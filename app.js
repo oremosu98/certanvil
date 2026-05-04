@@ -1,9 +1,9 @@
 // ══════════════════════════════════════════
-// Network+ AI Quiz — app.js  v4.85.24
+// Network+ AI Quiz — app.js  v4.85.25
 // ══════════════════════════════════════════
 
 // ── CONSTANTS ──
-const APP_VERSION = '4.85.24';
+const APP_VERSION = '4.85.25';
 
 // v4.42.0: Animation state flags. finish() / submitExam() set these when
 // they detect a streak increment or weak-spots rerank while #page-setup is
@@ -167,7 +167,10 @@ const RETENTION_GAP_CONCEPTS = [
   { label: 'Exploit',            parentTopic: 'Network Attacks & Threats',         objective: '4.2', keyword: 'Exploit \u2014 code/technique that takes advantage of a vulnerability to compromise; vulnerability is the flaw, exploit is the weapon' },
   { label: 'Vulnerability',      parentTopic: 'Network Attacks & Threats',         objective: '4.2', keyword: 'Vulnerability \u2014 flaw/weakness/misconfiguration that could be exploited; identified by scanners, remediated by patching or compensating controls' },
   { label: 'Visual Fault Locator', parentTopic: 'Cable Issues',                    objective: '5.2', keyword: 'VFL \u2014 visible red laser injected into fiber; light leaks from breaks/sharp bends/bad connectors; short-range visual troubleshooting (vs OTDR for long-run quantitative)' },
-  { label: 'Penetration Testing', parentTopic: 'Network Attacks & Threats',        objective: '4.2', keyword: 'Pentest \u2014 authorized simulated attack that EXPLOITS vulnerabilities (vs vulnerability scan which only identifies). Methods: black-box / white-box / gray-box. Always requires written authorization.' }
+  { label: 'Penetration Testing', parentTopic: 'Network Attacks & Threats',        objective: '4.2', keyword: 'Pentest \u2014 authorized simulated attack that EXPLOITS vulnerabilities (vs vulnerability scan which only identifies). Methods: black-box / white-box / gray-box. Always requires written authorization.' },
+  { label: 'OSPF Classless',     parentTopic: 'OSPF',                              objective: '2.1', keyword: 'OSPF is a CLASSLESS link-state protocol \u2014 carries subnet masks in LSAs, supports VLSM + CIDR (vs classful RIPv1/IGRP which assume default Class A/B/C masks)' },
+  { label: 'Lightweight vs Autonomous APs', parentTopic: 'Wireless Networking',    objective: '2.4', keyword: 'Autonomous AP (standalone, locally configured) vs Lightweight AP (centrally managed by WLC via CAPWAP/LWAPP) \u2014 lightweight wins at scale for unified config + RF coordination' },
+  { label: 'TAP (Traffic Access Point)', parentTopic: 'Network Monitoring & Observability', objective: '3.2', keyword: 'TAP \u2014 passive inline hardware that copies link traffic to a monitoring port at full fidelity (vs SPAN which can drop under load + filters errors). Optical TAPs are passive splitters with no power on data path.' }
 ];
 
 function _formatRetentionConceptsForPrompt() {
@@ -5941,6 +5944,179 @@ const QUESTION_EXEMPLARS = [
     explanation: 'A and B are correct definitions of standard pentest methodologies — black-box (no info, external attacker simulation), white-box (full info, insider/APT simulation), and gray-box (partial info, often as a compromised user). C is wrong AND illegal — pentests REQUIRE explicit written authorization from the system owner; without it the activity is unlawful intrusion. D is wrong — social engineering (phishing, pretexting) is a common authorized pentest component. E is wrong — pentest reports include all findings, exploitable or not, with severity ratings; unexploited findings are still vulnerabilities that defenders need to address.',
     source: 'curated',
     addedVersion: '4.85.24',
+    addedDate: '2026-05-04'
+  },
+  // ── Phase 3 Cycle 2 R4 add-on — 2026-05-04 (continued Dion gaps) ──
+  // 3 topics × 3 exemplars = 9 new exemplars.
+
+  // ── 1. OSPF AS A CLASSLESS ROUTING PROTOCOL ──
+  {
+    type: 'mcq',
+    question: 'Which of the following describes OSPF correctly with respect to addressing classes?',
+    difficulty: 'Foundational',
+    topic: 'OSPF',
+    objective: '2.1',
+    options: {
+      A: 'OSPF is a classless routing protocol — it carries subnet masks in its updates and supports VLSM and CIDR',
+      B: 'OSPF is a classful routing protocol — it assumes default subnet masks based on Class A/B/C',
+      C: 'OSPF is class-agnostic — it does not exchange routing information at all',
+      D: 'OSPF is a distance-vector classful protocol like RIPv1'
+    },
+    answer: 'A',
+    explanation: 'OSPF is a classless link-state routing protocol. It carries the subnet mask along with each network prefix in its LSAs (Link State Advertisements), which means it supports VLSM (Variable Length Subnet Masks) and CIDR (Classless Inter-Domain Routing). B describes RIPv1 / IGRP (legacy classful protocols, retired). C is fabricated. D is wrong — OSPF is a LINK-STATE classless protocol, not a distance-vector classful one.',
+    source: 'curated',
+    addedVersion: '4.85.25',
+    addedDate: '2026-05-04'
+  },
+  {
+    type: 'mcq',
+    question: 'A network engineer is choosing a routing protocol for a network that uses VLSM (e.g., /22, /24, /26, /30 subnets mixed within the same address space). Which of the following protocols correctly supports this requirement?',
+    difficulty: 'Exam Level',
+    topic: 'OSPF',
+    objective: '2.1',
+    options: {
+      A: 'OSPF — a classless protocol that carries subnet masks in updates and supports VLSM natively',
+      B: 'RIPv1 — assumes default classful masks, breaks VLSM',
+      C: 'IGRP — distance-vector classful, no VLSM support',
+      D: 'A static routing-only design — no dynamic protocol can support VLSM'
+    },
+    answer: 'A',
+    explanation: 'OSPF supports VLSM cleanly because it is classless and exchanges subnet masks with each route advertisement. Other classless options would also work (EIGRP, RIPv2, BGP, IS-IS), but among the choices given, OSPF is the correct answer. B and C are classful — they break under VLSM. D is wrong; many dynamic routing protocols support VLSM (just not the legacy classful ones).',
+    source: 'curated',
+    addedVersion: '4.85.25',
+    addedDate: '2026-05-04'
+  },
+  {
+    type: 'multi-select',
+    question: '(Choose TWO) Which statements correctly describe OSPF\'s relationship with classless routing?',
+    difficulty: 'Hard',
+    topic: 'OSPF',
+    objective: '2.1',
+    options: {
+      A: 'OSPF carries the subnet mask in every LSA, so it can correctly advertise prefixes of any length',
+      B: 'OSPF supports route summarization between areas at non-classful boundaries (e.g., aggregating /26s into a /22)',
+      C: 'OSPF requires every interface in an area to use the same classful mask',
+      D: 'OSPF cannot interoperate with CIDR-aggregated route advertisements',
+      E: 'OSPF was specified in 1989 as a classful protocol and only became classless in OSPFv3'
+    },
+    answers: ['A', 'B'],
+    explanation: 'A and B are accurate. OSPF carries the subnet mask in LSAs (A), which is the technical foundation of its classless behavior, and it supports route summarization at any prefix boundary (B) — including aggregating multiple smaller prefixes into a larger one for inter-area summarization. C is wrong (OSPF allows mixed prefix lengths within an area). D is wrong (OSPF works fine with CIDR). E is wrong — OSPFv2 (RFC 2328, the still-canonical version) is classless from the start; OSPFv3 is the IPv6 variant, not the introduction of classlessness.',
+    source: 'curated',
+    addedVersion: '4.85.25',
+    addedDate: '2026-05-04'
+  },
+
+  // ── 2. LIGHTWEIGHT vs AUTONOMOUS APs ──
+  {
+    type: 'mcq',
+    question: 'What is the KEY distinction between an autonomous (standalone) wireless access point and a lightweight wireless access point?',
+    difficulty: 'Foundational',
+    topic: 'Wireless Networking',
+    objective: '2.4',
+    options: {
+      A: 'An autonomous AP runs full configuration and forwarding logic locally; a lightweight AP relies on a centralized Wireless LAN Controller (WLC) for configuration and often forwarding decisions',
+      B: 'Autonomous APs are wired; lightweight APs are wireless',
+      C: 'Autonomous APs only operate at 2.4 GHz; lightweight APs only operate at 5 GHz',
+      D: 'Lightweight APs require batteries; autonomous APs require AC power'
+    },
+    answer: 'A',
+    explanation: 'Autonomous APs are self-contained — each one is configured individually with full local intelligence (SSIDs, security, RF tuning). Lightweight APs (sometimes called "thin APs") offload configuration and often forwarding to a centralized Wireless LAN Controller, communicating with it via CAPWAP (or its predecessor LWAPP). The LWAPP/CAPWAP model wins at scale: configure once on the WLC, push to hundreds of APs. B/C/D are fabricated technical distinctions.',
+    source: 'curated',
+    addedVersion: '4.85.25',
+    addedDate: '2026-05-04'
+  },
+  {
+    type: 'mcq',
+    question: 'A campus has 200 wireless access points across 12 buildings and wants centralized RF management, seamless roaming, and one-config-to-rule-them-all deployment. Which AP architecture BEST supports this?',
+    difficulty: 'Exam Level',
+    topic: 'Wireless Networking',
+    objective: '2.4',
+    options: {
+      A: 'Lightweight APs managed by one or more centralized Wireless LAN Controllers (WLCs) using CAPWAP',
+      B: 'Autonomous APs each configured individually via local web GUI',
+      C: 'Wireless mesh nodes that all peer-to-peer with each other',
+      D: 'Cellular small-cell base stations at each building'
+    },
+    answer: 'A',
+    explanation: 'A WLC + lightweight AP architecture is purpose-built for this scale: the WLC is the brain (RF coordination, channel/power assignments, SSID config, client roaming logic), and the lightweight APs are the radios. Configure once on the WLC, push to 200 APs. Autonomous (B) at this scale is operationally painful — every AP is its own snowflake. Mesh (C) has its place but doesn\'t centrally manage 200 APs. Cellular (D) is a different technology stack entirely.',
+    source: 'curated',
+    addedVersion: '4.85.25',
+    addedDate: '2026-05-04'
+  },
+  {
+    type: 'multi-select',
+    question: '(Choose TWO) Which advantages does a centralized lightweight-AP + WLC architecture have over autonomous APs?',
+    difficulty: 'Hard',
+    topic: 'Wireless Networking',
+    objective: '2.4',
+    options: {
+      A: 'Centralized configuration, monitoring, and policy push — one change on the WLC propagates to all APs',
+      B: 'Coordinated RF management — channel and transmit power assignments are calculated globally to minimize co-channel interference and optimize coverage',
+      C: 'Lightweight APs continue forwarding all client traffic identically when the WLC is offline',
+      D: 'Lightweight APs do not require any uplink to the wired network',
+      E: 'Each AP independently negotiates its own SSID with each client'
+    },
+    answers: ['A', 'B'],
+    explanation: 'A and B are the architectural wins of WLC-managed deployments — single source of truth for config (A) and globally-optimized RF planning (B), neither of which scales with autonomous APs. C is misleading — many lightweight AP deployments DO degrade when the WLC is offline (depending on FlexConnect/HREAP-style local switching configuration; pure central-switching mode breaks). D is wrong — lightweight APs need uplink to reach the WLC. E describes autonomous AP behavior, not lightweight.',
+    source: 'curated',
+    addedVersion: '4.85.25',
+    addedDate: '2026-05-04'
+  },
+
+  // ── 3. TAP (TEST/TRAFFIC ACCESS POINT) ──
+  {
+    type: 'mcq',
+    question: 'What is a network TAP (Test/Traffic Access Point) used for?',
+    difficulty: 'Foundational',
+    topic: 'Network Monitoring & Observability',
+    objective: '3.2',
+    options: {
+      A: 'A passive hardware device installed inline on a network link that copies all traffic to a separate monitoring port for capture or IDS analysis without affecting the live link',
+      B: 'A wireless access point that authenticates VPN clients',
+      C: 'A managed switch port that aggregates 802.1Q trunks',
+      D: 'A test instrument that injects synthetic traffic to benchmark link capacity'
+    },
+    answer: 'A',
+    explanation: 'A TAP is a passive (or semi-passive) inline device that physically copies traffic from a network link to one or more monitoring ports without affecting the original flow. Wireshark/IDS/IPS attaches to the monitoring port and sees full-fidelity traffic. B is wrong (wireless AP). C is fabricated. D describes a traffic generator, not a TAP.',
+    source: 'curated',
+    addedVersion: '4.85.25',
+    addedDate: '2026-05-04'
+  },
+  {
+    type: 'mcq',
+    question: 'What is the KEY advantage of a hardware TAP over a SPAN (port mirroring) port for traffic monitoring?',
+    difficulty: 'Exam Level',
+    topic: 'Network Monitoring & Observability',
+    objective: '3.2',
+    options: {
+      A: 'A TAP delivers a true unfiltered copy of every frame at full line rate, even under heavy load; a SPAN port can drop frames when oversubscribed and may not forward errored/runt frames',
+      B: 'A TAP is cheaper to deploy than a SPAN port',
+      C: 'A TAP requires no physical connection to the monitored link',
+      D: 'A TAP only captures unencrypted traffic, while SPAN handles all traffic'
+    },
+    answer: 'A',
+    explanation: 'TAPs are passive hardware copies — they reproduce every frame including errored frames, runts, oversized frames, and don\'t drop under load. SPAN ports run on the switch CPU/ASIC and can drop frames when the mirror buffer is overwhelmed (especially during incidents when monitoring matters most). They also typically filter out errored frames. B is reversed — TAPs are usually MORE expensive than configuring a SPAN port. C is wrong — TAPs are inline physical devices. D is fabricated.',
+    source: 'curated',
+    addedVersion: '4.85.25',
+    addedDate: '2026-05-04'
+  },
+  {
+    type: 'multi-select',
+    question: '(Choose TWO) Which statements about hardware network TAPs are correct?',
+    difficulty: 'Hard',
+    topic: 'Network Monitoring & Observability',
+    objective: '3.2',
+    options: {
+      A: 'A passive optical TAP introduces no power requirement on the data path itself — the splitter is purely optical',
+      B: 'TAPs are typically deployed inline at strategic chokepoints (uplinks, datacenter edges) to feed IDS/IPS/SIEM/Wireshark',
+      C: 'TAPs require firmware updates to learn the network topology',
+      D: 'TAPs are always preferred over SPAN ports because they are cheaper',
+      E: 'TAPs work only on wireless links, not wired'
+    },
+    answers: ['A', 'B'],
+    explanation: 'A and B are correct. Passive optical TAPs split light with no active electronics on the data path (A) — the data plane keeps working even if the TAP loses power. Strategic chokepoint placement (B) is the standard pattern: feed full-fidelity traffic from key links to IDS, IPS, or capture tools. C is fabricated. D is reversed (TAPs are usually MORE expensive than SPAN). E is wrong — most TAPs are wired (copper or fiber).',
+    source: 'curated',
+    addedVersion: '4.85.25',
     addedDate: '2026-05-04'
   }
 ];
