@@ -1,9 +1,9 @@
 // ══════════════════════════════════════════
-// Network+ AI Quiz — app.js  v4.85.23
+// Network+ AI Quiz — app.js  v4.85.24
 // ══════════════════════════════════════════
 
 // ── CONSTANTS ──
-const APP_VERSION = '4.85.23';
+const APP_VERSION = '4.85.24';
 
 // v4.42.0: Animation state flags. finish() / submitExam() set these when
 // they detect a streak increment or weak-spots rerank while #page-setup is
@@ -166,7 +166,8 @@ const RETENTION_GAP_CONCEPTS = [
   { label: 'Wet Pipe',           parentTopic: 'Data Centres',                      objective: '3.3', keyword: 'Wet pipe sprinkler \u2014 pressurized water in pipes, immediate discharge when head opens; risks accidental water damage on live electronics' },
   { label: 'Exploit',            parentTopic: 'Network Attacks & Threats',         objective: '4.2', keyword: 'Exploit \u2014 code/technique that takes advantage of a vulnerability to compromise; vulnerability is the flaw, exploit is the weapon' },
   { label: 'Vulnerability',      parentTopic: 'Network Attacks & Threats',         objective: '4.2', keyword: 'Vulnerability \u2014 flaw/weakness/misconfiguration that could be exploited; identified by scanners, remediated by patching or compensating controls' },
-  { label: 'Visual Fault Locator', parentTopic: 'Cable Issues',                    objective: '5.2', keyword: 'VFL \u2014 visible red laser injected into fiber; light leaks from breaks/sharp bends/bad connectors; short-range visual troubleshooting (vs OTDR for long-run quantitative)' }
+  { label: 'Visual Fault Locator', parentTopic: 'Cable Issues',                    objective: '5.2', keyword: 'VFL \u2014 visible red laser injected into fiber; light leaks from breaks/sharp bends/bad connectors; short-range visual troubleshooting (vs OTDR for long-run quantitative)' },
+  { label: 'Penetration Testing', parentTopic: 'Network Attacks & Threats',        objective: '4.2', keyword: 'Pentest \u2014 authorized simulated attack that EXPLOITS vulnerabilities (vs vulnerability scan which only identifies). Methods: black-box / white-box / gray-box. Always requires written authorization.' }
 ];
 
 function _formatRetentionConceptsForPrompt() {
@@ -5885,6 +5886,62 @@ const QUESTION_EXEMPLARS = [
     source: 'curated',
     addedVersion: '4.85.23',
     addedDate: '2026-05-03'
+  },
+  // ── Phase 3 Cycle 2 R3 add-on: PENETRATION TESTING — 2026-05-04 ──
+  {
+    type: 'mcq',
+    question: 'What is the primary purpose of a PENETRATION TEST?',
+    difficulty: 'Foundational',
+    topic: 'Network Attacks & Threats',
+    objective: '4.2',
+    options: {
+      A: 'An authorized simulated attack on a system to identify and exploit vulnerabilities before real adversaries do',
+      B: 'An automated scan that lists vulnerabilities without attempting to exploit them',
+      C: 'A formal audit of compliance documentation against a regulatory standard',
+      D: 'A backup test that restores data to verify recoverability'
+    },
+    answer: 'A',
+    explanation: 'A penetration test (pentest) is an authorized, simulated attack — testers actively exploit vulnerabilities to demonstrate real-world impact and find chains of weaknesses an attacker could use. B describes a vulnerability assessment (passive identification only — no exploitation). C describes a compliance audit. D is disaster-recovery testing. Pentest = "we tried to break in and here\'s what we found."',
+    source: 'curated',
+    addedVersion: '4.85.24',
+    addedDate: '2026-05-04'
+  },
+  {
+    type: 'mcq',
+    question: 'What is the KEY DIFFERENCE between a vulnerability scan and a penetration test?',
+    difficulty: 'Exam Level',
+    topic: 'Network Attacks & Threats',
+    objective: '4.2',
+    options: {
+      A: 'A vulnerability scan IDENTIFIES potential weaknesses but does not exploit them; a penetration test goes further by actively exploiting findings to confirm impact and chain together attack paths',
+      B: 'A vulnerability scan is unauthorized; a pentest is authorized',
+      C: 'A vulnerability scan tests web applications; a pentest tests networks',
+      D: 'A vulnerability scan is manual; a pentest is fully automated'
+    },
+    answer: 'A',
+    explanation: 'The defining difference is exploitation. Vulnerability scans (Nessus, Qualys, OpenVAS) automatically identify potential issues by signature matching but do NOT exploit them — they produce findings lists. Pentests authorized human testers (often using exploit tools like Metasploit + manual techniques) confirm exploitability, chain weaknesses together, and demonstrate real-world impact (e.g., "we got domain admin starting from this misconfigured printer"). Both are authorized when done legitimately (B is wrong). Both can target any asset class (C is wrong). Pentests are typically MORE manual than scans (D is reversed).',
+    source: 'curated',
+    addedVersion: '4.85.24',
+    addedDate: '2026-05-04'
+  },
+  {
+    type: 'multi-select',
+    question: '(Choose TWO) Which statements correctly describe penetration testing methodologies?',
+    difficulty: 'Hard',
+    topic: 'Network Attacks & Threats',
+    objective: '4.2',
+    options: {
+      A: 'Black-box testing — the tester has no prior knowledge of the target environment, simulating an external attacker',
+      B: 'White-box testing — the tester has full information (network diagrams, source code, credentials), simulating an insider or advanced persistent threat',
+      C: 'Pentests must always be conducted without the system owner\'s permission to be valid',
+      D: 'Pentests cannot include social engineering — they are strictly technical',
+      E: 'Pentest reports omit findings the tester could not exploit, to keep the report concise'
+    },
+    answers: ['A', 'B'],
+    explanation: 'A and B are correct definitions of standard pentest methodologies — black-box (no info, external attacker simulation), white-box (full info, insider/APT simulation), and gray-box (partial info, often as a compromised user). C is wrong AND illegal — pentests REQUIRE explicit written authorization from the system owner; without it the activity is unlawful intrusion. D is wrong — social engineering (phishing, pretexting) is a common authorized pentest component. E is wrong — pentest reports include all findings, exploitable or not, with severity ratings; unexploited findings are still vulnerabilities that defenders need to address.',
+    source: 'curated',
+    addedVersion: '4.85.24',
+    addedDate: '2026-05-04'
   }
 ];
 
