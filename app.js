@@ -1,9 +1,9 @@
 // ══════════════════════════════════════════
-// Network+ AI Quiz — app.js  v4.85.25
+// Network+ AI Quiz — app.js  v4.85.26
 // ══════════════════════════════════════════
 
 // ── CONSTANTS ──
-const APP_VERSION = '4.85.25';
+const APP_VERSION = '4.85.26';
 
 // v4.42.0: Animation state flags. finish() / submitExam() set these when
 // they detect a streak increment or weak-spots rerank while #page-setup is
@@ -170,7 +170,8 @@ const RETENTION_GAP_CONCEPTS = [
   { label: 'Penetration Testing', parentTopic: 'Network Attacks & Threats',        objective: '4.2', keyword: 'Pentest \u2014 authorized simulated attack that EXPLOITS vulnerabilities (vs vulnerability scan which only identifies). Methods: black-box / white-box / gray-box. Always requires written authorization.' },
   { label: 'OSPF Classless',     parentTopic: 'OSPF',                              objective: '2.1', keyword: 'OSPF is a CLASSLESS link-state protocol \u2014 carries subnet masks in LSAs, supports VLSM + CIDR (vs classful RIPv1/IGRP which assume default Class A/B/C masks)' },
   { label: 'Lightweight vs Autonomous APs', parentTopic: 'Wireless Networking',    objective: '2.4', keyword: 'Autonomous AP (standalone, locally configured) vs Lightweight AP (centrally managed by WLC via CAPWAP/LWAPP) \u2014 lightweight wins at scale for unified config + RF coordination' },
-  { label: 'TAP (Traffic Access Point)', parentTopic: 'Network Monitoring & Observability', objective: '3.2', keyword: 'TAP \u2014 passive inline hardware that copies link traffic to a monitoring port at full fidelity (vs SPAN which can drop under load + filters errors). Optical TAPs are passive splitters with no power on data path.' }
+  { label: 'TAP (Traffic Access Point)', parentTopic: 'Network Monitoring & Observability', objective: '3.2', keyword: 'TAP \u2014 passive inline hardware that copies link traffic to a monitoring port at full fidelity (vs SPAN which can drop under load + filters errors). Optical TAPs are passive splitters with no power on data path.' },
+  { label: 'Split Horizon',      parentTopic: 'Routing Protocols',                 objective: '2.1', keyword: 'Split horizon \u2014 distance-vector loop prevention: do not advertise a route back out the interface it was learned from. Poison reverse variant advertises with infinite metric instead of silence.' }
 ];
 
 function _formatRetentionConceptsForPrompt() {
@@ -6117,6 +6118,62 @@ const QUESTION_EXEMPLARS = [
     explanation: 'A and B are correct. Passive optical TAPs split light with no active electronics on the data path (A) — the data plane keeps working even if the TAP loses power. Strategic chokepoint placement (B) is the standard pattern: feed full-fidelity traffic from key links to IDS, IPS, or capture tools. C is fabricated. D is reversed (TAPs are usually MORE expensive than SPAN). E is wrong — most TAPs are wired (copper or fiber).',
     source: 'curated',
     addedVersion: '4.85.25',
+    addedDate: '2026-05-04'
+  },
+  // ── Phase 3 Cycle 2 R5 add-on: SPLIT HORIZON — 2026-05-04 ──
+  {
+    type: 'mcq',
+    question: 'In distance-vector routing protocols, what is the SPLIT HORIZON rule?',
+    difficulty: 'Foundational',
+    topic: 'Routing Protocols',
+    objective: '2.1',
+    options: {
+      A: 'A router does not advertise a route back out the same interface from which it learned that route',
+      B: 'A router floods every learned route out every interface to ensure full convergence',
+      C: 'A router only advertises routes that have been verified by traceroute',
+      D: 'A router sends route updates only to neighbors with matching VLAN IDs'
+    },
+    answer: 'A',
+    explanation: 'Split horizon is a loop-prevention rule for distance-vector protocols (RIP, EIGRP): if router A learned a route from router B, A will NOT advertise that route back to B on the same interface. This prevents the simplest "two routers convince each other a dead network is still reachable through the other guy" loop. B is the opposite (and creates loops). C and D are fabricated rules.',
+    source: 'curated',
+    addedVersion: '4.85.26',
+    addedDate: '2026-05-04'
+  },
+  {
+    type: 'mcq',
+    question: 'Router A learns about network 10.1.1.0/24 from Router B via interface Gi0/1. Router A is configured with split horizon enabled on Gi0/1. What does split horizon do in this scenario?',
+    difficulty: 'Exam Level',
+    topic: 'Routing Protocols',
+    objective: '2.1',
+    options: {
+      A: 'Router A will NOT include 10.1.1.0/24 in its routing updates sent out Gi0/1, preventing a routing loop with Router B',
+      B: 'Router A will advertise 10.1.1.0/24 with an infinite metric back out Gi0/1',
+      C: 'Router A will block all incoming traffic to 10.1.1.0/24 on Gi0/1',
+      D: 'Router A will buffer updates for 10.1.1.0/24 and replay them with a delay'
+    },
+    answer: 'A',
+    explanation: 'Split horizon means: omit routes learned via this interface from updates sent out the same interface. Router A learned 10.1.1.0/24 via Gi0/1, so Router A will NOT readvertise that prefix back out Gi0/1. B describes "split horizon with poison reverse" (a related but distinct variation that explicitly advertises the route as unreachable). C and D are fabricated.',
+    source: 'curated',
+    addedVersion: '4.85.26',
+    addedDate: '2026-05-04'
+  },
+  {
+    type: 'multi-select',
+    question: '(Choose TWO) Which statements about split horizon and related loop-prevention mechanisms in distance-vector routing are correct?',
+    difficulty: 'Hard',
+    topic: 'Routing Protocols',
+    objective: '2.1',
+    options: {
+      A: 'Split horizon prevents a router from advertising a route back out the interface it was learned from',
+      B: 'Split horizon with POISON REVERSE explicitly advertises the route back with an infinite metric (e.g., 16 in RIP), making the unreachability unambiguous to the neighbor',
+      C: 'Split horizon eliminates all routing loops in all topologies, making other mechanisms (holddown timers, triggered updates) unnecessary',
+      D: 'Split horizon is exclusive to link-state protocols like OSPF and IS-IS',
+      E: 'Split horizon requires manual configuration of an access list per interface'
+    },
+    answers: ['A', 'B'],
+    explanation: 'A and B are correct definitions. Split horizon (A) is the basic rule. Poison reverse (B) is the more aggressive variant that says "I cannot reach this network" rather than just staying silent. C is wrong — split horizon prevents simple two-router loops but not all loops; that\'s why distance-vector protocols also use holddown timers, triggered updates, and route poisoning. D is wrong — split horizon is a DISTANCE-VECTOR mechanism (RIP, EIGRP); link-state protocols like OSPF prevent loops via topology databases, not split horizon. E is wrong — split horizon is built into the protocol\'s update logic, not configured via ACLs.',
+    source: 'curated',
+    addedVersion: '4.85.26',
     addedDate: '2026-05-04'
   }
 ];
