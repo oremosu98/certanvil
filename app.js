@@ -1,9 +1,9 @@
 // ══════════════════════════════════════════
-// Network+ AI Quiz — app.js  v4.88.0
+// Network+ AI Quiz — app.js  v4.88.1
 // ══════════════════════════════════════════
 
 // ── CONSTANTS ──
-const APP_VERSION = '4.88.0';
+const APP_VERSION = '4.88.1';
 
 // ══════════════════════════════════════════════════════════════════════════
 // CERT PACK ARCHITECTURE (v4.86.0 Phase 1A engine refactor)
@@ -36012,6 +36012,16 @@ function renderSetupDomainGrid() {
   const el = document.getElementById('setup-domain-grid');
   const section = document.getElementById('domain-grid-section');
   if (!el || !section) return;
+  // v4.88.1: cert-aware bail. The hardcoded domainOrder + canonical topics
+  // below are Network+-only. Security+ has different domain keys (threats,
+  // architecture, governance) and different canonical topics. Until we
+  // make this whole function cert-aware, hide the section cleanly for any
+  // non-netplus cert so we don't crash on `DOMAIN_LABELS[dk].replace(...)`
+  // when dk is undefined.
+  if (typeof CURRENT_CERT !== 'undefined' && CURRENT_CERT !== 'netplus') {
+    section.classList.add('is-hidden');
+    return;
+  }
   const history = (typeof loadHistory === 'function') ? loadHistory() : [];
   // Hide the entire section if there's no data — don't show an empty grid
   if (history.length === 0) {

@@ -298,7 +298,7 @@ test('Validation in runSessionStep', js.includes('aiValidateQuestions(apiKey, qu
 
 // ── Analytics v2 (v4.5) ──
 console.log('\n\x1b[1m── ANALYTICS v2 (v4.5) ──\x1b[0m');
-test('APP_VERSION is 4.88.0', js.includes("const APP_VERSION = '4.88.0"));
+test('APP_VERSION is 4.88.1', js.includes("const APP_VERSION = '4.88.1"));
 test('getDailyGoal function', js.includes('function getDailyGoal('));
 test('renderDailyGoal function', js.includes('function renderDailyGoal('));
 test('editDailyGoal function', js.includes('function editDailyGoal('));
@@ -312,7 +312,7 @@ test('CSS: .topic-domain-group', css.includes('.topic-domain-group'));
 test('CSS: .daily-goal-card', css.includes('.daily-goal-card'));
 test('CSS: .advanced-section', css.includes('.advanced-section'));
 test('CSS: .hero-stats-strip', css.includes('.hero-stats-strip'));
-test('SW cache bumped to v4.88.0', sw.includes('netplus-v4.88.0'));
+test('SW cache bumped to v4.88.1', sw.includes('netplus-v4.88.1'));
 test('Family Drill: STORAGE.PORT_FAMILY_BEST', js.includes("PORT_FAMILY_BEST:"));
 test('Family Drill: ptMode handles family', js.includes("ptMode === 'family'"));
 test('Family Drill: HTML mode button', html.includes('id="pt-mode-family"'));
@@ -5501,8 +5501,9 @@ test('v4.53.0 JS: renderSetupDomainGrid function defined',
 test('v4.53.0 JS: domain grid aggregates via TOPIC_DOMAINS lookup',
   /renderSetupDomainGrid[\s\S]{0,2500}TOPIC_DOMAINS\[e\.topic\]/.test(js));
 // v4.54.10: renderSetupDomainGrid body grew \u2014 widen the regex window.
+// v4.88.1: cert-aware bail at top of fn pushes drillDomain further down.
 test('v4.53.0 JS: domain grid click wires drillDomain',
-  /renderSetupDomainGrid[\s\S]{0,6000}drillDomain\(/.test(js));
+  /renderSetupDomainGrid[\s\S]{0,7000}drillDomain\(/.test(js));
 // v4.81.23: renderSetupFocusBanner stopped being called from goSetup (retired
 // in v4.81.20 as a shim; element removed entirely in v4.81.23). goSetup
 // still calls renderSetupDomainGrid + renderTodayPlan.
@@ -16229,6 +16230,16 @@ test('v4.88.0 ObjBadge: topic-obj-badge title uses CERT_CODE template',
   /title="\$\{CERT_CODE\} objective \$\{obj\}"/.test(js));
 test('v4.88.0 ObjBadge: tombstone — hardcoded "N10-009 objective" removed from template',
   !/title="N10-009 objective \$\{obj\}"/.test(js));
+
+// ── v4.88.1: Security+ Home crash fix ──
+// renderSetupDomainGrid had hardcoded Network+ domain keys that crashed when
+// CURRENT_CERT === 'secplus' (DOMAIN_LABELS['implementation'] is undefined →
+// .replace(...) on undefined → window.onerror fires → red toast).
+// Fix: cert-aware early-return so the section is hidden cleanly for non-netplus.
+test('v4.88.1 Security+: renderSetupDomainGrid early-returns for non-netplus',
+  /renderSetupDomainGrid[\s\S]{0,1500}CURRENT_CERT[\s\S]{0,200}!==\s*'netplus'/.test(js));
+test('v4.88.1 Security+: renderSetupDomainGrid hides section on cert-aware bail',
+  /renderSetupDomainGrid[\s\S]{0,1500}CURRENT_CERT[\s\S]{0,500}section\.classList\.add\(['"]is-hidden['"]\)/.test(js));
 
 // ── Summary ──
 console.log('\n' + '═'.repeat(50));
