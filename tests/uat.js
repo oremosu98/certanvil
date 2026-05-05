@@ -290,7 +290,7 @@ test('Validation in runSessionStep', js.includes('aiValidateQuestions(apiKey, qu
 
 // ── Analytics v2 (v4.5) ──
 console.log('\n\x1b[1m── ANALYTICS v2 (v4.5) ──\x1b[0m');
-test('APP_VERSION is 4.85.26', js.includes("const APP_VERSION = '4.85.26"));
+test('APP_VERSION is 4.85.27', js.includes("const APP_VERSION = '4.85.27"));
 test('getDailyGoal function', js.includes('function getDailyGoal('));
 test('renderDailyGoal function', js.includes('function renderDailyGoal('));
 test('editDailyGoal function', js.includes('function editDailyGoal('));
@@ -304,7 +304,7 @@ test('CSS: .topic-domain-group', css.includes('.topic-domain-group'));
 test('CSS: .daily-goal-card', css.includes('.daily-goal-card'));
 test('CSS: .advanced-section', css.includes('.advanced-section'));
 test('CSS: .hero-stats-strip', css.includes('.hero-stats-strip'));
-test('SW cache bumped to v4.85.26', sw.includes('netplus-v4.85.26'));
+test('SW cache bumped to v4.85.27', sw.includes('netplus-v4.85.27'));
 test('Family Drill: STORAGE.PORT_FAMILY_BEST', js.includes("PORT_FAMILY_BEST:"));
 test('Family Drill: ptMode handles family', js.includes("ptMode === 'family'"));
 test('Family Drill: HTML mode button', html.includes('id="pt-mode-family"'));
@@ -15758,6 +15758,51 @@ try {
   test('Validation audit: regression gate', false);
   results.errors.push('validation-audit.js exited non-zero — run `node tests/validation-audit.js` for details');
 }
+
+// ═══════════════════════════════════════════════════════════════════════
+// v4.85.27 — Pass-proof banner. First-time-visitor trust signal per
+// cert_mode_launch_checklist.md Day 1 #3 post-pass action. Author
+// passed Network+ N10-009 (767/900) on 2026-05-05 using this tool.
+// Static markup, no JS state. Banner is the credibility anchor for
+// the cert-mode SaaS launch — must stay above the hero.
+// ═══════════════════════════════════════════════════════════════════════
+
+test('v4.85.27 PassProof: banner element exists in #page-setup',
+  /<div class="pass-proof-banner"/.test(html));
+
+test('v4.85.27 PassProof: banner cites the correct cert + score (Network\\+ + 767)',
+  /Network\+ N10-009.*767\/900/.test(html));
+
+test('v4.85.27 PassProof: banner cites the correct exam date (2026-05-05)',
+  html.includes('2026-05-05'));
+
+test('v4.85.27 PassProof: banner mentions Security+ as next cert',
+  /Security\+/.test(html));
+
+test('v4.85.27 PassProof: banner has aria-label for accessibility',
+  /aria-label="Author's exam result"/.test(html));
+
+test('v4.85.27 PassProof: banner sits BEFORE the hero (above-the-fold trust)',
+  (() => {
+    const bannerIdx = html.indexOf('class="pass-proof-banner"');
+    const heroIdx = html.indexOf('class="setup-hero-v2"');
+    return bannerIdx > 0 && heroIdx > 0 && bannerIdx < heroIdx;
+  })());
+
+test('v4.85.27 PassProof: .pass-proof-banner CSS declared',
+  /\.pass-proof-banner\s*\{/.test(css));
+
+test('v4.85.27 PassProof: .pass-proof-icon CSS declared',
+  /\.pass-proof-icon\s*\{/.test(css));
+
+test('v4.85.27 PassProof: green-success gradient (rgba(34,197,94))',
+  /\.pass-proof-banner[\s\S]{0,400}rgba\(34,197,94/.test(css));
+
+test('v4.85.27 PassProof: mobile breakpoint at 540px',
+  /max-width:\s*540px[\s\S]{0,400}\.pass-proof-banner/.test(css));
+
+test('v4.85.27 PassProof: light-theme variant declared',
+  /\[data-theme="light"\]\s*\.pass-proof-banner/.test(css));
 
 // ── Summary ──
 console.log('\n' + '═'.repeat(50));
