@@ -298,7 +298,7 @@ test('Validation in runSessionStep', js.includes('aiValidateQuestions(apiKey, qu
 
 // ── Analytics v2 (v4.5) ──
 console.log('\n\x1b[1m── ANALYTICS v2 (v4.5) ──\x1b[0m');
-test('APP_VERSION is 4.86.0', js.includes("const APP_VERSION = '4.86.0"));
+test('APP_VERSION is 4.86.1', js.includes("const APP_VERSION = '4.86.1"));
 test('getDailyGoal function', js.includes('function getDailyGoal('));
 test('renderDailyGoal function', js.includes('function renderDailyGoal('));
 test('editDailyGoal function', js.includes('function editDailyGoal('));
@@ -312,7 +312,7 @@ test('CSS: .topic-domain-group', css.includes('.topic-domain-group'));
 test('CSS: .daily-goal-card', css.includes('.daily-goal-card'));
 test('CSS: .advanced-section', css.includes('.advanced-section'));
 test('CSS: .hero-stats-strip', css.includes('.hero-stats-strip'));
-test('SW cache bumped to v4.86.0', sw.includes('netplus-v4.86.0'));
+test('SW cache bumped to v4.86.1', sw.includes('netplus-v4.86.1'));
 test('Family Drill: STORAGE.PORT_FAMILY_BEST', js.includes("PORT_FAMILY_BEST:"));
 test('Family Drill: ptMode handles family', js.includes("ptMode === 'family'"));
 test('Family Drill: HTML mode button', html.includes('id="pt-mode-family"'));
@@ -382,11 +382,17 @@ if (distCode) {
   'DNS Records & DNSSEC'
 ].forEach(topic => {
   test(`Topic chip: ${topic}`, html.includes(`data-v="${topic}"`));
-  test(`TOPIC_DOMAINS: ${topic}`, js.includes(`'${topic}'`));
-  test(`topicResources: ${topic}`, new RegExp(`'${topic.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}':\\s*\\{\\s*obj:`).test(js));
+  // v4.86.1: TOPIC_DOMAINS + topicResources moved to certs/netplus.js
+  test(`TOPIC_DOMAINS: ${topic}`, certNetplus.includes(`'${topic}'`));
+  test(`topicResources: ${topic}`, new RegExp(`'${topic.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}':\\s*\\{\\s*obj:`).test(certNetplus));
 });
-test('DOMAIN_WEIGHTS constant', js.includes('const DOMAIN_WEIGHTS = {'));
-test('TOPIC_DOMAINS mapping', js.includes('const TOPIC_DOMAINS = {'));
+// v4.86.1: const literals moved; app reads via CERT_PACK with fallback
+test('DOMAIN_WEIGHTS reads from CERT_PACK',
+  /const DOMAIN_WEIGHTS = .*CERT_PACK.*domainWeights/.test(js));
+test('TOPIC_DOMAINS reads from CERT_PACK',
+  /const TOPIC_DOMAINS = .*CERT_PACK.*topicDomains/.test(js));
+test('DOMAIN_WEIGHTS literal in cert pack', /domainWeights:\s*\{/.test(certNetplus));
+test('TOPIC_DOMAINS literal in cert pack', /topicDomains:\s*\{/.test(certNetplus));
 test('MILESTONE_DEFS defined', js.includes('MILESTONE_DEFS'));
 [
   'getExamDate','setExamDate','getDaysToExam','getReadinessForecast',
@@ -2725,12 +2731,13 @@ test('v4.41.0: tbGenerateAiTopology still uses CLAUDE_MODEL (Haiku) for cost',
 // speed+duplex only; Auto-MDIX is the pin-detection feature. These
 // assertions lock in the new GT_ETHERNET table, the _buildGtHint ethernet
 // branch, and the _groundTruthOk MDI/MDIX conflation guard.
-test('v4.41.0: GT_ETHERNET constant defined',
-  /const GT_ETHERNET\s*=\s*\{/.test(js));
-test('v4.41.0: GT_ETHERNET declares auto-negotiation as speed+duplex only',
-  /'auto-negotiation':\s*'negotiates SPEED and DUPLEX only/.test(js));
-test('v4.41.0: GT_ETHERNET declares auto-mdix as MDI/MDIX pin detection',
-  /'auto-mdix':\s*'detects MDI\/MDIX pin assignments/.test(js));
+// v4.86.1: GT_ETHERNET literal moved to certs/netplus.js as cert.gt.ethernet
+test('v4.41.0: GT_ETHERNET reads from CERT_PACK',
+  /const GT_ETHERNET\s*=.*CERT_PACK.*ethernet/.test(js));
+test('v4.41.0: cert pack ethernet table declares auto-negotiation as speed+duplex only',
+  /'auto-negotiation':\s*'negotiates SPEED and DUPLEX only/.test(certNetplus));
+test('v4.41.0: cert pack ethernet table declares auto-mdix as MDI/MDIX pin detection',
+  /'auto-mdix':\s*'detects MDI\/MDIX pin assignments/.test(certNetplus));
 const buildGtHintBody = _fnBody(js, '_buildGtHint');
 test('v4.41.0: _buildGtHint has ethernet keyword regex',
   /ethRe/.test(buildGtHintBody) || /auto\[-\\s\]\?negotiat/.test(buildGtHintBody));
@@ -2751,16 +2758,17 @@ test('v4.41.0: _groundTruthOk guards speed/duplex stem against auto-MDIX answer'
 // by extracting the function via Function() from the source — no runtime
 // execution of the full app, just the one helper.
 try {
-  // Pull GT_ETHERNET and _buildGtHint out of app.js into a throwaway sandbox.
-  // This is a structural test of actual output, not a regex sniff.
-  const gtEthMatch = js.match(/const GT_ETHERNET\s*=\s*\{[\s\S]*?\};/);
+  // v4.86.1: GT_ETHERNET literal moved to certs/netplus.js as cert.gt.ethernet.
+  // Extract from certNetplus, then build a sandbox that matches what runtime sees.
+  const gtEthMatch = certNetplus.match(/ethernet:\s*\{([\s\S]*?)\n\s*\}\s*\n\s*\}/);
   const buildGtHintMatch = js.match(/function _buildGtHint\(text, topicName\) \{[\s\S]*?\n\}/);
   if (gtEthMatch && buildGtHintMatch) {
-    // Minimal stubs for GT_PORTS/GT_OSI references inside _buildGtHint
+    // Reconstruct a usable GT_ETHERNET const for the sandbox from the cert pack body.
+    // Plus minimal stubs for GT_PORTS/GT_OSI references inside _buildGtHint.
     const sandbox = `
       const GT_PORTS = {};
       const GT_OSI = {};
-      ${gtEthMatch[0]}
+      const GT_ETHERNET = {${gtEthMatch[1]}};
       ${buildGtHintMatch[0]}
       module.exports = _buildGtHint;
     `;
@@ -3345,18 +3353,18 @@ const NEW_TOPICS_V4_42_3 = [
   { name: 'Connection Issues', domain: 'troubleshooting', obj: '5.5' }
 ];
 
+// v4.86.1: TOPIC_DOMAINS + topicResources moved to certs/netplus.js
 // Each new topic must appear in TOPIC_DOMAINS with the correct domain
 NEW_TOPICS_V4_42_3.forEach(t => {
   test(`v4.42.3: TOPIC_DOMAINS['${t.name}'] = '${t.domain}'`,
-    js.includes(`'${t.name}':`) &&
-    // sloppy but effective — grep lines containing topic name and check domain token follows
-    new RegExp(`'${t.name.replace(/[.*+?^${}()|[\]\\/]/g, '\\$&')}':\\s*'${t.domain}'`).test(js));
+    certNetplus.includes(`'${t.name}':`) &&
+    new RegExp(`'${t.name.replace(/[.*+?^${}()|[\]\\/]/g, '\\$&')}':\\s*'${t.domain}'`).test(certNetplus));
 });
 
 // Each new topic must appear in topicResources with the correct objective
 NEW_TOPICS_V4_42_3.forEach(t => {
   test(`v4.42.3: topicResources['${t.name}'] has obj '${t.obj}'`,
-    new RegExp(`'${t.name.replace(/[.*+?^${}()|[\]\\/]/g, '\\$&')}':\\s*\\{\\s*obj:\\s*'${t.obj.replace(/\./g, '\\.')}'`).test(js));
+    new RegExp(`'${t.name.replace(/[.*+?^${}()|[\]\\/]/g, '\\$&')}':\\s*\\{\\s*obj:\\s*'${t.obj.replace(/\./g, '\\.')}'`).test(certNetplus));
 });
 
 // Each new topic must appear as a chip in index.html
@@ -3366,20 +3374,19 @@ NEW_TOPICS_V4_42_3.forEach(t => {
 });
 
 // Parent umbrellas preserved (history continuity guard — do not delete these)
+// v4.86.1: TOPIC_DOMAINS literal moved to certs/netplus.js
 ['Routing Protocols', 'Switch Features & VLANs', 'IPsec & VPN Protocols',
  'Network Troubleshooting & Tools'].forEach(parent => {
   test(`v4.42.3: parent umbrella '${parent}' still in TOPIC_DOMAINS`,
-    js.includes(`'${parent}':`));
+    certNetplus.includes(`'${parent}':`));
   test(`v4.42.3: parent umbrella '${parent}' still a chip in HTML`,
     html.includes(`data-v="${parent}"`));
 });
 
 // Catalog size moved up by 10 — spot-check total count matches expectation.
-// TOPIC_DOMAINS has two sections: the per-domain objects inside the const.
-// Count canonical-string keys (heuristic: lines starting with "  '" in the
-// TOPIC_DOMAINS block).
+// v4.86.1: extract from certNetplus where the topicDomains: { ... } literal lives
 (function() {
-  const m = js.match(/const TOPIC_DOMAINS\s*=\s*\{([\s\S]*?)\n\};/);
+  const m = certNetplus.match(/topicDomains:\s*\{([\s\S]*?)\n\s*\},/);
   if (!m) {
     test('v4.42.3: TOPIC_DOMAINS block parseable', false);
     return;
@@ -3391,7 +3398,7 @@ NEW_TOPICS_V4_42_3.forEach(t => {
 
 // Troubleshooting domain coverage improved — was 2, now 6
 (function() {
-  const m = js.match(/const TOPIC_DOMAINS\s*=\s*\{([\s\S]*?)\n\};/);
+  const m = certNetplus.match(/topicDomains:\s*\{([\s\S]*?)\n\s*\},/);
   const body = m ? m[1] : '';
   const tsLines = body.split('\n').filter(l => /'troubleshooting'/.test(l));
   test(`v4.42.3: troubleshooting domain has 6 topics (found ${tsLines.length})`,
@@ -11922,7 +11929,9 @@ test('v4.81.17 DomainDrill: vm fixture — applyDomainPreset produces correct mu
       const helperBody = _fnBody(js, '_topicsInDomain');
       const presetBody = _fnBody(js, 'applyDomainPreset');
       // Extract the TOPIC_DOMAINS const block (large, walks brace depth)
-      const tdMatch = js.match(/const TOPIC_DOMAINS\s*=\s*\{[\s\S]*?\n\};/);
+      // v4.86.1: TOPIC_DOMAINS literal moved to certs/netplus.js as `topicDomains: {...}`
+      const tdInner = certNetplus.match(/topicDomains:\s*\{([\s\S]*?)\n\s*\},/);
+      const tdMatch = tdInner ? ['const TOPIC_DOMAINS = {' + tdInner[1] + '\n};'] : null;
       if (!helperBody || !presetBody || !tdMatch) return false;
       const vm = require('vm');
       // State observable to the test
@@ -12001,7 +12010,9 @@ test('v4.81.17 DomainDrill: vm fixture — _topicsInDomain memoisation + coverag
   (() => {
     try {
       const helperBody = _fnBody(js, '_topicsInDomain');
-      const tdMatch = js.match(/const TOPIC_DOMAINS\s*=\s*\{[\s\S]*?\n\};/);
+      // v4.86.1: TOPIC_DOMAINS literal moved to certs/netplus.js as `topicDomains: {...}`
+      const tdInner = certNetplus.match(/topicDomains:\s*\{([\s\S]*?)\n\s*\},/);
+      const tdMatch = tdInner ? ['const TOPIC_DOMAINS = {' + tdInner[1] + '\n};'] : null;
       if (!helperBody || !tdMatch) return false;
       const vm = require('vm');
       const ctx = { Object };

@@ -101,4 +101,189 @@ window.CERT_PACKS.netplus = {
     { label: 'TAP (Traffic Access Point)', parentTopic: 'Network Monitoring & Observability', objective: '3.2', keyword: 'TAP — passive inline hardware that copies link traffic to a monitoring port at full fidelity (vs SPAN which can drop under load + filters errors). Optical TAPs are passive splitters with no power on data path.' },
     { label: 'Split Horizon',      parentTopic: 'Routing Protocols',                 objective: '2.1', keyword: 'Split horizon — distance-vector loop prevention: do not advertise a route back out the interface it was learned from. Poison reverse variant advertises with infinite metric instead of silence.' }
   ],
+
+  // ── DOMAIN WEIGHTS (CompTIA N10-009 blueprint) ────────────────────────
+  // Used by computeDomainDistribution() to allocate exam questions across
+  // the 5 domains per official weights. Sum = 1.00.
+  domainWeights: {
+    concepts:        0.23, // Domain 1.0 — Networking Concepts
+    implementation:  0.20, // Domain 2.0 — Network Implementation
+    operations:      0.19, // Domain 3.0 — Network Operations
+    security:        0.14, // Domain 4.0 — Network Security
+    troubleshooting: 0.24  // Domain 5.0 — Network Troubleshooting
+  },
+
+  // Human-readable domain labels (rendered in Analytics, Domain Mastery,
+  // exam result breakdowns, etc.)
+  domainLabels: {
+    concepts:        'Networking Concepts',
+    implementation:  'Network Implementation',
+    operations:      'Network Operations',
+    security:        'Network Security',
+    troubleshooting: 'Network Troubleshooting'
+  },
+
+  // ── TOPIC → DOMAIN MAP (50 topics) ────────────────────────────────────
+  // Drives weak-spot routing, exemplar bank picker, lottery, readiness
+  // domain attribution. Topic name = primary key everywhere; domain key
+  // is one of: concepts / implementation / operations / security /
+  // troubleshooting.
+  topicDomains: {
+    // Domain 1.0 — Networking Concepts (23%)
+    'Network Models & OSI':              'concepts',
+    'TCP/IP Basics':                     'concepts',
+    'Subnetting & IP Addressing':        'concepts',
+    'TCP/IP Applications':               'concepts',
+    'Network Naming (DNS & DHCP)':       'concepts',
+    'IPv6':                              'concepts',
+    'NAT & IP Services':                 'concepts',
+    'NTP, ICMP & Traffic Types':         'concepts',
+    'Port Numbers':                      'concepts',
+    'Virtualisation & Cloud':            'concepts',
+    'Cloud Networking & VPCs':           'concepts',
+    'Network Appliances & Device Functions': 'concepts',
+    'DNS Records & DNSSEC':              'concepts',
+    // Domain 2.0 — Network Implementation (20%)
+    'Routing Protocols':                 'implementation', // umbrella — kept for history continuity (v4.42.3)
+    'OSPF':                              'implementation', // v4.42.3: split from Routing Protocols (blueprint 2.1)
+    'BGP':                               'implementation', // v4.42.3: split from Routing Protocols (blueprint 2.1)
+    'Switch Features & VLANs':           'implementation', // umbrella — kept for history continuity (v4.42.3)
+    'VLAN Trunking':                     'implementation', // v4.42.3: split from Switch Features (blueprint 2.2)
+    'STP/RSTP':                          'implementation', // v4.42.3: split from Switch Features (blueprint 2.2)
+    'Wireless Networking':               'implementation',
+    'Ethernet Basics':                   'implementation',
+    'Ethernet Standards':                'implementation',
+    'Cabling & Topology':                'implementation',
+    'Integrating Networked Devices':     'implementation',
+    'SDN, NFV & Automation':             'implementation',
+    'Data Center Architectures':         'implementation',
+    // Domain 3.0 — Network Operations (19%)
+    'Network Operations':                'operations',
+    'Data Centres':                      'operations',
+    'WAN Connectivity':                  'operations',
+    'SD-WAN & SASE':                     'operations',
+    'SMB & Network File Services':       'operations',
+    'Business Continuity & Disaster Recovery': 'operations',
+    'Network Monitoring & Observability': 'operations',
+    // Domain 4.0 — Network Security (14%)
+    'Securing TCP/IP':                   'security',
+    'Protecting Networks':               'security',
+    'AAA & Authentication':              'security',
+    'IPsec & VPN Protocols':             'security', // umbrella — kept for history continuity (v4.42.3)
+    'IPsec VPN':                         'security', // v4.42.3: split from IPsec & VPN Protocols (blueprint 4.4)
+    'SSL/TLS VPN':                       'security', // v4.42.3: split from IPsec & VPN Protocols (blueprint 4.4)
+    'PKI & Certificate Management':      'security',
+    'Firewalls, DMZ & Security Zones':   'security',
+    'WPA3 & EAP Authentication':         'security',
+    'Network Attacks & Threats':         'security',
+    'Physical Security Controls':        'security',
+    // Domain 5.0 — Network Troubleshooting (24%)
+    'Network Troubleshooting & Tools':   'troubleshooting', // umbrella — kept for history continuity (v4.42.3)
+    'Cable Issues':                      'troubleshooting', // v4.42.3: split — blueprint 5.2 (cabling & physical interface issues)
+    'Service Issues':                    'troubleshooting', // v4.42.3: split — blueprint 5.3 (network service issues)
+    'Perf Issues':                       'troubleshooting', // v4.42.3: split — blueprint 5.4 (performance issues)
+    'Connection Issues':                 'troubleshooting', // v4.42.3: split — blueprint 5.5 (tool/protocol selection for connection troubleshooting)
+    'CompTIA Troubleshooting Methodology': 'troubleshooting'
+  },
+
+  // ── TOPIC RESOURCES (Professor Messer YouTube search URLs + objective numbers) ──
+  topicResources: {
+    'Network Models & OSI': { obj: '1.1', title: 'OSI Model Overview', search: 'professor+messer+N10-009+OSI+model' },
+    'TCP/IP Basics': { obj: '1.1', title: 'TCP/IP Model', search: 'professor+messer+N10-009+TCP+IP+suite' },
+    'Subnetting & IP Addressing': { obj: '1.4', title: 'IP Addressing & Subnetting', search: 'professor+messer+N10-009+subnetting' },
+    'Routing Protocols': { obj: '1.4', title: 'Routing Protocols', search: 'professor+messer+N10-009+routing+protocols' },
+    'TCP/IP Applications': { obj: '1.5', title: 'TCP/IP Applications', search: 'professor+messer+N10-009+TCP+IP+applications' },
+    'Network Naming (DNS & DHCP)': { obj: '1.6', title: 'DNS & DHCP', search: 'professor+messer+N10-009+DNS+DHCP' },
+    'Securing TCP/IP': { obj: '4.1', title: 'Securing TCP/IP', search: 'professor+messer+N10-009+securing+TCP+IP' },
+    'Switch Features & VLANs': { obj: '2.1', title: 'Switches & VLANs', search: 'professor+messer+N10-009+switch+VLAN' },
+    'IPv6': { obj: '1.4', title: 'IPv6 Addressing', search: 'professor+messer+N10-009+IPv6' },
+    'WAN Connectivity': { obj: '1.2', title: 'WAN Technologies', search: 'professor+messer+N10-009+WAN+connectivity' },
+    'Wireless Networking': { obj: '2.4', title: 'Wireless Standards', search: 'professor+messer+N10-009+wireless+networking' },
+    'Virtualisation & Cloud': { obj: '1.8', title: 'Virtualisation & Cloud', search: 'professor+messer+N10-009+virtualization+cloud' },
+    'Data Centres': { obj: '3.3', title: 'Data Centre Infrastructure', search: 'professor+messer+N10-009+data+center' },
+    'Network Operations': { obj: '3.1', title: 'Network Operations', search: 'professor+messer+N10-009+network+operations' },
+    'Protecting Networks': { obj: '4.1', title: 'Network Security', search: 'professor+messer+N10-009+protecting+networks' },
+    'Cabling & Topology': { obj: '1.3', title: 'Cabling & Topology', search: 'professor+messer+N10-009+cabling+topology' },
+    'Ethernet Basics': { obj: '1.3', title: 'Ethernet Fundamentals', search: 'professor+messer+N10-009+ethernet+basics' },
+    'Ethernet Standards': { obj: '1.3', title: 'Ethernet Standards', search: 'professor+messer+N10-009+ethernet+standards' },
+    'SD-WAN & SASE': { obj: '1.2', title: 'SD-WAN & SASE', search: 'professor+messer+N10-009+SD-WAN+SASE' },
+    'Integrating Networked Devices': { obj: '2.1', title: 'Networked Devices & IoT', search: 'professor+messer+N10-009+IoT+networked+devices' },
+    'Network Troubleshooting & Tools': { obj: '5.1', title: 'Troubleshooting Tools', search: 'professor+messer+N10-009+troubleshooting+tools' },
+    'NAT & IP Services': { obj: '1.4', title: 'NAT & IP Services', search: 'professor+messer+N10-009+NAT' },
+    'AAA & Authentication': { obj: '4.1', title: 'AAA & Authentication', search: 'professor+messer+N10-009+AAA+RADIUS+TACACS' },
+    'NTP, ICMP & Traffic Types': { obj: '1.5', title: 'NTP, ICMP & Traffic', search: 'professor+messer+N10-009+NTP+ICMP' },
+    'IPsec & VPN Protocols': { obj: '4.4', title: 'IPsec & VPN', search: 'professor+messer+N10-009+IPsec+VPN' },
+    'SMB & Network File Services': { obj: '1.5', title: 'SMB & File Services', search: 'professor+messer+N10-009+SMB+NFS+file+services' },
+    'Cloud Networking & VPCs': { obj: '1.8', title: 'Cloud Networking & VPCs', search: 'professor+messer+N10-009+cloud+networking+VPC' },
+    'Port Numbers': { obj: '1.5', title: 'Port Numbers', search: 'professor+messer+N10-009+port+numbers' },
+    'PKI & Certificate Management': { obj: '4.3', title: 'PKI & Certificates', search: 'professor+messer+N10-009+PKI+certificates' },
+    'CompTIA Troubleshooting Methodology': { obj: '5.1', title: '7-Step Methodology', search: 'professor+messer+N10-009+troubleshooting+methodology' },
+    'Firewalls, DMZ & Security Zones': { obj: '4.1', title: 'Firewalls & DMZ', search: 'professor+messer+N10-009+firewall+DMZ+security+zones' },
+    'WPA3 & EAP Authentication': { obj: '4.3', title: 'WPA3 & EAP', search: 'professor+messer+N10-009+WPA3+EAP+authentication' },
+    'SDN, NFV & Automation': { obj: '1.8', title: 'SDN & Automation', search: 'professor+messer+N10-009+SDN+NFV+automation' },
+    'Network Attacks & Threats': { obj: '4.2', title: 'Network Attacks & Threats', search: 'professor+messer+N10-009+network+attacks' },
+    'Business Continuity & Disaster Recovery': { obj: '3.3', title: 'BCDR & Failover', search: 'professor+messer+N10-009+disaster+recovery+HA' },
+    'Network Monitoring & Observability': { obj: '3.2', title: 'Monitoring & SNMP', search: 'professor+messer+N10-009+SNMP+network+monitoring' },
+    'Network Appliances & Device Functions': { obj: '1.2', title: 'Network Appliances', search: 'professor+messer+N10-009+network+appliances' },
+    'Data Center Architectures': { obj: '1.8', title: 'DC Architectures', search: 'professor+messer+N10-009+three+tier+spine+leaf+data+center' },
+    'Physical Security Controls': { obj: '4.5', title: 'Physical Security', search: 'professor+messer+N10-009+physical+security' },
+    'DNS Records & DNSSEC': { obj: '1.6', title: 'DNS Records & DNSSEC', search: 'professor+messer+N10-009+DNS+records+DNSSEC' },
+    // ── v4.42.3: catalog expansion (blueprint-anchored splits) ────────────
+    'OSPF':              { obj: '2.1', title: 'OSPF',               search: 'professor+messer+N10-009+OSPF' },
+    'BGP':               { obj: '2.1', title: 'BGP',                search: 'professor+messer+N10-009+BGP' },
+    'VLAN Trunking':     { obj: '2.2', title: 'VLAN Trunking',      search: 'professor+messer+N10-009+VLAN+trunking+802.1Q' },
+    'STP/RSTP':          { obj: '2.2', title: 'Spanning Tree',      search: 'professor+messer+N10-009+spanning+tree+STP+RSTP' },
+    'IPsec VPN':         { obj: '4.4', title: 'IPsec VPN',          search: 'professor+messer+N10-009+IPsec+VPN+IKE' },
+    'SSL/TLS VPN':       { obj: '4.4', title: 'SSL/TLS VPN',        search: 'professor+messer+N10-009+SSL+TLS+client+VPN' },
+    'Cable Issues':      { obj: '5.2', title: 'Cable & Physical Issues', search: 'professor+messer+N10-009+cable+physical+issues' },
+    'Service Issues':    { obj: '5.3', title: 'Network Service Issues',  search: 'professor+messer+N10-009+network+service+troubleshooting' },
+    'Perf Issues':       { obj: '5.4', title: 'Performance Issues', search: 'professor+messer+N10-009+network+performance+issues' },
+    'Connection Issues': { obj: '5.5', title: 'Connection Troubleshooting', search: 'professor+messer+N10-009+TCP+IP+connection+troubleshooting' }
+  },
+
+  // ── GROUND TRUTH TABLES ───────────────────────────────────────────────
+  // Static Network+ facts. Dual-layer pattern: used both for prompt
+  // injection (Tier A) AND programmatic reject in validateQuestions().
+  gt: {
+    // Protocol → port number
+    ports: {
+      ftp: 21, ssh: 22, telnet: 23, smtp: 25, dns: 53, tftp: 69,
+      http: 80, pop3: 110, ntp: 123, imap: 143, snmp: 161,
+      ldap: 389, https: 443, smb: 445, syslog: 514, smtps: 465,
+      ldaps: 636, ftps: 990, imaps: 993, pop3s: 995,
+      rdp: 3389, mysql: 3306, sip: 5060, sqlserver: 1433,
+      mssql: 1433, dhcp: 67, kerberos: 88
+    },
+
+    // Protocol → OSI layer
+    osi: {
+      // L7
+      http: 7, https: 7, ftp: 7, sftp: 7, smtp: 7, pop3: 7, imap: 7,
+      dns: 7, dhcp: 7, snmp: 7, telnet: 7, ssh: 7, ntp: 7, tftp: 7, ldap: 7,
+      // L4
+      tcp: 4, udp: 4,
+      // L3
+      ip: 3, ipv4: 3, ipv6: 3, icmp: 3, ospf: 3, bgp: 3, eigrp: 3, rip: 3, igmp: 3,
+      // L2
+      ethernet: 2, arp: 2, ppp: 2, stp: 2
+    },
+
+    // Wireless encryption: broken = reject if marked as secure/recommended
+    wifiBroken: ['wep'],
+    wifiDeprecated: ['wpa'], // original WPA (not WPA2/3)
+
+    // Ethernet physical-layer conflation traps (v4.38.6).
+    // Haiku (and occasionally Sonnet) conflate auto-negotiation with
+    // Auto-MDIX because they're co-marketed on modern gear. They are
+    // distinct features. Every entry here is a (topic, correct feature)
+    // truth pair stuffed in as AUTHORITATIVE FACTS by the teacher prompt.
+    ethernet: {
+      'auto-negotiation': 'negotiates SPEED and DUPLEX only (IEEE 802.3u clause 28). It does NOT detect cable pinout or MDI/MDIX.',
+      'auto-mdix': 'detects MDI/MDIX pin assignments and automatically swaps TX/RX so straight-through and crossover cables are interchangeable (IEEE 802.3ab clause 40). This is a DIFFERENT feature from auto-negotiation.',
+      'mdi/mdix': 'MDI/MDIX pin assignment detection is handled by Auto-MDIX, not auto-negotiation. Auto-negotiation only handles speed and duplex.',
+      'straight-through vs crossover': 'Auto-MDIX (not auto-negotiation) is the feature that lets devices work with either cable type automatically.',
+      'duplex mismatch': 'A duplex mismatch causes late collisions and runt frames on the half-duplex side, and FCS/CRC errors on the full-duplex side. Fix by setting both ends to auto-negotiate or both to the same fixed duplex.',
+      'PoE standards': 'PoE (802.3af) = 15.4W, PoE+ (802.3at) = 30W, PoE++ / 4PPoE (802.3bt Type 3) = 60W, 802.3bt Type 4 = 100W. All power is sourced at the PSE (switch/injector), measured at the PD minus cable loss.'
+    }
+  },
 };

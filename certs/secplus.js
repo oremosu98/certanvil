@@ -43,4 +43,43 @@ window.CERT_PACKS.secplus = {
 
   // Empty stubs — populated in Phase 2 (Week 3 target v4.87.0).
   retentionGapConcepts: [],
+
+  // ── DOMAIN WEIGHTS (CompTIA SY0-701 blueprint) ────────────────────────
+  // Phase 2 will source actual weights from current CompTIA blueprint.
+  // For Phase 1B these are placeholders so the pack structure is parallel
+  // to Network+ — not used until secplus deploy goes live.
+  // SY0-701 has 5 domains; placeholder weights below are educated guesses
+  // pending blueprint confirmation: confirm before authoring exemplars.
+  domainWeights: {
+    concepts:        0.12, // Domain 1.0 — General Security Concepts
+    threats:         0.22, // Domain 2.0 — Threats, Vulnerabilities, Mitigations
+    architecture:    0.18, // Domain 3.0 — Security Architecture
+    operations:      0.28, // Domain 4.0 — Security Operations
+    governance:      0.20  // Domain 5.0 — Program Management & Oversight
+  },
+
+  domainLabels: {
+    concepts:     'General Security Concepts',
+    threats:      'Threats, Vulnerabilities & Mitigations',
+    architecture: 'Security Architecture',
+    operations:   'Security Operations',
+    governance:   'Program Management & Oversight'
+  },
+
+  // Empty topic-domain map — Phase 2 populates SY0-701 topics.
+  topicDomains: {},
+
+  // Empty topic resources — Phase 2 populates Professor Messer SY0-701 URLs.
+  topicResources: {},
+
+  // Empty GT tables — Phase 2 audits which Network+ ground truths transfer
+  // (most ports, OSI assignments, ethernet facts do; wifi facts likely do
+  // too — wireless security is covered on both certs).
+  gt: {
+    ports: {},
+    osi: {},
+    wifiBroken: [],
+    wifiDeprecated: [],
+    ethernet: {}
+  },
 };

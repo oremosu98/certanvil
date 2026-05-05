@@ -11,6 +11,9 @@ const path = require('path');
 
 const ROOT = path.resolve(__dirname, '..');
 const js = fs.readFileSync(path.join(ROOT, 'app.js'), 'utf8');
+// v4.86.1: GT_* tables moved to certs/netplus.js as cert.gt.*. Reconstruct
+// the const literals from the cert pack body so the sandbox compiles.
+const certNetplus = fs.readFileSync(path.join(ROOT, 'certs', 'netplus.js'), 'utf8');
 
 // ── Extract validateQuestions() source with regex ──
 // It's a top-level `function validateQuestions(qs) { ... }` block.
@@ -62,10 +65,35 @@ function extractConstBlock(src, startName) {
   return src.slice(start, i);
 }
 
-const gtPortsSrc = extractConstBlock(js, 'GT_PORTS');
-const gtOsiSrc = extractConstBlock(js, 'GT_OSI');
-const gtWifiBrokenSrc = extractConstBlock(js, 'GT_WIFI_BROKEN');
-const gtWifiDeprecatedSrc = extractConstBlock(js, 'GT_WIFI_DEPRECATED');
+// v4.86.1: GT_* tables moved into certs/netplus.js. Reconstruct const literals
+// from the cert pack body for the sandbox.
+// Object tables (ports / osi / ethernet): use brace-depth counting since
+// values can be multi-line. Arrays (wifiBroken / wifiDeprecated): tight
+// single-line regex.
+function extractCertObj(certSrc, key, constName) {
+  // Find `<key>: {` then walk to matching `}`
+  const re = new RegExp(`${key}:\\s*\\{`);
+  const m = certSrc.match(re);
+  if (!m) throw new Error(`Could not find ${key} in cert pack`);
+  const start = m.index + m[0].length - 1; // position of opening '{'
+  let depth = 0;
+  let i = start;
+  for (; i < certSrc.length; i++) {
+    if (certSrc[i] === '{') depth++;
+    else if (certSrc[i] === '}') { depth--; if (depth === 0) { i++; break; } }
+  }
+  return `const ${constName} = ${certSrc.slice(start, i)};`;
+}
+function extractCertArr(certSrc, key, constName) {
+  const re = new RegExp(`${key}:\\s*\\[([^\\]]*)\\]`);
+  const m = certSrc.match(re);
+  if (!m) throw new Error(`Could not find ${key} in cert pack`);
+  return `const ${constName} = [${m[1]}];`;
+}
+const gtPortsSrc = extractCertObj(certNetplus, 'ports', 'GT_PORTS');
+const gtOsiSrc = extractCertObj(certNetplus, 'osi', 'GT_OSI');
+const gtWifiBrokenSrc = extractCertArr(certNetplus, 'wifiBroken', 'GT_WIFI_BROKEN');
+const gtWifiDeprecatedSrc = extractCertArr(certNetplus, 'wifiDeprecated', 'GT_WIFI_DEPRECATED');
 // v4.81.16: stem-numeric word→int map consumed by _stemNumericMatchesAnswerCount
 const stemNumberWordsSrc = extractConstBlock(js, '_STEM_NUMBER_WORDS');
 
