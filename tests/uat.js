@@ -298,7 +298,7 @@ test('Validation in runSessionStep', js.includes('aiValidateQuestions(apiKey, qu
 
 // ── Analytics v2 (v4.5) ──
 console.log('\n\x1b[1m── ANALYTICS v2 (v4.5) ──\x1b[0m');
-test('APP_VERSION is 4.86.2', js.includes("const APP_VERSION = '4.86.2"));
+test('APP_VERSION is 4.87.0', js.includes("const APP_VERSION = '4.87.0"));
 test('getDailyGoal function', js.includes('function getDailyGoal('));
 test('renderDailyGoal function', js.includes('function renderDailyGoal('));
 test('editDailyGoal function', js.includes('function editDailyGoal('));
@@ -312,7 +312,7 @@ test('CSS: .topic-domain-group', css.includes('.topic-domain-group'));
 test('CSS: .daily-goal-card', css.includes('.daily-goal-card'));
 test('CSS: .advanced-section', css.includes('.advanced-section'));
 test('CSS: .hero-stats-strip', css.includes('.hero-stats-strip'));
-test('SW cache bumped to v4.86.2', sw.includes('netplus-v4.86.2'));
+test('SW cache bumped to v4.87.0', sw.includes('netplus-v4.87.0'));
 test('Family Drill: STORAGE.PORT_FAMILY_BEST', js.includes("PORT_FAMILY_BEST:"));
 test('Family Drill: ptMode handles family', js.includes("ptMode === 'family'"));
 test('Family Drill: HTML mode button', html.includes('id="pt-mode-family"'));
@@ -15917,6 +15917,97 @@ test('v4.85.27 PassProof: mobile breakpoint at 540px',
 
 test('v4.85.27 PassProof: light-theme variant declared',
   /\[data-theme="light"\]\s*\.pass-proof-banner/.test(css));
+
+// ═══════════════════════════════════════════════════════════════════════
+// v4.87.0 — Security+ pack content + cert-aware prompt + private banner.
+// First substantive Security+ ship. Cert pack stub gets full SY0-701 topic
+// catalog (32 topics), domain weights, Professor Messer URLs. Generation
+// prompts in _fetchQuestionsBatch use CERT_NAME_FULL so Haiku knows which
+// cert it's writing for. Inline <head> script sets data-cert on <html>
+// synchronously so the right banner paints first (no Network+ → Security+
+// content flash on Security+ mode load).
+// ═══════════════════════════════════════════════════════════════════════
+
+// ── Cert-aware prompt ──
+test('v4.87.0 PerCertPrompt: CERT_NAME_FULL constant declared',
+  /const\s+CERT_NAME_FULL\s*=.*CERT_PACK.*meta/.test(js));
+test('v4.87.0 PerCertPrompt: CERT_CODE constant declared',
+  /const\s+CERT_CODE\s*=.*CERT_PACK.*code/.test(js));
+test('v4.87.0 PerCertPrompt: prompt MIXED case uses CERT_NAME_FULL',
+  /MIXED_TOPIC[\s\S]{0,400}\$\{CERT_NAME_FULL\}/.test(js));
+test('v4.87.0 PerCertPrompt: prompt single-topic case uses CERT_NAME_FULL',
+  /Focus only on:\s*[\s\S]{0,200}\$\{CERT_NAME_FULL\}/.test(js));
+test('v4.87.0 PerCertPrompt: hardcoded "Network+ N10-009" REMOVED from MIXED prompt',
+  !/Cover a broad mix of Network\+ N10-009/.test(js));
+
+// ── Inline <head> cert detection script ──
+test('v4.87.0 InlineCertDetect: <head> script sets data-cert on <html>',
+  /document\.documentElement\.setAttribute\(['"]data-cert['"]/.test(html));
+test('v4.87.0 InlineCertDetect: <head> script reads localStorage nplus_dev_cert',
+  /<script>[\s\S]{0,800}localStorage\.getItem\(['"]nplus_dev_cert['"]\)/.test(html));
+test('v4.87.0 InlineCertDetect: <head> script checks secplus- host prefix',
+  /<script>[\s\S]{0,1000}location\.host[\s\S]{0,200}secplus-/.test(html));
+test('v4.87.0 InlineCertDetect: <head> script defaults to netplus',
+  (() => {
+    // The inline detectCert IIFE inside <head> initialises var cert = 'netplus'
+    const headBlock = html.match(/<script>([\s\S]*?)<\/script>/);
+    return headBlock && /var\s+cert\s*=\s*['"]netplus['"]/.test(headBlock[1]);
+  })());
+
+// ── Security+ private-mode banner ──
+test('v4.87.0 SecplusBanner: secplus-private-banner element exists',
+  /class="secplus-private-banner"/.test(html));
+test('v4.87.0 SecplusBanner: banner mentions SY0-701 + private + builder',
+  /SY0-701/.test(html) && /Private/.test(html) && /Builder use/.test(html));
+test('v4.87.0 SecplusBanner: banner cites target exam date 2026-07-29',
+  html.includes('2026-07-29'));
+test('v4.87.0 SecplusBanner: banner aria-label for accessibility',
+  /aria-label="Security\+ private builder mode"/.test(html));
+test('v4.87.0 SecplusBanner: .secplus-private-banner CSS declared',
+  /\.secplus-private-banner\s*\{/.test(css));
+test('v4.87.0 SecplusBanner: cert-mode visibility rule — show on data-cert="secplus"',
+  /\[data-cert="secplus"\]\s*\.secplus-private-banner\s*\{\s*display:\s*inline-flex/.test(css));
+test('v4.87.0 SecplusBanner: cert-mode visibility rule — hide pass-proof in Security+ mode',
+  /\[data-cert="secplus"\]\s*\.pass-proof-banner\s*\{\s*display:\s*none/.test(css));
+test('v4.87.0 SecplusBanner: orange-amber gradient (rgba(245,158,11))',
+  /\.secplus-private-banner[\s\S]{0,400}rgba\(245,158,11/.test(css));
+
+// ── Security+ cert pack content ──
+test('v4.87.0 SecplusContent: topicDomains has 37 SY0-701 topics',
+  (() => {
+    const m = certSecplus.match(/topicDomains:\s*\{([\s\S]*?)\n\s*\},/);
+    if (!m) return false;
+    const keyLines = m[1].split('\n').filter(l => /^\s*'[^']+':\s*'(concepts|threats|architecture|operations|governance)'/.test(l));
+    return keyLines.length === 37;
+  })());
+test('v4.87.0 SecplusContent: topicResources populated (37 entries)',
+  (() => {
+    const m = certSecplus.match(/topicResources:\s*\{([\s\S]*?)\n\s*\},/);
+    if (!m) return false;
+    const keyLines = m[1].split('\n').filter(l => /^\s*'[^']+':\s*\{\s*obj:/.test(l));
+    return keyLines.length === 37;
+  })());
+test('v4.87.0 SecplusContent: domainWeights sum to 1.00',
+  (() => {
+    const m = certSecplus.match(/domainWeights:\s*\{([\s\S]*?)\n\s*\},/);
+    if (!m) return false;
+    const nums = m[1].match(/0\.\d+/g) || [];
+    const sum = nums.reduce((a, n) => a + parseFloat(n), 0);
+    return Math.abs(sum - 1.00) < 0.001;
+  })());
+test('v4.87.0 SecplusContent: 5 domain labels declared',
+  (() => {
+    const m = certSecplus.match(/domainLabels:\s*\{([\s\S]*?)\n\s*\},/);
+    if (!m) return false;
+    const keyLines = m[1].split('\n').filter(l => /^\s*\w+:\s*['"]/.test(l));
+    return keyLines.length === 5;
+  })());
+test('v4.87.0 SecplusContent: covers Domain 4.0 Operations IAM topic',
+  /'Identity & Access Management':\s*'operations'/.test(certSecplus));
+test('v4.87.0 SecplusContent: covers Domain 5.0 Governance Risk Mgmt topic',
+  /'Risk Management':\s*'governance'/.test(certSecplus));
+test('v4.87.0 SecplusContent: Messer URLs use SY0-701 query param',
+  /search:\s*'professor\+messer\+SY0-701/.test(certSecplus));
 
 // ── Summary ──
 console.log('\n' + '═'.repeat(50));

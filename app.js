@@ -1,9 +1,9 @@
 // ══════════════════════════════════════════
-// Network+ AI Quiz — app.js  v4.86.2
+// Network+ AI Quiz — app.js  v4.87.0
 // ══════════════════════════════════════════
 
 // ── CONSTANTS ──
-const APP_VERSION = '4.86.2';
+const APP_VERSION = '4.87.0';
 
 // ══════════════════════════════════════════════════════════════════════════
 // CERT PACK ARCHITECTURE (v4.86.0 Phase 1A engine refactor)
@@ -76,6 +76,14 @@ const DIAGNOSTIC_DURATION_MS = 30 * 60 * 1000;  // 30-min timer (no hard cutoff 
 const DIAGNOSTIC_RETAKE_COOLDOWN_DAYS = 7;  // user can retake after 7 days
 const DIAGNOSTIC_RETAKE_COOLDOWN_MS = DIAGNOSTIC_RETAKE_COOLDOWN_DAYS * 86400000;
 const EXAM_MAX_SCORE = (CERT_PACK && CERT_PACK.meta && CERT_PACK.meta.examMaxScore) || 900;
+// v4.87.0: cert-aware exam name string for prompt injection. Examples:
+//   netplus → 'CompTIA Network+ N10-009'
+//   secplus → 'CompTIA Security+ SY0-701'
+// Used by _fetchQuestionsBatch so Haiku knows which cert it's writing for.
+const CERT_NAME_FULL = (CERT_PACK && CERT_PACK.meta)
+  ? CERT_PACK.meta.name + ' ' + CERT_PACK.meta.code
+  : 'CompTIA Network+ N10-009';
+const CERT_CODE = (CERT_PACK && CERT_PACK.meta && CERT_PACK.meta.code) || 'N10-009';
 const HISTORY_CAP = 200;
 const WRONG_BANK_CAP = 200;
 const REPORTS_CAP = 500;
@@ -5225,11 +5233,13 @@ ${fmt(sampled.troubleshooting)}
     mixedDistributionStr = `\n\nMANDATORY MULTI-TOPIC DISTRIBUTION: Of the ${n} questions, generate ${per} question${per === 1 ? '' : 's'} per topic from this list of ${multiTopicList.length} topics:\n${multiTopicList.map((t, i) => `- ${t}${topicHints[t] ? ' \u2014 ' + topicHints[t] : ''}${i < remainder ? ' (generate 1 EXTRA here)' : ''}`).join('\n')}\n\nDo not stray outside these ${multiTopicList.length} topics. Each question must explicitly focus on ONE of them, and the .topic field of every returned question must match one of these exact strings.`;
   }
   const expectedObj = (!isMulti && qTopic !== MIXED_TOPIC && topicResources[qTopic]) ? topicResources[qTopic].obj : null;
+  // v4.87.0: cert-aware prompt voice. Substitutes CERT_NAME_FULL so Haiku
+  // generates SY0-701 questions in Security+ mode + N10-009 in Network+ mode.
   const topicStr = qTopic === MIXED_TOPIC
-    ? 'Cover a broad mix of Network+ N10-009 exam topics across all 5 official CompTIA domains.'
+    ? `Cover a broad mix of ${CERT_NAME_FULL} exam topics across all 5 official CompTIA domains.`
     : isMulti
-      ? `Cover these ${multiTopicList.length} specific Network+ N10-009 topics selected by the user: ${multiTopicList.map(t => '"' + t + '"').join(', ')}. See the mandatory distribution block below.`
-      : `Focus only on: "${qTopic}" for the CompTIA Network+ N10-009 exam (primary objective ${expectedObj || 'N/A'}).${topicHints[qTopic] ? ' Specifically cover: ' + topicHints[qTopic] : ''}`;
+      ? `Cover these ${multiTopicList.length} specific ${CERT_NAME_FULL} topics selected by the user: ${multiTopicList.map(t => '"' + t + '"').join(', ')}. See the mandatory distribution block below.`
+      : `Focus only on: "${qTopic}" for the ${CERT_NAME_FULL} exam (primary objective ${expectedObj || 'N/A'}).${topicHints[qTopic] ? ' Specifically cover: ' + topicHints[qTopic] : ''}`;
 
   const diffStr = {
     'Foundational':  'Foundational: test basic recall and definitions. Clear right answers.',
