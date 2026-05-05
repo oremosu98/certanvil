@@ -44,14 +44,21 @@ const path = require('path');
 const ROOT = path.resolve(__dirname, '..');
 const read = (f) => fs.readFileSync(path.join(ROOT, f), 'utf8');
 
-let html, js, css, sw;
+let html, js, css, sw, certNetplus, certSecplus;
 try {
   html = read('index.html');
   js   = read('app.js');
   css  = read('styles.css');
   sw   = read('sw.js');
+  // v4.86.0: cert pack architecture. UAT now reads each cert file directly
+  // so assertions on moved content target the right source. The cert
+  // resolver (detectCert()) lives in app.js — UAT only loads the static
+  // source for cert packs; runtime resolution doesn't happen at test time.
+  certNetplus = read('certs/netplus.js');
+  certSecplus = read('certs/secplus.js');
 } catch(e) {
   console.error('ERROR: Could not read project files. Run from project root.');
+  console.error(e.message);
   process.exit(1);
 }
 
@@ -262,7 +269,8 @@ test('Broadcast 10.0.5.67/26', sandbox.getBroadcastAddr([10,0,5,67], sandbox.cid
 // ── Tech Debt Fixes (v3.5) ──
 console.log('\n\x1b[1m── TECH DEBT FIXES ──\x1b[0m');
 test('APP_VERSION constant defined', /const APP_VERSION = '\d+\.\d+/.test(js));
-test('EXAM_TIME_SECONDS constant', js.includes('const EXAM_TIME_SECONDS = 5400'));
+test('EXAM_TIME_SECONDS constant (cert-pack-aware, 5400 fallback)',
+  /const EXAM_TIME_SECONDS = .*examTimeSeconds.*\|\|\s*5400/.test(js));
 test('HISTORY_CAP constant', js.includes('const HISTORY_CAP = 200'));
 test('WRONG_BANK_CAP constant', js.includes('const WRONG_BANK_CAP = 200'));
 test('Port timer cleared in goSetup()', js.includes('if (portTimer) { clearInterval(portTimer)'));
@@ -290,7 +298,7 @@ test('Validation in runSessionStep', js.includes('aiValidateQuestions(apiKey, qu
 
 // ── Analytics v2 (v4.5) ──
 console.log('\n\x1b[1m── ANALYTICS v2 (v4.5) ──\x1b[0m');
-test('APP_VERSION is 4.85.27', js.includes("const APP_VERSION = '4.85.27"));
+test('APP_VERSION is 4.86.0', js.includes("const APP_VERSION = '4.86.0"));
 test('getDailyGoal function', js.includes('function getDailyGoal('));
 test('renderDailyGoal function', js.includes('function renderDailyGoal('));
 test('editDailyGoal function', js.includes('function editDailyGoal('));
@@ -304,7 +312,7 @@ test('CSS: .topic-domain-group', css.includes('.topic-domain-group'));
 test('CSS: .daily-goal-card', css.includes('.daily-goal-card'));
 test('CSS: .advanced-section', css.includes('.advanced-section'));
 test('CSS: .hero-stats-strip', css.includes('.hero-stats-strip'));
-test('SW cache bumped to v4.85.27', sw.includes('netplus-v4.85.27'));
+test('SW cache bumped to v4.86.0', sw.includes('netplus-v4.86.0'));
 test('Family Drill: STORAGE.PORT_FAMILY_BEST', js.includes("PORT_FAMILY_BEST:"));
 test('Family Drill: ptMode handles family', js.includes("ptMode === 'family'"));
 test('Family Drill: HTML mode button', html.includes('id="pt-mode-family"'));
@@ -3545,10 +3553,16 @@ console.log('\n\x1b[1m── v4.42.4 READINESS ALGORITHM FIX ──\x1b[0m');
 console.log('\n\x1b[1m── v4.42.5 MAINTENANCE BUNDLE ──\x1b[0m');
 
 // ── #130 — Magic numbers extracted ──
-test('v4.42.5 #130: EXAM_PASS_SCORE constant declared',
-  /const EXAM_PASS_SCORE = 720;/.test(js));
-test('v4.42.5 #130: EXAM_QUESTION_COUNT constant declared',
-  /const EXAM_QUESTION_COUNT = 90;/.test(js));
+// v4.86.0 update: literal values moved to certs/netplus.js as CERT_PACK.meta.
+// app.js now reads via CERT_PACK with Network+ defaults preserved as fallback.
+test('v4.42.5 #130: EXAM_PASS_SCORE declared (cert-pack-aware, 720 fallback)',
+  /const EXAM_PASS_SCORE = .*examPassScore.*\|\|\s*720/.test(js));
+test('v4.42.5 #130: EXAM_QUESTION_COUNT declared (cert-pack-aware, 90 fallback)',
+  /const EXAM_QUESTION_COUNT = .*examQuestionCount.*\|\|\s*90/.test(js));
+test('v4.86.0: cert pack netplus declares examPassScore: 720',
+  /examPassScore:\s*720/.test(certNetplus));
+test('v4.86.0: cert pack netplus declares examQuestionCount: 90',
+  /examQuestionCount:\s*90/.test(certNetplus));
 test('v4.42.5 #130: DOUBLE_CLICK_MS constant declared',
   /const DOUBLE_CLICK_MS = 400;/.test(js));
 test('v4.42.5 #130: VXLAN_VNI_MAX constant declared',
@@ -8228,12 +8242,17 @@ test('v4.62.2 validation-audit.js extracts + includes the new helper in its sand
 // Challenge, Marathon, and the Exam simulator uniformly.
 // ══════════════════════════════════════════════════════════════════════
 
-test('v4.62.3 JS: RETENTION_GAP_CONCEPTS const defined',
-  /const\s+RETENTION_GAP_CONCEPTS\s*=\s*\[/.test(js));
-test('v4.62.3 JS: RETENTION_GAP_CONCEPTS seeded with the 14 v4.59.0 Cycle-1 gap topics',
-  /RETENTION_GAP_CONCEPTS[\s\S]{0,6000}label:\s*['"]Powerload['"][\s\S]{0,400}label:\s*['"]NTS['"]/.test(js) &&
-  /label:\s*['"]NAC['"][\s\S]{0,400}label:\s*['"]Preaction fire system['"]/.test(js) &&
-  /label:\s*['"]PCAP File['"]/.test(js));
+// v4.86.0 update: RETENTION_GAP_CONCEPTS array literal moved to certs/netplus.js
+// as part of Phase 1A engine refactor. app.js now reads via CERT_PACK with empty
+// array fallback. UAT assertions on the array contents target certNetplus directly.
+test('v4.62.3 JS: RETENTION_GAP_CONCEPTS reads from CERT_PACK (cert-pack-aware)',
+  /const\s+RETENTION_GAP_CONCEPTS\s*=.*CERT_PACK.*retentionGapConcepts/.test(js));
+test('v4.62.3 cert pack: retentionGapConcepts array literal lives in certs/netplus.js',
+  /retentionGapConcepts:\s*\[/.test(certNetplus));
+test('v4.62.3 cert pack: seeded with the 14 v4.59.0 Cycle-1 gap topics',
+  /label:\s*['"]Powerload['"][\s\S]{0,400}label:\s*['"]NTS['"]/.test(certNetplus) &&
+  /label:\s*['"]NAC['"][\s\S]{0,400}label:\s*['"]Preaction fire system['"]/.test(certNetplus) &&
+  /label:\s*['"]PCAP File['"]/.test(certNetplus));
 test('v4.62.3 JS: _formatRetentionConceptsForPrompt helper defined',
   /function\s+_formatRetentionConceptsForPrompt\s*\(\)/.test(js));
 test('v4.62.3 JS: helper returns empty string when list is empty (no-op path)',
@@ -8249,11 +8268,14 @@ test('v4.62.3 JS: buildPrompt template interpolates retentionBlock alongside exe
 
 // Behavioural — sandbox the formatter against the real const to check it
 // emits the expected structure when non-empty + empty-string when empty.
+// v4.86.0 update: const literal moved to certs/netplus.js. Extract from
+// certNetplus source instead of js.
 (function testRetentionFormat() {
   try {
     const vm = require('vm');
     const helperBody = js.match(/function\s+_formatRetentionConceptsForPrompt\s*\(\)\s*\{([\s\S]*?)\n\}/);
-    const constMatch = js.match(/const\s+RETENTION_GAP_CONCEPTS\s*=\s*\[([\s\S]*?)\];\s*\n/);
+    // v4.86.0: literal now in certs/netplus.js as `retentionGapConcepts: [...]`
+    const constMatch = certNetplus.match(/retentionGapConcepts:\s*\[([\s\S]*?)\n\s*\],/);
     if (!helperBody || !constMatch) {
       test('v4.62.3 sandbox: helper + const extracted', false);
       return;
@@ -15758,6 +15780,82 @@ try {
   test('Validation audit: regression gate', false);
   results.errors.push('validation-audit.js exited non-zero — run `node tests/validation-audit.js` for details');
 }
+
+// ═══════════════════════════════════════════════════════════════════════
+// v4.86.0 — Cert pack architecture (Phase 1A engine refactor).
+// Multi-cert engine: Network+ + Security+ live in certs/<cert>.js, loaded
+// before app.js via <script> tags. detectCert() resolves active cert by
+// localStorage override → URL host prefix → netplus default. Phase 1A
+// scope: cert metadata + RETENTION_GAP_CONCEPTS only. Future phases add
+// TOPIC_DOMAINS, DOMAIN_WEIGHTS, topicResources, GT tables, exemplars.
+// ═══════════════════════════════════════════════════════════════════════
+
+// ── Architecture in app.js ──
+test('v4.86.0 CertPack: detectCert function defined',
+  /function\s+detectCert\s*\(\s*\)/.test(js));
+test('v4.86.0 CertPack: detectCert handles localStorage dev override',
+  /detectCert[\s\S]{0,800}localStorage[\s\S]{0,400}nplus_dev_cert/.test(js));
+test('v4.86.0 CertPack: detectCert handles URL host detection (secplus- prefix)',
+  /detectCert[\s\S]{0,800}location\.host[\s\S]{0,400}secplus-/.test(js));
+test('v4.86.0 CertPack: detectCert defaults to netplus',
+  /function\s+detectCert[\s\S]{0,1200}return\s+['"]netplus['"]/.test(js));
+test('v4.86.0 CertPack: CURRENT_CERT and CERT_PACK constants declared',
+  /const\s+CURRENT_CERT\s*=\s*detectCert\(\)/.test(js) &&
+  /const\s+CERT_PACK\s*=.*window\.CERT_PACKS\[CURRENT_CERT\]/.test(js));
+
+// ── Both cert packs declare correctly ──
+test('v4.86.0 CertPack: certs/netplus.js declares window.CERT_PACKS.netplus',
+  /window\.CERT_PACKS\.netplus\s*=\s*\{/.test(certNetplus));
+test('v4.86.0 CertPack: certs/secplus.js declares window.CERT_PACKS.secplus',
+  /window\.CERT_PACKS\.secplus\s*=\s*\{/.test(certSecplus));
+
+// ── Network+ cert metadata (preserves existing exam constants) ──
+test('v4.86.0 netplus meta: id is netplus',
+  /id:\s*['"]netplus['"]/.test(certNetplus));
+test('v4.86.0 netplus meta: name is CompTIA Network+',
+  /name:\s*['"]CompTIA Network\+['"]/.test(certNetplus));
+test('v4.86.0 netplus meta: code is N10-009',
+  /code:\s*['"]N10-009['"]/.test(certNetplus));
+test('v4.86.0 netplus meta: examPassScore 720',
+  /examPassScore:\s*720/.test(certNetplus));
+test('v4.86.0 netplus meta: examMaxScore 900',
+  /examMaxScore:\s*900/.test(certNetplus));
+test('v4.86.0 netplus meta: examQuestionCount 90',
+  /examQuestionCount:\s*90/.test(certNetplus));
+test('v4.86.0 netplus meta: examTimeSeconds 5400',
+  /examTimeSeconds:\s*5400/.test(certNetplus));
+
+// ── Security+ cert metadata (Phase 1A scaffolding) ──
+test('v4.86.0 secplus meta: id is secplus',
+  /id:\s*['"]secplus['"]/.test(certSecplus));
+test('v4.86.0 secplus meta: name is CompTIA Security+',
+  /name:\s*['"]CompTIA Security\+['"]/.test(certSecplus));
+test('v4.86.0 secplus meta: code is SY0-701',
+  /code:\s*['"]SY0-701['"]/.test(certSecplus));
+test('v4.86.0 secplus meta: examPassScore 750 (Security+ pass mark)',
+  /examPassScore:\s*750/.test(certSecplus));
+test('v4.86.0 secplus retention array starts EMPTY (Phase 2 populates carry-overs)',
+  /retentionGapConcepts:\s*\[\s*\]/.test(certSecplus));
+
+// ── HTML loads cert packs BEFORE app.js ──
+test('v4.86.0 CertPack: index.html loads certs/netplus.js',
+  /<script\s+src=["']certs\/netplus\.js["']/.test(html));
+test('v4.86.0 CertPack: index.html loads certs/secplus.js',
+  /<script\s+src=["']certs\/secplus\.js["']/.test(html));
+test('v4.86.0 CertPack: cert packs load BEFORE app.js (script-tag ordering)',
+  (() => {
+    const netplusIdx = html.indexOf('certs/netplus.js');
+    const secplusIdx = html.indexOf('certs/secplus.js');
+    const appIdx = html.indexOf('"app.js"');
+    return netplusIdx > 0 && secplusIdx > 0 && appIdx > 0
+      && netplusIdx < appIdx && secplusIdx < appIdx;
+  })());
+
+// ── SW precaches cert packs ──
+test('v4.86.0 CertPack: sw.js SHELL_ASSETS includes certs/netplus.js',
+  /SHELL_ASSETS\s*=\s*\[[\s\S]{0,400}certs\/netplus\.js/.test(sw));
+test('v4.86.0 CertPack: sw.js SHELL_ASSETS includes certs/secplus.js',
+  /SHELL_ASSETS\s*=\s*\[[\s\S]{0,400}certs\/secplus\.js/.test(sw));
 
 // ═══════════════════════════════════════════════════════════════════════
 // v4.85.27 — Pass-proof banner. First-time-visitor trust signal per

@@ -1,11 +1,16 @@
-// Service Worker v4.85.27 — Network+ Quiz App
-const CACHE_NAME = 'netplus-v4.85.27';
+// Service Worker v4.86.0 — Network+ Quiz App
+const CACHE_NAME = 'netplus-v4.86.0';
 const SHELL_ASSETS = [
   './',
   './index.html',
   './styles.css',
   './app.js',
-  './manifest.json'
+  './manifest.json',
+  // v4.86.0: cert packs precached. Both load on every visit (~3KB combined
+  // at Phase 1A; will grow as TOPIC_DOMAINS/exemplars migrate). Active cert
+  // is resolved at runtime by detectCert() in app.js.
+  './certs/netplus.js',
+  './certs/secplus.js'
 ];
 // Hard cap on cached entries to prevent unbounded cache growth (#20).
 // The shell counts toward this; everything beyond it (icons, fonts, runtime
