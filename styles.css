@@ -1,5 +1,5 @@
 /* ══════════════════════════════════════════
-   Network+ AI Quiz — styles.css  v4.87.2
+   Network+ AI Quiz — styles.css  v4.87.3
    ══════════════════════════════════════════ */
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -6937,6 +6937,9 @@ body.has-sidebar { padding-left: 240px; transition: padding-left .25s cubic-bezi
 }
 .sb-brand-text { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
 .sb-brand-name { font-size: 14px; font-weight: 800; color: var(--text); letter-spacing: -0.01em; line-height: 1.1; }
+/* v4.87.3 — CertAnvil cert sub-line: shows active cert pack (e.g.
+   "Network+ N10-009") below the brand name. Smaller + accent-colored. */
+.sb-brand-cert { font-size: 11px; font-weight: 600; color: var(--accent-light); letter-spacing: .02em; line-height: 1.25; margin-top: 1px; }
 .sb-brand-version { font-size: 10px; font-family: monospace; color: var(--text-dim); letter-spacing: .05em; line-height: 1.2; }
 
 /* Nav sections */

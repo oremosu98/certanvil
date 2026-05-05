@@ -298,7 +298,7 @@ test('Validation in runSessionStep', js.includes('aiValidateQuestions(apiKey, qu
 
 // ── Analytics v2 (v4.5) ──
 console.log('\n\x1b[1m── ANALYTICS v2 (v4.5) ──\x1b[0m');
-test('APP_VERSION is 4.87.2', js.includes("const APP_VERSION = '4.87.2"));
+test('APP_VERSION is 4.87.3', js.includes("const APP_VERSION = '4.87.3"));
 test('getDailyGoal function', js.includes('function getDailyGoal('));
 test('renderDailyGoal function', js.includes('function renderDailyGoal('));
 test('editDailyGoal function', js.includes('function editDailyGoal('));
@@ -312,7 +312,7 @@ test('CSS: .topic-domain-group', css.includes('.topic-domain-group'));
 test('CSS: .daily-goal-card', css.includes('.daily-goal-card'));
 test('CSS: .advanced-section', css.includes('.advanced-section'));
 test('CSS: .hero-stats-strip', css.includes('.hero-stats-strip'));
-test('SW cache bumped to v4.87.2', sw.includes('netplus-v4.87.2'));
+test('SW cache bumped to v4.87.3', sw.includes('netplus-v4.87.3'));
 test('Family Drill: STORAGE.PORT_FAMILY_BEST', js.includes("PORT_FAMILY_BEST:"));
 test('Family Drill: ptMode handles family', js.includes("ptMode === 'family'"));
 test('Family Drill: HTML mode button', html.includes('id="pt-mode-family"'));
@@ -16100,21 +16100,51 @@ test('v4.87.2 ChipRender: Mode Ladder tile updates .mdt-num + .mdt-name + .mdt-m
 test('v4.87.2 ChipRender: tombstone — span:last-child fallback removed',
   !/lastTextSpan\s*=\s*tile\.querySelector\(['"]span:last-child['"]\)/.test(js));
 
-test('v4.87.2 SidebarBrand: cert-aware brandMark + brandName declared',
-  /const\s+brandMark\s*=.*CURRENT_CERT === ['"]secplus['"].*S\+.*N\+/.test(js));
-test('v4.87.2 SidebarBrand: brandName covers both Security+ and Network+',
-  /const\s+brandName\s*=.*Security\+.*Network\+/.test(js));
-test('v4.87.2 SidebarBrand: sb-brand-mark uses ${brandMark} interpolation',
-  /sb-brand-mark[^>]*>\$\{brandMark\}/.test(js));
-test('v4.87.2 SidebarBrand: sb-brand-name uses ${brandName} interpolation',
-  /sb-brand-name[^>]*>\$\{brandName\}/.test(js));
-test('v4.87.2 SidebarBrand: hardcoded "N+" literal removed from renderAppSidebar',
+// v4.87.3 retired the v4.87.2 cert-aware brandMark/brandName variables.
+// Brand is now CertAnvil (parent) + cert sub-line (Network+ / Security+).
+// Keep the "no Network+ in mark" tombstones (still relevant) but retarget
+// the interpolation tests to the new architecture.
+test('v4.87.2 → v4.87.3 SidebarBrand: hardcoded "N+" sidebar mark removed (now "CA")',
   !/sb-brand-mark[^>]*>N\+</.test(js));
-test('v4.87.2 SidebarBrand: hardcoded "Network+" literal removed from sidebar template',
+test('v4.87.2 → v4.87.3 SidebarBrand: hardcoded "Network+" sidebar name removed (now "CertAnvil")',
   !/sb-brand-name[^>]*>Network\+</.test(js));
+test('v4.87.2 → v4.87.3 PageTitle: title now CertAnvil-prefixed, not "Security+ AI Quiz"',
+  /document\.title[\s\S]{0,300}CertAnvil — Security\+/.test(html));
 
-test('v4.87.2 PageTitle: inline <head> script swaps document.title to "Security+ AI Quiz"',
-  /document\.title\s*=\s*['"]Security\+ AI Quiz['"]/.test(html));
+// ═══════════════════════════════════════════════════════════════════════
+// v4.87.3 — CertAnvil brand identity adopted. Domain certanvil.com +
+// certanvil.co.uk registered 2026-05-05. Brand becomes the parent product
+// identity; Network+ and Security+ become cert sub-brands shown below.
+// ═══════════════════════════════════════════════════════════════════════
+
+test('v4.87.3 Brand: page <title> is CertAnvil-prefixed',
+  /<title>CertAnvil/.test(html));
+test('v4.87.3 Brand: meta description leads with CertAnvil',
+  /<meta name="description" content="CertAnvil/.test(html));
+test('v4.87.3 Brand: apple-mobile-web-app-title is CertAnvil',
+  /<meta name="apple-mobile-web-app-title" content="CertAnvil"/.test(html));
+test('v4.87.3 Brand: inline <head> script sets CertAnvil-prefixed title for both certs',
+  /document\.title\s*=.*CertAnvil — Security\+.*CertAnvil — Network\+/s.test(html));
+test('v4.87.3 Brand: hardcoded "Network+ AI Quiz" page title removed',
+  !/<title>Network\+ AI Quiz<\/title>/.test(html));
+
+test('v4.87.3 Sidebar: brand mark is "CA" (CertAnvil)',
+  /sb-brand-mark[^>]*>CA<\/div>/.test(js));
+test('v4.87.3 Sidebar: brand name is "CertAnvil"',
+  /sb-brand-name[^>]*>CertAnvil</.test(js));
+test('v4.87.3 Sidebar: cert sub-line uses CERT_PACK.meta name + code',
+  /certShortLabel\s*=[\s\S]{0,300}CERT_PACK\.meta[\s\S]{0,200}\.name[\s\S]{0,200}\.code/.test(js));
+test('v4.87.3 Sidebar: .sb-brand-cert CSS declared (cert sub-line)',
+  /\.sb-brand-cert\s*\{/.test(css));
+test('v4.87.3 Sidebar: tombstone — N+/Network+ literal sidebar mark removed',
+  !/sb-brand-mark[^>]*>N\+<\/div>/.test(js) && !/sb-brand-name[^>]*>Network\+</.test(js));
+test('v4.87.3 Sidebar: tombstone — S+/Security+ literal sidebar mark removed',
+  !/sb-brand-mark[^>]*>S\+<\/div>/.test(js) && !/sb-brand-name[^>]*>Security\+</.test(js));
+
+test('v4.87.3 PassProof: banner credits CertAnvil ("using CertAnvil")',
+  /using\s+<em>CertAnvil<\/em>/.test(html));
+test('v4.87.3 PassProof: tombstone — old "using this tool" copy removed',
+  !/767\/900[\s\S]{0,200}using this tool/.test(html));
 
 // ── Summary ──
 console.log('\n' + '═'.repeat(50));

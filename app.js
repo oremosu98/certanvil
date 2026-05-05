@@ -1,9 +1,9 @@
 // ══════════════════════════════════════════
-// Network+ AI Quiz — app.js  v4.87.2
+// Network+ AI Quiz — app.js  v4.87.3
 // ══════════════════════════════════════════
 
 // ── CONSTANTS ──
-const APP_VERSION = '4.87.2';
+const APP_VERSION = '4.87.3';
 
 // ══════════════════════════════════════════════════════════════════════════
 // CERT PACK ARCHITECTURE (v4.86.0 Phase 1A engine refactor)
@@ -35190,15 +35190,19 @@ function renderAppSidebar() {
     }
   } catch (_) { streakHtml = ''; }
 
-  // v4.87.2: cert-aware sidebar brand — N+ / Network+ for netplus,
-  // S+ / Security+ for secplus.
-  const brandMark = (CURRENT_CERT === 'secplus') ? 'S+' : 'N+';
-  const brandName = (CURRENT_CERT === 'secplus') ? 'Security+' : 'Network+';
+  // v4.87.3: CertAnvil brand architecture — parent product brand becomes
+  // CertAnvil; the active cert (Network+ / Security+) is shown as a
+  // sub-line below the brand name. Mark stays a single-glyph badge ("CA")
+  // so the existing sb-brand-mark CSS continues to work.
+  const certShortLabel = (CERT_PACK && CERT_PACK.meta)
+    ? CERT_PACK.meta.name.replace('CompTIA ', '') + ' ' + CERT_PACK.meta.code
+    : 'Network+ N10-009';
   el.innerHTML = `
     <div class="sb-brand">
-      <div class="sb-brand-mark" aria-hidden="true">${brandMark}</div>
+      <div class="sb-brand-mark" aria-hidden="true">CA</div>
       <div class="sb-brand-text">
-        <span class="sb-brand-name">${brandName}</span>
+        <span class="sb-brand-name">CertAnvil</span>
+        <span class="sb-brand-cert">${certShortLabel}</span>
         <span class="sb-brand-version">v${typeof APP_VERSION !== 'undefined' ? APP_VERSION : '4.53.0'}</span>
       </div>
     </div>
