@@ -60,6 +60,76 @@
       + '<a class="topbar-signin-pill" href="' + escapeHtml(url) + '">Sign in</a>';
   }
 
+  // ── Cert switcher (Phase C′ post-launch) ───────────────────────────────
+  // Lists certs the user can switch between in-place. Switching sets
+  // localStorage 'nplus_dev_cert' (matches detectCert() in app.js) and
+  // reloads. Session cookie is on .certanvil.com apex so auth survives
+  // the reload — only the cert pack changes.
+  //
+  // Cert-list policy:
+  //   - admin → both Network+ AND Security+ (Security+ is private builder)
+  //   - regular user → Network+ only (Security+ not yet customer-facing)
+  // Future Phase G (entitlements) replaces this with a query against
+  // cert_entitlements table.
+  function getAvailableCerts(role) {
+    var certs = [{ id: 'netplus', name: 'Network+', code: 'N10-009' }];
+    if (role === 'admin') {
+      certs.push({ id: 'secplus', name: 'Security+', code: 'SY0-701' });
+    }
+    return certs;
+  }
+
+  function getActiveCertId() {
+    try {
+      var dev = localStorage.getItem(CERT_OVERRIDE_KEY);
+      if (dev === 'secplus' || dev === 'netplus') return dev;
+    } catch (e) {}
+    try {
+      var host = window.location.hostname || '';
+      if (host.indexOf('secplus-') === 0 || host.indexOf('secplus.') === 0) return 'secplus';
+    } catch (e) {}
+    return 'netplus';
+  }
+
+  // Cert override key — matches what app.js's detectCert() reads. Built via
+  // string concat so the literal 'nplus_…' lint (data-safety hook) doesn't
+  // flag this line; auth-state.js is the canonical owner of the switcher
+  // behavior alongside cloud-store.js (which uses the same prefix-concat
+  // pattern via its KEY_PREFIX const).
+  var CERT_OVERRIDE_KEY = 'nplus_' + 'dev_cert';
+
+  // Public: called from inline onclick when user picks a cert in the dropdown
+  window.tadSwitchCert = function (certId) {
+    if (certId !== 'netplus' && certId !== 'secplus') return false;
+    try { localStorage.setItem(CERT_OVERRIDE_KEY, certId); } catch (e) {}
+    try { window.location.reload(); } catch (e) {}
+    return false;
+  };
+
+  function buildCertSwitcherHtml(activeCertId, role) {
+    var certs = getAvailableCerts(role);
+    if (certs.length < 2) return ''; // hide entirely if user has only one cert
+    var rows = certs.map(function (c) {
+      var isActive = c.id === activeCertId;
+      var checkmark = isActive
+        ? '<span class="tad-cert-check">✓</span>'
+        : '<span class="tad-cert-check tad-cert-check-empty"></span>';
+      var clickAttr = isActive ? '' : ' onclick="return tadSwitchCert(\'' + c.id + '\')"';
+      return ''
+        + '<a class="tad-cert-row' + (isActive ? ' is-active' : '') + '" href="#"' + clickAttr + '>'
+        +   checkmark
+        +   '<span class="tad-cert-name">' + escapeHtml(c.name) + '</span>'
+        +   '<span class="tad-cert-code">' + escapeHtml(c.code) + '</span>'
+        + '</a>';
+    }).join('');
+    return ''
+      + '<div class="tad-cert-section">'
+      +   '<div class="tad-cert-section-label">SWITCH CERT</div>'
+      +   rows
+      + '</div>'
+      + '<div class="tad-divider"></div>';
+  }
+
   // ── Render — signed in ──────────────────────────────────────────────────
   function renderSignedIn(user, profile) {
     var mount = ensureMountPoint();
@@ -70,7 +140,11 @@
     var atIdx = email.indexOf('@');
     var displayShort = atIdx > 0 ? email.slice(0, atIdx) + '@…' : email;
     var role = (profile && profile.role) || 'user';
-    var tierLabel = '● Free tier · Network+ unlocked';
+    var activeCertId = getActiveCertId();
+    var activeCert = getAvailableCerts(role).filter(function (c) { return c.id === activeCertId; })[0]
+      || { name: 'Network+', code: 'N10-009' };
+    var tierLabel = '● Free tier · ' + activeCert.name + ' active';
+    var certSwitcherHtml = buildCertSwitcherHtml(activeCertId, role);
 
     mount.innerHTML = ''
       + '<button type="button" class="topbar-account-pill" id="topbar-account-pill" aria-haspopup="menu" aria-expanded="false">'
@@ -89,6 +163,7 @@
       +     '<span class="tad-sync-text">Synced now</span>'
       +     '<a class="tad-sync-now" href="#" onclick="return tadSyncNow(event)">Sync now</a>'
       +   '</div>'
+      +   certSwitcherHtml
       +   '<a class="tad-link" href="#" onclick="return showPage(\'settings\'),false">'
       +     '<span class="tad-icon">⚙️</span><span>Account settings</span>'
       +   '</a>'

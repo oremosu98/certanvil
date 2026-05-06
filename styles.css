@@ -1,5 +1,5 @@
 /* ══════════════════════════════════════════
-   Network+ AI Quiz — styles.css  v4.89.3
+   Network+ AI Quiz — styles.css  v4.89.4
    ══════════════════════════════════════════ */
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -16278,6 +16278,60 @@ html { zoom: 1.10; }
   height: 1px;
   background: var(--border);
   margin: 4px 0;
+}
+/* v4.89.4: cert switcher rows inside the account dropdown */
+.tad-cert-section {
+  padding: 6px 0 4px;
+}
+.tad-cert-section-label {
+  padding: 4px 12px 6px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--text-dim);
+  text-transform: uppercase;
+}
+.tad-cert-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  color: var(--text-mid);
+  font-size: 13px; font-weight: 500;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background-color .15s ease, color .15s ease;
+}
+.tad-cert-row:hover {
+  background: rgba(var(--accent-rgb), .08);
+  color: var(--text);
+}
+.tad-cert-row.is-active {
+  color: var(--text);
+  cursor: default;
+}
+.tad-cert-row.is-active:hover {
+  background: rgba(var(--accent-rgb), .04);
+}
+.tad-cert-check {
+  width: 14px; height: 14px;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 11px;
+  color: var(--accent-light);
+  flex-shrink: 0;
+}
+.tad-cert-check.tad-cert-check-empty {
+  /* invisible placeholder so all rows align */
+  visibility: hidden;
+}
+.tad-cert-name {
+  flex: 1 1 auto;
+  font-weight: 600;
+}
+.tad-cert-code {
+  font-size: 10px;
+  color: var(--text-dim);
+  font-family: 'SF Mono', Menlo, monospace;
+  letter-spacing: 0.04em;
 }
 .tad-link.is-admin { color: var(--accent-light); }
 .tad-link.is-admin:hover {
