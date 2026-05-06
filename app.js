@@ -1,9 +1,9 @@
 // ══════════════════════════════════════════
-// Network+ AI Quiz — app.js  v4.88.3
+// Network+ AI Quiz — app.js  v4.88.4
 // ══════════════════════════════════════════
 
 // ── CONSTANTS ──
-const APP_VERSION = '4.88.3';
+const APP_VERSION = '4.88.4';
 
 // ══════════════════════════════════════════════════════════════════════════
 // CERT PACK ARCHITECTURE (v4.86.0 Phase 1A engine refactor)
@@ -36260,9 +36260,51 @@ function _v453Init() {
   }
 }
 
+// ── v4.88.4: URL action handler ──
+// Lets external surfaces (the certanvil.com landing diagnostic CTA, future
+// share links, etc.) route a user straight to a specific app action via a
+// query param. Currently supported: ?action=diagnostic → auto-fires
+// startDiagnostic() after the homepage paints.
+//
+// The URL is cleaned via history.replaceState so a subsequent refresh
+// doesn't re-fire the action. The 'from' param is logged for analytics
+// (placeholder; wire up when analytics ship).
+function _processUrlAction() {
+  try {
+    if (typeof URLSearchParams !== 'function') return;
+    const params = new URLSearchParams(window.location.search);
+    const action = (params.get('action') || '').toLowerCase().trim();
+    const from = (params.get('from') || '').trim();
+    if (!action) return;
+
+    // Clean the URL so refresh doesn't re-fire (preserves hash if any).
+    if (window.history && typeof window.history.replaceState === 'function') {
+      const cleanUrl = window.location.origin + window.location.pathname + (window.location.hash || '');
+      try { window.history.replaceState({}, '', cleanUrl); } catch (e) {}
+    }
+
+    if (action === 'diagnostic') {
+      // Defer one tick so the home page paints before the diagnostic kicks in.
+      // 100ms feels instant but lets renderTodayPlan / readiness etc. complete.
+      setTimeout(function () {
+        if (typeof startDiagnostic === 'function') {
+          try { startDiagnostic(); } catch (e) { console.warn('[url-action] startDiagnostic threw', e); }
+        }
+      }, 100);
+    }
+    // Future: action=newest|streak|wrongbank|etc.
+    if (from) console.info('[url-action]', { action: action, from: from });
+  } catch (e) {
+    // Never let URL parsing crash the app.
+    console.warn('[url-action]', e && e.message);
+  }
+}
+
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', _v453Init);
+  document.addEventListener('DOMContentLoaded', _processUrlAction);
 } else {
   // Already loaded (likely because app.js is at end of body)
   _v453Init();
+  _processUrlAction();
 }
