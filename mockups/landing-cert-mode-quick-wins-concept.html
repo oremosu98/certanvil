@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Concept Mockup — CertAnvil landing quick wins (sample Q + diag CTA + pass guarantee)</title>
+<style>
+  :root[data-theme="light"] {
+    --bg: #fafbff; --bg-elevated: #ffffff; --surface: #ffffff; --surface-2: #f4f5fa; --surface-3: #eaecf3;
+    --border: #e5e7f0; --border-strong: #c7c9d8;
+    --text: #1a1a2e; --text-mid: #4a4a6e; --text-dim: #8a8aac;
+    --accent: #5b4fdb; --accent-hover: #4a3fbe; --accent-light: #7c6ff7;
+    --accent-soft-bg: rgba(91,79,219,.06); --accent-soft-border: rgba(91,79,219,.18);
+    --green: #16a34a; --green-soft-bg: rgba(22,163,74,.08); --green-border: rgba(22,163,74,.3);
+    --orange: #d97706; --orange-soft-bg: rgba(217,119,6,.08); --orange-border: rgba(217,119,6,.3);
+    --red: #dc2626; --red-soft-bg: rgba(220,38,38,.06);
+    --shadow-card: 0 1px 2px rgba(20,20,40,.04), 0 4px 12px rgba(20,20,40,.05);
+    --shadow-cta: 0 6px 16px rgba(91,79,219,.32);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--bg); color: var(--text); line-height: 1.55;
+    padding: 48px 24px 100px; min-height: 100vh;
+  }
+  .container { max-width: 1100px; margin: 0 auto; }
+  h1.page-title { font-size: 32px; font-weight: 800; letter-spacing: -.02em; margin-bottom: 8px; color: var(--text); }
+  .page-lede { color: var(--text-mid); font-size: 14px; margin-bottom: 36px; max-width: 720px; }
+  code { font-family: 'SF Mono', 'Monaco', monospace; font-size: 0.85em; background: var(--accent-soft-bg); padding: 1px 6px; border-radius: 4px; color: var(--accent); }
+
+  .annotation {
+    background: var(--accent-soft-bg);
+    border-left: 3px solid var(--accent);
+    border-radius: 0 10px 10px 0;
+    padding: 12px 16px; margin: 14px 0 28px;
+    font-size: 13px; color: var(--text-mid);
+    line-height: 1.55;
+  }
+  .annotation strong { color: var(--accent); display: block; margin-bottom: 4px; font-size: 12px; letter-spacing: .04em; text-transform: uppercase; }
+  .annotation p { margin-bottom: 8px; }
+  .annotation p:last-child { margin-bottom: 0; }
+
+  .state-divider { margin: 56px 0 20px; display: flex; align-items: center; gap: 14px; }
+  .state-divider::before, .state-divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+  .state-label { font-size: 11px; font-weight: 800; letter-spacing: .14em; color: var(--text-dim); text-transform: uppercase; }
+
+  /* Browser frame */
+  .browser-frame { background: var(--bg-elevated); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; margin-bottom: 32px; box-shadow: var(--shadow-card); }
+  .browser-bar { background: var(--surface-2); padding: 10px 14px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--border); }
+  .browser-dots { display: flex; gap: 6px; }
+  .browser-dot { width: 11px; height: 11px; border-radius: 50%; }
+  .browser-dot.r { background: #ff5f56; } .browser-dot.y { background: #ffbd2e; } .browser-dot.g { background: #27c93f; }
+  .browser-url { flex: 1; background: var(--bg-elevated); border: 1px solid var(--border); border-radius: 99px; padding: 5px 14px; font-family: 'SF Mono', monospace; font-size: 12px; color: var(--text-mid); margin-left: 8px; text-align: center; }
+  .browser-url-secure { color: var(--green); margin-right: 4px; }
+
+  /* ── Mock landing — match existing certanvil.com structure ── */
+  .ml { padding: 0; background: var(--bg); }
+
+  .ml-topbar {
+    padding: 14px 24px;
+    display: flex; align-items: center; justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+    background: rgba(250,251,255,.8);
+    backdrop-filter: blur(20px);
+  }
+  .ml-logo { display: flex; align-items: center; gap: 10px; }
+  .ml-logo-mark { width: 32px; height: 32px; background: linear-gradient(135deg, #1a1a2e, #0a0a12); border: 1px solid var(--border); border-radius: 8px; padding: 3px; }
+  .ml-logo-mark svg { width: 100%; height: 100%; display: block; }
+  .ml-logo-name { font-size: 16px; font-weight: 800; letter-spacing: -.01em; color: var(--text); }
+  .ml-nav { display: flex; align-items: center; gap: 4px; }
+  .ml-nav-link { font-size: 13px; color: var(--text-mid); padding: 6px 12px; border-radius: 6px; cursor: pointer; }
+  .ml-sign-in { background: var(--accent); color: #fff; font-size: 13px; font-weight: 700; padding: 8px 16px; border-radius: 8px; border: 0; cursor: pointer; margin-left: 4px; }
+
+  /* Hero */
+  .ml-hero { padding: 64px 24px 32px; text-align: center; position: relative; overflow: hidden; }
+  .ml-hero::before { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 0%, var(--accent-soft-bg) 0%, transparent 60%); pointer-events: none; z-index: -1; }
+  .ml-eyebrow { display: inline-flex; gap: 8px; font-size: 11px; font-weight: 700; letter-spacing: .08em; color: var(--accent); background: var(--accent-soft-bg); border: 1px solid var(--accent-soft-border); padding: 5px 12px; border-radius: 99px; margin-bottom: 18px; text-transform: uppercase; }
+  .ml-hero h1 { font-size: 48px; font-weight: 800; letter-spacing: -.025em; line-height: 1.06; margin-bottom: 16px; color: var(--text); }
+  .ml-hero-sub { font-size: 17px; color: var(--text-mid); max-width: 580px; margin: 0 auto 24px; line-height: 1.55; }
+  .ml-pass-pill {
+    display: inline-flex; align-items: center; gap: 8px;
+    margin-top: 14px;
+    padding: 9px 16px;
+    background: linear-gradient(135deg, var(--green-soft-bg), var(--accent-soft-bg));
+    border: 1px solid var(--green-border);
+    border-radius: 99px;
+    font-size: 12.5px; color: var(--text-mid);
+    flex-wrap: wrap; justify-content: center;
+  }
+  .ml-pass-pill-icon { width: 19px; height: 19px; background: var(--green); color: #fff; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800; }
+  .ml-pass-pill strong { color: var(--text); font-weight: 700; }
+
+  /* NEW — Hero CTA row (split primary + secondary) */
+  .ml-hero-ctas {
+    display: flex; flex-direction: column; align-items: center; gap: 10px;
+    margin-top: 28px;
+  }
+  .ml-cta-primary {
+    background: var(--accent); color: #fff;
+    padding: 13px 28px;
+    border-radius: 11px;
+    font-size: 15px; font-weight: 700;
+    border: 0; cursor: pointer;
+    box-shadow: var(--shadow-cta);
+    display: inline-flex; align-items: center; gap: 8px;
+    transition: transform .15s, box-shadow .15s;
+  }
+  .ml-cta-primary:hover { transform: translateY(-2px); }
+  .ml-cta-primary-meta {
+    font-size: 11px; font-weight: 600; opacity: .82;
+    background: rgba(255,255,255,.16);
+    border: 1px solid rgba(255,255,255,.22);
+    padding: 1px 7px; border-radius: 99px;
+    margin-left: 4px;
+  }
+  .ml-cta-secondary {
+    font-size: 13px; color: var(--text-mid);
+    cursor: pointer;
+    border: 0; background: transparent;
+    text-decoration: underline;
+    text-decoration-color: var(--text-dim);
+    text-underline-offset: 3px;
+  }
+  .ml-cta-secondary:hover { color: var(--text); }
+
+  /* NEW — Sample question widget */
+  .sample-q-section {
+    padding: 32px 24px 8px;
+    text-align: center;
+  }
+  .sample-q-eyebrow {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 10.5px; font-weight: 800; letter-spacing: .12em;
+    color: var(--accent);
+    background: var(--accent-soft-bg);
+    border: 1px solid var(--accent-soft-border);
+    padding: 4px 11px; border-radius: 99px;
+    margin-bottom: 14px; text-transform: uppercase;
+  }
+  .sample-q-title { font-size: 20px; font-weight: 800; color: var(--text); margin-bottom: 6px; letter-spacing: -.01em; }
+  .sample-q-sub { font-size: 13.5px; color: var(--text-mid); margin-bottom: 22px; }
+
+  .sample-q-card {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 26px 28px 24px;
+    max-width: 720px; margin: 0 auto;
+    text-align: left;
+    box-shadow: var(--shadow-card);
+  }
+  .sq-meta-row {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 14px;
+    font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase;
+  }
+  .sq-cert-tag { color: var(--accent); background: var(--accent-soft-bg); border: 1px solid var(--accent-soft-border); padding: 3px 9px; border-radius: 99px; }
+  .sq-domain-tag { color: var(--text-dim); }
+  .sq-difficulty-tag { color: var(--orange); margin-left: auto; }
+
+  .sq-stem {
+    font-size: 17px; color: var(--text); line-height: 1.5;
+    margin-bottom: 18px; font-weight: 500;
+  }
+  .sq-options { display: flex; flex-direction: column; gap: 8px; }
+  .sq-option {
+    display: flex; align-items: flex-start; gap: 12px;
+    padding: 12px 14px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: border-color .15s, background-color .15s;
+    font-size: 14px; color: var(--text-mid);
+    text-align: left;
+    width: 100%;
+  }
+  .sq-option:hover { background: var(--surface); border-color: var(--accent); color: var(--text); }
+  .sq-option-letter {
+    width: 26px; height: 26px;
+    border-radius: 7px;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 800; color: var(--text-mid);
+    flex-shrink: 0;
+  }
+  .sq-option-text { flex: 1; line-height: 1.45; padding-top: 3px; }
+
+  /* States — picked / correct / wrong */
+  .sq-option.is-correct {
+    background: var(--green-soft-bg);
+    border-color: var(--green-border);
+    color: var(--text);
+  }
+  .sq-option.is-correct .sq-option-letter {
+    background: var(--green);
+    color: #fff;
+    border-color: var(--green);
+  }
+  .sq-option.is-wrong {
+    background: var(--red-soft-bg);
+    border-color: rgba(220,38,38,.3);
+    color: var(--text);
+  }
+  .sq-option.is-wrong .sq-option-letter {
+    background: var(--red);
+    color: #fff;
+    border-color: var(--red);
+  }
+  .sq-option.is-dimmed { opacity: .55; cursor: default; }
+  .sq-option-marker {
+    margin-left: auto;
+    font-size: 13px; font-weight: 700;
+  }
+
+  .sq-explanation {
+    margin-top: 18px;
+    padding: 14px 16px;
+    background: var(--accent-soft-bg);
+    border: 1px solid var(--accent-soft-border);
+    border-radius: 10px;
+    font-size: 13.5px;
+    color: var(--text-mid);
+    line-height: 1.55;
+  }
+  .sq-explanation strong { color: var(--text); font-weight: 700; }
+  .sq-explanation-eyebrow { font-size: 10px; font-weight: 800; letter-spacing: .12em; color: var(--accent); text-transform: uppercase; margin-bottom: 6px; display: block; }
+
+  .sq-followup {
+    margin-top: 18px;
+    padding-top: 18px;
+    border-top: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 14px; flex-wrap: wrap;
+  }
+  .sq-followup-text { font-size: 13px; color: var(--text-mid); }
+  .sq-followup-text strong { color: var(--text); }
+  .sq-followup-cta {
+    background: var(--accent); color: #fff;
+    font-size: 13px; font-weight: 700;
+    padding: 9px 18px;
+    border-radius: 9px;
+    border: 0; cursor: pointer;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .sq-followup-cta:hover { background: var(--accent-hover); }
+
+  /* Cert grid (snippet, simplified) */
+  .ml-certs-section {
+    padding: 32px 24px 48px;
+  }
+  .ml-section-head {
+    display: flex; align-items: baseline; justify-content: space-between;
+    margin-bottom: 20px;
+  }
+  .ml-section-head h2 { font-size: 26px; font-weight: 800; letter-spacing: -.015em; color: var(--text); }
+  .ml-section-head-help { font-size: 12px; color: var(--text-dim); }
+
+  .ml-cert-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+  .ml-cert-tile {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 18px 16px;
+    box-shadow: var(--shadow-card);
+    position: relative;
+    overflow: hidden;
+  }
+  .ml-cert-tile.is-live::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: var(--green); }
+  .ml-cert-tile-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+  .ml-cert-glyph { width: 36px; height: 36px; border-radius: 9px; background: linear-gradient(135deg, #1a1a2e, #0a0a12); color: var(--accent-light); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 13px; }
+  .ml-cert-status { font-size: 8.5px; font-weight: 800; letter-spacing: .12em; padding: 3px 7px; border-radius: 99px; text-transform: uppercase; }
+  .ml-cert-status.live { background: var(--green-soft-bg); color: var(--green); border: 1px solid var(--green-border); }
+  .ml-cert-status.soon { background: var(--surface-3); color: var(--text-dim); border: 1px solid var(--border); }
+  .ml-cert-name { font-size: 15px; font-weight: 800; color: var(--text); margin-bottom: 3px; }
+  .ml-cert-code { font-size: 10.5px; font-family: 'SF Mono', monospace; color: var(--text-dim); }
+
+  /* NEW — Pass guarantee section */
+  .pass-guarantee-section {
+    background: linear-gradient(135deg, var(--green-soft-bg) 0%, var(--accent-soft-bg) 100%);
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    padding: 56px 24px;
+    text-align: center;
+  }
+  .pg-eyebrow {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 11px; font-weight: 800; letter-spacing: .14em;
+    color: var(--green);
+    background: rgba(22,163,74,.10);
+    border: 1px solid var(--green-border);
+    padding: 5px 12px; border-radius: 99px;
+    text-transform: uppercase;
+    margin-bottom: 18px;
+  }
+  .pg-shield {
+    width: 56px; height: 56px;
+    border-radius: 50%;
+    background: var(--green);
+    color: #fff;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 26px;
+    margin: 0 auto 16px;
+    box-shadow: 0 6px 20px rgba(22,163,74,.32);
+  }
+  .pg-title {
+    font-size: 32px; font-weight: 800; letter-spacing: -.02em;
+    color: var(--text);
+    margin-bottom: 14px;
+    line-height: 1.15;
+  }
+  .pg-title em { color: var(--green); font-style: normal; }
+  .pg-prose {
+    font-size: 16px; color: var(--text-mid); line-height: 1.6;
+    max-width: 600px; margin: 0 auto 22px;
+  }
+  .pg-prose strong { color: var(--text); font-weight: 700; }
+  .pg-terms {
+    display: flex; gap: 16px; flex-wrap: wrap;
+    justify-content: center;
+    margin-bottom: 14px;
+  }
+  .pg-term {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 18px;
+    font-size: 13px; color: var(--text-mid);
+    text-align: left;
+    min-width: 180px;
+  }
+  .pg-term strong { display: block; color: var(--text); font-size: 13.5px; font-weight: 700; margin-bottom: 2px; }
+  .pg-finer { font-size: 11.5px; color: var(--text-dim); margin-top: 4px; max-width: 540px; margin-left: auto; margin-right: auto; line-height: 1.55; }
+
+  /* Why CertAnvil + footer (compressed) */
+  .ml-why-section { padding: 48px 24px; background: var(--surface-2); text-align: center; }
+  .ml-why-section h2 { font-size: 24px; font-weight: 800; color: var(--text); }
+  .ml-foot { padding: 22px 24px; border-top: 1px solid var(--border); font-size: 12px; color: var(--text-dim); text-align: center; font-family: 'SF Mono', monospace; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1 class="page-title">🎯 Landing — Cert Mode Quick Wins (3 ships)</h1>
+  <p class="page-lede">
+    Three additive changes to <code>certanvil.com</code>: (1) interactive sample question right in the hero so cold visitors taste the product before clicking, (2) primary CTA "Take the 5-min Baseline Diagnostic →" routing direct into the diagnostic, (3) Pass-guarantee section anchoring the long-arc value/price differentiator. All £0 cost. Mockup shows 3 sample-question states (default / correct / wrong) so you can see how the widget feels through the full interaction.
+  </p>
+
+  <div class="annotation">
+    <strong>Architectural decisions (handshake before code)</strong>
+    <p><strong>1. Sample question position.</strong> Above the cert grid (post-hero, pre-tiles). Answers "what does this actually feel like?" before "which cert?". Most landing pages tell visitors what the product does; very few let visitors try it before clicking.</p>
+    <p><strong>2. Sample question content.</strong> One Network+ question (the LIVE cert). Pre-baked sample (not live-generated since landing has no API key) — pulled from one of the 320 curated exemplars in the bank. Cycle randomly between 3-5 hand-picked exemplars across page loads so returning visitors get fresh content.</p>
+    <p><strong>3. Sample question after-submit.</strong> Always shows "Want more like this? → Take your free Baseline Diagnostic →" CTA regardless of right/wrong. Loops the sample-question conversion into the diagnostic flow (synergy with ship #2).</p>
+    <p><strong>4. Direct-to-diagnostic CTA.</strong> Primary purple button right under hero copy, replaces position currently held by the pass-pill (which moves slightly down or merges into the new CTA row). Routes to <code>networkplus.certanvil.com/?action=diagnostic&from=landing</code>; cert app picks up the param + auto-fires <code>startDiagnostic()</code>.</p>
+    <p><strong>5. Cert auto-pick.</strong> Currently only Network+ is LIVE, so the diagnostic CTA routes there directly. When Security+ goes public, the CTA opens a small "pick your cert" modal first OR uses last-touched cert if returning visitor.</p>
+    <p><strong>6. Pass guarantee terms.</strong> Hand-wave for now — mockup shows the SHAPE ("don't pass first try → extra month free + extended access"). Exact terms (refund? extra Pro time? credit?) get firmed up when pricing is firmed up. Marketing-copy ship; no Stripe wiring needed yet.</p>
+    <p><strong>7. Pass guarantee position.</strong> Standalone full-width section between cert grid + "Why CertAnvil". Sits in the funnel where visitors who scrolled past the cert grid are weighing commitment — the guarantee anchors the "what if I don't pass" anxiety just before they decide.</p>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════════════════ -->
+  <!-- SAMPLE 1 — Default state (sample question untouched)                  -->
+  <!-- ══════════════════════════════════════════════════════════════════════ -->
+  <div class="state-divider"><span class="state-label">State 1 · Sample question default · cold visitor</span></div>
+
+  <div class="annotation">
+    Cold visitor lands on <code>certanvil.com</code>. Pre-existing hero (eyebrow + title + sub + pass-pill). NEW: primary "Take the 5-min Baseline Diagnostic →" button (ship #2) sits directly below the pass-pill. NEW: Sample question widget below it (ship #1). Question is shown immediately — no "click to expand". The whole thing is interactive: hover any option to see lift state. Until they pick, no answer reveal.
+  </div>
+
+  <div class="browser-frame">
+    <div class="browser-bar">
+      <div class="browser-dots"><span class="browser-dot r"></span><span class="browser-dot y"></span><span class="browser-dot g"></span></div>
+      <div class="browser-url"><span class="browser-url-secure">🔒</span>certanvil.com</div>
+    </div>
+    <div class="ml">
+      <!-- Topbar -->
+      <div class="ml-topbar">
+        <div class="ml-logo">
+          <div class="ml-logo-mark"><svg viewBox="0 0 100 100"><g transform="rotate(-25 35 30)"><rect x="20" y="20" width="32" height="12" rx="2" fill="#7c6ff7"/><rect x="32" y="32" width="6" height="22" fill="#3d3870"/></g><path d="M30 60 L82 60 L77 65 L75 72 L80 72 L80 80 L32 80 L32 72 L37 72 L35 65 Z" fill="#f0f0f8"/><circle cx="55" cy="50" r="3" fill="#f59e0b"/></svg></div>
+          <span class="ml-logo-name">CertAnvil</span>
+        </div>
+        <nav class="ml-nav">
+          <a class="ml-nav-link">Why CertAnvil</a>
+          <a class="ml-nav-link">Certs</a>
+          <a class="ml-nav-link">Pricing</a>
+          <button class="ml-sign-in">Sign in</button>
+        </nav>
+      </div>
+
+      <!-- Hero -->
+      <div class="ml-hero">
+        <span class="ml-eyebrow">🔨 AI cert practice · forged from CompTIA blueprints</span>
+        <h1>Forge your way<br>through CompTIA certs.</h1>
+        <p class="ml-hero-sub">AI-generated practice questions, hand-curated quality bank, never the same quiz twice. Built and used by an exam-passer, not a textbook publisher.</p>
+
+        <div class="ml-pass-pill">
+          <span class="ml-pass-pill-icon">✓</span>
+          <span><strong>767/900 on Network+ N10-009</strong> on 2026-05-05 — built and passed using this tool</span>
+        </div>
+
+        <!-- NEW — Hero CTA row (ship #2) -->
+        <div class="ml-hero-ctas">
+          <button class="ml-cta-primary">
+            Take the Baseline Diagnostic
+            <span class="ml-cta-primary-meta">5 MIN · FREE</span>
+            →
+          </button>
+          <button class="ml-cta-secondary">Or pick a cert below ↓</button>
+        </div>
+      </div>
+
+      <!-- NEW — Sample question (ship #1) -->
+      <div class="sample-q-section">
+        <span class="sample-q-eyebrow">✨ Try one before you sign up</span>
+        <h2 class="sample-q-title">A real Network+ question, AI-validated, hand-curated.</h2>
+        <p class="sample-q-sub">No tricks, no recycled textbook content. This is exactly what your daily practice looks like.</p>
+
+        <div class="sample-q-card">
+          <div class="sq-meta-row">
+            <span class="sq-cert-tag">Network+ · N10-009</span>
+            <span class="sq-domain-tag">Domain 1.0 · Networking Concepts</span>
+            <span class="sq-difficulty-tag">Exam Level</span>
+          </div>
+          <p class="sq-stem">A network technician is troubleshooting slow file transfers between two servers. Which OSI-layer protocol is MOST likely to provide segment ordering and congestion control for the transfer?</p>
+          <div class="sq-options">
+            <button class="sq-option">
+              <span class="sq-option-letter">A</span>
+              <span class="sq-option-text">IP at Layer 3</span>
+            </button>
+            <button class="sq-option">
+              <span class="sq-option-letter">B</span>
+              <span class="sq-option-text">TCP at Layer 4</span>
+            </button>
+            <button class="sq-option">
+              <span class="sq-option-letter">C</span>
+              <span class="sq-option-text">HTTP at Layer 7</span>
+            </button>
+            <button class="sq-option">
+              <span class="sq-option-letter">D</span>
+              <span class="sq-option-text">Ethernet at Layer 2</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Cert picker (compressed snippet) -->
+      <div class="ml-certs-section">
+        <div class="ml-section-head">
+          <h2>Pick your cert</h2>
+          <span class="ml-section-head-help">Click any LIVE cert to start studying</span>
+        </div>
+        <div class="ml-cert-grid">
+          <div class="ml-cert-tile is-live">
+            <div class="ml-cert-tile-top"><div class="ml-cert-glyph">N+</div><span class="ml-cert-status live">● Live</span></div>
+            <div class="ml-cert-name">Network+</div>
+            <div class="ml-cert-code">N10-009</div>
+          </div>
+          <div class="ml-cert-tile">
+            <div class="ml-cert-tile-top"><div class="ml-cert-glyph" style="color:#0891b2">AZ</div><span class="ml-cert-status soon">Coming soon</span></div>
+            <div class="ml-cert-name">Azure Fundamentals</div>
+            <div class="ml-cert-code">AZ-900</div>
+          </div>
+          <div class="ml-cert-tile">
+            <div class="ml-cert-tile-top"><div class="ml-cert-glyph" style="color:#16a34a">CC</div><span class="ml-cert-status soon">Coming soon</span></div>
+            <div class="ml-cert-name">Cisco CCNA</div>
+            <div class="ml-cert-code">200-301</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ══════════════════════════════════════════════════════════════════════ -->
+  <!-- SAMPLE 2 — User picked CORRECT answer                                -->
+  <!-- ══════════════════════════════════════════════════════════════════════ -->
+  <div class="state-divider"><span class="state-label">State 2 · Sample question · CORRECT answer picked</span></div>
+
+  <div class="annotation">
+    User clicks option B (TCP at Layer 4). Card reveals: B turns green ✓, other options dimmed. Explanation block appears below options. Footer row appears with "Nice — you got it. Want 19 more like this?" + "Take the Baseline Diagnostic →" CTA.
+  </div>
+
+  <div class="browser-frame">
+    <div class="browser-bar">
+      <div class="browser-dots"><span class="browser-dot r"></span><span class="browser-dot y"></span><span class="browser-dot g"></span></div>
+      <div class="browser-url"><span class="browser-url-secure">🔒</span>certanvil.com</div>
+    </div>
+    <div class="ml">
+      <div class="sample-q-section" style="padding-top: 52px;">
+        <span class="sample-q-eyebrow">✨ Try one before you sign up</span>
+        <h2 class="sample-q-title">A real Network+ question, AI-validated, hand-curated.</h2>
+        <p class="sample-q-sub">No tricks, no recycled textbook content. This is exactly what your daily practice looks like.</p>
+
+        <div class="sample-q-card">
+          <div class="sq-meta-row">
+            <span class="sq-cert-tag">Network+ · N10-009</span>
+            <span class="sq-domain-tag">Domain 1.0 · Networking Concepts</span>
+            <span class="sq-difficulty-tag">Exam Level</span>
+          </div>
+          <p class="sq-stem">A network technician is troubleshooting slow file transfers between two servers. Which OSI-layer protocol is MOST likely to provide segment ordering and congestion control for the transfer?</p>
+          <div class="sq-options">
+            <button class="sq-option is-dimmed">
+              <span class="sq-option-letter">A</span>
+              <span class="sq-option-text">IP at Layer 3</span>
+            </button>
+            <button class="sq-option is-correct">
+              <span class="sq-option-letter">B</span>
+              <span class="sq-option-text">TCP at Layer 4</span>
+              <span class="sq-option-marker" style="color: var(--green);">✓ Correct</span>
+            </button>
+            <button class="sq-option is-dimmed">
+              <span class="sq-option-letter">C</span>
+              <span class="sq-option-text">HTTP at Layer 7</span>
+            </button>
+            <button class="sq-option is-dimmed">
+              <span class="sq-option-letter">D</span>
+              <span class="sq-option-text">Ethernet at Layer 2</span>
+            </button>
+          </div>
+          <div class="sq-explanation">
+            <span class="sq-explanation-eyebrow">Why TCP?</span>
+            <strong>TCP at Layer 4</strong> provides reliable delivery, segment ordering (via sequence numbers), and congestion control (sliding window, slow start). <strong>IP (A)</strong> routes packets but is connectionless — no ordering, no congestion control. <strong>HTTP (C)</strong> is application-layer and uses TCP underneath, but isn't itself the protocol providing those properties. <strong>Ethernet (D)</strong> handles framing at Layer 2 — it doesn't see segments at all.
+          </div>
+          <div class="sq-followup">
+            <p class="sq-followup-text">🎯 <strong>Nice — you got it.</strong> Want 19 more like this?</p>
+            <button class="sq-followup-cta">Take the Baseline Diagnostic →</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ══════════════════════════════════════════════════════════════════════ -->
+  <!-- SAMPLE 3 — User picked WRONG answer                                   -->
+  <!-- ══════════════════════════════════════════════════════════════════════ -->
+  <div class="state-divider"><span class="state-label">State 3 · Sample question · WRONG answer picked</span></div>
+
+  <div class="annotation">
+    User picks A (IP at Layer 3). A turns red ✗, B (correct) reveals as green ✓, C and D dim. Explanation appears. Footer copy adjusts: "Tricky one — that's exactly the kind of trap your daily practice catches." + same CTA. The "wrong" path is intentionally encouraging — we want them to feel "ah, this product would help me get this right" not "ah, I'm dumb."
+  </div>
+
+  <div class="browser-frame">
+    <div class="browser-bar">
+      <div class="browser-dots"><span class="browser-dot r"></span><span class="browser-dot y"></span><span class="browser-dot g"></span></div>
+      <div class="browser-url"><span class="browser-url-secure">🔒</span>certanvil.com</div>
+    </div>
+    <div class="ml">
+      <div class="sample-q-section" style="padding-top: 52px;">
+        <span class="sample-q-eyebrow">✨ Try one before you sign up</span>
+        <h2 class="sample-q-title">A real Network+ question, AI-validated, hand-curated.</h2>
+        <p class="sample-q-sub">No tricks, no recycled textbook content. This is exactly what your daily practice looks like.</p>
+
+        <div class="sample-q-card">
+          <div class="sq-meta-row">
+            <span class="sq-cert-tag">Network+ · N10-009</span>
+            <span class="sq-domain-tag">Domain 1.0 · Networking Concepts</span>
+            <span class="sq-difficulty-tag">Exam Level</span>
+          </div>
+          <p class="sq-stem">A network technician is troubleshooting slow file transfers between two servers. Which OSI-layer protocol is MOST likely to provide segment ordering and congestion control for the transfer?</p>
+          <div class="sq-options">
+            <button class="sq-option is-wrong">
+              <span class="sq-option-letter">A</span>
+              <span class="sq-option-text">IP at Layer 3</span>
+              <span class="sq-option-marker" style="color: var(--red);">✗ Your pick</span>
+            </button>
+            <button class="sq-option is-correct">
+              <span class="sq-option-letter">B</span>
+              <span class="sq-option-text">TCP at Layer 4</span>
+              <span class="sq-option-marker" style="color: var(--green);">✓ Correct</span>
+            </button>
+            <button class="sq-option is-dimmed">
+              <span class="sq-option-letter">C</span>
+              <span class="sq-option-text">HTTP at Layer 7</span>
+            </button>
+            <button class="sq-option is-dimmed">
+              <span class="sq-option-letter">D</span>
+              <span class="sq-option-text">Ethernet at Layer 2</span>
+            </button>
+          </div>
+          <div class="sq-explanation">
+            <span class="sq-explanation-eyebrow">Why TCP, not IP?</span>
+            IP at Layer 3 routes packets but is <strong>connectionless</strong> — no ordering, no congestion control. <strong>TCP at Layer 4</strong> is what provides segment ordering (sequence numbers) and congestion control (sliding window, slow start). The trap here: IP is involved in the path, but it's TCP doing the heavy lifting. CompTIA loves layer-misattribution questions like this.
+          </div>
+          <div class="sq-followup">
+            <p class="sq-followup-text">🎯 <strong>Tricky one</strong> — that's exactly the kind of trap your daily practice catches.</p>
+            <button class="sq-followup-cta">Take the Baseline Diagnostic →</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ══════════════════════════════════════════════════════════════════════ -->
+  <!-- SAMPLE 4 — Pass guarantee section in context                          -->
+  <!-- ══════════════════════════════════════════════════════════════════════ -->
+  <div class="state-divider"><span class="state-label">State 4 · Pass guarantee section · ship #5</span></div>
+
+  <div class="annotation">
+    <strong>Updated v2 — fraud-surface conscious framing</strong>
+    <p>Original v1 copy committed to a literal "60 days × extra month free" mechanic that's vulnerable to forged score-report PDFs (CompTIA's public credential verifier only confirms PASSED candidates; failures aren't independently verifiable without paid Pearson VUE Partner integration). v2 keeps the marketing <em>shape</em> ("we stand behind the product") but pushes literal terms to a "we'll review your case" framing where the natural fraud filter is platform-use telemetry we already collect (streak, history, mock-exam completion). Drive-by fraudsters won't sign up + use the platform consistently for 30+ days just to claim a $20 extension. Eligibility automation comes later when scale demands; manual review is cheap at low volume.</p>
+  </div>
+
+  <div class="browser-frame">
+    <div class="browser-bar">
+      <div class="browser-dots"><span class="browser-dot r"></span><span class="browser-dot y"></span><span class="browser-dot g"></span></div>
+      <div class="browser-url"><span class="browser-url-secure">🔒</span>certanvil.com</div>
+    </div>
+    <div class="ml">
+      <div class="pass-guarantee-section">
+        <div class="pg-shield">🛡</div>
+        <span class="pg-eyebrow">We stand behind the work</span>
+        <h2 class="pg-title">Put in the work, take the exam — <em>we'll back you up.</em></h2>
+        <p class="pg-prose">
+          We're confident enough in CertAnvil to stand behind it. <strong>For Pro users who put in the work and don't pass on first try, we'll review your case and extend your access until you do.</strong> No fine-print fight, no ten-page eligibility doc.
+        </p>
+
+        <div class="pg-terms">
+          <div class="pg-term">
+            <strong>💪 Show you put in the work</strong>
+            Active platform use ≥30 days, completed mock exam, maintained streak. We can see your effort in your study history.
+          </div>
+          <div class="pg-term">
+            <strong>📜 Booking + result</strong>
+            Submit your Pearson VUE booking confirmation + score report. Two artifacts so we can verify the full attempt.
+          </div>
+          <div class="pg-term">
+            <strong>🎁 Extension + extra prep</strong>
+            Manual case review, response within 7 days. Pro access extended so you can prep and retake without paying twice.
+          </div>
+        </div>
+        <p class="pg-finer">Exact eligibility published when Pro pricing launches. Until then, reach out to <code>simi@certanvil.com</code> and we'll work with you. We'd rather over-deliver on a few cases than under-deliver on the brand promise.</p>
+      </div>
+
+      <!-- Why CertAnvil + footer (snippet for context) -->
+      <div class="ml-why-section">
+        <h2>Why CertAnvil?</h2>
+      </div>
+      <div class="ml-foot">certanvil.com · forged in code</div>
+    </div>
+  </div>
+
+
+  <!-- ══════════════════════════════════════════════════════════════════════ -->
+  <!-- IMPLEMENTATION NOTES                                                 -->
+  <!-- ══════════════════════════════════════════════════════════════════════ -->
+  <div class="state-divider"><span class="state-label">Implementation plan · 3 ships</span></div>
+
+  <div class="annotation">
+    <strong>Ship A — Sample question widget (~1.5 hr)</strong>
+    <p>3-5 hand-picked Network+ exemplars hardcoded as a JS array in <code>landing/script.js</code> (or a new <code>landing/sample-questions.js</code>). On page load, pick one randomly. Inject markup into <code>landing/index.html</code> between hero and cert grid. Add CSS to <code>landing/styles.css</code> matching the existing design tokens. Click handler: reveal correct/wrong + explanation + follow-up CTA. CTA href routes to <code>https://networkplus.certanvil.com/?action=diagnostic&from=landing-sample-q</code>.</p>
+  </div>
+
+  <div class="annotation">
+    <strong>Ship B — Direct-to-diagnostic CTA (~45 min)</strong>
+    <p>Add the primary CTA button + secondary "or pick a cert below" link to the hero in <code>landing/index.html</code>. CSS for the button + meta-pill in <code>landing/styles.css</code>. The route target: <code>networkplus.certanvil.com/?action=diagnostic</code>. App.js handler: on DOMContentLoaded, parse <code>?action</code> query param; if <code>=diagnostic</code>, call <code>startDiagnostic()</code> directly after the homepage paint. Track <code>?from=</code> param for analytics later.</p>
+  </div>
+
+  <div class="annotation">
+    <strong>Ship C — Pass guarantee section (~30 min)</strong>
+    <p>Pure markup + CSS. Insert section between the cert grid and Why CertAnvil in <code>landing/index.html</code>. Add a new CSS block to <code>landing/styles.css</code>. No JS, no backend. Uses v2 fraud-conscious copy ("we'll review your case and extend access" — not a literal extension formula). Eligibility framing leverages the platform-use telemetry we already collect (streak, mock-exam completion, history) as the natural fraud filter — drive-by fraudsters won't sign up + use the platform consistently for 30+ days just to claim a small extension.</p>
+  </div>
+
+  <div class="annotation">
+    <strong>What this mockup does NOT cover (and why)</strong>
+    <p>(a) Pricing-page route — that's ship #3 from the original quick-wins list, separate mockup pass. (b) FAQ / Compare-to-Dion — separate ship. (c) Privacy/Terms placeholder pages — separate ship, mostly legal copy. (d) Sample-question cycling on returning visits — phase 2 polish; mockup shows just one question shape. (e) Multi-cert version of the diagnostic CTA — currently only Network+ is LIVE, so the CTA routes there directly; when Security+ goes public, we'll add a "pick your cert" interstitial.</p>
+  </div>
+
+  <div class="annotation">
+    <strong>Why this combination of three</strong>
+    <p>Together these collapse the funnel from "marketing page with cert tiles" to "interactive funnel where any visitor can taste the product → start the diagnostic → understand the value/price proposition." Ship A (sample Q) is the single highest-leverage conversion driver. Ship B (direct-to-diagnostic CTA) catches the visitors who want to act NOW without browsing further. Ship C (pass guarantee) anchors the long-arc differentiator so visitors leave with the right brand impression even if they don't sign up that visit.</p>
+  </div>
+
+</div>
+</body>
+</html>
