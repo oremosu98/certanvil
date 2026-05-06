@@ -46,6 +46,44 @@
   document.documentElement.setAttribute('data-theme', theme);
 })();
 </script>
+
+<!-- v4.89.3: SW kill switch for the landing.
+     A leftover service worker from a previous deploy (when the cert app
+     lived at certanvil.com root) intercepted Supabase API fetches and
+     broke the auth flow with "Failed to fetch". This block does THREE
+     things, in order: (1) registers /sw.js which is now a self-removing
+     SW that unregisters itself on activate; (2) defensively unregisters
+     ANY currently-registered SW on the certanvil.com origin; (3) reloads
+     the page once if we just killed an active controller, so the user's
+     fetches go straight to network on the new load.
+     Idempotent — once the rogue SW is gone this block is a no-op. -->
+<script>
+(function() {
+  if (!('serviceWorker' in navigator)) return;
+  try {
+    // Trigger an update check that installs the kill-switch sw.js.
+    navigator.serviceWorker.register('/sw.js').catch(function () {});
+  } catch (e) {}
+  // Belt-and-suspenders: unregister whatever's there right now.
+  try {
+    navigator.serviceWorker.getRegistrations().then(function (regs) {
+      var hadController = !!navigator.serviceWorker.controller;
+      var pending = regs.map(function (r) {
+        return r.unregister().catch(function () { return false; });
+      });
+      Promise.all(pending).then(function () {
+        // If we just removed an active controller, force one reload so
+        // subsequent network requests bypass the dead SW entirely.
+        // Guard against reload loops: only reload if a sentinel isn't set.
+        if (hadController && !sessionStorage.getItem('_certanvil_sw_killed')) {
+          try { sessionStorage.setItem('_certanvil_sw_killed', '1'); } catch (e) {}
+          try { window.location.reload(); } catch (e) {}
+        }
+      });
+    });
+  } catch (e) {}
+})();
+</script>
 </head>
 <body>
 

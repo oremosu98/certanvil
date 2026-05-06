@@ -298,7 +298,7 @@ test('Validation in runSessionStep', js.includes('aiValidateQuestions(apiKey, qu
 
 // ── Analytics v2 (v4.5) ──
 console.log('\n\x1b[1m── ANALYTICS v2 (v4.5) ──\x1b[0m');
-test('APP_VERSION is 4.89.2', js.includes("const APP_VERSION = '4.89.2"));
+test('APP_VERSION is 4.89.3', js.includes("const APP_VERSION = '4.89.3"));
 test('getDailyGoal function', js.includes('function getDailyGoal('));
 test('renderDailyGoal function', js.includes('function renderDailyGoal('));
 test('editDailyGoal function', js.includes('function editDailyGoal('));
@@ -312,7 +312,7 @@ test('CSS: .topic-domain-group', css.includes('.topic-domain-group'));
 test('CSS: .daily-goal-card', css.includes('.daily-goal-card'));
 test('CSS: .advanced-section', css.includes('.advanced-section'));
 test('CSS: .hero-stats-strip', css.includes('.hero-stats-strip'));
-test('SW cache bumped to v4.89.2', sw.includes('netplus-v4.89.2'));
+test('SW cache bumped to v4.89.3', sw.includes('netplus-v4.89.3'));
 test('Family Drill: STORAGE.PORT_FAMILY_BEST', js.includes("PORT_FAMILY_BEST:"));
 test('Family Drill: ptMode handles family', js.includes("ptMode === 'family'"));
 test('Family Drill: HTML mode button', html.includes('id="pt-mode-family"'));
@@ -16353,6 +16353,13 @@ test('v4.89.2 SW: app.js polls for SW updates every 60s (open-tab catch-up)',
   /reg\.update\(\)/.test(js) && /setInterval[\s\S]{0,200}60000/.test(js));
 test('v4.89.2 SW: sw.js broadcasts postMessage to clients on activate',
   /clients\.matchAll[\s\S]{0,300}postMessage[\s\S]{0,100}sw-updated/.test(sw));
+
+// v4.89.3: SW pass-through for Supabase API calls. Caching auth/REST
+// requests is wrong (POST etc. can't be cached anyway) and breaking
+// pass-through caused "Failed to fetch" errors on certanvil.com via a
+// rogue leftover SW. Regression-guarded so this can never silently regress.
+test('v4.89.3 SW: sw.js bypasses Supabase API hostnames',
+  /url\.hostname\.endsWith\(['"]\.supabase\.co['"]\)/.test(sw));
 
 // 2. Topbar mount point exists (replaces legacy .topbar-avatar 'S')
 test('v4.89.0 Phase C′: index.html has #topbar-account-mount span',

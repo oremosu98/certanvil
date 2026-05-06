@@ -1,5 +1,5 @@
-// Service Worker v4.89.2 — Network+ Quiz App (Phase C′ cloud-first)
-const CACHE_NAME = 'netplus-v4.89.2';
+// Service Worker v4.89.3 — Network+ Quiz App (Phase C′ cloud-first)
+const CACHE_NAME = 'netplus-v4.89.3';
 const SHELL_ASSETS = [
   './',
   './index.html',
@@ -78,6 +78,14 @@ self.addEventListener('fetch', event => {
 
   // Never cache API calls
   if (url.hostname === 'api.anthropic.com') return;
+
+  // v4.89.3: pass-through Supabase API calls (auth, REST, storage,
+  // realtime). Caching auth tokens / REST mutations is wrong + dangerous,
+  // and the Cache API can't store POST/PUT/DELETE responses anyway —
+  // intercepting them just produced "Failed to fetch" errors when the
+  // SW returned null after cache.put rejected. Pass-through preserves
+  // the browser's normal CORS + credential handling.
+  if (url.hostname.endsWith('.supabase.co') || url.hostname.endsWith('.supabase.in')) return;
 
   // v4.63.0 — pass /vendor/ and /mockups/ through untouched. The vendored
   // Three.js bundle (~1.3 MB) would evict legitimate shell entries under
