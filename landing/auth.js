@@ -169,11 +169,58 @@
       .replace(/'/g, '&#39;');
   }
 
+  // ── Return-URL plumbing (Phase C′) ──────────────────────────────────────
+  // When the cert app at networkplus.certanvil.com (or a Vercel preview)
+  // routes the user here for sign-in, it appends `?action=signin&return=<url>`.
+  // We honour that in two places:
+  //   (a) On page load — if already signed in, bounce immediately.
+  //   (b) When sending the magic link — set `emailRedirectTo` to the return
+  //       URL so the session lands on the right origin (critical for preview
+  //       URLs on vercel.app, which don't share cookies with .certanvil.com).
+  // Stored in module scope so both the URL handler and the magic-link sender
+  // can see the same value across renders.
+  var pendingReturnUrl = null;
+
+  function readReturnUrlFromQuery() {
+    try {
+      var params = new URLSearchParams(window.location.search);
+      var ret = params.get('return');
+      if (!ret) return null;
+      // Sanity check: must be an http(s) URL we can navigate to. Reject
+      // javascript: / data: / relative-with-protocol-confusion etc.
+      if (!/^https?:\/\//i.test(ret)) return null;
+      return ret;
+    } catch (e) { return null; }
+  }
+
+  function isSignInRequested() {
+    try {
+      var params = new URLSearchParams(window.location.search);
+      var act = (params.get('action') || '').toLowerCase().trim();
+      return act === 'signin';
+    } catch (e) { return false; }
+  }
+
+  // True if the return URL is on a host that shares the .certanvil.com apex
+  // cookie. Bouncing a signed-in user to such a host works because the
+  // existing session is already visible there. Bouncing to a different
+  // origin (e.g. *.vercel.app preview) is pointless since the session
+  // cookie won't be sent with that request — better to fall through to the
+  // modal flow and have the magic-link land the session on the right origin.
+  function returnUrlSharesApexCookie(returnUrl) {
+    try {
+      var u = new URL(returnUrl);
+      var host = u.hostname || '';
+      return host === 'certanvil.com' || host.endsWith('.certanvil.com');
+    } catch (e) { return false; }
+  }
+
   // ── Magic-link send ─────────────────────────────────────────────────────
   function buildRedirectUrl() {
-    // Magic-link arrives back at the same page. Supabase appends
-    // `?token_hash=...&type=magiclink` (or hash equivalents) and the
-    // detectSessionInUrl flag picks it up automatically on load.
+    // If the cert app passed a `return=` URL, point the magic link there
+    // so the session ends up on the cert app's origin. Otherwise the link
+    // arrives back at the same page (standard landing-side sign-in flow).
+    if (pendingReturnUrl) return pendingReturnUrl;
     return window.location.origin + window.location.pathname;
   }
 
@@ -391,13 +438,45 @@
 
   // ── Initial session check + state listener ──────────────────────────────
   function initAuthState() {
+    // Stash the return URL up front so both branches (signed-in bounce + the
+    // anonymous magic-link send) can see it.
+    pendingReturnUrl = readReturnUrlFromQuery();
+    var signinRequested = isSignInRequested();
+
     supabase.auth.getSession()
       .then(function (result) {
         var session = result && result.data ? result.data.session : null;
         if (session && session.user) {
           renderSignedIn(session.user);
+
+          // Phase C′: if the cert app sent us here with `?action=signin&return=…`
+          // bounce immediately ONLY when the return URL is on a host that
+          // shares the .certanvil.com apex cookie (the existing session is
+          // visible there). For cross-origin returns (Vercel preview URLs)
+          // fall through to the modal flow so the magic-link can land the
+          // session on the correct origin.
+          if (signinRequested && pendingReturnUrl) {
+            if (returnUrlSharesApexCookie(pendingReturnUrl)) {
+              try { window.location.replace(pendingReturnUrl); } catch (e) {}
+            } else {
+              // Cross-origin: open the modal so the user can re-sign-in via
+              // a magic link that redirects to the preview URL. Their
+              // existing certanvil.com session stays intact.
+              setTimeout(function () { openAuthModal(); }, 50);
+            }
+          }
         } else {
           renderSignedOut();
+
+          // Anonymous + ?action=signin: pop the modal automatically so the
+          // user doesn't have to find the button. The pendingReturnUrl is
+          // already stashed above, and sendMagicLink will use it as
+          // emailRedirectTo when the form is submitted.
+          if (signinRequested) {
+            // Defer one tick so the modal-open animation doesn't race the
+            // initial paint.
+            setTimeout(function () { openAuthModal(); }, 50);
+          }
         }
       })
       .catch(function (err) {
@@ -410,6 +489,20 @@
   supabase.auth.onAuthStateChange(function (event, session) {
     if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'INITIAL_SESSION') && session && session.user) {
       renderSignedIn(session.user);
+      // Phase C′: if the user just landed via magic link AND we have a
+      // pending return URL (from `?action=signin&return=…`), bounce them
+      // there now. This handles the case where the magic link came back to
+      // landing (rather than directly to the return URL — happens if the
+      // emailRedirectTo wasn't set, e.g. on a fresh page load with action=signin
+      // but no submit happened locally).
+      if (pendingReturnUrl) {
+        var ret = pendingReturnUrl;
+        pendingReturnUrl = null;
+        setTimeout(function () {
+          try { window.location.replace(ret); } catch (e) {}
+        }, 250);
+        return;
+      }
       // If user just landed via magic link with the modal still open, close it.
       if (authModal && !authModal.hasAttribute('hidden')) {
         setTimeout(closeAuthModal, 600);
