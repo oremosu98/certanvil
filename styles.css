@@ -1,5 +1,5 @@
 /* ══════════════════════════════════════════
-   Network+ AI Quiz — styles.css  v4.89.6
+   Network+ AI Quiz — styles.css  v4.89.7
    ══════════════════════════════════════════ */
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -6922,6 +6922,24 @@ body.has-sidebar { padding-left: 240px; transition: padding-left .25s cubic-bezi
   border-bottom: 1px solid var(--border);
   margin-bottom: 14px;
 }
+/* v4.89.7: brand is now an <a> linking to certanvil.com (back-to-home).
+   Override default link styles + add subtle hover affordance. */
+.sb-brand-link {
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+  border-radius: 8px;
+  margin: -4px -4px 14px -4px;
+  padding: 4px 10px 22px;
+  transition: background-color .15s ease;
+}
+.sb-brand-link:hover {
+  background: rgba(var(--accent-rgb), .06);
+}
+.sb-brand-link:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
 .sb-brand-mark {
   width: 34px; height: 34px;
   background: linear-gradient(135deg, #1a1a2e, #0a0a12);
@@ -7372,6 +7390,25 @@ body.has-sidebar { padding-left: 240px; transition: padding-left .25s cubic-bezi
   color: var(--text-dim);
   letter-spacing: .08em;
   font-variant-numeric: tabular-nums;
+}
+/* v4.89.7: visible version pill in topbar — same accent-purple treatment
+   as the landing footer .foot-version. Hidden on narrow screens where the
+   sidebar's .sb-brand-version is enough. */
+.topbar-version-pill {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 99px;
+  background: rgba(var(--accent-rgb), .10);
+  border: 1px solid rgba(var(--accent-rgb), .28);
+  color: var(--accent-light);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  font-family: monospace;
+  user-select: none;
+}
+@media (max-width: 720px) {
+  .topbar-version-pill { display: none; }
 }
 .topbar-iconbtn {
   width: 30px; height: 30px;

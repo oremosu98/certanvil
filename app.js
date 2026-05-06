@@ -1,9 +1,9 @@
 // ══════════════════════════════════════════
-// Network+ AI Quiz — app.js  v4.89.6
+// Network+ AI Quiz — app.js  v4.89.7
 // ══════════════════════════════════════════
 
 // ── CONSTANTS ──
-const APP_VERSION = '4.89.6';
+const APP_VERSION = '4.89.7';
 
 // ══════════════════════════════════════════════════════════════════════════
 // CERT PACK ARCHITECTURE (v4.86.0 Phase 1A engine refactor)
@@ -9878,7 +9878,13 @@ function renderAutoBackupList() {
 function _isProdHost() {
   try {
     const h = location.hostname || '';
-    return h.endsWith('.vercel.app') || h.endsWith('vercel.app');
+    // v4.89.7: include the certanvil.com apex + subdomains. Pre-fix the
+    // env badge incorrectly read 'DEV' on networkplus.certanvil.com because
+    // the prod-host check only matched *.vercel.app — but our actual prod
+    // domains are *.certanvil.com (with vercel.app as the underlying deploy
+    // host that customers don't see). Both stay in the prod set.
+    return h === 'certanvil.com' || h.endsWith('.certanvil.com')
+        || h.endsWith('.vercel.app') || h === 'vercel.app';
   } catch (_) { return false; }
 }
 
@@ -35428,14 +35434,14 @@ function renderAppSidebar() {
     + '<circle cx="55" cy="50" r="3" fill="#f59e0b"/>'
     + '</svg>';
   el.innerHTML = `
-    <div class="sb-brand">
+    <a class="sb-brand sb-brand-link" href="https://certanvil.com/" title="Back to CertAnvil home">
       <div class="sb-brand-mark" aria-hidden="true">${brandSvg}</div>
       <div class="sb-brand-text">
         <span class="sb-brand-name">CertAnvil</span>
         <span class="sb-brand-cert">${certShortLabel}</span>
         <span class="sb-brand-version">v${typeof APP_VERSION !== 'undefined' ? APP_VERSION : '4.53.0'}</span>
       </div>
-    </div>
+    </a>
     <div class="sb-section">
       <div class="sb-section-label">Practice</div>
       ${APP_SIDEBAR_PRACTICE.map(renderItem).join('')}
@@ -35574,6 +35580,17 @@ function _topbarTick() {
   if (typeof renderTopbarCountdown === 'function') renderTopbarCountdown();
 }
 
+// v4.89.7: populate the topbar version pill once on init. Static contract \u2014
+// reads APP_VERSION (which the bump-version script keeps in lockstep with
+// every other surface). Mirrors the landing's #foot-version setup.
+function _renderTopbarVersionPill() {
+  const el = document.getElementById('topbar-version-pill');
+  if (!el) return;
+  const v = (typeof APP_VERSION !== 'undefined') ? APP_VERSION : '';
+  if (!v) return;
+  el.textContent = 'v' + v;
+}
+
 // v4.54.17: persistent exam countdown chip in the topbar. Hidden until the
 // user sets a date. Mirrors the urgency tiers used in .ana-ready-datechip.
 // v4.54.17: end-of-day recap. Shown once per calendar day when the user
@@ -35677,6 +35694,9 @@ let _topbarTickInterval = null;
 function _topbarStartClock() {
   if (_topbarTickInterval) return;
   _topbarTick();
+  // v4.89.7: populate the version pill on first clock tick (cheap; reads
+  // APP_VERSION const, no async). Runs once per page load — pill is static.
+  _renderTopbarVersionPill();
   _topbarTickInterval = setInterval(_topbarTick, 30000); // refresh every 30s
 }
 

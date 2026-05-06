@@ -444,6 +444,7 @@ npx playwright test              # E2E (tests/e2e/app.spec.js)
 
 | Version | Features Added |
 |---|---|
+| v4.89.7 | DEV badge fix on certanvil hosts + cert-app dropdown unified with My certs/CCA + topbar version pill + sb-brand back-to-home link |
 | v4.89.6 | Landing 'My certs' + 'Cross-cert analytics' modals wired + version pill in footer |
 | v4.89.5 | Personalize landing cert tiles for signed-in users + ?cert= URL param |
 | v4.89.4 | Cert switcher in account dropdown — flip between Network+ and Security+ in-place (admin gets both) |

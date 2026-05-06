@@ -709,4 +709,36 @@
   });
 
   initAuthState();
+
+  // ── ?modal= URL param handler (Phase C′ post-launch) ───────────────────
+  // The cert app's account dropdown has links like
+  //   https://certanvil.com/?modal=my-certs
+  //   https://certanvil.com/?modal=analytics
+  // so clicking those items navigates to the landing AND auto-opens the
+  // matching modal. We strip the param after opening so refresh doesn't
+  // replay it. Defer until after initAuthState() resolves so the My certs
+  // list is populated (renderMyCertsList runs inside renderSignedIn).
+  function handleModalUrlParam() {
+    try {
+      var params = new URLSearchParams(window.location.search);
+      var which = (params.get('modal') || '').toLowerCase().trim();
+      if (which !== 'my-certs' && which !== 'analytics') return;
+      // Strip the param immediately so refresh doesn't re-fire.
+      try {
+        params.delete('modal');
+        var newUrl = window.location.pathname + (params.toString() ? '?' + params.toString() : '') + window.location.hash;
+        history.replaceState({}, '', newUrl);
+      } catch (e) {}
+      // Defer so the modal markup is in DOM + auth state has resolved.
+      setTimeout(function () {
+        if (which === 'my-certs') openMyCertsModal();
+        else if (which === 'analytics') openCcaModal();
+      }, 250);
+    } catch (e) {}
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', handleModalUrlParam);
+  } else {
+    handleModalUrlParam();
+  }
 })();
