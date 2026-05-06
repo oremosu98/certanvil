@@ -520,7 +520,10 @@
      consumes it to set window.certanvilSupabase, then auth.js wires up the
      UI, then existing script.js handles theme + builder mode + notify modal.
 ══════════════════════════════════════════ -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<!-- v4.89.1: vendored locally instead of cdn.jsdelivr.net (CDN 503'd
+     intermittently — broke auth flow on landing). Local copy is identical
+     to v2.105.3 UMD bundle. -->
+<script src="lib/supabase-umd.min.js"></script>
 <script src="lib/supabase.js"></script>
 <script src="auth.js"></script>
 <script src="script.js"></script>

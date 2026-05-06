@@ -5,6 +5,13 @@
    first-paint flash. See index.html for the bootstrap.
    ══════════════════════════════════════════════════════════════════════════ */
 
+/* v4.89.1: enforce HTML hidden attribute over class display rules.
+   Without this, `.account-pill { display: inline-flex }` overrides
+   `[hidden] { display: none }` (UA stylesheet) and the pill renders
+   even when auth.js sets the hidden attribute. Bug surfaced when both
+   the Sign-in button and account pill appeared together. */
+[hidden] { display: none !important; }
+
 /* ── Theme tokens ── */
 :root[data-theme="light"] {
   --bg: #fafbff;

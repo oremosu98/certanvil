@@ -1,5 +1,5 @@
-// Service Worker v4.89.0 — Network+ Quiz App (Phase C′ cloud-first)
-const CACHE_NAME = 'netplus-v4.89.0';
+// Service Worker v4.89.1 — Network+ Quiz App (Phase C′ cloud-first)
+const CACHE_NAME = 'netplus-v4.89.1';
 const SHELL_ASSETS = [
   './',
   './index.html',
@@ -16,8 +16,11 @@ const SHELL_ASSETS = [
   './certs/secplus.js',
   // v4.89.0 (Phase C′): cloud-first modules. Order in index.html matters
   // (Supabase UMD → lib/supabase.js → cloud-store.js → auth-state.js →
-  // migration.js → app.js). The Supabase UMD bundle ships from a CDN so
-  // it's NOT in the precache list — first load needs network.
+  // migration.js → app.js).
+  // v4.89.1: vendored Supabase UMD bundle locally (was cdn.jsdelivr.net, but
+  // the CDN 503'd intermittently and broke auth flow — auth.js bails out
+  // when window.supabase is missing). Local copy is precached for offline.
+  './lib/supabase-umd.min.js',
   './lib/supabase.js',
   './cloud-store.js',
   './auth-state.js',

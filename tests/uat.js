@@ -298,7 +298,7 @@ test('Validation in runSessionStep', js.includes('aiValidateQuestions(apiKey, qu
 
 // ── Analytics v2 (v4.5) ──
 console.log('\n\x1b[1m── ANALYTICS v2 (v4.5) ──\x1b[0m');
-test('APP_VERSION is 4.89.0', js.includes("const APP_VERSION = '4.89.0"));
+test('APP_VERSION is 4.89.1', js.includes("const APP_VERSION = '4.89.1"));
 test('getDailyGoal function', js.includes('function getDailyGoal('));
 test('renderDailyGoal function', js.includes('function renderDailyGoal('));
 test('editDailyGoal function', js.includes('function editDailyGoal('));
@@ -312,7 +312,7 @@ test('CSS: .topic-domain-group', css.includes('.topic-domain-group'));
 test('CSS: .daily-goal-card', css.includes('.daily-goal-card'));
 test('CSS: .advanced-section', css.includes('.advanced-section'));
 test('CSS: .hero-stats-strip', css.includes('.hero-stats-strip'));
-test('SW cache bumped to v4.89.0', sw.includes('netplus-v4.89.0'));
+test('SW cache bumped to v4.89.1', sw.includes('netplus-v4.89.1'));
 test('Family Drill: STORAGE.PORT_FAMILY_BEST', js.includes("PORT_FAMILY_BEST:"));
 test('Family Drill: ptMode handles family', js.includes("ptMode === 'family'"));
 test('Family Drill: HTML mode button', html.includes('id="pt-mode-family"'));
@@ -16320,16 +16320,25 @@ test('v4.88.2 Security+: exam-domain-breakdown render uses cert-aware order',
 
 // 1. Script-tag order — index.html must load Supabase UMD → lib/supabase.js
 //    → cloud-store.js → auth-state.js → migration.js → app.js, in that order.
-//    Use src="..." patterns to avoid matching the same names in surrounding
-//    HTML comments (which appear higher in the file and break a naive ordering
-//    check). Each substring below appears ONLY inside its respective <script>
-//    tag attribute, so the indexOf chain reflects real DOM order.
+//    v4.89.1: switched from cdn.jsdelivr.net to vendored lib/supabase-umd.min.js
+//    after the CDN 503'd intermittently for some users and broke the auth flow
+//    (auth.js bails out when window.supabase is missing → Sign-in button does
+//    nothing → migration banner never appears).
 test('v4.89.0 Phase C′: index.html loads Supabase UMD before cloud modules',
-  html.indexOf('src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"') < html.indexOf('src="lib/supabase.js"') &&
+  html.indexOf('src="lib/supabase-umd.min.js"') < html.indexOf('src="lib/supabase.js"') &&
   html.indexOf('src="lib/supabase.js"') < html.indexOf('src="cloud-store.js"') &&
   html.indexOf('src="cloud-store.js"') < html.indexOf('src="auth-state.js"') &&
   html.indexOf('src="auth-state.js"') < html.indexOf('src="migration.js"') &&
   html.indexOf('src="migration.js"') < html.indexOf('src="app.js"'));
+
+// v4.89.1: zero-tolerance regression guard — no third-party CDN script tags
+// for Supabase. Vendored locally because cdn.jsdelivr.net 503'd for users.
+test('v4.89.1 Phase C′: index.html does NOT load Supabase from cdn.jsdelivr.net',
+  !/<script[^>]*cdn\.jsdelivr\.net[^>]*supabase/i.test(html));
+test('v4.89.1 Phase C′: sw.js precaches the vendored Supabase UMD bundle',
+  sw.includes("'./lib/supabase-umd.min.js'"));
+test('v4.89.1 Phase C′: lib/supabase-umd.min.js exists on disk',
+  require('fs').existsSync(require('path').join(__dirname, '..', 'lib', 'supabase-umd.min.js')));
 
 // 2. Topbar mount point exists (replaces legacy .topbar-avatar 'S')
 test('v4.89.0 Phase C′: index.html has #topbar-account-mount span',
