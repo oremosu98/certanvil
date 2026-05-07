@@ -1,9 +1,9 @@
 // ══════════════════════════════════════════
-// Network+ AI Quiz — app.js  v4.90.3
+// Network+ AI Quiz — app.js  v4.91.0
 // ══════════════════════════════════════════
 
 // ── CONSTANTS ──
-const APP_VERSION = '4.90.3';
+const APP_VERSION = '4.91.0';
 
 // ══════════════════════════════════════════════════════════════════════════
 // CERT PACK ARCHITECTURE (v4.86.0 Phase 1A engine refactor)
@@ -291,6 +291,12 @@ const STORAGE = {
   FIX_CHALLENGES: 'nplus_fix_challenges',
   AB_MASTERY: 'nplus_ab_mastery',
   AB_LESSONS: 'nplus_ab_lessons',
+  // v4.91.0: Security+ Acronym Blitz uses separate keys so Network+ progress
+  // and Security+ progress don't collide when toggling between certs.
+  // Same shape as AB_MASTERY/AB_LESSONS — the abScaffold reads whichever
+  // pair is active based on CURRENT_CERT.
+  SAB_MASTERY: 'nplus_sab_mastery',
+  SAB_LESSONS: 'nplus_sab_lessons',
   OS_MASTERY: 'nplus_os_mastery',
   OS_LESSONS: 'nplus_os_lessons',
   CB_MASTERY: 'nplus_cb_mastery',
@@ -1057,37 +1063,68 @@ function goSetup() {
 }
 
 // v4.41.0: Drills launcher (consolidated entry point for Port/Acronym/OSI/Cables drills).
-// v4.90.3: when CURRENT_CERT === 'secplus', the existing drills (Subnet, Port,
-// Acronym, OSI, Cable, Network Analysis) are Network+-specific so we replace
-// the launcher with a "Security+ drills coming soon" placeholder instead.
-// Future ships will populate Security+-specific drills (control type sorter,
-// IoC recognizer, attack-mitigation match, etc.) — see roadmap in
-// memory/reference_phase_c_prime_cloud_first.md companion notes.
+// v4.90.3 → v4.91.0: when CURRENT_CERT === 'secplus', render a Security+
+// launcher with just the Acronym Blitz tile + a "more coming soon" hint.
+// Future ships extend with Attack-to-Mitigation (#301), Control Type
+// Sorter (#302), IR Phase Sorter (#303), IoC Recognizer (#304).
 function showDrillsPage() {
   showPage('drills');
   if (typeof CURRENT_CERT !== 'undefined' && CURRENT_CERT === 'secplus') {
-    _renderSecPlusDrillsPlaceholder();
+    _renderSecPlusDrillsLauncher();
     return;
   }
   // v4.78.0: surface weakest-drill recommendation
   if (typeof renderDrillsRecommendation === 'function') renderDrillsRecommendation();
 }
 
-function _renderSecPlusDrillsPlaceholder() {
+function _renderSecPlusDrillsLauncher() {
   var pageEl = document.getElementById('page-drills');
   if (!pageEl) return;
-  // Replace the existing drills launcher content with a single Security+
-  // placeholder card. Idempotent — overwrites whatever was there.
+  // Replace the existing drills launcher content with a Security+ tile
+  // grid. v4.91.0 ships only Acronym Blitz; future drills (issues
+  // #301-#304) extend the tile list. Idempotent — overwrites whatever
+  // was there from a prior render.
   pageEl.innerHTML = ''
-    + '<div class="ed-pagehead"><div class="ed-section-meta">Drills</div>'
-    +   '<h1 class="ed-pagehead-h1">Security+ drills coming soon</h1>'
-    +   '<p class="ed-pagehead-lede">The Network+ drills (Subnet, Port, Acronym, OSI, Cable, Network Analysis) are not relevant to SY0-701, so they\'re hidden in Security+ mode. New SY0-701-specific drills are queued for a future ship — control type sorter, attack-mitigation match, IoC recognizer, and more.</p>'
+    + '<div class="ed-pagehead"><div class="ed-section-meta">Security+ Drills</div>'
+    +   '<h1 class="ed-pagehead-h1">Pick a drill</h1>'
+    +   '<p class="ed-pagehead-lede">SY0-701-specific drills designed to move you closer to passing. Acronym Blitz is live; 4 more drills (Attack-to-Mitigation Match, Security Control Type Sorter, Incident Response Phase Sorter, IoC Recognizer) are queued for future ships.</p>'
     + '</div>'
-    + '<div class="secplus-drills-placeholder">'
-    +   '<div class="spdp-icon" aria-hidden="true">🛠</div>'
-    +   '<h2 class="spdp-title">Working on it</h2>'
-    +   '<p class="spdp-sub">In the meantime, take Mixed quizzes (Custom Quiz → leave domain unselected → click Generate) for breadth across the SY0-701 blueprint, or pick specific topics from Custom Quiz to drill deeper.</p>'
-    +   '<a class="spdp-cta" href="#" onclick="goSetup();return false;">← Back to home</a>'
+    + '<div class="secplus-drill-grid">'
+    +   '<a class="secplus-drill-tile" href="#" onclick="showPage(\'acronyms\');startAcronymBlitz();return false;">'
+    +     '<span class="secplus-drill-tile-badge">NEW</span>'
+    +     '<div class="secplus-drill-tile-icon" aria-hidden="true">🔤</div>'
+    +     '<div class="secplus-drill-tile-title">Acronym Blitz</div>'
+    +     '<div class="secplus-drill-tile-sub">120 SY0-701 acronyms across 7 categories. Recognition speed = exam speed.</div>'
+    +     '<div class="secplus-drill-tile-meta">All 5 domains · ~5 min/session</div>'
+    +   '</a>'
+    +   '<div class="secplus-drill-tile is-coming-soon" aria-disabled="true">'
+    +     '<span class="secplus-drill-tile-badge is-soon">SOON</span>'
+    +     '<div class="secplus-drill-tile-icon" aria-hidden="true">🎯</div>'
+    +     '<div class="secplus-drill-tile-title">Attack-to-Mitigation Match</div>'
+    +     '<div class="secplus-drill-tile-sub">D2 (22% of exam) — match attacks (SQLi, XSS, CSRF, SSRF, BO) to their canonical mitigations.</div>'
+    +     '<div class="secplus-drill-tile-meta">Issue #301 · queued</div>'
+    +   '</div>'
+    +   '<div class="secplus-drill-tile is-coming-soon" aria-disabled="true">'
+    +     '<span class="secplus-drill-tile-badge is-soon">SOON</span>'
+    +     '<div class="secplus-drill-tile-icon" aria-hidden="true">🗂</div>'
+    +     '<div class="secplus-drill-tile-title">Security Control Type Sorter</div>'
+    +     '<div class="secplus-drill-tile-sub">Cross-domain — sort controls by type (preventive/deterrent/detective/corrective/compensating/directive).</div>'
+    +     '<div class="secplus-drill-tile-meta">Issue #302 · queued</div>'
+    +   '</div>'
+    +   '<div class="secplus-drill-tile is-coming-soon" aria-disabled="true">'
+    +     '<span class="secplus-drill-tile-badge is-soon">SOON</span>'
+    +     '<div class="secplus-drill-tile-icon" aria-hidden="true">📋</div>'
+    +     '<div class="secplus-drill-tile-title">Incident Response Phase Sorter</div>'
+    +     '<div class="secplus-drill-tile-sub">D4 (28% of exam) — order IR actions into NIST phases (Preparation → Detection → Containment → Eradication → Recovery → Lessons Learned).</div>'
+    +     '<div class="secplus-drill-tile-meta">Issue #303 · queued</div>'
+    +   '</div>'
+    +   '<div class="secplus-drill-tile is-coming-soon" aria-disabled="true">'
+    +     '<span class="secplus-drill-tile-badge is-soon">SOON</span>'
+    +     '<div class="secplus-drill-tile-icon" aria-hidden="true">🔍</div>'
+    +     '<div class="secplus-drill-tile-title">IoC Recognizer</div>'
+    +     '<div class="secplus-drill-tile-sub">D4 (28% of exam) — read log lines / process trees / packet captures, identify the suspicious pattern.</div>'
+    +     '<div class="secplus-drill-tile-meta">Issue #304 · queued</div>'
+    +   '</div>'
     + '</div>';
 }
 
@@ -31983,8 +32020,14 @@ function createDrillScaffold(cfg) {
 // ══════════════════════════════════════════
 // FEATURE: ACRONYM BLITZ (ab-*)
 // ══════════════════════════════════════════
+// v4.91.0: AB_DATA / AB_CATEGORIES / AB_LESSONS are now cert-aware. The
+// Network+ inline data lives below as _NETPLUS_AB_* and is the default.
+// When CURRENT_CERT === 'secplus' AND CERT_PACK has acronymBank/Categories/
+// Lessons defined, those become the active source. Storage keys swap from
+// AB_MASTERY/LESSONS to SAB_MASTERY/LESSONS via _activeAbStorageKey() so
+// cert progress doesn't mix.
 
-const AB_DATA = [
+const _NETPLUS_AB_DATA = [
   // Core Protocols
   {abbr:'TCP',full:'Transmission Control Protocol',cat:'protocols',obj:'1.5',diff:'easy',mnemonic:'TCP = Take Care of Packets (reliable, ordered delivery)'},
   {abbr:'UDP',full:'User Datagram Protocol',cat:'protocols',obj:'1.5',diff:'easy',mnemonic:'UDP = Unreliable Delivery Protocol (fast but no guarantees)'},
@@ -32107,7 +32150,7 @@ const AB_DATA = [
   {abbr:'IoT',full:'Internet of Things',cat:'operations',obj:'1.8',diff:'easy',mnemonic:'IoT = Internet of Things (smart devices)'},
 ];
 
-const AB_CATEGORIES = {
+const _NETPLUS_AB_CATEGORIES = {
   protocols:      { label: 'Core Protocols',    icon: '\uD83D\uDD17', color: '#60a5fa' },
   switching:      { label: 'Switching',          icon: '\uD83D\uDD00', color: '#f472b6' },
   routing:        { label: 'Routing',            icon: '\uD83D\uDEA6', color: '#fb923c' },
@@ -32119,9 +32162,8 @@ const AB_CATEGORIES = {
   infrastructure: { label: 'Infrastructure',     icon: '\uD83C\uDFD7\uFE0F', color: '#fbbf24' },
   operations:     { label: 'Operations',         icon: '\u2699\uFE0F', color: '#2dd4bf' },
 };
-const AB_CAT_IDS = Object.keys(AB_CATEGORIES);
 
-const AB_LESSONS = [
+const _NETPLUS_AB_LESSONS = [
   { id: 'protocols', title: 'Core Protocols', icon: '\uD83D\uDD17', catId: 'protocols', desc: 'TCP, UDP, HTTP, DNS, DHCP and the foundational acronyms.',
     theory: [
       '<strong>TCP (Transmission Control Protocol)</strong> — Reliable, connection-oriented Layer 4 protocol. Uses three-way handshake (SYN, SYN-ACK, ACK). Guarantees delivery, ordering, and error checking.',
@@ -32202,6 +32244,27 @@ const AB_LESSONS = [
     ] },
 ];
 
+// ── Cert-aware AB_DATA / AB_CATEGORIES / AB_LESSONS (v4.91.0) ──
+// At module load, choose which bank/categories/lessons populate the
+// AB_* names that the rest of the drill code reads. If running in
+// Security+ mode AND the cert pack provides an acronymBank, those
+// override the Network+ defaults. Same shape, different content.
+const _SECPLUS_HAS_AB = typeof CERT_PACK === 'object' && CERT_PACK !== null
+  && Array.isArray(CERT_PACK.acronymBank) && CERT_PACK.acronymBank.length > 0;
+const _USE_SECPLUS_AB = (typeof CURRENT_CERT !== 'undefined') && CURRENT_CERT === 'secplus' && _SECPLUS_HAS_AB;
+
+const AB_DATA = _USE_SECPLUS_AB ? CERT_PACK.acronymBank : _NETPLUS_AB_DATA;
+const AB_CATEGORIES = _USE_SECPLUS_AB ? CERT_PACK.acronymCategories : _NETPLUS_AB_CATEGORIES;
+const AB_CAT_IDS = Object.keys(AB_CATEGORIES);
+const AB_LESSONS = _USE_SECPLUS_AB && Array.isArray(CERT_PACK.acronymLessons)
+  ? CERT_PACK.acronymLessons
+  : _NETPLUS_AB_LESSONS;
+
+// Storage key selection — Security+ progress writes to SAB_* so it's
+// kept distinct from the Network+ AB_* progress when toggling certs.
+const _AB_MASTERY_KEY = _USE_SECPLUS_AB ? STORAGE.SAB_MASTERY : STORAGE.AB_MASTERY;
+const _AB_LESSONS_KEY = _USE_SECPLUS_AB ? STORAGE.SAB_LESSONS : STORAGE.AB_LESSONS;
+
 // ── Acronym Blitz state ──
 let abQ = null, abIdx = 0, abCorrect = 0, abTotal = 0, abStreak = 0;
 let abMode = 'adaptive', abFocusCat = null, abActiveLesson = null;
@@ -32210,8 +32273,8 @@ let abQuestionStartTime = 0;
 // ── Acronym Blitz engine (scaffold-backed) ──
 const abScaffold = createDrillScaffold({
   prefix: 'ab',
-  storageKey: STORAGE.AB_MASTERY,
-  lessonsKey: STORAGE.AB_LESSONS,
+  storageKey: _AB_MASTERY_KEY,
+  lessonsKey: _AB_LESSONS_KEY,
   lessons: AB_LESSONS,
   categoryField: 'perItem',
   levelThresholds: [
@@ -32238,8 +32301,8 @@ const abScaffold = createDrillScaffold({
   },
   dashHeading: 'Category Mastery',
   dashResetLabel: 'Reset all acronym mastery data?',
-  storageKeyExpr: 'STORAGE.AB_MASTERY',
-  lessonsKeyExpr: 'STORAGE.AB_LESSONS',
+  storageKeyExpr: '_AB_MASTERY_KEY',
+  lessonsKeyExpr: '_AB_LESSONS_KEY',
   nextLevelText(level) {
     if (level === 'beginner') return 'Intermediate (60% acc, 50+ Qs)';
     if (level === 'intermediate') return 'Advanced (75% acc, 200+ Qs)';
@@ -35392,6 +35455,17 @@ const APP_SIDEBAR_DRILLS = [
   { page: 'network-analysis',   label: 'Network Analysis',  handler: () => { if (typeof startNetworkAnalysisDrill === 'function') startNetworkAnalysisDrill(); } }
 ];
 
+// v4.91.0: Security+ drill catalog. Network+ drills (subnet/port/OSI/cable
+// /network-analysis) are not relevant to SY0-701 so they're hidden — see
+// renderAppSidebar's cert-aware branch. Acronym Blitz is the only drill
+// today; future drills (Attack-to-Mitigation #301, Control Type Sorter
+// #302, IR Phase Sorter #303, IoC Recognizer #304) extend this list as
+// they ship. The Acronym Blitz handler reuses startAcronymBlitz — the
+// scaffold itself is cert-aware via _USE_SECPLUS_AB at module load.
+const APP_SIDEBAR_DRILLS_SECPLUS = [
+  { page: 'acronyms', label: 'Acronym Blitz', handler: () => { showPage('acronyms'); if (typeof startAcronymBlitz === 'function') startAcronymBlitz(); } }
+];
+
 // Map arbitrary page names to their sidebar highlight target. Quiz/exam/review
 // etc. all highlight "Home" because they're part of the setup\u2192study flow.
 const SIDEBAR_ACTIVE_MAP = {
@@ -35423,7 +35497,11 @@ function renderAppSidebar() {
   if (!el) return;
   // Register handlers keyed by page id, then generate HTML with onclick refs.
   const reg = window.__aclSidebarHandlers;
-  [...APP_SIDEBAR_PRACTICE, ...APP_SIDEBAR_DRILLS, ...APP_SIDEBAR_SETTINGS].forEach(it => {
+  // v4.91.0: include Security+ drill list in handler registration so the
+  // Acronym Blitz entry's onclick wires up regardless of which cert is
+  // active (Network+ AB and Security+ AB share the 'acronyms' page id;
+  // the scaffold itself is cert-aware via _USE_SECPLUS_AB).
+  [...APP_SIDEBAR_PRACTICE, ...APP_SIDEBAR_DRILLS, ...APP_SIDEBAR_DRILLS_SECPLUS, ...APP_SIDEBAR_SETTINGS].forEach(it => {
     reg[it.page] = it.handler;
   });
   // v4.54.9: sidebar nav-count pills retired per user request \u2014 the numbers
@@ -35485,12 +35563,9 @@ function renderAppSidebar() {
       ${APP_SIDEBAR_PRACTICE.map(renderItem).join('')}
     </div>
     ${(typeof CURRENT_CERT !== 'undefined' && CURRENT_CERT === 'secplus') ? `
-    <div class="sb-section sb-section-drills-coming-soon">
+    <div class="sb-section">
       <div class="sb-section-label">Drills</div>
-      <div class="sb-drills-placeholder">
-        <span class="sb-drills-placeholder-icon" aria-hidden="true">🛠</span>
-        <span class="sb-drills-placeholder-text">Security+ drills coming soon</span>
-      </div>
+      ${APP_SIDEBAR_DRILLS_SECPLUS.map(renderItem).join('')}
     </div>
     ` : `
     <div class="sb-section">

@@ -1,5 +1,5 @@
 /* ══════════════════════════════════════════
-   Network+ AI Quiz — styles.css  v4.90.3
+   Network+ AI Quiz — styles.css  v4.91.0
    ══════════════════════════════════════════ */
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -6990,48 +6990,74 @@ body.has-sidebar { padding-left: 240px; transition: padding-left .25s cubic-bezi
 .sb-drills-placeholder-text { font-style: italic; }
 
 /* v4.90.3: drills launcher page placeholder (when CURRENT_CERT === 'secplus'). */
-.secplus-drills-placeholder {
-  text-align: center;
-  padding: 56px 28px;
-  margin: 16px auto 0;
-  max-width: 560px;
+/* v4.91.0: Security+ drills launcher tile grid (replaces v4.90.3 single
+   placeholder card). Acronym Blitz is the only live tile today; the 4
+   "coming soon" tiles are visible-but-disabled to set expectation. */
+.secplus-drill-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+.secplus-drill-tile {
+  position: relative;
+  display: block;
+  padding: 22px 20px 18px;
   background: var(--surface);
-  border: 1px dashed var(--border);
-  border-radius: 16px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  text-decoration: none;
+  color: var(--text);
+  transition: border-color .15s ease, transform .1s ease;
 }
-.secplus-drills-placeholder .spdp-icon {
-  font-size: 44px;
-  margin-bottom: 12px;
-  opacity: 0.55;
+.secplus-drill-tile:not(.is-coming-soon):hover {
+  border-color: var(--accent);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px -8px rgba(var(--accent-rgb), .35);
 }
-.secplus-drills-placeholder .spdp-title {
-  font-size: 22px;
+.secplus-drill-tile.is-coming-soon {
+  opacity: 0.65;
+  cursor: not-allowed;
+  border-style: dashed;
+}
+.secplus-drill-tile-badge {
+  position: absolute;
+  top: 12px; right: 14px;
+  padding: 2px 8px;
+  border-radius: 99px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  background: var(--accent);
+  color: #fff;
+}
+.secplus-drill-tile-badge.is-soon {
+  background: var(--surface-3);
+  color: var(--text-dim);
+  border: 1px solid var(--border-strong);
+}
+.secplus-drill-tile-icon {
+  font-size: 28px;
+  margin-bottom: 10px;
+}
+.secplus-drill-tile-title {
+  font-size: 16px;
   font-weight: 800;
   letter-spacing: -0.01em;
-  margin-bottom: 8px;
+  margin-bottom: 4px;
   color: var(--text);
 }
-.secplus-drills-placeholder .spdp-sub {
-  font-size: 14px;
-  line-height: 1.6;
+.secplus-drill-tile-sub {
+  font-size: 12px;
   color: var(--text-mid);
-  max-width: 420px;
-  margin: 0 auto 20px;
+  line-height: 1.5;
+  margin-bottom: 10px;
 }
-.secplus-drills-placeholder .spdp-cta {
-  display: inline-block;
-  padding: 9px 18px;
-  background: rgba(var(--accent-rgb), .12);
-  color: var(--accent-light);
-  border: 1px solid rgba(var(--accent-rgb), .32);
-  border-radius: 8px;
-  font-size: 13px;
-  font-weight: 600;
-  text-decoration: none;
-  transition: background-color .15s ease;
-}
-.secplus-drills-placeholder .spdp-cta:hover {
-  background: rgba(var(--accent-rgb), .2);
+.secplus-drill-tile-meta {
+  font-size: 10px;
+  font-family: 'SF Mono', monospace;
+  color: var(--text-dim);
 }
 .sb-item {
   display: flex; align-items: center; gap: 10px;

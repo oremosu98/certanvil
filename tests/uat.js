@@ -44,7 +44,7 @@ const path = require('path');
 const ROOT = path.resolve(__dirname, '..');
 const read = (f) => fs.readFileSync(path.join(ROOT, f), 'utf8');
 
-let html, js, css, sw, certNetplus, certSecplus;
+let html, js, css, sw, certNetplus, certSecplus, cloudStoreJs;
 try {
   html = read('index.html');
   js   = read('app.js');
@@ -56,6 +56,9 @@ try {
   // source for cert packs; runtime resolution doesn't happen at test time.
   certNetplus = read('certs/netplus.js');
   certSecplus = read('certs/secplus.js');
+  // v4.89.0 Phase C′: cloud-store source so we can assert USER_DATA_KEYS coverage
+  // for new namespaced storage keys (e.g. v4.91.0 SAB_*).
+  cloudStoreJs = read('cloud-store.js');
 } catch(e) {
   console.error('ERROR: Could not read project files. Run from project root.');
   console.error(e.message);
@@ -298,7 +301,7 @@ test('Validation in runSessionStep', js.includes('aiValidateQuestions(apiKey, qu
 
 // ── Analytics v2 (v4.5) ──
 console.log('\n\x1b[1m── ANALYTICS v2 (v4.5) ──\x1b[0m');
-test('APP_VERSION is 4.90.3', js.includes("const APP_VERSION = '4.90.3"));
+test('APP_VERSION is 4.91.0', js.includes("const APP_VERSION = '4.91.0"));
 test('getDailyGoal function', js.includes('function getDailyGoal('));
 test('renderDailyGoal function', js.includes('function renderDailyGoal('));
 test('editDailyGoal function', js.includes('function editDailyGoal('));
@@ -312,7 +315,7 @@ test('CSS: .topic-domain-group', css.includes('.topic-domain-group'));
 test('CSS: .daily-goal-card', css.includes('.daily-goal-card'));
 test('CSS: .advanced-section', css.includes('.advanced-section'));
 test('CSS: .hero-stats-strip', css.includes('.hero-stats-strip'));
-test('SW cache bumped to v4.90.3', sw.includes('netplus-v4.90.3'));
+test('SW cache bumped to v4.91.0', sw.includes('netplus-v4.91.0'));
 test('Family Drill: STORAGE.PORT_FAMILY_BEST', js.includes("PORT_FAMILY_BEST:"));
 test('Family Drill: ptMode handles family', js.includes("ptMode === 'family'"));
 test('Family Drill: HTML mode button', html.includes('id="pt-mode-family"'));
@@ -5762,7 +5765,10 @@ test('v4.54.1 HTML: regression \u2014 #history-panel no longer inside #page-setu
 test('v4.54.1 JS: APP_SIDEBAR_SETTINGS array with Settings entry',
   js.includes('const APP_SIDEBAR_SETTINGS') && /APP_SIDEBAR_SETTINGS[\s\S]{0,400}label:\s*'Settings'/.test(js));
 test('v4.54.1 JS: renderAppSidebar merges Settings into handler registry',
-  js.includes('APP_SIDEBAR_PRACTICE, ...APP_SIDEBAR_DRILLS, ...APP_SIDEBAR_SETTINGS'));
+  // v4.91.0: ...APP_SIDEBAR_DRILLS_SECPLUS now sits between DRILLS and SETTINGS
+  // for cert-aware Security+ drills. The handler-registration spread MUST still
+  // include all four collections so click handlers wire up regardless of cert.
+  /APP_SIDEBAR_PRACTICE,\s*\.\.\.APP_SIDEBAR_DRILLS(?:,\s*\.\.\.APP_SIDEBAR_DRILLS_SECPLUS)?,\s*\.\.\.APP_SIDEBAR_SETTINGS/.test(js));
 test('v4.54.1 JS: sidebar renders Account section with Settings',
   /Account[\s\S]{0,500}APP_SIDEBAR_SETTINGS\.map/.test(js));
 test('v4.54.1 JS: SIDEBAR_ACTIVE_MAP has settings entry',
@@ -16408,6 +16414,92 @@ test('v4.89.0 Phase C′: scaffold saveMastery flushes cfg.storageKey (covers AB
   /function saveMastery\(m\)[\s\S]{0,200}_cloudFlush\(cfg\.storageKey\)/.test(js));
 test('v4.89.0 Phase C′: scaffold saveLessonProgress flushes cfg.lessonsKey',
   /function saveLessonProgress\(p\)[\s\S]{0,200}_cloudFlush\(cfg\.lessonsKey\)/.test(js));
+
+// ============================================================================
+// v4.91.0 — Security+ Acronym Blitz drill (first SY0-701 drill)
+// ============================================================================
+// Cert-aware AB scaffold reusing the existing Network+ drill plumbing via
+// _USE_SECPLUS_AB switch. Storage namespaced separately (SAB_*) so Network+
+// progress + Security+ progress can never collide. Sidebar branches by cert.
+// Launcher renders 5 tiles (1 live + 4 coming-soon → issues #301-#304).
+
+// Storage keys
+test('v4.91.0 SAB: STORAGE.SAB_MASTERY key declared',
+  /SAB_MASTERY:\s*['"]nplus_sab_mastery['"]/.test(js));
+test('v4.91.0 SAB: STORAGE.SAB_LESSONS key declared',
+  /SAB_LESSONS:\s*['"]nplus_sab_lessons['"]/.test(js));
+
+// Cloud-store sync coverage — SAB keys must hydrate + flush to Supabase
+test('v4.91.0 SAB: cloud-store USER_DATA_KEYS includes sab_mastery',
+  cloudStoreJs.includes("'nplus_sab_mastery'"));
+test('v4.91.0 SAB: cloud-store USER_DATA_KEYS includes sab_lessons',
+  cloudStoreJs.includes("'nplus_sab_lessons'"));
+
+// Cert-aware module-load aliases — switch on _USE_SECPLUS_AB at boot
+test('v4.91.0 SAB: _SECPLUS_HAS_AB cert-pack guard declared',
+  /const _SECPLUS_HAS_AB =/.test(js));
+test('v4.91.0 SAB: _USE_SECPLUS_AB cert-aware switch declared',
+  /const _USE_SECPLUS_AB =/.test(js));
+test('v4.91.0 SAB: AB_DATA cert-aware alias',
+  /const AB_DATA = _USE_SECPLUS_AB \? CERT_PACK\.acronymBank/.test(js));
+test('v4.91.0 SAB: AB_CATEGORIES cert-aware alias',
+  /const AB_CATEGORIES = _USE_SECPLUS_AB \? CERT_PACK\.acronymCategories/.test(js));
+test('v4.91.0 SAB: AB_LESSONS cert-aware alias',
+  /const AB_LESSONS = _USE_SECPLUS_AB && Array\.isArray\(CERT_PACK\.acronymLessons\)/.test(js));
+test('v4.91.0 SAB: _AB_MASTERY_KEY cert-aware storage key',
+  /const _AB_MASTERY_KEY = _USE_SECPLUS_AB \? STORAGE\.SAB_MASTERY : STORAGE\.AB_MASTERY/.test(js));
+test('v4.91.0 SAB: _AB_LESSONS_KEY cert-aware lessons key',
+  /const _AB_LESSONS_KEY = _USE_SECPLUS_AB \? STORAGE\.SAB_LESSONS : STORAGE\.AB_LESSONS/.test(js));
+
+// Original Network+ data preserved under _NETPLUS_AB_* names (renamed, not deleted)
+test('v4.91.0 SAB: Network+ AB data preserved as _NETPLUS_AB_DATA',
+  /const _NETPLUS_AB_DATA = \[/.test(js));
+test('v4.91.0 SAB: Network+ AB categories preserved as _NETPLUS_AB_CATEGORIES',
+  /const _NETPLUS_AB_CATEGORIES/.test(js));
+test('v4.91.0 SAB: Network+ AB lessons preserved as _NETPLUS_AB_LESSONS',
+  /const _NETPLUS_AB_LESSONS = \[/.test(js));
+
+// Drill scaffold wired to cert-aware keys
+test('v4.91.0 SAB: abScaffold uses _AB_MASTERY_KEY (not literal STORAGE.AB_MASTERY)',
+  /storageKey:\s*_AB_MASTERY_KEY/.test(js));
+test('v4.91.0 SAB: abScaffold uses _AB_LESSONS_KEY',
+  /lessonsKey:\s*_AB_LESSONS_KEY/.test(js));
+
+// Sidebar — Security+ drill list + cert-aware branching
+test('v4.91.0 SAB: APP_SIDEBAR_DRILLS_SECPLUS array declared',
+  /const APP_SIDEBAR_DRILLS_SECPLUS = \[/.test(js));
+test('v4.91.0 SAB: APP_SIDEBAR_DRILLS_SECPLUS includes Acronym Blitz',
+  /APP_SIDEBAR_DRILLS_SECPLUS[\s\S]{0,500}Acronym Blitz/.test(js));
+test('v4.91.0 SAB: sidebar handler-registration loop includes SECPLUS drills',
+  /\.\.\.APP_SIDEBAR_DRILLS_SECPLUS/.test(js));
+
+// Drills launcher — replaced placeholder with cert-aware tile grid
+test('v4.91.0 SAB: _renderSecPlusDrillsLauncher function defined',
+  /function _renderSecPlusDrillsLauncher\(\)/.test(js));
+test('v4.91.0 SAB: old _renderSecPlusDrillsPlaceholder is gone (regression-guard)',
+  !/function _renderSecPlusDrillsPlaceholder\(/.test(js));
+
+// CSS — secplus-drill-grid replaces secplus-drills-placeholder
+test('v4.91.0 SAB: secplus-drill-grid CSS pattern present',
+  /\.secplus-drill-grid\s*\{/.test(css));
+test('v4.91.0 SAB: secplus-drill-tile CSS pattern present',
+  /\.secplus-drill-tile\s*\{/.test(css));
+test('v4.91.0 SAB: is-coming-soon variant present (4 placeholder tiles use it)',
+  /\.secplus-drill-tile\.is-coming-soon/.test(css));
+test('v4.91.0 SAB: old secplus-drills-placeholder CSS is gone (regression-guard)',
+  !/\.secplus-drills-placeholder\s*\{/.test(css));
+
+// Cert-pack data integrity — secplus.js must carry the drill content
+test('v4.91.0 SAB: secplus.js cert pack declares acronymBank',
+  certSecplus.includes('acronymBank:'));
+test('v4.91.0 SAB: secplus.js cert pack declares acronymCategories',
+  certSecplus.includes('acronymCategories:'));
+test('v4.91.0 SAB: secplus.js cert pack declares acronymLessons',
+  certSecplus.includes('acronymLessons:'));
+test('v4.91.0 SAB: secplus.js acronymBank has ≥100 entries',
+  (certSecplus.match(/abbr:\s*['"][A-Z0-9]+['"]/g) || []).length >= 100);
+test('v4.91.0 SAB: secplus.js acronymCategories covers all 7 SY0-701 buckets',
+  /acronymCategories:\s*\{[\s\S]{0,4000}threats[\s\S]{0,4000}detection[\s\S]{0,4000}identity[\s\S]{0,4000}crypto[\s\S]{0,4000}network[\s\S]{0,4000}compliance[\s\S]{0,4000}operations/.test(certSecplus));
 
 // ── Summary ──
 console.log('\n' + '═'.repeat(50));

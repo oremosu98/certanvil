@@ -307,5 +307,214 @@ window.CERT_PACKS.secplus = {
     {"type":"mcq","question":"In a Mandatory Access Control (MAC) authorization model, who determines a user's access level for a particular resource?","difficulty":"Foundational","topic":"Identity & Access Management","objective":"4.6","options":{"A":"The user themselves, based on what they need","B":"The resource owner, at their discretion","C":"The system enforces access based on classification labels and clearances assigned by a central security policy","D":"A separately deployed firewall rule engine"},"answer":"C","explanation":"MAC is system-enforced based on classification labels (Top Secret, Secret, Confidential, Unclassified) and matching user clearances assigned by a central security policy. The OS or system enforces the rules — owners CANNOT grant access at their discretion. MAC is common in military, intelligence, and regulated environments where data classification is rigorous. (A) and (B) describe DAC (Discretionary Access Control), where owners decide who has access. (D) Firewalls are network access controls, separate from system MAC.","source":"curated-secplus-phase3","addedVersion":"4.88.3","addedDate":"2026-05-06"},
     {"type":"mcq","question":"A healthcare organization wants new hires in the nursing role to automatically receive permissions to read patient charts and update vital signs, without an administrator manually granting permissions per individual user. When a nurse leaves the organization or changes departments, their access is removed by changing their role assignment. Which authorization model BEST fits these requirements?","difficulty":"Exam Level","topic":"Identity & Access Management","objective":"4.6","options":{"A":"Discretionary Access Control (DAC)","B":"Mandatory Access Control (MAC)","C":"Role-Based Access Control (RBAC)","D":"Attribute-Based Access Control (ABAC)"},"answer":"C","explanation":"RBAC defines permissions per ROLE — the 'Nurse' role has 'read patient chart' + 'update vital signs' permissions; users are assigned to roles. New hires placed in the Nurse role inherit those permissions automatically without per-user permission grants. When a user changes roles, their permissions are re-evaluated by changing their role. This is the canonical RBAC scenario. (A) DAC requires per-resource access decisions by owners — operationally cumbersome at scale. (B) MAC requires labels and clearances, more rigorous than this scenario needs. (D) ABAC could work but is more complex (uses dynamic attributes like time-of-day, location, device posture) and overkill for a straightforward role-based grant scheme.","source":"curated-secplus-phase3","addedVersion":"4.88.3","addedDate":"2026-05-06"},
     {"type":"multi-select","question":"(Choose TWO) Which of the following BEST distinguish Attribute-Based Access Control (ABAC) from Role-Based Access Control (RBAC)?","difficulty":"Hard","topic":"Identity & Access Management","objective":"4.6","options":{"A":"ABAC evaluates dynamic attributes such as time of day, geographic location, and device posture at the moment of access","B":"RBAC requires every user to be assigned a unique role per resource accessed","C":"ABAC allows fine-grained access policies expressed as rules over user, resource, and environment attributes","D":"RBAC cannot be combined with mandatory access control (MAC)","E":"ABAC requires the resource owner to manually approve each access request before granting it"},"answers":["A","C"],"explanation":"ABAC's defining feature is policy expressed over ATTRIBUTES, evaluated dynamically at access time. (A) ABAC uses environmental attributes — time, location, device-posture, network-zone — that can deny access even to users who would normally have it (e.g., 'Allow Cardiology nurses ONLY during business hours from on-network devices'). RBAC's role assignments are typically static. (C) ABAC policies can express complex Boolean rules across user, resource, and environment attributes — far more expressive than RBAC's simpler role-permission mapping. (B) Wrong — RBAC users have ONE role (or a small set), not a unique role per resource. (D) Wrong — RBAC and MAC are commonly combined (e.g., MAC labels + RBAC role grants). (E) Wrong — that describes DAC (owner-controlled), not ABAC.","source":"curated-secplus-phase3","addedVersion":"4.88.3","addedDate":"2026-05-06"}
+  ],
+
+  // ── Acronym Blitz drill bank (v4.91.0) ───────────────────────────────────
+  // SY0-701 acronym bank consumed by the Acronym Blitz drill scaffold when
+  // CURRENT_CERT === 'secplus'. The scaffold auto-generates 3 distractors
+  // per question by sampling other entries in this same array, so each
+  // entry only needs the canonical {abbr, full, cat, obj, diff} fields.
+  // Mnemonic field is optional — included on tricky/easily-confused pairs.
+  // Total: 120 acronyms across 7 categories. Mockup signoff:
+  // mockups/security-acronym-blitz-concept.html (zero-revision-round).
+  acronymCategories: {
+    threats:    { label: 'Threats & Attacks',     icon: '⚔️',     color: '#ef4444' },
+    detection:  { label: 'Detection & Response',  icon: '🛡️', color: '#3b82f6' },
+    identity:   { label: 'Identity & Access',     icon: '🔑',     color: '#8b5cf6' },
+    crypto:     { label: 'Crypto & PKI',          icon: '🔐',     color: '#10b981' },
+    network:    { label: 'Network Security',      icon: '🌐',     color: '#f59e0b' },
+    compliance: { label: 'Compliance & Governance', icon: '📋',   color: '#6366f1' },
+    operations: { label: 'Operations & Cloud',    icon: '⚙️',     color: '#06b6d4' }
+  },
+
+  acronymBank: [
+    // ── Threats & Attacks (18) ─────────────────────────────────────────────
+    {abbr:'APT',full:'Advanced Persistent Threat',cat:'threats',obj:'2.1',diff:'easy',mnemonic:'APT = patient, well-funded attackers (often nation-states)'},
+    {abbr:'RAT',full:'Remote Access Trojan',cat:'threats',obj:'2.4',diff:'easy',mnemonic:'RAT = malware giving attacker remote control of host'},
+    {abbr:'DDoS',full:'Distributed Denial of Service',cat:'threats',obj:'2.4',diff:'easy',mnemonic:'DDoS = many sources flood ONE target'},
+    {abbr:'DoS',full:'Denial of Service',cat:'threats',obj:'2.4',diff:'easy'},
+    {abbr:'MITM',full:'Man-in-the-Middle',cat:'threats',obj:'2.4',diff:'easy',mnemonic:'MITM = attacker intercepts comms between two parties'},
+    {abbr:'MITB',full:'Man-in-the-Browser',cat:'threats',obj:'2.4',diff:'medium',mnemonic:'MITB = trojan modifies pages/transactions inside the browser'},
+    {abbr:'SQLi',full:'SQL Injection',cat:'threats',obj:'2.3',diff:'easy'},
+    {abbr:'XSS',full:'Cross-Site Scripting',cat:'threats',obj:'2.3',diff:'easy',mnemonic:'XSS = injects scripts into trusted sites (browser executes)'},
+    {abbr:'CSRF',full:'Cross-Site Request Forgery',cat:'threats',obj:'2.3',diff:'medium',mnemonic:'CSRF = tricks browser into submitting authenticated request'},
+    {abbr:'SSRF',full:'Server-Side Request Forgery',cat:'threats',obj:'2.3',diff:'medium',mnemonic:'SSRF = tricks SERVER to make requests to internal resources'},
+    {abbr:'RCE',full:'Remote Code Execution',cat:'threats',obj:'2.3',diff:'medium'},
+    {abbr:'LFI',full:'Local File Inclusion',cat:'threats',obj:'2.3',diff:'hard',mnemonic:'LFI = web app loads attacker-controlled local files via path traversal'},
+    {abbr:'BEC',full:'Business Email Compromise',cat:'threats',obj:'2.2',diff:'easy',mnemonic:'BEC = spoof/compromise exec email to trick wire transfers'},
+    {abbr:'OSINT',full:'Open-Source Intelligence',cat:'threats',obj:'2.4',diff:'medium',mnemonic:'OSINT = reconnaissance from publicly available sources'},
+    {abbr:'IoC',full:'Indicators of Compromise',cat:'threats',obj:'2.5',diff:'easy',mnemonic:'IoC = forensic artifacts confirming intrusion (post-fact)'},
+    {abbr:'IoA',full:'Indicators of Attack',cat:'threats',obj:'2.5',diff:'medium',mnemonic:'IoA = behavior patterns suggesting attack in progress (vs IoC)'},
+    {abbr:'TTP',full:'Tactics, Techniques, and Procedures',cat:'threats',obj:'2.5',diff:'medium',mnemonic:'TTP = how a threat actor operates repeatably (MITRE ATT&CK)'},
+    {abbr:'OWASP',full:'Open Worldwide Application Security Project',cat:'threats',obj:'2.3',diff:'medium',mnemonic:'OWASP = publishes the famous Top 10 web vulnerabilities list'},
+
+    // ── Detection & Response (17) ──────────────────────────────────────────
+    {abbr:'SIEM',full:'Security Information and Event Management',cat:'detection',obj:'4.4',diff:'easy',mnemonic:'SIEM = aggregates + correlates logs across the org'},
+    {abbr:'SOAR',full:'Security Orchestration, Automation, and Response',cat:'detection',obj:'4.4',diff:'medium',mnemonic:'SOAR = automates analyst playbooks (block IP, quarantine, ticket)'},
+    {abbr:'EDR',full:'Endpoint Detection and Response',cat:'detection',obj:'4.4',diff:'easy'},
+    {abbr:'MDR',full:'Managed Detection and Response',cat:'detection',obj:'4.4',diff:'medium',mnemonic:'MDR = EDR + 24/7 outsourced SOC analysts'},
+    {abbr:'XDR',full:'Extended Detection and Response',cat:'detection',obj:'4.4',diff:'medium',mnemonic:'XDR = cross-source correlation: endpoint + network + cloud + identity'},
+    {abbr:'NDR',full:'Network Detection and Response',cat:'detection',obj:'4.4',diff:'hard'},
+    {abbr:'UEBA',full:'User and Entity Behavior Analytics',cat:'detection',obj:'4.4',diff:'medium'},
+    {abbr:'IDS',full:'Intrusion Detection System',cat:'detection',obj:'4.4',diff:'easy',mnemonic:'IDS = passive — alerts on suspicious traffic, doesn’t block'},
+    {abbr:'IPS',full:'Intrusion Prevention System',cat:'detection',obj:'4.4',diff:'easy',mnemonic:'IPS = inline — alerts AND blocks suspicious traffic'},
+    {abbr:'NIDS',full:'Network-based Intrusion Detection System',cat:'detection',obj:'4.4',diff:'medium'},
+    {abbr:'NIPS',full:'Network-based Intrusion Prevention System',cat:'detection',obj:'4.4',diff:'medium'},
+    {abbr:'HIDS',full:'Host-based Intrusion Detection System',cat:'detection',obj:'4.4',diff:'medium'},
+    {abbr:'HIPS',full:'Host-based Intrusion Prevention System',cat:'detection',obj:'4.4',diff:'medium'},
+    {abbr:'SOC',full:'Security Operations Center',cat:'detection',obj:'4.5',diff:'easy'},
+    {abbr:'IRP',full:'Incident Response Plan',cat:'detection',obj:'4.8',diff:'easy'},
+    {abbr:'RCA',full:'Root Cause Analysis',cat:'detection',obj:'4.8',diff:'easy'},
+    {abbr:'TLP',full:'Traffic Light Protocol',cat:'detection',obj:'5.5',diff:'hard',mnemonic:'TLP = info-sharing classification (Red/Amber/Green/White)'},
+
+    // ── Identity & Access (17) ─────────────────────────────────────────────
+    {abbr:'IAM',full:'Identity and Access Management',cat:'identity',obj:'4.6',diff:'easy'},
+    {abbr:'MFA',full:'Multi-Factor Authentication',cat:'identity',obj:'4.6',diff:'easy',mnemonic:'MFA = something you know + have + are (≥2 factors)'},
+    {abbr:'2FA',full:'Two-Factor Authentication',cat:'identity',obj:'4.6',diff:'easy'},
+    {abbr:'SSO',full:'Single Sign-On',cat:'identity',obj:'4.6',diff:'easy'},
+    {abbr:'SAML',full:'Security Assertion Markup Language',cat:'identity',obj:'4.6',diff:'medium',mnemonic:'SAML = XML standard for SSO between IdP and SP'},
+    {abbr:'OAuth',full:'Open Authorization',cat:'identity',obj:'4.6',diff:'medium',mnemonic:'OAuth = delegated authorization via tokens (not authentication!)'},
+    {abbr:'OIDC',full:'OpenID Connect',cat:'identity',obj:'4.6',diff:'medium',mnemonic:'OIDC = authentication LAYER on top of OAuth 2.0'},
+    {abbr:'FIDO',full:'Fast Identity Online',cat:'identity',obj:'4.6',diff:'hard',mnemonic:'FIDO = passwordless authentication standards'},
+    {abbr:'RBAC',full:'Role-Based Access Control',cat:'identity',obj:'4.6',diff:'easy',mnemonic:'RBAC = permissions assigned via roles (admin/user/guest)'},
+    {abbr:'ABAC',full:'Attribute-Based Access Control',cat:'identity',obj:'4.6',diff:'medium',mnemonic:'ABAC = permissions evaluated against attributes (time/location/device)'},
+    {abbr:'DAC',full:'Discretionary Access Control',cat:'identity',obj:'4.6',diff:'medium',mnemonic:'DAC = resource OWNER decides access (file ACLs)'},
+    {abbr:'MAC',full:'Mandatory Access Control',cat:'identity',obj:'4.6',diff:'medium',mnemonic:'MAC = SYSTEM enforces via labels/clearances (military)'},
+    {abbr:'PAM',full:'Privileged Access Management',cat:'identity',obj:'4.6',diff:'medium',mnemonic:'PAM = securing + monitoring elevated/admin accounts'},
+    {abbr:'JIT',full:'Just-In-Time access',cat:'identity',obj:'4.6',diff:'medium',mnemonic:'JIT = temporary elevation granted only when needed'},
+    {abbr:'OTP',full:'One-Time Password',cat:'identity',obj:'4.6',diff:'easy'},
+    {abbr:'TOTP',full:'Time-Based One-Time Password',cat:'identity',obj:'4.6',diff:'medium',mnemonic:'TOTP = OTP that changes on a TIME schedule (typically 30s)'},
+    {abbr:'HOTP',full:'HMAC-Based One-Time Password',cat:'identity',obj:'4.6',diff:'hard',mnemonic:'HOTP = OTP generated via COUNTER + HMAC (not time-based)'},
+
+    // ── Crypto & PKI (18) ──────────────────────────────────────────────────
+    {abbr:'AES',full:'Advanced Encryption Standard',cat:'crypto',obj:'1.4',diff:'easy',mnemonic:'AES = symmetric block cipher (most modern encryption)'},
+    {abbr:'RSA',full:'Rivest-Shamir-Adleman',cat:'crypto',obj:'1.4',diff:'easy',mnemonic:'RSA = asymmetric: encryption + digital signatures'},
+    {abbr:'ECC',full:'Elliptic Curve Cryptography',cat:'crypto',obj:'1.4',diff:'medium',mnemonic:'ECC = asymmetric crypto with smaller keys vs RSA'},
+    {abbr:'ECDSA',full:'Elliptic Curve Digital Signature Algorithm',cat:'crypto',obj:'1.4',diff:'hard'},
+    {abbr:'ECDHE',full:'Elliptic Curve Diffie-Hellman Ephemeral',cat:'crypto',obj:'1.4',diff:'hard',mnemonic:'ECDHE = key exchange providing forward secrecy'},
+    {abbr:'SHA',full:'Secure Hash Algorithm',cat:'crypto',obj:'1.4',diff:'easy',mnemonic:'SHA = family of cryptographic hashes (SHA-256, SHA-3)'},
+    {abbr:'HMAC',full:'Hash-based Message Authentication Code',cat:'crypto',obj:'1.4',diff:'medium',mnemonic:'HMAC = hash function combined with secret key'},
+    {abbr:'PBKDF2',full:'Password-Based Key Derivation Function 2',cat:'crypto',obj:'1.4',diff:'hard',mnemonic:'PBKDF2 = slow hash for password storage (with bcrypt, Argon2)'},
+    {abbr:'MD5',full:'Message Digest 5',cat:'crypto',obj:'1.4',diff:'easy',mnemonic:'MD5 = BROKEN hash, not for security use anymore'},
+    {abbr:'DES',full:'Data Encryption Standard',cat:'crypto',obj:'1.4',diff:'easy',mnemonic:'DES = OBSOLETE 56-bit symmetric cipher'},
+    {abbr:'3DES',full:'Triple Data Encryption Standard',cat:'crypto',obj:'1.4',diff:'easy',mnemonic:'3DES = DES applied 3x (deprecated, use AES)'},
+    {abbr:'CA',full:'Certificate Authority',cat:'crypto',obj:'1.4',diff:'easy',mnemonic:'CA = trusted entity that issues digital certificates'},
+    {abbr:'RA',full:'Registration Authority',cat:'crypto',obj:'1.4',diff:'medium',mnemonic:'RA = verifies identity BEFORE CA issues a cert'},
+    {abbr:'CRL',full:'Certificate Revocation List',cat:'crypto',obj:'1.4',diff:'medium',mnemonic:'CRL = list of certs revoked before expiration'},
+    {abbr:'OCSP',full:'Online Certificate Status Protocol',cat:'crypto',obj:'1.4',diff:'medium',mnemonic:'OCSP = real-time cert validity check (replaces CRL polling)'},
+    {abbr:'CSR',full:'Certificate Signing Request',cat:'crypto',obj:'1.4',diff:'easy',mnemonic:'CSR = application sent to CA to issue a certificate'},
+    {abbr:'KMS',full:'Key Management Service',cat:'crypto',obj:'1.4',diff:'medium',mnemonic:'KMS = cloud service for managing encryption keys'},
+    {abbr:'HSM',full:'Hardware Security Module',cat:'crypto',obj:'1.4',diff:'medium',mnemonic:'HSM = tamper-resistant device for storing crypto keys'},
+
+    // ── Network Security (17) ──────────────────────────────────────────────
+    {abbr:'VPN',full:'Virtual Private Network',cat:'network',obj:'3.2',diff:'easy',mnemonic:'VPN = encrypted tunnel over public network'},
+    {abbr:'IPsec',full:'Internet Protocol Security',cat:'network',obj:'3.2',diff:'easy',mnemonic:'IPsec = suite of protocols for secure IP communication'},
+    {abbr:'SSL',full:'Secure Sockets Layer',cat:'network',obj:'3.2',diff:'easy',mnemonic:'SSL = DEPRECATED predecessor to TLS'},
+    {abbr:'TLS',full:'Transport Layer Security',cat:'network',obj:'3.2',diff:'easy',mnemonic:'TLS = modern protocol securing data over networks (HTTPS, etc.)'},
+    {abbr:'mTLS',full:'Mutual Transport Layer Security',cat:'network',obj:'3.2',diff:'medium',mnemonic:'mTLS = BOTH client and server present certificates (zero-trust)'},
+    {abbr:'NAT',full:'Network Address Translation',cat:'network',obj:'3.2',diff:'easy',mnemonic:'NAT = maps private IPs to public for internet traffic'},
+    {abbr:'PAT',full:'Port Address Translation',cat:'network',obj:'3.2',diff:'medium',mnemonic:'PAT = NAT variant using ports to multiplex private IPs'},
+    {abbr:'ACL',full:'Access Control List',cat:'network',obj:'3.2',diff:'easy',mnemonic:'ACL = ordered rules permit/deny traffic on a device'},
+    {abbr:'NAC',full:'Network Access Control',cat:'network',obj:'3.2',diff:'medium',mnemonic:'NAC = enforces compliance BEFORE granting network access'},
+    {abbr:'DMZ',full:'Demilitarized Zone',cat:'network',obj:'3.2',diff:'easy',mnemonic:'DMZ = network segment exposing public-facing services'},
+    {abbr:'WAF',full:'Web Application Firewall',cat:'network',obj:'3.2',diff:'easy',mnemonic:'WAF = filters HTTP traffic to web apps (L7)'},
+    {abbr:'NGFW',full:'Next-Generation Firewall',cat:'network',obj:'3.2',diff:'medium',mnemonic:'NGFW = firewall + deep packet inspection + app awareness'},
+    {abbr:'UTM',full:'Unified Threat Management',cat:'network',obj:'3.2',diff:'medium',mnemonic:'UTM = all-in-one security appliance'},
+    {abbr:'SD-WAN',full:'Software-Defined Wide Area Network',cat:'network',obj:'3.2',diff:'medium',mnemonic:'SD-WAN = WAN management abstracted by software'},
+    {abbr:'ZTNA',full:'Zero Trust Network Access',cat:'network',obj:'3.2',diff:'medium',mnemonic:'ZTNA = verify-then-trust (never assume internal=safe)'},
+    {abbr:'SASE',full:'Secure Access Service Edge',cat:'network',obj:'3.2',diff:'hard',mnemonic:'SASE = SD-WAN + ZTNA + CASB cloud-delivered'},
+    {abbr:'EAP',full:'Extensible Authentication Protocol',cat:'network',obj:'3.2',diff:'medium',mnemonic:'EAP = authentication framework, esp. for wireless'},
+
+    // ── Compliance & Governance (17) ───────────────────────────────────────
+    {abbr:'GDPR',full:'General Data Protection Regulation',cat:'compliance',obj:'5.1',diff:'easy',mnemonic:'GDPR = EU privacy/data-protection regulation'},
+    {abbr:'HIPAA',full:'Health Insurance Portability and Accountability Act',cat:'compliance',obj:'5.1',diff:'easy',mnemonic:'HIPAA = US healthcare privacy law (PHI)'},
+    {abbr:'PCI-DSS',full:'Payment Card Industry Data Security Standard',cat:'compliance',obj:'5.1',diff:'easy',mnemonic:'PCI-DSS = credit card data protection'},
+    {abbr:'SOX',full:'Sarbanes-Oxley Act',cat:'compliance',obj:'5.1',diff:'medium',mnemonic:'SOX = US corporate financial reporting / accountability'},
+    {abbr:'GLBA',full:'Gramm-Leach-Bliley Act',cat:'compliance',obj:'5.1',diff:'hard',mnemonic:'GLBA = US financial info privacy'},
+    {abbr:'FERPA',full:'Family Educational Rights and Privacy Act',cat:'compliance',obj:'5.1',diff:'hard',mnemonic:'FERPA = US student records privacy'},
+    {abbr:'FISMA',full:'Federal Information Security Management Act',cat:'compliance',obj:'5.1',diff:'medium',mnemonic:'FISMA = US gov info security'},
+    {abbr:'ISO',full:'International Organization for Standardization',cat:'compliance',obj:'5.1',diff:'easy'},
+    {abbr:'NIST',full:'National Institute of Standards and Technology',cat:'compliance',obj:'5.1',diff:'easy'},
+    {abbr:'CSF',full:'Cybersecurity Framework',cat:'compliance',obj:'5.1',diff:'medium',mnemonic:'CSF = NIST risk-based framework (Identify/Protect/Detect/Respond/Recover)'},
+    {abbr:'RMF',full:'Risk Management Framework',cat:'compliance',obj:'5.1',diff:'medium',mnemonic:'RMF = NIST 7-step process for managing security risk'},
+    {abbr:'CIS',full:'Center for Internet Security',cat:'compliance',obj:'5.1',diff:'easy',mnemonic:'CIS = publishes Controls + Benchmarks (hardening guides)'},
+    {abbr:'COBIT',full:'Control Objectives for Information and Related Technologies',cat:'compliance',obj:'5.1',diff:'hard',mnemonic:'COBIT = IT governance framework'},
+    {abbr:'SOC 2',full:'System and Organization Controls 2',cat:'compliance',obj:'5.1',diff:'medium',mnemonic:'SOC 2 = audit report on org’s security controls'},
+    {abbr:'PII',full:'Personally Identifiable Information',cat:'compliance',obj:'5.1',diff:'easy'},
+    {abbr:'PHI',full:'Protected Health Information',cat:'compliance',obj:'5.1',diff:'easy',mnemonic:'PHI = health data covered by HIPAA'},
+    {abbr:'AUP',full:'Acceptable Use Policy',cat:'compliance',obj:'5.1',diff:'easy'},
+
+    // ── Operations & Cloud (16) ────────────────────────────────────────────
+    {abbr:'DLP',full:'Data Loss Prevention',cat:'operations',obj:'4.5',diff:'easy',mnemonic:'DLP = monitors + blocks sensitive data leaving the org'},
+    {abbr:'CASB',full:'Cloud Access Security Broker',cat:'operations',obj:'3.1',diff:'medium',mnemonic:'CASB = sits between users + cloud apps (security/policy)'},
+    {abbr:'CSPM',full:'Cloud Security Posture Management',cat:'operations',obj:'3.1',diff:'hard',mnemonic:'CSPM = identifies cloud misconfigs + compliance gaps'},
+    {abbr:'CWPP',full:'Cloud Workload Protection Platform',cat:'operations',obj:'3.1',diff:'hard',mnemonic:'CWPP = protects cloud workloads (VMs, containers)'},
+    {abbr:'SCAP',full:'Security Content Automation Protocol',cat:'operations',obj:'4.3',diff:'hard'},
+    {abbr:'OVAL',full:'Open Vulnerability and Assessment Language',cat:'operations',obj:'4.3',diff:'hard'},
+    {abbr:'FIM',full:'File Integrity Monitoring',cat:'operations',obj:'4.5',diff:'medium',mnemonic:'FIM = detects unauthorized changes to files'},
+    {abbr:'MDM',full:'Mobile Device Management',cat:'operations',obj:'4.1',diff:'easy'},
+    {abbr:'MAM',full:'Mobile Application Management',cat:'operations',obj:'4.1',diff:'medium'},
+    {abbr:'EMM',full:'Enterprise Mobility Management',cat:'operations',obj:'4.1',diff:'medium',mnemonic:'EMM = MDM + MAM combined'},
+    {abbr:'RPO',full:'Recovery Point Objective',cat:'operations',obj:'3.4',diff:'easy',mnemonic:'RPO = MAX acceptable DATA LOSS measured in time'},
+    {abbr:'RTO',full:'Recovery Time Objective',cat:'operations',obj:'3.4',diff:'easy',mnemonic:'RTO = MAX acceptable TIME to restore service'},
+    {abbr:'MTTR',full:'Mean Time To Recover',cat:'operations',obj:'3.4',diff:'medium'},
+    {abbr:'MTBF',full:'Mean Time Between Failures',cat:'operations',obj:'3.4',diff:'medium'},
+    {abbr:'BCP',full:'Business Continuity Plan',cat:'operations',obj:'3.4',diff:'easy',mnemonic:'BCP = keep org running DURING/AFTER disruption'},
+    {abbr:'DRP',full:'Disaster Recovery Plan',cat:'operations',obj:'3.4',diff:'easy',mnemonic:'DRP = restore IT systems after major disruption'}
+  ],
+
+  // Lessons cheatsheet — one entry per category. Brief intro + auto-derived
+  // table from the bank entries that share the catId. Lighter than Network+
+  // AB lessons (which have 2-page theory blocks); revisit for v0.1 if the
+  // user asks for deeper lesson content per category.
+  acronymLessons: [
+    { id: 'threats', catId: 'threats', title: 'Threats & Attacks', icon: '⚔️',
+      desc: 'Attack vectors, attacker categories, and the indicators security teams use to recognize them.',
+      theory: [
+        'These acronyms cover the BAD STUFF on SY0-701: who attacks (APT, RAT operators), how they attack (DDoS, MITM, SQLi, XSS, CSRF, SSRF, RCE, BEC), what they leave behind (IoC = post-fact forensic artifacts), and what they’re doing in real time (IoA = behavior patterns suggesting an attack in progress).',
+        '<strong>Confusion pair to lock down:</strong> IoC vs IoA — IoC is something already happened (a malicious file hash, a known-bad IP in your logs); IoA is something happening right now (a process spawning suspicious children, unusual outbound beacons). Both are tested directly on the exam.'
+      ] },
+    { id: 'detection', catId: 'detection', title: 'Detection & Response', icon: '🛡️',
+      desc: 'The platforms and processes a SOC analyst uses every day.',
+      theory: [
+        'SY0-701 Domain 4 (Security Operations) is 28% of the exam — the LARGEST domain — and it’s built on the acronyms in this category. Master SIEM, SOAR, EDR/MDR/XDR, IDS/IPS variants, and the IR lifecycle terms.',
+        '<strong>Confusion pair to lock down:</strong> SIEM vs SOAR — SIEM aggregates and correlates logs to alert analysts; SOAR is the layer ABOVE SIEM that automates response actions (block IP, quarantine endpoint, open ticket) via analyst-authored playbooks. Many shops have both.',
+        '<strong>EDR vs MDR vs XDR:</strong> EDR is the technology on endpoints. MDR is EDR + 24/7 outsourced analysts. XDR extends correlation across endpoint + network + cloud + identity sources.'
+      ] },
+    { id: 'identity', catId: 'identity', title: 'Identity & Access', icon: '🔑',
+      desc: 'Who is the user, what can they access, and how do we prove it?',
+      theory: [
+        'IAM is the fastest-changing area on SY0-701 — federation (SAML, OIDC), zero-trust principles, FIDO passwordless, and the four authorization models (DAC, MAC, RBAC, ABAC).',
+        '<strong>Authorization model decision flow:</strong> Owner decides? → DAC. System decides via labels/clearances? → MAC. Permissions tied to a role/job function? → RBAC. Permissions evaluated dynamically against user/resource/environment attributes (time, location, device posture)? → ABAC.',
+        '<strong>OAuth vs OIDC:</strong> OAuth is delegated AUTHORIZATION (giving an app access to your data). OIDC sits on top of OAuth and adds authentication (proving who you are). Many vendors say "OAuth login" when they really mean OIDC.'
+      ] },
+    { id: 'crypto', catId: 'crypto', title: 'Crypto & PKI', icon: '🔐',
+      desc: 'The math + infrastructure that keeps data confidential and trustworthy.',
+      theory: [
+        'Symmetric (AES) vs asymmetric (RSA, ECC). Hashing (SHA-2, SHA-3, HMAC, PBKDF2) for integrity and password storage. PKI lifecycle: CA issues, CSR is the application, OCSP/CRL handle revocation.',
+        '<strong>Always-deprecated set:</strong> MD5, SHA-1, DES, 3DES, RC4, SSL (any version). The exam will test whether you recognize these as broken/legacy.',
+        '<strong>Forward secrecy:</strong> ECDHE provides session-key forward secrecy — even if the long-term private key is later compromised, past sessions stay confidential.'
+      ] },
+    { id: 'network', catId: 'network', title: 'Network Security', icon: '🌐',
+      desc: 'Filtering, segmentation, encrypted transport, and the modern zero-trust replacements.',
+      theory: [
+        'Classical layered defense (DMZ, ACLs, NAT, WAF) is being replaced by zero-trust patterns (ZTNA, SASE) where every access request is verified rather than relying on network position.',
+        '<strong>NGFW vs WAF:</strong> NGFW does L3-L7 inspection across all traffic. WAF specifically inspects HTTP traffic to web apps (SQLi, XSS protection at the request level).',
+        '<strong>SASE = SD-WAN + ZTNA + CASB</strong> bundled into a cloud-delivered service. This is the trendy architecture pattern on SY0-701.'
+      ] },
+    { id: 'compliance', catId: 'compliance', title: 'Compliance & Governance', icon: '📋',
+      desc: 'The laws, frameworks, and policies that shape what “security” actually means in your industry.',
+      theory: [
+        'Regulations apply by industry: HIPAA (healthcare), PCI-DSS (payment cards), SOX (publicly-traded financial reporting), GLBA (financial info), FERPA (education), GDPR (any org handling EU resident data), FISMA (US government).',
+        'Frameworks are voluntary best-practices: NIST CSF (5 functions), NIST RMF (7 steps), ISO 27001 (audit-certifiable management system), CIS Controls (prioritized 18-control list), COBIT (governance).',
+        '<strong>Data classifications:</strong> PII (any identifying info), PHI (health-specific), SPI (sensitive personal info, more restrictive than PII). The exam tests classification frequently.'
+      ] },
+    { id: 'operations', catId: 'operations', title: 'Operations & Cloud', icon: '⚙️',
+      desc: 'Day-to-day security operations, mobile/cloud platforms, and business-continuity metrics.',
+      theory: [
+        'Cloud-specific security tools live here: CASB (cloud-app gateway), CSPM (cloud-config posture), CWPP (workload protection in containers/VMs).',
+        '<strong>RPO vs RTO:</strong> RPO is the MAX DATA LOSS you can tolerate (measured in time, e.g., “we back up every 4 hours, so RPO = 4 hours”). RTO is the MAX TIME to restore service after a disruption. Both are critical inputs to BCP/DRP.',
+        '<strong>MDM/MAM/EMM trio:</strong> MDM controls the whole device. MAM controls just the apps + their data. EMM is the modern umbrella that combines both.'
+      ] }
   ]
 };

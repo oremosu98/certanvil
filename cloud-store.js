@@ -84,6 +84,8 @@
     'nplus_port_lessons',
     'nplus_ab_mastery',
     'nplus_ab_lessons',
+    'nplus_sab_mastery',
+    'nplus_sab_lessons',
     'nplus_os_mastery',
     'nplus_os_lessons',
     'nplus_cb_mastery',

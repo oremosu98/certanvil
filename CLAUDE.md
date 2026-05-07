@@ -459,6 +459,7 @@ npx playwright test              # E2E (tests/e2e/app.spec.js)
 
 | Version | Features Added |
 |---|---|
+| v4.91.0 | Security+ Acronym Blitz drill — first SY0-701 drill (cert-aware AB scaffold + 120-acronym bank + 7-tile launcher) |
 | v4.90.3 | Hide Network+-specific drills from Security+ cert + Drills launcher placeholder |
 | v4.90.2 | Hotfix — pricing.html dropdown links wired + Supabase CDN switched to local vendored bundle |
 | v4.90.1 | Hotfix — auth.js no longer bails out on pages without modal markup (account / admin) |
