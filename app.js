@@ -1,9 +1,9 @@
 // ══════════════════════════════════════════
-// Network+ AI Quiz — app.js  v4.90.2
+// Network+ AI Quiz — app.js  v4.90.3
 // ══════════════════════════════════════════
 
 // ── CONSTANTS ──
-const APP_VERSION = '4.90.2';
+const APP_VERSION = '4.90.3';
 
 // ══════════════════════════════════════════════════════════════════════════
 // CERT PACK ARCHITECTURE (v4.86.0 Phase 1A engine refactor)
@@ -1057,10 +1057,38 @@ function goSetup() {
 }
 
 // v4.41.0: Drills launcher (consolidated entry point for Port/Acronym/OSI/Cables drills).
+// v4.90.3: when CURRENT_CERT === 'secplus', the existing drills (Subnet, Port,
+// Acronym, OSI, Cable, Network Analysis) are Network+-specific so we replace
+// the launcher with a "Security+ drills coming soon" placeholder instead.
+// Future ships will populate Security+-specific drills (control type sorter,
+// IoC recognizer, attack-mitigation match, etc.) — see roadmap in
+// memory/reference_phase_c_prime_cloud_first.md companion notes.
 function showDrillsPage() {
   showPage('drills');
+  if (typeof CURRENT_CERT !== 'undefined' && CURRENT_CERT === 'secplus') {
+    _renderSecPlusDrillsPlaceholder();
+    return;
+  }
   // v4.78.0: surface weakest-drill recommendation
   if (typeof renderDrillsRecommendation === 'function') renderDrillsRecommendation();
+}
+
+function _renderSecPlusDrillsPlaceholder() {
+  var pageEl = document.getElementById('page-drills');
+  if (!pageEl) return;
+  // Replace the existing drills launcher content with a single Security+
+  // placeholder card. Idempotent — overwrites whatever was there.
+  pageEl.innerHTML = ''
+    + '<div class="ed-pagehead"><div class="ed-section-meta">Drills</div>'
+    +   '<h1 class="ed-pagehead-h1">Security+ drills coming soon</h1>'
+    +   '<p class="ed-pagehead-lede">The Network+ drills (Subnet, Port, Acronym, OSI, Cable, Network Analysis) are not relevant to SY0-701, so they\'re hidden in Security+ mode. New SY0-701-specific drills are queued for a future ship — control type sorter, attack-mitigation match, IoC recognizer, and more.</p>'
+    + '</div>'
+    + '<div class="secplus-drills-placeholder">'
+    +   '<div class="spdp-icon" aria-hidden="true">🛠</div>'
+    +   '<h2 class="spdp-title">Working on it</h2>'
+    +   '<p class="spdp-sub">In the meantime, take Mixed quizzes (Custom Quiz → leave domain unselected → click Generate) for breadth across the SY0-701 blueprint, or pick specific topics from Custom Quiz to drill deeper.</p>'
+    +   '<a class="spdp-cta" href="#" onclick="goSetup();return false;">← Back to home</a>'
+    + '</div>';
 }
 
 // v4.41.0: Progressive disclosure — hide Marathon Mode until user has completed 1+ quiz.
@@ -35456,10 +35484,20 @@ function renderAppSidebar() {
       <div class="sb-section-label">Practice</div>
       ${APP_SIDEBAR_PRACTICE.map(renderItem).join('')}
     </div>
+    ${(typeof CURRENT_CERT !== 'undefined' && CURRENT_CERT === 'secplus') ? `
+    <div class="sb-section sb-section-drills-coming-soon">
+      <div class="sb-section-label">Drills</div>
+      <div class="sb-drills-placeholder">
+        <span class="sb-drills-placeholder-icon" aria-hidden="true">🛠</span>
+        <span class="sb-drills-placeholder-text">Security+ drills coming soon</span>
+      </div>
+    </div>
+    ` : `
     <div class="sb-section">
       <div class="sb-section-label">Drills</div>
       ${APP_SIDEBAR_DRILLS.map(renderItem).join('')}
     </div>
+    `}
     <div class="sb-section">
       <div class="sb-section-label">Account</div>
       ${APP_SIDEBAR_SETTINGS.map(renderItem).join('')}

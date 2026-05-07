@@ -1,5 +1,5 @@
 /* ══════════════════════════════════════════
-   Network+ AI Quiz — styles.css  v4.90.2
+   Network+ AI Quiz — styles.css  v4.90.3
    ══════════════════════════════════════════ */
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -6972,6 +6972,66 @@ body.has-sidebar { padding-left: 240px; transition: padding-left .25s cubic-bezi
   font-size: 10px; font-weight: 800; letter-spacing: .12em;
   text-transform: uppercase; color: var(--text-dim);
   padding: 0 10px 6px;
+}
+/* v4.90.3: sidebar drill placeholder for Security+ (Network+ drills not
+   applicable to SY0-701; new SY0-701-specific drills queued). */
+.sb-section-drills-coming-soon { opacity: 0.7; }
+.sb-drills-placeholder {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 12px;
+  margin: 0 6px;
+  background: rgba(var(--accent-rgb), .04);
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+  font-size: 11px;
+  color: var(--text-dim);
+}
+.sb-drills-placeholder-icon { font-size: 14px; flex-shrink: 0; opacity: 0.7; }
+.sb-drills-placeholder-text { font-style: italic; }
+
+/* v4.90.3: drills launcher page placeholder (when CURRENT_CERT === 'secplus'). */
+.secplus-drills-placeholder {
+  text-align: center;
+  padding: 56px 28px;
+  margin: 16px auto 0;
+  max-width: 560px;
+  background: var(--surface);
+  border: 1px dashed var(--border);
+  border-radius: 16px;
+}
+.secplus-drills-placeholder .spdp-icon {
+  font-size: 44px;
+  margin-bottom: 12px;
+  opacity: 0.55;
+}
+.secplus-drills-placeholder .spdp-title {
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  margin-bottom: 8px;
+  color: var(--text);
+}
+.secplus-drills-placeholder .spdp-sub {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text-mid);
+  max-width: 420px;
+  margin: 0 auto 20px;
+}
+.secplus-drills-placeholder .spdp-cta {
+  display: inline-block;
+  padding: 9px 18px;
+  background: rgba(var(--accent-rgb), .12);
+  color: var(--accent-light);
+  border: 1px solid rgba(var(--accent-rgb), .32);
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background-color .15s ease;
+}
+.secplus-drills-placeholder .spdp-cta:hover {
+  background: rgba(var(--accent-rgb), .2);
 }
 .sb-item {
   display: flex; align-items: center; gap: 10px;
