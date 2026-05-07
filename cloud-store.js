@@ -88,6 +88,8 @@
     'nplus_sab_lessons',
     'nplus_amm_mastery',  // v4.94.0: Attack-to-Mitigation Match
     'nplus_amm_lessons',
+    'nplus_cts_mastery',  // v4.95.0: Control Type Sorter
+    'nplus_cts_lessons',
     'nplus_os_mastery',
     'nplus_os_lessons',
     'nplus_cb_mastery',

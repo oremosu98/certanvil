@@ -1351,5 +1351,240 @@ window.CERT_PACKS.secplus = {
         ['Tool drop', '802.1X + DHCP fingerprinting'],
         ['Laptop theft', 'FDE + remote wipe via MDM']
       ] }
+  ],
+
+  // ── CONTROL TYPE SORTER (v4.95.0, issue #302) ────────────────────────────
+  // CompTIA SY0-701 Domain 1.1 6×4 matrix: 6 types × 4 categories. Drill format
+  // is dual-axis MCQ — pick TYPE (1-of-6) AND CATEGORY (1-of-4) for each
+  // control. Submit only enabled when both axes locked in. Wrong on either
+  // axis = wrong; right on both = right (advance box +1).
+  // Visual contract locked to mockup `mockups/security-control-type-sorter-
+  // concept.html` State 2 (MCQ mode is recommended for v1).
+  controlTypes: {
+    prev:  { label: 'Preventive',   icon: '🔒', color: '#5b4fdb', gloss: 'Stops attack before it happens' },
+    det:   { label: 'Detective',    icon: '🔍', color: '#06b6d4', gloss: 'Finds attack in progress / after' },
+    corr:  { label: 'Corrective',   icon: '🔧', color: '#16a34a', gloss: 'Fixes after attack succeeds' },
+    deter: { label: 'Deterrent',    icon: '⚠',  color: '#f59e0b', gloss: 'Discourages attempt (warning)' },
+    comp:  { label: 'Compensating', icon: '🔄', color: '#d946ef', gloss: 'Fills gap when primary control fails' },
+    dir:   { label: 'Directive',    icon: '📋', color: '#6b6b90', gloss: 'Policy that directs other controls' }
+  },
+  controlCategories: {
+    tech: { label: 'Technical',   gloss: 'Hardware / software / firmware' },
+    mgmt: { label: 'Managerial',  gloss: 'Risk / policy / governance level' },
+    ops:  { label: 'Operational', gloss: 'People / process at runtime' },
+    phys: { label: 'Physical',    gloss: 'Tangible barriers / sensors' }
+  },
+  controls: [
+    // ── PREVENTIVE × TECHNICAL (5) ──
+    { id: 'firewall', name: 'Firewall', desc: 'Network device that blocks traffic based on rules.', type: 'prev', cat: 'tech', obj: '1.1', why: 'Blocks malicious traffic at the network edge before it reaches assets — classic preventive technical control.', trap: 'IDS' },
+    { id: 'ips', name: 'Intrusion Prevention System (IPS)', desc: 'Inline device that blocks traffic matching attack signatures.', type: 'prev', cat: 'tech', obj: '1.1', why: 'IPS BLOCKS (preventive) — same hardware as IDS but operates inline. The "P" letter changes the type entirely.', trap: 'IDS' },
+    { id: 'encryption-rest', name: 'Disk encryption (FDE)', desc: 'Encrypts data on disk so stolen drive is unreadable.', type: 'prev', cat: 'tech', obj: '1.1', why: 'Prevents disclosure of data-at-rest if device is stolen. Technical because it lives in software/firmware.', trap: null },
+    { id: 'antivirus-sig', name: 'Anti-virus (signature-based)', desc: 'Scans files for known malware signatures, blocks/quarantines.', type: 'prev', cat: 'tech', obj: '1.1', why: 'Prevents known malware from running. Modern EDR is hybrid (preventive + detective) but signature-based AV is preventive technical.', trap: null },
+    { id: 'mfa', name: 'Multi-factor authentication (MFA)', desc: 'Requires two or more credentials before granting access.', type: 'prev', cat: 'tech', obj: '1.1', why: 'Prevents unauthorised access even if password leaks. Technical because it\'s implemented in identity systems.', trap: null },
+
+    // ── PREVENTIVE × MANAGERIAL (5) ──
+    { id: 'onboarding-policy', name: 'Onboarding policy', desc: 'Mandatory checklist new hires must complete before getting system access.', type: 'prev', cat: 'mgmt', obj: '1.1', why: 'Prevents privilege creep + ensures security awareness from day one. Managerial because it\'s a policy/process.', trap: null },
+    { id: 'background-check', name: 'Pre-employment background check', desc: 'Vetting hire history, criminal record, education before offer.', type: 'prev', cat: 'mgmt', obj: '1.1', why: 'Prevents hiring high-risk individuals. Managerial — owned by HR/security policy, not technical.', trap: null },
+    { id: 'byod-policy', name: 'BYOD policy', desc: 'Written rules for personal-device access to corporate resources.', type: 'prev', cat: 'mgmt', obj: '1.1', why: 'Prevents data leakage by setting expectations + access boundaries before users plug in. Managerial because it\'s policy.', trap: null },
+    { id: 'risk-assessment', name: 'Annual risk assessment', desc: 'Formal review of threats + likelihood + impact across the org.', type: 'prev', cat: 'mgmt', obj: '5.1', why: 'Prevents unmitigated risks by surfacing them for prioritisation. Pure management activity.', trap: null },
+    { id: 'change-mgmt-policy', name: 'Change management policy', desc: 'Required approvals + review process for production changes.', type: 'prev', cat: 'mgmt', obj: '5.1', why: 'Prevents unreviewed changes from breaking prod or introducing vulns. Managerial because it directs the change process.', trap: 'directive' },
+
+    // ── PREVENTIVE × OPERATIONAL (5) ──
+    { id: 'job-rotation', name: 'Job rotation', desc: 'Periodically moving employees between roles.', type: 'prev', cat: 'ops', obj: '5.6', why: 'Prevents fraud + collusion + single points of knowledge. Operational because it\'s a runtime HR practice.', trap: null },
+    { id: 'separation-of-duties', name: 'Separation of duties', desc: 'Splits sensitive tasks so no single person can complete them alone.', type: 'prev', cat: 'ops', obj: '5.6', why: 'Prevents unilateral fraud (e.g., one person both approving + paying invoices). Operational practice baked into workflows.', trap: null },
+    { id: 'mandatory-leave', name: 'Mandatory leave / vacation', desc: 'Requires employees to take consecutive days off each year.', type: 'prev', cat: 'ops', obj: '5.6', why: 'Prevents long-running fraud schemes by forcing the perpetrator to be absent (catch via the substitute). Operational HR practice.', trap: null },
+    { id: 'least-privilege', name: 'Least-privilege provisioning', desc: 'Default access = minimum needed for the role; expansion requires justification.', type: 'prev', cat: 'ops', obj: '4.6', why: 'Prevents over-privilege creep. Operational because it\'s a runtime access-management practice.', trap: null },
+    { id: 'security-training', name: 'Annual security awareness training', desc: 'Mandatory yearly course on phishing, social eng, secure handling.', type: 'prev', cat: 'ops', obj: '5.6', why: 'Prevents user-side mistakes (clicking phishing, sharing creds). Operational because it\'s a recurring workforce activity.', trap: null },
+
+    // ── PREVENTIVE × PHYSICAL (5) ──
+    { id: 'mantrap', name: 'Mantrap (security vestibule)', desc: 'Two-door entry chamber, only one door open at a time.', type: 'prev', cat: 'phys', obj: '4.1', why: 'Prevents tailgating by enforcing single-occupancy entry. Tangible physical structure.', trap: null },
+    { id: 'locked-server-room', name: 'Locked server room', desc: 'Physical lock on the door to the data centre or comms closet.', type: 'prev', cat: 'phys', obj: '4.1', why: 'Prevents unauthorised physical access to servers. Most basic physical preventive control.', trap: null },
+    { id: 'cable-lock', name: 'Cable lock for laptops', desc: 'Wire lock attaches laptop to desk, deters opportunistic theft.', type: 'prev', cat: 'phys', obj: '4.1', why: 'Prevents physical theft. Physical technical control — sometimes ambiguous as deterrent, but CompTIA classifies as preventive.', trap: 'deter' },
+    { id: 'fence', name: 'Perimeter fence', desc: 'Physical boundary around a facility.', type: 'prev', cat: 'phys', obj: '4.1', why: 'Prevents/slows unauthorised entry. Tangible barrier = preventive physical.', trap: 'deter' },
+    { id: 'bollards', name: 'Bollards', desc: 'Concrete or steel posts blocking vehicle access to building entrances.', type: 'prev', cat: 'phys', obj: '4.1', why: 'Prevents vehicle ramming attacks. Physical structure that blocks (preventive, not just deterrent).', trap: 'deter' },
+
+    // ── DETECTIVE × TECHNICAL (5) ──
+    { id: 'ids', name: 'Intrusion Detection System (IDS)', desc: 'Network sensor that alerts on suspicious traffic patterns.', type: 'det', cat: 'tech', obj: '1.1', why: 'IDS DETECTS but doesn\'t block — alerts only. Same hardware as IPS but operates passively. The "I" letter is the only difference.', trap: 'IPS' },
+    { id: 'siem', name: 'SIEM (Security Information & Event Mgmt)', desc: 'Aggregates logs across the org, alerts on suspicious patterns.', type: 'det', cat: 'tech', obj: '4.1', why: 'Detects attacks via log correlation across devices. Pure detective technical — gives visibility, doesn\'t prevent.', trap: null },
+    { id: 'fim', name: 'File integrity monitoring (FIM)', desc: 'Hashes critical files + alerts on unauthorised changes.', type: 'det', cat: 'tech', obj: '4.1', why: 'Detects tampering with config files / system binaries after the fact. Technical software control.', trap: null },
+    { id: 'log-analytics', name: 'Log analytics platform', desc: 'Real-time analysis of application + system logs for anomalies.', type: 'det', cat: 'tech', obj: '4.1', why: 'Detects attack patterns by examining logs. Technical because it\'s implemented in software.', trap: null },
+    { id: 'edr-detect', name: 'EDR behavioural detection', desc: 'Endpoint agent that detects suspicious process behaviour (file-less malware, etc).', type: 'det', cat: 'tech', obj: '4.1', why: 'Detects what signature AV misses — behavioural patterns. Technical control on endpoints.', trap: null },
+
+    // ── DETECTIVE × MANAGERIAL (5) ──
+    { id: 'audit', name: 'Internal security audit', desc: 'Periodic formal review of security controls, gaps, and compliance.', type: 'det', cat: 'mgmt', obj: '5.5', why: 'Detects control failures + policy violations after the fact. Pure managerial activity — owned by audit/risk teams.', trap: null },
+    { id: 'log-review', name: 'Log review process', desc: 'Documented process where security team reviews specific logs daily/weekly.', type: 'det', cat: 'mgmt', obj: '4.1', why: 'Detects issues by formal log examination. Managerial because it\'s a process/policy, not the tool itself.', trap: null },
+    { id: 'compliance-audit', name: 'External compliance audit (SOC 2, ISO 27001)', desc: 'Third-party audit attesting to control effectiveness.', type: 'det', cat: 'mgmt', obj: '5.5', why: 'Detects gaps via independent review. Managerial — risk/compliance owns it.', trap: null },
+    { id: 'access-review', name: 'Quarterly access review', desc: 'Manager certifies their team\'s system access is still appropriate.', type: 'det', cat: 'mgmt', obj: '4.6', why: 'Detects privilege creep + stale accounts. Managerial because it\'s a process, not a technical scan.', trap: null },
+    { id: 'penetration-test', name: 'Penetration test', desc: 'Authorised attack simulation by external red team.', type: 'det', cat: 'mgmt', obj: '5.5', why: 'Detects exploitable vulns via simulated attack. Often classified as detective managerial because it\'s a scheduled program with a final report.', trap: null },
+
+    // ── DETECTIVE × OPERATIONAL (5) ──
+    { id: 'cctv-review', name: 'CCTV review (active monitoring)', desc: 'Security personnel actively watch camera feeds.', type: 'det', cat: 'ops', obj: '4.1', why: 'Detects in-progress events via human observation. Operational because it\'s a runtime human activity.', trap: 'phys' },
+    { id: 'guard-active', name: 'Active patrolling security guard', desc: 'Guard physically walks rounds, observes anomalies.', type: 'det', cat: 'ops', obj: '4.1', why: 'Detects anomalies during patrol. Operational because it\'s a runtime activity (separate from a posted-deterrent presence).', trap: 'deter' },
+    { id: 'help-desk-monitoring', name: 'Help-desk anomaly monitoring', desc: 'Help-desk staff trained to spot social-engineering attempts.', type: 'det', cat: 'ops', obj: '4.1', why: 'Detects social engineering at the support touchpoint. Operational human-monitoring practice.', trap: null },
+    { id: 'walk-around', name: 'Periodic walk-around inspection', desc: 'Security walks the floor checking for unbadged visitors, unlocked screens.', type: 'det', cat: 'ops', obj: '4.1', why: 'Detects clean-desk + tailgating violations in real-time. Operational human activity.', trap: null },
+    { id: 'shift-change-review', name: 'Shift-change handoff log', desc: 'Outgoing shift documents anomalies for incoming shift to review.', type: 'det', cat: 'ops', obj: '4.1', why: 'Detects ongoing situations across shifts. Operational because it\'s the routine handoff process.', trap: null },
+
+    // ── DETECTIVE × PHYSICAL (5) ──
+    { id: 'motion-sensor', name: 'Motion sensor', desc: 'PIR or IR sensor that triggers alarm on movement.', type: 'det', cat: 'phys', obj: '4.1', why: 'Detects intrusion when no one should be there. Tangible physical sensor.', trap: null },
+    { id: 'cctv-cam', name: 'CCTV camera (recording only)', desc: 'Camera records footage for later review (not actively watched).', type: 'det', cat: 'phys', obj: '4.1', why: 'Detects events for forensic review. Physical because the camera is tangible. Note: live-monitored CCTV is operational; recording-only is physical.', trap: 'ops' },
+    { id: 'door-sensor', name: 'Door open/close sensor', desc: 'Magnetic sensor alerts when a door opens outside hours.', type: 'det', cat: 'phys', obj: '4.1', why: 'Detects unauthorised entry attempts. Physical sensor.', trap: null },
+    { id: 'glass-break', name: 'Glass-break sensor', desc: 'Acoustic sensor detects breaking glass.', type: 'det', cat: 'phys', obj: '4.1', why: 'Detects forced entry through windows. Physical sensor.', trap: null },
+    { id: 'lighting-detect', name: 'Lighting (for camera coverage)', desc: 'Outdoor lighting that ensures cameras can capture identifiable footage.', type: 'det', cat: 'phys', obj: '4.1', why: 'The CompTIA trap: lighting LOOKS like a deterrent but classifies as DETECTIVE — it enables CCTV to detect intruders. Without light, cameras can\'t identify.', trap: 'deter' },
+
+    // ── CORRECTIVE × TECHNICAL (5) ──
+    { id: 'backup-restore', name: 'Backup restoration', desc: 'Restoring from backup after data loss / ransomware.', type: 'corr', cat: 'tech', obj: '5.4', why: 'Corrects the data-loss outcome by recovering. Technical because it\'s the backup software.', trap: null },
+    { id: 'av-cleanup', name: 'AV malware removal', desc: 'Anti-virus quarantines and removes detected malware.', type: 'corr', cat: 'tech', obj: '2.5', why: 'Corrects the infection by removing the malware. Note: AV detecting is detective; AV removing is corrective.', trap: 'det' },
+    { id: 'patch-mgmt', name: 'Emergency patch deployment', desc: 'Pushing critical patches after a CVE is disclosed.', type: 'corr', cat: 'tech', obj: '4.5', why: 'Corrects the vuln by closing the CVE. Technical (the patch itself) — note: scheduled patching is preventive, emergency patching is corrective.', trap: 'prev' },
+    { id: 'isolation', name: 'Compromised host isolation (network)', desc: 'Auto-isolating an infected endpoint via NAC / firewall rule.', type: 'corr', cat: 'tech', obj: '4.4', why: 'Corrects ongoing damage by limiting lateral spread. Technical — usually NAC + firewall.', trap: null },
+    { id: 'log-rollback', name: 'Database point-in-time recovery', desc: 'Rolling back DB to before a corruption / bad query.', type: 'corr', cat: 'tech', obj: '5.4', why: 'Corrects corrupted data by restoring to known-good. Technical (DB software feature).', trap: null },
+
+    // ── CORRECTIVE × MANAGERIAL (5) ──
+    { id: 'irp', name: 'Incident response plan (IRP)', desc: 'Documented procedures for handling security incidents.', type: 'corr', cat: 'mgmt', obj: '4.7', why: 'Corrects the incident by guiding response. Managerial because it\'s a documented plan.', trap: 'dir' },
+    { id: 'bcp', name: 'Business continuity plan (BCP)', desc: 'Plan for keeping business running during disruption.', type: 'corr', cat: 'mgmt', obj: '5.5', why: 'Corrects business disruption. Managerial — formal documented plan.', trap: 'dir' },
+    { id: 'drp', name: 'Disaster recovery plan (DRP)', desc: 'Plan for recovering IT systems after a disaster.', type: 'corr', cat: 'mgmt', obj: '5.5', why: 'Corrects technology outage. Managerial — formal documented plan with RTO/RPO.', trap: 'dir' },
+    { id: 'lessons-learned', name: 'Post-incident lessons-learned review', desc: 'Formal review after every major incident to extract learnings.', type: 'corr', cat: 'mgmt', obj: '4.7', why: 'Corrects organisational gaps revealed by the incident. Managerial activity owned by security leadership.', trap: null },
+    { id: 'crisis-comms', name: 'Crisis communication plan', desc: 'Pre-approved templates + channels for breach notification.', type: 'corr', cat: 'mgmt', obj: '5.5', why: 'Corrects reputational + legal damage by managing communication. Managerial — owned by legal/PR/IR.', trap: null },
+
+    // ── CORRECTIVE × OPERATIONAL (5) ──
+    { id: 'dr-drill', name: 'Annual DR drill', desc: 'Practice exercise simulating disaster + recovery.', type: 'corr', cat: 'ops', obj: '5.5', why: 'Corrects gaps in DR plan by exercising it. Operational because it\'s a hands-on activity.', trap: null },
+    { id: 'tabletop-exercise', name: 'Tabletop incident exercise', desc: 'Discussion-based simulation of incident response.', type: 'corr', cat: 'ops', obj: '4.7', why: 'Corrects IR plan gaps via simulation. Operational team activity (not just paper plan).', trap: null },
+    { id: 'restore-procedure', name: 'Documented restore procedure', desc: 'Step-by-step runbook executed by ops during recovery.', type: 'corr', cat: 'ops', obj: '5.5', why: 'Corrects via following a tested procedure. Operational because it\'s the runbook used at runtime.', trap: null },
+    { id: 'rollback-procedure', name: 'Production rollback procedure', desc: 'Steps to roll back a bad deployment to last-known-good.', type: 'corr', cat: 'ops', obj: '4.7', why: 'Corrects a bad release. Operational because it\'s the on-call team\'s runtime procedure.', trap: null },
+    { id: 'evidence-preservation', name: 'Forensic evidence preservation', desc: 'Operational handling of evidence after incident — chain of custody.', type: 'corr', cat: 'ops', obj: '4.8', why: 'Corrects future legal/compliance gap by preserving evidence. Operational activity.', trap: null },
+
+    // ── CORRECTIVE × PHYSICAL (5) ──
+    { id: 'fire-suppression', name: 'Fire suppression (post-trigger cleanup)', desc: 'After a fire-suppression system activates, drying / cleaning servers.', type: 'corr', cat: 'phys', obj: '4.1', why: 'Corrects damage after fire/water event. Physical activity on physical assets.', trap: 'prev' },
+    { id: 'water-damage-cleanup', name: 'Water damage cleanup', desc: 'Drying / replacing equipment after pipe burst, flood.', type: 'corr', cat: 'phys', obj: '4.1', why: 'Corrects physical damage. Physical because it\'s tangible cleanup.', trap: null },
+    { id: 'lock-rekey', name: 'Lock re-keying after compromise', desc: 'Re-keying locks after key/badge is lost or compromised.', type: 'corr', cat: 'phys', obj: '4.1', why: 'Corrects physical access compromise. Physical activity.', trap: null },
+    { id: 'replacement-equipment', name: 'Hot-spare equipment swap', desc: 'Physically swapping in a hot-spare server after hardware failure.', type: 'corr', cat: 'phys', obj: '5.5', why: 'Corrects hardware failure by physical replacement. Physical activity.', trap: null },
+    { id: 'evacuation-cleanup', name: 'Post-evacuation facility check', desc: 'Sweep + secure facility after emergency evacuation.', type: 'corr', cat: 'phys', obj: '4.1', why: 'Corrects security gaps left during emergency. Physical sweep.', trap: null },
+
+    // ── DETERRENT × TECHNICAL (5) ──
+    { id: 'login-banner', name: 'Login warning banner ("authorised use only")', desc: 'Pre-login banner warning of monitoring + unauthorised use prosecution.', type: 'deter', cat: 'tech', obj: '5.4', why: 'Deters unauthorised use by warning users they\'re monitored. Technical because it\'s an OS/app config.', trap: null },
+    { id: 'screen-lock-warning', name: 'Locked-screen warning text', desc: 'Locked-screen banner showing "this device monitored" + ownership.', type: 'deter', cat: 'tech', obj: '5.4', why: 'Deters opportunistic access attempts. Technical configuration.', trap: null },
+    { id: 'geofence-warning', name: 'MDM geofence warning', desc: 'Warning popup when user takes managed device outside permitted region.', type: 'deter', cat: 'tech', obj: '4.5', why: 'Deters out-of-policy use. Technical because it\'s MDM config.', trap: null },
+    { id: 'ssl-warning', name: 'Browser HTTPS-mismatch warning', desc: 'Browser displays warning when cert doesn\'t match domain.', type: 'deter', cat: 'tech', obj: '1.4', why: 'Deters users from continuing to suspicious sites. Technical browser feature.', trap: null },
+    { id: 'no-anonymous-access', name: '"Authentication required" prompt', desc: 'Prompt deters opportunistic anonymous access attempts.', type: 'deter', cat: 'tech', obj: '4.6', why: 'Deters opportunistic users from probing further. Technical configuration.', trap: 'prev' },
+
+    // ── DETERRENT × MANAGERIAL (5) ──
+    { id: 'disciplinary-policy', name: 'Posted disciplinary policy', desc: 'Published policy stating consequences for security violations.', type: 'deter', cat: 'mgmt', obj: '5.6', why: 'Deters violations by making consequences visible. Managerial — formal published policy.', trap: 'dir' },
+    { id: 'aup-warning', name: 'AUP acknowledgement on hire', desc: 'Acceptable Use Policy signed at onboarding with violation penalties.', type: 'deter', cat: 'mgmt', obj: '5.6', why: 'Deters policy violations by making expectations + penalties known. Managerial.', trap: 'dir' },
+    { id: 'whistleblower-policy', name: 'Whistleblower protection policy', desc: 'Policy protecting employees who report security violations.', type: 'deter', cat: 'mgmt', obj: '5.6', why: 'Deters retaliation against reporters, deters bad actors who fear being reported. Managerial.', trap: null },
+    { id: 'monitoring-notice', name: 'Workplace monitoring notice', desc: 'Notice that all communications + systems are monitored.', type: 'deter', cat: 'mgmt', obj: '5.4', why: 'Deters misuse. Managerial — owned by HR/legal.', trap: null },
+    { id: 'criminal-prosecution-policy', name: 'Posted prosecution policy', desc: 'Public statement that violations will be prosecuted.', type: 'deter', cat: 'mgmt', obj: '5.6', why: 'Deters by signaling consequences. Managerial.', trap: null },
+
+    // ── DETERRENT × OPERATIONAL (5) ──
+    { id: 'visible-guard', name: 'Visible security guard (presence)', desc: 'Stationed guard whose presence deters bad actors.', type: 'deter', cat: 'ops', obj: '4.1', why: 'Deters by presence — separate from active patrol (which is detective). Operational human role.', trap: 'det' },
+    { id: 'security-uniform', name: 'Visible security uniforms', desc: 'Staff wearing security uniforms in public areas.', type: 'deter', cat: 'ops', obj: '4.1', why: 'Deters opportunistic bad actors. Operational because it\'s the staff visible at runtime.', trap: null },
+    { id: 'badge-display', name: 'Visible badge display requirement', desc: 'All staff required to wear visible badges; missing badges challenged.', type: 'deter', cat: 'ops', obj: '4.1', why: 'Deters tailgaters who lack a badge. Operational practice.', trap: null },
+    { id: 'public-incident-disclosure', name: 'Public incident reporting (transparency)', desc: 'Quick public disclosure of incidents deters re-targeting.', type: 'deter', cat: 'ops', obj: '5.4', why: 'Deters by signaling that attackers won\'t go undetected/undisclosed. Operational practice.', trap: null },
+    { id: 'social-norm-enforcement', name: 'Active "no badge, no entry" enforcement', desc: 'Staff actively challenging unbadged visitors.', type: 'deter', cat: 'ops', obj: '4.1', why: 'Deters tailgating attempts via cultural norm. Operational practice.', trap: null },
+
+    // ── DETERRENT × PHYSICAL (5) ──
+    { id: 'beware-dog-sign', name: '"Beware of dog" sign', desc: 'Posted sign warning of guard dog (whether or not one exists).', type: 'deter', cat: 'phys', obj: '4.1', why: 'Deters by warning. Physical (the sign itself) but no actual barrier — pure deterrent.', trap: 'prev' },
+    { id: 'dummy-camera', name: 'Dummy CCTV camera', desc: 'Fake camera that looks real but doesn\'t record.', type: 'deter', cat: 'phys', obj: '4.1', why: 'Deters but doesn\'t detect. Physical (the prop) but provides no detection capability — pure deterrent.', trap: 'det' },
+    { id: 'warning-sign', name: '"No trespassing" sign', desc: 'Posted property warning sign.', type: 'deter', cat: 'phys', obj: '4.1', why: 'Deters by warning. Physical sign.', trap: null },
+    { id: 'cctv-warning-sign', name: '"CCTV in operation" sign', desc: 'Sign indicating area under camera surveillance.', type: 'deter', cat: 'phys', obj: '4.1', why: 'Deters bad actors. The sign is a deterrent; the camera (if real) is detective. Physical sign = deterrent physical.', trap: 'det' },
+    { id: 'visible-fence-deter', name: 'Highly visible perimeter fence', desc: 'Tall razor-wire fence whose primary purpose is to deter, not block.', type: 'deter', cat: 'phys', obj: '4.1', why: 'Visual height/razor-wire signals "high security". Note: a regular fence is preventive (blocks); a razor-wire fence is deterrent (warns).', trap: 'prev' },
+
+    // ── COMPENSATING × TECHNICAL (5) ──
+    { id: 'waf-legacy', name: 'WAF for unpatched legacy app', desc: 'Web Application Firewall placed in front of an app that can\'t be patched.', type: 'comp', cat: 'tech', obj: '4.4', why: 'COMPENSATES for the inability to fix the underlying app. WAF rules approximate a real fix. Technical control.', trap: 'prev' },
+    { id: 'manual-code-review', name: 'Manual code review (no SAST tooling)', desc: 'Human reviewer examines code when automated SAST tooling unavailable.', type: 'comp', cat: 'tech', obj: '4.5', why: 'Compensates for missing SAST automation. Technical activity (review of source code).', trap: null },
+    { id: 'air-gap', name: 'Air-gapped backup (when network backup compromised)', desc: 'Standalone backup not connected to compromised network.', type: 'comp', cat: 'tech', obj: '5.5', why: 'Compensates for the failure of network-based backups. Technical control filling the recovery gap.', trap: null },
+    { id: 'vpn-instead-of-zerotrust', name: 'VPN where Zero Trust isn\'t deployed', desc: 'VPN protects remote access in absence of full Zero Trust architecture.', type: 'comp', cat: 'tech', obj: '4.4', why: 'Compensates for the gap between current state and target Zero Trust state. Technical control bridging architectures.', trap: 'prev' },
+    { id: 'secondary-mfa-app', name: 'Email MFA when authenticator app unavailable', desc: 'OTP via email used when user can\'t use authenticator app.', type: 'comp', cat: 'tech', obj: '4.6', why: 'Compensates for primary MFA unavailability. Technical fallback control.', trap: null },
+
+    // ── COMPENSATING × MANAGERIAL (5) ──
+    { id: 'manual-approval-risky', name: 'Manual approval for risky transactions', desc: 'Human approver required when automated risk-engine threshold exceeded.', type: 'comp', cat: 'mgmt', obj: '5.1', why: 'Compensates for automated control gaps. Managerial because it\'s a process/policy.', trap: null },
+    { id: 'extra-reviewer-policy', name: 'Two-person rule for sensitive actions', desc: 'Policy requiring two people approve sensitive change.', type: 'comp', cat: 'mgmt', obj: '5.6', why: 'Compensates for the absence of automated separation-of-duties controls. Managerial policy.', trap: 'prev' },
+    { id: 'enhanced-vendor-review', name: 'Enhanced vendor review (after breach)', desc: 'Increased scrutiny of vendors after a supply-chain incident.', type: 'comp', cat: 'mgmt', obj: '5.3', why: 'Compensates for trust gap exposed by the breach. Managerial activity.', trap: null },
+    { id: 'temporary-access-policy', name: 'Temporary elevated access policy', desc: 'Policy granting temporary admin rights for emergency work.', type: 'comp', cat: 'mgmt', obj: '4.6', why: 'Compensates for the inability to give permanent admin (least privilege) when an emergency requires it. Managerial.', trap: null },
+    { id: 'budget-deferral-control', name: 'Budget deferral until upgrade', desc: 'Workaround security policy for systems waiting for funded replacement.', type: 'comp', cat: 'mgmt', obj: '5.1', why: 'Compensates for the inability to immediately replace. Managerial.', trap: null },
+
+    // ── COMPENSATING × OPERATIONAL (5) ──
+    { id: 'extra-reviewer-absence', name: 'Extra reviewer when primary unavailable', desc: 'Substitute approver brought in when primary on leave.', type: 'comp', cat: 'ops', obj: '5.6', why: 'Compensates for primary approver absence. Operational team activity.', trap: null },
+    { id: 'manual-process-during-outage', name: 'Manual fallback process during outage', desc: 'Paper-based process during system outage.', type: 'comp', cat: 'ops', obj: '5.5', why: 'Compensates for system unavailability. Operational manual practice.', trap: null },
+    { id: 'extra-monitoring-after-incident', name: 'Heightened monitoring after incident', desc: 'Increased operational monitoring of affected systems for X days post-incident.', type: 'comp', cat: 'ops', obj: '4.7', why: 'Compensates for residual risk after incident. Operational activity.', trap: null },
+    { id: 'compensating-watchstand', name: 'Manual security watch (after sensor failure)', desc: 'Human guard watching area after motion sensor fails.', type: 'comp', cat: 'ops', obj: '4.1', why: 'Compensates for technical sensor outage. Operational human activity.', trap: null },
+    { id: 'redundant-on-call', name: 'Redundant on-call rotation', desc: 'Two on-call engineers when system stability is uncertain.', type: 'comp', cat: 'ops', obj: '5.5', why: 'Compensates for primary on-call risk. Operational staffing.', trap: null },
+
+    // ── COMPENSATING × PHYSICAL (5) ──
+    { id: 'temp-lock', name: 'Temporary padlock + guard', desc: 'Padlock + posted guard at door whose biometric lock failed.', type: 'comp', cat: 'phys', obj: '4.1', why: 'Compensates for primary lock failure. Physical (the padlock + guard).', trap: null },
+    { id: 'temp-fence', name: 'Temporary chain-link fence (during construction)', desc: 'Construction-grade fence around damaged perimeter.', type: 'comp', cat: 'phys', obj: '4.1', why: 'Compensates for primary fence damage. Physical structure.', trap: null },
+    { id: 'temp-physical-barrier', name: 'Concrete barriers during permanent wall repair', desc: 'Jersey barriers around damaged building section.', type: 'comp', cat: 'phys', obj: '4.1', why: 'Compensates for primary structural integrity issue. Physical.', trap: null },
+    { id: 'manual-key-lockout', name: 'Manual lock-and-key when card reader fails', desc: 'Mechanical lock + key during electronic access system outage.', type: 'comp', cat: 'phys', obj: '4.1', why: 'Compensates for electronic access system failure. Physical fallback.', trap: null },
+    { id: 'temp-power-supply', name: 'Generator + UPS (during utility power loss)', desc: 'Backup power maintains physical security systems during outage.', type: 'comp', cat: 'phys', obj: '4.1', why: 'Compensates for utility power loss to maintain physical security operations. Physical equipment.', trap: null },
+
+    // ── DIRECTIVE × TECHNICAL (5) ──
+    { id: 'sso-config-requirement', name: 'SSO config requirement', desc: 'Documented requirement that all apps must integrate with corporate SSO.', type: 'dir', cat: 'tech', obj: '4.6', why: 'Directs technical implementation. Different from preventive (which would be the SSO system itself) — this is the directive saying "you must use SSO".', trap: 'prev' },
+    { id: 'crypto-standard', name: 'Approved cryptographic algorithm list', desc: 'Documented list of approved algorithms (e.g., AES-256, RSA-2048+).', type: 'dir', cat: 'tech', obj: '1.4', why: 'Directs cryptographic implementation. Engineers must follow this when building.', trap: 'prev' },
+    { id: 'tls-minimum-policy', name: 'TLS minimum version policy', desc: 'Policy mandating TLS 1.2+ for all internet-facing services.', type: 'dir', cat: 'tech', obj: '1.4', why: 'Directs technical implementation of transport security. Configuration requirement.', trap: 'prev' },
+    { id: 'patch-cadence-policy', name: 'Patch cadence policy', desc: 'Policy mandating critical patches applied within 14 days.', type: 'dir', cat: 'tech', obj: '4.5', why: 'Directs the technical patching schedule. Note: the patches themselves are preventive; the policy directing the schedule is directive.', trap: 'prev' },
+    { id: 'data-retention-config', name: 'Data retention configuration policy', desc: 'Policy directing how long technical systems retain data.', type: 'dir', cat: 'tech', obj: '5.4', why: 'Directs technical data lifecycle. Engineers configure retention to match.', trap: null },
+
+    // ── DIRECTIVE × MANAGERIAL (5) ──
+    { id: 'aup', name: 'Acceptable Use Policy (AUP)', desc: 'Top-level policy directing what users can/cannot do.', type: 'dir', cat: 'mgmt', obj: '5.6', why: 'Directs user behaviour at the policy level. Top-down managerial directive.', trap: 'deter' },
+    { id: 'nist-csf', name: 'NIST Cybersecurity Framework adoption', desc: 'Org commits to NIST CSF as its security framework.', type: 'dir', cat: 'mgmt', obj: '5.5', why: 'Directs the entire security program direction. Managerial framework directive.', trap: null },
+    { id: 'iso-27001', name: 'ISO 27001 ISMS', desc: 'Information Security Management System per ISO 27001.', type: 'dir', cat: 'mgmt', obj: '5.5', why: 'Directs how the security program is governed. Managerial directive.', trap: null },
+    { id: 'data-classification-policy', name: 'Data classification policy', desc: 'Policy directing how data is classified (Public/Internal/Confidential/Restricted).', type: 'dir', cat: 'mgmt', obj: '5.4', why: 'Directs all subsequent data handling. Top-down managerial directive.', trap: null },
+    { id: 'risk-tolerance-statement', name: 'Risk tolerance statement', desc: 'Board-approved statement of acceptable risk levels.', type: 'dir', cat: 'mgmt', obj: '5.1', why: 'Directs all subsequent risk decisions. Managerial directive.', trap: null },
+
+    // ── DIRECTIVE × OPERATIONAL (5) ──
+    { id: 'sop', name: 'Standard Operating Procedure (SOP)', desc: 'Step-by-step procedure directing how operational tasks are done.', type: 'dir', cat: 'ops', obj: '5.5', why: 'Directs how work is done at runtime. Operational because it lives in the day-to-day.', trap: null },
+    { id: 'runbook', name: 'On-call runbook', desc: 'Documented runbook directing on-call response for common issues.', type: 'dir', cat: 'ops', obj: '5.5', why: 'Directs on-call team\'s actions. Operational directive.', trap: null },
+    { id: 'change-window-schedule', name: 'Change window schedule', desc: 'Schedule directing when production changes are permitted.', type: 'dir', cat: 'ops', obj: '5.6', why: 'Directs operational change windows. Operational directive.', trap: null },
+    { id: 'naming-convention', name: 'Server naming convention', desc: 'Required pattern for server hostnames (e.g., env-region-role-NN).', type: 'dir', cat: 'ops', obj: '5.5', why: 'Directs how operational artifacts are named. Operational directive.', trap: null },
+    { id: 'rollback-policy-direct', name: 'Rollback procedure requirement', desc: 'Policy requiring every deployment to have a documented rollback.', type: 'dir', cat: 'ops', obj: '4.7', why: 'Directs how deployments are structured. Operational directive (the policy; the rollback itself is corrective).', trap: 'corr' },
+
+    // ── DIRECTIVE × PHYSICAL (5) ──
+    { id: 'evac-route', name: 'Posted evacuation route', desc: 'Floor diagram with marked evacuation paths.', type: 'dir', cat: 'phys', obj: '4.1', why: 'Directs physical action during emergency. Physical (the posted diagram).', trap: null },
+    { id: 'fire-extinguisher-loc', name: 'Posted fire extinguisher locations', desc: 'Required posted signage showing extinguisher locations.', type: 'dir', cat: 'phys', obj: '4.1', why: 'Directs physical emergency response. Physical signage.', trap: null },
+    { id: 'access-tier-signage', name: 'Posted security tier signage', desc: 'Signs marking restricted vs public areas of facility.', type: 'dir', cat: 'phys', obj: '4.1', why: 'Directs physical access decisions. Physical signage.', trap: 'deter' },
+    { id: 'emergency-procedures-poster', name: 'Posted emergency procedures', desc: 'Required posted emergency procedures (fire, lockdown, etc.).', type: 'dir', cat: 'phys', obj: '4.1', why: 'Directs physical response procedures. Physical posted document.', trap: null },
+    { id: 'safety-equipment-policy', name: 'Required safety equipment posting', desc: 'Posted requirements for hard hats, eye protection, etc. in restricted areas.', type: 'dir', cat: 'phys', obj: '4.1', why: 'Directs physical safety compliance. Physical posted requirements.', trap: null }
+  ],
+  controlMatrixLessons: [
+    { type: 'prev', title: 'Preventive controls', summary: 'Stop the attack before it happens.',
+      cells: {
+        tech: ['Firewall, IPS, encryption', 'AV, MFA'],
+        mgmt: ['Onboarding policy, BYOD', 'Background checks'],
+        ops:  ['Job rotation, separation of duties', 'Mandatory leave'],
+        phys: ['Mantrap, locked server room', 'Bollards, fence']
+      } },
+    { type: 'det', title: 'Detective controls', summary: 'Find the attack in progress or after.',
+      cells: {
+        tech: ['IDS, SIEM, FIM', 'EDR behavioural detection'],
+        mgmt: ['Audit, log review', 'Pen test, compliance audit'],
+        ops:  ['CCTV review, active patrol', 'Walk-around inspection'],
+        phys: ['Motion sensors, lighting', 'CCTV cameras (recording)']
+      } },
+    { type: 'corr', title: 'Corrective controls', summary: 'Fix the damage after the attack.',
+      cells: {
+        tech: ['Backup restore, AV cleanup', 'Emergency patch, isolation'],
+        mgmt: ['IR plan, BCP/DRP', 'Lessons learned, crisis comms'],
+        ops:  ['DR drill, restore procedure', 'Tabletop exercise'],
+        phys: ['Fire suppression cleanup', 'Lock re-keying, equipment swap']
+      } },
+    { type: 'deter', title: 'Deterrent controls', summary: 'Discourage the attempt with warning.',
+      cells: {
+        tech: ['Login banners, screen warnings', 'HTTPS-mismatch warning'],
+        mgmt: ['Posted disciplinary policy', 'AUP, monitoring notice'],
+        ops:  ['Visible guard presence', 'Security uniforms'],
+        phys: ['"Beware of dog" sign', 'Dummy camera, warning signs']
+      } },
+    { type: 'comp', title: 'Compensating controls', summary: 'Fill the gap when primary control fails.',
+      cells: {
+        tech: ['WAF for legacy app', 'Manual code review, air-gap'],
+        mgmt: ['Manual approval for risky txn', 'Two-person rule'],
+        ops:  ['Extra reviewer in absence', 'Manual fallback during outage'],
+        phys: ['Padlock + guard (lock failure)', 'Generator (power loss)']
+      } },
+    { type: 'dir', title: 'Directive controls', summary: 'Policy that directs other controls.',
+      cells: {
+        tech: ['SSO config requirement', 'Crypto standard, TLS policy'],
+        mgmt: ['AUP, NIST CSF, ISO 27001', 'Data classification policy'],
+        ops:  ['SOP, runbook', 'Change window schedule'],
+        phys: ['Posted evacuation route', 'Emergency procedures poster']
+      } }
   ]
 };

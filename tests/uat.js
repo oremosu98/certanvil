@@ -301,7 +301,7 @@ test('Validation in runSessionStep', js.includes('aiValidateQuestions(apiKey, qu
 
 // ── Analytics v2 (v4.5) ──
 console.log('\n\x1b[1m── ANALYTICS v2 (v4.5) ──\x1b[0m');
-test('APP_VERSION is 4.94.0', js.includes("const APP_VERSION = '4.94.0"));
+test('APP_VERSION is 4.95.0', js.includes("const APP_VERSION = '4.95.0"));
 test('getDailyGoal function', js.includes('function getDailyGoal('));
 test('renderDailyGoal function', js.includes('function renderDailyGoal('));
 test('editDailyGoal function', js.includes('function editDailyGoal('));
@@ -315,7 +315,7 @@ test('CSS: .topic-domain-group', css.includes('.topic-domain-group'));
 test('CSS: .daily-goal-card', css.includes('.daily-goal-card'));
 test('CSS: .advanced-section', css.includes('.advanced-section'));
 test('CSS: .hero-stats-strip', css.includes('.hero-stats-strip'));
-test('SW cache bumped to v4.94.0', sw.includes('netplus-v4.94.0'));
+test('SW cache bumped to v4.95.0', sw.includes('netplus-v4.95.0'));
 test('Family Drill: STORAGE.PORT_FAMILY_BEST', js.includes("PORT_FAMILY_BEST:"));
 test('Family Drill: ptMode handles family', js.includes("ptMode === 'family'"));
 test('Family Drill: HTML mode button', html.includes('id="pt-mode-family"'));
@@ -16566,7 +16566,8 @@ test('v4.94.0 AMM: launcher tile is LIVE (not is-coming-soon)',
   // The JS source escapes single quotes inside the string literal: onclick="showPage(\'amm\')..."
   /onclick="showPage\(\\'amm\\'\);startAttackMitigation\(\)/.test(js));
 test('v4.94.0 AMM: launcher header lede updated to reflect AMM live',
-  /Acronym Blitz \+ Attack-to-Mitigation are live/.test(js));
+  // v4.95.0 added CTS to the lede; either form is acceptable as long as AMM appears as live.
+  /Acronym Blitz[\s\S]{0,80}Attack-to-Mitigation[\s\S]{0,80}live/.test(js));
 
 // HTML page exists
 test('v4.94.0 AMM: index.html has #page-amm',
@@ -16597,6 +16598,115 @@ test('v4.94.0 AMM: secplus.js has 5 attack categories',
   /attackMitigationCategories:\s*\{[\s\S]{0,1500}webapp[\s\S]{0,1500}socialeng[\s\S]{0,1500}network[\s\S]{0,1500}malware[\s\S]{0,1500}physical/.test(certSecplus));
 test('v4.94.0 AMM: secplus.js has ≥90 attack/mitigation pairs',
   (certSecplus.match(/id:\s*['"][a-z0-9-]+['"]/g) || []).filter(s => true).length >= 90);
+
+// ============================================================================
+// v4.95.0 — Control Type Sorter drill (issue #302)
+// ============================================================================
+// Security+ drill: 120 controls across CompTIA 6 types × 4 categories matrix.
+// Dual-axis MCQ — pick TYPE (1-of-6) AND CATEGORY (1-of-4); submit gated on
+// both axes locked. Visual contract locked to mockups/security-control-type-
+// sorter-concept.html State 2 (MCQ mode v1; Sort mode disabled toggle).
+
+// Storage keys
+test('v4.95.0 CTS: STORAGE.CTS_MASTERY key declared',
+  /CTS_MASTERY:\s*['"]nplus_cts_mastery['"]/.test(js));
+test('v4.95.0 CTS: STORAGE.CTS_LESSONS key declared',
+  /CTS_LESSONS:\s*['"]nplus_cts_lessons['"]/.test(js));
+
+// Cloud-store sync
+test('v4.95.0 CTS: cloud-store USER_DATA_KEYS includes cts_mastery',
+  cloudStoreJs.includes("'nplus_cts_mastery'"));
+test('v4.95.0 CTS: cloud-store USER_DATA_KEYS includes cts_lessons',
+  cloudStoreJs.includes("'nplus_cts_lessons'"));
+
+// Cert-aware module-load aliases
+test('v4.95.0 CTS: _SECPLUS_HAS_CTS cert-pack guard declared',
+  /const _SECPLUS_HAS_CTS =/.test(js));
+test('v4.95.0 CTS: _USE_SECPLUS_CTS cert-aware switch declared',
+  /const _USE_SECPLUS_CTS =/.test(js));
+test('v4.95.0 CTS: CTS_DATA cert-aware alias',
+  /const CTS_DATA = _USE_SECPLUS_CTS \? CERT_PACK\.controls/.test(js));
+test('v4.95.0 CTS: CTS_TYPES cert-aware alias',
+  /const CTS_TYPES = _USE_SECPLUS_CTS \? CERT_PACK\.controlTypes/.test(js));
+test('v4.95.0 CTS: CTS_CATEGORIES cert-aware alias',
+  /const CTS_CATEGORIES = _USE_SECPLUS_CTS \? CERT_PACK\.controlCategories/.test(js));
+test('v4.95.0 CTS: CTS_LESSONS cert-aware alias',
+  /const CTS_LESSONS = _USE_SECPLUS_CTS && Array\.isArray\(CERT_PACK\.controlMatrixLessons\)/.test(js));
+
+// Drill code — dual-axis specific functions
+test('v4.95.0 CTS: startControlTypeSorter function defined',
+  /function startControlTypeSorter\(\)/.test(js));
+test('v4.95.0 CTS: ctsNextQuestion function defined',
+  /function ctsNextQuestion\(\)/.test(js));
+test('v4.95.0 CTS: ctsPickType function defined (axis 1)',
+  /function ctsPickType\(/.test(js));
+test('v4.95.0 CTS: ctsPickCat function defined (axis 2)',
+  /function ctsPickCat\(/.test(js));
+test('v4.95.0 CTS: ctsSubmitAnswer requires both axes',
+  /function ctsSubmitAnswer[\s\S]{0,500}!ctsPickedType \|\| !ctsPickedCat/.test(js));
+test('v4.95.0 CTS: ctsUpdateSubmitButton gates submit on both axes',
+  /function ctsUpdateSubmitButton[\s\S]{0,300}ctsPickedType && ctsPickedCat/.test(js));
+test('v4.95.0 CTS: ctsRenderQuestion function defined',
+  /function ctsRenderQuestion\(\)/.test(js));
+test('v4.95.0 CTS: ctsRenderLessons function defined',
+  /function ctsRenderLessons\(\)/.test(js));
+test('v4.95.0 CTS: ctsRenderDashboard function defined',
+  /function ctsRenderDashboard\(\)/.test(js));
+test('v4.95.0 CTS: setCtsTab function defined',
+  /function setCtsTab\(/.test(js));
+test('v4.95.0 CTS: ctsEndSession function defined',
+  /function ctsEndSession\(\)/.test(js));
+test('v4.95.0 CTS: updateCtsMastery flushes to cloud',
+  /function updateCtsMastery[\s\S]{0,1200}saveCtsMastery/.test(js) &&
+  /function saveCtsMastery[\s\S]{0,300}_cloudFlush\(STORAGE\.CTS_MASTERY\)/.test(js));
+
+// Sidebar + breadcrumb wiring
+test('v4.95.0 CTS: APP_SIDEBAR_DRILLS_SECPLUS includes Control Type Sorter',
+  /APP_SIDEBAR_DRILLS_SECPLUS = \[[\s\S]{0,800}page:\s*['"]cts['"][\s\S]{0,200}startControlTypeSorter/.test(js));
+test('v4.95.0 CTS: SIDEBAR_ACTIVE_MAP has cts entry',
+  /SIDEBAR_ACTIVE_MAP[\s\S]{0,1500}'cts':\s*'cts'/.test(js));
+test('v4.95.0 CTS: TOPBAR_CRUMBS has cts entry',
+  /TOPBAR_CRUMBS[\s\S]{0,1500}'cts':\s*['"]Control Type Sorter['"]/.test(js));
+
+// Launcher tile is LIVE
+test('v4.95.0 CTS: launcher tile uses NEW badge + onclick handler',
+  /onclick="showPage\(\\'cts\\'\);startControlTypeSorter\(\)/.test(js));
+test('v4.95.0 CTS: launcher lede mentions all 3 live drills',
+  /Acronym Blitz, Attack-to-Mitigation, and Control Type Sorter are live/.test(js));
+
+// HTML page exists
+test('v4.95.0 CTS: index.html has #page-cts',
+  /id="page-cts"/.test(html));
+test('v4.95.0 CTS: index.html has cts question card',
+  /id="cts-q-card"/.test(html));
+test('v4.95.0 CTS: index.html has 3 cts tabs (practice/lessons/dashboard)',
+  /cts-tab-btn-practice[\s\S]{0,500}cts-tab-btn-lessons[\s\S]{0,500}cts-tab-btn-dashboard/.test(html));
+test('v4.95.0 CTS: index.html has Sort mode coming-soon disabled toggle',
+  /cts-mode-btn[\s\S]{0,300}disabled[\s\S]{0,300}Sort mode coming v2/.test(html));
+
+// CSS contract
+test('v4.95.0 CTS: .cts-question-card CSS pattern present',
+  /\.cts-question-card\s*\{/.test(css));
+test('v4.95.0 CTS: .cts-q-grid (6-button TYPE grid) CSS pattern present',
+  /\.cts-q-grid\s*\{/.test(css));
+test('v4.95.0 CTS: .cts-q-cat-row (4-pill CATEGORY row) CSS pattern present',
+  /\.cts-q-cat-row\s*\{/.test(css));
+test('v4.95.0 CTS: .cts-lesson-matrix (6×4 cheatsheet) CSS pattern present',
+  /\.cts-lesson-matrix\s*\{/.test(css));
+test('v4.95.0 CTS: 6 type-color active classes present',
+  /\.cts-active-prev\b/.test(css) && /\.cts-active-det\b/.test(css) &&
+  /\.cts-active-corr\b/.test(css) && /\.cts-active-deter\b/.test(css) &&
+  /\.cts-active-comp\b/.test(css) && /\.cts-active-dir\b/.test(css));
+
+// Cert-pack data
+test('v4.95.0 CTS: secplus.js declares controls array',
+  /controls:\s*\[/.test(certSecplus));
+test('v4.95.0 CTS: secplus.js declares 6 controlTypes',
+  /controlTypes:\s*\{[\s\S]{0,1500}prev[\s\S]{0,1500}det[\s\S]{0,1500}corr[\s\S]{0,1500}deter[\s\S]{0,1500}comp[\s\S]{0,1500}dir/.test(certSecplus));
+test('v4.95.0 CTS: secplus.js declares 4 controlCategories',
+  /controlCategories:\s*\{[\s\S]{0,800}tech[\s\S]{0,800}mgmt[\s\S]{0,800}ops[\s\S]{0,800}phys/.test(certSecplus));
+test('v4.95.0 CTS: secplus.js declares controlMatrixLessons',
+  certSecplus.includes('controlMatrixLessons:'));
 
 // ── Summary ──
 console.log('\n' + '═'.repeat(50));

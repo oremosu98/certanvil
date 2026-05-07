@@ -1,9 +1,9 @@
 // ══════════════════════════════════════════
-// Network+ AI Quiz — app.js  v4.94.0
+// Network+ AI Quiz — app.js  v4.95.0
 // ══════════════════════════════════════════
 
 // ── CONSTANTS ──
-const APP_VERSION = '4.94.0';
+const APP_VERSION = '4.95.0';
 
 // ══════════════════════════════════════════════════════════════════════════
 // CERT PACK ARCHITECTURE (v4.86.0 Phase 1A engine refactor)
@@ -299,6 +299,8 @@ const STORAGE = {
   SAB_LESSONS: 'nplus_sab_lessons',
   AMM_MASTERY: 'nplus_amm_mastery',  // v4.94.0: Security+ Attack-to-Mitigation Match drill
   AMM_LESSONS: 'nplus_amm_lessons',
+  CTS_MASTERY: 'nplus_cts_mastery',  // v4.95.0: Security+ Control Type Sorter drill
+  CTS_LESSONS: 'nplus_cts_lessons',
   OS_MASTERY: 'nplus_os_mastery',
   OS_LESSONS: 'nplus_os_lessons',
   CB_MASTERY: 'nplus_cb_mastery',
@@ -1089,7 +1091,7 @@ function _renderSecPlusDrillsLauncher() {
   pageEl.innerHTML = ''
     + '<div class="ed-pagehead"><div class="ed-section-meta">Security+ Drills</div>'
     +   '<h1 class="ed-pagehead-h1">Pick a drill</h1>'
-    +   '<p class="ed-pagehead-lede">SY0-701-specific drills designed to move you closer to passing. Acronym Blitz + Attack-to-Mitigation are live; 3 more drills (Security Control Type Sorter, Incident Response Phase Sorter, IoC Recognizer) are queued for future ships.</p>'
+    +   '<p class="ed-pagehead-lede">SY0-701-specific drills designed to move you closer to passing. Acronym Blitz, Attack-to-Mitigation, and Control Type Sorter are live; 2 more drills (Incident Response Phase Sorter, IoC Recognizer) are queued for future ships.</p>'
     + '</div>'
     + '<div class="secplus-drill-grid">'
     +   '<a class="secplus-drill-tile" href="#" onclick="showPage(\'acronyms\');startAcronymBlitz();return false;">'
@@ -1106,13 +1108,13 @@ function _renderSecPlusDrillsLauncher() {
     +     '<div class="secplus-drill-tile-sub">96 attack/mitigation pairs across 5 categories. Build the "if I see X, the answer is Y" muscle memory.</div>'
     +     '<div class="secplus-drill-tile-meta">All 5 domains · ~5 min/session</div>'
     +   '</a>'
-    +   '<div class="secplus-drill-tile is-coming-soon" aria-disabled="true">'
-    +     '<span class="secplus-drill-tile-badge is-soon">SOON</span>'
-    +     '<div class="secplus-drill-tile-icon" aria-hidden="true">🗂</div>'
-    +     '<div class="secplus-drill-tile-title">Security Control Type Sorter</div>'
-    +     '<div class="secplus-drill-tile-sub">Cross-domain — sort controls by type (preventive/deterrent/detective/corrective/compensating/directive).</div>'
-    +     '<div class="secplus-drill-tile-meta">Issue #302 · queued</div>'
-    +   '</div>'
+    +   '<a class="secplus-drill-tile" href="#" onclick="showPage(\'cts\');startControlTypeSorter();return false;">'
+    +     '<span class="secplus-drill-tile-badge">NEW</span>'
+    +     '<div class="secplus-drill-tile-icon" aria-hidden="true">🛡</div>'
+    +     '<div class="secplus-drill-tile-title">Control Type Sorter</div>'
+    +     '<div class="secplus-drill-tile-sub">120 security controls across the CompTIA 6×4 matrix. Pick TYPE + CATEGORY for each control. Domain 1.1\'s hardest concept.</div>'
+    +     '<div class="secplus-drill-tile-meta">Domain 1.1 · ~5 min/session</div>'
+    +   '</a>'
     +   '<div class="secplus-drill-tile is-coming-soon" aria-disabled="true">'
     +     '<span class="secplus-drill-tile-badge is-soon">SOON</span>'
     +     '<div class="secplus-drill-tile-icon" aria-hidden="true">📋</div>'
@@ -32281,6 +32283,23 @@ const AMM_CAT_IDS = Object.keys(AMM_CATEGORIES);
 const AMM_LESSONS = _USE_SECPLUS_AMM && Array.isArray(CERT_PACK.attackMitigationLessons)
   ? CERT_PACK.attackMitigationLessons : [];
 
+// ── Control Type Sorter (v4.95.0, issue #302) ───────────────────────────
+// Cert-pack-only drill: Security+ users get 120 controls across the CompTIA
+// 6-types × 4-categories matrix. Dual-axis MCQ — pick TYPE (1-of-6) AND
+// CATEGORY (1-of-4); submit only enabled when both axes locked. Wrong on
+// either axis = wrong; right on both = right (advance box). Visual contract
+// locked to mockup State 2 (MCQ mode is v1; Sort mode deferred to v2).
+const _SECPLUS_HAS_CTS = typeof CERT_PACK === 'object' && CERT_PACK !== null
+  && Array.isArray(CERT_PACK.controls) && CERT_PACK.controls.length > 0;
+const _USE_SECPLUS_CTS = (typeof CURRENT_CERT !== 'undefined') && CURRENT_CERT === 'secplus' && _SECPLUS_HAS_CTS;
+const CTS_DATA = _USE_SECPLUS_CTS ? CERT_PACK.controls : [];
+const CTS_TYPES = _USE_SECPLUS_CTS ? CERT_PACK.controlTypes : {};
+const CTS_TYPE_IDS = Object.keys(CTS_TYPES);
+const CTS_CATEGORIES = _USE_SECPLUS_CTS ? CERT_PACK.controlCategories : {};
+const CTS_CAT_IDS = Object.keys(CTS_CATEGORIES);
+const CTS_LESSONS = _USE_SECPLUS_CTS && Array.isArray(CERT_PACK.controlMatrixLessons)
+  ? CERT_PACK.controlMatrixLessons : [];
+
 // ── Acronym Blitz state ──
 let abQ = null, abIdx = 0, abCorrect = 0, abTotal = 0, abStreak = 0;
 let abMode = 'adaptive', abFocusCat = null, abActiveLesson = null;
@@ -33081,6 +33100,400 @@ function startAttackMitigation() {
   if (card) card.classList.remove('is-hidden');
   if (endCard) endCard.classList.add('is-hidden');
   ammNextQuestion();
+}
+
+// ── Control Type Sorter (v4.95.0, issue #302) ──────────────────────────────
+// Dual-axis MCQ — pick TYPE (1-of-6) AND CATEGORY (1-of-4) for each control.
+// Submit only enabled when both axes locked. Wrong on either axis = wrong;
+// right on both = right (advance box). Visual contract locked to mockup
+// State 2 (MCQ mode is v1; Sort mode deferred to v2).
+let ctsQ = null, ctsIdx = 0, ctsCorrect = 0, ctsTotal = 0, ctsStreak = 0;
+let ctsSessionLength = 12, ctsSessionDone = false;
+let ctsPickedType = null, ctsPickedCat = null;
+
+function getCtsMastery() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(STORAGE.CTS_MASTERY) || 'null');
+    if (raw && raw.perControl) return raw;
+  } catch (_) {}
+  return ctsInitMastery();
+}
+
+function ctsInitMastery() {
+  const m = { totalAnswered: 0, totalCorrect: 0, perControl: {}, perType: {}, perCategory: {} };
+  CTS_DATA.forEach(c => { m.perControl[c.id] = { seen: 0, correct: 0, box: 1, streak: 0, lastSeen: null }; });
+  CTS_TYPE_IDS.forEach(t => { m.perType[t] = { seen: 0, correct: 0, streak: 0 }; });
+  CTS_CAT_IDS.forEach(c => { m.perCategory[c] = { seen: 0, correct: 0, streak: 0 }; });
+  return m;
+}
+
+function saveCtsMastery(m) {
+  try { localStorage.setItem(STORAGE.CTS_MASTERY, JSON.stringify(m)); _cloudFlush(STORAGE.CTS_MASTERY); } catch (_) {}
+}
+
+function updateCtsMastery(controlId, wasCorrect) {
+  const m = getCtsMastery();
+  const ctrl = CTS_DATA.find(c => c.id === controlId);
+  if (!ctrl) return;
+  if (!m.perControl[controlId]) m.perControl[controlId] = { seen: 0, correct: 0, box: 1, streak: 0, lastSeen: null };
+  if (!m.perType[ctrl.type]) m.perType[ctrl.type] = { seen: 0, correct: 0, streak: 0 };
+  if (!m.perCategory[ctrl.cat]) m.perCategory[ctrl.cat] = { seen: 0, correct: 0, streak: 0 };
+  const pi = m.perControl[controlId];
+  const pt = m.perType[ctrl.type];
+  const pc = m.perCategory[ctrl.cat];
+  pi.seen++; pt.seen++; pc.seen++; m.totalAnswered++;
+  if (wasCorrect) {
+    pi.correct++; pt.correct++; pc.correct++; m.totalCorrect++;
+    pi.streak++; pt.streak++; pc.streak++;
+    pi.box = Math.min(5, pi.box + 1);
+  } else {
+    pi.streak = 0; pt.streak = 0; pc.streak = 0;
+    pi.box = Math.max(1, pi.box - 1);
+  }
+  pi.lastSeen = Date.now();
+  saveCtsMastery(m);
+}
+
+function ctsPickControl() {
+  const m = getCtsMastery();
+  // Weight toward weakest types — un-mastered controls (box < 3) preferred
+  const typeScores = {};
+  CTS_TYPE_IDS.forEach(t => {
+    const pt = m.perType[t] || { seen: 0, correct: 0 };
+    const acc = pt.seen > 0 ? pt.correct / pt.seen : 0;
+    typeScores[t] = 1.5 - acc;
+  });
+  const unmastered = CTS_DATA.filter(c => {
+    const pi = m.perControl[c.id] || { box: 1 };
+    return pi.box < 3;
+  });
+  const pool = unmastered.length >= 5 ? unmastered : CTS_DATA;
+  const weights = pool.map(c => typeScores[c.type] || 1);
+  const total = weights.reduce((s, w) => s + w, 0);
+  let r = Math.random() * total;
+  for (let i = 0; i < pool.length; i++) {
+    r -= weights[i];
+    if (r <= 0) return pool[i];
+  }
+  return pool[pool.length - 1];
+}
+
+function ctsNextQuestion() {
+  if (ctsIdx >= ctsSessionLength) { ctsEndSession(); return; }
+  ctsIdx++;
+  ctsQ = ctsPickControl();
+  ctsPickedType = null;
+  ctsPickedCat = null;
+  ctsRenderQuestion();
+}
+
+function ctsRenderQuestion() {
+  const card = document.getElementById('cts-q-card');
+  if (!card || !ctsQ) return;
+  const ctrl = ctsQ;
+  card.innerHTML = `
+    <div class="cts-q-eyebrow">Classify the control</div>
+    <div class="cts-q-stem-card">
+      <div class="cts-q-stem-name">${escHtml(ctrl.name)}</div>
+      <div class="cts-q-stem-sub">${escHtml(ctrl.desc)}</div>
+      <div class="cts-q-stem-meta">SY0-701 &middot; Domain ${escHtml(ctrl.obj || '?')} &middot; Security controls</div>
+    </div>
+    <div class="cts-q-arrow">&darr; pick the TYPE</div>
+    <div class="cts-q-grid">
+      ${CTS_TYPE_IDS.map(tid => {
+        const t = CTS_TYPES[tid];
+        return `<button class="cts-q-opt" data-cts-type="${tid}" onclick="ctsPickType('${tid}')">
+          <span class="cts-q-opt-icon">${t.icon}</span>
+          ${escHtml(t.label)}
+        </button>`;
+      }).join('')}
+    </div>
+    <div class="cts-q-cat-row">
+      <span class="cts-q-cat-row-label">&darr; AND category</span>
+      ${CTS_CAT_IDS.map(cid => {
+        const c = CTS_CATEGORIES[cid];
+        return `<button class="cts-q-cat-pill" data-cts-cat="${cid}" onclick="ctsPickCat('${cid}')">${escHtml(c.label)}</button>`;
+      }).join('')}
+    </div>
+    <div id="cts-reveal" class="is-hidden"></div>
+    <div class="cts-q-foot">
+      <span id="cts-q-status">Pick TYPE + CATEGORY</span>
+      <span style="display:flex;gap:10px;align-items:center">
+        <span class="cts-q-progress">Q ${ctsIdx} / ${ctsSessionLength}</span>
+        <button class="cts-submit-btn" id="cts-submit-btn" onclick="ctsSubmitAnswer()" disabled>Submit &rarr;</button>
+      </span>
+    </div>
+  `;
+  // Update stats strip
+  const scoreEl = document.getElementById('cts-score');
+  const streakEl = document.getElementById('cts-streak');
+  const progEl = document.getElementById('cts-q-progress');
+  const badgeEl = document.getElementById('cts-streak-badge');
+  if (scoreEl) scoreEl.textContent = ctsCorrect + ' / ' + ctsTotal;
+  if (streakEl) streakEl.textContent = '🔥 ' + ctsStreak;
+  if (progEl) progEl.textContent = 'Q ' + ctsIdx + ' / ' + ctsSessionLength;
+  if (badgeEl) badgeEl.textContent = '🔥 ' + ctsStreak;
+}
+
+function ctsPickType(typeId) {
+  if (!ctsQ) return;
+  ctsPickedType = typeId;
+  // Highlight chosen type with type-specific color class
+  document.querySelectorAll('.cts-q-opt').forEach(b => {
+    b.classList.remove('cts-active-prev','cts-active-det','cts-active-corr','cts-active-deter','cts-active-comp','cts-active-dir');
+    if (b.getAttribute('data-cts-type') === typeId) {
+      b.classList.add('cts-active-' + typeId);
+    }
+  });
+  ctsUpdateSubmitButton();
+}
+
+function ctsPickCat(catId) {
+  if (!ctsQ) return;
+  ctsPickedCat = catId;
+  document.querySelectorAll('.cts-q-cat-pill').forEach(b => {
+    b.classList.toggle('cts-cat-active', b.getAttribute('data-cts-cat') === catId);
+  });
+  ctsUpdateSubmitButton();
+}
+
+function ctsUpdateSubmitButton() {
+  const btn = document.getElementById('cts-submit-btn');
+  const status = document.getElementById('cts-q-status');
+  if (!btn) return;
+  const ready = ctsPickedType && ctsPickedCat;
+  btn.disabled = !ready;
+  if (status) status.textContent = ready ? 'Both axes locked in · ready to submit' : 'Pick TYPE + CATEGORY';
+}
+
+function ctsSubmitAnswer() {
+  if (!ctsQ || !ctsPickedType || !ctsPickedCat) return;
+  const ctrl = ctsQ;
+  const typeCorrect = ctsPickedType === ctrl.type;
+  const catCorrect = ctsPickedCat === ctrl.cat;
+  const isCorrect = typeCorrect && catCorrect;
+  ctsTotal++;
+  if (isCorrect) { ctsCorrect++; ctsStreak++; } else { ctsStreak = 0; }
+  updateCtsMastery(ctrl.id, isCorrect);
+
+  // Disable buttons + show correct/wrong styling
+  document.querySelectorAll('.cts-q-opt').forEach(b => {
+    b.disabled = true;
+    const tid = b.getAttribute('data-cts-type');
+    if (tid === ctrl.type) b.classList.add('cts-show-correct');
+    if (tid === ctsPickedType && !typeCorrect) b.classList.add('cts-show-wrong');
+  });
+  document.querySelectorAll('.cts-q-cat-pill').forEach(b => {
+    b.disabled = true;
+    const cid = b.getAttribute('data-cts-cat');
+    if (cid === ctrl.cat) b.classList.add('cts-show-correct');
+    if (cid === ctsPickedCat && !catCorrect) b.classList.add('cts-show-wrong');
+  });
+
+  // Reveal panel
+  const reveal = document.getElementById('cts-reveal');
+  if (reveal) {
+    const correctType = CTS_TYPES[ctrl.type];
+    const correctCat = CTS_CATEGORIES[ctrl.cat];
+    const headLine = isCorrect
+      ? `✅ ${escHtml(correctType.label)} ✓ + ${escHtml(correctCat.label)} ✓`
+      : `${typeCorrect ? '✓' : '✗'} ${escHtml(correctType.label)} type · ${catCorrect ? '✓' : '✗'} ${escHtml(correctCat.label)} category`;
+    reveal.classList.remove('is-hidden');
+    reveal.innerHTML = `
+      <div class="cts-reveal">
+        <div class="cts-reveal-head">${headLine}</div>
+        <p class="cts-reveal-prose">${escHtml(ctrl.why)}</p>
+        <div class="cts-reveal-actions">
+          <button class="btn btn-primary cts-reveal-btn" onclick="ctsNextQuestion()">${ctsIdx >= ctsSessionLength ? 'See results &rarr;' : 'Next question &rarr;'}</button>
+        </div>
+      </div>
+    `;
+  }
+  // Hide submit button (replaced by Next in reveal panel)
+  const btn = document.getElementById('cts-submit-btn');
+  if (btn) btn.style.display = 'none';
+  const status = document.getElementById('cts-q-status');
+  if (status) status.innerHTML = isCorrect
+    ? '<span style="color:var(--green)">✓ Both axes correct &middot; ' + ctsStreak + '/' + ctsStreak + ' streak</span>'
+    : '<span style="color:var(--red)">✗ Wrong &middot; streak reset</span>';
+
+  // Update score
+  const scoreEl = document.getElementById('cts-score');
+  const streakEl = document.getElementById('cts-streak');
+  const badgeEl = document.getElementById('cts-streak-badge');
+  if (scoreEl) scoreEl.textContent = ctsCorrect + ' / ' + ctsTotal;
+  if (streakEl) streakEl.textContent = '🔥 ' + ctsStreak;
+  if (badgeEl) badgeEl.textContent = '🔥 ' + ctsStreak;
+  if (typeof evaluateMilestones === 'function') evaluateMilestones();
+}
+
+function ctsEndSession() {
+  ctsSessionDone = true;
+  const card = document.getElementById('cts-q-card');
+  const endCard = document.getElementById('cts-end-card');
+  if (card) card.classList.add('is-hidden');
+  if (!endCard) return;
+  endCard.classList.remove('is-hidden');
+  // Find weakest type
+  const m = getCtsMastery();
+  let weakest = null, weakestAcc = 1.1;
+  CTS_TYPE_IDS.forEach(t => {
+    const pt = m.perType[t] || { seen: 0, correct: 0 };
+    if (pt.seen >= 1) {
+      const acc = pt.correct / pt.seen;
+      if (acc < weakestAcc) { weakestAcc = acc; weakest = t; }
+    }
+  });
+  const weakestLabel = weakest ? (CTS_TYPES[weakest].icon + ' ' + CTS_TYPES[weakest].label) : '—';
+  const acc = ctsTotal > 0 ? Math.round((ctsCorrect / ctsTotal) * 100) : 0;
+  endCard.innerHTML = `
+    <div class="cts-eos-card">
+      <div class="cts-eos-burst">🛡</div>
+      <h2 class="cts-eos-title">Drill complete.</h2>
+      <p class="cts-eos-sub">${ctsCorrect}/${ctsTotal} right &middot; ${ctsStreak >= 5 ? '🔥 ' + ctsStreak + '-question streak!' : 'Keep stacking those reps.'}</p>
+      <div class="cts-eos-score-row">
+        <div class="cts-eos-score-tile"><div class="cts-eos-score-num">${acc}%</div><div class="cts-eos-score-lbl">accuracy</div></div>
+        <div class="cts-eos-score-tile"><div class="cts-eos-score-num">${ctsCorrect}</div><div class="cts-eos-score-lbl">correct</div></div>
+        <div class="cts-eos-score-tile"><div class="cts-eos-score-num">${m.totalAnswered}</div><div class="cts-eos-score-lbl">total seen</div></div>
+      </div>
+      ${weakest ? `<div class="cts-eos-weak">💡 <strong>Next focus:</strong> ${weakestLabel} (${Math.round(weakestAcc * 100)}% mastered) — drill weighted there next.</div>` : ''}
+      <div class="cts-eos-actions">
+        <button class="btn btn-primary" onclick="startControlTypeSorter()">Practice again →</button>
+        <button class="btn btn-ghost" onclick="setCtsTab('dashboard')">Back to dashboard</button>
+      </div>
+    </div>
+  `;
+}
+
+function ctsRenderLessons() {
+  const host = document.getElementById('cts-lessons-content');
+  if (!host) return;
+  if (!CTS_LESSONS.length) {
+    host.innerHTML = '<p style="text-align:center;color:var(--text-mid);padding:32px">No lessons available.</p>';
+    return;
+  }
+  // Render the full 6×4 matrix as a single reference card
+  host.innerHTML = `
+    <div class="cts-lesson-card">
+      <div class="cts-lesson-head">
+        <div class="cts-lesson-icon">🛡</div>
+        <div>
+          <div class="cts-lesson-title">The CompTIA 6×4 control matrix</div>
+          <div class="cts-lesson-sub">SY0-701 Domain 1.1 · 24 cells with example controls</div>
+        </div>
+      </div>
+      <div class="cts-lesson-matrix">
+        <div class="cts-lm-h"></div>
+        ${CTS_CAT_IDS.map(cid => `<div class="cts-lm-h">${escHtml(CTS_CATEGORIES[cid].label)}</div>`).join('')}
+        ${CTS_LESSONS.map(l => {
+          const tid = l.type;
+          const t = CTS_TYPES[tid] || { label: tid, icon: '', color: 'var(--accent)' };
+          return `
+            <div class="cts-lm-h cts-lm-row" style="color:${t.color}">${t.icon} ${escHtml(t.label)}</div>
+            ${CTS_CAT_IDS.map(cid => {
+              const examples = (l.cells && l.cells[cid]) || [];
+              return `<div class="cts-lm-cell">${examples.map(e => escHtml(e)).join('<br><em>')}</em></div>`;
+            }).join('')}
+          `;
+        }).join('')}
+      </div>
+      <div class="cts-lesson-summaries">
+        ${CTS_LESSONS.map(l => `
+          <div class="cts-lesson-sum"><span class="cts-lesson-sum-label" style="color:${(CTS_TYPES[l.type] || {}).color}">${(CTS_TYPES[l.type] || {}).icon} ${escHtml(l.title)}:</span> ${escHtml(l.summary)}</div>
+        `).join('')}
+      </div>
+    </div>
+  `;
+}
+
+function ctsRenderDashboard() {
+  const host = document.getElementById('cts-dashboard-content');
+  if (!host) return;
+  const m = getCtsMastery();
+  const totalMastered = Object.values(m.perControl).filter(p => p.box >= 3).length;
+  const totalSeen = Object.values(m.perControl).filter(p => p.seen > 0).length;
+  const overallAcc = m.totalAnswered > 0 ? Math.round((m.totalCorrect / m.totalAnswered) * 100) : 0;
+
+  // Per-type rows
+  const typeRows = CTS_TYPE_IDS.map(tid => {
+    const t = CTS_TYPES[tid];
+    const pt = m.perType[tid] || { seen: 0, correct: 0 };
+    const total = CTS_DATA.filter(c => c.type === tid).length;
+    const mastered = CTS_DATA.filter(c => c.type === tid && (m.perControl[c.id] || {}).box >= 3).length;
+    const pct = total > 0 ? Math.round((mastered / total) * 100) : 0;
+    return { tid, t, mastered, total, pct, seen: pt.seen };
+  });
+  const weakestType = typeRows.filter(r => r.seen > 0).sort((a, b) => a.pct - b.pct)[0] || null;
+
+  host.innerHTML = `
+    <div class="cts-dash">
+      <div class="cts-dash-card">
+        <div class="cts-dash-card-head">Mastery by control type</div>
+        <div class="cts-dash-type-grid">
+          ${typeRows.map(r => `
+            <div class="cts-dash-type-row" style="background:${r.t.color}1a;border-left:3px solid ${r.t.color}">
+              <span class="cts-dash-type-icon">${r.t.icon}</span>
+              <span class="cts-dash-type-name">${escHtml(r.t.label)}</span>
+              <span class="cts-dash-type-pct">${r.mastered}/${r.total}</span>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+      <div class="cts-dash-side">
+        ${weakestType ? `
+          <div class="cts-dash-card cts-dash-weakest">
+            <div class="cts-dash-card-head">Weakest type</div>
+            <div class="cts-dash-weak-name">${weakestType.t.icon} ${escHtml(weakestType.t.label)} (${weakestType.mastered}/${weakestType.total} mastered)</div>
+            <div class="cts-dash-weak-sub">Drill weighted there next session.</div>
+          </div>
+        ` : `
+          <div class="cts-dash-card">
+            <div class="cts-dash-card-head">Common confusion</div>
+            <div style="font-size:12px;color:var(--text-mid);line-height:1.5">Detective vs Preventive — IDS is Detective (alerts), IPS is Preventive (blocks). Same hardware, different control type.</div>
+          </div>
+        `}
+        <button class="cts-dash-cta" onclick="startControlTypeSorter()">🛡 Start ${ctsSessionLength}-question MCQ drill →</button>
+        <div class="cts-dash-overall">
+          <div><span class="cts-dash-overall-num">${totalMastered}</span><span class="cts-dash-overall-lbl">mastered</span></div>
+          <div><span class="cts-dash-overall-num">${totalSeen}</span><span class="cts-dash-overall-lbl">seen</span></div>
+          <div><span class="cts-dash-overall-num">${overallAcc}%</span><span class="cts-dash-overall-lbl">accuracy</span></div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function setCtsTab(tabId) {
+  document.querySelectorAll('.cts-tab-btn').forEach(b => {
+    const id = b.id.replace('cts-tab-btn-', '');
+    const active = id === tabId;
+    b.classList.toggle('cts-tab-active', active);
+    b.setAttribute('aria-selected', active ? 'true' : 'false');
+    b.tabIndex = active ? 0 : -1;
+  });
+  ['practice', 'lessons', 'dashboard'].forEach(p => {
+    const panel = document.getElementById('cts-tab-' + p);
+    if (!panel) return;
+    panel.classList.toggle('is-hidden', p !== tabId);
+  });
+  if (tabId === 'lessons') ctsRenderLessons();
+  else if (tabId === 'dashboard') ctsRenderDashboard();
+}
+
+function startControlTypeSorter() {
+  if (!_USE_SECPLUS_CTS) {
+    if (typeof showToast === 'function') showToast('Control Type Sorter is Security+ only.', 'info');
+    return;
+  }
+  ctsIdx = 0; ctsCorrect = 0; ctsTotal = 0; ctsStreak = 0;
+  ctsSessionDone = false;
+  ctsPickedType = null; ctsPickedCat = null;
+  setCtsTab('practice');
+  const card = document.getElementById('cts-q-card');
+  const endCard = document.getElementById('cts-end-card');
+  if (card) card.classList.remove('is-hidden');
+  if (endCard) endCard.classList.add('is-hidden');
+  ctsNextQuestion();
 }
 
 function setOsDifficulty(diff) {
@@ -35820,7 +36233,8 @@ const APP_SIDEBAR_DRILLS = [
 // scaffold itself is cert-aware via _USE_SECPLUS_AB at module load.
 const APP_SIDEBAR_DRILLS_SECPLUS = [
   { page: 'acronyms', label: 'Acronym Blitz', handler: () => { showPage('acronyms'); if (typeof startAcronymBlitz === 'function') startAcronymBlitz(); } },
-  { page: 'amm', label: 'Attack-to-Mitigation', handler: () => { showPage('amm'); if (typeof startAttackMitigation === 'function') startAttackMitigation(); } }
+  { page: 'amm', label: 'Attack-to-Mitigation', handler: () => { showPage('amm'); if (typeof startAttackMitigation === 'function') startAttackMitigation(); } },
+  { page: 'cts', label: 'Control Type Sorter', handler: () => { showPage('cts'); if (typeof startControlTypeSorter === 'function') startControlTypeSorter(); } }
 ];
 
 // Map arbitrary page names to their sidebar highlight target. Quiz/exam/review
@@ -35838,6 +36252,7 @@ const SIDEBAR_ACTIVE_MAP = {
   'ports': 'ports',
   'acronyms': 'acronyms',
   'amm': 'amm',  // v4.94.0: Attack-to-Mitigation drill highlights itself
+  'cts': 'cts',  // v4.95.0: Control Type Sorter drill highlights itself
   'osi-sorter': 'osi-sorter',
   'cables': 'cables',
   'network-analysis': 'network-analysis',
@@ -36032,6 +36447,7 @@ const TOPBAR_CRUMBS = {
   'ports': 'Port Drill',
   'acronyms': 'Acronym Blitz',
   'amm': 'Attack-to-Mitigation',  // v4.94.0
+  'cts': 'Control Type Sorter',  // v4.95.0
   'osi-sorter': 'OSI Sorter',
   'cables': 'Cable ID',
   'network-analysis': 'Network Analysis',
