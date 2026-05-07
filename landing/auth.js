@@ -59,9 +59,18 @@
   var migrationBanner = document.getElementById('migration-banner');
   var migrationStats = document.getElementById('migration-stats');
 
-  if (!authModal || !authForm) {
-    console.warn('[certanvil-auth] Auth modal markup missing — skipping wireup');
-    return;
+  // v4.90.1: auth.js is loaded on multiple landing-surface pages now —
+  // the home page (index.html) has the full sign-in modal markup, but
+  // account.html and admin.html do not. Pre-fix this function bailed out
+  // entirely when the modal was missing, which ALSO skipped the topbar
+  // render (Sign-in button stayed visible despite the user being signed
+  // in). Now: only modal-specific wiring is gated; the topbar pill + auth
+  // state machine still runs everywhere. See helper guards below
+  // (openAuthModal, closeAuthModal, sendMagicLink, form-submit handler)
+  // each gated independently with `if (!authModal) return;` etc.
+  var hasModalMarkup = !!(authModal && authForm);
+  if (!hasModalMarkup) {
+    console.info('[certanvil-auth] No auth-modal markup on this page — running topbar-only mode');
   }
 
   // ── Anonymous-progress detection ────────────────────────────────────────
@@ -440,7 +449,17 @@
   if (signInBtn) {
     signInBtn.addEventListener('click', function (e) {
       e.preventDefault();
-      openAuthModal();
+      // On the home page the modal opens directly. On other landing pages
+      // (account.html, admin.html) the modal isn't loaded, so we route
+      // users back home with the same `?action=signin&return=…` pattern
+      // already used by the cert app — landing's home picks up the URL
+      // params and auto-opens the modal there.
+      if (hasModalMarkup) {
+        openAuthModal();
+      } else {
+        var here = window.location.origin + window.location.pathname;
+        window.location.href = '/?action=signin&return=' + encodeURIComponent(here);
+      }
     });
   }
 
@@ -488,43 +507,47 @@
     }
   });
 
-  // Form submit — send magic link
-  authForm.addEventListener('submit', function (e) {
-    e.preventDefault();
-    clearAuthError();
-    var email = authEmailInput ? authEmailInput.value.trim() : '';
-    if (!email || email.indexOf('@') < 1) {
-      showAuthError('Enter a valid email.');
-      return;
-    }
+  // Form submit — send magic link. Only present on pages with the auth
+  // modal markup (landing index.html). Account / admin pages don't ship
+  // the modal, so this listener is gated.
+  if (authForm) {
+    authForm.addEventListener('submit', function (e) {
+      e.preventDefault();
+      clearAuthError();
+      var email = authEmailInput ? authEmailInput.value.trim() : '';
+      if (!email || email.indexOf('@') < 1) {
+        showAuthError('Enter a valid email.');
+        return;
+      }
 
-    if (authSubmit) {
-      authSubmit.disabled = true;
-      authSubmit.textContent = 'Sending…';
-    }
+      if (authSubmit) {
+        authSubmit.disabled = true;
+        authSubmit.textContent = 'Sending…';
+      }
 
-    sendMagicLink(email)
-      .then(function (result) {
-        if (authSubmit) {
-          authSubmit.disabled = false;
-          authSubmit.textContent = 'Continue with email →';
-        }
-        if (result && result.error) {
-          var msg = result.error.message || 'Could not send magic link. Try again in a moment.';
-          showAuthError(msg);
-          return;
-        }
-        showAuthSent(email);
-      })
-      .catch(function (err) {
-        if (authSubmit) {
-          authSubmit.disabled = false;
-          authSubmit.textContent = 'Continue with email →';
-        }
-        console.error('[certanvil-auth] sendMagicLink threw:', err);
-        showAuthError('Network error. Check your connection and try again.');
-      });
-  });
+      sendMagicLink(email)
+        .then(function (result) {
+          if (authSubmit) {
+            authSubmit.disabled = false;
+            authSubmit.textContent = 'Continue with email →';
+          }
+          if (result && result.error) {
+            var msg = result.error.message || 'Could not send magic link. Try again in a moment.';
+            showAuthError(msg);
+            return;
+          }
+          showAuthSent(email);
+        })
+        .catch(function (err) {
+          if (authSubmit) {
+            authSubmit.disabled = false;
+            authSubmit.textContent = 'Continue with email →';
+          }
+          console.error('[certanvil-auth] sendMagicLink threw:', err);
+          showAuthError('Network error. Check your connection and try again.');
+        });
+    });
+  }
 
   // Resend magic link (re-uses the email shown in the confirmation pill)
   if (authResend) {
