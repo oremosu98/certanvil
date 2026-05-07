@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Admin · CertAnvil</title>
+<meta name="description" content="CertAnvil owner-only admin dashboard.">
+<meta name="robots" content="noindex,nofollow">
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="apple-touch-icon" href="favicon.svg">
+<link rel="stylesheet" href="styles.css">
+<script>
+(function() {
+  var theme = 'light';
+  try {
+    var saved = localStorage.getItem('certanvil_theme');
+    if (saved === 'light' || saved === 'dark') theme = saved;
+  } catch (e) {}
+  document.documentElement.setAttribute('data-theme', theme);
+})();
+</script>
+<script>
+(function() {
+  if (!('serviceWorker' in navigator)) return;
+  try { navigator.serviceWorker.register('/sw.js').catch(function () {}); } catch (e) {}
+  try {
+    navigator.serviceWorker.getRegistrations().then(function (regs) {
+      var hadController = !!navigator.serviceWorker.controller;
+      var pending = regs.map(function (r) { return r.unregister().catch(function () { return false; }); });
+      Promise.all(pending).then(function () {
+        if (hadController && !sessionStorage.getItem('_certanvil_sw_killed')) {
+          try { sessionStorage.setItem('_certanvil_sw_killed', '1'); } catch (e) {}
+          try { window.location.reload(); } catch (e) {}
+        }
+      });
+    });
+  } catch (e) {}
+})();
+</script>
+</head>
+<body class="account-body admin-body">
+
+<!-- ══════════════════════════════════════════
+     ADMIN TOPBAR — same shape as the regular landing topbar but with
+     "· ADMIN" suffix on the logo (visual reminder this is privileged).
+     Auth-gated by lib/admin.js — anonymous + non-admin users redirect.
+══════════════════════════════════════════ -->
+<header class="topbar">
+  <div class="topbar-inner container">
+    <a class="logo" href="/" aria-label="CertAnvil home">
+      <span class="logo-mark" aria-hidden="true">
+        <svg viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
+          <g transform="rotate(-25 35 30)">
+            <rect x="20" y="20" width="32" height="12" rx="2" fill="#7c6ff7"/>
+            <rect x="32" y="32" width="6" height="22" fill="#3d3870"/>
+          </g>
+          <path d="M30 60 L82 60 L77 65 L75 72 L80 72 L80 80 L32 80 L32 72 L37 72 L35 65 Z" fill="#f0f0f8"/>
+          <circle cx="55" cy="50" r="3" fill="#f59e0b"/>
+        </svg>
+      </span>
+      <span class="logo-name">CertAnvil <span class="admin-suffix">· ADMIN</span></span>
+    </a>
+
+    <nav class="topbar-nav" aria-label="Admin navigation">
+      <a href="#users" class="nav-link">Users</a>
+      <a href="#certs" class="nav-link">Certs</a>
+      <a href="#operations" class="nav-link">Ops</a>
+      <a href="/account" class="nav-link">Back to account</a>
+      <button type="button" class="theme-toggle" id="theme-toggle" aria-label="Toggle light/dark theme" title="Toggle theme">
+        <svg class="theme-icon theme-icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="4"/>
+          <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>
+        </svg>
+        <svg class="theme-icon theme-icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+        </svg>
+      </button>
+
+      <button type="button" class="account-pill" id="account-pill" hidden aria-haspopup="menu" aria-expanded="false" aria-controls="account-dropdown">
+        <span class="account-avatar" id="account-avatar" aria-hidden="true">U</span>
+        <span class="account-email-short" id="account-email-short">you@…</span>
+        <span class="account-chevron" id="account-chevron" aria-hidden="true">▾</span>
+      </button>
+
+      <button type="button" class="sign-in-btn" id="sign-in-btn">Sign in</button>
+    </nav>
+
+    <div class="account-dropdown" id="account-dropdown" role="menu" aria-labelledby="account-pill" hidden>
+      <div class="dropdown-header">
+        <div class="dropdown-email" id="dropdown-email">you@email.com</div>
+        <div class="dropdown-tier" id="dropdown-tier">● Free tier · Network+ unlocked</div>
+      </div>
+      <a href="/account" class="dropdown-link" role="menuitem">
+        <span class="dropdown-link-icon" aria-hidden="true">⚙️</span>
+        <span>Account settings</span>
+      </a>
+      <div class="dropdown-divider" role="separator"></div>
+      <a href="#" class="dropdown-link dropdown-link-danger" id="sign-out-link" role="menuitem">
+        <span class="dropdown-link-icon" aria-hidden="true">↩</span>
+        <span>Sign out</span>
+      </a>
+    </div>
+  </div>
+</header>
+
+<main class="account-page admin-page">
+  <div class="container account-container admin-container">
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="/">Home</a> <span aria-hidden="true">·</span> <a href="/account">Account</a> <span aria-hidden="true">·</span> <span>Admin Dashboard</span>
+    </nav>
+
+    <header class="account-pagehead">
+      <div class="account-eyebrow admin-eyebrow">🔧 Admin</div>
+      <h1 class="account-title">Dashboard</h1>
+      <p class="account-subtitle">Owner-only operations + user management. Restricted by <code class="acc-code">role='admin'</code> in <code class="acc-code">profiles</code>.</p>
+    </header>
+
+    <!-- Loading state -->
+    <div class="account-loading" id="admin-loading" aria-live="polite">
+      <span class="account-loading-spinner" aria-hidden="true"></span>
+      <span>Loading dashboard…</span>
+    </div>
+
+    <!-- Anonymous gate -->
+    <div class="account-anon-gate" id="admin-anon-gate" hidden>
+      <div class="anon-gate-icon" aria-hidden="true">🔒</div>
+      <h2>Sign in to access the admin dashboard</h2>
+      <p>This area is restricted to accounts with <code class="acc-code">role='admin'</code> in the <code class="acc-code">profiles</code> table.</p>
+      <a href="/?action=signin&return=https%3A%2F%2Fcertanvil.com%2Fadmin" class="btn-primary-cta">Sign in →</a>
+      <a href="/" class="btn-ghost-link">Back to home</a>
+    </div>
+
+    <!-- 403 — signed in but not admin -->
+    <div class="account-anon-gate admin-403" id="admin-403-gate" hidden>
+      <div class="anon-gate-icon" aria-hidden="true">⛔</div>
+      <h2>Admin access required</h2>
+      <p>You're signed in, but your account doesn't have admin privileges. If this is a mistake, contact the CertAnvil owner.</p>
+      <a href="/account" class="btn-primary-cta">Back to my account →</a>
+      <a href="/" class="btn-ghost-link">Or back to home</a>
+    </div>
+
+    <!-- Admin content -->
+    <div class="admin-content" id="admin-content" hidden>
+
+      <!-- 4-stat hero grid -->
+      <div class="admin-grid" id="admin-stats">
+        <div class="admin-stat">
+          <div class="admin-stat-label">Total users</div>
+          <div class="admin-stat-value" id="stat-total-users">—</div>
+          <div class="admin-stat-delta" id="stat-total-users-delta">&nbsp;</div>
+        </div>
+        <div class="admin-stat">
+          <div class="admin-stat-label">Active this week</div>
+          <div class="admin-stat-value" id="stat-active-week">—</div>
+          <div class="admin-stat-delta" id="stat-active-week-delta">&nbsp;</div>
+        </div>
+        <div class="admin-stat">
+          <div class="admin-stat-label">Cert packs live</div>
+          <div class="admin-stat-value" id="stat-cert-packs">—</div>
+          <div class="admin-stat-delta" id="stat-cert-packs-delta">&nbsp;</div>
+        </div>
+        <div class="admin-stat">
+          <div class="admin-stat-label">App version</div>
+          <div class="admin-stat-value admin-stat-mono" id="stat-app-version">v—</div>
+          <div class="admin-stat-delta" id="stat-app-version-delta">&nbsp;</div>
+        </div>
+      </div>
+
+      <!-- §01 Users -->
+      <section class="admin-table-wrap" id="users">
+        <header class="admin-table-head">
+          <h2 class="admin-table-title">Users</h2>
+          <span class="admin-table-meta" id="users-table-meta">SELECT * FROM profiles</span>
+        </header>
+        <div class="admin-table-scroll">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th scope="col">Email</th>
+                <th scope="col">Role</th>
+                <th scope="col">Tier</th>
+                <th scope="col">Display name</th>
+                <th scope="col">Active cert</th>
+                <th scope="col">Last seen</th>
+              </tr>
+            </thead>
+            <tbody id="users-tbody">
+              <!-- Populated by lib/admin.js -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- §02 Cert packs -->
+      <section class="admin-table-wrap" id="certs">
+        <header class="admin-table-head">
+          <h2 class="admin-table-title">Cert packs</h2>
+          <span class="admin-table-meta">Visibility + pack-state per cert</span>
+        </header>
+        <div class="admin-table-scroll">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th scope="col">Cert</th>
+                <th scope="col">Code</th>
+                <th scope="col">Visibility</th>
+                <th scope="col">Question bank</th>
+                <th scope="col">Status</th>
+              </tr>
+            </thead>
+            <tbody id="certs-tbody">
+              <!-- Populated by lib/admin.js (static data for now — no DB-backed cert pack table yet) -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- §03 Recent ships -->
+      <section class="admin-table-wrap" id="operations">
+        <header class="admin-table-head">
+          <h2 class="admin-table-title">Recent ships</h2>
+          <a href="https://github.com/oremosu98/networkplus-quiz/commits/main" target="_blank" rel="noopener" class="admin-table-meta-link">View on GitHub →</a>
+        </header>
+        <div class="admin-table-scroll">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th scope="col">Commit</th>
+                <th scope="col">Message</th>
+                <th scope="col">Date</th>
+              </tr>
+            </thead>
+            <tbody id="ships-tbody">
+              <tr><td colspan="3" class="admin-table-empty">Loading commits from GitHub…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- §04 Telemetry placeholder -->
+      <section class="acc-section admin-telemetry-placeholder">
+        <header class="section-head">
+          <div class="section-eyebrow">§04 Telemetry</div>
+          <h2 class="section-title">Telemetry &amp; analytics</h2>
+          <p class="section-sub">Funnel, daily actives, churn signals — wired in Phase G+ when there are real users to measure.</p>
+        </header>
+        <p class="admin-placeholder-text">— deferred until ≥10 users + Stripe live —</p>
+      </section>
+
+    </div>
+  </div>
+</main>
+
+<div class="toast-stack" id="toast-stack" aria-live="polite" aria-atomic="true"></div>
+
+<script src="lib/supabase-umd.min.js"></script>
+<script src="lib/supabase.js"></script>
+<script src="auth.js"></script>
+<script src="lib/admin.js"></script>
+</body>
+</html>

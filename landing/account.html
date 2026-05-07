@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Account · CertAnvil</title>
+<meta name="description" content="Your CertAnvil account — profile, certs, security, notifications, and data.">
+<meta name="robots" content="noindex,nofollow"><!-- private user page; not for SEO -->
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="apple-touch-icon" href="favicon.svg">
+<link rel="stylesheet" href="styles.css">
+<script>
+// Inline theme bootstrap — runs synchronously before <body> renders so the
+// page paints in the right theme on first frame (no light→dark flash).
+(function() {
+  var theme = 'light';
+  try {
+    var saved = localStorage.getItem('certanvil_theme');
+    if (saved === 'light' || saved === 'dark') theme = saved;
+  } catch (e) {}
+  document.documentElement.setAttribute('data-theme', theme);
+})();
+</script>
+
+<!-- v4.89.3 SW kill-switch — same defensive pattern as landing/index.html.
+     Account page may be the first landing-surface page a returning user
+     hits, so we still need to evict the rogue SW from a previous deploy. -->
+<script>
+(function() {
+  if (!('serviceWorker' in navigator)) return;
+  try { navigator.serviceWorker.register('/sw.js').catch(function () {}); } catch (e) {}
+  try {
+    navigator.serviceWorker.getRegistrations().then(function (regs) {
+      var hadController = !!navigator.serviceWorker.controller;
+      var pending = regs.map(function (r) { return r.unregister().catch(function () { return false; }); });
+      Promise.all(pending).then(function () {
+        if (hadController && !sessionStorage.getItem('_certanvil_sw_killed')) {
+          try { sessionStorage.setItem('_certanvil_sw_killed', '1'); } catch (e) {}
+          try { window.location.reload(); } catch (e) {}
+        }
+      });
+    });
+  } catch (e) {}
+})();
+</script>
+</head>
+<body class="account-body">
+
+<!-- ══════════════════════════════════════════
+     TOPBAR — same as landing/index.html so the brand + auth pill stay consistent across surfaces
+══════════════════════════════════════════ -->
+<header class="topbar">
+  <div class="topbar-inner container">
+    <a class="logo" href="/" aria-label="CertAnvil home">
+      <span class="logo-mark" aria-hidden="true">
+        <svg viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
+          <g transform="rotate(-25 35 30)">
+            <rect x="20" y="20" width="32" height="12" rx="2" fill="#7c6ff7"/>
+            <rect x="32" y="32" width="6" height="22" fill="#3d3870"/>
+          </g>
+          <path d="M30 60 L82 60 L77 65 L75 72 L80 72 L80 80 L32 80 L32 72 L37 72 L35 65 Z" fill="#f0f0f8"/>
+          <circle cx="55" cy="50" r="3" fill="#f59e0b"/>
+        </svg>
+      </span>
+      <span class="logo-name">CertAnvil</span>
+    </a>
+
+    <nav class="topbar-nav" aria-label="Primary navigation">
+      <a href="/#why" class="nav-link">Why CertAnvil</a>
+      <a href="/#certs" class="nav-link">Certs</a>
+      <a href="/pricing" class="nav-link">Pricing</a>
+      <button type="button" class="theme-toggle" id="theme-toggle" aria-label="Toggle light/dark theme" title="Toggle theme">
+        <svg class="theme-icon theme-icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="4"/>
+          <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>
+        </svg>
+        <svg class="theme-icon theme-icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+        </svg>
+      </button>
+
+      <button type="button" class="sign-in-btn" id="sign-in-btn">Sign in</button>
+
+      <button type="button" class="account-pill" id="account-pill" hidden aria-haspopup="menu" aria-expanded="false" aria-controls="account-dropdown">
+        <span class="account-avatar" id="account-avatar" aria-hidden="true">U</span>
+        <span class="account-email-short" id="account-email-short">you@…</span>
+        <span class="account-chevron" id="account-chevron" aria-hidden="true">▾</span>
+      </button>
+    </nav>
+
+    <div class="account-dropdown" id="account-dropdown" role="menu" aria-labelledby="account-pill" hidden>
+      <div class="dropdown-header">
+        <div class="dropdown-email" id="dropdown-email">you@email.com</div>
+        <div class="dropdown-tier" id="dropdown-tier">● Free tier · Network+ unlocked</div>
+      </div>
+      <a href="/account" class="dropdown-link" role="menuitem" id="dropdown-account-settings">
+        <span class="dropdown-link-icon" aria-hidden="true">⚙️</span>
+        <span>Account settings</span>
+      </a>
+      <a href="#" class="dropdown-link" role="menuitem" id="dropdown-my-certs">
+        <span class="dropdown-link-icon" aria-hidden="true">🎓</span>
+        <span>My certs</span>
+      </a>
+      <a href="#" class="dropdown-link" role="menuitem" id="dropdown-cross-cert-analytics">
+        <span class="dropdown-link-icon" aria-hidden="true">📊</span>
+        <span>Cross-cert analytics</span>
+      </a>
+      <div class="dropdown-divider" role="separator"></div>
+      <a href="#" class="dropdown-link dropdown-link-danger" id="sign-out-link" role="menuitem">
+        <span class="dropdown-link-icon" aria-hidden="true">↩</span>
+        <span>Sign out</span>
+      </a>
+    </div>
+  </div>
+</header>
+
+<!-- ══════════════════════════════════════════
+     ACCOUNT PAGE BODY
+     - Anonymous users: gated by the JS auth check in lib/account.js;
+       redirected to / with a banner if not signed in.
+     - Signed-in users: page renders immediately, populated by account.js
+       once the session resolves.
+═════════════════════════════════════════ -->
+<main class="account-page">
+  <div class="container account-container">
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="/">Home</a> <span aria-hidden="true">·</span> <span>Account</span>
+    </nav>
+
+    <header class="account-pagehead">
+      <div class="account-eyebrow">Account</div>
+      <h1 class="account-title">Your account</h1>
+      <p class="account-subtitle">Profile, billing, security, and data — across every cert you study.</p>
+    </header>
+
+    <!-- Loading state shown while the auth check runs (most users see this for ~50ms before account.js populates) -->
+    <div class="account-loading" id="account-loading" aria-live="polite">
+      <span class="account-loading-spinner" aria-hidden="true"></span>
+      <span>Loading your account…</span>
+    </div>
+
+    <!-- Anonymous gate — shown if user isn't signed in -->
+    <div class="account-anon-gate" id="account-anon-gate" hidden>
+      <div class="anon-gate-icon" aria-hidden="true">🔒</div>
+      <h2>Sign in to view your account</h2>
+      <p>Your account settings, certs, and progress are private to you. Sign in with a magic link to continue.</p>
+      <a href="/?action=signin&return=https%3A%2F%2Fcertanvil.com%2Faccount" class="btn-primary-cta">Sign in →</a>
+      <a href="/" class="btn-ghost-link">Back to home</a>
+    </div>
+
+    <!-- Authenticated content — populated by account.js -->
+    <div class="account-content" id="account-content" hidden>
+
+      <!-- Admin CTA banner (only shown when role=admin) -->
+      <a href="/admin" class="admin-cta-banner" id="admin-cta-banner" hidden>
+        <span class="admin-cta-icon" aria-hidden="true">🔧</span>
+        <span class="admin-cta-info">
+          <span class="admin-cta-title">Admin Dashboard</span>
+          <span class="admin-cta-sub">Users, cert packs, deploy status, telemetry — owner-only operations.</span>
+        </span>
+        <span class="admin-cta-arrow" aria-hidden="true">→</span>
+      </a>
+
+      <!-- Identity card -->
+      <div class="id-card">
+        <div class="id-avatar" id="id-avatar">U</div>
+        <div class="id-info">
+          <div class="id-email" id="id-email">…</div>
+          <div class="id-meta-row">
+            <span class="id-tier-pill is-free" id="id-tier-pill"><span class="dot" aria-hidden="true"></span><span id="id-tier-label">Free tier</span></span>
+            <span class="id-admin-pill" id="id-admin-pill" hidden>🔧 Admin</span>
+            <span class="id-meta-text" id="id-meta-text">Loading…</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- §01 Profile -->
+      <section class="acc-section" id="section-profile">
+        <header class="section-head">
+          <div class="section-eyebrow">§01 Profile</div>
+          <h2 class="section-title">Profile</h2>
+        </header>
+        <div class="acc-field">
+          <span class="acc-field-label">Email</span>
+          <span class="acc-field-value acc-field-value-mono" id="profile-email-display">…</span>
+          <span class="acc-field-action"><button class="btn-ghost-sm" id="btn-change-email" disabled title="Email change coming soon">Change email</button></span>
+        </div>
+        <div class="acc-field">
+          <span class="acc-field-label">Display name</span>
+          <span class="acc-field-value" id="profile-display-name">…</span>
+          <span class="acc-field-action"><button class="btn-ghost-sm" id="btn-edit-display-name">Edit</button></span>
+        </div>
+        <div class="acc-field">
+          <span class="acc-field-label">Avatar</span>
+          <span class="acc-field-value">Auto-generated from email initial</span>
+          <span class="acc-field-action"><button class="btn-ghost-sm" disabled title="Custom avatar upload coming soon">Upload (soon)</button></span>
+        </div>
+      </section>
+
+      <!-- §02 Subscription -->
+      <section class="acc-section" id="section-subscription">
+        <header class="section-head">
+          <div class="section-eyebrow">§02 Subscription</div>
+          <h2 class="section-title">Subscription &amp; certs</h2>
+          <p class="section-sub">Manage tier and active cert entitlements.</p>
+        </header>
+        <div class="acc-field">
+          <span class="acc-field-label">Current tier</span>
+          <span class="acc-field-value">
+            <span class="id-tier-pill is-free" id="sub-tier-pill"><span class="dot" aria-hidden="true"></span><span id="sub-tier-label">Free tier</span></span>
+          </span>
+          <span class="acc-field-action" id="sub-tier-action">
+            <button class="btn-primary-sm" id="btn-upgrade" disabled title="Stripe billing coming with Phase G">Upgrade →</button>
+          </span>
+        </div>
+        <div class="ent-section">
+          <div class="ent-section-label">Active cert entitlements</div>
+          <div class="ent-list" id="ent-list">
+            <!-- Populated by account.js -->
+          </div>
+        </div>
+      </section>
+
+      <!-- §03 Security -->
+      <section class="acc-section" id="section-security">
+        <header class="section-head">
+          <div class="section-eyebrow">§03 Security</div>
+          <h2 class="section-title">Security</h2>
+        </header>
+        <div class="acc-field">
+          <span class="acc-field-label">Sign-in method</span>
+          <span class="acc-field-value">Magic link via <span class="acc-field-value-mono" id="security-email-mono" style="color:var(--text-mid)">…</span></span>
+        </div>
+        <div class="acc-field">
+          <span class="acc-field-label">Linked accounts</span>
+          <span class="acc-field-value" style="color:var(--text-dim);font-style:italic">Google · Microsoft (coming with OAuth-ready expansion)</span>
+        </div>
+        <div class="security-sessions">
+          <div class="security-sessions-label">Active sessions</div>
+          <div class="session-list" id="session-list">
+            <!-- Populated by account.js with the current session info -->
+          </div>
+        </div>
+        <div class="security-signout-row">
+          <button class="btn-danger-sm" id="btn-sign-out-everywhere">Sign out everywhere</button>
+        </div>
+      </section>
+
+      <!-- §04 Notifications -->
+      <section class="acc-section" id="section-notifications">
+        <header class="section-head">
+          <div class="section-eyebrow">§04 Notifications</div>
+          <h2 class="section-title">Email preferences</h2>
+          <p class="section-sub">Toggles save to your account immediately. Email cron wires up in a future ship.</p>
+        </header>
+        <div class="toggle-row">
+          <div class="toggle-info">
+            <div class="toggle-label">When a new cert pack ships</div>
+            <div class="toggle-sub">Single email when a cert you've notified-me'd on goes live</div>
+          </div>
+          <button type="button" class="toggle-switch is-on" id="notify-cert-launch" aria-pressed="true" aria-label="When a new cert pack ships"></button>
+        </div>
+        <div class="toggle-row">
+          <div class="toggle-info">
+            <div class="toggle-label">Weekly progress summary</div>
+            <div class="toggle-sub">Sunday 9am — questions answered, streak, weakest topic</div>
+          </div>
+          <button type="button" class="toggle-switch is-on" id="notify-weekly-progress" aria-pressed="true" aria-label="Weekly progress summary"></button>
+        </div>
+        <div class="toggle-row">
+          <div class="toggle-info">
+            <div class="toggle-label">Exam-date approaching</div>
+            <div class="toggle-sub">Reminders at 14d / 7d / 3d / 1d before your set exam date</div>
+          </div>
+          <button type="button" class="toggle-switch is-on" id="notify-exam-approaching" aria-pressed="true" aria-label="Exam-date approaching"></button>
+        </div>
+        <div class="toggle-row">
+          <div class="toggle-info">
+            <div class="toggle-label">Marketing emails</div>
+            <div class="toggle-sub">Product updates, tips, occasional discounts</div>
+          </div>
+          <button type="button" class="toggle-switch" id="notify-marketing" aria-pressed="false" aria-label="Marketing emails"></button>
+        </div>
+      </section>
+
+      <!-- §05 Data & Privacy -->
+      <section class="acc-section" id="section-data">
+        <header class="section-head">
+          <div class="section-eyebrow">§05 Data &amp; Privacy</div>
+          <h2 class="section-title">Your data</h2>
+          <p class="section-sub">Export everything you've stored on CertAnvil. Account deletion in the danger zone below.</p>
+        </header>
+        <div class="acc-field">
+          <span class="acc-field-label">Export data</span>
+          <span class="acc-field-value" style="color:var(--text-mid)">JSON archive of profile + cert metadata + recent quiz history</span>
+          <span class="acc-field-action"><button class="btn-ghost-sm" id="btn-export-data">Download .json</button></span>
+        </div>
+      </section>
+
+      <!-- §06 Danger zone -->
+      <section class="acc-section is-danger" id="section-danger">
+        <header class="section-head">
+          <div class="section-eyebrow">§06 Danger zone</div>
+          <h2 class="section-title">Delete account</h2>
+          <p class="section-sub">Marks your account for deletion. After 7 days, your profile + quiz history are permanently purged. You can cancel during the grace window by signing in.</p>
+        </header>
+        <div class="danger-action-row">
+          <button class="btn-danger" id="btn-delete-account">Delete account →</button>
+          <span class="danger-deletion-status" id="deletion-status" hidden></span>
+        </div>
+      </section>
+
+    </div>
+  </div>
+</main>
+
+<!-- Shared toast container (re-used across landing pages) -->
+<div class="toast-stack" id="toast-stack" aria-live="polite" aria-atomic="true"></div>
+
+<!-- ══════════════════════════════════════════
+     SCRIPTS
+═══════════════════════════════════════════ -->
+<script src="lib/supabase-umd.min.js"></script>
+<script src="lib/supabase.js"></script>
+<script src="auth.js"></script>
+<script src="lib/account.js"></script>
+</body>
+</html>

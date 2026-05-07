@@ -164,8 +164,11 @@
       +     '<a class="tad-sync-now" href="#" onclick="return tadSyncNow(event)">Sync now</a>'
       +   '</div>'
       +   certSwitcherHtml
-      +   '<a class="tad-link" href="#" onclick="return showPage(\'settings\'),false">'
+      +   '<a class="tad-link" href="https://certanvil.com/account">'
       +     '<span class="tad-icon">⚙️</span><span>Account settings</span>'
+      +   '</a>'
+      +   '<a class="tad-link" href="#" onclick="return showPage(\'settings\'),false">'
+      +     '<span class="tad-icon">🛠</span><span>App preferences</span>'
       +   '</a>'
       +   '<a class="tad-link" href="https://certanvil.com/?modal=my-certs">'
       +     '<span class="tad-icon">🎓</span><span>My certs</span>'
@@ -177,7 +180,7 @@
       +     '<span class="tad-icon">🏠</span><span>Back to certanvil.com</span>'
       +   '</a>'
       +   (role === 'admin' ?
-            '<a class="tad-link is-admin" href="https://certanvil.com/admin" target="_blank" rel="noopener">'
+            '<a class="tad-link is-admin" href="https://certanvil.com/admin">'
               + '<span class="tad-icon">🔧</span><span>Admin Dashboard</span>'
               + '</a>'
             : '')

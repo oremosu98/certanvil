@@ -1,0 +1,1336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CertAnvil — Account Settings + Admin Dashboard concept</title>
+<style>
+  :root {
+    --bg: #0a0a12;
+    --surface: #131320;
+    --surface-2: #1a1a2e;
+    --surface-3: #222235;
+    --border: #2e2e48;
+    --border-strong: #3a3a55;
+    --accent: #7c6ff7;
+    --accent-light: #a99df9;
+    --accent-dim: #3d3870;
+    --text: #f0f0f8;
+    --text-mid: #b0b0cc;
+    --text-dim: #6b6b90;
+    --green: #22c55e;
+    --green-soft: rgba(34,197,94,.12);
+    --green-border: rgba(34,197,94,.32);
+    --red: #f87171;
+    --red-soft: rgba(248,113,113,.10);
+    --red-border: rgba(248,113,113,.32);
+    --orange: #f59e0b;
+    --orange-soft: rgba(245,158,11,.12);
+    --orange-border: rgba(245,158,11,.32);
+    --yellow: #fbbf24;
+    --accent-rgb: 124, 111, 247;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #050510;
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+    padding: 32px 16px 80px;
+  }
+  .mockup-doc {
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+  .doc-header {
+    text-align: center;
+    margin-bottom: 40px;
+    padding-bottom: 32px;
+    border-bottom: 1px dashed var(--border);
+  }
+  .doc-title {
+    font-size: 28px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    margin-bottom: 8px;
+  }
+  .doc-sub {
+    color: var(--text-mid);
+    font-size: 14px;
+    margin-bottom: 16px;
+  }
+  .doc-meta {
+    display: inline-block;
+    padding: 4px 12px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 99px;
+    font-size: 11px;
+    color: var(--text-dim);
+    font-family: 'SF Mono', monospace;
+  }
+  .state-section {
+    margin-bottom: 64px;
+  }
+  .state-header {
+    display: flex; align-items: baseline; justify-content: space-between;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  .state-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--accent-light);
+  }
+  .state-tag {
+    font-size: 11px;
+    font-family: 'SF Mono', monospace;
+    color: var(--text-dim);
+    background: var(--surface);
+    padding: 4px 10px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+  }
+  .mockup-frame {
+    background: var(--bg);
+    border: 1px solid var(--border-strong);
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 24px 60px -20px rgba(0,0,0,.6);
+  }
+  .mockup-frame-bar {
+    background: var(--surface-2);
+    padding: 8px 14px;
+    border-bottom: 1px solid var(--border);
+    font-size: 11px;
+    color: var(--text-dim);
+    font-family: 'SF Mono', monospace;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .mockup-dots { display: inline-flex; gap: 5px; margin-right: 8px; }
+  .mockup-dots span { width: 9px; height: 9px; border-radius: 50%; background: var(--border-strong); }
+  .annotations {
+    margin-top: 12px;
+    padding: 12px 16px;
+    background: rgba(124,111,247,.06);
+    border-left: 3px solid var(--accent);
+    border-radius: 6px;
+    font-size: 12px;
+    color: var(--text-mid);
+    line-height: 1.6;
+  }
+  .annotations strong { color: var(--text); }
+  .annotations ul { padding-left: 16px; margin-top: 4px; }
+  .annotations li { margin-bottom: 4px; }
+
+  /* ── Page-shell pattern (mirrors landing) ── */
+  .page-topbar {
+    height: 56px;
+    background: var(--bg);
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center;
+    padding: 0 24px;
+    gap: 16px;
+  }
+  .topbar-logo {
+    display: flex; align-items: center; gap: 10px;
+    font-weight: 800; font-size: 15px;
+    letter-spacing: -0.01em;
+  }
+  .topbar-logo-mark {
+    width: 28px; height: 28px;
+    background: linear-gradient(135deg, #1a1a2e, #0a0a12);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    display: grid; place-items: center;
+    font-size: 14px;
+  }
+  .topbar-spacer { flex: 1; }
+  .topbar-nav {
+    display: flex; gap: 4px;
+    font-size: 13px;
+  }
+  .topbar-nav a {
+    color: var(--text-mid);
+    text-decoration: none;
+    padding: 6px 12px;
+    border-radius: 6px;
+    transition: color .15s ease, background-color .15s ease;
+  }
+  .topbar-nav a:hover { background: var(--surface); color: var(--text); }
+  .topbar-account-pill {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 4px 12px 4px 4px;
+    background: var(--surface);
+    border: 1px solid var(--accent);
+    border-radius: 99px;
+    cursor: pointer;
+  }
+  .topbar-account-avatar {
+    width: 26px; height: 26px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), var(--accent-light));
+    color: #fff;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 800;
+  }
+  .topbar-account-email {
+    font-size: 12px; font-weight: 600;
+    color: var(--text);
+  }
+  .topbar-account-chevron { font-size: 10px; color: var(--text-dim); }
+
+  .breadcrumb {
+    padding: 14px 24px;
+    border-bottom: 1px solid var(--border);
+    font-size: 12px;
+    color: var(--text-dim);
+  }
+  .breadcrumb a { color: var(--text-mid); text-decoration: none; }
+  .breadcrumb a:hover { color: var(--text); }
+
+  /* ── Account page layout ── */
+  .account-page {
+    padding: 32px 24px;
+    max-width: 720px;
+  }
+  .account-pagehead {
+    margin-bottom: 28px;
+  }
+  .account-eyebrow {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--accent);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .account-title {
+    font-size: 28px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    margin-bottom: 4px;
+  }
+  .account-subtitle {
+    color: var(--text-mid);
+    font-size: 14px;
+  }
+
+  /* ── Identity card (top of account page) ── */
+  .id-card {
+    display: flex; align-items: center; gap: 18px;
+    padding: 20px 22px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    margin-bottom: 24px;
+  }
+  .id-avatar {
+    width: 56px; height: 56px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), var(--accent-light));
+    color: #fff;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 22px; font-weight: 800;
+    flex-shrink: 0;
+  }
+  .id-info { flex: 1; min-width: 0; }
+  .id-email {
+    font-size: 15px; font-weight: 700;
+    color: var(--text);
+    margin-bottom: 4px;
+  }
+  .id-meta-row {
+    display: flex; align-items: center; gap: 8px;
+    flex-wrap: wrap;
+  }
+  .id-tier-pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 3px 10px;
+    border-radius: 99px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+  }
+  .id-tier-pill.is-free {
+    background: var(--green-soft);
+    color: var(--green);
+    border: 1px solid var(--green-border);
+  }
+  .id-tier-pill.is-paid {
+    background: var(--accent-dim);
+    color: var(--accent-light);
+    border: 1px solid var(--accent);
+  }
+  .id-tier-pill .dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+  .id-admin-pill {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 3px 8px;
+    background: var(--orange-soft);
+    color: var(--orange);
+    border: 1px solid var(--orange-border);
+    border-radius: 99px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .id-meta-text {
+    font-size: 12px;
+    color: var(--text-dim);
+    font-family: 'SF Mono', monospace;
+  }
+
+  /* ── Section blocks ── */
+  .section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 22px;
+    margin-bottom: 18px;
+  }
+  .section-head {
+    margin-bottom: 16px;
+  }
+  .section-eyebrow {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 4px;
+  }
+  .section-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text);
+  }
+  .section-sub {
+    font-size: 12px;
+    color: var(--text-dim);
+    margin-top: 2px;
+  }
+  .section.is-danger {
+    border-color: var(--red-border);
+    background: var(--red-soft);
+  }
+  .section.is-danger .section-eyebrow { color: var(--red); }
+  .section.is-danger .section-title { color: var(--red); }
+
+  .field {
+    display: flex; align-items: center; gap: 16px;
+    padding: 12px 0;
+    border-top: 1px solid var(--border);
+  }
+  .field:first-of-type { border-top: 0; padding-top: 0; }
+  .field-label {
+    flex: 0 0 140px;
+    font-size: 13px;
+    color: var(--text-mid);
+  }
+  .field-value {
+    flex: 1;
+    font-size: 14px;
+    color: var(--text);
+    min-width: 0;
+  }
+  .field-value-mono {
+    font-family: 'SF Mono', monospace;
+    font-size: 13px;
+  }
+  .field-action {
+    flex-shrink: 0;
+  }
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 7px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: filter .15s ease, transform .1s ease, background-color .15s ease, border-color .15s ease;
+  }
+  .btn-primary {
+    background: var(--accent);
+    color: #fff;
+  }
+  .btn-primary:hover { filter: brightness(1.1); }
+  .btn-ghost {
+    background: transparent;
+    color: var(--text-mid);
+    border-color: var(--border);
+  }
+  .btn-ghost:hover { color: var(--text); border-color: var(--border-strong); }
+  .btn-danger {
+    background: transparent;
+    color: var(--red);
+    border-color: var(--red-border);
+  }
+  .btn-danger:hover { background: var(--red-soft); }
+  .btn-sm { padding: 5px 10px; font-size: 12px; }
+
+  /* ── Cert entitlement rows ── */
+  .ent-list { display: flex; flex-direction: column; gap: 8px; }
+  .ent-row {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 14px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+  }
+  .ent-glyph {
+    width: 36px; height: 36px;
+    border-radius: 8px;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 800;
+    flex-shrink: 0;
+  }
+  .ent-glyph.netplus {
+    background: linear-gradient(135deg, #1a1a2e, #0a0a12);
+    border: 1px solid var(--border);
+    color: var(--accent-light);
+  }
+  .ent-glyph.secplus {
+    background: var(--orange-soft);
+    border: 1px solid var(--orange-border);
+    color: var(--orange);
+  }
+  .ent-info { flex: 1; min-width: 0; }
+  .ent-name-row { display: flex; align-items: center; gap: 8px; }
+  .ent-name { font-size: 14px; font-weight: 700; color: var(--text); }
+  .ent-status-pill {
+    display: inline-flex; align-items: center;
+    padding: 2px 7px;
+    border-radius: 99px;
+    font-size: 9.5px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .ent-status-pill.is-passed {
+    background: var(--green-soft);
+    color: var(--green);
+    border: 1px solid var(--green-border);
+  }
+  .ent-status-pill.is-active {
+    background: rgba(124,111,247,.16);
+    color: var(--accent);
+    border: 1px solid rgba(124,111,247,.4);
+  }
+  .ent-status-pill.is-locked {
+    background: var(--surface-3);
+    color: var(--text-dim);
+    border: 1px solid var(--border-strong);
+  }
+  .ent-meta {
+    font-size: 11px;
+    color: var(--text-dim);
+    font-family: 'SF Mono', monospace;
+    margin-top: 2px;
+  }
+
+  /* ── Toggle row ── */
+  .toggle-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 0;
+    border-top: 1px solid var(--border);
+  }
+  .toggle-row:first-of-type { border-top: 0; padding-top: 0; }
+  .toggle-info { flex: 1; padding-right: 12px; }
+  .toggle-label { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 2px; }
+  .toggle-sub { font-size: 11px; color: var(--text-dim); }
+  .toggle-switch {
+    flex-shrink: 0;
+    width: 36px; height: 20px;
+    background: var(--surface-3);
+    border-radius: 99px;
+    position: relative;
+    cursor: pointer;
+    transition: background-color .15s ease;
+  }
+  .toggle-switch::after {
+    content: '';
+    position: absolute;
+    top: 2px; left: 2px;
+    width: 16px; height: 16px;
+    background: var(--text-mid);
+    border-radius: 50%;
+    transition: left .15s ease, background-color .15s ease;
+  }
+  .toggle-switch.is-on { background: var(--accent); }
+  .toggle-switch.is-on::after { left: 18px; background: #fff; }
+
+  /* ── Session row ── */
+  .session-list { display: flex; flex-direction: column; gap: 8px; }
+  .session-row {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 14px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+  }
+  .session-icon {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    background: var(--surface-3);
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 14px;
+    flex-shrink: 0;
+  }
+  .session-info { flex: 1; min-width: 0; }
+  .session-name { font-size: 13px; font-weight: 600; color: var(--text); }
+  .session-meta { font-size: 11px; color: var(--text-dim); font-family: 'SF Mono', monospace; margin-top: 2px; }
+  .session-current-pill {
+    display: inline-block;
+    padding: 1px 6px;
+    background: var(--green-soft);
+    color: var(--green);
+    border: 1px solid var(--green-border);
+    border-radius: 99px;
+    font-size: 9px;
+    font-weight: 700;
+    margin-left: 6px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  /* ── Admin dashboard specific ── */
+  .admin-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
+    margin-bottom: 18px;
+  }
+  .admin-stat {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 18px;
+  }
+  .admin-stat-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 6px;
+  }
+  .admin-stat-value {
+    font-size: 28px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: var(--text);
+    line-height: 1;
+  }
+  .admin-stat-delta {
+    font-size: 11px;
+    color: var(--green);
+    margin-top: 4px;
+  }
+  .admin-table-wrap {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .admin-table-head {
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface-2);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .admin-table-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text);
+  }
+  .admin-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  .admin-table th, .admin-table td {
+    text-align: left;
+    padding: 10px 18px;
+    border-top: 1px solid var(--border);
+  }
+  .admin-table th {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    background: var(--surface);
+    border-top: 0;
+  }
+  .admin-table td.mono {
+    font-family: 'SF Mono', monospace;
+    font-size: 12px;
+    color: var(--text-mid);
+  }
+  .admin-role-pill {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 99px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .admin-role-pill.user {
+    background: var(--surface-3);
+    color: var(--text-mid);
+  }
+  .admin-role-pill.admin {
+    background: var(--orange-soft);
+    color: var(--orange);
+    border: 1px solid var(--orange-border);
+  }
+
+  .admin-link-card {
+    display: block;
+    padding: 16px 18px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    text-decoration: none;
+    margin-bottom: 18px;
+    color: var(--text);
+    transition: border-color .15s ease, transform .1s ease;
+  }
+  .admin-link-card:hover {
+    border-color: var(--accent);
+    transform: translateY(-1px);
+  }
+  .admin-link-row {
+    display: flex; align-items: center; gap: 12px;
+  }
+  .admin-link-icon {
+    font-size: 22px;
+  }
+  .admin-link-text { flex: 1; }
+  .admin-link-title { font-size: 14px; font-weight: 700; }
+  .admin-link-sub { font-size: 12px; color: var(--text-mid); margin-top: 2px; }
+  .admin-link-arrow { color: var(--accent); font-size: 16px; }
+
+  /* ── Admin Dashboard hero CTA on user account page ── */
+  .admin-cta {
+    display: flex; align-items: center; gap: 14px;
+    padding: 14px 18px;
+    background: linear-gradient(135deg, rgba(245,158,11,.10), rgba(124,111,247,.08));
+    border: 1px solid var(--orange-border);
+    border-radius: 12px;
+    margin-bottom: 24px;
+    text-decoration: none;
+    color: var(--text);
+  }
+  .admin-cta-icon {
+    font-size: 22px;
+    flex-shrink: 0;
+  }
+  .admin-cta-info { flex: 1; }
+  .admin-cta-title { font-size: 14px; font-weight: 700; }
+  .admin-cta-sub { font-size: 12px; color: var(--text-mid); margin-top: 2px; }
+  .admin-cta-arrow { color: var(--orange); font-weight: 700; }
+</style>
+</head>
+<body>
+<div class="mockup-doc">
+
+<div class="doc-header">
+  <h1 class="doc-title">Account Settings + Admin Dashboard</h1>
+  <p class="doc-sub">Concept mockup — landing-side <code>certanvil.com</code> Account page (cross-cert) + admin <code>/admin</code> dashboard. Shape decisions locked: (1a) Account on landing + cert-app Settings stays per-cert. (2) End-user Account is identical for everyone — admin gets an extra link to /admin dashboard, NOT a different page. (3) Magic-link only auth; OAuth-readiness section visible but marked deferred.</p>
+  <span class="doc-meta">v0.1 — author: claude · date: 2026-05-07 · 4 states</span>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════
+     STATE 1 — End user, free tier
+═════════════════════════════════════════════════════════════════ -->
+<section class="state-section">
+  <div class="state-header">
+    <h2 class="state-title">State 1 — End user, free tier</h2>
+    <span class="state-tag">/account · role=user · tier=free</span>
+  </div>
+  <div class="mockup-frame">
+    <div class="mockup-frame-bar">
+      <span class="mockup-dots"><span></span><span></span><span></span></span>
+      <span>certanvil.com/account</span>
+    </div>
+    <div class="page-topbar">
+      <div class="topbar-logo">
+        <span class="topbar-logo-mark">🔨</span>
+        <span>CertAnvil</span>
+      </div>
+      <div class="topbar-spacer"></div>
+      <nav class="topbar-nav">
+        <a href="#">Why CertAnvil</a>
+        <a href="#">Certs</a>
+        <a href="#">Pricing</a>
+      </nav>
+      <div class="topbar-account-pill">
+        <span class="topbar-account-avatar">A</span>
+        <span class="topbar-account-email">alex@…</span>
+        <span class="topbar-account-chevron">▾</span>
+      </div>
+    </div>
+    <div class="breadcrumb"><a href="#">Home</a> · Account</div>
+    <div class="account-page">
+
+      <div class="account-pagehead">
+        <div class="account-eyebrow">Account</div>
+        <h1 class="account-title">Your account</h1>
+        <div class="account-subtitle">Profile, billing, security, and data — across every cert you study.</div>
+      </div>
+
+      <!-- Identity card -->
+      <div class="id-card">
+        <div class="id-avatar">A</div>
+        <div class="id-info">
+          <div class="id-email">alex.kim@example.com</div>
+          <div class="id-meta-row">
+            <span class="id-tier-pill is-free"><span class="dot"></span>Free tier</span>
+            <span class="id-meta-text">Member since 2026-04-12</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Profile -->
+      <div class="section">
+        <div class="section-head">
+          <div class="section-eyebrow">§01 Profile</div>
+          <div class="section-title">Profile</div>
+        </div>
+        <div class="field">
+          <span class="field-label">Email</span>
+          <span class="field-value field-value-mono">alex.kim@example.com</span>
+          <span class="field-action"><button class="btn btn-ghost btn-sm">Change email</button></span>
+        </div>
+        <div class="field">
+          <span class="field-label">Display name</span>
+          <span class="field-value">Alex</span>
+          <span class="field-action"><button class="btn btn-ghost btn-sm">Edit</button></span>
+        </div>
+        <div class="field">
+          <span class="field-label">Avatar</span>
+          <span class="field-value">Auto-generated from email initial</span>
+          <span class="field-action"><button class="btn btn-ghost btn-sm" disabled style="opacity:.5;cursor:not-allowed">Upload (soon)</button></span>
+        </div>
+      </div>
+
+      <!-- Subscription -->
+      <div class="section">
+        <div class="section-head">
+          <div class="section-eyebrow">§02 Subscription</div>
+          <div class="section-title">Subscription &amp; certs</div>
+          <div class="section-sub">Manage tier and active cert entitlements.</div>
+        </div>
+        <div class="field">
+          <span class="field-label">Current tier</span>
+          <span class="field-value">
+            <span class="id-tier-pill is-free"><span class="dot"></span>Free tier</span>
+          </span>
+          <span class="field-action"><button class="btn btn-primary btn-sm">Upgrade →</button></span>
+        </div>
+        <div style="margin-top:12px"></div>
+        <div class="ent-list">
+          <div class="ent-row">
+            <div class="ent-glyph netplus">N+</div>
+            <div class="ent-info">
+              <div class="ent-name-row">
+                <span class="ent-name">Network+</span>
+                <span class="ent-status-pill is-active"><span style="margin-right:4px">●</span>Active</span>
+              </div>
+              <div class="ent-meta">N10-009 · unlocked free · no expiry</div>
+            </div>
+            <button class="btn btn-ghost btn-sm">Open →</button>
+          </div>
+          <div class="ent-row" style="opacity:.7">
+            <div class="ent-glyph" style="background:var(--surface-3);color:var(--text-dim);border:1px solid var(--border-strong)">S+</div>
+            <div class="ent-info">
+              <div class="ent-name-row">
+                <span class="ent-name" style="color:var(--text-mid)">Security+</span>
+                <span class="ent-status-pill is-locked">🔒 Locked</span>
+              </div>
+              <div class="ent-meta">SY0-701 · upgrade to Pro to unlock</div>
+            </div>
+            <button class="btn btn-primary btn-sm">Upgrade →</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Security -->
+      <div class="section">
+        <div class="section-head">
+          <div class="section-eyebrow">§03 Security</div>
+          <div class="section-title">Security</div>
+        </div>
+        <div class="field">
+          <span class="field-label">Sign-in method</span>
+          <span class="field-value">Magic link via <span class="field-value-mono" style="color:var(--text-mid)">alex.kim@example.com</span></span>
+        </div>
+        <div class="field">
+          <span class="field-label">Linked accounts</span>
+          <span class="field-value" style="color:var(--text-dim);font-style:italic">Google · Microsoft (coming with OAuth-ready expansion)</span>
+        </div>
+        <div style="border-top:1px solid var(--border);margin-top:12px;padding-top:14px">
+          <div class="section-sub" style="margin-bottom:10px;font-weight:600;color:var(--text-mid)">Active sessions (1)</div>
+          <div class="session-list">
+            <div class="session-row">
+              <div class="session-icon">💻</div>
+              <div class="session-info">
+                <div class="session-name">MacBook Pro · Chrome <span class="session-current-pill">This device</span></div>
+                <div class="session-meta">London · last active 2 min ago</div>
+              </div>
+              <button class="btn btn-ghost btn-sm">Sign out</button>
+            </div>
+          </div>
+        </div>
+        <div style="margin-top:14px;text-align:right">
+          <button class="btn btn-danger btn-sm">Sign out everywhere</button>
+        </div>
+      </div>
+
+      <!-- Notifications -->
+      <div class="section">
+        <div class="section-head">
+          <div class="section-eyebrow">§04 Notifications</div>
+          <div class="section-title">Email preferences</div>
+        </div>
+        <div class="toggle-row">
+          <div class="toggle-info">
+            <div class="toggle-label">When a new cert pack ships</div>
+            <div class="toggle-sub">Single email when a cert you've notified-me'd on goes live</div>
+          </div>
+          <div class="toggle-switch is-on"></div>
+        </div>
+        <div class="toggle-row">
+          <div class="toggle-info">
+            <div class="toggle-label">Weekly progress summary</div>
+            <div class="toggle-sub">Sunday 9am — questions answered, streak, weakest topic</div>
+          </div>
+          <div class="toggle-switch is-on"></div>
+        </div>
+        <div class="toggle-row">
+          <div class="toggle-info">
+            <div class="toggle-label">Exam-date approaching</div>
+            <div class="toggle-sub">Reminders at 14d / 7d / 3d / 1d before your set exam date</div>
+          </div>
+          <div class="toggle-switch is-on"></div>
+        </div>
+        <div class="toggle-row">
+          <div class="toggle-info">
+            <div class="toggle-label">Marketing emails</div>
+            <div class="toggle-sub">Product updates, tips, occasional discounts</div>
+          </div>
+          <div class="toggle-switch"></div>
+        </div>
+      </div>
+
+      <!-- Data & Privacy -->
+      <div class="section">
+        <div class="section-head">
+          <div class="section-eyebrow">§05 Data &amp; Privacy</div>
+          <div class="section-title">Your data</div>
+          <div class="section-sub">Export everything you've stored on CertAnvil, or delete the account permanently.</div>
+        </div>
+        <div class="field">
+          <span class="field-label">Export data</span>
+          <span class="field-value" style="color:var(--text-mid)">JSON archive of profile + quiz history + every cert's metadata</span>
+          <span class="field-action"><button class="btn btn-ghost btn-sm">Download .json</button></span>
+        </div>
+      </div>
+
+      <!-- Danger zone -->
+      <div class="section is-danger">
+        <div class="section-head">
+          <div class="section-eyebrow">§06 Danger zone</div>
+          <div class="section-title">Delete account</div>
+          <div class="section-sub">Permanent. All progress, history, mastery scores, exam dates wiped from CertAnvil. Cannot be undone.</div>
+        </div>
+        <div style="text-align:right">
+          <button class="btn btn-danger btn-sm">Delete account →</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+  <div class="annotations">
+    <strong>State 1 design notes:</strong>
+    <ul>
+      <li><strong>Identity card</strong> at top establishes "this is you" before any controls. Tier pill colour-codes free vs paid.</li>
+      <li><strong>§02 Subscription</strong> shows BOTH active certs (Network+ unlocked free) AND locked certs (Security+ requires upgrade). Single page covers entitlement state. Per-cert "Open →" goes to the cert app via <code>/?cert=&lt;id&gt;</code> (the v4.89.5 URL handler).</li>
+      <li><strong>§03 Security</strong> shows the magic-link method clearly. <em>Linked accounts</em> row is visible but italic-deferred — sets the OAuth-readiness expectation without coding it now (decision #3).</li>
+      <li><strong>§04 Notifications</strong> uses 4 toggles to start. Each has a single sentence explaining the trigger so the user can decide. Marketing OFF by default per user-respect default.</li>
+      <li><strong>§05 Data export</strong> is GDPR-friendly + a quiet trust signal. JSON not CSV (preserves nesting + types).</li>
+      <li><strong>§06 Danger zone</strong> visually distinct (red-tinted background + border). Mirrors the cert app's existing Settings page Danger zone so the pattern is consistent across surfaces.</li>
+      <li><strong>NO admin sections</strong> appear here. Identical for every signed-in user — that's the whole point of decision #2.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════════════════
+     STATE 2 — End user, paid tier
+═════════════════════════════════════════════════════════════════ -->
+<section class="state-section">
+  <div class="state-header">
+    <h2 class="state-title">State 2 — End user, paid tier (Pro)</h2>
+    <span class="state-tag">/account · role=user · tier=pro · entitlements=netplus,secplus</span>
+  </div>
+  <div class="mockup-frame">
+    <div class="mockup-frame-bar">
+      <span class="mockup-dots"><span></span><span></span><span></span></span>
+      <span>certanvil.com/account</span>
+    </div>
+    <div class="page-topbar">
+      <div class="topbar-logo">
+        <span class="topbar-logo-mark">🔨</span>
+        <span>CertAnvil</span>
+      </div>
+      <div class="topbar-spacer"></div>
+      <nav class="topbar-nav">
+        <a href="#">Why CertAnvil</a>
+        <a href="#">Certs</a>
+        <a href="#">Pricing</a>
+      </nav>
+      <div class="topbar-account-pill">
+        <span class="topbar-account-avatar">J</span>
+        <span class="topbar-account-email">jane@…</span>
+        <span class="topbar-account-chevron">▾</span>
+      </div>
+    </div>
+    <div class="breadcrumb"><a href="#">Home</a> · Account</div>
+    <div class="account-page">
+
+      <div class="account-pagehead">
+        <div class="account-eyebrow">Account</div>
+        <h1 class="account-title">Your account</h1>
+      </div>
+
+      <div class="id-card">
+        <div class="id-avatar">J</div>
+        <div class="id-info">
+          <div class="id-email">jane.delacroix@example.com</div>
+          <div class="id-meta-row">
+            <span class="id-tier-pill is-paid"><span class="dot"></span>Pro · all certs</span>
+            <span class="id-meta-text">Member since 2026-03-04 · renews 2027-03-04</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Subscription (paid variant) -->
+      <div class="section">
+        <div class="section-head">
+          <div class="section-eyebrow">§02 Subscription</div>
+          <div class="section-title">Subscription &amp; billing</div>
+        </div>
+        <div class="field">
+          <span class="field-label">Current tier</span>
+          <span class="field-value">
+            <span class="id-tier-pill is-paid"><span class="dot"></span>Pro · £9/month</span>
+          </span>
+          <span class="field-action"><button class="btn btn-ghost btn-sm">Manage in Stripe →</button></span>
+        </div>
+        <div class="field">
+          <span class="field-label">Renews</span>
+          <span class="field-value field-value-mono">2026-06-04 · auto-renew on</span>
+          <span class="field-action"><button class="btn btn-ghost btn-sm">Cancel</button></span>
+        </div>
+        <div class="field">
+          <span class="field-label">Last invoice</span>
+          <span class="field-value field-value-mono">£9.00 · 2026-05-04 · paid</span>
+          <span class="field-action"><button class="btn btn-ghost btn-sm">Download receipt</button></span>
+        </div>
+        <div style="margin-top:14px;border-top:1px solid var(--border);padding-top:14px">
+          <div class="section-sub" style="margin-bottom:10px;font-weight:600;color:var(--text-mid)">Active cert entitlements (2)</div>
+          <div class="ent-list">
+            <div class="ent-row">
+              <div class="ent-glyph netplus">N+</div>
+              <div class="ent-info">
+                <div class="ent-name-row">
+                  <span class="ent-name">Network+</span>
+                  <span class="ent-status-pill is-passed">✓ Passed</span>
+                </div>
+                <div class="ent-meta">N10-009 · 812/900 on 2026-04-22</div>
+              </div>
+              <button class="btn btn-ghost btn-sm">Keep practicing →</button>
+            </div>
+            <div class="ent-row">
+              <div class="ent-glyph secplus">S+</div>
+              <div class="ent-info">
+                <div class="ent-name-row">
+                  <span class="ent-name">Security+</span>
+                  <span class="ent-status-pill is-active"><span style="margin-right:4px">●</span>Active</span>
+                </div>
+                <div class="ent-meta">SY0-701 · target exam 2026-07-29</div>
+              </div>
+              <button class="btn btn-primary btn-sm">Resume →</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <p style="text-align:center;color:var(--text-dim);font-size:12px;margin-top:24px;font-style:italic">— Profile / Security / Notifications / Data / Danger sections identical to State 1, omitted here for brevity —</p>
+
+    </div>
+  </div>
+  <div class="annotations">
+    <strong>State 2 design notes (delta from State 1):</strong>
+    <ul>
+      <li>Tier pill is <strong>accent-purple "Pro"</strong> instead of green "Free" — visual elevation for paid users.</li>
+      <li>§02 Subscription expands when paid: adds Renews date, Cancel button, Last invoice + receipt download. <strong>Manage in Stripe</strong> link routes to the Stripe customer portal (Phase G — pluggable).</li>
+      <li>Cert entitlements show real status (Passed / Active) + per-cert CTA matching the v4.89.5 landing-tile personalization. Same "Open →" action — works for free + paid.</li>
+      <li>No "Locked Security+" row when paid — entitlement covers it.</li>
+      <li>Everything else (Profile, Security, Notifications, Data, Danger) is <strong>byte-identical</strong> to State 1. That's the discipline of decision #2 — no role-conditional clutter.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════════════════
+     STATE 3 — Admin (you), Account page
+═════════════════════════════════════════════════════════════════ -->
+<section class="state-section">
+  <div class="state-header">
+    <h2 class="state-title">State 3 — Admin, Account page (same page, with admin CTA)</h2>
+    <span class="state-tag">/account · role=admin · email=simi.oremosu@gmail.com</span>
+  </div>
+  <div class="mockup-frame">
+    <div class="mockup-frame-bar">
+      <span class="mockup-dots"><span></span><span></span><span></span></span>
+      <span>certanvil.com/account</span>
+    </div>
+    <div class="page-topbar">
+      <div class="topbar-logo">
+        <span class="topbar-logo-mark">🔨</span>
+        <span>CertAnvil</span>
+      </div>
+      <div class="topbar-spacer"></div>
+      <nav class="topbar-nav">
+        <a href="#">Why CertAnvil</a>
+        <a href="#">Certs</a>
+        <a href="#">Pricing</a>
+      </nav>
+      <div class="topbar-account-pill">
+        <span class="topbar-account-avatar">S</span>
+        <span class="topbar-account-email">simi.oremosu@…</span>
+        <span class="topbar-account-chevron">▾</span>
+      </div>
+    </div>
+    <div class="breadcrumb"><a href="#">Home</a> · Account</div>
+    <div class="account-page">
+
+      <div class="account-pagehead">
+        <div class="account-eyebrow">Account</div>
+        <h1 class="account-title">Your account</h1>
+      </div>
+
+      <!-- Admin CTA — ONLY visible to admins. Clear orange-tinted banner above the rest of the page. -->
+      <a href="#" class="admin-cta">
+        <span class="admin-cta-icon">🔧</span>
+        <span class="admin-cta-info">
+          <span class="admin-cta-title">Admin Dashboard</span>
+          <span class="admin-cta-sub">Users, cert packs, deploy status, telemetry — owner-only operations.</span>
+        </span>
+        <span class="admin-cta-arrow">→</span>
+      </a>
+
+      <div class="id-card">
+        <div class="id-avatar">S</div>
+        <div class="id-info">
+          <div class="id-email">simi.oremosu@gmail.com</div>
+          <div class="id-meta-row">
+            <span class="id-tier-pill is-free"><span class="dot"></span>Free tier · all certs</span>
+            <span class="id-admin-pill">🔧 Admin</span>
+            <span class="id-meta-text">Member since 2026-04-12 · owner</span>
+          </div>
+        </div>
+      </div>
+
+      <p style="text-align:center;color:var(--text-dim);font-size:12px;margin-top:8px;font-style:italic">— Profile / Subscription / Security / Notifications / Data / Danger sections identical to State 1, omitted here for brevity —</p>
+      <p style="text-align:center;color:var(--text-mid);font-size:13px;margin-top:14px"><strong>The Account page is byte-identical to a normal user.</strong><br>Only difference: Admin CTA banner above + small admin pill in the identity card.</p>
+
+    </div>
+  </div>
+  <div class="annotations">
+    <strong>State 3 design notes:</strong>
+    <ul>
+      <li><strong>Admin CTA banner</strong> at the top is the ONLY UX difference from a regular user's Account page. Orange-tinted (matches existing Builder/admin colour language) + arrow CTA → /admin.</li>
+      <li><strong>Small "🔧 Admin" pill</strong> in identity card — secondary indicator, helps confirm role at a glance.</li>
+      <li>Sections below are unchanged. Profile / Security / Notifications / Data / Danger are universal. <em>The discipline:</em> if I find myself wanting to add an admin-only section here, that section should go in /admin instead.</li>
+      <li>Per decision #2: every mod-button or user-management action lives at /admin. The Account page stays clean.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════════════════
+     STATE 4 — Admin Dashboard /admin
+═════════════════════════════════════════════════════════════════ -->
+<section class="state-section">
+  <div class="state-header">
+    <h2 class="state-title">State 4 — Admin Dashboard (/admin)</h2>
+    <span class="state-tag">/admin · role=admin (auth-gated) · users + certs + ops + telemetry</span>
+  </div>
+  <div class="mockup-frame">
+    <div class="mockup-frame-bar">
+      <span class="mockup-dots"><span></span><span></span><span></span></span>
+      <span>certanvil.com/admin</span>
+    </div>
+    <div class="page-topbar">
+      <div class="topbar-logo">
+        <span class="topbar-logo-mark">🔨</span>
+        <span>CertAnvil <span style="color:var(--orange);font-weight:700;font-size:11px;margin-left:6px">· ADMIN</span></span>
+      </div>
+      <div class="topbar-spacer"></div>
+      <nav class="topbar-nav">
+        <a href="#" style="color:var(--accent-light)">Dashboard</a>
+        <a href="#">Users</a>
+        <a href="#">Certs</a>
+        <a href="#">Operations</a>
+        <a href="#">Telemetry</a>
+      </nav>
+      <div class="topbar-account-pill">
+        <span class="topbar-account-avatar">S</span>
+        <span class="topbar-account-email">simi.oremosu@…</span>
+        <span class="topbar-account-chevron">▾</span>
+      </div>
+    </div>
+    <div class="breadcrumb"><a href="#">Home</a> · <a href="#">Account</a> · Admin Dashboard</div>
+    <div class="account-page" style="max-width: 980px">
+
+      <div class="account-pagehead">
+        <div class="account-eyebrow" style="color:var(--orange)">🔧 Admin</div>
+        <h1 class="account-title">Dashboard</h1>
+        <div class="account-subtitle">Owner-only operations + user management. Restricted by <code>role='admin'</code> in <code>profiles</code>.</div>
+      </div>
+
+      <!-- High-level stats -->
+      <div class="admin-grid">
+        <div class="admin-stat">
+          <div class="admin-stat-label">Total users</div>
+          <div class="admin-stat-value">1</div>
+          <div class="admin-stat-delta">+1 this month</div>
+        </div>
+        <div class="admin-stat">
+          <div class="admin-stat-label">Active this week</div>
+          <div class="admin-stat-value">1</div>
+          <div class="admin-stat-delta" style="color:var(--text-dim)">100% retention (n=1 — you)</div>
+        </div>
+        <div class="admin-stat">
+          <div class="admin-stat-label">Cert packs live</div>
+          <div class="admin-stat-value">1</div>
+          <div class="admin-stat-delta" style="color:var(--text-dim)">Network+ public · Security+ private</div>
+        </div>
+        <div class="admin-stat">
+          <div class="admin-stat-label">App version</div>
+          <div class="admin-stat-value" style="font-size:18px;font-family:'SF Mono',monospace;line-height:1.5">v4.89.8</div>
+          <div class="admin-stat-delta">2026-05-07 · last ship 2h ago</div>
+        </div>
+      </div>
+
+      <!-- Section: Users -->
+      <div class="admin-table-wrap" style="margin-bottom:18px">
+        <div class="admin-table-head">
+          <span class="admin-table-title">Users</span>
+          <span style="font-size:11px;color:var(--text-dim);font-family:'SF Mono',monospace">SELECT * FROM profiles</span>
+        </div>
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>Email</th>
+              <th>Role</th>
+              <th>Tier</th>
+              <th>Certs</th>
+              <th>Last seen</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="mono">simi.oremosu@gmail.com</td>
+              <td><span class="admin-role-pill admin">🔧 Admin</span></td>
+              <td>Free</td>
+              <td>Network+, Security+</td>
+              <td class="mono">just now</td>
+              <td><button class="btn btn-ghost btn-sm">View →</button></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Section: Cert packs -->
+      <div class="admin-table-wrap" style="margin-bottom:18px">
+        <div class="admin-table-head">
+          <span class="admin-table-title">Cert packs</span>
+          <button class="btn btn-ghost btn-sm">+ New cert pack</button>
+        </div>
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>Cert</th>
+              <th>Code</th>
+              <th>Visibility</th>
+              <th>Question bank</th>
+              <th>Tile state</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Network+</strong></td>
+              <td class="mono">N10-009</td>
+              <td>🌐 Public</td>
+              <td class="mono">320 exemplars</td>
+              <td>Live · "Passed" badge for owner</td>
+              <td><button class="btn btn-ghost btn-sm">Configure</button></td>
+            </tr>
+            <tr>
+              <td><strong>Security+</strong></td>
+              <td class="mono">SY0-701</td>
+              <td>🔒 Private (admin-only)</td>
+              <td class="mono">77 exemplars + Phase 2 growing</td>
+              <td>Hidden for users · "Active" for owner</td>
+              <td><button class="btn btn-ghost btn-sm">Configure</button></td>
+            </tr>
+            <tr style="opacity:.5">
+              <td>AZ-900</td>
+              <td class="mono">AZ-900</td>
+              <td>📋 Coming-soon tile</td>
+              <td class="mono">—</td>
+              <td>"Notify me" CTA</td>
+              <td><button class="btn btn-ghost btn-sm">Configure</button></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Section: Operations -->
+      <div class="admin-table-wrap" style="margin-bottom:18px">
+        <div class="admin-table-head">
+          <span class="admin-table-title">Recent ships</span>
+          <a href="#" style="font-size:11px;color:var(--accent-light);text-decoration:none">View on GitHub →</a>
+        </div>
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>Version</th>
+              <th>Commit</th>
+              <th>Description</th>
+              <th>UAT</th>
+              <th>Deploy</th>
+              <th>Date</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="mono">v4.89.8</td>
+              <td class="mono">0ce8257</td>
+              <td>Cookie-backed Supabase storage adapter</td>
+              <td style="color:var(--green)">✓ 5100/5100</td>
+              <td style="color:var(--green)">✓</td>
+              <td class="mono">2h ago</td>
+            </tr>
+            <tr>
+              <td class="mono">v4.89.7</td>
+              <td class="mono">aaeb9dc</td>
+              <td>DEV badge fix + dropdown unified + version pill</td>
+              <td style="color:var(--green)">✓ 5100/5100</td>
+              <td style="color:var(--green)">✓</td>
+              <td class="mono">3h ago</td>
+            </tr>
+            <tr>
+              <td class="mono">v4.89.6</td>
+              <td class="mono">204f504</td>
+              <td>My certs + CCA modals + footer version</td>
+              <td style="color:var(--green)">✓ 5100/5100</td>
+              <td style="color:var(--green)">✓</td>
+              <td class="mono">4h ago</td>
+            </tr>
+            <tr>
+              <td class="mono">v4.89.5</td>
+              <td class="mono">1056db5</td>
+              <td>Landing personalization + ?cert= URL param</td>
+              <td style="color:var(--green)">✓ 5100/5100</td>
+              <td style="color:var(--green)">✓</td>
+              <td class="mono">5h ago</td>
+            </tr>
+            <tr>
+              <td class="mono">v4.89.4</td>
+              <td class="mono">d6f961e</td>
+              <td>Cert switcher in account dropdown</td>
+              <td style="color:var(--green)">✓ 5100/5100</td>
+              <td style="color:var(--green)">✓</td>
+              <td class="mono">6h ago</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Section: Telemetry placeholder -->
+      <div class="section" style="border-style:dashed">
+        <div class="section-head">
+          <div class="section-eyebrow" style="color:var(--text-dim)">§ Telemetry</div>
+          <div class="section-title" style="color:var(--text-dim)">Telemetry &amp; analytics</div>
+          <div class="section-sub">Funnel, daily actives, churn signals — wired in Phase G+ when there are real users to measure.</div>
+        </div>
+        <p style="font-size:12px;color:var(--text-dim);font-style:italic;text-align:center;padding:24px 0">— deferred until ≥10 users + Stripe live —</p>
+      </div>
+
+    </div>
+  </div>
+  <div class="annotations">
+    <strong>State 4 design notes:</strong>
+    <ul>
+      <li><strong>Topbar nav swaps</strong> for admin context — primary site nav (Why / Certs / Pricing) replaced with admin sections (Dashboard / Users / Certs / Operations / Telemetry). Logo gets "· ADMIN" suffix.</li>
+      <li><strong>4-stat hero grid</strong> at top for at-a-glance health: total users, weekly actives, cert packs live, current app version. Reads like a deploy status board.</li>
+      <li><strong>Users table</strong> is the bread-and-butter — currently 1 row (you), but scales to N. Includes inline role / tier / cert columns + per-row View action that opens user-detail panel (drill-down via Phase G).</li>
+      <li><strong>Cert packs table</strong> centralizes visibility decisions — toggle Network+ (public) vs Security+ (private) vs coming-soon tiles without code changes. Each row's <em>Configure</em> action opens cert-pack settings.</li>
+      <li><strong>Recent ships table</strong> turns the existing CHANGELOG.md into a queryable view: last 10 versions with UAT pass count, deploy outcome, time. <em>View on GitHub</em> links to the full commit history.</li>
+      <li><strong>Telemetry section is dashed-border placeholder</strong> — visible to anchor the spot but explicitly marked as deferred. Sets expectation, doesn't pretend the data's there.</li>
+      <li>RLS-gated on the server: <code>profiles.role='admin'</code> via the existing <code>is_admin()</code> SECURITY DEFINER helper from Phase C′. Without admin role, the page returns 403 — not just visually hidden.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════════════════
+     IMPLEMENTATION NOTES
+═════════════════════════════════════════════════════════════════ -->
+<section class="state-section">
+  <div class="state-header">
+    <h2 class="state-title">Implementation notes (when we move from mockup → code)</h2>
+    <span class="state-tag">scoping for next ship</span>
+  </div>
+  <div class="annotations" style="border-left-color:var(--orange);background:rgba(245,158,11,.06)">
+    <strong>Files this'd touch:</strong>
+    <ul>
+      <li><strong>NEW</strong> <code>landing/account.html</code> — the Account page (or a route in <code>landing/index.html</code> with hash-based routing if simpler)</li>
+      <li><strong>NEW</strong> <code>landing/admin.html</code> — the Admin Dashboard page (auth-gated)</li>
+      <li><strong>NEW</strong> <code>landing/account.js</code> + <code>landing/admin.js</code> — page-specific logic (or fold into <code>landing/auth.js</code> + a new <code>landing/admin.js</code>)</li>
+      <li><strong>UPDATE</strong> <code>landing/styles.css</code> — port the patterns from this mockup as production CSS</li>
+      <li><strong>UPDATE</strong> <code>landing/index.html</code> — wire <code>#dropdown-account-settings</code> click handler to navigate to <code>/account</code></li>
+      <li><strong>UPDATE</strong> <code>auth-state.js</code> (cert app) — change "Account settings" link from <code>showPage('settings')</code> to <code>https://certanvil.com/account</code> so the cross-cert account is accessed from anywhere; cert app's existing <code>Settings</code> page stays for app-prefs (rename in dropdown to "App settings" or "Cert preferences" to disambiguate)</li>
+      <li><strong>SUPABASE</strong> — RLS policies likely need touching on <code>profiles</code> for the email-change flow + RPC for account deletion. Existing <code>is_admin()</code> helper covers /admin gating.</li>
+    </ul>
+    <strong style="display:block;margin-top:12px">Phase ordering recommendation:</strong>
+    <ul>
+      <li><strong>Ship 1:</strong> Account page (states 1 + 3) — Profile, Security (read-only), Data export, Sign out, Danger zone. Skip subscription details (placeholder badge only, no Stripe). Skip notifications (toggles render but don't wire).</li>
+      <li><strong>Ship 2:</strong> Notifications — wire the 4 toggles to <code>profiles.metadata.notifications.*</code> + a server-side cron + Resend email integration (already configured for the notify modal).</li>
+      <li><strong>Ship 3:</strong> Admin dashboard (state 4) — users table + cert pack visibility toggle + recent ships pull from GitHub API.</li>
+      <li><strong>Ship 4 (Phase G):</strong> Subscription + billing — Stripe portal integration, cert entitlements gating, paid tier upgrade flow. State 2 lights up.</li>
+    </ul>
+    <strong style="display:block;margin-top:12px">Decisions still open (push back if needed):</strong>
+    <ul>
+      <li>"Marketing emails" toggle defaults — OFF respects user, ON gives reach. Recommendation: OFF default with friendly nudge during sign-up.</li>
+      <li>Account deletion — soft-delete (mark deleted, retain for 30d) vs hard-delete (immediate purge). Recommendation: 7-day soft-delete + immediate UI confirmation, hard-purge after window.</li>
+      <li>Email-change flow — verification email to NEW address, link confirms switch. Standard pattern; needs a Supabase RPC.</li>
+      <li>Should <code>cert app /settings</code> redirect to <code>landing /account</code> for the truly-cross-cert items (email, billing) and KEEP only app-prefs (exam date, daily goal, API key)? Recommendation YES — it removes confusion.</li>
+    </ul>
+  </div>
+</section>
+
+</div>
+</body>
+</html>
