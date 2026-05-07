@@ -301,7 +301,7 @@ test('Validation in runSessionStep', js.includes('aiValidateQuestions(apiKey, qu
 
 // ── Analytics v2 (v4.5) ──
 console.log('\n\x1b[1m── ANALYTICS v2 (v4.5) ──\x1b[0m');
-test('APP_VERSION is 4.93.0', js.includes("const APP_VERSION = '4.93.0"));
+test('APP_VERSION is 4.94.0', js.includes("const APP_VERSION = '4.94.0"));
 test('getDailyGoal function', js.includes('function getDailyGoal('));
 test('renderDailyGoal function', js.includes('function renderDailyGoal('));
 test('editDailyGoal function', js.includes('function editDailyGoal('));
@@ -315,7 +315,7 @@ test('CSS: .topic-domain-group', css.includes('.topic-domain-group'));
 test('CSS: .daily-goal-card', css.includes('.daily-goal-card'));
 test('CSS: .advanced-section', css.includes('.advanced-section'));
 test('CSS: .hero-stats-strip', css.includes('.hero-stats-strip'));
-test('SW cache bumped to v4.93.0', sw.includes('netplus-v4.93.0'));
+test('SW cache bumped to v4.94.0', sw.includes('netplus-v4.94.0'));
 test('Family Drill: STORAGE.PORT_FAMILY_BEST', js.includes("PORT_FAMILY_BEST:"));
 test('Family Drill: ptMode handles family', js.includes("ptMode === 'family'"));
 test('Family Drill: HTML mode button', html.includes('id="pt-mode-family"'));
@@ -16500,6 +16500,103 @@ test('v4.91.0 SAB: secplus.js acronymBank has ≥100 entries',
   (certSecplus.match(/abbr:\s*['"][A-Z0-9]+['"]/g) || []).length >= 100);
 test('v4.91.0 SAB: secplus.js acronymCategories covers all 7 SY0-701 buckets',
   /acronymCategories:\s*\{[\s\S]{0,4000}threats[\s\S]{0,4000}detection[\s\S]{0,4000}identity[\s\S]{0,4000}crypto[\s\S]{0,4000}network[\s\S]{0,4000}compliance[\s\S]{0,4000}operations/.test(certSecplus));
+
+// ============================================================================
+// v4.94.0 — Attack-to-Mitigation Match drill (issue #301)
+// ============================================================================
+// Security+ drill: 96 attack/mitigation pairs across 5 categories, MCQ format.
+// Visual contract locked to mockups/security-attack-mitigation-match-concept.html
+// State 3. Cert-aware via _USE_SECPLUS_AMM, sidebar-gated to Security+ mode.
+
+// Storage keys
+test('v4.94.0 AMM: STORAGE.AMM_MASTERY key declared',
+  /AMM_MASTERY:\s*['"]nplus_amm_mastery['"]/.test(js));
+test('v4.94.0 AMM: STORAGE.AMM_LESSONS key declared',
+  /AMM_LESSONS:\s*['"]nplus_amm_lessons['"]/.test(js));
+
+// Cloud-store sync
+test('v4.94.0 AMM: cloud-store USER_DATA_KEYS includes amm_mastery',
+  cloudStoreJs.includes("'nplus_amm_mastery'"));
+test('v4.94.0 AMM: cloud-store USER_DATA_KEYS includes amm_lessons',
+  cloudStoreJs.includes("'nplus_amm_lessons'"));
+
+// Cert-aware module-load aliases
+test('v4.94.0 AMM: _SECPLUS_HAS_AMM cert-pack guard declared',
+  /const _SECPLUS_HAS_AMM =/.test(js));
+test('v4.94.0 AMM: _USE_SECPLUS_AMM cert-aware switch declared',
+  /const _USE_SECPLUS_AMM =/.test(js));
+test('v4.94.0 AMM: AMM_DATA cert-aware alias',
+  /const AMM_DATA = _USE_SECPLUS_AMM \? CERT_PACK\.attackMitigationPairs/.test(js));
+test('v4.94.0 AMM: AMM_CATEGORIES cert-aware alias',
+  /const AMM_CATEGORIES = _USE_SECPLUS_AMM \? CERT_PACK\.attackMitigationCategories/.test(js));
+test('v4.94.0 AMM: AMM_LESSONS cert-aware alias',
+  /const AMM_LESSONS = _USE_SECPLUS_AMM && Array\.isArray\(CERT_PACK\.attackMitigationLessons\)/.test(js));
+
+// Drill code
+test('v4.94.0 AMM: startAttackMitigation function defined',
+  /function startAttackMitigation\(\)/.test(js));
+test('v4.94.0 AMM: ammNextQuestion function defined',
+  /function ammNextQuestion\(\)/.test(js));
+test('v4.94.0 AMM: ammPickAnswer function defined',
+  /function ammPickAnswer\(/.test(js));
+test('v4.94.0 AMM: ammRenderQuestion function defined',
+  /function ammRenderQuestion\(\)/.test(js));
+test('v4.94.0 AMM: ammRenderLessons function defined',
+  /function ammRenderLessons\(\)/.test(js));
+test('v4.94.0 AMM: ammRenderDashboard function defined',
+  /function ammRenderDashboard\(\)/.test(js));
+test('v4.94.0 AMM: setAmmTab function defined',
+  /function setAmmTab\(/.test(js));
+test('v4.94.0 AMM: ammEndSession function defined',
+  /function ammEndSession\(\)/.test(js));
+test('v4.94.0 AMM: updateAmmMastery flushes to cloud',
+  /function updateAmmMastery[\s\S]{0,800}saveAmmMastery/.test(js) &&
+  /function saveAmmMastery[\s\S]{0,300}_cloudFlush\(STORAGE\.AMM_MASTERY\)/.test(js));
+
+// Sidebar wiring
+test('v4.94.0 AMM: APP_SIDEBAR_DRILLS_SECPLUS includes Attack-to-Mitigation entry',
+  /APP_SIDEBAR_DRILLS_SECPLUS = \[[\s\S]{0,500}page:\s*['"]amm['"][\s\S]{0,200}startAttackMitigation/.test(js));
+test('v4.94.0 AMM: SIDEBAR_ACTIVE_MAP has amm entry',
+  /SIDEBAR_ACTIVE_MAP[\s\S]{0,1500}'amm':\s*'amm'/.test(js));
+test('v4.94.0 AMM: TOPBAR_CRUMBS has amm entry',
+  /TOPBAR_CRUMBS[\s\S]{0,1500}'amm':\s*['"]Attack-to-Mitigation['"]/.test(js));
+
+// Drills launcher (live tile, not coming-soon)
+test('v4.94.0 AMM: launcher tile is LIVE (not is-coming-soon)',
+  // The JS source escapes single quotes inside the string literal: onclick="showPage(\'amm\')..."
+  /onclick="showPage\(\\'amm\\'\);startAttackMitigation\(\)/.test(js));
+test('v4.94.0 AMM: launcher header lede updated to reflect AMM live',
+  /Acronym Blitz \+ Attack-to-Mitigation are live/.test(js));
+
+// HTML page exists
+test('v4.94.0 AMM: index.html has #page-amm',
+  /id="page-amm"/.test(html));
+test('v4.94.0 AMM: index.html has amm question card',
+  /id="amm-q-card"/.test(html));
+test('v4.94.0 AMM: index.html has amm tab buttons (3 tabs)',
+  /amm-tab-btn-practice[\s\S]{0,500}amm-tab-btn-lessons[\s\S]{0,500}amm-tab-btn-dashboard/.test(html));
+
+// CSS contract
+test('v4.94.0 AMM: .amm-question-card CSS pattern present',
+  /\.amm-question-card\s*\{/.test(css));
+test('v4.94.0 AMM: .amm-q-attack-card CSS pattern present (locked visual)',
+  /\.amm-q-attack-card\s*\{/.test(css));
+test('v4.94.0 AMM: .amm-q-grid CSS pattern present',
+  /\.amm-q-grid\s*\{/.test(css));
+test('v4.94.0 AMM: .amm-reveal CSS pattern present',
+  /\.amm-reveal\s*\{/.test(css));
+
+// Cert-pack data
+test('v4.94.0 AMM: secplus.js declares attackMitigationCategories',
+  certSecplus.includes('attackMitigationCategories:'));
+test('v4.94.0 AMM: secplus.js declares attackMitigationPairs',
+  certSecplus.includes('attackMitigationPairs:'));
+test('v4.94.0 AMM: secplus.js declares attackMitigationLessons',
+  certSecplus.includes('attackMitigationLessons:'));
+test('v4.94.0 AMM: secplus.js has 5 attack categories',
+  /attackMitigationCategories:\s*\{[\s\S]{0,1500}webapp[\s\S]{0,1500}socialeng[\s\S]{0,1500}network[\s\S]{0,1500}malware[\s\S]{0,1500}physical/.test(certSecplus));
+test('v4.94.0 AMM: secplus.js has ≥90 attack/mitigation pairs',
+  (certSecplus.match(/id:\s*['"][a-z0-9-]+['"]/g) || []).filter(s => true).length >= 90);
 
 // ── Summary ──
 console.log('\n' + '═'.repeat(50));

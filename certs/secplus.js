@@ -516,5 +516,840 @@ window.CERT_PACKS.secplus = {
         '<strong>RPO vs RTO:</strong> RPO is the MAX DATA LOSS you can tolerate (measured in time, e.g., “we back up every 4 hours, so RPO = 4 hours”). RTO is the MAX TIME to restore service after a disruption. Both are critical inputs to BCP/DRP.',
         '<strong>MDM/MAM/EMM trio:</strong> MDM controls the whole device. MAM controls just the apps + their data. EMM is the modern umbrella that combines both.'
       ] }
+  ],
+
+  // ── ATTACK-TO-MITIGATION MATCH (v4.94.0, issue #301) ─────────────────────
+  // 96 attack/mitigation pairs across 5 categories. Drill format: stem = attack
+  // name + sub-line + objective tag, 4 MCQ options (1 correct + 3 plausible
+  // distractors). All 4 options are real mitigations — the trap is picking a
+  // less-correct one. Visual contract locked to mockup `mockups/security-
+  // attack-mitigation-match-concept.html` State 3.
+  attackMitigationCategories: {
+    webapp:    { label: 'Web / App attacks',    icon: '🌐', color: '#dc2626' },
+    socialeng: { label: 'Social engineering',   icon: '🎣', color: '#f59e0b' },
+    network:   { label: 'Network attacks',      icon: '🛰', color: '#5b4fdb' },
+    malware:   { label: 'Malware',              icon: '🦠', color: '#16a34a' },
+    physical:  { label: 'Insider / Physical',   icon: '🚪', color: '#06b6d4' }
+  },
+  attackMitigationPairs: [
+    // ── Web / App attacks (18) ─────────────────────────────────────────────
+    { id: 'sql-inj', attack: 'SQL Injection', icon: '⚔️', cat: 'webapp', obj: '2.4', diff: 2,
+      correct: { name: 'Parameterized queries', sub: 'Code-level prevention' },
+      distractors: [
+        { name: 'WAF rule', sub: 'Network-edge filter' },
+        { name: 'Rate limiting', sub: 'Throttling defence' },
+        { name: 'Network segmentation', sub: 'Lateral-movement control' }
+      ],
+      why: 'A WAF can detect known patterns at the edge but it\'s a signature game. Parameterized queries remove the vulnerability — user input is bound as data, never as SQL syntax. Root cause beats edge filter.' },
+    { id: 'xss', attack: 'Cross-Site Scripting (XSS)', icon: '⚔️', cat: 'webapp', obj: '2.4', diff: 2,
+      correct: { name: 'Output encoding + Content Security Policy', sub: 'Render-time prevention' },
+      distractors: [
+        { name: 'Input length limits', sub: 'Bounds checking' },
+        { name: 'HTTPS everywhere', sub: 'Transport encryption' },
+        { name: 'Anti-virus on the server', sub: 'Endpoint hygiene' }
+      ],
+      why: 'Output encoding stops user input from being interpreted as HTML/JS at render time. CSP adds defence-in-depth by restricting which scripts can run. Length limits + HTTPS don\'t address the injection itself.' },
+    { id: 'csrf', attack: 'Cross-Site Request Forgery (CSRF)', icon: '⚔️', cat: 'webapp', obj: '2.4', diff: 2,
+      correct: { name: 'Anti-CSRF tokens', sub: 'Synchroniser-token pattern' },
+      distractors: [
+        { name: 'Strong password policy', sub: 'Credential hygiene' },
+        { name: 'Account lockout', sub: 'Brute-force defence' },
+        { name: 'TLS pinning', sub: 'MITM prevention' }
+      ],
+      why: 'Anti-CSRF tokens are the canonical fix: a per-session unguessable token in forms that the attacker can\'t supply from a malicious site. Password policy + lockout target different attacks.' },
+    { id: 'directory-traversal', attack: 'Directory traversal', icon: '⚔️', cat: 'webapp', obj: '2.4', diff: 2,
+      correct: { name: 'Path canonicalisation + chroot', sub: 'Filesystem boundary enforcement' },
+      distractors: [
+        { name: 'Strong file permissions', sub: 'OS-level access control' },
+        { name: 'Disk encryption', sub: 'Data-at-rest protection' },
+        { name: 'Antivirus scan on uploads', sub: 'Malware filter' }
+      ],
+      why: 'Path canonicalisation resolves \'../\' and symlinks before access, preventing escape from the intended directory. chroot/jails enforce the boundary at the OS level. File permissions help but don\'t stop traversal within the user\'s permitted scope.' },
+    { id: 'buffer-overflow', attack: 'Buffer overflow', icon: '⚔️', cat: 'webapp', obj: '2.3', diff: 3,
+      correct: { name: 'ASLR + DEP / NX bit + bounds checking', sub: 'Memory-safety mitigations' },
+      distractors: [
+        { name: 'Code obfuscation', sub: 'Static-analysis defence' },
+        { name: 'Multi-factor authentication', sub: 'Identity-side control' },
+        { name: 'Network-level encryption', sub: 'Transit protection' }
+      ],
+      why: 'ASLR randomises memory layout, DEP/NX prevents code execution from data pages, and bounds checking prevents overflow at compile/runtime. These three together are the canonical defence-in-depth answer for buffer overflows.' },
+    { id: 'xxe', attack: 'XML External Entity (XXE)', icon: '⚔️', cat: 'webapp', obj: '2.4', diff: 3,
+      correct: { name: 'Disable external entity resolution in parser', sub: 'Parser hardening' },
+      distractors: [
+        { name: 'Block all XML uploads', sub: 'Content-type filter' },
+        { name: 'Enable HTTPS for the API', sub: 'Transport encryption' },
+        { name: 'Increase log retention', sub: 'Forensic capture' }
+      ],
+      why: 'XXE exploits XML parsers that resolve external entities. The fix is a parser config flag — disable external entities entirely. Blocking XML uploads is overkill and breaks legitimate use.' },
+    { id: 'idor', attack: 'Insecure Direct Object Reference (IDOR)', icon: '⚔️', cat: 'webapp', obj: '2.4', diff: 2,
+      correct: { name: 'Authorisation check on every object access', sub: 'Per-request authz enforcement' },
+      distractors: [
+        { name: 'GUID instead of integer IDs', sub: 'Obscurity-based defence' },
+        { name: 'Encrypt the database', sub: 'Data-at-rest protection' },
+        { name: 'Add a captcha to the URL', sub: 'Bot-detection control' }
+      ],
+      why: 'IDOR is an authorisation bug — the app trusts a URL parameter (e.g., /invoice/42) without checking whether THIS user can see THAT object. Random GUIDs delay discovery but don\'t fix the bug. Authz check is the answer.' },
+    { id: 'ssrf', attack: 'Server-Side Request Forgery (SSRF)', icon: '⚔️', cat: 'webapp', obj: '2.4', diff: 3,
+      correct: { name: 'Outbound URL allowlist + metadata-IP block', sub: 'Egress filtering at app layer' },
+      distractors: [
+        { name: 'Tighter input length limits', sub: 'Bounds checking' },
+        { name: 'WAF rule on inbound traffic', sub: 'Edge filter' },
+        { name: 'TLS for outbound calls', sub: 'Transport encryption' }
+      ],
+      why: 'SSRF tricks the server into requesting attacker-chosen URLs (often cloud metadata endpoints like 169.254.169.254). The fix is allowlisting which destinations the app is allowed to reach + blocking metadata IPs explicitly.' },
+    { id: 'cmd-inj', attack: 'Command injection', icon: '⚔️', cat: 'webapp', obj: '2.4', diff: 2,
+      correct: { name: 'Parameterised exec / no shell-out with user input', sub: 'API-level prevention' },
+      distractors: [
+        { name: 'Escape quotes in user input', sub: 'String sanitisation' },
+        { name: 'Run as non-root', sub: 'Privilege reduction' },
+        { name: 'AppArmor / SELinux profile', sub: 'Mandatory access control' }
+      ],
+      why: 'Just like SQL injection, escaping is brittle. Use APIs that pass arguments as a structured array (execve in C, subprocess.run([...]) in Python) so the shell never parses user input. Non-root + MAC are valuable defence-in-depth but don\'t stop the injection itself.' },
+    { id: 'deserialization', attack: 'Insecure deserialization', icon: '⚔️', cat: 'webapp', obj: '2.4', diff: 3,
+      correct: { name: 'Reject untrusted serialised data / use safe formats', sub: 'Trust-boundary enforcement' },
+      distractors: [
+        { name: 'Increase server memory', sub: 'Capacity tuning' },
+        { name: 'Add rate limiting', sub: 'Throttling defence' },
+        { name: 'Use HTTP/2', sub: 'Transport upgrade' }
+      ],
+      why: 'Deserialisation of attacker-controlled data lets them instantiate arbitrary classes — RCE. Either don\'t deserialise untrusted data at all, or use signed payloads, or migrate to data-only formats like JSON without polymorphic types.' },
+    { id: 'race-condition', attack: 'Race condition (TOCTOU)', icon: '⚔️', cat: 'webapp', obj: '2.4', diff: 3,
+      correct: { name: 'Atomic check-and-act / proper locking', sub: 'Concurrency control' },
+      distractors: [
+        { name: 'Increase the timeout', sub: 'Latency tolerance' },
+        { name: 'Drop user privileges', sub: 'Authz reduction' },
+        { name: 'Add input validation', sub: 'Boundary checks' }
+      ],
+      why: 'TOCTOU = Time of Check vs Time of Use. The fix is making the check + the action atomic — file locks, database transactions, or compare-and-swap operations. Timeouts/privileges don\'t address the race.' },
+    { id: 'prototype-pollution', attack: 'Prototype pollution (JavaScript)', icon: '⚔️', cat: 'webapp', obj: '2.4', diff: 3,
+      correct: { name: 'Object.freeze on prototypes / use Map for user data', sub: 'JS-specific hardening' },
+      distractors: [
+        { name: 'TLS for all connections', sub: 'Transport encryption' },
+        { name: 'Stronger CSP headers', sub: 'Browser policy' },
+        { name: 'JWT signature validation', sub: 'Token integrity' }
+      ],
+      why: 'Prototype pollution lets attacker-controlled JSON modify Object.prototype, affecting all objects. The fix is freezing prototypes and using Map (which doesn\'t inherit from Object) for arbitrary user-keyed data.' },
+    { id: 'open-redirect', attack: 'Open redirect', icon: '⚔️', cat: 'webapp', obj: '2.4', diff: 1,
+      correct: { name: 'Allowlist destination URLs', sub: 'Redirect-target validation' },
+      distractors: [
+        { name: 'Add a confirmation prompt', sub: 'User-side check' },
+        { name: 'TLS pinning', sub: 'MITM prevention' },
+        { name: 'Force lowercase URLs', sub: 'Normalisation' }
+      ],
+      why: 'Open redirect lets attackers craft URLs like /redirect?url=evil.com on a trusted domain — used in phishing. Fix is an allowlist of allowed destinations or relative-only redirects.' },
+    { id: 'clickjacking', attack: 'Clickjacking', icon: '⚔️', cat: 'webapp', obj: '2.4', diff: 1,
+      correct: { name: 'X-Frame-Options or CSP frame-ancestors', sub: 'Browser-side iframe block' },
+      distractors: [
+        { name: 'Stronger password policy', sub: 'Credential hygiene' },
+        { name: 'Captcha on every form', sub: 'Bot detection' },
+        { name: 'Disable JavaScript', sub: 'Feature reduction' }
+      ],
+      why: 'Clickjacking embeds your site in a hidden iframe and tricks users into clicking. X-Frame-Options:DENY or CSP frame-ancestors \'none\' tells the browser to refuse to render in a frame.' },
+    { id: 'jwt-alg', attack: 'JWT algorithm confusion (alg:none)', icon: '⚔️', cat: 'webapp', obj: '2.4', diff: 3,
+      correct: { name: 'Pin verification algorithm in the validator', sub: 'Library config hardening' },
+      distractors: [
+        { name: 'Encrypt JWTs', sub: 'Confidentiality protection' },
+        { name: 'Shorter token lifetimes', sub: 'Exposure window reduction' },
+        { name: 'Use HTTP-only cookies', sub: 'XSS-resistant storage' }
+      ],
+      why: 'Some JWT libraries trust the alg field in the header — attacker sends alg:none and skips signature check, or alg:HS256 with the public key as the secret. Pin the expected algorithm explicitly in your validator.' },
+    { id: 'graphql-inj', attack: 'GraphQL injection / introspection abuse', icon: '⚔️', cat: 'webapp', obj: '2.4', diff: 3,
+      correct: { name: 'Disable introspection in prod + query depth limits', sub: 'GraphQL-specific hardening' },
+      distractors: [
+        { name: 'TLS 1.3 for the endpoint', sub: 'Transport encryption' },
+        { name: 'Increase server memory', sub: 'Capacity tuning' },
+        { name: 'Move to REST', sub: 'Architecture change' }
+      ],
+      why: 'GraphQL introspection lets attackers map your schema. Plus deeply-nested queries cause N+1 explosion. Disable introspection in prod, enforce query depth + cost limits.' },
+    { id: 'nosql-inj', attack: 'NoSQL injection', icon: '⚔️', cat: 'webapp', obj: '2.4', diff: 2,
+      correct: { name: 'Type-strict queries + parameterised drivers', sub: 'Schema enforcement' },
+      distractors: [
+        { name: 'Escape single quotes', sub: 'String sanitisation' },
+        { name: 'Encrypt the database', sub: 'Data-at-rest' },
+        { name: 'Use newer database version', sub: 'Patch hygiene' }
+      ],
+      why: 'NoSQL injection abuses operator semantics (e.g., {$gt: \'\'}). Quote-escaping is a SQL-era reflex that doesn\'t apply. Use type-strict queries (assert input is a string, not an object) and parameterised drivers.' },
+    { id: 'file-upload', attack: 'Malicious file upload', icon: '⚔️', cat: 'webapp', obj: '2.4', diff: 2,
+      correct: { name: 'MIME validation + sandboxed storage outside webroot', sub: 'Defence in depth' },
+      distractors: [
+        { name: 'Scan files for viruses', sub: 'AV check' },
+        { name: 'Limit file size', sub: 'Bounds enforcement' },
+        { name: 'Require login to upload', sub: 'Authz gating' }
+      ],
+      why: 'AV scanning catches known signatures but misses unknown payloads. The defence-in-depth answer: validate MIME + extension, store outside webroot so files can\'t be executed, serve through a controller that doesn\'t honour client-supplied content-type.' },
+
+    // ── Social engineering (20) ─────────────────────────────────────────────
+    { id: 'phishing', attack: 'Phishing (generic email)', icon: '🎣', cat: 'socialeng', obj: '2.2', diff: 1,
+      correct: { name: 'Security awareness training + DMARC', sub: 'User-side + email auth' },
+      distractors: [
+        { name: 'Stronger firewall rules', sub: 'Network filter' },
+        { name: 'Disk encryption', sub: 'Data-at-rest' },
+        { name: 'Account lockout', sub: 'Brute-force defence' }
+      ],
+      why: 'Phishing exploits humans, not networks. Awareness training reduces click-through rates; DMARC + DKIM + SPF stop spoofed-domain emails from reaching the inbox in the first place.' },
+    { id: 'spear-phishing', attack: 'Spear phishing (targeted)', icon: '🎣', cat: 'socialeng', obj: '2.2', diff: 1,
+      correct: { name: 'MFA + URL sandboxing in email gateway', sub: 'Layered email defence' },
+      distractors: [
+        { name: 'IDS/IPS at the perimeter', sub: 'Network-edge detection' },
+        { name: 'Disk encryption', sub: 'Data-at-rest' },
+        { name: 'Stronger password policy', sub: 'Credential hygiene' }
+      ],
+      why: 'Spear phishing targets specific people with personalised lures, often defeating awareness training. MFA limits damage if creds leak; URL sandboxing detonates links in a sandbox before delivery.' },
+    { id: 'whaling', attack: 'Whaling (executive-targeted)', icon: '🎣', cat: 'socialeng', obj: '2.2', diff: 2,
+      correct: { name: 'Out-of-band verification for high-value transactions', sub: 'Process control' },
+      distractors: [
+        { name: 'WAF rules', sub: 'Web filter' },
+        { name: 'Encrypted email', sub: 'Confidentiality protection' },
+        { name: 'Captcha on logins', sub: 'Bot detection' }
+      ],
+      why: 'Whaling targets execs to authorise wire transfers / contract changes via fake CEO emails. Best defence is a process: any transaction over $X requires phone-call confirmation to a known number — a person, not a reply-to.' },
+    { id: 'vishing', attack: 'Vishing (voice phishing)', icon: '🎣', cat: 'socialeng', obj: '2.2', diff: 1,
+      correct: { name: 'Caller-ID verification + callback to known numbers', sub: 'Out-of-band verification' },
+      distractors: [
+        { name: 'TLS for all calls', sub: 'Transport encryption' },
+        { name: 'Stronger firewall', sub: 'Network filter' },
+        { name: 'Patch all servers', sub: 'Vulnerability hygiene' }
+      ],
+      why: 'Vishing relies on voice + urgency to bypass the user\'s "stop and think" reflex. Caller ID is spoofable — the only reliable defence is hanging up and calling back via a number the user already knows.' },
+    { id: 'smishing', attack: 'Smishing (SMS phishing)', icon: '🎣', cat: 'socialeng', obj: '2.2', diff: 1,
+      correct: { name: 'User training + SMS link blocking on managed devices', sub: 'Endpoint + user defence' },
+      distractors: [
+        { name: 'Email filtering', sub: 'Inbox protection' },
+        { name: 'Web Application Firewall', sub: 'Edge filter' },
+        { name: 'Database encryption', sub: 'Data-at-rest' },
+      ],
+      why: 'Smishing arrives via SMS, bypassing email filters entirely. Train users to treat SMS links like email links; enterprise MDM can block SMS link rendering on managed devices.' },
+    { id: 'pretexting', attack: 'Pretexting (fabricated scenario)', icon: '🎣', cat: 'socialeng', obj: '2.2', diff: 2,
+      correct: { name: 'Identity verification policy for sensitive requests', sub: 'Process control' },
+      distractors: [
+        { name: 'Strong password policy', sub: 'Credential hygiene' },
+        { name: 'Network segmentation', sub: 'Lateral-movement control' },
+        { name: 'Captcha on web forms', sub: 'Bot detection' }
+      ],
+      why: 'Pretexting = a believable cover story (\"this is IT, your account is locked\"). The fix is a policy: sensitive actions (password resets, account lookups) require positive identity verification — multiple channels, not just \"sounds plausible\".' },
+    { id: 'baiting', attack: 'Baiting (USB drop / free movie download)', icon: '🎣', cat: 'socialeng', obj: '2.2', diff: 1,
+      correct: { name: 'USB autorun disabled + content-disarm gateway', sub: 'Endpoint + perimeter control' },
+      distractors: [
+        { name: 'TLS pinning', sub: 'MITM prevention' },
+        { name: 'Strong password policy', sub: 'Credential hygiene' },
+        { name: 'Account lockout', sub: 'Brute-force defence' }
+      ],
+      why: 'Baiting offers something tempting (free music, found USB) that triggers malware on insertion. Disable USB autorun, block USB ports on sensitive devices, and run downloads through a content-disarm-and-reconstruction gateway.' },
+    { id: 'tailgating', attack: 'Tailgating (door piggyback)', icon: '🎣', cat: 'socialeng', obj: '4.1', diff: 1,
+      correct: { name: 'Mantrap (security vestibule) + badge enforcement training', sub: 'Physical + behavioural control' },
+      distractors: [
+        { name: 'Stronger Wi-Fi password', sub: 'Wireless credential' },
+        { name: 'IDS/IPS at the perimeter', sub: 'Network-edge detection' },
+        { name: 'Disk encryption', sub: 'Data-at-rest' }
+      ],
+      why: 'Tailgating relies on politeness — holding a door for the person behind. A mantrap (two doors, one at a time) prevents physical piggybacking; training reinforces the "always badge in" norm.' },
+    { id: 'dumpster-diving', attack: 'Dumpster diving', icon: '🎣', cat: 'socialeng', obj: '2.2', diff: 1,
+      correct: { name: 'Document shredding policy + secure disposal', sub: 'Information lifecycle control' },
+      distractors: [
+        { name: 'Stronger firewall', sub: 'Network filter' },
+        { name: 'Multi-factor authentication', sub: 'Identity protection' },
+        { name: 'Encrypted backups', sub: 'Data-at-rest' }
+      ],
+      why: 'Dumpster diving recovers documents, drives, and post-it notes from physical waste. Cross-cut shredders for paper, secure media destruction for drives — explicit retention/disposal policy.' },
+    { id: 'shoulder-surfing', attack: 'Shoulder surfing', icon: '🎣', cat: 'socialeng', obj: '2.2', diff: 1,
+      correct: { name: 'Privacy screen filters + clean-desk policy', sub: 'Visual disclosure control' },
+      distractors: [
+        { name: 'Disk encryption', sub: 'Data-at-rest' },
+        { name: 'Stronger Wi-Fi', sub: 'Wireless security' },
+        { name: 'Email filtering', sub: 'Inbox protection' }
+      ],
+      why: 'Shoulder surfing happens in coffee shops, airports, open offices. Privacy screen filters (anti-glare side-blocked films) restrict viewing angles; clean-desk policy reduces what\'s visible at all.' },
+    { id: 'water-holing', attack: 'Watering hole attack', icon: '🎣', cat: 'socialeng', obj: '2.2', diff: 3,
+      correct: { name: 'Network-egress filtering + endpoint EDR', sub: 'Layered detection' },
+      distractors: [
+        { name: 'Stronger Wi-Fi password', sub: 'Wireless credential' },
+        { name: 'Email DKIM/DMARC', sub: 'Email auth' },
+        { name: 'Disk encryption', sub: 'Data-at-rest' }
+      ],
+      why: 'Water holing compromises a SITE the target visits regularly (industry forum, vendor portal). Email defences don\'t apply. Egress filtering catches anomalous outbound; EDR catches the resulting payload on the endpoint.' },
+    { id: 'bec', attack: 'Business Email Compromise (BEC)', icon: '🎣', cat: 'socialeng', obj: '2.2', diff: 2,
+      correct: { name: 'DMARC + invoice change verification by phone', sub: 'Email auth + process' },
+      distractors: [
+        { name: 'TLS 1.3 for SMTP', sub: 'Transport encryption' },
+        { name: 'WAF on the website', sub: 'Web filter' },
+        { name: 'Disk encryption', sub: 'Data-at-rest' }
+      ],
+      why: 'BEC = attacker poses as supplier asking for invoice payment to a new account. DMARC blocks domain spoofing; the policy catch is verifying ANY bank-detail change by phone to a known number.' },
+    { id: 'typo-squat', attack: 'Typo-squatting / lookalike domain', icon: '🎣', cat: 'socialeng', obj: '2.2', diff: 2,
+      correct: { name: 'Domain monitoring + employee link-hover training', sub: 'Detection + user awareness' },
+      distractors: [
+        { name: 'Encryption of all data', sub: 'Confidentiality control' },
+        { name: 'Increase WAF rules', sub: 'Web filter' },
+        { name: 'Stronger Wi-Fi password', sub: 'Wireless credential' }
+      ],
+      why: 'Typo-squat = registering microsft.com (without the o), paypa1.com, etc. Domain monitoring services alert on lookalike registrations; users trained to hover before clicking spot the visual swap.' },
+    { id: 'evil-twin', attack: 'Evil twin Wi-Fi AP', icon: '🎣', cat: 'socialeng', obj: '2.4', diff: 2,
+      correct: { name: 'Always-on VPN for users on untrusted Wi-Fi', sub: 'Transport-layer assumption' },
+      distractors: [
+        { name: 'Stronger website passwords', sub: 'Credential hygiene' },
+        { name: 'Disk encryption', sub: 'Data-at-rest' },
+        { name: 'Disable USB ports', sub: 'Removable-media control' }
+      ],
+      why: 'Evil twin = rogue AP with same SSID as a trusted one. User auto-connects, attacker MITMs. Always-on VPN (mandatory tunnel for managed devices) makes the attacker see only encrypted traffic.' },
+    { id: 'fake-portal', attack: 'Fake login portal (cred harvest)', icon: '🎣', cat: 'socialeng', obj: '2.2', diff: 1,
+      correct: { name: 'FIDO2 / WebAuthn (phish-resistant MFA)', sub: 'Origin-bound credentials' },
+      distractors: [
+        { name: 'Captcha on logins', sub: 'Bot detection' },
+        { name: 'TLS for the real site', sub: 'Transport encryption' },
+        { name: 'Stronger password policy', sub: 'Credential hygiene' }
+      ],
+      why: 'Even if the user submits creds to a fake portal, FIDO2/WebAuthn keys won\'t sign for the wrong origin — phish-resistant. SMS-MFA can be relayed; FIDO2 can\'t.' },
+    { id: 'scareware', attack: 'Scareware ("your PC is infected" popup)', icon: '🎣', cat: 'socialeng', obj: '2.2', diff: 1,
+      correct: { name: 'Browser malvertising filter + user training', sub: 'Web hygiene + awareness' },
+      distractors: [
+        { name: 'Disk encryption', sub: 'Data-at-rest' },
+        { name: 'Network segmentation', sub: 'Lateral-movement control' },
+        { name: 'WAF rules', sub: 'Web filter' }
+      ],
+      why: 'Scareware is fake "your PC is infected, click here" pop-ups served via malvertising. Browser-level ad/tracker filters cut the delivery; training stops the click.' },
+    { id: 'invoice-fraud', attack: 'Fake invoice fraud', icon: '🎣', cat: 'socialeng', obj: '2.2', diff: 2,
+      correct: { name: 'Vendor allowlist + dual-approval for new payees', sub: 'Process control' },
+      distractors: [
+        { name: 'Encrypted email', sub: 'Confidentiality' },
+        { name: 'IDS at perimeter', sub: 'Network-edge detection' },
+        { name: 'Disk encryption', sub: 'Data-at-rest' }
+      ],
+      why: 'Fake invoices target AP departments. Process control: new payees go through a vendor-onboarding workflow, payments to new accounts require two approvers. Tech alone doesn\'t fix this.' },
+    { id: 'oauth-consent', attack: 'OAuth consent phishing', icon: '🎣', cat: 'socialeng', obj: '2.2', diff: 3,
+      correct: { name: 'Admin-approved app allowlist + consent review', sub: 'Identity-platform policy' },
+      distractors: [
+        { name: 'Stronger passwords', sub: 'Credential hygiene' },
+        { name: 'TLS pinning', sub: 'MITM prevention' },
+        { name: 'Stronger Wi-Fi password', sub: 'Wireless credential' }
+      ],
+      why: 'OAuth consent phishing tricks users into granting a malicious app access to their cloud account (Microsoft 365, Google). Tenant policy: only admin-approved apps can request consent; review the consent prompts.' },
+    { id: 'voice-deepfake', attack: 'Voice deepfake (CEO impersonation)', icon: '🎣', cat: 'socialeng', obj: '2.2', diff: 3,
+      correct: { name: 'Out-of-band callback verification + signed approval policy', sub: 'Process hardening' },
+      distractors: [
+        { name: 'TLS for VoIP', sub: 'Transport encryption' },
+        { name: 'Stronger password policy', sub: 'Credential hygiene' },
+        { name: 'Disk encryption', sub: 'Data-at-rest' }
+      ],
+      why: 'AI voice cloning can fake the CEO authorising a wire transfer in real-time. Tech can\'t reliably distinguish; process must — every transfer over $X requires a signed authorisation form, not just a phone call.' },
+    { id: 'browser-exploit', attack: 'Drive-by-download (browser exploit)', icon: '🎣', cat: 'socialeng', obj: '2.5', diff: 2,
+      correct: { name: 'Patch management + browser sandboxing', sub: 'Vulnerability hygiene + isolation' },
+      distractors: [
+        { name: 'Strong password policy', sub: 'Credential hygiene' },
+        { name: 'Disk encryption', sub: 'Data-at-rest' },
+        { name: 'WAF rules', sub: 'Web filter' }
+      ],
+      why: 'Drive-by-downloads exploit unpatched browser vulns to install malware silently. Modern browsers run renderer in a sandbox; patches close the underlying CVE. Both are needed — sandbox limits damage, patches close the door.' },
+
+    // ── Network attacks (19) ───────────────────────────────────────────────
+    { id: 'ddos-volumetric', attack: 'Volumetric DDoS', icon: '🛰', cat: 'network', obj: '2.4', diff: 2,
+      correct: { name: 'Cloud DDoS scrubbing service', sub: 'Upstream capacity offload' },
+      distractors: [
+        { name: 'Stronger firewall rules', sub: 'On-prem filter' },
+        { name: 'Faster CPUs in the load balancer', sub: 'Capacity tuning' },
+        { name: 'Reduce TTL on DNS records', sub: 'Caching control' }
+      ],
+      why: 'Volumetric DDoS saturates the link itself — your firewall sees the traffic but can\'t do anything because the pipe is full. Cloud scrubbing absorbs traffic upstream of your link.' },
+    { id: 'dns-poison', attack: 'DNS cache poisoning', icon: '🛰', cat: 'network', obj: '2.4', diff: 3,
+      correct: { name: 'DNSSEC validation + DoH/DoT', sub: 'DNS integrity + transport encryption' },
+      distractors: [
+        { name: 'Stronger Wi-Fi password', sub: 'Wireless credential' },
+        { name: 'Disk encryption', sub: 'Data-at-rest' },
+        { name: 'WAF rules', sub: 'Web filter' }
+      ],
+      why: 'DNSSEC signs records so the resolver verifies they came from the authoritative server. DoH/DoT encrypt the query so on-path attackers can\'t spoof responses. Together they prevent cache poisoning.' },
+    { id: 'arp-spoof', attack: 'ARP spoofing', icon: '🛰', cat: 'network', obj: '2.4', diff: 2,
+      correct: { name: 'Dynamic ARP Inspection (DAI) + DHCP snooping', sub: 'Switch-level mitigations' },
+      distractors: [
+        { name: 'Strong website passwords', sub: 'Credential hygiene' },
+        { name: 'Email filtering', sub: 'Inbox protection' },
+        { name: 'Disk encryption', sub: 'Data-at-rest' }
+      ],
+      why: 'ARP spoofing tricks LAN devices into sending traffic via the attacker. DAI validates ARP packets against the DHCP snooping binding table — switches drop spoofed ARP replies before they propagate.' },
+    { id: 'mitm-tls', attack: 'MITM (TLS interception)', icon: '🛰', cat: 'network', obj: '2.4', diff: 2,
+      correct: { name: 'TLS 1.3 + certificate pinning', sub: 'Transport hardening' },
+      distractors: [
+        { name: 'Stronger passwords', sub: 'Credential hygiene' },
+        { name: 'Disk encryption', sub: 'Data-at-rest' },
+        { name: 'IDS/IPS at perimeter', sub: 'Network-edge detection' }
+      ],
+      why: 'MITM with rogue certs is foiled by pinning — the client refuses to talk to anything but a known-good public key, no matter what cert the network presents.' },
+    { id: 'eavesdropping', attack: 'Eavesdropping on unencrypted traffic', icon: '🛰', cat: 'network', obj: '2.4', diff: 1,
+      correct: { name: 'TLS / IPsec for all sensitive traffic', sub: 'Transport encryption' },
+      distractors: [
+        { name: 'Stronger passwords', sub: 'Credential hygiene' },
+        { name: 'WAF rules', sub: 'Web filter' },
+        { name: 'Disk encryption', sub: 'Data-at-rest' }
+      ],
+      why: 'If the traffic isn\'t encrypted, anyone on the path can read it. TLS for application layer, IPsec for network layer — eliminates the threat entirely.' },
+    { id: 'port-scan', attack: 'Port scanning', icon: '🛰', cat: 'network', obj: '2.4', diff: 1,
+      correct: { name: 'Default-deny firewall + IDS alerting', sub: 'Surface reduction + detection' },
+      distractors: [
+        { name: 'Strong password policy', sub: 'Credential hygiene' },
+        { name: 'Disk encryption', sub: 'Data-at-rest' },
+        { name: 'Email DMARC', sub: 'Email auth' }
+      ],
+      why: 'Port scans map your attack surface. Default-deny firewall rules close ports you\'re not using; IDS alerts on the scan pattern so you know someone\'s probing. You can\'t prevent scanning, only minimise what they find.' },
+    { id: 'wireless-deauth', attack: 'Wireless deauthentication attack', icon: '🛰', cat: 'network', obj: '2.4', diff: 2,
+      correct: { name: 'WPA3 with Management Frame Protection (PMF)', sub: 'Wi-Fi protocol upgrade' },
+      distractors: [
+        { name: 'Stronger Wi-Fi password', sub: 'Credential strength' },
+        { name: 'MAC address filtering', sub: 'Allowlist control' },
+        { name: 'Hide the SSID', sub: 'Obscurity' }
+      ],
+      why: 'Deauth frames in WPA2 were unauthenticated — anyone could send them. WPA3\'s Protected Management Frames (PMF, mandatory in WPA3) authenticate management frames so attackers can\'t kick clients off.' },
+    { id: 'rogue-ap', attack: 'Rogue access point', icon: '🛰', cat: 'network', obj: '2.4', diff: 2,
+      correct: { name: 'Wireless Intrusion Detection + 802.1X authentication', sub: 'Detection + access control' },
+      distractors: [
+        { name: 'Stronger Wi-Fi password', sub: 'Credential strength' },
+        { name: 'Disk encryption', sub: 'Data-at-rest' },
+        { name: 'WAF rules', sub: 'Web filter' }
+      ],
+      why: 'Rogue APs are unauthorised APs plugged into your network (employee-installed or attacker-installed). WIDS scans for unknown SSIDs/BSSIDs; 802.1X requires devices to authenticate to the wired port before getting an IP.' },
+    { id: 'replay-attack', attack: 'Replay attack', icon: '🛰', cat: 'network', obj: '2.4', diff: 2,
+      correct: { name: 'Nonces + timestamps + sequence numbers', sub: 'Protocol freshness' },
+      distractors: [
+        { name: 'Stronger passwords', sub: 'Credential hygiene' },
+        { name: 'Disk encryption', sub: 'Data-at-rest' },
+        { name: 'WAF rules', sub: 'Web filter' }
+      ],
+      why: 'Replay attacks resubmit a captured legitimate request (e.g., a "transfer $100" request a second time). Nonces (one-time tokens) + timestamps + sequence numbers ensure each request is fresh.' },
+    { id: 'syn-flood', attack: 'SYN flood', icon: '🛰', cat: 'network', obj: '2.4', diff: 2,
+      correct: { name: 'SYN cookies + connection rate limiting', sub: 'TCP-stack hardening' },
+      distractors: [
+        { name: 'Bigger TCP buffers', sub: 'Capacity tuning' },
+        { name: 'Stronger passwords', sub: 'Credential hygiene' },
+        { name: 'Disk encryption', sub: 'Data-at-rest' }
+      ],
+      why: 'SYN floods exhaust the server\'s half-open connection table. SYN cookies allow the server to validate ACK without holding state; rate limiting drops obvious flood patterns at the edge.' },
+    { id: 'smurf-attack', attack: 'Smurf attack (ICMP amplification)', icon: '🛰', cat: 'network', obj: '2.4', diff: 2,
+      correct: { name: 'Disable directed broadcast + ingress filtering', sub: 'Router config hardening' },
+      distractors: [
+        { name: 'Stronger passwords', sub: 'Credential hygiene' },
+        { name: 'WAF rules', sub: 'Web filter' },
+        { name: 'Disk encryption', sub: 'Data-at-rest' }
+      ],
+      why: 'Smurf sends ICMP echo to a network broadcast address with spoofed source = victim. Every host responds to victim. Mitigation is two-part: block directed broadcasts on routers + ingress-filter spoofed source IPs.' },
+    { id: 'ip-spoof', attack: 'IP spoofing', icon: '🛰', cat: 'network', obj: '2.4', diff: 2,
+      correct: { name: 'BCP38 ingress filtering at network edges', sub: 'Anti-spoof routing policy' },
+      distractors: [
+        { name: 'Strong passwords', sub: 'Credential hygiene' },
+        { name: 'Disk encryption', sub: 'Data-at-rest' },
+        { name: 'WAF rules', sub: 'Web filter' }
+      ],
+      why: 'IP spoofing requires the attacker to send packets with a forged source IP. BCP38 / RFC 2827 ingress filtering at every ISP edge drops packets whose source IP isn\'t in the expected range — kills the attack at the source.' },
+    { id: 'session-hijack', attack: 'Session hijacking', icon: '🛰', cat: 'network', obj: '2.4', diff: 2,
+      correct: { name: 'TLS + secure cookies + short session timeouts', sub: 'Layered session protection' },
+      distractors: [
+        { name: 'Stronger password policy', sub: 'Credential hygiene' },
+        { name: 'Disk encryption', sub: 'Data-at-rest' },
+        { name: 'WAF rules', sub: 'Web filter' }
+      ],
+      why: 'Session hijack steals the session cookie/token. TLS prevents network capture; HTTP-only + Secure flags prevent XSS theft + insecure-channel transmission; short timeouts limit damage if it does leak.' },
+    { id: 'bgp-hijack', attack: 'BGP route hijacking', icon: '🛰', cat: 'network', obj: '2.4', diff: 3,
+      correct: { name: 'RPKI route origin validation', sub: 'Cryptographic routing assertion' },
+      distractors: [
+        { name: 'Stronger passwords', sub: 'Credential hygiene' },
+        { name: 'Disk encryption', sub: 'Data-at-rest' },
+        { name: 'IDS at perimeter', sub: 'Network-edge detection' }
+      ],
+      why: 'BGP hijacks let an AS announce prefixes they don\'t own — traffic gets redirected. RPKI lets prefix owners cryptographically sign their announcements; receiving routers reject invalid origins.' },
+    { id: 'dns-amp', attack: 'DNS amplification DDoS', icon: '🛰', cat: 'network', obj: '2.4', diff: 2,
+      correct: { name: 'Disable open recursion + response rate limiting', sub: 'DNS-server hardening' },
+      distractors: [
+        { name: 'TLS for the website', sub: 'Transport encryption' },
+        { name: 'Stronger Wi-Fi password', sub: 'Wireless credential' },
+        { name: 'Disk encryption', sub: 'Data-at-rest' }
+      ],
+      why: 'DNS amplification spoofs queries to open recursive resolvers, which respond with much larger answers to the victim. Don\'t run open resolvers; rate-limit responses to prevent your server being weaponised.' },
+    { id: 'sniffing', attack: 'Packet sniffing on shared media', icon: '🛰', cat: 'network', obj: '2.4', diff: 1,
+      correct: { name: 'Switched network + TLS for sensitive traffic', sub: 'Topology + encryption' },
+      distractors: [
+        { name: 'Stronger passwords', sub: 'Credential hygiene' },
+        { name: 'Disk encryption', sub: 'Data-at-rest' },
+        { name: 'Account lockout', sub: 'Brute-force defence' }
+      ],
+      why: 'Hubs broadcast every frame to every port — anyone with a sniffer sees everything. Switches send only to the destination port. TLS adds defence-in-depth even on switched networks (against rogue port mirroring).' },
+    { id: 'ntp-amp', attack: 'NTP amplification', icon: '🛰', cat: 'network', obj: '2.4', diff: 3,
+      correct: { name: 'Disable monlist + restrict NTP to allowed peers', sub: 'NTP-server hardening' },
+      distractors: [
+        { name: 'TLS for HTTPS', sub: 'Web encryption' },
+        { name: 'Stronger Wi-Fi password', sub: 'Wireless credential' },
+        { name: 'Disk encryption', sub: 'Data-at-rest' }
+      ],
+      why: 'NTP\'s monlist command returns up to 600 IPs — perfect amplifier. Disable monlist on every public NTP server; restrict NTP to known peers only.' },
+    { id: 'icmp-flood', attack: 'ICMP flood (ping flood)', icon: '🛰', cat: 'network', obj: '2.4', diff: 1,
+      correct: { name: 'Rate-limit ICMP at perimeter + cloud DDoS scrubbing', sub: 'Layered traffic control' },
+      distractors: [
+        { name: 'Stronger passwords', sub: 'Credential hygiene' },
+        { name: 'Disk encryption', sub: 'Data-at-rest' },
+        { name: 'WAF rules', sub: 'Web filter' }
+      ],
+      why: 'ICMP floods saturate links with ping packets. Rate-limit ICMP at the edge router; scrubbing for volumetric loads beyond your link capacity.' },
+    { id: 'on-path', attack: 'On-path / man-in-the-middle (general)', icon: '🛰', cat: 'network', obj: '2.4', diff: 2,
+      correct: { name: 'TLS with cert pinning + IPsec for sensitive segments', sub: 'Layered encryption' },
+      distractors: [
+        { name: 'Strong passwords', sub: 'Credential hygiene' },
+        { name: 'Disk encryption', sub: 'Data-at-rest' },
+        { name: 'Account lockout', sub: 'Brute-force defence' }
+      ],
+      why: 'On-path attacks intercept and modify traffic. TLS with pinning prevents app-layer MITM; IPsec adds network-layer integrity for trusted-zone communications.' },
+
+    // ── Malware (20) ───────────────────────────────────────────────────────
+    { id: 'virus', attack: 'Virus (file infector)', icon: '🦠', cat: 'malware', obj: '2.5', diff: 1,
+      correct: { name: 'Endpoint AV/EDR with real-time scanning', sub: 'Signature + behavioural detection' },
+      distractors: [
+        { name: 'Stronger passwords', sub: 'Credential hygiene' },
+        { name: 'Disk encryption', sub: 'Data-at-rest' },
+        { name: 'WAF rules', sub: 'Web filter' }
+      ],
+      why: 'Classic file-infector viruses are caught by AV signatures; modern variants need EDR\'s behavioural engine. Both layers are bundled in modern endpoint suites.' },
+    { id: 'worm', attack: 'Worm (self-propagating)', icon: '🦠', cat: 'malware', obj: '2.5', diff: 2,
+      correct: { name: 'Patch management + network segmentation', sub: 'Vulnerability + blast-radius control' },
+      distractors: [
+        { name: 'Stronger passwords', sub: 'Credential hygiene' },
+        { name: 'Disk encryption', sub: 'Data-at-rest' },
+        { name: 'Email filtering', sub: 'Inbox protection' }
+      ],
+      why: 'Worms spread by exploiting vulns (think WannaCry/EternalBlue). Patching closes the vuln; segmentation limits blast radius if patches lag.' },
+    { id: 'trojan', attack: 'Trojan horse', icon: '🦠', cat: 'malware', obj: '2.5', diff: 1,
+      correct: { name: 'App allowlist (only signed apps run)', sub: 'Execution control' },
+      distractors: [
+        { name: 'Disk encryption', sub: 'Data-at-rest' },
+        { name: 'Strong Wi-Fi password', sub: 'Wireless credential' },
+        { name: 'TLS for HTTPS', sub: 'Web encryption' }
+      ],
+      why: 'Trojans hide in seemingly-legit apps. App allowlisting (Windows AppLocker, macOS Gatekeeper) refuses to run unsigned/unknown executables — even if user double-clicks.' },
+    { id: 'ransomware', attack: 'Ransomware', icon: '🦠', cat: 'malware', obj: '2.5', diff: 2,
+      correct: { name: 'Immutable backups + EDR + segmentation', sub: 'Recovery + detection + containment' },
+      distractors: [
+        { name: 'Stronger passwords', sub: 'Credential hygiene' },
+        { name: 'WAF rules', sub: 'Web filter' },
+        { name: 'TLS pinning', sub: 'MITM prevention' }
+      ],
+      why: 'Ransomware encrypts files, demands payment. The "ransomware-proof recovery" answer is immutable backups (write-once, can\'t be deleted by attacker). EDR catches behaviour; segmentation limits spread.' },
+    { id: 'rootkit', attack: 'Rootkit', icon: '🦠', cat: 'malware', obj: '2.5', diff: 3,
+      correct: { name: 'Secure Boot + measured boot (TPM)', sub: 'Firmware-level integrity check' },
+      distractors: [
+        { name: 'Stronger passwords', sub: 'Credential hygiene' },
+        { name: 'Disk encryption', sub: 'Data-at-rest' },
+        { name: 'WAF rules', sub: 'Web filter' }
+      ],
+      why: 'Rootkits hide BELOW the OS — by the time AV runs, they\'re lying. Secure Boot validates the boot chain via cryptographic signatures; measured boot lets the TPM record what loaded so anomalies can be detected externally.' },
+    { id: 'keylogger', attack: 'Keylogger', icon: '🦠', cat: 'malware', obj: '2.5', diff: 1,
+      correct: { name: 'EDR + hardware MFA tokens', sub: 'Detection + phish-resistant credentials' },
+      distractors: [
+        { name: 'Stronger Wi-Fi password', sub: 'Wireless credential' },
+        { name: 'Disk encryption', sub: 'Data-at-rest' },
+        { name: 'Captcha on logins', sub: 'Bot detection' }
+      ],
+      why: 'Keyloggers capture keystrokes — even strong passwords leak. Hardware MFA (YubiKey, FIDO2) doesn\'t transmit a typed secret, so even with the password, attacker can\'t auth. EDR catches the keylogger itself.' },
+    { id: 'spyware', attack: 'Spyware', icon: '🦠', cat: 'malware', obj: '2.5', diff: 1,
+      correct: { name: 'EDR + browser permission audits', sub: 'Detection + privilege review' },
+      distractors: [
+        { name: 'Stronger passwords', sub: 'Credential hygiene' },
+        { name: 'Disk encryption', sub: 'Data-at-rest' },
+        { name: 'WAF rules', sub: 'Web filter' }
+      ],
+      why: 'Spyware monitors user activity, often arriving as browser extensions or bundled software. EDR detects behavioural patterns; periodic browser-extension audits catch the long tail of low-privilege spy tools.' },
+    { id: 'adware', attack: 'Adware (PUP)', icon: '🦠', cat: 'malware', obj: '2.5', diff: 1,
+      correct: { name: 'PUP detection in AV + scheduled software audits', sub: 'Endpoint hygiene' },
+      distractors: [
+        { name: 'Strong passwords', sub: 'Credential hygiene' },
+        { name: 'Disk encryption', sub: 'Data-at-rest' },
+        { name: 'WAF rules', sub: 'Web filter' }
+      ],
+      why: 'Adware/PUPs (Potentially Unwanted Programs) bundle with free downloads. Modern AV flags them as PUPs; quarterly software audits remove what slipped through.' },
+    { id: 'fileless', attack: 'Fileless malware', icon: '🦠', cat: 'malware', obj: '2.5', diff: 3,
+      correct: { name: 'EDR with PowerShell / WMI logging + script-block telemetry', sub: 'Behavioural detection' },
+      distractors: [
+        { name: 'Better signature-based AV', sub: 'Signature engine' },
+        { name: 'Stronger passwords', sub: 'Credential hygiene' },
+        { name: 'Disk encryption', sub: 'Data-at-rest' }
+      ],
+      why: 'Fileless malware lives in memory, uses LOLBins (PowerShell, WMI). Signatures don\'t apply. EDR with full PowerShell + WMI logging catches the behaviour patterns instead.' },
+    { id: 'bootkit', attack: 'Bootkit', icon: '🦠', cat: 'malware', obj: '2.5', diff: 3,
+      correct: { name: 'UEFI Secure Boot + measured boot integrity', sub: 'Firmware integrity' },
+      distractors: [
+        { name: 'Endpoint AV', sub: 'OS-level scanning' },
+        { name: 'Stronger passwords', sub: 'Credential hygiene' },
+        { name: 'Disk encryption', sub: 'Data-at-rest' }
+      ],
+      why: 'Bootkits live in firmware/MBR — they load before the OS. Same answer as rootkits: Secure Boot validates the chain, measured boot logs what loaded.' },
+    { id: 'logic-bomb', attack: 'Logic bomb', icon: '🦠', cat: 'malware', obj: '2.5', diff: 2,
+      correct: { name: 'Code review + version control with attribution', sub: 'Pre-deployment scrutiny' },
+      distractors: [
+        { name: 'Stronger passwords', sub: 'Credential hygiene' },
+        { name: 'Disk encryption', sub: 'Data-at-rest' },
+        { name: 'WAF rules', sub: 'Web filter' }
+      ],
+      why: 'Logic bombs trigger on a condition (date, missing username = the disgruntled dev was fired). Mandatory code review with multiple approvers + git blame + signed commits make planting one detectable.' },
+    { id: 'rat', attack: 'Remote Access Trojan (RAT)', icon: '🦠', cat: 'malware', obj: '2.5', diff: 2,
+      correct: { name: 'EDR + outbound network anomaly detection', sub: 'Endpoint + egress monitoring' },
+      distractors: [
+        { name: 'Stronger passwords', sub: 'Credential hygiene' },
+        { name: 'Disk encryption', sub: 'Data-at-rest' },
+        { name: 'TLS for HTTPS', sub: 'Web encryption' }
+      ],
+      why: 'RATs phone home to C2 servers. EDR catches the behaviour; outbound anomaly detection (uncommon destination, beaconing patterns) catches the phone-home channel.' },
+    { id: 'cryptominer', attack: 'Cryptominer (cryptojacking)', icon: '🦠', cat: 'malware', obj: '2.5', diff: 2,
+      correct: { name: 'CPU-anomaly detection + browser miner block', sub: 'Resource + browser hygiene' },
+      distractors: [
+        { name: 'Stronger passwords', sub: 'Credential hygiene' },
+        { name: 'Disk encryption', sub: 'Data-at-rest' },
+        { name: 'TLS pinning', sub: 'MITM prevention' }
+      ],
+      why: 'Cryptojacking spikes CPU. Endpoint EDR flags sustained high CPU on processes that shouldn\'t need it; browsers can block known mining JS at the DNS/url-filter layer.' },
+    { id: 'polymorphic', attack: 'Polymorphic malware', icon: '🦠', cat: 'malware', obj: '2.5', diff: 3,
+      correct: { name: 'EDR with behavioural / ML detection', sub: 'Beyond-signature detection' },
+      distractors: [
+        { name: 'Better signature-only AV', sub: 'Signature engine' },
+        { name: 'Stronger passwords', sub: 'Credential hygiene' },
+        { name: 'Disk encryption', sub: 'Data-at-rest' }
+      ],
+      why: 'Polymorphic malware mutates its code to evade signatures. Behavioural / ML models look at WHAT the malware does (API calls, network behaviour) rather than what it looks like — sees through the obfuscation.' },
+    { id: 'metamorphic', attack: 'Metamorphic malware', icon: '🦠', cat: 'malware', obj: '2.5', diff: 3,
+      correct: { name: 'EDR with behavioural detection + sandbox detonation', sub: 'Behavioural + dynamic analysis' },
+      distractors: [
+        { name: 'Better signatures', sub: 'Signature engine' },
+        { name: 'Stronger passwords', sub: 'Credential hygiene' },
+        { name: 'Disk encryption', sub: 'Data-at-rest' }
+      ],
+      why: 'Metamorphic malware rewrites its own code each generation, defeating signatures even more aggressively than polymorphic. Same answer category — behaviour-based detection plus sandbox detonation in EDR/email gateways.' },
+    { id: 'banking-trojan', attack: 'Banking trojan (form-grabber)', icon: '🦠', cat: 'malware', obj: '2.5', diff: 2,
+      correct: { name: 'FIDO2 hardware MFA + EDR', sub: 'Phish-resistant auth + detection' },
+      distractors: [
+        { name: 'Stronger passwords', sub: 'Credential hygiene' },
+        { name: 'Disk encryption', sub: 'Data-at-rest' },
+        { name: 'TLS pinning', sub: 'MITM prevention' }
+      ],
+      why: 'Banking trojans (Zeus, Emotet) capture form data + session cookies. FIDO2 doesn\'t transmit a stealable secret; EDR catches the form-grabber injection patterns.' },
+    { id: 'mobile-malware', attack: 'Mobile malware (sideloaded app)', icon: '🦠', cat: 'malware', obj: '2.5', diff: 2,
+      correct: { name: 'MDM with app allowlist + sideload block', sub: 'Mobile platform control' },
+      distractors: [
+        { name: 'Stronger passwords', sub: 'Credential hygiene' },
+        { name: 'Disk encryption', sub: 'Data-at-rest' },
+        { name: 'WAF rules', sub: 'Web filter' }
+      ],
+      why: 'Mobile malware mostly arrives via sideloaded APKs or jailbroken iOS. MDM blocks sideloading on managed devices, restricts to a curated app catalog.' },
+    { id: 'supply-chain-mw', attack: 'Supply-chain malware (compromised dependency)', icon: '🦠', cat: 'malware', obj: '2.3', diff: 3,
+      correct: { name: 'Software Bill of Materials + signed dependencies', sub: 'Supply-chain assurance' },
+      distractors: [
+        { name: 'Stronger passwords', sub: 'Credential hygiene' },
+        { name: 'Disk encryption', sub: 'Data-at-rest' },
+        { name: 'WAF rules', sub: 'Web filter' }
+      ],
+      why: 'Supply-chain malware compromises a dependency you trust (npm package, Docker base image). SBOM tracks what you ship; signed dependencies + reproducible builds let you verify integrity end-to-end.' },
+    { id: 'usb-malware', attack: 'USB-based malware (USB Rubber Ducky / BadUSB)', icon: '🦠', cat: 'malware', obj: '4.5', diff: 2,
+      correct: { name: 'USB port disabling + USB device-class allowlist', sub: 'Removable-media control' },
+      distractors: [
+        { name: 'Stronger passwords', sub: 'Credential hygiene' },
+        { name: 'Disk encryption', sub: 'Data-at-rest' },
+        { name: 'WAF rules', sub: 'Web filter' }
+      ],
+      why: 'BadUSB devices register as keyboards or network adapters and inject keystrokes/traffic. Disable unnecessary USB ports via Group Policy / MDM; allowlist only specific device classes (no HID from USB unless enrolled).' },
+    { id: 'macro-virus', attack: 'Macro virus (Office)', icon: '🦠', cat: 'malware', obj: '2.5', diff: 1,
+      correct: { name: 'Disable macros from internet by default + signed-only macros', sub: 'Office hardening' },
+      distractors: [
+        { name: 'Stronger passwords', sub: 'Credential hygiene' },
+        { name: 'Disk encryption', sub: 'Data-at-rest' },
+        { name: 'WAF rules', sub: 'Web filter' }
+      ],
+      why: 'Macro viruses ride in Word/Excel attachments. Modern Office defaults block macros from the internet; enterprise policy enforces signed-only macros — kills the attack surface.' },
+
+    // ── Insider / Physical (19) ────────────────────────────────────────────
+    { id: 'insider-threat', attack: 'Insider threat (malicious employee)', icon: '🚪', cat: 'physical', obj: '5.2', diff: 2,
+      correct: { name: 'Data Loss Prevention + UEBA + separation of duties', sub: 'Detection + process control' },
+      distractors: [
+        { name: 'Stronger Wi-Fi password', sub: 'Wireless credential' },
+        { name: 'Disk encryption', sub: 'Data-at-rest' },
+        { name: 'WAF rules', sub: 'Web filter' }
+      ],
+      why: 'Insider threats already have legit access. DLP catches data leaving abnormally; UEBA spots behavioural deviation; separation of duties limits what one person can do unilaterally.' },
+    { id: 'usb-drop', attack: 'USB drop attack', icon: '🚪', cat: 'physical', obj: '4.5', diff: 1,
+      correct: { name: 'Disable USB autorun + user training', sub: 'Endpoint config + behaviour' },
+      distractors: [
+        { name: 'Stronger Wi-Fi password', sub: 'Wireless credential' },
+        { name: 'Disk encryption', sub: 'Data-at-rest' },
+        { name: 'WAF rules', sub: 'Web filter' }
+      ],
+      why: 'USB drop = attacker leaves an infected USB in the parking lot, employee picks it up + plugs in. Disable autorun (frequently the only thing the malware needs) + train people to never plug in unknown USBs.' },
+    { id: 'hw-keylogger', attack: 'Hardware keylogger (in-line)', icon: '🚪', cat: 'physical', obj: '4.1', diff: 2,
+      correct: { name: 'Physical inspection + tamper-evident seals + USB-C only', sub: 'Physical access control' },
+      distractors: [
+        { name: 'Endpoint AV', sub: 'OS-level scanning' },
+        { name: 'Disk encryption', sub: 'Data-at-rest' },
+        { name: 'TLS pinning', sub: 'MITM prevention' }
+      ],
+      why: 'In-line hardware keyloggers slot between keyboard and PC. AV can\'t see them. Periodic physical inspection of high-value workstations; tamper-evident seals on cables; USB-C deters older keyloggers built for USB-A.' },
+    { id: 'evil-maid', attack: 'Evil maid (laptop access while away)', icon: '🚪', cat: 'physical', obj: '4.1', diff: 3,
+      correct: { name: 'Full-disk encryption with pre-boot auth + Secure Boot', sub: 'Boot-time integrity' },
+      distractors: [
+        { name: 'Strong login password', sub: 'OS credential' },
+        { name: 'WAF rules', sub: 'Web filter' },
+        { name: 'TLS pinning', sub: 'MITM prevention' }
+      ],
+      why: 'Evil-maid attacks gain physical access while you\'re away (hotel room, conference). Pre-boot auth (BitLocker w/PIN, FileVault) prevents tampering with boot chain; Secure Boot detects firmware modification.' },
+    { id: 'lock-picking', attack: 'Lock picking', icon: '🚪', cat: 'physical', obj: '4.1', diff: 1,
+      correct: { name: 'High-security locks + electronic access + audit log', sub: 'Physical + electronic gating' },
+      distractors: [
+        { name: 'Stronger Wi-Fi password', sub: 'Wireless credential' },
+        { name: 'Disk encryption', sub: 'Data-at-rest' },
+        { name: 'TLS for HTTPS', sub: 'Transport encryption' }
+      ],
+      why: 'Cheap locks open in seconds. High-security locks (Medeco, Mul-T-Lock) raise the bar; electronic access (badge readers) adds audit trail and rotation.' },
+    { id: 'badge-cloning', attack: 'Badge cloning (RFID skimming)', icon: '🚪', cat: 'physical', obj: '4.1', diff: 2,
+      correct: { name: 'Encrypted high-frequency badges (DESFire EV2/EV3)', sub: 'Modern badge protocol' },
+      distractors: [
+        { name: 'Stronger building Wi-Fi', sub: 'Wireless credential' },
+        { name: 'Disk encryption', sub: 'Data-at-rest' },
+        { name: 'WAF rules', sub: 'Web filter' }
+      ],
+      why: 'Older 125 kHz badges (HID Prox) clone trivially. Modern 13.56 MHz HF badges (DESFire EV2/EV3) use mutual authentication + encryption — clones fail to authenticate.' },
+    { id: 'rfid-skim', attack: 'RFID skimming (credit card / badge)', icon: '🚪', cat: 'physical', obj: '4.1', diff: 1,
+      correct: { name: 'RFID-blocking sleeves + EMV chip transactions', sub: 'Shielding + protocol upgrade' },
+      distractors: [
+        { name: 'Stronger Wi-Fi password', sub: 'Wireless credential' },
+        { name: 'Disk encryption', sub: 'Data-at-rest' },
+        { name: 'WAF rules', sub: 'Web filter' }
+      ],
+      why: 'RFID skimmers read cards through clothing. RFID-blocking sleeves (Faraday cage) prevent the read; EMV chip transactions don\'t expose the magstripe equivalent the skimmer wants.' },
+    { id: 'physical-shoulder', attack: 'Physical shoulder surfing (PIN entry)', icon: '🚪', cat: 'physical', obj: '4.1', diff: 1,
+      correct: { name: 'Privacy filters on screens + opaque PIN pads', sub: 'Visual occlusion' },
+      distractors: [
+        { name: 'Stronger Wi-Fi password', sub: 'Wireless credential' },
+        { name: 'Disk encryption', sub: 'Data-at-rest' },
+        { name: 'WAF rules', sub: 'Web filter' }
+      ],
+      why: 'PIN-entry shoulder-surfing happens at ATMs, POS terminals, secure-area keypads. Hooded PIN pads block side-views; privacy filters do the same for screens.' },
+    { id: 'mantrap-bypass', attack: 'Mantrap bypass (forcing the second door)', icon: '🚪', cat: 'physical', obj: '4.1', diff: 2,
+      correct: { name: 'Anti-passback + tailgate detection sensors', sub: 'Single-occupancy enforcement' },
+      distractors: [
+        { name: 'Stronger Wi-Fi password', sub: 'Wireless credential' },
+        { name: 'Disk encryption', sub: 'Data-at-rest' },
+        { name: 'WAF rules', sub: 'Web filter' }
+      ],
+      why: 'Mantraps are defeated by tailgating + force. Anti-passback rules (a badge can\'t enter twice without exiting first) and weight/IR tailgate sensors enforce single-occupancy.' },
+    { id: 'social-tailgate', attack: 'Social tailgating (carrying boxes)', icon: '🚪', cat: 'physical', obj: '4.1', diff: 1,
+      correct: { name: 'Mandatory badge presentation policy + training', sub: 'Behavioural enforcement' },
+      distractors: [
+        { name: 'Stronger door locks', sub: 'Physical hardening' },
+        { name: 'Disk encryption', sub: 'Data-at-rest' },
+        { name: 'WAF rules', sub: 'Web filter' }
+      ],
+      why: 'Tech locks fail when employees politely hold the door. Train + enforce a "no badge, no entry" culture; periodic walk-the-floor audits reinforce the norm.' },
+    { id: 'fence-climb', attack: 'Perimeter fence climbing', icon: '🚪', cat: 'physical', obj: '4.1', diff: 1,
+      correct: { name: 'Fence-line detection sensors + lighting + camera coverage', sub: 'Detection + deterrence' },
+      distractors: [
+        { name: 'Stronger Wi-Fi password', sub: 'Wireless credential' },
+        { name: 'Disk encryption', sub: 'Data-at-rest' },
+        { name: 'WAF rules', sub: 'Web filter' }
+      ],
+      why: 'Fences alone slow but don\'t stop. Fence-line vibration/break-detection sensors + lighting + cameras let security respond before the intruder reaches the building.' },
+    { id: 'tool-drop', attack: 'Tool drop / penetration via dropped device', icon: '🚪', cat: 'physical', obj: '4.1', diff: 2,
+      correct: { name: 'Network access control (802.1X) + DHCP fingerprinting', sub: 'Wired-port authentication' },
+      distractors: [
+        { name: 'Stronger Wi-Fi password', sub: 'Wireless credential' },
+        { name: 'Disk encryption', sub: 'Data-at-rest' },
+        { name: 'WAF rules', sub: 'Web filter' }
+      ],
+      why: 'Tool-drop = attacker plugs a Raspberry Pi into a wired port. 802.1X requires the device to authenticate before getting network access; DHCP fingerprinting flags unknown device types.' },
+    { id: 'laptop-theft', attack: 'Laptop theft', icon: '🚪', cat: 'physical', obj: '4.1', diff: 1,
+      correct: { name: 'Full-disk encryption + remote wipe via MDM', sub: 'Data + recovery control' },
+      distractors: [
+        { name: 'Stronger Wi-Fi password', sub: 'Wireless credential' },
+        { name: 'WAF rules', sub: 'Web filter' },
+        { name: 'TLS pinning', sub: 'MITM prevention' }
+      ],
+      why: 'Stolen laptops happen. FDE means the data is unreadable without the key; MDM remote-wipe destroys the data on first network connect.' },
+    { id: 'hw-supply-chain', attack: 'Hardware supply-chain compromise', icon: '🚪', cat: 'physical', obj: '4.1', diff: 3,
+      correct: { name: 'Trusted-hardware procurement + tamper-evident packaging', sub: 'Vendor + chain-of-custody' },
+      distractors: [
+        { name: 'Stronger Wi-Fi password', sub: 'Wireless credential' },
+        { name: 'Disk encryption', sub: 'Data-at-rest' },
+        { name: 'WAF rules', sub: 'Web filter' }
+      ],
+      why: 'Hardware can be tampered with before it ships (chip implants, modified firmware). Buy from trusted vendors with secure logistics chains; tamper-evident packaging detects in-transit modification.' },
+    { id: 'badusb-charger', attack: 'BadUSB cable / charging-port attack', icon: '🚪', cat: 'physical', obj: '4.5', diff: 2,
+      correct: { name: 'USB data-blocker dongles + organisation-issued cables only', sub: 'Travel-specific control' },
+      distractors: [
+        { name: 'Stronger passwords', sub: 'Credential hygiene' },
+        { name: 'Disk encryption', sub: 'Data-at-rest' },
+        { name: 'WAF rules', sub: 'Web filter' }
+      ],
+      why: 'Public USB chargers can deliver power AND data — "juice jacking". USB data-blockers (USB condoms) remove the data pins; org-issued cables prevent users buying compromised cables from sketchy retailers.' },
+    { id: 'physical-bug', attack: 'Physical eavesdropping device (room bug)', icon: '🚪', cat: 'physical', obj: '4.1', diff: 3,
+      correct: { name: 'TSCM (technical surveillance counter-measures) sweeps + acoustic shielding', sub: 'Counter-surveillance' },
+      distractors: [
+        { name: 'Stronger Wi-Fi password', sub: 'Wireless credential' },
+        { name: 'Disk encryption', sub: 'Data-at-rest' },
+        { name: 'WAF rules', sub: 'Web filter' }
+      ],
+      why: 'Listening devices in conference rooms / executive offices. Periodic TSCM sweeps detect transmitters and AC-line bugs; acoustic shielding (white-noise generators, sound-masking) defeats passive recordings.' },
+    { id: 'doc-theft', attack: 'Sensitive document theft', icon: '🚪', cat: 'physical', obj: '4.1', diff: 1,
+      correct: { name: 'Locked storage + clean-desk policy + audit', sub: 'Information lifecycle' },
+      distractors: [
+        { name: 'Stronger Wi-Fi password', sub: 'Wireless credential' },
+        { name: 'Disk encryption', sub: 'Data-at-rest' },
+        { name: 'WAF rules', sub: 'Web filter' }
+      ],
+      why: 'Paper documents leak by physical means. Locked filing cabinets, clean-desk policy enforced at end-of-day, periodic audit walks.' },
+    { id: 'photo-leak', attack: 'Credential leak via photo (whiteboard / screen)', icon: '🚪', cat: 'physical', obj: '5.6', diff: 1,
+      correct: { name: 'Awareness training + credential rotation policy', sub: 'Behavioural + recovery' },
+      distractors: [
+        { name: 'Stronger Wi-Fi password', sub: 'Wireless credential' },
+        { name: 'Disk encryption', sub: 'Data-at-rest' },
+        { name: 'WAF rules', sub: 'Web filter' }
+      ],
+      why: 'Background of social-media photos leaks whiteboards, screens, badges. Train people to scrub backgrounds; mandatory credential rotation when a leak is suspected limits damage.' },
+    { id: 'sneaker-net', attack: 'Sneaker-net data exfil (USB walkout)', icon: '🚪', cat: 'physical', obj: '5.2', diff: 2,
+      correct: { name: 'DLP for removable media + USB write blocker', sub: 'Egress control' },
+      distractors: [
+        { name: 'Stronger Wi-Fi password', sub: 'Wireless credential' },
+        { name: 'Disk encryption', sub: 'Data-at-rest' },
+        { name: 'WAF rules', sub: 'Web filter' }
+      ],
+      why: 'Insider walks out with USB full of data. DLP can block writes to removable media based on data classification; USB write blockers force read-only — combined, you stop the easy exfil channel.' }
+  ],
+  attackMitigationLessons: [
+    { cat: 'webapp', title: 'Web / App attack tactics', summary: 'Code-level fixes beat perimeter filters. Root-cause beats signature.',
+      keyPairs: [
+        ['SQL Injection', 'Parameterized queries (NOT WAF rule)'],
+        ['XSS', 'Output encoding + CSP'],
+        ['CSRF', 'Anti-CSRF tokens (synchroniser pattern)'],
+        ['IDOR', 'Authorisation check on every object access'],
+        ['Buffer overflow', 'ASLR + DEP/NX + bounds checking']
+      ] },
+    { cat: 'socialeng', title: 'Social engineering tactics', summary: 'Human-factor attacks need human-factor defences. Tech alone won\'t fix it.',
+      keyPairs: [
+        ['Phishing (generic)', 'Awareness training + DMARC'],
+        ['BEC', 'DMARC + invoice change verification by phone'],
+        ['Vishing', 'Caller-ID verification + callback to known numbers'],
+        ['Tailgating', 'Mantrap + badge enforcement training'],
+        ['OAuth consent phishing', 'Admin-approved app allowlist']
+      ] },
+    { cat: 'network', title: 'Network attack tactics', summary: 'Most network attacks have a protocol-level fix. Encryption is the universal answer.',
+      keyPairs: [
+        ['DDoS (volumetric)', 'Cloud DDoS scrubbing service'],
+        ['DNS poisoning', 'DNSSEC + DoH/DoT'],
+        ['ARP spoofing', 'Dynamic ARP Inspection + DHCP snooping'],
+        ['MITM', 'TLS 1.3 + cert pinning'],
+        ['BGP hijack', 'RPKI route origin validation']
+      ] },
+    { cat: 'malware', title: 'Malware tactics', summary: 'Modern malware needs behavioural + ML detection. Signatures alone are dead.',
+      keyPairs: [
+        ['Ransomware', 'Immutable backups + EDR + segmentation'],
+        ['Rootkit / Bootkit', 'Secure Boot + measured boot (TPM)'],
+        ['Fileless malware', 'EDR with PowerShell/WMI logging'],
+        ['Polymorphic', 'EDR with behavioural / ML detection'],
+        ['Supply-chain', 'SBOM + signed dependencies']
+      ] },
+    { cat: 'physical', title: 'Insider / Physical', summary: 'When physical access is the threat, physical + process controls dominate.',
+      keyPairs: [
+        ['Insider threat', 'DLP + UEBA + separation of duties'],
+        ['Evil maid', 'FDE with pre-boot auth + Secure Boot'],
+        ['Tailgating', 'Mantrap + anti-passback + tailgate sensors'],
+        ['Tool drop', '802.1X + DHCP fingerprinting'],
+        ['Laptop theft', 'FDE + remote wipe via MDM']
+      ] }
   ]
 };

@@ -1,0 +1,988 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CertAnvil — Packet Trace Drill concept (#305)</title>
+<style>
+  :root {
+    --bg: #0a0a12;
+    --surface: #131320;
+    --surface-2: #1a1a2e;
+    --surface-3: #222235;
+    --border: #2e2e48;
+    --border-strong: #3a3a55;
+    --accent: #7c6ff7;
+    --accent-light: #a99df9;
+    --text: #f0f0f8;
+    --text-mid: #b0b0cc;
+    --text-dim: #6b6b90;
+    --green: #22c55e;
+    --green-soft: rgba(34,197,94,.12);
+    --green-border: rgba(34,197,94,.32);
+    --red: #f87171;
+    --red-soft: rgba(248,113,113,.10);
+    --red-border: rgba(248,113,113,.32);
+    --orange: #f59e0b;
+    --orange-soft: rgba(245,158,11,.12);
+    --orange-border: rgba(245,158,11,.32);
+    --yellow: #fbbf24;
+    --amber: #d97706;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #050510;
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    font-size: 14px;
+    line-height: 1.55;
+    padding: 32px 16px 80px;
+  }
+  .mockup-doc { max-width: 1100px; margin: 0 auto; }
+  .doc-header { text-align: center; margin-bottom: 40px; padding-bottom: 32px; border-bottom: 1px dashed var(--border); }
+  .doc-title { font-size: 28px; font-weight: 800; letter-spacing: -0.02em; margin-bottom: 8px; }
+  .doc-sub { color: var(--text-mid); font-size: 14px; margin-bottom: 16px; max-width: 760px; margin-left: auto; margin-right: auto; }
+  .doc-meta { display: inline-block; padding: 4px 12px; background: var(--surface); border: 1px solid var(--border); border-radius: 99px; font-size: 11px; color: var(--text-dim); font-family: 'SF Mono', monospace; }
+  .doc-pin { display: inline-block; padding: 4px 12px; background: rgba(217,119,6,.12); border: 1px solid rgba(217,119,6,.32); border-radius: 99px; font-size: 11px; color: var(--amber); font-family: 'SF Mono', monospace; margin-left: 8px; }
+  .state-section { margin-bottom: 64px; }
+  .state-header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
+  .state-title { font-size: 18px; font-weight: 700; color: var(--accent-light); }
+  .state-tag { font-size: 11px; font-family: 'SF Mono', monospace; color: var(--text-dim); }
+  .state-note { color: var(--text-mid); font-size: 13px; margin-bottom: 20px; max-width: 800px; }
+  .state-note code { background: var(--surface-2); padding: 1px 6px; border-radius: 4px; color: var(--accent-light); font-family: 'SF Mono', monospace; font-size: 12px; }
+  .state-note strong { color: var(--text); }
+
+  .app-mock {
+    background: #fafbff;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    color: #1a1a2e;
+    min-height: 480px;
+  }
+
+  /* Drill head */
+  .drill-head {
+    display: flex; align-items: flex-end; justify-content: space-between;
+    padding-bottom: 14px;
+    border-bottom: 1px solid #e5e7f0;
+    margin-bottom: 16px;
+  }
+  .drill-eyebrow {
+    font-size: 11px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase;
+    color: var(--amber); margin-bottom: 2px;
+  }
+  .drill-title { font-size: 22px; font-weight: 800; letter-spacing: -0.02em; color: #1a1a2e; }
+  .drill-sub { font-size: 12px; color: #6b6b90; margin-top: 4px; }
+  .drill-stats { display: flex; gap: 16px; align-items: center; font-size: 12px; color: #6b6b90; }
+  .drill-stat-num { font-weight: 800; font-size: 18px; color: #1a1a2e; }
+
+  /* Dashboard */
+  .dash {
+    display: grid;
+    grid-template-columns: 1.4fr 1fr;
+    gap: 16px;
+  }
+  .dash-card {
+    background: #fff;
+    border: 1px solid #e5e7f0;
+    border-radius: 10px;
+    padding: 18px;
+  }
+  .dash-card-head { font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: #6b6b90; margin-bottom: 12px; }
+  .dash-scenario-list { display: flex; flex-direction: column; gap: 8px; }
+  .dash-scenario-row {
+    display: grid;
+    grid-template-columns: 32px 1fr auto;
+    gap: 12px; align-items: center;
+    padding: 10px 12px;
+    background: #fafbff;
+    border: 1px solid #e5e7f0;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: border-color .15s ease;
+  }
+  .dash-scenario-row:hover { border-color: var(--amber); }
+  .dash-scenario-row.is-mastered { background: rgba(22,163,74,.04); border-color: rgba(22,163,74,.3); }
+  .dash-scenario-row.is-locked { opacity: .55; cursor: not-allowed; }
+  .dash-scenario-icon {
+    width: 28px; height: 28px;
+    border-radius: 6px;
+    display: grid; place-items: center;
+    background: rgba(217,119,6,.1);
+    color: var(--amber);
+    font-size: 14px;
+  }
+  .dash-scenario-name { font-size: 13px; font-weight: 600; color: #1a1a2e; }
+  .dash-scenario-meta { font-size: 11px; color: #6b6b90; margin-top: 2px; }
+  .dash-scenario-mastery { font-family: 'SF Mono', monospace; font-size: 10.5px; color: #6b6b90; }
+  .dash-scenario-row.is-mastered .dash-scenario-mastery { color: #16a34a; font-weight: 700; }
+
+  .dash-streak {
+    background: linear-gradient(135deg, rgba(217,119,6,.08), rgba(251,191,36,.06));
+    border: 1px solid rgba(217,119,6,.2);
+    border-radius: 10px;
+    padding: 16px;
+    text-align: center;
+  }
+  .dash-streak-flame { font-size: 36px; }
+  .dash-streak-num { font-size: 28px; font-weight: 800; color: var(--amber); line-height: 1; }
+  .dash-streak-lbl { font-size: 11px; color: #6b6b90; }
+
+  .dash-start-cta {
+    background: linear-gradient(135deg, var(--amber), #fbbf24);
+    color: #fff;
+    padding: 14px 18px;
+    border-radius: 10px;
+    font-weight: 700;
+    text-align: center;
+    cursor: pointer;
+    margin-top: 12px;
+    box-shadow: 0 6px 16px rgba(217,119,6,.32);
+  }
+
+  /* ════════════════════════════════════════════════════════════════════════
+     Trace canvas — visual contract locked
+     ════════════════════════════════════════════════════════════════════════ */
+  .trace-stage {
+    background: linear-gradient(180deg, #fef3c7 0%, #fff 100%);
+    border: 1px solid rgba(217,119,6,.3);
+    border-radius: 12px;
+    padding: 0;
+    position: relative;
+    overflow: hidden;
+  }
+  .trace-stage-bg {
+    position: absolute; inset: 0;
+    background-image:
+      linear-gradient(rgba(217,119,6,.08) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(217,119,6,.08) 1px, transparent 1px);
+    background-size: 22px 22px;
+    pointer-events: none;
+  }
+  .trace-stage-head {
+    position: relative;
+    padding: 14px 18px;
+    background: rgba(255,255,255,.85);
+    border-bottom: 1px solid rgba(217,119,6,.2);
+    display: flex; align-items: center; justify-content: space-between;
+    backdrop-filter: blur(2px);
+  }
+  .trace-stage-title { font-size: 14px; font-weight: 700; color: #1a1a2e; }
+  .trace-stage-sub { font-size: 11px; color: #6b6b90; }
+  .trace-step-pill {
+    background: rgba(217,119,6,.1);
+    color: var(--amber);
+    padding: 4px 12px;
+    border-radius: 99px;
+    font-size: 11px; font-weight: 700;
+    border: 1px solid rgba(217,119,6,.32);
+    font-family: 'SF Mono', monospace;
+  }
+  .trace-canvas-wrap {
+    position: relative;
+    height: 320px;
+  }
+  .trace-canvas-wrap svg {
+    width: 100%; height: 100%;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Caption card — locked visual */
+  .trace-caption {
+    position: absolute;
+    bottom: 12px; left: 12px; right: 12px;
+    background: #fff;
+    border: 1px solid rgba(217,119,6,.4);
+    border-radius: 8px;
+    padding: 10px 14px;
+    z-index: 3;
+    box-shadow: 0 4px 12px rgba(217,119,6,.15);
+  }
+  .trace-caption-step {
+    font-size: 11px; font-weight: 700; color: var(--amber);
+    text-transform: uppercase; letter-spacing: .06em;
+    margin-bottom: 2px;
+  }
+  .trace-caption-action { font-size: 13px; color: #1a1a2e; font-weight: 600; }
+  .trace-caption-detail { font-size: 11px; color: #6b6b90; margin-top: 2px; font-family: 'SF Mono', monospace; }
+
+  /* Question panel below stage */
+  .trace-question {
+    background: #fff;
+    border: 1px solid #e5e7f0;
+    border-radius: 12px;
+    padding: 18px 20px;
+    margin-top: 14px;
+  }
+  .tq-eyebrow {
+    font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
+    color: var(--amber); margin-bottom: 6px;
+  }
+  .tq-stem { font-size: 15px; font-weight: 700; color: #1a1a2e; margin-bottom: 12px; }
+  .tq-options {
+    display: grid; gap: 8px;
+  }
+  .tq-opt {
+    background: #fafbff;
+    border: 1.5px solid #e5e7f0;
+    border-radius: 8px;
+    padding: 10px 14px;
+    cursor: pointer;
+    text-align: left;
+    font-size: 13px;
+    color: #1a1a2e;
+    display: flex; align-items: center; gap: 10px;
+    transition: all .15s ease;
+  }
+  .tq-opt:hover { border-color: #c7c9d8; background: #fff; }
+  .tq-opt-letter {
+    width: 22px; height: 22px;
+    background: #fff; border: 1px solid #c7c9d8;
+    border-radius: 5px;
+    display: grid; place-items: center;
+    font-size: 11px; font-weight: 700; color: #6b6b90;
+    flex-shrink: 0;
+  }
+  .tq-opt.is-correct {
+    background: rgba(22,163,74,.08);
+    border-color: rgba(22,163,74,.5);
+  }
+  .tq-opt.is-correct .tq-opt-letter {
+    background: #16a34a; color: #fff; border-color: #16a34a;
+  }
+  .tq-opt.is-wrong {
+    background: rgba(248,113,113,.08);
+    border-color: rgba(248,113,113,.5);
+  }
+  .tq-opt.is-wrong .tq-opt-letter {
+    background: #dc2626; color: #fff; border-color: #dc2626;
+  }
+  .tq-foot {
+    margin-top: 14px;
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 11px; color: #6b6b90;
+  }
+  .tq-progress {
+    display: flex; gap: 4px;
+  }
+  .tq-prog-dot {
+    width: 18px; height: 6px; border-radius: 3px;
+    background: #e5e7f0;
+  }
+  .tq-prog-dot.is-correct { background: #22c55e; }
+  .tq-prog-dot.is-wrong { background: #f87171; }
+  .tq-prog-dot.is-current { background: var(--amber); }
+
+  /* Reveal */
+  .tq-reveal {
+    margin-top: 14px;
+    background: rgba(91,79,219,.04);
+    border: 1px solid rgba(91,79,219,.2);
+    border-radius: 8px;
+    padding: 12px 14px;
+  }
+  .tq-reveal-head {
+    font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
+    color: var(--accent); margin-bottom: 6px;
+  }
+  .tq-reveal-prose { font-size: 12.5px; color: #4a4a6e; line-height: 1.55; }
+  .tq-reveal-prose strong { color: #1a1a2e; }
+  .tq-reveal-actions { margin-top: 10px; display: flex; justify-content: flex-end; }
+  .tq-next-btn {
+    background: var(--amber); color: #fff;
+    padding: 7px 16px; border-radius: 6px;
+    font-size: 12.5px; font-weight: 600;
+    border: 0; cursor: pointer;
+  }
+
+  /* Lessons (reference card per scenario type) */
+  .lesson-card { background: #fff; border: 1px solid #e5e7f0; border-radius: 10px; padding: 18px; }
+  .lesson-head { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; padding-bottom: 10px; border-bottom: 1px solid #e5e7f0; }
+  .lesson-icon { width: 32px; height: 32px; border-radius: 7px; background: rgba(217,119,6,.1); color: var(--amber); display: grid; place-items: center; font-size: 16px; }
+  .lesson-title { font-size: 15px; font-weight: 700; color: #1a1a2e; }
+  .lesson-sub { font-size: 11px; color: #6b6b90; }
+  .lesson-step-list {
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .lesson-step {
+    display: grid; grid-template-columns: 24px 1fr;
+    gap: 10px;
+    padding: 10px 12px;
+    background: #fafbff;
+    border: 1px solid #e5e7f0;
+    border-radius: 6px;
+    font-size: 12px;
+    color: #1a1a2e;
+  }
+  .lesson-step-num {
+    background: var(--amber); color: #fff;
+    border-radius: 4px;
+    display: grid; place-items: center;
+    font-size: 11px; font-weight: 700;
+    width: 22px; height: 22px;
+    align-self: start;
+  }
+  .lesson-step strong { color: #1a1a2e; }
+  .lesson-step em { color: #6b6b90; font-style: normal; display: block; margin-top: 2px; font-size: 11px; }
+
+  /* End of session */
+  .eos-card {
+    background: linear-gradient(135deg, #fff, #fafbff);
+    border: 1px solid #e5e7f0;
+    border-radius: 12px;
+    padding: 32px 28px;
+    text-align: center;
+    max-width: 480px;
+    margin: 0 auto;
+  }
+  .eos-burst { font-size: 48px; margin-bottom: 8px; }
+  .eos-title { font-size: 22px; font-weight: 800; color: #1a1a2e; margin-bottom: 4px; }
+  .eos-sub { font-size: 13px; color: #6b6b90; margin-bottom: 20px; }
+  .eos-trace-recap {
+    background: rgba(217,119,6,.04);
+    border: 1px solid rgba(217,119,6,.2);
+    padding: 12px 14px;
+    border-radius: 8px;
+    margin-bottom: 16px;
+    font-size: 12px;
+    text-align: left;
+  }
+  .eos-trace-recap-h { font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--amber); margin-bottom: 6px; }
+  .eos-trace-recap-row {
+    display: flex; gap: 6px; align-items: center;
+    margin-bottom: 4px;
+  }
+  .eos-trace-recap-num {
+    background: var(--amber); color: #fff;
+    border-radius: 3px;
+    width: 18px; height: 18px;
+    display: grid; place-items: center;
+    font-size: 10px; font-weight: 700;
+    flex-shrink: 0;
+  }
+  .eos-trace-recap-result { font-size: 11.5px; color: #4a4a6e; flex: 1; }
+  .eos-trace-recap-result.is-wrong { color: #dc2626; }
+  .eos-score-row { display: flex; gap: 12px; justify-content: center; margin-bottom: 18px; }
+  .eos-score-tile { background: #fff; border: 1px solid #e5e7f0; border-radius: 8px; padding: 12px 18px; min-width: 80px; }
+  .eos-score-num { font-size: 20px; font-weight: 800; color: #1a1a2e; }
+  .eos-score-lbl { font-size: 10px; color: #6b6b90; text-transform: uppercase; letter-spacing: .06em; }
+  .eos-actions { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+  .eos-btn { padding: 9px 16px; border-radius: 7px; font-size: 13px; font-weight: 600; cursor: pointer; }
+  .eos-btn-primary { background: var(--amber); color: #fff; }
+  .eos-btn-secondary { background: #f4f5fa; color: #4a4a6e; }
+
+  /* Implementation notes */
+  .impl-notes { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 24px; }
+  .impl-notes h3 { color: var(--accent-light); font-size: 15px; margin-bottom: 12px; }
+  .impl-notes h4 { color: var(--text); font-size: 13px; margin: 16px 0 6px; font-weight: 700; }
+  .impl-notes ul { padding-left: 22px; margin-bottom: 12px; }
+  .impl-notes li { margin-bottom: 6px; color: var(--text-mid); font-size: 13px; }
+  .impl-notes li code { background: var(--surface-2); padding: 1px 6px; border-radius: 4px; color: var(--accent-light); font-family: 'SF Mono', monospace; font-size: 11.5px; }
+  .schema-block { background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; font-family: 'SF Mono', monospace; font-size: 11.5px; line-height: 1.65; color: var(--text-mid); overflow-x: auto; }
+  .schema-block .key { color: #f472b6; }
+  .schema-block .val { color: var(--accent-light); }
+  .schema-block .com { color: var(--text-dim); }
+  .file-touch-list { display: grid; gap: 6px; margin-top: 8px; }
+  .file-touch { display: flex; align-items: center; gap: 12px; padding: 8px 12px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 6px; font-family: 'SF Mono', monospace; font-size: 11.5px; }
+  .file-touch-action { flex-shrink: 0; padding: 2px 7px; border-radius: 4px; font-size: 10px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; }
+  .file-touch-action.add { background: var(--green-soft); color: var(--green); border: 1px solid var(--green-border); }
+  .file-touch-action.edit { background: var(--orange-soft); color: var(--orange); border: 1px solid var(--orange-border); }
+  .file-touch-path { color: var(--text-mid); }
+  .file-touch-desc { color: var(--text-dim); margin-left: auto; font-family: -apple-system, sans-serif; font-size: 12px; }
+</style>
+</head>
+<body>
+
+<div class="mockup-doc">
+
+<header class="doc-header">
+  <h1 class="doc-title">Packet Trace Drill — concept (#305)</h1>
+  <p class="doc-sub">Network+ drill that walks a packet through curated scenarios hop-by-hop, asking a question at each step. <strong>Distinct from Topology Builder's existing packet-trace</strong> — this uses curated networks + multi-step quiz + mastery tracking, not user-built topologies.</p>
+  <span class="doc-meta">target: certs/netplus.js + app.js drill scaffold</span>
+  <span class="doc-pin">🔒 visual contract from preview panel</span>
+</header>
+
+<!-- ════════════════════════════════════════════════════════════════════════
+     STATE 1 — Drill dashboard (scenario picker)
+     ════════════════════════════════════════════════════════════════════════ -->
+<section class="state-section">
+  <div class="state-header">
+    <span class="state-title">State 1 — Drill dashboard (scenario picker)</span>
+    <span class="state-tag">click sidebar → here</span>
+  </div>
+  <p class="state-note">Scenarios listed as a vertical menu — each row is one curated network with a multi-hop trace. Mastery indicator on the right (X / N steps mastered). Locked scenarios stay greyed out until earlier ones are mastered (progressive disclosure). 10 scenarios at v1, expandable later.</p>
+
+  <div class="app-mock">
+    <div class="drill-head">
+      <div>
+        <div class="drill-eyebrow">Drill · Network+</div>
+        <h2 class="drill-title">📦 Packet Trace</h2>
+        <p class="drill-sub">10 curated scenarios. Walk a packet through each network hop-by-hop, answer a question at each step.</p>
+      </div>
+      <div class="drill-stats">
+        <div><div class="drill-stat-num">3</div><div>scenarios mastered</div></div>
+        <div><div class="drill-stat-num">19/47</div><div>steps mastered</div></div>
+        <div><div class="drill-stat-num">73%</div><div>accuracy</div></div>
+      </div>
+    </div>
+
+    <div class="dash">
+      <div class="dash-card">
+        <div class="dash-card-head">Scenarios · 10 total</div>
+        <div class="dash-scenario-list">
+          <div class="dash-scenario-row is-mastered">
+            <span class="dash-scenario-icon">🔗</span>
+            <div>
+              <div class="dash-scenario-name">Same-subnet ARP + L2 forwarding</div>
+              <div class="dash-scenario-meta">3 hops · objective 1.4 · ★☆☆</div>
+            </div>
+            <span class="dash-scenario-mastery">3/3 ✓</span>
+          </div>
+          <div class="dash-scenario-row is-mastered">
+            <span class="dash-scenario-icon">🌐</span>
+            <div>
+              <div class="dash-scenario-name">Cross-subnet routing + gateway ARP</div>
+              <div class="dash-scenario-meta">5 hops · objective 1.4 · ★★☆</div>
+            </div>
+            <span class="dash-scenario-mastery">5/5 ✓</span>
+          </div>
+          <div class="dash-scenario-row is-mastered">
+            <span class="dash-scenario-icon">🌍</span>
+            <div>
+              <div class="dash-scenario-name">NAT boundary (private → public)</div>
+              <div class="dash-scenario-meta">4 hops · objective 1.4 · ★★☆</div>
+            </div>
+            <span class="dash-scenario-mastery">4/4 ✓</span>
+          </div>
+          <div class="dash-scenario-row">
+            <span class="dash-scenario-icon">🔄</span>
+            <div>
+              <div class="dash-scenario-name">DHCP discovery (DORA)</div>
+              <div class="dash-scenario-meta">4 hops · objective 1.6 · ★★☆</div>
+            </div>
+            <span class="dash-scenario-mastery">2/4</span>
+          </div>
+          <div class="dash-scenario-row">
+            <span class="dash-scenario-icon">📡</span>
+            <div>
+              <div class="dash-scenario-name">DNS resolution (recursive)</div>
+              <div class="dash-scenario-meta">5 hops · objective 1.6 · ★★☆</div>
+            </div>
+            <span class="dash-scenario-mastery">3/5</span>
+          </div>
+          <div class="dash-scenario-row">
+            <span class="dash-scenario-icon">🌳</span>
+            <div>
+              <div class="dash-scenario-name">Spanning tree (root selection)</div>
+              <div class="dash-scenario-meta">6 hops · objective 2.3 · ★★★</div>
+            </div>
+            <span class="dash-scenario-mastery">2/6</span>
+          </div>
+          <div class="dash-scenario-row is-locked">
+            <span class="dash-scenario-icon">🔀</span>
+            <div>
+              <div class="dash-scenario-name">VLAN trunk (tagged egress)</div>
+              <div class="dash-scenario-meta">5 hops · objective 2.3 · ★★★</div>
+            </div>
+            <span class="dash-scenario-mastery">🔒 unlock</span>
+          </div>
+          <div class="dash-scenario-row is-locked">
+            <span class="dash-scenario-icon">🔁</span>
+            <div>
+              <div class="dash-scenario-name">HSRP failover (active → standby)</div>
+              <div class="dash-scenario-meta">4 hops · objective 1.5 · ★★★</div>
+            </div>
+            <span class="dash-scenario-mastery">🔒 unlock</span>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="dash-streak">
+          <div class="dash-streak-flame">📦</div>
+          <div class="dash-streak-num">5</div>
+          <div class="dash-streak-lbl">day streak</div>
+        </div>
+        <div class="dash-card" style="margin-top:12px">
+          <div class="dash-card-head">Resume where you left off</div>
+          <div style="font-size:13px;font-weight:600;margin-bottom:4px">📡 DNS resolution</div>
+          <div style="font-size:11.5px;color:#6b6b90">Step 3 of 5 · Recursive resolver query</div>
+        </div>
+        <div class="dash-start-cta">▶ Resume scenario →</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════════════════════════
+     STATE 2 — In-trace question (visual contract from preview panel)
+     ════════════════════════════════════════════════════════════════════════ -->
+<section class="state-section">
+  <div class="state-header">
+    <span class="state-title">State 2 — In-trace question (visual contract locked)</span>
+    <span class="state-tag">🔒 must match preview panel snippet</span>
+  </div>
+  <p class="state-note">Top: trace stage with yellow gradient + grid pattern, top-down network diagram, animated orange-amber dot showing current packet position, caption card at bottom-left showing "Step N of M" + current action. <strong>Bottom: question panel</strong> with the hop's MCQ. User answers → reveal → trace continues to next hop. <strong>This visual is locked to the snippet contract.</strong></p>
+
+  <div class="app-mock">
+    <div class="trace-stage">
+      <div class="trace-stage-head">
+        <div>
+          <div class="trace-stage-title">🌐 Cross-subnet routing + gateway ARP</div>
+          <div class="trace-stage-sub">PC-A (10.0.1.5) → Server (10.0.2.20) · ICMP echo request</div>
+        </div>
+        <span class="trace-step-pill">Step 2 of 5</span>
+      </div>
+      <div class="trace-canvas-wrap">
+        <div class="trace-stage-bg"></div>
+        <svg viewBox="0 0 580 320" xmlns="http://www.w3.org/2000/svg">
+          <!-- Cables (under devices) -->
+          <line x1="80" y1="160" x2="200" y2="160" stroke="#9ca3af" stroke-width="2"/>
+          <line x1="240" y1="160" x2="370" y2="160" stroke="#9ca3af" stroke-width="2"/>
+          <line x1="410" y1="160" x2="500" y2="160" stroke="#d1d5db" stroke-width="2" stroke-dasharray="4 4"/>
+
+          <!-- PC-A (left) -->
+          <rect x="40" y="140" width="44" height="32" rx="4" fill="#fff" stroke="#d97706" stroke-width="2"/>
+          <rect x="46" y="146" width="32" height="22" fill="#fbbf24"/>
+          <text x="62" y="190" text-anchor="middle" fill="#1a1a2e" font-size="10" font-weight="700">PC-A</text>
+          <text x="62" y="202" text-anchor="middle" fill="#6b6b90" font-size="9">10.0.1.5</text>
+
+          <!-- Switch -->
+          <rect x="195" y="140" width="48" height="32" rx="4" fill="#1a1a2e" stroke="#06b6d4" stroke-width="2"/>
+          <line x1="203" y1="148" x2="235" y2="148" stroke="#22c55e" stroke-width="1"/>
+          <line x1="203" y1="155" x2="235" y2="155" stroke="#22c55e" stroke-width="1"/>
+          <line x1="203" y1="162" x2="235" y2="162" stroke="#fbbf24" stroke-width="1"/>
+          <text x="219" y="190" text-anchor="middle" fill="#1a1a2e" font-size="10" font-weight="700">SW-1</text>
+
+          <!-- Router -->
+          <rect x="365" y="135" width="48" height="42" rx="6" fill="#1a1a2e" stroke="#5b4fdb" stroke-width="2"/>
+          <circle cx="375" cy="148" r="2" fill="#22c55e"/>
+          <circle cx="385" cy="148" r="2" fill="#22c55e"/>
+          <circle cx="395" cy="148" r="2" fill="#fbbf24"/>
+          <circle cx="405" cy="148" r="2" fill="#22c55e"/>
+          <text x="389" y="195" text-anchor="middle" fill="#1a1a2e" font-size="10" font-weight="700">RTR</text>
+          <text x="389" y="207" text-anchor="middle" fill="#6b6b90" font-size="8">.1 / .1</text>
+
+          <!-- Server (right, beyond gateway, slightly faded indicating not yet reached) -->
+          <rect x="495" y="138" width="44" height="36" rx="4" fill="#fff" stroke="#9ca3af" stroke-width="2" opacity=".5"/>
+          <rect x="500" y="143" width="14" height="8" fill="#22c55e" opacity=".5"/>
+          <rect x="500" y="155" width="14" height="3" fill="#9ca3af" opacity=".5"/>
+          <rect x="500" y="162" width="14" height="3" fill="#9ca3af" opacity=".5"/>
+          <rect x="500" y="169" width="14" height="3" fill="#9ca3af" opacity=".5"/>
+          <text x="517" y="190" text-anchor="middle" fill="#9ca3af" font-size="10" font-weight="700">Server</text>
+          <text x="517" y="202" text-anchor="middle" fill="#9ca3af" font-size="9">10.0.2.20</text>
+
+          <!-- Subnet labels -->
+          <rect x="20" y="40" width="220" height="28" rx="4" fill="rgba(217,119,6,.08)" stroke="rgba(217,119,6,.3)" stroke-width="1"/>
+          <text x="130" y="58" text-anchor="middle" fill="#d97706" font-size="11" font-weight="700">10.0.1.0/24 — local subnet</text>
+
+          <rect x="350" y="40" width="220" height="28" rx="4" fill="rgba(91,79,219,.08)" stroke="rgba(91,79,219,.3)" stroke-width="1"/>
+          <text x="460" y="58" text-anchor="middle" fill="#5b4fdb" font-size="11" font-weight="700">10.0.2.0/24 — remote subnet</text>
+
+          <!-- Animated packet at SW-1 (Step 2 of 5) -->
+          <circle cx="219" cy="160" r="9" fill="#d97706" stroke="#fff" stroke-width="2.5">
+            <animate attributeName="opacity" values=".7;1;.7" dur="1.6s" repeatCount="indefinite"/>
+          </circle>
+
+          <!-- Step indicator above packet -->
+          <text x="219" y="125" text-anchor="middle" fill="#d97706" font-size="9" font-weight="700">⬇ packet here</text>
+        </svg>
+
+        <div class="trace-caption">
+          <div class="trace-caption-step">Step 2 · L2 lookup</div>
+          <div class="trace-caption-action">SW-1 receives the frame from PC-A</div>
+          <div class="trace-caption-detail">Frame dst MAC: aa:bb:cc:dd:ee:01 (router's MAC)</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="trace-question">
+      <div class="tq-eyebrow">Hop question — Step 2</div>
+      <div class="tq-stem">What does SW-1 do with this frame?</div>
+      <div class="tq-options">
+        <button class="tq-opt"><span class="tq-opt-letter">A</span> Flood the frame out all ports except the ingress port</button>
+        <button class="tq-opt"><span class="tq-opt-letter">B</span> Look up the destination MAC in the MAC address table and forward to the matching port</button>
+        <button class="tq-opt"><span class="tq-opt-letter">C</span> Drop the frame because the destination is on a different subnet</button>
+        <button class="tq-opt"><span class="tq-opt-letter">D</span> Strip the L2 header and route based on the destination IP</button>
+      </div>
+      <div class="tq-foot">
+        <span style="font-family:'SF Mono',monospace">scenario · 5 hops</span>
+        <span class="tq-progress">
+          <span class="tq-prog-dot is-correct"></span>
+          <span class="tq-prog-dot is-current"></span>
+          <span class="tq-prog-dot"></span>
+          <span class="tq-prog-dot"></span>
+          <span class="tq-prog-dot"></span>
+        </span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════════════════════════
+     STATE 3 — Reveal (correct answer)
+     ════════════════════════════════════════════════════════════════════════ -->
+<section class="state-section">
+  <div class="state-header">
+    <span class="state-title">State 3 — Reveal after pick (correct path continues)</span>
+    <span class="state-tag">explanation + Next button → Step 3</span>
+  </div>
+  <p class="state-note">User picked B (correct). Reveal explains the L2 forwarding decision; "Next →" advances the trace to Step 3 with the packet now at the router.</p>
+
+  <div class="app-mock">
+    <div class="trace-stage">
+      <div class="trace-stage-head">
+        <div>
+          <div class="trace-stage-title">🌐 Cross-subnet routing + gateway ARP</div>
+          <div class="trace-stage-sub">PC-A (10.0.1.5) → Server (10.0.2.20) · ICMP echo request</div>
+        </div>
+        <span class="trace-step-pill">Step 2 ✓</span>
+      </div>
+      <div class="trace-canvas-wrap" style="height:200px">
+        <div class="trace-stage-bg"></div>
+        <svg viewBox="0 0 580 200" xmlns="http://www.w3.org/2000/svg">
+          <line x1="80" y1="100" x2="200" y2="100" stroke="#22c55e" stroke-width="2"/>
+          <line x1="240" y1="100" x2="370" y2="100" stroke="#22c55e" stroke-width="2"/>
+          <line x1="410" y1="100" x2="500" y2="100" stroke="#d1d5db" stroke-width="2" stroke-dasharray="4 4"/>
+
+          <rect x="40" y="80" width="44" height="32" rx="4" fill="#fff" stroke="#d97706" stroke-width="2"/>
+          <rect x="46" y="86" width="32" height="22" fill="#fbbf24"/>
+          <text x="62" y="130" text-anchor="middle" fill="#1a1a2e" font-size="10" font-weight="700">PC-A</text>
+
+          <rect x="195" y="80" width="48" height="32" rx="4" fill="#1a1a2e" stroke="#06b6d4" stroke-width="2"/>
+          <text x="219" y="130" text-anchor="middle" fill="#1a1a2e" font-size="10" font-weight="700">SW-1</text>
+
+          <rect x="365" y="75" width="48" height="42" rx="6" fill="#1a1a2e" stroke="#5b4fdb" stroke-width="2"/>
+          <text x="389" y="135" text-anchor="middle" fill="#1a1a2e" font-size="10" font-weight="700">RTR</text>
+
+          <rect x="495" y="78" width="44" height="36" rx="4" fill="#fff" stroke="#9ca3af" stroke-width="2" opacity=".5"/>
+          <text x="517" y="130" text-anchor="middle" fill="#9ca3af" font-size="10" font-weight="700">Server</text>
+
+          <!-- Packet now at RTR (correct answer revealed - frame was forwarded) -->
+          <circle cx="389" cy="100" r="9" fill="#d97706" stroke="#fff" stroke-width="2.5">
+            <animate attributeName="opacity" values=".7;1;.7" dur="1.6s" repeatCount="indefinite"/>
+          </circle>
+          <text x="389" y="68" text-anchor="middle" fill="#d97706" font-size="9" font-weight="700">⬇ now at RTR</text>
+        </svg>
+      </div>
+    </div>
+
+    <div class="trace-question">
+      <div class="tq-eyebrow">Hop question — Step 2</div>
+      <div class="tq-stem">What does SW-1 do with this frame?</div>
+      <div class="tq-options">
+        <button class="tq-opt"><span class="tq-opt-letter">A</span> Flood the frame out all ports except the ingress port</button>
+        <button class="tq-opt is-correct"><span class="tq-opt-letter">B</span> Look up the destination MAC in the MAC address table and forward to the matching port</button>
+        <button class="tq-opt"><span class="tq-opt-letter">C</span> Drop the frame because the destination is on a different subnet</button>
+        <button class="tq-opt"><span class="tq-opt-letter">D</span> Strip the L2 header and route based on the destination IP</button>
+      </div>
+
+      <div class="tq-reveal">
+        <div class="tq-reveal-head">L2 switching — MAC table lookup</div>
+        <p class="tq-reveal-prose">
+          A switch operates at <strong>Layer 2</strong>. It maintains a MAC address table mapping MACs → ports. When a frame arrives, it looks up the dst MAC and unicasts to that port. Flooding (option A) only happens when the MAC is NOT in the table (unknown unicast). Routing (option D) is what happens at the router on Step 3 — different layer entirely.
+        </p>
+        <div class="tq-reveal-actions">
+          <button class="tq-next-btn">Next hop · Step 3 →</button>
+        </div>
+      </div>
+
+      <div class="tq-foot">
+        <span style="color:#16a34a">✓ Correct · 2/2 streak</span>
+        <span class="tq-progress">
+          <span class="tq-prog-dot is-correct"></span>
+          <span class="tq-prog-dot is-correct"></span>
+          <span class="tq-prog-dot is-current"></span>
+          <span class="tq-prog-dot"></span>
+          <span class="tq-prog-dot"></span>
+        </span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════════════════════════
+     STATE 4 — Reveal (wrong answer + recovery)
+     ════════════════════════════════════════════════════════════════════════ -->
+<section class="state-section">
+  <div class="state-header">
+    <span class="state-title">State 4 — Wrong-pick reveal (the teaching moment)</span>
+    <span class="state-tag">red strikethrough + correct shown + explanation</span>
+  </div>
+  <p class="state-note">User picked D (router-style routing) on a switch. Reveal teaches the L2 vs L3 distinction. Trace still advances on click — wrong doesn't end the scenario, just resets the streak + counts toward accuracy. Step still shown as red dot in progress row.</p>
+
+  <div class="app-mock">
+    <div class="trace-question">
+      <div class="tq-eyebrow">Hop question — Step 2</div>
+      <div class="tq-stem">What does SW-1 do with this frame?</div>
+      <div class="tq-options">
+        <button class="tq-opt"><span class="tq-opt-letter">A</span> Flood the frame out all ports except the ingress port</button>
+        <button class="tq-opt is-correct"><span class="tq-opt-letter">B</span> Look up the destination MAC in the MAC address table and forward to the matching port</button>
+        <button class="tq-opt"><span class="tq-opt-letter">C</span> Drop the frame because the destination is on a different subnet</button>
+        <button class="tq-opt is-wrong"><span class="tq-opt-letter">D</span> Strip the L2 header and route based on the destination IP</button>
+      </div>
+
+      <div class="tq-reveal">
+        <div class="tq-reveal-head">Layer confusion — Switch ≠ Router</div>
+        <p class="tq-reveal-prose">
+          You picked routing behaviour — but SW-1 is a Layer 2 switch. <strong>Switches forward frames based on destination MAC, full stop.</strong> They don't inspect IP headers, don't make routing decisions. The router (Step 3) is where IP-level routing happens — that's why the packet has TWO hops: switch first (L2), then router (L3). Internalise this and the rest of the trace clicks.
+        </p>
+        <div class="tq-reveal-actions">
+          <button class="tq-next-btn">Continue · Step 3 →</button>
+        </div>
+      </div>
+
+      <div class="tq-foot">
+        <span style="color:#dc2626">✗ Wrong · streak reset</span>
+        <span class="tq-progress">
+          <span class="tq-prog-dot is-correct"></span>
+          <span class="tq-prog-dot is-wrong"></span>
+          <span class="tq-prog-dot is-current"></span>
+          <span class="tq-prog-dot"></span>
+          <span class="tq-prog-dot"></span>
+        </span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════════════════════════
+     STATE 5 — Lessons (per-scenario step breakdown)
+     ════════════════════════════════════════════════════════════════════════ -->
+<section class="state-section">
+  <div class="state-header">
+    <span class="state-title">State 5 — Lessons cheatsheet (per-scenario breakdown)</span>
+    <span class="state-tag">read-mode — full hop-by-hop walkthrough</span>
+  </div>
+  <p class="state-note">Each scenario has its own cheatsheet showing every step's correct answer + a one-line "what happens here" gloss. Lets users review the full trace as a study aid before/after drilling. 10 scenarios = 10 cheatsheets, ~5 hops each.</p>
+
+  <div class="app-mock">
+    <div class="lesson-card">
+      <div class="lesson-head">
+        <div class="lesson-icon">🌐</div>
+        <div>
+          <div class="lesson-title">Cross-subnet routing + gateway ARP</div>
+          <div class="lesson-sub">5-hop walkthrough · objective 1.4 · ★★☆ difficulty</div>
+        </div>
+      </div>
+      <div class="lesson-step-list">
+        <div class="lesson-step">
+          <span class="lesson-step-num">1</span>
+          <div>
+            <strong>PC-A wants to send to 10.0.2.20.</strong>
+            <em>Different subnet → frame goes to default gateway. Looks up gateway MAC via ARP.</em>
+          </div>
+        </div>
+        <div class="lesson-step">
+          <span class="lesson-step-num">2</span>
+          <div>
+            <strong>SW-1 receives the frame, dst MAC = router's MAC.</strong>
+            <em>L2 lookup in MAC table → forward to router-facing port. No IP inspection.</em>
+          </div>
+        </div>
+        <div class="lesson-step">
+          <span class="lesson-step-num">3</span>
+          <div>
+            <strong>Router decapsulates L2, inspects IP dst = 10.0.2.20.</strong>
+            <em>Routing table lookup → matches 10.0.2.0/24 directly connected. Strips inbound L2 header.</em>
+          </div>
+        </div>
+        <div class="lesson-step">
+          <span class="lesson-step-num">4</span>
+          <div>
+            <strong>Router builds new frame for the egress LAN, dst MAC = server's MAC.</strong>
+            <em>If router doesn't have server MAC cached → ARP for 10.0.2.20 first. New L2 header, same L3 packet.</em>
+          </div>
+        </div>
+        <div class="lesson-step">
+          <span class="lesson-step-num">5</span>
+          <div>
+            <strong>Server receives, processes ICMP echo, sends echo reply back.</strong>
+            <em>Whole trace runs in reverse — server → router → switch → PC-A. Same logic, mirrored.</em>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════════════════════════
+     STATE 6 — End-of-scenario card
+     ════════════════════════════════════════════════════════════════════════ -->
+<section class="state-section">
+  <div class="state-header">
+    <span class="state-title">State 6 — End-of-scenario card</span>
+    <span class="state-tag">all 5 hops done · trace recap + score</span>
+  </div>
+  <p class="state-note">Trace recap shows each hop's outcome (correct or wrong). Mastery for the scenario only increments if ALL hops correct (so wrong on any single hop = no mastery for this run). Encourages re-running scenarios. Streak counts on overall drill activity.</p>
+
+  <div class="app-mock" style="background:#f4f5fa;padding:48px 32px">
+    <div class="eos-card">
+      <div class="eos-burst">📦</div>
+      <h2 class="eos-title">Trace complete.</h2>
+      <p class="eos-sub">4/5 right · scenario won't master this run. Re-run to pin it down.</p>
+
+      <div class="eos-trace-recap">
+        <div class="eos-trace-recap-h">Trace recap</div>
+        <div class="eos-trace-recap-row">
+          <span class="eos-trace-recap-num">1</span>
+          <span class="eos-trace-recap-result">✓ ARP for gateway MAC</span>
+        </div>
+        <div class="eos-trace-recap-row">
+          <span class="eos-trace-recap-num">2</span>
+          <span class="eos-trace-recap-result is-wrong">✗ L2 vs L3 confusion (you picked D)</span>
+        </div>
+        <div class="eos-trace-recap-row">
+          <span class="eos-trace-recap-num">3</span>
+          <span class="eos-trace-recap-result">✓ Router IP lookup → matches /24</span>
+        </div>
+        <div class="eos-trace-recap-row">
+          <span class="eos-trace-recap-num">4</span>
+          <span class="eos-trace-recap-result">✓ ARP for server MAC + new L2 frame</span>
+        </div>
+        <div class="eos-trace-recap-row">
+          <span class="eos-trace-recap-num">5</span>
+          <span class="eos-trace-recap-result">✓ Server sends echo reply</span>
+        </div>
+      </div>
+
+      <div class="eos-score-row">
+        <div class="eos-score-tile"><div class="eos-score-num">80%</div><div class="eos-score-lbl">accuracy</div></div>
+        <div class="eos-score-tile"><div class="eos-score-num">+0</div><div class="eos-score-lbl">mastered</div></div>
+        <div class="eos-score-tile"><div class="eos-score-num">5 🔥</div><div class="eos-score-lbl">day streak</div></div>
+      </div>
+      <div class="eos-actions">
+        <button class="eos-btn eos-btn-primary">Re-run scenario →</button>
+        <button class="eos-btn eos-btn-secondary">Pick another</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════════════════════════
+     IMPLEMENTATION NOTES
+     ════════════════════════════════════════════════════════════════════════ -->
+<section class="state-section">
+  <div class="state-header">
+    <span class="state-title">Implementation notes</span>
+    <span class="state-tag">scope · schema · files · biggest risk</span>
+  </div>
+
+  <div class="impl-notes">
+    <h3>Drill mechanics</h3>
+    <ul>
+      <li><strong>Pool size</strong>: 10 curated scenarios at v1, ~4-6 hops each (≈ 47 total steps).</li>
+      <li><strong>Question format</strong>: at each hop, MCQ with 4 options. Stem = "What does X do with this frame/packet?". Wrong = reveal explanation, trace continues. Right = reveal explanation, trace continues.</li>
+      <li><strong>Mastery</strong>: per-scenario, only if ALL hops in a single run are correct. This is stricter than AB/CTS. Repeated wrong on the same hop counts toward weak-spot weighting.</li>
+      <li><strong>Locking</strong>: scenarios unlock progressively. First 3 (ARP, cross-subnet routing, NAT) unlocked from start; rest unlock as earlier ones master. Forces a learning curve.</li>
+      <li><strong>Resume</strong>: dashboard "Resume where you left off" picks up mid-scenario if user closed tab.</li>
+    </ul>
+
+    <h3>Biggest risk: SVG canvas authoring scale</h3>
+    <ul>
+      <li>10 scenarios × ~5 hops × bespoke SVG layout per hop = potentially a lot of hand-authored network diagrams. <strong>Mitigation</strong>: build a shared SVG renderer that takes a JSON network description (devices, cables, subnet boxes, packet position) and generates the diagram. Each scenario is just data.</li>
+      <li><strong>Renderer scope</strong>: ~6 device types (PC, laptop, switch, router, server, ?), 2 cable types (solid copper, dashed remote), subnet group boxes, animated packet position. Reuses TB device-glyph aesthetics for visual continuity.</li>
+      <li><strong>Estimate</strong>: renderer = ~250 LOC of new code. Per-scenario data = ~50 LOC each × 10 = ~500 LOC. Total ~750 LOC for the canvas + scenarios.</li>
+    </ul>
+
+    <h3>Schema (cert pack extension)</h3>
+    <p style="color:var(--text-mid);font-size:13px;margin-bottom:8px">Lives in <code>certs/netplus.js</code>.</p>
+    <div class="schema-block">
+<span class="key">packetTraceScenarios</span>: [
+  {
+    <span class="key">id</span>: <span class="val">'cross-subnet-routing'</span>,
+    <span class="key">title</span>: <span class="val">'Cross-subnet routing + gateway ARP'</span>,
+    <span class="key">icon</span>: <span class="val">'🌐'</span>,
+    <span class="key">obj</span>: <span class="val">'1.4'</span>,
+    <span class="key">diff</span>: <span class="val">2</span>,            <span class="com">// 1-3 stars</span>
+    <span class="key">unlockAfter</span>: [<span class="val">'same-subnet-arp'</span>],   <span class="com">// progressive disclosure</span>
+    <span class="key">summary</span>: <span class="val">'PC-A (10.0.1.5) → Server (10.0.2.20) · ICMP echo'</span>,
+    <span class="key">network</span>: {
+      <span class="key">devices</span>: [
+        { <span class="key">id</span>: <span class="val">'pc-a'</span>,   <span class="key">type</span>: <span class="val">'pc'</span>,     <span class="key">label</span>: <span class="val">'PC-A'</span>, <span class="key">ip</span>: <span class="val">'10.0.1.5'</span>,  <span class="key">x</span>: <span class="val">62</span>,  <span class="key">y</span>: <span class="val">160</span> },
+        { <span class="key">id</span>: <span class="val">'sw-1'</span>,   <span class="key">type</span>: <span class="val">'switch'</span>, <span class="key">label</span>: <span class="val">'SW-1'</span>,                  <span class="key">x</span>: <span class="val">219</span>, <span class="key">y</span>: <span class="val">160</span> },
+        { <span class="key">id</span>: <span class="val">'rtr'</span>,    <span class="key">type</span>: <span class="val">'router'</span>, <span class="key">label</span>: <span class="val">'RTR'</span>, <span class="key">ip</span>: <span class="val">'10.0.1.1, 10.0.2.1'</span>, <span class="key">x</span>: <span class="val">389</span>, <span class="key">y</span>: <span class="val">160</span> },
+        { <span class="key">id</span>: <span class="val">'srv'</span>,    <span class="key">type</span>: <span class="val">'server'</span>, <span class="key">label</span>: <span class="val">'Server'</span>, <span class="key">ip</span>: <span class="val">'10.0.2.20'</span>, <span class="key">x</span>: <span class="val">517</span>, <span class="key">y</span>: <span class="val">160</span> }
+      ],
+      <span class="key">cables</span>: [
+        { <span class="key">from</span>: <span class="val">'pc-a'</span>, <span class="key">to</span>: <span class="val">'sw-1'</span>, <span class="key">type</span>: <span class="val">'copper'</span> },
+        { <span class="key">from</span>: <span class="val">'sw-1'</span>, <span class="key">to</span>: <span class="val">'rtr'</span>,  <span class="key">type</span>: <span class="val">'copper'</span> },
+        { <span class="key">from</span>: <span class="val">'rtr'</span>,  <span class="key">to</span>: <span class="val">'srv'</span>,  <span class="key">type</span>: <span class="val">'remote'</span> }
+      ],
+      <span class="key">subnets</span>: [
+        { <span class="key">cidr</span>: <span class="val">'10.0.1.0/24'</span>, <span class="key">label</span>: <span class="val">'local subnet'</span>,  <span class="key">color</span>: <span class="val">'amber'</span>, <span class="key">contains</span>: [<span class="val">'pc-a'</span>, <span class="val">'sw-1'</span>] },
+        { <span class="key">cidr</span>: <span class="val">'10.0.2.0/24'</span>, <span class="key">label</span>: <span class="val">'remote subnet'</span>, <span class="key">color</span>: <span class="val">'purple'</span>, <span class="key">contains</span>: [<span class="val">'srv'</span>] }
+      ]
+    },
+    <span class="key">steps</span>: [
+      {
+        <span class="key">at</span>: <span class="val">'pc-a'</span>,
+        <span class="key">caption</span>: { <span class="key">title</span>: <span class="val">'L3 destination check'</span>, <span class="key">action</span>: <span class="val">'PC-A computes 10.0.2.20 not in 10.0.1.0/24'</span>, <span class="key">detail</span>: <span class="val">'→ frame must go to default gateway (10.0.1.1)'</span> },
+        <span class="key">question</span>: {
+          <span class="key">stem</span>: <span class="val">'What does PC-A need before it can send the frame?'</span>,
+          <span class="key">options</span>: [<span class="val">'Server\'s MAC address'</span>, <span class="val">'Gateway router\'s MAC address'</span>, <span class="val">'DNS resolution'</span>, <span class="val">'TLS handshake'</span>],
+          <span class="key">correctIdx</span>: <span class="val">1</span>,
+          <span class="key">why</span>: <span class="val">'Different subnet → frame goes to gateway. ARP for gateway MAC; server MAC isn\'t needed yet.'</span>
+        }
+      },
+      <span class="com">// ... 4 more steps</span>
+    ]
+  },
+  <span class="com">// ... 9 more scenarios</span>
+]</div>
+
+    <h3>Storage + cloud-sync</h3>
+    <ul>
+      <li><strong>Network+ STORAGE keys</strong>: <code>STORAGE.PT_MASTERY</code> (per-scenario, 0/1 = mastered or not) + <code>STORAGE.PT_LESSONS</code> (lesson read counts) + <code>STORAGE.PT_RESUME</code> (in-progress scenario state for resume).</li>
+      <li>Add 3 keys to <code>USER_DATA_KEYS</code> in <code>cloud-store.js</code>: <code>'nplus_pt_mastery'</code> · <code>'nplus_pt_lessons'</code> · <code>'nplus_pt_resume'</code>.</li>
+      <li><strong>Cert-aware</strong>: <code>_USE_NETPLUS_PT</code> switch — only renders for Network+ users (this drill makes no sense in Security+ context).</li>
+    </ul>
+
+    <h4>Files touched</h4>
+    <div class="file-touch-list">
+      <div class="file-touch">
+        <span class="file-touch-action edit">edit</span>
+        <span class="file-touch-path">certs/netplus.js</span>
+        <span class="file-touch-desc">Add 10 scenarios + lesson cheatsheets data (~500 LOC)</span>
+      </div>
+      <div class="file-touch">
+        <span class="file-touch-action add">add</span>
+        <span class="file-touch-path">app.js (new helpers)</span>
+        <span class="file-touch-desc">renderTraceSvg(network, packetPos) — shared SVG renderer (~250 LOC)</span>
+      </div>
+      <div class="file-touch">
+        <span class="file-touch-action edit">edit</span>
+        <span class="file-touch-path">app.js (drill scaffold)</span>
+        <span class="file-touch-desc">Trace-mode drill scaffold + scenario picker + step-by-step state machine + sidebar entry (~200 LOC)</span>
+      </div>
+      <div class="file-touch">
+        <span class="file-touch-action edit">edit</span>
+        <span class="file-touch-path">styles.css</span>
+        <span class="file-touch-desc">.trace-stage · .trace-canvas-wrap · .trace-caption · .trace-question · scenario-list (~220 LOC)</span>
+      </div>
+      <div class="file-touch">
+        <span class="file-touch-action edit">edit</span>
+        <span class="file-touch-path">cloud-store.js</span>
+        <span class="file-touch-desc">+3 keys to USER_DATA_KEYS (mastery, lessons, resume)</span>
+      </div>
+      <div class="file-touch">
+        <span class="file-touch-action edit">edit</span>
+        <span class="file-touch-path">tests/uat.js</span>
+        <span class="file-touch-desc">~18 regression guards (renderer + scenario count + step shape + cloud sync)</span>
+      </div>
+    </div>
+
+    <h3>Out of scope (v1)</h3>
+    <ul>
+      <li><strong>Security+ port</strong> of this drill — packet flows are the same protocol-wise but the scenarios for SY0-701 would be different (TLS handshake, IPSec tunnel, OAuth flow). Future cert-pack work.</li>
+      <li><strong>3D version</strong> — could be a TB 3D View tour instead. Issue for later.</li>
+      <li><strong>Multi-packet conversations</strong> (TCP handshake full sequence, file transfer, slow-start). v1 is single-packet traces.</li>
+      <li><strong>"Why is this hop wrong?" deep-dive</strong> — current reveal is one-line. Could expand to longer explanations + linked Professor Messer videos. Iterate after launch.</li>
+    </ul>
+  </div>
+</section>
+
+</div>
+</body>
+</html>

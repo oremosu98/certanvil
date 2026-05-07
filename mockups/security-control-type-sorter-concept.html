@@ -1,0 +1,1054 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CertAnvil — Security Control Type Sorter drill concept (#302)</title>
+<style>
+  :root {
+    --bg: #0a0a12;
+    --surface: #131320;
+    --surface-2: #1a1a2e;
+    --surface-3: #222235;
+    --border: #2e2e48;
+    --border-strong: #3a3a55;
+    --accent: #7c6ff7;
+    --accent-light: #a99df9;
+    --text: #f0f0f8;
+    --text-mid: #b0b0cc;
+    --text-dim: #6b6b90;
+    --green: #22c55e;
+    --green-soft: rgba(34,197,94,.12);
+    --green-border: rgba(34,197,94,.32);
+    --red: #f87171;
+    --red-soft: rgba(248,113,113,.10);
+    --red-border: rgba(248,113,113,.32);
+    --orange: #f59e0b;
+    --orange-soft: rgba(245,158,11,.12);
+    --orange-border: rgba(245,158,11,.32);
+
+    /* 6 control type colors */
+    --type-prev: #5b4fdb;        /* Preventive — purple */
+    --type-prev-soft: rgba(91,79,219,.08);
+    --type-prev-border: rgba(91,79,219,.3);
+    --type-det: #06b6d4;          /* Detective — cyan */
+    --type-det-soft: rgba(6,182,212,.08);
+    --type-det-border: rgba(6,182,212,.3);
+    --type-corr: #16a34a;         /* Corrective — green */
+    --type-corr-soft: rgba(22,163,74,.08);
+    --type-corr-border: rgba(22,163,74,.3);
+    --type-deter: #f59e0b;        /* Deterrent — orange */
+    --type-deter-soft: rgba(245,158,11,.08);
+    --type-deter-border: rgba(245,158,11,.3);
+    --type-comp: #d946ef;         /* Compensating — magenta */
+    --type-comp-soft: rgba(217,70,239,.08);
+    --type-comp-border: rgba(217,70,239,.3);
+    --type-dir: #6b6b90;          /* Directive — gray */
+    --type-dir-soft: rgba(107,107,144,.1);
+    --type-dir-border: rgba(107,107,144,.3);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #050510;
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    font-size: 14px;
+    line-height: 1.55;
+    padding: 32px 16px 80px;
+  }
+  .mockup-doc { max-width: 1100px; margin: 0 auto; }
+  .doc-header { text-align: center; margin-bottom: 40px; padding-bottom: 32px; border-bottom: 1px dashed var(--border); }
+  .doc-title { font-size: 28px; font-weight: 800; letter-spacing: -0.02em; margin-bottom: 8px; }
+  .doc-sub { color: var(--text-mid); font-size: 14px; margin-bottom: 16px; max-width: 760px; margin-left: auto; margin-right: auto; }
+  .doc-meta { display: inline-block; padding: 4px 12px; background: var(--surface); border: 1px solid var(--border); border-radius: 99px; font-size: 11px; color: var(--text-dim); font-family: 'SF Mono', monospace; }
+  .doc-pin { display: inline-block; padding: 4px 12px; background: rgba(124,111,247,.12); border: 1px solid rgba(124,111,247,.32); border-radius: 99px; font-size: 11px; color: var(--accent-light); font-family: 'SF Mono', monospace; margin-left: 8px; }
+  .state-section { margin-bottom: 64px; }
+  .state-header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
+  .state-title { font-size: 18px; font-weight: 700; color: var(--accent-light); }
+  .state-tag { font-size: 11px; font-family: 'SF Mono', monospace; color: var(--text-dim); }
+  .state-note { color: var(--text-mid); font-size: 13px; margin-bottom: 20px; max-width: 800px; }
+  .state-note code { background: var(--surface-2); padding: 1px 6px; border-radius: 4px; color: var(--accent-light); font-family: 'SF Mono', monospace; font-size: 12px; }
+  .state-note strong { color: var(--text); }
+
+  .app-mock {
+    background: #fafbff;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    color: #1a1a2e;
+    min-height: 480px;
+  }
+
+  /* Drill head */
+  .drill-head {
+    display: flex; align-items: flex-end; justify-content: space-between;
+    padding-bottom: 14px;
+    border-bottom: 1px solid #e5e7f0;
+    margin-bottom: 16px;
+  }
+  .drill-eyebrow {
+    font-size: 11px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase;
+    color: var(--type-prev); margin-bottom: 2px;
+  }
+  .drill-title { font-size: 22px; font-weight: 800; letter-spacing: -0.02em; color: #1a1a2e; }
+  .drill-sub { font-size: 12px; color: #6b6b90; margin-top: 4px; }
+  .drill-stats { display: flex; gap: 16px; align-items: center; font-size: 12px; color: #6b6b90; }
+  .drill-stat-num { font-weight: 800; font-size: 18px; color: #1a1a2e; }
+
+  /* Mode toggle */
+  .mode-toggle {
+    display: inline-flex; gap: 4px;
+    background: #f4f5fa;
+    padding: 4px; border-radius: 99px;
+    margin-bottom: 16px;
+  }
+  .mode-btn {
+    padding: 7px 14px; font-size: 12px; font-weight: 600;
+    color: #6b6b90; border: 0; background: transparent;
+    border-radius: 99px;
+    cursor: pointer;
+  }
+  .mode-btn.is-active {
+    background: #fff; color: #1a1a2e;
+    box-shadow: 0 1px 3px rgba(20,20,40,.08);
+  }
+
+  /* ── Mode A: MCQ format ── */
+  .ct-mcq-card {
+    background: #fff;
+    border: 1px solid #e5e7f0;
+    border-radius: 12px;
+    padding: 28px;
+    max-width: 580px;
+    margin: 0 auto;
+    box-shadow: 0 4px 16px rgba(20,20,40,.06);
+  }
+  .ct-mcq-eyebrow {
+    font-size: 11px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase;
+    color: var(--type-prev); text-align: center;
+    margin-bottom: 14px;
+  }
+  .ct-mcq-stem-card {
+    background: rgba(91,79,219,.06);
+    border: 1px solid rgba(91,79,219,.25);
+    padding: 16px; border-radius: 10px;
+    margin-bottom: 14px;
+  }
+  .ct-mcq-stem-name {
+    font-size: 17px; font-weight: 700; color: #1a1a2e;
+    margin-bottom: 4px;
+  }
+  .ct-mcq-stem-sub {
+    font-size: 12px; color: #4a4a6e; line-height: 1.5;
+  }
+  .ct-mcq-stem-meta {
+    font-size: 10px; color: #8a8aac; margin-top: 6px;
+    text-transform: uppercase; letter-spacing: .06em;
+  }
+  .ct-mcq-arrow { text-align: center; color: #8a8aac; font-size: 12px; font-weight: 600; margin-bottom: 12px; }
+
+  .ct-mcq-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+  .ct-mcq-opt {
+    background: #fff;
+    border: 1.5px solid #e5e7f0;
+    border-radius: 8px;
+    padding: 10px 8px;
+    cursor: pointer;
+    text-align: center;
+    font-size: 11.5px;
+    font-weight: 600;
+    color: #4a4a6e;
+    transition: all .15s ease;
+  }
+  .ct-mcq-opt:hover { border-color: #c7c9d8; background: #fafbff; }
+  .ct-mcq-opt-icon { display: block; font-size: 16px; margin-bottom: 4px; }
+  .ct-mcq-opt.is-active-prev  { background: var(--type-prev-soft);  border-color: var(--type-prev-border);  color: var(--type-prev); }
+  .ct-mcq-opt.is-active-det   { background: var(--type-det-soft);   border-color: var(--type-det-border);   color: var(--type-det); }
+  .ct-mcq-opt.is-active-corr  { background: var(--type-corr-soft);  border-color: var(--type-corr-border);  color: var(--type-corr); }
+  .ct-mcq-opt.is-active-deter { background: var(--type-deter-soft); border-color: var(--type-deter-border); color: var(--type-deter); }
+  .ct-mcq-opt.is-active-comp  { background: var(--type-comp-soft);  border-color: var(--type-comp-border);  color: var(--type-comp); }
+  .ct-mcq-opt.is-active-dir   { background: var(--type-dir-soft);   border-color: var(--type-dir-border);   color: var(--type-dir); }
+
+  /* Category MCQ pill row */
+  .ct-mcq-cat-row {
+    display: flex; gap: 6px; justify-content: center;
+    margin-top: 6px;
+    padding-top: 14px;
+    border-top: 1px dashed #e5e7f0;
+  }
+  .ct-mcq-cat-row-label {
+    font-size: 10px; color: #8a8aac; margin-right: 4px;
+    text-transform: uppercase; letter-spacing: .06em;
+    align-self: center;
+  }
+  .ct-mcq-cat-pill {
+    padding: 5px 12px; border-radius: 99px;
+    background: #f4f5fa; border: 1.5px solid #e5e7f0;
+    font-size: 11px; font-weight: 600; color: #6b6b90;
+    cursor: pointer;
+  }
+  .ct-mcq-cat-pill.is-active {
+    background: #1a1a2e; color: #fff; border-color: #1a1a2e;
+  }
+
+  .ct-mcq-foot {
+    margin-top: 14px;
+    display: flex; align-items: center; justify-content: space-between;
+    font-size: 11px; color: #8a8aac;
+  }
+  .ct-mcq-progress { font-family: 'SF Mono', monospace; }
+  .ct-mcq-submit-btn {
+    background: var(--type-prev); color: #fff;
+    padding: 7px 16px; border-radius: 6px;
+    font-size: 12px; font-weight: 600;
+    border: 0; cursor: pointer;
+  }
+
+  /* Reveal */
+  .ct-reveal {
+    margin-top: 18px;
+    background: rgba(91,79,219,.04);
+    border: 1px solid rgba(91,79,219,.2);
+    border-radius: 10px;
+    padding: 14px 16px;
+  }
+  .ct-reveal-head {
+    font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
+    color: var(--type-prev); margin-bottom: 6px;
+  }
+  .ct-reveal-prose { font-size: 12.5px; color: #4a4a6e; line-height: 1.55; }
+  .ct-reveal-prose strong { color: #1a1a2e; }
+
+  /* ── Mode B: Drag-to-bucket ── */
+  .ct-bucket-stage {
+    background: #fff;
+    border: 1px solid #e5e7f0;
+    border-radius: 12px;
+    padding: 20px;
+  }
+  .ct-bucket-pool {
+    background: #f4f5fa;
+    border: 1px dashed #c7c9d8;
+    border-radius: 8px;
+    padding: 14px;
+    margin-bottom: 14px;
+  }
+  .ct-bucket-pool-h {
+    font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
+    color: #6b6b90; margin-bottom: 10px;
+  }
+  .ct-bucket-chip-row {
+    display: flex; flex-wrap: wrap; gap: 8px;
+  }
+  .ct-bucket-chip {
+    background: #fff;
+    border: 1px solid #c7c9d8;
+    border-radius: 6px;
+    padding: 7px 12px;
+    font-size: 12px;
+    color: #1a1a2e;
+    cursor: grab;
+    user-select: none;
+    transition: transform .12s ease, box-shadow .12s ease;
+  }
+  .ct-bucket-chip:hover { transform: translateY(-1px); box-shadow: 0 2px 6px rgba(20,20,40,.08); }
+  .ct-bucket-chip.is-dragging { opacity: .5; cursor: grabbing; }
+
+  .ct-bucket-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(2, 1fr);
+    gap: 10px;
+    min-height: 280px;
+  }
+  .ct-bucket {
+    background: #fafbff;
+    border: 1.5px dashed #e5e7f0;
+    border-radius: 8px;
+    padding: 12px;
+    display: flex; flex-direction: column;
+    transition: border-color .15s ease, background-color .15s ease;
+  }
+  .ct-bucket-prev  { border-color: var(--type-prev-border);  background: var(--type-prev-soft); }
+  .ct-bucket-det   { border-color: var(--type-det-border);   background: var(--type-det-soft); }
+  .ct-bucket-corr  { border-color: var(--type-corr-border);  background: var(--type-corr-soft); }
+  .ct-bucket-deter { border-color: var(--type-deter-border); background: var(--type-deter-soft); }
+  .ct-bucket-comp  { border-color: var(--type-comp-border);  background: var(--type-comp-soft); }
+  .ct-bucket-dir   { border-color: var(--type-dir-border);   background: var(--type-dir-soft); }
+  .ct-bucket-h {
+    display: flex; align-items: center; gap: 6px;
+    margin-bottom: 8px;
+  }
+  .ct-bucket-icon { font-size: 14px; }
+  .ct-bucket-name { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; }
+  .ct-bucket-prev .ct-bucket-name { color: var(--type-prev); }
+  .ct-bucket-det .ct-bucket-name { color: var(--type-det); }
+  .ct-bucket-corr .ct-bucket-name { color: var(--type-corr); }
+  .ct-bucket-deter .ct-bucket-name { color: var(--type-deter); }
+  .ct-bucket-comp .ct-bucket-name { color: var(--type-comp); }
+  .ct-bucket-dir .ct-bucket-name { color: var(--type-dir); }
+  .ct-bucket-count {
+    font-size: 10px; color: #8a8aac; margin-left: auto;
+    font-family: 'SF Mono', monospace;
+  }
+  .ct-bucket-content {
+    display: flex; flex-wrap: wrap; gap: 4px;
+    flex: 1;
+  }
+  .ct-bucket-item {
+    background: #fff;
+    border: 1px solid currentColor;
+    border-radius: 4px;
+    padding: 3px 7px;
+    font-size: 10.5px;
+    color: inherit;
+    font-weight: 500;
+  }
+  .ct-bucket-prev .ct-bucket-item  { color: var(--type-prev);  border-color: var(--type-prev-border); }
+  .ct-bucket-det .ct-bucket-item   { color: var(--type-det);   border-color: var(--type-det-border); }
+  .ct-bucket-corr .ct-bucket-item  { color: var(--type-corr);  border-color: var(--type-corr-border); }
+  .ct-bucket-deter .ct-bucket-item { color: var(--type-deter); border-color: var(--type-deter-border); }
+  .ct-bucket-comp .ct-bucket-item  { color: var(--type-comp);  border-color: var(--type-comp-border); }
+  .ct-bucket-dir .ct-bucket-item   { color: var(--type-dir);   border-color: var(--type-dir-border); }
+  .ct-bucket-item.is-wrong {
+    background: rgba(248,113,113,.1);
+    color: #dc2626 !important;
+    border-color: rgba(248,113,113,.5) !important;
+  }
+  .ct-bucket-item.is-wrong::before { content: '✗ '; }
+
+  .ct-bucket-foot {
+    margin-top: 16px;
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 12px; color: #6b6b90;
+  }
+  .ct-bucket-submit {
+    background: var(--type-prev); color: #fff;
+    padding: 8px 16px; border-radius: 6px;
+    font-size: 12.5px; font-weight: 600;
+    border: 0; cursor: pointer;
+  }
+
+  /* Dashboard cards */
+  .dash {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  .dash-card {
+    background: #fff;
+    border: 1px solid #e5e7f0;
+    border-radius: 10px;
+    padding: 18px;
+  }
+  .dash-card-head { font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: #6b6b90; margin-bottom: 12px; }
+  .dash-type-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .dash-type-row {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 10px;
+    border-radius: 6px;
+    font-size: 12px;
+  }
+  .dash-type-row.prev  { background: var(--type-prev-soft); }
+  .dash-type-row.det   { background: var(--type-det-soft); }
+  .dash-type-row.corr  { background: var(--type-corr-soft); }
+  .dash-type-row.deter { background: var(--type-deter-soft); }
+  .dash-type-row.comp  { background: var(--type-comp-soft); }
+  .dash-type-row.dir   { background: var(--type-dir-soft); }
+  .dash-type-icon { font-size: 14px; }
+  .dash-type-name { flex: 1; font-weight: 600; color: #1a1a2e; }
+  .dash-type-pct { font-family: 'SF Mono', monospace; font-size: 11px; color: #6b6b90; }
+  .dash-start-cta {
+    background: linear-gradient(135deg, var(--type-prev), var(--type-det));
+    color: #fff;
+    padding: 14px 18px;
+    border-radius: 10px;
+    font-weight: 700;
+    text-align: center;
+    cursor: pointer;
+    margin-top: 12px;
+    box-shadow: 0 6px 16px rgba(91,79,219,.32);
+  }
+
+  /* Lessons */
+  .lesson-card { background: #fff; border: 1px solid #e5e7f0; border-radius: 10px; padding: 18px; }
+  .lesson-head { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; padding-bottom: 10px; border-bottom: 1px solid #e5e7f0; }
+  .lesson-icon { width: 32px; height: 32px; border-radius: 7px; background: rgba(91,79,219,.1); color: var(--type-prev); display: grid; place-items: center; font-size: 16px; }
+  .lesson-title { font-size: 15px; font-weight: 700; color: #1a1a2e; }
+  .lesson-sub { font-size: 11px; color: #6b6b90; }
+
+  .lesson-matrix {
+    display: grid;
+    grid-template-columns: 110px repeat(4, 1fr);
+    gap: 1px;
+    background: #e5e7f0;
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  .lm-h {
+    background: #f4f5fa;
+    padding: 8px 10px;
+    font-size: 10px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+    color: #6b6b90;
+    text-align: center;
+  }
+  .lm-h.is-row {
+    text-align: left;
+    background: #fff;
+  }
+  .lm-row-prev .lm-h { color: var(--type-prev); }
+  .lm-row-det .lm-h { color: var(--type-det); }
+  .lm-cell {
+    background: #fff;
+    padding: 8px 10px;
+    font-size: 10.5px;
+    color: #1a1a2e;
+    line-height: 1.4;
+  }
+  .lm-cell em { color: #6b6b90; font-style: normal; font-size: 9.5px; display: block; margin-top: 2px; }
+
+  /* End of session */
+  .eos-card {
+    background: linear-gradient(135deg, #fff, #fafbff);
+    border: 1px solid #e5e7f0;
+    border-radius: 12px;
+    padding: 32px 28px;
+    text-align: center;
+    max-width: 460px;
+    margin: 0 auto;
+  }
+  .eos-burst { font-size: 48px; margin-bottom: 8px; }
+  .eos-title { font-size: 22px; font-weight: 800; color: #1a1a2e; margin-bottom: 4px; }
+  .eos-sub { font-size: 13px; color: #6b6b90; margin-bottom: 20px; }
+  .eos-score-row { display: flex; gap: 16px; justify-content: center; margin-bottom: 20px; }
+  .eos-score-tile { background: #fff; border: 1px solid #e5e7f0; border-radius: 8px; padding: 12px 18px; min-width: 80px; }
+  .eos-score-num { font-size: 20px; font-weight: 800; color: #1a1a2e; }
+  .eos-score-lbl { font-size: 10px; color: #6b6b90; text-transform: uppercase; letter-spacing: .06em; }
+  .eos-actions { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+  .eos-btn { padding: 9px 16px; border-radius: 7px; font-size: 13px; font-weight: 600; cursor: pointer; }
+  .eos-btn-primary { background: var(--type-prev); color: #fff; }
+  .eos-btn-secondary { background: #f4f5fa; color: #4a4a6e; }
+
+  /* Implementation notes */
+  .impl-notes { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 24px; }
+  .impl-notes h3 { color: var(--accent-light); font-size: 15px; margin-bottom: 12px; }
+  .impl-notes h4 { color: var(--text); font-size: 13px; margin: 16px 0 6px; font-weight: 700; }
+  .impl-notes ul { padding-left: 22px; margin-bottom: 12px; }
+  .impl-notes li { margin-bottom: 6px; color: var(--text-mid); font-size: 13px; }
+  .impl-notes li code { background: var(--surface-2); padding: 1px 6px; border-radius: 4px; color: var(--accent-light); font-family: 'SF Mono', monospace; font-size: 11.5px; }
+  .schema-block { background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; font-family: 'SF Mono', monospace; font-size: 11.5px; line-height: 1.65; color: var(--text-mid); overflow-x: auto; }
+  .schema-block .key { color: #f472b6; }
+  .schema-block .val { color: var(--accent-light); }
+  .schema-block .com { color: var(--text-dim); }
+  .file-touch-list { display: grid; gap: 6px; margin-top: 8px; }
+  .file-touch { display: flex; align-items: center; gap: 12px; padding: 8px 12px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 6px; font-family: 'SF Mono', monospace; font-size: 11.5px; }
+  .file-touch-action { flex-shrink: 0; padding: 2px 7px; border-radius: 4px; font-size: 10px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; }
+  .file-touch-action.add { background: var(--green-soft); color: var(--green); border: 1px solid var(--green-border); }
+  .file-touch-action.edit { background: var(--orange-soft); color: var(--orange); border: 1px solid var(--orange-border); }
+  .file-touch-path { color: var(--text-mid); }
+  .file-touch-desc { color: var(--text-dim); margin-left: auto; font-family: -apple-system, sans-serif; font-size: 12px; }
+
+  .decision-banner {
+    background: rgba(245,158,11,.08);
+    border: 1px solid rgba(245,158,11,.3);
+    border-radius: 8px;
+    padding: 14px 16px;
+    margin-bottom: 24px;
+    color: var(--text-mid);
+    font-size: 13px;
+  }
+  .decision-banner strong { color: var(--orange); }
+</style>
+</head>
+<body>
+
+<div class="mockup-doc">
+
+<header class="doc-header">
+  <h1 class="doc-title">Security Control Type Sorter — concept (#302)</h1>
+  <p class="doc-sub">Security+ drill that hammers the CompTIA <strong>6×4 control matrix</strong>: 6 control TYPES (Preventive · Detective · Corrective · Deterrent · Compensating · Directive) × 4 CATEGORIES (Technical · Managerial · Operational · Physical). Two play modes proposed — let me know which to ship.</p>
+  <span class="doc-meta">target: certs/secplus.js + app.js drill scaffold</span>
+  <span class="doc-pin">🆕 fresh design — pick a mode</span>
+</header>
+
+<div class="decision-banner">
+  ⚠️ <strong>Decision needed:</strong> SY0-701 actually tests <em>both axes</em> (type AND category — e.g. "an IDS is Detective + Technical"). Mode A asks them on the same question (faster, more like exam MCQ). Mode B is two-axis drag-to-bucket (slower but more pedagogical, like a Kahoot for control taxonomy). My instinct: <strong>ship Mode A v1, add Mode B as a "Sort mode" toggle in v2</strong>. Look at both states and tell me which feels right.
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════════════
+     STATE 1 — Drill dashboard
+     ════════════════════════════════════════════════════════════════════════ -->
+<section class="state-section">
+  <div class="state-header">
+    <span class="state-title">State 1 — Drill dashboard</span>
+    <span class="state-tag">click sidebar → here</span>
+  </div>
+  <p class="state-note">Per-type mastery breakdown (6 tiles in 2×3 grid). Mode toggle at top — visible on the dashboard so users can pick their format before starting. Big "Start drill" CTA. Stats: total controls, mastered, accuracy, streak.</p>
+
+  <div class="app-mock">
+    <div class="drill-head">
+      <div>
+        <div class="drill-eyebrow">Drill · Security+</div>
+        <h2 class="drill-title">🛡 Control Type Sorter</h2>
+        <p class="drill-sub">120 security controls across 6 types × 4 categories. Hardest single concept on SY0-701 Domain 1.1.</p>
+      </div>
+      <div class="drill-stats">
+        <div><div class="drill-stat-num">38</div><div>mastered</div></div>
+        <div><div class="drill-stat-num">94</div><div>seen</div></div>
+        <div><div class="drill-stat-num">68%</div><div>accuracy</div></div>
+      </div>
+    </div>
+
+    <div class="mode-toggle">
+      <button class="mode-btn is-active">⚡ MCQ mode</button>
+      <button class="mode-btn">🗂 Sort mode</button>
+    </div>
+
+    <div class="dash">
+      <div class="dash-card">
+        <div class="dash-card-head">Mastery by control type</div>
+        <div class="dash-type-grid">
+          <div class="dash-type-row prev">
+            <span class="dash-type-icon">🔒</span>
+            <span class="dash-type-name">Preventive</span>
+            <span class="dash-type-pct">14/20</span>
+          </div>
+          <div class="dash-type-row det">
+            <span class="dash-type-icon">🔍</span>
+            <span class="dash-type-name">Detective</span>
+            <span class="dash-type-pct">9/20</span>
+          </div>
+          <div class="dash-type-row corr">
+            <span class="dash-type-icon">🔧</span>
+            <span class="dash-type-name">Corrective</span>
+            <span class="dash-type-pct">7/20</span>
+          </div>
+          <div class="dash-type-row deter">
+            <span class="dash-type-icon">⚠</span>
+            <span class="dash-type-name">Deterrent</span>
+            <span class="dash-type-pct">4/20</span>
+          </div>
+          <div class="dash-type-row comp">
+            <span class="dash-type-icon">🔄</span>
+            <span class="dash-type-name">Compensating</span>
+            <span class="dash-type-pct">3/20</span>
+          </div>
+          <div class="dash-type-row dir">
+            <span class="dash-type-icon">📋</span>
+            <span class="dash-type-name">Directive</span>
+            <span class="dash-type-pct">1/20</span>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="dash-card">
+          <div class="dash-card-head">Weakest type</div>
+          <div style="font-size:13px;color:#1a1a2e;font-weight:600;margin-bottom:6px">📋 Directive (1/20 mastered)</div>
+          <div style="font-size:11.5px;color:#6b6b90;line-height:1.5">Directive controls are the SY0-701 trap: they look like Preventive but are policy-level, not technical.</div>
+        </div>
+        <div class="dash-card" style="margin-top:12px">
+          <div class="dash-card-head">Common confusion</div>
+          <div style="font-size:11.5px;color:#4a4a6e;line-height:1.5">Detective vs Preventive — IDS is Detective (alerts), IPS is Preventive (blocks). Same hardware, different control type.</div>
+        </div>
+        <div class="dash-start-cta">🛡 Start 12-question MCQ drill →</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════════════════════════
+     STATE 2 — MCQ mode (recommended for v1)
+     ════════════════════════════════════════════════════════════════════════ -->
+<section class="state-section">
+  <div class="state-header">
+    <span class="state-title">State 2 — MCQ mode (recommended for v1)</span>
+    <span class="state-tag">⚡ stem control → pick TYPE + CATEGORY</span>
+  </div>
+  <p class="state-note">Single-question format that asks <strong>both axes at once</strong>. User picks 1 of 6 types AND 1 of 4 categories (the question isn't complete until both are picked). This mirrors how SY0-701 tests it — usually a stem like "an IDS is best classified as which type/category combination?". Fast to play (~10s/question), gives 12 questions in a typical 2-min session.</p>
+
+  <div class="app-mock">
+    <div class="ct-mcq-card">
+      <div class="ct-mcq-eyebrow">Classify the control</div>
+      <div class="ct-mcq-stem-card">
+        <div class="ct-mcq-stem-name">Intrusion Detection System (IDS)</div>
+        <div class="ct-mcq-stem-sub">Network sensor that alerts on suspicious traffic patterns matching known signatures.</div>
+        <div class="ct-mcq-stem-meta">SY0-701 · Domain 1.1 · Security controls</div>
+      </div>
+      <div class="ct-mcq-arrow">↓ pick the TYPE</div>
+      <div class="ct-mcq-grid">
+        <button class="ct-mcq-opt">
+          <span class="ct-mcq-opt-icon">🔒</span>
+          Preventive
+        </button>
+        <button class="ct-mcq-opt is-active-det">
+          <span class="ct-mcq-opt-icon">🔍</span>
+          Detective
+        </button>
+        <button class="ct-mcq-opt">
+          <span class="ct-mcq-opt-icon">🔧</span>
+          Corrective
+        </button>
+        <button class="ct-mcq-opt">
+          <span class="ct-mcq-opt-icon">⚠</span>
+          Deterrent
+        </button>
+        <button class="ct-mcq-opt">
+          <span class="ct-mcq-opt-icon">🔄</span>
+          Compensating
+        </button>
+        <button class="ct-mcq-opt">
+          <span class="ct-mcq-opt-icon">📋</span>
+          Directive
+        </button>
+      </div>
+      <div class="ct-mcq-cat-row">
+        <span class="ct-mcq-cat-row-label">↓ AND category</span>
+        <button class="ct-mcq-cat-pill is-active">Technical</button>
+        <button class="ct-mcq-cat-pill">Managerial</button>
+        <button class="ct-mcq-cat-pill">Operational</button>
+        <button class="ct-mcq-cat-pill">Physical</button>
+      </div>
+      <div class="ct-mcq-foot">
+        <span>Both axes locked in · ready to submit</span>
+        <span style="display:flex;gap:10px;align-items:center">
+          <span class="ct-mcq-progress">Q 4 / 12</span>
+          <button class="ct-mcq-submit-btn">Submit →</button>
+        </span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════════════════════════
+     STATE 3 — MCQ reveal after submit
+     ════════════════════════════════════════════════════════════════════════ -->
+<section class="state-section">
+  <div class="state-header">
+    <span class="state-title">State 3 — MCQ reveal (correct submission)</span>
+    <span class="state-tag">teaching moment for the trap</span>
+  </div>
+  <p class="state-note">Reveal panel explains why IDS is Detective (not Preventive) — the IPS-vs-IDS trap is the single most common Domain 1.1 question. Type + category both confirmed correct. Continue button advances.</p>
+
+  <div class="app-mock">
+    <div class="ct-mcq-card">
+      <div class="ct-mcq-eyebrow">Classify the control</div>
+      <div class="ct-mcq-stem-card">
+        <div class="ct-mcq-stem-name">Intrusion Detection System (IDS)</div>
+        <div class="ct-mcq-stem-sub">Network sensor that alerts on suspicious traffic patterns matching known signatures.</div>
+        <div class="ct-mcq-stem-meta">SY0-701 · Domain 1.1 · Security controls</div>
+      </div>
+      <div class="ct-mcq-arrow">↓ pick the TYPE</div>
+      <div class="ct-mcq-grid">
+        <button class="ct-mcq-opt"><span class="ct-mcq-opt-icon">🔒</span>Preventive</button>
+        <button class="ct-mcq-opt is-active-det" style="border-width:2px">
+          <span class="ct-mcq-opt-icon">🔍</span>
+          Detective ✓
+        </button>
+        <button class="ct-mcq-opt"><span class="ct-mcq-opt-icon">🔧</span>Corrective</button>
+        <button class="ct-mcq-opt"><span class="ct-mcq-opt-icon">⚠</span>Deterrent</button>
+        <button class="ct-mcq-opt"><span class="ct-mcq-opt-icon">🔄</span>Compensating</button>
+        <button class="ct-mcq-opt"><span class="ct-mcq-opt-icon">📋</span>Directive</button>
+      </div>
+      <div class="ct-mcq-cat-row">
+        <span class="ct-mcq-cat-row-label">↓ AND category</span>
+        <button class="ct-mcq-cat-pill is-active">Technical ✓</button>
+        <button class="ct-mcq-cat-pill">Managerial</button>
+        <button class="ct-mcq-cat-pill">Operational</button>
+        <button class="ct-mcq-cat-pill">Physical</button>
+      </div>
+
+      <div class="ct-reveal">
+        <div class="ct-reveal-head">Detective ✓ + Technical ✓ — the IDS trap</div>
+        <p class="ct-reveal-prose">
+          <strong>IDS detects but doesn't act</strong> — it's a sensor, alerts only. Same hardware can run as <strong>IPS</strong> (Intrusion <em>Prevention</em> System) which would be <strong>Preventive</strong> + Technical. The "I" letter is the only thing that changes — and it changes the type entirely. Common SY0-701 distractor.
+        </p>
+      </div>
+
+      <div class="ct-mcq-foot">
+        <span style="color:#16a34a">✓ Both axes correct · 4/4 streak</span>
+        <span style="display:flex;gap:10px;align-items:center">
+          <span class="ct-mcq-progress">Q 4 / 12</span>
+          <button class="ct-mcq-submit-btn">Next question →</button>
+        </span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════════════════════════
+     STATE 4 — Sort mode (drag-to-bucket alternative)
+     ════════════════════════════════════════════════════════════════════════ -->
+<section class="state-section">
+  <div class="state-header">
+    <span class="state-title">State 4 — Sort mode (alternative format, deferred to v2 IMO)</span>
+    <span class="state-tag">🗂 6 buckets · drag chips from pool</span>
+  </div>
+  <p class="state-note">Slower but more pedagogical. User gets ~12 control chips in a pool, drags each into the matching type bucket. Submit at the end gets graded all-at-once with wrong answers highlighted in red. <strong>Only sorts by TYPE</strong> — sorting by both axes simultaneously needs a 6×4 grid which doesn't fit on mobile. <strong>My instinct: defer this to v2.</strong></p>
+
+  <div class="app-mock">
+    <div class="drill-head" style="margin-bottom:14px">
+      <div>
+        <div class="drill-eyebrow">Sort mode · question 1/4</div>
+        <h2 class="drill-title" style="font-size:18px">Drag each control into its TYPE bucket</h2>
+      </div>
+      <div style="font-size:12px;color:#6b6b90">⏱ 2:14 elapsed</div>
+    </div>
+
+    <div class="ct-bucket-stage">
+      <div class="ct-bucket-pool">
+        <div class="ct-bucket-pool-h">Pool · 8 remaining</div>
+        <div class="ct-bucket-chip-row">
+          <span class="ct-bucket-chip">Security awareness training</span>
+          <span class="ct-bucket-chip">Acceptable Use Policy</span>
+          <span class="ct-bucket-chip">Hot site failover</span>
+          <span class="ct-bucket-chip">Bollards</span>
+          <span class="ct-bucket-chip">Backup restoration</span>
+          <span class="ct-bucket-chip">Mantrap (security vestibule)</span>
+          <span class="ct-bucket-chip">Lighting in parking lot</span>
+          <span class="ct-bucket-chip">Compensating WAF (legacy app)</span>
+        </div>
+      </div>
+
+      <div class="ct-bucket-grid">
+        <div class="ct-bucket ct-bucket-prev">
+          <div class="ct-bucket-h">
+            <span class="ct-bucket-icon">🔒</span>
+            <span class="ct-bucket-name">Preventive</span>
+            <span class="ct-bucket-count">2</span>
+          </div>
+          <div class="ct-bucket-content">
+            <span class="ct-bucket-item">Firewall</span>
+            <span class="ct-bucket-item">Mantrap (security vestibule)</span>
+          </div>
+        </div>
+
+        <div class="ct-bucket ct-bucket-det">
+          <div class="ct-bucket-h">
+            <span class="ct-bucket-icon">🔍</span>
+            <span class="ct-bucket-name">Detective</span>
+            <span class="ct-bucket-count">2</span>
+          </div>
+          <div class="ct-bucket-content">
+            <span class="ct-bucket-item">SIEM</span>
+            <span class="ct-bucket-item">CCTV review</span>
+          </div>
+        </div>
+
+        <div class="ct-bucket ct-bucket-corr">
+          <div class="ct-bucket-h">
+            <span class="ct-bucket-icon">🔧</span>
+            <span class="ct-bucket-name">Corrective</span>
+            <span class="ct-bucket-count">1</span>
+          </div>
+          <div class="ct-bucket-content">
+            <span class="ct-bucket-item">Backup restoration</span>
+          </div>
+        </div>
+
+        <div class="ct-bucket ct-bucket-deter">
+          <div class="ct-bucket-h">
+            <span class="ct-bucket-icon">⚠</span>
+            <span class="ct-bucket-name">Deterrent</span>
+            <span class="ct-bucket-count">1</span>
+          </div>
+          <div class="ct-bucket-content">
+            <span class="ct-bucket-item">Lighting in parking lot</span>
+          </div>
+        </div>
+
+        <div class="ct-bucket ct-bucket-comp">
+          <div class="ct-bucket-h">
+            <span class="ct-bucket-icon">🔄</span>
+            <span class="ct-bucket-name">Compensating</span>
+            <span class="ct-bucket-count">1</span>
+          </div>
+          <div class="ct-bucket-content">
+            <span class="ct-bucket-item">Compensating WAF (legacy app)</span>
+          </div>
+        </div>
+
+        <div class="ct-bucket ct-bucket-dir">
+          <div class="ct-bucket-h">
+            <span class="ct-bucket-icon">📋</span>
+            <span class="ct-bucket-name">Directive</span>
+            <span class="ct-bucket-count">1</span>
+          </div>
+          <div class="ct-bucket-content">
+            <span class="ct-bucket-item">Acceptable Use Policy</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="ct-bucket-foot">
+        <span>4 chips left in pool · drag to a bucket</span>
+        <button class="ct-bucket-submit">Submit sort →</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════════════════════════
+     STATE 5 — Sort mode reveal (one wrong, partial credit)
+     ════════════════════════════════════════════════════════════════════════ -->
+<section class="state-section">
+  <div class="state-header">
+    <span class="state-title">State 5 — Sort mode reveal (one wrong placement)</span>
+    <span class="state-tag">red strikethrough on misplaced chips</span>
+  </div>
+  <p class="state-note">User submitted with "Lighting in parking lot" in Deterrent — but it's actually Detective (the LIGHT itself doesn't deter; CCTV needs the light to detect). Grade card shows 11/12 + the one mismatch. Partial credit, no all-or-nothing.</p>
+
+  <div class="app-mock">
+    <div class="ct-bucket-stage">
+      <div style="background:rgba(22,163,74,.06);border:1px solid rgba(22,163,74,.3);padding:12px 14px;border-radius:8px;margin-bottom:14px;font-size:13px">
+        <strong style="color:#16a34a">11/12 correct</strong> — one chip was misplaced. The hint card on the left explains why.
+      </div>
+
+      <div class="ct-bucket-grid" style="grid-template-columns:repeat(3,1fr)">
+        <div class="ct-bucket ct-bucket-prev">
+          <div class="ct-bucket-h"><span class="ct-bucket-icon">🔒</span><span class="ct-bucket-name">Preventive</span><span class="ct-bucket-count" style="color:#16a34a">2/2 ✓</span></div>
+          <div class="ct-bucket-content">
+            <span class="ct-bucket-item">Firewall</span>
+            <span class="ct-bucket-item">Mantrap</span>
+          </div>
+        </div>
+        <div class="ct-bucket ct-bucket-det">
+          <div class="ct-bucket-h"><span class="ct-bucket-icon">🔍</span><span class="ct-bucket-name">Detective</span><span class="ct-bucket-count" style="color:#16a34a">2/2 ✓</span></div>
+          <div class="ct-bucket-content">
+            <span class="ct-bucket-item">SIEM</span>
+            <span class="ct-bucket-item">CCTV review</span>
+          </div>
+        </div>
+        <div class="ct-bucket ct-bucket-deter">
+          <div class="ct-bucket-h"><span class="ct-bucket-icon">⚠</span><span class="ct-bucket-name">Deterrent</span><span class="ct-bucket-count" style="color:#dc2626">0/1 ✗</span></div>
+          <div class="ct-bucket-content">
+            <span class="ct-bucket-item is-wrong">Lighting → was Detective</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="ct-reveal">
+        <div class="ct-reveal-head">Why "lighting" is Detective, not Deterrent</div>
+        <p class="ct-reveal-prose">
+          The trap: lighting <em>seems</em> to deter intruders. But CompTIA classifies the <strong>lighting itself as Detective</strong> — the camera/CCTV system uses the light to capture identifiable footage. <strong>Deterrents</strong> are explicit warnings (signs, dogs, security guards). The most reliable way to tell: ask "does this thing actively stop the attack? warn the attacker? or help us see?". Detective = help us see.
+        </p>
+      </div>
+
+      <div class="ct-bucket-foot">
+        <span style="color:#16a34a">+11 mastered, 1 reset</span>
+        <button class="ct-bucket-submit">Next round →</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════════════════════════
+     STATE 6 — Lessons (the 6×4 matrix cheatsheet)
+     ════════════════════════════════════════════════════════════════════════ -->
+<section class="state-section">
+  <div class="state-header">
+    <span class="state-title">State 6 — Lessons cheatsheet (the full 6×4 matrix)</span>
+    <span class="state-tag">📚 reference tab inside drill</span>
+  </div>
+  <p class="state-note">A single reference card showing all 24 cells with 1-2 example controls each. This is the cheatsheet users keep coming back to between drill sessions. Color-coded rows match the type colors used throughout the drill.</p>
+
+  <div class="app-mock">
+    <div class="lesson-card">
+      <div class="lesson-head">
+        <div class="lesson-icon">🛡</div>
+        <div>
+          <div class="lesson-title">The CompTIA 6×4 control matrix</div>
+          <div class="lesson-sub">SY0-701 Domain 1.1 · 24 cells with example controls</div>
+        </div>
+      </div>
+
+      <div class="lesson-matrix">
+        <div class="lm-h"></div>
+        <div class="lm-h">Technical</div>
+        <div class="lm-h">Managerial</div>
+        <div class="lm-h">Operational</div>
+        <div class="lm-h">Physical</div>
+
+        <div class="lm-h is-row" style="color:var(--type-prev)">🔒 Preventive</div>
+        <div class="lm-cell">Firewall, IPS, encryption<em>blocks attacks at the wire</em></div>
+        <div class="lm-cell">Onboarding policy, BYOD ban<em>policy stops bad outcomes</em></div>
+        <div class="lm-cell">Job rotation, separation of duties<em>process prevents fraud</em></div>
+        <div class="lm-cell">Mantrap, locked server room<em>physical access stop</em></div>
+
+        <div class="lm-h is-row" style="color:var(--type-det)">🔍 Detective</div>
+        <div class="lm-cell">IDS, SIEM, file integrity<em>alerts on activity</em></div>
+        <div class="lm-cell">Audit, log review process<em>finds policy violations</em></div>
+        <div class="lm-cell">CCTV review, security guards<em>spots in-progress events</em></div>
+        <div class="lm-cell">Motion sensors, lighting<em>detects intruders</em></div>
+
+        <div class="lm-h is-row" style="color:var(--type-corr)">🔧 Corrective</div>
+        <div class="lm-cell">Backup restoration, AV cleanup<em>fixes after the fact</em></div>
+        <div class="lm-cell">Incident response plan<em>guides recovery</em></div>
+        <div class="lm-cell">Disaster recovery drill<em>tests recovery process</em></div>
+        <div class="lm-cell">Fire suppression (post-fire)<em>limits damage</em></div>
+
+        <div class="lm-h is-row" style="color:var(--type-deter)">⚠ Deterrent</div>
+        <div class="lm-cell">Login banner ("authorised use only")<em>scares off opportunists</em></div>
+        <div class="lm-cell">Posted disciplinary policy<em>warns against violations</em></div>
+        <div class="lm-cell">Visible security guard<em>presence-as-deterrent</em></div>
+        <div class="lm-cell">"Beware of dog" sign<em>warning, not action</em></div>
+
+        <div class="lm-h is-row" style="color:var(--type-comp)">🔄 Compensating</div>
+        <div class="lm-cell">WAF for legacy app w/ no SDLC<em>covers a gap</em></div>
+        <div class="lm-cell">Manual approval for risky txn<em>fills control gap</em></div>
+        <div class="lm-cell">Extra reviewer in absence<em>covers when primary unavailable</em></div>
+        <div class="lm-cell">Temporary lock + guard<em>fills physical gap</em></div>
+
+        <div class="lm-h is-row" style="color:var(--type-dir)">📋 Directive</div>
+        <div class="lm-cell">SSO config requirement<em>policy directs technical impl</em></div>
+        <div class="lm-cell">Acceptable Use Policy, NIST CSF<em>direction-setting policy</em></div>
+        <div class="lm-cell">Standard operating procedure<em>directs how work is done</em></div>
+        <div class="lm-cell">Posted evacuation route<em>directs physical action</em></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════════════════════════
+     STATE 7 — End of session
+     ════════════════════════════════════════════════════════════════════════ -->
+<section class="state-section">
+  <div class="state-header">
+    <span class="state-title">State 7 — End-of-session card</span>
+    <span class="state-tag">12/12 done · weakest cell callout</span>
+  </div>
+  <p class="state-note">Standard end-of-session pattern. Score, accuracy, +mastered count, streak update. Smart suggestion bubble points to the weakest cell so the next session can target it.</p>
+
+  <div class="app-mock" style="background:#f4f5fa;padding:48px 32px">
+    <div class="eos-card">
+      <div class="eos-burst">🛡</div>
+      <h2 class="eos-title">Drill complete.</h2>
+      <p class="eos-sub">10/12 right · weakest cell: Compensating + Operational. Next drill weighted there.</p>
+      <div class="eos-score-row">
+        <div class="eos-score-tile"><div class="eos-score-num">83%</div><div class="eos-score-lbl">accuracy</div></div>
+        <div class="eos-score-tile"><div class="eos-score-num">+7</div><div class="eos-score-lbl">mastered</div></div>
+        <div class="eos-score-tile"><div class="eos-score-num">12 🔥</div><div class="eos-score-lbl">day streak</div></div>
+      </div>
+      <div style="font-size:12px;color:#6b6b90;text-align:left;background:#fff;padding:10px 12px;border-radius:6px;border:1px solid #e5e7f0;margin-bottom:16px">
+        💡 <strong>Common confusion you fixed:</strong> IPS vs IDS — IPS is Preventive, IDS is Detective. Both Technical.
+      </div>
+      <div class="eos-actions">
+        <button class="eos-btn eos-btn-primary">Practice again →</button>
+        <button class="eos-btn eos-btn-secondary">Back to dashboard</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════════════════════════
+     IMPLEMENTATION NOTES
+     ════════════════════════════════════════════════════════════════════════ -->
+<section class="state-section">
+  <div class="state-header">
+    <span class="state-title">Implementation notes</span>
+    <span class="state-tag">scope · schema · files · ship plan</span>
+  </div>
+
+  <div class="impl-notes">
+    <h3>Recommended ship plan</h3>
+    <ul>
+      <li><strong>v1: MCQ mode only</strong>. Covers 80% of pedagogical value, ships in 1-2 days. The 6+4 button grid is mobile-friendly out of the box.</li>
+      <li><strong>v2: Sort mode</strong> (drag-to-bucket). Adds depth for desktop users. Different ship — needs HTML5 drag-and-drop wiring + tablet/mobile fallback (long-press → tap-to-place). 2-3 days.</li>
+      <li>Mode toggle on dashboard makes both addressable from same drill entry. v1 ships with toggle UI but Sort tab disabled with "coming soon" pill.</li>
+    </ul>
+
+    <h3>Drill mechanics (MCQ mode)</h3>
+    <ul>
+      <li><strong>Pool size</strong>: ~120 controls (20 per type × 6 types).</li>
+      <li><strong>Question format</strong>: stem = control name + 1-line description + objective tag. Two answers required: 1 of 6 types + 1 of 4 categories. Submit only enabled when both axes locked in.</li>
+      <li><strong>Scoring</strong>: per-control mastery on the COMBINED axis (24 possible cells × 5 controls ≈ 120 mastery slots). Mastered = 3 correct in a row. Wrong on either axis resets to 0.</li>
+      <li><strong>Session length</strong>: 12 questions weighted toward weakest cells.</li>
+    </ul>
+
+    <h3>Schema (cert pack extension)</h3>
+    <p style="color:var(--text-mid);font-size:13px;margin-bottom:8px">Lives in <code>certs/secplus.js</code>.</p>
+    <div class="schema-block">
+<span class="key">controlTypes</span>: {
+  <span class="key">prev</span>:  { label: <span class="val">'Preventive'</span>,   icon: <span class="val">'🔒'</span>, color: <span class="val">'#5b4fdb'</span>, gloss: <span class="val">'Stops attack before it happens'</span> },
+  <span class="key">det</span>:   { label: <span class="val">'Detective'</span>,    icon: <span class="val">'🔍'</span>, color: <span class="val">'#06b6d4'</span>, gloss: <span class="val">'Finds attack in progress / after'</span> },
+  <span class="key">corr</span>:  { label: <span class="val">'Corrective'</span>,   icon: <span class="val">'🔧'</span>, color: <span class="val">'#16a34a'</span>, gloss: <span class="val">'Fixes after attack succeeds'</span> },
+  <span class="key">deter</span>: { label: <span class="val">'Deterrent'</span>,    icon: <span class="val">'⚠'</span>,  color: <span class="val">'#f59e0b'</span>, gloss: <span class="val">'Discourages attempt (warning)'</span> },
+  <span class="key">comp</span>:  { label: <span class="val">'Compensating'</span>, icon: <span class="val">'🔄'</span>, color: <span class="val">'#d946ef'</span>, gloss: <span class="val">'Fills gap when primary control fails'</span> },
+  <span class="key">dir</span>:   { label: <span class="val">'Directive'</span>,    icon: <span class="val">'📋'</span>, color: <span class="val">'#6b6b90'</span>, gloss: <span class="val">'Policy that directs other controls'</span> }
+},
+<span class="key">controlCategories</span>: {
+  <span class="key">tech</span>:  { label: <span class="val">'Technical'</span>,   gloss: <span class="val">'Hardware/software/firmware'</span> },
+  <span class="key">mgmt</span>:  { label: <span class="val">'Managerial'</span>,  gloss: <span class="val">'Risk/policy/governance level'</span> },
+  <span class="key">ops</span>:   { label: <span class="val">'Operational'</span>, gloss: <span class="val">'People/process at runtime'</span> },
+  <span class="key">phys</span>:  { label: <span class="val">'Physical'</span>,    gloss: <span class="val">'Tangible barriers/sensors'</span> }
+},
+<span class="key">controls</span>: [
+  {
+    <span class="key">id</span>: <span class="val">'ids'</span>,
+    <span class="key">name</span>: <span class="val">'Intrusion Detection System (IDS)'</span>,
+    <span class="key">desc</span>: <span class="val">'Network sensor that alerts on suspicious traffic patterns'</span>,
+    <span class="key">type</span>: <span class="val">'det'</span>,
+    <span class="key">cat</span>: <span class="val">'tech'</span>,
+    <span class="key">obj</span>: <span class="val">'1.1'</span>,
+    <span class="key">why</span>: <span class="val">'Sensor only — alerts but doesn\'t block. IPS would be Preventive + Technical.'</span>,
+    <span class="key">trap</span>: <span class="val">'IPS'</span>            <span class="com">// optional: cross-link to common confusion</span>
+  },
+  <span class="com">// ... 119 more</span>
+]</div>
+
+    <h3>Storage + cloud-sync</h3>
+    <ul>
+      <li>New <code>STORAGE.CTS_MASTERY</code> + <code>STORAGE.CTS_LESSONS</code> keys.</li>
+      <li>Add <code>'nplus_cts_mastery'</code> + <code>'nplus_cts_lessons'</code> to <code>USER_DATA_KEYS</code>.</li>
+      <li>Mastery stored per-control-id (not per-cell) so the same control answered multiple times accumulates correctly.</li>
+    </ul>
+
+    <h4>Files touched (v1 MCQ)</h4>
+    <div class="file-touch-list">
+      <div class="file-touch">
+        <span class="file-touch-action edit">edit</span>
+        <span class="file-touch-path">certs/secplus.js</span>
+        <span class="file-touch-desc">Add 120 controls + 6 types + 4 categories + lesson matrix data (~280 LOC)</span>
+      </div>
+      <div class="file-touch">
+        <span class="file-touch-action edit">edit</span>
+        <span class="file-touch-path">app.js</span>
+        <span class="file-touch-desc">createDrillScaffold call + cert-aware aliases + sidebar entry + mode toggle (Sort = disabled v1) (~140 LOC)</span>
+      </div>
+      <div class="file-touch">
+        <span class="file-touch-action edit">edit</span>
+        <span class="file-touch-path">styles.css</span>
+        <span class="file-touch-desc">.cts-mcq-card · 6-button type grid · 4-pill cat row · matrix lesson cheatsheet (~180 LOC)</span>
+      </div>
+      <div class="file-touch">
+        <span class="file-touch-action edit">edit</span>
+        <span class="file-touch-path">cloud-store.js</span>
+        <span class="file-touch-desc">+2 keys to USER_DATA_KEYS</span>
+      </div>
+      <div class="file-touch">
+        <span class="file-touch-action edit">edit</span>
+        <span class="file-touch-path">tests/uat.js</span>
+        <span class="file-touch-desc">~16 regression guards (matches AB pattern + new dual-axis assertions)</span>
+      </div>
+    </div>
+
+    <h3>Out of scope (v1)</h3>
+    <ul>
+      <li>Sort mode (drag-to-bucket). Toggle UI ships disabled with "coming v2" pill — wiring it up is its own ship.</li>
+      <li>Per-cell mastery heatmap on dashboard (the 6×4 grid lit up by % mastered). Could ship later if users want it.</li>
+      <li>Network+ port — control taxonomy is similar but Network+ doesn't test it as hard. Defer.</li>
+    </ul>
+  </div>
+</section>
+
+</div>
+</body>
+</html>

@@ -86,6 +86,8 @@
     'nplus_ab_lessons',
     'nplus_sab_mastery',
     'nplus_sab_lessons',
+    'nplus_amm_mastery',  // v4.94.0: Attack-to-Mitigation Match
+    'nplus_amm_lessons',
     'nplus_os_mastery',
     'nplus_os_lessons',
     'nplus_cb_mastery',
