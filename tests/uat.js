@@ -301,7 +301,7 @@ test('Validation in runSessionStep', js.includes('aiValidateQuestions(apiKey, qu
 
 // ── Analytics v2 (v4.5) ──
 console.log('\n\x1b[1m── ANALYTICS v2 (v4.5) ──\x1b[0m');
-test('APP_VERSION is 4.98.5', js.includes("const APP_VERSION = '4.98.5"));
+test('APP_VERSION is 4.98.6', js.includes("const APP_VERSION = '4.98.6"));
 test('getDailyGoal function', js.includes('function getDailyGoal('));
 test('renderDailyGoal function', js.includes('function renderDailyGoal('));
 test('editDailyGoal function', js.includes('function editDailyGoal('));
@@ -315,7 +315,7 @@ test('CSS: .topic-domain-group', css.includes('.topic-domain-group'));
 test('CSS: .daily-goal-card', css.includes('.daily-goal-card'));
 test('CSS: .advanced-section', css.includes('.advanced-section'));
 test('CSS: .hero-stats-strip', css.includes('.hero-stats-strip'));
-test('SW cache bumped to v4.98.5', sw.includes('netplus-v4.98.5'));
+test('SW cache bumped to v4.98.6', sw.includes('netplus-v4.98.6'));
 test('Family Drill: STORAGE.PORT_FAMILY_BEST', js.includes("PORT_FAMILY_BEST:"));
 test('Family Drill: ptMode handles family', js.includes("ptMode === 'family'"));
 test('Family Drill: HTML mode button', html.includes('id="pt-mode-family"'));
@@ -16901,8 +16901,8 @@ test('v4.97.0 IRW: irwUpdateScenarioMastery saves on completion',
   /function irwSaveMastery\([\s\S]{0,200}_cloudFlush\(STORAGE\.IRW_MASTERY\)/.test(js));
 test('v4.97.0 IRW: irwIsScenarioUnlocked respects unlockAfter',
   /function irwIsScenarioUnlocked\([\s\S]{0,400}unlockAfter/.test(js));
-test('v4.97.0 IRW: APP_SIDEBAR_DRILLS_SECPLUS includes IRW entry',
-  /APP_SIDEBAR_DRILLS_SECPLUS\s*=\s*\[[\s\S]{0,800}'IR War Room'/.test(js));
+test('v4.97.0 IRW: sidebar includes IRW entry (v4.98.6: now in Practice section, not Drills)',
+  /APP_SIDEBAR_PRACTICE_SECPLUS_TAIL\s*=\s*\[[\s\S]{0,800}'IR War Room'/.test(js));
 test('v4.97.0 IRW: SIDEBAR_ACTIVE_MAP has irw entry',
   /'irw':\s*'irw'/.test(js));
 test('v4.97.0 IRW: TOPBAR_CRUMBS has irw entry',
@@ -17187,8 +17187,8 @@ test('v4.98.0 PHT: phtSubmitDecision computes flag-pct + decisionCorrect',
 test('v4.98.0 PHT: phtUpdateScenarioMastery saves on completion',
   /function phtUpdateScenarioMastery\(/.test(js) &&
   /function phtSaveMastery\([\s\S]{0,300}_cloudFlush\(STORAGE\.PHT_MASTERY\)/.test(js));
-test('v4.98.0 PHT: APP_SIDEBAR_DRILLS_SECPLUS includes PHT entry',
-  /APP_SIDEBAR_DRILLS_SECPLUS\s*=\s*\[[\s\S]{0,1000}'Phishing Triage'/.test(js));
+test('v4.98.0 PHT: sidebar includes PHT entry (v4.98.6: now in Practice section, not Drills)',
+  /APP_SIDEBAR_PRACTICE_SECPLUS_TAIL\s*=\s*\[[\s\S]{0,1000}'Phishing Triage'/.test(js));
 test('v4.98.0 PHT: SIDEBAR_ACTIVE_MAP has pht entry',
   /'pht':\s*'pht'/.test(js));
 test('v4.98.0 PHT: TOPBAR_CRUMBS has pht entry',
@@ -17498,6 +17498,44 @@ test('v4.98.5 lock UI: prereq banner uses normal-flow position (not absolute)',
     return irwBanner && phtBanner &&
            !/position:\s*absolute/.test(irwBanner[0]) &&
            !/position:\s*absolute/.test(phtBanner[0]);
+  })());
+
+// ============================================================================
+// v4.98.6 — Sec+ Practice section cert-aware: IRW + PHT replace TB + ACL leakage
+// ============================================================================
+test('v4.98.6 Sec+ practice: APP_SIDEBAR_PRACTICE_BASE has 3 base items (Home/Progress/Analytics)',
+  (() => {
+    const m = js.match(/const APP_SIDEBAR_PRACTICE_BASE\s*=\s*\[([\s\S]+?)\];/);
+    if (!m) return false;
+    return /'setup'/.test(m[1]) && /'progress'/.test(m[1]) && /'analytics'/.test(m[1]);
+  })());
+test('v4.98.6 Sec+ practice: NETPLUS tail has TB + ACL only (the Network+ flagships)',
+  (() => {
+    const m = js.match(/const APP_SIDEBAR_PRACTICE_NETPLUS_TAIL\s*=\s*\[([\s\S]+?)\];/);
+    if (!m) return false;
+    return /'topology-builder'/.test(m[1]) && /'acl'/.test(m[1]);
+  })());
+test('v4.98.6 Sec+ practice: SECPLUS tail has IRW + PHT only (the Sec+ flagships)',
+  (() => {
+    const m = js.match(/const APP_SIDEBAR_PRACTICE_SECPLUS_TAIL\s*=\s*\[([\s\S]+?)\];/);
+    if (!m) return false;
+    return /'irw'/.test(m[1]) && /'pht'/.test(m[1]);
+  })());
+test('v4.98.6 Sec+ practice: APP_SIDEBAR_PRACTICE concatenates BASE + cert-aware TAIL',
+  /APP_SIDEBAR_PRACTICE\s*=\s*\[\s*\.\.\.APP_SIDEBAR_PRACTICE_BASE,\s*\.\.\.\(\(typeof CURRENT_CERT[\s\S]{0,200}APP_SIDEBAR_PRACTICE_SECPLUS_TAIL[\s\S]{0,200}APP_SIDEBAR_PRACTICE_NETPLUS_TAIL/.test(js));
+test('v4.98.6 Sec+ practice: APP_SIDEBAR_DRILLS_SECPLUS no longer contains IRW or PHT entries',
+  // IRW + PHT moved out of Drills into Practice — they shouldn\'t appear in
+  // the Drills array anymore (otherwise sidebar duplicates them).
+  (() => {
+    const m = js.match(/const APP_SIDEBAR_DRILLS_SECPLUS\s*=\s*\[([\s\S]+?)\];/);
+    if (!m) return false;
+    return !/page:\s*'irw'/.test(m[1]) && !/page:\s*'pht'/.test(m[1]);
+  })());
+test('v4.98.6 Sec+ practice: APP_SIDEBAR_DRILLS_SECPLUS still has the 3 supporting drills',
+  (() => {
+    const m = js.match(/const APP_SIDEBAR_DRILLS_SECPLUS\s*=\s*\[([\s\S]+?)\];/);
+    if (!m) return false;
+    return /'acronyms'/.test(m[1]) && /'amm'/.test(m[1]) && /'cts'/.test(m[1]);
   })());
 
 // ── Summary ──

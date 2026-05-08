@@ -1,9 +1,9 @@
 // ══════════════════════════════════════════
-// Network+ AI Quiz — app.js  v4.98.5
+// Network+ AI Quiz — app.js  v4.98.6
 // ══════════════════════════════════════════
 
 // ── CONSTANTS ──
-const APP_VERSION = '4.98.5';
+const APP_VERSION = '4.98.6';
 
 // ══════════════════════════════════════════════════════════════════════════
 // CERT PACK ARCHITECTURE (v4.86.0 Phase 1A engine refactor)
@@ -38891,12 +38891,28 @@ function aclCloseCoachModal() {
 // Two sections: Practice (core study surfaces) + Drills (muscle-memory reps).
 // Each item carries page-id + handler + optional icon. Active state is synced
 // from showPage() via updateSidebarActiveState().
-const APP_SIDEBAR_PRACTICE = [
+// v4.98.6: Practice section is cert-aware so each cert's flagships sit in
+// the top-level practice slot \u2014 Network+ shows TB + ACL (its flagships),
+// Sec+ shows IR War Room + Phishing Triage (its flagships). Previously TB
+// + ACL leaked onto Sec+ because the Practice array was unconditional.
+const APP_SIDEBAR_PRACTICE_BASE = [
   { page: 'setup',             label: 'Home',             icon: '\u2302', handler: () => goSetup() },
   { page: 'progress',          label: 'Progress',         icon: '\u25A4', handler: () => { showPage('progress'); if (typeof renderProgressPage === 'function') renderProgressPage(); } },
-  { page: 'analytics',         label: 'Analytics',        icon: '\u25A9', handler: () => { showPage('analytics'); if (typeof renderAnalytics === 'function') renderAnalytics(); } },
+  { page: 'analytics',         label: 'Analytics',        icon: '\u25A9', handler: () => { showPage('analytics'); if (typeof renderAnalytics === 'function') renderAnalytics(); } }
+];
+const APP_SIDEBAR_PRACTICE_NETPLUS_TAIL = [
   { page: 'topology-builder',  label: 'Network Builder',  icon: '\u25C7', handler: () => { showPage('topology-builder'); if (typeof openTopologyBuilder === 'function') openTopologyBuilder(); } },
   { page: 'acl',               label: 'ACL Builder',      icon: '\u25A3', handler: () => { showPage('acl'); if (typeof openAclBuilder === 'function') openAclBuilder(); } }
+];
+const APP_SIDEBAR_PRACTICE_SECPLUS_TAIL = [
+  { page: 'irw',               label: 'IR War Room',      icon: '\u26A0', handler: () => { showPage('irw'); if (typeof startIncidentResponseWarRoom === 'function') startIncidentResponseWarRoom(); } },
+  { page: 'pht',               label: 'Phishing Triage',  icon: '\u2709', handler: () => { showPage('pht'); if (typeof startPhishingTriageLab === 'function') startPhishingTriageLab(); } }
+];
+const APP_SIDEBAR_PRACTICE = [
+  ...APP_SIDEBAR_PRACTICE_BASE,
+  ...((typeof CURRENT_CERT !== 'undefined' && CURRENT_CERT === 'secplus')
+    ? APP_SIDEBAR_PRACTICE_SECPLUS_TAIL
+    : APP_SIDEBAR_PRACTICE_NETPLUS_TAIL)
 ];
 // v4.54.1: Settings section (own sidebar section so it's visually separate from study tools)
 const APP_SIDEBAR_SETTINGS = [
@@ -38925,11 +38941,11 @@ const APP_SIDEBAR_DRILLS = [
 const APP_SIDEBAR_DRILLS_SECPLUS = [
   { page: 'acronyms', label: 'Acronym Blitz', handler: () => { showPage('acronyms'); if (typeof startAcronymBlitz === 'function') startAcronymBlitz(); } },
   { page: 'amm', label: 'Attack-to-Mitigation', handler: () => { showPage('amm'); if (typeof startAttackMitigation === 'function') startAttackMitigation(); } },
-  { page: 'cts', label: 'Control Type Sorter', handler: () => { showPage('cts'); if (typeof startControlTypeSorter === 'function') startControlTypeSorter(); } },
-  // v4.97.0 — Incident Response War Room (flagship #1, SY0-701 Domain 4)
-  { page: 'irw', label: 'IR War Room', handler: () => { showPage('irw'); if (typeof startIncidentResponseWarRoom === 'function') startIncidentResponseWarRoom(); } },
-  // v4.98.0 — Phishing Triage Lab (flagship #2, SY0-701 Domain 2)
-  { page: 'pht', label: 'Phishing Triage', handler: () => { showPage('pht'); if (typeof startPhishingTriageLab === 'function') startPhishingTriageLab(); } }
+  { page: 'cts', label: 'Control Type Sorter', handler: () => { showPage('cts'); if (typeof startControlTypeSorter === 'function') startControlTypeSorter(); } }
+  // v4.98.6: IR War Room (#312) + Phishing Triage Lab (#313) moved to the
+  // Practice section as Sec+ flagships — they no longer appear here so the
+  // sidebar isn't duplicating them. Mirrors the Network+ pattern where the
+  // flagships (TB + ACL) live in Practice + the supporting drills live here.
 ];
 
 // Map arbitrary page names to their sidebar highlight target. Quiz/exam/review
