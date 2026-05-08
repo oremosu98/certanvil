@@ -1,9 +1,9 @@
 // ══════════════════════════════════════════
-// Network+ AI Quiz — app.js  v4.95.1
+// Network+ AI Quiz — app.js  v4.96.0
 // ══════════════════════════════════════════
 
 // ── CONSTANTS ──
-const APP_VERSION = '4.95.1';
+const APP_VERSION = '4.96.0';
 
 // ══════════════════════════════════════════════════════════════════════════
 // CERT PACK ARCHITECTURE (v4.86.0 Phase 1A engine refactor)
@@ -301,6 +301,9 @@ const STORAGE = {
   AMM_LESSONS: 'nplus_amm_lessons',
   CTS_MASTERY: 'nplus_cts_mastery',  // v4.95.0: Security+ Control Type Sorter drill
   CTS_LESSONS: 'nplus_cts_lessons',
+  PT_MASTERY:  'nplus_pt_mastery',   // v4.96.0: Network+ Packet Trace drill (per-scenario)
+  PT_LESSONS:  'nplus_pt_lessons',
+  PT_RESUME:   'nplus_pt_resume',    // mid-scenario resume state
   OS_MASTERY: 'nplus_os_mastery',
   OS_LESSONS: 'nplus_os_lessons',
   CB_MASTERY: 'nplus_cb_mastery',
@@ -32300,6 +32303,19 @@ const CTS_CAT_IDS = Object.keys(CTS_CATEGORIES);
 const CTS_LESSONS = _USE_SECPLUS_CTS && Array.isArray(CERT_PACK.controlMatrixLessons)
   ? CERT_PACK.controlMatrixLessons : [];
 
+// ── Packet Trace Drill (v4.96.0, issue #305) ────────────────────────────
+// Network+-only drill: 5 curated scenarios (v1) walking a packet through a
+// network hop-by-hop, with an MCQ at each step. Distinct from the Topology
+// Builder's free-form packet trace — this is curated scenarios with mastery
+// tracking + lesson cheatsheets. Visual contract locked to mockup State 2
+// (yellow trace stage + animated orange-amber dot + caption card + MCQ panel).
+const _NETPLUS_HAS_PT = typeof CERT_PACK === 'object' && CERT_PACK !== null
+  && Array.isArray(CERT_PACK.packetTraceScenarios) && CERT_PACK.packetTraceScenarios.length > 0;
+const _USE_NETPLUS_PT = (typeof CURRENT_CERT !== 'undefined') && CURRENT_CERT === 'netplus' && _NETPLUS_HAS_PT;
+const PT_DATA = _USE_NETPLUS_PT ? CERT_PACK.packetTraceScenarios : [];
+const PT_LESSONS = _USE_NETPLUS_PT && Array.isArray(CERT_PACK.packetTraceLessons)
+  ? CERT_PACK.packetTraceLessons : [];
+
 // ── Acronym Blitz state ──
 let abQ = null, abIdx = 0, abCorrect = 0, abTotal = 0, abStreak = 0;
 let abMode = 'adaptive', abFocusCat = null, abActiveLesson = null;
@@ -33494,6 +33510,468 @@ function startControlTypeSorter() {
   if (card) card.classList.remove('is-hidden');
   if (endCard) endCard.classList.add('is-hidden');
   ctsNextQuestion();
+}
+
+// ── Packet Trace Drill (v4.96.0, issue #305) ────────────────────────────
+// Network+-only drill walking a packet through curated networks hop-by-hop.
+// 5 scenarios at v1 (~21 step questions). Visual contract: yellow trace stage
+// with animated orange-amber packet dot + caption card + MCQ panel beneath.
+// State machine:
+//   - Dashboard (scenario picker) → user picks a scenario → Practice (in-trace)
+//   - Within a scenario: step 1..N, each step pins packet to a device, asks MCQ
+//   - Wrong → reveal explanation, advance anyway (teaching moment)
+//   - Right → reveal explanation, advance
+//   - Last step → end-of-scenario card, mastery if all correct in this run
+let ptrScenario = null, ptrStepIdx = 0, ptrCorrectThisRun = 0;
+let ptrAnswered = false, ptrPickedIdx = null;
+
+function getPtrMastery() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(STORAGE.PT_MASTERY) || 'null');
+    if (raw && raw.perScenario) return raw;
+  } catch (_) {}
+  return ptrInitMastery();
+}
+
+function ptrInitMastery() {
+  const m = { perScenario: {}, totalAttempted: 0, totalCorrect: 0 };
+  PT_DATA.forEach(s => { m.perScenario[s.id] = { mastered: false, runs: 0, bestStepsCorrect: 0, totalSteps: s.steps.length, lastAttemptAt: null }; });
+  return m;
+}
+
+function savePtrMastery(m) {
+  try { localStorage.setItem(STORAGE.PT_MASTERY, JSON.stringify(m)); _cloudFlush(STORAGE.PT_MASTERY); } catch (_) {}
+}
+
+function ptrSaveResume(state) {
+  try {
+    if (state == null) localStorage.removeItem(STORAGE.PT_RESUME);
+    else localStorage.setItem(STORAGE.PT_RESUME, JSON.stringify(state));
+    _cloudFlush(STORAGE.PT_RESUME);
+  } catch (_) {}
+}
+
+function ptrGetResume() {
+  try { return JSON.parse(localStorage.getItem(STORAGE.PT_RESUME) || 'null'); } catch (_) { return null; }
+}
+
+function ptrIsScenarioUnlocked(scenario) {
+  if (!scenario.unlockAfter || scenario.unlockAfter.length === 0) return true;
+  const m = getPtrMastery();
+  return scenario.unlockAfter.every(reqId => (m.perScenario[reqId] || {}).mastered);
+}
+
+// Shared SVG renderer — reads JSON network description, returns SVG string.
+// Devices supported: pc, laptop, switch, router, server. Unknown = generic rect.
+function _renderTraceSvg(network, packetAtId, opts) {
+  opts = opts || {};
+  const w = 600, h = 320;
+  let out = '<svg viewBox="0 0 ' + w + ' ' + h + '" xmlns="http://www.w3.org/2000/svg">';
+
+  // Subnet boxes (background — under everything)
+  (network.subnets || []).forEach(sn => {
+    const fill = sn.color === 'amber' ? 'rgba(217,119,6,.08)'
+               : sn.color === 'purple' ? 'rgba(91,79,219,.08)'
+               : 'rgba(107,107,144,.08)';
+    const stroke = sn.color === 'amber' ? 'rgba(217,119,6,.3)'
+                 : sn.color === 'purple' ? 'rgba(91,79,219,.3)'
+                 : 'rgba(107,107,144,.3)';
+    const text = sn.color === 'amber' ? '#d97706'
+               : sn.color === 'purple' ? '#5b4fdb'
+               : '#6b6b90';
+    out += '<rect x="' + sn.boxX + '" y="' + sn.boxY + '" width="' + sn.boxW + '" height="' + sn.boxH + '" rx="4" fill="' + fill + '" stroke="' + stroke + '" stroke-width="1"/>';
+    out += '<text x="' + (sn.boxX + sn.boxW/2) + '" y="' + (sn.boxY + sn.boxH/2 + 4) + '" text-anchor="middle" fill="' + text + '" font-size="11" font-weight="700">' + escHtml(sn.cidr) + (sn.label ? ' — ' + escHtml(sn.label) : '') + '</text>';
+  });
+
+  // Cables (under devices)
+  const deviceById = {};
+  (network.devices || []).forEach(d => { deviceById[d.id] = d; });
+  (network.cables || []).forEach(c => {
+    const a = deviceById[c.from], b = deviceById[c.to];
+    if (!a || !b) return;
+    const stroke = c.type === 'remote' ? '#d1d5db' : '#9ca3af';
+    const dash = c.type === 'remote' ? ' stroke-dasharray="4 4"' : '';
+    // Estimate centers (devices are ~44 wide × ~32 tall; centered roughly)
+    out += '<line x1="' + (a.x + 22) + '" y1="' + (a.y + 16) + '" x2="' + (b.x + 22) + '" y2="' + (b.y + 16) + '" stroke="' + stroke + '" stroke-width="2"' + dash + '/>';
+  });
+
+  // Devices
+  (network.devices || []).forEach(d => {
+    out += _renderDeviceGlyph(d);
+  });
+
+  // Animated packet at current device
+  if (packetAtId) {
+    const dev = deviceById[packetAtId];
+    if (dev) {
+      const cx = dev.x + 22, cy = dev.y + 16;
+      out += '<circle cx="' + cx + '" cy="' + cy + '" r="9" fill="#d97706" stroke="#fff" stroke-width="2.5">';
+      out += '<animate attributeName="opacity" values=".7;1;.7" dur="1.6s" repeatCount="indefinite"/>';
+      out += '</circle>';
+      out += '<text x="' + cx + '" y="' + (cy - 35) + '" text-anchor="middle" fill="#d97706" font-size="9" font-weight="700">⬇ packet here</text>';
+    }
+  }
+
+  out += '</svg>';
+  return out;
+}
+
+function _renderDeviceGlyph(d) {
+  const x = d.x, y = d.y;
+  let out = '';
+  const safeIp = d.ip ? escHtml(String(d.ip).replace(/\n/g, ' ')) : '';
+  const safeLabel = escHtml(String(d.label).replace(/\n/g, ' '));
+  if (d.type === 'pc' || d.type === 'laptop') {
+    out += '<rect x="' + x + '" y="' + y + '" width="44" height="32" rx="4" fill="#fff" stroke="#d97706" stroke-width="2"/>';
+    out += '<rect x="' + (x+6) + '" y="' + (y+6) + '" width="32" height="22" fill="#fbbf24"/>';
+  } else if (d.type === 'switch') {
+    out += '<rect x="' + x + '" y="' + y + '" width="48" height="32" rx="4" fill="#1a1a2e" stroke="#06b6d4" stroke-width="2"/>';
+    out += '<line x1="' + (x+8) + '" y1="' + (y+8) + '" x2="' + (x+40) + '" y2="' + (y+8) + '" stroke="#22c55e" stroke-width="1"/>';
+    out += '<line x1="' + (x+8) + '" y1="' + (y+15) + '" x2="' + (x+40) + '" y2="' + (y+15) + '" stroke="#22c55e" stroke-width="1"/>';
+    out += '<line x1="' + (x+8) + '" y1="' + (y+22) + '" x2="' + (x+40) + '" y2="' + (y+22) + '" stroke="#fbbf24" stroke-width="1"/>';
+  } else if (d.type === 'router') {
+    out += '<rect x="' + x + '" y="' + (y-5) + '" width="48" height="42" rx="6" fill="#1a1a2e" stroke="#5b4fdb" stroke-width="2"/>';
+    out += '<circle cx="' + (x+10) + '" cy="' + (y+8) + '" r="2" fill="#22c55e"/>';
+    out += '<circle cx="' + (x+20) + '" cy="' + (y+8) + '" r="2" fill="#22c55e"/>';
+    out += '<circle cx="' + (x+30) + '" cy="' + (y+8) + '" r="2" fill="#fbbf24"/>';
+    out += '<circle cx="' + (x+40) + '" cy="' + (y+8) + '" r="2" fill="#22c55e"/>';
+  } else if (d.type === 'server') {
+    out += '<rect x="' + x + '" y="' + y + '" width="44" height="36" rx="4" fill="#fff" stroke="#16a34a" stroke-width="2"/>';
+    out += '<rect x="' + (x+5) + '" y="' + (y+5) + '" width="14" height="8" fill="#22c55e"/>';
+    out += '<rect x="' + (x+5) + '" y="' + (y+17) + '" width="34" height="3" fill="#9ca3af"/>';
+    out += '<rect x="' + (x+5) + '" y="' + (y+24) + '" width="34" height="3" fill="#9ca3af"/>';
+    out += '<rect x="' + (x+5) + '" y="' + (y+31) + '" width="34" height="3" fill="#9ca3af"/>';
+  } else {
+    out += '<rect x="' + x + '" y="' + y + '" width="44" height="32" rx="4" fill="#f4f5fa" stroke="#9ca3af" stroke-width="2"/>';
+  }
+  // Label below device
+  out += '<text x="' + (x+22) + '" y="' + (y+50) + '" text-anchor="middle" fill="currentColor" font-size="10" font-weight="700" class="ptr-device-label">' + safeLabel + '</text>';
+  if (safeIp) {
+    out += '<text x="' + (x+22) + '" y="' + (y+62) + '" text-anchor="middle" fill="#6b6b90" font-size="9" class="ptr-device-ip">' + safeIp + '</text>';
+  }
+  return out;
+}
+
+function ptrRenderStage() {
+  const host = document.getElementById('ptr-stage-host');
+  if (!host || !ptrScenario) return;
+  const step = ptrScenario.steps[ptrStepIdx];
+  const network = ptrScenario.network;
+  const totalSteps = ptrScenario.steps.length;
+  // Build progress dots
+  const dots = ptrScenario.steps.map((_, i) => {
+    let cls = 'ptr-prog-dot';
+    if (i < ptrStepIdx) cls += ' is-done';
+    else if (i === ptrStepIdx) cls += ptrAnswered ? ' is-current is-answered' : ' is-current';
+    return '<span class="' + cls + '"></span>';
+  }).join('');
+  let optionsHtml = '';
+  step.question.options.forEach((opt, i) => {
+    let cls = 'ptr-opt';
+    if (ptrAnswered) {
+      if (i === step.question.correctIdx) cls += ' is-correct';
+      if (i === ptrPickedIdx && i !== step.question.correctIdx) cls += ' is-wrong';
+    }
+    const letter = String.fromCharCode(65 + i);
+    optionsHtml += `<button class="${cls}" data-ptr-opt="${i}" onclick="ptrPickAnswer(${i})" ${ptrAnswered ? 'disabled' : ''}><span class="ptr-opt-letter">${letter}</span> ${escHtml(opt)}</button>`;
+  });
+  let revealHtml = '';
+  if (ptrAnswered) {
+    const isCorrect = ptrPickedIdx === step.question.correctIdx;
+    const nextLabel = ptrStepIdx + 1 >= totalSteps ? 'See results &rarr;' : 'Next hop &rarr;';
+    revealHtml = `
+      <div class="ptr-reveal">
+        <div class="ptr-reveal-head">${isCorrect ? '✅ Correct' : '❌ Why ' + escHtml(step.question.options[step.question.correctIdx]) + ' is the answer'}</div>
+        <p class="ptr-reveal-prose">${escHtml(step.question.why)}</p>
+        <div class="ptr-reveal-actions">
+          <button class="btn btn-primary ptr-reveal-btn" onclick="ptrAdvance()">${nextLabel}</button>
+        </div>
+      </div>
+    `;
+  }
+  host.innerHTML = `
+    <div class="trace-stage">
+      <div class="trace-stage-head">
+        <div>
+          <div class="trace-stage-title">${escHtml(ptrScenario.icon || '📦')} ${escHtml(ptrScenario.title)}</div>
+          <div class="trace-stage-sub">${escHtml(ptrScenario.summary)}</div>
+        </div>
+        <span class="trace-step-pill">Step ${ptrStepIdx + 1} of ${totalSteps}</span>
+      </div>
+      <div class="trace-canvas-wrap">
+        <div class="trace-stage-bg"></div>
+        ${_renderTraceSvg(network, step.at)}
+        <div class="trace-caption">
+          <div class="trace-caption-step">${escHtml(step.caption.title)}</div>
+          <div class="trace-caption-action">${escHtml(step.caption.action)}</div>
+          <div class="trace-caption-detail">${escHtml(step.caption.detail)}</div>
+        </div>
+      </div>
+    </div>
+    <div class="trace-question">
+      <div class="tq-eyebrow">Hop question — Step ${ptrStepIdx + 1}</div>
+      <div class="tq-stem">${escHtml(step.question.stem)}</div>
+      <div class="tq-options">${optionsHtml}</div>
+      ${revealHtml}
+      <div class="tq-foot">
+        <span style="font-family:'SF Mono',monospace">scenario · ${totalSteps} hops</span>
+        <span class="tq-progress">${dots}</span>
+      </div>
+    </div>
+  `;
+  // Update streak badge
+  const badge = document.getElementById('ptr-streak-badge');
+  if (badge) badge.textContent = '📦 ' + ptrCorrectThisRun;
+}
+
+function ptrPickAnswer(optIdx) {
+  if (ptrAnswered || !ptrScenario) return;
+  ptrAnswered = true;
+  ptrPickedIdx = optIdx;
+  const step = ptrScenario.steps[ptrStepIdx];
+  const isCorrect = optIdx === step.question.correctIdx;
+  if (isCorrect) ptrCorrectThisRun++;
+  // Save resume
+  ptrSaveResume({ scenarioId: ptrScenario.id, stepIdx: ptrStepIdx, correctSoFar: ptrCorrectThisRun });
+  ptrRenderStage();
+  if (typeof evaluateMilestones === 'function') evaluateMilestones();
+}
+
+function ptrAdvance() {
+  if (!ptrScenario) return;
+  ptrStepIdx++;
+  ptrAnswered = false;
+  ptrPickedIdx = null;
+  if (ptrStepIdx >= ptrScenario.steps.length) {
+    ptrEndScenario();
+    return;
+  }
+  ptrSaveResume({ scenarioId: ptrScenario.id, stepIdx: ptrStepIdx, correctSoFar: ptrCorrectThisRun });
+  ptrRenderStage();
+}
+
+function ptrEndScenario() {
+  if (!ptrScenario) return;
+  // Update mastery
+  const m = getPtrMastery();
+  if (!m.perScenario[ptrScenario.id]) m.perScenario[ptrScenario.id] = { mastered: false, runs: 0, bestStepsCorrect: 0, totalSteps: ptrScenario.steps.length, lastAttemptAt: null };
+  const sm = m.perScenario[ptrScenario.id];
+  sm.runs++;
+  sm.totalSteps = ptrScenario.steps.length;
+  if (ptrCorrectThisRun > sm.bestStepsCorrect) sm.bestStepsCorrect = ptrCorrectThisRun;
+  if (ptrCorrectThisRun === ptrScenario.steps.length) sm.mastered = true;
+  sm.lastAttemptAt = Date.now();
+  m.totalAttempted++;
+  m.totalCorrect += ptrCorrectThisRun;
+  savePtrMastery(m);
+  // Clear resume — scenario is done
+  ptrSaveResume(null);
+  // Render end card
+  const stageHost = document.getElementById('ptr-stage-host');
+  const endCard = document.getElementById('ptr-end-card');
+  if (stageHost) stageHost.innerHTML = '';
+  if (!endCard) return;
+  endCard.classList.remove('is-hidden');
+  const isPerfect = ptrCorrectThisRun === ptrScenario.steps.length;
+  const acc = Math.round((ptrCorrectThisRun / ptrScenario.steps.length) * 100);
+  endCard.innerHTML = `
+    <div class="ptr-eos-card">
+      <div class="ptr-eos-burst">${isPerfect ? '🎉' : '📦'}</div>
+      <h2 class="ptr-eos-title">${isPerfect ? 'Scenario mastered.' : 'Scenario complete.'}</h2>
+      <p class="ptr-eos-sub">${ptrCorrectThisRun}/${ptrScenario.steps.length} hops correct${isPerfect ? ' — perfect run, scenario marked mastered ✓' : ' · keep practicing for the perfect run that locks in mastery'}</p>
+      <div class="ptr-eos-score-row">
+        <div class="ptr-eos-score-tile"><div class="ptr-eos-score-num">${acc}%</div><div class="ptr-eos-score-lbl">accuracy</div></div>
+        <div class="ptr-eos-score-tile"><div class="ptr-eos-score-num">${ptrCorrectThisRun}/${ptrScenario.steps.length}</div><div class="ptr-eos-score-lbl">hops</div></div>
+        <div class="ptr-eos-score-tile"><div class="ptr-eos-score-num">${sm.runs}</div><div class="ptr-eos-score-lbl">runs</div></div>
+      </div>
+      <div class="ptr-eos-actions">
+        <button class="btn btn-primary" onclick="ptrStartScenario('${ptrScenario.id}')">${isPerfect ? 'Run again →' : 'Try again →'}</button>
+        <button class="btn btn-ghost" onclick="setPtrTab('dashboard')">Back to dashboard</button>
+      </div>
+    </div>
+  `;
+  ptrScenario = null;
+  ptrStepIdx = 0;
+  ptrCorrectThisRun = 0;
+}
+
+function ptrStartScenario(scenarioId) {
+  const s = PT_DATA.find(x => x.id === scenarioId);
+  if (!s) {
+    if (typeof showToast === 'function') showToast('Scenario not found.', 'error');
+    return;
+  }
+  if (!ptrIsScenarioUnlocked(s)) {
+    if (typeof showToast === 'function') showToast('Master earlier scenarios to unlock this one.', 'info');
+    return;
+  }
+  ptrScenario = s;
+  ptrStepIdx = 0;
+  ptrCorrectThisRun = 0;
+  ptrAnswered = false;
+  ptrPickedIdx = null;
+  setPtrTab('practice');
+  const endCard = document.getElementById('ptr-end-card');
+  if (endCard) endCard.classList.add('is-hidden');
+  ptrSaveResume({ scenarioId: s.id, stepIdx: 0, correctSoFar: 0 });
+  ptrRenderStage();
+}
+
+function ptrResumeScenario() {
+  const r = ptrGetResume();
+  if (!r || !r.scenarioId) {
+    if (typeof showToast === 'function') showToast('Nothing to resume — pick a scenario.', 'info');
+    return;
+  }
+  const s = PT_DATA.find(x => x.id === r.scenarioId);
+  if (!s) { ptrSaveResume(null); return; }
+  ptrScenario = s;
+  ptrStepIdx = Math.min(r.stepIdx || 0, s.steps.length - 1);
+  ptrCorrectThisRun = r.correctSoFar || 0;
+  ptrAnswered = false;
+  ptrPickedIdx = null;
+  setPtrTab('practice');
+  const endCard = document.getElementById('ptr-end-card');
+  if (endCard) endCard.classList.add('is-hidden');
+  ptrRenderStage();
+}
+
+function ptrRenderDashboard() {
+  const host = document.getElementById('ptr-dashboard-content');
+  if (!host) return;
+  const m = getPtrMastery();
+  const masteredCount = Object.values(m.perScenario).filter(s => s.mastered).length;
+  const totalSteps = PT_DATA.reduce((acc, s) => acc + s.steps.length, 0);
+  const stepsMastered = Object.values(m.perScenario).reduce((acc, s) => acc + (s.bestStepsCorrect || 0), 0);
+  const overallAcc = m.totalAttempted > 0 ? Math.round((m.totalCorrect / (m.totalAttempted * (totalSteps / PT_DATA.length))) * 100) : 0;
+  const resume = ptrGetResume();
+  const resumeScenario = resume ? PT_DATA.find(s => s.id === resume.scenarioId) : null;
+
+  const rowsHtml = PT_DATA.map(s => {
+    const sm = m.perScenario[s.id] || { mastered: false, runs: 0, bestStepsCorrect: 0 };
+    const unlocked = ptrIsScenarioUnlocked(s);
+    let cls = 'dash-scenario-row';
+    let masteryHtml;
+    if (!unlocked) {
+      cls += ' is-locked';
+      masteryHtml = '<span class="dash-scenario-mastery">🔒 unlock</span>';
+    } else if (sm.mastered) {
+      cls += ' is-mastered';
+      masteryHtml = '<span class="dash-scenario-mastery">' + sm.bestStepsCorrect + '/' + s.steps.length + ' ✓</span>';
+    } else {
+      masteryHtml = '<span class="dash-scenario-mastery">' + (sm.bestStepsCorrect || 0) + '/' + s.steps.length + '</span>';
+    }
+    const stars = '★'.repeat(s.diff || 1) + '☆'.repeat(3 - (s.diff || 1));
+    const onclick = unlocked ? `onclick="ptrStartScenario('${s.id}')"` : 'aria-disabled="true"';
+    return `
+      <button class="${cls}" ${onclick} type="button">
+        <span class="dash-scenario-icon">${escHtml(s.icon || '📦')}</span>
+        <div>
+          <div class="dash-scenario-name">${escHtml(s.title)}</div>
+          <div class="dash-scenario-meta">${s.steps.length} hops · objective ${escHtml(s.obj)} · ${stars}</div>
+        </div>
+        ${masteryHtml}
+      </button>
+    `;
+  }).join('');
+
+  host.innerHTML = `
+    <div class="ptr-dash-head">
+      <div>
+        <div class="ptr-dash-eyebrow">Drill · Network+</div>
+        <h2 class="ptr-dash-title">📦 Packet Trace</h2>
+        <p class="ptr-dash-sub">${PT_DATA.length} curated scenarios. Walk a packet through each network hop-by-hop, answer a question at each step.</p>
+      </div>
+      <div class="ptr-dash-stats">
+        <div><div class="ptr-dash-stat-num">${masteredCount}</div><div>scenarios mastered</div></div>
+        <div><div class="ptr-dash-stat-num">${stepsMastered}/${totalSteps}</div><div>steps mastered</div></div>
+        <div><div class="ptr-dash-stat-num">${overallAcc || 0}%</div><div>accuracy</div></div>
+      </div>
+    </div>
+    <div class="ptr-dash">
+      <div class="ptr-dash-card">
+        <div class="ptr-dash-card-head">Scenarios · ${PT_DATA.length} total</div>
+        <div class="dash-scenario-list">${rowsHtml}</div>
+      </div>
+      <div class="ptr-dash-side">
+        ${resumeScenario ? `
+          <div class="ptr-dash-card">
+            <div class="ptr-dash-card-head">Resume where you left off</div>
+            <div style="font-size:13px;font-weight:600;margin-bottom:4px">${escHtml(resumeScenario.icon)} ${escHtml(resumeScenario.title)}</div>
+            <div style="font-size:11.5px;color:var(--text-mid)">Step ${resume.stepIdx + 1} of ${resumeScenario.steps.length}</div>
+            <button class="ptr-dash-cta" onclick="ptrResumeScenario()" style="margin-top:10px">▶ Resume scenario →</button>
+          </div>
+        ` : `
+          <div class="ptr-dash-card">
+            <div class="ptr-dash-card-head">Get started</div>
+            <div style="font-size:12.5px;color:var(--text-mid);line-height:1.5">Pick any unlocked scenario from the list. First scenario (ARP basics) unlocks the rest progressively.</div>
+          </div>
+        `}
+        ${PT_DATA.filter(s => !ptrIsScenarioUnlocked(s)).length > 0 ? `
+          <div class="ptr-dash-card">
+            <div class="ptr-dash-card-head">🔒 Locked</div>
+            <div style="font-size:11.5px;color:var(--text-mid);line-height:1.5">${PT_DATA.filter(s => !ptrIsScenarioUnlocked(s)).length} scenarios stay locked until you master earlier ones (perfect run = mastered).</div>
+          </div>
+        ` : ''}
+      </div>
+    </div>
+  `;
+}
+
+function ptrRenderLessons() {
+  const host = document.getElementById('ptr-lessons-content');
+  if (!host) return;
+  if (!PT_LESSONS.length) {
+    host.innerHTML = '<p style="text-align:center;color:var(--text-mid);padding:32px">No lessons available.</p>';
+    return;
+  }
+  host.innerHTML = PT_LESSONS.map(l => `
+    <div class="ptr-lesson-card">
+      <div class="ptr-lesson-head">
+        <div class="ptr-lesson-icon">📚</div>
+        <div>
+          <div class="ptr-lesson-title">${escHtml(l.title)}</div>
+          <div class="ptr-lesson-sub">${escHtml(l.summary)}</div>
+        </div>
+      </div>
+      <ul class="ptr-lesson-points">
+        ${(l.keyPoints || []).map(p => '<li>' + escHtml(p) + '</li>').join('')}
+      </ul>
+    </div>
+  `).join('');
+}
+
+function setPtrTab(tabId) {
+  document.querySelectorAll('.ptr-tab-btn').forEach(b => {
+    const id = b.id.replace('ptr-tab-btn-', '');
+    const active = id === tabId;
+    b.classList.toggle('ptr-tab-active', active);
+    b.setAttribute('aria-selected', active ? 'true' : 'false');
+    b.tabIndex = active ? 0 : -1;
+  });
+  ['practice', 'lessons', 'dashboard'].forEach(p => {
+    const panel = document.getElementById('ptr-tab-' + p);
+    if (!panel) return;
+    panel.classList.toggle('is-hidden', p !== tabId);
+  });
+  if (tabId === 'lessons') ptrRenderLessons();
+  else if (tabId === 'dashboard') ptrRenderDashboard();
+}
+
+function startPacketTrace() {
+  if (!_USE_NETPLUS_PT) {
+    if (typeof showToast === 'function') showToast('Packet Trace drill is Network+ only.', 'info');
+    return;
+  }
+  // If there's a resume, offer it; otherwise show dashboard
+  const resume = ptrGetResume();
+  if (resume && resume.scenarioId) {
+    setPtrTab('dashboard');  // dashboard surfaces the Resume card
+    ptrRenderDashboard();
+  } else {
+    setPtrTab('dashboard');
+    ptrRenderDashboard();
+  }
 }
 
 function setOsDifficulty(diff) {
@@ -36221,7 +36699,8 @@ const APP_SIDEBAR_DRILLS = [
   // v4.84.1: Network Analysis Drill (Phase 1) sidebar entry. Was reachable
   // only via the #page-drills tile launcher in v4.84.0 — discoverability bug
   // surfaced immediately by user dogfood.
-  { page: 'network-analysis',   label: 'Network Analysis',  handler: () => { if (typeof startNetworkAnalysisDrill === 'function') startNetworkAnalysisDrill(); } }
+  { page: 'network-analysis',   label: 'Network Analysis',  handler: () => { if (typeof startNetworkAnalysisDrill === 'function') startNetworkAnalysisDrill(); } },
+  { page: 'ptr',                label: 'Packet Trace',      handler: () => { showPage('ptr'); if (typeof startPacketTrace === 'function') startPacketTrace(); } }
 ];
 
 // v4.91.0: Security+ drill catalog. Network+ drills (subnet/port/OSI/cable
@@ -36253,6 +36732,7 @@ const SIDEBAR_ACTIVE_MAP = {
   'acronyms': 'acronyms',
   'amm': 'amm',  // v4.94.0: Attack-to-Mitigation drill highlights itself
   'cts': 'cts',  // v4.95.0: Control Type Sorter drill highlights itself
+  'ptr': 'ptr', // v4.96.0: Packet Trace drill highlights itself (NOT 'pt' — Port Drill owns that prefix)
   'osi-sorter': 'osi-sorter',
   'cables': 'cables',
   'network-analysis': 'network-analysis',
@@ -36448,6 +36928,7 @@ const TOPBAR_CRUMBS = {
   'acronyms': 'Acronym Blitz',
   'amm': 'Attack-to-Mitigation',  // v4.94.0
   'cts': 'Control Type Sorter',  // v4.95.0
+  'ptr': 'Packet Trace',         // v4.96.0 (page id is 'ptr' to avoid pt- collision with Port Drill)
   'osi-sorter': 'OSI Sorter',
   'cables': 'Cable ID',
   'network-analysis': 'Network Analysis',

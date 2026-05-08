@@ -6292,5 +6292,532 @@ window.CERT_PACKS.netplus = {
     addedVersion: '4.85.26',
     addedDate: '2026-05-04'
   }
+  ],
+
+  // ── PACKET TRACE DRILL (v4.96.0, issue #305) ─────────────────────────────
+  // 5 curated scenarios at v1, ~3-5 hops each. Walk a packet through each
+  // network hop-by-hop, with an MCQ at each step. Visual contract locked to
+  // mockup `mockups/network-packet-trace-drill-concept.html` State 2.
+  // Schema: each scenario has a network (devices+cables+subnets) and steps
+  // (each step pins the packet to a device, shows a caption card, asks an
+  // MCQ). The shared SVG renderer reads this JSON and draws everything.
+  // 5 more scenarios queued for v4.96.1+ (Spanning Tree, VLAN Trunk, HSRP,
+  // OSPF area boundary, Inter-VLAN routing).
+  packetTraceScenarios: [
+    {
+      id: 'same-subnet-arp',
+      title: 'Same-subnet ARP + L2 forwarding',
+      icon: '🔗',
+      obj: '1.4',
+      diff: 1,
+      unlockAfter: [],  // unlocked from start
+      summary: 'PC-A (10.0.1.5) → PC-B (10.0.1.20) · ICMP echo · same /24',
+      network: {
+        devices: [
+          { id: 'pc-a', type: 'pc',     label: 'PC-A',  ip: '10.0.1.5',  x: 62,  y: 160 },
+          { id: 'sw-1', type: 'switch', label: 'SW-1',                   x: 219, y: 160 },
+          { id: 'pc-b', type: 'pc',     label: 'PC-B',  ip: '10.0.1.20', x: 389, y: 160 }
+        ],
+        cables: [
+          { from: 'pc-a', to: 'sw-1', type: 'copper' },
+          { from: 'sw-1', to: 'pc-b', type: 'copper' }
+        ],
+        subnets: [
+          { cidr: '10.0.1.0/24', label: 'local subnet', color: 'amber', boxX: 20, boxY: 40, boxW: 440, boxH: 28 }
+        ]
+      },
+      steps: [
+        {
+          at: 'pc-a',
+          caption: { title: 'Step 1 · L3 destination check', action: 'PC-A computes 10.0.1.20 IS in 10.0.1.0/24', detail: 'Same subnet → no router needed; ARP for PC-B\'s MAC' },
+          question: {
+            stem: 'PC-A wants to send a frame to PC-B (10.0.1.20). What does PC-A need before it can send the frame?',
+            options: [
+              'The default gateway\'s MAC address',
+              'PC-B\'s MAC address (resolved via ARP)',
+              'A DNS lookup for PC-B',
+              'A TLS handshake with PC-B'
+            ],
+            correctIdx: 1,
+            why: 'Same-subnet destination → ARP for the destination\'s MAC directly. The gateway is only used for off-subnet traffic. DNS resolves names to IPs, not relevant here. TLS is a transport-layer concern.'
+          }
+        },
+        {
+          at: 'sw-1',
+          caption: { title: 'Step 2 · L2 forwarding', action: 'SW-1 receives the frame from PC-A', detail: 'Frame dst MAC: PC-B\'s MAC (from PC-A\'s ARP cache)' },
+          question: {
+            stem: 'What does SW-1 do with this frame?',
+            options: [
+              'Flood the frame out all ports except the ingress port',
+              'Look up the destination MAC in the MAC address table and forward to the matching port',
+              'Drop the frame because PC-A and PC-B are on different VLANs',
+              'Strip the L2 header and route based on the destination IP'
+            ],
+            correctIdx: 1,
+            why: 'A switch is a Layer-2 device — it forwards frames based on the MAC address table. If the destination MAC is known, it forwards to that single port (unicast). Flooding only happens for unknown unicast destinations. Switches don\'t route on IP — that\'s a router\'s job.'
+          }
+        },
+        {
+          at: 'pc-b',
+          caption: { title: 'Step 3 · Frame received', action: 'PC-B receives the frame and processes the ICMP request', detail: 'PC-B will reply with an ICMP echo response addressed to PC-A' },
+          question: {
+            stem: 'When PC-B replies, what destination MAC will the reply frame use?',
+            options: [
+              'Broadcast (FF:FF:FF:FF:FF:FF)',
+              'PC-A\'s MAC address (from PC-B\'s ARP cache, populated from the request)',
+              'The default gateway\'s MAC',
+              'PC-B\'s own MAC (loopback)'
+            ],
+            correctIdx: 1,
+            why: 'When PC-B received the request, it cached PC-A\'s MAC + IP from the source fields. The reply uses PC-A\'s MAC directly (still same subnet, still no gateway needed). Broadcasts are only used when the MAC is unknown.'
+          }
+        }
+      ]
+    },
+    {
+      id: 'cross-subnet-routing',
+      title: 'Cross-subnet routing + gateway ARP',
+      icon: '🌐',
+      obj: '1.4',
+      diff: 2,
+      unlockAfter: ['same-subnet-arp'],
+      summary: 'PC-A (10.0.1.5) → Server (10.0.2.20) · ICMP echo',
+      network: {
+        devices: [
+          { id: 'pc-a', type: 'pc',     label: 'PC-A',  ip: '10.0.1.5',  x: 62,  y: 200 },
+          { id: 'sw-1', type: 'switch', label: 'SW-1',                   x: 200, y: 200 },
+          { id: 'rtr',  type: 'router', label: 'RTR',   ip: '.1 / .1',   x: 340, y: 200 },
+          { id: 'srv',  type: 'server', label: 'Server',ip: '10.0.2.20', x: 480, y: 200 }
+        ],
+        cables: [
+          { from: 'pc-a', to: 'sw-1', type: 'copper' },
+          { from: 'sw-1', to: 'rtr',  type: 'copper' },
+          { from: 'rtr',  to: 'srv',  type: 'remote' }
+        ],
+        subnets: [
+          { cidr: '10.0.1.0/24', label: 'local subnet',  color: 'amber',  boxX: 20,  boxY: 60, boxW: 280, boxH: 28 },
+          { cidr: '10.0.2.0/24', label: 'remote subnet', color: 'purple', boxX: 320, boxY: 60, boxW: 220, boxH: 28 }
+        ]
+      },
+      steps: [
+        {
+          at: 'pc-a',
+          caption: { title: 'Step 1 · L3 destination check', action: 'PC-A computes 10.0.2.20 NOT in 10.0.1.0/24', detail: '→ frame must go to default gateway (10.0.1.1)' },
+          question: {
+            stem: 'What does PC-A need before it can send the frame to the server?',
+            options: [
+              'The server\'s MAC address',
+              'The gateway router\'s MAC address',
+              'A DNS lookup for the server',
+              'A TLS handshake'
+            ],
+            correctIdx: 1,
+            why: 'Different subnet → frame goes to the default gateway. PC-A ARPs for the GATEWAY\'s MAC, not the server\'s. The server\'s MAC is only known by the router on the destination side. The L3 destination IP stays the server, but the L2 destination MAC is the gateway.'
+          }
+        },
+        {
+          at: 'sw-1',
+          caption: { title: 'Step 2 · L2 lookup', action: 'SW-1 receives the frame from PC-A', detail: 'Frame dst MAC: aa:bb:cc:dd:ee:01 (router\'s MAC)' },
+          question: {
+            stem: 'What does SW-1 do with this frame?',
+            options: [
+              'Flood the frame out all ports except the ingress port',
+              'Look up the destination MAC in the MAC address table and forward to the matching port',
+              'Drop the frame because the destination IP is on a different subnet',
+              'Strip the L2 header and route based on the destination IP'
+            ],
+            correctIdx: 1,
+            why: 'Switch is L2-only. It cares about destination MAC, not destination IP. The destination MAC here is the router\'s MAC — frame gets forwarded to the router\'s port. The switch has no concept of "subnet" for forwarding decisions.'
+          }
+        },
+        {
+          at: 'rtr',
+          caption: { title: 'Step 3 · L3 routing', action: 'Router receives the frame and inspects L3 header', detail: 'Destination IP 10.0.2.20 → consult routing table' },
+          question: {
+            stem: 'What does the router do at this step?',
+            options: [
+              'Forward the frame unchanged to its outgoing interface',
+              'Strip the L2 header, look up 10.0.2.20 in its routing table, then build a NEW L2 frame with the next-hop\'s MAC',
+              'Encapsulate the original frame inside a new IP header (IP-in-IP tunnel)',
+              'Send a TCP RST back to PC-A because the destination is on a different subnet'
+            ],
+            correctIdx: 1,
+            why: 'A router strips the incoming L2 frame, makes an L3 forwarding decision based on the routing table, then BUILDS A NEW L2 frame for the outbound interface. The L3 header stays (TTL decremented); the L2 header is rewritten on every hop. This is the fundamental L2/L3 boundary.'
+          }
+        },
+        {
+          at: 'rtr',
+          caption: { title: 'Step 4 · ARP for remote subnet', action: 'Router needs the server\'s MAC for the new L2 frame', detail: 'Router checks its own ARP cache; ARPs if entry is missing' },
+          question: {
+            stem: 'For the new L2 frame leaving the router toward the server, what destination MAC does the router use?',
+            options: [
+              'PC-A\'s MAC (preserved from the original frame)',
+              'The server\'s MAC (resolved via ARP on the 10.0.2.0/24 segment)',
+              'A multicast MAC for cross-subnet traffic',
+              'The router\'s own MAC (loopback)'
+            ],
+            correctIdx: 1,
+            why: 'On the destination segment, the router ARPs for the SERVER\'s MAC (or uses its cache). The new L2 frame goes from "router\'s MAC on 10.0.2.0/24" → "server\'s MAC". L2 addresses are LOCAL to each segment — they change at every router hop. L3 source/destination IPs stay the same end-to-end (until NAT).'
+          }
+        },
+        {
+          at: 'srv',
+          caption: { title: 'Step 5 · Frame received at server', action: 'Server receives the L2 frame', detail: 'L2 dst MAC matches server NIC; L3 dst IP matches server IP → process ICMP' },
+          question: {
+            stem: 'What is the L3 source IP of the frame the server now sees?',
+            options: [
+              'The router\'s IP (10.0.2.1 or 10.0.1.1)',
+              'PC-A\'s IP (10.0.1.5) — preserved end-to-end',
+              'The server\'s own IP (10.0.2.20)',
+              '0.0.0.0 (unspecified)'
+            ],
+            correctIdx: 1,
+            why: 'L3 addresses are END-TO-END (until NAT changes them). The server sees PC-A\'s IP as the source. Even though the L2 MACs changed at the router, the L3 source IP stayed PC-A\'s. This is how the server\'s reply will know to send the ICMP echo response back to PC-A specifically.'
+          }
+        }
+      ]
+    },
+    {
+      id: 'nat-boundary',
+      title: 'NAT boundary (private → public)',
+      icon: '🌍',
+      obj: '1.4',
+      diff: 2,
+      unlockAfter: ['cross-subnet-routing'],
+      summary: 'PC-A (192.168.1.50) → Public web server (203.0.113.10) · HTTPS · NAT translates source',
+      network: {
+        devices: [
+          { id: 'pc-a',     type: 'pc',     label: 'PC-A',     ip: '192.168.1.50', x: 50,  y: 200 },
+          { id: 'sw-int',   type: 'switch', label: 'SW-INT',                       x: 180, y: 200 },
+          { id: 'fw-nat',   type: 'router', label: 'FW/NAT',   ip: '192.168.1.1 / 198.51.100.5', x: 310, y: 200 },
+          { id: 'isp',      type: 'router', label: 'ISP',                          x: 440, y: 200 },
+          { id: 'web',      type: 'server', label: 'web.example.com', ip: '203.0.113.10', x: 555, y: 200 }
+        ],
+        cables: [
+          { from: 'pc-a',   to: 'sw-int', type: 'copper' },
+          { from: 'sw-int', to: 'fw-nat', type: 'copper' },
+          { from: 'fw-nat', to: 'isp',    type: 'remote' },
+          { from: 'isp',    to: 'web',    type: 'remote' }
+        ],
+        subnets: [
+          { cidr: '192.168.1.0/24', label: 'private LAN', color: 'amber',  boxX: 20,  boxY: 60, boxW: 270, boxH: 28 },
+          { cidr: 'public internet', label: 'public IPs', color: 'purple', boxX: 310, boxY: 60, boxW: 270, boxH: 28 }
+        ]
+      },
+      steps: [
+        {
+          at: 'pc-a',
+          caption: { title: 'Step 1 · Outbound HTTPS', action: 'PC-A initiates TCP/443 to 203.0.113.10', detail: 'Source IP: 192.168.1.50 (private, RFC 1918)' },
+          question: {
+            stem: 'Why can\'t PC-A\'s private IP (192.168.1.50) appear directly on the public internet?',
+            options: [
+              'Private IPs (RFC 1918) are not routable on the public internet — they get dropped at any internet-facing router',
+              'Private IPs are illegal under ICANN policy',
+              'Private IPs require IPv6 to traverse the internet',
+              'Private IPs work fine on the internet — NAT is a security feature, not a routing requirement'
+            ],
+            correctIdx: 0,
+            why: 'RFC 1918 reserved 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16 as private — internet backbone routers will not forward packets with these source/destination IPs. NAT exists specifically to translate private IPs to a routable public IP at the boundary. Without NAT, private-IP traffic dies at the first ISP router.'
+          }
+        },
+        {
+          at: 'fw-nat',
+          caption: { title: 'Step 2 · NAT translation', action: 'Firewall/NAT receives the packet', detail: 'Source IP rewritten: 192.168.1.50 → 198.51.100.5 (public WAN); source port also rewritten + entry added to NAT table' },
+          question: {
+            stem: 'What does the NAT device record so the return traffic reaches the right internal host?',
+            options: [
+              'A pre-shared key with the public web server',
+              'A NAT translation table mapping (private-IP, private-port) → (public-IP, public-port) for the duration of the session',
+              'A static DNS record',
+              'A TLS certificate for PC-A'
+            ],
+            correctIdx: 1,
+            why: 'PAT (Port Address Translation, the most common NAT variant) maintains a mapping of (internal-IP, internal-port, external-IP, external-port, protocol) tuples. When return traffic arrives at the public IP/port, the table lookup tells NAT which internal host should receive it. This is dynamic state — destroyed when the session ends or after a timeout.'
+          }
+        },
+        {
+          at: 'web',
+          caption: { title: 'Step 3 · Web server view', action: 'Web server receives the HTTPS request', detail: 'Source IP appears as 198.51.100.5 (the NAT public IP) — server has no idea about 192.168.1.50' },
+          question: {
+            stem: 'What source IP does the web server see in the request?',
+            options: [
+              'PC-A\'s real private IP (192.168.1.50)',
+              'The NAT device\'s public IP (198.51.100.5)',
+              'The ISP\'s gateway IP',
+              '0.0.0.0 (unspecified)'
+            ],
+            correctIdx: 1,
+            why: 'After NAT translation, the source IP is the NAT device\'s public IP. The web server has NO visibility into the internal LAN — this is one of NAT\'s security side-benefits (internal topology is hidden) and one of its operational downsides (logs lose per-internal-host attribution unless the app layer adds it via X-Forwarded-For headers).'
+          }
+        },
+        {
+          at: 'fw-nat',
+          caption: { title: 'Step 4 · Return traffic', action: 'Web server reply arrives at NAT public IP', detail: 'NAT table lookup: (198.51.100.5, port) → (192.168.1.50, original-port) → packet forwarded internally' },
+          question: {
+            stem: 'How does NAT know which internal host to send the reply to?',
+            options: [
+              'It broadcasts the reply to all internal hosts',
+              'It looks up the destination port in the NAT translation table to find the original internal IP+port',
+              'It uses DNS to resolve the destination',
+              'It forwards to whoever has the most-recent ARP entry'
+            ],
+            correctIdx: 1,
+            why: 'The NAT table\'s reverse lookup uses the (public-IP, public-port) of the inbound reply to find the matching (private-IP, private-port). This is why "stateful" NAT is required — without state, replies couldn\'t find the right internal host. Outbound-initiated sessions work; unsolicited inbound traffic gets dropped because there\'s no NAT entry yet.'
+          }
+        }
+      ]
+    },
+    {
+      id: 'dhcp-dora',
+      title: 'DHCP discovery (DORA)',
+      icon: '🔄',
+      obj: '1.6',
+      diff: 2,
+      unlockAfter: ['cross-subnet-routing'],
+      summary: 'PC-A boots → DHCP Discover/Offer/Request/Acknowledge → IP lease assigned',
+      network: {
+        devices: [
+          { id: 'pc-a',   type: 'pc',     label: 'PC-A',   ip: '0.0.0.0 (boot)', x: 70,  y: 200 },
+          { id: 'sw-1',   type: 'switch', label: 'SW-1',                         x: 230, y: 200 },
+          { id: 'dhcp',   type: 'server', label: 'DHCP',   ip: '10.0.1.10',     x: 400, y: 200 }
+        ],
+        cables: [
+          { from: 'pc-a', to: 'sw-1', type: 'copper' },
+          { from: 'sw-1', to: 'dhcp', type: 'copper' }
+        ],
+        subnets: [
+          { cidr: '10.0.1.0/24', label: 'broadcast domain', color: 'amber', boxX: 30, boxY: 60, boxW: 440, boxH: 28 }
+        ]
+      },
+      steps: [
+        {
+          at: 'pc-a',
+          caption: { title: 'Step 1 · DISCOVER', action: 'PC-A boots with no IP, sends DHCP DISCOVER', detail: 'src 0.0.0.0:68 → dst 255.255.255.255:67 (limited broadcast)' },
+          question: {
+            stem: 'Why does the DHCP DISCOVER packet use 255.255.255.255 as the destination?',
+            options: [
+              'PC-A doesn\'t know the DHCP server\'s IP yet — broadcast reaches every host on the local segment so any DHCP server can respond',
+              'It\'s a multicast address reserved for DHCP',
+              'PC-A always uses broadcast for the first packet of any conversation',
+              'The DHCP server\'s IP is hardcoded as 255.255.255.255 in the protocol'
+            ],
+            correctIdx: 0,
+            why: 'At boot, the client has no IP, no default gateway, no DNS, no clue who the DHCP server is. Broadcast is the only way to reach an unknown server on the local segment. 255.255.255.255 is the LIMITED broadcast (stays on local subnet, never crosses routers). DHCP servers on the segment all see it; relays can forward to remote servers if configured.'
+          }
+        },
+        {
+          at: 'dhcp',
+          caption: { title: 'Step 2 · OFFER', action: 'DHCP server receives DISCOVER, picks an available IP, sends OFFER', detail: 'Offered IP: 10.0.1.50 + lease time + gateway + DNS + subnet mask' },
+          question: {
+            stem: 'How does the server send the OFFER back to PC-A, given PC-A still has no IP?',
+            options: [
+              'Server sends to PC-A\'s MAC address at the L2 layer (the source MAC from the DISCOVER)',
+              'Server uses the broadcast IP 255.255.255.255 again',
+              'Server sends to PC-A\'s eventual offered IP, hoping PC-A accepts it',
+              'Server uses ARP to resolve PC-A\'s IP first'
+            ],
+            correctIdx: 0,
+            why: 'The OFFER is sent unicast at L2 to PC-A\'s MAC (extracted from the DISCOVER\'s L2 source). The L3 destination is the OFFERED IP (10.0.1.50). PC-A\'s NIC accepts the frame because the L2 MAC matches. Note: DHCP can also send the OFFER as broadcast if the BROADCAST flag is set in the DISCOVER — but unicast-to-MAC is the more common modern behaviour.'
+          }
+        },
+        {
+          at: 'pc-a',
+          caption: { title: 'Step 3 · REQUEST', action: 'PC-A formally requests the offered IP via broadcast', detail: 'Broadcast tells any other DHCP servers their offers were declined' },
+          question: {
+            stem: 'Why is the REQUEST sent as broadcast (instead of unicast to the chosen DHCP server)?',
+            options: [
+              'PC-A still doesn\'t have its IP yet — broadcast is the only option',
+              'So that ANY other DHCP servers that also offered see that PC-A chose someone else and can release their reservation',
+              'Both A and B',
+              'Convention only — modern DHCP implementations use unicast'
+            ],
+            correctIdx: 2,
+            why: 'Both reasons are true: (1) at REQUEST time PC-A is still using 0.0.0.0 as source, so it can\'t do unicast confidently. (2) Broadcast is also intentional protocol design — multiple DHCP servers might have made offers; the broadcast REQUEST identifies the chosen server (in the option fields) so others can release their tentative reservations.'
+          }
+        },
+        {
+          at: 'dhcp',
+          caption: { title: 'Step 4 · ACK', action: 'Chosen server confirms with ACK (final lease grant)', detail: 'PC-A now configures NIC: IP, mask, gateway, DNS, lease-renewal timer' },
+          question: {
+            stem: 'When does PC-A start using the new IP address?',
+            options: [
+              'Immediately on receiving the OFFER (Step 2)',
+              'Immediately on sending the REQUEST (Step 3)',
+              'Only after receiving the ACK (Step 4)',
+              'Only after the lease-renewal timer fires'
+            ],
+            correctIdx: 2,
+            why: 'The IP is provisional from OFFER through REQUEST — PC-A might lose the offer if the server changed its mind or if a faster client took the same address. The ACK is the formal grant. Only after ACK does PC-A configure the NIC with the new IP and begin using it for normal traffic. The lease-renewal timer (typically 50% of lease time) governs when PC-A asks to renew, not the initial use.'
+          }
+        }
+      ]
+    },
+    {
+      id: 'dns-recursive',
+      title: 'DNS recursion (recursive resolver)',
+      icon: '📡',
+      obj: '1.6',
+      diff: 2,
+      unlockAfter: ['cross-subnet-routing'],
+      summary: 'PC-A queries example.com → recursive resolver → root → TLD → authoritative → answer',
+      network: {
+        devices: [
+          { id: 'pc-a',     type: 'pc',     label: 'PC-A',           ip: '10.0.1.5',   x: 50,  y: 200 },
+          { id: 'resolver', type: 'server', label: 'Recursive\nResolver', ip: '10.0.1.53',  x: 175, y: 200 },
+          { id: 'root',     type: 'server', label: 'Root .', ip: 'a.root-servers.net', x: 305, y: 110 },
+          { id: 'tld',      type: 'server', label: '.com TLD',        ip: 'a.gtld...',  x: 425, y: 110 },
+          { id: 'auth',     type: 'server', label: 'auth ns\nexample.com', ip: 'ns1.example.com', x: 545, y: 200 }
+        ],
+        cables: [
+          { from: 'pc-a',     to: 'resolver', type: 'copper' },
+          { from: 'resolver', to: 'root',     type: 'remote' },
+          { from: 'resolver', to: 'tld',      type: 'remote' },
+          { from: 'resolver', to: 'auth',     type: 'remote' }
+        ],
+        subnets: [
+          { cidr: '10.0.1.0/24', label: 'local', color: 'amber',  boxX: 20,  boxY: 60, boxW: 250, boxH: 28 },
+          { cidr: 'public DNS hierarchy', label: 'authoritative servers', color: 'purple', boxX: 290, boxY: 60, boxW: 290, boxH: 28 }
+        ]
+      },
+      steps: [
+        {
+          at: 'pc-a',
+          caption: { title: 'Step 1 · Recursive query', action: 'PC-A asks its configured resolver: "What\'s the A record for example.com?"', detail: 'PC-A is the STUB resolver; expects a single answer back' },
+          question: {
+            stem: 'What kind of query does PC-A send to the recursive resolver?',
+            options: [
+              'An iterative query — PC-A wants the resolver to give a referral, then PC-A handles each step',
+              'A recursive query — PC-A wants the resolver to do all the work and return the final answer',
+              'A zone transfer (AXFR) — PC-A wants the entire example.com zone',
+              'A reverse lookup (PTR) — PC-A queries by IP, not by name'
+            ],
+            correctIdx: 1,
+            why: 'PC-A\'s stub resolver sends a RECURSIVE query — "you (the resolver) do the work, give me the final answer." The resolver then makes ITERATIVE queries against the DNS hierarchy (root → TLD → authoritative) on PC-A\'s behalf. Most clients always do recursive queries; iterative is what resolvers do internally.'
+          }
+        },
+        {
+          at: 'resolver',
+          caption: { title: 'Step 2 · Cache check + root query', action: 'Cache miss → resolver queries a root server', detail: 'Root replies: "I don\'t know example.com but here are the .com TLD servers"' },
+          question: {
+            stem: 'Why does the resolver start at the root, not at the authoritative server for example.com?',
+            options: [
+              'Resolvers can\'t query authoritative servers directly',
+              'The resolver starts at the highest known anchor (the root) and follows referrals downward through the hierarchy',
+              'Root servers store every domain\'s records',
+              'Authoritative servers reject queries from anyone except root'
+            ],
+            correctIdx: 1,
+            why: 'The DNS hierarchy is a tree. Resolvers can only START from servers they know about — the root server hints (preconfigured in DNS software). They follow referrals down: root tells you about TLD servers; TLD tells you about authoritative servers; authoritative tells you the answer. Cached results short-circuit this; first-time queries go full path.'
+          }
+        },
+        {
+          at: 'tld',
+          caption: { title: 'Step 3 · TLD referral', action: 'Resolver queries .com TLD: "Where\'s example.com?"', detail: '.com TLD replies: "example.com is on ns1.example.com" (the NS record + glue)' },
+          question: {
+            stem: 'What is "glue" in this context?',
+            options: [
+              'A piece of malware injected into a DNS reply',
+              'The IP address of the authoritative nameserver, returned alongside the NS name to break the chicken-and-egg lookup',
+              'A backup record used when the primary fails',
+              'A signed DNSSEC record'
+            ],
+            correctIdx: 1,
+            why: 'If example.com\'s authoritative nameserver IS ns1.example.com, the resolver has a chicken-and-egg problem: to find ns1.example.com\'s IP, it would need to query example.com first. GLUE records solve this by including the NS\'s IP directly in the parent zone\'s reply. Without glue, the resolution can\'t complete on a fresh start.'
+          }
+        },
+        {
+          at: 'auth',
+          caption: { title: 'Step 4 · Authoritative answer', action: 'Resolver queries ns1.example.com directly', detail: 'Authoritative replies: "example.com A 93.184.216.34" (TTL 3600)' },
+          question: {
+            stem: 'What does the resolver do with this final answer?',
+            options: [
+              'Caches the record for the TTL duration, then returns it to PC-A',
+              'Discards it after a single use',
+              'Forwards it to every other resolver on the internet',
+              'Only returns it if PC-A signed the request'
+            ],
+            correctIdx: 0,
+            why: 'Resolvers cache answers up to the TTL specified by the authoritative server. Subsequent queries for example.com (from PC-A or other clients of the same resolver) get served from cache, skipping the entire root → TLD → auth path. TTLs let domain owners control how quickly DNS changes propagate (low TTL = fast change, more queries; high TTL = slow change, fewer queries).'
+          }
+        },
+        {
+          at: 'pc-a',
+          caption: { title: 'Step 5 · PC-A receives the IP', action: 'Resolver returns 93.184.216.34 to PC-A', detail: 'PC-A can now open a TCP connection to example.com on the IP layer' },
+          question: {
+            stem: 'On the next visit, when PC-A queries example.com again, what happens?',
+            options: [
+              'PC-A goes through the full root → TLD → authoritative path again',
+              'The recursive resolver serves the cached answer immediately (assuming TTL hasn\'t expired)',
+              'PC-A bypasses the resolver and queries the authoritative server directly',
+              'PC-A always re-queries even when its own stub cache has the answer'
+            ],
+            correctIdx: 1,
+            why: 'Caching is THE performance feature of DNS. Within the TTL, repeat queries get served from the resolver\'s cache (and PC-A\'s own stub cache) without any external traffic. This is why TTLs matter — short TTLs help fast cutover during DNS changes (e.g., during DR/failover) but increase query volume; long TTLs reduce traffic but slow propagation.'
+          }
+        }
+      ]
+    }
+  ],
+  packetTraceLessons: [
+    {
+      id: 'l2-vs-l3',
+      title: 'L2 vs L3 — the boundary',
+      summary: 'Switches forward frames by MAC; routers forward packets by IP. MACs change at every hop; IPs stay end-to-end (until NAT).',
+      keyPoints: [
+        'Switch: L2 (frame) — uses MAC address table to forward unicast traffic to a single port',
+        'Router: L3 (packet) — strips L2 header, makes routing decision on destination IP, builds new L2 frame for outbound interface',
+        'L2 addresses (MACs) are LOCAL to each segment and change at every router hop',
+        'L3 addresses (IPs) are END-TO-END, preserved across router hops (until a NAT device modifies them)',
+        'Same subnet → ARP for destination MAC. Different subnet → ARP for gateway MAC.'
+      ]
+    },
+    {
+      id: 'arp-mechanics',
+      title: 'ARP mechanics',
+      summary: 'ARP resolves L3 IPs to L2 MACs on the local broadcast domain. Cache is per-host; entries timeout to handle moves.',
+      keyPoints: [
+        'ARP request is broadcast (FF:FF:FF:FF:FF:FF dst MAC) — every host on the segment sees it',
+        'ARP reply is unicast — only the requesting host needs it',
+        'ARP cache is per-host, with typical 4-hour entry TTL on Linux/Windows',
+        'Gratuitous ARP: a host announces its own MAC unsolicited (used by HSRP failover, DHCP renewal)',
+        'ARP works only on the local L2 segment — routers do NOT forward ARP'
+      ]
+    },
+    {
+      id: 'nat-pat',
+      title: 'NAT / PAT essentials',
+      summary: 'NAT translates private IPs to a public IP at the boundary. PAT (the common variant) maps internal port + IP to external port + IP.',
+      keyPoints: [
+        'Private IPs (RFC 1918): 10/8, 172.16/12, 192.168/16 — not routable on the public internet',
+        'NAT maintains a translation table mapping (internal-IP, internal-port) → (public-IP, public-port)',
+        'Outbound-initiated traffic auto-creates entries; unsolicited inbound has no entry → dropped',
+        'Port forwarding manually creates static entries for inbound (e.g., :80 → server-internal:80)',
+        'NAT hides internal topology (security side-benefit) but breaks per-host attribution in logs (use X-Forwarded-For at app layer)'
+      ]
+    },
+    {
+      id: 'dhcp-dora',
+      title: 'DHCP — DORA flow',
+      summary: 'Discover, Offer, Request, Acknowledge. Broadcast discovery on segment; lease grants IP + gateway + DNS + mask.',
+      keyPoints: [
+        'DISCOVER: client → broadcast (no IP yet); OFFER: server → client (unicast to MAC, or broadcast)',
+        'REQUEST: client → broadcast (announces choice; declines other servers\' offers)',
+        'ACK: server → client (formal grant; client now uses the IP)',
+        'Lease typically 50% renewal timer (T1), 87.5% rebind timer (T2), 100% expiration',
+        'DHCP relay agents forward DISCOVER across routers when the DHCP server is on a different subnet'
+      ]
+    },
+    {
+      id: 'dns-hierarchy',
+      title: 'DNS — recursive resolution',
+      summary: 'Stub → recursive resolver → root → TLD → authoritative. Cache at every step. TTL governs propagation speed.',
+      keyPoints: [
+        'Stub resolver (on the client) sends RECURSIVE queries — "do all the work, give me the answer"',
+        'Recursive resolver makes ITERATIVE queries against the DNS hierarchy (root → TLD → authoritative)',
+        'Glue records: parent zone returns NS name + IP together to break chicken-and-egg lookups',
+        'TTLs control caching duration — low TTLs help fast cutover (DR/failover); high TTLs reduce query traffic',
+        'DNSSEC adds digital signatures so resolvers can verify answers haven\'t been tampered with on the path'
+      ]
+    }
   ]
 };

@@ -301,7 +301,7 @@ test('Validation in runSessionStep', js.includes('aiValidateQuestions(apiKey, qu
 
 // ── Analytics v2 (v4.5) ──
 console.log('\n\x1b[1m── ANALYTICS v2 (v4.5) ──\x1b[0m');
-test('APP_VERSION is 4.95.1', js.includes("const APP_VERSION = '4.95.1"));
+test('APP_VERSION is 4.96.0', js.includes("const APP_VERSION = '4.96.0"));
 test('getDailyGoal function', js.includes('function getDailyGoal('));
 test('renderDailyGoal function', js.includes('function renderDailyGoal('));
 test('editDailyGoal function', js.includes('function editDailyGoal('));
@@ -315,7 +315,7 @@ test('CSS: .topic-domain-group', css.includes('.topic-domain-group'));
 test('CSS: .daily-goal-card', css.includes('.daily-goal-card'));
 test('CSS: .advanced-section', css.includes('.advanced-section'));
 test('CSS: .hero-stats-strip', css.includes('.hero-stats-strip'));
-test('SW cache bumped to v4.95.1', sw.includes('netplus-v4.95.1'));
+test('SW cache bumped to v4.96.0', sw.includes('netplus-v4.96.0'));
 test('Family Drill: STORAGE.PORT_FAMILY_BEST', js.includes("PORT_FAMILY_BEST:"));
 test('Family Drill: ptMode handles family', js.includes("ptMode === 'family'"));
 test('Family Drill: HTML mode button', html.includes('id="pt-mode-family"'));
@@ -16716,6 +16716,125 @@ test('v4.95.0 CTS: secplus.js declares 4 controlCategories',
   /controlCategories:\s*\{[\s\S]{0,800}tech[\s\S]{0,800}mgmt[\s\S]{0,800}ops[\s\S]{0,800}phys/.test(certSecplus));
 test('v4.95.0 CTS: secplus.js declares controlMatrixLessons',
   certSecplus.includes('controlMatrixLessons:'));
+
+// ============================================================================
+// v4.96.0 — Packet Trace Drill (issue #305)
+// ============================================================================
+// Network+ drill walking a packet through curated networks hop-by-hop with an
+// MCQ at each step. Distinct from TB's free-form trace — curated scenarios
+// with mastery tracking + lesson cheatsheets. Visual contract locked to
+// mockups/network-packet-trace-drill-concept.html State 2.
+
+// Storage keys
+test('v4.96.0 PT: STORAGE.PT_MASTERY key declared',
+  /PT_MASTERY:\s*['"]nplus_pt_mastery['"]/.test(js));
+test('v4.96.0 PT: STORAGE.PT_LESSONS key declared',
+  /PT_LESSONS:\s*['"]nplus_pt_lessons['"]/.test(js));
+test('v4.96.0 PT: STORAGE.PT_RESUME key declared (mid-scenario resume)',
+  /PT_RESUME:\s*['"]nplus_pt_resume['"]/.test(js));
+
+// Cloud-store sync
+test('v4.96.0 PT: cloud-store USER_DATA_KEYS includes pt_mastery',
+  cloudStoreJs.includes("'nplus_pt_mastery'"));
+test('v4.96.0 PT: cloud-store USER_DATA_KEYS includes pt_lessons',
+  cloudStoreJs.includes("'nplus_pt_lessons'"));
+test('v4.96.0 PT: cloud-store USER_DATA_KEYS includes pt_resume',
+  cloudStoreJs.includes("'nplus_pt_resume'"));
+
+// Cert-aware module-load aliases (Network+ side, distinct from Sec+ pattern)
+test('v4.96.0 PT: _NETPLUS_HAS_PT cert-pack guard declared',
+  /const _NETPLUS_HAS_PT =/.test(js));
+test('v4.96.0 PT: _USE_NETPLUS_PT cert-aware switch declared',
+  /const _USE_NETPLUS_PT =/.test(js));
+test('v4.96.0 PT: PT_DATA cert-aware alias',
+  /const PT_DATA = _USE_NETPLUS_PT \? CERT_PACK\.packetTraceScenarios/.test(js));
+test('v4.96.0 PT: PT_LESSONS cert-aware alias',
+  /const PT_LESSONS = _USE_NETPLUS_PT && Array\.isArray\(CERT_PACK\.packetTraceLessons\)/.test(js));
+
+// Drill code — state machine + render functions
+test('v4.96.0 PT: startPacketTrace function defined',
+  /function startPacketTrace\(\)/.test(js));
+test('v4.96.0 PT: ptrStartScenario function defined',
+  /function ptrStartScenario\(/.test(js));
+test('v4.96.0 PT: ptrResumeScenario function defined (resume support)',
+  /function ptrResumeScenario\(\)/.test(js));
+test('v4.96.0 PT: ptrPickAnswer function defined',
+  /function ptrPickAnswer\(/.test(js));
+test('v4.96.0 PT: ptrAdvance function defined',
+  /function ptrAdvance\(\)/.test(js));
+test('v4.96.0 PT: ptrEndScenario function defined',
+  /function ptrEndScenario\(\)/.test(js));
+test('v4.96.0 PT: ptrRenderStage function defined (in-trace renderer)',
+  /function ptrRenderStage\(\)/.test(js));
+test('v4.96.0 PT: ptrRenderDashboard function defined',
+  /function ptrRenderDashboard\(\)/.test(js));
+test('v4.96.0 PT: ptrRenderLessons function defined',
+  /function ptrRenderLessons\(\)/.test(js));
+test('v4.96.0 PT: setPtrTab function defined',
+  /function setPtrTab\(/.test(js));
+test('v4.96.0 PT: ptrIsScenarioUnlocked function defined (progressive disclosure)',
+  /function ptrIsScenarioUnlocked\(/.test(js));
+test('v4.96.0 PT: shared SVG renderer _renderTraceSvg defined',
+  /function _renderTraceSvg\(/.test(js));
+test('v4.96.0 PT: device glyph helper _renderDeviceGlyph defined',
+  /function _renderDeviceGlyph\(/.test(js));
+test('v4.96.0 PT: savePtrMastery flushes to cloud',
+  /function savePtrMastery[\s\S]{0,300}_cloudFlush\(STORAGE\.PT_MASTERY\)/.test(js));
+test('v4.96.0 PT: ptrSaveResume flushes to cloud',
+  /function ptrSaveResume[\s\S]{0,400}_cloudFlush\(STORAGE\.PT_RESUME\)/.test(js));
+
+// Sidebar + breadcrumb wiring
+test('v4.96.0 PT: APP_SIDEBAR_DRILLS includes Packet Trace entry',
+  /APP_SIDEBAR_DRILLS = \[[\s\S]{0,1500}page:\s*['"]ptr['"][\s\S]{0,200}startPacketTrace/.test(js));
+test('v4.96.0 PT: SIDEBAR_ACTIVE_MAP has pt entry',
+  /SIDEBAR_ACTIVE_MAP[\s\S]{0,1500}'ptr':\s*'ptr'/.test(js));
+test('v4.96.0 PT: TOPBAR_CRUMBS has pt entry',
+  /TOPBAR_CRUMBS[\s\S]{0,1500}'ptr':\s*['"]Packet Trace['"]/.test(js));
+
+// HTML page exists
+test('v4.96.0 PT: index.html has #page-ptr',
+  /id="page-ptr"/.test(html));
+test('v4.96.0 PT: index.html has pt stage host',
+  /id="ptr-stage-host"/.test(html));
+test('v4.96.0 PT: index.html has 3 pt tabs (practice/lessons/dashboard)',
+  /ptr-tab-btn-practice[\s\S]{0,500}ptr-tab-btn-lessons[\s\S]{0,500}ptr-tab-btn-dashboard/.test(html));
+test('v4.96.0 PT: drills launcher has Packet Trace tile',
+  /onclick="showPage\('ptr'\);startPacketTrace\(\)/.test(html));
+
+// CSS contract
+test('v4.96.0 PT: .trace-stage CSS pattern present',
+  /\.trace-stage\s*\{/.test(css));
+test('v4.96.0 PT: .trace-canvas-wrap CSS pattern present',
+  /\.trace-canvas-wrap\s*\{/.test(css));
+test('v4.96.0 PT: .trace-caption CSS pattern present',
+  /\.trace-caption\s*\{/.test(css));
+test('v4.96.0 PT: .trace-question + .ptr-opt CSS patterns present',
+  /\.trace-question\s*\{/.test(css) && /\.ptr-opt\s*\{/.test(css));
+test('v4.96.0 PT: .dash-scenario-row CSS pattern present',
+  /\.dash-scenario-row\s*\{/.test(css));
+
+// Cert-pack data
+test('v4.96.0 PT: netplus.js declares packetTraceScenarios',
+  certNetplus.includes('packetTraceScenarios:'));
+test('v4.96.0 PT: netplus.js declares packetTraceLessons',
+  certNetplus.includes('packetTraceLessons:'));
+test('v4.96.0 PT: netplus.js has 5 scenarios at v1',
+  (() => {
+    // Count `unlockAfter:` — appears once per scenario at top level, never nested
+    const m = certNetplus.match(/packetTraceScenarios:\s*\[([\s\S]+?)\n\s*\],\s*\n\s*packetTraceLessons:/);
+    if (!m) return false;
+    const unlocks = m[1].match(/\bunlockAfter:\s*\[/g) || [];
+    return unlocks.length === 5;
+  })());
+test('v4.96.0 PT: netplus.js has 5 lessons at v1',
+  (() => {
+    // Count `keyPoints:` — appears once per lesson at top level, never nested.
+    // packetTraceLessons is the last property in the cert pack so match to EOF.
+    const m = certNetplus.match(/packetTraceLessons:\s*\[([\s\S]+)$/);
+    if (!m) return false;
+    const points = m[1].match(/\bkeyPoints:\s*\[/g) || [];
+    return points.length === 5;
+  })());
 
 // ── Summary ──
 console.log('\n' + '═'.repeat(50));

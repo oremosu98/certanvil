@@ -90,6 +90,9 @@
     'nplus_amm_lessons',
     'nplus_cts_mastery',  // v4.95.0: Control Type Sorter
     'nplus_cts_lessons',
+    'nplus_pt_mastery',   // v4.96.0: Network+ Packet Trace drill
+    'nplus_pt_lessons',
+    'nplus_pt_resume',
     'nplus_os_mastery',
     'nplus_os_lessons',
     'nplus_cb_mastery',
