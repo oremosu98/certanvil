@@ -301,7 +301,7 @@ test('Validation in runSessionStep', js.includes('aiValidateQuestions(apiKey, qu
 
 // ── Analytics v2 (v4.5) ──
 console.log('\n\x1b[1m── ANALYTICS v2 (v4.5) ──\x1b[0m');
-test('APP_VERSION is 4.96.0', js.includes("const APP_VERSION = '4.96.0"));
+test('APP_VERSION is 4.96.1', js.includes("const APP_VERSION = '4.96.1"));
 test('getDailyGoal function', js.includes('function getDailyGoal('));
 test('renderDailyGoal function', js.includes('function renderDailyGoal('));
 test('editDailyGoal function', js.includes('function editDailyGoal('));
@@ -315,7 +315,7 @@ test('CSS: .topic-domain-group', css.includes('.topic-domain-group'));
 test('CSS: .daily-goal-card', css.includes('.daily-goal-card'));
 test('CSS: .advanced-section', css.includes('.advanced-section'));
 test('CSS: .hero-stats-strip', css.includes('.hero-stats-strip'));
-test('SW cache bumped to v4.96.0', sw.includes('netplus-v4.96.0'));
+test('SW cache bumped to v4.96.1', sw.includes('netplus-v4.96.1'));
 test('Family Drill: STORAGE.PORT_FAMILY_BEST', js.includes("PORT_FAMILY_BEST:"));
 test('Family Drill: ptMode handles family', js.includes("ptMode === 'family'"));
 test('Family Drill: HTML mode button', html.includes('id="pt-mode-family"'));
@@ -16835,6 +16835,27 @@ test('v4.96.0 PT: netplus.js has 5 lessons at v1',
     const points = m[1].match(/\bkeyPoints:\s*\[/g) || [];
     return points.length === 5;
   })());
+
+// ============================================================================
+// v4.96.1 — Packet Trace slide animation (polish)
+// ============================================================================
+test('v4.96.1 PT slide: SVG packet circle has .ptr-packet class hook',
+  /<circle class="ptr-packet"/.test(js));
+test('v4.96.1 PT slide: SVG step-indicator text has .ptr-packet-here class hook',
+  /<text class="ptr-packet-here"/.test(js));
+test('v4.96.1 PT slide: ptrAdvance reads from + to step coords before re-render',
+  /function ptrAdvance[\s\S]{0,2500}fromStep\.at[\s\S]{0,800}toStep\.at/.test(js));
+test('v4.96.1 PT slide: ptrAdvance updates cx/cy attrs on the packet circle',
+  /packet\.setAttribute\(['"]cx['"]/.test(js) &&
+  /packet\.setAttribute\(['"]cy['"]/.test(js));
+test('v4.96.1 PT slide: ptrAdvance respects prefers-reduced-motion',
+  /function ptrAdvance[\s\S]{0,3000}prefers-reduced-motion/.test(js));
+test('v4.96.1 PT slide: ptrAdvance has 700ms re-render setTimeout (650ms tween + buffer)',
+  /function ptrAdvance[\s\S]{0,3000}setTimeout\(finalize,\s*700/.test(js));
+test('v4.96.1 PT slide: .ptr-packet CSS transition declared (cx + cy)',
+  /\.ptr-packet\s*\{[\s\S]{0,200}transition:[\s\S]{0,200}\bcx\b[\s\S]{0,200}\bcy\b/.test(css));
+test('v4.96.1 PT slide: reduced-motion media query kills transition',
+  /@media \(prefers-reduced-motion:\s*reduce\)\s*\{[\s\S]{0,300}\.ptr-packet[\s\S]{0,200}transition:\s*none/.test(css));
 
 // ── Summary ──
 console.log('\n' + '═'.repeat(50));

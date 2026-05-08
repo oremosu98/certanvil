@@ -1,5 +1,5 @@
 /* ══════════════════════════════════════════
-   Network+ AI Quiz — styles.css  v4.96.0
+   Network+ AI Quiz — styles.css  v4.96.1
    ══════════════════════════════════════════ */
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -17750,4 +17750,17 @@ html { zoom: 1.10; }
   .ptr-dash-cta:hover, .dash-scenario-row:hover { transform: none; }
   .dash-scenario-row, .ptr-tab-btn, .ptr-opt { transition: none; }
   .trace-canvas-wrap svg circle animate { display: none; }
+}
+
+/* v4.96.1: Packet slide animation between hops. cx/cy as CSS-animatable
+   SVG attrs (Chrome 76+). ptrAdvance() updates the circle's cx/cy and the
+   browser tweens automatically. Pulse opacity continues during the slide. */
+.ptr-packet {
+  transition: cx 0.65s cubic-bezier(0.4, 0, 0.2, 1), cy 0.65s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.ptr-packet-here {
+  transition: opacity 0.2s ease;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ptr-packet, .ptr-packet-here { transition: none; }
 }

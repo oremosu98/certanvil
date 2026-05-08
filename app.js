@@ -1,9 +1,9 @@
 // ══════════════════════════════════════════
-// Network+ AI Quiz — app.js  v4.96.0
+// Network+ AI Quiz — app.js  v4.96.1
 // ══════════════════════════════════════════
 
 // ── CONSTANTS ──
-const APP_VERSION = '4.96.0';
+const APP_VERSION = '4.96.1';
 
 // ══════════════════════════════════════════════════════════════════════════
 // CERT PACK ARCHITECTURE (v4.86.0 Phase 1A engine refactor)
@@ -33600,15 +33600,16 @@ function _renderTraceSvg(network, packetAtId, opts) {
     out += _renderDeviceGlyph(d);
   });
 
-  // Animated packet at current device
+  // Animated packet at current device. Class hooks on the <circle> + <text>
+  // let v4.96.1's slide animation in ptrAdvance() tween cx/cy between hops.
   if (packetAtId) {
     const dev = deviceById[packetAtId];
     if (dev) {
       const cx = dev.x + 22, cy = dev.y + 16;
-      out += '<circle cx="' + cx + '" cy="' + cy + '" r="9" fill="#d97706" stroke="#fff" stroke-width="2.5">';
+      out += '<circle class="ptr-packet" cx="' + cx + '" cy="' + cy + '" r="9" fill="#d97706" stroke="#fff" stroke-width="2.5">';
       out += '<animate attributeName="opacity" values=".7;1;.7" dur="1.6s" repeatCount="indefinite"/>';
       out += '</circle>';
-      out += '<text x="' + cx + '" y="' + (cy - 35) + '" text-anchor="middle" fill="#d97706" font-size="9" font-weight="700">⬇ packet here</text>';
+      out += '<text class="ptr-packet-here" x="' + cx + '" y="' + (cy - 35) + '" text-anchor="middle" fill="#d97706" font-size="9" font-weight="700">⬇ packet here</text>';
     }
   }
 
@@ -33739,15 +33740,46 @@ function ptrPickAnswer(optIdx) {
 
 function ptrAdvance() {
   if (!ptrScenario) return;
-  ptrStepIdx++;
-  ptrAnswered = false;
-  ptrPickedIdx = null;
-  if (ptrStepIdx >= ptrScenario.steps.length) {
+  // v4.96.1: slide the packet across the cable from current device → next device
+  // before re-rendering. Falls back to instant teleport if motion is suppressed
+  // or the SVG packet element isn't present (initial step, fast-clicks, etc.).
+  const nextStepIdx = ptrStepIdx + 1;
+  if (nextStepIdx >= ptrScenario.steps.length) {
+    ptrStepIdx = nextStepIdx;
     ptrEndScenario();
     return;
   }
-  ptrSaveResume({ scenarioId: ptrScenario.id, stepIdx: ptrStepIdx, correctSoFar: ptrCorrectThisRun });
-  ptrRenderStage();
+  const fromStep = ptrScenario.steps[ptrStepIdx];
+  const toStep = ptrScenario.steps[nextStepIdx];
+  const devices = (ptrScenario.network && ptrScenario.network.devices) || [];
+  const fromDev = devices.find(d => d.id === fromStep.at);
+  const toDev = devices.find(d => d.id === toStep.at);
+  const prefersReduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const packet = document.querySelector('#ptr-stage-host .ptr-packet');
+  const indicator = document.querySelector('#ptr-stage-host .ptr-packet-here');
+
+  const finalize = () => {
+    ptrStepIdx = nextStepIdx;
+    ptrAnswered = false;
+    ptrPickedIdx = null;
+    ptrSaveResume({ scenarioId: ptrScenario.id, stepIdx: ptrStepIdx, correctSoFar: ptrCorrectThisRun });
+    ptrRenderStage();
+  };
+
+  if (!prefersReduced && packet && fromDev && toDev && fromDev.id !== toDev.id) {
+    // Suppress the "⬇ packet here" indicator during the slide so it doesn't
+    // visually lag behind the packet. The new step's render restores it.
+    if (indicator) indicator.style.opacity = '0';
+    // Disable next-button + answer buttons during the tween (they're already
+    // disabled, but a fast double-click during the tween shouldn't requeue).
+    document.querySelectorAll('#ptr-stage-host .ptr-reveal-btn').forEach(b => { b.disabled = true; });
+    // Update circle attrs — CSS transition on .ptr-packet handles the tween.
+    packet.setAttribute('cx', String(toDev.x + 22));
+    packet.setAttribute('cy', String(toDev.y + 16));
+    setTimeout(finalize, 700);  // tween duration (650ms) + small safety buffer
+  } else {
+    finalize();
+  }
 }
 
 function ptrEndScenario() {
