@@ -3649,5 +3649,334 @@ window.CERT_PACKS.secplus = {
         '<strong>Blame culture.</strong> Blameless postmortems surface real gaps. Punitive ones surface lies.'
       ]
     }
+  ],
+
+  // ════════════════════════════════════════════════════════════════════
+  // PHISHING TRIAGE LAB — Flagship #2 (v4.98.0 / issue #313)
+  // SY0-701 Domain 2 (22%) flagship. Click-the-flag inbox simulator.
+  // 4 attack vectors at v1-final (email/sms/voice/qr); v4.98.0 ships
+  // email-only — 6 phish + 4 lesson cards + click-flag UI.
+  // Visual contract: mockups/security-phishing-email-triage-lab-concept.html
+  // ════════════════════════════════════════════════════════════════════
+  phishingVectors: {
+    'email': { name: 'Email phish', icon: '📧', color: '#3b82f6' },
+    'sms':   { name: 'Smishing',    icon: '💬', color: '#16a34a' },
+    'voice': { name: 'Vishing',     icon: '📞', color: '#d946ef' },
+    'qr':    { name: 'Quishing',    icon: '📱', color: '#f59e0b' }
+  },
+  phishingScenarios: [
+    // ──────────────────────────────────────────────────────────────────
+    // 1) CFO BEC wire fraud — the canonical (mockup state 2-4)
+    // ──────────────────────────────────────────────────────────────────
+    {
+      id: 'cfo-bec-wire-fraud',
+      title: '"CFO" wire-fraud BEC',
+      vector: 'email',
+      difficulty: 2,
+      unlockAfter: [],
+      category: 'bec',
+      summary: 'Display-name spoof of CFO Sarah Chen. Reply-To mismatch. Urgency + secrecy + wire transfer. SY0-701 trap-rich.',
+      sender: { name: 'Sarah Chen, CFO', email: 'sarah.chen.cfo@gmail.com', avatar: 'SC', avatarColor: '#3b82f6' },
+      subject: '[URGENT] Wire transfer needed before close — CONFIDENTIAL',
+      to: 'james.doe@corp.com',
+      replyTo: 'treasury.processing@corp-finance-secure.com',
+      time: '09:14',
+      bodyHtml: '<p><span class="flag" data-fid="f1">Hi James,</span></p>' +
+        '<p>I\'m currently in a confidential M&A discussion and need your immediate help. We need to wire <strong>$487,000</strong> to our advisory firm\'s escrow account by <span class="flag" data-fid="f2">end of business today</span> to lock in their engagement before our window closes.</p>' +
+        '<p>Wire details are attached. <span class="flag" data-fid="f3">Please don\'t loop anyone else in</span> — this is highly sensitive until the deal is announced. If anyone asks, defer to me directly.</p>' +
+        '<p>Account details + routing info here: <a href="#"><span class="flag" data-fid="f4">https://corp-finance-secure.com/wire-update.aspx?ref=Q3a82F</span></a></p>' +
+        '<p>Confirm receipt as soon as you can. <span class="flag" data-fid="f5">I\'m unavailable by phone</span> the next 2 hours but please proceed with the wire — I trust your judgement.</p>' +
+        '<p>Thanks,<br>Sarah</p>' +
+        '<p style="color:#6b6b90; font-size:11px;"><em>Sent from my iPhone</em></p>',
+      attachments: [{ name: 'wire-instructions-q4.zip', protected: true }],
+      flags: [
+        { id: 'f1', category: 'greeting', label: 'Generic greeting "Hi James"', why: 'A real CFO who works with you regularly would use a familiar nickname or simply your first name — generic "Hi [firstname]" is a template footprint indicating mass-personalisation.' },
+        { id: 'f2', category: 'urgency', label: 'Urgency cue: "end of business today"', why: 'Time pressure designed to short-circuit verification. Real CFO requests rarely come with a 6-hour deadline. Urgency + secrecy + money-ask = BEC red flag triad.' },
+        { id: 'f3', category: 'isolation', label: 'Isolation cue: "Please don\'t loop anyone else in"', why: 'Classic BEC tactic — secrecy stops the target asking the real CFO to verify in person/Slack. Defense: out-of-band verification mandatory for any wire request.' },
+        { id: 'f4', category: 'lookalike-url', label: 'Lookalike URL: corp-finance-secure.com', why: 'Typosquat domain registered to look corporate. Real corp.com domain would not delegate finance to a separate "secure" subdomain. Domain-age check (WHOIS) would show recent registration.' },
+        { id: 'f5', category: 'pre-empt-verify', label: '"I\'m unavailable by phone" pre-empts verification', why: 'Real BEC almost always includes a "don\'t call me" line — the attacker can\'t actually pick up. Pre-emptive friction-removal of the obvious verification step.' },
+        { id: 'f6', category: 'sender-mismatch', label: 'Display-name spoof (gmail.com)', why: 'Display name says "Sarah Chen, CFO" but address is gmail.com, not corp.com. Display names can be set to anything. Always check the actual email address.' },
+        { id: 'f7', category: 'reply-to-mismatch', label: 'Reply-To mismatch with From', why: 'From claims corp.com (via display); Reply-To routes to corp-finance-secure.com — a different typosquat domain. Replies go to attacker, not Sarah.' },
+        { id: 'f8', category: 'attachment', label: 'Password-protected attachment', why: 'Password-protected zips bypass corporate AV/sandbox scanning. Combined with "password in email above" framing — designed to slip through automated inspection.' }
+      ],
+      correctAction: 'report',
+      decisionReveal: {
+        report: { isCorrect: true, label: 'Report to security', why: 'Correct call. Security team can investigate, alert others on the team who may have received the same template, and start the BEC defense workflow. This is the canonical SY0-701 answer.' },
+        delete: { isCorrect: false, label: 'Delete', why: 'Deleting hides the evidence and means others may still get hit by the same template. Report first, then delete after security confirms.' },
+        reply: { isCorrect: false, label: 'Reply to verify', why: 'Replying confirms your address is monitored + routes the response to the attacker via the Reply-To trap. Out-of-band only — call Sarah on her known number.' },
+        click: { isCorrect: false, label: 'Click the link', why: 'Clicking is the entire point of the attack. The link likely captures credentials or deploys malware. Never click suspect links.' },
+        spam: { isCorrect: false, label: 'Mark as spam', why: 'Spam flag is a partial answer but doesn\'t alert security or warn other recipients. BEC needs active escalation, not passive filtering.' }
+      },
+      patternName: 'BEC display-name spoof + wire-fraud',
+      patternBlurb: 'SY0-701 Domain 2.2. Defense triad: <strong>(1)</strong> verify out-of-band (call CFO on known number), <strong>(2)</strong> bank-detail/wire requests must use a separate approval channel, <strong>(3)</strong> finance team training to question urgency + isolation cues.'
+    },
+    // ──────────────────────────────────────────────────────────────────
+    // 2) Microsoft password expiry — credential harvest
+    // ──────────────────────────────────────────────────────────────────
+    {
+      id: 'ms-password-expiry',
+      title: 'Microsoft password expiry credential phish',
+      vector: 'email',
+      difficulty: 1,
+      unlockAfter: [],
+      category: 'credential-harvest',
+      summary: '"Your Microsoft 365 password expires in 24h." Spoofed sender domain, link to credential harvest.',
+      sender: { name: 'Microsoft 365 Account Team', email: 'no-reply@m1crosoft-365-security.com', avatar: 'MS', avatarColor: '#0078d4' },
+      subject: 'Action required: Your password expires in 24 hours',
+      to: 'jane.smith@corp.com',
+      time: '14:22',
+      bodyHtml: '<p style="font-family:Arial,sans-serif;"><img src="data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'80\' height=\'20\' viewBox=\'0 0 80 20\'><text x=\'0\' y=\'15\' font-family=\'Arial\' font-size=\'14\' font-weight=\'bold\' fill=\'%230078d4\'>Microsoft</text></svg>" alt="Microsoft" style="display:block;margin-bottom:10px;"></p>' +
+        '<p><span class="flag" data-fid="f1">Dear Customer,</span></p>' +
+        '<p>Your Microsoft 365 password will expire in <strong><span class="flag" data-fid="f2">24 hours</span></strong>. To continue using your email and Office apps without interruption, please verify your account immediately.</p>' +
+        '<p>Click below to keep your current password:</p>' +
+        '<p><a href="#" style="background:#0078d4;color:#fff;padding:8px 18px;text-decoration:none;border-radius:4px;display:inline-block;"><span class="flag" data-fid="f3">Keep My Password →</span></a></p>' +
+        '<p style="font-size:11px;color:#888;">If you do not verify within 24 hours, your account will be <span class="flag" data-fid="f4">permanently disabled</span>.</p>' +
+        '<p style="font-size:10px;color:#888;border-top:1px solid #ddd;padding-top:8px;margin-top:14px;"><span class="flag" data-fid="f5">© 2024 Microsoft Corporation. All rights reserved.</span></p>',
+      attachments: [],
+      flags: [
+        { id: 'f1', category: 'greeting', label: 'Generic greeting "Dear Customer"', why: 'Microsoft has your full name + email + tenant info. They never address you as "Dear Customer" — generic greetings indicate mass phish.' },
+        { id: 'f2', category: 'urgency', label: 'Urgency cue: "24 hours"', why: 'Microsoft password-expiry warnings come 14+ days in advance, not 24 hours. Tight deadlines = panic engineering.' },
+        { id: 'f3', category: 'lookalike-url', label: 'Hover URL different from visible link', why: 'The "Keep My Password" button visibly says it does that, but hovering reveals the actual destination (typosquat or credential-harvest URL). Always hover before clicking.' },
+        { id: 'f4', category: 'urgency', label: 'Threat: "permanently disabled"', why: 'Microsoft never permanently disables for missed password-renewal. Threats of irreversible consequences = social engineering.' },
+        { id: 'f5', category: 'branding', label: 'Outdated copyright year', why: 'Microsoft\'s official emails always use the current year. Stale year = template was reused from a previous campaign.' },
+        { id: 'f6', category: 'sender-mismatch', label: 'Lookalike sender domain (m1crosoft)', why: 'Number "1" replacing letter "i" in m1crosoft-365-security.com. Real Microsoft uses microsoft.com / office.com — not third-party "security" subdomains.' },
+        { id: 'f7', category: 'header-anomaly', label: 'No DKIM/SPF alignment with claimed brand', why: 'Real Microsoft email passes DMARC/DKIM with proper SPF alignment. This message would fail those checks (visible in headers).' }
+      ],
+      correctAction: 'report',
+      decisionReveal: {
+        report: { isCorrect: true, label: 'Report to security', why: 'Right call. Security team alerts other recipients + may detect a campaign hitting multiple users. Microsoft accepts phish reports too (junk@office365.microsoft.com).' },
+        delete: { isCorrect: false, label: 'Delete', why: 'Doesn\'t alert security or other recipients who may also be targeted. Report first.' },
+        reply: { isCorrect: false, label: 'Reply', why: 'Replies confirm your email is live + may trigger more phish to your address. Never reply to phish.' },
+        click: { isCorrect: false, label: 'Click the link', why: 'Clicking is the attack. The link likely opens a fake Microsoft login page that captures your password.' },
+        spam: { isCorrect: false, label: 'Mark as spam', why: 'Filters this message but doesn\'t protect colleagues. Report so security can mass-alert.' }
+      },
+      patternName: 'Credential-harvest phish (Microsoft brand impersonation)',
+      patternBlurb: 'SY0-701 Domain 2.2. Always check sender address (not display name), hover links before clicking, verify password-expiry through your IT portal directly.'
+    },
+    // ──────────────────────────────────────────────────────────────────
+    // 3) Vendor invoice update — sophisticated BEC variant
+    // ──────────────────────────────────────────────────────────────────
+    {
+      id: 'vendor-invoice-update',
+      title: 'Vendor invoice "bank account update"',
+      vector: 'email',
+      difficulty: 3,
+      unlockAfter: ['cfo-bec-wire-fraud'],
+      category: 'bec',
+      summary: 'Real vendor\'s account compromised; attacker emails from legit address requesting bank-detail change for next invoice cycle.',
+      sender: { name: 'Patricia Wong (AcmeSupplies)', email: 'patricia.wong@acmesupplies.com', avatar: 'PW', avatarColor: '#22c55e' },
+      subject: 'Updated payment instructions for upcoming invoices',
+      to: 'accounts.payable@corp.com',
+      time: '11:08',
+      bodyHtml: '<p>Hi AP team,</p>' +
+        '<p>Hope you\'re doing well. I\'m writing to let you know our finance team has <span class="flag" data-fid="f1">recently switched our banking provider</span> and updated payment instructions for AcmeSupplies invoices going forward.</p>' +
+        '<p>For your records, please update our payment details to:</p>' +
+        '<p style="background:#f7f8fc;padding:10px;border-radius:6px;font-family:monospace;">Account name: <span class="flag" data-fid="f2">AcmeSupplies International Holdings Ltd</span><br>IBAN: GB29 NWBK 6016 1331 9268 19<br>SWIFT: <span class="flag" data-fid="f3">NWBKGB2L</span><br>Bank: NatWest, London</p>' +
+        '<p>This applies to <span class="flag" data-fid="f4">all invoices from this week onward</span> — please update your master records before processing the August batch.</p>' +
+        '<p><span class="flag" data-fid="f5">No need to send written confirmation</span> — just update your system. If you have questions feel free to email me here.</p>' +
+        '<p>Thanks,<br>Patricia<br>AcmeSupplies Accounts</p>',
+      attachments: [{ name: 'updated-payment-instructions.pdf', protected: false }],
+      flags: [
+        { id: 'f1', category: 'process-bypass', label: 'Bank change with no advance notice', why: 'Legitimate vendor bank-detail changes follow contractual notification protocols (signed letter, 30+ days notice, finance-to-finance phone confirmation). Email-only request bypasses controls.' },
+        { id: 'f2', category: 'entity-mismatch', label: 'Account name doesn\'t match vendor entity', why: '"AcmeSupplies International Holdings Ltd" vs your vendor record likely showing "AcmeSupplies Inc" or similar. Subtle entity-name mismatches are favoured for fraud (legitimate-sounding but routes to attacker).' },
+        { id: 'f3', category: 'jurisdiction-mismatch', label: 'New jurisdiction (UK NatWest) for US/local vendor', why: 'Vendor in your domestic country suddenly switching to international bank = red flag. Cross-border bank changes require enhanced verification.' },
+        { id: 'f4', category: 'urgency', label: 'Urgency: "all invoices from this week onward"', why: 'Urgency engineered to push the change through before AP can verify. Legit changes specify a future effective date with verification window.' },
+        { id: 'f5', category: 'pre-empt-verify', label: '"No need to send written confirmation"', why: 'Bank-detail changes ALWAYS require written confirmation per any reasonable AP control framework. Pre-emptive removal of verification = fraud signal.' },
+        { id: 'f6', category: 'sender-mismatch', label: 'Sender email is legitimate (compromised account)', why: 'The address is real — Patricia\'s real account was compromised (or she\'s been internally compromised). This is sophisticated BEC where the email looks 100% legitimate.' },
+        { id: 'f7', category: 'absence-of-context', label: 'No reference to recent invoices or interactions', why: 'Real vendor messages reference recent purchase orders, conversations, project context. Generic "for upcoming invoices" suggests a templated attack rather than relationship-aware comms.' }
+      ],
+      correctAction: 'report',
+      decisionReveal: {
+        report: { isCorrect: true, label: 'Report to security + verify out-of-band', why: 'Correct. Sender account is likely compromised — but the request must be confirmed via signed letter + phone-back to known number (not the one in any email). Security will coordinate.' },
+        delete: { isCorrect: false, label: 'Delete', why: 'Vendor account may genuinely be compromised affecting multiple AP processes — delete loses evidence + doesn\'t alert AcmeSupplies that they need to investigate.' },
+        reply: { isCorrect: false, label: 'Reply to confirm', why: 'Replying to a possibly-compromised account routes your confirmation to the attacker. Out-of-band verification only.' },
+        click: { isCorrect: false, label: 'Update the system as requested', why: 'Trap. This is the action the attacker wants. Bank-detail changes ALWAYS require enhanced verification. Refuse to act on email alone.' },
+        spam: { isCorrect: false, label: 'Mark as spam', why: 'Sender address is legitimate — spam-flag will be undone or override company allowlist. Report + verify out-of-band.' }
+      },
+      patternName: 'Vendor BEC (compromised legitimate sender)',
+      patternBlurb: 'SY0-701 Domain 2.2. Hardest phish to spot — sender address is legitimate. Defense: process-based, not email-based. Bank-detail changes require signed letter + phone-back to known number + AP supervisor approval.'
+    },
+    // ──────────────────────────────────────────────────────────────────
+    // 4) IT helpdesk MFA reset — credential harvest
+    // ──────────────────────────────────────────────────────────────────
+    {
+      id: 'it-mfa-reset',
+      title: 'IT helpdesk MFA reset request',
+      vector: 'email',
+      difficulty: 2,
+      unlockAfter: [],
+      category: 'credential-harvest',
+      summary: '"IT" emailing about new MFA enrolment requirement. Lookalike helpdesk URL, urgency cues.',
+      sender: { name: 'IT Helpdesk', email: 'helpdesk@corp-it-support.com', avatar: 'IT', avatarColor: '#06b6d4' },
+      subject: 'Required: Re-enrol MFA before policy deadline',
+      to: 'michael.chen@corp.com',
+      time: '08:14',
+      bodyHtml: '<p>Hello Michael,</p>' +
+        '<p>As part of our <span class="flag" data-fid="f1">new corporate security policy rollout</span>, all employees must re-enrol their multi-factor authentication (MFA) before <strong><span class="flag" data-fid="f2">end of day Friday</span></strong>.</p>' +
+        '<p>Please log in to the helpdesk portal to complete the re-enrolment:</p>' +
+        '<p><a href="#"><span class="flag" data-fid="f3">https://corp-it-support.com/mfa-enrol/</span></a></p>' +
+        '<p><span class="flag" data-fid="f4">Failure to comply will result in account suspension.</span></p>' +
+        '<p>If you experience any difficulty, please reply to this email and our team will assist you directly.</p>' +
+        '<p>Best regards,<br>IT Helpdesk Team<br><span class="flag" data-fid="f5">Corporate IT Support Services</span></p>',
+      attachments: [],
+      flags: [
+        { id: 'f1', category: 'corp-policy-impersonation', label: '"New corporate security policy"', why: 'Real IT policy changes are announced through HR + town halls + the IT internal portal — not surprise emails. Verify any "new policy" via the official channels.' },
+        { id: 'f2', category: 'urgency', label: 'Tight deadline: "end of day Friday"', why: 'Real IT policies give 30+ days for fleet-wide changes like MFA re-enrolment. Tight deadlines = engineered panic.' },
+        { id: 'f3', category: 'lookalike-url', label: 'Lookalike helpdesk URL (corp-it-support.com)', why: 'Real corp helpdesk would be at helpdesk.corp.com or it.corp.com — internal subdomain, not external "support" domain. Always verify portal URLs against your bookmarks.' },
+        { id: 'f4', category: 'urgency', label: 'Threat: "account suspension"', why: 'Real IT doesn\'t suspend accounts for missed MFA re-enrolment without escalation through HR + manager. Direct-to-suspension threats = social engineering.' },
+        { id: 'f5', category: 'branding', label: 'Generic team name "Corporate IT Support Services"', why: 'Real corp IT identifies as the actual team name (e.g. "Information Security" or "Tech Operations"). Generic-sounding "Support Services" sounds plausible but matches a phishing template.' },
+        { id: 'f6', category: 'sender-mismatch', label: 'External sender domain', why: 'corp-it-support.com is external — your real IT would email from corp.com or @corp-internal addresses. Domain-mismatch is the single biggest tell.' },
+        { id: 'f7', category: 'reply-trap', label: '"Reply to this email" reply-loop', why: 'Asking the user to reply for help routes any concerns directly to the attacker — who can then social-engineer further (e.g. "OK send me your current password to reset for you").' }
+      ],
+      correctAction: 'report',
+      decisionReveal: {
+        report: { isCorrect: true, label: 'Report to security', why: 'Right call. Security can verify whether IT actually has any MFA re-enrolment campaign + alert other recipients. Verify via the official IT portal at corp.com/it.' },
+        delete: { isCorrect: false, label: 'Delete', why: 'Doesn\'t alert security to the campaign. Report first.' },
+        reply: { isCorrect: false, label: 'Reply for help', why: 'Routes you to the attacker who will continue the social engineering. Always verify IT messages via known internal channels.' },
+        click: { isCorrect: false, label: 'Click the enrolment link', why: 'Clicking exposes you to the credential-capture page mimicking your real corp login. Bookmark your real IT portal + only use that.' },
+        spam: { isCorrect: false, label: 'Mark as spam', why: 'Filters this email but doesn\'t alert IT or other recipients. Report so security can confirm + warn org-wide.' }
+      },
+      patternName: 'IT helpdesk impersonation (credential harvest)',
+      patternBlurb: 'SY0-701 Domain 2.2. IT impersonation is high-yield because users instinctively trust IT. Defense: bookmark official portals, never click IT links from email — type the URL directly.'
+    },
+    // ──────────────────────────────────────────────────────────────────
+    // 5) Bank fraud alert — callback scam
+    // ──────────────────────────────────────────────────────────────────
+    {
+      id: 'bank-fraud-callback',
+      title: 'Bank "fraud alert" with callback number',
+      vector: 'email',
+      difficulty: 2,
+      unlockAfter: [],
+      category: 'callback-scam',
+      summary: '"Suspicious activity on your account." Provides callback number that routes to scammer call center.',
+      sender: { name: 'Chase Online Banking', email: 'security-alert@chase-online-banking.com', avatar: 'CB', avatarColor: '#117ACA' },
+      subject: '🚨 Suspicious activity detected on your account ending 4271',
+      to: 'recipient@corp.com',
+      time: '17:42',
+      bodyHtml: '<p style="font-family:Arial,sans-serif;background:#117ACA;color:#fff;padding:8px 14px;font-weight:bold;">Chase Online Banking</p>' +
+        '<p style="font-family:Arial,sans-serif;">Dear Valued Customer,</p>' +
+        '<p>We detected a <span class="flag" data-fid="f1">suspicious charge of $487.32</span> on your debit card ending 4271 at <span class="flag" data-fid="f2">"BestBuy Canada"</span>.</p>' +
+        '<p>If you authorized this transaction, no action is needed.</p>' +
+        '<p>If <strong>you did NOT authorize this charge</strong>, please call us immediately:</p>' +
+        '<p style="text-align:center;font-size:18px;font-weight:bold;color:#117ACA;"><span class="flag" data-fid="f3">📞 1-877-555-FAKE (3253)</span></p>' +
+        '<p style="color:#dc2626;"><span class="flag" data-fid="f4">⚠ Failure to confirm within 30 minutes will result in your card being permanently locked.</span></p>' +
+        '<p>For your security, do not click any links — call us using the number above.</p>',
+      attachments: [],
+      flags: [
+        { id: 'f1', category: 'specific-amount', label: 'Specific transaction amount + merchant', why: 'Crafted to feel real ("$487.32 at BestBuy Canada" sounds plausible). Real bank fraud alerts come via the bank app, NOT email. Specific details create authenticity but the channel is wrong.' },
+        { id: 'f2', category: 'jurisdiction-mismatch', label: 'Foreign-merchant tease', why: 'Cross-border charge ("BestBuy Canada") creates emotional response. Engineered to make you panic + want to act fast.' },
+        { id: 'f3', category: 'callback-scam', label: 'Callback number not on physical card', why: 'Real bank fraud-alerts direct you to the number on the back of your physical card or to log in to the official app — never to a number printed in the email itself. Callback scam = pure social-engineering channel.' },
+        { id: 'f4', category: 'urgency', label: 'Urgency: "30 minutes"', why: 'Real banks freeze your card automatically + give you weeks to dispute. 30-minute deadlines force panic-call to the scammer.' },
+        { id: 'f5', category: 'sender-mismatch', label: 'Sender domain not chase.com', why: 'Real Chase emails come from chase.com or chase-services.com (their actual subdomain). "chase-online-banking.com" is a typosquat.' },
+        { id: 'f6', category: 'preempt-link', label: '"Do not click any links" misdirection', why: 'Sounds responsible but is the social-engineering hook — pushes you to call the bad number instead. Real banks never redirect you to a phone number via email like this.' }
+      ],
+      correctAction: 'report',
+      decisionReveal: {
+        report: { isCorrect: true, label: 'Report to security + verify via bank app', why: 'Correct. Report to security so they alert others. Verify any real card activity via your bank\'s official app or by calling the number on the back of your physical card.' },
+        delete: { isCorrect: false, label: 'Delete', why: 'Doesn\'t alert security. Could affect colleagues with the same bank.' },
+        reply: { isCorrect: false, label: 'Reply', why: 'Confirms your email is live to the attacker.' },
+        click: { isCorrect: false, label: 'Call the number', why: 'Routes you to the scam call center where they\'ll social-engineer your card details + verification info to drain your account.' },
+        spam: { isCorrect: false, label: 'Mark as spam', why: 'Filters this but doesn\'t alert security or warn colleagues.' }
+      },
+      patternName: 'Callback scam (bank impersonation)',
+      patternBlurb: 'SY0-701 Domain 2.2. Callback scams bypass email-link defenses by routing you through the phone. Defense: only use the phone number on the back of your physical card or in your bank\'s app.'
+    },
+    // ──────────────────────────────────────────────────────────────────
+    // 6) CEO gift card request — BEC variant (low-cost test)
+    // ──────────────────────────────────────────────────────────────────
+    {
+      id: 'ceo-gift-card',
+      title: '"CEO" urgent gift card request',
+      vector: 'email',
+      difficulty: 2,
+      unlockAfter: [],
+      category: 'bec',
+      summary: 'CEO display-name spoof requesting urgent gift card purchases for "client appreciation".',
+      sender: { name: 'David Kim, CEO', email: 'david.k.ceo@gmail.com', avatar: 'DK', avatarColor: '#a855f7' },
+      subject: 'Quick favor — need your help',
+      to: 'sarah.johnson@corp.com',
+      time: '15:33',
+      bodyHtml: '<p><span class="flag" data-fid="f1">Hi Sarah,</span></p>' +
+        '<p>Are you available right now? I need a quick favor and don\'t have time to explain over a call — <span class="flag" data-fid="f2">I\'m heading into a board meeting in 10 minutes</span>.</p>' +
+        '<p>I need to send <span class="flag" data-fid="f3">$500 in Apple gift cards</span> to a key client as part of our appreciation program. Could you pick them up and email me the codes? I\'ll reimburse you on expense report.</p>' +
+        '<p><span class="flag" data-fid="f4">Please don\'t mention this to anyone</span> — it\'s tied to a pending deal we haven\'t announced yet.</p>' +
+        '<p>Thanks for jumping on this!<br>David</p>' +
+        '<p style="color:#888;font-size:11px;"><em>Sent from my mobile</em></p>',
+      attachments: [],
+      flags: [
+        { id: 'f1', category: 'sender-mismatch', label: 'Display-name spoof (gmail.com)', why: 'Display says CEO David Kim but address is david.k.ceo@gmail.com. Real CEO uses corp.com address. Display-name spoofing is trivial.' },
+        { id: 'f2', category: 'urgency', label: 'Urgency: "board meeting in 10 minutes"', why: 'Time pressure designed to bypass verification. Real CEO would have someone else handle this if they\'re too busy.' },
+        { id: 'f3', category: 'gift-card-redflag', label: 'Gift cards as the requested action', why: 'Gift cards are the #1 BEC indicator. Real corporate spending uses purchase orders + expense systems. CEO never asks employees to buy gift cards via email.' },
+        { id: 'f4', category: 'isolation', label: 'Isolation: "Please don\'t mention this to anyone"', why: 'Classic BEC. Secrecy stops you asking the real CEO via in-person/Slack to verify. Defense: ALWAYS verify out-of-band before any unusual money movement.' },
+        { id: 'f5', category: 'process-bypass', label: '"I\'ll reimburse on expense report"', why: 'Real corporate gifts go through marketing/sales budgets, not personal reimbursement. Expense-report-after framing bypasses procurement controls.' },
+        { id: 'f6', category: 'mobile-pretext', label: '"Sent from my mobile" excuse for brevity/typos', why: 'Mobile signature creates plausible cover for unusual brevity, missing context, or typos. Pre-empts "this doesn\'t sound like the CEO" objections.' }
+      ],
+      correctAction: 'report',
+      decisionReveal: {
+        report: { isCorrect: true, label: 'Report to security', why: 'Correct call. Gift card BEC is one of the most common BEC variants. Security alerts other recipients + the team can warn org-wide.' },
+        delete: { isCorrect: false, label: 'Delete', why: 'Misses the chance to alert security + warn colleagues. Report.' },
+        reply: { isCorrect: false, label: 'Reply to ask', why: 'Replies route to the attacker. Verify out-of-band — find David\'s real number via the company directory and call.' },
+        click: { isCorrect: false, label: 'Buy the gift cards', why: 'You\'ve handed $500 to the attacker. Gift cards are untraceable + unrecoverable. Never act on email alone.' },
+        spam: { isCorrect: false, label: 'Mark as spam', why: 'Filters this but doesn\'t protect colleagues from the same template. Report.' }
+      },
+      patternName: 'Gift-card BEC (CEO impersonation)',
+      patternBlurb: 'SY0-701 Domain 2.2. Gift-card BEC is the #1 most-attempted BEC variant globally. Defense: organisational policy that no exec ever requests gift cards via email + any unusual money movement requires out-of-band verification.'
+    }
+  ],
+  phishingLessons: [
+    {
+      id: 'anatomy-of-phish',
+      title: 'Anatomy of a phish — universal red flags',
+      summary: '8 categories of red flag that show up across every vector (email, SMS, voice, QR).',
+      flags: [
+        { name: 'Sender mismatch', detail: 'Display-name says one thing, actual sender says another. <code>"Microsoft" &lt;noreply@suspicious.tk&gt;</code>' },
+        { name: 'Urgency cue', detail: '"ACT NOW", "24 hours", "final notice." Designed to short-circuit verification.' },
+        { name: 'Isolation / secrecy', detail: '"Don\'t tell anyone", "between us", "I\'m in a meeting." Stops you asking the real person.' },
+        { name: 'Lookalike URL / domain', detail: 'Typosquat (<code>microsoft.com</code> vs <code>mlcrosoft.com</code>), recent registration, IP-instead-of-domain.' },
+        { name: 'Generic greeting', detail: '"Dear Customer", "Hi User", or template-style first-name only. Templates beget mass-send.' },
+        { name: 'Suspicious attachment / payload', detail: '<code>.zip</code> (often password-protected to bypass scanners), <code>.iso</code>, <code>.exe</code>, macros enabled.' },
+        { name: 'Pre-empts verification', detail: '"I can\'t be reached by phone", "don\'t reply to this address", "use the form below." Closes alternative channels.' },
+        { name: 'Money or credentials ask', detail: 'Wire transfer, gift card, password reset, MFA prompt. The point of the entire attack.' }
+      ]
+    },
+    {
+      id: 'bec-redflags',
+      title: 'BEC red flags — the executive impersonation playbook',
+      summary: 'Business Email Compromise is the #1 financial-loss phishing category. Specific tells.',
+      flags: [
+        { name: 'Display-name spoof', detail: 'Anyone can set "From" display name to "your CEO"; check the actual address.' },
+        { name: 'Reply-To &ne; From', detail: 'Replies are routed to the attacker\'s inbox via Reply-To header mismatch.' },
+        { name: 'Urgency + isolation pair', detail: 'Time pressure + "don\'t loop anyone in" — together they\'re BEC\'s signature.' },
+        { name: 'Money + secrecy', detail: 'Wire transfer, gift cards, bank-detail change combined with "this is confidential" framing.' },
+        { name: 'Pre-empts phone verification', detail: '"I\'m unavailable / in a meeting / on a flight" stops you calling to verify.' },
+        { name: 'Out-of-band verification = the defense', detail: 'Always call the executive on their known number via the company directory before any unusual money movement.' }
+      ]
+    },
+    {
+      id: 'credential-harvest-redflags',
+      title: 'Credential harvest red flags — fake login pages',
+      summary: 'Phish that aims to capture your password by routing you to a fake login page.',
+      flags: [
+        { name: 'Hover URL ≠ visible link', detail: 'Link text says one thing, href says another. Always hover to verify destination before clicking.' },
+        { name: 'Lookalike domain', detail: 'Typosquats (<code>m1crosoft</code>), homograph attacks (Cyrillic letters), unusual subdomains.' },
+        { name: 'Generic greeting', detail: 'Real brand emails address you by full name + tenant — never "Dear Customer".' },
+        { name: 'Brand impersonation tells', detail: 'Outdated copyright year, slightly-off logo, generic team-name signature.' },
+        { name: 'Header anomalies', detail: 'SPF/DKIM/DMARC failures (advanced; usually behind-the-scenes — flagged by your mail provider).' },
+        { name: 'Defense: bookmark + type, never click', detail: 'For any service, bookmark the real login page + always type the URL or use the bookmark — never click email links.' }
+      ]
+    },
+    {
+      id: 'callback-scam-redflags',
+      title: 'Callback scams — bypass email defenses via phone',
+      summary: 'Phish that routes you to a phone-based attack rather than a malicious link.',
+      flags: [
+        { name: 'Phone number embedded in email', detail: 'Real banks/brands direct you to the number on your physical card or in their app — never to a number printed in the email.' },
+        { name: 'Tight deadline', detail: '"30 minutes", "1 hour" engineered to push panic-calls. Real services give days to weeks.' },
+        { name: 'Authoritative impersonation', detail: 'Bank, Microsoft, IRS, Apple — institutions you instinctively trust + answer for.' },
+        { name: '"Don\'t click any links" misdirection', detail: 'Sounds responsible but is the hook — drives you to phone the scammer instead.' },
+        { name: 'Defense: verify via official channel only', detail: 'Bank: call the number on your card. SaaS: log in to the official app. IRS: never calls you. Trust nothing in the email\'s phone number.' }
+      ]
+    }
   ]
 };

@@ -301,7 +301,7 @@ test('Validation in runSessionStep', js.includes('aiValidateQuestions(apiKey, qu
 
 // ── Analytics v2 (v4.5) ──
 console.log('\n\x1b[1m── ANALYTICS v2 (v4.5) ──\x1b[0m');
-test('APP_VERSION is 4.97.3', js.includes("const APP_VERSION = '4.97.3"));
+test('APP_VERSION is 4.98.0', js.includes("const APP_VERSION = '4.98.0"));
 test('getDailyGoal function', js.includes('function getDailyGoal('));
 test('renderDailyGoal function', js.includes('function renderDailyGoal('));
 test('editDailyGoal function', js.includes('function editDailyGoal('));
@@ -315,7 +315,7 @@ test('CSS: .topic-domain-group', css.includes('.topic-domain-group'));
 test('CSS: .daily-goal-card', css.includes('.daily-goal-card'));
 test('CSS: .advanced-section', css.includes('.advanced-section'));
 test('CSS: .hero-stats-strip', css.includes('.hero-stats-strip'));
-test('SW cache bumped to v4.97.3', sw.includes('netplus-v4.97.3'));
+test('SW cache bumped to v4.98.0', sw.includes('netplus-v4.98.0'));
 test('Family Drill: STORAGE.PORT_FAMILY_BEST', js.includes("PORT_FAMILY_BEST:"));
 test('Family Drill: ptMode handles family', js.includes("ptMode === 'family'"));
 test('Family Drill: HTML mode button', html.includes('id="pt-mode-family"'));
@@ -16575,8 +16575,8 @@ test('v4.94.0 AMM: launcher tile is LIVE (not is-coming-soon)',
   // The JS source escapes single quotes inside the string literal: onclick="showPage(\'amm\')..."
   /onclick="showPage\(\\'amm\\'\);startAttackMitigation\(\)/.test(js));
 test('v4.94.0 AMM: launcher header lede updated to reflect AMM live',
-  // v4.95.0 added CTS to the lede; either form is acceptable as long as AMM appears as live.
-  /Acronym Blitz[\s\S]{0,80}Attack-to-Mitigation[\s\S]{0,80}live/.test(js));
+  // v4.95.0 added CTS, v4.97.0 added IRW, v4.98.0 changed lede shape — accept either ordering.
+  /(Acronym Blitz[\s\S]{0,150}Attack-to-Mitigation[\s\S]{0,150}live|live[\s\S]{0,200}Acronym Blitz[\s\S]{0,150}Attack-to-Mitigation)/.test(js));
 
 // HTML page exists
 test('v4.94.0 AMM: index.html has #page-amm',
@@ -16918,7 +16918,8 @@ test('v4.97.0 IRW: index.html has 3 irw tabs (practice/lessons/dashboard)',
 test('v4.97.0 IRW: Sec+ drills launcher has IR War Room flagship tile',
   /secplus-drill-tile-flagship[\s\S]{0,300}startIncidentResponseWarRoom/.test(js));
 test('v4.97.0 IRW: Sec+ drills launcher lede mentions IR War Room is live',
-  /Incident Response War Room flagship are live/.test(js));
+  // v4.98.0 expanded lede to "All 5 are live" + names IRW
+  /Incident Response War Room/.test(js) && /(flagship are live|All 5 are live)/.test(js));
 test('v4.97.0 IRW: .irw-warroom 3-column grid CSS',
   /\.irw-warroom\s*\{[\s\S]{0,200}grid-template-columns:[\s\S]{0,80}280px[\s\S]{0,40}1fr[\s\S]{0,40}280px/.test(css));
 test('v4.97.0 IRW: .irw-timeline grid (6 PICERL columns)',
@@ -17136,6 +17137,102 @@ test('v4.97.3 IRW: .irw-dash-vec-fill bar transition CSS',
   /\.irw-dash-vec-fill\s*\{[\s\S]{0,200}transition:\s*width/.test(css));
 test('v4.97.3 IRW: .irw-dash-callout prescriptive UI CSS',
   /\.irw-dash-callout\s*\{/.test(css) && /\.irw-dash-callout-cta/.test(css));
+
+// ============================================================================
+// v4.98.0 — Phishing Triage Lab Batch 1/4 (Sec+ flagship #2, issue #313)
+// ============================================================================
+test('v4.98.0 PHT: secplus.js declares phishingScenarios',
+  certSecplus.includes('phishingScenarios:'));
+test('v4.98.0 PHT: secplus.js declares phishingLessons',
+  certSecplus.includes('phishingLessons:'));
+test('v4.98.0 PHT: secplus.js declares phishingVectors (4 vectors)',
+  certSecplus.includes('phishingVectors:') &&
+  /'email'/.test(certSecplus) && /'sms'/.test(certSecplus) &&
+  /'voice'/.test(certSecplus) && /'qr'/.test(certSecplus));
+test('v4.98.0 PHT: 6 email phish at v1',
+  (() => {
+    // phishingScenarios is followed by phishingLessons in the secplus pack;
+    // match the scenarios block specifically.
+    const m = certSecplus.match(/phishingScenarios:\s*\[([\s\S]+?)phishingLessons:/);
+    if (!m) return false;
+    const ids = m[1].match(/^      id: '[a-z][a-z0-9-]+',/gm) || [];
+    return ids.length === 6;
+  })());
+test('v4.98.0 PHT: 6 phish IDs (cfo-bec / ms-password / vendor-invoice / it-mfa / bank-fraud / ceo-gift-card)',
+  /id:\s*'cfo-bec-wire-fraud'/.test(certSecplus) &&
+  /id:\s*'ms-password-expiry'/.test(certSecplus) &&
+  /id:\s*'vendor-invoice-update'/.test(certSecplus) &&
+  /id:\s*'it-mfa-reset'/.test(certSecplus) &&
+  /id:\s*'bank-fraud-callback'/.test(certSecplus) &&
+  /id:\s*'ceo-gift-card'/.test(certSecplus));
+test('v4.98.0 PHT: vendor-invoice locked behind cfo-bec-wire-fraud (progressive disclosure)',
+  /id:\s*'vendor-invoice-update'[\s\S]{0,500}unlockAfter:\s*\['cfo-bec-wire-fraud'\]/.test(certSecplus));
+test('v4.98.0 PHT: cert-aware module-load constants',
+  /const _SECPLUS_HAS_PHT\s*=/.test(js) &&
+  /const _USE_SECPLUS_PHT\s*=[\s\S]{0,200}CURRENT_CERT === 'secplus'[\s\S]{0,200}_SECPLUS_HAS_PHT/.test(js));
+test('v4.98.0 PHT: STORAGE.PHT_MASTERY + PHT_LESSONS keys defined',
+  /PHT_MASTERY:\s*'nplus_pht_mastery'/.test(js) &&
+  /PHT_LESSONS:\s*'nplus_pht_lessons'/.test(js));
+test('v4.98.0 PHT: cloud-store registers PHT keys',
+  cloudStoreJs.includes("'nplus_pht_mastery'") &&
+  cloudStoreJs.includes("'nplus_pht_lessons'"));
+test('v4.98.0 PHT: startPhishingTriageLab function exists + cert-gated',
+  /function startPhishingTriageLab\(\)\s*\{[\s\S]{0,500}_USE_SECPLUS_PHT/.test(js));
+test('v4.98.0 PHT: setPhtTab tab switcher (3 panes)',
+  /function setPhtTab\(/.test(js) &&
+  /'practice', 'lessons', 'dashboard'/.test(js));
+test('v4.98.0 PHT: phtToggleFlag click-to-tag function',
+  /function phtToggleFlag\(/.test(js) &&
+  /_phtTaggedFlagIds/.test(js));
+test('v4.98.0 PHT: phtSubmitDecision computes flag-pct + decisionCorrect',
+  /function phtSubmitDecision\([\s\S]{0,1500}phtUpdateScenarioMastery/.test(js));
+test('v4.98.0 PHT: phtUpdateScenarioMastery saves on completion',
+  /function phtUpdateScenarioMastery\(/.test(js) &&
+  /function phtSaveMastery\([\s\S]{0,300}_cloudFlush\(STORAGE\.PHT_MASTERY\)/.test(js));
+test('v4.98.0 PHT: APP_SIDEBAR_DRILLS_SECPLUS includes PHT entry',
+  /APP_SIDEBAR_DRILLS_SECPLUS\s*=\s*\[[\s\S]{0,1000}'Phishing Triage'/.test(js));
+test('v4.98.0 PHT: SIDEBAR_ACTIVE_MAP has pht entry',
+  /'pht':\s*'pht'/.test(js));
+test('v4.98.0 PHT: TOPBAR_CRUMBS has pht entry',
+  /'pht':\s*'Phishing Triage Lab'/.test(js));
+test('v4.98.0 PHT: index.html has #page-pht',
+  html.includes('id="page-pht"'));
+test('v4.98.0 PHT: index.html has 3 pht tabs',
+  html.includes('id="pht-tab-btn-practice"') &&
+  html.includes('id="pht-tab-btn-lessons"') &&
+  html.includes('id="pht-tab-btn-dashboard"'));
+test('v4.98.0 PHT: Sec+ launcher has PHT flagship tile (replaces SOON tile)',
+  /secplus-drill-tile-flagship[\s\S]{0,500}startPhishingTriageLab/.test(js));
+test('v4.98.0 PHT: Sec+ launcher lede mentions all 5 drills are live',
+  /All 5 are live/.test(js));
+test('v4.98.0 PHT: .pht-reading email pane CSS',
+  /\.pht-reading\s*\{/.test(css));
+test('v4.98.0 PHT: .pht-rd-body .flag click-to-tag CSS',
+  /\.pht-rd-body \.flag/.test(css));
+test('v4.98.0 PHT: flag tagged + revealed-missed states',
+  /\.flag\.is-tagged/.test(css) && /\.flag\.is-revealed-missed/.test(css));
+test('v4.98.0 PHT: .pht-decision-btn (5 actions)',
+  /\.pht-decision-btn\s*\{/.test(css));
+test('v4.98.0 PHT: .pht-reveal-card + grid + flag rows CSS',
+  /\.pht-reveal-card\s*\{/.test(css) &&
+  /\.pht-reveal-grid\s*\{/.test(css) &&
+  /\.pht-reveal-flag-row/.test(css));
+test('v4.98.0 PHT: 4 lesson cards (anatomy, BEC, credential harvest, callback)',
+  /id:\s*'anatomy-of-phish'/.test(certSecplus) &&
+  /id:\s*'bec-redflags'/.test(certSecplus) &&
+  /id:\s*'credential-harvest-redflags'/.test(certSecplus) &&
+  /id:\s*'callback-scam-redflags'/.test(certSecplus));
+test('v4.98.0 PHT: total flags ≥ 35 across 6 phish',
+  (() => {
+    const m = certSecplus.match(/phishingScenarios:\s*\[([\s\S]+?)phishingLessons:/);
+    if (!m) return false;
+    const flags = m[1].match(/\{ id:\s*'f\d+'/g) || [];
+    return flags.length >= 35;
+  })());
+test('v4.98.0 PHT: cfo-bec-wire-fraud has all 5 decisionReveal options',
+  /id:\s*'cfo-bec-wire-fraud'[\s\S]{0,15000}decisionReveal:\s*\{[\s\S]{0,3000}report:[\s\S]{0,500}delete:[\s\S]{0,500}reply:[\s\S]{0,500}click:[\s\S]{0,500}spam:/.test(certSecplus));
+test('v4.98.0 PHT: PHT reduced-motion gate present',
+  /@media \(prefers-reduced-motion:\s*reduce\)[\s\S]{0,2000}\.pht-/.test(css));
 
 // ── Summary ──
 console.log('\n' + '═'.repeat(50));

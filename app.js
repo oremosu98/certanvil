@@ -1,9 +1,9 @@
 // ══════════════════════════════════════════
-// Network+ AI Quiz — app.js  v4.97.3
+// Network+ AI Quiz — app.js  v4.98.0
 // ══════════════════════════════════════════
 
 // ── CONSTANTS ──
-const APP_VERSION = '4.97.3';
+const APP_VERSION = '4.98.0';
 
 // ══════════════════════════════════════════════════════════════════════════
 // CERT PACK ARCHITECTURE (v4.86.0 Phase 1A engine refactor)
@@ -307,6 +307,8 @@ const STORAGE = {
   PT_RESUME:   'nplus_pt_resume',    // mid-scenario resume state
   IRW_MASTERY: 'nplus_irw_mastery',  // v4.97.0: Security+ Incident Response War Room (flagship #1)
   IRW_LESSONS: 'nplus_irw_lessons',
+  PHT_MASTERY: 'nplus_pht_mastery',  // v4.98.0: Security+ Phishing Triage Lab (flagship #2)
+  PHT_LESSONS: 'nplus_pht_lessons',
   OS_MASTERY: 'nplus_os_mastery',
   OS_LESSONS: 'nplus_os_lessons',
   CB_MASTERY: 'nplus_cb_mastery',
@@ -1099,7 +1101,7 @@ function _renderSecPlusDrillsLauncher() {
   pageEl.innerHTML = ''
     + '<div class="ed-pagehead"><div class="ed-section-meta">Security+ Drills</div>'
     +   '<h1 class="ed-pagehead-h1">Pick a drill</h1>'
-    +   '<p class="ed-pagehead-lede">SY0-701-specific drills designed to move you closer to passing. Acronym Blitz, Attack-to-Mitigation, Control Type Sorter, and the Incident Response War Room flagship are live; the Phishing Triage Lab flagship arrives in v4.98.0.</p>'
+    +   '<p class="ed-pagehead-lede">SY0-701-specific drills designed to move you closer to passing. All 5 are live: Acronym Blitz, Attack-to-Mitigation, Control Type Sorter, plus the two flagships — Incident Response War Room (Domain 4) and Phishing Triage Lab (Domain 2).</p>'
     + '</div>'
     + '<div class="secplus-drill-grid">'
     +   '<a class="secplus-drill-tile" href="#" onclick="showPage(\'acronyms\');startAcronymBlitz();return false;">'
@@ -1124,19 +1126,19 @@ function _renderSecPlusDrillsLauncher() {
     +     '<div class="secplus-drill-tile-meta">Domain 1.1 · ~5 min/session</div>'
     +   '</a>'
     +   '<a class="secplus-drill-tile secplus-drill-tile-flagship" href="#" onclick="showPage(\'irw\');startIncidentResponseWarRoom();return false;">'
-    +     '<span class="secplus-drill-tile-badge is-flagship">FLAGSHIP · NEW</span>'
+    +     '<span class="secplus-drill-tile-badge is-flagship">FLAGSHIP · LIVE</span>'
     +     '<div class="secplus-drill-tile-icon" aria-hidden="true">🚨</div>'
     +     '<div class="secplus-drill-tile-title">Incident Response War Room</div>'
-    +     '<div class="secplus-drill-tile-sub">5 scenarios (ransomware, BEC, S3 breach, insider, LockBit). Walk PICERL phases. Multi-select decisions. The flagship for D4.</div>'
+    +     '<div class="secplus-drill-tile-sub">20 scenarios (ransomware, BEC, S3 breach, APT, etc.). Walk PICERL phases. Practice + Pressure modes + AI generator. The flagship for D4.</div>'
     +     '<div class="secplus-drill-tile-meta">Domain 4 (28%) · ~10-15 min/scenario</div>'
     +   '</a>'
-    +   '<div class="secplus-drill-tile is-coming-soon" aria-disabled="true">'
-    +     '<span class="secplus-drill-tile-badge is-soon">SOON</span>'
+    +   '<a class="secplus-drill-tile secplus-drill-tile-flagship" href="#" onclick="showPage(\'pht\');startPhishingTriageLab();return false;">'
+    +     '<span class="secplus-drill-tile-badge is-flagship">FLAGSHIP · NEW</span>'
     +     '<div class="secplus-drill-tile-icon" aria-hidden="true">🎣</div>'
     +     '<div class="secplus-drill-tile-title">Phishing Triage Lab</div>'
-    +     '<div class="secplus-drill-tile-sub">D2 flagship — click-the-flag inbox simulator across email, SMS, voice, QR. 60 phish + AI generator. Mockup locked.</div>'
-    +     '<div class="secplus-drill-tile-meta">Issue #313 · queued v4.98.0</div>'
-    +   '</div>'
+    +     '<div class="secplus-drill-tile-sub">6 email phish at v1 (SMS/voice/QR variants land in v4.98.1+). Click-the-flag inbox simulator. Pick the right action. The flagship for D2.</div>'
+    +     '<div class="secplus-drill-tile-meta">Domain 2 (22%) · ~3-5 min/phish</div>'
+    +   '</a>'
     + '</div>';
 }
 
@@ -32342,6 +32344,21 @@ const IRW_LESSONS = _USE_SECPLUS_IRW && Array.isArray(CERT_PACK.incidentResponse
 // Pressure-mode time budgets per scenario difficulty (seconds).
 const IRW_PRESSURE_BUDGETS = { 1: 1800, 2: 1500, 3: 2100 };
 
+// ── Phishing Triage Lab (v4.98.0, issue #313) ───────────────────────────
+// Flagship Security+ drill #2 (SY0-701 Domain 2, 22%). Click-the-flag inbox
+// simulator across email/SMS/voice/QR. v4.98.0 ships 6 email phish + 4
+// lesson cards; v4.98.1 adds smishing; v4.98.2 adds vishing+quishing;
+// v4.98.3 adds AI generator + dashboard. Visual contract locked to
+// mockups/security-phishing-email-triage-lab-concept.html (9 states).
+const _SECPLUS_HAS_PHT = typeof CERT_PACK === 'object' && CERT_PACK !== null
+  && Array.isArray(CERT_PACK.phishingScenarios) && CERT_PACK.phishingScenarios.length > 0;
+const _USE_SECPLUS_PHT = (typeof CURRENT_CERT !== 'undefined') && CURRENT_CERT === 'secplus' && _SECPLUS_HAS_PHT;
+const PHT_DATA = _USE_SECPLUS_PHT ? CERT_PACK.phishingScenarios : [];
+const PHT_LESSONS = _USE_SECPLUS_PHT && Array.isArray(CERT_PACK.phishingLessons)
+  ? CERT_PACK.phishingLessons : [];
+const PHT_VECTORS = _USE_SECPLUS_PHT && CERT_PACK.phishingVectors
+  ? CERT_PACK.phishingVectors : {};
+
 // ── Acronym Blitz state ──
 let abQ = null, abIdx = 0, abCorrect = 0, abTotal = 0, abStreak = 0;
 let abMode = 'adaptive', abFocusCat = null, abActiveLesson = null;
@@ -35077,6 +35094,387 @@ function _irwLoadGeneratedScenario() {
     });
   } catch (_) {}
 })();
+
+// ════════════════════════════════════════════════════════════════════
+// PHISHING TRIAGE LAB (v4.98.0, issue #313) — Flagship #2 for Sec+
+// SY0-701 Domain 2 (22%) flagship. Click-the-flag inbox simulator.
+// 6 email phish at v4.98.0; +4 email + smishing v4.98.1; vishing +
+// quishing v4.98.2; AI gen + dashboard v4.98.3.
+// ════════════════════════════════════════════════════════════════════
+let _phtActiveScenarioId = null;
+let _phtActiveScenario = null;
+let _phtTaggedFlagIds = [];          // currently-tagged flag ids
+let _phtWrongTags = [];               // user clicks that weren't flags
+let _phtRevealed = false;
+let _phtPickedDecision = null;        // 'report' | 'delete' | 'reply' | 'click' | 'spam'
+
+function phtInitMastery() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(STORAGE.PHT_MASTERY) || 'null');
+    if (raw && typeof raw === 'object') return raw;
+  } catch (_) {}
+  const m = {};
+  PHT_DATA.forEach(s => { m[s.id] = { pips: 0, lastRun: null, bestFlagPct: 0, runs: 0, completed: 0, decisionCorrect: false }; });
+  return m;
+}
+function phtSaveMastery(m) {
+  try { localStorage.setItem(STORAGE.PHT_MASTERY, JSON.stringify(m)); _cloudFlush(STORAGE.PHT_MASTERY); } catch (_) {}
+}
+function phtGetScenarioMastery(scenarioId) {
+  const m = phtInitMastery();
+  return m[scenarioId] || { pips: 0, lastRun: null, bestFlagPct: 0, runs: 0, completed: 0, decisionCorrect: false };
+}
+function phtUpdateScenarioMastery(scenarioId, flagPct, decisionCorrect) {
+  const m = phtInitMastery();
+  if (!m[scenarioId]) m[scenarioId] = { pips: 0, lastRun: null, bestFlagPct: 0, runs: 0, completed: 0, decisionCorrect: false };
+  const e = m[scenarioId];
+  e.runs += 1; e.completed += 1;
+  e.lastRun = new Date().toISOString();
+  if (flagPct > e.bestFlagPct) e.bestFlagPct = flagPct;
+  if (decisionCorrect) e.decisionCorrect = true;
+  // Mastery pip: ≥80% flag-catch + correct decision adds a pip (max 3).
+  if (flagPct >= 0.80 && decisionCorrect && e.pips < 3) e.pips += 1;
+  phtSaveMastery(m);
+  return e;
+}
+function phtIsScenarioUnlocked(scenario) {
+  if (!scenario.unlockAfter || scenario.unlockAfter.length === 0) return true;
+  const m = phtInitMastery();
+  return scenario.unlockAfter.every(reqId => {
+    const e = m[reqId];
+    return e && e.pips >= 2;
+  });
+}
+function setPhtTab(tabId) {
+  ['practice', 'lessons', 'dashboard'].forEach(t => {
+    const btn = document.getElementById('pht-tab-btn-' + t);
+    const panel = document.getElementById('pht-tab-' + t);
+    if (btn) {
+      btn.classList.toggle('pht-tab-active', t === tabId);
+      btn.setAttribute('aria-selected', t === tabId ? 'true' : 'false');
+      btn.setAttribute('tabindex', t === tabId ? '0' : '-1');
+    }
+    if (panel) panel.classList.toggle('is-hidden', t !== tabId);
+  });
+  if (tabId === 'practice') phtRenderHome();
+  else if (tabId === 'lessons') phtRenderLessons();
+  else if (tabId === 'dashboard') phtRenderDashboard();
+}
+function startPhishingTriageLab() {
+  if (!_USE_SECPLUS_PHT) {
+    if (typeof showToast === 'function') showToast('Phishing Triage Lab is Security+ only.', 'info');
+    return;
+  }
+  showPage('pht');
+  setPhtTab('practice');
+}
+function phtRenderHome() {
+  const host = document.getElementById('pht-stage-host');
+  if (!host) return;
+  // Reset session
+  _phtActiveScenarioId = null; _phtActiveScenario = null;
+  _phtTaggedFlagIds = []; _phtWrongTags = [];
+  _phtRevealed = false; _phtPickedDecision = null;
+
+  const m = phtInitMastery();
+  const totalScenarios = PHT_DATA.length;
+  const masteredCount = Object.values(m).filter(e => e.pips >= 3).length;
+  const completedCount = Object.values(m).filter(e => e.completed > 0).length;
+
+  let html = '<div class="pht-setup-shell">';
+  html += '<div class="pht-stats-strip">';
+  html += `<span class="pht-stat"><span class="pht-stat-num">${masteredCount}/${totalScenarios}</span><span class="pht-stat-label">Mastered</span></span>`;
+  html += `<span class="pht-stat"><span class="pht-stat-num">${completedCount}</span><span class="pht-stat-label">Completed</span></span>`;
+  html += `<span class="pht-stat"><span class="pht-stat-num">${PHT_DATA.length}</span><span class="pht-stat-label">Phish in bank</span></span>`;
+  html += '</div>';
+  html += '<div class="pht-mode-notice">🎯 <strong>Practice mode</strong> · Click the red flags · Pick the right action · Reveal-on-submit. Smishing + vishing + quishing variants land in v4.98.1+. AI generator in v4.98.3.</div>';
+
+  // Vector filter (only email is live in v4.98.0)
+  html += '<div class="pht-variant-row">';
+  Object.entries(PHT_VECTORS).forEach(([id, v]) => {
+    const isLive = id === 'email';  // v4.98.0: email-only
+    const count = PHT_DATA.filter(s => s.vector === id).length;
+    if (isLive) {
+      html += `<span class="pht-variant-pill is-active" style="--v-color:${v.color};">${v.icon} ${escHtml(v.name)} (${count})</span>`;
+    } else {
+      html += `<span class="pht-variant-pill is-disabled">${v.icon} ${escHtml(v.name)} <span class="pht-variant-pill-soon">soon</span></span>`;
+    }
+  });
+  html += '</div>';
+
+  // Scenario grid
+  html += '<div class="pht-scenario-grid">';
+  PHT_DATA.forEach(scen => {
+    const mEntry = m[scen.id] || { pips: 0, completed: 0, bestFlagPct: 0 };
+    const unlocked = phtIsScenarioUnlocked(scen);
+    const vector = PHT_VECTORS[scen.vector] || { name: 'Unknown', icon: '⚠️', color: '#6b6b90' };
+    const diffStars = '★'.repeat(scen.difficulty) + '☆'.repeat(3 - scen.difficulty);
+    const diffLabel = ['', 'Foundational', 'Exam', 'Hard'][scen.difficulty] || '';
+    html += `<div class="pht-scen-card ${unlocked ? '' : 'is-locked'}"${unlocked ? ` onclick="phtStartScenario('${escAttr(scen.id)}')"` : ''}>`;
+    if (!unlocked) {
+      const reqId = scen.unlockAfter[0];
+      const reqScen = PHT_DATA.find(s => s.id === reqId);
+      const reqTitle = reqScen ? reqScen.title : reqId;
+      html += `<div class="pht-scen-lock">🔒 Master "${escHtml(reqTitle)}" first</div>`;
+    }
+    html += '<div class="pht-scen-row1">';
+    html += `<div class="pht-scen-icon">${vector.icon}</div>`;
+    html += '<div class="pht-scen-titlewrap">';
+    html += `<div class="pht-scen-title">${escHtml(scen.title)}</div>`;
+    html += '<div class="pht-scen-meta">';
+    html += `<span class="pht-scen-tag" style="color:${vector.color};">${escHtml(vector.name)}</span>`;
+    html += `<span class="pht-scen-tag pht-scen-diff-${scen.difficulty}">${diffStars} ${diffLabel}</span>`;
+    html += `<span class="pht-scen-tag pht-scen-tag-muted">${scen.flags.length} red flags</span>`;
+    html += '</div></div></div>';
+    html += `<div class="pht-scen-summary">${escHtml(scen.summary)}</div>`;
+    html += '<div class="pht-scen-mastery">';
+    for (let i = 0; i < 3; i++) html += `<div class="pht-scen-pip ${i < mEntry.pips ? 'is-on' : ''}"></div>`;
+    if (mEntry.completed > 0) {
+      html += `<span class="pht-scen-completed">${mEntry.completed} run${mEntry.completed === 1 ? '' : 's'} · best ${Math.round(mEntry.bestFlagPct * 100)}% flags</span>`;
+    }
+    html += '</div></div>';
+  });
+  html += '</div>';
+
+  html += '<div class="pht-aigen-stub"><div class="pht-aigen-stub-icon">✨</div><div><strong>AI phish generator coming in v4.98.3.</strong> Sonnet authors fresh phish across all 4 vectors with a 7-layer validator gating output (no real PII, no real-registered domains, ≥4 flags per phish).</div></div>';
+  html += '</div>';
+  host.innerHTML = html;
+}
+function phtStartScenario(scenarioId) {
+  const scen = PHT_DATA.find(s => s.id === scenarioId);
+  if (!scen) { console.warn('PHT: scenario not found:', scenarioId); return; }
+  if (!phtIsScenarioUnlocked(scen)) {
+    if (typeof showToast === 'function') showToast('Master prerequisite scenario first.', 'info');
+    return;
+  }
+  _phtActiveScenarioId = scenarioId;
+  _phtActiveScenario = scen;
+  _phtTaggedFlagIds = [];
+  _phtWrongTags = [];
+  _phtRevealed = false;
+  _phtPickedDecision = null;
+  phtRenderEmailClient();
+}
+function phtRenderEmailClient() {
+  const host = document.getElementById('pht-stage-host');
+  if (!host || !_phtActiveScenario) return;
+  const scen = _phtActiveScenario;
+  const totalFlags = scen.flags.length;
+  const tagged = _phtTaggedFlagIds.length;
+  const counterColor = _phtRevealed ? '#22c55e' : (tagged > 0 ? '#22c55e' : '#ef4444');
+
+  let html = '';
+  // Triage bar (top)
+  html += '<div class="pht-triage-bar">';
+  html += '<div class="pht-tb-l">';
+  html += `<div class="pht-tb-counter" style="color:${counterColor};">${tagged}/${totalFlags}</div>`;
+  html += '<div>';
+  html += `<div class="pht-tb-label">Red flags tagged · ${escHtml(scen.title)}</div>`;
+  html += `<div class="pht-tb-mode">Practice mode${_phtWrongTags.length > 0 && !_phtRevealed ? ` · ${_phtWrongTags.length} wrong tag${_phtWrongTags.length === 1 ? '' : 's'}` : ''}</div>`;
+  html += '</div></div>';
+  if (!_phtRevealed) {
+    html += '<div class="pht-tb-r">';
+    ['report', 'delete', 'reply', 'click', 'spam'].forEach(act => {
+      const labels = { report: '🚨 Report', delete: '🗑 Delete', reply: '↩ Reply', click: '🔗 Click', spam: '📥 Spam' };
+      html += `<button class="pht-decision-btn" onclick="phtSubmitDecision('${act}')">${labels[act]}</button>`;
+    });
+    html += '</div>';
+  }
+  html += '</div>';
+
+  // Email reading pane
+  html += '<div class="pht-reading">';
+  html += '<div class="pht-rd-head">';
+  html += `<div class="pht-rd-subj">${escHtml(scen.subject)}</div>`;
+  html += '<div class="pht-rd-from-row">';
+  const av = scen.sender.avatar || '??';
+  const avC = scen.sender.avatarColor || '#7c6ff7';
+  html += `<span class="pht-rd-avatar" style="background:${avC};">${escHtml(av)}</span>`;
+  html += `<strong>${escHtml(scen.sender.name)}</strong> <span class="pht-rd-faded">&lt;<span class="flag" data-fid="sender-email" onclick="phtToggleFlag(event, 'sender-email')">${escHtml(scen.sender.email)}</span>&gt;</span>`;
+  html += '</div>';
+  html += `<div class="pht-rd-meta">To: ${escHtml(scen.to)}`;
+  if (scen.replyTo) {
+    html += ` · Reply-To: <span class="flag" data-fid="reply-to" onclick="phtToggleFlag(event, 'reply-to')">${escHtml(scen.replyTo)}</span>`;
+  }
+  html += ` · ${escHtml(scen.time)}</div>`;
+  html += '</div>';
+  // Process bodyHtml: wire up flag click handlers + tagged-state
+  let processedBody = scen.bodyHtml || '';
+  // Inject onclick to every <span class="flag" data-fid="X">
+  processedBody = processedBody.replace(/<span class="flag" data-fid="([^"]+)"/g, (m, fid) => {
+    let cls = 'flag';
+    if (_phtTaggedFlagIds.includes(fid)) cls += ' is-tagged';
+    if (_phtRevealed) {
+      // mark revealed flags green if not already tagged
+      if (!_phtTaggedFlagIds.includes(fid)) cls += ' is-revealed-missed';
+    }
+    const onClickAttr = _phtRevealed ? '' : ` onclick="phtToggleFlag(event, '${fid}')"`;
+    return `<span class="${cls}" data-fid="${fid}"${onClickAttr}`;
+  });
+  html += `<div class="pht-rd-body" onclick="phtBodyClick(event)">${processedBody}</div>`;
+  if (scen.attachments && scen.attachments.length > 0) {
+    html += '<div class="pht-rd-attachments">';
+    html += '<div class="pht-rd-attachments-h">📎 Attachments</div>';
+    scen.attachments.forEach(att => {
+      html += `<div class="pht-rd-attachment">${escHtml(att.name)}${att.protected ? ' <span class="pht-rd-attachment-tag">password protected</span>' : ''}</div>`;
+    });
+    html += '</div>';
+  }
+  html += '</div>';
+
+  // Reveal panel (post-decision)
+  if (_phtRevealed) {
+    html += phtRenderReveal();
+  }
+  host.innerHTML = html;
+  if (host.scrollIntoView) { try { host.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (_) {} }
+}
+function phtBodyClick(ev) {
+  // Capture body clicks NOT on a flag — count as wrong tags (over-tag penalty).
+  if (_phtRevealed) return;
+  if (!ev.target) return;
+  const t = ev.target;
+  if (t.classList && t.classList.contains('flag')) return;  // handled by phtToggleFlag
+  // Track a wrong-tag if user clicked a non-flag region of body text (a bit tolerant)
+  // Only fire if click was on text inside the body (not whitespace / margin)
+  const tagName = (t.tagName || '').toLowerCase();
+  if (tagName !== 'p' && tagName !== 'span' && tagName !== 'strong' && tagName !== 'em' && tagName !== 'div') return;
+  const wrongId = 'wrong-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6);
+  _phtWrongTags.push(wrongId);
+  phtRenderEmailClient();
+}
+function phtToggleFlag(ev, flagId) {
+  if (ev && ev.stopPropagation) ev.stopPropagation();
+  if (_phtRevealed) return;
+  // Special: sender-email + reply-to are virtual flag IDs not in the flags array;
+  // map them to the actual flag id if present (we keep them as separate categories).
+  const idx = _phtTaggedFlagIds.indexOf(flagId);
+  if (idx >= 0) _phtTaggedFlagIds.splice(idx, 1);
+  else _phtTaggedFlagIds.push(flagId);
+  phtRenderEmailClient();
+}
+function phtSubmitDecision(action) {
+  if (_phtRevealed) return;
+  _phtPickedDecision = action;
+  _phtRevealed = true;
+  // Compute scoring
+  const scen = _phtActiveScenario;
+  const validFlagIds = scen.flags.map(f => f.id);
+  const correctTagged = _phtTaggedFlagIds.filter(fid => validFlagIds.includes(fid)).length;
+  const flagPct = scen.flags.length > 0 ? correctTagged / scen.flags.length : 0;
+  const decisionCorrect = (action === scen.correctAction);
+  phtUpdateScenarioMastery(scen.id, flagPct, decisionCorrect);
+  phtRenderEmailClient();
+}
+function phtRenderReveal() {
+  const scen = _phtActiveScenario;
+  const validFlagIds = scen.flags.map(f => f.id);
+  const correctTagged = _phtTaggedFlagIds.filter(fid => validFlagIds.includes(fid)).length;
+  const totalFlags = scen.flags.length;
+  const flagPct = Math.round((totalFlags > 0 ? correctTagged / totalFlags : 0) * 100);
+  const wrongCount = _phtWrongTags.length + _phtTaggedFlagIds.filter(fid => !validFlagIds.includes(fid)).length;
+  const decisionCorrect = (_phtPickedDecision === scen.correctAction);
+  const decisionMeta = scen.decisionReveal[_phtPickedDecision] || { isCorrect: false, label: _phtPickedDecision, why: '' };
+
+  let html = '<div class="pht-reveal-card">';
+  html += '<div class="pht-reveal-h">';
+  html += `<div class="pht-reveal-h-icon ${decisionCorrect ? 'is-good' : 'is-bad'}">${decisionCorrect ? '✓' : '✗'}</div>`;
+  html += '<div>';
+  html += `<div class="pht-reveal-h-title">${decisionCorrect ? 'Right call —' : 'Wrong call —'} ${escHtml(decisionMeta.label)}</div>`;
+  html += `<div class="pht-reveal-h-sub">Flag-catch ${flagPct}% (${correctTagged}/${totalFlags}) · ${wrongCount} over-tag${wrongCount === 1 ? '' : 's'} · Decision ${decisionCorrect ? 'correct' : 'wrong'}</div>`;
+  html += '</div></div>';
+
+  // Stats grid
+  html += '<div class="pht-reveal-grid">';
+  html += `<div class="pht-reveal-stat"><div class="pht-reveal-stat-num ${flagPct >= 80 ? 'is-good' : (flagPct >= 50 ? '' : 'is-bad')}">${flagPct}%</div><div class="pht-reveal-stat-label">Flag-catch</div></div>`;
+  html += `<div class="pht-reveal-stat"><div class="pht-reveal-stat-num ${decisionCorrect ? 'is-good' : 'is-bad'}">${decisionCorrect ? '✓' : '✗'}</div><div class="pht-reveal-stat-label">Decision</div></div>`;
+  html += `<div class="pht-reveal-stat"><div class="pht-reveal-stat-num ${wrongCount === 0 ? 'is-good' : 'is-bad'}">${wrongCount}</div><div class="pht-reveal-stat-label">Over-tags</div></div>`;
+  html += '</div>';
+
+  // Decision why
+  html += `<div class="pht-reveal-section-h">📋 Decision: ${escHtml(decisionMeta.label)}</div>`;
+  html += `<div class="pht-reveal-flag-row ${decisionCorrect ? 'is-good' : ''}"><strong>${decisionCorrect ? '✓ ' : '✗ '}${escHtml(decisionMeta.label)}.</strong> ${escHtml(decisionMeta.why)}</div>`;
+
+  // Caught flags
+  const caughtFlags = scen.flags.filter(f => _phtTaggedFlagIds.includes(f.id));
+  if (caughtFlags.length > 0) {
+    html += `<div class="pht-reveal-section-h">✓ Flags you caught (${caughtFlags.length})</div>`;
+    caughtFlags.forEach(f => {
+      html += `<div class="pht-reveal-flag-row is-good"><strong>${escHtml(f.label)}.</strong> ${escHtml(f.why)}</div>`;
+    });
+  }
+  // Missed flags
+  const missedFlags = scen.flags.filter(f => !_phtTaggedFlagIds.includes(f.id));
+  if (missedFlags.length > 0) {
+    html += `<div class="pht-reveal-section-h">⚠ Flags you missed (${missedFlags.length})</div>`;
+    missedFlags.forEach(f => {
+      html += `<div class="pht-reveal-flag-row"><strong>${escHtml(f.label)}.</strong> ${escHtml(f.why)}</div>`;
+    });
+  }
+  // Anatomy / pattern
+  html += '<div class="pht-reveal-section-h">🧬 Anatomy of this phish</div>';
+  html += `<div class="pht-reveal-flag-row" style="border-left-color:#7c6ff7; background:rgba(124,111,247,.04);"><strong>Pattern: ${escHtml(scen.patternName)}.</strong> ${scen.patternBlurb}</div>`;
+  // CTAs
+  html += '<div class="pht-reveal-cta-row">';
+  // Find next phish in the list
+  const idx = PHT_DATA.findIndex(s => s.id === scen.id);
+  const next = idx >= 0 && idx < PHT_DATA.length - 1 ? PHT_DATA[idx + 1] : null;
+  if (next && phtIsScenarioUnlocked(next)) {
+    html += `<button class="pht-reveal-cta is-primary" onclick="phtStartScenario('${escAttr(next.id)}')">▶ Next phish (${escHtml(next.title)})</button>`;
+  }
+  html += `<button class="pht-reveal-cta" onclick="phtStartScenario('${escAttr(scen.id)}')">🔁 Replay this phish</button>`;
+  html += `<button class="pht-reveal-cta" onclick="setPhtTab('practice')">📋 Back to catalog</button>`;
+  html += '</div>';
+  html += '</div>';
+  return html;
+}
+function phtRenderLessons() {
+  const host = document.getElementById('pht-lessons-content');
+  if (!host) return;
+  let html = '<div class="pht-lessons-intro">';
+  html += '📚 <strong>Phishing red flag cheatsheets.</strong> Universal red flags + vector-specific tells. Smishing/vishing/quishing-specific cards land in v4.98.1+.';
+  html += '</div>';
+  html += '<div class="pht-lessons-grid">';
+  PHT_LESSONS.forEach(lesson => {
+    html += '<div class="pht-lesson-card">';
+    html += `<div class="pht-lesson-h">${escHtml(lesson.title)}</div>`;
+    html += `<div class="pht-lesson-summary">${escHtml(lesson.summary)}</div>`;
+    html += '<div class="pht-lesson-flags">';
+    lesson.flags.forEach(f => {
+      html += '<div class="pht-lesson-flag-row">';
+      html += `<div class="pht-lesson-flag-name">${escHtml(f.name)}</div>`;
+      html += `<div class="pht-lesson-flag-detail">${f.detail}</div>`;  // intentional raw HTML — markup in source
+      html += '</div>';
+    });
+    html += '</div></div>';
+  });
+  html += '</div>';
+  host.innerHTML = html;
+}
+function phtRenderDashboard() {
+  const host = document.getElementById('pht-dashboard-content');
+  if (!host) return;
+  const m = phtInitMastery();
+  let html = '<div class="pht-dash-shell"><div class="pht-dash-stub-h">📊 Per-scenario mastery</div><div class="pht-dash-list">';
+  PHT_DATA.forEach(scen => {
+    const e = m[scen.id] || { pips: 0, completed: 0, bestFlagPct: 0 };
+    const v = PHT_VECTORS[scen.vector] || { icon: '⚠️', color: '#6b6b90' };
+    html += '<div class="pht-dash-row">';
+    html += `<span class="pht-dash-row-icon">${v.icon}</span>`;
+    html += `<div class="pht-dash-row-name">${escHtml(scen.title)}</div>`;
+    html += '<div class="pht-dash-row-pips">';
+    for (let i = 0; i < 3; i++) html += `<div class="pht-dash-pip ${i < e.pips ? 'is-on' : ''}"></div>`;
+    html += '</div>';
+    if (e.completed > 0) {
+      html += `<div class="pht-dash-row-acc">${Math.round(e.bestFlagPct * 100)}% best · ${e.completed} run${e.completed === 1 ? '' : 's'}</div>`;
+    } else {
+      html += '<div class="pht-dash-row-acc pht-dash-row-acc-muted">Not yet attempted</div>';
+    }
+    html += '</div>';
+  });
+  html += '</div><div class="pht-dash-stub"><strong>Per-vector mastery analytics + prescriptive callouts arrive in v4.98.3.</strong> For now: replay your weakest scenario from the Practice catalog.</div></div>';
+  host.innerHTML = html;
+}
 
 function setOsDifficulty(diff) {
   osDifficulty = diff;
@@ -37819,7 +38217,9 @@ const APP_SIDEBAR_DRILLS_SECPLUS = [
   { page: 'amm', label: 'Attack-to-Mitigation', handler: () => { showPage('amm'); if (typeof startAttackMitigation === 'function') startAttackMitigation(); } },
   { page: 'cts', label: 'Control Type Sorter', handler: () => { showPage('cts'); if (typeof startControlTypeSorter === 'function') startControlTypeSorter(); } },
   // v4.97.0 — Incident Response War Room (flagship #1, SY0-701 Domain 4)
-  { page: 'irw', label: 'IR War Room', handler: () => { showPage('irw'); if (typeof startIncidentResponseWarRoom === 'function') startIncidentResponseWarRoom(); } }
+  { page: 'irw', label: 'IR War Room', handler: () => { showPage('irw'); if (typeof startIncidentResponseWarRoom === 'function') startIncidentResponseWarRoom(); } },
+  // v4.98.0 — Phishing Triage Lab (flagship #2, SY0-701 Domain 2)
+  { page: 'pht', label: 'Phishing Triage', handler: () => { showPage('pht'); if (typeof startPhishingTriageLab === 'function') startPhishingTriageLab(); } }
 ];
 
 // Map arbitrary page names to their sidebar highlight target. Quiz/exam/review
@@ -37840,6 +38240,7 @@ const SIDEBAR_ACTIVE_MAP = {
   'cts': 'cts',  // v4.95.0: Control Type Sorter drill highlights itself
   'ptr': 'ptr', // v4.96.0: Packet Trace drill highlights itself (NOT 'pt' — Port Drill owns that prefix)
   'irw': 'irw',  // v4.97.0: IR War Room flagship highlights itself
+  'pht': 'pht',  // v4.98.0: Phishing Triage Lab flagship highlights itself
   'osi-sorter': 'osi-sorter',
   'cables': 'cables',
   'network-analysis': 'network-analysis',
@@ -38037,6 +38438,7 @@ const TOPBAR_CRUMBS = {
   'cts': 'Control Type Sorter',  // v4.95.0
   'ptr': 'Packet Trace',         // v4.96.0 (page id is 'ptr' to avoid pt- collision with Port Drill)
   'irw': 'IR War Room',          // v4.97.0 (Sec+ flagship #1 — incident response)
+  'pht': 'Phishing Triage Lab',  // v4.98.0 (Sec+ flagship #2 — click-the-flag inbox)
   'osi-sorter': 'OSI Sorter',
   'cables': 'Cable ID',
   'network-analysis': 'Network Analysis',
