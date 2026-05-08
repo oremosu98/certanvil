@@ -301,7 +301,7 @@ test('Validation in runSessionStep', js.includes('aiValidateQuestions(apiKey, qu
 
 // ── Analytics v2 (v4.5) ──
 console.log('\n\x1b[1m── ANALYTICS v2 (v4.5) ──\x1b[0m');
-test('APP_VERSION is 4.96.4', js.includes("const APP_VERSION = '4.96.4"));
+test('APP_VERSION is 4.97.0', js.includes("const APP_VERSION = '4.97.0"));
 test('getDailyGoal function', js.includes('function getDailyGoal('));
 test('renderDailyGoal function', js.includes('function renderDailyGoal('));
 test('editDailyGoal function', js.includes('function editDailyGoal('));
@@ -315,7 +315,7 @@ test('CSS: .topic-domain-group', css.includes('.topic-domain-group'));
 test('CSS: .daily-goal-card', css.includes('.daily-goal-card'));
 test('CSS: .advanced-section', css.includes('.advanced-section'));
 test('CSS: .hero-stats-strip', css.includes('.hero-stats-strip'));
-test('SW cache bumped to v4.96.4', sw.includes('netplus-v4.96.4'));
+test('SW cache bumped to v4.97.0', sw.includes('netplus-v4.97.0'));
 test('Family Drill: STORAGE.PORT_FAMILY_BEST', js.includes("PORT_FAMILY_BEST:"));
 test('Family Drill: ptMode handles family', js.includes("ptMode === 'family'"));
 test('Family Drill: HTML mode button', html.includes('id="pt-mode-family"'));
@@ -16681,7 +16681,9 @@ test('v4.95.0 CTS: TOPBAR_CRUMBS has cts entry',
 test('v4.95.0 CTS: launcher tile uses NEW badge + onclick handler',
   /onclick="showPage\(\\'cts\\'\);startControlTypeSorter\(\)/.test(js));
 test('v4.95.0 CTS: launcher lede mentions all 3 live drills',
-  /Acronym Blitz, Attack-to-Mitigation, and Control Type Sorter are live/.test(js));
+  // v4.97.0: lede expanded to include IR War Room as 4th live drill;
+  // permissive regex only needs to find Acronym Blitz, AMM, and CTS appearing together
+  /Acronym Blitz, Attack-to-Mitigation,?\s*(and\s+)?Control Type Sorter/.test(js));
 
 // HTML page exists
 test('v4.95.0 CTS: index.html has #page-cts',
@@ -16856,6 +16858,105 @@ test('v4.96.1 PT slide: .ptr-packet CSS transition declared (cx + cy)',
   /\.ptr-packet\s*\{[\s\S]{0,200}transition:[\s\S]{0,200}\bcx\b[\s\S]{0,200}\bcy\b/.test(css));
 test('v4.96.1 PT slide: reduced-motion media query kills transition',
   /@media \(prefers-reduced-motion:\s*reduce\)\s*\{[\s\S]{0,300}\.ptr-packet[\s\S]{0,200}transition:\s*none/.test(css));
+
+// ============================================================================
+// v4.97.0 — Incident Response War Room (Sec+ flagship #1, issue #312)
+// ============================================================================
+test('v4.97.0 IRW: secplus.js declares incidentResponseScenarios',
+  certSecplus.includes('incidentResponseScenarios:'));
+test('v4.97.0 IRW: secplus.js declares incidentResponsePhases (PICERL)',
+  certSecplus.includes('incidentResponsePhases:'));
+test('v4.97.0 IRW: secplus.js declares incidentResponseVectors',
+  certSecplus.includes('incidentResponseVectors:'));
+test('v4.97.0 IRW: secplus.js has 5 scenarios at v1',
+  (() => {
+    // incidentResponseScenarios is the LAST property of the secplus pack —
+    // match to end of file to capture every scenario.
+    const m = certSecplus.match(/incidentResponseScenarios:\s*\[([\s\S]+)$/);
+    if (!m) return false;
+    // Top-level scenario ids: 6 leading spaces + `id: '<scenario-slug>'`.
+    // Action ids are inside `{ id: 'p1a1', ... }` lines (different shape).
+    const scenarioIds = m[1].match(/^      id: '[a-z][a-z0-9-]+',/gm) || [];
+    return scenarioIds.length === 5;
+  })());
+test('v4.97.0 IRW: 6 PICERL phases canonical order',
+  /incidentResponsePhases:\s*\[[\s\S]{0,800}preparation[\s\S]{0,400}identification[\s\S]{0,400}containment[\s\S]{0,400}eradication[\s\S]{0,400}recovery[\s\S]{0,400}lessons/.test(certSecplus));
+test('v4.97.0 IRW: cert-aware module-load constants',
+  /const _SECPLUS_HAS_IRW\s*=/.test(js) &&
+  /const _USE_SECPLUS_IRW\s*=[\s\S]{0,200}CURRENT_CERT === 'secplus'[\s\S]{0,200}_SECPLUS_HAS_IRW/.test(js));
+test('v4.97.0 IRW: STORAGE.IRW_MASTERY + IRW_LESSONS keys defined',
+  /IRW_MASTERY:\s*'nplus_irw_mastery'/.test(js) &&
+  /IRW_LESSONS:\s*'nplus_irw_lessons'/.test(js));
+test('v4.97.0 IRW: cloud-store registers IRW keys',
+  cloudStoreJs.includes("'nplus_irw_mastery'") &&
+  cloudStoreJs.includes("'nplus_irw_lessons'"));
+test('v4.97.0 IRW: startIncidentResponseWarRoom function exists + cert-gated',
+  /function startIncidentResponseWarRoom\(\)\s*\{[\s\S]{0,500}_USE_SECPLUS_IRW/.test(js));
+test('v4.97.0 IRW: setIrwTab tab switcher + 3 panes (practice/lessons/dashboard)',
+  /function setIrwTab\(/.test(js) &&
+  /'practice', 'lessons', 'dashboard'/.test(js));
+test('v4.97.0 IRW: irwSubmitDecisions scoring + reveal',
+  /function irwSubmitDecisions\(\)/.test(js) &&
+  /_irwPhaseRevealed\s*=\s*true/.test(js));
+test('v4.97.0 IRW: irwAdvancePhase advances + ends scenario',
+  /function irwAdvancePhase\(\)\s*\{[\s\S]{0,400}irwEndScenario\(\)/.test(js));
+test('v4.97.0 IRW: irwUpdateScenarioMastery saves on completion',
+  /function irwUpdateScenarioMastery\(/.test(js) &&
+  /function irwSaveMastery\([\s\S]{0,200}_cloudFlush\(STORAGE\.IRW_MASTERY\)/.test(js));
+test('v4.97.0 IRW: irwIsScenarioUnlocked respects unlockAfter',
+  /function irwIsScenarioUnlocked\([\s\S]{0,400}unlockAfter/.test(js));
+test('v4.97.0 IRW: APP_SIDEBAR_DRILLS_SECPLUS includes IRW entry',
+  /APP_SIDEBAR_DRILLS_SECPLUS\s*=\s*\[[\s\S]{0,800}'IR War Room'/.test(js));
+test('v4.97.0 IRW: SIDEBAR_ACTIVE_MAP has irw entry',
+  /'irw':\s*'irw'/.test(js));
+test('v4.97.0 IRW: TOPBAR_CRUMBS has irw entry',
+  /'irw':\s*'IR War Room'/.test(js));
+test('v4.97.0 IRW: index.html has #page-irw',
+  html.includes('id="page-irw"'));
+test('v4.97.0 IRW: index.html has irw stage host',
+  html.includes('id="irw-stage-host"'));
+test('v4.97.0 IRW: index.html has 3 irw tabs (practice/lessons/dashboard)',
+  html.includes('id="irw-tab-btn-practice"') &&
+  html.includes('id="irw-tab-btn-lessons"') &&
+  html.includes('id="irw-tab-btn-dashboard"'));
+test('v4.97.0 IRW: Sec+ drills launcher has IR War Room flagship tile',
+  /secplus-drill-tile-flagship[\s\S]{0,300}startIncidentResponseWarRoom/.test(js));
+test('v4.97.0 IRW: Sec+ drills launcher lede mentions IR War Room is live',
+  /Incident Response War Room flagship are live/.test(js));
+test('v4.97.0 IRW: .irw-warroom 3-column grid CSS',
+  /\.irw-warroom\s*\{[\s\S]{0,200}grid-template-columns:[\s\S]{0,80}280px[\s\S]{0,40}1fr[\s\S]{0,40}280px/.test(css));
+test('v4.97.0 IRW: .irw-timeline grid (6 PICERL columns)',
+  /\.irw-timeline\s*\{[\s\S]{0,200}grid-template-columns:\s*repeat\(6/.test(css));
+test('v4.97.0 IRW: .irw-action-card states (picked-correct/wrong/revealed)',
+  /\.irw-action-card\.is-picked-correct/.test(css) &&
+  /\.irw-action-card\.is-picked-wrong/.test(css) &&
+  /\.irw-action-card\.is-revealed-correct/.test(css));
+test('v4.97.0 IRW: .irw-trap-callout CSS for SY0-701 traps',
+  /\.irw-trap-callout\s*\{/.test(css));
+test('v4.97.0 IRW: .irw-eos-card end-of-scenario summary CSS',
+  /\.irw-eos-card\s*\{/.test(css));
+test('v4.97.0 IRW: reduced-motion gate for IRW components',
+  /@media \(prefers-reduced-motion:\s*reduce\)[\s\S]{0,500}\.irw-/.test(css));
+test('v4.97.0 IRW: hide-on-Sec+ — Sec+ launcher does NOT include Topology Builder tile',
+  // Sec+ launcher is its own dedicated render; it must not include TB/ACL (Net+ drills)
+  (() => {
+    const m = js.match(/function _renderSecPlusDrillsLauncher\(\)[\s\S]+?^\}/m);
+    if (!m) return false;
+    return !/Topology Builder|topology-builder|page-topology/.test(m[0]) && !/showPage\('acl'\)/.test(m[0]);
+  })());
+test('v4.97.0 IRW: IRW total actions ≥ 100 across 5 scenarios',
+  (() => {
+    // Match to EOF — see scenarios test above.
+    const m = certSecplus.match(/incidentResponseScenarios:\s*\[([\s\S]+)$/);
+    if (!m) return false;
+    // Action lines: `            { id: 'p1a1', ...` — `{ id: '` + p<N>a<N> prefix
+    const actions = m[1].match(/\{ id: 'p\d+a\d+'/g) || [];
+    return actions.length >= 100;
+  })());
+test('v4.97.0 IRW: ryuk-finance scenario has trapCallout (power-off canonical)',
+  /id:\s*'ryuk-finance'[\s\S]{0,12000}trapCallout:\s*\{/.test(certSecplus));
+test('v4.97.0 IRW: lockbit-multihost gated behind ryuk-finance (unlockAfter)',
+  /id:\s*'lockbit-multihost'[\s\S]{0,500}unlockAfter:\s*\['ryuk-finance'\]/.test(certSecplus));
 
 // ── Summary ──
 console.log('\n' + '═'.repeat(50));

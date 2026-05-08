@@ -1,9 +1,9 @@
 // ══════════════════════════════════════════
-// Network+ AI Quiz — app.js  v4.96.4
+// Network+ AI Quiz — app.js  v4.97.0
 // ══════════════════════════════════════════
 
 // ── CONSTANTS ──
-const APP_VERSION = '4.96.4';
+const APP_VERSION = '4.97.0';
 
 // ══════════════════════════════════════════════════════════════════════════
 // CERT PACK ARCHITECTURE (v4.86.0 Phase 1A engine refactor)
@@ -304,6 +304,8 @@ const STORAGE = {
   PT_MASTERY:  'nplus_pt_mastery',   // v4.96.0: Network+ Packet Trace drill (per-scenario)
   PT_LESSONS:  'nplus_pt_lessons',
   PT_RESUME:   'nplus_pt_resume',    // mid-scenario resume state
+  IRW_MASTERY: 'nplus_irw_mastery',  // v4.97.0: Security+ Incident Response War Room (flagship #1)
+  IRW_LESSONS: 'nplus_irw_lessons',
   OS_MASTERY: 'nplus_os_mastery',
   OS_LESSONS: 'nplus_os_lessons',
   CB_MASTERY: 'nplus_cb_mastery',
@@ -1089,12 +1091,14 @@ function _renderSecPlusDrillsLauncher() {
   if (!pageEl) return;
   // Replace the existing drills launcher content with a Security+ tile
   // grid. v4.91.0 ships only Acronym Blitz; future drills (issues
-  // #301-#304) extend the tile list. Idempotent — overwrites whatever
-  // was there from a prior render.
+  // #301-#304, #312-#313) extend the tile list. Idempotent — overwrites
+  // whatever was there from a prior render.
+  // v4.97.0: IR War Room flagship #1 (Domain 4) becomes live — replaces
+  // the Phase Sorter SOON tile. Phishing Triage Lab queued for v4.98.0.
   pageEl.innerHTML = ''
     + '<div class="ed-pagehead"><div class="ed-section-meta">Security+ Drills</div>'
     +   '<h1 class="ed-pagehead-h1">Pick a drill</h1>'
-    +   '<p class="ed-pagehead-lede">SY0-701-specific drills designed to move you closer to passing. Acronym Blitz, Attack-to-Mitigation, and Control Type Sorter are live; 2 more drills (Incident Response Phase Sorter, IoC Recognizer) are queued for future ships.</p>'
+    +   '<p class="ed-pagehead-lede">SY0-701-specific drills designed to move you closer to passing. Acronym Blitz, Attack-to-Mitigation, Control Type Sorter, and the Incident Response War Room flagship are live; the Phishing Triage Lab flagship arrives in v4.98.0.</p>'
     + '</div>'
     + '<div class="secplus-drill-grid">'
     +   '<a class="secplus-drill-tile" href="#" onclick="showPage(\'acronyms\');startAcronymBlitz();return false;">'
@@ -1105,32 +1109,32 @@ function _renderSecPlusDrillsLauncher() {
     +     '<div class="secplus-drill-tile-meta">All 5 domains · ~5 min/session</div>'
     +   '</a>'
     +   '<a class="secplus-drill-tile" href="#" onclick="showPage(\'amm\');startAttackMitigation();return false;">'
-    +     '<span class="secplus-drill-tile-badge">NEW</span>'
+    +     '<span class="secplus-drill-tile-badge">LIVE</span>'
     +     '<div class="secplus-drill-tile-icon" aria-hidden="true">⚔️</div>'
     +     '<div class="secplus-drill-tile-title">Attack-to-Mitigation Match</div>'
     +     '<div class="secplus-drill-tile-sub">96 attack/mitigation pairs across 5 categories. Build the "if I see X, the answer is Y" muscle memory.</div>'
     +     '<div class="secplus-drill-tile-meta">All 5 domains · ~5 min/session</div>'
     +   '</a>'
     +   '<a class="secplus-drill-tile" href="#" onclick="showPage(\'cts\');startControlTypeSorter();return false;">'
-    +     '<span class="secplus-drill-tile-badge">NEW</span>'
+    +     '<span class="secplus-drill-tile-badge">LIVE</span>'
     +     '<div class="secplus-drill-tile-icon" aria-hidden="true">🛡</div>'
     +     '<div class="secplus-drill-tile-title">Control Type Sorter</div>'
     +     '<div class="secplus-drill-tile-sub">120 security controls across the CompTIA 6×4 matrix. Pick TYPE + CATEGORY for each control. Domain 1.1\'s hardest concept.</div>'
     +     '<div class="secplus-drill-tile-meta">Domain 1.1 · ~5 min/session</div>'
     +   '</a>'
+    +   '<a class="secplus-drill-tile secplus-drill-tile-flagship" href="#" onclick="showPage(\'irw\');startIncidentResponseWarRoom();return false;">'
+    +     '<span class="secplus-drill-tile-badge is-flagship">FLAGSHIP · NEW</span>'
+    +     '<div class="secplus-drill-tile-icon" aria-hidden="true">🚨</div>'
+    +     '<div class="secplus-drill-tile-title">Incident Response War Room</div>'
+    +     '<div class="secplus-drill-tile-sub">5 scenarios (ransomware, BEC, S3 breach, insider, LockBit). Walk PICERL phases. Multi-select decisions. The flagship for D4.</div>'
+    +     '<div class="secplus-drill-tile-meta">Domain 4 (28%) · ~10-15 min/scenario</div>'
+    +   '</a>'
     +   '<div class="secplus-drill-tile is-coming-soon" aria-disabled="true">'
     +     '<span class="secplus-drill-tile-badge is-soon">SOON</span>'
-    +     '<div class="secplus-drill-tile-icon" aria-hidden="true">📋</div>'
-    +     '<div class="secplus-drill-tile-title">Incident Response Phase Sorter</div>'
-    +     '<div class="secplus-drill-tile-sub">D4 (28% of exam) — order IR actions into NIST phases (Preparation → Detection → Containment → Eradication → Recovery → Lessons Learned).</div>'
-    +     '<div class="secplus-drill-tile-meta">Issue #303 · queued</div>'
-    +   '</div>'
-    +   '<div class="secplus-drill-tile is-coming-soon" aria-disabled="true">'
-    +     '<span class="secplus-drill-tile-badge is-soon">SOON</span>'
-    +     '<div class="secplus-drill-tile-icon" aria-hidden="true">🔍</div>'
-    +     '<div class="secplus-drill-tile-title">IoC Recognizer</div>'
-    +     '<div class="secplus-drill-tile-sub">D4 (28% of exam) — read log lines / process trees / packet captures, identify the suspicious pattern.</div>'
-    +     '<div class="secplus-drill-tile-meta">Issue #304 · queued</div>'
+    +     '<div class="secplus-drill-tile-icon" aria-hidden="true">🎣</div>'
+    +     '<div class="secplus-drill-tile-title">Phishing Triage Lab</div>'
+    +     '<div class="secplus-drill-tile-sub">D2 flagship — click-the-flag inbox simulator across email, SMS, voice, QR. 60 phish + AI generator. Mockup locked.</div>'
+    +     '<div class="secplus-drill-tile-meta">Issue #313 · queued v4.98.0</div>'
     +   '</div>'
     + '</div>';
 }
@@ -32316,6 +32320,22 @@ const PT_DATA = _USE_NETPLUS_PT ? CERT_PACK.packetTraceScenarios : [];
 const PT_LESSONS = _USE_NETPLUS_PT && Array.isArray(CERT_PACK.packetTraceLessons)
   ? CERT_PACK.packetTraceLessons : [];
 
+// ── Incident Response War Room (v4.97.0, issue #312) ───────────────────
+// Flagship Security+ drill #1 (SY0-701 Domain 4, 28%). 6-phase SANS PICERL
+// scenario walkthrough — Preparation, Identification, Containment,
+// Eradication, Recovery, Lessons Learned. 5 scenarios at v1; expands to
+// 25 by v4.97.3. Practice mode in v4.97.0; Pressure + AI gen + dashboard
+// in subsequent batches. Visual contract locked to mockups/security-
+// incident-response-war-room-concept.html (8 states).
+const _SECPLUS_HAS_IRW = typeof CERT_PACK === 'object' && CERT_PACK !== null
+  && Array.isArray(CERT_PACK.incidentResponseScenarios) && CERT_PACK.incidentResponseScenarios.length > 0;
+const _USE_SECPLUS_IRW = (typeof CURRENT_CERT !== 'undefined') && CURRENT_CERT === 'secplus' && _SECPLUS_HAS_IRW;
+const IRW_DATA = _USE_SECPLUS_IRW ? CERT_PACK.incidentResponseScenarios : [];
+const IRW_PHASES = _USE_SECPLUS_IRW && Array.isArray(CERT_PACK.incidentResponsePhases)
+  ? CERT_PACK.incidentResponsePhases : [];
+const IRW_VECTORS = _USE_SECPLUS_IRW && CERT_PACK.incidentResponseVectors
+  ? CERT_PACK.incidentResponseVectors : {};
+
 // ── Acronym Blitz state ──
 let abQ = null, abIdx = 0, abCorrect = 0, abTotal = 0, abStreak = 0;
 let abMode = 'adaptive', abFocusCat = null, abActiveLesson = null;
@@ -34004,6 +34024,386 @@ function startPacketTrace() {
     setPtrTab('dashboard');
     ptrRenderDashboard();
   }
+}
+
+// ════════════════════════════════════════════════════════════════════
+// INCIDENT RESPONSE WAR ROOM (v4.97.0, issue #312) — Flagship #1 for Sec+
+// SY0-701 Domain 4 (28%) flagship. 6-phase SANS PICERL drill. Practice
+// mode only at v1; Pressure + AI gen + dashboard land v4.97.1+.
+// ════════════════════════════════════════════════════════════════════
+let _irwActiveScenarioId = null;
+let _irwActiveScenario = null;
+let _irwActivePhaseIdx = 0;
+let _irwPickedActionIds = [];
+let _irwPhaseRevealed = false;
+let _irwPhaseScores = [];
+
+function irwInitMastery() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(STORAGE.IRW_MASTERY) || 'null');
+    if (raw && typeof raw === 'object') return raw;
+  } catch (_) {}
+  const m = {};
+  IRW_DATA.forEach(s => { m[s.id] = { pips: 0, lastRun: null, bestAccuracy: 0, runs: 0, completed: 0 }; });
+  return m;
+}
+function irwSaveMastery(m) {
+  try { localStorage.setItem(STORAGE.IRW_MASTERY, JSON.stringify(m)); _cloudFlush(STORAGE.IRW_MASTERY); } catch (_) {}
+}
+function irwGetScenarioMastery(scenarioId) {
+  const m = irwInitMastery();
+  return m[scenarioId] || { pips: 0, lastRun: null, bestAccuracy: 0, runs: 0, completed: 0 };
+}
+function irwUpdateScenarioMastery(scenarioId, accuracy) {
+  const m = irwInitMastery();
+  if (!m[scenarioId]) m[scenarioId] = { pips: 0, lastRun: null, bestAccuracy: 0, runs: 0, completed: 0 };
+  const e = m[scenarioId];
+  e.runs += 1; e.completed += 1;
+  e.lastRun = new Date().toISOString();
+  if (accuracy > e.bestAccuracy) e.bestAccuracy = accuracy;
+  // Mastery pip: 85%+ accuracy adds a pip (max 3). Mirrors AMM/CTS box-progression.
+  if (accuracy >= 0.85 && e.pips < 3) e.pips += 1;
+  irwSaveMastery(m);
+  return e;
+}
+function irwIsScenarioUnlocked(scenario) {
+  if (!scenario.unlockAfter || scenario.unlockAfter.length === 0) return true;
+  const m = irwInitMastery();
+  return scenario.unlockAfter.every(reqId => {
+    const e = m[reqId];
+    return e && e.pips >= 2;  // need 2/3 mastery on prereq
+  });
+}
+function setIrwTab(tabId) {
+  ['practice', 'lessons', 'dashboard'].forEach(t => {
+    const btn = document.getElementById('irw-tab-btn-' + t);
+    const panel = document.getElementById('irw-tab-' + t);
+    if (btn) {
+      btn.classList.toggle('irw-tab-active', t === tabId);
+      btn.setAttribute('aria-selected', t === tabId ? 'true' : 'false');
+      btn.setAttribute('tabindex', t === tabId ? '0' : '-1');
+    }
+    if (panel) panel.classList.toggle('is-hidden', t !== tabId);
+  });
+  if (tabId === 'practice') irwRenderHome();
+  else if (tabId === 'lessons') irwRenderLessons();
+  else if (tabId === 'dashboard') irwRenderDashboard();
+}
+function startIncidentResponseWarRoom() {
+  if (!_USE_SECPLUS_IRW) {
+    if (typeof showToast === 'function') showToast('Incident Response War Room is Security+ only.', 'info');
+    return;
+  }
+  showPage('irw');
+  setIrwTab('practice');
+}
+function irwRenderHome() {
+  const host = document.getElementById('irw-stage-host');
+  if (!host) return;
+  // Reset session state
+  _irwActiveScenarioId = null; _irwActiveScenario = null;
+  _irwActivePhaseIdx = 0; _irwPickedActionIds = [];
+  _irwPhaseRevealed = false; _irwPhaseScores = [];
+
+  const m = irwInitMastery();
+  const totalScenarios = IRW_DATA.length;
+  const masteredCount = Object.values(m).filter(e => e.pips >= 3).length;
+  const completedCount = Object.values(m).filter(e => e.completed > 0).length;
+
+  let html = '<div class="irw-setup-shell">';
+  html += '<div class="irw-stats-strip">';
+  html += `<span class="irw-stat"><span class="irw-stat-num">${masteredCount}/${totalScenarios}</span><span class="irw-stat-label">Mastered</span></span>`;
+  html += `<span class="irw-stat"><span class="irw-stat-num">${completedCount}</span><span class="irw-stat-label">Completed</span></span>`;
+  html += `<span class="irw-stat"><span class="irw-stat-num">${IRW_DATA.length}</span><span class="irw-stat-label">Scenarios</span></span>`;
+  html += '</div>';
+  html += '<div class="irw-mode-notice">🎯 <strong>Practice mode</strong> · No timer · Reveal-on-mistake. Pressure mode + AI generator land in v4.97.1+.</div>';
+  html += '<div class="irw-scenario-grid">';
+  IRW_DATA.forEach(scen => {
+    const mEntry = m[scen.id] || { pips: 0, completed: 0, bestAccuracy: 0 };
+    const unlocked = irwIsScenarioUnlocked(scen);
+    const vector = IRW_VECTORS[scen.vector] || { name: 'Unknown', icon: '⚠️', color: '#6b6b90' };
+    const diffStars = '★'.repeat(scen.difficulty) + '☆'.repeat(3 - scen.difficulty);
+    const diffLabel = ['', 'Foundational', 'Exam', 'Real-world'][scen.difficulty] || 'Unknown';
+    const correctCount = scen.phases.reduce((a, p) => a + p.actions.filter(x => x.isCorrect).length, 0);
+    html += `<div class="irw-scen-card ${unlocked ? '' : 'is-locked'}"${unlocked ? ` onclick="irwStartScenario('${escAttr(scen.id)}')"` : ''}>`;
+    if (!unlocked) {
+      const reqId = scen.unlockAfter[0];
+      const reqScen = IRW_DATA.find(s => s.id === reqId);
+      const reqTitle = reqScen ? reqScen.title : reqId;
+      html += `<div class="irw-scen-lock">🔒 Master "${escHtml(reqTitle)}" first</div>`;
+    }
+    html += `<div class="irw-scen-row1">`;
+    html += `<div class="irw-scen-icon">${escHtml(scen.icon)}</div>`;
+    html += `<div class="irw-scen-titlewrap">`;
+    html += `<div class="irw-scen-title">${escHtml(scen.title)}</div>`;
+    html += `<div class="irw-scen-meta">`;
+    html += `<span class="irw-scen-tag" style="color:${vector.color};">${vector.icon} ${escHtml(vector.name)}</span>`;
+    html += `<span class="irw-scen-tag irw-scen-diff-${scen.difficulty}">${diffStars} ${diffLabel}</span>`;
+    html += `<span class="irw-scen-tag irw-scen-tag-muted">${scen.phases.length} phases · ${correctCount} correct actions</span>`;
+    html += `</div></div></div>`;
+    html += `<div class="irw-scen-summary">${escHtml(scen.summary)}</div>`;
+    html += '<div class="irw-scen-mastery">';
+    for (let i = 0; i < 3; i++) {
+      html += `<div class="irw-scen-pip ${i < mEntry.pips ? 'is-on' : ''}"></div>`;
+    }
+    if (mEntry.completed > 0) {
+      html += `<span class="irw-scen-completed">${mEntry.completed} run${mEntry.completed === 1 ? '' : 's'} · best ${Math.round(mEntry.bestAccuracy * 100)}%</span>`;
+    }
+    html += '</div></div>';
+  });
+  html += '</div>';
+  html += '<div class="irw-aigen-stub"><div class="irw-aigen-stub-icon">✨</div><div><strong>AI scenario generator coming in v4.97.2.</strong> Sonnet authors fresh scenarios with a 7-layer validator gating output.</div></div>';
+  html += '</div>';
+  host.innerHTML = html;
+}
+function irwStartScenario(scenarioId) {
+  const scen = IRW_DATA.find(s => s.id === scenarioId);
+  if (!scen) { console.warn('IRW: scenario not found:', scenarioId); return; }
+  if (!irwIsScenarioUnlocked(scen)) {
+    if (typeof showToast === 'function') showToast('Master prerequisite scenario first.', 'info');
+    return;
+  }
+  _irwActiveScenarioId = scenarioId;
+  _irwActiveScenario = scen;
+  _irwActivePhaseIdx = 0;
+  _irwPickedActionIds = [];
+  _irwPhaseRevealed = false;
+  _irwPhaseScores = [];
+  irwRenderWarRoom();
+}
+function irwRenderWarRoom() {
+  const host = document.getElementById('irw-stage-host');
+  if (!host || !_irwActiveScenario) return;
+  const scen = _irwActiveScenario;
+  let html = '<div class="irw-warroom">';
+  // LEFT: scenario context
+  html += '<div class="irw-wr-col">';
+  html += '<div class="irw-wr-col-h">📋 Incident</div>';
+  html += `<div class="irw-ctx-tag">${escHtml(scen.severity)} · ACTIVE</div>`;
+  html += `<div class="irw-ctx-title">${escHtml(scen.title)}</div>`;
+  html += `<div class="irw-ctx-summary">${escHtml(scen.context)}</div>`;
+  html += '<div class="irw-ctx-meta-row">';
+  const v = IRW_VECTORS[scen.vector] || { icon: '⚠️', name: scen.vector };
+  html += `<span class="irw-ctx-meta-pill">Vector: ${v.icon} ${escHtml(v.name)}</span>`;
+  html += `<span class="irw-ctx-meta-pill">Vertical: ${escHtml(scen.vertical)}</span>`;
+  html += `<span class="irw-ctx-meta-pill">${escHtml(scen.severity)}</span>`;
+  html += '</div>';
+  html += '<div class="irw-ctx-iocs"><div class="irw-ctx-iocs-h">🔍 IOCs</div>';
+  scen.iocs.forEach(ioc => {
+    html += `<div class="irw-ctx-ioc-row"><strong>${escHtml(ioc.label)}:</strong> ${escHtml(ioc.value)}</div>`;
+  });
+  html += '</div></div>';
+
+  // CENTER: timeline + phase + actions
+  html += '<div class="irw-wr-col irw-wr-col-center">';
+  html += '<div class="irw-wr-col-h">⏱ PICERL Timeline</div>';
+  html += irwRenderTimeline();
+  html += irwRenderPhasePrompt();
+  html += '</div>';
+
+  // RIGHT: evidence feed
+  html += '<div class="irw-wr-col">';
+  html += '<div class="irw-wr-col-h">📡 Evidence feed <span class="irw-wr-col-pulse"></span></div>';
+  html += irwRenderEvidenceFeed();
+  html += '</div>';
+  html += '</div>';
+  host.innerHTML = html;
+  if (host.scrollIntoView) { try { host.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (_) {} }
+}
+function irwRenderTimeline() {
+  let html = '<div class="irw-timeline">';
+  IRW_PHASES.forEach((p, idx) => {
+    let cls = '';
+    let scoreLabel = '—';
+    if (idx < _irwActivePhaseIdx) {
+      cls = 'is-done';
+      const score = _irwPhaseScores[idx];
+      scoreLabel = score != null ? Math.round(score * 100) + '%' : '✓';
+    } else if (idx === _irwActivePhaseIdx) {
+      cls = 'is-active';
+      scoreLabel = _irwPhaseRevealed ? Math.round((_irwPhaseScores[idx] || 0) * 100) + '%' : 'in progress';
+    }
+    html += `<div class="irw-tl-stage ${cls}" style="--tl-color:${p.color};">`;
+    html += `<div class="irw-tl-stage-num">${p.num}</div>`;
+    html += `<div class="irw-tl-stage-name">${escHtml(p.name)}</div>`;
+    html += `<div class="irw-tl-stage-acc">${scoreLabel}</div>`;
+    if (cls === 'is-done') html += '<div class="irw-tl-stage-check">✓</div>';
+    html += '</div>';
+  });
+  html += '</div>';
+  return html;
+}
+function irwRenderPhasePrompt() {
+  const scen = _irwActiveScenario;
+  const phaseDef = IRW_PHASES[_irwActivePhaseIdx];
+  const phaseData = scen.phases[_irwActivePhaseIdx];
+  const expectedCount = phaseData.expectedCount || phaseData.actions.filter(a => a.isCorrect).length;
+  let html = `<div class="irw-phase-prompt"><div class="irw-phase-eyebrow" style="color:${phaseDef.color};">PHASE ${phaseDef.num} · ${escHtml(phaseDef.name).toUpperCase()}</div>`;
+  html += `<div class="irw-phase-title">${escHtml(phaseData.promptTitle)}</div>`;
+  html += `<div class="irw-phase-stem">${escHtml(phaseData.promptStem)}</div></div>`;
+  html += '<div class="irw-actions-instructions">';
+  if (_irwPhaseRevealed) {
+    html += `Reveal — phase score <strong>${Math.round(_irwPhaseScores[_irwActivePhaseIdx] * 100)}%</strong>`;
+  } else {
+    html += `Pick all that apply (${expectedCount} expected · ${phaseData.actions.length} options):`;
+  }
+  html += '</div><div class="irw-action-deck">';
+  phaseData.actions.forEach(action => {
+    const isPicked = _irwPickedActionIds.includes(action.id);
+    let cls = '';
+    if (_irwPhaseRevealed) {
+      if (isPicked && action.isCorrect) cls = 'is-picked-correct';
+      else if (isPicked && !action.isCorrect) cls = 'is-picked-wrong';
+      else if (!isPicked && action.isCorrect) cls = 'is-revealed-correct';
+    } else if (isPicked) {
+      cls = 'is-picked';
+    }
+    html += `<div class="irw-action-card ${cls}"${_irwPhaseRevealed ? '' : ` onclick="irwToggleAction('${escAttr(action.id)}')"`}>`;
+    html += `<div class="irw-action-cb">${isPicked ? '✓' : ''}</div>`;
+    html += '<div class="irw-action-body">';
+    html += `<div class="irw-action-name">${escHtml(action.label)}</div>`;
+    html += `<div class="irw-action-meta">${escHtml(action.meta || '')}</div>`;
+    if (_irwPhaseRevealed) {
+      html += `<div class="irw-action-why"><strong>${action.isCorrect ? '✓ Correct.' : (isPicked ? '✗ Wrong.' : 'Required — you missed this.')}</strong> ${escHtml(action.why || '')}</div>`;
+    }
+    html += '</div></div>';
+  });
+  html += '</div>';
+  if (_irwPhaseRevealed && phaseData.trapCallout) {
+    html += '<div class="irw-trap-callout"><div class="irw-trap-h"><div class="irw-trap-icon">!</div><div>';
+    html += `<div class="irw-trap-title">${escHtml(phaseData.trapCallout.title)}</div>`;
+    html += `<div class="irw-trap-sub">SY0-701 trap-callout</div></div></div>`;
+    html += `<div class="irw-trap-body">${escHtml(phaseData.trapCallout.body)}</div></div>`;
+  }
+  html += '<div class="irw-submit-row">';
+  if (_irwPhaseRevealed) {
+    const isLast = _irwActivePhaseIdx === IRW_PHASES.length - 1;
+    html += `<button class="irw-submit-btn is-confirm" onclick="irwAdvancePhase()">${isLast ? '🏁 Finish scenario →' : 'Advance to ' + escHtml(IRW_PHASES[_irwActivePhaseIdx + 1].name) + ' →'}</button>`;
+  } else {
+    const picked = _irwPickedActionIds.length;
+    html += `<div class="irw-submit-counter">${picked} of ${expectedCount} expected · ${picked} selected</div>`;
+    html += `<button class="irw-submit-btn" ${picked === 0 ? 'disabled' : ''} onclick="irwSubmitDecisions()">Lock answers →</button>`;
+  }
+  html += '</div>';
+  return html;
+}
+function irwRenderEvidenceFeed() {
+  const scen = _irwActiveScenario;
+  let html = '';
+  scen.iocs.forEach((ioc, idx) => {
+    const isNew = idx === 0 && _irwActivePhaseIdx === 0 && !_irwPhaseRevealed;
+    html += `<div class="irw-alert-row ${isNew ? 'is-new' : ''}">`;
+    html += `<div class="irw-alert-time">IOC #${idx + 1}</div>`;
+    html += `<div class="irw-alert-src">${escHtml(ioc.label)}</div>`;
+    html += `<div class="irw-alert-detail"><code>${escHtml(ioc.value)}</code></div></div>`;
+  });
+  html += '<div class="irw-alert-row" style="margin-top:14px; border-left-color:#3b82f6;">';
+  html += `<div class="irw-alert-time">Phase ${_irwActivePhaseIdx + 1} of ${IRW_PHASES.length}</div>`;
+  html += `<div class="irw-alert-src">SOC analyst</div>`;
+  html += `<div class="irw-alert-detail">${_irwPhaseRevealed ? 'Phase complete. Advance when ready.' : 'Decisions pending. Lock answers to advance.'}</div></div>`;
+  return html;
+}
+function irwToggleAction(actionId) {
+  if (_irwPhaseRevealed) return;
+  const idx = _irwPickedActionIds.indexOf(actionId);
+  if (idx >= 0) _irwPickedActionIds.splice(idx, 1);
+  else _irwPickedActionIds.push(actionId);
+  irwRenderWarRoom();
+}
+function irwSubmitDecisions() {
+  if (_irwPhaseRevealed) return;
+  if (_irwPickedActionIds.length === 0) return;
+  const phaseData = _irwActiveScenario.phases[_irwActivePhaseIdx];
+  const correctActions = phaseData.actions.filter(a => a.isCorrect);
+  const correctCount = correctActions.length;
+  const correctPicked = _irwPickedActionIds.filter(id => correctActions.some(a => a.id === id)).length;
+  const wrongPicked = _irwPickedActionIds.filter(id => !correctActions.some(a => a.id === id)).length;
+  // Score: correctPicked / total - wrongPenalty. Bounded [0,1].
+  let raw = (correctPicked - 0.5 * wrongPicked) / correctCount;
+  if (raw < 0) raw = 0; if (raw > 1) raw = 1;
+  _irwPhaseScores[_irwActivePhaseIdx] = raw;
+  _irwPhaseRevealed = true;
+  irwRenderWarRoom();
+}
+function irwAdvancePhase() {
+  _irwActivePhaseIdx += 1;
+  _irwPickedActionIds = [];
+  _irwPhaseRevealed = false;
+  if (_irwActivePhaseIdx >= IRW_PHASES.length) {
+    irwEndScenario();
+  } else {
+    irwRenderWarRoom();
+  }
+}
+function irwEndScenario() {
+  const host = document.getElementById('irw-stage-host');
+  if (!host) return;
+  const scen = _irwActiveScenario;
+  const totalScore = _irwPhaseScores.reduce((a, s) => a + s, 0) / _irwPhaseScores.length;
+  irwUpdateScenarioMastery(scen.id, totalScore);
+  let html = '<div class="irw-eos-card">';
+  html += '<div class="irw-eos-h"><div class="irw-eos-icon">🏁</div>';
+  html += `<div><div class="irw-eos-title">${escHtml(scen.title)} — completed</div><div class="irw-eos-sub">Practice mode · ${scen.phases.length} phases</div></div></div>`;
+  html += '<div class="irw-eos-stats">';
+  html += `<div class="irw-eos-stat"><div class="irw-eos-stat-label">Overall accuracy</div><div class="irw-eos-stat-num is-good">${Math.round(totalScore * 100)}%</div></div>`;
+  html += `<div class="irw-eos-stat"><div class="irw-eos-stat-label">Phases</div><div class="irw-eos-stat-num">${scen.phases.length}/${scen.phases.length}</div></div>`;
+  const strongCount = _irwPhaseScores.filter(s => s >= 0.85).length;
+  html += `<div class="irw-eos-stat"><div class="irw-eos-stat-label">Strong phases</div><div class="irw-eos-stat-num is-good">${strongCount}/${scen.phases.length}</div></div>`;
+  const newPips = irwGetScenarioMastery(scen.id).pips;
+  html += `<div class="irw-eos-stat"><div class="irw-eos-stat-label">Mastery pips</div><div class="irw-eos-stat-num">${newPips}/3</div></div>`;
+  html += '</div><div class="irw-eos-phase-table">';
+  IRW_PHASES.forEach((p, idx) => {
+    const score = _irwPhaseScores[idx] || 0;
+    const cls = score >= 0.85 ? 'is-good' : (score >= 0.65 ? 'is-mid' : 'is-bad');
+    html += '<div class="irw-eos-phase-row">';
+    html += `<div class="irw-eos-phase-stage" style="color:${p.color};">P${p.num}</div>`;
+    html += `<div class="irw-eos-phase-name">${escHtml(p.name)}</div>`;
+    html += `<div class="irw-eos-phase-acc ${cls}">${Math.round(score * 100)}%</div></div>`;
+  });
+  html += '</div><div class="irw-eos-cta-row">';
+  html += `<button class="irw-eos-cta is-primary" onclick="irwStartScenario('${escAttr(scen.id)}')">🔁 Replay</button>`;
+  html += `<button class="irw-eos-cta" onclick="setIrwTab('practice')">📋 Back to catalog</button></div></div>`;
+  host.innerHTML = html;
+  if (host.scrollIntoView) { try { host.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (_) {} }
+}
+function irwRenderLessons() {
+  const host = document.getElementById('irw-lessons-content');
+  if (!host) return;
+  let html = '<div class="irw-lessons-stub"><div class="irw-lessons-stub-icon">📚</div>';
+  html += '<div class="irw-lessons-stub-title">Phase cheatsheets ship in v4.97.1</div>';
+  html += '<div class="irw-lessons-stub-sub">6 PICERL phase cheatsheets (Preparation, Identification, Containment, Eradication, Recovery, Lessons Learned) with goals + canonical actions + SY0-701 trap callouts.</div></div>';
+  html += '<div class="irw-phases-preview">';
+  IRW_PHASES.forEach(p => {
+    html += `<div class="irw-phase-preview-card" style="border-top-color:${p.color};">`;
+    html += `<div class="irw-phase-preview-num" style="color:${p.color};">P${p.num}</div>`;
+    html += `<div class="irw-phase-preview-name">${escHtml(p.name)}</div>`;
+    html += `<div class="irw-phase-preview-goal">${escHtml(p.goal)}</div></div>`;
+  });
+  html += '</div>';
+  host.innerHTML = html;
+}
+function irwRenderDashboard() {
+  const host = document.getElementById('irw-dashboard-content');
+  if (!host) return;
+  const m = irwInitMastery();
+  let html = '<div class="irw-dash-shell"><div class="irw-dash-stub-h">📊 Per-scenario mastery</div><div class="irw-dash-list">';
+  IRW_DATA.forEach(scen => {
+    const e = m[scen.id] || { pips: 0, completed: 0, bestAccuracy: 0 };
+    html += '<div class="irw-dash-row">';
+    html += `<span class="irw-dash-row-icon">${escHtml(scen.icon)}</span>`;
+    html += `<div class="irw-dash-row-name">${escHtml(scen.title)}</div>`;
+    html += '<div class="irw-dash-row-pips">';
+    for (let i = 0; i < 3; i++) html += `<div class="irw-dash-pip ${i < e.pips ? 'is-on' : ''}"></div>`;
+    html += '</div>';
+    if (e.completed > 0) {
+      html += `<div class="irw-dash-row-acc">${Math.round(e.bestAccuracy * 100)}% best · ${e.completed} run${e.completed === 1 ? '' : 's'}</div>`;
+    } else {
+      html += '<div class="irw-dash-row-acc irw-dash-row-acc-muted">Not yet attempted</div>';
+    }
+    html += '</div>';
+  });
+  html += '</div><div class="irw-dash-stub"><strong>Per-phase mastery analytics + prescriptive callouts arrive in v4.97.3.</strong> For now: replay your weakest scenario from the Practice catalog.</div></div>';
+  host.innerHTML = html;
 }
 
 function setOsDifficulty(diff) {
@@ -36745,7 +37145,9 @@ const APP_SIDEBAR_DRILLS = [
 const APP_SIDEBAR_DRILLS_SECPLUS = [
   { page: 'acronyms', label: 'Acronym Blitz', handler: () => { showPage('acronyms'); if (typeof startAcronymBlitz === 'function') startAcronymBlitz(); } },
   { page: 'amm', label: 'Attack-to-Mitigation', handler: () => { showPage('amm'); if (typeof startAttackMitigation === 'function') startAttackMitigation(); } },
-  { page: 'cts', label: 'Control Type Sorter', handler: () => { showPage('cts'); if (typeof startControlTypeSorter === 'function') startControlTypeSorter(); } }
+  { page: 'cts', label: 'Control Type Sorter', handler: () => { showPage('cts'); if (typeof startControlTypeSorter === 'function') startControlTypeSorter(); } },
+  // v4.97.0 — Incident Response War Room (flagship #1, SY0-701 Domain 4)
+  { page: 'irw', label: 'IR War Room', handler: () => { showPage('irw'); if (typeof startIncidentResponseWarRoom === 'function') startIncidentResponseWarRoom(); } }
 ];
 
 // Map arbitrary page names to their sidebar highlight target. Quiz/exam/review
@@ -36765,6 +37167,7 @@ const SIDEBAR_ACTIVE_MAP = {
   'amm': 'amm',  // v4.94.0: Attack-to-Mitigation drill highlights itself
   'cts': 'cts',  // v4.95.0: Control Type Sorter drill highlights itself
   'ptr': 'ptr', // v4.96.0: Packet Trace drill highlights itself (NOT 'pt' — Port Drill owns that prefix)
+  'irw': 'irw',  // v4.97.0: IR War Room flagship highlights itself
   'osi-sorter': 'osi-sorter',
   'cables': 'cables',
   'network-analysis': 'network-analysis',
@@ -36961,6 +37364,7 @@ const TOPBAR_CRUMBS = {
   'amm': 'Attack-to-Mitigation',  // v4.94.0
   'cts': 'Control Type Sorter',  // v4.95.0
   'ptr': 'Packet Trace',         // v4.96.0 (page id is 'ptr' to avoid pt- collision with Port Drill)
+  'irw': 'IR War Room',          // v4.97.0 (Sec+ flagship #1 — incident response)
   'osi-sorter': 'OSI Sorter',
   'cables': 'Cable ID',
   'network-analysis': 'Network Analysis',

@@ -1598,5 +1598,529 @@ window.CERT_PACKS.secplus = {
         ops:  ['SOP, runbook', 'Change window schedule'],
         phys: ['Posted evacuation route', 'Emergency procedures poster']
       } }
+  ],
+
+  // ════════════════════════════════════════════════════════════════════
+  // INCIDENT RESPONSE WAR ROOM — Flagship #1 (v4.97.0 / issue #312)
+  // SY0-701 Domain 4 (Security Operations, 28%) flagship drill.
+  // 6-phase SANS PICERL timeline (Preparation, Identification,
+  // Containment, Eradication, Recovery, Lessons Learned).
+  // 5 scenarios at v1; expands to 25 by v4.97.3.
+  // Visual contract locked to mockups/security-incident-response-war-room-concept.html
+  // ════════════════════════════════════════════════════════════════════
+  incidentResponseVectors: {
+    'ransomware':    { name: 'Ransomware', icon: '🦠', color: '#ef4444' },
+    'insider':       { name: 'Insider threat', icon: '👤', color: '#a855f7' },
+    'cloud':         { name: 'Cloud breach', icon: '☁️', color: '#06b6d4' },
+    'phish-derived': { name: 'Phish-derived', icon: '🎣', color: '#f59e0b' },
+    'supply-chain':  { name: 'Supply chain', icon: '🔗', color: '#22c55e' },
+    'ddos':          { name: 'DDoS', icon: '🌐', color: '#3b82f6' }
+  },
+  incidentResponsePhases: [
+    { id: 'preparation',    num: 1, name: 'Preparation',    color: '#3b82f6', goal: "You can't pause an incident to write a playbook. Build readiness BEFORE day-zero." },
+    { id: 'identification', num: 2, name: 'Identification', color: '#06b6d4', goal: 'Is this an incident? What kind? How bad? Confirm and classify.' },
+    { id: 'containment',    num: 3, name: 'Containment',    color: '#f59e0b', goal: 'Stop the spread. Preserve evidence. Don\'t make eradication harder.' },
+    { id: 'eradication',    num: 4, name: 'Eradication',    color: '#ef4444', goal: 'Remove the malware AND the way it got in. If you only remove the malware, it\'ll come back.' },
+    { id: 'recovery',       num: 5, name: 'Recovery',       color: '#22c55e', goal: 'Get back to business safely. Watch for recurrence. Restore + monitor + validate.' },
+    { id: 'lessons',        num: 6, name: 'Lessons Learned',color: '#a855f7', goal: 'How do we make sure this never happens again — or at least costs less next time?' }
+  ],
+  incidentResponseScenarios: [
+    // ──────────────────────────────────────────────────────────────────
+    // 1) Ryuk on finance workstation — Ransomware ★★ Exam (the canonical PICERL scenario)
+    // ──────────────────────────────────────────────────────────────────
+    {
+      id: 'ryuk-finance',
+      title: 'Ryuk ransomware on finance workstation',
+      icon: '🦠',
+      vector: 'ransomware',
+      difficulty: 2,
+      unlockAfter: [],
+      summary: 'Encrypted files appear on FIN-WS-08. SMB shares accessed cross-VLAN. C2 beacon to known TOR node. Walk the playbook.',
+      context: 'At 09:14, file-server ABC-FS01 logged 3,400 SMB writes from FIN-WS-08 in 90 seconds. EDR on FIN-WS-08 flagged a process tree: cmd.exe → powershell.exe → ryuk.exe. CPU pinned at 100%. Files in C:\\Users\\jdoe\\Documents now have .ryk extension. User reports "ransom note popped up."',
+      vertical: 'Corporate finance',
+      severity: 'SEV-2',
+      iocs: [
+        { type: 'sha256', value: '4f3c8bc2a91d…b2e1', label: 'ryuk.exe' },
+        { type: 'c2', value: '185.220.101.42:443', label: 'TOR exit node' },
+        { type: 'mutex', value: 'RyukReadMe.txt', label: 'Ransom-note marker' },
+        { type: 'host', value: 'FIN-WS-08 (10.4.12.18)', label: 'Affected host' },
+        { type: 'user', value: 'CORP\\jdoe', label: 'Compromised account' }
+      ],
+      phases: [
+        {
+          stage: 'preparation', expectedCount: 3,
+          promptTitle: 'What pre-incident readiness already paid off?',
+          promptStem: 'Pick the prep activities that made this response possible. (This is "is your house in order?" — done before day-zero.)',
+          actions: [
+            { id: 'p1a1', label: 'IR plan documented + reviewed last quarter', isCorrect: true, meta: 'Preparation · plan', why: 'You have a runbook to follow at 09:14 — without it, you improvise under pressure.' },
+            { id: 'p1a2', label: 'EDR deployed across all corp endpoints with auto-isolation policy enabled', isCorrect: true, meta: 'Preparation · tooling', why: 'EDR is what surfaced the malicious process tree + lets you isolate without driving to the desk.' },
+            { id: 'p1a3', label: 'Tabletop exercise on ransomware ran 6 months ago', isCorrect: true, meta: 'Preparation · practice', why: 'The team has rehearsed this exact playbook in the calm. Muscle memory matters.' },
+            { id: 'p1a4', label: 'Buy more security tools right now', isCorrect: false, meta: 'Eradication-flavoured · wrong phase', why: 'Tools without playbook + practice don\'t help during an incident. Process > products. Buy more later, in the post-incident review.' },
+            { id: 'p1a5', label: 'Restore from backup', isCorrect: false, meta: 'Recovery · wrong phase', why: 'Recovery comes after eradication. You don\'t restore at preparation time.' }
+          ]
+        },
+        {
+          stage: 'identification', expectedCount: 3,
+          promptTitle: 'What do you do RIGHT NOW to confirm and triage?',
+          promptStem: 'Pick every action that\'s appropriate at this stage. Over-picking is a wrong-answer signal — pick only what is required to confirm scope and classify severity.',
+          actions: [
+            { id: 'p2a1', label: 'Open a ticket and assign severity SEV-2', isCorrect: true, meta: 'Identification · classify', why: 'Severity drives the scope of response. SEV-2 mobilises the IR team without the all-hands-on-deck of SEV-1.' },
+            { id: 'p2a2', label: 'Pull EDR process tree + parent process for ryuk.exe', isCorrect: true, meta: 'Identification · confirm', why: 'Confirms this isn\'t a false positive AND shows how the malware launched (PowerShell → ransomware = post-exploitation).' },
+            { id: 'p2a3', label: 'Cross-check C2 IP against threat intel feed', isCorrect: true, meta: 'Identification · enrich', why: 'TOR-exit confirmation classifies this as deliberate human-operated ransomware, not commodity drive-by.' },
+            { id: 'p2a4', label: 'Power off FIN-WS-08 immediately', isCorrect: false, meta: 'Containment-flavoured · wrong phase', why: 'Containment comes next. AND power-off is the wrong containment move (see phase 3).' },
+            { id: 'p2a5', label: 'Restore files from backup', isCorrect: false, meta: 'Recovery · wrong phase', why: 'Restoring during identification is way too early — you don\'t even know the scope yet.' },
+            { id: 'p2a6', label: 'Wipe and re-image FIN-WS-08', isCorrect: false, meta: 'Eradication · wrong phase', why: 'Wiping destroys the evidence you\'d need for the rest of the response. Wait until eradication.' }
+          ]
+        },
+        {
+          stage: 'containment', expectedCount: 5,
+          promptTitle: 'Stop the spread without destroying evidence.',
+          promptStem: '5 expected actions. Evidence preservation matters. Over-aggressive containment can cost the eradication phase later.',
+          trapCallout: {
+            title: 'The power-off trap',
+            body: '"Powering off the infected host stops the encryption" sounds right — and it does stop encryption — but it destroys all volatile evidence in the process. RAM holds the running ransomware process state, the decryption key (sometimes), injected DLLs, the C2 session, and recently-accessed file tables. Network-isolate achieves the same containment goal (no more spread, no more C2) WHILE preserving everything forensics needs to attribute the attack and possibly recover keys. Memorize: isolate ≠ power off.'
+          },
+          actions: [
+            { id: 'p3a1', label: 'Network-isolate FIN-WS-08 via EDR (keep powered on)', isCorrect: true, meta: 'Containment · evidence-preserving', why: 'Isolating via EDR cuts the host off from network spread + C2 callouts while keeping memory + running processes intact for forensics. Canonical containment move.' },
+            { id: 'p3a2', label: 'Block C2 IP 185.220.101.42 at perimeter firewall', isCorrect: true, meta: 'Containment · network-level', why: 'Blocks command-and-control for any other infected host you haven\'t found yet — including the second host the AD sweep will surface.' },
+            { id: 'p3a3', label: 'Disable CORP\\jdoe AD account + force re-auth across session', isCorrect: true, meta: 'Containment · identity-level', why: 'Stops the attacker pivoting with jdoe\'s credentials to other hosts. Pair with Kerberos golden-ticket invalidation if AD is on the table.' },
+            { id: 'p3a4', label: 'Capture memory image (RAM dump) before any power state change', isCorrect: true, meta: 'Containment · forensic preservation', why: 'Order of volatility (RFC 3227): RAM > swap > network state > disk. Captured BEFORE any reboot/power-off, you preserve injected DLLs, decryption keys still resident, and C2 session state.' },
+            { id: 'p3a5', label: 'Sweep AD for SMB sessions originating from 10.4.12.18', isCorrect: true, meta: 'Containment · scope expansion', why: 'Containment isn\'t just "stop the obvious thing" — it\'s "find the unknown spread." This is what surfaces HR-WS-04 (the second infected host).' },
+            { id: 'p3a6', label: 'Power off FIN-WS-08 to stop encryption', isCorrect: false, meta: 'Eradication-flavoured · destroys evidence', why: 'TRAP. Power-off destroys all volatile evidence. Network-isolate first, RAM-dump second, only THEN power down if needed. The #1 SY0-701 IR trap.' },
+            { id: 'p3a7', label: 'Re-image FIN-WS-08 from clean baseline', isCorrect: false, meta: 'Eradication · wrong phase', why: 'Re-imaging is eradication. Doing it now destroys evidence + hasn\'t confirmed scope yet.' }
+          ]
+        },
+        {
+          stage: 'eradication', expectedCount: 4,
+          promptTitle: 'Remove the malware AND the way it got in.',
+          promptStem: 'Containment is done. Both infected hosts are isolated. Now make sure trust is restored and the vulnerability is closed.',
+          actions: [
+            { id: 'p4a1', label: 'Wipe and re-image FIN-WS-08 + HR-WS-04 from clean Windows baseline', isCorrect: true, meta: 'Eradication · trust-restore', why: 'Disinfection isn\'t trust-restoring (you can never be sure you got 100%). Wipe + reimage is the only trustworthy option.' },
+            { id: 'p4a2', label: 'Patch the initial-access vulnerability (Outlook macro exploit) fleet-wide', isCorrect: true, meta: 'Eradication · root-cause', why: 'Same vuln exists on every other host. If you only patch the affected hosts, the next phish hits a different host with the same gap.' },
+            { id: 'p4a3', label: 'Rotate jdoe\'s passwords + any service-account creds touched on FIN-WS-08', isCorrect: true, meta: 'Eradication · credential rotation', why: 'Attackers exfiltrate credentials before encrypting. Rotate every credential the host had access to.' },
+            { id: 'p4a4', label: 'Promote 185.220.101.42 from temporary block to permanent IOC blocklist', isCorrect: true, meta: 'Eradication · IOC promotion', why: 'Containment-time blocks expire. Make it permanent.' },
+            { id: 'p4a5', label: 'Just run AV again on the infected hosts', isCorrect: false, meta: 'Eradication-flavoured · half-measure', why: 'Disinfection-only isn\'t trust-restoring. Wipe + reimage is the only safe path.' },
+            { id: 'p4a6', label: 'Pay the ransom to get the decryption key', isCorrect: false, meta: 'Recovery-flavoured · trap', why: 'Pay-the-ransom funds future attacks + you may not get keys back + may violate OFAC sanctions if the crew is sanctioned. Almost never the right move.' }
+          ]
+        },
+        {
+          stage: 'recovery', expectedCount: 4,
+          promptTitle: 'Get back to business safely. Watch for recurrence.',
+          promptStem: 'Eradication is done. Hosts are clean, vuln is patched. Now bring service back up — carefully + monitored.',
+          actions: [
+            { id: 'p5a1', label: 'Restore user files from backup taken before 09:14 today', isCorrect: true, meta: 'Recovery · clean restore', why: 'Pre-incident-timestamp backups only. Verify backup hashes against known-good before restore.' },
+            { id: 'p5a2', label: 'Hash-check restored files against pre-incident manifest', isCorrect: true, meta: 'Recovery · integrity validation', why: 'Hash-check verifies backup was clean + restored intact. Especially important if backup-server credentials were touched.' },
+            { id: 'p5a3', label: 'Re-introduce hosts to network gradually + monitor for 30 days', isCorrect: true, meta: 'Recovery · staged + monitored', why: 'Heightened monitoring catches recurrence. Ransomware crews often try again 2-4 weeks later via the same initial-access path.' },
+            { id: 'p5a4', label: 'Notify finance team about new SOPs for opening attachments', isCorrect: true, meta: 'Recovery · user comms', why: 'Macro-exploit was the initial vector. Affected users need to know what to watch for + new safe-handling procedures.' },
+            { id: 'p5a5', label: 'Restore from yesterday\'s backup (last automated)', isCorrect: false, meta: 'Recovery · stale data', why: 'Yesterday loses today\'s pre-incident work. This morning\'s pre-9:14 snapshot is the right target.' },
+            { id: 'p5a6', label: 'Restore directly to production without staging', isCorrect: false, meta: 'Recovery · risky', why: 'Direct restore = if you missed something during eradication, you\'re back in containment. Stage + verify first.' }
+          ]
+        },
+        {
+          stage: 'lessons', expectedCount: 4,
+          promptTitle: 'Close the loop. Make sure this never happens again — or at least costs less next time.',
+          promptStem: 'Recovery done. Now the post-incident review (within 2 weeks while details are fresh).',
+          actions: [
+            { id: 'p6a1', label: 'Write blameless post-mortem with timestamped action log', isCorrect: true, meta: 'Lessons · documentation', why: 'Blameless postmortems surface real gaps. Punitive ones surface lies. Timestamps reveal where the response slowed.' },
+            { id: 'p6a2', label: 'Update IR playbook with "always isolate, never power off" guidance', isCorrect: true, meta: 'Lessons · playbook update', why: 'You almost made the power-off mistake. Codify the lesson so the next person doesn\'t.' },
+            { id: 'p6a3', label: 'Block macros in Office by default fleet-wide', isCorrect: true, meta: 'Lessons · prevention upgrade', why: 'Closes the initial-access vector permanently for the whole org. Single biggest reduction in ransomware-attack surface.' },
+            { id: 'p6a4', label: 'Share IOCs (185.220.101.42, ryuk.exe SHA256) with sector ISAC', isCorrect: true, meta: 'Lessons · intel sharing', why: 'Helps peer orgs detect the same crew. Information sharing is what makes ISACs valuable.' },
+            { id: 'p6a5', label: 'Skip the post-mortem to ship more features', isCorrect: false, meta: 'Lessons · negligence', why: '"We\'re too busy" = next incident is the same incident. Always close the loop.' },
+            { id: 'p6a6', label: 'Fire the user who clicked the macro', isCorrect: false, meta: 'Lessons · blame culture', why: 'Punitive blame breaks the trust that makes future incidents reportable. The user did what most users would do — train, don\'t fire.' }
+          ]
+        }
+      ]
+    },
+
+    // ──────────────────────────────────────────────────────────────────
+    // 2) BEC wire-fraud — Phish-derived ★★ Exam (social-engineering canonical)
+    // ──────────────────────────────────────────────────────────────────
+    {
+      id: 'bec-wire-fraud',
+      title: 'CFO BEC → wire fraud almost executed',
+      icon: '🎣',
+      vector: 'phish-derived',
+      difficulty: 2,
+      unlockAfter: [],
+      summary: 'Spoofed CFO email instructs treasury to wire $480K. Treasurer hesitates. You have 18 minutes before the bank cutoff.',
+      context: 'At 14:02, treasurer Sarah received an email from "Sarah Chen, CFO" instructing an urgent confidential wire of $487,000 to an "M&A advisory escrow account" by EOD. The treasurer noticed the Reply-To was different from the From and called you. Wire is staged in the bank portal but not yet authorised. Bank cutoff: 16:00.',
+      vertical: 'Corp finance / M&A',
+      severity: 'SEV-3',
+      iocs: [
+        { type: 'email', value: 'sarah.chen.cfo@gmail.com', label: 'Spoofed sender (display-name spoof)' },
+        { type: 'reply-to', value: 'treasury.processing@corp-finance-secure.com', label: 'Typosquat reply-to' },
+        { type: 'amount', value: '$487,000', label: 'Requested wire' },
+        { type: 'recipient', value: 'Account ending 4271 @ Citibank', label: 'Wire destination' }
+      ],
+      phases: [
+        {
+          stage: 'preparation', expectedCount: 3,
+          promptTitle: 'What pre-incident readiness mattered here?',
+          promptStem: 'BEC succeeds when verification channels are weak. Pick the prep activities that gave the treasurer the confidence to pause.',
+          actions: [
+            { id: 'p1a1', label: 'Treasury training on out-of-band verification for any wire ≥ $50K', isCorrect: true, meta: 'Preparation · training', why: 'The treasurer knew to verify out-of-band. Without that training, the wire would be gone.' },
+            { id: 'p1a2', label: 'Documented SOP requiring two-person approval for wires ≥ $100K', isCorrect: true, meta: 'Preparation · process', why: 'Two-person rule is the canonical BEC defense — even if the attacker fools one person, they must fool two.' },
+            { id: 'p1a3', label: 'DMARC/DKIM/SPF on corp.com domain at quarantine policy', isCorrect: true, meta: 'Preparation · email security', why: 'DMARC quarantine prevents external-address spoofs of corp.com. The attacker had to use gmail.com because of this.' },
+            { id: 'p1a4', label: 'Open a SOC ticket and triage', isCorrect: false, meta: 'Identification · wrong phase', why: 'Tickets come in identification, not preparation.' },
+            { id: 'p1a5', label: 'Block the sender domain', isCorrect: false, meta: 'Containment · wrong phase', why: 'Containment, not preparation.' }
+          ]
+        },
+        {
+          stage: 'identification', expectedCount: 4,
+          promptTitle: 'Confirm + classify quickly — wire window is closing.',
+          promptStem: 'Treasurer paused but bank cutoff is in 117 minutes. Confirm this is BEC, scope the damage, classify severity.',
+          actions: [
+            { id: 'p2a1', label: 'Call Sarah Chen on her known mobile number to verify the wire request', isCorrect: true, meta: 'Identification · out-of-band verify', why: 'Out-of-band verification breaks the BEC loop. If Sarah didn\'t send it, you\'ve confirmed BEC in 30 seconds.' },
+            { id: 'p2a2', label: 'Pull email headers for SPF/DKIM/DMARC results', isCorrect: true, meta: 'Identification · technical verify', why: 'Headers show the email failed DMARC alignment — confirming spoof + giving you provenance for the SOC ticket.' },
+            { id: 'p2a3', label: 'Check whether other staff received similar emails (campaign breadth)', isCorrect: true, meta: 'Identification · scope', why: 'BEC often targets multiple finance staff. If 3 people got it, the urgency goes up.' },
+            { id: 'p2a4', label: 'Open SEV-3 ticket and notify CFO + legal counsel', isCorrect: true, meta: 'Identification · classify', why: 'Wire fraud crosses into legal/regulatory territory. Loop in legal early.' },
+            { id: 'p2a5', label: 'Authorise the wire and ask questions later', isCorrect: false, meta: 'Recovery-flavoured · trap', why: 'Authorising the wire IS the breach. The whole point of identification is to prevent it.' },
+            { id: 'p2a6', label: 'Reply to the email asking for more details', isCorrect: false, meta: 'Identification · trap', why: 'Replying confirms your address is monitored + may trigger additional pressure. Out-of-band only.' }
+          ]
+        },
+        {
+          stage: 'containment', expectedCount: 4,
+          promptTitle: 'Stop the wire + lock down the immediate risk.',
+          promptStem: 'BEC is confirmed. Treasurer is fine. Now contain the attack so it can\'t pivot.',
+          actions: [
+            { id: 'p3a1', label: 'Cancel the staged wire in the bank portal', isCorrect: true, meta: 'Containment · stop the loss', why: 'The wire is the entire payload of this attack. Cancellation is containment.' },
+            { id: 'p3a2', label: 'Block sender domain corp-finance-secure.com at email gateway', isCorrect: true, meta: 'Containment · email layer', why: 'Stops follow-up emails from the same crew + any other staff getting the same lure.' },
+            { id: 'p3a3', label: 'Quarantine all emails from gmail.com matching "Sarah Chen" display name', isCorrect: true, meta: 'Containment · campaign halt', why: 'Catches the variants that are already in inboxes but not yet read.' },
+            { id: 'p3a4', label: 'Notify CFO + bank fraud department (in case wire was sent + needs recall)', isCorrect: true, meta: 'Containment · external coord', why: 'Banks have fraud-recall windows. Notify within hours = better recall odds.' },
+            { id: 'p3a5', label: 'Wipe Sarah\'s laptop', isCorrect: false, meta: 'Eradication · wrong target', why: 'Sarah\'s laptop wasn\'t compromised. The attacker spoofed her display name from gmail.com — there\'s nothing to wipe.' },
+            { id: 'p3a6', label: 'Disable Sarah\'s AD account', isCorrect: false, meta: 'Containment · wrong target', why: 'Sarah\'s identity wasn\'t compromised. Disabling her account hurts ops without containing the threat.' }
+          ]
+        },
+        {
+          stage: 'eradication', expectedCount: 3,
+          promptTitle: 'Close the windows the attacker exploited.',
+          promptStem: 'Wire stopped. Now harden the ecosystem so the same attack can\'t succeed against the next person.',
+          actions: [
+            { id: 'p4a1', label: 'Roll out anti-spoof banner: "External email from CFO display name" warning', isCorrect: true, meta: 'Eradication · UI control', why: 'Visual warning on every external email claiming to be a senior exec. Trains the eye + adds friction.' },
+            { id: 'p4a2', label: 'Tighten DMARC from quarantine to reject for corp.com', isCorrect: true, meta: 'Eradication · email policy', why: 'Reject is the strongest DMARC stance. Blocks 100% of spoofs claiming to be from corp.com.' },
+            { id: 'p4a3', label: 'Mandate two-person rule for ALL wires ≥ $25K (was $100K)', isCorrect: true, meta: 'Eradication · process', why: 'Lowers the threshold so smaller BEC attempts also need 2-person sign-off.' },
+            { id: 'p4a4', label: 'Block all gmail.com inbound', isCorrect: false, meta: 'Eradication · over-reach', why: 'Gmail is widely used by legitimate vendors + customers. Blanket-block breaks ops without proportionate benefit.' },
+            { id: 'p4a5', label: 'Fire the treasurer for "almost falling for it"', isCorrect: false, meta: 'Eradication · blame culture', why: 'The treasurer paused and called you — that\'s exactly the right behaviour. Reward, don\'t punish.' }
+          ]
+        },
+        {
+          stage: 'recovery', expectedCount: 3,
+          promptTitle: 'Get treasury back to normal operations.',
+          promptStem: 'Threat closed. Now reassure + re-establish workflow for legitimate wires.',
+          actions: [
+            { id: 'p5a1', label: 'Communicate to all finance staff about what happened + what to do if they see similar', isCorrect: true, meta: 'Recovery · awareness', why: 'Awareness multiplies vigilance. The next attempt may target a different staffer who doesn\'t know about today.' },
+            { id: 'p5a2', label: 'Resume normal wire workflow with the new two-person + out-of-band rules', isCorrect: true, meta: 'Recovery · restored ops', why: 'Treasury operations need to keep running. New rules are the safety net.' },
+            { id: 'p5a3', label: 'Schedule a sector-wide BEC awareness email next week', isCorrect: true, meta: 'Recovery · prevention', why: 'Wider org awareness reduces future attempts.' },
+            { id: 'p5a4', label: 'Suspend all wire transfers indefinitely', isCorrect: false, meta: 'Recovery · over-reach', why: 'Legitimate wires must continue. New rules are the safety net, not a freeze.' }
+          ]
+        },
+        {
+          stage: 'lessons', expectedCount: 3,
+          promptTitle: 'Close the loop.',
+          promptStem: 'Post-incident review within 2 weeks while details are fresh.',
+          actions: [
+            { id: 'p6a1', label: 'Document: "out-of-band call saved $487K" with timeline', isCorrect: true, meta: 'Lessons · win documentation', why: 'Documenting wins reinforces the behaviour + builds the case for security investment.' },
+            { id: 'p6a2', label: 'Add BEC simulation to next quarterly phishing drill', isCorrect: true, meta: 'Lessons · training', why: 'Simulated BEC keeps the muscle memory fresh. Once-a-year training is forgotten.' },
+            { id: 'p6a3', label: 'Brief the board on BEC trend + current org defenses', isCorrect: true, meta: 'Lessons · executive visibility', why: 'Board understanding of the threat = continued investment in defenses.' },
+            { id: 'p6a4', label: 'Take credit on LinkedIn for "saving the company"', isCorrect: false, meta: 'Lessons · OPSEC fail', why: 'Public posts about your incident response give attackers playbook intel + may legally complicate the response.' }
+          ]
+        }
+      ]
+    },
+
+    // ──────────────────────────────────────────────────────────────────
+    // 3) S3 PII exposure — Cloud breach ★★ Exam (cloud-shared-responsibility canonical)
+    // ──────────────────────────────────────────────────────────────────
+    {
+      id: 's3-pii-exposure',
+      title: 'S3 bucket exposure — customer PII leaked',
+      icon: '☁️',
+      vector: 'cloud',
+      difficulty: 2,
+      unlockAfter: [],
+      summary: 'Researcher reports public S3 bucket containing 2.1M customer records. CloudTrail shows 14 days of unauthorized GETs.',
+      context: 'At 11:42, an external security researcher emailed report@corp.com with: "Your S3 bucket s3://corp-customer-archive/ is publicly readable and contains 2.1M customer PII records." CloudTrail review confirms 14 days of GET operations from 11 unique IPs. The bucket was made public by a deploy of new dev tooling 21 days ago via misconfigured CloudFormation template.',
+      vertical: 'B2C SaaS',
+      severity: 'SEV-1',
+      iocs: [
+        { type: 'bucket', value: 's3://corp-customer-archive/', label: 'Exposed bucket' },
+        { type: 'data', value: '2.1M customer records', label: 'PII volume' },
+        { type: 'ip', value: '11 unique source IPs over 14 days', label: 'Unauthorized GET sources' },
+        { type: 'cause', value: 'CloudFormation template (deploy 21d ago)', label: 'Initial misconfiguration' }
+      ],
+      phases: [
+        {
+          stage: 'preparation', expectedCount: 3,
+          promptTitle: 'What cloud-readiness mattered?',
+          promptStem: 'Cloud breaches succeed when guardrails are weak. Pick the prep that prevented this from being even worse.',
+          actions: [
+            { id: 'p1a1', label: 'AWS Config rule blocking public-read on PII-tagged buckets (in alert-only mode)', isCorrect: true, meta: 'Preparation · cloud guardrails', why: 'Even in alert-only, this generates the signal. In enforce mode, this would have prevented the breach entirely.' },
+            { id: 'p1a2', label: 'CloudTrail enabled in all regions + sent to immutable bucket', isCorrect: true, meta: 'Preparation · audit logging', why: 'CloudTrail is what gives you the 14-day GET history. Without it, you\'re blind to scope.' },
+            { id: 'p1a3', label: 'Bug-bounty / responsible-disclosure email monitored', isCorrect: true, meta: 'Preparation · external comms', why: 'The report came from an external researcher. report@corp.com being monitored = early notification.' },
+            { id: 'p1a4', label: 'Run a vulnerability scan against the bucket', isCorrect: false, meta: 'Identification · wrong phase', why: 'Scans come during identification.' },
+            { id: 'p1a5', label: 'Buy a CASB tool', isCorrect: false, meta: 'Lessons · wrong phase', why: 'Tooling decisions are lessons-learned territory.' }
+          ]
+        },
+        {
+          stage: 'identification', expectedCount: 4,
+          promptTitle: 'Confirm scope + classify breach + start the regulatory clock.',
+          promptStem: 'PII exposure has legal consequences (GDPR 72h, state breach laws, SEC 4-day for material). Classify fast.',
+          actions: [
+            { id: 'p2a1', label: 'CloudTrail review for full GET history on the bucket (last 14 days)', isCorrect: true, meta: 'Identification · scope', why: 'Establishes who accessed, when, what. Critical for breach-disclosure scope.' },
+            { id: 'p2a2', label: 'Compare bucket policy + IAM trust against last-known-good (config drift)', isCorrect: true, meta: 'Identification · root cause', why: 'Tells you what changed when. Surfaces the CloudFormation deploy as the root cause.' },
+            { id: 'p2a3', label: 'Classify SEV-1 + open breach-counsel + privacy-counsel chatops channel', isCorrect: true, meta: 'Identification · classify + escalate', why: 'PII at this scale = SEV-1. Breach counsel + privacy counsel run in parallel; loop both in immediately.' },
+            { id: 'p2a4', label: 'Verify the researcher\'s claim by attempting unauthenticated GET yourself', isCorrect: true, meta: 'Identification · confirm', why: 'Trust-but-verify. Don\'t take the researcher\'s word — confirm with your own test.' },
+            { id: 'p2a5', label: 'Make a public statement immediately', isCorrect: false, meta: 'Recovery · wrong phase', why: 'Public comms come AFTER you\'ve scoped + contained. Speaking before you know is its own breach (SEC, customers, partners).' },
+            { id: 'p2a6', label: 'Delete CloudTrail logs to "minimize exposure"', isCorrect: false, meta: 'Eradication · destruction of evidence', why: 'Destroying audit logs during a breach = legal nightmare + obstruction risk. Logs are evidence.' }
+          ]
+        },
+        {
+          stage: 'containment', expectedCount: 4,
+          promptTitle: 'Close the bucket and stop further exposure.',
+          promptStem: 'Bucket is confirmed public. 14d of unauthorized GETs already happened. Stop the bleeding.',
+          actions: [
+            { id: 'p3a1', label: 'Make the bucket private + add explicit deny on s3:GetObject for principal "*"', isCorrect: true, meta: 'Containment · access lockdown', why: 'Belt-and-suspenders. Even if a subsequent IAM grant accidentally re-allows public-read, the explicit deny wins.' },
+            { id: 'p3a2', label: 'Enable S3 access logs for the bucket (forward to SIEM)', isCorrect: true, meta: 'Containment · forensic', why: 'Captures any future access attempts, including from the same crew if they pivot. Different from CloudTrail (data-plane vs control-plane).' },
+            { id: 'p3a3', label: 'Rotate any access keys / credentials that had read access to the bucket', isCorrect: true, meta: 'Containment · credential', why: 'Even though the breach was "no auth needed," any keys that ALSO had access need rotation in case the attacker exfil\'d via authenticated path too.' },
+            { id: 'p3a4', label: 'Notify the security researcher you\'ve received the report + acted', isCorrect: true, meta: 'Containment · external relations', why: 'Maintains researcher goodwill + buys time before they tweet about it. Most researchers give 30-90d responsible-disclosure if you respond fast.' },
+            { id: 'p3a5', label: 'Delete the bucket', isCorrect: false, meta: 'Containment · evidence destruction', why: 'Deleting destroys the data you need for breach scope analysis + may violate legal hold. Lock it down, don\'t destroy.' },
+            { id: 'p3a6', label: 'Email all customers right now', isCorrect: false, meta: 'Recovery · wrong phase', why: 'Customer notification is regulatory comms, after legal-counsel + breach-counsel sign-off, after scope is verified. Not at containment.' }
+          ]
+        },
+        {
+          stage: 'eradication', expectedCount: 3,
+          promptTitle: 'Make sure no other bucket is misconfigured the same way.',
+          promptStem: 'One CF template caused this. Same template may be deployed elsewhere. Sweep.',
+          actions: [
+            { id: 'p4a1', label: 'Audit all S3 buckets in all AWS accounts for public-read on PII-tagged data', isCorrect: true, meta: 'Eradication · sweep', why: 'Same misconfig may exist elsewhere. AWS Config or scout-suite scan surfaces it.' },
+            { id: 'p4a2', label: 'Patch the CloudFormation template that introduced the misconfig + redeploy', isCorrect: true, meta: 'Eradication · root cause', why: 'Without fixing the template, the next deploy reintroduces the issue.' },
+            { id: 'p4a3', label: 'Move AWS Config rule from alert-only to enforce', isCorrect: true, meta: 'Eradication · prevention', why: 'Now it blocks the misconfig at deploy time instead of just alerting after the fact.' },
+            { id: 'p4a4', label: 'Delete all S3 buckets and start fresh', isCorrect: false, meta: 'Eradication · over-reach', why: 'Legitimate buckets serve real workloads. Targeted fix only.' }
+          ]
+        },
+        {
+          stage: 'recovery', expectedCount: 3,
+          promptTitle: 'Customer + regulator notification + service continuity.',
+          promptStem: 'Eradication done. Now meet legal disclosure requirements + restore customer trust.',
+          actions: [
+            { id: 'p5a1', label: 'Notify affected customers within statutory deadline (state-specific)', isCorrect: true, meta: 'Recovery · regulatory', why: 'State breach laws + GDPR 72h require timely notification. Counsel-approved notice template, then send.' },
+            { id: 'p5a2', label: 'Offer credit monitoring for affected customers', isCorrect: true, meta: 'Recovery · customer trust', why: 'Standard remediation for PII breach. Buys customer goodwill + may reduce litigation risk.' },
+            { id: 'p5a3', label: 'Publish post-incident summary (after counsel sign-off)', isCorrect: true, meta: 'Recovery · transparency', why: 'Public disclosure done well = trust restoration. Done badly = compounded reputational damage. Counsel sign-off matters.' },
+            { id: 'p5a4', label: 'Hope the regulators don\'t notice', isCorrect: false, meta: 'Recovery · regulatory failure', why: 'Failure to notify = additional fines, criminal liability for officers, much worse outcome.' }
+          ]
+        },
+        {
+          stage: 'lessons', expectedCount: 3,
+          promptTitle: 'How does the org never have a misconfigured-bucket breach again?',
+          promptStem: 'Cloud-shared-responsibility means most config errors are your responsibility, not AWS\'s.',
+          actions: [
+            { id: 'p6a1', label: 'Mandatory IaC review for any change to bucket policy or IAM trust', isCorrect: true, meta: 'Lessons · process', why: 'Two-person review of IaC catches the misconfig in PR review instead of in production.' },
+            { id: 'p6a2', label: 'Add cloud-misconfig drill to quarterly tabletop exercises', isCorrect: true, meta: 'Lessons · practice', why: 'Cloud breaches feel different from endpoint breaches. Practice the cloud-shaped response.' },
+            { id: 'p6a3', label: 'Cross-train SOC team on AWS / GCP / Azure incident response', isCorrect: true, meta: 'Lessons · team capability', why: 'Cloud IR requires cloud-specific tooling knowledge. Build the muscle.' },
+            { id: 'p6a4', label: 'Blame the developer who wrote the CF template', isCorrect: false, meta: 'Lessons · blame culture', why: 'The system allowed it through PR + deploy + 21 days of monitoring. The developer is one link in a long chain. Fix the system.' }
+          ]
+        }
+      ]
+    },
+
+    // ──────────────────────────────────────────────────────────────────
+    // 4) Insider exfil — Insider threat ★★★ Real-world (HR + legal complexity)
+    // ──────────────────────────────────────────────────────────────────
+    {
+      id: 'insider-exfil',
+      title: 'Departing engineer · data exfil via personal cloud',
+      icon: '👤',
+      vector: 'insider',
+      difficulty: 3,
+      unlockAfter: ['ryuk-finance'],
+      summary: 'DLP flags 4.2 GB upload to personal Dropbox 6h after resignation. HR not notified yet. Legal will be involved.',
+      context: 'At 18:47, DLP flagged a 4.2 GB upload from engineer Marcus Lee\'s laptop to a personal dropbox.com account. Marcus submitted resignation at 12:30 today; last day is in 2 weeks. The uploaded data appears to include the source code for the proprietary recommendation engine + customer-clustering analysis. HR has not yet been notified. This intersects with employment law, IP protection, and forensic chain-of-custody.',
+      vertical: 'Tech / SaaS',
+      severity: 'SEV-2',
+      iocs: [
+        { type: 'user', value: 'CORP\\mlee (Marcus Lee, Sr Eng)', label: 'Insider' },
+        { type: 'data', value: '4.2 GB to dropbox.com', label: 'Exfil destination' },
+        { type: 'time', value: 'Resignation 12:30 → upload 18:47', label: 'Suspicious sequence' },
+        { type: 'data', value: 'Recommendation engine source + customer clustering', label: 'Exfiltrated content' }
+      ],
+      phases: [
+        {
+          stage: 'preparation', expectedCount: 3,
+          promptTitle: 'What pre-incident readiness mattered?',
+          promptStem: 'Insider threat is hard. Pick the prep that gave you visibility + the policy basis to act.',
+          actions: [
+            { id: 'p1a1', label: 'DLP deployed on endpoints + cloud egress with PII/IP-content tagging', isCorrect: true, meta: 'Preparation · detection', why: 'Without DLP this exfil is invisible. The 4.2 GB Dropbox upload only flagged because DLP fingerprinted the content as proprietary.' },
+            { id: 'p1a2', label: 'Acceptable-use policy that explicitly prohibits personal cloud uploads of company data', isCorrect: true, meta: 'Preparation · policy basis', why: 'Without an AUP that prohibits this behaviour, HR + legal may struggle to justify action against the employee.' },
+            { id: 'p1a3', label: 'Resignation-trigger workflow with HR + IT + legal sync', isCorrect: true, meta: 'Preparation · process', why: 'Resignation is the highest-risk insider event. Pre-built workflow reduces response time.' },
+            { id: 'p1a4', label: 'Block Dropbox at the firewall', isCorrect: false, meta: 'Preparation · over-restriction', why: 'Many legitimate workflows use Dropbox. Blanket block creates more problems. DLP-based content filtering is the right control.' }
+          ]
+        },
+        {
+          stage: 'identification', expectedCount: 4,
+          promptTitle: 'Confirm + classify. This intersects HR + legal + forensics.',
+          promptStem: 'Insider IR is unique: you can\'t move alone. HR + legal + forensic chain-of-custody all required.',
+          actions: [
+            { id: 'p2a1', label: 'Pull DLP event detail + content fingerprint match', isCorrect: true, meta: 'Identification · technical confirm', why: 'Confirms what was uploaded + why DLP flagged it. Foundation for everything that follows.' },
+            { id: 'p2a2', label: 'Notify HR + General Counsel before taking any action against the employee', isCorrect: true, meta: 'Identification · cross-functional', why: 'Insider response without HR + legal can violate employment law + destroy the legal case. ALWAYS loop them in first.' },
+            { id: 'p2a3', label: 'Preserve forensic image of the laptop with chain-of-custody documentation', isCorrect: true, meta: 'Identification · forensic preservation', why: 'If this becomes a lawsuit or criminal case, forensic chain-of-custody is the evidence backbone.' },
+            { id: 'p2a4', label: 'Review last 60 days of Marcus\'s activity for prior exfil patterns', isCorrect: true, meta: 'Identification · scope', why: 'Today\'s 4.2 GB may not be the first event. Look back for smaller transfers that may have been a dry run.' },
+            { id: 'p2a5', label: 'Confront Marcus directly via Slack', isCorrect: false, meta: 'Identification · trap', why: 'Direct confrontation without HR + legal violates process + alerts the employee to delete evidence. Never do this alone.' },
+            { id: 'p2a6', label: 'Disable Marcus\'s account immediately without coordination', isCorrect: false, meta: 'Containment-flavoured · trap', why: 'Without HR + legal sign-off, account-disable can constitute wrongful action + loses legal options. Coordinate first.' }
+          ]
+        },
+        {
+          stage: 'containment', expectedCount: 4,
+          promptTitle: 'After HR + legal sign-off, contain access + preserve evidence.',
+          promptStem: 'Assume HR + legal are now in the room. Coordinated containment.',
+          actions: [
+            { id: 'p3a1', label: 'Disable Marcus\'s AD + cloud-IDP account (post HR sign-off)', isCorrect: true, meta: 'Containment · identity', why: 'Stops further data egress. Post-sign-off, this is the right move.' },
+            { id: 'p3a2', label: 'Revoke API tokens + SSH keys + cloud credentials Marcus had access to', isCorrect: true, meta: 'Containment · token rotation', why: 'API tokens persist beyond AD disable. Each one needs rotation.' },
+            { id: 'p3a3', label: 'Send legal-drafted preservation notice to Dropbox requesting account hold', isCorrect: true, meta: 'Containment · external + legal', why: 'Dropbox may be willing to preserve the account contents pending subpoena. Legal-drafted request maximises chances.' },
+            { id: 'p3a4', label: 'Network-isolate Marcus\'s laptop pending forensic image', isCorrect: true, meta: 'Containment · forensic', why: 'Stops further uploads + preserves machine state for forensic image.' },
+            { id: 'p3a5', label: 'Wipe Marcus\'s laptop immediately', isCorrect: false, meta: 'Eradication · destroys evidence', why: 'WIPING = destroying the evidence you need for legal + HR action. Forensic image first, wipe never (until legal says so).' },
+            { id: 'p3a6', label: 'Have HR call Marcus to "talk it out"', isCorrect: false, meta: 'Containment · trap', why: 'Pre-confrontation tip-off lets the employee delete cloud-side evidence + lawyer-up before you preserve.' }
+          ]
+        },
+        {
+          stage: 'eradication', expectedCount: 3,
+          promptTitle: 'Close the gap that allowed this to happen.',
+          promptStem: 'Same hole exists for the next departing engineer. Close it.',
+          actions: [
+            { id: 'p4a1', label: 'Tighten DLP rules to block (not just alert) on uploads ≥ 100MB to personal cloud', isCorrect: true, meta: 'Eradication · prevention', why: 'Now the next attempt fails at the file-egress moment, not after-the-fact.' },
+            { id: 'p4a2', label: 'Auto-trigger DLP elevated-monitoring on all employees who submit resignation', isCorrect: true, meta: 'Eradication · process', why: 'Resignation = highest-risk insider window. Tag + monitor automatically.' },
+            { id: 'p4a3', label: 'Update IP-protection language in employment agreements + exit interviews', isCorrect: true, meta: 'Eradication · legal protection', why: 'Tightens the legal basis for action against future incidents.' },
+            { id: 'p4a4', label: 'Block ALL personal cloud accounts for ALL employees', isCorrect: false, meta: 'Eradication · over-reach', why: 'Many legitimate workflows. DLP content-filtering achieves the same goal without breaking legitimate work.' }
+          ]
+        },
+        {
+          stage: 'recovery', expectedCount: 3,
+          promptTitle: 'Determine business impact + legal posture.',
+          promptStem: 'Code is out. Now what?',
+          actions: [
+            { id: 'p5a1', label: 'Engage IP counsel re: trade-secret protection + potential litigation', isCorrect: true, meta: 'Recovery · legal posture', why: 'Trade-secret status requires you to take "reasonable measures" to protect — your response itself is part of that defense.' },
+            { id: 'p5a2', label: 'Audit which customers / projects the leaked data references', isCorrect: true, meta: 'Recovery · contract review', why: 'Customer contracts may have notification requirements re: their data being leaked.' },
+            { id: 'p5a3', label: 'Brief execs on potential financial / competitive impact', isCorrect: true, meta: 'Recovery · executive comms', why: 'Execs need to make decisions about disclosure, litigation, customer comms. Brief them with facts.' },
+            { id: 'p5a4', label: 'Tell the press', isCorrect: false, meta: 'Recovery · OPSEC fail', why: 'Press disclosure of insider IP theft = compromises legal posture + invites further leaks. Never go to press unilaterally.' }
+          ]
+        },
+        {
+          stage: 'lessons', expectedCount: 3,
+          promptTitle: 'Insider-threat lessons.',
+          promptStem: 'Insider attacks succeed when monitoring is weak + processes are slow. Close both.',
+          actions: [
+            { id: 'p6a1', label: 'Build resignation-trigger SOP: HR + IT + legal sync within 24h of notice', isCorrect: true, meta: 'Lessons · process', why: 'Today the workflow was reactive. Make it proactive.' },
+            { id: 'p6a2', label: 'Run insider-threat tabletop annually', isCorrect: true, meta: 'Lessons · practice', why: 'Insider IR is uniquely hard. Practice = readiness.' },
+            { id: 'p6a3', label: 'Add insider-threat indicators to security-awareness training (mgr-targeted)', isCorrect: true, meta: 'Lessons · training', why: 'Managers see the early signs (resignation-after-disagreement, after-hours-access patterns). Train them.' },
+            { id: 'p6a4', label: 'Implement universal employee surveillance', isCorrect: false, meta: 'Lessons · over-reach', why: 'Universal surveillance breaks trust + creates more insider risk than it prevents. Targeted, role-based, signal-based monitoring.' }
+          ]
+        }
+      ]
+    },
+
+    // ──────────────────────────────────────────────────────────────────
+    // 5) LockBit multi-host — Ransomware ★★★ Real-world (advanced; locked behind ryuk-finance)
+    // ──────────────────────────────────────────────────────────────────
+    {
+      id: 'lockbit-multihost',
+      title: 'LockBit 3.0 — multi-host, double extortion',
+      icon: '🦠',
+      vector: 'ransomware',
+      difficulty: 3,
+      unlockAfter: ['ryuk-finance'],
+      summary: '15 hosts encrypted across 3 VLANs. Attacker exfiltrated 380 GB before encryption. Public leak site countdown: 72h.',
+      context: 'At 02:14 (overnight), 15 corp hosts across 3 VLANs (engineering, finance, HR) showed simultaneous mass-encryption events with ".lockbit" extensions. EDR forensics show 380 GB exfiltrated to an attacker-controlled MEGA.io account over the previous 6 days via SOCKS proxy. The LockBit leak site posted a countdown: 72h to pay or data goes public. Affected: customer contracts, employee records, source code, M&A docs.',
+      vertical: 'Mid-size enterprise',
+      severity: 'SEV-1',
+      iocs: [
+        { type: 'family', value: 'LockBit 3.0', label: 'Ransomware family' },
+        { type: 'count', value: '15 hosts across 3 VLANs', label: 'Encryption blast radius' },
+        { type: 'data', value: '380 GB to MEGA.io (6-day exfil)', label: 'Pre-encryption exfiltration' },
+        { type: 'pressure', value: '72h leak-site countdown', label: 'Double-extortion lever' },
+        { type: 'access', value: 'Initial: Citrix CVE-2023-3519 (unpatched VDI)', label: 'Root cause' }
+      ],
+      phases: [
+        {
+          stage: 'preparation', expectedCount: 4,
+          promptTitle: 'Real-world ransomware: what readiness even matters at this scale?',
+          promptStem: '15 hosts encrypted, leak site live, board panicking. Pick the prep that\'s actively saving the response right now.',
+          actions: [
+            { id: 'p1a1', label: 'Immutable, off-network backups stored 30+ days', isCorrect: true, meta: 'Preparation · 3-2-1 rule', why: 'Without immutable + off-network backups, paying the ransom may be the only option. With them, you\'re negotiating from strength.' },
+            { id: 'p1a2', label: 'Cyber-insurance policy with ransomware-specific coverage', isCorrect: true, meta: 'Preparation · risk transfer', why: 'Cyber-insurance funds the response (legal, IR firm, ransom-broker, business interruption). At this scale, irreplaceable.' },
+            { id: 'p1a3', label: 'Pre-engaged IR firm on retainer with go-now SLA', isCorrect: true, meta: 'Preparation · vendor', why: 'In-house team is overwhelmed at 15 hosts. Retainer means the IR firm is on-site within 24h, not RFP-shopping in week 2.' },
+            { id: 'p1a4', label: 'Tabletop ransomware exercise within last 12 months', isCorrect: true, meta: 'Preparation · practice', why: 'Muscle memory at this scale = response speed. Without it, every decision becomes a debate.' },
+            { id: 'p1a5', label: 'Board-level decision on "do we pay?" pre-decided in policy', isCorrect: false, meta: 'Preparation · over-rigid', why: 'Pre-deciding "we never pay" is good policy until it isn\'t. Pre-decided "we always pay" funds future attacks. Decision frameworks matter more than fixed answers.' }
+          ]
+        },
+        {
+          stage: 'identification', expectedCount: 5,
+          promptTitle: 'Confirm scope + classify SEV-1 + activate full-org response.',
+          promptStem: 'This is the highest-severity scenario in the playbook. Mistakes during identification cost millions in dwell-time + business interruption.',
+          actions: [
+            { id: 'p2a1', label: 'Confirm strain (LockBit 3.0) via ransom note + file-extension fingerprint', isCorrect: true, meta: 'Identification · confirm', why: 'Strain identification drives playbook + decryptor availability + threat-actor profile.' },
+            { id: 'p2a2', label: 'Map encryption blast radius via EDR + SMB + network traffic logs', isCorrect: true, meta: 'Identification · scope', why: 'You need to know "what\'s safe" before you can recover. The 15-host count is the start; lateral-spread paths reveal what else is exposed.' },
+            { id: 'p2a3', label: 'Identify pre-encryption exfil scope via NetFlow + DLP + cloud egress logs', isCorrect: true, meta: 'Identification · double-extortion', why: 'LockBit\'s leverage isn\'t encryption — it\'s the leak site. Knowing what was exfiltrated before encryption defines the negotiation.' },
+            { id: 'p2a4', label: 'Activate cyber-insurance + IR firm + breach counsel within 60 minutes', isCorrect: true, meta: 'Identification · escalate', why: 'Insurance often requires notification-within-hours to maintain coverage. IR firm + counsel run in parallel.' },
+            { id: 'p2a5', label: 'Establish out-of-band comms channel (assume corp email is owned)', isCorrect: true, meta: 'Identification · OPSEC', why: 'Attackers often have email access. Use Signal / phone / out-of-band tooling for IR comms during the response.' },
+            { id: 'p2a6', label: 'Read the ransom note out loud on the all-hands call', isCorrect: false, meta: 'Identification · OPSEC fail', why: 'Wide distribution of attacker comms = panic + leaks + media risk. Tight need-to-know circle.' }
+          ]
+        },
+        {
+          stage: 'containment', expectedCount: 6,
+          promptTitle: 'Stop spread + preserve evidence + protect uninfected.',
+          promptStem: 'Maximum complexity. 15 hosts, 3 VLANs, ongoing C2, 6-day adversary dwell. Multi-axis containment.',
+          trapCallout: {
+            title: 'The "isolate everything" trap',
+            body: 'When 15 hosts pop, the instinct is "shut down the network." But that breaks every legitimate workflow + tips off the adversary they\'re detected. Surgical containment: isolate the 15 known + sweep for unknowns + cut adversary access (C2, persistence, IAM) without breaking ops. Pace matters: you have hours, not seconds.'
+          },
+          actions: [
+            { id: 'p3a1', label: 'Network-isolate all 15 confirmed-encrypted hosts via EDR', isCorrect: true, meta: 'Containment · primary', why: 'Stops further encryption + C2 callouts on the known-bad set.' },
+            { id: 'p3a2', label: 'Block all C2 IPs + domains at perimeter + DNS sinkhole', isCorrect: true, meta: 'Containment · network', why: 'Cuts attacker\'s persistence + lateral-movement infrastructure even on hosts you haven\'t found yet.' },
+            { id: 'p3a3', label: 'Disable all compromised user accounts + rotate Kerberos krbtgt password TWICE', isCorrect: true, meta: 'Containment · identity', why: 'krbtgt rotation invalidates golden tickets + persistence. Rotate twice within 10 hours per MSFT guidance.' },
+            { id: 'p3a4', label: 'Preserve forensic images of 5 representative encrypted hosts', isCorrect: true, meta: 'Containment · forensic', why: 'Cyber-insurance + IR firm + law enforcement all want forensic image evidence. Preserve before any wiping.' },
+            { id: 'p3a5', label: 'Patch the Citrix CVE-2023-3519 root cause across all VDI + perimeter', isCorrect: true, meta: 'Containment · root-cause', why: 'Patching during containment is unusual but here essential — leaving the entry-vector open invites re-entry mid-response.' },
+            { id: 'p3a6', label: 'Sweep for additional infected hosts via IOC hunting (file extensions, hashes, mutex, beacon patterns)', isCorrect: true, meta: 'Containment · scope expansion', why: 'The 15-host count is the visible tip. Hunt finds the dormant hosts the attacker hasn\'t encrypted yet.' },
+            { id: 'p3a7', label: 'Power off all 15 encrypted hosts immediately', isCorrect: false, meta: 'Eradication-flavoured · destroys evidence', why: 'Power-off destroys volatile evidence on every host. Network-isolate keeps the encryption-time RAM intact for possible decryption-key recovery.' },
+            { id: 'p3a8', label: 'Pay the ransom now to stop the leak-site countdown', isCorrect: false, meta: 'Recovery · wrong phase + ethics', why: 'Pay decision belongs to executive + legal + insurance, AFTER scope is known + alternatives evaluated. Never on the IR analyst\'s call.' }
+          ]
+        },
+        {
+          stage: 'eradication', expectedCount: 4,
+          promptTitle: 'Trust restoration across the entire affected estate.',
+          promptStem: '6 days of attacker presence. Persistence may exist where you haven\'t looked. Comprehensive cleanup.',
+          actions: [
+            { id: 'p4a1', label: 'Wipe + reimage all 15 encrypted hosts from clean baseline', isCorrect: true, meta: 'Eradication · trust restore', why: 'Disinfection cannot prove zero residual presence. Wipe + reimage is the only trustworthy path.' },
+            { id: 'p4a2', label: 'Hunt for persistence on every other host (scheduled tasks, registry, services, WMI)', isCorrect: true, meta: 'Eradication · sweep', why: '6-day dwell almost always means dormant persistence elsewhere. Hunt before declaring eradication done.' },
+            { id: 'p4a3', label: 'Force password reset for ALL employees + rotate ALL service-account creds', isCorrect: true, meta: 'Eradication · credential', why: 'After 6-day dwell, assume credential exposure org-wide. Reset is the only safe baseline.' },
+            { id: 'p4a4', label: 'Validate clean state via independent IR firm review', isCorrect: true, meta: 'Eradication · verification', why: 'Independent eyes catch what your team missed. IR firm signs off on "clean" before you re-introduce hosts.' },
+            { id: 'p4a5', label: 'Trust your in-house team\'s verification', isCorrect: false, meta: 'Eradication · over-confidence', why: 'In-house team is exhausted + emotionally invested. Independent IR firm verification is the standard for SEV-1.' }
+          ]
+        },
+        {
+          stage: 'recovery', expectedCount: 4,
+          promptTitle: 'Restore operations + decide on ransom + manage public disclosure.',
+          promptStem: 'Final stretch. Restoration prioritised by business-criticality. Negotiation in parallel with restoration.',
+          actions: [
+            { id: 'p5a1', label: 'Restore from immutable off-network backups, hash-verified', isCorrect: true, meta: 'Recovery · clean restore', why: 'The whole reason you have immutable backups is this moment.' },
+            { id: 'p5a2', label: 'Stage restoration: tier-1 ops → customer-facing → internal tools', isCorrect: true, meta: 'Recovery · prioritisation', why: 'Restore in priority order. Don\'t bring back the corporate wiki before the customer-facing services.' },
+            { id: 'p5a3', label: 'Heightened monitoring for 90 days + threat-hunt cadence weekly', isCorrect: true, meta: 'Recovery · post-incident vigilance', why: 'LockBit affiliates often retry within months. Sustained vigilance.' },
+            { id: 'p5a4', label: 'Coordinate disclosure: customers, regulators, employees, partners, public', isCorrect: true, meta: 'Recovery · external comms', why: 'Counsel-led, insurance-coordinated, sequenced. Different stakeholders need different timing + content.' },
+            { id: 'p5a5', label: 'Pay the ransom even though you have backups', isCorrect: false, meta: 'Recovery · trap', why: 'If backups work, paying funds the next attack + rewards the crew + risks OFAC sanctions if attribution lands them on the list. Negotiate scope-down only.' },
+            { id: 'p5a6', label: 'Hide the breach from customers', isCorrect: false, meta: 'Recovery · regulatory failure', why: 'Required disclosures (state breach laws, GDPR, SEC for material) are mandatory. Hiding compounds the legal damage.' }
+          ]
+        },
+        {
+          stage: 'lessons', expectedCount: 4,
+          promptTitle: 'How does the org never have a SEV-1 ransomware again?',
+          promptStem: 'This was preventable. Trace the chain of failures + close every link.',
+          actions: [
+            { id: 'p6a1', label: 'Mandate patching SLAs: critical CVEs within 48h, high within 14d', isCorrect: true, meta: 'Lessons · process', why: 'CVE-2023-3519 sat unpatched. Hard SLAs + dashboard accountability close that window.' },
+            { id: 'p6a2', label: 'Adopt zero-trust segmentation: assume breach, limit blast radius', isCorrect: true, meta: 'Lessons · architecture', why: 'Today\'s 3-VLAN spread succeeded because trust-zone segmentation was weak. ZT principles cap future blast radius.' },
+            { id: 'p6a3', label: 'Quarterly ransomware-specific tabletops at exec level', isCorrect: true, meta: 'Lessons · practice', why: 'Exec decisions today happened in panic mode. Practice = better decisions next time.' },
+            { id: 'p6a4', label: 'Bug-bounty + external red-team annually', isCorrect: true, meta: 'Lessons · validation', why: 'External eyes find what internal eyes miss. Annual cadence keeps it fresh.' },
+            { id: 'p6a5', label: 'Fire the security team', isCorrect: false, meta: 'Lessons · scapegoating', why: 'Security team responded as well as architecture allowed. Firing them loses the institutional knowledge from the incident. Fix the system.' }
+          ]
+        }
+      ]
+    }
   ]
 };

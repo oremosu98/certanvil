@@ -93,6 +93,8 @@
     'nplus_pt_mastery',   // v4.96.0: Network+ Packet Trace drill
     'nplus_pt_lessons',
     'nplus_pt_resume',
+    'nplus_irw_mastery',  // v4.97.0: Security+ IR War Room flagship
+    'nplus_irw_lessons',
     'nplus_os_mastery',
     'nplus_os_lessons',
     'nplus_cb_mastery',
