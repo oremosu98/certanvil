@@ -2603,6 +2603,473 @@ window.CERT_PACKS.secplus = {
           ]
         }
       ]
+    },
+
+    // ──────────────────────────────────────────────────────────────────
+    // 11) MFA bombing → account takeover (v4.97.2 Batch 3)
+    // ──────────────────────────────────────────────────────────────────
+    {
+      id: 'mfa-bombing',
+      title: 'MFA push-fatigue → admin account takeover',
+      icon: '📱',
+      vector: 'phish-derived',
+      difficulty: 2,
+      unlockAfter: ['bec-wire-fraud'],
+      summary: 'Admin user approved a malicious MFA push at 02:47am after 14 spam attempts. Attacker now has corp VPN access.',
+      context: 'At 02:47, a senior admin received their 14th MFA push notification of the night and tapped "Approve" while half-asleep. SIEM logged 14 prior denials over 90 min from a non-corp IP attempting to log in to the corp SSO. The attacker now has valid SSO + VPN access. Forensics shows lateral movement attempts to AD + file servers in the last 30 minutes.',
+      vertical: 'Tech / SaaS',
+      severity: 'SEV-1',
+      iocs: [
+        { type: 'auth', value: '14 MFA push attempts then 1 approval', label: 'MFA-bombing pattern' },
+        { type: 'user', value: 'CORP\\admin_jchen', label: 'Compromised admin' },
+        { type: 'ip', value: 'Non-corp source IP (Russia ASN)', label: 'Attacker source' },
+        { type: 'access', value: 'SSO + VPN session active', label: 'Current attacker access' }
+      ],
+      phases: [
+        {
+          stage: 'preparation', expectedCount: 3,
+          promptTitle: 'What pre-incident readiness mattered?',
+          promptStem: 'MFA bombing succeeds when push-approval is the only factor. Pick the prep that should have caught it.',
+          actions: [
+            { id: 'p1a1', label: 'Number-matching MFA (typing a 2-digit code instead of "Approve")', isCorrect: true, meta: 'Preparation · MFA hardening', why: 'Number-matching defeats fatigue — you can\'t mistakenly tap "Approve" if you have to type a code that came from the legit login screen.' },
+            { id: 'p1a2', label: 'Conditional-access policy: block logins from non-corp IPs without enhanced MFA', isCorrect: true, meta: 'Preparation · CA', why: 'Risk-based CA blocks the suspicious-source-IP login before MFA even fires. Defense-in-depth.' },
+            { id: 'p1a3', label: 'User awareness training on MFA-fatigue attacks', isCorrect: true, meta: 'Preparation · training', why: 'Trained users decline unprompted pushes + report patterns. Untrained users tap to make notifications stop.' },
+            { id: 'p1a4', label: 'Disable MFA entirely', isCorrect: false, meta: 'Preparation · anti-pattern', why: 'No MFA = vastly easier compromise. Better MFA, not no MFA.' }
+          ]
+        },
+        {
+          stage: 'identification', expectedCount: 4,
+          promptTitle: 'Confirm + scope the compromise.',
+          promptStem: 'Admin approved a malicious MFA. Attacker has SSO + VPN. What\'s already compromised?',
+          actions: [
+            { id: 'p2a1', label: 'Pull SSO + VPN session logs for the compromised account in last 60 min', isCorrect: true, meta: 'Identification · session', why: 'Establishes what the attacker has touched since the approval — services accessed, downloads, lateral attempts.' },
+            { id: 'p2a2', label: 'Pull SIEM auth-failure logs to confirm MFA bombing pattern', isCorrect: true, meta: 'Identification · pattern', why: 'Confirms it was MFA bombing (not normal login). 14 fails + 1 approve in 90 min is the signature.' },
+            { id: 'p2a3', label: 'Check AD + file-server audit logs for lateral movement attempts', isCorrect: true, meta: 'Identification · scope', why: 'Admin account = high blast radius. Check the obvious next-targets.' },
+            { id: 'p2a4', label: 'Open SEV-1 + alert IR team + breach counsel', isCorrect: true, meta: 'Identification · escalate', why: 'Active admin compromise = SEV-1. Team mobilises immediately.' },
+            { id: 'p2a5', label: 'Wait until morning to investigate', isCorrect: false, meta: 'Identification · trap', why: 'Active session = active damage. Every minute the attacker is in is more compromise.' }
+          ]
+        },
+        {
+          stage: 'containment', expectedCount: 4,
+          promptTitle: 'Cut the attacker off — fast.',
+          promptStem: 'Admin SSO + VPN session is live. Multi-axis containment.',
+          actions: [
+            { id: 'p3a1', label: 'Force logout admin from SSO + VPN + revoke all active session tokens', isCorrect: true, meta: 'Containment · session kill', why: 'Stops the attacker\'s active access. Most important first action.' },
+            { id: 'p3a2', label: 'Reset admin password + MFA re-enrolment + lockout pending review', isCorrect: true, meta: 'Containment · identity', why: 'Prevents re-entry with stolen credential. Lockout stops the legit admin from re-using it until cleared.' },
+            { id: 'p3a3', label: 'Review + revoke any privileged-access elevations granted in last 60 min', isCorrect: true, meta: 'Containment · privilege', why: 'Attacker may have requested privilege elevations during the session. Revoke them.' },
+            { id: 'p3a4', label: 'Block source IP at perimeter + add to threat-intel watchlist', isCorrect: true, meta: 'Containment · network', why: 'Stops re-attempts from same IP + alerts on similar IPs.' },
+            { id: 'p3a5', label: 'Disable MFA on the admin account so they can re-authenticate quickly', isCorrect: false, meta: 'Containment · anti-pattern', why: 'Removes the only remaining defense. Re-enrol MFA (with number-matching), don\'t disable.' }
+          ]
+        },
+        {
+          stage: 'eradication', expectedCount: 3,
+          promptTitle: 'Close the MFA-bombing window.',
+          promptStem: 'This worked because of MFA-fatigue. Architectural fix.',
+          actions: [
+            { id: 'p4a1', label: 'Roll out number-matching MFA org-wide (replace push-approval)', isCorrect: true, meta: 'Eradication · architecture', why: 'Number-matching defeats fatigue + bombing. The single highest-yield fix.' },
+            { id: 'p4a2', label: 'Tighten conditional-access: require step-up MFA for non-corp IPs', isCorrect: true, meta: 'Eradication · CA', why: 'Risk-based step-up MFA = defense-in-depth. Suspicious-IP logins need more proof.' },
+            { id: 'p4a3', label: 'Add MFA-fatigue scenario to all admin training', isCorrect: true, meta: 'Eradication · training', why: 'Admins are highest-value targets. Specific training on MFA-bombing helps them refuse the next attempt.' },
+            { id: 'p4a4', label: 'Disable VPN + SSO entirely', isCorrect: false, meta: 'Eradication · over-reach', why: 'Legit work depends on these. Hardening, not removal.' }
+          ]
+        },
+        {
+          stage: 'recovery', expectedCount: 3,
+          promptTitle: 'Restore admin access safely.',
+          promptStem: 'Eradication done. Admin needs to get back to work — but cleanly.',
+          actions: [
+            { id: 'p5a1', label: 'Re-enrol admin in MFA (number-matching) + restore access via verified channel', isCorrect: true, meta: 'Recovery · re-enrol', why: 'Verified re-enrol via in-person or known-secure channel ensures it\'s the real admin.' },
+            { id: 'p5a2', label: 'Audit + validate all systems admin had access to (no attacker persistence)', isCorrect: true, meta: 'Recovery · validation', why: 'Confirm no backdoors, no new accounts, no GPO changes from the attacker session.' },
+            { id: 'p5a3', label: 'Heightened monitoring on admin account + similar profiles for 30 days', isCorrect: true, meta: 'Recovery · vigilance', why: 'Same crew may try again with different admin. Monitoring for the comeback.' },
+            { id: 'p5a4', label: 'Just give admin temporary access without re-MFA', isCorrect: false, meta: 'Recovery · sloppy', why: 'Defeats the purpose of the response. Re-enrol cleanly.' }
+          ]
+        },
+        {
+          stage: 'lessons', expectedCount: 3,
+          promptTitle: 'MFA-bombing lessons.',
+          promptStem: 'MFA was a feature, not a finished product. Maturity matters.',
+          actions: [
+            { id: 'p6a1', label: 'Document this incident as a why-we-need-number-matching case study', isCorrect: true, meta: 'Lessons · documentation', why: 'Real incident stories are how budget gets approved + skeptics get convinced. Document.' },
+            { id: 'p6a2', label: 'Add MFA-bombing simulation to quarterly red-team exercises', isCorrect: true, meta: 'Lessons · practice', why: 'Simulated attacks keep the muscle memory fresh.' },
+            { id: 'p6a3', label: 'Review + tighten conditional-access policies fleet-wide', isCorrect: true, meta: 'Lessons · architecture', why: 'CA is the layer above MFA. Tighter CA = fewer cases where MFA is the last line.' },
+            { id: 'p6a4', label: 'Punish the admin for approving the push', isCorrect: false, meta: 'Lessons · blame culture', why: '14 push notifications at 2am = the system failed the admin, not the other way around. Fix the system.' }
+          ]
+        }
+      ]
+    },
+
+    // ──────────────────────────────────────────────────────────────────
+    // 12) DNS registrar hijack (v4.97.2)
+    // ──────────────────────────────────────────────────────────────────
+    {
+      id: 'dns-registrar-hijack',
+      title: 'DNS registrar hijack → MX record swap → email interception',
+      icon: '🌐',
+      vector: 'cloud',
+      difficulty: 3,
+      unlockAfter: ['aws-key-leak'],
+      summary: 'Attacker compromised the registrar account. Changed MX records 4 hours ago. Customer emails were intercepted.',
+      context: 'At 09:14, customers reported password-reset emails not arriving. Investigation: registrar (GoDaddy) account was compromised at 05:00 — attacker changed corp.com MX records to point to attacker-controlled mail servers. 4 hours of email (~2,400 messages) was intercepted, including password resets, invoice copies, and partner contracts. Registrar account had no MFA + the attacker reset the password using a leaked admin email + security-question-guess.',
+      vertical: 'B2C SaaS',
+      severity: 'SEV-1',
+      iocs: [
+        { type: 'registrar', value: 'GoDaddy account corp-domains', label: 'Compromised registrar' },
+        { type: 'mx', value: 'corp.com MX → mail.evil-redirect.io', label: 'Modified MX records' },
+        { type: 'data', value: '~2,400 emails intercepted (4h window)', label: 'Compromised email volume' },
+        { type: 'access', value: 'Registrar admin password reset via security questions', label: 'Initial vector' }
+      ],
+      phases: [
+        {
+          stage: 'preparation', expectedCount: 3,
+          promptTitle: 'What registrar/DNS readiness should have been in place?',
+          promptStem: 'Registrar accounts are the foundation. Pick the prep that would have prevented this.',
+          actions: [
+            { id: 'p1a1', label: 'Hardware MFA on the registrar account (not just SMS)', isCorrect: true, meta: 'Preparation · registrar', why: 'Hardware MFA defeats credential-reset attacks via security questions. SMS MFA is bypassable; hardware is not.' },
+            { id: 'p1a2', label: 'Registry lock / domain transfer lock enabled', isCorrect: true, meta: 'Preparation · registry lock', why: 'Registry lock prevents registrar-side changes without manual provider verification. Critical for high-value domains.' },
+            { id: 'p1a3', label: 'DNS change monitoring (DNSSEC + external monitoring service)', isCorrect: true, meta: 'Preparation · monitoring', why: 'Surfaces unauthorised DNS changes within minutes — would have caught the MX swap immediately.' },
+            { id: 'p1a4', label: 'Use multiple registrars for redundancy', isCorrect: false, meta: 'Preparation · misaligned', why: 'Multiple registrars = multiple attack surfaces. Single registrar with strong controls is better.' }
+          ]
+        },
+        {
+          stage: 'identification', expectedCount: 4,
+          promptTitle: 'Confirm scope of email interception + compromise.',
+          promptStem: 'MX was wrong for 4 hours. Identify what was intercepted + classify regulatory exposure.',
+          actions: [
+            { id: 'p2a1', label: 'Pull mail-server logs to identify all emails routed via the malicious MX', isCorrect: true, meta: 'Identification · scope', why: 'Tells you exactly which emails went where + by sender/recipient. Foundation for breach scope.' },
+            { id: 'p2a2', label: 'Audit registrar account login history + change logs', isCorrect: true, meta: 'Identification · root cause', why: 'Establishes how + when the registrar account was compromised. Critical for closing the door.' },
+            { id: 'p2a3', label: 'Identify customer-facing emails affected (password resets, invoices, account changes)', isCorrect: true, meta: 'Identification · regulatory', why: 'Customer-facing email interception triggers breach notification laws. Scope = notification scope.' },
+            { id: 'p2a4', label: 'Open SEV-1 + breach counsel + customer comms team', isCorrect: true, meta: 'Identification · escalate', why: '4-hour customer email exposure = SEV-1 with regulatory implications.' },
+            { id: 'p2a5', label: 'Skip the email scope analysis to save time', isCorrect: false, meta: 'Identification · regulatory failure', why: 'Without scope, breach notifications can\'t be tailored. Required by GDPR / state laws.' }
+          ]
+        },
+        {
+          stage: 'containment', expectedCount: 4,
+          promptTitle: 'Restore correct DNS + lock down the registrar.',
+          promptStem: 'Get DNS back to authoritative + prevent re-compromise.',
+          actions: [
+            { id: 'p3a1', label: 'Revert MX records to authoritative values via registrar emergency channel', isCorrect: true, meta: 'Containment · DNS restore', why: 'Stops the email interception ASAP. Use registrar\'s emergency support if normal access is locked.' },
+            { id: 'p3a2', label: 'Lock the registrar account: hardware MFA + change all admin passwords', isCorrect: true, meta: 'Containment · registrar', why: 'Prevents the attacker from re-changing DNS while you investigate.' },
+            { id: 'p3a3', label: 'Enable registry lock at the TLD registry level', isCorrect: true, meta: 'Containment · TLD', why: 'TLD-level lock requires manual registry verification for changes. Defense-in-depth.' },
+            { id: 'p3a4', label: 'Force password reset for any account that received password-reset emails during the 4h window', isCorrect: true, meta: 'Containment · downstream', why: 'Attacker may have used intercepted reset links to take over customer accounts. Force reset assumes worst case.' },
+            { id: 'p3a5', label: 'Migrate to a different registrar immediately', isCorrect: false, meta: 'Containment · panic', why: 'Migration during incident = increased risk + downtime. Stay + harden, migrate later if needed.' }
+          ]
+        },
+        {
+          stage: 'eradication', expectedCount: 3,
+          promptTitle: 'Make registrar compromise impossible going forward.',
+          promptStem: 'Architecture-level fix.',
+          actions: [
+            { id: 'p4a1', label: 'Mandatory hardware MFA on all registrar admin accounts', isCorrect: true, meta: 'Eradication · MFA', why: 'Hardware MFA defeats security-question-bypass + phishing. Standard for high-value accounts.' },
+            { id: 'p4a2', label: 'Enable DNSSEC for the corp.com domain', isCorrect: true, meta: 'Eradication · DNSSEC', why: 'DNSSEC prevents DNS spoofing + makes future hijacks harder to use successfully.' },
+            { id: 'p4a3', label: 'Implement DMARC + SPF + DKIM at strict policies', isCorrect: true, meta: 'Eradication · email', why: 'Even if MX is hijacked again, strict email auth makes the intercepted-emails-replay attack harder to monetise.' },
+            { id: 'p4a4', label: 'Stop using DNS', isCorrect: false, meta: 'Eradication · over-reach', why: 'DNS is foundational. Hardening, not abandonment.' }
+          ]
+        },
+        {
+          stage: 'recovery', expectedCount: 3,
+          promptTitle: 'Customer + regulatory disclosure + email re-validation.',
+          promptStem: 'Email content is leaked. Manage the regulatory + trust fallout.',
+          actions: [
+            { id: 'p5a1', label: 'Notify affected customers within statutory deadline + offer reset assistance', isCorrect: true, meta: 'Recovery · regulatory', why: 'Required by breach laws + restores customer trust through transparency.' },
+            { id: 'p5a2', label: 'Validate email auth records (SPF/DKIM/DMARC) + monitor for spoofing campaigns', isCorrect: true, meta: 'Recovery · email auth', why: 'Attacker may use intercepted emails to craft convincing follow-on phishing. Tighten auth + monitor.' },
+            { id: 'p5a3', label: 'Public post-incident summary (counsel-approved)', isCorrect: true, meta: 'Recovery · transparency', why: 'Public disclosure done well restores trust. Hidden = much worse outcome when discovered.' },
+            { id: 'p5a4', label: 'Hide the breach from customers', isCorrect: false, meta: 'Recovery · regulatory failure', why: 'Failure to disclose breaks GDPR / state laws + makes legal outcome much worse.' }
+          ]
+        },
+        {
+          stage: 'lessons', expectedCount: 3,
+          promptTitle: 'Registrar lessons.',
+          promptStem: 'Registrar accounts are tier-zero infrastructure. Treat accordingly.',
+          actions: [
+            { id: 'p6a1', label: 'Add registrar account to "tier-zero" inventory + audit quarterly', isCorrect: true, meta: 'Lessons · inventory', why: 'Tier-zero = highest privilege, audited frequently, hardest controls. Registrar belongs there.' },
+            { id: 'p6a2', label: 'Document registrar incident + share with sector ISAC', isCorrect: true, meta: 'Lessons · sharing', why: 'DNS/registrar attacks affect peer orgs. Shared TTPs help everyone.' },
+            { id: 'p6a3', label: 'Add registrar-compromise scenario to quarterly tabletop', isCorrect: true, meta: 'Lessons · practice', why: 'Different shape from typical IR — practice it specifically.' },
+            { id: 'p6a4', label: 'Move all corp infrastructure to a single cloud provider', isCorrect: false, meta: 'Lessons · misaligned', why: 'Doesn\'t address the registrar issue. Single-provider lock-in has its own problems.' }
+          ]
+        }
+      ]
+    },
+
+    // ──────────────────────────────────────────────────────────────────
+    // 13) Stolen laptop with FDE disabled (v4.97.2)
+    // ──────────────────────────────────────────────────────────────────
+    {
+      id: 'stolen-laptop',
+      title: 'Stolen laptop · full-disk encryption was disabled',
+      icon: '💻',
+      vector: 'insider',
+      difficulty: 2,
+      unlockAfter: [],
+      summary: 'Engineer\'s laptop stolen at airport. FDE was disabled by user override 6 months ago. Cached creds + source code at risk.',
+      context: 'At 14:22, engineer Alex emailed IT: "My laptop was stolen at LAX airport." MDM check reveals BitLocker was suspended via local-admin override 6 months ago by the user (during a Windows update issue) and never re-enabled. The laptop has cached AD credentials, SSH keys for production, an active VPN cert, and a clone of the main monorepo. No password on the BIOS. The laptop will likely be powered on by the thief.',
+      vertical: 'Tech / SaaS',
+      severity: 'SEV-2',
+      iocs: [
+        { type: 'asset', value: 'Dell XPS 15 · S/N FXY8923B', label: 'Stolen device' },
+        { type: 'fde', value: 'BitLocker DISABLED (user-suspended 6mo ago)', label: 'Encryption status' },
+        { type: 'creds', value: 'Cached AD + SSH + VPN cert', label: 'On-device credentials' },
+        { type: 'data', value: 'Full monorepo clone (~12GB source)', label: 'On-device data' }
+      ],
+      phases: [
+        {
+          stage: 'preparation', expectedCount: 3,
+          promptTitle: 'What pre-incident readiness mattered (or failed)?',
+          promptStem: 'Stolen-laptop response is mostly architectural prep. Pick the prep that should have prevented this from being a SEV-2.',
+          actions: [
+            { id: 'p1a1', label: 'BitLocker enforced via Group Policy + cannot be disabled by users', isCorrect: true, meta: 'Preparation · FDE policy', why: 'Hard-enforced FDE prevents user override entirely. Without this control, the device is plaintext now.' },
+            { id: 'p1a2', label: 'MDM (Intune / Jamf) on every device with remote-wipe capability', isCorrect: true, meta: 'Preparation · MDM', why: 'MDM remote-wipe is the single most effective post-theft control. Without it, you can\'t wipe.' },
+            { id: 'p1a3', label: 'Conditional access blocking VPN cert from non-MDM-checked-in devices', isCorrect: true, meta: 'Preparation · CA', why: 'Even if VPN cert is on the laptop, CA blocks unverified machines from establishing the tunnel.' },
+            { id: 'p1a4', label: 'GPS tracking on every device', isCorrect: false, meta: 'Preparation · privacy', why: 'GPS tracking on employee devices is a privacy risk + most thieves remove SIM/disable WiFi. MDM remote-wipe is better than tracking.' }
+          ]
+        },
+        {
+          stage: 'identification', expectedCount: 4,
+          promptTitle: 'Confirm + classify the exposure.',
+          promptStem: 'Need to scope: what credentials + data are at risk + what was the user doing?',
+          actions: [
+            { id: 'p2a1', label: 'Pull MDM check-in history + last-known location', isCorrect: true, meta: 'Identification · device', why: 'Establishes whether MDM has remote-wipe access + last-seen network details for forensics.' },
+            { id: 'p2a2', label: 'Audit what credentials + data were on the device per asset register', isCorrect: true, meta: 'Identification · scope', why: 'Determines blast radius. Cached creds, SSH keys, VPN cert, source clone — each one becomes a containment task.' },
+            { id: 'p2a3', label: 'File police report for the theft + cite asset serial number', isCorrect: true, meta: 'Identification · legal', why: 'Required for cyber-insurance + creates official record for any subsequent legal action.' },
+            { id: 'p2a4', label: 'Open SEV-2 ticket + notify CISO + start scribe log', isCorrect: true, meta: 'Identification · classify', why: 'FDE-disabled stolen device with creds = SEV-2. Mobilises the response.' },
+            { id: 'p2a5', label: 'Wait to see if the laptop is returned', isCorrect: false, meta: 'Identification · trap', why: '99% of stolen laptops aren\'t returned. Treat as compromised from minute zero.' }
+          ]
+        },
+        {
+          stage: 'containment', expectedCount: 5,
+          promptTitle: 'Revoke everything on the device — fast.',
+          promptStem: 'Assume the device will be powered on + all on-device creds will be extracted.',
+          actions: [
+            { id: 'p3a1', label: 'Issue MDM remote-wipe command to the device (best-effort + logged)', isCorrect: true, meta: 'Containment · device wipe', why: 'If device comes online, it wipes. Even if it never comes online, the attempt is logged for compliance.' },
+            { id: 'p3a2', label: 'Disable Alex\'s AD account + force re-auth across active sessions', isCorrect: true, meta: 'Containment · AD', why: 'Cached AD creds can be used offline against captured Kerberos / NTLM hashes. Disabling stops re-auth.' },
+            { id: 'p3a3', label: 'Revoke all SSH keys associated with Alex (rotate corp-side authorized_keys)', isCorrect: true, meta: 'Containment · SSH', why: 'SSH keys grant cross-host access. Revoke at the corp side so the stolen private key is useless.' },
+            { id: 'p3a4', label: 'Revoke VPN certificate via PKI; add to certificate revocation list', isCorrect: true, meta: 'Containment · VPN', why: 'Stops the laptop from establishing VPN even if it boots up + connects.' },
+            { id: 'p3a5', label: 'Audit recent git activity on the monorepo from Alex\'s account', isCorrect: true, meta: 'Containment · code', why: 'If attacker gets in to git via cached creds, they may push malicious commits. Audit + watch.' },
+            { id: 'p3a6', label: 'Hope the laptop battery dies before the thief boots it', isCorrect: false, meta: 'Containment · negligence', why: 'Trap. Hoping is not a control. Active revocation of every credential is the only path.' }
+          ]
+        },
+        {
+          stage: 'eradication', expectedCount: 3,
+          promptTitle: 'Close the FDE-bypass + cred-on-device gaps.',
+          promptStem: 'Same situation must not happen with the next stolen device.',
+          actions: [
+            { id: 'p4a1', label: 'Re-enable BitLocker enforcement org-wide + audit FDE status on all devices', isCorrect: true, meta: 'Eradication · FDE', why: 'The user-suspend was the root cause. Hard enforcement + audit catches all currently-non-compliant devices.' },
+            { id: 'p4a2', label: 'Move SSH keys + VPN certs to hardware keys (YubiKey) where possible', isCorrect: true, meta: 'Eradication · hardware token', why: 'Hardware-token-bound creds can\'t be extracted from stolen devices. Architectural defense.' },
+            { id: 'p4a3', label: 'Deploy MDM check-in compliance check before granting corp resources access', isCorrect: true, meta: 'Eradication · MDM enforcement', why: 'CA + MDM-compliance ensures lost devices can\'t access corp resources after MDM is removed.' },
+            { id: 'p4a4', label: 'Remove laptops from all employees', isCorrect: false, meta: 'Eradication · over-reach', why: 'Engineers need laptops. Hardening, not removal.' }
+          ]
+        },
+        {
+          stage: 'recovery', expectedCount: 3,
+          promptTitle: 'Restore Alex to productivity + close out the ticket.',
+          promptStem: 'New laptop + restored access + insurance handling.',
+          actions: [
+            { id: 'p5a1', label: 'Issue replacement laptop with FDE pre-enforced + verify before deployment', isCorrect: true, meta: 'Recovery · device', why: 'Alex needs to work. Pre-verified FDE prevents recurrence on the new device.' },
+            { id: 'p5a2', label: 'Re-enrol Alex with new SSH keys + VPN cert (after MFA-verified identity check)', isCorrect: true, meta: 'Recovery · re-enrol', why: 'Identity verification before re-enrol ensures it\'s the real Alex (not the thief).' },
+            { id: 'p5a3', label: 'Submit cyber-insurance claim + police report + asset write-off', isCorrect: true, meta: 'Recovery · financial', why: 'Insurance recovers laptop cost. Police report is required for the claim.' },
+            { id: 'p5a4', label: 'Make Alex pay for the replacement laptop', isCorrect: false, meta: 'Recovery · blame', why: 'The user-suspend was a failure of policy enforcement, not malicious intent. Hostile.' }
+          ]
+        },
+        {
+          stage: 'lessons', expectedCount: 3,
+          promptTitle: 'Lessons-learned.',
+          promptStem: 'Endpoint security gaps + user-bypass-able controls.',
+          actions: [
+            { id: 'p6a1', label: 'Document this as the case for hard-enforced FDE in the next exec briefing', isCorrect: true, meta: 'Lessons · advocacy', why: 'Real incidents get budget approved. Use this as the case for enforcement-only controls.' },
+            { id: 'p6a2', label: 'Audit all "user-can-disable" security controls + escalate or remove', isCorrect: true, meta: 'Lessons · audit', why: 'Any control a user can disable will get disabled by some user. Find them all + harden.' },
+            { id: 'p6a3', label: 'Add stolen-device drill to quarterly IR tabletop', isCorrect: true, meta: 'Lessons · practice', why: 'Stolen-device IR has unique components (MDM, PKI, AD). Practice them.' },
+            { id: 'p6a4', label: 'Track Alex via GPS in case the laptop is recovered', isCorrect: false, meta: 'Lessons · privacy violation', why: 'Tracking employees is a privacy + legal nightmare. Police handle stolen property.' }
+          ]
+        }
+      ]
+    },
+
+    // ──────────────────────────────────────────────────────────────────
+    // 14) Third-party SaaS breach (v4.97.2, locked behind npm-supply-chain)
+    // ──────────────────────────────────────────────────────────────────
+    {
+      id: 'saas-vendor-breach',
+      title: 'Third-party SaaS provider breached · downstream impact',
+      icon: '🔗',
+      vector: 'supply-chain',
+      difficulty: 3,
+      unlockAfter: ['npm-supply-chain'],
+      summary: 'Your CRM vendor disclosed a breach. Customer + sales-pipeline data possibly exposed. You need to respond as if breached.',
+      context: 'At 11:08, your CRM vendor "PipelineCRM" emailed CISOs about a breach: "Attacker gained read access to a subset of customer data via OAuth token theft on May 1-3. Affected customers being notified individually." 90 minutes later, PipelineCRM confirmed your tenant\'s data WAS in the affected scope: customer contacts (75K), sales pipeline values (~$240M ARR data), email exchanges with prospects, 4 OAuth tokens that have access to your other apps. The vendor is your responsibility, but the data is yours.',
+      vertical: 'B2B SaaS',
+      severity: 'SEV-2',
+      iocs: [
+        { type: 'vendor', value: 'PipelineCRM (3rd-party SaaS)', label: 'Breached provider' },
+        { type: 'window', value: 'May 1-3 (3 days)', label: 'Exposure window' },
+        { type: 'data', value: '75K customer contacts + $240M pipeline data', label: 'Your data exposed' },
+        { type: 'tokens', value: '4 OAuth tokens (Slack, Gmail, Calendar, Salesforce)', label: 'Cross-app risk' }
+      ],
+      phases: [
+        {
+          stage: 'preparation', expectedCount: 3,
+          promptTitle: 'What vendor-risk readiness mattered?',
+          promptStem: 'You can\'t prevent vendor breaches. You can prepare for them.',
+          actions: [
+            { id: 'p1a1', label: 'Vendor risk assessment (SOC2 + pen-test review) at vendor-onboarding + annually', isCorrect: true, meta: 'Preparation · vendor risk', why: 'Establishes baseline + identifies lower-maturity vendors. Higher-risk vendors get more granular monitoring.' },
+            { id: 'p1a2', label: 'Data inventory per vendor (what data, what scope, what tokens)', isCorrect: true, meta: 'Preparation · inventory', why: 'When breach happens, you need to know in 5 minutes what was exposed. Inventory enables that.' },
+            { id: 'p1a3', label: 'Contractual breach-notification clauses (vendor must notify within X hours)', isCorrect: true, meta: 'Preparation · contract', why: 'Legal SLA on breach notification = early warning + legal lever if vendor delays.' },
+            { id: 'p1a4', label: 'Avoid using third-party SaaS entirely', isCorrect: false, meta: 'Preparation · over-reach', why: 'Modern business runs on SaaS. The right answer is vendor risk management, not avoidance.' }
+          ]
+        },
+        {
+          stage: 'identification', expectedCount: 4,
+          promptTitle: 'Verify vendor claim + identify your specific exposure.',
+          promptStem: 'Trust but verify. Vendor disclosure is the start, not the end of your investigation.',
+          actions: [
+            { id: 'p2a1', label: 'Request detailed breach report from vendor (data accessed, attacker capabilities, IOCs)', isCorrect: true, meta: 'Identification · vendor coord', why: 'Generic disclosure isn\'t enough. Specific IOCs help your downstream investigation.' },
+            { id: 'p2a2', label: 'Audit vendor API logs from your tenant for the breach window', isCorrect: true, meta: 'Identification · own audit', why: 'Vendor logs may show what was accessed FROM YOUR account specifically.' },
+            { id: 'p2a3', label: 'Identify which OAuth tokens vendor has into your other apps + scope of access', isCorrect: true, meta: 'Identification · cross-app', why: 'OAuth tokens granted to vendor mean attacker may have lateral access to your other apps.' },
+            { id: 'p2a4', label: 'Open SEV-2 + activate vendor-management + breach counsel', isCorrect: true, meta: 'Identification · escalate', why: '75K customers + $240M data exposure = SEV-2. Vendor management + counsel coordinate response.' },
+            { id: 'p2a5', label: 'Trust the vendor\'s disclosure and skip your own investigation', isCorrect: false, meta: 'Identification · negligence', why: 'Vendor breach disclosures are often incomplete. Your customers\' data is your responsibility.' }
+          ]
+        },
+        {
+          stage: 'containment', expectedCount: 4,
+          promptTitle: 'Limit downstream damage — revoke + isolate.',
+          promptStem: 'You can\'t un-breach the vendor, but you can stop the cross-app spread.',
+          actions: [
+            { id: 'p3a1', label: 'Revoke + rotate all 4 OAuth tokens vendor had to your other apps', isCorrect: true, meta: 'Containment · token rotation', why: 'OAuth tokens grant cross-app access. Revoke prevents attacker pivoting from CRM to Slack/Gmail/Calendar/SFDC.' },
+            { id: 'p3a2', label: 'Audit those apps for unusual access from vendor IPs in the breach window', isCorrect: true, meta: 'Containment · cross-app audit', why: 'Validate whether attacker actually pivoted via the OAuth tokens. Logs in each app surface this.' },
+            { id: 'p3a3', label: 'Pause new data shares with vendor until they confirm remediation', isCorrect: true, meta: 'Containment · vendor pause', why: 'Don\'t add more data to a still-actively-investigating breach.' },
+            { id: 'p3a4', label: 'Notify customers whose data was specifically exposed (per regulation)', isCorrect: true, meta: 'Containment · downstream', why: 'Required by GDPR + state laws. Counsel-led, vendor-coordinated comms.' },
+            { id: 'p3a5', label: 'Take down all your products to prevent further damage', isCorrect: false, meta: 'Containment · over-reach', why: 'Your products are not breached. Vendor is. Targeted response.' }
+          ]
+        },
+        {
+          stage: 'eradication', expectedCount: 3,
+          promptTitle: 'Reduce future vendor-breach blast radius.',
+          promptStem: 'Architecture-level fix to vendor risk.',
+          actions: [
+            { id: 'p4a1', label: 'Adopt least-privilege OAuth scopes — revisit every vendor integration', isCorrect: true, meta: 'Eradication · scope', why: 'Tighter scopes = smaller blast radius when vendor is compromised. Frequently neglected at integration time.' },
+            { id: 'p4a2', label: 'Add OAuth-token rotation on a schedule (not just on incident)', isCorrect: true, meta: 'Eradication · rotation', why: 'Routine rotation reduces window of token utility for any future leak.' },
+            { id: 'p4a3', label: 'Require ongoing SOC2 + breach disclosure clauses from all vendors', isCorrect: true, meta: 'Eradication · contract', why: 'Codify vendor accountability + ongoing monitoring as part of contract.' },
+            { id: 'p4a4', label: 'Replace vendor immediately', isCorrect: false, meta: 'Eradication · panic', why: 'Mid-incident vendor migration = increased risk. Evaluate post-incident with a clearer head.' }
+          ]
+        },
+        {
+          stage: 'recovery', expectedCount: 3,
+          promptTitle: 'Customer trust recovery + regulatory disclosure.',
+          promptStem: 'Vendor breached you, but customers see YOUR brand.',
+          actions: [
+            { id: 'p5a1', label: 'Notify all affected customers per regulatory deadline + offer remediation (credit monitoring etc.)', isCorrect: true, meta: 'Recovery · regulatory', why: 'Required by breach laws. Customer trust restoration starts here.' },
+            { id: 'p5a2', label: 'Public statement clarifying that this was a vendor breach + your response', isCorrect: true, meta: 'Recovery · transparency', why: 'Customers want to know it wasn\'t YOU + that you took action. Counsel-led statement.' },
+            { id: 'p5a3', label: 'Coordinate with vendor on joint customer communication', isCorrect: true, meta: 'Recovery · coordination', why: 'Joint message reduces customer confusion + presents unified response.' },
+            { id: 'p5a4', label: 'Blame the vendor publicly', isCorrect: false, meta: 'Recovery · OPSEC fail', why: 'Public blame games look defensive + don\'t help customers. Coordinated response is professional.' }
+          ]
+        },
+        {
+          stage: 'lessons', expectedCount: 3,
+          promptTitle: 'Vendor-risk lessons.',
+          promptStem: 'Third-party risk is a permanent reality. Build the muscle.',
+          actions: [
+            { id: 'p6a1', label: 'Categorise vendors by risk tier + apply graduated controls', isCorrect: true, meta: 'Lessons · vendor mgmt', why: 'High-data vendors get tighter controls + monitoring than low-data ones. Graduated approach scales.' },
+            { id: 'p6a2', label: 'Conduct vendor-breach tabletops annually', isCorrect: true, meta: 'Lessons · practice', why: 'Different shape from internal IR. Practice the vendor-coord aspect specifically.' },
+            { id: 'p6a3', label: 'Establish a "trust score" + monitoring for each vendor', isCorrect: true, meta: 'Lessons · governance', why: 'Quarterly trust score + breach intelligence keeps vendor risk visible to leadership.' },
+            { id: 'p6a4', label: 'Build everything in-house to avoid vendor risk', isCorrect: false, meta: 'Lessons · misaligned', why: 'In-house has its own security risk + opportunity cost. Manage vendor risk, don\'t avoid it.' }
+          ]
+        }
+      ]
+    },
+
+    // ──────────────────────────────────────────────────────────────────
+    // 15) AD golden ticket (v4.97.2, locked behind ryuk-finance)
+    // ──────────────────────────────────────────────────────────────────
+    {
+      id: 'golden-ticket',
+      title: 'AD golden ticket attack · domain-wide persistence',
+      icon: '🎫',
+      vector: 'insider',
+      difficulty: 3,
+      unlockAfter: ['ryuk-finance'],
+      summary: 'EDR flagged anomalous Kerberos activity. Attacker has the krbtgt hash. Forging tickets cluster-wide with admin permissions.',
+      context: 'At 18:42, EDR + the SIEM Kerberos analytics flagged a cascade of unusual TGT requests — accounts logging in to systems they\'ve never touched, with privilege levels they shouldn\'t have. Investigation: the attacker dumped the krbtgt hash 3 days ago via DCSync attack. They\'ve been forging Kerberos tickets to impersonate any user in the domain at will, including domain admins. The blast radius is the entire AD forest.',
+      vertical: 'Mid-size enterprise',
+      severity: 'SEV-1',
+      iocs: [
+        { type: 'attack', value: 'Golden ticket (forged Kerberos TGT)', label: 'Attack technique' },
+        { type: 'access', value: 'krbtgt hash extracted via DCSync (3 days ago)', label: 'Initial vector' },
+        { type: 'scope', value: 'Entire AD forest', label: 'Blast radius' },
+        { type: 'detection', value: 'Anomalous TGT request patterns from EDR + SIEM', label: 'Detection signal' }
+      ],
+      phases: [
+        {
+          stage: 'preparation', expectedCount: 3,
+          promptTitle: 'What AD-readiness mattered?',
+          promptStem: 'Golden tickets succeed when AD hygiene is weak. Pick the prep that mattered (or didn\'t).',
+          actions: [
+            { id: 'p1a1', label: 'Tier 0 admin separation — domain admins use dedicated workstations only', isCorrect: true, meta: 'Preparation · tier 0', why: 'Tier-0 isolation prevents domain admin creds from being on regular workstations where they can be dumped.' },
+            { id: 'p1a2', label: 'Routine krbtgt password rotation (twice per year minimum)', isCorrect: true, meta: 'Preparation · rotation', why: 'Routine rotation invalidates older golden tickets. Without it, an attacker with old krbtgt has indefinite persistence.' },
+            { id: 'p1a3', label: 'EDR + SIEM Kerberos analytics for anomalous TGT patterns', isCorrect: true, meta: 'Preparation · detection', why: 'This is what surfaced the attack. Without it, the dwell would be open-ended.' },
+            { id: 'p1a4', label: 'Disable AD entirely', isCorrect: false, meta: 'Preparation · impossible', why: 'AD is foundational for most enterprises. Hardening is the only path.' }
+          ]
+        },
+        {
+          stage: 'identification', expectedCount: 4,
+          promptTitle: 'Confirm + scope the krbtgt compromise.',
+          promptStem: 'Golden ticket = total AD compromise. Identify the dwell window + what attacker has touched.',
+          actions: [
+            { id: 'p2a1', label: 'Pull DC + SIEM logs for last 7 days for unusual Kerberos activity', isCorrect: true, meta: 'Identification · timeline', why: 'Establishes when the krbtgt hash was first used. 3-day dwell is a baseline; could be longer.' },
+            { id: 'p2a2', label: 'Audit DCSync events on every DC for last 30 days', isCorrect: true, meta: 'Identification · root cause', why: 'DCSync (replication abuse) is how the krbtgt was extracted. Find the source + path.' },
+            { id: 'p2a3', label: 'Identify every host accessed via forged tickets (golden ticket usage)', isCorrect: true, meta: 'Identification · scope', why: 'Each accessed host is potentially compromised + needs forensic review.' },
+            { id: 'p2a4', label: 'Activate IR firm + breach counsel + AD-recovery specialist', isCorrect: true, meta: 'Identification · escalate', why: 'AD-wide compromise needs specialist help. Don\'t go solo on this — recovery is hard.' },
+            { id: 'p2a5', label: 'Just rotate the krbtgt password and call it done', isCorrect: false, meta: 'Identification · trap', why: 'Trap. Single rotation isn\'t enough — attacker may have other persistence (golden ticket may have created backdoor accounts, group memberships, GPOs).' }
+          ]
+        },
+        {
+          stage: 'containment', expectedCount: 5,
+          promptTitle: 'Cut off the attacker AND invalidate forged tickets.',
+          promptStem: 'Golden ticket containment is unique. Single rotation = insufficient.',
+          trapCallout: {
+            title: 'The "rotate krbtgt twice" requirement',
+            body: 'krbtgt rotation invalidates current golden tickets. But if you only rotate once, any tickets issued in the brief window between attacker access and your rotation are still valid (and they could re-issue tickets via the previous-key check Microsoft built in for backwards compat). You MUST rotate krbtgt password TWICE, with at least 10 hours between rotations, to fully invalidate the attacker\'s capability. This is documented in Microsoft\'s AD recovery guidance + standard SY0-701-tested IR knowledge.'
+          },
+          actions: [
+            { id: 'p3a1', label: 'Rotate krbtgt password TWICE (10+ hours apart) per Microsoft guidance', isCorrect: true, meta: 'Containment · krbtgt', why: 'Single rotation lets old tickets stay valid. Double rotation invalidates everything.' },
+            { id: 'p3a2', label: 'Identify + reset compromised admin/service account passwords', isCorrect: true, meta: 'Containment · accounts', why: 'Attacker may have used golden tickets to alter admin credentials. Reset all that may have been touched.' },
+            { id: 'p3a3', label: 'Identify + remove attacker-created admin accounts / group memberships', isCorrect: true, meta: 'Containment · persistence', why: 'Golden ticket users often add themselves or shadow accounts to Domain Admins. Remove them.' },
+            { id: 'p3a4', label: 'Audit + revoke unusual service-account permissions from last 7 days', isCorrect: true, meta: 'Containment · service accounts', why: 'Service accounts often have over-broad rights. Attacker may have piggy-backed.' },
+            { id: 'p3a5', label: 'Network-isolate any host where golden ticket usage was confirmed', isCorrect: true, meta: 'Containment · endpoint', why: 'Confirmed-touched hosts need quarantine until forensically cleaned.' },
+            { id: 'p3a6', label: 'Wipe all DCs immediately', isCorrect: false, meta: 'Containment · over-destructive', why: 'Wipes destroy AD itself + the evidence you need. Recovery via krbtgt rotation, not nuke-from-orbit.' }
+          ]
+        },
+        {
+          stage: 'eradication', expectedCount: 4,
+          promptTitle: 'Clean up + harden against re-occurrence.',
+          promptStem: 'krbtgt is rotated. Now make sure attacker can never get back to this state.',
+          actions: [
+            { id: 'p4a1', label: 'Forensic image + wipe + rebuild every host the attacker touched', isCorrect: true, meta: 'Eradication · trust restore', why: 'Attacker-touched hosts can\'t be cleaned in place. Image, wipe, rebuild.' },
+            { id: 'p4a2', label: 'Implement Privileged Access Workstations (PAW) for all tier-0 admin work', isCorrect: true, meta: 'Eradication · architecture', why: 'PAW prevents future krbtgt extraction by isolating tier-0 admin work to dedicated, hardened workstations.' },
+            { id: 'p4a3', label: 'Enable Microsoft\'s Local Administrator Password Solution (LAPS)', isCorrect: true, meta: 'Eradication · LAPS', why: 'LAPS rotates local admin passwords automatically + per-machine, defeating pass-the-hash for local admin.' },
+            { id: 'p4a4', label: 'Schedule routine krbtgt rotation (every 6 months minimum)', isCorrect: true, meta: 'Eradication · routine', why: 'Routine rotation invalidates undetected long-dwell golden tickets. Defense-in-depth via time.' },
+            { id: 'p4a5', label: 'Migrate off Active Directory', isCorrect: false, meta: 'Eradication · over-reach', why: 'AD is foundational. Hardening, not abandonment.' }
+          ]
+        },
+        {
+          stage: 'recovery', expectedCount: 3,
+          promptTitle: 'Validate clean state + restore operations.',
+          promptStem: 'AD recovery is delicate. Validate before declaring done.',
+          actions: [
+            { id: 'p5a1', label: 'Independent IR-firm validation of AD clean state before declaring resolved', isCorrect: true, meta: 'Recovery · validation', why: 'AD compromise is hard to fully verify. Independent eyes catch what your team missed.' },
+            { id: 'p5a2', label: 'Heightened DC + Kerberos monitoring for 90+ days post-incident', isCorrect: true, meta: 'Recovery · vigilance', why: 'Attackers often retry with similar TTPs within months. Monitor for the comeback.' },
+            { id: 'p5a3', label: 'Threat-hunt for similar TTPs across the environment monthly', isCorrect: true, meta: 'Recovery · hunting', why: 'Proactive hunting catches long-dwell threats before they activate.' },
+            { id: 'p5a4', label: 'Skip validation to save IR firm cost', isCorrect: false, meta: 'Recovery · negligence', why: 'AD compromise without validation = false sense of security. Worth the cost.' }
+          ]
+        },
+        {
+          stage: 'lessons', expectedCount: 3,
+          promptTitle: 'Lessons-learned: AD security maturity.',
+          promptStem: 'Golden tickets are an AD security maturity test. Build the muscle.',
+          actions: [
+            { id: 'p6a1', label: 'Adopt the AD security tiering model (Tier 0/1/2 separation)', isCorrect: true, meta: 'Lessons · architecture', why: 'Tiering prevents attacker pivot from low-value to high-value AD resources.' },
+            { id: 'p6a2', label: 'Run quarterly purple-team exercises specifically targeting AD', isCorrect: true, meta: 'Lessons · practice', why: 'AD-focused purple team validates detection + response specifically for the AD attack surface.' },
+            { id: 'p6a3', label: 'Document this incident as the case for AD-security investment', isCorrect: true, meta: 'Lessons · advocacy', why: 'AD security investment often gets deferred. Real incident data drives approval.' },
+            { id: 'p6a4', label: 'Train every employee on Kerberos forging', isCorrect: false, meta: 'Lessons · misaligned', why: 'Kerberos is invisible to most users. Training devs/admins is right; training all employees is overkill.' }
+          ]
+        }
+      ]
     }
   ],
 

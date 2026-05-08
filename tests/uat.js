@@ -301,7 +301,7 @@ test('Validation in runSessionStep', js.includes('aiValidateQuestions(apiKey, qu
 
 // ── Analytics v2 (v4.5) ──
 console.log('\n\x1b[1m── ANALYTICS v2 (v4.5) ──\x1b[0m');
-test('APP_VERSION is 4.97.1', js.includes("const APP_VERSION = '4.97.1"));
+test('APP_VERSION is 4.97.2', js.includes("const APP_VERSION = '4.97.2"));
 test('getDailyGoal function', js.includes('function getDailyGoal('));
 test('renderDailyGoal function', js.includes('function renderDailyGoal('));
 test('editDailyGoal function', js.includes('function editDailyGoal('));
@@ -315,7 +315,7 @@ test('CSS: .topic-domain-group', css.includes('.topic-domain-group'));
 test('CSS: .daily-goal-card', css.includes('.daily-goal-card'));
 test('CSS: .advanced-section', css.includes('.advanced-section'));
 test('CSS: .hero-stats-strip', css.includes('.hero-stats-strip'));
-test('SW cache bumped to v4.97.1', sw.includes('netplus-v4.97.1'));
+test('SW cache bumped to v4.97.2', sw.includes('netplus-v4.97.2'));
 test('Family Drill: STORAGE.PORT_FAMILY_BEST', js.includes("PORT_FAMILY_BEST:"));
 test('Family Drill: ptMode handles family', js.includes("ptMode === 'family'"));
 test('Family Drill: HTML mode button', html.includes('id="pt-mode-family"'));
@@ -16868,14 +16868,12 @@ test('v4.97.0 IRW: secplus.js declares incidentResponsePhases (PICERL)',
   certSecplus.includes('incidentResponsePhases:'));
 test('v4.97.0 IRW: secplus.js declares incidentResponseVectors',
   certSecplus.includes('incidentResponseVectors:'));
-test('v4.97.1 IRW: secplus.js has 10 scenarios (v4.97.1 added 5: ddos/npm/aws-key/spear/k8s)',
+test('v4.97.2 IRW: secplus.js has 15 scenarios (v4.97.2 added 5: mfa-bombing/dns-hijack/stolen-laptop/saas-breach/golden-ticket)',
   (() => {
-    // incidentResponseScenarios is followed by incidentResponseLessons (v4.97.1).
-    // Match scenarios block by sentinel to lessons header.
     const m = certSecplus.match(/incidentResponseScenarios:\s*\[([\s\S]+?)INCIDENT RESPONSE LESSONS/);
     if (!m) return false;
     const scenarioIds = m[1].match(/^      id: '[a-z][a-z0-9-]+',/gm) || [];
-    return scenarioIds.length === 10;
+    return scenarioIds.length === 15;
   })());
 test('v4.97.0 IRW: 6 PICERL phases canonical order',
   /incidentResponsePhases:\s*\[[\s\S]{0,800}preparation[\s\S]{0,400}identification[\s\S]{0,400}containment[\s\S]{0,400}eradication[\s\S]{0,400}recovery[\s\S]{0,400}lessons/.test(certSecplus));
@@ -17027,6 +17025,74 @@ test('v4.97.1 IRW: .irw-eos-pressure-warn CSS (over-budget penalty UI)',
   /\.irw-eos-pressure-warn/.test(css));
 test('v4.97.1 IRW: pressure-bar reduced-motion gate kills critical animation',
   /@media \(prefers-reduced-motion:\s*reduce\)[\s\S]{0,2000}\.irw-pressure-bar/.test(css));
+
+// ============================================================================
+// v4.97.2 — IR War Room Batch 3/4: AI generator + 7-layer validator + 5 scens
+// ============================================================================
+test('v4.97.2 IRW: 5 new scenarios shipped (mfa-bombing, dns-registrar-hijack, stolen-laptop, saas-vendor-breach, golden-ticket)',
+  /id:\s*'mfa-bombing'/.test(certSecplus) &&
+  /id:\s*'dns-registrar-hijack'/.test(certSecplus) &&
+  /id:\s*'stolen-laptop'/.test(certSecplus) &&
+  /id:\s*'saas-vendor-breach'/.test(certSecplus) &&
+  /id:\s*'golden-ticket'/.test(certSecplus));
+test('v4.97.2 IRW: total actions ≥ 400 across 15 scenarios',
+  (() => {
+    const m = certSecplus.match(/incidentResponseScenarios:\s*\[([\s\S]+?)INCIDENT RESPONSE LESSONS/);
+    if (!m) return false;
+    const actions = m[1].match(/\{ id: 'p\d+a\d+'/g) || [];
+    return actions.length >= 400;
+  })());
+test('v4.97.2 IRW: golden-ticket has krbtgt-rotation trapCallout',
+  /id:\s*'golden-ticket'[\s\S]{0,15000}trapCallout:\s*\{/.test(certSecplus));
+test('v4.97.2 IRW: AI generator state object',
+  /let _irwAiGenState\s*=\s*\{[\s\S]{0,500}isOpen[\s\S]{0,200}vector[\s\S]{0,200}difficulty/.test(js));
+test('v4.97.2 IRW: irwOpenAiGenerator + irwCloseAiGenerator + irwGenerateScenario',
+  /function irwOpenAiGenerator\(/.test(js) &&
+  /function irwCloseAiGenerator\(/.test(js) &&
+  /async function irwGenerateScenario\(/.test(js));
+test('v4.97.2 IRW: irwGenerateScenario calls Anthropic API with Sonnet',
+  /async function irwGenerateScenario[\s\S]{0,3000}fetch\(CLAUDE_API_URL[\s\S]{0,1000}CLAUDE_TEACHER_MODEL/.test(js));
+test('v4.97.2 IRW: API key from STORAGE.KEY (user-provided, never hardcoded)',
+  /async function irwGenerateScenario[\s\S]{0,500}localStorage\.getItem\(STORAGE\.KEY\)/.test(js));
+test('v4.97.2 IRW: _irwBuildAiGenPrompt constructs Sonnet prompt with constraints',
+  /function _irwBuildAiGenPrompt\(/.test(js) &&
+  /function _irwBuildAiGenPrompt[\s\S]{0,5000}PICERL/.test(js) &&
+  /function _irwBuildAiGenPrompt[\s\S]{0,5000}NIST/.test(js));
+test('v4.97.2 IRW: 7-layer validator function exists',
+  /function _irwValidateAiScenario\(/.test(js));
+test('v4.97.2 IRW: validator includes 7 layers (PICERL ordering, action realism, IOC, count, distractor, trap, citation)',
+  (() => {
+    // Locate the validator function and check for all 7 layer labels
+    const fnMatch = js.match(/function _irwValidateAiScenario\([\s\S]+?\n\}/);
+    if (!fnMatch) return false;
+    const fn = fnMatch[0];
+    return /PICERL stage ordering/.test(fn) &&
+           /Action realism/.test(fn) &&
+           /IOC plausibility/.test(fn) &&
+           /Per-phase action count/.test(fn) &&
+           /Distractor quality/.test(fn) &&
+           /Trap presence/.test(fn) &&
+           /Citation grounding/.test(fn);
+  })());
+test('v4.97.2 IRW: validator checks PICERL canonical order',
+  /expectedStages\s*=\s*\[\s*'preparation',\s*'identification',\s*'containment',\s*'eradication',\s*'recovery',\s*'lessons'/.test(js));
+test('v4.97.2 IRW: validator rejects famously real public IPs',
+  /8\.8\.8\.8|1\.1\.1\.1/.test(js));
+test('v4.97.2 IRW: _irwLoadGeneratedScenario gates on all-7-validator-pass',
+  /function _irwLoadGeneratedScenario[\s\S]{0,500}filter\(r => r\.status === 'pass'\)\.length === 7/.test(js));
+test('v4.97.2 IRW: home renders live AI gen CTA (replaces v4.97.1 stub)',
+  /irw-aigen-stub is-live[\s\S]{0,500}irwOpenAiGenerator\(\)/.test(js));
+test('v4.97.2 IRW: .irw-aigen-modal CSS (modal + backdrop)',
+  /\.irw-aigen-modal\s*\{/.test(css) &&
+  /\.irw-aigen-backdrop\s*\{/.test(css));
+test('v4.97.2 IRW: .irw-aigen-validator-shell CSS (right-pane validator)',
+  /\.irw-aigen-validator-shell\s*\{/.test(css));
+test('v4.97.2 IRW: .irw-aigen-check-icon states (pass/warn/fail)',
+  /\.irw-aigen-check-icon\.is-warn/.test(css) &&
+  /\.irw-aigen-check-icon\.is-fail/.test(css));
+test('v4.97.2 IRW: .irw-aigen-output success card CSS',
+  /\.irw-aigen-output\s*\{/.test(css) &&
+  /\.irw-aigen-load-btn\s*\{/.test(css));
 
 // ── Summary ──
 console.log('\n' + '═'.repeat(50));

@@ -1,9 +1,9 @@
 // ══════════════════════════════════════════
-// Network+ AI Quiz — app.js  v4.97.1
+// Network+ AI Quiz — app.js  v4.97.2
 // ══════════════════════════════════════════
 
 // ── CONSTANTS ──
-const APP_VERSION = '4.97.1';
+const APP_VERSION = '4.97.2';
 
 // ══════════════════════════════════════════════════════════════════════════
 // CERT PACK ARCHITECTURE (v4.86.0 Phase 1A engine refactor)
@@ -135,6 +135,7 @@ const MAX_TOKENS_TEACHER_DEFAULT = 1500;  // explainFurther, tbCoachTopology —
 const MAX_TOKENS_TEACHER_LONG    = 2000;  // showTopicDeepDive — longest teacher call
 const MAX_TOKENS_TEACHER_COACH   = 800;   // tbExplainDevice — focused coach call
 const MAX_TOKENS_TEACHER_BRIEF   = 400;   // stAskCoach, ptAskCoach, fetchTopicBrief — short teacher call
+const MAX_TOKENS_IRW_AIGEN       = 4000;  // v4.97.2: IRW AI scenario generator (full PICERL JSON output)
 
 const MIXED_TOPIC = 'Mixed \u2014 All Topics';
 const EXAM_TOPIC = 'Exam Simulation';
@@ -34185,7 +34186,12 @@ function irwRenderHome() {
     html += '</div></div>';
   });
   html += '</div>';
-  html += '<div class="irw-aigen-stub"><div class="irw-aigen-stub-icon">✨</div><div><strong>AI scenario generator coming in v4.97.2.</strong> Sonnet authors fresh scenarios with a 7-layer validator gating output.</div></div>';
+  // v4.97.2: AI generator is now LIVE. Replace stub with active CTA.
+  html += '<div class="irw-aigen-stub is-live" onclick="irwOpenAiGenerator()">';
+  html += '<div class="irw-aigen-stub-icon">✨</div>';
+  html += '<div><strong>AI scenario generator</strong> — Sonnet 4.6 authors fresh scenarios on demand. 7-layer validator gates every output (PICERL ordering · action realism · IOC plausibility · per-phase count · distractor quality · trap presence · citation grounding). Click to open.</div>';
+  html += '<div class="irw-aigen-stub-cta">Open generator →</div>';
+  html += '</div>';
   html += '</div>';
   host.innerHTML = html;
 }
@@ -34548,6 +34554,343 @@ function irwRenderDashboard() {
   });
   html += '</div><div class="irw-dash-stub"><strong>Per-phase mastery analytics + prescriptive callouts arrive in v4.97.3.</strong> For now: replay your weakest scenario from the Practice catalog.</div></div>';
   host.innerHTML = html;
+}
+
+// ════════════════════════════════════════════════════════════════════
+// IRW AI SCENARIO GENERATOR (v4.97.2 Batch 3) — Sonnet-authored scenarios
+// gated by 7-layer validator. Modeled on tbDeepValidateAndFix pattern.
+// User-supplied API key (STORAGE.KEY); same direct-browser-access pattern
+// as fetchQuestions. Validator rejects malformed output before load.
+// ════════════════════════════════════════════════════════════════════
+let _irwAiGenState = {
+  isOpen: false,
+  isGenerating: false,
+  vector: 'cloud',
+  difficulty: 2,
+  bias: null,
+  lastScenario: null,
+  lastValidatorResults: null,
+  lastError: null
+};
+
+function irwOpenAiGenerator() {
+  _irwAiGenState.isOpen = true;
+  _irwAiGenState.lastScenario = null;
+  _irwAiGenState.lastValidatorResults = null;
+  _irwAiGenState.lastError = null;
+  _irwRenderAiGenModal();
+}
+function irwCloseAiGenerator() {
+  _irwAiGenState.isOpen = false;
+  const modal = document.getElementById('irw-aigen-modal');
+  if (modal) modal.remove();
+}
+function irwSetAiGenVector(v) { _irwAiGenState.vector = v; _irwRenderAiGenModal(); }
+function irwSetAiGenDifficulty(d) { _irwAiGenState.difficulty = parseInt(d, 10); _irwRenderAiGenModal(); }
+function irwSetAiGenBias(b) { _irwAiGenState.bias = b === _irwAiGenState.bias ? null : b; _irwRenderAiGenModal(); }
+
+function _irwRenderAiGenModal() {
+  let modal = document.getElementById('irw-aigen-modal');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'irw-aigen-modal';
+    modal.className = 'irw-aigen-modal';
+    document.body.appendChild(modal);
+  }
+  const s = _irwAiGenState;
+  const vectorOptions = Object.entries(IRW_VECTORS).map(([id, v]) =>
+    `<button type="button" class="irw-aigen-pill ${s.vector === id ? 'is-active' : ''}" onclick="irwSetAiGenVector('${escAttr(id)}')">${v.icon} ${escHtml(v.name)}</button>`
+  ).join('');
+  const biasOptions = ['identification', 'containment', 'eradication', 'recovery'].map(b =>
+    `<button type="button" class="irw-aigen-pill ${s.bias === b ? 'is-active' : ''}" onclick="irwSetAiGenBias('${b}')">${b.charAt(0).toUpperCase() + b.slice(1)}</button>`
+  ).join('');
+
+  let html = '<div class="irw-aigen-backdrop" onclick="irwCloseAiGenerator()"></div>';
+  html += '<div class="irw-aigen-card" role="dialog" aria-label="AI Scenario Generator">';
+  html += '<div class="irw-aigen-h">';
+  html += '<div class="irw-aigen-h-icon">✨</div>';
+  html += '<div><div class="irw-aigen-h-title">AI Scenario Generator</div>';
+  html += '<div class="irw-aigen-h-sub">Sonnet 4.6 · Tier C · 7-layer validator-gated</div></div>';
+  html += `<button type="button" class="irw-aigen-close" onclick="irwCloseAiGenerator()" aria-label="Close">×</button>`;
+  html += '</div>';
+  html += '<div class="irw-aigen-body">';
+  html += '<div class="irw-aigen-controls">';
+  html += '<div class="irw-aigen-row">';
+  html += '<div class="irw-aigen-row-label">🎯 Threat vector</div>';
+  html += `<div class="irw-aigen-pills">${vectorOptions}</div>`;
+  html += '</div>';
+  html += '<div class="irw-aigen-row">';
+  html += '<div class="irw-aigen-row-label">⭐ Difficulty</div>';
+  html += '<div class="irw-aigen-pills">';
+  html += `<button type="button" class="irw-aigen-pill ${s.difficulty === 1 ? 'is-active' : ''}" onclick="irwSetAiGenDifficulty(1)">★ Foundational</button>`;
+  html += `<button type="button" class="irw-aigen-pill ${s.difficulty === 2 ? 'is-active' : ''}" onclick="irwSetAiGenDifficulty(2)">★★ Exam</button>`;
+  html += `<button type="button" class="irw-aigen-pill ${s.difficulty === 3 ? 'is-active' : ''}" onclick="irwSetAiGenDifficulty(3)">★★★ Real-world</button>`;
+  html += '</div></div>';
+  html += '<div class="irw-aigen-row">';
+  html += '<div class="irw-aigen-row-label">🔥 Bias toward weak phase (optional)</div>';
+  html += `<div class="irw-aigen-pills">${biasOptions}</div>`;
+  html += '</div>';
+  html += `<button type="button" class="irw-aigen-btn" onclick="irwGenerateScenario()" ${s.isGenerating ? 'disabled' : ''}>${s.isGenerating ? '⏳ Generating + validating...' : '✨ Generate scenario'}</button>`;
+  html += '</div>';
+  // Validator panel (right side)
+  html += '<div class="irw-aigen-validator-shell">';
+  if (!s.lastScenario && !s.isGenerating && !s.lastError) {
+    html += '<div class="irw-aigen-validator-empty">📋 Pick options on the left + click Generate. The 7-layer validator output will appear here.</div>';
+  }
+  if (s.lastError) {
+    html += `<div class="irw-aigen-validator-fail">⚠ ${escHtml(s.lastError)}</div>`;
+  }
+  if (s.lastValidatorResults) {
+    const passed = s.lastValidatorResults.filter(r => r.status === 'pass').length;
+    html += `<div class="irw-aigen-validator-h">🛡 7-layer validator · <span style="color:${passed === 7 ? '#22c55e' : '#f59e0b'}; font-family:'SF Mono',monospace;">${passed}/7 ✓</span></div>`;
+    s.lastValidatorResults.forEach((r, idx) => {
+      const iconCls = r.status === 'pass' ? '' : (r.status === 'warn' ? 'is-warn' : 'is-fail');
+      const icon = r.status === 'pass' ? '✓' : (r.status === 'warn' ? '!' : '✗');
+      html += `<div class="irw-aigen-check-row"><div class="irw-aigen-check-icon ${iconCls}">${icon}</div><div><strong>${idx + 1}. ${escHtml(r.label)}</strong> — ${escHtml(r.detail || '')}</div></div>`;
+    });
+    if (s.lastScenario && passed === 7) {
+      html += '<div class="irw-aigen-output">';
+      html += `<div class="irw-aigen-output-h">✓ Validated · ready to load</div>`;
+      html += `<div class="irw-aigen-output-title">${escHtml(s.lastScenario.title)}</div>`;
+      html += `<div class="irw-aigen-output-summary">${escHtml(s.lastScenario.summary || '')}</div>`;
+      html += `<button type="button" class="irw-aigen-load-btn" onclick="_irwLoadGeneratedScenario()">Load + start scenario →</button>`;
+      html += '</div>';
+    }
+  }
+  html += '</div>';
+  html += '</div></div>';
+  modal.innerHTML = html;
+}
+
+async function irwGenerateScenario() {
+  const key = (localStorage.getItem(STORAGE.KEY) || '').trim();
+  if (!key) {
+    _irwAiGenState.lastError = 'Add your Anthropic API key in Settings to generate scenarios.';
+    _irwRenderAiGenModal();
+    return;
+  }
+  _irwAiGenState.isGenerating = true;
+  _irwAiGenState.lastError = null;
+  _irwAiGenState.lastValidatorResults = null;
+  _irwAiGenState.lastScenario = null;
+  _irwRenderAiGenModal();
+
+  const prompt = _irwBuildAiGenPrompt(_irwAiGenState);
+
+  try {
+    const res = await fetch(CLAUDE_API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': key,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: CLAUDE_TEACHER_MODEL,
+        max_tokens: MAX_TOKENS_IRW_AIGEN,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+    if (!res.ok) {
+      _irwAiGenState.lastError = `API error: ${res.status}. Check your API key in Settings.`;
+      _irwAiGenState.isGenerating = false;
+      _irwRenderAiGenModal();
+      return;
+    }
+    const data = await res.json();
+    const text = (data.content && data.content[0] && data.content[0].text) || '';
+    // Extract JSON from response (sometimes wrapped in markdown code fences)
+    let jsonStr = text.trim();
+    const fenceMatch = jsonStr.match(/```(?:json)?\s*([\s\S]*?)```/);
+    if (fenceMatch) jsonStr = fenceMatch[1].trim();
+    let scenario;
+    try {
+      scenario = JSON.parse(jsonStr);
+    } catch (parseErr) {
+      _irwAiGenState.lastError = 'AI returned invalid JSON. Try regenerating.';
+      _irwAiGenState.isGenerating = false;
+      _irwRenderAiGenModal();
+      return;
+    }
+    // Run 7-layer validator
+    const validatorResults = _irwValidateAiScenario(scenario);
+    _irwAiGenState.lastScenario = scenario;
+    _irwAiGenState.lastValidatorResults = validatorResults;
+    _irwAiGenState.isGenerating = false;
+    _irwRenderAiGenModal();
+  } catch (e) {
+    _irwAiGenState.lastError = `Network error: ${e.message || 'Unknown'}`;
+    _irwAiGenState.isGenerating = false;
+    _irwRenderAiGenModal();
+  }
+}
+
+function _irwBuildAiGenPrompt(opts) {
+  const vector = opts.vector;
+  const vectorMeta = IRW_VECTORS[vector] || { name: vector };
+  const diffLabel = ['', 'Foundational', 'Exam', 'Real-world'][opts.difficulty];
+  const biasLine = opts.bias ? `Bias the scenario toward exercising the ${opts.bias} phase (more decisions there).` : '';
+  return `You are authoring an Incident Response War Room scenario for the SY0-701 CompTIA Security+ exam prep drill. Output ONLY valid JSON, no surrounding markdown or commentary.
+
+REQUIREMENTS:
+- Threat vector: ${vector} (${vectorMeta.name})
+- Difficulty: ${diffLabel}
+${biasLine}
+
+SCHEMA (output exactly this shape):
+{
+  "id": "kebab-case-slug-unique",
+  "title": "Concise title (≤60 chars)",
+  "icon": "single emoji",
+  "vector": "${vector}",
+  "difficulty": ${opts.difficulty},
+  "unlockAfter": [],
+  "summary": "1-2 sentence tile description (≤180 chars)",
+  "context": "3-4 sentence paragraph describing the unfolding incident at the moment of detection",
+  "vertical": "Industry context (e.g. Tech / SaaS, Corp finance)",
+  "severity": "SEV-1 | SEV-2 | SEV-3",
+  "iocs": [
+    { "type": "string", "value": "string", "label": "string" }
+  ],
+  "phases": [
+    {
+      "stage": "preparation",
+      "expectedCount": <number 2-5>,
+      "promptTitle": "What action prompt for this phase?",
+      "promptStem": "Detail of what the user must do",
+      "actions": [
+        { "id": "p1aN", "label": "action label", "isCorrect": true|false, "meta": "Phase · subtype", "why": "Why this is right or wrong, citing NIST SP 800-61 / SANS PICERL / SY0-701 objective" }
+      ]
+    }
+    // ... 6 phases total in canonical PICERL order
+  ]
+}
+
+CONSTRAINTS:
+1. Exactly 6 phases in this order: preparation, identification, containment, eradication, recovery, lessons
+2. Each phase has 4-6 actions; expectedCount = number of correct picks (typically 2-5)
+3. Each phase needs at least 1 wrong-but-plausible distractor action
+4. At least one SY0-701-canonical TRAP in containment OR eradication phase (e.g. power-off-vs-isolate, restore-before-eradicate, wipe-before-image)
+5. Action ids: p1a1, p1a2, ... p6aN (phase number + action number)
+6. IOCs use realistic format but invented values (no real IPs, hashes, domains, or names)
+7. Every "why" must cite NIST SP 800-61, SANS PICERL, or a specific SY0-701 objective
+8. unlockAfter: leave as []
+9. icon: pick one emoji that matches the vector
+
+Output JSON only. No markdown fences, no commentary.`;
+}
+
+function _irwValidateAiScenario(scenario) {
+  // 7-layer validator. Each entry: { status: 'pass'|'warn'|'fail', label, detail }
+  const results = [];
+  // Layer 1: PICERL stage ordering
+  const expectedStages = ['preparation', 'identification', 'containment', 'eradication', 'recovery', 'lessons'];
+  const actualStages = Array.isArray(scenario.phases) ? scenario.phases.map(p => p.stage) : [];
+  const stageOrderOk = JSON.stringify(actualStages) === JSON.stringify(expectedStages);
+  results.push({
+    status: stageOrderOk ? 'pass' : 'fail',
+    label: 'PICERL stage ordering',
+    detail: stageOrderOk ? '6 phases in canonical PICERL order' : `Expected ${expectedStages.join(' → ')}, got ${actualStages.join(' → ')}`
+  });
+  // Layer 2: Action realism (require structured actions with required fields)
+  let realismOk = true;
+  let realismDetail = 'every action has label + isCorrect + meta + why';
+  if (scenario.phases) {
+    for (const p of scenario.phases) {
+      if (!Array.isArray(p.actions)) { realismOk = false; realismDetail = 'phase missing actions array'; break; }
+      for (const a of p.actions) {
+        if (!a.label || typeof a.isCorrect !== 'boolean' || !a.why) {
+          realismOk = false; realismDetail = `action ${a.id || '?'} missing required fields`; break;
+        }
+      }
+    }
+  } else { realismOk = false; realismDetail = 'no phases array'; }
+  results.push({ status: realismOk ? 'pass' : 'fail', label: 'Action realism', detail: realismDetail });
+  // Layer 3: IOC plausibility (need iocs array, must not contain obviously real IPs)
+  let iocsOk = true;
+  let iocsDetail = 'IOCs structurally valid';
+  if (!Array.isArray(scenario.iocs) || scenario.iocs.length === 0) {
+    iocsOk = false; iocsDetail = 'missing or empty iocs array';
+  } else {
+    // Reject if any IOC value contains famously real IPs (8.8.8.8, 1.1.1.1) or real-domains
+    for (const ioc of scenario.iocs) {
+      if (/\b(8\.8\.8\.8|1\.1\.1\.1|8\.8\.4\.4)\b/.test(ioc.value || '')) { iocsOk = false; iocsDetail = 'contains real public IP'; break; }
+      if (/(google|microsoft|amazon|github|aws)\.com/.test((ioc.value || '').toLowerCase())) { iocsOk = false; iocsDetail = 'contains real registered domain'; break; }
+    }
+  }
+  results.push({ status: iocsOk ? 'pass' : 'fail', label: 'IOC plausibility', detail: iocsDetail });
+  // Layer 4: Per-phase action count (4-6 per phase)
+  let countOk = true;
+  let countDetail = 'each phase has 4-6 actions';
+  if (scenario.phases) {
+    for (const p of scenario.phases) {
+      const n = (p.actions || []).length;
+      if (n < 4 || n > 8) { countOk = false; countDetail = `phase ${p.stage} has ${n} actions (need 4-8)`; break; }
+    }
+  } else { countOk = false; countDetail = 'no phases'; }
+  results.push({ status: countOk ? 'pass' : (countOk === false ? 'fail' : 'warn'), label: 'Per-phase action count', detail: countDetail });
+  // Layer 5: Distractor quality (each phase needs ≥1 wrong action)
+  let distractorOk = true;
+  let distractorDetail = 'each phase has ≥1 plausible distractor';
+  if (scenario.phases) {
+    for (const p of scenario.phases) {
+      const wrongs = (p.actions || []).filter(a => a.isCorrect === false);
+      if (wrongs.length < 1) { distractorOk = false; distractorDetail = `phase ${p.stage} has 0 distractors`; break; }
+    }
+  } else { distractorOk = false; }
+  results.push({ status: distractorOk ? 'pass' : 'warn', label: 'Distractor quality', detail: distractorDetail });
+  // Layer 6: Trap presence (at least 1 trap-like action in containment OR eradication)
+  let trapOk = false;
+  let trapDetail = 'no canonical SY0-701 trap detected';
+  if (scenario.phases) {
+    const trapPhases = scenario.phases.filter(p => p.stage === 'containment' || p.stage === 'eradication');
+    for (const p of trapPhases) {
+      // Look for trap signals: "wrong" actions whose `why` mentions trap, fatigue, panic, destroys, or canonical traps
+      const trapSignals = (p.actions || []).filter(a => a.isCorrect === false && /trap|destroys|over-reach|premature|panic|wrong phase|anti-pattern/i.test(a.why || ''));
+      if (trapSignals.length > 0) { trapOk = true; trapDetail = `${trapSignals.length} trap action(s) in ${p.stage}`; break; }
+    }
+  }
+  if (!trapOk) {
+    // Also accept explicit trapCallout field
+    if (scenario.phases && scenario.phases.some(p => p.trapCallout)) {
+      trapOk = true; trapDetail = 'phase trapCallout present';
+    }
+  }
+  results.push({ status: trapOk ? 'pass' : 'warn', label: 'Trap presence', detail: trapDetail });
+  // Layer 7: Citation grounding — at least 50% of `why` should cite a framework/objective
+  let citationOk = false;
+  let citationDetail = 'fewer than 30% of explanations cite a standard';
+  if (scenario.phases) {
+    let total = 0, cited = 0;
+    for (const p of scenario.phases) {
+      for (const a of p.actions || []) {
+        total++;
+        if (/(NIST|SANS|PICERL|SY0|RFC|800-61|MITRE)/i.test(a.why || '')) cited++;
+      }
+    }
+    const pct = total > 0 ? (cited / total) : 0;
+    if (pct >= 0.30) { citationOk = true; citationDetail = `${Math.round(pct * 100)}% of explanations cite a standard`; }
+    else citationDetail = `only ${Math.round(pct * 100)}% cite a standard (need ≥30%)`;
+  }
+  results.push({ status: citationOk ? 'pass' : 'warn', label: 'Citation grounding', detail: citationDetail });
+  return results;
+}
+
+function _irwLoadGeneratedScenario() {
+  if (!_irwAiGenState.lastScenario) return;
+  const passedAll = (_irwAiGenState.lastValidatorResults || []).filter(r => r.status === 'pass').length === 7;
+  if (!passedAll) {
+    if (typeof showToast === 'function') showToast('Validator did not fully pass — fix or regenerate first.', 'info');
+    return;
+  }
+  const scen = _irwAiGenState.lastScenario;
+  // Append to in-memory bank for this session (persistent storage would come in v4.97.3)
+  if (!IRW_DATA.find(s => s.id === scen.id)) {
+    IRW_DATA.push(scen);
+  }
+  irwCloseAiGenerator();
+  irwStartScenario(scen.id);
 }
 
 function setOsDifficulty(diff) {
