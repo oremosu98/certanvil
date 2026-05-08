@@ -4276,6 +4276,358 @@ window.CERT_PACKS.secplus = {
       },
       patternName: 'Telco-impersonation smishing',
       patternBlurb: 'SY0-701 Domain 2.2. Telco smishing exploits everyone-has-a-phone. Defense: check billing only via the carrier\'s official app — never via SMS links.'
+    },
+    // ──────────────────────────────────────────────────────────────────
+    // ════════════════════════ VISHING (v4.98.2) ════════════════════════
+    // 6 voice phish · vector: 'voice' · voicemail-player UI w/ transcript
+    // ──────────────────────────────────────────────────────────────────
+    // 17) Microsoft tech support vishing — canonical (mockup state 6)
+    {
+      id: 'ms-tech-support-vish',
+      title: 'Fake "Microsoft Security Support" voicemail',
+      vector: 'voice',
+      difficulty: 2,
+      unlockAfter: [],
+      category: 'tech-support-scam',
+      summary: 'Recorded voicemail claiming "your Microsoft account was hacked, call back urgently." Caller-ID spoofed.',
+      callerId: '+1 (425) 555-0192',
+      time: 'Today · 09:42 AM',
+      voicemailLength: '0:38',
+      transcript: '"This is <span class="flag" data-fid="f1">Microsoft Security Support</span>. We\'ve detected suspicious activity on your Microsoft 365 account. Your account will be <span class="flag" data-fid="f2">permanently locked in 24 hours</span> unless you call us back at <span class="flag" data-fid="f3">1-800-555-0192</span>. <span class="flag" data-fid="f4">Press 1 to speak with a security agent immediately</span>, or visit <span class="flag" data-fid="f5">microsoft-account-verify.com</span> to confirm your identity. This is your final warning."',
+      flags: [
+        { id: 'f1', category: 'unsolicited-claim', label: '"Microsoft Security Support" calling you', why: 'CRITICAL: Microsoft NEVER calls customers about account security. Any voicemail claiming to be from Microsoft = 100% scam.' },
+        { id: 'f2', category: 'urgency', label: '"Permanently locked in 24 hours" threat', why: 'Real Microsoft never threatens permanent lockout via phone. Manufactured urgency = social engineering.' },
+        { id: 'f3', category: 'callback-trap', label: 'Callback number not on Microsoft.com', why: 'Real Microsoft support contact is via support.microsoft.com — not a callback number left in voicemail. The number routes to scam call center.' },
+        { id: 'f4', category: 'press-keypad-trap', label: '"Press 1" routing trap', why: 'Pressing 1 connects you to live scammers who escalate the social engineering (asking for credentials, remote access, payment info).' },
+        { id: 'f5', category: 'lookalike-url', label: 'Lookalike domain "microsoft-account-verify.com"', why: 'Real Microsoft uses microsoft.com / outlook.com / live.com. Hyphenated subdomain = typosquat for credential harvest.' },
+        { id: 'f6', category: 'caller-id-spoofing', label: 'Caller-ID can be spoofed', why: 'The "+1 (425)" Redmond, WA number looks like Microsoft\'s HQ — but caller-ID is trivially spoofable. Never trust caller-ID alone.' }
+      ],
+      correctAction: 'report',
+      decisionReveal: {
+        report: { isCorrect: true, label: 'Report + delete voicemail', why: 'Correct. Forward to security so they can alert other employees + report to FCC at 1-888-CALL-FCC. Do NOT call back the number.' },
+        delete: { isCorrect: false, label: 'Just delete', why: 'Doesn\'t alert security or help block the campaign. Report first.' },
+        reply: { isCorrect: false, label: 'Call back to investigate', why: 'Routes you directly to the scam call center. NEVER call back numbers in unsolicited voicemails.' },
+        click: { isCorrect: false, label: 'Visit the URL mentioned', why: 'Routes to credential-harvest mimicking Microsoft. Always navigate to microsoft.com directly.' },
+        spam: { isCorrect: false, label: 'Block the number', why: 'Number rotates daily. Report first, then block.' }
+      },
+      patternName: 'Tech-support vishing (Microsoft impersonation)',
+      patternBlurb: 'SY0-701 Domain 2.2. <strong>CRITICAL RULE: Microsoft + Apple + IRS + Social Security NEVER call you about account/tax/security issues.</strong> Any unsolicited call claiming to be these = 100% scam. Defense: hang up, look up the official number on the company\'s website, call them directly to verify.'
+    },
+    // 18) IRS back-tax demand vishing
+    {
+      id: 'irs-back-tax-vish',
+      title: '"IRS" back-tax demand · arrest threat',
+      vector: 'voice',
+      difficulty: 1,
+      unlockAfter: [],
+      category: 'government-impersonation',
+      summary: 'Aggressive voicemail demanding immediate payment for "back taxes" with arrest threat. Most common phone scam.',
+      callerId: '+1 (202) 555-0834',
+      time: 'Today · 11:08 AM',
+      voicemailLength: '0:42',
+      transcript: '"This is <span class="flag" data-fid="f1">Officer Michael Reeves from the Internal Revenue Service</span>. We are calling regarding an urgent matter pertaining to your tax filings. Our records indicate <span class="flag" data-fid="f2">you owe $4,892 in back taxes</span> dating from 2021. <span class="flag" data-fid="f3">An arrest warrant has been issued in your name</span> and local law enforcement will be at your address within 24 hours unless this matter is resolved. Please call back at <span class="flag" data-fid="f4">1-844-555-IRS-PAY (477-7297)</span> immediately to settle this debt. <span class="flag" data-fid="f5">Acceptable payment methods are gift cards or wire transfer only</span>. Failure to comply will result in immediate arrest."',
+      flags: [
+        { id: 'f1', category: 'fake-authority', label: '"Officer from IRS"', why: 'CRITICAL: The IRS does NOT have officers who call taxpayers. The IRS uses postal mail for first contact + has revenue officers (not "officers"). Any voicemail with "Officer + IRS" = 100% scam.' },
+        { id: 'f2', category: 'specific-amount', label: 'Specific debt amount', why: 'Random-looking specific amount ($4,892) crafted to feel real. Real IRS notices arrive in writing via USPS with your taxpayer ID + filing details.' },
+        { id: 'f3', category: 'arrest-threat', label: '"Arrest warrant has been issued"', why: 'CRITICAL: The IRS does NOT issue arrest warrants for taxes — that\'s a court process requiring due process. Threats of immediate arrest are 100% scam.' },
+        { id: 'f4', category: 'callback-trap', label: 'Callback number to settle', why: 'Real IRS communications direct you to irs.gov or 1-800-829-1040 (the genuine line). Other numbers route to scammers.' },
+        { id: 'f5', category: 'gift-cards-payment', label: '"Gift cards or wire transfer only"', why: 'CRITICAL: NO legitimate organization — IRS, court, business, charity — accepts payment in gift cards. Gift card payment demand = 100% scam.' },
+        { id: 'f6', category: 'urgency', label: '24-hour arrest deadline', why: 'Real IRS gives extensive notice + appeal periods. Tight deadlines = panic engineering.' }
+      ],
+      correctAction: 'report',
+      decisionReveal: {
+        report: { isCorrect: true, label: 'Report to FTC at reportfraud.ftc.gov', why: 'Correct. The FTC tracks IRS-impersonation scams. Real IRS questions: irs.gov or 1-800-829-1040. Forward voicemail to phishing@irs.gov.' },
+        delete: { isCorrect: false, label: 'Just delete', why: 'Doesn\'t help others. Report so the FTC can track + block the campaign.' },
+        reply: { isCorrect: false, label: 'Call back to verify', why: 'Routes directly to scammers. Verify any IRS contact via irs.gov ONLY.' },
+        click: { isCorrect: false, label: 'Pay via gift cards', why: 'Hands the scammer your money — unrecoverable. NEVER pay with gift cards for any official-looking demand.' },
+        spam: { isCorrect: false, label: 'Block the number', why: 'Number rotates daily. Report to FTC first.' }
+      },
+      patternName: 'IRS-impersonation vishing (gift-card scam)',
+      patternBlurb: 'SY0-701 Domain 2.2. <strong>CRITICAL RULES: (1) The IRS never calls about tax debt — postal mail only. (2) The IRS never issues arrest warrants for taxes. (3) NO legitimate org accepts gift card payment.</strong> Any one of these = 100% scam.'
+    },
+    // 19) Bank fraud verification vishing
+    {
+      id: 'bank-fraud-verify-vish',
+      title: 'Bank "fraud verification" callback',
+      vector: 'voice',
+      difficulty: 2,
+      unlockAfter: ['bank-fraud-smish'],
+      category: 'bank-impersonation',
+      summary: 'Caller claims to be from your bank verifying a "suspicious charge" — asks you to confirm account details over the phone.',
+      callerId: '+1 (800) 555-2222',
+      time: 'Today · 2:14 PM',
+      voicemailLength: '0:28',
+      transcript: '"This is <span class="flag" data-fid="f1">Jennifer from Capital One Fraud Department</span>. We detected a <span class="flag" data-fid="f2">suspicious $487 charge</span> on your account ending in 4271 at a Best Buy in Toronto. To verify whether you authorized this transaction, please call us back at <span class="flag" data-fid="f3">1-800-555-2222</span>. <span class="flag" data-fid="f4">Have your full card number, CVV, and online banking password ready</span> for verification. Failure to respond within <span class="flag" data-fid="f5">1 hour</span> will result in your card being temporarily suspended."',
+      flags: [
+        { id: 'f1', category: 'unsolicited-bank-call', label: '"Capital One Fraud Department" calling you', why: 'Real banks may call about fraud — but they NEVER ask you to call BACK to a number they leave. Real bank fraud calls are followed up via the app or via the number on your physical card.' },
+        { id: 'f2', category: 'specific-charge', label: 'Specific suspicious charge details', why: 'Crafted to feel real. Real fraud alerts come via the bank app first, with the charge visible in your transaction history.' },
+        { id: 'f3', category: 'callback-trap', label: 'Callback number not on physical card', why: 'Real banks use the number on the back of your physical card. The number in the voicemail routes to the scam call center.' },
+        { id: 'f4', category: 'critical-information-request', label: 'Asking for full card + CVV + password', why: 'CRITICAL: Real bank fraud verification NEVER asks for your full card number, CVV, or online banking password over the phone. They already have your account info — they ask security questions, not for credentials.' },
+        { id: 'f5', category: 'urgency', label: '1-hour suspension threat', why: 'Real banks take days/weeks to suspend cards for unanswered fraud alerts. Tight deadlines = panic engineering.' }
+      ],
+      correctAction: 'report',
+      decisionReveal: {
+        report: { isCorrect: true, label: 'Report + verify via card-back number', why: 'Correct. Hang up, call the number on the back of your card directly. Real fraud will still be there if it\'s real. Report this voicemail to your bank + FTC.' },
+        delete: { isCorrect: false, label: 'Just delete', why: 'Misses the verification step. Real fraud might exist (rare but possible) — verify via the card-back number.' },
+        reply: { isCorrect: false, label: 'Call back to verify', why: 'Routes to scam call center. They\'ll ask for credentials + drain your account.' },
+        click: { isCorrect: false, label: 'Provide card details', why: 'Hands the scammer everything they need to drain your account.' },
+        spam: { isCorrect: false, label: 'Block the number', why: 'Doesn\'t verify whether real fraud exists. Always verify via the card-back number first.' }
+      },
+      patternName: 'Bank-fraud-verification vishing',
+      patternBlurb: 'SY0-701 Domain 2.2. <strong>CRITICAL RULE: Real banks never ask for full card number, CVV, or online banking password over the phone — they have your info already.</strong> Defense: hang up, call the number on the back of your physical card.'
+    },
+    // 20) Social Security number suspension vishing
+    {
+      id: 'ssn-suspension-vish',
+      title: '"Social Security" SSN suspension scam',
+      vector: 'voice',
+      difficulty: 1,
+      unlockAfter: [],
+      category: 'government-impersonation',
+      summary: 'Voicemail claims your Social Security number has been "suspended" for criminal activity. Aggressive scam pattern.',
+      callerId: '+1 (800) 555-1213',
+      time: 'Today · 10:18 AM',
+      voicemailLength: '0:35',
+      transcript: '"This is <span class="flag" data-fid="f1">Inspector Martinez from the Social Security Administration</span>. Your <span class="flag" data-fid="f2">Social Security number has been suspended</span> due to <span class="flag" data-fid="f3">suspicious activity linked to drug trafficking and money laundering in Texas</span>. To prevent legal action and unfreezing your benefits, please call us back at <span class="flag" data-fid="f4">1-800-555-1213</span> immediately. <span class="flag" data-fid="f5">Failure to respond will result in arrest and seizure of all your assets</span>. Press 1 for English, Press 2 for Spanish."',
+      flags: [
+        { id: 'f1', category: 'fake-authority', label: '"Inspector from SSA"', why: 'The SSA does NOT have "Inspectors" who call. The SSA uses postal mail for first contact + has Office of the Inspector General (which doesn\'t cold-call about benefits).' },
+        { id: 'f2', category: 'impossible-action', label: '"SSN suspended"', why: 'CRITICAL: Social Security numbers are NEVER suspended. They are permanent. Any claim that your SSN has been suspended = 100% scam.' },
+        { id: 'f3', category: 'fear-appeal', label: 'Drug trafficking + money laundering accusations', why: 'Designed for maximum fear. Real SSA never accuses you of crimes — that\'s a court process requiring due process.' },
+        { id: 'f4', category: 'callback-trap', label: 'Callback number to "fix"', why: 'Real SSA contact is ssa.gov / 1-800-772-1213 (the genuine line). Other numbers route to scammers.' },
+        { id: 'f5', category: 'arrest-threat', label: 'Arrest + asset seizure threat', why: 'CRITICAL: Threats of arrest + asset seizure for "SSN issues" are pure social engineering. Real legal action requires court orders + extensive notice.' }
+      ],
+      correctAction: 'report',
+      decisionReveal: {
+        report: { isCorrect: true, label: 'Report to SSA OIG at oig.ssa.gov/report', why: 'Correct. The SSA Office of the Inspector General tracks SSN-impersonation scams. Reports help block + prosecute scammers.' },
+        delete: { isCorrect: false, label: 'Just delete', why: 'Doesn\'t help others. Report to OIG.' },
+        reply: { isCorrect: false, label: 'Call back to verify', why: 'Routes directly to scammers who will demand SSN verification + payment.' },
+        click: { isCorrect: false, label: 'Provide SSN to "verify"', why: 'Hands the scammer the most sensitive piece of personal info you have.' },
+        spam: { isCorrect: false, label: 'Block the number', why: 'Number rotates. Report to SSA OIG first.' }
+      },
+      patternName: 'SSN-suspension vishing (government impersonation)',
+      patternBlurb: 'SY0-701 Domain 2.2. <strong>CRITICAL FACT: SSNs are never suspended. They are permanent.</strong> Any "your SSN has been suspended" claim = 100% scam.'
+    },
+    // 21) Tech support remote-access scam
+    {
+      id: 'tech-support-remote-vish',
+      title: '"Tech support" remote-access scam',
+      vector: 'voice',
+      difficulty: 2,
+      unlockAfter: ['ms-tech-support-vish'],
+      category: 'tech-support-scam',
+      summary: 'Caller claims your computer has a virus and offers to "fix" it via remote access — gateway to credential theft + ransomware.',
+      callerId: '+1 (650) 555-7700',
+      time: 'Today · 3:42 PM',
+      voicemailLength: '0:48',
+      transcript: '"Hello, this is <span class="flag" data-fid="f1">technical support from Apple Computer Services</span>. We\'ve been monitoring your computer remotely and have detected <span class="flag" data-fid="f2">multiple virus infections</span> originating from your IP address. To prevent <span class="flag" data-fid="f3">your personal data being stolen</span>, please call us back at <span class="flag" data-fid="f4">1-650-555-7700</span>. We will need to <span class="flag" data-fid="f5">install remote-access software</span> on your computer to remove the threats. There may be a <span class="flag" data-fid="f6">small fee of $299</span> for the security cleanup. Please call us within the hour."',
+      flags: [
+        { id: 'f1', category: 'fake-authority', label: '"Apple Computer Services" calling you', why: 'CRITICAL: Apple does NOT cold-call customers about computer issues. Any unsolicited "Apple/Microsoft/etc support" call = 100% scam.' },
+        { id: 'f2', category: 'fake-claim', label: '"We\'ve been monitoring your computer"', why: 'Tech companies cannot remotely "monitor your computer" without your software + consent. This is impossible without active malware already installed.' },
+        { id: 'f3', category: 'fear-appeal', label: 'Data-theft threat', why: 'Manufactured fear — designed to override critical thinking + push you to grant remote access.' },
+        { id: 'f4', category: 'callback-trap', label: 'Callback number to "support"', why: 'Routes to scam call center. Real Apple support: support.apple.com / 1-800-MY-APPLE (1-800-692-7753).' },
+        { id: 'f5', category: 'remote-access-trap', label: '"Install remote-access software"', why: 'CRITICAL: Granting remote access to anyone you don\'t know personally = handing them your computer. They install ransomware, steal credentials, drain accounts.' },
+        { id: 'f6', category: 'fee-demand', label: '$299 "security cleanup fee"', why: 'Real Apple support is free for in-warranty issues + transparent for out-of-warranty. Surprise "cleanup fees" = scam.' }
+      ],
+      correctAction: 'report',
+      decisionReveal: {
+        report: { isCorrect: true, label: 'Report + delete', why: 'Correct. Forward to security + report to FTC reportfraud.ftc.gov. Real Apple: support.apple.com.' },
+        delete: { isCorrect: false, label: 'Just delete', why: 'Misses the chance to alert security + help block the campaign.' },
+        reply: { isCorrect: false, label: 'Call back to fix', why: 'Routes to scammers. They\'ll request remote access + drain accounts.' },
+        click: { isCorrect: false, label: 'Allow remote access', why: 'CATASTROPHIC. Hands the scammer full control of your computer. Never allow remote access to unsolicited callers.' },
+        spam: { isCorrect: false, label: 'Block the number', why: 'Number rotates. Report first.' }
+      },
+      patternName: 'Tech-support remote-access scam',
+      patternBlurb: 'SY0-701 Domain 2.2. <strong>CRITICAL RULES: (1) No tech company cold-calls about computer issues. (2) Never grant remote access to unsolicited callers. (3) Never pay "cleanup fees" by phone.</strong>'
+    },
+    // 22) Police "warrant" vishing
+    {
+      id: 'police-warrant-vish',
+      title: '"Police" outstanding warrant scam',
+      vector: 'voice',
+      difficulty: 2,
+      unlockAfter: [],
+      category: 'law-enforcement-impersonation',
+      summary: 'Caller claims to be local police with an outstanding warrant — demands immediate payment to "clear" it.',
+      callerId: '+1 (415) 555-0100',
+      time: 'Today · 1:18 PM',
+      voicemailLength: '0:32',
+      transcript: '"This is <span class="flag" data-fid="f1">Sergeant Thompson with the San Francisco Police Department</span>. We have an <span class="flag" data-fid="f2">outstanding warrant for your arrest</span> for failure to appear in court regarding jury duty notification. To clear this matter and avoid <span class="flag" data-fid="f3">immediate arrest</span>, please call us back at <span class="flag" data-fid="f4">1-415-555-0100</span>. The fine to clear the warrant is <span class="flag" data-fid="f5">$1,247 and must be paid via Apple gift cards or Bitcoin</span>. Failure to comply will result in officers being dispatched to your residence within 2 hours."',
+      flags: [
+        { id: 'f1', category: 'fake-authority', label: '"Sergeant from SFPD" calling you', why: 'Real police do NOT call about outstanding warrants. Real warrants are served in person by uniformed officers — not via phone with payment demands.' },
+        { id: 'f2', category: 'impossible-action', label: '"Outstanding arrest warrant"', why: 'CRITICAL: Police never call to inform you of warrants and offer to "clear" them via payment. Real warrants are served in person.' },
+        { id: 'f3', category: 'arrest-threat', label: 'Immediate arrest threat', why: 'Threats of imminent arrest in 2 hours = pure social engineering. Real police don\'t telegraph arrests.' },
+        { id: 'f4', category: 'callback-trap', label: 'Callback number to "clear"', why: 'Routes to scam call center. Real police are reached via the non-emergency line of your local department, looked up on the official .gov website.' },
+        { id: 'f5', category: 'gift-cards-payment', label: 'Payment in gift cards or Bitcoin', why: 'CRITICAL: NO law enforcement agency accepts payment in gift cards or Bitcoin for any reason. Any demand for these = 100% scam.' }
+      ],
+      correctAction: 'report',
+      decisionReveal: {
+        report: { isCorrect: true, label: 'Report to FTC + local police non-emergency line', why: 'Correct. Report to reportfraud.ftc.gov + your local police via the non-emergency line (looked up on the official department website).' },
+        delete: { isCorrect: false, label: 'Just delete', why: 'Doesn\'t help others. Report so the FTC can track + your local police can warn citizens.' },
+        reply: { isCorrect: false, label: 'Call back to "clear" the warrant', why: 'Routes to scammers. They\'ll demand payment via gift cards + escalate threats.' },
+        click: { isCorrect: false, label: 'Pay in gift cards', why: 'Hands the scammer money — unrecoverable. Never pay with gift cards for any official-looking demand.' },
+        spam: { isCorrect: false, label: 'Block the number', why: 'Number rotates. Report first.' }
+      },
+      patternName: 'Police-impersonation vishing (warrant scam)',
+      patternBlurb: 'SY0-701 Domain 2.2. <strong>CRITICAL: Police never call about warrants — they serve them in person. NO law enforcement accepts gift cards or Bitcoin.</strong> Any phone demand for these = 100% scam.'
+    },
+    // ──────────────────────────────────────────────────────────────────
+    // ════════════════════════ QUISHING (v4.98.2) ════════════════════
+    // 5 QR phish · vector: 'qr' · QR-image + decoded URL preview UI
+    // ──────────────────────────────────────────────────────────────────
+    // 23) Parking meter QR scam — canonical (mockup state 6)
+    {
+      id: 'parking-meter-qr',
+      title: 'Parking meter QR sticker scam',
+      vector: 'qr',
+      difficulty: 2,
+      unlockAfter: [],
+      category: 'physical-overlay',
+      summary: 'QR sticker pasted over the parking meter\'s official one. Decoded URL points to credential-harvest mimicking the city\'s parking app.',
+      context: 'You\'ve parked downtown at a city meter. The QR sticker on the meter looks slightly raised — possibly pasted over an existing one. You scan it.',
+      decodedUrl: 'https://park-now-pay.app/meter?id=4271&p=Q3a82F',
+      realUrl: 'parkdc.dc.gov',
+      domainAge: '4 days (registered 4 days ago)',
+      flags: [
+        { id: 'f1', category: 'physical-overlay', label: 'Sticker pasted over original (slightly raised)', why: 'CRITICAL: Physical attack pattern. Scammers print fake QR stickers + paste them over real meter QRs. Always check whether the sticker looks tampered.' },
+        { id: 'f2', category: 'lookalike-domain', label: 'Lookalike domain (park-now-pay.app)', why: 'Real city parking app: parkdc.dc.gov (or your specific city .gov domain). "Park-now-pay.app" is a typosquat designed to look legitimate.' },
+        { id: 'f3', category: 'recent-registration', label: 'Domain registered 4 days ago', why: 'Public WHOIS shows the domain age. Real city services have decades-old domains. Recent registration (< 30 days) = phish red flag.' },
+        { id: 'f4', category: 'unusual-tld', label: 'Unusual TLD (.app instead of .gov)', why: 'Real city services use .gov TLD. Other TLDs (.app, .com, .io) for "official" services = scam.' },
+        { id: 'f5', category: 'qr-only-payment', label: 'QR-only payment when official app + meter buttons exist', why: 'Real city meters accept payment via the official app (typically downloaded from App Store) OR coin/card via meter buttons. QR-only payment flow = scam.' }
+      ],
+      correctAction: 'report',
+      decisionReveal: {
+        report: { isCorrect: true, label: 'Report + use official meter buttons or app', why: 'Correct. Report sticker to city via 311 or parking enforcement. Pay via the official app (downloaded from App Store) or via the meter buttons.' },
+        delete: { isCorrect: false, label: 'Just walk away', why: 'Misses the chance to alert city + help next driver. Report to 311.' },
+        reply: { isCorrect: false, label: 'Pay via the QR link anyway', why: 'Routes to credential-harvest mimicking your city\'s parking app. May install malware on your phone too.' },
+        click: { isCorrect: false, label: 'Scan + ignore the URL', why: 'Even loading the URL may install drive-by malware. Don\'t scan suspicious QRs.' },
+        spam: { isCorrect: false, label: 'Block the domain', why: 'Doesn\'t help — the next driver will hit the same sticker. Report to city.' }
+      },
+      patternName: 'Quishing (physical-overlay parking scam)',
+      patternBlurb: 'SY0-701 Domain 2.2. Quishing exploits trust in QR codes + lack of URL preview before scan. Defense: <strong>(1) Check stickers for tampering. (2) Use official city apps from App Store. (3) Verify decoded URL before tapping. (4) Real city services use .gov TLD.</strong>'
+    },
+    // 24) MFA-update QR poster
+    {
+      id: 'mfa-update-qr',
+      title: 'Corporate-themed "MFA update" QR poster',
+      vector: 'qr',
+      difficulty: 3,
+      unlockAfter: ['parking-meter-qr'],
+      category: 'corporate-impersonation',
+      summary: 'Print-out poster looking like internal IT notice asking employees to scan QR for "MFA update". Lookalike-domain credential harvest.',
+      context: 'A printed flier appeared in the breakroom: "IT NOTICE — MFA update required by Friday. Scan QR to enrol your new device." It looks corporate-internal but you don\'t recognize the formatting.',
+      decodedUrl: 'https://mfa-corp-update.io/?u={username}',
+      realUrl: 'helpdesk.corp.com (your real internal IT portal)',
+      domainAge: '14 days (registered 2 weeks ago)',
+      flags: [
+        { id: 'f1', category: 'physical-corporate-impersonation', label: '"IT Notice" print-out in breakroom', why: 'Real IT communications come via email + intranet announcements. A printed flier asking everyone to scan a QR = mass-targeting attack.' },
+        { id: 'f2', category: 'lookalike-domain', label: 'Lookalike domain (mfa-corp-update.io)', why: 'Real internal IT lives on corp.com / helpdesk.corp.com. External domains for "internal" services = phish.' },
+        { id: 'f3', category: 'recent-registration', label: 'Domain registered 14 days ago', why: 'Real corp portals have permanent infrastructure. Recent registration (< 30 days) = phish red flag.' },
+        { id: 'f4', category: 'urgency', label: '"By Friday" deadline', why: 'Real corp IT changes give weeks of notice. Tight deadlines = panic engineering.' },
+        { id: 'f5', category: 'unusual-tld', label: 'Unusual TLD (.io for internal corp)', why: 'Real corp services use the company\'s domain (.com), not generic TLDs.' },
+        { id: 'f6', category: 'unverified-source', label: 'No mentioned IT contact / ticket reference', why: 'Real IT notices include the contact (ticket portal, helpdesk number) for follow-up. Anonymous flier = phish.' }
+      ],
+      correctAction: 'report',
+      decisionReveal: {
+        report: { isCorrect: true, label: 'Report to security + remove flier', why: 'Correct. Report to security so they can confirm whether it\'s legitimate (it isn\'t) + check whether other employees scanned. Remove the flier so colleagues don\'t fall for it.' },
+        delete: { isCorrect: false, label: 'Ignore + walk away', why: 'Other employees will see + scan the flier. Report to security.' },
+        reply: { isCorrect: false, label: 'Scan + complete enrolment', why: 'Routes to credential-harvest mimicking your corp SSO. Hands the attacker your corp credentials.' },
+        click: { isCorrect: false, label: 'Email the address on the flier', why: 'No legit address on a phish flier. Verify via your real corp IT portal directly.' },
+        spam: { isCorrect: false, label: 'Take the flier down silently', why: 'Doesn\'t alert security or warn employees who already scanned. Report first.' }
+      },
+      patternName: 'Corporate-impersonation quishing (poster attack)',
+      patternBlurb: 'SY0-701 Domain 2.2. Physical poster + QR is a high-yield targeted attack on enterprise. Defense: real corp IT communications come via email + intranet — never anonymous fliers asking you to scan QR.'
+    },
+    // 25) Restaurant menu QR scam
+    {
+      id: 'restaurant-menu-qr',
+      title: 'Restaurant menu QR · credential harvest',
+      vector: 'qr',
+      difficulty: 1,
+      unlockAfter: [],
+      category: 'physical-overlay',
+      summary: 'QR code on restaurant table for "menu" leads to credential-harvest page with fake login.',
+      context: 'You\'re at a restaurant. The QR code on the table claims to lead to the digital menu. Scanning it loads a page that looks like the menu but asks you to "sign in for personalised recommendations."',
+      decodedUrl: 'https://table-menu-direct.com/r/menu?t=42',
+      realUrl: 'thelocaldiner.com (or no website needed)',
+      domainAge: '8 days',
+      flags: [
+        { id: 'f1', category: 'lookalike-domain', label: 'Generic third-party domain (table-menu-direct.com)', why: 'Real restaurant menus are on the restaurant\'s own domain. Generic "menu service" domains = phish.' },
+        { id: 'f2', category: 'login-trap', label: 'Asks for login for "personalised recommendations"', why: 'CRITICAL: Real restaurant menus do NOT require login. Login prompts = credential harvest.' },
+        { id: 'f3', category: 'recent-registration', label: 'Domain registered 8 days ago', why: 'Real restaurant menus have stable infrastructure. Recent registration = phish.' },
+        { id: 'f4', category: 'over-permission-request', label: 'Asks for email + password', why: 'A menu doesn\'t need your email or password. Any login form on a "menu" site = credential harvest.' }
+      ],
+      correctAction: 'report',
+      decisionReveal: {
+        report: { isCorrect: true, label: 'Report + ask waiter for paper menu', why: 'Correct. Tell the waiter — they may not know about the swap. Many restaurants have paper menus + the official menu URL on the receipt.' },
+        delete: { isCorrect: false, label: 'Just walk away from the link', why: 'Misses the chance to alert restaurant + help next customer.' },
+        reply: { isCorrect: false, label: 'Sign in to see menu', why: 'Hands the scammer your email + password. They\'ll try those credentials at every major bank/email provider (credential stuffing).' },
+        click: { isCorrect: false, label: 'Use the QR menu without login', why: 'Even if you don\'t login, the page may install malware + track you. Use the paper menu.' },
+        spam: { isCorrect: false, label: 'Block the domain', why: 'Doesn\'t help next customer. Tell the waiter.' }
+      },
+      patternName: 'Quishing (restaurant menu credential harvest)',
+      patternBlurb: 'SY0-701 Domain 2.2. CRITICAL RULE: <strong>A menu never requires login.</strong> Any QR-loaded "menu" asking for email + password = credential harvest.'
+    },
+    // 26) Charity donation QR scam
+    {
+      id: 'charity-donation-qr',
+      title: 'Emotional charity donation QR scam',
+      vector: 'qr',
+      difficulty: 2,
+      unlockAfter: [],
+      category: 'social-engineering',
+      summary: 'QR code on a charity flier with emotional fundraising language. Decoded URL captures payment details + diverts donations.',
+      context: 'A flier on a community board: "Help victims of [recent disaster]. Every dollar counts. Scan to donate!" The QR loads a page asking for credit card details to make an "instant donation."',
+      decodedUrl: 'https://disaster-relief-2024-helpnow.org/donate',
+      realUrl: 'redcross.org (the real Red Cross domain)',
+      domainAge: '2 days',
+      flags: [
+        { id: 'f1', category: 'lookalike-domain', label: 'Lookalike "disaster-relief" domain', why: 'Real charities use their established domains (redcross.org, savethechildren.org). Generic "disaster-relief-help" domains pop up after every disaster = scam.' },
+        { id: 'f2', category: 'emotional-pressure', label: 'Emotional fundraising language', why: 'Disasters trigger immediate giving impulse. Scammers exploit this. Real charities don\'t need emotional manipulation.' },
+        { id: 'f3', category: 'recent-registration', label: 'Domain registered 2 days ago', why: 'Real charities exist long before disasters. Domain registered after the disaster started = scam.' },
+        { id: 'f4', category: 'urgency', label: '"Every dollar counts" + "Scan to donate"', why: 'Real charities don\'t use QR scan-to-donate without verifiable infrastructure. Real charity donation is via the charity\'s established website + phone line.' },
+        { id: 'f5', category: 'no-charity-info', label: 'No EIN, no charity registration info', why: 'Real charities provide EIN (tax-exempt ID) for verification on Charity Navigator + GuideStar. Generic "help" with no verifiable info = scam.' }
+      ],
+      correctAction: 'report',
+      decisionReveal: {
+        report: { isCorrect: true, label: 'Report + donate via verified charity', why: 'Correct. Verify charities at CharityNavigator.org + give via the official charity domain. Report fake disaster-relief scams to FTC + Charity Navigator.' },
+        delete: { isCorrect: false, label: 'Just walk away', why: 'Doesn\'t help others. Report so legitimate charities aren\'t crowded out.' },
+        reply: { isCorrect: false, label: 'Donate via the QR', why: 'Funds go to the scammer, not victims. Real victims need real donations to verified charities.' },
+        click: { isCorrect: false, label: 'Verify the charity then donate', why: 'Verify FIRST via Charity Navigator. If the charity isn\'t there, don\'t donate.' },
+        spam: { isCorrect: false, label: 'Block the domain', why: 'Doesn\'t help — disaster scammers spin up new domains. Report + donate to verified charities.' }
+      },
+      patternName: 'Disaster-relief charity quishing',
+      patternBlurb: 'SY0-701 Domain 2.2. Disaster scams spike after every major event. Defense: <strong>verify charities at CharityNavigator.org before donating + give via the charity\'s established website only.</strong>'
+    },
+    // 27) Conference badge QR
+    {
+      id: 'conference-badge-qr',
+      title: 'Conference badge QR · credential harvest',
+      vector: 'qr',
+      difficulty: 2,
+      unlockAfter: [],
+      category: 'event-targeted',
+      summary: 'QR badge at conference networking event linked to "exclusive event app" — actually credential-harvest for LinkedIn-style accounts.',
+      context: 'You\'re at a tech conference. Someone hands you their printed business card with a QR labelled "Connect with me on EventHub — exclusive networking app." The QR loads a sign-in page asking for your LinkedIn or Twitter credentials.',
+      decodedUrl: 'https://eventhub-network-pro.com/connect',
+      realUrl: 'linkedin.com or the conference\'s official app',
+      domainAge: '21 days',
+      flags: [
+        { id: 'f1', category: 'lookalike-domain', label: 'Lookalike domain (eventhub-network-pro)', why: 'Real conference networking happens via LinkedIn or the conference\'s official app (Whova, Cvent, etc.). Generic "eventhub" domains = phish.' },
+        { id: 'f2', category: 'social-account-request', label: 'Asks for LinkedIn or Twitter credentials', why: 'CRITICAL: No legitimate networking tool asks for your existing social account passwords. They use OAuth ("Sign in with LinkedIn") which never sends your password to the third party.' },
+        { id: 'f3', category: 'recent-registration', label: 'Domain registered 21 days ago', why: 'Real event apps have permanent infrastructure. Recent registration timed to event = phish.' },
+        { id: 'f4', category: 'no-event-affiliation', label: 'No connection to actual conference branding', why: 'Real event apps display the official conference logo + branding. Generic "EventHub" with no event-specific branding = scam.' },
+        { id: 'f5', category: 'social-engineering', label: 'Social pressure (handed in person)', why: 'Being handed a card by someone friendly creates social pressure to scan. Conference scammers print cards + circulate them at networking events.' }
+      ],
+      correctAction: 'report',
+      decisionReveal: {
+        report: { isCorrect: true, label: 'Report + use LinkedIn directly', why: 'Correct. Report the person + URL to event security. Connect via LinkedIn directly using the person\'s profile (search by name).' },
+        delete: { isCorrect: false, label: 'Politely decline + walk away', why: 'Misses the chance to alert event security. The "person" may be circulating the QR to many attendees.' },
+        reply: { isCorrect: false, label: 'Sign in to "connect"', why: 'Hands the scammer your LinkedIn or Twitter credentials. They\'ll take over your account + spam your network.' },
+        click: { isCorrect: false, label: 'Skip login + browse the app', why: 'Even without login, the page may install malware. Don\'t engage.' },
+        spam: { isCorrect: false, label: 'Block the domain', why: 'Doesn\'t help other attendees. Report to event security.' }
+      },
+      patternName: 'Conference quishing (event-targeted credential harvest)',
+      patternBlurb: 'SY0-701 Domain 2.2. Event-targeted phish exploits networking goodwill. Defense: <strong>connect via LinkedIn directly + only use the event\'s official app.</strong>'
     }
   ],
   phishingLessons: [
@@ -4345,6 +4697,36 @@ window.CERT_PACKS.secplus = {
         { name: '"IRS / government" via SMS = always phish', detail: 'CRITICAL: The IRS NEVER contacts taxpayers via SMS. Any "IRS" text = 100% phish. Same for SSA, Medicare, etc.' },
         { name: 'NEVER share 2FA codes via SMS', detail: 'CRITICAL: No legitimate company will ever ask you to share or forward a 2FA code — even Microsoft, Apple, your bank. The code stays with you.' },
         { name: 'Defense: forward to 7726 (SPAM) + use official app', detail: 'In the US, forward to 7726. Verify any account/financial issue via the official app — never via SMS links.' }
+      ]
+    },
+    {
+      id: 'vishing-redflags',
+      title: 'Vishing — voice-call phish red flags',
+      summary: 'Voice phish ("vishing") bypasses email + SMS defenses entirely. Phone-specific tells.',
+      flags: [
+        { name: 'Caller-ID spoofing is trivial', detail: 'Any number can be spoofed. Even a number that matches a real org\'s headquarters means nothing. Never trust caller-ID alone.' },
+        { name: 'Microsoft / Apple / IRS / SSA NEVER call you', detail: 'CRITICAL: These orgs do not cold-call. Any unsolicited call claiming to be from these = 100% scam.' },
+        { name: 'SSN / arrest / warrant threats', detail: 'CRITICAL FACTS: <strong>SSNs are never suspended.</strong> Police don\'t call about warrants — they serve them in person. Any of these claims = scam.' },
+        { name: 'Gift card / Bitcoin / wire transfer payment', detail: 'CRITICAL: NO legitimate organization (IRS, court, charity, business) accepts payment in gift cards or Bitcoin. Demand for these = 100% scam.' },
+        { name: 'Remote-access software request', detail: 'Granting remote access to unsolicited callers = handing them your computer. They install ransomware + steal credentials.' },
+        { name: 'Press-keypad routing trap', detail: '"Press 1 to speak with..." routes you to live scammers who escalate the social engineering.' },
+        { name: 'Tight deadlines (24-48h)', detail: 'Real legal/financial processes have weeks/months of due process. Tight deadlines = panic engineering.' },
+        { name: 'Defense: hang up + call back via official channel', detail: 'Hang up. Look up the official phone number on the org\'s website. Call them directly to verify any claim.' }
+      ]
+    },
+    {
+      id: 'quishing-redflags',
+      title: 'Quishing — QR code phish red flags',
+      summary: 'QR phish ("quishing") exploits trust in QR codes + lack of URL preview. Physical + digital tells.',
+      flags: [
+        { name: 'Physical sticker over original (paper attack)', detail: 'CRITICAL: Scammers print fake QR stickers + paste them over real ones (parking meters, restaurants, posters). Always check whether stickers look tampered or raised.' },
+        { name: 'Decode URL before tapping', detail: 'Most modern camera apps (iOS Camera, most Android) preview the URL after scanning. Read it before tapping.' },
+        { name: 'Lookalike domain', detail: 'Typosquats (parkdc.dc.gov vs park-now-pay.app), unusual TLDs (.io / .app for "official" services), recent registrations. Always check the domain.' },
+        { name: 'Recent domain registration', detail: 'Public WHOIS shows domain age. Real services have decades-old domains. Recent registration (< 30 days) = phish red flag.' },
+        { name: 'Login prompt on QR-loaded "menu" or "info" page', detail: 'CRITICAL: Menus + info pages don\'t require login. Login forms on QR-loaded pages = credential harvest.' },
+        { name: 'HTTPS doesn\'t mean trustworthy', detail: 'Let\'s Encrypt issues SSL certs for free — even scammers have HTTPS. The padlock means "encrypted in transit", not "legit destination".' },
+        { name: 'Use official app instead of QR', detail: 'For city services, restaurants, charities: download the official app from the App Store rather than scanning fliers.' },
+        { name: 'Defense: verify decoded URL + use known apps', detail: 'When in doubt, type the URL or use the org\'s official app. Don\'t trust anonymous QRs in public places.' }
       ]
     }
   ]

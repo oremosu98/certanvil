@@ -1,9 +1,9 @@
 // ══════════════════════════════════════════
-// Network+ AI Quiz — app.js  v4.98.1
+// Network+ AI Quiz — app.js  v4.98.2
 // ══════════════════════════════════════════
 
 // ── CONSTANTS ──
-const APP_VERSION = '4.98.1';
+const APP_VERSION = '4.98.2';
 
 // ══════════════════════════════════════════════════════════════════════════
 // CERT PACK ARCHITECTURE (v4.86.0 Phase 1A engine refactor)
@@ -35187,11 +35187,11 @@ function phtRenderHome() {
   html += `<span class="pht-stat"><span class="pht-stat-num">${completedCount}</span><span class="pht-stat-label">Completed</span></span>`;
   html += `<span class="pht-stat"><span class="pht-stat-num">${PHT_DATA.length}</span><span class="pht-stat-label">Phish in bank</span></span>`;
   html += '</div>';
-  html += '<div class="pht-mode-notice">🎯 <strong>Practice mode</strong> · Click the red flags · Pick the right action · Reveal-on-submit. Email + Smishing live; Vishing + Quishing land in v4.98.2. AI generator in v4.98.3.</div>';
+  html += '<div class="pht-mode-notice">🎯 <strong>Practice mode</strong> · Click the red flags · Pick the right action · Reveal-on-submit. All 4 vectors live: email · smishing · vishing · quishing. AI generator + dashboard in v4.98.3.</div>';
 
-  // Vector filter — email + sms live in v4.98.1; voice/qr in v4.98.2
+  // Vector filter — all 4 vectors live in v4.98.2
   html += '<div class="pht-variant-row">';
-  const liveVectors = ['email', 'sms'];
+  const liveVectors = ['email', 'sms', 'voice', 'qr'];
   Object.entries(PHT_VECTORS).forEach(([id, v]) => {
     const isLive = liveVectors.includes(id);
     const count = PHT_DATA.filter(s => s.vector === id).length;
@@ -35254,9 +35254,13 @@ function phtStartScenario(scenarioId) {
   _phtWrongTags = [];
   _phtRevealed = false;
   _phtPickedDecision = null;
-  // v4.98.1: route to vector-specific renderer
+  // v4.98.1: route to vector-specific renderer · v4.98.2 adds voice + qr
   if (scen.vector === 'sms') {
     phtRenderSmsClient();
+  } else if (scen.vector === 'voice') {
+    phtRenderVoiceClient();
+  } else if (scen.vector === 'qr') {
+    phtRenderQrClient();
   } else {
     phtRenderEmailClient();
   }
@@ -35423,6 +35427,174 @@ function phtRenderSmsClient() {
   if (_phtRevealed) {
     html += phtRenderReveal();
   }
+  host.innerHTML = html;
+  if (host.scrollIntoView) { try { host.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (_) {} }
+}
+
+function phtRenderVoiceClient() {
+  // v4.98.2: vishing UI — voicemail player + transcript with click-the-flag.
+  const host = document.getElementById('pht-stage-host');
+  if (!host || !_phtActiveScenario) return;
+  const scen = _phtActiveScenario;
+  const totalFlags = scen.flags.length;
+  const tagged = _phtTaggedFlagIds.length;
+  const counterColor = _phtRevealed ? '#22c55e' : (tagged > 0 ? '#22c55e' : '#ef4444');
+
+  let html = '';
+  html += '<div class="pht-triage-bar">';
+  html += '<div class="pht-tb-l">';
+  html += `<div class="pht-tb-counter" style="color:${counterColor};">${tagged}/${totalFlags}</div>`;
+  html += '<div>';
+  html += `<div class="pht-tb-label">Red flags tagged · 📞 Vishing · ${escHtml(scen.title)}</div>`;
+  html += `<div class="pht-tb-mode">Practice mode${_phtWrongTags.length > 0 && !_phtRevealed ? ` · ${_phtWrongTags.length} wrong tag${_phtWrongTags.length === 1 ? '' : 's'}` : ''}</div>`;
+  html += '</div></div></div>';
+
+  html += '<div class="pht-voice-layout">';
+
+  // Voicemail card
+  html += '<div class="pht-voicemail-card">';
+  html += '<div class="pht-voicemail-head">';
+  html += '<div class="pht-voicemail-icon">📞</div>';
+  html += '<div>';
+  html += `<div class="pht-voicemail-title"><span class="flag" data-fid="caller-id" onclick="phtToggleFlag(event, 'caller-id')">${escHtml(scen.callerId || '+0 (000) 000-0000')}</span></div>`;
+  html += `<div class="pht-voicemail-meta">${escHtml(scen.time || 'Today')} · ${escHtml(scen.voicemailLength || '0:30')} voicemail</div>`;
+  html += '</div></div>';
+  // Player
+  html += '<div class="pht-voicemail-player">';
+  html += '<button class="pht-voicemail-play-btn" type="button" aria-label="Play voicemail (mock)">▶</button>';
+  html += '<div class="pht-voicemail-progress"><div class="pht-voicemail-progress-fill"></div></div>';
+  html += `<div class="pht-voicemail-time">${escHtml(scen.voicemailLength || '0:30')}</div>`;
+  html += '</div>';
+  // Transcript
+  html += '<div class="pht-voicemail-transcript-h">📝 Auto-transcript</div>';
+  let processedTranscript = scen.transcript || '';
+  processedTranscript = processedTranscript.replace(/<span class="flag" data-fid="([^"]+)"/g, (m, fid) => {
+    let cls = 'flag';
+    if (_phtTaggedFlagIds.includes(fid)) cls += ' is-tagged';
+    if (_phtRevealed && !_phtTaggedFlagIds.includes(fid)) cls += ' is-revealed-missed';
+    const onClickAttr = _phtRevealed ? '' : ` onclick="phtToggleFlag(event, '${fid}')"`;
+    return `<span class="${cls}" data-fid="${fid}"${onClickAttr}`;
+  });
+  html += `<div class="pht-voicemail-transcript" onclick="phtBodyClick(event)">${processedTranscript}</div>`;
+  html += '</div>';
+
+  // Decision + tips panel
+  html += '<div class="pht-voice-side">';
+  if (!_phtRevealed) {
+    html += '<div class="pht-sms-decision-card">';
+    html += '<div class="pht-sms-decision-h">📋 Decision</div>';
+    [
+      ['report', '🚨 Report + delete voicemail'],
+      ['delete', '🗑 Just delete'],
+      ['reply', '📞 Call back to verify'],
+      ['click', '🌐 Visit URL mentioned'],
+      ['spam', '📵 Block the number']
+    ].forEach(([act, label]) => {
+      html += `<button class="pht-decision-btn" style="text-align:left;" onclick="phtSubmitDecision('${act}')">${label}</button>`;
+    });
+    html += '</div>';
+  }
+  html += '<div class="pht-voice-tips">';
+  html += '<div class="pht-voice-tips-h">📞 Vishing-specific flags</div>';
+  html += '<ul>';
+  html += '<li>Caller-ID can be spoofed — never trust alone</li>';
+  html += '<li>Microsoft / Apple / IRS / SSA NEVER call you</li>';
+  html += '<li>SSN / arrest / warrant threats = scam</li>';
+  html += '<li><strong>Gift cards / Bitcoin = always scam</strong></li>';
+  html += '<li>Remote-access requests = catastrophic</li>';
+  html += '<li>Press-keypad routing traps you with live scammers</li>';
+  html += '<li>Defense: hang up + call back via official number</li>';
+  html += '</ul>';
+  html += '</div>';
+  html += '</div>';
+  html += '</div>';
+
+  if (_phtRevealed) html += phtRenderReveal();
+  host.innerHTML = html;
+  if (host.scrollIntoView) { try { host.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (_) {} }
+}
+
+function phtRenderQrClient() {
+  // v4.98.2: quishing UI — QR image + decoded URL + context panel.
+  const host = document.getElementById('pht-stage-host');
+  if (!host || !_phtActiveScenario) return;
+  const scen = _phtActiveScenario;
+  const totalFlags = scen.flags.length;
+  const tagged = _phtTaggedFlagIds.length;
+  const counterColor = _phtRevealed ? '#22c55e' : (tagged > 0 ? '#22c55e' : '#ef4444');
+
+  let html = '';
+  html += '<div class="pht-triage-bar">';
+  html += '<div class="pht-tb-l">';
+  html += `<div class="pht-tb-counter" style="color:${counterColor};">${tagged}/${totalFlags}</div>`;
+  html += '<div>';
+  html += `<div class="pht-tb-label">Red flags tagged · 📱 Quishing · ${escHtml(scen.title)}</div>`;
+  html += `<div class="pht-tb-mode">Practice mode${_phtWrongTags.length > 0 && !_phtRevealed ? ` · ${_phtWrongTags.length} wrong tag${_phtWrongTags.length === 1 ? '' : 's'}` : ''}</div>`;
+  html += '</div></div></div>';
+
+  html += '<div class="pht-qr-layout">';
+
+  // QR card (left side)
+  html += '<div class="pht-qr-card">';
+  html += '<div class="pht-qr-image"></div>';
+  html += '<div class="pht-qr-detail">';
+  html += `<div class="pht-qr-context">${escHtml(scen.context || '')}</div>`;
+  // Decoded URL preview (this is THE thing the user inspects + tags)
+  html += '<div class="pht-qr-mobile-preview">';
+  html += '<div class="pht-qr-mobile-preview-h">📱 What your phone shows after scan</div>';
+  // The decoded URL itself is a flag — wrap in flag span
+  html += `<div class="pht-qr-mobile-url"><span class="flag" data-fid="decoded-url" onclick="phtToggleFlag(event, 'decoded-url')">${escHtml(scen.decodedUrl || '')}</span></div>`;
+  if (scen.realUrl) {
+    html += `<div class="pht-qr-real-url">⚠️ Real ${escHtml(scen.title.split(' ')[0]).toLowerCase()} domain: <code>${escHtml(scen.realUrl)}</code>`;
+    if (scen.domainAge) html += ` · this domain registered <span class="flag" data-fid="domain-age" onclick="phtToggleFlag(event, 'domain-age')">${escHtml(scen.domainAge)}</span>`;
+    html += '</div>';
+  }
+  html += '</div>';
+  // List view of flags as clickable items (since there's no body text to click)
+  html += '<div class="pht-qr-flag-list">';
+  html += '<div class="pht-qr-flag-list-h">🚩 Tag the red flags about this QR</div>';
+  scen.flags.forEach(f => {
+    if (f.id === 'decoded-url' || f.id === 'domain-age') return;  // already rendered inline
+    let cls = 'pht-qr-flag-tag';
+    if (_phtTaggedFlagIds.includes(f.id)) cls += ' is-tagged';
+    if (_phtRevealed && !_phtTaggedFlagIds.includes(f.id)) cls += ' is-revealed-missed';
+    const onClickAttr = _phtRevealed ? '' : ` onclick="phtToggleFlag(event, '${f.id}')"`;
+    html += `<div class="${cls}"${onClickAttr}>${escHtml(f.label)}</div>`;
+  });
+  html += '</div>';
+  html += '</div></div>';
+
+  // Decision + tips panel
+  html += '<div class="pht-qr-side">';
+  if (!_phtRevealed) {
+    html += '<div class="pht-sms-decision-card">';
+    html += '<div class="pht-sms-decision-h">📋 Decision</div>';
+    [
+      ['report', '🚨 Report + use official channel'],
+      ['delete', '🗑 Walk away / ignore'],
+      ['reply', '🔗 Use the QR anyway'],
+      ['click', '🌐 Verify domain first then click'],
+      ['spam', '📵 Block the domain']
+    ].forEach(([act, label]) => {
+      html += `<button class="pht-decision-btn" style="text-align:left;" onclick="phtSubmitDecision('${act}')">${label}</button>`;
+    });
+    html += '</div>';
+  }
+  html += '<div class="pht-qr-tips">';
+  html += '<div class="pht-qr-tips-h">📱 Quishing-specific flags</div>';
+  html += '<ul>';
+  html += '<li>Sticker-over-original physical attack pattern</li>';
+  html += '<li>Lookalike domain / unusual TLD (.app vs .gov)</li>';
+  html += '<li>Recent domain registration (&lt; 30 days)</li>';
+  html += '<li>HTTPS doesn\'t mean trustworthy</li>';
+  html += '<li><strong>Login on a "menu" page = credential harvest</strong></li>';
+  html += '<li>Use official app instead of QR when in doubt</li>';
+  html += '</ul>';
+  html += '</div>';
+  html += '</div>';
+  html += '</div>';
+
+  if (_phtRevealed) html += phtRenderReveal();
   host.innerHTML = html;
   if (host.scrollIntoView) { try { host.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (_) {} }
 }

@@ -301,7 +301,7 @@ test('Validation in runSessionStep', js.includes('aiValidateQuestions(apiKey, qu
 
 // ── Analytics v2 (v4.5) ──
 console.log('\n\x1b[1m── ANALYTICS v2 (v4.5) ──\x1b[0m');
-test('APP_VERSION is 4.98.1', js.includes("const APP_VERSION = '4.98.1"));
+test('APP_VERSION is 4.98.2', js.includes("const APP_VERSION = '4.98.2"));
 test('getDailyGoal function', js.includes('function getDailyGoal('));
 test('renderDailyGoal function', js.includes('function renderDailyGoal('));
 test('editDailyGoal function', js.includes('function editDailyGoal('));
@@ -315,7 +315,7 @@ test('CSS: .topic-domain-group', css.includes('.topic-domain-group'));
 test('CSS: .daily-goal-card', css.includes('.daily-goal-card'));
 test('CSS: .advanced-section', css.includes('.advanced-section'));
 test('CSS: .hero-stats-strip', css.includes('.hero-stats-strip'));
-test('SW cache bumped to v4.98.1', sw.includes('netplus-v4.98.1'));
+test('SW cache bumped to v4.98.2', sw.includes('netplus-v4.98.2'));
 test('Family Drill: STORAGE.PORT_FAMILY_BEST', js.includes("PORT_FAMILY_BEST:"));
 test('Family Drill: ptMode handles family', js.includes("ptMode === 'family'"));
 test('Family Drill: HTML mode button', html.includes('id="pt-mode-family"'));
@@ -17149,12 +17149,12 @@ test('v4.98.0 PHT: secplus.js declares phishingVectors (4 vectors)',
   certSecplus.includes('phishingVectors:') &&
   /'email'/.test(certSecplus) && /'sms'/.test(certSecplus) &&
   /'voice'/.test(certSecplus) && /'qr'/.test(certSecplus));
-test('v4.98.1 PHT: 16 phish total (10 email + 6 SMS) at v4.98.1',
+test('v4.98.2 PHT: 27 phish total (10 email + 6 SMS + 6 voice + 5 QR) at v4.98.2',
   (() => {
     const m = certSecplus.match(/phishingScenarios:\s*\[([\s\S]+?)phishingLessons:/);
     if (!m) return false;
     const ids = m[1].match(/^      id: '[a-z][a-z0-9-]+',/gm) || [];
-    return ids.length === 16;
+    return ids.length === 27;
   })());
 test('v4.98.0 PHT: 6 phish IDs (cfo-bec / ms-password / vendor-invoice / it-mfa / bank-fraud / ceo-gift-card)',
   /id:\s*'cfo-bec-wire-fraud'/.test(certSecplus) &&
@@ -17257,17 +17257,12 @@ test('v4.98.1 PHT: SMS phish use vector "sms"',
   })());
 test('v4.98.1 PHT: smishing lesson card added',
   /id:\s*'smishing-redflags'/.test(certSecplus));
-test('v4.98.1 PHT: 5 lesson cards now (was 4)',
+test('v4.98.2 PHT: 7 lesson cards now (was 4 → 5 → 7; v4.98.2 added vishing + quishing)',
   (() => {
     const m = certSecplus.match(/phishingLessons:\s*\[([\s\S]+)$/);
     if (!m) return false;
-    const ids = m[1].match(/^    \{\s*\n?\s*id:\s*'[a-z-]+'/gm) || [];
-    // Fallback simpler: count lesson 'id:' entries with 4-space indent
-    if (ids.length === 0) {
-      const ids2 = m[1].match(/^      id:\s*'[a-z-]+'/gm) || [];
-      return ids2.length === 5;
-    }
-    return ids.length === 5;
+    const ids = m[1].match(/^      id:\s*'[a-z-]+'/gm) || [];
+    return ids.length === 7;
   })());
 test('v4.98.1 PHT: phtRenderSmsClient function exists',
   /function phtRenderSmsClient\(/.test(js));
@@ -17276,7 +17271,8 @@ test('v4.98.1 PHT: phtStartScenario routes to SMS renderer when vector === sms',
 test('v4.98.1 PHT: SMS renderer uses phone-frame UI',
   /function phtRenderSmsClient[\s\S]{0,3000}pht-phone-frame[\s\S]{0,500}pht-phone-screen/.test(js));
 test('v4.98.1 PHT: home screen marks email + sms as live (not soon)',
-  /const liveVectors\s*=\s*\['email',\s*'sms'\]/.test(js));
+  // v4.98.2 expanded liveVectors to all 4 — accept either shape
+  /const liveVectors\s*=\s*\['email',\s*'sms'(?:,|])/.test(js));
 test('v4.98.1 PHT: ms-2fa-smish has 2FA-share critical warning in patternBlurb',
   /id:\s*'ms-2fa-smish'[\s\S]{0,4000}NEVER share 2FA codes/.test(certSecplus));
 test('v4.98.1 PHT: irs-refund-smish notes IRS never SMSes',
@@ -17308,6 +17304,87 @@ test('v4.98.1 PHT: total flags ≥ 80 across 16 phish',
     const flags = m[1].match(/\{ id:\s*'f\d+'/g) || [];
     return flags.length >= 80;
   })());
+
+// ============================================================================
+// v4.98.2 — PHT Batch 3/4: vishing + quishing variants
+// ============================================================================
+test('v4.98.2 PHT: 6 voice phish (vishing variant)',
+  (() => {
+    const m = certSecplus.match(/phishingScenarios:\s*\[([\s\S]+?)phishingLessons:/);
+    if (!m) return false;
+    const voiceCount = (m[1].match(/^      vector:\s*'voice',/gm) || []).length;
+    return voiceCount === 6;
+  })());
+test('v4.98.2 PHT: 5 QR phish (quishing variant)',
+  (() => {
+    const m = certSecplus.match(/phishingScenarios:\s*\[([\s\S]+?)phishingLessons:/);
+    if (!m) return false;
+    const qrCount = (m[1].match(/^      vector:\s*'qr',/gm) || []).length;
+    return qrCount === 5;
+  })());
+test('v4.98.2 PHT: voice phish IDs (ms-tech, irs-back-tax, bank-fraud-verify, ssn-suspension, tech-support-remote, police-warrant)',
+  /id:\s*'ms-tech-support-vish'/.test(certSecplus) &&
+  /id:\s*'irs-back-tax-vish'/.test(certSecplus) &&
+  /id:\s*'bank-fraud-verify-vish'/.test(certSecplus) &&
+  /id:\s*'ssn-suspension-vish'/.test(certSecplus) &&
+  /id:\s*'tech-support-remote-vish'/.test(certSecplus) &&
+  /id:\s*'police-warrant-vish'/.test(certSecplus));
+test('v4.98.2 PHT: QR phish IDs (parking-meter, mfa-update-poster, restaurant-menu, charity-donation, conference-badge)',
+  /id:\s*'parking-meter-qr'/.test(certSecplus) &&
+  /id:\s*'mfa-update-qr'/.test(certSecplus) &&
+  /id:\s*'restaurant-menu-qr'/.test(certSecplus) &&
+  /id:\s*'charity-donation-qr'/.test(certSecplus) &&
+  /id:\s*'conference-badge-qr'/.test(certSecplus));
+test('v4.98.2 PHT: 7 lesson cards now (was 5; v4.98.2 added vishing + quishing)',
+  /id:\s*'vishing-redflags'/.test(certSecplus) &&
+  /id:\s*'quishing-redflags'/.test(certSecplus));
+test('v4.98.2 PHT: phtRenderVoiceClient function exists',
+  /function phtRenderVoiceClient\(/.test(js));
+test('v4.98.2 PHT: phtRenderQrClient function exists',
+  /function phtRenderQrClient\(/.test(js));
+test('v4.98.2 PHT: phtStartScenario routes to voice + qr renderers',
+  /function phtStartScenario[\s\S]{0,1500}vector === 'voice'[\s\S]{0,200}phtRenderVoiceClient[\s\S]{0,500}vector === 'qr'[\s\S]{0,200}phtRenderQrClient/.test(js));
+test('v4.98.2 PHT: all 4 vectors live in liveVectors array',
+  /const liveVectors\s*=\s*\['email',\s*'sms',\s*'voice',\s*'qr'\]/.test(js));
+test('v4.98.2 PHT: vishing UI uses voicemail player',
+  /function phtRenderVoiceClient/.test(js) &&
+  /function phtRenderVoiceClient[\s\S]{0,5000}pht-voicemail-player/.test(js) &&
+  /function phtRenderVoiceClient[\s\S]{0,5000}pht-voicemail-transcript/.test(js));
+test('v4.98.2 PHT: quishing UI shows decoded URL preview',
+  /function phtRenderQrClient[\s\S]{0,3000}pht-qr-mobile-preview[\s\S]{0,200}pht-qr-mobile-url/.test(js));
+test('v4.98.2 PHT: ms-tech-support-vish patternBlurb has CRITICAL RULE about Microsoft never calling',
+  /id:\s*'ms-tech-support-vish'[\s\S]{0,5000}Microsoft \+ Apple \+ IRS \+ Social Security NEVER call you/.test(certSecplus));
+test('v4.98.2 PHT: irs-back-tax-vish has gift-cards-as-payment trap',
+  /id:\s*'irs-back-tax-vish'[\s\S]{0,4000}gift card/.test(certSecplus));
+test('v4.98.2 PHT: ssn-suspension-vish notes SSNs are never suspended',
+  /id:\s*'ssn-suspension-vish'[\s\S]{0,5000}SSNs are never suspended/.test(certSecplus));
+test('v4.98.2 PHT: parking-meter-qr decoded URL ≠ real city domain',
+  /id:\s*'parking-meter-qr'[\s\S]{0,3000}park-now-pay\.app[\s\S]{0,500}parkdc\.dc\.gov/.test(certSecplus));
+test('v4.98.2 PHT: tech-support-remote-vish locked behind ms-tech-support-vish',
+  /id:\s*'tech-support-remote-vish'[\s\S]{0,500}unlockAfter:\s*\['ms-tech-support-vish'\]/.test(certSecplus));
+test('v4.98.2 PHT: mfa-update-qr locked behind parking-meter-qr',
+  /id:\s*'mfa-update-qr'[\s\S]{0,500}unlockAfter:\s*\['parking-meter-qr'\]/.test(certSecplus));
+test('v4.98.2 PHT: bank-fraud-verify-vish locked behind bank-fraud-smish (cross-vector progression)',
+  /id:\s*'bank-fraud-verify-vish'[\s\S]{0,500}unlockAfter:\s*\['bank-fraud-smish'\]/.test(certSecplus));
+test('v4.98.2 PHT: total flags ≥ 130 across 27 phish',
+  (() => {
+    const m = certSecplus.match(/phishingScenarios:\s*\[([\s\S]+?)phishingLessons:/);
+    if (!m) return false;
+    const flags = m[1].match(/\{ id:\s*'f\d+'/g) || [];
+    return flags.length >= 130;
+  })());
+test('v4.98.2 PHT: .pht-voicemail-player CSS',
+  /\.pht-voicemail-player\s*\{/.test(css));
+test('v4.98.2 PHT: .pht-voicemail-transcript .flag click-to-tag CSS',
+  /\.pht-voicemail-transcript \.flag/.test(css));
+test('v4.98.2 PHT: .pht-qr-card + .pht-qr-image CSS',
+  /\.pht-qr-card\s*\{/.test(css) && /\.pht-qr-image\s*\{/.test(css));
+test('v4.98.2 PHT: .pht-qr-mobile-preview decoded URL CSS',
+  /\.pht-qr-mobile-preview\s*\{/.test(css) && /\.pht-qr-mobile-url\s*\{/.test(css));
+test('v4.98.2 PHT: .pht-qr-flag-tag clickable list CSS',
+  /\.pht-qr-flag-tag\s*\{/.test(css));
+test('v4.98.2 PHT: voice + QR reduced-motion gates',
+  /@media \(prefers-reduced-motion:\s*reduce\)[\s\S]{0,3000}\.pht-voicemail-transcript \.flag/.test(css));
 
 // ── Summary ──
 console.log('\n' + '═'.repeat(50));
