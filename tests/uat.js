@@ -301,7 +301,7 @@ test('Validation in runSessionStep', js.includes('aiValidateQuestions(apiKey, qu
 
 // ── Analytics v2 (v4.5) ──
 console.log('\n\x1b[1m── ANALYTICS v2 (v4.5) ──\x1b[0m');
-test('APP_VERSION is 4.98.2', js.includes("const APP_VERSION = '4.98.2"));
+test('APP_VERSION is 4.98.3', js.includes("const APP_VERSION = '4.98.3"));
 test('getDailyGoal function', js.includes('function getDailyGoal('));
 test('renderDailyGoal function', js.includes('function renderDailyGoal('));
 test('editDailyGoal function', js.includes('function editDailyGoal('));
@@ -315,7 +315,7 @@ test('CSS: .topic-domain-group', css.includes('.topic-domain-group'));
 test('CSS: .daily-goal-card', css.includes('.daily-goal-card'));
 test('CSS: .advanced-section', css.includes('.advanced-section'));
 test('CSS: .hero-stats-strip', css.includes('.hero-stats-strip'));
-test('SW cache bumped to v4.98.2', sw.includes('netplus-v4.98.2'));
+test('SW cache bumped to v4.98.3', sw.includes('netplus-v4.98.3'));
 test('Family Drill: STORAGE.PORT_FAMILY_BEST', js.includes("PORT_FAMILY_BEST:"));
 test('Family Drill: ptMode handles family', js.includes("ptMode === 'family'"));
 test('Family Drill: HTML mode button', html.includes('id="pt-mode-family"'));
@@ -17385,6 +17385,74 @@ test('v4.98.2 PHT: .pht-qr-flag-tag clickable list CSS',
   /\.pht-qr-flag-tag\s*\{/.test(css));
 test('v4.98.2 PHT: voice + QR reduced-motion gates',
   /@media \(prefers-reduced-motion:\s*reduce\)[\s\S]{0,3000}\.pht-voicemail-transcript \.flag/.test(css));
+
+// ============================================================================
+// v4.98.3 — PHT Batch 4/4 FINAL: AI generator + 7-layer validator + dashboard
+// Issue #313 (Sec+ flagship #2) closes here.
+// ============================================================================
+test('v4.98.3 PHT: AI generator state object',
+  /let _phtAiGenState\s*=\s*\{[\s\S]{0,500}isOpen[\s\S]{0,200}vector[\s\S]{0,200}difficulty/.test(js));
+test('v4.98.3 PHT: phtOpenAiGenerator + phtCloseAiGenerator + phtGenerateScenario exist',
+  /function phtOpenAiGenerator\(/.test(js) &&
+  /function phtCloseAiGenerator\(/.test(js) &&
+  /async function phtGenerateScenario\(/.test(js));
+test('v4.98.3 PHT: phtGenerateScenario calls Anthropic API with Sonnet',
+  /async function phtGenerateScenario[\s\S]{0,3000}fetch\(CLAUDE_API_URL[\s\S]{0,1000}CLAUDE_TEACHER_MODEL/.test(js));
+test('v4.98.3 PHT: API key from STORAGE.KEY (user-provided)',
+  /async function phtGenerateScenario[\s\S]{0,500}localStorage\.getItem\(STORAGE\.KEY\)/.test(js));
+test('v4.98.3 PHT: _phtBuildAiGenPrompt with vector-aware schema',
+  /function _phtBuildAiGenPrompt[\s\S]{0,5000}vector === 'email'[\s\S]{0,800}vector === 'sms'[\s\S]{0,800}vector === 'voice'[\s\S]{0,800}vector === 'qr'/.test(js));
+test('v4.98.3 PHT: 7-layer validator function exists',
+  /function _phtValidateAiScenario\(/.test(js));
+test('v4.98.3 PHT: validator includes all 7 layers',
+  (() => {
+    const fnMatch = js.match(/function _phtValidateAiScenario\([\s\S]+?\n\}/);
+    if (!fnMatch) return false;
+    const fn = fnMatch[0];
+    return /Vector validity/.test(fn) &&
+           /Action realism/.test(fn) &&
+           /No real PII/.test(fn) &&
+           /flags per phish/.test(fn) &&
+           /defense citation/.test(fn) &&
+           /5 decision actions present/.test(fn) &&
+           /Vector-format match/.test(fn);
+  })());
+test('v4.98.3 PHT: validator rejects real-registered domains',
+  /function _phtValidateAiScenario[\s\S]{0,8000}google\|microsoft\|amazon/.test(js));
+test('v4.98.3 PHT: validator vector-format check (email/sms/voice/qr)',
+  /function _phtValidateAiScenario[\s\S]{0,8000}sender[\s\S]{0,500}senderId[\s\S]{0,500}callerId[\s\S]{0,500}decodedUrl/.test(js));
+test('v4.98.3 PHT: _phtLoadGeneratedScenario gates on all-7-validator-pass',
+  /function _phtLoadGeneratedScenario[\s\S]{0,500}filter\(r => r\.status === 'pass'\)\.length === 7/.test(js));
+test('v4.98.3 PHT: persistence helpers (_phtLoadGeneratedScenarios + _phtSaveGeneratedScenario)',
+  /function _phtLoadGeneratedScenarios\(/.test(js) &&
+  /function _phtSaveGeneratedScenario\(/.test(js));
+test('v4.98.3 PHT: _phtLoadGeneratedScenario calls _phtSaveGeneratedScenario',
+  /function _phtLoadGeneratedScenario[\s\S]{0,800}_phtSaveGeneratedScenario\(scen\)/.test(js));
+test('v4.98.3 PHT: hydration IIFE pushes saved phish into PHT_DATA on boot',
+  /_phtHydrateAiGenScenarios[\s\S]{0,500}_phtLoadGeneratedScenarios\(\)[\s\S]{0,500}PHT_DATA\.push/.test(js));
+test('v4.98.3 PHT: phtRenderHome shows live AI gen CTA (replaces v4.98.0 stub)',
+  /function phtRenderHome[\s\S]{0,8000}pht-aigen-stub is-live[\s\S]{0,300}phtOpenAiGenerator\(\)/.test(js));
+test('v4.98.3 PHT: phtRenderDashboard rewritten with prescriptive callouts',
+  /function phtRenderDashboard[\s\S]{0,9000}pht-dash-callout/.test(js));
+test('v4.98.3 PHT: dashboard includes per-vector mastery aggregation',
+  /function phtRenderDashboard[\s\S]{0,9000}vectorAcc/.test(js));
+test('v4.98.3 PHT: dashboard hero stats',
+  /function phtRenderDashboard[\s\S]{0,9000}pht-dash-stat-pill/.test(js));
+test('v4.98.3 PHT: .pht-aigen-modal CSS (modal + backdrop)',
+  /\.pht-aigen-modal\s*\{/.test(css) && /\.pht-aigen-backdrop\s*\{/.test(css));
+test('v4.98.3 PHT: .pht-aigen-validator-shell CSS',
+  /\.pht-aigen-validator-shell\s*\{/.test(css));
+test('v4.98.3 PHT: .pht-aigen-check-icon states (pass/warn/fail)',
+  /\.pht-aigen-check-icon\.is-warn/.test(css) &&
+  /\.pht-aigen-check-icon\.is-fail/.test(css));
+test('v4.98.3 PHT: .pht-aigen-output success card + load button',
+  /\.pht-aigen-output\s*\{/.test(css) && /\.pht-aigen-load-btn\s*\{/.test(css));
+test('v4.98.3 PHT: .pht-dash-grid 2-column layout CSS',
+  /\.pht-dash-grid\s*\{[\s\S]{0,200}grid-template-columns:\s*1fr 1fr/.test(css));
+test('v4.98.3 PHT: .pht-dash-vec-fill bar transition CSS',
+  /\.pht-dash-vec-fill\s*\{[\s\S]{0,200}transition:\s*width/.test(css));
+test('v4.98.3 PHT: .pht-dash-callout prescriptive UI CSS',
+  /\.pht-dash-callout\s*\{/.test(css) && /\.pht-dash-callout-cta/.test(css));
 
 // ── Summary ──
 console.log('\n' + '═'.repeat(50));
