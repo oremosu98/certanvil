@@ -1,9 +1,9 @@
 // ══════════════════════════════════════════
-// Network+ AI Quiz — app.js  v4.97.0
+// Network+ AI Quiz — app.js  v4.97.1
 // ══════════════════════════════════════════
 
 // ── CONSTANTS ──
-const APP_VERSION = '4.97.0';
+const APP_VERSION = '4.97.1';
 
 // ══════════════════════════════════════════════════════════════════════════
 // CERT PACK ARCHITECTURE (v4.86.0 Phase 1A engine refactor)
@@ -32335,6 +32335,11 @@ const IRW_PHASES = _USE_SECPLUS_IRW && Array.isArray(CERT_PACK.incidentResponseP
   ? CERT_PACK.incidentResponsePhases : [];
 const IRW_VECTORS = _USE_SECPLUS_IRW && CERT_PACK.incidentResponseVectors
   ? CERT_PACK.incidentResponseVectors : {};
+// v4.97.1: lesson cheatsheets (6 PICERL phase cards) + pressure-mode budgets
+const IRW_LESSONS = _USE_SECPLUS_IRW && Array.isArray(CERT_PACK.incidentResponseLessons)
+  ? CERT_PACK.incidentResponseLessons : [];
+// Pressure-mode time budgets per scenario difficulty (seconds).
+const IRW_PRESSURE_BUDGETS = { 1: 1800, 2: 1500, 3: 2100 };
 
 // ── Acronym Blitz state ──
 let abQ = null, abIdx = 0, abCorrect = 0, abTotal = 0, abStreak = 0;
@@ -34037,6 +34042,13 @@ let _irwActivePhaseIdx = 0;
 let _irwPickedActionIds = [];
 let _irwPhaseRevealed = false;
 let _irwPhaseScores = [];
+// v4.97.1: Pressure mode + selected mode for setup
+let _irwSelectedMode = 'practice';   // 'practice' | 'pressure'
+let _irwPressureActive = false;
+let _irwPressureStartMs = 0;
+let _irwPressureBudgetMs = 0;
+let _irwPressureTimerId = null;
+let _irwPressureExpired = false;
 
 function irwInitMastery() {
   try {
@@ -34104,6 +34116,8 @@ function irwRenderHome() {
   _irwActiveScenarioId = null; _irwActiveScenario = null;
   _irwActivePhaseIdx = 0; _irwPickedActionIds = [];
   _irwPhaseRevealed = false; _irwPhaseScores = [];
+  // v4.97.1: stop any running pressure timer (e.g. user tabbed back to catalog)
+  _irwStopPressureTimer();
 
   const m = irwInitMastery();
   const totalScenarios = IRW_DATA.length;
@@ -34116,7 +34130,26 @@ function irwRenderHome() {
   html += `<span class="irw-stat"><span class="irw-stat-num">${completedCount}</span><span class="irw-stat-label">Completed</span></span>`;
   html += `<span class="irw-stat"><span class="irw-stat-num">${IRW_DATA.length}</span><span class="irw-stat-label">Scenarios</span></span>`;
   html += '</div>';
-  html += '<div class="irw-mode-notice">🎯 <strong>Practice mode</strong> · No timer · Reveal-on-mistake. Pressure mode + AI generator land in v4.97.1+.</div>';
+  // v4.97.1: mode picker (Practice / Pressure). AI gen still v4.97.2.
+  html += '<div class="irw-mode-picker">';
+  html += `<button class="irw-mode-btn ${_irwSelectedMode === 'practice' ? 'is-active' : ''}" onclick="irwSetMode('practice')" type="button">`;
+  html += '<span class="irw-mode-btn-icon">🎯</span>';
+  html += '<span class="irw-mode-btn-label">Practice</span>';
+  html += '<span class="irw-mode-btn-sub">No timer · build mastery first</span>';
+  html += '</button>';
+  html += `<button class="irw-mode-btn ${_irwSelectedMode === 'pressure' ? 'is-active' : ''}" onclick="irwSetMode('pressure')" type="button">`;
+  html += '<span class="irw-mode-btn-icon">⏱️</span>';
+  html += '<span class="irw-mode-btn-label">Pressure</span>';
+  html += '<span class="irw-mode-btn-sub">25-35 min budget · realistic SOC feel</span>';
+  html += '</button>';
+  html += '</div>';
+  html += '<div class="irw-mode-notice">';
+  if (_irwSelectedMode === 'pressure') {
+    html += '⏱️ <strong>Pressure mode active</strong> · Live timer counts down per scenario. Going over budget penalises accuracy. AI generator + 7-layer validator land in v4.97.2.';
+  } else {
+    html += '🎯 <strong>Practice mode</strong> · No timer · Reveal-on-mistake. Switch to Pressure when you\'re ready for the SOC analyst feel.';
+  }
+  html += '</div>';
   html += '<div class="irw-scenario-grid">';
   IRW_DATA.forEach(scen => {
     const mEntry = m[scen.id] || { pips: 0, completed: 0, bestAccuracy: 0 };
@@ -34169,13 +34202,33 @@ function irwStartScenario(scenarioId) {
   _irwPickedActionIds = [];
   _irwPhaseRevealed = false;
   _irwPhaseScores = [];
+  // v4.97.1: kick off pressure timer if Pressure mode is selected
+  if (_irwSelectedMode === 'pressure') {
+    _irwStartPressureTimer(scen);
+  } else {
+    _irwStopPressureTimer();
+  }
   irwRenderWarRoom();
 }
 function irwRenderWarRoom() {
   const host = document.getElementById('irw-stage-host');
   if (!host || !_irwActiveScenario) return;
   const scen = _irwActiveScenario;
-  let html = '<div class="irw-warroom">';
+  let html = '';
+  // v4.97.1: pressure-mode bar above the war-room
+  if (_irwPressureActive) {
+    html += '<div id="irw-pressure-bar" class="irw-pressure-bar">';
+    html += '<div class="irw-pb-l">';
+    html += '<div class="irw-pb-pulse"></div>';
+    html += `<div><div class="irw-pb-label">⚡ PRESSURE MODE</div><div class="irw-pb-mode">${escHtml(scen.title)}</div></div>`;
+    html += '</div>';
+    html += '<div class="irw-pb-r">';
+    html += '<div class="irw-pb-time">--:--</div>';
+    html += '<div class="irw-pb-pct">100% budget</div>';
+    html += '</div>';
+    html += '</div>';
+  }
+  html += '<div class="irw-warroom">';
   // LEFT: scenario context
   html += '<div class="irw-wr-col">';
   html += '<div class="irw-wr-col-h">📋 Incident</div>';
@@ -34208,6 +34261,8 @@ function irwRenderWarRoom() {
   html += '</div>';
   html += '</div>';
   host.innerHTML = html;
+  // v4.97.1: refresh pressure bar immediately so time isn't '--:--' for a tick
+  if (_irwPressureActive) _irwUpdatePressureBar();
   if (host.scrollIntoView) { try { host.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (_) {} }
 }
 function irwRenderTimeline() {
@@ -34339,11 +34394,34 @@ function irwEndScenario() {
   const host = document.getElementById('irw-stage-host');
   if (!host) return;
   const scen = _irwActiveScenario;
-  const totalScore = _irwPhaseScores.reduce((a, s) => a + s, 0) / _irwPhaseScores.length;
+  let totalScore = _irwPhaseScores.reduce((a, s) => a + s, 0) / _irwPhaseScores.length;
+  // v4.97.1: pressure-mode over-budget penalty (5% per minute over)
+  let pressureMeta = null;
+  if (_irwPressureActive || _irwPressureExpired) {
+    const elapsedMs = Date.now() - _irwPressureStartMs;
+    const overBudgetMs = elapsedMs - _irwPressureBudgetMs;
+    if (overBudgetMs > 0) {
+      const minOver = Math.ceil(overBudgetMs / 60000);
+      const penaltyPct = Math.min(0.30, minOver * 0.05);  // cap at 30%
+      pressureMeta = { elapsedMs, overBudgetMs, penaltyPct, minOver };
+      totalScore = Math.max(0, totalScore - penaltyPct);
+    } else {
+      pressureMeta = { elapsedMs, overBudgetMs: 0, penaltyPct: 0, minOver: 0 };
+    }
+    _irwStopPressureTimer();
+  }
   irwUpdateScenarioMastery(scen.id, totalScore);
   let html = '<div class="irw-eos-card">';
   html += '<div class="irw-eos-h"><div class="irw-eos-icon">🏁</div>';
-  html += `<div><div class="irw-eos-title">${escHtml(scen.title)} — completed</div><div class="irw-eos-sub">Practice mode · ${scen.phases.length} phases</div></div></div>`;
+  const modeLabel = pressureMeta ? '⚡ Pressure mode' : '🎯 Practice mode';
+  html += `<div><div class="irw-eos-title">${escHtml(scen.title)} — completed</div><div class="irw-eos-sub">${modeLabel} · ${scen.phases.length} phases</div></div></div>`;
+  if (pressureMeta && pressureMeta.overBudgetMs > 0) {
+    html += `<div class="irw-eos-pressure-warn">⏱️ Over budget by ${pressureMeta.minOver} min · accuracy penalty −${Math.round(pressureMeta.penaltyPct * 100)}%</div>`;
+  } else if (pressureMeta) {
+    const elapsedMin = Math.floor(pressureMeta.elapsedMs / 60000);
+    const elapsedSec = Math.floor((pressureMeta.elapsedMs % 60000) / 1000);
+    html += `<div class="irw-eos-pressure-good">⏱️ Completed in ${elapsedMin}m ${elapsedSec.toString().padStart(2,'0')}s · within budget</div>`;
+  }
   html += '<div class="irw-eos-stats">';
   html += `<div class="irw-eos-stat"><div class="irw-eos-stat-label">Overall accuracy</div><div class="irw-eos-stat-num is-good">${Math.round(totalScore * 100)}%</div></div>`;
   html += `<div class="irw-eos-stat"><div class="irw-eos-stat-label">Phases</div><div class="irw-eos-stat-num">${scen.phases.length}/${scen.phases.length}</div></div>`;
@@ -34369,18 +34447,84 @@ function irwEndScenario() {
 function irwRenderLessons() {
   const host = document.getElementById('irw-lessons-content');
   if (!host) return;
-  let html = '<div class="irw-lessons-stub"><div class="irw-lessons-stub-icon">📚</div>';
-  html += '<div class="irw-lessons-stub-title">Phase cheatsheets ship in v4.97.1</div>';
-  html += '<div class="irw-lessons-stub-sub">6 PICERL phase cheatsheets (Preparation, Identification, Containment, Eradication, Recovery, Lessons Learned) with goals + canonical actions + SY0-701 trap callouts.</div></div>';
-  html += '<div class="irw-phases-preview">';
-  IRW_PHASES.forEach(p => {
-    html += `<div class="irw-phase-preview-card" style="border-top-color:${p.color};">`;
-    html += `<div class="irw-phase-preview-num" style="color:${p.color};">P${p.num}</div>`;
-    html += `<div class="irw-phase-preview-name">${escHtml(p.name)}</div>`;
-    html += `<div class="irw-phase-preview-goal">${escHtml(p.goal)}</div></div>`;
+  // v4.97.1: full PICERL lesson cards from IRW_LESSONS data array.
+  let html = '<div class="irw-lessons-intro">';
+  html += '📚 <strong>PICERL phase cheatsheets.</strong> Each card has the phase goal, canonical actions, and the canonical SY0-701 traps for that phase. Print-friendly + searchable.';
+  html += '</div>';
+  html += '<div class="irw-lessons-grid">';
+  IRW_LESSONS.forEach((lesson, idx) => {
+    const phaseDef = IRW_PHASES.find(p => p.id === lesson.phase) || { num: idx + 1, color: '#7c6ff7', name: lesson.title };
+    html += `<div class="irw-lesson-card" style="border-top-color:${phaseDef.color};" data-phase="${escAttr(lesson.phase)}">`;
+    html += `<div class="irw-lesson-h">`;
+    html += `<div class="irw-lesson-num" style="color:${phaseDef.color};">P${phaseDef.num}</div>`;
+    html += `<div class="irw-lesson-name">${escHtml(lesson.title)}</div>`;
+    html += `</div>`;
+    html += `<div class="irw-lesson-goal">${escHtml(lesson.goal)}</div>`;
+    html += '<ul class="irw-lesson-bullets">';
+    lesson.actions.forEach(a => {
+      html += `<li>${a}</li>`;  // intentional raw HTML — actions contain <strong> markup
+    });
+    html += '</ul>';
+    if (lesson.traps && lesson.traps.length > 0) {
+      html += '<div class="irw-lesson-traps">';
+      html += '<div class="irw-lesson-traps-h">⚠ Common traps</div>';
+      lesson.traps.forEach(t => {
+        html += `<div class="irw-lesson-trap">${t}</div>`;
+      });
+      html += '</div>';
+    }
+    html += '</div>';
   });
   html += '</div>';
   host.innerHTML = html;
+}
+
+// ── Pressure mode helpers (v4.97.1) ──
+function _irwFormatPressureTime(remainingMs) {
+  if (remainingMs < 0) remainingMs = 0;
+  const totalSec = Math.ceil(remainingMs / 1000);
+  const min = Math.floor(totalSec / 60);
+  const sec = totalSec % 60;
+  return min.toString().padStart(2, '0') + ':' + sec.toString().padStart(2, '0');
+}
+function _irwStartPressureTimer(scenario) {
+  _irwStopPressureTimer();
+  const budgetSec = IRW_PRESSURE_BUDGETS[scenario.difficulty] || 1500;
+  _irwPressureBudgetMs = budgetSec * 1000;
+  _irwPressureStartMs = Date.now();
+  _irwPressureExpired = false;
+  _irwPressureActive = true;
+  _irwPressureTimerId = setInterval(_irwUpdatePressureBar, 1000);
+  _irwUpdatePressureBar();
+}
+function _irwStopPressureTimer() {
+  if (_irwPressureTimerId) { clearInterval(_irwPressureTimerId); _irwPressureTimerId = null; }
+  _irwPressureActive = false;
+}
+function _irwUpdatePressureBar() {
+  const bar = document.getElementById('irw-pressure-bar');
+  if (!bar || !_irwPressureActive) return;
+  const elapsed = Date.now() - _irwPressureStartMs;
+  const remaining = _irwPressureBudgetMs - elapsed;
+  if (remaining <= 0 && !_irwPressureExpired) {
+    _irwPressureExpired = true;
+    if (typeof showToast === 'function') showToast('⏱️ Time budget exceeded — accuracy will be penalised', 'info');
+  }
+  const timeEl = bar.querySelector('.irw-pb-time');
+  const pctEl = bar.querySelector('.irw-pb-pct');
+  if (timeEl) timeEl.textContent = remaining < 0 ? '00:00' : _irwFormatPressureTime(remaining);
+  if (pctEl) {
+    const pct = Math.max(0, Math.round((remaining / _irwPressureBudgetMs) * 100));
+    pctEl.textContent = pct + '% budget';
+  }
+  // Visual escalation: header gradient shifts toward red as time drains
+  const ratio = Math.max(0, Math.min(1, remaining / _irwPressureBudgetMs));
+  if (ratio < 0.25) bar.classList.add('is-critical');
+  else if (ratio < 0.5) bar.classList.add('is-warn');
+}
+function irwSetMode(mode) {
+  _irwSelectedMode = (mode === 'pressure') ? 'pressure' : 'practice';
+  irwRenderHome();
 }
 function irwRenderDashboard() {
   const host = document.getElementById('irw-dashboard-content');

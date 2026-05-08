@@ -301,7 +301,7 @@ test('Validation in runSessionStep', js.includes('aiValidateQuestions(apiKey, qu
 
 // ── Analytics v2 (v4.5) ──
 console.log('\n\x1b[1m── ANALYTICS v2 (v4.5) ──\x1b[0m');
-test('APP_VERSION is 4.97.0', js.includes("const APP_VERSION = '4.97.0"));
+test('APP_VERSION is 4.97.1', js.includes("const APP_VERSION = '4.97.1"));
 test('getDailyGoal function', js.includes('function getDailyGoal('));
 test('renderDailyGoal function', js.includes('function renderDailyGoal('));
 test('editDailyGoal function', js.includes('function editDailyGoal('));
@@ -315,7 +315,7 @@ test('CSS: .topic-domain-group', css.includes('.topic-domain-group'));
 test('CSS: .daily-goal-card', css.includes('.daily-goal-card'));
 test('CSS: .advanced-section', css.includes('.advanced-section'));
 test('CSS: .hero-stats-strip', css.includes('.hero-stats-strip'));
-test('SW cache bumped to v4.97.0', sw.includes('netplus-v4.97.0'));
+test('SW cache bumped to v4.97.1', sw.includes('netplus-v4.97.1'));
 test('Family Drill: STORAGE.PORT_FAMILY_BEST', js.includes("PORT_FAMILY_BEST:"));
 test('Family Drill: ptMode handles family', js.includes("ptMode === 'family'"));
 test('Family Drill: HTML mode button', html.includes('id="pt-mode-family"'));
@@ -16868,16 +16868,14 @@ test('v4.97.0 IRW: secplus.js declares incidentResponsePhases (PICERL)',
   certSecplus.includes('incidentResponsePhases:'));
 test('v4.97.0 IRW: secplus.js declares incidentResponseVectors',
   certSecplus.includes('incidentResponseVectors:'));
-test('v4.97.0 IRW: secplus.js has 5 scenarios at v1',
+test('v4.97.1 IRW: secplus.js has 10 scenarios (v4.97.1 added 5: ddos/npm/aws-key/spear/k8s)',
   (() => {
-    // incidentResponseScenarios is the LAST property of the secplus pack —
-    // match to end of file to capture every scenario.
-    const m = certSecplus.match(/incidentResponseScenarios:\s*\[([\s\S]+)$/);
+    // incidentResponseScenarios is followed by incidentResponseLessons (v4.97.1).
+    // Match scenarios block by sentinel to lessons header.
+    const m = certSecplus.match(/incidentResponseScenarios:\s*\[([\s\S]+?)INCIDENT RESPONSE LESSONS/);
     if (!m) return false;
-    // Top-level scenario ids: 6 leading spaces + `id: '<scenario-slug>'`.
-    // Action ids are inside `{ id: 'p1a1', ... }` lines (different shape).
     const scenarioIds = m[1].match(/^      id: '[a-z][a-z0-9-]+',/gm) || [];
-    return scenarioIds.length === 5;
+    return scenarioIds.length === 10;
   })());
 test('v4.97.0 IRW: 6 PICERL phases canonical order',
   /incidentResponsePhases:\s*\[[\s\S]{0,800}preparation[\s\S]{0,400}identification[\s\S]{0,400}containment[\s\S]{0,400}eradication[\s\S]{0,400}recovery[\s\S]{0,400}lessons/.test(certSecplus));
@@ -16957,6 +16955,78 @@ test('v4.97.0 IRW: ryuk-finance scenario has trapCallout (power-off canonical)',
   /id:\s*'ryuk-finance'[\s\S]{0,12000}trapCallout:\s*\{/.test(certSecplus));
 test('v4.97.0 IRW: lockbit-multihost gated behind ryuk-finance (unlockAfter)',
   /id:\s*'lockbit-multihost'[\s\S]{0,500}unlockAfter:\s*\['ryuk-finance'\]/.test(certSecplus));
+
+// ============================================================================
+// v4.97.1 — IR War Room Batch 2/4: Pressure mode + 5 scenarios + 6 lessons
+// ============================================================================
+test('v4.97.1 IRW: secplus.js declares incidentResponseLessons (6 PICERL cheatsheets)',
+  certSecplus.includes('incidentResponseLessons:'));
+test('v4.97.1 IRW: 6 lesson cards present',
+  (() => {
+    const m = certSecplus.match(/incidentResponseLessons:\s*\[([\s\S]+)$/);
+    if (!m) return false;
+    const phaseRefs = m[1].match(/^      phase:\s*'[a-z-]+'/gm) || [];
+    return phaseRefs.length === 6;
+  })());
+test('v4.97.1 IRW: lesson card structure (phase + title + goal + actions + traps)',
+  /phase:\s*'preparation'[\s\S]{0,3000}title:\s*'Preparation'[\s\S]{0,3000}goal:[\s\S]{0,500}actions:\s*\[[\s\S]{0,3000}traps:\s*\[/.test(certSecplus));
+test('v4.97.1 IRW: containment lesson references "isolate" + "power off" trap',
+  /phase:\s*'containment'[\s\S]{0,5000}power-off|phase:\s*'containment'[\s\S]{0,5000}power off/i.test(certSecplus));
+test('v4.97.1 IRW: 5 new scenarios shipped (ddos-frontend, npm-supply-chain, aws-key-leak, spear-to-ransomware, k8s-container-escape)',
+  /id:\s*'ddos-frontend'/.test(certSecplus) &&
+  /id:\s*'npm-supply-chain'/.test(certSecplus) &&
+  /id:\s*'aws-key-leak'/.test(certSecplus) &&
+  /id:\s*'spear-to-ransomware'/.test(certSecplus) &&
+  /id:\s*'k8s-container-escape'/.test(certSecplus));
+test('v4.97.1 IRW: spear-to-ransomware locked behind bec-wire-fraud',
+  /id:\s*'spear-to-ransomware'[\s\S]{0,500}unlockAfter:\s*\['bec-wire-fraud'\]/.test(certSecplus));
+test('v4.97.1 IRW: k8s-container-escape locked behind s3-pii-exposure',
+  /id:\s*'k8s-container-escape'[\s\S]{0,500}unlockAfter:\s*\['s3-pii-exposure'\]/.test(certSecplus));
+test('v4.97.1 IRW: npm-supply-chain locked behind ryuk-finance',
+  /id:\s*'npm-supply-chain'[\s\S]{0,500}unlockAfter:\s*\['ryuk-finance'\]/.test(certSecplus));
+test('v4.97.1 IRW: total actions ≥ 250 across 10 scenarios',
+  (() => {
+    const m = certSecplus.match(/incidentResponseScenarios:\s*\[([\s\S]+?)INCIDENT RESPONSE LESSONS/);
+    if (!m) return false;
+    const actions = m[1].match(/\{ id: 'p\d+a\d+'/g) || [];
+    return actions.length >= 250;
+  })());
+test('v4.97.1 IRW: IRW_LESSONS module-load constant (cert-aware)',
+  /const IRW_LESSONS\s*=\s*_USE_SECPLUS_IRW[\s\S]{0,200}incidentResponseLessons/.test(js));
+test('v4.97.1 IRW: IRW_PRESSURE_BUDGETS table (3 difficulty tiers)',
+  /const IRW_PRESSURE_BUDGETS\s*=\s*\{[\s\S]{0,200}1:\s*\d+[\s\S]{0,200}2:\s*\d+[\s\S]{0,200}3:\s*\d+/.test(js));
+test('v4.97.1 IRW: pressure-mode state variables defined',
+  /let _irwPressureActive[\s\S]{0,200}let _irwPressureStartMs[\s\S]{0,200}let _irwPressureBudgetMs[\s\S]{0,200}let _irwPressureTimerId/.test(js));
+test('v4.97.1 IRW: _irwStartPressureTimer + _irwStopPressureTimer functions exist',
+  /function _irwStartPressureTimer\(/.test(js) &&
+  /function _irwStopPressureTimer\(/.test(js));
+test('v4.97.1 IRW: _irwUpdatePressureBar updates DOM with remaining time',
+  /function _irwUpdatePressureBar\(\)\s*\{[\s\S]{0,800}\.irw-pb-time/.test(js));
+test('v4.97.1 IRW: irwSetMode toggles practice/pressure',
+  /function irwSetMode\([\s\S]{0,300}_irwSelectedMode\s*=/.test(js));
+test('v4.97.1 IRW: irwStartScenario kicks off pressure timer when pressure mode',
+  /function irwStartScenario\([\s\S]{0,800}_irwSelectedMode === 'pressure'[\s\S]{0,200}_irwStartPressureTimer/.test(js));
+test('v4.97.1 IRW: irwEndScenario applies over-budget penalty + stops timer',
+  /function irwEndScenario\([\s\S]{0,3000}penaltyPct[\s\S]{0,400}_irwStopPressureTimer/.test(js));
+test('v4.97.1 IRW: irwRenderHome shows mode-picker (Practice + Pressure)',
+  /function irwRenderHome[\s\S]{0,5000}irw-mode-picker[\s\S]{0,400}irwSetMode\('practice'\)[\s\S]{0,400}irwSetMode\('pressure'\)/.test(js));
+test('v4.97.1 IRW: irwRenderLessons renders real lesson cards (not stub)',
+  /function irwRenderLessons[\s\S]{0,500}IRW_LESSONS\.forEach/.test(js));
+test('v4.97.1 IRW: irwRenderWarRoom emits pressure bar when active',
+  /function irwRenderWarRoom[\s\S]{0,500}_irwPressureActive[\s\S]{0,500}irw-pressure-bar/.test(js));
+test('v4.97.1 IRW: .irw-pressure-bar CSS (gradient + critical state)',
+  /\.irw-pressure-bar\s*\{/.test(css) &&
+  /\.irw-pressure-bar\.is-critical/.test(css));
+test('v4.97.1 IRW: .irw-mode-picker CSS (2-button grid)',
+  /\.irw-mode-picker\s*\{[\s\S]{0,200}grid-template-columns:\s*1fr 1fr/.test(css));
+test('v4.97.1 IRW: .irw-lesson-card CSS (full lesson cards)',
+  /\.irw-lesson-card\s*\{/.test(css) &&
+  /\.irw-lesson-bullets/.test(css) &&
+  /\.irw-lesson-traps/.test(css));
+test('v4.97.1 IRW: .irw-eos-pressure-warn CSS (over-budget penalty UI)',
+  /\.irw-eos-pressure-warn/.test(css));
+test('v4.97.1 IRW: pressure-bar reduced-motion gate kills critical animation',
+  /@media \(prefers-reduced-motion:\s*reduce\)[\s\S]{0,2000}\.irw-pressure-bar/.test(css));
 
 // ── Summary ──
 console.log('\n' + '═'.repeat(50));

@@ -2121,6 +2121,590 @@ window.CERT_PACKS.secplus = {
           ]
         }
       ]
+    },
+
+    // ──────────────────────────────────────────────────────────────────
+    // 6) DDoS on web frontend — DDoS ★★ Exam (v4.97.1 Batch 2 expansion)
+    // ──────────────────────────────────────────────────────────────────
+    {
+      id: 'ddos-frontend',
+      title: 'L7 DDoS on public API — bot army at 50K rps',
+      icon: '🌐',
+      vector: 'ddos',
+      difficulty: 2,
+      unlockAfter: [],
+      summary: 'Public API getting hammered with 50K req/s from a bot army. Customers complaining. CDN backend pegged.',
+      context: 'At 13:18, monitoring alerted on 50,000 requests/second hitting the public-facing API endpoint /api/login (normal baseline: 200 rps). Origin server CPU pinned at 100%. Edge CDN cache miss rate spiked. Customers reporting timeouts on the mobile app. Source IP distribution: 15,000 unique IPs across 47 countries — classic botnet pattern. No clear bot signature in user-agent.',
+      vertical: 'B2C SaaS',
+      severity: 'SEV-2',
+      iocs: [
+        { type: 'metric', value: '50,000 rps (250× baseline)', label: 'Request volume' },
+        { type: 'endpoint', value: '/api/login', label: 'Targeted endpoint' },
+        { type: 'count', value: '15,000 unique source IPs', label: 'Distributed attack' },
+        { type: 'geo', value: '47 countries · majority residential ISP', label: 'Botnet character' }
+      ],
+      phases: [
+        {
+          stage: 'preparation', expectedCount: 3,
+          promptTitle: 'What pre-incident DDoS readiness mattered?',
+          promptStem: 'DDoS defense is mostly architecture, not response. Pick the prep that\'s saving you right now.',
+          actions: [
+            { id: 'p1a1', label: 'CDN with anycast + DDoS scrubbing in front of all public endpoints', isCorrect: true, meta: 'Preparation · architecture', why: 'CDN absorbs the attack at edge before it ever reaches origin. Without it, origin would be down already.' },
+            { id: 'p1a2', label: 'WAF deployed with managed bot-mitigation rule sets enabled', isCorrect: true, meta: 'Preparation · WAF', why: 'WAF managed-rules catch known botnet signatures + provide rate-limiting primitives.' },
+            { id: 'p1a3', label: 'Auto-scaling group on origin tier with CPU-based scale-out triggers', isCorrect: true, meta: 'Preparation · capacity', why: 'Auto-scale gives you headroom while you investigate. Without it, you\'re fighting capacity AND attacker.' },
+            { id: 'p1a4', label: 'Buy more bandwidth from ISP', isCorrect: false, meta: 'Preparation · wrong scale', why: 'Bandwidth alone doesn\'t solve L7 attacks (which target application logic, not pipe). And reactive bandwidth-buying is expensive emergency procurement.' },
+            { id: 'p1a5', label: 'Notify all customers in advance', isCorrect: false, meta: 'Preparation · wrong action', why: 'You can\'t notify customers about a future attack you don\'t know is coming. This is what monitoring + IR plans handle.' }
+          ]
+        },
+        {
+          stage: 'identification', expectedCount: 4,
+          promptTitle: 'Confirm + classify: is this a real DDoS or a flash crowd?',
+          promptStem: 'Rapid classification matters — the response differs. Distinguish DDoS from legit traffic spike.',
+          actions: [
+            { id: 'p2a1', label: 'Pull source-IP geographic + ASN distribution', isCorrect: true, meta: 'Identification · pattern', why: '15K IPs across 47 countries on residential ISPs = botnet. Flash crowds cluster geographically + ASN-wise.' },
+            { id: 'p2a2', label: 'Compare request shape vs. legitimate user behaviour (sessions, cookies, browser fingerprint)', isCorrect: true, meta: 'Identification · behavioural', why: 'Bots usually skip cookie/session establishment. Behaviour analytics surface the anomaly.' },
+            { id: 'p2a3', label: 'Check if other endpoints are also affected (scope of attack)', isCorrect: true, meta: 'Identification · scope', why: '/api/login alone vs. all endpoints tells you targeted-credential-stuffing vs. generic outage attack.' },
+            { id: 'p2a4', label: 'Open SEV-2 ticket + notify CDN provider + cyber-insurance', isCorrect: true, meta: 'Identification · escalate', why: 'CDN provider may have correlated intel from other tenants. Insurance may have business-interruption clause.' },
+            { id: 'p2a5', label: 'Email all customers about an incident', isCorrect: false, meta: 'Identification · wrong phase', why: 'Customer comms come after triage. Without scope + ETA you\'re creating panic without information.' },
+            { id: 'p2a6', label: 'Take the API offline immediately', isCorrect: false, meta: 'Containment-flavoured · drastic', why: 'Taking yourself offline = the attacker\'s goal achieved. Defend in place; only kill switch as last resort.' }
+          ]
+        },
+        {
+          stage: 'containment', expectedCount: 4,
+          promptTitle: 'Defend in place — keep legit users on, block the bots.',
+          promptStem: 'Surgical containment. Don\'t kill legitimate users in the panic.',
+          trapCallout: {
+            title: 'The "block by IP" trap',
+            body: 'Manual IP-block lists for botnets that span 15K IPs is a losing game — you can\'t block fast enough, and the IP set rotates. Modern DDoS defense uses behavioural rules + rate-limiting + bot-detection (TLS fingerprinting, browser challenges). Pattern-based defense scales; per-IP defense doesn\'t.'
+          },
+          actions: [
+            { id: 'p3a1', label: 'Enable WAF rate-limiting on /api/login at 5 req/min/IP', isCorrect: true, meta: 'Containment · rate-limit', why: 'Botnet IPs typically each only have 1-3 hits across the campaign. Rate-limit catches the few that hammer one IP.' },
+            { id: 'p3a2', label: 'Activate WAF challenge-mode (JS challenge / CAPTCHA) on suspicious traffic', isCorrect: true, meta: 'Containment · challenge', why: 'Challenges separate real browsers from headless bots without breaking real users (worst case: a CAPTCHA).' },
+            { id: 'p3a3', label: 'Geo-block the top-3 highest-volume countries if they don\'t match user base', isCorrect: true, meta: 'Containment · geo', why: 'Targeted geo-block reduces volume without affecting most legit users. Only safe if the orgs business is geographically localised.' },
+            { id: 'p3a4', label: 'Scale origin auto-scaling group to 3× normal capacity', isCorrect: true, meta: 'Containment · capacity', why: 'Headroom buys you time to tune the WAF rules without origin tipping over.' },
+            { id: 'p3a5', label: 'Block all 15,000 source IPs at perimeter firewall', isCorrect: false, meta: 'Containment · wrong tool', why: 'Trap. 15K rules is unmanageable + bot IPs rotate. Behavioural rules at WAF/CDN tier scale; static IP blocks don\'t.' },
+            { id: 'p3a6', label: 'Take /api/login offline temporarily', isCorrect: false, meta: 'Containment · drastic', why: 'Login is critical to product function. Killing it achieves the attacker\'s objective without a fight.' }
+          ]
+        },
+        {
+          stage: 'eradication', expectedCount: 3,
+          promptTitle: 'Stop this attack from recurring — block the campaign, not just this round.',
+          promptStem: 'Containment slowed the bots. Now make the next round harder.',
+          actions: [
+            { id: 'p4a1', label: 'Promote temporary WAF rules to permanent + tune false-positive rate', isCorrect: true, meta: 'Eradication · WAF perm', why: 'Temp rules expire. Permanent rules + tuning means the bot pattern is blocked even if attack returns weeks later.' },
+            { id: 'p4a2', label: 'Enable account-lockout policies on /api/login (after 5 failed attempts)', isCorrect: true, meta: 'Eradication · auth', why: 'If this was credential-stuffing, lockout slows the brute-force component to near-zero.' },
+            { id: 'p4a3', label: 'Subscribe to threat-intel feed + auto-block known botnet IP ranges', isCorrect: true, meta: 'Eradication · TI', why: 'Threat-intel feeds catch new variants of the same campaign + same crew\'s next attack.' },
+            { id: 'p4a4', label: 'Disable login entirely', isCorrect: false, meta: 'Eradication · over-reach', why: 'Customers can\'t use the product without login. Wrong knob to turn.' }
+          ]
+        },
+        {
+          stage: 'recovery', expectedCount: 3,
+          promptTitle: 'Restore normal operations + monitor for recurrence.',
+          promptStem: 'Attack is mitigated. Now wind down the elevated posture safely.',
+          actions: [
+            { id: 'p5a1', label: 'Gradually scale auto-scaling group back to normal as attack subsides', isCorrect: true, meta: 'Recovery · scale-down', why: 'Sudden scale-down can drop legit users mid-session. Gradual retains buffer for bot resurgence.' },
+            { id: 'p5a2', label: 'Heightened monitoring for 48-72 hours post-attack', isCorrect: true, meta: 'Recovery · vigilance', why: 'Botnets often retry the next day — same bots, slightly different patterns.' },
+            { id: 'p5a3', label: 'Communicate to customers via status page if there was visible degradation', isCorrect: true, meta: 'Recovery · comms', why: 'Public status-page transparency = trust restoration. Acknowledge, don\'t hide.' },
+            { id: 'p5a4', label: 'Disable WAF temp rules immediately', isCorrect: false, meta: 'Recovery · premature', why: 'Bots may retry. Keep rules on for at least a week, then evaluate.' }
+          ]
+        },
+        {
+          stage: 'lessons', expectedCount: 3,
+          promptTitle: 'Lessons-learned for the next DDoS.',
+          promptStem: 'DDoS is a cost-of-doing-business event for any public-facing service. Plan for next time.',
+          actions: [
+            { id: 'p6a1', label: 'Run a DDoS tabletop with the team using today\'s attack as the scenario', isCorrect: true, meta: 'Lessons · practice', why: 'Today\'s muscle memory + decision sequence becomes the playbook for next time.' },
+            { id: 'p6a2', label: 'Document the WAF rule-set + thresholds that worked for sharing', isCorrect: true, meta: 'Lessons · knowledge', why: 'Operational documentation closes the loop — next person on-call has the playbook.' },
+            { id: 'p6a3', label: 'Engage with sector ISAC / DDoS-defence partner about the attack profile', isCorrect: true, meta: 'Lessons · intel', why: 'Same crew may target peer orgs. Sharing the attack profile helps the ecosystem.' },
+            { id: 'p6a4', label: 'Brag about defending the attack on social media', isCorrect: false, meta: 'Lessons · OPSEC fail', why: 'Bragging invites round 2. Discreet documentation > public victory laps.' }
+          ]
+        }
+      ]
+    },
+
+    // ──────────────────────────────────────────────────────────────────
+    // 7) NPM tampered package — Supply chain ★★★ Real-world (v4.97.1)
+    // ──────────────────────────────────────────────────────────────────
+    {
+      id: 'npm-supply-chain',
+      title: 'Tampered NPM dependency · supply chain compromise',
+      icon: '🔗',
+      vector: 'supply-chain',
+      difficulty: 3,
+      unlockAfter: ['ryuk-finance'],
+      summary: 'Dependency bot flags new version of a utility lib bundled with credential stealer. Lib used in 12 internal projects.',
+      context: 'At 16:42, automated dependency-scanner alerted on `react-utils-extra@2.4.1` (released 18 hours ago) — security researcher published a write-up on the package containing a postinstall script that exfiltrates `~/.aws/credentials`, `~/.npmrc`, and `~/.ssh/*` to a remote endpoint. The original maintainer\'s account was compromised via session-token theft. The package is a transitive dependency in 12 of your internal projects. CI workflows ran `npm install` 47 times in the last 18 hours.',
+      vertical: 'Tech / multi-product',
+      severity: 'SEV-1',
+      iocs: [
+        { type: 'package', value: 'react-utils-extra@2.4.1', label: 'Tampered version' },
+        { type: 'method', value: 'Compromised maintainer session', label: 'Initial vector' },
+        { type: 'data', value: 'AWS creds + npm tokens + SSH keys', label: 'Targeted secrets' },
+        { type: 'count', value: '12 internal projects · 47 CI runs in 18h', label: 'Blast radius' },
+        { type: 'endpoint', value: 'exfil to https://registry-utils.dev/v', label: 'Lookalike domain' }
+      ],
+      phases: [
+        {
+          stage: 'preparation', expectedCount: 3,
+          promptTitle: 'What supply-chain readiness mattered?',
+          promptStem: 'Supply chain attacks target the build pipeline. Pick the prep that gave visibility + restraint.',
+          actions: [
+            { id: 'p1a1', label: 'SBOM (software bill of materials) generated for every build', isCorrect: true, meta: 'Preparation · SBOM', why: 'Without SBOM, "what versions are deployed where" is unanswerable. With it, scope analysis is minutes not days.' },
+            { id: 'p1a2', label: 'Dependency-pinning + lockfile commits enforced via pre-commit hook', isCorrect: true, meta: 'Preparation · pinning', why: 'Pinned versions prevent silent upgrades. Lockfile in git = reproducible builds.' },
+            { id: 'p1a3', label: 'Dependency-scanner (Dependabot / Snyk / Socket.dev) on every repo', isCorrect: true, meta: 'Preparation · scanning', why: 'This is what surfaced the tampered package. Without it, the postinstall would have run silently for weeks.' },
+            { id: 'p1a4', label: 'Block all NPM packages from external registry', isCorrect: false, meta: 'Preparation · over-restriction', why: 'Modern dev teams need NPM. Internal mirror with vetting (Artifactory, Nexus) is the right control, not blanket-block.' }
+          ]
+        },
+        {
+          stage: 'identification', expectedCount: 4,
+          promptTitle: 'Confirm scope + classify SEV. Secret exposure window matters.',
+          promptStem: 'CI ran npm install 47 times. Every run on a CI host had host-level secrets potentially exfiltrated. Scope is critical.',
+          actions: [
+            { id: 'p2a1', label: 'Pull npm install logs from CI for the affected period to identify hosts', isCorrect: true, meta: 'Identification · log review', why: 'Each CI run = one potential exfil event. Identifies which hosts ran the malicious postinstall.' },
+            { id: 'p2a2', label: 'Audit AWS CloudTrail for unusual access from the CI host IPs in the affected window', isCorrect: true, meta: 'Identification · cloud audit', why: 'If AWS creds were exfil\'d, attacker may already be using them. CloudTrail shows the abuse.' },
+            { id: 'p2a3', label: 'Open SEV-1 + activate IR firm + breach counsel within 60 minutes', isCorrect: true, meta: 'Identification · escalate', why: 'Supply-chain attack with credential exposure = SEV-1. Speed of escalation = speed of containment.' },
+            { id: 'p2a4', label: 'Identify all internal projects that include the tampered package (transitive included)', isCorrect: true, meta: 'Identification · scope', why: 'Direct deps are easy. Transitive deps (where the package was a sub-sub-dep) require SBOM walk. Both must be enumerated.' },
+            { id: 'p2a5', label: 'Wait for the package maintainer to publish a fix', isCorrect: false, meta: 'Identification · passive', why: 'You don\'t wait. The maintainer may not even know yet. Active response = preserve credentials, stop the bleed.' }
+          ]
+        },
+        {
+          stage: 'containment', expectedCount: 5,
+          promptTitle: 'Stop the bleed + revoke everything that was exposed.',
+          promptStem: 'Assume every secret on every CI host that ran npm install is compromised. Containment = revocation at scale.',
+          actions: [
+            { id: 'p3a1', label: 'Pin react-utils-extra to last-known-safe version (2.3.4) across all repos', isCorrect: true, meta: 'Containment · pinning', why: 'Stops the malicious version from being installed in any new build. First action — bleeding stops.' },
+            { id: 'p3a2', label: 'Rotate all AWS access keys + IAM credentials touched by affected CI hosts', isCorrect: true, meta: 'Containment · cloud rotation', why: 'Assume exfiltrated. Rotate ALL — any credential on any affected host. CI hosts are blast radius.' },
+            { id: 'p3a3', label: 'Rotate all NPM publish tokens across the org', isCorrect: true, meta: 'Containment · npm rotation', why: 'If npm tokens leaked, attacker can publish malicious updates AS YOU. Rotate immediately.' },
+            { id: 'p3a4', label: 'Rotate all SSH keys on developer workstations + CI hosts', isCorrect: true, meta: 'Containment · ssh rotation', why: 'SSH keys grant cross-host access. Compromise = pivot risk. Rotate fleet-wide.' },
+            { id: 'p3a5', label: 'Block exfil endpoint registry-utils.dev at perimeter DNS', isCorrect: true, meta: 'Containment · network', why: 'Stops any future exfil attempts even if the malicious code somehow runs again.' },
+            { id: 'p3a6', label: 'Take all CI hosts offline indefinitely', isCorrect: false, meta: 'Containment · over-reach', why: 'Stops the org from shipping. Targeted rotation + isolation works without breaking everyone.' },
+            { id: 'p3a7', label: 'Email the package maintainer angrily', isCorrect: false, meta: 'Containment · wrong action', why: 'The maintainer is also a victim (compromised account). Coordinate with them constructively, not aggressively.' }
+          ]
+        },
+        {
+          stage: 'eradication', expectedCount: 4,
+          promptTitle: 'Make the org supply-chain-attack-resistant going forward.',
+          promptStem: 'This will happen again — to a different package. Architecture-level changes.',
+          actions: [
+            { id: 'p4a1', label: 'Move all NPM dependencies to internal mirror with pre-publish vetting', isCorrect: true, meta: 'Eradication · mirror', why: 'Internal mirror with delayed-publish + scanning catches malicious packages before any project consumes them.' },
+            { id: 'p4a2', label: 'Disable NPM postinstall scripts in CI by default (--ignore-scripts)', isCorrect: true, meta: 'Eradication · build hardening', why: 'Postinstall is the most common supply-chain payload vector. Disable by default; enable for known-safe packages only.' },
+            { id: 'p4a3', label: 'Implement isolated build environments — no host-credential mounting', isCorrect: true, meta: 'Eradication · isolation', why: 'CI builds shouldn\'t have access to host AWS/npm/SSH credentials. Use ephemeral build credentials only.' },
+            { id: 'p4a4', label: 'Adopt secret-scanning + commit-time secret detection', isCorrect: true, meta: 'Eradication · prevention', why: 'Catches accidental commits of secrets so the blast radius is smaller next time something does leak.' },
+            { id: 'p4a5', label: 'Stop using NPM entirely — migrate to bundled internal libraries', isCorrect: false, meta: 'Eradication · over-reach', why: 'Modern dev requires NPM. The right control is mirror + vetting, not abandoning the ecosystem.' }
+          ]
+        },
+        {
+          stage: 'recovery', expectedCount: 3,
+          promptTitle: 'Resume normal dev velocity with new guardrails.',
+          promptStem: 'Eradication done. Get the team back to shipping.',
+          actions: [
+            { id: 'p5a1', label: 'Communicate to dev team: what happened + what changed + what they need to do', isCorrect: true, meta: 'Recovery · comms', why: 'New guardrails (mirror, --ignore-scripts) require dev workflow changes. Without comms, devs work around them.' },
+            { id: 'p5a2', label: 'Audit + restore productivity by un-pinning safe deps + restoring CI velocity', isCorrect: true, meta: 'Recovery · velocity', why: 'Pinning everything is necessary in containment but kills development velocity long-term. Selectively unpin known-safe.' },
+            { id: 'p5a3', label: 'Submit case study to internal-eng wiki + sector ISAC', isCorrect: true, meta: 'Recovery · sharing', why: 'Closes the institutional-learning loop + helps peer orgs.' },
+            { id: 'p5a4', label: 'Mandate every dev manually review every dep daily', isCorrect: false, meta: 'Recovery · unrealistic', why: 'Doesn\'t scale. Automation + tooling > human review for supply chain.' }
+          ]
+        },
+        {
+          stage: 'lessons', expectedCount: 3,
+          promptTitle: 'Long-term: how does the org survive the next supply chain attack?',
+          promptStem: 'Supply chain is a 5-year defensive trend. Bake it in.',
+          actions: [
+            { id: 'p6a1', label: 'Add supply-chain attack to quarterly tabletop scenarios', isCorrect: true, meta: 'Lessons · practice', why: 'Each tabletop builds team intuition. SC attacks are different from endpoint/cloud — practice them specifically.' },
+            { id: 'p6a2', label: 'Adopt SLSA framework for build provenance', isCorrect: true, meta: 'Lessons · framework', why: 'SLSA (Supply-chain Levels for Software Artifacts) is the maturity model. Adoption gives you a level-up roadmap.' },
+            { id: 'p6a3', label: 'Sign + verify all internal builds (Sigstore / cosign)', isCorrect: true, meta: 'Lessons · attestation', why: 'Build attestation prevents downstream attacks where attacker swaps your binary for theirs.' },
+            { id: 'p6a4', label: 'Forbid all open-source dependencies', isCorrect: false, meta: 'Lessons · over-reach', why: 'Open-source is foundational to modern software. The answer is supply-chain hygiene, not avoidance.' }
+          ]
+        }
+      ]
+    },
+
+    // ──────────────────────────────────────────────────────────────────
+    // 8) AWS root key on GitHub — Cloud breach ★★ Exam (v4.97.1)
+    // ──────────────────────────────────────────────────────────────────
+    {
+      id: 'aws-key-leak',
+      title: 'AWS root access key leaked on public GitHub',
+      icon: '☁️',
+      vector: 'cloud',
+      difficulty: 2,
+      unlockAfter: [],
+      summary: 'Bug-bounty researcher reports root account AWS_SECRET_ACCESS_KEY committed to a public repo 6 days ago.',
+      context: 'At 10:14, security@corp.com received: "Your AWS root account access key is committed in https://github.com/corp/internal-tools/commit/abc123 — 6 days ago. Crypto miner spinning up 50 c5.18xlarge instances in your account in eu-central-1 right now. Bill projection: $14,000/day at this rate." CloudTrail confirms: 50 EC2 RunInstances calls in eu-central-1 from a non-corporate IP in the last 4 hours.',
+      vertical: 'B2C SaaS',
+      severity: 'SEV-1',
+      iocs: [
+        { type: 'creds', value: 'AKIA**********ROOT', label: 'Leaked AWS root access key' },
+        { type: 'commit', value: 'github.com/corp/internal-tools/commit/abc123 (6d ago)', label: 'Source of leak' },
+        { type: 'abuse', value: '50 × c5.18xlarge in eu-central-1', label: 'Crypto-mining cluster' },
+        { type: 'cost', value: '$14,000/day projected', label: 'Financial impact' },
+        { type: 'ip', value: 'Non-corp source IP for RunInstances calls', label: 'Attacker access' }
+      ],
+      phases: [
+        {
+          stage: 'preparation', expectedCount: 3,
+          promptTitle: 'What pre-incident readiness matters?',
+          promptStem: 'Cloud-credential leaks are mostly preventable. Pick the prep that matters most.',
+          actions: [
+            { id: 'p1a1', label: 'GitHub secret scanning enabled on all repos (catches accidental commits)', isCorrect: true, meta: 'Preparation · scanning', why: 'Pre-commit secret scanning is the single highest-yield control. Catches the leak before it ever pushes.' },
+            { id: 'p1a2', label: 'AWS root account locked with hardware MFA + no programmatic access keys', isCorrect: true, meta: 'Preparation · root hygiene', why: 'AWS\'s own #1 recommendation. Root account should never have access keys. The fact that this leak exists means this control wasn\'t in place.' },
+            { id: 'p1a3', label: 'AWS Cost Anomaly Detection + budget alerts enabled', isCorrect: true, meta: 'Preparation · cost', why: 'Cost spike alert is what catches abuse-of-leaked-creds. Without it, you\'d find out at end-of-month billing.' },
+            { id: 'p1a4', label: 'Block all internet access to AWS console', isCorrect: false, meta: 'Preparation · impractical', why: 'Cloud admin requires console access. The right control is MFA + IP allowlist, not blanket-block.' }
+          ]
+        },
+        {
+          stage: 'identification', expectedCount: 4,
+          promptTitle: 'Confirm scope quickly — money is leaving the building.',
+          promptStem: 'Crypto miner is running. $580/hour burn rate. Identify scope rapidly so eradication can start.',
+          actions: [
+            { id: 'p2a1', label: 'CloudTrail review: enumerate every API call made with the leaked key in last 6 days', isCorrect: true, meta: 'Identification · audit', why: 'Establishes full abuse scope: what was created, what was accessed, what was modified. Foundation for cleanup.' },
+            { id: 'p2a2', label: 'IAM Access Advisor / GuardDuty review for unusual access patterns', isCorrect: true, meta: 'Identification · enrichment', why: 'GuardDuty surfaces anomalies (impossible-travel, new-tool usage). Confirms abuse + characterises attacker.' },
+            { id: 'p2a3', label: 'Identify the GitHub commit author + git history of the leaked file', isCorrect: true, meta: 'Identification · root cause', why: 'Determines who accidentally committed it + whether they have other secrets in commit history.' },
+            { id: 'p2a4', label: 'Open SEV-1 + activate cyber-insurance + cloud-IR partner', isCorrect: true, meta: 'Identification · escalate', why: 'Active financial loss = SEV-1. Insurance often covers cloud-fraud expenses. Partner accelerates response.' },
+            { id: 'p2a5', label: 'Make the GitHub repo private', isCorrect: false, meta: 'Identification · pointless', why: 'Trap. The credential is already on GitHub Archive, archive.org, search-engine caches, and possibly threat-actor databases. Private-toggling doesn\'t un-leak it. The credential is permanently compromised — focus on rotation.' }
+          ]
+        },
+        {
+          stage: 'containment', expectedCount: 4,
+          promptTitle: 'Revoke the credential + stop the bleed.',
+          promptStem: 'Every minute = $9.66 of crypto-mining cost. Revoke fast.',
+          actions: [
+            { id: 'p3a1', label: 'Deactivate + delete the leaked AWS root access key immediately', isCorrect: true, meta: 'Containment · revocation', why: 'Stops the attacker\'s active access. Single most important action.' },
+            { id: 'p3a2', label: 'Terminate all unauthorized resources (50 c5.18xlarge instances) in eu-central-1', isCorrect: true, meta: 'Containment · resource cleanup', why: 'Terminates the active crypto-miner + stops the bill from growing.' },
+            { id: 'p3a3', label: 'Audit IAM for any new IAM users / access keys created by the attacker', isCorrect: true, meta: 'Containment · persistence check', why: 'Attackers often create persistence (new IAM users, new access keys) before doing visible bad things. Find + revoke them.' },
+            { id: 'p3a4', label: 'Rotate ALL AWS access keys + IAM user passwords in the account', isCorrect: true, meta: 'Containment · full rotation', why: 'Assume any cred touched by the leaked key is also compromised. Full rotation closes that door.' },
+            { id: 'p3a5', label: 'Just rotate the one leaked key', isCorrect: false, meta: 'Containment · partial', why: 'If the attacker had time to create persistence, rotating one key doesn\'t help. Full audit + rotation.' }
+          ]
+        },
+        {
+          stage: 'eradication', expectedCount: 4,
+          promptTitle: 'Close the door on AWS-root-key-leak forever.',
+          promptStem: 'This was preventable. Make sure it can\'t recur.',
+          actions: [
+            { id: 'p4a1', label: 'Lock the AWS root account: hardware MFA + remove all programmatic access keys', isCorrect: true, meta: 'Eradication · root hygiene', why: 'AWS root should never have access keys. Programmatic access goes through IAM users / SSO / roles.' },
+            { id: 'p4a2', label: 'Migrate all programmatic access to IAM-Roles-for-EC2 or AWS SSO + role assumption', isCorrect: true, meta: 'Eradication · architecture', why: 'Role-based access has built-in expiration + scoped permissions. Long-lived access keys go away.' },
+            { id: 'p4a3', label: 'Enable GitHub secret scanning push-protection org-wide', isCorrect: true, meta: 'Eradication · prevention', why: 'Push-protection rejects commits containing secrets at git-push time. Stops the leak before it\'s public.' },
+            { id: 'p4a4', label: 'Implement AWS-IAM-permission-boundary on all IAM users (block IAM admin actions for non-admins)', isCorrect: true, meta: 'Eradication · IAM', why: 'Even if a non-admin user\'s creds leak, they can\'t create new admin users or escalate.' },
+            { id: 'p4a5', label: 'Stop using AWS', isCorrect: false, meta: 'Eradication · over-reach', why: 'Cloud is core infrastructure. The fix is hygiene + architecture, not migration.' }
+          ]
+        },
+        {
+          stage: 'recovery', expectedCount: 3,
+          promptTitle: 'Restore normal operations + handle financial fallout.',
+          promptStem: 'The bleed is stopped. Now the bill arrives.',
+          actions: [
+            { id: 'p5a1', label: 'Open AWS support case + request fraud charges credit', isCorrect: true, meta: 'Recovery · financial', why: 'AWS often credits documented fraudulent charges. Don\'t pay $14K just because the attacker spent it.' },
+            { id: 'p5a2', label: 'Verify all production workloads still running correctly post-rotation', isCorrect: true, meta: 'Recovery · validation', why: 'Mass rotation can break legit services. Validate everything still works.' },
+            { id: 'p5a3', label: 'Re-enable normal IAM workflows with new guardrails active', isCorrect: true, meta: 'Recovery · ops', why: 'Get the team back to productive work with the new architecture in place.' },
+            { id: 'p5a4', label: 'Pay the $14K bill silently and move on', isCorrect: false, meta: 'Recovery · waste', why: 'AWS has a fraud-charge process. Use it.' }
+          ]
+        },
+        {
+          stage: 'lessons', expectedCount: 3,
+          promptTitle: 'Lessons-learned: cloud credential hygiene.',
+          promptStem: 'Cloud credentials are the new attack surface. Bake the controls in.',
+          actions: [
+            { id: 'p6a1', label: 'Add credential-leak scenario to dev onboarding training', isCorrect: true, meta: 'Lessons · training', why: 'Most leaks are accidental commits by new devs. Onboarding training prevents the next one.' },
+            { id: 'p6a2', label: 'Document this incident in internal eng wiki with anonymized details', isCorrect: true, meta: 'Lessons · documentation', why: 'Other engineers learn from real incident stories. Keeps the lesson alive.' },
+            { id: 'p6a3', label: 'Quarterly audit of every IAM user + access key with usage age + last-used', isCorrect: true, meta: 'Lessons · governance', why: 'Stale credentials accumulate. Quarterly audits catch them.' },
+            { id: 'p6a4', label: 'Fire the engineer who committed the key', isCorrect: false, meta: 'Lessons · blame culture', why: 'Engineer made an honest mistake. The system allowed it (no scanning, no push-protection). Fix the system.' }
+          ]
+        }
+      ]
+    },
+
+    // ──────────────────────────────────────────────────────────────────
+    // 9) Spear phish → ransomware multi-stage — Phish-derived ★★★ (v4.97.1, locked)
+    // ──────────────────────────────────────────────────────────────────
+    {
+      id: 'spear-to-ransomware',
+      title: 'Spear phish → 3-week dwell → ransomware activation',
+      icon: '🎣',
+      vector: 'phish-derived',
+      difficulty: 3,
+      unlockAfter: ['bec-wire-fraud'],
+      summary: 'Engineering laptop encrypted today. Forensics show attacker has been pivoting since a spear phish 3 weeks ago.',
+      context: 'At 08:14, three engineering workstations encrypted simultaneously with .lockit extension. Initial EDR forensics show the attacker was inside since 21 days ago — a spear-phish on Jane (lead engineer) gave them initial access; they then created a service account, pivoted to the engineering CI/CD system, harvested credentials over 19 days, dumped the AD database 4 days ago, and triggered encryption today. Dwell-time: 21 days. The ransomware is the visible part of a much longer attack.',
+      vertical: 'Tech / SaaS',
+      severity: 'SEV-1',
+      iocs: [
+        { type: 'dwell', value: '21 days from phish to encryption', label: 'Initial-access window' },
+        { type: 'access', value: 'Spear phish · Outlook macro to lead eng', label: 'Initial vector' },
+        { type: 'persistence', value: 'svc_eng_ops (created day 2)', label: 'Attacker service account' },
+        { type: 'pivot', value: 'CI/CD system + AD DC', label: 'Lateral targets' },
+        { type: 'exfil', value: '180 GB before encryption', label: 'Pre-encryption theft' }
+      ],
+      phases: [
+        {
+          stage: 'preparation', expectedCount: 3,
+          promptTitle: 'What pre-incident readiness mattered (or failed) here?',
+          promptStem: '21-day dwell means detection failed. Pick the prep that should have caught this earlier.',
+          actions: [
+            { id: 'p1a1', label: 'EDR on all endpoints with behavioural anomaly detection enabled', isCorrect: true, meta: 'Preparation · detection', why: 'Behavioural anomaly detection should have flagged the post-exploitation: PowerShell + persistence creation + CI access. Why it didn\'t = the question to investigate.' },
+            { id: 'p1a2', label: 'Privileged-access workstations + just-in-time elevation for admin tasks', isCorrect: true, meta: 'Preparation · PAW', why: 'PAW + JIT prevents domain admin creds from being on regular endpoints — the technique attacker used.' },
+            { id: 'p1a3', label: 'Quarterly purple-team exercises (red + blue together)', isCorrect: true, meta: 'Preparation · validation', why: 'Purple-teaming is what identifies the gaps in detection. Annual frequency is too slow.' },
+            { id: 'p1a4', label: 'Patch all systems daily', isCorrect: false, meta: 'Preparation · misaligned', why: 'Patching is important but doesn\'t prevent phish-driven malware execution by the user. Different attack class.' }
+          ]
+        },
+        {
+          stage: 'identification', expectedCount: 5,
+          promptTitle: 'Scope is bigger than the visible ransomware. Find the dwell.',
+          promptStem: 'Today\'s ransomware is the LAST step of a 21-day attack. Identification = uncovering the full timeline.',
+          actions: [
+            { id: 'p2a1', label: 'Pull EDR + endpoint logs back 30 days for the affected hosts', isCorrect: true, meta: 'Identification · timeline', why: 'Builds the full attack timeline. Surfaces the spear-phish + initial execution + persistence creation.' },
+            { id: 'p2a2', label: 'Audit AD for new accounts created in last 30 days + their activity', isCorrect: true, meta: 'Identification · persistence hunt', why: 'svc_eng_ops account was created day 2. Audit catches it + similar persistence elsewhere.' },
+            { id: 'p2a3', label: 'Review CI/CD audit logs + secret-access patterns last 30 days', isCorrect: true, meta: 'Identification · pivot tracking', why: 'CI/CD compromise = secrets harvest. Identifies which secrets were touched.' },
+            { id: 'p2a4', label: 'Check egress logs for unusual data transfers in last 30 days', isCorrect: true, meta: 'Identification · exfil scope', why: '180 GB exfil happened over weeks. Egress logs reveal what was stolen + where it went.' },
+            { id: 'p2a5', label: 'Open SEV-1 + IR firm + breach counsel + cyber insurance within 60 minutes', isCorrect: true, meta: 'Identification · escalate', why: 'Multi-stage ransomware with confirmed exfil = SEV-1. Speed matters.' },
+            { id: 'p2a6', label: 'Treat this as just-the-ransomware (skip the dwell investigation)', isCorrect: false, meta: 'Identification · trap', why: 'Trap. If you just clean the ransomware, the attacker still has persistence + 180 GB of data. The full attack must be uncovered.' }
+          ]
+        },
+        {
+          stage: 'containment', expectedCount: 5,
+          promptTitle: 'Cut off the attacker — fully + everywhere.',
+          promptStem: 'Multi-stage attack = multi-axis containment. Endpoints, accounts, CI/CD, AD, network.',
+          actions: [
+            { id: 'p3a1', label: 'Network-isolate the 3 encrypted hosts via EDR (preserve memory)', isCorrect: true, meta: 'Containment · endpoint', why: 'Standard containment. Isolate without power-off; capture RAM for forensics.' },
+            { id: 'p3a2', label: 'Disable + delete attacker-created service accounts (svc_eng_ops + similar)', isCorrect: true, meta: 'Containment · identity', why: 'Removes persistence. Without this, attacker walks back in tomorrow.' },
+            { id: 'p3a3', label: 'Force password reset for ALL employees (assume creds harvested)', isCorrect: true, meta: 'Containment · scale rotation', why: '21-day dwell + AD dump = assume every credential is exposed. Org-wide reset is the only safe baseline.' },
+            { id: 'p3a4', label: 'Rotate krbtgt password TWICE (10h apart) to invalidate golden tickets', isCorrect: true, meta: 'Containment · Kerberos', why: 'AD dump = attacker has krbtgt hash = golden ticket potential. Double-rotate kills any in-flight tickets.' },
+            { id: 'p3a5', label: 'Isolate CI/CD system from network until clean', isCorrect: true, meta: 'Containment · build pipeline', why: 'CI/CD compromise risk is high. Quarantine until forensic review confirms clean.' },
+            { id: 'p3a6', label: 'Restore from yesterday\'s backup', isCorrect: false, meta: 'Containment · trap', why: 'Yesterday\'s backup may include the persistence (created 21d ago). Recovery from pre-day-2 backup is the only safe option, AND only AFTER eradication.' },
+            { id: 'p3a7', label: 'Power off all 3 encrypted hosts immediately', isCorrect: false, meta: 'Containment · destroys evidence', why: 'Same trap as ryuk-finance. RAM dump first.' }
+          ]
+        },
+        {
+          stage: 'eradication', expectedCount: 4,
+          promptTitle: 'Eradicate the 21-day-deep attacker presence.',
+          promptStem: 'Long dwell = persistence everywhere. Comprehensive cleanup is mandatory.',
+          actions: [
+            { id: 'p4a1', label: 'Wipe + reimage every host the attacker touched (per CloudTrail / EDR / log evidence)', isCorrect: true, meta: 'Eradication · trust restore', why: 'You can never trust a host that was attacker-controlled. Wipe + reimage from clean.' },
+            { id: 'p4a2', label: 'Hunt for ALL persistence patterns across the fleet (scheduled tasks, registry, services, WMI, GPO)', isCorrect: true, meta: 'Eradication · sweep', why: '21-day attacker had time to drop persistence in many places. Hunt fleet-wide.' },
+            { id: 'p4a3', label: 'Validate clean state via independent IR firm review', isCorrect: true, meta: 'Eradication · external validation', why: 'In-house team can\'t verify itself. Independent IR firm signs off "we found everything."' },
+            { id: 'p4a4', label: 'Patch the spear-phish initial-access vector (block Outlook macros + add user training)', isCorrect: true, meta: 'Eradication · root cause', why: 'Macro-exploit was the entry. Closing it stops the next attempt at entry-1.' },
+            { id: 'p4a5', label: 'Just patch the affected hosts', isCorrect: false, meta: 'Eradication · half-measure', why: 'Persistence is fleet-wide. Affected-only is incomplete.' }
+          ]
+        },
+        {
+          stage: 'recovery', expectedCount: 4,
+          promptTitle: 'Restore + monitor + handle the data-breach side.',
+          promptStem: '180 GB exfiltration is its own data-breach incident. Manage in parallel with technical recovery.',
+          actions: [
+            { id: 'p5a1', label: 'Restore from immutable backups taken before day 2 (pre-attacker)', isCorrect: true, meta: 'Recovery · clean restore', why: 'Pre-attacker backups are the only verifiable-clean source. Hash-verify before restore.' },
+            { id: 'p5a2', label: 'Heightened monitoring for 90+ days post-incident', isCorrect: true, meta: 'Recovery · vigilance', why: 'Long-dwell attackers often retry within months. Sustained monitoring catches the comeback.' },
+            { id: 'p5a3', label: 'Coordinate disclosure: customers, regulators, employees per data-breach scope', isCorrect: true, meta: 'Recovery · regulatory', why: '180 GB exfil triggers GDPR / state breach laws / SEC depending on data. Counsel-led disclosure.' },
+            { id: 'p5a4', label: 'Threat-hunt for similar TTPs across peer customers / partners', isCorrect: true, meta: 'Recovery · ecosystem', why: 'Same crew may target peers. Threat hunt with shared TTPs helps everyone.' },
+            { id: 'p5a5', label: 'Skip data-breach disclosure to avoid bad press', isCorrect: false, meta: 'Recovery · regulatory failure', why: 'Failure-to-disclose is illegal in many jurisdictions. Disclose properly = controlled narrative; hide = much worse outcome when caught.' }
+          ]
+        },
+        {
+          stage: 'lessons', expectedCount: 3,
+          promptTitle: 'Lessons-learned: 21-day dwell-time means detection failed.',
+          promptStem: 'The visible ransomware was the symptom. The detection gap is the disease.',
+          actions: [
+            { id: 'p6a1', label: 'Audit detection coverage: where did the 21d dwell happen + what should have caught it?', isCorrect: true, meta: 'Lessons · detection audit', why: 'Each missed signal is a detection-engineering opportunity. Document each + plan fixes.' },
+            { id: 'p6a2', label: 'Implement dwell-time-reduction goals (target: <7 days mean dwell next year)', isCorrect: true, meta: 'Lessons · KPI', why: 'You manage what you measure. Dwell-time KPI drives detection investment.' },
+            { id: 'p6a3', label: 'Adopt zero-trust + just-in-time access to limit blast radius next time', isCorrect: true, meta: 'Lessons · architecture', why: 'Even if attacker gets in, ZT + JIT cap how far they can pivot before being detected.' },
+            { id: 'p6a4', label: 'Stop using email entirely', isCorrect: false, meta: 'Lessons · over-reach', why: 'Email is core to business. Defenses + training are the answer, not abandonment.' }
+          ]
+        }
+      ]
+    },
+
+    // ──────────────────────────────────────────────────────────────────
+    // 10) Container escape on k8s — Cloud breach ★★★ Real-world (v4.97.1, locked)
+    // ──────────────────────────────────────────────────────────────────
+    {
+      id: 'k8s-container-escape',
+      title: 'Container escape → cluster compromise · k8s production',
+      icon: '☁️',
+      vector: 'cloud',
+      difficulty: 3,
+      unlockAfter: ['s3-pii-exposure'],
+      summary: 'Privileged pod exploited. Attacker on the node. Cluster control plane access likely. 28 production services at risk.',
+      context: 'At 14:32, GuardDuty fired on unusual API calls to k8s-apiserver from a worker node IP. Investigation: a customer-facing image-resize pod was running with hostPath mount + privileged: true. Attacker exploited a known image library CVE to break out of the container, gained host-level access, then accessed the kubelet credentials and pivoted to the API server. 28 production services run on this cluster. Service-account tokens for those services are stored on the compromised node.',
+      vertical: 'B2C SaaS',
+      severity: 'SEV-1',
+      iocs: [
+        { type: 'pod', value: 'image-resize-7c8b9 (privileged + hostPath)', label: 'Initial entry pod' },
+        { type: 'cve', value: 'CVE-2024-NNNN (image library RCE)', label: 'Exploited vuln' },
+        { type: 'node', value: 'worker-node-04', label: 'Compromised node' },
+        { type: 'kubelet', value: 'Kubelet creds extracted', label: 'Persistence vector' },
+        { type: 'scope', value: '28 production services on cluster', label: 'Blast radius' }
+      ],
+      phases: [
+        {
+          stage: 'preparation', expectedCount: 3,
+          promptTitle: 'What pre-incident k8s readiness mattered?',
+          promptStem: 'Container security has many layers. Pick the prep that should have prevented this — and the one that\'s saving you now.',
+          actions: [
+            { id: 'p1a1', label: 'Pod Security Admission policies blocking privileged + hostPath pods by default', isCorrect: true, meta: 'Preparation · admission', why: 'PSA at restricted level would have blocked the privileged pod from ever scheduling. Without it, devs deploy pods that violate every defense-in-depth principle.' },
+            { id: 'p1a2', label: 'Network policies enforcing pod-to-pod + pod-to-API-server segmentation', isCorrect: true, meta: 'Preparation · network', why: 'Without network policies, every pod can reach kube-apiserver. With them, only specific pods can — limiting blast radius.' },
+            { id: 'p1a3', label: 'Image-scanning at build time + admission-time (block known-vulnerable)', isCorrect: true, meta: 'Preparation · image', why: 'Known CVE in the image library should have been caught at build OR admission. Both layers should have blocked.' },
+            { id: 'p1a4', label: 'Run all pods as root', isCorrect: false, meta: 'Preparation · anti-pattern', why: 'Opposite of best practice. Pods should run as non-root with read-only filesystems.' }
+          ]
+        },
+        {
+          stage: 'identification', expectedCount: 4,
+          promptTitle: 'Confirm scope quickly — control plane compromise has cluster-wide implications.',
+          promptStem: '28 services on this cluster. Attacker may have already pivoted. Speed matters.',
+          actions: [
+            { id: 'p2a1', label: 'Pull k8s audit logs + node-level logs for last 6 hours', isCorrect: true, meta: 'Identification · audit', why: 'Audit logs reveal what API calls were made + by whom. Foundation for scope analysis.' },
+            { id: 'p2a2', label: 'Enumerate every service-account on the compromised node + their token usage', isCorrect: true, meta: 'Identification · scope', why: '28 services have SA tokens. Each one needs assessment for "did the attacker steal + use this token?"' },
+            { id: 'p2a3', label: 'Check for new pods, deployments, or RBAC bindings created in last 6 hours', isCorrect: true, meta: 'Identification · persistence', why: 'Attackers often create persistence (rogue pods, RBAC for backdoor SAs). Find them now.' },
+            { id: 'p2a4', label: 'Open SEV-1 + activate cloud-IR + breach counsel within 60 minutes', isCorrect: true, meta: 'Identification · escalate', why: 'Cluster-level compromise = SEV-1. Cloud-IR specialists needed.' },
+            { id: 'p2a5', label: 'Reboot the entire cluster', isCorrect: false, meta: 'Containment · destructive + premature', why: 'Reboot before scope is known = lose the evidence + may not eradicate persistent threats.' }
+          ]
+        },
+        {
+          stage: 'containment', expectedCount: 5,
+          promptTitle: 'Surgical containment of compromised node + apiserver access.',
+          promptStem: 'Multi-axis containment. Node, identity, network, RBAC.',
+          actions: [
+            { id: 'p3a1', label: 'Cordon + drain the compromised node (worker-node-04) — terminate it after evidence capture', isCorrect: true, meta: 'Containment · node', why: 'Cordon prevents new pods from scheduling. Drain moves running pods. Termination after capture removes the foothold.' },
+            { id: 'p3a2', label: 'Rotate kubelet certificates for all nodes in the cluster', isCorrect: true, meta: 'Containment · kubelet', why: 'Kubelet creds give node-level access. Rotation invalidates the stolen cred.' },
+            { id: 'p3a3', label: 'Revoke + rotate all service-account tokens on the compromised node', isCorrect: true, meta: 'Containment · SA tokens', why: 'SA tokens grant pod-level access. Each one was potentially stolen + needs rotation.' },
+            { id: 'p3a4', label: 'Audit + rotate any cloud IAM roles linked to the compromised node (IRSA / Workload Identity)', isCorrect: true, meta: 'Containment · cloud IAM', why: 'Modern k8s uses cloud-IAM-via-SA-tokens. Compromised SA tokens may have granted cloud access.' },
+            { id: 'p3a5', label: 'Enable network policies blocking pod-to-apiserver from non-essential namespaces', isCorrect: true, meta: 'Containment · segmentation', why: 'Stops further lateral pod-to-apiserver attacks while you investigate.' },
+            { id: 'p3a6', label: 'Delete every pod in the cluster', isCorrect: false, meta: 'Containment · over-reach', why: 'Kills 28 production services. Surgical cleanup, not nuke-from-orbit.' }
+          ]
+        },
+        {
+          stage: 'eradication', expectedCount: 4,
+          promptTitle: 'Trust restoration + close the door.',
+          promptStem: 'Compromised cluster needs systematic verification + architectural fixes.',
+          actions: [
+            { id: 'p4a1', label: 'Rebuild the compromised node from clean image + reattach to cluster', isCorrect: true, meta: 'Eradication · trust restore', why: 'Wipe + reimage. Node-level compromise can\'t be cleaned in place.' },
+            { id: 'p4a2', label: 'Patch the image library CVE in all images using it (rebuild + redeploy)', isCorrect: true, meta: 'Eradication · vuln close', why: 'Same CVE will be re-exploited otherwise. Find every image using the lib + rebuild.' },
+            { id: 'p4a3', label: 'Enforce Pod Security Admission at restricted level cluster-wide', isCorrect: true, meta: 'Eradication · architecture', why: 'PSA-restricted blocks privileged pods, hostPath, hostNetwork. Architectural fix that prevents recurrence.' },
+            { id: 'p4a4', label: 'Implement runtime security (Falco / Tetragon) for behavioral detection', isCorrect: true, meta: 'Eradication · runtime defense', why: 'Even if attacker breaks in again, runtime security catches container-escape attempts.' },
+            { id: 'p4a5', label: 'Stop using k8s', isCorrect: false, meta: 'Eradication · over-reach', why: 'k8s is the platform. The fix is hardening, not migration.' }
+          ]
+        },
+        {
+          stage: 'recovery', expectedCount: 3,
+          promptTitle: 'Restore production safely + validate everything works.',
+          promptStem: '28 services need to come back up cleanly.',
+          actions: [
+            { id: 'p5a1', label: 'Bring services back up gradually + verify each behaves normally', isCorrect: true, meta: 'Recovery · staged', why: 'Mass-up = mass-fail. One at a time + validate.' },
+            { id: 'p5a2', label: 'Validate cloud IAM still works correctly after rotation (smoke tests)', isCorrect: true, meta: 'Recovery · IAM validation', why: 'Mass IAM rotation can break legit services. Smoke-test catches regressions.' },
+            { id: 'p5a3', label: 'Heightened k8s monitoring for 30 days post-incident', isCorrect: true, meta: 'Recovery · vigilance', why: 'Sophisticated attackers often retry. Monitoring for the comeback.' },
+            { id: 'p5a4', label: 'Take all services offline indefinitely', isCorrect: false, meta: 'Recovery · over-reach', why: 'Customers can\'t use the product. Bring back gradually.' }
+          ]
+        },
+        {
+          stage: 'lessons', expectedCount: 3,
+          promptTitle: 'How does the org never have a container-escape again?',
+          promptStem: 'Cloud-native security is its own discipline. Build the muscle.',
+          actions: [
+            { id: 'p6a1', label: 'Hire / contract a k8s-security specialist for a 90-day hardening engagement', isCorrect: true, meta: 'Lessons · expertise', why: 'k8s security has steep learning curve. Specialist closes gaps faster than generalist team.' },
+            { id: 'p6a2', label: 'Add k8s-specific scenarios to quarterly tabletop exercises', isCorrect: true, meta: 'Lessons · practice', why: 'k8s incidents differ from VM/host incidents. Practice them specifically.' },
+            { id: 'p6a3', label: 'Adopt CIS Kubernetes Benchmark + run kube-bench monthly', isCorrect: true, meta: 'Lessons · governance', why: 'CIS Benchmark is the maturity model. Monthly scans surface drift.' },
+            { id: 'p6a4', label: 'Migrate everything off Kubernetes to bare metal', isCorrect: false, meta: 'Lessons · over-reach', why: 'k8s is the standard. The answer is harden it, not abandon it.' }
+          ]
+        }
+      ]
+    }
+  ],
+
+  // ════════════════════════════════════════════════════════════════════
+  // INCIDENT RESPONSE LESSONS — 6 PICERL phase cheatsheets (v4.97.1)
+  // Each card has: phase, goal, canonical actions, common traps.
+  // Visual contract from mockup state 7.
+  // ════════════════════════════════════════════════════════════════════
+  incidentResponseLessons: [
+    {
+      phase: 'preparation',
+      title: 'Preparation',
+      goal: '"You can\'t pause an incident to write a playbook." Build readiness BEFORE day-zero.',
+      actions: [
+        '<strong>IR plan</strong> documented + reviewed annually',
+        '<strong>IR team</strong> roles assigned (commander, scribe, comms, legal, forensics)',
+        '<strong>Tooling</strong> staged (EDR, SIEM, NetFlow, write-blockers, RAM-capture)',
+        '<strong>Tabletop exercises</strong> quarterly with realistic scenarios',
+        '<strong>Backups + comms tree</strong> tested + out-of-band channel ready'
+      ],
+      traps: [
+        '<strong>"Buy more tools."</strong> Tooling without playbook + practice doesn\'t help. Process &gt; products.'
+      ]
+    },
+    {
+      phase: 'identification',
+      title: 'Identification',
+      goal: '"Is this an incident? What kind? How bad?" Confirm and classify.',
+      actions: [
+        '<strong>Confirm</strong> via correlation across sources (EDR + FW + user report)',
+        '<strong>Classify</strong> incident type (malware / data breach / DoS / etc.)',
+        '<strong>Assign severity</strong> per the IR plan\'s matrix (impact × urgency)',
+        '<strong>Open ticket</strong> + start the scribe log + start incident timer',
+        '<strong>Stay broad</strong> — collect IOCs even if you\'re not sure they\'re related yet'
+      ],
+      traps: [
+        '<strong>Jumping to containment too early.</strong> Without classification, you over-isolate or under-isolate. Classify first.'
+      ]
+    },
+    {
+      phase: 'containment',
+      title: 'Containment',
+      goal: '"Stop the spread. Preserve evidence. Don\'t make eradication harder."',
+      actions: [
+        '<strong>Network-isolate</strong> infected hosts via EDR (NOT power off)',
+        '<strong>Block C2</strong> at perimeter / DNS sinkhole',
+        '<strong>Identity-contain</strong> — disable compromised accounts + force re-auth',
+        '<strong>RAM dump</strong> before any state-changing action (RFC 3227 order of volatility)',
+        '<strong>Scope-expand</strong> — sweep for lateral movement (other hosts hit?)'
+      ],
+      traps: [
+        '<strong>Power-off vs isolate.</strong> Power-off destroys RAM, swap, network state, decryption keys. Isolate keeps the host alive for forensics. <em>Never power off first.</em>',
+        '<strong>Wipe-and-reimage too soon.</strong> That\'s eradication. Wiping pre-evidence-capture loses attribution + IOCs.'
+      ]
+    },
+    {
+      phase: 'eradication',
+      title: 'Eradication',
+      goal: '"Remove the malware AND the way it got in. If you only remove the malware, it\'ll come back."',
+      actions: [
+        '<strong>Wipe-and-reimage</strong> (preferred over disinfection — trust nothing)',
+        '<strong>Patch</strong> the exploited vulnerability (not just the host you found)',
+        '<strong>Rotate credentials</strong> for any account that touched the affected host',
+        '<strong>Revoke certs</strong> if private keys were on the box',
+        '<strong>Update IOC blocklists</strong> permanently — promote from temporary block'
+      ],
+      traps: [
+        '<strong>"Just run AV again."</strong> Disinfection isn\'t trust-restoring. Reimage from clean baseline.',
+        '<strong>Patching only the affected host.</strong> Same vuln exists on every other host. Patch fleet-wide.'
+      ]
+    },
+    {
+      phase: 'recovery',
+      title: 'Recovery',
+      goal: '"Get back to business safely. Watch for recurrence." Restore + monitor + validate.',
+      actions: [
+        '<strong>Restore from clean backup</strong> verified pre-incident timestamp',
+        '<strong>Validate integrity</strong> — hash-check restored files vs known-good',
+        '<strong>Stage re-introduction</strong> — bring services back gradually + monitored',
+        '<strong>Heightened monitoring</strong> for ~30d post-recovery (recurrence risk)',
+        '<strong>User communication</strong> — what was affected, what to watch for'
+      ],
+      traps: [
+        '<strong>Restore before eradication.</strong> Restoring onto an unpatched host re-infects. Sequence matters.',
+        '<strong>Restoring from compromised backup.</strong> Pre-incident timestamps only. Verify backup hashes.'
+      ]
+    },
+    {
+      phase: 'lessons',
+      title: 'Lessons Learned',
+      goal: '"How do we make sure this never happens again — or at least costs less next time?"',
+      actions: [
+        '<strong>Post-incident review</strong> within 2 weeks while details fresh',
+        '<strong>Document timeline</strong> — every action + when + by whom',
+        '<strong>Identify gaps</strong> in detection, response, comms, tooling',
+        '<strong>Update playbook</strong> with new attack-pattern + better response',
+        '<strong>Share intel</strong> with peer orgs / ISAC if appropriate'
+      ],
+      traps: [
+        '<strong>Skipping it.</strong> "We\'re too busy" = next incident is the same incident. Always close the loop.',
+        '<strong>Blame culture.</strong> Blameless postmortems surface real gaps. Punitive ones surface lies.'
+      ]
     }
   ]
 };
