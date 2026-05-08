@@ -7066,6 +7066,218 @@ window.CERT_PACKS.netplus = {
           }
         }
       ]
+    },
+    {
+      id: 'hsrp-failover',
+      title: 'HSRP failover (active → standby)',
+      icon: '🔁',
+      obj: '1.5',
+      diff: 3,
+      unlockAfter: ['cross-subnet-routing'],
+      summary: 'Two routers share a virtual IP/MAC · active fails · standby takes over via gratuitous ARP',
+      network: {
+        devices: [
+          { id: 'pc-a',  type: 'pc',     label: 'PC-A',     ip: '10.0.1.5',  x: 60,  y: 200 },
+          { id: 'sw-1',  type: 'switch', label: 'SW-1',                       x: 200, y: 200 },
+          { id: 'rtr-a', type: 'router', label: 'RTR-A\nactive',  ip: '.2/VIP .1', x: 350, y: 130 },
+          { id: 'rtr-b', type: 'router', label: 'RTR-B\nstandby', ip: '.3/VIP .1', x: 350, y: 270 },
+          { id: 'wan',   type: 'router', label: 'WAN',                            x: 510, y: 200 }
+        ],
+        cables: [
+          { from: 'pc-a',  to: 'sw-1',  type: 'copper' },
+          { from: 'sw-1',  to: 'rtr-a', type: 'copper' },
+          { from: 'sw-1',  to: 'rtr-b', type: 'copper' },
+          { from: 'rtr-a', to: 'wan',   type: 'remote' },
+          { from: 'rtr-b', to: 'wan',   type: 'remote' }
+        ],
+        subnets: [
+          { cidr: '10.0.1.0/24', label: 'LAN · gateway VIP = 10.0.1.1 (HSRP virtual)', color: 'amber',  boxX: 20,  boxY: 30, boxW: 320, boxH: 28 },
+          { cidr: 'WAN', label: 'upstream', color: 'purple', boxX: 380, boxY: 30, boxW: 200, boxH: 28 }
+        ]
+      },
+      steps: [
+        {
+          at: 'pc-a',
+          caption: { title: 'Step 1 · PC uses the VIP as its gateway', action: 'PC-A sends to off-subnet destination', detail: 'PC-A\'s default gateway is 10.0.1.1 (the HSRP VIP) — it has no idea two physical routers share this IP.' },
+          question: {
+            stem: 'PC-A is configured with default gateway 10.0.1.1. Which router actually receives PC-A\'s frames?',
+            options: [
+              'Both routers (PC-A broadcasts)',
+              'Only the router whose physical IP is 10.0.1.1 — the VIP IS a real router\'s IP',
+              'The HSRP active router (RTR-A here) — it answers ARP for the VIP and processes the frames; the standby is silent on the VIP',
+              'PC-A round-robins between RTR-A and RTR-B'
+            ],
+            correctIdx: 2,
+            why: 'HSRP/VRRP/GLBP create a VIRTUAL IP shared by two or more routers. Only the ACTIVE router answers ARP for the VIP and processes traffic to it. The standby exists silently, watching the active via Hello packets. PC-A\'s ARP cache resolves 10.0.1.1 → RTR-A\'s virtual MAC (00:00:0c:07:ac:XX format for HSRP), all traffic to the VIP goes to RTR-A.'
+          }
+        },
+        {
+          at: 'sw-1',
+          caption: { title: 'Step 2 · Frame to active router', action: 'SW-1 forwards via MAC table', detail: 'Destination MAC = HSRP virtual MAC. SW-1 has learned this MAC on RTR-A\'s port (since RTR-A is active and emits frames with the virtual MAC).' },
+          question: {
+            stem: 'What\'s special about the virtual MAC HSRP uses?',
+            options: [
+              'It\'s a randomly-generated unicast MAC',
+              'It\'s the active router\'s burned-in MAC',
+              'It\'s a well-known MAC (00:00:0c:07:ac:XX where XX = HSRP group ID) — both routers use it but only the active responds',
+              'It\'s a multicast MAC the entire subnet shares'
+            ],
+            correctIdx: 2,
+            why: 'HSRP uses a deterministic virtual MAC: 00:00:0c:07:ac:XX where XX = HSRP group number (0-255). The active router uses THIS MAC as the source on packets it sends — so SW-1\'s MAC table learns the virtual MAC against RTR-A\'s port. When standby takes over, it sends a gratuitous ARP with the SAME virtual MAC, causing every switch in the broadcast domain to update its MAC table to the new port. Same MAC, different physical location → seamless failover.'
+          }
+        },
+        {
+          at: 'rtr-a',
+          caption: { title: 'Step 3 · Active router fails', action: 'RTR-A power-cycles or its uplink dies', detail: 'RTR-B stops receiving Hello packets within 3 seconds (Hold time = 10s default; tunable down to subseconds).' },
+          question: {
+            stem: 'How does RTR-B (standby) detect that RTR-A (active) has failed?',
+            options: [
+              'RTR-B pings RTR-A periodically and notices timeouts',
+              'RTR-B stops receiving HSRP Hello packets from RTR-A; after the Hold timer expires (default 10s), RTR-B promotes itself to active',
+              'A central HSRP server tells RTR-B',
+              'PC-A notifies the network'
+            ],
+            correctIdx: 1,
+            why: 'HSRP uses Hello/Hold timers: routers send Hellos every 3 seconds (default), Hold timer is 10 seconds. If standby stops hearing Hellos, it assumes active is dead and promotes itself. Tuneable down to ms-level (`standby X timers msec 200 msec 750`) for sub-second failover. VRRP uses similar mechanics with slightly different timer defaults.'
+          }
+        },
+        {
+          at: 'rtr-b',
+          caption: { title: 'Step 4 · Gratuitous ARP', action: 'RTR-B promotes to active and broadcasts a gratuitous ARP for the VIP', detail: 'gARP says "10.0.1.1 is at virtual MAC 00:00:0c:07:ac:01" — every device updates its ARP cache + every switch updates its MAC table.' },
+          question: {
+            stem: 'Why is gratuitous ARP critical for HSRP failover?',
+            options: [
+              'It tells the WAN about the new active router',
+              'It updates every host\'s ARP cache + every switch\'s MAC table to point the virtual IP/MAC at the NEW physical port — so traffic flows to RTR-B without anyone changing config',
+              'It encrypts the failover transition',
+              'It pings PC-A to verify it\'s still alive'
+            ],
+            correctIdx: 1,
+            why: 'gARP is an unsolicited ARP REPLY broadcast to the whole subnet. It says "this IP belongs to this MAC, update your tables." For HSRP, the new active router gARPs the VIP/virtual-MAC pairing, which: (1) refreshes every host\'s ARP cache so they don\'t time out the entry waiting for response on the dead router; (2) updates every switch\'s MAC table so frames destined to the virtual MAC now egress on the standby\'s port. End-to-end: failover completes in seconds with NO config change on hosts.'
+          }
+        },
+        {
+          at: 'rtr-b',
+          caption: { title: 'Step 5 · Steady state on RTR-B', action: 'PC-A\'s next packet to 10.0.1.1 reaches RTR-B', detail: 'PC-A still uses gateway 10.0.1.1 — it has no idea the underlying router changed.' },
+          question: {
+            stem: 'After failover, when RTR-A comes back online, what happens by default?',
+            options: [
+              'RTR-A automatically resumes active (preempt is on by default)',
+              'RTR-A becomes standby (preempt is OFF by default — RTR-B keeps active until ITS hold timer trips)',
+              'RTR-A and RTR-B alternate every 60 seconds',
+              'RTR-A remains down — manual intervention required'
+            ],
+            correctIdx: 1,
+            why: 'HSRP `preempt` defaults to OFF. When RTR-A returns, it becomes standby — RTR-B keeps active. This avoids unnecessary failovers. Some shops enable preempt + use priorities (`standby X priority 110`) so a designated primary always wins back. Trade-off: preempt = predictable active-router but extra failover events; no-preempt = first-comes wins, less churn.'
+          }
+        }
+      ]
+    },
+    {
+      id: 'ospf-inter-area',
+      title: 'OSPF inter-area routing',
+      icon: '🌐',
+      obj: '1.4',
+      diff: 3,
+      unlockAfter: ['cross-subnet-routing'],
+      summary: 'Packet from Area 1 → Area 0 (backbone) → Area 2 · ABRs summarise routes between areas',
+      network: {
+        devices: [
+          { id: 'pc-a', type: 'pc',     label: 'PC-A',  ip: '10.1.1.5', x: 40,  y: 200 },
+          { id: 'r1',   type: 'router', label: 'R1\n(Area 1)', x: 160, y: 200 },
+          { id: 'abr1', type: 'router', label: 'ABR-1\n(Area 1↔0)', x: 290, y: 200 },
+          { id: 'abr2', type: 'router', label: 'ABR-2\n(Area 0↔2)', x: 420, y: 200 },
+          { id: 'r2',   type: 'router', label: 'R2\n(Area 2)', x: 540, y: 200 }
+        ],
+        cables: [
+          { from: 'pc-a', to: 'r1',   type: 'copper' },
+          { from: 'r1',   to: 'abr1', type: 'copper' },
+          { from: 'abr1', to: 'abr2', type: 'copper' },
+          { from: 'abr2', to: 'r2',   type: 'copper' }
+        ],
+        subnets: [
+          { cidr: 'Area 1 = 10.1.0.0/16', label: 'edge area', color: 'amber',  boxX: 20,  boxY: 40, boxW: 240, boxH: 28 },
+          { cidr: 'Area 0 = backbone',     label: 'always present',           color: 'purple', boxX: 270, boxY: 40, boxW: 170, boxH: 28 },
+          { cidr: 'Area 2 = 10.2.0.0/16', label: 'edge area',               color: 'amber',  boxX: 450, boxY: 40, boxW: 130, boxH: 28 }
+        ]
+      },
+      steps: [
+        {
+          at: 'pc-a',
+          caption: { title: 'Step 1 · Why areas exist', action: 'OSPF scales by SPLITTING the topology into areas', detail: 'A single OSPF flat domain doesn\'t scale — every router sees every link, every change triggers SPF recalc everywhere.' },
+          question: {
+            stem: 'Why does OSPF use AREAS instead of being a single flat domain?',
+            options: [
+              'For security — different areas mean different passwords',
+              'To LIMIT the size of the link-state database and reduce SPF recalculation scope — changes within an area only trigger recalc within that area, not org-wide',
+              'Because OSPF can only handle 5 routers per process',
+              'To match Ethernet broadcast domains'
+            ],
+            correctIdx: 1,
+            why: 'OSPF SPF (Dijkstra) is O(n log n) on the link-state database (LSDB). At 1000+ routers, recalc on every link flap becomes prohibitive. AREAS scope the LSDB: each router only stores LSDBs for its own area + summarised inter-area routes. Area 0 (backbone) is mandatory — every other area MUST physically connect to area 0. Without areas, OSPF wouldn\'t scale past mid-size enterprises.'
+          }
+        },
+        {
+          at: 'abr1',
+          caption: { title: 'Step 2 · ABR (Area Border Router)', action: 'ABR-1 sits in BOTH Area 1 AND Area 0', detail: 'ABRs maintain SEPARATE LSDBs for each area they\'re in and SUMMARISE routes between them.' },
+          question: {
+            stem: 'ABR-1 receives a Type-1 LSA inside Area 1 advertising 10.1.5.0/24. What does ABR-1 advertise into Area 0?',
+            options: [
+              'The same Type-1 LSA, unmodified',
+              'Nothing — areas are isolated',
+              'A Type-3 Summary LSA describing 10.1.5.0/24 as reachable via ABR-1\'s router ID',
+              'A Type-7 NSSA External LSA'
+            ],
+            correctIdx: 2,
+            why: 'ABRs translate intra-area Type-1/2 LSAs into Type-3 SUMMARY LSAs for OTHER areas. The detail (full topology of Area 1) doesn\'t leak — only the prefix + cost-to-reach via the ABR. This summary-only flow is what makes OSPF scale: routers in Area 0 + Area 2 don\'t see Area 1\'s internal topology, only "10.1.5.0/24 via ABR-1, cost X".'
+          }
+        },
+        {
+          at: 'abr1',
+          caption: { title: 'Step 3 · Forwarding to backbone', action: 'ABR-1 receives PC-A\'s packet (dest 10.2.1.5)', detail: 'Routing table lookup: 10.2.0.0/16 reachable via ABR-2 (cost from Type-3 LSA flooded by ABR-2 into Area 0).' },
+          question: {
+            stem: 'How did ABR-1 learn about 10.2.0.0/16 (which lives in Area 2)?',
+            options: [
+              'ABR-1 ran an Area 2 SPF calculation',
+              'ABR-1 received a Type-3 Summary LSA from ABR-2 (advertising Area 2\'s prefixes into Area 0)',
+              'ABR-1 received a default route from R2',
+              'ABR-1 must have BGP running between areas'
+            ],
+            correctIdx: 1,
+            why: 'Only ABR-2 sees Area 2\'s detail (it\'s the border for Area 2). ABR-2 generates Type-3 Summary LSAs for Area 2\'s prefixes and floods them into Area 0. ABR-1 learns "10.2.0.0/16 via ABR-2" from Area 0\'s LSDB. ABR-1 does NOT see Area 2\'s detailed topology — just the summary. This is the inter-area "thin" view that keeps SPF computation bounded.'
+          }
+        },
+        {
+          at: 'abr2',
+          caption: { title: 'Step 4 · Backbone → Area 2', action: 'ABR-2 receives the packet from ABR-1', detail: 'ABR-2 looks up dest 10.2.1.5 in its Area 2 LSDB → next hop = R2 → forwards.' },
+          question: {
+            stem: 'Why does ABR-2 know Area 2\'s INTERNAL topology while ABR-1 only sees a summary?',
+            options: [
+              'ABR-2 runs a different OSPF process',
+              'ABR-2 is a member of Area 2 (it sits in BOTH Area 0 and Area 2) — so it has the full Area 2 LSDB',
+              'ABR-1 and ABR-2 share an LSDB via TCP',
+              'OSPF randomly chooses which router gets full visibility'
+            ],
+            correctIdx: 1,
+            why: 'An ABR is by definition a member of multiple areas. ABR-2 has FULL LSDBs for Area 0 AND Area 2. It generates summaries for OTHER ABRs, but its own Area 2 view is complete. This is why ABRs can route between areas — they hold the detailed picture for each area they belong to. Routers entirely inside Area 1 never see Area 2 detail; they only see "summary via ABR".'
+          }
+        },
+        {
+          at: 'r2',
+          caption: { title: 'Step 5 · Final hop in Area 2', action: 'R2 receives packet, forwards to 10.2.1.5 within Area 2', detail: 'L3 source IP = PC-A\'s 10.1.1.5 (preserved end-to-end across the OSPF domain).' },
+          question: {
+            stem: 'What\'s the cost metric R2 used to choose its path?',
+            options: [
+              'Hop count (3 hops total)',
+              'Bandwidth-derived cost — OSPF reference-bandwidth / interface-bandwidth, summed along the path',
+              'Random load balancing',
+              'AS path length (BGP-style)'
+            ],
+            correctIdx: 1,
+            why: 'OSPF uses INTERFACE COST (default = 100 Mbps reference / interface bandwidth in Mbps; tuneable via `auto-cost reference-bandwidth`). 1Gb interface = cost 1, 100Mb = 10, 10Mb = 100. Path cost is the sum of all egress interface costs along the route. This is why OSPF is "link-state" — it picks the path with lowest total link cost, not hop count. RIP uses hop count; OSPF respects bandwidth.'
+          }
+        }
+      ]
     }
   ],
   packetTraceLessons: [
