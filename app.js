@@ -1,9 +1,9 @@
 // ══════════════════════════════════════════
-// Network+ AI Quiz — app.js  v4.98.3
+// Network+ AI Quiz — app.js  v4.98.4
 // ══════════════════════════════════════════
 
 // ── CONSTANTS ──
-const APP_VERSION = '4.98.3';
+const APP_VERSION = '4.98.4';
 
 // ══════════════════════════════════════════════════════════════════════════
 // CERT PACK ARCHITECTURE (v4.86.0 Phase 1A engine refactor)
@@ -36810,6 +36810,13 @@ function cbCheckGate(btn, isCorrect) { cbScaffold.checkGate(btn, isCorrect); }
 // ══════════════════════════════════════════
 function escHtml(str) {
   return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+// v4.98.4 hotfix: escAttr was used throughout IRW + PHT flagships but never
+// defined — caused both flagships to crash on first render with
+// "escAttr is not defined". escHtml already escapes both quote types so
+// it's safe to alias for HTML attribute contexts.
+function escAttr(str) {
+  return escHtml(str == null ? '' : str);
 }
 
 // ── v4.43.0: exam-convention keyword highlighting ────────────────────
