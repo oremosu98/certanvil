@@ -6756,6 +6756,316 @@ window.CERT_PACKS.netplus = {
           }
         }
       ]
+    },
+    {
+      id: 'stp-convergence',
+      title: 'Spanning Tree convergence',
+      icon: '🌳',
+      obj: '2.3',
+      diff: 3,
+      unlockAfter: ['same-subnet-arp'],
+      summary: '3 switches in a triangle · STP elects root + blocks one port to break the loop',
+      network: {
+        devices: [
+          { id: 'sw-a', type: 'switch', label: 'SW-A',  ip: 'BID 32768.aa:11', x: 200, y: 80 },
+          { id: 'sw-b', type: 'switch', label: 'SW-B',  ip: 'BID 32768.bb:22', x: 80,  y: 200 },
+          { id: 'sw-c', type: 'switch', label: 'SW-C',  ip: 'BID 32768.cc:33', x: 320, y: 200 },
+          { id: 'pc-1', type: 'pc',     label: 'PC-1',  ip: '10.0.1.5',        x: 80,  y: 280 },
+          { id: 'pc-2', type: 'pc',     label: 'PC-2',  ip: '10.0.1.20',       x: 320, y: 280 }
+        ],
+        cables: [
+          { from: 'sw-a', to: 'sw-b', type: 'copper' },
+          { from: 'sw-a', to: 'sw-c', type: 'copper' },
+          { from: 'sw-b', to: 'sw-c', type: 'copper' },
+          { from: 'pc-1', to: 'sw-b', type: 'copper' },
+          { from: 'pc-2', to: 'sw-c', type: 'copper' }
+        ],
+        subnets: [
+          { cidr: '10.0.1.0/24', label: 'L2 broadcast domain · 3 switches in a loop', color: 'amber', boxX: 20, boxY: 30, boxW: 540, boxH: 28 }
+        ]
+      },
+      steps: [
+        {
+          at: 'sw-a',
+          caption: { title: 'Step 1 · Why STP exists', action: 'Three switches form a Layer-2 loop', detail: 'Without STP, broadcast frames would circulate forever, multiplying with every hop and saturating every link.' },
+          question: {
+            stem: 'What WOULD happen if a single broadcast frame entered this triangle topology with NO Spanning Tree Protocol running?',
+            options: [
+              'The first switch to receive it would forward it once and then drop the loop',
+              'Each switch would forward the broadcast out all other ports indefinitely, creating a broadcast storm that saturates every link',
+              'The frame would automatically take the shortest path and stop',
+              'The frame would be dropped because broadcast frames are limited to a single switch'
+            ],
+            correctIdx: 1,
+            why: 'Layer-2 has no TTL field (unlike L3 IP). A broadcast frame entering a loop is forwarded out every other port on each switch, which then receive it again on different ports, forwarding it again — exponential frame multiplication. STP prevents this by logically blocking redundant links so the L2 topology becomes a tree (no cycles).'
+          }
+        },
+        {
+          at: 'sw-a',
+          caption: { title: 'Step 2 · Root bridge election', action: 'Switches send BPDUs comparing Bridge IDs', detail: 'Bridge ID = priority (default 32768) + MAC. Lowest BID wins.' },
+          question: {
+            stem: 'All three switches have the default priority of 32768. SW-A\'s MAC starts with aa, SW-B with bb, SW-C with cc. Which switch becomes the root bridge?',
+            options: [
+              'SW-A (lowest MAC = aa)',
+              'SW-B (middle MAC = bb)',
+              'SW-C (highest MAC = cc, longest uptime)',
+              'It depends on which switch boots first'
+            ],
+            correctIdx: 0,
+            why: 'STP root election: lowest Bridge ID wins. With identical priorities (default 32768), the tiebreaker is the MAC address — lowest MAC becomes root. SW-A with MAC starting "aa" is lowest, so SW-A is the root bridge. To force a specific switch as root, lower its priority via `spanning-tree vlan X priority 4096`.'
+          }
+        },
+        {
+          at: 'sw-c',
+          caption: { title: 'Step 3 · Port roles converging', action: 'Each non-root switch picks ONE root port (best path to root) + designated ports per segment', detail: 'On SW-C: which port leads to root? Compare path costs.' },
+          question: {
+            stem: 'SW-C has two paths to the root (SW-A): direct via the SW-A↔SW-C link (cost 4 for 1Gb), or indirect via SW-B (cost 4+4=8). Which port becomes SW-C\'s ROOT port?',
+            options: [
+              'The port toward SW-B (longer path, more redundant)',
+              'The port toward SW-A directly (lowest path cost = 4)',
+              'Both ports — STP keeps redundancy active',
+              'Neither — SW-C blocks all uplinks until manual designation'
+            ],
+            correctIdx: 1,
+            why: 'Each non-root switch elects exactly ONE root port: the port with the LOWEST path cost to the root bridge. Direct cost (4) beats indirect (8). The other uplink becomes either designated (forwarding for that segment) or blocked. Path cost is per-link based on speed — 10Mb=100, 100Mb=19, 1Gb=4, 10Gb=2.'
+          }
+        },
+        {
+          at: 'sw-b',
+          caption: { title: 'Step 4 · The blocked port', action: 'Per L2 segment, one port becomes designated; the other (if redundant) gets blocked', detail: 'On SW-B↔SW-C segment: who wins designated, who blocks?' },
+          question: {
+            stem: 'On the SW-B ↔ SW-C link, both switches advertise themselves. Their root path costs from SW-A are equal (both 4). Which port BLOCKS to break the loop?',
+            options: [
+              'Both ports forward — STP only blocks costly links',
+              'The port on the switch with the higher Bridge ID gets blocked (SW-C, since cc > bb)',
+              'A random port is chosen',
+              'STP can\'t resolve a tie and the link goes amber-pending'
+            ],
+            correctIdx: 1,
+            why: 'When path costs are equal, the tiebreaker is the sender\'s Bridge ID. SW-B (BID 32768.bb) advertises a lower BID than SW-C (32768.cc). SW-B wins designated on the SW-B↔SW-C segment; SW-C\'s port on that segment blocks. Now the topology is a tree: SW-A (root) → SW-B; SW-A → SW-C; SW-B↔SW-C is broken.'
+          }
+        },
+        {
+          at: 'sw-b',
+          caption: { title: 'Step 5 · Frame flow after convergence', action: 'PC-1 sends to PC-2; the frame travels through forwarding ports only', detail: 'SW-B → SW-A → SW-C → PC-2. The blocked SW-B↔SW-C link is unused.' },
+          question: {
+            stem: 'After STP converges, the SW-B↔SW-C cable is blocked. If the SW-A↔SW-C cable physically fails, what happens?',
+            options: [
+              'Traffic stops permanently — the network is partitioned',
+              'STP detects the failure (BPDUs stop arriving), the previously-blocked SW-B↔SW-C port unblocks, and the topology re-converges',
+              'SW-C powers off automatically',
+              'The frame loops back through PC-1'
+            ],
+            correctIdx: 1,
+            why: 'This is the whole point of STP redundancy. The redundant link exists for failover; it\'s only LOGICALLY blocked. When the active path fails, BPDUs stop arriving, STP detects the topology change, and the blocked port transitions through Listening (15s) → Learning (15s) → Forwarding (~30s with classic STP, much faster with RSTP/802.1w). Real-world: tune for RSTP for sub-second recovery.'
+          }
+        }
+      ]
+    },
+    {
+      id: 'vlan-trunk',
+      title: 'VLAN trunk (access → trunk → access)',
+      icon: '🔀',
+      obj: '2.3',
+      diff: 2,
+      unlockAfter: ['stp-convergence'],
+      summary: 'PC-1 (VLAN 10) → SW-1 → trunk → SW-2 → PC-2 (VLAN 10) · 802.1Q tag added/stripped at boundaries',
+      network: {
+        devices: [
+          { id: 'pc-1', type: 'pc',     label: 'PC-1',  ip: '10.0.10.5',  x: 60,  y: 200 },
+          { id: 'sw-1', type: 'switch', label: 'SW-1',  ip: 'access:V10', x: 200, y: 200 },
+          { id: 'sw-2', type: 'switch', label: 'SW-2',  ip: 'access:V10', x: 380, y: 200 },
+          { id: 'pc-2', type: 'pc',     label: 'PC-2',  ip: '10.0.10.20', x: 520, y: 200 }
+        ],
+        cables: [
+          { from: 'pc-1', to: 'sw-1', type: 'copper' },
+          { from: 'sw-1', to: 'sw-2', type: 'copper' },  // 802.1Q trunk
+          { from: 'sw-2', to: 'pc-2', type: 'copper' }
+        ],
+        subnets: [
+          { cidr: 'VLAN 10', label: 'access ports + 802.1Q trunk', color: 'amber',  boxX: 20,  boxY: 60, boxW: 540, boxH: 28 }
+        ]
+      },
+      steps: [
+        {
+          at: 'pc-1',
+          caption: { title: 'Step 1 · Untagged egress', action: 'PC-1 builds a normal Ethernet frame to PC-2', detail: 'PC-1 has no concept of VLANs — it just sends a standard frame.' },
+          question: {
+            stem: 'Does PC-1 add an 802.1Q VLAN tag to the frame before sending it?',
+            options: [
+              'Yes — every frame on a VLAN-aware network is tagged at the source',
+              'No — the host is unaware of VLANs; tagging happens at the switch access port',
+              'Yes — but only if PC-1 has a managed NIC',
+              'No — tagging only happens for inter-VLAN routing'
+            ],
+            correctIdx: 1,
+            why: 'Hosts almost always send untagged frames (the rare exception: trunked virtualisation hosts and 802.1Q-aware servers). VLANs are a switch construct. The access port assigns the VLAN based on its config (`switchport access vlan 10`); the frame itself is untagged on the wire from PC to switch.'
+          }
+        },
+        {
+          at: 'sw-1',
+          caption: { title: 'Step 2 · Access port → trunk port', action: 'SW-1\'s access port classifies the frame into VLAN 10', detail: 'When SW-1 forwards to the trunk port heading to SW-2, it ADDS an 802.1Q tag (VID=10).' },
+          question: {
+            stem: 'When SW-1 forwards the frame out its trunk port toward SW-2, what changes?',
+            options: [
+              'Nothing — the frame is unchanged',
+              'A 4-byte 802.1Q tag is inserted between the source MAC and EtherType, carrying VID=10 + priority bits',
+              'The destination MAC is rewritten to the trunk port\'s MAC',
+              'The frame is encrypted with TLS'
+            ],
+            correctIdx: 1,
+            why: '802.1Q (dot1q) tagging adds a 4-byte field after the source MAC: TPID 0x8100 + 12-bit VLAN ID + 3-bit priority (PCP) + 1-bit drop-eligible. The original frame is otherwise unchanged. Trunks carry MULTIPLE VLANs — the tag is the only way the receiving switch can tell which VLAN the frame belongs to.'
+          }
+        },
+        {
+          at: 'sw-2',
+          caption: { title: 'Step 3 · Trunk port ingress on SW-2', action: 'SW-2 reads the 802.1Q tag, places frame into VLAN 10 forwarding table', detail: 'SW-2 looks up the destination MAC in its VLAN 10 MAC table and finds PC-2\'s port.' },
+          question: {
+            stem: 'How does SW-2 know this tagged frame belongs to VLAN 10 (and not another VLAN sharing the trunk)?',
+            options: [
+              'It guesses based on the source MAC',
+              'It reads the VID field in the 802.1Q tag (=10)',
+              'It checks the destination IP address',
+              'All trunked frames default to VLAN 1 unless told otherwise'
+            ],
+            correctIdx: 1,
+            why: 'The VID (VLAN ID) in the 802.1Q tag is the only authoritative source. SW-2 looks at the 12-bit VLAN ID, applies it to the frame\'s VLAN context, then uses VLAN 10\'s MAC address table to forward. Each VLAN has its own MAC table (per-VLAN). The frame would never accidentally cross into another VLAN unless misconfiguration (VLAN hopping attack) or a router routes between them.'
+          }
+        },
+        {
+          at: 'sw-2',
+          caption: { title: 'Step 4 · Trunk port → access port (egress)', action: 'SW-2 forwards toward PC-2\'s access port; access port STRIPS the tag before transmission', detail: 'PC-2 receives a clean untagged Ethernet frame.' },
+          question: {
+            stem: 'When SW-2 forwards the frame out its access port toward PC-2, what happens to the 802.1Q tag?',
+            options: [
+              'It stays — PC-2 strips it on receipt',
+              'It\'s stripped before egress — PC-2 receives an untagged frame',
+              'It\'s converted to an MPLS label',
+              'It\'s replicated on every port for redundancy'
+            ],
+            correctIdx: 1,
+            why: 'Symmetric to ingress: access ports DROP tags on egress. PC-2 receives a normal untagged Ethernet frame and has no idea VLANs exist. This invisibility is what makes VLANs work transparently for end hosts. The "native VLAN" on a trunk is the only exception — frames in the native VLAN cross the trunk untagged (used for compatibility with legacy non-tagging devices, but a security trap if misconfigured).'
+          }
+        },
+        {
+          at: 'pc-2',
+          caption: { title: 'Step 5 · Frame received', action: 'PC-2 sees a standard Ethernet frame from PC-1', detail: 'L2 source MAC = PC-1\'s MAC; L3 source IP = 10.0.10.5. End-to-end, the frame looks "normal" — VLANs were transparent.' },
+          question: {
+            stem: 'What does PC-2 know about VLAN 10?',
+            options: [
+              'PC-2 is fully VLAN-aware and processed the tag',
+              'Nothing — VLANs are a switch concept, transparent to hosts',
+              'PC-2 detected the tag during the trunk hop and de-encapsulated',
+              'PC-2 only learns about VLANs if its OS supports 802.1Q drivers'
+            ],
+            correctIdx: 1,
+            why: 'Hosts on access ports are completely unaware of VLAN segmentation. As far as PC-2 knows, it received a normal frame from PC-1 on the same broadcast domain. VLANs achieve "logical L2 isolation" without any host configuration — that\'s their operational power. Inter-VLAN traffic requires a router or L3 switch (next scenario).'
+          }
+        }
+      ]
+    },
+    {
+      id: 'inter-vlan-routing',
+      title: 'Inter-VLAN routing (router-on-a-stick)',
+      icon: '🔁',
+      obj: '2.3',
+      diff: 3,
+      unlockAfter: ['vlan-trunk'],
+      summary: 'PC-1 (VLAN 10) → trunk → R1 sub-interfaces → trunk → PC-2 (VLAN 20) · single physical link, two L3 boundaries',
+      network: {
+        devices: [
+          { id: 'pc-1', type: 'pc',     label: 'PC-1',  ip: '10.0.10.5',  x: 60,  y: 130 },
+          { id: 'sw-1', type: 'switch', label: 'SW-1',  ip: 'V10+V20',    x: 220, y: 200 },
+          { id: 'rtr',  type: 'router', label: 'R1',    ip: '.1/.10/.20', x: 380, y: 200 },
+          { id: 'pc-2', type: 'pc',     label: 'PC-2',  ip: '10.0.20.5',  x: 540, y: 270 }
+        ],
+        cables: [
+          { from: 'pc-1', to: 'sw-1', type: 'copper' },
+          { from: 'sw-1', to: 'rtr',  type: 'copper' },  // 802.1Q trunk between SW-1 and R1 (the "stick")
+          { from: 'rtr',  to: 'pc-2', type: 'copper' }
+        ],
+        subnets: [
+          { cidr: 'VLAN 10 = 10.0.10.0/24', label: 'subnet A', color: 'amber',  boxX: 20,  boxY: 30, boxW: 240, boxH: 28 },
+          { cidr: 'VLAN 20 = 10.0.20.0/24', label: 'subnet B', color: 'purple', boxX: 320, boxY: 30, boxW: 240, boxH: 28 }
+        ]
+      },
+      steps: [
+        {
+          at: 'pc-1',
+          caption: { title: 'Step 1 · L3 destination check', action: 'PC-1 (10.0.10.5) → PC-2 (10.0.20.5)', detail: 'Different /24 subnets → frame must go to default gateway (10.0.10.1, R1\'s VLAN-10 sub-interface).' },
+          question: {
+            stem: 'PC-1 wants to reach PC-2 in VLAN 20. What IP does PC-1 use as the next-hop L2 destination (i.e., who does PC-1 ARP for)?',
+            options: [
+              'PC-2\'s IP (10.0.20.5) — direct ARP',
+              'R1\'s VLAN-10 sub-interface (10.0.10.1) — the default gateway for VLAN 10',
+              'The broadcast address (10.0.10.255)',
+              'SW-1\'s management IP'
+            ],
+            correctIdx: 1,
+            why: 'Different VLANs = different subnets = different broadcast domains. PC-1 cannot ARP across the VLAN boundary. PC-1 ARPs for its VLAN 10 default gateway (R1\'s 10.0.10.1) and uses R1\'s MAC as the L2 destination. The L3 destination IP (10.0.20.5) is unchanged — only the L2 next-hop differs.'
+          }
+        },
+        {
+          at: 'sw-1',
+          caption: { title: 'Step 2 · Frame tagged + sent up the trunk', action: 'SW-1\'s access port (PC-1) classifies into VLAN 10', detail: 'SW-1 forwards out its trunk port toward R1, with a VLAN 10 tag added.' },
+          question: {
+            stem: 'SW-1 forwards the frame out its trunk port to R1. What\'s in the 802.1Q tag?',
+            options: [
+              'VID=20, because the destination is in VLAN 20',
+              'VID=10, because the source access port was in VLAN 10',
+              'VID=1, because trunks default to native VLAN',
+              'No tag — SW-1 strips it before sending to a router'
+            ],
+            correctIdx: 1,
+            why: 'The tag reflects the SOURCE VLAN, not the destination. SW-1 has no idea about R1\'s routing logic — it just tags the frame with the access port\'s VLAN (10) and sends it up the trunk. The router will determine the destination VLAN by looking at the destination IP.'
+          }
+        },
+        {
+          at: 'rtr',
+          caption: { title: 'Step 3 · R1\'s VLAN-10 sub-interface', action: 'R1 receives tagged frame on Gi0/0.10 sub-interface (VLAN 10)', detail: 'L2 destination = R1\'s MAC. R1 strips L2 header, looks up dest IP 10.0.20.5 in routing table.' },
+          question: {
+            stem: 'How does R1 handle the tagged frame? (router-on-a-stick = single physical interface with sub-interfaces)',
+            options: [
+              'R1 receives the frame on its physical Gi0/0 interface, but logically processes it via Gi0/0.10 (the sub-interface configured for VLAN 10)',
+              'R1 has dedicated physical ports for each VLAN — no sub-interfaces involved',
+              'R1 ignores the VLAN tag and processes as untagged',
+              'R1 floods the frame back out the trunk to find PC-2'
+            ],
+            correctIdx: 0,
+            why: 'Router-on-a-stick (a.k.a. ROAS) uses a SINGLE physical interface configured as a trunk + multiple SUB-INTERFACES (.10, .20, etc.), one per VLAN. Each sub-interface has its own IP (the gateway for that VLAN). This is how a single trunked link between SW and R can route between many VLANs without needing one physical interface per VLAN.'
+          }
+        },
+        {
+          at: 'rtr',
+          caption: { title: 'Step 4 · L3 routing decision + new L2 frame', action: 'R1 looks up 10.0.20.5 → directly connected via Gi0/0.20 (VLAN 20)', detail: 'R1 builds a NEW L2 frame: src MAC = R1\'s VLAN-20 sub-interface MAC, dst MAC = PC-2\'s MAC (ARP\'d if needed), tagged with VLAN 20.' },
+          question: {
+            stem: 'When R1 sends the frame back down the trunk toward SW-1, what 802.1Q tag does it use?',
+            options: [
+              'VID=10 (the source VLAN)',
+              'VID=20 (the destination VLAN, because R1 just routed into the 10.0.20.0/24 subnet)',
+              'No tag — R1 sends it untagged',
+              'VID=1 (default)'
+            ],
+            correctIdx: 1,
+            why: 'After the L3 routing decision, R1 emits the frame in the DESTINATION VLAN. The Gi0/0.20 sub-interface tags the egress frame with VID=20. SW-1 will receive it on its trunk port, see VID=20, and forward it to PC-2\'s VLAN-20 access port. This is the "stick" doing its job — both directions of inter-VLAN traffic flow over the same physical link.'
+          }
+        },
+        {
+          at: 'pc-2',
+          caption: { title: 'Step 5 · Frame arrives untagged at PC-2', action: 'SW-1\'s VLAN-20 access port strips the tag before egress', detail: 'L3 source IP = 10.0.10.5 (preserved end-to-end); L2 source MAC = R1\'s VLAN-20 MAC (changed at the router hop).' },
+          question: {
+            stem: 'PC-2 receives the frame. What\'s the L3 source IP?',
+            options: [
+              'R1\'s VLAN-20 IP (10.0.20.1)',
+              'PC-1\'s IP (10.0.10.5) — preserved end-to-end',
+              'PC-2\'s own IP (10.0.20.5)',
+              '10.0.20.255 (subnet broadcast)'
+            ],
+            correctIdx: 1,
+            why: 'Same fundamental rule as cross-subnet routing: L2 addresses change at every router hop, L3 addresses are end-to-end. PC-2 sees PC-1\'s IP as the source — that\'s how the reply will know where to go. The router rewrote the L2 header (source MAC = R1\'s VLAN-20 MAC, destination MAC = PC-2\'s MAC) but left L3 untouched. NAT would be different — but plain routing preserves L3 source.'
+          }
+        }
+      ]
     }
   ],
   packetTraceLessons: [
