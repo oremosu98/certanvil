@@ -305,7 +305,7 @@ test('Validation in runSessionStep', js.includes('aiValidateQuestions(apiKey, qu
 
 // ── Analytics v2 (v4.5) ──
 console.log('\n\x1b[1m── ANALYTICS v2 (v4.5) ──\x1b[0m');
-test('APP_VERSION is 4.99.11', js.includes("const APP_VERSION = '4.99.11"));
+test('APP_VERSION is 4.99.12', js.includes("const APP_VERSION = '4.99.12"));
 test('getDailyGoal function', js.includes('function getDailyGoal('));
 test('renderDailyGoal function', js.includes('function renderDailyGoal('));
 test('editDailyGoal function', js.includes('function editDailyGoal('));
@@ -319,7 +319,7 @@ test('CSS: .topic-domain-group', css.includes('.topic-domain-group'));
 test('CSS: .daily-goal-card', css.includes('.daily-goal-card'));
 test('CSS: .advanced-section', css.includes('.advanced-section'));
 test('CSS: .hero-stats-strip', css.includes('.hero-stats-strip'));
-test('SW cache bumped to v4.99.11', sw.includes('netplus-v4.99.11'));
+test('SW cache bumped to v4.99.12', sw.includes('netplus-v4.99.12'));
 test('Family Drill: STORAGE.PORT_FAMILY_BEST', js.includes("PORT_FAMILY_BEST:"));
 test('Family Drill: ptMode handles family', js.includes("ptMode === 'family'"));
 test('Family Drill: HTML mode button', html.includes('id="pt-mode-family"'));
@@ -17872,6 +17872,26 @@ test('v4.99.11 ShowPageGuard: no raw classList.add(active) on Pro-only page IDs 
   !/getElementById\(['"]page-(topology-builder|acl|irw|pht|subnet|ports|acronyms|cables|amm|cts|guided-lab|monitor|network-analysis|osi-sorter|ptr)['"]\)\.classList\.add\(['"]active['"]/.test(js));
 test('v4.99.11 ShowPageGuard: only 1 raw classList.add(active) site (inside showPage activate())',
   (js.match(/classList\.add\(['"]active['"]\)/g) || []).length <= 1);
+
+// ── v4.99.12 — RLS regex hotfix for v4.99.10 notify_signups ──
+console.log('\n\x1b[1m── v4.99.12 — RLS REGEX HOTFIX ──\x1b[0m');
+const notifyMigrationFixed = fs.readFileSync(
+  path.join(ROOT, 'supabase/migrations/20260509_notify_signups.sql'), 'utf8');
+// Note: comments in both migration files INTENTIONALLY mention the old broken
+// '[^@\s]' regex for documentation purposes. The guards below match only the
+// active SQL line ("email ~ '...'") to avoid false positives on the comments.
+test('v4.99.12 Migration: original notify_signups.sql active SQL uses \\s-free POSIX regex',
+  /email\s*~\s*'\^\[\^@\]\+@\[\^@\]\+/.test(notifyMigrationFixed)
+  && !/email\s*~\s*'\^\[\^@\\s\]/.test(notifyMigrationFixed));
+test('v4.99.12 Hotfix: regex_fix migration file exists for prod-already-applied installs',
+  fs.existsSync(path.join(ROOT, 'supabase/migrations/20260509_notify_signups_regex_fix.sql')));
+const regexFixMigration = fs.readFileSync(
+  path.join(ROOT, 'supabase/migrations/20260509_notify_signups_regex_fix.sql'), 'utf8');
+test('v4.99.12 Hotfix: regex_fix drops + recreates the policy idempotently',
+  /drop policy if exists "Allow notify-me signup inserts"[\s\S]{0,300}create policy "Allow notify-me signup inserts"/.test(regexFixMigration));
+test('v4.99.12 Hotfix: regex_fix active SQL uses correct \\s-free POSIX regex',
+  /email\s*~\s*'\^\[\^@\]\+@\[\^@\]\+/.test(regexFixMigration)
+  && !/email\s*~\s*'\^\[\^@\\s\]/.test(regexFixMigration));
 
 // ── Summary ──
 console.log('\n' + '═'.repeat(50));

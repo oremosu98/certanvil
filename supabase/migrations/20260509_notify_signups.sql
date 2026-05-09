@@ -59,7 +59,13 @@ create policy "Allow notify-me signup inserts"
   for insert
   to anon, authenticated
   with check (
-    email ~ '^[^@\s]+@[^@\s]+\.[^@\s]+$'
+    -- v4.99.12: Postgres POSIX regex does NOT support \s (Perl-style escape).
+    -- Pre-fix the regex was '^[^@\s]+@[^@\s]+\.[^@\s]+$' which interpreted
+    -- \s as literal 's' inside the character class — so any email containing
+    -- the letter 's' was rejected by RLS. Now uses a simpler '^[^@]+@[^@]+\.[^@]+$'
+    -- which is sufficient because the edge function does its own validation
+    -- upstream (defence-in-depth, not the only validation layer).
+    email ~ '^[^@]+@[^@]+\.[^@]+$'
     and length(email) <= 254
     and length(cert) > 0
     and length(cert) <= 100
