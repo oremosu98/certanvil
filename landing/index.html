@@ -872,6 +872,13 @@
           <span class="coming-soon-pill">Soon</span>
         </button>
 
+        <!-- v4.99.21: visible "Have a password?" link so testers don't need
+             to remember a special URL. Magic-link mode only (hidden in
+             password mode since they're already there). -->
+        <button type="button" class="auth-magic-fallback-link" id="auth-show-password">
+          Have a password? <strong>Sign in instead →</strong>
+        </button>
+
         <div class="auth-foot">
           By continuing you agree to our <a href="#">Terms</a> and <a href="#">Privacy</a>. We use magic links because <em>passwords break, and password resets break more</em>.
         </div>

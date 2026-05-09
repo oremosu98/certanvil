@@ -992,6 +992,36 @@ button { font: inherit; border: 0; background: transparent; cursor: pointer; col
   border-color: rgba(245, 158, 11, 0.35);
 }
 
+/* v4.99.21 — "Have a password?" fallback link in the auth modal.
+   Subtle inline link styling, sits below the OAuth button. Click swaps
+   the form to password mode. Hidden in password mode (consumer of the
+   #auth-magic-only wrapper). Replaces the older URL-param-only flow
+   so tester onboarding can just be "go to certanvil.com and click sign in". */
+.auth-magic-fallback-link {
+  display: block;
+  width: 100%;
+  background: transparent;
+  border: none;
+  color: var(--text-mid, #6b7280);
+  font-size: 13px;
+  text-align: center;
+  padding: 12px 8px 4px;
+  margin-top: 8px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: color 0.15s ease;
+}
+.auth-magic-fallback-link strong {
+  color: var(--accent, #5b4fdb);
+  font-weight: 700;
+}
+.auth-magic-fallback-link:hover { color: var(--text, #1a1a2e); }
+.auth-magic-fallback-link:hover strong { color: var(--accent-hover, #6e60e8); }
+[data-theme="dark"] .auth-magic-fallback-link { color: rgba(255, 255, 255, 0.55); }
+[data-theme="dark"] .auth-magic-fallback-link strong { color: #c4baff; }
+[data-theme="dark"] .auth-magic-fallback-link:hover { color: rgba(255, 255, 255, 0.9); }
+[data-theme="dark"] .auth-magic-fallback-link:hover strong { color: #d4cdff; }
+
 .auth-title {
   font-size: 22px;
   font-weight: 800;

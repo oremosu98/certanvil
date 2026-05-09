@@ -65,6 +65,10 @@
   var authMagicOnly = document.getElementById('auth-magic-only');
   var authSubText = document.getElementById('auth-sub');
   var authModalTitle = document.getElementById('auth-modal-title');
+  // v4.99.21 — visible "Have a password?" link in magic-link mode (replaces
+  // the URL-param-only flow as the primary path; URL param still works for
+  // backward compat). Click swaps the auth form to password mode.
+  var authShowPassword = document.getElementById('auth-show-password');
 
   // v4.90.1: auth.js is loaded on multiple landing-surface pages now —
   // the home page (index.html) has the full sign-in modal markup, but
@@ -234,6 +238,24 @@
 
   function signInWithPlaytestPassword(email, password) {
     return supabase.auth.signInWithPassword({ email: email, password: password });
+  }
+
+  // v4.99.21 — wire the "Have a password? Sign in instead →" link to swap
+  // the auth modal into password mode. After clicking, the user fills in
+  // email + password just like they would via the ?auth=password URL param.
+  // No localStorage flag set here — that only happens after a successful
+  // sign-in. So clicking the link without signing in doesn't mark the device.
+  if (authShowPassword) {
+    authShowPassword.addEventListener('click', function (e) {
+      e.preventDefault();
+      setAuthMode('password');
+      clearAuthError();
+      // Focus the password input so they can start typing immediately
+      // (email is usually already filled in from the magic-link form)
+      if (authPasswordInput) {
+        try { authPasswordInput.focus(); } catch (_) {}
+      }
+    });
   }
 
   function showAuthError(msg) {

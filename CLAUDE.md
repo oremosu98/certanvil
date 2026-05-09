@@ -467,6 +467,7 @@ npx playwright test              # E2E (tests/e2e/app.spec.js)
 
 | Version | Features Added |
 |---|---|
+| v4.99.21 | Visible 'Have a password?' link in auth modal — replaces URL-param-only flow as the primary tester sign-in path |
 | v4.99.20 | Tester accounts get fixed 'tester' greeting via is_playtest flag override |
 | v4.99.19 | Sec+ coming-soon tile on landing for public visitors (mutual exclusion with the builder-only private tile) |
 | v4.99.18 | Per-user display name in cert-app greeting (replaces hardcoded Simi); reads from auth-state.js profile fetch + falls back through localStorage cache → email prefix → 'there' |

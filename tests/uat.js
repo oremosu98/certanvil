@@ -305,7 +305,7 @@ test('Validation in runSessionStep', js.includes('aiValidateQuestions(apiKey, qu
 
 // ── Analytics v2 (v4.5) ──
 console.log('\n\x1b[1m── ANALYTICS v2 (v4.5) ──\x1b[0m');
-test('APP_VERSION is 4.99.20', js.includes("const APP_VERSION = '4.99.20"));
+test('APP_VERSION is 4.99.21', js.includes("const APP_VERSION = '4.99.21"));
 test('getDailyGoal function', js.includes('function getDailyGoal('));
 test('renderDailyGoal function', js.includes('function renderDailyGoal('));
 test('editDailyGoal function', js.includes('function editDailyGoal('));
@@ -319,7 +319,7 @@ test('CSS: .topic-domain-group', css.includes('.topic-domain-group'));
 test('CSS: .daily-goal-card', css.includes('.daily-goal-card'));
 test('CSS: .advanced-section', css.includes('.advanced-section'));
 test('CSS: .hero-stats-strip', css.includes('.hero-stats-strip'));
-test('SW cache bumped to v4.99.20', sw.includes('netplus-v4.99.20'));
+test('SW cache bumped to v4.99.21', sw.includes('netplus-v4.99.21'));
 test('Family Drill: STORAGE.PORT_FAMILY_BEST', js.includes("PORT_FAMILY_BEST:"));
 test('Family Drill: ptMode handles family', js.includes("ptMode === 'family'"));
 test('Family Drill: HTML mode button', html.includes('id="pt-mode-family"'));
@@ -18080,6 +18080,30 @@ test('v4.99.20 AuthState: is_playtest=true overrides display name to "tester"',
   /profile\.is_playtest === true[\s\S]{0,300}window\._certanvilDisplayName\s*=\s*['"]tester['"]/.test(authStateJsV99_20));
 test('v4.99.20 AuthState: tester override branch caches "tester" to localStorage too',
   /is_playtest === true[\s\S]{0,400}localStorage\.setItem\(['"]certanvil_display_name_cache['"],\s*['"]tester['"]/.test(authStateJsV99_20));
+
+// ── v4.99.21 — Visible "Have a password?" link (replaces URL-param-only flow) ──
+console.log('\n\x1b[1m── v4.99.21 — VISIBLE PASSWORD FALLBACK LINK ──\x1b[0m');
+const landingHtmlV99_21 = fs.readFileSync(path.join(ROOT, 'landing/index.html'), 'utf8');
+test('v4.99.21 LandingHtml: "Have a password?" button present in auth modal',
+  /<button[^>]*id="auth-show-password"[\s\S]{0,200}Have a password\?/.test(landingHtmlV99_21));
+test('v4.99.21 LandingHtml: button is inside auth-magic-only (hides in password mode)',
+  /id="auth-magic-only"[\s\S]{0,2000}id="auth-show-password"/.test(landingHtmlV99_21));
+
+const authJsV99_21 = fs.readFileSync(path.join(ROOT, 'landing/auth.js'), 'utf8');
+test('v4.99.21 AuthJs: authShowPassword element reference cached at top',
+  /var authShowPassword = document\.getElementById\(['"]auth-show-password['"]\)/.test(authJsV99_21));
+test('v4.99.21 AuthJs: click handler calls setAuthMode("password")',
+  /authShowPassword[\s\S]{0,400}addEventListener\(['"]click['"][\s\S]{0,300}setAuthMode\(['"]password['"]\)/.test(authJsV99_21));
+test('v4.99.21 AuthJs: click handler does NOT set localStorage flag (only successful sign-in does)',
+  // Verify that the click-handler block does NOT have setItem inside it.
+  // Look at the code after the click handler arg is opened, until function body closes.
+  (function () {
+    var match = authJsV99_21.match(/authShowPassword\.addEventListener\(['"]click['"],\s*function\s*\([^)]*\)\s*\{([^}]*)\}/);
+    if (!match) return false;
+    return !/localStorage\.setItem/.test(match[1]);
+  })());
+test('v4.99.21 LandingCss: .auth-magic-fallback-link rule defined',
+  /\.auth-magic-fallback-link\s*\{/.test(landingStylesCss));
 
 // ── Summary ──
 console.log('\n' + '═'.repeat(50));
