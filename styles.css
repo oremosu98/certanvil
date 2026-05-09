@@ -1,5 +1,5 @@
 /* ══════════════════════════════════════════
-   Network+ AI Quiz — styles.css  v4.99.7
+   Network+ AI Quiz — styles.css  v4.99.8
    ══════════════════════════════════════════ */
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -7091,6 +7091,23 @@ body.has-sidebar { padding-left: 240px; transition: padding-left .25s cubic-bezi
 }
 .sb-item-icon { font-size: 14px; line-height: 1; width: 18px; display: inline-flex; justify-content: center; flex-shrink: 0; }
 .sb-item-label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* v4.99.8 — Pro-only lock indicator on sidebar items. Hidden by default;
+   becomes visible only when body.is-state-resolved AND not body.is-pro-tier.
+   This means anonymous users + Free users see locks; Pro/admin users don't.
+   No locks render during the brief state-hydration window so Pro users don't
+   see a flash of locked-then-unlocked UI on initial load. */
+.sb-item-lock {
+  display: none;
+  font-size: 10px;
+  line-height: 1;
+  opacity: .55;
+  flex-shrink: 0;
+  margin-left: 6px;
+  filter: grayscale(.5);
+  transition: opacity .15s ease;
+}
+body.is-state-resolved:not(.is-pro-tier) .sb-item.is-pro-only .sb-item-lock { display: inline-flex; }
+.sb-item.is-pro-only:hover .sb-item-lock { opacity: .9; }
 .sb-item-count {
   font-size: 10px; font-family: monospace;
   color: var(--text-dim);

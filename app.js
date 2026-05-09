@@ -1,9 +1,9 @@
 // ══════════════════════════════════════════
-// Network+ AI Quiz — app.js  v4.99.7
+// Network+ AI Quiz — app.js  v4.99.8
 // ══════════════════════════════════════════
 
 // ── CONSTANTS ──
-const APP_VERSION = '4.99.7';
+const APP_VERSION = '4.99.8';
 
 // ══════════════════════════════════════════════════════════════════════════
 // CERT PACK ARCHITECTURE (v4.86.0 Phase 1A engine refactor)
@@ -375,6 +375,19 @@ async function _refreshQuotaChip() {
 
 function _renderQuotaChip() {
   var el = document.getElementById('topbar-quota-chip');
+  // v4.99.8 — body.is-state-resolved + body.is-pro-tier drive sidebar lock
+  // visibility (Pro-only items show 🔒 unless body has is-pro-tier). State
+  // is resolved as soon as we have any verdict — Pro, Free, or anonymous.
+  if (_quotaState) {
+    document.body.classList.add('is-state-resolved');
+    var resolvedTier = _quotaState.tier || 'free';
+    var isUnlimited = (typeof _quotaState.daily_limit === 'number' && _quotaState.daily_limit < 0);
+    if (resolvedTier === 'pro' || isUnlimited) {
+      document.body.classList.add('is-pro-tier');
+    } else {
+      document.body.classList.remove('is-pro-tier');
+    }
+  }
   if (!el) return;
 
   if (!_quotaState) {
@@ -690,6 +703,10 @@ function _showProOnlyUI(detail) {
       window.certanvilSupabase.auth.onAuthStateChange(function (event, session) {
         if (event === 'SIGNED_OUT' || !session) {
           _quotaState = null;
+          // v4.99.8 — anonymous + signed-out users are definitely not Pro;
+          // mark state as resolved so sidebar locks render without waiting.
+          document.body.classList.add('is-state-resolved');
+          document.body.classList.remove('is-pro-tier');
           _renderQuotaChip();
         } else if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION' || event === 'TOKEN_REFRESHED') {
           _refreshQuotaChip();
@@ -39565,11 +39582,22 @@ function renderAppSidebar() {
   });
   // v4.54.9: sidebar nav-count pills retired per user request \u2014 the numbers
   // weren't actionable; the drill entries read cleaner without them.
+  // v4.99.8 — Pro-only locked indicator. Reads PRO_ONLY_PAGES at render time
+  // (static); body.is-state-resolved + body.is-pro-tier classes drive visibility
+  // dynamically via CSS. Pro users + Pro-tier admins see no locks; Free users
+  // and anonymous see 🔒 on every locked entry. The body classes are managed
+  // in _renderQuotaChip (signed-in path) + the auth listener SIGNED_OUT branch.
   const renderItem = it => {
     const hasIcon = it.icon;
-    return `<button type="button" class="sb-item" data-sb-page="${it.page}" onclick="__aclSidebarHandlers['${it.page}'] && __aclSidebarHandlers['${it.page}']()">
+    const isLocked = (typeof PRO_ONLY_PAGES !== 'undefined') && PRO_ONLY_PAGES[it.page];
+    const lockClass = isLocked ? ' is-pro-only' : '';
+    const lockBadge = isLocked
+      ? '<span class="sb-item-lock" aria-label="Pro only" title="Pro only">&#128274;</span>'
+      : '';
+    return `<button type="button" class="sb-item${lockClass}" data-sb-page="${it.page}" onclick="__aclSidebarHandlers['${it.page}'] && __aclSidebarHandlers['${it.page}']()">
       ${hasIcon ? `<span class="sb-item-icon" aria-hidden="true">${it.icon}</span>` : '<span class="sb-item-icon">&bull;</span>'}
       <span class="sb-item-label">${escHtml(it.label)}</span>
+      ${lockBadge}
     </button>`;
   };
   // Streak badge in footer — reuses existing getStreak()

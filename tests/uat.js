@@ -305,7 +305,7 @@ test('Validation in runSessionStep', js.includes('aiValidateQuestions(apiKey, qu
 
 // ── Analytics v2 (v4.5) ──
 console.log('\n\x1b[1m── ANALYTICS v2 (v4.5) ──\x1b[0m');
-test('APP_VERSION is 4.99.7', js.includes("const APP_VERSION = '4.99.7"));
+test('APP_VERSION is 4.99.8', js.includes("const APP_VERSION = '4.99.8"));
 test('getDailyGoal function', js.includes('function getDailyGoal('));
 test('renderDailyGoal function', js.includes('function renderDailyGoal('));
 test('editDailyGoal function', js.includes('function editDailyGoal('));
@@ -319,7 +319,7 @@ test('CSS: .topic-domain-group', css.includes('.topic-domain-group'));
 test('CSS: .daily-goal-card', css.includes('.daily-goal-card'));
 test('CSS: .advanced-section', css.includes('.advanced-section'));
 test('CSS: .hero-stats-strip', css.includes('.hero-stats-strip'));
-test('SW cache bumped to v4.99.7', sw.includes('netplus-v4.99.7'));
+test('SW cache bumped to v4.99.8', sw.includes('netplus-v4.99.8'));
 test('Family Drill: STORAGE.PORT_FAMILY_BEST', js.includes("PORT_FAMILY_BEST:"));
 test('Family Drill: ptMode handles family', js.includes("ptMode === 'family'"));
 test('Family Drill: HTML mode button', html.includes('id="pt-mode-family"'));
@@ -17784,6 +17784,25 @@ test('v4.99.7 GateRace: anonymous users still default-deny in _gateProOnly',
   /function _gateProOnly[\s\S]{0,1200}_showProOnlyUI\([\s\S]{0,200}return false/.test(js));
 test('v4.99.7 QuotaModal: countdown shows "(midnight UTC)" clarifier',
   /Resets in <strong>' \+ resetText \+ '<\/strong> \(midnight UTC\)/.test(js));
+
+// ── v4.99.8 — Drill lock indicators on sidebar (Pro-only items show 🔒 to Free/anonymous) ──
+console.log('\n\x1b[1m── v4.99.8 — DRILL LOCK INDICATORS ──\x1b[0m');
+test('v4.99.8 SidebarLock: renderItem checks PRO_ONLY_PAGES for is-pro-only class',
+  /const isLocked = \(typeof PRO_ONLY_PAGES !== 'undefined'\) && PRO_ONLY_PAGES\[it\.page\]/.test(js));
+test('v4.99.8 SidebarLock: locked items render <span class="sb-item-lock"> badge',
+  /sb-item-lock[\s\S]{0,200}aria-label="Pro only"/.test(js));
+test('v4.99.8 SidebarLock: _renderQuotaChip sets body.is-state-resolved when state present',
+  /function _renderQuotaChip[\s\S]{0,800}document\.body\.classList\.add\('is-state-resolved'\)/.test(js));
+test('v4.99.8 SidebarLock: _renderQuotaChip sets body.is-pro-tier for Pro/unlimited',
+  /document\.body\.classList\.add\('is-pro-tier'\)/.test(js));
+test('v4.99.8 SidebarLock: _renderQuotaChip removes body.is-pro-tier for Free',
+  /document\.body\.classList\.remove\('is-pro-tier'\)/.test(js));
+test('v4.99.8 SidebarLock: SIGNED_OUT branch also marks state-resolved (anonymous sees locks)',
+  /SIGNED_OUT[\s\S]{0,400}is-state-resolved[\s\S]{0,200}is-pro-tier/.test(js));
+test('v4.99.8 SidebarLock CSS: .sb-item-lock display:none default',
+  /\.sb-item-lock\s*\{[\s\S]{0,300}display:\s*none/.test(css));
+test('v4.99.8 SidebarLock CSS: locked items reveal only when state-resolved + not Pro',
+  /body\.is-state-resolved:not\(\.is-pro-tier\)\s+\.sb-item\.is-pro-only\s+\.sb-item-lock/.test(css));
 
 // ── Summary ──
 console.log('\n' + '═'.repeat(50));
