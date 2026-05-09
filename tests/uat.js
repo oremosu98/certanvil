@@ -305,7 +305,7 @@ test('Validation in runSessionStep', js.includes('aiValidateQuestions(apiKey, qu
 
 // ── Analytics v2 (v4.5) ──
 console.log('\n\x1b[1m── ANALYTICS v2 (v4.5) ──\x1b[0m');
-test('APP_VERSION is 4.99.23', js.includes("const APP_VERSION = '4.99.23"));
+test('APP_VERSION is 4.99.24', js.includes("const APP_VERSION = '4.99.24"));
 test('getDailyGoal function', js.includes('function getDailyGoal('));
 test('renderDailyGoal function', js.includes('function renderDailyGoal('));
 test('editDailyGoal function', js.includes('function editDailyGoal('));
@@ -319,7 +319,7 @@ test('CSS: .topic-domain-group', css.includes('.topic-domain-group'));
 test('CSS: .daily-goal-card', css.includes('.daily-goal-card'));
 test('CSS: .advanced-section', css.includes('.advanced-section'));
 test('CSS: .hero-stats-strip', css.includes('.hero-stats-strip'));
-test('SW cache bumped to v4.99.23', sw.includes('netplus-v4.99.23'));
+test('SW cache bumped to v4.99.24', sw.includes('netplus-v4.99.24'));
 test('Family Drill: STORAGE.PORT_FAMILY_BEST', js.includes("PORT_FAMILY_BEST:"));
 test('Family Drill: ptMode handles family', js.includes("ptMode === 'family'"));
 test('Family Drill: HTML mode button', html.includes('id="pt-mode-family"'));
@@ -18123,6 +18123,17 @@ test('v4.99.22 LandingCss: .auth-cta-secondary rule defined with amber theme',
 const authJsV99_22 = fs.readFileSync(path.join(ROOT, 'landing/auth.js'), 'utf8');
 test('v4.99.22 AuthJs: setAuthMode explicitly toggles authShowPassword visibility',
   /setAuthMode[\s\S]{0,2000}authShowPassword[\s\S]{0,300}setAttribute\(['"]hidden['"]/.test(authJsV99_22));
+
+// ── v4.99.24 — Default-quiet unhandledrejection (mobile noise fix) ──
+console.log('\n\x1b[1m── v4.99.24 — DEFAULT-QUIET REJECTION HANDLER ──\x1b[0m');
+test('v4.99.24 RejectionHandler: still logs every rejection to monitor (logError preserved)',
+  /unhandledrejection[\s\S]{0,500}logError\('promise'/.test(js));
+test('v4.99.24 RejectionHandler: toast is now opt-in via err.userFacing === true',
+  /unhandledrejection[\s\S]{0,1500}e\.reason\.userFacing === true[\s\S]{0,200}showErrorToast/.test(js));
+test('v4.99.24 RejectionHandler: stale isNetwork filter REMOVED (replaced by opt-in pattern)',
+  // The pre-v4.99.24 filter checked for 'API'/'fetch'/'NetworkError' and toasted
+  // for everything else. New filter inverts: log all, toast only opt-in.
+  !/const isNetwork = msg\.includes\('API'\)/.test(js));
 
 // ── Summary ──
 console.log('\n' + '═'.repeat(50));

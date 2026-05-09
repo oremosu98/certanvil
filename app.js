@@ -1,9 +1,9 @@
 // ══════════════════════════════════════════
-// Network+ AI Quiz — app.js  v4.99.23
+// Network+ AI Quiz — app.js  v4.99.24
 // ══════════════════════════════════════════
 
 // ── CONSTANTS ──
-const APP_VERSION = '4.99.23';
+const APP_VERSION = '4.99.24';
 
 // ══════════════════════════════════════════════════════════════════════════
 // CERT PACK ARCHITECTURE (v4.86.0 Phase 1A engine refactor)
@@ -1062,11 +1062,23 @@ window.onerror = function(msg, src, line, col, err) {
 window.addEventListener('unhandledrejection', e => {
   console.error('[Unhandled Promise]', e.reason);
   const msg = e.reason?.message || String(e.reason);
-  const isNetwork = msg.includes('API') || msg.includes('fetch') || msg.includes('Failed to fetch') || msg.includes('NetworkError');
   logError('promise', msg, {
     stack: e.reason?.stack ? e.reason.stack.slice(0, 500) : ''
   });
-  if (!isNetwork) showErrorToast('An unexpected error occurred.');
+  // v4.99.24 — default-quiet for unhandled promise rejections. Pre-fix the
+  // handler toasted "An unexpected error occurred." for any non-network
+  // rejection, which created noise on slow mobile connections (Supabase
+  // transient errors, session-cookie propagation race, RPC timeouts —
+  // none of which the user can act on). New behavior: always log to the
+  // in-app monitor for diagnosis, but only toast errors that explicitly
+  // opt-in via `err.userFacing = true`. Real user-facing errors should
+  // be caught at the call site with explicit error UI, not relied on
+  // the global handler. Discovered via mobile Safari tester report
+  // 2026-05-09 — friend on 2-bar cellular saw toast on home page load
+  // despite app being functional after auto-dismiss.
+  if (e.reason && e.reason.userFacing === true) {
+    showErrorToast(e.reason.message || 'An unexpected error occurred.');
+  }
 });
 
 // ── Monitor Panel ──

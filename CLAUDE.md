@@ -467,6 +467,7 @@ npx playwright test              # E2E (tests/e2e/app.spec.js)
 
 | Version | Features Added |
 |---|---|
+| v4.99.24 | Default-quiet unhandledrejection handler — mobile tester saw 'unexpected error' toast on slow cellular; toast now opt-in via err.userFacing, all rejections still logged to monitor |
 | v4.99.23 | Night-end consolidation — 42 rows moved from CLAUDE.md to CHANGELOG.md (v4.93.0–v4.99.19) + memory consolidation (1 new feedback file + 2 status updates) |
 | v4.99.22 | Prominent password-fallback button replaces v4.99.21 small link (live-verified positioned 10px below main CTA, amber theme) |
 | v4.99.21 | Visible 'Have a password?' link in auth modal — replaces URL-param-only flow as the primary tester sign-in path |
