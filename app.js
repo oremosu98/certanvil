@@ -1,9 +1,9 @@
 // ══════════════════════════════════════════
-// Network+ AI Quiz — app.js  v4.99.6
+// Network+ AI Quiz — app.js  v4.99.7
 // ══════════════════════════════════════════
 
 // ── CONSTANTS ──
-const APP_VERSION = '4.99.6';
+const APP_VERSION = '4.99.7';
 
 // ══════════════════════════════════════════════════════════════════════════
 // CERT PACK ARCHITECTURE (v4.86.0 Phase 1A engine refactor)
@@ -546,7 +546,7 @@ function _showQuotaExceededUI(detail) {
     '<div class="quota-exceeded-card">' +
       '<div class="quota-exceeded-icon">&#128267;</div>' +
       '<div class="quota-exceeded-title">You&rsquo;ve used today&rsquo;s free questions</div>' +
-      '<div class="quota-exceeded-sub">Free is 20 questions per day, every day, no card required. Resets in <strong>' + resetText + '</strong> &middot; or upgrade to Pro for unlimited.</div>' +
+      '<div class="quota-exceeded-sub">Free is 20 questions per day, every day, no card required. Resets in <strong>' + resetText + '</strong> (midnight UTC) &middot; or upgrade to Pro for unlimited.</div>' +
       '<div class="quota-exceeded-actions">' +
         '<a class="quota-exceeded-cta" href="https://certanvil.com/pricing" target="_blank" rel="noopener">Upgrade to Pro &middot; $9.99/mo &rarr;</a>' +
         '<button type="button" class="quota-exceeded-dismiss" id="quota-exceeded-dismiss">I&rsquo;ll wait until reset</button>' +
@@ -617,9 +617,20 @@ function _gateActivityForQuota(activityLabel) {
 // Returns true if the user is Pro/admin (proceed), false if Free (blocked +
 // modal shown). Pattern: `if (!_gateProOnly('Acronym Blitz')) return;`
 function _gateProOnly(featureLabel) {
-  // Unknown quota state → assume not Pro for safety, block + show modal.
-  // This is conservative: if we can't confirm Pro status, deny access.
+  // v4.99.7 — optimistic-allow for signed-in users while quota state is still
+  // hydrating. Pre-v4.99.7, the default-deny path here caused signed-in Pro
+  // users to briefly see the upgrade modal during the first ~500ms after page
+  // load while get_daily_quota_usage was still in flight. Now: if signed-in
+  // (window._certanvilSignedIn truthy) but state is null → allow through.
+  // Subsequent gate checks (in start* functions or showPage on later nav)
+  // fire after state has resolved with the correct verdict. Anonymous users
+  // still default-deny since they're definitely not Pro.
   if (!_quotaState) {
+    if (window._certanvilSignedIn === true) {
+      // Optimistic allow; gate re-fires on actual activity start with real state
+      return true;
+    }
+    // Anonymous → block
     if (typeof _showProOnlyUI === 'function') {
       _showProOnlyUI({ feature: featureLabel || 'this feature' });
     }
@@ -13877,9 +13888,10 @@ async function showTopicDeepDive(topicName) {
   contentEl.innerHTML = '<div class="topic-dive-loading"><div class="spinner" style="width:32px;height:32px;border-width:3px"></div><p style="margin-top:12px;color:var(--text-dim)">Generating topic guide\u2026</p></div>';
 
   backBtn.onclick = () => {
-    document.getElementById('page-topic-dive').classList.remove('active');
-    document.getElementById(topicDiveReturnPage).classList.add('active');
-    window.scrollTo(0, 0);
+    // v4.99.7 — route through showPage so PRO_ONLY_PAGES gate fires, plus
+    // sidebar/breadcrumb sync + a11y focus. Pre-v4.99.7 the direct .active
+    // toggle bypassed every gate added in v4.99.5.
+    showPage(topicDiveReturnPage.replace(/^page-/, ''));
   };
 
   showPage('topic-dive');
@@ -14096,9 +14108,10 @@ function openGuidedLab(topicName) {
   const backBtn = document.getElementById('lab-back-btn');
   if (backBtn) {
     backBtn.onclick = () => {
-      document.getElementById('page-guided-lab').classList.remove('active');
-      document.getElementById(guidedLabReturnPage).classList.add('active');
-      window.scrollTo(0, 0);
+      // v4.99.7 — route through showPage so PRO_ONLY_PAGES gate fires, plus
+      // sidebar/breadcrumb sync + a11y focus. Pre-v4.99.7 the direct .active
+      // toggle bypassed every gate added in v4.99.5.
+      showPage(guidedLabReturnPage.replace(/^page-/, ''));
     };
   }
 

@@ -305,7 +305,7 @@ test('Validation in runSessionStep', js.includes('aiValidateQuestions(apiKey, qu
 
 // ── Analytics v2 (v4.5) ──
 console.log('\n\x1b[1m── ANALYTICS v2 (v4.5) ──\x1b[0m');
-test('APP_VERSION is 4.99.6', js.includes("const APP_VERSION = '4.99.6"));
+test('APP_VERSION is 4.99.7', js.includes("const APP_VERSION = '4.99.7"));
 test('getDailyGoal function', js.includes('function getDailyGoal('));
 test('renderDailyGoal function', js.includes('function renderDailyGoal('));
 test('editDailyGoal function', js.includes('function editDailyGoal('));
@@ -319,7 +319,7 @@ test('CSS: .topic-domain-group', css.includes('.topic-domain-group'));
 test('CSS: .daily-goal-card', css.includes('.daily-goal-card'));
 test('CSS: .advanced-section', css.includes('.advanced-section'));
 test('CSS: .hero-stats-strip', css.includes('.hero-stats-strip'));
-test('SW cache bumped to v4.99.6', sw.includes('netplus-v4.99.6'));
+test('SW cache bumped to v4.99.7', sw.includes('netplus-v4.99.7'));
 test('Family Drill: STORAGE.PORT_FAMILY_BEST', js.includes("PORT_FAMILY_BEST:"));
 test('Family Drill: ptMode handles family', js.includes("ptMode === 'family'"));
 test('Family Drill: HTML mode button', html.includes('id="pt-mode-family"'));
@@ -17666,8 +17666,10 @@ test('v4.99.4 ProOnly: _gateProOnly helper defined',
   /function _gateProOnly\(featureLabel\)/.test(js));
 test('v4.99.4 ProOnly: _showProOnlyUI modal helper defined',
   /function _showProOnlyUI\(/.test(js));
-test('v4.99.4 ProOnly: helper denies access when quotaState is null (safe default)',
-  /_gateProOnly[\s\S]{0,400}!_quotaState[\s\S]{0,200}return false/.test(js));
+// v4.99.7 — softened from hard default-deny to anonymous-only default-deny.
+// Signed-in users now optimistic-allow during state hydration (race fix).
+test('v4.99.4 ProOnly: anonymous users denied when quotaState is null (safe default)',
+  /_gateProOnly[\s\S]{0,800}!_quotaState[\s\S]{0,400}window\._certanvilSignedIn === true[\s\S]{0,300}return false/.test(js));
 test('v4.99.4 ProOnly: modal links to upgrade page',
   /pro-only-modal[\s\S]{0,1000}certanvil\.com\/pricing/.test(js));
 
@@ -17748,6 +17750,40 @@ test('v4.99.0 hook: submitExam() calls _writeReadinessSnapshot',
   /function submitExam\(\)[\s\S]{0,40000}_writeReadinessSnapshot\(\)/.test(js));
 test('v4.99.0 cloud-store: nplus_readiness_snapshots in USER_DATA_KEYS',
   /USER_DATA_KEYS\s*=\s*new Set\(\[[\s\S]*?'nplus_readiness_snapshots'/.test(cloudStoreJs));
+
+// ── v4.99.7 — Pre-launch punch list batch (pricing fix + showPage gate fix + race fix) ──
+console.log('\n\x1b[1m── v4.99.7 — PRE-LAUNCH PUNCH LIST BATCH ──\x1b[0m');
+const landingPricingHtml = fs.readFileSync(path.join(ROOT, 'landing/pricing.html'), 'utf8');
+const landingAccountHtml = fs.readFileSync(path.join(ROOT, 'landing/account.html'), 'utf8');
+const landingIndexHtml = fs.readFileSync(path.join(ROOT, 'landing/index.html'), 'utf8');
+test('v4.99.7 Pricing: no $14.99 references on pricing.html (canonical $9.99/mo)',
+  !landingPricingHtml.includes('$14.99') && !landingPricingHtml.includes('14.99/mo'));
+test('v4.99.7 Pricing: $9.99/mo present as monthly rate',
+  /\$9\.99\/mo|\$9\.99<\/strong>/.test(landingPricingHtml));
+test('v4.99.7 Pricing: "Save 50%" pill removed (math only worked at $14.99)',
+  !landingPricingHtml.includes('Save 50%'));
+test('v4.99.7 Pricing: "Save a third" pill present (matches landing/index.html voice)',
+  /Save a third/.test(landingPricingHtml));
+test('v4.99.7 Account: "Phase G" internal jargon removed from upgrade tooltip',
+  !landingAccountHtml.includes('Phase G'));
+test('v4.99.7 Account: upgrade tooltip says "Upgrade coming soon"',
+  /title="Upgrade coming soon"/.test(landingAccountHtml));
+test('v4.99.7 Landing: stale "Phase G" HTML comment cleaned up on index.html',
+  !landingIndexHtml.includes('future Phase G renders'));
+test('v4.99.7 ShowPageGate: topic-dive Back button routes through showPage (not direct .active)',
+  /backBtn\.onclick = \(\) => \{[\s\S]{0,400}showPage\(topicDiveReturnPage\.replace\(\/\^page-\/, ''\)\)/.test(js));
+test('v4.99.7 ShowPageGate: guided-lab Back button routes through showPage (not direct .active)',
+  /backBtn\.onclick = \(\) => \{[\s\S]{0,400}showPage\(guidedLabReturnPage\.replace\(\/\^page-\/, ''\)\)/.test(js));
+test('v4.99.7 ShowPageGate: topic-dive Back no longer raw-toggles .active class',
+  !/getElementById\('page-topic-dive'\)\.classList\.remove\('active'\)/.test(js));
+test('v4.99.7 ShowPageGate: guided-lab Back no longer raw-toggles .active class',
+  !/getElementById\('page-guided-lab'\)\.classList\.remove\('active'\)/.test(js));
+test('v4.99.7 GateRace: _gateProOnly optimistic-allows signed-in users when _quotaState pending',
+  /function _gateProOnly[\s\S]{0,800}window\._certanvilSignedIn === true[\s\S]{0,200}return true/.test(js));
+test('v4.99.7 GateRace: anonymous users still default-deny in _gateProOnly',
+  /function _gateProOnly[\s\S]{0,1200}_showProOnlyUI\([\s\S]{0,200}return false/.test(js));
+test('v4.99.7 QuotaModal: countdown shows "(midnight UTC)" clarifier',
+  /Resets in <strong>' \+ resetText \+ '<\/strong> \(midnight UTC\)/.test(js));
 
 // ── Summary ──
 console.log('\n' + '═'.repeat(50));
