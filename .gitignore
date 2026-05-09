@@ -1,5 +1,8 @@
 .DS_Store
-.claude/
+# .claude/ holds local Claude Code state (launch.json, sessions). Skills
+# are project-level and DO ship — exception them in.
+.claude/*
+!.claude/skills/
 .vercel
 
 # Dependencies

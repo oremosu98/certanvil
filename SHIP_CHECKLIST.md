@@ -6,6 +6,16 @@ Pre-flight before every `git push`. Codifies the cert-app's conventions from CLA
 
 ---
 
+## Phase 0 — Pre-flight: was this reviewed? (non-trivial features only)
+
+For ANY change touching 3+ files, introducing a new sub-system, modifying schema, or adding a multi-step user flow: **run `/review-feature` BEFORE writing code.** The skill at [`.claude/skills/review-feature/SKILL.md`](./.claude/skills/review-feature/SKILL.md) fires 4 parallel agents (Architect, Engineer, Reviewer, Optimizer) and synthesizes a recommendation. ~2-3 min wall-clock; saves hours of misdirected coding.
+
+For trivial ships (single file, < 30 LOC, no schema/auth surface): skip Phase 0. Multi-engineer review is overhead at small scope.
+
+**STOP CONDITION**: either reviewed via `/review-feature` and synthesis approved, OR explicitly determined small enough to skip review.
+
+---
+
 ## Phase 1 — Automated checks (must pass)
 
 ### 1.1 UAT

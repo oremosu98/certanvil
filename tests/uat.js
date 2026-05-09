@@ -305,7 +305,7 @@ test('Validation in runSessionStep', js.includes('aiValidateQuestions(apiKey, qu
 
 // ── Analytics v2 (v4.5) ──
 console.log('\n\x1b[1m── ANALYTICS v2 (v4.5) ──\x1b[0m');
-test('APP_VERSION is 4.99.15', js.includes("const APP_VERSION = '4.99.15"));
+test('APP_VERSION is 4.99.16', js.includes("const APP_VERSION = '4.99.16"));
 test('getDailyGoal function', js.includes('function getDailyGoal('));
 test('renderDailyGoal function', js.includes('function renderDailyGoal('));
 test('editDailyGoal function', js.includes('function editDailyGoal('));
@@ -319,7 +319,7 @@ test('CSS: .topic-domain-group', css.includes('.topic-domain-group'));
 test('CSS: .daily-goal-card', css.includes('.daily-goal-card'));
 test('CSS: .advanced-section', css.includes('.advanced-section'));
 test('CSS: .hero-stats-strip', css.includes('.hero-stats-strip'));
-test('SW cache bumped to v4.99.15', sw.includes('netplus-v4.99.15'));
+test('SW cache bumped to v4.99.16', sw.includes('netplus-v4.99.16'));
 test('Family Drill: STORAGE.PORT_FAMILY_BEST', js.includes("PORT_FAMILY_BEST:"));
 test('Family Drill: ptMode handles family', js.includes("ptMode === 'family'"));
 test('Family Drill: HTML mode button', html.includes('id="pt-mode-family"'));
@@ -17940,6 +17940,37 @@ test('v4.99.15 ShipChecklist: STOP CONDITIONs at every phase (>=5 occurrences)',
 const claudeMdContent = fs.readFileSync(path.join(ROOT, 'CLAUDE.md'), 'utf8');
 test('v4.99.15 ShipChecklist: CLAUDE.md Deployment section references the file',
   /SHIP_CHECKLIST\.md/.test(claudeMdContent) && /Ship checklist/.test(claudeMdContent));
+
+// ── v4.99.16 — Multi-engineer review skill (/review-feature) ──
+console.log('\n\x1b[1m── v4.99.16 — REVIEW-FEATURE SKILL ──\x1b[0m');
+const reviewFeatureSkillPath = path.join(ROOT, '.claude/skills/review-feature/SKILL.md');
+test('v4.99.16 ReviewFeature: SKILL.md exists in .claude/skills/review-feature/',
+  fs.existsSync(reviewFeatureSkillPath));
+const reviewFeatureSkill = fs.existsSync(reviewFeatureSkillPath)
+  ? fs.readFileSync(reviewFeatureSkillPath, 'utf8') : '';
+test('v4.99.16 ReviewFeature: defines all 4 agent personas',
+  /### Agent 1 — Architect/.test(reviewFeatureSkill)
+  && /### Agent 2 — Engineer/.test(reviewFeatureSkill)
+  && /### Agent 3 — Reviewer/.test(reviewFeatureSkill)
+  && /### Agent 4 — Optimizer/.test(reviewFeatureSkill));
+test('v4.99.16 ReviewFeature: each agent prompt references CLAUDE.md',
+  (reviewFeatureSkill.match(/CLAUDE\.md/g) || []).length >= 4);
+test('v4.99.16 ReviewFeature: encodes the 3-phase fan-out → synthesize → handoff flow',
+  /Phase 1 — Spawn 4 parallel agents/.test(reviewFeatureSkill)
+  && /Phase 2 — Synthesize/.test(reviewFeatureSkill)
+  && /Phase 3 — Hand off/.test(reviewFeatureSkill));
+test('v4.99.16 ReviewFeature: Engineer agent encodes the v4.99.x RLS lessons (POSIX, UPSERT, return)',
+  /POSIX/.test(reviewFeatureSkill)
+  && /merge-duplicates/.test(reviewFeatureSkill)
+  && /ignore-duplicates/.test(reviewFeatureSkill));
+test('v4.99.16 ReviewFeature: skill explicitly says "don\'t ship code from this skill" (review only)',
+  /Don't ship code from this skill/.test(reviewFeatureSkill));
+test('v4.99.16 .gitignore: .claude/skills/ exception present (so skill ships)',
+  /!\.claude\/skills\//.test(fs.readFileSync(path.join(ROOT, '.gitignore'), 'utf8')));
+test('v4.99.16 SHIP_CHECKLIST: Phase 0 added referencing /review-feature',
+  /Phase 0[\s\S]{0,300}\/review-feature/.test(shipChecklistMd));
+test('v4.99.16 CLAUDE.md: Multi-engineer review section references skill path',
+  /\.claude\/skills\/review-feature\/SKILL\.md/.test(claudeMdContent));
 
 // ── Summary ──
 console.log('\n' + '═'.repeat(50));
