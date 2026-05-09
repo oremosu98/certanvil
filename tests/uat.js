@@ -303,7 +303,7 @@ test('Validation in runSessionStep', js.includes('aiValidateQuestions(apiKey, qu
 
 // ── Analytics v2 (v4.5) ──
 console.log('\n\x1b[1m── ANALYTICS v2 (v4.5) ──\x1b[0m');
-test('APP_VERSION is 4.98.8', js.includes("const APP_VERSION = '4.98.8"));
+test('APP_VERSION is 4.99.0', js.includes("const APP_VERSION = '4.99.0"));
 test('getDailyGoal function', js.includes('function getDailyGoal('));
 test('renderDailyGoal function', js.includes('function renderDailyGoal('));
 test('editDailyGoal function', js.includes('function editDailyGoal('));
@@ -317,7 +317,7 @@ test('CSS: .topic-domain-group', css.includes('.topic-domain-group'));
 test('CSS: .daily-goal-card', css.includes('.daily-goal-card'));
 test('CSS: .advanced-section', css.includes('.advanced-section'));
 test('CSS: .hero-stats-strip', css.includes('.hero-stats-strip'));
-test('SW cache bumped to v4.98.8', sw.includes('netplus-v4.98.8'));
+test('SW cache bumped to v4.99.0', sw.includes('netplus-v4.99.0'));
 test('Family Drill: STORAGE.PORT_FAMILY_BEST', js.includes("PORT_FAMILY_BEST:"));
 test('Family Drill: ptMode handles family', js.includes("ptMode === 'family'"));
 test('Family Drill: HTML mode button', html.includes('id="pt-mode-family"'));
@@ -17554,6 +17554,25 @@ test('v4.98.7 auth-state: handleSignedIn calls renderSignedIn BEFORE fetchProfil
   /function handleSignedIn[\s\S]{0,800}renderSignedIn\(session\.user,\s*\{\s*role:\s*'user'\s*\}\)[\s\S]{0,300}fetchProfile\(userId\)/.test(authStateJs));
 test('v4.98.7 auth-state: re-render only happens when role differs from default',
   /fetchProfile\(userId\)\.then[\s\S]{0,500}profile\.role !== 'user'[\s\S]{0,200}renderSignedIn\(session\.user,\s*profile\)/.test(authStateJs));
+
+// ── v4.99.0 — Cross-cert analytics readiness snapshot pipeline (Phase A.5) ──
+console.log('\n\x1b[1m── v4.99.0 — CROSS-CERT ANALYTICS READINESS PIPELINE ──\x1b[0m');
+test('v4.99.0 STORAGE: READINESS_SNAPSHOTS key declared',
+  /READINESS_SNAPSHOTS:\s*'nplus_readiness_snapshots'/.test(js));
+test('v4.99.0 helper: _writeReadinessSnapshot function defined',
+  /function _writeReadinessSnapshot\(\)/.test(js));
+test('v4.99.0 helper: snapshot uses CURRENT_CERT as the per-cert key',
+  /_writeReadinessSnapshot[\s\S]{0,400}snapshots\[CURRENT_CERT\]\s*=/.test(js));
+test('v4.99.0 helper: snapshot includes score + computed_at',
+  /score:\s*readiness\.predicted[\s\S]{0,100}computed_at:\s*new Date\(\)\.toISOString\(\)/.test(js));
+test('v4.99.0 helper: snapshot triggers _cloudFlush for cross-device sync',
+  /function _writeReadinessSnapshot\(\)[\s\S]{0,800}_cloudFlush\(STORAGE\.READINESS_SNAPSHOTS\)/.test(js));
+test('v4.99.0 hook: finish() calls _writeReadinessSnapshot',
+  /function finish\(\)[\s\S]{0,40000}_writeReadinessSnapshot\(\)/.test(js));
+test('v4.99.0 hook: submitExam() calls _writeReadinessSnapshot',
+  /function submitExam\(\)[\s\S]{0,40000}_writeReadinessSnapshot\(\)/.test(js));
+test('v4.99.0 cloud-store: nplus_readiness_snapshots in USER_DATA_KEYS',
+  /USER_DATA_KEYS\s*=\s*new Set\(\[[\s\S]*?'nplus_readiness_snapshots'/.test(cloudStoreJs));
 
 // ── Summary ──
 console.log('\n' + '═'.repeat(50));

@@ -221,12 +221,68 @@
       + '</div>';
   }
 
-  function renderActiveRow(cert) {
-    // Phase A: no readiness number yet — placeholder until snapshot pipeline
-    // ships in Phase A.5. Show cert + status pill + coach line + Continue CTA.
+  function renderActiveRow(cert, snapshot) {
+    // Phase A.5: live readiness gauge from snapshot if present, otherwise
+    // graceful "Open cert app to compute" placeholder.
+    //
+    // Snapshot shape (written by cert-app's _writeReadinessSnapshot):
+    //   { score: 645, computed_at: '2026-05-09T14:32:00Z' }
+    // Score range: 420-870 (CompTIA scaled). Cutoff is per-cert (cert.passScore
+    // expressed in score-band terms ≈ 720 for N+, 750 for S+ etc — but the
+    // readiness bar is normalised to the 420-870 readiness range, NOT the
+    // cert's max-score range).
     var ctaHref = (cert.cta && cert.cta.href) || '#';
     var ctaLabel = (cert.cta && cert.cta.label) || 'Continue →';
     var ctaDisabled = cert.cta && cert.cta.disabled;
+
+    var hasSnapshot = !!(snapshot && typeof snapshot.score === 'number');
+    var readinessHtml;
+    if (hasSnapshot) {
+      // Convert 420-870 readiness range to 0-100% bar fill
+      var pct = Math.max(0, Math.min(100, Math.round(((snapshot.score - 420) / (870 - 420)) * 100)));
+      // Cutoff line: where cert.passScore (in 100-900 band) maps onto the
+      // 420-870 readiness band — i.e., the readiness threshold for "you'd
+      // pass the real exam." Use cert.passScore directly since CompTIA
+      // readiness predictions land in the same band as actual scaled scores.
+      var cutoffPct = Math.max(0, Math.min(100, Math.round(((cert.passScore - 420) / (870 - 420)) * 100)));
+      var gapToPass = cert.passScore - snapshot.score;
+      var fillClass = snapshot.score >= cert.passScore ? 'cca-pr-fill-green' : '';
+      var scoreClass = snapshot.score >= cert.passScore ? 'cca-pr-score-green' : '';
+      var statusLine = gapToPass <= 0
+        ? 'Above pass cutoff · keep practising'
+        : 'Gap: ' + gapToPass + ' to pass';
+      readinessHtml = ''
+        + '<div class="cca-pr-readiness">'
+        +   '<div class="cca-pr-readiness-label">'
+        +     '<span>Readiness</span>'
+        +     '<span class="cca-pr-readiness-score ' + scoreClass + '">' + escapeHtml(String(snapshot.score)) + '</span>'
+        +   '</div>'
+        +   '<div class="cca-pr-readiness-bar">'
+        +     '<div class="cca-pr-readiness-fill ' + fillClass + '" style="width: ' + pct + '%;"></div>'
+        +     '<div class="cca-pr-readiness-cutoff" style="left: ' + cutoffPct + '%;"></div>'
+        +   '</div>'
+        +   '<div class="cca-pr-readiness-meta">'
+        +     '<span>' + escapeHtml(humanFreshness(snapshot.computed_at)) + '</span>'
+        +     '<span>' + escapeHtml(statusLine) + '</span>'
+        +   '</div>'
+        + '</div>';
+    } else {
+      readinessHtml = ''
+        + '<div class="cca-pr-readiness cca-pr-readiness-pending">'
+        +   '<div class="cca-pr-readiness-label">'
+        +     '<span>Readiness</span>'
+        +     '<span class="cca-pr-readiness-score cca-pr-score-pending">—</span>'
+        +   '</div>'
+        +   '<div class="cca-pr-readiness-bar">'
+        +     '<div class="cca-pr-readiness-cutoff" style="left: 70%;"></div>'
+        +   '</div>'
+        +   '<div class="cca-pr-readiness-meta">'
+        +     '<span>Open cert app to compute</span>'
+        +     '<span>Cutoff ' + escapeHtml(String(cert.passScore)) + '</span>'
+        +   '</div>'
+        + '</div>';
+    }
+
     return ''
       + '<div class="cca-pr-row cca-pr-row-active" data-cert="' + cert.id + '">'
       +   renderGlyph(cert)
@@ -237,25 +293,37 @@
       +     '</div>'
       +     '<div class="cca-pr-coach">' + escapeHtml(cert.coachActive || 'In progress') + '</div>'
       +   '</div>'
-      +   '<div class="cca-pr-readiness cca-pr-readiness-pending">'
-      +     '<div class="cca-pr-readiness-label">'
-      +       '<span>Readiness</span>'
-      +       '<span class="cca-pr-readiness-score cca-pr-score-pending">—</span>'
-      +     '</div>'
-      +     '<div class="cca-pr-readiness-bar">'
-      +       '<div class="cca-pr-readiness-cutoff" style="left: 80%;"></div>'
-      +     '</div>'
-      +     '<div class="cca-pr-readiness-meta">'
-      +       '<span>Live gauge ships next</span>'
-      +       '<span>Cutoff ' + escapeHtml(String(cert.passScore)) + '</span>'
-      +     '</div>'
-      +   '</div>'
+      +   readinessHtml
       +   '<div class="cca-pr-action">'
       +     (ctaDisabled
         ? '<button class="cca-pr-action-btn cca-pr-action-disabled" disabled title="' + escapeHtml((cert.cta && cert.cta.title) || '') + '">' + escapeHtml(ctaLabel) + '</button>'
         : '<a class="cca-pr-action-btn" href="' + escapeHtml(ctaHref) + '">' + escapeHtml(ctaLabel) + '</a>')
       +   '</div>'
       + '</div>';
+  }
+
+  // Snapshot freshness humaniser — displayed in the meta line under the bar.
+  // Stale snapshots (>30 days) get a subtle "stale" hint; fresh ones display
+  // a friendly relative time.
+  function humanFreshness(iso) {
+    if (!iso) return 'Just computed';
+    try {
+      var d = new Date(iso);
+      if (isNaN(d.getTime())) return 'Just computed';
+      var now = Date.now();
+      var diffMs = now - d.getTime();
+      var diffMin = Math.floor(diffMs / 60000);
+      var diffHr = Math.floor(diffMs / 3600000);
+      var diffDay = Math.floor(diffMs / 86400000);
+      if (diffMin < 1) return 'Just now';
+      if (diffMin < 60) return diffMin + ' min ago';
+      if (diffHr < 24) return diffHr + ' hr ago';
+      if (diffDay < 7) return diffDay + ' day' + (diffDay === 1 ? '' : 's') + ' ago';
+      if (diffDay < 30) return Math.floor(diffDay / 7) + ' wk ago';
+      return diffDay + ' days ago · stale';
+    } catch (_) {
+      return 'Just computed';
+    }
   }
 
   function renderSoonRow(cert) {
@@ -333,6 +401,9 @@
     if (!elPrList) return;
     var role = (profile && profile.role) || 'user';
     var results = (profile && profile.metadata && profile.metadata.cert_results) || {};
+    // v4.99.0 Phase A.5: cert app writes per-cert readiness snapshots after
+    // every quiz/exam — read them here for the active-cert gauges.
+    var snapshots = (profile && profile.metadata && profile.metadata.nplus_readiness_snapshots) || {};
     var catalog = getCertCatalog(role);
 
     // Bucket certs by their effective status
@@ -346,7 +417,7 @@
       if (result && result.status === 'passed') {
         passedCerts.push({ cert: cert, result: result });
       } else if (cert.status === 'active') {
-        activeCerts.push(cert);
+        activeCerts.push({ cert: cert, snapshot: snapshots[cert.id] || null });
       } else if (cert.status === 'locked') {
         lockedCerts.push(cert);
       } else {
@@ -367,8 +438,8 @@
     // ACTIVE group
     if (activeCerts.length) {
       html += renderGroupHeader('Currently studying', activeCerts.length, 'active');
-      activeCerts.forEach(function (cert) {
-        html += renderActiveRow(cert);
+      activeCerts.forEach(function (item) {
+        html += renderActiveRow(item.cert, item.snapshot);
       });
     }
 

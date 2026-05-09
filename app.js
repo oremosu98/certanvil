@@ -1,9 +1,9 @@
 // ══════════════════════════════════════════
-// Network+ AI Quiz — app.js  v4.98.8
+// Network+ AI Quiz — app.js  v4.99.0
 // ══════════════════════════════════════════
 
 // ── CONSTANTS ──
-const APP_VERSION = '4.98.8';
+const APP_VERSION = '4.99.0';
 
 // ══════════════════════════════════════════════════════════════════════════
 // CERT PACK ARCHITECTURE (v4.86.0 Phase 1A engine refactor)
@@ -309,6 +309,11 @@ const STORAGE = {
   IRW_LESSONS: 'nplus_irw_lessons',
   PHT_MASTERY: 'nplus_pht_mastery',  // v4.98.0: Security+ Phishing Triage Lab (flagship #2)
   PHT_LESSONS: 'nplus_pht_lessons',
+  // v4.99.0: cross-cert analytics readiness snapshots. Per-cert map shaped
+  // { netplus: { score, computed_at }, secplus: { ... } }. Written after
+  // every quiz/exam completion by _writeReadinessSnapshot(); cloud-flushed
+  // via Phase C′ pattern so landing's /analytics page can read live values.
+  READINESS_SNAPSHOTS: 'nplus_readiness_snapshots',
   OS_MASTERY: 'nplus_os_mastery',
   OS_LESSONS: 'nplus_os_lessons',
   CB_MASTERY: 'nplus_cb_mastery',
@@ -6599,6 +6604,11 @@ function finish() {
     }
   } catch (_) {}
 
+  // v4.99.0: snapshot readiness for cross-cert analytics (Phase A.5).
+  // Writes per-cert score to STORAGE.READINESS_SNAPSHOTS and cloud-flushes
+  // so landing's /analytics page can render the live gauge for this cert.
+  _writeReadinessSnapshot();
+
   // Daily challenge completion hook — count any finished daily-challenge run
   if (dailyChallengeMode) {
     completeDailyChallenge();
@@ -7027,6 +7037,10 @@ function submitExam() {
       _newlyUnlocked.forEach((id, i) => setTimeout(() => showMilestoneCelebration(id), 900 + i * 900));
     }
   } catch (_) {}
+
+  // v4.99.0: snapshot readiness for cross-cert analytics (Phase A.5).
+  // Mirror finish() — exam completion is a major readiness moment.
+  _writeReadinessSnapshot();
 }
 
 // ══════════════════════════════════════════
@@ -7807,6 +7821,39 @@ function getReadinessScore() {
     // v4.85.14 — stale-topic list for the score-breakdown card
     staleTopics
   };
+}
+
+// v4.99.0 — readiness snapshot writer (cross-cert analytics Phase A.5).
+//
+// Computes the user's current readiness for the active cert and writes a
+// per-cert snapshot under a single STORAGE.READINESS_SNAPSHOTS key shaped
+// like { netplus: {score, computed_at}, secplus: {score, computed_at} }.
+// Triggered from finish() (quiz complete) and submitExam() (exam complete)
+// — natural moments where readiness changes meaningfully.
+//
+// Cloud-flushed via existing Phase C′ pattern so landing's /analytics page
+// reads it from profile.metadata.nplus_readiness_snapshots and renders
+// live readiness gauges per cert across the user's whole portfolio.
+//
+// Defensive: silently no-ops on any failure so a snapshot write never
+// blocks a quiz/exam from finishing. The score will get rewritten on the
+// next quiz finish anyway.
+function _writeReadinessSnapshot() {
+  try {
+    var readiness = getReadinessScore();
+    if (!readiness || typeof readiness.predicted !== 'number') return;
+    var raw = localStorage.getItem(STORAGE.READINESS_SNAPSHOTS);
+    var snapshots = {};
+    if (raw) {
+      try { snapshots = JSON.parse(raw) || {}; } catch (_) { snapshots = {}; }
+    }
+    snapshots[CURRENT_CERT] = {
+      score: readiness.predicted,
+      computed_at: new Date().toISOString()
+    };
+    localStorage.setItem(STORAGE.READINESS_SNAPSHOTS, JSON.stringify(snapshots));
+    if (typeof _cloudFlush === 'function') _cloudFlush(STORAGE.READINESS_SNAPSHOTS);
+  } catch (_) { /* non-fatal — never block quiz finish */ }
 }
 
 // ── Exam date storage + forecast ──

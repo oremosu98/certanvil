@@ -97,6 +97,7 @@
     'nplus_irw_lessons',
     'nplus_pht_mastery',  // v4.98.0: Security+ Phishing Triage Lab flagship
     'nplus_pht_lessons',
+    'nplus_readiness_snapshots',  // v4.99.0: cross-cert analytics readiness pipeline (Phase A.5)
     'nplus_os_mastery',
     'nplus_os_lessons',
     'nplus_cb_mastery',
