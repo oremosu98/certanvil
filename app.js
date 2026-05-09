@@ -1,9 +1,9 @@
 // ══════════════════════════════════════════
-// Network+ AI Quiz — app.js  v4.99.16
+// Network+ AI Quiz — app.js  v4.99.17
 // ══════════════════════════════════════════
 
 // ── CONSTANTS ──
-const APP_VERSION = '4.99.16';
+const APP_VERSION = '4.99.17';
 
 // ══════════════════════════════════════════════════════════════════════════
 // CERT PACK ARCHITECTURE (v4.86.0 Phase 1A engine refactor)
@@ -40593,11 +40593,49 @@ function _processUrlAction() {
   }
 }
 
+// v4.99.17 — Playtest welcome toast. Fires once per fresh sign-in (flag set
+// by landing/auth.js after successful password sign-in). Confirms to the
+// tester that Pro entitlements are active so they don't have to wonder why
+// drills + builders aren't locked. One-shot: clears flag immediately.
+function _maybeShowPlaytestWelcomeToast() {
+  try {
+    if (localStorage.getItem('certanvil_playtest_welcome_pending') !== 'true') return;
+    localStorage.removeItem('certanvil_playtest_welcome_pending');
+    // Defer a tick so the topbar / sidebar render before the toast layers.
+    setTimeout(function () {
+      try {
+        var toast = document.createElement('div');
+        toast.className = 'playtest-welcome-toast';
+        toast.setAttribute('role', 'status');
+        toast.setAttribute('aria-live', 'polite');
+        toast.innerHTML =
+          '<span class="pwt-icon" aria-hidden="true">✓</span>' +
+          '<span class="pwt-body">' +
+            '<span class="pwt-title">Welcome to the playtest.</span>' +
+            '<span class="pwt-sub">Full Pro access enabled. Drills + builders unlocked.</span>' +
+          '</span>' +
+          '<button type="button" class="pwt-close" aria-label="Dismiss">×</button>';
+        document.body.appendChild(toast);
+        var closeBtn = toast.querySelector('.pwt-close');
+        var dismiss = function () {
+          toast.classList.add('pwt-leaving');
+          setTimeout(function () { try { toast.remove(); } catch (_) {} }, 250);
+        };
+        if (closeBtn) closeBtn.addEventListener('click', dismiss);
+        // Auto-dismiss after 8 seconds (long enough to read, short enough not to annoy)
+        setTimeout(dismiss, 8000);
+      } catch (_) {}
+    }, 800);
+  } catch (_) {}
+}
+
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', _v453Init);
   document.addEventListener('DOMContentLoaded', _processUrlAction);
+  document.addEventListener('DOMContentLoaded', _maybeShowPlaytestWelcomeToast);
 } else {
   // Already loaded (likely because app.js is at end of body)
   _v453Init();
   _processUrlAction();
+  _maybeShowPlaytestWelcomeToast();
 }

@@ -1,5 +1,5 @@
 /* ══════════════════════════════════════════
-   Network+ AI Quiz — styles.css  v4.99.16
+   Network+ AI Quiz — styles.css  v4.99.17
    ══════════════════════════════════════════ */
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -19449,4 +19449,75 @@ html { zoom: 1.10; }
 }
 @media (prefers-reduced-motion: reduce) {
   .quota-chip-tooltip { animation: none; }
+}
+
+/* v4.99.17 — Playtest welcome toast. Fires once after a tester completes
+   their first password sign-in (set by landing/auth.js, consumed by
+   _maybeShowPlaytestWelcomeToast in app.js). Auto-dismisses at 8s; manual
+   close via the × button. Reduced-motion gate at the bottom. */
+.playtest-welcome-toast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.18), rgba(16, 185, 129, 0.06));
+  border: 1px solid rgba(16, 185, 129, 0.4);
+  border-radius: 12px;
+  padding: 14px 16px 14px 14px;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(16, 185, 129, 0.15);
+  max-width: 360px;
+  color: #d1fae5;
+  font-size: 13px;
+  line-height: 1.45;
+  animation: pwtSlideIn 0.42s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.playtest-welcome-toast.pwt-leaving {
+  animation: pwtSlideOut 0.24s ease-in forwards;
+}
+.pwt-icon {
+  font-size: 18px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: rgba(16, 185, 129, 0.25);
+  color: #6ee7b7;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-weight: 700;
+}
+.pwt-body { display: flex; flex-direction: column; gap: 2px; }
+.pwt-title { color: #f0fdf4; font-weight: 700; letter-spacing: -0.005em; }
+.pwt-sub { color: #a7f3d0; font-size: 12px; }
+.pwt-close {
+  background: transparent;
+  border: none;
+  color: #6ee7b7;
+  cursor: pointer;
+  padding: 0;
+  width: 22px;
+  height: 22px;
+  font-size: 16px;
+  line-height: 1;
+  border-radius: 4px;
+  margin-left: 4px;
+  flex-shrink: 0;
+  opacity: 0.6;
+  transition: opacity .15s ease;
+}
+.pwt-close:hover { opacity: 1; }
+@keyframes pwtSlideIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes pwtSlideOut {
+  to { opacity: 0; transform: translateY(8px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .playtest-welcome-toast { animation: none; }
+  .playtest-welcome-toast.pwt-leaving { animation: none; opacity: 0; }
 }

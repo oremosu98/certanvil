@@ -967,6 +967,31 @@ button { font: inherit; border: 0; background: transparent; cursor: pointer; col
 }
 .auth-logo-mark svg { width: 100%; height: 100%; display: block; }
 
+/* v4.99.17 — Playtest mode pill (shown when ?auth=password URL param OR
+   localStorage flag set after first password sign-in). Matches the warm-amber
+   aesthetic used elsewhere on the landing for "soon" / "in progress" badges,
+   so it reads as "this is a special access path" without screaming. */
+.auth-mode-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.12), rgba(245, 158, 11, 0.04));
+  color: #b45309;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  padding: 4px 10px;
+  border-radius: 99px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  margin-bottom: 14px;
+  text-transform: uppercase;
+}
+[data-theme="dark"] .auth-mode-pill {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.18), rgba(245, 158, 11, 0.06));
+  color: #fbbf24;
+  border-color: rgba(245, 158, 11, 0.35);
+}
+
 .auth-title {
   font-size: 22px;
   font-weight: 800;

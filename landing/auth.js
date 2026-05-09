@@ -58,6 +58,13 @@
   var authDifferentEmail = document.getElementById('auth-different-email');
   var migrationBanner = document.getElementById('migration-banner');
   var migrationStats = document.getElementById('migration-stats');
+  // v4.99.17 — playtest-mode-only elements (password sign-in surface)
+  var authPlaytestPill = document.getElementById('auth-playtest-pill');
+  var authPasswordGroup = document.getElementById('auth-password-group');
+  var authPasswordInput = document.getElementById('auth-password');
+  var authMagicOnly = document.getElementById('auth-magic-only');
+  var authSubText = document.getElementById('auth-sub');
+  var authModalTitle = document.getElementById('auth-modal-title');
 
   // v4.90.1: auth.js is loaded on multiple landing-surface pages now —
   // the home page (index.html) has the full sign-in modal markup, but
@@ -123,8 +130,14 @@
     showAuthMain();
     clearAuthError();
 
+    // v4.99.17 — flip auth mode based on URL param + localStorage flag.
+    // setAuthMode handles all the show/hide logic for the password fields,
+    // playtest pill, and magic-link-only elements.
+    var isPlaytest = detectPlaytestMode();
+    setAuthMode(isPlaytest ? 'password' : 'magic-link');
+
     var progress = detectAnonymousProgress();
-    if (progress && migrationBanner && migrationStats) {
+    if (progress && migrationBanner && migrationStats && !isPlaytest) {
       migrationStats.innerHTML = '<strong>' + escapeHtml(buildMigrationCopy(progress)) + '</strong>';
       migrationBanner.removeAttribute('hidden');
     } else if (migrationBanner) {
@@ -154,6 +167,73 @@
     if (authMain) authMain.setAttribute('hidden', '');
     if (authSent) authSent.removeAttribute('hidden');
     if (authSentEmail) authSentEmail.textContent = email;
+  }
+
+  // ── v4.99.17 — Playtest auth mode ──────────────────────────────────────
+  // 5 dummy accounts (tester{1..5}@certanvil-playtest.com) for friends to
+  // playtest the app. They use a hidden password sign-in surface — opaque to
+  // public users, robust for testers (re-login + cross-session).
+  //
+  // Trigger order:
+  //   1. URL param ?auth=password — first-time entry (you text testers the URL)
+  //   2. localStorage 'certanvil_auth_mode' === 'password' — set after first
+  //      successful sign-in so testers don't need the URL again
+  //
+  // Sign-out clears the localStorage flag so a tester signing out (or another
+  // user on the same browser) gets the default magic-link UX, not the
+  // password form.
+
+  var PLAYTEST_AUTH_KEY = 'certanvil_auth_mode';
+  var PLAYTEST_WELCOME_KEY = 'certanvil_playtest_welcome_pending';
+
+  function detectPlaytestMode() {
+    try {
+      var params = new URLSearchParams(window.location.search);
+      if ((params.get('auth') || '').toLowerCase() === 'password') return true;
+    } catch (e) {}
+    try {
+      if (localStorage.getItem(PLAYTEST_AUTH_KEY) === 'password') return true;
+    } catch (e) {}
+    return false;
+  }
+
+  function setAuthMode(mode) {
+    var isPlaytest = mode === 'password';
+    if (authPlaytestPill) {
+      if (isPlaytest) authPlaytestPill.removeAttribute('hidden');
+      else authPlaytestPill.setAttribute('hidden', '');
+    }
+    if (authPasswordGroup) {
+      if (isPlaytest) authPasswordGroup.removeAttribute('hidden');
+      else authPasswordGroup.setAttribute('hidden', '');
+    }
+    if (authMagicOnly) {
+      if (isPlaytest) authMagicOnly.setAttribute('hidden', '');
+      else authMagicOnly.removeAttribute('hidden');
+    }
+    if (authForm && authForm.dataset) authForm.dataset.mode = mode;
+    if (authModalTitle) {
+      authModalTitle.textContent = isPlaytest
+        ? 'Sign in with password'
+        : 'Sign in to CertAnvil';
+    }
+    if (authSubText) {
+      authSubText.textContent = isPlaytest
+        ? 'Tester credentials only. The rest of the world uses magic links.'
+        : "Drop your email and we'll send a one-click sign-in link. New here? Same form — your account gets created automatically.";
+    }
+    if (authSubmit) {
+      authSubmit.textContent = isPlaytest ? 'Sign in →' : 'Continue with email →';
+    }
+    // Migration banner is irrelevant for playtesters (their accounts are
+    // pre-seeded; no anonymous progress to claim). Hide it in playtest mode.
+    if (migrationBanner && isPlaytest) {
+      migrationBanner.setAttribute('hidden', '');
+    }
+  }
+
+  function signInWithPlaytestPassword(email, password) {
+    return supabase.auth.signInWithPassword({ email: email, password: password });
   }
 
   function showAuthError(msg) {
@@ -561,6 +641,50 @@
         return;
       }
 
+      // v4.99.17 — branch on auth mode. dataset.mode is set by setAuthMode().
+      var mode = (authForm.dataset && authForm.dataset.mode) || 'magic-link';
+
+      if (mode === 'password') {
+        var password = authPasswordInput ? authPasswordInput.value : '';
+        if (!password) {
+          showAuthError('Enter your password.');
+          return;
+        }
+        if (authSubmit) {
+          authSubmit.disabled = true;
+          authSubmit.textContent = 'Signing in…';
+        }
+        signInWithPlaytestPassword(email, password)
+          .then(function (result) {
+            if (authSubmit) {
+              authSubmit.disabled = false;
+              authSubmit.textContent = 'Sign in →';
+            }
+            if (result && result.error) {
+              showAuthError('Wrong email or password. Check the credentials Simi sent you.');
+              return;
+            }
+            // Success — set localStorage flag so this device remembers
+            // password mode for future visits (no URL param needed).
+            try { localStorage.setItem(PLAYTEST_AUTH_KEY, 'password'); } catch (e2) {}
+            // Set welcome flag for cert app to show toast on first nav-to-app.
+            try { localStorage.setItem(PLAYTEST_WELCOME_KEY, 'true'); } catch (e2) {}
+            // Auth state listener handles the rest (renders signed-in pill,
+            // closes modal automatically). Don't manually close — let the
+            // existing flow run.
+          })
+          .catch(function (err) {
+            if (authSubmit) {
+              authSubmit.disabled = false;
+              authSubmit.textContent = 'Sign in →';
+            }
+            console.error('[certanvil-auth] signInWithPassword threw:', err);
+            showAuthError('Network error. Check your connection and try again.');
+          });
+        return;
+      }
+
+      // ── Default magic-link flow ──
       if (authSubmit) {
         authSubmit.disabled = true;
         authSubmit.textContent = 'Sending…';
@@ -635,6 +759,12 @@
   if (signOutLink) {
     signOutLink.addEventListener('click', function (e) {
       e.preventDefault();
+      // v4.99.17 — clear the playtest auth-mode flag on sign-out so a tester
+      // signing out (or another user on the same browser) reverts to the
+      // default magic-link UX, not the password form. Without this, the
+      // password mode would persist forever once set.
+      try { localStorage.removeItem(PLAYTEST_AUTH_KEY); } catch (e3) {}
+      try { localStorage.removeItem(PLAYTEST_WELCOME_KEY); } catch (e3) {}
       supabase.auth.signOut()
         .then(function () {
           renderSignedOut();

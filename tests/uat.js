@@ -305,7 +305,7 @@ test('Validation in runSessionStep', js.includes('aiValidateQuestions(apiKey, qu
 
 // ── Analytics v2 (v4.5) ──
 console.log('\n\x1b[1m── ANALYTICS v2 (v4.5) ──\x1b[0m');
-test('APP_VERSION is 4.99.16', js.includes("const APP_VERSION = '4.99.16"));
+test('APP_VERSION is 4.99.17', js.includes("const APP_VERSION = '4.99.17"));
 test('getDailyGoal function', js.includes('function getDailyGoal('));
 test('renderDailyGoal function', js.includes('function renderDailyGoal('));
 test('editDailyGoal function', js.includes('function editDailyGoal('));
@@ -319,7 +319,7 @@ test('CSS: .topic-domain-group', css.includes('.topic-domain-group'));
 test('CSS: .daily-goal-card', css.includes('.daily-goal-card'));
 test('CSS: .advanced-section', css.includes('.advanced-section'));
 test('CSS: .hero-stats-strip', css.includes('.hero-stats-strip'));
-test('SW cache bumped to v4.99.16', sw.includes('netplus-v4.99.16'));
+test('SW cache bumped to v4.99.17', sw.includes('netplus-v4.99.17'));
 test('Family Drill: STORAGE.PORT_FAMILY_BEST', js.includes("PORT_FAMILY_BEST:"));
 test('Family Drill: ptMode handles family', js.includes("ptMode === 'family'"));
 test('Family Drill: HTML mode button', html.includes('id="pt-mode-family"'));
@@ -17971,6 +17971,63 @@ test('v4.99.16 SHIP_CHECKLIST: Phase 0 added referencing /review-feature',
   /Phase 0[\s\S]{0,300}\/review-feature/.test(shipChecklistMd));
 test('v4.99.16 CLAUDE.md: Multi-engineer review section references skill path',
   /\.claude\/skills\/review-feature\/SKILL\.md/.test(claudeMdContent));
+
+// ── v4.99.17 — Playtest auth (5 dummy accounts via ?auth=password) ──
+console.log('\n\x1b[1m── v4.99.17 — PLAYTEST AUTH ──\x1b[0m');
+const playtestMigrationPath = path.join(ROOT, 'supabase/migrations/20260509_playtest_accounts.sql');
+test('v4.99.17 PlaytestMigration: file exists',
+  fs.existsSync(playtestMigrationPath));
+const playtestMigration = fs.existsSync(playtestMigrationPath)
+  ? fs.readFileSync(playtestMigrationPath, 'utf8') : '';
+test('v4.99.17 PlaytestMigration: adds is_playtest column to profiles',
+  /alter table public\.profiles[\s\S]{0,200}is_playtest boolean/.test(playtestMigration));
+test('v4.99.17 PlaytestMigration: includes seed block for Pro entitlements',
+  /insert into public\.subscriptions[\s\S]{0,400}9999-12-31/.test(playtestMigration));
+test('v4.99.17 PlaytestMigration: cleanup SQL documented',
+  /delete from auth\.users[\s\S]{0,100}@certanvil-playtest\.com/.test(playtestMigration));
+
+const landingAuthJs = fs.readFileSync(path.join(ROOT, 'landing/auth.js'), 'utf8');
+test('v4.99.17 AuthJs: detectPlaytestMode reads URL param + localStorage',
+  /function detectPlaytestMode\(\)[\s\S]{0,500}URLSearchParams[\s\S]{0,400}PLAYTEST_AUTH_KEY/.test(landingAuthJs));
+test('v4.99.17 AuthJs: setAuthMode swaps title + sub + button copy',
+  /function setAuthMode\(mode\)[\s\S]{0,1500}Sign in with password[\s\S]{0,300}Tester credentials only/.test(landingAuthJs));
+test('v4.99.17 AuthJs: signInWithPlaytestPassword wraps supabase.auth.signInWithPassword',
+  /function signInWithPlaytestPassword[\s\S]{0,200}supabase\.auth\.signInWithPassword\({/.test(landingAuthJs));
+test('v4.99.17 AuthJs: openAuthModal calls setAuthMode based on detectPlaytestMode',
+  /openAuthModal[\s\S]{0,800}detectPlaytestMode\(\)[\s\S]{0,200}setAuthMode/.test(landingAuthJs));
+test('v4.99.17 AuthJs: form submit handler branches on dataset.mode === password',
+  /authForm\.dataset[\s\S]{0,200}mode === 'password'[\s\S]{0,1500}signInWithPlaytestPassword/.test(landingAuthJs));
+test('v4.99.17 AuthJs: success path sets localStorage flags (auth_mode + welcome_pending)',
+  /localStorage\.setItem\(PLAYTEST_AUTH_KEY,\s*'password'\)[\s\S]{0,300}localStorage\.setItem\(PLAYTEST_WELCOME_KEY,\s*'true'\)/.test(landingAuthJs));
+test('v4.99.17 AuthJs: sign-out clears the playtest auth flag',
+  /signOutLink[\s\S]{0,500}localStorage\.removeItem\(PLAYTEST_AUTH_KEY\)/.test(landingAuthJs));
+
+const landingIndexAfterPatch = fs.readFileSync(path.join(ROOT, 'landing/index.html'), 'utf8');
+test('v4.99.17 IndexHtml: auth-playtest-pill element present + hidden by default',
+  /<span class="auth-mode-pill" id="auth-playtest-pill" hidden>/.test(landingIndexAfterPatch));
+test('v4.99.17 IndexHtml: password input group present + hidden by default',
+  /<div class="auth-input-group" id="auth-password-group" hidden>[\s\S]{0,300}type="password"/.test(landingIndexAfterPatch));
+test('v4.99.17 IndexHtml: magic-link-only elements wrapped in auth-magic-only',
+  /<div id="auth-magic-only">[\s\S]{0,800}auth-divider/.test(landingIndexAfterPatch));
+
+const landingStylesCss = fs.readFileSync(path.join(ROOT, 'landing/styles.css'), 'utf8');
+test('v4.99.17 LandingCss: .auth-mode-pill class defined',
+  /\.auth-mode-pill\s*\{/.test(landingStylesCss));
+
+test('v4.99.17 AppJs: _maybeShowPlaytestWelcomeToast helper defined',
+  /function _maybeShowPlaytestWelcomeToast\(\)/.test(js));
+test('v4.99.17 AppJs: welcome toast hooked into DOMContentLoaded',
+  /addEventListener\('DOMContentLoaded',\s*_maybeShowPlaytestWelcomeToast\)/.test(js));
+test('v4.99.17 AppJs: welcome toast clears flag (one-shot)',
+  /_maybeShowPlaytestWelcomeToast[\s\S]{0,500}removeItem\('certanvil_playtest_welcome_pending'\)/.test(js));
+
+test('v4.99.17 Css: .playtest-welcome-toast class defined',
+  /\.playtest-welcome-toast\s*\{/.test(css));
+test('v4.99.17 Css: reduced-motion gate present for welcome toast',
+  /prefers-reduced-motion[\s\S]{0,500}\.playtest-welcome-toast\s*\{\s*animation:\s*none/.test(css));
+
+test('v4.99.17 Mockup: playtest-auth-concept.html exists in mockups/',
+  fs.existsSync(path.join(ROOT, 'mockups/playtest-auth-concept.html')));
 
 // ── Summary ──
 console.log('\n' + '═'.repeat(50));
