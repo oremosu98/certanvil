@@ -226,10 +226,10 @@
       </a>
 
       <!-- Security+ — PRIVATE BUILDER (hidden by default; un-hidden by
-           script.js for signed-in admin users). Link sends ?cert=secplus
-           so the cert app at networkplus.certanvil.com switches to
-           Security+ mode in one click (instead of needing the in-app
-           cert switcher dropdown). -->
+           script.js for signed-in admin users in builder mode). Link sends
+           ?cert=secplus so the cert app at networkplus.certanvil.com
+           switches to Security+ mode in one click (instead of needing the
+           in-app cert switcher dropdown). -->
       <a class="cert-tile is-private" href="https://networkplus.certanvil.com/?cert=secplus" data-cert="secplus" id="cert-tile-secplus" hidden>
         <div class="cert-tile-top">
           <div class="cert-glyph cert-glyph-secplus">S+</div>
@@ -243,6 +243,24 @@
           <span class="cert-cta" id="cert-tile-secplus-cta">Continue prep →</span>
         </div>
       </a>
+
+      <!-- v4.99.19: Security+ — COMING SOON (public-facing variant).
+           Visible to all visitors by default. script.js hides this when
+           builder mode is on (admin sees the private tile above instead).
+           Mutually exclusive with #cert-tile-secplus. -->
+      <div class="cert-tile is-soon" data-cert="secplus" id="cert-tile-secplus-soon">
+        <div class="cert-tile-top">
+          <div class="cert-glyph cert-glyph-secplus">S+</div>
+          <span class="cert-status status-soon">Coming soon</span>
+        </div>
+        <div class="cert-name">Security+</div>
+        <div class="cert-code">SY0-701 · CompTIA's flagship security cert</div>
+        <div class="cert-desc">Threat actors, identity, SIEM, incident response, and governance. Same CertAnvil engine that got Network+ across the line, retuned for the SecOps domain — with the IR War Room and Phishing Triage drills you won't find anywhere else.</div>
+        <div class="cert-foot">
+          <span class="cert-progress">~6 weeks ETA</span>
+          <button class="cert-cta cert-cta-notify" type="button">Notify me ↗</button>
+        </div>
+      </div>
 
       <!-- AZ-900 — COMING SOON -->
       <div class="cert-tile is-soon" data-cert="az900">

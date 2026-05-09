@@ -305,7 +305,7 @@ test('Validation in runSessionStep', js.includes('aiValidateQuestions(apiKey, qu
 
 // ── Analytics v2 (v4.5) ──
 console.log('\n\x1b[1m── ANALYTICS v2 (v4.5) ──\x1b[0m');
-test('APP_VERSION is 4.99.18', js.includes("const APP_VERSION = '4.99.18"));
+test('APP_VERSION is 4.99.19', js.includes("const APP_VERSION = '4.99.19"));
 test('getDailyGoal function', js.includes('function getDailyGoal('));
 test('renderDailyGoal function', js.includes('function renderDailyGoal('));
 test('editDailyGoal function', js.includes('function editDailyGoal('));
@@ -319,7 +319,7 @@ test('CSS: .topic-domain-group', css.includes('.topic-domain-group'));
 test('CSS: .daily-goal-card', css.includes('.daily-goal-card'));
 test('CSS: .advanced-section', css.includes('.advanced-section'));
 test('CSS: .hero-stats-strip', css.includes('.hero-stats-strip'));
-test('SW cache bumped to v4.99.18', sw.includes('netplus-v4.99.18'));
+test('SW cache bumped to v4.99.19', sw.includes('netplus-v4.99.19'));
 test('Family Drill: STORAGE.PORT_FAMILY_BEST', js.includes("PORT_FAMILY_BEST:"));
 test('Family Drill: ptMode handles family', js.includes("ptMode === 'family'"));
 test('Family Drill: HTML mode button', html.includes('id="pt-mode-family"'));
@@ -18052,6 +18052,24 @@ test('v4.99.18 CertApp: greeting listens for display-name-resolved event (re-ren
   /addEventListener\(['"]certanvil:display-name-resolved['"]/.test(js));
 test('v4.99.18 CertApp: display name escaped via escHtml (XSS protection on user-controlled field)',
   /renderGreeting[\s\S]{0,800}escHtml\(name\)/.test(js));
+
+// ── v4.99.19 — Security+ "Coming soon" public landing tile ──
+console.log('\n\x1b[1m── v4.99.19 — SECPLUS COMING-SOON TILE ──\x1b[0m');
+const landingHtmlV99_19 = fs.readFileSync(path.join(ROOT, 'landing/index.html'), 'utf8');
+test('v4.99.19 LandingHtml: cert-tile-secplus-soon element exists',
+  /id="cert-tile-secplus-soon"/.test(landingHtmlV99_19));
+test('v4.99.19 LandingHtml: secplus coming-soon tile NOT hidden by default (visible to public)',
+  /<div class="cert-tile is-soon"[^>]*id="cert-tile-secplus-soon"(?![^>]*hidden)/.test(landingHtmlV99_19));
+test('v4.99.19 LandingHtml: secplus coming-soon tile has Notify me button',
+  /id="cert-tile-secplus-soon"[\s\S]{0,1500}cert-cta-notify[\s\S]{0,200}Notify me/.test(landingHtmlV99_19));
+test('v4.99.19 LandingHtml: secplus private builder tile remains hidden by default',
+  /id="cert-tile-secplus"[^>]*hidden/.test(landingHtmlV99_19));
+
+const landingScriptJsV99_19 = fs.readFileSync(path.join(ROOT, 'landing/script.js'), 'utf8');
+test('v4.99.19 LandingScript: builder mode hides the coming-soon variant (mutual exclusion)',
+  /isBuilder[\s\S]{0,500}cert-tile-secplus-soon[\s\S]{0,200}setAttribute\(['"]hidden['"]/.test(landingScriptJsV99_19));
+test('v4.99.19 LandingScript: builder mode still un-hides the private builder tile',
+  /isBuilder[\s\S]{0,200}cert-tile-secplus['"]\)[\s\S]{0,100}removeAttribute\(['"]hidden['"]/.test(landingScriptJsV99_19));
 
 // ── Summary ──
 console.log('\n' + '═'.repeat(50));
