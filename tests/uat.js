@@ -305,7 +305,7 @@ test('Validation in runSessionStep', js.includes('aiValidateQuestions(apiKey, qu
 
 // ── Analytics v2 (v4.5) ──
 console.log('\n\x1b[1m── ANALYTICS v2 (v4.5) ──\x1b[0m');
-test('APP_VERSION is 4.99.5', js.includes("const APP_VERSION = '4.99.5"));
+test('APP_VERSION is 4.99.6', js.includes("const APP_VERSION = '4.99.6"));
 test('getDailyGoal function', js.includes('function getDailyGoal('));
 test('renderDailyGoal function', js.includes('function renderDailyGoal('));
 test('editDailyGoal function', js.includes('function editDailyGoal('));
@@ -319,7 +319,7 @@ test('CSS: .topic-domain-group', css.includes('.topic-domain-group'));
 test('CSS: .daily-goal-card', css.includes('.daily-goal-card'));
 test('CSS: .advanced-section', css.includes('.advanced-section'));
 test('CSS: .hero-stats-strip', css.includes('.hero-stats-strip'));
-test('SW cache bumped to v4.99.5', sw.includes('netplus-v4.99.5'));
+test('SW cache bumped to v4.99.6', sw.includes('netplus-v4.99.6'));
 test('Family Drill: STORAGE.PORT_FAMILY_BEST', js.includes("PORT_FAMILY_BEST:"));
 test('Family Drill: ptMode handles family', js.includes("ptMode === 'family'"));
 test('Family Drill: HTML mode button', html.includes('id="pt-mode-family"'));
@@ -11048,17 +11048,17 @@ test('v4.81.11 Settings: renderSettingsPage calls renderSettingsHealthCard',
   })());
 test('v4.81.11 Settings: #settings-health-card container in markup',
   /id="settings-health-card"/.test(html) && /id="settings-health-grid"/.test(html));
-// v4.99.5: API key tile retired (BYOK gone), replaced with "Cloud sync".
-// Local backup tile renamed to "Local safety net" since cloud is now primary.
-test('v4.99.5 Settings: health card surfaces 5 rows (cloud-sync/exam/goal/local-safety-net/today)',
+// v4.99.6: Local safety net tile retired (cloud sync is the primary recovery path).
+// Health card now has 4 rows: cloud-sync / exam / goal / today.
+test('v4.99.6 Settings: health card surfaces 4 rows (cloud-sync/exam/goal/today)',
   (() => {
     const body = _fnBody(js, 'renderSettingsHealthCard');
     return body
       && /Cloud sync/.test(body)
       && /Exam date/.test(body)
       && /Daily goal/.test(body)
-      && /Local safety net/.test(body)
-      && /Today/.test(body);
+      && /Today/.test(body)
+      && !/label: 'Local safety net'/.test(body);
   })());
 test('v4.81.11 Settings: .settings-health-row CSS declared',
   /\.settings-health-row\s*\{/.test(css));
@@ -13330,10 +13330,10 @@ test('v4.81.13 Exam: vm fixture — domain breakdown buckets correct/total per d
     } catch (e) { return false; }
   })());
 
-// v4.99.5: API key tile retired in v4.99.4. The vm fixture now exercises
-// the new Cloud sync tile path — surfaces "Sign in to sync" when no Supabase
-// session is available and "Active" when a sb-...-auth-token cookie exists.
-test('v4.99.5 Settings: vm fixture — health card surfaces Cloud sync status',
+// v4.99.6: Cloud sync detection now uses _quotaState as truth source.
+// _quotaState is populated only after a successful get_daily_quota_usage RPC
+// (which requires a valid auth.uid()), so non-null = signed in.
+test('v4.99.6 Settings: vm fixture — health card surfaces Cloud sync status via _quotaState',
   (() => {
     try {
       const body = _fnBody(js, 'renderSettingsHealthCard');
@@ -13346,32 +13346,25 @@ test('v4.99.5 Settings: vm fixture — health card surfaces Cloud sync status',
         localStorage: {
           getItem: (k) => storage[k] === undefined ? null : storage[k],
           setItem: (k, v) => { storage[k] = String(v); },
-          removeItem: (k) => { delete storage[k]; },
-          // Object.keys support for the cloud-sync detection path
-          get length() { return Object.keys(storage).length; },
-          key: (i) => Object.keys(storage)[i]
+          removeItem: (k) => { delete storage[k]; }
         },
         document: { getElementById: () => fakeHost },
         getExamDate: () => null,
         getDaysToExam: () => null,
-        listAutoBackups: () => [],
         getDailyGoal: () => 20,
         getTodayQuestionCount: () => 0,
         escHtml: (s) => String(s),
         Number, parseInt,
         Math, Date, JSON, Object,
-        window: { certanvilSupabase: { auth: {} } }
+        _quotaState: null  // simulate signed-out
       };
       vm.createContext(ctx);
       vm.runInContext(body, ctx);
       // No session → "Sign in to sync"
       vm.runInContext('renderSettingsHealthCard()', ctx);
       const noSessionHtml = fakeHost._innerHTML;
-      // Stored Supabase session token → "Active"
-      storage['sb-appmuaqwuethndvalarl-auth-token'] = '{}';
-      // Workaround: pass Object.keys-friendly interface
-      ctx.localStorage.getItem = (k) => storage[k] === undefined ? null : storage[k];
-      ctx.window._certanvilSignedIn = true;
+      // _quotaState populated → "Active"
+      ctx._quotaState = { used_today: 5, daily_limit: 20, tier: 'free' };
       vm.runInContext('renderSettingsHealthCard()', ctx);
       const withSessionHtml = fakeHost._innerHTML;
       return /Sign in to sync/.test(noSessionHtml)
@@ -17704,12 +17697,35 @@ test('v4.99.5 SettingsHealth: API key tile retired (BYOK gone)',
   && !/Connected · ' \+ apiKey\.slice/.test(js));
 test('v4.99.5 SettingsHealth: Cloud sync tile added',
   /label: 'Cloud sync'[\s\S]{0,200}your progress is saved/.test(js));
-test('v4.99.5 SettingsHealth: backup label renamed to Local safety net',
-  /label: 'Local safety net'/.test(js)
+// v4.99.6: backup tile retired entirely (cloud sync is the primary recovery path)
+test('v4.99.6 SettingsHealth: backup tile retired',
+  !/label: 'Local safety net'/.test(js)
   && !/label: 'Automatic backup'/.test(js));
 test('v4.99.5 SettingsPage: eyebrow updated from "Account · configuration" to "Configuration"',
   /<div class="ed-pagehead-eyebrow">Configuration<\/div>/.test(html)
   && !/Account &middot; configuration/.test(html));
+
+// ── v4.99.6 — Phase E.5 polish + Settings card bug fixes ──
+console.log('\n\x1b[1m── v4.99.6 — PHASE E.5 + SETTINGS BUG FIXES ──\x1b[0m');
+test('v4.99.6 Chip: Pro variant says just "Pro" (no count)',
+  /tier === 'pro' \|\| limit === -1[\s\S]{0,400}labelText = 'Pro'/.test(js)
+  && !/used \+ ' today &middot; Pro'/.test(js));
+test('v4.99.6 CloudSync: uses _quotaState as truth source (no localStorage probe)',
+  /1\. Cloud sync \(v4\.99\.6[\s\S]{0,400}_quotaState/.test(js));
+test('v4.99.6 DailyGoal: reads via getDailyGoal() helper (handles legacy JSON format)',
+  /3\. Daily goal[\s\S]{0,1000}getDailyGoal\(\)[\s\S]{0,200}isUserSetGoal/.test(js));
+test('v4.99.6 Tooltip: _toggleQuotaTooltip function defined',
+  /function _toggleQuotaTooltip\(\)/.test(js));
+test('v4.99.6 Tooltip: chip click handler wired in _renderQuotaChip',
+  /el\.onclick = function[\s\S]{0,200}_toggleQuotaTooltip/.test(js));
+test('v4.99.6 Tooltip: Pro variant shows "Pro · Unlimited"',
+  /Pro &middot; Unlimited/.test(js));
+test('v4.99.6 Tooltip: Free variant shows reset countdown + upgrade CTA',
+  /quota-chip-tooltip-cta[\s\S]{0,200}certanvil\.com\/pricing/.test(js));
+test('v4.99.6 CSS: .quota-chip-tooltip styles present',
+  /\.quota-chip-tooltip\s*\{/.test(css));
+test('v4.99.6 CSS: tooltip animation declared',
+  /@keyframes quotaTooltipIn/.test(css));
 test('v4.99.3 BYOK retire: § 02 AI Coach group hidden in Settings',
   /data-group="ai-coach"[^>]*hidden/.test(html));
 test('v4.99.3 BYOK retire: api-key input still exists as hidden (legacy bind safety)',

@@ -1,9 +1,9 @@
 // ══════════════════════════════════════════
-// Network+ AI Quiz — app.js  v4.99.5
+// Network+ AI Quiz — app.js  v4.99.6
 // ══════════════════════════════════════════
 
 // ── CONSTANTS ──
-const APP_VERSION = '4.99.5';
+const APP_VERSION = '4.99.6';
 
 // ══════════════════════════════════════════════════════════════════════════
 // CERT PACK ARCHITECTURE (v4.86.0 Phase 1A engine refactor)
@@ -394,7 +394,9 @@ function _renderQuotaChip() {
   if (tier === 'pro' || limit === -1) {
     el.classList.add('is-pro');
     iconHtml = '<span class="quota-chip-icon" aria-hidden="true">&#9889;</span>';
-    labelText = used + ' today &middot; Pro';
+    // v4.99.6: Pro users don't care about the daily count — the chip is just
+    // a status indicator. Click-to-tooltip surfaces the count for the curious.
+    labelText = 'Pro';
   } else {
     var pct = Math.min(100, Math.round((used / limit) * 100));
     if (used >= limit) {
@@ -415,6 +417,106 @@ function _renderQuotaChip() {
 
   el.innerHTML = iconHtml + '<span class="quota-chip-label">' + labelText + '</span>' + barHtml;
   el.setAttribute('title', labelText + ' — click for details');
+
+  // v4.99.6 Phase E.5: chip click → tooltip with reset countdown + upgrade CTA.
+  // Wire once (replace handler so re-renders don't stack).
+  el.onclick = function (e) {
+    e.preventDefault();
+    e.stopPropagation();
+    _toggleQuotaTooltip();
+  };
+}
+
+// v4.99.6 Phase E.5 — chip-click tooltip showing reset countdown + plan + upgrade CTA.
+// Toggleable: click chip while open closes it. Click outside also closes.
+function _toggleQuotaTooltip() {
+  var existing = document.getElementById('quota-chip-tooltip');
+  if (existing) {
+    existing.remove();
+    return;
+  }
+  if (!_quotaState) return;
+
+  // Compute reset countdown
+  var resetText = 'midnight UTC';
+  try {
+    var now = new Date();
+    var resetAt = new Date(Date.UTC(
+      now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1, 0, 0, 0
+    ));
+    var diffMs = resetAt.getTime() - now.getTime();
+    var hr = Math.floor(diffMs / 3600000);
+    var min = Math.floor((diffMs % 3600000) / 60000);
+    resetText = (hr > 0 ? hr + 'h ' : '') + min + 'm';
+  } catch (_) {}
+
+  var isPro = _quotaState.tier === 'pro' || (typeof _quotaState.daily_limit === 'number' && _quotaState.daily_limit < 0);
+  var used = _quotaState.used_today || 0;
+  var limit = _quotaState.daily_limit;
+
+  var tt = document.createElement('div');
+  tt.id = 'quota-chip-tooltip';
+  tt.className = 'quota-chip-tooltip';
+
+  if (isPro) {
+    tt.innerHTML =
+      '<div class="quota-chip-tooltip-title">' +
+        '<span aria-hidden="true">&#9889;</span> Pro &middot; Unlimited' +
+      '</div>' +
+      '<div class="quota-chip-tooltip-row">' +
+        '<span class="quota-chip-tooltip-key">Used today</span>' +
+        '<span class="quota-chip-tooltip-value">' + used + '</span>' +
+      '</div>' +
+      '<div class="quota-chip-tooltip-row">' +
+        '<span class="quota-chip-tooltip-key">Plan</span>' +
+        '<span class="quota-chip-tooltip-value">Pro &middot; all certs</span>' +
+      '</div>' +
+      '<div class="quota-chip-tooltip-foot">No daily cap. Drills, builders, and the Sec+ flagships are all yours.</div>';
+  } else {
+    tt.innerHTML =
+      '<div class="quota-chip-tooltip-title">' +
+        (used >= limit
+          ? '<span aria-hidden="true">&#128308;</span> Daily limit reached'
+          : (used / limit >= 0.8
+              ? '<span aria-hidden="true">&#9888;&#65039;</span> Approaching daily limit'
+              : '<span aria-hidden="true">&#128267;</span> Free tier &middot; ' + (limit - used) + ' left')) +
+      '</div>' +
+      '<div class="quota-chip-tooltip-row">' +
+        '<span class="quota-chip-tooltip-key">Used today</span>' +
+        '<span class="quota-chip-tooltip-value">' + used + ' / ' + limit + '</span>' +
+      '</div>' +
+      '<div class="quota-chip-tooltip-row">' +
+        '<span class="quota-chip-tooltip-key">Resets in</span>' +
+        '<span class="quota-chip-tooltip-value">' + resetText + '</span>' +
+      '</div>' +
+      '<div class="quota-chip-tooltip-row">' +
+        '<span class="quota-chip-tooltip-key">Plan</span>' +
+        '<span class="quota-chip-tooltip-value">Free</span>' +
+      '</div>' +
+      '<div class="quota-chip-tooltip-divider"></div>' +
+      '<a class="quota-chip-tooltip-cta" href="https://certanvil.com/pricing" target="_blank" rel="noopener">Upgrade to Pro &middot; unlimited &rarr;</a>';
+  }
+
+  // Position tooltip below + slightly left of the chip
+  var chipEl = document.getElementById('topbar-quota-chip');
+  if (chipEl) {
+    var rect = chipEl.getBoundingClientRect();
+    tt.style.position = 'fixed';
+    tt.style.top = (rect.bottom + 8) + 'px';
+    tt.style.right = Math.max(16, window.innerWidth - rect.right) + 'px';
+  }
+  document.body.appendChild(tt);
+
+  // Click-outside-to-close — bound on next tick so the chip's own click doesn't immediately close it
+  setTimeout(function () {
+    function offClickHandler(e) {
+      if (tt.contains(e.target)) return;
+      if (chipEl && chipEl.contains(e.target)) return;  // chip-click handled by toggle itself
+      tt.remove();
+      document.removeEventListener('click', offClickHandler);
+    }
+    document.addEventListener('click', offClickHandler);
+  }, 0);
 }
 
 // Modal-style hero shown when the proxy returns 429 quota_exceeded.
@@ -39811,42 +39913,20 @@ function renderSettingsHealthCard() {
   if (!host) return;
   const rows = [];
 
-  // 1. Cloud sync (v4.99.5 — replaces the BYOK API key tile retired in v4.99.4).
-  // Shows whether the user's progress is being synced to Supabase. Phase C′
-  // already handles the sync; this just surfaces the status visually.
-  try {
-    const supa = (typeof window !== 'undefined' && window.certanvilSupabase) || null;
-    if (supa && supa.auth) {
-      let signedIn = false;
-      try {
-        // Use cached session — getSession is sync after first hydrate
-        const cached = supa.auth.getSession ? null : null;  // placeholder; we call it below
-      } catch (_) {}
-      // We can't await here (renderSettingsHealthCard is sync), so check
-      // for the auth-state.js cached signedIn flag if available.
-      if (typeof window._certanvilSignedIn === 'boolean') {
-        signedIn = window._certanvilSignedIn;
-      } else {
-        // Fallback: check for a stored session token via Supabase's localStorage key
-        try {
-          const keys = Object.keys(localStorage);
-          signedIn = keys.some(k => k.startsWith('sb-') && k.endsWith('-auth-token'));
-        } catch (_) {}
-      }
-      if (signedIn) {
-        rows.push({
-          icon: '✓', tier: 'ok', label: 'Cloud sync',
-          value: 'Active — your progress is saved across devices'
-        });
-      } else {
-        rows.push({
-          icon: '⚠', tier: 'warn', label: 'Cloud sync',
-          value: 'Sign in to sync your progress to the cloud'
-        });
-      }
-    }
-  } catch (_) {
-    rows.push({ icon: '?', tier: 'warn', label: 'Cloud sync', value: 'Status unavailable' });
+  // 1. Cloud sync (v4.99.6 — _quotaState is the truth source).
+  // If _quotaState is populated, the user IS signed in (we successfully
+  // called the get_daily_quota_usage RPC, which requires an auth.uid()).
+  // No localStorage probing or window-flag dependency.
+  if (typeof _quotaState !== 'undefined' && _quotaState) {
+    rows.push({
+      icon: '✓', tier: 'ok', label: 'Cloud sync',
+      value: 'Active — your progress is saved across devices'
+    });
+  } else {
+    rows.push({
+      icon: '⚠', tier: 'warn', label: 'Cloud sync',
+      value: 'Sign in to sync your progress to the cloud'
+    });
   }
 
   // 2. Exam date
@@ -39869,22 +39949,19 @@ function renderSettingsHealthCard() {
   }
 
   // 3. Daily goal
-  // v4.81.26 FIX: this section was reading the daily goal as a JSON object
-  // `{goal: N, date: "YYYY-MM-DD", current: N}` — but `setDailyGoal()` writes
-  // a plain string number. Schema mismatch bug introduced in v4.81.11. The
-  // user-set value never matched, so the row always reported "Not set" even
-  // when a goal was explicitly saved (visible in the Daily Goal input below).
-  // Same bug class as v4.81.5's diagnostic options-render schema mismatch —
-  // direct hit on `feedback_behavioral_fixtures.md` (vm-fixture would have
-  // caught this in v4.81.11). Now reads via getDailyGoal() + checks raw
-  // localStorage to distinguish "user explicitly set" from "default fallback".
+  // v4.99.6 FIX: previous direct-parseInt logic broke when the stored value
+  // was a JSON object (legacy format from pre-v4.81.11). parseInt('{"goal":20...')
+  // returns NaN, isUserSetGoal becomes false, row reports "Not set" even though
+  // the goal IS set (and visible in the Daily Goal input below). Now uses
+  // getDailyGoal() which handles both formats correctly + treats anything
+  // explicitly stored as user-set.
   let goal = 0;
   let isUserSetGoal = false;
   try {
     const rawStored = localStorage.getItem(STORAGE.DAILY_GOAL);
-    const stored = parseInt(rawStored, 10);
-    isUserSetGoal = rawStored !== null && Number.isFinite(stored) && stored > 0;
-    goal = isUserSetGoal ? stored : 0;
+    const fromHelper = (typeof getDailyGoal === 'function') ? getDailyGoal() : 0;
+    isUserSetGoal = rawStored !== null && Number.isFinite(fromHelper) && fromHelper > 0;
+    goal = isUserSetGoal ? fromHelper : 0;
   } catch (_) { isUserSetGoal = false; goal = 0; }
   if (isUserSetGoal) {
     rows.push({
@@ -39898,36 +39975,10 @@ function renderSettingsHealthCard() {
     });
   }
 
-  // 4. Local backup (renamed in v4.99.5 — cloud is now primary, this is a
-  // complementary local safety net that protects against accidental clears).
-  try {
-    const backups = (typeof listAutoBackups === 'function') ? listAutoBackups() : [];
-    if (backups.length === 0) {
-      rows.push({
-        icon: '⚠', tier: 'warn', label: 'Local safety net',
-        value: 'Cloud syncs your data; one local backup will be created on next page load'
-      });
-    } else {
-      const newest = backups[0];
-      const ageMs = newest.capturedAt ? Date.now() - new Date(newest.capturedAt).getTime() : null;
-      let ageStr = 'recent';
-      if (ageMs !== null) {
-        const mins = Math.floor(ageMs / 60000);
-        const hrs = Math.floor(mins / 60);
-        const days = Math.floor(hrs / 24);
-        if (days > 0) ageStr = days + 'd ago';
-        else if (hrs > 0) ageStr = hrs + 'h ago';
-        else if (mins > 0) ageStr = mins + 'm ago';
-        else ageStr = 'just now';
-      }
-      rows.push({
-        icon: '✓', tier: 'ok', label: 'Local safety net',
-        value: backups.length + ' snapshot' + (backups.length === 1 ? '' : 's') + ' · last: ' + ageStr
-      });
-    }
-  } catch (_) {
-    rows.push({ icon: '?', tier: 'warn', label: 'Local safety net', value: 'Status unavailable' });
-  }
+  // 4. Local backup tile retired in v4.99.6 — cloud sync (Phase C′) is the
+  // primary recovery path, so the local safety net info became redundant
+  // for users. Backups still run quietly in the background (v4.81.2
+  // _takeAutoBackup), accessible via Settings → Data & Backups → Restore.
 
   // 5. Today's progress
   // v4.81.26 FIX: this section was reading today's progress from a JSON

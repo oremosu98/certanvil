@@ -162,8 +162,13 @@
       if (role === 'admin') pieces.push('owner');
       elIdMetaText.textContent = pieces.join(' · ');
     }
-    // Tier pill — Free for everyone tonight (Stripe + Pro tier ships in Phase G)
-    if (elIdTierLabel) elIdTierLabel.textContent = 'Free tier' + (role === 'admin' ? ' · all certs' : '');
+    // Tier pill — admins are treated as Pro for entitlement purposes
+    // (Phase E.4 SQL migration: is_pro() OR'd with role='admin'). Stripe-paying
+    // users will get tier='pro' from subscriptions table once Stripe ships.
+    var tierLabel;
+    if (role === 'admin') tierLabel = 'Pro tier · all certs';
+    else tierLabel = 'Free tier';
+    if (elIdTierLabel) elIdTierLabel.textContent = tierLabel;
     if (elIdAdminPill) {
       if (role === 'admin') elIdAdminPill.removeAttribute('hidden');
       else elIdAdminPill.setAttribute('hidden', '');
@@ -179,8 +184,8 @@
     if (elProfileEmail) elProfileEmail.textContent = email;
     if (elProfileDisplayName) elProfileDisplayName.textContent = displayName;
 
-    // Subscription tier
-    if (elSubTierLabel) elSubTierLabel.textContent = 'Free tier' + (role === 'admin' ? ' · all certs' : '');
+    // Subscription tier — same logic as the tier pill above (admin = Pro for now)
+    if (elSubTierLabel) elSubTierLabel.textContent = tierLabel;
 
     // Cert entitlements (status now reflects metadata.cert_results when present)
     if (elEntList) elEntList.innerHTML = renderEntitlements(role, profile);

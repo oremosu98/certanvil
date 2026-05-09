@@ -1,5 +1,5 @@
 /* ══════════════════════════════════════════
-   Network+ AI Quiz — styles.css  v4.99.5
+   Network+ AI Quiz — styles.css  v4.99.6
    ══════════════════════════════════════════ */
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -19361,4 +19361,75 @@ html { zoom: 1.10; }
   .topbar-quota-chip,
   .topbar-quota-chip .quota-chip-fill,
   .quota-exceeded-cta { transition: none !important; }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   v4.99.6 Phase E.5 — Quota chip click tooltip
+   ══════════════════════════════════════════════════════════════════════════ */
+.quota-chip-tooltip {
+  z-index: 9000;
+  background: var(--surface, #131320);
+  border: 1px solid var(--border, #2e2e48);
+  border-radius: 10px;
+  padding: 14px 16px;
+  font-size: 12px;
+  color: var(--text-mid, #b0b0cc);
+  line-height: 1.55;
+  min-width: 240px;
+  max-width: 300px;
+  box-shadow: 0 12px 32px rgba(0,0,0,0.45);
+  animation: quotaTooltipIn 0.12s ease forwards;
+}
+@keyframes quotaTooltipIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.quota-chip-tooltip-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text, #f0f0f8);
+  margin-bottom: 8px;
+  display: flex; align-items: center; gap: 6px;
+}
+.quota-chip-tooltip-row {
+  display: flex; justify-content: space-between;
+  margin: 4px 0;
+}
+.quota-chip-tooltip-key { color: var(--text-dim, #6b6b90); }
+.quota-chip-tooltip-value {
+  color: var(--text, #f0f0f8);
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+.quota-chip-tooltip-foot {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border, #2e2e48);
+  font-size: 11px;
+  color: var(--text-mid, #b0b0cc);
+  line-height: 1.5;
+}
+.quota-chip-tooltip-divider {
+  margin: 8px 0;
+  height: 1px;
+  background: var(--border, #2e2e48);
+}
+.quota-chip-tooltip-cta {
+  display: block;
+  text-align: center;
+  padding: 7px 0;
+  background: var(--accent, #5b4fdb);
+  color: #fff !important;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  text-decoration: none;
+  margin-top: 4px;
+  transition: background 0.15s ease;
+}
+.quota-chip-tooltip-cta:hover {
+  background: var(--accent-hover, #6e60e8);
+}
+@media (prefers-reduced-motion: reduce) {
+  .quota-chip-tooltip { animation: none; }
 }
