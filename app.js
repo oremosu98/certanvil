@@ -1,9 +1,9 @@
 // ══════════════════════════════════════════
-// Network+ AI Quiz — app.js  v4.99.1
+// Network+ AI Quiz — app.js  v4.99.2
 // ══════════════════════════════════════════
 
 // ── CONSTANTS ──
-const APP_VERSION = '4.99.1';
+const APP_VERSION = '4.99.2';
 
 // ══════════════════════════════════════════════════════════════════════════
 // CERT PACK ARCHITECTURE (v4.86.0 Phase 1A engine refactor)
@@ -239,6 +239,257 @@ ${blocks}
 }
 const CLAUDE_API_URL = 'https://api.anthropic.com/v1/messages';
 const CLAUDE_MODEL = 'claude-haiku-4-5-20251001';
+
+// ══════════════════════════════════════════════════════════════════════════
+// v4.99.2 Phase E.3 — _claudeFetch wrapper
+// ══════════════════════════════════════════════════════════════════════════
+// Single chokepoint for every Claude API call in the app. Auto-routes:
+//   • Signed-in user → POST /api/ai/generate (server proxy, JWT-authed,
+//     server-held ANTHROPIC_API_KEY, server-side quota enforcement).
+//   • Anonymous user with a stored API key → direct Anthropic call (BYOK
+//     fallback). Phase E.4 removes this fallback once the server proxy
+//     ships with the daily-quota guarantee.
+//   • Anonymous user with no stored key → throws err.needsAuth, caller
+//     surfaces a "sign in for free 20 questions/day" UI.
+//
+// The wrapper preserves the same call shape as fetch(url, init) so all 13
+// existing Anthropic call sites in this file collapsed to a single global
+// rename: fetch(CLAUDE_API_URL, → _claudeFetch(.
+//
+// To mark a call as "metered" (counts against the user's daily 20-Q quota),
+// the body's parsed JSON should include _metered: true. Only the canonical
+// question-generation site (_fetchQuestionsBatch) sets this flag; all
+// other AI calls (validation, teacher, coach, scenario gen) are infrastructure.
+// The proxy strips _metered from the body before forwarding to Anthropic;
+// the BYOK fallback below also strips it so Anthropic doesn't reject as
+// an unknown field.
+//
+// On HTTP 429 quota_exceeded, the wrapper triggers _showQuotaExceededUI()
+// (modal hero) so callers don't each need to handle it. Wrapper also
+// triggers a quota-chip refresh after every successful metered call.
+async function _claudeFetch(init) {
+  init = init || {};
+
+  // Try to grab the user's Supabase session
+  var session = null;
+  try {
+    if (typeof window !== 'undefined' && window.certanvilSupabase && window.certanvilSupabase.auth) {
+      var s = await window.certanvilSupabase.auth.getSession();
+      session = (s && s.data && s.data.session) || null;
+    }
+  } catch (_) {}
+
+  // Detect _metered flag in the body so we can refresh the chip after success
+  var wasMetered = false;
+  try {
+    if (init.body) {
+      var parsed = JSON.parse(init.body);
+      wasMetered = parsed && parsed._metered === true;
+    }
+  } catch (_) {}
+
+  if (session && session.access_token) {
+    // Route 1: server proxy
+    var r = await fetch('/api/ai/generate', {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer ' + session.access_token,
+        'Content-Type': 'application/json'
+      },
+      body: init.body
+    });
+
+    // Quota exceeded — surface the upgrade UI
+    if (r.status === 429) {
+      try {
+        var detail = await r.clone().json();
+        if (typeof _showQuotaExceededUI === 'function') {
+          _showQuotaExceededUI(detail);
+        }
+      } catch (_) {}
+    } else if (wasMetered && r.ok) {
+      // Successful metered call — refresh the chip in the background
+      setTimeout(function () {
+        try { if (typeof _refreshQuotaChip === 'function') _refreshQuotaChip(); }
+        catch (_) {}
+      }, 50);
+    }
+
+    return r;
+  }
+
+  // Route 2: BYOK fallback (anonymous users with a stored API key)
+  // This path goes away in Phase E.4 once everyone is on the proxy.
+  var key = null;
+  try { key = localStorage.getItem(STORAGE.KEY); } catch (_) {}
+  if (key) {
+    // Strip _metered from the body — Anthropic rejects unknown fields
+    var cleanBody = init.body;
+    try {
+      if (init.body) {
+        var p = JSON.parse(init.body);
+        if (p && '_metered' in p) {
+          delete p._metered;
+          cleanBody = JSON.stringify(p);
+        }
+      }
+    } catch (_) {}
+    // Direct fetch to Anthropic — NOT _claudeFetch (would recurse).
+    return fetch(CLAUDE_API_URL, {
+      method: 'POST',
+      headers: {
+        'x-api-key': key,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true',
+        'content-type': 'application/json'
+      },
+      body: cleanBody
+    });
+  }
+
+  // No session, no key — surface a sign-in nag
+  var err = new Error('Sign in to study — 20 free questions/day at certanvil.com.');
+  err.needsAuth = true;
+  throw err;
+}
+
+// ── Quota chip + exceeded UI (Phase E.3) ────────────────────────────────
+// State cached in module scope; refreshed on auth + after metered calls.
+var _quotaState = null;  // { used_today, daily_limit, tier } | null
+
+async function _refreshQuotaChip() {
+  // Reads get_daily_quota_usage RPC + repaints the chip.
+  // Silent on errors — chip just stays at last-known state.
+  try {
+    if (!window.certanvilSupabase) return;
+    var s = await window.certanvilSupabase.auth.getSession();
+    var session = s && s.data && s.data.session;
+    if (!session || !session.user) return;
+    var resp = await window.certanvilSupabase.rpc('get_daily_quota_usage', { uid: session.user.id });
+    if (resp && resp.data && resp.data.length) {
+      _quotaState = resp.data[0];
+      _renderQuotaChip();
+    }
+  } catch (_) {}
+}
+
+function _renderQuotaChip() {
+  var el = document.getElementById('topbar-quota-chip');
+  if (!el) return;
+
+  if (!_quotaState) {
+    el.classList.add('is-hidden');
+    return;
+  }
+  el.classList.remove('is-hidden');
+
+  var used = _quotaState.used_today || 0;
+  var limit = _quotaState.daily_limit;  // -1 = unlimited (Pro)
+  var tier = _quotaState.tier || 'free';
+
+  // Reset all variant classes
+  el.classList.remove('is-low', 'is-approaching', 'is-exceeded', 'is-pro');
+
+  var iconHtml, labelText, barHtml = '';
+  if (tier === 'pro' || limit === -1) {
+    el.classList.add('is-pro');
+    iconHtml = '<span class="quota-chip-icon" aria-hidden="true">&#9889;</span>';
+    labelText = used + ' today &middot; Pro';
+  } else {
+    var pct = Math.min(100, Math.round((used / limit) * 100));
+    if (used >= limit) {
+      el.classList.add('is-exceeded');
+      iconHtml = '<span class="quota-chip-icon" aria-hidden="true">&#128308;</span>';
+      labelText = 'Limit reached';
+    } else if (pct >= 80) {
+      el.classList.add('is-approaching');
+      iconHtml = '<span class="quota-chip-icon" aria-hidden="true">&#9888;&#65039;</span>';
+      labelText = used + ' / ' + limit + ' today';
+    } else {
+      el.classList.add('is-low');
+      iconHtml = '<span class="quota-chip-icon" aria-hidden="true">&#128267;</span>';
+      labelText = used + ' / ' + limit + ' today';
+    }
+    barHtml = '<span class="quota-chip-bar"><span class="quota-chip-fill" style="width:' + pct + '%;"></span></span>';
+  }
+
+  el.innerHTML = iconHtml + '<span class="quota-chip-label">' + labelText + '</span>' + barHtml;
+  el.setAttribute('title', labelText + ' — click for details');
+}
+
+// Modal-style hero shown when the proxy returns 429 quota_exceeded.
+// Renders inline; user can dismiss + browse marketing or click upgrade.
+function _showQuotaExceededUI(detail) {
+  // Compute friendly reset countdown
+  var resetText = 'midnight UTC';
+  try {
+    if (detail && detail.reset_at) {
+      var resetMs = new Date(detail.reset_at).getTime();
+      var now = Date.now();
+      var diffMs = Math.max(0, resetMs - now);
+      var hr = Math.floor(diffMs / 3600000);
+      var min = Math.floor((diffMs % 3600000) / 60000);
+      resetText = (hr > 0 ? hr + 'h ' : '') + min + 'm';
+    }
+  } catch (_) {}
+
+  // Remove any existing instance first
+  var prev = document.getElementById('quota-exceeded-modal');
+  if (prev) prev.remove();
+
+  var modal = document.createElement('div');
+  modal.id = 'quota-exceeded-modal';
+  modal.className = 'quota-exceeded-modal';
+  modal.innerHTML =
+    '<div class="quota-exceeded-card">' +
+      '<div class="quota-exceeded-icon">&#128267;</div>' +
+      '<div class="quota-exceeded-title">You&rsquo;ve used today&rsquo;s free questions</div>' +
+      '<div class="quota-exceeded-sub">Free is 20 questions per day, every day, no card required. Resets in <strong>' + resetText + '</strong> &middot; or upgrade to Pro for unlimited.</div>' +
+      '<div class="quota-exceeded-actions">' +
+        '<a class="quota-exceeded-cta" href="https://certanvil.com/pricing" target="_blank" rel="noopener">Upgrade to Pro &middot; $9.99/mo &rarr;</a>' +
+        '<button type="button" class="quota-exceeded-dismiss" id="quota-exceeded-dismiss">I&rsquo;ll wait until reset</button>' +
+      '</div>' +
+    '</div>';
+  document.body.appendChild(modal);
+
+  var dismissBtn = document.getElementById('quota-exceeded-dismiss');
+  if (dismissBtn) {
+    dismissBtn.addEventListener('click', function () { modal.remove(); });
+  }
+  // Click outside card → dismiss
+  modal.addEventListener('click', function (e) {
+    if (e.target === modal) modal.remove();
+  });
+}
+
+// Self-contained auth listener — keeps the quota chip in sync with auth state
+// (fires on initial load, sign-in, sign-out, and token refresh). Safe to call
+// before window.certanvilSupabase is defined; defers until next tick.
+(function _initQuotaChipListener() {
+  function attach() {
+    if (!window.certanvilSupabase || !window.certanvilSupabase.auth) {
+      // Supabase client not yet ready — try again on next tick
+      setTimeout(attach, 100);
+      return;
+    }
+    try {
+      window.certanvilSupabase.auth.onAuthStateChange(function (event, session) {
+        if (event === 'SIGNED_OUT' || !session) {
+          _quotaState = null;
+          _renderQuotaChip();
+        } else if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION' || event === 'TOKEN_REFRESHED') {
+          _refreshQuotaChip();
+        }
+      });
+    } catch (_) {}
+  }
+  if (typeof window === 'undefined') return;
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', attach);
+  } else {
+    attach();
+  }
+})();
 // AI validator runs the second-pass quality check over generated questions.
 // Upgraded to Sonnet because the semantic failure modes still slipping past
 // the programmatic validator (premise-answer contradictions, explanation-answer
@@ -5578,7 +5829,7 @@ Respond ONLY with a raw JSON array - no markdown, no extra text:
   // API-level errors with `.apiError = true`, or on parse failures with
   // `.raw` attached so the caller can log the raw response for diagnosis.
   const attempt = async (prompt, label, model) => {
-    const res = await fetch(CLAUDE_API_URL, {
+    const res = await _claudeFetch( {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -5586,7 +5837,9 @@ Respond ONLY with a raw JSON array - no markdown, no extra text:
         'anthropic-version': '2023-06-01',
         'anthropic-dangerous-direct-browser-access': 'true'
       },
-      body: JSON.stringify({ model: model || CLAUDE_MODEL, max_tokens: MAX_TOKENS_GENERATION, messages: [{ role: 'user', content: prompt }] })
+      // _metered: true → counts against the user's daily 20-Q quota.
+      // The proxy strips this before forwarding to Anthropic.
+      body: JSON.stringify({ model: model || CLAUDE_MODEL, max_tokens: MAX_TOKENS_GENERATION, messages: [{ role: 'user', content: prompt }], _metered: true })
     });
     if (!res.ok) {
       const b = await res.json().catch(() => ({}));
@@ -13109,7 +13362,7 @@ ${qList}
 Respond with one line per question, nothing else:`;
 
   try {
-    const res = await fetch(CLAUDE_API_URL, {
+    const res = await _claudeFetch( {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -13295,7 +13548,7 @@ Use plain text, no markdown. Label each section clearly. Aim for 250-350 words t
   let text = _aiCacheGet('explainFurther', cacheKey);
   if (!text) {
     try {
-      const res = await fetch(CLAUDE_API_URL, {
+      const res = await _claudeFetch( {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -13413,7 +13666,7 @@ async function showTopicDeepDive(topicName) {
   }
 
   try {
-    const apiRes = await fetch(CLAUDE_API_URL, {
+    const apiRes = await _claudeFetch( {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -19504,7 +19757,7 @@ Keep the total response under 500 words. Respond with ONLY the JSON object.`;
   }
 
   try {
-    const res = await fetch(CLAUDE_API_URL, {
+    const res = await _claudeFetch( {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -24028,7 +24281,7 @@ Generate the complete topology JSON now.`;
 
     // Helper: call the AI and parse the response
     async function _tbCallAiAndParse(promptText, maxTok) {
-      const r = await fetch(CLAUDE_API_URL, {
+      const r = await _claudeFetch( {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -24140,7 +24393,7 @@ async function tbExplainDevice(deviceId) {
   }, null, 2);
 
   try {
-    const res = await fetch(CLAUDE_API_URL, {
+    const res = await _claudeFetch( {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -28567,7 +28820,7 @@ async function stAskCoach() {
       gtBlock = `\nAUTHORITATIVE FACTS (do not contradict):\n- IP ${ipStr} in binary: ${ipBin.match(/.{8}/g).join('.')}\n- /${cidr} mask in binary: ${maskBin.match(/.{8}/g).join('.')}\n- Network address (IP AND mask): ${netDotted}\n`;
     }
     const prompt = `You are a subnetting tutor helping a Network+ student. They were asked: "${stQ.q}"\nThey answered: "${userAns}" but the correct answer is: "${stQ.answer}".${gtBlock}\nIn 3-4 sentences, explain where they likely made their mistake using the binary/calculation approach. Be encouraging but precise. End with a one-sentence tip to avoid this mistake next time.`;
-    const res = await fetch(CLAUDE_API_URL, {
+    const res = await _claudeFetch( {
       method: 'POST',
       headers: { 'x-api-key': key, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true', 'content-type': 'application/json' },
       body: JSON.stringify({ model: CLAUDE_TEACHER_MODEL, max_tokens: MAX_TOKENS_TEACHER_BRIEF, messages: [{ role: 'user', content: prompt }] })
@@ -29876,7 +30129,7 @@ async function ptAskCoach() {
   const proto = ptQ.correct ? ptQ.correct.proto : '';
   const port = ptQ.correct ? ptQ.correct.port : '';
   try {
-    const res = await fetch(CLAUDE_API_URL, {
+    const res = await _claudeFetch( {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
       body: JSON.stringify({ model: CLAUDE_TEACHER_MODEL, max_tokens: MAX_TOKENS_TEACHER_BRIEF, messages: [{ role: 'user', content: `I'm studying for CompTIA Network+ N10-009. I just got a port number question wrong.\n\nAUTHORITATIVE FACT (do not contradict): ${proto} uses port ${port}.\n\nGive me a concise, memorable explanation of what this protocol does, a memory trick to remember its port number, and one exam tip. Keep it under 100 words.` }] })
@@ -30140,7 +30393,7 @@ Include:
 
 Keep it under 120 words. Use plain text, no markdown. Number each section.`;
   try {
-    const res = await fetch(CLAUDE_API_URL, {
+    const res = await _claudeFetch( {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -34932,7 +35185,7 @@ async function irwGenerateScenario() {
   const prompt = _irwBuildAiGenPrompt(_irwAiGenState);
 
   try {
-    const res = await fetch(CLAUDE_API_URL, {
+    const res = await _claudeFetch( {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -36044,7 +36297,7 @@ async function phtGenerateScenario() {
   _phtRenderAiGenModal();
   const prompt = _phtBuildAiGenPrompt(_phtAiGenState);
   try {
-    const res = await fetch(CLAUDE_API_URL, {
+    const res = await _claudeFetch( {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -38853,7 +39106,7 @@ async function aclAskCoach() {
   _aclShowCoachModalLoading(scen);
   const prompt = _aclBuildCoachPrompt(scen);
   try {
-    const res = await fetch(CLAUDE_API_URL, {
+    const res = await _claudeFetch( {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

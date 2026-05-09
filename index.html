@@ -115,6 +115,14 @@
       <span class="topbar-countdown-val" id="topbar-countdown-val">\u2014</span>
     </button>
     <span class="topbar-time" id="topbar-time" aria-label="Current time">&mdash;</span>
+    <!-- v4.99.2 Phase E.3: AI quota chip. Hidden until first refresh.
+         Reads get_daily_quota_usage RPC; repaints after every metered AI
+         call. Color-coded states: low (green), approaching (amber),
+         exceeded (red), pro (purple). -->
+    <button type="button" class="topbar-quota-chip is-hidden" id="topbar-quota-chip" aria-label="AI quota — questions used today" title="AI quota">
+      <span class="quota-chip-icon" aria-hidden="true">&#128267;</span>
+      <span class="quota-chip-label">&mdash;</span>
+    </button>
     <!-- v4.89.7: visible version pill in topbar — populated by app.js on
          DOMContentLoaded. Mirrors the landing footer .foot-version pill so
          the build is visible on every surface. -->
@@ -220,7 +228,7 @@
     <span class="hero-icon">&#9889;</span>
     <h1>Network+ AI Quiz</h1>
     <p>AI-generated MCQs every session. Never the same quiz twice.</p>
-    <span id="version-badge" style="display:inline-block;margin-top:10px;font-size:11px;font-weight:700;letter-spacing:.08em;color:var(--accent-light);background:rgba(124,111,247,.12);border:1px solid rgba(124,111,247,.3);padding:3px 10px;border-radius:99px;cursor:default;user-select:none">v4.99.1</span>
+    <span id="version-badge" style="display:inline-block;margin-top:10px;font-size:11px;font-weight:700;letter-spacing:.08em;color:var(--accent-light);background:rgba(124,111,247,.12);border:1px solid rgba(124,111,247,.3);padding:3px 10px;border-radius:99px;cursor:default;user-select:none">v4.99.2</span>
     <div id="streak-badge" class="streak-badge"></div>
     <div id="stats-card" class="hero-stats-strip is-hidden">
       <div class="stats-grid" id="stats-grid"></div>

@@ -303,7 +303,7 @@ test('Validation in runSessionStep', js.includes('aiValidateQuestions(apiKey, qu
 
 // ── Analytics v2 (v4.5) ──
 console.log('\n\x1b[1m── ANALYTICS v2 (v4.5) ──\x1b[0m');
-test('APP_VERSION is 4.99.1', js.includes("const APP_VERSION = '4.99.1"));
+test('APP_VERSION is 4.99.2', js.includes("const APP_VERSION = '4.99.2"));
 test('getDailyGoal function', js.includes('function getDailyGoal('));
 test('renderDailyGoal function', js.includes('function renderDailyGoal('));
 test('editDailyGoal function', js.includes('function editDailyGoal('));
@@ -317,7 +317,7 @@ test('CSS: .topic-domain-group', css.includes('.topic-domain-group'));
 test('CSS: .daily-goal-card', css.includes('.daily-goal-card'));
 test('CSS: .advanced-section', css.includes('.advanced-section'));
 test('CSS: .hero-stats-strip', css.includes('.hero-stats-strip'));
-test('SW cache bumped to v4.99.1', sw.includes('netplus-v4.99.1'));
+test('SW cache bumped to v4.99.2', sw.includes('netplus-v4.99.2'));
 test('Family Drill: STORAGE.PORT_FAMILY_BEST', js.includes("PORT_FAMILY_BEST:"));
 test('Family Drill: ptMode handles family', js.includes("ptMode === 'family'"));
 test('Family Drill: HTML mode button', html.includes('id="pt-mode-family"'));
@@ -1067,7 +1067,9 @@ test('Coach cache trims to 10 entries', /\.slice\(0, 10\)/.test(js));
 // don't silently break when line offsets shift — previously relied on a fragile
 // [\s\S]{0,4000} span anchored at the first mention of tbCoachTopology, which
 // happened to be a comment at the top of the file.)
-test('Coach calls CLAUDE_API_URL', _fnBody(js, 'tbCoachTopology').includes('CLAUDE_API_URL'));
+// v4.99.2: refactored to route through _claudeFetch wrapper instead of direct fetch.
+// Wrapper preserves the same call shape; CLAUDE_API_URL still referenced in BYOK fallback.
+test('Coach routes through _claudeFetch wrapper (v4.99.2)', _fnBody(js, 'tbCoachTopology').includes('_claudeFetch('));
 test('Coach uses a Claude model constant', /CLAUDE_(TEACHER_)?MODEL/.test(_fnBody(js, 'tbCoachTopology')));
 test('Coach guards missing API key', /tbCoachTopology[\s\S]{0,1500}Add your Anthropic API key/.test(js));
 test('Coach strips markdown fences', /replace\(\/\^```/.test(js));
@@ -17053,8 +17055,8 @@ test('v4.97.2 IRW: irwOpenAiGenerator + irwCloseAiGenerator + irwGenerateScenari
   /function irwOpenAiGenerator\(/.test(js) &&
   /function irwCloseAiGenerator\(/.test(js) &&
   /async function irwGenerateScenario\(/.test(js));
-test('v4.97.2 IRW: irwGenerateScenario calls Anthropic API with Sonnet',
-  /async function irwGenerateScenario[\s\S]{0,3000}fetch\(CLAUDE_API_URL[\s\S]{0,1000}CLAUDE_TEACHER_MODEL/.test(js));
+test('v4.97.2 IRW: irwGenerateScenario calls Anthropic API with Sonnet (via _claudeFetch wrapper post-v4.99.2)',
+  /async function irwGenerateScenario[\s\S]{0,3000}_claudeFetch\([\s\S]{0,1000}CLAUDE_TEACHER_MODEL/.test(js));
 test('v4.97.2 IRW: API key from STORAGE.KEY (user-provided, never hardcoded)',
   /async function irwGenerateScenario[\s\S]{0,500}localStorage\.getItem\(STORAGE\.KEY\)/.test(js));
 test('v4.97.2 IRW: _irwBuildAiGenPrompt constructs Sonnet prompt with constraints',
@@ -17398,8 +17400,8 @@ test('v4.98.3 PHT: phtOpenAiGenerator + phtCloseAiGenerator + phtGenerateScenari
   /function phtOpenAiGenerator\(/.test(js) &&
   /function phtCloseAiGenerator\(/.test(js) &&
   /async function phtGenerateScenario\(/.test(js));
-test('v4.98.3 PHT: phtGenerateScenario calls Anthropic API with Sonnet',
-  /async function phtGenerateScenario[\s\S]{0,3000}fetch\(CLAUDE_API_URL[\s\S]{0,1000}CLAUDE_TEACHER_MODEL/.test(js));
+test('v4.98.3 PHT: phtGenerateScenario calls Anthropic API with Sonnet (via _claudeFetch wrapper post-v4.99.2)',
+  /async function phtGenerateScenario[\s\S]{0,3000}_claudeFetch\([\s\S]{0,1000}CLAUDE_TEACHER_MODEL/.test(js));
 test('v4.98.3 PHT: API key from STORAGE.KEY (user-provided)',
   /async function phtGenerateScenario[\s\S]{0,500}localStorage\.getItem\(STORAGE\.KEY\)/.test(js));
 test('v4.98.3 PHT: _phtBuildAiGenPrompt with vector-aware schema',
@@ -17576,6 +17578,54 @@ test('v4.99.1 helper: snapshot includes days_to_exam for runway math',
   /days_to_exam:\s*typeof readiness\.daysToExam === 'number'/.test(js));
 test('v4.99.1 helper: snapshot includes total_qs for confidence weighting',
   /total_qs:\s*typeof readiness\.totalQs === 'number'/.test(js));
+
+// ── v4.99.2 — Phase E.3 client refactor + topbar quota chip ──
+console.log('\n\x1b[1m── v4.99.2 — PHASE E.3 PROXY WRAPPER + QUOTA CHIP ──\x1b[0m');
+test('v4.99.2 wrapper: _claudeFetch function defined',
+  /async function _claudeFetch\(init\)/.test(js));
+test('v4.99.2 wrapper: routes through /api/ai/generate when signed in',
+  /_claudeFetch[\s\S]{0,1500}fetch\('\/api\/ai\/generate'/.test(js));
+test('v4.99.2 wrapper: BYOK fallback exists for anonymous users',
+  /Route 2: BYOK fallback[\s\S]{0,2000}fetch\(CLAUDE_API_URL/.test(js));
+test('v4.99.2 wrapper: 429 quota_exceeded triggers _showQuotaExceededUI',
+  /r\.status === 429[\s\S]{0,200}_showQuotaExceededUI/.test(js));
+test('v4.99.2 wrapper: signs requests with Bearer Supabase JWT',
+  /Authorization[\s\S]{0,80}Bearer[\s\S]{0,80}session\.access_token/.test(js));
+test('v4.99.2 wrapper: needsAuth error when no session and no key',
+  /err\.needsAuth = true/.test(js));
+test('v4.99.2 metering: question-gen call site sets _metered: true',
+  /MAX_TOKENS_GENERATION[\s\S]{0,200}_metered:\s*true/.test(js));
+test('v4.99.2 chip: _refreshQuotaChip function defined',
+  /async function _refreshQuotaChip\(\)/.test(js));
+test('v4.99.2 chip: _renderQuotaChip function defined',
+  /function _renderQuotaChip\(\)/.test(js));
+test('v4.99.2 chip: refresh calls get_daily_quota_usage RPC',
+  /get_daily_quota_usage/.test(js));
+test('v4.99.2 chip: 4 variants (low/approaching/exceeded/pro)',
+  /is-low[\s\S]{0,1000}is-approaching[\s\S]{0,1000}is-exceeded[\s\S]{0,1000}is-pro/.test(js));
+test('v4.99.2 chip: hidden when no quota state',
+  /if \(!_quotaState\)[\s\S]{0,80}is-hidden/.test(js));
+test('v4.99.2 modal: _showQuotaExceededUI function defined',
+  /function _showQuotaExceededUI\(/.test(js));
+test('v4.99.2 modal: includes upgrade-to-Pro CTA',
+  /quota-exceeded-cta[\s\S]{0,200}certanvil\.com\/pricing/.test(js));
+test('v4.99.2 boot: auth listener self-initialises (no auth-state.js dep)',
+  /_initQuotaChipListener[\s\S]{0,500}onAuthStateChange/.test(js));
+test('v4.99.2 markup: topbar-quota-chip element in index.html',
+  html.includes('id="topbar-quota-chip"'));
+test('v4.99.2 css: .topbar-quota-chip base styles exist',
+  /\.topbar-quota-chip\s*\{/.test(css));
+test('v4.99.2 css: 4 variant classes (.is-low/.is-approaching/.is-exceeded/.is-pro)',
+  /\.topbar-quota-chip\.is-low[\s\S]{0,300}\.topbar-quota-chip\.is-approaching[\s\S]{0,300}\.topbar-quota-chip\.is-exceeded[\s\S]{0,300}\.topbar-quota-chip\.is-pro/.test(css));
+test('v4.99.2 css: .quota-exceeded-modal full-viewport overlay',
+  /\.quota-exceeded-modal\s*\{[\s\S]{0,200}position:\s*fixed/.test(css));
+test('v4.99.2 css: reduced-motion gate kills modal animation',
+  /prefers-reduced-motion[\s\S]{0,200}\.quota-exceeded-modal[\s\S]{0,80}animation:\s*none/.test(css));
+test('v4.99.2 refactor: only BYOK fallback (+ doc comment) remain referencing fetch(CLAUDE_API_URL,)',
+  // Expected: 2 occurrences total — (1) the BYOK fallback inside _claudeFetch,
+  // (2) the doc comment "// rename: fetch(CLAUDE_API_URL, → _claudeFetch(.".
+  // All 13 prior call sites have been refactored to _claudeFetch(.
+  (js.match(/fetch\(CLAUDE_API_URL,/g) || []).length === 2);
 test('v4.99.0 helper: snapshot triggers _cloudFlush for cross-device sync',
   /function _writeReadinessSnapshot\(\)[\s\S]{0,1500}_cloudFlush\(STORAGE\.READINESS_SNAPSHOTS\)/.test(js));
 test('v4.99.0 hook: finish() calls _writeReadinessSnapshot',

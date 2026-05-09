@@ -1,5 +1,5 @@
 /* ══════════════════════════════════════════
-   Network+ AI Quiz — styles.css  v4.99.1
+   Network+ AI Quiz — styles.css  v4.99.2
    ══════════════════════════════════════════ */
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -19207,4 +19207,158 @@ html { zoom: 1.10; }
   .pht-voicemail-transcript .flag, .pht-qr-mobile-url .flag {
     transition: none !important;
   }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   v4.99.2 Phase E.3 — Topbar AI quota chip + quota-exceeded modal
+   ══════════════════════════════════════════════════════════════════════════ */
+
+.topbar-quota-chip {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 6px 12px;
+  border-radius: 99px;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+  background: rgba(34,197,94,0.10);
+  border: 1px solid rgba(34,197,94,0.32);
+  color: var(--green, #22c55e);
+  white-space: nowrap;
+}
+.topbar-quota-chip.is-hidden { display: none; }
+
+.topbar-quota-chip .quota-chip-icon {
+  font-size: 13px;
+  line-height: 1;
+}
+.topbar-quota-chip .quota-chip-label {
+  font-variant-numeric: tabular-nums;
+}
+.topbar-quota-chip .quota-chip-bar {
+  display: inline-block;
+  width: 32px; height: 4px;
+  border-radius: 2px;
+  overflow: hidden;
+  background: rgba(255,255,255,0.18);
+}
+.topbar-quota-chip .quota-chip-fill {
+  display: block;
+  height: 100%;
+  border-radius: 2px;
+  background: currentColor;
+  transition: width 0.3s ease;
+}
+
+.topbar-quota-chip.is-low {
+  background: rgba(34,197,94,0.10);
+  border-color: rgba(34,197,94,0.32);
+  color: var(--green, #22c55e);
+}
+.topbar-quota-chip.is-approaching {
+  background: rgba(245,158,11,0.12);
+  border-color: rgba(245,158,11,0.4);
+  color: #f59e0b;
+}
+.topbar-quota-chip.is-exceeded {
+  background: rgba(248,113,113,0.12);
+  border-color: rgba(248,113,113,0.4);
+  color: var(--red, #f87171);
+}
+.topbar-quota-chip.is-pro {
+  background: rgba(124,111,247,0.12);
+  border-color: rgba(124,111,247,0.4);
+  color: var(--accent-light, #a99df9);
+}
+.topbar-quota-chip.is-pro .quota-chip-bar { display: none; }
+
+/* Quota-exceeded modal — full-viewport overlay with centered hero card */
+.quota-exceeded-modal {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(8,8,16,0.65);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 9999;
+  padding: 20px;
+  animation: quotaExceededFadeIn 0.18s ease forwards;
+}
+@keyframes quotaExceededFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.quota-exceeded-card {
+  background: var(--surface, #131320);
+  border: 1px solid rgba(248,113,113,0.4);
+  border-radius: 12px;
+  padding: 28px;
+  text-align: center;
+  max-width: 460px;
+  width: 100%;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+}
+.quota-exceeded-icon {
+  width: 56px; height: 56px;
+  margin: 0 auto 14px;
+  border-radius: 14px;
+  background: rgba(248,113,113,0.12);
+  border: 1px solid rgba(248,113,113,0.4);
+  color: var(--red, #f87171);
+  display: grid; place-items: center;
+  font-size: 26px;
+}
+.quota-exceeded-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text, #f0f0f8);
+  margin-bottom: 8px;
+}
+.quota-exceeded-sub {
+  font-size: 13px;
+  color: var(--text-mid, #b0b0cc);
+  margin-bottom: 20px;
+  line-height: 1.55;
+}
+.quota-exceeded-sub strong {
+  color: var(--text, #f0f0f8);
+  font-variant-numeric: tabular-nums;
+}
+.quota-exceeded-actions {
+  display: flex; gap: 10px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+.quota-exceeded-cta {
+  background: linear-gradient(135deg, #5b4fdb, #7c6ff7);
+  color: #fff !important;
+  padding: 11px 22px;
+  font-size: 13px;
+  font-weight: 700;
+  border-radius: 8px;
+  text-decoration: none;
+  border: 0;
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+.quota-exceeded-cta:hover { transform: translateY(-1px); }
+.quota-exceeded-dismiss {
+  background: transparent;
+  color: var(--text-mid, #b0b0cc);
+  border: 1px solid rgba(255,255,255,0.16);
+  padding: 11px 20px;
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: inherit;
+}
+.quota-exceeded-dismiss:hover {
+  border-color: rgba(255,255,255,0.32);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .quota-exceeded-modal { animation: none; }
+  .topbar-quota-chip,
+  .topbar-quota-chip .quota-chip-fill,
+  .quota-exceeded-cta { transition: none !important; }
 }
