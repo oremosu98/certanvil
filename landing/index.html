@@ -856,6 +856,17 @@
         <button type="submit" class="auth-cta" id="auth-submit">Continue with email →</button>
       </form>
 
+      <!-- v4.99.22: prominent password-fallback button. Moved out of the
+           auth-magic-only wrapper and bumped to be right under the main
+           CTA so testers' eyes can't miss it after they type their email.
+           Replaces the small gray link from v4.99.21 (too subtle — testers
+           defaulted to clicking the big blue magic-link button without
+           noticing the alternative). Hidden in password mode via setAuthMode. -->
+      <button type="button" class="auth-cta-secondary" id="auth-show-password">
+        <span class="auth-cta-secondary-icon" aria-hidden="true">⚡</span>
+        Have a password? <strong>Sign in instead →</strong>
+      </button>
+
       <!-- v4.99.17: magic-link-only elements (divider + OAuth + foot copy)
            wrapped so they hide together in playtest mode. -->
       <div id="auth-magic-only">
@@ -870,13 +881,6 @@
           </svg>
           <span>Continue with Google</span>
           <span class="coming-soon-pill">Soon</span>
-        </button>
-
-        <!-- v4.99.21: visible "Have a password?" link so testers don't need
-             to remember a special URL. Magic-link mode only (hidden in
-             password mode since they're already there). -->
-        <button type="button" class="auth-magic-fallback-link" id="auth-show-password">
-          Have a password? <strong>Sign in instead →</strong>
         </button>
 
         <div class="auth-foot">

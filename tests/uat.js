@@ -305,7 +305,7 @@ test('Validation in runSessionStep', js.includes('aiValidateQuestions(apiKey, qu
 
 // ── Analytics v2 (v4.5) ──
 console.log('\n\x1b[1m── ANALYTICS v2 (v4.5) ──\x1b[0m');
-test('APP_VERSION is 4.99.21', js.includes("const APP_VERSION = '4.99.21"));
+test('APP_VERSION is 4.99.22', js.includes("const APP_VERSION = '4.99.22"));
 test('getDailyGoal function', js.includes('function getDailyGoal('));
 test('renderDailyGoal function', js.includes('function renderDailyGoal('));
 test('editDailyGoal function', js.includes('function editDailyGoal('));
@@ -319,7 +319,7 @@ test('CSS: .topic-domain-group', css.includes('.topic-domain-group'));
 test('CSS: .daily-goal-card', css.includes('.daily-goal-card'));
 test('CSS: .advanced-section', css.includes('.advanced-section'));
 test('CSS: .hero-stats-strip', css.includes('.hero-stats-strip'));
-test('SW cache bumped to v4.99.21', sw.includes('netplus-v4.99.21'));
+test('SW cache bumped to v4.99.22', sw.includes('netplus-v4.99.22'));
 test('Family Drill: STORAGE.PORT_FAMILY_BEST', js.includes("PORT_FAMILY_BEST:"));
 test('Family Drill: ptMode handles family', js.includes("ptMode === 'family'"));
 test('Family Drill: HTML mode button', html.includes('id="pt-mode-family"'));
@@ -18086,8 +18086,10 @@ console.log('\n\x1b[1m── v4.99.21 — VISIBLE PASSWORD FALLBACK LINK ──\
 const landingHtmlV99_21 = fs.readFileSync(path.join(ROOT, 'landing/index.html'), 'utf8');
 test('v4.99.21 LandingHtml: "Have a password?" button present in auth modal',
   /<button[^>]*id="auth-show-password"[\s\S]{0,200}Have a password\?/.test(landingHtmlV99_21));
-test('v4.99.21 LandingHtml: button is inside auth-magic-only (hides in password mode)',
-  /id="auth-magic-only"[\s\S]{0,2000}id="auth-show-password"/.test(landingHtmlV99_21));
+// v4.99.22 — button moved OUT of auth-magic-only and is toggled via JS now.
+// Updated guard: button still hides in password mode (via setAuthMode JS toggle).
+test('v4.99.21/22 LandingHtml: auth-show-password button exists + has hidden-toggle wired in JS',
+  /id="auth-show-password"/.test(landingHtmlV99_21));
 
 const authJsV99_21 = fs.readFileSync(path.join(ROOT, 'landing/auth.js'), 'utf8');
 test('v4.99.21 AuthJs: authShowPassword element reference cached at top',
@@ -18102,8 +18104,25 @@ test('v4.99.21 AuthJs: click handler does NOT set localStorage flag (only succes
     if (!match) return false;
     return !/localStorage\.setItem/.test(match[1]);
   })());
-test('v4.99.21 LandingCss: .auth-magic-fallback-link rule defined',
-  /\.auth-magic-fallback-link\s*\{/.test(landingStylesCss));
+test('v4.99.21 LandingCss: .auth-magic-fallback-link rule defined OR superseded by .auth-cta-secondary (v4.99.22)',
+  /\.auth-magic-fallback-link\s*\{|\.auth-cta-secondary\s*\{/.test(landingStylesCss));
+
+// ── v4.99.22 — Prominent password-fallback button (replaces v4.99.21 small link) ──
+console.log('\n\x1b[1m── v4.99.22 — PROMINENT PASSWORD FALLBACK BUTTON ──\x1b[0m');
+const landingHtmlV99_22 = fs.readFileSync(path.join(ROOT, 'landing/index.html'), 'utf8');
+test('v4.99.22 LandingHtml: auth-show-password button uses the new auth-cta-secondary class',
+  /<button[^>]*class="auth-cta-secondary"[^>]*id="auth-show-password"/.test(landingHtmlV99_22));
+test('v4.99.22 LandingHtml: auth-show-password button is OUTSIDE auth-magic-only wrapper',
+  // The button should appear BEFORE the auth-magic-only wrapper now (was inside in v4.99.21)
+  /id="auth-show-password"[\s\S]{0,500}<div id="auth-magic-only">/.test(landingHtmlV99_22));
+test('v4.99.22 LandingHtml: button positioned right after the form (above the magic-only wrapper)',
+  /<\/form>[\s\S]{0,800}id="auth-show-password"/.test(landingHtmlV99_22));
+const landingStylesCssV99_22 = fs.readFileSync(path.join(ROOT, 'landing/styles.css'), 'utf8');
+test('v4.99.22 LandingCss: .auth-cta-secondary rule defined with amber theme',
+  /\.auth-cta-secondary\s*\{[\s\S]{0,800}rgba\(245,\s*158,\s*11/.test(landingStylesCssV99_22));
+const authJsV99_22 = fs.readFileSync(path.join(ROOT, 'landing/auth.js'), 'utf8');
+test('v4.99.22 AuthJs: setAuthMode explicitly toggles authShowPassword visibility',
+  /setAuthMode[\s\S]{0,2000}authShowPassword[\s\S]{0,300}setAttribute\(['"]hidden['"]/.test(authJsV99_22));
 
 // ── Summary ──
 console.log('\n' + '═'.repeat(50));

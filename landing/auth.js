@@ -215,6 +215,13 @@
       if (isPlaytest) authMagicOnly.setAttribute('hidden', '');
       else authMagicOnly.removeAttribute('hidden');
     }
+    // v4.99.22 — auth-cta-secondary (the prominent password-fallback button)
+    // lives outside auth-magic-only so it gets toggled explicitly here.
+    // Hidden in password mode (testers are already there); visible otherwise.
+    if (authShowPassword) {
+      if (isPlaytest) authShowPassword.setAttribute('hidden', '');
+      else authShowPassword.removeAttribute('hidden');
+    }
     if (authForm && authForm.dataset) authForm.dataset.mode = mode;
     if (authModalTitle) {
       authModalTitle.textContent = isPlaytest
