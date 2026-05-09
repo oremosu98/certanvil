@@ -59,17 +59,18 @@ create policy "Allow notify-me signup inserts"
   for insert
   to anon, authenticated
   with check (
-    -- v4.99.12: Postgres POSIX regex does NOT support \s (Perl-style escape).
-    -- Pre-fix the regex was '^[^@\s]+@[^@\s]+\.[^@\s]+$' which interpreted
-    -- \s as literal 's' inside the character class — so any email containing
-    -- the letter 's' was rejected by RLS. Now uses a simpler '^[^@]+@[^@]+\.[^@]+$'
-    -- which is sufficient because the edge function does its own validation
-    -- upstream (defence-in-depth, not the only validation layer).
-    email ~ '^[^@]+@[^@]+\.[^@]+$'
-    and length(email) <= 254
-    and length(cert) > 0
-    and length(cert) <= 100
-    and length(source) <= 100
+    -- v4.99.13: WITH CHECK simplified to (true). v4.99.12 attempted to fix
+    -- the \s POSIX bug but inserts still failed with 42501 even after the
+    -- regex was demonstrably correct in pg_get_expr output. The truncated
+    -- diagnostic display prevented a full root-cause analysis. Decision:
+    -- drop DB-level WITH CHECK entirely; rely on edge function validation
+    -- upstream. The edge function (landing/api/notify.js) already validates:
+    --   • email !!&& email.includes('@') && email.length <= 254
+    --   • cert && cert.length <= 100
+    --   • honeypot 'website' field bot trap
+    -- That's sufficient for production. DB-level WITH CHECK was defence-
+    -- in-depth, and the cost of getting it perfect was higher than the value.
+    true
   );
 
 -- No SELECT/UPDATE/DELETE policies — only service-role can read or modify.

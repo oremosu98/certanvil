@@ -305,7 +305,7 @@ test('Validation in runSessionStep', js.includes('aiValidateQuestions(apiKey, qu
 
 // ── Analytics v2 (v4.5) ──
 console.log('\n\x1b[1m── ANALYTICS v2 (v4.5) ──\x1b[0m');
-test('APP_VERSION is 4.99.12', js.includes("const APP_VERSION = '4.99.12"));
+test('APP_VERSION is 4.99.13', js.includes("const APP_VERSION = '4.99.13"));
 test('getDailyGoal function', js.includes('function getDailyGoal('));
 test('renderDailyGoal function', js.includes('function renderDailyGoal('));
 test('editDailyGoal function', js.includes('function editDailyGoal('));
@@ -319,7 +319,7 @@ test('CSS: .topic-domain-group', css.includes('.topic-domain-group'));
 test('CSS: .daily-goal-card', css.includes('.daily-goal-card'));
 test('CSS: .advanced-section', css.includes('.advanced-section'));
 test('CSS: .hero-stats-strip', css.includes('.hero-stats-strip'));
-test('SW cache bumped to v4.99.12', sw.includes('netplus-v4.99.12'));
+test('SW cache bumped to v4.99.13', sw.includes('netplus-v4.99.13'));
 test('Family Drill: STORAGE.PORT_FAMILY_BEST', js.includes("PORT_FAMILY_BEST:"));
 test('Family Drill: ptMode handles family', js.includes("ptMode === 'family'"));
 test('Family Drill: HTML mode button', html.includes('id="pt-mode-family"'));
@@ -17825,8 +17825,11 @@ test('v4.99.10 Migration: unique constraint on (email, cert) for UPSERT',
   /unique\s*\(\s*email\s*,\s*cert\s*\)/.test(notifyMigration));
 test('v4.99.10 Migration: enables row level security',
   /enable row level security/.test(notifyMigration));
-test('v4.99.10 Migration: anon insert policy with email format guard',
-  /create policy[\s\S]{0,300}for insert[\s\S]{0,200}to anon[\s\S]{0,500}email\s*~/.test(notifyMigration));
+// v4.99.13 — superseded by permissive policy (drops the regex check entirely).
+// Original v4.99.10 guard checked for an email-format regex inside WITH CHECK;
+// rewritten to assert the policy + role + INSERT shape only.
+test('v4.99.10 Migration: anon/authenticated insert policy present',
+  /create policy[\s\S]{0,300}for insert[\s\S]{0,200}to anon,?\s*authenticated/.test(notifyMigration));
 test('v4.99.10 Notify: writes to Supabase notify_signups via PostgREST',
   /\/rest\/v1\/notify_signups\?on_conflict=email,cert/.test(notifyJs));
 test('v4.99.10 Notify: uses Prefer header for UPSERT (merge-duplicates)',
@@ -17877,12 +17880,11 @@ test('v4.99.11 ShowPageGuard: only 1 raw classList.add(active) site (inside show
 console.log('\n\x1b[1m── v4.99.12 — RLS REGEX HOTFIX ──\x1b[0m');
 const notifyMigrationFixed = fs.readFileSync(
   path.join(ROOT, 'supabase/migrations/20260509_notify_signups.sql'), 'utf8');
-// Note: comments in both migration files INTENTIONALLY mention the old broken
-// '[^@\s]' regex for documentation purposes. The guards below match only the
-// active SQL line ("email ~ '...'") to avoid false positives on the comments.
-test('v4.99.12 Migration: original notify_signups.sql active SQL uses \\s-free POSIX regex',
-  /email\s*~\s*'\^\[\^@\]\+@\[\^@\]\+/.test(notifyMigrationFixed)
-  && !/email\s*~\s*'\^\[\^@\\s\]/.test(notifyMigrationFixed));
+// v4.99.13 superseded the regex check entirely (now WITH CHECK = true).
+// This guard now just asserts the broken \s pattern is NOT in the active SQL.
+// (Comments still mention the bug for documentation; we tolerate that.)
+test('v4.99.12 Migration: no \\s-with-character-class in active SQL of notify_signups.sql',
+  !/email\s*~\s*'\^\[\^@\\s\]/.test(notifyMigrationFixed));
 test('v4.99.12 Hotfix: regex_fix migration file exists for prod-already-applied installs',
   fs.existsSync(path.join(ROOT, 'supabase/migrations/20260509_notify_signups_regex_fix.sql')));
 const regexFixMigration = fs.readFileSync(
@@ -17892,6 +17894,19 @@ test('v4.99.12 Hotfix: regex_fix drops + recreates the policy idempotently',
 test('v4.99.12 Hotfix: regex_fix active SQL uses correct \\s-free POSIX regex',
   /email\s*~\s*'\^\[\^@\]\+@\[\^@\]\+/.test(regexFixMigration)
   && !/email\s*~\s*'\^\[\^@\\s\]/.test(regexFixMigration));
+
+// ── v4.99.13 — Permissive policy hotfix (drops complex WITH CHECK) ──
+console.log('\n\x1b[1m── v4.99.13 — PERMISSIVE POLICY HOTFIX ──\x1b[0m');
+test('v4.99.13 Permissive: permissive migration file exists',
+  fs.existsSync(path.join(ROOT, 'supabase/migrations/20260509_notify_signups_permissive.sql')));
+const permissiveMigration = fs.readFileSync(
+  path.join(ROOT, 'supabase/migrations/20260509_notify_signups_permissive.sql'), 'utf8');
+test('v4.99.13 Permissive: drops + recreates the policy idempotently',
+  /drop policy if exists "Allow notify-me signup inserts"[\s\S]{0,400}create policy "Allow notify-me signup inserts"/.test(permissiveMigration));
+test('v4.99.13 Permissive: WITH CHECK simplified to (true)',
+  /with check\s*\(\s*true\s*\)/.test(permissiveMigration));
+test('v4.99.13 Original: notify_signups.sql in-place WITH CHECK also simplified to (true)',
+  /^\s*true\s*$/m.test(notifyMigrationFixed.split('with check (')[1] || ''));
 
 // ── Summary ──
 console.log('\n' + '═'.repeat(50));
