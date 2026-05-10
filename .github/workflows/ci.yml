@@ -28,8 +28,13 @@ jobs:
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
 
-      - name: Run Playwright E2E tests
-        run: npx playwright test
+      # v4.99.29 (iOS Plan Phase 3) — explicit --project=chromium filter.
+      # The config also defines `webkit` + `mobile-safari` projects for
+      # local iOS testing (`npm run test:webkit` / `test:mobile-safari`).
+      # CI gates on Chromium only until the existing Chromium suite is
+      # triaged + iOS-specific failures are catalogued separately.
+      - name: Run Playwright E2E tests (Chromium only — gating)
+        run: npx playwright test --project=chromium
 
       - name: Upload Playwright report on failure
         if: failure()

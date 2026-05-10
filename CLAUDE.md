@@ -467,6 +467,7 @@ npx playwright test              # E2E (tests/e2e/app.spec.js)
 
 | Version | Features Added |
 |---|---|
+| v4.99.29 | iOS Plan Phase 3 — Playwright WebKit + Mobile Safari projects + npm scripts + IOS_TESTING.md doc + CI filtered to chromium-only gating |
 | v4.99.28 | iOS Plan Phase 2 — mobile UX audit fixes (input 16px font / chip 44px min-height / 100dvh body / focus-visible on btn+chip+sb-item) |
 | v4.99.27 | iOS Plan Phase 1 — SW network-first for HTML+JS + visible 'New version available' banner replaces silent auto-reload (mobile Safari deploy-propagation fix) |
 | v4.99.26 | Today's Plan cert-aware filter (Network+ topics no longer leak into Sec+) + GT_ZERO_TRUST validator (rejects Haiku-invented off-vocab Zero Trust principles like 'device posture assessment') |

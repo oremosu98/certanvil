@@ -305,7 +305,7 @@ test('Validation in runSessionStep', js.includes('aiValidateQuestions(apiKey, qu
 
 // ── Analytics v2 (v4.5) ──
 console.log('\n\x1b[1m── ANALYTICS v2 (v4.5) ──\x1b[0m');
-test('APP_VERSION is 4.99.28', js.includes("const APP_VERSION = '4.99.28"));
+test('APP_VERSION is 4.99.29', js.includes("const APP_VERSION = '4.99.29"));
 test('getDailyGoal function', js.includes('function getDailyGoal('));
 test('renderDailyGoal function', js.includes('function renderDailyGoal('));
 test('editDailyGoal function', js.includes('function editDailyGoal('));
@@ -319,7 +319,7 @@ test('CSS: .topic-domain-group', css.includes('.topic-domain-group'));
 test('CSS: .daily-goal-card', css.includes('.daily-goal-card'));
 test('CSS: .advanced-section', css.includes('.advanced-section'));
 test('CSS: .hero-stats-strip', css.includes('.hero-stats-strip'));
-test('SW cache bumped to v4.99.28', sw.includes('netplus-v4.99.28'));
+test('SW cache bumped to v4.99.29', sw.includes('netplus-v4.99.29'));
 test('Family Drill: STORAGE.PORT_FAMILY_BEST', js.includes("PORT_FAMILY_BEST:"));
 test('Family Drill: ptMode handles family', js.includes("ptMode === 'family'"));
 test('Family Drill: HTML mode button', html.includes('id="pt-mode-family"'));
@@ -16189,6 +16189,37 @@ test('v4.99.28 FocusVisible: .chip has focus-visible partner',
   /\.chip:focus-visible\s*\{[\s\S]{0,200}outline:\s*2px solid var\(--accent\)/.test(css));
 test('v4.99.28 FocusVisible: .sb-item has focus-visible partner (sidebar nav a11y)',
   /\.sb-item:focus-visible\s*\{[\s\S]{0,300}outline:\s*2px solid var\(--accent\)/.test(css));
+
+// ── v4.99.29 — iOS Plan Phase 3: Playwright WebKit + Mobile Safari + iPhone-via-USB doc ──
+const playwrightConfig = fs.readFileSync(path.join(ROOT, 'playwright.config.js'), 'utf8');
+const ciYml = fs.readFileSync(path.join(ROOT, '.github/workflows/ci.yml'), 'utf8');
+const packageJsonRaw = fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8');
+test('v4.99.29 Playwright: webkit project added (Desktop Safari engine)',
+  /name:\s*'webkit'[\s\S]{0,200}devices\['Desktop Safari'\]/.test(playwrightConfig));
+test('v4.99.29 Playwright: mobile-safari project added (iPhone 14 viewport)',
+  /name:\s*'mobile-safari'[\s\S]{0,200}devices\['iPhone 14'\]/.test(playwrightConfig));
+test('v4.99.29 Playwright: chromium remains as gating browser',
+  /name:\s*'chromium'/.test(playwrightConfig));
+test('v4.99.29 CI: gating Playwright run filtered to chromium-only',
+  /npx playwright test --project=chromium/.test(ciYml));
+test('v4.99.29 PackageJson: test:webkit script wired',
+  /"test:webkit":\s*"npx playwright test --project=webkit"/.test(packageJsonRaw));
+test('v4.99.29 PackageJson: test:mobile-safari script wired',
+  /"test:mobile-safari":\s*"npx playwright test --project=mobile-safari"/.test(packageJsonRaw));
+test('v4.99.29 PackageJson: test:ios runs both iOS projects together',
+  /"test:ios":\s*"npx playwright test --project=webkit --project=mobile-safari"/.test(packageJsonRaw));
+test('v4.99.29 PackageJson: test:e2e:all runs all 3 projects',
+  /"test:e2e:all":\s*"npx playwright test"/.test(packageJsonRaw));
+test('v4.99.29 IOS_TESTING.md: doc file exists at repo root',
+  fs.existsSync(path.join(ROOT, 'IOS_TESTING.md')));
+const iosTesting = fs.existsSync(path.join(ROOT, 'IOS_TESTING.md'))
+  ? fs.readFileSync(path.join(ROOT, 'IOS_TESTING.md'), 'utf8') : '';
+test('v4.99.29 IOS_TESTING.md: documents iPhone-via-USB Develop-menu setup',
+  /Develop menu[\s\S]{0,500}Web Inspector/.test(iosTesting));
+test('v4.99.29 IOS_TESTING.md: documents Playwright iOS commands',
+  /npm run test:webkit[\s\S]{0,200}npm run test:mobile-safari/.test(iosTesting));
+test('v4.99.29 IOS_TESTING.md: documents the trigger to promote iOS to gating CI',
+  /promote[\s\S]{0,400}--project=chromium/.test(iosTesting));
 
 test('v4.87.1 CarryOver: every carry-over has source: curated-netplus-carryover',
   (() => {
