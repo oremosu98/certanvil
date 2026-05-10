@@ -117,6 +117,7 @@ Re-run Lighthouse after every Phase 7+ ship and update this doc. Target trajecto
 | 2026-05-10 13:35 | v4.99.35 | **11a (defer)** | **65** | 5.5s | 5.9s | **5.5s** | 60ms | **0ms ✓** |
 | 2026-05-10 18:30 | v4.99.36 | **11b (NA only)** | 63 | 5.8s | 6.1s | 5.8s | 90ms | 0ms |
 | 2026-05-10 19:30 | v4.99.37 | **11b (NA + PHT)** | 65 | 5.3s | 5.7s | 5.3s | 50ms | 0ms |
+| 2026-05-10 21:00 | v4.99.38 | **11b (+ Port Drill)** | 65 | 5.3s | 5.7s | 5.3s | 60ms | 0ms |
 | _TBD_ | — | Phase 7+8 | _target 88+_ | _target < 1.8s_ | _target < 2.0s_ | — | — | 0 |
 | _TBD_ | — | Phase 10 | _target 90+_ | _stable_ | _stable_ | — | — | 0 |
 
