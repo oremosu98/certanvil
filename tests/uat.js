@@ -305,7 +305,7 @@ test('Validation in runSessionStep', js.includes('aiValidateQuestions(apiKey, qu
 
 // ── Analytics v2 (v4.5) ──
 console.log('\n\x1b[1m── ANALYTICS v2 (v4.5) ──\x1b[0m');
-test('APP_VERSION is 4.99.27', js.includes("const APP_VERSION = '4.99.27"));
+test('APP_VERSION is 4.99.28', js.includes("const APP_VERSION = '4.99.28"));
 test('getDailyGoal function', js.includes('function getDailyGoal('));
 test('renderDailyGoal function', js.includes('function renderDailyGoal('));
 test('editDailyGoal function', js.includes('function editDailyGoal('));
@@ -319,7 +319,7 @@ test('CSS: .topic-domain-group', css.includes('.topic-domain-group'));
 test('CSS: .daily-goal-card', css.includes('.daily-goal-card'));
 test('CSS: .advanced-section', css.includes('.advanced-section'));
 test('CSS: .hero-stats-strip', css.includes('.hero-stats-strip'));
-test('SW cache bumped to v4.99.27', sw.includes('netplus-v4.99.27'));
+test('SW cache bumped to v4.99.28', sw.includes('netplus-v4.99.28'));
 test('Family Drill: STORAGE.PORT_FAMILY_BEST', js.includes("PORT_FAMILY_BEST:"));
 test('Family Drill: ptMode handles family', js.includes("ptMode === 'family'"));
 test('Family Drill: HTML mode button', html.includes('id="pt-mode-family"'));
@@ -16173,6 +16173,22 @@ test('v4.99.27 Css: mobile breakpoint hides sub-text to save vertical space',
   /@media \(max-width:\s*480px\)[\s\S]{0,500}\.sw-banner-sub\s*\{\s*display:\s*none/.test(css));
 test('v4.99.27 Css: reduced-motion gate present for banner',
   /prefers-reduced-motion[\s\S]{0,300}\.sw-update-banner\s*\{\s*animation:\s*none/.test(css));
+
+// ── v4.99.28 — iOS Plan Phase 2: Mobile UX audit fixes ──
+test('v4.99.28 InputZoom: input[type=password]/text now uses 16px font (prevents iOS zoom)',
+  /input\[type="password"\], input\[type="text"\][\s\S]{0,500}font-size:\s*16px/.test(css)
+  && !/input\[type="password"\], input\[type="text"\][\s\S]{0,500}font-size:\s*14px/.test(css));
+test('v4.99.28 TouchTarget: .chip min-height bumped to 44px (Apple HIG floor)',
+  /\.chip\s*\{[\s\S]{0,500}min-height:\s*44px/.test(css)
+  && !/\.chip\s*\{[\s\S]{0,500}min-height:\s*36px/.test(css));
+test('v4.99.28 ViewportHeight: body has 100vh fallback + 100dvh override',
+  /body\s*\{[\s\S]{0,500}min-height:\s*100vh;\s*min-height:\s*100dvh/.test(css));
+test('v4.99.28 FocusVisible: .btn has focus-visible partner (a11y)',
+  /\.btn:focus-visible\s*\{[\s\S]{0,200}outline:\s*2px solid var\(--accent\)/.test(css));
+test('v4.99.28 FocusVisible: .chip has focus-visible partner',
+  /\.chip:focus-visible\s*\{[\s\S]{0,200}outline:\s*2px solid var\(--accent\)/.test(css));
+test('v4.99.28 FocusVisible: .sb-item has focus-visible partner (sidebar nav a11y)',
+  /\.sb-item:focus-visible\s*\{[\s\S]{0,300}outline:\s*2px solid var\(--accent\)/.test(css));
 
 test('v4.87.1 CarryOver: every carry-over has source: curated-netplus-carryover',
   (() => {

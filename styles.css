@@ -1,5 +1,5 @@
 /* ══════════════════════════════════════════
-   Network+ AI Quiz — styles.css  v4.99.27
+   Network+ AI Quiz — styles.css  v4.99.28
    ══════════════════════════════════════════ */
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -96,7 +96,12 @@ button:focus-visible, .chip:focus-visible, .btn:focus-visible { outline: 2px sol
 }
 
 html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
-body { background: var(--bg); color: var(--text); font-family: 'Segoe UI',system-ui,-apple-system,sans-serif; min-height: 100vh; line-height: 1.6; padding-top: env(safe-area-inset-top); padding-bottom: env(safe-area-inset-bottom); transition: background .3s, color .3s; }
+/* v4.99.28 — added 100dvh fallback after 100vh. On iOS Safari, 100vh includes
+   the address bar height even when the bar is collapsed, causing layout jump
+   on scroll. 100dvh (dynamic viewport height) collapses with the chrome.
+   Order matters: 100vh is the fallback for older browsers; 100dvh overrides
+   on modern browsers (iOS 15.4+, Chrome 108+, Firefox 101+ — coverage > 95%). */
+body { background: var(--bg); color: var(--text); font-family: 'Segoe UI',system-ui,-apple-system,sans-serif; min-height: 100vh; min-height: 100dvh; line-height: 1.6; padding-top: env(safe-area-inset-top); padding-bottom: env(safe-area-inset-bottom); transition: background .3s, color .3s; }
 
 .page { display: none; max-width: 800px; margin: 0 auto; padding: 24px 20px calc(60px + env(safe-area-inset-bottom)); }
 /* v4.46.1: Analytics page gets a wider canvas than the default 800px — the
@@ -116,6 +121,10 @@ h3 { font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacin
 .card h3 { margin-bottom: 14px; }
 
 .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 13px 22px; border-radius: var(--radius-sm); border: none; font-size: 15px; font-weight: 600; cursor: pointer; transition: all .15s; text-decoration: none; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+/* v4.99.28 — focus-visible partner for .btn. Pre-fix .btn had hover but no
+   focus state; keyboard users had no visual feedback when tabbing. Phase 2
+   mobile UX audit caught this — same accent-outline pattern as .option had. */
+.btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .btn-primary { background: var(--accent); color: white; }
 .btn-primary:hover { background: var(--accent-light); transform: translateY(-1px); box-shadow: 0 4px 20px rgba(124,111,247,.3); }
 .btn-secondary { background: var(--surface2); color: var(--text-mid); border: 1px solid var(--border); }
@@ -135,14 +144,24 @@ h3 { font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacin
   .chip-group { flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; padding-bottom: 4px; }
   .chip-group::-webkit-scrollbar { display: none; }
 }
-.chip { padding: 8px 16px; border-radius: 99px; border: 1.5px solid var(--border); background: transparent; color: var(--text-mid); font-size: 13px; font-weight: 500; cursor: pointer; transition: all .15s; white-space: nowrap; -webkit-tap-highlight-color: transparent; touch-action: manipulation; min-height: 36px; }
+/* v4.99.28 — chip min-height bumped 36px → 44px per Apple HIG (44x44 minimum
+   touch target). Phase 2 mobile UX audit. iOS auto-targets larger taps but
+   < 44px chips were measurably flaky on smaller iPhones (SE-class).
+   Also added :focus-visible partner for the existing :hover so keyboard
+   users get the same affordance touch + mouse already had. */
+.chip { padding: 8px 16px; border-radius: 99px; border: 1.5px solid var(--border); background: transparent; color: var(--text-mid); font-size: 13px; font-weight: 500; cursor: pointer; transition: all .15s; white-space: nowrap; -webkit-tap-highlight-color: transparent; touch-action: manipulation; min-height: 44px; }
 .chip:hover { border-color: var(--accent-dim); color: var(--text); }
+.chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-color: var(--accent); }
 .chip.on { border-color: var(--accent); background: rgba(124,111,247,.18); color: var(--accent); font-weight: 700; }
 /* v4.11 — drillTopic lands on setup and flashes the chip so you see where you landed */
 @keyframes chipFlash { 0%, 100% { box-shadow: 0 0 0 0 rgba(124,111,247,0); transform: scale(1); } 25% { box-shadow: 0 0 0 6px rgba(124,111,247,.35); transform: scale(1.05); } 60% { box-shadow: 0 0 0 3px rgba(124,111,247,.2); transform: scale(1.02); } }
 .chip.chip-flash { animation: chipFlash 1.3s ease-out; }
 
-input[type="password"], input[type="text"] { width: 100%; background: var(--surface2); border: 1.5px solid var(--border); border-radius: var(--radius-sm); padding: 13px 16px; color: var(--text); font-size: 14px; font-family: monospace; outline: none; transition: border-color .2s; }
+/* v4.99.28 — bumped font-size 14px → 16px to prevent iOS Safari zoom-on-focus.
+   iOS auto-zooms ANY input with font-size < 16px when focused; the zoom can't
+   be disabled even with viewport user-scalable=no (deliberate Apple a11y design).
+   16px is the floor; any larger is also fine. Phase 2 mobile UX audit. */
+input[type="password"], input[type="text"] { width: 100%; background: var(--surface2); border: 1.5px solid var(--border); border-radius: var(--radius-sm); padding: 13px 16px; color: var(--text); font-size: 16px; font-family: monospace; outline: none; transition: border-color .2s; }
 input:focus { border-color: var(--accent); }
 input::placeholder { color: var(--text-dim); }
 
@@ -7076,6 +7095,10 @@ body.has-sidebar { padding-left: 240px; transition: padding-left .25s cubic-bezi
   position: relative;
 }
 .sb-item:hover { background: rgba(var(--accent-rgb), .07); color: var(--text); }
+/* v4.99.28 — focus-visible partner for .sb-item (sidebar nav items). Phase 2
+   mobile UX audit. Keyboard users tabbing through the sidebar now see the
+   active focus outline; touch + mouse keep their existing hover affordance. */
+.sb-item:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; background: rgba(var(--accent-rgb), .07); color: var(--text); }
 .sb-item.sb-item-active {
   background: rgba(var(--accent-rgb), .14);
   color: var(--accent-light);
