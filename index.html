@@ -13,12 +13,41 @@
 <link rel="manifest" href="manifest.json">
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <link rel="apple-touch-icon" href="favicon.svg">
+<!-- v4.99.30 (iOS Plan Phase 4b): preload styles.css so the browser fetches
+     it in parallel with HTML parsing (high-priority hint), then the actual
+     <link rel="stylesheet"> below applies it. Cuts ~50-150ms off first paint
+     on cellular. The <style> block sets body bg + text color matching the
+     active theme so first paint shows dark/light bg instead of white-flash
+     while styles.css is en route. data-theme attribute is set by the inline
+     theme detection deeper in app.js — until then we default to dark to
+     match the meta name="theme-color" content="#0a0a12". -->
+<link rel="preload" as="style" href="styles.css">
+<style>
+  /* Critical inline CSS — only what's needed to prevent FOUC on first paint.
+     Full styles.css applies via the <link rel="stylesheet"> below. Keep this
+     under 1 KB; anything larger belongs in styles.css proper. */
+  html { background: #0a0a12; }
+  html[data-theme="light"] { background: #f4f4fa; }
+  body { background: inherit; color: #f0f0f8; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif; margin: 0; }
+  html[data-theme="light"] body { color: #1a1a2e; }
+</style>
 <link rel="stylesheet" href="styles.css">
 <script>
 // v4.87.0: Inline cert detection — runs synchronously before <body>
 // renders so the right banner shows on first paint (no Network+ → Security+
 // content flash). Mirrors detectCert() in app.js. Sets data-cert attribute
 // on <html> for CSS to key off.
+//
+// v4.99.30 (iOS Plan Phase 4a — mobile perf): also document.write the
+// active cert pack <script> tag here so we load ONLY one of netplus.js
+// (~510 KB) or secplus.js (~610 KB) on first page load instead of both.
+// This saves ~510-610 KB per visit on cellular — the single biggest perf
+// win available without a build pipeline. document.write is the only
+// reliable mechanism for synchronous-before-app.js script injection in a
+// no-bundler setup; the alternatives (dynamic <script> tags) defer
+// execution past app.js's CERT_PACK reads at top-level. See app.js:74-75
+// (CURRENT_CERT + CERT_PACK assignment runs at module load, must see
+// window.CERT_PACKS.<cert> populated synchronously).
 (function() {
   var cert = 'netplus';
   try {
@@ -43,6 +72,13 @@
       ? 'CertAnvil — Security+'
       : 'CertAnvil — Network+';
   } catch (e) {}
+  // v4.99.30: synchronous active-cert-pack load. document.write before
+  // </head> with the body still parsing — the browser blocks parsing on
+  // this <script> as if it were statically authored. Both files identical
+  // in shape; only one gets fetched.
+  try {
+    document.write('<scr' + 'ipt src="certs/' + cert + '.js"></scr' + 'ipt>');
+  } catch (e) { /* document.write disallowed in some embeds — app.js still has Network+ defaults as fallback */ }
 })();
 </script>
 </head>
@@ -228,7 +264,7 @@
     <span class="hero-icon">&#9889;</span>
     <h1>Network+ AI Quiz</h1>
     <p>AI-generated MCQs every session. Never the same quiz twice.</p>
-    <span id="version-badge" style="display:inline-block;margin-top:10px;font-size:11px;font-weight:700;letter-spacing:.08em;color:var(--accent-light);background:rgba(124,111,247,.12);border:1px solid rgba(124,111,247,.3);padding:3px 10px;border-radius:99px;cursor:default;user-select:none">v4.99.29</span>
+    <span id="version-badge" style="display:inline-block;margin-top:10px;font-size:11px;font-weight:700;letter-spacing:.08em;color:var(--accent-light);background:rgba(124,111,247,.12);border:1px solid rgba(124,111,247,.3);padding:3px 10px;border-radius:99px;cursor:default;user-select:none">v4.99.30</span>
     <div id="streak-badge" class="streak-badge"></div>
     <div id="stats-card" class="hero-stats-strip is-hidden">
       <div class="stats-grid" id="stats-grid"></div>
@@ -2840,13 +2876,18 @@
   }
 }
 </script>
-<!-- v4.86.0: Cert pack architecture (Phase 1A engine refactor). Both packs
-     load BEFORE app.js so window.CERT_PACKS.netplus and window.CERT_PACKS.secplus
-     are populated when app.js's top-level code runs detectCert() + reads CERT_PACK.
-     Active cert resolved by URL host ('secplus-' prefix → secplus, else → netplus)
-     plus localStorage 'nplus_dev_cert' override. See cert_saas_pivot_plan.md. -->
-<script src="certs/netplus.js"></script>
-<script src="certs/secplus.js"></script>
+<!-- v4.86.0: Cert pack architecture (Phase 1A engine refactor). Originally
+     both packs loaded BEFORE app.js so window.CERT_PACKS.netplus and
+     window.CERT_PACKS.secplus were populated when app.js's top-level code
+     ran detectCert() + read CERT_PACK. Active cert resolved by URL host
+     ('secplus-' prefix → secplus, else → netplus) plus localStorage
+     'nplus_dev_cert' override. See cert_saas_pivot_plan.md.
+     v4.99.30 (iOS Plan Phase 4a): cert pack now loads from the inline
+     detection script in <head> via document.write — only the active cert
+     gets fetched. Static <script> tags here removed. The single document.write
+     site is the cert-pack-load contract surface; do NOT add static cert
+     pack <script> tags back here. -->
+
 <!-- Phase C′ (cloud-first): Supabase UMD bundle + cert-app cloud modules.
      Order matters:
        1. supabase-js (window.supabase factory)

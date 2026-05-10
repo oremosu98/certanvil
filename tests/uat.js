@@ -305,7 +305,7 @@ test('Validation in runSessionStep', js.includes('aiValidateQuestions(apiKey, qu
 
 // ── Analytics v2 (v4.5) ──
 console.log('\n\x1b[1m── ANALYTICS v2 (v4.5) ──\x1b[0m');
-test('APP_VERSION is 4.99.29', js.includes("const APP_VERSION = '4.99.29"));
+test('APP_VERSION is 4.99.30', js.includes("const APP_VERSION = '4.99.30"));
 test('getDailyGoal function', js.includes('function getDailyGoal('));
 test('renderDailyGoal function', js.includes('function renderDailyGoal('));
 test('editDailyGoal function', js.includes('function editDailyGoal('));
@@ -319,7 +319,7 @@ test('CSS: .topic-domain-group', css.includes('.topic-domain-group'));
 test('CSS: .daily-goal-card', css.includes('.daily-goal-card'));
 test('CSS: .advanced-section', css.includes('.advanced-section'));
 test('CSS: .hero-stats-strip', css.includes('.hero-stats-strip'));
-test('SW cache bumped to v4.99.29', sw.includes('netplus-v4.99.29'));
+test('SW cache bumped to v4.99.30', sw.includes('netplus-v4.99.30'));
 test('Family Drill: STORAGE.PORT_FAMILY_BEST', js.includes("PORT_FAMILY_BEST:"));
 test('Family Drill: ptMode handles family', js.includes("ptMode === 'family'"));
 test('Family Drill: HTML mode button', html.includes('id="pt-mode-family"'));
@@ -15907,17 +15907,31 @@ test('v4.86.0 secplus retention array (retargeted v4.88.3): populated by Phase 3
   /retentionGapConcepts:\s*\[\s*\{[\s\S]{50,}label:[\s\S]{0,200}parentTopic:/.test(certSecplus));
 
 // ── HTML loads cert packs BEFORE app.js ──
-test('v4.86.0 CertPack: index.html loads certs/netplus.js',
-  /<script\s+src=["']certs\/netplus\.js["']/.test(html));
-test('v4.86.0 CertPack: index.html loads certs/secplus.js',
-  /<script\s+src=["']certs\/secplus\.js["']/.test(html));
-test('v4.86.0 CertPack: cert packs load BEFORE app.js (script-tag ordering)',
+// v4.99.30 (iOS Plan Phase 4a — mobile perf): cert packs no longer load
+// via static <script> tags. The inline cert-detection script in <head>
+// document.write's the active cert pack tag (one of netplus.js or secplus.js,
+// never both) to save ~510-610 KB on first paint. Tests below retargeted:
+//   - was: assert static <script src="certs/netplus.js"> exists
+//   - now: assert inline detection script document.write's the cert pack
+//     dynamically, AND assert static dual-load tags do NOT reappear
+//     (regression-guard tombstone — see CLAUDE.md regression-guard pattern).
+test('v4.99.30 CertPack lazy-load: inline <head> script document.writes the active cert pack tag',
+  /document\.write\(\s*['"]<scr['"][\s\S]{0,80}certs\/['"]\s*\+\s*cert\s*\+\s*['"]\.js/.test(html));
+test('v4.99.30 CertPack lazy-load: static <script src="certs/netplus.js"> tag REMOVED (regression tombstone)',
+  !/<script\s+src=["']certs\/netplus\.js["']/.test(html));
+test('v4.99.30 CertPack lazy-load: static <script src="certs/secplus.js"> tag REMOVED (regression tombstone)',
+  !/<script\s+src=["']certs\/secplus\.js["']/.test(html));
+test('v4.99.30 CertPack lazy-load: document.write site sits inside inline detection block (before app.js)',
   (() => {
-    const netplusIdx = html.indexOf('certs/netplus.js');
-    const secplusIdx = html.indexOf('certs/secplus.js');
+    const docWriteIdx = html.indexOf("document.write('<scr'");
     const appIdx = html.indexOf('"app.js"');
-    return netplusIdx > 0 && secplusIdx > 0 && appIdx > 0
-      && netplusIdx < appIdx && secplusIdx < appIdx;
+    return docWriteIdx > 0 && appIdx > 0 && docWriteIdx < appIdx;
+  })());
+test('v4.99.30 CertPack lazy-load: data-cert attribute already set on <html> before document.write fires (correct ordering)',
+  (() => {
+    const setAttrIdx = html.indexOf("setAttribute('data-cert'");
+    const docWriteIdx = html.indexOf("document.write('<scr'");
+    return setAttrIdx > 0 && docWriteIdx > 0 && setAttrIdx < docWriteIdx;
   })());
 
 // ── SW precaches cert packs ──
@@ -18256,6 +18270,27 @@ test('v4.99.24 RejectionHandler: stale isNetwork filter REMOVED (replaced by opt
   // The pre-v4.99.24 filter checked for 'API'/'fetch'/'NetworkError' and toasted
   // for everything else. New filter inverts: log all, toast only opt-in.
   !/const isNetwork = msg\.includes\('API'\)/.test(js));
+
+// ── v4.99.30 — iOS Plan Phase 4 mobile perf (cert-pack lazy-load + CSS preload + critical inline) ──
+console.log('\n\x1b[1m── v4.99.30 — iOS PLAN PHASE 4 MOBILE PERF ──\x1b[0m');
+test('v4.99.30 Phase4 (4a): preload hint for styles.css present in <head>',
+  /<link\s+rel=["']preload["']\s+as=["']style["']\s+href=["']styles\.css["']/.test(html));
+test('v4.99.30 Phase4 (4b): critical inline <style> block sets html background to dark theme #0a0a12',
+  /<style>[\s\S]{0,500}html\s*\{\s*background:\s*#0a0a12/.test(html));
+test('v4.99.30 Phase4 (4b): critical inline <style> block sets light-theme override #f4f4fa',
+  /<style>[\s\S]{0,800}html\[data-theme="light"\]\s*\{\s*background:\s*#f4f4fa/.test(html));
+test('v4.99.30 Phase4 (4b): critical inline <style> block sets body color',
+  /<style>[\s\S]{0,1200}body\s*\{[\s\S]{0,200}color:\s*#f0f0f8/.test(html));
+test('v4.99.30 Phase4 (4b): preload hint precedes the actual stylesheet link (parallel-fetch order)',
+  (() => {
+    const preloadIdx = html.indexOf('rel="preload" as="style"');
+    const stylesheetIdx = html.indexOf('rel="stylesheet" href="styles.css"');
+    return preloadIdx > 0 && stylesheetIdx > 0 && preloadIdx < stylesheetIdx;
+  })());
+test('v4.99.30 Phase4 (4a): inline detection script comments document the lazy-load contract',
+  /v4\.99\.30[\s\S]{0,300}Phase 4a[\s\S]{0,200}cert pack/i.test(html));
+test('v4.99.30 Phase4 (4a): document.write site is wrapped in try/catch (graceful degradation)',
+  /try\s*\{\s*document\.write\(\s*['"]<scr['"][\s\S]{0,200}\}\s*catch/.test(html));
 
 // ── Summary ──
 console.log('\n' + '═'.repeat(50));
