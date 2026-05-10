@@ -192,7 +192,49 @@ window.CERT_PACKS.secplus = {
     osi: {},
     wifiBroken: [],
     wifiDeprecated: [],
-    ethernet: {}
+    ethernet: {},
+    // v4.99.26 — Zero Trust principle vocabulary. Used by _buildGtHint to
+    // inject canonical SY0-701 vocabulary into Haiku generation prompts when
+    // topic = 'Zero Trust & SDN', and by _groundTruthOk to reject answers
+    // that name off-vocabulary terms (like 'device posture assessment') as
+    // Zero Trust principles. Device posture, behavior signals, etc. are
+    // INPUTS that feed into adaptive identity decisions — they are NOT
+    // top-level Zero Trust principles per the SY0-701 blueprint.
+    // Origin: founder-flagged Haiku-generated question 2026-05-10 that
+    // claimed "device posture assessment" was a Zero Trust principle when
+    // the actual SY0-701 framework names different concepts.
+    zeroTrust: {
+      validPrinciples: [
+        'adaptive identity',
+        'threat scope reduction',
+        'policy-driven access control',
+        'policy enforcement point',
+        'policy decision point',
+        'policy engine',
+        'policy administrator',
+        'control plane',
+        'data plane',
+        'implicit trust zones',
+        'pep',
+        'pdp',
+        'pe',
+        'pa'
+      ],
+      // Off-vocabulary terms Haiku sometimes invents as principles. If a
+      // question stem asks "what Zero Trust principle..." and the answer
+      // text is anchored on one of these, the validator rejects.
+      offVocabulary: [
+        'device posture assessment',
+        'continuous verification',
+        'risk-based authentication',
+        'context-aware authentication',
+        'just-in-time access',
+        'session risk evaluation',
+        'continuous trust evaluation',
+        'least privilege access',
+        'micro-segmentation'
+      ]
+    }
   },
 
   // ── EXEMPLAR BANK (Phase 2B will populate) ────────────────────────────

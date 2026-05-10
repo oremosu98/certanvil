@@ -1,9 +1,9 @@
 // ══════════════════════════════════════════
-// Network+ AI Quiz — app.js  v4.99.25
+// Network+ AI Quiz — app.js  v4.99.26
 // ══════════════════════════════════════════
 
 // ── CONSTANTS ──
-const APP_VERSION = '4.99.25';
+const APP_VERSION = '4.99.26';
 
 // ══════════════════════════════════════════════════════════════════════════
 // CERT PACK ARCHITECTURE (v4.86.0 Phase 1A engine refactor)
@@ -9867,6 +9867,21 @@ function renderReadinessCard() {
 // non-empty in early-stage usage. Keeps the original return shape
 // { topic, reason, color } so all existing consumers (renderTodayPlan,
 // startSession, isStudyPlanDoneToday, runSessionStep) work unchanged.
+// v4.99.26 — Cert-aware topic filter. Returns true if topic is in the current
+// cert's TOPIC_DOMAINS catalog. Prevents cross-cert leakage (e.g., Network+
+// 'Network Models & OSI' showing up in Today's Plan when user is on Sec+).
+// Quiz history + wrong bank are global per user (one localStorage namespace
+// across certs); the active cert filters which topics are surfaced. Defensive
+// fallback: if TOPIC_DOMAINS is empty/undefined, allow through so the home
+// page never goes blank when called pre-init.
+function _isCurrentCertTopic(topic) {
+  if (!topic) return false;
+  if (typeof TOPIC_DOMAINS === 'undefined' || !TOPIC_DOMAINS) return true;
+  const keys = Object.keys(TOPIC_DOMAINS);
+  if (!keys.length) return true;
+  return Object.prototype.hasOwnProperty.call(TOPIC_DOMAINS, topic);
+}
+
 function buildSessionPlan(n) {
   const target = (typeof n === 'number' && n > 0) ? n : SESSION_TOPICS;
   const items = [];
@@ -9876,9 +9891,14 @@ function buildSessionPlan(n) {
   const staleColor = '#f59e0b';  // amber — matches v4.81.15 rotation chips
 
   // ── Top weak spots (recency-decayed wrong-bank + accuracy gap) ──
+  // v4.99.26: filter cross-cert leakage — quiz history is global per user
+  // but topics belong to a specific cert. Only surface topics in the
+  // current cert's TOPIC_DOMAINS catalog.
   let weakRows = [];
   try {
-    if (typeof computeWeakSpotScores === 'function') weakRows = computeWeakSpotScores();
+    if (typeof computeWeakSpotScores === 'function') {
+      weakRows = computeWeakSpotScores().filter(w => w && _isCurrentCertTopic(w.topic));
+    }
   } catch (_) {}
   weakRows.slice(0, TODAY_PLAN_WEAK_COUNT).forEach(w => {
     if (!w || !w.topic || taken.has(w.topic)) return;
@@ -9894,12 +9914,14 @@ function buildSessionPlan(n) {
   });
 
   // ── Stale topics (not seen in WEAK_STALENESS_DAYS+, deduped against weak) ──
+  // v4.99.26: same cert-aware filter as weak rows above.
   let staleRows = [];
   try {
     if (typeof _computeStaleTopics === 'function' && typeof loadHistory === 'function') {
       const hist = loadHistory();
       // Request 2× the stale slots so dedup overhead doesn't starve the plan
-      staleRows = _computeStaleTopics(hist, TODAY_PLAN_STALE_COUNT * 2);
+      staleRows = _computeStaleTopics(hist, TODAY_PLAN_STALE_COUNT * 2)
+        .filter(s => s && _isCurrentCertTopic(s.topic));
     }
   } catch (_) {}
   let staleAdded = 0;
@@ -12473,6 +12495,14 @@ const GT_WIFI_DEPRECATED = (CERT_PACK && CERT_PACK.gt && CERT_PACK.gt.wifiDeprec
 // prompt stuffs in as AUTHORITATIVE FACTS whenever any of the trigger keywords
 // show up in the question/topic text.
 const GT_ETHERNET = (CERT_PACK && CERT_PACK.gt && CERT_PACK.gt.ethernet) || {};
+// v4.99.26 — Zero Trust principle vocabulary (Sec+ Domain 3.2). Sourced from
+// SY0-701 official blueprint + NIST SP 800-207. Founder caught Haiku claiming
+// "device posture assessment" was a top-level Zero Trust principle when it's
+// actually a SIGNAL feeding into adaptive identity decisions. This GT table
+// (a) injects canonical principle names into Haiku prompts via _buildGtHint
+// so Haiku doesn't invent off-vocab terms, and (b) lets _groundTruthOk
+// reject questions where the correct answer text leans on an off-vocab term.
+const GT_ZERO_TRUST = (CERT_PACK && CERT_PACK.gt && CERT_PACK.gt.zeroTrust) || { validPrinciples: [], offVocabulary: [] };
 
 function _groundTruthOk(q) {
   if (getQType(q) !== 'mcq') return true;
@@ -12541,6 +12571,25 @@ function _groundTruthOk(q) {
   const speedDuplexStemRe = /\b(speed\s+and\s+duplex|speed\/duplex|duplex\s+mismatch|negotiate\s+speed)\b/i;
   if (speedDuplexStemRe.test(stem)) {
     if (/\bauto[-\s]?mdix\b/i.test(ansText) && !/\bauto[-\s]?negotiat/i.test(ansText)) return false;
+  }
+
+  // ── Zero Trust principle vocabulary check (v4.99.26, Sec+ Domain 3.2) ──
+  // When the stem explicitly asks "what Zero Trust principle..." and the
+  // marked answer's text leans on an off-vocabulary term (per GT_ZERO_TRUST.
+  // offVocabulary), reject the question. Origin: founder-flagged Haiku
+  // generation that named "device posture assessment" as a Zero Trust
+  // principle when SY0-701 vocabulary names different concepts.
+  const ztPrincipleAskRe = /\bzero[-\s]?trust\b[^.?!]*\b(principle|concept|component|element|tenet)\b/i;
+  if (ztPrincipleAskRe.test(stem) && Array.isArray(GT_ZERO_TRUST.offVocabulary) && GT_ZERO_TRUST.offVocabulary.length) {
+    // Reject if the answer text starts with or is anchored on an off-vocab
+    // term (i.e., the answer NAMES the off-vocab term as the principle).
+    // We don't reject if the answer just MENTIONS the term in passing as
+    // part of an explanation of a real principle.
+    const ansFirstSentence = ansText.split(/[.,;]/)[0]; // first clause = the answer's identifier
+    const namesOffVocab = GT_ZERO_TRUST.offVocabulary.some(term =>
+      ansFirstSentence.indexOf(term.toLowerCase()) >= 0
+    );
+    if (namesOffVocab) return false;
   }
 
   return true;
@@ -12726,6 +12775,20 @@ function _buildGtHint(text, topicName) {
     if (/\bduplex\b/i.test(hay)) ethLines.push('- Duplex mismatch: ' + GT_ETHERNET['duplex mismatch']);
     if (/\bpoe\b/i.test(hay)) ethLines.push('- ' + GT_ETHERNET['PoE standards']);
     facts.push('Ethernet physical layer:\n' + ethLines.join('\n'));
+  }
+  // v4.99.26 — Zero Trust vocabulary injection (Sec+ Domain 3.2). Fires when
+  // topic OR text mentions Zero Trust / ZTNA / specific principle names.
+  // Hard-codes the SY0-701 canonical list so Haiku doesn't invent off-vocab
+  // terms like "device posture assessment" as top-level principles.
+  const ztRe = /\bzero[-\s]?trust\b|\bztna\b|\bpolicy enforcement point\b|\bpolicy decision point\b|\bpolicy engine\b|\bpolicy administrator\b|\badaptive identity\b|\bthreat scope reduction\b|\bcontrol plane\b|\bdata plane\b/i;
+  if (ztRe.test(hay) && Array.isArray(GT_ZERO_TRUST.validPrinciples) && GT_ZERO_TRUST.validPrinciples.length) {
+    const ztLines = [
+      '- The CANONICAL SY0-701 Zero Trust principles are: adaptive identity, threat scope reduction, policy-driven access control, Policy Engine (PE), Policy Administrator (PA), Policy Decision Point (PDP), Policy Enforcement Point (PEP), Control Plane, Data Plane, implicit trust zones (legacy concept Zero Trust replaces).',
+      '- Do NOT name "device posture assessment", "continuous verification", "context-aware authentication", "risk-based authentication", or "micro-segmentation" as top-level Zero Trust principles. Those are SIGNALS or implementation patterns, NOT principles per the SY0-701 blueprint.',
+      '- Memorize the three-way split: PE DECIDES, PA CONFIGURES, PEP ENFORCES.',
+      '- Control Plane = decision-making (PE, PA, adaptive identity, threat scope reduction, policy-driven access control). Data Plane = enforcement (PEP on the actual data path).'
+    ];
+    facts.push('Zero Trust principles (SY0-701):\n' + ztLines.join('\n'));
   }
   if (!facts.length) return '';
   return `\nAUTHORITATIVE FACTS (do not contradict these; cite them verbatim when relevant):\n${facts.join('\n')}\n`;

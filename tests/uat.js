@@ -305,7 +305,7 @@ test('Validation in runSessionStep', js.includes('aiValidateQuestions(apiKey, qu
 
 // ── Analytics v2 (v4.5) ──
 console.log('\n\x1b[1m── ANALYTICS v2 (v4.5) ──\x1b[0m');
-test('APP_VERSION is 4.99.25', js.includes("const APP_VERSION = '4.99.25"));
+test('APP_VERSION is 4.99.26', js.includes("const APP_VERSION = '4.99.26"));
 test('getDailyGoal function', js.includes('function getDailyGoal('));
 test('renderDailyGoal function', js.includes('function renderDailyGoal('));
 test('editDailyGoal function', js.includes('function editDailyGoal('));
@@ -319,7 +319,7 @@ test('CSS: .topic-domain-group', css.includes('.topic-domain-group'));
 test('CSS: .daily-goal-card', css.includes('.daily-goal-card'));
 test('CSS: .advanced-section', css.includes('.advanced-section'));
 test('CSS: .hero-stats-strip', css.includes('.hero-stats-strip'));
-test('SW cache bumped to v4.99.25', sw.includes('netplus-v4.99.25'));
+test('SW cache bumped to v4.99.26', sw.includes('netplus-v4.99.26'));
 test('Family Drill: STORAGE.PORT_FAMILY_BEST', js.includes("PORT_FAMILY_BEST:"));
 test('Family Drill: ptMode handles family', js.includes("ptMode === 'family'"));
 test('Family Drill: HTML mode button', html.includes('id="pt-mode-family"'));
@@ -11835,6 +11835,8 @@ test('v4.81.18 TodayPlan: vm fixture — buildSessionPlan composes 2 weak + 3 st
         ],
         _getAllStudyTopics: () => ['Foo', 'Bar'],
         _scoreTopicNeed: () => ({ score: 1, reason: 'fallback', color: '#666' }),
+        // v4.99.26 — cert-aware filter mock; default-allow so existing tests pass
+        _isCurrentCertTopic: () => true,
         Date, Math, Array, Object, String
       };
       vm.createContext(ctx);
@@ -11882,6 +11884,8 @@ test('v4.81.18 TodayPlan: vm fixture — buildSessionPlan dedupes overlap betwee
         loadHistory: () => [{ date: new Date().toISOString(), topic: 'X' }],
         _getAllStudyTopics: () => ['Filler1', 'Filler2', 'Filler3'],
         _scoreTopicNeed: () => ({ score: 1, reason: 'fb', color: '#666' }),
+        // v4.99.26 — cert-aware filter mock; default-allow so existing tests pass
+        _isCurrentCertTopic: () => true,
         Date, Math, Array, Object, String
       };
       vm.createContext(ctx);
@@ -16121,6 +16125,27 @@ test('v4.99.25 Phase 3 Cycle 3: Adaptive Identity & Threat Scope retention conce
   /label:\s*'Adaptive Identity & Threat Scope'/.test(certSecplus));
 test('v4.99.25 Phase 3 Cycle 3: distinguishes PE (decides) from PA (configures) from PEP (enforces)',
   /PE decides, PA configures, PEP enforces/.test(certSecplus));
+
+// ── v4.99.26 — Cert-aware Today's Plan filter + GT_ZERO_TRUST validator ──
+test('v4.99.26 CertFilter: _isCurrentCertTopic helper defined',
+  /function _isCurrentCertTopic\(topic\)/.test(js));
+test('v4.99.26 CertFilter: buildSessionPlan filters weakRows via _isCurrentCertTopic',
+  /weakRows = computeWeakSpotScores\(\)\.filter\(w => w && _isCurrentCertTopic\(w\.topic\)\)/.test(js));
+test('v4.99.26 CertFilter: buildSessionPlan filters staleRows via _isCurrentCertTopic',
+  /staleRows = _computeStaleTopics\([\s\S]{0,200}\.filter\(s => s && _isCurrentCertTopic\(s\.topic\)\)/.test(js));
+test('v4.99.26 CertFilter: helper falls back gracefully if TOPIC_DOMAINS undefined',
+  /function _isCurrentCertTopic[\s\S]{0,400}typeof TOPIC_DOMAINS === 'undefined'[\s\S]{0,80}return true/.test(js));
+test('v4.99.26 GT_ZERO_TRUST: constant defined in app.js',
+  /const GT_ZERO_TRUST = \(CERT_PACK && CERT_PACK\.gt && CERT_PACK\.gt\.zeroTrust\)/.test(js));
+test('v4.99.26 GT_ZERO_TRUST: secplus.js gt.zeroTrust populated with validPrinciples',
+  /zeroTrust:\s*\{[\s\S]{0,1500}validPrinciples:\s*\[[\s\S]{0,500}'adaptive identity'[\s\S]{0,500}'policy enforcement point'/.test(certSecplus));
+test('v4.99.26 GT_ZERO_TRUST: secplus.js gt.zeroTrust populated with offVocabulary',
+  /zeroTrust:\s*\{[\s\S]{0,3000}offVocabulary:\s*\[[\s\S]{0,500}'device posture assessment'/.test(certSecplus));
+test('v4.99.26 _buildGtHint: injects Zero Trust principle block when topic mentions Zero Trust',
+  /_buildGtHint[\s\S]{0,5000}PE DECIDES, PA CONFIGURES, PEP ENFORCES[\s\S]{0,500}Zero Trust principles \(SY0-701\)/.test(js));
+test('v4.99.26 _groundTruthOk: rejects answers naming off-vocab Zero Trust principles',
+  /_groundTruthOk[\s\S]{0,15000}Zero Trust principle vocabulary check[\s\S]{0,1500}GT_ZERO_TRUST\.offVocabulary\.some/.test(js));
+
 test('v4.87.1 CarryOver: every carry-over has source: curated-netplus-carryover',
   (() => {
     const m = certSecplus.match(/questionExemplars:\s*\[([\s\S]*?)\n\s*\]\s*\n?\s*\}/);
