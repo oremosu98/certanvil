@@ -305,7 +305,7 @@ test('Validation in runSessionStep', js.includes('aiValidateQuestions(apiKey, qu
 
 // ── Analytics v2 (v4.5) ──
 console.log('\n\x1b[1m── ANALYTICS v2 (v4.5) ──\x1b[0m');
-test('APP_VERSION is 4.99.34', js.includes("const APP_VERSION = '4.99.34"));
+test('APP_VERSION is 4.99.35', js.includes("const APP_VERSION = '4.99.35"));
 test('getDailyGoal function', js.includes('function getDailyGoal('));
 test('renderDailyGoal function', js.includes('function renderDailyGoal('));
 test('editDailyGoal function', js.includes('function editDailyGoal('));
@@ -319,7 +319,7 @@ test('CSS: .topic-domain-group', css.includes('.topic-domain-group'));
 test('CSS: .daily-goal-card', css.includes('.daily-goal-card'));
 test('CSS: .advanced-section', css.includes('.advanced-section'));
 test('CSS: .hero-stats-strip', css.includes('.hero-stats-strip'));
-test('SW cache bumped to v4.99.34', sw.includes('netplus-v4.99.34'));
+test('SW cache bumped to v4.99.35', sw.includes('netplus-v4.99.35'));
 test('Family Drill: STORAGE.PORT_FAMILY_BEST', js.includes("PORT_FAMILY_BEST:"));
 test('Family Drill: ptMode handles family', js.includes("ptMode === 'family'"));
 test('Family Drill: HTML mode button', html.includes('id="pt-mode-family"'));
@@ -18479,6 +18479,34 @@ test('v4.99.34 SignedInFlag behavioral: handleSignedOut() flips the flag from tr
     require('vm').runInContext(m[0] + '; handleSignedOut();', ctx);
     return win._certanvilSignedIn === false;
   })());
+
+// ── v4.99.35 — Phase 11a: defer all 6 scripts (FCP/LCP unblock) ──
+console.log('\n\x1b[1m── v4.99.35 — PHASE 11a SCRIPT DEFER ──\x1b[0m');
+test('v4.99.35 Phase11a: lib/supabase-umd.min.js has defer attribute',
+  /<script\s+defer\s+src=["']lib\/supabase-umd\.min\.js["']/.test(html));
+test('v4.99.35 Phase11a: lib/supabase.js has defer attribute',
+  /<script\s+defer\s+src=["']lib\/supabase\.js["']/.test(html));
+test('v4.99.35 Phase11a: cloud-store.js has defer attribute',
+  /<script\s+defer\s+src=["']cloud-store\.js["']/.test(html));
+test('v4.99.35 Phase11a: auth-state.js has defer attribute',
+  /<script\s+defer\s+src=["']auth-state\.js["']/.test(html));
+test('v4.99.35 Phase11a: migration.js has defer attribute',
+  /<script\s+defer\s+src=["']migration\.js["']/.test(html));
+test('v4.99.35 Phase11a: app.js has defer attribute',
+  /<script\s+defer\s+src=["']app\.js["']/.test(html));
+test('v4.99.35 Phase11a: app.js has preload hint (largest payload, highest priority)',
+  /<link\s+rel=["']preload["']\s+as=["']script["']\s+href=["']app\.js["']/.test(html));
+test('v4.99.35 Phase11a: preload hint precedes the deferred app.js script tag',
+  (() => {
+    const preloadIdx = html.indexOf('rel="preload" as="script" href="app.js"');
+    const scriptIdx = html.indexOf('<script defer src="app.js"');
+    return preloadIdx > 0 && scriptIdx > 0 && preloadIdx < scriptIdx;
+  })());
+test('v4.99.35 Phase11a: cert pack document.write site PRESERVED (loads sync, NOT deferred)',
+  /document\.write\(\s*['"]<scr['"][\s\S]{0,200}certs\/['"]\s*\+\s*cert\s*\+\s*['"]\.js/.test(html)
+  // Cert pack must remain synchronous because it document-writes during HTML parse
+  // for the inline detection contract (v4.99.30). Defer would break that.
+  && !/<script\s+defer\s+src=["']certs\//.test(html));
 
 // ── Summary ──
 console.log('\n' + '═'.repeat(50));
