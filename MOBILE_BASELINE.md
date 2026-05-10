@@ -115,9 +115,19 @@ Re-run Lighthouse after every Phase 7+ ship and update this doc. Target trajecto
 |---|---|---|---:|---:|---:|---:|---:|---:|
 | 2026-05-10 13:15 | v4.99.34 | baseline | **64** | 5.6s | 5.9s | 6.1s | 20ms | 3,450ms |
 | 2026-05-10 13:35 | v4.99.35 | **11a (defer)** | **65** | 5.5s | 5.9s | **5.5s** | 60ms | **0ms ✓** |
-| _TBD_ | _v4.99.36-37_ | 11b (feature extract) | _target 85+_ | _target < 2s_ | _target < 2.5s_ | — | — | 0 |
+| 2026-05-10 18:30 | v4.99.36 | **11b (NA only)** | 63 | 5.8s | 6.1s | 5.8s | 90ms | 0ms |
 | _TBD_ | — | Phase 7+8 | _target 88+_ | _target < 1.8s_ | _target < 2.0s_ | — | — | 0 |
 | _TBD_ | — | Phase 10 | _target 90+_ | _stable_ | _stable_ | — | — | 0 |
+
+### Phase 11b session 1 (NA only) honest assessment (2026-05-10)
+
+**Pattern proven, perf needle barely moved**: extracted Network Analysis Drill (1,053 LOC, ~50 KB raw / ~17 KB transferred). Performance 65 → 63 (within run variance). LCP +200ms (regression within noise). app.js 614 KB → 597 KB.
+
+**Why so little movement**: NA was only ~3% of the shell. The big gains live in the bigger features still in-shell — Packet Trace (5,170 LOC), ACL Builder (2,200 LOC), Phishing Triage (1,187 LOC), Incident Response (911 LOC). Combined those are 9,500 LOC vs NA's 1,000.
+
+**What this session actually delivered**: the lazy-load *infrastructure* — `_loadFeature()` helper, `features/` directory contract, IIFE + window-exposure pattern, UAT auto-concat, Playwright stub-hardening. Each subsequent feature extraction is now mechanical (~30-60 min). Wednesday session can extract all 4 remaining features in one block.
+
+**Re-measure expectation post Phase 11b sessions 2 + 3**: app.js 597 KB → 280-320 KB, Performance 63 → 80-85, LCP 6.1s → 2.5-3.0s. THAT is the perf-score-jumps-to-App-Store-gate moment.
 
 ### Phase 11a honest assessment (2026-05-10)
 
