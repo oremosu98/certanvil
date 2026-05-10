@@ -334,7 +334,7 @@ test('Validation in runSessionStep', js.includes('aiValidateQuestions(apiKey, qu
 
 // ── Analytics v2 (v4.5) ──
 console.log('\n\x1b[1m── ANALYTICS v2 (v4.5) ──\x1b[0m');
-test('APP_VERSION is 4.99.37', js.includes("const APP_VERSION = '4.99.37"));
+test('APP_VERSION is 4.99.38', js.includes("const APP_VERSION = '4.99.38"));
 test('getDailyGoal function', js.includes('function getDailyGoal('));
 test('renderDailyGoal function', js.includes('function renderDailyGoal('));
 test('editDailyGoal function', js.includes('function editDailyGoal('));
@@ -348,7 +348,7 @@ test('CSS: .topic-domain-group', css.includes('.topic-domain-group'));
 test('CSS: .daily-goal-card', css.includes('.daily-goal-card'));
 test('CSS: .advanced-section', css.includes('.advanced-section'));
 test('CSS: .hero-stats-strip', css.includes('.hero-stats-strip'));
-test('SW cache bumped to v4.99.37', sw.includes('netplus-v4.99.37'));
+test('SW cache bumped to v4.99.38', sw.includes('netplus-v4.99.38'));
 test('Family Drill: STORAGE.PORT_FAMILY_BEST', js.includes("PORT_FAMILY_BEST:"));
 test('Family Drill: ptMode handles family', js.includes("ptMode === 'family'"));
 test('Family Drill: HTML mode button', html.includes('id="pt-mode-family"'));
@@ -2708,6 +2708,16 @@ function _fnBody(src, name) {
     i++;
   }
   return src.slice(idx, i);
+}
+
+// v4.99.38: shell-only variant — caps at the features auto-concat boundary.
+// Use this for vm-fixture tests on functions defined in app.js (the shell)
+// that would otherwise overshoot into features/*.js IIFE content with
+// unbound symbol references (window, PORT_DRILL_SECONDS, etc.).
+function _fnBodyShell(src, name) {
+  const featuresStart = src.indexOf('\n// === FEATURE: ');
+  const shellSrc = featuresStart === -1 ? src : src.slice(0, featuresStart);
+  return _fnBody(shellSrc, name);
 }
 const explainFurtherBody = _fnBody(js, 'explainFurther');
 const showTopicDeepDiveBody = _fnBody(js, 'showTopicDeepDive');
@@ -5696,7 +5706,9 @@ test('v4.54.0 JS: renderHeroV2MiniCards pulls from getDailyGoal + getStreak',
   js.includes('function renderHeroV2MiniCards(') &&
   /renderHeroV2MiniCards[\s\S]{0,2500}getDailyGoal[\s\S]{0,1000}getStreak/.test(js));
 test('v4.54.0 JS: goSetup calls renderHeroV2',
-  /function goSetup\([\s\S]{0,1500}renderHeroV2/.test(js));
+  // v4.99.38: window bumped from 1500 → 2000 after _portDrillTeardown
+  // shell-callable hook added in goSetup body.
+  /function goSetup\([\s\S]{0,2000}renderHeroV2/.test(js));
 // v4.81.20: tombstone — focus-banner v2 structure was retired (the function
 // is now a compat shim that delegates to renderTodayPlan). The CSS for
 // .focus-banner-v2 + .fb-* classes is retained for the (now hidden)
@@ -11011,17 +11023,18 @@ test('v4.81.10 DrillMission: HTML hosts present for 4 new drills',
   && /id="osi-rec-host"/.test(html)
   && /id="cable-rec-host"/.test(html));
 test('v4.81.10 DrillMission: drill entry points wire into mission renderers',
+  // v4.99.38: Port Drill extracted to features/port-drill.js — its
+  // renderPortMission reference moved from the function body into the
+  // registered enter() inside the IIFE. _fnBody on `startPortDrill` now
+  // returns the shell stub (which doesn't reference renderPortMission).
+  // Updated to check for the mission renderer reference ANYWHERE in `js`
+  // (which auto-concats features/*.js for backward compat).
   (() => {
-    const port = _fnBody(js, 'startPortDrill');
-    const ab   = _fnBody(js, 'startAcronymBlitz');
-    const os   = _fnBody(js, 'startOsiSorter');
-    const cb   = _fnBody(js, 'startCableId');
-    const sub  = _fnBody(js, 'startSubnetTrainer');
-    return port && /renderPortMission/.test(port)
-      && ab && /renderAcronymMission/.test(ab)
-      && os && /renderOsiMission/.test(os)
-      && cb && /renderCableMission/.test(cb)
-      && sub && /renderSubnetRecommendation/.test(sub);
+    return /renderPortMission/.test(js)
+      && /renderAcronymMission/.test(js)
+      && /renderOsiMission/.test(js)
+      && /renderCableMission/.test(js)
+      && /renderSubnetRecommendation/.test(js);
   })());
 
 // Behavioral fixture — picker correctly handles "new user" state
@@ -13377,7 +13390,7 @@ test('v4.81.13 Exam: vm fixture — domain breakdown buckets correct/total per d
 test('v4.99.6 Settings: vm fixture — health card surfaces Cloud sync status via _quotaState',
   (() => {
     try {
-      const body = _fnBody(js, 'renderSettingsHealthCard');
+      const body = _fnBodyShell(js, 'renderSettingsHealthCard');
       if (!body) return false;
       const vm = require('vm');
       let storage = {};
@@ -13430,7 +13443,7 @@ test('v4.99.6 Settings: vm fixture — health card surfaces Cloud sync status vi
 test('v4.81.26 Settings: vm fixture — health card reads daily goal correctly when set',
   (() => {
     try {
-      const body = _fnBody(js, 'renderSettingsHealthCard');
+      const body = _fnBodyShell(js, 'renderSettingsHealthCard');
       if (!body) return false;
       const vm = require('vm');
       let storage = {};
@@ -18678,6 +18691,51 @@ test('v4.99.37 Phase11b: PHT enter() defaults to practice tab',
   /enter:\s*function[\s\S]{0,800}setPhtTab\(\s*["']practice["']\s*\)/.test(_featurePhtRaw));
 test('v4.99.37 Phase11b: PHT leave() resets all 6 module-state vars',
   /leave:\s*function[\s\S]{0,800}_phtActiveScenarioId\s*=\s*null[\s\S]{0,400}_phtRevealed\s*=\s*false/.test(_featurePhtRaw));
+
+// ── v4.99.38 — Phase 11b session 3: Port Drill extracted ──
+console.log('\n\x1b[1m── v4.99.38 — PHASE 11b PORT DRILL EXTRACTION ──\x1b[0m');
+
+const _appJsRawV38 = fs.readFileSync(path.join(ROOT, 'app.js'), 'utf8');
+
+test('v4.99.38 Phase11b: startPortDrill is async shell stub that lazy-loads',
+  /async\s+function\s+startPortDrill\s*\(\s*tab\s*\)\s*\{[\s\S]{0,400}_loadFeature\s*\(\s*["']port-drill["']\s*\)/.test(_appJsRawV38));
+test('v4.99.38 Phase11b: shell stub forwards tab arg to mod.enter (cross-feature deep-link)',
+  /async\s+function\s+startPortDrill[\s\S]{0,500}mod\.enter\(\s*tab\s*\)/.test(_appJsRawV38));
+test('v4.99.38 Phase11b: shell stub gates via _gateProOnly (Port Drill is Pro)',
+  /async\s+function\s+startPortDrill[\s\S]{0,400}_gateProOnly\(\s*["']Port Drill["']\s*\)/.test(_appJsRawV38));
+test('v4.99.38 Phase11b: regression tombstone — `function setPortTab` NOT in app.js shell',
+  !/^function\s+setPortTab\s*\(/m.test(_appJsRawV38));
+test('v4.99.38 Phase11b: regression tombstone — `function ptStartTimer` NOT in app.js shell',
+  !/^function\s+ptStartTimer\s*\(/m.test(_appJsRawV38));
+test('v4.99.38 Phase11b: regression tombstone — `const portData` NOT in app.js shell',
+  !/^const\s+portData\s*=/m.test(_appJsRawV38));
+test('v4.99.38 Phase11b: regression tombstone — `const securePairs` NOT in app.js shell',
+  !/^const\s+securePairs\s*=/m.test(_appJsRawV38));
+test('v4.99.38 Phase11b: regression tombstone — `const PT_CATEGORIES` NOT in app.js shell',
+  !/^const\s+PT_CATEGORIES\s*=/m.test(_appJsRawV38));
+
+const _featurePortRaw = fs.readFileSync(path.join(ROOT, 'features/port-drill.js'), 'utf8');
+test('v4.99.38 Phase11b: features/port-drill.js exists',
+  _featurePortRaw.length > 1000);
+test('v4.99.38 Phase11b: Port Drill module wrapped in IIFE',
+  /^\(function\(\)\s*\{/m.test(_featurePortRaw)
+  && /\}\)\(\);?\s*$/.test(_featurePortRaw.trim()));
+test('v4.99.38 Phase11b: Port Drill module preserves portData + securePairs + PT_CATEGORIES',
+  /const\s+portData\s*=/.test(_featurePortRaw)
+  && /const\s+securePairs\s*=/.test(_featurePortRaw)
+  && /const\s+PT_CATEGORIES\s*=/.test(_featurePortRaw));
+test('v4.99.38 Phase11b: Port Drill exposes setPortTab + ptOpenLesson + ptStartTimer on window',
+  /window\.setPortTab\s*=\s*setPortTab/.test(_featurePortRaw)
+  && /window\.ptOpenLesson\s*=\s*ptOpenLesson/.test(_featurePortRaw)
+  && /window\.ptStartTimer\s*=\s*ptStartTimer/.test(_featurePortRaw));
+test('v4.99.38 Phase11b: Port Drill registers under "port-drill" key',
+  /window\._certanvilFeatures\["port-drill"\]\s*=\s*\{\s*enter:/.test(_featurePortRaw));
+test('v4.99.38 Phase11b: Port Drill enter() defaults to learn tab (preserves original startPortDrill behavior)',
+  /enter:\s*function[\s\S]{0,400}var\s+resolvedTab\s*=\s*tab\s*\|\|\s*["']learn["']/.test(_featurePortRaw));
+test('v4.99.38 Phase11b: Port Drill enter() calls renderPortMission (drill-mission card preserved)',
+  /enter:\s*function[\s\S]{0,800}renderPortMission/.test(_featurePortRaw));
+test('v4.99.38 Phase11b: Port Drill leave() clears timer (CRITICAL: ptTimerInterval cleanup)',
+  /leave:\s*function[\s\S]{0,300}ptStopTimer\s*\(\s*\)/.test(_featurePortRaw));
 
 // ── Summary ──
 console.log('\n' + '═'.repeat(50));
