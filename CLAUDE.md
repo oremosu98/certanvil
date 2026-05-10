@@ -467,6 +467,7 @@ npx playwright test              # E2E (tests/e2e/app.spec.js)
 
 | Version | Features Added |
 |---|---|
+| v4.99.32 | Playwright triage — 37 → 0 failures via auth-state stub beforeEach (Pro-gate bypass for anonymous test users) + 5 small test fixes (greeting form / hidden api-key / localStorage-only persistence) |
 | v4.99.31 | iOS Plan Phase 5 PWA polish — Add-to-Home-Screen banner (Android beforeinstallprompt + iOS share-sheet hint, 7-day cooldown), standalone-mode body class + display-mode media query, web push SW handlers (subscribe deferred until VAPID + server backend) |
 | v4.99.30 | iOS Plan Phase 4 mobile perf — cert-pack lazy-load (only active cert loads on first paint, saves 510-610KB) + CSS preload hint + critical inline body-bg style (FOUC fix) |
 | v4.99.29 | iOS Plan Phase 3 — Playwright WebKit + Mobile Safari projects + npm scripts + IOS_TESTING.md doc + CI filtered to chromium-only gating |

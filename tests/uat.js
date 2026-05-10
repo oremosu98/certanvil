@@ -305,7 +305,7 @@ test('Validation in runSessionStep', js.includes('aiValidateQuestions(apiKey, qu
 
 // ── Analytics v2 (v4.5) ──
 console.log('\n\x1b[1m── ANALYTICS v2 (v4.5) ──\x1b[0m');
-test('APP_VERSION is 4.99.31', js.includes("const APP_VERSION = '4.99.31"));
+test('APP_VERSION is 4.99.32', js.includes("const APP_VERSION = '4.99.32"));
 test('getDailyGoal function', js.includes('function getDailyGoal('));
 test('renderDailyGoal function', js.includes('function renderDailyGoal('));
 test('editDailyGoal function', js.includes('function editDailyGoal('));
@@ -319,7 +319,7 @@ test('CSS: .topic-domain-group', css.includes('.topic-domain-group'));
 test('CSS: .daily-goal-card', css.includes('.daily-goal-card'));
 test('CSS: .advanced-section', css.includes('.advanced-section'));
 test('CSS: .hero-stats-strip', css.includes('.hero-stats-strip'));
-test('SW cache bumped to v4.99.31', sw.includes('netplus-v4.99.31'));
+test('SW cache bumped to v4.99.32', sw.includes('netplus-v4.99.32'));
 test('Family Drill: STORAGE.PORT_FAMILY_BEST', js.includes("PORT_FAMILY_BEST:"));
 test('Family Drill: ptMode handles family', js.includes("ptMode === 'family'"));
 test('Family Drill: HTML mode button', html.includes('id="pt-mode-family"'));
@@ -18376,6 +18376,42 @@ test('v4.99.31 Push App: window._pushSupported feature-detection flag',
   /window\._pushSupported\s*=/.test(js));
 test('v4.99.31 Push App: feature detection checks all 3 APIs',
   /_pushSupported[\s\S]{0,500}serviceWorker[\s\S]{0,200}PushManager[\s\S]{0,200}Notification/.test(js));
+
+// ── v4.99.32 — Playwright triage (37 → 0 failures via auth-state stub + 5 test fixes) ──
+console.log('\n\x1b[1m── v4.99.32 — PLAYWRIGHT TRIAGE ──\x1b[0m');
+const e2eSpec = fs.readFileSync(path.join(ROOT, 'tests/e2e/app.spec.js'), 'utf8');
+
+// 1. The auth-state stub MUST stay in beforeEach for the suite to be green.
+//    Without it, _gateProOnly() blocks 30+ drill/lab/topology/monitor tests.
+test('v4.99.32 PlaywrightTriage: beforeEach stubs window._certanvilSignedIn = true (Pro-gate bypass)',
+  /test\.beforeEach[\s\S]{0,600}window\._certanvilSignedIn\s*=\s*true/.test(e2eSpec));
+test('v4.99.32 PlaywrightTriage: beforeEach stubs _quotaState with tier: pro',
+  /window\._quotaState\s*=\s*\{\s*tier:\s*['"]pro['"]/.test(e2eSpec));
+test('v4.99.32 PlaywrightTriage: beforeEach adds is-pro-tier + is-state-resolved body classes',
+  /classList\.add\(['"]is-pro-tier['"],\s*['"]is-state-resolved['"]/.test(e2eSpec));
+
+// 2. Greeting test now asserts greeting form not "Simi" — covers anonymous user
+test('v4.99.32 PlaywrightTriage: greeting test asserts form (Good morning/afternoon/evening) not name',
+  /toContainText\(\s*\/Good \(morning\|afternoon\|evening\)\|Working late/.test(e2eSpec));
+test('v4.99.32 PlaywrightTriage: hardcoded toContainText("Simi") removed (regression tombstone)',
+  // Tighten to match only actual expect(...).toContainText('Simi') calls,
+  // not the explanatory comment that mentions the old pattern.
+  !/expect\([^)]+\)\.toContainText\(['"]Simi['"]\)/.test(e2eSpec));
+
+// 3. ARIA test retargeted to type="hidden" regression guard
+test('v4.99.32 PlaywrightTriage: API key test retargeted to type="hidden" regression guard',
+  /API key input is hidden \(BYOK retired in v4\.99\.3\)[\s\S]{0,500}toHaveAttribute\(['"]type['"],\s*['"]hidden['"]\)/.test(e2eSpec));
+test('v4.99.32 PlaywrightTriage: stale toHaveAttribute(aria-label, /API key/i) removed',
+  !/toHaveAttribute\(['"]aria-label['"],\s*\/API key\/i\)/.test(e2eSpec));
+
+// 4. API key persistence test no longer fills hidden input
+test('v4.99.32 PlaywrightTriage: saves-API-key test uses localStorage round-trip (no .fill on hidden input)',
+  /test\(['"]saves API key to localStorage['"][\s\S]{0,800}localStorage\.setItem\(['"]nplus_key['"]/.test(e2eSpec)
+  && !/test\(['"]saves API key to localStorage['"][\s\S]{0,400}\.fill\(['"]sk-ant/.test(e2eSpec));
+test('v4.99.32 PlaywrightTriage: restores-API-key test reads localStorage instead of .inputValue',
+  /test\(['"]restores API key from localStorage on reload['"][\s\S]{0,800}localStorage\.getItem\(['"]nplus_key['"]/.test(e2eSpec)
+  // Tighten: match the actual await/value-read pattern, not the comment
+  && !/test\(['"]restores API key from localStorage on reload['"][\s\S]{0,500}await[^.]*\.inputValue\(\)/.test(e2eSpec));
 
 // ── Summary ──
 console.log('\n' + '═'.repeat(50));
