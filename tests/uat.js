@@ -334,7 +334,7 @@ test('Validation in runSessionStep', js.includes('aiValidateQuestions(apiKey, qu
 
 // ── Analytics v2 (v4.5) ──
 console.log('\n\x1b[1m── ANALYTICS v2 (v4.5) ──\x1b[0m');
-test('APP_VERSION is 4.99.45', js.includes("const APP_VERSION = '4.99.45"));
+test('APP_VERSION is 4.99.46', js.includes("const APP_VERSION = '4.99.46"));
 test('getDailyGoal function', js.includes('function getDailyGoal('));
 test('renderDailyGoal function', js.includes('function renderDailyGoal('));
 test('editDailyGoal function', js.includes('function editDailyGoal('));
@@ -348,7 +348,7 @@ test('CSS: .topic-domain-group', css.includes('.topic-domain-group'));
 test('CSS: .daily-goal-card', css.includes('.daily-goal-card'));
 test('CSS: .advanced-section', css.includes('.advanced-section'));
 test('CSS: .hero-stats-strip', css.includes('.hero-stats-strip'));
-test('SW cache bumped to v4.99.45', sw.includes('netplus-v4.99.45'));
+test('SW cache bumped to v4.99.46', sw.includes('netplus-v4.99.46'));
 test('Family Drill: STORAGE.PORT_FAMILY_BEST', js.includes("PORT_FAMILY_BEST:"));
 test('Family Drill: ptMode handles family', js.includes("ptMode === 'family'"));
 test('Family Drill: HTML mode button', html.includes('id="pt-mode-family"'));
@@ -19200,6 +19200,57 @@ test('v4.99.45 Phase6b: index.html loads collector after Supabase but before app
   })());
 test('v4.99.45 Phase6b: app.js exposes APP_VERSION on window for collector consumption',
   /window\.APP_VERSION\s*=\s*APP_VERSION/.test(js));
+
+// ── v4.99.46 — Hotfix: signed-in Pro users blocked from diagnostic + 3 other flows ──
+// Founder-caught on iPhone 2026-05-11: tapping "🩺 Take the Diagnostic" on
+// mobile did nothing visible. Root cause: startDiagnostic + 3 other Tier A
+// teacher flows rolled their own `if (!key)` BYOK check that didn't account
+// for window._certanvilSignedIn. The v4.99.33 fix unified this through
+// validateApiKey() for startQuiz / startExam / drill launchers — but missed
+// these 4 sites. From the founder POV: invisible toast + subtle goSettings
+// transition = "nothing happened."
+console.log('\n\x1b[1m── v4.99.46 — DIAGNOSTIC SIGNED-IN BYOK BYPASS HOTFIX ──\x1b[0m');
+
+test('v4.99.46 hotfix: startDiagnostic uses validateApiKey (handles signed-in proxy users)',
+  // _fnBody extracts the function body. We assert validateApiKey is called
+  // before the confirm() prompt so signed-in users see the dialog they need.
+  (() => {
+    const body = _fnBody(js, 'startDiagnostic');
+    if (!body) return false;
+    // validateApiKey must be called BEFORE the confirm() prompt
+    const vIdx = body.indexOf('validateApiKey(');
+    const cIdx = body.indexOf("confirm('");
+    return vIdx > -1 && cIdx > -1 && vIdx < cIdx;
+  })());
+test('v4.99.46 hotfix: startDiagnostic does NOT have rolled-own `if (!key)` early-return that ignores signed-in',
+  // The pre-fix pattern: `if (!key) { showToast(...); goSettings(); return; }`.
+  // Post-fix uses validateApiKey() return value. Guard against the rolled-own
+  // pattern resurfacing.
+  (() => {
+    const body = _fnBody(js, 'startDiagnostic');
+    if (!body) return false;
+    // The bad pattern: `if (!key) { showToast(...api key...); ...return; }`
+    return !/if\s*\(\s*!key\s*\)\s*\{[\s\S]{0,200}Add\s+your\s+API\s+key/i.test(body);
+  })());
+test('v4.99.46 hotfix: regression tombstone — original "Add your API key in Settings first" toast not in startDiagnostic',
+  // The exact pre-fix toast string must not return.
+  (() => {
+    const body = _fnBody(js, 'startDiagnostic');
+    return body && !/Add your API key in Settings first/i.test(body);
+  })());
+test('v4.99.46 hotfix: explainFurther uses validateApiKey',
+  (() => {
+    const body = _fnBody(js, 'explainFurther');
+    return body && /validateApiKey\(/.test(body);
+  })());
+test('v4.99.46 hotfix: drill-this-concept uses validateApiKey',
+  // Anchor on the unique "Drill this concept" button label (which is reset
+  // in the error-path block right after the validateApiKey check). Plain
+  // text avoids the surrogate-pair regex issue with the 🎯 emoji.
+  /validateApiKey\(key\)[\s\S]{0,300}Drill this concept/.test(js));
+test('v4.99.46 hotfix: topic-deep-dive (showTopicDeepDive or buildTopicDive*) uses validateApiKey',
+  // Find by searching for the unique 'No API key found' error message + validateApiKey nearby.
+  /No API key found[\s\S]{0,1000}validateApiKey\(|validateApiKey\([\s\S]{0,1000}No API key found/.test(js));
 
 // ── Summary ──
 console.log('\n' + '═'.repeat(50));

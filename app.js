@@ -1,9 +1,9 @@
 // ══════════════════════════════════════════
-// Network+ AI Quiz — app.js  v4.99.45
+// Network+ AI Quiz — app.js  v4.99.46
 // ══════════════════════════════════════════
 
 // ── CONSTANTS ──
-const APP_VERSION = '4.99.45';
+const APP_VERSION = '4.99.46';
 // v4.99.45 (Phase 6b): expose APP_VERSION on window so the web-vitals
 // collector (lib/web-vitals-collector.js, loaded BEFORE app.js so its
 // PerformanceObservers attach earlier) can stamp this version onto every
@@ -3542,8 +3542,18 @@ function dismissDiagnosticCta(ev) {
 // the quiz flow.
 async function startDiagnostic() {
   const key = (typeof getApiKey === 'function') ? getApiKey() : (localStorage.getItem(STORAGE.KEY) || '');
-  if (!key) {
-    showToast('Add your API key in Settings first', 'error');
+  // v4.99.46 fix: signed-in Pro users route through the server proxy (no
+  // client BYOK key needed). validateApiKey() returns null for signed-in
+  // users; we use it instead of the rolled-own `if (!key)` check that
+  // pre-fix blocked them with a "Set your API key" toast + goSettings()
+  // redirect. From the founder's iPhone POV: tap → invisible toast +
+  // subtle page transition = "nothing happened." Same root cause as the
+  // v4.99.33 fix for Generate Quiz / Exam / Drills (all 5 of those use
+  // validateApiKey at the top of their start* function — startDiagnostic
+  // was missed because it predates the unified gate).
+  const keyErr = validateApiKey(key);
+  if (keyErr) {
+    showToast(keyErr, 'error');
     if (typeof goSettings === 'function') goSettings();
     return;
   }
@@ -13020,8 +13030,11 @@ async function followUpOnMistake() {
   }
   try {
     const key = apiKey || localStorage.getItem(STORAGE.KEY) || '';
-    if (!key) {
-      if (typeof showErrorToast === 'function') showErrorToast('Set your Anthropic API key in Settings first.');
+    // v4.99.46 fix: validateApiKey bypasses for signed-in Pro users (server
+    // proxy path). Pre-fix the rolled-own `if (!key)` check blocked them.
+    const keyErr = validateApiKey(key);
+    if (keyErr) {
+      if (typeof showErrorToast === 'function') showErrorToast(keyErr);
       if (btn) { btn.disabled = false; btn.innerHTML = '\u{1F3AF} Drill this concept'; }
       return;
     }
@@ -13071,7 +13084,8 @@ async function explainFurther() {
   if (btn) { btn.textContent = 'Loading\u2026'; btn.disabled = true; }
 
   const key = apiKey || localStorage.getItem(STORAGE.KEY) || '';
-  if (!key) {
+  // v4.99.46 fix: validateApiKey bypasses for signed-in Pro users.
+  if (validateApiKey(key)) {
     if (btn) { btn.textContent = 'No API key'; btn.disabled = true; }
     return;
   }
@@ -13231,7 +13245,10 @@ async function showTopicDeepDive(topicName) {
   showPage('topic-dive');
 
   const key = apiKey || localStorage.getItem(STORAGE.KEY) || '';
-  if (!key) {
+  // v4.99.46 fix: validateApiKey bypasses for signed-in Pro users (server
+  // proxy path). Pre-fix the rolled-own `if (!key)` check blocked them with
+  // a "No API key" notice even though they don't need one.
+  if (validateApiKey(key)) {
     contentEl.innerHTML = '<div class="topic-dive-error">⚠️ No API key found. Enter your Anthropic API key on the setup page to use Topic Deep Dive.</div>';
     return;
   }
