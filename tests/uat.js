@@ -334,7 +334,7 @@ test('Validation in runSessionStep', js.includes('aiValidateQuestions(apiKey, qu
 
 // ── Analytics v2 (v4.5) ──
 console.log('\n\x1b[1m── ANALYTICS v2 (v4.5) ──\x1b[0m');
-test('APP_VERSION is 4.99.42', js.includes("const APP_VERSION = '4.99.42"));
+test('APP_VERSION is 4.99.43', js.includes("const APP_VERSION = '4.99.43"));
 test('getDailyGoal function', js.includes('function getDailyGoal('));
 test('renderDailyGoal function', js.includes('function renderDailyGoal('));
 test('editDailyGoal function', js.includes('function editDailyGoal('));
@@ -348,7 +348,7 @@ test('CSS: .topic-domain-group', css.includes('.topic-domain-group'));
 test('CSS: .daily-goal-card', css.includes('.daily-goal-card'));
 test('CSS: .advanced-section', css.includes('.advanced-section'));
 test('CSS: .hero-stats-strip', css.includes('.hero-stats-strip'));
-test('SW cache bumped to v4.99.42', sw.includes('netplus-v4.99.42'));
+test('SW cache bumped to v4.99.43', sw.includes('netplus-v4.99.43'));
 test('Family Drill: STORAGE.PORT_FAMILY_BEST', js.includes("PORT_FAMILY_BEST:"));
 test('Family Drill: ptMode handles family', js.includes("ptMode === 'family'"));
 test('Family Drill: HTML mode button', html.includes('id="pt-mode-family"'));
@@ -18927,6 +18927,56 @@ test('v4.99.42 Phase11b: Subnet Trainer exposes _subnetTrainerTeardown for shell
   && /clearInterval\(stTimerInterval\)/.test(_featureStRaw));
 test('v4.99.42 Phase11b: Subnet Trainer leave() calls _subnetTrainerTeardown + resets module state',
   /leave:\s*function[\s\S]{0,500}_subnetTrainerTeardown\(\)[\s\S]{0,300}stCorrect\s*=\s*0/.test(_featureStRaw));
+
+// ── v4.99.43 — Phase 11b session 6: ACL Builder extracted ──
+console.log('\n\x1b[1m── v4.99.43 — PHASE 11b ACL BUILDER EXTRACTION ──\x1b[0m');
+
+const _appJsRawV43 = fs.readFileSync(path.join(ROOT, 'app.js'), 'utf8');
+
+test('v4.99.43 Phase11b: openAclBuilder is async shell stub that lazy-loads',
+  /async\s+function\s+openAclBuilder\s*\(\s*\)\s*\{[\s\S]{0,400}_loadFeature\s*\(\s*["']acl-builder["']\s*\)/.test(_appJsRawV43));
+test('v4.99.43 Phase11b: shell stub gates via _gateProOnly (ACL Builder is Pro)',
+  /async\s+function\s+openAclBuilder[\s\S]{0,400}_gateProOnly\(\s*["']ACL Builder["']\s*\)/.test(_appJsRawV43));
+test('v4.99.43 Phase11b: regression tombstone — `function aclLoadScenario` NOT in app.js shell',
+  !/^function\s+aclLoadScenario\s*\(/m.test(_appJsRawV43));
+test('v4.99.43 Phase11b: regression tombstone — `function aclLoadState` NOT in app.js shell',
+  !/^function\s+aclLoadState\s*\(/m.test(_appJsRawV43));
+test('v4.99.43 Phase11b: regression tombstone — `function renderAclPage` NOT in app.js shell',
+  !/^function\s+renderAclPage\s*\(/m.test(_appJsRawV43));
+test('v4.99.43 Phase11b: regression tombstone — `const ACL_SCENARIOS` NOT in app.js shell',
+  !/^const\s+ACL_SCENARIOS\s*=/m.test(_appJsRawV43));
+test('v4.99.43 Phase11b: regression tombstone — `let aclState` NOT in app.js shell',
+  !/^let\s+aclState\s*=/m.test(_appJsRawV43));
+test('v4.99.43 Phase11b: ACL Pass-Plan PBQ (different feature, same prefix) STAYS in shell',
+  /const\s+ACL_PBQ_BANK\s*=\s*\[/.test(_appJsRawV43)
+  && /function\s+aclOpenFromPassPlan\s*\(/.test(_appJsRawV43));
+
+const _featureAclRaw = fs.readFileSync(path.join(ROOT, 'features/acl-builder.js'), 'utf8');
+test('v4.99.43 Phase11b: features/acl-builder.js exists',
+  _featureAclRaw.length > 5000);
+test('v4.99.43 Phase11b: ACL Builder wrapped in IIFE',
+  /^\(function\(\)\s*\{/m.test(_featureAclRaw)
+  && /\}\)\(\);?\s*$/.test(_featureAclRaw.trim()));
+test('v4.99.43 Phase11b: ACL Builder preserves ACL_SCENARIOS + ACL_CATEGORIES + aclState',
+  /const\s+ACL_SCENARIOS\s*=/.test(_featureAclRaw)
+  && /const\s+ACL_CATEGORIES\s*=/.test(_featureAclRaw)
+  && /let\s+aclState\s*=/.test(_featureAclRaw));
+test('v4.99.43 Phase11b: ACL Builder preserves animation timing constants',
+  /const\s+ACL_ANIM_RULE_MS\s*=/.test(_featureAclRaw)
+  && /const\s+ACL_ANIM_STAGGER_MS\s*=/.test(_featureAclRaw));
+test('v4.99.43 Phase11b: ACL Builder exposes all 18 onclick targets on window',
+  /window\.aclLoadScenario\s*=\s*aclLoadScenario/.test(_featureAclRaw)
+  && /window\.aclAskCoach\s*=\s*aclAskCoach/.test(_featureAclRaw)
+  && /window\.aclShowHint\s*=\s*aclShowHint/.test(_featureAclRaw)
+  && /window\.aclShowSolution\s*=\s*aclShowSolution/.test(_featureAclRaw)
+  && /window\.aclRunAllTests\s*=\s*aclRunAllTests/.test(_featureAclRaw)
+  && /window\.aclOpenScenarioPicker\s*=\s*aclOpenScenarioPicker/.test(_featureAclRaw));
+test('v4.99.43 Phase11b: ACL Builder registers under "acl-builder" key',
+  /window\._certanvilFeatures\["acl-builder"\]\s*=\s*\{\s*enter:/.test(_featureAclRaw));
+test('v4.99.43 Phase11b: ACL Builder enter() preserves original behavior (aclLoadState + renderAclPage)',
+  /enter:\s*function[\s\S]{0,400}aclLoadState\(\)[\s\S]{0,200}renderAclPage\(\)/.test(_featureAclRaw));
+test('v4.99.43 Phase11b: ACL Builder leave() closes all 3 modals (coach + scenario picker + add-rule)',
+  /leave:\s*function[\s\S]{0,800}acl-coach-modal[\s\S]{0,400}acl-scenario-picker[\s\S]{0,400}acl-add-rule-modal/.test(_featureAclRaw));
 
 // ── Summary ──
 console.log('\n' + '═'.repeat(50));
