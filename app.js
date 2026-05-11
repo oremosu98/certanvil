@@ -1,9 +1,15 @@
 // ══════════════════════════════════════════
-// Network+ AI Quiz — app.js  v4.99.44
+// Network+ AI Quiz — app.js  v4.99.45
 // ══════════════════════════════════════════
 
 // ── CONSTANTS ──
-const APP_VERSION = '4.99.44';
+const APP_VERSION = '4.99.45';
+// v4.99.45 (Phase 6b): expose APP_VERSION on window so the web-vitals
+// collector (lib/web-vitals-collector.js, loaded BEFORE app.js so its
+// PerformanceObservers attach earlier) can stamp this version onto every
+// telemetry row at flush time. The collector reads window.APP_VERSION lazily
+// at flush, so the cross-file ordering doesn't matter.
+if (typeof window !== 'undefined') window.APP_VERSION = APP_VERSION;
 
 // ══════════════════════════════════════════════════════════════════════════
 // CERT PACK ARCHITECTURE (v4.86.0 Phase 1A engine refactor)

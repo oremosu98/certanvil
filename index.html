@@ -264,7 +264,7 @@
     <span class="hero-icon">&#9889;</span>
     <h1>Network+ AI Quiz</h1>
     <p>AI-generated MCQs every session. Never the same quiz twice.</p>
-    <span id="version-badge" style="display:inline-block;margin-top:10px;font-size:11px;font-weight:700;letter-spacing:.08em;color:var(--accent-light);background:rgba(124,111,247,.12);border:1px solid rgba(124,111,247,.3);padding:3px 10px;border-radius:99px;cursor:default;user-select:none">v4.99.44</span>
+    <span id="version-badge" style="display:inline-block;margin-top:10px;font-size:11px;font-weight:700;letter-spacing:.08em;color:var(--accent-light);background:rgba(124,111,247,.12);border:1px solid rgba(124,111,247,.3);padding:3px 10px;border-radius:99px;cursor:default;user-select:none">v4.99.45</span>
     <div id="streak-badge" class="streak-badge"></div>
     <div id="stats-card" class="hero-stats-strip is-hidden">
       <div class="stats-grid" id="stats-grid"></div>
@@ -2916,6 +2916,11 @@
 <script defer src="cloud-store.js"></script>
 <script defer src="auth-state.js"></script>
 <script defer src="migration.js"></script>
+<!-- v4.99.45 (Phase 6b): Web Vitals collector. Sets up PerformanceObservers
+     immediately on load (buffered:true picks up pre-script events too),
+     then POSTs LCP/FCP/CLS/TTFB once per session on tab hide. Prod-host
+     gated + signed-in only — localhost and preview deploys never fire. -->
+<script defer src="lib/web-vitals-collector.js"></script>
 <script defer src="app.js"></script>
 </body>
 </html>

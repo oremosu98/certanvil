@@ -334,7 +334,7 @@ test('Validation in runSessionStep', js.includes('aiValidateQuestions(apiKey, qu
 
 // ── Analytics v2 (v4.5) ──
 console.log('\n\x1b[1m── ANALYTICS v2 (v4.5) ──\x1b[0m');
-test('APP_VERSION is 4.99.44', js.includes("const APP_VERSION = '4.99.44"));
+test('APP_VERSION is 4.99.45', js.includes("const APP_VERSION = '4.99.45"));
 test('getDailyGoal function', js.includes('function getDailyGoal('));
 test('renderDailyGoal function', js.includes('function renderDailyGoal('));
 test('editDailyGoal function', js.includes('function editDailyGoal('));
@@ -348,7 +348,7 @@ test('CSS: .topic-domain-group', css.includes('.topic-domain-group'));
 test('CSS: .daily-goal-card', css.includes('.daily-goal-card'));
 test('CSS: .advanced-section', css.includes('.advanced-section'));
 test('CSS: .hero-stats-strip', css.includes('.hero-stats-strip'));
-test('SW cache bumped to v4.99.44', sw.includes('netplus-v4.99.44'));
+test('SW cache bumped to v4.99.45', sw.includes('netplus-v4.99.45'));
 test('Family Drill: STORAGE.PORT_FAMILY_BEST', js.includes("PORT_FAMILY_BEST:"));
 test('Family Drill: ptMode handles family', js.includes("ptMode === 'family'"));
 test('Family Drill: HTML mode button', html.includes('id="pt-mode-family"'));
@@ -19103,6 +19103,103 @@ test('v4.99.44 Phase11c: TB preserves _tbUiState consolidated state object (v4.6
 test('v4.99.44 Phase11c: TB preserves _tbOverlayRegistry pattern (v4.62.4 tech-debt sweep)',
   /_tbOverlayRegistry/.test(_featureTbRaw)
   && /tbRegisterOverlay/.test(_featureTbRaw));
+
+// ── v4.99.45 — Phase 6b: Web Vitals collector ──
+// Measurement infra ship. Adds Supabase migration + record_web_vitals RPC +
+// client-side PerformanceObserver collector. Signed-in + prod-host only.
+// Single write per session on tab hide. Data feeds admin slicing queries
+// (p75 LCP by version, iOS vs Android etc.) so we can validate that
+// Lighthouse synthetic wins translate to real-phone-on-cellular.
+console.log('\n\x1b[1m── v4.99.45 — PHASE 6b WEB VITALS COLLECTOR ──\x1b[0m');
+
+const _collectorRaw = fs.existsSync(path.join(ROOT, 'lib/web-vitals-collector.js'))
+  ? fs.readFileSync(path.join(ROOT, 'lib/web-vitals-collector.js'), 'utf8')
+  : '';
+const _migrationRaw = fs.existsSync(path.join(ROOT, 'supabase/migrations/20260511_web_vitals.sql'))
+  ? fs.readFileSync(path.join(ROOT, 'supabase/migrations/20260511_web_vitals.sql'), 'utf8')
+  : '';
+
+// — Migration —
+test('v4.99.45 Phase6b: supabase/migrations/20260511_web_vitals.sql exists',
+  _migrationRaw.length > 1000);
+test('v4.99.45 Phase6b: migration creates web_vitals table',
+  /create\s+table\s+if\s+not\s+exists\s+web_vitals\s*\(/i.test(_migrationRaw));
+test('v4.99.45 Phase6b: migration creates record_web_vitals RPC',
+  /create\s+or\s+replace\s+function\s+record_web_vitals\s*\(\s*payload\s+jsonb\s*\)/i.test(_migrationRaw));
+test('v4.99.45 Phase6b: record_web_vitals is SECURITY DEFINER (clients can insert without table-level INSERT policy)',
+  /create\s+or\s+replace\s+function\s+record_web_vitals[\s\S]{0,500}security\s+definer/i.test(_migrationRaw));
+test('v4.99.45 Phase6b: record_web_vitals stamps user_id from auth.uid() (anti-spoof)',
+  /auth\.uid\(\)/.test(_migrationRaw));
+test('v4.99.45 Phase6b: web_vitals captures all 5 Core Web Vitals (LCP/FCP/CLS/TTFB/INP)',
+  /lcp_ms\s+integer/i.test(_migrationRaw)
+  && /fcp_ms\s+integer/i.test(_migrationRaw)
+  && /cls\s+numeric/i.test(_migrationRaw)
+  && /ttfb_ms\s+integer/i.test(_migrationRaw)
+  && /inp_ms\s+integer/i.test(_migrationRaw));
+test('v4.99.45 Phase6b: web_vitals captures slicing dimensions (app_version + cert + viewport + connection)',
+  /app_version\s+text/i.test(_migrationRaw)
+  && /cert\s+text/i.test(_migrationRaw)
+  && /viewport_w\s+integer/i.test(_migrationRaw)
+  && /connection_type\s+text/i.test(_migrationRaw));
+test('v4.99.45 Phase6b: RLS — admin reads all, no client INSERT/UPDATE/DELETE policies (immutable log)',
+  /alter\s+table\s+web_vitals\s+enable\s+row\s+level\s+security/i.test(_migrationRaw)
+  && /web_vitals_admin_select[\s\S]{0,200}is_admin\(\)/i.test(_migrationRaw)
+  && !/for\s+insert\s+on\s+web_vitals/i.test(_migrationRaw)
+  && !/for\s+update\s+on\s+web_vitals/i.test(_migrationRaw)
+  && !/for\s+delete\s+on\s+web_vitals/i.test(_migrationRaw));
+
+// — Collector —
+test('v4.99.45 Phase6b: lib/web-vitals-collector.js exists',
+  _collectorRaw.length > 2000);
+test('v4.99.45 Phase6b: collector wrapped in IIFE (no module-scope leaks)',
+  /^\(function\(\)\s*\{/m.test(_collectorRaw)
+  && /\}\)\(\);?\s*$/.test(_collectorRaw.trim()));
+test('v4.99.45 Phase6b: collector gates on prod-only host (skips localhost + preview branch deploys)',
+  /function\s+_isWebVitalsHost\s*\(/.test(_collectorRaw)
+  && /localhost/.test(_collectorRaw)
+  && /-git-/.test(_collectorRaw)
+  && /\.certanvil\.com/.test(_collectorRaw));
+test('v4.99.45 Phase6b: collector uses PerformanceObserver for FCP + LCP + CLS',
+  /new\s+PerformanceObserver/.test(_collectorRaw)
+  && /first-contentful-paint/.test(_collectorRaw)
+  && /largest-contentful-paint/.test(_collectorRaw)
+  && /layout-shift/.test(_collectorRaw));
+test('v4.99.45 Phase6b: collector observers use buffered:true (retroactively capture pre-init events)',
+  /buffered:\s*true/.test(_collectorRaw));
+test('v4.99.45 Phase6b: collector reads TTFB from Navigation Timing',
+  /getEntriesByType\(\s*['"]navigation['"]\s*\)/.test(_collectorRaw)
+  && /responseStart/.test(_collectorRaw));
+test('v4.99.45 Phase6b: collector flushes on visibilitychange:hidden AND pagehide (cross-browser)',
+  /visibilitychange/.test(_collectorRaw)
+  && /pagehide/.test(_collectorRaw));
+test('v4.99.45 Phase6b: collector double-flush guard prevents N writes from N events',
+  /_flushed\s*=\s*false/.test(_collectorRaw)
+  && /_flushed\s*=\s*true/.test(_collectorRaw));
+test('v4.99.45 Phase6b: collector skips flush if no Supabase client (silent no-op)',
+  /window\.certanvilSupabase/.test(_collectorRaw)
+  && /if\s*\(\s*!window\.certanvilSupabase/.test(_collectorRaw));
+test('v4.99.45 Phase6b: collector requires signed-in session before flushing',
+  /auth\.getSession\(\)/.test(_collectorRaw)
+  && /session\.user/.test(_collectorRaw));
+test('v4.99.45 Phase6b: collector calls record_web_vitals RPC with payload',
+  /\.rpc\(\s*['"]record_web_vitals['"]/.test(_collectorRaw));
+test('v4.99.45 Phase6b: collector exposes window.__certanvilWebVitals for debug/testability',
+  /window\.__certanvilWebVitals\s*=/.test(_collectorRaw));
+test('v4.99.45 Phase6b: collector strips auth tokens from page_path (anti-PII)',
+  /access_token|refresh_token/.test(_collectorRaw)
+  && /replace\(/.test(_collectorRaw));
+
+// — Wiring —
+test('v4.99.45 Phase6b: index.html loads collector after Supabase but before app.js',
+  (() => {
+    // Verify the script tag order: supabase modules → web-vitals-collector → app.js
+    const wvIdx = html.indexOf('lib/web-vitals-collector.js');
+    const appIdx = html.indexOf('src="app.js"');
+    const supaIdx = html.indexOf('lib/supabase.js');
+    return wvIdx > supaIdx && wvIdx < appIdx;
+  })());
+test('v4.99.45 Phase6b: app.js exposes APP_VERSION on window for collector consumption',
+  /window\.APP_VERSION\s*=\s*APP_VERSION/.test(js));
 
 // ── Summary ──
 console.log('\n' + '═'.repeat(50));
