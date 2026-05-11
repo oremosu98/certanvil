@@ -334,7 +334,7 @@ test('Validation in runSessionStep', js.includes('aiValidateQuestions(apiKey, qu
 
 // ── Analytics v2 (v4.5) ──
 console.log('\n\x1b[1m── ANALYTICS v2 (v4.5) ──\x1b[0m');
-test('APP_VERSION is 4.99.55', js.includes("const APP_VERSION = '4.99.55"));
+test('APP_VERSION is 4.99.56', js.includes("const APP_VERSION = '4.99.56"));
 test('getDailyGoal function', js.includes('function getDailyGoal('));
 test('renderDailyGoal function', js.includes('function renderDailyGoal('));
 test('editDailyGoal function', js.includes('function editDailyGoal('));
@@ -348,7 +348,7 @@ test('CSS: .topic-domain-group', css.includes('.topic-domain-group'));
 test('CSS: .daily-goal-card', css.includes('.daily-goal-card'));
 test('CSS: .advanced-section', css.includes('.advanced-section'));
 test('CSS: .hero-stats-strip', css.includes('.hero-stats-strip'));
-test('SW cache bumped to v4.99.55', sw.includes('netplus-v4.99.55'));
+test('SW cache bumped to v4.99.56', sw.includes('netplus-v4.99.56'));
 test('Family Drill: STORAGE.PORT_FAMILY_BEST', js.includes("PORT_FAMILY_BEST:"));
 test('Family Drill: ptMode handles family', js.includes("ptMode === 'family'"));
 test('Family Drill: HTML mode button', html.includes('id="pt-mode-family"'));
@@ -19920,8 +19920,10 @@ test('v4.99.55 D.4: Retake button confirms before clearing results',
 // Stub panels (pre-Stripe / pre-D.5 / pre-D.6 placeholders)
 test('v4.99.55 D.4: Subscribe stub panel mentions D.6.5 next ship',
   _resultsD4Raw.includes('dr-stub-subscribe') && _resultsD4Raw.includes('D.6.5 next ship'));
-test('v4.99.55 D.4: Continue stub panel mentions D.5 next ship',
-  _resultsD4Raw.includes('dr-stub-continue') && _resultsD4Raw.includes('D.5 next ship'));
+test('v4.99.55 D.4: Continue stub panel exists (v4.99.56: stub copy replaced by D.5 magic-link form)',
+  _resultsD4Raw.includes('dr-stub-continue') &&
+  // v4.99.56 D.5: stub no longer has "D.5 next ship" placeholder copy — it has a working form
+  (_resultsD4Raw.includes('D.5 next ship') || _resultsD4Raw.includes('id="dr-continue-form"')));
 test('v4.99.55 D.4: Download stub panel mentions D.6 next ship',
   _resultsD4Raw.includes('dr-stub-download') && _resultsD4Raw.includes('D.6 next ship'));
 test('v4.99.55 D.4: stub panels open/close via openStub/closeStub helpers',
@@ -19952,6 +19954,117 @@ test('v4.99.55 D.4: prefers-reduced-motion neutralises ring + bar transitions',
   /prefers-reduced-motion[\s\S]{0,200}dr-ring-fg[\s\S]{0,80}transition:\s*none/.test(_resultsD4Raw));
 test('v4.99.55 D.4: review toggle has aria-controls for screen readers',
   _resultsD4Raw.includes('aria-controls="dr-review-list"'));
+
+// ══════════════════════════════════════════════════════════════════════════
+// v4.99.56 — D.5 Landing Diagnostic · anon → authed magic-link migration
+// ══════════════════════════════════════════════════════════════════════════
+console.log('\n\x1b[1m── v4.99.56 — D.5 LANDING DIAGNOSTIC MAGIC-LINK MIGRATION ──\x1b[0m');
+
+// ── Migration SQL ──
+const _migD5Path = path.join(__dirname, '..', 'supabase', 'migrations', '20260511_diagnostic_pending.sql');
+let _migD5Raw = '';
+try { _migD5Raw = fs.readFileSync(_migD5Path, 'utf8'); } catch (_) {}
+
+test('v4.99.56 D.5: migration file exists at supabase/migrations/20260511_diagnostic_pending.sql', _migD5Raw.length > 0);
+test('v4.99.56 D.5: migration creates diagnostic_pending table (token PK, jsonb results)',
+  /create\s+table\s+if\s+not\s+exists\s+diagnostic_pending[\s\S]{0,400}token\s+text\s+primary\s+key[\s\S]{0,400}results\s+jsonb\s+not\s+null/i.test(_migD5Raw));
+test('v4.99.56 D.5: migration creates diagnostic_signup_rate_limit table (separate from D.3 quota)',
+  /create\s+table\s+if\s+not\s+exists\s+diagnostic_signup_rate_limit/i.test(_migD5Raw));
+test('v4.99.56 D.5: migration creates claim_diagnostic_results(p_token) RPC with SECURITY DEFINER',
+  /create\s+or\s+replace\s+function\s+claim_diagnostic_results[\s\S]{0,300}security\s+definer/i.test(_migD5Raw));
+test('v4.99.56 D.5: claim RPC rejects unsigned-in callers',
+  /v_user_id\s+is\s+null[\s\S]{0,200}not_signed_in/i.test(_migD5Raw));
+test('v4.99.56 D.5: claim RPC handles already_claimed / expired / not_found cases',
+  /already_claimed/.test(_migD5Raw) && /expired/.test(_migD5Raw) && /not_found/.test(_migD5Raw));
+test('v4.99.56 D.5: claim RPC merges into profiles.metadata.diagnostic + diagnostic_history',
+  /profiles[\s\S]{0,1000}metadata[\s\S]{0,1000}diagnostic_history/i.test(_migD5Raw));
+test('v4.99.56 D.5: claim RPC marks token claimed (one-shot)',
+  /update\s+diagnostic_pending\s+set\s+claimed_at/i.test(_migD5Raw));
+test('v4.99.56 D.5: migration creates diag_signup_check_and_increment(ip_hash) RPC',
+  /create\s+or\s+replace\s+function\s+diag_signup_check_and_increment/i.test(_migD5Raw));
+test('v4.99.56 D.5: signup rate limit is 5 calls / 1 hour rolling window',
+  /v_limit\s+constant\s+int\s*:=\s*5/.test(_migD5Raw) && /v_window\s+constant\s+interval\s*:=\s*interval\s*'1\s+hour'/.test(_migD5Raw));
+test('v4.99.56 D.5: claim RPC has authenticated execute grant',
+  /grant\s+execute\s+on\s+function\s+claim_diagnostic_results[\s\S]{0,100}to\s+authenticated/i.test(_migD5Raw));
+test('v4.99.56 D.5: migration enables RLS on both new tables · admin reads only',
+  /alter\s+table\s+diagnostic_pending\s+enable\s+row\s+level\s+security[\s\S]{0,800}is_admin\(\)/i.test(_migD5Raw));
+test('v4.99.56 D.5: cleanup helper diag_pending_purge_old() defined',
+  /create\s+or\s+replace\s+function\s+diag_pending_purge_old/i.test(_migD5Raw));
+
+// ── Endpoint ──
+const _epD5Path = path.join(__dirname, '..', 'landing', 'api', 'diagnostic', 'signup-magic-link.js');
+let _epD5Raw = '';
+try { _epD5Raw = fs.readFileSync(_epD5Path, 'utf8'); } catch (_) {}
+
+test('v4.99.56 D.5: endpoint file exists at landing/api/diagnostic/signup-magic-link.js', _epD5Raw.length > 0);
+test('v4.99.56 D.5: endpoint uses Vercel edge runtime',
+  /export\s+const\s+config\s*=\s*\{\s*runtime:\s*['"]edge['"]/.test(_epD5Raw));
+test('v4.99.56 D.5: endpoint validates email format',
+  /isValidEmail/.test(_epD5Raw) && /invalid_email/.test(_epD5Raw));
+test('v4.99.56 D.5: endpoint validates cert ∈ [network-plus, security-plus]',
+  /ALLOWED_CERTS\s*=\s*\[\s*['"]network-plus['"]\s*,\s*['"]security-plus['"]/.test(_epD5Raw));
+test('v4.99.56 D.5: endpoint validates diagnosticResults shape (scaledScore/totalQuestions/correctCount)',
+  /scaledScore[\s\S]{0,80}totalQuestions[\s\S]{0,80}correctCount/.test(_epD5Raw) && /incomplete_results/.test(_epD5Raw));
+test('v4.99.56 D.5: endpoint hashes client IP (SHA-256, never stores raw)',
+  /sha256Hex/.test(_epD5Raw) && /IP_HASH_SALT/.test(_epD5Raw));
+test('v4.99.56 D.5: endpoint rate-limits via diag_signup_check_and_increment RPC',
+  /diag_signup_check_and_increment/.test(_epD5Raw));
+test('v4.99.56 D.5: endpoint generates crypto-random token via WebCrypto',
+  /crypto\.getRandomValues/.test(_epD5Raw) &&
+  // No actual call to Math.random — comment-mention is fine (regex excludes comment lines)
+  !/^[^/]*Math\.random\(/.test(_epD5Raw.split('\n').filter(l => !/^\s*(\/\/|\*)/.test(l)).join('\n')));
+test('v4.99.56 D.5: endpoint writes pending row via service-role bypassing RLS',
+  /SUPABASE_SERVICE_ROLE_KEY/.test(_epD5Raw) && /diagnostic_pending/.test(_epD5Raw));
+test('v4.99.56 D.5: endpoint builds redirectTo with cert-specific claim host',
+  /CERT_TO_CLAIM_HOST/.test(_epD5Raw) && /action=claim-diagnostic/.test(_epD5Raw));
+test('v4.99.56 D.5: endpoint gracefully 503s when env vars missing',
+  /service_unconfigured/.test(_epD5Raw) && /503/.test(_epD5Raw));
+test('v4.99.56 D.5: endpoint 429s on rate limit with resetsAt',
+  /rate_limited/.test(_epD5Raw) && /resetsAt/.test(_epD5Raw));
+test('v4.99.56 D.5: endpoint optional Turnstile re-check (defense in depth)',
+  /turnstileToken[\s\S]{0,400}verifyTurnstile/.test(_epD5Raw));
+
+// ── Continue stub on results.html ──
+test('v4.99.56 D.5: results.html loads Supabase client (UMD + lib/supabase.js)',
+  /script[\s\S]{0,100}supabase-umd\.min\.js/.test(_resultsD4Raw) && /script[\s\S]{0,100}lib\/supabase\.js/.test(_resultsD4Raw));
+test('v4.99.56 D.5: results.html Continue stub replaced with email form (no "D.5 next ship" stub copy)',
+  !_resultsD4Raw.includes('D.5 next ship') && _resultsD4Raw.includes('id="dr-continue-form"'));
+test('v4.99.56 D.5: results.html form posts to /api/diagnostic/signup-magic-link',
+  /fetch\(['"]\/api\/diagnostic\/signup-magic-link['"]/.test(_resultsD4Raw));
+test('v4.99.56 D.5: results.html form calls signInWithOtp with returned redirectTo',
+  /signInWithOtp\(/.test(_resultsD4Raw) && /emailRedirectTo:\s*r\.body\.redirectTo/.test(_resultsD4Raw));
+test('v4.99.56 D.5: results.html handles 503/429 inline status messages',
+  /r\.status\s*===\s*503/.test(_resultsD4Raw) && /r\.status\s*===\s*429/.test(_resultsD4Raw));
+test('v4.99.56 D.5: results.html disables submit + email during fetch (busy state)',
+  /setContinueBusy/.test(_resultsD4Raw));
+
+// ── Cert app claim hook ──
+const _claimPath = path.join(__dirname, '..', 'diagnostic-claim.js');
+let _claimRaw = '';
+try { _claimRaw = fs.readFileSync(_claimPath, 'utf8'); } catch (_) {}
+
+test('v4.99.56 D.5: diagnostic-claim.js exists at repo root', _claimRaw.length > 0);
+test('v4.99.56 D.5: claim hook reads ?action=claim-diagnostic&token=... from URL',
+  /action\s*(?:===|!==)\s*['"]claim-diagnostic['"]/.test(_claimRaw) && /params\.get\(['"]token['"]\)/.test(_claimRaw));
+test('v4.99.56 D.5: claim hook waits for SIGNED_IN before firing RPC',
+  /onAuthStateChange[\s\S]{0,400}SIGNED_IN/.test(_claimRaw));
+test('v4.99.56 D.5: claim hook calls claim_diagnostic_results RPC with p_token',
+  /sb\.rpc\(['"]claim_diagnostic_results['"]\s*,\s*\{\s*p_token/.test(_claimRaw));
+test('v4.99.56 D.5: claim hook strips action+token URL params after attempt',
+  /searchParams\.delete\(['"]action['"]\)/.test(_claimRaw) && /searchParams\.delete\(['"]token['"]\)/.test(_claimRaw));
+test('v4.99.56 D.5: claim hook re-hydrates cloud-store on success',
+  /cloudStore\.hydrate/.test(_claimRaw));
+test('v4.99.56 D.5: claim hook tracks attempted tokens in sessionStorage (idempotent)',
+  /certanvilClaimAttemptedTokens/.test(_claimRaw));
+test('v4.99.56 D.5: claim hook handles all 4 RPC outcomes (claimed/already_claimed/expired/not_found)',
+  /['"]claimed['"]/.test(_claimRaw) && /already_claimed/.test(_claimRaw) &&
+  /expired/.test(_claimRaw) && /not_found/.test(_claimRaw));
+
+// ── Wiring on cert app ──
+test('v4.99.56 D.5: index.html loads diagnostic-claim.js after auth-state.js',
+  /<script defer src="auth-state\.js"[\s\S]{0,500}<script defer src="diagnostic-claim\.js"/.test(html));
+test('v4.99.56 D.5: sw.js precaches diagnostic-claim.js in SHELL_ASSETS',
+  /SHELL_ASSETS[\s\S]{0,2000}'\.\/diagnostic-claim\.js'/.test(sw));
 
 // ── Summary ──
 console.log('\n' + '═'.repeat(50));

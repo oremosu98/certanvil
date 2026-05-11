@@ -1,5 +1,5 @@
-// Service Worker v4.99.55 — Network+ Quiz App (Phase C′ cloud-first)
-const CACHE_NAME = 'netplus-v4.99.55';
+// Service Worker v4.99.56 — Network+ Quiz App (Phase C′ cloud-first)
+const CACHE_NAME = 'netplus-v4.99.56';
 const SHELL_ASSETS = [
   './',
   './index.html',
@@ -24,7 +24,10 @@ const SHELL_ASSETS = [
   './lib/supabase.js',
   './cloud-store.js',
   './auth-state.js',
-  './migration.js'
+  './migration.js',
+  // v4.99.56 (D.5): landing-diagnostic claim hook. Fires on URL action
+  // `?action=claim-diagnostic&token=...` post magic-link sign-in.
+  './diagnostic-claim.js'
 ];
 // Hard cap on cached entries to prevent unbounded cache growth (#20).
 // The shell counts toward this; everything beyond it (icons, fonts, runtime

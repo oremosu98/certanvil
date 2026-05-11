@@ -10,6 +10,11 @@
 <link rel="stylesheet" href="../../styles.css">
 <link rel="canonical" href="https://certanvil.com/diagnostic/network-plus/results">
 <meta name="robots" content="noindex, nofollow">
+<!-- v4.99.56 D.5: Supabase client for magic-link signup from Continue stub.
+     Loaded ahead of body so window.certanvilSupabase is available by the
+     time the Continue CTA wires up. Defer-ok — only used after click. -->
+<script src="../../lib/supabase-umd.min.js" defer></script>
+<script src="../../lib/supabase.js" defer></script>
 <script>
 (function() {
   var theme = 'light';
@@ -448,6 +453,59 @@
     padding: 3px 9px;
     border-radius: 8px;
     margin-bottom: 8px;
+  }
+
+  /* D.5 · Magic-link form inside Continue stub */
+  .dr-continue-form {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 10px;
+  }
+  .dr-continue-form input[type="email"] {
+    font-family: inherit;
+    font-size: 14px;
+    padding: 11px 14px;
+    border-radius: 10px;
+    border: 1px solid var(--border, rgba(0,0,0,.16));
+    background: var(--surface, #fff);
+    color: var(--text, #1a1a26);
+    width: 100%;
+  }
+  .dr-continue-form input[type="email"]:focus {
+    outline: 2px solid var(--accent, #7c6ff7);
+    outline-offset: -1px;
+    border-color: var(--accent, #7c6ff7);
+  }
+  .dr-continue-form input[type="email"][disabled] {
+    background: var(--surface2, #f5f6f9);
+    color: var(--text-dim, #8a8b9c);
+  }
+  .dr-continue-submit {
+    align-self: stretch;
+  }
+  .dr-continue-submit[disabled] {
+    opacity: .55;
+    cursor: not-allowed;
+    transform: none !important;
+  }
+  .dr-continue-status {
+    font-size: 13px;
+    line-height: 1.5;
+    margin-top: 6px;
+  }
+  .dr-continue-status.is-error {
+    color: #b91c1c;
+    background: rgba(185,28,28,.08);
+    padding: 10px 12px;
+    border-radius: 8px;
+  }
+  .dr-continue-status.is-success {
+    color: #15803d;
+    background: rgba(34,197,94,.10);
+    padding: 12px 14px;
+    border-radius: 10px;
+    font-weight: 600;
   }
 
   /* ─── Answer review (collapsible) ─── */
@@ -941,10 +999,18 @@
         '<button type="button" class="dr-stub-close" data-close="continue" aria-label="Close">×</button>' +
       '</div>' +
       '<div class="dr-stub-body">' +
-        '<span class="dr-stub-pill">D.5 next ship</span>' +
-        '<p><strong>Free-tier signup lands in the next ship.</strong> When you create an account, these diagnostic results merge into your profile so they\'re waiting for you the moment you sign in to the cert app.</p>' +
-        '<p>Until then, your results are saved in this browser tab. If you head straight to the cert app now, you\'ll start fresh — but you keep BYOK (bring-your-own-Anthropic-key) access to the full feature set on the free tier.</p>' +
-        '<p style="margin-top:14px"><a href="https://networkplus.certanvil.com/?action=diagnostic" class="dr-cta dr-cta-secondary" style="text-decoration:none;display:inline-grid;grid-template-columns:auto 1fr auto;padding:10px 16px"><span class="dr-cta-icon">🚀</span><span class="dr-cta-body"><span class="dr-cta-title">Open the cert app (BYOK)</span></span><span class="dr-cta-chev">→</span></a></p>' +
+        '<p>Drop your email — we\'ll send a magic link that creates your free CertAnvil account and saves these diagnostic results to your profile. No password to remember.</p>' +
+        '<form id="dr-continue-form" class="dr-continue-form" novalidate>' +
+          '<input type="email" id="dr-continue-email" name="email" required ' +
+                 'placeholder="you@example.com" autocomplete="email" ' +
+                 'aria-label="Your email address" />' +
+          '<button type="submit" id="dr-continue-submit" class="dr-cta dr-cta-secondary dr-continue-submit">' +
+            '<span class="dr-cta-icon">✉</span>' +
+            '<span class="dr-cta-body"><span class="dr-cta-title">Send magic link</span></span>' +
+            '<span class="dr-cta-chev">→</span>' +
+          '</button>' +
+        '</form>' +
+        '<div id="dr-continue-status" class="dr-continue-status" role="status" aria-live="polite"></div>' +
       '</div>' +
     '</div>' +
 
@@ -1012,6 +1078,111 @@
     if (btn) btn.addEventListener('click', function() { openStub(name); });
     var closeBtn = document.querySelector('[data-close="' + name + '"]');
     if (closeBtn) closeBtn.addEventListener('click', function() { closeStub(name); });
+  });
+
+  // ── D.5 · Continue stub form: magic-link signup + result claim handoff ─
+  // Two-step server-then-client flow:
+  //   1. POST /api/diagnostic/signup-magic-link with { email, cert,
+  //      diagnosticResults } — server validates + rate-limits + writes a
+  //      diagnostic_pending row, returns { token, redirectTo }
+  //   2. Client calls window.certanvilSupabase.auth.signInWithOtp({ email,
+  //      options: { emailRedirectTo: redirectTo } }) — Supabase auto-sends
+  //      the magic link from its configured email provider
+  // After email click → cert app's #action=claim-diagnostic&token=... hook
+  // calls claim_diagnostic_results(token) post-SIGNED_IN to merge results
+  // into profiles.metadata.diagnostic.
+  var continueForm = document.getElementById('dr-continue-form');
+  var continueStatus = document.getElementById('dr-continue-status');
+  var continueSubmit = document.getElementById('dr-continue-submit');
+  var continueEmail = document.getElementById('dr-continue-email');
+
+  function setContinueStatus(text, tone) {
+    if (!continueStatus) return;
+    continueStatus.textContent = text || '';
+    continueStatus.classList.remove('is-error', 'is-success');
+    if (tone === 'error') continueStatus.classList.add('is-error');
+    else if (tone === 'success') continueStatus.classList.add('is-success');
+  }
+
+  function setContinueBusy(busy) {
+    if (continueSubmit) continueSubmit.disabled = !!busy;
+    if (continueEmail) continueEmail.disabled = !!busy;
+  }
+
+  if (continueForm) continueForm.addEventListener('submit', function(ev) {
+    ev.preventDefault();
+    if (!continueEmail || !continueEmail.value) return;
+    var emailRaw = continueEmail.value.trim();
+    if (!emailRaw || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailRaw)) {
+      setContinueStatus('Please enter a valid email address.', 'error');
+      return;
+    }
+
+    setContinueBusy(true);
+    setContinueStatus('Sending…', null);
+
+    // Step 1 · server-side validate + rate-limit + write pending row
+    fetch('/api/diagnostic/signup-magic-link', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: emailRaw,
+        cert: results.cert || 'network-plus',
+        diagnosticResults: results,
+      }),
+    }).then(function(res) {
+      return res.json().then(function(body) { return { status: res.status, body: body }; });
+    }).then(function(r) {
+      if (r.status === 503) {
+        // Pre-config deploy — graceful degrade
+        setContinueStatus('Magic-link signup is being configured — try again in a moment, or use the BYOK cert app below.', 'error');
+        setContinueBusy(false);
+        return;
+      }
+      if (r.status === 429) {
+        setContinueStatus('Too many sign-up attempts from this IP — please wait an hour before trying again.', 'error');
+        setContinueBusy(false);
+        return;
+      }
+      if (!r.body || !r.body.ok) {
+        var msg = (r.body && r.body.error) || 'unknown_error';
+        setContinueStatus('Couldn\'t send magic link · ' + msg + ' · please try again.', 'error');
+        setContinueBusy(false);
+        return;
+      }
+
+      // Step 2 · ask Supabase to send the magic link with our emailRedirectTo
+      var sb = window.certanvilSupabase;
+      if (!sb || !sb.auth || typeof sb.auth.signInWithOtp !== 'function') {
+        setContinueStatus('Supabase client missing — please refresh and try again.', 'error');
+        setContinueBusy(false);
+        return;
+      }
+      sb.auth.signInWithOtp({
+        email: emailRaw,
+        options: {
+          emailRedirectTo: r.body.redirectTo,
+          // shouldCreateUser defaults to true · landing magic-link UX expects this
+        },
+      }).then(function(otpResp) {
+        if (otpResp && otpResp.error) {
+          setContinueStatus('Supabase auth error: ' + (otpResp.error.message || 'send_failed') + '. Please try again.', 'error');
+          setContinueBusy(false);
+          return;
+        }
+        // Success: show "check your inbox" — keep form disabled so they don't double-send
+        setContinueStatus(
+          '✓ Magic link sent to ' + emailRaw + '. Click the link in your inbox to finish signing up — your diagnostic results will land in your profile automatically.',
+          'success'
+        );
+      }).catch(function(err) {
+        setContinueStatus('Send failed: ' + (err && err.message ? err.message : 'unknown error') + '. Please try again.', 'error');
+        setContinueBusy(false);
+      });
+    }).catch(function(err) {
+      setContinueStatus('Network error: ' + (err && err.message ? err.message : 'fetch failed') + '. Please try again.', 'error');
+      setContinueBusy(false);
+    });
   });
 
   // Retake: clear session + results + go back to intake
