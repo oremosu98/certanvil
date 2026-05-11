@@ -334,7 +334,7 @@ test('Validation in runSessionStep', js.includes('aiValidateQuestions(apiKey, qu
 
 // ── Analytics v2 (v4.5) ──
 console.log('\n\x1b[1m── ANALYTICS v2 (v4.5) ──\x1b[0m');
-test('APP_VERSION is 4.99.47', js.includes("const APP_VERSION = '4.99.47"));
+test('APP_VERSION is 4.99.48', js.includes("const APP_VERSION = '4.99.48"));
 test('getDailyGoal function', js.includes('function getDailyGoal('));
 test('renderDailyGoal function', js.includes('function renderDailyGoal('));
 test('editDailyGoal function', js.includes('function editDailyGoal('));
@@ -348,7 +348,7 @@ test('CSS: .topic-domain-group', css.includes('.topic-domain-group'));
 test('CSS: .daily-goal-card', css.includes('.daily-goal-card'));
 test('CSS: .advanced-section', css.includes('.advanced-section'));
 test('CSS: .hero-stats-strip', css.includes('.hero-stats-strip'));
-test('SW cache bumped to v4.99.47', sw.includes('netplus-v4.99.47'));
+test('SW cache bumped to v4.99.48', sw.includes('netplus-v4.99.48'));
 test('Family Drill: STORAGE.PORT_FAMILY_BEST', js.includes("PORT_FAMILY_BEST:"));
 test('Family Drill: ptMode handles family', js.includes("ptMode === 'family'"));
 test('Family Drill: HTML mode button', html.includes('id="pt-mode-family"'));
@@ -18745,9 +18745,11 @@ const _appJsRawV37 = fs.readFileSync(path.join(ROOT, 'app.js'), 'utf8');
 
 // 1. Shell stub correctly wraps the lazy-load
 test('v4.99.37 Phase11b: startPhishingTriageLab is async shell stub that lazy-loads',
-  /async\s+function\s+startPhishingTriageLab\s*\(\s*\)\s*\{[\s\S]{0,400}_loadFeature\s*\(\s*["']phishing-triage["']\s*\)/.test(_appJsRawV37));
+  // v4.99.48: window bumped 400→900 since the Phase 8 desktop-only nudge
+  // check sits between the gate and the _loadFeature call.
+  /async\s+function\s+startPhishingTriageLab\s*\(\s*\)\s*\{[\s\S]{0,900}_loadFeature\s*\(\s*["']phishing-triage["']\s*\)/.test(_appJsRawV37));
 test('v4.99.37 Phase11b: shell stub gates via _gateActivityForQuota before lazy-load',
-  /async\s+function\s+startPhishingTriageLab[\s\S]{0,400}_gateActivityForQuota\([\s\S]{0,200}_loadFeature/.test(_appJsRawV37));
+  /async\s+function\s+startPhishingTriageLab[\s\S]{0,900}_gateActivityForQuota\([\s\S]{0,700}_loadFeature/.test(_appJsRawV37));
 
 // 2. PHT code REMOVED from app.js shell (regression tombstones)
 test('v4.99.37 Phase11b: regression tombstone — `function phtRenderHome` NOT in app.js shell',
@@ -18845,7 +18847,7 @@ console.log('\n\x1b[1m── v4.99.39 — PHASE 11b IRW EXTRACTION ──\x1b[0m
 const _appJsRawV39 = fs.readFileSync(path.join(ROOT, 'app.js'), 'utf8');
 
 test('v4.99.39 Phase11b: startIncidentResponseWarRoom is async shell stub',
-  /async\s+function\s+startIncidentResponseWarRoom\s*\(\s*\)\s*\{[\s\S]{0,400}_loadFeature\s*\(\s*["']incident-response["']\s*\)/.test(_appJsRawV39));
+  /async\s+function\s+startIncidentResponseWarRoom\s*\(\s*\)\s*\{[\s\S]{0,900}_loadFeature\s*\(\s*["']incident-response["']\s*\)/.test(_appJsRawV39));
 test('v4.99.39 Phase11b: shell stub gates via _gateActivityForQuota',
   /async\s+function\s+startIncidentResponseWarRoom[\s\S]{0,400}_gateActivityForQuota\(\s*["']Incident Response War Room["']\s*\)/.test(_appJsRawV39));
 test('v4.99.39 Phase11b: goSetup calls _irwTeardown for pressure-timer cleanup',
@@ -18947,7 +18949,7 @@ console.log('\n\x1b[1m── v4.99.43 — PHASE 11b ACL BUILDER EXTRACTION ─�
 const _appJsRawV43 = fs.readFileSync(path.join(ROOT, 'app.js'), 'utf8');
 
 test('v4.99.43 Phase11b: openAclBuilder is async shell stub that lazy-loads',
-  /async\s+function\s+openAclBuilder\s*\(\s*\)\s*\{[\s\S]{0,400}_loadFeature\s*\(\s*["']acl-builder["']\s*\)/.test(_appJsRawV43));
+  /async\s+function\s+openAclBuilder\s*\(\s*\)\s*\{[\s\S]{0,900}_loadFeature\s*\(\s*["']acl-builder["']\s*\)/.test(_appJsRawV43));
 test('v4.99.43 Phase11b: shell stub gates via _gateProOnly (ACL Builder is Pro)',
   /async\s+function\s+openAclBuilder[\s\S]{0,400}_gateProOnly\(\s*["']ACL Builder["']\s*\)/.test(_appJsRawV43));
 test('v4.99.43 Phase11b: regression tombstone — `function aclLoadScenario` NOT in app.js shell',
@@ -19000,11 +19002,14 @@ console.log('\n\x1b[1m── v4.99.44 — PHASE 11c TOPOLOGY BUILDER EXTRACTION 
 const _appJsRawV44 = fs.readFileSync(path.join(ROOT, 'app.js'), 'utf8');
 
 test('v4.99.44 Phase11c: openTopologyBuilder is async shell stub that lazy-loads',
-  /async\s+function\s+openTopologyBuilder\s*\(\s*\)\s*\{[\s\S]{0,800}_loadFeature\s*\(\s*["']topology-builder["']\s*\)/.test(_appJsRawV44));
+  /async\s+function\s+openTopologyBuilder\s*\(\s*\)\s*\{[\s\S]{0,1200}_loadFeature\s*\(\s*["']topology-builder["']\s*\)/.test(_appJsRawV44));
 test('v4.99.44 Phase11c: shell stub gates via _gateProOnly (Topology Builder is Pro)',
   /async\s+function\s+openTopologyBuilder[\s\S]{0,300}_gateProOnly\(\s*["']Topology Builder["']\s*\)/.test(_appJsRawV44));
 test('v4.99.44 Phase11c: shell stub performs Phase 8 desktop-only viewport check BEFORE _loadFeature',
-  /async\s+function\s+openTopologyBuilder[\s\S]{0,600}window\.innerWidth\s*<\s*900[\s\S]{0,200}return[\s\S]{0,400}_loadFeature/.test(_appJsRawV44));
+  // v4.99.48: upgraded to _isDesktopOnlyViewport helper + _showDesktopOnlyNudge.
+  // The viewport-gate semantics are preserved (still <900) but the check now
+  // goes through helpers instead of inline innerWidth comparison.
+  /async\s+function\s+openTopologyBuilder[\s\S]{0,1200}_isDesktopOnlyViewport\(\)[\s\S]{0,300}return[\s\S]{0,600}_loadFeature/.test(_appJsRawV44));
 test('v4.99.44 Phase11c: shell stub shows error toast on lazy-load failure',
   /async\s+function\s+openTopologyBuilder[\s\S]{0,1200}catch[\s\S]{0,200}showErrorToast[\s\S]{0,200}Topology Builder failed to load/.test(_appJsRawV44));
 test('v4.99.44 Phase11c: regression tombstone — `function tbGenerateAiTopology` NOT in app.js shell',
@@ -19281,6 +19286,43 @@ test('v4.99.47 Phase7: tablet block pins ana-milestones to 3-col (was 4-col on d
   /@media \(min-width:\s*768px\) and \(max-width:\s*1023px\)[\s\S]{0,2000}\.ana-milestones\s*\{[^}]*grid-template-columns:\s*repeat\(3,\s*1fr\)/.test(css));
 test('v4.99.47 Phase7: JS sidebar a11y breakpoint lowered to <768 (matches CSS)',
   /isMobile\s*=\s*window\.innerWidth\s*<\s*768/.test(js));
+
+// ── v4.99.48 — Phase 8: desktop-only nudge (5 features) ──
+// Closes the loop from Phase 7 audit: TB / ACL / IRW / PHT / Packet Trace
+// all render awkwardly at iPad portrait. Pre-Phase-8 the only signal was a
+// 3-second toast then bail — felt broken. Phase 8 replaces with a clean
+// modal overlay with Web Share / copy-link affordances to continue on
+// desktop. Same <900 viewport gate as Phase 7 sidebar pin breakpoint
+// inverse (phones <768 + iPad portrait 768-899 fire the nudge; iPad
+// landscape 900+ and desktop work normally).
+console.log('\n\x1b[1m── v4.99.48 — PHASE 8 DESKTOP-ONLY NUDGE ──\x1b[0m');
+
+test('v4.99.48 Phase8: _isDesktopOnlyViewport helper defined (gates at innerWidth < 900)',
+  /function\s+_isDesktopOnlyViewport\s*\(\s*\)\s*\{[\s\S]{0,200}innerWidth\s*<\s*900/.test(js));
+test('v4.99.48 Phase8: _showDesktopOnlyNudge helper defined',
+  /function\s+_showDesktopOnlyNudge\s*\(\s*featureName/.test(js));
+test('v4.99.48 Phase8: nudge supports Web Share API + copy-link fallback',
+  /navigator\.share/.test(js) && /clipboard\.writeText/.test(js));
+test('v4.99.48 Phase8: openTopologyBuilder fires nudge (not toast) at desktop-only viewport',
+  /async\s+function\s+openTopologyBuilder[\s\S]{0,800}_isDesktopOnlyViewport[\s\S]{0,200}_showDesktopOnlyNudge\(\s*['"]Topology Builder['"]/.test(js));
+test('v4.99.48 Phase8: openAclBuilder fires nudge at desktop-only viewport',
+  /async\s+function\s+openAclBuilder[\s\S]{0,500}_isDesktopOnlyViewport[\s\S]{0,200}_showDesktopOnlyNudge\(\s*['"]ACL Builder['"]/.test(js));
+test('v4.99.48 Phase8: startIncidentResponseWarRoom fires nudge at desktop-only viewport',
+  /async\s+function\s+startIncidentResponseWarRoom[\s\S]{0,500}_isDesktopOnlyViewport[\s\S]{0,200}_showDesktopOnlyNudge\(\s*['"]Incident Response War Room['"]/.test(js));
+test('v4.99.48 Phase8: startPhishingTriageLab fires nudge at desktop-only viewport',
+  /async\s+function\s+startPhishingTriageLab[\s\S]{0,500}_isDesktopOnlyViewport[\s\S]{0,200}_showDesktopOnlyNudge\(\s*['"]Phishing Triage Lab['"]/.test(js));
+test('v4.99.48 Phase8: startPacketTrace fires nudge at desktop-only viewport',
+  /function\s+startPacketTrace\s*\(\s*\)\s*\{[\s\S]{0,800}_isDesktopOnlyViewport[\s\S]{0,200}_showDesktopOnlyNudge\(\s*['"]Packet Trace['"]/.test(js));
+test('v4.99.48 Phase8: nudge uses dialog ARIA semantics (role + aria-modal)',
+  /setAttribute\(['"]role['"],\s*['"]dialog['"]\)/.test(js)
+  && /setAttribute\(['"]aria-modal['"],\s*['"]true['"]\)/.test(js));
+test('v4.99.48 Phase8: nudge CSS exists in stylesheet (.donudge-overlay + .donudge-card)',
+  /\.donudge-overlay\s*\{/.test(css) && /\.donudge-card\s*\{/.test(css));
+test('v4.99.48 Phase8: nudge respects prefers-reduced-motion',
+  /@media\s*\(prefers-reduced-motion:\s*reduce\)[\s\S]{0,200}\.donudge-overlay/.test(css));
+test('v4.99.48 Phase8: regression tombstone — TB no longer uses showErrorToast for desktop-only',
+  // The old "Topology Builder works best on desktop. Open on a wider screen" toast must be gone
+  !/showErrorToast\("Topology Builder works best on desktop\. Open on a wider screen\."/.test(js));
 
 // ── Summary ──
 console.log('\n' + '═'.repeat(50));

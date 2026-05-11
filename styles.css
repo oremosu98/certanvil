@@ -1,5 +1,5 @@
 /* ══════════════════════════════════════════
-   Network+ AI Quiz — styles.css  v4.99.47
+   Network+ AI Quiz — styles.css  v4.99.48
    ══════════════════════════════════════════ */
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -19720,6 +19720,112 @@ body.is-standalone {
 }
 @media (display-mode: standalone) {
   body { padding-top: max(env(safe-area-inset-top, 0px), 4px); }
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   DESKTOP-ONLY NUDGE — Phase 8 (v4.99.48, 2026-05-11)
+   ══════════════════════════════════════════════════════════════════════
+   Modal overlay that fires when a phone or iPad-portrait user tries to
+   open a desktop-only feature (TB · ACL · IRW · PHT · Packet Trace).
+   Replaces the prior 3-second toast pattern with a deliberate dismissable
+   UI that offers Web Share or copy-link to continue on desktop. */
+.donudge-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(5, 5, 8, .78);
+  z-index: 9990;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  opacity: 0;
+  transition: opacity .2s ease;
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+}
+.donudge-overlay.is-shown { opacity: 1; }
+.donudge-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 32px 28px 24px;
+  max-width: 440px;
+  width: 100%;
+  position: relative;
+  text-align: center;
+  box-shadow: 0 30px 80px rgba(124, 111, 247, .15), 0 6px 24px rgba(0, 0, 0, .5);
+  transform: translateY(8px);
+  transition: transform .25s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.donudge-overlay.is-shown .donudge-card { transform: translateY(0); }
+.donudge-close {
+  position: absolute;
+  top: 10px;
+  right: 14px;
+  background: transparent;
+  border: none;
+  color: var(--text-dim);
+  font-size: 26px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 6px 10px;
+  border-radius: 6px;
+  transition: color .15s, background .15s;
+  font-family: inherit;
+}
+.donudge-close:hover { color: var(--text); background: var(--surface2); }
+.donudge-icon { font-size: 44px; margin-bottom: 10px; }
+.donudge-title {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--text);
+  margin: 0 0 8px;
+  letter-spacing: -0.01em;
+}
+.donudge-sub {
+  font-size: 14px;
+  color: var(--text-mid);
+  line-height: 1.55;
+  margin: 0 0 20px;
+}
+.donudge-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.donudge-btn {
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  padding: 12px 18px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: transform .15s, background .15s, border-color .15s;
+}
+.donudge-btn-primary {
+  background: var(--accent);
+  color: white;
+  border-color: var(--accent);
+}
+.donudge-btn-primary:hover { background: var(--accent-light); border-color: var(--accent-light); }
+.donudge-btn-primary:active { transform: scale(.98); }
+.donudge-btn-ghost {
+  background: transparent;
+  color: var(--text-mid);
+  border-color: var(--border);
+}
+.donudge-btn-ghost:hover { background: var(--surface2); color: var(--text); }
+.donudge-foot {
+  font-size: 11px;
+  color: var(--text-dim);
+  margin: 0;
+  line-height: 1.5;
+  word-break: break-all;
+}
+@media (prefers-reduced-motion: reduce) {
+  .donudge-overlay, .donudge-card { transition: none; }
 }
 
 /* ══════════════════════════════════════════════════════════════════════

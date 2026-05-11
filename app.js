@@ -1,9 +1,9 @@
 // ══════════════════════════════════════════
-// Network+ AI Quiz — app.js  v4.99.47
+// Network+ AI Quiz — app.js  v4.99.48
 // ══════════════════════════════════════════
 
 // ── CONSTANTS ──
-const APP_VERSION = '4.99.47';
+const APP_VERSION = '4.99.48';
 // v4.99.45 (Phase 6b): expose APP_VERSION on window so the web-vitals
 // collector (lib/web-vitals-collector.js, loaded BEFORE app.js so its
 // PerformanceObservers attach earlier) can stamp this version onto every
@@ -976,6 +976,111 @@ function showSuccessToast(msg) {
   document.body.appendChild(toast);
   setTimeout(() => toast.classList.add('show'), 10);
   setTimeout(() => { toast.classList.remove('show'); setTimeout(() => toast.remove(), 300); }, 4000);
+}
+
+// ══════════════════════════════════════════
+// v4.99.48 (Phase 8) — Desktop-only nudge
+// ══════════════════════════════════════════
+// A few features (Topology Builder, ACL Builder, Incident Response War Room,
+// Phishing Triage Lab, Packet Trace) are genuinely desktop-only by design:
+// drag/drop canvases, multi-pane layouts, dense toolbars. Before Phase 8,
+// tapping them on a phone/tablet showed a 3-second toast then bailed —
+// user was left wondering what happened. Phase 8 replaces that with a clean
+// modal overlay that explains the situation + offers Web Share to email
+// themselves a link to open on desktop.
+//
+// Triggered at viewport < 900px (so phones AND iPad portrait route here;
+// iPad landscape and desktop work normally). Matches the lazy-load gate so
+// mobile users never download the feature module either.
+//
+// Usage at feature entry:
+//   if (_isDesktopOnlyViewport()) {
+//     _showDesktopOnlyNudge('Topology Builder', 'Build, simulate, and grade...');
+//     return;
+//   }
+
+function _isDesktopOnlyViewport() {
+  try {
+    return typeof window !== 'undefined' && window.innerWidth < 900;
+  } catch (_) { return false; }
+}
+
+function _showDesktopOnlyNudge(featureName, featureDescription) {
+  // Idempotent — close any prior nudge first
+  const existing = document.getElementById('desktop-only-nudge');
+  if (existing) existing.remove();
+
+  const url = (typeof location !== 'undefined') ? location.origin + location.pathname : '';
+  const canShare = typeof navigator !== 'undefined' && typeof navigator.share === 'function';
+
+  const overlay = document.createElement('div');
+  overlay.id = 'desktop-only-nudge';
+  overlay.className = 'donudge-overlay';
+  overlay.setAttribute('role', 'dialog');
+  overlay.setAttribute('aria-modal', 'true');
+  overlay.setAttribute('aria-label', featureName + ' is desktop-only');
+  overlay.innerHTML = '' +
+    '<div class="donudge-card" role="document">' +
+      '<button type="button" class="donudge-close" aria-label="Close" onclick="_closeDesktopOnlyNudge()">×</button>' +
+      '<div class="donudge-icon">🖥️</div>' +
+      '<h2 class="donudge-title">' + _escNudge(featureName) + ' works best on desktop</h2>' +
+      '<p class="donudge-sub">' + _escNudge(featureDescription) + '</p>' +
+      '<div class="donudge-actions">' +
+        (canShare
+          ? '<button type="button" class="donudge-btn donudge-btn-primary" onclick="_shareDesktopOnlyLink(' + JSON.stringify(featureName).replace(/"/g, '&quot;') + ')">📨 Send me a link to my desktop</button>'
+          : '<button type="button" class="donudge-btn donudge-btn-primary" onclick="_copyDesktopOnlyLink()">📋 Copy link to share with desktop</button>'
+        ) +
+        '<button type="button" class="donudge-btn donudge-btn-ghost" onclick="_closeDesktopOnlyNudge()">Maybe later</button>' +
+      '</div>' +
+      '<p class="donudge-foot">Tip · open ' + _escNudge(url) + ' in a browser on a laptop or desktop. Your progress syncs across devices automatically.</p>' +
+    '</div>';
+  document.body.appendChild(overlay);
+  // Fade in on next tick
+  requestAnimationFrame(() => overlay.classList.add('is-shown'));
+  // Focus the primary button for keyboard users
+  const focusBtn = overlay.querySelector('.donudge-btn-primary');
+  if (focusBtn) try { focusBtn.focus(); } catch (_) {}
+}
+
+function _closeDesktopOnlyNudge() {
+  const el = document.getElementById('desktop-only-nudge');
+  if (!el) return;
+  el.classList.remove('is-shown');
+  setTimeout(() => el.remove(), 200);
+}
+
+async function _shareDesktopOnlyLink(featureName) {
+  try {
+    await navigator.share({
+      title: 'CertAnvil · ' + featureName,
+      text: featureName + ' works best on desktop. Open this link there:',
+      url: location.origin + location.pathname
+    });
+  } catch (_) { /* user cancelled or share failed — silent */ }
+}
+
+async function _copyDesktopOnlyLink() {
+  const url = location.origin + location.pathname;
+  try {
+    await navigator.clipboard.writeText(url);
+    showSuccessToast('Link copied — paste it in a desktop browser');
+  } catch (_) {
+    showErrorToast('Copy failed — link is: ' + url);
+  }
+}
+
+function _escNudge(s) {
+  return String(s || '').replace(/[&<>"']/g, m => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  })[m]);
+}
+
+// Window-expose so onclick handlers in the dynamically-created nudge HTML
+// find them. (Pattern matches the existing tb*/acl* exposure approach.)
+if (typeof window !== 'undefined') {
+  window._closeDesktopOnlyNudge = _closeDesktopOnlyNudge;
+  window._shareDesktopOnlyLink = _shareDesktopOnlyLink;
+  window._copyDesktopOnlyLink = _copyDesktopOnlyLink;
 }
 
 // ── GitHub Issues Auto-Reporter ──
@@ -13672,8 +13777,11 @@ async function openTopologyBuilder() {
   // + the existing in-page #tb-mobile-nudge UX (rendered by the module
   // on enter()). Without lazy-load this check would still happen but
   // the user would have already paid the ~400 KB download cost.
-  if (typeof window !== "undefined" && window.innerWidth < 900) {
-    if (typeof showErrorToast === "function") showErrorToast("Topology Builder works best on desktop. Open on a wider screen.");
+  // v4.99.48 Phase 8: upgraded from toast → page-level nudge with Web Share /
+  // copy-link affordances. Same viewport gate (<900) — phones + iPad portrait.
+  if (_isDesktopOnlyViewport()) {
+    _showDesktopOnlyNudge('Topology Builder',
+      'Drag-drop network topology canvas with STP, OSPF, BGP simulation, 3D view, and 16 guided scenarios. Drag-drop and the dense toolbar are not built for touch — open this on a laptop or desktop.');
     return;
   }
   try {
@@ -16018,6 +16126,12 @@ const PT_LESSONS = _USE_NETPLUS_PT && Array.isArray(CERT_PACK.packetTraceLessons
 // ══════════════════════════════════════════
 async function startIncidentResponseWarRoom() {
   if (typeof _gateActivityForQuota === "function" && !_gateActivityForQuota("Incident Response War Room")) return;
+  // v4.99.48 Phase 8: desktop-only nudge for phones + iPad portrait.
+  if (_isDesktopOnlyViewport()) {
+    _showDesktopOnlyNudge('Incident Response War Room',
+      'Multi-pane SOC console with live timeline, evidence panes, and pressure-timer drills. Designed for 13"+ screens — open this on a laptop or desktop.');
+    return;
+  }
   try {
     var mod = await _loadFeature("incident-response");
     return mod.enter();
@@ -16036,6 +16150,12 @@ async function startIncidentResponseWarRoom() {
 // ══════════════════════════════════════════
 async function startPhishingTriageLab() {
   if (typeof _gateActivityForQuota === "function" && !_gateActivityForQuota("Phishing Triage Lab")) return;
+  // v4.99.48 Phase 8: desktop-only nudge for phones + iPad portrait.
+  if (_isDesktopOnlyViewport()) {
+    _showDesktopOnlyNudge('Phishing Triage Lab',
+      'Email-inbox UI with header inspector, link-hover preview, and a side-panel evidence builder. The inbox layout needs landscape room — open this on a laptop or desktop.');
+    return;
+  }
   try {
     var mod = await _loadFeature("phishing-triage");
     return mod.enter();
@@ -17728,6 +17848,14 @@ function startPacketTrace() {
     if (typeof showToast === 'function') showToast('Packet Trace drill is Network+ only.', 'info');
     return;
   }
+  // v4.99.48 Phase 8: desktop-only nudge for phones + iPad portrait. Packet
+  // Trace renders a wide horizontal timeline of hops + a per-hop inspector
+  // pane — the layout assumes landscape room.
+  if (_isDesktopOnlyViewport()) {
+    _showDesktopOnlyNudge('Packet Trace',
+      'Hop-by-hop wireshark-style packet inspector with a horizontal timeline + per-frame protocol decoder. The timeline needs landscape room — open this on a laptop or desktop.');
+    return;
+  }
   // If there's a resume, offer it; otherwise show dashboard
   const resume = ptrGetResume();
   if (resume && resume.scenarioId) {
@@ -18485,6 +18613,12 @@ function setQuestionText(el, raw) {
 // ══════════════════════════════════════════
 async function openAclBuilder() {
   if (typeof _gateProOnly === "function" && !_gateProOnly("ACL Builder")) return;
+  // v4.99.48 Phase 8: desktop-only nudge for phones + iPad portrait.
+  if (_isDesktopOnlyViewport()) {
+    _showDesktopOnlyNudge('ACL Builder',
+      'Multi-column firewall-rule editor with test-traffic playback and live PASS/DENY animation. The rule-table layout needs landscape room — open this on a laptop or desktop.');
+    return;
+  }
   try {
     var mod = await _loadFeature("acl-builder");
     return mod.enter();
