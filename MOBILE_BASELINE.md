@@ -121,8 +121,32 @@ Re-run Lighthouse after every Phase 7+ ship and update this doc. Target trajecto
 | 2026-05-10 22:30 | v4.99.39 | **11b (+ IRW)** | 64 | 5.4s | 5.8s | 5.6s | 80ms | 0ms |
 | 2026-05-11 11:30 | v4.99.42 | **11b (+ Subnet Trainer)** | 65 | 5.3s | 5.7s | 5.5s | 100ms | 0ms |
 | 2026-05-11 12:15 | v4.99.43 | **11b (+ ACL Builder)** | 65 | 5.0s | 5.4s | 5.0s | 40ms | 0ms |
+| 2026-05-11 _TBD_ | v4.99.44 | **11c (+ Topology Builder — THE score-jumper)** | _target 80+_ | _target 2.5-3.0s_ | _target 2.5-3.0s_ | — | — | 0 |
 | _TBD_ | — | Phase 7+8 | _target 88+_ | _target < 1.8s_ | _target < 2.0s_ | — | — | 0 |
 | _TBD_ | — | Phase 10 | _target 90+_ | _stable_ | _stable_ | — | — | 0 |
+
+### Phase 11c (Topology Builder) — pre-Lighthouse projection (2026-05-11)
+
+**This is the score-jumper ship.** Topology Builder is the biggest single feature in the cert app — 14,330 LOC of canvas rendering, AI generation, lab system, fix challenges, CLI dispatch, 3D View entry/exit, and 16 scenarios. It's also the one feature on the cert app that is genuinely **desktop-only** by design (the 1800×1100 canvas, multi-pane device palette, and drag-to-place workflow simply do not fit a phone viewport — even when scaled). Phase 11c bundles two complementary patterns into one ship:
+
+1. **Lazy-load**: the module only fetches when `openTopologyBuilder()` is called.
+2. **Phase 8 desktop-only redirect**: the shell stub checks `window.innerWidth < 900` BEFORE `_loadFeature` fires. Mobile users get a clear "open on a wider screen" toast and never download the module at all.
+
+So mobile users save the full ~350-400 KB transfer of a feature they were never going to use anyway. Desktop users still get TB on first navigation, paying the (still-improved) one-time cost.
+
+**Structural delta** (measured from git):
+- app.js shell: 33,962 lines → **19,667 lines** (-14,295 lines, **-42% in one ship**)
+- Cumulative trajectory: 41,021 (v4.99.34 baseline) → 19,667 (v4.99.44) = **-21,354 lines / -52%** since Phase 11 began
+- features/topology-builder.js: 14,505 lines new module (IIFE-wrapped)
+
+**Expected Lighthouse impact** (post-deploy re-measure pending):
+- Perf score: 65 → **80+** (the threshold-crossing ship — likely lands at App Store gate)
+- LCP: 5.4s → **2.5-3.0s** (the metric that gates "good" for both Lighthouse + Apple's App Store quality bar)
+- app.js shell transfer: 508 KB → ~250-280 KB (-45%)
+
+**The one bug caught at the wire**: post-extraction, the `await import('./tb3d.js')` inside the new IIFE silently 404'd (relative path now resolves to `/features/tb3d.js`). Symptom: clicking the 🧭 3D View pill opened it for ~50ms then auto-closed. Caught by Playwright's `tb-3d-host-active` class assertion failing across 9 tests. Fixed by changing to absolute `/tb3d.js`. UAT regression-guards both paths now. Lesson logged for future extractions: **audit dynamic-import paths during any file-relocation**.
+
+**Why this matters for the App Store roadmap**: the v4.99.34 baseline projection had Phase 11 as the ONLY phase that materially moves LCP. Phase 11a (defer) was infrastructure. Phase 11b sessions 1-6 proved the pattern across 6 features. Phase 11c is the gravity well — combined with the per-cert pack lazy-load (Phase 5) and feature module concat (Phases 11b), this is the architecture that gets the cert app into App Store distribution at end-of-June.
 
 ### Phase 11b session 1 (NA only) honest assessment (2026-05-10)
 
