@@ -334,7 +334,7 @@ test('Validation in runSessionStep', js.includes('aiValidateQuestions(apiKey, qu
 
 // ── Analytics v2 (v4.5) ──
 console.log('\n\x1b[1m── ANALYTICS v2 (v4.5) ──\x1b[0m');
-test('APP_VERSION is 4.99.61', js.includes("const APP_VERSION = '4.99.61"));
+test('APP_VERSION is 4.99.62', js.includes("const APP_VERSION = '4.99.62"));
 test('getDailyGoal function', js.includes('function getDailyGoal('));
 test('renderDailyGoal function', js.includes('function renderDailyGoal('));
 test('editDailyGoal function', js.includes('function editDailyGoal('));
@@ -348,7 +348,7 @@ test('CSS: .topic-domain-group', css.includes('.topic-domain-group'));
 test('CSS: .daily-goal-card', css.includes('.daily-goal-card'));
 test('CSS: .advanced-section', css.includes('.advanced-section'));
 test('CSS: .hero-stats-strip', css.includes('.hero-stats-strip'));
-test('SW cache bumped to v4.99.61', sw.includes('netplus-v4.99.61'));
+test('SW cache bumped to v4.99.62', sw.includes('netplus-v4.99.62'));
 test('Family Drill: STORAGE.PORT_FAMILY_BEST', js.includes("PORT_FAMILY_BEST:"));
 test('Family Drill: ptMode handles family', js.includes("ptMode === 'family'"));
 test('Family Drill: HTML mode button', html.includes('id="pt-mode-family"'));
@@ -20247,6 +20247,17 @@ test('v4.99.61 tombstone: all 3 screens link the shared system, zero inline <sty
   /diagnostic-system\.css/.test(_pickerRaw) && !/<style>/.test(_pickerRaw) &&
   /diagnostic-system\.css/.test(_intakeRaw) && !/<style>/.test(_intakeRaw) &&
   /diagnostic-system\.css/.test(_quizRaw) && !/<style>/.test(_quizRaw));
+// v4.99.62 prod-incident class-of-bug guard: a diagnostic page's
+// diagnostic-system.css link must NEVER be bare-`./`-relative. Vercel
+// cleanUrls + trailingSlash:false serves the picker at /diagnostic (no
+// slash) → `./x.css` resolves to /x.css (404, unstyled page). All
+// diagnostic CSS links must be `../diagnostic/`-prefixed (resolves to
+// /diagnostic/diagnostic-system.css in BOTH prod cleanUrls and the
+// localhost /landing/ root). Guards the PATTERN across all 4 screens.
+test('v4.99.62 class-of-bug: no diagnostic page links diagnostic-system.css via bare ./ (cleanUrls 404 trap)',
+  ![_pickerRaw, _intakeRaw, _quizRaw, _resultsD4Raw].some(s =>
+    /href="\.\/diagnostic-system\.css/.test(s)) &&
+  /href="\.\.\/diagnostic\/diagnostic-system\.css/.test(_pickerRaw));
 test('v4.99.61 tombstone: all 3 screens dark + zero em-dashes',
   /var theme = 'dark'/.test(_pickerRaw) && !_pickerRaw.includes('—') &&
   /var theme = 'dark'/.test(_intakeRaw) && !_intakeRaw.includes('—') &&
