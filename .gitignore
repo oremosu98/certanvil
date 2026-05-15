@@ -3,6 +3,17 @@
 # are project-level and DO ship — exception them in.
 .claude/*
 !.claude/skills/
+
+# Third-party skills installed via `npx skills add <owner>/<repo>` — personal
+# dev tooling, NOT CertAnvil app code. The CLI drops real content in .agents/
+# and symlinks each skill into .claude/skills/. First-party project skills
+# (e.g. .claude/skills/review-feature/) DO ship; third-party installed ones
+# never enter this brand-critical repo. Add a symlink line per new install.
+.agents/
+skills-lock.json
+.claude/skills/impeccable
+.claude/skills/emil-design-eng
+
 .vercel
 
 # Dependencies
