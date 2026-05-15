@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>Network+ Baseline · 20-Q diagnostic — CertAnvil</title>
+<title>Network+ Baseline · 20-Q diagnostic · CertAnvil</title>
 <meta name="theme-color" content="#fafbff">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="CertAnvil">
@@ -14,7 +14,7 @@
 <meta name="robots" content="noindex, nofollow">
 <script>
 (function() {
-  var theme = 'light';
+  var theme = 'dark';
   try {
     var saved = localStorage.getItem('certanvil_theme');
     if (saved === 'light' || saved === 'dark') theme = saved;
@@ -27,267 +27,7 @@
      Site key is PUBLIC (safe to embed). Dev/test key below always passes;
      production needs a real site key from dash.cloudflare.com/?to=/:account/turnstile -->
 <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
-<style>
-  /* ──────────────────────────────────────────
-     Quiz shell · self-contained styling
-     ──────────────────────────────────────────── */
-  body { padding-bottom: 40px; }
-
-  .dq-shell { max-width: 720px; margin: 0 auto; padding: 24px 18px 60px; }
-
-  /* Header bar · progress + timer + quit */
-  .dq-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    margin-bottom: 14px;
-    flex-wrap: wrap;
-  }
-  .dq-header-left {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    font-size: 13px;
-    color: var(--text-mid, #4a4b5e);
-    font-weight: 600;
-  }
-  .dq-header-right {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-  }
-  .dq-timer {
-    font-family: 'SF Mono', Monaco, monospace;
-    font-size: 14px;
-    font-weight: 700;
-    color: var(--accent, #7c6ff7);
-    background: var(--surface, #fff);
-    padding: 5px 12px;
-    border-radius: 8px;
-    border: 1px solid var(--border, rgba(0,0,0,.08));
-    min-width: 76px;
-    text-align: center;
-  }
-  .dq-timer.is-overtime { color: var(--orange, #fb923c); border-color: rgba(251,146,60,.4); }
-  .dq-timer.is-paused { color: var(--text-dim, #8a8b9c); background: var(--surface2, #f5f6f9); }
-  .dq-quit-link {
-    color: var(--text-dim, #8a8b9c);
-    text-decoration: none;
-    font-size: 12px;
-    font-weight: 600;
-    background: transparent;
-    border: none;
-    cursor: pointer;
-    padding: 4px 8px;
-    font-family: inherit;
-  }
-  .dq-quit-link:hover { color: var(--red, #ef4444); text-decoration: underline; }
-
-  /* Progress bar */
-  .dq-progress {
-    height: 6px;
-    background: var(--surface2, #f5f6f9);
-    border-radius: 3px;
-    overflow: hidden;
-    margin-bottom: 18px;
-  }
-  .dq-progress-fill {
-    height: 100%;
-    background: linear-gradient(90deg, var(--accent, #7c6ff7), var(--accent-light, #9b8df9));
-    border-radius: 3px;
-    transition: width .4s cubic-bezier(0.2, 0.8, 0.2, 1);
-  }
-
-  /* Pause banner */
-  .dq-pause-banner {
-    background: linear-gradient(135deg, rgba(56,189,248,.08), transparent);
-    border: 1px solid rgba(56,189,248,.3);
-    border-radius: 10px;
-    padding: 12px 16px;
-    margin-bottom: 18px;
-    font-size: 13px;
-    color: var(--blue, #38bdf8);
-    text-align: center;
-    display: none;
-  }
-  body.dq-paused .dq-pause-banner { display: block; }
-
-  /* Question card */
-  .dq-card {
-    background: var(--surface, #fff);
-    border: 1px solid var(--border, rgba(0,0,0,.08));
-    border-radius: 14px;
-    padding: 28px 26px;
-    margin-bottom: 18px;
-    box-shadow: 0 4px 14px rgba(0,0,0,.04);
-  }
-  .dq-card-pills {
-    display: flex;
-    gap: 6px;
-    flex-wrap: wrap;
-    margin-bottom: 14px;
-  }
-  .dq-pill {
-    font-size: 10px;
-    font-weight: 700;
-    padding: 3px 9px;
-    border-radius: 10px;
-    text-transform: uppercase;
-    letter-spacing: .05em;
-  }
-  .dq-pill-domain { background: var(--accent-dim, rgba(124,111,247,.15)); color: var(--accent, #7c6ff7); }
-  .dq-pill-difficulty { background: rgba(251,191,36,.15); color: #b45309; }
-  .dq-pill-difficulty.is-easy { background: rgba(34,197,94,.15); color: #15803d; }
-  .dq-pill-difficulty.is-hard { background: rgba(239,68,68,.15); color: #b91c1c; }
-  .dq-pill-meta { background: var(--surface2, #f5f6f9); color: var(--text-mid, #4a4b5e); }
-
-  .dq-stem {
-    font-size: 16px;
-    line-height: 1.6;
-    color: var(--text, #1a1a26);
-    margin: 0 0 22px;
-    font-weight: 500;
-  }
-
-  .dq-options { display: flex; flex-direction: column; gap: 8px; margin-bottom: 22px; }
-  .dq-option {
-    background: var(--surface, #fff);
-    border: 1.5px solid var(--border, rgba(0,0,0,.12));
-    border-radius: 10px;
-    padding: 14px 16px;
-    font-size: 14px;
-    color: var(--text, #1a1a26);
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    text-align: left;
-    font-family: inherit;
-    transition: border-color .15s, background .15s, transform .1s;
-    line-height: 1.45;
-  }
-  .dq-option:hover { border-color: var(--accent, #7c6ff7); background: rgba(124,111,247,.02); }
-  .dq-option:active { transform: scale(.998); }
-  .dq-option.is-selected {
-    border-color: var(--accent, #7c6ff7);
-    background: linear-gradient(135deg, rgba(124,111,247,.08), var(--surface, #fff));
-  }
-  .dq-option-letter {
-    background: var(--surface2, #f5f6f9);
-    color: var(--text-mid, #4a4b5e);
-    width: 28px; height: 28px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: 800;
-    font-size: 12px;
-    flex-shrink: 0;
-  }
-  .dq-option.is-selected .dq-option-letter { background: var(--accent, #7c6ff7); color: white; }
-  .dq-option-text { flex: 1; min-width: 0; }
-
-  /* Confidence section */
-  .dq-confidence {
-    margin-bottom: 22px;
-    padding-top: 18px;
-    border-top: 1px dashed var(--border, rgba(0,0,0,.1));
-  }
-  .dq-confidence-label {
-    font-size: 11px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: .08em;
-    color: var(--text-dim, #8a8b9c);
-    margin: 0 0 10px;
-  }
-  .dq-confidence-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
-    gap: 6px;
-  }
-  .dq-confidence-btn {
-    background: var(--surface, #fff);
-    border: 1.5px solid var(--border, rgba(0,0,0,.12));
-    border-radius: 8px;
-    padding: 10px 8px;
-    font-family: inherit;
-    font-size: 11px;
-    font-weight: 700;
-    color: var(--text-mid, #4a4b5e);
-    cursor: pointer;
-    text-align: center;
-    transition: border-color .15s, background .15s;
-    line-height: 1.3;
-  }
-  .dq-confidence-btn:hover { border-color: var(--accent, #7c6ff7); }
-  .dq-confidence-btn.is-selected {
-    background: linear-gradient(135deg, rgba(124,111,247,.1), var(--surface, #fff));
-    border-color: var(--accent, #7c6ff7);
-    color: var(--accent, #7c6ff7);
-  }
-  .dq-confidence-btn-emoji { font-size: 18px; display: block; margin-bottom: 2px; }
-
-  /* Footer actions */
-  .dq-actions { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
-  .dq-hint {
-    font-size: 11px;
-    color: var(--text-dim, #8a8b9c);
-    flex: 1;
-  }
-  .dq-btn {
-    font-family: inherit;
-    font-size: 14px;
-    font-weight: 700;
-    padding: 12px 22px;
-    border-radius: 10px;
-    border: 1px solid transparent;
-    cursor: pointer;
-    transition: background .15s, border-color .15s, transform .15s;
-  }
-  .dq-btn-primary { background: var(--accent, #7c6ff7); color: white; border-color: var(--accent, #7c6ff7); }
-  .dq-btn-primary:hover:not(:disabled) { background: var(--accent-light, #9b8df9); border-color: var(--accent-light, #9b8df9); }
-  .dq-btn-primary:active:not(:disabled) { transform: scale(.98); }
-  .dq-btn-primary:disabled { opacity: .4; cursor: not-allowed; }
-
-  /* No-JS / loading states */
-  .dq-loading, .dq-no-js {
-    text-align: center;
-    padding: 60px 24px;
-    color: var(--text-mid, #4a4b5e);
-  }
-  .dq-no-js { display: none; }
-  .no-js .dq-no-js { display: block; }
-  .no-js .dq-shell { display: none; }
-  .dq-loading-spinner {
-    width: 32px; height: 32px;
-    border: 3px solid var(--border, rgba(0,0,0,.12));
-    border-top-color: var(--accent, #7c6ff7);
-    border-radius: 50%;
-    animation: dq-spin .8s linear infinite;
-    margin: 0 auto 12px;
-  }
-  @keyframes dq-spin { to { transform: rotate(360deg); } }
-
-  /* Reduced motion */
-  @media (prefers-reduced-motion: reduce) {
-    .dq-progress-fill { transition: none; }
-    .dq-loading-spinner { animation: none; }
-  }
-
-  @media (max-width: 600px) {
-    .dq-card { padding: 22px 18px; }
-    .dq-stem { font-size: 15px; }
-    .dq-option { padding: 12px 14px; font-size: 13px; }
-    .dq-confidence-row { gap: 4px; }
-    .dq-confidence-btn { font-size: 10px; padding: 8px 4px; }
-    .dq-confidence-btn-emoji { font-size: 16px; }
-    .dq-actions { flex-direction: column; align-items: stretch; }
-    .dq-hint { text-align: center; }
-    .dq-btn { width: 100%; }
-  }
-</style>
+<link rel="stylesheet" href="../diagnostic-system.css?v=4.99.61">
 </head>
 <body class="no-js">
 
@@ -323,7 +63,7 @@
   <!-- v4.99.54 D.3: invisible Turnstile widget. Site key 3x...FF is Cloudflare's
        public dev/test INVISIBLE key (always passes the challenge). Prod swap to
        a real invisible-mode key from dash.cloudflare.com → Turnstile.
-       Note: data-size is NOT set — invisible mode is determined by the key
+       Note: data-size is NOT set · invisible mode is determined by the key
        itself; setting data-size="invisible" throws a TurnstileError. -->
   <div id="dq-turnstile"
        class="cf-turnstile"
@@ -338,7 +78,7 @@
     <p style="font-size:12px;color:var(--text-dim, #8a8b9c);margin-top:6px" id="dq-loading-sub">Generating 20 fresh questions across the 5 Network+ domains.</p>
   </div>
 
-  <!-- Source banner — surfaces when we fall back to the inline pool -->
+  <!-- Source banner · surfaces when we fall back to the inline pool -->
   <div id="dq-source-banner" role="status" aria-live="polite" style="display:none;background:linear-gradient(135deg,rgba(56,189,248,.06),transparent);border:1px solid rgba(56,189,248,.3);border-radius:10px;padding:10px 14px;margin-bottom:14px;font-size:12px;color:var(--blue, #38bdf8);text-align:center"></div>
 
   <!-- Live UI (built by JS) -->
@@ -358,7 +98,7 @@
     </div>
 
     <div class="dq-pause-banner" role="status" aria-live="polite">
-      ⏸ Paused — your timer froze when you switched tabs. Click here or come back to resume.
+      ⏸ Paused · your timer froze when you switched tabs. Click here or come back to resume.
     </div>
 
     <div class="dq-card">
@@ -435,7 +175,7 @@
       question: 'A streaming protocol prioritises low latency and tolerates occasional packet loss without retransmission. Which transport-layer protocol is the best fit?',
       options: { A: 'TCP (Transmission Control Protocol)', B: 'UDP (User Datagram Protocol)', C: 'ICMP (Internet Control Message Protocol)', D: 'SCTP (Stream Control Transmission Protocol)' },
       answer: 'B',
-      explanation: 'UDP is connectionless, has no retransmission, and minimal overhead — ideal for real-time streaming, VoIP, and DNS queries where speed matters more than guaranteed delivery.'
+      explanation: 'UDP is connectionless, has no retransmission, and minimal overhead · ideal for real-time streaming, VoIP, and DNS queries where speed matters more than guaranteed delivery.'
     },
     {
       id: 3, domain: 'Networking Concepts', topic: 'Ports', objective: '1.4', difficulty: 'Easy',
@@ -449,7 +189,7 @@
       question: 'A network administrator wants to enable IPv6 with minimal configuration overhead. The network has IPv6-aware devices and supports Router Advertisements. Which address-assignment method is best?',
       options: { A: 'DHCPv6 stateful', B: 'SLAAC (Stateless Address Autoconfiguration)', C: 'Static IPv6 on every host', D: 'IPv4-only with NAT64' },
       answer: 'B',
-      explanation: 'SLAAC uses Router Advertisements + EUI-64 to let hosts self-configure their IPv6 addresses without a DHCP server — minimum config for IPv6-aware networks.'
+      explanation: 'SLAAC uses Router Advertisements + EUI-64 to let hosts self-configure their IPv6 addresses without a DHCP server · minimum config for IPv6-aware networks.'
     },
     {
       id: 5, domain: 'Networking Concepts', topic: 'Subnetting', objective: '1.4', difficulty: 'Hard',
@@ -465,7 +205,7 @@
       question: 'Which routing protocol uses link-state advertisements and converges quickly by maintaining a full topology database of the area?',
       options: { A: 'RIP v2', B: 'OSPF', C: 'EIGRP', D: 'Static routing' },
       answer: 'B',
-      explanation: 'OSPF (Open Shortest Path First) is a link-state protocol — routers share LSAs to build a complete topology map and run Dijkstra to find shortest paths. RIP is distance-vector; EIGRP is hybrid.'
+      explanation: 'OSPF (Open Shortest Path First) is a link-state protocol · routers share LSAs to build a complete topology map and run Dijkstra to find shortest paths. RIP is distance-vector; EIGRP is hybrid.'
     },
     {
       id: 7, domain: 'Network Implementation', topic: 'VLANs', objective: '2.3', difficulty: 'Medium',
@@ -479,7 +219,7 @@
       question: 'Wi-Fi 6 (802.11ax) introduces which technology to allow multiple clients to communicate simultaneously by dividing a channel into smaller resource units?',
       options: { A: 'MIMO (Multiple Input Multiple Output)', B: 'OFDMA (Orthogonal Frequency Division Multiple Access)', C: 'DFS (Dynamic Frequency Selection)', D: 'Channel bonding' },
       answer: 'B',
-      explanation: 'OFDMA splits a Wi-Fi channel into multiple resource units that can serve different clients simultaneously — a major efficiency boost over the time-sliced single-client model in earlier 802.11 standards.'
+      explanation: 'OFDMA splits a Wi-Fi channel into multiple resource units that can serve different clients simultaneously · a major efficiency boost over the time-sliced single-client model in earlier 802.11 standards.'
     },
     {
       id: 9, domain: 'Network Implementation', topic: 'Switching', objective: '2.3', difficulty: 'Hard',
@@ -509,12 +249,12 @@
       question: 'A network admin wants to keep daily backups for 30 days but only retain weekly and monthly snapshots beyond that. Which strategy describes this?',
       options: { A: 'Continuous Data Protection', B: 'Grandfather-Father-Son (GFS) rotation', C: 'Single full nightly backup', D: 'Differential-only backup' },
       answer: 'B',
-      explanation: 'GFS rotates daily (Son), weekly (Father), and monthly (Grandfather) backups — daily backups age into weekly slots, which age into monthly. Industry-standard rotation for tape and cloud backups.'
+      explanation: 'GFS rotates daily (Son), weekly (Father), and monthly (Grandfather) backups · daily backups age into weekly slots, which age into monthly. Industry-standard rotation for tape and cloud backups.'
     },
     {
       id: 13, domain: 'Network Operations', topic: 'Change Management', objective: '3.2', difficulty: 'Easy',
       question: 'Before deploying a major configuration change to a production network, which step provides the safest rollback path?',
-      options: { A: 'Roll out to all devices at once', B: 'Create a backup of current configs + define a rollback plan', C: 'Skip testing in lab — deploy directly', D: 'Notify only the admin team after deployment' },
+      options: { A: 'Roll out to all devices at once', B: 'Create a backup of current configs + define a rollback plan', C: 'Skip testing in lab · deploy directly', D: 'Notify only the admin team after deployment' },
       answer: 'B',
       explanation: 'Always back up configs and document the rollback steps before any major change. Combined with lab testing and staged rollout, this is the standard change-management hygiene.'
     },
@@ -562,7 +302,7 @@
       question: 'A user can reach 8.8.8.8 via ping but cannot resolve google.com. Which is the most likely cause?',
       options: { A: 'Default gateway is misconfigured', B: 'DNS server is unreachable or misconfigured', C: 'Subnet mask is incorrect', D: 'Cable is unplugged' },
       answer: 'B',
-      explanation: 'IP connectivity works (8.8.8.8 ping succeeds) but name resolution fails — that is the textbook DNS problem. Check /etc/resolv.conf or the DNS server setting on the host.'
+      explanation: 'IP connectivity works (8.8.8.8 ping succeeds) but name resolution fails · that is the textbook DNS problem. Check /etc/resolv.conf or the DNS server setting on the host.'
     },
     {
       id: 20, domain: 'Network Troubleshooting', topic: 'Performance', objective: '5.5', difficulty: 'Hard',
@@ -614,7 +354,7 @@
   }
 
   function shuffleInlinePool() {
-    // Fisher-Yates over the inline pool — used as the fallback question source
+    // Fisher-Yates over the inline pool · used as the fallback question source
     var copy = QUESTION_POOL.slice();
     for (var i = copy.length - 1; i > 0; i--) {
       var j = Math.floor(Math.random() * (i + 1));
@@ -849,7 +589,7 @@
   }
 
   // ── 7. Timer (30:00 countdown · informational, no hard cutoff) ──
-  // v4.99.54 D.3: timer no longer auto-starts at module load — session is
+  // v4.99.54 D.3: timer no longer auto-starts at module load · session is
   // null until either the resume path restores it or the fresh-start path
   // (AI fetch or inline-pool fallback) creates it. Timer is now started
   // inside startTimer() which is called from showLive().
@@ -958,10 +698,10 @@
   function showSourceBanner(source) {
     if (!sourceBanner) return;
     if (source === 'fallback') {
-      sourceBanner.innerHTML = '📦 <strong style="font-weight:700">Local question set</strong> — high traffic right now, so we\'re using our curated 20-Q pool instead of live AI generation. Same quality, same scoring.';
+      sourceBanner.innerHTML = '📦 <strong style="font-weight:700">Local question set</strong> · high traffic right now, so we\'re using our curated 20-Q pool instead of live AI generation. Same quality, same scoring.';
       sourceBanner.style.display = 'block';
     } else if (source === 'inline') {
-      // Dev/preview mode — endpoint unconfigured. Silent (don't worry the user).
+      // Dev/preview mode · endpoint unconfigured. Silent (don't worry the user).
       sourceBanner.style.display = 'none';
     } else {
       sourceBanner.style.display = 'none';
@@ -981,14 +721,14 @@
   if (session) {
     showSourceBanner(session.source);
     showLive();
-    return;  // exit the IIFE early — no AI fetch needed
+    return;  // exit the IIFE early · no AI fetch needed
   }
 
   // ── Path B · Fresh start · AI-first with fallback ──
   loadingText.textContent = 'Preparing your diagnostic…';
   loadingSub.textContent = 'Generating 20 fresh questions across the 5 Network+ domains.';
 
-  // Turnstile callback — set on window so the cf-turnstile widget can call it
+  // Turnstile callback · set on window so the cf-turnstile widget can call it
   var turnstileSettled = false;
   var turnstileTimeoutHandle = null;
 
@@ -1009,7 +749,7 @@
 
   // Timeout: if Turnstile doesn't fire its callback within 10s, fall back.
   // This handles cases where the script is blocked by an extension / CSP /
-  // ad-blocker — common enough that we can't assume Turnstile will load.
+  // ad-blocker · common enough that we can't assume Turnstile will load.
   turnstileTimeoutHandle = setTimeout(function() {
     if (turnstileSettled) return;
     turnstileSettled = true;
@@ -1018,7 +758,7 @@
   }, TURNSTILE_TIMEOUT_MS);
 
   // Some browsers / ad-blockers strip the Turnstile script entirely. In that
-  // case `window.turnstile` is undefined after a tick. We don't wait — the
+  // case `window.turnstile` is undefined after a tick. We don't wait · the
   // timeout above catches it. But we DO check for the existence after a
   // short delay so we can fail fast with a clearer log.
   setTimeout(function() {
@@ -1064,7 +804,7 @@
           // Show a quota-specific banner via the fallback path
           bootWithFallback('fallback');
           if (sourceBanner) {
-            sourceBanner.innerHTML = '⏱ <strong style="font-weight:700">Daily limit reached</strong> — IPs are limited to 25 AI calls per 24h. We\'re using our local pool so you can still take the diagnostic. Sign up for unlimited retakes after.';
+            sourceBanner.innerHTML = '⏱ <strong style="font-weight:700">Daily limit reached</strong> · IPs are limited to 25 AI calls per 24h. We\'re using our local pool so you can still take the diagnostic. Sign up for unlimited retakes after.';
           }
           return;
         }
@@ -1085,7 +825,7 @@
         return;
       }
 
-      // Success — use AI questions
+      // Success · use AI questions
       session = createFreshSession(data.questions.slice(0, TARGET_QUESTION_COUNT), 'ai');
       persistSession();
       showSourceBanner('ai');

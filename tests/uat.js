@@ -334,7 +334,7 @@ test('Validation in runSessionStep', js.includes('aiValidateQuestions(apiKey, qu
 
 // ── Analytics v2 (v4.5) ──
 console.log('\n\x1b[1m── ANALYTICS v2 (v4.5) ──\x1b[0m');
-test('APP_VERSION is 4.99.60', js.includes("const APP_VERSION = '4.99.60"));
+test('APP_VERSION is 4.99.61', js.includes("const APP_VERSION = '4.99.61"));
 test('getDailyGoal function', js.includes('function getDailyGoal('));
 test('renderDailyGoal function', js.includes('function renderDailyGoal('));
 test('editDailyGoal function', js.includes('function editDailyGoal('));
@@ -348,7 +348,7 @@ test('CSS: .topic-domain-group', css.includes('.topic-domain-group'));
 test('CSS: .daily-goal-card', css.includes('.daily-goal-card'));
 test('CSS: .advanced-section', css.includes('.advanced-section'));
 test('CSS: .hero-stats-strip', css.includes('.hero-stats-strip'));
-test('SW cache bumped to v4.99.60', sw.includes('netplus-v4.99.60'));
+test('SW cache bumped to v4.99.61', sw.includes('netplus-v4.99.61'));
 test('Family Drill: STORAGE.PORT_FAMILY_BEST', js.includes("PORT_FAMILY_BEST:"));
 test('Family Drill: ptMode handles family', js.includes("ptMode === 'family'"));
 test('Family Drill: HTML mode button', html.includes('id="pt-mode-family"'));
@@ -19719,8 +19719,10 @@ test('v4.99.53 D.2: resumes in-progress session if returning to page (sessionSto
       || /parsed\.questions[\s\S]{0,100}length\s*===\s*TARGET_QUESTION_COUNT/.test(_dxQuizD2Raw)));
 test('v4.99.53 D.2: no-JS fallback message present (graceful degradation)',
   /class="dq-no-js"|JavaScript required/i.test(_dxQuizD2Raw));
-test('v4.99.53 D.2: reduced-motion gate for transitions',
-  /@media\s*\(prefers-reduced-motion:\s*reduce\)/.test(_dxQuizD2Raw));
+test('v4.99.53 D.2: reduced-motion gate for transitions (v4.99.61: moved to shared diagnostic-system.css)',
+  (() => { let s=''; try { s=fs.readFileSync(path.join(__dirname,'..','landing','diagnostic','diagnostic-system.css'),'utf8'); } catch(_) {}
+    return /@media\s*\(prefers-reduced-motion:\s*reduce\)/.test(s) &&
+           /\.dq-progress-fill[\s\S]{0,120}transition:\s*none/.test(s); })());
 test('v4.99.53 D.2: options use ARIA radiogroup semantics',
   /role="radiogroup"/.test(_dxQuizD2Raw)
   && /setAttribute\(\s*['"]aria-checked['"]/.test(_dxQuizD2Raw));
@@ -20236,6 +20238,28 @@ test('v4.99.60 tombstone: de-carded — score/passplan/cta/domain blocks have no
   /\.dr-passplan,[\s\S]{0,260}background:\s*none\s*!important/.test(_dgSys));
 test('v4.99.60 tombstone: token war won via html:root higher specificity',
   /html:root\s*\{/.test(_dgSys));
+
+// ── v4.99.61 increment-2 tombstones — picker/intake/quiz swept to system ──
+const _pickerRaw = (() => { try { return fs.readFileSync(path.join(__dirname,'..','landing','diagnostic','index.html'),'utf8'); } catch(_) { return ''; } })();
+const _intakeRaw = (() => { try { return fs.readFileSync(path.join(__dirname,'..','landing','diagnostic','network-plus','intake.html'),'utf8'); } catch(_) { return ''; } })();
+const _quizRaw   = (() => { try { return fs.readFileSync(path.join(__dirname,'..','landing','diagnostic','network-plus','quiz.html'),'utf8'); } catch(_) { return ''; } })();
+test('v4.99.61 tombstone: all 3 screens link the shared system, zero inline <style>',
+  /diagnostic-system\.css/.test(_pickerRaw) && !/<style>/.test(_pickerRaw) &&
+  /diagnostic-system\.css/.test(_intakeRaw) && !/<style>/.test(_intakeRaw) &&
+  /diagnostic-system\.css/.test(_quizRaw) && !/<style>/.test(_quizRaw));
+test('v4.99.61 tombstone: all 3 screens dark + zero em-dashes',
+  /var theme = 'dark'/.test(_pickerRaw) && !_pickerRaw.includes('—') &&
+  /var theme = 'dark'/.test(_intakeRaw) && !_intakeRaw.includes('—') &&
+  /var theme = 'dark'/.test(_quizRaw) && !_quizRaw.includes('—'));
+test('v4.99.61 tombstone: dx-* + dq-* systems authored in shared CSS (de-carded, tap targets, decorative emoji hidden)',
+  /PICKER \+ INTAKE\s+\(dx-\*/.test(_dgSys) && /QUIZ\s+\(dq-\*/.test(_dgSys) &&
+  /\.dx-intensity-btn-emoji\s*\{\s*display:\s*none/.test(_dgSys) &&
+  /\.dq-confidence-btn-emoji\s*\{\s*display:\s*none/.test(_dgSys));
+test('v4.99.61 tombstone: quiz stem is a real type anchor (audit fix: was 16px/500, now clamp→--dg-t2)',
+  /\.dq-stem\s*\{[\s\S]{0,120}clamp\([^)]*--dg-t2/.test(_dgSys));
+test('v4.99.61 tombstone: flow control tap targets >= 44px (dx-back/skip, dq-quit)',
+  /\.dx-back-link,\s*\.dx-skip-link\s*\{[\s\S]{0,140}min-height:\s*44px/.test(_dgSys) &&
+  /\.dq-quit-link\s*\{[\s\S]{0,200}min-height:\s*44px/.test(_dgSys));
 
 // ══════════════════════════════════════════════════════════════════════════
 // v4.99.59 — Environment Strategy · migration rollback-block convention
