@@ -334,7 +334,7 @@ test('Validation in runSessionStep', js.includes('aiValidateQuestions(apiKey, qu
 
 // ── Analytics v2 (v4.5) ──
 console.log('\n\x1b[1m── ANALYTICS v2 (v4.5) ──\x1b[0m');
-test('APP_VERSION is 4.99.58', js.includes("const APP_VERSION = '4.99.58"));
+test('APP_VERSION is 4.99.59', js.includes("const APP_VERSION = '4.99.59"));
 test('getDailyGoal function', js.includes('function getDailyGoal('));
 test('renderDailyGoal function', js.includes('function renderDailyGoal('));
 test('editDailyGoal function', js.includes('function editDailyGoal('));
@@ -348,7 +348,7 @@ test('CSS: .topic-domain-group', css.includes('.topic-domain-group'));
 test('CSS: .daily-goal-card', css.includes('.daily-goal-card'));
 test('CSS: .advanced-section', css.includes('.advanced-section'));
 test('CSS: .hero-stats-strip', css.includes('.hero-stats-strip'));
-test('SW cache bumped to v4.99.58', sw.includes('netplus-v4.99.58'));
+test('SW cache bumped to v4.99.59', sw.includes('netplus-v4.99.59'));
 test('Family Drill: STORAGE.PORT_FAMILY_BEST', js.includes("PORT_FAMILY_BEST:"));
 test('Family Drill: ptMode handles family', js.includes("ptMode === 'family'"));
 test('Family Drill: HTML mode button', html.includes('id="pt-mode-family"'));
@@ -20210,6 +20210,69 @@ test('v4.99.57 D.6: results.html print footer shows /r/{token} or canonical URL'
   /dr-print-footer/.test(_resultsD4Raw));
 test('v4.99.57 D.6: results.html reduced-motion gate still applies',
   /@media\s+\(prefers-reduced-motion/.test(_resultsD4Raw));
+
+// ══════════════════════════════════════════════════════════════════════════
+// v4.99.59 — Environment Strategy · migration rollback-block convention
+// ══════════════════════════════════════════════════════════════════════════
+// Every supabase/migrations/*.sql file dated 2026-05-12 OR LATER must carry a
+// `-- ROLLBACK` block (the documented backout plan — gated-lane discipline per
+// ENVIRONMENT_STRATEGY.md). Migrations dated BEFORE 2026-05-12 predate the
+// convention + are already applied to prod; their recovery path is Supabase
+// PITR — we do NOT retrofit fabricated reversal SQL onto them (untested
+// rollback SQL is itself a risk). The cutoff is enforced here automatically.
+console.log('\n\x1b[1m── v4.99.59 — ENVIRONMENT STRATEGY · MIGRATION ROLLBACK GUARD ──\x1b[0m');
+
+const _migDir = path.join(ROOT, 'supabase', 'migrations');
+const _ROLLBACK_CONVENTION_CUTOFF = 20260512; // YYYYMMDD — convention adopted
+
+test('v4.99.59 EnvStrategy: supabase/migrations/ directory exists', (() => {
+  try { return fs.statSync(_migDir).isDirectory(); } catch (_) { return false; }
+})());
+
+test('v4.99.59 EnvStrategy: every migration dated >= 2026-05-12 carries a -- ROLLBACK block (pre-cutoff grandfathered → PITR)', (() => {
+  let files;
+  try { files = fs.readdirSync(_migDir).filter(f => /^\d{8}_.*\.sql$/.test(f)); }
+  catch (_) { return false; }
+  const offenders = [];
+  for (const f of files) {
+    const datePrefix = parseInt(f.slice(0, 8), 10);
+    if (isNaN(datePrefix) || datePrefix < _ROLLBACK_CONVENTION_CUTOFF) continue; // grandfathered
+    let body = '';
+    try { body = fs.readFileSync(path.join(_migDir, f), 'utf8'); } catch (_) { body = ''; }
+    // Convention marker: a "-- ROLLBACK" comment line (case-insensitive).
+    if (!/^\s*--\s*ROLLBACK/im.test(body)) offenders.push(f);
+  }
+  if (offenders.length) {
+    results.errors.push('migrations missing -- ROLLBACK block: ' + offenders.join(', '));
+  }
+  return offenders.length === 0;
+})());
+
+test('v4.99.59 EnvStrategy: ENVIRONMENT_STRATEGY.md exists at repo root', (() => {
+  try { return fs.statSync(path.join(ROOT, 'ENVIRONMENT_STRATEGY.md')).isFile(); }
+  catch (_) { return false; }
+})());
+
+test('v4.99.59 EnvStrategy: CLAUDE.md Branching Strategy is the risk-tiered model (old trigger-list retired)', (() => {
+  let cm = '';
+  try { cm = fs.readFileSync(path.join(ROOT, 'CLAUDE.md'), 'utf8'); } catch (_) { return false; }
+  return /Branching Strategy\s*—\s*Risk-Tiered/.test(cm) &&
+         /ENVIRONMENT_STRATEGY\.md/.test(cm) &&
+         !/Add a `stage` branch only when one of these fires/.test(cm); // tombstone: old stance gone
+})());
+
+test('v4.99.59 EnvStrategy: SHIP_CHECKLIST.md has the Phase 0.5 risk-tier gate', (() => {
+  let sc = '';
+  try { sc = fs.readFileSync(path.join(ROOT, 'SHIP_CHECKLIST.md'), 'utf8'); } catch (_) { return false; }
+  return /Phase 0\.5 — Risk-tier gate/.test(sc) && /gated lane/i.test(sc);
+})());
+
+test('v4.99.59 EnvStrategy: PR template exists with the gated-lane checklist', (() => {
+  let pt = '';
+  try { pt = fs.readFileSync(path.join(ROOT, '.github', 'pull_request_template.md'), 'utf8'); }
+  catch (_) { return false; }
+  return /Risk tier/i.test(pt) && /Supabase branch DB/.test(pt) && /-- ROLLBACK/.test(pt);
+})());
 
 // ── Summary ──
 console.log('\n' + '═'.repeat(50));

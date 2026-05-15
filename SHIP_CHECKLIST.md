@@ -16,6 +16,33 @@ For trivial ships (single file, < 30 LOC, no schema/auth surface): skip Phase 0.
 
 ---
 
+## Phase 0.5 — Risk-tier gate: fast lane or gated lane? (decide BEFORE writing code)
+
+Full spec: [`ENVIRONMENT_STRATEGY.md`](./ENVIRONMENT_STRATEGY.md). The one question:
+
+> **Does this change touch the database schema, money, auth, or the service worker?**
+
+**Gated-lane triggers** (any one → gated lane):
+- Any file in `supabase/migrations/`
+- `landing/api/stripe/*` · `landing/api/{ai,diagnostic}/*` server endpoints
+- `auth-state.js` · `cloud-store.js` · `lib/supabase.js`
+- `sw.js` (service worker)
+- RLS policies · entitlements · `is_pro()` / quota RPCs
+
+**If GATED lane:**
+1. Work on a **feature branch**, not direct-to-`main`.
+2. Open a **PR** — this auto-spins the Supabase branch DB + Vercel preview + CI.
+3. **Smoke-test the preview URL against the branch DB.** Run the migration there FIRST.
+4. Migration files dated ≥ 2026-05-12 MUST carry a tested `-- ROLLBACK:` block (UAT-guarded). Test the rollback on the branch DB.
+5. Self-sign-off (the PR template checklist), then **squash-merge** → prod.
+6. Post-merge: confirm Supabase applied the migration to prod + run pre-prod activation (env vars + redeploy if needed).
+
+**If FAST lane:** proceed trunk-based as normal (commit → `main` → push). The rest of this checklist applies unchanged.
+
+**STOP CONDITION**: lane explicitly chosen. If gated, you are on a branch with a PR open before any further phase — do not direct-push gated changes to `main`.
+
+---
+
 ## Phase 1 — Automated checks (must pass)
 
 ### 1.1 UAT
