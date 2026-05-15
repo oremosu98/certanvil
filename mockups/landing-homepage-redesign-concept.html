@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>CertAnvil · Homepage Redesign Concept (impeccable · landing-system)</title>
+<!--
+  CONCEPT MOCKUP · not production. Establishes the LANDING design language by
+  extending the proven diagnostic-system.css editorial system site-wide.
+  Reuses the exact --dg-* OKLCH token values so coherence with the
+  now-redesigned diagnostic flow is provable, not asserted.
+
+  Impeccable framework:
+   · Register : BRAND (cold-traffic first impression · design IS the product).
+                Bolder than the product-register diagnostic: ONE expressive
+                forged hero moment, then editorial restraint below.
+   · Scene    : an IT pro, evening, found this via Reddit/a colleague,
+                skeptical (seen 100 cert sites), 30 sec to decide if it's
+                different. The forge/anvil/blueprint VOICE already wants
+                gravitas · the pixels just have to honor it.
+   · Audit fix: 44 cards / nest-3 → 0 (editorial sections + hairline cert
+                list). 16-size type smear → modular scale. light+purple+🔨
+                slop → dark editorial brass. 13 em-dash → 0. OKLCH.
+   · Coherence: same canvas, accent, type soul as the diagnostic. The seam
+                (generic landing → striking diagnostic) is closed.
+-->
+<style>
+  /* ── Dual-theme editorial token system ─────────────────────────────────
+     Cascade: base = DARK (fallback). @media prefers-color-scheme:light →
+     light tokens (OS-default for light users). html[data-theme=*] blocks
+     LAST = explicit toggle, equal specificity but later source order so the
+     user's persisted choice always beats the OS default. Both palettes
+     designed to the same editorial bar; AA-verified canvas-pixel both ways.
+     LIGHT = warm-paper (ivory, not stark white) + cool ink + forged-bronze
+     accent. DARK = cool charcoal + near-white + brass. Same soul. */
+  /* 1 · base = DARK (fallback when OS has no/dark pref and no toggle set).
+     Shared non-colour vars live here only (theme-invariant). */
+  html:root {
+    --dg-bg: oklch(0.17 0.008 275); --dg-bg-2: oklch(0.205 0.009 275);
+    --dg-rule: oklch(0.32 0.011 275); --dg-rule-soft: oklch(0.255 0.010 275);
+    --dg-text: oklch(0.96 0.006 275); --dg-text-2: oklch(0.80 0.012 275);
+    --dg-text-dim: oklch(0.725 0.013 275);
+    --dg-accent: oklch(0.80 0.125 78); --dg-accent-ink: oklch(0.20 0.030 78);
+    --dg-pass: oklch(0.74 0.150 152);
+    --maxw: 760px; --t-1: 13px; --t0: 17px; --t1: 22px; --t2: 30px;
+    --t3: 44px; --t4: 64px; --t-hero: 92px;
+    --ease: cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  /* 2 · OS prefers light → light editorial paper (the default for light-OS
+     users, e.g. the founder, when no explicit toggle has been set) */
+  @media (prefers-color-scheme: light) {
+    html:root {
+      --dg-bg: oklch(0.975 0.007 85); --dg-bg-2: oklch(0.945 0.008 85);
+      --dg-rule: oklch(0.85 0.011 85); --dg-rule-soft: oklch(0.90 0.009 85);
+      --dg-text: oklch(0.26 0.015 280); --dg-text-2: oklch(0.42 0.014 280);
+      --dg-text-dim: oklch(0.50 0.013 280);
+      --dg-accent: oklch(0.50 0.13 62); --dg-accent-ink: oklch(0.98 0.012 82);
+      --dg-pass: oklch(0.50 0.15 150);
+    }
+  }
+  /* 3 · explicit persisted toggle — these come LAST so an equal-specificity
+     html[data-theme] always beats the OS-default html:root above,
+     regardless of source-order ties. THIS is the cascade-correctness fix. */
+  html[data-theme="dark"] {
+    --dg-bg: oklch(0.17 0.008 275); --dg-bg-2: oklch(0.205 0.009 275);
+    --dg-rule: oklch(0.32 0.011 275); --dg-rule-soft: oklch(0.255 0.010 275);
+    --dg-text: oklch(0.96 0.006 275); --dg-text-2: oklch(0.80 0.012 275);
+    --dg-text-dim: oklch(0.725 0.013 275);
+    --dg-accent: oklch(0.80 0.125 78); --dg-accent-ink: oklch(0.20 0.030 78);
+    --dg-pass: oklch(0.74 0.150 152);
+  }
+  html[data-theme="light"] {
+    --dg-bg: oklch(0.975 0.007 85); --dg-bg-2: oklch(0.945 0.008 85);
+    --dg-rule: oklch(0.85 0.011 85); --dg-rule-soft: oklch(0.90 0.009 85);
+    --dg-text: oklch(0.26 0.015 280); --dg-text-2: oklch(0.42 0.014 280);
+    --dg-text-dim: oklch(0.50 0.013 280);
+    --dg-accent: oklch(0.50 0.13 62); --dg-accent-ink: oklch(0.98 0.012 82);
+    --dg-pass: oklch(0.50 0.15 150);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--dg-bg); color: var(--dg-text);
+    font-family: Inter, -apple-system, "system-ui", "Segoe UI", Roboto, sans-serif;
+    font-size: var(--t0); line-height: 1.6; -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: var(--maxw); margin: 0 auto; padding: 0 24px; }
+
+  nav.top {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 26px 0; max-width: var(--maxw); margin: 0 auto; padding-left: 24px; padding-right: 24px;
+  }
+  .brand { font-size: var(--t-1); font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--dg-text-2); }
+  .brand b { color: var(--dg-accent); }
+  .nav-r { display: flex; gap: 26px; align-items: center; font-size: var(--t-1); }
+  .nav-r a { color: var(--dg-text-dim); text-decoration: none; }
+  .nav-r a:hover { color: var(--dg-text); }
+  .nav-r .signin { color: var(--dg-text); font-weight: 600; }
+
+  /* HERO · the one expressive forged moment (brand register) */
+  .hero { padding: 80px 0 0; }
+  .kicker {
+    font-size: var(--t-1); font-weight: 700; letter-spacing: 0.18em;
+    text-transform: uppercase; color: var(--dg-text-dim); margin-bottom: 26px;
+  }
+  .hero h1 {
+    font-size: clamp(48px, 11vw, var(--t-hero));
+    font-weight: 800; letter-spacing: -0.035em; line-height: 0.98;
+    max-width: 12ch;
+  }
+  .hero h1 .forge { color: var(--dg-accent); }
+  .hero-sub {
+    margin-top: 24px; font-size: var(--t1); color: var(--dg-text-2);
+    max-width: 52ch; line-height: 1.5;
+  }
+  .hero-cta { margin-top: 40px; display: flex; align-items: center; gap: 24px; flex-wrap: wrap; }
+  .cta {
+    display: inline-flex; align-items: center; gap: 12px;
+    background: var(--dg-accent); color: var(--dg-accent-ink);
+    font: 700 var(--t0)/1 Inter, sans-serif; text-decoration: none;
+    padding: 20px 28px; border-radius: 12px;
+    transition: transform 0.15s var(--ease), filter 0.15s var(--ease);
+  }
+  .cta:hover { transform: translateY(-1px); filter: brightness(1.06); }
+  .cta-meta { font-size: var(--t-1); color: var(--dg-text-dim); letter-spacing: 0.06em; }
+  .cta-2 { color: var(--dg-text-dim); text-decoration: none; font-size: var(--t-1); font-weight: 600; }
+  .cta-2:hover { color: var(--dg-accent); }
+
+  /* SECTION primitive · label + full-width rule, never a card */
+  section { margin-top: 96px; }
+  .s-label {
+    font-size: var(--t-1); font-weight: 700; letter-spacing: 0.16em;
+    text-transform: uppercase; color: var(--dg-text-dim);
+    padding-bottom: 16px; border-bottom: 1px solid var(--dg-rule);
+  }
+  .s-head { margin-top: 26px; font-size: var(--t2); font-weight: 800; letter-spacing: -0.02em; }
+  .s-body { margin-top: 14px; font-size: var(--t0); color: var(--dg-text-2); max-width: 56ch; }
+
+  /* Cert lineup · hairline list, not 4 cards */
+  .certs { margin-top: 22px; }
+  .cert {
+    display: grid; grid-template-columns: 1fr auto auto; align-items: baseline;
+    gap: 20px; padding: 22px 2px; border-bottom: 1px solid var(--dg-rule-soft);
+    text-decoration: none; color: var(--dg-text);
+    transition: padding-left 0.15s var(--ease), color 0.15s;
+  }
+  .cert:hover { padding-left: 6px; color: var(--dg-accent); }
+  .cert-name { font-size: var(--t1); font-weight: 700; letter-spacing: -0.01em; }
+  .cert-name small { color: var(--dg-text-dim); font-size: var(--t-1); font-weight: 600; margin-left: 8px; font-variant-numeric: tabular-nums; }
+  .cert-sub { font-size: var(--t-1); color: var(--dg-text-dim); }
+  .cert-state { font-size: var(--t-1); font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; }
+  .cert-state.live { color: var(--dg-pass); }
+  .cert-state.soon { color: var(--dg-text-dim); }
+  .cert:hover .cert-state.live, .cert:hover .cert-state.soon { color: var(--dg-accent); }
+
+  /* Differentiators · editorial showcase, not a 6-icon-card grid */
+  .diff { margin-top: 30px; display: flex; flex-direction: column; gap: 34px; }
+  .diff-row { display: grid; grid-template-columns: 26px 1fr; gap: 18px; }
+  .diff-n { font-size: var(--t1); font-weight: 800; color: var(--dg-accent); font-variant-numeric: tabular-nums; }
+  .diff-row h3 { font-size: var(--t1); font-weight: 700; letter-spacing: -0.01em; margin-bottom: 6px; }
+  .diff-row p { font-size: var(--t0); color: var(--dg-text-2); max-width: 56ch; }
+
+  /* Sample-question moment · one framed example, editorial */
+  .sample {
+    margin-top: 26px; padding: 28px 0 0; border-top: 1px solid var(--dg-rule-soft);
+  }
+  .sample q { font-size: var(--t1); color: var(--dg-text); font-weight: 600; display: block; max-width: 50ch; quotes: none; line-height: 1.5; }
+  .sample q::before, .sample q::after { content: ''; }
+  .sample-opts { margin-top: 18px; display: flex; flex-direction: column; }
+  .sample-opt {
+    display: flex; gap: 14px; align-items: center; padding: 14px 0;
+    border-top: 1px solid var(--dg-rule-soft); font-size: var(--t0); color: var(--dg-text-2);
+  }
+  .sample-opt b { color: var(--dg-text-dim); font-weight: 700; width: 18px; }
+  .sample-opt.correct { color: var(--dg-text); }
+  .sample-opt.correct b { color: var(--dg-pass); }
+  .sample-note { margin-top: 16px; font-size: var(--t-1); color: var(--dg-text-dim); }
+
+  /* Guarantee line */
+  .guarantee { margin-top: 30px; font-size: var(--t1); color: var(--dg-text-2); max-width: 54ch; line-height: 1.5; }
+  .guarantee b { color: var(--dg-text); font-weight: 700; }
+
+  /* Pricing teaser · one line, not a card */
+  .price { margin-top: 26px; display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap; }
+  .price-figure { font-size: var(--t2); font-weight: 800; letter-spacing: -0.02em; }
+  .price-figure span { color: var(--dg-text-dim); font-size: var(--t0); font-weight: 500; }
+  .price a { color: var(--dg-accent); text-decoration: none; font-size: var(--t-1); font-weight: 700; }
+
+  footer {
+    margin-top: 110px; padding: 30px 0 60px;
+    border-top: 1px solid var(--dg-rule-soft);
+    display: flex; justify-content: space-between; flex-wrap: wrap; gap: 14px;
+    font-size: var(--t-1); color: var(--dg-text-dim);
+  }
+  footer nav { display: flex; gap: 24px; }
+  footer a { color: var(--dg-text-dim); text-decoration: none; }
+  footer a:hover { color: var(--dg-text-2); }
+
+  .theme-toggle {
+    background: none; border: 1px solid var(--dg-rule); border-radius: 8px;
+    color: var(--dg-text-dim); font: 600 var(--t-1)/1 Inter, sans-serif;
+    padding: 7px 12px; cursor: pointer; letter-spacing: 0.04em;
+    transition: border-color 0.15s, color 0.15s;
+  }
+  .theme-toggle:hover { border-color: var(--dg-accent); color: var(--dg-accent); }
+
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+  @media (max-width: 620px) {
+    .cert { grid-template-columns: 1fr auto; }
+    .cert-sub { display: none; }
+    section { margin-top: 68px; }
+  }
+</style>
+<script>
+  /* Flash-free: runs synchronously before <body> paints. Persisted choice
+     wins; absent → CSS @media prefers-color-scheme drives the default. */
+  (function () {
+    try {
+      var t = localStorage.getItem('certanvilTheme');
+      if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t);
+    } catch (e) {}
+  })();
+</script>
+</head>
+<body>
+
+<nav class="top">
+  <span class="brand">Cert<b>Anvil</b></span>
+  <span class="nav-r">
+    <a href="#">Why CertAnvil</a><a href="#">Certs</a><a href="#">Pricing</a>
+    <button class="theme-toggle" id="themeToggle" type="button" aria-label="Toggle light/dark theme">Theme</button>
+    <a href="#" class="signin">Sign in</a>
+  </span>
+</nav>
+
+<div class="wrap">
+  <header class="hero">
+    <div class="kicker">AI cert practice · forged from CompTIA blueprints</div>
+    <h1><span class="forge">Forge</span> your way through CompTIA certs.</h1>
+    <p class="hero-sub">AI-generated practice, a hand-curated quality bank, never the same quiz twice. Built by someone who passed Network+ using exactly this.</p>
+    <div class="hero-cta">
+      <a href="#" class="cta">Take the free diagnostic <span aria-hidden="true">&rarr;</span></a>
+      <span class="cta-meta">~30 MIN · NO ACCOUNT</span>
+      <a href="#" class="cta-2">or pick a cert &darr;</a>
+    </div>
+  </header>
+
+  <section>
+    <div class="s-label">Pick your cert</div>
+    <div class="certs">
+      <a class="cert" href="#">
+        <span class="cert-name">Network+ <small>N10-009</small><br><span class="cert-sub">90-Q exam sim · subnet trainer · topology builder · packet trace</span></span>
+        <span class="cert-state live">Live</span>
+        <span aria-hidden="true" style="color:var(--dg-text-dim)">&rarr;</span>
+      </a>
+      <a class="cert" href="#">
+        <span class="cert-name">Security+ <small>SY0-701</small><br><span class="cert-sub">IR war room · phishing triage · 121-exemplar quality bank</span></span>
+        <span class="cert-state live">Live</span>
+        <span aria-hidden="true" style="color:var(--dg-text-dim)">&rarr;</span>
+      </a>
+      <a class="cert" href="#">
+        <span class="cert-name">AZ-900 <small>Azure</small><br><span class="cert-sub">Same engine, retuned for Microsoft's cloud blueprint</span></span>
+        <span class="cert-state soon">Soon</span>
+        <span aria-hidden="true" style="color:var(--dg-text-dim)">&rarr;</span>
+      </a>
+      <a class="cert" href="#">
+        <span class="cert-name">CCNA <small>Cisco</small><br><span class="cert-sub">Goes deeper on routing: OSPF, BGP, full IOS CLI lab</span></span>
+        <span class="cert-state soon">Soon</span>
+        <span aria-hidden="true" style="color:var(--dg-text-dim)">&rarr;</span>
+      </a>
+    </div>
+  </section>
+
+  <section>
+    <div class="s-label">This is exactly what daily practice looks like</div>
+    <div class="sample">
+      <q>A company connects two branch offices over the public internet and needs all traffic between them encrypted and authenticated. Which solution fits best?</q>
+      <div class="sample-opts">
+        <div class="sample-opt"><b>A</b> A dedicated leased line between sites</div>
+        <div class="sample-opt correct"><b>B</b> A site-to-site IPsec VPN over the internet</div>
+        <div class="sample-opt"><b>C</b> A clientless SSL VPN portal</div>
+        <div class="sample-opt"><b>D</b> 802.1X port-based authentication</div>
+      </div>
+      <p class="sample-note">A real Network+ question, AI-validated against the N10-009 blueprint, hand-curated. No tricks, no recycled textbook content.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="s-label">Not flashcards. Real tools.</div>
+    <div class="diff">
+      <div class="diff-row"><span class="diff-n">1</span><div><h3>Build a real network.</h3><p>Drop devices on a canvas, cable them, run L2/L3 simulation, watch a frame trace hop by hop. Rotate the same topology into a 3D OSI stack to see the layers move.</p></div></div>
+      <div class="diff-row"><span class="diff-n">2</span><div><h3>Drill the math until it's reflex.</h3><p>Subnet trainer with 21 question types, adaptive difficulty, deterministic step-by-step feedback. A coach that cannot hallucinate the binary.</p></div></div>
+      <div class="diff-row"><span class="diff-n">3</span><div><h3>Train under exam pressure.</h3><p>90-question simulator, scaled scoring, strict mode that hides the safety rails. Security+ adds an incident-response war room on a pressure timer.</p></div></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="s-label">The deal</div>
+    <p class="guarantee"><b>Put in the work, take the exam.</b> Free tier is real, not a teaser. Pro unlocks unlimited AI generation, every cert, and a pass guarantee.</p>
+    <div class="price">
+      <span class="price-figure">$9.99<span> / mo</span></span>
+      <span class="price-figure" style="color:var(--dg-text-2)">$89<span> / yr</span></span>
+      <a href="#">See full pricing &rarr;</a>
+    </div>
+  </section>
+</div>
+
+<footer>
+  <span class="wrap" style="padding:0">certanvil.com · forged for the exam</span>
+  <nav><a href="#">Privacy</a><a href="#">Terms</a><a href="#">Contact</a></nav>
+</footer>
+
+<script>
+  (function () {
+    var btn = document.getElementById('themeToggle');
+    var mq = window.matchMedia('(prefers-color-scheme: light)');
+    function effective() {
+      var a = document.documentElement.getAttribute('data-theme');
+      if (a === 'light' || a === 'dark') return a;
+      return mq.matches ? 'light' : 'dark';   // no explicit choice → OS default
+    }
+    function label() { btn.textContent = effective() === 'light' ? 'Dark' : 'Light'; }
+    label();
+    btn.addEventListener('click', function () {
+      var next = effective() === 'light' ? 'dark' : 'light';
+      document.documentElement.setAttribute('data-theme', next);
+      try { localStorage.setItem('certanvilTheme', next); } catch (e) {}
+      label();
+    });
+    // If the user has no explicit choice, keep following the OS as it changes.
+    mq.addEventListener('change', function () {
+      if (!document.documentElement.getAttribute('data-theme')) label();
+    });
+  })();
+</script>
+
+</body>
+</html>

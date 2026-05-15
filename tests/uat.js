@@ -334,7 +334,7 @@ test('Validation in runSessionStep', js.includes('aiValidateQuestions(apiKey, qu
 
 // ── Analytics v2 (v4.5) ──
 console.log('\n\x1b[1m── ANALYTICS v2 (v4.5) ──\x1b[0m');
-test('APP_VERSION is 4.99.62', js.includes("const APP_VERSION = '4.99.62"));
+test('APP_VERSION is 4.99.63', js.includes("const APP_VERSION = '4.99.63"));
 test('getDailyGoal function', js.includes('function getDailyGoal('));
 test('renderDailyGoal function', js.includes('function renderDailyGoal('));
 test('editDailyGoal function', js.includes('function editDailyGoal('));
@@ -348,7 +348,7 @@ test('CSS: .topic-domain-group', css.includes('.topic-domain-group'));
 test('CSS: .daily-goal-card', css.includes('.daily-goal-card'));
 test('CSS: .advanced-section', css.includes('.advanced-section'));
 test('CSS: .hero-stats-strip', css.includes('.hero-stats-strip'));
-test('SW cache bumped to v4.99.62', sw.includes('netplus-v4.99.62'));
+test('SW cache bumped to v4.99.63', sw.includes('netplus-v4.99.63'));
 test('Family Drill: STORAGE.PORT_FAMILY_BEST', js.includes("PORT_FAMILY_BEST:"));
 test('Family Drill: ptMode handles family', js.includes("ptMode === 'family'"));
 test('Family Drill: HTML mode button', html.includes('id="pt-mode-family"'));
@@ -20258,10 +20258,21 @@ test('v4.99.62 class-of-bug: no diagnostic page links diagnostic-system.css via 
   ![_pickerRaw, _intakeRaw, _quizRaw, _resultsD4Raw].some(s =>
     /href="\.\/diagnostic-system\.css/.test(s)) &&
   /href="\.\.\/diagnostic\/diagnostic-system\.css/.test(_pickerRaw));
-test('v4.99.61 tombstone: all 3 screens dark + zero em-dashes',
-  /var theme = 'dark'/.test(_pickerRaw) && !_pickerRaw.includes('—') &&
-  /var theme = 'dark'/.test(_intakeRaw) && !_intakeRaw.includes('—') &&
-  /var theme = 'dark'/.test(_quizRaw) && !_quizRaw.includes('—'));
+// v4.99.63: superseded forced-dark with the dual-theme prefers-aware
+// bootstrap. The 3 screens (a) must NOT force `var theme = 'dark'`,
+// (b) must use the persisted-or-prefers bootstrap, (c) still 0 em-dash.
+test('v4.99.63 tombstone: 3 screens prefers-aware bootstrap (no forced dark) + zero em-dashes',
+  ![_pickerRaw, _intakeRaw, _quizRaw].some(s => /var theme = 'dark'/.test(s)) &&
+  [_pickerRaw, _intakeRaw, _quizRaw].every(s =>
+    /prefers-color-scheme drives default/.test(s) && !s.includes('—')));
+test('v4.99.63 dual-theme: diagnostic-system.css has the 4-block cascade, html[data-theme] LAST',
+  (() => { let s=''; try { s=fs.readFileSync(path.join(__dirname,'..','landing','diagnostic','diagnostic-system.css'),'utf8'); } catch(_) {}
+    // base html:root dark → @media prefers light → html[data-theme=dark] → html[data-theme=light], in that order
+    return /html:root\s*\{[\s\S]*?@media\s*\(prefers-color-scheme:\s*light\)[\s\S]*?html\[data-theme="dark"\][\s\S]*?html\[data-theme="light"\]/.test(s)
+      && /--dg-bg:\s*oklch\(0\.975/.test(s) && /--dg-bg:\s*oklch\(0\.17 0\.008 275\)/.test(s); })());
+test('v4.99.63 dual-theme: all 4 diagnostic pages cache-bust diagnostic-system.css at v=4.99.63',
+  [_pickerRaw, _intakeRaw, _quizRaw, _resultsD4Raw].every(s =>
+    /diagnostic-system\.css\?v=4\.99\.63/.test(s)));
 test('v4.99.61 tombstone: dx-* + dq-* systems authored in shared CSS (de-carded, tap targets, decorative emoji hidden)',
   /PICKER \+ INTAKE\s+\(dx-\*/.test(_dgSys) && /QUIZ\s+\(dq-\*/.test(_dgSys) &&
   /\.dx-intensity-btn-emoji\s*\{\s*display:\s*none/.test(_dgSys) &&

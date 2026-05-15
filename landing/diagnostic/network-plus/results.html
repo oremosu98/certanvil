@@ -17,16 +17,13 @@
 <script src="../../lib/supabase.js" defer></script>
 <script>
 (function() {
-  var theme = 'dark';
-  try {
-    var saved = localStorage.getItem('certanvilDiagnosticTheme');
-    if (!saved) saved = localStorage.getItem('certanvil_theme');
-    if (saved === 'light' || saved === 'dark') theme = saved;
-  } catch (e) {}
-  document.documentElement.setAttribute('data-theme', theme);
+  var t;
+  try { t = localStorage.getItem('certanvilTheme') || localStorage.getItem('certanvilDiagnosticTheme') || localStorage.getItem('certanvil_theme'); } catch (e) {}
+  if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t);
+  /* else: no attribute -> @media prefers-color-scheme drives default */
 })();
 </script>
-<link rel="stylesheet" href="../diagnostic-system.css?v=4.99.60">
+<link rel="stylesheet" href="../diagnostic-system.css?v=4.99.63">
 </head>
 <body>
 
