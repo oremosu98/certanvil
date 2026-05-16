@@ -282,7 +282,11 @@ html[data-theme] body .proof-of-product{padding:52px 0;}
 html[data-theme] body .pp-eyebrow{font-size:11px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:var(--dg-accent);background:none;border:0;padding:0;}
 html[data-theme] body .pp-title{font-size:var(--dg-t3);font-weight:800;letter-spacing:-0.02em;color:var(--dg-text);margin:12px 0 6px;}
 html[data-theme] body .pp-sub{font-size:var(--dg-t-1);color:var(--dg-text-dim);line-height:1.6;}
-html[data-theme] body .pp-tabs{display:inline-flex;gap:2px;border:1px solid var(--dg-rule-soft);border-radius:9px;padding:3px;margin:18px 0;}
+html[data-theme] body .pp-tabs{display:inline-flex;gap:2px;background:var(--dg-bg-2);border:1px solid var(--dg-rule-soft);border-radius:9px;padding:3px;margin:18px 0;}
+html[data-theme] body .pp-tab-dot{width:6px;height:6px;border-radius:50%;background:var(--dg-text-dim);}
+html[data-theme] body .pp-tab-dot.live{background:var(--dg-pass);}
+html[data-theme] body .pp-tab-dot.active{background:var(--dg-accent);}
+html[data-theme] body .pp-tab-dot.soon{background:var(--dg-rule);}
 html[data-theme] body .pp-tab{background:none;border:0;border-radius:6px;color:var(--dg-text-dim);font-weight:600;font-size:var(--dg-t-1);padding:8px 14px;cursor:pointer;}
 html[data-theme] body .pp-tab.is-active{background:var(--dg-bg-2);color:var(--dg-text);box-shadow:inset 0 0 0 1px var(--dg-rule);}
 html[data-theme] body .pp-mosaic{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}
@@ -299,6 +303,11 @@ html[data-theme] body .pp-foot{display:flex;align-items:center;justify-content:s
 html[data-theme] body .pp-foot-prose{font-size:var(--dg-t-1);color:var(--dg-text-dim);}
 html[data-theme] body .pp-cta-btn{display:inline-flex;align-items:center;gap:8px;background:none;border:1px solid var(--dg-rule);border-radius:9px;color:var(--dg-text);font-weight:700;font-size:var(--dg-t-1);padding:11px 16px;text-decoration:none;}
 html[data-theme] body .pp-cta-btn:hover{border-color:var(--dg-accent);color:var(--dg-accent);}
+html[data-theme] body .pp-locked{background:none;border:1px dashed var(--dg-rule);border-radius:12px;box-shadow:none;padding:40px 28px;text-align:center;}
+html[data-theme] body .pp-locked-icon{color:var(--dg-text-dim);opacity:0.7;margin-bottom:12px;}
+html[data-theme] body .pp-locked-title{color:var(--dg-text);font-weight:800;font-size:var(--dg-t1);letter-spacing:-0.01em;}
+html[data-theme] body .pp-locked-sub{color:var(--dg-text-2);font-size:var(--dg-t-1);line-height:1.6;margin-top:8px;}
+html[data-theme] body .pp-locked-eta{display:inline-block;margin-top:16px;background:color-mix(in oklab,var(--dg-accent) 8%,transparent);border:1px solid color-mix(in oklab,var(--dg-accent) 38%,transparent);border-radius:999px;padding:6px 14px;font-size:11px;font-weight:700;letter-spacing:0.04em;color:var(--dg-accent);}
 
 /* pass-guarantee band · calm */
 html[data-theme] body .pass-guarantee{margin:0;padding:52px 0;border-top:1px solid var(--dg-rule-soft);border-bottom:1px solid var(--dg-rule-soft);background:color-mix(in oklab,var(--dg-pass) 5%,transparent);text-align:center;}
@@ -317,7 +326,7 @@ html[data-theme] body .why{padding:52px 0;}
 html[data-theme] body .why-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:0;border-top:1px solid var(--dg-rule);}
 html[data-theme] body .why-item{background:none;border:0;border-right:1px solid var(--dg-rule-soft);border-radius:0;box-shadow:none;padding:24px 22px;}
 html[data-theme] body .why-item:last-child{border-right:0;}
-html[data-theme] body .why-glyph{width:30px;height:30px;display:grid;place-items:center;color:var(--dg-accent);margin-bottom:14px;}
+html[data-theme] body .why-glyph{width:30px;height:30px;display:grid;place-items:center;background:none;border:0;border-radius:0;box-shadow:none;color:var(--dg-accent);margin-bottom:14px;}
 html[data-theme] body .why-title{font-size:var(--dg-t0);font-weight:800;color:var(--dg-text);letter-spacing:-0.01em;margin-bottom:7px;}
 html[data-theme] body .why-item p{font-size:var(--dg-t-1);color:var(--dg-text-2);line-height:1.6;}
 
@@ -336,7 +345,7 @@ html[data-theme] body .faq-a strong{color:var(--dg-text);}
 html[data-theme] body .faq-a-foot{color:var(--dg-text-dim);font-size:11px;margin-top:10px;}
 
 /* de-brand inline SVG art · CSS overrides SVG presentation attrs (incl
-   the hardcoded #7c6ff7 brand purple) at any specificity → coherent
+   the hardcoded old brand-purple) at any specificity → coherent
    monochrome dg line-art, theme-aware, zero markup change */
 html[data-theme] body .pp-tile-art svg{color:var(--dg-text-2);}
 html[data-theme] body .pp-tile-art svg rect{stroke:var(--dg-rule);fill:var(--dg-bg-2);}
