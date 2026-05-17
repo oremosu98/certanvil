@@ -692,3 +692,100 @@ html[data-theme] body #page-quiz .btn-next:hover{filter:brightness(1.05);transfo
 html[data-theme] body #page-quiz .quiz-kbd-hints kbd{font:600 10px/1 var(--mono)!important;border:1px solid var(--border)!important;border-bottom-width:2px!important;border-radius:4px!important;padding:4px 6px!important;color:var(--text-mid)!important;background:var(--surface)!important;box-shadow:none!important;}
 
 @media (max-width:680px){#page-quiz .quiz-topbar{padding-left:18px;padding-right:18px;}#page-quiz .q-card,#page-quiz .progress-wrap,#page-quiz .quiz-kbd-hints{padding-left:18px;padding-right:18px;}#page-quiz .q-text{font-size:var(--t1)!important;}#page-quiz .quiz-stats .stat-pill{display:none;}}
+
+/* ────────────────────────────────────────────────────────────────────────
+   PER-SURFACE STRUCTURAL RESKIN · Batch 4e · QUIZ RESULTS (#page-results)
+   ────────────────────────────────────────────────────────────────────────
+   Faithful build of mockups/netplus-quiz-results-concept.html. #page-results
+   is a STATIC shell finish() populates (sets #result-headline innerHTML +
+   #result-sub/#r-correct/#r-wrong/#r-v2-pct/#r-elapsed/#r-streak/#r-v2-score
+   text, toggles #r-v2-verdict .results-v2-verdict-pass|-fail, paints
+   #diff-breakdown via renderResultsDifficultyBreakdown + #results-review-list
+   via _renderResultsReviewList). The locked mockup de-slops the legacy glossy
+   purple gradient hero + radial glow blob + soft-card review list + COLOURED
+   PILL verdicts into: score-as-typographic-VERDICT, hairline stat ledger,
+   hairline difficulty pair, de-carded hairline review rows with a TEXT
+   Correct/Wrong verdict (never a pill), the genuine fail signal on the
+   scoped --dg-danger semantic. Complete scoped #page-results override; zero
+   render-logic change (style only); every onclick/id preserved. The score
+   count-up is the app's existing animateCount('r-v2-score') (the mockup's one
+   purposeful motion — already present, not added). Inline emoji CSS can't
+   hide (text nodes / innerHTML literals): static 🔥 "Best streak", 📋 #btn-
+   review, 🎯 #btn-drill-mistakes (markup) + 🎯 finish() drillBtn.innerHTML
+   are stripped separately, display-only, same precedent + 0-emoji bar as the
+   prior 4 surfaces. 0 emoji · 0 hex. */
+#page-results{--t-1:12px;--t0:14px;--t1:18px;--t2:23px;--t3:30px;--t4:42px;--t5:64px;--mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;}
+html[data-theme] body #page-results{background:var(--bg);color:var(--text);}
+#page-results [hidden],#page-results .is-hidden{display:none!important;}
+
+/* shell wrap — editorial measure */
+#page-results .results-v2{max-width:880px;margin:0 auto;padding:46px 26px 70px;}
+
+/* eyebrow + display heading + lede (kill the legacy hairline ::before) */
+html[data-theme] body #page-results .results-v2-eyebrow{display:block;font-size:11px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:var(--accent)!important;font-family:inherit;margin:0 0 4px;}
+#page-results .results-v2-eyebrow::before{content:none!important;display:none!important;}
+html[data-theme] body #page-results h1.results-v2-display{font-size:var(--t5);font-weight:800;letter-spacing:-0.035em;line-height:1.02;color:var(--text)!important;margin:16px 0 8px;}
+html[data-theme] body #page-results .results-v2-display em{font-style:normal;color:var(--accent)!important;font-weight:800;}
+html[data-theme] body #page-results .results-v2-lede{font-size:var(--t1);line-height:1.5;color:var(--text-mid)!important;margin:0;max-width:560px;}
+
+/* verdict — typographic, NOT a glossy card (kill gradient/glow/shadow/radius) */
+html[data-theme] body #page-results .results-v2-hero{display:grid;grid-template-columns:1.1fr 1fr;gap:0;margin:34px 0 0!important;background:none!important;border:0!important;border-top:1px solid var(--border)!important;border-bottom:1px solid var(--border)!important;border-radius:0!important;box-shadow:none!important;overflow:visible;}
+#page-results .results-v2-hero::before{content:none!important;display:none!important;}
+html[data-theme] body #page-results .results-v2-big{position:relative;padding:34px 36px 34px 0!important;color:var(--text)!important;border:0!important;border-right:1px solid var(--dg-rule-soft)!important;}
+html[data-theme] body #page-results .results-v2-big-label{font-size:10px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--text-dim)!important;font-family:inherit;margin:0 0 14px;}
+html[data-theme] body #page-results .results-v2-big-score{font-size:var(--t5);font-weight:800;letter-spacing:-0.035em;line-height:1;color:var(--text)!important;font-variant-numeric:tabular-nums;display:flex;align-items:baseline;gap:8px;margin:0 0 16px;}
+html[data-theme] body #page-results .results-v2-big-score em{font-style:normal;font-size:var(--t2);font-weight:700;color:var(--text-dim)!important;letter-spacing:0;}
+html[data-theme] body #page-results .results-v2-verdict{display:inline-flex;align-items:center;gap:8px;font-size:var(--t-1);font-weight:800;font-family:inherit;letter-spacing:0;padding:7px 14px;border-radius:999px;border:1px solid transparent;background:none;}
+html[data-theme] body #page-results .results-v2-verdict-pass{color:var(--green)!important;border-color:color-mix(in oklab,var(--green) 40%,transparent)!important;background:color-mix(in oklab,var(--green) 8%,transparent)!important;}
+html[data-theme] body #page-results .results-v2-verdict-fail{color:var(--red)!important;border-color:color-mix(in oklab,var(--red) 45%,transparent)!important;background:color-mix(in oklab,var(--red) 8%,transparent)!important;}
+
+/* stat ledger — de-carded hairline column */
+html[data-theme] body #page-results .results-v2-side{position:relative;padding:14px 0 14px 36px!important;display:flex;flex-direction:column;gap:0;color:var(--text)!important;background:none!important;}
+html[data-theme] body #page-results .results-v2-row{display:flex;justify-content:space-between;align-items:center;padding:11px 0!important;border:0!important;border-bottom:1px solid var(--dg-rule-soft)!important;}
+html[data-theme] body #page-results .results-v2-row:last-child{border-bottom:0!important;}
+html[data-theme] body #page-results .results-v2-row .k{font-size:10px;font-weight:600;font-family:inherit;letter-spacing:0.04em;text-transform:uppercase;color:var(--text-dim)!important;}
+html[data-theme] body #page-results .results-v2-row .v{font-size:var(--t1);font-weight:800;color:var(--text)!important;font-variant-numeric:tabular-nums;letter-spacing:-0.01em;}
+html[data-theme] body #page-results .results-v2-row .v#r-correct{color:var(--green)!important;}
+html[data-theme] body #page-results .results-v2-row .v#r-wrong{color:var(--red)!important;}
+
+/* difficulty split — hairline pair (override legacy flex + kill .dstat card + rainbow inline color) */
+#page-results #diff-breakdown:empty{display:none!important;}
+html[data-theme] body #page-results #diff-breakdown.diff-breakdown{display:grid;grid-template-columns:1fr 1fr;gap:0!important;margin:0!important;border-bottom:1px solid var(--border)!important;flex-wrap:nowrap;}
+html[data-theme] body #page-results #diff-breakdown .dstat{flex:none;min-width:0;padding:20px 24px!important;background:none!important;border:0!important;border-right:1px solid var(--dg-rule-soft)!important;border-radius:0!important;text-align:center;}
+html[data-theme] body #page-results #diff-breakdown .dstat:last-child{border-right:0!important;}
+html[data-theme] body #page-results #diff-breakdown .dstat .dv{font-size:var(--t2)!important;font-weight:800;font-variant-numeric:tabular-nums;color:var(--text-dim)!important;}
+html[data-theme] body #page-results #diff-breakdown .dstat:first-child .dv{color:var(--accent)!important;}
+html[data-theme] body #page-results #diff-breakdown .dstat .dl{font-size:10px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--text-dim)!important;margin-top:5px;}
+
+/* review — de-carded hairline rows, TEXT verdict (never a coloured pill) */
+html[data-theme] body #page-results .results-v2-review{margin-top:46px!important;padding-top:0!important;border-top:0!important;}
+#page-results .results-v2-review::before{content:none!important;display:none!important;}
+#page-results .results-v2-review-head{margin-bottom:18px;}
+html[data-theme] body #page-results .results-v2-review-eyebrow{font-size:11px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:var(--accent)!important;font-family:inherit;margin:0 0 10px;padding-left:0!important;}
+#page-results .results-v2-review-eyebrow::before{content:none!important;display:none!important;}
+html[data-theme] body #page-results .results-v2-review-title{font-size:var(--t4);font-weight:800;letter-spacing:-0.03em;margin:0;color:var(--text)!important;}
+html[data-theme] body #page-results .results-v2-review-title em{font-style:normal;color:var(--accent)!important;}
+html[data-theme] body #page-results .results-v2-review-list{display:flex;flex-direction:column;border:0!important;border-radius:0!important;overflow:visible!important;}
+html[data-theme] body #page-results .results-v2-review-row{display:grid;grid-template-columns:42px 1fr 96px;gap:18px;align-items:center;padding:16px 4px!important;background:none!important;border:0!important;border-top:1px solid var(--dg-rule-soft)!important;cursor:pointer;text-align:left;font-family:inherit;color:var(--text)!important;transition:padding-left .15s ease;}
+html[data-theme] body #page-results .results-v2-review-row:last-child{border-bottom:1px solid var(--dg-rule-soft)!important;}
+html[data-theme] body #page-results .results-v2-review-row:hover{padding-left:10px!important;background:none!important;}
+html[data-theme] body #page-results .results-v2-review-num{font:700 var(--t-1)/1 var(--mono)!important;color:var(--text-dim)!important;letter-spacing:0;text-transform:none;}
+#page-results .results-v2-review-body{min-width:0;}
+html[data-theme] body #page-results .results-v2-review-q{font-size:var(--t0);font-weight:600;line-height:1.45;letter-spacing:0;margin-bottom:6px;color:var(--text)!important;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;}
+html[data-theme] body #page-results .results-v2-review-meta{font:700 10px/1.3 inherit!important;color:var(--text-dim)!important;letter-spacing:0.1em;text-transform:uppercase;opacity:1;}
+html[data-theme] body #page-results .results-v2-review-mark{justify-self:end;font-size:11px;font-weight:800;font-family:inherit;letter-spacing:0.08em;text-transform:uppercase;padding:0!important;border:0!important;border-radius:0!important;background:none!important;}
+html[data-theme] body #page-results .results-v2-review-mark-ok{color:var(--green)!important;}
+html[data-theme] body #page-results .results-v2-review-mark-bad{color:var(--red)!important;}
+html[data-theme] body #page-results .results-v2-review-empty{padding:26px 0!important;background:none!important;border:0!important;color:var(--text-dim)!important;font-size:var(--t-1);}
+
+/* actions — flex row (kill the dashed accent border-top) */
+html[data-theme] body #page-results .results-v2-cta-row{display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin-top:40px!important;padding-top:0!important;border-top:0!important;}
+#page-results .results-v2-cta-right{display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin-left:auto;}
+html[data-theme] body #page-results .results-v2-cta-row .btn{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--border)!important;border-radius:9px!important;font:600 var(--t-1)/1 Inter,-apple-system,sans-serif!important;padding:14px 18px!important;cursor:pointer;background:none!important;color:var(--text-mid)!important;box-shadow:none!important;transition:border-color .15s,color .15s;}
+html[data-theme] body #page-results .results-v2-cta-row .btn:hover{border-color:var(--accent)!important;color:var(--accent)!important;transform:none;}
+html[data-theme] body #page-results .results-v2-cta-row .btn.btn-primary{background:var(--accent)!important;border-color:var(--accent)!important;color:var(--bg)!important;}
+html[data-theme] body #page-results .results-v2-cta-row .btn.btn-primary:hover{filter:brightness(1.05);color:var(--bg)!important;}
+html[data-theme] body #page-results .results-v2-cta-back{font-size:var(--t-1);}
+
+@media (prefers-reduced-motion: reduce){#page-results .results-v2-review-row,#page-results .results-v2-cta-row .btn{transition:none;}}
+@media (max-width:720px){#page-results .results-v2{padding-left:18px;padding-right:18px;}#page-results .results-v2-hero,#page-results #diff-breakdown.diff-breakdown{grid-template-columns:1fr;}#page-results .results-v2-big{border-right:0!important;border-bottom:1px solid var(--dg-rule-soft)!important;padding:24px 0!important;}#page-results .results-v2-side{padding:14px 0!important;}#page-results #diff-breakdown .dstat{border-right:0!important;border-bottom:1px solid var(--dg-rule-soft)!important;}#page-results #diff-breakdown .dstat:last-child{border-bottom:0!important;}#page-results .results-v2-review-row{grid-template-columns:30px 1fr 70px;gap:12px;}html[data-theme] body #page-results h1.results-v2-display{font-size:var(--t4);}#page-results .results-v2-cta-right{margin-left:0;width:100%;}}

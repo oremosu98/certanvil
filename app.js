@@ -1,9 +1,9 @@
 // ══════════════════════════════════════════
-// Network+ AI Quiz — app.js  v4.99.68
+// Network+ AI Quiz — app.js  v4.99.69
 // ══════════════════════════════════════════
 
 // ── CONSTANTS ──
-const APP_VERSION = '4.99.68';
+const APP_VERSION = '4.99.69';
 // v4.99.45 (Phase 6b): expose APP_VERSION on window so the web-vitals
 // collector (lib/web-vitals-collector.js, loaded BEFORE app.js so its
 // PerformanceObservers attach earlier) can stamp this version onto every
@@ -7642,7 +7642,7 @@ function finish() {
   if (drillBtn) {
     const wrongCount = total - score;
     drillBtn.style.display = wrongCount > 0 ? '' : 'none';
-    drillBtn.innerHTML = `\u{1F3AF} Drill my ${wrongCount} mistake${wrongCount === 1 ? '' : 's'}`;
+    drillBtn.innerHTML = `Drill my ${wrongCount} mistake${wrongCount === 1 ? '' : 's'}`;
   }
 
   document.getElementById('btn-review').classList.toggle('is-hidden', log.length === 0);
