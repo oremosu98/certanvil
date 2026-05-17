@@ -1,9 +1,9 @@
 // ══════════════════════════════════════════
-// Network+ AI Quiz — app.js  v4.99.76
+// Network+ AI Quiz — app.js  v4.99.77
 // ══════════════════════════════════════════
 
 // ── CONSTANTS ──
-const APP_VERSION = '4.99.76';
+const APP_VERSION = '4.99.77';
 // v4.99.45 (Phase 6b): expose APP_VERSION on window so the web-vitals
 // collector (lib/web-vitals-collector.js, loaded BEFORE app.js so its
 // PerformanceObservers attach earlier) can stamp this version onto every
@@ -17298,6 +17298,23 @@ function ctsNextQuestion() {
   ctsRenderQuestion();
 }
 
+// v4.99.77 (Rebrand Batch 4m): the secplus-control-type-sorter mockup's
+// exact monoline SVG icon set for the 6 control types. Additive + render-
+// only (the Network Builder tbPaletteLineIcon precedent) — replaces the
+// emoji `t.icon` at every CTS type-icon site so the drill is icon-faithful
+// to the locked mockup. Inherits currentColor; sized by scoped Batch 4m.
+function _ctsLineIcon(typeId) {
+  const P = {
+    prev:  '<rect x="5" y="11" width="14" height="9" rx="2" stroke="currentColor" stroke-width="1.6"/><path d="M8 11V8a4 4 0 0 1 8 0v3" stroke="currentColor" stroke-width="1.6"/>',
+    det:   '<circle cx="11" cy="11" r="6" stroke="currentColor" stroke-width="1.6"/><path d="M16 16l4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>',
+    corr:  '<path d="M14.7 6.3a4 4 0 0 0-5.4 5.3L3 18l3 3 6.4-6.3a4 4 0 0 0 5.3-5.4l-2.6 2.6-2.4-.6-.6-2.4 2.6-2.6z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>',
+    deter: '<path d="M10.3 4l-7 12a2 2 0 0 0 1.7 3h14a2 2 0 0 0 1.7-3l-7-12a2 2 0 0 0-3.4 0z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M12 9v4M12 16h.01" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>',
+    comp:  '<path d="M4 12a8 8 0 0 1 13.7-5.7L20 8M20 4v4h-4M20 12a8 8 0 0 1-13.7 5.7L4 16M4 20v-4h4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>',
+    dir:   '<rect x="6" y="4" width="12" height="16" rx="2" stroke="currentColor" stroke-width="1.6"/><path d="M9 8h6M9 12h6M9 16h4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>'
+  };
+  return '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true">' + (P[typeId] || '') + '</svg>';
+}
+
 function ctsRenderQuestion() {
   const card = document.getElementById('cts-q-card');
   if (!card || !ctsQ) return;
@@ -17314,7 +17331,7 @@ function ctsRenderQuestion() {
       ${CTS_TYPE_IDS.map(tid => {
         const t = CTS_TYPES[tid];
         return `<button class="cts-q-opt" data-cts-type="${tid}" onclick="ctsPickType('${tid}')">
-          <span class="cts-q-opt-icon">${t.icon}</span>
+          <span class="cts-q-opt-icon">${_ctsLineIcon(tid)}</span>
           ${escHtml(t.label)}
         </button>`;
       }).join('')}
@@ -17341,9 +17358,9 @@ function ctsRenderQuestion() {
   const progEl = document.getElementById('cts-q-progress');
   const badgeEl = document.getElementById('cts-streak-badge');
   if (scoreEl) scoreEl.textContent = ctsCorrect + ' / ' + ctsTotal;
-  if (streakEl) streakEl.textContent = '🔥 ' + ctsStreak;
+  if (streakEl) streakEl.textContent = '' + ctsStreak;
   if (progEl) progEl.textContent = 'Q ' + ctsIdx + ' / ' + ctsSessionLength;
-  if (badgeEl) badgeEl.textContent = '🔥 ' + ctsStreak;
+  if (badgeEl) badgeEl.textContent = '' + ctsStreak;
 }
 
 function ctsPickType(typeId) {
@@ -17433,8 +17450,8 @@ function ctsSubmitAnswer() {
   const streakEl = document.getElementById('cts-streak');
   const badgeEl = document.getElementById('cts-streak-badge');
   if (scoreEl) scoreEl.textContent = ctsCorrect + ' / ' + ctsTotal;
-  if (streakEl) streakEl.textContent = '🔥 ' + ctsStreak;
-  if (badgeEl) badgeEl.textContent = '🔥 ' + ctsStreak;
+  if (streakEl) streakEl.textContent = '' + ctsStreak;
+  if (badgeEl) badgeEl.textContent = '' + ctsStreak;
   if (typeof evaluateMilestones === 'function') evaluateMilestones();
 }
 
@@ -17461,13 +17478,13 @@ function ctsEndSession() {
     <div class="cts-eos-card">
       <div class="cts-eos-burst">🛡</div>
       <h2 class="cts-eos-title">Drill complete.</h2>
-      <p class="cts-eos-sub">${ctsCorrect}/${ctsTotal} right &middot; ${ctsStreak >= 5 ? '🔥 ' + ctsStreak + '-question streak!' : 'Keep stacking those reps.'}</p>
+      <p class="cts-eos-sub">${ctsCorrect}/${ctsTotal} right &middot; ${ctsStreak >= 5 ? ctsStreak + '-question streak!' : 'Keep stacking those reps.'}</p>
       <div class="cts-eos-score-row">
         <div class="cts-eos-score-tile"><div class="cts-eos-score-num">${acc}%</div><div class="cts-eos-score-lbl">accuracy</div></div>
         <div class="cts-eos-score-tile"><div class="cts-eos-score-num">${ctsCorrect}</div><div class="cts-eos-score-lbl">correct</div></div>
         <div class="cts-eos-score-tile"><div class="cts-eos-score-num">${m.totalAnswered}</div><div class="cts-eos-score-lbl">total seen</div></div>
       </div>
-      ${weakest ? `<div class="cts-eos-weak">💡 <strong>Next focus:</strong> ${weakestLabel} (${Math.round(weakestAcc * 100)}% mastered) — drill weighted there next.</div>` : ''}
+      ${weakest ? `<div class="cts-eos-weak"><strong>Next focus:</strong> ${weakestLabel} (${Math.round(weakestAcc * 100)}% mastered) — drill weighted there next.</div>` : ''}
       <div class="cts-eos-actions">
         <button class="btn btn-primary" onclick="startControlTypeSorter()">Practice again →</button>
         <button class="btn btn-ghost" onclick="setCtsTab('dashboard')">Back to dashboard</button>
@@ -17500,7 +17517,7 @@ function ctsRenderLessons() {
           const tid = l.type;
           const t = CTS_TYPES[tid] || { label: tid, icon: '', color: 'var(--accent)' };
           return `
-            <div class="cts-lm-h cts-lm-row" style="color:${t.color}">${t.icon} ${escHtml(t.label)}</div>
+            <div class="cts-lm-h cts-lm-row" style="color:${t.color}">${_ctsLineIcon(tid)} ${escHtml(t.label)}</div>
             ${CTS_CAT_IDS.map(cid => {
               const examples = (l.cells && l.cells[cid]) || [];
               return `<div class="cts-lm-cell">${examples.map(e => escHtml(e)).join('<br><em>')}</em></div>`;
@@ -17510,7 +17527,7 @@ function ctsRenderLessons() {
       </div>
       <div class="cts-lesson-summaries">
         ${CTS_LESSONS.map(l => `
-          <div class="cts-lesson-sum"><span class="cts-lesson-sum-label" style="color:${(CTS_TYPES[l.type] || {}).color}">${(CTS_TYPES[l.type] || {}).icon} ${escHtml(l.title)}:</span> ${escHtml(l.summary)}</div>
+          <div class="cts-lesson-sum"><span class="cts-lesson-sum-label" style="color:${(CTS_TYPES[l.type] || {}).color}">${_ctsLineIcon(l.type)} ${escHtml(l.title)}:</span> ${escHtml(l.summary)}</div>
         `).join('')}
       </div>
     </div>
@@ -17543,7 +17560,7 @@ function ctsRenderDashboard() {
         <div class="cts-dash-type-grid">
           ${typeRows.map(r => `
             <div class="cts-dash-type-row" style="background:${r.t.color}1a;border-left:3px solid ${r.t.color}">
-              <span class="cts-dash-type-icon">${r.t.icon}</span>
+              <span class="cts-dash-type-icon">${_ctsLineIcon(r.tid)}</span>
               <span class="cts-dash-type-name">${escHtml(r.t.label)}</span>
               <span class="cts-dash-type-pct">${r.mastered}/${r.total}</span>
             </div>
@@ -17554,7 +17571,7 @@ function ctsRenderDashboard() {
         ${weakestType ? `
           <div class="cts-dash-card cts-dash-weakest">
             <div class="cts-dash-card-head">Weakest type</div>
-            <div class="cts-dash-weak-name">${weakestType.t.icon} ${escHtml(weakestType.t.label)} (${weakestType.mastered}/${weakestType.total} mastered)</div>
+            <div class="cts-dash-weak-name">${_ctsLineIcon(weakestType.tid)} ${escHtml(weakestType.t.label)} (${weakestType.mastered}/${weakestType.total} mastered)</div>
             <div class="cts-dash-weak-sub">Drill weighted there next session.</div>
           </div>
         ` : `
@@ -17563,7 +17580,7 @@ function ctsRenderDashboard() {
             <div style="font-size:12px;color:var(--text-mid);line-height:1.5">Detective vs Preventive — IDS is Detective (alerts), IPS is Preventive (blocks). Same hardware, different control type.</div>
           </div>
         `}
-        <button class="cts-dash-cta" onclick="startControlTypeSorter()">🛡 Start ${ctsSessionLength}-question MCQ drill →</button>
+        <button class="cts-dash-cta" onclick="startControlTypeSorter()">Start ${ctsSessionLength}-question MCQ drill →</button>
         <div class="cts-dash-overall">
           <div><span class="cts-dash-overall-num">${totalMastered}</span><span class="cts-dash-overall-lbl">mastered</span></div>
           <div><span class="cts-dash-overall-num">${totalSeen}</span><span class="cts-dash-overall-lbl">seen</span></div>
