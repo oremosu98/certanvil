@@ -574,7 +574,9 @@ test.describe('History & Stats Rendering', () => {
   });
 
   test('hero v2 mini cards show when history exists', async ({ page }) => {
-    // v4.54.0: #stats-card retired; hero-v2 mini cards (Today + Streak) are the replacement
+    // v4.54.0: #stats-card retired; hero-v2 mini cards (Today + Streak) are the replacement.
+    // v4.99.65 (dg Batch 4): the .hero-v2-mini-row wrapper was rebuilt to the
+    // editorial .dgh-stats strip; the #mc-* contract ids were preserved.
     await page.goto('/');
 
     await page.evaluate(() => {
@@ -587,7 +589,7 @@ test.describe('History & Stats Rendering', () => {
 
     await page.reload();
 
-    await expect(page.locator('.hero-v2-mini-row')).toBeVisible();
+    await expect(page.locator('.dgh-stats')).toBeVisible();
     await expect(page.locator('#mc-today-done')).toBeVisible();
     await expect(page.locator('#mc-streak-num')).toBeVisible();
   });
