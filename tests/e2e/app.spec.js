@@ -1914,12 +1914,19 @@ test.describe('Network Analysis Drill — Phase 1 MVP', () => {
     );
     expect(expHasState).toBe(true);
 
-    // Mastery storage updated
-    const mastery = await page.evaluate(() => JSON.parse(localStorage.getItem('nplus_na_mastery')));
-    expect(mastery).toBeTruthy();
-    const totalAnswered = ['tcpdump', 'wireshark', 'nmap', 'output-reading']
-      .reduce((sum, c) => sum + (mastery[c]?.total || 0), 0);
-    expect(totalAnswered).toBe(1);
+    // Mastery storage updated. v4.99.67 de-flake: the old assertion summed a
+    // HARD-CODED 4-category list ['tcpdump','wireshark','nmap','output-reading']
+    // and assumed the drill's RANDOM first question always landed in one of
+    // them — when it didn't (other/extra category, or differently-keyed) the
+    // sum was 0 forever and CI failed nondeterministically (it "passed on
+    // retry" only when the random draw happened to hit those 4). Count the
+    // answer for WHATEVER category it was — same intent ("exactly 1 answer
+    // recorded after 1 click"), now deterministic. Polled in case the
+    // debounced persist write also lags the explanation render by a tick.
+    await expect.poll(async () => page.evaluate(() => {
+      const m = JSON.parse(localStorage.getItem('nplus_na_mastery') || '{}');
+      return Object.values(m).reduce((sum, c) => sum + ((c && c.total) || 0), 0);
+    }), { timeout: 5000 }).toBe(1);
 
     // Click Next → new question card
     await page.locator('.na-next-row .btn').click();
