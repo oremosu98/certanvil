@@ -596,3 +596,99 @@ html[data-theme] body #page-analytics .ana-cal-day{aspect-ratio:1;width:auto!imp
 #page-analytics .ana-cal-day-sm{width:13px;height:13px;border-radius:3px;}
 
 @media (max-width:760px){#page-analytics .ana-hero-stats{grid-template-columns:1fr 1fr;}#page-analytics .ana-grid-2col,#page-analytics .ana-ms-grid{grid-template-columns:1fr;}#page-analytics .why-bar-row,#page-analytics .ana-domain-row,#page-analytics .dm-row,#page-analytics .ana-diff-item{grid-template-columns:1fr;}}
+
+/* ════════════════════════════════════════════════════════════════════════
+   PER-SURFACE STRUCTURAL RESKIN · Batch 4d · QUIZ (#page-quiz)
+   ────────────────────────────────────────────────────────────────────────
+   Faithful build of mockups/netplus-quiz-concept.html. The quiz is a STATIC
+   shell render() populates (sets text/classes on fixed ids + paints
+   #options via renderMCQ/renderMultiSelect/etc + #quiz-prog-dots). Highest-
+   focus surface: strip everything that is not the question. Complete scoped
+   #page-quiz override -> slim .qbar, question as a TYPOGRAPHIC BLOCK (not a
+   card), options as hairline rows (correct = pass-tint + pass rule, not a
+   big green soft card), quiet explanation block, bronze Next, calm. Zero
+   render-logic change (style only); every onclick/id preserved. The 🔥
+   #live-streak prefix (3 JS sites, display-only) + 📦 cache-notice (static
+   markup) are stripped separately; ✏️ .revisit-banner-icon is a span ->
+   hidden here. 0 emoji · 0 hex. */
+#page-quiz{--t-1:12px;--t0:14px;--t1:18px;--t2:23px;--mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;}
+html[data-theme] body #page-quiz{background:var(--bg);color:var(--text);}
+
+/* slim quiz bar */
+html[data-theme] body #page-quiz .quiz-topbar{display:flex;align-items:center;justify-content:space-between;gap:18px;background:none!important;border:0;border-bottom:1px solid var(--dg-rule-soft);border-radius:0;box-shadow:none;padding:12px 26px;margin:0;}
+html[data-theme] body #page-quiz .back-btn{display:inline-flex;align-items:center;gap:7px;background:none!important;border:1px solid var(--border)!important;border-radius:8px!important;color:var(--text-dim)!important;font:600 var(--t-1)/1 Inter,sans-serif;padding:8px 12px!important;cursor:pointer;box-shadow:none!important;}
+html[data-theme] body #page-quiz .back-btn:hover{border-color:var(--accent)!important;color:var(--accent)!important;}
+#page-quiz .quiz-stats{display:flex;align-items:center;gap:10px;}
+html[data-theme] body #page-quiz .stat-pill,html[data-theme] body #page-quiz .flag-btn,html[data-theme] body #page-quiz #cache-notice{display:flex;align-items:center;gap:7px;background:none!important;border:1px solid var(--border)!important;border-radius:999px!important;color:var(--text-mid)!important;font:700 var(--t-1)/1 Inter,sans-serif;padding:6px 12px!important;box-shadow:none!important;font-variant-numeric:tabular-nums;}
+html[data-theme] body #page-quiz .flag-btn{border-radius:8px!important;color:var(--text-dim)!important;cursor:pointer;}
+html[data-theme] body #page-quiz .flag-btn:hover,html[data-theme] body #page-quiz .flag-btn.flagged{border-color:var(--accent)!important;color:var(--accent)!important;}
+html[data-theme] body #page-quiz .stat-pill.streak{color:var(--accent)!important;border-color:color-mix(in oklab,var(--accent) 40%,transparent)!important;}
+#page-quiz #cache-notice{display:none;}
+#page-quiz #cache-notice.show{display:flex;}
+
+/* progress + pips */
+#page-quiz .progress-wrap{max-width:780px;margin:0 auto;padding:24px 26px 0;background:none;border:0;}
+#page-quiz .progress-label{display:flex;align-items:center;justify-content:space-between;gap:16px;color:var(--text-dim);font-size:var(--t-1);font-variant-numeric:tabular-nums;}
+#page-quiz #q-label,#page-quiz #q-pct{color:var(--text-dim);}
+html[data-theme] body #page-quiz .quiz-nav-arrow{width:30px;height:30px;border-radius:50%;border:1px solid var(--border)!important;background:none!important;color:var(--text-dim)!important;display:grid;place-items:center;cursor:pointer;box-shadow:none!important;font-size:var(--t-1);}
+html[data-theme] body #page-quiz .quiz-nav-arrow:hover:not(:disabled){border-color:var(--accent)!important;color:var(--accent)!important;}
+#page-quiz .quiz-nav-arrow:disabled{opacity:0.4;cursor:default;}
+#page-quiz .progress-bar{height:3px;border-radius:2px;background:var(--surface)!important;margin:14px 0 0;overflow:hidden;border:0!important;}
+#page-quiz .progress-fill{height:100%;background:var(--accent)!important;border-radius:2px;}
+#page-quiz .quiz-prog-dots{display:flex;gap:8px;flex-wrap:wrap;margin:22px 0 0;}
+html[data-theme] body #page-quiz .quiz-prog-dots>*{width:28px;height:28px;border-radius:50%;border:1px solid var(--border)!important;background:none!important;display:grid;place-items:center;font-size:var(--t-1);font-weight:700;color:var(--text-dim)!important;font-variant-numeric:tabular-nums;box-shadow:none!important;}
+html[data-theme] body #page-quiz .quiz-prog-dots>.correct,html[data-theme] body #page-quiz .quiz-prog-dots>.done{border-color:var(--green)!important;color:var(--green)!important;}
+html[data-theme] body #page-quiz .quiz-prog-dots>.wrong{border-color:var(--red)!important;color:var(--red)!important;}
+html[data-theme] body #page-quiz .quiz-prog-dots>.current,html[data-theme] body #page-quiz .quiz-prog-dots>.active{background:var(--accent)!important;border-color:var(--accent)!important;color:var(--bg)!important;}
+
+/* the question — typographic block, NOT a card */
+html[data-theme] body #page-quiz .q-card{max-width:780px;margin:0 auto;background:none!important;border:0!important;border-radius:0!important;box-shadow:none!important;backdrop-filter:none!important;padding:26px 26px 60px!important;}
+#page-quiz .q-meta{display:flex;align-items:center;gap:12px;margin-bottom:14px;}
+#page-quiz .q-num{font-size:var(--t-1);font-weight:800;color:var(--text-dim);font-variant-numeric:tabular-nums;}
+html[data-theme] body #page-quiz .diff-badge{font-size:10px!important;font-weight:800!important;letter-spacing:0.12em!important;text-transform:uppercase!important;color:var(--accent)!important;background:none!important;border:0!important;padding:0!important;border-radius:0!important;}
+html[data-theme] body #page-quiz .pbq-badge{font-size:10px;font-weight:800;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-dim);background:none!important;border:1px solid var(--border)!important;border-radius:999px;padding:3px 9px!important;}
+html[data-theme] body #page-quiz .q-text{font-size:var(--t2)!important;font-weight:800!important;letter-spacing:-0.02em!important;line-height:1.35!important;color:var(--text)!important;margin-bottom:26px!important;}
+html[data-theme] body #page-quiz .q-scenario{background:color-mix(in oklab,var(--accent) 5%,transparent)!important;border:1px solid var(--dg-rule-soft)!important;border-left:2px solid var(--accent)!important;border-radius:10px!important;padding:14px 16px!important;margin-bottom:20px!important;font-size:var(--t-1);color:var(--text-mid);box-shadow:none!important;}
+
+/* options — hairline rows; correct = pass-tint + pass rule (not a big card) */
+#page-quiz .options{display:block;}
+html[data-theme] body #page-quiz .option{display:flex;align-items:center;gap:16px;width:100%;text-align:left;background:none!important;border:1px solid var(--dg-rule-soft)!important;border-radius:11px!important;padding:16px 18px!important;margin-bottom:11px!important;cursor:pointer;color:var(--text-mid)!important;font:600 var(--t0)/1.45 Inter,sans-serif!important;box-shadow:none!important;transform:none!important;}
+html[data-theme] body #page-quiz .option:hover:not(.correct):not(.wrong):not(.reveal-correct){border-color:var(--accent)!important;color:var(--text)!important;background:none!important;}
+html[data-theme] body #page-quiz .option .opt-letter,html[data-theme] body #page-quiz .option .ms-checkbox{flex:none;width:28px;height:28px;border-radius:7px;background:var(--surface)!important;display:grid;place-items:center;font-weight:800;font-size:var(--t-1);color:var(--text-dim)!important;border:0!important;}
+#page-quiz .option .opt-text{flex:1;min-width:0;}
+html[data-theme] body #page-quiz .option.correct,html[data-theme] body #page-quiz .option.reveal-correct{border-color:var(--green)!important;background:color-mix(in oklab,var(--green) 9%,transparent)!important;color:var(--text)!important;}
+html[data-theme] body #page-quiz .option.correct .opt-letter,html[data-theme] body #page-quiz .option.reveal-correct .opt-letter,html[data-theme] body #page-quiz .option.correct .ms-checkbox{background:var(--green)!important;color:var(--bg)!important;}
+html[data-theme] body #page-quiz .option.wrong{border-color:var(--red)!important;background:color-mix(in oklab,var(--red) 9%,transparent)!important;color:var(--text)!important;}
+html[data-theme] body #page-quiz .option.wrong .opt-letter{background:var(--red)!important;color:var(--bg)!important;}
+html[data-theme] body #page-quiz .option.exam-selected,html[data-theme] body #page-quiz .option.ms-selected,html[data-theme] body #page-quiz .option.selected{border-color:var(--accent)!important;background:color-mix(in oklab,var(--accent) 8%,transparent)!important;color:var(--text)!important;}
+
+/* explanation — quiet bordered block */
+html[data-theme] body #page-quiz .explanation-box{margin-top:18px!important;background:color-mix(in oklab,var(--green) 5%,transparent)!important;border:1px solid var(--dg-rule-soft)!important;border-left:2px solid var(--green)!important;border-radius:10px!important;padding:18px 20px!important;box-shadow:none!important;color:var(--text-mid)!important;}
+#page-quiz .explanation-box.is-hidden{display:none!important;}
+html[data-theme] body #page-quiz #exp-label{display:block;font-size:var(--t-1);font-weight:800;color:var(--green)!important;margin-bottom:9px;}
+#page-quiz #exp-text{font-size:var(--t0);line-height:1.65;color:var(--text-mid);}
+#page-quiz #exp-text strong,#page-quiz #exp-box strong{color:var(--text);font-weight:700;}
+#page-quiz .exp-wrong-explain{margin-top:10px;color:var(--text-dim);font-size:var(--t-1);}
+/* generic ghost for explanation action buttons (Explain Further / Report) */
+html[data-theme] body #page-quiz #exp-box button:not(.btn-next){display:inline-flex;align-items:center;gap:7px;border:1px solid var(--border)!important;border-radius:8px!important;padding:9px 13px!important;font:600 var(--t-1)/1 Inter,sans-serif;color:var(--text-dim)!important;background:none!important;box-shadow:none!important;cursor:pointer;margin:0 9px 0 0;}
+html[data-theme] body #page-quiz #exp-box button:not(.btn-next):hover{border-color:var(--accent)!important;color:var(--accent)!important;}
+#page-quiz #exp-box .resource-link{margin-top:16px;margin-bottom:9px;}
+/* the Study link is the PROMINENT accent affordance (mockup .study) — wins
+   over the generic ghost above via later source order + equal specificity */
+html[data-theme] body #page-quiz #exp-box a,html[data-theme] body #page-quiz #exp-box .study-link,html[data-theme] body #page-quiz #exp-box [class*="study"],html[data-theme] body #page-quiz #exp-box .resource-link button,html[data-theme] body #page-quiz #exp-box .resource-dive-btn{display:inline-flex;align-items:center;gap:8px;border:1px solid color-mix(in oklab,var(--accent) 40%,transparent)!important;border-radius:8px!important;padding:9px 13px!important;font:700 var(--t-1)/1 Inter,sans-serif!important;color:var(--accent)!important;background:color-mix(in oklab,var(--accent) 8%,transparent)!important;text-decoration:none;box-shadow:none!important;cursor:pointer;}
+html[data-theme] body #page-quiz #exp-box .resource-link button:hover,html[data-theme] body #page-quiz #exp-box .resource-dive-btn:hover{filter:brightness(1.08);}
+
+/* revisit banner — quiet note; hide the ✏️ icon span */
+html[data-theme] body #page-quiz .quiz-revisit-banner{background:none!important;border:0!important;border-top:1px solid var(--dg-rule-soft)!important;border-radius:0!important;box-shadow:none!important;padding:14px 0 0!important;margin-top:16px!important;font-size:var(--t-1);color:var(--text-dim)!important;}
+#page-quiz .quiz-revisit-banner.is-hidden{display:none!important;}
+#page-quiz .revisit-banner-icon{display:none!important;}
+
+/* Next + keyboard hints */
+#page-quiz .next-btn-row{display:flex;justify-content:flex-end;margin-top:24px;}
+html[data-theme] body #page-quiz .btn-next{display:inline-flex;align-items:center;gap:9px;background:var(--accent)!important;color:var(--bg)!important;border:0!important;border-radius:10px!important;font:800 var(--t0)/1 Inter,-apple-system,sans-serif!important;padding:15px 26px!important;cursor:pointer;box-shadow:none!important;}
+html[data-theme] body #page-quiz .btn-next:hover{filter:brightness(1.05);transform:none;box-shadow:none!important;}
+#page-quiz .quiz-kbd-hints{display:flex;align-items:center;justify-content:center;gap:22px;max-width:780px;margin:34px auto 0;font-size:var(--t-1);color:var(--text-dim);flex-wrap:wrap;}
+#page-quiz .quiz-kbd-hints span{display:inline-flex;align-items:center;gap:8px;}
+html[data-theme] body #page-quiz .quiz-kbd-hints kbd{font:600 10px/1 var(--mono)!important;border:1px solid var(--border)!important;border-bottom-width:2px!important;border-radius:4px!important;padding:4px 6px!important;color:var(--text-mid)!important;background:var(--surface)!important;box-shadow:none!important;}
+
+@media (max-width:680px){#page-quiz .quiz-topbar{padding-left:18px;padding-right:18px;}#page-quiz .q-card,#page-quiz .progress-wrap,#page-quiz .quiz-kbd-hints{padding-left:18px;padding-right:18px;}#page-quiz .q-text{font-size:var(--t1)!important;}#page-quiz .quiz-stats .stat-pill{display:none;}}

@@ -1,9 +1,9 @@
 // ══════════════════════════════════════════
-// Network+ AI Quiz — app.js  v4.99.67
+// Network+ AI Quiz — app.js  v4.99.68
 // ══════════════════════════════════════════
 
 // ── CONSTANTS ──
-const APP_VERSION = '4.99.67';
+const APP_VERSION = '4.99.68';
 // v4.99.45 (Phase 6b): expose APP_VERSION on window so the web-vitals
 // collector (lib/web-vitals-collector.js, loaded BEFORE app.js so its
 // PerformanceObservers attach earlier) can stamp this version onto every
@@ -6835,7 +6835,7 @@ function render() {
   const qType = getQType(q);
 
   document.getElementById('live-score').textContent  = `${score} / ${answered}`;
-  document.getElementById('live-streak').textContent = `\u{1F525} ${streak}`;
+  document.getElementById('live-streak').textContent = `Streak ${streak}`;
   document.getElementById('q-label').textContent     = `Question ${current + 1} of ${total}`;
   document.getElementById('q-pct').textContent       = pct + '%';
   document.getElementById('prog-fill').style.width   = pct + '%';
@@ -7480,24 +7480,24 @@ function showExplanation(q, isRight, entryOverride) {
   const res = topicResources[qTopic];
   let extraHtml = '';
   if (res) {
-    extraHtml += '<div class="resource-link"><button class="resource-dive-btn" onclick="showTopicDeepDive(\'' + escHtml(qTopic).replace(/'/g, "\\'") + '\')">📚 Study: ' + escHtml(res.title) + ' (Obj ' + res.obj + ')</button></div>';
+    extraHtml += '<div class="resource-link"><button class="resource-dive-btn" onclick="showTopicDeepDive(\'' + escHtml(qTopic).replace(/'/g, "\\'") + '\')">Study: ' + escHtml(res.title) + ' (Obj ' + res.obj + ')</button></div>';
   }
 
   // Explain Further button (Enhancement 5)
-  extraHtml += '<button class="explain-btn" onclick="explainFurther()">\ud83d\udca1 Explain Further</button>';
+  extraHtml += '<button class="explain-btn" onclick="explainFurther()">Explain Further</button>';
   // v4.54.17: on wrong answers, offer a "Drill this concept" button that
   // injects 2 follow-up questions into the current session immediately
   // after the current question.
   if (!isRight && typeof followUpOnMistake === 'function') {
-    extraHtml += '<button class="explain-btn explain-btn-followup" onclick="followUpOnMistake()">\ud83c\udfaf Drill this concept</button>';
+    extraHtml += '<button class="explain-btn explain-btn-followup" onclick="followUpOnMistake()">Drill this concept</button>';
   }
 
   // Report button
   const reportCount = getReportCount(q.question);
   if (reportCount > 0) {
-    extraHtml += '<button class="report-btn reported" disabled>\u2691 Reported (' + reportCount + ')</button>';
+    extraHtml += '<button class="report-btn reported" disabled>Reported (' + reportCount + ')</button>';
   } else {
-    extraHtml += '<button class="report-btn" onclick="reportIssue()">\u2691 Report Issue</button>';
+    extraHtml += '<button class="report-btn" onclick="reportIssue()">Report Issue</button>';
   }
 
   // Clean up previous extra HTML (resource links, buttons) before inserting new
@@ -12005,7 +12005,7 @@ function submitHotArea(q) {
     if (!isCorrect) addToWrongBank(q, _hotAreaPick);
     else if (wrongDrillMode) graduateFromBank(q.question);
     document.getElementById('live-score').textContent = score + ' / ' + answered;
-    document.getElementById('live-streak').textContent = '🔥 ' + streak;
+    document.getElementById('live-streak').textContent = 'Streak ' + streak;
   }
 
   // Apply reveal classes — mark the picked region correct/wrong, mark all
@@ -13181,7 +13181,7 @@ function submitTopology(q) {
     if (!allCorrect) addToWrongBank(q, JSON.stringify(topoDevices));
     else if (wrongDrillMode) graduateFromBank(q.question);
     document.getElementById('live-score').textContent = score + ' / ' + answered;
-    document.getElementById('live-streak').textContent = '\ud83d\udd25 ' + streak;
+    document.getElementById('live-streak').textContent = 'Streak ' + streak;
   }
 
   // v4.82.0: keep devices + zones + submit + reset clickable so user can re-place + re-submit.
