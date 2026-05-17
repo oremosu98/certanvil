@@ -789,3 +789,81 @@ html[data-theme] body #page-results .results-v2-cta-back{font-size:var(--t-1);}
 
 @media (prefers-reduced-motion: reduce){#page-results .results-v2-review-row,#page-results .results-v2-cta-row .btn{transition:none;}}
 @media (max-width:720px){#page-results .results-v2{padding-left:18px;padding-right:18px;}#page-results .results-v2-hero,#page-results #diff-breakdown.diff-breakdown{grid-template-columns:1fr;}#page-results .results-v2-big{border-right:0!important;border-bottom:1px solid var(--dg-rule-soft)!important;padding:24px 0!important;}#page-results .results-v2-side{padding:14px 0!important;}#page-results #diff-breakdown .dstat{border-right:0!important;border-bottom:1px solid var(--dg-rule-soft)!important;}#page-results #diff-breakdown .dstat:last-child{border-bottom:0!important;}#page-results .results-v2-review-row{grid-template-columns:30px 1fr 70px;gap:12px;}html[data-theme] body #page-results h1.results-v2-display{font-size:var(--t4);}#page-results .results-v2-cta-right{margin-left:0;width:100%;}}
+
+/* ────────────────────────────────────────────────────────────────────────
+   PER-SURFACE STRUCTURAL RESKIN · Batch 4f · QUIZ LOADING (#page-loading)
+   ────────────────────────────────────────────────────────────────────────
+   Faithful build of mockups/netplus-quiz-loading-concept.html. The AI-
+   generating / loading state shown while fetchQuestions builds the set.
+   `#page-loading` is a STATIC skeleton page; app.js only sets #loading-msg
+   text + drives #load-bar-fill width via _loadingProgress* (pure DOM) +
+   toggles #load-progress / #topic-brief .is-hidden + fills #topic-brief-
+   text. The locked mockup de-slops the legacy soft-CARD skeleton (.skel-
+   card = surface bg+border+radius+28px = box-in-box) + the .skel-status
+   opacity PULSE + the purple .topic-brief into: a chrome-light frame that
+   matches the real quiz layout (zero-jump continuity), hairline-neutral
+   skeleton placeholders on the real stem/option rhythm, ONE calm transform-
+   only shimmer (reduced-motion gated), an honest status line + a THIN
+   accent progress bar, de-purpled editorial topic-brief. Complete scoped
+   #page-loading override; zero render-logic change (style only); the JS-
+   driven #load-bar-fill inline width is left untouched (we only restyle
+   bg/height/colour, never set width). The legacy .load-bar-fill::after
+   loadBarShimmer is hidden (not removed — styles.css keeps it so UAT
+   v4.82.1 guards stay green) for editorial calm. The 📚 #topic-brief h3
+   (`&#128218;` — a text node CSS can't hide, NOT UAT-guarded; the 4871
+   guard is a different "How to build" string) is stripped separately,
+   display-only (static label, never read/compared). 0 emoji · 0 hex. */
+#page-loading{--t-1:12px;--t0:14px;--t1:18px;--t2:23px;--t3:30px;--ld-ease:cubic-bezier(0.16,1,0.3,1);}
+html[data-theme] body #page-loading{background:var(--bg);color:var(--text);}
+#page-loading [hidden],#page-loading .is-hidden{display:none!important;}
+
+/* editorial wrap — same measure as the quiz screen for zero-jump continuity */
+#page-loading .skeleton-loader{max-width:780px;margin:0 auto;padding:54px 26px 60px;}
+
+/* skeleton base — hairline-neutral fill + ONE calm transform-only shimmer */
+html[data-theme] body #page-loading .skel-block{background:color-mix(in oklab,var(--text) 7%,transparent)!important;border-radius:6px!important;position:relative;overflow:hidden;}
+#page-loading .skel-block::after{content:"";position:absolute;inset:0;transform:translateX(-100%);background:linear-gradient(90deg,transparent,color-mix(in oklab,var(--text) 6%,transparent),transparent);animation:skelShimmer 1.5s var(--ld-ease) infinite;}
+@media (prefers-reduced-motion: reduce){#page-loading .skel-block::after{display:none!important;}}
+
+/* topbar skeleton — slim hairline row, calm (quiz qbar rhythm; the real
+   global chrome is the separately-flagged surface, not rebuilt here) */
+#page-loading .skel-topbar{display:flex;align-items:center;gap:14px;margin:0 0 26px;padding:0 0 16px;border-bottom:1px solid var(--dg-rule-soft);}
+html[data-theme] body #page-loading .skel-back{width:64px;height:30px;border-radius:7px!important;}
+html[data-theme] body #page-loading .skel-pill{width:96px;height:14px;border-radius:5px!important;}
+#page-loading .skel-pill:last-child{margin-left:0;}
+#page-loading .skel-pill:first-of-type{margin-left:auto;}
+
+/* progress placeholder — thin hairline (matches the quiz progress position) */
+#page-loading .skel-progress{margin:0 0 30px;}
+html[data-theme] body #page-loading .skel-bar{width:100%;height:4px;border-radius:3px!important;}
+
+/* DE-CARD the skeleton card — the box-in-box kill (mockup has no card) */
+html[data-theme] body #page-loading .skel-card{background:none!important;border:0!important;border-radius:0!important;padding:0!important;box-shadow:none!important;}
+
+/* meta + stem rhythm — exactly the mockup .sk-meta / .sk-stem.w1/.w2 */
+html[data-theme] body #page-loading .skel-badge-row{width:120px;height:14px;border-radius:5px!important;margin:0 0 22px;}
+html[data-theme] body #page-loading .skel-title{width:78%;height:22px;margin:0 0 10px;}
+html[data-theme] body #page-loading .skel-title-short{width:54%;height:22px;margin:0 0 30px;}
+
+/* options — hairline 56px rows, the real quiz .opt rhythm (continuity) */
+html[data-theme] body #page-loading .skel-option{width:100%;height:56px;margin:0 0 11px;border:1px solid var(--dg-rule-soft)!important;border-radius:11px!important;background:none!important;}
+#page-loading .skel-option::after{display:none!important;}
+#page-loading .skel-option:last-child{margin-bottom:0;}
+
+/* status line — honest, calm (kill the legacy skelPulse opacity animation) */
+html[data-theme] body #page-loading .skel-status{margin:44px 0 0!important;text-align:center;font-size:var(--t1)!important;font-weight:700!important;letter-spacing:-0.01em;color:var(--text-mid)!important;animation:none!important;opacity:1!important;}
+
+/* progress block — thin accent bar + dim sub (mockup .status .pbar/.sub) */
+#page-loading .load-progress{margin:22px auto 0!important;max-width:360px!important;}
+html[data-theme] body #page-loading .load-bar{height:4px!important;background:var(--surface)!important;border:0!important;border-radius:3px!important;overflow:hidden;}
+html[data-theme] body #page-loading .load-bar-fill{background:var(--accent)!important;border-radius:3px!important;transition:width 1.6s var(--ld-ease);}
+#page-loading .load-bar-fill::after{display:none!important;}
+html[data-theme] body #page-loading #load-progress-label{margin-top:14px!important;font-size:var(--t-1)!important;color:var(--text-dim)!important;text-align:center;font-weight:600;}
+
+/* topic-brief — de-purpled, de-carded, editorial (kill rgba(124,111,247)
+   bg + accent-dim border + accent-light h3) */
+html[data-theme] body #page-loading .topic-brief{margin:34px auto 0!important;max-width:560px!important;background:none!important;border:0!important;border-top:1px solid var(--dg-rule-soft)!important;border-radius:0!important;padding:22px 0 0!important;text-align:left;}
+html[data-theme] body #page-loading .topic-brief h3{font-size:11px!important;font-weight:700!important;letter-spacing:0.16em;text-transform:uppercase;color:var(--accent)!important;margin:0 0 11px!important;}
+html[data-theme] body #page-loading .topic-brief-text{font-size:var(--t0)!important;line-height:1.7;color:var(--text-mid)!important;}
+
+@media (max-width:680px){#page-loading .skeleton-loader{padding-left:18px;padding-right:18px;}}
