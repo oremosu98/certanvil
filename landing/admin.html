@@ -9,6 +9,7 @@
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <link rel="apple-touch-icon" href="favicon.svg">
 <link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="dg-system.css?v=4.99.91">
 <script>
 (function() {
   var theme = 'light';
@@ -111,7 +112,7 @@
     </nav>
 
     <header class="account-pagehead">
-      <div class="account-eyebrow admin-eyebrow">🔧 Admin</div>
+      <div class="account-eyebrow admin-eyebrow">Admin</div>
       <h1 class="account-title">Dashboard</h1>
       <p class="account-subtitle">Owner-only operations + user management. Restricted by <code class="acc-code">role='admin'</code> in <code class="acc-code">profiles</code>.</p>
     </header>
@@ -124,7 +125,7 @@
 
     <!-- Anonymous gate -->
     <div class="account-anon-gate" id="admin-anon-gate" hidden>
-      <div class="anon-gate-icon" aria-hidden="true">🔒</div>
+      <div class="anon-gate-icon" aria-hidden="true"></div>
       <h2>Sign in to access the admin dashboard</h2>
       <p>This area is restricted to accounts with <code class="acc-code">role='admin'</code> in the <code class="acc-code">profiles</code> table.</p>
       <a href="/?action=signin&return=https%3A%2F%2Fcertanvil.com%2Fadmin" class="btn-primary-cta">Sign in →</a>
@@ -133,7 +134,7 @@
 
     <!-- 403 — signed in but not admin -->
     <div class="account-anon-gate admin-403" id="admin-403-gate" hidden>
-      <div class="anon-gate-icon" aria-hidden="true">⛔</div>
+      <div class="anon-gate-icon" aria-hidden="true"></div>
       <h2>Admin access required</h2>
       <p>You're signed in, but your account doesn't have admin privileges. If this is a mistake, contact the CertAnvil owner.</p>
       <a href="/account" class="btn-primary-cta">Back to my account →</a>

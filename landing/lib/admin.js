@@ -197,7 +197,7 @@
     elUsersTbody.innerHTML = users.map(function (u) {
       var role = u.role || 'user';
       var roleClass = role === 'admin' ? 'admin' : 'user';
-      var roleLabel = role === 'admin' ? '🔧 Admin' : 'User';
+      var roleLabel = role === 'admin' ? 'Admin' : 'User';
       var displayName = u.display_name || '—';
       var activeCert = u.active_cert || '—';
       var lastSeen = u.updated_at || u.created_at;
@@ -218,12 +218,12 @@
   function renderCertPacks() {
     if (!elCertsTbody) return;
     var packs = [
-      { name: 'Network+', code: 'N10-009', visibility: '🌐 Public', bank: '320 exemplars', status: 'Live · public tile + auto-deploy' },
-      { name: 'Security+', code: 'SY0-701', visibility: '🔒 Private (admin-only)', bank: '77 exemplars + Phase 2 growing', status: 'Hidden tile · admin-only via role check' },
-      { name: 'AZ-900', code: 'AZ-900', visibility: '📋 Coming-soon tile', bank: '—', status: 'Notify-me CTA' },
-      { name: 'Cisco CCNA', code: '200-301', visibility: '📋 Coming-soon tile', bank: '—', status: 'Notify-me CTA' },
-      { name: 'AWS SAA', code: 'SAA-C03', visibility: '📋 Coming-soon tile', bank: '—', status: 'Notify-me CTA' },
-      { name: 'Azure Admin', code: 'AZ-104', visibility: '📋 Coming-soon tile', bank: '—', status: 'Notify-me CTA' },
+      { name: 'Network+', code: 'N10-009', visibility: 'Public', bank: '320 exemplars', status: 'Live · public tile + auto-deploy' },
+      { name: 'Security+', code: 'SY0-701', visibility: 'Private (admin-only)', bank: '77 exemplars + Phase 2 growing', status: 'Hidden tile · admin-only via role check' },
+      { name: 'AZ-900', code: 'AZ-900', visibility: 'Coming-soon tile', bank: '—', status: 'Notify-me CTA' },
+      { name: 'Cisco CCNA', code: '200-301', visibility: 'Coming-soon tile', bank: '—', status: 'Notify-me CTA' },
+      { name: 'AWS SAA', code: 'SAA-C03', visibility: 'Coming-soon tile', bank: '—', status: 'Notify-me CTA' },
+      { name: 'Azure Admin', code: 'AZ-104', visibility: 'Coming-soon tile', bank: '—', status: 'Notify-me CTA' },
     ];
     elCertsTbody.innerHTML = packs.map(function (p) {
       return ''

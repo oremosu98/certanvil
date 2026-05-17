@@ -81,14 +81,42 @@ html[data-theme] body .account-pill{background:var(--dg-bg-2);border:1px solid v
 html[data-theme] body .account-pill:hover{border-color:var(--dg-accent);}
 html[data-theme] body .account-avatar{background:color-mix(in oklab,var(--dg-accent) 18%,var(--dg-bg));color:var(--dg-accent);}
 html[data-theme] body .builder-pill{background:var(--dg-bg-2);border:1px solid var(--dg-rule);color:var(--dg-text-dim);}
-html[data-theme] body .account-dropdown{background:var(--dg-bg);border:1px solid var(--dg-rule);border-radius:12px;box-shadow:0 24px 60px -24px color-mix(in oklab,oklch(0 0 0) 60%,transparent);}
-html[data-theme] body .dropdown-header{border-bottom:1px solid var(--dg-rule-soft);}
-html[data-theme] body .dropdown-email{color:var(--dg-text);font-weight:700;}
-html[data-theme] body .dropdown-tier{color:var(--dg-text-dim);}
-html[data-theme] body .dropdown-link{color:var(--dg-text-2);}
-html[data-theme] body .dropdown-link:hover{background:var(--dg-bg-2);color:var(--dg-text);}
-html[data-theme] body .dropdown-link-danger{color:var(--dg-danger);}
-html[data-theme] body .dropdown-divider{background:var(--dg-rule-soft);}
+/* account pill — press + open states (mockup .pill) */
+html[data-theme] body .account-pill{transition:border-color 0.15s var(--dg-ease),transform 0.12s var(--dg-ease);}
+html[data-theme] body .account-pill:active{transform:scale(0.98);}
+html[data-theme] body .account-pill:focus-visible{outline:2px solid var(--dg-accent);outline-offset:2px;}
+html[data-theme] body .account-chevron{transition:transform 0.18s var(--dg-ease);display:inline-block;}
+html[data-theme] body .account-pill.is-open .account-chevron{transform:rotate(180deg);}
+
+/* dropdown popover — origin-aware animation (mockup .menu) */
+html[data-theme] body .account-dropdown{
+  background:var(--dg-bg);border:1px solid var(--dg-rule);border-radius:14px;
+  padding:6px;transform-origin:top right;
+  box-shadow:0 18px 44px -16px color-mix(in oklab,var(--dg-text) 22%,transparent);
+  opacity:1;transform:none;transition:opacity 0.18s var(--dg-ease),transform 0.18s var(--dg-ease);
+}
+html[data-theme] body .account-dropdown[hidden]{
+  display:block!important;opacity:0;pointer-events:none;
+  transform:scale(0.97) translateY(-4px);
+}
+html[data-theme] body .dropdown-header{border-bottom:1px solid var(--dg-rule-soft);padding:12px 12px 11px;}
+html[data-theme] body .dropdown-email{color:var(--dg-text);font-weight:700;font-size:12.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+html[data-theme] body .dropdown-tier{color:var(--dg-text-dim);font-size:11.5px;margin-top:5px;letter-spacing:0.02em;}
+/* hide emoji icons — mockup uses SVG line icons (display:none = zero markup change) */
+html[data-theme] body .dropdown-link-icon{display:none;}
+html[data-theme] body .dropdown-link{
+  display:flex;align-items:center;gap:11px;
+  padding:10px 12px;border-radius:9px;
+  font-size:12.5px;font-weight:600;color:var(--dg-text-2);
+  text-decoration:none;
+  transition:background 0.12s ease,color 0.12s ease;
+}
+html[data-theme] body .dropdown-link:hover,html[data-theme] body .dropdown-link:focus-visible{background:var(--dg-bg-2);color:var(--dg-text);outline:none;}
+/* sign-out: editorial dim → accent on hover (NOT loud red — mockup's explicit
+   direction: sign-out is low-destructive/reversible, separation carries signal) */
+html[data-theme] body .dropdown-link-danger{color:var(--dg-text-dim);}
+html[data-theme] body .dropdown-link-danger:hover,html[data-theme] body .dropdown-link-danger:focus-visible{color:var(--dg-accent);background:var(--dg-bg-2);}
+html[data-theme] body .dropdown-divider{height:1px;background:var(--dg-rule-soft);margin:5px 6px;}
 
 /* ── Shared chrome · FOOTER ─────────────────────────────────────────────── */
 html[data-theme] body .foot{background:var(--dg-bg);border-top:1px solid var(--dg-rule-soft);}
@@ -379,4 +407,179 @@ html[data-theme] body .logo-mark svg circle{fill:var(--dg-accent);}
 @media (max-width:680px){
   html[data-theme] body .legal-toc ol{columns:1;}
   html[data-theme] body .legal-h1{font-size:var(--dg-t3);}
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+   Batch 3 — ACCOUNT PAGE + ADMIN DASHBOARD + MY-CERTS MODAL
+   ────────────────────────────────────────────────────────────────────────
+   Editorial treatment per the locked mockups:
+     mockups/account-page-concept.html
+     mockups/admin-dashboard-concept.html
+     mockups/my-certs-concept.html
+   0 hardcoded hex · 0 emoji · hairline de-carded · bronze accent.
+   ════════════════════════════════════════════════════════════════════════ */
+
+/* ── SHARED: account + admin page bases ─────────────────────────────────── */
+html[data-theme] body.account-body{background:var(--dg-bg);color:var(--dg-text);}
+html[data-theme] body .account-container{max-width:760px;}
+html[data-theme] body .admin-container{max-width:1120px;}
+
+/* breadcrumb */
+html[data-theme] body .breadcrumb{color:var(--dg-text-dim);font-size:var(--dg-t-1);}
+html[data-theme] body .breadcrumb a{color:var(--dg-text-dim);text-decoration:none;}
+html[data-theme] body .breadcrumb a:hover{color:var(--dg-accent);}
+
+/* page header */
+html[data-theme] body .account-pagehead{margin-bottom:32px;}
+html[data-theme] body .account-eyebrow{font-size:10px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:var(--dg-accent);background:none;border:0;padding:0;}
+html[data-theme] body .admin-eyebrow{color:var(--dg-accent)!important;}
+html[data-theme] body .account-title{font-size:var(--dg-t4);font-weight:800;letter-spacing:-0.03em;color:var(--dg-text);}
+html[data-theme] body .account-subtitle{color:var(--dg-text-2);font-size:var(--dg-t0);line-height:1.6;}
+html[data-theme] body .acc-code{background:var(--dg-bg-2);border:1px solid var(--dg-rule-soft);border-radius:4px;color:var(--dg-text-2);font-family:var(--dg-mono);font-size:11px;padding:2px 6px;}
+
+/* loading state */
+html[data-theme] body .account-loading{color:var(--dg-text-dim);}
+html[data-theme] body .account-loading-spinner{border-color:var(--dg-rule-soft);border-top-color:var(--dg-accent);}
+
+/* anon gate + 403 */
+html[data-theme] body .account-anon-gate{background:none;border:1px solid var(--dg-rule);border-radius:14px;padding:48px 32px;text-align:center;}
+html[data-theme] body .account-anon-gate h2{color:var(--dg-text);font-weight:800;letter-spacing:-0.02em;}
+html[data-theme] body .account-anon-gate p{color:var(--dg-text-2);}
+html[data-theme] body .anon-gate-icon{display:none;}
+html[data-theme] body .btn-primary-cta{background:var(--dg-accent);color:var(--dg-accent-ink);border:0;border-radius:9px;font-weight:800;box-shadow:none;}
+html[data-theme] body .btn-primary-cta:hover{filter:brightness(1.05);transform:none;}
+html[data-theme] body .btn-ghost-link{color:var(--dg-text-dim);background:none;border:0;text-decoration:none;}
+html[data-theme] body .btn-ghost-link:hover{color:var(--dg-accent);}
+
+/* ── ACCOUNT PAGE: identity card ─────────────────────────────────────────── */
+html[data-theme] body .id-card{background:none;border:1px solid var(--dg-rule);border-radius:14px;box-shadow:none;padding:28px;}
+html[data-theme] body .id-avatar{background:color-mix(in oklab,var(--dg-accent) 14%,var(--dg-bg))!important;color:var(--dg-accent)!important;border:1px solid var(--dg-rule-soft);box-shadow:none;}
+html[data-theme] body .id-tier-pill{background:var(--dg-bg-2);border:1px solid var(--dg-rule-soft);color:var(--dg-text-dim);font-weight:700;font-size:10px;letter-spacing:0.08em;text-transform:uppercase;}
+html[data-theme] body .id-tier-pill.is-free{background:var(--dg-bg-2);color:var(--dg-text-dim);}
+html[data-theme] body .id-tier-pill.is-paid{background:color-mix(in oklab,var(--dg-accent) 10%,transparent);border-color:color-mix(in oklab,var(--dg-accent) 38%,transparent);color:var(--dg-accent);}
+html[data-theme] body .id-tier-pill .dot{background:currentColor;}
+
+/* ── ACCOUNT PAGE: sections (de-card) ────────────────────────────────────── */
+html[data-theme] body .acc-section{background:none;border:0;border-radius:0;box-shadow:none;padding:0;margin-bottom:36px;border-bottom:1px solid var(--dg-rule-soft);padding-bottom:32px;}
+html[data-theme] body .acc-section:last-child{border-bottom:0;margin-bottom:0;}
+html[data-theme] body .acc-section .section-eyebrow{font-size:10px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:var(--dg-accent);background:none;border:0;padding:0;}
+html[data-theme] body .acc-section .section-title{font-size:var(--dg-t2);font-weight:800;letter-spacing:-0.02em;color:var(--dg-text);}
+html[data-theme] body .acc-section .section-sub{color:var(--dg-text-2);font-size:var(--dg-t-1);line-height:1.6;}
+
+/* danger zone */
+html[data-theme] body .acc-section.is-danger{border:1px solid color-mix(in oklab,var(--dg-danger) 40%,transparent);border-radius:12px;padding:24px;margin-bottom:36px;}
+html[data-theme] body .acc-section.is-danger .section-eyebrow,
+html[data-theme] body .acc-section.is-danger .section-title{color:var(--dg-danger)!important;}
+
+/* field rows */
+html[data-theme] body .acc-field{border-color:var(--dg-rule-soft);color:var(--dg-text-2);}
+html[data-theme] body .acc-field-label{color:var(--dg-text-dim);font-size:var(--dg-t-1);font-weight:600;}
+html[data-theme] body .acc-field-value{color:var(--dg-text);font-weight:600;}
+html[data-theme] body .acc-field-value-mono{font-family:var(--dg-mono);color:var(--dg-text-2);}
+
+/* entitlement status pills */
+html[data-theme] body .ent-status-pill{background:var(--dg-bg-2);border:1px solid var(--dg-rule-soft);color:var(--dg-text-dim);font-size:10px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;}
+html[data-theme] body .ent-status-pill.is-passed{background:color-mix(in oklab,var(--dg-pass) 10%,transparent);border-color:color-mix(in oklab,var(--dg-pass) 38%,transparent);color:var(--dg-pass);}
+html[data-theme] body .ent-status-pill.is-active{background:color-mix(in oklab,var(--dg-accent) 10%,transparent);border-color:color-mix(in oklab,var(--dg-accent) 38%,transparent);color:var(--dg-accent);}
+html[data-theme] body .ent-status-pill.is-attempted{background:var(--dg-bg-2);border-color:var(--dg-rule-soft);color:var(--dg-text-dim);}
+html[data-theme] body .ent-status-pill.is-locked{background:var(--dg-bg-2);border-color:var(--dg-rule-soft);color:var(--dg-text-dim);}
+
+/* toggle switch */
+html[data-theme] body .toggle-switch{background:var(--dg-bg-2);border:1px solid var(--dg-rule);}
+html[data-theme] body .toggle-switch::after{background:var(--dg-text-dim);}
+html[data-theme] body .toggle-switch.is-on{background:var(--dg-accent);border-color:var(--dg-accent);}
+html[data-theme] body .toggle-switch.is-on::after{background:var(--dg-accent-ink);}
+
+/* session row */
+html[data-theme] body .session-row{border-color:var(--dg-rule-soft);}
+html[data-theme] body .session-icon{display:none;}
+
+/* admin CTA banner (de-gradient) */
+html[data-theme] body .admin-cta-banner{background:none;border:1px solid var(--dg-rule);border-radius:12px;box-shadow:none;}
+html[data-theme] body .admin-cta-banner:hover{background:var(--dg-bg-2);box-shadow:none;transform:none;}
+html[data-theme] body .admin-cta-icon{display:none;}
+html[data-theme] body .admin-cta-title{color:var(--dg-text);}
+html[data-theme] body .admin-cta-sub{color:var(--dg-text-dim);}
+html[data-theme] body .admin-cta-arrow{color:var(--dg-accent)!important;}
+
+/* confetti modal (de-purple sprinkles + burst) */
+html[data-theme] body .confetti-burst{display:none;}
+html[data-theme] body .confetti-eyebrow{color:var(--dg-accent);font-size:10px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;}
+html[data-theme] body .confetti-title{color:var(--dg-text);font-weight:800;}
+html[data-theme] body .confetti-prose{color:var(--dg-text-2);}
+html[data-theme] body .confetti-cert-card{background:var(--dg-bg-2);border:1px solid var(--dg-rule-soft);border-radius:10px;box-shadow:none;}
+
+/* ── ADMIN DASHBOARD: stat grid (divided strip, not 4 cards) ─────────────── */
+html[data-theme] body .admin-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:0;border:1px solid var(--dg-rule);border-radius:14px;overflow:hidden;margin-bottom:36px;}
+html[data-theme] body .admin-stat{background:none;border:0;border-right:1px solid var(--dg-rule-soft);border-radius:0;box-shadow:none;padding:22px 20px;}
+html[data-theme] body .admin-stat:last-child{border-right:0;}
+html[data-theme] body .admin-stat-label{color:var(--dg-text-dim);font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;}
+html[data-theme] body .admin-stat-value{color:var(--dg-text);font-size:var(--dg-t3);font-weight:800;letter-spacing:-0.02em;}
+html[data-theme] body .admin-stat-mono{font-family:var(--dg-mono);font-size:var(--dg-t1)!important;}
+html[data-theme] body .admin-stat-delta{color:var(--dg-text-dim);font-size:11px;}
+
+/* ── ADMIN DASHBOARD: tables (editorial) ─────────────────────────────────── */
+html[data-theme] body .admin-table-wrap{background:none;border:0;border-radius:0;box-shadow:none;margin-bottom:36px;border-bottom:1px solid var(--dg-rule-soft);padding-bottom:32px;}
+html[data-theme] body .admin-table-head{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:16px;}
+html[data-theme] body .admin-table-title{font-size:var(--dg-t2);font-weight:800;letter-spacing:-0.02em;color:var(--dg-text);}
+html[data-theme] body .admin-table-meta{font-family:var(--dg-mono);font-size:11px;color:var(--dg-text-dim);}
+html[data-theme] body .admin-table-meta-link{color:var(--dg-accent);font-size:var(--dg-t-1);font-weight:600;text-decoration:none;}
+html[data-theme] body .admin-table-meta-link:hover{text-decoration:underline;text-underline-offset:3px;}
+html[data-theme] body .admin-table{width:100%;border-collapse:collapse;font-size:var(--dg-t-1);}
+html[data-theme] body .admin-table th{font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--dg-text-dim);background:none;border-bottom:1px solid var(--dg-rule);padding:10px 12px;text-align:left;}
+html[data-theme] body .admin-table td{color:var(--dg-text-2);border-bottom:1px solid var(--dg-rule-soft);padding:11px 12px;font-variant-numeric:tabular-nums;}
+html[data-theme] body .admin-table td.mono{font-family:var(--dg-mono);color:var(--dg-text-dim);}
+html[data-theme] body .admin-table tr:hover td{background:color-mix(in oklab,var(--dg-text) 4%,transparent);}
+html[data-theme] body .admin-table td a{color:var(--dg-accent);}
+html[data-theme] body .admin-table-empty{color:var(--dg-text-dim);text-align:center;padding:24px!important;}
+
+/* role pills */
+html[data-theme] body .admin-role-pill{background:var(--dg-bg-2);border:1px solid var(--dg-rule-soft);color:var(--dg-text-dim);font-size:10px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;border-radius:5px;padding:3px 8px;display:inline-block;}
+html[data-theme] body .admin-role-pill.admin{background:color-mix(in oklab,var(--dg-accent) 10%,transparent);border-color:color-mix(in oklab,var(--dg-accent) 38%,transparent);color:var(--dg-accent);}
+html[data-theme] body .admin-role-pill.user{background:var(--dg-bg-2);color:var(--dg-text-dim);}
+
+/* telemetry placeholder */
+html[data-theme] body .admin-telemetry-placeholder{border:1px dashed var(--dg-rule);border-radius:12px;padding:32px;text-align:center;background:none;box-shadow:none;}
+html[data-theme] body .admin-placeholder-text{color:var(--dg-text-dim);font-family:var(--dg-mono);font-size:var(--dg-t-1);}
+
+/* admin suffix in topbar logo */
+html[data-theme] body .admin-suffix{color:var(--dg-accent);font-weight:700;font-size:11px;letter-spacing:0.06em;}
+
+/* ── MY-CERTS MODAL (de-card rows, kill purple) ──────────────────────────── */
+html[data-theme] body .my-certs-modal-card{background:var(--dg-bg);border:1px solid var(--dg-rule);border-radius:16px;box-shadow:0 40px 90px -30px color-mix(in oklab,oklch(0 0 0) 70%,transparent);}
+html[data-theme] body .my-cert-row{background:none;border:0;border-radius:0;box-shadow:none;padding:14px 0;border-bottom:1px solid var(--dg-rule-soft);}
+html[data-theme] body .my-cert-row:last-child{border-bottom:0;}
+html[data-theme] body .my-cert-row:hover{background:none;box-shadow:none;transform:none;}
+html[data-theme] body .my-cert-status{font-size:10px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;}
+html[data-theme] body .my-cert-status-passed{color:var(--dg-pass);background:color-mix(in oklab,var(--dg-pass) 10%,transparent);border-color:color-mix(in oklab,var(--dg-pass) 38%,transparent);}
+html[data-theme] body .my-cert-status-active{color:var(--dg-accent);background:color-mix(in oklab,var(--dg-accent) 10%,transparent);border-color:color-mix(in oklab,var(--dg-accent) 38%,transparent);}
+html[data-theme] body .my-cert-status-attempted{color:var(--dg-text-dim);background:var(--dg-bg-2);border-color:var(--dg-rule-soft);}
+html[data-theme] body .my-certs-foot{border-top:1px solid var(--dg-rule-soft);}
+html[data-theme] body .my-certs-foot-link{color:var(--dg-text-dim);font-weight:600;text-decoration:none;}
+html[data-theme] body .my-certs-foot-link:hover{color:var(--dg-accent);}
+
+/* toast stack */
+html[data-theme] body .toast-stack .toast{background:var(--dg-bg-2);border:1px solid var(--dg-rule);color:var(--dg-text);border-radius:10px;box-shadow:0 12px 40px -12px color-mix(in oklab,oklch(0 0 0) 50%,transparent);}
+
+/* ── responsive (admin stat strip) ── */
+@media (max-width:720px){
+  html[data-theme] body .admin-grid{grid-template-columns:1fr 1fr;}
+  html[data-theme] body .admin-stat{border-bottom:1px solid var(--dg-rule-soft);}
+}
+@media (max-width:420px){
+  html[data-theme] body .admin-grid{grid-template-columns:1fr;}
+}
+
+/* ── reduced motion ── */
+@media (prefers-reduced-motion:reduce){
+  html[data-theme] body .btn-primary-cta,
+  html[data-theme] body .admin-cta-banner,
+  html[data-theme] body .my-cert-row,
+  html[data-theme] body .toggle-switch,
+  html[data-theme] body .toggle-switch::after,
+  html[data-theme] body .account-pill,
+  html[data-theme] body .account-chevron,
+  html[data-theme] body .account-dropdown,
+  html[data-theme] body .dropdown-link{transition:none!important;}
+  html[data-theme] body .account-dropdown[hidden]{transform:none;}
 }

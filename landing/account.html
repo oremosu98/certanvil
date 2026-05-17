@@ -9,6 +9,7 @@
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <link rel="apple-touch-icon" href="favicon.svg">
 <link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="dg-system.css?v=4.99.91">
 <script>
 // Inline theme bootstrap — runs synchronously before <body> renders so the
 // page paints in the right theme on first frame (no light→dark flash).
@@ -142,7 +143,7 @@
 
     <!-- Anonymous gate — shown if user isn't signed in -->
     <div class="account-anon-gate" id="account-anon-gate" hidden>
-      <div class="anon-gate-icon" aria-hidden="true">🔒</div>
+      <div class="anon-gate-icon" aria-hidden="true"></div>
       <h2>Sign in to view your account</h2>
       <p>Your account settings, certs, and progress are private to you. Sign in with a magic link to continue.</p>
       <a href="/?action=signin&return=https%3A%2F%2Fcertanvil.com%2Faccount" class="btn-primary-cta">Sign in →</a>
@@ -154,7 +155,7 @@
 
       <!-- Admin CTA banner (only shown when role=admin) -->
       <a href="/admin" class="admin-cta-banner" id="admin-cta-banner" hidden>
-        <span class="admin-cta-icon" aria-hidden="true">🔧</span>
+        <span class="admin-cta-icon" aria-hidden="true"></span>
         <span class="admin-cta-info">
           <span class="admin-cta-title">Admin Dashboard</span>
           <span class="admin-cta-sub">Users, cert packs, deploy status, telemetry — owner-only operations.</span>

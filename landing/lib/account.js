@@ -240,7 +240,7 @@
       } else if (displayStatus === 'active') {
         statusPill = '<span class="ent-status-pill is-active"><span aria-hidden="true">●</span> Active</span>';
       } else if (displayStatus === 'locked') {
-        statusPill = '<span class="ent-status-pill is-locked">🔒 Locked</span>';
+        statusPill = '<span class="ent-status-pill is-locked">Locked</span>';
       }
       var ctaAttrs = c.cta.disabled
         ? 'disabled aria-disabled="true" title="' + escapeHtml(c.cta.title || '') + '"'
@@ -484,14 +484,14 @@
       ? '<div class="confetti-sprinkle" style="top:10%;left:8%;width:12px;height:12px;background:#22c55e;border-radius:2px;transform:rotate(20deg)"></div>'
         + '<div class="confetti-sprinkle" style="top:20%;left:88%;width:10px;height:10px;background:#f472b6;border-radius:50%"></div>'
         + '<div class="confetti-sprinkle" style="top:35%;left:14%;width:8px;height:14px;background:#fbbf24;transform:rotate(45deg)"></div>'
-        + '<div class="confetti-sprinkle" style="top:55%;left:90%;width:14px;height:8px;background:#7c6ff7;transform:rotate(15deg)"></div>'
+        + '<div class="confetti-sprinkle" style="top:55%;left:90%;width:14px;height:8px;background:#b8860b;transform:rotate(15deg)"></div>'
         + '<div class="confetti-sprinkle" style="top:70%;left:6%;width:10px;height:10px;background:#06b6d4"></div>'
         + '<div class="confetti-sprinkle" style="top:80%;left:80%;width:12px;height:12px;background:#22c55e;border-radius:50%"></div>'
         + '<div class="confetti-sprinkle" style="top:14%;left:50%;width:8px;height:8px;background:#f59e0b;border-radius:2px"></div>'
-        + '<div class="confetti-sprinkle" style="top:88%;left:48%;width:10px;height:10px;background:#a99df9;border-radius:50%"></div>'
+        + '<div class="confetti-sprinkle" style="top:88%;left:48%;width:10px;height:10px;background:#d4a574;border-radius:50%"></div>'
       : '';
     var bodyHtml = passed
-      ? '<div class="confetti-burst">🎉</div>'
+      ? '<div class="confetti-burst"></div>'
         + '<div class="confetti-eyebrow">CERT PASSED</div>'
         + '<h2 class="confetti-title">You crushed it.</h2>'
         + '<p class="confetti-prose">' + escapeHtml(cert.name) + ' in the bag. Your tile on the home page just earned a Passed badge.</p>'
@@ -582,7 +582,7 @@
 
     return ''
       + '<div class="session-row">'
-      +   '<div class="session-icon" aria-hidden="true">💻</div>'
+      +   '<div class="session-icon" aria-hidden="true"></div>'
       +   '<div class="session-info">'
       +     '<div class="session-name">' + escapeHtml(device) + ' · ' + escapeHtml(browser)
       +       ' <span class="session-current-pill">This device</span>'
