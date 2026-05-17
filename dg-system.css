@@ -451,3 +451,148 @@ html[data-theme] body #page-progress .topic-row .topic-play-btn{grid-column:4;ju
 html[data-theme] body #page-progress .topic-row .topic-play-btn:hover{color:var(--accent);background:var(--surface);}
 
 @media (max-width:680px){#page-progress .topic-row{grid-template-columns:1fr 60px 26px;}#page-progress .topic-row .topic-mini-bar{display:none;}#page-progress .topic-row .topic-pct-lbl{grid-column:2;}#page-progress .topic-row .topic-play-btn{grid-column:3;}}
+
+/* ════════════════════════════════════════════════════════════════════════
+   PER-SURFACE STRUCTURAL RESKIN · Batch 4c · ANALYTICS (#page-analytics)
+   ────────────────────────────────────────────────────────────────────────
+   Faithful build of mockups/netplus-analytics-concept.html. The page is
+   render-painted (renderAnalytics orchestrates 13 _renderAna* helpers into
+   #analytics-content + renderAnalyticsActionHeadline into
+   #ana-action-headline). ~60 ana-* classes / soft cards / emoji icons /
+   colored pills. Same proven approach as Home+Progress: COMPLETE scoped
+   #page-analytics override -> editorial bands (de-carded, hairline, bronze,
+   pass/warn, calm). Charts (SVG trend, flex bars, heatmap, constellation)
+   are kept as data-viz, de-carded + recoloured to dg tokens. Every onclick/
+   id preserved (style only, zero markup/app.js render-logic change). The
+   inline bar colours use var(--green/red/warn) which the cascade already
+   dg-tones. 0 emoji (icon spans display:none) · 0 hex. */
+#page-analytics{--t-1:12px;--t0:14px;--t1:18px;--t2:23px;--t3:30px;--t4:42px;--t5:60px;}
+html[data-theme] body #page-analytics{background:var(--bg);color:var(--text);}
+#page-analytics{max-width:960px;margin:0 auto;padding:46px 26px 90px;}
+
+/* head -> .top (same recipe as Progress) */
+html[data-theme] body #page-analytics .ed-pagehead{display:block;background:none;border:0;box-shadow:none;padding:0;margin:0 0 24px;}
+#page-analytics .ed-pagehead-back{background:none!important;border:0!important;box-shadow:none!important;color:var(--text-dim)!important;font-size:var(--t-1);font-weight:600;padding:0 0 14px!important;}
+#page-analytics .ed-pagehead-back:hover{color:var(--accent)!important;}
+#page-analytics .ed-pagehead-eyebrow{font-size:10px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:var(--text-dim);}
+#page-analytics .ed-pagehead-eyebrow::before{content:none!important;display:none!important;}
+html[data-theme] body #page-analytics h1.ed-pagehead-display{font-size:var(--t4);font-weight:800;letter-spacing:-0.03em;margin:12px 0 0;color:var(--text);}
+#page-analytics h1.ed-pagehead-display em,#page-analytics h1.ed-pagehead-display i{font-style:normal;color:var(--accent);}
+
+/* universal de-card: every ana card/section -> editorial band */
+html[data-theme] body #page-analytics .ana-card,
+html[data-theme] body #page-analytics #analytics-content [class$="-card"],
+html[data-theme] body #page-analytics #ana-action-headline,
+html[data-theme] body #page-analytics .ana-ready-hero,
+html[data-theme] body #page-analytics .ana-empty-card{background:none!important;border:0!important;border-bottom:1px solid var(--border)!important;border-radius:0!important;box-shadow:none!important;backdrop-filter:none!important;padding:30px 0!important;margin:0!important;}
+/* kill every decorative emoji/icon glyph + the streak flame */
+#page-analytics [class*="-icon"],#page-analytics [class*="-ico"],#page-analytics .ana-streak-flame,#page-analytics .ana-empty-icon,#page-analytics .ana-hero-stat-icon,#page-analytics .ana-ready-datechip-icon{display:none!important;}
+/* eyebrows / titles / subtitles -> editorial type */
+#page-analytics [class*="-eyebrow"],#page-analytics [class$="-head"]>.ana-subtitle,#page-analytics .ana-subtitle,#page-analytics .ana-accchart-eyebrow,#page-analytics .ana-heatmap-eyebrow,#page-analytics .ana-action-eyebrow{font-size:10px!important;font-weight:700!important;letter-spacing:0.16em!important;text-transform:uppercase!important;color:var(--text-dim)!important;}
+#page-analytics .ana-action-eyebrow{color:var(--accent)!important;font-weight:800!important;letter-spacing:0.14em!important;}
+html[data-theme] body #page-analytics [class*="-title"]{font-size:var(--t2);font-weight:800;letter-spacing:-0.02em;color:var(--text);margin:7px 0 4px;}
+#page-analytics [class*="-title"] i,#page-analytics [class*="-title"] em,#page-analytics [class*="-title"] b{font-style:normal;color:var(--accent);font-weight:800;}
+#page-analytics [class$="-head"]{display:flex;align-items:baseline;justify-content:space-between;gap:14px;flex-wrap:wrap;background:none;border:0;padding:0;margin:0 0 6px;}
+
+/* readiness -> .ready typographic verdict */
+#page-analytics .ana-ready-num{font-size:var(--t5);font-weight:800;letter-spacing:-0.03em;line-height:1;font-variant-numeric:tabular-nums;color:var(--text);}
+#page-analytics .ana-ready-denom{font-size:var(--t2);color:var(--text-dim);font-weight:700;}
+#page-analytics .ana-ready-badge,#page-analytics .ana-ready-title{font-size:11px;font-weight:800;letter-spacing:0.1em;text-transform:uppercase;color:var(--yellow);background:none!important;border:0!important;padding:0!important;}
+#page-analytics .ana-ready-bar,#page-analytics .ana-ready-bar-wrap{height:6px;border-radius:3px;background:var(--surface)!important;overflow:hidden;border:0!important;box-shadow:none!important;}
+#page-analytics .ana-ready-bar-fill{height:100%;border-radius:3px;background:var(--accent)!important;box-shadow:none!important;}
+#page-analytics .ana-ready-bar-passtick{background:var(--text-dim)!important;}
+#page-analytics .ana-ready-bar-passlabel,#page-analytics .ana-ready-bar-scale{color:var(--text-dim)!important;font-size:10px;}
+html[data-theme] body #page-analytics .ana-ready-datechip{background:none;border:1px solid var(--border);border-radius:8px;box-shadow:none;color:var(--text-dim);}
+#page-analytics .ana-ready-datechip-days,#page-analytics .ana-ready-datechip-date{color:var(--text-mid);}
+
+/* why-score -> .comp weighted component rows + .verdict callout */
+#page-analytics .ana-why-score,#page-analytics .why-bar-row{display:grid;gap:15px;}
+#page-analytics .why-bar-row{grid-template-columns:230px 1fr 46px;align-items:center;}
+#page-analytics .why-bar-row [class*="track"],#page-analytics .why-bar-row [class*="-bar"]:not(button){height:8px;border-radius:4px;background:var(--surface)!important;overflow:hidden;}
+#page-analytics .why-bar-row [class*="fill"]{height:100%;border-radius:4px;}
+#page-analytics .ana-why-verdict,#page-analytics [class*="verdict"]{border:1px solid color-mix(in oklab,var(--yellow) 40%,var(--border))!important;border-radius:10px!important;padding:15px 17px!important;background:color-mix(in oklab,var(--yellow) 7%,transparent)!important;font-size:var(--t-1);color:var(--text-mid);line-height:1.6;}
+#page-analytics [class*="verdict"] b,#page-analytics [class*="verdict"] strong{color:var(--text);font-weight:800;}
+
+/* generic bars/tracks/fills across diff/domain/trend/exam/ms -> hairline */
+#page-analytics .ana-diff-bar,#page-analytics .ana-domain-bar,#page-analytics .ana-ms-track,#page-analytics .ana-diff-grid .ana-diff-item [class*="bar"],#page-analytics [class*="-track"]{height:6px!important;border-radius:3px!important;background:var(--surface)!important;overflow:hidden;border:0!important;}
+#page-analytics .ana-diff-fill,#page-analytics .ana-domain-fill,#page-analytics .ana-ms-fill,#page-analytics [class*="-fill"]{height:100%!important;border-radius:3px!important;box-shadow:none!important;}
+#page-analytics .ana-diff-pct,#page-analytics .ana-domain-pct,#page-analytics [class*="-pct"],#page-analytics [class*="-val"]{font-weight:800;font-variant-numeric:tabular-nums;}
+#page-analytics .ana-domain-dot{display:none!important;}
+#page-analytics .ana-domain-row,#page-analytics .dm-row{display:grid;grid-template-columns:1fr 150px 110px;gap:18px;align-items:center;padding:15px 2px;border-bottom:1px solid var(--dg-rule-soft)!important;background:none!important;border-left:0!important;border-radius:0!important;}
+#page-analytics .ana-domain-name,#page-analytics .dm-row .ana-domain-name{font-size:var(--t-1);font-weight:700;color:var(--text);}
+#page-analytics .ana-domain-meta,#page-analytics .ana-domain-weight,#page-analytics .ana-domain-target{font-size:11px;color:var(--text-dim);}
+
+/* difficulty + diff grid -> .diff rows */
+#page-analytics .ana-diff-grid{display:grid;gap:14px;}
+#page-analytics .ana-diff-item{display:grid;grid-template-columns:120px 1fr 80px;gap:16px;align-items:center;background:none!important;border:0!important;padding:0!important;}
+#page-analytics .ana-diff-name{font-size:var(--t-1);font-weight:600;color:var(--text-mid);}
+
+/* accuracy chart + heatmap + constellation: de-card container, keep viz */
+#page-analytics .ana-accchart-wrap,#page-analytics .ana-heatmap-wrap,#page-analytics .ana-chart{margin-top:18px;}
+#page-analytics .ana-accchart-tabs,#page-analytics .ana-nav{display:flex;gap:2px;border:1px solid var(--dg-rule-soft);border-radius:8px;padding:3px;background:none;flex-wrap:wrap;}
+html[data-theme] body #page-analytics .ana-accchart-tab,html[data-theme] body #page-analytics .ana-nav-pill{background:none!important;border:0!important;border-radius:5px!important;color:var(--text-dim)!important;font:600 11px/1 Inter,sans-serif!important;padding:8px 11px!important;box-shadow:none!important;}
+html[data-theme] body #page-analytics .ana-accchart-tab-active,html[data-theme] body #page-analytics .ana-nav-pill.active,html[data-theme] body #page-analytics .ana-nav-pill[aria-current="true"]{color:var(--text)!important;background:var(--surface)!important;box-shadow:inset 0 0 0 1px var(--border)!important;}
+#page-analytics .ana-nav{margin:0 0 22px;}
+#page-analytics .ana-chart-bars,#page-analytics .ana-bar-wrap{display:flex;align-items:flex-end;gap:6px;height:120px;}
+#page-analytics .ana-bar,#page-analytics .ana-chart-bars i{flex:1;background:var(--green)!important;border-radius:3px 3px 0 0;display:block;}
+#page-analytics .ana-bar.bad,#page-analytics .ana-bar-bad{background:var(--red)!important;}
+#page-analytics .ana-chart-lbl,#page-analytics .ana-bar-tip,#page-analytics .ana-avg{font-size:11px;color:var(--text-dim);}
+#page-analytics .ana-constellation,#page-analytics .ana-calendar,#page-analytics .ana-heatmap-svg,#page-analytics .ana-accchart-svg{border:1px solid var(--dg-rule-soft)!important;border-radius:10px!important;background:none!important;box-shadow:none!important;}
+#page-analytics .ana-cal-day,#page-analytics .ana-cal-day-sm{border-radius:3px;}
+#page-analytics .ana-heatmap-legend,#page-analytics .ana-heatmap-stats,#page-analytics .ana-heatmap-stat,#page-analytics .ana-cal-legend,#page-analytics .ana-cal-num{font-size:11px;color:var(--text-dim);}
+
+/* hero stats -> .stats 4-col hairline strip */
+#page-analytics .ana-hero-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:0;border-top:1px solid var(--border);border-bottom:1px solid var(--border);margin:0;}
+html[data-theme] body #page-analytics .ana-hero-stat{background:none!important;border:0!important;border-right:1px solid var(--dg-rule-soft)!important;border-radius:0!important;box-shadow:none!important;padding:18px 20px!important;text-align:left;}
+#page-analytics .ana-hero-stat:last-child{border-right:0!important;}
+#page-analytics .ana-hero-stat-lbl{font-size:10px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-dim);}
+#page-analytics .ana-hero-stat-val{font-size:var(--t2);font-weight:800;margin-top:7px;letter-spacing:-0.02em;font-variant-numeric:tabular-nums;color:var(--text);}
+#page-analytics .ana-hero-stat-spark{opacity:0.5;}
+
+/* action headline -> .nbm band; topics cta + exams + 2-col + streak + ms */
+#page-analytics #ana-action-headline{display:flex;align-items:center;justify-content:space-between;gap:24px;flex-wrap:wrap;}
+#page-analytics .ana-action-body{min-width:260px;flex:1;}
+html[data-theme] body #page-analytics .ana-action-topic,html[data-theme] body #page-analytics .ana-action-text{font-size:var(--t2);font-weight:800;letter-spacing:-0.02em;color:var(--text);margin:9px 0 5px;}
+#page-analytics .ana-action-meta{font-size:var(--t-1);color:var(--text-dim);}
+html[data-theme] body #page-analytics .ana-action-btn,html[data-theme] body #page-analytics .ana-topics-cta-btn,html[data-theme] body #page-analytics .ana-empty-cta{background:var(--accent)!important;color:var(--bg)!important;border:0!important;border-radius:9px!important;font:800 var(--t0)/1 Inter,-apple-system,sans-serif!important;padding:14px 22px!important;box-shadow:none!important;cursor:pointer;flex:none;}
+html[data-theme] body #page-analytics .ana-action-btn:hover,html[data-theme] body #page-analytics .ana-topics-cta-btn:hover,html[data-theme] body #page-analytics .ana-empty-cta:hover{filter:brightness(1.05);transform:none;box-shadow:none!important;}
+#page-analytics .ana-grid-2col{display:grid;grid-template-columns:1fr 1fr;gap:0;border-top:1px solid var(--border);}
+html[data-theme] body #page-analytics .ana-grid-2col>*{background:none!important;border:0!important;border-right:1px solid var(--dg-rule-soft)!important;border-radius:0!important;box-shadow:none!important;padding:22px 24px 22px 0!important;}
+#page-analytics .ana-grid-2col>*:last-child{border-right:0!important;padding-left:24px!important;}
+#page-analytics .ana-streak-grid,#page-analytics .ana-streak-week{display:flex;gap:4px;flex-wrap:wrap;}
+#page-analytics .ana-streak-day,#page-analytics .ana-streak-day-dot{width:11px;height:11px;border-radius:3px;background:var(--surface)!important;}
+#page-analytics .ana-streak-day-on,#page-analytics .ana-streak-day.on{background:var(--accent)!important;}
+#page-analytics .ana-streak-day-today{box-shadow:inset 0 0 0 1px var(--accent)!important;}
+#page-analytics .ana-streak-num,#page-analytics .ana-streak-big{font-size:var(--t3);font-weight:800;font-variant-numeric:tabular-nums;color:var(--text);}
+#page-analytics .ana-streak-lbl,#page-analytics .ana-streak-msg,#page-analytics .ana-streak-meta,#page-analytics .ana-streak-info{font-size:var(--t-1);color:var(--text-dim);}
+#page-analytics .ana-ms-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:0;border-top:1px solid var(--dg-rule-soft);}
+html[data-theme] body #page-analytics .ana-ms-grid>*,html[data-theme] body #page-analytics .ana-ms-item{background:none!important;border:0!important;border-right:1px solid var(--dg-rule-soft)!important;border-radius:0!important;padding:15px 16px 15px 0!important;}
+#page-analytics .ana-ms-grid>*:last-child{border-right:0!important;}
+#page-analytics .ana-empty-card{text-align:center;}
+#page-analytics .ana-empty-title{font-size:var(--t3);font-weight:800;color:var(--text);}
+#page-analytics .ana-empty-body,#page-analytics .ana-empty-foot{color:var(--text-dim);}
+
+/* ── Batch 4c · live-audit residual fixes (visual caught what mapping missed) ── */
+/* styles.css puts a persistent outline + radius on the analytics h1 */
+#page-analytics h1.ed-pagehead-display{outline:0!important;border-radius:0!important;}
+/* kill ALL styles.css ::before pseudo-glyphs (em-dash on eyebrows, ▶/▸ on
+   the milestones <details> summary) — same class of bug as Progress */
+#page-analytics [class*="-eyebrow"]::before,#page-analytics [class*="subtitle"]::before,#page-analytics .ana-accchart-eyebrow::before,#page-analytics .ana-heatmap-eyebrow::before,#page-analytics .ed-cardhead-eyebrow::before,#page-analytics .ana-ms-details::before,#page-analytics .ana-ms-details>summary::before,#page-analytics [class*="ana-ms"]>summary::before{content:none!important;display:none!important;}
+/* streak: de-card the filled .ana-streak-big block + kill off-day dot border */
+html[data-theme] body #page-analytics .ana-streak-big{background:none!important;border:0!important;border-radius:0!important;box-shadow:none!important;padding:0!important;}
+#page-analytics .ana-streak-day-dot{border:0!important;background:var(--surface)!important;}
+/* milestone tiles -> editorial .mi (de-carded, hairline divider, no box) */
+#page-analytics .ana-ms-recent{display:grid;grid-template-columns:repeat(3,1fr);gap:0;border-top:1px solid var(--dg-rule-soft);margin-top:14px;}
+html[data-theme] body #page-analytics .ana-milestone{background:none!important;border:0!important;border-right:1px solid var(--dg-rule-soft)!important;border-radius:0!important;box-shadow:none!important;padding:15px 16px 15px 0!important;}
+#page-analytics .ana-ms-recent .ana-milestone:last-child{border-right:0!important;}
+#page-analytics .ana-milestone-label{font-size:var(--t-1);font-weight:800;color:var(--text);}
+#page-analytics .ana-milestone-desc{font-size:11px;color:var(--text-dim);margin-top:4px;line-height:1.5;}
+html[data-theme] body #page-analytics .ana-ms-details{background:none!important;border:0!important;border-radius:0!important;box-shadow:none!important;padding:0!important;}
+#page-analytics .ana-ms-section-title{font-size:10px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:var(--text-dim);margin:0 0 4px;}
+/* activity: compact contribution heatmap (was a 4-col 86px giant-block grid) */
+#page-analytics .ana-calendar{grid-template-columns:repeat(14,1fr)!important;gap:5px!important;}
+html[data-theme] body #page-analytics .ana-cal-day{aspect-ratio:1;width:auto!important;height:auto!important;min-width:0!important;min-height:0!important;padding:0!important;border-radius:3px!important;display:block!important;}
+#page-analytics .ana-cal-day .ana-cal-num{display:none!important;}
+#page-analytics .ana-cal-day-sm{width:13px;height:13px;border-radius:3px;}
+
+@media (max-width:760px){#page-analytics .ana-hero-stats{grid-template-columns:1fr 1fr;}#page-analytics .ana-grid-2col,#page-analytics .ana-ms-grid{grid-template-columns:1fr;}#page-analytics .why-bar-row,#page-analytics .ana-domain-row,#page-analytics .dm-row,#page-analytics .ana-diff-item{grid-template-columns:1fr;}}

@@ -1,9 +1,9 @@
 // ══════════════════════════════════════════
-// Network+ AI Quiz — app.js  v4.99.66
+// Network+ AI Quiz — app.js  v4.99.67
 // ══════════════════════════════════════════
 
 // ── CONSTANTS ──
-const APP_VERSION = '4.99.66';
+const APP_VERSION = '4.99.67';
 // v4.99.45 (Phase 6b): expose APP_VERSION on window so the web-vitals
 // collector (lib/web-vitals-collector.js, loaded BEFORE app.js so its
 // PerformanceObservers attach earlier) can stamp this version onto every
@@ -4989,7 +4989,7 @@ function renderAnalyticsActionHeadline() {
   }
   const top = r.whatIf[0];
   const safeTopic = (top.topic || '').replace(/'/g, "\\'");
-  host.innerHTML = '<div class="ana-action-eyebrow">🎯 Your next 30 minutes</div>'
+  host.innerHTML = '<div class="ana-action-eyebrow">Your next 30 minutes</div>'
     + '<div class="ana-action-body">'
     + '<div class="ana-action-text">'
     + '<div class="ana-action-topic">' + escHtml(top.topic) + '</div>'
@@ -14503,10 +14503,10 @@ function _renderAnaReadiness(h) {
 
   const { predicted, domainAccuracy } = readiness;
   let tier, tierColor, tierBg;
-  if (predicted >= EXAM_PASS_SCORE)      { tier = '🟢 Exam Ready';   tierColor = 'var(--green)';  tierBg = 'rgba(34,197,94,.12)'; }
-  else if (predicted >= 650) { tier = '🟠 Getting Close'; tierColor = 'var(--orange)'; tierBg = 'rgba(251,146,60,.12)'; }
-  else if (predicted >= 500) { tier = '🟡 Building';     tierColor = 'var(--yellow)'; tierBg = 'rgba(251,191,36,.12)'; }
-  else                       { tier = '🔴 Not Ready';    tierColor = 'var(--red)';    tierBg = 'rgba(248,113,113,.12)'; }
+  if (predicted >= EXAM_PASS_SCORE)      { tier = 'Exam Ready';   tierColor = 'var(--green)';  tierBg = 'rgba(34,197,94,.12)'; }
+  else if (predicted >= 650) { tier = 'Getting Close'; tierColor = 'var(--orange)'; tierBg = 'rgba(251,146,60,.12)'; }
+  else if (predicted >= 500) { tier = 'Building';     tierColor = 'var(--yellow)'; tierBg = 'rgba(251,191,36,.12)'; }
+  else                       { tier = 'Not Ready';    tierColor = 'var(--red)';    tierBg = 'rgba(248,113,113,.12)'; }
   const barPct = Math.max(0, Math.min(100, ((predicted - 420) / 450) * 100));
 
   // v4.46.0: merged date + countdown chip (built via shared _buildExamDateChipHtml)
@@ -15783,7 +15783,7 @@ function renderAnalytics() {
       + '<strong>weakest topic</strong>, <strong>readiness trend</strong>, and '
       + '<strong>next study move</strong>.</p>'
       + '<button type="button" class="btn btn-primary ana-empty-cta" '
-      + 'onclick="applyPreset(\'warmup\')">⚡ Start 5-min Warmup</button>'
+      + 'onclick="applyPreset(\'warmup\')">Start 5-min Warmup</button>'
       + '<p class="ana-empty-foot">5 questions · ~3 min · foundational</p>'
       + '</div>';
     // Hide actionable headline in empty state
