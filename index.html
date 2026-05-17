@@ -252,7 +252,7 @@
     <span class="hero-icon">&#9889;</span>
     <h1>Network+ AI Quiz</h1>
     <p>AI-generated MCQs every session. Never the same quiz twice.</p>
-    <span id="version-badge" style="display:inline-block;margin-top:10px;font-size:11px;font-weight:700;letter-spacing:.08em;color:var(--accent-light);background:rgba(124,111,247,.12);border:1px solid rgba(124,111,247,.3);padding:3px 10px;border-radius:99px;cursor:default;user-select:none">v4.99.88</span>
+    <span id="version-badge" style="display:inline-block;margin-top:10px;font-size:11px;font-weight:700;letter-spacing:.08em;color:var(--accent-light);background:rgba(124,111,247,.12);border:1px solid rgba(124,111,247,.3);padding:3px 10px;border-radius:99px;cursor:default;user-select:none">v4.99.90</span>
     <div id="streak-badge" class="streak-badge"></div>
     <div id="stats-card" class="hero-stats-strip is-hidden">
       <div class="stats-grid" id="stats-grid"></div>
@@ -952,13 +952,13 @@
   </div>
   <div id="sr-card-host"></div>
   <div id="sr-empty" class="sr-empty" hidden>
-    <div class="sr-empty-icon">🎉</div>
+    <div class="sr-empty-icon"></div>
     <h2>Queue empty</h2>
     <p>No cards are due right now. Come back later — items reschedule based on your last review and resurface when due.</p>
     <button class="btn btn-primary" onclick="goSetup()">Back to home</button>
   </div>
   <div id="sr-complete" class="sr-empty" hidden>
-    <div class="sr-empty-icon">✅</div>
+    <div class="sr-empty-icon"></div>
     <h2>Review complete</h2>
     <p id="sr-complete-stats">All cards reviewed.</p>
     <button class="btn btn-primary" onclick="goSetup()">Back to home</button>
@@ -1136,7 +1136,7 @@
         <div class="exam-results-v2-big-score" id="exam-scaled-score">750</div>
         <div class="exam-results-v2-verdict">
           <span class="pass-badge" id="exam-pass-badge">PASS</span>
-          <span class="hardcore-badge is-hidden" id="exam-hardcore-badge">&#128293; HARDCORE</span>
+          <span class="hardcore-badge is-hidden" id="exam-hardcore-badge">HARDCORE</span>
         </div>
         <p class="exam-results-v2-msg" id="exam-result-msg"></p>
         <p class="exam-results-v2-threshold">Pass mark: 720 / 900 &middot; CompTIA N10-009 scaled score</p>
@@ -1164,8 +1164,8 @@
     <div class="results-v2-cta-row">
       <button class="btn btn-ghost results-v2-cta-back" onclick="goSetup()" aria-label="Back to menu">&larr; Menu</button>
       <div class="results-v2-cta-right">
-        <button class="btn btn-ghost" onclick="showReview(true)">&#128203; Review All</button>
-        <button class="btn btn-exam" onclick="startExam()">Retry Exam &#127358;</button>
+        <button class="btn btn-ghost" onclick="showReview(true)">Review All</button>
+        <button class="btn btn-exam" onclick="startExam()">Retry Exam</button>
       </div>
     </div>
   </div>
@@ -1286,22 +1286,22 @@
   <div id="drills-rec-host" hidden></div>
   <div class="drills-grid">
     <button type="button" class="drills-tile" onclick="showPage('ports');startPortDrill()">
-      <span class="drills-tile-icon">&#9889;</span>
+      <span class="drills-tile-icon"></span>
       <span class="drills-tile-title">Port Drill</span>
       <span class="drills-tile-sub">40 ports &middot; Timed, Endless, Family, Secure Pairs</span>
     </button>
     <button type="button" class="drills-tile" onclick="showPage('acronyms');startAcronymBlitz()">
-      <span class="drills-tile-icon">&#128161;</span>
+      <span class="drills-tile-icon"></span>
       <span class="drills-tile-title">Acronym Blitz</span>
       <span class="drills-tile-sub">CompTIA acronym list &middot; Learn &amp; test</span>
     </button>
     <button type="button" class="drills-tile" onclick="showPage('osi-sorter');startOsiSorter()">
-      <span class="drills-tile-icon">&#127760;</span>
+      <span class="drills-tile-icon"></span>
       <span class="drills-tile-title">OSI Sorter</span>
       <span class="drills-tile-sub">7 layers &middot; Sort protocols &amp; devices</span>
     </button>
     <button type="button" class="drills-tile" onclick="showPage('cables');startCableId()">
-      <span class="drills-tile-icon">&#128268;</span>
+      <span class="drills-tile-icon"></span>
       <span class="drills-tile-title">Cable ID</span>
       <span class="drills-tile-sub">Cat5e/6/6a/7/8, fiber, coax, console</span>
     </button>
@@ -1309,7 +1309,7 @@
          format. Drag firewall rules into priority order, send test traffic,
          see what's allowed/denied. Closest to real CompTIA exam PBQs. -->
     <button type="button" class="drills-tile drills-tile-pbq" onclick="openAclPbqPicker()">
-      <span class="drills-tile-icon">&#128737;&#65039;</span>
+      <span class="drills-tile-icon"></span>
       <span class="drills-tile-title">ACL Ordering <span class="drills-tile-pbq-badge">PBQ</span></span>
       <span class="drills-tile-sub">Order firewall rules &middot; Test traffic &middot; Real exam format</span>
     </button>
@@ -1317,7 +1317,7 @@
          N10-009 Domain 5.5 ("use the appropriate tool") gap. tcpdump filters,
          Wireshark display filters, Nmap scan types, output reading. -->
     <button type="button" class="drills-tile drills-tile-new" onclick="startNetworkAnalysisDrill()">
-      <span class="drills-tile-icon">&#128269;</span>
+      <span class="drills-tile-icon"></span>
       <span class="drills-tile-title">Network Analysis <span class="drills-tile-new-badge">NEW</span></span>
       <span class="drills-tile-sub">tcpdump &middot; Wireshark &middot; Nmap &middot; Output &middot; Filters</span>
     </button>
@@ -1325,7 +1325,7 @@
          networks hop-by-hop with an MCQ at each step. Distinct from TB's
          free-form trace; this is curated scenarios with mastery tracking. -->
     <button type="button" class="drills-tile drills-tile-new" onclick="showPage('ptr');startPacketTrace()">
-      <span class="drills-tile-icon">&#128229;</span>
+      <span class="drills-tile-icon"></span>
       <span class="drills-tile-title">Packet Trace <span class="drills-tile-new-badge">NEW</span></span>
       <span class="drills-tile-sub">5 scenarios &middot; ARP &middot; Routing &middot; NAT &middot; DHCP &middot; DNS</span>
     </button>
@@ -1587,12 +1587,12 @@
       <div class="ed-pagehead-eyebrow">Drill &middot; Network+</div>
       <h1 class="ed-pagehead-display">Packet <em>trace.</em></h1>
     </div>
-    <span id="ptr-streak-badge" class="ptr-streak-badge">&#128229; 0</span>
+    <span id="ptr-streak-badge" class="ptr-streak-badge">0</span>
   </div>
   <div class="ptr-tab-bar" role="tablist" aria-label="Packet Trace tabs">
-    <button class="ptr-tab-btn ptr-tab-active" id="ptr-tab-btn-practice" role="tab" aria-selected="true" tabindex="0" onclick="setPtrTab('practice')">&#9889; Practice</button>
-    <button class="ptr-tab-btn" id="ptr-tab-btn-lessons" role="tab" aria-selected="false" tabindex="-1" onclick="setPtrTab('lessons')">&#128218; Lessons</button>
-    <button class="ptr-tab-btn" id="ptr-tab-btn-dashboard" role="tab" aria-selected="false" tabindex="-1" onclick="setPtrTab('dashboard')">&#128202; Dashboard</button>
+    <button class="ptr-tab-btn ptr-tab-active" id="ptr-tab-btn-practice" role="tab" aria-selected="true" tabindex="0" onclick="setPtrTab('practice')">Practice</button>
+    <button class="ptr-tab-btn" id="ptr-tab-btn-lessons" role="tab" aria-selected="false" tabindex="-1" onclick="setPtrTab('lessons')">Lessons</button>
+    <button class="ptr-tab-btn" id="ptr-tab-btn-dashboard" role="tab" aria-selected="false" tabindex="-1" onclick="setPtrTab('dashboard')">Dashboard</button>
   </div>
   <div id="ptr-tab-practice" class="ptr-tab-panel" role="tabpanel">
     <div id="ptr-stage-host"></div>

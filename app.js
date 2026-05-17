@@ -1,9 +1,9 @@
 // ══════════════════════════════════════════
-// Network+ AI Quiz — app.js  v4.99.88
+// Network+ AI Quiz — app.js  v4.99.90
 // ══════════════════════════════════════════
 
 // ── CONSTANTS ──
-const APP_VERSION = '4.99.88';
+const APP_VERSION = '4.99.90';
 // v4.99.45 (Phase 6b): expose APP_VERSION on window so the web-vitals
 // collector (lib/web-vitals-collector.js, loaded BEFORE app.js so its
 // PerformanceObservers attach earlier) can stamp this version onto every
@@ -2205,35 +2205,35 @@ function _renderSecPlusDrillsLauncher() {
     + '<div class="secplus-drill-grid">'
     +   '<a class="secplus-drill-tile" href="#" onclick="showPage(\'acronyms\');startAcronymBlitz();return false;">'
     +     '<span class="secplus-drill-tile-badge">LIVE</span>'
-    +     '<div class="secplus-drill-tile-icon" aria-hidden="true">🔤</div>'
+    +     '<div class="secplus-drill-tile-icon" aria-hidden="true"></div>'
     +     '<div class="secplus-drill-tile-title">Acronym Blitz</div>'
     +     '<div class="secplus-drill-tile-sub">120 SY0-701 acronyms across 7 categories. Recognition speed = exam speed.</div>'
     +     '<div class="secplus-drill-tile-meta">All 5 domains · ~5 min/session</div>'
     +   '</a>'
     +   '<a class="secplus-drill-tile" href="#" onclick="showPage(\'amm\');startAttackMitigation();return false;">'
     +     '<span class="secplus-drill-tile-badge">LIVE</span>'
-    +     '<div class="secplus-drill-tile-icon" aria-hidden="true">⚔️</div>'
+    +     '<div class="secplus-drill-tile-icon" aria-hidden="true"></div>'
     +     '<div class="secplus-drill-tile-title">Attack-to-Mitigation Match</div>'
     +     '<div class="secplus-drill-tile-sub">96 attack/mitigation pairs across 5 categories. Build the "if I see X, the answer is Y" muscle memory.</div>'
     +     '<div class="secplus-drill-tile-meta">All 5 domains · ~5 min/session</div>'
     +   '</a>'
     +   '<a class="secplus-drill-tile" href="#" onclick="showPage(\'cts\');startControlTypeSorter();return false;">'
     +     '<span class="secplus-drill-tile-badge">LIVE</span>'
-    +     '<div class="secplus-drill-tile-icon" aria-hidden="true">🛡</div>'
+    +     '<div class="secplus-drill-tile-icon" aria-hidden="true"></div>'
     +     '<div class="secplus-drill-tile-title">Control Type Sorter</div>'
     +     '<div class="secplus-drill-tile-sub">120 security controls across the CompTIA 6×4 matrix. Pick TYPE + CATEGORY for each control. Domain 1.1\'s hardest concept.</div>'
     +     '<div class="secplus-drill-tile-meta">Domain 1.1 · ~5 min/session</div>'
     +   '</a>'
     +   '<a class="secplus-drill-tile secplus-drill-tile-flagship" href="#" onclick="showPage(\'irw\');startIncidentResponseWarRoom();return false;">'
     +     '<span class="secplus-drill-tile-badge is-flagship">FLAGSHIP · LIVE</span>'
-    +     '<div class="secplus-drill-tile-icon" aria-hidden="true">🚨</div>'
+    +     '<div class="secplus-drill-tile-icon" aria-hidden="true"></div>'
     +     '<div class="secplus-drill-tile-title">Incident Response War Room</div>'
     +     '<div class="secplus-drill-tile-sub">20 scenarios (ransomware, BEC, S3 breach, APT, etc.). Walk PICERL phases. Practice + Pressure modes + AI generator. The flagship for D4.</div>'
     +     '<div class="secplus-drill-tile-meta">Domain 4 (28%) · ~10-15 min/scenario</div>'
     +   '</a>'
     +   '<a class="secplus-drill-tile secplus-drill-tile-flagship" href="#" onclick="showPage(\'pht\');startPhishingTriageLab();return false;">'
     +     '<span class="secplus-drill-tile-badge is-flagship">FLAGSHIP · NEW</span>'
-    +     '<div class="secplus-drill-tile-icon" aria-hidden="true">🎣</div>'
+    +     '<div class="secplus-drill-tile-icon" aria-hidden="true"></div>'
     +     '<div class="secplus-drill-tile-title">Phishing Triage Lab</div>'
     +     '<div class="secplus-drill-tile-sub">6 email phish at v1 (SMS/voice/QR variants land in v4.98.1+). Click-the-flag inbox simulator. Pick the right action. The flagship for D2.</div>'
     +     '<div class="secplus-drill-tile-meta">Domain 2 (22%) · ~3-5 min/phish</div>'
@@ -3473,10 +3473,10 @@ function _renderSrCard() {
           + '<div class="sr-confidence-row">'
           + '<div class="sr-confidence-label">How did that feel?</div>'
           + '<button type="button" class="sr-confidence-btn sr-confidence-confident" onclick="srMarkConfidence(\'correct-confident\')">'
-          + '✅ Got it · was confident'
+          + 'Got it · was confident'
           + '<span class="sr-confidence-hint">interval grows fast</span></button>'
           + '<button type="button" class="sr-confidence-btn sr-confidence-uncertain" onclick="srMarkConfidence(\'correct-uncertain\')">'
-          + '🤔 Got it · was unsure'
+          + 'Got it · was unsure'
           + '<span class="sr-confidence-hint">interval grows slowly</span></button>'
           + '</div>';
       } else {
@@ -3541,10 +3541,10 @@ function _renderSrCard() {
           + '<div class="sr-confidence-row">'
           + '<div class="sr-confidence-label">How did that feel?</div>'
           + '<button type="button" class="sr-confidence-btn sr-confidence-confident" onclick="srMarkConfidence(\'correct-confident\')">'
-          + '✅ Got it · was confident'
+          + 'Got it · was confident'
           + '<span class="sr-confidence-hint">interval grows fast</span></button>'
           + '<button type="button" class="sr-confidence-btn sr-confidence-uncertain" onclick="srMarkConfidence(\'correct-uncertain\')">'
-          + '🤔 Got it · was unsure'
+          + 'Got it · was unsure'
           + '<span class="sr-confidence-hint">interval grows slowly</span></button>'
           + '</div>';
       } else {
@@ -3588,10 +3588,10 @@ function _renderSrCard() {
         + '<div class="sr-confidence-row">'
         + '<div class="sr-confidence-label">How did you do?</div>'
         + '<button type="button" class="sr-confidence-btn sr-confidence-confident" onclick="srMarkConfidence(\'correct-confident\')">'
-        + '✅ Got it · was confident'
+        + 'Got it · was confident'
         + '<span class="sr-confidence-hint">interval grows fast</span></button>'
         + '<button type="button" class="sr-confidence-btn sr-confidence-uncertain" onclick="srMarkConfidence(\'correct-uncertain\')">'
-        + '🤔 Got it · was unsure'
+        + 'Got it · was unsure'
         + '<span class="sr-confidence-hint">interval grows slowly</span></button>'
         + '<button type="button" class="sr-confidence-btn sr-confidence-wrong" onclick="srMarkConfidence(\'wrong\')">'
         + '✗ Got it wrong'
@@ -5019,7 +5019,7 @@ function renderAnalyticsActionHeadline() {
 // across pages.
 function _pageRecCard(opts) {
   const { eyebrow, icon, headline, sub, ctaLabel, ctaFn, reason } = opts;
-  const safeIcon = icon || '🎯';
+  const safeIcon = icon || '';
   return '<div class="page-rec-card">'
     + '<div class="page-rec-eyebrow">'
     + '<span class="page-rec-icon">' + safeIcon + '</span>'
@@ -5051,7 +5051,7 @@ function _pickRecommendedDrill() {
   if (totalAnswered === 0) {
     return {
       eyebrow: 'Recommended drill',
-      icon: '⚡',
+      icon: '',
       headline: 'Start with Port Drill',
       sub: '40 ports · timed · the foundational cert-prep drill',
       ctaLabel: 'Start Port Drill →',
@@ -5096,7 +5096,7 @@ function _pickRecommendedDrill() {
   if (top._score < 30 && totalAnswered >= 50) {
     return {
       eyebrow: 'Try something new',
-      icon: '🛡️',
+      icon: '',
       headline: 'ACL Ordering PBQ',
       sub: 'Performance-based question · closest to real exam format',
       ctaLabel: 'Open ACL PBQ →',
@@ -5107,7 +5107,7 @@ function _pickRecommendedDrill() {
 
   return {
     eyebrow: 'Weakest drill right now',
-    icon: '⚡',
+    icon: '',
     headline: top.label,
     sub: top._reason,
     ctaLabel: 'Drill ' + top.label + ' →',
@@ -6345,7 +6345,7 @@ async function startExam() {
     examMode = false;
     _loadingProgressFinish();
     showPage('setup');
-    errBox.textContent = '\u26a0\ufe0f ' + e.message;
+    errBox.textContent = e.message;
     errBox.classList.remove('is-hidden');
   }
 }
@@ -6365,7 +6365,7 @@ function showExamShortfallBanner(actualCount) {
   banner.className = 'exam-shortfall-banner';
   banner.setAttribute('role', 'status');
   banner.innerHTML = `
-    <span class="exam-shortfall-icon" aria-hidden="true">\u2139\uFE0F</span>
+    <span class="exam-shortfall-icon" aria-hidden="true"></span>
     <span class="exam-shortfall-text">This exam has <strong>${actualCount} of ${EXAM_QUESTION_COUNT}</strong> questions \u2014 ${filtered} were filtered out by the quality validator. Your score scales against the actual count, so the ${EXAM_PASS_SCORE} pass mark stays accurate.</span>
     <button class="exam-shortfall-dismiss" onclick="document.getElementById('exam-shortfall-banner')?.remove()" aria-label="Dismiss">\u00D7</button>
   `;
@@ -8184,7 +8184,7 @@ function submitExam() {
   try { if (typeof renderSrReviewCard === 'function') renderSrReviewCard(); } catch (_) {}
 
   const scoreEl = document.getElementById('exam-scaled-score');
-  scoreEl.style.color  = passed ? '#22c55e' : '#f87171';
+  scoreEl.style.color  = passed ? 'var(--green)' : 'var(--red)';
   animateCount('exam-scaled-score', 0, scaledScore, 1200);
 
   const badge = document.getElementById('exam-pass-badge');
@@ -8260,7 +8260,7 @@ function launchConfetti() {
   canvas.classList.remove('is-hidden');
 
   const PARTICLE_COUNT = 150;
-  const COLORS = ['#22c55e','#7c6ff7','#f59e0b','#ef4444','#3b82f6','#ec4899','#14b8a6','#f97316'];
+  const COLORS = ['#22c55e','#d4a574','#f59e0b','#ef4444','#3b82f6','#ec4899','#14b8a6','#f97316'];
   const particles = [];
 
   for (let i = 0; i < PARTICLE_COUNT; i++) {
@@ -8386,7 +8386,7 @@ function launchMiniConfetti() {
     canvas.classList.remove('is-hidden');
 
     const PARTICLE_COUNT = 40;
-    const COLORS = ['#fbbf24','#f59e0b','#fde047','#7c6ff7','#22c55e'];
+    const COLORS = ['#fbbf24','#f59e0b','#fde047','#d4a574','#22c55e'];
     const originX = canvas.width / 2;
     const originY = 80; // near the top where the toast lives
     const particles = [];
@@ -8526,7 +8526,7 @@ function _renderReviewList() {
     const label = activeChip ? activeChip.label.toLowerCase() : '';
     host.innerHTML = filterRowHtml + `
       <div class="review-filter-empty">
-        <span class="review-filter-empty-ico">\uD83C\uDFAF</span>
+        <span class="review-filter-empty-ico"></span>
         <div class="review-filter-empty-title">Nothing here \u2014 no ${escHtml(label)} answers</div>
         <div class="review-filter-empty-body">Try a different filter to review your answers.</div>
         <button type="button" class="review-filter-empty-cta" onclick="_setReviewFilter('all')">Show all ${log.length} \u2192</button>
@@ -17679,13 +17679,10 @@ function _renderTraceSvg(network, packetAtId, opts) {
   // Subnet boxes (background — under everything)
   (network.subnets || []).forEach(sn => {
     const fill = sn.color === 'amber' ? 'rgba(217,119,6,.08)'
-               : sn.color === 'purple' ? 'rgba(91,79,219,.08)'
                : 'rgba(107,107,144,.08)';
     const stroke = sn.color === 'amber' ? 'rgba(217,119,6,.3)'
-                 : sn.color === 'purple' ? 'rgba(91,79,219,.3)'
                  : 'rgba(107,107,144,.3)';
     const text = sn.color === 'amber' ? '#d97706'
-               : sn.color === 'purple' ? '#5b4fdb'
                : '#6b6b90';
     out += '<rect x="' + sn.boxX + '" y="' + sn.boxY + '" width="' + sn.boxW + '" height="' + sn.boxH + '" rx="4" fill="' + fill + '" stroke="' + stroke + '" stroke-width="1"/>';
     out += '<text x="' + (sn.boxX + sn.boxW/2) + '" y="' + (sn.boxY + sn.boxH/2 + 4) + '" text-anchor="middle" fill="' + text + '" font-size="11" font-weight="700">' + escHtml(sn.cidr) + (sn.label ? ' — ' + escHtml(sn.label) : '') + '</text>';
@@ -17717,7 +17714,7 @@ function _renderTraceSvg(network, packetAtId, opts) {
       out += '<circle class="ptr-packet" cx="' + cx + '" cy="' + cy + '" r="9" fill="#d97706" stroke="#fff" stroke-width="2.5">';
       out += '<animate attributeName="opacity" values=".7;1;.7" dur="1.6s" repeatCount="indefinite"/>';
       out += '</circle>';
-      out += '<text class="ptr-packet-here" x="' + cx + '" y="' + (cy - 35) + '" text-anchor="middle" fill="#d97706" font-size="9" font-weight="700">⬇ packet here</text>';
+      out += '<text class="ptr-packet-here" x="' + cx + '" y="' + (cy - 35) + '" text-anchor="middle" fill="#d97706" font-size="9" font-weight="700">packet here</text>';
     }
   }
 
@@ -17739,7 +17736,7 @@ function _renderDeviceGlyph(d) {
     out += '<line x1="' + (x+8) + '" y1="' + (y+15) + '" x2="' + (x+40) + '" y2="' + (y+15) + '" stroke="#22c55e" stroke-width="1"/>';
     out += '<line x1="' + (x+8) + '" y1="' + (y+22) + '" x2="' + (x+40) + '" y2="' + (y+22) + '" stroke="#fbbf24" stroke-width="1"/>';
   } else if (d.type === 'router') {
-    out += '<rect x="' + x + '" y="' + (y-5) + '" width="48" height="42" rx="6" fill="#1a1a2e" stroke="#5b4fdb" stroke-width="2"/>';
+    out += '<rect x="' + x + '" y="' + (y-5) + '" width="48" height="42" rx="6" fill="#1a1a2e" stroke="#9ca3af" stroke-width="2"/>';
     out += '<circle cx="' + (x+10) + '" cy="' + (y+8) + '" r="2" fill="#22c55e"/>';
     out += '<circle cx="' + (x+20) + '" cy="' + (y+8) + '" r="2" fill="#22c55e"/>';
     out += '<circle cx="' + (x+30) + '" cy="' + (y+8) + '" r="2" fill="#fbbf24"/>';
@@ -17790,7 +17787,7 @@ function ptrRenderStage() {
     const nextLabel = ptrStepIdx + 1 >= totalSteps ? 'See results &rarr;' : 'Next hop &rarr;';
     revealHtml = `
       <div class="ptr-reveal">
-        <div class="ptr-reveal-head">${isCorrect ? '✅ Correct' : '❌ Why ' + escHtml(step.question.options[step.question.correctIdx]) + ' is the answer'}</div>
+        <div class="ptr-reveal-head">${isCorrect ? 'Correct' : 'Why ' + escHtml(step.question.options[step.question.correctIdx]) + ' is the answer'}</div>
         <p class="ptr-reveal-prose">${escHtml(step.question.why)}</p>
         <div class="ptr-reveal-actions">
           <button class="btn btn-primary ptr-reveal-btn" onclick="ptrAdvance()">${nextLabel}</button>
@@ -17802,7 +17799,7 @@ function ptrRenderStage() {
     <div class="trace-stage">
       <div class="trace-stage-head">
         <div>
-          <div class="trace-stage-title">${escHtml(ptrScenario.icon || '📦')} ${escHtml(ptrScenario.title)}</div>
+          <div class="trace-stage-title"><span class="trace-stage-icon">${escHtml(ptrScenario.icon || '')}</span>${escHtml(ptrScenario.title)}</div>
           <div class="trace-stage-sub">${escHtml(ptrScenario.summary)}</div>
         </div>
         <span class="trace-step-pill">Step ${ptrStepIdx + 1} of ${totalSteps}</span>
@@ -17830,7 +17827,7 @@ function ptrRenderStage() {
   `;
   // Update streak badge
   const badge = document.getElementById('ptr-streak-badge');
-  if (badge) badge.textContent = '📦 ' + ptrCorrectThisRun;
+  if (badge) badge.textContent = '' + ptrCorrectThisRun;
 }
 
 function ptrPickAnswer(optIdx) {
@@ -17916,7 +17913,7 @@ function ptrEndScenario() {
   const acc = Math.round((ptrCorrectThisRun / ptrScenario.steps.length) * 100);
   endCard.innerHTML = `
     <div class="ptr-eos-card">
-      <div class="ptr-eos-burst">${isPerfect ? '🎉' : '📦'}</div>
+      <div class="ptr-eos-burst"></div>
       <h2 class="ptr-eos-title">${isPerfect ? 'Scenario mastered.' : 'Scenario complete.'}</h2>
       <p class="ptr-eos-sub">${ptrCorrectThisRun}/${ptrScenario.steps.length} hops correct${isPerfect ? ' — perfect run, scenario marked mastered ✓' : ' · keep practicing for the perfect run that locks in mastery'}</p>
       <div class="ptr-eos-score-row">
@@ -17995,21 +17992,21 @@ function ptrRenderDashboard() {
     let masteryHtml;
     if (!unlocked) {
       cls += ' is-locked';
-      masteryHtml = '<span class="dash-scenario-mastery">🔒 unlock</span>';
+      masteryHtml = '<span class="dash-scenario-mastery">unlock</span>';
     } else if (sm.mastered) {
       cls += ' is-mastered';
       masteryHtml = '<span class="dash-scenario-mastery">' + sm.bestStepsCorrect + '/' + s.steps.length + ' ✓</span>';
     } else {
       masteryHtml = '<span class="dash-scenario-mastery">' + (sm.bestStepsCorrect || 0) + '/' + s.steps.length + '</span>';
     }
-    const stars = '★'.repeat(s.diff || 1) + '☆'.repeat(3 - (s.diff || 1));
+    const diffPips = Array.from({length:3}, (_,i) => '<i class="ptr-pip' + (i < (s.diff || 1) ? ' on' : '') + '"></i>').join('');
     const onclick = unlocked ? `onclick="ptrStartScenario('${s.id}')"` : 'aria-disabled="true"';
     return `
       <button class="${cls}" ${onclick} type="button">
-        <span class="dash-scenario-icon">${escHtml(s.icon || '📦')}</span>
+        <span class="dash-scenario-icon"></span>
         <div>
           <div class="dash-scenario-name">${escHtml(s.title)}</div>
-          <div class="dash-scenario-meta">${s.steps.length} hops · objective ${escHtml(s.obj)} · ${stars}</div>
+          <div class="dash-scenario-meta">${s.steps.length} hops · objective ${escHtml(s.obj)} · <span class="ptr-pips">${diffPips}</span></div>
         </div>
         ${masteryHtml}
       </button>
@@ -18020,7 +18017,7 @@ function ptrRenderDashboard() {
     <div class="ptr-dash-head">
       <div>
         <div class="ptr-dash-eyebrow">Drill · Network+</div>
-        <h2 class="ptr-dash-title">📦 Packet Trace</h2>
+        <h2 class="ptr-dash-title">Packet Trace</h2>
         <p class="ptr-dash-sub">${PT_DATA.length} curated scenarios. Walk a packet through each network hop-by-hop, answer a question at each step.</p>
       </div>
       <div class="ptr-dash-stats">
@@ -18038,7 +18035,7 @@ function ptrRenderDashboard() {
         ${resumeScenario ? `
           <div class="ptr-dash-card">
             <div class="ptr-dash-card-head">Resume where you left off</div>
-            <div style="font-size:13px;font-weight:600;margin-bottom:4px">${escHtml(resumeScenario.icon)} ${escHtml(resumeScenario.title)}</div>
+            <div style="font-size:13px;font-weight:600;margin-bottom:4px">${escHtml(resumeScenario.title)}</div>
             <div style="font-size:11.5px;color:var(--text-mid)">Step ${resume.stepIdx + 1} of ${resumeScenario.steps.length}</div>
             <button class="ptr-dash-cta" onclick="ptrResumeScenario()" style="margin-top:10px">▶ Resume scenario →</button>
           </div>
@@ -18050,7 +18047,7 @@ function ptrRenderDashboard() {
         `}
         ${PT_DATA.filter(s => !ptrIsScenarioUnlocked(s)).length > 0 ? `
           <div class="ptr-dash-card">
-            <div class="ptr-dash-card-head">🔒 Locked</div>
+            <div class="ptr-dash-card-head">Locked</div>
             <div style="font-size:11.5px;color:var(--text-mid);line-height:1.5">${PT_DATA.filter(s => !ptrIsScenarioUnlocked(s)).length} scenarios stay locked until you master earlier ones (perfect run = mastered).</div>
           </div>
         ` : ''}
@@ -18069,7 +18066,7 @@ function ptrRenderLessons() {
   host.innerHTML = PT_LESSONS.map(l => `
     <div class="ptr-lesson-card">
       <div class="ptr-lesson-head">
-        <div class="ptr-lesson-icon">📚</div>
+        <div class="ptr-lesson-icon"></div>
         <div>
           <div class="ptr-lesson-title">${escHtml(l.title)}</div>
           <div class="ptr-lesson-sub">${escHtml(l.summary)}</div>
