@@ -12928,10 +12928,17 @@
     html += '</div></div><div id="tb-lab-cards">';
   
     // ── Render category groups ──
+    // v4.99.75: only the first category opens by default; the rest render as
+    // collapsed group rows (faithful to netplus-concept-labs mockup — open
+    // group = .g-h list, collapsed groups = .grp rows). Still <details>, so
+    // every group stays click-expandable; zero behaviour change.
+    let _tbLabCatIdx = 0;
     Object.entries(TB_LAB_CATEGORIES).forEach(([categoryName, labIds]) => {
       const categoryLabs = labIds.map(id => labById[id]).filter(Boolean);
       if (categoryLabs.length === 0) return;
-      html += `<details class="tb-lab-category" open>
+      const _open = _tbLabCatIdx === 0 ? ' open' : '';
+      _tbLabCatIdx++;
+      html += `<details class="tb-lab-category"${_open}>
         <summary class="tb-lab-category-head">
           <span class="tb-lab-category-name">${escHtml(categoryName)}</span>
           <span class="tb-lab-category-count">${categoryLabs.length} lab${categoryLabs.length === 1 ? '' : 's'}</span>

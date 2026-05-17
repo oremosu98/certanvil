@@ -32,7 +32,7 @@
   html[data-theme="light"] body { color: #1a1a2e; }
 </style>
 <link rel="stylesheet" href="styles.css">
-<link rel="stylesheet" href="dg-system.css?v=4.99.74">
+<link rel="stylesheet" href="dg-system.css?v=4.99.75">
 <script>
 // v4.87.0: Inline cert detection — runs synchronously before <body>
 // renders so the right banner shows on first paint (no Network+ → Security+
@@ -252,7 +252,7 @@
     <span class="hero-icon">&#9889;</span>
     <h1>Network+ AI Quiz</h1>
     <p>AI-generated MCQs every session. Never the same quiz twice.</p>
-    <span id="version-badge" style="display:inline-block;margin-top:10px;font-size:11px;font-weight:700;letter-spacing:.08em;color:var(--accent-light);background:rgba(124,111,247,.12);border:1px solid rgba(124,111,247,.3);padding:3px 10px;border-radius:99px;cursor:default;user-select:none">v4.99.74</span>
+    <span id="version-badge" style="display:inline-block;margin-top:10px;font-size:11px;font-weight:700;letter-spacing:.08em;color:var(--accent-light);background:rgba(124,111,247,.12);border:1px solid rgba(124,111,247,.3);padding:3px 10px;border-radius:99px;cursor:default;user-select:none">v4.99.75</span>
     <div id="streak-badge" class="streak-badge"></div>
     <div id="stats-card" class="hero-stats-strip is-hidden">
       <div class="stats-grid" id="stats-grid"></div>
@@ -2515,12 +2515,14 @@
   <!-- Lab picker modal -->
   <div id="tb-lab-picker" class="tb-grade-modal is-hidden" role="dialog">
     <div class="tb-grade-backdrop" onclick="document.getElementById('tb-lab-picker').classList.add('is-hidden')"></div>
-    <div class="tb-grade-card" style="max-width:520px">
-      <div class="tb-grade-card-head">
-        <h3 style="margin:0">Guided Topology Labs</h3>
-        <button type="button" class="tb-grade-close" onclick="document.getElementById('tb-lab-picker').classList.add('is-hidden')">&times;</button>
+    <div class="tb-grade-card tb-lab-card-shell" style="max-width:620px">
+      <div class="tb-grade-card-head tb-lab-head">
+        <span class="tb-lab-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M9 3v6l-5 9a2 2 0 0 0 2 3h12a2 2 0 0 0 2-3l-5-9V3" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M8 3h8M7.5 14h9" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></span>
+        <span class="tb-lab-ht"><span class="tb-lab-eyebrow">Guided learning</span><h3 style="margin:0">Topology Labs</h3></span>
+        <button type="button" class="tb-grade-close" onclick="document.getElementById('tb-lab-picker').classList.add('is-hidden')" aria-label="Close">&times;</button>
       </div>
-      <div id="tb-lab-picker-body" class="tb-grade-body" style="padding:16px"></div>
+      <div id="tb-lab-picker-body" class="tb-grade-body" style="padding:0"></div>
+      <div class="tb-lab-foot"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3l2.4 5 5.6.8-4 4 1 5.6L12 16l-5 2.4 1-5.6-4-4 5.6-.8z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg><span><b>Auto-generated config variants</b> sit alongside these labs, generated to drill the specific objectives you are weakest on.</span></div>
     </div>
   </div>
 

@@ -1394,3 +1394,95 @@ html[data-theme] body #page-topology-builder .tb-strip-acct{display:flex;align-i
 html[data-theme] body #page-topology-builder .tb-pill:not([hidden]){display:inline-flex!important;align-items:center!important;gap:7px!important;}
 html[data-theme] body #page-topology-builder .tb-pill .tb-pill-ico{width:14px!important;height:14px!important;flex:none!important;color:currentColor!important;}
 html[data-theme] body #page-topology-builder .tb-pill[hidden]{display:none!important;}
+
+/* ════════════════════════════════════════════════════════════════════════
+   PER-SURFACE STRUCTURAL RESKIN · Batch 4k · CONCEPT / TOPOLOGY LABS
+   (#tb-lab-picker — the Guided Topology Labs modal, tbOpenLabPicker())
+   ════════════════════════════════════════════════════════════════════════
+   Faithful to mockups/netplus-concept-labs-concept.html (same Emil
+   center-origin dialog family as the ACL scenario picker shipped v4.99.73).
+   Refines the Batch-4j .tb-grade-* modal baseline into the mockup's exact
+   spec: de-card the lab-card grid → a hairline grouped LIST (name + TEXT
+   difficulty tag + meta line + one-line desc), the 4 pill filters → ONE
+   hairline segmented control, rainbow diff bubbles → semantic text,
+   purple count → editorial dim stat. Value-for-value from the mockup CSS;
+   scoped to the unique #tb-lab-picker id so the Fix picker (#tb-fix-picker,
+   shares .tb-fix-tab/.tb-lab-card) is untouched. Zero markup/render change;
+   every onclick/id preserved → no UAT migration. 0 emoji · 0 hex. */
+#tb-lab-picker{--t-1:12px;--t0:14px;--t1:18px;--t2:23px;}
+
+/* modal head — editorial title + dim stat sub (mockup .m-h / h1 / .sub) */
+html[data-theme] body #tb-lab-picker .tb-grade-card-head h3{font-size:var(--t2)!important;font-weight:800!important;letter-spacing:-0.02em;color:var(--text)!important;}
+html[data-theme] body #tb-lab-picker .tb-lab-picker-header{margin:14px 22px 4px!important;}
+html[data-theme] body #tb-lab-picker .tb-lab-picker-count{font-size:var(--t-1)!important;font-weight:400!important;color:var(--text-dim)!important;font-variant-numeric:tabular-nums;margin:0!important;}
+html[data-theme] body #tb-lab-picker .tb-lab-picker-count strong{color:var(--text-mid)!important;font-weight:700!important;}
+html[data-theme] body #tb-lab-picker .tb-lab-picker-count-sub{color:var(--text-dim)!important;font-size:var(--t-1)!important;}
+
+/* filter pills → one hairline segmented control (mockup .m-filter / .fb) */
+html[data-theme] body #tb-lab-picker .tb-fix-tabs{display:inline-flex!important;gap:2px!important;margin:14px 22px 4px!important;border:1px solid var(--dg-rule-soft)!important;border-radius:9px!important;padding:3px!important;}
+html[data-theme] body #tb-lab-picker .tb-fix-tab{background:none!important;border:0!important;border-radius:6px!important;color:var(--text-dim)!important;font:600 var(--t-1)/1 Inter,sans-serif!important;padding:8px 14px!important;box-shadow:none!important;}
+html[data-theme] body #tb-lab-picker .tb-fix-tab:hover{color:var(--text)!important;border:0!important;}
+html[data-theme] body #tb-lab-picker .tb-fix-tab-active,html[data-theme] body #tb-lab-picker .tb-fix-tab.tb-fix-tab-active{color:var(--text)!important;background:color-mix(in oklab,var(--text) 8%,transparent)!important;box-shadow:inset 0 0 0 1px var(--border)!important;border:0!important;}
+
+/* list + group headers (mockup .m-list / .g-h / .n) — de-card the details */
+#tb-lab-picker #tb-lab-cards{padding:8px 6px 10px;}
+html[data-theme] body #tb-lab-picker .tb-lab-category{margin:0!important;border:0!important;background:none!important;border-radius:0!important;}
+html[data-theme] body #tb-lab-picker .tb-lab-category-head{display:flex!important;align-items:baseline!important;justify-content:space-between!important;padding:16px 16px 8px!important;background:none!important;font-size:10px!important;font-weight:700!important;letter-spacing:0.14em!important;text-transform:uppercase!important;color:var(--text-dim)!important;cursor:pointer;}
+html[data-theme] body #tb-lab-picker .tb-lab-category-head:hover{background:none!important;color:var(--text-mid)!important;}
+html[data-theme] body #tb-lab-picker .tb-lab-category-name{flex:1;min-width:0;}
+html[data-theme] body #tb-lab-picker .tb-lab-category-count{font-weight:600!important;letter-spacing:0!important;text-transform:none!important;font-size:var(--t-1)!important;color:var(--text-dim)!important;}
+#tb-lab-picker .tb-lab-category-cards{display:block!important;grid-template-columns:none!important;gap:0!important;padding:0!important;}
+
+/* lab rows — de-card → hairline rows (mockup .lab / .nm / .tag / .lab-m / .lab-d) */
+html[data-theme] body #tb-lab-picker .tb-lab-card{display:block!important;background:none!important;border:0!important;border-top:1px solid var(--dg-rule-soft)!important;border-radius:0!important;padding:14px 16px!important;margin:0!important;cursor:pointer;box-shadow:none!important;color:inherit;}
+#tb-lab-picker .tb-lab-category-cards .tb-lab-card:first-child{border-top:0!important;}
+html[data-theme] body #tb-lab-picker .tb-lab-card:hover{background:color-mix(in oklab,var(--text) 6%,transparent)!important;border-color:var(--dg-rule-soft)!important;}
+html[data-theme] body #tb-lab-picker .tb-lab-card-head{display:flex!important;align-items:baseline!important;gap:10px!important;flex-wrap:wrap!important;justify-content:flex-start!important;margin:0 0 3px!important;}
+html[data-theme] body #tb-lab-picker .tb-lab-card-head strong{font-size:var(--t0)!important;font-weight:700!important;color:var(--text)!important;letter-spacing:-0.01em;}
+html[data-theme] body #tb-lab-picker .tb-lab-diff,html[data-theme] body #tb-lab-picker .tb-lab-diff-beginner,html[data-theme] body #tb-lab-picker .tb-lab-diff-intermediate,html[data-theme] body #tb-lab-picker .tb-lab-diff-advanced{background:none!important;border:0!important;border-radius:0!important;padding:0!important;font-size:10px!important;font-weight:700!important;letter-spacing:0.1em!important;text-transform:uppercase!important;color:var(--accent)!important;}
+html[data-theme] body #tb-lab-picker .tb-lab-diff-beginner{color:var(--green)!important;}
+html[data-theme] body #tb-lab-picker .tb-lab-card-meta{margin:3px 0 0!important;font-size:11px!important;color:var(--text-dim)!important;font-variant-numeric:tabular-nums;}
+html[data-theme] body #tb-lab-picker .tb-lab-badge-auto{background:none!important;border:1px solid var(--dg-rule-soft)!important;border-radius:5px!important;color:var(--text-dim)!important;font-size:10px!important;padding:1px 5px!important;text-transform:none;}
+html[data-theme] body #tb-lab-picker .tb-lab-card-desc{margin:7px 0 0!important;font-size:var(--t-1)!important;color:var(--text-mid)!important;line-height:1.55;}
+
+/* variant groups → de-carded editorial (mockup keeps these quiet) */
+html[data-theme] body #tb-lab-picker .tb-lab-category-variants{border:0!important;background:none!important;border-style:solid!important;}
+#tb-lab-picker .tb-lab-variant-groups{padding:0 0 8px!important;}
+html[data-theme] body #tb-lab-picker .tb-lab-variant-group-head strong{color:var(--text)!important;font-weight:700;}
+html[data-theme] body #tb-lab-picker .tb-lab-variant-group-parent{color:var(--text-dim)!important;font-weight:400;}
+
+/* ── Batch 4k · round-2 (founder: build EVERYTHING in the mockup) ──
+   The mockup .m-h header (flask icon box + "Guided learning" eyebrow +
+   "Topology Labs" h1 + boxed close), the pinned .m-f footer, per-row
+   chevrons (.lab-go), and the open-vs-collapsed group treatment (open =
+   .g-h small list header; collapsed = .grp large row + chevron). Markup
+   for the head/footer added in index.html; one render tweak opens only
+   the first category. Theme-safe tokens (no var(--surface) — the v4.99.75
+   dark near-white lesson). ── */
+html[data-theme] body #tb-lab-picker .tb-lab-head{display:flex!important;align-items:flex-start!important;gap:14px!important;padding:22px 22px 16px!important;border-bottom:1px solid var(--dg-rule-soft)!important;background:none!important;}
+html[data-theme] body #tb-lab-picker .tb-lab-ic{width:34px;height:34px;flex:none;border-radius:9px;border:1px solid var(--border)!important;display:grid;place-items:center;color:var(--accent)!important;background:none!important;}
+#tb-lab-picker .tb-lab-ic svg{width:17px;height:17px;}
+#tb-lab-picker .tb-lab-ht{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px;}
+html[data-theme] body #tb-lab-picker .tb-lab-eyebrow{font-size:10px!important;font-weight:700!important;letter-spacing:0.16em;text-transform:uppercase;color:var(--text-dim)!important;}
+html[data-theme] body #tb-lab-picker .tb-lab-head h3{font-size:var(--t2)!important;font-weight:800!important;letter-spacing:-0.02em!important;text-transform:none!important;color:var(--text)!important;margin:0!important;}
+html[data-theme] body #tb-lab-picker .tb-lab-head .tb-grade-close{flex:none;width:32px;height:32px;border-radius:8px!important;border:1px solid var(--border)!important;background:none!important;color:var(--text-dim)!important;display:grid;place-items:center;font-size:18px;line-height:1;cursor:pointer;}
+html[data-theme] body #tb-lab-picker .tb-lab-head .tb-grade-close:hover{border-color:var(--accent)!important;color:var(--accent)!important;}
+
+/* pinned footer (mockup .m-f) */
+html[data-theme] body #tb-lab-picker .tb-lab-foot{display:flex;align-items:center;gap:12px;padding:14px 22px!important;border-top:1px solid var(--dg-rule-soft)!important;font-size:11px;color:var(--text-dim)!important;line-height:1.5;flex:none;}
+#tb-lab-picker .tb-lab-foot svg{width:15px;height:15px;flex:none;color:var(--text-dim);}
+html[data-theme] body #tb-lab-picker .tb-lab-foot b{color:var(--text-mid)!important;font-weight:700;}
+
+/* per-row chevron (mockup .lab-go) — CSS-only, no render change */
+#tb-lab-picker .tb-lab-card{position:relative;padding-right:38px!important;}
+#tb-lab-picker .tb-lab-card::after{content:'';position:absolute;right:18px;top:50%;width:7px;height:7px;border-right:2px solid currentColor;border-top:2px solid currentColor;transform:translateY(-50%) rotate(45deg);color:var(--text-dim);transition:color .12s ease,right .12s ease;}
+#tb-lab-picker .tb-lab-card:hover::after{color:var(--accent);right:15px;}
+
+/* open group = .g-h small list header; collapsed = .grp large row + chevron */
+#tb-lab-picker .tb-lab-category > summary{list-style:none;}
+#tb-lab-picker .tb-lab-category > summary::-webkit-details-marker{display:none;}
+html[data-theme] body #tb-lab-picker .tb-lab-category:not([open]) > .tb-lab-category-head{padding:15px 16px!important;font-size:var(--t0)!important;font-weight:700!important;letter-spacing:-0.01em!important;text-transform:none!important;color:var(--text-mid)!important;}
+html[data-theme] body #tb-lab-picker .tb-lab-category:not([open]) > .tb-lab-category-head:hover{background:color-mix(in oklab,var(--text) 6%,transparent)!important;color:var(--text)!important;}
+#tb-lab-picker .tb-lab-category:not([open]) > .tb-lab-category-head .tb-lab-category-count{display:none!important;}
+#tb-lab-picker .tb-lab-category:not([open]) > .tb-lab-category-head::after{content:'';flex:none;width:7px;height:7px;border-right:2px solid currentColor;border-top:2px solid currentColor;transform:rotate(45deg);color:var(--text-dim);}
+#tb-lab-picker .tb-lab-category-head{align-items:center;}
