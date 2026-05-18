@@ -1,9 +1,9 @@
 // ══════════════════════════════════════════
-// Network+ AI Quiz — app.js  v5.0.2
+// Network+ AI Quiz — app.js  v5.0.3
 // ══════════════════════════════════════════
 
 // ── CONSTANTS ──
-const APP_VERSION = '5.0.2';
+const APP_VERSION = '5.0.3';
 // v4.99.45 (Phase 6b): expose APP_VERSION on window so the web-vitals
 // collector (lib/web-vitals-collector.js, loaded BEFORE app.js so its
 // PerformanceObservers attach earlier) can stamp this version onto every
@@ -18903,6 +18903,7 @@ const APP_SIDEBAR_PRACTICE_BASE = [
 ];
 const APP_SIDEBAR_PRACTICE_NETPLUS_TAIL = [
   { page: 'topology-builder',  label: 'Network Builder',  icon: '\u25C7', handler: () => { showPage('topology-builder'); if (typeof openTopologyBuilder === 'function') openTopologyBuilder(); } },
+  { page: 'topology-builder-v2', label: 'Builder V2',     icon: '\u25C8', handler: async () => { await _loadFeature('topology-builder-v2'); showPage('topology-builder-v2'); if (typeof openTopologyBuilderV2 === 'function') openTopologyBuilderV2(); } },
   { page: 'acl',               label: 'ACL Builder',      icon: '\u25A3', handler: () => { showPage('acl'); if (typeof openAclBuilder === 'function') openAclBuilder(); } }
 ];
 const APP_SIDEBAR_PRACTICE_SECPLUS_TAIL = [
@@ -18996,7 +18997,8 @@ function _sbNavIcon(pageId) {
     'ptr': '<svg viewBox="0 0 24 24" fill="none"><path d="M5 12h14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M12 5l7 7-7 7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>',
     'settings': '<svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.6"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1.08-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1.08 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1.08 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1.08z" stroke="currentColor" stroke-width="1.4"/></svg>',
     'amm': '<svg viewBox="0 0 24 24" fill="none"><path d="M6 18L18 6M18 18L6 6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><circle cx="6" cy="6" r="2" stroke="currentColor" stroke-width="1.4"/><circle cx="18" cy="18" r="2" stroke="currentColor" stroke-width="1.4"/></svg>',
-    'cts': '<svg viewBox="0 0 24 24" fill="none"><path d="M4 6h7M13 6h7M4 12h7M13 12h7M4 18h7M13 18h7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><circle cx="7" cy="6" r="1.5" fill="currentColor"/><circle cx="17" cy="12" r="1.5" fill="currentColor"/><circle cx="7" cy="18" r="1.5" fill="currentColor"/></svg>'
+    'cts': '<svg viewBox="0 0 24 24" fill="none"><path d="M4 6h7M13 6h7M4 12h7M13 12h7M4 18h7M13 18h7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><circle cx="7" cy="6" r="1.5" fill="currentColor"/><circle cx="17" cy="12" r="1.5" fill="currentColor"/><circle cx="7" cy="18" r="1.5" fill="currentColor"/></svg>',
+    'topology-builder-v2': '<svg viewBox="0 0 24 24" fill="none"><circle cx="7" cy="7" r="2.5" stroke="currentColor" stroke-width="1.6"/><circle cx="17" cy="7" r="2.5" stroke="currentColor" stroke-width="1.6"/><circle cx="12" cy="17" r="2.5" stroke="currentColor" stroke-width="1.6"/><path d="M9 8l3 7M15 8l-3 7" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M7 10v2M17 10v2" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" opacity="0.5"/></svg>'
   };
   return icons[pageId] || '<svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="2" fill="currentColor"/></svg>';
 }

@@ -1,0 +1,1451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CertAnvil · Network Builder Revamp · comprehensive concept</title>
+<!--
+  CONCEPT MOCKUP · not production. Ground-up revamp of the entire Network
+  Builder — the 14K-LOC flagship.
+
+  This is the DESIGN BIBLE for the rebuild. Every state shown here is the
+  target. If it's not in this mockup, it doesn't ship.
+
+  STATES COVERED (toggle via the tab bar at top):
+  1. Workspace — 2D canvas with editorial device nodes + cables + ambient flow
+  2. Trace — ANIMATED packet movement along cable paths (the star)
+  3. Config — device config panel with type-filtered tabs
+  4. 3D Concept — colour/lighting direction for the Three.js scene
+  5. Grade — topology grading modal with progressive scoring
+  6. Labs — lab step panel + picker concept
+  7. Fix + Empty — Fix This Network fault-injection state + empty canvas
+
+  DESIGN DECISIONS:
+  · Canvas is the protagonist — full-viewport workspace (proven v4.99.74)
+  · Device nodes: rounded rect + monoline icon + hostname + IP
+    All SVG attributes use CSS custom properties — ZERO hardcoded hex
+  · Cables: 2px rule strokes, accent for traced/active, dim for default
+    TYPE-DIFFERENTIATED: cat6=solid, fiber=dash, coax=thick, console=dot
+  · Packet animation: CSS offset-path along SVG cable paths
+    ease-in-out per hop, glow trail, frame badge with L2/L3 data
+  · Cable highlight sweep: stroke-dashoffset animation leads the packet
+  · Hop arrival pulse: device-node glow on packet arrival (200ms)
+  · Config panel: type-filtered tabs (router ≠ PC ≠ switch)
+    Slides in from right with 300ms ease transform
+  · Trace panel: hairline card, geometric SVG playback icons (0 emoji)
+  · Grading: progressive % score, not binary pass/fail list
+  · Fix This Network: faulted device nodes (fail-stroke + ! badge),
+    broken cables (dashed fail), fix banner with fault description,
+    fix-result reveal panel with per-fault pass/miss
+  · Empty canvas: calm typographic prompt, not a card. Pick scenario
+    or AI generate as primary actions, keyboard hint as secondary
+  · 3D: bronze-warm lighting, no purple ambient/fill, fog matches dg-bg
+  · Undo/redo in modebar. Multi-select via shift (dashed accent stroke).
+  · Device hover state: text-2 stroke (not accent — accent = selected)
+
+  EDITORIAL: 0 emoji · 0 hardcoded hex · 0 purple · 0 gradient · 0 em-dash
+  MOTION: emil-design-eng — packets are the ONE purposeful animation.
+          Cable sweep + hop pulse are the two SUPPORTING animations.
+          Config slide + frame badge entry are FUNCTIONAL transitions.
+          Everything else is calm (hover tint). ALL reduced-motion gated.
+  COPY: stop-slop — every label is precise, technical, non-generic.
+        "Cable type" not "Cables". "Select to auto-populate" not
+        "Auto-build a network topology". "Highlight on canvas" not
+        "Fix issues". "any" not "open" for Free Build.
+-->
+<style>
+  /* ─── TOKENS ─── */
+  html:root {
+    --bg: oklch(0.17 0.008 275);
+    --bg-2: oklch(0.205 0.009 275);
+    --bg-3: oklch(0.24 0.010 275);
+    --rule: oklch(0.32 0.011 275);
+    --rule-soft: oklch(0.255 0.010 275);
+    --text: oklch(0.96 0.006 275);
+    --text-2: oklch(0.80 0.012 275);
+    --text-dim: oklch(0.58 0.013 275);
+    --accent: oklch(0.80 0.155 64);
+    --accent-soft: oklch(0.80 0.155 64 / 0.12);
+    --accent-ink: oklch(0.20 0.045 64);
+    --pass: oklch(0.74 0.150 152);
+    --pass-soft: oklch(0.74 0.150 152 / 0.12);
+    --warn: oklch(0.82 0.130 85);
+    --warn-soft: oklch(0.82 0.130 85 / 0.12);
+    --fail: oklch(0.70 0.160 25);
+    --fail-soft: oklch(0.70 0.160 25 / 0.10);
+    --grid: oklch(0.23 0.009 275);
+    --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    --ease: cubic-bezier(0.16, 1, 0.3, 1);
+    --ease-out: cubic-bezier(0.33, 1, 0.68, 1);
+  }
+  @media (prefers-color-scheme: light) {
+    html:root {
+      --bg: oklch(0.975 0.007 85); --bg-2: oklch(0.945 0.008 85);
+      --bg-3: oklch(0.92 0.009 85); --rule: oklch(0.85 0.011 85);
+      --rule-soft: oklch(0.90 0.009 85); --text: oklch(0.20 0.015 280);
+      --text-2: oklch(0.38 0.014 280); --text-dim: oklch(0.55 0.013 280);
+      --accent: oklch(0.50 0.155 55); --accent-soft: oklch(0.50 0.155 55 / 0.10);
+      --accent-ink: oklch(0.98 0.012 70); --pass: oklch(0.50 0.15 150);
+      --pass-soft: oklch(0.50 0.15 150 / 0.10); --warn: oklch(0.55 0.13 85);
+      --warn-soft: oklch(0.55 0.13 85 / 0.10); --fail: oklch(0.52 0.16 25);
+      --fail-soft: oklch(0.52 0.16 25 / 0.08); --grid: oklch(0.91 0.008 85);
+    }
+  }
+
+  /* ─── RESET ─── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; overflow: hidden; }
+  body {
+    background: var(--bg); color: var(--text);
+    font: 400 14px/1.5 Inter, -apple-system, system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    display: flex; flex-direction: column;
+  }
+
+  /* ─── CONCEPT TAB BAR (mockup-only, not in prod) ─── */
+  .concept-tabs {
+    display: flex; gap: 2px; padding: 6px 8px;
+    background: var(--bg-2); border-bottom: 1px solid var(--rule-soft);
+    flex: none; font-size: 11px; font-weight: 700;
+    letter-spacing: 0.06em; text-transform: uppercase;
+  }
+  .concept-tab {
+    background: none; border: 0; color: var(--text-dim);
+    padding: 6px 14px; border-radius: 6px; cursor: pointer;
+    transition: color 0.12s, background 0.12s;
+  }
+  .concept-tab:hover { color: var(--text); background: var(--bg-3); }
+  .concept-tab.on { color: var(--accent); background: var(--accent-soft); }
+  .concept-panel { display: none; flex: 1; min-height: 0; }
+  .concept-panel.on { display: flex; flex-direction: column; }
+
+  /* ─── STRIP HEADER ─── */
+  .strip {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 18px; padding: 10px 22px;
+    border-bottom: 1px solid var(--rule-soft); flex: none;
+  }
+  .s-l { display: flex; align-items: center; gap: 14px; }
+  .menu-btn {
+    display: flex; align-items: center; gap: 6px;
+    background: none; border: 1px solid var(--rule); border-radius: 8px;
+    color: var(--text-dim); font: 600 12px/1 Inter, sans-serif;
+    padding: 7px 11px; cursor: pointer;
+  }
+  .menu-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .menu-btn svg { width: 13px; height: 13px; }
+  .eyebrow { font-size: 10px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-dim); }
+  .h1 { font-size: 17px; font-weight: 800; letter-spacing: -0.02em; }
+  .h1 em { font-style: normal; color: var(--accent); }
+  .s-r { display: flex; align-items: center; gap: 10px; }
+  .count-pill {
+    font: 700 11px/1 var(--mono); color: var(--text-dim);
+    border: 1px solid var(--rule); border-radius: 999px; padding: 5px 10px;
+    font-variant-numeric: tabular-nums;
+  }
+  .count-pill b { color: var(--text); }
+  .undo-redo { display: flex; gap: 2px; }
+  .undo-redo button {
+    width: 30px; height: 30px; background: none;
+    border: 1px solid var(--rule); border-radius: 7px;
+    color: var(--text-dim); cursor: pointer; display: grid; place-items: center;
+  }
+  .undo-redo button:hover { border-color: var(--accent); color: var(--accent); }
+  .undo-redo button:disabled { opacity: 0.3; cursor: default; }
+  .undo-redo svg { width: 14px; height: 14px; }
+
+  /* ─── WORKSPACE ─── */
+  .work { flex: 1; display: grid; grid-template-columns: 200px 1fr 220px; min-height: 0; }
+
+  /* ─── PALETTE RAIL ─── */
+  .rail {
+    border-right: 1px solid var(--rule-soft);
+    overflow-y: auto; display: flex; flex-direction: column;
+  }
+  .rail.right { border-right: 0; border-left: 1px solid var(--rule-soft); }
+  .rail-head {
+    padding: 14px 14px 10px;
+    border-bottom: 1px solid var(--rule-soft);
+  }
+  .rail-head h2 { font-size: 13px; font-weight: 800; }
+  .rail-head p { font-size: 10px; color: var(--text-dim); margin-top: 4px; line-height: 1.4; }
+  .cat { padding: 10px 6px 2px; }
+  .cat-h {
+    padding: 0 8px 6px; font-size: 9px; font-weight: 800;
+    letter-spacing: 0.16em; text-transform: uppercase; color: var(--text-dim);
+  }
+  .dev-btn {
+    display: flex; align-items: center; gap: 8px; width: 100%;
+    background: none; border: 0; text-align: left;
+    padding: 7px 9px; border-radius: 6px; cursor: grab;
+    color: var(--text-2); font: 500 12px/1 Inter, sans-serif;
+    transition: background 0.1s, color 0.1s;
+  }
+  .dev-btn:hover { background: var(--bg-2); color: var(--text); }
+  .dev-btn svg { width: 15px; height: 15px; color: var(--text-dim); flex: none; }
+  .dev-btn:hover svg { color: var(--accent); }
+  .cable-section { padding: 10px 14px; border-top: 1px solid var(--rule-soft); }
+  .cable-section h3 { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em; color: var(--text-dim); margin-bottom: 8px; }
+  .cable-chip {
+    display: inline-flex; align-items: center; gap: 5px;
+    background: none; border: 1px solid var(--rule); border-radius: 5px;
+    padding: 4px 8px; font: 500 10px/1 Inter, sans-serif;
+    color: var(--text-dim); cursor: pointer; margin: 0 4px 4px 0;
+  }
+  .cable-chip.on { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
+  .cable-chip .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+
+  /* ─── CANVAS ─── */
+  .canvas {
+    position: relative; min-width: 0; overflow: hidden;
+    background:
+      linear-gradient(var(--grid) 1px, transparent 1px) 0 0 / 24px 24px,
+      linear-gradient(90deg, var(--grid) 1px, transparent 1px) 0 0 / 24px 24px,
+      var(--bg);
+  }
+
+  /* Modebar */
+  .modebar {
+    position: absolute; top: 14px; left: 50%; transform: translateX(-50%);
+    display: flex; gap: 2px; background: var(--bg);
+    border: 1px solid var(--rule); border-radius: 10px;
+    padding: 3px; z-index: 5;
+    box-shadow: 0 8px 24px -10px oklch(0 0 0 / 0.25);
+  }
+  .mb {
+    display: flex; align-items: center; gap: 6px;
+    background: none; border: 0; border-radius: 7px;
+    color: var(--text-dim); font: 600 11px/1 Inter, sans-serif;
+    padding: 8px 10px; cursor: pointer; white-space: nowrap;
+    transition: background 0.1s, color 0.1s;
+  }
+  .mb svg { width: 13px; height: 13px; flex: none; }
+  .mb:hover { color: var(--text); background: var(--bg-2); }
+  .mb.on { color: var(--accent); background: var(--accent-soft); }
+  .mb-sep { width: 1px; background: var(--rule-soft); margin: 4px 2px; flex: none; }
+
+  /* Help + Zoom */
+  .help-btn {
+    position: absolute; top: 14px; right: 14px; z-index: 5;
+    width: 28px; height: 28px; border-radius: 7px;
+    border: 1px solid var(--rule); background: var(--bg);
+    color: var(--text-dim); display: grid; place-items: center; cursor: pointer;
+  }
+  .help-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .help-btn svg { width: 13px; height: 13px; }
+  .zoom-ctrl {
+    position: absolute; right: 14px; bottom: 50px;
+    display: flex; flex-direction: column;
+    border: 1px solid var(--rule); border-radius: 8px;
+    overflow: hidden; background: var(--bg); z-index: 5;
+  }
+  .zoom-ctrl button {
+    width: 32px; height: 32px; background: none;
+    border: 0; border-bottom: 1px solid var(--rule-soft);
+    color: var(--text-dim); cursor: pointer; display: grid; place-items: center;
+  }
+  .zoom-ctrl button:last-child { border-bottom: 0; }
+  .zoom-ctrl button:hover { background: var(--bg-2); color: var(--accent); }
+  .zoom-ctrl svg { width: 13px; height: 13px; }
+  .canvas-status {
+    position: absolute; left: 14px; bottom: 12px; z-index: 5;
+    font: 500 10px/1 var(--mono); color: var(--text-dim);
+    background: var(--bg); border: 1px solid var(--rule-soft);
+    border-radius: 7px; padding: 6px 11px;
+  }
+  .canvas-status b { color: var(--text-2); font-weight: 700; }
+
+  /* ─── SVG CANVAS DEVICES + CABLES ─── */
+  .cv { position: absolute; inset: 0; width: 100%; height: 100%; }
+  /* Device nodes */
+  .node-body { fill: var(--bg-2); stroke: var(--rule); stroke-width: 1.5; }
+  .node-body.selected { stroke: var(--accent); stroke-width: 2; }
+  .node-icon { fill: none; stroke: var(--text-dim); stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+  .node-body.selected + .node-icon { stroke: var(--accent); }
+  .node-label { fill: var(--text); font-size: 12px; font-weight: 700; font-family: Inter, sans-serif; }
+  .node-sublabel { fill: var(--text-dim); font-size: 9px; font-weight: 500; font-family: var(--mono); }
+  .node-iface { fill: var(--pass); r: 3; }
+  .node-iface.empty { fill: var(--text-dim); r: 2.5; }
+  /* Cables */
+  .cable { stroke: var(--rule); stroke-width: 2; fill: none; stroke-linecap: round; }
+  .cable.active { stroke: var(--accent); stroke-width: 2.5; }
+  .cable.traced { stroke: var(--accent); stroke-width: 2.5; stroke-dasharray: none; }
+  .cable.health-warn { stroke: var(--warn); }
+  .cable.health-fail { stroke: var(--fail); }
+
+  /* ─── PACKET ANIMATION (the star) ─── */
+  .packet-group { opacity: 0; }
+  .packet-group.active { opacity: 1; }
+  .packet-dot {
+    r: 5; fill: var(--accent);
+    filter: drop-shadow(0 0 6px var(--accent));
+  }
+  .packet-glow {
+    r: 10; fill: var(--accent); opacity: 0.2;
+  }
+  .packet-trail {
+    stroke: var(--accent); stroke-width: 3; fill: none;
+    opacity: 0.3; stroke-linecap: round;
+  }
+  /* offset-path animation for packet along cable */
+  @keyframes packetMove {
+    0% { offset-distance: 0%; opacity: 0; }
+    5% { opacity: 1; }
+    95% { opacity: 1; }
+    100% { offset-distance: 100%; opacity: 0.6; }
+  }
+  .packet-mover {
+    offset-rotate: 0deg;
+    animation: packetMove 1.4s var(--ease-out) forwards;
+  }
+  .packet-mover.speed-2x { animation-duration: 0.7s; }
+  .packet-mover.speed-half { animation-duration: 2.8s; }
+
+  /* ─── CABLE HIGHLIGHT SWEEP (emil-design-eng addition) ─── */
+  /* When a packet enters a cable, the cable progressively highlights
+     ahead of the dot — gives the eye a leading indicator. Uses
+     stroke-dashoffset animation on the traced cable to "draw" the
+     accent stroke from source to destination. */
+  @keyframes cableSweep {
+    0% { stroke-dashoffset: var(--cable-len, 200); }
+    100% { stroke-dashoffset: 0; }
+  }
+  .cable.sweeping {
+    stroke: var(--accent); stroke-width: 2.5;
+    stroke-dasharray: var(--cable-len, 200);
+    stroke-dashoffset: var(--cable-len, 200);
+    animation: cableSweep 1.4s var(--ease-out) forwards;
+  }
+  .cable.sweeping.speed-2x { animation-duration: 0.7s; }
+  .cable.sweeping.speed-half { animation-duration: 2.8s; }
+
+  /* ─── HOP ARRIVAL PULSE (emil-design-eng addition) ─── */
+  /* 200ms device-node glow when a packet arrives at an intermediate
+     hop. Makes the trace feel like a PROCESS, not a dot teleporting. */
+  @keyframes hopPulse {
+    0% { stroke-width: 2; filter: drop-shadow(0 0 0 var(--accent)); }
+    40% { stroke-width: 2.5; filter: drop-shadow(0 0 8px var(--accent)); }
+    100% { stroke-width: 2; filter: drop-shadow(0 0 0 var(--accent)); }
+  }
+  .node-body.hop-arrived {
+    stroke: var(--accent);
+    animation: hopPulse 0.5s var(--ease-out) forwards;
+  }
+
+  /* ─── FRAME BADGE ENTRY (emil-design-eng addition) ─── */
+  @keyframes badgeIn {
+    0% { opacity: 0; transform: scale(0.92) translateY(4px); }
+    100% { opacity: 1; transform: scale(1) translateY(0); }
+  }
+  .frame-badge { animation: badgeIn 0.25s var(--ease-out) forwards; }
+
+  /* ─── CONFIG PANEL SLIDE (emil-design-eng addition) ─── */
+  @keyframes configSlideIn {
+    0% { transform: translateX(100%); }
+    100% { transform: translateX(0); }
+  }
+  .config-panel { animation: configSlideIn 0.3s var(--ease) forwards; }
+
+  /* ─── CABLE TYPE DIFFERENTIATION (taste-skill addition) ─── */
+  /* Different cable types are visually distinct on canvas, not identical */
+  .cable.fiber { stroke-dasharray: 8 3; }
+  .cable.coax { stroke-width: 3; }
+  .cable.console { stroke-dasharray: 3 4; stroke: var(--text-dim); }
+  .cable.wireless { stroke-dasharray: 2 4; stroke: var(--text-dim); opacity: 0.6; }
+
+  /* ─── DEVICE HOVER + MULTI-SELECT (taste-skill addition) ─── */
+  .node-body:hover { stroke: var(--text-2); cursor: grab; }
+  .node-body.multi-selected {
+    stroke: var(--accent); stroke-width: 2;
+    stroke-dasharray: 4 3;
+  }
+
+  /* Ambient flow dots */
+  @keyframes ambientFlow {
+    0% { offset-distance: 0%; opacity: 0; }
+    10% { opacity: 0.4; }
+    90% { opacity: 0.4; }
+    100% { offset-distance: 100%; opacity: 0; }
+  }
+  .ambient-dot {
+    r: 2; fill: var(--text-dim); opacity: 0;
+    offset-rotate: 0deg;
+    animation: ambientFlow 3s linear infinite;
+  }
+  .ambient-dot:nth-child(2) { animation-delay: 1s; }
+  .ambient-dot:nth-child(3) { animation-delay: 2s; }
+  .ambient-dot.healthy { fill: var(--pass); }
+  /* Deliver/Fail pulse */
+  @keyframes deliverPulse {
+    0% { r: 5; opacity: 1; }
+    100% { r: 20; opacity: 0; }
+  }
+  .deliver-ring { fill: none; stroke: var(--pass); stroke-width: 2; animation: deliverPulse 0.8s var(--ease-out) forwards; }
+  .fail-ring { fill: none; stroke: var(--fail); stroke-width: 2; animation: deliverPulse 0.6s var(--ease-out) forwards; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .packet-mover, .ambient-dot, .deliver-ring, .fail-ring,
+    .cable.sweeping, .node-body.hop-arrived, .frame-badge,
+    .config-panel { animation: none !important; }
+    .packet-mover { offset-distance: 100%; opacity: 1; }
+    .ambient-dot { opacity: 0; }
+    .cable.sweeping { stroke-dashoffset: 0; }
+    .frame-badge { opacity: 1; transform: none; }
+    .config-panel { transform: translateX(0); }
+  }
+
+  /* ─── TRACE PANEL ─── */
+  .trace-panel {
+    position: absolute; left: 14px; top: 60px; z-index: 10;
+    width: 300px; background: var(--bg);
+    border: 1px solid var(--rule); border-radius: 10px;
+    box-shadow: 0 12px 32px -8px oklch(0 0 0 / 0.3);
+    overflow: hidden;
+  }
+  .tp-head {
+    padding: 12px 14px 10px;
+    border-bottom: 1px solid var(--rule-soft);
+    cursor: grab;
+  }
+  .tp-eyebrow { font-size: 9px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent); }
+  .tp-title { font-size: 14px; font-weight: 800; margin-top: 2px; }
+  .tp-meta { font-size: 10px; color: var(--text-dim); margin-top: 3px; font-family: var(--mono); }
+  .tp-hops {
+    max-height: 200px; overflow-y: auto;
+    padding: 8px 10px;
+  }
+  .tp-hop {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 7px 4px; border-bottom: 1px solid var(--rule-soft);
+    font-size: 11px;
+  }
+  .tp-hop:last-child { border-bottom: 0; }
+  .tp-hop-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    border: 2px solid var(--rule); flex: none; margin-top: 3px;
+  }
+  .tp-hop-dot.visited { border-color: var(--pass); background: var(--pass); }
+  .tp-hop-dot.current { border-color: var(--accent); background: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+  .tp-hop-dot.pending { border-color: var(--rule); }
+  .tp-hop-dev { font-weight: 700; color: var(--text); }
+  .tp-hop-layer {
+    font: 600 9px/1 var(--mono); padding: 2px 5px;
+    border-radius: 4px; margin-left: 6px;
+  }
+  .tp-hop-layer.l2 { color: var(--warn); background: var(--warn-soft); }
+  .tp-hop-layer.l3 { color: var(--accent); background: var(--accent-soft); }
+  .tp-hop-layer.arp { color: var(--text-dim); background: var(--bg-3); }
+  .tp-hop-layer.deliver { color: var(--pass); background: var(--pass-soft); }
+  .tp-hop-layer.fail { color: var(--fail); background: var(--fail-soft); }
+  .tp-hop-decision { color: var(--text-dim); margin-top: 2px; font-size: 10px; }
+  .tp-controls {
+    display: flex; align-items: center; gap: 6px;
+    padding: 10px 14px; border-top: 1px solid var(--rule-soft);
+  }
+  .tp-btn {
+    width: 30px; height: 30px; border-radius: 7px;
+    border: 1px solid var(--rule); background: none;
+    color: var(--text-dim); cursor: pointer; display: grid; place-items: center;
+  }
+  .tp-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .tp-btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+  .tp-btn.primary:hover { filter: brightness(1.1); }
+  .tp-btn svg { width: 12px; height: 12px; }
+  .tp-progress {
+    flex: 1; display: flex; flex-direction: column; gap: 3px; margin: 0 6px;
+  }
+  .tp-progress-label { font: 600 9px/1 var(--mono); color: var(--text-dim); text-align: center; }
+  .tp-progress-bar {
+    height: 3px; background: var(--rule-soft); border-radius: 2px; overflow: hidden;
+  }
+  .tp-progress-fill { height: 100%; background: var(--accent); border-radius: 2px; transition: width 0.3s var(--ease-out); }
+  .tp-speed {
+    font: 700 10px/1 var(--mono); color: var(--text-dim);
+    background: none; border: 1px solid var(--rule); border-radius: 5px;
+    padding: 4px 7px; cursor: pointer; white-space: nowrap;
+  }
+  .tp-speed:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* ─── FRAME BADGE (packet info overlay) ─── */
+  .frame-badge {
+    position: absolute; z-index: 8;
+    background: var(--bg); border: 1px solid var(--accent);
+    border-radius: 8px; padding: 8px 10px; min-width: 180px;
+    box-shadow: 0 6px 18px -6px oklch(0 0 0 / 0.3);
+    font-size: 10px; pointer-events: none;
+  }
+  .fb-head {
+    font: 700 10px/1 Inter, sans-serif; color: var(--accent);
+    text-transform: uppercase; letter-spacing: 0.08em;
+    padding-bottom: 6px; border-bottom: 1px solid var(--rule-soft);
+    margin-bottom: 6px;
+  }
+  .fb-row { display: flex; justify-content: space-between; padding: 2px 0; }
+  .fb-k { color: var(--text-dim); font-weight: 600; }
+  .fb-v { color: var(--text); font-family: var(--mono); font-weight: 600; }
+
+  /* ─── SCENARIO RAIL ─── */
+  .scn { padding: 10px 6px; }
+  .scn-g { padding: 10px 6px 2px; }
+  .scn-gh {
+    display: flex; align-items: baseline; justify-content: space-between;
+    padding: 0 8px 6px; font-size: 9px; font-weight: 800;
+    letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-dim);
+  }
+  .scn-gh .n { font-weight: 600; letter-spacing: 0; }
+  .scn-row {
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    width: 100%; background: none; border: 0; text-align: left;
+    padding: 7px 9px; border-radius: 6px; cursor: pointer;
+    color: var(--text-2); font: 500 11px/1.3 Inter, sans-serif;
+    transition: background 0.1s, color 0.1s;
+  }
+  .scn-row:hover { background: var(--bg-2); color: var(--text); }
+  .scn-row .dv {
+    font: 500 9px/1 var(--mono); color: var(--text-dim);
+    border: 1px solid var(--rule-soft); border-radius: 4px;
+    padding: 3px 5px; white-space: nowrap; flex: none;
+  }
+  .scn-row.on { color: var(--accent); background: var(--accent-soft); }
+  .scn-row.on .dv { color: var(--accent); border-color: var(--accent); }
+
+  /* ─── CONFIG PANEL (slide-out) ─── */
+  .config-panel {
+    position: absolute; right: 0; top: 0; bottom: 0; z-index: 12;
+    width: 360px; background: var(--bg);
+    border-left: 1px solid var(--rule);
+    display: flex; flex-direction: column;
+    box-shadow: -8px 0 24px -8px oklch(0 0 0 / 0.2);
+  }
+  .cp-head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 16px; border-bottom: 1px solid var(--rule-soft);
+  }
+  .cp-head-info {}
+  .cp-head-type { font-size: 9px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); }
+  .cp-head-name { font-size: 15px; font-weight: 800; margin-top: 1px; }
+  .cp-close {
+    width: 28px; height: 28px; border-radius: 7px;
+    border: 1px solid var(--rule); background: none;
+    color: var(--text-dim); cursor: pointer; display: grid; place-items: center;
+  }
+  .cp-close:hover { border-color: var(--accent); color: var(--accent); }
+  .cp-close svg { width: 12px; height: 12px; }
+  .cp-tabs {
+    display: flex; gap: 0; padding: 0 16px;
+    border-bottom: 1px solid var(--rule-soft); overflow-x: auto;
+  }
+  .cp-tab {
+    background: none; border: 0; border-bottom: 2px solid transparent;
+    color: var(--text-dim); font: 600 11px/1 Inter, sans-serif;
+    padding: 10px 10px 8px; cursor: pointer; white-space: nowrap;
+    transition: color 0.1s;
+  }
+  .cp-tab:hover { color: var(--text); }
+  .cp-tab.on { color: var(--accent); border-bottom-color: var(--accent); }
+  .cp-body { flex: 1; overflow-y: auto; padding: 14px 16px; }
+  .cp-section { margin-bottom: 16px; }
+  .cp-section-h {
+    font-size: 10px; font-weight: 800; letter-spacing: 0.10em;
+    text-transform: uppercase; color: var(--text-dim);
+    padding-bottom: 8px; border-bottom: 1px solid var(--rule-soft);
+    margin-bottom: 10px;
+  }
+  .cp-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 6px 0; border-bottom: 1px solid var(--rule-soft);
+    font-size: 12px;
+  }
+  .cp-row:last-child { border-bottom: 0; }
+  .cp-k { color: var(--text-dim); font-weight: 600; }
+  .cp-v { color: var(--text); font-family: var(--mono); font-weight: 500; }
+  .cp-v.editable {
+    background: var(--bg-2); border: 1px solid var(--rule);
+    border-radius: 5px; padding: 4px 8px; cursor: text;
+  }
+  .cp-iface-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+  .cp-iface-table th {
+    text-align: left; font-size: 9px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--text-dim); padding: 6px 6px 4px;
+    border-bottom: 1px solid var(--rule);
+  }
+  .cp-iface-table td {
+    padding: 6px; border-bottom: 1px solid var(--rule-soft);
+    font-family: var(--mono); color: var(--text-2);
+  }
+  .cp-iface-status {
+    width: 6px; height: 6px; border-radius: 50;
+    display: inline-block;
+  }
+  .cp-iface-status.up { background: var(--pass); }
+  .cp-iface-status.down { background: var(--fail); }
+
+  /* ─── GRADE MODAL ─── */
+  .grade-modal {
+    position: absolute; inset: 0; z-index: 20;
+    display: flex; align-items: center; justify-content: center;
+    background: oklch(0 0 0 / 0.5);
+  }
+  .grade-card {
+    width: 440px; max-height: 80vh; overflow-y: auto;
+    background: var(--bg); border: 1px solid var(--rule);
+    border-radius: 12px;
+    box-shadow: 0 16px 48px -12px oklch(0 0 0 / 0.4);
+  }
+  .gc-head { padding: 20px 20px 16px; border-bottom: 1px solid var(--rule-soft); text-align: center; }
+  .gc-score { font-size: 42px; font-weight: 900; letter-spacing: -0.03em; }
+  .gc-score em { font-style: normal; color: var(--text-dim); font-weight: 500; font-size: 24px; }
+  .gc-score.pass { color: var(--pass); }
+  .gc-score.partial { color: var(--warn); }
+  .gc-label { font-size: 11px; font-weight: 700; color: var(--text-dim); margin-top: 4px; }
+  .gc-bar { height: 4px; background: var(--rule-soft); border-radius: 2px; margin: 12px 0 0; overflow: hidden; }
+  .gc-bar-fill { height: 100%; border-radius: 2px; transition: width 0.6s var(--ease-out); }
+  .gc-bar-fill.pass { background: var(--pass); }
+  .gc-bar-fill.partial { background: var(--warn); }
+  .gc-body { padding: 14px 20px 20px; }
+  .gc-rule {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 8px 0; border-bottom: 1px solid var(--rule-soft);
+    font-size: 12px;
+  }
+  .gc-rule:last-child { border-bottom: 0; }
+  .gc-check {
+    width: 18px; height: 18px; border-radius: 5px; flex: none;
+    display: grid; place-items: center; margin-top: 1px;
+  }
+  .gc-check.ok { background: var(--pass-soft); color: var(--pass); }
+  .gc-check.fail { background: var(--fail-soft); color: var(--fail); }
+  .gc-check svg { width: 11px; height: 11px; }
+  .gc-rule-text { color: var(--text-2); }
+  .gc-rule-text b { color: var(--text); font-weight: 700; }
+  .gc-foot {
+    padding: 12px 20px 16px; border-top: 1px solid var(--rule-soft);
+    display: flex; gap: 8px; justify-content: flex-end;
+  }
+  .gc-btn {
+    font: 700 12px/1 Inter, sans-serif; padding: 9px 16px;
+    border-radius: 7px; cursor: pointer; border: 1px solid var(--rule);
+    background: none; color: var(--text-2);
+    transition: border-color 0.1s, color 0.1s;
+  }
+  .gc-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .gc-btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+
+  /* ─── 3D CONCEPT PANEL ─── */
+  .concept-3d {
+    flex: 1; display: flex; flex-direction: column; align-items: center;
+    justify-content: center; gap: 24px; padding: 40px;
+    background: var(--bg);
+  }
+  .concept-3d-scene {
+    width: 100%; max-width: 700px; aspect-ratio: 16/9;
+    border-radius: 12px; border: 1px solid var(--rule);
+    overflow: hidden; position: relative;
+    background:
+      radial-gradient(ellipse at 50% 120%, oklch(0.22 0.020 64 / 0.3), transparent 60%),
+      oklch(0.13 0.006 275);
+  }
+  .concept-3d-grid {
+    position: absolute; inset: 0;
+    background:
+      linear-gradient(oklch(0.20 0.008 64 / 0.15) 1px, transparent 1px) 0 0 / 40px 40px,
+      linear-gradient(90deg, oklch(0.20 0.008 64 / 0.15) 1px, transparent 1px) 0 0 / 40px 40px;
+    transform: perspective(600px) rotateX(55deg) translateY(30%);
+    transform-origin: center bottom;
+  }
+  .concept-3d-note {
+    max-width: 560px; text-align: center;
+  }
+  .concept-3d-note h2 { font-size: 18px; font-weight: 800; margin-bottom: 8px; }
+  .concept-3d-note p { font-size: 12px; color: var(--text-dim); line-height: 1.6; }
+  .color-swatches {
+    display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; margin-top: 16px;
+  }
+  .swatch {
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
+    font-size: 9px; color: var(--text-dim); font-weight: 600;
+  }
+  .swatch-block {
+    width: 48px; height: 32px; border-radius: 6px;
+    border: 1px solid var(--rule-soft);
+  }
+
+  /* ─── LAB PANEL ─── */
+  .lab-panel {
+    position: absolute; bottom: 0; left: 0; right: 0; z-index: 10;
+    background: var(--bg); border-top: 1px solid var(--rule);
+    box-shadow: 0 -8px 24px -8px oklch(0 0 0 / 0.2);
+  }
+  .lp-head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 16px; border-bottom: 1px solid var(--rule-soft);
+  }
+  .lp-title { font-size: 13px; font-weight: 800; }
+  .lp-step { font: 600 10px/1 var(--mono); color: var(--text-dim); }
+  .lp-progress { height: 3px; background: var(--rule-soft); }
+  .lp-progress-fill { height: 100%; background: var(--accent); transition: width 0.4s var(--ease-out); }
+  .lp-body { padding: 12px 16px; display: flex; gap: 16px; align-items: flex-start; }
+  .lp-instruction { flex: 1; font-size: 13px; color: var(--text-2); line-height: 1.6; }
+  .lp-instruction strong { color: var(--text); font-weight: 700; }
+  .lp-instruction code { font-family: var(--mono); background: var(--bg-2); padding: 1px 5px; border-radius: 4px; font-size: 11px; }
+  .lp-actions { display: flex; gap: 6px; flex: none; }
+  .lp-btn {
+    font: 600 11px/1 Inter, sans-serif; padding: 8px 14px;
+    border-radius: 7px; cursor: pointer; border: 1px solid var(--rule);
+    background: none; color: var(--text-dim);
+  }
+  .lp-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .lp-btn.hint { color: var(--warn); border-color: var(--warn); }
+  .lp-check {
+    font: 700 10px/1 Inter, sans-serif; color: var(--pass);
+    display: flex; align-items: center; gap: 5px;
+  }
+  .lp-check svg { width: 12px; height: 12px; }
+
+  /* ─── FIX THIS NETWORK (taste-skill addition) ─── */
+  .fix-banner {
+    position: absolute; top: 60px; left: 50%; transform: translateX(-50%);
+    z-index: 8; display: flex; align-items: center; gap: 10px;
+    background: var(--bg); border: 1px solid var(--fail);
+    border-radius: 10px; padding: 10px 16px;
+    box-shadow: 0 8px 24px -10px oklch(0 0 0 / 0.25);
+    font-size: 12px; max-width: 420px;
+  }
+  .fix-banner-icon {
+    width: 28px; height: 28px; border-radius: 7px; flex: none;
+    background: var(--fail-soft); color: var(--fail);
+    display: grid; place-items: center;
+  }
+  .fix-banner-icon svg { width: 14px; height: 14px; }
+  .fix-banner-text b { font-weight: 700; color: var(--text); }
+  .fix-banner-text { color: var(--text-2); line-height: 1.4; }
+  .fix-banner-hint {
+    font-size: 10px; color: var(--text-dim); margin-top: 3px;
+    font-family: var(--mono);
+  }
+  /* Faulted device node */
+  .node-body.faulted { stroke: var(--fail); stroke-width: 2; }
+  .node-fault-badge {
+    fill: var(--fail); font-size: 13px; font-weight: 900;
+    font-family: Inter, sans-serif;
+    text-anchor: middle; dominant-baseline: central;
+  }
+  /* Faulted cable */
+  .cable.broken { stroke: var(--fail); stroke-dasharray: 5 5; }
+  /* Fix result panel */
+  .fix-result {
+    position: absolute; left: 50%; top: 50%; z-index: 15;
+    transform: translate(-50%, -50%);
+    width: 380px; background: var(--bg);
+    border: 1px solid var(--rule); border-radius: 12px;
+    box-shadow: 0 16px 48px -12px oklch(0 0 0 / 0.4);
+    overflow: hidden;
+  }
+  .fr-head {
+    padding: 16px 20px; border-bottom: 1px solid var(--rule-soft);
+    text-align: center;
+  }
+  .fr-verdict { font-size: 22px; font-weight: 800; }
+  .fr-verdict.pass { color: var(--pass); }
+  .fr-verdict.fail { color: var(--fail); }
+  .fr-sub { font-size: 11px; color: var(--text-dim); margin-top: 4px; }
+  .fr-body { padding: 14px 20px; }
+  .fr-section-h {
+    font-size: 9px; font-weight: 800; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--text-dim);
+    padding-bottom: 8px; border-bottom: 1px solid var(--rule-soft);
+    margin-bottom: 8px;
+  }
+  .fr-row {
+    display: flex; justify-content: space-between; padding: 5px 0;
+    font-size: 12px; border-bottom: 1px solid var(--rule-soft);
+  }
+  .fr-row:last-child { border-bottom: 0; }
+  .fr-k { color: var(--text-dim); font-weight: 600; }
+  .fr-v { font-family: var(--mono); font-weight: 600; }
+  .fr-v.ok { color: var(--pass); }
+  .fr-v.bad { color: var(--fail); }
+  .fr-foot {
+    padding: 12px 20px; border-top: 1px solid var(--rule-soft);
+    display: flex; gap: 8px; justify-content: flex-end;
+  }
+  .fr-btn {
+    font: 700 12px/1 Inter, sans-serif; padding: 9px 16px;
+    border-radius: 7px; cursor: pointer; border: 1px solid var(--rule);
+    background: none; color: var(--text-2);
+  }
+  .fr-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .fr-btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+
+  /* ─── EMPTY CANVAS STATE (taste-skill addition) ─── */
+  .empty-state {
+    position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center; max-width: 340px; z-index: 3;
+  }
+  .empty-icon {
+    width: 48px; height: 48px; margin: 0 auto 16px;
+    border: 1px solid var(--rule); border-radius: 12px;
+    display: grid; place-items: center; color: var(--text-dim);
+  }
+  .empty-icon svg { width: 22px; height: 22px; }
+  .empty-h { font-size: 17px; font-weight: 800; letter-spacing: -0.02em; margin-bottom: 6px; }
+  .empty-sub { font-size: 12px; color: var(--text-dim); line-height: 1.6; margin-bottom: 16px; }
+  .empty-actions { display: flex; gap: 8px; justify-content: center; }
+  .empty-btn {
+    font: 600 11px/1 Inter, sans-serif; padding: 9px 14px;
+    border-radius: 7px; border: 1px solid var(--rule);
+    background: none; color: var(--text-2); cursor: pointer;
+  }
+  .empty-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .empty-btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+  .empty-kbd {
+    font: 500 10px/1 var(--mono); color: var(--text-dim);
+    margin-top: 14px;
+  }
+  .empty-kbd kbd {
+    background: var(--bg-2); border: 1px solid var(--rule);
+    border-radius: 4px; padding: 2px 6px; font-family: var(--mono);
+    font-size: 10px;
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══ CONCEPT TAB BAR (mockup navigation, not production) ═══ -->
+<nav class="concept-tabs">
+  <button class="concept-tab on" data-panel="workspace">Workspace + trace</button>
+  <button class="concept-tab" data-panel="config">Config panel</button>
+  <button class="concept-tab" data-panel="threed">3D concept</button>
+  <button class="concept-tab" data-panel="grade">Grade modal</button>
+  <button class="concept-tab" data-panel="lab">Lab step</button>
+  <button class="concept-tab" data-panel="fix">Fix + empty states</button>
+</nav>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     PANEL 1: WORKSPACE + TRACE
+     The main 2D canvas with editorial device nodes, cables,
+     animated packet trace, trace panel, and ambient flow dots.
+     ═══════════════════════════════════════════════════════════════ -->
+<div class="concept-panel on" id="workspace">
+  <header class="strip">
+    <span class="s-l">
+      <button class="menu-btn" type="button"><svg viewBox="0 0 24 24" fill="none"><path d="M15 6l-6 6 6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Menu</button>
+      <span><div class="eyebrow">Network+ · N10-009 · sandbox</div><div class="h1">Network <em>builder.</em></div></span>
+    </span>
+    <span class="s-r">
+      <span class="undo-redo">
+        <button type="button" aria-label="Undo"><svg viewBox="0 0 24 24" fill="none"><path d="M4 8l5-5M4 8l5 5M4 8h12a4 4 0 0 1 0 8H12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        <button type="button" aria-label="Redo" disabled><svg viewBox="0 0 24 24" fill="none"><path d="M20 8l-5-5M20 8l-5 5M20 8H8a4 4 0 0 0 0 8h4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      </span>
+      <span class="count-pill"><b>7</b> / 50</span>
+    </span>
+  </header>
+
+  <div class="work">
+    <!-- LEFT RAIL: Device palette -->
+    <aside class="rail">
+      <div class="rail-head">
+        <h2>Devices</h2>
+        <p>Drag to canvas or click to place.</p>
+      </div>
+      <div class="cat">
+        <div class="cat-h">Infrastructure</div>
+        <button class="dev-btn" type="button"><svg viewBox="0 0 24 24" fill="none"><rect x="3" y="9" width="18" height="6" rx="2" stroke="currentColor" stroke-width="1.5"/><circle cx="7" cy="12" r="1" fill="currentColor"/><circle cx="11" cy="12" r="1" fill="currentColor"/></svg>Router</button>
+        <button class="dev-btn" type="button"><svg viewBox="0 0 24 24" fill="none"><rect x="3" y="9" width="18" height="6" rx="1.5" stroke="currentColor" stroke-width="1.5"/><path d="M7 9V6M11 9V6M15 9V6M19 9V6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>Switch</button>
+        <button class="dev-btn" type="button"><svg viewBox="0 0 24 24" fill="none"><rect x="5" y="4" width="14" height="16" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M5 10h14M9 4v6M15 4v6" stroke="currentColor" stroke-width="1.3"/></svg>Firewall</button>
+        <button class="dev-btn" type="button"><svg viewBox="0 0 24 24" fill="none"><path d="M12 3c3 2 6 5 6 9a6 6 0 0 1-12 0c0-4 3-7 6-9z" stroke="currentColor" stroke-width="1.5"/><circle cx="12" cy="13" r="2" stroke="currentColor" stroke-width="1.5"/></svg>Access Point</button>
+      </div>
+      <div class="cat">
+        <div class="cat-h">Endpoints</div>
+        <button class="dev-btn" type="button"><svg viewBox="0 0 24 24" fill="none"><rect x="4" y="4" width="16" height="12" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M8 20h8M12 16v4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>PC</button>
+        <button class="dev-btn" type="button"><svg viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="3" stroke="currentColor" stroke-width="1.5"/><path d="M3 7h18M7 17h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>Server</button>
+        <button class="dev-btn" type="button"><svg viewBox="0 0 24 24" fill="none"><rect x="6" y="4" width="12" height="16" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M10 18h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>Laptop</button>
+      </div>
+      <div class="cable-section">
+        <h3>Cable type</h3>
+        <button class="cable-chip on"><span class="dot"></span>Cat6</button>
+        <button class="cable-chip"><span class="dot"></span>Fiber</button>
+        <button class="cable-chip"><span class="dot"></span>Coax</button>
+        <button class="cable-chip"><span class="dot"></span>Console</button>
+      </div>
+    </aside>
+
+    <!-- CENTER: Canvas with SVG topology -->
+    <main class="canvas">
+      <div class="modebar">
+        <button class="mb" type="button"><svg viewBox="0 0 24 24" fill="none"><path d="M4 20l4-1L19 8a2.8 2.8 0 0 0-4-4L4 15l-1 4z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>Design</button>
+        <button class="mb" type="button"><svg viewBox="0 0 24 24" fill="none"><path d="M8 5v14l11-7z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>Simulate</button>
+        <button class="mb on" type="button"><svg viewBox="0 0 24 24" fill="none"><path d="M4 12h5l2-5 4 10 2-5h3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>Trace</button>
+        <button class="mb" type="button"><svg viewBox="0 0 24 24" fill="none"><path d="M9 3v6l-5 9a2 2 0 0 0 2 3h12a2 2 0 0 0 2-3l-5-9V3" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>Labs</button>
+        <button class="mb" type="button"><svg viewBox="0 0 24 24" fill="none"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9zM12 12l8-4.5M12 12v9M12 12L4 7.5" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>3D</button>
+        <span class="mb-sep"></span>
+        <button class="mb" type="button"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="9" r="3.5" stroke="currentColor" stroke-width="1.5"/><path d="M5 20a7 7 0 0 1 14 0" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>Coach</button>
+        <button class="mb" type="button"><svg viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Grade</button>
+        <button class="mb" type="button"><svg viewBox="0 0 24 24" fill="none"><path d="M12 4v10M8 10l4 4 4-4M5 20h14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>Export</button>
+      </div>
+
+      <button class="help-btn" type="button" aria-label="How to build"><svg viewBox="0 0 24 24" fill="none"><path d="M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-1 .5-1.5 1-1.5 2M12 17h.01" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></button>
+
+      <!-- THE SVG CANVAS — editorial device nodes + cables + packet trace -->
+      <svg class="cv" viewBox="0 0 960 580" preserveAspectRatio="xMidYMid meet">
+        <defs>
+          <!-- Cable paths for packet animation (offset-path needs a path d) -->
+          <path id="cable-r-sw" d="M 480 140 L 480 260" />
+          <path id="cable-sw-fw" d="M 480 310 L 300 420" />
+          <path id="cable-sw-srv" d="M 480 310 L 660 420" />
+          <path id="cable-sw-pc1" d="M 480 310 L 180 460" />
+          <path id="cable-fw-dmz" d="M 300 470 L 300 540" />
+        </defs>
+
+        <!-- CABLES (drawn first, under devices) — type-differentiated -->
+        <g class="cables">
+          <line class="cable traced" x1="480" y1="140" x2="480" y2="260"/>
+          <line class="cable traced" x1="480" y1="310" x2="300" y2="420"/>
+          <line class="cable" x1="480" y1="310" x2="660" y2="420"/>
+          <line class="cable" x1="480" y1="310" x2="180" y2="460"/>
+          <line class="cable fiber" x1="300" y1="470" x2="300" y2="540"/>
+        </g>
+
+        <!-- AMBIENT FLOW DOTS on healthy cables -->
+        <g>
+          <circle class="ambient-dot healthy" style="offset-path:path('M 480 310 L 660 420');" />
+          <circle class="ambient-dot healthy" style="offset-path:path('M 480 310 L 660 420');" />
+          <circle class="ambient-dot healthy" style="offset-path:path('M 480 310 L 180 460');" />
+          <circle class="ambient-dot" style="offset-path:path('M 300 470 L 300 540');" />
+        </g>
+
+        <!-- DEVICE NODES -->
+        <!-- Router (selected, traced) -->
+        <g transform="translate(420, 80)">
+          <rect class="node-body selected" width="120" height="60" rx="10"/>
+          <g class="node-icon" transform="translate(14, 15)">
+            <rect x="0" y="8" width="28" height="14" rx="3"/>
+            <circle cx="8" cy="15" r="1.5" fill="var(--accent)" stroke="none"/>
+            <circle cx="14" cy="15" r="1.5" fill="var(--accent)" stroke="none"/>
+          </g>
+          <text class="node-label" x="48" y="30">Edge-RTR</text>
+          <text class="node-sublabel" x="48" y="42">10.0.0.1</text>
+          <circle class="node-iface" cx="60" cy="60"/>
+        </g>
+
+        <!-- Switch (traced) -->
+        <g transform="translate(420, 260)">
+          <rect class="node-body" width="120" height="50" rx="10" style="stroke:var(--accent);"/>
+          <g class="node-icon" transform="translate(14, 12)">
+            <rect x="0" y="8" width="28" height="12" rx="2" stroke="var(--text-dim)" stroke-width="1.5" fill="none"/>
+            <line x1="7" y1="8" x2="7" y2="3" stroke="var(--text-dim)" stroke-width="1.5" stroke-linecap="round"/>
+            <line x1="14" y1="8" x2="14" y2="3" stroke="var(--text-dim)" stroke-width="1.5" stroke-linecap="round"/>
+            <line x1="21" y1="8" x2="21" y2="3" stroke="var(--text-dim)" stroke-width="1.5" stroke-linecap="round"/>
+          </g>
+          <text class="node-label" x="48" y="27">Core-SW</text>
+          <text class="node-sublabel" x="48" y="39">VLAN 10</text>
+          <circle class="node-iface" cx="60" cy="0"/>
+          <circle class="node-iface" cx="30" cy="50"/>
+          <circle class="node-iface" cx="60" cy="50"/>
+          <circle class="node-iface" cx="90" cy="50"/>
+        </g>
+
+        <!-- Firewall (traced) -->
+        <g transform="translate(240, 420)">
+          <rect class="node-body" width="120" height="50" rx="10" style="stroke:var(--accent);"/>
+          <g class="node-icon" transform="translate(14, 10)">
+            <rect x="2" y="2" width="24" height="26" rx="3" stroke="var(--text-dim)" stroke-width="1.5" fill="none"/>
+            <line x1="2" y1="14" x2="26" y2="14" stroke="var(--text-dim)" stroke-width="1.3"/>
+          </g>
+          <text class="node-label" x="48" y="27">FW-01</text>
+          <text class="node-sublabel" x="48" y="39">10.0.1.1</text>
+          <circle class="node-iface" cx="60" cy="0"/>
+          <circle class="node-iface" cx="60" cy="50"/>
+        </g>
+
+        <!-- Server -->
+        <g transform="translate(600, 420)">
+          <rect class="node-body" width="120" height="50" rx="10"/>
+          <g class="node-icon" transform="translate(14, 10)">
+            <rect x="2" y="0" width="24" height="28" rx="3" stroke="var(--text-dim)" stroke-width="1.5" fill="none"/>
+            <line x1="2" y1="10" x2="26" y2="10" stroke="var(--text-dim)" stroke-width="1"/>
+            <line x1="2" y1="18" x2="26" y2="18" stroke="var(--text-dim)" stroke-width="1"/>
+          </g>
+          <text class="node-label" x="48" y="27">SRV-01</text>
+          <text class="node-sublabel" x="48" y="39">10.0.2.10</text>
+          <circle class="node-iface" cx="60" cy="0"/>
+        </g>
+
+        <!-- PC -->
+        <g transform="translate(120, 440)">
+          <rect class="node-body" width="120" height="50" rx="10"/>
+          <g class="node-icon" transform="translate(14, 10)">
+            <rect x="4" y="0" width="20" height="16" rx="2" stroke="var(--text-dim)" stroke-width="1.5" fill="none"/>
+            <line x1="10" y1="16" x2="10" y2="22" stroke="var(--text-dim)" stroke-width="1.5"/>
+            <line x1="4" y1="22" x2="18" y2="22" stroke="var(--text-dim)" stroke-width="1.5" stroke-linecap="round"/>
+          </g>
+          <text class="node-label" x="48" y="27">PC-01</text>
+          <text class="node-sublabel" x="48" y="39">10.0.0.50</text>
+          <circle class="node-iface" cx="60" cy="0"/>
+        </g>
+
+        <!-- DMZ Server -->
+        <g transform="translate(240, 530)">
+          <rect class="node-body" width="120" height="40" rx="10"/>
+          <text class="node-label" x="14" y="22">DMZ-Web</text>
+          <text class="node-sublabel" x="14" y="34">172.16.0.10</text>
+          <circle class="node-iface.empty" cx="60" cy="0" r="2.5" fill="var(--text-dim)"/>
+        </g>
+
+        <!-- PACKET ANIMATION — the star of the show -->
+        <!-- Packet travelling from Router to Switch (hop 1 → 2) -->
+        <g class="packet-group active">
+          <!-- Glow ring at current position -->
+          <circle class="packet-glow" style="offset-path:path('M 480 140 L 480 260'); offset-distance:65%; offset-rotate:0deg;"/>
+          <!-- Core dot -->
+          <circle class="packet-dot packet-mover" style="offset-path:path('M 480 140 L 480 260');"/>
+        </g>
+      </svg>
+
+      <!-- FRAME BADGE (shows L2/L3 info for current hop) -->
+      <div class="frame-badge" style="top: 170px; left: 520px;">
+        <div class="fb-head">L3 forward · hop 2 of 5</div>
+        <div class="fb-row"><span class="fb-k">Src MAC</span><span class="fb-v">aa:bb:cc:00:01:01</span></div>
+        <div class="fb-row"><span class="fb-k">Dst MAC</span><span class="fb-v">aa:bb:cc:00:02:01</span></div>
+        <div class="fb-row"><span class="fb-k">Src IP</span><span class="fb-v">10.0.0.50</span></div>
+        <div class="fb-row"><span class="fb-k">Dst IP</span><span class="fb-v">172.16.0.10</span></div>
+        <div class="fb-row"><span class="fb-k">TTL</span><span class="fb-v">63</span></div>
+      </div>
+
+      <!-- TRACE PANEL -->
+      <div class="trace-panel">
+        <div class="tp-head">
+          <div class="tp-eyebrow">Packet trace · live</div>
+          <div class="tp-title">ping 172.16.0.10</div>
+          <div class="tp-meta">PC-01 (10.0.0.50) &rarr; DMZ-Web (172.16.0.10) · 5 hops</div>
+        </div>
+        <div class="tp-hops">
+          <div class="tp-hop">
+            <span class="tp-hop-dot visited"></span>
+            <div>
+              <span class="tp-hop-dev">PC-01</span>
+              <span class="tp-hop-layer arp">ARP</span>
+              <div class="tp-hop-decision">ARP request: who has 10.0.0.1?</div>
+            </div>
+          </div>
+          <div class="tp-hop">
+            <span class="tp-hop-dot current"></span>
+            <div>
+              <span class="tp-hop-dev">Edge-RTR</span>
+              <span class="tp-hop-layer l3">L3</span>
+              <div class="tp-hop-decision">Route lookup: 172.16.0.0/24 via Gi0/1 to FW-01</div>
+            </div>
+          </div>
+          <div class="tp-hop">
+            <span class="tp-hop-dot pending"></span>
+            <div>
+              <span class="tp-hop-dev">Core-SW</span>
+              <span class="tp-hop-layer l2">L2</span>
+              <div class="tp-hop-decision">MAC forward to port Fa0/3</div>
+            </div>
+          </div>
+          <div class="tp-hop">
+            <span class="tp-hop-dot pending"></span>
+            <div>
+              <span class="tp-hop-dev">FW-01</span>
+              <span class="tp-hop-layer l3">L3</span>
+              <div class="tp-hop-decision">ACL permit: ICMP 10.0.0.50 &rarr; 172.16.0.0/24</div>
+            </div>
+          </div>
+          <div class="tp-hop">
+            <span class="tp-hop-dot pending"></span>
+            <div>
+              <span class="tp-hop-dev">DMZ-Web</span>
+              <span class="tp-hop-layer deliver">Deliver</span>
+              <div class="tp-hop-decision">ICMP echo reply</div>
+            </div>
+          </div>
+        </div>
+        <div class="tp-controls">
+          <button class="tp-btn" type="button" aria-label="Reset"><svg viewBox="0 0 24 24" fill="none"><path d="M4 8l4-4M4 8l4 4M4 8h12a4 4 0 0 1 0 8h-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+          <button class="tp-btn primary" type="button" aria-label="Pause"><svg viewBox="0 0 24 24" fill="none"><rect x="6" y="5" width="4" height="14" rx="1" fill="currentColor"/><rect x="14" y="5" width="4" height="14" rx="1" fill="currentColor"/></svg></button>
+          <button class="tp-btn" type="button" aria-label="Step forward"><svg viewBox="0 0 24 24" fill="none"><path d="M6 5v14l10-7z" fill="currentColor"/><rect x="17" y="5" width="3" height="14" rx="1" fill="currentColor"/></svg></button>
+          <div class="tp-progress">
+            <div class="tp-progress-label">Hop 2 of 5</div>
+            <div class="tp-progress-bar"><div class="tp-progress-fill" style="width:40%"></div></div>
+          </div>
+          <button class="tp-speed" type="button">1x</button>
+        </div>
+      </div>
+
+      <div class="zoom-ctrl">
+        <button type="button" aria-label="Zoom in"><svg viewBox="0 0 24 24" fill="none"><path d="M12 6v12M6 12h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+        <button type="button" aria-label="Zoom out"><svg viewBox="0 0 24 24" fill="none"><path d="M6 12h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+        <button type="button" aria-label="Fit to view"><svg viewBox="0 0 24 24" fill="none"><path d="M4 9V5h5M20 9V5h-5M4 15v4h5M20 15v4h-5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      </div>
+      <div class="canvas-status"><b>7</b> devices · <b>6</b> cables · trace active</div>
+    </main>
+
+    <!-- RIGHT RAIL: Scenarios -->
+    <aside class="rail right">
+      <div class="rail-head">
+        <h2>Scenarios</h2>
+        <p>Select to auto-populate.</p>
+      </div>
+      <div class="scn">
+        <div class="scn-g">
+          <div class="scn-gh">Sandbox</div>
+          <button class="scn-row on" type="button"><span>Free Build</span><span class="dv">any</span></button>
+        </div>
+        <div class="scn-g">
+          <div class="scn-gh">Campus <span class="n">5</span></div>
+          <button class="scn-row" type="button"><span>Home network</span><span class="dv">7 dev</span></button>
+          <button class="scn-row" type="button"><span>Small office</span><span class="dv">7 dev</span></button>
+          <button class="scn-row" type="button"><span>DMZ with screened subnet</span><span class="dv">9 dev</span></button>
+          <button class="scn-row" type="button"><span>Enterprise with IDS</span><span class="dv">12 dev</span></button>
+          <button class="scn-row" type="button"><span>Branch office</span><span class="dv">11 dev</span></button>
+        </div>
+        <div class="scn-g">
+          <div class="scn-gh">WAN <span class="n">10</span></div>
+          <button class="scn-row" type="button"><span>Leased line</span><span class="dv">8 dev</span></button>
+          <button class="scn-row" type="button"><span>Hub and spoke</span><span class="dv">13 dev</span></button>
+          <button class="scn-row" type="button"><span>Full mesh</span><span class="dv">12 dev</span></button>
+          <button class="scn-row" type="button"><span>SD-WAN</span><span class="dv">12 dev</span></button>
+        </div>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     PANEL 2: CONFIG PANEL
+     Device config with type-filtered tabs. Router shown.
+     ═══════════════════════════════════════════════════════════════ -->
+<div class="concept-panel" id="config" style="position:relative;background:var(--bg);">
+  <div style="padding:40px;max-width:800px;margin:0 auto;">
+    <div style="font-size:11px;color:var(--text-dim);margin-bottom:20px;">
+      Config panel slides in from the right when a device is double-clicked.
+      Tabs are FILTERED by device type — a router shows routing tabs, a PC shows only overview + interface.
+    </div>
+  </div>
+  <div class="config-panel" style="position:relative;width:100%;max-width:380px;margin:0 auto;box-shadow:none;border:1px solid var(--rule);border-radius:10px;">
+    <div class="cp-head">
+      <div class="cp-head-info">
+        <div class="cp-head-type">Router</div>
+        <div class="cp-head-name">Edge-RTR</div>
+      </div>
+      <button class="cp-close" type="button"><svg viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+    </div>
+    <div class="cp-tabs">
+      <button class="cp-tab on">Overview</button>
+      <button class="cp-tab">Interfaces</button>
+      <button class="cp-tab">Routing</button>
+      <button class="cp-tab">OSPF</button>
+      <button class="cp-tab">ACL</button>
+      <button class="cp-tab">CLI</button>
+    </div>
+    <div class="cp-body">
+      <div class="cp-section">
+        <div class="cp-section-h">Identity</div>
+        <div class="cp-row"><span class="cp-k">Hostname</span><span class="cp-v editable">Edge-RTR</span></div>
+        <div class="cp-row"><span class="cp-k">Type</span><span class="cp-v">Router</span></div>
+        <div class="cp-row"><span class="cp-k">MAC</span><span class="cp-v">aa:bb:cc:00:01:01</span></div>
+      </div>
+      <div class="cp-section">
+        <div class="cp-section-h">Interfaces</div>
+        <table class="cp-iface-table">
+          <thead><tr><th>Name</th><th>IP</th><th>Mask</th><th>Status</th></tr></thead>
+          <tbody>
+            <tr><td>Gi0/0</td><td>10.0.0.1</td><td>/24</td><td><span class="cp-iface-status up" style="width:6px;height:6px;border-radius:50%;display:inline-block;background:var(--pass);"></span></td></tr>
+            <tr><td>Gi0/1</td><td>10.0.1.1</td><td>/24</td><td><span class="cp-iface-status up" style="width:6px;height:6px;border-radius:50%;display:inline-block;background:var(--pass);"></span></td></tr>
+            <tr><td>Gi0/2</td><td style="color:var(--text-dim);">unset</td><td></td><td><span style="width:6px;height:6px;border-radius:50%;display:inline-block;background:var(--fail);"></span></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="cp-section">
+        <div class="cp-section-h">Routing table</div>
+        <div class="cp-row"><span class="cp-k">10.0.0.0/24</span><span class="cp-v">Gi0/0 · connected</span></div>
+        <div class="cp-row"><span class="cp-k">10.0.1.0/24</span><span class="cp-v">Gi0/1 · connected</span></div>
+        <div class="cp-row"><span class="cp-k">172.16.0.0/24</span><span class="cp-v">10.0.1.2 · static</span></div>
+        <div class="cp-row"><span class="cp-k">0.0.0.0/0</span><span class="cp-v">10.0.0.254 · default</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     PANEL 3: 3D CONCEPT
+     Colour/lighting direction for Three.js scene rebuild.
+     ═══════════════════════════════════════════════════════════════ -->
+<div class="concept-panel" id="threed">
+  <div class="concept-3d">
+    <div class="concept-3d-scene">
+      <div class="concept-3d-grid"></div>
+    </div>
+    <div class="concept-3d-note">
+      <h2>3D scene direction</h2>
+      <p>
+        Replace pre-rebrand purple lighting with a bronze-warm palette.
+        Ambient light shifts from purple <code>0xa99cff</code> to warm
+        <code>oklch(0.80 0.06 64)</code>. Fill light from purple
+        <code>0x7c6ff7</code> to bronze <code>oklch(0.65 0.10 64)</code>.
+        Ground grid uses the token-equivalent of <code>--bg-2</code>, not
+        purple-tinted navy. Fog matches <code>--bg</code>. Device materials
+        use roughness 0.6 / metalness 0.15 for a matte editorial feel.
+        Cable tubes differentiate by type: cat6 = accent, fiber = warm gold,
+        coax = neutral dim. Packets follow the ACTUAL cubic bezier cable
+        curves (fix the broken <code>fromId/toId</code> lookup). Packet
+        glow = accent with ease-in-out along arc-length-parameterised path.
+      </p>
+      <div class="color-swatches">
+        <div class="swatch"><div class="swatch-block" style="background:oklch(0.13 0.006 275);"></div>Fog / bg</div>
+        <div class="swatch"><div class="swatch-block" style="background:oklch(0.20 0.008 64);"></div>Ground</div>
+        <div class="swatch"><div class="swatch-block" style="background:oklch(0.80 0.06 64);"></div>Ambient</div>
+        <div class="swatch"><div class="swatch-block" style="background:oklch(0.65 0.10 64);"></div>Fill</div>
+        <div class="swatch"><div class="swatch-block" style="background:oklch(0.80 0.155 64);"></div>Accent</div>
+        <div class="swatch"><div class="swatch-block" style="background:oklch(0.74 0.150 152);"></div>Pass</div>
+        <div class="swatch"><div class="swatch-block" style="background:oklch(0.70 0.160 25);"></div>Fail</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     PANEL 4: GRADE MODAL
+     Progressive scoring (percentage) not binary pass/fail list.
+     ═══════════════════════════════════════════════════════════════ -->
+<div class="concept-panel" id="grade" style="position:relative;background:var(--bg);">
+  <div class="grade-modal" style="position:relative;min-height:500px;">
+    <div class="grade-card">
+      <div class="gc-head">
+        <div class="gc-score partial">78<em>%</em></div>
+        <div class="gc-label">7 of 9 checks passed · DMZ with screened subnet</div>
+        <div class="gc-bar"><div class="gc-bar-fill partial" style="width:78%;"></div></div>
+      </div>
+      <div class="gc-body">
+        <div class="gc-rule">
+          <span class="gc-check ok"><svg viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+          <span class="gc-rule-text"><b>Minimum devices</b> · at least 9 devices present</span>
+        </div>
+        <div class="gc-rule">
+          <span class="gc-check ok"><svg viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+          <span class="gc-rule-text"><b>No orphans</b> · every device is connected</span>
+        </div>
+        <div class="gc-rule">
+          <span class="gc-check ok"><svg viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+          <span class="gc-rule-text"><b>Firewall present</b> · DMZ requires a firewall</span>
+        </div>
+        <div class="gc-rule">
+          <span class="gc-check ok"><svg viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+          <span class="gc-rule-text"><b>Subnet consistency</b> · connected devices share a subnet</span>
+        </div>
+        <div class="gc-rule">
+          <span class="gc-check ok"><svg viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+          <span class="gc-rule-text"><b>IP uniqueness</b> · no duplicate addresses</span>
+        </div>
+        <div class="gc-rule">
+          <span class="gc-check ok"><svg viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+          <span class="gc-rule-text"><b>Gateway validity</b> · gateways are routable</span>
+        </div>
+        <div class="gc-rule">
+          <span class="gc-check ok"><svg viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+          <span class="gc-rule-text"><b>Routing table</b> · router can reach all subnets</span>
+        </div>
+        <div class="gc-rule">
+          <span class="gc-check fail"><svg viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg></span>
+          <span class="gc-rule-text"><b>DMZ isolation</b> · DMZ subnet must route through firewall only</span>
+        </div>
+        <div class="gc-rule">
+          <span class="gc-check fail"><svg viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg></span>
+          <span class="gc-rule-text"><b>Trunk links</b> · switch-to-switch cables need VLAN trunk</span>
+        </div>
+      </div>
+      <div class="gc-foot">
+        <button class="gc-btn" type="button">Dismiss</button>
+        <button class="gc-btn primary" type="button">Highlight on canvas</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     PANEL 5: LAB STEP
+     Guided lab step panel pinned to bottom of canvas.
+     ═══════════════════════════════════════════════════════════════ -->
+<div class="concept-panel" id="lab" style="position:relative;background:var(--bg);">
+  <div style="flex:1;position:relative;background:
+    linear-gradient(var(--grid) 1px, transparent 1px) 0 0 / 24px 24px,
+    linear-gradient(90deg, var(--grid) 1px, transparent 1px) 0 0 / 24px 24px,
+    var(--bg);">
+    <div style="padding:20px;font-size:11px;color:var(--text-dim);">Canvas content above (devices, cables, lab target highlights)</div>
+
+    <div class="lab-panel" style="position:absolute;">
+      <div class="lp-head">
+        <div>
+          <div class="lp-title">Static routing lab</div>
+          <div class="lp-step">Step 3 of 6 · configure the default route</div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <span class="lp-check"><svg viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>Step 2 complete</span>
+        </div>
+      </div>
+      <div class="lp-progress"><div class="lp-progress-fill" style="width:50%"></div></div>
+      <div class="lp-body">
+        <div class="lp-instruction">
+          Open <strong>Edge-RTR</strong> config and add a default route
+          (<code>0.0.0.0/0</code>) pointing to the ISP gateway at
+          <code>203.0.113.1</code> via interface <strong>Gi0/0</strong>.
+          This ensures traffic to unknown destinations exits the network.
+        </div>
+        <div class="lp-actions">
+          <button class="lp-btn hint" type="button">Hint</button>
+          <button class="lp-btn" type="button">Skip step</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     PANEL 6: FIX THIS NETWORK + EMPTY CANVAS STATES
+     taste-skill additions — two critical states the original
+     mockup was missing.
+     ═══════════════════════════════════════════════════════════════ -->
+<div class="concept-panel" id="fix" style="position:relative;background:var(--bg);">
+  <div style="display:flex;flex-direction:column;height:100%;gap:1px;background:var(--rule-soft);">
+
+    <!-- TOP HALF: Fix This Network state -->
+    <div style="flex:1;position:relative;overflow:hidden;background:
+      linear-gradient(var(--grid) 1px, transparent 1px) 0 0 / 24px 24px,
+      linear-gradient(90deg, var(--grid) 1px, transparent 1px) 0 0 / 24px 24px,
+      var(--bg);">
+
+      <div style="padding:14px 20px;font-size:10px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-dim);border-bottom:1px solid var(--rule-soft);background:var(--bg);">
+        Fix This Network · fault-injection challenge
+      </div>
+
+      <!-- Fix banner (the fault alert) -->
+      <div class="fix-banner">
+        <span class="fix-banner-icon"><svg viewBox="0 0 24 24" fill="none"><path d="M12 9v4M12 17h.01M4.93 19h14.14c1.34 0 2.07-1.56 1.18-2.5L13.18 4.39a1.5 1.5 0 0 0-2.36 0L3.75 16.5c-.89.94-.16 2.5 1.18 2.5z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+        <span class="fix-banner-text">
+          <b>Network fault detected.</b> Users in the 10.0.0.0/24 subnet
+          cannot reach the DMZ server. Find and fix the misconfiguration.
+          <div class="fix-banner-hint">3 faults injected · intermediate · 8:42 elapsed</div>
+        </span>
+      </div>
+
+      <!-- SVG showing faulted topology -->
+      <svg style="position:absolute;inset:0;width:100%;height:100%;margin-top:40px;" viewBox="0 0 600 260" preserveAspectRatio="xMidYMid meet">
+        <!-- Cables — one broken -->
+        <line class="cable" x1="300" y1="50" x2="300" y2="120"/>
+        <line class="cable broken" x1="300" y1="170" x2="160" y2="230"/>
+        <line class="cable" x1="300" y1="170" x2="440" y2="230"/>
+
+        <!-- Router (normal) -->
+        <g transform="translate(240, 20)">
+          <rect class="node-body" width="120" height="50" rx="10"/>
+          <text class="node-label" x="14" y="24">Edge-RTR</text>
+          <text class="node-sublabel" x="14" y="38">10.0.0.1</text>
+          <circle class="node-iface" cx="60" cy="50"/>
+        </g>
+
+        <!-- Switch (faulted) -->
+        <g transform="translate(240, 120)">
+          <rect class="node-body faulted" width="120" height="50" rx="10"/>
+          <text class="node-label" x="14" y="24">Core-SW</text>
+          <text class="node-sublabel" x="14" y="38">VLAN 10</text>
+          <circle cx="108" cy="8" r="9" fill="var(--fail)"/>
+          <text class="node-fault-badge" x="108" y="9">!</text>
+          <circle class="node-iface" cx="30" cy="50"/>
+          <circle class="node-iface" cx="90" cy="50"/>
+        </g>
+
+        <!-- PC (normal) -->
+        <g transform="translate(100, 210)">
+          <rect class="node-body" width="110" height="40" rx="10"/>
+          <text class="node-label" x="14" y="22">PC-01</text>
+          <text class="node-sublabel" x="14" y="34">10.0.0.50</text>
+        </g>
+
+        <!-- DMZ Server (faulted) -->
+        <g transform="translate(380, 210)">
+          <rect class="node-body faulted" width="110" height="40" rx="10"/>
+          <text class="node-label" x="14" y="22">DMZ-Web</text>
+          <text class="node-sublabel" x="14" y="34">172.16.0.10</text>
+          <circle cx="98" cy="8" r="9" fill="var(--fail)"/>
+          <text class="node-fault-badge" x="98" y="9">!</text>
+        </g>
+      </svg>
+
+      <!-- Fix result panel (overlaid when user submits fix) -->
+      <div class="fix-result" style="top:45%;left:60%;">
+        <div class="fr-head">
+          <div class="fr-verdict pass">Network restored</div>
+          <div class="fr-sub">2 of 3 faults found in 4m 12s</div>
+        </div>
+        <div class="fr-body">
+          <div class="fr-section-h">Faults</div>
+          <div class="fr-row"><span class="fr-k">Wrong subnet mask on FW-01 Gi0/1</span><span class="fr-v ok">Fixed</span></div>
+          <div class="fr-row"><span class="fr-k">Missing static route on Edge-RTR</span><span class="fr-v ok">Fixed</span></div>
+          <div class="fr-row"><span class="fr-k">VLAN mismatch on Core-SW Fa0/3</span><span class="fr-v bad">Missed</span></div>
+        </div>
+        <div class="fr-foot">
+          <button class="fr-btn" type="button">Review faults</button>
+          <button class="fr-btn primary" type="button">Next challenge</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- BOTTOM HALF: Empty canvas state -->
+    <div style="flex:1;position:relative;overflow:hidden;background:
+      linear-gradient(var(--grid) 1px, transparent 1px) 0 0 / 24px 24px,
+      linear-gradient(90deg, var(--grid) 1px, transparent 1px) 0 0 / 24px 24px,
+      var(--bg);">
+
+      <div style="padding:14px 20px;font-size:10px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-dim);border-bottom:1px solid var(--rule-soft);background:var(--bg);">
+        Empty canvas · first-visit state
+      </div>
+
+      <div class="empty-state">
+        <div class="empty-icon"><svg viewBox="0 0 24 24" fill="none"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9zM12 12l8-4.5M12 12v9M12 12L4 7.5" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg></div>
+        <div class="empty-h">Start building.</div>
+        <div class="empty-sub">
+          Drag a device from the palette, pick a scenario from the
+          right rail, or let the AI generate a topology for you.
+        </div>
+        <div class="empty-actions">
+          <button class="empty-btn primary" type="button">Pick a scenario</button>
+          <button class="empty-btn" type="button">AI generate</button>
+        </div>
+        <div class="empty-kbd">or drag a <kbd>Router</kbd> from the palette to begin</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// Concept tab switching
+document.querySelectorAll('.concept-tab').forEach(function(tab) {
+  tab.addEventListener('click', function() {
+    document.querySelectorAll('.concept-tab').forEach(function(t) { t.classList.remove('on'); });
+    document.querySelectorAll('.concept-panel').forEach(function(p) { p.classList.remove('on'); });
+    tab.classList.add('on');
+    document.getElementById(tab.dataset.panel).classList.add('on');
+  });
+});
+// Modebar toggle
+document.querySelectorAll('.mb').forEach(function(m) {
+  m.addEventListener('click', function() {
+    document.querySelectorAll('.mb').forEach(function(x) { x.classList.remove('on'); });
+    m.classList.add('on');
+  });
+});
+// Config tab toggle
+document.querySelectorAll('.cp-tab').forEach(function(t) {
+  t.addEventListener('click', function() {
+    document.querySelectorAll('.cp-tab').forEach(function(x) { x.classList.remove('on'); });
+    t.classList.add('on');
+  });
+});
+</script>
+
+</body>
+</html>

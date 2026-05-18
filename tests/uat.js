@@ -5518,8 +5518,10 @@ test('v4.53.0 HTML: regression \u2014 old .setup-nav-group 6-button row removed'
 // JS \u2014 sidebar
 test('v4.53.0 JS: APP_SIDEBAR_PRACTICE + APP_SIDEBAR_DRILLS arrays defined',
   js.includes('const APP_SIDEBAR_PRACTICE') && js.includes('const APP_SIDEBAR_DRILLS'));
-test('v4.53.0 JS: Practice nav has Home/Progress/Analytics/Network Builder/ACL Builder',
-  /APP_SIDEBAR_PRACTICE[\s\S]{0,1500}Home[\s\S]{0,300}Progress[\s\S]{0,300}Analytics[\s\S]{0,400}Network Builder[\s\S]{0,400}ACL Builder/.test(js));
+test('v4.53.0 JS: Practice nav has Home/Progress/Analytics/Network Builder/Builder V2/ACL Builder',
+  /APP_SIDEBAR_PRACTICE[\s\S]{0,1500}Home[\s\S]{0,300}Progress[\s\S]{0,300}Analytics[\s\S]{0,400}Network Builder[\s\S]{0,600}ACL Builder/.test(js));
+test('v5.0.3 JS: Builder V2 sidebar entry present in NETPLUS_TAIL',
+  /APP_SIDEBAR_PRACTICE_NETPLUS_TAIL[\s\S]{0,600}topology-builder-v2[\s\S]{0,200}Builder V2[\s\S]{0,300}_loadFeature\('topology-builder-v2'\)/.test(js));
 test('v4.53.0 JS: Drills nav has 5 per-drill entries (Subnet/Port/Acronym/OSI/Cable)',
   /APP_SIDEBAR_DRILLS[\s\S]{0,2000}Subnet Mastery[\s\S]{0,200}Port Drill[\s\S]{0,200}Acronym Blitz[\s\S]{0,200}OSI Sorter[\s\S]{0,200}Cable ID/.test(js));
 test('v4.53.0 JS: renderAppSidebar function defined',

@@ -252,7 +252,7 @@
     <span class="hero-icon">&#9889;</span>
     <h1>Network+ AI Quiz</h1>
     <p>AI-generated MCQs every session. Never the same quiz twice.</p>
-    <span id="version-badge" style="display:inline-block;margin-top:10px;font-size:11px;font-weight:700;letter-spacing:.08em;color:var(--accent-light);background:rgba(124,111,247,.12);border:1px solid rgba(124,111,247,.3);padding:3px 10px;border-radius:99px;cursor:default;user-select:none">v5.0.2</span>
+    <span id="version-badge" style="display:inline-block;margin-top:10px;font-size:11px;font-weight:700;letter-spacing:.08em;color:var(--accent-light);background:rgba(124,111,247,.12);border:1px solid rgba(124,111,247,.3);padding:3px 10px;border-radius:99px;cursor:default;user-select:none">v5.0.3</span>
     <div id="streak-badge" class="streak-badge"></div>
     <div id="stats-card" class="hero-stats-strip is-hidden">
       <div class="stats-grid" id="stats-grid"></div>
@@ -2621,6 +2621,64 @@
       </div>
       <div id="tb-coach-body" class="tb-grade-body"></div>
     </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     TOPOLOGY BUILDER V2 (v5.0.3)
+     Ground-up rebuild to the locked mockups.
+     Strangler-fig pattern: V2 alongside V1,
+     shared engine, new render layer.
+══════════════════════════════════════════ -->
+<div id="page-topology-v2" class="page">
+  <!-- Strip header (full-viewport, no app chrome) -->
+  <header class="strip">
+    <div class="strip-left">
+      <span class="eyebrow">Network+ · Sandbox · design &amp; simulate</span>
+      <h1>Network <em>builder.</em></h1>
+    </div>
+    <div class="strip-right">
+      <span id="tbv2-device-count" class="count-pill">0 devices</span>
+      <button type="button" class="strip-btn" onclick="toggleTheme()" aria-label="Toggle theme">
+        <svg viewBox="0 0 24 24" fill="none" width="15" height="15"><circle cx="12" cy="12" r="5" stroke="currentColor" stroke-width="1.7"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+      </button>
+      <button type="button" class="strip-btn back-btn" onclick="showPage('setup'); goSetup();" aria-label="Back to home">
+        <svg viewBox="0 0 24 24" fill="none" width="15" height="15"><path d="M19 12H5M12 19l-7-7 7-7" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- 3-column workspace -->
+  <div class="work">
+    <!-- Left: device palette -->
+    <aside class="palette">
+      <div class="palette-head">
+        <h2>Devices</h2>
+        <input id="tbv2-palette-search" type="text" class="palette-search" placeholder="Filter devices..." aria-label="Filter devices">
+      </div>
+      <div id="tbv2-palette-list" class="palette-list"></div>
+    </aside>
+
+    <!-- Center: canvas + modebar + mode label -->
+    <main class="canvas">
+      <div id="tbv2-modebar" class="modebar"></div>
+      <div id="tbv2-mode-label" class="mode-label"></div>
+      <svg id="tbv2-canvas-svg" class="canvas-svg" viewBox="0 0 1800 1100" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <pattern id="tbv2-grid" width="40" height="40" patternUnits="userSpaceOnUse">
+            <path d="M 40 0 L 0 0 0 40" fill="none" stroke="var(--tb-grid-stroke, oklch(0.3 0.01 270 / 0.12))" stroke-width="0.5"/>
+          </pattern>
+        </defs>
+        <rect width="100%" height="100%" fill="url(#tbv2-grid)"/>
+      </svg>
+      <!-- Mode panels rendered here by JS -->
+      <div id="tbv2-panels" class="panels"></div>
+    </main>
+
+    <!-- Right: scenario rail -->
+    <aside class="scenarios">
+      <div id="tbv2-scenarios"></div>
+    </aside>
   </div>
 </div>
 
