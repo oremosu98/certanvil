@@ -365,6 +365,278 @@ html:has(#page-topology-builder-v2.page.active) #page-topology-builder-v2 {
   }
 }
 
+/* ════════════════════════════════════════════════════════════════════
+   SIMULATE MODE — Ship #4
+   Dialog overlay + simulation log panel + packet pills.
+   ════════════════════════════════════════════════════════════════════ */
+
+/* ── Simulate overlay (transparent bg, centers dialog) ────────────── */
+#page-topology-builder-v2 .v2-sim-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 20;
+  background: color-mix(in oklab, var(--bg) 60%, transparent);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+}
+#page-topology-builder-v2 .v2-sim-overlay.v2-sim-visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* ── Sim dialog card ─────────────────────────────────────────────── */
+#page-topology-builder-v2 .v2-sim-card {
+  width: 380px;
+  max-width: 90%;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+  transform: translateY(8px) scale(0.97);
+  transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+#page-topology-builder-v2 .v2-sim-overlay.v2-sim-visible .v2-sim-card {
+  transform: translateY(0) scale(1);
+}
+
+/* ── Sim dialog head ─────────────────────────────────────────────── */
+#page-topology-builder-v2 .v2-sim-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 18px 20px 12px;
+  border-bottom: 1px solid var(--border);
+}
+#page-topology-builder-v2 .v2-sim-eyebrow {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--text-dim);
+  margin-bottom: 2px;
+}
+#page-topology-builder-v2 .v2-sim-title {
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--text);
+}
+#page-topology-builder-v2 .v2-sim-close {
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+  color: var(--text-dim);
+  transition: color 0.15s, border-color 0.15s;
+  flex: none;
+}
+#page-topology-builder-v2 .v2-sim-close:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+#page-topology-builder-v2 .v2-sim-close svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* ── Sim dialog body ─────────────────────────────────────────────── */
+#page-topology-builder-v2 .v2-sim-body {
+  padding: 16px 20px 20px;
+}
+#page-topology-builder-v2 .v2-sim-field {
+  margin-bottom: 14px;
+}
+#page-topology-builder-v2 .v2-sim-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-dim);
+  margin-bottom: 5px;
+}
+#page-topology-builder-v2 .v2-sim-select {
+  width: 100%;
+  padding: 9px 12px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M3 4.5l3 3 3-3' fill='none' stroke='%23888' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+}
+#page-topology-builder-v2 .v2-sim-select:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--accent) 15%, transparent);
+}
+
+/* ── Protocol label ──────────────────────────────────────────────── */
+#page-topology-builder-v2 .v2-sim-proto-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-dim);
+  margin-bottom: 8px;
+}
+
+/* ── Protocol action buttons ─────────────────────────────────────── */
+#page-topology-builder-v2 .v2-sim-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+#page-topology-builder-v2 .v2-sim-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 8px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+#page-topology-builder-v2 .v2-sim-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+#page-topology-builder-v2 .v2-sim-btn svg {
+  width: 14px;
+  height: 14px;
+  flex: none;
+}
+#page-topology-builder-v2 .v2-sim-btn.primary {
+  background: var(--accent);
+  color: var(--bg);
+  border-color: var(--accent);
+}
+#page-topology-builder-v2 .v2-sim-btn.primary:hover {
+  filter: brightness(1.1);
+  color: var(--bg);
+}
+
+/* ── Simulation log panel ────────────────────────────────────────── */
+#page-topology-builder-v2 .v2-sim-log {
+  position: absolute;
+  right: 14px;
+  top: 50px;
+  width: 340px;
+  max-height: calc(100% - 80px);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  z-index: 15;
+  display: flex;
+  flex-direction: column;
+  opacity: 0;
+  transform: translateX(12px);
+  pointer-events: none;
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+#page-topology-builder-v2 .v2-sim-log.v2-sim-visible {
+  opacity: 1;
+  transform: translateX(0);
+  pointer-events: auto;
+}
+
+/* ── Log head ────────────────────────────────────────────────────── */
+#page-topology-builder-v2 .v2-sim-log-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border);
+  flex: none;
+}
+#page-topology-builder-v2 .v2-sim-log-title {
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text);
+}
+#page-topology-builder-v2 .v2-sim-log-clear {
+  font-size: 11px;
+  font-weight: 600;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-dim);
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+#page-topology-builder-v2 .v2-sim-log-clear:hover {
+  color: var(--accent);
+}
+
+/* ── Log body ────────────────────────────────────────────────────── */
+#page-topology-builder-v2 .v2-sim-log-body {
+  overflow-y: auto;
+  padding: 4px 0;
+  flex: 1 1 0;
+  max-height: 360px;
+}
+#page-topology-builder-v2 .v2-sim-log-empty {
+  padding: 20px 14px;
+  font-size: 12px;
+  color: var(--text-dim);
+  text-align: center;
+}
+
+/* ── Individual log entry ────────────────────────────────────────── */
+#page-topology-builder-v2 .v2-sim-entry {
+  padding: 6px 14px;
+  font-size: 12px;
+  font-family: 'SF Mono', 'Consolas', 'Monaco', monospace;
+  line-height: 1.5;
+  color: var(--text);
+  border-bottom: 1px solid color-mix(in oklab, var(--border) 50%, transparent);
+}
+#page-topology-builder-v2 .v2-sim-entry:last-child {
+  border-bottom: 0;
+}
+#page-topology-builder-v2 .v2-sim-ts {
+  color: var(--text-dim);
+  margin-right: 4px;
+}
+#page-topology-builder-v2 .v2-sim-ok {
+  color: var(--green, #22c55e);
+  font-weight: 700;
+}
+#page-topology-builder-v2 .v2-sim-fail {
+  color: var(--red, #ef4444);
+  font-weight: 700;
+}
+#page-topology-builder-v2 .v2-sim-info {
+  color: var(--accent);
+  font-weight: 700;
+}
+#page-topology-builder-v2 .v2-sim-arp {
+  color: #3b82f6;
+}
+#page-topology-builder-v2 .v2-sim-dhcp {
+  color: #8b5cf6;
+}
+
 /* ── Responsive: collapse rails on narrow viewports ──────────────────── */
 @media (max-width: 900px) {
   #page-topology-builder-v2 .work {
@@ -373,5 +645,9 @@ html:has(#page-topology-builder-v2.page.active) #page-topology-builder-v2 {
   #page-topology-builder-v2 .palette,
   #page-topology-builder-v2 .scenarios {
     display: none;
+  }
+  #page-topology-builder-v2 .v2-sim-log {
+    width: 260px;
+    right: 8px;
   }
 }

@@ -20381,6 +20381,71 @@ test('v5.0.5 JS: V2 double-click detection uses DOUBLE_CLICK_MS',
   && /_lastClickDevId/.test(_featureV2Js)
   && /tbOpenConfigPanel/.test(_featureV2Js));
 
+// ── v5.0.7 — TB V2 Ship #4: Simulate mode panel ──
+const _featureV1Js = (() => {
+  try { return fs.readFileSync(path.join(ROOT, 'features/topology-builder.js'), 'utf8'); }
+  catch (_) { return ''; }
+})();
+test('v5.0.7 JS: V1 bridge exposes simulation functions (tbV2SimPing, tbV2SimARP, tbV2SimDHCP)',
+  /window\.tbV2SimPing\s*=/.test(_featureV1Js)
+  && /window\.tbV2SimARP\s*=/.test(_featureV1Js)
+  && /window\.tbV2SimDHCP\s*=/.test(_featureV1Js)
+  && /window\.tbV2AnimatePacket\s*=/.test(_featureV1Js));
+
+test('v5.0.7 JS: V2 has _renderSimDialog for simulate mode UI',
+  /_renderSimDialog/.test(_featureV2Js)
+  && /v2-sim-card/.test(_featureV2Js)
+  && /v2-sim-select/.test(_featureV2Js));
+
+test('v5.0.7 JS: V2 has _renderSimLog panel',
+  /_renderSimLog/.test(_featureV2Js)
+  && /v2-sim-log/.test(_featureV2Js)
+  && /v2-sim-log-body/.test(_featureV2Js));
+
+test('v5.0.7 JS: V2 has _runPing protocol handler calling tbV2SimPing',
+  /function _runPing/.test(_featureV2Js)
+  && /tbV2SimPing/.test(_featureV2Js));
+
+test('v5.0.7 JS: V2 has _runARP protocol handler calling tbV2SimARP',
+  /function _runARP/.test(_featureV2Js)
+  && /tbV2SimARP/.test(_featureV2Js));
+
+test('v5.0.7 JS: V2 has _runDHCP protocol handler calling tbV2SimDHCP',
+  /function _runDHCP/.test(_featureV2Js)
+  && /tbV2SimDHCP/.test(_featureV2Js));
+
+test('v5.0.7 JS: V2 _showSimulateUI + _hideSimulateUI toggle sim UI',
+  /function _showSimulateUI/.test(_featureV2Js)
+  && /function _hideSimulateUI/.test(_featureV2Js));
+
+test('v5.0.7 JS: V2 _setMode wires simulate UI on mode enter',
+  /modeId\s*===\s*'simulate'/.test(_featureV2Js)
+  && /_showSimulateUI/.test(_featureV2Js)
+  && /_hideSimulateUI/.test(_featureV2Js));
+
+test('v5.0.7 JS: V2 has _appendLogEntry for simulation log entries',
+  /function _appendLogEntry/.test(_featureV2Js)
+  && /v2-sim-entry/.test(_featureV2Js)
+  && /v2-sim-ts/.test(_featureV2Js));
+
+test('v5.0.7 JS: V2 has _clearSimLog to reset simulation log',
+  /function _clearSimLog/.test(_featureV2Js)
+  && /v2-sim-log-empty/.test(_featureV2Js));
+
+test('v5.0.7 JS: V2 _buildDeviceOptions populates sim dropdowns from tbGetState',
+  /function _buildDeviceOptions/.test(_featureV2Js)
+  && /tbGetState/.test(_featureV2Js));
+
+test('v5.0.7 CSS: V2 simulate dialog + log panel styles exist', (() => {
+  let v2css = '';
+  try { v2css = fs.readFileSync(path.join(ROOT, 'features', 'topology-builder-v2.css'), 'utf8'); } catch (_) { return false; }
+  return /\.v2-sim-overlay/.test(v2css)
+    && /\.v2-sim-card/.test(v2css)
+    && /\.v2-sim-log/.test(v2css)
+    && /\.v2-sim-entry/.test(v2css)
+    && /\.v2-sim-btn\.primary/.test(v2css);
+})());
+
 test('v4.99.59 EnvStrategy: ENVIRONMENT_STRATEGY.md exists at repo root', (() => {
   try { return fs.statSync(path.join(ROOT, 'ENVIRONMENT_STRATEGY.md')).isFile(); }
   catch (_) { return false; }

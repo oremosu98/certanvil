@@ -14577,6 +14577,14 @@
   window.tbSetSelectedCableType = function(type) { tbSelectedCableType = type; };
   window.tbGetSelectedCableType = function() { return tbSelectedCableType; };
 
+  // ── V2 bridge: simulation functions so V2 can run L2/L3 sims
+  // programmatically without going through V1's modal-dependent
+  // tbExecPing/tbExecArp. Added v5.0.7 Ship #4.
+  window.tbV2SimPing = function(srcDeviceId, dstIp) { return tbSimPing(tbState, srcDeviceId, dstIp); };
+  window.tbV2SimARP = function(srcDeviceId, targetIp) { return tbSimARP(tbState, srcDeviceId, targetIp); };
+  window.tbV2SimDHCP = function(clientDeviceId) { return tbSimDHCP(tbState, clientDeviceId); };
+  window.tbV2AnimatePacket = tbAnimatePacket;
+
   // ── Register feature module entry point ──
   // Same contract as v4.99.36-43. Shell calls
   // window._certanvilFeatures["topology-builder"].enter() after lazy-load

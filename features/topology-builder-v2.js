@@ -518,7 +518,352 @@
     if (!label) return;
     if (_activeMode === 'design') {
       label.innerHTML = '<b>Design</b> mode -- ' + msg;
+    } else if (_activeMode === 'simulate') {
+      label.innerHTML = '<b>Simulate</b> mode -- ' + msg;
     }
+  }
+
+  // ════════════════════════════════════════════════════════════════════
+  // SIMULATE MODE — Ship #4
+  // Dialog for source/dest device selection + protocol buttons (Ping,
+  // ARP, DHCP). Log panel shows timestamped simulation results.
+  // All sim calls go through V1 bridge: tbV2SimPing / tbV2SimARP /
+  // tbV2SimDHCP. Packet animation via tbV2AnimatePacket.
+  // ════════════════════════════════════════════════════════════════════
+
+  var _simLogEntries = [];
+  var _simStartTime = 0;
+  var _simDialogWired = false;
+
+  // ── Sim timestamp helper ──────────────────────────────────────────
+  function _simTimestamp() {
+    if (!_simStartTime) _simStartTime = Date.now();
+    var elapsed = (Date.now() - _simStartTime) / 1000;
+    var mins = Math.floor(elapsed / 60);
+    var secs = (elapsed % 60).toFixed(1);
+    return (mins > 0 ? String(mins).padStart(2, '0') + ':' : '00:')
+      + (secs.length < 4 ? '0' + secs : secs);
+  }
+
+  // ── Build device options for sim dropdowns ────────────────────────
+  function _buildDeviceOptions() {
+    var state = window.tbGetState ? window.tbGetState() : null;
+    if (!state || !state.devices || state.devices.length === 0) {
+      return '<option value="">No devices</option>';
+    }
+    var html = '';
+    for (var i = 0; i < state.devices.length; i++) {
+      var d = state.devices[i];
+      var ip = '';
+      if (d.interfaces) {
+        for (var j = 0; j < d.interfaces.length; j++) {
+          if (d.interfaces[j].ip) { ip = d.interfaces[j].ip; break; }
+        }
+      }
+      var label = _esc(d.hostname || d.type);
+      if (ip) label += ' (' + _esc(ip) + ')';
+      html += '<option value="' + _esc(d.id) + '">' + label + '</option>';
+    }
+    return html;
+  }
+
+  // ── Render the simulate dialog ────────────────────────────────────
+  function _renderSimDialog() {
+    var panels = document.getElementById('tbv2-panels');
+    if (!panels) return;
+
+    // Remove old dialog if exists
+    var old = document.getElementById('tbv2-sim-dialog');
+    if (old) old.remove();
+
+    var deviceOpts = _buildDeviceOptions();
+    var div = document.createElement('div');
+    div.id = 'tbv2-sim-dialog';
+    div.className = 'v2-sim-overlay';
+    div.innerHTML =
+      '<div class="v2-sim-card">'
+      + '<div class="v2-sim-head">'
+      +   '<div>'
+      +     '<div class="v2-sim-eyebrow">Network simulation</div>'
+      +     '<div class="v2-sim-title">Test connectivity</div>'
+      +   '</div>'
+      +   '<button class="v2-sim-close" type="button" id="tbv2-sim-close">'
+      +     '<svg viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>'
+      +   '</button>'
+      + '</div>'
+      + '<div class="v2-sim-body">'
+      +   '<div class="v2-sim-field">'
+      +     '<label class="v2-sim-label">Source device</label>'
+      +     '<select class="v2-sim-select" id="tbv2-sim-src">' + deviceOpts + '</select>'
+      +   '</div>'
+      +   '<div class="v2-sim-field">'
+      +     '<label class="v2-sim-label">Destination</label>'
+      +     '<select class="v2-sim-select" id="tbv2-sim-dst">' + deviceOpts + '</select>'
+      +   '</div>'
+      +   '<div class="v2-sim-proto-label">Protocol</div>'
+      +   '<div class="v2-sim-actions">'
+      +     '<button class="v2-sim-btn primary" type="button" data-proto="ping">'
+      +       '<svg viewBox="0 0 24 24" fill="none"><path d="M12 3v18M3 12l4-4M3 12l4 4M21 12l-4-4M21 12l-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+      +       'Ping'
+      +     '</button>'
+      +     '<button class="v2-sim-btn" type="button" data-proto="arp">'
+      +       '<svg viewBox="0 0 24 24" fill="none"><path d="M4 12h5l2-5 4 10 2-5h3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+      +       'ARP request'
+      +     '</button>'
+      +     '<button class="v2-sim-btn" type="button" data-proto="dhcp">'
+      +       '<svg viewBox="0 0 24 24" fill="none"><path d="M12 3c3 2 6 5 6 9a6 6 0 0 1-12 0c0-4 3-7 6-9z" stroke="currentColor" stroke-width="1.5"/></svg>'
+      +       'DHCP discover'
+      +     '</button>'
+      +   '</div>'
+      + '</div>'
+      + '</div>';
+    panels.appendChild(div);
+  }
+
+  // ── Render the simulation log panel ───────────────────────────────
+  function _renderSimLog() {
+    var canvasWrap = document.querySelector('#page-topology-builder-v2 .canvas');
+    if (!canvasWrap) return;
+
+    var old = document.getElementById('tbv2-sim-log');
+    if (old) old.remove();
+
+    var div = document.createElement('div');
+    div.id = 'tbv2-sim-log';
+    div.className = 'v2-sim-log';
+    div.innerHTML =
+      '<div class="v2-sim-log-head">'
+      + '<span class="v2-sim-log-title">Simulation log</span>'
+      + '<button class="v2-sim-log-clear" type="button" id="tbv2-sim-log-clear">Clear</button>'
+      + '</div>'
+      + '<div class="v2-sim-log-body" id="tbv2-sim-log-body">'
+      + '<div class="v2-sim-log-empty">Run a simulation to see results here.</div>'
+      + '</div>';
+    canvasWrap.appendChild(div);
+  }
+
+  // ── Append a log entry ────────────────────────────────────────────
+  function _appendLogEntry(protocol, message, status) {
+    var ts = _simTimestamp();
+    var statusCls = status === 'ok' ? 'v2-sim-ok' : status === 'fail' ? 'v2-sim-fail' : 'v2-sim-info';
+    var protoCls = protocol === 'ARP' ? 'v2-sim-arp' : protocol === 'DHCP' ? 'v2-sim-dhcp' : '';
+    var entry = { ts: ts, protocol: protocol, message: message, statusCls: statusCls, protoCls: protoCls };
+    _simLogEntries.push(entry);
+
+    var body = document.getElementById('tbv2-sim-log-body');
+    if (!body) return;
+
+    // Remove empty placeholder
+    var empty = body.querySelector('.v2-sim-log-empty');
+    if (empty) empty.remove();
+
+    var div = document.createElement('div');
+    div.className = 'v2-sim-entry';
+    div.innerHTML = '<span class="v2-sim-ts">' + _esc(ts) + '</span> '
+      + '<span class="' + statusCls + (protoCls ? ' ' + protoCls : '') + '">' + _esc(protocol) + '</span> '
+      + _esc(message);
+    body.appendChild(div);
+
+    // Auto-scroll to bottom
+    body.scrollTop = body.scrollHeight;
+  }
+
+  // ── Parse sim result log lines into entries ───────────────────────
+  function _parseSimLog(logLines, protocol) {
+    if (!logLines || !logLines.length) return;
+    for (var i = 0; i < logLines.length; i++) {
+      var line = logLines[i];
+      var status = 'ok';
+      if (/unreachable|fail|no route|unknown|dropped|expired/i.test(line)) status = 'fail';
+      else if (/ARP/i.test(line)) status = 'info';
+      _appendLogEntry(protocol, line, status);
+    }
+  }
+
+  // ── Get destination IP from device ID ─────────────────────────────
+  function _getDeviceIp(deviceId) {
+    var state = window.tbGetState ? window.tbGetState() : null;
+    if (!state) return '';
+    for (var i = 0; i < state.devices.length; i++) {
+      var d = state.devices[i];
+      if (d.id === deviceId && d.interfaces) {
+        for (var j = 0; j < d.interfaces.length; j++) {
+          if (d.interfaces[j].ip) return d.interfaces[j].ip;
+        }
+      }
+    }
+    return '';
+  }
+
+  // ── Run Ping ──────────────────────────────────────────────────────
+  function _runPing() {
+    var srcEl = document.getElementById('tbv2-sim-src');
+    var dstEl = document.getElementById('tbv2-sim-dst');
+    if (!srcEl || !dstEl) return;
+
+    var srcId = srcEl.value;
+    var dstId = dstEl.value;
+    if (!srcId || !dstId) {
+      _appendLogEntry('SYS', 'Select source and destination devices.', 'fail');
+      return;
+    }
+    if (srcId === dstId) {
+      _appendLogEntry('SYS', 'Source and destination must be different.', 'fail');
+      return;
+    }
+
+    var dstIp = _getDeviceIp(dstId);
+    if (!dstIp) {
+      _appendLogEntry('SYS', 'Destination device has no IP address configured.', 'fail');
+      return;
+    }
+
+    _appendLogEntry('ICMP', 'Ping ' + dstIp + ' from ' + (srcEl.options[srcEl.selectedIndex].text || srcId), 'ok');
+
+    if (typeof window.tbV2SimPing === 'function') {
+      var result = window.tbV2SimPing(srcId, dstIp);
+      if (result && result.log) _parseSimLog(result.log, 'ICMP');
+      // Animate packet on canvas
+      if (result && result.path && typeof window.tbV2AnimatePacket === 'function') {
+        window.tbV2AnimatePacket(result.path, result.success ? '#22c55e' : '#ef4444', 'ICMP');
+      }
+      _updateStatus(result && result.success ? 'Ping successful.' : 'Ping failed — check routing.');
+    } else {
+      _appendLogEntry('SYS', 'Simulation engine not loaded.', 'fail');
+    }
+  }
+
+  // ── Run ARP ───────────────────────────────────────────────────────
+  function _runARP() {
+    var srcEl = document.getElementById('tbv2-sim-src');
+    var dstEl = document.getElementById('tbv2-sim-dst');
+    if (!srcEl || !dstEl) return;
+
+    var srcId = srcEl.value;
+    var dstId = dstEl.value;
+    if (!srcId || !dstId) {
+      _appendLogEntry('SYS', 'Select source and destination devices.', 'fail');
+      return;
+    }
+
+    var dstIp = _getDeviceIp(dstId);
+    if (!dstIp) {
+      _appendLogEntry('SYS', 'Destination device has no IP address configured.', 'fail');
+      return;
+    }
+
+    _appendLogEntry('ARP', 'ARP request: who has ' + dstIp + '?', 'info');
+
+    if (typeof window.tbV2SimARP === 'function') {
+      var result = window.tbV2SimARP(srcId, dstIp);
+      if (result && result.log) _parseSimLog(result.log, 'ARP');
+      if (result && result.path && typeof window.tbV2AnimatePacket === 'function') {
+        window.tbV2AnimatePacket(result.path, '#3b82f6', 'ARP');
+      }
+      _updateStatus(result && result.success ? 'ARP resolved.' : 'ARP failed — no reply.');
+    } else {
+      _appendLogEntry('SYS', 'Simulation engine not loaded.', 'fail');
+    }
+  }
+
+  // ── Run DHCP ──────────────────────────────────────────────────────
+  function _runDHCP() {
+    var srcEl = document.getElementById('tbv2-sim-src');
+    if (!srcEl) return;
+
+    var srcId = srcEl.value;
+    if (!srcId) {
+      _appendLogEntry('SYS', 'Select a client device.', 'fail');
+      return;
+    }
+
+    _appendLogEntry('DHCP', 'DHCP discover from ' + (srcEl.options[srcEl.selectedIndex].text || srcId), 'info');
+
+    if (typeof window.tbV2SimDHCP === 'function') {
+      var result = window.tbV2SimDHCP(srcId);
+      if (result && result.log) _parseSimLog(result.log, 'DHCP');
+      _updateStatus(result && result.success ? 'DHCP lease obtained.' : 'DHCP failed — no server found.');
+    } else {
+      _appendLogEntry('SYS', 'Simulation engine not loaded.', 'fail');
+    }
+  }
+
+  // ── Clear sim log ─────────────────────────────────────────────────
+  function _clearSimLog() {
+    _simLogEntries = [];
+    _simStartTime = 0;
+    var body = document.getElementById('tbv2-sim-log-body');
+    if (body) {
+      body.innerHTML = '<div class="v2-sim-log-empty">Run a simulation to see results here.</div>';
+    }
+  }
+
+  // ── Show / hide simulate UI ───────────────────────────────────────
+  function _showSimulateUI() {
+    _renderSimDialog();
+    _renderSimLog();
+    _wireSimDialog();
+
+    var dialog = document.getElementById('tbv2-sim-dialog');
+    var log = document.getElementById('tbv2-sim-log');
+    if (dialog) dialog.classList.add('v2-sim-visible');
+    if (log) log.classList.add('v2-sim-visible');
+  }
+
+  function _hideSimulateUI() {
+    var dialog = document.getElementById('tbv2-sim-dialog');
+    var log = document.getElementById('tbv2-sim-log');
+    if (dialog) { dialog.classList.remove('v2-sim-visible'); dialog.remove(); }
+    if (log) { log.classList.remove('v2-sim-visible'); log.remove(); }
+  }
+
+  // ── Wire simulate dialog event handlers ───────────────────────────
+  function _wireSimDialog() {
+    // Close button
+    var closeBtn = document.getElementById('tbv2-sim-close');
+    if (closeBtn) {
+      closeBtn.addEventListener('click', function() {
+        _setMode('design');
+      });
+    }
+
+    // Protocol buttons (event delegation)
+    var dialog = document.getElementById('tbv2-sim-dialog');
+    if (dialog) {
+      dialog.addEventListener('click', function(e) {
+        var btn = e.target.closest('[data-proto]');
+        if (!btn) return;
+        var proto = btn.getAttribute('data-proto');
+        if (proto === 'ping') _runPing();
+        else if (proto === 'arp') _runARP();
+        else if (proto === 'dhcp') _runDHCP();
+      });
+    }
+
+    // Clear log button
+    var clearBtn = document.getElementById('tbv2-sim-log-clear');
+    if (clearBtn) {
+      clearBtn.addEventListener('click', _clearSimLog);
+    }
+
+    // Overlay click to close
+    var overlay = document.getElementById('tbv2-sim-dialog');
+    if (overlay) {
+      overlay.addEventListener('click', function(e) {
+        if (e.target === overlay) _setMode('design');
+      });
+    }
+  }
+
+  // ── Refresh sim dropdowns (called on mode enter) ──────────────────
+  function _refreshSimDropdowns() {
+    var srcEl = document.getElementById('tbv2-sim-src');
+    var dstEl = document.getElementById('tbv2-sim-dst');
+    var opts = _buildDeviceOptions();
+    if (srcEl) srcEl.innerHTML = opts;
+    if (dstEl) dstEl.innerHTML = opts;
+    // Auto-select second device for destination if available
+    if (dstEl && dstEl.options.length > 1) dstEl.selectedIndex = 1;
   }
 
   // ── Wire all interaction listeners ────────────────────────────────
@@ -663,7 +1008,14 @@
       };
       label.innerHTML = descriptions[modeId] || '';
     }
-    // Re-render canvas (future: mode-specific overlays)
+    // ── Mode-specific UI ─────────────────────────────────────────
+    if (modeId === 'simulate') {
+      _showSimulateUI();
+    } else {
+      _hideSimulateUI();
+    }
+
+    // Re-render canvas
     _renderCanvas();
   }
   // Expose for onclick
