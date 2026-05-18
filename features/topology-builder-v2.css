@@ -1278,11 +1278,108 @@ html:has(#page-topology-builder-v2.page.active) #page-topology-builder-v2 {
 .v2-lc-back { background: var(--accent); color: #fff; }
 .v2-lc-back:hover { filter: brightness(1.08); }
 
-/* ── Reduced-motion gate ─────────────────────────────────── */
+/* ── Reduced-motion gate (Labs) ──────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
   .v2-lab-target .v2-device-bg { animation: none; }
   .v2-ls-pbar-fill              { transition: none; }
   .v2-ls-dot                    { transition: none; }
   .v2-lp-tab                    { transition: none; }
   .v2-lp-row                    { transition: none; }
+}
+
+/* ══════════════════════════════════════════════════════════ */
+/* 3D VIEW MODE — Ship #7                                     */
+/* ══════════════════════════════════════════════════════════ */
+
+/* Overlay covers V2's entire canvas area, z above canvas (30) */
+.v2-3d-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* V2's chrome bar — sits in normal flex flow above the 3D host */
+.v2-3d-chrome {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 44px;
+  flex-shrink: 0;
+  padding: 0 14px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+  z-index: 2;
+}
+
+/* Override V1's absolute positioning so #tb-3d-host flows in flex */
+.v2-3d-overlay #tb-3d-host {
+  position: relative !important;
+  top: auto !important;
+  right: auto !important;
+  bottom: auto !important;
+  left: auto !important;
+  flex: 1;
+  min-height: 0;
+}
+
+/* V1's chrome buttons hidden — V2 supplies its own .v2-3d-chrome */
+.v2-3d-overlay .tb-3d-chrome {
+  display: none !important;
+}
+
+/* V1's loading spinner hidden — V2 shows #tbv2-3d-loading instead */
+.v2-3d-overlay #tb-3d-loading {
+  display: none !important;
+}
+
+/* Canvas and labels fill the full host (V1 chrome is gone → top: 0) */
+.v2-3d-overlay .tb-3d-canvas,
+.v2-3d-overlay .tb-3d-labels {
+  top: 0 !important;
+}
+
+/* V2's "← Back to Design" button */
+.v2-3d-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: none;
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: border-color .15s, color .15s;
+}
+.v2-3d-back:hover  { border-color: var(--accent); color: var(--accent); }
+.v2-3d-back svg    { width: 14px; height: 14px; flex-shrink: 0; }
+
+/* "3D Explorer" eyebrow label */
+.v2-3d-eyebrow {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+/* Loading text — centered in overlay, above 3D host */
+.v2-3d-loading {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 13px;
+  color: var(--text-dim);
+  z-index: 5;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .v2-3d-back { transition: none; }
 }

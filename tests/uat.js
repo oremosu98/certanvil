@@ -20593,6 +20593,95 @@ test('v5.1.0 CSS: V2 labs picker overlay, step panel, completion card styles exi
     && /v2LabTargetPulse/.test(v2css);
 })());
 
+// ── v5.2.0 Ship #7 — TB V2 3D View mode ──────────────────────────────
+// V1 bridge: tbV2Open3DView (async, calls enter(tbState, opts)) + tbV2Close3DView (calls exit())
+test('v5.2.0 V1 bridge: window.tbV2Open3DView async function exists in topology-builder.js', (() => {
+  let tb = '';
+  try { tb = fs.readFileSync(path.join(ROOT, 'features', 'topology-builder.js'), 'utf8'); } catch (_) { return false; }
+  return /window\.tbV2Open3DView\s*=\s*async\s+function/.test(tb);
+})());
+
+test('v5.2.0 V1 bridge: tbV2Open3DView lazy-imports /tb3d.js into window._tbV2_3dModule', (() => {
+  let tb = '';
+  try { tb = fs.readFileSync(path.join(ROOT, 'features', 'topology-builder.js'), 'utf8'); } catch (_) { return false; }
+  return /window\._tbV2_3dModule\s*=\s*await\s+import\('\/tb3d\.js'\)/.test(tb);
+})());
+
+test('v5.2.0 V1 bridge: tbV2Open3DView calls enter(tbState, opts)', (() => {
+  let tb = '';
+  try { tb = fs.readFileSync(path.join(ROOT, 'features', 'topology-builder.js'), 'utf8'); } catch (_) { return false; }
+  // Extract the tbV2Open3DView function body
+  const m = tb.match(/window\.tbV2Open3DView\s*=\s*async\s+function[\s\S]{0,400}?\};/);
+  if (!m) return false;
+  return /\.enter\(tbState,/.test(m[0]);
+})());
+
+test('v5.2.0 V1 bridge: window.tbV2Close3DView calls exit() on _tbV2_3dModule', (() => {
+  let tb = '';
+  try { tb = fs.readFileSync(path.join(ROOT, 'features', 'topology-builder.js'), 'utf8'); } catch (_) { return false; }
+  return /window\.tbV2Close3DView\s*=\s*function/.test(tb)
+    && /window\._tbV2_3dModule[\s\S]{0,60}\.exit\(\)/.test(tb);
+})());
+
+// V2 JS: show/hide functions + _setMode wiring + _3dHostOrigParent state + exit lifecycle
+test('v5.2.0 V2 JS: _showThreedUI function exists in topology-builder-v2.js', (() => {
+  let v2 = '';
+  try { v2 = fs.readFileSync(path.join(ROOT, 'features', 'topology-builder-v2.js'), 'utf8'); } catch (_) { return false; }
+  return /function\s+_showThreedUI\s*\(/.test(v2);
+})());
+
+test('v5.2.0 V2 JS: _hideThreedUI function exists in topology-builder-v2.js', (() => {
+  let v2 = '';
+  try { v2 = fs.readFileSync(path.join(ROOT, 'features', 'topology-builder-v2.js'), 'utf8'); } catch (_) { return false; }
+  return /function\s+_hideThreedUI\s*\(/.test(v2);
+})());
+
+test('v5.2.0 V2 JS: _setMode wires threed mode to _showThreedUI/_hideThreedUI', (() => {
+  let v2 = '';
+  try { v2 = fs.readFileSync(path.join(ROOT, 'features', 'topology-builder-v2.js'), 'utf8'); } catch (_) { return false; }
+  return /if\s*\(modeId\s*===\s*'threed'\s*\)\s*\{[\s\S]{0,60}_showThreedUI/.test(v2)
+    && /else\s*\{[\s\S]{0,40}_hideThreedUI/.test(v2);
+})());
+
+test('v5.2.0 V2 JS: _3dHostOrigParent state variable tracks original parent for restore', (() => {
+  let v2 = '';
+  try { v2 = fs.readFileSync(path.join(ROOT, 'features', 'topology-builder-v2.js'), 'utf8'); } catch (_) { return false; }
+  return /var\s+_3dHostOrigParent\s*=\s*null/.test(v2)
+    && /_3dHostOrigParent\s*=\s*v1Host\.parentElement/.test(v2);
+})());
+
+test('v5.2.0 V2 JS: _showThreedUI has overlay-existence guard before calling tbV2Open3DView', (() => {
+  let v2 = '';
+  try { v2 = fs.readFileSync(path.join(ROOT, 'features', 'topology-builder-v2.js'), 'utf8'); } catch (_) { return false; }
+  return /document\.getElementById\('tbv2-3d-overlay'\)[\s\S]{0,40}return/.test(v2);
+})());
+
+test('v5.2.0 V2 JS: exit() lifecycle calls _hideThreedUI for cleanup', (() => {
+  let v2 = '';
+  try { v2 = fs.readFileSync(path.join(ROOT, 'features', 'topology-builder-v2.js'), 'utf8'); } catch (_) { return false; }
+  const m = v2.match(/function exit\(\)[\s\S]{0,400}?\}/);
+  if (!m) return false;
+  return /_hideThreedUI\(\)/.test(m[0]);
+})());
+
+// V2 CSS: overlay structure, V1 chrome hidden, canvas top override
+test('v5.2.0 CSS: V2 3D overlay, chrome, back-button, V1-chrome-hidden, canvas-top-override exist', (() => {
+  let v2css = '';
+  try { v2css = fs.readFileSync(path.join(ROOT, 'features', 'topology-builder-v2.css'), 'utf8'); } catch (_) { return false; }
+  return /\.v2-3d-overlay/.test(v2css)
+    && /\.v2-3d-chrome/.test(v2css)
+    && /\.v2-3d-back/.test(v2css)
+    && /\.v2-3d-overlay\s+\.tb-3d-chrome[\s\S]{0,60}display:\s*none\s*!important/.test(v2css)
+    && /\.v2-3d-overlay\s+\.tb-3d-canvas[\s\S]{0,60}top:\s*0\s*!important/.test(v2css);
+})());
+
+test('v5.2.0 CSS: V2 3D overlay overrides #tb-3d-host position to flex-relative', (() => {
+  let v2css = '';
+  try { v2css = fs.readFileSync(path.join(ROOT, 'features', 'topology-builder-v2.css'), 'utf8'); } catch (_) { return false; }
+  return /\.v2-3d-overlay\s+#tb-3d-host[\s\S]{0,200}position:\s*relative\s*!important/.test(v2css)
+    && /\.v2-3d-overlay\s+#tb-3d-host[\s\S]{0,200}flex:\s*1/.test(v2css);
+})());
+
 test('v4.99.59 EnvStrategy: ENVIRONMENT_STRATEGY.md exists at repo root', (() => {
   try { return fs.statSync(path.join(ROOT, 'ENVIRONMENT_STRATEGY.md')).isFile(); }
   catch (_) { return false; }

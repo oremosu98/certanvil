@@ -14621,6 +14621,23 @@
   };
   window.tbV2ExitLab = function() { tbEndLab(); };
 
+  // ── V2 bridge: 3D view functions. Added v5.2.0 Ship #7. ──────────
+  // Lazy-imports /tb3d.js and calls enter(tbState, opts) directly.
+  // Uses the shared ES module cache — same module instance as V1's
+  // _tb3dModule (safe: V1 and V2 are never simultaneously in 3D mode;
+  // they live on different pages, only one visible at a time).
+  window.tbV2Open3DView = async function(opts) {
+    if (!window._tbV2_3dModule) {
+      window._tbV2_3dModule = await import('/tb3d.js');
+    }
+    window._tbV2_3dModule.enter(tbState, opts || {});
+  };
+  window.tbV2Close3DView = function() {
+    if (window._tbV2_3dModule) {
+      try { window._tbV2_3dModule.exit(); } catch (_) {}
+    }
+  };
+
   // ── Register feature module entry point ──
   // Same contract as v4.99.36-43. Shell calls
   // window._certanvilFeatures["topology-builder"].enter() after lazy-load

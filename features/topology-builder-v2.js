@@ -531,6 +531,8 @@
       label.innerHTML = '<b>Trace</b> mode -- ' + msg;
     } else if (_activeMode === 'labs') {
       label.innerHTML = '<b>Labs</b> mode -- ' + msg;
+    } else if (_activeMode === 'threed') {
+      label.innerHTML = '<b>3D</b> mode -- ' + msg;
     }
   }
 
@@ -1381,6 +1383,110 @@
     }
   }
 
+  // ════════════════════════════════════════════════════════════════════
+  // 3D VIEW MODE — Ship #7
+  // Immersive Three.js view of the current topology.
+  // V2 temporarily moves #tb-3d-host (V1's 3D container — it holds the
+  // Three.js canvas + CSS2D labels) into a full-coverage overlay on V2's
+  // canvas, so tb3d.js can mount into visible elements (clientWidth/Height
+  // must be >0 for the renderer to size correctly — impossible while the
+  // host sits inside V1's display:none page).
+  // V1's chrome buttons (.tb-3d-chrome) are hidden via CSS; V2 supplies
+  // its own minimal "Back to Design" button. On exit the host is restored
+  // to its original position in V1's page. Render-only — never mutates
+  // tbState. Same contract as V1's tb3d.js render-only discipline.
+  // ════════════════════════════════════════════════════════════════════
+
+  var _3dHostOrigParent = null;
+
+  function _showThreedUI() {
+    var v1Host = document.getElementById('tb-3d-host');
+    var canvasWrap = document.querySelector('#page-topology-builder-v2 .canvas');
+    if (!v1Host || !canvasWrap) return;
+
+    // Remove any stale overlay from a prior interrupted entry
+    var stale = document.getElementById('tbv2-3d-overlay');
+    if (stale) stale.remove();
+
+    // Build V2's overlay container
+    var overlay = document.createElement('div');
+    overlay.id = 'tbv2-3d-overlay';
+    overlay.className = 'v2-3d-overlay';
+
+    // V2's minimal header chrome (V1's .tb-3d-chrome is hidden via CSS)
+    var chrome = document.createElement('div');
+    chrome.className = 'v2-3d-chrome';
+    chrome.innerHTML =
+      '<button class="v2-3d-back" id="tbv2-3d-back-btn" type="button">'
+      + '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">'
+      + '<path d="M19 12H5M5 12l7-7M5 12l7 7" stroke-linecap="round" stroke-linejoin="round"/>'
+      + '</svg>'
+      + 'Back to Design</button>'
+      + '<span class="v2-3d-eyebrow">3D Explorer</span>';
+    overlay.appendChild(chrome);
+
+    // V2's loading indicator (removed by onAfterEnter callback)
+    var loading = document.createElement('div');
+    loading.id = 'tbv2-3d-loading';
+    loading.className = 'v2-3d-loading';
+    loading.textContent = 'Loading 3D view…';
+    overlay.appendChild(loading);
+
+    // Move #tb-3d-host from V1's hidden page into V2's overlay.
+    // Save the original parent so we can restore it on exit.
+    _3dHostOrigParent = v1Host.parentElement;
+    v1Host.hidden = false;
+    v1Host.classList.add('tb-3d-host-active');
+    overlay.appendChild(v1Host);
+
+    // Attach overlay to V2's canvas area
+    canvasWrap.appendChild(overlay);
+
+    // Wire V2's back button
+    var backBtn = document.getElementById('tbv2-3d-back-btn');
+    if (backBtn) {
+      backBtn.addEventListener('click', function() { _setMode('design'); });
+    }
+
+    // Ensure V1 engine is loaded, then launch the 3D view
+    _ensureEngine().then(function() {
+      // Guard: user may have switched modes before the async resolved
+      if (!document.getElementById('tbv2-3d-overlay')) return;
+      if (window.tbV2Open3DView) {
+        window.tbV2Open3DView({
+          onDeviceClick: function(deviceId) {
+            if (window.tbOpenConfigPanel) window.tbOpenConfigPanel(deviceId);
+          },
+          onAfterEnter: function() {
+            var ld = document.getElementById('tbv2-3d-loading');
+            if (ld) ld.remove();
+          }
+        });
+      } else {
+        var ld = document.getElementById('tbv2-3d-loading');
+        if (ld) ld.textContent = '3D view unavailable — engine not loaded.';
+      }
+    });
+  }
+
+  function _hideThreedUI() {
+    // Exit the Three.js render loop
+    if (window.tbV2Close3DView) window.tbV2Close3DView();
+
+    // Restore #tb-3d-host to its original position in V1's page
+    var v1Host = document.getElementById('tb-3d-host');
+    if (v1Host && _3dHostOrigParent) {
+      v1Host.hidden = true;
+      v1Host.classList.remove('tb-3d-host-active');
+      _3dHostOrigParent.appendChild(v1Host);
+      _3dHostOrigParent = null;
+    }
+
+    // Remove V2's overlay
+    var overlay = document.getElementById('tbv2-3d-overlay');
+    if (overlay) overlay.remove();
+  }
+
   // ── Wire all interaction listeners ────────────────────────────────
   function _wireInteraction() {
     var svg = document.getElementById('tbv2-canvas-svg');
@@ -1539,6 +1645,11 @@
     } else {
       _hideLabsUI();
     }
+    if (modeId === 'threed') {
+      _showThreedUI();
+    } else {
+      _hideThreedUI();
+    }
 
     // Re-render canvas
     _renderCanvas();
@@ -1621,7 +1732,12 @@
   }
 
   function exit() {
-    // Cleanup if needed when navigating away
+    // Restore 3D host to V1's page if 3D mode is active when user navigates away
+    _hideThreedUI();
+    // End any active lab
+    if (window.tbV2ExitLab && window.tbV2GetActiveLab && window.tbV2GetActiveLab()) {
+      window.tbV2ExitLab();
+    }
   }
 
   // ── Module registration ───────────────────────────────────────────
