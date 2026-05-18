@@ -16450,8 +16450,10 @@ test('v4.87.1 ChipRender: function rebuilds 5 topic-domain-group accordions',
   /_renderTopicChipsForActiveCert[\s\S]{0,3000}details\.topic-domain-group\[data-domain-idx="['"]?\s*['"]?\s*\+\s*idx/.test(js));
 test('v4.87.1 ChipRender: function updates 5 .tdp-pill labels',
   /_renderTopicChipsForActiveCert[\s\S]{0,3500}\.tdp-pill/.test(js));
-test('v4.87.1 ChipRender: function updates 5 .modes-domain-tile labels',
-  /_renderTopicChipsForActiveCert[\s\S]{0,4000}\.modes-domain-tile/.test(js));
+test('v5.5.0 ChipRender: function updates 5 .dgh-db domain-preset buttons',
+  /_renderTopicChipsForActiveCert[\s\S]{0,4000}\.dgh-db/.test(js));
+test('v5.5.0 TOMBSTONE: .modes-domain-tile must not appear in _renderTopicChipsForActiveCert (dead DOM class replaced by .dgh-db)',
+  !/_renderTopicChipsForActiveCert[\s\S]{0,4000}\.modes-domain-tile/.test(js));
 test('v4.87.1 ChipRender: hooked into DOMContentLoaded',
   /DOMContentLoaded[\s\S]{0,800}_renderTopicChipsForActiveCert\s*\(\)/.test(js));
 
@@ -16470,12 +16472,12 @@ test('v4.87.1 DomainIdx: Network+ fallback preserved for safety',
 // Plus browser-tab title was still "Network+ AI Quiz" in Security+ mode.
 // ═══════════════════════════════════════════════════════════════════════
 
-test('v4.87.2 ChipRender: Mode Ladder tile updates target .mdt-name (not last span)',
-  /\.mdt-name/.test(_fnBody(js, '_renderTopicChipsForActiveCert') || ''));
-test('v4.87.2 ChipRender: Mode Ladder tile updates .mdt-num + .mdt-name + .mdt-meta',
+test('v5.5.0 ChipRender: domain-preset buttons target .dbn label span',
+  /\.dbn/.test(_fnBody(js, '_renderTopicChipsForActiveCert') || ''));
+test('v5.5.0 ChipRender: domain-preset buttons update .dbk + .dbn + .dbm spans',
   (() => {
     const body = _fnBody(js, '_renderTopicChipsForActiveCert') || '';
-    return /\.mdt-num/.test(body) && /\.mdt-name/.test(body) && /\.mdt-meta/.test(body);
+    return /\.dbk/.test(body) && /\.dbn/.test(body) && /\.dbm/.test(body);
   })());
 test('v4.87.2 ChipRender: tombstone — span:last-child fallback removed',
   !/lastTextSpan\s*=\s*tile\.querySelector\(['"]span:last-child['"]\)/.test(js));

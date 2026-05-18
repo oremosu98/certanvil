@@ -1,9 +1,9 @@
 // ══════════════════════════════════════════
-// Network+ AI Quiz — app.js  v5.4.0
+// Network+ AI Quiz — app.js  v5.5.0
 // ══════════════════════════════════════════
 
 // ── CONSTANTS ──
-const APP_VERSION = '5.4.0';
+const APP_VERSION = '5.5.0';
 // v4.99.45 (Phase 6b): expose APP_VERSION on window so the web-vitals
 // collector (lib/web-vitals-collector.js, loaded BEFORE app.js so its
 // PerformanceObservers attach earlier) can stamp this version onto every
@@ -10148,7 +10148,7 @@ function _renderCertAwareCopy() {
 // function rebuilds:
 //   1. The 5 <details class="topic-domain-group"> accordions (chip lists)
 //   2. The 5 .tdp-pill domain-prefill buttons (label + onclick handler)
-//   3. The 5 .modes-domain-tile Mode Ladder tiles (label + onclick + title)
+//   3. The 5 .dgh-db domain-preset buttons (label + onclick + title)
 // Network+ mode is no-op — static HTML is correct for it.
 //
 // Why re-render at runtime instead of dynamic HTML from scratch: keeps the
@@ -10204,25 +10204,25 @@ function _renderTopicChipsForActiveCert() {
       pill.setAttribute('title', 'Select all ' + count + ' ' + label + ' topics');
     });
 
-    // 3. Update the 5 .modes-domain-tile Mode Ladder tiles. Inner structure:
-    //   <span class="mdt-num">1.0</span>
-    //   <span class="mdt-name">Networking Concepts</span>
-    //   <span class="mdt-meta">23% · 10 Qs</span>
-    document.querySelectorAll('.modes-domain-tile').forEach((tile) => {
-      const idx = parseInt(tile.dataset.domainIdx, 10);
+    // 3. Update the 5 .dgh-db domain-preset buttons. Inner structure:
+    //   <span class="dbk">1.0 · 23%</span>
+    //   <span class="dbn">Networking Concepts</span>
+    //   <span class="dbm">10 Qs</span>
+    document.querySelectorAll('.dgh-db').forEach((btn) => {
+      const idx = parseInt(btn.dataset.domainIdx, 10);
       const dKey = domainKeys[idx - 1];
       if (!dKey) return;
       const label = CERT_PACK.domainLabels[dKey] || dKey;
       const weight = CERT_PACK.domainWeights[dKey];
       const count = (topicsByDomain[dKey] || []).length;
-      tile.setAttribute('onclick', "applyDomainPreset('" + dKey + "')");
-      tile.setAttribute('title', '10 Qs · Exam Level · all ' + count + ' ' + label + ' topics');
-      const numSpan = tile.querySelector('.mdt-num');
-      const nameSpan = tile.querySelector('.mdt-name');
-      const metaSpan = tile.querySelector('.mdt-meta');
-      if (numSpan) numSpan.textContent = idx + '.0';
-      if (nameSpan) nameSpan.textContent = label;
-      if (metaSpan) metaSpan.textContent = (weight ? Math.round(weight * 100) + '%' : '') + ' · 10 Qs';
+      btn.setAttribute('onclick', "applyDomainPreset('" + dKey + "')");
+      btn.setAttribute('title', '10 Qs · Exam Level · all ' + count + ' ' + label + ' topics');
+      var kSpan = btn.querySelector('.dbk');
+      var nSpan = btn.querySelector('.dbn');
+      var mSpan = btn.querySelector('.dbm');
+      if (kSpan) kSpan.textContent = idx + '.0 · ' + (weight ? Math.round(weight * 100) + '%' : '');
+      if (nSpan) nSpan.textContent = label;
+      if (mSpan) mSpan.textContent = '10 Qs';
     });
   } catch (e) {
     if (typeof console !== 'undefined') console.warn('[chips] _renderTopicChipsForActiveCert failed:', e.message);
