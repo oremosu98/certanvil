@@ -549,15 +549,298 @@
 </section>
 
 <!-- ══════════════════════════════════════════
-     SAMPLE QUESTION (Ship A) — Try one before you sign up
+     SAMPLE QUESTION v2 ("Try one") — answer a real one, see why.
+     FULLY SCOPED under #sq2 + .sq2-* (prior failure mode avoided).
+     Tokens on #sq2, not :root. [data-theme="dark"] variant matches the
+     prod theme system (same as #hero-v2). Self-contained: the legacy
+     #sample-question-host is dropped — sample-questions.js null-guards
+     (`if (!host) return;`) so it cleanly no-ops. Fonts already loaded
+     by the hero-v2 head links. Hero above + certs below untouched.
 ══════════════════════════════════════════ -->
-<section class="sample-q-section">
-  <div class="container">
-    <span class="sample-q-eyebrow">Try one before you sign up</span>
-    <h2 class="sample-q-title">A real Network+ question, AI-validated, hand-curated.</h2>
-    <p class="sample-q-sub">No tricks, no recycled textbook content. This is exactly what your daily practice looks like.</p>
-    <div id="sample-question-host"></div>
+<style id="sq2-styles">
+  #sq2{
+    --bg:oklch(0.975 0.007 85);
+    --bg-deep:oklch(0.955 0.012 82);
+    --surface:oklch(0.992 0.004 85);
+    --surface-2:oklch(0.965 0.010 84);
+    --ink:oklch(0.22 0.015 280);
+    --ink-soft:oklch(0.36 0.014 280);
+    --muted:oklch(0.50 0.013 280);
+    --border:oklch(0.86 0.008 85);
+    --border-soft:oklch(0.91 0.006 85);
+    --accent:oklch(0.50 0.155 55);
+    --accent-bright:oklch(0.80 0.155 64);
+    --accent-deep:oklch(0.42 0.150 52);
+    --on-accent:oklch(0.985 0.010 85);
+    --tile-top:#FFFDF8;--tile-bot:#FFF7EC;
+    --shadow-soft:0 1px 0 rgba(255,255,255,.55),0 18px 38px -18px oklch(0.22 0.015 280 / .20);
+    --shadow-card:0 2px 4px oklch(0.22 0.015 280 / .05),0 28px 56px -22px oklch(0.22 0.015 280 / .26);
+    --eo:cubic-bezier(0.23,1,0.32,1);
+    --eio:cubic-bezier(0.77,0,0.175,1);
+    position:relative;display:block;background:var(--bg);color:var(--ink);
+    font-family:'Inter',system-ui,-apple-system,sans-serif;-webkit-font-smoothing:antialiased;
+    padding:clamp(56px,9vh,108px) clamp(20px,4vw,56px);
+    border-top:1px solid var(--border-soft);
+  }
+  [data-theme="dark"] #sq2{
+    --bg:oklch(0.16 0.009 275);--bg-deep:oklch(0.185 0.012 275);
+    --surface:oklch(0.205 0.009 275);--surface-2:oklch(0.185 0.009 275);
+    --ink:oklch(0.96 0.006 275);--ink-soft:oklch(0.78 0.010 275);--muted:oklch(0.60 0.013 275);
+    --border:oklch(0.30 0.008 275);--border-soft:oklch(0.26 0.008 275);
+    --accent:oklch(0.80 0.155 64);--accent-bright:oklch(0.86 0.140 70);
+    --accent-deep:oklch(0.70 0.150 62);--on-accent:oklch(0.18 0.020 275);
+    --shadow-soft:0 1px 0 rgba(255,255,255,.04),0 20px 40px -18px rgba(0,0,0,.55);
+    --shadow-card:0 2px 4px rgba(0,0,0,.3),0 30px 58px -22px rgba(0,0,0,.62);
+  }
+  #sq2 *{box-sizing:border-box}
+  #sq2 a{color:inherit;text-decoration:none}
+  #sq2 .sq2-wrap{max-width:1240px;margin:0 auto;display:grid;grid-template-columns:0.82fr 1.18fr;align-items:center;gap:clamp(36px,5vw,84px)}
+  #sq2 .sq2-eyebrow{display:inline-flex;align-items:center;gap:9px;font-size:12.5px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin-bottom:22px}
+  #sq2 .sq2-eyebrow svg{width:15px;height:15px;display:block}
+  #sq2 .sq2-eyebrow::after{content:"";flex:none;width:28px;height:1px;background:linear-gradient(90deg,var(--accent),transparent)}
+  #sq2 .sq2-title{font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:clamp(30px,3.4vw,46px);line-height:1.08;letter-spacing:-.018em;color:var(--ink);margin-bottom:18px}
+  #sq2 .sq2-title .sq2-em{font-style:italic;color:var(--accent)}
+  #sq2 .sq2-title .sq2-nb{white-space:nowrap}
+  #sq2 .sq2-sub{font-size:clamp(15px,1.15vw,17px);line-height:1.6;color:var(--ink-soft);max-width:42ch;margin-bottom:34px}
+  #sq2 .sq2-proof{border-top:1px solid var(--border)}
+  #sq2 .sq2-proof-row{display:flex;align-items:center;gap:15px;padding:16px 2px;border-bottom:1px solid var(--border)}
+  #sq2 .sq2-proof-ic{flex:none;width:46px;height:46px;border-radius:13px;background:linear-gradient(180deg,var(--tile-top),var(--tile-bot));border:1px solid var(--border);box-shadow:var(--shadow-soft);display:grid;place-items:center}
+  #sq2 .sq2-proof-ic svg{width:30px;height:30px;display:block}
+  #sq2 .sq2-proof-tx{font-size:14.5px;font-weight:500;color:var(--ink-soft)}
+  #sq2 .sq2-proof-tx b{color:var(--ink);font-weight:650}
+  #sq2 .sq2-card{background:linear-gradient(180deg,var(--surface),var(--surface-2));border:1px solid var(--border);border-radius:22px;box-shadow:var(--shadow-card);padding:clamp(22px,2.4vw,34px)}
+  #sq2 .sq2-meta{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:20px}
+  #sq2 .sq2-tag{font-size:11px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);border:1px solid var(--border);border-radius:7px;padding:5px 10px}
+  #sq2 .sq2-tag-diff{color:var(--accent);border-color:color-mix(in oklab,var(--accent) 40%,transparent);background:color-mix(in oklab,var(--accent) 8%,transparent);margin-left:auto}
+  #sq2 .sq2-stem{font-size:clamp(16px,1.35vw,19px);font-weight:600;line-height:1.5;color:var(--ink);margin-bottom:22px}
+  #sq2 .sq2-stem code{font-family:'SF Mono',ui-monospace,Menlo,monospace;font-size:.93em;background:color-mix(in oklab,var(--accent) 9%,transparent);color:var(--accent-deep);padding:2px 7px;border-radius:6px;font-weight:600}
+  [data-theme="dark"] #sq2 .sq2-stem code{color:var(--accent-bright)}
+  #sq2 .sq2-opts{display:flex;flex-direction:column;gap:10px}
+  #sq2 .sq2-opt{display:flex;align-items:center;gap:14px;width:100%;padding:15px 18px;text-align:left;cursor:pointer;background:var(--bg);border:1px solid var(--border);border-radius:13px;font:inherit;color:var(--ink);transition:transform 150ms var(--eo),border-color 150ms ease,background 150ms ease}
+  #sq2 .sq2-opt-k{flex:none;width:28px;height:28px;border-radius:8px;display:grid;place-items:center;font-size:13px;font-weight:700;color:var(--ink-soft);background:var(--surface);border:1px solid var(--border);transition:background 150ms ease,color 150ms ease,border-color 150ms ease}
+  #sq2 .sq2-opt-v{font-size:15.5px;font-weight:500;font-variant-numeric:tabular-nums}
+  #sq2 .sq2-opt-mark{margin-left:auto;width:20px;height:20px;opacity:0;transform:scale(0.7);transition:opacity 220ms var(--eo),transform 220ms var(--eo)}
+  #sq2 .sq2-opt-mark svg{width:100%;height:100%;display:block}
+  @media (hover:hover) and (pointer:fine){
+    #sq2 .sq2-opt:hover{transform:translateY(-2px);border-color:color-mix(in oklab,var(--accent) 45%,var(--border))}
+    #sq2 .sq2-opt:hover .sq2-opt-k{border-color:color-mix(in oklab,var(--accent) 45%,var(--border));color:var(--accent)}
+  }
+  #sq2 .sq2-opt:active{transform:scale(0.99)}
+  #sq2 .sq2-opt:focus-visible{outline:2px solid color-mix(in oklab,var(--accent) 55%,transparent);outline-offset:2px}
+  #sq2 .sq2-card.is-answered .sq2-opt{cursor:default}
+  #sq2 .sq2-card.is-answered .sq2-opt:hover{transform:none}
+  #sq2 .sq2-opt.is-correct{border-color:var(--accent);background:color-mix(in oklab,var(--accent) 11%,var(--bg))}
+  #sq2 .sq2-opt.is-correct .sq2-opt-k{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
+  #sq2 .sq2-opt.is-correct .sq2-opt-mark{opacity:1;transform:none;color:var(--accent)}
+  #sq2 .sq2-opt.is-wrong{border-color:color-mix(in oklab,var(--muted) 55%,var(--border));opacity:.72}
+  #sq2 .sq2-opt.is-wrong .sq2-opt-mark{opacity:1;transform:none;color:var(--muted)}
+  #sq2 .sq2-hint{margin-top:16px;font-size:13px;color:var(--muted);font-weight:500;display:flex;align-items:center;gap:8px}
+  #sq2 .sq2-hint::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--accent);opacity:.6}
+  #sq2 .sq2-card.is-answered .sq2-hint{display:none}
+  #sq2 .sq2-reveal{overflow:hidden;max-height:0;opacity:0;transition:max-height 420ms var(--eio),opacity 320ms ease,margin-top 420ms var(--eio);margin-top:0}
+  #sq2 .sq2-card.is-answered .sq2-reveal{max-height:520px;opacity:1;margin-top:18px}
+  #sq2 .sq2-reveal-inner{border-top:1px solid var(--border);padding-top:18px;transform:translateY(8px);transition:transform 420ms var(--eo)}
+  #sq2 .sq2-card.is-answered .sq2-reveal-inner{transform:none}
+  #sq2 .sq2-reveal-h{font-size:13px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--accent);margin-bottom:9px}
+  #sq2 .sq2-reveal-tx{font-size:14.5px;line-height:1.62;color:var(--ink-soft)}
+  #sq2 .sq2-reveal-tx b{color:var(--ink);font-weight:650;font-variant-numeric:tabular-nums}
+  #sq2 .sq2-chip{display:inline-flex;align-items:center;gap:9px;margin-top:16px;font-size:12.5px;font-weight:600;color:var(--ink-soft);background:var(--bg);border:1px solid var(--border);border-radius:999px;padding:7px 14px 7px 8px}
+  #sq2 .sq2-chip-ic{flex:none;width:24px;height:24px;display:block}
+  #sq2 .sq2-chip b{color:var(--ink);font-weight:700}
+  #sq2 .sq2-verdict{display:flex;align-items:center;gap:10px;margin-bottom:11px;font-size:15.5px;font-weight:700;font-family:'Fraunces',Georgia,serif}
+  #sq2 .sq2-verdict-ic{flex:none;width:23px;height:23px;border-radius:50%;display:none;place-items:center}
+  #sq2 .sq2-verdict-ic svg{width:12px;height:12px;display:block}
+  #sq2 .sq2-card.is-correct-pick .sq2-verdict{color:var(--accent)}
+  #sq2 .sq2-card.is-correct-pick .sq2-vc{display:grid;background:color-mix(in oklab,var(--accent) 16%,transparent);color:var(--accent)}
+  #sq2 .sq2-card.is-wrong-pick .sq2-verdict{color:var(--ink)}
+  #sq2 .sq2-card.is-wrong-pick .sq2-vw{display:grid;background:color-mix(in oklab,var(--muted) 22%,transparent);color:var(--muted)}
+  #sq2 .sq2-miss{display:none;font-size:14px;line-height:1.62;color:var(--ink-soft);margin-bottom:16px;padding-left:14px;border-left:2px solid color-mix(in oklab,var(--muted) 45%,transparent)}
+  #sq2 .sq2-miss b{color:var(--ink);font-weight:650;font-variant-numeric:tabular-nums}
+  #sq2 .sq2-card.is-wrong-pick .sq2-miss{display:block}
+  #sq2 .sq2-r{opacity:0;transform:translateY(16px);transition:opacity 600ms var(--eo),transform 600ms var(--eo)}
+  #sq2.sq2-in .sq2-r{opacity:1;transform:none}
+  #sq2.sq2-in .sq2-r[data-d="1"]{transition-delay:50ms}
+  #sq2.sq2-in .sq2-r[data-d="2"]{transition-delay:120ms}
+  #sq2.sq2-in .sq2-r[data-d="3"]{transition-delay:190ms}
+  #sq2.sq2-in .sq2-r[data-d="4"]{transition-delay:260ms}
+  #sq2 .sq2-card{opacity:0;transform:translateY(20px) scale(0.975);filter:blur(4px);transition:opacity 700ms var(--eo) 180ms,transform 700ms var(--eo) 180ms,filter 700ms var(--eo) 180ms}
+  #sq2.sq2-in .sq2-card{opacity:1;transform:none;filter:none}
+  @media (max-width:980px){
+    #sq2 .sq2-wrap{grid-template-columns:1fr;gap:40px}
+    #sq2 .sq2-sub{max-width:none}
+  }
+  @media (max-width:560px){
+    #sq2 .sq2-title{font-size:clamp(27px,8vw,34px)}
+    #sq2 .sq2-tag-diff{margin-left:0}
+    #sq2 .sq2-opt-v{font-size:15px}
+  }
+  @media (prefers-reduced-motion:reduce){
+    #sq2 .sq2-r,#sq2 .sq2-card{transition:opacity 240ms ease !important;transform:none !important;filter:none !important}
+    #sq2.sq2-in .sq2-r,#sq2.sq2-in .sq2-card{transform:none !important}
+    #sq2 .sq2-opt,#sq2 .sq2-opt-mark{transition:opacity 160ms ease,background 160ms ease,border-color 160ms ease !important;transform:none !important}
+    #sq2 .sq2-reveal{transition:opacity 220ms ease !important}
+    #sq2 .sq2-reveal-inner{transform:none !important;transition:none !important}
+  }
+</style>
+
+<section id="sq2">
+  <svg width="0" height="0" aria-hidden="true" style="position:absolute">
+    <defs>
+      <linearGradient id="sq2-brass" x1="0" x2="1" y1="0" y2="1">
+        <stop offset="0" stop-color="oklch(0.74 0.150 60)"/><stop offset="1" stop-color="oklch(0.50 0.155 55)"/>
+      </linearGradient>
+      <linearGradient id="sq2-cream" x1="0" x2="1" y1="0" y2="1">
+        <stop offset="0" stop-color="#FFFDF8"/><stop offset="1" stop-color="#FFF7EC"/>
+      </linearGradient>
+      <filter id="sq2-shadow" x="-20%" y="-20%" width="140%" height="140%">
+        <feDropShadow dx="0" dy="4" stdDeviation="5" flood-color="#141827" flood-opacity="0.10"/>
+      </filter>
+      <symbol id="sq2-ic-q" viewBox="0 0 256 256">
+        <g filter="url(#sq2-shadow)">
+          <path d="M61 70h94c14 0 25 11 25 25v46c0 14-11 25-25 25h-39l-33 32 4-32H61c-14 0-25-11-25-25V95c0-14 11-25 25-25z" fill="url(#sq2-cream)" stroke="#2C2F39" stroke-width="8" stroke-linejoin="round"/>
+          <path d="M103 131c0-24 33-18 33-45 0-17-14-28-32-28-14 0-26 7-32 19" transform="translate(0 20)" fill="none" stroke="#2C2F39" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="106" cy="164" r="7" fill="url(#sq2-brass)"/>
+          <path d="M165 112h30c13 0 24 11 24 24v25c0 13-11 24-24 24h-10l3 24-26-24h-8" fill="url(#sq2-brass)" stroke="#2C2F39" stroke-width="6" stroke-linejoin="round"/>
+          <path d="M173 151l10 10 22-26" fill="none" stroke="#FFF7EC" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+        </g>
+      </symbol>
+      <symbol id="sq2-ic-ai" viewBox="0 0 256 256">
+        <g filter="url(#sq2-shadow)">
+          <path d="M74 177c-21-5-36-25-32-48 3-18 16-32 32-37 4-29 28-51 58-51 33 0 59 26 59 59 16 7 27 22 27 40 0 24-20 43-44 43h-4" fill="url(#sq2-cream)" stroke="#2C2F39" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M92 176v-39M164 176v-39M92 137c0-20 16-36 36-36s36 16 36 36" fill="none" stroke="#2C2F39" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M108 137l16 16 35-41" fill="none" stroke="#9A5E16" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="74" cy="117" r="7" fill="url(#sq2-brass)"/>
+          <circle cx="182" cy="117" r="7" fill="url(#sq2-brass)"/>
+        </g>
+      </symbol>
+      <symbol id="sq2-ic-badge" viewBox="0 0 256 256">
+        <g filter="url(#sq2-shadow)">
+          <path d="M67 60h102c12 0 22 10 22 22v12h-50c-9 0-16 7-16 16v14H88c-24 0-43-19-43-43 0-12 10-21 22-21z" fill="#25272F"/>
+          <path d="M124 124h78c7 0 13 6 13 13v25c0 7-6 13-13 13h-78v-51z" fill="url(#sq2-brass)"/>
+          <path d="M77 94h61M142 150h50" fill="none" stroke="#FFF7EC" stroke-width="6" stroke-linecap="round"/>
+          <circle cx="107" cy="172" r="34" fill="url(#sq2-cream)" stroke="#2C2F39" stroke-width="6"/>
+          <path d="M93 172l11 11 25-31" fill="none" stroke="#9A5E16" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M61 198h110" fill="none" stroke="#2C2F39" stroke-width="8" stroke-linecap="round"/>
+        </g>
+      </symbol>
+    </defs>
+  </svg>
+
+  <div class="sq2-wrap">
+    <div class="sq2-frame">
+      <span class="sq2-eyebrow sq2-r" data-d="1">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L20 7"/></svg>
+        Try one · no signup
+      </span>
+      <h2 class="sq2-title sq2-r" data-d="2">Answer a <span class="sq2-em">real</span> <span class="sq2-nb">N10-009</span> question.</h2>
+      <p class="sq2-sub sq2-r" data-d="3">This is exactly what daily practice feels like. Answer it, then see why.</p>
+
+      <div class="sq2-proof sq2-r" data-d="4">
+        <div class="sq2-proof-row">
+          <span class="sq2-proof-ic"><svg viewBox="0 0 256 256"><use href="#sq2-ic-q"/></svg></span>
+          <span class="sq2-proof-tx">Written from the <b>N10-009 objectives</b></span>
+        </div>
+        <div class="sq2-proof-row">
+          <span class="sq2-proof-ic"><svg viewBox="0 0 256 256"><use href="#sq2-ic-ai"/></svg></span>
+          <span class="sq2-proof-tx">Validated by a <b>seven-layer AI engine</b></span>
+        </div>
+        <div class="sq2-proof-row">
+          <span class="sq2-proof-ic"><svg viewBox="0 0 256 256"><use href="#sq2-ic-badge"/></svg></span>
+          <span class="sq2-proof-tx"><b>Hand-reviewed</b> before it ships</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="sq2-card" id="sq2-card">
+      <div class="sq2-meta">
+        <span class="sq2-tag">Network+ · N10-009</span>
+        <span class="sq2-tag">Domain 1.4 · Subnetting &amp; IP</span>
+        <span class="sq2-tag sq2-tag-diff">Foundational</span>
+      </div>
+
+      <p class="sq2-stem">
+        A company is allocated <code>192.168.10.0/26</code> for a small department.
+        How many usable host addresses are in this subnet?
+      </p>
+
+      <div class="sq2-opts" id="sq2-opts">
+        <button class="sq2-opt" type="button" data-i="0">
+          <span class="sq2-opt-k">A</span><span class="sq2-opt-v">30</span>
+          <span class="sq2-opt-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6L6 18"/></svg></span>
+        </button>
+        <button class="sq2-opt" type="button" data-i="1">
+          <span class="sq2-opt-k">B</span><span class="sq2-opt-v">62</span>
+          <span class="sq2-opt-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg></span>
+        </button>
+        <button class="sq2-opt" type="button" data-i="2">
+          <span class="sq2-opt-k">C</span><span class="sq2-opt-v">64</span>
+          <span class="sq2-opt-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6L6 18"/></svg></span>
+        </button>
+        <button class="sq2-opt" type="button" data-i="3">
+          <span class="sq2-opt-k">D</span><span class="sq2-opt-v">126</span>
+          <span class="sq2-opt-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6L6 18"/></svg></span>
+        </button>
+      </div>
+
+      <div class="sq2-hint">Pick an answer. The explanation is instant.</div>
+
+      <div class="sq2-reveal" id="sq2-reveal">
+        <div class="sq2-reveal-inner">
+          <div class="sq2-verdict">
+            <span class="sq2-verdict-ic sq2-vc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg></span>
+            <span class="sq2-verdict-ic sq2-vw"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6L6 18"/></svg></span>
+            <span class="sq2-verdict-tx" id="sq2-verdict-tx">Correct.</span>
+          </div>
+          <p class="sq2-miss" id="sq2-miss"></p>
+          <div class="sq2-reveal-h">Why B is correct</div>
+          <p class="sq2-reveal-tx">
+            A <b>/26</b> leaves 6 host bits, so <b>2⁶ = 64</b> addresses. Drop the
+            network and broadcast addresses and <b>62</b> are usable for hosts.
+          </p>
+          <span class="sq2-chip">
+            <svg class="sq2-chip-ic" viewBox="0 0 256 256"><use href="#sq2-ic-ai"/></svg>
+            Checked by the 7-layer engine · <b>N10-009 obj 1.4</b>
+          </span>
+        </div>
+      </div>
+    </div>
   </div>
+
+  <script>
+    (function(){
+      var sec=document.getElementById('sq2');
+      var card=document.getElementById('sq2-card');
+      var opts=document.getElementById('sq2-opts');
+      var verdict=document.getElementById('sq2-verdict-tx');
+      var miss=document.getElementById('sq2-miss');
+      if(!sec||!card||!opts)return;
+      var CORRECT=1, answered=false;
+      var MISS={
+        0:'<b>30</b> is the usable count for a <b>/27</b>. A <b>/26</b> is one bit wider, so it holds <b>62</b>.',
+        2:'<b>64</b> is every address in a <b>/26</b>. The network and broadcast addresses are not usable, so <b>62</b> remain.',
+        3:'<b>126</b> is the usable count for a <b>/25</b>. A <b>/26</b> is one bit narrower, so it holds <b>62</b>.'
+      };
+      if('IntersectionObserver' in window){
+        var io=new IntersectionObserver(function(es){
+          es.forEach(function(e){ if(e.isIntersecting){ sec.classList.add('sq2-in'); io.disconnect(); } });
+        },{threshold:0.2});
+        io.observe(sec);
+      } else { sec.classList.add('sq2-in'); }
+      opts.addEventListener('click',function(e){
+        var btn=e.target.closest('.sq2-opt'); if(!btn||answered)return;
+        answered=true;
+        var picked=+btn.dataset.i, right=picked===CORRECT;
+        card.classList.add('is-answered', right?'is-correct-pick':'is-wrong-pick');
+        verdict.textContent = right ? 'Correct.' : 'Not quite.';
+        if(!right) miss.innerHTML = MISS[picked] || '';
+        [].forEach.call(opts.children,function(o){
+          var i=+o.dataset.i;
+          if(i===CORRECT) o.classList.add('is-correct');
+          else if(i===picked) o.classList.add('is-wrong');
+        });
+      });
+    })();
+  </script>
 </section>
 
 <!-- ══════════════════════════════════════════
