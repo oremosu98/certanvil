@@ -318,6 +318,41 @@ html:has(#page-topology-v2.page.active) #page-topology-v2 {
 }
 #page-topology-v2 .mode-panels > * { pointer-events: auto; }
 
+/* ═══════════════════════════════════════════════════════════════════════
+   Ship #2 — Canvas device + cable rendering
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* ── Device nodes ───────────────────────────────────────────────────── */
+#page-topology-v2 .v2-device { cursor: grab; }
+#page-topology-v2 .v2-device:hover .v2-device-bg { stroke-opacity: 0.8; }
+#page-topology-v2 .v2-device-selected .v2-device-bg {
+  stroke: var(--accent); stroke-width: 2.5; stroke-opacity: 1;
+  filter: drop-shadow(0 0 6px color-mix(in oklab, var(--accent) 40%, transparent));
+}
+#page-topology-v2 .v2-device-pending .v2-device-bg {
+  stroke-dasharray: 6 3; stroke: var(--accent);
+}
+#page-topology-v2 .v2-device-label {
+  pointer-events: none; user-select: none;
+}
+#page-topology-v2 .v2-health-badge { pointer-events: none; }
+
+/* ── Cables ─────────────────────────────────────────────────────────── */
+#page-topology-v2 .v2-cable-sheath { pointer-events: none; }
+#page-topology-v2 .v2-cable { pointer-events: none; }
+#page-topology-v2 .v2-cable-hit { cursor: pointer; }
+
+/* Cable health status — override conductor stroke */
+#page-topology-v2 .v2-cable-healthy { stroke: var(--green, #22c55e) !important; }
+#page-topology-v2 .v2-cable-partial { stroke: var(--yellow, #f59e0b) !important; }
+#page-topology-v2 .v2-cable-selected {
+  stroke: var(--accent) !important;
+  filter: drop-shadow(0 0 4px color-mix(in oklab, var(--accent) 50%, transparent));
+}
+
+/* ── SVG layers inside the canvas ───────────────────────────────────── */
+#tbv2-cables-layer, #tbv2-devices-layer { pointer-events: all; }
+
 /* ── Reduced-motion gate ─────────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
   #page-topology-v2 *,

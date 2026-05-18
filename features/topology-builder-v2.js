@@ -1,5 +1,5 @@
 // ════════════════════════════════════════════════════════════════════
-// features/topology-builder-v2.js — Topology Builder V2 shell
+// features/topology-builder-v2.js — Topology Builder V2
 // ════════════════════════════════════════════════════════════════════
 //
 // Ground-up rebuild of the Network Builder UI to the locked mockups:
@@ -7,9 +7,8 @@
 // · mockups/network-builder-modes-concept.html (modes bible)
 //
 // Ship #1: Visual shell — layout, modebar, palette, scenario rail.
-// The existing TB engine (tbState, simulation, grading, AI) will be
-// wired incrementally in subsequent ships. For now, this is a static
-// visual shell that proves the mockup translates to production.
+// Ship #2: Design mode canvas — reads tbState via V1 bridge getters,
+//   draws devices + cables on the V2 SVG canvas. No interaction yet.
 //
 // ARCHITECTURE:
 // · V2 has its own render layer (this file) + CSS (topology-builder-v2.css)
@@ -27,17 +26,20 @@
   function _ensureCss() {
     if (_cssLoaded) return;
     _cssLoaded = true;
-    const link = document.createElement('link');
+    var link = document.createElement('link');
     link.rel = 'stylesheet';
     link.href = '/features/topology-builder-v2.css';
     document.head.appendChild(link);
   }
 
+  // ── Constants ─────────────────────────────────────────────────────
+  var HALF_W = 48, HALF_H = 36;  // device rect half-dimensions (matches V1)
+
   // ── Device palette data ───────────────────────────────────────────
   // Mirrors the mockup's categorized device list. Each device has a
   // monoline SVG icon (matching tbPaletteLineIcon from V1 + the locked
   // mockup's exact icon paths).
-  const PALETTE = [
+  var PALETTE = [
     { cat: 'Infrastructure', devices: [
       { type: 'router',     label: 'Router',       icon: '<rect x="3" y="9" width="18" height="6" rx="2" stroke="currentColor" stroke-width="1.5"/><circle cx="7" cy="12" r="1" fill="currentColor"/><circle cx="11" cy="12" r="1" fill="currentColor"/>' },
       { type: 'switch',     label: 'Switch',       icon: '<rect x="3" y="9" width="18" height="6" rx="1.5" stroke="currentColor" stroke-width="1.5"/><path d="M7 9V6M11 9V6M15 9V6M19 9V6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>' },
@@ -64,7 +66,7 @@
 
   // ── Modebar pills ─────────────────────────────────────────────────
   // SVG paths from the locked mockup (network-builder-revamp-concept.html)
-  const MODES = [
+  var MODES = [
     { id: 'design',   label: 'Design',   icon: '<path d="M4 20l4-1L19 8a2.8 2.8 0 0 0-4-4L4 15l-1 4z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>' },
     { id: 'simulate', label: 'Simulate', icon: '<path d="M8 5v14l11-7z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>' },
     { id: 'trace',    label: 'Trace',    icon: '<path d="M4 12h5l2-5 4 10 2-5h3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>' },
@@ -77,7 +79,7 @@
   ];
 
   // ── Scenario categories (static for shell — will read TB_SCENARIOS later) ──
-  const SCENARIO_GROUPS = [
+  var SCENARIO_GROUPS = [
     { label: 'Sandbox', rows: [
       { name: 'Free Build', meta: 'any', active: true },
     ]},
@@ -97,20 +99,184 @@
   ];
 
   // ── Active mode state ─────────────────────────────────────────────
-  let _activeMode = 'design';
+  var _activeMode = 'design';
+  var _engineLoaded = false;
 
   // ── Escaping ──────────────────────────────────────────────────────
   function _esc(s) {
-    return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+    return String(s).replace(/[&<>"']/g, function(m) { return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]; });
   }
+
+  // ── Edge-point calculation (matches V1's tbEdgePoint) ─────────────
+  // Returns the point on the device rect perimeter closest to the
+  // target point — so cables connect at the edge, not the center.
+  function _edgePoint(cx, cy, tx, ty) {
+    var dx = tx - cx, dy = ty - cy;
+    if (dx === 0 && dy === 0) return { x: cx, y: cy };
+    var absDx = Math.abs(dx), absDy = Math.abs(dy);
+    if (absDx * HALF_H > absDy * HALF_W) {
+      var sign = dx > 0 ? 1 : -1;
+      return { x: cx + sign * HALF_W, y: cy + dy * HALF_W / absDx };
+    } else {
+      var sign2 = dy > 0 ? 1 : -1;
+      return { x: cx + dx * HALF_H / absDy, y: cy + sign2 * HALF_H };
+    }
+  }
+
+  // ════════════════════════════════════════════════════════════════════
+  // CANVAS RENDER — Ship #2
+  // Reads tbState via V1 bridge getters and draws devices + cables
+  // on the V2 SVG canvas. This is a one-way read — V2 never mutates
+  // tbState directly (that's what V1's exposed functions are for).
+  // ════════════════════════════════════════════════════════════════════
+
+  function _renderCanvas() {
+    if (!_engineLoaded) return;
+
+    var state = window.tbGetState();
+    var selectedId = window.tbGetSelectedId ? window.tbGetSelectedId() : null;
+    var pendingFrom = window.tbGetPendingCableFrom ? window.tbGetPendingCableFrom() : null;
+    var deviceTypes = window.tbGetDeviceTypes ? window.tbGetDeviceTypes() : {};
+    var cableTypes = window.tbGetCableTypes ? window.tbGetCableTypes() : {};
+    if (!state) return;
+
+    var svg = document.getElementById('tbv2-canvas-svg');
+    if (!svg) return;
+
+    // Get or create the cable and device layers
+    var cabLayer = document.getElementById('tbv2-cables-layer');
+    var devLayer = document.getElementById('tbv2-devices-layer');
+    if (!cabLayer) {
+      cabLayer = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+      cabLayer.id = 'tbv2-cables-layer';
+      svg.appendChild(cabLayer);
+    }
+    if (!devLayer) {
+      devLayer = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+      devLayer.id = 'tbv2-devices-layer';
+      svg.appendChild(devLayer);
+    }
+
+    var isLight = document.documentElement.getAttribute('data-theme') === 'light';
+
+    // ── Cables (drawn under devices) ──────────────────────────────
+    var cabHtml = '';
+    for (var ci = 0; ci < state.cables.length; ci++) {
+      var c = state.cables[ci];
+      var from = null, to = null;
+      for (var di = 0; di < state.devices.length; di++) {
+        if (state.devices[di].id === c.from) from = state.devices[di];
+        if (state.devices[di].id === c.to) to = state.devices[di];
+      }
+      if (!from || !to) continue;
+
+      var selected = selectedId === c.id ? ' v2-cable-selected' : '';
+      var p1 = _edgePoint(from.x, from.y, to.x, to.y);
+      var p2 = _edgePoint(to.x, to.y, from.x, from.y);
+      var cType = c.type || 'cat6';
+      var meta = cableTypes[cType] || cableTypes.cat6 || { color: '#a78bfa', width: 7, dash: '' };
+
+      // Quadratic curve with 16px sag (matches V1)
+      var mx = (p1.x + p2.x) / 2;
+      var my = (p1.y + p2.y) / 2 + 16;
+      var dAttr = 'M ' + p1.x + ' ' + p1.y + ' Q ' + mx + ' ' + my + ' ' + p2.x + ' ' + p2.y;
+      var dashAttr = meta.dash ? ' stroke-dasharray="' + meta.dash + '"' : '';
+
+      // Cable health status
+      var cableStatus = '';
+      var fromIfc = from.interfaces ? from.interfaces.find(function(i) { return i.cableId === c.id; }) : null;
+      var toIfc = to.interfaces ? to.interfaces.find(function(i) { return i.cableId === c.id; }) : null;
+      var fromHasIp = (fromIfc && fromIfc.ip) || from.type === 'switch' || from.type === 'dmz-switch' || from.type === 'cloud';
+      var toHasIp = (toIfc && toIfc.ip) || to.type === 'switch' || to.type === 'dmz-switch' || to.type === 'cloud';
+      if (fromHasIp && toHasIp) cableStatus = ' v2-cable-healthy';
+      else if (fromHasIp || toHasIp) cableStatus = ' v2-cable-partial';
+
+      // Three-layer render: sheath (shadow) + conductor + hitbox
+      cabHtml += '<path class="v2-cable-sheath" d="' + dAttr + '" stroke="#0b1020" stroke-width="' + (meta.width + 5) + '" stroke-linecap="round" fill="none" opacity="0.7" pointer-events="none"/>';
+      cabHtml += '<path class="v2-cable v2-cable-' + cType + selected + cableStatus + '" d="' + dAttr + '" stroke="' + meta.color + '" stroke-width="' + meta.width + '" stroke-linecap="round" fill="none"' + dashAttr + ' pointer-events="none"/>';
+      cabHtml += '<path class="v2-cable-hit" data-v2-cable="' + c.id + '" d="' + dAttr + '" stroke="transparent" stroke-width="20" stroke-linecap="round" fill="none" style="cursor:pointer"/>';
+    }
+    cabLayer.innerHTML = cabHtml;
+
+    // ── Devices ───────────────────────────────────────────────────
+    var devHtml = '';
+    for (var i = 0; i < state.devices.length; i++) {
+      var d = state.devices[i];
+      var dmeta = deviceTypes[d.type];
+      if (!dmeta) continue;
+
+      var selCls = selectedId === d.id ? ' v2-device-selected' : '';
+      var pendCls = pendingFrom === d.id ? ' v2-device-pending' : '';
+
+      // Health badge logic (matches V1)
+      var isEndpoint = ['pc','laptop','smartphone','game-console','smart-tv','server','printer','voip','iot'].indexOf(d.type) !== -1;
+      var isRoutable = ['router','firewall','isp-router'].indexOf(d.type) !== -1;
+      var isSwitch = d.type === 'switch' || d.type === 'dmz-switch';
+      var hasCable = state.cables.some(function(cab) { return cab.from === d.id || cab.to === d.id; });
+      var hasIp = d.interfaces ? d.interfaces.some(function(ifc) { return ifc.ip; }) : false;
+      var hasGw = d.interfaces ? d.interfaces.some(function(ifc) { return ifc.gateway; }) : false;
+
+      var healthColor = '';
+      if (hasCable && ((isEndpoint && hasIp && hasGw) || (isRoutable && hasIp) || (isSwitch && hasCable) || (!isEndpoint && !isRoutable && !isSwitch))) {
+        healthColor = '#22c55e';
+      } else if (hasCable && (hasIp || isSwitch)) {
+        healthColor = '#f59e0b';
+      } else if (hasCable) {
+        healthColor = '#ef4444';
+      }
+
+      var labelFill = isLight ? '#1e293b' : '#e2e8f0';
+      var badgeStroke = isLight ? '#ffffff' : '#0f172a';
+      var healthBadge = healthColor
+        ? '<circle cx="40" cy="-28" r="5" fill="' + healthColor + '" stroke="' + badgeStroke + '" stroke-width="1.5" class="v2-health-badge"/>'
+        : '';
+
+      // Device icon — reuse V1's tbDeviceIcon if available, else fallback
+      var iconSvg = '';
+      if (typeof window.tbDeviceIcon === 'function') {
+        iconSvg = window.tbDeviceIcon(d.type, dmeta.color);
+      } else {
+        // Fallback: simple colored rect with type abbreviation
+        iconSvg = '<rect x="-16" y="-16" width="32" height="32" rx="4" fill="' + dmeta.color + '" fill-opacity="0.3"/>'
+          + '<text text-anchor="middle" dy="5" font-size="12" font-weight="700" fill="' + dmeta.color + '">' + _esc(dmeta.short || '?') + '</text>';
+      }
+
+      devHtml += '<g class="v2-device' + selCls + pendCls + '" data-v2-device="' + d.id + '" transform="translate(' + d.x + ', ' + d.y + ')">'
+        + '<rect class="v2-device-bg" x="-48" y="-36" width="96" height="72" rx="10" ry="10"'
+        + ' fill="' + dmeta.color + '" fill-opacity="' + (isLight ? '0.12' : '0.18') + '"'
+        + ' stroke="' + dmeta.color + '" stroke-width="2"/>'
+        + '<g transform="scale(0.72) translate(0, 4)">' + iconSvg + '</g>'
+        + '<text class="v2-device-label" y="26" text-anchor="middle" font-size="13" font-weight="700" fill="' + labelFill + '">' + _esc(d.hostname || dmeta.label) + '</text>'
+        + healthBadge
+        + '</g>';
+    }
+    devLayer.innerHTML = devHtml;
+
+    // ── Empty state toggle ────────────────────────────────────────
+    var emptyEl = document.getElementById('tbv2-empty');
+    if (emptyEl) {
+      emptyEl.style.display = state.devices.length > 0 ? 'none' : '';
+    }
+
+    // ── Device count pill ─────────────────────────────────────────
+    var countPill = document.getElementById('tbv2-device-count');
+    if (countPill) {
+      countPill.textContent = state.devices.length + ' device' + (state.devices.length !== 1 ? 's' : '');
+    }
+  }
+
+  // Expose render so it can be called externally (e.g., after engine mutations)
+  window.tbv2RenderCanvas = _renderCanvas;
 
   // ── Build the palette HTML ────────────────────────────────────────
   function _renderPalette(el) {
-    let html = '';
-    for (const cat of PALETTE) {
+    var html = '';
+    for (var ci = 0; ci < PALETTE.length; ci++) {
+      var cat = PALETTE[ci];
       html += '<div class="cat">';
       html += '<div class="cat-h">' + _esc(cat.cat) + '</div>';
-      for (const dev of cat.devices) {
+      for (var di = 0; di < cat.devices.length; di++) {
+        var dev = cat.devices[di];
         html += '<button class="dev-btn" type="button" data-type="' + _esc(dev.type) + '">'
           + '<svg viewBox="0 0 24 24" fill="none">' + dev.icon + '</svg>'
           + _esc(dev.label)
@@ -131,13 +297,14 @@
 
   // ── Build the modebar HTML ────────────────────────────────────────
   function _renderModebar(el) {
-    let html = '';
-    for (const m of MODES) {
+    var html = '';
+    for (var i = 0; i < MODES.length; i++) {
+      var m = MODES[i];
       if (m.id === '_sep') {
         html += '<span class="mb-sep"></span>';
         continue;
       }
-      const cls = m.id === _activeMode ? ' on' : '';
+      var cls = m.id === _activeMode ? ' on' : '';
       html += '<button class="mb' + cls + '" type="button" data-mode="' + m.id + '">'
         + '<svg viewBox="0 0 24 24" fill="none">' + m.icon + '</svg>'
         + _esc(m.label)
@@ -148,15 +315,17 @@
 
   // ── Build the scenario rail HTML ──────────────────────────────────
   function _renderScenarios(el) {
-    let html = '<div class="palette-head"><h2>Scenarios</h2><p>Select to auto-populate.</p></div>';
+    var html = '<div class="palette-head"><h2>Scenarios</h2><p>Select to auto-populate.</p></div>';
     html += '<div class="scn">';
-    for (const g of SCENARIO_GROUPS) {
+    for (var gi = 0; gi < SCENARIO_GROUPS.length; gi++) {
+      var g = SCENARIO_GROUPS[gi];
       html += '<div class="scn-g">';
       html += '<div class="scn-gh">' + _esc(g.label);
       if (g.count) html += ' <span class="n">' + g.count + '</span>';
       html += '</div>';
-      for (const r of g.rows) {
-        const cls = r.active ? ' on' : '';
+      for (var ri = 0; ri < g.rows.length; ri++) {
+        var r = g.rows[ri];
+        var cls = r.active ? ' on' : '';
         html += '<button class="scn-row' + cls + '" type="button">'
           + '<span>' + _esc(r.name) + '</span>'
           + '<span class="dv">' + _esc(r.meta) + '</span>'
@@ -170,7 +339,7 @@
 
   // ── Build the empty-state canvas ──────────────────────────────────
   function _renderEmptyState(canvasEl) {
-    const el = document.createElement('div');
+    var el = document.createElement('div');
     el.className = 'empty-state';
     el.id = 'tbv2-empty';
     el.innerHTML = '<div class="empty-card">'
@@ -191,9 +360,11 @@
     // Update modebar active state
     var bar = document.getElementById('tbv2-modebar');
     if (bar) {
-      bar.querySelectorAll('.mb').forEach(function(btn) {
-        btn.classList.toggle('on', btn.dataset.mode === modeId);
-      });
+      var btns = bar.querySelectorAll('.mb');
+      for (var i = 0; i < btns.length; i++) {
+        if (btns[i].dataset.mode === modeId) btns[i].classList.add('on');
+        else btns[i].classList.remove('on');
+      }
     }
     // Update mode label
     var label = document.getElementById('tbv2-mode-label');
@@ -210,9 +381,38 @@
       };
       label.innerHTML = descriptions[modeId] || '';
     }
+    // Re-render canvas (future: mode-specific overlays)
+    _renderCanvas();
   }
   // Expose for onclick
   window.tbv2SetMode = _setMode;
+
+  // ── Load the V1 engine (lazy) ─────────────────────────────────────
+  // V2 needs V1's engine for state + device icons + simulation.
+  // _loadFeature is defined in app.js shell.
+  function _ensureEngine() {
+    return new Promise(function(resolve) {
+      // Already loaded?
+      if (typeof window.tbGetState === 'function') {
+        _engineLoaded = true;
+        resolve();
+        return;
+      }
+      // Load V1 module (this also exposes tbGetState etc.)
+      if (typeof window._loadFeature === 'function') {
+        window._loadFeature('topology-builder').then(function() {
+          _engineLoaded = true;
+          resolve();
+        }).catch(function() {
+          // Engine load failed — V2 will render empty shell
+          console.warn('TB V2: engine load failed, running in shell-only mode');
+          resolve();
+        });
+      } else {
+        resolve();
+      }
+    });
+  }
 
   // ── Enter / Exit ──────────────────────────────────────────────────
   function enter() {
@@ -241,18 +441,23 @@
       searchInput.addEventListener('input', function() {
         var q = this.value.toLowerCase().trim();
         var btns = document.querySelectorAll('#tbv2-palette-list .dev-btn');
-        btns.forEach(function(btn) {
-          var match = !q || btn.textContent.toLowerCase().includes(q);
-          btn.style.display = match ? '' : 'none';
-        });
+        for (var i = 0; i < btns.length; i++) {
+          var match = !q || btns[i].textContent.toLowerCase().indexOf(q) !== -1;
+          btns[i].style.display = match ? '' : 'none';
+        }
         // Hide category headers if all children hidden
         var cats = document.querySelectorAll('#tbv2-palette-list .cat');
-        cats.forEach(function(cat) {
-          var visible = cat.querySelectorAll('.dev-btn:not([style*="display: none"])');
-          cat.style.display = visible.length > 0 ? '' : 'none';
-        });
+        for (var j = 0; j < cats.length; j++) {
+          var visible = cats[j].querySelectorAll('.dev-btn:not([style*="display: none"])');
+          cats[j].style.display = visible.length > 0 ? '' : 'none';
+        }
       });
     }
+
+    // Load the V1 engine, then render the canvas
+    _ensureEngine().then(function() {
+      _renderCanvas();
+    });
   }
 
   function exit() {

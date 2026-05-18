@@ -14555,6 +14555,16 @@
     tbZoomReset
   );
 
+  // ── V2 bridge: read-only getters so the V2 render layer can read
+  // engine state without duplicating it. V2 calls these, never mutates
+  // tbState directly. Added v5.0.3 for the strangler-fig pattern.
+  window.tbGetState = function() { return tbState; };
+  window.tbGetSelectedId = function() { return tbSelectedId; };
+  window.tbGetPendingCableFrom = function() { return tbPendingCableFrom; };
+  window.tbGetDeviceTypes = function() { return TB_DEVICE_TYPES; };
+  window.tbGetCableTypes = function() { return TB_CABLE_TYPES; };
+  window.tbDeviceIcon = tbDeviceIcon;
+
   // ── Register feature module entry point ──
   // Same contract as v4.99.36-43. Shell calls
   // window._certanvilFeatures["topology-builder"].enter() after lazy-load
