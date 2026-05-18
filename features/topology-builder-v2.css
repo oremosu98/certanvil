@@ -637,6 +637,215 @@ html:has(#page-topology-builder-v2.page.active) #page-topology-builder-v2 {
   color: #8b5cf6;
 }
 
+/* ════════════════════════════════════════════════════════════════════
+   TRACE MODE — Ship #5
+   Trace initiation panel (sidebar-style, right side of canvas).
+   Source/dest device pickers with icons, protocol toggle, begin trace.
+   ════════════════════════════════════════════════════════════════════ */
+
+/* ── Trace init panel ────────────────────────────────────────────── */
+#page-topology-builder-v2 .v2-trace-init {
+  position: absolute;
+  right: 14px;
+  top: 50px;
+  width: 320px;
+  max-height: calc(100% - 80px);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  z-index: 18;
+  display: flex;
+  flex-direction: column;
+  opacity: 0;
+  transform: translateX(12px);
+  pointer-events: none;
+  transition: opacity 0.25s ease, transform 0.25s ease;
+  overflow: hidden;
+}
+#page-topology-builder-v2 .v2-trace-init.v2-trace-visible {
+  opacity: 1;
+  transform: translateX(0);
+  pointer-events: auto;
+}
+#page-topology-builder-v2 .v2-trace-init.v2-trace-running {
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+/* ── Trace head ──────────────────────────────────────────────────── */
+#page-topology-builder-v2 .v2-ti-head {
+  padding: 18px 18px 14px;
+  border-bottom: 1px solid var(--border);
+}
+#page-topology-builder-v2 .v2-ti-eyebrow {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--text-dim);
+  margin-bottom: 2px;
+}
+#page-topology-builder-v2 .v2-ti-title {
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+#page-topology-builder-v2 .v2-ti-sub {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-dim);
+}
+
+/* ── Trace body ──────────────────────────────────────────────────── */
+#page-topology-builder-v2 .v2-ti-body {
+  padding: 14px 18px;
+  flex: 1 1 0;
+  overflow-y: auto;
+}
+#page-topology-builder-v2 .v2-ti-field {
+  margin-bottom: 6px;
+}
+
+/* ── Device picker card ──────────────────────────────────────────── */
+#page-topology-builder-v2 .v2-ti-pick {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  position: relative;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+#page-topology-builder-v2 .v2-ti-pick:hover {
+  border-color: var(--accent);
+}
+#page-topology-builder-v2 .v2-ti-pick.selected {
+  border-color: color-mix(in oklab, var(--accent) 40%, var(--border));
+}
+#page-topology-builder-v2 .v2-ti-pick-empty {
+  padding: 14px 12px;
+  border: 1px dashed var(--border);
+  border-radius: 10px;
+  color: var(--text-dim);
+  font-size: 12px;
+  text-align: center;
+}
+#page-topology-builder-v2 .v2-ti-pick-icon {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+}
+#page-topology-builder-v2 .v2-ti-pick-icon svg {
+  width: 36px;
+  height: 36px;
+}
+#page-topology-builder-v2 .v2-ti-pick-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+}
+#page-topology-builder-v2 .v2-ti-pick-ip {
+  font-size: 11px;
+  font-family: 'SF Mono', 'Consolas', monospace;
+  color: var(--text-dim);
+}
+
+/* Hidden select overlaying the picker card for accessibility */
+#page-topology-builder-v2 .v2-ti-select {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+  width: 100%;
+  height: 100%;
+}
+
+/* ── Arrow between src and dst ───────────────────────────────────── */
+#page-topology-builder-v2 .v2-ti-arrow {
+  text-align: center;
+  font-size: 18px;
+  color: var(--text-dim);
+  padding: 2px 0;
+}
+
+/* ── Protocol type toggle ────────────────────────────────────────── */
+#page-topology-builder-v2 .v2-ti-type-row {
+  display: flex;
+  gap: 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+#page-topology-builder-v2 .v2-ti-type {
+  flex: 1;
+  padding: 8px 4px;
+  font-size: 11px;
+  font-weight: 600;
+  text-align: center;
+  background: none;
+  border: none;
+  border-right: 1px solid var(--border);
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+#page-topology-builder-v2 .v2-ti-type:last-child {
+  border-right: none;
+}
+#page-topology-builder-v2 .v2-ti-type:hover {
+  color: var(--text);
+}
+#page-topology-builder-v2 .v2-ti-type.on {
+  background: color-mix(in oklab, var(--accent) 12%, transparent);
+  color: var(--accent);
+  font-weight: 700;
+  box-shadow: inset 0 -2px 0 var(--accent);
+}
+
+/* ── Trace footer ────────────────────────────────────────────────── */
+#page-topology-builder-v2 .v2-ti-foot {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 14px 18px;
+  border-top: 1px solid var(--border);
+}
+#page-topology-builder-v2 .v2-ti-cancel {
+  padding: 9px 16px;
+  font-size: 12px;
+  font-weight: 600;
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+#page-topology-builder-v2 .v2-ti-cancel:hover {
+  color: var(--text);
+  border-color: var(--text-dim);
+}
+#page-topology-builder-v2 .v2-ti-begin {
+  padding: 9px 20px;
+  font-size: 12px;
+  font-weight: 700;
+  background: var(--accent);
+  color: var(--bg);
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: filter 0.15s;
+}
+#page-topology-builder-v2 .v2-ti-begin:hover {
+  filter: brightness(1.1);
+}
+
 /* ── Responsive: collapse rails on narrow viewports ──────────────────── */
 @media (max-width: 900px) {
   #page-topology-builder-v2 .work {

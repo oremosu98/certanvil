@@ -20446,6 +20446,65 @@ test('v5.0.7 CSS: V2 simulate dialog + log panel styles exist', (() => {
     && /\.v2-sim-btn\.primary/.test(v2css);
 })());
 
+// ── v5.0.8 — TB V2 Ship #5: Trace mode panel ──
+console.log('\n\x1b[1m── v5.0.8 — TB V2 Ship #5: Trace mode panel ──\x1b[0m');
+
+test('v5.0.8 JS: V1 bridge exposes trace functions (tbV2ComputeTrace, tbV2StartTrace, tbV2EndTrace)',
+  /window\.tbV2ComputeTrace\s*=/.test(_featureV1Js)
+  && /window\.tbV2StartTrace\s*=/.test(_featureV1Js)
+  && /window\.tbV2EndTrace\s*=/.test(_featureV1Js));
+
+test('v5.0.8 JS: V1 bridge exposes trace playback (tbV2TracePlay, tbV2TracePause, tbV2TraceStep)',
+  /window\.tbV2TracePlay\s*=/.test(_featureV1Js)
+  && /window\.tbV2TracePause\s*=/.test(_featureV1Js)
+  && /window\.tbV2TraceStep\s*=/.test(_featureV1Js));
+
+test('v5.0.8 JS: V1 bridge exposes tbV2GetTraceState for V2 trace state reads',
+  /window\.tbV2GetTraceState\s*=/.test(_featureV1Js));
+
+test('v5.0.8 JS: V2 has _renderTracePanel for trace initiation UI',
+  /_renderTracePanel/.test(_featureV2Js)
+  && /v2-trace-init/.test(_featureV2Js)
+  && /v2-ti-head/.test(_featureV2Js));
+
+test('v5.0.8 JS: V2 has _wireTracePanel for trace event delegation',
+  /function _wireTracePanel/.test(_featureV2Js)
+  && /v2-ti-begin/.test(_featureV2Js));
+
+test('v5.0.8 JS: V2 _showTraceUI + _hideTraceUI toggle trace panel',
+  /function _showTraceUI/.test(_featureV2Js)
+  && /function _hideTraceUI/.test(_featureV2Js));
+
+test('v5.0.8 JS: V2 _buildDevicePickerHtml renders device card with icon + name + IP',
+  /function _buildDevicePickerHtml/.test(_featureV2Js)
+  && /v2-ti-pick/.test(_featureV2Js)
+  && /v2-ti-pick-icon/.test(_featureV2Js)
+  && /v2-ti-pick-name/.test(_featureV2Js)
+  && /v2-ti-pick-ip/.test(_featureV2Js));
+
+test('v5.0.8 JS: V2 _getDevicesWithIp filters devices for trace',
+  /function _getDevicesWithIp/.test(_featureV2Js));
+
+test('v5.0.8 JS: V2 _setMode wires trace UI on mode enter',
+  /modeId\s*===\s*'trace'/.test(_featureV2Js)
+  && /_showTraceUI/.test(_featureV2Js)
+  && /_hideTraceUI/.test(_featureV2Js));
+
+test('v5.0.8 JS: V2 trace protocol toggle supports Ping/Traceroute/HTTP/DNS',
+  /v2-ti-type/.test(_featureV2Js)
+  && /_traceProtocol/.test(_featureV2Js));
+
+test('v5.0.8 CSS: V2 trace initiation panel styles exist', (() => {
+  let v2css = '';
+  try { v2css = fs.readFileSync(path.join(ROOT, 'features', 'topology-builder-v2.css'), 'utf8'); } catch (_) { return false; }
+  return /\.v2-trace-init/.test(v2css)
+    && /\.v2-ti-head/.test(v2css)
+    && /\.v2-ti-pick/.test(v2css)
+    && /\.v2-ti-type/.test(v2css)
+    && /\.v2-ti-begin/.test(v2css)
+    && /\.v2-ti-foot/.test(v2css);
+})());
+
 test('v4.99.59 EnvStrategy: ENVIRONMENT_STRATEGY.md exists at repo root', (() => {
   try { return fs.statSync(path.join(ROOT, 'ENVIRONMENT_STRATEGY.md')).isFile(); }
   catch (_) { return false; }

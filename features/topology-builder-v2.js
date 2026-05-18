@@ -520,6 +520,8 @@
       label.innerHTML = '<b>Design</b> mode -- ' + msg;
     } else if (_activeMode === 'simulate') {
       label.innerHTML = '<b>Simulate</b> mode -- ' + msg;
+    } else if (_activeMode === 'trace') {
+      label.innerHTML = '<b>Trace</b> mode -- ' + msg;
     }
   }
 
@@ -866,6 +868,204 @@
     if (dstEl && dstEl.options.length > 1) dstEl.selectedIndex = 1;
   }
 
+  // ════════════════════════════════════════════════════════════════════
+  // TRACE MODE — Ship #5
+  // Trace initiation panel (replaces V1's browser prompt() dialog).
+  // Source + destination device pickers with icons, protocol toggle
+  // (Ping/Traceroute/HTTP/DNS), cancel + begin trace buttons.
+  // Trace execution delegates to V1 bridge: tbV2StartTrace.
+  // ════════════════════════════════════════════════════════════════════
+
+  var _traceProtocol = 'ping';
+
+  // ── Build device picker row (icon + name + IP) ────────────────────
+  function _buildDevicePickerHtml(devices, selectedIndex) {
+    if (!devices || devices.length === 0) {
+      return '<div class="v2-ti-pick v2-ti-pick-empty">No devices with IPs</div>';
+    }
+    var d = devices[selectedIndex] || devices[0];
+    var ip = '';
+    if (d.interfaces) {
+      for (var j = 0; j < d.interfaces.length; j++) {
+        if (d.interfaces[j].ip) { ip = d.interfaces[j].ip; break; }
+      }
+    }
+    // Device icon from V1's tbDeviceIcon or fallback
+    var iconSvg = '';
+    var deviceTypes = window.tbGetDeviceTypes ? window.tbGetDeviceTypes() : {};
+    var meta = deviceTypes[d.type];
+    if (typeof window.tbDeviceIcon === 'function' && meta) {
+      iconSvg = window.tbDeviceIcon(d.type, meta.color);
+    }
+    if (!iconSvg) {
+      // Fallback monoline icon based on type
+      iconSvg = '<rect x="4" y="4" width="16" height="12" rx="2" stroke="currentColor" stroke-width="1.5" fill="none"/>'
+        + '<path d="M8 20h8M12 16v4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>';
+    }
+    return '<div class="v2-ti-pick selected">'
+      + '<div class="v2-ti-pick-icon"><svg viewBox="0 0 40 40" fill="none">' + iconSvg + '</svg></div>'
+      + '<div class="v2-ti-pick-info">'
+      + '<div class="v2-ti-pick-name">' + _esc(d.hostname || d.type) + '</div>'
+      + '<div class="v2-ti-pick-ip">' + _esc(ip || 'No IP') + '</div>'
+      + '</div>'
+      + '<select class="v2-ti-select" data-role="device-select">' + _buildDeviceOptions() + '</select>'
+      + '</div>';
+  }
+
+  // ── Get devices with IPs ──────────────────────────────────────────
+  function _getDevicesWithIp() {
+    var state = window.tbGetState ? window.tbGetState() : null;
+    if (!state || !state.devices) return [];
+    return state.devices.filter(function(d) {
+      return d.interfaces && d.interfaces.some(function(ifc) { return ifc.ip; });
+    });
+  }
+
+  // ── Render trace initiation panel ─────────────────────────────────
+  function _renderTracePanel() {
+    var panels = document.getElementById('tbv2-panels');
+    if (!panels) return;
+
+    var old = document.getElementById('tbv2-trace-panel');
+    if (old) old.remove();
+
+    var devices = _getDevicesWithIp();
+
+    var div = document.createElement('div');
+    div.id = 'tbv2-trace-panel';
+    div.className = 'v2-trace-init';
+    div.innerHTML =
+      '<div class="v2-ti-head">'
+      + '<div class="v2-ti-eyebrow">Packet trace</div>'
+      + '<div class="v2-ti-title">Trace a path</div>'
+      + '<div class="v2-ti-sub">Select source and destination, choose a protocol, then begin the trace. The packet path will animate hop-by-hop.</div>'
+      + '</div>'
+      + '<div class="v2-ti-body">'
+      +   '<div class="v2-ti-field">'
+      +     '<div class="v2-sim-label">Source</div>'
+      +     '<div id="tbv2-trace-src-pick">' + _buildDevicePickerHtml(devices, 0) + '</div>'
+      +   '</div>'
+      +   '<div class="v2-ti-arrow">&darr;</div>'
+      +   '<div class="v2-ti-field">'
+      +     '<div class="v2-sim-label">Destination</div>'
+      +     '<div id="tbv2-trace-dst-pick">' + _buildDevicePickerHtml(devices, devices.length > 1 ? 1 : 0) + '</div>'
+      +   '</div>'
+      +   '<div class="v2-sim-label" style="margin-top:12px;">Protocol</div>'
+      +   '<div class="v2-ti-type-row">'
+      +     '<button class="v2-ti-type on" type="button" data-trace-proto="ping">Ping</button>'
+      +     '<button class="v2-ti-type" type="button" data-trace-proto="traceroute">Traceroute</button>'
+      +     '<button class="v2-ti-type" type="button" data-trace-proto="http">HTTP</button>'
+      +     '<button class="v2-ti-type" type="button" data-trace-proto="dns">DNS</button>'
+      +   '</div>'
+      + '</div>'
+      + '<div class="v2-ti-foot">'
+      +   '<button class="v2-ti-cancel" type="button">Cancel</button>'
+      +   '<button class="v2-ti-begin" type="button">Begin trace</button>'
+      + '</div>';
+    panels.appendChild(div);
+  }
+
+  // ── Wire trace panel events ───────────────────────────────────────
+  function _wireTracePanel() {
+    var panel = document.getElementById('tbv2-trace-panel');
+    if (!panel) return;
+
+    // Protocol toggle
+    panel.addEventListener('click', function(e) {
+      var btn = e.target.closest('[data-trace-proto]');
+      if (btn) {
+        _traceProtocol = btn.getAttribute('data-trace-proto');
+        var allBtns = panel.querySelectorAll('[data-trace-proto]');
+        for (var i = 0; i < allBtns.length; i++) {
+          allBtns[i].classList.toggle('on', allBtns[i] === btn);
+        }
+      }
+    });
+
+    // Device select change — update the picker card visuals
+    panel.addEventListener('change', function(e) {
+      var sel = e.target.closest('[data-role="device-select"]');
+      if (!sel) return;
+      var deviceId = sel.value;
+      var devices = _getDevicesWithIp();
+      var idx = 0;
+      for (var i = 0; i < devices.length; i++) {
+        if (devices[i].id === deviceId) { idx = i; break; }
+      }
+      var pickContainer = sel.closest('#tbv2-trace-src-pick, #tbv2-trace-dst-pick');
+      if (pickContainer) {
+        pickContainer.innerHTML = _buildDevicePickerHtml(devices, idx);
+        // Re-select the chosen option in the new select
+        var newSel = pickContainer.querySelector('[data-role="device-select"]');
+        if (newSel) newSel.value = deviceId;
+      }
+    });
+
+    // Cancel button
+    var cancelBtn = panel.querySelector('.v2-ti-cancel');
+    if (cancelBtn) {
+      cancelBtn.addEventListener('click', function() {
+        _setMode('design');
+      });
+    }
+
+    // Begin trace button
+    var beginBtn = panel.querySelector('.v2-ti-begin');
+    if (beginBtn) {
+      beginBtn.addEventListener('click', function() {
+        var srcSel = panel.querySelector('#tbv2-trace-src-pick [data-role="device-select"]');
+        var dstSel = panel.querySelector('#tbv2-trace-dst-pick [data-role="device-select"]');
+        if (!srcSel || !dstSel) return;
+
+        var srcId = srcSel.value;
+        var dstId = dstSel.value;
+        if (!srcId || !dstId) {
+          _updateStatus('Select source and destination devices.');
+          return;
+        }
+        if (srcId === dstId) {
+          _updateStatus('Source and destination must be different.');
+          return;
+        }
+
+        var dstIp = _getDeviceIp(dstId);
+        if (!dstIp) {
+          _updateStatus('Destination has no IP configured.');
+          return;
+        }
+
+        // Start the trace via V1 bridge
+        if (typeof window.tbV2StartTrace === 'function') {
+          window.tbV2StartTrace(srcId, dstIp);
+          _updateStatus('Tracing packet path...');
+          // Hide the init panel once trace starts
+          var initPanel = document.getElementById('tbv2-trace-panel');
+          if (initPanel) initPanel.classList.add('v2-trace-running');
+        } else {
+          _updateStatus('Trace engine not loaded.');
+        }
+      });
+    }
+  }
+
+  // ── Show / hide trace UI ──────────────────────────────────────────
+  function _showTraceUI() {
+    _renderTracePanel();
+    _wireTracePanel();
+    var panel = document.getElementById('tbv2-trace-panel');
+    if (panel) panel.classList.add('v2-trace-visible');
+  }
+
+  function _hideTraceUI() {
+    var panel = document.getElementById('tbv2-trace-panel');
+    if (panel) { panel.classList.remove('v2-trace-visible'); panel.remove(); }
+    // End any active trace
+    if (typeof window.tbV2EndTrace === 'function') {
+      var traceState = window.tbV2GetTraceState ? window.tbV2GetTraceState() : null;
+      if (traceState && traceState.active) window.tbV2EndTrace();
+    }
+  }
+
   // ── Wire all interaction listeners ────────────────────────────────
   function _wireInteraction() {
     var svg = document.getElementById('tbv2-canvas-svg');
@@ -1013,6 +1213,11 @@
       _showSimulateUI();
     } else {
       _hideSimulateUI();
+    }
+    if (modeId === 'trace') {
+      _showTraceUI();
+    } else {
+      _hideTraceUI();
     }
 
     // Re-render canvas

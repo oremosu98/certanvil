@@ -14585,6 +14585,17 @@
   window.tbV2SimDHCP = function(clientDeviceId) { return tbSimDHCP(tbState, clientDeviceId); };
   window.tbV2AnimatePacket = tbAnimatePacket;
 
+  // ── V2 bridge: trace functions so V2 can initiate + control traces
+  // programmatically. V1's tbOpenTraceDialog uses browser prompt() which
+  // V2 replaces with its own editorial panel. Added v5.0.8 Ship #5.
+  window.tbV2ComputeTrace = function(srcDeviceId, dstIp, maxTtl) { return tbComputeTrace(tbState, srcDeviceId, dstIp, maxTtl || 64); };
+  window.tbV2StartTrace = function(srcId, dstIp) { tbStartTrace(srcId, dstIp); };
+  window.tbV2EndTrace = tbEndTrace;
+  window.tbV2TracePlay = tbTracePlay;
+  window.tbV2TracePause = tbTracePause;
+  window.tbV2TraceStep = tbTraceStep;
+  window.tbV2GetTraceState = function() { return _tbUiState.trace; };
+
   // ── Register feature module entry point ──
   // Same contract as v4.99.36-43. Shell calls
   // window._certanvilFeatures["topology-builder"].enter() after lazy-load
