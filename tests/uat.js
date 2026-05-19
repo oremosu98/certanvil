@@ -19627,8 +19627,11 @@ test('v4.99.52 D.1: S+ /quiz placeholder exists',
   _dxQuizSecRaw.length > 1000);
 
 // — Landing CTAs rewired —
+// MIGRATED (hero-v2 rebrand): the hero primary CTA class was scoped
+// .cta-primary -> .hv2-cta-primary. Intent unchanged — assert the hero
+// primary CTA still points to /diagnostic with full regression strength.
 test('v4.99.52 D.1: landing/index.html hero CTA points to /diagnostic (not direct cert-app URL)',
-  /class="cta-primary"\s+href="\/diagnostic"/.test(_landingIndexD1));
+  /class="hv2-cta-primary"\s+href="\/diagnostic"/.test(_landingIndexD1));
 test('v4.99.52 D.1: regression tombstone — landing/index.html no longer hard-redirects to cert-app diagnostic',
   !/networkplus\.certanvil\.com\/\?action=diagnostic[^"]*from=landing-hero/.test(_landingIndexD1));
 test('v4.99.52 D.1: landing/pricing.html free-tier CTA points to /diagnostic',
