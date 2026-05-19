@@ -132,7 +132,7 @@ html[data-theme] body #page-setup{background:var(--bg);color:var(--text);}
    renderTodaySection still write them; do not display) */
 #page-setup .hero,#page-setup #readiness-card,#page-setup #daily-goal-card,#page-setup #marathon-section,#page-setup #wrong-preset-tile,#page-setup #wrong-preset-sub,#page-setup #modes-ladder.modes-ladder>.modes-tier,#page-setup .modes-ladder .ed-section-head{position:absolute!important;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;}
 
-#page-setup .ch-wrap{max-width:1240px;margin:0 auto;padding:0 26px 90px;}
+#page-setup .ch-wrap{max-width:1440px;margin:0 auto;padding:0 26px 90px;}
 /* Visual band styling only — does NOT set display, so styles.css keeps full
    ownership of the [data-cert] gate (pass-proof shows in netplus, private
    in secplus; never both). The earlier blanket display:flex force-showed

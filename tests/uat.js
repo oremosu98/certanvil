@@ -9979,6 +9979,18 @@ test('codex-home HTML v5.5.5: #continue-card always-present rail anchor (in .col
   && !/id="continue-card"[^>]*\bis-hidden\b|\bis-hidden\b[^"]*"[^>]*id="continue-card"/.test(html)
   && /function renderContinueCard\s*\(/.test(js)
   && (js.match(/typeof renderContinueCard === 'function'\) renderContinueCard\(\)/g) || []).length >= 2);
+// v5.5.7 — cert-leak fix. Quiz history + wrong bank are global per user
+// (v4.99.26) but topics belong to a cert. renderContinueCard (v5.5.5) +
+// the pre-existing renderHeroV2 lede both surfaced raw global topics →
+// leaked N10-009 "Cable Issues" while in Security+. Both must filter
+// through _isCurrentCertTopic (the canonical v4.99.26 buildSessionPlan
+// pattern). These regexes double as tombstones: a revert to bare
+// loadHistory()/loadWrongBank()/computeWeakSpotScores() fails them.
+test('v5.5.7 CertLeak: renderContinueCard cert-scopes loadHistory + loadWrongBank via _isCurrentCertTopic (tombstone: revert to bare loadHistory()/loadWrongBank() fails this)',
+  /\(\s*loadHistory\(\)\s*\|\|\s*\[\]\)\.filter\(\s*e\s*=>\s*e\s*&&\s*_isCurrentCertTopic\(\s*e\.topic\s*\)\s*\)/.test(js)
+  && /\(\s*loadWrongBank\(\)\s*\|\|\s*\[\]\)\.filter\(\s*w\s*=>\s*w\s*&&\s*_isCurrentCertTopic\(\s*w\.topic\s*\)\s*\)\.length/.test(js));
+test('v5.5.7 CertLeak: renderHeroV2 lede cert-scopes computeWeakSpotScores via _isCurrentCertTopic (the |\| [] form is unique vs buildSessionPlan)',
+  /\(\s*computeWeakSpotScores\(\)\s*\|\|\s*\[\]\)\.filter\(\s*w\s*=>\s*w\s*&&\s*_isCurrentCertTopic\(\s*w\.topic\s*\)\s*\)/.test(js));
 test('v4.76.0/dg4 HTML: 3 commitment groups (quick / practice / exam)',
   (html.match(/class="dgh-grp"/g) || []).length === 3 && html.includes('Quick &middot; 3-5 min') && html.includes('Practice &middot; 10-30 min') && html.includes('Exam simulation &middot; 60-90 min'));
 test('v4.76.0 HTML: Daily Challenge tile in Quick tier', html.includes('id="modes-dc-tile"'));

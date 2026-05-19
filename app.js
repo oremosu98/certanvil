@@ -1,9 +1,9 @@
 // ══════════════════════════════════════════
-// Network+ AI Quiz — app.js  v5.5.6
+// Network+ AI Quiz — app.js  v5.5.7
 // ══════════════════════════════════════════
 
 // ── CONSTANTS ──
-const APP_VERSION = '5.5.6';
+const APP_VERSION = '5.5.7';
 // v4.99.45 (Phase 6b): expose APP_VERSION on window so the web-vitals
 // collector (lib/web-vitals-collector.js, loaded BEFORE app.js so its
 // PerformanceObservers attach earlier) can stamp this version onto every
@@ -9665,7 +9665,12 @@ function renderContinueCard() {
   const card = document.getElementById('continue-card');
   if (!card) return;
   let hist = [];
-  try { hist = loadHistory(); } catch (_) {}
+  // v5.5.7: cert-scope. Quiz history + wrong bank are global per user but
+  // topics belong to a specific cert (the v4.99.26 cross-cert pattern).
+  // Filtering to the current cert means a cert with no own history correctly
+  // falls to the "fresh" first-action state instead of leaking the OTHER
+  // cert's last session (was showing N10-009 "Cable Issues" in Security+).
+  try { hist = (loadHistory() || []).filter(e => e && _isCurrentCertTopic(e.topic)); } catch (_) {}
   const last = (hist && hist.length) ? hist[0] : null;
   const totalQ = (hist || []).reduce((s, e) => s + (parseInt(e && e.total, 10) || 0), 0);
   const hasHistory = !!last && totalQ > 0;
@@ -9704,7 +9709,11 @@ function renderContinueCard() {
   const lastTopic = String(last.topic || 'your last topic');
 
   let wrongN = 0;
-  try { wrongN = loadWrongBank().length; } catch (_) {}
+  // v5.5.7: cert-scope the wrong-bank count too (entries carry .topic) so
+  // "N still in your wrong bank" / "Drill the N you missed" reflect only the
+  // current cert. If the current cert has 0 wrongs the wrong-path is skipped
+  // (gated on wrongN > 0) and the cert-filtered weak path takes over.
+  try { wrongN = (loadWrongBank() || []).filter(w => w && _isCurrentCertTopic(w.topic)).length; } catch (_) {}
 
   setTxt('cc-eyebrow-t', 'Pick up where you left off');
 
@@ -19805,7 +19814,11 @@ function renderHeroV2() {
       let weakInline = '';
       try {
         if (typeof computeWeakSpotScores === 'function') {
-          const weak = computeWeakSpotScores();
+          // v5.5.7: cert-scope. Quiz history is global per user but topics
+          // belong to a specific cert. Mirror the v4.99.26 buildSessionPlan
+          // filter so the lede never names a wrong-cert topic (was leaking
+          // N10-009 topics like "Cable Issues" while in Security+ mode).
+          const weak = (computeWeakSpotScores() || []).filter(w => w && _isCurrentCertTopic(w.topic));
           if (weak && weak.length >= 2) {
             weakInline = `Yesterday you wobbled on <strong>${escHtml(weak[0].topic)}</strong> and <strong>${escHtml(weak[1].topic)}</strong>. `;
           } else if (weak && weak.length === 1) {
