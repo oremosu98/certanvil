@@ -229,12 +229,18 @@ html[data-theme] body #page-setup #today-plan.plan-card{display:block;background
 html[data-theme] body #page-setup .readiness-card{position:relative;overflow:hidden;background:linear-gradient(180deg,var(--surface),color-mix(in oklab,var(--surface) 84%,var(--bg)));border:1px solid color-mix(in oklab,var(--accent) 26%,var(--border));border-radius:20px;padding:24px 24px 26px;box-shadow:none;}
 #page-setup .readiness-card::before{content:"";position:absolute;inset:0;background:radial-gradient(120% 80% at 100% 0%,color-mix(in oklab,var(--accent) 9%,transparent),transparent 60%);pointer-events:none;}
 #page-setup .readiness-eyebrow{position:relative;font-size:10.5px;font-weight:800;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);margin-bottom:14px;}
-#page-setup .readiness-score{position:relative;font-family:'Fraunces',Georgia,serif;font-size:clamp(58px,7vw,84px);font-weight:600;color:var(--text);line-height:0.92;letter-spacing:-0.03em;font-variant-numeric:tabular-nums;}
-#page-setup .readiness-score span{font-family:'Fraunces',Georgia,serif;font-size:clamp(18px,2vw,24px);font-weight:500;color:var(--text-dim);letter-spacing:0;}
+/* v5.5.10 — hero treatment (founder: "like a hero shot, big and in my
+   face"; picked candidate A at 140px max). Score becomes the poster-number
+   protagonist on its own line; the inline sibling span is demoted to a
+   small uppercase caption directly below (the index.html text content was
+   tweaked " / 900" → "out of 900" for clean caption read). */
+#page-setup .readiness-score{position:relative;display:flex;flex-direction:column;align-items:baseline;gap:0;font-variant-numeric:tabular-nums;}
+html[data-theme] body #page-setup .readiness-score #rc-v2-num{display:block;font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:clamp(94px,11.5vw,140px);line-height:0.92;letter-spacing:-0.03em;color:var(--text);}
+html[data-theme] body #page-setup .readiness-score span:not(#rc-v2-num){display:block;margin-top:6px;font-family:Inter,-apple-system,sans-serif;font-weight:600;font-size:13.5px;line-height:1;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-dim);}
 #page-setup .readiness-tier{position:relative;display:inline-flex;align-items:center;gap:7px;font-size:10.5px;font-weight:800;letter-spacing:0.07em;text-transform:uppercase;color:var(--accent);background:color-mix(in oklab,var(--accent) 12%,transparent);border:1px solid color-mix(in oklab,var(--accent) 26%,transparent);padding:5px 11px;border-radius:7px;margin:12px 0 0;}
 #page-setup .readiness-prob{position:relative;font-size:13px;color:var(--text-mid);margin:12px 0 0;line-height:1.5;font-variant-numeric:tabular-nums;}
 #page-setup .readiness-prob b,#page-setup .readiness-prob strong{color:var(--text);font-weight:700;}
-#page-setup .readiness-bar-track{position:relative;height:12px;border-radius:99px;background:color-mix(in oklab,var(--text) 12%,transparent);overflow:visible;margin-top:22px;}
+#page-setup .readiness-bar-track{position:relative;height:12px;border-radius:99px;background:color-mix(in oklab,var(--text) 12%,transparent);overflow:visible;margin-top:34px;}
 #page-setup .readiness-bar-fill{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,var(--accent),color-mix(in oklab,var(--accent) 64%,var(--yellow)));width:0;transition:width 1.1s var(--dgh-ease);}
 #page-setup .readiness-bar-mark{position:absolute;top:-7px;bottom:-7px;height:auto;width:2px;background:var(--text-mid);border-radius:1px;}
 #page-setup .readiness-bar-mark::after{content:"PASS 720";position:absolute;top:-17px;left:50%;transform:translateX(-50%);font:800 8px/1 Inter,-apple-system,sans-serif;letter-spacing:0.09em;color:var(--text-mid);white-space:nowrap;}

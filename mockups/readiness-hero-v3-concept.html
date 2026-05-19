@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Readiness score — hero treatment · CertAnvil</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;550;600;650;700;800&display=swap" rel="stylesheet">
+<!-- ═══════════════════════════════════════════════════════════════════════
+     READINESS SCORE — HERO TREATMENT  (v3 concept)
+
+     Founder: the v5.5.10 +24% bump (clamp(70,8.5vw,104), max 104px on
+     desktop) is not big enough. "like a hero shot. when i was studying
+     for my net+ it was the 1st thing i looked at, it was big and in my
+     face." Three candidates shown at TRUE rail width (372px col-side)
+     so you see actual proportion. Forged-bronze editorial tokens; light
+     primary + dark toggle.
+
+     Structural note: at hero sizes "522" + " / 900" inline overflows
+     the 372px rail. Demote " / 900" to a SMALL caption directly below
+     the hero number — score becomes the protagonist; "/ 900" reads as
+     a denominator. taste-skill: a single dominant figure with a quiet
+     qualifier is the editorial poster-number pattern (matches the
+     masthead's Fraunces hero greeting hierarchy).
+
+     DISCUSSION ONLY — pick A/B/C/custom; I integrate scoped-CSS-only
+     over the preserved DOM contract (no app.js change), bump v5.5.10,
+     ship.
+═══════════════════════════════════════════════════════════════════════ -->
+<style>
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  :root{
+    --bg:oklch(0.975 0.007 85);--surface:oklch(0.992 0.004 85);--surface-2:oklch(0.965 0.010 84);
+    --ink:oklch(0.22 0.015 280);--ink-soft:oklch(0.36 0.014 280);--muted:oklch(0.50 0.013 280);
+    --border:oklch(0.86 0.008 85);--border-soft:oklch(0.91 0.006 85);
+    --accent:oklch(0.50 0.155 55);--accent-bright:oklch(0.80 0.155 64);--accent-deep:oklch(0.42 0.150 52);--on-accent:oklch(0.985 0.010 85);
+    --shadow-card:0 2px 4px oklch(0.22 0.015 280 / .05),0 30px 60px -24px oklch(0.22 0.015 280 / .26);
+    --eo:cubic-bezier(0.23,1,0.32,1);
+  }
+  [data-theme="dark"]{
+    --bg:oklch(0.16 0.009 275);--surface:oklch(0.205 0.009 275);--surface-2:oklch(0.185 0.009 275);
+    --ink:oklch(0.96 0.006 275);--ink-soft:oklch(0.78 0.010 275);--muted:oklch(0.60 0.013 275);
+    --border:oklch(0.30 0.008 275);--border-soft:oklch(0.26 0.008 275);
+    --accent:oklch(0.80 0.155 64);--accent-bright:oklch(0.86 0.140 70);--accent-deep:oklch(0.70 0.150 62);--on-accent:oklch(0.18 0.020 275);
+    --shadow-card:0 2px 4px rgba(0,0,0,.3),0 32px 60px -24px rgba(0,0,0,.62);
+  }
+  body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-serif;-webkit-font-smoothing:antialiased;min-height:100vh;
+    padding:54px 20px 90px;display:flex;flex-direction:column;align-items:center;gap:30px}
+  h1{font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:22px;margin:0;letter-spacing:-.01em;text-align:center}
+  .sub{font-size:13px;color:var(--muted);text-align:center;max-width:560px}
+
+  .row{display:flex;gap:32px;flex-wrap:wrap;justify-content:center;align-items:flex-start}
+  .col{display:flex;flex-direction:column;align-items:center;gap:14px}
+  .cap{font:700 10px/1 Inter,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#9b7b2e}
+  [data-theme="dark"] .cap{color:#d9b56a}
+  .delta{font-size:11px;color:var(--muted)}
+
+  /* the actual readiness card — 372px rail width, locked forged-bronze chrome */
+  .card{position:relative;width:372px;border:1px solid color-mix(in oklab,var(--accent) 26%,var(--border));border-radius:20px;padding:24px 24px 26px;background:linear-gradient(180deg,var(--surface),var(--surface-2));box-shadow:var(--shadow-card);overflow:hidden}
+  .card::before{content:"";position:absolute;inset:0;background:radial-gradient(120% 80% at 100% 0%,color-mix(in oklab,var(--accent) 9%,transparent),transparent 60%);pointer-events:none}
+  .eyebrow{position:relative;font-size:10.5px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);margin-bottom:14px}
+  [data-theme="dark"] .eyebrow{color:var(--accent-bright)}
+
+  /* THE HERO SCORE — score on its own line, "/ 900" demoted below as caption */
+  .score{position:relative;display:flex;flex-direction:column;align-items:baseline;gap:0;font-family:'Fraunces',Georgia,serif;font-weight:600;color:var(--ink);line-height:0.92;letter-spacing:-0.03em;font-variant-numeric:tabular-nums}
+  .num{display:block;line-height:0.92}
+  .denom{display:block;margin-top:6px;font-family:'Inter',sans-serif;font-weight:600;font-size:13.5px;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted)}
+  /* candidates */
+  .A .num{font-size:140px}
+  .B .num{font-size:170px}
+  .C .num{font-size:200px}
+
+  .tier{position:relative;display:inline-flex;align-items:center;gap:7px;margin-top:16px;font-size:11px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:var(--accent-deep);background:color-mix(in oklab,var(--accent) 12%,transparent);border:1px solid color-mix(in oklab,var(--accent) 26%,transparent);padding:5px 11px;border-radius:7px}
+  [data-theme="dark"] .tier{color:var(--accent-bright)}
+  .prob{position:relative;margin-top:12px;font-size:13px;color:var(--ink-soft);line-height:1.5}
+  .prob b{color:var(--ink);font-weight:700}
+
+  .bar{position:relative;margin-top:22px;height:12px;border-radius:99px;background:color-mix(in oklab,var(--muted) 16%,transparent);overflow:visible}
+  .fill{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,var(--accent-deep),var(--accent-bright));width:58%}
+  .mark{position:absolute;top:-7px;bottom:-7px;width:2px;background:var(--ink-soft);border-radius:1px;left:80%}
+  .mark::after{content:"PASS 720";position:absolute;top:-17px;left:50%;transform:translateX(-50%);font:800 8px/1 'Inter',sans-serif;letter-spacing:.09em;color:var(--ink-soft);white-space:nowrap}
+  .range{position:relative;margin-top:24px;display:flex;justify-content:space-between;align-items:baseline;font-size:12px;color:var(--muted);padding-top:14px;border-top:1px solid var(--border-soft)}
+  .range b{color:var(--ink);font-weight:700;font-variant-numeric:tabular-nums}
+
+  .mk-bar{position:fixed;top:14px;right:16px;z-index:9;display:flex;gap:8px}
+  .mk-bar button{font:600 12px Inter,sans-serif;padding:7px 13px;border-radius:9px;border:1px solid #ccc;background:#fff;color:#333;cursor:pointer}
+  [data-theme="dark"] .mk-bar button{background:#222;color:#eee;border-color:#444}
+  .mk-note{max-width:760px;padding:15px 18px;border:1px dashed color-mix(in oklab,#b8860b 40%,#ccc);border-radius:12px;font:500 12.5px/1.65 Inter,sans-serif;color:#7a5c12}
+  [data-theme="dark"] .mk-note{color:#d9b56a;border-color:#5a4416}
+  .mk-note b{font-weight:800}.mk-note code{font-family:ui-monospace,Menlo,monospace;font-size:11.5px;background:rgba(184,134,11,.12);padding:1px 5px;border-radius:4px}
+</style>
+</head>
+<body>
+
+<div class="mk-bar">
+  <button onclick="document.documentElement.setAttribute('data-theme',document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark')">Theme</button>
+</div>
+
+<h1>Readiness score &mdash; hero treatment</h1>
+<p class="sub">All three at <b>true rail width (372px)</b> with the full readiness chrome. The score is on its own line; "/ 900" is demoted to a small uppercase caption below (the editorial poster-number pattern). Toggle theme top-right.</p>
+
+<div class="row">
+
+  <!-- A · 140px -->
+  <div class="col">
+    <span class="cap">A &middot; 140px</span><span class="delta">+35% vs current 104</span>
+    <div class="card A">
+      <div class="eyebrow">Exam readiness &middot; scaled 100&ndash;900</div>
+      <div class="score">
+        <span class="num">522</span>
+        <span class="denom">out of 900</span>
+      </div>
+      <div class="tier">Building foundation</div>
+      <div class="prob">Pass probability <b>1%</b> &middot; likely range 448&ndash;596</div>
+      <div class="bar"><span class="fill"></span><div class="mark"></div></div>
+      <div class="range"><span>range 448&ndash;596</span><span>pass mark <b>720</b></span></div>
+    </div>
+  </div>
+
+  <!-- B · 170px -->
+  <div class="col">
+    <span class="cap">B &middot; 170px</span><span class="delta">+63% vs current 104</span>
+    <div class="card B">
+      <div class="eyebrow">Exam readiness &middot; scaled 100&ndash;900</div>
+      <div class="score">
+        <span class="num">522</span>
+        <span class="denom">out of 900</span>
+      </div>
+      <div class="tier">Building foundation</div>
+      <div class="prob">Pass probability <b>1%</b> &middot; likely range 448&ndash;596</div>
+      <div class="bar"><span class="fill"></span><div class="mark"></div></div>
+      <div class="range"><span>range 448&ndash;596</span><span>pass mark <b>720</b></span></div>
+    </div>
+  </div>
+
+  <!-- C · 200px -->
+  <div class="col">
+    <span class="cap">C &middot; 200px</span><span class="delta">+92% vs current 104</span>
+    <div class="card C">
+      <div class="eyebrow">Exam readiness &middot; scaled 100&ndash;900</div>
+      <div class="score">
+        <span class="num">522</span>
+        <span class="denom">out of 900</span>
+      </div>
+      <div class="tier">Building foundation</div>
+      <div class="prob">Pass probability <b>1%</b> &middot; likely range 448&ndash;596</div>
+      <div class="bar"><span class="fill"></span><div class="mark"></div></div>
+      <div class="range"><span>range 448&ndash;596</span><span>pass mark <b>720</b></span></div>
+    </div>
+  </div>
+
+</div>
+
+<p class="mk-note">
+  <b>Hero treatment.</b> The score becomes the poster-number protagonist; the "/ 900" qualifier is demoted to a quiet uppercase caption directly below (rendered as <b>out of 900</b> &mdash; reads cleaner than "/ 900" beneath a giant figure). taste-skill: a single dominant figure + a tiny denominator is the editorial poster pattern (same hierarchy the masthead's Fraunces greeting already uses).
+  <br><br>
+  <b>Integration (scoped-CSS-only, no markup change):</b> the existing render emits <code>&lt;span id="rc-v2-num"&gt;522&lt;/span&gt;&lt;span&gt;/ 900&lt;/span&gt;</code> &mdash; the scoped dg-system.css block re-flows that into the hero structure: <code>.readiness-score</code> becomes <code>flex-direction:column;align-items:baseline</code>; <code>#rc-v2-num</code> is the hero (e.g. for B: <code>clamp(110px, 14vw, 170px)</code>); the inline-text sibling span is restyled as the small uppercase caption (its <code>" / 900"</code> text content stays in the DOM &mdash; CSS hides the leading "/ " glyph via clip / overflow-x-hidden or we accept the slash; or app.js render is tweaked to emit <code>"out of 900"</code> instead, a one-string change). Zero contract risk: <code>#rc-v2-num</code> + the sibling span preserved; <code>renderReadinessCardV2()</code> still just sets <code>textContent</code> on <code>#rc-v2-num</code>. Quick CSS bump + a one-string render tweak; bump v5.5.10 + <code>dg-system.css?v</code> hand-bump.
+</p>
+
+</body>
+</html>
