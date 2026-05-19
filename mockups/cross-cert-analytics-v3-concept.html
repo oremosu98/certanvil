@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cross-cert analytics v3 — concept · CertAnvil</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;550;600;650;700;800&display=swap" rel="stylesheet">
+<!-- ═══════════════════════════════════════════════════════════════════════
+     CROSS-CERT ANALYTICS — v3 CONCEPT  ("The Transfer Ledger")
+
+     A fresh ground-up redesign after the v2 reskin was rejected (the
+     Skill-overlap panel specifically read as a generic flat-row accordion
+     + grey detail dump — the dashboards anti-slop failure).
+
+     ROUTED THROUGH: taste-skill → dashboards. The page's subject IS
+     movement between certs, so the design uses the dashboards "push
+     further" levers — a transfer DIAGRAM, a standings CHART, row
+     highlights, a payoff figure with a real data role — instead of
+     repeating metric rows. stop-slop applied to all static prose.
+     emil restraint: one accent, hairline rules, one icon per section.
+
+     CONTRACT-FAITHFUL: every panel reproduces the EXACT markup +
+     class names emitted by lib/cross-cert-analytics.js (renderPanel1
+     / renderSoPair / renderHero / renderSecondaryList) so the CSS
+     transfers 1:1 into the scoped <style id="ccax-styles"> with ZERO
+     JS or DOM change. The #site-topbar block is the already-shipped,
+     prod-verified index.html block, verbatim.
+
+     This file is for DISCUSSION ONLY — not an integration.
+═══════════════════════════════════════════════════════════════════════ -->
+<style>
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{background:var(--cc-page-bg,#fff)}
+
+  /* ── Shipped #site-topbar (verbatim, prod-verified) ─────────────── */
+  #site-topbar{--bg:oklch(0.975 0.007 85);--surface:oklch(0.992 0.004 85);--surface-2:oklch(0.965 0.010 84);--ink:oklch(0.22 0.015 280);--ink-soft:oklch(0.36 0.014 280);--muted:oklch(0.50 0.013 280);--border:oklch(0.86 0.008 85);--border-soft:oklch(0.91 0.006 85);--accent:oklch(0.50 0.155 55);--accent-bright:oklch(0.80 0.155 64);--accent-deep:oklch(0.42 0.150 52);--on-accent:oklch(0.985 0.010 85);--topbar-bg:oklch(0.975 0.007 85 / .82);--eo:cubic-bezier(0.23,1,0.32,1);position:sticky;top:0;z-index:50;background:var(--topbar-bg);backdrop-filter:blur(20px) saturate(1.4);-webkit-backdrop-filter:blur(20px) saturate(1.4);border-bottom:1px solid var(--border-soft);font-family:'Inter',system-ui,-apple-system,sans-serif;-webkit-font-smoothing:antialiased}
+  [data-theme="dark"] #site-topbar{--bg:oklch(0.16 0.009 275);--surface:oklch(0.205 0.009 275);--surface-2:oklch(0.185 0.009 275);--ink:oklch(0.96 0.006 275);--ink-soft:oklch(0.78 0.010 275);--muted:oklch(0.60 0.013 275);--border:oklch(0.30 0.008 275);--border-soft:oklch(0.26 0.008 275);--accent:oklch(0.80 0.155 64);--accent-bright:oklch(0.86 0.140 70);--accent-deep:oklch(0.70 0.150 62);--on-accent:oklch(0.18 0.020 275);--topbar-bg:oklch(0.16 0.009 275 / .82)}
+  #site-topbar *{box-sizing:border-box}
+  #site-topbar .topbar-inner{max-width:1180px;margin:0 auto;padding:15px clamp(20px,4vw,32px);display:flex;align-items:center;justify-content:space-between;gap:16px;position:relative}
+  #site-topbar .logo{display:flex;align-items:center;gap:11px;text-decoration:none}
+  #site-topbar .logo-mark{width:34px;height:34px;display:block;flex:none}
+  #site-topbar .logo-mark svg{width:100%;height:100%;display:block;fill:none}
+  #site-topbar .logo-mark svg path{stroke:var(--accent)}
+  #site-topbar .logo-mark svg line{stroke:var(--muted)}
+  #site-topbar .logo-name{font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:20px;letter-spacing:-.01em;color:var(--ink)}
+  #site-topbar .topbar-nav{display:flex;align-items:center;gap:clamp(6px,1.4vw,16px)}
+  #site-topbar .nav-link{position:relative;font-size:13.5px;font-weight:600;color:var(--ink-soft);text-decoration:none;padding:8px 4px;transition:color 200ms var(--eo)}
+  #site-topbar .nav-link::after{content:"";position:absolute;left:4px;right:calc(100% - 4px);bottom:2px;height:1.5px;background:var(--accent);transition:right 260ms var(--eo)}
+  @media (hover:hover){#site-topbar .nav-link:hover{color:var(--accent)}#site-topbar .nav-link:hover::after{right:4px}}
+  #site-topbar .theme-toggle{display:grid;place-items:center;width:36px;height:36px;margin-left:4px;border:1px solid var(--border);border-radius:10px;background:var(--surface);color:var(--ink-soft);cursor:pointer;position:relative;transition:color 200ms var(--eo),border-color 200ms var(--eo)}
+  @media (hover:hover){#site-topbar .theme-toggle:hover{color:var(--accent);border-color:color-mix(in oklab,var(--accent) 40%,var(--border))}}
+  #site-topbar .theme-icon{position:absolute;width:17px;height:17px;transition:opacity 280ms var(--eo),transform 280ms var(--eo)}
+  #site-topbar .theme-icon-sun{opacity:1;transform:rotate(0)}
+  #site-topbar .theme-icon-moon{opacity:0;transform:rotate(-90deg)}
+  [data-theme="dark"] #site-topbar .theme-icon-sun{opacity:0;transform:rotate(90deg)}
+  [data-theme="dark"] #site-topbar .theme-icon-moon{opacity:1;transform:rotate(0)}
+  #site-topbar .account-pill{display:flex;align-items:center;gap:9px;cursor:pointer;margin-left:6px;padding:5px 12px 5px 5px;border-radius:999px;background:var(--surface);border:1px solid var(--border)}
+  #site-topbar .account-avatar{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;flex:none;font-size:12px;font-weight:700;color:var(--on-accent);background:linear-gradient(150deg,var(--accent-bright),var(--accent))}
+  #site-topbar .account-email-short{font-size:13px;font-weight:600;color:var(--ink-soft)}
+  #site-topbar .account-chevron{font-size:10px;color:var(--muted)}
+
+  /* ════════════════════════════════════════════════════════════════
+     #analytics-page — scoped forged-bronze editorial system
+     (locked Phase 0 tokens, prod-verified; component CSS is the new
+     v3 "transfer ledger" design)
+  ════════════════════════════════════════════════════════════════ */
+  #analytics-page{
+    --bg:oklch(0.975 0.007 85);--surface:oklch(0.992 0.004 85);--surface-2:oklch(0.965 0.010 84);
+    --ink:oklch(0.22 0.015 280);--ink-soft:oklch(0.36 0.014 280);--muted:oklch(0.50 0.013 280);
+    --border:oklch(0.86 0.008 85);--border-soft:oklch(0.91 0.006 85);
+    --accent:oklch(0.50 0.155 55);--accent-bright:oklch(0.80 0.155 64);--accent-deep:oklch(0.42 0.150 52);--on-accent:oklch(0.985 0.010 85);
+    --pass:oklch(0.52 0.13 150);
+    --shadow-soft:0 1px 0 rgba(255,255,255,.55),0 18px 38px -18px oklch(0.22 0.015 280 / .20);
+    --shadow-card:0 2px 4px oklch(0.22 0.015 280 / .05),0 30px 60px -24px oklch(0.22 0.015 280 / .26);
+    --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;--eo:cubic-bezier(0.23,1,0.32,1);
+    display:block;background:var(--bg);color:var(--ink);
+    font-family:'Inter',system-ui,-apple-system,sans-serif;-webkit-font-smoothing:antialiased;
+    padding:clamp(34px,6vh,64px) clamp(20px,4vw,56px) clamp(80px,13vh,128px);
+  }
+  [data-theme="dark"] #analytics-page{
+    --bg:oklch(0.16 0.009 275);--surface:oklch(0.205 0.009 275);--surface-2:oklch(0.185 0.009 275);
+    --ink:oklch(0.96 0.006 275);--ink-soft:oklch(0.78 0.010 275);--muted:oklch(0.60 0.013 275);
+    --border:oklch(0.30 0.008 275);--border-soft:oklch(0.26 0.008 275);
+    --accent:oklch(0.80 0.155 64);--accent-bright:oklch(0.86 0.140 70);--accent-deep:oklch(0.70 0.150 62);--on-accent:oklch(0.18 0.020 275);
+    --pass:oklch(0.74 0.150 152);
+    --shadow-soft:0 1px 0 rgba(255,255,255,.04),0 20px 40px -18px rgba(0,0,0,.55);
+    --shadow-card:0 2px 4px rgba(0,0,0,.3),0 32px 60px -24px rgba(0,0,0,.62);
+  }
+  #analytics-page *{box-sizing:border-box}
+  #analytics-page [hidden]{display:none!important}
+  #analytics-page .account-container{max-width:940px;margin:0 auto}
+
+  /* breadcrumb + pagehead ─────────────────────────────────────────── */
+  #analytics-page .breadcrumb{font-size:12.5px;color:var(--muted)}
+  #analytics-page .breadcrumb a{color:var(--muted);text-decoration:none;transition:color 180ms var(--eo)}
+  @media (hover:hover){#analytics-page .breadcrumb a:hover{color:var(--accent)}}
+  #analytics-page .account-pagehead{margin-top:22px;padding-bottom:clamp(26px,3.4vw,38px);border-bottom:1px solid var(--border-soft)}
+  #analytics-page .account-eyebrow{display:inline-flex;align-items:center;gap:10px;font-size:12px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);margin-bottom:14px}
+  #analytics-page .account-eyebrow::after{content:"";width:34px;height:1px;background:linear-gradient(90deg,var(--accent),transparent)}
+  #analytics-page .cca-eyebrow-icon{display:none}
+  #analytics-page .account-title{font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:clamp(32px,4.4vw,50px);line-height:1.02;letter-spacing:-.022em;color:var(--ink)}
+  #analytics-page .account-subtitle{margin-top:14px;font-size:clamp(14px,1.1vw,16px);line-height:1.62;color:var(--ink-soft);max-width:60ch}
+
+  /* loading / anon / empty ────────────────────────────────────────── */
+  #analytics-page .account-loading{display:flex;align-items:center;gap:10px;margin-top:48px;font-size:14px;color:var(--muted)}
+  #analytics-page .account-loading-spinner{width:15px;height:15px;border-radius:50%;border:2px solid color-mix(in oklab,var(--muted) 36%,transparent);border-top-color:var(--accent);animation:ccaxSpin .8s linear infinite}
+  @keyframes ccaxSpin{to{transform:rotate(360deg)}}
+  #analytics-page .account-anon-gate,#analytics-page .cca-empty-state{max-width:540px;margin:64px auto;text-align:center}
+  #analytics-page .anon-gate-icon,#analytics-page .cca-empty-icon{display:none}
+  #analytics-page .account-anon-gate h2,#analytics-page .cca-empty-state h2{font-family:'Fraunces',Georgia,serif;font-size:clamp(23px,2.7vw,31px);font-weight:600;color:var(--ink);margin-bottom:12px;letter-spacing:-.01em}
+  #analytics-page .account-anon-gate p,#analytics-page .cca-empty-state p{font-size:14px;line-height:1.62;color:var(--ink-soft);margin-bottom:24px}
+  #analytics-page .btn-primary-cta{display:inline-flex;align-items:center;gap:8px;font-size:14px;font-weight:650;color:var(--on-accent);background:var(--accent);border:1px solid var(--accent-deep);padding:11px 22px;border-radius:11px;text-decoration:none;margin-right:14px;transition:background 200ms var(--eo)}
+  @media (hover:hover){#analytics-page .btn-primary-cta:hover{background:var(--accent-deep)}}
+  #analytics-page .btn-ghost-link{font-size:13.5px;font-weight:600;color:var(--ink-soft);text-decoration:none}
+  @media (hover:hover){#analytics-page .btn-ghost-link:hover{color:var(--accent)}}
+
+  /* ── Section opener — one numbered editorial head per panel ─────── */
+  #analytics-page .cca-panel{margin-top:clamp(48px,6.5vw,76px)}
+  #analytics-page .cca-panel-head{display:flex;align-items:center;justify-content:space-between;gap:18px;flex-wrap:wrap;padding-bottom:18px;border-bottom:1px solid var(--border)}
+  #analytics-page .cca-panel-title-row{display:flex;align-items:center;gap:16px;min-width:0}
+  #analytics-page .cca-panel-icon{width:46px;height:46px;flex:none;border-radius:13px;background-color:#FFFBF3;border:1px solid var(--border);box-shadow:var(--shadow-soft);display:grid;place-items:center}
+  [data-theme="dark"] #analytics-page .cca-panel-icon{background-color:#FFFBF3}
+  #analytics-page .cca-panel-icon svg,#analytics-page .cca-panel-icon img{width:34px;height:34px;display:block;object-fit:contain}
+  #analytics-page .cca-panel-title{font-family:'Fraunces',Georgia,serif;font-size:clamp(22px,2.7vw,31px);font-weight:600;letter-spacing:-.02em;color:var(--ink)}
+  #analytics-page .cca-panel-title small{display:block;font-family:'Inter',sans-serif;font-size:12px;font-weight:600;letter-spacing:.02em;color:var(--muted);margin-top:3px;text-transform:none}
+  #analytics-page .cca-panel-help{font-size:11px;font-weight:700;letter-spacing:.11em;text-transform:uppercase;color:var(--muted)}
+
+  /* ════════════════════════════════════════════════════════════════
+     PANEL 1 — Pass-readiness "standings"
+     Every cert plotted against ONE shared pass-cutoff guide.
+     Active = protagonist (bronze, gap called out); Passed = settled
+     (green, quiet); Soon = ghosted.
+  ════════════════════════════════════════════════════════════════ */
+  #analytics-page .cca-pr-list{margin-top:6px}
+  #analytics-page .cca-pr-group-h{display:flex;align-items:center;gap:13px;margin:30px 0 4px;font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+  #analytics-page .cca-pr-group-h-passed{color:var(--pass)}
+  #analytics-page .cca-pr-group-h-active{color:var(--accent)}
+  #analytics-page .cca-pr-group-h-icon{display:none}
+  #analytics-page .cca-pr-group-h-rule{flex:1;height:1px;background:var(--border)}
+  #analytics-page .cca-pr-row{display:grid;grid-template-columns:50px minmax(0,1.35fr) minmax(0,1.55fr) auto;align-items:center;gap:20px;padding:22px 6px;border-bottom:1px solid var(--border-soft);position:relative}
+  #analytics-page .cca-pr-row:last-child{border-bottom:0}
+  #analytics-page .cca-pr-row-active{background:linear-gradient(90deg,color-mix(in oklab,var(--accent) 5%,transparent),transparent 62%);border-radius:14px;margin:2px -10px;padding:22px 16px;border-bottom:0}
+  #analytics-page .cca-pr-row-active::before{content:"";position:absolute;left:0;top:14px;bottom:14px;width:3px;border-radius:99px;background:var(--accent)}
+  #analytics-page .cca-pr-row-soon{opacity:.55}
+  #analytics-page .cca-pr-glyph{width:46px;height:46px;border-radius:13px;flex:none;display:grid;place-items:center;font:800 14px var(--mono);color:var(--accent-deep);background:color-mix(in oklab,var(--accent) 9%,transparent);border:1px solid color-mix(in oklab,var(--accent) 22%,transparent)}
+  [data-theme="dark"] #analytics-page .cca-pr-glyph{color:var(--accent-bright)}
+  #analytics-page .cca-pr-row-passed .cca-pr-glyph{color:var(--pass);background:color-mix(in oklab,var(--pass) 10%,transparent);border-color:color-mix(in oklab,var(--pass) 24%,transparent)}
+  #analytics-page .cca-pr-info{min-width:0}
+  #analytics-page .cca-pr-name{display:flex;align-items:center;gap:10px;font-size:16px;font-weight:700;color:var(--ink);flex-wrap:wrap;margin-bottom:5px;letter-spacing:-.01em}
+  #analytics-page .cca-pr-coach{font-size:12.5px;color:var(--muted);line-height:1.5}
+  #analytics-page .cca-pr-status-pill{font-size:9.5px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;padding:3px 9px;border-radius:6px;color:var(--muted);border:1px solid var(--border)}
+  #analytics-page .cca-pr-status-passed{color:var(--pass);border-color:color-mix(in oklab,var(--pass) 42%,transparent);background:color-mix(in oklab,var(--pass) 12%,transparent)}
+  #analytics-page .cca-pr-status-active{color:var(--accent-deep);border-color:color-mix(in oklab,var(--accent) 42%,transparent);background:color-mix(in oklab,var(--accent) 12%,transparent)}
+  [data-theme="dark"] #analytics-page .cca-pr-status-active{color:var(--accent-bright)}
+  #analytics-page .cca-pr-readiness{min-width:0}
+  #analytics-page .cca-pr-readiness-label{display:flex;align-items:baseline;justify-content:space-between;font-size:11px;font-weight:600;color:var(--muted);margin-bottom:13px;text-transform:uppercase;letter-spacing:.06em}
+  #analytics-page .cca-pr-readiness-score{font-family:'Fraunces',Georgia,serif;font-size:20px;font-weight:600;color:var(--ink);letter-spacing:-.01em}
+  #analytics-page .cca-pr-score-green{color:var(--pass)}
+  #analytics-page .cca-pr-score-pending{color:var(--muted)}
+  #analytics-page .cca-pr-readiness-bar{position:relative;height:8px;border-radius:99px;background:color-mix(in oklab,var(--muted) 16%,transparent);overflow:visible}
+  #analytics-page .cca-pr-readiness-fill{position:absolute;left:0;top:0;height:100%;border-radius:99px;background:linear-gradient(90deg,var(--accent-deep),var(--accent));transition:width 900ms var(--eo)}
+  #analytics-page .cca-pr-fill-green{background:linear-gradient(90deg,color-mix(in oklab,var(--pass) 80%,black 4%),var(--pass))}
+  #analytics-page .cca-pr-readiness-cutoff{position:absolute;top:-4px;width:2px;height:16px;background:var(--ink-soft);border-radius:1px}
+  #analytics-page .cca-pr-readiness-cutoff::after{content:"";position:absolute;top:-5px;left:-2px;width:6px;height:6px;border-radius:50%;background:var(--ink-soft)}
+  #analytics-page .cca-pr-readiness-meta{margin-top:9px;font-size:11.5px;color:var(--muted);display:flex;justify-content:space-between;gap:10px}
+  #analytics-page .cca-pr-readiness-meta span:last-child{font-weight:650;color:var(--accent-deep)}
+  [data-theme="dark"] #analytics-page .cca-pr-readiness-meta span:last-child{color:var(--accent-bright)}
+  #analytics-page .cca-pr-row-passed .cca-pr-readiness-meta span:last-child,
+  #analytics-page .cca-pr-row-soon .cca-pr-readiness-meta span:last-child{color:var(--muted);font-weight:400}
+  #analytics-page .cca-pr-readiness-empty,#analytics-page .cca-pr-readiness-pending{opacity:.85}
+  #analytics-page .cca-pr-readiness-empty .cca-pr-readiness-bar{background:repeating-linear-gradient(90deg,color-mix(in oklab,var(--muted) 16%,transparent) 0 6px,transparent 6px 12px)}
+  #analytics-page .cca-pr-action-btn{font-size:12.5px;font-weight:650;color:var(--on-accent);background:var(--accent);border:1px solid var(--accent-deep);padding:9px 17px;border-radius:10px;cursor:pointer;text-decoration:none;white-space:nowrap;transition:background 200ms var(--eo)}
+  @media (hover:hover){#analytics-page .cca-pr-action-btn:hover{background:var(--accent-deep)}}
+  #analytics-page .cca-pr-action-ghost{color:var(--accent);background:none;border:1px solid color-mix(in oklab,var(--accent) 32%,transparent)}
+  @media (hover:hover){#analytics-page .cca-pr-action-ghost:hover{background:color-mix(in oklab,var(--accent) 8%,transparent)}}
+  #analytics-page .cca-pr-action-disabled{font-size:12px;color:var(--muted);white-space:nowrap;background:none;border:1px dashed var(--border);padding:9px 15px;border-radius:10px;cursor:not-allowed}
+  #analytics-page .cca-pr-cutoff-legend{margin-top:22px;display:flex;align-items:center;gap:10px;font-size:11.5px;color:var(--muted)}
+  #analytics-page .cca-pr-cutoff-tick{width:2px;height:14px;background:var(--ink-soft);border-radius:1px;flex:none}
+
+  /* ════════════════════════════════════════════════════════════════
+     PANEL 2 — Skill overlap "TRANSFER MAP"  (the rebuilt panel)
+     Each pair = two cert NODES bridged by a transfer CONDUIT carrying
+     the % figure. Expanded = a knowledge ledger: what carries (quiet,
+     green — the win) vs the real new work (bronze, emphasised), with
+     the time-saved as the headline payoff.
+  ════════════════════════════════════════════════════════════════ */
+  #analytics-page .cca-so-list{margin-top:14px;display:flex;flex-direction:column;gap:16px}
+  #analytics-page .cca-so-row{border:1px solid var(--border);border-radius:18px;background:linear-gradient(180deg,var(--surface),var(--surface-2));overflow:hidden;transition:border-color 220ms var(--eo),box-shadow 220ms var(--eo)}
+  @media (hover:hover){#analytics-page .cca-so-row:hover{border-color:color-mix(in oklab,var(--accent) 34%,var(--border))}}
+  #analytics-page .cca-so-row.is-open{border-color:color-mix(in oklab,var(--accent) 42%,var(--border));box-shadow:var(--shadow-card)}
+  #analytics-page .cca-so-summary{display:grid;grid-template-columns:auto minmax(150px,1fr) minmax(0,1.05fr) 26px;align-items:center;gap:clamp(16px,2.6vw,30px);width:100%;text-align:left;background:none;border:0;cursor:pointer;padding:clamp(18px,2.4vw,26px) clamp(20px,2.8vw,30px);font-family:inherit}
+  /* the bridge: two cert nodes joined by a drawn conduit */
+  #analytics-page .cca-so-pair{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:0;position:relative}
+  #analytics-page .cca-so-pair-glyph{width:56px;height:50px;border-radius:13px;display:grid;place-items:center;font:800 13px var(--mono);color:var(--accent-deep);background:color-mix(in oklab,var(--accent) 11%,transparent);border:1px solid color-mix(in oklab,var(--accent) 26%,transparent);z-index:1;letter-spacing:.02em}
+  [data-theme="dark"] #analytics-page .cca-so-pair-glyph{color:var(--accent-bright)}
+  #analytics-page .cca-so-pair-glyph:last-of-type{color:var(--on-accent);background:var(--accent);border-color:var(--accent-deep)}
+  #analytics-page .cca-so-pair-arrow{justify-self:center;display:grid;place-items:center;width:24px;height:24px;border-radius:50%;background:var(--surface);border:1px solid color-mix(in oklab,var(--accent) 38%,var(--border));color:var(--accent);font-size:12px;font-weight:800;z-index:1}
+  #analytics-page .cca-so-pair::before{content:"";position:absolute;left:46px;right:46px;top:50%;height:3px;transform:translateY(-50%);border-radius:99px;background:linear-gradient(90deg,color-mix(in oklab,var(--accent) 28%,transparent),color-mix(in oklab,var(--accent) 60%,transparent))}
+  /* the conduit: the % is the protagonist figure */
+  #analytics-page .cca-so-bar-wrap{display:flex;flex-direction:column;gap:9px;min-width:0}
+  #analytics-page .cca-so-bar-pct{order:-1;font-family:'Fraunces',Georgia,serif;font-size:clamp(28px,3.4vw,40px);font-weight:600;line-height:1;color:var(--accent-deep);letter-spacing:-.02em}
+  [data-theme="dark"] #analytics-page .cca-so-bar-pct{color:var(--accent-bright)}
+  #analytics-page .cca-so-bar-track{position:relative;height:9px;border-radius:99px;background:color-mix(in oklab,var(--muted) 16%,transparent);overflow:hidden}
+  #analytics-page .cca-so-bar-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--accent-deep),var(--accent-bright));transition:width 1000ms var(--eo)}
+  #analytics-page .cca-so-meta{min-width:0}
+  #analytics-page .cca-so-meta-headline{font-size:15px;font-weight:700;color:var(--ink);letter-spacing:-.01em;line-height:1.3}
+  #analytics-page .cca-so-meta-sub{font-size:12px;color:var(--muted);margin-top:4px;font-variant-numeric:tabular-nums}
+  #analytics-page .cca-so-chevron{justify-self:end;display:grid;place-items:center;width:26px;height:26px;border-radius:8px;border:1px solid var(--border);color:var(--muted);font-size:11px;transition:transform 280ms var(--eo),color 200ms var(--eo),border-color 200ms var(--eo)}
+  #analytics-page .cca-so-row.is-open .cca-so-chevron{transform:rotate(180deg);color:var(--accent);border-color:color-mix(in oklab,var(--accent) 40%,var(--border))}
+
+  /* the ledger — collapsed by default; JS toggles .is-open on the row */
+  #analytics-page .cca-so-detail{display:none}
+  #analytics-page .cca-so-row.is-open .cca-so-detail{display:block;padding:0 clamp(20px,2.8vw,30px) clamp(22px,2.8vw,28px);border-top:1px solid var(--border-soft);margin-top:-2px}
+  #analytics-page .cca-so-detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:0;margin-top:22px;border:1px solid var(--border-soft);border-radius:14px;overflow:hidden}
+  #analytics-page .cca-so-detail-col{padding:clamp(16px,2vw,22px)}
+  #analytics-page .cca-so-detail-col:first-child{background:color-mix(in oklab,var(--pass) 4%,transparent)}
+  #analytics-page .cca-so-detail-col:last-child{background:color-mix(in oklab,var(--accent) 5%,transparent);border-left:1px solid var(--border-soft)}
+  #analytics-page .cca-so-detail-col-h{display:flex;align-items:center;gap:9px;font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-soft);margin-bottom:16px;line-height:1.4}
+  #analytics-page .cca-so-detail-col-list{display:flex;flex-direction:column;gap:11px}
+  #analytics-page .cca-so-topic{display:flex;gap:10px;align-items:flex-start;font-size:13px;color:var(--ink-soft);line-height:1.45}
+  #analytics-page .cca-so-topic-pill{flex:none;width:18px;height:18px;border-radius:6px;display:grid;place-items:center;font-size:10px;font-weight:800;margin-top:1px}
+  #analytics-page .cca-so-topic-pill.mastered{color:var(--pass);background:color-mix(in oklab,var(--pass) 14%,transparent);border:1px solid color-mix(in oklab,var(--pass) 30%,transparent)}
+  #analytics-page .cca-so-topic-pill.shared{color:var(--accent-deep);background:color-mix(in oklab,var(--accent) 13%,transparent);border:1px solid color-mix(in oklab,var(--accent) 28%,transparent)}
+  #analytics-page .cca-so-topic-pill.refresher{color:var(--accent-deep);background:color-mix(in oklab,var(--accent) 13%,transparent);border:1px solid color-mix(in oklab,var(--accent) 28%,transparent)}
+  #analytics-page .cca-so-topic-pill.new{color:var(--on-accent);background:var(--accent);border:1px solid var(--accent-deep)}
+  [data-theme="dark"] #analytics-page .cca-so-topic-pill.shared,[data-theme="dark"] #analytics-page .cca-so-topic-pill.refresher{color:var(--accent-bright)}
+  #analytics-page .cca-so-detail-col .cca-so-detail-col-h[style]{margin-top:18px!important;padding-top:16px;border-top:1px dashed var(--border)}
+  /* payoff banner — the time-saved is a real figure, not a faint pill */
+  #analytics-page .cca-so-callout{margin-top:18px;display:flex;align-items:center;gap:18px;flex-wrap:wrap;font-size:13px;line-height:1.55;color:var(--ink-soft);padding:18px 20px;border-radius:14px;background:color-mix(in oklab,var(--accent) 6%,var(--surface));border:1px solid color-mix(in oklab,var(--accent) 22%,var(--border))}
+  #analytics-page .cca-so-callout{flex:1;min-width:240px}
+  #analytics-page .cca-so-saving-pill{flex:none;display:block;font-family:'Fraunces',Georgia,serif;font-size:clamp(16px,1.7vw,20px);font-weight:600;letter-spacing:-.01em;color:var(--accent-deep);background:none;border:0;border-left:2px solid color-mix(in oklab,var(--accent) 40%,transparent);padding:2px 0 2px 18px;text-transform:none}
+  [data-theme="dark"] #analytics-page .cca-so-saving-pill{color:var(--accent-bright)}
+
+  /* ════════════════════════════════════════════════════════════════
+     PANEL 3 — What to study next  (the resolution: one focal move)
+  ════════════════════════════════════════════════════════════════ */
+  #analytics-page .cca-wn-body{margin-top:22px}
+  #analytics-page .cca-wn-hero{position:relative;border:1px solid color-mix(in oklab,var(--accent) 30%,var(--border));border-radius:18px;padding:clamp(24px,3vw,32px);background:linear-gradient(180deg,var(--surface),var(--surface-2));box-shadow:var(--shadow-soft);overflow:hidden}
+  #analytics-page .cca-wn-hero::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:linear-gradient(180deg,var(--accent-bright),var(--accent))}
+  #analytics-page .cca-wn-hero *{-webkit-text-fill-color:currentColor}
+  #analytics-page .cca-wn-hero-eyebrow{font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);margin-bottom:12px}
+  #analytics-page .cca-wn-hero-title{font-family:'Fraunces',Georgia,serif;font-size:clamp(21px,2.4vw,28px);font-weight:600;color:var(--ink);margin-bottom:18px;letter-spacing:-.015em;line-height:1.18}
+  #analytics-page .cca-wn-hero-reasons{display:flex;flex-direction:column;gap:11px;margin-bottom:24px}
+  #analytics-page .cca-wn-reason{display:flex;gap:11px;align-items:flex-start;font-size:13.5px;line-height:1.5;color:var(--ink-soft)}
+  #analytics-page .cca-wn-reason strong{color:var(--ink);font-weight:700}
+  #analytics-page .cca-wn-reason-icon{flex:none;width:20px;height:20px;border-radius:6px;display:grid;place-items:center;font-size:11px;color:var(--accent);background:color-mix(in oklab,var(--accent) 12%,transparent);font-style:normal;margin-top:1px}
+  #analytics-page .cca-wn-hero-cta{display:inline-flex;align-items:center;gap:8px;font-size:14px;font-weight:650;color:var(--on-accent);-webkit-text-fill-color:var(--on-accent);background:var(--accent);border:1px solid var(--accent-deep);padding:12px 24px;border-radius:11px;text-decoration:none;transition:background 200ms var(--eo)}
+  @media (hover:hover){#analytics-page .cca-wn-hero-cta:hover{background:var(--accent-deep)}}
+  #analytics-page .cca-wn-secondary-h{margin-top:30px;margin-bottom:4px;font-size:10.5px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+  #analytics-page .cca-wn-secondary-row{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:16px;padding:17px 6px;border-bottom:1px solid var(--border-soft);text-decoration:none}
+  #analytics-page .cca-wn-secondary-row:last-child{border-bottom:0}
+  @media (hover:hover){#analytics-page .cca-wn-secondary-row:hover{background:color-mix(in oklab,var(--accent) 4%,transparent)}#analytics-page .cca-wn-secondary-row:hover .cca-wn-row-action{color:var(--accent-deep)}}
+  #analytics-page .cca-wn-rank{width:26px;height:26px;border-radius:8px;display:grid;place-items:center;font:800 12px 'Fraunces',serif;color:var(--accent-deep);background:color-mix(in oklab,var(--accent) 11%,transparent);flex:none}
+  [data-theme="dark"] #analytics-page .cca-wn-rank{color:var(--accent-bright)}
+  #analytics-page .cca-wn-text{font-size:13.5px;font-weight:600;color:var(--ink-soft)}
+  #analytics-page .cca-wn-text strong{color:var(--ink);font-weight:700}
+  #analytics-page .cca-wn-text-meta{font-size:11.5px;color:var(--muted);margin-top:3px;font-variant-numeric:tabular-nums}
+  #analytics-page .cca-wn-row-action{font-size:12.5px;font-weight:650;color:var(--accent);white-space:nowrap;transition:color 180ms var(--eo)}
+
+  /* ── entrance reveal (data role: first-paint pacing; rm-gated) ──── */
+  #analytics-page .acx-r{opacity:0;transform:translateY(16px);transition:opacity 620ms var(--eo),transform 620ms var(--eo)}
+  #analytics-page.acx-in .acx-r{opacity:1;transform:none}
+  #analytics-page.acx-in .acx-r[data-d="1"]{transition-delay:40ms}
+  #analytics-page.acx-in .acx-r[data-d="2"]{transition-delay:120ms}
+  #analytics-page.acx-in .acx-r[data-d="3"]{transition-delay:200ms}
+  #analytics-page.acx-in .acx-r[data-d="4"]{transition-delay:280ms}
+
+  @media (max-width:820px){
+    #analytics-page .cca-pr-row{grid-template-columns:44px 1fr;gap:14px}
+    #analytics-page .cca-pr-readiness,#analytics-page .cca-pr-action{grid-column:1 / -1}
+    #analytics-page .cca-so-summary{grid-template-columns:1fr auto;gap:16px}
+    #analytics-page .cca-so-bar-wrap{grid-column:1 / -1}
+    #analytics-page .cca-so-meta{grid-column:1 / -1}
+    #analytics-page .cca-so-detail-grid{grid-template-columns:1fr}
+    #analytics-page .cca-so-detail-col:last-child{border-left:0;border-top:1px solid var(--border-soft)}
+  }
+  @media (prefers-reduced-motion:reduce){
+    #analytics-page .acx-r{transition:opacity 200ms ease!important;transform:none!important}
+    #analytics-page.acx-in .acx-r{transform:none!important}
+    #analytics-page .cca-so-chevron,#analytics-page .cca-pr-readiness-fill,#analytics-page .cca-so-bar-fill{transition:none!important}
+  }
+
+  /* mockup-only scaffold */
+  .mk-note{max-width:940px;margin:30px auto 0;padding:14px 18px;border:1px dashed color-mix(in oklab,#b8860b 40%,#ccc);border-radius:12px;background:color-mix(in oklab,#b8860b 6%,transparent);font:500 12.5px/1.6 'Inter',sans-serif;color:#7a5c12}
+  [data-theme="dark"] .mk-note{color:#d9b56a;border-color:#5a4416;background:rgba(184,134,11,.07)}
+</style>
+</head>
+<body>
+
+<header class="topbar" id="site-topbar">
+  <div class="topbar-inner">
+    <a class="logo" href="#" aria-label="CertAnvil home">
+      <span class="logo-mark" aria-hidden="true">
+        <svg viewBox="0 0 100 100" fill="none" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
+          <path d="M58 12 C42 6, 16 16, 14 34 C12 52, 22 62, 42 64" stroke="#b8860b" stroke-width="7" stroke-linecap="round"/>
+          <line x1="30" y1="84" x2="70" y2="16" stroke="#6a6a76" stroke-width="5" stroke-linecap="round"/>
+          <path d="M46 88 L64 50 L82 88 M53 74 L75 74" stroke="#b8860b" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </span>
+      <span class="logo-name">CertAnvil</span>
+    </a>
+    <nav class="topbar-nav" aria-label="Primary navigation">
+      <a href="#" class="nav-link">Why CertAnvil</a>
+      <a href="#" class="nav-link">Certs</a>
+      <a href="#" class="nav-link">Pricing</a>
+      <button type="button" class="theme-toggle" id="theme-toggle" aria-label="Toggle light/dark theme" title="Toggle theme">
+        <svg class="theme-icon theme-icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+        <svg class="theme-icon theme-icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      </button>
+      <button type="button" class="account-pill">
+        <span class="account-avatar" aria-hidden="true">S</span>
+        <span class="account-email-short">simi@…</span>
+        <span class="account-chevron" aria-hidden="true">▾</span>
+      </button>
+    </nav>
+  </div>
+</header>
+
+<main class="account-page" id="analytics-page">
+  <div class="container account-container">
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="#">Home</a> <span aria-hidden="true">·</span> <span>Cross-cert analytics</span>
+    </nav>
+
+    <header class="account-pagehead acx-r" data-d="1">
+      <div class="account-eyebrow"><span class="cca-eyebrow-icon" aria-hidden="true"></span>Analytics</div>
+      <h1 class="account-title">Cross-cert analytics</h1>
+      <p class="account-subtitle">One dashboard for every cert you're studying. See where you stand, how much of one cert carries into the next, and the single move that pays off most today.</p>
+    </header>
+
+    <div class="cca-content" id="cca-content">
+
+      <!-- ░░░ PANEL 1 — Pass-readiness (exact renderPanel1 markup) ░░░ -->
+      <section class="cca-panel acx-r" data-d="2" id="cca-panel-pr">
+        <header class="cca-panel-head">
+          <div class="cca-panel-title-row">
+            <span class="cca-panel-icon" aria-hidden="true">
+              <svg viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs><linearGradient id="r-o" x1="0" x2="1" y1="0" y2="1"><stop offset="0" stop-color="#E17A1A"/><stop offset="1" stop-color="#C65300"/></linearGradient><linearGradient id="r-c" x1="0" x2="1" y1="0" y2="1"><stop offset="0" stop-color="#FFFDF8"/><stop offset="1" stop-color="#FFF7EC"/></linearGradient></defs><g fill="none" stroke="#2B333B" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"><circle fill="url(#r-c)" cx="128" cy="128" r="84"/><path stroke="#D9D0C4" stroke-width="6" d="M72 128a56 56 0 0 1 112 0"/><path stroke="#C65300" stroke-width="6" d="M72 128a56 56 0 0 1 92-43"/><path d="M128 128l38-42"/><circle fill="#FFF7EC" stroke-width="6" cx="128" cy="128" r="12"/><path stroke-width="6" d="M72 162h112"/></g></svg>
+            </span>
+            <h2 class="cca-panel-title">Where you stand<small>Every cert against one shared pass cutoff</small></h2>
+          </div>
+          <span class="cca-panel-help">Grouped by status</span>
+        </header>
+
+        <div class="cca-pr-list" id="cca-pr-list">
+
+          <div class="cca-pr-group-h cca-pr-group-h-passed"><span class="cca-pr-group-h-icon">✓</span><span>Passed (1)</span><span class="cca-pr-group-h-rule"></span></div>
+
+          <div class="cca-pr-row cca-pr-row-passed" data-cert="netplus">
+            <div class="cca-pr-glyph cca-pr-glyph-netplus">N+</div>
+            <div class="cca-pr-info">
+              <div class="cca-pr-name">Network+ <span class="cca-pr-status-pill cca-pr-status-passed">✓ Passed</span></div>
+              <div class="cca-pr-coach">Maintenance practice. Keep your knowledge sharp for related certs.</div>
+            </div>
+            <div class="cca-pr-readiness">
+              <div class="cca-pr-readiness-label"><span>Score</span><span class="cca-pr-readiness-score cca-pr-score-green">767/900</span></div>
+              <div class="cca-pr-readiness-bar">
+                <div class="cca-pr-readiness-fill cca-pr-fill-green" style="width: 85%;"></div>
+                <div class="cca-pr-readiness-cutoff" style="left: 80%;"></div>
+              </div>
+              <div class="cca-pr-readiness-meta"><span>Passed May 5, 2026</span><span>Cutoff 720</span></div>
+            </div>
+            <div class="cca-pr-action"><a class="cca-pr-action-btn cca-pr-action-ghost" href="#">Open →</a></div>
+          </div>
+
+          <div class="cca-pr-group-h cca-pr-group-h-active"><span class="cca-pr-group-h-icon"></span><span>Currently studying (1)</span><span class="cca-pr-group-h-rule"></span></div>
+
+          <div class="cca-pr-row cca-pr-row-active" data-cert="secplus">
+            <div class="cca-pr-glyph cca-pr-glyph-secplus">S+</div>
+            <div class="cca-pr-info">
+              <div class="cca-pr-name">Security+ <span class="cca-pr-status-pill cca-pr-status-active">Active</span></div>
+              <div class="cca-pr-coach">Exam July 29. Domains 4 &amp; 5 are your widest gap.</div>
+            </div>
+            <div class="cca-pr-readiness">
+              <div class="cca-pr-readiness-label"><span>Readiness</span><span class="cca-pr-readiness-score">688</span></div>
+              <div class="cca-pr-readiness-bar">
+                <div class="cca-pr-readiness-fill" style="width: 60%;"></div>
+                <div class="cca-pr-readiness-cutoff" style="left: 73%;"></div>
+              </div>
+              <div class="cca-pr-readiness-meta"><span>2 hr ago</span><span>Gap: 62 to pass</span></div>
+            </div>
+            <div class="cca-pr-action"><a class="cca-pr-action-btn" href="#">Continue →</a></div>
+          </div>
+
+          <div class="cca-pr-group-h cca-pr-group-h-soon"><span class="cca-pr-group-h-icon"></span><span>Coming soon &amp; Pro-only (2)</span><span class="cca-pr-group-h-rule"></span></div>
+
+          <div class="cca-pr-row cca-pr-row-soon" data-cert="ccna">
+            <div class="cca-pr-glyph cca-pr-glyph-ccna">CC</div>
+            <div class="cca-pr-info">
+              <div class="cca-pr-name">CCNA <span class="cca-pr-status-pill cca-pr-status-soon">Coming soon</span></div>
+              <div class="cca-pr-coach">In the queue · 85% transfers from Network+</div>
+            </div>
+            <div class="cca-pr-readiness cca-pr-readiness-empty">
+              <div class="cca-pr-readiness-label"><span>Readiness</span><span class="cca-pr-readiness-score cca-pr-score-pending">—</span></div>
+              <div class="cca-pr-readiness-bar"></div>
+              <div class="cca-pr-readiness-meta"><span>Not started</span></div>
+            </div>
+            <div class="cca-pr-action"><button class="cca-pr-action-btn cca-pr-action-disabled" disabled>Notify me</button></div>
+          </div>
+
+          <div class="cca-pr-row cca-pr-row-soon" data-cert="aws-saa">
+            <div class="cca-pr-glyph cca-pr-glyph-aws">AW</div>
+            <div class="cca-pr-info">
+              <div class="cca-pr-name">AWS SAA <span class="cca-pr-status-pill cca-pr-status-soon">Coming soon</span></div>
+              <div class="cca-pr-coach">In the queue · 40% transfers from Network+</div>
+            </div>
+            <div class="cca-pr-readiness cca-pr-readiness-empty">
+              <div class="cca-pr-readiness-label"><span>Readiness</span><span class="cca-pr-readiness-score cca-pr-score-pending">—</span></div>
+              <div class="cca-pr-readiness-bar"></div>
+              <div class="cca-pr-readiness-meta"><span>Not started</span></div>
+            </div>
+            <div class="cca-pr-action"><button class="cca-pr-action-btn cca-pr-action-disabled" disabled>Notify me</button></div>
+          </div>
+
+        </div>
+
+        <div class="cca-pr-cutoff-legend">
+          <span class="cca-pr-cutoff-tick"></span>
+          <span>Vertical mark on each bar = exam pass cutoff for that cert</span>
+        </div>
+      </section>
+
+      <!-- ░░░ PANEL 2 — Skill overlap "transfer map" (exact renderSoPair markup) ░░░ -->
+      <section class="cca-panel acx-r" data-d="3" id="cca-panel-so">
+        <header class="cca-panel-head">
+          <div class="cca-panel-title-row">
+            <span class="cca-panel-icon" aria-hidden="true">
+              <svg viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs><linearGradient id="o-o" x1="0" x2="1" y1="0" y2="1"><stop offset="0" stop-color="#E17A1A"/><stop offset="1" stop-color="#C65300"/></linearGradient><linearGradient id="o-c" x1="0" x2="1" y1="0" y2="1"><stop offset="0" stop-color="#FFFDF8"/><stop offset="1" stop-color="#FFF7EC"/></linearGradient></defs><g fill="none" stroke="#2B333B" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"><circle fill="url(#o-c)" cx="94" cy="126" r="58"/><circle fill="url(#o-c)" cx="162" cy="126" r="58"/><path fill="url(#o-o)" stroke="none" opacity="0.86" d="M128 78c17 11 28 29 28 48s-11 37-28 48c-17-11-28-29-28-48s11-37 28-48z"/><path stroke-width="6" d="M89 126h78"/><path stroke-width="6" d="M148 107l21 19-21 19"/></g></svg>
+            </span>
+            <h2 class="cca-panel-title">How your knowledge transfers<small>What a passed cert buys you toward the next one</small></h2>
+          </div>
+          <span class="cca-panel-help">Click any pair for the topic ledger</span>
+        </header>
+
+        <div class="cca-so-list" id="cca-so-list">
+
+          <!-- N+ → CCNA, 85%, EXPANDED (the exact pair that was rejected, rebuilt) -->
+          <div class="cca-so-row is-open" data-pair="netplus__ccna">
+            <button type="button" class="cca-so-summary" data-pair="netplus__ccna" aria-expanded="true">
+              <div class="cca-so-pair">
+                <div class="cca-so-pair-glyph cca-pr-glyph-netplus">N+</div>
+                <span class="cca-so-pair-arrow" aria-hidden="true">→</span>
+                <div class="cca-so-pair-glyph cca-pr-glyph-ccna">CC</div>
+              </div>
+              <div class="cca-so-bar-wrap">
+                <div class="cca-so-bar-track"><div class="cca-so-bar-fill" style="width: 85%;"></div></div>
+                <span class="cca-so-bar-pct">85%</span>
+              </div>
+              <div class="cca-so-meta">
+                <div class="cca-so-meta-headline">CCNA fast-track candidate</div>
+                <div class="cca-so-meta-sub">17 of 20 topics shared</div>
+              </div>
+              <span class="cca-so-chevron" aria-hidden="true">▾</span>
+            </button>
+            <div class="cca-so-detail">
+              <div class="cca-so-detail-grid">
+                <div class="cca-so-detail-col">
+                  <div class="cca-so-detail-col-h"><span class="cca-so-topic-pill mastered">✓</span>Already mastered (skip the re-study)</div>
+                  <div class="cca-so-detail-col-list">
+                    <div class="cca-so-topic"><span class="cca-so-topic-pill mastered">✓</span>OSI model &amp; TCP/IP stack</div>
+                    <div class="cca-so-topic"><span class="cca-so-topic-pill mastered">✓</span>Subnetting &amp; VLSM</div>
+                    <div class="cca-so-topic"><span class="cca-so-topic-pill mastered">✓</span>Switch operation &amp; MAC tables</div>
+                    <div class="cca-so-topic"><span class="cca-so-topic-pill mastered">✓</span>VLAN basics &amp; 802.1Q tagging</div>
+                    <div class="cca-so-topic"><span class="cca-so-topic-pill mastered">✓</span>Static routing fundamentals</div>
+                    <div class="cca-so-topic"><span class="cca-so-topic-pill mastered">✓</span>NAT/PAT &amp; overload</div>
+                    <div class="cca-so-topic"><span class="cca-so-topic-pill mastered">✓</span>DHCP &amp; DNS</div>
+                    <div class="cca-so-topic"><span class="cca-so-topic-pill mastered">✓</span>Common cabling &amp; connectors</div>
+                    <div class="cca-so-topic"><span class="cca-so-topic-pill mastered">✓</span>IPv4/IPv6 addressing</div>
+                  </div>
+                  <div class="cca-so-detail-col-h" style="margin-top:14px;"><span class="cca-so-topic-pill refresher">⏵</span>Refresher needed</div>
+                  <div class="cca-so-detail-col-list">
+                    <div class="cca-so-topic"><span class="cca-so-topic-pill refresher">⏵</span>Wireless 802.11 standards expand to Cisco-specific extensions</div>
+                    <div class="cca-so-topic"><span class="cca-so-topic-pill refresher">⏵</span>QoS gets significantly deeper than N+ surface-level coverage</div>
+                  </div>
+                </div>
+                <div class="cca-so-detail-col">
+                  <div class="cca-so-detail-col-h"><span class="cca-so-topic-pill new">+</span>CCNA-specific (your real focus)</div>
+                  <div class="cca-so-detail-col-list">
+                    <div class="cca-so-topic"><span class="cca-so-topic-pill new">+</span>OSPF inter-area routing</div>
+                    <div class="cca-so-topic"><span class="cca-so-topic-pill new">+</span>BGP path selection</div>
+                    <div class="cca-so-topic"><span class="cca-so-topic-pill new">+</span>EtherChannel &amp; Spanning Tree variants (RSTP, MST)</div>
+                    <div class="cca-so-topic"><span class="cca-so-topic-pill new">+</span>Cisco IOS CLI mastery</div>
+                    <div class="cca-so-topic"><span class="cca-so-topic-pill new">+</span>SD-WAN architecture concepts</div>
+                    <div class="cca-so-topic"><span class="cca-so-topic-pill new">+</span>Network programmability (REST APIs, JSON)</div>
+                  </div>
+                </div>
+              </div>
+              <div class="cca-so-callout">Skip ~30 hours of N+ overlap. Real CCNA prep is OSPF/BGP depth + IOS CLI fluency — that's where the new study time should go. <span class="cca-so-saving-pill">≈ 7 days of prep saved</span></div>
+            </div>
+          </div>
+
+          <!-- N+ → Sec+, 65%, collapsed -->
+          <div class="cca-so-row" data-pair="netplus__secplus">
+            <button type="button" class="cca-so-summary" data-pair="netplus__secplus" aria-expanded="false">
+              <div class="cca-so-pair">
+                <div class="cca-so-pair-glyph cca-pr-glyph-netplus">N+</div>
+                <span class="cca-so-pair-arrow" aria-hidden="true">→</span>
+                <div class="cca-so-pair-glyph cca-pr-glyph-secplus">S+</div>
+              </div>
+              <div class="cca-so-bar-wrap">
+                <div class="cca-so-bar-track"><div class="cca-so-bar-fill" style="width: 65%;"></div></div>
+                <span class="cca-so-bar-pct">65%</span>
+              </div>
+              <div class="cca-so-meta">
+                <div class="cca-so-meta-headline">Strong feed into Sec+</div>
+                <div class="cca-so-meta-sub">8 of 12 topics shared</div>
+              </div>
+              <span class="cca-so-chevron" aria-hidden="true">▾</span>
+            </button>
+            <div class="cca-so-detail">
+              <div class="cca-so-detail-grid">
+                <div class="cca-so-detail-col">
+                  <div class="cca-so-detail-col-h"><span class="cca-so-topic-pill mastered">✓</span>Already mastered (skip the re-study)</div>
+                  <div class="cca-so-detail-col-list">
+                    <div class="cca-so-topic"><span class="cca-so-topic-pill mastered">✓</span>TCP/IP fundamentals</div>
+                    <div class="cca-so-topic"><span class="cca-so-topic-pill mastered">✓</span>Subnetting &amp; IP addressing</div>
+                    <div class="cca-so-topic"><span class="cca-so-topic-pill mastered">✓</span>OSI model &amp; layered security</div>
+                    <div class="cca-so-topic"><span class="cca-so-topic-pill mastered">✓</span>Common ports &amp; protocols</div>
+                    <div class="cca-so-topic"><span class="cca-so-topic-pill mastered">✓</span>Firewalls &amp; ACL fundamentals</div>
+                  </div>
+                </div>
+                <div class="cca-so-detail-col">
+                  <div class="cca-so-detail-col-h"><span class="cca-so-topic-pill new">+</span>Sec+-specific (your real focus)</div>
+                  <div class="cca-so-detail-col-list">
+                    <div class="cca-so-topic"><span class="cca-so-topic-pill new">+</span>Cryptography &amp; PKI</div>
+                    <div class="cca-so-topic"><span class="cca-so-topic-pill new">+</span>Risk management &amp; governance (Domain 5)</div>
+                    <div class="cca-so-topic"><span class="cca-so-topic-pill new">+</span>Identity &amp; access management</div>
+                    <div class="cca-so-topic"><span class="cca-so-topic-pill new">+</span>Incident response (PICERL)</div>
+                  </div>
+                </div>
+              </div>
+              <div class="cca-so-callout">Most Sec+ Domain 1.1 + 1.2 networking content is review for you. Focus prep on Domains 4 (operations) + 5 (governance). <span class="cca-so-saving-pill">≈ 6 days of prep saved</span></div>
+            </div>
+          </div>
+
+          <!-- N+ → AWS SAA, 40%, collapsed -->
+          <div class="cca-so-row" data-pair="netplus__aws-saa">
+            <button type="button" class="cca-so-summary" data-pair="netplus__aws-saa" aria-expanded="false">
+              <div class="cca-so-pair">
+                <div class="cca-so-pair-glyph cca-pr-glyph-netplus">N+</div>
+                <span class="cca-so-pair-arrow" aria-hidden="true">→</span>
+                <div class="cca-so-pair-glyph cca-pr-glyph-aws">AW</div>
+              </div>
+              <div class="cca-so-bar-wrap">
+                <div class="cca-so-bar-track"><div class="cca-so-bar-fill" style="width: 40%;"></div></div>
+                <span class="cca-so-bar-pct">40%</span>
+              </div>
+              <div class="cca-so-meta">
+                <div class="cca-so-meta-headline">Networking foundation transfers</div>
+                <div class="cca-so-meta-sub">6 of 15 topics shared</div>
+              </div>
+              <span class="cca-so-chevron" aria-hidden="true">▾</span>
+            </button>
+            <div class="cca-so-detail">
+              <div class="cca-so-detail-grid">
+                <div class="cca-so-detail-col">
+                  <div class="cca-so-detail-col-h"><span class="cca-so-topic-pill mastered">✓</span>Already mastered (skip the re-study)</div>
+                  <div class="cca-so-detail-col-list">
+                    <div class="cca-so-topic"><span class="cca-so-topic-pill mastered">✓</span>TCP/IP fundamentals</div>
+                    <div class="cca-so-topic"><span class="cca-so-topic-pill mastered">✓</span>Subnetting &amp; CIDR (critical for VPC design)</div>
+                    <div class="cca-so-topic"><span class="cca-so-topic-pill mastered">✓</span>DNS resolution</div>
+                    <div class="cca-so-topic"><span class="cca-so-topic-pill mastered">✓</span>Routing concepts</div>
+                  </div>
+                </div>
+                <div class="cca-so-detail-col">
+                  <div class="cca-so-detail-col-h"><span class="cca-so-topic-pill new">+</span>AWS SAA-specific (your real focus)</div>
+                  <div class="cca-so-detail-col-list">
+                    <div class="cca-so-topic"><span class="cca-so-topic-pill new">+</span>AWS service catalog (50+ services)</div>
+                    <div class="cca-so-topic"><span class="cca-so-topic-pill new">+</span>IAM users, roles, policies</div>
+                    <div class="cca-so-topic"><span class="cca-so-topic-pill new">+</span>S3 storage classes &amp; lifecycle</div>
+                    <div class="cca-so-topic"><span class="cca-so-topic-pill new">+</span>High availability + multi-AZ patterns</div>
+                  </div>
+                </div>
+              </div>
+              <div class="cca-so-callout">Networking is ~20% of SAA-C03. Your N+ knowledge applies directly to VPC + subnet design; the other 80% is new. <span class="cca-so-saving-pill">≈ 4 days of prep saved</span></div>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- ░░░ PANEL 3 — What to study next (exact renderHero + renderSecondaryList markup) ░░░ -->
+      <section class="cca-panel acx-r" data-d="4" id="cca-panel-wn">
+        <header class="cca-panel-head">
+          <div class="cca-panel-title-row">
+            <span class="cca-panel-icon" aria-hidden="true">
+              <svg viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs><linearGradient id="n-o" x1="20" y1="10" x2="110" y2="118" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#F08A24"/><stop offset="1" stop-color="#B94700"/></linearGradient><linearGradient id="n-c" x1="14" y1="6" x2="116" y2="126" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#FFFDF8"/><stop offset="1" stop-color="#F7EBDC"/></linearGradient></defs><rect fill="url(#n-c)" stroke="#E7DDD0" stroke-width="2.2" x="16" y="22" width="96" height="84" rx="16"/><path stroke="#172033" stroke-width="3.5" stroke-linecap="round" fill="none" d="M34 44h26M34 64h38M34 84h20"/><circle fill="#FFF7EC" stroke="#E7DDD0" stroke-width="2.2" cx="88" cy="43" r="13"/><circle fill="#FFF7EC" stroke="#E7DDD0" stroke-width="2.2" cx="88" cy="84" r="13"/><path stroke="#C95000" stroke-width="5.2" stroke-linecap="round" stroke-linejoin="round" fill="none" d="M88 30v26M75 43h26M78 84h20"/></svg>
+            </span>
+            <h2 class="cca-panel-title">Your next move<small>The single highest-impact thing to do today</small></h2>
+          </div>
+          <span class="cca-panel-help">Recomputed after every quiz</span>
+        </header>
+
+        <div class="cca-wn-body" id="cca-wn-body">
+          <div class="cca-wn-hero">
+            <div class="cca-wn-hero-eyebrow">Top recommendation</div>
+            <div class="cca-wn-hero-title">Drill Risk Management &amp; Governance on Security+ for ~60 min today</div>
+            <div class="cca-wn-hero-reasons">
+              <div class="cca-wn-reason"><span class="cca-wn-reason-icon">↑</span><span><strong>62 points</strong> below the Security+ pass cutoff — the closest cert to a result.</span></div>
+              <div class="cca-wn-reason"><span class="cca-wn-reason-icon">◷</span><span>Exam is <strong>July 29</strong> — 71 days out, and Domain 5 is your weakest area.</span></div>
+              <div class="cca-wn-reason"><span class="cca-wn-reason-icon">⊙</span><span>None of this overlaps Network+, so it's <strong>genuinely new ground</strong> to cover.</span></div>
+            </div>
+            <a class="cca-wn-hero-cta" href="#">Open Security+ &amp; drill Domain 5 →</a>
+          </div>
+
+          <div class="cca-wn-secondary-h">Other high-impact options</div>
+          <div class="cca-wn-secondary-list">
+            <a class="cca-wn-secondary-row" href="#">
+              <div class="cca-wn-rank">2</div>
+              <div>
+                <div class="cca-wn-text"><strong>Practice Cryptography &amp; PKI</strong> (Security+)</div>
+                <div class="cca-wn-text-meta">Readiness 688 · gap 62 to pass</div>
+              </div>
+              <span class="cca-wn-row-action">Start →</span>
+            </a>
+            <a class="cca-wn-secondary-row" href="#">
+              <div class="cca-wn-rank">3</div>
+              <div>
+                <div class="cca-wn-text"><strong>Network+ refresher quiz</strong></div>
+                <div class="cca-wn-text-meta">Maintain streak · 5 min · keeps your passed cert sharp</div>
+              </div>
+              <span class="cca-wn-row-action">Start →</span>
+            </a>
+          </div>
+        </div>
+      </section>
+
+    </div>
+
+    <p class="mk-note"><strong>Concept v3 — "The Transfer Ledger".</strong> Routed through taste-skill → dashboards. Panel 2 (the one rejected) is rebuilt from a flat-row accordion into a transfer map: two cert nodes bridged by a conduit carrying the % as the protagonist figure, opening into a what-carries / what's-new ledger with the time saved as the payoff. Every panel reproduces the exact <code>lib/cross-cert-analytics.js</code> markup — the CSS drops straight into the scoped <code>&lt;style id="ccax-styles"&gt;</code> with zero JS change. Toggle theme top-right. Discussion only — no integration yet.</p>
+
+  </div>
+</main>
+
+<script>
+  // Mockup-only: theme toggle + entrance trigger (mirrors the scoped IIFE).
+  (function(){
+    var t=document.getElementById('theme-toggle');
+    if(t)t.addEventListener('click',function(){
+      var d=document.documentElement;
+      d.setAttribute('data-theme',d.getAttribute('data-theme')==='dark'?'light':'dark');
+    });
+    var p=document.getElementById('analytics-page');
+    requestAnimationFrame(function(){requestAnimationFrame(function(){p.classList.add('acx-in');});});
+  })();
+</script>
+</body>
+</html>
