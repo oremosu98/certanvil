@@ -2298,19 +2298,154 @@
 </section>
 
 <!-- ══════════════════════════════════════════
-     FOOTER
+     FOOTER v2 — editorial closing chord (brand sign-off + nav +
+     fine print), not a cramped one-line strip. FULLY SCOPED under
+     #site-footer (new scoping-root id; class="foot" kept so the bare
+     .foot rule is beaten per-property; no script.js / UAT contract on
+     the footer). Fresh .fzx-* classes → zero production .foot-* bleed.
+     id="foot-version" PRESERVED verbatim ("v4.98.8"). The C/A monogram
+     path mirrors the topbar logo for brand consistency; the auth-wired
+     topbar itself is untouched. [data-theme="dark"] matches the prod
+     theme system; fonts from the hero-v2 head. #faq above untouched.
 ══════════════════════════════════════════ -->
-<footer class="foot">
-  <div class="container">
-    <div class="foot-inner">
-      <span class="foot-brand">certanvil.com · forged for the exam <span class="foot-version" id="foot-version">v4.98.8</span></span>
-      <nav class="foot-nav" aria-label="Footer navigation">
-        <a href="/privacy" class="foot-link">Privacy</a>
-        <a href="/terms" class="foot-link">Terms</a>
-        <a href="mailto:hello@certanvil.com" class="foot-link">Contact</a>
+<style id="fzx-styles">
+  #site-footer{
+    --bg:oklch(0.975 0.007 85);
+    --surface:oklch(0.992 0.004 85);
+    --surface-2:oklch(0.965 0.010 84);
+    --ink:oklch(0.22 0.015 280);
+    --ink-soft:oklch(0.36 0.014 280);
+    --muted:oklch(0.50 0.013 280);
+    --border:oklch(0.86 0.008 85);
+    --border-soft:oklch(0.91 0.006 85);
+    --accent:oklch(0.50 0.155 55);
+    --accent-bright:oklch(0.80 0.155 64);
+    --accent-deep:oklch(0.42 0.150 52);
+    --on-accent:oklch(0.985 0.010 85);
+    --eo:cubic-bezier(0.23,1,0.32,1);
+    position:relative;display:block;background:var(--bg);color:var(--ink);
+    font-family:'Inter',system-ui,-apple-system,sans-serif;-webkit-font-smoothing:antialiased;
+    padding:clamp(48px,7vh,84px) clamp(20px,4vw,56px) clamp(34px,5vh,54px);
+    border-top:1px solid var(--border-soft);
+  }
+  [data-theme="dark"] #site-footer{
+    --bg:oklch(0.16 0.009 275);
+    --surface:oklch(0.205 0.009 275);--surface-2:oklch(0.185 0.009 275);
+    --ink:oklch(0.96 0.006 275);--ink-soft:oklch(0.78 0.010 275);--muted:oklch(0.60 0.013 275);
+    --border:oklch(0.30 0.008 275);--border-soft:oklch(0.26 0.008 275);
+    --accent:oklch(0.80 0.155 64);--accent-bright:oklch(0.86 0.140 70);
+    --accent-deep:oklch(0.70 0.150 62);--on-accent:oklch(0.18 0.020 275);
+  }
+  #site-footer *{box-sizing:border-box}
+  #site-footer .fzx-wrap{max-width:1180px;margin:0 auto}
+
+  #site-footer .fzx-top{
+    display:flex;align-items:flex-start;justify-content:space-between;gap:40px;flex-wrap:wrap;
+    padding-bottom:clamp(26px,3.6vw,40px);
+  }
+  #site-footer .fzx-brand{display:flex;flex-direction:column;gap:12px;min-width:0}
+  #site-footer .fzx-mark{display:flex;align-items:center;gap:13px}
+  #site-footer .fzx-mono{width:36px;height:36px;flex:none;display:block}
+  #site-footer .fzx-mono .c,#site-footer .fzx-mono .a{stroke:var(--accent)}
+  #site-footer .fzx-mono .s{stroke:var(--muted)}
+  #site-footer .fzx-word{font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:22px;letter-spacing:-.01em;color:var(--ink)}
+  #site-footer .fzx-tag{font-size:14px;line-height:1.55;color:var(--ink-soft);max-width:42ch}
+  #site-footer .fzx-tag em{font-style:italic;color:var(--accent)}
+
+  #site-footer .fzx-nav{display:flex;align-items:center;gap:clamp(18px,2.4vw,32px);flex-wrap:wrap}
+  #site-footer .fzx-link{
+    position:relative;font-size:13.5px;font-weight:600;color:var(--ink-soft);text-decoration:none;
+    padding:3px 0;transition:color 200ms var(--eo);
+  }
+  #site-footer .fzx-link::after{
+    content:"";position:absolute;left:0;right:100%;bottom:-1px;height:1.5px;
+    background:var(--accent);transition:right 260ms var(--eo);
+  }
+  @media (hover:hover){
+    #site-footer .fzx-link:hover{color:var(--accent)}
+    #site-footer .fzx-link:hover::after{right:0}
+  }
+
+  #site-footer .fzx-base{
+    display:flex;align-items:center;justify-content:space-between;gap:18px;flex-wrap:wrap;
+    padding-top:clamp(22px,3vw,30px);border-top:1px solid var(--border);
+  }
+  #site-footer .fzx-fine{font-size:12.5px;line-height:1.6;color:var(--muted)}
+  #site-footer .fzx-fine b{color:var(--ink-soft);font-weight:600}
+  #site-footer .fzx-dot{color:var(--border);margin:0 9px;font-weight:400}
+  #site-footer .fzx-ver{
+    display:inline-flex;align-items:center;gap:7px;
+    font-size:11.5px;font-weight:600;font-variant-numeric:tabular-nums;letter-spacing:.02em;
+    color:var(--accent-deep);
+    padding:5px 11px;border-radius:999px;
+    background:color-mix(in oklab,var(--accent) 9%,transparent);
+    border:1px solid color-mix(in oklab,var(--accent) 22%,transparent);
+  }
+  [data-theme="dark"] #site-footer .fzx-ver{color:var(--accent-bright)}
+  #site-footer .fzx-ver::before{content:"";width:5px;height:5px;border-radius:50%;background:var(--accent);flex:none}
+
+  #site-footer .fzx-r{opacity:0;transform:translateY(14px);transition:opacity 620ms var(--eo),transform 620ms var(--eo)}
+  #site-footer.fzx-in .fzx-r{opacity:1;transform:none}
+  #site-footer.fzx-in .fzx-r[data-d="2"]{transition-delay:90ms}
+  #site-footer.fzx-in .fzx-r[data-d="3"]{transition-delay:170ms}
+
+  @media (max-width:680px){
+    #site-footer .fzx-top{flex-direction:column;gap:26px}
+    #site-footer .fzx-base{flex-direction:column;align-items:flex-start;gap:14px}
+  }
+  @media (prefers-reduced-motion:reduce){
+    #site-footer .fzx-r{transition:opacity 200ms ease !important;transform:none !important}
+    #site-footer.fzx-in .fzx-r{transform:none !important}
+    #site-footer .fzx-link::after{transition:none !important}
+  }
+</style>
+
+<footer class="foot" id="site-footer">
+  <div class="fzx-wrap">
+
+    <div class="fzx-top">
+      <div class="fzx-brand fzx-r" data-d="1">
+        <div class="fzx-mark">
+          <svg class="fzx-mono" viewBox="0 0 100 100" fill="none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+            <path class="c" d="M58 12 C42 6, 16 16, 14 34 C12 52, 22 62, 42 64" stroke-width="7" stroke-linecap="round"/>
+            <line class="s" x1="30" y1="84" x2="70" y2="16" stroke-width="5" stroke-linecap="round"/>
+            <path class="a" d="M46 88 L64 50 L82 88 M53 74 L75 74" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <span class="fzx-word">CertAnvil</span>
+        </div>
+        <p class="fzx-tag">AI cert practice, <em>forged for the exam.</em> Fresh questions every session, checked before you see them.</p>
+      </div>
+
+      <nav class="fzx-nav fzx-r" data-d="2" aria-label="Footer navigation">
+        <a href="/privacy" class="fzx-link">Privacy</a>
+        <a href="/terms" class="fzx-link">Terms</a>
+        <a href="mailto:hello@certanvil.com" class="fzx-link">Contact</a>
       </nav>
     </div>
+
+    <div class="fzx-base fzx-r" data-d="3">
+      <p class="fzx-fine">
+        &copy; 2026 CertAnvil
+        <span class="fzx-dot">·</span>
+        <b>Built and passed by the person who made it</b> (767/900, N10-009)
+      </p>
+      <span class="fzx-ver" id="foot-version">v4.98.8</span>
+    </div>
+
   </div>
+
+  <script>
+    /* Scoped entrance trigger only — no script.js contract on the
+       footer. script.js never touches .fzx-in. */
+    (function(){
+      var s=document.getElementById('site-footer');
+      if(!s)return;
+      if('IntersectionObserver' in window){
+        var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){s.classList.add('fzx-in');io.disconnect();}});},{threshold:0.2});
+        io.observe(s);
+      } else { s.classList.add('fzx-in'); }
+    })();
+  </script>
 </footer>
 
 <!-- ══════════════════════════════════════════

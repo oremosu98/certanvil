@@ -19533,8 +19533,8 @@ test('v4.99.51 Terms: prohibits AI proxy abuse + non-cert content generation',
 
 // Cross-page wiring
 test('v4.99.51 wiring: landing/index.html footer links to /privacy + /terms',
-  /<a href="\/privacy"[^>]*class="foot-link">Privacy/.test(_landingIndexRaw)
-  && /<a href="\/terms"[^>]*class="foot-link">Terms/.test(_landingIndexRaw));
+  /<a href="\/privacy"[^>]*class="fzx-link">Privacy/.test(_landingIndexRaw)
+  && /<a href="\/terms"[^>]*class="fzx-link">Terms/.test(_landingIndexRaw));
 test('v4.99.51 wiring: landing/index.html signup screen links to /terms + /privacy',
   /agree to our <a href="\/terms">Terms<\/a> and <a href="\/privacy">Privacy/.test(_landingIndexRaw));
 test('v4.99.51 wiring: landing/pricing.html signup screen also links to /terms + /privacy',
