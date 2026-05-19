@@ -1,112 +1,84 @@
 <!DOCTYPE html>
+<!--
+  CertAnvil — Cross-cert analytics redesign concept (v2). MOCKUP FOR
+  DISCUSSION. Not production. Self-contained. Fresh in the locked
+  bronze system (forget the prior cross-cert-analytics-concept.html).
+
+  3 skills:
+   - taste-skill: another sibling of /account (<main class="account-
+     page">). Same bronze eyebrow + Fraunces title + the shipped
+     #site-topbar; the 3 panels de-carded to hairline editorial with a
+     left icon rail (one icon per panel head — Pass-readiness / Skill
+     overlap / What next — filling the EXISTING empty .cca-panel-icon
+     slots; none on cert rows or overlap bars, restraint). Thin bronze
+     readiness/overlap bars with the pass-cutoff tick; semantic status
+     pills (passed=green, active=bronze, soon=muted); de-purpled.
+   - stop-slop: real analytics.html copy kept verbatim (minimal-change
+     discipline for an auth-wired surface).
+   - emil: signed-in dashboard seen periodically → one calm reveal,
+     micro-interactions, reduced-motion path, scoped trigger.
+
+  ⚠ CONTRACT: lib/cross-cert-analytics.js (+ cross-cert-overlap.js)
+  gates (#cca-loading/#cca-anon-gate/#cca-content/#cca-empty-state) +
+  innerHTML-injects #cca-pr-list / #cca-so-list / #cca-wn-body with the
+  .cca-pr-*/.cca-so-*/.cca-wn-* classes. Real DOM preserved byte-for-
+  byte. Only additive at integration: id="site-topbar" + id="analytics-
+  page" scoping roots, the scoped <style>, an <img> in each existing
+  .cca-panel-icon span, a scoped entrance IIFE. JS untouched. Rows
+  below use the EXACT injected classes so the reskin transfers 1:1.
+-->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Cross-cert analytics · CertAnvil</title>
-<meta name="description" content="One dashboard for all your active certs. Pass-readiness side-by-side, skill overlap, what to study next.">
-<meta name="robots" content="noindex,nofollow"><!-- private user page; not for SEO -->
-<link rel="icon" type="image/svg+xml" href="favicon.svg">
-<link rel="apple-touch-icon" href="favicon.svg">
-<link rel="stylesheet" href="styles.css">
-<link rel="stylesheet" href="dg-system.css?v=4.99.91">
-<script>
-// Inline theme bootstrap — runs synchronously before <body> renders so the
-// page paints in the right theme on first frame (no light→dark flash).
-(function() {
-  var theme = 'light';
-  try {
-    var saved = localStorage.getItem('certanvil_theme');
-    if (saved === 'light' || saved === 'dark') theme = saved;
-  } catch (e) {}
-  document.documentElement.setAttribute('data-theme', theme);
-})();
-</script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CertAnvil — cross-cert analytics concept v2</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:oklch(0.975 0.007 85);font-family:'Inter',system-ui,sans-serif}
+  body.dark{background:oklch(0.16 0.009 275)}
+  .toolbar{position:fixed;right:16px;bottom:16px;z-index:999}
+  .toolbar button{border:1px solid oklch(0.86 0.008 85);background:oklch(0.992 0.004 85);color:oklch(0.30 0.015 280);border-radius:8px;padding:8px 12px;cursor:pointer;font:600 12px/1 'Inter',sans-serif}
+  body.dark .toolbar button{border-color:oklch(0.30 0.008 275);background:oklch(0.205 0.009 275);color:oklch(0.9 0.006 275)}
 
-<!-- v4.89.3 SW kill-switch — same defensive pattern as account.html. -->
-<script>
-(function() {
-  if (!('serviceWorker' in navigator)) return;
-  try { navigator.serviceWorker.register('/sw.js').catch(function () {}); } catch (e) {}
-  try {
-    navigator.serviceWorker.getRegistrations().then(function (regs) {
-      var hadController = !!navigator.serviceWorker.controller;
-      var pending = regs.map(function (r) { return r.unregister().catch(function () { return false; }); });
-      Promise.all(pending).then(function () {
-        if (hadController && !sessionStorage.getItem('_certanvil_sw_killed')) {
-          try { sessionStorage.setItem('_certanvil_sw_killed', '1'); } catch (e) {}
-          try { window.location.reload(); } catch (e) {}
-        }
-      });
-    });
-  } catch (e) {}
-})();
-</script>
-</head>
-<body class="account-body">
-
-<!-- ══════════════════════════════════════════
-     CROSS-CERT ANALYTICS v2 — editorial reskin (taste-skill + stop-slop
-     + emil), a sibling of /account in the locked bronze system.
-     SCOPED, CONTRACT-SAFE: lib/cross-cert-analytics.js (+ cross-cert-
-     overlap.js) gates (#cca-loading/#cca-anon-gate/#cca-content/
-     #cca-empty-state) + innerHTML-injects #cca-pr-list / #cca-so-list /
-     #cca-wn-body with .cca-pr-*/.cca-so-*/.cca-wn-*; auth.js drives the
-     shared topbar. Real DOM + copy preserved byte-for-byte. Only
-     additive: id="site-topbar" + id="analytics-page" scoping roots,
-     this scoped <style>, an <img> in each EXISTING .cca-panel-icon
-     span, a scoped entrance IIFE. JS untouched; #cca-panel-wn markup
-     preserved verbatim (UAT). The #site-topbar block is the already-
-     shipped index.html block. [data-theme="dark"] = prod theme system.
-══════════════════════════════════════════ -->
-<style id="ccax-styles">
+  /* ---- #site-topbar : the shipped block ---- */
   #site-topbar{--bg:oklch(0.975 0.007 85);--surface:oklch(0.992 0.004 85);--surface-2:oklch(0.965 0.010 84);--ink:oklch(0.22 0.015 280);--ink-soft:oklch(0.36 0.014 280);--muted:oklch(0.50 0.013 280);--border:oklch(0.86 0.008 85);--border-soft:oklch(0.91 0.006 85);--accent:oklch(0.50 0.155 55);--accent-bright:oklch(0.80 0.155 64);--accent-deep:oklch(0.42 0.150 52);--on-accent:oklch(0.985 0.010 85);--topbar-bg:oklch(0.975 0.007 85 / .82);--eo:cubic-bezier(0.23,1,0.32,1);position:sticky;top:0;z-index:50;background:var(--topbar-bg);backdrop-filter:blur(20px) saturate(1.4);-webkit-backdrop-filter:blur(20px) saturate(1.4);border-bottom:1px solid var(--border-soft);font-family:'Inter',system-ui,-apple-system,sans-serif;-webkit-font-smoothing:antialiased}
-  [data-theme="dark"] #site-topbar{--bg:oklch(0.16 0.009 275);--surface:oklch(0.205 0.009 275);--surface-2:oklch(0.185 0.009 275);--ink:oklch(0.96 0.006 275);--ink-soft:oklch(0.78 0.010 275);--muted:oklch(0.60 0.013 275);--border:oklch(0.30 0.008 275);--border-soft:oklch(0.26 0.008 275);--accent:oklch(0.80 0.155 64);--accent-bright:oklch(0.86 0.140 70);--accent-deep:oklch(0.70 0.150 62);--on-accent:oklch(0.18 0.020 275);--topbar-bg:oklch(0.16 0.009 275 / .82)}
+  body.dark #site-topbar{--bg:oklch(0.16 0.009 275);--surface:oklch(0.205 0.009 275);--surface-2:oklch(0.185 0.009 275);--ink:oklch(0.96 0.006 275);--ink-soft:oklch(0.78 0.010 275);--muted:oklch(0.60 0.013 275);--border:oklch(0.30 0.008 275);--border-soft:oklch(0.26 0.008 275);--accent:oklch(0.80 0.155 64);--accent-bright:oklch(0.86 0.140 70);--accent-deep:oklch(0.70 0.150 62);--on-accent:oklch(0.18 0.020 275);--topbar-bg:oklch(0.16 0.009 275 / .82)}
   #site-topbar *{box-sizing:border-box}
   #site-topbar [hidden]{display:none!important}
   #site-topbar .topbar-inner{max-width:1180px;margin:0 auto;padding:15px clamp(20px,4vw,32px);display:flex;align-items:center;justify-content:space-between;gap:16px;position:relative}
   #site-topbar .logo{display:flex;align-items:center;gap:11px;text-decoration:none}
-  #site-topbar .logo-mark{width:34px;height:34px;display:block;flex:none;flex-shrink:0;background:none;border:0;border-radius:0;padding:0;box-shadow:none}
-  #site-topbar .logo-mark::before,#site-topbar .logo-mark::after{content:none!important}
+  #site-topbar .logo-mark{width:34px;height:34px;display:block;flex:none;background:none;border:0;border-radius:0;padding:0;box-shadow:none}
   #site-topbar .logo-mark svg{width:100%;height:100%;display:block;fill:none}
   #site-topbar .logo-mark svg path,#site-topbar .logo-mark svg line{fill:none}
   #site-topbar .logo-mark svg path{stroke:var(--accent)}
   #site-topbar .logo-mark svg line{stroke:var(--muted)}
   #site-topbar .logo-name{font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:20px;letter-spacing:-.01em;color:var(--ink)}
   #site-topbar .topbar-nav{display:flex;align-items:center;gap:clamp(6px,1.4vw,16px)}
-  #site-topbar .nav-link{position:relative;font-size:13.5px;font-weight:600;color:var(--ink-soft);text-decoration:none;padding:8px 4px;border-radius:0;background:none;transition:color 200ms var(--eo)}
+  #site-topbar .nav-link{position:relative;font-size:13.5px;font-weight:600;color:var(--ink-soft);text-decoration:none;padding:8px 4px;background:none;transition:color 200ms var(--eo)}
   #site-topbar .nav-link::after{content:"";position:absolute;left:4px;right:calc(100% - 4px);bottom:2px;height:1.5px;background:var(--accent);transition:right 260ms var(--eo)}
-  @media (hover:hover){#site-topbar .nav-link:hover{color:var(--accent);background:none}#site-topbar .nav-link:hover::after{right:4px}}
-  #site-topbar .theme-toggle{display:grid;place-items:center;width:36px;height:36px;margin-left:4px;border:1px solid var(--border);border-radius:10px;background:var(--surface);color:var(--ink-soft);cursor:pointer;position:relative;transition:color 200ms var(--eo),border-color 200ms var(--eo),background 200ms var(--eo)}
-  @media (hover:hover){#site-topbar .theme-toggle:hover{color:var(--accent);border-color:color-mix(in oklab,var(--accent) 40%,var(--border))}}
-  #site-topbar .theme-toggle:focus-visible{outline:2px solid color-mix(in oklab,var(--accent) 55%,transparent);outline-offset:2px}
-  #site-topbar .theme-icon{position:absolute;width:17px;height:17px;transition:opacity 280ms var(--eo),transform 280ms var(--eo)}
-  #site-topbar .theme-icon-sun{opacity:1;transform:rotate(0)}
-  #site-topbar .theme-icon-moon{opacity:0;transform:rotate(-90deg)}
-  [data-theme="dark"] #site-topbar .theme-icon-sun{opacity:0;transform:rotate(90deg)}
-  [data-theme="dark"] #site-topbar .theme-icon-moon{opacity:1;transform:rotate(0)}
-  #site-topbar .sign-in-btn{font-family:'Inter',sans-serif;font-size:13.5px;font-weight:650;color:var(--on-accent);background:var(--accent);border:1px solid var(--accent-deep);padding:9px 18px;border-radius:10px;cursor:pointer;margin-left:6px;transition:background 200ms var(--eo),transform 160ms var(--eo)}
-  @media (hover:hover){#site-topbar .sign-in-btn:hover{background:var(--accent-deep)}}
-  #site-topbar .sign-in-btn:active{transform:translateY(1px)}
-  #site-topbar .account-pill{display:flex;align-items:center;gap:9px;cursor:pointer;margin-left:6px;font-family:'Inter',sans-serif;padding:5px 12px 5px 5px;border-radius:999px;background:var(--surface);border:1px solid var(--border);transition:border-color 200ms var(--eo),background 200ms var(--eo)}
-  @media (hover:hover){#site-topbar .account-pill:hover{border-color:color-mix(in oklab,var(--accent) 40%,var(--border))}}
-  #site-topbar .account-pill.is-open{border-color:color-mix(in oklab,var(--accent) 45%,var(--border));background:color-mix(in oklab,var(--accent) 5%,var(--surface))}
+  @media (hover:hover){#site-topbar .nav-link:hover{color:var(--accent)}#site-topbar .nav-link:hover::after{right:4px}}
+  #site-topbar .theme-toggle{display:grid;place-items:center;width:36px;height:36px;margin-left:4px;border:1px solid var(--border);border-radius:10px;background:var(--surface);color:var(--ink-soft);cursor:pointer;position:relative}
+  #site-topbar .theme-icon{position:absolute;width:17px;height:17px;transition:opacity 280ms var(--eo)}
+  #site-topbar .theme-icon-sun{opacity:1}#site-topbar .theme-icon-moon{opacity:0}
+  body.dark #site-topbar .theme-icon-sun{opacity:0}body.dark #site-topbar .theme-icon-moon{opacity:1}
+  #site-topbar .sign-in-btn{font-size:13.5px;font-weight:650;color:var(--on-accent);background:var(--accent);border:1px solid var(--accent-deep);padding:9px 18px;border-radius:10px;cursor:pointer;margin-left:6px}
+  #site-topbar .account-pill{display:flex;align-items:center;gap:9px;cursor:pointer;margin-left:6px;padding:5px 12px 5px 5px;border-radius:999px;background:var(--surface);border:1px solid var(--border)}
   #site-topbar .account-avatar{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;flex:none;font-size:12px;font-weight:700;color:var(--on-accent);background:linear-gradient(150deg,var(--accent-bright),var(--accent))}
   #site-topbar .account-email-short{font-size:13px;font-weight:600;color:var(--ink-soft);max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  #site-topbar .account-chevron{font-size:10px;color:var(--muted);transition:transform 240ms var(--eo)}
-  #site-topbar .account-pill.is-open .account-chevron{transform:rotate(180deg)}
-  #site-topbar .account-dropdown{position:absolute;top:calc(100% + 10px);right:clamp(20px,4vw,32px);z-index:60;width:280px;background:linear-gradient(180deg,var(--surface),var(--surface-2));border:1px solid var(--border);border-radius:16px;box-shadow:0 2px 4px oklch(0.22 0.015 280 / .05),0 30px 60px -24px oklch(0.22 0.015 280 / .28);overflow:hidden;animation:ccaxDrop 240ms var(--eo)}
-  @keyframes ccaxDrop{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:none}}
+  #site-topbar .account-chevron{font-size:10px;color:var(--muted)}
+  #site-topbar .account-dropdown{position:absolute;top:calc(100% + 10px);right:clamp(20px,4vw,32px);z-index:60;width:280px;background:linear-gradient(180deg,var(--surface),var(--surface-2));border:1px solid var(--border);border-radius:16px;box-shadow:0 2px 4px oklch(0.22 0.015 280 / .05),0 30px 60px -24px oklch(0.22 0.015 280 / .28);overflow:hidden}
   #site-topbar .dropdown-header{padding:16px 18px;border-bottom:1px solid var(--border)}
-  #site-topbar .dropdown-email{font-size:13.5px;font-weight:650;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  #site-topbar .dropdown-email{font-size:13.5px;font-weight:650;color:var(--ink)}
   #site-topbar .dropdown-tier{font-size:12px;color:var(--muted);margin-top:3px}
-  #site-topbar .dropdown-link{display:flex;align-items:center;gap:11px;padding:11px 18px;font-size:13.5px;font-weight:550;color:var(--ink-soft);text-decoration:none;transition:background 170ms var(--eo),color 170ms var(--eo)}
+  #site-topbar .dropdown-link{display:flex;align-items:center;gap:11px;padding:11px 18px;font-size:13.5px;font-weight:550;color:var(--ink-soft);text-decoration:none}
   #site-topbar .dropdown-link-icon{display:none}
-  @media (hover:hover){#site-topbar .dropdown-link:hover{background:color-mix(in oklab,var(--accent) 6%,transparent);color:var(--accent)}}
   #site-topbar .dropdown-divider{height:1px;background:var(--border);margin:6px 0}
   #site-topbar .dropdown-link-danger{color:var(--muted)}
-  @media (hover:hover){#site-topbar .dropdown-link-danger:hover{background:color-mix(in oklab,var(--accent) 7%,transparent);color:var(--accent-deep)}}
 
+  /* ---- #analytics-page : account-v2 grammar + .cca-* editorial ---- */
   #analytics-page{
     --bg:oklch(0.975 0.007 85);--surface:oklch(0.992 0.004 85);--surface-2:oklch(0.965 0.010 84);
     --ink:oklch(0.22 0.015 280);--ink-soft:oklch(0.36 0.014 280);--muted:oklch(0.50 0.013 280);
@@ -120,7 +92,7 @@
     font-family:'Inter',system-ui,-apple-system,sans-serif;-webkit-font-smoothing:antialiased;
     padding:clamp(34px,6vh,64px) clamp(20px,4vw,56px) clamp(72px,12vh,120px);
   }
-  [data-theme="dark"] #analytics-page{
+  body.dark #analytics-page{
     --bg:oklch(0.16 0.009 275);--surface:oklch(0.205 0.009 275);--surface-2:oklch(0.185 0.009 275);
     --ink:oklch(0.96 0.006 275);--ink-soft:oklch(0.78 0.010 275);--muted:oklch(0.60 0.013 275);
     --border:oklch(0.30 0.008 275);--border-soft:oklch(0.26 0.008 275);
@@ -149,14 +121,18 @@
   #analytics-page .btn-primary-cta{display:inline-flex;align-items:center;gap:8px;font-size:14px;font-weight:650;color:var(--on-accent);background:var(--accent);border:1px solid var(--accent-deep);padding:11px 22px;border-radius:10px;text-decoration:none;margin-right:14px}
   #analytics-page .btn-ghost-link{font-size:13.5px;font-weight:600;color:var(--ink-soft);text-decoration:none}
   @media (hover:hover){#analytics-page .btn-ghost-link:hover{color:var(--accent)}}
+
+  /* panels — de-carded hairline + left icon rail */
   #analytics-page .cca-panel{margin-top:clamp(42px,5.5vw,62px)}
   #analytics-page .cca-panel-head{display:flex;align-items:baseline;justify-content:space-between;gap:18px;flex-wrap:wrap;padding-bottom:15px;border-bottom:1px solid var(--border)}
   #analytics-page .cca-panel-title-row{display:flex;align-items:center;gap:14px;min-width:0}
   #analytics-page .cca-panel-icon{width:38px;height:38px;flex:none;border-radius:11px;background-color:#FFFBF3;border:1px solid var(--border);box-shadow:var(--shadow-soft);display:grid;place-items:center}
-  [data-theme="dark"] #analytics-page .cca-panel-icon{background-color:#FFFBF3}
+  body.dark #analytics-page .cca-panel-icon{background-color:#FFFBF3}
   #analytics-page .cca-panel-icon img{width:30px;height:30px;display:block;object-fit:contain}
   #analytics-page .cca-panel-title{font-family:'Fraunces',Georgia,serif;font-size:clamp(20px,2.4vw,28px);font-weight:600;letter-spacing:-.02em;color:var(--ink)}
   #analytics-page .cca-panel-help{font-size:11.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+
+  /* Panel 1 — pass-readiness rows */
   #analytics-page .cca-pr-group-h{display:flex;align-items:center;gap:12px;margin:24px 0 6px;font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
   #analytics-page .cca-pr-group-h-passed{color:var(--pass)}
   #analytics-page .cca-pr-group-h-active{color:var(--accent)}
@@ -166,14 +142,14 @@
   #analytics-page .cca-pr-row:last-child{border-bottom:0}
   #analytics-page .cca-pr-row-soon{opacity:.62}
   #analytics-page .cca-pr-glyph{width:42px;height:42px;border-radius:11px;flex:none;display:grid;place-items:center;font:800 13px var(--mono);color:var(--accent-deep)!important;background:color-mix(in oklab,var(--accent) 9%,transparent)!important;border:1px solid color-mix(in oklab,var(--accent) 22%,transparent)!important}
-  [data-theme="dark"] #analytics-page .cca-pr-glyph{color:var(--accent-bright)!important}
+  body.dark #analytics-page .cca-pr-glyph{color:var(--accent-bright)!important}
   #analytics-page .cca-pr-info{min-width:0}
   #analytics-page .cca-pr-name{display:flex;align-items:center;gap:9px;font-size:15px;font-weight:700;color:var(--ink);flex-wrap:wrap;margin-bottom:4px}
   #analytics-page .cca-pr-info>div:last-child{font-size:12.5px;color:var(--muted);line-height:1.5}
   #analytics-page .cca-pr-status-pill{font-size:9.5px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;padding:3px 8px;border-radius:5px;color:var(--muted);border:1px solid var(--border)}
   #analytics-page .cca-pr-status-passed{color:var(--pass)!important;border-color:color-mix(in oklab,var(--pass) 42%,transparent)!important;background:color-mix(in oklab,var(--pass) 12%,transparent)!important}
   #analytics-page .cca-pr-status-active{color:var(--accent-deep)!important;border-color:color-mix(in oklab,var(--accent) 42%,transparent)!important;background:color-mix(in oklab,var(--accent) 12%,transparent)!important}
-  [data-theme="dark"] #analytics-page .cca-pr-status-active{color:var(--accent-bright)!important}
+  body.dark #analytics-page .cca-pr-status-active{color:var(--accent-bright)!important}
   #analytics-page .cca-pr-readiness{min-width:0}
   #analytics-page .cca-pr-readiness-label{display:flex;align-items:baseline;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:7px}
   #analytics-page .cca-pr-readiness-score{font-family:var(--mono);font-size:14px;font-weight:700;color:var(--ink)}
@@ -190,17 +166,19 @@
   #analytics-page .cca-pr-action-disabled{font-size:12px;color:var(--muted);white-space:nowrap}
   #analytics-page .cca-pr-cutoff-legend{margin-top:18px;display:flex;align-items:center;gap:9px;font-size:11px;color:var(--muted)}
   #analytics-page .cca-pr-cutoff-tick{width:2px;height:12px;background:var(--ink-soft);border-radius:1px;flex:none}
+
+  /* Panel 2 — skill overlap pairs */
   #analytics-page .cca-so-list{margin-top:20px}
   #analytics-page .cca-so-pair{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:16px;padding:16px 4px;border-bottom:1px solid var(--border-soft);cursor:pointer}
   #analytics-page .cca-so-pair:last-child{border-bottom:0}
   #analytics-page .cca-so-pair-glyph{width:34px;height:30px;border-radius:8px;display:grid;place-items:center;font:800 11px var(--mono);color:var(--accent-deep);background:color-mix(in oklab,var(--accent) 9%,transparent);border:1px solid color-mix(in oklab,var(--accent) 20%,transparent)}
-  [data-theme="dark"] #analytics-page .cca-so-pair-glyph{color:var(--accent-bright)}
+  body.dark #analytics-page .cca-so-pair-glyph{color:var(--accent-bright)}
   #analytics-page .cca-so-pair-arrow{color:var(--muted);font-size:12px;margin:0 2px}
   #analytics-page .cca-so-bar-wrap{display:flex;align-items:center;gap:14px;min-width:0}
   #analytics-page .cca-so-bar-track{flex:1;height:6px;border-radius:99px;background:color-mix(in oklab,var(--muted) 18%,transparent);overflow:hidden;min-width:80px}
   #analytics-page .cca-so-bar-fill{height:100%;border-radius:99px;background:var(--accent)}
   #analytics-page .cca-so-bar-pct{font-family:var(--mono);font-size:14px;font-weight:700;color:var(--accent-deep);min-width:42px;text-align:right}
-  [data-theme="dark"] #analytics-page .cca-so-bar-pct{color:var(--accent-bright)}
+  body.dark #analytics-page .cca-so-bar-pct{color:var(--accent-bright)}
   #analytics-page .cca-so-meta{text-align:right;min-width:140px}
   #analytics-page .cca-so-meta-headline{font-size:13px;font-weight:700;color:var(--ink)}
   #analytics-page .cca-so-meta-sub{font-size:11px;color:var(--muted);margin-top:2px}
@@ -213,10 +191,12 @@
   #analytics-page .cca-so-detail-col-list>div{display:flex;gap:8px;align-items:flex-start}
   #analytics-page .cca-so-callout{margin-top:18px;font-size:13px;line-height:1.55;color:var(--ink-soft);padding:14px 16px;border:1px solid var(--border);border-radius:12px;background:color-mix(in oklab,var(--accent) 4%,transparent);display:flex;align-items:center;gap:12px;flex-wrap:wrap}
   #analytics-page .cca-so-saving-pill{font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--accent-deep);background:color-mix(in oklab,var(--accent) 13%,transparent);border:1px solid color-mix(in oklab,var(--accent) 28%,transparent);padding:4px 9px;border-radius:6px}
-  [data-theme="dark"] #analytics-page .cca-so-saving-pill{color:var(--accent-bright)}
+  body.dark #analytics-page .cca-so-saving-pill{color:var(--accent-bright)}
   #analytics-page .cca-so-topic-pill{font-size:10px;font-weight:700;padding:2px 7px;border-radius:5px;border:1px solid var(--border);color:var(--muted)}
   #analytics-page .cca-so-topic-mastered{color:var(--pass);border-color:color-mix(in oklab,var(--pass) 38%,transparent)}
   #analytics-page .cca-so-topic-new,#analytics-page .cca-so-topic-shared,#analytics-page .cca-so-topic-refresher{color:var(--accent-deep);border-color:color-mix(in oklab,var(--accent) 34%,transparent)}
+
+  /* Panel 3 — what to study next */
   #analytics-page .cca-wn-body{margin-top:22px}
   #analytics-page .cca-wn-hero{border:1px solid var(--border);border-radius:16px;padding:24px clamp(20px,2.6vw,28px);background:linear-gradient(180deg,var(--surface),var(--surface-2));box-shadow:var(--shadow-soft)}
   #analytics-page .cca-wn-hero-eyebrow{font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin-bottom:10px}
@@ -229,11 +209,12 @@
   #analytics-page .cca-wn-secondary-row{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:15px;padding:15px 4px;border-bottom:1px solid var(--border-soft);text-decoration:none}
   #analytics-page .cca-wn-secondary-row:last-child{border-bottom:0}
   #analytics-page .cca-wn-rank{width:24px;height:24px;border-radius:6px;display:grid;place-items:center;font:800 11px var(--mono);color:var(--accent-deep);background:color-mix(in oklab,var(--accent) 11%,transparent);flex:none}
-  [data-theme="dark"] #analytics-page .cca-wn-rank{color:var(--accent-bright)}
+  body.dark #analytics-page .cca-wn-rank{color:var(--accent-bright)}
   #analytics-page .cca-wn-secondary-row .t{font-size:13.5px;font-weight:650;color:var(--ink)}
   #analytics-page .cca-wn-secondary-row .s{font-size:11.5px;color:var(--muted);margin-top:2px}
   #analytics-page .cca-wn-secondary-cta{font-size:12.5px;font-weight:650;color:var(--accent);white-space:nowrap}
   #analytics-page .cca-wn-empty{font-size:13px;color:var(--muted);font-style:italic;padding:20px 4px}
+
   #analytics-page .acx-r{opacity:0;transform:translateY(14px);transition:opacity 560ms var(--eo),transform 560ms var(--eo)}
   #analytics-page.acx-in .acx-r{opacity:1;transform:none}
   #analytics-page.acx-in .acx-r[data-d="1"]{transition-delay:40ms}
@@ -252,6 +233,8 @@
     #analytics-page .cca-so-chevron{transition:none!important}
   }
 </style>
+</head>
+<body>
 
 <header class="topbar" id="site-topbar">
   <div class="topbar-inner container">
@@ -265,59 +248,30 @@
       </span>
       <span class="logo-name">CertAnvil</span>
     </a>
-
     <nav class="topbar-nav" aria-label="Primary navigation">
       <a href="/#why" class="nav-link">Why CertAnvil</a>
       <a href="/#certs" class="nav-link">Certs</a>
       <a href="/pricing" class="nav-link">Pricing</a>
       <button type="button" class="theme-toggle" id="theme-toggle" aria-label="Toggle light/dark theme" title="Toggle theme">
-        <svg class="theme-icon theme-icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <circle cx="12" cy="12" r="4"/>
-          <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>
-        </svg>
-        <svg class="theme-icon theme-icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
-        </svg>
+        <svg class="theme-icon theme-icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+        <svg class="theme-icon theme-icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
       </button>
-
-      <button type="button" class="sign-in-btn" id="sign-in-btn">Sign in</button>
-
-      <button type="button" class="account-pill" id="account-pill" hidden aria-haspopup="menu" aria-expanded="false" aria-controls="account-dropdown">
-        <span class="account-avatar" id="account-avatar" aria-hidden="true">U</span>
-        <span class="account-email-short" id="account-email-short">you@…</span>
+      <button type="button" class="account-pill" id="account-pill" aria-haspopup="menu" aria-expanded="false" aria-controls="account-dropdown">
+        <span class="account-avatar" id="account-avatar" aria-hidden="true">S</span>
+        <span class="account-email-short" id="account-email-short">simi.oremosu@…</span>
         <span class="account-chevron" id="account-chevron" aria-hidden="true">▾</span>
       </button>
+      <button type="button" class="sign-in-btn" id="sign-in-btn" hidden>Sign in</button>
     </nav>
-
     <div class="account-dropdown" id="account-dropdown" role="menu" aria-labelledby="account-pill" hidden>
-      <div class="dropdown-header">
-        <div class="dropdown-email" id="dropdown-email">you@email.com</div>
-        <div class="dropdown-tier" id="dropdown-tier">● Free tier · Network+ unlocked</div>
-      </div>
-      <a href="/account" class="dropdown-link" role="menuitem">
-        <span class="dropdown-link-icon" aria-hidden="true">⚙️</span>
-        <span>Account settings</span>
-      </a>
-      <a href="/?modal=my-certs" class="dropdown-link" role="menuitem">
-        <span class="dropdown-link-icon" aria-hidden="true">🎓</span>
-        <span>My certs</span>
-      </a>
-      <a href="/analytics" class="dropdown-link is-active" role="menuitem">
-        <span class="dropdown-link-icon" aria-hidden="true">📊</span>
-        <span>Cross-cert analytics</span>
-      </a>
+      <div class="dropdown-header"><div class="dropdown-email" id="dropdown-email">simi.oremosu@gmail.com</div><div class="dropdown-tier" id="dropdown-tier">● Pro tier · all certs</div></div>
+      <a href="/account" class="dropdown-link" role="menuitem"><span class="dropdown-link-icon" aria-hidden="true">⚙️</span><span>Account settings</span></a>
       <div class="dropdown-divider" role="separator"></div>
-      <a href="#" class="dropdown-link dropdown-link-danger" id="sign-out-link" role="menuitem">
-        <span class="dropdown-link-icon" aria-hidden="true">↩</span>
-        <span>Sign out</span>
-      </a>
+      <a href="#" class="dropdown-link dropdown-link-danger" id="sign-out-link" role="menuitem"><span class="dropdown-link-icon" aria-hidden="true">↩</span><span>Sign out</span></a>
     </div>
   </div>
 </header>
 
-<!-- ══════════════════════════════════════════
-     CROSS-CERT ANALYTICS PAGE BODY
-═════════════════════════════════════════ -->
 <main class="account-page" id="analytics-page">
   <div class="container account-container">
 
@@ -325,43 +279,15 @@
       <a href="/">Home</a> <span aria-hidden="true">·</span> <span>Cross-cert analytics</span>
     </nav>
 
-    <header class="account-pagehead">
-      <div class="account-eyebrow">
-        <span class="cca-eyebrow-icon" aria-hidden="true"></span>
-        Analytics
-      </div>
+    <header class="account-pagehead acx-r" data-d="1">
+      <div class="account-eyebrow"><span class="cca-eyebrow-icon" aria-hidden="true"></span>Analytics</div>
       <h1 class="account-title">Cross-cert analytics</h1>
       <p class="account-subtitle">One dashboard for every cert you're studying. See where you've passed, where you're closest to passing, and where the same skills carry from one cert to the next.</p>
     </header>
 
-    <!-- Loading state shown while the auth check runs -->
-    <div class="account-loading" id="cca-loading" aria-live="polite">
-      <span class="account-loading-spinner" aria-hidden="true"></span>
-      <span>Loading your analytics…</span>
-    </div>
+    <div class="cca-content" id="cca-content">
 
-    <!-- Anonymous gate — shown if user isn't signed in -->
-    <div class="account-anon-gate" id="cca-anon-gate" hidden>
-      <div class="anon-gate-icon" aria-hidden="true"></div>
-      <h2>Sign in to view your analytics</h2>
-      <p>Cross-cert analytics is private to your account. Sign in with a magic link to see your dashboard.</p>
-      <a href="/?action=signin&return=https%3A%2F%2Fcertanvil.com%2Fanalytics" class="btn-primary-cta">Sign in →</a>
-      <a href="/" class="btn-ghost-link">Back to home</a>
-    </div>
-
-    <!-- Authenticated content — populated by lib/cross-cert-analytics.js -->
-    <div class="cca-content" id="cca-content" hidden>
-
-      <!-- Empty state — no certs unlocked / studied yet -->
-      <div class="cca-empty-state" id="cca-empty-state" hidden>
-        <div class="cca-empty-icon" aria-hidden="true"></div>
-        <h2>Pick your first cert to unlock this dashboard</h2>
-        <p>Cross-cert analytics shows how skills carry between certs and where to focus next — once you've started studying. Pick a cert and we'll start tracking from your first quiz.</p>
-        <a href="/#certs" class="btn-primary-cta">Browse certs →</a>
-      </div>
-
-      <!-- Panel 1: Pass-readiness side-by-side -->
-      <section class="cca-panel" id="cca-panel-pr" hidden>
+      <section class="cca-panel acx-r" data-d="2" id="cca-panel-pr">
         <header class="cca-panel-head">
           <div class="cca-panel-title-row">
             <span class="cca-panel-icon" aria-hidden="true"><img src="assets/analytics/readiness.svg" alt=""></span>
@@ -370,16 +296,38 @@
           <span class="cca-panel-help">Grouped by status</span>
         </header>
         <div class="cca-pr-list" id="cca-pr-list">
-          <!-- Rows + group headers populated by JS -->
+          <div class="cca-pr-group-h cca-pr-group-h-passed"><span class="cca-pr-group-h-icon"></span>Passed (1)<span class="cca-pr-group-h-rule"></span></div>
+          <div class="cca-pr-row cca-pr-row-passed">
+            <span class="cca-pr-glyph cca-pr-glyph-netplus">N+</span>
+            <div class="cca-pr-info"><div class="cca-pr-name">Network+ <span class="cca-pr-status-pill cca-pr-status-passed">Passed</span></div><div>Maintenance practice. Keep your knowledge sharp for related certs.</div></div>
+            <div class="cca-pr-readiness"><div class="cca-pr-readiness-label">Score<span class="cca-pr-readiness-score cca-pr-score-green">767/900</span></div><div class="cca-pr-readiness-bar"><div class="cca-pr-readiness-fill cca-pr-fill-green" style="width:85%"></div><div class="cca-pr-readiness-cutoff" style="left:80%"></div></div><div class="cca-pr-readiness-meta"><span>Passed May 5</span><span>Cutoff 720</span></div></div>
+            <a class="cca-pr-action-ghost" href="#">Open →</a>
+          </div>
+          <div class="cca-pr-group-h cca-pr-group-h-active"><span class="cca-pr-group-h-icon"></span>Currently studying (1)<span class="cca-pr-group-h-rule"></span></div>
+          <div class="cca-pr-row cca-pr-row-active">
+            <span class="cca-pr-glyph cca-pr-glyph-secplus">S+</span>
+            <div class="cca-pr-info"><div class="cca-pr-name">Security+ <span class="cca-pr-status-pill cca-pr-status-active">Active</span></div><div>Builds on N+. 65% knowledge transfer from Network+.</div></div>
+            <div class="cca-pr-readiness"><div class="cca-pr-readiness-label">Readiness<span class="cca-pr-readiness-score cca-pr-score-pending">—</span></div><div class="cca-pr-readiness-bar"><div class="cca-pr-readiness-fill" style="width:8%"></div><div class="cca-pr-readiness-cutoff" style="left:83%"></div></div><div class="cca-pr-readiness-meta"><span>Open cert app to compute</span><span>Cutoff 750</span></div></div>
+            <a class="cca-pr-action-btn" href="#">Resume →</a>
+          </div>
+          <div class="cca-pr-group-h"><span class="cca-pr-group-h-icon"></span>Coming soon (4)<span class="cca-pr-group-h-rule"></span></div>
+          <div class="cca-pr-row cca-pr-row-soon">
+            <span class="cca-pr-glyph cca-pr-glyph-az">AZ</span>
+            <div class="cca-pr-info"><div class="cca-pr-name">Azure Fundamentals <span class="cca-pr-status-pill">Coming soon</span></div><div>~6 weeks ETA</div></div>
+            <div class="cca-pr-readiness"><div class="cca-pr-readiness-label">Readiness<span class="cca-pr-readiness-score cca-pr-score-pending">—</span></div><div class="cca-pr-readiness-bar"></div><div class="cca-pr-readiness-meta"><span>Not started</span><span></span></div></div>
+            <span class="cca-pr-action-disabled">Notify me</span>
+          </div>
+          <div class="cca-pr-row cca-pr-row-soon">
+            <span class="cca-pr-glyph cca-pr-glyph-ccna">CC</span>
+            <div class="cca-pr-info"><div class="cca-pr-name">Cisco CCNA <span class="cca-pr-status-pill">Coming soon</span></div><div>~10 weeks ETA · 85% N+ overlap</div></div>
+            <div class="cca-pr-readiness"><div class="cca-pr-readiness-label">Readiness<span class="cca-pr-readiness-score cca-pr-score-pending">—</span></div><div class="cca-pr-readiness-bar"></div><div class="cca-pr-readiness-meta"><span>Not started</span><span></span></div></div>
+            <span class="cca-pr-action-disabled">Notify me</span>
+          </div>
         </div>
-        <div class="cca-pr-cutoff-legend">
-          <span class="cca-pr-cutoff-tick"></span>
-          <span>Vertical mark on each bar = exam pass cutoff for that cert</span>
-        </div>
+        <div class="cca-pr-cutoff-legend"><span class="cca-pr-cutoff-tick"></span><span>Vertical mark on each bar = exam pass cutoff for that cert</span></div>
       </section>
 
-      <!-- Panel 2: Skill overlap (Phase B) -->
-      <section class="cca-panel" id="cca-panel-so" hidden>
+      <section class="cca-panel acx-r" data-d="3" id="cca-panel-so">
         <header class="cca-panel-head">
           <div class="cca-panel-title-row">
             <span class="cca-panel-icon" aria-hidden="true"><img src="assets/analytics/overlap.svg" alt=""></span>
@@ -388,12 +336,32 @@
           <span class="cca-panel-help">Click any pair to see specific topics</span>
         </header>
         <div class="cca-so-list" id="cca-so-list">
-          <!-- Pair rows populated by renderPanel2() -->
+          <div class="cca-so-pair">
+            <span><span class="cca-so-pair-glyph">N+</span><span class="cca-so-pair-arrow">→</span><span class="cca-so-pair-glyph">CC</span></span>
+            <span class="cca-so-bar-wrap"><span class="cca-so-bar-track"><span class="cca-so-bar-fill" style="width:85%"></span></span><span class="cca-so-bar-pct">85%</span></span>
+            <span class="cca-so-meta"><span class="cca-so-meta-headline">CCNA fast-track candidate</span><span class="cca-so-meta-sub">17 of 20 topics shared</span></span>
+          </div>
+          <div class="cca-so-detail">
+            <div class="cca-so-detail-grid">
+              <div><div class="cca-so-detail-col-h">Already mastered (skip the re-study)</div><div class="cca-so-detail-col-list"><div><span class="cca-so-topic-pill cca-so-topic-mastered">✓</span>OSI model &amp; TCP/IP stack</div><div><span class="cca-so-topic-pill cca-so-topic-mastered">✓</span>Subnetting &amp; VLSM</div><div><span class="cca-so-topic-pill cca-so-topic-mastered">✓</span>Switch operation &amp; MAC tables</div><div><span class="cca-so-topic-pill cca-so-topic-mastered">✓</span>VLAN basics &amp; 802.1Q tagging</div></div></div>
+              <div><div class="cca-so-detail-col-h">Cisco CCNA-specific (your real focus)</div><div class="cca-so-detail-col-list"><div><span class="cca-so-topic-pill cca-so-topic-new">+</span>OSPF inter-area routing</div><div><span class="cca-so-topic-pill cca-so-topic-new">+</span>BGP path selection</div><div><span class="cca-so-topic-pill cca-so-topic-new">+</span>EtherChannel &amp; STP variants (RSTP, MST)</div><div><span class="cca-so-topic-pill cca-so-topic-new">+</span>Cisco IOS CLI mastery</div></div></div>
+            </div>
+            <div class="cca-so-callout">Skip ~30 hours of N+ overlap. Real CCNA prep is OSPF/BGP depth + IOS CLI fluency, that's where the new study time should go. <span class="cca-so-saving-pill">≈ 7 days of prep saved</span></div>
+          </div>
+          <div class="cca-so-pair">
+            <span><span class="cca-so-pair-glyph">N+</span><span class="cca-so-pair-arrow">→</span><span class="cca-so-pair-glyph">S+</span></span>
+            <span class="cca-so-bar-wrap"><span class="cca-so-bar-track"><span class="cca-so-bar-fill" style="width:65%"></span></span><span class="cca-so-bar-pct">65%</span></span>
+            <span class="cca-so-meta"><span class="cca-so-meta-headline">Strong feed into Sec+</span><span class="cca-so-meta-sub">8 of 12 topics shared</span></span>
+          </div>
+          <div class="cca-so-pair">
+            <span><span class="cca-so-pair-glyph">N+</span><span class="cca-so-pair-arrow">→</span><span class="cca-so-pair-glyph">AW</span></span>
+            <span class="cca-so-bar-wrap"><span class="cca-so-bar-track"><span class="cca-so-bar-fill" style="width:40%"></span></span><span class="cca-so-bar-pct">40%</span></span>
+            <span class="cca-so-meta"><span class="cca-so-meta-headline">Networking foundation transfers</span><span class="cca-so-meta-sub">6 of 15 topics shared</span></span>
+          </div>
         </div>
       </section>
 
-      <!-- Panel 3: What to study next (Phase C — deterministic ranker) -->
-      <section class="cca-panel" id="cca-panel-wn" hidden>
+      <section class="cca-panel acx-r" data-d="4" id="cca-panel-wn">
         <header class="cca-panel-head">
           <div class="cca-panel-title-row">
             <span class="cca-panel-icon" aria-hidden="true"><img src="assets/analytics/next.svg" alt=""></span>
@@ -402,7 +370,23 @@
           <span class="cca-panel-help">Recomputed after every quiz</span>
         </header>
         <div class="cca-wn-body" id="cca-wn-body">
-          <!-- Hero recommendation + ranked secondary list populated by renderPanel3() -->
+          <div class="cca-wn-hero">
+            <div class="cca-wn-hero-eyebrow">Top recommendation</div>
+            <div class="cca-wn-hero-title">Take a 20-Q quiz on Security+ to seed your readiness</div>
+            <ul><li>Network+ overlap gives you a 65% head start</li><li>No exam booked yet — set a date to unlock the countdown</li></ul>
+            <a class="cca-wn-hero-cta" href="#">Continue Security+ →</a>
+          </div>
+          <div class="cca-wn-secondary-h">Other high-impact options</div>
+          <a class="cca-wn-secondary-row" href="#">
+            <span class="cca-wn-rank">2</span>
+            <span><span class="t">Network+ refresher quiz</span><span class="s">Maintain streak · 5 min · keeps your passed cert sharp</span></span>
+            <span class="cca-wn-secondary-cta">Start →</span>
+          </a>
+          <a class="cca-wn-secondary-row" href="#">
+            <span class="cca-wn-rank">3</span>
+            <span><span class="t">Review your Network+ weak spots</span><span class="s">3 topics below mastery · carries into Sec+ and CCNA</span></span>
+            <span class="cca-wn-secondary-cta">Review →</span>
+          </a>
         </div>
       </section>
 
@@ -410,29 +394,15 @@
   </div>
 </main>
 
-<!-- Shared toast container -->
-<div class="toast-stack" id="toast-stack" aria-live="polite" aria-atomic="true"></div>
+<div class="toolbar"><button id="t-theme" type="button">Dark</button></div>
 
-<!-- ══════════════════════════════════════════
-     SCRIPTS
-═══════════════════════════════════════════ -->
 <script>
-  /* Scoped entrance trigger only — no cross-cert-analytics.js/auth.js
-     contract. The JS owns #cca-content visibility; this just adds
-     .acx-in so the .acx-r reveals play when content appears. */
+  /* mockup-only — prod keeps cross-cert-analytics.js + auth.js verbatim. */
   (function(){
     var p=document.getElementById('analytics-page');
-    if(!p)return;
-    if('IntersectionObserver' in window){
-      var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){p.classList.add('acx-in');io.disconnect();}});},{threshold:0.02});
-      io.observe(p);
-    } else { p.classList.add('acx-in'); }
+    if('IntersectionObserver' in window){var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){p.classList.add('acx-in');io.disconnect();}});},{threshold:0.02});io.observe(p);}else{p.classList.add('acx-in');}
+    document.getElementById('t-theme').addEventListener('click',function(){document.body.classList.toggle('dark');});
   })();
 </script>
-<script src="lib/supabase-umd.min.js"></script>
-<script src="lib/supabase.js"></script>
-<script src="auth.js"></script>
-<script src="lib/cross-cert-overlap.js"></script>
-<script src="lib/cross-cert-analytics.js"></script>
 </body>
 </html>
