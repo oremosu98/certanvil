@@ -1,0 +1,14 @@
+<!-- CertAnvil C/A monogram — the locked brand mark.
+     Source of truth: the inline brandSvg in app.js's renderSidebar()
+     (added in v5.0.2 / mockups/certanvil-ca-monogram-concept.html).
+     Stylised C upper-left + diagonal slash + A lower-right; STROKE-ONLY.
+     Colors are theme-adaptive: use currentColor (or override the three
+     class strokes individually) so the same SVG works on light & dark.
+     Default lockup: all strokes = currentColor; if you want the v5.0.2
+     "slash quieter" look, override .ca-slash to a dim/text-mid token. -->
+<svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="CertAnvil">
+  <title>CertAnvil</title>
+  <path class="ca-c" d="M58 12 C42 6, 16 16, 14 34 C12 52, 22 62, 42 64" stroke="currentColor" stroke-width="7" stroke-linecap="round"/>
+  <line class="ca-slash" x1="30" y1="84" x2="70" y2="16" stroke="currentColor" stroke-width="5" stroke-linecap="round" opacity="0.55"/>
+  <path class="ca-a" d="M46 88 L64 50 L82 88 M53 74 L75 74" stroke="currentColor" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

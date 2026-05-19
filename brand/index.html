@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CertAnvil · Brand & Design System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;550;600;650;700;800&display=swap" rel="stylesheet">
+<!-- ═══════════════════════════════════════════════════════════════════════
+     CERTANVIL · BRAND & DESIGN SYSTEM
+     The visual showcase. Self-demonstrating: every section uses the tokens
+     it documents. Spec lives at brand/BRAND.md; redesign-todo lives at
+     brand/REDESIGN-TODO.md. Theme toggle top-right · print-friendly.
+═══════════════════════════════════════════════════════════════════════ -->
+<style>
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+
+  :root{
+    --bg:oklch(0.975 0.007 85);--surface:oklch(0.992 0.004 85);--surface-2:oklch(0.965 0.010 84);
+    --text:oklch(0.22 0.015 280);--text-mid:oklch(0.42 0.014 280);--text-dim:oklch(0.50 0.013 280);
+    --border:oklch(0.86 0.008 85);--border-soft:oklch(0.91 0.006 85);
+    --accent:oklch(0.50 0.155 55);--accent-bright:oklch(0.80 0.155 64);--accent-deep:oklch(0.42 0.150 52);--on-accent:oklch(0.985 0.010 85);
+    --pass:oklch(0.52 0.13 150);--warn:oklch(0.62 0.14 70);
+    --shadow:0 1px 0 color-mix(in oklab,var(--text) 4%,transparent),0 18px 40px -16px color-mix(in oklab,var(--text) 22%,transparent);
+    --eo:cubic-bezier(0.16,1,0.3,1);
+  }
+  [data-theme="dark"]{
+    --bg:oklch(0.16 0.009 275);--surface:oklch(0.205 0.009 275);--surface-2:oklch(0.185 0.009 275);
+    --text:oklch(0.96 0.006 275);--text-mid:oklch(0.78 0.010 275);--text-dim:oklch(0.60 0.013 275);
+    --border:oklch(0.30 0.008 275);--border-soft:oklch(0.26 0.008 275);
+    --accent:oklch(0.80 0.155 64);--accent-bright:oklch(0.86 0.140 70);--accent-deep:oklch(0.70 0.150 62);--on-accent:oklch(0.18 0.020 275);
+    --pass:oklch(0.74 0.150 152);--warn:oklch(0.80 0.130 75);
+  }
+  body{
+    background:var(--bg);color:var(--text);
+    font-family:'Inter',system-ui,-apple-system,sans-serif;
+    -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+    font-feature-settings:"cv11","ss01";
+    min-height:100vh;
+  }
+  .wrap{max-width:1100px;margin:0 auto;padding:60px clamp(20px,4vw,50px) 120px}
+
+  /* type scale */
+  .eyebrow{font-size:11px;font-weight:800;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);}
+  .display{font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:clamp(38px,5.4vw,64px);line-height:1.0;letter-spacing:-0.025em;color:var(--text);margin:14px 0 0;}
+  .lede{font-size:clamp(15px,1.25vw,18px);line-height:1.6;color:var(--text-mid);max-width:62ch;margin:18px 0 0;}
+  .lede strong{color:var(--text);font-weight:700;border-bottom:1.5px solid color-mix(in oklab,var(--accent) 50%,transparent);}
+  h2{font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:clamp(24px,3vw,32px);letter-spacing:-0.015em;color:var(--text);margin:0;}
+  h2 em{font-style:normal;color:var(--accent);}
+  .section-head{display:flex;align-items:baseline;justify-content:space-between;gap:18px;margin:90px 0 26px;padding-top:36px;border-top:1px solid var(--border);}
+  .section-num{font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:13px;color:var(--text-dim);letter-spacing:.06em;}
+  .panel{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:clamp(22px,2.4vw,30px);box-shadow:var(--shadow);}
+  .grid{display:grid;gap:clamp(18px,2vw,24px);}
+  .g-2{grid-template-columns:repeat(2,minmax(0,1fr));}
+  .g-3{grid-template-columns:repeat(3,minmax(0,1fr));}
+  .g-4{grid-template-columns:repeat(4,minmax(0,1fr));}
+  @media (max-width:780px){.g-4{grid-template-columns:repeat(2,1fr)}.g-3{grid-template-columns:1fr}}
+
+  /* logo lockup row */
+  .logos{display:flex;align-items:center;gap:48px;flex-wrap:wrap;padding:30px 0;}
+  .logo-cell{display:flex;flex-direction:column;align-items:center;gap:12px;}
+  .logo-svg{color:var(--accent);}
+  .logo-cap{font-size:10.5px;font-weight:700;letter-spacing:.13em;text-transform:uppercase;color:var(--text-dim);}
+  .ca-slash{opacity:0.55;}
+
+  /* color swatches */
+  .swatch{border:1px solid var(--border);border-radius:11px;overflow:hidden;display:flex;flex-direction:column;background:var(--surface);}
+  .swatch-fill{height:72px;border-bottom:1px solid var(--border-soft);}
+  .swatch-body{padding:12px 14px;font-size:12px;line-height:1.4;}
+  .swatch-name{font-weight:700;color:var(--text);font-size:12.5px;}
+  .swatch-val{color:var(--text-dim);font-family:ui-monospace,Menlo,Consolas,monospace;font-size:10.5px;margin-top:3px;}
+  .swatch-use{color:var(--text-mid);font-size:11px;margin-top:5px;}
+
+  /* type specimens */
+  .spec{padding:18px 0;border-bottom:1px solid var(--border-soft);}
+  .spec:last-child{border-bottom:0;}
+  .spec-tag{font-size:10.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text-dim);margin-bottom:8px;display:flex;gap:12px;align-items:baseline;}
+  .spec-tag b{color:var(--accent);font-weight:800;}
+  .specimen{margin:0;color:var(--text);}
+  .fraunces{font-family:'Fraunces',Georgia,serif;}
+  .inter{font-family:'Inter',sans-serif;}
+
+  /* type scale rows */
+  .ts-row{display:flex;align-items:baseline;gap:18px;padding:14px 0;border-bottom:1px solid var(--border-soft);}
+  .ts-row:last-child{border-bottom:0;}
+  .ts-tok{font-family:ui-monospace,Menlo,monospace;font-size:11.5px;color:var(--text-dim);width:62px;flex:none;}
+  .ts-size{font-family:ui-monospace,Menlo,monospace;font-size:11px;color:var(--text-dim);width:48px;flex:none;}
+  .ts-sample{flex:1;color:var(--text);}
+
+  /* hero numerals demo */
+  .hero-num{font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:clamp(110px,14vw,170px);line-height:1;letter-spacing:-0.03em;color:var(--text);}
+  .hero-num.lining{font-variant-numeric:lining-nums tabular-nums;font-feature-settings:"lnum","tnum";}
+  .hero-num.oldstyle{font-variant-numeric:oldstyle-nums;font-feature-settings:"onum";}
+  .hero-cap{display:block;margin-top:14px;font-family:Inter,sans-serif;font-weight:600;font-size:13.5px;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-dim);}
+
+  /* readiness instrument demo (the canonical hero pattern) */
+  .ri-card{position:relative;border:1px solid color-mix(in oklab,var(--accent) 26%,var(--border));border-radius:20px;padding:clamp(22px,2.6vw,30px);background:linear-gradient(180deg,var(--surface),var(--surface-2));box-shadow:var(--shadow);overflow:hidden;max-width:460px;}
+  .ri-card::before{content:"";position:absolute;inset:0;background:radial-gradient(120% 80% at 100% 0%,color-mix(in oklab,var(--accent) 9%,transparent),transparent 60%);pointer-events:none;}
+  .ri-eyebrow{position:relative;font-size:10.5px;font-weight:800;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);margin-bottom:14px;}
+  .ri-score{position:relative;display:flex;flex-direction:column;align-items:baseline;gap:0;font-variant-numeric:tabular-nums;}
+  .ri-num{display:block;font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:clamp(94px,11.5vw,140px);line-height:1;letter-spacing:-0.03em;color:var(--text);font-variant-numeric:lining-nums tabular-nums;font-feature-settings:"lnum","tnum";}
+  .ri-denom{display:block;margin-top:14px;font-family:Inter,sans-serif;font-weight:600;font-size:13.5px;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-dim);}
+  .ri-prob{position:relative;margin-top:12px;font-size:13px;color:var(--text-mid);}
+  .ri-prob b{color:var(--text);font-weight:700;}
+  .ri-bar{position:relative;margin-top:34px;height:12px;border-radius:99px;background:color-mix(in oklab,var(--text) 12%,transparent);overflow:visible;}
+  .ri-fill{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,var(--accent-deep),var(--accent));width:58%;}
+  .ri-mark{position:absolute;top:-7px;bottom:-7px;width:2px;background:var(--text-mid);border-radius:1px;left:80%;}
+  .ri-mark::after{content:"PASS 720";position:absolute;top:-17px;left:50%;transform:translateX(-50%);font:800 8px/1 Inter,sans-serif;letter-spacing:0.09em;color:var(--text-mid);white-space:nowrap;}
+  .ri-range{position:relative;margin-top:24px;display:flex;justify-content:space-between;align-items:baseline;font-size:12px;color:var(--text-dim);padding-top:14px;border-top:1px solid var(--border-soft);}
+  .ri-range b{color:var(--text);font-weight:700;font-variant-numeric:tabular-nums;}
+
+  /* buttons (component examples) */
+  .btn{display:inline-flex;align-items:center;gap:8px;font-family:Inter,sans-serif;font-weight:700;font-size:13px;letter-spacing:0;padding:11px 18px;border-radius:10px;cursor:pointer;transition:transform 0.15s var(--eo),filter 0.16s ease,background 0.16s ease,border-color 0.16s ease;}
+  .btn-primary{background:var(--accent);color:var(--bg);border:1px solid var(--accent-deep);}
+  .btn-ghost{background:none;color:var(--accent);border:1px solid color-mix(in oklab,var(--accent) 30%,transparent);}
+  .btn-outline{background:color-mix(in oklab,var(--accent) 5%,transparent);color:var(--accent);border:1px solid color-mix(in oklab,var(--accent) 30%,transparent);}
+  .btn:active{transform:scale(0.97);}
+  @media (hover:hover) and (pointer:fine){
+    .btn-primary:hover{filter:brightness(1.06);transform:translateY(-1px);}
+    .btn-ghost:hover,.btn-outline:hover{background:color-mix(in oklab,var(--accent) 11%,transparent);border-color:color-mix(in oklab,var(--accent) 48%,transparent);}
+  }
+
+  /* chips */
+  .chip{display:inline-flex;align-items:center;gap:7px;padding:8px 12px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text-mid);font-size:12.5px;font-weight:600;cursor:pointer;transition:background .15s ease,border-color .15s ease,color .15s ease;}
+  .chip.on{background:color-mix(in oklab,var(--accent) 14%,transparent);border-color:var(--accent);color:var(--accent);}
+  @media (hover:hover) and (pointer:fine){.chip:hover{border-color:color-mix(in oklab,var(--accent) 40%,var(--border));color:var(--text);}}
+
+  /* anti-slop do/don't */
+  .ds{display:grid;gap:18px;grid-template-columns:repeat(2,minmax(0,1fr));}
+  @media (max-width:680px){.ds{grid-template-columns:1fr}}
+  .ds-card{border:1px solid var(--border);border-radius:14px;padding:18px 20px;background:var(--surface);}
+  .ds-card.bad{border-color:color-mix(in oklab,var(--warn) 36%,var(--border));}
+  .ds-card.good{border-color:color-mix(in oklab,var(--pass) 32%,var(--border));}
+  .ds-tag{font-size:10.5px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;margin-bottom:8px;}
+  .ds-tag.bad{color:var(--warn);}
+  .ds-tag.good{color:var(--pass);}
+  .ds-body{font-size:13px;color:var(--text-mid);line-height:1.55;}
+
+  /* motion: entrance reveal */
+  .reveal-demo{opacity:0;transform:translateY(15px);transition:opacity .55s var(--eo),transform .55s var(--eo);}
+  body.is-in .reveal-demo{opacity:1;transform:none;}
+  .reveal-demo[data-d="1"]{transition-delay:0ms;}
+  .reveal-demo[data-d="2"]{transition-delay:60ms;}
+  .reveal-demo[data-d="3"]{transition-delay:120ms;}
+  .reveal-demo[data-d="4"]{transition-delay:180ms;}
+  @media (prefers-reduced-motion:reduce){
+    .reveal-demo{opacity:1;transform:none;transition:none;}
+    .btn,.btn:hover,.btn:active{transform:none!important;transition:none!important;}
+  }
+
+  /* footer / refs */
+  .refs{margin-top:60px;padding-top:30px;border-top:1px solid var(--border);font-size:12.5px;color:var(--text-dim);line-height:1.7;}
+  .refs code{font-family:ui-monospace,Menlo,monospace;font-size:11.5px;background:color-mix(in oklab,var(--accent) 8%,transparent);padding:1px 6px;border-radius:4px;color:var(--text-mid);}
+  .refs a{color:var(--accent);text-decoration:none;border-bottom:1px solid color-mix(in oklab,var(--accent) 40%,transparent);}
+  .refs a:hover{color:var(--accent-deep);}
+
+  /* theme toggle */
+  .toggle{position:fixed;top:18px;right:20px;z-index:9;display:flex;gap:8px;}
+  .toggle button{font:600 12px Inter,sans-serif;padding:8px 14px;border-radius:9px;border:1px solid var(--border);background:var(--surface);color:var(--text);cursor:pointer;transition:all .15s var(--eo);}
+  .toggle button:hover{border-color:var(--accent);color:var(--accent);}
+
+  /* print */
+  @media print{
+    body{background:#fff;color:#111;}
+    .toggle{display:none;}
+    .section-head{break-inside:avoid;}
+    .panel,.swatch,.ds-card,.ri-card{break-inside:avoid;}
+  }
+</style>
+</head>
+<body>
+
+<div class="toggle">
+  <button onclick="document.documentElement.setAttribute('data-theme',document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark')">Theme</button>
+  <button onclick="window.print()">Print</button>
+</div>
+
+<div class="wrap">
+
+  <!-- ────────── HERO ────────── -->
+  <header class="reveal-demo" data-d="1">
+    <div class="eyebrow">CertAnvil &middot; v5.5.12</div>
+    <h1 class="display">The forged-bronze<br>editorial system.</h1>
+    <p class="lede">The locked design language across the cert-app, the landing site, and the diagnostic flow. <strong>Hairlines over soft-shadow cards</strong>. <strong>Bronze, not purple</strong>. <strong>Restraint with purpose</strong>. The full written spec lives at <code>brand/BRAND.md</code>. The list of surfaces still to redesign lives at <code>brand/REDESIGN-TODO.md</code>.</p>
+  </header>
+
+  <!-- ────────── 1 · LOGO ────────── -->
+  <div class="section-head"><h2>The <em>C/A monogram</em>.</h2><span class="section-num">&sect; 01 &middot; logo</span></div>
+  <div class="panel reveal-demo" data-d="2">
+    <p class="lede" style="margin-top:0">Stylised <strong>C</strong> upper-left, diagonal slash through the centre, <strong>A</strong> lower-right. Stroke-only; theme-adaptive via <code style="font-family:ui-monospace,monospace;font-size:11.5px;background:color-mix(in oklab,var(--accent) 8%,transparent);padding:1px 6px;border-radius:4px">currentColor</code>. Source: <code style="font-family:ui-monospace,monospace;font-size:11.5px;background:color-mix(in oklab,var(--accent) 8%,transparent);padding:1px 6px;border-radius:4px">brand/logo.svg</code> + the runtime <code style="font-family:ui-monospace,monospace;font-size:11.5px;background:color-mix(in oklab,var(--accent) 8%,transparent);padding:1px 6px;border-radius:4px">brandSvg</code> in <code style="font-family:ui-monospace,monospace;font-size:11.5px;background:color-mix(in oklab,var(--accent) 8%,transparent);padding:1px 6px;border-radius:4px">app.js renderSidebar()</code>.</p>
+    <div class="logos">
+      <div class="logo-cell">
+        <svg class="logo-svg" viewBox="0 0 100 100" fill="none" width="32" height="32"><path class="ca-c" d="M58 12 C42 6, 16 16, 14 34 C12 52, 22 62, 42 64" stroke="currentColor" stroke-width="7" stroke-linecap="round"/><line class="ca-slash" x1="30" y1="84" x2="70" y2="16" stroke="currentColor" stroke-width="5" stroke-linecap="round"/><path class="ca-a" d="M46 88 L64 50 L82 88 M53 74 L75 74" stroke="currentColor" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span class="logo-cap">32px &middot; sidebar</span>
+      </div>
+      <div class="logo-cell">
+        <svg class="logo-svg" viewBox="0 0 100 100" fill="none" width="64" height="64"><path class="ca-c" d="M58 12 C42 6, 16 16, 14 34 C12 52, 22 62, 42 64" stroke="currentColor" stroke-width="7" stroke-linecap="round"/><line class="ca-slash" x1="30" y1="84" x2="70" y2="16" stroke="currentColor" stroke-width="5" stroke-linecap="round"/><path class="ca-a" d="M46 88 L64 50 L82 88 M53 74 L75 74" stroke="currentColor" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span class="logo-cap">64px &middot; auth/onboarding</span>
+      </div>
+      <div class="logo-cell">
+        <svg class="logo-svg" viewBox="0 0 100 100" fill="none" width="128" height="128"><path class="ca-c" d="M58 12 C42 6, 16 16, 14 34 C12 52, 22 62, 42 64" stroke="currentColor" stroke-width="7" stroke-linecap="round"/><line class="ca-slash" x1="30" y1="84" x2="70" y2="16" stroke="currentColor" stroke-width="5" stroke-linecap="round"/><path class="ca-a" d="M46 88 L64 50 L82 88 M53 74 L75 74" stroke="currentColor" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span class="logo-cap">128px &middot; marketing hero</span>
+      </div>
+    </div>
+    <div class="ds" style="margin-top:8px">
+      <div class="ds-card good"><div class="ds-tag good">&check; Do</div><div class="ds-body">Stroke-only. Bronze accent on both light + dark surfaces. Slash at <code style="font-family:ui-monospace,monospace;font-size:11px">opacity:0.55</code> so it reads as a quiet connector.</div></div>
+      <div class="ds-card bad"><div class="ds-tag bad">&times; Don&apos;t</div><div class="ds-body">Never fill the strokes. Never on purple/rainbow backgrounds. Never with drop-shadow or glow. Never recolor C and A independently.</div></div>
+    </div>
+  </div>
+
+  <!-- ────────── 2 · COLOR ────────── -->
+  <div class="section-head"><h2>The <em>palette</em>.</h2><span class="section-num">&sect; 02 &middot; color</span></div>
+  <p class="lede" style="margin-top:0">All tokens are <strong>OKLCH</strong> for perceptual uniformity. <strong>One accent</strong> (forged bronze) adapts per theme &mdash; deep on light, bright on dark. Never hardcode hex for chrome; use the tokens + <code style="font-family:ui-monospace,monospace;font-size:11.5px;background:color-mix(in oklab,var(--accent) 8%,transparent);padding:1px 6px;border-radius:4px">color-mix()</code> for tints, borders, shadows.</p>
+
+  <div class="grid g-4 reveal-demo" data-d="2" style="margin-top:24px">
+    <div class="swatch"><div class="swatch-fill" style="background:var(--bg)"></div><div class="swatch-body"><div class="swatch-name">--bg</div><div class="swatch-val">page background</div><div class="swatch-use">warm ivory (light) / deep charcoal-blue (dark)</div></div></div>
+    <div class="swatch"><div class="swatch-fill" style="background:var(--surface)"></div><div class="swatch-body"><div class="swatch-name">--surface</div><div class="swatch-val">card surface</div><div class="swatch-use">cards, panels, toasts</div></div></div>
+    <div class="swatch"><div class="swatch-fill" style="background:var(--surface-2)"></div><div class="swatch-body"><div class="swatch-name">--surface-2</div><div class="swatch-val">deeper surface</div><div class="swatch-use">gradient depth, alt rows</div></div></div>
+    <div class="swatch"><div class="swatch-fill" style="background:var(--accent)"></div><div class="swatch-body"><div class="swatch-name">--accent</div><div class="swatch-val">the one accent</div><div class="swatch-use">primary CTAs, focal elements</div></div></div>
+    <div class="swatch"><div class="swatch-fill" style="background:var(--accent-deep)"></div><div class="swatch-body"><div class="swatch-name">--accent-deep</div><div class="swatch-val">accent border</div><div class="swatch-use">filled-button borders</div></div></div>
+    <div class="swatch"><div class="swatch-fill" style="background:var(--accent-bright)"></div><div class="swatch-body"><div class="swatch-name">--accent-bright</div><div class="swatch-val">accent bright</div><div class="swatch-use">used in dark / icon highlights</div></div></div>
+    <div class="swatch"><div class="swatch-fill" style="background:var(--text)"></div><div class="swatch-body"><div class="swatch-name">--text</div><div class="swatch-val">primary ink</div><div class="swatch-use">headlines, key content</div></div></div>
+    <div class="swatch"><div class="swatch-fill" style="background:var(--text-mid)"></div><div class="swatch-body"><div class="swatch-name">--text-mid</div><div class="swatch-val">secondary ink</div><div class="swatch-use">body, sub-headlines</div></div></div>
+    <div class="swatch"><div class="swatch-fill" style="background:var(--text-dim)"></div><div class="swatch-body"><div class="swatch-name">--text-dim</div><div class="swatch-val">tertiary ink</div><div class="swatch-use">captions, eyebrows, meta</div></div></div>
+    <div class="swatch"><div class="swatch-fill" style="background:var(--border)"></div><div class="swatch-body"><div class="swatch-name">--border</div><div class="swatch-val">hairline</div><div class="swatch-use">card borders, dividers</div></div></div>
+    <div class="swatch"><div class="swatch-fill" style="background:var(--pass)"></div><div class="swatch-body"><div class="swatch-name">--pass</div><div class="swatch-val">semantic green</div><div class="swatch-use">success, passing</div></div></div>
+    <div class="swatch"><div class="swatch-fill" style="background:var(--warn)"></div><div class="swatch-body"><div class="swatch-name">--warn</div><div class="swatch-val">semantic amber</div><div class="swatch-use">caution, stale, near-fail</div></div></div>
+  </div>
+
+  <!-- ────────── 3 · TYPE ────────── -->
+  <div class="section-head"><h2>Two faces, <em>two jobs</em>.</h2><span class="section-num">&sect; 03 &middot; type</span></div>
+  <p class="lede" style="margin-top:0"><strong>Fraunces</strong> for editorial display &mdash; hero greetings, score figures, card titles. <strong>Inter</strong> for everything else &mdash; UI, body, eyebrows, buttons. Each has a specific job; never mix.</p>
+
+  <div class="grid g-2 reveal-demo" data-d="3" style="margin-top:24px">
+    <div class="panel">
+      <div class="spec">
+        <div class="spec-tag"><b>Fraunces</b> &middot; 600 &middot; the editorial display</div>
+        <p class="specimen fraunces" style="font-size:38px;line-height:1.05;font-weight:600;letter-spacing:-0.015em">Good afternoon, <span style="color:var(--accent)">Simi.</span></p>
+      </div>
+      <div class="spec">
+        <div class="spec-tag"><b>Fraunces</b> &middot; 600 &middot; section title</div>
+        <p class="specimen fraunces" style="font-size:23px;font-weight:600;letter-spacing:-0.015em">Where do you stand on <span style="font-style:italic">N10-009?</span></p>
+      </div>
+      <div class="spec">
+        <div class="spec-tag"><b>Fraunces</b> &middot; 600 &middot; card title</div>
+        <p class="specimen fraunces" style="font-size:18px;font-weight:600;letter-spacing:-0.01em">Take the Baseline Diagnostic</p>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="spec">
+        <div class="spec-tag"><b>Inter</b> &middot; 700-800 &middot; the UI workhorse</div>
+        <p class="specimen inter" style="font-size:14px;font-weight:700;color:var(--text)">Refresh to load the latest CertAnvil</p>
+        <p class="specimen inter" style="font-size:12px;color:var(--text-dim);margin-top:4px">A 14px/700 toast title sits on a 12px muted sub. Standard body type runs at 14px / 1.55-1.6 line-height.</p>
+      </div>
+      <div class="spec">
+        <div class="spec-tag"><b>Inter</b> &middot; 800 &middot; eyebrow / section label</div>
+        <p class="specimen inter" style="font-size:10.5px;font-weight:800;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent)">Exam readiness &middot; scaled 100-900</p>
+      </div>
+      <div class="spec">
+        <div class="spec-tag"><b>Inter</b> &middot; 600 &middot; small caption</div>
+        <p class="specimen inter" style="font-size:11.5px;color:var(--text-dim);letter-spacing:0.05em">range 448-596 &middot; pass mark 720</p>
+      </div>
+    </div>
+  </div>
+
+  <h3 style="font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:20px;letter-spacing:-0.01em;margin:36px 0 0">Type scale.</h3>
+  <p class="lede" style="margin-top:8px">Tokens on <code style="font-family:ui-monospace,monospace;font-size:11.5px;background:color-mix(in oklab,var(--accent) 8%,transparent);padding:1px 6px;border-radius:4px">#page-setup</code> (in <code style="font-family:ui-monospace,monospace;font-size:11.5px;background:color-mix(in oklab,var(--accent) 8%,transparent);padding:1px 6px;border-radius:4px">dg-system.css</code>) for the cert-app interior.</p>
+  <div class="panel" style="margin-top:16px">
+    <div class="ts-row"><span class="ts-tok">--t-1</span><span class="ts-size">12px</span><span class="ts-sample inter" style="font-size:12px">Caption &middot; small body</span></div>
+    <div class="ts-row"><span class="ts-tok">--t0</span><span class="ts-size">14px</span><span class="ts-sample inter" style="font-size:14px">Default body type runs at this size.</span></div>
+    <div class="ts-row"><span class="ts-tok">--t1</span><span class="ts-size">18px</span><span class="ts-sample fraunces" style="font-size:18px;font-weight:600">Card title (Fraunces)</span></div>
+    <div class="ts-row"><span class="ts-tok">--t2</span><span class="ts-size">23px</span><span class="ts-sample fraunces" style="font-size:23px;font-weight:600">Section title (Fraunces)</span></div>
+    <div class="ts-row"><span class="ts-tok">--t3</span><span class="ts-size">30px</span><span class="ts-sample fraunces" style="font-size:30px;font-weight:600">Page title (Fraunces)</span></div>
+    <div class="ts-row"><span class="ts-tok">--t4</span><span class="ts-size">42px</span><span class="ts-sample fraunces" style="font-size:42px;font-weight:600;letter-spacing:-0.015em">Hero display</span></div>
+  </div>
+
+  <!-- ────────── 4 · NUMERALS ────────── -->
+  <div class="section-head"><h2>Hero <em>numerals</em>.</h2><span class="section-num">&sect; 04 &middot; the v5.5.12 rule</span></div>
+  <p class="lede" style="margin-top:0">Any Fraunces hero number MUST force <code style="font-family:ui-monospace,monospace;font-size:11.5px;background:color-mix(in oklab,var(--accent) 8%,transparent);padding:1px 6px;border-radius:4px">lining-nums</code>. Old-style figures (Fraunces&apos;s default in some contexts) make <strong>5/7/9</strong> full-height with descenders while <strong>1/2/0</strong> sit at x-height &mdash; uneven heroes. <code style="font-family:ui-monospace,monospace;font-size:11.5px;background:color-mix(in oklab,var(--accent) 8%,transparent);padding:1px 6px;border-radius:4px">tabular-nums</code> alone only normalises width, not figure-style &mdash; they&apos;re independent axes. <strong>Always set both.</strong></p>
+
+  <div class="grid g-2 reveal-demo" data-d="3" style="margin-top:24px;align-items:end">
+    <div class="ds-card bad" style="display:flex;flex-direction:column;align-items:center;padding:30px;">
+      <div class="ds-tag bad">&times; Old-style (default)</div>
+      <p class="hero-num oldstyle" style="font-size:130px;margin:0">522</p>
+      <span class="hero-cap" style="margin-top:14px">5 tall &middot; 2s short</span>
+    </div>
+    <div class="ds-card good" style="display:flex;flex-direction:column;align-items:center;padding:30px;">
+      <div class="ds-tag good">&check; Lining-nums (forced)</div>
+      <p class="hero-num lining" style="font-size:130px;margin:0">522</p>
+      <span class="hero-cap" style="margin-top:14px">Uniform cap-height</span>
+    </div>
+  </div>
+  <pre style="margin-top:18px;padding:16px 18px;background:color-mix(in oklab,var(--accent) 5%,transparent);border:1px solid color-mix(in oklab,var(--accent) 20%,var(--border));border-radius:10px;font-family:ui-monospace,Menlo,monospace;font-size:12px;line-height:1.6;color:var(--text-mid);overflow-x:auto"><span style="color:var(--text-dim)">/* the locked rule */</span>
+<span style="color:var(--accent-deep)">font-variant-numeric</span>: lining-nums tabular-nums;  <span style="color:var(--text-dim)">/* modern */</span>
+<span style="color:var(--accent-deep)">font-feature-settings</span>: <span style="color:var(--accent)">"lnum"</span>, <span style="color:var(--accent)">"tnum"</span>;           <span style="color:var(--text-dim)">/* fallback */</span></pre>
+
+  <!-- ────────── 5 · THE READINESS INSTRUMENT ────────── -->
+  <div class="section-head"><h2>The <em>readiness instrument</em>.</h2><span class="section-num">&sect; 05 &middot; the canonical hero pattern</span></div>
+  <p class="lede" style="margin-top:0">The lockup that codifies the whole system: <strong>Fraunces hero number</strong> with <strong>lining-nums</strong>, an <strong>uppercase Inter caption</strong> below, a thin <strong>bronze bar</strong> with a pass-mark notch, a <strong>hairline footer row</strong>. Reuse this pattern for any hero figure across the system.</p>
+
+  <div class="ri-card reveal-demo" data-d="4" style="margin-top:24px">
+    <div class="ri-eyebrow">Exam readiness &middot; scaled 100&ndash;900</div>
+    <div class="ri-score">
+      <span class="ri-num">522</span>
+      <span class="ri-denom">out of 900</span>
+    </div>
+    <div class="ri-prob">Pass probability <b>1%</b> &middot; likely range 448&ndash;596</div>
+    <div class="ri-bar"><span class="ri-fill"></span><div class="ri-mark"></div></div>
+    <div class="ri-range"><span>range 448&ndash;596</span><span>pass mark <b>720</b></span></div>
+  </div>
+
+  <!-- ────────── 6 · COMPONENTS ────────── -->
+  <div class="section-head"><h2>The <em>component set</em>.</h2><span class="section-num">&sect; 06 &middot; buttons, chips, eyebrows</span></div>
+
+  <div class="panel reveal-demo" data-d="3" style="margin-top:0">
+    <h3 style="font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:18px;margin:0 0 14px">Buttons</h3>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center">
+      <button class="btn btn-primary">Take the diagnostic &rarr;</button>
+      <button class="btn btn-ghost">Skip for now</button>
+      <button class="btn btn-outline">Continue weak spots &rarr;</button>
+    </div>
+    <p class="lede" style="margin-top:14px;font-size:13px;color:var(--text-dim)">The <strong style="color:var(--accent)">primary</strong> is the single focal bronze fill per surface. The <strong>ghost</strong> is the editorial dismissal. The <strong>outline</strong> is a quiet primary (used inside rail cards like the Continue anchor). Press feedback (<code style="font-family:ui-monospace,monospace;font-size:11.5px">:active{scale(0.97)}</code>) on all three.</p>
+
+    <h3 style="font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:18px;margin:30px 0 14px">Chips</h3>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <span class="chip on">Mixed</span>
+      <span class="chip">Foundational</span>
+      <span class="chip">Exam Level</span>
+      <span class="chip">Hard</span>
+      <span class="chip">Subnetting &amp; IP</span>
+    </div>
+    <p class="lede" style="margin-top:14px;font-size:13px;color:var(--text-dim)">Default = surface + hairline + text-mid. Active (<code style="font-family:ui-monospace,monospace;font-size:11.5px">.on</code>) = accent-tinted bg + accent border + accent text.</p>
+
+    <h3 style="font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:18px;margin:30px 0 14px">Eyebrows</h3>
+    <div style="display:flex;gap:24px;flex-wrap:wrap">
+      <div><span class="eyebrow">Exam readiness</span><div style="font-size:11.5px;color:var(--text-dim);margin-top:4px">accent &middot; focal</div></div>
+      <div><span class="eyebrow" style="color:var(--text-dim)">Account</span><div style="font-size:11.5px;color:var(--text-dim);margin-top:4px">dim &middot; neutral</div></div>
+      <div><span class="eyebrow" style="color:var(--pass)">Passed</span><div style="font-size:11.5px;color:var(--text-dim);margin-top:4px">pass &middot; semantic</div></div>
+    </div>
+  </div>
+
+  <!-- ────────── 7 · ANTI-SLOP ────────── -->
+  <div class="section-head"><h2>The <em>anti-slop</em> rules.</h2><span class="section-num">&sect; 07 &middot; do / don&apos;t</span></div>
+  <p class="lede" style="margin-top:0">The locked do-not list. Every reskin enforces these &mdash; they&apos;re what separates the editorial system from generic-SaaS slop.</p>
+
+  <div class="ds reveal-demo" data-d="3" style="margin-top:24px">
+    <div class="ds-card bad"><div class="ds-tag bad">&times; Don&apos;t</div><div class="ds-body"><strong style="color:var(--text)">Purple buttons</strong>. <code style="font-family:ui-monospace,monospace;font-size:11px">#5b4fdb</code> / <code style="font-family:ui-monospace,monospace;font-size:11px">#7c6ff7</code> is the #1 AI-tell. Eliminated everywhere; the rebrand watched for fallback <code style="font-family:ui-monospace,monospace;font-size:11px">var(--accent2, #5b4fdb)</code> leaks specifically.</div></div>
+    <div class="ds-card good"><div class="ds-tag good">&check; Do</div><div class="ds-body"><strong style="color:var(--text)">One bronze accent</strong>, theme-adaptive. The single focal action per surface is the bronze fill; everything else is hairline-outlined or quiet ghost.</div></div>
+
+    <div class="ds-card bad"><div class="ds-tag bad">&times; Don&apos;t</div><div class="ds-body"><strong style="color:var(--text)">Emoji as decorative icons</strong>. The only emoji that survive are functional verdict marks (<code style="font-family:ui-monospace,monospace;font-size:11px">&check;</code> / <code style="font-family:ui-monospace,monospace;font-size:11px">&times;</code> / <code style="font-family:ui-monospace,monospace;font-size:11px">&rarr;</code>) where they carry semantic meaning.</div></div>
+    <div class="ds-card good"><div class="ds-tag good">&check; Do</div><div class="ds-body"><strong style="color:var(--text)">Monoline SVG icons</strong> for UI; <strong>brand-illustrative SVG</strong> (the orange flame, sync arrows) for character moments. Trim <code style="font-family:ui-monospace,monospace;font-size:11px">&lt;style&gt;</code> blocks before inlining &mdash; they leak globally.</div></div>
+
+    <div class="ds-card bad"><div class="ds-tag bad">&times; Don&apos;t</div><div class="ds-body"><strong style="color:var(--text)">Card-spam grids</strong>. 4+ identical soft-shadow cards in a row is the editorial-premium AI-tell. De-card to hairline rows or replace with real data-viz.</div></div>
+    <div class="ds-card good"><div class="ds-tag good">&check; Do</div><div class="ds-body"><strong style="color:var(--text)">Hairline editorial</strong>. Cards = surface + 1px border. The bronze focal NBM is the ONE filled card per surface; everything else is quiet.</div></div>
+
+    <div class="ds-card bad"><div class="ds-tag bad">&times; Don&apos;t</div><div class="ds-body"><strong style="color:var(--text)">Em-dashes</strong> (<code style="font-family:ui-monospace,monospace;font-size:11px">&mdash;</code>) in copy. <strong>Throat-clearing</strong> ("Here&apos;s what..." / "It&apos;s worth noting..."). <strong>Vague declaratives</strong> ("The implications are significant").</div></div>
+    <div class="ds-card good"><div class="ds-tag good">&check; Do</div><div class="ds-body"><strong style="color:var(--text)">Middle-dot</strong> (<code style="font-family:ui-monospace,monospace;font-size:11px">&middot;</code>) for separators. Active voice, specific copy, state directly. Every Analytics card must drive an action (Prescriptive &gt; Descriptive).</div></div>
+
+    <div class="ds-card bad"><div class="ds-tag bad">&times; Don&apos;t</div><div class="ds-body"><strong style="color:var(--text)">Hardcoded hex on chrome</strong>. Edit <code style="font-family:ui-monospace,monospace;font-size:11px">styles.css</code> for editorial reskins &mdash; the v4.54.x CSS guards assert legacy rules; touching styles.css forces UAT migrations.</div></div>
+    <div class="ds-card good"><div class="ds-tag good">&check; Do</div><div class="ds-body"><strong style="color:var(--text)">Tokens + <code style="font-family:ui-monospace,monospace;font-size:11px">color-mix()</code></strong>. Add scoped <code style="font-family:ui-monospace,monospace;font-size:11px">html[data-theme] body</code> overrides in <code style="font-family:ui-monospace,monospace;font-size:11px">dg-system.css</code> &mdash; not UAT-read, no migration, the v5.5.x pattern.</div></div>
+  </div>
+
+  <!-- ────────── 8 · MOTION ────────── -->
+  <div class="section-head"><h2>Motion <em>with purpose</em>.</h2><span class="section-num">&sect; 08 &middot; emil-design-eng</span></div>
+  <p class="lede" style="margin-top:0">Easing: <code style="font-family:ui-monospace,monospace;font-size:11.5px;background:color-mix(in oklab,var(--accent) 8%,transparent);padding:1px 6px;border-radius:4px">cubic-bezier(0.16, 1, 0.3, 1)</code>. Transform + opacity only (GPU). Never <code style="font-family:ui-monospace,monospace;font-size:11.5px;background:color-mix(in oklab,var(--accent) 8%,transparent);padding:1px 6px;border-radius:4px">scale(0)</code> &mdash; entrances start at <code style="font-family:ui-monospace,monospace;font-size:11.5px;background:color-mix(in oklab,var(--accent) 8%,transparent);padding:1px 6px;border-radius:4px">scale(0.96-0.98)</code>. <code style="font-family:ui-monospace,monospace;font-size:11.5px;background:color-mix(in oklab,var(--accent) 8%,transparent);padding:1px 6px;border-radius:4px">:active{scale(0.97)}</code> press on every clickable. Hover gated to fine pointers. Reduced-motion = fade only.</p>
+
+  <div class="panel reveal-demo" data-d="4" style="margin-top:24px">
+    <div class="grid g-2">
+      <div>
+        <h3 style="font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:18px;margin:0 0 14px">Durations</h3>
+        <div class="ts-row"><span class="ts-tok">150ms</span><span class="ts-size">btn</span><span class="ts-sample" style="font-size:13px">Hover/press &middot; UI responsiveness</span></div>
+        <div class="ts-row"><span class="ts-tok">200ms</span><span class="ts-size">card</span><span class="ts-sample" style="font-size:13px">Card lift, arrow nudge</span></div>
+        <div class="ts-row"><span class="ts-tok">360ms</span><span class="ts-size">toast</span><span class="ts-sample" style="font-size:13px">Toast entrance &middot; must announce</span></div>
+        <div class="ts-row"><span class="ts-tok">560ms</span><span class="ts-size">reveal</span><span class="ts-sample" style="font-size:13px">First-paint stagger</span></div>
+        <div class="ts-row"><span class="ts-tok">1100ms</span><span class="ts-size">bar</span><span class="ts-sample" style="font-size:13px">Data motion &middot; instrument-like</span></div>
+      </div>
+      <div>
+        <h3 style="font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:18px;margin:0 0 14px">Reveal stagger</h3>
+        <p style="font-size:13px;color:var(--text-mid);margin:0 0 10px;line-height:1.6">This page&apos;s sections demonstrate the entrance stagger (<code style="font-family:ui-monospace,monospace;font-size:11.5px">data-d</code> multiplied by 60ms). Refresh to replay.</p>
+        <button class="btn btn-ghost" onclick="document.body.classList.remove('is-in');void document.body.offsetWidth;document.body.classList.add('is-in');">Replay entrance</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ────────── 9 · IMPLEMENTATION ────────── -->
+  <div class="section-head"><h2>Implementation.</h2><span class="section-num">&sect; 09 &middot; files</span></div>
+  <div class="refs">
+    <p><strong style="color:var(--text)">Tokens</strong>: <code>dg-system.css</code> (top of file, both theme blocks; <code>#page-setup</code>-scoped extras at ~line 118).<br>
+    <strong style="color:var(--text)">Cert-app</strong>: <code>index.html</code> + <code>app.js</code> + <code>styles.css</code> (legacy, never edit for reskins) + <code>dg-system.css</code> (editorial overlay, loaded AFTER styles.css).<br>
+    <strong style="color:var(--text)">Landing</strong>: <code>landing/index.html</code> + <code>landing/dg-system.css</code> (separate Vercel project).<br>
+    <strong style="color:var(--text)">Logo</strong>: <code>brand/logo.svg</code> (standalone) + inline <code>brandSvg</code> in <code>app.js renderSidebar()</code>.<br>
+    <strong style="color:var(--text)">Mockups</strong>: <code>mockups/*-concept.html</code> &mdash; every feature/redesign is mockup-first (the concept-mockup-first workflow, approved across 14+ ships with zero revision rounds).<br><br>
+    <strong style="color:var(--text)">Spec</strong>: <a href="./BRAND.md">brand/BRAND.md</a> &mdash; the written rules.<br>
+    <strong style="color:var(--text)">Redesign-TODO</strong>: <a href="./REDESIGN-TODO.md">brand/REDESIGN-TODO.md</a> &mdash; surfaces still to do.<br>
+    <strong style="color:var(--text)">Version history</strong>: <code>CLAUDE.md</code> (the rebrand sprint v4.99.65 &rarr; v5.5.12, 60+ ships).</p>
+  </div>
+
+</div>
+
+<script>
+  /* IntersectionObserver-driven entrance reveal · matches the cert-app pattern.
+     Adds .is-in once the body settles, with a 1.6s safety net so any reveal
+     stuck hidden gets un-hidden no matter what. */
+  requestAnimationFrame(function(){requestAnimationFrame(function(){document.body.classList.add('is-in');});});
+  setTimeout(function(){document.body.classList.add('is-in');},1600);
+</script>
+</body>
+</html>
