@@ -49,12 +49,35 @@ test.beforeEach(async ({ page }) => {
       try {
         document.body && document.body.classList.add('is-pro-tier', 'is-state-resolved');
       } catch (_) {}
-      // Open the collapsed Custom Quiz <details> so chip-group tests work
+      // v5.5.6: the v4.43.4 GLOBAL force-open of #custom-quiz-section was
+      // REMOVED from here. v5.5.4 turned that section into a portal modal
+      // (position:fixed; inset:0; z-index:140; scroll-locked; reparented
+      // to <body>). Force-opening it for EVERY test then covered the whole
+      // viewport with a backdrop → the ~89 tests that don't touch the modal
+      // had their clicks intercepted → 30s actionability timeout + 1 retry
+      // each → the chromium suite ran for hours and the CI gate never went
+      // green (v5.5.4 + v5.5.5 never deployed as a result). The open is now
+      // SCOPED to only the describe blocks that exercise the modal's chip
+      // groups / Generate button (see openCustomQuizModal below).
+    });
+  });
+});
+
+// v5.5.6: scoped opener for the modal-dependent describe blocks. Same
+// mechanism as the old v4.43.4 global hook (set .open on DOMContentLoaded
+// → app.js _cqModalInit portals it + the dg-system.css [open] modal
+// styles apply) but applied ONLY where #topic-group / #diff-group /
+// #count-group / the Generate button are exercised, so the portal modal's
+// full-viewport backdrop never covers the page for tests that don't use
+// it. Each test gets a fresh page, so no teardown is needed.
+const openCustomQuizModal = async ({ page }) => {
+  await page.addInitScript(() => {
+    window.addEventListener('DOMContentLoaded', () => {
       const sec = document.getElementById('custom-quiz-section');
       if (sec) sec.open = true;
     });
   });
-});
+};
 
 test.describe('App Load & Setup Page', () => {
   test('loads and shows the setup page', async ({ page }) => {
@@ -311,6 +334,7 @@ test.describe('Data Export/Import', () => {
 });
 
 test.describe('Chip Selectors', () => {
+  test.beforeEach(openCustomQuizModal);
   test('topic chips are selectable', async ({ page }) => {
     await page.goto('/');
 
@@ -345,6 +369,7 @@ test.describe('Chip Selectors', () => {
 });
 
 test.describe('API Key Validation', () => {
+  test.beforeEach(openCustomQuizModal);
   // v4.99.36: these 2 tests originally asserted that the BYOK error fires for
   // empty / bad-format keys. v4.99.33 retargeted validateApiKey to skip the
   // check entirely for signed-in users (server proxy handles auth). Since the
@@ -355,7 +380,7 @@ test.describe('API Key Validation', () => {
   test('signed-in user with empty API key does NOT see BYOK error (v4.99.33 contract)', async ({ page }) => {
     await page.goto('/');
     await page.evaluate(() => localStorage.setItem('nplus_key', ''));
-    await page.locator('#page-setup button:has-text("Generate Quiz")').click();
+    await page.locator('#custom-quiz-section button:has-text("Generate Quiz")').click();
     // v4.99.33: error is suppressed for signed-in users (validateApiKey returns null).
     // Quiz generation will fail downstream because there's no real session, but
     // the BYOK gate doesn't fire — that's the contract under test.
@@ -370,7 +395,7 @@ test.describe('API Key Validation', () => {
       const el = document.getElementById('api-key');
       if (el) el.value = 'invalid-key-123';
     });
-    await page.locator('#page-setup button:has-text("Generate Quiz")').click();
+    await page.locator('#custom-quiz-section button:has-text("Generate Quiz")').click();
     const err = page.locator('#setup-err');
     await expect(err).not.toBeVisible({ timeout: 1500 });
   });
@@ -404,6 +429,7 @@ test.describe('Responsive Layout', () => {
 // ══════════════════════════════════════════
 
 test.describe('Default Chip Selections', () => {
+  test.beforeEach(openCustomQuizModal);
   test('Mixed topic is selected by default', async ({ page }) => {
     await page.goto('/');
     const mixedChip = page.locator('#topic-group .chip.on');
@@ -427,6 +453,7 @@ test.describe('Default Chip Selections', () => {
 });
 
 test.describe('Topic Chip Count', () => {
+  test.beforeEach(openCustomQuizModal);
   test('has topic chips including Mixed and Smart', async ({ page }) => {
     await page.goto('/');
     const chips = page.locator('#topic-group .chip');

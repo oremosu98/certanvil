@@ -18638,6 +18638,27 @@ test('v4.99.32 PlaywrightTriage: restores-API-key test reads localStorage instea
   // Tighten: match the actual await/value-read pattern, not the comment
   && !/test\(['"]restores API key from localStorage on reload['"][\s\S]{0,500}await[^.]*\.inputValue\(\)/.test(e2eSpec));
 
+// ── v5.5.6 — Playwright CI-hang tombstone (reuses e2eSpec above) ──
+// v5.5.4 turned #custom-quiz-section into a portal modal (position:fixed;
+// inset:0; z-index:140; scroll-locked; reparented to <body>). The v4.43.4
+// GLOBAL beforeEach force-opened that section on EVERY test, so post-v5.5.4
+// its full-viewport backdrop covered the page for the ~89 tests that don't
+// use it → clicks intercepted → 30s timeout + 1 retry each → the chromium
+// suite ran ~59 min then FAILED and the CI gate never went green (v5.5.4 +
+// v5.5.5 shipped via Vercel's independent build but left CI red). Fast-lane
+// tombstone so a re-introduction is caught HERE (pre-commit, seconds) not
+// after another hour of hung CI. Fix = the open is SCOPED via
+// openCustomQuizModal to only the describe blocks that exercise the modal.
+console.log('\n\x1b[1m── v5.5.6 — PLAYWRIGHT CI-HANG TOMBSTONE ──\x1b[0m');
+test('v5.5.6 CqHang: scoped openCustomQuizModal helper exists',
+  /const\s+openCustomQuizModal\s*=\s*async\s*\(\s*\{\s*page\s*\}\s*\)\s*=>/.test(e2eSpec));
+test('v5.5.6 CqHang: openCustomQuizModal applied to the modal-dependent describes (>=4 scoped beforeEach)',
+  (e2eSpec.match(/test\.beforeEach\(openCustomQuizModal\)/g) || []).length >= 4);
+test('v5.5.6 CqHang TOMBSTONE: GLOBAL beforeEach must NOT force-open #custom-quiz-section (the ~59-min CI-hang bug) — Pro-tier stub not immediately followed by an open',
+  !/is-state-resolved'\)[\s\S]{0,220}sec\.open\s*=\s*true/.test(e2eSpec));
+test('v5.5.6 CqHang TOMBSTONE: the old global-open comment line stays deleted',
+  !e2eSpec.includes('Open the collapsed Custom Quiz ' + '<details> so chip-group tests work'));
+
 // ── v4.99.33 — Signed-in users bypass BYOK check (PROD bug fix from iPhone tester) ──
 console.log('\n\x1b[1m── v4.99.33 — SIGNED-IN BYOK BYPASS ──\x1b[0m');
 
