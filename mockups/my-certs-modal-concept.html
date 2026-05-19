@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<!--
+  CertAnvil — "Your certifications" modal redesign concept. MOCKUP FOR
+  DISCUSSION. Not production. Self-contained. Fresh in the NOW-locked
+  bronze system (not the old my-certs-concept.html).
+
+  3 skills:
+   - taste-skill (warm-modern): the live modal is generic — purple
+     "Keep practicing/Resume" links + dark-navy cert tiles that fight
+     the brand. Rebuilt as a compact ECHO of the just-shipped account
+     §02 entitlements: the SAME cream/bronze glyph chip, the SAME
+     semantic status pills (passed=green, active=bronze), the SAME
+     bronze CTA + framed-panel card grammar. Cross-surface consistency
+     is the point — this modal lists the same certs as /account, so it
+     should read as the same product, not a different component. No
+     extra folder icons forced into a 2-row modal (the glyph chip IS
+     the icon — restraint, the §07 call again).
+   - stop-slop: kept the real functional sub (minimal-change discipline
+     for an auth-wired surface — the reskin is visual); no em-dashes.
+   - emil-design-eng: a modal is opened on demand (not every visit), so
+     a gentle scale+fade entrance is justified — custom easing,
+     transform/opacity only, reduced-motion path, scoped trigger. The
+     row CTA arrow slides on hover; calm, not flashy.
+
+  ⚠ CONTRACT: the modal is auth-wired. auth.js renderMyCertsList()
+  innerHTML-injects #my-certs-list rows (.my-cert-row/.my-cert-glyph/
+  .my-cert-info/.my-cert-name-row/.my-cert-name/.my-cert-status[
+  -passed|-attempted|-active]/.my-cert-code/.my-cert-cta + a per-cert
+  glyphClass); openMyCertsModal()/close toggle #my-certs-modal[hidden];
+  #dropdown-my-certs + ?modal=my-certs open it. So integration is a
+  scoped CSS-only reskin: the real modal DOM is preserved BYTE-FOR-BYTE
+  (every id/class incl. the JS-row classes). The only DOM change is the
+  scoped <style> (the #my-certs-modal id already exists as the scoping
+  root). The rows below are hand-written with the EXACT injected
+  classes/structure so the reskin transfers 1:1. auth.js untouched.
+-->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CertAnvil — my-certs modal concept</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:oklch(0.975 0.007 85);font-family:'Inter',system-ui,sans-serif;min-height:100vh}
+  body.dark{background:oklch(0.16 0.009 275)}
+  .faux{max-width:1100px;margin:70px auto;padding:0 24px;font-family:'Fraunces',serif;font-size:clamp(26px,5vw,52px);line-height:1.12;color:oklch(0.74 0.02 280);font-style:italic}
+  body.dark .faux{color:oklch(0.4 0.02 275)}
+  .toolbar{position:fixed;right:16px;bottom:16px;z-index:999}
+  .toolbar button{border:1px solid oklch(0.86 0.008 85);background:oklch(0.992 0.004 85);color:oklch(0.30 0.015 280);border-radius:8px;padding:8px 12px;cursor:pointer;font:600 12px/1 'Inter',sans-serif}
+  body.dark .toolbar button{border-color:oklch(0.30 0.008 275);background:oklch(0.205 0.009 275);color:oklch(0.9 0.006 275)}
+
+  /* ===== modal — scoped under #my-certs-modal ===== */
+  #my-certs-modal{
+    --bg:oklch(0.975 0.007 85);--surface:oklch(0.992 0.004 85);--surface-2:oklch(0.965 0.010 84);
+    --ink:oklch(0.22 0.015 280);--ink-soft:oklch(0.36 0.014 280);--muted:oklch(0.50 0.013 280);
+    --border:oklch(0.86 0.008 85);--border-soft:oklch(0.91 0.006 85);
+    --accent:oklch(0.50 0.155 55);--accent-bright:oklch(0.80 0.155 64);--accent-deep:oklch(0.42 0.150 52);--on-accent:oklch(0.985 0.010 85);
+    --pass:oklch(0.52 0.13 150);
+    --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;--eo:cubic-bezier(0.23,1,0.32,1);
+    position:fixed;inset:0;z-index:100;display:grid;place-items:center;padding:24px;
+    background:oklch(0.22 0.015 280 / .42);
+    -webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px);
+    font-family:'Inter',system-ui,-apple-system,sans-serif;-webkit-font-smoothing:antialiased;
+    animation:mcOverlay 220ms var(--eo);
+  }
+  body.dark #my-certs-modal{
+    --bg:oklch(0.16 0.009 275);--surface:oklch(0.205 0.009 275);--surface-2:oklch(0.185 0.009 275);
+    --ink:oklch(0.96 0.006 275);--ink-soft:oklch(0.78 0.010 275);--muted:oklch(0.60 0.013 275);
+    --border:oklch(0.30 0.008 275);--border-soft:oklch(0.26 0.008 275);
+    --accent:oklch(0.80 0.155 64);--accent-bright:oklch(0.86 0.140 70);--accent-deep:oklch(0.70 0.150 62);--on-accent:oklch(0.18 0.020 275);
+    --pass:oklch(0.74 0.150 152);
+    background:oklch(0.10 0.012 275 / .58);
+  }
+  @keyframes mcOverlay{from{opacity:0}to{opacity:1}}
+  #my-certs-modal *{box-sizing:border-box}
+
+  #my-certs-modal .my-certs-modal-card{
+    position:relative;width:min(100%,520px);
+    background:linear-gradient(180deg,var(--surface),var(--surface-2));
+    border:1px solid var(--border);border-radius:20px;
+    box-shadow:0 2px 4px oklch(0.22 0.015 280 / .06),0 40px 80px -28px oklch(0.22 0.015 280 / .42);
+    padding:26px clamp(22px,3vw,30px) 22px;
+    animation:mcCard 320ms var(--eo);
+  }
+  @keyframes mcCard{from{opacity:0;transform:translateY(10px) scale(0.98)}to{opacity:1;transform:none}}
+
+  #my-certs-modal .modal-close{
+    position:absolute;top:16px;right:16px;width:30px;height:30px;
+    display:grid;place-items:center;border:1px solid var(--border);border-radius:9px;
+    background:none;color:var(--muted);font-size:17px;line-height:1;cursor:pointer;
+    transition:color 180ms var(--eo),border-color 180ms var(--eo),background 180ms var(--eo);
+  }
+  @media (hover:hover){#my-certs-modal .modal-close:hover{color:var(--accent);border-color:color-mix(in oklab,var(--accent) 40%,var(--border))}}
+
+  #my-certs-modal .modal-title{font-family:'Fraunces',Georgia,serif;font-size:22px;font-weight:600;letter-spacing:-.015em;color:var(--ink);padding-right:40px}
+  #my-certs-modal .modal-sub{margin-top:7px;font-size:13px;line-height:1.55;color:var(--muted)}
+
+  #my-certs-modal .my-certs-list{margin-top:20px;border-top:1px solid var(--border)}
+
+  /* row — the auth.js-injected .my-cert-* structure, reskinned to the
+     account §02 entitlements grammar (cross-surface consistency) */
+  #my-certs-modal .my-cert-row{
+    display:grid;grid-template-columns:42px 1fr auto;align-items:center;gap:15px;
+    padding:17px 4px;border-bottom:1px solid var(--border-soft);
+    text-decoration:none;color:inherit;transition:background 170ms var(--eo);
+  }
+  #my-certs-modal .my-cert-row:last-child{border-bottom:0}
+  @media (hover:hover){#my-certs-modal .my-cert-row:hover{background:color-mix(in oklab,var(--accent) 4%,transparent)}}
+  #my-certs-modal .my-cert-glyph{
+    width:42px;height:42px;border-radius:11px;flex:none;display:grid;place-items:center;
+    font:800 13px var(--mono);
+    color:var(--accent-deep)!important;
+    background:color-mix(in oklab,var(--accent) 9%,transparent)!important;
+    border:1px solid color-mix(in oklab,var(--accent) 22%,transparent)!important;
+  }
+  body.dark #my-certs-modal .my-cert-glyph{color:var(--accent-bright)!important}
+  #my-certs-modal .my-cert-info{min-width:0}
+  #my-certs-modal .my-cert-name-row{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+  #my-certs-modal .my-cert-name{font-size:14.5px;font-weight:700;color:var(--ink)}
+  #my-certs-modal .my-cert-status{font-size:9.5px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;padding:3px 8px;border-radius:5px;color:var(--muted);border:1px solid var(--border)}
+  #my-certs-modal .my-cert-status-passed{color:var(--pass)!important;border-color:color-mix(in oklab,var(--pass) 42%,transparent)!important;background:color-mix(in oklab,var(--pass) 12%,transparent)!important}
+  #my-certs-modal .my-cert-status-active{color:var(--accent-deep)!important;border-color:color-mix(in oklab,var(--accent) 42%,transparent)!important;background:color-mix(in oklab,var(--accent) 12%,transparent)!important}
+  body.dark #my-certs-modal .my-cert-status-active{color:var(--accent-bright)!important}
+  #my-certs-modal .my-cert-status-attempted{color:var(--muted)!important;border-color:var(--border)!important}
+  #my-certs-modal .my-cert-code{margin-top:4px;font-size:11.5px;color:var(--muted);font-family:var(--mono)}
+  #my-certs-modal .my-cert-cta{
+    font-size:12.5px;font-weight:650;color:var(--accent)!important;white-space:nowrap;
+    display:inline-flex;align-items:center;gap:5px;
+  }
+  #my-certs-modal .my-cert-cta::after{content:"→";transition:transform 220ms var(--eo)}
+  @media (hover:hover){#my-certs-modal .my-cert-row:hover .my-cert-cta::after{transform:translateX(3px)}}
+
+  #my-certs-modal .my-certs-foot{margin-top:6px;padding-top:16px;border-top:1px solid var(--border);text-align:center}
+  #my-certs-modal .my-certs-foot-link{
+    display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:650;
+    color:var(--ink-soft)!important;text-decoration:none;transition:color 180ms var(--eo);
+  }
+  @media (hover:hover){#my-certs-modal .my-certs-foot-link:hover{color:var(--accent)!important}}
+
+  @media (prefers-reduced-motion:reduce){
+    #my-certs-modal,#my-certs-modal .my-certs-modal-card{animation:none!important}
+    #my-certs-modal .modal-close,#my-certs-modal .my-cert-row,#my-certs-modal .my-cert-cta::after,#my-certs-modal .my-certs-foot-link{transition:none!important}
+  }
+</style>
+</head>
+<body>
+
+<div class="faux">The page sits behind, dimmed. The modal is the one thing in focus.</div>
+
+<!-- ▼ verbatim production modal DOM (index.html 2627-2641). The 2 rows
+     are hand-written with the EXACT auth.js renderMyCertsList classes
+     so the scoped reskin transfers 1:1. Shown open (prod: [hidden] +
+     openMyCertsModal()). ▼ -->
+<div class="modal my-certs-modal" id="my-certs-modal" role="dialog" aria-labelledby="my-certs-modal-title" aria-modal="true">
+  <div class="modal-card my-certs-modal-card">
+    <button class="modal-close" type="button" id="my-certs-modal-close" aria-label="Close">×</button>
+    <h3 class="modal-title" id="my-certs-modal-title">Your certifications</h3>
+    <p class="modal-sub">Switch between certs, see status, or jump back into a session.</p>
+    <div class="my-certs-list" id="my-certs-list">
+      <a class="my-cert-row" href="/?cert=netplus">
+        <span class="my-cert-glyph cert-glyph-netplus">N+</span>
+        <div class="my-cert-info">
+          <div class="my-cert-name-row">
+            <span class="my-cert-name">Network+</span>
+            <span class="my-cert-status my-cert-status-passed">Passed</span>
+          </div>
+          <div class="my-cert-code">N10-009 · 767/900 · 2026-05-05</div>
+        </div>
+        <span class="my-cert-cta">Keep practicing</span>
+      </a>
+      <a class="my-cert-row" href="/?cert=secplus">
+        <span class="my-cert-glyph cert-glyph-secplus">S+</span>
+        <div class="my-cert-info">
+          <div class="my-cert-name-row">
+            <span class="my-cert-name">Security+</span>
+            <span class="my-cert-status my-cert-status-active">Active</span>
+          </div>
+          <div class="my-cert-code">SY0-701 · target exam 2026-07-29</div>
+        </div>
+        <span class="my-cert-cta">Resume</span>
+      </a>
+    </div>
+    <div class="my-certs-foot">
+      <a href="#certs" class="my-certs-foot-link" id="my-certs-browse-link">Browse all certs ↓</a>
+    </div>
+  </div>
+</div>
+
+<div class="toolbar"><button id="t-theme" type="button">Dark</button></div>
+
+<script>
+  /* mockup-only — prod keeps auth.js verbatim (open/close + render). */
+  document.getElementById('t-theme').addEventListener('click',function(){document.body.classList.toggle('dark');});
+  document.getElementById('my-certs-modal-close').addEventListener('click',function(){
+    document.getElementById('my-certs-modal').style.display='none';
+  });
+</script>
+</body>
+</html>
