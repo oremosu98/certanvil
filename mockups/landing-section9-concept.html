@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<!--
+  CertAnvil — Section 9 redesign concept (TOPBAR / the auth-wired header).
+  MOCKUP FOR DISCUSSION. Not production. Self-contained.
+
+  ⚠ SHAPE-OF-SOLUTION (read first — this surface is different):
+  The topbar is 100% auth/theme-wired. EVERY id is a JS contract:
+  auth.js drives sign-in-btn / account-pill / account-dropdown /
+  account-avatar / account-email-short / dropdown-email / dropdown-tier /
+  sign-out-link / dropdown-my-certs / dropdown-cross-cert-analytics;
+  script.js drives theme-toggle (flips <html data-theme>) + builder-pill.
+  Visibility is toggled via the `hidden` ATTRIBUTE, defended globally by
+  styles.css `[hidden]{display:none!important}`. The founding mistake of
+  this whole redesign was a topbar swap that broke account links.
+
+  So unlike sections 2–8 (fresh DOM + fresh .prefix-* classes), the
+  topbar redesign is a SCOPED CSS-ONLY RESKIN. The production topbar DOM
+  is preserved BYTE-FOR-BYTE below (every id / class / href / ARIA /
+  hidden-toggle / both theme-icon SVGs / the dropdown emoji spans). The
+  ONLY DOM change at integration is adding id="site-topbar" to
+  <header class="topbar"> as a pure CSS scoping root (no JS reads the
+  header element by id — zero functional change). All visual change is
+  #site-topbar-scoped CSS overriding styles.css. The bronze monogram is
+  done by overriding the inline stroke= presentation attributes (CSS
+  beats presentation attrs). Dropdown emoji are CSS-hidden for the
+  editorial look (auth.js never touches those spans). The
+  `[hidden]` toggle + the `[data-theme]` theme-icon swap are preserved.
+
+  Playbook:
+   - Phase 0 system REUSED verbatim (Fraunces+Inter, forged bronze, cool
+     ink, warm ivory, light+dark). Keep font + colour scheme; only the
+     blue/grey chrome is rebuilt on the locked bronze.
+   - taste-skill (warm-modern): the live topbar is generic grey chrome.
+     Reskinned to the editorial system — tokenised bronze monogram,
+     Fraunces wordmark, nav with the footer's underline-grow hover,
+     bronze sign-in CTA, a refined account pill + hairline framed
+     dropdown (the section-5/6/7 panel language), emoji stripped.
+   - emil-design-eng: a sticky topbar is seen every visit → NO entrance
+     animation (the emil "frequent = none" rule). Only hover/focus
+     micro-interactions + the dropdown open transition; reduced-motion
+     path. Calm chrome, never animated for its own sake.
+   - stop-slop: topbar copy is functional nav labels + auth-injected
+     text — nothing to rewrite; renaming nav would break wayfinding.
+
+  The toolbar buttons (Dark / Signed-in / Dropdown) are MOCKUP-ONLY —
+  they fake what auth.js/script.js do in prod so every state is
+  reviewable. None of that script ships.
+-->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CertAnvil — section 9 concept</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:oklch(0.975 0.007 85);font-family:'Inter',system-ui,sans-serif;min-height:220vh}
+  body.dark{background:oklch(0.16 0.009 275)}
+  .toolbar{position:fixed;right:16px;bottom:16px;z-index:999;display:flex;gap:8px}
+  .toolbar button{border:1px solid oklch(0.86 0.008 85);background:oklch(0.992 0.004 85);color:oklch(0.30 0.015 280);border-radius:8px;padding:8px 12px;cursor:pointer;font:600 12px/1 'Inter',sans-serif}
+  body.dark .toolbar button{border-color:oklch(0.30 0.008 275);background:oklch(0.205 0.009 275);color:oklch(0.9 0.006 275)}
+  .faux{max-width:1100px;margin:60px auto;padding:0 24px;font-family:'Fraunces',serif;font-size:clamp(28px,5vw,56px);line-height:1.1;color:oklch(0.7 0.02 280);font-style:italic}
+  body.dark .faux{color:oklch(0.4 0.02 275)}
+
+  /* ───────────── TOPBAR — scoped under #site-topbar ─────────────
+     CSS-ONLY reskin over the verbatim production DOM. Preserves
+     sticky/z-index/relative-inner/backdrop + the [hidden] toggle +
+     the [data-theme] icon swap; restyles appearance only. */
+  #site-topbar{
+    --bg:oklch(0.975 0.007 85);
+    --surface:oklch(0.992 0.004 85);
+    --surface-2:oklch(0.965 0.010 84);
+    --ink:oklch(0.22 0.015 280);
+    --ink-soft:oklch(0.36 0.014 280);
+    --muted:oklch(0.50 0.013 280);
+    --border:oklch(0.86 0.008 85);
+    --border-soft:oklch(0.91 0.006 85);
+    --accent:oklch(0.50 0.155 55);
+    --accent-bright:oklch(0.80 0.155 64);
+    --accent-deep:oklch(0.42 0.150 52);
+    --on-accent:oklch(0.985 0.010 85);
+    --topbar-bg:oklch(0.975 0.007 85 / .82);
+    --shadow-card:0 2px 4px oklch(0.22 0.015 280 / .05),0 30px 60px -24px oklch(0.22 0.015 280 / .28);
+    --eo:cubic-bezier(0.23,1,0.32,1);
+    position:sticky;top:0;z-index:50;
+    background:var(--topbar-bg);
+    backdrop-filter:blur(20px) saturate(1.4);-webkit-backdrop-filter:blur(20px) saturate(1.4);
+    border-bottom:1px solid var(--border-soft);
+    font-family:'Inter',system-ui,-apple-system,sans-serif;-webkit-font-smoothing:antialiased;
+  }
+  body.dark #site-topbar{
+    --bg:oklch(0.16 0.009 275);
+    --surface:oklch(0.205 0.009 275);--surface-2:oklch(0.185 0.009 275);
+    --ink:oklch(0.96 0.006 275);--ink-soft:oklch(0.78 0.010 275);--muted:oklch(0.60 0.013 275);
+    --border:oklch(0.30 0.008 275);--border-soft:oklch(0.26 0.008 275);
+    --accent:oklch(0.80 0.155 64);--accent-bright:oklch(0.86 0.140 70);
+    --accent-deep:oklch(0.70 0.150 62);--on-accent:oklch(0.18 0.020 275);
+    --topbar-bg:oklch(0.16 0.009 275 / .82);
+  }
+  #site-topbar *{box-sizing:border-box}
+  /* reinforce the toggle defense (the styles.css:13 contract) */
+  #site-topbar [hidden]{display:none!important}
+
+  #site-topbar .topbar-inner{
+    max-width:1180px;margin:0 auto;padding:15px clamp(20px,4vw,32px);
+    display:flex;align-items:center;justify-content:space-between;gap:16px;position:relative;
+  }
+
+  /* — logo: bronze monogram (override inline stroke=) + Fraunces word — */
+  #site-topbar .logo{display:flex;align-items:center;gap:11px;text-decoration:none}
+  #site-topbar .logo-mark{width:34px;height:34px;display:block;flex:none}
+  #site-topbar .logo-mark svg{width:100%;height:100%;display:block}
+  #site-topbar .logo-mark svg path{stroke:var(--accent)}
+  #site-topbar .logo-mark svg line{stroke:var(--muted)}
+  #site-topbar .logo-name{font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:20px;letter-spacing:-.01em;color:var(--ink)}
+  #site-topbar .builder-pill{
+    margin-left:8px;font-size:10.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;
+    color:var(--accent-deep);padding:3px 9px;border-radius:999px;
+    background:color-mix(in oklab,var(--accent) 10%,transparent);
+    border:1px solid color-mix(in oklab,var(--accent) 24%,transparent);
+  }
+  body.dark #site-topbar .builder-pill{color:var(--accent-bright)}
+
+  #site-topbar .topbar-nav{display:flex;align-items:center;gap:clamp(6px,1.4vw,16px)}
+  #site-topbar .nav-link{
+    position:relative;font-size:13.5px;font-weight:600;color:var(--ink-soft);text-decoration:none;
+    padding:8px 4px;border-radius:0;background:none;
+    transition:color 200ms var(--eo);
+  }
+  #site-topbar .nav-link::after{
+    content:"";position:absolute;left:4px;right:calc(100% - 4px);bottom:2px;height:1.5px;
+    background:var(--accent);transition:right 260ms var(--eo);
+  }
+  @media (hover:hover){
+    #site-topbar .nav-link:hover{color:var(--accent);background:none}
+    #site-topbar .nav-link:hover::after{right:4px}
+  }
+
+  /* — theme toggle: clean icon button (icon-swap left to its contract) — */
+  #site-topbar .theme-toggle{
+    display:grid;place-items:center;width:36px;height:36px;margin-left:4px;
+    border:1px solid var(--border);border-radius:10px;background:var(--surface);
+    color:var(--ink-soft);cursor:pointer;position:relative;
+    transition:color 200ms var(--eo),border-color 200ms var(--eo),background 200ms var(--eo);
+  }
+  @media (hover:hover){#site-topbar .theme-toggle:hover{color:var(--accent);border-color:color-mix(in oklab,var(--accent) 40%,var(--border))}}
+  #site-topbar .theme-toggle:focus-visible{outline:2px solid color-mix(in oklab,var(--accent) 55%,transparent);outline-offset:2px}
+  #site-topbar .theme-icon{position:absolute;width:17px;height:17px;transition:opacity 280ms var(--eo),transform 280ms var(--eo)}
+  /* preserve the [data-theme] swap (mockup mirrors it via body.dark) */
+  #site-topbar .theme-icon-sun{opacity:1;transform:rotate(0)}
+  #site-topbar .theme-icon-moon{opacity:0;transform:rotate(-90deg)}
+  body.dark #site-topbar .theme-icon-sun{opacity:0;transform:rotate(90deg)}
+  body.dark #site-topbar .theme-icon-moon{opacity:1;transform:rotate(0)}
+
+  /* — sign-in CTA: solid bronze (the page's primary action language) — */
+  #site-topbar .sign-in-btn{
+    font-family:'Inter',sans-serif;font-size:13.5px;font-weight:650;
+    color:var(--on-accent);background:var(--accent);border:1px solid var(--accent-deep);
+    padding:9px 18px;border-radius:10px;cursor:pointer;margin-left:6px;
+    transition:background 200ms var(--eo),transform 160ms var(--eo);
+  }
+  @media (hover:hover){#site-topbar .sign-in-btn:hover{background:var(--accent-deep)}}
+  #site-topbar .sign-in-btn:active{transform:translateY(1px)}
+  #site-topbar .sign-in-btn:focus-visible{outline:2px solid color-mix(in oklab,var(--accent) 55%,transparent);outline-offset:2px}
+
+  /* — account pill — */
+  #site-topbar .account-pill{
+    display:flex;align-items:center;gap:9px;cursor:pointer;margin-left:6px;
+    font-family:'Inter',sans-serif;
+    padding:5px 12px 5px 5px;border-radius:999px;
+    background:var(--surface);border:1px solid var(--border);
+    transition:border-color 200ms var(--eo),background 200ms var(--eo);
+  }
+  @media (hover:hover){#site-topbar .account-pill:hover{border-color:color-mix(in oklab,var(--accent) 40%,var(--border))}}
+  #site-topbar .account-pill.is-open{border-color:color-mix(in oklab,var(--accent) 45%,var(--border));background:color-mix(in oklab,var(--accent) 5%,var(--surface))}
+  #site-topbar .account-pill:focus-visible{outline:2px solid color-mix(in oklab,var(--accent) 55%,transparent);outline-offset:2px}
+  #site-topbar .account-avatar{
+    width:28px;height:28px;border-radius:50%;display:grid;place-items:center;flex:none;
+    font-size:12px;font-weight:700;color:var(--on-accent);
+    background:linear-gradient(150deg,var(--accent-bright),var(--accent));
+  }
+  #site-topbar .account-email-short{font-size:13px;font-weight:600;color:var(--ink-soft);max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  #site-topbar .account-chevron{font-size:10px;color:var(--muted);transition:transform 240ms var(--eo)}
+  #site-topbar .account-pill.is-open .account-chevron{transform:rotate(180deg)}
+
+  /* — account dropdown: the hairline framed-panel language — */
+  #site-topbar .account-dropdown{
+    position:absolute;top:calc(100% + 10px);right:clamp(20px,4vw,32px);z-index:60;
+    width:280px;
+    background:linear-gradient(180deg,var(--surface),var(--surface-2));
+    border:1px solid var(--border);border-radius:16px;box-shadow:var(--shadow-card);
+    overflow:hidden;
+    animation:stbDrop 240ms var(--eo);
+  }
+  @keyframes stbDrop{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:none}}
+  #site-topbar .dropdown-header{padding:16px 18px;border-bottom:1px solid var(--border)}
+  #site-topbar .dropdown-email{font-size:13.5px;font-weight:650;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  #site-topbar .dropdown-tier{font-size:12px;color:var(--muted);margin-top:3px}
+  #site-topbar .dropdown-link{
+    display:flex;align-items:center;gap:11px;
+    padding:11px 18px;font-size:13.5px;font-weight:550;color:var(--ink-soft);text-decoration:none;
+    transition:background 170ms var(--eo),color 170ms var(--eo);
+  }
+  #site-topbar .dropdown-link-icon{display:none}   /* emoji stripped — editorial; auth.js never touches these spans */
+  @media (hover:hover){#site-topbar .dropdown-link:hover{background:color-mix(in oklab,var(--accent) 6%,transparent);color:var(--accent)}}
+  #site-topbar .dropdown-divider{height:1px;background:var(--border);margin:6px 0}
+  #site-topbar .dropdown-link-danger{color:var(--muted)}
+  @media (hover:hover){#site-topbar .dropdown-link-danger:hover{background:color-mix(in oklab,var(--accent) 7%,transparent);color:var(--accent-deep)}}
+
+  @media (prefers-reduced-motion:reduce){
+    #site-topbar .nav-link::after,#site-topbar .theme-icon,#site-topbar .account-chevron,
+    #site-topbar .sign-in-btn,#site-topbar .account-pill,#site-topbar .theme-toggle{transition:none!important}
+    #site-topbar .account-dropdown{animation:none!important}
+  }
+</style>
+</head>
+<body>
+
+<!-- ▼▼▼ VERBATIM production topbar DOM (lines 102–166 of landing/index.html).
+     Only change: id="site-topbar" added to <header> as the scoping root. ▼▼▼ -->
+<header class="topbar" id="site-topbar">
+  <div class="topbar-inner">
+    <a class="logo" href="/" aria-label="CertAnvil home">
+      <span class="logo-mark" aria-hidden="true">
+        <svg viewBox="0 0 100 100" fill="none" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
+          <path d="M58 12 C42 6, 16 16, 14 34 C12 52, 22 62, 42 64" stroke="#b8860b" stroke-width="7" stroke-linecap="round"/>
+          <line x1="30" y1="84" x2="70" y2="16" stroke="#6a6a76" stroke-width="5" stroke-linecap="round"/>
+          <path d="M46 88 L64 50 L82 88 M53 74 L75 74" stroke="#b8860b" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </span>
+      <span class="logo-name">CertAnvil</span>
+      <span class="builder-pill" id="builder-pill" hidden>Builder</span>
+    </a>
+
+    <nav class="topbar-nav" aria-label="Primary navigation">
+      <a href="#why" class="nav-link">Why CertAnvil</a>
+      <a href="#certs" class="nav-link">Certs</a>
+      <a href="/pricing" class="nav-link">Pricing</a>
+      <button type="button" class="theme-toggle" id="theme-toggle" aria-label="Toggle light/dark theme" title="Toggle theme">
+        <svg class="theme-icon theme-icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="4"/>
+          <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>
+        </svg>
+        <svg class="theme-icon theme-icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+        </svg>
+      </button>
+
+      <!-- Sign-in CTA (hidden when signed in; toggled by auth.js) -->
+      <button type="button" class="sign-in-btn" id="sign-in-btn">Sign in</button>
+
+      <!-- Account pill (hidden when signed out; toggled by auth.js) -->
+      <button type="button" class="account-pill" id="account-pill" hidden aria-haspopup="menu" aria-expanded="false" aria-controls="account-dropdown">
+        <span class="account-avatar" id="account-avatar" aria-hidden="true">S</span>
+        <span class="account-email-short" id="account-email-short">simi.oremosu@…</span>
+        <span class="account-chevron" id="account-chevron" aria-hidden="true">▾</span>
+      </button>
+    </nav>
+
+    <!-- Account dropdown — positioned absolute relative to .topbar-inner -->
+    <div class="account-dropdown" id="account-dropdown" role="menu" aria-labelledby="account-pill" hidden>
+      <div class="dropdown-header">
+        <div class="dropdown-email" id="dropdown-email">simi.oremosu@hotmail.com</div>
+        <div class="dropdown-tier" id="dropdown-tier">● Free tier · Network+ unlocked</div>
+      </div>
+      <a href="/account" class="dropdown-link" role="menuitem" id="dropdown-account-settings">
+        <span class="dropdown-link-icon" aria-hidden="true">⚙️</span>
+        <span>Account settings</span>
+      </a>
+      <a href="#" class="dropdown-link" role="menuitem" id="dropdown-my-certs">
+        <span class="dropdown-link-icon" aria-hidden="true">🎓</span>
+        <span>My certs</span>
+      </a>
+      <a href="/analytics" class="dropdown-link" role="menuitem" id="dropdown-cross-cert-analytics">
+        <span class="dropdown-link-icon" aria-hidden="true">📊</span>
+        <span>Cross-cert analytics</span>
+      </a>
+      <div class="dropdown-divider" role="separator"></div>
+      <a href="#" class="dropdown-link dropdown-link-danger" id="sign-out-link" role="menuitem">
+        <span class="dropdown-link-icon" aria-hidden="true">↩</span>
+        <span>Sign out</span>
+      </a>
+    </div>
+  </div>
+</header>
+<!-- ▲▲▲ end verbatim production topbar DOM ▲▲▲ -->
+
+<div class="faux">Scroll — the bar stays, blurs the page beneath, and holds its hairline. Toolbar (bottom-right): preview signed-out / signed-in / dropdown / dark.</div>
+
+<div class="toolbar">
+  <button id="t-theme" type="button">Dark</button>
+  <button id="t-auth" type="button">Signed-in</button>
+  <button id="t-drop" type="button">Dropdown</button>
+</div>
+
+<script>
+  /* MOCKUP-ONLY — fakes auth.js/script.js so every state is reviewable.
+     None of this ships; prod keeps auth.js + script.js verbatim. */
+  (function(){
+    var signIn=document.getElementById('sign-in-btn');
+    var pill=document.getElementById('account-pill');
+    var drop=document.getElementById('account-dropdown');
+    var signedIn=false;
+    document.getElementById('t-theme').addEventListener('click',function(){document.body.classList.toggle('dark');});
+    document.getElementById('t-auth').addEventListener('click',function(){
+      signedIn=!signedIn;
+      if(signedIn){signIn.setAttribute('hidden','');pill.removeAttribute('hidden');}
+      else{signIn.removeAttribute('hidden');pill.setAttribute('hidden','');drop.setAttribute('hidden','');pill.classList.remove('is-open');}
+    });
+    document.getElementById('t-drop').addEventListener('click',function(){
+      if(!signedIn){document.getElementById('t-auth').click();}
+      var open=!drop.hasAttribute('hidden');
+      if(open){drop.setAttribute('hidden','');pill.classList.remove('is-open');pill.setAttribute('aria-expanded','false');}
+      else{drop.removeAttribute('hidden');pill.classList.add('is-open');pill.setAttribute('aria-expanded','true');}
+    });
+  })();
+</script>
+</body>
+</html>
