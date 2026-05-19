@@ -2819,11 +2819,37 @@ html[data-theme] body .sb-item:hover .sb-item-icon svg{color:var(--text)!importa
 /* ── Pro lock badge ── */
 html[data-theme] body .sb-item-lock{font-size:9px!important;font-weight:800!important;letter-spacing:0.1em!important;text-transform:uppercase!important;color:var(--accent)!important;opacity:0.7!important;background:none!important;border:0!important;border-radius:0!important;padding:0!important;}
 
-/* ── Streak footer ── */
+/* ── Streak footer · v5.5.8 redesign ──
+   Founder: the legacy element is "ugly" — styles.css .sb-streak is a dark
+   gradient pill (linear-gradient(135deg,#1e1b2e,#0f0c1b)) marooned in the
+   light hairline editorial sidebar (card-spam in a de-carded system). The
+   v4.99.86 rebrand only recoloured the num/label + hid the old flame; it
+   never de-carded the container. styles.css is left UNTOUCHED (the
+   v4.54.10 css guards 6448/6450/6452 read styles.css → stay green, no
+   migration) — this scoped block de-cards it to an editorial hairline
+   footer with the founder's brand flame. taste-skill; the v4.99.86
+   sidebar language. Beats styles.css via html[data-theme] body + later
+   source + !important (the established sidebar override pattern). */
+html[data-theme] body .sb-streak{display:flex!important;align-items:center!important;gap:13px!important;width:100%!important;text-align:left!important;background:none!important;border:0!important;border-top:1px solid var(--border)!important;border-radius:0!important;box-shadow:none!important;padding:16px 14px 14px!important;margin:0!important;color:var(--text)!important;cursor:pointer;}
+html[data-theme] body .sb-streak.sb-streak-empty{cursor:default;}
 html[data-theme] body .sb-streak .sb-streak-flame{display:none!important;}
-html[data-theme] body .sb-streak-num{color:var(--accent)!important;font-weight:800!important;}
-html[data-theme] body .sb-streak-label{color:var(--text-dim)!important;}
-html[data-theme] body .sb-streak-empty{color:var(--text-dim)!important;font-size:12px!important;}
+html[data-theme] body .sb-streak-ico{flex:none!important;width:30px!important;height:30px!important;display:grid!important;place-items:center!important;color:var(--accent)!important;filter:none!important;}
+html[data-theme] body .sb-streak-ico svg{width:26px!important;height:26px!important;}
+html[data-theme] body .sb-streak-text{display:flex!important;flex-direction:column!important;gap:2px!important;min-width:0!important;flex:1!important;}
+html[data-theme] body .sb-streak-top{display:flex!important;align-items:baseline!important;gap:7px!important;}
+html[data-theme] body .sb-streak-num{font-family:'Fraunces',Georgia,serif!important;font-size:26px!important;font-weight:600!important;line-height:1!important;letter-spacing:-0.02em!important;color:var(--accent)!important;}
+html[data-theme] body .sb-streak-label{font-family:Inter,-apple-system,sans-serif!important;font-size:10.5px!important;font-weight:800!important;letter-spacing:0.13em!important;text-transform:uppercase!important;color:var(--text-dim)!important;}
+html[data-theme] body .sb-streak-sub{font-size:11px!important;color:var(--text-dim)!important;font-variant-numeric:tabular-nums!important;}
+html[data-theme] body .sb-streak-sub b{color:var(--text-mid)!important;font-weight:650!important;}
+html[data-theme] body .sb-streak-empty{color:var(--text-dim)!important;}
+html[data-theme] body .sb-streak-empty .sb-streak-ico{color:var(--text-dim)!important;opacity:0.55!important;}
+html[data-theme] body .sb-streak-empty .sb-streak-core{fill:none!important;stroke:currentColor!important;opacity:0.6!important;}
+html[data-theme] body .sb-streak-empty-t{font-size:12.5px!important;font-weight:700!important;color:var(--text-mid)!important;}
+html[data-theme] body .sb-streak-empty-s{font-size:11px!important;color:var(--text-dim)!important;margin-top:2px!important;}
+html[data-theme] body .sb-streak.sb-streak-active{transition:background 0.16s ease,transform 0.14s ease!important;}
+@media (hover:hover) and (pointer:fine){html[data-theme] body .sb-streak.sb-streak-active:hover{background:color-mix(in oklab,var(--accent) 7%,transparent)!important;transform:none!important;box-shadow:none!important;}}
+html[data-theme] body .sb-streak.sb-streak-active:active{transform:scale(0.99)!important;box-shadow:none!important;}
+@media (prefers-reduced-motion:reduce){html[data-theme] body .sb-streak,html[data-theme] body .sb-streak.sb-streak-active{transition:none!important;transform:none!important;}}
 
 /* ── TOPBAR ── */
 html[data-theme] body #app-topbar{border-bottom:1px solid var(--border)!important;background:var(--bg)!important;}

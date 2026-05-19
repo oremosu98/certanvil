@@ -1,9 +1,9 @@
 // ══════════════════════════════════════════
-// Network+ AI Quiz — app.js  v5.5.7
+// Network+ AI Quiz — app.js  v5.5.8
 // ══════════════════════════════════════════
 
 // ── CONSTANTS ──
-const APP_VERSION = '5.5.7';
+const APP_VERSION = '5.5.8';
 // v4.99.45 (Phase 6b): expose APP_VERSION on window so the web-vitals
 // collector (lib/web-vitals-collector.js, loaded BEFORE app.js so its
 // PerformanceObservers attach earlier) can stamp this version onto every
@@ -19188,17 +19188,33 @@ function renderAppSidebar() {
   };
   // Streak badge in footer — reuses existing getStreak()
   let streakHtml = '';
+  // v5.5.8: founder's brand flame (07_study_streak.svg, trimmed —
+  // namespaced gradient, no <filter>/<title>/<style> so it is safe to
+  // inline: the OTHER flame's internal global .line/.orange CSS would
+  // leak). Outline rides currentColor (theme-adaptive); .sb-streak-core
+  // carries the brand orange (dg-system.css dims it in the empty state).
+  // One const, reused active + empty.
+  const streakFlameSvg = '<svg viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs><linearGradient id="sbStreakFlame" x1="22" y1="18" x2="106" y2="110" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#E27822"/><stop offset="1" stop-color="#C95500"/></linearGradient></defs><path d="M67 19c12 18-2 29 13 41 5 4 11 10 11 22 0 18-13 31-28 31S35 100 35 82c0-14 8-25 19-34 8-7 11-15 13-29z" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/><path class="sb-streak-core" d="M66 57c8 10-1 17 8 25 3 3 5 6 5 11 0 9-7 16-16 16s-16-7-16-16c0-8 5-14 11-19 5-5 7-9 8-17z" fill="url(#sbStreakFlame)" stroke="#C95500" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   try {
     const s = (typeof getStreak === 'function') ? getStreak() : { current: 0, best: 0 };
     if (s && s.current >= 1) {
+      const _best = (s && typeof s.best === 'number') ? s.best : 0;
+      const _streakSub = (_best > s.current) ? `Longest <b>${_best} days</b>` : 'Your best run yet';
       streakHtml = `<button type="button" class="sb-streak sb-streak-active" onclick="goSetup()" title="View full streak history">
+        <span class="sb-streak-ico" aria-hidden="true">${streakFlameSvg}</span>
         <span class="sb-streak-text">
-          <span class="sb-streak-num">${s.current}</span>
-          <span class="sb-streak-label">day streak</span>
+          <span class="sb-streak-top"><span class="sb-streak-num">${s.current}</span><span class="sb-streak-label">day streak</span></span>
+          <span class="sb-streak-sub">${_streakSub}</span>
         </span>
       </button>`;
     } else {
-      streakHtml = `<div class="sb-streak-empty">Take your first quiz to start a streak</div>`;
+      streakHtml = `<div class="sb-streak sb-streak-empty">
+        <span class="sb-streak-ico" aria-hidden="true">${streakFlameSvg}</span>
+        <span class="sb-streak-text">
+          <span class="sb-streak-empty-t">Start a streak</span>
+          <span class="sb-streak-empty-s">Take your first quiz today</span>
+        </span>
+      </div>`;
     }
   } catch (_) { streakHtml = ''; }
 

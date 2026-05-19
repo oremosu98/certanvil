@@ -9991,6 +9991,17 @@ test('v5.5.7 CertLeak: renderContinueCard cert-scopes loadHistory + loadWrongBan
   && /\(\s*loadWrongBank\(\)\s*\|\|\s*\[\]\)\.filter\(\s*w\s*=>\s*w\s*&&\s*_isCurrentCertTopic\(\s*w\.topic\s*\)\s*\)\.length/.test(js));
 test('v5.5.7 CertLeak: renderHeroV2 lede cert-scopes computeWeakSpotScores via _isCurrentCertTopic (the |\| [] form is unique vs buildSessionPlan)',
   /\(\s*computeWeakSpotScores\(\)\s*\|\|\s*\[\]\)\.filter\(\s*w\s*=>\s*w\s*&&\s*_isCurrentCertTopic\(\s*w\.topic\s*\)\s*\)/.test(js));
+// v5.5.8 — sidebar streak redesign (founder: legacy dark pill is "ugly").
+// styles.css .sb-streak UNTOUCHED (the v4.54.10 css guards 6448/6450/6452
+// stay green); the look is a scoped dg-system.css de-card (not UAT-read).
+// This guards the app.js render contract: the additive brand flame
+// (.sb-streak-ico via the namespaced sbStreakFlame SVG) + Longest sub +
+// the byte-exact preserved goSetup/.sb-streak-num/.sb-streak-label and the
+// .sb-streak-empty contract. Tombstones a revert to the bare old markup.
+test('v5.5.8 StreakRedesign: sidebar streak render = brand flame + Longest sub, contract (goSetup/.sb-streak-num/-label/-empty) preserved',
+  /const\s+streakFlameSvg\s*=\s*'<svg viewBox="0 0 128 128"[\s\S]{0,260}sbStreakFlame[\s\S]{0,400}sb-streak-core/.test(js)
+  && /class="sb-streak sb-streak-active" onclick="goSetup\(\)"[\s\S]{0,220}sb-streak-ico[\s\S]{0,220}sb-streak-num[\s\S]{0,140}sb-streak-label[\s\S]{0,140}sb-streak-sub/.test(js)
+  && /class="sb-streak sb-streak-empty"[\s\S]{0,220}sb-streak-ico[\s\S]{0,200}sb-streak-empty-t/.test(js));
 test('v4.76.0/dg4 HTML: 3 commitment groups (quick / practice / exam)',
   (html.match(/class="dgh-grp"/g) || []).length === 3 && html.includes('Quick &middot; 3-5 min') && html.includes('Practice &middot; 10-30 min') && html.includes('Exam simulation &middot; 60-90 min'));
 test('v4.76.0 HTML: Daily Challenge tile in Quick tier', html.includes('id="modes-dc-tile"'));
