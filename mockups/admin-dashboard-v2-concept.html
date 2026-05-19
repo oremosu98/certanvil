@@ -1,110 +1,91 @@
 <!DOCTYPE html>
+<!--
+  CertAnvil — Admin Dashboard redesign concept (v2). MOCKUP FOR
+  DISCUSSION. Not production. Self-contained. Fresh in the NOW-locked
+  bronze system (forget the prior admin-dashboard-concept.html).
+
+  3 skills:
+   - taste-skill (warm-modern): admin is the SIBLING of the account
+     page (<main class="account-page admin-page">). Rebuilt to the SAME
+     account-v2 grammar — bronze eyebrow + Fraunces title, de-carded
+     hairline §sections, a left icon rail, the shipped #site-topbar —
+     PLUS an editorial admin-table system: the 4 stats as ONE framed
+     divided STRIP (not 4 floating cards — the card-spam tell), tables
+     with uppercase-dim headers + hairline rows + mono data cells,
+     semantic role pill (admin=bronze, user=neutral). One icon per
+     SECTION head only (Users/Certs/Ships/Telemetry); none on stat
+     cells or table rows (restraint — the §07/my-certs call again).
+   - stop-slop: real admin.html copy kept verbatim (minimal-change
+     discipline for an auth-gated surface; the reskin is visual).
+   - emil-design-eng: owner sees this occasionally → one calm reveal,
+     micro-interactions only, reduced-motion path, scoped trigger.
+
+  ⚠ CONTRACT: admin is auth-gated + JS-populated. lib/admin.js gates
+  (#admin-loading/#admin-anon-gate/#admin-403-gate/#admin-content),
+  sets the #stat-* ids, and innerHTML-injects #users-tbody (rows:
+  td.mono + <span class="admin-role-pill admin|user">), #certs-tbody
+  (<strong>/td.mono/inline opacity:.65 on coming-soon), #ships-tbody;
+  auth.js drives the shared topbar. So integration is a scoped CSS-only
+  reskin: the real DOM is preserved BYTE-FOR-BYTE. Only additive
+  changes at integration: id="site-topbar" + id="admin-page" scoping
+  roots, the scoped <style>, a .acc-sec-ic span in each STATIC section
+  head. admin.js/auth.js untouched. The rows below are hand-written
+  with the EXACT injected classes so the reskin transfers 1:1.
+-->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Admin · CertAnvil</title>
-<meta name="description" content="CertAnvil owner-only admin dashboard.">
-<meta name="robots" content="noindex,nofollow">
-<link rel="icon" type="image/svg+xml" href="favicon.svg">
-<link rel="apple-touch-icon" href="favicon.svg">
-<link rel="stylesheet" href="styles.css">
-<link rel="stylesheet" href="dg-system.css?v=4.99.91">
-<script>
-(function() {
-  var theme = 'light';
-  try {
-    var saved = localStorage.getItem('certanvil_theme');
-    if (saved === 'light' || saved === 'dark') theme = saved;
-  } catch (e) {}
-  document.documentElement.setAttribute('data-theme', theme);
-})();
-</script>
-<script>
-(function() {
-  if (!('serviceWorker' in navigator)) return;
-  try { navigator.serviceWorker.register('/sw.js').catch(function () {}); } catch (e) {}
-  try {
-    navigator.serviceWorker.getRegistrations().then(function (regs) {
-      var hadController = !!navigator.serviceWorker.controller;
-      var pending = regs.map(function (r) { return r.unregister().catch(function () { return false; }); });
-      Promise.all(pending).then(function () {
-        if (hadController && !sessionStorage.getItem('_certanvil_sw_killed')) {
-          try { sessionStorage.setItem('_certanvil_sw_killed', '1'); } catch (e) {}
-          try { window.location.reload(); } catch (e) {}
-        }
-      });
-    });
-  } catch (e) {}
-})();
-</script>
-</head>
-<body class="account-body admin-body">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CertAnvil — admin dashboard concept v2</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:oklch(0.975 0.007 85);font-family:'Inter',system-ui,sans-serif}
+  body.dark{background:oklch(0.16 0.009 275)}
+  .toolbar{position:fixed;right:16px;bottom:16px;z-index:999}
+  .toolbar button{border:1px solid oklch(0.86 0.008 85);background:oklch(0.992 0.004 85);color:oklch(0.30 0.015 280);border-radius:8px;padding:8px 12px;cursor:pointer;font:600 12px/1 'Inter',sans-serif}
+  body.dark .toolbar button{border-color:oklch(0.30 0.008 275);background:oklch(0.205 0.009 275);color:oklch(0.9 0.006 275)}
 
-<!-- ══════════════════════════════════════════
-     ADMIN v2 — editorial reskin (taste-skill + stop-slop + emil),
-     the sibling of /account in the locked bronze system. SCOPED,
-     CONTRACT-SAFE: lib/admin.js gates (#admin-loading/#admin-anon-gate/
-     #admin-403-gate/#admin-content), sets #stat-* ids, innerHTML-
-     injects #users-tbody (.mono + .admin-role-pill admin|user) /
-     #certs-tbody / #ships-tbody; auth.js drives the shared topbar.
-     The real DOM is preserved byte-for-byte. Only additive: id="site-
-     topbar" + id="admin-page" scoping roots, this scoped <style>, a
-     .acc-sec-ic span in each STATIC section head, a scoped entrance
-     IIFE. admin.js/auth.js untouched. The #site-topbar block is the
-     already-shipped index.html block. [data-theme="dark"] matches the
-     prod theme system; fonts from the existing head.
-══════════════════════════════════════════ -->
-<style id="admx-styles">
+  /* ---- #site-topbar : the shipped block, verbatim (chrome consistency) ---- */
   #site-topbar{--bg:oklch(0.975 0.007 85);--surface:oklch(0.992 0.004 85);--surface-2:oklch(0.965 0.010 84);--ink:oklch(0.22 0.015 280);--ink-soft:oklch(0.36 0.014 280);--muted:oklch(0.50 0.013 280);--border:oklch(0.86 0.008 85);--border-soft:oklch(0.91 0.006 85);--accent:oklch(0.50 0.155 55);--accent-bright:oklch(0.80 0.155 64);--accent-deep:oklch(0.42 0.150 52);--on-accent:oklch(0.985 0.010 85);--topbar-bg:oklch(0.975 0.007 85 / .82);--eo:cubic-bezier(0.23,1,0.32,1);position:sticky;top:0;z-index:50;background:var(--topbar-bg);backdrop-filter:blur(20px) saturate(1.4);-webkit-backdrop-filter:blur(20px) saturate(1.4);border-bottom:1px solid var(--border-soft);font-family:'Inter',system-ui,-apple-system,sans-serif;-webkit-font-smoothing:antialiased}
-  [data-theme="dark"] #site-topbar{--bg:oklch(0.16 0.009 275);--surface:oklch(0.205 0.009 275);--surface-2:oklch(0.185 0.009 275);--ink:oklch(0.96 0.006 275);--ink-soft:oklch(0.78 0.010 275);--muted:oklch(0.60 0.013 275);--border:oklch(0.30 0.008 275);--border-soft:oklch(0.26 0.008 275);--accent:oklch(0.80 0.155 64);--accent-bright:oklch(0.86 0.140 70);--accent-deep:oklch(0.70 0.150 62);--on-accent:oklch(0.18 0.020 275);--topbar-bg:oklch(0.16 0.009 275 / .82)}
+  body.dark #site-topbar{--bg:oklch(0.16 0.009 275);--surface:oklch(0.205 0.009 275);--surface-2:oklch(0.185 0.009 275);--ink:oklch(0.96 0.006 275);--ink-soft:oklch(0.78 0.010 275);--muted:oklch(0.60 0.013 275);--border:oklch(0.30 0.008 275);--border-soft:oklch(0.26 0.008 275);--accent:oklch(0.80 0.155 64);--accent-bright:oklch(0.86 0.140 70);--accent-deep:oklch(0.70 0.150 62);--on-accent:oklch(0.18 0.020 275);--topbar-bg:oklch(0.16 0.009 275 / .82)}
   #site-topbar *{box-sizing:border-box}
   #site-topbar [hidden]{display:none!important}
   #site-topbar .topbar-inner{max-width:1180px;margin:0 auto;padding:15px clamp(20px,4vw,32px);display:flex;align-items:center;justify-content:space-between;gap:16px;position:relative}
   #site-topbar .logo{display:flex;align-items:center;gap:11px;text-decoration:none}
-  #site-topbar .logo-mark{width:34px;height:34px;display:block;flex:none;flex-shrink:0;background:none;border:0;border-radius:0;padding:0;box-shadow:none}
-  #site-topbar .logo-mark::before,#site-topbar .logo-mark::after{content:none!important}
+  #site-topbar .logo-mark{width:34px;height:34px;display:block;flex:none;background:none;border:0;border-radius:0;padding:0;box-shadow:none}
   #site-topbar .logo-mark svg{width:100%;height:100%;display:block;fill:none}
   #site-topbar .logo-mark svg path,#site-topbar .logo-mark svg line{fill:none}
   #site-topbar .logo-mark svg path{stroke:var(--accent)}
   #site-topbar .logo-mark svg line{stroke:var(--muted)}
   #site-topbar .logo-name{font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:20px;letter-spacing:-.01em;color:var(--ink)}
   #site-topbar .admin-suffix{font-family:'Inter',sans-serif;font-size:10.5px;font-weight:700;letter-spacing:.12em;color:var(--accent-deep);margin-left:2px}
-  [data-theme="dark"] #site-topbar .admin-suffix{color:var(--accent-bright)}
+  body.dark #site-topbar .admin-suffix{color:var(--accent-bright)}
   #site-topbar .topbar-nav{display:flex;align-items:center;gap:clamp(6px,1.4vw,16px)}
-  #site-topbar .nav-link{position:relative;font-size:13.5px;font-weight:600;color:var(--ink-soft);text-decoration:none;padding:8px 4px;border-radius:0;background:none;transition:color 200ms var(--eo)}
+  #site-topbar .nav-link{position:relative;font-size:13.5px;font-weight:600;color:var(--ink-soft);text-decoration:none;padding:8px 4px;background:none;transition:color 200ms var(--eo)}
   #site-topbar .nav-link::after{content:"";position:absolute;left:4px;right:calc(100% - 4px);bottom:2px;height:1.5px;background:var(--accent);transition:right 260ms var(--eo)}
-  @media (hover:hover){#site-topbar .nav-link:hover{color:var(--accent);background:none}#site-topbar .nav-link:hover::after{right:4px}}
-  #site-topbar .theme-toggle{display:grid;place-items:center;width:36px;height:36px;margin-left:4px;border:1px solid var(--border);border-radius:10px;background:var(--surface);color:var(--ink-soft);cursor:pointer;position:relative;transition:color 200ms var(--eo),border-color 200ms var(--eo),background 200ms var(--eo)}
-  @media (hover:hover){#site-topbar .theme-toggle:hover{color:var(--accent);border-color:color-mix(in oklab,var(--accent) 40%,var(--border))}}
-  #site-topbar .theme-toggle:focus-visible{outline:2px solid color-mix(in oklab,var(--accent) 55%,transparent);outline-offset:2px}
-  #site-topbar .theme-icon{position:absolute;width:17px;height:17px;transition:opacity 280ms var(--eo),transform 280ms var(--eo)}
-  #site-topbar .theme-icon-sun{opacity:1;transform:rotate(0)}
-  #site-topbar .theme-icon-moon{opacity:0;transform:rotate(-90deg)}
-  [data-theme="dark"] #site-topbar .theme-icon-sun{opacity:0;transform:rotate(90deg)}
-  [data-theme="dark"] #site-topbar .theme-icon-moon{opacity:1;transform:rotate(0)}
-  #site-topbar .sign-in-btn{font-family:'Inter',sans-serif;font-size:13.5px;font-weight:650;color:var(--on-accent);background:var(--accent);border:1px solid var(--accent-deep);padding:9px 18px;border-radius:10px;cursor:pointer;margin-left:6px;transition:background 200ms var(--eo),transform 160ms var(--eo)}
-  @media (hover:hover){#site-topbar .sign-in-btn:hover{background:var(--accent-deep)}}
-  #site-topbar .sign-in-btn:active{transform:translateY(1px)}
-  #site-topbar .account-pill{display:flex;align-items:center;gap:9px;cursor:pointer;margin-left:6px;font-family:'Inter',sans-serif;padding:5px 12px 5px 5px;border-radius:999px;background:var(--surface);border:1px solid var(--border);transition:border-color 200ms var(--eo),background 200ms var(--eo)}
-  @media (hover:hover){#site-topbar .account-pill:hover{border-color:color-mix(in oklab,var(--accent) 40%,var(--border))}}
-  #site-topbar .account-pill.is-open{border-color:color-mix(in oklab,var(--accent) 45%,var(--border));background:color-mix(in oklab,var(--accent) 5%,var(--surface))}
+  @media (hover:hover){#site-topbar .nav-link:hover{color:var(--accent)}#site-topbar .nav-link:hover::after{right:4px}}
+  #site-topbar .theme-toggle{display:grid;place-items:center;width:36px;height:36px;margin-left:4px;border:1px solid var(--border);border-radius:10px;background:var(--surface);color:var(--ink-soft);cursor:pointer;position:relative}
+  #site-topbar .theme-icon{position:absolute;width:17px;height:17px;transition:opacity 280ms var(--eo)}
+  #site-topbar .theme-icon-sun{opacity:1}#site-topbar .theme-icon-moon{opacity:0}
+  body.dark #site-topbar .theme-icon-sun{opacity:0}body.dark #site-topbar .theme-icon-moon{opacity:1}
+  #site-topbar .sign-in-btn{font-size:13.5px;font-weight:650;color:var(--on-accent);background:var(--accent);border:1px solid var(--accent-deep);padding:9px 18px;border-radius:10px;cursor:pointer;margin-left:6px}
+  #site-topbar .account-pill{display:flex;align-items:center;gap:9px;cursor:pointer;margin-left:6px;padding:5px 12px 5px 5px;border-radius:999px;background:var(--surface);border:1px solid var(--border)}
   #site-topbar .account-avatar{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;flex:none;font-size:12px;font-weight:700;color:var(--on-accent);background:linear-gradient(150deg,var(--accent-bright),var(--accent))}
   #site-topbar .account-email-short{font-size:13px;font-weight:600;color:var(--ink-soft);max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  #site-topbar .account-chevron{font-size:10px;color:var(--muted);transition:transform 240ms var(--eo)}
-  #site-topbar .account-pill.is-open .account-chevron{transform:rotate(180deg)}
-  #site-topbar .account-dropdown{position:absolute;top:calc(100% + 10px);right:clamp(20px,4vw,32px);z-index:60;width:280px;background:linear-gradient(180deg,var(--surface),var(--surface-2));border:1px solid var(--border);border-radius:16px;box-shadow:0 2px 4px oklch(0.22 0.015 280 / .05),0 30px 60px -24px oklch(0.22 0.015 280 / .28);overflow:hidden;animation:admxDrop 240ms var(--eo)}
-  @keyframes admxDrop{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:none}}
+  #site-topbar .account-chevron{font-size:10px;color:var(--muted)}
+  #site-topbar .account-dropdown{position:absolute;top:calc(100% + 10px);right:clamp(20px,4vw,32px);z-index:60;width:280px;background:linear-gradient(180deg,var(--surface),var(--surface-2));border:1px solid var(--border);border-radius:16px;box-shadow:0 2px 4px oklch(0.22 0.015 280 / .05),0 30px 60px -24px oklch(0.22 0.015 280 / .28);overflow:hidden}
   #site-topbar .dropdown-header{padding:16px 18px;border-bottom:1px solid var(--border)}
-  #site-topbar .dropdown-email{font-size:13.5px;font-weight:650;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  #site-topbar .dropdown-email{font-size:13.5px;font-weight:650;color:var(--ink)}
   #site-topbar .dropdown-tier{font-size:12px;color:var(--muted);margin-top:3px}
-  #site-topbar .dropdown-link{display:flex;align-items:center;gap:11px;padding:11px 18px;font-size:13.5px;font-weight:550;color:var(--ink-soft);text-decoration:none;transition:background 170ms var(--eo),color 170ms var(--eo)}
+  #site-topbar .dropdown-link{display:flex;align-items:center;gap:11px;padding:11px 18px;font-size:13.5px;font-weight:550;color:var(--ink-soft);text-decoration:none}
   #site-topbar .dropdown-link-icon{display:none}
-  @media (hover:hover){#site-topbar .dropdown-link:hover{background:color-mix(in oklab,var(--accent) 6%,transparent);color:var(--accent)}}
   #site-topbar .dropdown-divider{height:1px;background:var(--border);margin:6px 0}
   #site-topbar .dropdown-link-danger{color:var(--muted)}
-  @media (hover:hover){#site-topbar .dropdown-link-danger:hover{background:color-mix(in oklab,var(--accent) 7%,transparent);color:var(--accent-deep)}}
 
+  /* ---- #admin-page : account-v2 grammar + editorial admin tables ---- */
   #admin-page{
     --bg:oklch(0.975 0.007 85);--surface:oklch(0.992 0.004 85);--surface-2:oklch(0.965 0.010 84);
     --ink:oklch(0.22 0.015 280);--ink-soft:oklch(0.36 0.014 280);--muted:oklch(0.50 0.013 280);
@@ -118,7 +99,7 @@
     font-family:'Inter',system-ui,-apple-system,sans-serif;-webkit-font-smoothing:antialiased;
     padding:clamp(34px,6vh,64px) clamp(20px,4vw,56px) clamp(72px,12vh,120px);
   }
-  [data-theme="dark"] #admin-page{
+  body.dark #admin-page{
     --bg:oklch(0.16 0.009 275);--surface:oklch(0.205 0.009 275);--surface-2:oklch(0.185 0.009 275);
     --ink:oklch(0.96 0.006 275);--ink-soft:oklch(0.78 0.010 275);--muted:oklch(0.60 0.013 275);
     --border:oklch(0.30 0.008 275);--border-soft:oklch(0.26 0.008 275);
@@ -139,7 +120,7 @@
   #admin-page .account-title{font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:clamp(30px,4vw,46px);line-height:1.04;letter-spacing:-.02em;color:var(--ink)}
   #admin-page .account-subtitle{margin-top:12px;font-size:clamp(13.5px,1.05vw,15px);line-height:1.65;color:var(--ink-soft);max-width:64ch}
   #admin-page .acc-code{font-family:var(--mono);font-size:.86em;color:var(--accent-deep);background:color-mix(in oklab,var(--accent) 9%,transparent);border:1px solid color-mix(in oklab,var(--accent) 20%,transparent);border-radius:5px;padding:1px 6px}
-  [data-theme="dark"] #admin-page .acc-code{color:var(--accent-bright)}
+  body.dark #admin-page .acc-code{color:var(--accent-bright)}
   #admin-page .account-loading{display:flex;align-items:center;gap:10px;margin-top:48px;font-size:14px;color:var(--muted)}
   #admin-page .account-anon-gate{max-width:540px;margin:56px auto;text-align:center}
   #admin-page .anon-gate-icon{display:none}
@@ -148,17 +129,25 @@
   #admin-page .btn-primary-cta{display:inline-flex;align-items:center;gap:8px;font-size:14px;font-weight:650;color:var(--on-accent);background:var(--accent);border:1px solid var(--accent-deep);padding:11px 22px;border-radius:10px;text-decoration:none;margin-right:14px}
   #admin-page .btn-ghost-link{font-size:13.5px;font-weight:600;color:var(--ink-soft);text-decoration:none}
   @media (hover:hover){#admin-page .btn-ghost-link:hover{color:var(--accent)}}
-  #admin-page .admin-grid{margin-top:26px;display:grid;grid-template-columns:repeat(4,1fr);border:1px solid var(--border);border-radius:16px;overflow:hidden;background:linear-gradient(180deg,var(--surface),var(--surface-2));box-shadow:var(--shadow-soft)}
+
+  /* 4-stat hero → ONE framed divided strip (not 4 cards) */
+  #admin-page .admin-grid{
+    margin-top:26px;display:grid;grid-template-columns:repeat(4,1fr);
+    border:1px solid var(--border);border-radius:16px;overflow:hidden;
+    background:linear-gradient(180deg,var(--surface),var(--surface-2));box-shadow:var(--shadow-soft);
+  }
   #admin-page .admin-stat{padding:20px 22px;border-right:1px solid var(--border-soft)}
   #admin-page .admin-stat:last-child{border-right:0}
   #admin-page .admin-stat-label{font-size:10.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
   #admin-page .admin-stat-value{margin-top:8px;font-family:'Fraunces',Georgia,serif;font-size:26px;font-weight:600;color:var(--ink);letter-spacing:-.01em}
   #admin-page .admin-stat-value.admin-stat-mono{font-family:var(--mono);font-size:21px;font-weight:700}
   #admin-page .admin-stat-delta{margin-top:5px;font-size:11.5px;color:var(--muted)}
+
+  /* table sections — de-carded hairline editorial + left icon rail */
   #admin-page .admin-table-wrap{margin-top:clamp(40px,5vw,56px)}
   #admin-page .admin-table-head{display:grid;grid-template-columns:auto 1fr auto;align-items:center;column-gap:15px;padding-bottom:14px;border-bottom:1px solid var(--border)}
   #admin-page .acc-sec-ic{width:36px;height:36px;flex:none;border-radius:10px;background-color:#FFFBF3;border:1px solid var(--border);box-shadow:var(--shadow-soft);display:grid;place-items:center}
-  [data-theme="dark"] #admin-page .acc-sec-ic{background-color:#FFFBF3}
+  body.dark #admin-page .acc-sec-ic{background-color:#FFFBF3}
   #admin-page .acc-sec-ic img{width:28px;height:28px;display:block;object-fit:contain}
   #admin-page .admin-table-title{font-family:'Fraunces',Georgia,serif;font-size:clamp(20px,2.2vw,26px);font-weight:600;letter-spacing:-.02em;color:var(--ink)}
   #admin-page .admin-table-meta{font-size:11.5px;color:var(--muted);font-family:var(--mono);justify-self:end}
@@ -176,9 +165,11 @@
   #admin-page .admin-table-empty{text-align:center;color:var(--muted);padding:26px 14px!important;font-style:italic}
   #admin-page .admin-role-pill{display:inline-block;font-size:9.5px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;padding:3px 9px;border-radius:5px;color:var(--muted);border:1px solid var(--border)}
   #admin-page .admin-role-pill.admin{color:var(--accent-deep);border-color:color-mix(in oklab,var(--accent) 42%,transparent);background:color-mix(in oklab,var(--accent) 12%,transparent)}
-  [data-theme="dark"] #admin-page .admin-role-pill.admin{color:var(--accent-bright)}
+  body.dark #admin-page .admin-role-pill.admin{color:var(--accent-bright)}
   #admin-page .admin-table tbody tr td a{color:var(--accent);text-decoration:none;font-family:var(--mono);font-size:12px}
   @media (hover:hover){#admin-page .admin-table tbody tr td a:hover{text-decoration:underline;text-underline-offset:3px}}
+
+  /* §04 telemetry placeholder — de-carded hairline + icon rail */
   #admin-page .acc-section{margin-top:clamp(40px,5vw,56px)}
   #admin-page .admin-telemetry-placeholder{border:1px dashed var(--border);border-radius:16px;padding:24px clamp(20px,2.4vw,28px)}
   #admin-page .section-head{display:grid;grid-template-columns:auto 1fr;column-gap:15px;align-items:start}
@@ -187,6 +178,7 @@
   #admin-page .section-sub{grid-column:2;margin-top:9px;font-size:12.5px;line-height:1.55;color:var(--muted);max-width:64ch}
   #admin-page .section-head .acc-sec-ic{grid-row:1 / span 3;align-self:start}
   #admin-page .admin-placeholder-text{margin-top:16px;text-align:center;font-size:12.5px;font-style:italic;color:var(--muted)}
+
   #admin-page .acx-r{opacity:0;transform:translateY(14px);transition:opacity 560ms var(--eo),transform 560ms var(--eo)}
   #admin-page.acx-in .acx-r{opacity:1;transform:none}
   #admin-page.acx-in .acx-r[data-d="1"]{transition-delay:40ms}
@@ -201,9 +193,11 @@
   @media (prefers-reduced-motion:reduce){
     #admin-page .acx-r{transition:opacity 200ms ease!important;transform:none!important}
     #admin-page.acx-in .acx-r{transform:none!important}
-    #admin-page .admin-table-meta-link::after{transition:none!important}
+    #admin-page .admin-table-meta-link::after,#admin-page .admin-table tbody tr:hover td{transition:none!important}
   }
 </style>
+</head>
+<body>
 
 <header class="topbar" id="site-topbar">
   <div class="topbar-inner container">
@@ -217,45 +211,27 @@
       </span>
       <span class="logo-name">CertAnvil <span class="admin-suffix">· ADMIN</span></span>
     </a>
-
     <nav class="topbar-nav" aria-label="Admin navigation">
       <a href="#users" class="nav-link">Users</a>
       <a href="#certs" class="nav-link">Certs</a>
       <a href="#operations" class="nav-link">Ops</a>
       <a href="/account" class="nav-link">Back to account</a>
       <button type="button" class="theme-toggle" id="theme-toggle" aria-label="Toggle light/dark theme" title="Toggle theme">
-        <svg class="theme-icon theme-icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <circle cx="12" cy="12" r="4"/>
-          <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>
-        </svg>
-        <svg class="theme-icon theme-icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
-        </svg>
+        <svg class="theme-icon theme-icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+        <svg class="theme-icon theme-icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
       </button>
-
-      <button type="button" class="account-pill" id="account-pill" hidden aria-haspopup="menu" aria-expanded="false" aria-controls="account-dropdown">
-        <span class="account-avatar" id="account-avatar" aria-hidden="true">U</span>
-        <span class="account-email-short" id="account-email-short">you@…</span>
+      <button type="button" class="account-pill" id="account-pill" aria-haspopup="menu" aria-expanded="false" aria-controls="account-dropdown">
+        <span class="account-avatar" id="account-avatar" aria-hidden="true">S</span>
+        <span class="account-email-short" id="account-email-short">simi.oremosu@…</span>
         <span class="account-chevron" id="account-chevron" aria-hidden="true">▾</span>
       </button>
-
-      <button type="button" class="sign-in-btn" id="sign-in-btn">Sign in</button>
+      <button type="button" class="sign-in-btn" id="sign-in-btn" hidden>Sign in</button>
     </nav>
-
     <div class="account-dropdown" id="account-dropdown" role="menu" aria-labelledby="account-pill" hidden>
-      <div class="dropdown-header">
-        <div class="dropdown-email" id="dropdown-email">you@email.com</div>
-        <div class="dropdown-tier" id="dropdown-tier">● Free tier · Network+ unlocked</div>
-      </div>
-      <a href="/account" class="dropdown-link" role="menuitem">
-        <span class="dropdown-link-icon" aria-hidden="true">⚙️</span>
-        <span>Account settings</span>
-      </a>
+      <div class="dropdown-header"><div class="dropdown-email" id="dropdown-email">simi.oremosu@gmail.com</div><div class="dropdown-tier" id="dropdown-tier">● Pro tier · all certs</div></div>
+      <a href="/account" class="dropdown-link" role="menuitem"><span class="dropdown-link-icon" aria-hidden="true">⚙️</span><span>Account settings</span></a>
       <div class="dropdown-divider" role="separator"></div>
-      <a href="#" class="dropdown-link dropdown-link-danger" id="sign-out-link" role="menuitem">
-        <span class="dropdown-link-icon" aria-hidden="true">↩</span>
-        <span>Sign out</span>
-      </a>
+      <a href="#" class="dropdown-link dropdown-link-danger" id="sign-out-link" role="menuitem"><span class="dropdown-link-icon" aria-hidden="true">↩</span><span>Sign out</span></a>
     </div>
   </div>
 </header>
@@ -267,91 +243,41 @@
       <a href="/">Home</a> <span aria-hidden="true">·</span> <a href="/account">Account</a> <span aria-hidden="true">·</span> <span>Admin Dashboard</span>
     </nav>
 
-    <header class="account-pagehead">
+    <header class="account-pagehead acx-r" data-d="1">
       <div class="account-eyebrow admin-eyebrow">Admin</div>
       <h1 class="account-title">Dashboard</h1>
       <p class="account-subtitle">Owner-only operations + user management. Restricted by <code class="acc-code">role='admin'</code> in <code class="acc-code">profiles</code>.</p>
     </header>
 
-    <!-- Loading state -->
-    <div class="account-loading" id="admin-loading" aria-live="polite">
-      <span class="account-loading-spinner" aria-hidden="true"></span>
-      <span>Loading dashboard…</span>
-    </div>
+    <div class="admin-content" id="admin-content">
 
-    <!-- Anonymous gate -->
-    <div class="account-anon-gate" id="admin-anon-gate" hidden>
-      <div class="anon-gate-icon" aria-hidden="true"></div>
-      <h2>Sign in to access the admin dashboard</h2>
-      <p>This area is restricted to accounts with <code class="acc-code">role='admin'</code> in the <code class="acc-code">profiles</code> table.</p>
-      <a href="/?action=signin&return=https%3A%2F%2Fcertanvil.com%2Fadmin" class="btn-primary-cta">Sign in →</a>
-      <a href="/" class="btn-ghost-link">Back to home</a>
-    </div>
-
-    <!-- 403 — signed in but not admin -->
-    <div class="account-anon-gate admin-403" id="admin-403-gate" hidden>
-      <div class="anon-gate-icon" aria-hidden="true"></div>
-      <h2>Admin access required</h2>
-      <p>You're signed in, but your account doesn't have admin privileges. If this is a mistake, contact the CertAnvil owner.</p>
-      <a href="/account" class="btn-primary-cta">Back to my account →</a>
-      <a href="/" class="btn-ghost-link">Or back to home</a>
-    </div>
-
-    <!-- Admin content -->
-    <div class="admin-content" id="admin-content" hidden>
-
-      <!-- 4-stat hero grid -->
-      <div class="admin-grid" id="admin-stats">
-        <div class="admin-stat">
-          <div class="admin-stat-label">Total users</div>
-          <div class="admin-stat-value" id="stat-total-users">—</div>
-          <div class="admin-stat-delta" id="stat-total-users-delta">&nbsp;</div>
-        </div>
-        <div class="admin-stat">
-          <div class="admin-stat-label">Active this week</div>
-          <div class="admin-stat-value" id="stat-active-week">—</div>
-          <div class="admin-stat-delta" id="stat-active-week-delta">&nbsp;</div>
-        </div>
-        <div class="admin-stat">
-          <div class="admin-stat-label">Cert packs live</div>
-          <div class="admin-stat-value" id="stat-cert-packs">—</div>
-          <div class="admin-stat-delta" id="stat-cert-packs-delta">&nbsp;</div>
-        </div>
-        <div class="admin-stat">
-          <div class="admin-stat-label">App version</div>
-          <div class="admin-stat-value admin-stat-mono" id="stat-app-version">v—</div>
-          <div class="admin-stat-delta" id="stat-app-version-delta">&nbsp;</div>
-        </div>
+      <div class="admin-grid acx-r" data-d="2" id="admin-stats">
+        <div class="admin-stat"><div class="admin-stat-label">Total users</div><div class="admin-stat-value" id="stat-total-users">7</div><div class="admin-stat-delta" id="stat-total-users-delta">+7 this month</div></div>
+        <div class="admin-stat"><div class="admin-stat-label">Active this week</div><div class="admin-stat-value" id="stat-active-week">0</div><div class="admin-stat-delta" id="stat-active-week-delta">0% of all users</div></div>
+        <div class="admin-stat"><div class="admin-stat-label">Cert packs live</div><div class="admin-stat-value" id="stat-cert-packs">2</div><div class="admin-stat-delta" id="stat-cert-packs-delta">Network+ public · Security+ private</div></div>
+        <div class="admin-stat"><div class="admin-stat-label">App version</div><div class="admin-stat-value admin-stat-mono" id="stat-app-version">v5.5.0</div><div class="admin-stat-delta" id="stat-app-version-delta">live on networkplus.certanvil.com</div></div>
       </div>
 
-      <!-- §01 Users -->
-      <section class="admin-table-wrap" id="users">
+      <section class="admin-table-wrap acx-r" data-d="3" id="users">
         <header class="admin-table-head">
           <span class="acc-sec-ic" aria-hidden="true"><img src="assets/admin/users.svg" alt=""></span>
           <h2 class="admin-table-title">Users</h2>
-          <span class="admin-table-meta" id="users-table-meta">SELECT * FROM profiles</span>
+          <span class="admin-table-meta" id="users-table-meta">SELECT * FROM profiles · 7 rows</span>
         </header>
         <div class="admin-table-scroll">
           <table class="admin-table">
-            <thead>
-              <tr>
-                <th scope="col">Email</th>
-                <th scope="col">Role</th>
-                <th scope="col">Tier</th>
-                <th scope="col">Display name</th>
-                <th scope="col">Active cert</th>
-                <th scope="col">Last seen</th>
-              </tr>
-            </thead>
+            <thead><tr><th scope="col">Email</th><th scope="col">Role</th><th scope="col">Tier</th><th scope="col">Display name</th><th scope="col">Active cert</th><th scope="col">Last seen</th></tr></thead>
             <tbody id="users-tbody">
-              <!-- Populated by lib/admin.js -->
+              <tr><td class="mono">tester3@certanvil-playtest.com</td><td><span class="admin-role-pill user">User</span></td><td>Free</td><td>tester3</td><td>netplus</td><td class="mono">2026-05-09</td></tr>
+              <tr><td class="mono">tester1@certanvil-playtest.com</td><td><span class="admin-role-pill user">User</span></td><td>Free</td><td>tester1</td><td>netplus</td><td class="mono">2026-05-09</td></tr>
+              <tr><td class="mono">simi.oremosu@gmail.com</td><td><span class="admin-role-pill admin">Admin</span></td><td>Free</td><td>Simi</td><td>netplus</td><td class="mono">2026-05-09</td></tr>
+              <tr><td class="mono">simi_oremosu@hotmail.com</td><td><span class="admin-role-pill user">User</span></td><td>Free</td><td>simi_oremosu</td><td>netplus</td><td class="mono">2026-05-05</td></tr>
             </tbody>
           </table>
         </div>
       </section>
 
-      <!-- §02 Cert packs -->
-      <section class="admin-table-wrap" id="certs">
+      <section class="admin-table-wrap acx-r" data-d="3" id="certs">
         <header class="admin-table-head">
           <span class="acc-sec-ic" aria-hidden="true"><img src="assets/admin/certs.svg" alt=""></span>
           <h2 class="admin-table-title">Cert packs</h2>
@@ -359,24 +285,18 @@
         </header>
         <div class="admin-table-scroll">
           <table class="admin-table">
-            <thead>
-              <tr>
-                <th scope="col">Cert</th>
-                <th scope="col">Code</th>
-                <th scope="col">Visibility</th>
-                <th scope="col">Question bank</th>
-                <th scope="col">Status</th>
-              </tr>
-            </thead>
+            <thead><tr><th scope="col">Cert</th><th scope="col">Code</th><th scope="col">Visibility</th><th scope="col">Question bank</th><th scope="col">Status</th></tr></thead>
             <tbody id="certs-tbody">
-              <!-- Populated by lib/admin.js (static data for now — no DB-backed cert pack table yet) -->
+              <tr><td><strong>Network+</strong></td><td class="mono">N10-009</td><td>Public</td><td class="mono">320 exemplars</td><td>Live · public tile + auto-deploy</td></tr>
+              <tr><td><strong>Security+</strong></td><td class="mono">SY0-701</td><td>Private (admin-only)</td><td class="mono">77 exemplars + Phase 2 growing</td><td>Hidden tile · admin-only via role check</td></tr>
+              <tr style="opacity:.65"><td><strong>AZ-900</strong></td><td class="mono">AZ-900</td><td>Coming-soon tile</td><td class="mono">—</td><td>Notify-me CTA</td></tr>
+              <tr style="opacity:.65"><td><strong>Cisco CCNA</strong></td><td class="mono">200-301</td><td>Coming-soon tile</td><td class="mono">—</td><td>Notify-me CTA</td></tr>
             </tbody>
           </table>
         </div>
       </section>
 
-      <!-- §03 Recent ships -->
-      <section class="admin-table-wrap" id="operations">
+      <section class="admin-table-wrap acx-r" data-d="4" id="operations">
         <header class="admin-table-head">
           <span class="acc-sec-ic" aria-hidden="true"><img src="assets/admin/ships.svg" alt=""></span>
           <h2 class="admin-table-title">Recent ships</h2>
@@ -384,22 +304,17 @@
         </header>
         <div class="admin-table-scroll">
           <table class="admin-table">
-            <thead>
-              <tr>
-                <th scope="col">Commit</th>
-                <th scope="col">Message</th>
-                <th scope="col">Date</th>
-              </tr>
-            </thead>
+            <thead><tr><th scope="col">Commit</th><th scope="col">Message</th><th scope="col">Date</th></tr></thead>
             <tbody id="ships-tbody">
-              <tr><td colspan="3" class="admin-table-empty">Loading commits from GitHub…</td></tr>
+              <tr><td><a href="#">19e4612</a></td><td>Landing my-certs modal v2 — editorial reskin, scoped, zero DOM change</td><td class="mono">8m ago</td></tr>
+              <tr><td><a href="#">60e7df6</a></td><td>Landing account v2 — editorial reskin, scoped, contract-safe</td><td class="mono">53m ago</td></tr>
+              <tr><td><a href="#">2386c1d</a></td><td>Landing topbar v2 — editorial reskin, de-greyed, CSS-only over auth DOM</td><td class="mono">1h ago</td></tr>
             </tbody>
           </table>
         </div>
       </section>
 
-      <!-- §04 Telemetry placeholder -->
-      <section class="acc-section admin-telemetry-placeholder">
+      <section class="acc-section admin-telemetry-placeholder acx-r" data-d="4">
         <header class="section-head">
           <span class="acc-sec-ic" aria-hidden="true"><img src="assets/admin/telemetry.svg" alt=""></span>
           <div class="section-eyebrow">§04 Telemetry</div>
@@ -413,24 +328,15 @@
   </div>
 </main>
 
-<div class="toast-stack" id="toast-stack" aria-live="polite" aria-atomic="true"></div>
+<div class="toolbar"><button id="t-theme" type="button">Dark</button></div>
 
 <script>
-  /* Scoped entrance trigger only — no admin.js/auth.js contract.
-     admin.js owns #admin-content visibility; this just adds .acx-in
-     so the .acx-r reveals play when content appears. */
+  /* mockup-only — prod keeps auth.js + lib/admin.js verbatim. */
   (function(){
     var p=document.getElementById('admin-page');
-    if(!p)return;
-    if('IntersectionObserver' in window){
-      var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){p.classList.add('acx-in');io.disconnect();}});},{threshold:0.02});
-      io.observe(p);
-    } else { p.classList.add('acx-in'); }
+    if('IntersectionObserver' in window){var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){p.classList.add('acx-in');io.disconnect();}});},{threshold:0.02});io.observe(p);}else{p.classList.add('acx-in');}
+    document.getElementById('t-theme').addEventListener('click',function(){document.body.classList.toggle('dark');});
   })();
 </script>
-<script src="lib/supabase-umd.min.js"></script>
-<script src="lib/supabase.js"></script>
-<script src="auth.js"></script>
-<script src="lib/admin.js"></script>
 </body>
 </html>
