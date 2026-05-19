@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light" data-cert="secplus">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Home masthead v3 — concept · CertAnvil</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;550;600;650;700;800&display=swap" rel="stylesheet">
+<!-- ═══════════════════════════════════════════════════════════════════════
+     HOME · SECTION 1 — MASTHEAD  (v3 concept, "Mission Readout")
+
+     Full reimagining, section by section, in the locked forged-bronze
+     editorial system, routed taste-skill → dashboards. This section sets
+     the design language the rest of the Home inherits.
+
+     CONTRACT-FAITHFUL: reproduces the EXACT #page-setup masthead DOM +
+     every render-fn id (hero-v2-eyebrow/display/lede, rc-v2-num/tier/
+     prediction/bar-fill/delta/trajectory, hero-v2-cta + sub-ids,
+     mc-* stats, the .pass-proof / .secplus-private banners). The
+     reimagining is engineered to be achievable scoped-CSS-ONLY over the
+     preserved contract (the analytics-v3 lesson) — zero JS/DOM change at
+     integration. Toggle theme + cert (Net+/Sec+) top-right.
+
+     DISCUSSION ONLY — not an integration. Sign off before I build it.
+═══════════════════════════════════════════════════════════════════════ -->
+<style>
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+
+  /* ════════════════════════════════════════════════════════════════
+     #page-setup — scoped forged-bronze editorial system
+     (locked Phase 0 OKLCH tokens; cert + theme aware)
+  ════════════════════════════════════════════════════════════════ */
+  #page-setup{
+    --bg:oklch(0.975 0.007 85);--surface:oklch(0.992 0.004 85);--surface-2:oklch(0.965 0.010 84);
+    --ink:oklch(0.22 0.015 280);--ink-soft:oklch(0.36 0.014 280);--muted:oklch(0.50 0.013 280);
+    --border:oklch(0.86 0.008 85);--border-soft:oklch(0.91 0.006 85);
+    --accent:oklch(0.50 0.155 55);--accent-bright:oklch(0.80 0.155 64);--accent-deep:oklch(0.42 0.150 52);--on-accent:oklch(0.985 0.010 85);
+    --pass:oklch(0.52 0.13 150);--warn:oklch(0.62 0.14 70);
+    --shadow-soft:0 1px 0 rgba(255,255,255,.55),0 18px 38px -18px oklch(0.22 0.015 280 / .20);
+    --shadow-card:0 2px 4px oklch(0.22 0.015 280 / .05),0 30px 60px -24px oklch(0.22 0.015 280 / .26);
+    --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;--eo:cubic-bezier(0.23,1,0.32,1);
+    display:block;background:var(--bg);color:var(--ink);min-height:100vh;
+    font-family:'Inter',system-ui,-apple-system,sans-serif;-webkit-font-smoothing:antialiased;
+    padding:clamp(26px,4.5vh,46px) clamp(20px,4vw,56px) clamp(60px,10vh,110px);
+  }
+  [data-theme="dark"] #page-setup{
+    --bg:oklch(0.16 0.009 275);--surface:oklch(0.205 0.009 275);--surface-2:oklch(0.185 0.009 275);
+    --ink:oklch(0.96 0.006 275);--ink-soft:oklch(0.78 0.010 275);--muted:oklch(0.60 0.013 275);
+    --border:oklch(0.30 0.008 275);--border-soft:oklch(0.26 0.008 275);
+    --accent:oklch(0.80 0.155 64);--accent-bright:oklch(0.86 0.140 70);--accent-deep:oklch(0.70 0.150 62);--on-accent:oklch(0.18 0.020 275);
+    --pass:oklch(0.74 0.150 152);--warn:oklch(0.80 0.130 75);
+    --shadow-soft:0 1px 0 rgba(255,255,255,.04),0 20px 40px -18px rgba(0,0,0,.55);
+    --shadow-card:0 2px 4px rgba(0,0,0,.3),0 32px 60px -24px rgba(0,0,0,.62);
+  }
+  #page-setup *{box-sizing:border-box}
+  #page-setup .ch-wrap{max-width:1140px;margin:0 auto}
+
+  /* ── cert status ribbon (was .pass-proof / .secplus-private banner) ── */
+  #page-setup .pass-proof-banner,#page-setup .secplus-private-banner{
+    display:flex;align-items:center;gap:11px;width:fit-content;max-width:100%;
+    margin:0 auto 26px;padding:8px 16px 8px 12px;border-radius:999px;
+    font-size:12.5px;color:var(--ink-soft);
+    background:color-mix(in oklab,var(--accent) 6%,var(--surface));
+    border:1px solid color-mix(in oklab,var(--accent) 22%,var(--border));
+  }
+  #page-setup[data-cert="secplus"] .pass-proof-banner{display:none}
+  #page-setup:not([data-cert="secplus"]) .secplus-private-banner{display:none}
+  #page-setup .pass-proof-icon,#page-setup .secplus-private-icon{
+    display:grid;place-items:center;width:22px;height:22px;border-radius:50%;flex:none;
+    color:var(--on-accent);background:var(--accent);
+  }
+  #page-setup .pass-proof-icon svg,#page-setup .secplus-private-icon svg{width:13px;height:13px}
+  #page-setup .pass-proof-text strong,#page-setup .secplus-private-text strong{color:var(--ink);font-weight:700}
+  #page-setup .pass-proof-text em,#page-setup .secplus-private-text em{font-style:normal;color:var(--accent-deep);font-weight:600}
+  [data-theme="dark"] #page-setup .pass-proof-text em,[data-theme="dark"] #page-setup .secplus-private-text em{color:var(--accent-bright)}
+
+  /* ── masthead grid: editorial hero + the readiness instrument ── */
+  #page-setup .home-grid{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(340px,0.85fr);gap:clamp(24px,3.4vw,46px);align-items:start}
+  #page-setup .col-main,#page-setup .col-side{display:flex;flex-direction:column;gap:clamp(16px,2vw,22px);min-width:0}
+
+  /* hero — the editorial voice */
+  #page-setup .ch-hero{padding:6px 0 4px}
+  #page-setup .hero-date{font-size:12px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);margin-bottom:16px;display:flex;align-items:center;gap:11px}
+  #page-setup .hero-date::after{content:"";height:1px;flex:1;max-width:120px;background:linear-gradient(90deg,var(--accent),transparent)}
+  #page-setup .hero-greet{font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:clamp(34px,5vw,58px);line-height:1.0;letter-spacing:-.025em;color:var(--ink);margin:0}
+  #page-setup .hero-greet .name{color:var(--accent)}
+  [data-theme="dark"] #page-setup .hero-greet .name{color:var(--accent-bright)}
+  #page-setup .hero-body{margin:20px 0 0;font-size:clamp(15px,1.25vw,17px);line-height:1.6;color:var(--ink-soft);max-width:46ch}
+  #page-setup .hero-body strong{color:var(--ink);font-weight:700;border-bottom:2px solid color-mix(in oklab,var(--accent) 40%,transparent)}
+
+  /* the stat row → quiet inline readouts (de-carded, dashboards: no metric-card spam) */
+  #page-setup .stat-row{display:flex;gap:0;border:1px solid var(--border);border-radius:14px;overflow:hidden;background:linear-gradient(180deg,var(--surface),var(--surface-2))}
+  #page-setup .stat-card{flex:1;padding:16px 20px}
+  #page-setup .stat-card+.stat-card{border-left:1px solid var(--border-soft)}
+  #page-setup .stat-label{font-size:10.5px;font-weight:800;letter-spacing:.13em;text-transform:uppercase;color:var(--muted)}
+  #page-setup .stat-big{font-family:'Fraunces',Georgia,serif;font-size:26px;font-weight:600;color:var(--ink);margin-top:7px;letter-spacing:-.01em}
+  #page-setup .stat-big .mini-sub{font-family:'Inter',sans-serif;font-size:13px;font-weight:600;color:var(--muted)}
+  #page-setup .stat-sub{font-size:11.5px;color:var(--muted);margin-top:5px}
+
+  /* ── THE READINESS INSTRUMENT (the dashboards hero data-viz) ──
+     Reimagined from a flat width-bar into a measured gauge: the score
+     is a large Fraunces figure, the track is a precise instrument with
+     the 720 pass-mark as a labelled notch (the .readiness-bar-mark that
+     already exists in the DOM), band + probability + delta as readouts.
+     Achievable scoped-CSS-only — the JS still just sets bar-fill width
+     + the by-id text nodes. */
+  #page-setup .readiness-card{position:relative;border:1px solid color-mix(in oklab,var(--accent) 26%,var(--border));border-radius:20px;padding:clamp(22px,2.6vw,30px);background:linear-gradient(180deg,var(--surface),var(--surface-2));box-shadow:var(--shadow-card);overflow:hidden}
+  #page-setup .readiness-card::before{content:"";position:absolute;inset:0;background:radial-gradient(120% 80% at 100% 0%,color-mix(in oklab,var(--accent) 9%,transparent),transparent 60%);pointer-events:none}
+  #page-setup .readiness-eyebrow{position:relative;font-size:10.5px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);margin-bottom:14px}
+  [data-theme="dark"] #page-setup .readiness-eyebrow{color:var(--accent-bright)}
+  #page-setup .readiness-score{position:relative;font-family:'Fraunces',Georgia,serif;font-weight:600;line-height:.92;letter-spacing:-.03em;color:var(--ink);display:flex;align-items:baseline;gap:2px}
+  #page-setup .readiness-score #rc-v2-num{font-size:clamp(58px,8vw,86px)}
+  #page-setup .readiness-score span:last-child{font-size:clamp(18px,2vw,24px);color:var(--muted);font-weight:500;letter-spacing:0}
+  #page-setup .readiness-tier{position:relative;display:inline-flex;align-items:center;gap:7px;margin-top:12px;font-size:11px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:var(--accent-deep);background:color-mix(in oklab,var(--accent) 12%,transparent);border:1px solid color-mix(in oklab,var(--accent) 26%,transparent);padding:5px 11px;border-radius:7px}
+  [data-theme="dark"] #page-setup .readiness-tier{color:var(--accent-bright)}
+  #page-setup .readiness-prob{position:relative;margin-top:12px;font-size:13px;color:var(--ink-soft);line-height:1.5}
+  #page-setup .readiness-prob b{color:var(--ink);font-weight:700}
+  #page-setup .readiness-bar-track{position:relative;margin-top:22px;height:12px;border-radius:99px;background:color-mix(in oklab,var(--muted) 16%,transparent);overflow:visible}
+  #page-setup .readiness-bar-fill{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,var(--accent-deep),var(--accent-bright));transition:width 1100ms var(--eo)}
+  #page-setup .readiness-bar-mark{position:absolute;top:-7px;bottom:-7px;width:2px;background:var(--ink-soft);border-radius:1px}
+  #page-setup .readiness-bar-mark::after{content:"PASS 720";position:absolute;top:-17px;left:50%;transform:translateX(-50%);font:800 8px/1 'Inter',sans-serif;letter-spacing:.09em;color:var(--ink-soft);white-space:nowrap}
+  #page-setup .readiness-range{position:relative;margin-top:24px;display:flex;justify-content:space-between;align-items:baseline;font-size:12px;color:var(--muted);padding-top:14px;border-top:1px solid var(--border-soft)}
+  #page-setup .readiness-range #rc-v2-delta{font-weight:650;color:var(--ink-soft)}
+  #page-setup .readiness-range b{color:var(--ink);font-weight:700;font-variant-numeric:tabular-nums}
+  #page-setup .readiness-traj{position:relative;margin-top:12px;font-size:12px;color:var(--muted);line-height:1.5}
+
+  /* ── NEXT BEST MOVE — the single prominent action ── */
+  #page-setup .nbm-card{position:relative;border:0;border-radius:20px;padding:clamp(22px,2.6vw,28px);background:linear-gradient(150deg,var(--accent),var(--accent-deep));color:var(--on-accent);box-shadow:0 20px 44px -22px color-mix(in oklab,var(--accent) 70%,transparent);overflow:hidden}
+  #page-setup .nbm-card::before{content:"";position:absolute;right:-30px;top:-30px;width:160px;height:160px;border-radius:50%;background:color-mix(in oklab,var(--accent-bright) 28%,transparent);pointer-events:none}
+  #page-setup .nbm-card .card-eyebrow{position:relative;display:flex;align-items:center;gap:8px;font-size:10.5px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:color-mix(in oklab,var(--on-accent) 78%,transparent);margin-bottom:14px}
+  #page-setup .nbm-card .card-eyebrow span{display:grid;place-items:center;width:18px;height:18px}
+  #page-setup .nbm-card .card-eyebrow span svg{width:14px;height:14px}
+  #page-setup .nbm-header{position:relative;display:flex;align-items:flex-end;justify-content:space-between;gap:18px;flex-wrap:wrap}
+  #page-setup .nbm-card .card-title{font-family:'Fraunces',Georgia,serif;font-size:clamp(20px,2.3vw,26px);font-weight:600;letter-spacing:-.015em;line-height:1.15}
+  #page-setup .nbm-card .card-desc{font-size:13px;line-height:1.5;color:color-mix(in oklab,var(--on-accent) 82%,transparent);margin-top:7px;max-width:34ch}
+  #page-setup .nbm-card .btn-white{flex:none;font-family:'Inter',sans-serif;font-size:13.5px;font-weight:700;color:var(--accent-deep);background:var(--on-accent);border:0;padding:11px 22px;border-radius:11px;cursor:pointer;transition:transform 160ms var(--eo)}
+  @media (hover:hover){#page-setup .nbm-card .btn-white:hover{transform:translateY(-1px)}}
+
+  /* col-side supporting cards (SR / placeholders) — quiet, inherit later */
+  #page-setup .sr-card{border:1px solid var(--border);border-radius:16px;padding:20px 22px;background:var(--surface)}
+  #page-setup .sr-card .card-eyebrow{font-size:10.5px;font-weight:800;letter-spacing:.13em;text-transform:uppercase;color:var(--muted);margin-bottom:12px}
+  #page-setup .sr-header{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap}
+  #page-setup .sr-card .card-title{font-family:'Fraunces',Georgia,serif;font-size:18px;font-weight:600;color:var(--ink)}
+  #page-setup .sr-card .card-desc{font-size:12.5px;color:var(--muted);line-height:1.5;margin-top:5px;max-width:32ch}
+  #page-setup .sr-meta{font-size:11.5px;color:var(--accent-deep);font-weight:600;margin-top:8px}
+  [data-theme="dark"] #page-setup .sr-card .sr-meta{color:var(--accent-bright)}
+  #page-setup .btn-ghost{flex:none;font-size:12.5px;font-weight:650;color:var(--accent);background:none;border:1px solid color-mix(in oklab,var(--accent) 30%,transparent);padding:9px 16px;border-radius:10px;cursor:pointer}
+  @media (hover:hover){#page-setup .btn-ghost:hover{background:color-mix(in oklab,var(--accent) 8%,transparent)}}
+
+  /* diagnostic card (left col, lightly styled — full pass in Section 2) */
+  #page-setup .diag-card{border:1px dashed color-mix(in oklab,var(--accent) 34%,var(--border));border-radius:16px;padding:20px 22px;background:color-mix(in oklab,var(--accent) 4%,transparent)}
+  #page-setup .diag-card .card-eyebrow{display:flex;align-items:center;gap:9px;font-size:10.5px;font-weight:800;letter-spacing:.13em;text-transform:uppercase;color:var(--muted);margin-bottom:10px}
+  #page-setup .tag-new{font-size:9px;font-weight:800;letter-spacing:.06em;color:var(--on-accent);background:var(--accent);padding:2px 7px;border-radius:5px}
+  #page-setup .diag-card .card-title{font-family:'Fraunces',Georgia,serif;font-size:18px;font-weight:600;color:var(--ink);letter-spacing:-.01em}
+  #page-setup .diag-card .card-desc{font-size:12.5px;color:var(--ink-soft);line-height:1.55;margin-top:7px}
+  #page-setup .diag-skip{display:inline-block;margin-top:10px;font-size:11.5px;color:var(--muted);text-decoration:none}
+  #page-setup .diag-stats{display:flex;gap:26px;margin:16px 0}
+  #page-setup .diag-stat-num{font-family:'Fraunces',Georgia,serif;font-size:20px;font-weight:600;color:var(--accent-deep)}
+  [data-theme="dark"] #page-setup .diag-stat-num{color:var(--accent-bright)}
+  #page-setup .diag-stat-label{font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-top:3px}
+  #page-setup .btn-primary{font-size:13px;font-weight:650;color:var(--on-accent);background:var(--accent);border:1px solid var(--accent-deep);padding:10px 20px;border-radius:10px;cursor:pointer}
+  #page-setup .is-hidden{display:none!important}
+
+  /* ════════════════════════════════════════════════════════════════
+     MOTION — emil-design-eng. Mood = professional dashboard → crisp +
+     fast. Only transform/opacity (GPU). Custom ease-out curve (--eo =
+     cubic-bezier(0.23,1,0.32,1), emil's recommended UI ease-out, never
+     ease-in). Durations under the framework caps. Hover gated to fine
+     pointers. Every motion has a purpose; reduced-motion keeps opacity
+     only, no movement. All achievable scoped-CSS-only at integration
+     (the .reveal stagger rides the page's existing IIFE; the readiness
+     count-up stays JS-owned by renderReadinessCardV2 — CSS only adds the
+     bar-fill width transition).
+  ════════════════════════════════════════════════════════════════ */
+  /* Entrance: prevent jarring first paint. translateY (never scale(0)),
+     ~60ms stagger via --d, ease-out, <600ms (occasional, first-paint). */
+  #page-setup .reveal{opacity:0;transform:translateY(14px);transition:opacity 560ms var(--eo),transform 560ms var(--eo);transition-delay:calc(var(--d,0)*60ms)}
+  #page-setup.is-in .reveal{opacity:1;transform:none}
+  /* Readiness bar: the fill IS the data — animate it in (explanation). */
+  #page-setup .readiness-bar-fill{transition:width 1000ms var(--eo)}
+  /* Buttons must feel responsive: scale(0.97) on press, fast ease-out. */
+  #page-setup .btn-white,#page-setup .btn-primary,#page-setup .btn-ghost{transition:transform 150ms var(--eo),background 160ms ease,color 160ms ease}
+  #page-setup .btn-white:active,#page-setup .btn-primary:active,#page-setup .btn-ghost:active{transform:scale(.97)}
+  /* Hover — gated to fine pointers (touch taps would false-fire it).
+     Lift only the action cards (NBM/diagnostic/SR); the hero + the
+     readiness instrument are display, not click targets — no hover. */
+  @media (hover:hover) and (pointer:fine){
+    #page-setup .nbm-card,#page-setup .diag-card,#page-setup .sr-card{transition:transform 200ms ease,border-color 200ms ease}
+    #page-setup .nbm-card:hover,#page-setup .diag-card:hover,#page-setup .sr-card:hover{transform:translateY(-2px)}
+    #page-setup .diag-card:hover{border-color:color-mix(in oklab,var(--accent) 50%,var(--border))}
+    #page-setup .btn-primary:hover{background:var(--accent-deep)}
+  }
+  @media (prefers-reduced-motion:reduce){
+    #page-setup .reveal{transition:opacity 200ms ease!important;transform:none!important;transition-delay:0ms!important}
+    #page-setup.is-in .reveal{transform:none!important}
+    #page-setup .readiness-bar-fill{transition:none!important}
+    #page-setup .nbm-card,#page-setup .diag-card,#page-setup .sr-card,
+    #page-setup .btn-white,#page-setup .btn-primary,#page-setup .btn-ghost{transition:none!important;transform:none!important}
+  }
+
+  @media (max-width:880px){
+    #page-setup .home-grid{grid-template-columns:1fr;gap:22px}
+    #page-setup .col-side{order:-1}
+  }
+
+  /* mockup-only scaffold */
+  .mk-bar{position:fixed;top:14px;right:16px;z-index:99;display:flex;gap:8px}
+  .mk-bar button{font:600 12px Inter,sans-serif;padding:7px 13px;border-radius:9px;border:1px solid #ccc;background:#fff;color:#333;cursor:pointer}
+  [data-theme="dark"] .mk-bar button{background:#222;color:#eee;border-color:#444}
+  .mk-note{max-width:1140px;margin:38px auto 0;padding:14px 18px;border:1px dashed color-mix(in oklab,#b8860b 40%,#ccc);border-radius:12px;font:500 12.5px/1.6 Inter,sans-serif;color:#7a5c12}
+  [data-theme="dark"] .mk-note{color:#d9b56a;border-color:#5a4416}
+</style>
+</head>
+<body>
+
+<div class="mk-bar">
+  <button onclick="document.documentElement.setAttribute('data-theme',document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark')">Theme</button>
+  <button onclick="var s=document.getElementById('page-setup');s.setAttribute('data-cert',s.getAttribute('data-cert')==='secplus'?'netplus':'secplus')">Cert</button>
+</div>
+
+<div id="page-setup" class="page active" data-cert="secplus">
+
+  <div class="ch-wrap">
+
+    <div class="pass-proof-banner" role="note" aria-label="Author's exam result">
+      <span class="pass-proof-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" width="16" height="16"><path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+      <span class="pass-proof-text"><strong>I passed Network+ N10-009 (767/900)</strong> on 2026-05-05 using <em>CertAnvil</em>. Security+ pack coming next.</span>
+    </div>
+
+    <div class="secplus-private-banner" role="note" aria-label="Security+ private builder mode">
+      <span class="secplus-private-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" width="16" height="16"><rect x="5" y="11" width="14" height="9" rx="2" stroke="currentColor" stroke-width="1.9"/><path d="M8 11V8a4 4 0 0 1 8 0v3" stroke="currentColor" stroke-width="1.9"/></svg></span>
+      <span class="secplus-private-text"><strong>Private builder</strong> &middot; CompTIA Security+ (SY0-701) study mode &middot; <em>target exam 2026-07-29</em></span>
+    </div>
+
+    <div class="home-grid">
+
+      <div class="col-main">
+        <div class="ch-hero reveal" style="--d:0" id="setup-hero-v2">
+          <div class="hero-date" id="hero-v2-eyebrow">Tuesday · May 19 · 4:13 PM</div>
+          <h1 class="hero-greet" id="hero-v2-display">Good afternoon, <span class="name">Simi.</span></h1>
+          <p class="hero-body" id="hero-v2-lede">Yesterday you wobbled on Cable Issues and Ethernet Basics. <strong>Fifteen focused minutes</strong> now would lift your readiness to the pass line.</p>
+        </div>
+
+        <div class="stat-row reveal" style="--d:1">
+          <div class="stat-card"><div class="stat-info">
+            <div class="stat-label">Today</div>
+            <div class="stat-big"><span id="mc-today-done">0</span> <span class="mini-sub">/ <span id="mc-today-goal">20</span></span></div>
+            <div class="stat-sub" id="mc-today-sub">daily goal</div>
+          </div></div>
+          <div class="stat-card"><div class="stat-info">
+            <div class="stat-label">Streak</div>
+            <div class="stat-big"><span id="mc-streak-num">1</span> <span class="mini-sub">days</span></div>
+            <div class="stat-sub" id="mc-streak-sub">longest · 4 days</div>
+          </div></div>
+        </div>
+
+        <div class="card diag-card reveal" style="--d:3" id="diagnostic-cta-card">
+          <div class="card-eyebrow"><span class="tag tag-new">New</span> Recommended</div>
+          <div class="card-title diagnostic-cta-title">Where do you stand on SY0-701?</div>
+          <div class="card-desc">Take a 20-question Baseline Diagnostic. Get your pass probability, weak-domain priorities, and your first review cards, all in one go.</div>
+          <a class="diag-skip" href="#" onclick="return false">Skip for now, I'd rather just practise</a>
+          <div class="diag-stats">
+            <div class="diag-stat"><div class="diag-stat-num">20</div><div class="diag-stat-label">Questions</div></div>
+            <div class="diag-stat"><div class="diag-stat-num">~30</div><div class="diag-stat-label">Minutes</div></div>
+            <div class="diag-stat"><div class="diag-stat-num">5</div><div class="diag-stat-label">Domains</div></div>
+          </div>
+          <button type="button" class="btn-primary">Take the diagnostic</button>
+        </div>
+      </div>
+
+      <div class="col-side">
+
+        <div class="card readiness-card reveal" style="--d:1" id="readiness-card-v2">
+          <div class="readiness-eyebrow">Exam readiness · scaled 100–900</div>
+          <div class="readiness-score"><span id="rc-v2-num">522</span><span> / 900</span></div>
+          <div class="readiness-tier" id="rc-v2-tier">Building foundation</div>
+          <div class="readiness-prob" id="rc-v2-prediction">Pass probability <b>1%</b> · likely range 440–590</div>
+          <div class="readiness-bar-track"><span class="readiness-bar-fill" id="rc-v2-bar-fill" style="width:58%"></span><div class="readiness-bar-mark" aria-hidden="true" style="left:69%"></div></div>
+          <div class="readiness-range"><span id="rc-v2-delta">198 to the pass line</span><span>pass mark <b>720</b></span></div>
+          <div class="readiness-traj" id="rc-v2-trajectory">At your recent pace you reach 720 around mid-July — tight against the 2026-07-29 exam.</div>
+        </div>
+
+        <div class="card nbm-card reveal" style="--d:2" id="hero-v2-cta">
+          <div class="card-eyebrow"><span id="hero-v2-cta-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span> Next best move</div>
+          <div class="nbm-header">
+            <div>
+              <div class="card-title" id="hero-v2-cta-title">Review 8 cards due</div>
+              <div class="card-desc" id="hero-v2-cta-sub">Re-encounter what you forgot before it fades further.</div>
+              <div class="card-desc" id="hero-v2-cta-reason" style="margin-top:5px;opacity:.85">Spaced repetition is the highest-leverage 4 minutes you have today.</div>
+            </div>
+            <button type="button" class="btn-white" id="hero-v2-cta-btn">Start →</button>
+          </div>
+        </div>
+
+        <div class="card sr-card reveal" style="--d:3" id="sr-review-card">
+          <div class="card-eyebrow">Spaced repetition · daily review</div>
+          <div class="sr-header">
+            <div>
+              <div class="card-title" id="sr-review-card-headline">8 cards due</div>
+              <div class="card-desc">Re-encounter what you have forgotten. Each card comes back on a growing interval.</div>
+              <div class="sr-meta" id="sr-review-card-stats">6 review · 2 new</div>
+            </div>
+            <button type="button" class="btn-ghost" id="sr-review-start-btn">Start review</button>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+    <p class="mk-note"><strong>Home · Section 1 — masthead ("Mission Readout").</strong> Full reimagining in the locked bronze system, taste-skill → dashboards. The flat readiness width-bar becomes a measured instrument (huge Fraunces score + a labelled 720 pass-notch on the track + band/probability/delta/trajectory readouts); the greeting is the editorial voice; Next Best Move is the one bronze focal action. Exact <code>#page-setup</code> contract reproduced (every <code>#hero-v2-*</code> / <code>#rc-v2-*</code> / <code>#mc-*</code> / <code>#sr-*</code> id + the pass-proof / secplus-private banners) — engineered so integration is scoped-CSS-only, zero JS change. Toggle theme + cert top-right. Discussion only — sign off and I move to Section 2.</p>
+
+  </div>
+</div>
+
+<script>
+  /* Mockup-only: demonstrates the intended motion. At integration the
+     .reveal stagger rides the page's existing IIFE and the count-up
+     stays owned by renderReadinessCardV2() — CSS adds only the bar
+     width transition. Reduced-motion → paint final state instantly. */
+  (function(){
+    var p=document.getElementById('page-setup');
+    var rm=matchMedia('(prefers-reduced-motion:reduce)').matches;
+    requestAnimationFrame(function(){requestAnimationFrame(function(){p.classList.add('is-in');});});
+    var fill=document.getElementById('rc-v2-bar-fill');
+    var num=document.getElementById('rc-v2-num');
+    var target=fill.style.width, to=parseInt(num.textContent,10)||0;
+    if(rm)return;
+    fill.style.width='0%'; num.textContent='0';
+    setTimeout(function(){ fill.style.width=target; },440);
+    var start=null,dur=900;
+    function tick(t){ if(!start)start=t; var k=Math.min(1,(t-start)/dur); var e=1-Math.pow(1-k,3); num.textContent=Math.round(to*e); if(k<1)requestAnimationFrame(tick); else num.textContent=to; }
+    setTimeout(function(){ requestAnimationFrame(tick); },440);
+  })();
+</script>
+</body>
+</html>
