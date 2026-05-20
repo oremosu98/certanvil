@@ -281,6 +281,86 @@
     return step(srcId, srcIp, {});
   }
 
+  function computeReachability(state, completion) {
+    var failures = [];
+    var required = (completion && completion.requiredCables) || [];
+    var devices = (state && state.devices) || [];
+    var cables = (state && state.cables) || [];
+    function pickByType(t, excludeId) {
+      for (var i = 0; i < devices.length; i++) {
+        if (devices[i].type === t && devices[i].id !== excludeId) return devices[i];
+      }
+      return null;
+    }
+    function hasIp(dev) {
+      if (!dev) return false;
+      if (dev.config && dev.config.ip) return true;
+      if (Array.isArray(dev.interfaces)) {
+        for (var j = 0; j < dev.interfaces.length; j++) {
+          if (dev.interfaces[j] && dev.interfaces[j].ip) return true;
+        }
+      }
+      return false;
+    }
+    // L2 cable-reachability check (BFS on cables, ignoring IP) between two device ids
+    function l2Connected(idA, idB) {
+      var visited = {};
+      visited[idA] = true;
+      var queue = [idA];
+      while (queue.length) {
+        var cur = queue.shift();
+        if (cur === idB) return true;
+        for (var k = 0; k < cables.length; k++) {
+          var c = cables[k];
+          var other = null;
+          if (c.fromId === cur) other = c.toId;
+          else if (c.toId === cur) other = c.fromId;
+          if (other && !visited[other]) { visited[other] = true; queue.push(other); }
+        }
+      }
+      return false;
+    }
+    for (var i = 0; i < required.length; i++) {
+      var pair = required[i];
+      var a = pickByType(pair.from, null);
+      if (!a) continue; // no representative — let cable-shape validator handle missing-type
+      var b = pickByType(pair.to, a.id);
+      if (!b) continue;
+      // Determine L3 src + dst: prefer IP-bearing devices for full reachability check
+      var ipSrc = hasIp(a) ? a : (hasIp(b) ? b : null);
+      var ipDst = null;
+      if (ipSrc) {
+        // Find an IP-bearing device of the other type
+        var otherType = ipSrc === a ? pair.to : pair.from;
+        ipDst = pickByType(otherType, ipSrc.id);
+        // If the other type has no IP (e.g. it's a switch), look for any other IP-bearing device
+        if (ipDst && !hasIp(ipDst)) {
+          // Fall back to any IP-bearing device except ipSrc
+          ipDst = null;
+          for (var j = 0; j < devices.length; j++) {
+            if (devices[j].id !== ipSrc.id && hasIp(devices[j])) { ipDst = devices[j]; break; }
+          }
+        }
+      }
+      if (ipSrc && ipDst) {
+        // Full L3 reachability check between two IP-bearing representatives
+        var result = computePath(ipSrc.id, ipDst.id, state);
+        if (!result.ok) {
+          failures.push({ from: ipSrc.id, to: ipDst.id, reason: result.reason, failedAt: result.failedAt });
+        }
+      } else {
+        // Both sides are L2-only: verify cable path exists
+        if (!l2Connected(a.id, b.id)) {
+          failures.push({ from: a.id, to: b.id, reason: 'no-cable-path', failedAt: a.id });
+        }
+      }
+    }
+    return {
+      complete: failures.length === 0,
+      failures: failures,
+    };
+  }
+
   // ───────────────────────────────────────────────────────────
   // SCENARIOS CATALOG (Phase 2 — 8 starter; full 20-25 in Phase 2.x)
   //
@@ -2454,6 +2534,7 @@
     inSameSubnet: inSameSubnet,
     routeNextHop: routeNextHop,
     computePath: computePath,
+    computeReachability: computeReachability,
     // Scenarios (phase 2)
     TB_V3_SCENARIOS: TB_V3_SCENARIOS,
     validateScenarioShape: validateScenarioShape,

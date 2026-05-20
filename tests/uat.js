@@ -21523,6 +21523,63 @@ test('phase2: TB_V3_FREEBUILD_BACKUP does not collide with TB_V3_DRAFT', !/TB_V3
 
   // Source equals destination — trivially reachable
   assert(callCp('ws1', 'ws1', lan).ok === true, 'cp-H: src===dst trivially ok');
+
+  // ── 5. computeReachability(state, completion) ────────────
+  const crDecl = _fnBody(tbv3SrcP3, 'computeReachability');
+  assert(crDecl, 'phase3: computeReachability exists');
+
+  function callCr(state, completion) {
+    const sb = { result: null };
+    vm.runInNewContext(
+      pcDecl + ' ' + issDecl + ' ' + rnhDecl + ' ' + cpDecl + ' ' + crDecl +
+      ' result = computeReachability(' + JSON.stringify(state) + ',' + JSON.stringify(completion) + ');',
+      sb
+    );
+    return sb.result;
+  }
+
+  // Empty requiredCables → trivially complete
+  assert(callCr({devices:[], cables:[]}, {}).complete === true, 'cr-A: empty completion is complete');
+  assert(callCr({devices:[], cables:[]}, {requiredCables: []}).complete === true, 'cr-B: empty requiredCables array is complete');
+
+  // Reachable scenario — star (switch + server + 3 workstations all same subnet)
+  const starOk = {
+    devices: [
+      { id:'sw',   type:'switch' },
+      { id:'srv',  type:'server',      config:{ ip:'192.168.10.10', mask:24, gateway:'192.168.10.1' } },
+      { id:'ws1',  type:'workstation', config:{ ip:'192.168.10.20', mask:24, gateway:'192.168.10.1' } },
+      { id:'ws2',  type:'workstation', config:{ ip:'192.168.10.21', mask:24, gateway:'192.168.10.1' } },
+      { id:'ws3',  type:'workstation', config:{ ip:'192.168.10.22', mask:24, gateway:'192.168.10.1' } },
+    ],
+    cables: [
+      { id:'c1', fromId:'sw', toId:'srv' },
+      { id:'c2', fromId:'sw', toId:'ws1' },
+      { id:'c3', fromId:'sw', toId:'ws2' },
+      { id:'c4', fromId:'sw', toId:'ws3' },
+    ],
+  };
+  const compStar = { requiredCables: [
+    { from:'switch', to:'server' },
+    { from:'switch', to:'workstation' },
+  ]};
+  assert(callCr(starOk, compStar).complete === true, 'cr-C: star reachable scenario complete');
+  assert(callCr(starOk, compStar).failures.length === 0, 'cr-D: star no failures');
+
+  // Broken — workstation moved to a different subnet with no router
+  const starBroken = JSON.parse(JSON.stringify(starOk));
+  starBroken.devices[2].config.ip = '10.0.0.20';
+  starBroken.devices[2].config.mask = 24;
+  delete starBroken.devices[2].config.gateway;
+  const brokenResult = callCr(starBroken, compStar);
+  assert(brokenResult.complete === false, 'cr-E: broken scenario incomplete');
+  assert(brokenResult.failures.length > 0, 'cr-F: broken scenario reports failures');
+  assert(brokenResult.failures[0].reason && brokenResult.failures[0].failedAt, 'cr-G: failures carry reason + failedAt');
+
+  // No matching device for a type-pair → graceful handling
+  const noServer = { devices:[{ id:'sw', type:'switch' }], cables:[] };
+  const compNoServer = { requiredCables: [{ from:'switch', to:'server' }] };
+  const noSrvResult = callCr(noServer, compNoServer);
+  assert(typeof noSrvResult.complete === 'boolean', 'cr-H: no-representative-device returns boolean complete');
 })();
 
 // ── Summary ──
