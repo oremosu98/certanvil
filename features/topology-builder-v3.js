@@ -426,7 +426,94 @@
   // PALETTE (TASK 3.x)
   // ───────────────────────────────────────────────────────────
 
-  function _renderPalette() { /* TASK 3.1 */ }
+  // Device catalog — lifted from v1's TB_DEVICE_TYPES + TB_PALETTE_GROUPS
+  // (features/topology-builder.js lines 39 + 82). Same set, scoped to v3.
+  var TB_V3_DEVICE_TYPES = {
+    // Routers
+    'router':         { label: 'Router', icon: _icoRouter() },
+    'l3-router':      { label: 'Layer 3 Router', icon: _icoL3Router() },
+    // Switches
+    'switch':         { label: 'Switch', icon: _icoSwitch() },
+    'l3-switch':      { label: 'Layer 3 Switch', icon: _icoL3Switch() },
+    'hub':            { label: 'Hub', icon: _icoHub() },
+    // Endpoints
+    'desktop':        { label: 'Desktop', icon: _icoDesktop() },
+    'laptop':         { label: 'Laptop', icon: _icoLaptop() },
+    'server':         { label: 'Server', icon: _icoServer() },
+    'smartphone':     { label: 'Smartphone', icon: _icoSmartphone() },
+    'smart-tv':       { label: 'Smart TV', icon: _icoSmartTv() },
+    'game-console':   { label: 'Game Console', icon: _icoGameConsole() },
+    // Wireless
+    'ap':             { label: 'Access Point', icon: _icoAp() },
+    'wlc':            { label: 'Wireless Controller', icon: _icoWlc() },
+    // Security
+    'firewall':       { label: 'Firewall', icon: _icoFirewall() },
+    'ids-ips':        { label: 'IDS / IPS', icon: _icoIds() },
+    // Cloud & WAN
+    'cloud':          { label: 'Cloud', icon: _icoCloud() },
+    'internet':       { label: 'Internet', icon: _icoInternet() },
+    'isp-modem':      { label: 'ISP Modem', icon: _icoModem() },
+    'mpls-core':      { label: 'MPLS Core', icon: _icoMpls() },
+    'vpn-gateway':    { label: 'VPN Gateway', icon: _icoVpn() },
+    'load-balancer':  { label: 'Load Balancer', icon: _icoLb() },
+  };
+
+  var TB_V3_PALETTE_GROUPS = [
+    { name: 'Routers', items: ['router', 'l3-router'] },
+    { name: 'Switches', items: ['switch', 'l3-switch', 'hub'] },
+    { name: 'Endpoints', items: ['desktop', 'laptop', 'server', 'smartphone', 'smart-tv', 'game-console'] },
+    { name: 'Wireless', items: ['ap', 'wlc'] },
+    { name: 'Security', items: ['firewall', 'ids-ips'] },
+    { name: 'Cloud & WAN', items: ['cloud', 'internet', 'isp-modem', 'mpls-core', 'vpn-gateway', 'load-balancer'] },
+  ];
+
+  // Icon helpers — each returns SVG markup. Lift-and-shift from v1's tbPaletteLineIcon
+  // (features/topology-builder.js — search for tbPaletteLineIcon) IF that source is
+  // preferred. For Phase 1 we inline minimal monoline SVGs:
+  function _icoRouter() { return '<svg viewBox="0 0 24 24" class="tb3-palette-ico" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M8 4l-2 4M8 20l-2-4M16 4l2 4M16 20l2-4"/></svg>'; }
+  function _icoL3Router() { return '<svg viewBox="0 0 24 24" class="tb3-palette-ico" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/></svg>'; }
+  function _icoSwitch() { return '<svg viewBox="0 0 24 24" class="tb3-palette-ico" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="8" width="18" height="8" rx="1"/><path d="M7 8V5M11 8V5M15 8V5M7 19v-3M11 19v-3M15 19v-3"/></svg>'; }
+  function _icoL3Switch() { return '<svg viewBox="0 0 24 24" class="tb3-palette-ico" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="8" width="18" height="8" rx="1"/><circle cx="8" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="16" cy="12" r="1"/></svg>'; }
+  function _icoHub() { return '<svg viewBox="0 0 24 24" class="tb3-palette-ico" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="10" width="18" height="4" rx="1"/></svg>'; }
+  function _icoDesktop() { return '<svg viewBox="0 0 24 24" class="tb3-palette-ico" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="4" width="18" height="13" rx="1"/><path d="M2 21h20M8 17v4M16 17v4"/></svg>'; }
+  function _icoLaptop() { return '<svg viewBox="0 0 24 24" class="tb3-palette-ico" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="5" width="18" height="11" rx="1"/><path d="M2 20h20"/></svg>'; }
+  function _icoServer() { return '<svg viewBox="0 0 24 24" class="tb3-palette-ico" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="18" height="18" rx="1"/><circle cx="12" cy="6" r="1"/><circle cx="12" cy="12" r="3"/></svg>'; }
+  function _icoSmartphone() { return '<svg viewBox="0 0 24 24" class="tb3-palette-ico" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="7" y="2" width="10" height="20" rx="2"/><circle cx="12" cy="18" r="1"/></svg>'; }
+  function _icoSmartTv() { return '<svg viewBox="0 0 24 24" class="tb3-palette-ico" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="2" y="5" width="20" height="13" rx="1"/><path d="M8 21h8"/></svg>'; }
+  function _icoGameConsole() { return '<svg viewBox="0 0 24 24" class="tb3-palette-ico" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="9" width="18" height="9" rx="3"/><circle cx="8" cy="13" r="1"/><circle cx="16" cy="13" r="1"/></svg>'; }
+  function _icoAp() { return '<svg viewBox="0 0 24 24" class="tb3-palette-ico" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="20" r="1"/><path d="M3 13a13 13 0 0 1 18 0M6 16a8 8 0 0 1 12 0M9 19a3 3 0 0 1 6 0"/></svg>'; }
+  function _icoWlc() { return '<svg viewBox="0 0 24 24" class="tb3-palette-ico" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="8" width="18" height="8" rx="1"/><circle cx="18" cy="12" r="1"/><path d="M14 12a2 2 0 0 1 4 0"/></svg>'; }
+  function _icoFirewall() { return '<svg viewBox="0 0 24 24" class="tb3-palette-ico" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 2l8 4v6c0 5-3.5 9-8 10C7.5 21 4 17 4 12V6l8-4z"/></svg>'; }
+  function _icoIds() { return '<svg viewBox="0 0 24 24" class="tb3-palette-ico" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16h.01"/></svg>'; }
+  function _icoCloud() { return '<svg viewBox="0 0 24 24" class="tb3-palette-ico" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M17 18a4 4 0 1 0-3.5-6.5A5 5 0 0 0 4 13a3 3 0 0 0 3 5h10z"/></svg>'; }
+  function _icoInternet() { return '<svg viewBox="0 0 24 24" class="tb3-palette-ico" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg>'; }
+  function _icoModem() { return '<svg viewBox="0 0 24 24" class="tb3-palette-ico" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="10" width="18" height="8" rx="1"/><circle cx="8" cy="14" r="1"/><circle cx="12" cy="14" r="1"/><path d="M3 10v-3a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v3"/></svg>'; }
+  function _icoMpls() { return '<svg viewBox="0 0 24 24" class="tb3-palette-ico" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="3"/><circle cx="5" cy="6" r="2"/><circle cx="19" cy="6" r="2"/><circle cx="5" cy="18" r="2"/><circle cx="19" cy="18" r="2"/><path d="M7 7l3 3M17 7l-3 3M7 17l3-3M17 17l-3-3"/></svg>'; }
+  function _icoVpn() { return '<svg viewBox="0 0 24 24" class="tb3-palette-ico" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>'; }
+  function _icoLb() { return '<svg viewBox="0 0 24 24" class="tb3-palette-ico" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3v18"/></svg>'; }
+
+  function _renderPalette() {
+    var pal = document.getElementById('tb3-palette');
+    if (!pal) return;
+
+    var html = '';
+    TB_V3_PALETTE_GROUPS.forEach(function (grp) {
+      html += '<div class="tb3-palette-grp">';
+      html += '<div class="tb3-palette-grp-h">' + grp.name + '</div>';
+      grp.items.forEach(function (typeKey) {
+        var def = TB_V3_DEVICE_TYPES[typeKey];
+        if (!def) return;
+        html += '<div class="tb3-palette-item" draggable="true" data-device-type="' + typeKey + '">';
+        html += def.icon;
+        html += '<span>' + def.label + '</span>';
+        html += '</div>';
+      });
+      html += '</div>';
+    });
+
+    pal.innerHTML = html;
+  }
+
   function _wireDragToCanvas() { /* TASK 3.3 */ }
 
   // ───────────────────────────────────────────────────────────
