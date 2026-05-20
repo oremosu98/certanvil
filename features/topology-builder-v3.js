@@ -618,12 +618,12 @@
       objectiveRefs: ['1.8'],
       startingState: {
         devices: [
-          { id: 'sc_hyb_onprem_sw', type: 'switch',   x: 320, y: 360, label: 'ONPREM-SW' },
-          { id: 'sc_hyb_onprem_fw', type: 'firewall', x: 520, y: 360, label: 'EDGE-FW' },
-          { id: 'sc_hyb_vpn',       type: 'vpn',      x: 720, y: 360, label: 'IPSEC-VPN' },
-          { id: 'sc_hyb_cloud',     type: 'cloud',    x: 920, y: 360, label: 'AWS-VPC' },
-          { id: 'sc_hyb_srv',       type: 'server',   x: 320, y: 180, label: 'APP-01' },
-          { id: 'sc_hyb_ws',        type: 'workstation', x: 320, y: 540, label: 'WS-01' },
+          { id: 'sc_hyb_onprem_sw', type: 'switch',      x: 320, y: 360, label: 'ONPREM-SW' },
+          { id: 'sc_hyb_onprem_fw', type: 'firewall',    x: 520, y: 360, label: 'EDGE-FW',   interfaces:[{ ip:'192.168.10.2', mask:24 },{ ip:'10.0.99.1', mask:30 }] },
+          { id: 'sc_hyb_vpn',       type: 'vpn',         x: 720, y: 360, label: 'IPSEC-VPN', interfaces:[{ ip:'10.0.99.2', mask:30 },{ ip:'10.100.0.1', mask:24 }] },
+          { id: 'sc_hyb_cloud',     type: 'cloud',       x: 920, y: 360, label: 'AWS-VPC',   interfaces:[{ ip:'10.100.0.2', mask:24 }] },
+          { id: 'sc_hyb_srv',       type: 'server',      x: 320, y: 180, label: 'APP-01',    config:{ ip:'192.168.10.10', mask:24, gateway:'192.168.10.2' } },
+          { id: 'sc_hyb_ws',        type: 'workstation', x: 320, y: 540, label: 'WS-01',     config:{ ip:'192.168.10.20', mask:24, gateway:'192.168.10.2' } },
         ],
         cables: [
           { id: 'sc_hyb_c1', fromId: 'sc_hyb_onprem_sw', toId: 'sc_hyb_srv',       type: 'cat6' },
@@ -1092,11 +1092,11 @@
       objectiveRefs: ['1.8'],
       startingState: {
         devices: [
-          { id: 'sc_pco_inet', type: 'internet',    x: 600, y: 160, label: 'INTERNET' },
-          { id: 'sc_pco_fw',   type: 'firewall',    x: 600, y: 320, label: 'CLOUD-FW' },
-          { id: 'sc_pco_srv1', type: 'server',      x: 380, y: 480, label: 'APP-01' },
-          { id: 'sc_pco_srv2', type: 'server',      x: 600, y: 480, label: 'APP-02' },
-          { id: 'sc_pco_ws',   type: 'workstation', x: 820, y: 480, label: 'ADMIN-WS' },
+          { id: 'sc_pco_inet', type: 'internet',    x: 600, y: 160, label: 'INTERNET', interfaces:[{ ip:'203.0.113.1', mask:30 }] },
+          { id: 'sc_pco_fw',   type: 'firewall',    x: 600, y: 320, label: 'CLOUD-FW', interfaces:[{ ip:'203.0.113.2', mask:30 },{ ip:'10.100.0.1', mask:24 }] },
+          { id: 'sc_pco_srv1', type: 'server',      x: 380, y: 480, label: 'APP-01',   config:{ ip:'10.100.0.10', mask:24, gateway:'10.100.0.1' } },
+          { id: 'sc_pco_srv2', type: 'server',      x: 600, y: 480, label: 'APP-02',   config:{ ip:'10.100.0.11', mask:24, gateway:'10.100.0.1' } },
+          { id: 'sc_pco_ws',   type: 'workstation', x: 820, y: 480, label: 'ADMIN-WS', config:{ ip:'10.100.0.20', mask:24, gateway:'10.100.0.1' } },
         ],
         cables: [
           { id: 'sc_pco_c1', fromId: 'sc_pco_inet', toId: 'sc_pco_fw',   type: 'fiber' },
@@ -1131,9 +1131,9 @@
       objectiveRefs: ['1.8'],
       startingState: {
         devices: [
-          { id: 'sc_mc_c1',   type: 'cloud',  x: 320, y: 360, label: 'AWS-VPC' },
-          { id: 'sc_mc_rtr',  type: 'router', x: 600, y: 360, label: 'INTER-CLOUD-VPN' },
-          { id: 'sc_mc_c2',   type: 'cloud',  x: 880, y: 360, label: 'AZURE-VNET' },
+          { id: 'sc_mc_c1',  type: 'cloud',  x: 320, y: 360, label: 'AWS-VPC',   interfaces:[{ ip:'10.200.0.1', mask:30 }] },
+          { id: 'sc_mc_rtr', type: 'router', x: 600, y: 360, label: 'INTER-CLOUD-VPN', interfaces:[{ ip:'10.200.0.2', mask:30 },{ ip:'10.200.0.5', mask:30 }] },
+          { id: 'sc_mc_c2',  type: 'cloud',  x: 880, y: 360, label: 'AZURE-VNET', interfaces:[{ ip:'10.200.0.6', mask:30 }] },
         ],
         cables: [
           { id: 'sc_mc_c_c1', fromId: 'sc_mc_c1',  toId: 'sc_mc_rtr', type: 'fiber' },
@@ -1165,8 +1165,8 @@
       startingState: {
         devices: [
           { id: 'sc_dc_sw',    type: 'switch', x: 320, y: 360, label: 'ONPREM-SW' },
-          { id: 'sc_dc_rtr',   type: 'router', x: 600, y: 360, label: 'EDGE-R' },
-          { id: 'sc_dc_cloud', type: 'cloud',  x: 880, y: 360, label: 'AWS-VPC' },
+          { id: 'sc_dc_rtr',   type: 'router', x: 600, y: 360, label: 'EDGE-R',   interfaces:[{ ip:'192.168.10.1', mask:24 },{ ip:'10.200.0.1', mask:30 }] },
+          { id: 'sc_dc_cloud', type: 'cloud',  x: 880, y: 360, label: 'AWS-VPC',  interfaces:[{ ip:'10.200.0.2', mask:30 }] },
         ],
         cables: [
           { id: 'sc_dc_c1', fromId: 'sc_dc_sw',  toId: 'sc_dc_rtr',   type: 'cat6'  },
@@ -1455,7 +1455,9 @@
     var ss = scenario.startingState;
     return {
       devices: (ss.devices || []).map(function (d) {
-        return { id: d.id, type: d.type, x: d.x, y: d.y, label: d.label || '', config: d.config || {} };
+        var dev = { id: d.id, type: d.type, x: d.x, y: d.y, label: d.label || '', config: d.config || {} };
+        if (Array.isArray(d.interfaces)) dev.interfaces = d.interfaces;
+        return dev;
       }),
       cables: (ss.cables || []).map(function (c) {
         return { id: c.id, fromId: c.fromId, fromPort: c.fromPort || 0, toId: c.toId, toPort: c.toPort || 0, type: c.type || 'cat6' };
