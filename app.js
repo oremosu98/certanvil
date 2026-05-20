@@ -19066,8 +19066,9 @@ const APP_SIDEBAR_PRACTICE_BASE = [
   { page: 'analytics',         label: 'Analytics',        icon: '\u25A9', handler: () => { showPage('analytics'); if (typeof renderAnalytics === 'function') renderAnalytics(); } }
 ];
 const APP_SIDEBAR_PRACTICE_NETPLUS_TAIL = [
-  { page: 'topology-builder',  label: 'Network Builder',  icon: '\u25C7', handler: () => { showPage('topology-builder'); if (typeof openTopologyBuilder === 'function') openTopologyBuilder(); } },
-  { page: 'topology-builder-v2', label: 'Builder V2',     icon: '\u25C8', handler: async () => { await _loadFeature('topology-builder-v2'); showPage('topology-builder-v2'); if (typeof openTopologyBuilderV2 === 'function') openTopologyBuilderV2(); } },
+  { page: 'topology-builder-v3', label: 'Network Builder', icon: '\u25C7', handler: async () => { await _loadFeature('topology-builder-v3'); showPage('topology-builder-v3'); if (typeof openTopologyBuilderV3 === 'function') openTopologyBuilderV3(); } },
+  { page: 'topology-builder',  label: 'Network Builder (v1)',  icon: '\u25C7', handler: () => { showPage('topology-builder'); if (typeof openTopologyBuilder === 'function') openTopologyBuilder(); } },
+  { page: 'topology-builder-v2', label: 'Builder V2 (legacy)',  icon: '\u25C8', handler: async () => { await _loadFeature('topology-builder-v2'); showPage('topology-builder-v2'); if (typeof openTopologyBuilderV2 === 'function') openTopologyBuilderV2(); } },
   { page: 'acl',               label: 'ACL Builder',      icon: '\u25A3', handler: () => { showPage('acl'); if (typeof openAclBuilder === 'function') openAclBuilder(); } }
 ];
 const APP_SIDEBAR_PRACTICE_SECPLUS_TAIL = [

@@ -31,7 +31,7 @@
 ## Files
 | File | Purpose | Size |
 |---|---|---|
-| `index.html` | All page structures (30+ pages: setup, quiz, exam, results, review, subnet, ports, drills launcher, topology, analytics, progress, guided labs, …) + global chrome (sidebar + topbar incl. `#topbar-bug-report` iconbtn that lazy-loads `features/reports.js`) | ~115 KB |
+| `index.html` | All page structures (30+ pages: setup, quiz, exam, results, review, subnet, ports, drills launcher, topology, topology-builder-v3, analytics, progress, guided labs, …) + global chrome (sidebar + topbar incl. `#topbar-bug-report` iconbtn that lazy-loads `features/reports.js`) | ~115 KB |
 | `app.js` | All app logic — state, AI calls, rendering, game loops, analytics, 5 activity sub-systems, cloud-flush hooks. Exposes `window.CURRENT_CERT` + `window.CERT_PACK` for lazy-loaded feature modules. | **~2.0 MB / ~32K lines** |
 | `styles.css` | Full dark/light theme styling + account pill + cert switcher + `@media (prefers-reduced-motion)` gate | ~485 KB |
 | `dg-system.css` | Editorial design-system overrides — forged-bronze tokens, scoped page reskins, `.br-*` bug-report drawer block (incl. scoped `[hidden]{display:none!important}` since component `display:flex` rules otherwise override the attribute) | growing |
