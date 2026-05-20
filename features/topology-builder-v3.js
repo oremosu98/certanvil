@@ -445,6 +445,75 @@
         ],
       },
     },
+    {
+      id: 'ring-topology',
+      title: 'Ring topology (5 nodes, closed loop)',
+      category: 'topology',
+      objectiveRefs: ['1.2'],
+      startingState: {
+        devices: [
+          { id: 'sc_ring_1', type: 'router', x: 600, y: 160, label: 'R1' },
+          { id: 'sc_ring_2', type: 'router', x: 840, y: 280, label: 'R2' },
+          { id: 'sc_ring_3', type: 'router', x: 760, y: 520, label: 'R3' },
+          { id: 'sc_ring_4', type: 'router', x: 440, y: 520, label: 'R4' },
+          { id: 'sc_ring_5', type: 'router', x: 360, y: 280, label: 'R5' },
+        ],
+        cables: [
+          { id: 'sc_ring_c1', fromId: 'sc_ring_1', toId: 'sc_ring_2', type: 'cat6' },
+          { id: 'sc_ring_c2', fromId: 'sc_ring_2', toId: 'sc_ring_3', type: 'cat6' },
+          { id: 'sc_ring_c3', fromId: 'sc_ring_3', toId: 'sc_ring_4', type: 'cat6' },
+          { id: 'sc_ring_c4', fromId: 'sc_ring_4', toId: 'sc_ring_5', type: 'cat6' },
+          { id: 'sc_ring_c5', fromId: 'sc_ring_5', toId: 'sc_ring_1', type: 'cat6' },
+        ],
+        viewport: { x: 0, y: 0, zoom: 1 },
+      },
+      brief: 'Ring topology connects nodes in a closed loop where every device has exactly two neighbours. A single link break partitions the ring unless the protocol supports bidirectional traffic (FDDI dual ring) or self-healing arbitration. Largely a legacy LAN shape today, but the exam still tests recognition + the failure-domain trade-off.',
+      examRelevance: {
+        overview:      'Closed loop of N devices, each with exactly two neighbours.',
+        howItRoutes:   'Traffic circulates around the ring in one direction (single-ring) or both (dual-ring); legacy variants used token passing to arbitrate access.',
+        keyDevices:    'Routers or switches in the loop; no central node.',
+        keyConcepts:   'Single link break partitions the ring; dual-ring (FDDI) survives one cut.',
+        examRelevance: 'N10-009 obj 1.2 — recognise ring on a diagram; contrast its failure mode against star/mesh.',
+      },
+      completion: {
+        requiredDevices: ['router'],
+        expectedCount:   { router: 5 },
+        requiredCables:  [
+          { from:'router', to:'router' },
+        ],
+      },
+    },
+    {
+      id: 'point-to-point-topology',
+      title: 'Point-to-point topology (single dedicated link)',
+      category: 'topology',
+      objectiveRefs: ['1.2'],
+      startingState: {
+        devices: [
+          { id: 'sc_p2p_1', type: 'router', x: 440, y: 360, label: 'R1' },
+          { id: 'sc_p2p_2', type: 'router', x: 800, y: 360, label: 'R2' },
+        ],
+        cables: [
+          { id: 'sc_p2p_c1', fromId: 'sc_p2p_1', toId: 'sc_p2p_2', type: 'fiber' },
+        ],
+        viewport: { x: 0, y: 0, zoom: 1 },
+      },
+      brief: 'Point-to-point dedicates one link between two endpoints with no intermediate device. It is the atomic WAN building block — serial links, leased lines, microwave hops, satellite uplinks all share this shape. The exam contrasts it against multi-access and point-to-multipoint topologies.',
+      examRelevance: {
+        overview:      'A single dedicated link between two endpoints, no intermediaries.',
+        howItRoutes:   'Direct delivery; no media-access arbitration since the link has only two participants.',
+        keyDevices:    'Two routers (or any endpoint pair) and one link.',
+        keyConcepts:   'The atomic WAN building block; leased lines, serial circuits and microwave hops are all point-to-point.',
+        examRelevance: 'N10-009 obj 1.2 — distinguish point-to-point from point-to-multipoint and broadcast LAN topologies.',
+      },
+      completion: {
+        requiredDevices: ['router'],
+        expectedCount:   { router: 2 },
+        requiredCables:  [
+          { from:'router', to:'router' },
+        ],
+      },
+    },
   ];
 
   function validateScenarioShape(s) {
