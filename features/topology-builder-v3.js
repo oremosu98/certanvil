@@ -364,6 +364,47 @@
         ],
       },
     },
+    {
+      id: 'dmz-screened-subnet',
+      title: 'DMZ / screened subnet',
+      category: 'security',
+      objectiveRefs: ['1.6', '4.1'],
+      startingState: {
+        devices: [
+          { id: 'sc_dmz_internet', type: 'internet', x: 600, y: 100, label: 'INTERNET' },
+          { id: 'sc_dmz_outerfw',  type: 'firewall', x: 600, y: 260, label: 'OUTER-FW' },
+          { id: 'sc_dmz_dmzsrv',   type: 'server',   x: 380, y: 400, label: 'WEB-DMZ' },
+          { id: 'sc_dmz_dmzsrv2',  type: 'server',   x: 820, y: 400, label: 'MAIL-DMZ' },
+          { id: 'sc_dmz_innerfw',  type: 'firewall', x: 600, y: 560, label: 'INNER-FW' },
+          { id: 'sc_dmz_lan_sw',   type: 'switch',   x: 600, y: 720, label: 'LAN-SW' },
+        ],
+        cables: [
+          { id: 'sc_dmz_c1', fromId: 'sc_dmz_internet', toId: 'sc_dmz_outerfw', type: 'fiber' },
+          { id: 'sc_dmz_c2', fromId: 'sc_dmz_outerfw',  toId: 'sc_dmz_dmzsrv',  type: 'cat6' },
+          { id: 'sc_dmz_c3', fromId: 'sc_dmz_outerfw',  toId: 'sc_dmz_dmzsrv2', type: 'cat6' },
+          { id: 'sc_dmz_c4', fromId: 'sc_dmz_outerfw',  toId: 'sc_dmz_innerfw', type: 'cat6' },
+          { id: 'sc_dmz_c5', fromId: 'sc_dmz_innerfw',  toId: 'sc_dmz_lan_sw',  type: 'cat6' },
+        ],
+        viewport: { x: 0, y: 0, zoom: 1 },
+      },
+      brief: 'A screened subnet (the modern name for DMZ) sits between two firewalls. Internet-facing servers live there. The outer firewall lets internet → DMZ; the inner one blocks DMZ → LAN by default. Compromise of the DMZ does not get the attacker into the LAN.',
+      examRelevance: {
+        overview:      'Two firewalls + a middle "screened subnet" hosting public services.',
+        howItRoutes:   'Outer FW: internet ↔ DMZ. Inner FW: DMZ ↔ LAN (heavily filtered). Direct internet ↔ LAN blocked.',
+        keyDevices:    'Outer firewall, DMZ-hosted servers (web/mail/DNS), inner firewall, LAN switch.',
+        keyConcepts:   'Defense in depth, screened subnet, why a single firewall with 3 zones is the same idea at lower cost.',
+        examRelevance: 'N10-009 obj 4.1 — network security architecture. Contrast with bastion host, zero-trust.',
+      },
+      completion: {
+        requiredDevices: ['firewall','server','internet','switch'],
+        expectedCount:   { firewall:2, server:2, internet:1, switch:1 },
+        requiredCables:  [
+          { from:'internet', to:'firewall' },
+          { from:'firewall', to:'server' },
+          { from:'firewall', to:'switch' },
+        ],
+      },
+    },
   ];
 
   function validateScenarioShape(s) {
