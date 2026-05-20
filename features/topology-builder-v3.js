@@ -35,7 +35,7 @@
   // APP_VERSION hasn't changed. After v3 ships in a version-bump cycle,
   // APP_VERSION will be the canonical cache key and this constant can be
   // retired (or kept at .0 forever).
-  var TB3_CSS_REV = 'r7'; // r7: picker scroll fix (min-height:0 + overflow:hidden on grid item)
+  var TB3_CSS_REV = 'r8'; // r8: Phase 3 diagnostic drawer + Inspector IP fields CSS appended
 
   function _ensureCss() {
     if (document.querySelector('link[href*="topology-builder-v3.css"]')) return;
