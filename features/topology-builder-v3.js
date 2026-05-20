@@ -539,13 +539,13 @@
       objectiveRefs: ['1.6'],
       startingState: {
         devices: [
-          { id: 'sc_3tier_core1',  type: 'l3-switch',   x: 600, y: 160, label: 'CORE-1' },
-          { id: 'sc_3tier_dist1',  type: 'l3-switch',   x: 360, y: 340, label: 'DIST-1' },
-          { id: 'sc_3tier_dist2',  type: 'l3-switch',   x: 840, y: 340, label: 'DIST-2' },
-          { id: 'sc_3tier_acc1',   type: 'switch',      x: 240, y: 540, label: 'ACC-1' },
-          { id: 'sc_3tier_acc2',   type: 'switch',      x: 480, y: 540, label: 'ACC-2' },
-          { id: 'sc_3tier_acc3',   type: 'switch',      x: 720, y: 540, label: 'ACC-3' },
-          { id: 'sc_3tier_acc4',   type: 'switch',      x: 960, y: 540, label: 'ACC-4' },
+          { id: 'sc_3tier_core1', type: 'l3-switch', x: 600, y: 160, label: 'CORE-1', interfaces:[{ ip:'10.0.12.1', mask:30 },{ ip:'10.0.13.1', mask:30 }] },
+          { id: 'sc_3tier_dist1', type: 'l3-switch', x: 360, y: 340, label: 'DIST-1', interfaces:[{ ip:'10.0.12.2', mask:30 },{ ip:'192.168.10.1', mask:24 }] },
+          { id: 'sc_3tier_dist2', type: 'l3-switch', x: 840, y: 340, label: 'DIST-2', interfaces:[{ ip:'10.0.13.2', mask:30 },{ ip:'192.168.20.1', mask:24 }] },
+          { id: 'sc_3tier_acc1',  type: 'switch',    x: 240, y: 540, label: 'ACC-1' },
+          { id: 'sc_3tier_acc2',  type: 'switch',    x: 480, y: 540, label: 'ACC-2' },
+          { id: 'sc_3tier_acc3',  type: 'switch',    x: 720, y: 540, label: 'ACC-3' },
+          { id: 'sc_3tier_acc4',  type: 'switch',    x: 960, y: 540, label: 'ACC-4' },
         ],
         cables: [
           { id: 'sc_3tier_c1', fromId: 'sc_3tier_core1', toId: 'sc_3tier_dist1', type: 'fiber' },
@@ -849,12 +849,12 @@
       objectiveRefs: ['1.6'],
       startingState: {
         devices: [
-          { id: 'sc_slf_s1',   type: 'l3-switch', x: 480, y: 200, label: 'SPINE-1' },
-          { id: 'sc_slf_s2',   type: 'l3-switch', x: 720, y: 200, label: 'SPINE-2' },
-          { id: 'sc_slf_l1',   type: 'l3-switch', x: 320, y: 480, label: 'LEAF-1' },
-          { id: 'sc_slf_l2',   type: 'l3-switch', x: 520, y: 480, label: 'LEAF-2' },
-          { id: 'sc_slf_l3',   type: 'l3-switch', x: 720, y: 480, label: 'LEAF-3' },
-          { id: 'sc_slf_l4',   type: 'l3-switch', x: 920, y: 480, label: 'LEAF-4' },
+          { id: 'sc_slf_s1', type: 'l3-switch', x: 480, y: 200, label: 'SPINE-1', interfaces:[{ ip:'10.0.11.1', mask:30 },{ ip:'10.0.12.1', mask:30 },{ ip:'10.0.13.1', mask:30 },{ ip:'10.0.14.1', mask:30 }] },
+          { id: 'sc_slf_s2', type: 'l3-switch', x: 720, y: 200, label: 'SPINE-2', interfaces:[{ ip:'10.0.21.1', mask:30 },{ ip:'10.0.22.1', mask:30 },{ ip:'10.0.23.1', mask:30 },{ ip:'10.0.24.1', mask:30 }] },
+          { id: 'sc_slf_l1', type: 'l3-switch', x: 320, y: 480, label: 'LEAF-1', interfaces:[{ ip:'10.0.11.2', mask:30 },{ ip:'10.0.21.2', mask:30 }] },
+          { id: 'sc_slf_l2', type: 'l3-switch', x: 520, y: 480, label: 'LEAF-2', interfaces:[{ ip:'10.0.12.2', mask:30 },{ ip:'10.0.22.2', mask:30 }] },
+          { id: 'sc_slf_l3', type: 'l3-switch', x: 720, y: 480, label: 'LEAF-3', interfaces:[{ ip:'10.0.13.2', mask:30 },{ ip:'10.0.23.2', mask:30 }] },
+          { id: 'sc_slf_l4', type: 'l3-switch', x: 920, y: 480, label: 'LEAF-4', interfaces:[{ ip:'10.0.14.2', mask:30 },{ ip:'10.0.24.2', mask:30 }] },
         ],
         cables: [
           { id: 'sc_slf_c1', fromId: 'sc_slf_l1', toId: 'sc_slf_s1', type: 'fiber' },
@@ -891,8 +891,8 @@
       objectiveRefs: ['1.6'],
       startingState: {
         devices: [
-          { id: 'sc_cc_l3a',  type: 'l3-switch', x: 440, y: 240, label: 'L3-A' },
-          { id: 'sc_cc_l3b',  type: 'l3-switch', x: 760, y: 240, label: 'L3-B' },
+          { id: 'sc_cc_l3a',  type: 'l3-switch', x: 440, y: 240, label: 'L3-A', interfaces:[{ ip:'10.0.12.1', mask:30 },{ ip:'192.168.10.1', mask:24 }] },
+          { id: 'sc_cc_l3b',  type: 'l3-switch', x: 760, y: 240, label: 'L3-B', interfaces:[{ ip:'10.0.12.2', mask:30 },{ ip:'192.168.10.2', mask:24 }] },
           { id: 'sc_cc_acc1', type: 'switch',    x: 320, y: 520, label: 'ACC-1' },
           { id: 'sc_cc_acc2', type: 'switch',    x: 480, y: 520, label: 'ACC-2' },
           { id: 'sc_cc_acc3', type: 'switch',    x: 720, y: 520, label: 'ACC-3' },
@@ -932,13 +932,13 @@
       objectiveRefs: ['1.6'],
       startingState: {
         devices: [
-          { id: 'sc_soho_rtr', type: 'router',      x: 520, y: 200, label: 'GATEWAY' },
+          { id: 'sc_soho_rtr', type: 'router',      x: 520, y: 200, label: 'GATEWAY', interfaces:[{ ip:'192.168.10.1', mask:24 }] },
           { id: 'sc_soho_sw',  type: 'switch',      x: 520, y: 360, label: 'LAN-SW' },
           { id: 'sc_soho_ap',  type: 'ap',          x: 760, y: 360, label: 'AP-01' },
-          { id: 'sc_soho_ws1', type: 'workstation', x: 280, y: 520, label: 'WS-1' },
-          { id: 'sc_soho_ws2', type: 'workstation', x: 440, y: 520, label: 'WS-2' },
-          { id: 'sc_soho_lap', type: 'laptop',      x: 760, y: 520, label: 'LAPTOP' },
-          { id: 'sc_soho_phn', type: 'smartphone',  x: 920, y: 520, label: 'PHONE' },
+          { id: 'sc_soho_ws1', type: 'workstation', x: 280, y: 520, label: 'WS-1',   config:{ ip:'192.168.10.10', mask:24, gateway:'192.168.10.1' } },
+          { id: 'sc_soho_ws2', type: 'workstation', x: 440, y: 520, label: 'WS-2',   config:{ ip:'192.168.10.11', mask:24, gateway:'192.168.10.1' } },
+          { id: 'sc_soho_lap', type: 'laptop',      x: 760, y: 520, label: 'LAPTOP', config:{ ip:'192.168.10.20', mask:24, gateway:'192.168.10.1' } },
+          { id: 'sc_soho_phn', type: 'smartphone',  x: 920, y: 520, label: 'PHONE',  config:{ ip:'192.168.10.21', mask:24, gateway:'192.168.10.1' } },
         ],
         cables: [
           { id: 'sc_soho_c1', fromId: 'sc_soho_rtr', toId: 'sc_soho_sw',  type: 'cat6' },
