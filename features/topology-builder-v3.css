@@ -422,6 +422,12 @@ html[data-theme="light"] #page-topology-builder-v3 {
   display: none;
   flex-direction: column;
   padding: 18px;
+  /* Grid items default to min-height:auto (=content size). Without min-height:0 + overflow:hidden,
+     a tall scenarios catalog would push the picker past its grid cell and the bottom would be
+     clipped by the page-takeover's overflow:hidden. Constrain to the cell + delegate scroll to
+     the inner #tb3-picker-list which has its own overflow-y:auto. */
+  min-height: 0;
+  overflow: hidden;
 }
 #page-topology-builder-v3 .tb3-body.picker-open {
   grid-template-columns: 200px 1fr 320px;
@@ -430,6 +436,10 @@ html[data-theme="light"] #page-topology-builder-v3 {
 #page-topology-builder-v3 .tb3-body.picker-open .tb3-picker { display: flex; }
 /* Picker + Inspector mutually exclusive (one rail panel at a time) */
 #page-topology-builder-v3 .tb3-body.picker-open.inspector-open .tb3-inspector { display: none; }
+
+/* Flex-child scroll gotcha: a flex child with overflow-y:auto needs min-height:0 to allow
+   shrinking below content size, otherwise overflow never engages. */
+#page-topology-builder-v3 #tb3-picker-list { min-height: 0; }
 
 #page-topology-builder-v3 .tb3-picker-grp { display: flex; flex-direction: column; gap: 8px; }
 #page-topology-builder-v3 .tb3-picker-grp-h {
