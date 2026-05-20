@@ -1492,12 +1492,23 @@
       });
       return !ok;
     });
-
+    var reachabilityFailures = [];
+    if ((c.requiredCables || []).length && missingDevices.length === 0 && missingCables.length === 0) {
+      if (typeof computeReachability === 'function') {
+        var reach = computeReachability(state, c);
+        reachabilityFailures = reach.failures || [];
+      }
+    }
+    var complete = missingDevices.length === 0
+      && deviceCountMismatch.length === 0
+      && missingCables.length === 0
+      && reachabilityFailures.length === 0;
     return {
-      complete: missingDevices.length === 0 && deviceCountMismatch.length === 0 && missingCables.length === 0,
+      complete: complete,
       missingDevices: missingDevices,
       deviceCountMismatch: deviceCountMismatch,
       missingCables: missingCables,
+      reachabilityFailures: reachabilityFailures,
     };
   }
 
@@ -2459,8 +2470,19 @@
       pill.textContent = 'Goals met';
     } else {
       pill.classList.remove('on');
-      var missing = (res.missingDevices.length + res.deviceCountMismatch.length + res.missingCables.length);
+      var missing = (res.missingDevices.length + res.deviceCountMismatch.length + res.missingCables.length + (res.reachabilityFailures || []).length);
       pill.textContent = missing + ' to go';
+    }
+    pill.onclick = function () {
+      if (state.intent === 'lab' && state.activeScenarioId) {
+        _openDiagnostic();
+      }
+    };
+    pill.style.cursor = 'pointer';
+    // If drawer is already open, refresh its contents
+    var body = document.getElementById('tb3-body');
+    if (body && body.classList.contains('diagnostic-open')) {
+      _renderDiagnosticDrawer();
     }
   }
 

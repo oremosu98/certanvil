@@ -508,6 +508,17 @@ html[data-theme="light"] #page-topology-builder-v3 {
   background: var(--tb3-pass);
   border-color: var(--tb3-pass);
 }
+#page-topology-builder-v3 .tb3-completion-pill {
+  cursor: pointer;
+  transition: border-color 150ms ease, color 150ms ease;
+}
+#page-topology-builder-v3 .tb3-completion-pill:hover {
+  border-color: color-mix(in oklab, var(--tb3-accent) 30%, transparent);
+  color: var(--tb3-text);
+}
+@media (hover: hover) and (pointer: fine) {
+  #page-topology-builder-v3 .tb3-completion-pill:active { transform: scale(0.97); }
+}
 
 /* Inspector L3 fields (Phase 3) */
 #page-topology-builder-v3 .tb3-insp-section {
