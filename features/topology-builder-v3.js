@@ -405,6 +405,46 @@
         ],
       },
     },
+    {
+      id: 'router-on-a-stick',
+      title: 'Router-on-a-stick (inter-VLAN routing)',
+      category: 'vlan',
+      objectiveRefs: ['2.1', '2.3'],
+      startingState: {
+        devices: [
+          { id: 'sc_roas_router', type: 'router', x: 600, y: 200, label: 'R1' },
+          { id: 'sc_roas_switch', type: 'switch', x: 600, y: 380, label: 'SW1' },
+          { id: 'sc_roas_v10_a',  type: 'workstation', x: 320, y: 560, label: 'VLAN10-A' },
+          { id: 'sc_roas_v10_b',  type: 'workstation', x: 480, y: 560, label: 'VLAN10-B' },
+          { id: 'sc_roas_v20_a',  type: 'workstation', x: 720, y: 560, label: 'VLAN20-A' },
+          { id: 'sc_roas_v20_b',  type: 'workstation', x: 880, y: 560, label: 'VLAN20-B' },
+        ],
+        cables: [
+          { id: 'sc_roas_c1', fromId: 'sc_roas_router', toId: 'sc_roas_switch', type: 'cat6' },
+          { id: 'sc_roas_c2', fromId: 'sc_roas_switch', toId: 'sc_roas_v10_a',  type: 'cat6' },
+          { id: 'sc_roas_c3', fromId: 'sc_roas_switch', toId: 'sc_roas_v10_b',  type: 'cat6' },
+          { id: 'sc_roas_c4', fromId: 'sc_roas_switch', toId: 'sc_roas_v20_a',  type: 'cat6' },
+          { id: 'sc_roas_c5', fromId: 'sc_roas_switch', toId: 'sc_roas_v20_b',  type: 'cat6' },
+        ],
+        viewport: { x: 0, y: 0, zoom: 1 },
+      },
+      brief: 'Router-on-a-stick uses a single trunked link between a switch and a router. The router carries one subinterface per VLAN — that\'s how hosts in VLAN 10 reach hosts in VLAN 20 without an L3 switch. The classic exam contrast against SVIs on an L3 switch.',
+      examRelevance: {
+        overview:      'One physical link between switch and router carries multiple VLANs as a trunk; router subinterfaces route between them.',
+        howItRoutes:   'Switch trunks frames tagged with VLAN IDs to the router. Router subinterface per VLAN holds the gateway IP. Inter-VLAN packets hairpin through the router.',
+        keyDevices:    'L2 switch (with trunk port) + router (with subinterfaces).',
+        keyConcepts:   '802.1Q tagging, trunk vs access ports, subinterfaces, hairpin routing, why an L3 switch is faster.',
+        examRelevance: 'N10-009 obj 2.1 (switching) + obj 2.3 (VLANs). Commonly tested against L3-switch inter-VLAN.',
+      },
+      completion: {
+        requiredDevices: ['router','switch','workstation'],
+        expectedCount:   { router:1, switch:1, workstation:4 },
+        requiredCables:  [
+          { from:'router', to:'switch' },
+          { from:'switch', to:'workstation' },
+        ],
+      },
+    },
   ];
 
   function validateScenarioShape(s) {
