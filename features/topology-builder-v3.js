@@ -246,6 +246,43 @@
         ],
       },
     },
+    {
+      id: 'hub-and-spoke-wan',
+      title: 'Hub-and-spoke WAN with branch routers',
+      category: 'wan',
+      objectiveRefs: ['1.6', '2.1'],
+      startingState: {
+        devices: [
+          { id: 'sc_hns_hub',  type: 'router', x: 600, y: 300, label: 'HQ' },
+          { id: 'sc_hns_b1',   type: 'router', x: 320, y: 200, label: 'BR-1' },
+          { id: 'sc_hns_b2',   type: 'router', x: 320, y: 400, label: 'BR-2' },
+          { id: 'sc_hns_b3',   type: 'router', x: 880, y: 200, label: 'BR-3' },
+          { id: 'sc_hns_b4',   type: 'router', x: 880, y: 400, label: 'BR-4' },
+        ],
+        cables: [
+          { id: 'sc_hns_c1', fromId: 'sc_hns_hub', toId: 'sc_hns_b1', type: 'fiber' },
+          { id: 'sc_hns_c2', fromId: 'sc_hns_hub', toId: 'sc_hns_b2', type: 'fiber' },
+          { id: 'sc_hns_c3', fromId: 'sc_hns_hub', toId: 'sc_hns_b3', type: 'fiber' },
+          { id: 'sc_hns_c4', fromId: 'sc_hns_hub', toId: 'sc_hns_b4', type: 'fiber' },
+        ],
+        viewport: { x: 0, y: 0, zoom: 1 },
+      },
+      brief: 'Hub-and-spoke centralises WAN traffic through a single HQ router. All branch-to-branch traffic transits the hub — simple to manage, single point of failure, the classic SD-WAN starting shape.',
+      examRelevance: {
+        overview:      'All branches connect only to the hub. Branch-to-branch goes hub → branch.',
+        howItRoutes:   'Hub is the default gateway for inter-branch traffic. Static or BGP routing pinned to the hub.',
+        keyDevices:    'Hub router (HQ) + branch routers. Often firewalls in the path.',
+        keyConcepts:   'Hub bottleneck. Failure domain (hub down = all branches isolated from each other). Common SD-WAN underlay.',
+        examRelevance: 'N10-009 obj 1.6 — WAN topology archetype. Contrast with full-mesh + partial-mesh + MPLS.',
+      },
+      completion: {
+        requiredDevices: ['router'],
+        expectedCount:   { router: 5 },
+        requiredCables:  [
+          { from:'router', to:'router' },
+        ],
+      },
+    },
   ];
 
   function validateScenarioShape(s) {
