@@ -204,12 +204,15 @@ Add to `tests/uat.js` (near the end, before the final `process.exit` block):
   const reportsSrc = fs.readFileSync(path.join(__dirname,'..','features','reports.js'),'utf8');
 
   // ── 1. buildPayload(form, ctx) ───────────────────────────
-  const buildPayloadBody = _fnBody(reportsSrc, 'buildPayload');
-  assert(buildPayloadBody, 'buildPayload exists');
+  // NOTE: _fnBody returns the FULL "function NAME(args) { ... }" declaration,
+  // not just the inner body. Inline the declaration directly inside the
+  // sandbox template — matches the existing pattern at uat.js:277-290.
+  const buildPayloadDecl = _fnBody(reportsSrc, 'buildPayload');
+  assert(buildPayloadDecl, 'buildPayload exists');
 
   const sandbox = { result: null };
   const code = `
-    function buildPayload(form, ctx) { ${buildPayloadBody} }
+    ${buildPayloadDecl}
     result = buildPayload(
       { title: '  streak issue  ', desc: 'detail', steps: null },
       { cert: 'netplus-N10-009', theme: 'light', version: 'v5.5.12',
@@ -316,12 +319,12 @@ Add inside the same `_reportFixtures` IIFE in `tests/uat.js`, after the buildPay
 
 ```js
   // ── 2. renderIssueBody(payload) ──────────────────────────
-  const renderBodyBody = _fnBody(reportsSrc, 'renderIssueBody');
-  assert(renderBodyBody, 'renderIssueBody exists');
+  const renderBodyDecl = _fnBody(reportsSrc, 'renderIssueBody');
+  assert(renderBodyDecl, 'renderIssueBody exists');
 
   const rbSandbox = { result: null };
   const rbCode = `
-    function renderIssueBody(payload) { ${renderBodyBody} }
+    ${renderBodyDecl}
     result = renderIssueBody({
       id: 'rpt_2026-05-20T14-32-07_a3f9',
       title: 'streak does not update',
@@ -417,13 +420,13 @@ git commit -m "feat(bug-report): renderIssueBody + fixture"
 
 ```js
   // ── 3. classifyError(resp) ───────────────────────────────
-  const classifyBody = _fnBody(reportsSrc, 'classifyError');
-  assert(classifyBody, 'classifyError exists');
+  const classifyDecl = _fnBody(reportsSrc, 'classifyError');
+  assert(classifyDecl, 'classifyError exists');
 
   function callClassify(input) {
     var s = { result: null };
     vm.runInNewContext(
-      'function classifyError(resp) { ' + classifyBody + ' } result = classifyError(' + JSON.stringify(input) + ');',
+      classifyDecl + ' result = classifyError(' + JSON.stringify(input) + ');',
       s
     );
     return s.result;
@@ -517,13 +520,13 @@ git commit -m "feat(bug-report): classifyError + 7-case fixture"
 
 ```js
   // ── 4. enqueueReport(rpt, store) ─────────────────────────
-  const enqueueBody = _fnBody(reportsSrc, 'enqueueReport');
-  assert(enqueueBody, 'enqueueReport exists');
+  const enqueueDecl = _fnBody(reportsSrc, 'enqueueReport');
+  assert(enqueueDecl, 'enqueueReport exists');
 
   function callEnq(rpt, store) {
     var s = { result: null };
     vm.runInNewContext(
-      'function enqueueReport(rpt, store) { ' + enqueueBody + ' } result = enqueueReport(' +
+      enqueueDecl + ' result = enqueueReport(' +
         JSON.stringify(rpt) + ', ' + JSON.stringify(store) + ');',
       s
     );
