@@ -270,7 +270,109 @@
     if (el) el.textContent = Math.round(state.viewport.zoom * 100) + '%';
   }
 
-  function _wirePanZoom() { /* TASK 2.3 */ }
+  function _wirePanZoom() {
+    var wrap = document.getElementById('tb3-canvas-wrap');
+    if (!wrap) return;
+
+    var spaceDown = false;
+    var panning = false;
+    var panStartX = 0, panStartY = 0;
+    var viewStartX = 0, viewStartY = 0;
+
+    // Space key toggles pan mode (cursor changes via CSS .panning class)
+    document.addEventListener('keydown', function (e) {
+      if (e.code === 'Space' && !spaceDown && document.getElementById('page-topology-builder-v3').classList.contains('active')) {
+        spaceDown = true;
+        wrap.classList.add('panning');
+        e.preventDefault();
+      }
+    });
+    document.addEventListener('keyup', function (e) {
+      if (e.code === 'Space') {
+        spaceDown = false;
+        wrap.classList.remove('panning');
+        wrap.classList.remove('grabbing');
+      }
+    });
+
+    // Pan: mousedown when space is down → drag
+    wrap.addEventListener('mousedown', function (e) {
+      if (!spaceDown) return;
+      panning = true;
+      wrap.classList.add('grabbing');
+      panStartX = e.clientX;
+      panStartY = e.clientY;
+      viewStartX = state.viewport.x;
+      viewStartY = state.viewport.y;
+      e.preventDefault();
+    });
+    document.addEventListener('mousemove', function (e) {
+      if (!panning) return;
+      var dx = (e.clientX - panStartX) / state.viewport.zoom;
+      var dy = (e.clientY - panStartY) / state.viewport.zoom;
+      state.viewport.x = viewStartX - dx;
+      state.viewport.y = viewStartY - dy;
+      _renderCanvas();
+      _renderMinimap();
+    });
+    document.addEventListener('mouseup', function () {
+      if (panning) {
+        panning = false;
+        wrap.classList.remove('grabbing');
+        _saveState();
+      }
+    });
+
+    // Zoom: scroll wheel
+    wrap.addEventListener('wheel', function (e) {
+      e.preventDefault();
+      var oldZoom = state.viewport.zoom;
+      var delta = -e.deltaY * 0.001;
+      var newZoom = Math.max(0.5, Math.min(4, oldZoom * (1 + delta)));
+      if (newZoom === oldZoom) return;
+
+      // Zoom toward cursor: keep the logical point under the cursor stationary
+      var rect = wrap.getBoundingClientRect();
+      var cx = e.clientX - rect.left;
+      var cy = e.clientY - rect.top;
+      var lx = state.viewport.x + cx / oldZoom;
+      var ly = state.viewport.y + cy / oldZoom;
+      state.viewport.zoom = newZoom;
+      state.viewport.x = lx - cx / newZoom;
+      state.viewport.y = ly - cy / newZoom;
+
+      _renderCanvas();
+      _renderMinimap();
+      _updateZoomDisplay();
+      _saveState();
+    }, { passive: false });
+
+    // Zoom buttons
+    var btnIn = document.getElementById('tb3-zoom-in');
+    var btnOut = document.getElementById('tb3-zoom-out');
+    if (btnIn) btnIn.addEventListener('click', function () { _zoomStep(1.2); });
+    if (btnOut) btnOut.addEventListener('click', function () { _zoomStep(1/1.2); });
+  }
+
+  function _zoomStep(factor) {
+    var oldZoom = state.viewport.zoom;
+    var newZoom = Math.max(0.5, Math.min(4, oldZoom * factor));
+    if (newZoom === oldZoom) return;
+    // Zoom from canvas centre
+    var wrap = document.getElementById('tb3-canvas-wrap');
+    var cx = wrap.clientWidth / 2;
+    var cy = wrap.clientHeight / 2;
+    var lx = state.viewport.x + cx / oldZoom;
+    var ly = state.viewport.y + cy / oldZoom;
+    state.viewport.zoom = newZoom;
+    state.viewport.x = lx - cx / newZoom;
+    state.viewport.y = ly - cy / newZoom;
+    _renderCanvas();
+    _renderMinimap();
+    _updateZoomDisplay();
+    _saveState();
+  }
+
   function _renderMinimap() { /* TASK 2.5 */ }
 
   // ───────────────────────────────────────────────────────────
