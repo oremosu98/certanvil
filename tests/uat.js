@@ -21037,6 +21037,43 @@ test('v4.99.59 EnvStrategy: PR template exists with the gated-lane checklist', (
   assert(!sC.find(function(x){ return x.id === 'rpt_0'; }), 'C: oldest (rpt_0) dropped');
 })(); // close _reportFixtures IIFE
 
+// ─── Bug-report structural guards (v4.99.x Stage 8) ─────────────────────────
+// Lock in the structural shape of the bug-report popup feature so future
+// refactors can't silently regress these surfaces. Sits OUTSIDE the
+// _reportFixtures IIFE — uses the global test() helper directly.
+const reportsModule = fs.readFileSync(path.join(__dirname, '..', 'features', 'reports.js'), 'utf8');
+const indexHtml = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
+const appJs = fs.readFileSync(path.join(__dirname, '..', 'app.js'), 'utf8');
+const dgCss = fs.readFileSync(path.join(__dirname, '..', 'dg-system.css'), 'utf8');
+
+// Topbar iconbtn exists
+test('topbar bug iconbtn exists', indexHtml.includes('id="topbar-bug-report"'));
+test('bug iconbtn lazy-loads reports module', indexHtml.includes("_loadFeature('reports')"));
+
+// STORAGE.BUG_REPORTS key
+test('STORAGE.BUG_REPORTS key registered', /BUG_REPORTS:\s*'nplus_bug_reports'/.test(appJs));
+
+// Feature module contract
+test('reports.js registers on _certanvilFeatures', reportsModule.includes('window._certanvilFeatures.reports'));
+test('reports.js exports all 4 pure functions',
+  reportsModule.includes('function buildPayload') &&
+  reportsModule.includes('function renderIssueBody') &&
+  reportsModule.includes('function classifyError') &&
+  reportsModule.includes('function enqueueReport'));
+
+// DOMContentLoaded drain hook in app.js
+test('app.js drainQueue hook on DOMContentLoaded',
+  /DOMContentLoaded[\s\S]{0,400}_loadFeature\('reports'\)[\s\S]{0,200}drainQueue/.test(appJs));
+
+// CSS — drawer + toast classes present
+test('drawer CSS scoped to #bug-report-drawer', dgCss.includes('#bug-report-drawer'));
+test('toast CSS exists', dgCss.includes('.br-toast'));
+test('mobile bottom-sheet breakpoint present', dgCss.includes('@media (max-width: 767px)'));
+test('reduced-motion gate present', dgCss.includes('prefers-reduced-motion'));
+
+// Tombstone — STORAGE.BUG_REPORTS must not collide with STORAGE.REPORTS string
+test('BUG_REPORTS does not collide with REPORTS key', !/BUG_REPORTS:\s*'nplus_reports'/.test(appJs));
+
 // ── Summary ──
 console.log('\n' + '═'.repeat(50));
 const total = results.pass + results.fail;
