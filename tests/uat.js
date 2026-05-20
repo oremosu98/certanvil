@@ -21136,6 +21136,26 @@ test('BUG_REPORTS does not collide with REPORTS key', !/BUG_REPORTS:\s*'nplus_re
   assert(pC.devices.length === 0 && pC.intent === 'free-build' && pC.selectedId === null, 'C: empty object → defaults + selectedId null');
 })();
 
+// ─── Topology Builder v3 structural guards ────────────────
+const tbv3Module = fs.readFileSync(path.join(__dirname, '..', 'features', 'topology-builder-v3.js'), 'utf8');
+const tbv3Css = fs.readFileSync(path.join(__dirname, '..', 'features', 'topology-builder-v3.css'), 'utf8');
+const tbv3IndexHtml = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
+const tbv3AppJs = fs.readFileSync(path.join(__dirname, '..', 'app.js'), 'utf8');
+
+test('v6.x TB v3: STORAGE.TB_V3_DRAFT key registered', /TB_V3_DRAFT:\s*'nplus_tb_v3_draft'/.test(tbv3AppJs));
+test('v6.x TB v3: feature module registers on _certanvilFeatures', tbv3Module.includes("window._certanvilFeatures['topology-builder-v3']"));
+test('v6.x TB v3: openTopologyBuilderV3 exposed on window', tbv3Module.includes('window.openTopologyBuilderV3 = openTopologyBuilderV3'));
+test('v6.x TB v3: 4 pure functions exported', tbv3Module.includes('buildDevice: buildDevice') && tbv3Module.includes('buildCable: buildCable') && tbv3Module.includes('serialiseState: serialiseState') && tbv3Module.includes('parseState: parseState'));
+test('v6.x TB v3: #page-topology-builder-v3 div in index.html', tbv3IndexHtml.includes('id="page-topology-builder-v3"'));
+test('v6.x TB v3: sidebar entry lazy-loads topology-builder-v3', /page:\s*'topology-builder-v3'[\s\S]{0,200}_loadFeature\('topology-builder-v3'\)/.test(tbv3AppJs));
+test('v6.x TB v3: full-viewport takeover CSS scoped to #page-topology-builder-v3', tbv3Css.includes('html:has(#page-topology-builder-v3.page.active) #app-sidebar'));
+test('v6.x TB v3: 5 modes referenced in renderModeBar', /id:\s*'design'[\s\S]{0,600}id:\s*'simulate'[\s\S]{0,600}id:\s*'trace'[\s\S]{0,600}id:\s*'osi'[\s\S]{0,600}id:\s*'3d'/.test(tbv3Module));
+test('v6.x TB v3: TB_V3_PALETTE_GROUPS has 6 groups', /TB_V3_PALETTE_GROUPS\s*=\s*\[[\s\S]{0,2000}'Routers'[\s\S]{0,200}'Switches'[\s\S]{0,200}'Endpoints'[\s\S]{0,200}'Wireless'[\s\S]{0,200}'Security'[\s\S]{0,200}'Cloud & WAN'/.test(tbv3Module));
+test('v6.x TB v3: scoped CSS tokens in light + dark', tbv3Css.includes('--tb3-bg: oklch(0.16 0.009 275)') && tbv3Css.includes('html[data-theme="light"] #page-topology-builder-v3'));
+test('v6.x TB v3: reduced-motion gate', tbv3Css.includes('prefers-reduced-motion'));
+test('v6.x TB v3: 40px grid snap', tbv3Module.includes('Math.round(lx / 40) * 40'));
+test('v6.x TB v3: STORAGE.TB_V3_DRAFT does not collide with REPORTS', !/TB_V3_DRAFT:\s*'nplus_(bug_)?reports'/.test(tbv3AppJs));
+
 // ── Summary ──
 console.log('\n' + '═'.repeat(50));
 const total = results.pass + results.fail;
