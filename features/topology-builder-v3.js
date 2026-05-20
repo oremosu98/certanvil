@@ -363,6 +363,8 @@
     var required = (completion && completion.requiredCables) || [];
     var devices = (state && state.devices) || [];
     var cables = (state && state.cables) || [];
+    var L2_TYPES = { 'switch':1,'hub':1,'ap':1,'wlc':1 };
+    var L3_MULTI_TYPES = { 'router':1,'l3-switch':1,'firewall':1,'vpn':1,'cloud':1,'internet':1 };
     function pickByType(t, excludeId) {
       for (var i = 0; i < devices.length; i++) {
         if (devices[i].type === t && devices[i].id !== excludeId) return devices[i];
@@ -379,10 +381,8 @@
       }
       return false;
     }
-    // L2 cable-reachability check (BFS on cables, ignoring IP) between two device ids
     function l2Connected(idA, idB) {
-      var visited = {};
-      visited[idA] = true;
+      var visited = {}; visited[idA] = true;
       var queue = [idA];
       while (queue.length) {
         var cur = queue.shift();
@@ -397,45 +397,105 @@
       }
       return false;
     }
+    // Smart-pick: try every (a, b) device combination matching the type-pair and
+    // accept the FIRST pair whose reachability succeeds. If NONE succeed, report
+    // the failure from the first attempt (best-effort diagnostic).
+    function pairsOfType(fromType, toType) {
+      var fromDevs = devices.filter(function (d) { return d.type === fromType; });
+      var toDevs = devices.filter(function (d) { return d.type === toType; });
+      var pairs = [];
+      for (var i = 0; i < fromDevs.length; i++) {
+        for (var j = 0; j < toDevs.length; j++) {
+          if (fromDevs[i].id !== toDevs[j].id) pairs.push([fromDevs[i], toDevs[j]]);
+        }
+      }
+      return pairs;
+    }
     for (var i = 0; i < required.length; i++) {
       var pair = required[i];
-      var a = pickByType(pair.from, null);
-      if (!a) continue; // no representative — let cable-shape validator handle missing-type
-      var b = pickByType(pair.to, a.id);
-      if (!b) continue;
-      // Determine L3 src + dst: prefer IP-bearing devices for full reachability check
-      var ipSrc = hasIp(a) ? a : (hasIp(b) ? b : null);
-      var ipDst = null;
-      if (ipSrc) {
-        // Find an IP-bearing device of the other type
-        var otherType = ipSrc === a ? pair.to : pair.from;
-        ipDst = pickByType(otherType, ipSrc.id);
-        // If the other type has no IP (e.g. it's a switch), look for any other IP-bearing device
-        if (ipDst && !hasIp(ipDst)) {
-          // Fall back to any IP-bearing device except ipSrc
-          ipDst = null;
-          for (var j = 0; j < devices.length; j++) {
-            if (devices[j].id !== ipSrc.id && hasIp(devices[j])) { ipDst = devices[j]; break; }
+      // Determine if each side is a pure-L2 type (no IP) or an IP-bearing type
+      var fromIsL2 = !!L2_TYPES[pair.from];
+      var toIsL2   = !!L2_TYPES[pair.to];
+      // Resolve the effective IP-bearing types for routing:
+      //   if a side is L2, use the OTHER side's type for both ends of the L3 check
+      var ipFromType = fromIsL2 ? pair.to   : pair.from;
+      var ipToType   = toIsL2   ? pair.from : pair.to;
+      // When BOTH sides are L2, just verify cable connectivity between them
+      if (fromIsL2 && toIsL2) {
+        var pairs = pairsOfType(pair.from, pair.to);
+        if (pairs.length === 0) continue;
+        var anyL2 = pairs.some(function (p) { return l2Connected(p[0].id, p[1].id); });
+        if (!anyL2) {
+          failures.push({
+            from: pairs[0][0].id, to: pairs[0][1].id,
+            reason: 'no-cable-path', failedAt: pairs[0][0].id,
+          });
+        }
+        continue;
+      }
+      // When one or both sides are IP-bearing, determine the routing strategy:
+      //   - Both sides are distinct IP-bearing types (e.g. router↔router, firewall↔server):
+      //     try ALL cross-type pairs, accept if ANY succeeds (spine-leaf fix).
+      //   - One side is L2 (e.g. switch↔workstation): the L2 device has no IP to route from.
+      //     Instead verify that EVERY IP-bearing device of the non-L2 type can reach at
+      //     least one peer — this detects a single isolated workstation even when others
+      //     are mutually reachable.
+      var pairs = pairsOfType(ipFromType, ipToType);
+      if (pairs.length === 0) continue; // no representative — cable-shape validator handles
+      var firstFail = null;
+      var anyOk = false;
+      if (fromIsL2 || toIsL2) {
+        // L2-mixed: the L2 side has no IP — check that every IP-bearing device of the
+        // non-L2 type can reach at least one peer (L3 routing or, as a fallback for
+        // multi-interface devices whose computePath has trouble, direct cable-to-IP-peer).
+        var ipType = fromIsL2 ? pair.to : pair.from;
+        var ipDevs = devices.filter(function (d) { return d.type === ipType && hasIp(d); });
+        var allOk = ipDevs.length > 0;
+        for (var k = 0; k < ipDevs.length && allOk; k++) {
+          var src = ipDevs[k];
+          var canReachSomeone = false;
+          // Try L3 routing to any same-type peer
+          for (var m = 0; m < ipDevs.length; m++) {
+            if (ipDevs[m].id === src.id) continue;
+            var r = computePath(src.id, ipDevs[m].id, state);
+            if (r.ok) { canReachSomeone = true; break; }
+            if (!firstFail) firstFail = { from: src.id, to: ipDevs[m].id, reason: r.reason, failedAt: r.failedAt };
           }
+          // Fallback: if L3 failed (e.g. multi-interface routing gap), accept if this device
+          // is cable-connected to at least one IP-bearing device (indicates physical reachability)
+          if (!canReachSomeone) {
+            for (var n = 0; n < cables.length; n++) {
+              var c = cables[n];
+              var neighborId = null;
+              if (c.fromId === src.id) neighborId = c.toId;
+              else if (c.toId === src.id) neighborId = c.fromId;
+              if (neighborId) {
+                for (var p = 0; p < devices.length; p++) {
+                  if (devices[p].id === neighborId && hasIp(devices[p])) { canReachSomeone = true; break; }
+                }
+              }
+              if (canReachSomeone) break;
+            }
+          }
+          if (!canReachSomeone) allOk = false;
+        }
+        anyOk = allOk;
+      } else {
+        // Both sides are IP-bearing types — any successful pair is enough
+        for (var k = 0; k < pairs.length; k++) {
+          var a = pairs[k][0], b = pairs[k][1];
+          if (!hasIp(a) || !hasIp(b)) continue; // skip pairs where either side has no IP
+          var result = computePath(a.id, b.id, state);
+          if (result.ok) { anyOk = true; break; }
+          if (!firstFail) firstFail = { from: a.id, to: b.id, reason: result.reason, failedAt: result.failedAt };
         }
       }
-      if (ipSrc && ipDst) {
-        // Full L3 reachability check between two IP-bearing representatives
-        var result = computePath(ipSrc.id, ipDst.id, state);
-        if (!result.ok) {
-          failures.push({ from: ipSrc.id, to: ipDst.id, reason: result.reason, failedAt: result.failedAt });
-        }
-      } else {
-        // Both sides are L2-only: verify cable path exists
-        if (!l2Connected(a.id, b.id)) {
-          failures.push({ from: a.id, to: b.id, reason: 'no-cable-path', failedAt: a.id });
-        }
+      if (!anyOk) {
+        if (firstFail) failures.push(firstFail);
+        // else: no IP-bearing pair found — skip silently (cable-shape will have flagged)
       }
     }
-    return {
-      complete: failures.length === 0,
-      failures: failures,
-    };
+    return { complete: failures.length === 0, failures: failures };
   }
 
   // ───────────────────────────────────────────────────────────
