@@ -35,7 +35,7 @@
   // APP_VERSION hasn't changed. After v3 ships in a version-bump cycle,
   // APP_VERSION will be the canonical cache key and this constant can be
   // retired (or kept at .0 forever).
-  var TB3_CSS_REV = 'r5'; // phase 2 bumps for picker panel + intent chip CSS appended in this stage
+  var TB3_CSS_REV = 'r6'; // r6: implicit click+drag canvas pan (grabbing cursor rule loosened)
 
   function _ensureCss() {
     if (document.querySelector('link[href*="topology-builder-v3.css"]')) return;
@@ -768,8 +768,10 @@
 
     var spaceDown = false;
     var panning = false;
+    var panCommitted = false; // false until mouse moves > PAN_THRESHOLD px (suppresses pan on a static click)
     var panStartX = 0, panStartY = 0;
     var viewStartX = 0, viewStartY = 0;
+    var PAN_THRESHOLD = 3;
 
     // Space key toggles pan mode (cursor changes via CSS .panning class)
     document.addEventListener('keydown', function (e) {
@@ -787,21 +789,44 @@
       }
     });
 
-    // Pan: mousedown when space is down → drag
+    // Pan: space+drag (instant) OR click+drag on empty canvas (committed after PAN_THRESHOLD px)
     wrap.addEventListener('mousedown', function (e) {
-      if (!spaceDown) return;
+      if (e.button !== 0) return; // left click only
+      if (spaceDown) {
+        // Space-pan: commit immediately (matches pre-existing power-user behaviour)
+        panning = true;
+        panCommitted = true;
+        wrap.classList.add('grabbing');
+        panStartX = e.clientX;
+        panStartY = e.clientY;
+        viewStartX = state.viewport.x;
+        viewStartY = state.viewport.y;
+        e.preventDefault();
+        return;
+      }
+      // Implicit pan: mousedown on empty canvas → candidate pan, committed after PAN_THRESHOLD movement.
+      // Skip if the mousedown originated on a device (the device-drag handler owns that).
+      // Skip in cable mode (cursor='crosshair' is the only signal at this scope).
+      if (e.target.closest('.tb3-dev')) return;
+      if (wrap.style.cursor === 'crosshair') return;
       panning = true;
-      wrap.classList.add('grabbing');
+      panCommitted = false; // not yet — wait for threshold in mousemove
       panStartX = e.clientX;
       panStartY = e.clientY;
       viewStartX = state.viewport.x;
       viewStartY = state.viewport.y;
-      e.preventDefault();
     });
     document.addEventListener('mousemove', function (e) {
       if (!panning) return;
-      var dx = (e.clientX - panStartX) / state.viewport.zoom;
-      var dy = (e.clientY - panStartY) / state.viewport.zoom;
+      var rawDx = e.clientX - panStartX;
+      var rawDy = e.clientY - panStartY;
+      if (!panCommitted) {
+        if (Math.abs(rawDx) < PAN_THRESHOLD && Math.abs(rawDy) < PAN_THRESHOLD) return;
+        panCommitted = true;
+        wrap.classList.add('grabbing');
+      }
+      var dx = rawDx / state.viewport.zoom;
+      var dy = rawDy / state.viewport.zoom;
       state.viewport.x = viewStartX - dx;
       state.viewport.y = viewStartY - dy;
       _renderCanvas();
@@ -809,10 +834,14 @@
     });
     document.addEventListener('mouseup', function () {
       if (panning) {
+        var wasCommitted = panCommitted;
         panning = false;
+        panCommitted = false;
         wrap.classList.remove('grabbing');
-        _saveState();
-        _renderCompletionPill();
+        if (wasCommitted) {
+          _saveState();
+          _renderCompletionPill();
+        }
       }
     });
 

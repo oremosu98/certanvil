@@ -215,7 +215,8 @@ html[data-theme="light"] #page-topology-builder-v3 {
   cursor: default;
 }
 #page-topology-builder-v3 .tb3-canvas-wrap.panning { cursor: grab; }
-#page-topology-builder-v3 .tb3-canvas-wrap.panning.grabbing { cursor: grabbing; }
+/* .grabbing applies during both space-pan AND implicit click+drag pan */
+#page-topology-builder-v3 .tb3-canvas-wrap.grabbing { cursor: grabbing; }
 #page-topology-builder-v3 .tb3-canvas-svg {
   position: absolute;
   inset: 0;
