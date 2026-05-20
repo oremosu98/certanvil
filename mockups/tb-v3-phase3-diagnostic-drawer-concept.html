@@ -1,0 +1,631 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>TB v3 Phase 3 — Diagnostic Drawer Concept</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  /* ── locked TB v3 tokens (mirrors features/topology-builder-v3.css) ── */
+  html[data-theme="dark"] {
+    --tb3-bg:        oklch(0.18 0.012 280);
+    --tb3-surface:   oklch(0.22 0.012 280);
+    --tb3-surface-2: oklch(0.205 0.009 275);
+    --tb3-text:      oklch(0.96 0.008 90);
+    --tb3-text-mid:  oklch(0.78 0.011 85);
+    --tb3-text-dim:  oklch(0.62 0.012 80);
+    --tb3-border:        color-mix(in oklab, var(--tb3-text) 16%, transparent);
+    --tb3-border-soft:   color-mix(in oklab, var(--tb3-text) 9%, transparent);
+    --tb3-accent:        oklch(0.8 0.155 64);
+    --tb3-accent-deep:   oklch(0.68 0.18 60);
+    --tb3-pass:          oklch(0.74 0.16 145);
+    --tb3-on-accent:     oklch(0.18 0.012 280);
+  }
+  html[data-theme="light"] {
+    --tb3-bg:        oklch(0.985 0.008 85);
+    --tb3-surface:   oklch(1 0 0);
+    --tb3-surface-2: oklch(0.97 0.006 85);
+    --tb3-text:      oklch(0.22 0.012 280);
+    --tb3-text-mid:  oklch(0.42 0.014 285);
+    --tb3-text-dim:  oklch(0.55 0.012 280);
+    --tb3-border:        color-mix(in oklab, var(--tb3-text) 14%, transparent);
+    --tb3-border-soft:   color-mix(in oklab, var(--tb3-text) 7%, transparent);
+    --tb3-accent:        oklch(0.5 0.155 55);
+    --tb3-accent-deep:   oklch(0.42 0.18 55);
+    --tb3-pass:          oklch(0.55 0.16 145);
+    --tb3-on-accent:     oklch(0.985 0.008 85);
+  }
+  /* ── motion tokens (emil) ── */
+  :root {
+    --ease-out:    cubic-bezier(0.23, 1, 0.32, 1);
+    --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+    --t-enter: 220ms;
+    --t-exit: 150ms;
+    --t-press: 100ms;
+    --t-hover: 150ms;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--tb3-bg);
+    color: var(--tb3-text);
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    font-size: 14px;
+    min-height: 100vh;
+    transition: background var(--t-hover) ease, color var(--t-hover) ease;
+  }
+  .page {
+    max-width: 1440px;
+    margin: 0 auto;
+    padding: 28px 32px 80px;
+  }
+  /* ── page header ── */
+  .ph {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 28px;
+    padding-bottom: 18px;
+    border-bottom: 1px solid var(--tb3-border-soft);
+  }
+  .ph-eyebrow {
+    font-size: 10px; font-weight: 800; letter-spacing: .14em;
+    text-transform: uppercase; color: var(--tb3-text-dim);
+  }
+  .ph-title {
+    font-family: 'Fraunces', Georgia, serif;
+    font-weight: 600; font-size: 22px;
+    letter-spacing: -.01em;
+    color: var(--tb3-text);
+    margin: 4px 0 0;
+  }
+  .ph em { font-style: normal; color: var(--tb3-accent); }
+  .theme-toggle {
+    border: 1px solid var(--tb3-border);
+    background: transparent;
+    color: var(--tb3-text-mid);
+    font-family: inherit; font-size: 11px; font-weight: 600;
+    letter-spacing: .08em; text-transform: uppercase;
+    padding: 6px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: color var(--t-hover) ease, border-color var(--t-hover) ease;
+  }
+  .theme-toggle:hover { color: var(--tb3-text); border-color: var(--tb3-accent); }
+  @media (hover: hover) and (pointer: fine) {
+    .theme-toggle:active { transform: scale(0.97); }
+  }
+  /* ── section header ── */
+  .section-h {
+    display: flex; align-items: baseline; gap: 14px;
+    margin: 36px 0 14px;
+  }
+  .section-h-num {
+    font-family: 'Fraunces', Georgia, serif;
+    font-weight: 500; font-size: 22px;
+    color: var(--tb3-accent);
+    font-variant-numeric: tabular-nums lining-nums;
+  }
+  .section-h-title {
+    font-family: 'Fraunces', Georgia, serif;
+    font-weight: 600; font-size: 18px;
+    color: var(--tb3-text);
+  }
+  .section-h-sub {
+    margin-left: auto;
+    font-size: 12px; color: var(--tb3-text-dim);
+  }
+
+  /* ── workspace stub (mimics the TB v3 layout in miniature) ── */
+  .workspace {
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    gap: 0;
+    height: 540px;
+    border: 1px solid var(--tb3-border-soft);
+    border-radius: 12px;
+    overflow: hidden;
+    background: var(--tb3-bg);
+  }
+  .canvas {
+    position: relative;
+    background:
+      radial-gradient(circle, color-mix(in oklab, var(--tb3-text) 6%, transparent) 1px, transparent 1px);
+    background-size: 36px 36px;
+    overflow: hidden;
+  }
+  .canvas-strip {
+    position: absolute; top: 0; left: 0; right: 0;
+    height: 38px;
+    border-bottom: 1px solid var(--tb3-border-soft);
+    background: var(--tb3-bg);
+    display: flex; align-items: center; padding: 0 14px;
+    gap: 12px;
+    font-size: 11px;
+    color: var(--tb3-text-dim);
+    z-index: 2;
+  }
+  .intent-chip {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 4px 10px;
+    border: 1px solid var(--tb3-border);
+    border-radius: 999px;
+    background: color-mix(in oklab, var(--tb3-accent) 8%, transparent);
+    border-right-color: var(--tb3-accent);
+    font-size: 11px;
+  }
+  .intent-chip-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--tb3-accent-deep);
+  }
+  .intent-chip-label {
+    color: var(--tb3-text-dim);
+    font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
+    font-size: 9px;
+  }
+  .intent-chip-name { color: var(--tb3-text); font-weight: 600; }
+  .strip-spacer { flex: 1; }
+  .strip-count {
+    color: var(--tb3-text-mid);
+    font-variant-numeric: tabular-nums;
+  }
+  /* device sketches on canvas */
+  .dev {
+    position: absolute;
+    width: 80px; height: 56px;
+    background: var(--tb3-surface);
+    border: 1px solid var(--tb3-border);
+    border-radius: 8px;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    font-size: 9px;
+    color: var(--tb3-text-mid);
+    font-weight: 600;
+    letter-spacing: .04em; text-transform: uppercase;
+  }
+  .dev .dev-label {
+    font-size: 10px;
+    color: var(--tb3-text);
+    margin-top: 3px;
+    text-transform: none;
+    letter-spacing: 0;
+    font-variant-numeric: tabular-nums;
+  }
+  .dev[data-bad] { border-color: color-mix(in oklab, var(--tb3-text) 22%, transparent); }
+  .dev[data-bad]::after {
+    content: '';
+    position: absolute; top: -3px; right: -3px;
+    width: 8px; height: 8px; border-radius: 50%;
+    background: oklch(0.65 0.18 25);
+    box-shadow: 0 0 0 2px var(--tb3-bg);
+  }
+  /* cable line */
+  svg.cables { position: absolute; inset: 38px 0 0 0; width: 100%; height: calc(100% - 38px); pointer-events: none; }
+  svg.cables path { fill: none; stroke: var(--tb3-text-dim); stroke-width: 1.5; opacity: 0.6; }
+
+  /* ── right rail (where the completion pill lives) ── */
+  .rrail {
+    border-left: 1px solid var(--tb3-border-soft);
+    background: var(--tb3-surface-2);
+    padding: 14px;
+    display: flex; flex-direction: column; gap: 10px;
+    align-items: center;
+  }
+  .pill {
+    font-size: 10px; font-weight: 800; letter-spacing: .12em;
+    text-transform: uppercase;
+    padding: 5px 10px;
+    border: 1px solid var(--tb3-border);
+    border-radius: 999px;
+    color: var(--tb3-text-dim);
+    background: var(--tb3-surface);
+    white-space: nowrap;
+    margin-bottom: 6px;
+    font-variant-numeric: tabular-nums;
+    cursor: pointer;
+    transition: border-color var(--t-hover) ease, color var(--t-hover) ease;
+  }
+  .pill:hover {
+    border-color: color-mix(in oklab, var(--tb3-accent) 30%, transparent);
+    color: var(--tb3-text);
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .pill:active { transform: scale(0.97); }
+  }
+  .pill.on {
+    color: var(--tb3-on-accent);
+    background: var(--tb3-pass);
+    border-color: var(--tb3-pass);
+  }
+  .pill.is-current::after {
+    content: ' ←';
+    color: var(--tb3-accent);
+    font-weight: 700;
+  }
+  .rrail-btn {
+    width: 36px; height: 36px;
+    border: 1px solid var(--tb3-border);
+    border-radius: 8px;
+    background: var(--tb3-surface);
+    display: flex; align-items: center; justify-content: center;
+    color: var(--tb3-text-dim);
+    font-size: 14px;
+    cursor: pointer;
+  }
+  .rrail-caption {
+    margin-top: 6px;
+    font-size: 9.5px;
+    color: var(--tb3-text-dim);
+    text-align: center;
+    text-transform: uppercase;
+    letter-spacing: .1em;
+  }
+
+  /* ── diagnostic drawer (the surface this concept is for) ── */
+  .workspace.diag-open .rrail { display: none; }
+  .drawer {
+    border-left: 1px solid var(--tb3-border-soft);
+    background: var(--tb3-surface-2);
+    display: flex; flex-direction: column;
+    padding: 18px;
+    min-height: 0;
+    overflow: hidden;
+    animation: drawerEnter var(--t-enter) var(--ease-out);
+  }
+  @keyframes drawerEnter {
+    from { transform: translateX(100%); opacity: 0.7; }
+    to   { transform: translateX(0);    opacity: 1; }
+  }
+  .drawer-head {
+    display: flex; align-items: baseline; justify-content: space-between;
+    margin-bottom: 14px;
+  }
+  .drawer-head-l { display: flex; flex-direction: column; gap: 4px; }
+  .drawer-eyebrow {
+    font-size: 10px; font-weight: 800; letter-spacing: .14em;
+    text-transform: uppercase; color: var(--tb3-text-dim);
+  }
+  .drawer-title {
+    font-family: 'Fraunces', Georgia, serif;
+    font-weight: 600; font-size: 18px;
+    letter-spacing: -.01em;
+    color: var(--tb3-text);
+    margin: 0;
+  }
+  .drawer-close {
+    background: transparent;
+    border: 0;
+    color: var(--tb3-text-dim);
+    font-size: 18px;
+    cursor: pointer;
+    padding: 4px 8px;
+    line-height: 1;
+    transition: color var(--t-hover) ease;
+  }
+  .drawer-close:hover { color: var(--tb3-text); }
+  @media (hover: hover) and (pointer: fine) {
+    .drawer-close:active { transform: scale(0.92); }
+  }
+  .drawer-rule {
+    height: 1px;
+    background: var(--tb3-border-soft);
+    margin: 0 -18px 14px;
+  }
+  .drawer-list {
+    flex: 1;
+    overflow-y: auto;
+    display: flex; flex-direction: column; gap: 12px;
+    min-height: 0;
+    padding-right: 4px;
+  }
+  .drawer-row {
+    appearance: none;
+    width: 100%;
+    text-align: left;
+    background: transparent;
+    border: 0;
+    padding: 10px 12px;
+    border-radius: 8px;
+    display: flex; flex-direction: column; gap: 4px;
+    cursor: pointer;
+    transition: background var(--t-hover) ease, transform var(--t-press) var(--ease-out);
+    font: inherit;
+    color: inherit;
+  }
+  .drawer-row:hover {
+    background: color-mix(in oklab, var(--tb3-accent) 6%, transparent);
+  }
+  .drawer-row:focus-visible {
+    outline: none;
+    background: color-mix(in oklab, var(--tb3-accent) 6%, transparent);
+    box-shadow: 0 0 0 2px color-mix(in oklab, var(--tb3-accent) 40%, transparent);
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .drawer-row:active { transform: scale(0.98); }
+  }
+  .drawer-row-t {
+    font-size: 13px; font-weight: 600;
+    color: var(--tb3-text); letter-spacing: -.005em;
+    font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+  }
+  .drawer-row-r {
+    font-size: 11.5px; line-height: 1.4;
+    color: var(--tb3-text-dim);
+  }
+  .drawer-foot {
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px solid var(--tb3-border-soft);
+    font-size: 10px; color: var(--tb3-text-dim);
+    text-transform: uppercase;
+    letter-spacing: .12em;
+  }
+
+  /* empty state */
+  .drawer-empty {
+    flex: 1;
+    display: flex; align-items: center; justify-content: center;
+    text-align: center;
+    padding: 24px 8px;
+  }
+  .drawer-empty-l {
+    display: flex; flex-direction: column; gap: 8px;
+    max-width: 240px;
+  }
+  .drawer-empty-eyebrow {
+    font-size: 10px; font-weight: 800; letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--tb3-pass);
+  }
+  .drawer-empty-t {
+    font-family: 'Fraunces', Georgia, serif;
+    font-weight: 600; font-size: 17px;
+    color: var(--tb3-text);
+    letter-spacing: -.01em;
+    line-height: 1.3;
+  }
+  .drawer-empty-s {
+    font-size: 12px; color: var(--tb3-text-dim);
+    line-height: 1.5;
+  }
+
+  /* ── annotation strip ── */
+  .annotation {
+    margin: 22px 0 0;
+    padding: 16px 20px;
+    background: color-mix(in oklab, var(--tb3-accent) 5%, transparent);
+    border: 1px solid color-mix(in oklab, var(--tb3-accent) 18%, transparent);
+    border-left-width: 3px;
+    border-radius: 8px;
+    font-size: 12.5px;
+    line-height: 1.55;
+    color: var(--tb3-text-mid);
+  }
+  .annotation b { color: var(--tb3-text); font-weight: 600; }
+  .annotation code {
+    font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+    font-size: 11.5px;
+    padding: 1px 5px;
+    background: color-mix(in oklab, var(--tb3-text) 8%, transparent);
+    border-radius: 4px;
+    color: var(--tb3-text);
+  }
+
+  /* reduced-motion */
+  @media (prefers-reduced-motion: reduce) {
+    .drawer { animation: none; }
+    .pill, .theme-toggle, .drawer-close, .drawer-row, .rrail-btn {
+      transition: none;
+    }
+    @media (hover: hover) and (pointer: fine) {
+      .pill:active, .theme-toggle:active, .drawer-close:active, .drawer-row:active { transform: none; }
+    }
+  }
+</style>
+</head>
+<body>
+  <div class="page">
+    <div class="ph">
+      <div>
+        <div class="ph-eyebrow">NET+ · N10-009 · Phase 3 concept</div>
+        <h1 class="ph-title">Diagnostic <em>drawer.</em></h1>
+      </div>
+      <button class="theme-toggle" id="t-toggle">Toggle theme</button>
+    </div>
+
+    <!-- ─────────────────────────────── -->
+    <!--  STATE 1: failures present       -->
+    <!-- ─────────────────────────────── -->
+    <div class="section-h">
+      <div class="section-h-num">§ 01</div>
+      <div class="section-h-title">Failures present — 5 to go</div>
+      <div class="section-h-sub">Click the pill (right rail) → drawer slides in from the right.</div>
+    </div>
+
+    <div class="workspace diag-open">
+      <!-- Canvas (stylised topology — star scenario, but with config issues so 5 pairs fail) -->
+      <div class="canvas">
+        <div class="canvas-strip">
+          <div class="intent-chip">
+            <span class="intent-chip-dot"></span>
+            <span class="intent-chip-label">Intent</span>
+            <span class="intent-chip-name">Lab · Star topology with central switch</span>
+          </div>
+          <div class="strip-spacer"></div>
+          <div class="strip-count">5 devices · 4 cables</div>
+        </div>
+        <svg class="cables" viewBox="0 0 800 460" preserveAspectRatio="xMidYMid meet">
+          <path d="M 400 220 Q 350 130 240 100"/>
+          <path d="M 400 220 Q 470 140 580 100"/>
+          <path d="M 400 220 Q 270 320 200 380"/>
+          <path d="M 400 220 Q 530 320 600 380"/>
+        </svg>
+        <div class="dev" style="left: 360px; top: 220px;" data-bad>
+          SW1<br><span class="dev-label">no IP</span>
+        </div>
+        <div class="dev" style="left: 200px; top: 100px;" data-bad>
+          SRV-01<br><span class="dev-label">192.168.10.10</span>
+        </div>
+        <div class="dev" style="left: 540px; top: 100px;" data-bad>
+          WS-01<br><span class="dev-label">no GW</span>
+        </div>
+        <div class="dev" style="left: 160px; top: 380px;" data-bad>
+          WS-02<br><span class="dev-label">10.0.0.5 (?)</span>
+        </div>
+        <div class="dev" style="left: 560px; top: 380px;">
+          WS-03<br><span class="dev-label">192.168.10.30</span>
+        </div>
+      </div>
+
+      <!-- Diagnostic drawer -->
+      <aside class="drawer" aria-labelledby="drawer-t" role="dialog">
+        <div class="drawer-head">
+          <div class="drawer-head-l">
+            <div class="drawer-eyebrow">Diagnostics</div>
+            <h2 class="drawer-title" id="drawer-t">Why goals aren't met</h2>
+          </div>
+          <button class="drawer-close" aria-label="Close">&times;</button>
+        </div>
+        <div class="drawer-rule"></div>
+
+        <div class="drawer-list">
+          <button class="drawer-row" data-device-id="sc_star_2">
+            <div class="drawer-row-t">SRV-01 → WS-01</div>
+            <div class="drawer-row-r">WS-01 has no default gateway. Set it in the Inspector.</div>
+          </button>
+
+          <button class="drawer-row" data-device-id="sc_star_1">
+            <div class="drawer-row-t">SW1 (no IP)</div>
+            <div class="drawer-row-r">Central switch is missing an IP — but it's a Layer-2 device. Did you mean to configure an SVI on an L3 switch?</div>
+          </button>
+
+          <button class="drawer-row" data-device-id="sc_star_4">
+            <div class="drawer-row-t">SRV-01 → WS-02</div>
+            <div class="drawer-row-r">WS-02 IP <code>10.0.0.5/24</code> is on a different subnet from SRV-01 (<code>192.168.10.0/24</code>). No router between them.</div>
+          </button>
+
+          <button class="drawer-row" data-device-id="sc_star_4">
+            <div class="drawer-row-t">SRV-01 → WS-03</div>
+            <div class="drawer-row-r">No path reaches WS-03 because the upstream switch is unconfigured.</div>
+          </button>
+
+          <button class="drawer-row" data-device-id="sc_star_2">
+            <div class="drawer-row-t">SW1 → WS-01</div>
+            <div class="drawer-row-r">WS-01 cannot ARP its gateway — gateway field is empty.</div>
+          </button>
+        </div>
+
+        <div class="drawer-foot">Updated live as you edit</div>
+      </aside>
+    </div>
+
+    <div class="annotation">
+      <b>How a user reads this</b> &middot; the completion pill stays at <code>5 TO GO</code> on the right rail. Click it &rarr; this drawer slides in from the right (<code>translateX(100%) → 0</code> over 220ms, custom <code>ease-out</code>). Each failure row is a button: click a row &rarr; the corresponding device gets selected on the canvas, the drawer stays open, the Inspector opens for editing in parallel. As the user fixes issues, rows fade out (200ms opacity) and the count on the pill decrements. When the last failure resolves, the pill flips to <code>GOALS MET</code> + accent fill, and the drawer empty-state takes over (see § 02 below).
+    </div>
+
+    <!-- ─────────────────────────────── -->
+    <!--  STATE 2: empty (goals met)      -->
+    <!-- ─────────────────────────────── -->
+    <div class="section-h">
+      <div class="section-h-num">§ 02</div>
+      <div class="section-h-title">All paths reachable — empty state</div>
+      <div class="section-h-sub">Drawer can stay open even when there's nothing to diagnose — calm, no celebration noise.</div>
+    </div>
+
+    <div class="workspace diag-open">
+      <div class="canvas">
+        <div class="canvas-strip">
+          <div class="intent-chip">
+            <span class="intent-chip-dot"></span>
+            <span class="intent-chip-label">Intent</span>
+            <span class="intent-chip-name">Lab · Star topology with central switch</span>
+          </div>
+          <div class="strip-spacer"></div>
+          <div class="strip-count">5 devices · 4 cables</div>
+        </div>
+        <svg class="cables" viewBox="0 0 800 460" preserveAspectRatio="xMidYMid meet">
+          <path d="M 400 220 Q 350 130 240 100"/>
+          <path d="M 400 220 Q 470 140 580 100"/>
+          <path d="M 400 220 Q 270 320 200 380"/>
+          <path d="M 400 220 Q 530 320 600 380"/>
+        </svg>
+        <div class="dev" style="left: 360px; top: 220px;">SW1<br><span class="dev-label">L2</span></div>
+        <div class="dev" style="left: 200px; top: 100px;">SRV-01<br><span class="dev-label">.10</span></div>
+        <div class="dev" style="left: 540px; top: 100px;">WS-01<br><span class="dev-label">.20</span></div>
+        <div class="dev" style="left: 160px; top: 380px;">WS-02<br><span class="dev-label">.21</span></div>
+        <div class="dev" style="left: 560px; top: 380px;">WS-03<br><span class="dev-label">.22</span></div>
+      </div>
+
+      <aside class="drawer" aria-labelledby="drawer-empty-t" role="dialog">
+        <div class="drawer-head">
+          <div class="drawer-head-l">
+            <div class="drawer-eyebrow">Diagnostics</div>
+            <h2 class="drawer-title" id="drawer-empty-t">Goals met</h2>
+          </div>
+          <button class="drawer-close" aria-label="Close">&times;</button>
+        </div>
+        <div class="drawer-rule"></div>
+
+        <div class="drawer-empty">
+          <div class="drawer-empty-l">
+            <div class="drawer-empty-eyebrow">All paths reachable</div>
+            <div class="drawer-empty-t">Every required cable type-pair has a working route.</div>
+            <div class="drawer-empty-s">Free Build users can keep editing; the pill will flip back to <code>N TO GO</code> if a path breaks.</div>
+          </div>
+        </div>
+
+        <div class="drawer-foot">Updated live as you edit</div>
+      </aside>
+    </div>
+
+    <div class="annotation">
+      <b>Calm, not celebratory</b> &middot; no confetti, no checkmark animation, no "well done!". The accent stays restrained. This is the editorial-premium pacing — the design lets the empty state feel like the resting equilibrium, not the reward.
+    </div>
+
+    <!-- ─────────────────────────────── -->
+    <!--  STATE 3: pill in rail context  -->
+    <!-- ─────────────────────────────── -->
+    <div class="section-h">
+      <div class="section-h-num">§ 03</div>
+      <div class="section-h-title">Pill in right-rail context (drawer closed)</div>
+      <div class="section-h-sub">When the drawer is closed, the rail returns. Pill is the entry point.</div>
+    </div>
+
+    <div class="workspace">
+      <div class="canvas">
+        <div class="canvas-strip">
+          <div class="intent-chip">
+            <span class="intent-chip-dot"></span>
+            <span class="intent-chip-label">Intent</span>
+            <span class="intent-chip-name">Lab · Star topology with central switch</span>
+          </div>
+          <div class="strip-spacer"></div>
+          <div class="strip-count">5 devices · 4 cables</div>
+        </div>
+      </div>
+      <div class="rrail">
+        <div class="pill is-current">5 to go</div>
+        <div class="rrail-caption">click pill →<br>diagnostic drawer</div>
+        <div class="rrail-btn">S</div>
+        <div class="rrail-btn">I</div>
+      </div>
+    </div>
+
+    <div class="annotation">
+      <b>Pill becomes the affordance</b> &middot; cursor flips to <code>pointer</code> on hover (visible above), border tints accent on hover. The pill text never changes (no "click for details" prompt) — the interactivity is the cursor and the border lift. This is the unseen detail compound: the pill is small but every state feels considered.
+    </div>
+
+  </div>
+
+<script>
+  // Theme toggle — same OKLCH variable swap as TB v3
+  document.getElementById('t-toggle').addEventListener('click', function () {
+    var cur = document.documentElement.getAttribute('data-theme');
+    document.documentElement.setAttribute('data-theme', cur === 'dark' ? 'light' : 'dark');
+  });
+</script>
+</body>
+</html>
