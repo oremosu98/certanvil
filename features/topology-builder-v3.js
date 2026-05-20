@@ -2035,7 +2035,7 @@
     'l3-switch':      { label: 'Layer 3 Switch', icon: _icoL3Switch() },
     'hub':            { label: 'Hub', icon: _icoHub() },
     // Endpoints
-    'desktop':        { label: 'Desktop', icon: _icoDesktop() },
+    'workstation':    { label: 'Workstation', icon: _icoDesktop() },
     'laptop':         { label: 'Laptop', icon: _icoLaptop() },
     'server':         { label: 'Server', icon: _icoServer() },
     'smartphone':     { label: 'Smartphone', icon: _icoSmartphone() },
@@ -2059,7 +2059,7 @@
   var TB_V3_PALETTE_GROUPS = [
     { name: 'Routers', items: ['router', 'l3-router'] },
     { name: 'Switches', items: ['switch', 'l3-switch', 'hub'] },
-    { name: 'Endpoints', items: ['desktop', 'laptop', 'server', 'smartphone', 'smart-tv', 'game-console'] },
+    { name: 'Endpoints', items: ['workstation', 'laptop', 'server', 'smartphone', 'smart-tv', 'game-console'] },
     { name: 'Wireless', items: ['ap', 'wlc'] },
     { name: 'Security', items: ['firewall', 'ids-ips'] },
     { name: 'Cloud & WAN', items: ['cloud', 'internet', 'isp-modem', 'mpls-core', 'vpn-gateway', 'load-balancer'] },
