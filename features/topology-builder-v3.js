@@ -826,7 +826,35 @@
   // MODE BAR + INTENT CHIP (TASK 7.x)
   // ───────────────────────────────────────────────────────────
 
-  function _renderModeBar() { /* TASK 7.1 */ }
+  function _renderModeBar() {
+    var row = document.getElementById('tb3-modes-row');
+    if (!row) return;
+    var modes = [
+      { id: 'design',   label: 'Design',   icon: '<svg viewBox="0 0 24 24" class="tb3-mode-ic" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>',           locked: false },
+      { id: 'simulate', label: 'Simulate', icon: '<svg viewBox="0 0 24 24" class="tb3-mode-ic" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M5 12h14M12 5v14"/></svg>',                                                                                                                                                                       locked: true },
+      { id: 'trace',    label: 'Trace',    icon: '<svg viewBox="0 0 24 24" class="tb3-mode-ic" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 12c4 0 4-7 8-7s4 14 8 14"/></svg>',                                                                                                                                                          locked: true },
+      { id: 'osi',      label: 'OSI',      icon: '<svg viewBox="0 0 24 24" class="tb3-mode-ic" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 6h18M3 10h18M3 14h18M3 18h18"/></svg>',                                                                                                                                                       locked: true },
+      { id: '3d',       label: '3D',       icon: '<svg viewBox="0 0 24 24" class="tb3-mode-ic" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>',                                                                                                       locked: true },
+    ];
+    var html = modes.map(function (m) {
+      var on = (m.id === state.mode);
+      return '<div class="tb3-mode' + (on ? ' on' : '') + (m.locked ? ' locked' : '') + '" data-mode="' + m.id + '" title="' + (m.locked ? m.label + ' — phase ' + ({'simulate':3,'trace':4,'osi':5,'3d':6}[m.id]) : m.label) + '">' + m.icon + m.label + '</div>';
+    }).join('');
+    row.innerHTML = html;
+
+    // Wire mode clicks (Phase 1 only Design works)
+    row.querySelectorAll('.tb3-mode').forEach(function (el) {
+      el.addEventListener('click', function () {
+        if (el.classList.contains('locked')) return;
+        var mode = el.getAttribute('data-mode');
+        if (mode === state.mode) return;
+        state.mode = mode;
+        _renderModeBar();
+        _updateStatus('mode-change', mode);
+        _saveState();
+      });
+    });
+  }
 
   // ───────────────────────────────────────────────────────────
   // EXPORT (TASK 8.x)
