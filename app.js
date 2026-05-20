@@ -749,6 +749,7 @@ const STORAGE = {
   WRONG_BANK: 'nplus_wrong_bank',
   SR_QUEUE: 'nplus_sr_queue',
   REPORTS: 'nplus_reports',
+  BUG_REPORTS: 'nplus_bug_reports', // v5.6.x bug-report drawer retry queue
   PORT_BEST: 'nplus_port_best',
   PORT_STREAK_BEST: 'nplus_port_streak_best',
   PORT_FAMILY_BEST: 'nplus_port_family_best',
