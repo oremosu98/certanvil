@@ -1571,7 +1571,7 @@ test.describe('bug-report drawer', () => {
   test.beforeEach(async ({ page }) => {
     // Seed a fake GH token so the form is unlocked
     await page.addInitScript(() => {
-      try { localStorage.setItem('nplus_gh_token', 'ghp_test_dummy_token_value_for_e2e_only'); } catch (e) {}
+      try { localStorage.setItem('nplus_gh_monitor_token', 'ghp_test_dummy_token_value_for_e2e_only'); } catch (e) {}
     });
     await page.goto('/');
     await page.waitForLoadState('domcontentloaded');
@@ -1587,22 +1587,26 @@ test.describe('bug-report drawer', () => {
   });
 
   test('02: closes via ESC, ×, Cancel, and backdrop click', async ({ page }) => {
-    // ESC
+    // ESC — wait for the full portal teardown (240ms transition) before re-opening
     await page.click('#topbar-bug-report');
     await page.keyboard.press('Escape');
     await expect(page.locator('#bug-report-drawer')).toHaveCount(0);
+    await expect(page.locator('#br-portal')).toHaveCount(0);
     // ×
     await page.click('#topbar-bug-report');
     await page.click('#br-close');
     await expect(page.locator('#bug-report-drawer')).toHaveCount(0);
+    await expect(page.locator('#br-portal')).toHaveCount(0);
     // Cancel
     await page.click('#topbar-bug-report');
     await page.click('#br-cancel');
     await expect(page.locator('#bug-report-drawer')).toHaveCount(0);
+    await expect(page.locator('#br-portal')).toHaveCount(0);
     // Backdrop
     await page.click('#topbar-bug-report');
     await page.locator('#br-backdrop').click({ position: { x: 10, y: 10 } });
     await expect(page.locator('#bug-report-drawer')).toHaveCount(0);
+    await expect(page.locator('#br-portal')).toHaveCount(0);
   });
 
   test('03: Send disabled until both required fields filled', async ({ page }) => {
@@ -1691,7 +1695,7 @@ git commit -m "test(bug-report): Playwright tests 01-04 (open/close/gating/count
 
   test('07: token banner shows when GH_TOKEN missing', async ({ page }) => {
     await page.addInitScript(() => {
-      try { localStorage.removeItem('nplus_gh_token'); } catch (e) {}
+      try { localStorage.removeItem('nplus_gh_monitor_token'); } catch (e) {}
     });
     await page.goto('/');
     await page.click('#topbar-bug-report');
@@ -1701,7 +1705,7 @@ git commit -m "test(bug-report): Playwright tests 01-04 (open/close/gating/count
 
   test('08: cross-cert leak filter — Sec+ active reads secplus cert', async ({ page }) => {
     await page.addInitScript(() => {
-      try { localStorage.setItem('nplus_current_cert', 'secplus'); } catch (e) {}
+      try { localStorage.setItem('nplus_dev_cert', 'secplus'); } catch (e) {}
     });
     await page.goto('/');
     await page.click('#topbar-bug-report');

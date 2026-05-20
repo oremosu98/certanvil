@@ -82,6 +82,14 @@ const CERT_PACK = (typeof window !== 'undefined' && window.CERT_PACKS && window.
 if (typeof window !== 'undefined' && !CERT_PACK) {
   console.error('[cert] Cert pack not loaded for cert id: ' + CURRENT_CERT + '. Falling back to Network+ defaults.');
 }
+// v5.6.x: expose CURRENT_CERT + CERT_PACK on window so lazy-loaded feature
+// modules (e.g. features/reports.js _getCtx) can read the active cert without
+// re-deriving via localStorage. Pure exposure of existing module-scope consts;
+// no behaviour change in the shell.
+if (typeof window !== 'undefined') {
+  window.CURRENT_CERT = CURRENT_CERT;
+  window.CERT_PACK = CERT_PACK;
+}
 
 // v4.42.0: Animation state flags. finish() / submitExam() set these when
 // they detect a streak increment or weak-spots rerank while #page-setup is
