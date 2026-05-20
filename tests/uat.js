@@ -21353,6 +21353,23 @@ test('phase2: TB_V3_FREEBUILD_BACKUP does not collide with TB_V3_DRAFT', !/TB_V3
   assert(callPc('192.168.10.5/33') === null, 'pc-H: mask >32 returns null');
   assert(callPc('192.168.10.5/-1') === null, 'pc-I: mask <0 returns null');
   assert(callPc('192.168.300.5/24') === null, 'pc-J: octet >255 returns null');
+
+  // ── 2. inSameSubnet(ipA, ipB, mask) ──────────────────────
+  const issDecl = _fnBody(tbv3SrcP3, 'inSameSubnet');
+  assert(issDecl, 'phase3: inSameSubnet exists');
+
+  function callIss(a, b, m) {
+    const sb = { result: null };
+    vm.runInNewContext(issDecl + ' result = inSameSubnet(' + JSON.stringify(a) + ',' + JSON.stringify(b) + ',' + m + ');', sb);
+    return sb.result;
+  }
+
+  assert(callIss([192,168,10,1], [192,168,10,254], 24) === true,  'iss-A: /24 same subnet');
+  assert(callIss([192,168,10,1], [192,168,11,1],   24) === false, 'iss-B: /24 different subnet');
+  assert(callIss([10,0,0,1],     [10,0,0,2],       30) === true,  'iss-C: /30 point-to-point same');
+  assert(callIss([10,0,0,1],     [10,0,0,5],       30) === false, 'iss-D: /30 different /30');
+  assert(callIss([1,2,3,4],      [5,6,7,8],         0) === true,  'iss-E: /0 always matches');
+  assert(callIss([192,168,10,5], [192,168,10,5],   32) === true,  'iss-F: /32 exact match');
 })();
 
 // ── Summary ──

@@ -138,6 +138,19 @@
     return { ip: ip, mask: mask };
   }
 
+  function inSameSubnet(ipA, ipB, mask) {
+    if (!Array.isArray(ipA) || !Array.isArray(ipB) || ipA.length !== 4 || ipB.length !== 4) return false;
+    if (mask === 0) return true;
+    var fullOctets = Math.floor(mask / 8);
+    var remainder = mask % 8;
+    for (var i = 0; i < fullOctets; i++) {
+      if (ipA[i] !== ipB[i]) return false;
+    }
+    if (remainder === 0) return true;
+    var bitMask = (0xFF << (8 - remainder)) & 0xFF;
+    return (ipA[fullOctets] & bitMask) === (ipB[fullOctets] & bitMask);
+  }
+
   // ───────────────────────────────────────────────────────────
   // SCENARIOS CATALOG (Phase 2 — 8 starter; full 20-25 in Phase 2.x)
   //
@@ -2308,6 +2321,7 @@
     parseState: parseState,
     // Phase 3 — reachability engine
     parseCidr: parseCidr,
+    inSameSubnet: inSameSubnet,
     // Scenarios (phase 2)
     TB_V3_SCENARIOS: TB_V3_SCENARIOS,
     validateScenarioShape: validateScenarioShape,
