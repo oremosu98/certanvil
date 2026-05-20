@@ -751,6 +751,112 @@
         ],
       },
     },
+    {
+      id: 'public-cloud-only',
+      title: 'Public cloud only (no on-prem)',
+      category: 'cloud',
+      objectiveRefs: ['1.8'],
+      startingState: {
+        devices: [
+          { id: 'sc_pco_inet', type: 'internet',    x: 600, y: 160, label: 'INTERNET' },
+          { id: 'sc_pco_fw',   type: 'firewall',    x: 600, y: 320, label: 'CLOUD-FW' },
+          { id: 'sc_pco_srv1', type: 'server',      x: 380, y: 480, label: 'APP-01' },
+          { id: 'sc_pco_srv2', type: 'server',      x: 600, y: 480, label: 'APP-02' },
+          { id: 'sc_pco_ws',   type: 'workstation', x: 820, y: 480, label: 'ADMIN-WS' },
+        ],
+        cables: [
+          { id: 'sc_pco_c1', fromId: 'sc_pco_inet', toId: 'sc_pco_fw',   type: 'fiber' },
+          { id: 'sc_pco_c2', fromId: 'sc_pco_fw',   toId: 'sc_pco_srv1', type: 'cat6'  },
+          { id: 'sc_pco_c3', fromId: 'sc_pco_fw',   toId: 'sc_pco_srv2', type: 'cat6'  },
+          { id: 'sc_pco_c4', fromId: 'sc_pco_fw',   toId: 'sc_pco_ws',   type: 'cat6'  },
+        ],
+        viewport: { x: 0, y: 0, zoom: 1 },
+      },
+      brief: 'Public-cloud-only deployments live entirely inside one provider VPC. Every server, every workstation, every firewall is a cloud resource; the internet is the only path in. Contrast with hybrid (where some workloads stay on-prem) and multi-cloud (where they spread across providers).',
+      examRelevance: {
+        overview:      'All compute, storage and security live inside the cloud provider VPC; no on-prem footprint.',
+        howItRoutes:   'Internet traffic enters via the cloud-native edge firewall or load-balancer; inter-VM traffic stays within the VPC.',
+        keyDevices:    'Cloud-native firewall, server VMs, workstation (admin instance or VDI).',
+        keyConcepts:   'Cloud-native architecture, VPC as the perimeter, no L2 on-prem-to-cloud bridge, full provider stack ownership.',
+        examRelevance: 'N10-009 obj 1.8 — recognise public-cloud-only deployment; contrast with hybrid, private, community models.',
+      },
+      completion: {
+        requiredDevices: ['internet', 'firewall', 'server', 'workstation'],
+        expectedCount:   { internet: 1, firewall: 1, server: 2, workstation: 1 },
+        requiredCables:  [
+          { from:'internet', to:'firewall' },
+          { from:'firewall', to:'server' },
+          { from:'firewall', to:'workstation' },
+        ],
+      },
+    },
+    {
+      id: 'multi-cloud',
+      title: 'Multi-cloud (two providers bridged)',
+      category: 'cloud',
+      objectiveRefs: ['1.8'],
+      startingState: {
+        devices: [
+          { id: 'sc_mc_c1',   type: 'cloud',  x: 320, y: 360, label: 'AWS-VPC' },
+          { id: 'sc_mc_rtr',  type: 'router', x: 600, y: 360, label: 'INTER-CLOUD-VPN' },
+          { id: 'sc_mc_c2',   type: 'cloud',  x: 880, y: 360, label: 'AZURE-VNET' },
+        ],
+        cables: [
+          { id: 'sc_mc_c_c1', fromId: 'sc_mc_c1',  toId: 'sc_mc_rtr', type: 'fiber' },
+          { id: 'sc_mc_c_c2', fromId: 'sc_mc_rtr', toId: 'sc_mc_c2',  type: 'fiber' },
+        ],
+        viewport: { x: 0, y: 0, zoom: 1 },
+      },
+      brief: 'Multi-cloud spreads workloads across two or more public-cloud providers, joined by a VPN or cloud-to-cloud private link. Common for workload portability, vendor lock-in avoidance, and selective use of each provider strongest service. Network engineering complexity goes up — every cloud has its own naming, routing and IAM model.',
+      examRelevance: {
+        overview:      'Two (or more) public-cloud providers bridged by a customer-managed VPN or cloud-to-cloud private link.',
+        howItRoutes:   'Each cloud has its own VPC + edge; a VPN gateway router (a customer VM, or third-party transit) carries the inter-cloud traffic.',
+        keyDevices:    'Two cloud regions/providers + an inter-cloud VPN gateway router.',
+        keyConcepts:   'Workload portability, vendor lock-in avoidance, transit cost asymmetry, per-cloud IAM and naming.',
+        examRelevance: 'N10-009 obj 1.8 — recognise multi-cloud deployment; contrast with hybrid and single-public.',
+      },
+      completion: {
+        requiredDevices: ['cloud', 'router'],
+        expectedCount:   { cloud: 2, router: 1 },
+        requiredCables:  [
+          { from:'cloud', to:'router' },
+        ],
+      },
+    },
+    {
+      id: 'direct-connect-private-link',
+      title: 'Direct Connect (dedicated private link to cloud)',
+      category: 'cloud',
+      objectiveRefs: ['1.8'],
+      startingState: {
+        devices: [
+          { id: 'sc_dc_sw',    type: 'switch', x: 320, y: 360, label: 'ONPREM-SW' },
+          { id: 'sc_dc_rtr',   type: 'router', x: 600, y: 360, label: 'EDGE-R' },
+          { id: 'sc_dc_cloud', type: 'cloud',  x: 880, y: 360, label: 'AWS-VPC' },
+        ],
+        cables: [
+          { id: 'sc_dc_c1', fromId: 'sc_dc_sw',  toId: 'sc_dc_rtr',   type: 'cat6'  },
+          { id: 'sc_dc_c2', fromId: 'sc_dc_rtr', toId: 'sc_dc_cloud', type: 'fiber' },
+        ],
+        viewport: { x: 0, y: 0, zoom: 1 },
+      },
+      brief: 'Direct Connect (AWS) / ExpressRoute (Azure) creates a dedicated private circuit between on-prem and a cloud region — no internet path. Lower latency, predictable throughput, no shared-bandwidth contention. The trade-off is provisioning time (weeks for the physical cross-connect) and the higher fixed cost vs a site-to-site VPN.',
+      examRelevance: {
+        overview:      'Dedicated private circuit between on-prem and a cloud region; bypasses the public internet entirely.',
+        howItRoutes:   'BGP peering across the dedicated link; the provider terminates the customer VLAN tag on the cloud-side VPC attachment.',
+        keyDevices:    'On-prem switch, customer-edge router, cloud VPC.',
+        keyConcepts:   'Dedicated bandwidth, BGP peering, no internet exposure, longer provisioning time than VPN.',
+        examRelevance: 'N10-009 obj 1.8 — recognise Direct Connect / ExpressRoute pattern; contrast with site-to-site VPN over internet.',
+      },
+      completion: {
+        requiredDevices: ['switch', 'router', 'cloud'],
+        expectedCount:   { switch: 1, router: 1, cloud: 1 },
+        requiredCables:  [
+          { from:'switch', to:'router' },
+          { from:'router', to:'cloud' },
+        ],
+      },
+    },
   ];
 
   function validateScenarioShape(s) {
