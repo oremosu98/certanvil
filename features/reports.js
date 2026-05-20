@@ -138,6 +138,59 @@
   // DRAWER UI (TASK 2.x)
   // ───────────────────────────────────────────────────────────
 
+  function _drawerHtml(ctx) {
+    var c = ctx || {};
+    var lq = c.last_quiz;
+    var ctxLine =
+      '<b>' + (c.version || '?') + '</b> &middot; ' +
+      (c.page || '?') + ' &middot; ' +
+      (c.cert || '?') + ' &middot; ' +
+      (c.theme || '?') + ' &middot; ' +
+      (c.viewport || '?') + ' &middot; ' +
+      (lq ? 'last quiz: ' + lq.topic + ' <b>' + lq.score + '</b> ' + lq.minutes_ago + 'm ago' : 'no recent quiz') +
+      ' &middot; wrong-bank: <b>' + (typeof c.wrong_bank_size === 'number' ? c.wrong_bank_size : 0) + '</b>';
+
+    return (
+      '<div class="br-backdrop" id="br-backdrop"></div>' +
+      '<div class="br-drawer" id="bug-report-drawer" role="dialog" aria-modal="true" aria-labelledby="br-title">' +
+        '<div class="br-head">' +
+          '<div>' +
+            '<div class="br-eyebrow">&sect; Report</div>' +
+            '<h3 class="br-title" id="br-title">Report an issue</h3>' +
+          '</div>' +
+          '<button type="button" class="br-close" id="br-close" aria-label="Close">&times;</button>' +
+        '</div>' +
+        '<div class="br-body">' +
+          '<div class="br-field">' +
+            '<label class="br-label" for="br-input-title">Title <span class="br-req">*</span></label>' +
+            '<input class="br-input" id="br-input-title" type="text" maxlength="200" placeholder="What happened in one line?">' +
+            '<div class="br-caption br-caption-err" id="br-title-err" hidden>Title is required</div>' +
+          '</div>' +
+          '<div class="br-field">' +
+            '<label class="br-label" for="br-input-desc">Description <span class="br-req">*</span><span class="br-counter" id="br-desc-counter" hidden></span></label>' +
+            '<textarea class="br-textarea" id="br-input-desc" maxlength="5000" placeholder="What you did, what happened, what you expected."></textarea>' +
+            '<div class="br-caption br-caption-err" id="br-desc-err" hidden>Description is required</div>' +
+          '</div>' +
+          '<button type="button" class="br-steps-link" id="br-steps-toggle">' +
+            '<span class="br-plus">+</span><span>Add steps to reproduce</span>' +
+          '</button>' +
+          '<div class="br-ctx">' +
+            '<span class="br-ctx-h">Auto-attached</span>' +
+            '<span class="br-ctx-fields">' + ctxLine + '</span>' +
+          '</div>' +
+          '<div class="br-no-token" id="br-no-token" hidden>' +
+            '<b>Setup needed</b>' +
+            '<span>Add a GitHub personal access token in <a href="#" id="br-open-settings">Settings &rsaquo; Integrations</a> to file reports.</span>' +
+          '</div>' +
+        '</div>' +
+        '<div class="br-foot">' +
+          '<button type="button" class="br-cancel" id="br-cancel">Cancel</button>' +
+          '<button type="button" class="br-send" id="br-send">Send report</button>' +
+        '</div>' +
+      '</div>'
+    );
+  }
+
   function openDrawer() { /* TASK 2.3 */ }
   function closeDrawer() { /* TASK 2.3 */ }
 
