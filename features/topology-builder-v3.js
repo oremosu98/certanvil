@@ -232,7 +232,7 @@
     if (!device) return null;
     var dstParsed = parseCidr(dstIp + '/32');
     if (!dstParsed) return null;
-    var L3_MULTI = (device.type === 'router' || device.type === 'l3-switch' || device.type === 'firewall' || device.type === 'vpn');
+    var L3_MULTI = (device.type === 'router' || device.type === 'l3-switch' || device.type === 'firewall' || device.type === 'vpn' || device.type === 'cloud' || device.type === 'internet');
     if (L3_MULTI && Array.isArray(device.interfaces)) {
       for (var i = 0; i < device.interfaces.length; i++) {
         var iface = device.interfaces[i];
@@ -267,7 +267,7 @@
       return null;
     }
     function isL3(dev) {
-      return dev && (dev.type === 'router' || dev.type === 'l3-switch' || dev.type === 'firewall' || dev.type === 'vpn');
+      return dev && (dev.type === 'router' || dev.type === 'l3-switch' || dev.type === 'firewall' || dev.type === 'vpn' || dev.type === 'cloud' || dev.type === 'internet');
     }
     function devIp(dev) {
       if (!dev) return null;
@@ -581,11 +581,11 @@
       objectiveRefs: ['1.6', '2.1'],
       startingState: {
         devices: [
-          { id: 'sc_hns_hub',  type: 'router', x: 600, y: 300, label: 'HQ' },
-          { id: 'sc_hns_b1',   type: 'router', x: 320, y: 200, label: 'BR-1' },
-          { id: 'sc_hns_b2',   type: 'router', x: 320, y: 400, label: 'BR-2' },
-          { id: 'sc_hns_b3',   type: 'router', x: 880, y: 200, label: 'BR-3' },
-          { id: 'sc_hns_b4',   type: 'router', x: 880, y: 400, label: 'BR-4' },
+          { id: 'sc_hns_hub', type: 'router', x: 600, y: 300, label: 'HQ',   interfaces:[{ ip:'10.0.11.1', mask:30 },{ ip:'10.0.12.1', mask:30 },{ ip:'10.0.13.1', mask:30 },{ ip:'10.0.14.1', mask:30 }] },
+          { id: 'sc_hns_b1',  type: 'router', x: 320, y: 200, label: 'BR-1', interfaces:[{ ip:'10.0.11.2', mask:30 }] },
+          { id: 'sc_hns_b2',  type: 'router', x: 320, y: 400, label: 'BR-2', interfaces:[{ ip:'10.0.12.2', mask:30 }] },
+          { id: 'sc_hns_b3',  type: 'router', x: 880, y: 200, label: 'BR-3', interfaces:[{ ip:'10.0.13.2', mask:30 }] },
+          { id: 'sc_hns_b4',  type: 'router', x: 880, y: 400, label: 'BR-4', interfaces:[{ ip:'10.0.14.2', mask:30 }] },
         ],
         cables: [
           { id: 'sc_hns_c1', fromId: 'sc_hns_hub', toId: 'sc_hns_b1', type: 'fiber' },
@@ -972,12 +972,18 @@
       objectiveRefs: ['1.6'],
       startingState: {
         devices: [
-          { id: 'sc_mpls_mpls', type: 'cloud',  x: 600, y: 360, label: 'MPLS-CORE' },
-          { id: 'sc_mpls_hq',   type: 'router', x: 600, y: 160, label: 'HQ' },
-          { id: 'sc_mpls_b1',   type: 'router', x: 280, y: 280, label: 'BR-1' },
-          { id: 'sc_mpls_b2',   type: 'router', x: 280, y: 480, label: 'BR-2' },
-          { id: 'sc_mpls_b3',   type: 'router', x: 920, y: 280, label: 'BR-3' },
-          { id: 'sc_mpls_b4',   type: 'router', x: 920, y: 480, label: 'BR-4' },
+          { id: 'sc_mpls_mpls', type: 'cloud',  x: 600, y: 360, label: 'MPLS-CORE', interfaces:[
+            { ip:'10.0.11.1', mask:30 },
+            { ip:'10.0.12.1', mask:30 },
+            { ip:'10.0.13.1', mask:30 },
+            { ip:'10.0.14.1', mask:30 },
+            { ip:'10.0.15.1', mask:30 },
+          ] },
+          { id: 'sc_mpls_hq',  type: 'router', x: 600, y: 160, label: 'HQ',   interfaces:[{ ip:'10.0.11.2', mask:30 }] },
+          { id: 'sc_mpls_b1',  type: 'router', x: 280, y: 280, label: 'BR-1', interfaces:[{ ip:'10.0.12.2', mask:30 }] },
+          { id: 'sc_mpls_b2',  type: 'router', x: 280, y: 480, label: 'BR-2', interfaces:[{ ip:'10.0.13.2', mask:30 }] },
+          { id: 'sc_mpls_b3',  type: 'router', x: 920, y: 280, label: 'BR-3', interfaces:[{ ip:'10.0.14.2', mask:30 }] },
+          { id: 'sc_mpls_b4',  type: 'router', x: 920, y: 480, label: 'BR-4', interfaces:[{ ip:'10.0.15.2', mask:30 }] },
         ],
         cables: [
           { id: 'sc_mpls_c1', fromId: 'sc_mpls_hq', toId: 'sc_mpls_mpls', type: 'fiber' },
@@ -1011,10 +1017,10 @@
       objectiveRefs: ['1.6'],
       startingState: {
         devices: [
-          { id: 'sc_pm_a', type: 'router', x: 440, y: 240, label: 'R-A' },
-          { id: 'sc_pm_b', type: 'router', x: 760, y: 240, label: 'R-B' },
-          { id: 'sc_pm_c', type: 'router', x: 440, y: 520, label: 'R-C' },
-          { id: 'sc_pm_d', type: 'router', x: 760, y: 520, label: 'R-D' },
+          { id: 'sc_pm_a', type: 'router', x: 440, y: 240, label: 'R-A', interfaces:[{ ip:'10.0.12.1', mask:30 },{ ip:'10.0.13.1', mask:30 }] },
+          { id: 'sc_pm_b', type: 'router', x: 760, y: 240, label: 'R-B', interfaces:[{ ip:'10.0.12.2', mask:30 },{ ip:'10.0.23.1', mask:30 }] },
+          { id: 'sc_pm_c', type: 'router', x: 440, y: 520, label: 'R-C', interfaces:[{ ip:'10.0.13.2', mask:30 },{ ip:'10.0.23.2', mask:30 },{ ip:'10.0.34.1', mask:30 }] },
+          { id: 'sc_pm_d', type: 'router', x: 760, y: 520, label: 'R-D', interfaces:[{ ip:'10.0.34.2', mask:30 }] },
         ],
         cables: [
           { id: 'sc_pm_c1', fromId: 'sc_pm_a', toId: 'sc_pm_b', type: 'fiber' },
@@ -1047,10 +1053,10 @@
       objectiveRefs: ['1.6'],
       startingState: {
         devices: [
-          { id: 'sc_disp_ispa', type: 'internet', x: 440, y: 160, label: 'ISP-A' },
-          { id: 'sc_disp_ispb', type: 'internet', x: 760, y: 160, label: 'ISP-B' },
-          { id: 'sc_disp_rtr',  type: 'router',   x: 600, y: 320, label: 'EDGE-R' },
-          { id: 'sc_disp_fw',   type: 'firewall', x: 600, y: 480, label: 'EDGE-FW' },
+          { id: 'sc_disp_ispa', type: 'internet', x: 440, y: 160, label: 'ISP-A',   interfaces:[{ ip:'203.0.113.1', mask:30 }] },
+          { id: 'sc_disp_ispb', type: 'internet', x: 760, y: 160, label: 'ISP-B',   interfaces:[{ ip:'203.0.113.5', mask:30 }] },
+          { id: 'sc_disp_rtr',  type: 'router',   x: 600, y: 320, label: 'EDGE-R',  interfaces:[{ ip:'203.0.113.2', mask:30 },{ ip:'203.0.113.6', mask:30 },{ ip:'192.168.10.1', mask:24 }] },
+          { id: 'sc_disp_fw',   type: 'firewall', x: 600, y: 480, label: 'EDGE-FW', interfaces:[{ ip:'192.168.10.2', mask:24 },{ ip:'192.168.20.1', mask:24 }] },
           { id: 'sc_disp_sw',   type: 'switch',   x: 600, y: 640, label: 'LAN-SW' },
         ],
         cables: [
