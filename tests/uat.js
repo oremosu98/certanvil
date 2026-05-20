@@ -21324,6 +21324,37 @@ test('phase2: TB_V3_FREEBUILD_BACKUP does not collide with TB_V3_DRAFT', !/TB_V3
   assert(sandbox.out === null, 'D: subsequent restore returns null (one-shot)');
 })();
 
+// ────────────────────────────────────────────────────────────
+// v6.0 · Topology Builder v3 Phase 3 — Reachability engine (5 pure fns)
+// ────────────────────────────────────────────────────────────
+(function _tbv3Phase3Fixtures() {
+  function assert(cond, msg) { test(msg, !!cond); }
+
+  const tbv3SrcP3 = fs.readFileSync(path.join(__dirname, '..', 'features', 'topology-builder-v3.js'), 'utf8');
+
+  // ── 1. parseCidr(input) ───────────────────────────────────
+  const pcDecl = _fnBody(tbv3SrcP3, 'parseCidr');
+  assert(pcDecl, 'phase3: parseCidr exists');
+
+  function callPc(input) {
+    const sb = { result: null };
+    vm.runInNewContext(pcDecl + ' result = parseCidr(' + JSON.stringify(input) + ');', sb);
+    return sb.result;
+  }
+
+  const ok = callPc('192.168.10.5/24');
+  assert(ok && Array.isArray(ok.ip) && ok.ip.join('.') === '192.168.10.5' && ok.mask === 24, 'pc-A: valid /24 parses');
+  assert(callPc('10.0.0.1/30') && callPc('10.0.0.1/30').mask === 30, 'pc-B: /30 parses');
+  assert(callPc('0.0.0.0/0') && callPc('0.0.0.0/0').mask === 0, 'pc-C: /0 parses');
+  assert(callPc('255.255.255.255/32') && callPc('255.255.255.255/32').mask === 32, 'pc-D: /32 parses');
+  assert(callPc('') === null, 'pc-E: empty returns null');
+  assert(callPc(null) === null, 'pc-F: null returns null');
+  assert(callPc('192.168.10.5') === null, 'pc-G: no mask returns null');
+  assert(callPc('192.168.10.5/33') === null, 'pc-H: mask >32 returns null');
+  assert(callPc('192.168.10.5/-1') === null, 'pc-I: mask <0 returns null');
+  assert(callPc('192.168.300.5/24') === null, 'pc-J: octet >255 returns null');
+})();
+
 // ── Summary ──
 console.log('\n' + '═'.repeat(50));
 const total = results.pass + results.fail;

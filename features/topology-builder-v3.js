@@ -111,6 +111,34 @@
   }
 
   // ───────────────────────────────────────────────────────────
+  // REACHABILITY ENGINE (Phase 3 — subnet-aware L3 validator)
+  //
+  // Five pure functions: parseCidr, inSameSubnet, routeNextHop,
+  // computePath, computeReachability. Synchronous, deterministic,
+  // safe for vm-sandbox tests + safe for re-running on every
+  // canvas mutation (wired via the existing _renderCompletionPill
+  // hook from Phase 2).
+  // ───────────────────────────────────────────────────────────
+
+  function parseCidr(input) {
+    if (typeof input !== 'string' || !input.length) return null;
+    var parts = input.split('/');
+    if (parts.length !== 2) return null;
+    var mask = parseInt(parts[1], 10);
+    if (!Number.isInteger(mask) || mask < 0 || mask > 32) return null;
+    var octets = parts[0].split('.');
+    if (octets.length !== 4) return null;
+    var ip = [];
+    for (var i = 0; i < 4; i++) {
+      var n = parseInt(octets[i], 10);
+      if (!Number.isInteger(n) || n < 0 || n > 255) return null;
+      if (String(n) !== octets[i]) return null; // reject '0123', '+5', etc.
+      ip.push(n);
+    }
+    return { ip: ip, mask: mask };
+  }
+
+  // ───────────────────────────────────────────────────────────
   // SCENARIOS CATALOG (Phase 2 — 8 starter; full 20-25 in Phase 2.x)
   //
   // Schema (locked from spec §9):
@@ -2278,6 +2306,8 @@
     buildCable: buildCable,
     serialiseState: serialiseState,
     parseState: parseState,
+    // Phase 3 — reachability engine
+    parseCidr: parseCidr,
     // Scenarios (phase 2)
     TB_V3_SCENARIOS: TB_V3_SCENARIOS,
     validateScenarioShape: validateScenarioShape,
