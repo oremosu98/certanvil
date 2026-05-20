@@ -112,7 +112,103 @@
   // WORKSPACE RENDER (TASK 1.x)
   // ───────────────────────────────────────────────────────────
 
-  function _renderWorkspace() { /* TASK 1.3 */ }
+  function _renderWorkspace() {
+    var host = document.getElementById('page-topology-builder-v3');
+    if (!host) return;
+
+    host.innerHTML =
+      // Strip header
+      '<div class="tb3-strip">' +
+        '<span class="tb3-eyb">Net+ &middot; N10-009</span>' +
+        '<span class="tb3-title">Network <em>builder.</em></span>' +
+        '<div class="tb3-strip-r">' +
+          '<span id="tb3-device-count">0 devices &middot; 0 cables</span>' +
+          '<span id="tb3-theme-toggle" class="tb3-rrail-btn" style="width:28px;height:28px;border:1px solid var(--tb3-border-soft)" title="Toggle theme">' +
+            '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" stroke-linecap="round"/></svg>' +
+          '</span>' +
+        '</div>' +
+      '</div>' +
+
+      // Mode bar
+      '<div class="tb3-bar">' +
+        '<div class="tb3-intent" id="tb3-intent-chip">' +
+          '<span class="tb3-intent-dot"></span>' +
+          '<div style="display:flex;flex-direction:column;gap:2px">' +
+            '<span class="tb3-intent-lbl">Intent</span>' +
+            '<span class="tb3-intent-name" id="tb3-intent-name">Free Build</span>' +
+          '</div>' +
+          '<span style="margin-left:auto;color:var(--tb3-text-dim);font-size:10px">&#9662;</span>' +
+        '</div>' +
+        '<div class="tb3-modes" id="tb3-modes-row">' +
+          // Modes injected by _renderModeBar (Task 7.1)
+        '</div>' +
+        '<div class="tb3-bar-r">' +
+          '<div class="tb3-mode" id="tb3-export-btn">' +
+            '<svg viewBox="0 0 24 24" class="tb3-mode-ic" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 3v12M5 10l7 7 7-7M5 21h14"/></svg>' +
+            'Export' +
+          '</div>' +
+        '</div>' +
+      '</div>' +
+
+      // Body
+      '<div class="tb3-body" id="tb3-body">' +
+        '<div class="tb3-palette" id="tb3-palette"></div>' +
+        '<div class="tb3-canvas-wrap" id="tb3-canvas-wrap">' +
+          '<svg class="tb3-canvas-svg" id="tb3-canvas-svg"></svg>' +
+          '<div class="tb3-canvas-chip" id="tb3-canvas-chip"></div>' +
+          '<div class="tb3-canvas-zoom">' +
+            '<div class="tb3-zoom-btn" id="tb3-zoom-out">&minus;</div>' +
+            '<div class="tb3-zoom-pct" id="tb3-zoom-pct">100%</div>' +
+            '<div class="tb3-zoom-btn" id="tb3-zoom-in">+</div>' +
+          '</div>' +
+          '<div class="tb3-minimap" id="tb3-minimap">' +
+            '<div class="tb3-minimap-inner" id="tb3-minimap-inner"></div>' +
+          '</div>' +
+        '</div>' +
+        '<div class="tb3-rrail" id="tb3-rrail">' +
+          '<div class="tb3-rrail-btn locked" title="Inspector (active when device selected)">' +
+            '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg>' +
+          '</div>' +
+          '<div class="tb3-rrail-btn locked" title="Scenarios (Phase 2)">' +
+            '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 9h18M7 5v14"/></svg>' +
+          '</div>' +
+          '<div class="tb3-rrail-btn locked" title="Coach (Phase 7)">' +
+            '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 2l3 7h7l-5.5 4 2 7-6.5-4.5L5.5 20l2-7L2 9h7z"/></svg>' +
+          '</div>' +
+        '</div>' +
+        '<div class="tb3-inspector" id="tb3-inspector"></div>' +
+      '</div>' +
+
+      // Status bar
+      '<div class="tb3-status">' +
+        '<span id="tb3-status-intent">Free Build</span>' +
+        '<span id="tb3-status-mode" class="accent">Design</span>' +
+        '<span id="tb3-status-save" class="pass">&middot; saved</span>' +
+        '<span class="stat-r">' +
+          '<span>space + drag &middot; pan</span>' +
+          '<span>scroll &middot; zoom</span>' +
+          '<span>del &middot; remove</span>' +
+        '</span>' +
+      '</div>';
+
+    _renderModeBar();   // Task 7.1
+    _renderPalette();   // Task 3.1
+    _renderCanvas();    // Task 2.1
+    _wirePanZoom();     // Task 2.3
+    _renderMinimap();   // Task 2.5
+    _wireDragToCanvas();// Task 3.3
+    _wireCableDrawing();// Task 4.1
+    _wireGlobalKeys();  // Task 5.3
+    _wireExport();      // Task 8.2
+  }
+
+  function _updateDeviceCount() {
+    var el = document.getElementById('tb3-device-count');
+    if (el) {
+      el.textContent = state.devices.length + ' device' + (state.devices.length === 1 ? '' : 's') +
+                       ' · ' + state.cables.length + ' cable' + (state.cables.length === 1 ? '' : 's');
+    }
+  }
 
   // ───────────────────────────────────────────────────────────
   // CANVAS (TASK 2.x)
@@ -143,6 +239,7 @@
   function _selectDevice(id) { /* TASK 5.1 */ }
   function _deleteSelected() { /* TASK 5.3 */ }
   function _renderInspector() { /* TASK 5.4 */ }
+  function _wireGlobalKeys() { /* TASK 5.3 — Delete + Escape + Space-pan */ }
 
   // ───────────────────────────────────────────────────────────
   // MODE BAR + INTENT CHIP (TASK 7.x)
@@ -155,6 +252,7 @@
   // ───────────────────────────────────────────────────────────
 
   function _exportPng() { /* TASK 8.1 */ }
+  function _wireExport() { /* TASK 8.2 — Export button click handler */ }
 
   // Register on the standard feature-modules contract
   window._certanvilFeatures = window._certanvilFeatures || {};
