@@ -759,11 +759,11 @@
       objectiveRefs: ['1.6', '4.1'],
       startingState: {
         devices: [
-          { id: 'sc_dmz_internet', type: 'internet', x: 600, y: 100, label: 'INTERNET' },
-          { id: 'sc_dmz_outerfw',  type: 'firewall', x: 600, y: 260, label: 'OUTER-FW' },
-          { id: 'sc_dmz_dmzsrv',   type: 'server',   x: 380, y: 400, label: 'WEB-DMZ' },
-          { id: 'sc_dmz_dmzsrv2',  type: 'server',   x: 820, y: 400, label: 'MAIL-DMZ' },
-          { id: 'sc_dmz_innerfw',  type: 'firewall', x: 600, y: 560, label: 'INNER-FW' },
+          { id: 'sc_dmz_internet', type: 'internet', x: 600, y: 100, label: 'INTERNET', interfaces:[{ ip:'203.0.113.1', mask:30 }] },
+          { id: 'sc_dmz_outerfw',  type: 'firewall', x: 600, y: 260, label: 'OUTER-FW', interfaces:[{ ip:'203.0.113.2', mask:30 },{ ip:'192.168.30.1', mask:24 }] },
+          { id: 'sc_dmz_dmzsrv',   type: 'server',   x: 380, y: 400, label: 'WEB-DMZ',  config:{ ip:'192.168.30.10', mask:24, gateway:'192.168.30.1' } },
+          { id: 'sc_dmz_dmzsrv2',  type: 'server',   x: 820, y: 400, label: 'MAIL-DMZ', config:{ ip:'192.168.30.11', mask:24, gateway:'192.168.30.1' } },
+          { id: 'sc_dmz_innerfw',  type: 'firewall', x: 600, y: 560, label: 'INNER-FW', interfaces:[{ ip:'192.168.30.254', mask:24 },{ ip:'192.168.10.1', mask:24 }] },
           { id: 'sc_dmz_lan_sw',   type: 'switch',   x: 600, y: 720, label: 'LAN-SW' },
         ],
         cables: [
@@ -1336,13 +1336,20 @@
       objectiveRefs: ['4.1'],
       startingState: {
         devices: [
-          { id: 'sc_zt_fw',   type: 'firewall',    x: 600, y: 360, label: 'FW-POLICY' },
-          { id: 'sc_zt_srv1', type: 'server',      x: 320, y: 160, label: 'SRV-1' },
-          { id: 'sc_zt_srv2', type: 'server',      x: 600, y: 160, label: 'SRV-2' },
-          { id: 'sc_zt_srv3', type: 'server',      x: 880, y: 160, label: 'SRV-3' },
-          { id: 'sc_zt_ws1',  type: 'workstation', x: 320, y: 560, label: 'WS-1' },
-          { id: 'sc_zt_ws2',  type: 'workstation', x: 600, y: 560, label: 'WS-2' },
-          { id: 'sc_zt_ws3',  type: 'workstation', x: 880, y: 560, label: 'WS-3' },
+          { id: 'sc_zt_fw',   type: 'firewall',    x: 600, y: 360, label: 'FW-POLICY', interfaces:[
+            { ip:'192.168.10.1', mask:24 },
+            { ip:'192.168.20.1', mask:24 },
+            { ip:'192.168.30.1', mask:24 },
+            { ip:'192.168.40.1', mask:24 },
+            { ip:'192.168.50.1', mask:24 },
+            { ip:'192.168.60.1', mask:24 },
+          ] },
+          { id: 'sc_zt_srv1', type: 'server',      x: 320, y: 160, label: 'SRV-1', config:{ ip:'192.168.10.10', mask:24, gateway:'192.168.10.1' } },
+          { id: 'sc_zt_srv2', type: 'server',      x: 600, y: 160, label: 'SRV-2', config:{ ip:'192.168.20.10', mask:24, gateway:'192.168.20.1' } },
+          { id: 'sc_zt_srv3', type: 'server',      x: 880, y: 160, label: 'SRV-3', config:{ ip:'192.168.30.10', mask:24, gateway:'192.168.30.1' } },
+          { id: 'sc_zt_ws1',  type: 'workstation', x: 320, y: 560, label: 'WS-1',  config:{ ip:'192.168.40.10', mask:24, gateway:'192.168.40.1' } },
+          { id: 'sc_zt_ws2',  type: 'workstation', x: 600, y: 560, label: 'WS-2',  config:{ ip:'192.168.50.10', mask:24, gateway:'192.168.50.1' } },
+          { id: 'sc_zt_ws3',  type: 'workstation', x: 880, y: 560, label: 'WS-3',  config:{ ip:'192.168.60.10', mask:24, gateway:'192.168.60.1' } },
         ],
         cables: [
           { id: 'sc_zt_c1', fromId: 'sc_zt_fw', toId: 'sc_zt_srv1', type: 'cat6' },
@@ -1378,12 +1385,12 @@
       objectiveRefs: ['4.1'],
       startingState: {
         devices: [
-          { id: 'sc_bj_inet', type: 'internet', x: 600, y: 100, label: 'INTERNET' },
-          { id: 'sc_bj_fw',   type: 'firewall', x: 600, y: 240, label: 'EDGE-FW' },
-          { id: 'sc_bj_bas',  type: 'server',   x: 320, y: 360, label: 'BASTION' },
+          { id: 'sc_bj_inet', type: 'internet', x: 600, y: 100, label: 'INTERNET', interfaces:[{ ip:'203.0.113.1', mask:30 }] },
+          { id: 'sc_bj_fw',   type: 'firewall', x: 600, y: 240, label: 'EDGE-FW', interfaces:[{ ip:'203.0.113.2', mask:30 },{ ip:'192.168.10.1', mask:24 }] },
+          { id: 'sc_bj_bas',  type: 'server',   x: 320, y: 360, label: 'BASTION',   config:{ ip:'192.168.10.10', mask:24, gateway:'192.168.10.1' } },
           { id: 'sc_bj_sw',   type: 'switch',   x: 600, y: 480, label: 'INTERNAL-SW' },
-          { id: 'sc_bj_srv1', type: 'server',   x: 440, y: 640, label: 'INT-SRV-1' },
-          { id: 'sc_bj_srv2', type: 'server',   x: 760, y: 640, label: 'INT-SRV-2' },
+          { id: 'sc_bj_srv1', type: 'server',   x: 440, y: 640, label: 'INT-SRV-1', config:{ ip:'192.168.10.20', mask:24, gateway:'192.168.10.1' } },
+          { id: 'sc_bj_srv2', type: 'server',   x: 760, y: 640, label: 'INT-SRV-2', config:{ ip:'192.168.10.21', mask:24, gateway:'192.168.10.1' } },
         ],
         cables: [
           { id: 'sc_bj_c1', fromId: 'sc_bj_inet', toId: 'sc_bj_fw',   type: 'fiber' },
@@ -1420,12 +1427,12 @@
       objectiveRefs: ['4.1'],
       startingState: {
         devices: [
-          { id: 'sc_nac_rtr',  type: 'router',      x: 600, y: 160, label: 'GATEWAY' },
-          { id: 'sc_nac_sw',   type: 'switch',      x: 600, y: 320, label: 'NAC-SW' },
-          { id: 'sc_nac_srv',  type: 'server',      x: 880, y: 320, label: 'RADIUS-AAA' },
-          { id: 'sc_nac_ws1',  type: 'workstation', x: 320, y: 520, label: 'WS-1' },
-          { id: 'sc_nac_ws2',  type: 'workstation', x: 600, y: 520, label: 'WS-2' },
-          { id: 'sc_nac_ws3',  type: 'workstation', x: 880, y: 520, label: 'WS-3' },
+          { id: 'sc_nac_rtr', type: 'router',      x: 600, y: 160, label: 'GATEWAY', interfaces:[{ ip:'192.168.10.1', mask:24 }] },
+          { id: 'sc_nac_sw',  type: 'switch',      x: 600, y: 320, label: 'NAC-SW' },
+          { id: 'sc_nac_srv', type: 'server',      x: 880, y: 320, label: 'RADIUS-AAA', config:{ ip:'192.168.10.10', mask:24, gateway:'192.168.10.1' } },
+          { id: 'sc_nac_ws1', type: 'workstation', x: 320, y: 520, label: 'WS-1', config:{ ip:'192.168.10.20', mask:24, gateway:'192.168.10.1' } },
+          { id: 'sc_nac_ws2', type: 'workstation', x: 600, y: 520, label: 'WS-2', config:{ ip:'192.168.10.21', mask:24, gateway:'192.168.10.1' } },
+          { id: 'sc_nac_ws3', type: 'workstation', x: 880, y: 520, label: 'WS-3', config:{ ip:'192.168.10.22', mask:24, gateway:'192.168.10.1' } },
         ],
         cables: [
           { id: 'sc_nac_c1', fromId: 'sc_nac_rtr', toId: 'sc_nac_sw',  type: 'cat6' },
