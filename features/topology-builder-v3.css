@@ -16,8 +16,18 @@ html:has(#page-topology-builder-v3.page.active) body {
 }
 
 #page-topology-builder-v3 {
+  /* Full-viewport takeover. The global .page rule (styles.css line 106) sets
+     max-width:800px + margin:0 auto + padding:24px 20px and a 900px
+     tablet-portrait breakpoint; this id-scoped rule outranks .page but we
+     MUST also blank out max-width + width + the constraining padding/margin
+     or the workspace clamps and the canvas leaves dead space on the right.
+     position:fixed + inset:0 alone (no width set) sizes us to the viewport
+     exactly via the right:0/bottom:0 constraints — no scrollbar maths. */
   position: fixed;
   inset: 0;
+  width: auto;
+  max-width: none;
+  min-width: 0;
   margin: 0;
   padding: 0;
   background: var(--tb3-bg);
@@ -26,6 +36,7 @@ html:has(#page-topology-builder-v3.page.active) body {
   display: flex;
   flex-direction: column;
   z-index: 100;
+  overflow: hidden;
 }
 
 /* ════════════════════════════════════════════════════════════

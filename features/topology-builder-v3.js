@@ -34,7 +34,7 @@
   // APP_VERSION hasn't changed. After v3 ships in a version-bump cycle,
   // APP_VERSION will be the canonical cache key and this constant can be
   // retired (or kept at .0 forever).
-  var TB3_CSS_REV = 'r2';
+  var TB3_CSS_REV = 'r4';
 
   function _ensureCss() {
     if (document.querySelector('link[href*="topology-builder-v3.css"]')) return;
