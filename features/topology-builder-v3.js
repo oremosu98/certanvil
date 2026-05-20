@@ -166,6 +166,44 @@
         ],
       },
     },
+    {
+      id: 'mesh-topology',
+      title: 'Full mesh topology (4 nodes)',
+      category: 'topology',
+      objectiveRefs: ['1.2'],
+      startingState: {
+        devices: [
+          { id: 'sc_mesh_1', type: 'router', x: 360, y: 200, label: 'R1' },
+          { id: 'sc_mesh_2', type: 'router', x: 840, y: 200, label: 'R2' },
+          { id: 'sc_mesh_3', type: 'router', x: 360, y: 520, label: 'R3' },
+          { id: 'sc_mesh_4', type: 'router', x: 840, y: 520, label: 'R4' },
+        ],
+        cables: [
+          { id: 'sc_mesh_c1', fromId: 'sc_mesh_1', toId: 'sc_mesh_2', type: 'cat6' },
+          { id: 'sc_mesh_c2', fromId: 'sc_mesh_1', toId: 'sc_mesh_3', type: 'cat6' },
+          { id: 'sc_mesh_c3', fromId: 'sc_mesh_1', toId: 'sc_mesh_4', type: 'cat6' },
+          { id: 'sc_mesh_c4', fromId: 'sc_mesh_2', toId: 'sc_mesh_3', type: 'cat6' },
+          { id: 'sc_mesh_c5', fromId: 'sc_mesh_2', toId: 'sc_mesh_4', type: 'cat6' },
+          { id: 'sc_mesh_c6', fromId: 'sc_mesh_3', toId: 'sc_mesh_4', type: 'cat6' },
+        ],
+        viewport: { x: 0, y: 0, zoom: 1 },
+      },
+      brief: 'Full mesh wires every node to every other node — n(n-1)/2 links. Most fault-tolerant shape, most expensive to scale (link count is quadratic in node count).',
+      examRelevance: {
+        overview:      'Full mesh = every node has a direct link to every other node.',
+        howItRoutes:   'Direct path between any pair; routing protocols choose shortest available link if multiple exist.',
+        keyDevices:    'Routers or switches; node type matches deployment (core WAN, datacentre).',
+        keyConcepts:   'Link count = n(n-1)/2 (here: 4 nodes = 6 links). Partial mesh is the practical compromise.',
+        examRelevance: 'N10-009 obj 1.2 — recognise mesh on diagrams; calculate links; contrast with star/ring.',
+      },
+      completion: {
+        requiredDevices: ['router'],
+        expectedCount:   { router: 4 },
+        requiredCables:  [
+          { from:'router', to:'router' },
+        ],
+      },
+    },
   ];
 
   function validateScenarioShape(s) {
