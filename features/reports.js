@@ -297,6 +297,55 @@
     }, 240);
   }
 
+  // ───────────────────────────────────────────────────────────
+  // SUBMIT HELPERS (TASK 4.1)
+  // ───────────────────────────────────────────────────────────
+
+  var GH_OWNER = 'oremosu98';
+  var GH_REPO = 'networkplus-quiz';
+
+  function _showToast(opts) {
+    var existing = document.querySelector('.br-toast');
+    if (existing) existing.parentNode.removeChild(existing);
+    var t = document.createElement('div');
+    var tone = opts.tone || 'ok';
+    t.className = 'br-toast ' + tone;
+    var icon = tone === 'ok' ? '&check;' : (tone === 'amber' ? '&#8635;' : '&times;');
+    t.innerHTML =
+      '<div class="br-toast-i">' + icon + '</div>' +
+      '<div><div class="br-toast-t">' + (opts.title || '') + '</div>' +
+      (opts.sub ? '<div class="br-toast-l">' + opts.sub + '</div>' : '') + '</div>';
+    if (opts.url) {
+      t.classList.add('br-toast-link');
+      t.addEventListener('click', function(){ window.open(opts.url, '_blank', 'noopener'); });
+    }
+    document.body.appendChild(t);
+    requestAnimationFrame(function(){ t.classList.add('open'); });
+    setTimeout(function(){
+      t.classList.remove('open');
+      setTimeout(function(){ if (t.parentNode) t.parentNode.removeChild(t); }, 300);
+    }, opts.duration || 5000);
+  }
+
+  function _loadQueue() {
+    try { return JSON.parse(localStorage.getItem(STORAGE.BUG_REPORTS) || '[]'); }
+    catch (e) { return []; }
+  }
+  function _saveQueue(q) {
+    try { localStorage.setItem(STORAGE.BUG_REPORTS, JSON.stringify(q)); } catch (e) {}
+  }
+
+  function _certBadgeClass() {
+    try { return 'cert:' + (window.CURRENT_CERT || 'unknown'); } catch (e) { return 'cert:unknown'; }
+  }
+
+  function _updateTopbarDot() {
+    var btn = document.getElementById('topbar-bug-report');
+    if (!btn) return;
+    var q = _loadQueue();
+    btn.classList.toggle('has-queue', q.length > 0);
+  }
+
   // Stubs that later tasks will implement; provide empty bodies so openDrawer doesn't error
   function _wireForm(host) {
     var titleEl = host.querySelector('#br-input-title');
@@ -351,13 +400,100 @@
 
     updateSend();
   }
-  function _wireSubmit(host) {}
+  function _wireSubmit(host) {
+    host.querySelector('#br-send').addEventListener('click', async function(){
+      var sendBtn = host.querySelector('#br-send');
+      sendBtn.disabled = true;
+      var form = {
+        title: host.querySelector('#br-input-title').value,
+        desc: host.querySelector('#br-input-desc').value,
+        steps: (host.querySelector('#br-input-steps') || {}).value || null,
+      };
+      var payload = buildPayload(form, _getCtx());
+      var result = await submitReport(payload);
+
+      if (result.type === 'success') {
+        _showToast({ tone: 'ok', title: 'Report filed',
+          sub: 'Issue <b>#' + result.issue_number + '</b> · tap to open',
+          url: result.issue_url });
+        // Clear from queue if this was a retry
+        var q = _loadQueue();
+        _saveQueue(q.filter(function(r){ return r.id !== payload.id; }));
+        closeDrawer();
+        _updateTopbarDot();
+        return;
+      }
+
+      // Failure paths
+      if (result.queueAction === 'enqueue' || result.queueAction === 'requeue') {
+        var q2 = _loadQueue();
+        var record = {
+          id: payload.id, payload: payload,
+          attempts: 1, last_try: payload.submitted_at,
+          next_try: result.next_try || null,
+          terminal: !!result.terminal,
+        };
+        _saveQueue(enqueueReport(record, q2));
+      }
+      _showToast({ tone: result.toast.tone, title: result.toast.title });
+      sendBtn.disabled = false;
+      _updateTopbarDot();
+    });
+  }
 
   // ───────────────────────────────────────────────────────────
   // SUBMIT + RETRY (TASK 5.x, 6.x)
   // ───────────────────────────────────────────────────────────
 
-  async function submitReport(payload) { /* TASK 5.1 */ }
+  async function submitReport(payload) {
+    var token;
+    try { token = localStorage.getItem(STORAGE.GH_TOKEN); } catch (e) { token = null; }
+    if (!token) {
+      return classifyError({ status: 401 });
+    }
+
+    var body = renderIssueBody(payload);
+    var labels = ['bug-report', _certBadgeClass(), 'version:' + (payload.context && payload.context.version) ];
+
+    try {
+      var resp = await fetch('https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/issues', {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/vnd.github+json',
+          'Authorization': 'Bearer ' + token,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          title: '[user-report] ' + payload.title,
+          body: body,
+          labels: labels,
+        }),
+      });
+
+      var rlRem = parseInt(resp.headers.get('x-ratelimit-remaining') || '-1', 10);
+      var rlReset = parseInt(resp.headers.get('x-ratelimit-reset') || '0', 10);
+      if (resp.ok) {
+        var json = await resp.json();
+        return Object.assign(classifyError({ status: resp.status }), {
+          issue_number: json.number, issue_url: json.html_url,
+        });
+      }
+      var respBody = null;
+      try { respBody = await resp.json(); } catch (e) {}
+      var cls = classifyError({
+        status: resp.status,
+        ratelimit_remaining: rlRem >= 0 ? rlRem : undefined,
+        ratelimit_reset: rlReset || undefined,
+        body: respBody,
+      });
+      if (cls.type === 'payload') {
+        try { console.error('[bug-report] 422 payload rejected:', respBody); } catch (e) {}
+      }
+      return cls;
+    } catch (e) {
+      return classifyError({ status: 0, network: true });
+    }
+  }
   async function drainQueue() { /* TASK 6.1 */ }
 
   // ───────────────────────────────────────────────────────────
