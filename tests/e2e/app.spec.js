@@ -2562,11 +2562,11 @@ test.describe('topology-builder-v3', () => {
     await expect(page.locator('#tb3-intent-name')).toContainText('Free Build');
   });
 
-  test('17: picker renders all 8 scenarios', async ({ page }) => {
+  test('17: picker renders all 25 scenarios', async ({ page }) => {
     await page.click('[data-sb-page="topology-builder-v3"]');
     await page.click('#tb3-rrail-scenarios');
     const rows = page.locator('#tb3-picker .tb3-picker-row');
-    await expect(rows).toHaveCount(8);
+    await expect(rows).toHaveCount(25);
   });
 });
 
