@@ -298,7 +298,59 @@
   }
 
   // Stubs that later tasks will implement; provide empty bodies so openDrawer doesn't error
-  function _wireForm(host) {}
+  function _wireForm(host) {
+    var titleEl = host.querySelector('#br-input-title');
+    var descEl = host.querySelector('#br-input-desc');
+    var sendEl = host.querySelector('#br-send');
+    var stepsToggle = host.querySelector('#br-steps-toggle');
+    var counter = host.querySelector('#br-desc-counter');
+    var titleErr = host.querySelector('#br-title-err');
+    var descErr = host.querySelector('#br-desc-err');
+
+    function updateSend() {
+      var t = titleEl.value.trim();
+      var d = descEl.value.trim();
+      var ok = t.length > 0 && d.length > 0 && _hasToken();
+      sendEl.disabled = !ok;
+    }
+
+    function updateCounter() {
+      var len = descEl.value.length;
+      if (len >= 4000) {
+        counter.hidden = false;
+        counter.textContent = len.toLocaleString() + ' / 5,000';
+        counter.classList.toggle('warn', len >= 4000);
+      } else {
+        counter.hidden = true;
+      }
+    }
+
+    titleEl.addEventListener('input', function(){
+      titleEl.classList.remove('err'); titleErr.hidden = true; updateSend();
+    });
+    descEl.addEventListener('input', function(){
+      descEl.classList.remove('err'); descErr.hidden = true;
+      updateCounter(); updateSend();
+    });
+
+    // Steps-to-reproduce expander
+    var stepsInserted = false;
+    stepsToggle.addEventListener('click', function(){
+      if (stepsInserted) return;
+      stepsInserted = true;
+      var field = document.createElement('div');
+      field.className = 'br-field';
+      field.innerHTML =
+        '<label class="br-label" for="br-input-steps">Steps to reproduce <span style="color:var(--text-dim);font-weight:400;font-size:9.5px">(optional)</span></label>' +
+        '<textarea class="br-textarea" id="br-input-steps" maxlength="2000" placeholder="1. ...&#10;2. ...&#10;3. ..."></textarea>';
+      stepsToggle.parentNode.insertBefore(field, stepsToggle);
+      stepsToggle.hidden = true;
+      var stepsEl = host.querySelector('#br-input-steps');
+      stepsEl.focus();
+    });
+
+    updateSend();
+  }
   function _wireSubmit(host) {}
 
   // ───────────────────────────────────────────────────────────
