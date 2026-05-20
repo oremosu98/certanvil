@@ -20365,3 +20365,21 @@ if (document.readyState === 'loading') {
   _processUrlAction();
   _maybeShowPlaytestWelcomeToast();
 }
+
+// v5.6.x — Bug-report retry queue drain
+// Note: wrapped in a `typeof window.addEventListener === 'function'` guard
+// because tests/uat.js's `renderSettingsHealthCard` vm-fixture extracts the
+// function body via the brace-walker `_fnBodyShell` which overshoots through
+// EOF; the test stubs `window: {}` (no addEventListener) so a bare call would
+// throw. In the real browser the guard is always-true and the hook fires.
+if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
+  window.addEventListener('DOMContentLoaded', function(){
+    // Run after a 2s delay so it doesn't block first-paint
+    setTimeout(function(){
+      if (typeof _loadFeature !== 'function') return;
+      _loadFeature('reports').then(function(m){
+        if (m && typeof m.drainQueue === 'function') m.drainQueue();
+      }).catch(function(){ /* silent */ });
+    }, 2000);
+  });
+}

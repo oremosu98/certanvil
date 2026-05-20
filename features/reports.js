@@ -494,7 +494,40 @@
       return classifyError({ status: 0, network: true });
     }
   }
-  async function drainQueue() { /* TASK 6.1 */ }
+  async function drainQueue() {
+    var q = _loadQueue();
+    if (!q.length) return;
+
+    var keep = [];
+    var landed = 0;
+    for (var i = 0; i < q.length; i++) {
+      var entry = q[i];
+      if (entry.terminal) { keep.push(entry); continue; }
+      if (entry.next_try && Date.now() < entry.next_try * 1000) {
+        keep.push(entry); continue;
+      }
+      // One attempt
+      var result = await submitReport(entry.payload);
+      if (result.type === 'success') {
+        landed++;
+        continue; // don't keep
+      }
+      entry.attempts = (entry.attempts || 1) + 1;
+      entry.last_try = new Date().toISOString().replace(/\.\d{3}Z$/, 'Z');
+      entry.next_try = result.next_try || null;
+      entry.terminal = !!result.terminal;
+      keep.push(entry);
+    }
+    _saveQueue(keep);
+    _updateTopbarDot();
+
+    if (landed > 0) {
+      _showToast({ tone: 'ok',
+        title: 'Filed offline ' + (landed === 1 ? 'report' : 'reports'),
+        sub: landed + ' queued ' + (landed === 1 ? 'report' : 'reports') + ' just landed',
+      });
+    }
+  }
 
   // ───────────────────────────────────────────────────────────
   // SETTINGS PANEL (TASK 7.x)
