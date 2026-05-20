@@ -2525,8 +2525,7 @@ test.describe('topology-builder-v3', () => {
     await page.click('[data-sb-page="topology-builder-v3"]');
     await page.click('#tb3-rrail-scenarios');
     await page.click('.tb3-picker-row[data-scenario-id="star-topology"]');
-    // Close the picker so the rrail (which contains the pill) becomes visible
-    await page.click('#tb3-picker-close');
+    // Picker auto-closes on successful load (v5.8.1) — rrail+pill immediately visible.
     // star-topology starting state is designed to meet completion already
     await expect(page.locator('#tb3-completion-pill')).toBeVisible();
     await expect(page.locator('#tb3-completion-pill')).toHaveClass(/on/);
@@ -2537,8 +2536,7 @@ test.describe('topology-builder-v3', () => {
     await page.click('[data-sb-page="topology-builder-v3"]');
     await page.click('#tb3-rrail-scenarios');
     await page.click('.tb3-picker-row[data-scenario-id="star-topology"]');
-    // Close the picker so the rrail is visible before clicking the intent chip
-    await page.click('#tb3-picker-close');
+    // Picker auto-closes on successful load (v5.8.1) — intent chip directly clickable.
     await page.click('#tb3-intent-chip');
     await expect(page.locator('#tb3-intent-name')).toContainText('Free Build');
     await expect(page.locator('#tb3-canvas-svg .tb3-dev')).toHaveCount(0);

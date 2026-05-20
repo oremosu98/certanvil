@@ -1449,6 +1449,11 @@
     _renderPickerPanel();
     _renderCompletionPill();
     _saveState();
+    // Auto-close the picker after a successful load so the completion pill
+    // (and the rrail in general) is immediately visible. Cancel paths
+    // (early-return on user-declined confirm) leave the picker open so the
+    // user can pick a different scenario without re-opening it.
+    _closePicker();
   }
 
   function _wireGlobalKeys() {
