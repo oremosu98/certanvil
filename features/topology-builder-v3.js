@@ -857,6 +857,84 @@
         ],
       },
     },
+    {
+      id: 'wireless-mesh',
+      title: 'Wireless mesh (radio backhaul between APs)',
+      category: 'wireless',
+      objectiveRefs: ['2.4'],
+      startingState: {
+        devices: [
+          { id: 'sc_wm_rtr', type: 'router',     x: 520, y: 160, label: 'GATEWAY' },
+          { id: 'sc_wm_sw',  type: 'switch',     x: 520, y: 320, label: 'LAN-SW' },
+          { id: 'sc_wm_ap1', type: 'ap',         x: 320, y: 480, label: 'AP-1 (root)' },
+          { id: 'sc_wm_ap2', type: 'ap',         x: 520, y: 480, label: 'AP-2 (mesh)' },
+          { id: 'sc_wm_ap3', type: 'ap',         x: 720, y: 480, label: 'AP-3 (mesh)' },
+          { id: 'sc_wm_phn', type: 'smartphone', x: 920, y: 480, label: 'CLIENT' },
+        ],
+        cables: [
+          { id: 'sc_wm_c1', fromId: 'sc_wm_rtr', toId: 'sc_wm_sw',  type: 'cat6' },
+          { id: 'sc_wm_c2', fromId: 'sc_wm_sw',  toId: 'sc_wm_ap1', type: 'cat6' },
+          { id: 'sc_wm_c3', fromId: 'sc_wm_ap1', toId: 'sc_wm_ap2', type: 'cat6' },
+          { id: 'sc_wm_c4', fromId: 'sc_wm_ap2', toId: 'sc_wm_ap3', type: 'cat6' },
+        ],
+        viewport: { x: 0, y: 0, zoom: 1 },
+      },
+      brief: 'Wireless mesh chains APs together via radio backhaul, with one root AP wired into the LAN switch. Mesh APs forward each other traffic without needing a wired drop at every location. Common for warehouses, outdoor coverage, and historic buildings where pulling cable is impractical.',
+      examRelevance: {
+        overview:      'Multiple APs share radio backhaul links to extend coverage from a single wired root AP.',
+        howItRoutes:   'Mesh APs run a wireless mesh protocol (802.11s or vendor proprietary) to discover neighbours and select forwarding paths back to the root.',
+        keyDevices:    'Root AP (wired uplink), mesh APs (radio backhaul), LAN switch, gateway router, wireless clients.',
+        keyConcepts:   'Self-healing wireless backhaul, per-hop throughput degradation, the trade-off vs running cable to every AP.',
+        examRelevance: 'N10-009 obj 2.4 — recognise wireless mesh deployment; contrast with controller-based ESS and ad-hoc.',
+      },
+      completion: {
+        requiredDevices: ['router', 'switch', 'ap'],
+        expectedCount:   { router: 1, switch: 1, ap: 3 },
+        requiredCables:  [
+          { from:'router', to:'switch' },
+          { from:'switch', to:'ap' },
+          { from:'ap',     to:'ap' },
+        ],
+      },
+    },
+    {
+      id: 'wireless-bridge-p2p',
+      title: 'Wireless bridge (point-to-point building link)',
+      category: 'wireless',
+      objectiveRefs: ['2.4'],
+      startingState: {
+        devices: [
+          { id: 'sc_wb_swa',  type: 'switch', x: 240, y: 480, label: 'SW-A' },
+          { id: 'sc_wb_apa',  type: 'ap',     x: 440, y: 320, label: 'AP-A (bridge)' },
+          { id: 'sc_wb_apb',  type: 'ap',     x: 760, y: 320, label: 'AP-B (bridge)' },
+          { id: 'sc_wb_swb',  type: 'switch', x: 960, y: 480, label: 'SW-B' },
+          { id: 'sc_wb_lap',  type: 'laptop', x: 240, y: 640, label: 'LAPTOP-A' },
+        ],
+        cables: [
+          { id: 'sc_wb_c1', fromId: 'sc_wb_swa', toId: 'sc_wb_apa', type: 'cat6' },
+          { id: 'sc_wb_c2', fromId: 'sc_wb_apa', toId: 'sc_wb_apb', type: 'cat6' },
+          { id: 'sc_wb_c3', fromId: 'sc_wb_apb', toId: 'sc_wb_swb', type: 'cat6' },
+          { id: 'sc_wb_c4', fromId: 'sc_wb_swa', toId: 'sc_wb_lap', type: 'cat6' },
+        ],
+        viewport: { x: 0, y: 0, zoom: 1 },
+      },
+      brief: 'Point-to-point wireless bridge connects two buildings with line-of-sight APs in bridge mode. Replaces a fibre run or leased line for short hops (campus, warehouse-to-office). Cheaper than trenching cable; weather and line-of-sight constraints are the trade-off.',
+      examRelevance: {
+        overview:      'Two APs in bridge mode link two physically separated LAN segments over a wireless backhaul.',
+        howItRoutes:   'The AP pair acts as a transparent L2 bridge — frames on one side appear on the other; the wireless link is invisible to clients.',
+        keyDevices:    'Two APs (bridge mode), one switch per site, wireless clients on either segment.',
+        keyConcepts:   'L2 bridging over wireless, line-of-sight requirement, weather sensitivity, replaces cable-pull or leased-line WAN for short hops.',
+        examRelevance: 'N10-009 obj 2.4 — recognise wireless bridge use case; contrast with mesh APs and infrastructure mode.',
+      },
+      completion: {
+        requiredDevices: ['switch', 'ap'],
+        expectedCount:   { switch: 2, ap: 2 },
+        requiredCables:  [
+          { from:'switch', to:'ap' },
+          { from:'ap',     to:'ap' },
+        ],
+      },
+    },
   ];
 
   function validateScenarioShape(s) {
