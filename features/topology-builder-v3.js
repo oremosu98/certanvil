@@ -2166,6 +2166,47 @@
 
     body.classList.add('inspector-open');
     var def = TB_V3_DEVICE_TYPES[dev.type] || { label: dev.type };
+
+    // Build optional IP/Mask/Gateway block (Phase 3.1)
+    var ENDPOINT_TYPES = ['workstation','server','laptop','smartphone','cloud','internet'];
+    var L3_MULTI_TYPES = ['router','l3-switch','firewall','vpn'];
+    var L2_TYPES = ['switch','hub','ap','wlc'];
+
+    var ipBlock = '';
+    if (ENDPOINT_TYPES.indexOf(dev.type) !== -1) {
+      var cfg = dev.config || {};
+      var ipVal = _escAttr(cfg.ip || '');
+      var maskVal = (typeof cfg.mask === 'number') ? cfg.mask : 24;
+      var gwVal = _escAttr(cfg.gateway || '');
+      ipBlock =
+        '<div class="tb3-insp-section">' +
+          '<div class="tb3-insp-section-h">L3 configuration</div>' +
+          '<label class="tb3-insp-field">' +
+            '<span class="tb3-insp-field-l">IP</span>' +
+            '<input type="text" class="tb3-insp-input" id="tb3-insp-ip" data-device-id="' + _escAttr(dev.id) + '" value="' + ipVal + '" placeholder="192.168.10.10" />' +
+          '</label>' +
+          '<label class="tb3-insp-field">' +
+            '<span class="tb3-insp-field-l">Mask</span>' +
+            '<select class="tb3-insp-input" id="tb3-insp-mask" data-device-id="' + _escAttr(dev.id) + '">' +
+              [8,16,24,25,26,27,28,29,30,32].map(function(m){
+                return '<option value="' + m + '"' + (m === maskVal ? ' selected' : '') + '>/' + m + '</option>';
+              }).join('') +
+            '</select>' +
+          '</label>' +
+          '<label class="tb3-insp-field">' +
+            '<span class="tb3-insp-field-l">Gateway</span>' +
+            '<input type="text" class="tb3-insp-input" id="tb3-insp-gw" data-device-id="' + _escAttr(dev.id) + '" value="' + gwVal + '" placeholder="192.168.10.1" />' +
+          '</label>' +
+          '<div class="tb3-insp-caption" id="tb3-insp-cap" hidden></div>' +
+        '</div>';
+    } else if (L2_TYPES.indexOf(dev.type) !== -1) {
+      ipBlock =
+        '<div class="tb3-insp-section">' +
+          '<div class="tb3-insp-caption tb3-insp-caption-l2">Layer-2 device — no IP configuration.</div>' +
+        '</div>';
+    }
+    // L3_MULTI_TYPES handled in Task 3.2 — leaving Inspector unchanged for those
+
     insp.innerHTML =
       '<div style="display:flex;flex-direction:column;gap:14px">' +
         '<div>' +
@@ -2176,6 +2217,7 @@
           '<label style="font-size:10px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--tb3-text-dim)">Label</label>' +
           '<input type="text" id="tb3-insp-label" value="' + _escAttr(dev.label || '') + '" style="background:var(--tb3-surface);border:1px solid var(--tb3-border);border-radius:6px;padding:8px 10px;color:var(--tb3-text);font-size:13px;font-family:Inter">' +
         '</div>' +
+        ipBlock +
         '<div style="font-size:11px;color:var(--tb3-text-dim);font-family:ui-monospace,Menlo,monospace">id: ' + dev.id + '</div>' +
         '<div style="font-size:11px;color:var(--tb3-text-dim);font-family:ui-monospace,Menlo,monospace">position: ' + dev.x + ', ' + dev.y + '</div>' +
       '</div>';
@@ -2190,6 +2232,52 @@
         _renderCompletionPill();
       });
     }
+
+    // Wire IP/Mask/Gateway blur+change handlers (Phase 3.1)
+    var ipInput = document.getElementById('tb3-insp-ip');
+    var maskSelect = document.getElementById('tb3-insp-mask');
+    var gwInput = document.getElementById('tb3-insp-gw');
+    var cap = document.getElementById('tb3-insp-cap');
+
+    function applyIpCommit() {
+      var ipRaw = ipInput ? ipInput.value.trim() : '';
+      var maskRaw = maskSelect ? parseInt(maskSelect.value, 10) : NaN;
+      var gwRaw = gwInput ? gwInput.value.trim() : '';
+      var errors = [];
+      if (ipRaw && !parseCidr(ipRaw + '/32')) {
+        errors.push('IP must be a dotted-quad like 192.168.10.10.');
+        if (ipInput) ipInput.classList.add('is-invalid');
+      } else if (ipInput) {
+        ipInput.classList.remove('is-invalid');
+      }
+      if (gwRaw && !parseCidr(gwRaw + '/32')) {
+        errors.push('Gateway must be a dotted-quad.');
+        if (gwInput) gwInput.classList.add('is-invalid');
+      } else if (gwInput) {
+        gwInput.classList.remove('is-invalid');
+      }
+      if (errors.length) {
+        if (cap) {
+          cap.hidden = false;
+          cap.classList.add('is-error');
+          cap.textContent = errors.join(' ');
+        }
+        return;
+      }
+      if (cap) { cap.hidden = true; cap.classList.remove('is-error'); cap.textContent = ''; }
+      dev.config = dev.config || {};
+      if (ipRaw) dev.config.ip = ipRaw; else delete dev.config.ip;
+      if (typeof maskRaw === 'number' && !isNaN(maskRaw)) dev.config.mask = maskRaw;
+      if (gwRaw) dev.config.gateway = gwRaw; else delete dev.config.gateway;
+      _saveState();
+      _renderCompletionPill();
+    }
+
+    [ipInput, maskSelect, gwInput].forEach(function (el) {
+      if (!el) return;
+      el.addEventListener('blur', applyIpCommit);
+      el.addEventListener('change', applyIpCommit);
+    });
   }
 
   function _escAttr(s) {

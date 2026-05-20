@@ -509,6 +509,56 @@ html[data-theme="light"] #page-topology-builder-v3 {
   border-color: var(--tb3-pass);
 }
 
+/* Inspector L3 fields (Phase 3) */
+#page-topology-builder-v3 .tb3-insp-section {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--tb3-border-soft);
+}
+#page-topology-builder-v3 .tb3-insp-section-h {
+  font-size: 10px; font-weight: 800; letter-spacing: .14em;
+  text-transform: uppercase; color: var(--tb3-text-dim);
+  margin-bottom: 10px;
+}
+#page-topology-builder-v3 .tb3-insp-field {
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: 8px;
+}
+#page-topology-builder-v3 .tb3-insp-field-l {
+  width: 60px; font-size: 11px; font-weight: 600;
+  color: var(--tb3-text-mid); text-transform: uppercase; letter-spacing: .06em;
+}
+#page-topology-builder-v3 .tb3-insp-input {
+  flex: 1;
+  padding: 6px 9px;
+  border: 1px solid var(--tb3-border);
+  border-radius: 6px;
+  background: var(--tb3-surface);
+  color: var(--tb3-text);
+  font: inherit;
+  font-size: 12px;
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+  transition: border-color 150ms ease;
+}
+#page-topology-builder-v3 .tb3-insp-input:focus {
+  outline: none;
+  border-color: var(--tb3-accent);
+}
+#page-topology-builder-v3 .tb3-insp-input.is-invalid {
+  border-color: oklch(0.65 0.18 25);
+}
+#page-topology-builder-v3 .tb3-insp-caption {
+  font-size: 11px; color: var(--tb3-text-dim);
+  margin-top: 4px;
+  line-height: 1.4;
+}
+#page-topology-builder-v3 .tb3-insp-caption-l2 {
+  font-style: italic;
+}
+#page-topology-builder-v3 .tb3-insp-caption.is-error {
+  color: oklch(0.65 0.18 25);
+}
+
 /* Reduced motion */
 @media (prefers-reduced-motion: reduce) {
   #page-topology-builder-v3 *,
