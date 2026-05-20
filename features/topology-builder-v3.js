@@ -204,6 +204,48 @@
         ],
       },
     },
+    {
+      id: 'three-tier-hierarchical',
+      title: '3-tier hierarchical (core / distribution / access)',
+      category: 'architecture',
+      objectiveRefs: ['1.6'],
+      startingState: {
+        devices: [
+          { id: 'sc_3tier_core1',  type: 'l3-switch',   x: 600, y: 160, label: 'CORE-1' },
+          { id: 'sc_3tier_dist1',  type: 'l3-switch',   x: 360, y: 340, label: 'DIST-1' },
+          { id: 'sc_3tier_dist2',  type: 'l3-switch',   x: 840, y: 340, label: 'DIST-2' },
+          { id: 'sc_3tier_acc1',   type: 'switch',      x: 240, y: 540, label: 'ACC-1' },
+          { id: 'sc_3tier_acc2',   type: 'switch',      x: 480, y: 540, label: 'ACC-2' },
+          { id: 'sc_3tier_acc3',   type: 'switch',      x: 720, y: 540, label: 'ACC-3' },
+          { id: 'sc_3tier_acc4',   type: 'switch',      x: 960, y: 540, label: 'ACC-4' },
+        ],
+        cables: [
+          { id: 'sc_3tier_c1', fromId: 'sc_3tier_core1', toId: 'sc_3tier_dist1', type: 'fiber' },
+          { id: 'sc_3tier_c2', fromId: 'sc_3tier_core1', toId: 'sc_3tier_dist2', type: 'fiber' },
+          { id: 'sc_3tier_c3', fromId: 'sc_3tier_dist1', toId: 'sc_3tier_acc1',  type: 'cat6' },
+          { id: 'sc_3tier_c4', fromId: 'sc_3tier_dist1', toId: 'sc_3tier_acc2',  type: 'cat6' },
+          { id: 'sc_3tier_c5', fromId: 'sc_3tier_dist2', toId: 'sc_3tier_acc3',  type: 'cat6' },
+          { id: 'sc_3tier_c6', fromId: 'sc_3tier_dist2', toId: 'sc_3tier_acc4',  type: 'cat6' },
+        ],
+        viewport: { x: 0, y: 0, zoom: 1 },
+      },
+      brief: 'Cisco-style 3-tier separates routing (core), policy + aggregation (distribution), and end-user attach (access). The shape under most enterprise campus diagrams.',
+      examRelevance: {
+        overview:      'Three layers: core (fast routing), distribution (policy + uplinks), access (user attach).',
+        howItRoutes:   'L3 routing happens at core + distribution. Access is L2 (or L3 with SVIs at distribution).',
+        keyDevices:    'L3 switches at core + distribution, L2 switches at access.',
+        keyConcepts:   'Separation of concerns. Failure domains. Why "collapsed core" merges core + distribution for smaller sites.',
+        examRelevance: 'N10-009 obj 1.6 — recognise 3-tier vs collapsed core vs spine-leaf; identify tier from a diagram.',
+      },
+      completion: {
+        requiredDevices: ['l3-switch','switch'],
+        expectedCount:   { 'l3-switch': 3, switch: 4 },
+        requiredCables:  [
+          { from:'l3-switch', to:'l3-switch' },
+          { from:'l3-switch', to:'switch' },
+        ],
+      },
+    },
   ];
 
   function validateScenarioShape(s) {
