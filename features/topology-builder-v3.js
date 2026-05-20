@@ -860,8 +860,54 @@
   // EXPORT (TASK 8.x)
   // ───────────────────────────────────────────────────────────
 
-  function _exportPng() { /* TASK 8.1 */ }
-  function _wireExport() { /* TASK 8.2 — Export button click handler */ }
+  function _exportPng() {
+    var svg = document.getElementById('tb3-canvas-svg');
+    if (!svg) return;
+
+    // Serialise SVG to string
+    var serializer = new XMLSerializer();
+    var svgString = serializer.serializeToString(svg);
+    // Inject the computed style colors into the serialized SVG so the export
+    // matches what's on screen (var(--tb3-*) won't resolve outside the page).
+    // Simplest approach: compute colors from the page's CSS and substitute.
+    var wrap = document.getElementById('tb3-canvas-wrap');
+    var styles = getComputedStyle(wrap);
+    var bg = styles.backgroundColor;
+    // For Phase 1 export: rasterise via canvas, accept that backgrounds may
+    // come through as transparent. Bronze accent and text colors are inherited
+    // through the SVG attributes (we set fill/stroke explicitly).
+
+    var img = new Image();
+    var blob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
+    var url = URL.createObjectURL(blob);
+
+    img.onload = function () {
+      var canvas = document.createElement('canvas');
+      canvas.width = svg.clientWidth * 2;  // 2x for retina
+      canvas.height = svg.clientHeight * 2;
+      var ctx = canvas.getContext('2d');
+      ctx.fillStyle = bg || '#161616';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      URL.revokeObjectURL(url);
+
+      canvas.toBlob(function (pngBlob) {
+        var pngUrl = URL.createObjectURL(pngBlob);
+        var a = document.createElement('a');
+        a.href = pngUrl;
+        a.download = 'topology-' + Date.now().toString(36) + '.png';
+        a.click();
+        setTimeout(function () { URL.revokeObjectURL(pngUrl); }, 1000);
+      }, 'image/png');
+    };
+    img.src = url;
+  }
+
+  function _wireExport() {
+    var btn = document.getElementById('tb3-export-btn');
+    if (!btn) return;
+    btn.addEventListener('click', _exportPng);
+  }
 
   // Register on the standard feature-modules contract
   window._certanvilFeatures = window._certanvilFeatures || {};
