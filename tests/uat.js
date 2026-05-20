@@ -21182,6 +21182,42 @@ test('v6.x TB v3: STORAGE.TB_V3_DRAFT does not collide with REPORTS', !/TB_V3_DR
   assert(callVss({ id:'', title:'X', category:'topology', objectiveRefs:[], startingState:{devices:[],cables:[],viewport:{x:0,y:0,zoom:1}}, completion:{requiredDevices:[]} }) === false, 'F: empty id fails');
   assert(callVss({ id:'x', title:'X', category:'wan', objectiveRefs:['1.6'], startingState:{devices:[],cables:[],viewport:{x:0,y:0,zoom:1}}, completion:{requiredDevices:['router']} }) === true, 'G: wan category valid');
   assert(callVss({ id:'x', title:'X', category:'topology', objectiveRefs:[], startingState:{devices:[],cables:[],viewport:{x:0,y:0,zoom:1}}, completion:null }) === false, 'H: null completion fails');
+
+  // ── 2. loadScenarioOnCanvas(state, scenario) ─────────────
+  const lsoDecl = _fnBody(tbv3Src, 'loadScenarioOnCanvas');
+  assert(lsoDecl, 'phase2: loadScenarioOnCanvas exists');
+
+  function callLso(state, scenario) {
+    const sb = { result: null };
+    vm.runInNewContext(vssDecl + ' ' + lsoDecl + ' result = loadScenarioOnCanvas(' + JSON.stringify(state) + ', ' + JSON.stringify(scenario) + ');', sb);
+    return sb.result;
+  }
+
+  const emptyState = { devices:[], cables:[], viewport:{x:0,y:0,zoom:1}, intent:'free-build', mode:'design', selectedId:null };
+  const sampleScen = {
+    id:'star-topology', title:'Star topology', category:'topology', objectiveRefs:['1.2'],
+    startingState:{
+      devices:[
+        { id:'sc_star_1', type:'switch', x:400, y:300, label:'SW1' },
+        { id:'sc_star_2', type:'server', x:200, y:200, label:'SRV' },
+        { id:'sc_star_3', type:'workstation', x:600, y:400, label:'WS1' }
+      ],
+      cables:[
+        { id:'sc_star_c1', fromId:'sc_star_1', toId:'sc_star_2', type:'cat6' },
+        { id:'sc_star_c2', fromId:'sc_star_1', toId:'sc_star_3', type:'cat6' }
+      ],
+      viewport:{x:0,y:0,zoom:1}
+    },
+    brief:'…', examRelevance:{}, completion:{requiredDevices:['switch','server','workstation']}
+  };
+
+  const loaded = callLso(emptyState, sampleScen);
+  assert(loaded.devices.length === 3, 'A: 3 devices loaded');
+  assert(loaded.cables.length === 2, 'B: 2 cables loaded');
+  assert(loaded.intent === 'lab', 'C: intent flipped to lab');
+  assert(loaded.activeScenarioId === 'star-topology', 'D: activeScenarioId set');
+  assert(loaded.selectedId === null, 'E: selectedId reset');
+  assert(loaded.devices[0].id === 'sc_star_1', 'F: device ids preserved');
 })();
 
 // ── Summary ──

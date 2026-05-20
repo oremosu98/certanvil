@@ -23,6 +23,7 @@
     intent: 'free-build',  // 'free-build' | 'lab' | 'pbq'
     mode: 'design',        // 'design' | 'simulate' | 'trace' | 'osi' | '3d'
     selectedId: null,      // currently-selected device id (or null)
+    activeScenarioId: null, // phase 2: id of currently-loaded scenario when intent === 'lab'
   };
 
   // ───────────────────────────────────────────────────────────
@@ -86,6 +87,7 @@
       viewport: s.viewport,
       intent: s.intent,
       mode: s.mode,
+      activeScenarioId: s.activeScenarioId || null,
     });
   }
 
@@ -101,9 +103,10 @@
         intent: parsed.intent || 'free-build',
         mode: parsed.mode || 'design',
         selectedId: null,
+        activeScenarioId: parsed.activeScenarioId || null,
       };
     } catch (e) {
-      return { devices: [], cables: [], viewport: { x: 0, y: 0, zoom: 1 }, intent: 'free-build', mode: 'design', selectedId: null };
+      return { devices: [], cables: [], viewport: { x: 0, y: 0, zoom: 1 }, intent: 'free-build', mode: 'design', selectedId: null, activeScenarioId: null };
     }
   }
 
@@ -139,6 +142,26 @@
     if (!s.completion || typeof s.completion !== 'object') return false;
     if (!Array.isArray(s.completion.requiredDevices)) return false;
     return true;
+  }
+
+  // Pure: returns the next state after loading a scenario.
+  // Caller is responsible for re-rendering canvas + minimap + intent chip + completion pill.
+  function loadScenarioOnCanvas(curState, scenario) {
+    if (!validateScenarioShape(scenario)) return curState;
+    var ss = scenario.startingState;
+    return {
+      devices: (ss.devices || []).map(function (d) {
+        return { id: d.id, type: d.type, x: d.x, y: d.y, label: d.label || '', config: d.config || {} };
+      }),
+      cables: (ss.cables || []).map(function (c) {
+        return { id: c.id, fromId: c.fromId, fromPort: c.fromPort || 0, toId: c.toId, toPort: c.toPort || 0, type: c.type || 'cat6' };
+      }),
+      viewport: ss.viewport ? { x: ss.viewport.x || 0, y: ss.viewport.y || 0, zoom: ss.viewport.zoom || 1 } : { x: 0, y: 0, zoom: 1 },
+      intent: 'lab',
+      mode: 'design',
+      selectedId: null,
+      activeScenarioId: scenario.id,
+    };
   }
 
   // ───────────────────────────────────────────────────────────
@@ -963,6 +986,7 @@
     // Scenarios (phase 2)
     TB_V3_SCENARIOS: TB_V3_SCENARIOS,
     validateScenarioShape: validateScenarioShape,
+    loadScenarioOnCanvas: loadScenarioOnCanvas,
     // State access (for tests)
     _getState: function () { return state; },
     _setState: function (s) { state = s; },
