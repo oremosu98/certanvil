@@ -21156,6 +21156,21 @@ test('v6.x TB v3: reduced-motion gate', tbv3Css.includes('prefers-reduced-motion
 test('v6.x TB v3: 40px grid snap', tbv3Module.includes('Math.round(lx / 40) * 40'));
 test('v6.x TB v3: STORAGE.TB_V3_DRAFT does not collide with REPORTS', !/TB_V3_DRAFT:\s*'nplus_(bug_)?reports'/.test(tbv3AppJs));
 
+// ─── Topology Builder v3 Phase 2 structural guards ─────────
+test('phase2: TB_V3_SCENARIOS has 8 entries', /TB_V3_SCENARIOS\s*=\s*\[/.test(tbv3Module) && (tbv3Module.match(/^\s*id:\s*'/gm) || []).length >= 8);
+test('phase2: TB_V3_FREEBUILD_BACKUP key registered', /TB_V3_FREEBUILD_BACKUP:\s*'nplus_tb_v3_freebuild_backup'/.test(tbv3AppJs));
+test('phase2: picker panel CSS scoped to #page-topology-builder-v3', tbv3Css.includes('#page-topology-builder-v3 .tb3-picker'));
+test('phase2: intent chip lab/free-build branches present', tbv3Module.includes("'Lab · '") && tbv3Module.includes("'Free Build'"));
+test('phase2: 5 pure functions exported (validateScenarioShape, loadScenarioOnCanvas, checkCompletion, backupFreeBuild, restoreFreeBuild)',
+  tbv3Module.includes('validateScenarioShape: validateScenarioShape') &&
+  tbv3Module.includes('loadScenarioOnCanvas: loadScenarioOnCanvas') &&
+  tbv3Module.includes('checkCompletion: checkCompletion') &&
+  tbv3Module.includes('backupFreeBuild: backupFreeBuild') &&
+  tbv3Module.includes('restoreFreeBuild: restoreFreeBuild'));
+test('phase2: rrail Scenarios icon unlocked (not .locked)', /id="tb3-rrail-scenarios"/.test(tbv3Module) && !/locked"[^"]*"Scenarios/.test(tbv3Module));
+test('phase2: 7 category labels in TB_V3_CATEGORY_LABELS', /TB_V3_CATEGORY_LABELS\s*=\s*\{[\s\S]{0,600}topology:[\s\S]{0,100}architecture:[\s\S]{0,100}wan:[\s\S]{0,100}cloud:[\s\S]{0,100}wireless:[\s\S]{0,100}security:[\s\S]{0,100}vlan:/.test(tbv3Module));
+test('phase2: TB_V3_FREEBUILD_BACKUP does not collide with TB_V3_DRAFT', !/TB_V3_FREEBUILD_BACKUP:\s*'nplus_tb_v3_draft'/.test(tbv3AppJs));
+
 // ────────────────────────────────────────────────────────────
 // v6.x · Topology Builder v3 Phase 2 — Pure Functions (4 fixtures)
 // ────────────────────────────────────────────────────────────
