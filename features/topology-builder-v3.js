@@ -2202,6 +2202,8 @@
       // _renderCanvas() detaches the click target on every mousedown,
       // which would break e.target.closest('.tb3-dev') in the cable handler.
       if (canvas.style.cursor === 'crosshair') return;
+      // Skip in Simulate mode — Simulate owns clicks on devices (Phase 4)
+      if (state.mode === 'simulate') return;
       // Find a device group ancestor
       var g = e.target.closest('.tb3-dev');
       if (!g) return;
@@ -2316,6 +2318,11 @@
   // ───────────────────────────────────────────────────────────
 
   function _selectDevice(id) {
+    // Exit Simulate if active (single-track UX)
+    var body = document.getElementById('tb3-body');
+    if (body && body.classList.contains('simulate-open')) {
+      _closeSimulate();
+    }
     state.selectedId = id;
     _renderCanvas();
     _renderInspector();
@@ -2678,6 +2685,10 @@
   function _openPicker() {
     var body = document.getElementById('tb3-body');
     if (!body) return;
+    // Exit Simulate if active (single-track UX)
+    if (body.classList.contains('simulate-open')) {
+      _closeSimulate();
+    }
     // Mutually exclusive with Inspector (only one rail panel at a time).
     body.classList.remove('inspector-open');
     body.classList.add('picker-open');
@@ -2825,6 +2836,10 @@
   function _openDiagnostic() {
     var body = document.getElementById('tb3-body');
     if (!body) return;
+    // Exit Simulate if active (single-track UX)
+    if (body.classList.contains('simulate-open')) {
+      _closeSimulate();
+    }
     body.classList.remove('picker-open');
     body.classList.remove('inspector-open');
     body.classList.add('diagnostic-open');
