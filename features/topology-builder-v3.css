@@ -924,3 +924,11 @@ html[data-theme="light"] #page-topology-builder-v3 {
   margin-top: 8px;
   font-style: italic;
 }
+
+/* ── Stage 4.1 — Packet SVG element ─────────────────────────── */
+#page-topology-builder-v3 .tb3-packet {
+  pointer-events: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  #page-topology-builder-v3 .tb3-packet { animation: none; transition: none }
+}

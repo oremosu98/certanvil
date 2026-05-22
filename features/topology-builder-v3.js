@@ -1812,6 +1812,62 @@
   // CANVAS (TASK 2.x)
   // ───────────────────────────────────────────────────────────
 
+  // ───────────────────────────────────────────────────────────
+  // STAGE 4.1 — Packet motion primitives
+  // ───────────────────────────────────────────────────────────
+
+  function _devCenter(devId) {
+    var dev = state.devices.find(function (d) { return d.id === devId; });
+    if (!dev) return null;
+    // Match _renderCanvas: device is 76x76, label group at translate(x,y)
+    return { x: dev.x + 38, y: dev.y + 38 };
+  }
+
+  function _spawnPacketSvg(color) {
+    var svg = document.getElementById('tb3-canvas-svg');
+    if (!svg) return null;
+    var el = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    el.setAttribute('r', '6');
+    el.setAttribute('class', 'tb3-packet');
+    el.setAttribute('fill', color);
+    el.setAttribute('filter', 'drop-shadow(0 0 6px ' + color + ')');
+    svg.appendChild(el);
+    return el;
+  }
+
+  function _movePacket(el, fromPt, toPt, durMs, onDone) {
+    if (!el) { if (onDone) onDone(); return null; }
+    var start = performance.now();
+    var raf;
+    function tick(now) {
+      var t = Math.min(1, (now - start) / durMs);
+      // cubic-bezier(0.4, 0, 0.2, 1) approximation
+      var ease = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+      var x = fromPt.x + (toPt.x - fromPt.x) * ease;
+      var y = fromPt.y + (toPt.y - fromPt.y) * ease;
+      el.setAttribute('cx', x);
+      el.setAttribute('cy', y);
+      if (t < 1) {
+        raf = requestAnimationFrame(tick);
+        _simState.currentPacket = raf;
+      } else {
+        _simState.currentPacket = null;
+        if (onDone) onDone();
+      }
+    }
+    raf = requestAnimationFrame(tick);
+    _simState.currentPacket = raf;
+    return raf;
+  }
+
+  function _despawnPacket(el) {
+    if (el && el.parentNode) el.parentNode.removeChild(el);
+  }
+
+  function _reducedMotion() {
+    return window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  }
+
   function _renderCanvas() {
     var svg = document.getElementById('tb3-canvas-svg');
     if (!svg) return;
