@@ -3226,6 +3226,8 @@
     _openDiagnostic: _openDiagnostic,
     _closeDiagnostic: _closeDiagnostic,
     _renderDiagnosticDrawer: _renderDiagnosticDrawer,
+    // Phase 4 — Simulate mode (exposed for Playwright tests 28-30)
+    _renderCanvas: function () { _renderCanvas(); },
   };
 
   // Also expose openTopologyBuilderV3 directly on window for the sidebar handler

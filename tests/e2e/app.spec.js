@@ -2729,6 +2729,62 @@ test.describe('topology-builder-v3', () => {
     await expect(page.locator('.tb3-body')).not.toHaveClass(/simulate-open/);
     await expect(page.locator('#tb3-simulate-panel')).toBeHidden();
   });
+
+  test('28: Drill panel renders src/dst/protocol/Send', async ({ page }) => {
+    await page.goto('http://localhost:3131/');
+    await page.evaluate(async () => {
+      await window._loadFeature('topology-builder-v3');
+      window.showPage('topology-builder-v3');
+      window.openTopologyBuilderV3();
+      var feat = window._certanvilFeatures['topology-builder-v3'];
+      var state = feat._getState();
+      state.devices.push({ id: 'd1', type: 'workstation', x: 100, y: 100, label: 'PC-1', config: { ip: '10.0.0.10', mask: 24, gateway: '10.0.0.1' } });
+      state.devices.push({ id: 'd2', type: 'router', x: 200, y: 100, label: 'R-1' });
+      feat._renderCanvas();
+    });
+    await page.locator('.tb3-mode[data-mode="simulate"]').click();
+    await expect(page.locator('#tb3-sim-src')).toBeVisible();
+    await expect(page.locator('#tb3-sim-dst')).toBeVisible();
+    await expect(page.locator('.tb3-sim-proto[data-proto="ping"]')).toHaveClass(/on/);
+    await expect(page.locator('#tb3-sim-send')).toBeDisabled();
+  });
+
+  test('29: Send button enables when src and dst are set and different', async ({ page }) => {
+    await page.goto('http://localhost:3131/');
+    await page.evaluate(async () => {
+      await window._loadFeature('topology-builder-v3');
+      window.showPage('topology-builder-v3');
+      window.openTopologyBuilderV3();
+      var feat = window._certanvilFeatures['topology-builder-v3'];
+      var state = feat._getState();
+      state.devices.push({ id: 'd1', type: 'workstation', x: 100, y: 100, label: 'PC-1' });
+      state.devices.push({ id: 'd2', type: 'router', x: 200, y: 100, label: 'R-1' });
+      feat._renderCanvas();
+    });
+    await page.locator('.tb3-mode[data-mode="simulate"]').click();
+    await page.locator('#tb3-sim-src').selectOption('d1');
+    await page.locator('#tb3-sim-dst').selectOption('d2');
+    await expect(page.locator('#tb3-sim-send')).toBeEnabled();
+  });
+
+  test('30: Click on a device populates next-empty dropdown', async ({ page }) => {
+    await page.goto('http://localhost:3131/');
+    await page.evaluate(async () => {
+      await window._loadFeature('topology-builder-v3');
+      window.showPage('topology-builder-v3');
+      window.openTopologyBuilderV3();
+      var feat = window._certanvilFeatures['topology-builder-v3'];
+      var state = feat._getState();
+      state.devices.push({ id: 'd1', type: 'workstation', x: 100, y: 100, label: 'PC-1' });
+      state.devices.push({ id: 'd2', type: 'router', x: 200, y: 100, label: 'R-1' });
+      feat._renderCanvas();
+    });
+    await page.locator('.tb3-mode[data-mode="simulate"]').click();
+    await page.locator('.tb3-dev[data-device-id="d1"]').click();
+    await expect(page.locator('#tb3-sim-src')).toHaveValue('d1');
+    await page.locator('.tb3-dev[data-device-id="d2"]').click();
+    await expect(page.locator('#tb3-sim-dst')).toHaveValue('d2');
+  });
 });
 
 
