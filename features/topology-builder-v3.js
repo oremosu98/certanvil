@@ -2963,10 +2963,41 @@
   }
 
   function _wireSimulate() {
-    var closeBtn = document.getElementById('tb3-sim-close');
-    if (closeBtn) {
-      closeBtn.onclick = _closeSimulate;
-    }
+    var panel = document.getElementById('tb3-simulate-panel');
+    if (!panel) return;
+    var closeBtn = panel.querySelector('#tb3-sim-close');
+    if (closeBtn) closeBtn.onclick = _closeSimulate;
+    var src = panel.querySelector('#tb3-sim-src');
+    if (src) src.onchange = function () {
+      _simState.drillSrcId = src.value || null;
+      _updateSendEnabled();
+    };
+    var dst = panel.querySelector('#tb3-sim-dst');
+    if (dst) dst.onchange = function () {
+      _simState.drillDstId = dst.value || null;
+      _updateSendEnabled();
+    };
+    panel.querySelectorAll('.tb3-sim-proto').forEach(function (btn) {
+      btn.onclick = function () {
+        _simState.drillProtocol = btn.getAttribute('data-proto');
+        panel.querySelectorAll('.tb3-sim-proto').forEach(function (b) {
+          b.classList.toggle('on', b === btn);
+        });
+      };
+    });
+    var sendBtn = panel.querySelector('#tb3-sim-send');
+    if (sendBtn) sendBtn.onclick = _onDrillSend;
+  }
+
+  function _onDrillSend() {
+    // Stage 4 + 5 fill this in. For now: log a placeholder entry.
+    _simState.log.push({
+      ts: Date.now(),
+      text: 'Drill: ' + (_simState.drillProtocol || 'ping') + ' from ' +
+        _simState.drillSrcId + ' to ' + _simState.drillDstId + ' (animation pending)',
+      failure: false,
+    });
+    _renderSimLog();
   }
 
   function _wireGlobalKeys() {
