@@ -3046,13 +3046,58 @@
   }
 
   function _motionPing(spec) {
-    // Implemented in Stage 5.
-    _appendLogEntry({
-      ts: Date.now(),
-      protocol: 'ping',
-      text: 'ping ' + spec.path[0] + ' → ' + spec.path[spec.path.length - 1] + ' (motion stub)',
-      failure: false,
-    });
+    var path = spec.path;
+    var color = 'var(--tb3-pkt-ping)';
+    if (_reducedMotion()) {
+      _appendLogEntry({ ts: Date.now(), protocol: 'ping', text: path[0] + ' sends ICMP echo to ' + path[path.length - 1], failure: false });
+      if (spec.failedAt) {
+        _appendLogEntry({ ts: Date.now(), protocol: 'ping', text: path[path.length - 1] + ' unreachable: ' + (spec.failReason || 'no path'), failure: true });
+      } else {
+        _appendLogEntry({ ts: Date.now(), protocol: 'ping', text: path[path.length - 1] + ' reply received', failure: false });
+      }
+      if (spec.onComplete) spec.onComplete();
+      return;
+    }
+
+    var el = _spawnPacketSvg('oklch(0.74 0.13 65)');
+    if (!el) { if (spec.onComplete) spec.onComplete(); return; }
+
+    _appendLogEntry({ ts: Date.now(), protocol: 'ping', text: path[0] + ' sends ICMP echo to ' + path[path.length - 1], failure: false });
+
+    var hops = path.map(_devCenter).filter(Boolean);
+    var hopMs = 600;
+    function leg(i, dir, done) {
+      if (i >= hops.length - 1 || (dir === -1 && i <= 0)) { done(); return; }
+      var from = hops[i];
+      var to = hops[i + dir];
+      _movePacket(el, from, to, hopMs, function () { leg(i + dir, dir, done); });
+    }
+
+    function outbound() {
+      leg(0, 1, function () {
+        // settle pulse 80ms
+        el.setAttribute('r', '9');
+        setTimeout(function () {
+          el.setAttribute('r', '6');
+          // failure here?
+          if (spec.failedAt && spec.failedAt === path[path.length - 1]) {
+            _appendLogEntry({ ts: Date.now(), protocol: 'ping', text: 'destination unreachable at ' + spec.failedAt + ': ' + (spec.failReason || ''), failure: true });
+            _despawnPacket(el);
+            if (spec.onComplete) spec.onComplete();
+            return;
+          }
+          _appendLogEntry({ ts: Date.now(), protocol: 'ping', text: path[path.length - 1] + ' echo received, replying', failure: false });
+          // return leg
+          leg(hops.length - 1, -1, function () {
+            _despawnPacket(el);
+            _appendLogEntry({ ts: Date.now(), protocol: 'ping', text: 'reply received at ' + path[0], failure: false });
+            if (spec.onComplete) spec.onComplete();
+          });
+        }, 80);
+      });
+    }
+
+    outbound();
   }
   function _motionArp(spec) {
     // Implemented in Stage 6.
