@@ -792,6 +792,8 @@ html[data-theme="light"] #page-topology-builder-v3 {
   transform: translateX(0);
 }
 
+#page-topology-builder-v3 .tb3-body.simulate-open .tb3-rrail { display: none; }
+
 #page-topology-builder-v3 #tb3-simulate-panel .tb3-sim-head {
   display: flex;
   align-items: flex-start;

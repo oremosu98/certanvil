@@ -2700,6 +2700,34 @@ test.describe('topology-builder-v3', () => {
     });
     expect(anim).toBe('none');
   });
+
+  test('26: Simulate pill unlocks + panel slides in on click', async ({ page }) => {
+    await page.goto('http://localhost:3131/');
+    await page.evaluate(async () => {
+      await window._loadFeature('topology-builder-v3');
+      window.showPage('topology-builder-v3');
+      window.openTopologyBuilderV3();
+    });
+    // Pill should NOT be locked
+    const simPill = page.locator('.tb3-mode[data-mode="simulate"]');
+    await expect(simPill).not.toHaveClass(/locked/);
+    // Click it → panel opens
+    await simPill.click();
+    await expect(page.locator('.tb3-body')).toHaveClass(/simulate-open/);
+    await expect(page.locator('#tb3-simulate-panel')).toBeVisible();
+  });
+
+  test('27: Simulate close button restores design mode', async ({ page }) => {
+    await page.goto('http://localhost:3131/');
+    await page.evaluate(async () => {
+      await window._loadFeature('topology-builder-v3');
+      window.showPage('topology-builder-v3');
+      window.openTopologyBuilderV3();
+    });
+    await page.locator('.tb3-mode[data-mode="simulate"]').click();
+    await page.locator('#tb3-sim-close').click();
+    await expect(page.locator('.tb3-body')).not.toHaveClass(/simulate-open/);
+  });
 });
 
 
