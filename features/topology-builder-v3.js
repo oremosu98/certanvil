@@ -1816,6 +1816,24 @@
   // STAGE 4.1 — Packet motion primitives
   // ───────────────────────────────────────────────────────────
 
+  function _sameSubnet(devA, devB) {
+    if (!devA || !devB || !devA.config || !devB.config) return false;
+    var a = devA.config.ip, b = devB.config.ip, mask = devA.config.mask || devB.config.mask || 24;
+    if (!a || !b) return false;
+    var ipNum = function (s) {
+      var p = String(s).split('.').map(Number);
+      return ((p[0] << 24) | (p[1] << 16) | (p[2] << 8) | p[3]) >>> 0;
+    };
+    var mNum = (mask === 0) ? 0 : (~0 << (32 - mask)) >>> 0;
+    return (ipNum(a) & mNum) === (ipNum(b) & mNum);
+  }
+
+  function _sameSubnetDevices(srcId) {
+    var src = state.devices.find(function (d) { return d.id === srcId; });
+    if (!src) return [];
+    return state.devices.filter(function (d) { return d.id !== srcId && _sameSubnet(src, d); });
+  }
+
   function _devCenter(devId) {
     var dev = state.devices.find(function (d) { return d.id === devId; });
     if (!dev) return null;
