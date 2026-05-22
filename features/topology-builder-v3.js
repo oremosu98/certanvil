@@ -3358,6 +3358,9 @@
       host.innerHTML = '<div class="tb3-sim-log-empty">No packets fired yet.</div>';
       return;
     }
+    // data-log-idx on each row maps back to _simState.log[idx]; rows that carry
+    // a .pair field (validator-preview entries) are re-playable via the logHost
+    // click handler wired in _wireSimulate (Task 9.3).
     var rows = _simState.log.map(function (e, idx) {
       var date = new Date(e.ts);
       var ts = ('0' + date.getHours()).slice(-2) + ':' +
