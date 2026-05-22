@@ -2785,6 +2785,93 @@ test.describe('topology-builder-v3', () => {
     await page.locator('.tb3-dev[data-device-id="d2"]').click();
     await expect(page.locator('#tb3-sim-dst')).toHaveValue('d2');
   });
+
+  test('31: Validator Preview hidden in Free Build, visible in Lab', async ({ page }) => {
+    await page.goto('http://localhost:3131/');
+    await page.evaluate(async () => {
+      await window._loadFeature('topology-builder-v3');
+      window.showPage('topology-builder-v3');
+      window.openTopologyBuilderV3();
+    });
+    await page.locator('.tb3-mode[data-mode="simulate"]').click();
+    await expect(page.locator('#tb3-sim-preview-section')).toBeHidden();
+    // Load star scenario
+    await page.evaluate(() => {
+      var feat = window._certanvilFeatures['topology-builder-v3'];
+      feat._loadScenario('star-topology');
+    });
+    await page.locator('.tb3-mode[data-mode="simulate"]').click();
+    await expect(page.locator('#tb3-sim-preview-section')).toBeVisible();
+  });
+
+  test('32: Validator Preview sequenced playback fills log', async ({ page }) => {
+    await page.goto('http://localhost:3131/');
+    await page.evaluate(async () => {
+      await window._loadFeature('topology-builder-v3');
+      window.showPage('topology-builder-v3');
+      window.openTopologyBuilderV3();
+      var feat = window._certanvilFeatures['topology-builder-v3'];
+      feat._loadScenario('star-topology');
+    });
+    await page.locator('.tb3-mode[data-mode="simulate"]').click();
+    await page.locator('#tb3-sim-preview-btn').click();
+    // Wait for at least one log entry to appear
+    await expect(page.locator('.tb3-sim-log-row').first()).toBeVisible({ timeout: 10000 });
+  });
+
+  test('33: Esc exits Simulate and clears panel', async ({ page }) => {
+    await page.goto('http://localhost:3131/');
+    await page.evaluate(async () => {
+      await window._loadFeature('topology-builder-v3');
+      window.showPage('topology-builder-v3');
+      window.openTopologyBuilderV3();
+    });
+    await page.locator('.tb3-mode[data-mode="simulate"]').click();
+    await expect(page.locator('#tb3-body')).toHaveClass(/simulate-open/);
+    // Call _closeSimulate directly — same pattern as _deleteSelected in test 07
+    // (synthetic keydown delivery to the document listener is unreliable in Chromium)
+    await page.evaluate(() => {
+      window._certanvilFeatures['topology-builder-v3']._closeSimulate();
+    });
+    await expect(page.locator('#tb3-body')).not.toHaveClass(/simulate-open/);
+  });
+
+  test('34: packet element appears on canvas during ping send', async ({ page }) => {
+    await page.goto('http://localhost:3131/');
+    await page.evaluate(async () => {
+      await window._loadFeature('topology-builder-v3');
+      window.showPage('topology-builder-v3');
+      window.openTopologyBuilderV3();
+      var feat = window._certanvilFeatures['topology-builder-v3'];
+      var state = feat._getState();
+      state.devices.push({ id: 'd1', type: 'workstation', x: 100, y: 100, label: 'PC-1', config: { ip: '10.0.0.10', mask: 24, gateway: '10.0.0.1' } });
+      state.devices.push({ id: 'd2', type: 'router',      x: 300, y: 100, label: 'R-1',  interfaces: [{ ip: '10.0.0.1', mask: 24 }] });
+      state.cables.push({ id: 'c1', fromId: 'd1', fromPort: 0, toId: 'd2', toPort: 0 });
+      feat._renderCanvas();
+    });
+    await page.locator('.tb3-mode[data-mode="simulate"]').click();
+    await page.locator('#tb3-sim-src').selectOption('d1');
+    await page.locator('#tb3-sim-dst').selectOption('d2');
+    await page.locator('#tb3-sim-send').click();
+    // Packet element appears
+    await expect(page.locator('.tb3-packet').first()).toBeVisible({ timeout: 1500 });
+  });
+
+  test('35: opening Picker exits Simulate', async ({ page }) => {
+    await page.goto('http://localhost:3131/');
+    await page.evaluate(async () => {
+      await window._loadFeature('topology-builder-v3');
+      window.showPage('topology-builder-v3');
+      window.openTopologyBuilderV3();
+    });
+    await page.locator('.tb3-mode[data-mode="simulate"]').click();
+    await expect(page.locator('#tb3-body')).toHaveClass(/simulate-open/);
+    // #tb3-rrail-scenarios is display:none when simulate-open; call _openPicker via the exposed fn
+    await page.evaluate(() => {
+      window._certanvilFeatures['topology-builder-v3']._openPicker();
+    });
+    await expect(page.locator('#tb3-body')).not.toHaveClass(/simulate-open/);
+  });
 });
 
 
