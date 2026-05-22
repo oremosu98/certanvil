@@ -3202,12 +3202,82 @@
     }, 600);
   }
   function _motionDhcp(spec) {
-    // Implemented in Stage 7.
-    _appendLogEntry({
-      ts: Date.now(),
-      protocol: 'dhcp',
-      text: 'DHCP ' + spec.path[0] + ' → ' + spec.path[spec.path.length - 1] + ' (motion stub)',
-      failure: false,
+    var clientId = spec.path[0];
+    var serverId = spec.path[spec.path.length - 1];
+    var clientCenter = _devCenter(clientId);
+    var serverCenter = _devCenter(serverId);
+    var color = 'oklch(0.62 0.16 250)';
+    if (!clientCenter || !serverCenter) { if (spec.onComplete) spec.onComplete(); return; }
+
+    if (_reducedMotion()) {
+      _appendLogEntry({ ts: Date.now(), protocol: 'dhcp', text: 'DISCOVER broadcast from ' + clientId, failure: false });
+      setTimeout(function () {
+        _appendLogEntry({ ts: Date.now(), protocol: 'dhcp', text: 'OFFER from ' + serverId, failure: false });
+      }, 50);
+      setTimeout(function () {
+        _appendLogEntry({ ts: Date.now(), protocol: 'dhcp', text: 'REQUEST broadcast from ' + clientId, failure: false });
+      }, 100);
+      setTimeout(function () {
+        _appendLogEntry({ ts: Date.now(), protocol: 'dhcp', text: 'ACK from ' + serverId + ' · lease confirmed', failure: false });
+        if (spec.onComplete) spec.onComplete();
+      }, 150);
+      return;
+    }
+
+    function broadcastBurst(centerPt, durMs, done) {
+      var svg = document.getElementById('tb3-canvas-svg');
+      var ring = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      ring.setAttribute('cx', centerPt.x);
+      ring.setAttribute('cy', centerPt.y);
+      ring.setAttribute('r', '6');
+      ring.setAttribute('fill', 'none');
+      ring.setAttribute('stroke', color);
+      ring.setAttribute('stroke-width', '2');
+      ring.setAttribute('class', 'tb3-packet');
+      svg.appendChild(ring);
+      var start = performance.now();
+      function tick(now) {
+        var t = Math.min(1, (now - start) / durMs);
+        ring.setAttribute('r', String(6 + t * 90));
+        ring.setAttribute('opacity', String(1 - t));
+        if (t < 1) requestAnimationFrame(tick);
+        else { _despawnPacket(ring); if (done) done(); }
+      }
+      requestAnimationFrame(tick);
+    }
+
+    function unicast(fromPt, toPt, durMs, done) {
+      var dot = _spawnPacketSvg(color);
+      _movePacket(dot, fromPt, toPt, durMs, function () { _despawnPacket(dot); if (done) done(); });
+    }
+
+    // D — Discover (broadcast)
+    _appendLogEntry({ ts: Date.now(), protocol: 'dhcp', text: 'DISCOVER broadcast from ' + clientId, failure: false });
+    broadcastBurst(clientCenter, 500, function () {
+      setTimeout(function () {
+        // O — Offer (unicast)
+        _appendLogEntry({ ts: Date.now(), protocol: 'dhcp', text: 'OFFER from ' + serverId, failure: false });
+        unicast(serverCenter, clientCenter, 500, function () {
+          setTimeout(function () {
+            // R — Request (broadcast)
+            _appendLogEntry({ ts: Date.now(), protocol: 'dhcp', text: 'REQUEST broadcast from ' + clientId, failure: false });
+            broadcastBurst(clientCenter, 500, function () {
+              setTimeout(function () {
+                // A — Ack (unicast)
+                if (spec.failedAt) {
+                  _appendLogEntry({ ts: Date.now(), protocol: 'dhcp', text: 'DHCP failed: ' + (spec.failReason || 'no server reply'), failure: true });
+                  if (spec.onComplete) spec.onComplete();
+                  return;
+                }
+                _appendLogEntry({ ts: Date.now(), protocol: 'dhcp', text: 'ACK from ' + serverId + ' · lease confirmed', failure: false });
+                unicast(serverCenter, clientCenter, 500, function () {
+                  if (spec.onComplete) spec.onComplete();
+                });
+              }, 120);
+            });
+          }, 120);
+        });
+      }, 120);
     });
   }
 
