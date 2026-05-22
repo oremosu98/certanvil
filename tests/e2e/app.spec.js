@@ -2727,6 +2727,7 @@ test.describe('topology-builder-v3', () => {
     await page.locator('.tb3-mode[data-mode="simulate"]').click();
     await page.locator('#tb3-sim-close').click();
     await expect(page.locator('.tb3-body')).not.toHaveClass(/simulate-open/);
+    await expect(page.locator('#tb3-simulate-panel')).toBeHidden();
   });
 });
 

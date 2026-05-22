@@ -2928,7 +2928,7 @@
   function _wireSimulate() {
     var closeBtn = document.getElementById('tb3-sim-close');
     if (closeBtn) {
-      closeBtn.addEventListener('click', _closeSimulate);
+      closeBtn.onclick = _closeSimulate;
     }
   }
 
@@ -3026,7 +3026,7 @@
     ];
     var html = modes.map(function (m) {
       var on = (m.id === state.mode);
-      return '<div class="tb3-mode' + (on ? ' on' : '') + (m.locked ? ' locked' : '') + '" data-mode="' + m.id + '" title="' + (m.locked ? m.label + ' — phase ' + ({'simulate':3,'trace':4,'osi':5,'3d':6}[m.id]) : m.label) + '">' + m.icon + m.label + '</div>';
+      return '<div class="tb3-mode' + (on ? ' on' : '') + (m.locked ? ' locked' : '') + '" data-mode="' + m.id + '" title="' + (m.locked ? m.label + ' — phase ' + ({'trace':4,'osi':5,'3d':6}[m.id]) : m.label) + '">' + m.icon + m.label + '</div>';
     }).join('');
     row.innerHTML = html;
 

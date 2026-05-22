@@ -770,6 +770,9 @@ html[data-theme="light"] #page-topology-builder-v3 {
   --tb3-pkt-failure: oklch(0.6  0.20 25);
 }
 
+/* Simulate panel uses position:absolute + slide-in (overlay) rather than the
+   grid-column reflow pattern of Inspector/Picker/Diagnostic — read-heavy panel,
+   no need to reflow the canvas. */
 #page-topology-builder-v3 #tb3-simulate-panel {
   display: none;
   position: absolute;
