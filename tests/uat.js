@@ -21879,6 +21879,20 @@ test('phase2: TB_V3_FREEBUILD_BACKUP does not collide with TB_V3_DRAFT', !/TB_V3
   test('phase5: _startTrace spawns amber packet (Phase 4 helper reuse)',
     /_spawnPacketSvg\('amber'\)/.test(tbv3SrcP5));
 
+  // ───── Stage 6: _stepTrace + _movePacketTracked + settle pulse ─────
+
+  test('phase5: _stepTrace function defined',
+    /function _stepTrace\(\)/.test(tbv3SrcP5));
+
+  test('phase5: _stepTrace cancels prior rAF before new step (emil §8.6 interruptibility)',
+    /cancelAnimationFrame\(_traceState\.rafHandle\)/.test(tbv3SrcP5));
+
+  test('phase5: _stepTrace uses _movePacketTracked wrapper for rAF capture',
+    /_movePacketTracked\(_traceState\.packet/.test(tbv3SrcP5));
+
+  test('phase5: step 250ms vs autoplay 600ms (spec §8.1 + §8.2)',
+    /durMs\s*=\s*isAutoplay\s*\?\s*600\s*:\s*250/.test(tbv3SrcP5));
+
 })();
 
 // ── Summary ──

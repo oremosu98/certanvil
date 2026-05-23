@@ -3216,6 +3216,89 @@
     _renderTracePanel();
   }
 
+  function _stepTrace() {
+    if (!_traceState || _traceState.mode === 'idle' || _traceState.mode === 'done') return;
+    if (!_canStepFurther()) return;
+
+    // rAF cancellation discipline (emil §8.6 — interruptibility):
+    // Cancel any in-flight glide before launching the next one so
+    // rapid Next clicks retarget cleanly without orphan loops.
+    if (_traceState.rafHandle) {
+      cancelAnimationFrame(_traceState.rafHandle);
+      _traceState.rafHandle = null;
+    }
+
+    const fromHopIdx = _traceState.currentHopIdx;
+    const toHopIdx = fromHopIdx + 1;
+    const fromPt = _devCenter(_traceState.hops[fromHopIdx]);
+    const toPt = _devCenter(_traceState.hops[toHopIdx]);
+    if (!fromPt || !toPt || !_traceState.packet) return;
+
+    // Glide duration per spec §8.1: 250ms cubic-bezier ease-in-out
+    // (the strong custom curve, NOT default CSS easing).
+    const isAutoplay = _traceState.mode === 'play';
+    const durMs = isAutoplay ? 600 : 250;
+
+    _movePacketTracked(_traceState.packet, fromPt, toPt, durMs, function() {
+      _traceState.currentHopIdx = toHopIdx;
+      _renderSettlePulse(_traceState.hops[toHopIdx]);
+      _updateHopBadge();
+
+      // If this hop is the failed hop, trigger the failure beat.
+      // _failHop is implemented in Stage 9 — guard for now.
+      if (_traceState.failedAt !== null && toHopIdx === _traceState.failedAt) {
+        if (typeof _failHop === 'function') {
+          _failHop(toHopIdx, _traceState.reasons[toHopIdx] || '');
+        }
+      }
+
+      // If we reached the destination (no failure), mark mode = 'done'.
+      if (_traceState.currentHopIdx === _traceState.hops.length - 1 && _traceState.failedAt === null) {
+        _traceState.mode = 'done';
+      }
+
+      _renderTracePanel();
+    });
+  }
+
+  function _renderSettlePulse(devId) {
+    if (!devId) return;
+    const el = document.querySelector('.tb3-dev[data-device-id="' + _escAttr(devId) + '"]');
+    if (!el) return;
+    // Re-trigger by removing + reflow + adding the class
+    el.classList.remove('tb3-trace-settle');
+    // Force reflow so the animation re-fires on rapid re-entry
+    void el.offsetWidth;
+    el.classList.add('tb3-trace-settle');
+  }
+
+  function _updateHopBadge() {
+    // Stub for Stage 6 — Stage 10 implements the full badge animation.
+    // Stage 6's hop list re-render (via _renderTracePanel) handles the
+    // current-hop visual state via the .is-current class.
+  }
+
+  function _movePacketTracked(el, fromPt, toPt, durMs, onDone) {
+    if (!el) { if (onDone) onDone(); return; }
+    const start = performance.now();
+    function step(now) {
+      const t = Math.min(1, (now - start) / durMs);
+      // cubic-bezier ease-in-out approximation per spec §8.1
+      const ease = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+      const x = fromPt.x + (toPt.x - fromPt.x) * ease;
+      const y = fromPt.y + (toPt.y - fromPt.y) * ease;
+      el.setAttribute('cx', x);
+      el.setAttribute('cy', y);
+      if (t < 1) {
+        _traceState.rafHandle = requestAnimationFrame(step);
+      } else {
+        _traceState.rafHandle = null;
+        if (onDone) onDone();
+      }
+    }
+    _traceState.rafHandle = requestAnimationFrame(step);
+  }
+
   function _canStepFurther() {
     return _traceState && Array.isArray(_traceState.hops) && _traceState.currentHopIdx < _traceState.hops.length - 1 && _traceState.failedAt === null;
   }
