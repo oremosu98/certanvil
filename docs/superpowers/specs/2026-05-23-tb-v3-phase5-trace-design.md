@@ -38,11 +38,11 @@ A small (14px) circular badge attached to the current hop on the canvas anchors 
 ### 3.4 OSI overlay scope — thin per-hop layer label only
 
 The annotation includes a small layer chip per hop:
-- Workstation / server endpoint → `L7 · Application` (or `L4 · Transport` depending on protocol mapping — see §7.3)
+- Workstation / server / endpoint device → `L7 · Application`
 - Switch → `L2 · Data Link`
 - Router / L3-switch / firewall / VPN → `L3 · Network`
 
-One line, no expansion. Phase 6 OSI mode then ships the FULL drill on top.
+One line, no expansion. Phase 6 OSI mode then ships the FULL drill on top (layer-by-layer encapsulation, hover/click expansion, byte-level header breakdown).
 
 ### 3.5 Failure-at-hop UX — full beat
 
@@ -75,7 +75,7 @@ Failed Simulate log rows (`entry.failure` truthy) get a small "Trace →" chevro
 | `tests/e2e/app.spec.js` | New Playwright tests 36–45 (~8–10 tests) | ~+120 LOC |
 | `.superpowers/brainstorm/.../content/phase5-dogfood.html` | Founder dogfood HTML (10-step smoke) | new file |
 
-TB v3 feature module currently ~1300 LOC after Phase 4; Phase 5 brings it to ~1800–1950 LOC. Still under the founder-noted 1500-LOC split threshold? Yes — that threshold is the trigger for splitting the IIFE, not a hard cap. Phase 5 staying additive keeps the single-module-per-feature pattern intact. If post-Phase 5 the module crosses ~2500 LOC, a Phase 5.5 split is worth flagging.
+TB v3 feature module is ~4280 LOC after Phase 4 (Phase 1 baseline ~900 LOC + Phase 2 +726 + Phase 2.x +652 + Phase 3 +1200 + Phase 4 +800). Phase 5 brings it to ~4800–4900 LOC. The single-IIFE pattern still serves: every render path needs the shared `state` + `tbDeviceIcon` + `_devCenter` + `_movePacket` + cross-rail mutex, and splitting the IIFE multiplies the import-coordination surface without paying for itself. The post-Phase 5 module size will be re-evaluated at the start of Phase 6 — if Phase 6's OSI overlay adds another ~800 LOC, a structural split (e.g., extract motion + reachability into sibling modules) becomes worth weighing.
 
 ### 4.2 CSS rev bump
 
@@ -162,7 +162,8 @@ _closeTrace()               Removes `body.trace-open`; clears _traceState (via _
 ```
 _startTrace()               Pre-conditions: _traceState.srcId + dstId set, not same device.
                             Calls computePath(srcId, dstId, state) — returns {ok, hops, reason?, failedAt?}.
-                            Populates _traceState.hops, .failedAt (if failure), .reasons[failedIdx].
+                            Populates _traceState.hops; sets failedAt (null if path OK, otherwise the hop
+                            index where reachability broke) and reasons[failedAt] from REACH_REASON_TEMPLATES.
                             Sets currentHopIdx = 0, mode = 'step'.
                             Calls _spawnPacketSvg('amber') → _traceState.packet, positioned at srcId.
                             Renders hop list + annotation.
