@@ -37,6 +37,43 @@
     playing: false,          // true while Validator Preview queue is running
   };
 
+  // Ephemeral Trace-mode state (Phase 5) — NOT persisted, cleared on _closeTrace
+  // Separate from _simState per spec §3.6 (clean mode separation).
+  var _traceState = null;
+
+  function _initTraceState(payload) {
+    _traceState = {
+      // pair identity
+      srcId: (payload && payload.srcId) || null,
+      dstId: (payload && payload.dstId) || null,
+      protocol: (payload && payload.protocol) || 'ping',
+
+      // computed path (from Phase 3's computePath — note: result.hops NOT result.path)
+      hops: [],
+      reasons: {},
+      failedAt: null,
+
+      // playback
+      currentHopIdx: 0,
+      mode: 'idle',
+      autoplayTimer: null,
+      rafHandle: null,        // emil §8.6 — captured for interruptibility on rapid Next clicks
+
+      // visuals
+      packet: null,
+
+      // handoff bookkeeping (Sim→Trace re-entry)
+      lastPayload: payload || null
+    };
+  }
+
+  function _resetTraceState() {
+    if (_traceState && _traceState.autoplayTimer) clearTimeout(_traceState.autoplayTimer);
+    if (_traceState && _traceState.rafHandle) cancelAnimationFrame(_traceState.rafHandle);
+    if (_traceState && _traceState.packet) _despawnPacket(_traceState.packet);
+    _traceState = null;
+  }
+
   // ───────────────────────────────────────────────────────────
   // CSS LOADING (single-call from enter())
   // ───────────────────────────────────────────────────────────

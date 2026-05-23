@@ -21705,6 +21705,68 @@ test('phase2: TB_V3_FREEBUILD_BACKUP does not collide with TB_V3_DRAFT', !/TB_V3
   );
 })();
 
+// ═══════════════════════════════════════════════════════════════
+// TB v3 Phase 5 (Trace mode) fixtures
+// ═══════════════════════════════════════════════════════════════
+
+(function _tbv3Phase5Fixtures() {
+  const tbv3SrcP5 = fs.readFileSync(path.join(__dirname, '..', 'features', 'topology-builder-v3.js'), 'utf8');
+
+  // ───── Stage 1: _traceState schema + pure-fn stubs ─────
+
+  test('phase5: _traceState module-scope var declared',
+    /var\s+_traceState\s*=\s*null\b/.test(tbv3SrcP5));
+
+  test('phase5: _initTraceState defined',
+    /function\s+_initTraceState\s*\(/.test(tbv3SrcP5));
+
+  test('phase5: _resetTraceState defined',
+    /function\s+_resetTraceState\s*\(/.test(tbv3SrcP5));
+
+  // Schema fields locked per spec §5
+  const initBody = _fnBody(tbv3SrcP5, '_initTraceState');
+
+  test('phase5: _initTraceState declares srcId/dstId/protocol pair fields',
+    /srcId:[\s\S]{0,80}dstId:[\s\S]{0,80}protocol:/.test(initBody));
+
+  test('phase5: protocol defaults to ping',
+    /protocol:\s*\(payload && payload\.protocol\)\s*\|\|\s*['"]ping['"]/.test(initBody));
+
+  test('phase5: _initTraceState declares hops/reasons/failedAt path fields',
+    /hops:\s*\[\][\s\S]{0,80}reasons:\s*\{\}[\s\S]{0,80}failedAt:\s*null/.test(initBody));
+
+  test('phase5: _initTraceState declares currentHopIdx + mode + autoplayTimer',
+    /currentHopIdx:\s*0[\s\S]{0,120}mode:\s*['"]idle['"][\s\S]{0,120}autoplayTimer:\s*null/.test(initBody));
+
+  test('phase5: _initTraceState declares rafHandle (emil §8.6 interruptibility)',
+    /rafHandle:\s*null/.test(initBody));
+
+  test('phase5: _initTraceState declares packet + lastPayload',
+    /packet:\s*null[\s\S]{0,200}lastPayload:\s*payload\s*\|\|\s*null/.test(initBody));
+
+  const resetBody = _fnBody(tbv3SrcP5, '_resetTraceState');
+
+  test('phase5: _resetTraceState cancels autoplayTimer',
+    /clearTimeout\(_traceState\.autoplayTimer\)/.test(resetBody));
+
+  test('phase5: _resetTraceState cancels rafHandle (emil §8.6 — both handles must clear)',
+    /cancelAnimationFrame\(_traceState\.rafHandle\)/.test(resetBody));
+
+  test('phase5: _resetTraceState despawns packet via Phase 4 helper',
+    /_despawnPacket\(_traceState\.packet\)/.test(resetBody));
+
+  test('phase5: _resetTraceState sets _traceState back to null',
+    /_traceState\s*=\s*null/.test(resetBody));
+
+  // Tombstones — Phase 5 state is transient like _simState
+  test('phase5: _traceState transient — no STORAGE namespace key references trace state',
+    !/STORAGE\.[A-Z_]*TRACE/.test(tbv3SrcP5));
+
+  test('phase5: _traceState transient — no nplus_tb_v3_trace localStorage key',
+    !/nplus_tb_v3_trace/.test(tbv3SrcP5));
+
+})();
+
 // ── Summary ──
 console.log('\n' + '═'.repeat(50));
 const total = results.pass + results.fail;
