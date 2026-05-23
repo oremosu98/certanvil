@@ -315,9 +315,12 @@ _openInspector / _selectDevice / _openPicker / _openDiagnostic / _openSimulate
     <div class="tb3-trace-controls-row">
       <button id="tb3-trace-start" class="tb3-trace-btn primary">Start trace</button>
       <button id="tb3-trace-next" class="tb3-trace-btn" disabled>Next hop ›</button>
-      <button id="tb3-trace-play" class="tb3-trace-btn-icon" aria-label="Play">▶</button>
-      <button id="tb3-trace-end" class="tb3-trace-btn ghost" disabled>End</button>
+      <button id="tb3-trace-play" class="tb3-trace-btn">Play</button>
+      <button id="tb3-trace-end" class="tb3-trace-btn ghost" disabled>End trace</button>
     </div>
+    <!-- Play button text + aria-label swap to "Pause" when _traceState.mode === 'play'. Single button, two states. -->
+    <!-- End button enables once _traceState.mode !== 'idle'. Click → _endTrace() → mode='done' + despawn packet. -->
+    <!-- Next button enables once _traceState.mode === 'step' AND currentHopIdx < hops.length - 1 AND not failed. -->
   </section>
 
   <ol class="tb3-trace-hops">
@@ -358,17 +361,30 @@ Width: 320px right-anchored. Same `position:absolute + transform:translateX(100%
 
 Rendered onto the current hop device's `<g class="tb3-dev">` group. One badge at a time (removed on hop change, re-added at new hop). Red variant: `fill="var(--tb3-pkt-failure)"` when `hopIdx === failedAt`.
 
-### 7.4 Annotation copy templates
+### 7.4 Annotation copy templates (stop-slop pass — locked)
 
-| Device type | OSI chip | Action | Reason source |
+Strings locked via stop-slop pass: specific (no `{verb}` placeholders — Phase 5 is ping-only), active voice, task-first. No em-dashes. No marketing copy. Failure copy reuses Phase 3's `REACH_REASON_TEMPLATES` (already stop-slopped at Phase 3 ship time).
+
+| Device role | OSI chip | Action | Reason |
 |---|---|---|---|
-| `workstation` / `laptop` / `smartphone` / `server` (as src) | `L7 · Application` | "Originates {protocol} {verb}" | "Targets {dstIp} via default gateway {gateway}" |
-| `switch` | `L2 · Data Link` | "Forwards via MAC table" | "Egress port toward {nextHopMAC}" |
-| `router` / `l3-switch` | `L3 · Network` | "Forwards via routing table" | "Egress to {nextHopIp}" |
-| `firewall` / `vpn` | `L3 · Network` | "Inspects + forwards" | "Permits per policy → {nextHopIp}" |
-| destination (`workstation` / `server` / etc.) | `L7 · Application` | "Receives {protocol} {verb}" | "Replies to {srcIp}" |
+| `workstation` / `laptop` / `smartphone` / `server` (as source) | `L7 · Application` | Originates ICMP echo request | Targets `{dstIp}` via default gateway `{gateway}` |
+| `switch` | `L2 · Data Link` | Forwards via MAC table | Egress port toward `{nextHopMAC}` |
+| `router` / `l3-switch` | `L3 · Network` | Forwards via routing table | Egress to `{nextHopIp}` |
+| `firewall` / `vpn` | `L3 · Network` | Filters and forwards | Permits per policy. Egress `{nextHopIp}` |
+| destination (`workstation` / `server` / etc.) | `L7 · Application` | Receives ICMP echo, sends reply | Replies to `{srcIp}` |
 
-For failed hops, the action remains the device's action verb but the reason switches to the `REACH_REASON_TEMPLATES` copy. The templates are already in Phase 3's `_reachReasonText(failedAt, reason, srcId, dstId)`; Phase 5 calls into the same helper.
+**Failure path**: when `_traceState.failedAt === hopIdx`, the action stays as above (so the user sees what the device *would* do at that role), the reason swaps to `_reachReasonText(failedAt, reason, srcId, dstId)` — Phase 3's existing wrapper around `REACH_REASON_TEMPLATES`. Sample failure reasons (Phase 3 locked):
+- "Router-1 has no route to 192.168.30.0/24"
+- "Workstation-1 has no default gateway"
+- "Switch-1 has no MAC entry for {dstMAC}"
+
+**Hop list chip labels**: `{N}·{hostname}` — number, middle-dot, device hostname. No emoji, no decoration.
+
+**Button labels (locked)**: "Start trace" · "Next hop ›" · "Play" / "Pause" (swap) · "End trace". Aria-labels match visible text (except Play↔Pause swap which carries its own aria).
+
+**Section labels**: "Source", "Destination", "Hop {N} of {M}".
+
+**Dogfood + CLAUDE.md ship-row** (Stage 15 + v6.2.0 ship): same stop-slop rules apply. Dogfood steps are imperative one-liners (action + observable outcome). Ship row follows Phase 4's pattern — specific LOC, specific test counts, specific lessons.
 
 ## 8. Motion choreography + timing
 
