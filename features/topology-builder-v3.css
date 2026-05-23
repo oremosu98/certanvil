@@ -1347,3 +1347,24 @@ html[data-theme="light"] #page-topology-builder-v3 {
     transform: none;
   }
 }
+
+/* Trace settle pulse (Phase 5 Stage 6) */
+
+@keyframes tb3TraceSettle {
+  0%   { filter: drop-shadow(0 0 0 transparent); }
+  40%  { filter: drop-shadow(0 0 8px var(--tb3-accent)); }
+  100% { filter: drop-shadow(0 0 0 transparent); }
+}
+
+.tb3-dev.tb3-trace-settle {
+  animation: tb3TraceSettle 80ms var(--tb3-ease-out) forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tb3-dev.tb3-trace-settle {
+    animation: none;
+    filter: drop-shadow(0 0 6px var(--tb3-accent));
+    /* Static 1.5s glow per emil §8.6 reduced-motion fallback */
+    transition: filter 1500ms ease;
+  }
+}
