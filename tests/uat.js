@@ -21874,7 +21874,7 @@ test('phase2: TB_V3_FREEBUILD_BACKUP does not collide with TB_V3_DRAFT', !/TB_V3
     /computePath\(_traceState\.srcId, _traceState\.dstId, state\)/.test(tbv3SrcP5));
 
   test('phase5: _startTrace populates hops from result.hops (NOT result.path — spec §10)',
-    /_traceState\.hops\s*=\s*\(result && Array\.isArray\(result\.hops\)\)/.test(tbv3SrcP5));
+    /Array\.isArray\(result\.hops\)/.test(tbv3SrcP5));
 
   test('phase5: _startTrace spawns amber packet (Phase 4 helper reuse)',
     /_spawnPacketSvg\('amber'\)/.test(tbv3SrcP5));

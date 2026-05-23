@@ -26,6 +26,14 @@
     activeScenarioId: null, // phase 2: id of currently-loaded scenario when intent === 'lab'
   };
 
+  // Phase 5 helper — internal accessor mirroring the registration-object
+  // _getState exposure. Lets render helpers (_renderTracePanel /
+  // _renderHopList / _renderTraceAnnotation / _startTrace) reference
+  // state via a fn call instead of the bare var. Without this the plan's
+  // _getState() calls would ReferenceError at runtime (the registration's
+  // inline function is only reachable via window._certanvilFeatures[...]).
+  function _getState() { return state; }
+
   // Ephemeral Simulate-mode state (Phase 4) — NOT persisted, cleared on mode exit
   var _simState = {
     drillSrcId: null,        // device id
@@ -3192,10 +3200,27 @@
     const state = _getState();
     const result = computePath(_traceState.srcId, _traceState.dstId, state);
 
-    // Phase 3 schema: result is {ok, hops, reason?, failedAt?}
-    // Field name discipline per spec §10: 'hops' NOT 'path'
-    _traceState.hops = (result && Array.isArray(result.hops)) ? result.hops.slice() : [];
-    _traceState.failedAt = (result && typeof result.failedAt === 'number') ? result.failedAt : null;
+    // Phase 3 schema: result is {ok, hops?, reason?, failedAt?}
+    // - On success, result.hops is the device-ID path.
+    // - On failure, result.hops is undefined; result.failedAt is the DEVICE ID
+    //   where the path broke (NOT an index). Phase 5 normalizes: hops always
+    //   carries at least [srcId] so _renderHopList has something to mark; we
+    //   convert Phase 3's device-ID failedAt to an INDEX in that hops array,
+    //   because _canStepFurther + _renderHopList expect a numeric index.
+    // Field name discipline per spec §10: 'hops' NOT 'path'.
+    if (result && Array.isArray(result.hops) && result.hops.length > 0) {
+      _traceState.hops = result.hops.slice();
+    } else {
+      _traceState.hops = [_traceState.srcId];
+    }
+
+    if (result && result.ok === false && result.failedAt) {
+      var failIdx = _traceState.hops.indexOf(result.failedAt);
+      _traceState.failedAt = failIdx >= 0 ? failIdx : 0;
+    } else {
+      _traceState.failedAt = null;
+    }
+
     _traceState.reasons = {};
     if (_traceState.failedAt !== null) {
       _traceState.reasons[_traceState.failedAt] = _reachReasonText(
