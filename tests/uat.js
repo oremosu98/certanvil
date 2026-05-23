@@ -22352,6 +22352,20 @@ test('phase2: TB_V3_FREEBUILD_BACKUP does not collide with TB_V3_DRAFT', !/TB_V3
   test('P6: _stepTrace dispatches OSI source role to _animateEncap',
     /_stepTrace[\s\S]{0,4000}state\.mode\s*===\s*'osi'[\s\S]{0,400}role\s*===\s*'source'[\s\S]{0,200}_animateEncap/.test(tbv3SrcP6)
   );
+
+  // ---- Stage 9: _animateIntermediate motion engine ----
+  test('P6: _animateIntermediate is defined',
+    /function\s+_animateIntermediate\s*\(/.test(tbv3SrcP6)
+  );
+  test('P6: _animateIntermediate captures rAF on osiAnimHandle',
+    /_animateIntermediate[\s\S]{0,2500}_traceState\.osiAnimHandle\s*=\s*requestAnimationFrame/.test(tbv3SrcP6)
+  );
+  test('P6: _animateIntermediate uses topLayer=2 for switch',
+    /_animateIntermediate[\s\S]{0,500}deviceType\s*===\s*'switch'[\s\S]{0,200}topLayer\s*=\s*2/.test(tbv3SrcP6)
+  );
+  test('P6: _stepTrace dispatches OSI intermediate role to _animateIntermediate',
+    /_stepTrace[\s\S]{0,4000}role\s*===\s*'intermediate'[\s\S]{0,200}_animateIntermediate/.test(tbv3SrcP6)
+  );
 })();
 
 // ── Summary ──

@@ -3336,8 +3336,10 @@
           _animateEncap(hopId, activeLayers, function () {
             // OSI cascade complete — settle pulse + badge update already fired above
           });
+        } else if (role === 'intermediate') {
+          _animateIntermediate(hopId, (hopDev && hopDev.type) || 'router', null);
         }
-        // intermediate + dest handled in Stages 9 + 10
+        // dest handled in Stage 10
       }
 
       // If this hop is the failed hop, trigger the failure beat.
@@ -3729,6 +3731,86 @@
         if (!fired[i] && elapsed >= i * perLayerMs) {
           fired[i] = true;
           _setOSILayerFiring(layers[i]);
+        }
+      }
+
+      if (elapsed < totalMs) {
+        _traceState.osiAnimHandle = requestAnimationFrame(tick);
+      } else {
+        _traceState.osiAnimHandle = null;
+        if (typeof onDone === 'function') onDone();
+      }
+    }
+
+    _traceState.osiAnimHandle = requestAnimationFrame(tick);
+  }
+
+  // ===========================================================================
+  // Phase 6: _animateIntermediate
+  // Decap-up + 100ms pause + re-encap-down cascade at router/switch/firewall/vpn.
+  // Per spec §3.7. Decap-up goes L1 → relevant-layer (L2 for switch,
+  // L3 for router/l3-switch/firewall/vpn). Re-encap-down mirrors back to L1.
+  // Asymmetric easing per direction per spec §9.3 (handled by class-based
+  // CSS keyframe — JS only fires the row class; easing rides _animateEncap's
+  // existing tb3OSILayerSettle keyframe + ease tokens declared in Stage 6 CSS).
+  // ===========================================================================
+  function _animateIntermediate(hopId, deviceType, onDone) {
+    // Determine the top-of-decap layer per device type.
+    var topLayer;
+    if (deviceType === 'switch' || deviceType === 'ap' || deviceType === 'wlc') {
+      topLayer = 2;
+    } else if (deviceType === 'router' || deviceType === 'l3-switch' || deviceType === 'firewall' || deviceType === 'vpn') {
+      topLayer = 3;
+    } else {
+      topLayer = 3;   // fallback
+    }
+
+    // Reduced-motion fast-path: light L1..topLayer at once, skip cascade.
+    if (_reducedMotion && _reducedMotion()) {
+      for (var n = 1; n <= topLayer; n++) _setOSILayerFiring(n);
+      if (typeof onDone === 'function') setTimeout(onDone, 80);
+      return;
+    }
+
+    // Build cascade sequences:
+    //   Decap-up: L1 → topLayer (ascending)
+    //   Pause:    100ms
+    //   Re-encap: topLayer → L1 (descending)
+    var upSeq = [];
+    for (var u = 1; u <= topLayer; u++) upSeq.push(u);
+    var downSeq = [];
+    for (var d = topLayer; d >= 1; d--) downSeq.push(d);
+
+    var perLayerMs = 80;
+    var pauseMs = 100;
+    var upTotalMs = upSeq.length * perLayerMs;
+    var pauseEndMs = upTotalMs + pauseMs;
+    var totalMs = pauseEndMs + downSeq.length * perLayerMs;
+
+    var startTs = null;
+    var upFired = new Array(upSeq.length).fill(false);
+    var downFired = new Array(downSeq.length).fill(false);
+
+    function tick(ts) {
+      if (startTs === null) startTs = ts;
+      var elapsed = ts - startTs;
+
+      // Phase A: decap-up
+      if (elapsed < upTotalMs) {
+        for (var i = 0; i < upSeq.length; i++) {
+          if (!upFired[i] && elapsed >= i * perLayerMs) {
+            upFired[i] = true;
+            _setOSILayerFiring(upSeq[i]);
+          }
+        }
+      } else if (elapsed >= pauseEndMs) {
+        // Phase C: re-encap-down (Phase B is the 100ms pause — nothing fires)
+        var downElapsed = elapsed - pauseEndMs;
+        for (var j = 0; j < downSeq.length; j++) {
+          if (!downFired[j] && downElapsed >= j * perLayerMs) {
+            downFired[j] = true;
+            _setOSILayerFiring(downSeq[j]);
+          }
         }
       }
 
