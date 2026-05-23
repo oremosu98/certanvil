@@ -3282,6 +3282,13 @@
     }
 
     _renderTracePanel();
+
+    // Phase 6 Stage 8: initial OSI encap cascade at source on trace start.
+    if (state.mode === 'osi') {
+      const srcDev = (state.devices || []).find(function (d) { return d.id === _traceState.srcId; });
+      const activeLayers = _activeLayersForDev(srcDev || {});
+      _animateEncap(_traceState.srcId, activeLayers, null);
+    }
   }
 
   function _stepTrace() {
@@ -3316,6 +3323,22 @@
       _traceState.currentHopIdx = toHopIdx;
       _renderSettlePulse(_traceState.hops[toHopIdx]);
       _updateHopBadge();
+
+      // Phase 6 Stage 8: OSI encap cascade on source role at hop arrival.
+      // Runs in parallel with the settle pulse + badge update (spec §4).
+      var state = _getState();
+      if (state.mode === 'osi') {
+        const role = _hopRole(toHopIdx);
+        const hopId = _traceState.hops[toHopIdx];
+        const hopDev = (state.devices || []).find(function (d) { return d.id === hopId; });
+        const activeLayers = _activeLayersForDev(hopDev || {});
+        if (role === 'source') {
+          _animateEncap(hopId, activeLayers, function () {
+            // OSI cascade complete — settle pulse + badge update already fired above
+          });
+        }
+        // intermediate + dest handled in Stages 9 + 10
+      }
 
       // If this hop is the failed hop, trigger the failure beat.
       // _failHop is implemented in Stage 9 — guard for now.
@@ -3666,6 +3689,58 @@
       return map[reason];
     }
     return 3; // default: L3 Network
+  }
+
+  // ===========================================================================
+  // Phase 6: _animateEncap
+  // Per-layer cascade L7 → L1 (top-down). 80ms per ACTIVE layer with no
+  // overlap (next layer fires when prior completes). Captures rAF handle on
+  // _traceState.osiAnimHandle so _stepTrace + _pauseTrace + _endTrace can
+  // cancel cleanly per spec §9.4. onDone callback fires after the final
+  // layer's pulse completes (used by _stepTrace to chain into settle pulse +
+  // badge update).
+  // ===========================================================================
+  function _animateEncap(srcHopId, activeLayers, onDone) {
+    // Reduced-motion fast-path: light all active layers at once + skip cascade.
+    if (_reducedMotion && _reducedMotion()) {
+      (activeLayers || []).forEach(function (n) { _setOSILayerFiring(n); });
+      if (typeof onDone === 'function') setTimeout(onDone, 80);
+      return;
+    }
+
+    // Filter to layers we'll fire (active subset only, sorted top-down 7 → 1).
+    var layers = (activeLayers || []).slice().sort(function (a, b) { return b - a; });
+    if (layers.length === 0) {
+      if (typeof onDone === 'function') onDone();
+      return;
+    }
+
+    var startTs = null;
+    var perLayerMs = 80;
+    var totalMs = layers.length * perLayerMs;
+    var fired = new Array(layers.length).fill(false);
+
+    function tick(ts) {
+      if (startTs === null) startTs = ts;
+      var elapsed = ts - startTs;
+
+      // Fire each layer at its scheduled window.
+      for (var i = 0; i < layers.length; i++) {
+        if (!fired[i] && elapsed >= i * perLayerMs) {
+          fired[i] = true;
+          _setOSILayerFiring(layers[i]);
+        }
+      }
+
+      if (elapsed < totalMs) {
+        _traceState.osiAnimHandle = requestAnimationFrame(tick);
+      } else {
+        _traceState.osiAnimHandle = null;
+        if (typeof onDone === 'function') onDone();
+      }
+    }
+
+    _traceState.osiAnimHandle = requestAnimationFrame(tick);
   }
 
   function _osiChipForDevice(dev, isSrc, isDst) {

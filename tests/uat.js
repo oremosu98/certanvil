@@ -22335,6 +22335,23 @@ test('phase2: TB_V3_FREEBUILD_BACKUP does not collide with TB_V3_DRAFT', !/TB_V3
     test('P6: failure unknown defaults → L3', out && out.unknown === 3);
     test('P6: failure null defaults → L3',    out && out.nullReason === 3);
   }
+
+  // ---- Stage 8: _animateEncap motion engine ----
+  test('P6: _animateEncap is defined',
+    /function\s+_animateEncap\s*\(/.test(tbv3SrcP6)
+  );
+  test('P6: _animateEncap captures rAF handle on osiAnimHandle',
+    /_animateEncap[\s\S]{0,1500}_traceState\.osiAnimHandle\s*=\s*requestAnimationFrame/.test(tbv3SrcP6)
+  );
+  test('P6: _animateEncap calls _setOSILayerFiring per layer',
+    /_animateEncap[\s\S]{0,1500}_setOSILayerFiring\s*\(/.test(tbv3SrcP6)
+  );
+  test('P6: _animateEncap reduced-motion fast-path lights all layers at once',
+    /_animateEncap[\s\S]{0,400}_reducedMotion\s*\(\s*\)[\s\S]{0,200}forEach[\s\S]{0,80}_setOSILayerFiring/.test(tbv3SrcP6)
+  );
+  test('P6: _stepTrace dispatches OSI source role to _animateEncap',
+    /_stepTrace[\s\S]{0,4000}state\.mode\s*===\s*'osi'[\s\S]{0,400}role\s*===\s*'source'[\s\S]{0,200}_animateEncap/.test(tbv3SrcP6)
+  );
 })();
 
 // ── Summary ──
