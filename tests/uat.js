@@ -22029,6 +22029,69 @@ test('phase2: TB_V3_FREEBUILD_BACKUP does not collide with TB_V3_DRAFT', !/TB_V3
 
 })();
 
+// ═══════════════════════════════════════════════════════════════
+// TB v3 Phase 6 (OSI mode) fixtures
+// ═══════════════════════════════════════════════════════════════
+
+(function _tbv3Phase6Fixtures() {
+  const tbv3SrcP6 = fs.readFileSync(path.join(__dirname, '..', 'features/topology-builder-v3.js'), 'utf8');
+  const tbv3CssP6 = fs.readFileSync(path.join(__dirname, '..', 'features/topology-builder-v3.css'), 'utf8');
+
+  // ---- _initTraceState carries osiAnimHandle: null ----
+  function loadTraceStateP6() {
+    const initBody = _fnBody(tbv3SrcP6, '_initTraceState');
+    const sandbox = {
+      _traceState: null,
+      _despawnPacket: function () {},
+      clearTimeout: function () {},
+      cancelAnimationFrame: function () {}
+    };
+    vm.runInNewContext(
+      'function _initTraceState(payload) { ' + initBody + ' }\n' +
+      '_initTraceState(null);\n' +
+      '__out = _traceState;',
+      sandbox
+    );
+    return sandbox.__out;
+  }
+
+  {
+    const s = loadTraceStateP6();
+    test('P6: _traceState carries osiAnimHandle field', s && Object.prototype.hasOwnProperty.call(s, 'osiAnimHandle'));
+    test('P6: osiAnimHandle defaults to null', s && s.osiAnimHandle === null);
+  }
+
+  // ---- _resetTraceState cancels osiAnimHandle (mirror rafHandle) ----
+  test(
+    'P6: _resetTraceState cancels osiAnimHandle via cancelAnimationFrame',
+    /_resetTraceState[\s\S]{0,400}cancelAnimationFrame\(\s*_traceState\.osiAnimHandle\s*\)/.test(tbv3SrcP6)
+  );
+
+  // ---- _stepTrace top-of-fn cancels osiAnimHandle ----
+  test(
+    'P6: _stepTrace top-of-fn cancels both rafHandle AND osiAnimHandle',
+    /_stepTrace[\s\S]{0,600}cancelAnimationFrame\(\s*_traceState\.rafHandle\s*\)[\s\S]{0,400}cancelAnimationFrame\(\s*_traceState\.osiAnimHandle\s*\)/.test(tbv3SrcP6)
+  );
+
+  // ---- _pauseTrace + _endTrace clear osiAnimHandle ----
+  test(
+    'P6: _pauseTrace clears osiAnimHandle',
+    /_pauseTrace[\s\S]{0,400}_traceState\.osiAnimHandle\s*=\s*null/.test(tbv3SrcP6)
+  );
+  test(
+    'P6: _endTrace clears osiAnimHandle',
+    /_endTrace[\s\S]{0,400}_traceState\.osiAnimHandle\s*=\s*null/.test(tbv3SrcP6)
+  );
+
+  // ---- 'osi' is a valid state.mode value (modebar pill no longer locked) ----
+  test(
+    "P6: modebar OSI pill no longer carries locked:true",
+    !/id:\s*'osi'[\s\S]{0,400}locked:\s*true/.test(tbv3SrcP6)
+  );
+
+  // Expose tbv3SrcP6 + tbv3CssP6 for downstream Phase 6 stages by reusing this block.
+})();
+
 // ── Summary ──
 console.log('\n' + '═'.repeat(50));
 const total = results.pass + results.fail;
