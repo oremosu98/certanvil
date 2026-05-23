@@ -21927,6 +21927,17 @@ test('phase2: TB_V3_FREEBUILD_BACKUP does not collide with TB_V3_DRAFT', !/TB_V3
   test('phase5: _pauseTrace also cancels rafHandle (emil §8.6 — both timers must clear)',
     /cancelAnimationFrame\(_traceState\.rafHandle\)/.test(tbv3SrcP5));
 
+  // ───── Stage 9: _failHop + auto-pause + reason copy ─────
+
+  test('phase5: _failHop function defined with hopIdx + reasonText params',
+    /function _failHop\(hopIdx, reasonText\)/.test(tbv3SrcP5));
+
+  test('phase5: _failHop reuses Phase 4 _failDevice (shake + glow)',
+    /_failDevice\(hopId,\s*reasonText/.test(tbv3SrcP5));
+
+  test('phase5: _failHop auto-pauses autoplay on failure (spec §3.5)',
+    /_traceState\.mode === 'play'[\s\S]{0,300}_traceState\.mode = 'paused'/.test(tbv3SrcP5));
+
 })();
 
 // ── Summary ──

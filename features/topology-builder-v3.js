@@ -3479,6 +3479,33 @@
     _renderTracePanel();
   }
 
+  function _failHop(hopIdx, reasonText) {
+    if (!_traceState || typeof hopIdx !== 'number') return;
+    const hopId = _traceState.hops[hopIdx];
+    if (!hopId) return;
+
+    // Re-use Phase 4's _failDevice — 200ms shake + 1.2s red glow.
+    // Reduced-motion path inside _failDevice handles the gate.
+    _failDevice(hopId, reasonText || '');
+
+    // If we were autoplaying, auto-pause so the user can read the reason.
+    if (_traceState.mode === 'play') {
+      _traceState.mode = 'paused';
+      if (_traceState.autoplayTimer) {
+        clearTimeout(_traceState.autoplayTimer);
+        _traceState.autoplayTimer = null;
+      }
+    }
+
+    // Make sure the reason is captured on _traceState so the annotation renders it.
+    // (Already populated in _startTrace from REACH_REASON_TEMPLATES; this is a safety net.)
+    if (reasonText && !_traceState.reasons[hopIdx]) {
+      _traceState.reasons[hopIdx] = reasonText;
+    }
+
+    _renderTracePanel();
+  }
+
   function _wireTracePanel() {
     var panel = document.getElementById('tb3-trace-panel');
     if (!panel) return;
