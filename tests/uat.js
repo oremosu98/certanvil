@@ -21893,6 +21893,23 @@ test('phase2: TB_V3_FREEBUILD_BACKUP does not collide with TB_V3_DRAFT', !/TB_V3
   test('phase5: step 250ms vs autoplay 600ms (spec §8.1 + §8.2)',
     /durMs\s*=\s*isAutoplay\s*\?\s*600\s*:\s*250/.test(tbv3SrcP5));
 
+  // ───── Stage 7: _renderTraceAnnotation + locked copy ─────
+
+  test('phase5: locked action copy — source emits ICMP echo (stop-slop §7.4)',
+    /Originates ICMP echo request/.test(tbv3SrcP5));
+
+  test('phase5: locked action copy — destination receives + replies (stop-slop §7.4)',
+    /Receives ICMP echo, sends reply/.test(tbv3SrcP5));
+
+  test('phase5: firewall action copy locked (stop-slop §7.4 — was "Inspects + forwards")',
+    /Filters and forwards/.test(tbv3SrcP5));
+
+  test('phase5: tombstone — "Inspects + forwards" replaced by "Filters and forwards"',
+    !/Inspects \+ forwards/.test(tbv3SrcP5));
+
+  test('phase5: firewall reason copy locked (stop-slop §7.4 — period breaks the chain)',
+    /Permits per policy\. Egress/.test(tbv3SrcP5));
+
 })();
 
 // ── Summary ──

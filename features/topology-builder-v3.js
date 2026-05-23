@@ -3139,6 +3139,7 @@
       : '<section class="tb3-trace-empty"><p>Add devices to the canvas to start tracing.</p></section>';
 
     const hopsHtml = _renderHopList();
+    const annotationHtml = _renderTraceAnnotation();
 
     panel.innerHTML =
       '<header class="tb3-trace-head">' +
@@ -3147,7 +3148,8 @@
         '<button class="tb3-trace-close" aria-label="Close Trace">×</button>' +
       '</header>' +
       controlsHtml +
-      hopsHtml;
+      hopsHtml +
+      annotationHtml;
 
     _wireTracePanel();
   }
@@ -3334,6 +3336,83 @@
     });
     html += '</ol>';
     return html;
+  }
+
+  function _renderTraceAnnotation() {
+    if (!_traceState || !Array.isArray(_traceState.hops) || _traceState.hops.length === 0) {
+      return '';
+    }
+    const state = _getState();
+    const idx = _traceState.currentHopIdx;
+    const total = _traceState.hops.length;
+    const hopId = _traceState.hops[idx];
+    const dev = (state.devices || []).find(function(d) { return d.id === hopId; });
+    if (!dev) return '';
+
+    const isSrc = (idx === 0);
+    const isDst = (idx === total - 1);
+    const isFailed = (idx === _traceState.failedAt);
+
+    const osiChip = _osiChipForDevice(dev, isSrc, isDst);
+    const action = _actionForDevice(dev, isSrc, isDst);
+    const reason = isFailed
+      ? _traceState.reasons[idx]
+      : _reasonForDevice(dev, isSrc, isDst, state);
+
+    return '' +
+      '<section class="tb3-trace-annotation">' +
+        '<div class="tb3-trace-anno-eyebrow">Hop ' + (idx + 1) + ' of ' + total + '</div>' +
+        '<div class="tb3-trace-anno-title">' + _escAttr(dev.hostname || dev.id) + '</div>' +
+        '<div class="tb3-trace-anno-osi">' + _escAttr(osiChip) + '</div>' +
+        '<div class="tb3-trace-anno-action">' + _escAttr(action) + '</div>' +
+        '<div class="tb3-trace-anno-reason' + (isFailed ? ' is-failure' : '') + '">' + _escAttr(reason || '') + '</div>' +
+      '</section>';
+  }
+
+  function _osiChipForDevice(dev, isSrc, isDst) {
+    if (isSrc || isDst) return 'L7 · Application';
+    if (dev.type === 'switch') return 'L2 · Data Link';
+    if (dev.type === 'router' || dev.type === 'l3-switch' || dev.type === 'firewall' || dev.type === 'vpn') return 'L3 · Network';
+    return 'L3 · Network';  // fallback
+  }
+
+  function _actionForDevice(dev, isSrc, isDst) {
+    // Locked stop-slop copy per spec §7.4. Ping-only (Phase 5).
+    if (isSrc) return 'Originates ICMP echo request';
+    if (isDst) return 'Receives ICMP echo, sends reply';
+    if (dev.type === 'switch') return 'Forwards via MAC table';
+    if (dev.type === 'router' || dev.type === 'l3-switch') return 'Forwards via routing table';
+    if (dev.type === 'firewall' || dev.type === 'vpn') return 'Filters and forwards';
+    return 'Forwards';
+  }
+
+  function _reasonForDevice(dev, isSrc, isDst, state) {
+    // Locked stop-slop reason templates per spec §7.4.
+    if (isSrc) {
+      const dstId = _traceState.dstId;
+      const dstDev = (state.devices || []).find(function(d) { return d.id === dstId; });
+      const dstIp = (dstDev && dstDev.config && dstDev.config.ip) ? dstDev.config.ip : '?';
+      const gw = (dev.config && dev.config.gateway) ? dev.config.gateway : '?';
+      return 'Targets ' + dstIp + ' via default gateway ' + gw;
+    }
+    if (isDst) {
+      const srcId = _traceState.srcId;
+      const srcDev = (state.devices || []).find(function(d) { return d.id === srcId; });
+      const srcIp = (srcDev && srcDev.config && srcDev.config.ip) ? srcDev.config.ip : '?';
+      return 'Replies to ' + srcIp;
+    }
+    // Intermediate hop: find next hop IP for egress reason
+    const nextIdx = (_traceState.hops || []).indexOf(dev.id) + 1;
+    const nextHopId = (_traceState.hops || [])[nextIdx];
+    const nextDev = (state.devices || []).find(function(d) { return d.id === nextHopId; });
+    const nextIp = (nextDev && nextDev.config && nextDev.config.ip) ? nextDev.config.ip : '?';
+    if (dev.type === 'switch') {
+      return 'Egress port toward ' + nextIp;  // MAC info would be ideal but IP is the user-facing handle
+    }
+    if (dev.type === 'firewall' || dev.type === 'vpn') {
+      return 'Permits per policy. Egress ' + nextIp;
+    }
+    return 'Egress to ' + nextIp;
   }
 
   function _wireTracePanel() {
