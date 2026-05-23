@@ -3177,6 +3177,42 @@
       '</section>';
   }
 
+  function _startTrace() {
+    if (!_traceState || !_traceState.srcId || !_traceState.dstId) return;
+    if (_traceState.srcId === _traceState.dstId) return;
+
+    const state = _getState();
+    const result = computePath(_traceState.srcId, _traceState.dstId, state);
+
+    // Phase 3 schema: result is {ok, hops, reason?, failedAt?}
+    // Field name discipline per spec §10: 'hops' NOT 'path'
+    _traceState.hops = (result && Array.isArray(result.hops)) ? result.hops.slice() : [];
+    _traceState.failedAt = (result && typeof result.failedAt === 'number') ? result.failedAt : null;
+    _traceState.reasons = {};
+    if (_traceState.failedAt !== null) {
+      _traceState.reasons[_traceState.failedAt] = _reachReasonText(
+        _traceState.failedAt,
+        result.reason,
+        _traceState.srcId,
+        _traceState.dstId
+      );
+    }
+
+    _traceState.currentHopIdx = 0;
+    _traceState.mode = 'step';
+
+    // Spawn packet at source (Phase 4 helper reuse).
+    if (_traceState.packet) _despawnPacket(_traceState.packet);
+    _traceState.packet = _spawnPacketSvg('amber');
+    const srcPt = _devCenter(_traceState.srcId);
+    if (_traceState.packet && srcPt) {
+      _traceState.packet.setAttribute('cx', srcPt.x);
+      _traceState.packet.setAttribute('cy', srcPt.y);
+    }
+
+    _renderTracePanel();
+  }
+
   function _canStepFurther() {
     return _traceState && Array.isArray(_traceState.hops) && _traceState.currentHopIdx < _traceState.hops.length - 1 && _traceState.failedAt === null;
   }
@@ -3961,6 +3997,7 @@
     // Phase 5 — Trace mode
     _openTrace: _openTrace,
     _closeTrace: function () { _closeTrace(); },
+    _startTrace: _startTrace,
   };
 
   // Also expose openTopologyBuilderV3 directly on window for the sidebar handler

@@ -21865,6 +21865,20 @@ test('phase2: TB_V3_FREEBUILD_BACKUP does not collide with TB_V3_DRAFT', !/TB_V3
   test('phase5: reduced-motion gate neutralizes #tb3-trace-panel transition',
     /prefers-reduced-motion:\s*reduce[\s\S]{0,800}#tb3-trace-panel[\s\S]{0,200}transition:\s*none/.test(tbv3CssP5));
 
+  // ───── Stage 4: _startTrace + computePath integration ─────
+
+  test('phase5: _startTrace function defined',
+    /function _startTrace\(\)/.test(tbv3SrcP5));
+
+  test('phase5: _startTrace calls computePath with srcId, dstId, state',
+    /computePath\(_traceState\.srcId, _traceState\.dstId, state\)/.test(tbv3SrcP5));
+
+  test('phase5: _startTrace populates hops from result.hops (NOT result.path — spec §10)',
+    /_traceState\.hops\s*=\s*\(result && Array\.isArray\(result\.hops\)\)/.test(tbv3SrcP5));
+
+  test('phase5: _startTrace spawns amber packet (Phase 4 helper reuse)',
+    /_spawnPacketSvg\('amber'\)/.test(tbv3SrcP5));
+
 })();
 
 // ── Summary ──
