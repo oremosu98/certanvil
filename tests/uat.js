@@ -21910,6 +21910,23 @@ test('phase2: TB_V3_FREEBUILD_BACKUP does not collide with TB_V3_DRAFT', !/TB_V3
   test('phase5: firewall reason copy locked (stop-slop §7.4 — period breaks the chain)',
     /Permits per policy\. Egress/.test(tbv3SrcP5));
 
+  // ───── Stage 8: _playTrace + _pauseTrace + _endTrace ─────
+
+  test('phase5: _playTrace function defined',
+    /function _playTrace\(\)/.test(tbv3SrcP5));
+
+  test('phase5: autoplay uses 600ms hop + 120ms gap (spec §8.2)',
+    /setTimeout\(tick,\s*600\s*\+\s*120\)/.test(tbv3SrcP5));
+
+  test('phase5: _pauseTrace function defined',
+    /function _pauseTrace\(\)/.test(tbv3SrcP5));
+
+  test('phase5: _pauseTrace clears autoplayTimer',
+    /clearTimeout\(_traceState\.autoplayTimer\)/.test(tbv3SrcP5));
+
+  test('phase5: _pauseTrace also cancels rafHandle (emil §8.6 — both timers must clear)',
+    /cancelAnimationFrame\(_traceState\.rafHandle\)/.test(tbv3SrcP5));
+
 })();
 
 // ── Summary ──

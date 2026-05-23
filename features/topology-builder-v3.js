@@ -3415,6 +3415,70 @@
     return 'Egress to ' + nextIp;
   }
 
+  function _playTrace() {
+    if (!_traceState || _traceState.mode === 'idle' || _traceState.mode === 'done') return;
+    if (!_canStepFurther()) return;
+
+    _traceState.mode = 'play';
+    _renderTracePanel();
+
+    function tick() {
+      // Check we're still in play mode (could have been paused or ended mid-cycle).
+      if (!_traceState || _traceState.mode !== 'play') return;
+      // Check we have somewhere to go.
+      if (!_canStepFurther()) {
+        _traceState.mode = 'done';
+        _renderTracePanel();
+        return;
+      }
+
+      _stepTrace();
+
+      // After _stepTrace fires (which is rAF-driven 600ms in autoplay mode),
+      // schedule the next tick after the hop duration + 120ms gap.
+      // Note: _stepTrace's onDone callback handles the failure case (auto-pauses
+      // via _failHop in Stage 9). We rely on _traceState.mode being checked
+      // at the top of tick() to bail when paused/failed.
+      _traceState.autoplayTimer = setTimeout(tick, 600 + 120);
+    }
+
+    // Kick off first tick after a short pre-roll (gives the user time to see
+    // the hop list before motion starts).
+    _traceState.autoplayTimer = setTimeout(tick, 200);
+  }
+
+  function _pauseTrace() {
+    if (!_traceState) return;
+    _traceState.mode = 'paused';
+    if (_traceState.autoplayTimer) {
+      clearTimeout(_traceState.autoplayTimer);
+      _traceState.autoplayTimer = null;
+    }
+    if (_traceState.rafHandle) {
+      cancelAnimationFrame(_traceState.rafHandle);
+      _traceState.rafHandle = null;
+    }
+    _renderTracePanel();
+  }
+
+  function _endTrace() {
+    if (!_traceState) return;
+    _traceState.mode = 'done';
+    if (_traceState.autoplayTimer) {
+      clearTimeout(_traceState.autoplayTimer);
+      _traceState.autoplayTimer = null;
+    }
+    if (_traceState.rafHandle) {
+      cancelAnimationFrame(_traceState.rafHandle);
+      _traceState.rafHandle = null;
+    }
+    if (_traceState.packet) {
+      _despawnPacket(_traceState.packet);
+      _traceState.packet = null;
+    }
+    _renderTracePanel();
+  }
+
   function _wireTracePanel() {
     var panel = document.getElementById('tb3-trace-panel');
     if (!panel) return;
@@ -4187,6 +4251,10 @@
     _openTrace: _openTrace,
     _closeTrace: function () { _closeTrace(); },
     _startTrace: _startTrace,
+    _stepTrace: _stepTrace,
+    _playTrace: _playTrace,
+    _pauseTrace: _pauseTrace,
+    _endTrace: _endTrace,
   };
 
   // Also expose openTopologyBuilderV3 directly on window for the sidebar handler
