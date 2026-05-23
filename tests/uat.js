@@ -22118,7 +22118,7 @@ test('phase2: TB_V3_FREEBUILD_BACKUP does not collide with TB_V3_DRAFT', !/TB_V3
     const fnBody = _fnBody(tbv3SrcP6, '_genMockMac');
     const sandbox = { __out: null };
     vm.runInNewContext(
-      'function _genMockMac(devId) { ' + fnBody + ' }\n' +
+      fnBody + '\n' +
       '__out = {\n' +
       '  a1: _genMockMac("dev_a"),\n' +
       '  a2: _genMockMac("dev_a"),\n' +

@@ -3527,6 +3527,32 @@
     return 'Egress to ' + nextIp;
   }
 
+  // ===========================================================================
+  // Phase 6: _genMockMac
+  // Deterministic mock-MAC per device id. djb2 hash → 3 bytes hex →
+  // 02:00:00:XX:XX:XX (locally-administered range; U/L bit set; NOT a real OUI).
+  // Per spec §6 + §7.5 — one mock MAC per device (intentional pedagogical
+  // simplification; the L2-vs-L3 demarcation lesson lands without per-interface
+  // MAC accuracy).
+  // ===========================================================================
+  function _genMockMac(devId) {
+    const s = (devId == null) ? '' : String(devId);
+    // djb2 hash — see Phase 5 spec discussion in §6.
+    let h = 5381;
+    for (let i = 0; i < s.length; i++) {
+      h = ((h << 5) + h + s.charCodeAt(i)) | 0;
+    }
+    // Take 3 bytes from the 32-bit hash.
+    const b1 = (h >>> 16) & 0xff;
+    const b2 = (h >>> 8) & 0xff;
+    const b3 = h & 0xff;
+    function hex2(n) {
+      const r = (n & 0xff).toString(16);
+      return r.length === 1 ? '0' + r : r;
+    }
+    return '02:00:00:' + hex2(b1) + ':' + hex2(b2) + ':' + hex2(b3);
+  }
+
   function _playTrace() {
     if (!_traceState || _traceState.mode === 'idle' || _traceState.mode === 'done') return;
     if (!_canStepFurther()) return;
