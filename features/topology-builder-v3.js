@@ -66,6 +66,7 @@
       mode: 'idle',
       autoplayTimer: null,
       rafHandle: null,        // emil §8.6 — captured for interruptibility on rapid Next clicks
+      osiAnimHandle: null,    // Phase 6 — OSI overlay animation handle (dual-timer discipline)
 
       // visuals
       packet: null,
@@ -78,6 +79,7 @@
   function _resetTraceState() {
     if (_traceState && _traceState.autoplayTimer) clearTimeout(_traceState.autoplayTimer);
     if (_traceState && _traceState.rafHandle) cancelAnimationFrame(_traceState.rafHandle);
+    if (_traceState && _traceState.osiAnimHandle) cancelAnimationFrame(_traceState.osiAnimHandle);
     if (_traceState && _traceState.packet) _despawnPacket(_traceState.packet);
     _traceState = null;
   }
@@ -3253,9 +3255,14 @@
     // rAF cancellation discipline (emil §8.6 — interruptibility):
     // Cancel any in-flight glide before launching the next one so
     // rapid Next clicks retarget cleanly without orphan loops.
+    // Dual-timer: also cancel any in-flight OSI overlay animation.
     if (_traceState.rafHandle) {
       cancelAnimationFrame(_traceState.rafHandle);
       _traceState.rafHandle = null;
+    }
+    if (_traceState.osiAnimHandle) {
+      cancelAnimationFrame(_traceState.osiAnimHandle);
+      _traceState.osiAnimHandle = null;
     }
 
     const fromHopIdx = _traceState.currentHopIdx;
@@ -3535,6 +3542,10 @@
       cancelAnimationFrame(_traceState.rafHandle);
       _traceState.rafHandle = null;
     }
+    if (_traceState.osiAnimHandle) {
+      cancelAnimationFrame(_traceState.osiAnimHandle);
+      _traceState.osiAnimHandle = null;
+    }
     _renderTracePanel();
   }
 
@@ -3548,6 +3559,10 @@
     if (_traceState.rafHandle) {
       cancelAnimationFrame(_traceState.rafHandle);
       _traceState.rafHandle = null;
+    }
+    if (_traceState.osiAnimHandle) {
+      cancelAnimationFrame(_traceState.osiAnimHandle);
+      _traceState.osiAnimHandle = null;
     }
     if (_traceState.packet) {
       _despawnPacket(_traceState.packet);
@@ -4248,12 +4263,12 @@
       { id: 'design',   label: 'Design',   icon: '<svg viewBox="0 0 24 24" class="tb3-mode-ic" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>',           locked: false },
       { id: 'simulate', label: 'Simulate', icon: '<svg viewBox="0 0 24 24" class="tb3-mode-ic" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M5 12h14M12 5v14"/></svg>' },
       { id: 'trace',    label: 'Trace',    icon: '<svg viewBox="0 0 24 24" class="tb3-mode-ic" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 12c4 0 4-7 8-7s4 14 8 14"/></svg>' },
-      { id: 'osi',      label: 'OSI',      icon: '<svg viewBox="0 0 24 24" class="tb3-mode-ic" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 6h18M3 10h18M3 14h18M3 18h18"/></svg>',                                                                                                                                                       locked: true },
+      { id: 'osi',      label: 'OSI',      icon: '<svg viewBox="0 0 24 24" class="tb3-mode-ic" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 6h18M3 10h18M3 14h18M3 18h18"/></svg>' },
       { id: '3d',       label: '3D',       icon: '<svg viewBox="0 0 24 24" class="tb3-mode-ic" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>',                                                                                                       locked: true },
     ];
     var html = modes.map(function (m) {
       var on = (m.id === state.mode);
-      return '<div class="tb3-mode' + (on ? ' on' : '') + (m.locked ? ' locked' : '') + '" data-mode="' + m.id + '" title="' + (m.locked ? m.label + ' — phase ' + ({'osi':5,'3d':6}[m.id]) : m.label) + '">' + m.icon + m.label + '</div>';
+      return '<div class="tb3-mode' + (on ? ' on' : '') + (m.locked ? ' locked' : '') + '" data-mode="' + m.id + '" title="' + (m.locked ? m.label + ' — phase ' + ({'3d':6}[m.id]) : m.label) + '">' + m.icon + m.label + '</div>';
     }).join('');
     row.innerHTML = html;
 

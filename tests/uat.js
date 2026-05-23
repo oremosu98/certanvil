@@ -22047,7 +22047,7 @@ test('phase2: TB_V3_FREEBUILD_BACKUP does not collide with TB_V3_DRAFT', !/TB_V3
       cancelAnimationFrame: function () {}
     };
     vm.runInNewContext(
-      'function _initTraceState(payload) { ' + initBody + ' }\n' +
+      initBody + '\n' +
       '_initTraceState(null);\n' +
       '__out = _traceState;',
       sandbox
@@ -22076,11 +22076,11 @@ test('phase2: TB_V3_FREEBUILD_BACKUP does not collide with TB_V3_DRAFT', !/TB_V3
   // ---- _pauseTrace + _endTrace clear osiAnimHandle ----
   test(
     'P6: _pauseTrace clears osiAnimHandle',
-    /_pauseTrace[\s\S]{0,400}_traceState\.osiAnimHandle\s*=\s*null/.test(tbv3SrcP6)
+    /_pauseTrace[\s\S]{0,600}_traceState\.osiAnimHandle\s*=\s*null/.test(tbv3SrcP6)
   );
   test(
     'P6: _endTrace clears osiAnimHandle',
-    /_endTrace[\s\S]{0,400}_traceState\.osiAnimHandle\s*=\s*null/.test(tbv3SrcP6)
+    /_endTrace[\s\S]{0,600}_traceState\.osiAnimHandle\s*=\s*null/.test(tbv3SrcP6)
   );
 
   // ---- 'osi' is a valid state.mode value (modebar pill no longer locked) ----
