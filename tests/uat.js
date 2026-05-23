@@ -22273,6 +22273,22 @@ test('phase2: TB_V3_FREEBUILD_BACKUP does not collide with TB_V3_DRAFT', !/TB_V3
   test('P6: _renderOSIPanel uses _escAttr only (no _escHtml)',
     !/_renderOSIPanel[\s\S]{0,2500}_escHtml/.test(tbv3SrcP6)
   );
+  // ---- Stage 6: scoped CSS for OSI panel ----
+  test('P6 CSS: .tb3-osi-panel scoped to #page-topology-builder-v3',
+    /#page-topology-builder-v3\s+\.tb3-osi-panel/.test(tbv3CssP6)
+  );
+  test('P6 CSS: .tb3-osi-layer.is-active emits accent left-bar via ::before',
+    /\.tb3-osi-layer\.is-active::before/.test(tbv3CssP6)
+  );
+  test('P6 CSS: .tb3-osi-layer.is-failure emits red tint',
+    /\.tb3-osi-layer\.is-failure/.test(tbv3CssP6)
+  );
+  test('P6 CSS: tb3OSILayerSettle keyframe defined',
+    /@keyframes\s+tb3OSILayerSettle/.test(tbv3CssP6)
+  );
+  test('P6 CSS: reduced-motion gates .tb3-osi-layer-firing',
+    /prefers-reduced-motion[\s\S]{0,400}\.tb3-osi-layer-firing[\s\S]{0,200}animation:\s*none/.test(tbv3CssP6)
+  );
 })();
 
 // ── Summary ──

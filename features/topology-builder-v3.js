@@ -3599,6 +3599,32 @@
       '</section>';
   }
 
+  // ===========================================================================
+  // Phase 6: _setOSILayerFiring DOM helper
+  // Adds .tb3-osi-layer-firing class to the matching row, triggers the 80ms
+  // tb3OSILayerSettle keyframe, removes class on animationend. Reduced-motion
+  // path: single 1200ms drop-shadow fade (handled by CSS @media block, JS only
+  // adds + removes the class).
+  // ===========================================================================
+  function _setOSILayerFiring(layerNum) {
+    const panel = document.getElementById('tb3-trace-panel');
+    if (!panel) return;
+    const row = panel.querySelector('.tb3-osi-layer[data-layer="' + layerNum + '"]');
+    if (!row) return;
+    row.classList.add('tb3-osi-layer-firing');
+    // Use animationend (full-motion path); fallback timer for reduced-motion path
+    // where the CSS sets animation:none.
+    let cleared = false;
+    function clear() {
+      if (cleared) return;
+      cleared = true;
+      row.classList.remove('tb3-osi-layer-firing');
+      row.removeEventListener('animationend', clear);
+    }
+    row.addEventListener('animationend', clear, { once: true });
+    setTimeout(clear, 1400);   // reduced-motion safety net (1200ms + 200ms buffer)
+  }
+
   function _osiChipForDevice(dev, isSrc, isDst) {
     if (isSrc || isDst) return 'L7 · Application';
     if (dev.type === 'switch') return 'L2 · Data Link';
