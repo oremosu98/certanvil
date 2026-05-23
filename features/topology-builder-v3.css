@@ -1478,3 +1478,170 @@ html[data-theme="light"] #page-topology-builder-v3 {
   outline: 2px solid var(--tb3-accent);
   outline-offset: 2px;
 }
+
+/* ============================================================================
+   Phase 6: OSI mode — layer stack panel + motion
+   ============================================================================ */
+
+/* Easing tokens (additive — only declare if not already present from Phase 5) */
+#page-topology-builder-v3 {
+  --tb3-osi-ease-encap:   cubic-bezier(0.5, 0, 0.5, 1);
+  --tb3-osi-ease-decap-up: cubic-bezier(0.25, 0, 0.5, 1);
+  --tb3-osi-ease-reencap: cubic-bezier(0.5, 0, 0.25, 1);
+  --tb3-osi-ease-decap:   cubic-bezier(0.5, 0, 0.5, 1);
+}
+
+/* Panel container — replaces the annotation pane when state.mode === 'osi' */
+#page-topology-builder-v3 .tb3-osi-panel {
+  padding: 12px 16px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+#page-topology-builder-v3 .tb3-osi-eyebrow {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--tb3-text-dim);
+  font-family: var(--tb3-mono, ui-monospace, SF Mono, Menlo, monospace);
+}
+
+#page-topology-builder-v3 .tb3-osi-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--tb3-text);
+}
+
+#page-topology-builder-v3 .tb3-osi-stack {
+  list-style: none;
+  margin: 8px 0 0 0;
+  padding: 0;
+}
+
+#page-topology-builder-v3 .tb3-osi-layer {
+  position: relative;
+  display: grid;
+  grid-template-columns: 36px 1fr;
+  gap: 10px;
+  padding: 10px 4px 10px 12px;
+  border-bottom: 1px solid var(--tb3-border);
+  transition: background-color 160ms var(--tb3-osi-ease-encap),
+              filter 160ms var(--tb3-osi-ease-encap);
+}
+
+#page-topology-builder-v3 .tb3-osi-layer:last-child {
+  border-bottom: 0;
+}
+
+#page-topology-builder-v3 .tb3-osi-num {
+  font-family: var(--tb3-mono, ui-monospace, SF Mono, Menlo, monospace);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--tb3-text-dim);
+  letter-spacing: 0.02em;
+  align-self: center;
+}
+
+#page-topology-builder-v3 .tb3-osi-name {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--tb3-text);
+  margin-bottom: 2px;
+}
+
+#page-topology-builder-v3 .tb3-osi-proto {
+  display: block;
+  font-family: var(--tb3-mono, ui-monospace, SF Mono, Menlo, monospace);
+  font-size: 11px;
+  color: var(--tb3-text-dim);
+  margin-bottom: 4px;
+  word-break: break-all;
+}
+
+#page-topology-builder-v3 .tb3-osi-verb {
+  display: block;
+  font-size: 12px;
+  color: var(--tb3-text);
+  font-style: normal;
+}
+
+/* Active variant — bronze left-bar + ink text + accent number + roman verb */
+#page-topology-builder-v3 .tb3-osi-layer.is-active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 6px;
+  bottom: 6px;
+  width: 2px;
+  background: var(--tb3-accent);
+}
+
+#page-topology-builder-v3 .tb3-osi-layer.is-active .tb3-osi-num,
+#page-topology-builder-v3 .tb3-osi-layer.is-active .tb3-osi-name {
+  color: var(--tb3-accent);
+}
+
+/* Passive variant — dim text, italic verb */
+#page-topology-builder-v3 .tb3-osi-layer.is-passive .tb3-osi-name {
+  color: var(--tb3-text-dim);
+}
+
+#page-topology-builder-v3 .tb3-osi-layer.is-passive .tb3-osi-verb {
+  color: var(--tb3-text-dim);
+  font-style: italic;
+}
+
+/* Failure variant — red 2px left-bar + red text + 6% red-tinted bg */
+#page-topology-builder-v3 .tb3-osi-layer.is-failure::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 6px;
+  bottom: 6px;
+  width: 2px;
+  background: var(--tb3-pkt-failure, #c0392b);
+}
+
+#page-topology-builder-v3 .tb3-osi-layer.is-failure {
+  background: color-mix(in oklab, var(--tb3-pkt-failure, #c0392b) 6%, transparent);
+}
+
+#page-topology-builder-v3 .tb3-osi-layer.is-failure .tb3-osi-num,
+#page-topology-builder-v3 .tb3-osi-layer.is-failure .tb3-osi-name,
+#page-topology-builder-v3 .tb3-osi-layer.is-failure .tb3-osi-verb {
+  color: var(--tb3-pkt-failure, #c0392b);
+}
+
+#page-topology-builder-v3 .tb3-osi-layer-reason {
+  display: block;
+  margin-top: 4px;
+  font-size: 11px;
+  font-style: italic;
+  color: var(--tb3-pkt-failure, #c0392b);
+}
+
+/* Firing keyframe — 80ms per-layer pulse triggered by JS during the cascade */
+@keyframes tb3OSILayerSettle {
+  0%   { filter: drop-shadow(0 0 0 transparent); }
+  40%  { filter: drop-shadow(0 0 8px var(--tb3-accent)); }
+  100% { filter: drop-shadow(0 0 0 transparent); }
+}
+
+#page-topology-builder-v3 .tb3-osi-layer.tb3-osi-layer-firing {
+  animation: tb3OSILayerSettle 80ms var(--tb3-osi-ease-encap);
+}
+
+/* Reduced-motion gate per spec §9.5 — single static 1200ms drop-shadow */
+@media (prefers-reduced-motion: reduce) {
+  #page-topology-builder-v3 .tb3-osi-layer {
+    transition: none;
+  }
+  #page-topology-builder-v3 .tb3-osi-layer.tb3-osi-layer-firing {
+    animation: none;
+    filter: drop-shadow(0 0 6px var(--tb3-accent));
+    transition: filter 1200ms ease;
+  }
+}

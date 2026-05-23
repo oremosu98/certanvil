@@ -22029,6 +22029,391 @@ test('phase2: TB_V3_FREEBUILD_BACKUP does not collide with TB_V3_DRAFT', !/TB_V3
 
 })();
 
+// ═══════════════════════════════════════════════════════════════
+// TB v3 Phase 6 (OSI mode) fixtures
+// ═══════════════════════════════════════════════════════════════
+
+(function _tbv3Phase6Fixtures() {
+  const tbv3SrcP6 = fs.readFileSync(path.join(__dirname, '..', 'features/topology-builder-v3.js'), 'utf8');
+  const tbv3CssP6 = fs.readFileSync(path.join(__dirname, '..', 'features/topology-builder-v3.css'), 'utf8');
+
+  // ---- _initTraceState carries osiAnimHandle: null ----
+  function loadTraceStateP6() {
+    const initBody = _fnBody(tbv3SrcP6, '_initTraceState');
+    const sandbox = {
+      _traceState: null,
+      _despawnPacket: function () {},
+      clearTimeout: function () {},
+      cancelAnimationFrame: function () {}
+    };
+    vm.runInNewContext(
+      initBody + '\n' +
+      '_initTraceState(null);\n' +
+      '__out = _traceState;',
+      sandbox
+    );
+    return sandbox.__out;
+  }
+
+  {
+    const s = loadTraceStateP6();
+    test('P6: _traceState carries osiAnimHandle field', s && Object.prototype.hasOwnProperty.call(s, 'osiAnimHandle'));
+    test('P6: osiAnimHandle defaults to null', s && s.osiAnimHandle === null);
+  }
+
+  // ---- _resetTraceState cancels osiAnimHandle (mirror rafHandle) ----
+  test(
+    'P6: _resetTraceState cancels osiAnimHandle via cancelAnimationFrame',
+    /_resetTraceState[\s\S]{0,400}cancelAnimationFrame\(\s*_traceState\.osiAnimHandle\s*\)/.test(tbv3SrcP6)
+  );
+
+  // ---- _stepTrace top-of-fn cancels osiAnimHandle ----
+  test(
+    'P6: _stepTrace top-of-fn cancels both rafHandle AND osiAnimHandle',
+    /_stepTrace[\s\S]{0,600}cancelAnimationFrame\(\s*_traceState\.rafHandle\s*\)[\s\S]{0,400}cancelAnimationFrame\(\s*_traceState\.osiAnimHandle\s*\)/.test(tbv3SrcP6)
+  );
+
+  // ---- _pauseTrace + _endTrace clear osiAnimHandle ----
+  test(
+    'P6: _pauseTrace clears osiAnimHandle',
+    /_pauseTrace[\s\S]{0,600}_traceState\.osiAnimHandle\s*=\s*null/.test(tbv3SrcP6)
+  );
+  test(
+    'P6: _endTrace clears osiAnimHandle',
+    /_endTrace[\s\S]{0,600}_traceState\.osiAnimHandle\s*=\s*null/.test(tbv3SrcP6)
+  );
+
+  // ---- 'osi' is a valid state.mode value (modebar pill no longer locked) ----
+  test(
+    "P6: modebar OSI pill no longer carries locked:true",
+    !/id:\s*'osi'[\s\S]{0,400}locked:\s*true/.test(tbv3SrcP6)
+  );
+
+  // ---- Stage 2: _openOSI / _closeOSI lifecycle ----
+  test(
+    'P6: _openOSI defined',
+    /function\s+_openOSI\s*\(/.test(tbv3SrcP6)
+  );
+  test(
+    'P6: _openOSI guards _openTrace with alreadyInTrace then sets state.mode = "osi"',
+    /_openOSI[\s\S]{0,600}alreadyInTrace[\s\S]{0,200}_openTrace[\s\S]{0,200}state\.mode\s*=\s*'osi'/.test(tbv3SrcP6)
+  );
+  test(
+    "P6: _openOSI adds 'osi-open' to #tb3-body element",
+    /_openOSI[\s\S]{0,600}classList\.add\('osi-open'\)/.test(tbv3SrcP6)
+  );
+  test(
+    'P6: _closeOSI removes osi-open + delegates to _closeTrace',
+    /_closeOSI[\s\S]{0,200}classList\.remove\('osi-open'\)[\s\S]{0,100}_closeTrace\s*\(/.test(tbv3SrcP6)
+  );
+  test(
+    'P6: modebar wires osi branch to _openOSI',
+    /mode\s*===\s*'osi'[\s\S]{0,80}_openOSI\s*\(/.test(tbv3SrcP6)
+  );
+
+  // Expose tbv3SrcP6 + tbv3CssP6 for downstream Phase 6 stages by reusing this block.
+
+  // ---- Stage 3: _genMockMac determinism + format ----
+  function loadGenMockMac() {
+    const fnBody = _fnBody(tbv3SrcP6, '_genMockMac');
+    const sandbox = { __out: null };
+    vm.runInNewContext(
+      fnBody + '\n' +
+      '__out = {\n' +
+      '  a1: _genMockMac("dev_a"),\n' +
+      '  a2: _genMockMac("dev_a"),\n' +
+      '  b:  _genMockMac("dev_b"),\n' +
+      '  empty: _genMockMac(""),\n' +
+      '  null:  _genMockMac(null)\n' +
+      '};',
+      sandbox
+    );
+    return sandbox.__out;
+  }
+
+  {
+    const out = loadGenMockMac();
+    test('P6: _genMockMac returns locally-administered MAC prefix 02:00:00:',
+      out && /^02:00:00:[0-9a-f]{2}:[0-9a-f]{2}:[0-9a-f]{2}$/.test(out.a1)
+    );
+    test('P6: _genMockMac is deterministic (same input → same MAC)',
+      out && out.a1 === out.a2
+    );
+    test('P6: _genMockMac is injective on distinct ids',
+      out && out.a1 !== out.b
+    );
+    test('P6: _genMockMac handles empty string defensively',
+      out && /^02:00:00:[0-9a-f]{2}:[0-9a-f]{2}:[0-9a-f]{2}$/.test(out.empty)
+    );
+    test('P6: _genMockMac handles null defensively',
+      out && /^02:00:00:[0-9a-f]{2}:[0-9a-f]{2}:[0-9a-f]{2}$/.test(out.null)
+    );
+  }
+
+  // ---- Stage 4: _activeLayersForDev shape per role ----
+  function loadActiveLayers() {
+    const fnBody = _fnBody(tbv3SrcP6, '_activeLayersForDev');
+    const sandbox = { __out: null };
+    vm.runInNewContext(
+      fnBody + '\n' +
+      '__out = {\n' +
+      '  workstation: _activeLayersForDev({type:"workstation"}),\n' +
+      '  server:      _activeLayersForDev({type:"server"}),\n' +
+      '  laptop:      _activeLayersForDev({type:"laptop"}),\n' +
+      '  smartphone:  _activeLayersForDev({type:"smartphone"}),\n' +
+      '  switch:      _activeLayersForDev({type:"switch"}),\n' +
+      '  router:      _activeLayersForDev({type:"router"}),\n' +
+      '  l3switch:    _activeLayersForDev({type:"l3-switch"}),\n' +
+      '  firewall:    _activeLayersForDev({type:"firewall"}),\n' +
+      '  vpn:         _activeLayersForDev({type:"vpn"})\n' +
+      '};',
+      sandbox
+    );
+    return sandbox.__out;
+  }
+
+  {
+    let out = null;
+    try { out = loadActiveLayers(); } catch(e) { /* function not yet implemented */ }
+    function eq(a, b) { return a && b && JSON.stringify(a.slice().sort()) === JSON.stringify(b.slice().sort()); }
+    test('P6: endpoint workstation active = [1,2,3,7] (ICMP)', out && eq(out.workstation, [1,2,3,7]));
+    test('P6: endpoint server active = [1,2,3,7]', out && eq(out.server, [1,2,3,7]));
+    test('P6: endpoint laptop active = [1,2,3,7]', out && eq(out.laptop, [1,2,3,7]));
+    test('P6: endpoint smartphone active = [1,2,3,7]', out && eq(out.smartphone, [1,2,3,7]));
+    test('P6: switch active = [1,2]', out && eq(out.switch, [1,2]));
+    test('P6: router active = [1,2,3]', out && eq(out.router, [1,2,3]));
+    test('P6: l3-switch active = [1,2,3]', out && eq(out.l3switch, [1,2,3]));
+    test('P6: firewall active = [1,2,3]', out && eq(out.firewall, [1,2,3]));
+    test('P6: vpn active = [1,2,3]', out && eq(out.vpn, [1,2,3]));
+  }
+
+  // ---- Stage 4: locked stop-slop verb templates per spec §7.4 ----
+  test("P6: locked verb 'Originates ICMP echo request'",
+    tbv3SrcP6.includes("'Originates ICMP echo request'")
+  );
+  test("P6: locked verb 'Receives ICMP echo, sends reply'",
+    tbv3SrcP6.includes("'Receives ICMP echo, sends reply'")
+  );
+  test("P6: locked verb 'n/a — ICMP runs directly on IP'",
+    tbv3SrcP6.includes("'n/a — ICMP runs directly on IP'")
+  );
+  test("P6: locked verb 'Wraps payload with source/dest IP'",
+    tbv3SrcP6.includes("'Wraps payload with source/dest IP'")
+  );
+  test("P6: locked verb 'Forwards via routing table'",
+    tbv3SrcP6.includes("'Forwards via routing table'")
+  );
+  test("P6: locked verb 'Filters per policy. Forwards via routing table' (period load-bearing)",
+    tbv3SrcP6.includes("'Filters per policy. Forwards via routing table'")
+  );
+  test("P6: locked verb 'Accepts packet for own IP'",
+    tbv3SrcP6.includes("'Accepts packet for own IP'")
+  );
+  test("P6: locked verb 'Frames with source/next-hop MAC'",
+    tbv3SrcP6.includes("'Frames with source/next-hop MAC'")
+  );
+  test("P6: locked verb 'Forwards via MAC table'",
+    tbv3SrcP6.includes("'Forwards via MAC table'")
+  );
+  test("P6: locked verb 'Rewrites frame with own MAC + next-hop MAC'",
+    tbv3SrcP6.includes("'Rewrites frame with own MAC + next-hop MAC'")
+  );
+  test("P6: locked verb 'Accepts frame for own MAC'",
+    tbv3SrcP6.includes("'Accepts frame for own MAC'")
+  );
+  test("P6: locked verb 'Encodes frame as electrical signal'",
+    tbv3SrcP6.includes("'Encodes frame as electrical signal'")
+  );
+
+  // ---- Tombstones: bare variants must NOT exist per spec §7.4 ----
+  test("P6: tombstone — 'Wraps with IP' bare variant must not exist",
+    !tbv3SrcP6.includes("'Wraps with IP'")
+  );
+  test("P6: tombstone — 'Rewrites MAC' bare variant must not exist",
+    !tbv3SrcP6.includes("'Rewrites MAC'")
+  );
+
+  // ---- Stage 4: _hopRole returns 'source' | 'intermediate' | 'dest' ----
+  function loadHopRole() {
+    const fnBody = _fnBody(tbv3SrcP6, '_hopRole');
+    const sandbox = {
+      _traceState: { hops: ['a', 'b', 'c', 'd'] },
+      __out: null
+    };
+    vm.runInNewContext(
+      fnBody + '\n' +
+      '__out = { src:_hopRole(0), mid:_hopRole(2), dst:_hopRole(3) };',
+      sandbox
+    );
+    return sandbox.__out;
+  }
+  {
+    let out = null;
+    try { out = loadHopRole(); } catch(e) { /* function not yet implemented */ }
+    test("P6: _hopRole returns 'source' at idx 0", out && out.src === 'source');
+    test("P6: _hopRole returns 'intermediate' in middle", out && out.mid === 'intermediate');
+    test("P6: _hopRole returns 'dest' at last idx", out && out.dst === 'dest');
+  }
+
+  // ---- Stage 4: _buildLayerStackForHop returns 7 rows ----
+  test('P6: _buildLayerStackForHop is defined',
+    /function\s+_buildLayerStackForHop\s*\(/.test(tbv3SrcP6)
+  );
+
+  // ---- Stage 5: _renderOSIPanel + dispatch ----
+  test('P6: _renderOSIPanel is defined',
+    /function\s+_renderOSIPanel\s*\(/.test(tbv3SrcP6)
+  );
+  test('P6: _renderTracePanel dispatches OSI vs annotation by state.mode',
+    /state\.mode\s*===\s*'osi'[\s\S]{0,80}_renderOSIPanel\s*\([\s\S]{0,80}_renderTraceAnnotation\s*\(/.test(tbv3SrcP6)
+  );
+  test('P6: _renderOSIPanel emits <ol class="tb3-osi-stack">',
+    /tb3-osi-stack/.test(tbv3SrcP6)
+  );
+  test('P6: _renderOSIPanel uses _escAttr only (no _escHtml)',
+    !/_renderOSIPanel[\s\S]{0,2500}_escHtml/.test(tbv3SrcP6)
+  );
+  // ---- Stage 6: scoped CSS for OSI panel ----
+  test('P6 CSS: .tb3-osi-panel scoped to #page-topology-builder-v3',
+    /#page-topology-builder-v3\s+\.tb3-osi-panel/.test(tbv3CssP6)
+  );
+  test('P6 CSS: .tb3-osi-layer.is-active emits accent left-bar via ::before',
+    /\.tb3-osi-layer\.is-active::before/.test(tbv3CssP6)
+  );
+  test('P6 CSS: .tb3-osi-layer.is-failure emits red tint',
+    /\.tb3-osi-layer\.is-failure/.test(tbv3CssP6)
+  );
+  test('P6 CSS: tb3OSILayerSettle keyframe defined',
+    /@keyframes\s+tb3OSILayerSettle/.test(tbv3CssP6)
+  );
+  test('P6 CSS: reduced-motion gates .tb3-osi-layer-firing',
+    /prefers-reduced-motion[\s\S]{0,400}\.tb3-osi-layer-firing[\s\S]{0,200}animation:\s*none/.test(tbv3CssP6)
+  );
+
+  // ---- Stage 7: _failedReasonToLayer mapping per spec §8 ----
+  function loadReasonMap() {
+    const fnBody = _fnBody(tbv3SrcP6, '_failedReasonToLayer');
+    if (!fnBody) return null;
+    const sandbox = { __out: null };
+    try {
+      vm.runInNewContext(
+        fnBody + '\n' +
+        '__out = {\n' +
+        '  noLink:           _failedReasonToLayer("no-link"),\n' +
+        '  noCablePath:      _failedReasonToLayer("no-cable-path"),\n' +
+        '  macNotFound:      _failedReasonToLayer("mac-not-found"),\n' +
+        '  noL2Path:         _failedReasonToLayer("no-l2-path"),\n' +
+        '  noIp:             _failedReasonToLayer("no-ip"),\n' +
+        '  noGateway:        _failedReasonToLayer("no-gateway"),\n' +
+        '  gatewayNotFound:  _failedReasonToLayer("gateway-not-found"),\n' +
+        '  differentSubnet:  _failedReasonToLayer("different-subnet"),\n' +
+        '  notL3:            _failedReasonToLayer("not-l3"),\n' +
+        '  noRoute:          _failedReasonToLayer("no-route"),\n' +
+        '  noRouterBetween:  _failedReasonToLayer("no-router-between"),\n' +
+        '  unknown:          _failedReasonToLayer("totally-fake-reason"),\n' +
+        '  nullReason:       _failedReasonToLayer(null)\n' +
+        '};',
+        sandbox
+      );
+    } catch (e) { return null; }
+    return sandbox.__out;
+  }
+
+  {
+    const out = loadReasonMap();
+    test('P6: failure no-link → L1',          out && out.noLink === 1);
+    test('P6: failure no-cable-path → L1',    out && out.noCablePath === 1);
+    test('P6: failure mac-not-found → L2',    out && out.macNotFound === 2);
+    test('P6: failure no-l2-path → L2',       out && out.noL2Path === 2);
+    test('P6: failure no-ip → L3',            out && out.noIp === 3);
+    test('P6: failure no-gateway → L3',       out && out.noGateway === 3);
+    test('P6: failure gateway-not-found → L3', out && out.gatewayNotFound === 3);
+    test('P6: failure different-subnet → L3', out && out.differentSubnet === 3);
+    test('P6: failure not-l3 → L3',           out && out.notL3 === 3);
+    test('P6: failure no-route → L3',         out && out.noRoute === 3);
+    test('P6: failure no-router-between → L3', out && out.noRouterBetween === 3);
+    test('P6: failure unknown defaults → L3', out && out.unknown === 3);
+    test('P6: failure null defaults → L3',    out && out.nullReason === 3);
+  }
+
+  // ---- Stage 8: _animateEncap motion engine ----
+  test('P6: _animateEncap is defined',
+    /function\s+_animateEncap\s*\(/.test(tbv3SrcP6)
+  );
+  test('P6: _animateEncap captures rAF handle on osiAnimHandle',
+    /_animateEncap[\s\S]{0,1500}_traceState\.osiAnimHandle\s*=\s*requestAnimationFrame/.test(tbv3SrcP6)
+  );
+  test('P6: _animateEncap calls _setOSILayerFiring per layer',
+    /_animateEncap[\s\S]{0,1500}_setOSILayerFiring\s*\(/.test(tbv3SrcP6)
+  );
+  test('P6: _animateEncap reduced-motion fast-path lights all layers at once',
+    /_animateEncap[\s\S]{0,400}_reducedMotion\s*\(\s*\)[\s\S]{0,200}forEach[\s\S]{0,80}_setOSILayerFiring/.test(tbv3SrcP6)
+  );
+  test('P6: _stepTrace dispatches OSI source role to _animateEncap',
+    /_stepTrace[\s\S]{0,4000}state\.mode\s*===\s*'osi'[\s\S]{0,400}role\s*===\s*'source'[\s\S]{0,200}_animateEncap/.test(tbv3SrcP6)
+  );
+
+  // ---- Stage 9: _animateIntermediate motion engine ----
+  test('P6: _animateIntermediate is defined',
+    /function\s+_animateIntermediate\s*\(/.test(tbv3SrcP6)
+  );
+  test('P6: _animateIntermediate captures rAF on osiAnimHandle',
+    /_animateIntermediate[\s\S]{0,2500}_traceState\.osiAnimHandle\s*=\s*requestAnimationFrame/.test(tbv3SrcP6)
+  );
+  test('P6: _animateIntermediate uses topLayer=2 for switch',
+    /_animateIntermediate[\s\S]{0,500}deviceType\s*===\s*'switch'[\s\S]{0,200}topLayer\s*=\s*2/.test(tbv3SrcP6)
+  );
+  test('P6: _stepTrace dispatches OSI intermediate role to _animateIntermediate',
+    /_stepTrace[\s\S]{0,4000}role\s*===\s*'intermediate'[\s\S]{0,200}_animateIntermediate/.test(tbv3SrcP6)
+  );
+
+  // ---- Stage 10: _animateDecap + reduced-motion coverage ----
+  test('P6: _animateDecap is defined',
+    /function\s+_animateDecap\s*\(/.test(tbv3SrcP6)
+  );
+  test('P6: _animateDecap captures rAF on osiAnimHandle',
+    /_animateDecap[\s\S]{0,1500}_traceState\.osiAnimHandle\s*=\s*requestAnimationFrame/.test(tbv3SrcP6)
+  );
+  test('P6: _animateDecap sorts layers ascending (bottom-up L1 → L7)',
+    /_animateDecap[\s\S]{0,800}sort\(function[\s\S]{0,80}return\s+a\s*-\s*b/.test(tbv3SrcP6)
+  );
+  test('P6: _stepTrace dispatches OSI dest role to _animateDecap',
+    /_stepTrace[\s\S]{0,4000}role\s*===\s*'dest'[\s\S]{0,200}_animateDecap/.test(tbv3SrcP6)
+  );
+
+  // ---- Stage 11: 5-panel cross-rail mutex forEach lock ----
+  // Every inspector-opener path (the 4 from Phase 5 + any new) MUST call
+  // _closeTrace() AND _closeOSI() (the Trace mutex was Phase 5 Stage 12's
+  // catch; OSI extends it). _openTrace itself does NOT call _closeOSI()
+  // because they share state — switching between them is a mode flip.
+  ['_selectDevice', '_openPicker', '_openDiagnostic', '_openSimulate'].forEach(function (openerName) {
+    var body = _fnBody(tbv3SrcP6, openerName) || '';
+    test(
+      'P6 mutex: ' + openerName + ' calls _closeTrace()',
+      /_closeTrace\s*\(/.test(body)
+    );
+    test(
+      'P6 mutex: ' + openerName + ' calls _closeOSI()',
+      /_closeOSI\s*\(/.test(body)
+    );
+  });
+
+  // ---- Stage 11: _openTrace does NOT call _closeOSI (view-toggle invariant) ----
+  {
+    var openTraceBody = _fnBody(tbv3SrcP6, '_openTrace') || '';
+    test(
+      'P6 mutex: _openTrace does NOT call _closeOSI (Trace/OSI share state)',
+      !/_closeOSI\s*\(/.test(openTraceBody)
+    );
+  }
+
+  // ---- Stage 11: Esc handler closes OSI before Trace ----
+  test(
+    'P6 mutex: Esc handler closes osi-open before trace-open (more-specific first)',
+    /classList\.contains\('osi-open'\)[\s\S]{0,200}_closeOSI[\s\S]{0,400}classList\.contains\('trace-open'\)[\s\S]{0,200}_closeTrace/.test(tbv3SrcP6)
+  );
+})();
+
 // ── Summary ──
 console.log('\n' + '═'.repeat(50));
 const total = results.pass + results.fail;

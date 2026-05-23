@@ -66,9 +66,13 @@
       mode: 'idle',
       autoplayTimer: null,
       rafHandle: null,        // emil §8.6 — captured for interruptibility on rapid Next clicks
+      osiAnimHandle: null,    // Phase 6 — OSI overlay animation handle (dual-timer discipline)
 
       // visuals
       packet: null,
+
+      // OSI failure layer (Phase 6 — set by _startTrace from result.reason)
+      reasonCode: null,
 
       // handoff bookkeeping (Sim→Trace re-entry)
       lastPayload: payload || null
@@ -78,6 +82,7 @@
   function _resetTraceState() {
     if (_traceState && _traceState.autoplayTimer) clearTimeout(_traceState.autoplayTimer);
     if (_traceState && _traceState.rafHandle) cancelAnimationFrame(_traceState.rafHandle);
+    if (_traceState && _traceState.osiAnimHandle) cancelAnimationFrame(_traceState.osiAnimHandle);
     if (_traceState && _traceState.packet) _despawnPacket(_traceState.packet);
     _traceState = null;
   }
@@ -91,7 +96,7 @@
   // APP_VERSION hasn't changed. After v3 ships in a version-bump cycle,
   // APP_VERSION will be the canonical cache key and this constant can be
   // retired (or kept at .0 forever).
-  var TB3_CSS_REV = 'r10'; // r10: Phase 5 Trace mode CSS appended (panel slide, hop list, badges, settle pulse)
+  var TB3_CSS_REV = 'r11'; // r11: Phase 6 OSI mode CSS appended (layer stack, encap/decap motion, failure variants)
 
   function _ensureCss() {
     if (document.querySelector('link[href*="topology-builder-v3.css"]')) return;
@@ -2479,6 +2484,9 @@
     if (body && body.classList.contains('trace-open')) {
       _closeTrace();
     }
+    if (body && body.classList.contains('osi-open')) {
+      _closeOSI();
+    }
     state.selectedId = id;
     _renderCanvas();
     _renderInspector();
@@ -2846,6 +2854,9 @@
       _closeSimulate();
     }
     if (body.classList.contains('trace-open')) _closeTrace();
+    if (body.classList.contains('osi-open')) {
+      _closeOSI();
+    }
     // Mutually exclusive with Inspector (only one rail panel at a time).
     body.classList.remove('inspector-open');
     body.classList.add('picker-open');
@@ -3038,6 +3049,9 @@
       _closeSimulate();
     }
     if (body.classList.contains('trace-open')) _closeTrace();
+    if (body.classList.contains('osi-open')) {
+      _closeOSI();
+    }
     body.classList.remove('picker-open');
     body.classList.remove('inspector-open');
     body.classList.add('diagnostic-open');
@@ -3079,6 +3093,9 @@
     body.classList.remove('inspector-open');
     body.classList.remove('diagnostic-open');
     if (body.classList.contains('trace-open')) _closeTrace();
+    if (body.classList.contains('osi-open')) {
+      _closeOSI();
+    }
     body.classList.add('simulate-open');
     state.mode = 'simulate';
     _renderSimulatePanel();
@@ -3131,6 +3148,29 @@
     _renderModeBar();
   }
 
+  function _openOSI(payload) {
+    // OSI is a view-toggle on Trace per spec §3.1.
+    // If already in trace/osi mode, preserve _traceState (mid-trace toggle must
+    // not re-init the state and destroy currentHopIdx/hops/etc).
+    // If entering fresh, run the full _openTrace path (cross-rail sweep + init).
+    var body = document.getElementById('tb3-body');
+    if (!body) return;
+    var alreadyInTrace = (state.mode === 'trace' || state.mode === 'osi');
+    if (!alreadyInTrace) {
+      _openTrace(payload || null);   // cross-rail sweep + _initTraceState + panel
+    }
+    state.mode = 'osi';
+    body.classList.add('osi-open');
+    _renderTracePanel();   // re-render so dispatch picks _renderOSIPanel (Stage 5)
+    _renderModeBar();      // repaint so OSI pill highlights, Trace pill un-highlights
+  }
+
+  function _closeOSI() {
+    var body = document.getElementById('tb3-body');
+    if (body) body.classList.remove('osi-open');
+    _closeTrace();   // shares teardown — clears _traceState + removes trace-open class
+  }
+
   function _renderTracePanel() {
     var panel = document.getElementById('tb3-trace-panel');
     if (!panel) {
@@ -3150,7 +3190,9 @@
       : '<section class="tb3-trace-empty"><p>Add devices to the canvas to start tracing.</p></section>';
 
     const hopsHtml = _renderHopList();
-    const annotationHtml = _renderTraceAnnotation();
+    const annotationHtml = (state.mode === 'osi')
+      ? _renderOSIPanel()
+      : _renderTraceAnnotation();
 
     panel.innerHTML =
       '<header class="tb3-trace-head">' +
@@ -3229,6 +3271,9 @@
         _traceState.srcId,
         _traceState.dstId
       );
+      _traceState.reasonCode = result.reason || null;
+    } else {
+      _traceState.reasonCode = null;
     }
 
     _traceState.currentHopIdx = 0;
@@ -3244,6 +3289,13 @@
     }
 
     _renderTracePanel();
+
+    // Phase 6 Stage 8: initial OSI encap cascade at source on trace start.
+    if (state.mode === 'osi') {
+      const srcDev = (state.devices || []).find(function (d) { return d.id === _traceState.srcId; });
+      const activeLayers = _activeLayersForDev(srcDev || {});
+      _animateEncap(_traceState.srcId, activeLayers, null);
+    }
   }
 
   function _stepTrace() {
@@ -3253,9 +3305,14 @@
     // rAF cancellation discipline (emil §8.6 — interruptibility):
     // Cancel any in-flight glide before launching the next one so
     // rapid Next clicks retarget cleanly without orphan loops.
+    // Dual-timer: also cancel any in-flight OSI overlay animation.
     if (_traceState.rafHandle) {
       cancelAnimationFrame(_traceState.rafHandle);
       _traceState.rafHandle = null;
+    }
+    if (_traceState.osiAnimHandle) {
+      cancelAnimationFrame(_traceState.osiAnimHandle);
+      _traceState.osiAnimHandle = null;
     }
 
     const fromHopIdx = _traceState.currentHopIdx;
@@ -3273,6 +3330,25 @@
       _traceState.currentHopIdx = toHopIdx;
       _renderSettlePulse(_traceState.hops[toHopIdx]);
       _updateHopBadge();
+
+      // Phase 6 Stage 8: OSI encap cascade on source role at hop arrival.
+      // Runs in parallel with the settle pulse + badge update (spec §4).
+      var state = _getState();
+      if (state.mode === 'osi') {
+        const role = _hopRole(toHopIdx);
+        const hopId = _traceState.hops[toHopIdx];
+        const hopDev = (state.devices || []).find(function (d) { return d.id === hopId; });
+        const activeLayers = _activeLayersForDev(hopDev || {});
+        if (role === 'source') {
+          _animateEncap(hopId, activeLayers, function () {
+            // OSI cascade complete — settle pulse + badge update already fired above
+          });
+        } else if (role === 'intermediate') {
+          _animateIntermediate(hopId, (hopDev && hopDev.type) || 'router', null);
+        } else if (role === 'dest') {
+          _animateDecap(hopId, activeLayers, null);
+        }
+      }
 
       // If this hop is the failed hop, trigger the failure beat.
       // _failHop is implemented in Stage 9 — guard for now.
@@ -3446,6 +3522,363 @@
       '</section>';
   }
 
+  // ===========================================================================
+  // Phase 6: _renderOSIPanel
+  // Replaces _renderTraceAnnotation when state.mode === 'osi'. Per spec §3.3.
+  // Empty state per spec §6 — same 7-row DOM shape, only the content varies.
+  // ===========================================================================
+  function _renderOSIPanel() {
+    const state = _getState();
+    const hasHops = _traceState && Array.isArray(_traceState.hops) && _traceState.hops.length > 0;
+
+    if (!hasHops) {
+      // Empty state — render the 7-row stack with all rows passive + placeholder
+      // proto + verb copy per spec §6.
+      const layerNames = { 7:'Application', 6:'Presentation', 5:'Session', 4:'Transport', 3:'Network', 2:'Data Link', 1:'Physical' };
+      let rowsHtml = '';
+      for (let n = 7; n >= 1; n--) {
+        rowsHtml +=
+          '<li class="tb3-osi-layer" data-layer="' + n + '">' +
+            '<span class="tb3-osi-num">L' + n + '</span>' +
+            '<div>' +
+              '<span class="tb3-osi-name">' + layerNames[n] + '</span>' +
+              '<span class="tb3-osi-proto">n/a</span>' +
+              '<span class="tb3-osi-verb">Pick a source + destination, then Start to populate this layer</span>' +
+            '</div>' +
+          '</li>';
+      }
+      return '' +
+        '<section class="tb3-osi-panel">' +
+          '<div class="tb3-osi-eyebrow">PICK SOURCE + DEST</div>' +
+          '<div class="tb3-osi-title">Awaiting trace</div>' +
+          '<ol class="tb3-osi-stack">' + rowsHtml + '</ol>' +
+        '</section>';
+    }
+
+    const idx = _traceState.currentHopIdx;
+    const total = _traceState.hops.length;
+    const hopId = _traceState.hops[idx];
+    const dev = (state.devices || []).find(function (d) { return d.id === hopId; });
+    if (!dev) return '<section class="tb3-osi-panel"><div class="tb3-osi-eyebrow">HOP ' + (idx+1) + ' OF ' + total + '</div><div class="tb3-osi-title">Unknown device</div></section>';
+
+    const role = _hopRole(idx);
+    const srcId = _traceState.srcId;
+    const dstId = _traceState.dstId;
+    const srcDev = (state.devices || []).find(function (d) { return d.id === srcId; });
+    const dstDev = (state.devices || []).find(function (d) { return d.id === dstId; });
+    const srcIp = (srcDev && srcDev.config && srcDev.config.ip) || '';
+    const dstIp = (dstDev && dstDev.config && dstDev.config.ip) || '';
+    const srcMac = srcId ? _genMockMac(srcId) : '';
+    const dstMac = dstId ? _genMockMac(dstId) : '';
+
+    // Next hop MAC for router-out context.
+    const nextHopIdx = idx + 1;
+    const nextHopId = (nextHopIdx < total) ? _traceState.hops[nextHopIdx] : null;
+    const nextHopMac = nextHopId ? _genMockMac(nextHopId) : '';
+    const routerMacOut = (role === 'intermediate' && nextHopId) ? _genMockMac(nextHopId) : '';
+
+    // Cable type: read the cable touching this hop + its next neighbour from
+    // state.cables (shape {id, fromId, fromPort, toId, toPort, type}). Default
+    // 'cat6' per spec §7.5.
+    let cableType = 'cat6';
+    if (state.cables && nextHopId) {
+      const cab = state.cables.find(function (c) {
+        return (c.fromId === hopId && c.toId === nextHopId) ||
+               (c.toId === hopId && c.fromId === nextHopId);
+      });
+      if (cab && cab.type) cableType = cab.type;
+    }
+
+    const ctx = {
+      srcIp: srcIp,
+      dstIp: dstIp,
+      srcMac: srcMac,
+      dstMac: dstMac,
+      nextHopMac: nextHopMac,
+      routerMacOut: routerMacOut,
+      cableType: cableType
+    };
+
+    const stack = _buildLayerStackForHop({ dev: dev }, role, ctx);
+
+    // If this hop is the failing hop, mark the corresponding layer's row.
+    if (_traceState.failedAt !== null && _traceState.failedAt === idx) {
+      const failLayer = (typeof _failedReasonToLayer === 'function')
+        ? _failedReasonToLayer(_traceState.reasonCode || null)
+        : 3;
+      stack.forEach(function (row) {
+        if (row.num === failLayer) row.failure = true;
+      });
+    }
+
+    let rowsHtml = '';
+    stack.forEach(function (row) {
+      const cls = 'tb3-osi-layer' +
+                  (row.active ? ' is-active' : ' is-passive') +
+                  (row.failure ? ' is-failure' : '');
+      rowsHtml +=
+        '<li class="' + cls + '" data-layer="' + row.num + '">' +
+          '<span class="tb3-osi-num">L' + row.num + '</span>' +
+          '<div>' +
+            '<span class="tb3-osi-name">' + _escAttr(row.name) + '</span>' +
+            '<span class="tb3-osi-proto">' + _escAttr(row.proto) + '</span>' +
+            '<span class="tb3-osi-verb">' + _escAttr(row.verb) + '</span>' +
+            (row.failure && _traceState.reasons && _traceState.reasons[idx]
+              ? '<span class="tb3-osi-layer-reason">' + _escAttr(_traceState.reasons[idx]) + '</span>'
+              : '') +
+          '</div>' +
+        '</li>';
+    });
+
+    return '' +
+      '<section class="tb3-osi-panel">' +
+        '<div class="tb3-osi-eyebrow">HOP ' + (idx + 1) + ' OF ' + total + '</div>' +
+        '<div class="tb3-osi-title">' + _escAttr(dev.hostname || dev.id) + '</div>' +
+        '<ol class="tb3-osi-stack">' + rowsHtml + '</ol>' +
+      '</section>';
+  }
+
+  // ===========================================================================
+  // Phase 6: _setOSILayerFiring DOM helper
+  // Adds .tb3-osi-layer-firing class to the matching row, triggers the 80ms
+  // tb3OSILayerSettle keyframe, removes class on animationend. Reduced-motion
+  // path: single 1200ms drop-shadow fade (handled by CSS @media block, JS only
+  // adds + removes the class).
+  // ===========================================================================
+  function _setOSILayerFiring(layerNum) {
+    const panel = document.getElementById('tb3-trace-panel');
+    if (!panel) return;
+    const row = panel.querySelector('.tb3-osi-layer[data-layer="' + layerNum + '"]');
+    if (!row) return;
+    row.classList.add('tb3-osi-layer-firing');
+    // Use animationend (full-motion path); fallback timer for reduced-motion path
+    // where the CSS sets animation:none.
+    let cleared = false;
+    function clear() {
+      if (cleared) return;
+      cleared = true;
+      row.classList.remove('tb3-osi-layer-firing');
+      row.removeEventListener('animationend', clear);
+    }
+    row.addEventListener('animationend', clear, { once: true });
+    setTimeout(clear, 1400);   // reduced-motion safety net (1200ms + 200ms buffer)
+  }
+
+  // ── Stage 7: failure-reason → OSI layer mapping (spec §8) ──────────────────
+  // NOTE: _failedReasonToLayer is self-contained (inlines the table) so the
+  // vm-sandbox UAT fixture can extract and run it without module-scope deps.
+  var _FAILED_REASON_TO_LAYER = {
+    'no-link':           1,
+    'no-cable-path':     1,
+    'mac-not-found':     2,
+    'no-l2-path':        2,
+    'no-ip':             3,
+    'no-gateway':        3,
+    'gateway-not-found': 3,
+    'different-subnet':  3,
+    'not-l3':            3,
+    'no-route':          3,
+    'no-router-between': 3,
+  };
+
+  function _failedReasonToLayer(reason) {
+    var map = {
+      'no-link':           1,
+      'no-cable-path':     1,
+      'mac-not-found':     2,
+      'no-l2-path':        2,
+      'no-ip':             3,
+      'no-gateway':        3,
+      'gateway-not-found': 3,
+      'different-subnet':  3,
+      'not-l3':            3,
+      'no-route':          3,
+      'no-router-between': 3,
+    };
+    if (reason && Object.prototype.hasOwnProperty.call(map, reason)) {
+      return map[reason];
+    }
+    return 3; // default: L3 Network
+  }
+
+  // ===========================================================================
+  // Phase 6: _animateEncap
+  // Per-layer cascade L7 → L1 (top-down). 80ms per ACTIVE layer with no
+  // overlap (next layer fires when prior completes). Captures rAF handle on
+  // _traceState.osiAnimHandle so _stepTrace + _pauseTrace + _endTrace can
+  // cancel cleanly per spec §9.4. onDone callback fires after the final
+  // layer's pulse completes (used by _stepTrace to chain into settle pulse +
+  // badge update).
+  // ===========================================================================
+  function _animateEncap(srcHopId, activeLayers, onDone) {
+    // Reduced-motion fast-path: light all active layers at once + skip cascade.
+    if (_reducedMotion && _reducedMotion()) {
+      (activeLayers || []).forEach(function (n) { _setOSILayerFiring(n); });
+      if (typeof onDone === 'function') setTimeout(onDone, 80);
+      return;
+    }
+
+    // Filter to layers we'll fire (active subset only, sorted top-down 7 → 1).
+    var layers = (activeLayers || []).slice().sort(function (a, b) { return b - a; });
+    if (layers.length === 0) {
+      if (typeof onDone === 'function') onDone();
+      return;
+    }
+
+    var startTs = null;
+    var perLayerMs = 80;
+    var totalMs = layers.length * perLayerMs;
+    var fired = new Array(layers.length).fill(false);
+
+    function tick(ts) {
+      if (startTs === null) startTs = ts;
+      var elapsed = ts - startTs;
+
+      // Fire each layer at its scheduled window.
+      for (var i = 0; i < layers.length; i++) {
+        if (!fired[i] && elapsed >= i * perLayerMs) {
+          fired[i] = true;
+          _setOSILayerFiring(layers[i]);
+        }
+      }
+
+      if (elapsed < totalMs) {
+        _traceState.osiAnimHandle = requestAnimationFrame(tick);
+      } else {
+        _traceState.osiAnimHandle = null;
+        if (typeof onDone === 'function') onDone();
+      }
+    }
+
+    _traceState.osiAnimHandle = requestAnimationFrame(tick);
+  }
+
+  // ===========================================================================
+  // Phase 6: _animateIntermediate
+  // Decap-up + 100ms pause + re-encap-down cascade at router/switch/firewall/vpn.
+  // Per spec §3.7. Decap-up goes L1 → relevant-layer (L2 for switch,
+  // L3 for router/l3-switch/firewall/vpn). Re-encap-down mirrors back to L1.
+  // Asymmetric easing per direction per spec §9.3 (handled by class-based
+  // CSS keyframe — JS only fires the row class; easing rides _animateEncap's
+  // existing tb3OSILayerSettle keyframe + ease tokens declared in Stage 6 CSS).
+  // ===========================================================================
+  function _animateIntermediate(hopId, deviceType, onDone) {
+    // Determine the top-of-decap layer per device type.
+    var topLayer;
+    if (deviceType === 'switch' || deviceType === 'ap' || deviceType === 'wlc') {
+      topLayer = 2;
+    } else if (deviceType === 'router' || deviceType === 'l3-switch' || deviceType === 'firewall' || deviceType === 'vpn') {
+      topLayer = 3;
+    } else {
+      topLayer = 3;   // fallback
+    }
+
+    // Reduced-motion fast-path: light L1..topLayer at once, skip cascade.
+    if (_reducedMotion && _reducedMotion()) {
+      for (var n = 1; n <= topLayer; n++) _setOSILayerFiring(n);
+      if (typeof onDone === 'function') setTimeout(onDone, 80);
+      return;
+    }
+
+    // Build cascade sequences:
+    //   Decap-up: L1 → topLayer (ascending)
+    //   Pause:    100ms
+    //   Re-encap: topLayer → L1 (descending)
+    var upSeq = [];
+    for (var u = 1; u <= topLayer; u++) upSeq.push(u);
+    var downSeq = [];
+    for (var d = topLayer; d >= 1; d--) downSeq.push(d);
+
+    var perLayerMs = 80;
+    var pauseMs = 100;
+    var upTotalMs = upSeq.length * perLayerMs;
+    var pauseEndMs = upTotalMs + pauseMs;
+    var totalMs = pauseEndMs + downSeq.length * perLayerMs;
+
+    var startTs = null;
+    var upFired = new Array(upSeq.length).fill(false);
+    var downFired = new Array(downSeq.length).fill(false);
+
+    function tick(ts) {
+      if (startTs === null) startTs = ts;
+      var elapsed = ts - startTs;
+
+      // Phase A: decap-up
+      if (elapsed < upTotalMs) {
+        for (var i = 0; i < upSeq.length; i++) {
+          if (!upFired[i] && elapsed >= i * perLayerMs) {
+            upFired[i] = true;
+            _setOSILayerFiring(upSeq[i]);
+          }
+        }
+      } else if (elapsed >= pauseEndMs) {
+        // Phase C: re-encap-down (Phase B is the 100ms pause — nothing fires)
+        var downElapsed = elapsed - pauseEndMs;
+        for (var j = 0; j < downSeq.length; j++) {
+          if (!downFired[j] && downElapsed >= j * perLayerMs) {
+            downFired[j] = true;
+            _setOSILayerFiring(downSeq[j]);
+          }
+        }
+      }
+
+      if (elapsed < totalMs) {
+        _traceState.osiAnimHandle = requestAnimationFrame(tick);
+      } else {
+        _traceState.osiAnimHandle = null;
+        if (typeof onDone === 'function') onDone();
+      }
+    }
+
+    _traceState.osiAnimHandle = requestAnimationFrame(tick);
+  }
+
+  // ===========================================================================
+  // Phase 6: _animateDecap
+  // Per-layer cascade L1 → L7 (bottom-up). Mirror of _animateEncap timing
+  // (80ms per active layer, no overlap) but bottom-up. Easing rides the
+  // tb3OSILayerSettle keyframe from CSS (same cubic-bezier as encap per
+  // spec §9.3 — mirror).
+  // ===========================================================================
+  function _animateDecap(dstHopId, activeLayers, onDone) {
+    if (_reducedMotion && _reducedMotion()) {
+      (activeLayers || []).forEach(function (n) { _setOSILayerFiring(n); });
+      if (typeof onDone === 'function') setTimeout(onDone, 80);
+      return;
+    }
+
+    // Filter to layers we'll fire (active subset only, sorted bottom-up 1 → 7).
+    var layers = (activeLayers || []).slice().sort(function (a, b) { return a - b; });
+    if (layers.length === 0) {
+      if (typeof onDone === 'function') onDone();
+      return;
+    }
+
+    var startTs = null;
+    var perLayerMs = 80;
+    var totalMs = layers.length * perLayerMs;
+    var fired = new Array(layers.length).fill(false);
+
+    function tick(ts) {
+      if (startTs === null) startTs = ts;
+      var elapsed = ts - startTs;
+      for (var i = 0; i < layers.length; i++) {
+        if (!fired[i] && elapsed >= i * perLayerMs) {
+          fired[i] = true;
+          _setOSILayerFiring(layers[i]);
+        }
+      }
+      if (elapsed < totalMs) {
+        _traceState.osiAnimHandle = requestAnimationFrame(tick);
+      } else {
+        _traceState.osiAnimHandle = null;
+        if (typeof onDone === 'function') onDone();
+      }
+    }
+
+    _traceState.osiAnimHandle = requestAnimationFrame(tick);
+  }
+
   function _osiChipForDevice(dev, isSrc, isDst) {
     if (isSrc || isDst) return 'L7 · Application';
     if (dev.type === 'switch') return 'L2 · Data Link';
@@ -3492,6 +3925,144 @@
     return 'Egress to ' + nextIp;
   }
 
+  // ===========================================================================
+  // Phase 6: _genMockMac
+  // Deterministic mock-MAC per device id. djb2 hash → 3 bytes hex →
+  // 02:00:00:XX:XX:XX (locally-administered range; U/L bit set; NOT a real OUI).
+  // Per spec §6 + §7.5 — one mock MAC per device (intentional pedagogical
+  // simplification; the L2-vs-L3 demarcation lesson lands without per-interface
+  // MAC accuracy).
+  // ===========================================================================
+  function _genMockMac(devId) {
+    const s = (devId == null) ? '' : String(devId);
+    // djb2 hash — see Phase 5 spec discussion in §6.
+    let h = 5381;
+    for (let i = 0; i < s.length; i++) {
+      h = ((h << 5) + h + s.charCodeAt(i)) | 0;
+    }
+    // Take 3 bytes from the 32-bit hash.
+    const b1 = (h >>> 16) & 0xff;
+    const b2 = (h >>> 8) & 0xff;
+    const b3 = h & 0xff;
+    function hex2(n) {
+      const r = (n & 0xff).toString(16);
+      return r.length === 1 ? '0' + r : r;
+    }
+    return '02:00:00:' + hex2(b1) + ':' + hex2(b2) + ':' + hex2(b3);
+  }
+
+  // ===========================================================================
+  // Phase 6: OSI active-layers + role + layer-stack builder
+  // ===========================================================================
+
+  function _hopRole(hopIdx) {
+    if (!_traceState || !Array.isArray(_traceState.hops)) return 'intermediate';
+    const last = _traceState.hops.length - 1;
+    if (hopIdx === 0) return 'source';
+    if (hopIdx === last) return 'dest';
+    return 'intermediate';
+  }
+
+  function _activeLayersForDev(dev) {
+    if (!dev || !dev.type) return [1, 2, 3];
+    var endpoints = ['workstation', 'server', 'laptop', 'smartphone', 'game-console', 'smart-tv'];
+    if (endpoints.indexOf(dev.type) !== -1) return [1, 2, 3, 7];  // ICMP: L4 = n/a
+    if (dev.type === 'switch' || dev.type === 'ap' || dev.type === 'wlc') return [1, 2];
+    if (dev.type === 'router' || dev.type === 'l3-switch' || dev.type === 'firewall' || dev.type === 'vpn') return [1, 2, 3];
+    if (dev.type === 'cloud' || dev.type === 'internet') return [1, 2, 3];
+    return [1, 2, 3];
+  }
+
+  // Locked stop-slop verb templates per spec §7.4 (extending Phase 5's
+  // _actionForDevice discipline to layer level). Returns the verb string for a
+  // given {layer, role, deviceType}. Period in 'Filters per policy. Forwards
+  // via routing table' is load-bearing (spec §7.4 — "period breaks the chain").
+  function _verbForLayer(layerNum, role, devType) {
+    if (layerNum === 7) {
+      if (role === 'source') return 'Originates ICMP echo request';
+      if (role === 'dest') return 'Receives ICMP echo, sends reply';
+      return 'n/a — device does not examine application data';
+    }
+    if (layerNum === 4) return 'n/a — ICMP runs directly on IP';
+    if (layerNum === 3) {
+      if (role === 'source') return 'Wraps payload with source/dest IP';
+      if (role === 'dest') return 'Accepts packet for own IP';
+      if (devType === 'switch' || devType === 'ap' || devType === 'wlc') return 'n/a — switch does not examine IP';
+      if (devType === 'firewall' || devType === 'vpn') return 'Filters per policy. Forwards via routing table';
+      return 'Forwards via routing table';
+    }
+    if (layerNum === 2) {
+      if (role === 'source') return 'Frames with source/next-hop MAC';
+      if (role === 'dest') return 'Accepts frame for own MAC';
+      if (devType === 'switch' || devType === 'ap' || devType === 'wlc') return 'Forwards via MAC table';
+      return 'Rewrites frame with own MAC + next-hop MAC';
+    }
+    if (layerNum === 1) {
+      if (role === 'dest') return 'Receives signal';
+      return 'Encodes frame as electrical signal';
+    }
+    if (layerNum === 5 || layerNum === 6) return 'n/a — not engaged by ping';
+    return '';
+  }
+
+  function _protoForLayer(layerNum, role, devType, ctx) {
+    // ctx = { srcIp, dstIp, srcMac, nextHopMac, routerMacOut, dstMac, cableType }
+    var ct = (ctx && ctx.cableType) || 'cat6';
+    if (layerNum === 7) {
+      if (role === 'source') return 'ICMP echo request · type=8 code=0';
+      if (role === 'dest') return 'ICMP echo reply queued';
+      return 'n/a';
+    }
+    if (layerNum === 4) return 'n/a';
+    if (layerNum === 3) {
+      if (role === 'source') return 'IP · src=' + (ctx.srcIp || '?') + ' · dst=' + (ctx.dstIp || '?');
+      if (role === 'dest') return 'IP · dst=' + (ctx.dstIp || '?') + ' matches';
+      if (devType === 'switch' || devType === 'ap' || devType === 'wlc') return 'n/a';
+      return 'IP · src=' + (ctx.srcIp || '?') + ' · dst=' + (ctx.dstIp || '?') + ' · TTL decrements';
+    }
+    if (layerNum === 2) {
+      if (role === 'source') return 'Ethernet · src=' + (ctx.srcMac || '?') + ' · dst=' + (ctx.nextHopMac || '?');
+      if (role === 'dest') return 'Ethernet · dst=' + (ctx.dstMac || '?') + ' matches';
+      if (devType === 'switch' || devType === 'ap' || devType === 'wlc') return 'Ethernet · forwarding table lookup';
+      return 'Ethernet · src=' + (ctx.routerMacOut || '?') + ' · dst=' + (ctx.nextHopMac || '?');
+    }
+    if (layerNum === 1) {
+      if (role === 'dest') return ct + ' · signal received';
+      return ct + ' · electrical signal';
+    }
+    if (layerNum === 5 || layerNum === 6) return 'n/a';
+    return '';
+  }
+
+  // _buildLayerStackForHop(hop, role, ctx) → array of 7 row descriptors
+  //   { num, name, proto, verb, active, failure }
+  // Layers always 7→1 (top-down render order). ctx as in _protoForLayer above.
+  function _buildLayerStackForHop(hop, role, ctx) {
+    const dev = (hop && hop.dev) || hop || {};
+    const activeNums = _activeLayersForDev(dev);
+    const layerNames = {
+      7: 'Application',
+      6: 'Presentation',
+      5: 'Session',
+      4: 'Transport',
+      3: 'Network',
+      2: 'Data Link',
+      1: 'Physical'
+    };
+    const out = [];
+    for (let n = 7; n >= 1; n--) {
+      out.push({
+        num: n,
+        name: layerNames[n],
+        proto: _protoForLayer(n, role, dev.type, ctx || {}),
+        verb: _verbForLayer(n, role, dev.type),
+        active: activeNums.indexOf(n) !== -1,
+        failure: false   // populated in Stage 7
+      });
+    }
+    return out;
+  }
+
   function _playTrace() {
     if (!_traceState || _traceState.mode === 'idle' || _traceState.mode === 'done') return;
     if (!_canStepFurther()) return;
@@ -3535,6 +4106,10 @@
       cancelAnimationFrame(_traceState.rafHandle);
       _traceState.rafHandle = null;
     }
+    if (_traceState.osiAnimHandle) {
+      cancelAnimationFrame(_traceState.osiAnimHandle);
+      _traceState.osiAnimHandle = null;
+    }
     _renderTracePanel();
   }
 
@@ -3548,6 +4123,10 @@
     if (_traceState.rafHandle) {
       cancelAnimationFrame(_traceState.rafHandle);
       _traceState.rafHandle = null;
+    }
+    if (_traceState.osiAnimHandle) {
+      cancelAnimationFrame(_traceState.osiAnimHandle);
+      _traceState.osiAnimHandle = null;
     }
     if (_traceState.packet) {
       _despawnPacket(_traceState.packet);
@@ -4175,6 +4754,10 @@
           _closeSimulate();
           return;
         }
+        if (body && body.classList.contains('osi-open')) {
+          _closeOSI();
+          return;
+        }
         if (body && body.classList.contains('trace-open')) { _closeTrace(); return; }
         if (body && body.classList.contains('diagnostic-open')) { _closeDiagnostic(); return; }
         if (document.getElementById('tb3-body').classList.contains('picker-open')) {
@@ -4248,12 +4831,12 @@
       { id: 'design',   label: 'Design',   icon: '<svg viewBox="0 0 24 24" class="tb3-mode-ic" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>',           locked: false },
       { id: 'simulate', label: 'Simulate', icon: '<svg viewBox="0 0 24 24" class="tb3-mode-ic" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M5 12h14M12 5v14"/></svg>' },
       { id: 'trace',    label: 'Trace',    icon: '<svg viewBox="0 0 24 24" class="tb3-mode-ic" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 12c4 0 4-7 8-7s4 14 8 14"/></svg>' },
-      { id: 'osi',      label: 'OSI',      icon: '<svg viewBox="0 0 24 24" class="tb3-mode-ic" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 6h18M3 10h18M3 14h18M3 18h18"/></svg>',                                                                                                                                                       locked: true },
+      { id: 'osi',      label: 'OSI',      icon: '<svg viewBox="0 0 24 24" class="tb3-mode-ic" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 6h18M3 10h18M3 14h18M3 18h18"/></svg>' },
       { id: '3d',       label: '3D',       icon: '<svg viewBox="0 0 24 24" class="tb3-mode-ic" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>',                                                                                                       locked: true },
     ];
     var html = modes.map(function (m) {
       var on = (m.id === state.mode);
-      return '<div class="tb3-mode' + (on ? ' on' : '') + (m.locked ? ' locked' : '') + '" data-mode="' + m.id + '" title="' + (m.locked ? m.label + ' — phase ' + ({'osi':5,'3d':6}[m.id]) : m.label) + '">' + m.icon + m.label + '</div>';
+      return '<div class="tb3-mode' + (on ? ' on' : '') + (m.locked ? ' locked' : '') + '" data-mode="' + m.id + '" title="' + (m.locked ? m.label + ' — phase ' + ({'3d':6}[m.id]) : m.label) + '">' + m.icon + m.label + '</div>';
     }).join('');
     row.innerHTML = html;
 
@@ -4268,6 +4851,10 @@
         }
         if (mode === 'trace') {
           _openTrace();
+          return;
+        }
+        if (mode === 'osi') {
+          _openOSI();
           return;
         }
         if (mode === state.mode) return;
@@ -4383,6 +4970,18 @@
     _playTrace: _playTrace,
     _pauseTrace: _pauseTrace,
     _endTrace: _endTrace,
+    _openOSI: _openOSI,
+    _closeOSI: function () { _closeOSI(); },
+    // Phase 6 — OSI mode test exposures
+    _genMockMac: _genMockMac,
+    _activeLayersForDev: _activeLayersForDev,
+    _failedReasonToLayer: _failedReasonToLayer,
+    _getTraceState: function () { return _traceState; },
+    _setTraceSrcDst: function (srcId, dstId) {
+      if (!_traceState) return;
+      _traceState.srcId = srcId;
+      _traceState.dstId = dstId;
+    },
   };
 
   // Also expose openTopologyBuilderV3 directly on window for the sidebar handler
