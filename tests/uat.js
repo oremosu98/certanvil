@@ -22289,6 +22289,52 @@ test('phase2: TB_V3_FREEBUILD_BACKUP does not collide with TB_V3_DRAFT', !/TB_V3
   test('P6 CSS: reduced-motion gates .tb3-osi-layer-firing',
     /prefers-reduced-motion[\s\S]{0,400}\.tb3-osi-layer-firing[\s\S]{0,200}animation:\s*none/.test(tbv3CssP6)
   );
+
+  // ---- Stage 7: _failedReasonToLayer mapping per spec §8 ----
+  function loadReasonMap() {
+    const fnBody = _fnBody(tbv3SrcP6, '_failedReasonToLayer');
+    if (!fnBody) return null;
+    const sandbox = { __out: null };
+    try {
+      vm.runInNewContext(
+        fnBody + '\n' +
+        '__out = {\n' +
+        '  noLink:           _failedReasonToLayer("no-link"),\n' +
+        '  noCablePath:      _failedReasonToLayer("no-cable-path"),\n' +
+        '  macNotFound:      _failedReasonToLayer("mac-not-found"),\n' +
+        '  noL2Path:         _failedReasonToLayer("no-l2-path"),\n' +
+        '  noIp:             _failedReasonToLayer("no-ip"),\n' +
+        '  noGateway:        _failedReasonToLayer("no-gateway"),\n' +
+        '  gatewayNotFound:  _failedReasonToLayer("gateway-not-found"),\n' +
+        '  differentSubnet:  _failedReasonToLayer("different-subnet"),\n' +
+        '  notL3:            _failedReasonToLayer("not-l3"),\n' +
+        '  noRoute:          _failedReasonToLayer("no-route"),\n' +
+        '  noRouterBetween:  _failedReasonToLayer("no-router-between"),\n' +
+        '  unknown:          _failedReasonToLayer("totally-fake-reason"),\n' +
+        '  nullReason:       _failedReasonToLayer(null)\n' +
+        '};',
+        sandbox
+      );
+    } catch (e) { return null; }
+    return sandbox.__out;
+  }
+
+  {
+    const out = loadReasonMap();
+    test('P6: failure no-link → L1',          out && out.noLink === 1);
+    test('P6: failure no-cable-path → L1',    out && out.noCablePath === 1);
+    test('P6: failure mac-not-found → L2',    out && out.macNotFound === 2);
+    test('P6: failure no-l2-path → L2',       out && out.noL2Path === 2);
+    test('P6: failure no-ip → L3',            out && out.noIp === 3);
+    test('P6: failure no-gateway → L3',       out && out.noGateway === 3);
+    test('P6: failure gateway-not-found → L3', out && out.gatewayNotFound === 3);
+    test('P6: failure different-subnet → L3', out && out.differentSubnet === 3);
+    test('P6: failure not-l3 → L3',           out && out.notL3 === 3);
+    test('P6: failure no-route → L3',         out && out.noRoute === 3);
+    test('P6: failure no-router-between → L3', out && out.noRouterBetween === 3);
+    test('P6: failure unknown defaults → L3', out && out.unknown === 3);
+    test('P6: failure null defaults → L3',    out && out.nullReason === 3);
+  }
 })();
 
 // ── Summary ──
