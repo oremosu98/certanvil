@@ -22112,6 +22112,43 @@ test('phase2: TB_V3_FREEBUILD_BACKUP does not collide with TB_V3_DRAFT', !/TB_V3
   );
 
   // Expose tbv3SrcP6 + tbv3CssP6 for downstream Phase 6 stages by reusing this block.
+
+  // ---- Stage 3: _genMockMac determinism + format ----
+  function loadGenMockMac() {
+    const fnBody = _fnBody(tbv3SrcP6, '_genMockMac');
+    const sandbox = { __out: null };
+    vm.runInNewContext(
+      'function _genMockMac(devId) { ' + fnBody + ' }\n' +
+      '__out = {\n' +
+      '  a1: _genMockMac("dev_a"),\n' +
+      '  a2: _genMockMac("dev_a"),\n' +
+      '  b:  _genMockMac("dev_b"),\n' +
+      '  empty: _genMockMac(""),\n' +
+      '  null:  _genMockMac(null)\n' +
+      '};',
+      sandbox
+    );
+    return sandbox.__out;
+  }
+
+  {
+    const out = loadGenMockMac();
+    test('P6: _genMockMac returns locally-administered MAC prefix 02:00:00:',
+      out && /^02:00:00:[0-9a-f]{2}:[0-9a-f]{2}:[0-9a-f]{2}$/.test(out.a1)
+    );
+    test('P6: _genMockMac is deterministic (same input → same MAC)',
+      out && out.a1 === out.a2
+    );
+    test('P6: _genMockMac is injective on distinct ids',
+      out && out.a1 !== out.b
+    );
+    test('P6: _genMockMac handles empty string defensively',
+      out && /^02:00:00:[0-9a-f]{2}:[0-9a-f]{2}:[0-9a-f]{2}$/.test(out.empty)
+    );
+    test('P6: _genMockMac handles null defensively',
+      out && /^02:00:00:[0-9a-f]{2}:[0-9a-f]{2}:[0-9a-f]{2}$/.test(out.null)
+    );
+  }
 })();
 
 // ── Summary ──
