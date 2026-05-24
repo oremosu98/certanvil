@@ -22776,6 +22776,23 @@ test('phase2: TB_V3_FREEBUILD_BACKUP does not collide with TB_V3_DRAFT', !/TB_V3
   );
 })();
 
+// ══════════════════════════════════════════
+// TB v3 Phase 7 v2 Polish Stage 4 UAT fixtures — centroid offset
+// ══════════════════════════════════════════
+(function _tbv3PolishStage4Fixtures() {
+  const fs = require('fs');
+  const path = require('path');
+  const tbv3SrcPo = fs.readFileSync(path.join(__dirname, '..', 'features', 'topology-builder-v3.js'), 'utf8');
+
+  test('POLISH: _computeSceneCentroid helper defined',
+    /function\s+_computeSceneCentroid\s*\(/.test(tbv3SrcPo)
+  );
+  test('POLISH: _build3DDeviceEl + _build3DCableEl accept sceneCx/sceneCy params',
+    /function\s+_build3DDeviceEl\s*\([^)]*sceneCx[^)]*sceneCy/.test(tbv3SrcPo) &&
+    /function\s+_build3DCableEl\s*\([^)]*sceneCx[^)]*sceneCy/.test(tbv3SrcPo)
+  );
+})();
+
 // ── Summary ──
 console.log('\n' + '═'.repeat(50));
 const total = results.pass + results.fail;

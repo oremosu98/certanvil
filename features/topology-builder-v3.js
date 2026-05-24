@@ -4370,7 +4370,25 @@
   // Phase 7 v2 §3: Extruded device cards
   // ---------------------------------------------------------------------------
 
-  function _build3DDeviceEl(dev) {
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Phase 7 v2 Polish: scene centroid helper.
+  // Returns {cx, cy} = arithmetic mean of all device positions, so the
+  // topology can be translated to center around the stage origin (viewport
+  // 50/50). Returns {0,0} for empty topologies.
+  // ═══════════════════════════════════════════════════════════════════════════
+  function _computeSceneCentroid(devices) {
+    if (!Array.isArray(devices) || devices.length === 0) return { cx: 0, cy: 0 };
+    var sumX = 0, sumY = 0;
+    for (var i = 0; i < devices.length; i++) {
+      sumX += (typeof devices[i].x === 'number' ? devices[i].x : 0);
+      sumY += (typeof devices[i].y === 'number' ? devices[i].y : 0);
+    }
+    return { cx: sumX / devices.length, cy: sumY / devices.length };
+  }
+
+  function _build3DDeviceEl(dev, sceneCx, sceneCy) {
+    sceneCx = sceneCx || 0;
+    sceneCy = sceneCy || 0;
     var iconHtml = (TB_V3_DEVICE_TYPES && TB_V3_DEVICE_TYPES[dev.type] && TB_V3_DEVICE_TYPES[dev.type].icon)
       ? TB_V3_DEVICE_TYPES[dev.type].icon
       : '';
@@ -4389,11 +4407,11 @@
     el.className = 'tb3-3d-dev';
     el.setAttribute('data-device-id', _escAttr(dev.id));
     el.setAttribute('data-family', family);
-    // Position card in 3D space using device's canvas coordinates as a base.
-    // translate3d is GPU-composited and integrates cleanly with transform-style:
-    // preserve-3d on the stage (camera rotation applied in Stage 5).
-    var x = (typeof dev.x === 'number' ? dev.x : 0);
-    var y = (typeof dev.y === 'number' ? dev.y : 0);
+    // Position card in 3D space using centroid-relative coords so the topology
+    // is centered around the stage origin (viewport 50/50) regardless of its
+    // raw canvas-coordinate range. Stage 4 centroid offset fix.
+    var x = (typeof dev.x === 'number' ? dev.x : 0) - sceneCx;   // NEW: centroid-relative
+    var y = (typeof dev.y === 'number' ? dev.y : 0) - sceneCy;
     el.style.transform = 'translate3d(' + x + 'px, ' + y + 'px, 0)';
     el.innerHTML =
       '<div class="tb3-3d-dev-top">' + iconHtml + labelHtml + '</div>' +
@@ -4415,12 +4433,16 @@
     return null;
   }
 
-  function _build3DCableEl(cab, fromDev, toDev) {
-    // Cable anchors: bottom-edge midpoint of each device card (44px from left, 60px from top)
-    var x1 = (fromDev.x || 0) + 44;
-    var y1 = (fromDev.y || 0) + 60;
-    var x2 = (toDev.x || 0) + 44;
-    var y2 = (toDev.y || 0) + 60;
+  function _build3DCableEl(cab, fromDev, toDev, sceneCx, sceneCy) {
+    sceneCx = sceneCx || 0;
+    sceneCy = sceneCy || 0;
+    // Cable anchors: bottom-edge midpoint of each device card (44px from left, 60px from top).
+    // Subtract centroid from each endpoint so cable bezier uses the same shifted coords
+    // as the device transforms (Stage 4 centroid offset fix).
+    var x1 = ((fromDev.x || 0) - sceneCx) + 44;
+    var y1 = ((fromDev.y || 0) - sceneCy) + 60;
+    var x2 = ((toDev.x || 0) - sceneCx) + 44;
+    var y2 = ((toDev.y || 0) - sceneCy) + 60;
 
     // Bezier control points: midpoint X with a slight Y offset for a natural sag.
     // ui-ux-pro-max recommendation: cap sag at 70px so long cables don't droop excessively
@@ -4728,8 +4750,10 @@
     for (var i = 0; i < existing.length; i++) {
       existing[i].parentNode.removeChild(existing[i]);
     }
+    var centroid = _computeSceneCentroid(state.devices);   // Stage 4: centroid offset
+
     for (var j = 0; j < state.devices.length; j++) {
-      stage.appendChild(_build3DDeviceEl(state.devices[j]));
+      stage.appendChild(_build3DDeviceEl(state.devices[j], centroid.cx, centroid.cy));
     }
 
     // Append cables (Stage 4)
@@ -4738,7 +4762,7 @@
       var fromDev = _findDeviceById(cab.fromId);
       var toDev = _findDeviceById(cab.toId);
       if (!fromDev || !toDev) continue;
-      stage.appendChild(_build3DCableEl(cab, fromDev, toDev));
+      stage.appendChild(_build3DCableEl(cab, fromDev, toDev, centroid.cx, centroid.cy));
     }
 
     // Empty state — no devices on canvas
