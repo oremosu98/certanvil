@@ -22157,7 +22157,7 @@ test('phase2: TB_V3_FREEBUILD_BACKUP does not collide with TB_V3_DRAFT', !/TB_V3
     vm.runInNewContext(
       fnBody + '\n' +
       '__out = {\n' +
-      '  workstation: _activeLayersForDev({type:"workstation"}),\n' +
+      '  pc:          _activeLayersForDev({type:"pc"}),\n' +
       '  server:      _activeLayersForDev({type:"server"}),\n' +
       '  laptop:      _activeLayersForDev({type:"laptop"}),\n' +
       '  smartphone:  _activeLayersForDev({type:"smartphone"}),\n' +
@@ -22176,7 +22176,7 @@ test('phase2: TB_V3_FREEBUILD_BACKUP does not collide with TB_V3_DRAFT', !/TB_V3
     let out = null;
     try { out = loadActiveLayers(); } catch(e) { /* function not yet implemented */ }
     function eq(a, b) { return a && b && JSON.stringify(a.slice().sort()) === JSON.stringify(b.slice().sort()); }
-    test('P6: endpoint workstation active = [1,2,3,7] (ICMP)', out && eq(out.workstation, [1,2,3,7]));
+    test('P6: endpoint pc active = [1,2,3,7] (ICMP)', out && eq(out.pc, [1,2,3,7]));
     test('P6: endpoint server active = [1,2,3,7]', out && eq(out.server, [1,2,3,7]));
     test('P6: endpoint laptop active = [1,2,3,7]', out && eq(out.laptop, [1,2,3,7]));
     test('P6: endpoint smartphone active = [1,2,3,7]', out && eq(out.smartphone, [1,2,3,7]));
@@ -22516,6 +22516,96 @@ test('phase2: TB_V3_FREEBUILD_BACKUP does not collide with TB_V3_DRAFT', !/TB_V3
     /_on3DPopupFocusIn[\s\S]{0,500}modal\.contains[\s\S]{0,200}tb3-3d-popup-close-btn[\s\S]{0,80}\.focus/.test(tbv3SrcP7v2)
   );
 
+})();
+
+(function _tbv3V1ParityFixtures() {
+  const fs = require('fs');
+  const path = require('path');
+  const tbv3SrcV1P = fs.readFileSync(path.join(__dirname, '..', 'features', 'topology-builder-v3.js'), 'utf8');
+
+  test('V1P: TB_V3_DEVICE_TYPES uses V1 id wap (not ap)',
+    /TB_V3_DEVICE_TYPES[\s\S]{0,3000}'wap':\s*\{[\s\S]{0,200}label:\s*'WAP'/.test(tbv3SrcV1P) &&
+    !/'ap':\s*\{[\s\S]{0,80}label:\s*'Access Point'/.test(tbv3SrcV1P)
+  );
+  test('V1P: TB_V3_DEVICE_TYPES uses V1 id pc (not workstation)',
+    /'pc':\s*\{[\s\S]{0,80}label:\s*'PC'/.test(tbv3SrcV1P) &&
+    !/'workstation':\s*\{[\s\S]{0,80}label:\s*'Workstation'/.test(tbv3SrcV1P)
+  );
+  test('V1P: TB_V3_DEVICE_TYPES uses V1 id ids (not ids-ips)',
+    /'ids':\s*\{[\s\S]{0,80}label:\s*'IDS\/IPS'/.test(tbv3SrcV1P)
+  );
+  test('V1P: TB_V3_DEVICE_TYPES uses V1 id vpg (not vpn-gateway)',
+    /'vpg':\s*\{[\s\S]{0,80}label:\s*'VPN Gateway'/.test(tbv3SrcV1P)
+  );
+  test('V1P: TB_V3_DEVICE_TYPES uses V1 id isp-router (not isp-modem)',
+    /'isp-router':\s*\{[\s\S]{0,80}label:\s*'ISP Router'/.test(tbv3SrcV1P)
+  );
+  test('V1P: _V1_TYPE_RENAMES migration map defined',
+    /_V1_TYPE_RENAMES\s*=\s*\{[\s\S]{0,400}'ap':\s*'wap'[\s\S]{0,400}'workstation':\s*'pc'/.test(tbv3SrcV1P)
+  );
+  test('V1P: _migrateStateTypesToV1 is defined',
+    /function\s+_migrateStateTypesToV1\s*\(/.test(tbv3SrcV1P)
+  );
+  // Stage 2 V1-parity guards
+  test('V1P Stage2: TB_V3_DEVICE_TYPES includes all 16 new device type ids',
+    ['dmz-switch','printer','voip','iot','public-web','public-file','public-cloud',
+     'vpc','cloud-subnet','igw','nat-gw','tgw','onprem-dc','sase-edge','dns-server','bridge']
+      .every(id => new RegExp("'" + id + "'\\s*:\\s*\\{").test(tbv3SrcV1P))
+  );
+  test('V1P Stage2: TB_V3_PALETTE_GROUPS includes Public Cloud group with igw and tgw',
+    /name:\s*'Public Cloud'[\s\S]{0,300}'igw'[\s\S]{0,100}'tgw'/.test(tbv3SrcV1P)
+  );
+  test('V1P Stage2: _autoFillIp ENDPOINT_TYPES includes new endpoint device types',
+    /ENDPOINT_TYPES\s*=\s*\[[\s\S]{0,200}'printer'[\s\S]{0,100}'voip'[\s\S]{0,100}'iot'[\s\S]{0,100}'dns-server'/.test(tbv3SrcV1P)
+  );
+  // ---- Stage 2 follow-up: inspector ENDPOINT_TYPES includes new endpoint types ----
+  test('V1P: inspector ENDPOINT_TYPES includes printer/voip/iot/dns-server',
+    (function() {
+      // Match the SECOND ENDPOINT_TYPES (inside _renderInspector around line 2633)
+      // The first one is _autoFillIp's earlier in the file.
+      var matches = tbv3SrcV1P.match(/var\s+ENDPOINT_TYPES\s*=\s*\[[^\]]+\]/g) || [];
+      if (matches.length < 2) return false;
+      var inspectorArr = matches[1];
+      return /'printer'/.test(inspectorArr) &&
+             /'voip'/.test(inspectorArr) &&
+             /'iot'/.test(inspectorArr) &&
+             /'dns-server'/.test(inspectorArr);
+    })()
+  );
+
+  // ---- Stage 3: 16 ported V1 scenarios ----
+  test('V1P: ported V1 scenarios present in TB_V3_SCENARIOS',
+    /id:\s*'small-office'/.test(tbv3SrcV1P) &&
+    /id:\s*'enterprise-ids-lb'/.test(tbv3SrcV1P) &&
+    /id:\s*'branch-office-wireless'/.test(tbv3SrcV1P) &&
+    /id:\s*'home-network'/.test(tbv3SrcV1P) &&
+    /id:\s*'cloud-vpc-architecture'/.test(tbv3SrcV1P) &&
+    /id:\s*'multi-vpc-transit-gateway'/.test(tbv3SrcV1P) &&
+    /id:\s*'sase-architecture'/.test(tbv3SrcV1P) &&
+    /id:\s*'sd-wan-network'/.test(tbv3SrcV1P) &&
+    /id:\s*'nat-gateway-cloud'/.test(tbv3SrcV1P) &&
+    /id:\s*'internet-gateway-cloud'/.test(tbv3SrcV1P) &&
+    /id:\s*'vpc-peering-cloud'/.test(tbv3SrcV1P) &&
+    /id:\s*'metropolitan-area-network'/.test(tbv3SrcV1P) &&
+    /id:\s*'site-to-site-ipsec-vpn'/.test(tbv3SrcV1P) &&
+    /id:\s*'remote-access-vpn'/.test(tbv3SrcV1P) &&
+    /id:\s*'cellular-4g-5g-wan'/.test(tbv3SrcV1P) &&
+    /id:\s*'satellite-wan'/.test(tbv3SrcV1P) &&
+    /id:\s*'hybrid-cloud-vpn'/.test(tbv3SrcV1P)
+  );
+
+  // ---- Stage 4: title-case sweep ----
+  test('V1P: _titleCase helper defined',
+    /function\s+_titleCase\s*\(/.test(tbv3SrcV1P)
+  );
+  test('V1P: scenario titles are title-cased (spot check)',
+    /title:\s*'Star Topology With Central Switch'/.test(tbv3SrcV1P) &&
+    /title:\s*'DMZ \/ Screened Subnet'/.test(tbv3SrcV1P) &&
+    /title:\s*'Router-on-a-Stick/.test(tbv3SrcV1P)
+  );
+  test('V1P: no sentence-case scenario titles remain (regression guard)',
+    !/title:\s*'Star topology with central switch'/.test(tbv3SrcV1P)
+  );
 })();
 
 // ── Summary ──

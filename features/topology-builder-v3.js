@@ -107,7 +107,7 @@
   // APP_VERSION hasn't changed. After v3 ships in a version-bump cycle,
   // APP_VERSION will be the canonical cache key and this constant can be
   // retired (or kept at .0 forever).
-  var TB3_CSS_REV = 'r13'; // r13: Phase 7 v2 hotfix — modal z-index 70 → 10001 (was rendering behind builder stacking context)
+  var TB3_CSS_REV = 'r14'; // r14: V1 parity — new device icons + ports + scenarios + title-case
 
   function _ensureCss() {
     if (document.querySelector('link[href*="topology-builder-v3.css"]')) return;
@@ -124,6 +124,7 @@
   function openTopologyBuilderV3() {
     _ensureCss();
     _loadState();
+    _migrateStateTypesToV1();
     _renderWorkspace();
   }
 
@@ -132,7 +133,7 @@
   // ───────────────────────────────────────────────────────────
 
   function _autoFillIp(dev, state) {
-    var ENDPOINT_TYPES = ['workstation','server','laptop','smartphone'];
+    var ENDPOINT_TYPES = ['pc','server','laptop','smartphone','printer','voip','iot','dns-server'];
     var L3_MULTI_TYPES = ['router','l3-switch','firewall','vpn'];
     if (ENDPOINT_TYPES.indexOf(dev.type) === -1 && L3_MULTI_TYPES.indexOf(dev.type) === -1) {
       return; // L2 / cloud / internet — no config
@@ -435,7 +436,7 @@
     var required = (completion && completion.requiredCables) || [];
     var devices = (state && state.devices) || [];
     var cables = (state && state.cables) || [];
-    var L2_TYPES = { 'switch':1,'hub':1,'ap':1,'wlc':1 };
+    var L2_TYPES = { 'switch':1,'hub':1,'wap':1,'wlc':1 };
     var L3_MULTI_TYPES = { 'router':1,'l3-switch':1,'firewall':1,'vpn':1,'cloud':1,'internet':1 };
     function pickByType(t, excludeId) {
       for (var i = 0; i < devices.length; i++) {
@@ -590,16 +591,16 @@
   var TB_V3_SCENARIOS = [
     {
       id: 'star-topology',
-      title: 'Star topology with central switch',
+      title: 'Star Topology With Central Switch',
       category: 'topology',
       objectiveRefs: ['1.2', '2.1'],
       startingState: {
         devices: [
           { id: 'sc_star_1', type: 'switch',      x: 600, y: 360, label: 'SW1' },
           { id: 'sc_star_2', type: 'server',      x: 360, y: 200, label: 'SRV-01', config: { ip: '192.168.10.10', mask: 24, gateway: '192.168.10.1' } },
-          { id: 'sc_star_3', type: 'workstation', x: 360, y: 520, label: 'WS-01',  config: { ip: '192.168.10.20', mask: 24, gateway: '192.168.10.1' } },
-          { id: 'sc_star_4', type: 'workstation', x: 840, y: 520, label: 'WS-02',  config: { ip: '192.168.10.21', mask: 24, gateway: '192.168.10.1' } },
-          { id: 'sc_star_5', type: 'workstation', x: 840, y: 200, label: 'WS-03',  config: { ip: '192.168.10.22', mask: 24, gateway: '192.168.10.1' } },
+          { id: 'sc_star_3', type: 'pc', x: 360, y: 520, label: 'WS-01',  config: { ip: '192.168.10.20', mask: 24, gateway: '192.168.10.1' } },
+          { id: 'sc_star_4', type: 'pc', x: 840, y: 520, label: 'WS-02',  config: { ip: '192.168.10.21', mask: 24, gateway: '192.168.10.1' } },
+          { id: 'sc_star_5', type: 'pc', x: 840, y: 200, label: 'WS-03',  config: { ip: '192.168.10.22', mask: 24, gateway: '192.168.10.1' } },
         ],
         cables: [
           { id: 'sc_star_c1', fromId: 'sc_star_1', toId: 'sc_star_2', type: 'cat6' },
@@ -618,17 +619,17 @@
         examRelevance: 'N10-009 obj 1.2 (topology shapes) + obj 2.1 (switching). Often paired with mesh/ring contrasts on PBQs.',
       },
       completion: {
-        requiredDevices: ['switch','server','workstation'],
-        expectedCount:   { switch:1, server:1, workstation:3 },
+        requiredDevices: ['switch','server','pc'],
+        expectedCount:   { switch:1, server:1, pc:3 },
         requiredCables:  [
           { from:'switch', to:'server' },
-          { from:'switch', to:'workstation' },
+          { from:'switch', to:'pc' },
         ],
       },
     },
     {
       id: 'mesh-topology',
-      title: 'Full mesh topology (4 nodes)',
+      title: 'Full Mesh Topology (4 Nodes)',
       category: 'topology',
       objectiveRefs: ['1.2'],
       startingState: {
@@ -666,7 +667,7 @@
     },
     {
       id: 'three-tier-hierarchical',
-      title: '3-tier hierarchical (core / distribution / access)',
+      title: '3-Tier Hierarchical (Core / Distribution / Access)',
       category: 'architecture',
       objectiveRefs: ['1.6'],
       startingState: {
@@ -708,7 +709,7 @@
     },
     {
       id: 'hub-and-spoke-wan',
-      title: 'Hub-and-spoke WAN with branch routers',
+      title: 'Hub-and-Spoke WAN With Branch Routers',
       category: 'wan',
       objectiveRefs: ['1.6', '2.1'],
       startingState: {
@@ -745,7 +746,7 @@
     },
     {
       id: 'hybrid-cloud',
-      title: 'Hybrid cloud (on-prem + public cloud)',
+      title: 'Hybrid Cloud (On-Prem + Public Cloud)',
       category: 'cloud',
       objectiveRefs: ['1.8'],
       startingState: {
@@ -755,7 +756,7 @@
           { id: 'sc_hyb_vpn',       type: 'vpn',         x: 720, y: 360, label: 'IPSEC-VPN', interfaces:[{ ip:'10.0.99.2', mask:30 },{ ip:'10.100.0.1', mask:24 }] },
           { id: 'sc_hyb_cloud',     type: 'cloud',       x: 920, y: 360, label: 'AWS-VPC',   interfaces:[{ ip:'10.100.0.2', mask:24 }] },
           { id: 'sc_hyb_srv',       type: 'server',      x: 320, y: 180, label: 'APP-01',    config:{ ip:'192.168.10.10', mask:24, gateway:'192.168.10.2' } },
-          { id: 'sc_hyb_ws',        type: 'workstation', x: 320, y: 540, label: 'WS-01',     config:{ ip:'192.168.10.20', mask:24, gateway:'192.168.10.2' } },
+          { id: 'sc_hyb_ws',        type: 'pc', x: 320, y: 540, label: 'WS-01',     config:{ ip:'192.168.10.20', mask:24, gateway:'192.168.10.2' } },
         ],
         cables: [
           { id: 'sc_hyb_c1', fromId: 'sc_hyb_onprem_sw', toId: 'sc_hyb_srv',       type: 'cat6' },
@@ -786,16 +787,16 @@
     },
     {
       id: 'wireless-controller-bss-ess',
-      title: 'Wireless infrastructure (BSS + ESS) with controller',
+      title: 'Wireless Infrastructure (BSS + ESS) With Controller',
       category: 'wireless',
       objectiveRefs: ['2.4'],
       startingState: {
         devices: [
           { id: 'sc_wls_wlc', type: 'wlc',        x: 600, y: 180, label: 'WLC-01' },
           { id: 'sc_wls_sw',  type: 'switch',     x: 600, y: 360, label: 'CORE-SW' },
-          { id: 'sc_wls_ap1', type: 'ap',         x: 360, y: 540, label: 'AP-01' },
-          { id: 'sc_wls_ap2', type: 'ap',         x: 600, y: 540, label: 'AP-02' },
-          { id: 'sc_wls_ap3', type: 'ap',         x: 840, y: 540, label: 'AP-03' },
+          { id: 'sc_wls_ap1', type: 'wap',         x: 360, y: 540, label: 'AP-01' },
+          { id: 'sc_wls_ap2', type: 'wap',         x: 600, y: 540, label: 'AP-02' },
+          { id: 'sc_wls_ap3', type: 'wap',         x: 840, y: 540, label: 'AP-03' },
           { id: 'sc_wls_cli1',type: 'smartphone', x: 280, y: 700, label: 'PHONE',  config:{ ip:'192.168.10.20', mask:24, gateway:'192.168.10.1' } },
           { id: 'sc_wls_cli2',type: 'laptop',     x: 520, y: 700, label: 'LAPTOP', config:{ ip:'192.168.10.21', mask:24, gateway:'192.168.10.1' } },
         ],
@@ -816,17 +817,17 @@
         examRelevance: 'N10-009 obj 2.4 — wireless deployment models. Differentiate ad-hoc / infrastructure / mesh.',
       },
       completion: {
-        requiredDevices: ['wlc','switch','ap'],
-        expectedCount:   { wlc:1, switch:1, ap:3 },
+        requiredDevices: ['wlc','switch','wap'],
+        expectedCount:   { wlc:1, switch:1, wap:3 },
         requiredCables:  [
           { from:'wlc',    to:'switch' },
-          { from:'switch', to:'ap' },
+          { from:'switch', to:'wap' },
         ],
       },
     },
     {
       id: 'dmz-screened-subnet',
-      title: 'DMZ / screened subnet',
+      title: 'DMZ / Screened Subnet',
       category: 'security',
       objectiveRefs: ['1.6', '4.1'],
       startingState: {
@@ -867,7 +868,7 @@
     },
     {
       id: 'router-on-a-stick',
-      title: 'Router-on-a-stick (inter-VLAN routing)',
+      title: 'Router-on-a-Stick (Inter-VLAN Routing)',
       category: 'vlan',
       objectiveRefs: ['2.1', '2.3'],
       startingState: {
@@ -877,10 +878,10 @@
             { ip:'192.168.20.1', mask:24 },
           ] },
           { id: 'sc_roas_switch', type: 'switch', x: 600, y: 380, label: 'SW1' },
-          { id: 'sc_roas_v10_a',  type: 'workstation', x: 320, y: 560, label: 'VLAN10-A', config:{ ip:'192.168.10.10', mask:24, gateway:'192.168.10.1' } },
-          { id: 'sc_roas_v10_b',  type: 'workstation', x: 480, y: 560, label: 'VLAN10-B', config:{ ip:'192.168.10.11', mask:24, gateway:'192.168.10.1' } },
-          { id: 'sc_roas_v20_a',  type: 'workstation', x: 720, y: 560, label: 'VLAN20-A', config:{ ip:'192.168.20.10', mask:24, gateway:'192.168.20.1' } },
-          { id: 'sc_roas_v20_b',  type: 'workstation', x: 880, y: 560, label: 'VLAN20-B', config:{ ip:'192.168.20.11', mask:24, gateway:'192.168.20.1' } },
+          { id: 'sc_roas_v10_a',  type: 'pc', x: 320, y: 560, label: 'VLAN10-A', config:{ ip:'192.168.10.10', mask:24, gateway:'192.168.10.1' } },
+          { id: 'sc_roas_v10_b',  type: 'pc', x: 480, y: 560, label: 'VLAN10-B', config:{ ip:'192.168.10.11', mask:24, gateway:'192.168.10.1' } },
+          { id: 'sc_roas_v20_a',  type: 'pc', x: 720, y: 560, label: 'VLAN20-A', config:{ ip:'192.168.20.10', mask:24, gateway:'192.168.20.1' } },
+          { id: 'sc_roas_v20_b',  type: 'pc', x: 880, y: 560, label: 'VLAN20-B', config:{ ip:'192.168.20.11', mask:24, gateway:'192.168.20.1' } },
         ],
         cables: [
           { id: 'sc_roas_c1', fromId: 'sc_roas_router', toId: 'sc_roas_switch', type: 'cat6' },
@@ -900,17 +901,17 @@
         examRelevance: 'N10-009 obj 2.1 (switching) + obj 2.3 (VLANs). Commonly tested against L3-switch inter-VLAN.',
       },
       completion: {
-        requiredDevices: ['router','switch','workstation'],
-        expectedCount:   { router:1, switch:1, workstation:4 },
+        requiredDevices: ['router','switch','pc'],
+        expectedCount:   { router:1, switch:1, pc:4 },
         requiredCables:  [
           { from:'router', to:'switch' },
-          { from:'switch', to:'workstation' },
+          { from:'switch', to:'pc' },
         ],
       },
     },
     {
       id: 'ring-topology',
-      title: 'Ring topology (5 nodes, closed loop)',
+      title: 'Ring Topology (5 Nodes, Closed Loop)',
       category: 'topology',
       objectiveRefs: ['1.2'],
       startingState: {
@@ -948,7 +949,7 @@
     },
     {
       id: 'point-to-point-topology',
-      title: 'Point-to-point topology (single dedicated link)',
+      title: 'Point-to-Point Topology (Single Dedicated Link)',
       category: 'topology',
       objectiveRefs: ['1.2'],
       startingState: {
@@ -979,7 +980,7 @@
     },
     {
       id: 'spine-leaf-fabric',
-      title: 'Spine-leaf fabric (2 spines, 4 leaves)',
+      title: 'Spine-Leaf Fabric (2 Spines, 4 Leaves)',
       category: 'architecture',
       objectiveRefs: ['1.6'],
       startingState: {
@@ -1021,7 +1022,7 @@
     },
     {
       id: 'collapsed-core',
-      title: 'Collapsed core (2 L3 + 4 access)',
+      title: 'Collapsed Core (2 L3 + 4 Access)',
       category: 'architecture',
       objectiveRefs: ['1.6'],
       startingState: {
@@ -1062,16 +1063,16 @@
     },
     {
       id: 'soho-network',
-      title: 'SOHO (router + switch + AP + endpoints)',
+      title: 'SOHO (Router + Switch + AP + Endpoints)',
       category: 'architecture',
       objectiveRefs: ['1.6'],
       startingState: {
         devices: [
           { id: 'sc_soho_rtr', type: 'router',      x: 520, y: 200, label: 'GATEWAY', interfaces:[{ ip:'192.168.10.1', mask:24 }] },
           { id: 'sc_soho_sw',  type: 'switch',      x: 520, y: 360, label: 'LAN-SW' },
-          { id: 'sc_soho_ap',  type: 'ap',          x: 760, y: 360, label: 'AP-01' },
-          { id: 'sc_soho_ws1', type: 'workstation', x: 280, y: 520, label: 'WS-1',   config:{ ip:'192.168.10.10', mask:24, gateway:'192.168.10.1' } },
-          { id: 'sc_soho_ws2', type: 'workstation', x: 440, y: 520, label: 'WS-2',   config:{ ip:'192.168.10.11', mask:24, gateway:'192.168.10.1' } },
+          { id: 'sc_soho_ap',  type: 'wap',          x: 760, y: 360, label: 'AP-01' },
+          { id: 'sc_soho_ws1', type: 'pc', x: 280, y: 520, label: 'WS-1',   config:{ ip:'192.168.10.10', mask:24, gateway:'192.168.10.1' } },
+          { id: 'sc_soho_ws2', type: 'pc', x: 440, y: 520, label: 'WS-2',   config:{ ip:'192.168.10.11', mask:24, gateway:'192.168.10.1' } },
           { id: 'sc_soho_lap', type: 'laptop',      x: 760, y: 520, label: 'LAPTOP', config:{ ip:'192.168.10.20', mask:24, gateway:'192.168.10.1' } },
           { id: 'sc_soho_phn', type: 'smartphone',  x: 920, y: 520, label: 'PHONE',  config:{ ip:'192.168.10.21', mask:24, gateway:'192.168.10.1' } },
         ],
@@ -1092,17 +1093,17 @@
         examRelevance: 'N10-009 obj 1.6 — recognise the SOHO baseline; contrast its flat L2 against enterprise 3-tier.',
       },
       completion: {
-        requiredDevices: ['router', 'switch', 'ap'],
-        expectedCount:   { router: 1, switch: 1, ap: 1 },
+        requiredDevices: ['router', 'switch', 'wap'],
+        expectedCount:   { router: 1, switch: 1, wap: 1 },
         requiredCables:  [
           { from:'router', to:'switch' },
-          { from:'switch', to:'ap' },
+          { from:'switch', to:'wap' },
         ],
       },
     },
     {
       id: 'mpls-wan',
-      title: 'MPLS WAN (provider any-to-any)',
+      title: 'MPLS WAN (Provider Any-to-Any)',
       category: 'wan',
       objectiveRefs: ['1.6'],
       startingState: {
@@ -1147,7 +1148,7 @@
     },
     {
       id: 'partial-mesh-wan',
-      title: 'Partial mesh WAN (4 routers, 4 links)',
+      title: 'Partial Mesh WAN (4 Routers, 4 Links)',
       category: 'wan',
       objectiveRefs: ['1.6'],
       startingState: {
@@ -1183,7 +1184,7 @@
     },
     {
       id: 'dual-isp-failover',
-      title: 'Dual-ISP failover (redundant internet edge)',
+      title: 'Dual-ISP Failover (Redundant Internet Edge)',
       category: 'wan',
       objectiveRefs: ['1.6'],
       startingState: {
@@ -1222,7 +1223,7 @@
     },
     {
       id: 'public-cloud-only',
-      title: 'Public cloud only (no on-prem)',
+      title: 'Public Cloud Only (No On-Prem)',
       category: 'cloud',
       objectiveRefs: ['1.8'],
       startingState: {
@@ -1231,7 +1232,7 @@
           { id: 'sc_pco_fw',   type: 'firewall',    x: 600, y: 320, label: 'CLOUD-FW', interfaces:[{ ip:'203.0.113.2', mask:30 },{ ip:'10.100.0.1', mask:24 }] },
           { id: 'sc_pco_srv1', type: 'server',      x: 380, y: 480, label: 'APP-01',   config:{ ip:'10.100.0.10', mask:24, gateway:'10.100.0.1' } },
           { id: 'sc_pco_srv2', type: 'server',      x: 600, y: 480, label: 'APP-02',   config:{ ip:'10.100.0.11', mask:24, gateway:'10.100.0.1' } },
-          { id: 'sc_pco_ws',   type: 'workstation', x: 820, y: 480, label: 'ADMIN-WS', config:{ ip:'10.100.0.20', mask:24, gateway:'10.100.0.1' } },
+          { id: 'sc_pco_ws',   type: 'pc', x: 820, y: 480, label: 'ADMIN-WS', config:{ ip:'10.100.0.20', mask:24, gateway:'10.100.0.1' } },
         ],
         cables: [
           { id: 'sc_pco_c1', fromId: 'sc_pco_inet', toId: 'sc_pco_fw',   type: 'fiber' },
@@ -1250,18 +1251,18 @@
         examRelevance: 'N10-009 obj 1.8 — recognise public-cloud-only deployment; contrast with hybrid, private, community models.',
       },
       completion: {
-        requiredDevices: ['internet', 'firewall', 'server', 'workstation'],
-        expectedCount:   { internet: 1, firewall: 1, server: 2, workstation: 1 },
+        requiredDevices: ['internet', 'firewall', 'server', 'pc'],
+        expectedCount:   { internet: 1, firewall: 1, server: 2, pc: 1 },
         requiredCables:  [
           { from:'internet', to:'firewall' },
           { from:'firewall', to:'server' },
-          { from:'firewall', to:'workstation' },
+          { from:'firewall', to:'pc' },
         ],
       },
     },
     {
       id: 'multi-cloud',
-      title: 'Multi-cloud (two providers bridged)',
+      title: 'Multi-Cloud (Two Providers Bridged)',
       category: 'cloud',
       objectiveRefs: ['1.8'],
       startingState: {
@@ -1294,7 +1295,7 @@
     },
     {
       id: 'direct-connect-private-link',
-      title: 'Direct Connect (dedicated private link to cloud)',
+      title: 'Direct Connect (Dedicated Private Link to Cloud)',
       category: 'cloud',
       objectiveRefs: ['1.8'],
       startingState: {
@@ -1328,16 +1329,16 @@
     },
     {
       id: 'wireless-mesh',
-      title: 'Wireless mesh (radio backhaul between APs)',
+      title: 'Wireless Mesh (Radio Backhaul Between APs)',
       category: 'wireless',
       objectiveRefs: ['2.4'],
       startingState: {
         devices: [
           { id: 'sc_wm_rtr', type: 'router',     x: 520, y: 160, label: 'GATEWAY', interfaces:[{ ip:'192.168.10.1', mask:24 }] },
           { id: 'sc_wm_sw',  type: 'switch',     x: 520, y: 320, label: 'LAN-SW' },
-          { id: 'sc_wm_ap1', type: 'ap',         x: 320, y: 480, label: 'AP-1 (root)' },
-          { id: 'sc_wm_ap2', type: 'ap',         x: 520, y: 480, label: 'AP-2 (mesh)' },
-          { id: 'sc_wm_ap3', type: 'ap',         x: 720, y: 480, label: 'AP-3 (mesh)' },
+          { id: 'sc_wm_ap1', type: 'wap',         x: 320, y: 480, label: 'AP-1 (root)' },
+          { id: 'sc_wm_ap2', type: 'wap',         x: 520, y: 480, label: 'AP-2 (mesh)' },
+          { id: 'sc_wm_ap3', type: 'wap',         x: 720, y: 480, label: 'AP-3 (mesh)' },
           { id: 'sc_wm_phn', type: 'smartphone', x: 920, y: 480, label: 'CLIENT',     config:{ ip:'192.168.10.20', mask:24, gateway:'192.168.10.1' } },
         ],
         cables: [
@@ -1357,25 +1358,25 @@
         examRelevance: 'N10-009 obj 2.4 — recognise wireless mesh deployment; contrast with controller-based ESS and ad-hoc.',
       },
       completion: {
-        requiredDevices: ['router', 'switch', 'ap'],
-        expectedCount:   { router: 1, switch: 1, ap: 3 },
+        requiredDevices: ['router', 'switch', 'wap'],
+        expectedCount:   { router: 1, switch: 1, wap: 3 },
         requiredCables:  [
           { from:'router', to:'switch' },
-          { from:'switch', to:'ap' },
-          { from:'ap',     to:'ap' },
+          { from:'switch', to:'wap' },
+          { from:'wap',    to:'wap' },
         ],
       },
     },
     {
       id: 'wireless-bridge-p2p',
-      title: 'Wireless bridge (point-to-point building link)',
+      title: 'Wireless Bridge (Point-to-Point Building Link)',
       category: 'wireless',
       objectiveRefs: ['2.4'],
       startingState: {
         devices: [
           { id: 'sc_wb_swa',  type: 'switch', x: 240, y: 480, label: 'SW-A' },
-          { id: 'sc_wb_apa',  type: 'ap',     x: 440, y: 320, label: 'AP-A (bridge)' },
-          { id: 'sc_wb_apb',  type: 'ap',     x: 760, y: 320, label: 'AP-B (bridge)' },
+          { id: 'sc_wb_apa',  type: 'wap',     x: 440, y: 320, label: 'AP-A (bridge)' },
+          { id: 'sc_wb_apb',  type: 'wap',     x: 760, y: 320, label: 'AP-B (bridge)' },
           { id: 'sc_wb_swb',  type: 'switch', x: 960, y: 480, label: 'SW-B' },
           { id: 'sc_wb_lap',  type: 'laptop', x: 240, y: 640, label: 'LAPTOP-A', config:{ ip:'192.168.10.20', mask:24 } },
         ],
@@ -1396,17 +1397,17 @@
         examRelevance: 'N10-009 obj 2.4 — recognise wireless bridge use case; contrast with mesh APs and infrastructure mode.',
       },
       completion: {
-        requiredDevices: ['switch', 'ap'],
-        expectedCount:   { switch: 2, ap: 2 },
+        requiredDevices: ['switch', 'wap'],
+        expectedCount:   { switch: 2, wap: 2 },
         requiredCables:  [
-          { from:'switch', to:'ap' },
-          { from:'ap',     to:'ap' },
+          { from:'switch', to:'wap' },
+          { from:'wap',    to:'wap' },
         ],
       },
     },
     {
       id: 'zero-trust-segmented',
-      title: 'Zero-trust microsegmentation',
+      title: 'Zero-Trust Microsegmentation',
       category: 'security',
       objectiveRefs: ['4.1'],
       startingState: {
@@ -1422,9 +1423,9 @@
           { id: 'sc_zt_srv1', type: 'server',      x: 320, y: 160, label: 'SRV-1', config:{ ip:'192.168.10.10', mask:24, gateway:'192.168.10.1' } },
           { id: 'sc_zt_srv2', type: 'server',      x: 600, y: 160, label: 'SRV-2', config:{ ip:'192.168.20.10', mask:24, gateway:'192.168.20.1' } },
           { id: 'sc_zt_srv3', type: 'server',      x: 880, y: 160, label: 'SRV-3', config:{ ip:'192.168.30.10', mask:24, gateway:'192.168.30.1' } },
-          { id: 'sc_zt_ws1',  type: 'workstation', x: 320, y: 560, label: 'WS-1',  config:{ ip:'192.168.40.10', mask:24, gateway:'192.168.40.1' } },
-          { id: 'sc_zt_ws2',  type: 'workstation', x: 600, y: 560, label: 'WS-2',  config:{ ip:'192.168.50.10', mask:24, gateway:'192.168.50.1' } },
-          { id: 'sc_zt_ws3',  type: 'workstation', x: 880, y: 560, label: 'WS-3',  config:{ ip:'192.168.60.10', mask:24, gateway:'192.168.60.1' } },
+          { id: 'sc_zt_ws1',  type: 'pc', x: 320, y: 560, label: 'WS-1',  config:{ ip:'192.168.40.10', mask:24, gateway:'192.168.40.1' } },
+          { id: 'sc_zt_ws2',  type: 'pc', x: 600, y: 560, label: 'WS-2',  config:{ ip:'192.168.50.10', mask:24, gateway:'192.168.50.1' } },
+          { id: 'sc_zt_ws3',  type: 'pc', x: 880, y: 560, label: 'WS-3',  config:{ ip:'192.168.60.10', mask:24, gateway:'192.168.60.1' } },
         ],
         cables: [
           { id: 'sc_zt_c1', fromId: 'sc_zt_fw', toId: 'sc_zt_srv1', type: 'cat6' },
@@ -1445,17 +1446,17 @@
         examRelevance: 'N10-009 obj 4.1 — recognise zero-trust segmentation; contrast with implicit-trust LAN and traditional perimeter defence.',
       },
       completion: {
-        requiredDevices: ['firewall', 'server', 'workstation'],
-        expectedCount:   { firewall: 1, server: 3, workstation: 3 },
+        requiredDevices: ['firewall', 'server', 'pc'],
+        expectedCount:   { firewall: 1, server: 3, pc: 3 },
         requiredCables:  [
           { from:'firewall', to:'server' },
-          { from:'firewall', to:'workstation' },
+          { from:'firewall', to:'pc' },
         ],
       },
     },
     {
       id: 'bastion-jump-host',
-      title: 'Bastion / jump host (single controlled admin door)',
+      title: 'Bastion / Jump Host (Single Controlled Admin Door)',
       category: 'security',
       objectiveRefs: ['4.1'],
       startingState: {
@@ -1497,7 +1498,7 @@
     },
     {
       id: 'nac-802-1x',
-      title: 'NAC / 802.1X (port-based authentication)',
+      title: 'NAC / 802.1X (Port-Based Authentication)',
       category: 'security',
       objectiveRefs: ['4.1'],
       startingState: {
@@ -1505,9 +1506,9 @@
           { id: 'sc_nac_rtr', type: 'router',      x: 600, y: 160, label: 'GATEWAY', interfaces:[{ ip:'192.168.10.1', mask:24 }] },
           { id: 'sc_nac_sw',  type: 'switch',      x: 600, y: 320, label: 'NAC-SW' },
           { id: 'sc_nac_srv', type: 'server',      x: 880, y: 320, label: 'RADIUS-AAA', config:{ ip:'192.168.10.10', mask:24, gateway:'192.168.10.1' } },
-          { id: 'sc_nac_ws1', type: 'workstation', x: 320, y: 520, label: 'WS-1', config:{ ip:'192.168.10.20', mask:24, gateway:'192.168.10.1' } },
-          { id: 'sc_nac_ws2', type: 'workstation', x: 600, y: 520, label: 'WS-2', config:{ ip:'192.168.10.21', mask:24, gateway:'192.168.10.1' } },
-          { id: 'sc_nac_ws3', type: 'workstation', x: 880, y: 520, label: 'WS-3', config:{ ip:'192.168.10.22', mask:24, gateway:'192.168.10.1' } },
+          { id: 'sc_nac_ws1', type: 'pc', x: 320, y: 520, label: 'WS-1', config:{ ip:'192.168.10.20', mask:24, gateway:'192.168.10.1' } },
+          { id: 'sc_nac_ws2', type: 'pc', x: 600, y: 520, label: 'WS-2', config:{ ip:'192.168.10.21', mask:24, gateway:'192.168.10.1' } },
+          { id: 'sc_nac_ws3', type: 'pc', x: 880, y: 520, label: 'WS-3', config:{ ip:'192.168.10.22', mask:24, gateway:'192.168.10.1' } },
         ],
         cables: [
           { id: 'sc_nac_c1', fromId: 'sc_nac_rtr', toId: 'sc_nac_sw',  type: 'cat6' },
@@ -1527,18 +1528,18 @@
         examRelevance: 'N10-009 obj 4.1 — recognise NAC/802.1X pattern; commonly tested alongside RADIUS, EAP, and VLAN assignment.',
       },
       completion: {
-        requiredDevices: ['router', 'switch', 'server', 'workstation'],
-        expectedCount:   { router: 1, switch: 1, server: 1, workstation: 3 },
+        requiredDevices: ['router', 'switch', 'server', 'pc'],
+        expectedCount:   { router: 1, switch: 1, server: 1, pc: 3 },
         requiredCables:  [
           { from:'router', to:'switch' },
           { from:'switch', to:'server' },
-          { from:'switch', to:'workstation' },
+          { from:'switch', to:'pc' },
         ],
       },
     },
     {
       id: 'l3-switch-svi',
-      title: 'L3 switch with SVIs (inter-VLAN routing)',
+      title: 'L3 Switch With SVIs (Inter-VLAN Routing)',
       category: 'vlan',
       objectiveRefs: ['2.1', '2.3'],
       startingState: {
@@ -1547,10 +1548,10 @@
             { ip:'192.168.10.1', mask:24 },
             { ip:'192.168.20.1', mask:24 },
           ] },
-          { id: 'sc_svi_v10a',  type: 'workstation', x: 280, y: 480, label: 'VLAN10-A', config:{ ip:'192.168.10.10', mask:24, gateway:'192.168.10.1' } },
-          { id: 'sc_svi_v10b',  type: 'workstation', x: 440, y: 480, label: 'VLAN10-B', config:{ ip:'192.168.10.11', mask:24, gateway:'192.168.10.1' } },
-          { id: 'sc_svi_v20a',  type: 'workstation', x: 760, y: 480, label: 'VLAN20-A', config:{ ip:'192.168.20.10', mask:24, gateway:'192.168.20.1' } },
-          { id: 'sc_svi_v20b',  type: 'workstation', x: 920, y: 480, label: 'VLAN20-B', config:{ ip:'192.168.20.11', mask:24, gateway:'192.168.20.1' } },
+          { id: 'sc_svi_v10a',  type: 'pc', x: 280, y: 480, label: 'VLAN10-A', config:{ ip:'192.168.10.10', mask:24, gateway:'192.168.10.1' } },
+          { id: 'sc_svi_v10b',  type: 'pc', x: 440, y: 480, label: 'VLAN10-B', config:{ ip:'192.168.10.11', mask:24, gateway:'192.168.10.1' } },
+          { id: 'sc_svi_v20a',  type: 'pc', x: 760, y: 480, label: 'VLAN20-A', config:{ ip:'192.168.20.10', mask:24, gateway:'192.168.20.1' } },
+          { id: 'sc_svi_v20b',  type: 'pc', x: 920, y: 480, label: 'VLAN20-B', config:{ ip:'192.168.20.11', mask:24, gateway:'192.168.20.1' } },
         ],
         cables: [
           { id: 'sc_svi_c1', fromId: 'sc_svi_l3', toId: 'sc_svi_v10a', type: 'cat6' },
@@ -1569,10 +1570,830 @@
         examRelevance: 'N10-009 obj 2.1 (switching) + 2.3 (VLANs) — recognise L3-switch SVI; contrast with router-on-a-stick performance + complexity.',
       },
       completion: {
-        requiredDevices: ['l3-switch', 'workstation'],
-        expectedCount:   { 'l3-switch': 1, workstation: 4 },
+        requiredDevices: ['l3-switch', 'pc'],
+        expectedCount:   { 'l3-switch': 1, pc: 4 },
         requiredCables:  [
-          { from:'l3-switch', to:'workstation' },
+          { from:'l3-switch', to:'pc' },
+        ],
+      },
+    },
+
+    // ── Batch A: Campus scenarios ─────────────────────────────────────────
+    {
+      id: 'small-office',
+      title: 'Small Office (firewall + switch + endpoints)',
+      category: 'security',
+      objectiveRefs: ['1.4', '2.4', '4.1', '4.3'],
+      startingState: {
+        devices: [
+          { id: 'sc_so_isp',   type: 'cloud',    x: 520, y: 100, label: 'ISP' },
+          { id: 'sc_so_fw',    type: 'firewall',  x: 520, y: 220, label: 'Edge-FW',   interfaces: [{ ip: '203.0.113.1', mask: 24 }, { ip: '192.168.1.1', mask: 24 }] },
+          { id: 'sc_so_sw',    type: 'switch',    x: 520, y: 340, label: 'LAN-SW' },
+          { id: 'sc_so_pc1',   type: 'pc',        x: 280, y: 460, label: 'PC-01',     interfaces: [{ ip: '192.168.1.10', mask: 24 }] },
+          { id: 'sc_so_pc2',   type: 'pc',        x: 440, y: 460, label: 'PC-02',     interfaces: [{ ip: '192.168.1.11', mask: 24 }] },
+          { id: 'sc_so_pc3',   type: 'pc',        x: 600, y: 460, label: 'PC-03',     interfaces: [{ ip: '192.168.1.12', mask: 24 }] },
+          { id: 'sc_so_prn',   type: 'server',    x: 760, y: 460, label: 'Printer',   interfaces: [{ ip: '192.168.1.20', mask: 24 }] },
+        ],
+        cables: [
+          { id: 'sc_so_c1', fromId: 'sc_so_isp',  toId: 'sc_so_fw',  type: 'fiber' },
+          { id: 'sc_so_c2', fromId: 'sc_so_fw',   toId: 'sc_so_sw',  type: 'cat6' },
+          { id: 'sc_so_c3', fromId: 'sc_so_sw',   toId: 'sc_so_pc1', type: 'cat6' },
+          { id: 'sc_so_c4', fromId: 'sc_so_sw',   toId: 'sc_so_pc2', type: 'cat6' },
+          { id: 'sc_so_c5', fromId: 'sc_so_sw',   toId: 'sc_so_pc3', type: 'cat6' },
+          { id: 'sc_so_c6', fromId: 'sc_so_sw',   toId: 'sc_so_prn', type: 'cat6' },
+        ],
+        viewport: { x: 0, y: 0, zoom: 1 },
+      },
+      brief: 'A small office places a single firewall between the ISP uplink and the internal switch. The firewall is the network boundary — it enforces ACLs, performs NAT, and is the single choke point for all inbound and outbound traffic. Every endpoint reaches the internet through the firewall, so a misconfigured rule affects every user.',
+      examRelevance: {
+        overview:      'A firewall-at-the-edge with a flat LAN behind it is the simplest secure small-office design.',
+        howItRoutes:   'PCs send all non-local traffic to the firewall gateway (192.168.1.1); the firewall performs NAT and forwards to the ISP.',
+        keyDevices:    'Edge firewall (perimeter enforcement + NAT), unmanaged switch (LAN aggregation), endpoints behind the boundary.',
+        keyConcepts:   'Stateful packet inspection, NAT/PAT, default-deny ACL, single-point-of-failure vs simplicity trade-off.',
+        examRelevance: 'N10-009 obj 4.1 (security concepts) + 4.3 (network segmentation) — recognise firewall-as-edge vs DMZ designs.',
+      },
+      completion: {
+        requiredDevices: ['firewall', 'switch', 'pc'],
+        expectedCount:   { firewall: 1, switch: 1, pc: 3 },
+        requiredCables:  [
+          { from: 'cloud', to: 'firewall' },
+          { from: 'firewall', to: 'switch' },
+          { from: 'switch', to: 'pc' },
+        ],
+      },
+    },
+
+    {
+      id: 'enterprise-ids-lb',
+      title: 'Enterprise with IDS/IPS + Load Balancer',
+      category: 'security',
+      objectiveRefs: ['2.1', '4.1', '4.2'],
+      startingState: {
+        devices: [
+          { id: 'sc_ei_isp',   type: 'cloud',         x: 520, y:  60, label: 'Internet' },
+          { id: 'sc_ei_fw1',   type: 'firewall',      x: 520, y: 160, label: 'Perimeter-FW',  interfaces: [{ ip: '203.0.113.1', mask: 24 }, { ip: '10.0.0.1', mask: 24 }] },
+          { id: 'sc_ei_ids',   type: 'server',        x: 340, y: 260, label: 'IDS/IPS',       interfaces: [{ ip: '10.0.0.5', mask: 24 }] },
+          { id: 'sc_ei_dsw',   type: 'switch',        x: 680, y: 260, label: 'DMZ-SW' },
+          { id: 'sc_ei_lb',    type: 'server',        x: 680, y: 360, label: 'App-LB',        interfaces: [{ ip: '10.0.1.1', mask: 24 }] },
+          { id: 'sc_ei_web1',  type: 'server',        x: 520, y: 460, label: 'Web-01',        interfaces: [{ ip: '10.0.1.10', mask: 24 }] },
+          { id: 'sc_ei_web2',  type: 'server',        x: 680, y: 460, label: 'Web-02',        interfaces: [{ ip: '10.0.1.11', mask: 24 }] },
+          { id: 'sc_ei_web3',  type: 'server',        x: 840, y: 460, label: 'Web-03',        interfaces: [{ ip: '10.0.1.12', mask: 24 }] },
+          { id: 'sc_ei_fw2',   type: 'firewall',      x: 520, y: 560, label: 'Internal-FW',   interfaces: [{ ip: '10.0.0.2', mask: 24 }, { ip: '172.16.0.1', mask: 24 }] },
+          { id: 'sc_ei_insw',  type: 'switch',        x: 520, y: 660, label: 'Internal-SW' },
+          { id: 'sc_ei_pc1',   type: 'pc',            x: 440, y: 760, label: 'PC-01',         interfaces: [{ ip: '172.16.0.10', mask: 24 }] },
+          { id: 'sc_ei_pc2',   type: 'pc',            x: 600, y: 760, label: 'PC-02',         interfaces: [{ ip: '172.16.0.11', mask: 24 }] },
+        ],
+        cables: [
+          { id: 'sc_ei_c1',  fromId: 'sc_ei_isp',  toId: 'sc_ei_fw1',  type: 'fiber' },
+          { id: 'sc_ei_c2',  fromId: 'sc_ei_fw1',  toId: 'sc_ei_ids',  type: 'cat6' },
+          { id: 'sc_ei_c3',  fromId: 'sc_ei_fw1',  toId: 'sc_ei_dsw',  type: 'cat6' },
+          { id: 'sc_ei_c4',  fromId: 'sc_ei_dsw',  toId: 'sc_ei_lb',   type: 'cat6' },
+          { id: 'sc_ei_c5',  fromId: 'sc_ei_lb',   toId: 'sc_ei_web1', type: 'cat6' },
+          { id: 'sc_ei_c6',  fromId: 'sc_ei_lb',   toId: 'sc_ei_web2', type: 'cat6' },
+          { id: 'sc_ei_c7',  fromId: 'sc_ei_lb',   toId: 'sc_ei_web3', type: 'cat6' },
+          { id: 'sc_ei_c8',  fromId: 'sc_ei_fw1',  toId: 'sc_ei_fw2',  type: 'cat6' },
+          { id: 'sc_ei_c9',  fromId: 'sc_ei_fw2',  toId: 'sc_ei_insw', type: 'cat6' },
+          { id: 'sc_ei_c10', fromId: 'sc_ei_insw', toId: 'sc_ei_pc1',  type: 'cat6' },
+          { id: 'sc_ei_c11', fromId: 'sc_ei_insw', toId: 'sc_ei_pc2',  type: 'cat6' },
+        ],
+        viewport: { x: 0, y: 0, zoom: 1 },
+      },
+      brief: 'An enterprise perimeter stacks an IDS/IPS inline with the DMZ for deep-packet inspection before traffic reaches the load balancer and web farm. A second internal firewall separates the trusted network from the DMZ — even a compromised DMZ server cannot directly reach internal hosts. The load balancer distributes requests across the web tier for availability and scale.',
+      examRelevance: {
+        overview:      'A dual-firewall enterprise perimeter with IDS/IPS provides defence-in-depth: block at the edge, inspect in the DMZ, block again before the trusted LAN.',
+        howItRoutes:   'Internet → perimeter firewall → IDS/IPS copy + DMZ switch → load balancer → web servers; trusted traffic → perimeter firewall → internal firewall → LAN.',
+        keyDevices:    'Perimeter firewall (internet boundary), IDS/IPS (inline inspection), load balancer (availability), internal firewall (LAN isolation).',
+        keyConcepts:   'Defence in depth, dual-firewall DMZ, IDS vs IPS placement, load balancing algorithms, network segmentation.',
+        examRelevance: 'N10-009 obj 4.1 (network security architecture) + 4.2 (IDS/IPS) — recognise inline vs passive IDS and why a load balancer lives in the DMZ.',
+      },
+      completion: {
+        requiredDevices: ['firewall', 'switch', 'server', 'pc'],
+        expectedCount:   { firewall: 2, switch: 2, server: 1, pc: 2 },
+        requiredCables:  [
+          { from: 'cloud',    to: 'firewall' },
+          { from: 'firewall', to: 'switch' },
+          { from: 'switch',   to: 'server' },
+          { from: 'server',   to: 'pc' },
+        ],
+      },
+    },
+
+    {
+      id: 'branch-office-wireless',
+      title: 'Branch Office with Wireless (WLC + WAPs)',
+      category: 'wireless',
+      objectiveRefs: ['2.4', '1.6'],
+      startingState: {
+        devices: [
+          { id: 'sc_bw_isp',  type: 'cloud',    x: 520, y:  80, label: 'Internet' },
+          { id: 'sc_bw_fw',   type: 'firewall',  x: 520, y: 180, label: 'Branch-FW',  interfaces: [{ ip: '203.0.113.2', mask: 24 }, { ip: '10.10.0.1', mask: 24 }] },
+          { id: 'sc_bw_sw',   type: 'switch',    x: 520, y: 280, label: 'Branch-SW' },
+          { id: 'sc_bw_wlc',  type: 'wlc',      x: 360, y: 380, label: 'WLC',         interfaces: [{ ip: '10.10.0.10', mask: 24 }] },
+          { id: 'sc_bw_ap1',  type: 'wap',      x: 240, y: 500, label: 'WAP-01',      interfaces: [{ ip: '10.10.0.11', mask: 24 }] },
+          { id: 'sc_bw_ap2',  type: 'wap',      x: 480, y: 500, label: 'WAP-02',      interfaces: [{ ip: '10.10.0.12', mask: 24 }] },
+          { id: 'sc_bw_lap1', type: 'laptop',   x: 160, y: 640, label: 'Laptop-01',   interfaces: [{ ip: '10.10.0.50', mask: 24 }] },
+          { id: 'sc_bw_lap2', type: 'laptop',   x: 320, y: 640, label: 'Laptop-02',   interfaces: [{ ip: '10.10.0.51', mask: 24 }] },
+          { id: 'sc_bw_ph1',  type: 'smartphone', x: 480, y: 640, label: 'Phone-01',  interfaces: [{ ip: '10.10.0.52', mask: 24 }] },
+          { id: 'sc_bw_ph2',  type: 'smartphone', x: 640, y: 640, label: 'Phone-02',  interfaces: [{ ip: '10.10.0.53', mask: 24 }] },
+          { id: 'sc_bw_pc',   type: 'pc',       x: 680, y: 380, label: 'Reception',   interfaces: [{ ip: '10.10.0.20', mask: 24 }] },
+        ],
+        cables: [
+          { id: 'sc_bw_c1', fromId: 'sc_bw_isp',  toId: 'sc_bw_fw',  type: 'fiber' },
+          { id: 'sc_bw_c2', fromId: 'sc_bw_fw',   toId: 'sc_bw_sw',  type: 'cat6' },
+          { id: 'sc_bw_c3', fromId: 'sc_bw_sw',   toId: 'sc_bw_wlc', type: 'cat6' },
+          { id: 'sc_bw_c4', fromId: 'sc_bw_sw',   toId: 'sc_bw_pc',  type: 'cat6' },
+          { id: 'sc_bw_c5', fromId: 'sc_bw_wlc',  toId: 'sc_bw_ap1', type: 'cat6' },
+          { id: 'sc_bw_c6', fromId: 'sc_bw_wlc',  toId: 'sc_bw_ap2', type: 'cat6' },
+        ],
+        viewport: { x: 0, y: 0, zoom: 1 },
+      },
+      brief: 'A branch office pairs a wireless LAN controller (WLC) with lightweight access points (LAPs). The WLC holds all the configuration — RF profiles, SSIDs, security policies — so deploying a new AP is zero-touch: it discovers the WLC via CAPWAP and downloads its config automatically. Wireless clients roam between WAP-01 and WAP-02 without re-authenticating.',
+      examRelevance: {
+        overview:      'A controller-based WLAN centralises management: the WLC owns the SSID config, APs are "thin" and forward all traffic through a CAPWAP tunnel back to the controller.',
+        howItRoutes:   'Wireless clients associate with a WAP; the WAP tunnels the frame to the WLC; the WLC bridges it onto the wired LAN via the switch.',
+        keyDevices:    'WLC (wireless LAN controller — SSID/policy engine), WAP/LAP (radio head — dumb radio, no local config), switch (wired backhaul).',
+        keyConcepts:   'CAPWAP protocol, split-MAC architecture, centralized vs autonomous AP modes, seamless roaming.',
+        examRelevance: 'N10-009 obj 2.4 (wireless technologies) — distinguish controller-based from autonomous APs, know CAPWAP tunnel purpose.',
+      },
+      completion: {
+        requiredDevices: ['wlc', 'wap', 'switch'],
+        expectedCount:   { wlc: 1, wap: 2, switch: 1 },
+        requiredCables:  [
+          { from: 'switch', to: 'wlc' },
+          { from: 'wlc',   to: 'wap' },
+        ],
+      },
+    },
+
+    {
+      id: 'home-network',
+      title: 'Home Network (router + WAP + consumer devices)',
+      category: 'architecture',
+      objectiveRefs: ['1.6'],
+      startingState: {
+        devices: [
+          { id: 'sc_hn_isp',  type: 'cloud',      x: 520, y:  80, label: 'ISP' },
+          { id: 'sc_hn_rtr',  type: 'router',     x: 520, y: 200, label: 'Home-Router', interfaces: [{ ip: '203.0.113.3', mask: 24 }, { ip: '192.168.0.1', mask: 24 }] },
+          { id: 'sc_hn_ap',   type: 'wap',        x: 520, y: 340, label: 'WiFi-AP',     interfaces: [{ ip: '192.168.0.2', mask: 24 }] },
+          { id: 'sc_hn_lap',  type: 'laptop',     x: 280, y: 500, label: 'Laptop',      interfaces: [{ ip: '192.168.0.10', mask: 24 }] },
+          { id: 'sc_hn_ph',   type: 'smartphone', x: 440, y: 500, label: 'Phone',       interfaces: [{ ip: '192.168.0.11', mask: 24 }] },
+          { id: 'sc_hn_tv',   type: 'server',     x: 600, y: 500, label: 'Smart-TV',    interfaces: [{ ip: '192.168.0.12', mask: 24 }] },
+          { id: 'sc_hn_gc',   type: 'pc',         x: 760, y: 500, label: 'Console',     interfaces: [{ ip: '192.168.0.13', mask: 24 }] },
+        ],
+        cables: [
+          { id: 'sc_hn_c1', fromId: 'sc_hn_isp', toId: 'sc_hn_rtr', type: 'fiber' },
+          { id: 'sc_hn_c2', fromId: 'sc_hn_rtr', toId: 'sc_hn_ap',  type: 'cat6' },
+        ],
+        viewport: { x: 0, y: 0, zoom: 1 },
+      },
+      brief: 'A typical SOHO home network has a consumer router (often a combo modem+router) that terminates the ISP link, performs NAT, and runs a DHCP server for the private subnet. A wireless access point provides Wi-Fi for phones, laptops, and smart home devices. All devices share a single flat /24, so a compromised device can reach every other device — there is no segmentation.',
+      examRelevance: {
+        overview:      'A home network is a flat SOHO design: one router does NAT + DHCP + sometimes wireless, no segmentation, all devices on the same subnet.',
+        howItRoutes:   'All devices send non-local traffic to the router gateway (192.168.0.1); the router performs NAT and forwards to the ISP.',
+        keyDevices:    'Router (NAT + DHCP + gateway), WAP (wireless radio), consumer endpoints (DHCP clients).',
+        keyConcepts:   'NAT/PAT, DHCP, flat LAN vs segmented LAN, single point of failure, SOHO security risks.',
+        examRelevance: 'N10-009 obj 1.6 (network topologies and types) — contrast SOHO flat LAN with enterprise segmented designs.',
+      },
+      completion: {
+        requiredDevices: ['router', 'wap'],
+        expectedCount:   { router: 1, wap: 1 },
+        requiredCables:  [
+          { from: 'cloud',  to: 'router' },
+          { from: 'router', to: 'wap' },
+        ],
+      },
+    },
+
+    // ── Batch B: Cloud scenarios ──────────────────────────────────────────
+    {
+      id: 'cloud-vpc-architecture',
+      title: 'Cloud VPC Architecture (public + private subnets)',
+      category: 'cloud',
+      objectiveRefs: ['1.8'],
+      startingState: {
+        devices: [
+          { id: 'sc_cv_inet',  type: 'cloud',   x: 520, y:  80, label: 'Internet' },
+          { id: 'sc_cv_igw',   type: 'router',  x: 520, y: 200, label: 'IGW',          interfaces: [{ ip: '203.0.113.10', mask: 24 }] },
+          { id: 'sc_cv_vpc',   type: 'cloud',   x: 520, y: 320, label: 'VPC-prod' },
+          { id: 'sc_cv_pub',   type: 'switch',  x: 320, y: 440, label: 'public-subnet' },
+          { id: 'sc_cv_priv',  type: 'switch',  x: 720, y: 440, label: 'private-subnet' },
+          { id: 'sc_cv_nat',   type: 'router',  x: 320, y: 560, label: 'NAT-GW',        interfaces: [{ ip: '10.0.1.5', mask: 24 }] },
+          { id: 'sc_cv_web',   type: 'server',  x: 320, y: 680, label: 'Web-Server',    interfaces: [{ ip: '10.0.1.10', mask: 24 }] },
+          { id: 'sc_cv_app',   type: 'server',  x: 640, y: 560, label: 'App-Server',    interfaces: [{ ip: '10.0.2.10', mask: 24 }] },
+          { id: 'sc_cv_db',    type: 'server',  x: 800, y: 560, label: 'DB-Primary',    interfaces: [{ ip: '10.0.2.20', mask: 24 }] },
+        ],
+        cables: [
+          { id: 'sc_cv_c1', fromId: 'sc_cv_inet', toId: 'sc_cv_igw',  type: 'fiber' },
+          { id: 'sc_cv_c2', fromId: 'sc_cv_igw',  toId: 'sc_cv_vpc',  type: 'fiber' },
+          { id: 'sc_cv_c3', fromId: 'sc_cv_vpc',  toId: 'sc_cv_pub',  type: 'cat6' },
+          { id: 'sc_cv_c4', fromId: 'sc_cv_vpc',  toId: 'sc_cv_priv', type: 'cat6' },
+          { id: 'sc_cv_c5', fromId: 'sc_cv_pub',  toId: 'sc_cv_nat',  type: 'cat6' },
+          { id: 'sc_cv_c6', fromId: 'sc_cv_pub',  toId: 'sc_cv_web',  type: 'cat6' },
+          { id: 'sc_cv_c7', fromId: 'sc_cv_priv', toId: 'sc_cv_app',  type: 'cat6' },
+          { id: 'sc_cv_c8', fromId: 'sc_cv_priv', toId: 'sc_cv_db',   type: 'cat6' },
+          { id: 'sc_cv_c9', fromId: 'sc_cv_nat',  toId: 'sc_cv_app',  type: 'cat6' },
+        ],
+        viewport: { x: 0, y: 0, zoom: 1 },
+      },
+      brief: 'A cloud VPC splits resources into a public subnet (internet-reachable) and a private subnet (no inbound internet path). An Internet Gateway (IGW) is the VPC border router for public traffic. A NAT Gateway in the public subnet lets private instances initiate outbound internet connections without exposing inbound routes — the private app and DB servers remain unreachable from the internet.',
+      examRelevance: {
+        overview:      'A two-tier VPC design isolates public-facing servers from backend databases using subnet routing rules, not a firewall.',
+        howItRoutes:   'Internet → IGW → public subnet route table → web servers; private subnet has no IGW route, uses NAT-GW for outbound-only internet access.',
+        keyDevices:    'Internet Gateway (VPC border router), NAT Gateway (outbound-only masquerade), public/private subnets (routing boundaries).',
+        keyConcepts:   'VPC, subnet routing tables, IGW vs NAT Gateway, public vs private subnet, cloud security groups as stateful firewalls.',
+        examRelevance: 'N10-009 obj 1.8 (cloud deployment models) — understand IGW, NAT Gateway, and public/private subnet routing.',
+      },
+      completion: {
+        requiredDevices: ['cloud', 'router', 'switch', 'server'],
+        expectedCount:   { cloud: 2, router: 2, switch: 2, server: 2 },
+        requiredCables:  [
+          { from: 'cloud',  to: 'router' },
+          { from: 'router', to: 'switch' },
+          { from: 'switch', to: 'server' },
+        ],
+      },
+    },
+
+    {
+      id: 'multi-vpc-transit-gateway',
+      title: 'Multi-VPC with Transit Gateway',
+      category: 'cloud',
+      objectiveRefs: ['1.8'],
+      startingState: {
+        devices: [
+          { id: 'sc_mt_inet',  type: 'cloud',   x: 520, y:  60, label: 'Internet' },
+          { id: 'sc_mt_igw',   type: 'router',  x: 520, y: 160, label: 'IGW',           interfaces: [{ ip: '203.0.113.20', mask: 24 }] },
+          { id: 'sc_mt_tgw',   type: 'router',  x: 520, y: 300, label: 'Transit-GW',    interfaces: [{ ip: '100.64.0.1', mask: 24 }] },
+          { id: 'sc_mt_vpcp',  type: 'cloud',   x: 280, y: 440, label: 'VPC-prod' },
+          { id: 'sc_mt_vpcs',  type: 'cloud',   x: 520, y: 440, label: 'VPC-shared' },
+          { id: 'sc_mt_vpcd',  type: 'cloud',   x: 760, y: 440, label: 'VPC-dev' },
+          { id: 'sc_mt_subn1', type: 'switch',  x: 280, y: 560, label: 'prod-subnet',   },
+          { id: 'sc_mt_subn2', type: 'switch',  x: 520, y: 560, label: 'shared-subnet', },
+          { id: 'sc_mt_subn3', type: 'switch',  x: 760, y: 560, label: 'dev-subnet',    },
+        ],
+        cables: [
+          { id: 'sc_mt_c1', fromId: 'sc_mt_inet',  toId: 'sc_mt_igw',   type: 'fiber' },
+          { id: 'sc_mt_c2', fromId: 'sc_mt_igw',   toId: 'sc_mt_tgw',   type: 'fiber' },
+          { id: 'sc_mt_c3', fromId: 'sc_mt_tgw',   toId: 'sc_mt_vpcp',  type: 'fiber' },
+          { id: 'sc_mt_c4', fromId: 'sc_mt_tgw',   toId: 'sc_mt_vpcs',  type: 'fiber' },
+          { id: 'sc_mt_c5', fromId: 'sc_mt_tgw',   toId: 'sc_mt_vpcd',  type: 'fiber' },
+          { id: 'sc_mt_c6', fromId: 'sc_mt_vpcp',  toId: 'sc_mt_subn1', type: 'cat6' },
+          { id: 'sc_mt_c7', fromId: 'sc_mt_vpcs',  toId: 'sc_mt_subn2', type: 'cat6' },
+          { id: 'sc_mt_c8', fromId: 'sc_mt_vpcd',  toId: 'sc_mt_subn3', type: 'cat6' },
+        ],
+        viewport: { x: 0, y: 0, zoom: 1 },
+      },
+      brief: 'When an organisation grows beyond one VPC, a Transit Gateway (TGW) is the hub that connects multiple VPCs with a single attachment each — rather than a full mesh of VPC peering links. The TGW has its own route table and can selectively allow or deny inter-VPC routing, making it the cloud equivalent of a core router in a hub-and-spoke WAN.',
+      examRelevance: {
+        overview:      'A Transit Gateway simplifies multi-VPC connectivity: each VPC attaches once to the TGW hub rather than peering with every other VPC.',
+        howItRoutes:   'Each VPC adds a route pointing 0.0.0.0/0 or specific CIDRs toward the TGW attachment; the TGW consults its own route table to forward between VPCs or toward the internet via the IGW.',
+        keyDevices:    'Transit Gateway (hub router for VPCs), Internet Gateway (internet border), VPC (network boundary), subnet (routing zone).',
+        keyConcepts:   'Hub-and-spoke vs full-mesh VPC peering, TGW route tables, VPC attachments, inter-VPC routing policy.',
+        examRelevance: 'N10-009 obj 1.8 (cloud deployment models) — understand Transit Gateway as the hub-and-spoke alternative to VPC peering.',
+      },
+      completion: {
+        requiredDevices: ['cloud', 'router', 'switch'],
+        expectedCount:   { cloud: 4, router: 2, switch: 3 },
+        requiredCables:  [
+          { from: 'cloud',  to: 'router' },
+          { from: 'router', to: 'cloud' },
+          { from: 'cloud',  to: 'switch' },
+        ],
+      },
+    },
+
+    {
+      id: 'sase-architecture',
+      title: 'SASE Architecture (cloud-delivered security)',
+      category: 'cloud',
+      objectiveRefs: ['1.8', '4.1'],
+      startingState: {
+        devices: [
+          { id: 'sc_sa_user1',  type: 'laptop',   x: 160, y: 160, label: 'Remote-User-01', interfaces: [{ ip: '192.168.50.10', mask: 24 }] },
+          { id: 'sc_sa_user2',  type: 'laptop',   x: 160, y: 320, label: 'Remote-User-02', interfaces: [{ ip: '192.168.51.10', mask: 24 }] },
+          { id: 'sc_sa_user3',  type: 'smartphone', x: 160, y: 480, label: 'Remote-User-03', interfaces: [{ ip: '192.168.52.10', mask: 24 }] },
+          { id: 'sc_sa_sase',   type: 'cloud',    x: 480, y: 320, label: 'SASE-Edge PoP', interfaces: [{ ip: '100.64.1.1', mask: 24 }] },
+          { id: 'sc_sa_inet',   type: 'cloud',    x: 480, y: 120, label: 'Internet' },
+          { id: 'sc_sa_vpc',    type: 'cloud',    x: 760, y: 320, label: 'Corp-VPC',     interfaces: [{ ip: '10.0.0.1', mask: 16 }] },
+          { id: 'sc_sa_saas',   type: 'server',   x: 760, y: 120, label: 'SaaS-App',       interfaces: [{ ip: '10.1.0.10', mask: 24 }] },
+          { id: 'sc_sa_hq',     type: 'server',   x: 760, y: 520, label: 'HQ-DC',          interfaces: [{ ip: '10.2.0.1', mask: 24 }] },
+        ],
+        cables: [
+          { id: 'sc_sa_c1', fromId: 'sc_sa_user1', toId: 'sc_sa_sase', type: 'fiber' },
+          { id: 'sc_sa_c2', fromId: 'sc_sa_user2', toId: 'sc_sa_sase', type: 'fiber' },
+          { id: 'sc_sa_c3', fromId: 'sc_sa_user3', toId: 'sc_sa_sase', type: 'fiber' },
+          { id: 'sc_sa_c4', fromId: 'sc_sa_sase',  toId: 'sc_sa_inet', type: 'fiber' },
+          { id: 'sc_sa_c5', fromId: 'sc_sa_sase',  toId: 'sc_sa_vpc',  type: 'fiber' },
+          { id: 'sc_sa_c6', fromId: 'sc_sa_inet',  toId: 'sc_sa_saas', type: 'fiber' },
+          { id: 'sc_sa_c7', fromId: 'sc_sa_vpc',   toId: 'sc_sa_hq',   type: 'fiber' },
+        ],
+        viewport: { x: 0, y: 0, zoom: 1 },
+      },
+      brief: 'Secure Access Service Edge (SASE) converges SD-WAN, CASB, SWG, ZTNA, and firewall-as-a-service into a cloud-delivered service delivered from globally distributed PoPs. Instead of backhauling remote-user traffic to a corporate data centre for inspection, users connect directly to the nearest SASE PoP — security is applied in the cloud before traffic reaches its destination.',
+      examRelevance: {
+        overview:      'SASE eliminates the hub-and-spoke VPN model: every user connects to a cloud PoP that enforces policy, inspects traffic, and routes directly to the destination.',
+        howItRoutes:   'Remote user → nearest SASE PoP (TLS tunnel) → ZTNA/CASB/SWG policy enforcement → direct route to SaaS app or corporate VPC.',
+        keyDevices:    'SASE PoP (cloud-delivered policy engine), ZTNA (identity-based access, no implicit trust), CASB (cloud app visibility).',
+        keyConcepts:   'SASE vs traditional VPN backhauling, zero-trust network access, cloud-delivered security, SD-WAN + security convergence.',
+        examRelevance: 'N10-009 obj 1.8 (cloud) + 4.1 (security architecture) — understand SASE as the converged cloud-edge security model vs legacy hub-and-spoke VPN.',
+      },
+      completion: {
+        requiredDevices: ['cloud', 'laptop', 'server'],
+        expectedCount:   { cloud: 3, laptop: 2, server: 2 },
+        requiredCables:  [
+          { from: 'laptop', to: 'cloud' },
+          { from: 'cloud',  to: 'server' },
+        ],
+      },
+    },
+
+    // ── Batch C: More Cloud + WAN scenarios ───────────────────────────────
+    {
+      id: 'sd-wan-network',
+      title: 'SD-WAN Network (HQ + 2 branches)',
+      category: 'wan',
+      objectiveRefs: ['1.6', '2.1'],
+      startingState: {
+        devices: [
+          { id: 'sc_sw_inet',  type: 'cloud',   x: 520, y:  60, label: 'Internet/MPLS', interfaces: [{ ip: '203.0.113.0', mask: 24 }] },
+          { id: 'sc_sw_hqe',   type: 'router',  x: 520, y: 180, label: 'HQ-SDWAN-Edge', interfaces: [{ ip: '203.0.113.1', mask: 24 }, { ip: '10.0.0.1', mask: 24 }] },
+          { id: 'sc_sw_br1e',  type: 'router',  x: 280, y: 400, label: 'Branch-1-Edge', interfaces: [{ ip: '203.0.113.2', mask: 24 }, { ip: '10.1.0.1', mask: 24 }] },
+          { id: 'sc_sw_br2e',  type: 'router',  x: 760, y: 400, label: 'Branch-2-Edge', interfaces: [{ ip: '203.0.113.3', mask: 24 }, { ip: '10.2.0.1', mask: 24 }] },
+          { id: 'sc_sw_hqsw',  type: 'switch',  x: 520, y: 300, label: 'HQ-SW' },
+          { id: 'sc_sw_br1sw', type: 'switch',  x: 280, y: 520, label: 'Branch-1-SW' },
+          { id: 'sc_sw_br2sw', type: 'switch',  x: 760, y: 520, label: 'Branch-2-SW' },
+          { id: 'sc_sw_hqpc',  type: 'pc',      x: 520, y: 420, label: 'HQ-Host',      interfaces: [{ ip: '10.0.0.10', mask: 24 }] },
+          { id: 'sc_sw_b1pc',  type: 'pc',      x: 160, y: 640, label: 'BR1-Host-01',  interfaces: [{ ip: '10.1.0.10', mask: 24 }] },
+          { id: 'sc_sw_b1lap', type: 'laptop',  x: 320, y: 640, label: 'BR1-Laptop',   interfaces: [{ ip: '10.1.0.11', mask: 24 }] },
+          { id: 'sc_sw_b2pc',  type: 'pc',      x: 680, y: 640, label: 'BR2-Host-01',  interfaces: [{ ip: '10.2.0.10', mask: 24 }] },
+          { id: 'sc_sw_b2vo',  type: 'server',  x: 840, y: 640, label: 'BR2-VoIP',     interfaces: [{ ip: '10.2.0.20', mask: 24 }] },
+        ],
+        cables: [
+          { id: 'sc_sw_c1',  fromId: 'sc_sw_inet',  toId: 'sc_sw_hqe',   type: 'fiber' },
+          { id: 'sc_sw_c2',  fromId: 'sc_sw_inet',  toId: 'sc_sw_br1e',  type: 'fiber' },
+          { id: 'sc_sw_c3',  fromId: 'sc_sw_inet',  toId: 'sc_sw_br2e',  type: 'fiber' },
+          { id: 'sc_sw_c4',  fromId: 'sc_sw_hqe',   toId: 'sc_sw_hqsw',  type: 'cat6' },
+          { id: 'sc_sw_c5',  fromId: 'sc_sw_br1e',  toId: 'sc_sw_br1sw', type: 'cat6' },
+          { id: 'sc_sw_c6',  fromId: 'sc_sw_br2e',  toId: 'sc_sw_br2sw', type: 'cat6' },
+          { id: 'sc_sw_c7',  fromId: 'sc_sw_hqsw',  toId: 'sc_sw_hqpc',  type: 'cat6' },
+          { id: 'sc_sw_c8',  fromId: 'sc_sw_br1sw', toId: 'sc_sw_b1pc',  type: 'cat6' },
+          { id: 'sc_sw_c9',  fromId: 'sc_sw_br1sw', toId: 'sc_sw_b1lap', type: 'cat6' },
+          { id: 'sc_sw_c10', fromId: 'sc_sw_br2sw', toId: 'sc_sw_b2pc',  type: 'cat6' },
+          { id: 'sc_sw_c11', fromId: 'sc_sw_br2sw', toId: 'sc_sw_b2vo',  type: 'cat6' },
+        ],
+        viewport: { x: 0, y: 0, zoom: 1 },
+      },
+      brief: 'SD-WAN decouples the WAN overlay from the physical underlay. Each site has an SD-WAN edge device that can bond multiple transports (MPLS, broadband, LTE) into a single logical fabric. A centralised controller defines application-level policies — e.g. route VoIP over MPLS and bulk data over broadband — applied automatically at every edge. Branches get enterprise-grade connectivity without expensive MPLS-only circuits.',
+      examRelevance: {
+        overview:      'SD-WAN virtualises WAN transport: edge routers create encrypted overlays across any mix of internet, MPLS, or cellular links, policy-steered per application.',
+        howItRoutes:   'Each SD-WAN edge establishes encrypted tunnels to all other edges across the underlay; the controller pushes per-app routing policies that select the best path dynamically.',
+        keyDevices:    'SD-WAN edge (CPE + tunnel endpoint), SD-WAN controller (centralised policy), MPLS/internet underlay (transport).',
+        keyConcepts:   'Transport independence, application-aware routing, zero-touch provisioning, SD-WAN vs MPLS-only, WAN optimisation.',
+        examRelevance: 'N10-009 obj 1.6 (WAN technologies) — identify SD-WAN as the software-defined alternative to dedicated MPLS circuits.',
+      },
+      completion: {
+        requiredDevices: ['cloud', 'router', 'switch'],
+        expectedCount:   { cloud: 1, router: 3, switch: 3 },
+        requiredCables:  [
+          { from: 'cloud',  to: 'router' },
+          { from: 'router', to: 'switch' },
+        ],
+      },
+    },
+
+    {
+      id: 'nat-gateway-cloud',
+      title: 'NAT Gateway Cloud (private outbound access)',
+      category: 'cloud',
+      objectiveRefs: ['1.8'],
+      startingState: {
+        devices: [
+          { id: 'sc_ng_inet',  type: 'cloud',   x: 520, y:  80, label: 'Internet' },
+          { id: 'sc_ng_igw',   type: 'router',  x: 520, y: 200, label: 'IGW',           interfaces: [{ ip: '203.0.113.30', mask: 24 }] },
+          { id: 'sc_ng_vpc',   type: 'cloud',   x: 520, y: 320, label: 'VPC-prod',      interfaces: [{ ip: '10.0.0.1', mask: 16 }] },
+          { id: 'sc_ng_pub',   type: 'switch',  x: 320, y: 440, label: 'public-subnet' },
+          { id: 'sc_ng_priv',  type: 'switch',  x: 720, y: 440, label: 'private-subnet' },
+          { id: 'sc_ng_nat',   type: 'router',  x: 320, y: 560, label: 'NAT-GW',        interfaces: [{ ip: '10.0.1.5', mask: 24 }] },
+          { id: 'sc_ng_api',   type: 'server',  x: 640, y: 560, label: 'Backend-API',   interfaces: [{ ip: '10.0.2.10', mask: 24 }] },
+          { id: 'sc_ng_db',    type: 'server',  x: 800, y: 560, label: 'DB-Primary',    interfaces: [{ ip: '10.0.2.20', mask: 24 }] },
+        ],
+        cables: [
+          { id: 'sc_ng_c1', fromId: 'sc_ng_inet', toId: 'sc_ng_igw',  type: 'fiber' },
+          { id: 'sc_ng_c2', fromId: 'sc_ng_igw',  toId: 'sc_ng_vpc',  type: 'fiber' },
+          { id: 'sc_ng_c3', fromId: 'sc_ng_vpc',  toId: 'sc_ng_pub',  type: 'cat6' },
+          { id: 'sc_ng_c4', fromId: 'sc_ng_vpc',  toId: 'sc_ng_priv', type: 'cat6' },
+          { id: 'sc_ng_c5', fromId: 'sc_ng_pub',  toId: 'sc_ng_nat',  type: 'cat6' },
+          { id: 'sc_ng_c6', fromId: 'sc_ng_priv', toId: 'sc_ng_api',  type: 'cat6' },
+          { id: 'sc_ng_c7', fromId: 'sc_ng_priv', toId: 'sc_ng_db',   type: 'cat6' },
+          { id: 'sc_ng_c8', fromId: 'sc_ng_nat',  toId: 'sc_ng_api',  type: 'cat6' },
+        ],
+        viewport: { x: 0, y: 0, zoom: 1 },
+      },
+      brief: 'A NAT Gateway enables private-subnet instances to initiate outbound internet connections (e.g. to download packages or call an API) without having a public IP address or an inbound internet route. Inbound connections from the internet are still blocked — the NAT Gateway performs source NAT on outbound packets and discards unsolicited inbound traffic. The NAT Gateway itself resides in the public subnet with an Elastic IP.',
+      examRelevance: {
+        overview:      'A NAT Gateway gives private instances outbound-only internet access: source NAT out, no inbound route in. The internet cannot initiate connections to private instances.',
+        howItRoutes:   'Private subnet instance → private route table (0.0.0.0/0 → NAT-GW) → NAT-GW source NATs the packet → IGW → internet.',
+        keyDevices:    'NAT Gateway (source NAT, Elastic IP, lives in public subnet), IGW (VPC internet border), private subnet (no IGW route).',
+        keyConcepts:   'Source NAT vs DNAT, Elastic IP, private subnet routing table, outbound-only internet access, difference from IGW.',
+        examRelevance: 'N10-009 obj 1.8 (cloud) — contrast NAT Gateway (outbound private) with IGW (bidirectional public) routing.',
+      },
+      completion: {
+        requiredDevices: ['cloud', 'router', 'switch', 'server'],
+        expectedCount:   { cloud: 2, router: 2, switch: 2, server: 2 },
+        requiredCables:  [
+          { from: 'cloud',  to: 'router' },
+          { from: 'router', to: 'switch' },
+          { from: 'switch', to: 'server' },
+        ],
+      },
+    },
+
+    {
+      id: 'internet-gateway-cloud',
+      title: 'Internet Gateway Cloud (public web tier + LB)',
+      category: 'cloud',
+      objectiveRefs: ['1.8'],
+      startingState: {
+        devices: [
+          { id: 'sc_ig_inet',  type: 'cloud',   x: 520, y:  80, label: 'Internet' },
+          { id: 'sc_ig_igw',   type: 'router',  x: 520, y: 200, label: 'IGW',         interfaces: [{ ip: '203.0.113.40', mask: 24 }] },
+          { id: 'sc_ig_vpc',   type: 'cloud',   x: 520, y: 320, label: 'VPC-web',     interfaces: [{ ip: '10.3.0.1', mask: 16 }] },
+          { id: 'sc_ig_pub',   type: 'switch',  x: 520, y: 440, label: 'public-subnet' },
+          { id: 'sc_ig_lb',    type: 'server',  x: 520, y: 560, label: 'App-LB',      interfaces: [{ ip: '10.3.1.5', mask: 24 }] },
+          { id: 'sc_ig_web1',  type: 'server',  x: 320, y: 680, label: 'Web-01',      interfaces: [{ ip: '10.3.1.10', mask: 24 }] },
+          { id: 'sc_ig_web2',  type: 'server',  x: 520, y: 680, label: 'Web-02',      interfaces: [{ ip: '10.3.1.11', mask: 24 }] },
+          { id: 'sc_ig_web3',  type: 'server',  x: 720, y: 680, label: 'Web-03',      interfaces: [{ ip: '10.3.1.12', mask: 24 }] },
+        ],
+        cables: [
+          { id: 'sc_ig_c1', fromId: 'sc_ig_inet', toId: 'sc_ig_igw',  type: 'fiber' },
+          { id: 'sc_ig_c2', fromId: 'sc_ig_igw',  toId: 'sc_ig_vpc',  type: 'fiber' },
+          { id: 'sc_ig_c3', fromId: 'sc_ig_vpc',  toId: 'sc_ig_pub',  type: 'cat6' },
+          { id: 'sc_ig_c4', fromId: 'sc_ig_pub',  toId: 'sc_ig_lb',   type: 'cat6' },
+          { id: 'sc_ig_c5', fromId: 'sc_ig_lb',   toId: 'sc_ig_web1', type: 'cat6' },
+          { id: 'sc_ig_c6', fromId: 'sc_ig_lb',   toId: 'sc_ig_web2', type: 'cat6' },
+          { id: 'sc_ig_c7', fromId: 'sc_ig_lb',   toId: 'sc_ig_web3', type: 'cat6' },
+        ],
+        viewport: { x: 0, y: 0, zoom: 1 },
+      },
+      brief: 'An Internet Gateway (IGW) is the VPC component that enables bidirectional communication between VPC resources and the internet. Resources in the public subnet with public IPs (or Elastic IPs) can receive inbound connections directly through the IGW. A load balancer in the public subnet distributes incoming HTTP/HTTPS requests across the web server pool — horizontal scale plus redundancy.',
+      examRelevance: {
+        overview:      'The IGW is a VPC border router for public-IP resources: it performs 1-to-1 NAT between Elastic IPs and private IPs, allowing inbound and outbound internet traffic.',
+        howItRoutes:   'Internet → IGW → public subnet route table → load balancer → web servers (via load balancer VIP, which maps to private IPs of the web tier).',
+        keyDevices:    'Internet Gateway (1-to-1 NAT, bidirectional), Application Load Balancer (L7 routing across web tier), public subnet (IGW-routed).',
+        keyConcepts:   'IGW 1-to-1 NAT vs NAT Gateway masquerade, public subnet routing table, load balancer health checks, elastic IP.',
+        examRelevance: 'N10-009 obj 1.8 (cloud) — distinguish IGW (public, bidirectional, 1-to-1 NAT) from NAT Gateway (private, outbound-only, masquerade).',
+      },
+      completion: {
+        requiredDevices: ['cloud', 'router', 'switch', 'server'],
+        expectedCount:   { cloud: 2, router: 1, switch: 1, server: 4 },
+        requiredCables:  [
+          { from: 'cloud',  to: 'router' },
+          { from: 'router', to: 'switch' },
+          { from: 'switch', to: 'server' },
+          { from: 'server', to: 'server' },
+        ],
+      },
+    },
+
+    {
+      id: 'vpc-peering-cloud',
+      title: 'VPC Peering (two VPCs, private connectivity)',
+      category: 'cloud',
+      objectiveRefs: ['1.8'],
+      startingState: {
+        devices: [
+          { id: 'sc_vp_vpca',  type: 'cloud',   x: 280, y: 200, label: 'VPC-A',        interfaces: [{ ip: '10.10.0.1', mask: 16 }] },
+          { id: 'sc_vp_vpcb',  type: 'cloud',   x: 760, y: 200, label: 'VPC-B',        interfaces: [{ ip: '10.20.0.1', mask: 16 }] },
+          { id: 'sc_vp_suba',  type: 'switch',  x: 280, y: 360, label: 'app-subnet-A' },
+          { id: 'sc_vp_subb',  type: 'switch',  x: 760, y: 360, label: 'db-subnet-B' },
+          { id: 'sc_vp_aw1',   type: 'server',  x: 160, y: 500, label: 'App-A-Web',    interfaces: [{ ip: '10.10.1.10', mask: 24 }] },
+          { id: 'sc_vp_as1',   type: 'server',  x: 360, y: 500, label: 'App-A-Svc',    interfaces: [{ ip: '10.10.1.11', mask: 24 }] },
+          { id: 'sc_vp_bd1',   type: 'server',  x: 640, y: 500, label: 'DB-Primary',   interfaces: [{ ip: '10.20.1.10', mask: 24 }] },
+          { id: 'sc_vp_bd2',   type: 'server',  x: 840, y: 500, label: 'DB-Replica',   interfaces: [{ ip: '10.20.1.11', mask: 24 }] },
+        ],
+        cables: [
+          { id: 'sc_vp_c1', fromId: 'sc_vp_vpca', toId: 'sc_vp_vpcb', type: 'fiber' },
+          { id: 'sc_vp_c2', fromId: 'sc_vp_vpca', toId: 'sc_vp_suba', type: 'cat6' },
+          { id: 'sc_vp_c3', fromId: 'sc_vp_vpcb', toId: 'sc_vp_subb', type: 'cat6' },
+          { id: 'sc_vp_c4', fromId: 'sc_vp_suba', toId: 'sc_vp_aw1',  type: 'cat6' },
+          { id: 'sc_vp_c5', fromId: 'sc_vp_suba', toId: 'sc_vp_as1',  type: 'cat6' },
+          { id: 'sc_vp_c6', fromId: 'sc_vp_subb', toId: 'sc_vp_bd1',  type: 'cat6' },
+          { id: 'sc_vp_c7', fromId: 'sc_vp_subb', toId: 'sc_vp_bd2',  type: 'cat6' },
+        ],
+        viewport: { x: 0, y: 0, zoom: 1 },
+      },
+      brief: 'VPC peering creates a direct private-IP routing path between two VPCs — traffic travels over the cloud backbone, never the public internet. Each VPC adds a route entry pointing the peer CIDR to the peering connection. VPC peering is non-transitive: if VPC-A peers with VPC-B and VPC-B peers with VPC-C, VPC-A cannot reach VPC-C through VPC-B (use a Transit Gateway for transitive routing).',
+      examRelevance: {
+        overview:      'VPC peering links two VPCs with private routing over the cloud provider backbone — no internet exposure, no VPN overhead, low latency.',
+        howItRoutes:   'App server in VPC-A sends traffic to DB in VPC-B; the VPC-A route table routes 10.20.0.0/16 via the peering connection; traffic traverses the cloud backbone directly.',
+        keyDevices:    'VPC (network boundary), peering connection (private routing link), subnet (routing zone), servers (workloads in each VPC).',
+        keyConcepts:   'VPC peering non-transitivity, route table peering entries, private IP routing, VPC peering vs Transit Gateway.',
+        examRelevance: 'N10-009 obj 1.8 (cloud) — understand VPC peering non-transitivity and when to use Transit Gateway instead.',
+      },
+      completion: {
+        requiredDevices: ['cloud', 'switch', 'server'],
+        expectedCount:   { cloud: 2, switch: 2, server: 4 },
+        requiredCables:  [
+          { from: 'cloud',  to: 'cloud' },
+          { from: 'cloud',  to: 'switch' },
+          { from: 'switch', to: 'server' },
+        ],
+      },
+    },
+
+    // ── Batch D: WAN + VPN ───────────────────────────────────────────────
+
+    {
+      id: 'metropolitan-area-network',
+      title: 'Metropolitan Area Network (MAN)',
+      category: 'wan',
+      objectiveRefs: ['1.2', '1.6'],
+      startingState: {
+        devices: [
+          { id: 'sc_man_core',  type: 'router',   x: 520, y: 180, label: 'MAN-Core',      interfaces: [{ ip: '10.1.0.1',  mask: 24 }] },
+          { id: 'sc_man_site1', type: 'router',   x: 240, y: 340, label: 'Site-A-Router', interfaces: [{ ip: '10.1.1.1',  mask: 24 }] },
+          { id: 'sc_man_site2', type: 'router',   x: 520, y: 400, label: 'Site-B-Router', interfaces: [{ ip: '10.1.2.1',  mask: 24 }] },
+          { id: 'sc_man_site3', type: 'router',   x: 800, y: 340, label: 'Site-C-Router', interfaces: [{ ip: '10.1.3.1',  mask: 24 }] },
+          { id: 'sc_man_sw1',   type: 'switch',   x: 240, y: 480, label: 'SW-SiteA' },
+          { id: 'sc_man_sw2',   type: 'switch',   x: 520, y: 540, label: 'SW-SiteB' },
+          { id: 'sc_man_sw3',   type: 'switch',   x: 800, y: 480, label: 'SW-SiteC' },
+          { id: 'sc_man_ws1',   type: 'pc',       x: 160, y: 600, label: 'Workstation-A1' },
+          { id: 'sc_man_ws2',   type: 'pc',       x: 320, y: 600, label: 'Workstation-A2' },
+          { id: 'sc_man_ws3',   type: 'pc',       x: 520, y: 660, label: 'Workstation-B1' },
+          { id: 'sc_man_ws4',   type: 'pc',       x: 800, y: 600, label: 'Workstation-C1' },
+        ],
+        cables: [
+          { id: 'sc_man_c1', fromId: 'sc_man_core',  toId: 'sc_man_site1', type: 'fiber' },
+          { id: 'sc_man_c2', fromId: 'sc_man_core',  toId: 'sc_man_site2', type: 'fiber' },
+          { id: 'sc_man_c3', fromId: 'sc_man_core',  toId: 'sc_man_site3', type: 'fiber' },
+          { id: 'sc_man_c4', fromId: 'sc_man_site1', toId: 'sc_man_sw1',   type: 'cat6' },
+          { id: 'sc_man_c5', fromId: 'sc_man_site2', toId: 'sc_man_sw2',   type: 'cat6' },
+          { id: 'sc_man_c6', fromId: 'sc_man_site3', toId: 'sc_man_sw3',   type: 'cat6' },
+          { id: 'sc_man_c7', fromId: 'sc_man_sw1',   toId: 'sc_man_ws1',   type: 'cat6' },
+          { id: 'sc_man_c8', fromId: 'sc_man_sw1',   toId: 'sc_man_ws2',   type: 'cat6' },
+          { id: 'sc_man_c9', fromId: 'sc_man_sw2',   toId: 'sc_man_ws3',   type: 'cat6' },
+          { id: 'sc_man_c10', fromId: 'sc_man_sw3',  toId: 'sc_man_ws4',   type: 'cat6' },
+        ],
+        viewport: { x: 0, y: 0, zoom: 1 },
+      },
+      brief: 'A MAN spans a city or campus, interconnecting multiple buildings or sites over a shared high-speed backbone — typically fiber. Each site has its own LAN but shares the MAN core for inter-site routing. MANs sit between a LAN (single building) and a WAN (national/global) in coverage and are common in university campuses, city government networks, and multi-site enterprises within one metro area.',
+      examRelevance: {
+        overview: 'A MAN covers a city or campus area, larger than a LAN but smaller than a WAN.',
+        howItRoutes: 'Sites connect to a central MAN core router via fiber; inter-site traffic routes through the core.',
+        keyDevices: 'MAN core router, site-edge routers, access switches, and LAN workstations.',
+        keyConcepts: 'MAN vs LAN vs WAN scope, fiber backbone, hub-and-spoke topology, city-scale coverage.',
+        examRelevance: 'N10-009 obj 1.2 (network topology) and 1.6 (WAN types) — know MAN as the middle tier between LAN and WAN and recognize fiber as the typical MAN transport.',
+      },
+      completion: {
+        requiredDevices: ['router', 'switch', 'pc'],
+        expectedCount:   { router: 4, switch: 3, pc: 4 },
+        requiredCables:  [
+          { from: 'router', to: 'router' },
+          { from: 'router', to: 'switch' },
+          { from: 'switch', to: 'pc' },
+        ],
+      },
+    },
+
+    {
+      id: 'site-to-site-ipsec-vpn',
+      title: 'Site-to-Site IPSec VPN',
+      category: 'security',
+      objectiveRefs: ['4.1', '1.6'],
+      startingState: {
+        devices: [
+          { id: 'sc_sv_inet',  type: 'internet', x: 520, y: 160, label: 'Internet',       interfaces: [{ ip: '0.0.0.0', mask: 0 }] },
+          { id: 'sc_sv_hqfw',  type: 'firewall', x: 280, y: 300, label: 'HQ-Firewall',    interfaces: [{ ip: '203.0.113.1', mask: 24 }] },
+          { id: 'sc_sv_brfw',  type: 'firewall', x: 760, y: 300, label: 'Branch-Firewall', interfaces: [{ ip: '198.51.100.1', mask: 24 }] },
+          { id: 'sc_sv_hqsw',  type: 'switch',   x: 200, y: 440, label: 'HQ-LAN-SW' },
+          { id: 'sc_sv_brsw',  type: 'switch',   x: 840, y: 440, label: 'Branch-LAN-SW' },
+          { id: 'sc_sv_hqsrv', type: 'server',   x: 120, y: 560, label: 'HQ-Server',      interfaces: [{ ip: '192.168.10.10', mask: 24 }] },
+          { id: 'sc_sv_hqws',  type: 'pc',       x: 280, y: 560, label: 'HQ-PC' },
+          { id: 'sc_sv_brws1', type: 'pc',       x: 760, y: 560, label: 'Branch-PC1' },
+          { id: 'sc_sv_brws2', type: 'pc',       x: 920, y: 560, label: 'Branch-PC2' },
+        ],
+        cables: [
+          { id: 'sc_sv_c1', fromId: 'sc_sv_inet',  toId: 'sc_sv_hqfw',  type: 'fiber' },
+          { id: 'sc_sv_c2', fromId: 'sc_sv_inet',  toId: 'sc_sv_brfw',  type: 'fiber' },
+          { id: 'sc_sv_c3', fromId: 'sc_sv_hqfw',  toId: 'sc_sv_hqsw',  type: 'cat6' },
+          { id: 'sc_sv_c4', fromId: 'sc_sv_brfw',  toId: 'sc_sv_brsw',  type: 'cat6' },
+          { id: 'sc_sv_c5', fromId: 'sc_sv_hqsw',  toId: 'sc_sv_hqsrv', type: 'cat6' },
+          { id: 'sc_sv_c6', fromId: 'sc_sv_hqsw',  toId: 'sc_sv_hqws',  type: 'cat6' },
+          { id: 'sc_sv_c7', fromId: 'sc_sv_brsw',  toId: 'sc_sv_brws1', type: 'cat6' },
+          { id: 'sc_sv_c8', fromId: 'sc_sv_brsw',  toId: 'sc_sv_brws2', type: 'cat6' },
+        ],
+        viewport: { x: 0, y: 0, zoom: 1 },
+      },
+      brief: 'A site-to-site IPSec VPN creates an encrypted tunnel between two network firewalls over the public internet, making remote branch traffic appear as if it is on the same private LAN as headquarters. The firewalls negotiate IKE Phase 1 (ISAKMP SA — authenticating peers) and Phase 2 (IPSec SA — encrypting the data tunnel). The tunnel is always-on and transparent to end devices.',
+      examRelevance: {
+        overview: 'Site-to-site IPSec VPN encrypts traffic between two fixed sites over the internet.',
+        howItRoutes: 'HQ and branch firewalls both connect to the internet; IPSec tunnel encrypts traffic between the two private LANs.',
+        keyDevices: 'Firewall/VPN concentrators at each end, internet as the transport, LAN switches and endpoints.',
+        keyConcepts: 'IKE Phase 1 vs Phase 2, ISAKMP, ESP vs AH, tunnel mode vs transport mode, pre-shared key vs certificate authentication.',
+        examRelevance: 'N10-009 obj 4.1 (security concepts) and 1.6 (WAN connectivity) — know the two IKE phases, ESP for encryption, and distinguish site-to-site from remote-access VPN.',
+      },
+      completion: {
+        requiredDevices: ['internet', 'firewall', 'switch', 'server', 'pc'],
+        expectedCount:   { internet: 1, firewall: 2, switch: 2, server: 1, pc: 3 },
+        requiredCables:  [
+          { from: 'internet', to: 'firewall' },
+          { from: 'firewall', to: 'switch' },
+          { from: 'switch',   to: 'server' },
+          { from: 'switch',   to: 'pc' },
+        ],
+      },
+    },
+
+    {
+      id: 'remote-access-vpn',
+      title: 'Remote Access VPN (SSL/TLS)',
+      category: 'security',
+      objectiveRefs: ['4.1', '1.6'],
+      startingState: {
+        devices: [
+          { id: 'sc_rv_inet',  type: 'internet', x: 520, y: 140, label: 'Internet',        interfaces: [{ ip: '0.0.0.0', mask: 0 }] },
+          { id: 'sc_rv_vpnc',  type: 'vpn',      x: 320, y: 280, label: 'VPN-Concentrator', interfaces: [{ ip: '203.0.113.10', mask: 24 }] },
+          { id: 'sc_rv_fw',    type: 'firewall', x: 520, y: 280, label: 'Corp-Firewall',    interfaces: [{ ip: '10.0.0.1',    mask: 8 }] },
+          { id: 'sc_rv_sw',    type: 'switch',   x: 520, y: 420, label: 'Corp-LAN-SW' },
+          { id: 'sc_rv_srv',   type: 'server',   x: 400, y: 540, label: 'File-Server',      interfaces: [{ ip: '10.10.1.10',  mask: 24 }] },
+          { id: 'sc_rv_app',   type: 'server',   x: 640, y: 540, label: 'App-Server',       interfaces: [{ ip: '10.10.1.20',  mask: 24 }] },
+          { id: 'sc_rv_lap1',  type: 'laptop',   x: 160, y: 420, label: 'Remote-Worker-1' },
+          { id: 'sc_rv_lap2',  type: 'laptop',   x: 160, y: 560, label: 'Remote-Worker-2' },
+          { id: 'sc_rv_mob',   type: 'smartphone', x: 760, y: 140, label: 'Mobile-User' },
+        ],
+        cables: [
+          { id: 'sc_rv_c1', fromId: 'sc_rv_inet', toId: 'sc_rv_vpnc',  type: 'fiber' },
+          { id: 'sc_rv_c2', fromId: 'sc_rv_inet', toId: 'sc_rv_fw',    type: 'fiber' },
+          { id: 'sc_rv_c3', fromId: 'sc_rv_inet', toId: 'sc_rv_mob',   type: 'fiber' },
+          { id: 'sc_rv_c4', fromId: 'sc_rv_vpnc', toId: 'sc_rv_fw',    type: 'cat6' },
+          { id: 'sc_rv_c5', fromId: 'sc_rv_vpnc', toId: 'sc_rv_lap1',  type: 'fiber' },
+          { id: 'sc_rv_c6', fromId: 'sc_rv_vpnc', toId: 'sc_rv_lap2',  type: 'fiber' },
+          { id: 'sc_rv_c7', fromId: 'sc_rv_fw',   toId: 'sc_rv_sw',    type: 'cat6' },
+          { id: 'sc_rv_c8', fromId: 'sc_rv_sw',   toId: 'sc_rv_srv',   type: 'cat6' },
+          { id: 'sc_rv_c9', fromId: 'sc_rv_sw',   toId: 'sc_rv_app',   type: 'cat6' },
+        ],
+        viewport: { x: 0, y: 0, zoom: 1 },
+      },
+      brief: 'A remote-access VPN lets individual users connect securely to the corporate network from anywhere over the internet. SSL/TLS VPNs use port 443 and a VPN concentrator or firewall as the termination point — they work through most firewalls without special port-forwarding and require only a browser or lightweight client. The concentrator authenticates the user, assigns a virtual IP from the corporate pool, and tunnels traffic to internal resources.',
+      examRelevance: {
+        overview: 'Remote-access VPN gives individual road-warrior users an encrypted tunnel to the corporate LAN.',
+        howItRoutes: 'Remote devices connect through the internet to a VPN concentrator, which terminates the tunnel and forwards decrypted traffic into the corp LAN.',
+        keyDevices: 'VPN concentrator, corp firewall, internal servers, and remote laptops/smartphones.',
+        keyConcepts: 'SSL/TLS VPN vs IPSec VPN, split tunneling vs full tunneling, user authentication (MFA), virtual IP assignment, port 443.',
+        examRelevance: 'N10-009 obj 4.1 (security concepts) and 1.6 (WAN) — know the difference between remote-access VPN and site-to-site VPN, and why SSL VPN is preferred for road warriors.',
+      },
+      completion: {
+        requiredDevices: ['internet', 'vpn', 'firewall', 'switch', 'server'],
+        expectedCount:   { internet: 1, vpn: 1, firewall: 1, switch: 1, server: 2 },
+        requiredCables:  [
+          { from: 'internet', to: 'vpn' },
+          { from: 'vpn',      to: 'firewall' },
+          { from: 'firewall', to: 'switch' },
+          { from: 'switch',   to: 'server' },
+        ],
+      },
+    },
+
+    {
+      id: 'cellular-4g-5g-wan',
+      title: 'Cellular 4G/5G WAN',
+      category: 'wan',
+      objectiveRefs: ['1.6', '2.4'],
+      startingState: {
+        devices: [
+          { id: 'sc_cw_tower',  type: 'internet', x: 520, y: 140, label: 'Cellular-Tower', interfaces: [{ ip: '100.64.0.1', mask: 10 }] },
+          { id: 'sc_cw_rtr1',   type: 'router',   x: 280, y: 300, label: 'HQ-4G-Router',  interfaces: [{ ip: '100.64.0.2', mask: 10 }] },
+          { id: 'sc_cw_rtr2',   type: 'router',   x: 760, y: 300, label: 'Branch-5G-Router', interfaces: [{ ip: '100.64.0.3', mask: 10 }] },
+          { id: 'sc_cw_sw1',    type: 'switch',   x: 200, y: 440, label: 'HQ-LAN-SW' },
+          { id: 'sc_cw_sw2',    type: 'switch',   x: 840, y: 440, label: 'Branch-LAN-SW' },
+          { id: 'sc_cw_srv',    type: 'server',   x: 120, y: 560, label: 'HQ-Server',     interfaces: [{ ip: '192.168.10.5', mask: 24 }] },
+          { id: 'sc_cw_ws1',    type: 'pc',       x: 280, y: 560, label: 'HQ-PC' },
+          { id: 'sc_cw_mob1',   type: 'smartphone', x: 760, y: 560, label: 'Branch-Mobile1' },
+          { id: 'sc_cw_mob2',   type: 'smartphone', x: 920, y: 560, label: 'Branch-Mobile2' },
+        ],
+        cables: [
+          { id: 'sc_cw_c1', fromId: 'sc_cw_tower', toId: 'sc_cw_rtr1',  type: 'fiber' },
+          { id: 'sc_cw_c2', fromId: 'sc_cw_tower', toId: 'sc_cw_rtr2',  type: 'fiber' },
+          { id: 'sc_cw_c3', fromId: 'sc_cw_rtr1',  toId: 'sc_cw_sw1',   type: 'cat6' },
+          { id: 'sc_cw_c4', fromId: 'sc_cw_rtr2',  toId: 'sc_cw_sw2',   type: 'cat6' },
+          { id: 'sc_cw_c5', fromId: 'sc_cw_sw1',   toId: 'sc_cw_srv',   type: 'cat6' },
+          { id: 'sc_cw_c6', fromId: 'sc_cw_sw1',   toId: 'sc_cw_ws1',   type: 'cat6' },
+          { id: 'sc_cw_c7', fromId: 'sc_cw_sw2',   toId: 'sc_cw_mob1',  type: 'cat6' },
+          { id: 'sc_cw_c8', fromId: 'sc_cw_sw2',   toId: 'sc_cw_mob2',  type: 'cat6' },
+        ],
+        viewport: { x: 0, y: 0, zoom: 1 },
+      },
+      brief: 'Cellular WAN uses 4G LTE or 5G NR as the last-mile transport between a site router and the mobile carrier backbone. It is a popular backup or primary WAN option for sites where fiber or cable is unavailable — the router contains a cellular modem with a SIM card. 5G offers sub-10ms latency and multi-Gbps speeds suitable for SD-WAN or IoT-dense sites; 4G LTE is adequate for branch office traffic.',
+      examRelevance: {
+        overview: 'Cellular WAN uses 4G/5G mobile networks as the transport layer for site connectivity.',
+        howItRoutes: 'Site routers connect to cellular towers via wireless RF; the carrier backbone forwards traffic to the internet or VPN endpoints.',
+        keyDevices: 'Cellular router (with SIM), cellular tower, LAN switches, and endpoint devices.',
+        keyConcepts: '4G LTE vs 5G NR speeds/latency, cellular as WAN backup or primary, SIM-based authentication, CGNAT addressing (100.64/10 range).',
+        examRelevance: 'N10-009 obj 1.6 (WAN types) and 2.4 (wireless) — know cellular as a WAN option, 4G/5G characteristics, and when cellular WAN is preferred over fiber.',
+      },
+      completion: {
+        requiredDevices: ['internet', 'router', 'switch'],
+        expectedCount:   { internet: 1, router: 2, switch: 2 },
+        requiredCables:  [
+          { from: 'internet', to: 'router' },
+          { from: 'router',   to: 'switch' },
+        ],
+      },
+    },
+
+    {
+      id: 'satellite-wan',
+      title: 'Satellite WAN',
+      category: 'wan',
+      objectiveRefs: ['1.6'],
+      startingState: {
+        devices: [
+          { id: 'sc_sat_sat',  type: 'cloud',   x: 520, y: 100, label: 'Satellite',        interfaces: [{ ip: '192.0.2.1', mask: 24 }] },
+          { id: 'sc_sat_hub',  type: 'router',  x: 520, y: 260, label: 'Satellite-Hub-NOC', interfaces: [{ ip: '192.0.2.10', mask: 24 }] },
+          { id: 'sc_sat_inet', type: 'internet', x: 760, y: 260, label: 'Internet',         interfaces: [{ ip: '0.0.0.0', mask: 0 }] },
+          { id: 'sc_sat_vsat1', type: 'router', x: 200, y: 400, label: 'VSAT-Site1',        interfaces: [{ ip: '10.99.1.1', mask: 24 }] },
+          { id: 'sc_sat_vsat2', type: 'router', x: 840, y: 400, label: 'VSAT-Site2',        interfaces: [{ ip: '10.99.2.1', mask: 24 }] },
+          { id: 'sc_sat_sw1',  type: 'switch',  x: 120, y: 540, label: 'Remote-SW1' },
+          { id: 'sc_sat_sw2',  type: 'switch',  x: 920, y: 540, label: 'Remote-SW2' },
+          { id: 'sc_sat_ws1',  type: 'pc',      x: 80,  y: 660, label: 'Remote-PC1' },
+          { id: 'sc_sat_ws2',  type: 'pc',      x: 200, y: 660, label: 'Remote-PC2' },
+          { id: 'sc_sat_ws3',  type: 'pc',      x: 840, y: 660, label: 'Remote-PC3' },
+        ],
+        cables: [
+          { id: 'sc_sat_c1',  fromId: 'sc_sat_sat',   toId: 'sc_sat_hub',   type: 'fiber' },
+          { id: 'sc_sat_c2',  fromId: 'sc_sat_sat',   toId: 'sc_sat_vsat1', type: 'fiber' },
+          { id: 'sc_sat_c3',  fromId: 'sc_sat_sat',   toId: 'sc_sat_vsat2', type: 'fiber' },
+          { id: 'sc_sat_c4',  fromId: 'sc_sat_hub',   toId: 'sc_sat_inet',  type: 'cat6' },
+          { id: 'sc_sat_c5',  fromId: 'sc_sat_vsat1', toId: 'sc_sat_sw1',   type: 'cat6' },
+          { id: 'sc_sat_c6',  fromId: 'sc_sat_vsat2', toId: 'sc_sat_sw2',   type: 'cat6' },
+          { id: 'sc_sat_c7',  fromId: 'sc_sat_sw1',   toId: 'sc_sat_ws1',   type: 'cat6' },
+          { id: 'sc_sat_c8',  fromId: 'sc_sat_sw1',   toId: 'sc_sat_ws2',   type: 'cat6' },
+          { id: 'sc_sat_c9',  fromId: 'sc_sat_sw2',   toId: 'sc_sat_ws3',   type: 'cat6' },
+        ],
+        viewport: { x: 0, y: 0, zoom: 1 },
+      },
+      brief: 'Satellite WAN is the last-resort connectivity option for remote sites with no terrestrial infrastructure — oil rigs, ships, farms, and rural branches. VSAT (Very Small Aperture Terminal) dishes at each site beam traffic up to a geostationary satellite and down to a Network Operations Centre (NOC) hub, which connects to the internet. Key trade-off: high latency (~600ms round-trip for GEO) due to the 35,786 km altitude. Low-Earth Orbit (LEO) satellites like Starlink cut this to ~20-40ms.',
+      examRelevance: {
+        overview: 'Satellite WAN provides connectivity to remote sites using VSAT dishes and a satellite hub.',
+        howItRoutes: 'Remote VSAT routers beam traffic to the satellite, which relays to a NOC hub router connected to the internet.',
+        keyDevices: 'Satellite (GEO or LEO), VSAT site routers, NOC hub router, LAN switches at remote sites.',
+        keyConcepts: 'VSAT, GEO vs LEO latency (600ms vs 20-40ms), hub-and-spoke topology via satellite, last-mile for remote locations.',
+        examRelevance: 'N10-009 obj 1.6 (WAN connectivity types) — know satellite WAN characteristics, especially high GEO latency and why LEO options are preferred for latency-sensitive applications.',
+      },
+      completion: {
+        requiredDevices: ['cloud', 'router', 'internet', 'switch', 'pc'],
+        expectedCount:   { cloud: 1, router: 3, internet: 1, switch: 2, pc: 3 },
+        requiredCables:  [
+          { from: 'cloud',    to: 'router' },
+          { from: 'router',   to: 'internet' },
+          { from: 'router',   to: 'switch' },
+          { from: 'switch',   to: 'pc' },
+        ],
+      },
+    },
+    {
+      id: 'hybrid-cloud-vpn',
+      title: 'Hybrid Cloud (VPN)',
+      category: 'cloud',
+      objectiveRefs: ['1.8'],
+      startingState: {
+        devices: [
+          { id: 'sc_hcvpn_dc',   type: 'switch',   x: 200,  y: 400, label: 'HQ-DC',      interfaces: [{ ip: '10.100.0.1',   mask: 24 }] },
+          { id: 'sc_hcvpn_fw',   type: 'firewall', x: 400,  y: 400, label: 'DC-FW',       interfaces: [{ ip: '10.100.0.2',   mask: 24 }, { ip: '203.0.113.1', mask: 24 }] },
+          { id: 'sc_hcvpn_inet', type: 'internet', x: 600,  y: 200, label: 'Internet',    interfaces: [{ ip: '0.0.0.0',      mask: 0  }] },
+          { id: 'sc_hcvpn_vpg',  type: 'vpg',      x: 800,  y: 400, label: 'Cloud-VPG',   interfaces: [{ ip: '203.0.113.10', mask: 24 }] },
+          { id: 'sc_hcvpn_vpc',  type: 'cloud',    x: 1000, y: 400, label: 'VPC-prod',    interfaces: [{ ip: '10.0.0.1',     mask: 16 }] },
+          { id: 'sc_hcvpn_sub',  type: 'switch',   x: 1000, y: 560, label: 'app-subnet'   },
+          { id: 'sc_hcvpn_app',  type: 'server',   x: 1000, y: 700, label: 'Cloud-App',   interfaces: [{ ip: '10.0.1.10',    mask: 24 }] },
+        ],
+        cables: [
+          { id: 'sc_hcvpn_c1', fromId: 'sc_hcvpn_dc',   toId: 'sc_hcvpn_fw',   type: 'cat6'  },
+          { id: 'sc_hcvpn_c2', fromId: 'sc_hcvpn_fw',   toId: 'sc_hcvpn_inet', type: 'cat6'  },
+          { id: 'sc_hcvpn_c3', fromId: 'sc_hcvpn_inet', toId: 'sc_hcvpn_vpg',  type: 'fiber' },
+          { id: 'sc_hcvpn_c4', fromId: 'sc_hcvpn_vpg',  toId: 'sc_hcvpn_vpc',  type: 'cat6'  },
+          { id: 'sc_hcvpn_c5', fromId: 'sc_hcvpn_vpc',  toId: 'sc_hcvpn_sub',  type: 'cat6'  },
+          { id: 'sc_hcvpn_c6', fromId: 'sc_hcvpn_sub',  toId: 'sc_hcvpn_app',  type: 'cat6'  },
+        ],
+        viewport: { x: 0, y: 0, zoom: 1 },
+      },
+      brief: 'Hybrid cloud connects an on-premises datacenter to a cloud VPC through an IPSec VPN tunnel. Legacy resources stay in the physical DC; newer workloads run in the cloud. Crypto parameters (encryption, hash, DH group, lifetime) must match exactly on both ends or the tunnel will not come up.',
+      examRelevance: {
+        overview:      'A site-to-site IPSec VPN bridges an on-prem DC and a cloud VPC, making both halves appear as one network. The VPN Gateway (VPG) is the cloud-side tunnel endpoint; the on-prem firewall terminates the tunnel on-prem.',
+        howItRoutes:   'On-prem host → DC switch → firewall (IPSec encrypt, ESP tunnel mode) → internet → Cloud VPG (decrypt) → VPC → app-subnet → Cloud-App. Return path is symmetric.',
+        keyDevices:    'DC Firewall (on-prem VPN endpoint, terminates IPSec tunnel), VPN Gateway — VPG (cloud-side tunnel endpoint, attached to VPC), VPC (cloud network boundary), Cloud-App server.',
+        keyConcepts:   'IPSec tunnel mode (ESP), IKE Phase 1 + Phase 2 negotiation, crypto parameter matching (encryption alg, hash, DH group, lifetime), Perfect Forward Secrecy (PFS).',
+        examRelevance: 'N10-009 obj 1.8 (hybrid cloud) and 4.1 (site-to-site VPN) — know that IPSec uses tunnel mode for site-to-site, that crypto params must match on both peers, and that the VPN Gateway is the cloud-side IPSec endpoint.',
+      },
+      completion: {
+        requiredDevices: ['switch', 'firewall', 'internet', 'vpg', 'cloud', 'server'],
+        expectedCount:   { switch: 2, firewall: 1, internet: 1, vpg: 1, cloud: 1, server: 1 },
+        requiredCables:  [
+          { from: 'switch',   to: 'firewall'  },
+          { from: 'firewall', to: 'internet'  },
+          { from: 'internet', to: 'vpg'       },
+          { from: 'vpg',      to: 'cloud'     },
+          { from: 'cloud',    to: 'switch'    },
+          { from: 'switch',   to: 'server'    },
         ],
       },
     },
@@ -1736,6 +2557,52 @@
     }
     _renderIntentChip(); // Task 4.1 (phase 2) — restore chip after state reload
     _renderCompletionPill(); // Task 6.1 (phase 2) — restore pill after state reload
+  }
+
+  // ===========================================================================
+  // Title-case helper for scenario titles. Capitalizes first letter of each
+  // word except short joiners (only when not the first word). Preserves
+  // acronyms (UPPERCASE words >= 2 chars stay so). Splits on whitespace and
+  // hyphens so hyphenated compounds get each component capitalized.
+  var _TITLE_CASE_LOWER_WORDS = new Set(['a','an','and','the','of','with','on','in','or','for','to','at','vs','via']);
+  function _titleCase(str) {
+    if (!str || typeof str !== 'string') return str;
+    return str.split(/(\s+|-)/).map(function (part, idx) {
+      if (part.match(/^\s+$/) || part === '-') return part;
+      // If already all-uppercase (>=2 chars) → preserve as acronym
+      if (part.length >= 2 && part === part.toUpperCase() && /[A-Z]/.test(part)) return part;
+      // Lower-word check (only for non-first parts, not at start of string)
+      if (idx > 0 && _TITLE_CASE_LOWER_WORDS.has(part.toLowerCase())) return part.toLowerCase();
+      // Capitalize first letter, lower rest
+      return part.charAt(0).toUpperCase() + part.slice(1).toLowerCase();
+    }).join('');
+  }
+
+  // ===========================================================================
+  // V1 parity migration: rewrites old V3 device type ids to V1 conventions.
+  // Runs once per hydration. Idempotent (safe to call multiple times).
+  // ===========================================================================
+  var _V1_TYPE_RENAMES = {
+    'ap': 'wap',
+    'workstation': 'pc',
+    'vpn-gateway': 'vpg',
+    'ids-ips': 'ids',
+    'isp-modem': 'isp-router'
+  };
+  function _migrateStateTypesToV1() {
+    if (!state || !Array.isArray(state.devices)) return;
+    var renamed = 0;
+    for (var i = 0; i < state.devices.length; i++) {
+      var oldType = state.devices[i].type;
+      if (_V1_TYPE_RENAMES.hasOwnProperty(oldType)) {
+        state.devices[i].type = _V1_TYPE_RENAMES[oldType];
+        renamed++;
+      }
+    }
+    if (renamed > 0) {
+      console.info('[tb-v3] V1 parity: migrated ' + renamed + ' device(s) to V1 type ids');
+      if (typeof _saveState === 'function') _saveState();
+    }
   }
 
   // ───────────────────────────────────────────────────────────
@@ -2224,34 +3091,56 @@
     'l3-switch':      { label: 'Layer 3 Switch', icon: _icoL3Switch() },
     'hub':            { label: 'Hub', icon: _icoHub() },
     // Endpoints
-    'workstation':    { label: 'Workstation', icon: _icoDesktop() },
+    'pc':             { label: 'PC', icon: _icoDesktop() },
     'laptop':         { label: 'Laptop', icon: _icoLaptop() },
     'server':         { label: 'Server', icon: _icoServer() },
     'smartphone':     { label: 'Smartphone', icon: _icoSmartphone() },
     'smart-tv':       { label: 'Smart TV', icon: _icoSmartTv() },
     'game-console':   { label: 'Game Console', icon: _icoGameConsole() },
     // Wireless
-    'ap':             { label: 'Access Point', icon: _icoAp() },
+    'wap':            { label: 'WAP', icon: _icoAp() },
     'wlc':            { label: 'Wireless Controller', icon: _icoWlc() },
     // Security
     'firewall':       { label: 'Firewall', icon: _icoFirewall() },
-    'ids-ips':        { label: 'IDS / IPS', icon: _icoIds() },
+    'ids':            { label: 'IDS/IPS', icon: _icoIds() },
     // Cloud & WAN
     'cloud':          { label: 'Cloud', icon: _icoCloud() },
     'internet':       { label: 'Internet', icon: _icoInternet() },
-    'isp-modem':      { label: 'ISP Modem', icon: _icoModem() },
+    'isp-router':     { label: 'ISP Router', icon: _icoModem() },
     'mpls-core':      { label: 'MPLS Core', icon: _icoMpls() },
-    'vpn-gateway':    { label: 'VPN Gateway', icon: _icoVpn() },
+    'vpg':            { label: 'VPN Gateway', icon: _icoVpn() },
     'load-balancer':  { label: 'Load Balancer', icon: _icoLb() },
+    // Stage 2 V1-parity device types
+    // Network
+    'dmz-switch':     { label: 'DMZ Switch', icon: _icoDmzSwitch() },
+    'onprem-dc':      { label: 'On-Prem DC', icon: _icoOnpremDc() },
+    'bridge':         { label: 'Bridge', icon: _icoBridge() },
+    // Endpoints
+    'printer':        { label: 'Printer', icon: _icoPrinter() },
+    'voip':           { label: 'VoIP Phone', icon: _icoVoip() },
+    'iot':            { label: 'IoT Device', icon: _icoIot() },
+    'dns-server':     { label: 'DNS Server', icon: _icoDnsServer() },
+    // Cloud
+    'public-web':     { label: 'Public Web', icon: _icoPublicWeb() },
+    'public-file':    { label: 'Public File', icon: _icoPublicFile() },
+    'public-cloud':   { label: 'Public Cloud', icon: _icoPublicCloud() },
+    'vpc':            { label: 'VPC', icon: _icoVpc() },
+    'cloud-subnet':   { label: 'Cloud Subnet', icon: _icoCloudSubnet() },
+    'igw':            { label: 'Internet Gateway', icon: _icoIgw() },
+    'nat-gw':         { label: 'NAT Gateway', icon: _icoNatGw() },
+    'tgw':            { label: 'Transit Gateway', icon: _icoTgw() },
+    // Security
+    'sase-edge':      { label: 'SASE Edge', icon: _icoSaseEdge() },
   };
 
   var TB_V3_PALETTE_GROUPS = [
-    { name: 'Routers', items: ['router', 'l3-router'] },
-    { name: 'Switches', items: ['switch', 'l3-switch', 'hub'] },
-    { name: 'Endpoints', items: ['workstation', 'laptop', 'server', 'smartphone', 'smart-tv', 'game-console'] },
-    { name: 'Wireless', items: ['ap', 'wlc'] },
-    { name: 'Security', items: ['firewall', 'ids-ips'] },
-    { name: 'Cloud & WAN', items: ['cloud', 'internet', 'isp-modem', 'mpls-core', 'vpn-gateway', 'load-balancer'] },
+    { name: 'Routers',     items: ['router', 'l3-router', 'isp-router'] },
+    { name: 'Switches',    items: ['switch', 'l3-switch', 'hub', 'dmz-switch', 'bridge'] },
+    { name: 'Endpoints',   items: ['pc', 'laptop', 'server', 'smartphone', 'smart-tv', 'game-console', 'printer', 'voip', 'iot', 'dns-server'] },
+    { name: 'Wireless',    items: ['wap', 'wlc'] },
+    { name: 'Security',    items: ['firewall', 'ids', 'sase-edge'] },
+    { name: 'Cloud & WAN', items: ['cloud', 'internet', 'mpls-core', 'vpg', 'load-balancer', 'onprem-dc'] },
+    { name: 'Public Cloud', items: ['public-web', 'public-file', 'public-cloud', 'vpc', 'cloud-subnet', 'igw', 'nat-gw', 'tgw'] },
   ];
 
   // Icon helpers — each returns SVG markup. Lift-and-shift from v1's tbPaletteLineIcon
@@ -2278,6 +3167,23 @@
   function _icoMpls() { return '<svg viewBox="0 0 24 24" class="tb3-palette-ico" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="3"/><circle cx="5" cy="6" r="2"/><circle cx="19" cy="6" r="2"/><circle cx="5" cy="18" r="2"/><circle cx="19" cy="18" r="2"/><path d="M7 7l3 3M17 7l-3 3M7 17l3-3M17 17l-3-3"/></svg>'; }
   function _icoVpn() { return '<svg viewBox="0 0 24 24" class="tb3-palette-ico" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>'; }
   function _icoLb() { return '<svg viewBox="0 0 24 24" class="tb3-palette-ico" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3v18"/></svg>'; }
+  // Stage 2 V1-parity icons
+  function _icoDmzSwitch() { return '<svg viewBox="0 0 24 24" class="tb3-palette-ico" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="9" width="18" height="6" rx="1"/><circle cx="7" cy="12" r=".8" fill="currentColor"/><circle cx="11" cy="12" r=".8" fill="currentColor"/><circle cx="15" cy="12" r=".8" fill="currentColor"/><path d="M3 6h18M3 18h18" stroke-dasharray="2 2"/></svg>'; }
+  function _icoPrinter() { return '<svg viewBox="0 0 24 24" class="tb3-palette-ico" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="6" y="14" width="12" height="7" rx="1"/><path d="M6 17H3V9a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v8h-3"/><rect x="6" y="3" width="12" height="6" rx="1"/></svg>'; }
+  function _icoVoip() { return '<svg viewBox="0 0 24 24" class="tb3-palette-ico" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M6.5 4h4l1.5 3.5-2 1.5c1 2.5 3.5 5 6 6l1.5-2L21 14.5V19a1 1 0 0 1-1 1C8 20 4 10 4 5a1 1 0 0 1 1-1z"/></svg>'; }
+  function _icoIot() { return '<svg viewBox="0 0 24 24" class="tb3-palette-ico" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="3"/><path d="M5 12a7 7 0 0 1 7-7M5 12a7 7 0 0 0 7 7M19 12a7 7 0 0 1-7 7M19 12a7 7 0 0 0-7-7M3 12h2M19 12h2M12 3v2M12 19v2"/></svg>'; }
+  function _icoPublicWeb() { return '<svg viewBox="0 0 24 24" class="tb3-palette-ico" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/><circle cx="12" cy="12" r="2" fill="currentColor"/></svg>'; }
+  function _icoPublicFile() { return '<svg viewBox="0 0 24 24" class="tb3-palette-ico" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h5"/></svg>'; }
+  function _icoPublicCloud() { return '<svg viewBox="0 0 24 24" class="tb3-palette-ico" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M17 18a4 4 0 1 0-3.5-6.5A5 5 0 0 0 4 13a3 3 0 0 0 3 5h10z"/><path d="M12 18v3M9 21h6"/></svg>'; }
+  function _icoVpc() { return '<svg viewBox="0 0 24 24" class="tb3-palette-ico" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="18" height="18" rx="2" stroke-dasharray="4 2"/><rect x="7" y="7" width="10" height="10" rx="1"/></svg>'; }
+  function _icoCloudSubnet() { return '<svg viewBox="0 0 24 24" class="tb3-palette-ico" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="18" height="18" rx="2" stroke-dasharray="4 2"/><path d="M3 9h18M9 3v18"/></svg>'; }
+  function _icoIgw() { return '<svg viewBox="0 0 24 24" class="tb3-palette-ico" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><path d="M8 12h8M13 8l4 4-4 4"/></svg>'; }
+  function _icoNatGw() { return '<svg viewBox="0 0 24 24" class="tb3-palette-ico" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="8" width="18" height="8" rx="1"/><path d="M7 12h10M14 9l3 3-3 3"/></svg>'; }
+  function _icoTgw() { return '<svg viewBox="0 0 24 24" class="tb3-palette-ico" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="4"/><path d="M3 12h5M16 12h5M6 6l3.5 4M18 6l-3.5 4M6 18l3.5-4M18 18l-3.5-4"/></svg>'; }
+  function _icoOnpremDc() { return '<svg viewBox="0 0 24 24" class="tb3-palette-ico" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="2" y="6" width="20" height="12" rx="1"/><rect x="5" y="9" width="5" height="3" rx="0.5"/><rect x="14" y="9" width="5" height="3" rx="0.5"/><path d="M5 15h2M9 15h2M13 15h2M17 15h2"/></svg>'; }
+  function _icoSaseEdge() { return '<svg viewBox="0 0 24 24" class="tb3-palette-ico" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 2l8 4v6c0 5-3.5 9-8 10C7.5 21 4 17 4 12V6l8-4z"/><path d="M9 12l2 2 4-4"/></svg>'; }
+  function _icoDnsServer() { return '<svg viewBox="0 0 24 24" class="tb3-palette-ico" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="18" height="18" rx="1"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r="1" fill="currentColor"/></svg>'; }
+  function _icoBridge() { return '<svg viewBox="0 0 24 24" class="tb3-palette-ico" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 17h18M6 17v-4a6 6 0 0 1 12 0v4M6 10v3M18 10v3M6 13h12"/></svg>'; }
 
   function _renderPalette() {
     var pal = document.getElementById('tb3-palette');
@@ -2563,9 +3469,9 @@
     var def = TB_V3_DEVICE_TYPES[dev.type] || { label: dev.type };
 
     // Build optional IP/Mask/Gateway block (Phase 3.1)
-    var ENDPOINT_TYPES = ['workstation','server','laptop','smartphone','cloud','internet'];
+    var ENDPOINT_TYPES = ['pc','server','laptop','smartphone','cloud','internet','printer','voip','iot','dns-server'];
     var L3_MULTI_TYPES = ['router','l3-switch','firewall','vpn'];
-    var L2_TYPES = ['switch','hub','ap','wlc'];
+    var L2_TYPES = ['switch','hub','wap','wlc'];
 
     var ipBlock = '';
     if (ENDPOINT_TYPES.indexOf(dev.type) !== -1) {
@@ -4244,7 +5150,7 @@
   function _animateIntermediate(hopId, deviceType, onDone) {
     // Determine the top-of-decap layer per device type.
     var topLayer;
-    if (deviceType === 'switch' || deviceType === 'ap' || deviceType === 'wlc') {
+    if (deviceType === 'switch' || deviceType === 'wap' || deviceType === 'wlc') {
       topLayer = 2;
     } else if (deviceType === 'router' || deviceType === 'l3-switch' || deviceType === 'firewall' || deviceType === 'vpn') {
       topLayer = 3;
@@ -4444,9 +5350,9 @@
 
   function _activeLayersForDev(dev) {
     if (!dev || !dev.type) return [1, 2, 3];
-    var endpoints = ['workstation', 'server', 'laptop', 'smartphone', 'game-console', 'smart-tv'];
+    var endpoints = ['pc', 'server', 'laptop', 'smartphone', 'game-console', 'smart-tv'];
     if (endpoints.indexOf(dev.type) !== -1) return [1, 2, 3, 7];  // ICMP: L4 = n/a
-    if (dev.type === 'switch' || dev.type === 'ap' || dev.type === 'wlc') return [1, 2];
+    if (dev.type === 'switch' || dev.type === 'wap' || dev.type === 'wlc') return [1, 2];
     if (dev.type === 'router' || dev.type === 'l3-switch' || dev.type === 'firewall' || dev.type === 'vpn') return [1, 2, 3];
     if (dev.type === 'cloud' || dev.type === 'internet') return [1, 2, 3];
     return [1, 2, 3];
@@ -4466,14 +5372,14 @@
     if (layerNum === 3) {
       if (role === 'source') return 'Wraps payload with source/dest IP';
       if (role === 'dest') return 'Accepts packet for own IP';
-      if (devType === 'switch' || devType === 'ap' || devType === 'wlc') return 'n/a — switch does not examine IP';
+      if (devType === 'switch' || devType === 'wap' || devType === 'wlc') return 'n/a — switch does not examine IP';
       if (devType === 'firewall' || devType === 'vpn') return 'Filters per policy. Forwards via routing table';
       return 'Forwards via routing table';
     }
     if (layerNum === 2) {
       if (role === 'source') return 'Frames with source/next-hop MAC';
       if (role === 'dest') return 'Accepts frame for own MAC';
-      if (devType === 'switch' || devType === 'ap' || devType === 'wlc') return 'Forwards via MAC table';
+      if (devType === 'switch' || devType === 'wap' || devType === 'wlc') return 'Forwards via MAC table';
       return 'Rewrites frame with own MAC + next-hop MAC';
     }
     if (layerNum === 1) {
@@ -4496,13 +5402,13 @@
     if (layerNum === 3) {
       if (role === 'source') return 'IP · src=' + (ctx.srcIp || '?') + ' · dst=' + (ctx.dstIp || '?');
       if (role === 'dest') return 'IP · dst=' + (ctx.dstIp || '?') + ' matches';
-      if (devType === 'switch' || devType === 'ap' || devType === 'wlc') return 'n/a';
+      if (devType === 'switch' || devType === 'wap' || devType === 'wlc') return 'n/a';
       return 'IP · src=' + (ctx.srcIp || '?') + ' · dst=' + (ctx.dstIp || '?') + ' · TTL decrements';
     }
     if (layerNum === 2) {
       if (role === 'source') return 'Ethernet · src=' + (ctx.srcMac || '?') + ' · dst=' + (ctx.nextHopMac || '?');
       if (role === 'dest') return 'Ethernet · dst=' + (ctx.dstMac || '?') + ' matches';
-      if (devType === 'switch' || devType === 'ap' || devType === 'wlc') return 'Ethernet · forwarding table lookup';
+      if (devType === 'switch' || devType === 'wap' || devType === 'wlc') return 'Ethernet · forwarding table lookup';
       return 'Ethernet · src=' + (ctx.routerMacOut || '?') + ' · dst=' + (ctx.nextHopMac || '?');
     }
     if (layerNum === 1) {
