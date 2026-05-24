@@ -2924,3 +2924,18 @@ html[data-theme="light"] #page-topology-builder-v3 {
   .tb3-3d-dev:hover .tb3-3d-dev-illust,
   .tb3-3d-dev:hover .tb3-3d-dev-accent-stripe { transform: none; }
 }
+
+@media (prefers-reduced-motion: reduce) {
+  /* Stage 7: kill hover-lift transitions so reduced-motion users don't get
+     a momentary translateZ shift on mouseover */
+  .tb3-3d-dev .tb3-3d-dev-top,
+  .tb3-3d-dev .tb3-3d-dev-illust,
+  .tb3-3d-dev .tb3-3d-dev-accent-stripe {
+    transition: none !important;
+  }
+  .tb3-3d-dev:hover .tb3-3d-dev-top,
+  .tb3-3d-dev:hover .tb3-3d-dev-illust,
+  .tb3-3d-dev:hover .tb3-3d-dev-accent-stripe {
+    transform: none !important;
+  }
+}

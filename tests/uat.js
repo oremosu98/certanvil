@@ -22895,6 +22895,27 @@ test('phase2: TB_V3_FREEBUILD_BACKUP does not collide with TB_V3_DRAFT', !/TB_V3
   );
 })();
 
+// ══════════════════════════════════════════
+// TB v3 Phase 7 v2 Polish Stage 7 UAT fixtures — reduced-motion + a11y
+// ══════════════════════════════════════════
+(function _tbv3PolishStage7Fixtures() {
+  const fs = require('fs');
+  const path = require('path');
+  const tbv3SrcPo = fs.readFileSync(path.join(__dirname, '..', 'features', 'topology-builder-v3.js'), 'utf8');
+  const tbv3CssPo = fs.readFileSync(path.join(__dirname, '..', 'features', 'topology-builder-v3.css'), 'utf8');
+
+  test('POLISH: reduced-motion kills hover-lift transitions',
+    /@media\s*\(prefers-reduced-motion[\s\S]{0,5000}\.tb3-3d-dev\s+\.tb3-3d-dev-top[\s\S]{0,300}transition\s*:\s*none/.test(tbv3CssPo)
+  );
+  test('POLISH: reduced-motion kills hover-lift transforms',
+    /@media\s*\(prefers-reduced-motion[\s\S]{0,5000}\.tb3-3d-dev:hover\s+\.tb3-3d-dev-top[\s\S]{0,300}transform\s*:\s*none/.test(tbv3CssPo)
+  );
+  test('POLISH: Fit + Reset buttons have aria-labels',
+    /tb3-3d-popup-fit-btn[\s\S]{0,200}aria-label/.test(tbv3SrcPo) &&
+    /tb3-3d-popup-reset-btn[\s\S]{0,200}aria-label/.test(tbv3SrcPo)
+  );
+})();
+
 // ── Summary ──
 console.log('\n' + '═'.repeat(50));
 const total = results.pass + results.fail;
