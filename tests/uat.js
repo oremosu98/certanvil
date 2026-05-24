@@ -22157,7 +22157,7 @@ test('phase2: TB_V3_FREEBUILD_BACKUP does not collide with TB_V3_DRAFT', !/TB_V3
     vm.runInNewContext(
       fnBody + '\n' +
       '__out = {\n' +
-      '  workstation: _activeLayersForDev({type:"workstation"}),\n' +
+      '  pc:          _activeLayersForDev({type:"pc"}),\n' +
       '  server:      _activeLayersForDev({type:"server"}),\n' +
       '  laptop:      _activeLayersForDev({type:"laptop"}),\n' +
       '  smartphone:  _activeLayersForDev({type:"smartphone"}),\n' +
@@ -22176,7 +22176,7 @@ test('phase2: TB_V3_FREEBUILD_BACKUP does not collide with TB_V3_DRAFT', !/TB_V3
     let out = null;
     try { out = loadActiveLayers(); } catch(e) { /* function not yet implemented */ }
     function eq(a, b) { return a && b && JSON.stringify(a.slice().sort()) === JSON.stringify(b.slice().sort()); }
-    test('P6: endpoint workstation active = [1,2,3,7] (ICMP)', out && eq(out.workstation, [1,2,3,7]));
+    test('P6: endpoint pc active = [1,2,3,7] (ICMP)', out && eq(out.pc, [1,2,3,7]));
     test('P6: endpoint server active = [1,2,3,7]', out && eq(out.server, [1,2,3,7]));
     test('P6: endpoint laptop active = [1,2,3,7]', out && eq(out.laptop, [1,2,3,7]));
     test('P6: endpoint smartphone active = [1,2,3,7]', out && eq(out.smartphone, [1,2,3,7]));
@@ -22516,6 +22516,36 @@ test('phase2: TB_V3_FREEBUILD_BACKUP does not collide with TB_V3_DRAFT', !/TB_V3
     /_on3DPopupFocusIn[\s\S]{0,500}modal\.contains[\s\S]{0,200}tb3-3d-popup-close-btn[\s\S]{0,80}\.focus/.test(tbv3SrcP7v2)
   );
 
+})();
+
+(function _tbv3V1ParityFixtures() {
+  const fs = require('fs');
+  const path = require('path');
+  const tbv3SrcV1P = fs.readFileSync(path.join(__dirname, '..', 'features', 'topology-builder-v3.js'), 'utf8');
+
+  test('V1P: TB_V3_DEVICE_TYPES uses V1 id wap (not ap)',
+    /TB_V3_DEVICE_TYPES[\s\S]{0,3000}'wap':\s*\{[\s\S]{0,200}label:\s*'WAP'/.test(tbv3SrcV1P) &&
+    !/'ap':\s*\{[\s\S]{0,80}label:\s*'Access Point'/.test(tbv3SrcV1P)
+  );
+  test('V1P: TB_V3_DEVICE_TYPES uses V1 id pc (not workstation)',
+    /'pc':\s*\{[\s\S]{0,80}label:\s*'PC'/.test(tbv3SrcV1P) &&
+    !/'workstation':\s*\{[\s\S]{0,80}label:\s*'Workstation'/.test(tbv3SrcV1P)
+  );
+  test('V1P: TB_V3_DEVICE_TYPES uses V1 id ids (not ids-ips)',
+    /'ids':\s*\{[\s\S]{0,80}label:\s*'IDS\/IPS'/.test(tbv3SrcV1P)
+  );
+  test('V1P: TB_V3_DEVICE_TYPES uses V1 id vpg (not vpn-gateway)',
+    /'vpg':\s*\{[\s\S]{0,80}label:\s*'VPN Gateway'/.test(tbv3SrcV1P)
+  );
+  test('V1P: TB_V3_DEVICE_TYPES uses V1 id isp-router (not isp-modem)',
+    /'isp-router':\s*\{[\s\S]{0,80}label:\s*'ISP Router'/.test(tbv3SrcV1P)
+  );
+  test('V1P: _V1_TYPE_RENAMES migration map defined',
+    /_V1_TYPE_RENAMES\s*=\s*\{[\s\S]{0,400}'ap':\s*'wap'[\s\S]{0,400}'workstation':\s*'pc'/.test(tbv3SrcV1P)
+  );
+  test('V1P: _migrateStateTypesToV1 is defined',
+    /function\s+_migrateStateTypesToV1\s*\(/.test(tbv3SrcV1P)
+  );
 })();
 
 // ── Summary ──

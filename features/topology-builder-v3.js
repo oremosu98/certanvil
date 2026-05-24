@@ -124,6 +124,7 @@
   function openTopologyBuilderV3() {
     _ensureCss();
     _loadState();
+    _migrateStateTypesToV1();
     _renderWorkspace();
   }
 
@@ -132,7 +133,7 @@
   // ───────────────────────────────────────────────────────────
 
   function _autoFillIp(dev, state) {
-    var ENDPOINT_TYPES = ['workstation','server','laptop','smartphone'];
+    var ENDPOINT_TYPES = ['pc','server','laptop','smartphone'];
     var L3_MULTI_TYPES = ['router','l3-switch','firewall','vpn'];
     if (ENDPOINT_TYPES.indexOf(dev.type) === -1 && L3_MULTI_TYPES.indexOf(dev.type) === -1) {
       return; // L2 / cloud / internet — no config
@@ -435,7 +436,7 @@
     var required = (completion && completion.requiredCables) || [];
     var devices = (state && state.devices) || [];
     var cables = (state && state.cables) || [];
-    var L2_TYPES = { 'switch':1,'hub':1,'ap':1,'wlc':1 };
+    var L2_TYPES = { 'switch':1,'hub':1,'wap':1,'wlc':1 };
     var L3_MULTI_TYPES = { 'router':1,'l3-switch':1,'firewall':1,'vpn':1,'cloud':1,'internet':1 };
     function pickByType(t, excludeId) {
       for (var i = 0; i < devices.length; i++) {
@@ -597,9 +598,9 @@
         devices: [
           { id: 'sc_star_1', type: 'switch',      x: 600, y: 360, label: 'SW1' },
           { id: 'sc_star_2', type: 'server',      x: 360, y: 200, label: 'SRV-01', config: { ip: '192.168.10.10', mask: 24, gateway: '192.168.10.1' } },
-          { id: 'sc_star_3', type: 'workstation', x: 360, y: 520, label: 'WS-01',  config: { ip: '192.168.10.20', mask: 24, gateway: '192.168.10.1' } },
-          { id: 'sc_star_4', type: 'workstation', x: 840, y: 520, label: 'WS-02',  config: { ip: '192.168.10.21', mask: 24, gateway: '192.168.10.1' } },
-          { id: 'sc_star_5', type: 'workstation', x: 840, y: 200, label: 'WS-03',  config: { ip: '192.168.10.22', mask: 24, gateway: '192.168.10.1' } },
+          { id: 'sc_star_3', type: 'pc', x: 360, y: 520, label: 'WS-01',  config: { ip: '192.168.10.20', mask: 24, gateway: '192.168.10.1' } },
+          { id: 'sc_star_4', type: 'pc', x: 840, y: 520, label: 'WS-02',  config: { ip: '192.168.10.21', mask: 24, gateway: '192.168.10.1' } },
+          { id: 'sc_star_5', type: 'pc', x: 840, y: 200, label: 'WS-03',  config: { ip: '192.168.10.22', mask: 24, gateway: '192.168.10.1' } },
         ],
         cables: [
           { id: 'sc_star_c1', fromId: 'sc_star_1', toId: 'sc_star_2', type: 'cat6' },
@@ -618,11 +619,11 @@
         examRelevance: 'N10-009 obj 1.2 (topology shapes) + obj 2.1 (switching). Often paired with mesh/ring contrasts on PBQs.',
       },
       completion: {
-        requiredDevices: ['switch','server','workstation'],
-        expectedCount:   { switch:1, server:1, workstation:3 },
+        requiredDevices: ['switch','server','pc'],
+        expectedCount:   { switch:1, server:1, pc:3 },
         requiredCables:  [
           { from:'switch', to:'server' },
-          { from:'switch', to:'workstation' },
+          { from:'switch', to:'pc' },
         ],
       },
     },
@@ -755,7 +756,7 @@
           { id: 'sc_hyb_vpn',       type: 'vpn',         x: 720, y: 360, label: 'IPSEC-VPN', interfaces:[{ ip:'10.0.99.2', mask:30 },{ ip:'10.100.0.1', mask:24 }] },
           { id: 'sc_hyb_cloud',     type: 'cloud',       x: 920, y: 360, label: 'AWS-VPC',   interfaces:[{ ip:'10.100.0.2', mask:24 }] },
           { id: 'sc_hyb_srv',       type: 'server',      x: 320, y: 180, label: 'APP-01',    config:{ ip:'192.168.10.10', mask:24, gateway:'192.168.10.2' } },
-          { id: 'sc_hyb_ws',        type: 'workstation', x: 320, y: 540, label: 'WS-01',     config:{ ip:'192.168.10.20', mask:24, gateway:'192.168.10.2' } },
+          { id: 'sc_hyb_ws',        type: 'pc', x: 320, y: 540, label: 'WS-01',     config:{ ip:'192.168.10.20', mask:24, gateway:'192.168.10.2' } },
         ],
         cables: [
           { id: 'sc_hyb_c1', fromId: 'sc_hyb_onprem_sw', toId: 'sc_hyb_srv',       type: 'cat6' },
@@ -793,9 +794,9 @@
         devices: [
           { id: 'sc_wls_wlc', type: 'wlc',        x: 600, y: 180, label: 'WLC-01' },
           { id: 'sc_wls_sw',  type: 'switch',     x: 600, y: 360, label: 'CORE-SW' },
-          { id: 'sc_wls_ap1', type: 'ap',         x: 360, y: 540, label: 'AP-01' },
-          { id: 'sc_wls_ap2', type: 'ap',         x: 600, y: 540, label: 'AP-02' },
-          { id: 'sc_wls_ap3', type: 'ap',         x: 840, y: 540, label: 'AP-03' },
+          { id: 'sc_wls_ap1', type: 'wap',         x: 360, y: 540, label: 'AP-01' },
+          { id: 'sc_wls_ap2', type: 'wap',         x: 600, y: 540, label: 'AP-02' },
+          { id: 'sc_wls_ap3', type: 'wap',         x: 840, y: 540, label: 'AP-03' },
           { id: 'sc_wls_cli1',type: 'smartphone', x: 280, y: 700, label: 'PHONE',  config:{ ip:'192.168.10.20', mask:24, gateway:'192.168.10.1' } },
           { id: 'sc_wls_cli2',type: 'laptop',     x: 520, y: 700, label: 'LAPTOP', config:{ ip:'192.168.10.21', mask:24, gateway:'192.168.10.1' } },
         ],
@@ -816,11 +817,11 @@
         examRelevance: 'N10-009 obj 2.4 — wireless deployment models. Differentiate ad-hoc / infrastructure / mesh.',
       },
       completion: {
-        requiredDevices: ['wlc','switch','ap'],
-        expectedCount:   { wlc:1, switch:1, ap:3 },
+        requiredDevices: ['wlc','switch','wap'],
+        expectedCount:   { wlc:1, switch:1, wap:3 },
         requiredCables:  [
           { from:'wlc',    to:'switch' },
-          { from:'switch', to:'ap' },
+          { from:'switch', to:'wap' },
         ],
       },
     },
@@ -877,10 +878,10 @@
             { ip:'192.168.20.1', mask:24 },
           ] },
           { id: 'sc_roas_switch', type: 'switch', x: 600, y: 380, label: 'SW1' },
-          { id: 'sc_roas_v10_a',  type: 'workstation', x: 320, y: 560, label: 'VLAN10-A', config:{ ip:'192.168.10.10', mask:24, gateway:'192.168.10.1' } },
-          { id: 'sc_roas_v10_b',  type: 'workstation', x: 480, y: 560, label: 'VLAN10-B', config:{ ip:'192.168.10.11', mask:24, gateway:'192.168.10.1' } },
-          { id: 'sc_roas_v20_a',  type: 'workstation', x: 720, y: 560, label: 'VLAN20-A', config:{ ip:'192.168.20.10', mask:24, gateway:'192.168.20.1' } },
-          { id: 'sc_roas_v20_b',  type: 'workstation', x: 880, y: 560, label: 'VLAN20-B', config:{ ip:'192.168.20.11', mask:24, gateway:'192.168.20.1' } },
+          { id: 'sc_roas_v10_a',  type: 'pc', x: 320, y: 560, label: 'VLAN10-A', config:{ ip:'192.168.10.10', mask:24, gateway:'192.168.10.1' } },
+          { id: 'sc_roas_v10_b',  type: 'pc', x: 480, y: 560, label: 'VLAN10-B', config:{ ip:'192.168.10.11', mask:24, gateway:'192.168.10.1' } },
+          { id: 'sc_roas_v20_a',  type: 'pc', x: 720, y: 560, label: 'VLAN20-A', config:{ ip:'192.168.20.10', mask:24, gateway:'192.168.20.1' } },
+          { id: 'sc_roas_v20_b',  type: 'pc', x: 880, y: 560, label: 'VLAN20-B', config:{ ip:'192.168.20.11', mask:24, gateway:'192.168.20.1' } },
         ],
         cables: [
           { id: 'sc_roas_c1', fromId: 'sc_roas_router', toId: 'sc_roas_switch', type: 'cat6' },
@@ -900,11 +901,11 @@
         examRelevance: 'N10-009 obj 2.1 (switching) + obj 2.3 (VLANs). Commonly tested against L3-switch inter-VLAN.',
       },
       completion: {
-        requiredDevices: ['router','switch','workstation'],
-        expectedCount:   { router:1, switch:1, workstation:4 },
+        requiredDevices: ['router','switch','pc'],
+        expectedCount:   { router:1, switch:1, pc:4 },
         requiredCables:  [
           { from:'router', to:'switch' },
-          { from:'switch', to:'workstation' },
+          { from:'switch', to:'pc' },
         ],
       },
     },
@@ -1069,9 +1070,9 @@
         devices: [
           { id: 'sc_soho_rtr', type: 'router',      x: 520, y: 200, label: 'GATEWAY', interfaces:[{ ip:'192.168.10.1', mask:24 }] },
           { id: 'sc_soho_sw',  type: 'switch',      x: 520, y: 360, label: 'LAN-SW' },
-          { id: 'sc_soho_ap',  type: 'ap',          x: 760, y: 360, label: 'AP-01' },
-          { id: 'sc_soho_ws1', type: 'workstation', x: 280, y: 520, label: 'WS-1',   config:{ ip:'192.168.10.10', mask:24, gateway:'192.168.10.1' } },
-          { id: 'sc_soho_ws2', type: 'workstation', x: 440, y: 520, label: 'WS-2',   config:{ ip:'192.168.10.11', mask:24, gateway:'192.168.10.1' } },
+          { id: 'sc_soho_ap',  type: 'wap',          x: 760, y: 360, label: 'AP-01' },
+          { id: 'sc_soho_ws1', type: 'pc', x: 280, y: 520, label: 'WS-1',   config:{ ip:'192.168.10.10', mask:24, gateway:'192.168.10.1' } },
+          { id: 'sc_soho_ws2', type: 'pc', x: 440, y: 520, label: 'WS-2',   config:{ ip:'192.168.10.11', mask:24, gateway:'192.168.10.1' } },
           { id: 'sc_soho_lap', type: 'laptop',      x: 760, y: 520, label: 'LAPTOP', config:{ ip:'192.168.10.20', mask:24, gateway:'192.168.10.1' } },
           { id: 'sc_soho_phn', type: 'smartphone',  x: 920, y: 520, label: 'PHONE',  config:{ ip:'192.168.10.21', mask:24, gateway:'192.168.10.1' } },
         ],
@@ -1092,11 +1093,11 @@
         examRelevance: 'N10-009 obj 1.6 — recognise the SOHO baseline; contrast its flat L2 against enterprise 3-tier.',
       },
       completion: {
-        requiredDevices: ['router', 'switch', 'ap'],
-        expectedCount:   { router: 1, switch: 1, ap: 1 },
+        requiredDevices: ['router', 'switch', 'wap'],
+        expectedCount:   { router: 1, switch: 1, wap: 1 },
         requiredCables:  [
           { from:'router', to:'switch' },
-          { from:'switch', to:'ap' },
+          { from:'switch', to:'wap' },
         ],
       },
     },
@@ -1231,7 +1232,7 @@
           { id: 'sc_pco_fw',   type: 'firewall',    x: 600, y: 320, label: 'CLOUD-FW', interfaces:[{ ip:'203.0.113.2', mask:30 },{ ip:'10.100.0.1', mask:24 }] },
           { id: 'sc_pco_srv1', type: 'server',      x: 380, y: 480, label: 'APP-01',   config:{ ip:'10.100.0.10', mask:24, gateway:'10.100.0.1' } },
           { id: 'sc_pco_srv2', type: 'server',      x: 600, y: 480, label: 'APP-02',   config:{ ip:'10.100.0.11', mask:24, gateway:'10.100.0.1' } },
-          { id: 'sc_pco_ws',   type: 'workstation', x: 820, y: 480, label: 'ADMIN-WS', config:{ ip:'10.100.0.20', mask:24, gateway:'10.100.0.1' } },
+          { id: 'sc_pco_ws',   type: 'pc', x: 820, y: 480, label: 'ADMIN-WS', config:{ ip:'10.100.0.20', mask:24, gateway:'10.100.0.1' } },
         ],
         cables: [
           { id: 'sc_pco_c1', fromId: 'sc_pco_inet', toId: 'sc_pco_fw',   type: 'fiber' },
@@ -1250,12 +1251,12 @@
         examRelevance: 'N10-009 obj 1.8 — recognise public-cloud-only deployment; contrast with hybrid, private, community models.',
       },
       completion: {
-        requiredDevices: ['internet', 'firewall', 'server', 'workstation'],
-        expectedCount:   { internet: 1, firewall: 1, server: 2, workstation: 1 },
+        requiredDevices: ['internet', 'firewall', 'server', 'pc'],
+        expectedCount:   { internet: 1, firewall: 1, server: 2, pc: 1 },
         requiredCables:  [
           { from:'internet', to:'firewall' },
           { from:'firewall', to:'server' },
-          { from:'firewall', to:'workstation' },
+          { from:'firewall', to:'pc' },
         ],
       },
     },
@@ -1335,9 +1336,9 @@
         devices: [
           { id: 'sc_wm_rtr', type: 'router',     x: 520, y: 160, label: 'GATEWAY', interfaces:[{ ip:'192.168.10.1', mask:24 }] },
           { id: 'sc_wm_sw',  type: 'switch',     x: 520, y: 320, label: 'LAN-SW' },
-          { id: 'sc_wm_ap1', type: 'ap',         x: 320, y: 480, label: 'AP-1 (root)' },
-          { id: 'sc_wm_ap2', type: 'ap',         x: 520, y: 480, label: 'AP-2 (mesh)' },
-          { id: 'sc_wm_ap3', type: 'ap',         x: 720, y: 480, label: 'AP-3 (mesh)' },
+          { id: 'sc_wm_ap1', type: 'wap',         x: 320, y: 480, label: 'AP-1 (root)' },
+          { id: 'sc_wm_ap2', type: 'wap',         x: 520, y: 480, label: 'AP-2 (mesh)' },
+          { id: 'sc_wm_ap3', type: 'wap',         x: 720, y: 480, label: 'AP-3 (mesh)' },
           { id: 'sc_wm_phn', type: 'smartphone', x: 920, y: 480, label: 'CLIENT',     config:{ ip:'192.168.10.20', mask:24, gateway:'192.168.10.1' } },
         ],
         cables: [
@@ -1357,12 +1358,12 @@
         examRelevance: 'N10-009 obj 2.4 — recognise wireless mesh deployment; contrast with controller-based ESS and ad-hoc.',
       },
       completion: {
-        requiredDevices: ['router', 'switch', 'ap'],
-        expectedCount:   { router: 1, switch: 1, ap: 3 },
+        requiredDevices: ['router', 'switch', 'wap'],
+        expectedCount:   { router: 1, switch: 1, wap: 3 },
         requiredCables:  [
           { from:'router', to:'switch' },
-          { from:'switch', to:'ap' },
-          { from:'ap',     to:'ap' },
+          { from:'switch', to:'wap' },
+          { from:'wap',    to:'wap' },
         ],
       },
     },
@@ -1374,8 +1375,8 @@
       startingState: {
         devices: [
           { id: 'sc_wb_swa',  type: 'switch', x: 240, y: 480, label: 'SW-A' },
-          { id: 'sc_wb_apa',  type: 'ap',     x: 440, y: 320, label: 'AP-A (bridge)' },
-          { id: 'sc_wb_apb',  type: 'ap',     x: 760, y: 320, label: 'AP-B (bridge)' },
+          { id: 'sc_wb_apa',  type: 'wap',     x: 440, y: 320, label: 'AP-A (bridge)' },
+          { id: 'sc_wb_apb',  type: 'wap',     x: 760, y: 320, label: 'AP-B (bridge)' },
           { id: 'sc_wb_swb',  type: 'switch', x: 960, y: 480, label: 'SW-B' },
           { id: 'sc_wb_lap',  type: 'laptop', x: 240, y: 640, label: 'LAPTOP-A', config:{ ip:'192.168.10.20', mask:24 } },
         ],
@@ -1396,11 +1397,11 @@
         examRelevance: 'N10-009 obj 2.4 — recognise wireless bridge use case; contrast with mesh APs and infrastructure mode.',
       },
       completion: {
-        requiredDevices: ['switch', 'ap'],
-        expectedCount:   { switch: 2, ap: 2 },
+        requiredDevices: ['switch', 'wap'],
+        expectedCount:   { switch: 2, wap: 2 },
         requiredCables:  [
-          { from:'switch', to:'ap' },
-          { from:'ap',     to:'ap' },
+          { from:'switch', to:'wap' },
+          { from:'wap',    to:'wap' },
         ],
       },
     },
@@ -1422,9 +1423,9 @@
           { id: 'sc_zt_srv1', type: 'server',      x: 320, y: 160, label: 'SRV-1', config:{ ip:'192.168.10.10', mask:24, gateway:'192.168.10.1' } },
           { id: 'sc_zt_srv2', type: 'server',      x: 600, y: 160, label: 'SRV-2', config:{ ip:'192.168.20.10', mask:24, gateway:'192.168.20.1' } },
           { id: 'sc_zt_srv3', type: 'server',      x: 880, y: 160, label: 'SRV-3', config:{ ip:'192.168.30.10', mask:24, gateway:'192.168.30.1' } },
-          { id: 'sc_zt_ws1',  type: 'workstation', x: 320, y: 560, label: 'WS-1',  config:{ ip:'192.168.40.10', mask:24, gateway:'192.168.40.1' } },
-          { id: 'sc_zt_ws2',  type: 'workstation', x: 600, y: 560, label: 'WS-2',  config:{ ip:'192.168.50.10', mask:24, gateway:'192.168.50.1' } },
-          { id: 'sc_zt_ws3',  type: 'workstation', x: 880, y: 560, label: 'WS-3',  config:{ ip:'192.168.60.10', mask:24, gateway:'192.168.60.1' } },
+          { id: 'sc_zt_ws1',  type: 'pc', x: 320, y: 560, label: 'WS-1',  config:{ ip:'192.168.40.10', mask:24, gateway:'192.168.40.1' } },
+          { id: 'sc_zt_ws2',  type: 'pc', x: 600, y: 560, label: 'WS-2',  config:{ ip:'192.168.50.10', mask:24, gateway:'192.168.50.1' } },
+          { id: 'sc_zt_ws3',  type: 'pc', x: 880, y: 560, label: 'WS-3',  config:{ ip:'192.168.60.10', mask:24, gateway:'192.168.60.1' } },
         ],
         cables: [
           { id: 'sc_zt_c1', fromId: 'sc_zt_fw', toId: 'sc_zt_srv1', type: 'cat6' },
@@ -1445,11 +1446,11 @@
         examRelevance: 'N10-009 obj 4.1 — recognise zero-trust segmentation; contrast with implicit-trust LAN and traditional perimeter defence.',
       },
       completion: {
-        requiredDevices: ['firewall', 'server', 'workstation'],
-        expectedCount:   { firewall: 1, server: 3, workstation: 3 },
+        requiredDevices: ['firewall', 'server', 'pc'],
+        expectedCount:   { firewall: 1, server: 3, pc: 3 },
         requiredCables:  [
           { from:'firewall', to:'server' },
-          { from:'firewall', to:'workstation' },
+          { from:'firewall', to:'pc' },
         ],
       },
     },
@@ -1505,9 +1506,9 @@
           { id: 'sc_nac_rtr', type: 'router',      x: 600, y: 160, label: 'GATEWAY', interfaces:[{ ip:'192.168.10.1', mask:24 }] },
           { id: 'sc_nac_sw',  type: 'switch',      x: 600, y: 320, label: 'NAC-SW' },
           { id: 'sc_nac_srv', type: 'server',      x: 880, y: 320, label: 'RADIUS-AAA', config:{ ip:'192.168.10.10', mask:24, gateway:'192.168.10.1' } },
-          { id: 'sc_nac_ws1', type: 'workstation', x: 320, y: 520, label: 'WS-1', config:{ ip:'192.168.10.20', mask:24, gateway:'192.168.10.1' } },
-          { id: 'sc_nac_ws2', type: 'workstation', x: 600, y: 520, label: 'WS-2', config:{ ip:'192.168.10.21', mask:24, gateway:'192.168.10.1' } },
-          { id: 'sc_nac_ws3', type: 'workstation', x: 880, y: 520, label: 'WS-3', config:{ ip:'192.168.10.22', mask:24, gateway:'192.168.10.1' } },
+          { id: 'sc_nac_ws1', type: 'pc', x: 320, y: 520, label: 'WS-1', config:{ ip:'192.168.10.20', mask:24, gateway:'192.168.10.1' } },
+          { id: 'sc_nac_ws2', type: 'pc', x: 600, y: 520, label: 'WS-2', config:{ ip:'192.168.10.21', mask:24, gateway:'192.168.10.1' } },
+          { id: 'sc_nac_ws3', type: 'pc', x: 880, y: 520, label: 'WS-3', config:{ ip:'192.168.10.22', mask:24, gateway:'192.168.10.1' } },
         ],
         cables: [
           { id: 'sc_nac_c1', fromId: 'sc_nac_rtr', toId: 'sc_nac_sw',  type: 'cat6' },
@@ -1527,12 +1528,12 @@
         examRelevance: 'N10-009 obj 4.1 — recognise NAC/802.1X pattern; commonly tested alongside RADIUS, EAP, and VLAN assignment.',
       },
       completion: {
-        requiredDevices: ['router', 'switch', 'server', 'workstation'],
-        expectedCount:   { router: 1, switch: 1, server: 1, workstation: 3 },
+        requiredDevices: ['router', 'switch', 'server', 'pc'],
+        expectedCount:   { router: 1, switch: 1, server: 1, pc: 3 },
         requiredCables:  [
           { from:'router', to:'switch' },
           { from:'switch', to:'server' },
-          { from:'switch', to:'workstation' },
+          { from:'switch', to:'pc' },
         ],
       },
     },
@@ -1547,10 +1548,10 @@
             { ip:'192.168.10.1', mask:24 },
             { ip:'192.168.20.1', mask:24 },
           ] },
-          { id: 'sc_svi_v10a',  type: 'workstation', x: 280, y: 480, label: 'VLAN10-A', config:{ ip:'192.168.10.10', mask:24, gateway:'192.168.10.1' } },
-          { id: 'sc_svi_v10b',  type: 'workstation', x: 440, y: 480, label: 'VLAN10-B', config:{ ip:'192.168.10.11', mask:24, gateway:'192.168.10.1' } },
-          { id: 'sc_svi_v20a',  type: 'workstation', x: 760, y: 480, label: 'VLAN20-A', config:{ ip:'192.168.20.10', mask:24, gateway:'192.168.20.1' } },
-          { id: 'sc_svi_v20b',  type: 'workstation', x: 920, y: 480, label: 'VLAN20-B', config:{ ip:'192.168.20.11', mask:24, gateway:'192.168.20.1' } },
+          { id: 'sc_svi_v10a',  type: 'pc', x: 280, y: 480, label: 'VLAN10-A', config:{ ip:'192.168.10.10', mask:24, gateway:'192.168.10.1' } },
+          { id: 'sc_svi_v10b',  type: 'pc', x: 440, y: 480, label: 'VLAN10-B', config:{ ip:'192.168.10.11', mask:24, gateway:'192.168.10.1' } },
+          { id: 'sc_svi_v20a',  type: 'pc', x: 760, y: 480, label: 'VLAN20-A', config:{ ip:'192.168.20.10', mask:24, gateway:'192.168.20.1' } },
+          { id: 'sc_svi_v20b',  type: 'pc', x: 920, y: 480, label: 'VLAN20-B', config:{ ip:'192.168.20.11', mask:24, gateway:'192.168.20.1' } },
         ],
         cables: [
           { id: 'sc_svi_c1', fromId: 'sc_svi_l3', toId: 'sc_svi_v10a', type: 'cat6' },
@@ -1569,10 +1570,10 @@
         examRelevance: 'N10-009 obj 2.1 (switching) + 2.3 (VLANs) — recognise L3-switch SVI; contrast with router-on-a-stick performance + complexity.',
       },
       completion: {
-        requiredDevices: ['l3-switch', 'workstation'],
-        expectedCount:   { 'l3-switch': 1, workstation: 4 },
+        requiredDevices: ['l3-switch', 'pc'],
+        expectedCount:   { 'l3-switch': 1, pc: 4 },
         requiredCables:  [
-          { from:'l3-switch', to:'workstation' },
+          { from:'l3-switch', to:'pc' },
         ],
       },
     },
@@ -1736,6 +1737,33 @@
     }
     _renderIntentChip(); // Task 4.1 (phase 2) — restore chip after state reload
     _renderCompletionPill(); // Task 6.1 (phase 2) — restore pill after state reload
+  }
+
+  // ===========================================================================
+  // V1 parity migration: rewrites old V3 device type ids to V1 conventions.
+  // Runs once per hydration. Idempotent (safe to call multiple times).
+  // ===========================================================================
+  var _V1_TYPE_RENAMES = {
+    'ap': 'wap',
+    'workstation': 'pc',
+    'vpn-gateway': 'vpg',
+    'ids-ips': 'ids',
+    'isp-modem': 'isp-router'
+  };
+  function _migrateStateTypesToV1() {
+    if (!state || !Array.isArray(state.devices)) return;
+    var renamed = 0;
+    for (var i = 0; i < state.devices.length; i++) {
+      var oldType = state.devices[i].type;
+      if (_V1_TYPE_RENAMES.hasOwnProperty(oldType)) {
+        state.devices[i].type = _V1_TYPE_RENAMES[oldType];
+        renamed++;
+      }
+    }
+    if (renamed > 0) {
+      console.info('[tb-v3] V1 parity: migrated ' + renamed + ' device(s) to V1 type ids');
+      if (typeof _saveState === 'function') _saveState();
+    }
   }
 
   // ───────────────────────────────────────────────────────────
@@ -2224,34 +2252,34 @@
     'l3-switch':      { label: 'Layer 3 Switch', icon: _icoL3Switch() },
     'hub':            { label: 'Hub', icon: _icoHub() },
     // Endpoints
-    'workstation':    { label: 'Workstation', icon: _icoDesktop() },
+    'pc':             { label: 'PC', icon: _icoDesktop() },
     'laptop':         { label: 'Laptop', icon: _icoLaptop() },
     'server':         { label: 'Server', icon: _icoServer() },
     'smartphone':     { label: 'Smartphone', icon: _icoSmartphone() },
     'smart-tv':       { label: 'Smart TV', icon: _icoSmartTv() },
     'game-console':   { label: 'Game Console', icon: _icoGameConsole() },
     // Wireless
-    'ap':             { label: 'Access Point', icon: _icoAp() },
+    'wap':            { label: 'WAP', icon: _icoAp() },
     'wlc':            { label: 'Wireless Controller', icon: _icoWlc() },
     // Security
     'firewall':       { label: 'Firewall', icon: _icoFirewall() },
-    'ids-ips':        { label: 'IDS / IPS', icon: _icoIds() },
+    'ids':            { label: 'IDS/IPS', icon: _icoIds() },
     // Cloud & WAN
     'cloud':          { label: 'Cloud', icon: _icoCloud() },
     'internet':       { label: 'Internet', icon: _icoInternet() },
-    'isp-modem':      { label: 'ISP Modem', icon: _icoModem() },
+    'isp-router':     { label: 'ISP Router', icon: _icoModem() },
     'mpls-core':      { label: 'MPLS Core', icon: _icoMpls() },
-    'vpn-gateway':    { label: 'VPN Gateway', icon: _icoVpn() },
+    'vpg':            { label: 'VPN Gateway', icon: _icoVpn() },
     'load-balancer':  { label: 'Load Balancer', icon: _icoLb() },
   };
 
   var TB_V3_PALETTE_GROUPS = [
     { name: 'Routers', items: ['router', 'l3-router'] },
     { name: 'Switches', items: ['switch', 'l3-switch', 'hub'] },
-    { name: 'Endpoints', items: ['workstation', 'laptop', 'server', 'smartphone', 'smart-tv', 'game-console'] },
-    { name: 'Wireless', items: ['ap', 'wlc'] },
-    { name: 'Security', items: ['firewall', 'ids-ips'] },
-    { name: 'Cloud & WAN', items: ['cloud', 'internet', 'isp-modem', 'mpls-core', 'vpn-gateway', 'load-balancer'] },
+    { name: 'Endpoints', items: ['pc', 'laptop', 'server', 'smartphone', 'smart-tv', 'game-console'] },
+    { name: 'Wireless', items: ['wap', 'wlc'] },
+    { name: 'Security', items: ['firewall', 'ids'] },
+    { name: 'Cloud & WAN', items: ['cloud', 'internet', 'isp-router', 'mpls-core', 'vpg', 'load-balancer'] },
   ];
 
   // Icon helpers — each returns SVG markup. Lift-and-shift from v1's tbPaletteLineIcon
@@ -2563,9 +2591,9 @@
     var def = TB_V3_DEVICE_TYPES[dev.type] || { label: dev.type };
 
     // Build optional IP/Mask/Gateway block (Phase 3.1)
-    var ENDPOINT_TYPES = ['workstation','server','laptop','smartphone','cloud','internet'];
+    var ENDPOINT_TYPES = ['pc','server','laptop','smartphone','cloud','internet'];
     var L3_MULTI_TYPES = ['router','l3-switch','firewall','vpn'];
-    var L2_TYPES = ['switch','hub','ap','wlc'];
+    var L2_TYPES = ['switch','hub','wap','wlc'];
 
     var ipBlock = '';
     if (ENDPOINT_TYPES.indexOf(dev.type) !== -1) {
@@ -4244,7 +4272,7 @@
   function _animateIntermediate(hopId, deviceType, onDone) {
     // Determine the top-of-decap layer per device type.
     var topLayer;
-    if (deviceType === 'switch' || deviceType === 'ap' || deviceType === 'wlc') {
+    if (deviceType === 'switch' || deviceType === 'wap' || deviceType === 'wlc') {
       topLayer = 2;
     } else if (deviceType === 'router' || deviceType === 'l3-switch' || deviceType === 'firewall' || deviceType === 'vpn') {
       topLayer = 3;
@@ -4444,9 +4472,9 @@
 
   function _activeLayersForDev(dev) {
     if (!dev || !dev.type) return [1, 2, 3];
-    var endpoints = ['workstation', 'server', 'laptop', 'smartphone', 'game-console', 'smart-tv'];
+    var endpoints = ['pc', 'server', 'laptop', 'smartphone', 'game-console', 'smart-tv'];
     if (endpoints.indexOf(dev.type) !== -1) return [1, 2, 3, 7];  // ICMP: L4 = n/a
-    if (dev.type === 'switch' || dev.type === 'ap' || dev.type === 'wlc') return [1, 2];
+    if (dev.type === 'switch' || dev.type === 'wap' || dev.type === 'wlc') return [1, 2];
     if (dev.type === 'router' || dev.type === 'l3-switch' || dev.type === 'firewall' || dev.type === 'vpn') return [1, 2, 3];
     if (dev.type === 'cloud' || dev.type === 'internet') return [1, 2, 3];
     return [1, 2, 3];
@@ -4466,14 +4494,14 @@
     if (layerNum === 3) {
       if (role === 'source') return 'Wraps payload with source/dest IP';
       if (role === 'dest') return 'Accepts packet for own IP';
-      if (devType === 'switch' || devType === 'ap' || devType === 'wlc') return 'n/a — switch does not examine IP';
+      if (devType === 'switch' || devType === 'wap' || devType === 'wlc') return 'n/a — switch does not examine IP';
       if (devType === 'firewall' || devType === 'vpn') return 'Filters per policy. Forwards via routing table';
       return 'Forwards via routing table';
     }
     if (layerNum === 2) {
       if (role === 'source') return 'Frames with source/next-hop MAC';
       if (role === 'dest') return 'Accepts frame for own MAC';
-      if (devType === 'switch' || devType === 'ap' || devType === 'wlc') return 'Forwards via MAC table';
+      if (devType === 'switch' || devType === 'wap' || devType === 'wlc') return 'Forwards via MAC table';
       return 'Rewrites frame with own MAC + next-hop MAC';
     }
     if (layerNum === 1) {
@@ -4496,13 +4524,13 @@
     if (layerNum === 3) {
       if (role === 'source') return 'IP · src=' + (ctx.srcIp || '?') + ' · dst=' + (ctx.dstIp || '?');
       if (role === 'dest') return 'IP · dst=' + (ctx.dstIp || '?') + ' matches';
-      if (devType === 'switch' || devType === 'ap' || devType === 'wlc') return 'n/a';
+      if (devType === 'switch' || devType === 'wap' || devType === 'wlc') return 'n/a';
       return 'IP · src=' + (ctx.srcIp || '?') + ' · dst=' + (ctx.dstIp || '?') + ' · TTL decrements';
     }
     if (layerNum === 2) {
       if (role === 'source') return 'Ethernet · src=' + (ctx.srcMac || '?') + ' · dst=' + (ctx.nextHopMac || '?');
       if (role === 'dest') return 'Ethernet · dst=' + (ctx.dstMac || '?') + ' matches';
-      if (devType === 'switch' || devType === 'ap' || devType === 'wlc') return 'Ethernet · forwarding table lookup';
+      if (devType === 'switch' || devType === 'wap' || devType === 'wlc') return 'Ethernet · forwarding table lookup';
       return 'Ethernet · src=' + (ctx.routerMacOut || '?') + ' · dst=' + (ctx.nextHopMac || '?');
     }
     if (layerNum === 1) {
