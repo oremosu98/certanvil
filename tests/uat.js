@@ -22546,6 +22546,18 @@ test('phase2: TB_V3_FREEBUILD_BACKUP does not collide with TB_V3_DRAFT', !/TB_V3
   test('V1P: _migrateStateTypesToV1 is defined',
     /function\s+_migrateStateTypesToV1\s*\(/.test(tbv3SrcV1P)
   );
+  // Stage 2 V1-parity guards
+  test('V1P Stage2: TB_V3_DEVICE_TYPES includes all 16 new device type ids',
+    ['dmz-switch','printer','voip','iot','public-web','public-file','public-cloud',
+     'vpc','cloud-subnet','igw','nat-gw','tgw','onprem-dc','sase-edge','dns-server','bridge']
+      .every(id => new RegExp("'" + id + "'\\s*:\\s*\\{").test(tbv3SrcV1P))
+  );
+  test('V1P Stage2: TB_V3_PALETTE_GROUPS includes Public Cloud group with igw and tgw',
+    /name:\s*'Public Cloud'[\s\S]{0,300}'igw'[\s\S]{0,100}'tgw'/.test(tbv3SrcV1P)
+  );
+  test('V1P Stage2: _autoFillIp ENDPOINT_TYPES includes new endpoint device types',
+    /ENDPOINT_TYPES\s*=\s*\[[\s\S]{0,200}'printer'[\s\S]{0,100}'voip'[\s\S]{0,100}'iot'[\s\S]{0,100}'dns-server'/.test(tbv3SrcV1P)
+  );
 })();
 
 // ── Summary ──

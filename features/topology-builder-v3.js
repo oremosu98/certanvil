@@ -133,7 +133,7 @@
   // ───────────────────────────────────────────────────────────
 
   function _autoFillIp(dev, state) {
-    var ENDPOINT_TYPES = ['pc','server','laptop','smartphone'];
+    var ENDPOINT_TYPES = ['pc','server','laptop','smartphone','printer','voip','iot','dns-server'];
     var L3_MULTI_TYPES = ['router','l3-switch','firewall','vpn'];
     if (ENDPOINT_TYPES.indexOf(dev.type) === -1 && L3_MULTI_TYPES.indexOf(dev.type) === -1) {
       return; // L2 / cloud / internet — no config
@@ -2271,15 +2271,37 @@
     'mpls-core':      { label: 'MPLS Core', icon: _icoMpls() },
     'vpg':            { label: 'VPN Gateway', icon: _icoVpn() },
     'load-balancer':  { label: 'Load Balancer', icon: _icoLb() },
+    // Stage 2 V1-parity device types
+    // Network
+    'dmz-switch':     { label: 'DMZ Switch', icon: _icoDmzSwitch() },
+    'onprem-dc':      { label: 'On-Prem DC', icon: _icoOnpremDc() },
+    'bridge':         { label: 'Bridge', icon: _icoBridge() },
+    // Endpoints
+    'printer':        { label: 'Printer', icon: _icoPrinter() },
+    'voip':           { label: 'VoIP Phone', icon: _icoVoip() },
+    'iot':            { label: 'IoT Device', icon: _icoIot() },
+    'dns-server':     { label: 'DNS Server', icon: _icoDnsServer() },
+    // Cloud
+    'public-web':     { label: 'Public Web', icon: _icoPublicWeb() },
+    'public-file':    { label: 'Public File', icon: _icoPublicFile() },
+    'public-cloud':   { label: 'Public Cloud', icon: _icoPublicCloud() },
+    'vpc':            { label: 'VPC', icon: _icoVpc() },
+    'cloud-subnet':   { label: 'Cloud Subnet', icon: _icoCloudSubnet() },
+    'igw':            { label: 'Internet Gateway', icon: _icoIgw() },
+    'nat-gw':         { label: 'NAT Gateway', icon: _icoNatGw() },
+    'tgw':            { label: 'Transit Gateway', icon: _icoTgw() },
+    // Security
+    'sase-edge':      { label: 'SASE Edge', icon: _icoSaseEdge() },
   };
 
   var TB_V3_PALETTE_GROUPS = [
-    { name: 'Routers', items: ['router', 'l3-router'] },
-    { name: 'Switches', items: ['switch', 'l3-switch', 'hub'] },
-    { name: 'Endpoints', items: ['pc', 'laptop', 'server', 'smartphone', 'smart-tv', 'game-console'] },
-    { name: 'Wireless', items: ['wap', 'wlc'] },
-    { name: 'Security', items: ['firewall', 'ids'] },
-    { name: 'Cloud & WAN', items: ['cloud', 'internet', 'isp-router', 'mpls-core', 'vpg', 'load-balancer'] },
+    { name: 'Routers',     items: ['router', 'l3-router', 'isp-router'] },
+    { name: 'Switches',    items: ['switch', 'l3-switch', 'hub', 'dmz-switch', 'bridge'] },
+    { name: 'Endpoints',   items: ['pc', 'laptop', 'server', 'smartphone', 'smart-tv', 'game-console', 'printer', 'voip', 'iot', 'dns-server'] },
+    { name: 'Wireless',    items: ['wap', 'wlc'] },
+    { name: 'Security',    items: ['firewall', 'ids', 'sase-edge'] },
+    { name: 'Cloud & WAN', items: ['cloud', 'internet', 'mpls-core', 'vpg', 'load-balancer', 'onprem-dc'] },
+    { name: 'Public Cloud', items: ['public-web', 'public-file', 'public-cloud', 'vpc', 'cloud-subnet', 'igw', 'nat-gw', 'tgw'] },
   ];
 
   // Icon helpers — each returns SVG markup. Lift-and-shift from v1's tbPaletteLineIcon
@@ -2306,6 +2328,23 @@
   function _icoMpls() { return '<svg viewBox="0 0 24 24" class="tb3-palette-ico" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="3"/><circle cx="5" cy="6" r="2"/><circle cx="19" cy="6" r="2"/><circle cx="5" cy="18" r="2"/><circle cx="19" cy="18" r="2"/><path d="M7 7l3 3M17 7l-3 3M7 17l3-3M17 17l-3-3"/></svg>'; }
   function _icoVpn() { return '<svg viewBox="0 0 24 24" class="tb3-palette-ico" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>'; }
   function _icoLb() { return '<svg viewBox="0 0 24 24" class="tb3-palette-ico" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3v18"/></svg>'; }
+  // Stage 2 V1-parity icons
+  function _icoDmzSwitch() { return '<svg viewBox="0 0 24 24" class="tb3-palette-ico" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="9" width="18" height="6" rx="1"/><circle cx="7" cy="12" r=".8" fill="currentColor"/><circle cx="11" cy="12" r=".8" fill="currentColor"/><circle cx="15" cy="12" r=".8" fill="currentColor"/><path d="M3 6h18M3 18h18" stroke-dasharray="2 2"/></svg>'; }
+  function _icoPrinter() { return '<svg viewBox="0 0 24 24" class="tb3-palette-ico" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="6" y="14" width="12" height="7" rx="1"/><path d="M6 17H3V9a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v8h-3"/><rect x="6" y="3" width="12" height="6" rx="1"/></svg>'; }
+  function _icoVoip() { return '<svg viewBox="0 0 24 24" class="tb3-palette-ico" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M6.5 4h4l1.5 3.5-2 1.5c1 2.5 3.5 5 6 6l1.5-2L21 14.5V19a1 1 0 0 1-1 1C8 20 4 10 4 5a1 1 0 0 1 1-1z"/></svg>'; }
+  function _icoIot() { return '<svg viewBox="0 0 24 24" class="tb3-palette-ico" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="3"/><path d="M5 12a7 7 0 0 1 7-7M5 12a7 7 0 0 0 7 7M19 12a7 7 0 0 1-7 7M19 12a7 7 0 0 0-7-7M3 12h2M19 12h2M12 3v2M12 19v2"/></svg>'; }
+  function _icoPublicWeb() { return '<svg viewBox="0 0 24 24" class="tb3-palette-ico" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/><circle cx="12" cy="12" r="2" fill="currentColor"/></svg>'; }
+  function _icoPublicFile() { return '<svg viewBox="0 0 24 24" class="tb3-palette-ico" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h5"/></svg>'; }
+  function _icoPublicCloud() { return '<svg viewBox="0 0 24 24" class="tb3-palette-ico" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M17 18a4 4 0 1 0-3.5-6.5A5 5 0 0 0 4 13a3 3 0 0 0 3 5h10z"/><path d="M12 18v3M9 21h6"/></svg>'; }
+  function _icoVpc() { return '<svg viewBox="0 0 24 24" class="tb3-palette-ico" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="18" height="18" rx="2" stroke-dasharray="4 2"/><rect x="7" y="7" width="10" height="10" rx="1"/></svg>'; }
+  function _icoCloudSubnet() { return '<svg viewBox="0 0 24 24" class="tb3-palette-ico" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="18" height="18" rx="2" stroke-dasharray="4 2"/><path d="M3 9h18M9 3v18"/></svg>'; }
+  function _icoIgw() { return '<svg viewBox="0 0 24 24" class="tb3-palette-ico" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><path d="M8 12h8M13 8l4 4-4 4"/></svg>'; }
+  function _icoNatGw() { return '<svg viewBox="0 0 24 24" class="tb3-palette-ico" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="8" width="18" height="8" rx="1"/><path d="M7 12h10M14 9l3 3-3 3"/></svg>'; }
+  function _icoTgw() { return '<svg viewBox="0 0 24 24" class="tb3-palette-ico" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="4"/><path d="M3 12h5M16 12h5M6 6l3.5 4M18 6l-3.5 4M6 18l3.5-4M18 18l-3.5-4"/></svg>'; }
+  function _icoOnpremDc() { return '<svg viewBox="0 0 24 24" class="tb3-palette-ico" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="2" y="6" width="20" height="12" rx="1"/><rect x="5" y="9" width="5" height="3" rx="0.5"/><rect x="14" y="9" width="5" height="3" rx="0.5"/><path d="M5 15h2M9 15h2M13 15h2M17 15h2"/></svg>'; }
+  function _icoSaseEdge() { return '<svg viewBox="0 0 24 24" class="tb3-palette-ico" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 2l8 4v6c0 5-3.5 9-8 10C7.5 21 4 17 4 12V6l8-4z"/><path d="M9 12l2 2 4-4"/></svg>'; }
+  function _icoDnsServer() { return '<svg viewBox="0 0 24 24" class="tb3-palette-ico" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="18" height="18" rx="1"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r="1" fill="currentColor"/></svg>'; }
+  function _icoBridge() { return '<svg viewBox="0 0 24 24" class="tb3-palette-ico" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 17h18M6 17v-4a6 6 0 0 1 12 0v4M6 10v3M18 10v3M6 13h12"/></svg>'; }
 
   function _renderPalette() {
     var pal = document.getElementById('tb3-palette');
