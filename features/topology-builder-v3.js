@@ -3207,12 +3207,13 @@
     var labelHtml = '<span class="tb3-3d-dev-label">' + _escAttr(dev.label || dev.hostname || dev.type) + '</span>';
     var el = document.createElement('div');
     el.className = 'tb3-3d-dev';
-    el.setAttribute('data-dev-id', _escAttr(dev.id));
-    // Position card in 3D space using device's canvas coordinates as a base
+    el.setAttribute('data-device-id', _escAttr(dev.id));
+    // Position card in 3D space using device's canvas coordinates as a base.
+    // translate3d is GPU-composited and integrates cleanly with transform-style:
+    // preserve-3d on the stage (camera rotation applied in Stage 5).
     var x = (typeof dev.x === 'number' ? dev.x : 0);
     var y = (typeof dev.y === 'number' ? dev.y : 0);
-    el.style.left = x + 'px';
-    el.style.top  = y + 'px';
+    el.style.transform = 'translate3d(' + x + 'px, ' + y + 'px, 0)';
     el.innerHTML =
       '<div class="tb3-3d-dev-top">' + iconHtml + labelHtml + '</div>' +
       '<div class="tb3-3d-dev-bottom"></div>' +
@@ -3226,13 +3227,27 @@
   function _render3DScene() {
     var stage = document.getElementById('tb3-3d-popup-stage');
     if (!stage) return;
-    // Clear any previously-rendered cards before (re-)populating
-    var existing = stage.querySelectorAll('.tb3-3d-dev');
+    // Clear any previously-rendered cards and cables before (re-)populating.
+    // .tb3-3d-cable selector is preemptively included so Stage 4's cable build
+    // is cleared on re-render without needing to revisit this function.
+    var existing = stage.querySelectorAll('.tb3-3d-dev, .tb3-3d-cable');
     for (var i = 0; i < existing.length; i++) {
       existing[i].parentNode.removeChild(existing[i]);
     }
     for (var j = 0; j < state.devices.length; j++) {
       stage.appendChild(_build3DDeviceEl(state.devices[j]));
+    }
+
+    // Update header counts so they stay in sync on every re-render.
+    var counts = document.querySelector('.tb3-3d-popup-counts');
+    if (counts) counts.innerHTML = state.devices.length + ' devices &middot; ' + state.cables.length + ' cables';
+
+    // Update viewport aria-label with live counts (live sync exercised in Stage 6).
+    var vp = document.getElementById('tb3-3d-popup-viewport');
+    if (vp) {
+      vp.setAttribute('aria-label',
+        '3D rendering of ' + state.devices.length + ' devices and ' + state.cables.length +
+        ' cables. Use arrow keys to rotate, plus or minus to zoom, R to reset, Escape to close.');
     }
   }
 
