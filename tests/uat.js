@@ -22572,6 +22572,26 @@ test('phase2: TB_V3_FREEBUILD_BACKUP does not collide with TB_V3_DRAFT', !/TB_V3
              /'dns-server'/.test(inspectorArr);
     })()
   );
+
+  // ---- Stage 3: 16 ported V1 scenarios ----
+  test('V1P: ported V1 scenarios present in TB_V3_SCENARIOS',
+    /id:\s*'small-office'/.test(tbv3SrcV1P) &&
+    /id:\s*'enterprise-ids-lb'/.test(tbv3SrcV1P) &&
+    /id:\s*'branch-office-wireless'/.test(tbv3SrcV1P) &&
+    /id:\s*'home-network'/.test(tbv3SrcV1P) &&
+    /id:\s*'cloud-vpc-architecture'/.test(tbv3SrcV1P) &&
+    /id:\s*'multi-vpc-transit-gateway'/.test(tbv3SrcV1P) &&
+    /id:\s*'sase-architecture'/.test(tbv3SrcV1P) &&
+    /id:\s*'sd-wan-network'/.test(tbv3SrcV1P) &&
+    /id:\s*'nat-gateway-cloud'/.test(tbv3SrcV1P) &&
+    /id:\s*'internet-gateway-cloud'/.test(tbv3SrcV1P) &&
+    /id:\s*'vpc-peering-cloud'/.test(tbv3SrcV1P) &&
+    /id:\s*'metropolitan-area-network'/.test(tbv3SrcV1P) &&
+    /id:\s*'site-to-site-ipsec-vpn'/.test(tbv3SrcV1P) &&
+    /id:\s*'remote-access-vpn'/.test(tbv3SrcV1P) &&
+    /id:\s*'cellular-4g-5g-wan'/.test(tbv3SrcV1P) &&
+    /id:\s*'satellite-wan'/.test(tbv3SrcV1P)
+  );
 })();
 
 // ── Summary ──
