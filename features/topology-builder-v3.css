@@ -2756,3 +2756,30 @@ html[data-theme="light"] #page-topology-builder-v3 {
 .tb3-3d-dev-illust .illust-tgw-spoke-2 { transform: rotate(135deg);  }
 .tb3-3d-dev-illust .illust-tgw-spoke-3 { transform: rotate(225deg);  }
 .tb3-3d-dev-illust .illust-tgw-spoke-4 { transform: rotate(315deg);  }
+
+/* ── Phase 7 v2.1 §3a: Device labels below ── */
+.tb3-3d-dev-label-below {
+  position: absolute;
+  top: 60px; left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  text-align: center;
+  pointer-events: none;
+  transform-style: preserve-3d;
+  /* JS rewrites .style.transform on every _apply3DCamera() call to keep
+     the label perpendicular to the camera as the scene rotates. */
+}
+
+.tb3-3d-dev-label-below .tb3-3d-dev-name {
+  display: block;
+  font: 600 11px/1.2 "Fraunces", Georgia, serif;
+  color: var(--tb3-ink, #1a1a1a);
+  letter-spacing: .02em;
+}
+
+.tb3-3d-dev-label-below .tb3-3d-dev-ip {
+  display: block;
+  font: 500 9px/1.2 -apple-system, "SF Mono", Menlo, monospace;
+  color: var(--tb3-muted, #7a6e5e);
+  margin-top: 2px;
+}

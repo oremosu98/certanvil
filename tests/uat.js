@@ -22460,7 +22460,7 @@ test('phase2: TB_V3_FREEBUILD_BACKUP does not collide with TB_V3_DRAFT', !/TB_V3
     /function\s+_render3DScene\s*\(/.test(tbv3SrcP7v2)
   );
   test('P7v2: _build3DDeviceEl emits 5-face extruded card structure',
-    /function\s+_build3DDeviceEl[\s\S]{0,1400}tb3-3d-dev-top[\s\S]{0,200}tb3-3d-dev-bottom[\s\S]{0,200}tb3-3d-dev-side-n[\s\S]{0,200}tb3-3d-dev-side-s[\s\S]{0,200}tb3-3d-dev-side-e[\s\S]{0,200}tb3-3d-dev-side-w/.test(tbv3SrcP7v2)
+    /function\s+_build3DDeviceEl[\s\S]{0,3500}tb3-3d-dev-top[\s\S]{0,200}tb3-3d-dev-bottom[\s\S]{0,200}tb3-3d-dev-side-n[\s\S]{0,200}tb3-3d-dev-side-s[\s\S]{0,200}tb3-3d-dev-side-e[\s\S]{0,200}tb3-3d-dev-side-w/.test(tbv3SrcP7v2)
   );
   test('P7v2: top face uses 135deg gradient (light from upper-left)',
     /\.tb3-3d-dev-top[\s\S]{0,400}linear-gradient\(\s*135deg/.test(tbv3CssP7v2)
@@ -22750,6 +22750,29 @@ test('phase2: TB_V3_FREEBUILD_BACKUP does not collide with TB_V3_DRAFT', !/TB_V3
       }
       return true;
     })()
+  );
+})();
+
+// ══════════════════════════════════════════
+// TB v3 Phase 7 v2 Polish Stage 3 UAT fixtures
+// ══════════════════════════════════════════
+(function _tbv3PolishStage3Fixtures() {
+  const fs = require('fs');
+  const path = require('path');
+  const tbv3SrcPo = fs.readFileSync(path.join(__dirname, '..', 'features', 'topology-builder-v3.js'), 'utf8');
+  const tbv3CssPo = fs.readFileSync(path.join(__dirname, '..', 'features', 'topology-builder-v3.css'), 'utf8');
+
+  // ---- Stage 3: device labels below + counter-rotation ----
+  test('POLISH: label-below CSS classes defined',
+    /\.tb3-3d-dev-label-below/.test(tbv3CssPo) &&
+    /\.tb3-3d-dev-name/.test(tbv3CssPo) &&
+    /\.tb3-3d-dev-ip/.test(tbv3CssPo)
+  );
+  test('POLISH: _apply3DCamera counter-rotates labels',
+    /function\s+_apply3DCamera[\s\S]{0,1200}\.tb3-3d-dev-label-below[\s\S]{0,300}counterTransform/.test(tbv3SrcPo)
+  );
+  test('POLISH: _build3DDeviceEl emits .tb3-3d-dev-label-below in innerHTML',
+    /function\s+_build3DDeviceEl[\s\S]{0,3500}tb3-3d-dev-label-below/.test(tbv3SrcPo)
   );
 })();
 

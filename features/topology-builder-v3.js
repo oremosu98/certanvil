@@ -4357,6 +4357,13 @@
       'rotateX(' + _3dPopup.camera.rotX + 'deg) ' +
       'rotateY(' + _3dPopup.camera.rotY + 'deg) ' +
       'scale(' + _3dPopup.camera.zoom + ')';
+
+    // Stage 3: counter-rotate labels so they stay camera-facing
+    var labels = stage.querySelectorAll('.tb3-3d-dev-label-below');
+    var counterTransform = 'translateX(-50%) rotateX(' + (-_3dPopup.camera.rotX) + 'deg) rotateY(' + (-_3dPopup.camera.rotY) + 'deg)';
+    for (var i = 0; i < labels.length; i++) {
+      labels[i].style.transform = counterTransform;
+    }
   }
 
   // ---------------------------------------------------------------------------
@@ -4370,6 +4377,14 @@
     var labelHtml = '<span class="tb3-3d-dev-label">' + _escAttr(dev.label || dev.hostname || dev.type) + '</span>';
     var family = _TB_V3_DEVICE_FAMILY[dev.type] || 'network';
     var illust = (_TB_V3_DEVICE_3D_ILLUSTRATIONS && _TB_V3_DEVICE_3D_ILLUSTRATIONS[dev.type]) ? _TB_V3_DEVICE_3D_ILLUSTRATIONS[dev.type] : '';
+    // Stage 3: label below the device card (hostname + IP, counter-rotated by _apply3DCamera)
+    var labelName = _escAttr(dev.label || dev.hostname || dev.type);
+    var labelIp = dev.config && dev.config.ip ? _escAttr(dev.config.ip) : '';
+    var labelBelowHtml =
+      '<div class="tb3-3d-dev-label-below">' +
+        '<span class="tb3-3d-dev-name">' + labelName + '</span>' +
+        (labelIp ? '<span class="tb3-3d-dev-ip">' + labelIp + '</span>' : '') +
+      '</div>';
     var el = document.createElement('div');
     el.className = 'tb3-3d-dev';
     el.setAttribute('data-device-id', _escAttr(dev.id));
@@ -4388,7 +4403,8 @@
       '<div class="tb3-3d-dev-side-e"></div>' +
       '<div class="tb3-3d-dev-side-w"></div>' +
       '<div class="tb3-3d-dev-illust">' + illust + '</div>' +
-      '<div class="tb3-3d-dev-accent-stripe"></div>';
+      '<div class="tb3-3d-dev-accent-stripe"></div>' +
+      labelBelowHtml;
     return el;
   }
 
