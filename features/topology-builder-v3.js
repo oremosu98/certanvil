@@ -53,7 +53,7 @@
   // Lives separate from state.mode (popup is transient, not a mode value).
   var _3dPopup = {
     open: false,
-    camera: { rotX: 52, rotY: -18, zoom: 1 },
+    camera: { rotX: 42, rotY: -18, zoom: 1.1 }, // Stage 6: lower tilt, tighter zoom
     dragState: { active: false, startX: 0, startY: 0, startRotX: 0, startRotY: 0 },
     velocityX: 0,
     velocityY: 0,
@@ -4386,6 +4386,67 @@
     return { cx: sumX / devices.length, cy: sumY / devices.length };
   }
 
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Phase 7 v2 Stage 6: Fit-to-view — auto-computes optimal zoom so all devices
+  // are visible, then tweens camera to that zoom over 400ms (ease-out cubic).
+  // Cancel-on-new-call discipline: always cancels any in-flight rAF first.
+  // ═══════════════════════════════════════════════════════════════════════════
+  function _fitCameraToDevices(devices) {
+    if (!Array.isArray(devices) || devices.length === 0) return;
+    // Compute bounding box of device positions (canvas coords)
+    var minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    for (var i = 0; i < devices.length; i++) {
+      var dx = typeof devices[i].x === 'number' ? devices[i].x : 0;
+      var dy = typeof devices[i].y === 'number' ? devices[i].y : 0;
+      if (dx < minX) minX = dx;
+      if (dx > maxX) maxX = dx;
+      if (dy < minY) minY = dy;
+      if (dy > maxY) maxY = dy;
+    }
+    var spanX = (maxX - minX) || 1;
+    var spanY = (maxY - minY) || 1;
+    // Fit zoom so the largest axis fills ~70% of the viewport (conservative margin)
+    var viewport = document.getElementById('tb3-3d-popup-viewport');
+    var vpW = viewport ? viewport.offsetWidth : 900;
+    var vpH = viewport ? viewport.offsetHeight : 600;
+    // Approximate device footprint in stage px (each device is 80px wide)
+    var DEVICE_PX = 80;
+    var stageSpanX = spanX * 0.15 + DEVICE_PX; // 0.15 = canvas→stage scale approx
+    var stageSpanY = spanY * 0.10 + DEVICE_PX;
+    var fitZoom = Math.min((vpW * 0.7) / stageSpanX, (vpH * 0.7) / stageSpanY, 2.0);
+    fitZoom = Math.max(fitZoom, 0.5);
+    // Tween to fitZoom keeping rotX/rotY unchanged
+    var startZoom = _3dPopup.camera.zoom;
+    var targetZoom = fitZoom;
+    if (_3dPopup.rafHandle) {
+      cancelAnimationFrame(_3dPopup.rafHandle);
+      _3dPopup.rafHandle = null;
+    }
+    if (_3dPopupReducedMotion()) {
+      _3dPopup.camera.zoom = targetZoom;
+      _apply3DCamera();
+      return;
+    }
+    var startTs = null;
+    var durationMs = 400;
+    function ease(t) { return 1 - Math.pow(1 - t, 3); }
+    function tick(ts) {
+      if (startTs === null) startTs = ts;
+      var t = Math.min(1, (ts - startTs) / durationMs);
+      var k = ease(t);
+      _3dPopup.camera.zoom = startZoom + (targetZoom - startZoom) * k;
+      _apply3DCamera();
+      if (t < 1) {
+        _3dPopup.rafHandle = requestAnimationFrame(tick);
+      } else {
+        _3dPopup.camera.zoom = targetZoom;
+        _apply3DCamera();
+        _3dPopup.rafHandle = null;
+      }
+    }
+    _3dPopup.rafHandle = requestAnimationFrame(tick);
+  }
+
   function _build3DDeviceEl(dev, sceneCx, sceneCy) {
     sceneCx = sceneCx || 0;
     sceneCy = sceneCy || 0;
@@ -4714,16 +4775,16 @@
 
   function _on3DPopupDblClick() {
     if (_3dPopupReducedMotion()) {
-      _3dPopup.camera.rotX = 52;
+      _3dPopup.camera.rotX = 42; // Stage 6: updated default
       _3dPopup.camera.rotY = -18;
-      _3dPopup.camera.zoom = 1;
+      _3dPopup.camera.zoom = 1.1; // Stage 6: updated default
       _apply3DCamera();
       return;
     }
     var startRotX = _3dPopup.camera.rotX;
     var startRotY = _3dPopup.camera.rotY;
     var startZoom = _3dPopup.camera.zoom;
-    var targetRotX = 52, targetRotY = -18, targetZoom = 1;
+    var targetRotX = 42, targetRotY = -18, targetZoom = 1.1; // Stage 6: updated defaults
     var startTs = null;
     var durationMs = 400;
     if (_3dPopup.rafHandle) {
@@ -4889,6 +4950,9 @@
         '<header class="tb3-3d-popup-header">' +
           '<h2 id="tb3-3d-popup-title" class="tb3-3d-popup-title">3D view of topology</h2>' +
           '<span class="tb3-3d-popup-counts">' + devCount + ' devices &middot; ' + cabCount + ' cables</span>' +
+          '<span class="tb3-3d-popup-header-spacer"></span>' +
+          '<button class="tb3-3d-popup-tool-btn" id="tb3-3d-popup-fit-btn" aria-label="Fit topology to view" type="button" title="Fit to view">⊡</button>' +
+          '<button class="tb3-3d-popup-tool-btn" id="tb3-3d-popup-reset-btn" aria-label="Reset camera to default" type="button" title="Reset camera">↺</button>' +
           '<button class="tb3-3d-popup-close-btn" id="tb3-3d-popup-close-btn" aria-label="Close 3D view" type="button">&times;</button>' +
         '</header>' +
         '<div class="tb3-3d-popup-viewport" id="tb3-3d-popup-viewport" role="img" ' +
@@ -4896,6 +4960,13 @@
              'tabindex="0">' +
           '<div class="tb3-3d-popup-stage" id="tb3-3d-popup-stage">' +
             '<div class="tb3-3d-floor"></div>' +
+          '</div>' +
+          '<div class="tb3-3d-legend-chip" id="tb3-3d-legend-chip">' +
+            '<span class="tb3-3d-legend-dot" style="background:var(--tb3-3d-accent-network,#8a6a3e)"></span><span class="tb3-3d-legend-label">Network</span>' +
+            '<span class="tb3-3d-legend-dot" style="background:var(--tb3-3d-accent-endpoint,#5a8a4e)"></span><span class="tb3-3d-legend-label">Endpoint</span>' +
+            '<span class="tb3-3d-legend-dot" style="background:var(--tb3-3d-accent-security,#8a4e4e)"></span><span class="tb3-3d-legend-label">Security</span>' +
+            '<span class="tb3-3d-legend-dot" style="background:var(--tb3-3d-accent-cloud,#4e6a8a)"></span><span class="tb3-3d-legend-label">Cloud</span>' +
+            '<span class="tb3-3d-legend-dot" style="background:var(--tb3-3d-accent-wireless,#7a5a8a)"></span><span class="tb3-3d-legend-label">Wireless</span>' +
           '</div>' +
         '</div>' +
       '</div>';
@@ -4907,6 +4978,9 @@
     // Wire X button + backdrop close (full input listeners come in Stage 5)
     document.getElementById('tb3-3d-popup-close-btn').addEventListener('click', _close3DPopup);
     document.getElementById('tb3-3d-popup-backdrop').addEventListener('click', _close3DPopup);
+    // Stage 6: Fit-to-view + Reset camera tool buttons
+    document.getElementById('tb3-3d-popup-fit-btn').addEventListener('click', function () { _fitCameraToDevices(state.devices); });
+    document.getElementById('tb3-3d-popup-reset-btn').addEventListener('click', _on3DPopupDblClick);
 
     // Open tween — add .is-open after a paint to trigger CSS transitions
     requestAnimationFrame(function () {

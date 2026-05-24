@@ -22480,7 +22480,7 @@ test('phase2: TB_V3_FREEBUILD_BACKUP does not collide with TB_V3_DRAFT', !/TB_V3
     /_build3DCableEl[\s\S]{0,3000}transform\s*=\s*['"]translateZ\(0\)['"]/.test(tbv3SrcP7v2)
   );
   test('P7v2: floor uses rotateX(90deg) + radial gradient vignette',
-    /\.tb3-3d-floor[\s\S]{0,800}rotateX\(90deg\)[\s\S]{0,400}radial-gradient/.test(tbv3CssP7v2)
+    /\.tb3-3d-floor[\s\S]{0,800}rotateX\(90deg\)[\s\S]{0,1600}radial-gradient/.test(tbv3CssP7v2)
   );
 
   // ---- Stage 5: drag + zoom + momentum + animations ----
@@ -22807,6 +22807,88 @@ test('phase2: TB_V3_FREEBUILD_BACKUP does not collide with TB_V3_DRAFT', !/TB_V3
   );
   test('POLISH: reduced-motion hides ambient packets',
     /@media\s*\(prefers-reduced-motion[\s\S]{0,3000}\.tb3-3d-ambient-packet[\s\S]{0,100}display\s*:\s*none/.test(tbv3CssPo)
+  );
+})();
+
+// ── Stage 6: v6.4.3 TB v3 Popup Polish ──
+(function () {
+  var fs = require('fs');
+  var tbv3SrcS6 = fs.readFileSync(
+    require('path').join(__dirname, '../features/topology-builder-v3.js'), 'utf8'
+  );
+  var tbv3CssS6 = fs.readFileSync(
+    require('path').join(__dirname, '../features/topology-builder-v3.css'), 'utf8'
+  );
+
+  // 6.1 Floor grid CSS: background-color + background-image with linear-gradient grid
+  test('STAGE6: .tb3-3d-floor has background-color (not shorthand)',
+    /\.tb3-3d-floor[\s\S]{0,600}background-color\s*:/.test(tbv3CssS6)
+  );
+  test('STAGE6: .tb3-3d-floor background-image includes 60px grid linear-gradient',
+    /\.tb3-3d-floor[\s\S]{0,800}linear-gradient[\s\S]{0,400}60px\s+60px/.test(tbv3CssS6)
+  );
+  test('STAGE6: .tb3-3d-floor has mask-image edge-fade',
+    /\.tb3-3d-floor[\s\S]{0,2200}mask-image\s*:[\s\S]{0,400}radial-gradient/.test(tbv3CssS6)
+  );
+
+  // 6.2 Camera defaults updated
+  test('STAGE6: _3dPopup camera defaults rotX:42 zoom:1.1',
+    /camera\s*:\s*\{\s*rotX\s*:\s*42\s*,\s*rotY\s*:\s*-18\s*,\s*zoom\s*:\s*1\.1\s*\}/.test(tbv3SrcS6)
+  );
+  test('STAGE6: _on3DPopupDblClick reset targets use rotX 42 zoom 1.1',
+    /targetRotX\s*=\s*42[\s\S]{0,100}targetZoom\s*=\s*1\.1/.test(tbv3SrcS6)
+  );
+  test('STAGE6: _on3DPopupDblClick reduced-motion branch uses rotX 42 zoom 1.1',
+    /camera\.rotX\s*=\s*42[\s\S]{0,100}camera\.zoom\s*=\s*1\.1/.test(tbv3SrcS6)
+  );
+
+  // 6.3 Fit + Reset buttons in header HTML
+  test('STAGE6: header contains tb3-3d-popup-fit-btn',
+    /tb3-3d-popup-fit-btn/.test(tbv3SrcS6)
+  );
+  test('STAGE6: header contains tb3-3d-popup-reset-btn',
+    /tb3-3d-popup-reset-btn/.test(tbv3SrcS6)
+  );
+  test('STAGE6: header contains tb3-3d-popup-header-spacer',
+    /tb3-3d-popup-header-spacer/.test(tbv3SrcS6)
+  );
+
+  // 6.4 Fit/Reset handlers wired
+  test('STAGE6: fit-btn click wires _fitCameraToDevices',
+    /tb3-3d-popup-fit-btn[\s\S]{0,200}_fitCameraToDevices/.test(tbv3SrcS6)
+  );
+  test('STAGE6: reset-btn click wires _on3DPopupDblClick',
+    /tb3-3d-popup-reset-btn[\s\S]{0,200}_on3DPopupDblClick/.test(tbv3SrcS6)
+  );
+
+  // 6.5 _fitCameraToDevices function exists with rAF tween
+  test('STAGE6: _fitCameraToDevices defined with rAF tween + cancel discipline',
+    /function\s+_fitCameraToDevices[\s\S]{0,1600}cancelAnimationFrame[\s\S]{0,700}requestAnimationFrame/.test(tbv3SrcS6)
+  );
+  test('STAGE6: _fitCameraToDevices respects reduced-motion fast path',
+    /function\s+_fitCameraToDevices[\s\S]{0,2000}_3dPopupReducedMotion/.test(tbv3SrcS6)
+  );
+
+  // 6.6 Legend chip present in viewport HTML
+  test('STAGE6: tb3-3d-legend-chip appended inside viewport',
+    /tb3-3d-legend-chip/.test(tbv3SrcS6)
+  );
+  test('STAGE6: legend chip contains at least 3 device-family dots',
+    (tbv3SrcS6.match(/tb3-3d-legend-dot/g) || []).length >= 3
+  );
+
+  // 6.7 Chrome CSS present
+  test('STAGE6: .tb3-3d-popup-tool-btn CSS rule exists',
+    /\.tb3-3d-popup-tool-btn\s*\{/.test(tbv3CssS6)
+  );
+  test('STAGE6: .tb3-3d-legend-chip CSS rule exists',
+    /\.tb3-3d-legend-chip\s*\{/.test(tbv3CssS6)
+  );
+  test('STAGE6: .tb3-3d-dev-card hover lift CSS exists',
+    /\.tb3-3d-dev-card:hover[\s\S]{0,100}translateZ/.test(tbv3CssS6)
+  );
+  test('STAGE6: Stage 6 reduced-motion gate kills tool-btn transition and hover lift',
+    /@media\s*\(prefers-reduced-motion[\s\S]{0,3000}\.tb3-3d-popup-tool-btn[\s\S]{0,100}transition\s*:\s*none/.test(tbv3CssS6)
   );
 })();
 

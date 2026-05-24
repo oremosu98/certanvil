@@ -1913,14 +1913,39 @@ html[data-theme="light"] #page-topology-builder-v3 {
   margin-top: -800px;
   transform: rotateX(90deg) translateZ(-30px);
   transform-origin: center center;
-  /* ui-ux-pro-max recommendation: 22% darken (was 35%) keeps the floor warm
-   * without an oppressive "thunderdome" vignette. Stripe/Vercel use 12-22%.
-   * Midpoint at 40% keeps the center bright, vignette ramps in the outer 60%. */
-  background: radial-gradient(
+  /* Stage 6: cream base (replaces background shorthand so background-image layers work) */
+  background-color: var(--tb3-cream, #f5ede0);
+  /* Stage 6: grid cross-hatch (60×60 px) layered over radial vignette.
+   * Grid lines use color-mix so they track the cream token in light/dark.
+   * Radial mask fades the grid at the edges so there's no hard cut-off. */
+  background-image:
+    linear-gradient(
+      to right,
+      color-mix(in oklab, var(--tb3-cream, #f5ede0) 82%, black 18%) 1px,
+      transparent 1px
+    ),
+    linear-gradient(
+      to bottom,
+      color-mix(in oklab, var(--tb3-cream, #f5ede0) 82%, black 18%) 1px,
+      transparent 1px
+    ),
+    radial-gradient(
+      ellipse at 50% 50%,
+      var(--tb3-cream, #f5ede0) 0%,
+      var(--tb3-cream, #f5ede0) 40%,
+      color-mix(in oklab, var(--tb3-cream, #f5ede0) 78%, black 22%) 100%
+    );
+  background-size: 60px 60px, 60px 60px, 100% 100%;
+  /* Stage 6: edge-fade mask — grid dissolves before reaching floor border */
+  -webkit-mask-image: radial-gradient(
     ellipse at 50% 50%,
-    var(--tb3-cream, #f5ede0) 0%,
-    var(--tb3-cream, #f5ede0) 40%,
-    color-mix(in oklab, var(--tb3-cream, #f5ede0) 78%, black 22%) 100%
+    black 30%,
+    transparent 80%
+  );
+  mask-image: radial-gradient(
+    ellipse at 50% 50%,
+    black 30%,
+    transparent 80%
   );
   pointer-events: none;
 }
@@ -2793,4 +2818,85 @@ html[data-theme="light"] #page-topology-builder-v3 {
 @media (prefers-reduced-motion: reduce) {
   /* Phase 7 v2 polish: kill ambient packets entirely (decorative only) */
   .tb3-3d-ambient-packet { display: none !important; }
+}
+
+/* ── Stage 6 chrome: header spacer, tool buttons, legend chip, hover lift ── */
+
+/* Header spacer pushes tool buttons + close to the right */
+.tb3-3d-popup-header-spacer {
+  flex: 1 1 0;
+}
+
+/* Tool buttons (Fit-to-view, Reset) */
+.tb3-3d-popup-tool-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid color-mix(in oklab, var(--tb3-cream, #f5ede0) 60%, black 40%);
+  border-radius: 6px;
+  background: transparent;
+  color: color-mix(in oklab, var(--tb3-cream, #f5ede0) 70%, black 30%);
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  margin-right: 6px;
+  flex-shrink: 0;
+}
+
+.tb3-3d-popup-tool-btn:hover {
+  background: color-mix(in oklab, var(--tb3-cream, #f5ede0) 12%, black 88%);
+  color: var(--tb3-cream, #f5ede0);
+  border-color: color-mix(in oklab, var(--tb3-cream, #f5ede0) 50%, black 50%);
+}
+
+.tb3-3d-popup-tool-btn:active {
+  transform: scale(0.94);
+}
+
+/* Device family legend chip — bottom-left corner of viewport */
+.tb3-3d-legend-chip {
+  position: absolute;
+  bottom: 14px;
+  left: 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 5px 10px;
+  background: color-mix(in oklab, #1a1410 85%, transparent);
+  border: 1px solid color-mix(in oklab, var(--tb3-cream, #f5ede0) 20%, transparent);
+  border-radius: 20px;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  pointer-events: none;
+  z-index: 10;
+}
+
+.tb3-3d-legend-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.tb3-3d-legend-label {
+  font: 500 10px/1 -apple-system, system-ui, sans-serif;
+  color: color-mix(in oklab, var(--tb3-cream, #f5ede0) 80%, transparent);
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+}
+
+/* Hover lift on 3D device cards */
+.tb3-3d-dev-card:hover {
+  transform: translateZ(6px);
+  transition: transform 0.18s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* Stage 6: kill tool-button transition and hover lift in reduced-motion */
+  .tb3-3d-popup-tool-btn { transition: none; }
+  .tb3-3d-dev-card:hover { transform: none; }
 }
