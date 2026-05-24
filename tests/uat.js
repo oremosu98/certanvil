@@ -22520,6 +22520,26 @@ test('phase2: TB_V3_FREEBUILD_BACKUP does not collide with TB_V3_DRAFT', !/TB_V3
     /body\.3d-open\s+\.tb3-rrail[\s\S]{0,200}display:\s*none/.test(tbv3CssP7)
   );
 
+  // ---- Stage 8: packet rise/fall + cancel discipline ----
+  test('P7: _packetRise is defined',
+    /function\s+_packetRise\s*\(/.test(tbv3SrcP7)
+  );
+  test('P7: _packetFall is defined',
+    /function\s+_packetFall\s*\(/.test(tbv3SrcP7)
+  );
+  test('P7: _clearPacketTransition is defined',
+    /function\s+_clearPacketTransition\s*\(/.test(tbv3SrcP7)
+  );
+  test('P7: _stepTrace cancel chain includes _clearPacketTransition',
+    /function\s+_stepTrace[\s\S]{0,2500}_clearPacketTransition\s*\(/.test(tbv3SrcP7)
+  );
+  test('P7: 4 motion easing tokens declared',
+    /--tb3-3d-rise:/.test(tbv3CssP7) &&
+    /--tb3-3d-fall:/.test(tbv3CssP7) &&
+    /--tb3-3d-cascade:/.test(tbv3CssP7) &&
+    /--tb3-3d-scene:/.test(tbv3CssP7)
+  );
+
 })();
 
 // ── Summary ──

@@ -3405,6 +3405,7 @@
       cancelAnimationFrame(_traceState.osiAnimHandle);
       _traceState.osiAnimHandle = null;
     }
+    _clearPacketTransition();   // NEW Phase 7 — cancel any in-flight rise/fall
 
     const fromHopIdx = _traceState.currentHopIdx;
     const toHopIdx = fromHopIdx + 1;
@@ -3668,6 +3669,83 @@
     // Show the foreignObject wrapper
     var fo = document.querySelector('.tb3-3d-device-cascade-fo[data-dev-id="' + devId + '"]');
     if (fo) fo.style.display = '';
+  }
+
+  // ===========================================================================
+  // Phase 7 Stage 8: Packet rise/fall + cancel discipline
+  // 1-shot CSS transitions on the .tb3-packet element. Self-cancelling via
+  // _clearPacketTransition which overwrites the transform + forces a reflow
+  // before the next transition. Triple-coverage cancel in _stepTrace:
+  // rafHandle (Phase 5 glide) + osiAnimHandle (Phase 6 cascade) + packet
+  // transition (Phase 7). emil §8.6 dual-timer becomes triple-timer.
+  // ===========================================================================
+
+  function _packetRise(hopId, onDone) {
+    var pkt = document.querySelector('.tb3-packet');
+    if (!pkt) { if (typeof onDone === 'function') onDone(); return; }
+
+    // Reduced-motion fast-path: teleport, no transition.
+    var rm = (typeof _reducedMotion === 'function') ? _reducedMotion()
+           : (typeof window !== 'undefined' && window.matchMedia &&
+              window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+    if (rm) {
+      pkt.style.transition = 'none';
+      pkt.style.transform = 'translateZ(56px)';
+      if (typeof onDone === 'function') setTimeout(onDone, 0);
+      return;
+    }
+
+    pkt.style.transition = 'transform 180ms var(--tb3-3d-rise)';
+    pkt.style.transform = 'translateZ(56px)';
+
+    var fired = false;
+    var onEnd = function () {
+      if (fired) return;
+      fired = true;
+      pkt.removeEventListener('transitionend', onEnd);
+      if (typeof onDone === 'function') onDone();
+    };
+    pkt.addEventListener('transitionend', onEnd);
+    // Safety net — if transitionend fails to fire (e.g., interrupted), guarantee onDone
+    setTimeout(onEnd, 240);
+  }
+
+  function _packetFall(hopId, onDone) {
+    var pkt = document.querySelector('.tb3-packet');
+    if (!pkt) { if (typeof onDone === 'function') onDone(); return; }
+
+    var rm = (typeof _reducedMotion === 'function') ? _reducedMotion()
+           : (typeof window !== 'undefined' && window.matchMedia &&
+              window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+    if (rm) {
+      pkt.style.transition = 'none';
+      pkt.style.transform = 'translateZ(0)';
+      if (typeof onDone === 'function') setTimeout(onDone, 0);
+      return;
+    }
+
+    pkt.style.transition = 'transform 180ms var(--tb3-3d-fall)';
+    pkt.style.transform = 'translateZ(0)';
+
+    var fired = false;
+    var onEnd = function () {
+      if (fired) return;
+      fired = true;
+      pkt.removeEventListener('transitionend', onEnd);
+      if (typeof onDone === 'function') onDone();
+    };
+    pkt.addEventListener('transitionend', onEnd);
+    setTimeout(onEnd, 240);
+  }
+
+  function _clearPacketTransition() {
+    var pkt = document.querySelector('.tb3-packet');
+    if (!pkt) return;
+    pkt.style.transition = 'none';
+    pkt.style.transform = '';
+    // Force reflow to commit the reset before any next transition is applied.
+    void pkt.offsetWidth;
+    pkt.style.transition = '';
   }
 
   // ===========================================================================

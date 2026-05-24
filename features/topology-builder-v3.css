@@ -1832,3 +1832,11 @@ body.3d-open .tb3-rrail {
   border-radius: 6px;
   cursor: pointer;
 }
+
+/* ── Phase 7 §6: Motion easing tokens (asymmetric rise/fall + cascade) ── */
+:root {
+  --tb3-3d-rise: cubic-bezier(.2, .7, .2, 1);
+  --tb3-3d-fall: cubic-bezier(.8, 0, .8, .3);
+  --tb3-3d-cascade: cubic-bezier(.4, 0, .2, 1);
+  --tb3-3d-scene: linear;
+}
