@@ -1781,3 +1781,107 @@ html[data-theme="light"] #page-topology-builder-v3 {
   transform-style: preserve-3d;
   /* transform set inline by _apply3DCamera */
 }
+
+/* ── Phase 7 v2 §3: Extruded device cards ── */
+.tb3-3d-dev {
+  position: absolute;
+  width: 88px;
+  height: 60px;
+  transform-style: preserve-3d;
+  filter: drop-shadow(8px 14px 16px rgba(0, 0, 0, .18));
+}
+
+.tb3-3d-dev-top {
+  position: absolute;
+  inset: 0;
+  transform: translateZ(14px);
+  background: linear-gradient(135deg,
+    color-mix(in oklab, var(--tb3-bronze, #8b5a3c) 92%, white 8%),
+    var(--tb3-bronze, #8b5a3c));
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px;
+  color: var(--tb3-cream, #f5ede0);
+  font-family: var(--tb3-font, system-ui);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.tb3-3d-dev-top .tb3-mode-ic,
+.tb3-3d-dev-top svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+.tb3-3d-dev-label {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tb3-3d-dev-bottom {
+  position: absolute;
+  inset: 0;
+  background: color-mix(in oklab, var(--tb3-bronze, #8b5a3c) 75%, black 25%);
+  border-radius: 6px;
+}
+
+/* North face: lit side (light from upper-left → 12% darker) */
+.tb3-3d-dev-side-n,
+.tb3-3d-dev-side-s {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 14px;
+  border-radius: 0 0 2px 2px;
+}
+
+.tb3-3d-dev-side-n {
+  top: 0;
+  background: color-mix(in oklab, var(--tb3-bronze, #8b5a3c) 88%, black 12%);
+  transform: rotateX(90deg);
+  transform-origin: top;
+}
+
+/* South face: shadow side (15% darker) */
+.tb3-3d-dev-side-s {
+  bottom: 0;
+  background: color-mix(in oklab, var(--tb3-bronze, #8b5a3c) 85%, black 15%);
+  transform: rotateX(-90deg);
+  transform-origin: bottom;
+}
+
+.tb3-3d-dev-side-e,
+.tb3-3d-dev-side-w {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 14px;
+}
+
+/* East face: shadow side (15% darker) */
+.tb3-3d-dev-side-e {
+  right: 0;
+  background: color-mix(in oklab, var(--tb3-bronze, #8b5a3c) 85%, black 15%);
+  transform: rotateY(-90deg);
+  transform-origin: right;
+}
+
+/* West face: lit side (light from upper-left → 12% darker) */
+.tb3-3d-dev-side-w {
+  left: 0;
+  background: color-mix(in oklab, var(--tb3-bronze, #8b5a3c) 88%, black 12%);
+  transform: rotateY(90deg);
+  transform-origin: left;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tb3-3d-dev {
+    filter: drop-shadow(4px 7px 8px rgba(0, 0, 0, .18));
+  }
+}

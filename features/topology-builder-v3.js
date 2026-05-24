@@ -3196,6 +3196,46 @@
       'scale(' + _3dPopup.camera.zoom + ')';
   }
 
+  // ---------------------------------------------------------------------------
+  // Phase 7 v2 §3: Extruded device cards
+  // ---------------------------------------------------------------------------
+
+  function _build3DDeviceEl(dev) {
+    var iconHtml = (TB_V3_DEVICE_TYPES && TB_V3_DEVICE_TYPES[dev.type] && TB_V3_DEVICE_TYPES[dev.type].icon)
+      ? TB_V3_DEVICE_TYPES[dev.type].icon
+      : '';
+    var labelHtml = '<span class="tb3-3d-dev-label">' + _escAttr(dev.label || dev.hostname || dev.type) + '</span>';
+    var el = document.createElement('div');
+    el.className = 'tb3-3d-dev';
+    el.setAttribute('data-dev-id', _escAttr(dev.id));
+    // Position card in 3D space using device's canvas coordinates as a base
+    var x = (typeof dev.x === 'number' ? dev.x : 0);
+    var y = (typeof dev.y === 'number' ? dev.y : 0);
+    el.style.left = x + 'px';
+    el.style.top  = y + 'px';
+    el.innerHTML =
+      '<div class="tb3-3d-dev-top">' + iconHtml + labelHtml + '</div>' +
+      '<div class="tb3-3d-dev-bottom"></div>' +
+      '<div class="tb3-3d-dev-side-n"></div>' +
+      '<div class="tb3-3d-dev-side-s"></div>' +
+      '<div class="tb3-3d-dev-side-e"></div>' +
+      '<div class="tb3-3d-dev-side-w"></div>';
+    return el;
+  }
+
+  function _render3DScene() {
+    var stage = document.getElementById('tb3-3d-popup-stage');
+    if (!stage) return;
+    // Clear any previously-rendered cards before (re-)populating
+    var existing = stage.querySelectorAll('.tb3-3d-dev');
+    for (var i = 0; i < existing.length; i++) {
+      existing[i].parentNode.removeChild(existing[i]);
+    }
+    for (var j = 0; j < state.devices.length; j++) {
+      stage.appendChild(_build3DDeviceEl(state.devices[j]));
+    }
+  }
+
   function _open3DPopup() {
     if (_3dPopup.open) return;
     _3dPopup.open = true;
@@ -3229,7 +3269,8 @@
       '</div>';
     document.body.appendChild(modal);
 
-    _apply3DCamera();   // apply initial camera (full impl arrives in Stage 5)
+    _render3DScene();    // populate device extruded cards (Stage 3) + cables (Stage 4)
+    _apply3DCamera();    // apply initial camera (full impl arrives in Stage 5)
 
     // Wire X button + backdrop close (full input listeners come in Stage 5)
     document.getElementById('tb3-3d-popup-close-btn').addEventListener('click', _close3DPopup);

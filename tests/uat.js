@@ -22455,6 +22455,20 @@ test('phase2: TB_V3_FREEBUILD_BACKUP does not collide with TB_V3_DRAFT', !/TB_V3
     /function\s+_apply3DCamera[\s\S]{0,400}getElementById\(['"]tb3-3d-popup-stage['"]\)[\s\S]{0,400}transform[\s\S]{0,200}rotateX/.test(tbv3SrcP7v2)
   );
 
+  // ---- Stage 3: device extruded cards ----
+  test('P7v2: _render3DScene is defined',
+    /function\s+_render3DScene\s*\(/.test(tbv3SrcP7v2)
+  );
+  test('P7v2: _build3DDeviceEl emits 5-face extruded card structure',
+    /function\s+_build3DDeviceEl[\s\S]{0,800}tb3-3d-dev-top[\s\S]{0,200}tb3-3d-dev-bottom[\s\S]{0,200}tb3-3d-dev-side-n[\s\S]{0,200}tb3-3d-dev-side-s[\s\S]{0,200}tb3-3d-dev-side-e[\s\S]{0,200}tb3-3d-dev-side-w/.test(tbv3SrcP7v2)
+  );
+  test('P7v2: top face uses 135deg gradient (light from upper-left)',
+    /\.tb3-3d-dev-top[\s\S]{0,400}linear-gradient\(\s*135deg/.test(tbv3CssP7v2)
+  );
+  test('P7v2: device drop-shadow offset matches light direction',
+    /\.tb3-3d-dev\s*\{[\s\S]{0,200}drop-shadow\(8px\s+14px\s+16px/.test(tbv3CssP7v2)
+  );
+
 })();
 
 // ── Summary ──
