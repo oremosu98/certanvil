@@ -22453,6 +22453,14 @@ test('phase2: TB_V3_FREEBUILD_BACKUP does not collide with TB_V3_DRAFT', !/TB_V3
   test("P7: stale {'3d':6} locked-phase map entry removed",
     !/\{['"]3d['"]\s*:\s*6\}/.test(tbv3SrcP7)
   );
+  test('P7: Esc handler closes 3d-open BEFORE osi-open (more-specific first)',
+    (function () {
+      // Find the Esc handler — the keydown listener that checks body classes
+      // and calls _close*. Verify '3d-open' check appears before 'osi-open' check.
+      var match = tbv3SrcP7.match(/contains\(['"]3d-open['"]\)[\s\S]{0,200}contains\(['"]osi-open['"]\)/);
+      return !!match;
+    })()
+  );
 
 })();
 
