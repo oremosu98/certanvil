@@ -22497,6 +22497,14 @@ test('phase2: TB_V3_FREEBUILD_BACKUP does not collide with TB_V3_DRAFT', !/TB_V3
     /_on3DPopupWheel[\s\S]{0,500}_clamp3D[\s\S]{0,80}0\.5[\s\S]{0,80}2(\.0)?/.test(tbv3SrcP7v2)
   );
 
+  // ---- Stage 6: live sync + keyboard nav ----
+  test('P7v2: _renderCanvas calls _render3DScene when popup is open',
+    /function\s+_renderCanvas[\s\S]{0,8000}if\s*\(\s*_3dPopup\.open\s*\)\s*_render3DScene\s*\(\s*\)/.test(tbv3SrcP7v2)
+  );
+  test('P7v2: keyboard nav covers Esc + ArrowLeft/Right/Up/Down + plus/minus + R',
+    /_on3DPopupKeyDown[\s\S]{0,2500}ArrowLeft[\s\S]{0,300}ArrowRight[\s\S]{0,300}ArrowUp[\s\S]{0,300}ArrowDown[\s\S]{0,500}['"]\+['"][\s\S]{0,500}['"]-['"][\s\S]{0,500}['"][rR]['"]/.test(tbv3SrcP7v2)
+  );
+
 })();
 
 // ── Summary ──

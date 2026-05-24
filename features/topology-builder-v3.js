@@ -2013,6 +2013,11 @@
     if (state.mode === 'simulate') {
       _renderSimulatePanel();
     }
+
+    // Phase 7 v2 Stage 6: live sync — if 3D popup is open, refresh its scene.
+    // Camera transform on .tb3-3d-popup-stage is NOT touched — user keeps
+    // their rotated view across edits.
+    if (_3dPopup.open) _render3DScene();
   }
 
   function _updateZoomDisplay() {
@@ -3456,9 +3461,51 @@
 
   function _on3DPopupKeyDown(e) {
     if (!_3dPopup.open) return;
+    var step = 5;
     if (e.key === 'Escape') {
       e.preventDefault();
       _close3DPopup();
+      return;
+    }
+    if (e.key === 'ArrowLeft') {
+      e.preventDefault();
+      _3dPopup.camera.rotY -= step;
+      _apply3DCamera();
+      return;
+    }
+    if (e.key === 'ArrowRight') {
+      e.preventDefault();
+      _3dPopup.camera.rotY += step;
+      _apply3DCamera();
+      return;
+    }
+    if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      _3dPopup.camera.rotX = _clamp3D(_3dPopup.camera.rotX - step, 15, 75);
+      _apply3DCamera();
+      return;
+    }
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      _3dPopup.camera.rotX = _clamp3D(_3dPopup.camera.rotX + step, 15, 75);
+      _apply3DCamera();
+      return;
+    }
+    if (e.key === '+' || e.key === '=') {
+      e.preventDefault();
+      _3dPopup.camera.zoom = _clamp3D(_3dPopup.camera.zoom * 1.1, 0.5, 2.0);
+      _apply3DCamera();
+      return;
+    }
+    if (e.key === '-' || e.key === '_') {
+      e.preventDefault();
+      _3dPopup.camera.zoom = _clamp3D(_3dPopup.camera.zoom / 1.1, 0.5, 2.0);
+      _apply3DCamera();
+      return;
+    }
+    if (e.key === 'r' || e.key === 'R') {
+      e.preventDefault();
+      _on3DPopupDblClick();   // reuse the 400ms tween
       return;
     }
   }
