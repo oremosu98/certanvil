@@ -5456,6 +5456,9 @@
     _endTrace: _endTrace,
     _openOSI: _openOSI,
     _closeOSI: function () { _closeOSI(); },
+    // Phase 7 v2 — 3D popup test exposures
+    _open3DPopup: _open3DPopup,
+    _close3DPopup: function () { _close3DPopup(); },
     // Phase 6 — OSI mode test exposures
     _genMockMac: _genMockMac,
     _activeLayersForDev: _activeLayersForDev,
