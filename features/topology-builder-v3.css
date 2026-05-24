@@ -1676,3 +1676,24 @@ body.3d-open .tb3-dev {
   transform-origin: 50% 100%;
   transition: transform 280ms cubic-bezier(.4, 0, .2, 1);
 }
+
+/* ── Phase 7 §3: Cables and packet at table plane ── */
+body.3d-open .tb3-cable {
+  /* Cables render on the SVG path at translateZ(0) — no per-cable transform
+     needed; preserve-3d on the parent scene handles depth-sort automatically. */
+  transform: translateZ(0);
+}
+
+body.3d-open .tb3-packet {
+  /* Packet baseline at table plane. Stage 8 adds rise (translateZ:56px)
+     and fall transitions as one-shot inline styles set by _packetRise /
+     _packetFall — DO NOT add transition shorthand here that would conflict. */
+  transform: translateZ(0);
+  will-change: transform;
+}
+
+/* Floating control strip + modebar float above 3D scene */
+body.3d-open .tb3-strip,
+body.3d-open .tb3-bar {
+  z-index: 50;
+}

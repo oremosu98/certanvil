@@ -22481,6 +22481,17 @@ test('phase2: TB_V3_FREEBUILD_BACKUP does not collide with TB_V3_DRAFT', !/TB_V3
     /body\.3d-open\s+\.tb3-dev[\s\S]{0,400}transform-origin:\s*50%\s+100%/.test(tbv3CssP7)
   );
 
+  // ---- Stage 5: cable + packet 3D baseline ----
+  test('P7: cables render at translateZ(0) on table plane',
+    /body\.3d-open\s+\.tb3-cable[\s\S]{0,200}translateZ\(0\)/.test(tbv3CssP7)
+  );
+  test('P7: packet baseline at translateZ(0)',
+    /body\.3d-open\s+\.tb3-packet[\s\S]{0,300}translateZ\(0\)/.test(tbv3CssP7)
+  );
+  test('P7: modebar z-index above 3D scene',
+    /body\.3d-open\s+\.tb3-bar[\s\S]{0,500}z-index:\s*50/.test(tbv3CssP7)
+  );
+
 })();
 
 // ── Summary ──
