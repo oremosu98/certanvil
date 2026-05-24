@@ -3405,6 +3405,17 @@
     }
   }
 
+  // ===========================================================================
+  // Phase 7 Stage 12: _update3DAriaStatus
+  // Updates the aria-live polite region in the floating control strip so
+  // screen-reader users get hop-by-hop announcements. Called from _stepTrace
+  // 3D branch (and the failure short-circuit).
+  // ===========================================================================
+  function _update3DAriaStatus(text) {
+    var status = document.getElementById('tb3-3d-status');
+    if (status) status.textContent = text;
+  }
+
   function _stepTrace() {
     if (!_traceState || _traceState.mode === 'idle' || _traceState.mode === 'done') return;
     if (!_canStepFurther()) return;
@@ -3498,6 +3509,26 @@
         };
         var layerStack3d = _buildLayerStackForHop({ dev: hopDev3d || {} }, role3d, ctx3d);
 
+        // Phase 7 Stage 12 — aria-live announcement BEFORE motion fires
+        var hopN = toHopIdx + 1;
+        var totalN = _traceState.hops.length;
+        var devLabel = (hopDev3d && hopDev3d.label) || devId3d;
+        var isFailureHop = (_traceState.failedAt === toHopIdx);
+        if (isFailureHop) {
+          var failLayer = (typeof _failedReasonToLayer === 'function')
+                        ? _failedReasonToLayer(_traceState.reasonCode)
+                        : null;
+          _update3DAriaStatus('Failure at Hop ' + hopN + ' of ' + totalN + ' — ' + devLabel +
+                               ' — ' + (_traceState.reasonCode || 'unknown reason') +
+                               (failLayer ? ' — Layer ' + failLayer : ''));
+        } else {
+          var roleVerb = (role3d === 'source')       ? 'encapsulating'
+                       : (role3d === 'dest')         ? 'decapsulating'
+                       : /* intermediate */            'forwarding';
+          _update3DAriaStatus('Hop ' + hopN + ' of ' + totalN + ' — ' + devLabel +
+                               ' — ' + roleVerb);
+        }
+
         // Pre-render the in-device cascade DOM (all rows start passive)
         _render3DDeviceCascade(devId3d, role3d, layerStack3d);
 
@@ -3506,7 +3537,6 @@
         // row class is already set by _buildLayerStackForHop when
         // _traceState.failedAt === toHopIdx, so the OSI layer pulse fires
         // automatically once the cascade lights it.
-        var isFailureHop = (_traceState.failedAt === toHopIdx);
 
         // Sequential chain: RISE → CASCADE → FALL (or → TRAP on failure)
         _packetRise(function () {

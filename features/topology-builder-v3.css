@@ -1867,3 +1867,32 @@ body.3d-open .tb3-osi-stack--in-device .tb3-osi-layer.is-failure {
   animation: tb3OSILayerFailPulse 1.2s ease-in-out 3;
   opacity: 1;
 }
+
+/* ── Phase 7 §8: Reduced-motion fallback ── */
+@media (prefers-reduced-motion: reduce) {
+  body.3d-open .tb3-canvas-svg {
+    transform: rotateX(0deg);
+    transition: none;
+  }
+  body.3d-open .tb3-dev {
+    transform: none;
+    transition: none;
+  }
+  body.3d-open .tb3-packet {
+    transition: none;
+    transform: none !important;
+  }
+  body.3d-open .tb3-osi-stack--in-device .tb3-osi-layer {
+    animation: none;
+    opacity: 1;
+    transition: none;
+  }
+  body.3d-open .tb3-dev.tb3-3d-fail-glow {
+    animation: none;
+    box-shadow: 0 0 0 2px var(--tb3-fail-border, rgba(239, 68, 68, .6));
+  }
+  body.3d-open .tb3-osi-stack--in-device .tb3-osi-layer.is-failure {
+    animation: none;
+    background: var(--tb3-fail-soft, rgba(239, 68, 68, .2));
+  }
+}

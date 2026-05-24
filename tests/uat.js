@@ -22568,7 +22568,7 @@ test('phase2: TB_V3_FREEBUILD_BACKUP does not collide with TB_V3_DRAFT', !/TB_V3
     /function\s+_setOSILayerFiring\s*\([^)]*devId/.test(tbv3SrcP7)
   );
   test('P7: _stepTrace 3D branch wires _packetRise → cascade → _packetFall',
-    /function\s+_stepTrace[\s\S]+?state\.mode\s*===\s*['"]3d['"][\s\S]{0,2500}_packetRise[\s\S]{0,600}_packetFall/.test(tbv3SrcP7)
+    /function\s+_stepTrace[\s\S]+?state\.mode\s*===\s*['"]3d['"][\s\S]{0,3600}_packetRise[\s\S]{0,600}_packetFall/.test(tbv3SrcP7)
   );
 
   // ---- Stage 10: intermediate hop in standing device ----
@@ -22599,6 +22599,26 @@ test('phase2: TB_V3_FREEBUILD_BACKUP does not collide with TB_V3_DRAFT', !/TB_V3
   );
   test('P7: _close3D clears tb3-3d-fail-glow on teardown',
     /function\s+_close3D[\s\S]{0,800}classList\.remove\(['"]tb3-3d-fail-glow['"]\)/.test(tbv3SrcP7)
+  );
+
+  // ---- Stage 12: reduced-motion + aria-live ----
+  test('P7: reduced-motion media query in Phase 7 CSS section',
+    /@media\s*\(prefers-reduced-motion:\s*reduce\)[\s\S]{0,3000}body\.3d-open\s+\.tb3-canvas-svg/.test(tbv3CssP7)
+  );
+  test('P7: reduced-motion zeros the scene tilt (rotateX 0)',
+    /@media[^{]*prefers-reduced-motion[\s\S]{0,2500}body\.3d-open\s+\.tb3-canvas-svg[\s\S]{0,200}rotateX\(0deg\)/.test(tbv3CssP7)
+  );
+  test('P7: reduced-motion clears in-device cascade animation',
+    /@media[^{]*prefers-reduced-motion[\s\S]{0,3000}body\.3d-open\s+\.tb3-osi-stack--in-device[\s\S]{0,400}animation:\s*none/.test(tbv3CssP7)
+  );
+  test('P7: reduced-motion swaps fail-glow pulse for static border',
+    /@media[^{]*prefers-reduced-motion[\s\S]{0,3500}\.tb3-3d-fail-glow[\s\S]{0,400}animation:\s*none/.test(tbv3CssP7)
+  );
+  test('P7: _update3DAriaStatus is defined',
+    /function\s+_update3DAriaStatus\s*\(/.test(tbv3SrcP7)
+  );
+  test('P7: _stepTrace 3D branch updates aria-live status',
+    /state\.mode\s*===\s*['"]3d['"][\s\S]{0,2500}_update3DAriaStatus\s*\(/.test(tbv3SrcP7)
   );
 
 })();
