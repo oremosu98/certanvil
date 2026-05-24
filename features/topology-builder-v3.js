@@ -2630,7 +2630,7 @@
     var def = TB_V3_DEVICE_TYPES[dev.type] || { label: dev.type };
 
     // Build optional IP/Mask/Gateway block (Phase 3.1)
-    var ENDPOINT_TYPES = ['pc','server','laptop','smartphone','cloud','internet'];
+    var ENDPOINT_TYPES = ['pc','server','laptop','smartphone','cloud','internet','printer','voip','iot','dns-server'];
     var L3_MULTI_TYPES = ['router','l3-switch','firewall','vpn'];
     var L2_TYPES = ['switch','hub','wap','wlc'];
 

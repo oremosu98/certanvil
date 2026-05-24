@@ -22558,6 +22558,20 @@ test('phase2: TB_V3_FREEBUILD_BACKUP does not collide with TB_V3_DRAFT', !/TB_V3
   test('V1P Stage2: _autoFillIp ENDPOINT_TYPES includes new endpoint device types',
     /ENDPOINT_TYPES\s*=\s*\[[\s\S]{0,200}'printer'[\s\S]{0,100}'voip'[\s\S]{0,100}'iot'[\s\S]{0,100}'dns-server'/.test(tbv3SrcV1P)
   );
+  // ---- Stage 2 follow-up: inspector ENDPOINT_TYPES includes new endpoint types ----
+  test('V1P: inspector ENDPOINT_TYPES includes printer/voip/iot/dns-server',
+    (function() {
+      // Match the SECOND ENDPOINT_TYPES (inside _renderInspector around line 2633)
+      // The first one is _autoFillIp's earlier in the file.
+      var matches = tbv3SrcV1P.match(/var\s+ENDPOINT_TYPES\s*=\s*\[[^\]]+\]/g) || [];
+      if (matches.length < 2) return false;
+      var inspectorArr = matches[1];
+      return /'printer'/.test(inspectorArr) &&
+             /'voip'/.test(inspectorArr) &&
+             /'iot'/.test(inspectorArr) &&
+             /'dns-server'/.test(inspectorArr);
+    })()
+  );
 })();
 
 // ── Summary ──
