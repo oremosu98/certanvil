@@ -2351,6 +2351,52 @@
         ],
       },
     },
+    {
+      id: 'hybrid-cloud-vpn',
+      title: 'Hybrid Cloud (VPN)',
+      category: 'cloud',
+      objectiveRefs: ['1.8'],
+      startingState: {
+        devices: [
+          { id: 'sc_hcvpn_dc',   type: 'switch',   x: 200,  y: 400, label: 'HQ-DC',      interfaces: [{ ip: '10.100.0.1',   mask: 24 }] },
+          { id: 'sc_hcvpn_fw',   type: 'firewall', x: 400,  y: 400, label: 'DC-FW',       interfaces: [{ ip: '10.100.0.2',   mask: 24 }, { ip: '203.0.113.1', mask: 24 }] },
+          { id: 'sc_hcvpn_inet', type: 'internet', x: 600,  y: 200, label: 'Internet',    interfaces: [{ ip: '0.0.0.0',      mask: 0  }] },
+          { id: 'sc_hcvpn_vpg',  type: 'vpg',      x: 800,  y: 400, label: 'Cloud-VPG',   interfaces: [{ ip: '203.0.113.10', mask: 24 }] },
+          { id: 'sc_hcvpn_vpc',  type: 'cloud',    x: 1000, y: 400, label: 'VPC-prod',    interfaces: [{ ip: '10.0.0.1',     mask: 16 }] },
+          { id: 'sc_hcvpn_sub',  type: 'switch',   x: 1000, y: 560, label: 'app-subnet'   },
+          { id: 'sc_hcvpn_app',  type: 'server',   x: 1000, y: 700, label: 'Cloud-App',   interfaces: [{ ip: '10.0.1.10',    mask: 24 }] },
+        ],
+        cables: [
+          { id: 'sc_hcvpn_c1', fromId: 'sc_hcvpn_dc',   toId: 'sc_hcvpn_fw',   type: 'cat6'  },
+          { id: 'sc_hcvpn_c2', fromId: 'sc_hcvpn_fw',   toId: 'sc_hcvpn_inet', type: 'cat6'  },
+          { id: 'sc_hcvpn_c3', fromId: 'sc_hcvpn_inet', toId: 'sc_hcvpn_vpg',  type: 'fiber' },
+          { id: 'sc_hcvpn_c4', fromId: 'sc_hcvpn_vpg',  toId: 'sc_hcvpn_vpc',  type: 'cat6'  },
+          { id: 'sc_hcvpn_c5', fromId: 'sc_hcvpn_vpc',  toId: 'sc_hcvpn_sub',  type: 'cat6'  },
+          { id: 'sc_hcvpn_c6', fromId: 'sc_hcvpn_sub',  toId: 'sc_hcvpn_app',  type: 'cat6'  },
+        ],
+        viewport: { x: 0, y: 0, zoom: 1 },
+      },
+      brief: 'Hybrid cloud connects an on-premises datacenter to a cloud VPC through an IPSec VPN tunnel. Legacy resources stay in the physical DC; newer workloads run in the cloud. Crypto parameters (encryption, hash, DH group, lifetime) must match exactly on both ends or the tunnel will not come up.',
+      examRelevance: {
+        overview:      'A site-to-site IPSec VPN bridges an on-prem DC and a cloud VPC, making both halves appear as one network. The VPN Gateway (VPG) is the cloud-side tunnel endpoint; the on-prem firewall terminates the tunnel on-prem.',
+        howItRoutes:   'On-prem host → DC switch → firewall (IPSec encrypt, ESP tunnel mode) → internet → Cloud VPG (decrypt) → VPC → app-subnet → Cloud-App. Return path is symmetric.',
+        keyDevices:    'DC Firewall (on-prem VPN endpoint, terminates IPSec tunnel), VPN Gateway — VPG (cloud-side tunnel endpoint, attached to VPC), VPC (cloud network boundary), Cloud-App server.',
+        keyConcepts:   'IPSec tunnel mode (ESP), IKE Phase 1 + Phase 2 negotiation, crypto parameter matching (encryption alg, hash, DH group, lifetime), Perfect Forward Secrecy (PFS).',
+        examRelevance: 'N10-009 obj 1.8 (hybrid cloud) and 4.1 (site-to-site VPN) — know that IPSec uses tunnel mode for site-to-site, that crypto params must match on both peers, and that the VPN Gateway is the cloud-side IPSec endpoint.',
+      },
+      completion: {
+        requiredDevices: ['switch', 'firewall', 'internet', 'vpg', 'cloud', 'server'],
+        expectedCount:   { switch: 2, firewall: 1, internet: 1, vpg: 1, cloud: 1, server: 1 },
+        requiredCables:  [
+          { from: 'switch',   to: 'firewall'  },
+          { from: 'firewall', to: 'internet'  },
+          { from: 'internet', to: 'vpg'       },
+          { from: 'vpg',      to: 'cloud'     },
+          { from: 'cloud',    to: 'switch'    },
+          { from: 'switch',   to: 'server'    },
+        ],
+      },
+    },
   ];
 
   function validateScenarioShape(s) {

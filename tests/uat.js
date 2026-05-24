@@ -22590,7 +22590,8 @@ test('phase2: TB_V3_FREEBUILD_BACKUP does not collide with TB_V3_DRAFT', !/TB_V3
     /id:\s*'site-to-site-ipsec-vpn'/.test(tbv3SrcV1P) &&
     /id:\s*'remote-access-vpn'/.test(tbv3SrcV1P) &&
     /id:\s*'cellular-4g-5g-wan'/.test(tbv3SrcV1P) &&
-    /id:\s*'satellite-wan'/.test(tbv3SrcV1P)
+    /id:\s*'satellite-wan'/.test(tbv3SrcV1P) &&
+    /id:\s*'hybrid-cloud-vpn'/.test(tbv3SrcV1P)
   );
 })();
 
