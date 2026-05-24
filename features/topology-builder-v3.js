@@ -3187,12 +3187,60 @@
   // 3D popup is a transient modal (NOT a mode). Does NOT modify state.mode.
   // Spec: docs/superpowers/specs/2026-05-24-tb-v3-phase7-3d-popup-design.md §4
   // ===========================================================================
+  function _apply3DCamera() {
+    var stage = document.getElementById('tb3-3d-popup-stage');
+    if (!stage) return;
+    stage.style.transform =
+      'rotateX(' + _3dPopup.camera.rotX + 'deg) ' +
+      'rotateY(' + _3dPopup.camera.rotY + 'deg) ' +
+      'scale(' + _3dPopup.camera.zoom + ')';
+  }
+
   function _open3DPopup() {
     if (_3dPopup.open) return;
     _3dPopup.open = true;
-    document.body.style.overflow = 'hidden';   // body scroll lock
-    // Stage 2: build modal DOM + initial render + camera apply
-    // Stage 5: open animation + input listeners
+
+    document.body.style.overflow = 'hidden';
+
+    var devCount = state.devices.length;
+    var cabCount = state.cables.length;
+
+    var modal = document.createElement('div');
+    modal.className = 'tb3-3d-popup-modal';
+    modal.id = 'tb3-3d-popup-modal';
+    modal.setAttribute('role', 'dialog');
+    modal.setAttribute('aria-modal', 'true');
+    modal.setAttribute('aria-labelledby', 'tb3-3d-popup-title');
+    modal.innerHTML =
+      '<div class="tb3-3d-popup-backdrop" id="tb3-3d-popup-backdrop"></div>' +
+      '<div class="tb3-3d-popup-card">' +
+        '<header class="tb3-3d-popup-header">' +
+          '<h2 id="tb3-3d-popup-title" class="tb3-3d-popup-title">3D view of topology</h2>' +
+          '<span class="tb3-3d-popup-counts">' + devCount + ' devices &middot; ' + cabCount + ' cables</span>' +
+          '<button class="tb3-3d-popup-close-btn" id="tb3-3d-popup-close-btn" aria-label="Close 3D view" type="button">&times;</button>' +
+        '</header>' +
+        '<div class="tb3-3d-popup-viewport" id="tb3-3d-popup-viewport" role="img" ' +
+             'aria-label="3D rendering of ' + devCount + ' devices and ' + cabCount + ' cables. Use arrow keys to rotate, plus or minus to zoom, R to reset, Escape to close." ' +
+             'tabindex="0">' +
+          '<div class="tb3-3d-popup-stage" id="tb3-3d-popup-stage">' +
+            '<div class="tb3-3d-floor"></div>' +
+          '</div>' +
+        '</div>' +
+      '</div>';
+    document.body.appendChild(modal);
+
+    _apply3DCamera();   // apply initial camera (full impl arrives in Stage 5)
+
+    // Wire X button + backdrop close (full input listeners come in Stage 5)
+    document.getElementById('tb3-3d-popup-close-btn').addEventListener('click', _close3DPopup);
+    document.getElementById('tb3-3d-popup-backdrop').addEventListener('click', _close3DPopup);
+
+    // Open tween — add .is-open after a paint to trigger CSS transitions
+    requestAnimationFrame(function () {
+      modal.classList.add('is-open');
+      var btn = document.getElementById('tb3-3d-popup-close-btn');
+      if (btn) btn.focus();
+    });
   }
 
   function _close3DPopup() {

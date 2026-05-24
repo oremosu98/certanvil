@@ -22441,6 +22441,20 @@ test('phase2: TB_V3_FREEBUILD_BACKUP does not collide with TB_V3_DRAFT', !/TB_V3
     !/mode\s*===\s*['"]3d['"][\s\S]{0,100}_open3D\s*\(\s*\)/.test(tbv3SrcP7v2.replace(/_open3DPopup/g, 'XX'))
   );
 
+  // ---- Stage 2: modal DOM + chrome CSS ----
+  test('P7v2: _open3DPopup creates modal with role=dialog + aria-modal',
+    /_open3DPopup[\s\S]{0,1500}role['"]?\s*,\s*['"]dialog['"][\s\S]{0,200}aria-modal['"]?\s*,\s*['"]true['"]/.test(tbv3SrcP7v2)
+  );
+  test('P7v2: modal chrome CSS defines tb3-3d-popup-modal positioning',
+    /\.tb3-3d-popup-modal\s*\{[\s\S]{0,500}position:\s*fixed[\s\S]{0,200}z-index:\s*70/.test(tbv3CssP7v2)
+  );
+  test('P7v2: modal card has the spec-cream background + bronze shadow',
+    /\.tb3-3d-popup-card[\s\S]{0,800}background:\s*var\(--tb3-cream/.test(tbv3CssP7v2)
+  );
+  test('P7v2: _apply3DCamera writes transform to stage',
+    /function\s+_apply3DCamera[\s\S]{0,400}getElementById\(['"]tb3-3d-popup-stage['"]\)[\s\S]{0,400}transform[\s\S]{0,200}rotateX/.test(tbv3SrcP7v2)
+  );
+
 })();
 
 // ── Summary ──
