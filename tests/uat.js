@@ -22445,7 +22445,9 @@ test('phase2: TB_V3_FREEBUILD_BACKUP does not collide with TB_V3_DRAFT', !/TB_V3
     /_open3D[\s\S]{0,500}classList\.add\('3d-open'\)/.test(tbv3SrcP7)
   );
   test('P7: _close3D removes 3d-open + delegates to _closeTrace',
-    /function\s+_close3D[\s\S]{0,200}classList\.remove\('3d-open'\)[\s\S]{0,200}_closeTrace\s*\(/.test(tbv3SrcP7)
+    // P7 Stage 11 widened {0,200} → {0,500} second window to accommodate the
+    // fail-glow cleanup loop between classList.remove('3d-open') and _closeTrace().
+    /function\s+_close3D[\s\S]{0,200}classList\.remove\('3d-open'\)[\s\S]{0,500}_closeTrace\s*\(/.test(tbv3SrcP7)
   );
   test('P7: modebar wires 3d branch to _open3D',
     /mode\s*===\s*'3d'[\s\S]{0,80}_open3D\s*\(/.test(tbv3SrcP7)
@@ -22577,7 +22579,26 @@ test('phase2: TB_V3_FREEBUILD_BACKUP does not collide with TB_V3_DRAFT', !/TB_V3
     /function\s+_animateIntermediate3D[\s\S]{0,800}deviceType\s*===\s*['"]switch['"][\s\S]{0,200}topLayer\s*=\s*2/.test(tbv3SrcP7)
   );
   test('P7: _stepTrace 3D branch intermediate path uses _animateIntermediate3D',
-    /state\.mode\s*===\s*['"]3d['"][\s\S]{0,2500}_animateIntermediate3D/.test(tbv3SrcP7)
+    // P7 Stage 11 widened {0,2500} → {0,4500} to accommodate the isFailureHop
+    // short-circuit branch inserted before the dispatch.
+    /state\.mode\s*===\s*['"]3d['"][\s\S]{0,4500}_animateIntermediate3D/.test(tbv3SrcP7)
+  );
+
+  // ---- Stage 11: failure UX ----
+  test('P7: tb3FailGlowPulse keyframe defined',
+    /@keyframes\s+tb3FailGlowPulse/.test(tbv3CssP7)
+  );
+  test('P7: tb3OSILayerFailPulse keyframe defined',
+    /@keyframes\s+tb3OSILayerFailPulse/.test(tbv3CssP7)
+  );
+  test('P7: tb3-3d-fail-glow applies pulse animation on standing device',
+    /body\.3d-open\s+\.tb3-dev\.tb3-3d-fail-glow[\s\S]{0,200}animation:\s*tb3FailGlowPulse/.test(tbv3CssP7)
+  );
+  test('P7: _stepTrace 3D branch applies tb3-3d-fail-glow on failed hop',
+    /state\.mode\s*===\s*['"]3d['"][\s\S]{0,4500}classList\.add\(['"]tb3-3d-fail-glow['"]\)/.test(tbv3SrcP7)
+  );
+  test('P7: _close3D clears tb3-3d-fail-glow on teardown',
+    /function\s+_close3D[\s\S]{0,800}classList\.remove\(['"]tb3-3d-fail-glow['"]\)/.test(tbv3SrcP7)
   );
 
 })();

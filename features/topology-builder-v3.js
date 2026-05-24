@@ -3194,6 +3194,12 @@
     document.body.classList.remove('3d-open');
     var strip = document.getElementById('tb3-3d-control-strip');
     if (strip) strip.remove();
+    // Phase 7 Stage 11 — clean lingering fail-glow classes (all devices,
+    // long traces may have multiple failed hops over a session)
+    var glowed = document.querySelectorAll('.tb3-3d-fail-glow');
+    for (var i = 0; i < glowed.length; i++) {
+      glowed[i].classList.remove('tb3-3d-fail-glow');
+    }
     _closeTrace();   // shares teardown with Trace/OSI
   }
 
@@ -3331,6 +3337,14 @@
   function _startTrace() {
     if (!_traceState || !_traceState.srcId || !_traceState.dstId) return;
     if (_traceState.srcId === _traceState.dstId) return;
+
+    // Phase 7 Stage 11 — clear any lingering fail-glow from a previous failed
+    // trace BEFORE any rendering kicks off, otherwise the new trace's first
+    // hop could render with stale glow.
+    var glowed = document.querySelectorAll('.tb3-3d-fail-glow');
+    for (var i = 0; i < glowed.length; i++) {
+      glowed[i].classList.remove('tb3-3d-fail-glow');
+    }
 
     const state = _getState();
     const result = computePath(_traceState.srcId, _traceState.dstId, state);
@@ -3487,9 +3501,23 @@
         // Pre-render the in-device cascade DOM (all rows start passive)
         _render3DDeviceCascade(devId3d, role3d, layerStack3d);
 
-        // Sequential chain: RISE → CASCADE → FALL
+        // Phase 7 Stage 11: failure short-circuit. If this is the failing hop,
+        // glow the device + trap the packet (skip _packetFall). The .is-failure
+        // row class is already set by _buildLayerStackForHop when
+        // _traceState.failedAt === toHopIdx, so the OSI layer pulse fires
+        // automatically once the cascade lights it.
+        var isFailureHop = (_traceState.failedAt === toHopIdx);
+
+        // Sequential chain: RISE → CASCADE → FALL (or → TRAP on failure)
         _packetRise(function () {
-          var onCascadeDone = function () { _packetFall(function () { /* settle complete */ }); };
+          var onCascadeDone = isFailureHop
+            ? function () {
+                // Failure: glow the device, trap the packet (no fall)
+                var devEl = document.querySelector('.tb3-dev[data-device-id="' + devId3d + '"]');
+                if (devEl) devEl.classList.add('tb3-3d-fail-glow');
+                // settle is implicit — _renderTracePanel below handles badge/panel update
+              }
+            : function () { _packetFall(function () { /* settle complete */ }); };
           if (role3d === 'source')       _animateEncap3D(devId3d, layerStack3d, onCascadeDone);
           else if (role3d === 'dest')    _animateDecap3D(devId3d, layerStack3d, onCascadeDone);
           else                           _animateIntermediate3D(devId3d, (hopDev3d && hopDev3d.type) || 'router', onCascadeDone);

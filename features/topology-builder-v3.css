@@ -1840,3 +1840,30 @@ body.3d-open .tb3-rrail {
   --tb3-3d-cascade: cubic-bezier(.4, 0, .2, 1);
   --tb3-3d-scene: linear;
 }
+
+/* ── Phase 7 §7: Failure UX (rim glow + layer pulse + trapped packet) ── */
+
+@keyframes tb3FailGlowPulse {
+  0%, 100% { box-shadow: 0 0 12px var(--tb3-fail-border, rgba(239, 68, 68, .45)); }
+  50%      { box-shadow: 0 0 24px var(--tb3-fail-glow, rgba(239, 68, 68, .85)); }
+}
+
+@keyframes tb3OSILayerFailPulse {
+  0%, 100% {
+    background: var(--tb3-fail-soft, rgba(239, 68, 68, .15));
+    border-left: 2px solid var(--tb3-fail-border, rgba(239, 68, 68, .6));
+  }
+  50% {
+    background: var(--tb3-fail-strong, rgba(239, 68, 68, .35));
+    border-left: 2px solid var(--tb3-fail-strong, rgba(239, 68, 68, 1));
+  }
+}
+
+body.3d-open .tb3-dev.tb3-3d-fail-glow {
+  animation: tb3FailGlowPulse 2s ease-in-out infinite;
+}
+
+body.3d-open .tb3-osi-stack--in-device .tb3-osi-layer.is-failure {
+  animation: tb3OSILayerFailPulse 1.2s ease-in-out 3;
+  opacity: 1;
+}
