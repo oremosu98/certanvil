@@ -22530,14 +22530,26 @@ test('phase2: TB_V3_FREEBUILD_BACKUP does not collide with TB_V3_DRAFT', !/TB_V3
   test('P7: _clearPacketTransition is defined',
     /function\s+_clearPacketTransition\s*\(/.test(tbv3SrcP7)
   );
-  test('P7: _stepTrace cancel chain includes _clearPacketTransition',
-    /function\s+_stepTrace[\s\S]{0,2500}_clearPacketTransition\s*\(/.test(tbv3SrcP7)
+  test('P7: _stepTrace cancel chain runs rafHandle → osiAnimHandle → _clearPacketTransition in order',
+    /function\s+_stepTrace[\s\S]{0,500}cancelAnimationFrame[\s\S]{0,400}rafHandle[\s\S]{0,500}cancelAnimationFrame[\s\S]{0,400}osiAnimHandle[\s\S]{0,500}_clearPacketTransition\s*\(/.test(tbv3SrcP7)
   );
-  test('P7: 4 motion easing tokens declared',
-    /--tb3-3d-rise:/.test(tbv3CssP7) &&
-    /--tb3-3d-fall:/.test(tbv3CssP7) &&
-    /--tb3-3d-cascade:/.test(tbv3CssP7) &&
-    /--tb3-3d-scene:/.test(tbv3CssP7)
+  test('P7: 4 motion easing tokens declared with correct cubic-bezier values',
+    /--tb3-3d-rise:\s*cubic-bezier\(\.2,\s*\.7,\s*\.2,\s*1\)/.test(tbv3CssP7) &&
+    /--tb3-3d-fall:\s*cubic-bezier\(\.8,\s*0,\s*\.8,\s*\.3\)/.test(tbv3CssP7) &&
+    /--tb3-3d-cascade:\s*cubic-bezier\(\.4,\s*0,\s*\.2,\s*1\)/.test(tbv3CssP7) &&
+    /--tb3-3d-scene:\s*linear/.test(tbv3CssP7)
+  );
+  test('P7: _pauseTrace calls _clearPacketTransition',
+    /function\s+_pauseTrace[\s\S]{0,800}_clearPacketTransition\s*\(/.test(tbv3SrcP7)
+  );
+  test('P7: _endTrace calls _clearPacketTransition',
+    /function\s+_endTrace[\s\S]{0,800}_clearPacketTransition\s*\(/.test(tbv3SrcP7)
+  );
+  test('P7: _resetTraceState calls _clearPacketTransition',
+    /function\s+_resetTraceState[\s\S]{0,800}_clearPacketTransition\s*\(/.test(tbv3SrcP7)
+  );
+  test('P7: _clearPacketTransition cancels packetTimerId',
+    /function\s+_clearPacketTransition[\s\S]{0,400}clearTimeout\([\s\S]{0,100}packetTimerId/.test(tbv3SrcP7)
   );
 
 })();

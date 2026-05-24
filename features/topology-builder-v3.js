@@ -67,6 +67,7 @@
       autoplayTimer: null,
       rafHandle: null,        // emil §8.6 — captured for interruptibility on rapid Next clicks
       osiAnimHandle: null,    // Phase 6 — OSI overlay animation handle (dual-timer discipline)
+      packetTimerId: null,    // Phase 7 Stage 8 — packet rise/fall safety-net timer ID (cancellable)
 
       // visuals
       packet: null,
@@ -80,6 +81,7 @@
   }
 
   function _resetTraceState() {
+    _clearPacketTransition();   // P7 Stage 8 — must run BEFORE _traceState is nulled (reads packetTimerId)
     if (_traceState && _traceState.autoplayTimer) clearTimeout(_traceState.autoplayTimer);
     if (_traceState && _traceState.rafHandle) cancelAnimationFrame(_traceState.rafHandle);
     if (_traceState && _traceState.osiAnimHandle) cancelAnimationFrame(_traceState.osiAnimHandle);
@@ -3680,9 +3682,13 @@
   // transition (Phase 7). emil §8.6 dual-timer becomes triple-timer.
   // ===========================================================================
 
-  function _packetRise(hopId, onDone) {
+  function _packetRise(onDone) {
     var pkt = document.querySelector('.tb3-packet');
-    if (!pkt) { if (typeof onDone === 'function') onDone(); return; }
+    if (!pkt) {
+      // Async for consistency — every code path settles via macrotask, never sync (re-entrancy hazard).
+      if (typeof onDone === 'function') setTimeout(onDone, 0);
+      return;
+    }
 
     // Reduced-motion fast-path: teleport, no transition.
     var rm = (typeof _reducedMotion === 'function') ? _reducedMotion()
@@ -3703,16 +3709,27 @@
       if (fired) return;
       fired = true;
       pkt.removeEventListener('transitionend', onEnd);
+      if (_traceState) _traceState.packetTimerId = null;  // clear on natural completion (avoid leaking ID)
       if (typeof onDone === 'function') onDone();
     };
     pkt.addEventListener('transitionend', onEnd);
-    // Safety net — if transitionend fails to fire (e.g., interrupted), guarantee onDone
-    setTimeout(onEnd, 240);
+    // Safety net — if transitionend fails to fire (e.g., interrupted), guarantee onDone.
+    // Capture the timer ID so _clearPacketTransition can cancel it on cancel paths.
+    if (_traceState) {
+      _traceState.packetTimerId = setTimeout(onEnd, 240);
+    } else {
+      // No active trace — nothing to cancel against, fire-and-forget.
+      setTimeout(onEnd, 240);
+    }
   }
 
-  function _packetFall(hopId, onDone) {
+  function _packetFall(onDone) {
     var pkt = document.querySelector('.tb3-packet');
-    if (!pkt) { if (typeof onDone === 'function') onDone(); return; }
+    if (!pkt) {
+      // Async for consistency — every code path settles via macrotask, never sync (re-entrancy hazard).
+      if (typeof onDone === 'function') setTimeout(onDone, 0);
+      return;
+    }
 
     var rm = (typeof _reducedMotion === 'function') ? _reducedMotion()
            : (typeof window !== 'undefined' && window.matchMedia &&
@@ -3732,13 +3749,26 @@
       if (fired) return;
       fired = true;
       pkt.removeEventListener('transitionend', onEnd);
+      if (_traceState) _traceState.packetTimerId = null;  // clear on natural completion (avoid leaking ID)
       if (typeof onDone === 'function') onDone();
     };
     pkt.addEventListener('transitionend', onEnd);
-    setTimeout(onEnd, 240);
+    // Safety net — capture timer ID so _clearPacketTransition can cancel a stale onEnd.
+    if (_traceState) {
+      _traceState.packetTimerId = setTimeout(onEnd, 240);
+    } else {
+      // No active trace — nothing to cancel against, fire-and-forget.
+      setTimeout(onEnd, 240);
+    }
   }
 
   function _clearPacketTransition() {
+    // Cancel any pending safety-net timer FIRST so a fired-but-not-yet-executed
+    // onEnd from a prior rise/fall can't race against the DOM reset below.
+    if (_traceState && _traceState.packetTimerId) {
+      clearTimeout(_traceState.packetTimerId);
+      _traceState.packetTimerId = null;
+    }
     var pkt = document.querySelector('.tb3-packet');
     if (!pkt) return;
     pkt.style.transition = 'none';
@@ -4328,6 +4358,7 @@
       cancelAnimationFrame(_traceState.osiAnimHandle);
       _traceState.osiAnimHandle = null;
     }
+    _clearPacketTransition();   // Phase 7 Stage 8 — cancel any in-flight packet rise/fall + safety-net timer
     _renderTracePanel();
   }
 
@@ -4346,6 +4377,7 @@
       cancelAnimationFrame(_traceState.osiAnimHandle);
       _traceState.osiAnimHandle = null;
     }
+    _clearPacketTransition();   // Phase 7 Stage 8 — cancel any in-flight packet rise/fall + safety-net timer
     if (_traceState.packet) {
       _despawnPacket(_traceState.packet);
       _traceState.packet = null;
