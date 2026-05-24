@@ -49,6 +49,17 @@
   // Separate from _simState per spec §3.6 (clean mode separation).
   var _traceState = null;
 
+  // Ephemeral 3D popup state (Phase 7 v2) — NOT persisted, cleared on _close3DPopup
+  // Lives separate from state.mode (popup is transient, not a mode value).
+  var _3dPopup = {
+    open: false,
+    camera: { rotX: 52, rotY: -18, zoom: 1 },
+    dragState: { active: false, startX: 0, startY: 0, startRotX: 0, startRotY: 0 },
+    velocityX: 0,
+    velocityY: 0,
+    rafHandle: null
+  };
+
   function _initTraceState(payload) {
     _traceState = {
       // pair identity
@@ -3171,6 +3182,34 @@
     _closeTrace();   // shares teardown — clears _traceState + removes trace-open class
   }
 
+  // ===========================================================================
+  // Phase 7 v2: _open3DPopup / _close3DPopup — 3D popup lifecycle
+  // 3D popup is a transient modal (NOT a mode). Does NOT modify state.mode.
+  // Spec: docs/superpowers/specs/2026-05-24-tb-v3-phase7-3d-popup-design.md §4
+  // ===========================================================================
+  function _open3DPopup() {
+    if (_3dPopup.open) return;
+    _3dPopup.open = true;
+    document.body.style.overflow = 'hidden';   // body scroll lock
+    // Stage 2: build modal DOM + initial render + camera apply
+    // Stage 5: open animation + input listeners
+  }
+
+  function _close3DPopup() {
+    if (!_3dPopup.open) return;
+    _3dPopup.open = false;
+    if (_3dPopup.rafHandle) {
+      cancelAnimationFrame(_3dPopup.rafHandle);
+      _3dPopup.rafHandle = null;
+    }
+    var modal = document.getElementById('tb3-3d-popup-modal');
+    if (modal && modal.parentNode) modal.parentNode.removeChild(modal);
+    document.body.style.overflow = '';
+    var pill = document.querySelector('.tb3-mode[data-mode="3d"]');
+    if (pill) pill.focus();
+    // Stage 5: close animation, Stage 6: detach input listeners
+  }
+
   function _renderTracePanel() {
     var panel = document.getElementById('tb3-trace-panel');
     if (!panel) {
@@ -4832,11 +4871,11 @@
       { id: 'simulate', label: 'Simulate', icon: '<svg viewBox="0 0 24 24" class="tb3-mode-ic" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M5 12h14M12 5v14"/></svg>' },
       { id: 'trace',    label: 'Trace',    icon: '<svg viewBox="0 0 24 24" class="tb3-mode-ic" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 12c4 0 4-7 8-7s4 14 8 14"/></svg>' },
       { id: 'osi',      label: 'OSI',      icon: '<svg viewBox="0 0 24 24" class="tb3-mode-ic" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 6h18M3 10h18M3 14h18M3 18h18"/></svg>' },
-      { id: '3d',       label: '3D',       icon: '<svg viewBox="0 0 24 24" class="tb3-mode-ic" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>',                                                                                                       locked: true },
+      { id: '3d',       label: '3D',       icon: '<svg viewBox="0 0 24 24" class="tb3-mode-ic" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>',                                                                                                       locked: false },
     ];
     var html = modes.map(function (m) {
       var on = (m.id === state.mode);
-      return '<div class="tb3-mode' + (on ? ' on' : '') + (m.locked ? ' locked' : '') + '" data-mode="' + m.id + '" title="' + (m.locked ? m.label + ' — phase ' + ({'3d':6}[m.id]) : m.label) + '">' + m.icon + m.label + '</div>';
+      return '<div class="tb3-mode' + (on ? ' on' : '') + (m.locked ? ' locked' : '') + '" data-mode="' + m.id + '" title="' + (m.locked ? m.label + ' — coming soon' : m.label) + '">' + m.icon + m.label + '</div>';
     }).join('');
     row.innerHTML = html;
 
@@ -4855,6 +4894,11 @@
         }
         if (mode === 'osi') {
           _openOSI();
+          return;
+        }
+        if (mode === '3d') {
+          // Phase 7 v2: 3D is a popup, NOT a mode — do NOT modify state.mode
+          _open3DPopup();
           return;
         }
         if (mode === state.mode) return;

@@ -22414,6 +22414,35 @@ test('phase2: TB_V3_FREEBUILD_BACKUP does not collide with TB_V3_DRAFT', !/TB_V3
   );
 })();
 
+// ══════════════════════════════════════════
+// TB v3 Phase 7 v2 — 3D popup UAT fixtures
+// ══════════════════════════════════════════
+(function _tbv3Phase7v2Fixtures() {
+  const fs = require('fs');
+  const path = require('path');
+  const tbv3SrcP7v2 = fs.readFileSync(path.join(__dirname, '..', 'features', 'topology-builder-v3.js'), 'utf8');
+  const tbv3CssP7v2 = fs.readFileSync(path.join(__dirname, '..', 'features', 'topology-builder-v3.css'), 'utf8');
+
+  // ---- Stage 1: _3dPopup state + lifecycle + pill rewire ----
+  test('P7v2: _3dPopup state object defined with all fields',
+    /_3dPopup\s*=\s*\{[\s\S]{0,400}open:\s*false[\s\S]{0,400}camera:[\s\S]{0,200}rotX[\s\S]{0,200}rotY[\s\S]{0,200}zoom[\s\S]{0,400}dragState/.test(tbv3SrcP7v2)
+  );
+  test('P7v2: _open3DPopup is defined',
+    /function\s+_open3DPopup\s*\(/.test(tbv3SrcP7v2)
+  );
+  test('P7v2: _close3DPopup is defined',
+    /function\s+_close3DPopup\s*\(/.test(tbv3SrcP7v2)
+  );
+  test('P7v2: 3D modebar pill unlocked (locked:false)',
+    /id:\s*['"]3d['"][\s\S]{0,400}locked:\s*false/.test(tbv3SrcP7v2)
+  );
+  test('P7v2: modebar wires 3d click to _open3DPopup (NOT _open3D)',
+    /mode\s*===\s*['"]3d['"][\s\S]{0,100}_open3DPopup\s*\(/.test(tbv3SrcP7v2) &&
+    !/mode\s*===\s*['"]3d['"][\s\S]{0,100}_open3D\s*\(\s*\)/.test(tbv3SrcP7v2.replace(/_open3DPopup/g, 'XX'))
+  );
+
+})();
+
 // ── Summary ──
 console.log('\n' + '═'.repeat(50));
 const total = results.pass + results.fail;
