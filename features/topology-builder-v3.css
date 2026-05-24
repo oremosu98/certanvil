@@ -2588,3 +2588,171 @@ html[data-theme="light"] #page-topology-builder-v3 {
 .tb3-3d-dev-illust .illust-lb-arrow-1 { left: 26%; }
 .tb3-3d-dev-illust .illust-lb-arrow-2 { left: 50%; transform: translateX(-50%); }
 .tb3-3d-dev-illust .illust-lb-arrow-3 { right: 26%; }
+
+/* ── Phase 7 v2.1 §2 Batch 2E: Public Cloud illustrations ── */
+
+/* public-web — small globe + page */
+.tb3-3d-dev-illust .illust-pw-globe {
+  position: absolute;
+  left: 10px; top: 50%;
+  transform: translateY(-50%);
+  width: 26px; height: 26px;
+  border-radius: 99px;
+  background: radial-gradient(circle at 30% 30%, color-mix(in oklab, var(--tb3-3d-accent-cloud) 35%, white 65%), color-mix(in oklab, var(--tb3-3d-accent-cloud) 65%, black 35%));
+  border: 1px solid color-mix(in oklab, var(--tb3-3d-accent-cloud) 70%, black 30%);
+  box-shadow: inset -3px -3px 6px rgba(0, 0, 0, .15);
+}
+.tb3-3d-dev-illust .illust-pw-page {
+  position: absolute;
+  right: 8px; top: 50%;
+  transform: translateY(-50%);
+  width: 30px; height: 38px;
+  background: color-mix(in oklab, var(--tb3-bronze, #8b5a3c) 12%, white 88%);
+  border: 1px solid color-mix(in oklab, var(--tb3-bronze, #8b5a3c) 45%, black 55%);
+  border-radius: 1px;
+}
+.tb3-3d-dev-illust .illust-pw-page-line {
+  position: absolute;
+  right: 12px;
+  width: 22px; height: 1.5px;
+  background: color-mix(in oklab, var(--tb3-bronze, #8b5a3c) 35%, black 65%);
+}
+.tb3-3d-dev-illust .illust-pw-page-line-1 { top: calc(50% - 8px); }
+.tb3-3d-dev-illust .illust-pw-page-line-2 { top: 50%; }
+.tb3-3d-dev-illust .illust-pw-page-line-3 { top: calc(50% + 8px); }
+
+/* public-file — stacked docs + cloud silhouette */
+.tb3-3d-dev-illust .illust-pf-cloud {
+  position: absolute;
+  left: 6px; top: 6px;
+  width: 28px; height: 14px;
+  background: color-mix(in oklab, var(--tb3-3d-accent-cloud) 18%, white 82%);
+  border: 1px solid color-mix(in oklab, var(--tb3-3d-accent-cloud) 55%, black 45%);
+  border-radius: 14px 14px 6px 6px;
+}
+.tb3-3d-dev-illust .illust-pf-doc {
+  position: absolute;
+  width: 28px; height: 36px;
+  background: color-mix(in oklab, var(--tb3-bronze, #8b5a3c) 12%, white 88%);
+  border: 1px solid color-mix(in oklab, var(--tb3-bronze, #8b5a3c) 45%, black 55%);
+  border-radius: 1px;
+}
+.tb3-3d-dev-illust .illust-pf-doc-1 { right: 8px; top: 8px; }
+.tb3-3d-dev-illust .illust-pf-doc-2 { right: 14px; top: 13px; opacity: .82; }
+.tb3-3d-dev-illust .illust-pf-doc-3 { right: 20px; top: 18px; opacity: .65; }
+
+/* public-cloud — large cloud + 4 sub-service dots */
+.tb3-3d-dev-illust .illust-cloud-large {
+  left: 8px; right: 8px; top: 16px; height: 28px;
+  border-radius: 14px 14px 8px 8px;
+}
+.tb3-3d-dev-illust .illust-pc-dot {
+  position: absolute;
+  width: 4px; height: 4px;
+  border-radius: 99px;
+  background: var(--tb3-3d-accent-cloud);
+  box-shadow: 0 0 3px color-mix(in oklab, var(--tb3-3d-accent-cloud) 55%, transparent 45%);
+}
+.tb3-3d-dev-illust .illust-pc-dot-1 { left: 30%; top: 28px; }
+.tb3-3d-dev-illust .illust-pc-dot-2 { left: 46%; top: 30px; }
+.tb3-3d-dev-illust .illust-pc-dot-3 { left: 62%; top: 28px; }
+.tb3-3d-dev-illust .illust-pc-dot-4 { left: 46%; top: 36px; }
+
+/* vpc / cloud-subnet — dashed container rectangles */
+.tb3-3d-dev-illust .illust-container {
+  position: absolute;
+  border: 1.5px dashed color-mix(in oklab, var(--tb3-3d-accent-cloud) 70%, black 30%);
+  border-radius: 4px;
+  background: color-mix(in oklab, var(--tb3-3d-accent-cloud) 6%, transparent 94%);
+}
+.tb3-3d-dev-illust .illust-container-vpc {
+  left: 6px; right: 6px; top: 8px; bottom: 8px;
+}
+.tb3-3d-dev-illust .illust-container-subnet {
+  left: 24px; right: 24px; top: 18px; bottom: 18px;
+}
+.tb3-3d-dev-illust .illust-badge-vpc,
+.tb3-3d-dev-illust .illust-badge-subnet {
+  color: var(--tb3-3d-accent-cloud);
+}
+
+/* igw / nat-gw — gateway arch + pillars + variant decoration */
+.tb3-3d-dev-illust .illust-gw-arch {
+  position: absolute;
+  left: 16px; right: 16px; top: 10px;
+  height: 22px;
+  border: 1.5px solid color-mix(in oklab, var(--tb3-bronze, #8b5a3c) 60%, black 40%);
+  border-bottom: none;
+  border-radius: 50% 50% 0 0;
+}
+.tb3-3d-dev-illust .illust-gw-pillar {
+  position: absolute;
+  top: 22px;
+  width: 4px; height: 22px;
+  background: color-mix(in oklab, var(--tb3-bronze, #8b5a3c) 50%, black 50%);
+  border-radius: 1px;
+}
+.tb3-3d-dev-illust .illust-gw-pillar-l { left: 16px; }
+.tb3-3d-dev-illust .illust-gw-pillar-r { right: 16px; }
+.tb3-3d-dev-illust .illust-gw-globe {
+  position: absolute;
+  right: 6px; top: 18px;
+  width: 14px; height: 14px;
+  border-radius: 99px;
+  background: radial-gradient(circle at 30% 30%, color-mix(in oklab, var(--tb3-3d-accent-cloud) 35%, white 65%), color-mix(in oklab, var(--tb3-3d-accent-cloud) 65%, black 35%));
+  border: 1px solid color-mix(in oklab, var(--tb3-3d-accent-cloud) 70%, black 30%);
+}
+.tb3-3d-dev-illust .illust-natgw-xlate {
+  position: absolute;
+  left: 50%; bottom: 8px;
+  transform: translateX(-50%);
+  width: 32px; height: 4px;
+  background:
+    linear-gradient(90deg, transparent 0 8px, color-mix(in oklab, var(--tb3-bronze, #8b5a3c) 60%, black 40%) 8px 24px, transparent 24px 32px);
+  border-radius: 1px;
+}
+.tb3-3d-dev-illust .illust-natgw-xlate::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 50%;
+  transform: translateY(-50%);
+  width: 0; height: 0;
+  border-top: 4px solid transparent;
+  border-bottom: 4px solid transparent;
+  border-right: 6px solid color-mix(in oklab, var(--tb3-bronze, #8b5a3c) 60%, black 40%);
+}
+.tb3-3d-dev-illust .illust-natgw-xlate::after {
+  content: '';
+  position: absolute;
+  right: 0; top: 50%;
+  transform: translateY(-50%);
+  width: 0; height: 0;
+  border-top: 4px solid transparent;
+  border-bottom: 4px solid transparent;
+  border-left: 6px solid color-mix(in oklab, var(--tb3-bronze, #8b5a3c) 60%, black 40%);
+}
+
+/* tgw — hub + 4 spokes */
+.tb3-3d-dev-illust .illust-tgw-hub {
+  position: absolute;
+  left: 50%; top: 50%;
+  transform: translate(-50%, -50%);
+  width: 14px; height: 14px;
+  border-radius: 99px;
+  background: linear-gradient(135deg, color-mix(in oklab, var(--tb3-3d-accent-cloud) 55%, white 45%), color-mix(in oklab, var(--tb3-3d-accent-cloud) 70%, black 30%));
+  border: 1px solid color-mix(in oklab, var(--tb3-3d-accent-cloud) 70%, black 30%);
+  box-shadow: 0 0 4px color-mix(in oklab, var(--tb3-3d-accent-cloud) 40%, transparent 60%);
+  z-index: 2;
+}
+.tb3-3d-dev-illust .illust-tgw-spoke {
+  position: absolute;
+  left: 50%; top: 50%;
+  width: 32px; height: 2px;
+  background: color-mix(in oklab, var(--tb3-3d-accent-cloud) 60%, black 40%);
+  transform-origin: 0 50%;
+  border-radius: 1px;
+}
+.tb3-3d-dev-illust .illust-tgw-spoke-1 { transform: rotate(45deg);   }
+.tb3-3d-dev-illust .illust-tgw-spoke-2 { transform: rotate(135deg);  }
+.tb3-3d-dev-illust .illust-tgw-spoke-3 { transform: rotate(225deg);  }
+.tb3-3d-dev-illust .illust-tgw-spoke-4 { transform: rotate(315deg);  }

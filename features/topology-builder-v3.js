@@ -3338,6 +3338,53 @@
     '<div class="illust-lb-arrow illust-lb-arrow-2"></div>' +
     '<div class="illust-lb-arrow illust-lb-arrow-3"></div>';
 
+  _TB_V3_DEVICE_3D_ILLUSTRATIONS['public-web'] =
+    '<div class="illust-pw-globe"></div>' +
+    '<div class="illust-pw-page"></div>' +
+    '<div class="illust-pw-page-line illust-pw-page-line-1"></div>' +
+    '<div class="illust-pw-page-line illust-pw-page-line-2"></div>' +
+    '<div class="illust-pw-page-line illust-pw-page-line-3"></div>';
+
+  _TB_V3_DEVICE_3D_ILLUSTRATIONS['public-file'] =
+    '<div class="illust-pf-cloud"></div>' +
+    '<div class="illust-pf-doc illust-pf-doc-3"></div>' +
+    '<div class="illust-pf-doc illust-pf-doc-2"></div>' +
+    '<div class="illust-pf-doc illust-pf-doc-1"></div>';
+
+  _TB_V3_DEVICE_3D_ILLUSTRATIONS['public-cloud'] =
+    '<div class="illust-cloud-base illust-cloud-large"></div>' +
+    '<div class="illust-pc-dot illust-pc-dot-1"></div>' +
+    '<div class="illust-pc-dot illust-pc-dot-2"></div>' +
+    '<div class="illust-pc-dot illust-pc-dot-3"></div>' +
+    '<div class="illust-pc-dot illust-pc-dot-4"></div>';
+
+  _TB_V3_DEVICE_3D_ILLUSTRATIONS['vpc'] =
+    '<div class="illust-container illust-container-vpc"></div>' +
+    '<div class="illust-badge illust-badge-vpc">VPC</div>';
+
+  _TB_V3_DEVICE_3D_ILLUSTRATIONS['cloud-subnet'] =
+    '<div class="illust-container illust-container-subnet"></div>' +
+    '<div class="illust-badge illust-badge-subnet">SUB</div>';
+
+  _TB_V3_DEVICE_3D_ILLUSTRATIONS['igw'] =
+    '<div class="illust-gw-arch"></div>' +
+    '<div class="illust-gw-pillar illust-gw-pillar-l"></div>' +
+    '<div class="illust-gw-pillar illust-gw-pillar-r"></div>' +
+    '<div class="illust-gw-globe"></div>';
+
+  _TB_V3_DEVICE_3D_ILLUSTRATIONS['nat-gw'] =
+    '<div class="illust-gw-arch"></div>' +
+    '<div class="illust-gw-pillar illust-gw-pillar-l"></div>' +
+    '<div class="illust-gw-pillar illust-gw-pillar-r"></div>' +
+    '<div class="illust-natgw-xlate"></div>';
+
+  _TB_V3_DEVICE_3D_ILLUSTRATIONS['tgw'] =
+    '<div class="illust-tgw-hub"></div>' +
+    '<div class="illust-tgw-spoke illust-tgw-spoke-1"></div>' +
+    '<div class="illust-tgw-spoke illust-tgw-spoke-2"></div>' +
+    '<div class="illust-tgw-spoke illust-tgw-spoke-3"></div>' +
+    '<div class="illust-tgw-spoke illust-tgw-spoke-4"></div>';
+
   var TB_V3_PALETTE_GROUPS = [
     { name: 'Routers',     items: ['router', 'l3-router', 'isp-router'] },
     { name: 'Switches',    items: ['switch', 'l3-switch', 'hub', 'dmz-switch', 'bridge'] },

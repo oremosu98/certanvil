@@ -22715,6 +22715,44 @@ test('phase2: TB_V3_FREEBUILD_BACKUP does not collide with TB_V3_DRAFT', !/TB_V3
   );
 })();
 
+// ══════════════════════════════════════════
+// TB v3 Phase 7 v2 Polish Stage 2E UAT fixtures — FINAL illustration batch
+// ══════════════════════════════════════════
+(function _tbv3PolishStage2EFixtures() {
+  const fs = require('fs');
+  const path = require('path');
+  const tbv3SrcPo = fs.readFileSync(path.join(__dirname, '..', 'features', 'topology-builder-v3.js'), 'utf8');
+
+  test('POLISH: Batch 2E — all 8 public-cloud device illustrations defined',
+    /_TB_V3_DEVICE_3D_ILLUSTRATIONS\['public-web'\]/.test(tbv3SrcPo) &&
+    /_TB_V3_DEVICE_3D_ILLUSTRATIONS\['public-file'\]/.test(tbv3SrcPo) &&
+    /_TB_V3_DEVICE_3D_ILLUSTRATIONS\['public-cloud'\]/.test(tbv3SrcPo) &&
+    /_TB_V3_DEVICE_3D_ILLUSTRATIONS\['vpc'\]/.test(tbv3SrcPo) &&
+    /_TB_V3_DEVICE_3D_ILLUSTRATIONS\['cloud-subnet'\]/.test(tbv3SrcPo) &&
+    /_TB_V3_DEVICE_3D_ILLUSTRATIONS\['igw'\]/.test(tbv3SrcPo) &&
+    /_TB_V3_DEVICE_3D_ILLUSTRATIONS\['nat-gw'\]/.test(tbv3SrcPo) &&
+    /_TB_V3_DEVICE_3D_ILLUSTRATIONS\['tgw'\]/.test(tbv3SrcPo)
+  );
+  test('POLISH: all 37 device types have illustrations',
+    (function () {
+      var src = tbv3SrcPo;
+      var types = [
+        'router','l3-router','isp-router','switch','l3-switch','dmz-switch','hub','bridge','onprem-dc','mpls-core',
+        'pc','laptop','server','smartphone','smart-tv','game-console','printer','voip','iot','dns-server',
+        'wap','wlc','firewall','ids','vpg','sase-edge',
+        'cloud','internet','load-balancer',
+        'public-web','public-file','public-cloud','vpc','cloud-subnet','igw','nat-gw','tgw'
+      ];
+      for (var i = 0; i < types.length; i++) {
+        var t = types[i].replace(/[\.\*\+\?\(\)\[\]\\]/g, '\\$&');
+        var rx = new RegExp("_TB_V3_DEVICE_3D_ILLUSTRATIONS\\['" + t + "'\\]");
+        if (!rx.test(src)) return false;
+      }
+      return true;
+    })()
+  );
+})();
+
 // ── Summary ──
 console.log('\n' + '═'.repeat(50));
 const total = results.pass + results.fail;
