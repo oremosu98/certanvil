@@ -2044,7 +2044,7 @@ html[data-theme="light"] #page-topology-builder-v3 {
 .tb3-3d-dev-illust .illust-badge-l3   { color: #c47340; }
 .tb3-3d-dev-illust .illust-badge-isp  { color: #4a6a82; }
 .tb3-3d-dev-illust .illust-badge-dmz  { color: #a73e29; }
-.tb3-3d-dev-illust .illust-badge-mpls { color: #4a6a82; }
+.tb3-3d-dev-illust .illust-badge-mpls { color: #5b4a82; }  /* distinct from -isp's #4a6a82: provider-core vs edge-ISP */
 .tb3-3d-dev-illust .illust-badge-hub  { color: #8b5a3c; }
 .tb3-3d-dev-illust .illust-badge-bridge { color: #8b5a3c; }
 
