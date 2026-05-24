@@ -22462,6 +22462,17 @@ test('phase2: TB_V3_FREEBUILD_BACKUP does not collide with TB_V3_DRAFT', !/TB_V3
     })()
   );
 
+  // ---- Stage 3: scene-level scoped CSS ----
+  test('P7: scene scoped CSS gates on body.3d-open',
+    /body\.3d-open\s+\.tb3-canvas-wrap/.test(tbv3CssP7)
+  );
+  test('P7: scene applies perspective 1400px',
+    /body\.3d-open\s+\.tb3-canvas-wrap[\s\S]{0,200}perspective:\s*1400px/.test(tbv3CssP7)
+  );
+  test('P7: scene applies rotateX(50deg) + preserve-3d',
+    /body\.3d-open\s+\.tb3-canvas-svg[\s\S]{0,300}rotateX\(50deg\)[\s\S]{0,200}preserve-3d/.test(tbv3CssP7)
+  );
+
 })();
 
 // ── Summary ──

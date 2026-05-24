@@ -1645,3 +1645,27 @@ html[data-theme="light"] #page-topology-builder-v3 {
     transition: filter 1200ms ease;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   PHASE 7 — 3D MODE
+   Activates only when body.3d-open. Scene tilts ~50°; per-device standing
+   transforms in §2; cascade in §3; motion in §4; reduced-motion in §5.
+   Spec: docs/superpowers/specs/2026-05-24-tb-v3-phase7-3d-design.md
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Phase 7 §1: Scene-level transforms ── */
+body.3d-open .tb3-canvas-wrap {
+  perspective: 1400px;
+  perspective-origin: 50% 30%;
+}
+
+body.3d-open .tb3-canvas-svg {
+  transform: rotateX(50deg);
+  transform-style: preserve-3d;
+  transform-origin: 50% 50%;
+  transition: transform 280ms cubic-bezier(.4, 0, .2, 1);
+}
+
+body.3d-open .tb3-canvas-svg > * {
+  transform-style: preserve-3d;
+}
