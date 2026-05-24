@@ -22430,9 +22430,8 @@ test('phase2: TB_V3_FREEBUILD_BACKUP does not collide with TB_V3_DRAFT', !/TB_V3
   test('P7: _renderOSIPanel delegates 7-row HTML to _renderOSIStack',
     /function\s+_renderOSIPanel[\s\S]{0,4500}_renderOSIStack\s*\(/.test(tbv3SrcP7)
   );
-  test("P7: _renderOSIStack accepts opts.variant ('panel' or 'in-device')",
-    /_renderOSIStack[\s\S]{0,400}opts\s*\&\&\s*opts\.variant/.test(tbv3SrcP7) ||
-    /_renderOSIStack\s*\([^)]*opts[^)]*\)/.test(tbv3SrcP7)
+  test("P7: _renderOSIStack accepts opts.variant and emits in-device class",
+    /function\s+_renderOSIStack\s*\([^)]*opts[^)]*\)\s*\{[\s\S]{0,600}tb3-osi-stack--in-device/.test(tbv3SrcP7)
   );
 
 })();

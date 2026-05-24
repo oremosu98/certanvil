@@ -3525,11 +3525,10 @@
   // ===========================================================================
   // ===========================================================================
   // Phase 7 Stage 1: _renderOSIStack
-  // Shared 7-row HTML generator. Phase 6 calls with variant='panel' (renders
-  // into the right-rail trace annotation panel). Phase 7 calls with
-  // variant='in-device' (renders into the standing device card in 3D mode).
-  // Both variants emit the SAME row DOM — only the wrapper class differs
-  // for scoped CSS variant styling.
+  // Shared 7-row OSI layer-stack HTML. Variant flag controls the wrapper
+  // class only — row DOM is byte-identical across variants. Callers pass
+  // {variant:'panel'} for the right-rail trace annotation surface or
+  // {variant:'in-device'} for an in-device cascade (Phase 7 §5.3).
   // ===========================================================================
   function _renderOSIStack(layerStack, opts) {
     var variant = (opts && opts.variant) || 'panel';
@@ -3572,6 +3571,11 @@
     const hasHops = _traceState && Array.isArray(_traceState.hops) && _traceState.hops.length > 0;
 
     if (!hasHops) {
+      // Empty-state rows are intentionally NOT delegated to _renderOSIStack —
+      // they use a static placeholder dict (no layerStack, no reasons, no
+      // per-hop dispatch) and the rendering shape diverges (all rows passive,
+      // 'n/a' proto, fixed prompt verb). If we ever build a synthetic layerStack
+      // for the empty case, this can fold into _renderOSIStack.
       // Empty state — render the 7-row stack with all rows passive + placeholder
       // proto + verb copy per spec §6.
       const layerNames = { 7:'Application', 6:'Presentation', 5:'Session', 4:'Transport', 3:'Network', 2:'Data Link', 1:'Physical' };
