@@ -1988,3 +1988,164 @@ html[data-theme="light"] #page-topology-builder-v3 {
 .tb3-3d-dev[data-family="wireless"] .tb3-3d-dev-accent-stripe { background: var(--tb3-3d-accent-wireless); }
 .tb3-3d-dev[data-family="security"] .tb3-3d-dev-accent-stripe { background: var(--tb3-3d-accent-security); }
 .tb3-3d-dev[data-family="cloud"]    .tb3-3d-dev-accent-stripe { background: var(--tb3-3d-accent-cloud); }
+
+/* ── Phase 7 v2.1 §2: Per-device illustration overlays ── */
+
+.tb3-3d-dev-illust {
+  position: absolute;
+  inset: 0;
+  transform: translateZ(15px);
+  pointer-events: none;
+}
+
+/* ── Phase 7 v2.1 §2 Batch 2A: Network device illustrations ── */
+
+/* Shared elements (reused across batches 2A-2E) */
+.tb3-3d-dev-illust .illust-rack-bar {
+  position: absolute;
+  top: 4px; left: 50%; transform: translateX(-50%);
+  width: 60%; height: 2px;
+  background: color-mix(in oklab, var(--tb3-bronze, #8b5a3c) 60%, black 40%);
+  border-radius: 1px;
+}
+.tb3-3d-dev-illust .illust-antenna {
+  position: absolute;
+  width: 2px;
+  background: linear-gradient(to bottom, color-mix(in oklab, var(--tb3-bronze, #8b5a3c) 60%, white 40%), var(--tb3-bronze, #8b5a3c));
+  border-radius: 1px;
+  transform-origin: bottom center;
+}
+.tb3-3d-dev-illust .illust-led-row {
+  position: absolute;
+  top: 10px; left: 12px;
+  display: flex; gap: 4px;
+}
+.tb3-3d-dev-illust .illust-led-row .led {
+  width: 3px; height: 3px; border-radius: 99px;
+  background: #f5c25c;
+  box-shadow: 0 0 3px rgba(245,194,92,.6);
+}
+.tb3-3d-dev-illust .illust-led-row .led.off {
+  background: rgba(0,0,0,.2);
+  box-shadow: none;
+}
+
+.tb3-3d-dev-illust .illust-badge {
+  position: absolute;
+  bottom: 4px; right: 4px;
+  font: 600 7px/1 -apple-system, system-ui;
+  letter-spacing: .04em;
+  background: rgba(255,255,255,.85);
+  color: #1a1a1a;
+  padding: 2px 4px;
+  border-radius: 3px;
+  text-transform: uppercase;
+}
+.tb3-3d-dev-illust .illust-badge-l3   { color: #c47340; }
+.tb3-3d-dev-illust .illust-badge-isp  { color: #4a6a82; }
+.tb3-3d-dev-illust .illust-badge-dmz  { color: #a73e29; }
+.tb3-3d-dev-illust .illust-badge-mpls { color: #4a6a82; }
+.tb3-3d-dev-illust .illust-badge-hub  { color: #8b5a3c; }
+.tb3-3d-dev-illust .illust-badge-bridge { color: #8b5a3c; }
+
+.tb3-3d-dev-illust .illust-port-grid {
+  position: absolute;
+  inset: 12px 12px 10px 12px;
+  display: grid;
+  gap: 2px;
+}
+.tb3-3d-dev-illust .switch-ports {
+  grid-template-columns: repeat(12, 1fr);
+  grid-template-rows: repeat(2, 1fr);
+}
+.tb3-3d-dev-illust .switch-ports .port {
+  background: color-mix(in oklab, var(--tb3-bronze, #8b5a3c) 50%, black 50%);
+  border-radius: 1px;
+}
+.tb3-3d-dev-illust .switch-ports .port.lit {
+  background: linear-gradient(to bottom, color-mix(in oklab, var(--tb3-bronze, #8b5a3c) 50%, black 50%) 60%, #f5c25c 60%, #f5c25c);
+}
+.tb3-3d-dev-illust .switch-ports.dmz .port.lit {
+  background: linear-gradient(to bottom, color-mix(in oklab, var(--tb3-bronze, #8b5a3c) 50%, black 50%) 60%, var(--tb3-3d-accent-security) 60%, var(--tb3-3d-accent-security));
+}
+
+.tb3-3d-dev-illust .illust-dmz-rail {
+  position: absolute;
+  top: 4px; left: 4px; right: 4px; height: 2px;
+  background: var(--tb3-3d-accent-security);
+  border-radius: 1px;
+}
+
+.tb3-3d-dev-illust .illust-wan-cluster {
+  position: absolute;
+  top: 16px; left: 50%; transform: translateX(-50%);
+  display: flex; gap: 4px;
+}
+.tb3-3d-dev-illust .illust-wan-cluster .led-wan {
+  width: 6px; height: 4px;
+  background: #4a6a82;
+  border-radius: 1px;
+  box-shadow: 0 0 4px rgba(74,106,130,.5);
+}
+
+.tb3-3d-dev-illust .illust-hub-spokes {
+  position: absolute;
+  inset: 8px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(2, 1fr);
+  gap: 4px;
+}
+.tb3-3d-dev-illust .illust-hub-spokes span {
+  background: color-mix(in oklab, var(--tb3-bronze, #8b5a3c) 55%, black 45%);
+  border-radius: 99px;
+}
+
+.tb3-3d-dev-illust .illust-bridge-arc {
+  position: absolute;
+  top: 8px; left: 12px; right: 12px; height: 30px;
+  border: 1.5px solid color-mix(in oklab, var(--tb3-bronze, #8b5a3c) 65%, black 35%);
+  border-bottom: none;
+  border-radius: 50% 50% 0 0;
+}
+
+.tb3-3d-dev-illust .illust-rack-chassis {
+  position: absolute;
+  inset: 6px;
+  display: flex; flex-direction: column;
+  gap: 2px;
+}
+.tb3-3d-dev-illust .illust-rack-chassis .rack-unit {
+  flex: 1;
+  background: linear-gradient(180deg, color-mix(in oklab, var(--tb3-bronze, #8b5a3c) 50%, black 50%), color-mix(in oklab, var(--tb3-bronze, #8b5a3c) 40%, black 60%));
+  border: 1px solid color-mix(in oklab, var(--tb3-bronze, #8b5a3c) 40%, black 60%);
+  border-radius: 1px;
+  position: relative;
+}
+.tb3-3d-dev-illust .illust-rack-chassis .rack-unit .led {
+  position: absolute;
+  left: 4px; top: 50%; transform: translateY(-50%);
+  width: 2px; height: 2px; border-radius: 99px;
+  background: #f5c25c;
+  box-shadow: 0 0 2px rgba(245,194,92,.5);
+}
+
+.tb3-3d-dev-illust .mpls-ports {
+  grid-template-columns: repeat(8, 1fr);
+  grid-template-rows: 1fr;
+  bottom: 16px;
+}
+.tb3-3d-dev-illust .mpls-ports .port-wan {
+  background: color-mix(in oklab, #4a6a82 50%, black 50%);
+  border-radius: 1px;
+}
+.tb3-3d-dev-illust .mpls-ports .port-wan.lit {
+  background: linear-gradient(to bottom, color-mix(in oklab, #4a6a82 50%, black 50%) 60%, #4a6a82 60%, #4a6a82);
+  box-shadow: 0 0 4px rgba(74,106,130,.4);
+}
+
+.tb3-3d-dev-illust .illust-port {
+  position: absolute;
+  background: color-mix(in oklab, var(--tb3-bronze, #8b5a3c) 55%, black 45%);
+  border-radius: 1px;
+}

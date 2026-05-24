@@ -22460,7 +22460,7 @@ test('phase2: TB_V3_FREEBUILD_BACKUP does not collide with TB_V3_DRAFT', !/TB_V3
     /function\s+_render3DScene\s*\(/.test(tbv3SrcP7v2)
   );
   test('P7v2: _build3DDeviceEl emits 5-face extruded card structure',
-    /function\s+_build3DDeviceEl[\s\S]{0,1000}tb3-3d-dev-top[\s\S]{0,200}tb3-3d-dev-bottom[\s\S]{0,200}tb3-3d-dev-side-n[\s\S]{0,200}tb3-3d-dev-side-s[\s\S]{0,200}tb3-3d-dev-side-e[\s\S]{0,200}tb3-3d-dev-side-w/.test(tbv3SrcP7v2)
+    /function\s+_build3DDeviceEl[\s\S]{0,1400}tb3-3d-dev-top[\s\S]{0,200}tb3-3d-dev-bottom[\s\S]{0,200}tb3-3d-dev-side-n[\s\S]{0,200}tb3-3d-dev-side-s[\s\S]{0,200}tb3-3d-dev-side-e[\s\S]{0,200}tb3-3d-dev-side-w/.test(tbv3SrcP7v2)
   );
   test('P7v2: top face uses 135deg gradient (light from upper-left)',
     /\.tb3-3d-dev-top[\s\S]{0,400}linear-gradient\(\s*135deg/.test(tbv3CssP7v2)
@@ -22635,6 +22635,28 @@ test('phase2: TB_V3_FREEBUILD_BACKUP does not collide with TB_V3_DRAFT', !/TB_V3
     /--tb3-3d-accent-wireless/.test(tbv3CssPo) &&
     /--tb3-3d-accent-security/.test(tbv3CssPo) &&
     /--tb3-3d-accent-cloud/.test(tbv3CssPo)
+  );
+})();
+
+// ══════════════════════════════════════════
+// TB v3 Phase 7 v2 Polish Stage 2A UAT fixtures
+// ══════════════════════════════════════════
+(function _tbv3PolishStage2AFixtures() {
+  const fs = require('fs');
+  const path = require('path');
+  const tbv3SrcPo = fs.readFileSync(path.join(__dirname, '..', 'features', 'topology-builder-v3.js'), 'utf8');
+
+  test('POLISH: Batch 2A — all 10 network device illustrations defined',
+    /_TB_V3_DEVICE_3D_ILLUSTRATIONS\['router'\]/.test(tbv3SrcPo) &&
+    /_TB_V3_DEVICE_3D_ILLUSTRATIONS\['l3-router'\]/.test(tbv3SrcPo) &&
+    /_TB_V3_DEVICE_3D_ILLUSTRATIONS\['isp-router'\]/.test(tbv3SrcPo) &&
+    /_TB_V3_DEVICE_3D_ILLUSTRATIONS\['switch'\]/.test(tbv3SrcPo) &&
+    /_TB_V3_DEVICE_3D_ILLUSTRATIONS\['l3-switch'\]/.test(tbv3SrcPo) &&
+    /_TB_V3_DEVICE_3D_ILLUSTRATIONS\['dmz-switch'\]/.test(tbv3SrcPo) &&
+    /_TB_V3_DEVICE_3D_ILLUSTRATIONS\['hub'\]/.test(tbv3SrcPo) &&
+    /_TB_V3_DEVICE_3D_ILLUSTRATIONS\['bridge'\]/.test(tbv3SrcPo) &&
+    /_TB_V3_DEVICE_3D_ILLUSTRATIONS\['onprem-dc'\]/.test(tbv3SrcPo) &&
+    /_TB_V3_DEVICE_3D_ILLUSTRATIONS\['mpls-core'\]/.test(tbv3SrcPo)
   );
 })();
 

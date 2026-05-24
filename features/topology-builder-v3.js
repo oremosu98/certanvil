@@ -3160,6 +3160,79 @@
     'igw': 'cloud', 'nat-gw': 'cloud', 'tgw': 'cloud'
   };
 
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Phase 7 v2 Polish: device 3D illustration overlays.
+  // Each entry is an HTML string fragment rendered above the device's top face.
+  // Filled in across batches 2A-2E.
+  // ═══════════════════════════════════════════════════════════════════════════
+  var _TB_V3_DEVICE_3D_ILLUSTRATIONS = {};
+
+  _TB_V3_DEVICE_3D_ILLUSTRATIONS['router'] =
+    '<div class="illust-rack-bar"></div>' +
+    '<div class="illust-antenna" style="left:18px;top:-18px;height:18px;"></div>' +
+    '<div class="illust-antenna" style="left:50%;top:-22px;height:22px;margin-left:-1px;"></div>' +
+    '<div class="illust-antenna" style="right:18px;top:-18px;height:18px;transform:rotate(10deg);"></div>' +
+    '<div class="illust-led-row"><span class="led"></span><span class="led off"></span><span class="led"></span><span class="led"></span></div>';
+
+  _TB_V3_DEVICE_3D_ILLUSTRATIONS['l3-router'] =
+    _TB_V3_DEVICE_3D_ILLUSTRATIONS['router'] +
+    '<div class="illust-badge illust-badge-l3">L3</div>';
+
+  _TB_V3_DEVICE_3D_ILLUSTRATIONS['isp-router'] =
+    '<div class="illust-rack-bar"></div>' +
+    '<div class="illust-antenna" style="left:14px;top:-18px;height:16px;transform:rotate(-15deg);"></div>' +
+    '<div class="illust-antenna" style="right:14px;top:-18px;height:16px;transform:rotate(15deg);"></div>' +
+    '<div class="illust-wan-cluster">' +
+      '<span class="led-wan"></span><span class="led-wan"></span>' +
+    '</div>' +
+    '<div class="illust-badge illust-badge-isp">ISP</div>';
+
+  _TB_V3_DEVICE_3D_ILLUSTRATIONS['switch'] =
+    '<div class="illust-port-grid switch-ports">' +
+      Array.from({ length: 24 }).map(function (_, i) {
+        return '<span class="port' + (i % 3 === 0 ? ' lit' : '') + '"></span>';
+      }).join('') +
+    '</div>';
+
+  _TB_V3_DEVICE_3D_ILLUSTRATIONS['l3-switch'] =
+    _TB_V3_DEVICE_3D_ILLUSTRATIONS['switch'] +
+    '<div class="illust-badge illust-badge-l3">L3</div>';
+
+  _TB_V3_DEVICE_3D_ILLUSTRATIONS['dmz-switch'] =
+    '<div class="illust-port-grid switch-ports dmz">' +
+      Array.from({ length: 24 }).map(function (_, i) {
+        return '<span class="port' + (i % 4 === 0 ? ' lit' : '') + '"></span>';
+      }).join('') +
+    '</div>' +
+    '<div class="illust-dmz-rail"></div>' +
+    '<div class="illust-badge illust-badge-dmz">DMZ</div>';
+
+  _TB_V3_DEVICE_3D_ILLUSTRATIONS['hub'] =
+    '<div class="illust-hub-spokes">' +
+      Array.from({ length: 6 }).map(function () { return '<span></span>'; }).join('') +
+    '</div>' +
+    '<div class="illust-badge illust-badge-hub">HUB</div>';
+
+  _TB_V3_DEVICE_3D_ILLUSTRATIONS['bridge'] =
+    '<div class="illust-bridge-arc"></div>' +
+    '<div class="illust-port" style="left:6px;top:50%;width:8px;height:4px;transform:translateY(-50%);"></div>' +
+    '<div class="illust-port" style="right:6px;top:50%;width:8px;height:4px;transform:translateY(-50%);"></div>' +
+    '<div class="illust-badge illust-badge-bridge">BR</div>';
+
+  _TB_V3_DEVICE_3D_ILLUSTRATIONS['onprem-dc'] =
+    '<div class="illust-rack-chassis">' +
+      Array.from({ length: 4 }).map(function () { return '<span class="rack-unit"><span class="led"></span></span>'; }).join('') +
+    '</div>';
+
+  _TB_V3_DEVICE_3D_ILLUSTRATIONS['mpls-core'] =
+    '<div class="illust-rack-bar"></div>' +
+    '<div class="illust-port-grid mpls-ports">' +
+      Array.from({ length: 8 }).map(function (_, i) {
+        return '<span class="port-wan' + (i < 6 ? ' lit' : '') + '"></span>';
+      }).join('') +
+    '</div>' +
+    '<div class="illust-badge illust-badge-mpls">MPLS</div>';
+
   var TB_V3_PALETTE_GROUPS = [
     { name: 'Routers',     items: ['router', 'l3-router', 'isp-router'] },
     { name: 'Switches',    items: ['switch', 'l3-switch', 'hub', 'dmz-switch', 'bridge'] },
@@ -4144,6 +4217,7 @@
       : '';
     var labelHtml = '<span class="tb3-3d-dev-label">' + _escAttr(dev.label || dev.hostname || dev.type) + '</span>';
     var family = _TB_V3_DEVICE_FAMILY[dev.type] || 'network';
+    var illust = (_TB_V3_DEVICE_3D_ILLUSTRATIONS && _TB_V3_DEVICE_3D_ILLUSTRATIONS[dev.type]) ? _TB_V3_DEVICE_3D_ILLUSTRATIONS[dev.type] : '';
     var el = document.createElement('div');
     el.className = 'tb3-3d-dev';
     el.setAttribute('data-device-id', _escAttr(dev.id));
@@ -4161,6 +4235,7 @@
       '<div class="tb3-3d-dev-side-s"></div>' +
       '<div class="tb3-3d-dev-side-e"></div>' +
       '<div class="tb3-3d-dev-side-w"></div>' +
+      '<div class="tb3-3d-dev-illust">' + illust + '</div>' +
       '<div class="tb3-3d-dev-accent-stripe"></div>';
     return el;
   }
