@@ -107,7 +107,7 @@
   // APP_VERSION hasn't changed. After v3 ships in a version-bump cycle,
   // APP_VERSION will be the canonical cache key and this constant can be
   // retired (or kept at .0 forever).
-  var TB3_CSS_REV = 'r14'; // r14: V1 parity — new device icons + ports + scenarios + title-case
+  var TB3_CSS_REV = 'r15'; // r15: Polish pass — per-device 3D illustrations + labels + centroid + ambient packets
 
   function _ensureCss() {
     if (document.querySelector('link[href*="topology-builder-v3.css"]')) return;
