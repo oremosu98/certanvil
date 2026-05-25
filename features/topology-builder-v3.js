@@ -7473,7 +7473,70 @@
     var card = document.querySelector('.tb3-walk-card');
     if (card && card.parentNode) card.parentNode.removeChild(card);
   }                                                   // Task 15
-  function showCompletionCard(/* walkthroughId */) {} // Task 18
+  function showCompletionCard(walkthroughId) {
+    var walkList = (typeof TB_V3_WALKTHROUGHS !== 'undefined' ? TB_V3_WALKTHROUGHS : []);
+    var walk = walkList.find(function (w) { return w.id === walkthroughId; });
+    if (!walk) return;
+
+    var card = document.querySelector('.tb3-walk-card');
+    if (!card) return;
+
+    // Find sibling walks for the same scenario (excluding this one)
+    var siblings = walkList.filter(function (w) {
+      return w.scenarioId === walk.scenarioId && w.id !== walk.id;
+    });
+
+    var siblingMarkup = '';
+    if (siblings.length > 0) {
+      siblingMarkup += '<div class="tb3-walk-card-siblings-label">More for this topology</div>';
+      siblingMarkup += '<div class="tb3-walk-card-siblings">';
+      for (var i = 0; i < siblings.length; i++) {
+        var s = siblings[i];
+        siblingMarkup += '<div class="tb3-walk-card-sibling" data-walk-sibling="' + _escAttr(s.id) + '">' +
+                        '<span class="tb3-walk-lens-icon"></span>' +
+                        '<span>' + _escAttr(s.title) + '</span>' +
+                        '<span class="tb3-walk-card-sibling-meta">' + (s.durationMin || '?') + ' min</span>' +
+                        '</div>';
+      }
+      siblingMarkup += '</div>';
+    }
+
+    card.classList.add('tb3-walk-card-complete');
+    card.innerHTML =
+      '<div class="tb3-walk-card-complete-icon">✓</div>' +
+      '<div class="tb3-walk-card-complete-title">Walkthrough complete</div>' +
+      '<div class="tb3-walk-card-complete-sub">Saved to your progress.</div>' +
+      siblingMarkup +
+      '<div class="tb3-walk-card-controls">' +
+        '<div class="tb3-walk-card-btn tb3-walk-card-btn-back" data-walk-replay>↺ Replay</div>' +
+        '<div class="tb3-walk-card-btn tb3-walk-card-btn-next" data-walk-catalog>Catalog</div>' +
+      '</div>';
+
+    // Wire buttons
+    var replayBtn = card.querySelector('[data-walk-replay]');
+    if (replayBtn) {
+      replayBtn.onclick = function () {
+        state.walkStepIdx = 0;
+        card.classList.remove('tb3-walk-card-complete');
+        if (walk.steps && walk.steps.length > 0) runStep(walk.steps[0], state.walkMode);
+      };
+    }
+    var catalogBtn = card.querySelector('[data-walk-catalog]');
+    if (catalogBtn) catalogBtn.onclick = walkExit;
+
+    var siblingEls = card.querySelectorAll('[data-walk-sibling]');
+    for (var j = 0; j < siblingEls.length; j++) {
+      siblingEls[j].onclick = (function (id) {
+        return function () {
+          walkExit();
+          walkStart(id);
+        };
+      })(siblingEls[j].dataset.walkSibling);
+    }
+
+    // Anchor card to viewport center (no specific target for completion)
+    anchorStepCardToViewportCenter();
+  }
   function renderWalkCatalog() {
     var workspace = document.querySelector('.tb3-workspace');
     if (!workspace) return;

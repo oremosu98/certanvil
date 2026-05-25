@@ -23331,6 +23331,27 @@ test('TB v3 walk: fade-through respects prefers-reduced-motion', (function () {
   return /prefers-reduced-motion/.test(m[0]) || /matchMedia/.test(m[0]);
 })());
 
+test('TB v3 walk: showCompletionCard renders Walkthrough complete text', (function () {
+  var m = tbV3JsForWalk.match(/function showCompletionCard\(walkthroughId\)[\s\S]*?\n  \}/);
+  if (!m) return false;
+  var body = m[0];
+  return /Walkthrough complete/.test(body)
+      && /Replay/.test(body)
+      && /Catalog/.test(body);
+})());
+
+test('TB v3 walk: showCompletionCard surfaces sibling walkthroughs', (function () {
+  var m = tbV3JsForWalk.match(/function showCompletionCard[\s\S]*?\n  \}/);
+  if (!m) return false;
+  return /sibling|scenarioId/.test(m[0]) && /TB_V3_WALKTHROUGHS/.test(m[0]);
+})());
+
+test('TB v3 walk: completion CSS has tb3-walk-card-complete styles', (function () {
+  var tbCss = read('features/topology-builder-v3.css');
+  return /\.tb3-walk-card-complete\b/.test(tbCss)
+      && /\.tb3-walk-card-complete-icon\b/.test(tbCss);
+})());
+
 // ── Summary ──
 console.log('\n' + '═'.repeat(50));
 const total = results.pass + results.fail;

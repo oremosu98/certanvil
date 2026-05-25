@@ -3313,3 +3313,66 @@ html[data-theme="light"] #page-topology-builder-v3 {
 @media (prefers-reduced-motion: reduce) {
   .tb3-walk-card { transition: none; }
 }
+
+/* ── Walkthrough completion card (Task 18) ─────────────────────── */
+.tb3-walk-card.tb3-walk-card-complete {
+  text-align: center;
+}
+.tb3-walk-card-complete-icon {
+  width: 36px;
+  height: 36px;
+  margin: 0 auto;
+  border-radius: 50%;
+  background: rgba(201, 138, 54, 0.22);
+  border: 1.5px solid #f0c789;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #f0c789;
+  font-size: 16px;
+  font-weight: 700;
+}
+.tb3-walk-card-complete-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #f5deb6;
+}
+.tb3-walk-card-complete-sub {
+  font-size: 11px;
+  color: rgba(240, 199, 137, 0.65);
+}
+.tb3-walk-card-siblings-label {
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(255, 255, 255, 0.4);
+  margin-top: 6px;
+  text-align: left;
+}
+.tb3-walk-card-siblings {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.tb3-walk-card-sibling {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 9px;
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 4px;
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.78);
+  cursor: pointer;
+  text-align: left;
+  transition: background 200ms;
+}
+.tb3-walk-card-sibling:hover {
+  background: rgba(201, 138, 54, 0.10);
+}
+.tb3-walk-card-sibling-meta {
+  margin-left: auto;
+  font-size: 9px;
+  color: rgba(255, 255, 255, 0.45);
+}
