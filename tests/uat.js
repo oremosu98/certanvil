@@ -23476,6 +23476,30 @@ test('TB v3 walk: hub-spoke-branches-reach-hq walkthrough exists with 6 steps', 
   return !!walk && walk.scenarioId === 'hub-and-spoke-wan' && walk.steps.length === 6;
 })());
 
+// v6.5.8 — Phase 8b Topology fundamentals: 6 new walkthroughs for star / mesh /
+// three-tier / ring / point-to-point / spine-leaf scenarios. Consolidated guard
+// asserts presence + scenario binding + step count for each; the existing data-
+// integrity sweep below auto-validates their device-id targets against the
+// scenarios in topology-builder-v3.js — no additional sweep needed.
+test('TB v3 walk: 6 topology fundamentals walkthroughs (v6.5.8) present + bound + sized', (function () {
+  var walkJs = read('features/topology-builder-v3-walkthroughs.js');
+  var arrMatch = walkJs.match(/var TB_V3_WALKTHROUGHS = (\[[\s\S]*\]);/);
+  if (!arrMatch) return false;
+  var walks = new Function('return ' + arrMatch[1])();
+  var expected = [
+    { id: 'star-topology-shape',         scenarioId: 'star-topology',            steps: 6 },
+    { id: 'mesh-topology-paths',         scenarioId: 'mesh-topology',            steps: 6 },
+    { id: 'three-tier-tiers-and-roles',  scenarioId: 'three-tier-hierarchical',  steps: 6 },
+    { id: 'ring-topology-loop',          scenarioId: 'ring-topology',            steps: 6 },
+    { id: 'point-to-point-atomic-link',  scenarioId: 'point-to-point-topology',  steps: 5 },
+    { id: 'spine-leaf-east-west',        scenarioId: 'spine-leaf-fabric',        steps: 6 },
+  ];
+  return expected.every(function (e) {
+    var w = walks.find(function (x) { return x.id === e.id; });
+    return !!w && w.scenarioId === e.scenarioId && w.steps.length === e.steps;
+  });
+})());
+
 test('TB v3 walk: ALL pilot walkthroughs pass data integrity (scenario + device ids exist)', (function () {
   var walkJs = read('features/topology-builder-v3-walkthroughs.js');
   var tbJs = read('features/topology-builder-v3.js');
@@ -23637,23 +23661,23 @@ test('TB v3 walk: _clearWalkHighlight3D resets panX/panY via camera state', (fun
 
 // ── v6.5.2 hotfix tests ──
 
-test('v6.5.7: package.json version is 6.5.7', (function () {
+test('v6.5.8: package.json version is 6.5.8', (function () {
   var pkg = read('package.json');
-  return /"version":\s*"6\.5\.7"/.test(pkg);
+  return /"version":\s*"6\.5\.8"/.test(pkg);
 })());
 
-test('v6.5.7: sw.js CACHE_NAME is netplus-v6.5.7', (function () {
+test('v6.5.8: sw.js CACHE_NAME is netplus-v6.5.8', (function () {
   var sw = read('sw.js');
-  return /netplus-v6\.5\.7/.test(sw);
+  return /netplus-v6\.5\.8/.test(sw);
 })());
 
-test('v6.5.7: index.html version badge is v6.5.7', (function () {
-  return /version-badge[\s\S]*?v6\.5\.7/.test(html);
+test('v6.5.8: index.html version badge is v6.5.8', (function () {
+  return /version-badge[\s\S]*?v6\.5\.8/.test(html);
 })());
 
-test('v6.5.7: app.js APP_VERSION is 6.5.7', (function () {
+test('v6.5.8: app.js APP_VERSION is 6.5.8', (function () {
   var js = read('app.js');
-  return /APP_VERSION\s*=\s*['"]6\.5\.7['"]/.test(js);
+  return /APP_VERSION\s*=\s*['"]6\.5\.8['"]/.test(js);
 })());
 
 test('TB v3 walk: catalog text uses theme tokens, not hardcoded white rgba', (function () {
