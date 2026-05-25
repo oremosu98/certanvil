@@ -1,9 +1,9 @@
 // ══════════════════════════════════════════
-// Network+ AI Quiz — app.js  v6.4.3
+// Network+ AI Quiz — app.js  v6.5.0
 // ══════════════════════════════════════════
 
 // ── CONSTANTS ──
-const APP_VERSION = '6.4.3';
+const APP_VERSION = '6.5.0';
 // v4.99.45 (Phase 6b): expose APP_VERSION on window so the web-vitals
 // collector (lib/web-vitals-collector.js, loaded BEFORE app.js so its
 // PerformanceObservers attach earlier) can stamp this version onto every
@@ -760,6 +760,7 @@ const STORAGE = {
   BUG_REPORTS: 'nplus_bug_reports', // v5.6.x bug-report drawer retry queue
   TB_V3_DRAFT: 'nplus_tb_v3_draft', // v6.x topology-builder v3 canvas state (Net+ only)
   TB_V3_FREEBUILD_BACKUP: 'nplus_tb_v3_freebuild_backup', // phase 2 freebuild backup state
+  TB_V3_WALK_PROGRESS: 'nplus_tb_v3_walk_progress_v1', // phase 8 walkthrough progress
   PORT_BEST: 'nplus_port_best',
   PORT_STREAK_BEST: 'nplus_port_streak_best',
   PORT_FAMILY_BEST: 'nplus_port_family_best',

@@ -2939,3 +2939,463 @@ html[data-theme="light"] #page-topology-builder-v3 {
     transform: none !important;
   }
 }
+
+/* ── Walkthrough effects (2D, SVG) ───────────────────────────────── */
+@keyframes tb3-walk-pulse {
+  0%, 100% { filter: drop-shadow(0 0 0 transparent); }
+  50%      { filter: drop-shadow(0 0 10px rgba(201, 138, 54, 0.7)); }
+}
+
+.tb3-walk-pulse {
+  animation: tb3-walk-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes tb3-walk-cable-pulse {
+  0%, 100% { stroke: rgba(255, 255, 255, 0.35); stroke-width: 1.5; }
+  50%      { stroke: rgba(201, 138, 54, 0.95); stroke-width: 3; }
+}
+
+.tb3-walk-cable-pulse {
+  animation: tb3-walk-cable-pulse 1.6s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tb3-walk-pulse {
+    animation: none;
+    filter: drop-shadow(0 0 8px rgba(201, 138, 54, 0.9));
+  }
+  .tb3-walk-cable-pulse {
+    animation: none;
+    stroke: rgba(201, 138, 54, 0.95);
+    stroke-width: 3;
+  }
+}
+
+/* ── Walkthrough flow (2D, SVG) ────────────────────────────────── */
+.tb3-walk-pellet {
+  fill: #f0c789;
+  filter: drop-shadow(0 0 6px rgba(240, 199, 137, 0.7));
+  pointer-events: none;
+}
+
+.tb3-walk-flow-arrow {
+  fill: #f0c789;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  pointer-events: none;
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tb3-walk-pellet { display: none; }
+  .tb3-walk-flow-arrow { display: inline; }
+}
+
+/* ── Walkthrough flow (3D popup, CSS 3D + SVG) ──────────────────── */
+.tb3-walk-3d-packet {
+  position: absolute;
+  pointer-events: none;
+  z-index: 5;  /* sits above tb3-3d-ambient-packet (z-index 4-ish) */
+}
+.tb3-walk-3d-packet circle {
+  fill: #f0c789;
+  filter: drop-shadow(0 0 6px rgba(240, 199, 137, 0.85));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tb3-walk-3d-packet { display: none; }
+}
+
+/* ── Walkthrough catalog (Phase 8) ─────────────────────────────── */
+.tb3-rail-panel[data-mode="walk-catalog"] {
+  padding: 14px;
+  flex-direction: column;
+  gap: 6px;
+}
+.tb3-walk-catalog-header {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--tb3-text-strong, #f5deb6);
+  margin-bottom: 4px;
+}
+.tb3-walk-catalog-domain-h {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 8px;
+  background: rgba(255, 255, 255, 0.03);
+  border-left: 2px solid var(--tb3-bronze, #8b5a3c);
+  border-radius: 4px;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(255, 255, 255, 0.65);
+  font-weight: 600;
+  margin-top: 8px;
+}
+.tb3-walk-catalog-domain-count {
+  background: rgba(201, 138, 54, 0.12);
+  color: rgba(201, 138, 54, 0.85);
+  padding: 2px 6px;
+  border-radius: 9px;
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: 0;
+}
+.tb3-walk-scen-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 5px;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.78);
+  cursor: pointer;
+  transition: opacity 200ms ease, background 200ms ease;
+}
+.tb3-walk-scen-row:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+.tb3-walk-scen-title { flex: 1; }
+.tb3-walk-walks-pill {
+  font-size: 9px;
+  color: rgba(201, 138, 54, 0.9);
+  background: rgba(201, 138, 54, 0.10);
+  border: 1px solid rgba(201, 138, 54, 0.3);
+  padding: 2px 7px;
+  border-radius: 10px;
+}
+.tb3-walk-scen-chev { color: rgba(201, 138, 54, 0.5); font-size: 12px; }
+
+/* ── Walkthrough catalog — focus-dim accordion (Task 13) ───────── */
+.tb3-walk-scen-row.tb3-walk-scen-active {
+  background: linear-gradient(180deg, rgba(201, 138, 54, 0.18), rgba(201, 138, 54, 0.06)) !important;
+  border-color: rgba(201, 138, 54, 0.55) !important;
+  color: #f5deb6 !important;
+}
+.tb3-walk-dimmed {
+  opacity: 0.3;
+  pointer-events: none;
+}
+.tb3-walk-catalog-domain-h.tb3-walk-dimmed {
+  border-left-color: rgba(255, 255, 255, 0.1);
+}
+.tb3-walk-nest {
+  margin-left: 14px;
+  padding-left: 10px;
+  border-left: 1px solid rgba(201, 138, 54, 0.4);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 4px;
+  margin-bottom: 4px;
+}
+.tb3-walk-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 9px;
+  border-radius: 4px;
+  background: linear-gradient(180deg, rgba(201, 138, 54, 0.14), rgba(201, 138, 54, 0.05));
+  border: 1px solid rgba(201, 138, 54, 0.35);
+  color: #f5deb6;
+  font-size: 10px;
+  cursor: pointer;
+  transition: background 200ms ease;
+}
+.tb3-walk-row:hover {
+  background: linear-gradient(180deg, rgba(201, 138, 54, 0.22), rgba(201, 138, 54, 0.08));
+}
+.tb3-walk-row.tb3-walk-row-running {
+  background: linear-gradient(180deg, rgba(201, 138, 54, 0.32), rgba(201, 138, 54, 0.12));
+  border-color: rgba(201, 138, 54, 0.7);
+}
+.tb3-walk-lens-icon {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  background: rgba(201, 138, 54, 0.22);
+  border: 1px solid rgba(201, 138, 54, 0.45);
+  flex-shrink: 0;
+}
+.tb3-walk-row-title { flex: 1; }
+.tb3-walk-row-meta {
+  font-size: 9px;
+  color: rgba(255, 255, 255, 0.55);
+}
+.tb3-walk-row.tb3-walk-row-running .tb3-walk-row-meta {
+  color: rgba(240, 199, 137, 0.95);
+}
+
+/* ── Walkthrough completion ledger (Task 14) ───────────────────── */
+.tb3-walk-badge-done {
+  width: 14px; height: 14px;
+  border-radius: 50%;
+  background: rgba(93, 161, 75, 0.85);
+  color: #0e0e10;
+  font-size: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.tb3-walk-badge-resume {
+  width: 14px; height: 14px;
+  border-radius: 50%;
+  background: rgba(201, 138, 54, 0.25);
+  border: 1px solid rgba(201, 138, 54, 0.55);
+  color: #f0c789;
+  font-size: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.tb3-walk-badge-blank {
+  width: 14px; height: 14px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  flex-shrink: 0;
+}
+.tb3-walk-row.tb3-walk-row-done .tb3-walk-row-title {
+  color: rgba(255, 255, 255, 0.55);
+}
+.tb3-walk-walks-pill-complete {
+  color: rgba(93, 161, 75, 0.95) !important;
+  background: rgba(93, 161, 75, 0.12) !important;
+  border-color: rgba(93, 161, 75, 0.4) !important;
+}
+.tb3-walk-walks-pill-partial {
+  /* Uses base amber from .tb3-walk-walks-pill — no override needed */
+}
+
+/* ── Walkthrough step card (Task 15) ────────────────────────────── */
+.tb3-walk-card {
+  position: absolute;
+  width: 260px;
+  background: linear-gradient(180deg, #161618, #0e0e10);
+  border: 1px solid rgba(201, 138, 54, 0.55);
+  border-radius: 10px;
+  padding: 14px;
+  box-shadow:
+    0 0 0 1px rgba(201, 138, 54, 0.18),
+    0 12px 36px -10px rgba(0, 0, 0, 0.85),
+    0 6px 22px -10px rgba(201, 138, 54, 0.45);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 105;
+  color: rgba(255, 255, 255, 0.92);
+  transition:
+    left 300ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    top 300ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  font-family: inherit;
+}
+.tb3-walk-card.tb3-walk-card-in-popup {
+  z-index: 8;
+}
+.tb3-walk-card-exit-x {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  color: rgba(255, 255, 255, 0.45);
+  font-size: 14px;
+  cursor: pointer;
+  user-select: none;
+  line-height: 1;
+}
+.tb3-walk-card-exit-x:hover {
+  color: rgba(255, 255, 255, 0.85);
+}
+.tb3-walk-card-progress {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+.tb3-walk-card-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  transition: background 200ms;
+}
+.tb3-walk-card-dot.done {
+  background: rgba(201, 138, 54, 0.85);
+  border-color: #c98a36;
+}
+.tb3-walk-card-dot.current {
+  background: rgba(201, 138, 54, 0.4);
+  border-color: #f0c789;
+  box-shadow: 0 0 0 2px rgba(201, 138, 54, 0.18);
+}
+.tb3-walk-card-pos {
+  margin-left: auto;
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(201, 138, 54, 0.9);
+  font-weight: 600;
+}
+.tb3-walk-card-kind {
+  font-size: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #c98a36;
+  background: rgba(201, 138, 54, 0.12);
+  border: 1px solid rgba(201, 138, 54, 0.3);
+  padding: 3px 7px;
+  border-radius: 3px;
+  align-self: flex-start;
+}
+.tb3-walk-card-title {
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.25;
+}
+.tb3-walk-card-body {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.7);
+  line-height: 1.55;
+}
+.tb3-walk-card-controls {
+  display: flex;
+  gap: 6px;
+  padding-top: 6px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+.tb3-walk-card-btn {
+  flex: 1;
+  padding: 8px;
+  text-align: center;
+  border-radius: 5px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  user-select: none;
+  border: 1px solid;
+  background-clip: padding-box;
+}
+.tb3-walk-card-btn-back {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.65);
+}
+.tb3-walk-card-btn-back[disabled] {
+  opacity: 0.3;
+  pointer-events: none;
+}
+.tb3-walk-card-btn-next {
+  background: linear-gradient(180deg, rgba(201, 138, 54, 0.3), rgba(201, 138, 54, 0.18));
+  border-color: rgba(201, 138, 54, 0.6);
+  color: #f5deb6;
+}
+.tb3-walk-card-btn-next:hover {
+  background: linear-gradient(180deg, rgba(201, 138, 54, 0.4), rgba(201, 138, 54, 0.25));
+}
+.tb3-walk-card-resume-link {
+  font-size: 10px;
+  color: #f0c789;
+  text-align: center;
+  margin-top: 4px;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tb3-walk-card { transition: none; }
+}
+
+/* ── Walkthrough completion card (Task 18) ─────────────────────── */
+.tb3-walk-card.tb3-walk-card-complete {
+  text-align: center;
+}
+.tb3-walk-card-complete-icon {
+  width: 36px;
+  height: 36px;
+  margin: 0 auto;
+  border-radius: 50%;
+  background: rgba(201, 138, 54, 0.22);
+  border: 1.5px solid #f0c789;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #f0c789;
+  font-size: 16px;
+  font-weight: 700;
+}
+.tb3-walk-card-complete-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #f5deb6;
+}
+.tb3-walk-card-complete-sub {
+  font-size: 11px;
+  color: rgba(240, 199, 137, 0.65);
+}
+.tb3-walk-card-siblings-label {
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(255, 255, 255, 0.4);
+  margin-top: 6px;
+  text-align: left;
+}
+.tb3-walk-card-siblings {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.tb3-walk-card-sibling {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 9px;
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 4px;
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.78);
+  cursor: pointer;
+  text-align: left;
+  transition: background 200ms;
+}
+.tb3-walk-card-sibling:hover {
+  background: rgba(201, 138, 54, 0.10);
+}
+.tb3-walk-card-sibling-meta {
+  margin-left: auto;
+  font-size: 9px;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+/* ── Walk catalog visibility (Follow-up #2) ───────────────────── */
+.tb3-rail-panel[data-mode="walk-catalog"] {
+  display: none;
+  position: relative;
+}
+#tb3-body.walk-catalog-open .tb3-rail-panel[data-mode="walk-catalog"] {
+  display: flex;
+}
+.tb3-walk-catalog-close {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  background: transparent;
+  border: 0;
+  color: var(--tb3-text-dim, rgba(255, 255, 255, 0.45));
+  font-size: 20px;
+  cursor: pointer;
+  padding: 4px 8px;
+  line-height: 1;
+}
+.tb3-walk-catalog-close:hover {
+  color: var(--tb3-text, rgba(255, 255, 255, 0.9));
+}

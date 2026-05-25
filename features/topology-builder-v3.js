@@ -20,10 +20,16 @@
     devices: [],           // [{id, type, x, y, label, config}]
     cables: [],            // [{id, fromId, fromPort, toId, toPort}]
     viewport: { x: 0, y: 0, zoom: 1 }, // pan offset + zoom
-    intent: 'free-build',  // 'free-build' | 'lab' | 'pbq'
+    intent: 'free-build',  // 'free-build' | 'lab' | 'pbq' | 'walk'
     mode: 'design',        // 'design' | 'simulate' | 'trace' | 'osi' | '3d'
     selectedId: null,      // currently-selected device id (or null)
     activeScenarioId: null, // phase 2: id of currently-loaded scenario when intent === 'lab'
+    // ── walkthrough (Phase 8) ──
+    priorIntent: null,           // string|null — saved intent for restore on walkExit
+    activeWalkthroughId: null,   // string|null — running walkthrough
+    walkStepIdx: 0,              // number      — 0-based current step
+    walkMode: '2d',              // '2d'|'3d'   — visible renderer
+    walkCardAnchor: null,        // {deviceId, side}|null — last card placement
   };
 
   // Phase 5 helper — internal accessor mirroring the registration-object
@@ -53,7 +59,7 @@
   // Lives separate from state.mode (popup is transient, not a mode value).
   var _3dPopup = {
     open: false,
-    camera: { rotX: 42, rotY: -18, zoom: 1.1 }, // Stage 6: lower tilt, tighter zoom
+    camera: { rotX: 42, rotY: -18, zoom: 1.1, panX: 0, panY: 0 }, // Stage 6: lower tilt, tighter zoom (panX/panY for walk-focus)
     dragState: { active: false, startX: 0, startY: 0, startRotX: 0, startRotY: 0 },
     velocityX: 0,
     velocityY: 0,
@@ -238,6 +244,10 @@
       intent: s.intent,
       mode: s.mode,
       activeScenarioId: s.activeScenarioId || null,
+      // ── walkthrough fields (Phase 8) — companion key STORAGE.TB_V3_WALK_PROGRESS holds richer progress ──
+      activeWalkthroughId: s.activeWalkthroughId || null,
+      walkStepIdx: s.walkStepIdx || 0,
+      // NOTE: walkMode + walkCardAnchor are runtime-only, NOT persisted
     });
   }
 
@@ -254,9 +264,15 @@
         mode: parsed.mode || 'design',
         selectedId: null,
         activeScenarioId: parsed.activeScenarioId || null,
+        // ── walkthrough fields (Phase 8) ──
+        priorIntent: null,        // runtime-only, always reset on load
+        activeWalkthroughId: parsed.activeWalkthroughId || null,
+        walkStepIdx: typeof parsed.walkStepIdx === 'number' ? parsed.walkStepIdx : 0,
+        walkMode: '2d',           // runtime-only, always reset on load
+        walkCardAnchor: null,     // runtime-only, always reset on load
       };
     } catch (e) {
-      return { devices: [], cables: [], viewport: { x: 0, y: 0, zoom: 1 }, intent: 'free-build', mode: 'design', selectedId: null, activeScenarioId: null };
+      return { devices: [], cables: [], viewport: { x: 0, y: 0, zoom: 1 }, intent: 'free-build', mode: 'design', selectedId: null, activeScenarioId: null, priorIntent: null, activeWalkthroughId: null, walkStepIdx: 0, walkMode: '2d', walkCardAnchor: null };
     }
   }
 
@@ -569,6 +585,27 @@
       }
     }
     return { complete: failures.length === 0, failures: failures };
+  }
+
+  // ── Exam domain lookup ───────────────────────────────────────────
+  const _TB_V3_EXAM_DOMAINS = {
+    '1': 'Networking Concepts',
+    '2': 'Network Implementation',
+    '3': 'Network Operations',
+    '4': 'Network Security',
+    '5': 'Network Troubleshooting',
+  };
+
+  function domainsForRefs(objectiveRefs) {
+    if (!Array.isArray(objectiveRefs) || objectiveRefs.length === 0) {
+      return ['Other'];
+    }
+    return [...new Set(
+      objectiveRefs.map(r => {
+        const major = String(r).split('.')[0];
+        return _TB_V3_EXAM_DOMAINS[major] || 'Other';
+      })
+    )];
   }
 
   // ───────────────────────────────────────────────────────────
@@ -2531,6 +2568,18 @@
     _updateSaveIndicator('saving');
   }
 
+  // Immediate (non-debounced) flush — used by walkthrough state changes
+  // where a reload between steps must always rehydrate the latest step.
+  function _saveStateImmediate() {
+    if (_saveTimer) { clearTimeout(_saveTimer); _saveTimer = null; }
+    try {
+      localStorage.setItem(STORAGE.TB_V3_DRAFT, serialiseState(state));
+      _updateSaveIndicator('saved');
+    } catch (e) {
+      _updateSaveIndicator('error');
+    }
+  }
+
   function _updateSaveIndicator(status) {
     var el = document.getElementById('tb3-status-save');
     if (!el) return;
@@ -2551,6 +2600,25 @@
       var json = localStorage.getItem(STORAGE.TB_V3_DRAFT);
       if (json) {
         state = parseState(json);
+        // ── Walkthrough auto-resume (Phase 8) ──
+        if (state.activeWalkthroughId) {
+          var walk = TB_V3_WALKTHROUGHS.find(function (w) { return w.id === state.activeWalkthroughId; });
+          if (walk && walk.steps && walk.steps.length > 0) {
+            // Clamp stepIdx in case content was trimmed since last visit
+            state.walkStepIdx = Math.min(state.walkStepIdx || 0, walk.steps.length - 1);
+            state.intent = 'walk';
+            // Defer until after layout — runStep + markCardAsResumed need DOM
+            requestAnimationFrame(function () {
+              runStep(walk.steps[state.walkStepIdx], state.walkMode);
+              markCardAsResumed();
+            });
+          } else {
+            // Stale walkthrough id OR empty steps — silently clear
+            state.activeWalkthroughId = null;
+            state.walkStepIdx = 0;
+            state.intent = state.priorIntent || 'free-build';
+          }
+        }
       }
     } catch (e) {
       // Silent — start fresh
@@ -4322,6 +4390,34 @@
     _renderModeBar();
   }
 
+  // ───────────────────────────────────────────────────────────
+  // WALK CATALOG (Follow-up #2 — sidebar trigger for walkthroughs)
+  // ───────────────────────────────────────────────────────────
+
+  function _openWalkCatalog() {
+    var body = document.getElementById('tb3-body');
+    if (!body) return;
+    // Mutual-exclusion sweep (same pattern as _openTrace)
+    body.classList.remove('picker-open');
+    body.classList.remove('inspector-open');
+    body.classList.remove('diagnostic-open');
+    body.classList.remove('simulate-open');
+    body.classList.remove('trace-open');
+    body.classList.remove('osi-open');
+    body.classList.add('walk-catalog-open');
+    state.mode = 'walk';
+    renderWalkCatalog();
+    _renderModeBar();
+  }
+
+  function _closeWalkCatalog() {
+    var body = document.getElementById('tb3-body');
+    if (!body) return;
+    body.classList.remove('walk-catalog-open');
+    state.mode = 'design';
+    _renderModeBar();
+  }
+
   function _openOSI(payload) {
     // OSI is a view-toggle on Trace per spec §3.1.
     // If already in trace/osi mode, preserve _traceState (mid-trace toggle must
@@ -4353,14 +4449,16 @@
   function _apply3DCamera() {
     var stage = document.getElementById('tb3-3d-popup-stage');
     if (!stage) return;
+    var cam = _3dPopup.camera;
     stage.style.transform =
-      'rotateX(' + _3dPopup.camera.rotX + 'deg) ' +
-      'rotateY(' + _3dPopup.camera.rotY + 'deg) ' +
-      'scale(' + _3dPopup.camera.zoom + ')';
+      'translate3d(' + (cam.panX || 0) + 'px, ' + (cam.panY || 0) + 'px, 0) ' +
+      'rotateX(' + cam.rotX + 'deg) ' +
+      'rotateY(' + cam.rotY + 'deg) ' +
+      'scale(' + cam.zoom + ')';
 
     // Stage 3: counter-rotate labels so they stay camera-facing
     var labels = stage.querySelectorAll('.tb3-3d-dev-label-below');
-    var counterTransform = 'translateX(-50%) rotateX(' + (-_3dPopup.camera.rotX) + 'deg) rotateY(' + (-_3dPopup.camera.rotY) + 'deg)';
+    var counterTransform = 'translateX(-50%) rotateX(' + (-cam.rotX) + 'deg) rotateY(' + (-cam.rotY) + 'deg)';
     for (var i = 0; i < labels.length; i++) {
       labels[i].style.transform = counterTransform;
     }
@@ -6668,6 +6766,7 @@
       { id: 'design',   label: 'Design',   icon: '<svg viewBox="0 0 24 24" class="tb3-mode-ic" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>',           locked: false },
       { id: 'simulate', label: 'Simulate', icon: '<svg viewBox="0 0 24 24" class="tb3-mode-ic" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M5 12h14M12 5v14"/></svg>' },
       { id: 'trace',    label: 'Trace',    icon: '<svg viewBox="0 0 24 24" class="tb3-mode-ic" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 12c4 0 4-7 8-7s4 14 8 14"/></svg>' },
+      { id: 'walk',     label: 'Walk',     icon: '<svg viewBox="0 0 24 24" class="tb3-mode-ic" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M9 4l-2 5 3 4-1 7M14 2l-1 6 3 2-2 4 3 6"/><circle cx="14" cy="2" r="1.5"/></svg>' },
       { id: 'osi',      label: 'OSI',      icon: '<svg viewBox="0 0 24 24" class="tb3-mode-ic" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 6h18M3 10h18M3 14h18M3 18h18"/></svg>' },
       { id: '3d',       label: '3D',       icon: '<svg viewBox="0 0 24 24" class="tb3-mode-ic" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>',                                                                                                       locked: false },
     ];
@@ -6688,6 +6787,10 @@
         }
         if (mode === 'trace') {
           _openTrace();
+          return;
+        }
+        if (mode === 'walk') {
+          _openWalkCatalog();
           return;
         }
         if (mode === 'osi') {
@@ -6786,6 +6889,23 @@
     checkCompletion: checkCompletion,
     backupFreeBuild: backupFreeBuild,
     restoreFreeBuild: restoreFreeBuild,
+    // Walkthroughs (Phase 8)
+    TB_V3_WALKTHROUGHS: (typeof TB_V3_WALKTHROUGHS !== 'undefined' ? TB_V3_WALKTHROUGHS : []),
+    walkStart: walkStart,
+    walkNext: walkNext,
+    walkBack: walkBack,
+    walkExit: walkExit,
+    walkComplete: walkComplete,
+    renderWalkCatalog: renderWalkCatalog,
+    _openWalkCatalog: _openWalkCatalog,
+    _closeWalkCatalog: _closeWalkCatalog,
+    showCompletionCard: showCompletionCard,
+    // Walkthrough internals (for tests)
+    domainsForRefs: domainsForRefs,
+    resolveTarget: resolveTarget,
+    targetExists: targetExists,
+    _walkBadgeFor: _walkBadgeFor,
+    _walksPillText: _walksPillText,
     // State access (for tests)
     _getState: function () { return state; },
     _setState: function (s) { state = s; },
@@ -6828,6 +6948,951 @@
       _traceState.dstId = dstId;
     },
   };
+
+  // ════════════════════════════════════════════════════════════════════
+  // TB v3 Walkthrough — runner lifecycle (Phase 8)
+  // state.intent union: 'free-build' | 'lab' | 'pbq' | 'walk'
+  // ════════════════════════════════════════════════════════════════════
+
+  // ── Walkthrough render primitives (Phase 8) ──
+  // Replaces Task 4 stubs.
+
+  function resolveTarget(target) {
+    if (!target) return { devices: [], cables: [] };
+    switch (target.kind) {
+      case 'device':  return { devices: [target.id], cables: [] };
+      case 'devices': return { devices: target.ids.slice(), cables: [] };
+      case 'cable':   return { devices: [], cables: [[target.deviceA, target.deviceB]] };
+      default:        return { devices: [], cables: [] };
+    }
+  }
+
+  function targetExists(target) {
+    var resolved = resolveTarget(target);
+    var deviceIds = {};
+    for (var i = 0; i < state.devices.length; i++) deviceIds[state.devices[i].id] = true;
+    for (var j = 0; j < resolved.devices.length; j++) {
+      if (!deviceIds[resolved.devices[j]]) return false;
+    }
+    for (var k = 0; k < resolved.cables.length; k++) {
+      var a = resolved.cables[k][0], b = resolved.cables[k][1];
+      if (!deviceIds[a] || !deviceIds[b]) return false;
+      var found = state.cables.find(function (c) {
+        return (c.fromId === a && c.toId === b) || (c.fromId === b && c.toId === a);
+      });
+      if (!found) return false;
+    }
+    return true;
+  }
+
+  function _fadeCardThroughStepChange(applyChanges) {
+    var card = document.querySelector('.tb3-walk-card');
+    var reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (!card || reduced) {
+      applyChanges();
+      return;
+    }
+    // Fade out to 0.4, swap content, fade back to 1
+    card.style.transition = 'opacity 140ms ease-out';
+    card.style.opacity = '0.4';
+    setTimeout(function () {
+      applyChanges();
+      card.style.opacity = '1';
+      // Restore position transition for the next step's anchor move
+      requestAnimationFrame(function () {
+        card.style.transition = '';
+      });
+    }, 140);
+  }
+
+  function runStep(step, mode) {
+    if (!step) return;
+    clearEffects(mode);
+    _fadeCardThroughStepChange(function () {
+      renderStepCard(step);
+      switch (step.type) {
+        case 'narrate':
+          anchorStepCardToViewportCenter();
+          break;
+        case 'highlight':
+          if (!targetExists(step.target)) {
+            console.warn('[walk] missing target for step', step.id, step.target);
+            anchorStepCardToViewportCenter();
+            break;
+          }
+          applyHighlight(step.target, mode);
+          anchorStepCardToTarget(step.target, mode);
+          break;
+        case 'flow':
+          // For flow steps, validate every device in the path
+          var flowDevices = [step.flow.from, step.flow.to].concat(step.flow.via || []);
+          if (!targetExists({ kind: 'devices', ids: flowDevices })) {
+            console.warn('[walk] missing devices for flow step', step.id, step.flow);
+            anchorStepCardToViewportCenter();
+            break;
+          }
+          animateFlow(step.flow, mode);
+          anchorStepCardToDevice(step.flow.from, mode);
+          break;
+        default:
+          console.warn('[walk] unknown step.type', step.type);
+      }
+    });
+  }
+
+  function clearEffects(mode) {
+    // Remove walk effect classes from any SVG/HTML elements
+    var pulsed = document.querySelectorAll('.tb3-walk-pulse, .tb3-walk-cable-pulse');
+    for (var i = 0; i < pulsed.length; i++) {
+      pulsed[i].classList.remove('tb3-walk-pulse', 'tb3-walk-cable-pulse');
+    }
+    // Remove any pellet sprites
+    var pellets = document.querySelectorAll('.tb3-walk-pellet, .tb3-walk-flow-arrow');
+    for (var j = 0; j < pellets.length; j++) {
+      pellets[j].parentNode && pellets[j].parentNode.removeChild(pellets[j]);
+    }
+    // 3D popup is CSS-3D + SVG (no Three.js). Reset stage translate added by
+    // _focusCameraOnDevice3D so user-set rotation/zoom remain intact.
+    if (mode === '3d') {
+      _clearWalkHighlight3D();
+    }
+  }
+
+  // Stubs for downstream tasks (replaced by Tasks 8/9/15/16/18)
+  function renderStepCard(step) {
+    var card = document.querySelector('.tb3-walk-card');
+    if (!card) {
+      card = document.createElement('div');
+      card.className = 'tb3-walk-card';
+      // Mount to whichever container matches the current mode
+      var host;
+      if (state.walkMode === '3d') {
+        host = document.getElementById('tb3-3d-popup-modal') || document.body;
+        card.classList.add('tb3-walk-card-in-popup');
+      } else {
+        host = document.getElementById('tb3-canvas-wrap') || document.body;
+      }
+      host.appendChild(card);
+    }
+
+    var walk = (typeof TB_V3_WALKTHROUGHS !== 'undefined' ? TB_V3_WALKTHROUGHS : [])
+      .find(function (w) { return w.id === state.activeWalkthroughId; });
+    if (!walk) return;
+    var idx = state.walkStepIdx;
+    var total = walk.steps.length;
+
+    var dotsHtml = '';
+    for (var i = 0; i < total; i++) {
+      var dotClass = 'tb3-walk-card-dot';
+      if (i < idx) dotClass += ' done';
+      else if (i === idx) dotClass += ' current';
+      dotsHtml += '<span class="' + dotClass + '"></span>';
+    }
+
+    var backDisabled = idx === 0 ? ' disabled' : '';
+    var nextLabel = idx === total - 1 ? 'Finish →' : 'Continue →';
+    var kindLabel = step.type.charAt(0).toUpperCase() + step.type.slice(1);
+
+    card.innerHTML =
+      '<div class="tb3-walk-card-exit-x" data-walk-exit>×</div>' +
+      '<div class="tb3-walk-card-progress">' + dotsHtml +
+        '<span class="tb3-walk-card-pos">' + (idx + 1) + ' / ' + total + '</span>' +
+      '</div>' +
+      '<div class="tb3-walk-card-kind">' + kindLabel + '</div>' +
+      '<div class="tb3-walk-card-title">' + _escAttr(step.title) + '</div>' +
+      '<div class="tb3-walk-card-body">' + _escAttr(step.body) + '</div>' +
+      '<div class="tb3-walk-card-controls">' +
+        '<div class="tb3-walk-card-btn tb3-walk-card-btn-back"' + backDisabled + ' data-walk-back>← Back</div>' +
+        '<div class="tb3-walk-card-btn tb3-walk-card-btn-next" data-walk-next>' + nextLabel + '</div>' +
+      '</div>';
+
+    // Wire buttons
+    var exitBtn = card.querySelector('[data-walk-exit]');
+    if (exitBtn) exitBtn.onclick = walkExit;
+    var nextBtn = card.querySelector('[data-walk-next]');
+    if (nextBtn) nextBtn.onclick = walkNext;
+    var backBtn = card.querySelector('[data-walk-back]');
+    if (backBtn && idx > 0) backBtn.onclick = walkBack;
+  }                                                              // Task 15
+  function anchorStepCardToViewportCenter() {
+    var card = document.querySelector('.tb3-walk-card');
+    if (!card) return;
+    var host = (state.walkMode === '3d')
+      ? document.getElementById('tb3-3d-popup-modal')
+      : document.getElementById('tb3-canvas-wrap');
+    if (!host) return;
+    var hostRect = host.getBoundingClientRect();
+    var cardRect = card.getBoundingClientRect();
+    card.style.left = Math.max(20, (hostRect.width - cardRect.width) / 2) + 'px';
+    card.style.top = '40px';
+    state.walkCardAnchor = null;
+  }
+
+  function anchorStepCardToTarget(target, mode) {
+    var resolved = resolveTarget(target);
+    if (resolved.devices.length > 0) {
+      anchorStepCardToDevice(resolved.devices[0], mode);
+    } else if (resolved.cables.length > 0) {
+      anchorStepCardToDevice(resolved.cables[0][0], mode);
+    } else {
+      anchorStepCardToViewportCenter();
+    }
+  }
+
+  function anchorStepCardToDevice(deviceId, mode) {
+    var card = document.querySelector('.tb3-walk-card');
+    if (!card) return;
+    var host = (mode === '3d')
+      ? document.getElementById('tb3-3d-popup-modal')
+      : document.getElementById('tb3-canvas-wrap');
+    if (!host) return;
+
+    var devEl = (mode === '3d')
+      ? document.querySelector('.tb3-3d-dev[data-device-id="' + deviceId + '"]')
+      : document.querySelector('.tb3-dev[data-device-id="' + deviceId + '"]');
+    if (!devEl) {
+      anchorStepCardToViewportCenter();
+      return;
+    }
+
+    var hostRect = host.getBoundingClientRect();
+    var devRect  = devEl.getBoundingClientRect();
+    var cardRect = card.getBoundingClientRect();
+
+    // Device center relative to host's top-left
+    var devCenter = {
+      x: devRect.left - hostRect.left + devRect.width / 2,
+      y: devRect.top - hostRect.top + devRect.height / 2,
+      width: devRect.width || 32,
+      height: devRect.height || 32,
+    };
+
+    var side = _pickAnchorSide(devCenter, { width: hostRect.width, height: hostRect.height }, cardRect);
+    var pos = _computeAnchorPosition(side, devCenter, cardRect);
+
+    card.style.left = pos.left + 'px';
+    card.style.top = pos.top + 'px';
+    state.walkCardAnchor = { deviceId: deviceId, side: pos.tailSide };
+  }
+
+  function _pickAnchorSide(devCenter, hostSize, cardRect) {
+    var sides = ['above-right', 'below-right', 'above-left', 'below-left', 'top-center'];
+    for (var i = 0; i < sides.length; i++) {
+      var pos = _computeAnchorPosition(sides[i], devCenter, cardRect);
+      if (
+        pos.left >= 4 &&
+        pos.top >= 4 &&
+        pos.left + cardRect.width <= hostSize.width - 4 &&
+        pos.top + cardRect.height <= hostSize.height - 4
+      ) {
+        return sides[i];
+      }
+    }
+    return 'top-center';
+  }
+
+  function _computeAnchorPosition(side, devCenter, cardRect) {
+    var margin = 24;
+    switch (side) {
+      case 'above-right':
+        return {
+          left: devCenter.x + devCenter.width / 2 + margin,
+          top:  devCenter.y - cardRect.height / 2,
+          tailSide: 'left',
+        };
+      case 'below-right':
+        return {
+          left: devCenter.x + devCenter.width / 2 + margin,
+          top:  devCenter.y + cardRect.height / 4,
+          tailSide: 'left',
+        };
+      case 'above-left':
+        return {
+          left: devCenter.x - devCenter.width / 2 - cardRect.width - margin,
+          top:  devCenter.y - cardRect.height / 2,
+          tailSide: 'right',
+        };
+      case 'below-left':
+        return {
+          left: devCenter.x - devCenter.width / 2 - cardRect.width - margin,
+          top:  devCenter.y + cardRect.height / 4,
+          tailSide: 'right',
+        };
+      case 'top-center':
+      default:
+        return { left: 40, top: 40, tailSide: 'bottom' };
+    }
+  }
+  function applyHighlight(target, mode) {
+    var resolved = resolveTarget(target);
+    if (mode === '2d') {
+      // Device pulses (SVG groups)
+      for (var i = 0; i < resolved.devices.length; i++) {
+        var el = document.querySelector('.tb3-dev[data-device-id="' + resolved.devices[i] + '"]');
+        if (el) el.classList.add('tb3-walk-pulse');
+      }
+      // Cable pulses (SVG paths) — look up cable.id by endpoints, then querySelector
+      for (var j = 0; j < resolved.cables.length; j++) {
+        var a = resolved.cables[j][0], b = resolved.cables[j][1];
+        var cbl = state.cables.find(function (c) {
+          return (c.fromId === a && c.toId === b) || (c.fromId === b && c.toId === a);
+        });
+        if (cbl) {
+          var cblEl = document.querySelector('.tb3-cable[data-cable-id="' + cbl.id + '"]');
+          if (cblEl) cblEl.classList.add('tb3-walk-cable-pulse');
+        }
+      }
+    } else if (mode === '3d') {
+      // 3D popup is CSS-3D + SVG. Same data-device-id / data-cable-id conventions
+      // as 2D, so the same tb3-walk-pulse / tb3-walk-cable-pulse classes apply
+      // (filter: drop-shadow works on both DOM divs and SVG paths).
+      for (var i3 = 0; i3 < resolved.devices.length; i3++) {
+        var el3 = document.querySelector('.tb3-3d-dev[data-device-id="' + resolved.devices[i3] + '"]');
+        if (el3) el3.classList.add('tb3-walk-pulse');
+      }
+      for (var j3 = 0; j3 < resolved.cables.length; j3++) {
+        var a3 = resolved.cables[j3][0], b3 = resolved.cables[j3][1];
+        var cbl3 = state.cables.find(function (c) {
+          return (c.fromId === a3 && c.toId === b3) || (c.fromId === b3 && c.toId === a3);
+        });
+        if (cbl3) {
+          var cblEl3 = document.querySelector('.tb3-3d-cable[data-cable-id="' + cbl3.id + '"]');
+          if (cblEl3) cblEl3.classList.add('tb3-walk-cable-pulse');
+        }
+      }
+      // Camera focus on single-device targets only (multi-device / cable groups
+      // don't trigger camera moves — keeps user-set rotation/zoom stable).
+      if (target && target.kind === 'device' && target.cameraIn3D !== 'none') {
+        _focusCameraOnDevice3D(target.id);
+      }
+    }
+  }
+
+  function _focusCameraOnDevice3D(deviceId) {
+    var stage = document.getElementById('tb3-3d-popup-stage');
+    if (!stage) return;
+    var devEl = document.querySelector('.tb3-3d-dev[data-device-id="' + deviceId + '"]');
+    if (!devEl) return;
+
+    // Reduced-motion: skip camera tween entirely so user view is undisturbed
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      return;
+    }
+
+    // Compute viewport center vs device center; tween panX/panY in the camera
+    // state so the focus offset survives subsequent user drag/zoom (every
+    // _apply3DCamera() call re-applies the translate3d before rotate/scale).
+    var viewport = document.getElementById('tb3-3d-popup-viewport') || stage.parentElement;
+    if (!viewport) return;
+    var vpRect = viewport.getBoundingClientRect();
+    var devRect = devEl.getBoundingClientRect();
+    var dx = (vpRect.left + vpRect.width / 2) - (devRect.left + devRect.width / 2);
+    var dy = (vpRect.top + vpRect.height / 2) - (devRect.top + devRect.height / 2);
+
+    // Delta is relative to the current camera pan, so repeated focuses chain
+    // correctly (target = where the device would sit after applying the new pan).
+    var startX = _3dPopup.camera.panX || 0;
+    var startY = _3dPopup.camera.panY || 0;
+    var targetX = startX + dx;
+    var targetY = startY + dy;
+
+    var startTime = performance.now();
+    var dur = 500;
+    function frame(t) {
+      var k = Math.min((t - startTime) / dur, 1);
+      var ease = 1 - Math.pow(1 - k, 3); // ease-out cubic
+      _3dPopup.camera.panX = startX + (targetX - startX) * ease;
+      _3dPopup.camera.panY = startY + (targetY - startY) * ease;
+      _apply3DCamera();
+      if (k < 1) requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
+  }
+
+  function _clearWalkHighlight3D() {
+    // Remove walk classes from 3D popup elements (defensive — clearEffects
+    // already strips by class globally, but this is the explicit 3D-scoped path).
+    var devs = document.querySelectorAll('.tb3-3d-dev.tb3-walk-pulse');
+    for (var i = 0; i < devs.length; i++) devs[i].classList.remove('tb3-walk-pulse');
+    var cbls = document.querySelectorAll('.tb3-3d-cable.tb3-walk-cable-pulse');
+    for (var j = 0; j < cbls.length; j++) cbls[j].classList.remove('tb3-walk-cable-pulse');
+    // Remove walk-spawned 3D SVG packets (Task 11).
+    var walkPackets = document.querySelectorAll('.tb3-walk-3d-packet');
+    for (var k = 0; k < walkPackets.length; k++) {
+      walkPackets[k].parentNode && walkPackets[k].parentNode.removeChild(walkPackets[k]);
+    }
+    // Reset camera pan (was set by _focusCameraOnDevice3D); preserves rotX/rotY/zoom.
+    if (_3dPopup.camera.panX !== 0 || _3dPopup.camera.panY !== 0) {
+      _3dPopup.camera.panX = 0;
+      _3dPopup.camera.panY = 0;
+      _apply3DCamera();
+    }
+  }
+  function animateFlow(flow, mode) {
+    if (mode === '2d') {
+      _animateFlow2D(flow);
+    } else {
+      _animateFlow3D(flow);  // Task 11 — currently no-op stub
+    }
+  }
+
+  function _animateFlow2D(flow) {
+    // Spawns SVG <circle class="tb3-walk-pellet"> elements that travel along
+    // the device path (via _spawnPellet2D, which uses createElementNS).
+    var path = [flow.from].concat(flow.via || []).concat([flow.to]);
+    var svg = document.getElementById('tb3-canvas-svg');
+    if (!svg) return;
+
+    // Reduced-motion fallback
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      _renderFlowArrowStatic2D(path, svg);
+      return;
+    }
+
+    // Build segments: pairs of consecutive devices in the path
+    var segments = [];
+    for (var i = 0; i < path.length - 1; i++) {
+      segments.push([path[i], path[i + 1]]);
+    }
+    var speed = flow.speed === 'slow' ? 4000 : (flow.speed === 'fast' ? 1600 : 2600);
+    var forwardBack = flow.direction === 'forward-back';
+
+    // Spawn 3 pellets, staggered
+    for (var p = 0; p < 3; p++) {
+      setTimeout(function () { _spawnPellet2D(svg, segments, speed, forwardBack); }, p * 600);
+    }
+  }
+
+  function _spawnPellet2D(svg, segments, speed, forwardBack) {
+    var pellet = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    pellet.setAttribute('class', 'tb3-walk-pellet');
+    pellet.setAttribute('r', '5');
+    svg.appendChild(pellet);
+
+    var segMs = speed / Math.max(segments.length, 1);
+    var segIdx = 0;
+    var reversing = false;
+    var startTime = null;
+    var startPos = null;
+    var endPos = null;
+
+    function devicePos(id) {
+      var d = state.devices.find(function (dv) { return dv.id === id; });
+      return d ? { x: d.x, y: d.y } : null;
+    }
+
+    function setSegment() {
+      var seg = segments[segIdx];
+      if (!seg) return false;
+      startPos = devicePos(reversing ? seg[1] : seg[0]);
+      endPos   = devicePos(reversing ? seg[0] : seg[1]);
+      if (!startPos || !endPos) return false;
+      startTime = performance.now();
+      return true;
+    }
+
+    function frame(t) {
+      if (startTime === null) {
+        if (!setSegment()) { pellet.remove(); return; }
+      }
+      var k = Math.min((t - startTime) / segMs, 1);
+      var cx = startPos.x + (endPos.x - startPos.x) * k;
+      var cy = startPos.y + (endPos.y - startPos.y) * k;
+      pellet.setAttribute('cx', cx);
+      pellet.setAttribute('cy', cy);
+      if (k >= 1) {
+        segIdx += 1;
+        if (segIdx >= segments.length) {
+          if (forwardBack && !reversing) {
+            reversing = true;
+            segIdx = 0;
+            startTime = null;
+          } else {
+            pellet.remove();
+            return;
+          }
+        } else {
+          startTime = null;
+        }
+      }
+      requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
+  }
+
+  function _renderFlowArrowStatic2D(path, svg) {
+    // For reduced motion: render a simple SVG <text> with arrow labels
+    var labels = path.map(function (id) {
+      var d = state.devices.find(function (dv) { return dv.id === id; });
+      return d ? (d.label || d.type || id) : id;
+    }).join(' → ');
+    var fromDev = state.devices.find(function (dv) { return dv.id === path[0]; });
+    if (!fromDev) return;
+    var text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    text.setAttribute('class', 'tb3-walk-flow-arrow');
+    text.setAttribute('x', fromDev.x);
+    text.setAttribute('y', fromDev.y - 30);
+    text.setAttribute('fill', '#f0c789');
+    text.textContent = labels;
+    svg.appendChild(text);
+  }
+
+  function _animateFlow3D(flow) {
+    // Spawns .tb3-walk-3d-packet SVGs (animateMotion-driven) per segment via _spawnWalkPacket3D.
+    var path = [flow.from].concat(flow.via || []).concat([flow.to]);
+    var stage = document.getElementById('tb3-3d-popup-stage');
+    if (!stage) return;
+
+    // Reduced motion: skip animation entirely (CSS also hides the class)
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      return;
+    }
+
+    var speed = flow.speed === 'slow' ? '4s' : (flow.speed === 'fast' ? '1.6s' : '2.6s');
+    var forwardBack = flow.direction === 'forward-back';
+
+    // Match centroid offset used by _buildAmbientPacketEl / _build3DDeviceEl / _build3DCableEl
+    var centroid = _computeSceneCentroid(state.devices);
+
+    // For each segment (from → to), find the cable + spawn an SVG packet that animates along it
+    for (var i = 0; i < path.length - 1; i++) {
+      var fromId = path[i];
+      var toId = path[i + 1];
+      _spawnWalkPacket3D(stage, fromId, toId, speed, forwardBack, i * 0.4, centroid.cx, centroid.cy);
+    }
+  }
+
+  function _spawnWalkPacket3D(stage, fromId, toId, dur, forwardBack, delayS, sceneCx, sceneCy) {
+    sceneCx = sceneCx || 0;
+    sceneCy = sceneCy || 0;
+    var fromDev = state.devices.find(function (d) { return d.id === fromId; });
+    var toDev = state.devices.find(function (d) { return d.id === toId; });
+    if (!fromDev || !toDev) return;
+
+    // Match _buildAmbientPacketEl bezier formula: x = (dev.x - sceneCx) + 44, y = (dev.y - sceneCy) + 60
+    var x1 = (fromDev.x - sceneCx) + 44;
+    var y1 = (fromDev.y - sceneCy) + 60;
+    var x2 = (toDev.x - sceneCx) + 44;
+    var y2 = (toDev.y - sceneCy) + 60;
+    var sagY = Math.min(70, Math.max(20, Math.abs(x2 - x1) * 0.12));
+    var cy1 = y1 + sagY;
+    var cy2 = y2 + sagY;
+    var midX = (x1 + x2) / 2;
+
+    var minX = Math.min(x1, x2) - 20;
+    var minY = Math.min(y1, y2) - 4;
+    var maxX = Math.max(x1, x2) + 20;
+    var maxY = Math.max(y1, y2) + sagY + 8;
+    var w = maxX - minX;
+    var h = maxY - minY;
+
+    var px1 = x1 - minX, py1 = y1 - minY;
+    var px2 = x2 - minX, py2 = y2 - minY;
+    var cpX = midX - minX, pcy1 = cy1 - minY, pcy2 = cy2 - minY;
+    var pathStr = 'M' + px1 + ',' + py1 +
+                  ' C' + cpX + ',' + pcy1 + ' ' + cpX + ',' + pcy2 + ' ' + px2 + ',' + py2;
+    var pathId = 'tb3-walk-3d-path-' + fromId + '-' + toId + '-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8);
+
+    var svgNs = 'http://www.w3.org/2000/svg';
+    var svg = document.createElementNS(svgNs, 'svg');
+    svg.setAttribute('class', 'tb3-walk-3d-packet');
+    svg.setAttribute('width', String(w));
+    svg.setAttribute('height', String(h));
+    svg.setAttribute('viewBox', '0 0 ' + w + ' ' + h);
+    svg.style.left = minX + 'px';
+    svg.style.top = minY + 'px';
+    svg.style.transform = 'translateZ(1px)';  // sit above ambient packets
+    svg.style.overflow = 'visible';
+
+    var defs = document.createElementNS(svgNs, 'defs');
+    var pathEl = document.createElementNS(svgNs, 'path');
+    pathEl.setAttribute('id', pathId);
+    pathEl.setAttribute('d', pathStr);
+    pathEl.setAttribute('fill', 'none');
+    pathEl.setAttribute('stroke', 'none');
+    defs.appendChild(pathEl);
+    svg.appendChild(defs);
+
+    // 3 staggered larger packets (r=4 vs ambient r=2)
+    var stagger = [0, 0.4, 0.8];
+    for (var p = 0; p < 3; p++) {
+      var pkt = document.createElementNS(svgNs, 'circle');
+      pkt.setAttribute('r', '4');
+      var anim = document.createElementNS(svgNs, 'animateMotion');
+      anim.setAttribute('dur', dur);
+      anim.setAttribute('repeatCount', forwardBack ? '1' : 'indefinite');
+      anim.setAttribute('begin', (stagger[p] + delayS) + 's');
+      // For forward-back: alternate direction via keyPoints (forward then reverse)
+      if (forwardBack) {
+        anim.setAttribute('keyPoints', '0;1;0');
+        anim.setAttribute('keyTimes', '0;0.5;1');
+        anim.setAttribute('calcMode', 'linear');
+      }
+      var mpath = document.createElementNS(svgNs, 'mpath');
+      mpath.setAttribute('href', '#' + pathId);
+      anim.appendChild(mpath);
+      pkt.appendChild(anim);
+      svg.appendChild(pkt);
+    }
+    stage.appendChild(svg);
+  }
+
+  // Stubs for not-yet-implemented functions (later tasks replace these):
+  function hideStepCard() {
+    var card = document.querySelector('.tb3-walk-card');
+    if (card && card.parentNode) card.parentNode.removeChild(card);
+  }                                                   // Task 15
+  function showCompletionCard(walkthroughId) {
+    var walkList = (typeof TB_V3_WALKTHROUGHS !== 'undefined' ? TB_V3_WALKTHROUGHS : []);
+    var walk = walkList.find(function (w) { return w.id === walkthroughId; });
+    if (!walk) return;
+
+    var card = document.querySelector('.tb3-walk-card');
+    if (!card) return;
+
+    // Find sibling walks for the same scenario (excluding this one)
+    var siblings = walkList.filter(function (w) {
+      return w.scenarioId === walk.scenarioId && w.id !== walk.id;
+    });
+
+    var siblingMarkup = '';
+    if (siblings.length > 0) {
+      siblingMarkup += '<div class="tb3-walk-card-siblings-label">More for this topology</div>';
+      siblingMarkup += '<div class="tb3-walk-card-siblings">';
+      for (var i = 0; i < siblings.length; i++) {
+        var s = siblings[i];
+        siblingMarkup += '<div class="tb3-walk-card-sibling" data-walk-sibling="' + _escAttr(s.id) + '">' +
+                        '<span class="tb3-walk-lens-icon"></span>' +
+                        '<span>' + _escAttr(s.title) + '</span>' +
+                        '<span class="tb3-walk-card-sibling-meta">' + (s.durationMin || '?') + ' min</span>' +
+                        '</div>';
+      }
+      siblingMarkup += '</div>';
+    }
+
+    card.classList.add('tb3-walk-card-complete');
+    card.innerHTML =
+      '<div class="tb3-walk-card-complete-icon">✓</div>' +
+      '<div class="tb3-walk-card-complete-title">Walkthrough complete</div>' +
+      '<div class="tb3-walk-card-complete-sub">Saved to your progress.</div>' +
+      siblingMarkup +
+      '<div class="tb3-walk-card-controls">' +
+        '<div class="tb3-walk-card-btn tb3-walk-card-btn-back" data-walk-replay>↺ Replay</div>' +
+        '<div class="tb3-walk-card-btn tb3-walk-card-btn-next" data-walk-catalog>Catalog</div>' +
+      '</div>';
+
+    // Wire buttons
+    var replayBtn = card.querySelector('[data-walk-replay]');
+    if (replayBtn) {
+      replayBtn.onclick = function () {
+        state.walkStepIdx = 0;
+        card.classList.remove('tb3-walk-card-complete');
+        if (walk.steps && walk.steps.length > 0) runStep(walk.steps[0], state.walkMode);
+      };
+    }
+    var catalogBtn = card.querySelector('[data-walk-catalog]');
+    if (catalogBtn) catalogBtn.onclick = walkExit;
+
+    var siblingEls = card.querySelectorAll('[data-walk-sibling]');
+    for (var j = 0; j < siblingEls.length; j++) {
+      siblingEls[j].onclick = (function (id) {
+        return function () {
+          walkExit();
+          walkStart(id);
+        };
+      })(siblingEls[j].dataset.walkSibling);
+    }
+
+    // Anchor card to viewport center (no specific target for completion)
+    anchorStepCardToViewportCenter();
+  }
+  function renderWalkCatalog() {
+    var workspace = document.querySelector('.tb3-workspace');
+    if (!workspace) return;
+
+    // Get or create the panel
+    var panel = document.querySelector('.tb3-rail-panel[data-mode="walk-catalog"]');
+    if (!panel) {
+      panel = document.createElement('aside');
+      panel.className = 'tb3-rail-panel';
+      panel.dataset.mode = 'walk-catalog';
+      workspace.appendChild(panel);
+    }
+
+    // Group scenarios by primary exam domain (first objectiveRef)
+    // Only include scenarios that have at least one walkthrough
+    var _walkSrc = (typeof TB_V3_WALKTHROUGHS !== 'undefined' ? TB_V3_WALKTHROUGHS : []);
+    var groups = {};
+    for (var i = 0; i < TB_V3_SCENARIOS.length; i++) {
+      var scen = TB_V3_SCENARIOS[i];
+      var walks = _walkSrc.filter(function (w) { return w.scenarioId === scen.id; });
+      if (walks.length === 0) continue;
+      var primaryDomain = domainsForRefs(scen.objectiveRefs || [])[0];
+      groups[primaryDomain] = groups[primaryDomain] || [];
+      groups[primaryDomain].push({ scen: scen, walks: walks });
+    }
+
+    // Stable domain order
+    var domainOrder = [
+      'Networking Concepts',
+      'Network Implementation',
+      'Network Operations',
+      'Network Security',
+      'Network Troubleshooting',
+      'Other',
+    ];
+
+    var html = '<div class="tb3-walk-catalog-header">Walkthroughs</div>';
+    html += '<button type="button" class="tb3-walk-catalog-close" aria-label="Close walkthroughs">&times;</button>';
+
+    // Apply active/dim treatment + nested walkthroughs
+    var hasActive = !!state.activeScenarioId;
+
+    for (var d = 0; d < domainOrder.length; d++) {
+      var domain = domainOrder[d];
+      var items = groups[domain];
+      if (!items || items.length === 0) continue;
+
+      // Domain header dims if there's an active scenario AND no items in this domain are active
+      var domainHasActive = hasActive && items.some(function (it) { return it.scen.id === state.activeScenarioId; });
+      var domainDimClass = (hasActive && !domainHasActive) ? ' tb3-walk-dimmed' : '';
+
+      html += '<div class="tb3-walk-catalog-domain-h' + domainDimClass + '">' +
+              '<span>' + domain + '</span>' +
+              '<span class="tb3-walk-catalog-domain-count">' + items.length + '</span>' +
+              '</div>';
+
+      for (var k = 0; k < items.length; k++) {
+        var item = items[k];
+        var isActive = state.activeScenarioId === item.scen.id;
+        var isDimmed = hasActive && !isActive;
+        var rowClasses = 'tb3-walk-scen-row';
+        if (isActive) rowClasses += ' tb3-walk-scen-active';
+        if (isDimmed) rowClasses += ' tb3-walk-dimmed';
+
+        var pillInfo = _walksPillText(item.walks);
+        var pillClass = 'tb3-walk-walks-pill';
+        if (pillInfo.variant === 'complete') pillClass += ' tb3-walk-walks-pill-complete';
+        if (pillInfo.variant === 'partial')  pillClass += ' tb3-walk-walks-pill-partial';
+
+        html += '<div class="' + rowClasses + '" data-scenario-id="' + _escAttr(item.scen.id) + '">' +
+                '<span class="tb3-walk-scen-title">' + _escAttr(item.scen.title) + '</span>' +
+                '<span class="' + pillClass + '">' + pillInfo.text + '</span>' +
+                '<span class="tb3-walk-scen-chev">' + (isActive ? '▾' : '▸') + '</span>' +
+                '</div>';
+
+        // Nested walk rows under the active scenario
+        if (isActive && item.walks.length > 0) {
+          html += '<div class="tb3-walk-nest">';
+          for (var w = 0; w < item.walks.length; w++) {
+            var walk = item.walks[w];
+            var running = state.activeWalkthroughId === walk.id;
+            var badge = _walkBadgeFor(walk.id);
+            var rowClass = 'tb3-walk-row';
+            if (running) rowClass += ' tb3-walk-row-running';
+            if (badge.kind === 'done') rowClass += ' tb3-walk-row-done';
+
+            var badgeMarkup;
+            if (badge.kind === 'done') {
+              badgeMarkup = '<span class="tb3-walk-badge-done">✓</span>';
+            } else if (badge.kind === 'resume') {
+              badgeMarkup = '<span class="tb3-walk-badge-resume">▶</span>';
+            } else {
+              badgeMarkup = '<span class="tb3-walk-badge-blank"></span>';
+            }
+
+            var meta;
+            if (running) {
+              meta = '● Running';
+            } else if (badge.kind === 'resume') {
+              meta = 'Resume · step ' + (badge.stepIdx + 1) + ' / ' + walk.steps.length;
+            } else {
+              meta = (walk.durationMin || '?') + ' min';
+            }
+
+            html += '<div class="' + rowClass + '" data-walk-id="' + _escAttr(walk.id) + '">' +
+                    badgeMarkup +
+                    '<span class="tb3-walk-row-title">' + _escAttr(walk.title) + '</span>' +
+                    '<span class="tb3-walk-row-meta">' + meta + '</span>' +
+                    '</div>';
+          }
+          html += '</div>';
+        }
+      }
+    }
+
+    if (Object.keys(groups).length === 0) {
+      html += '<div style="padding:12px;font-size:11px;color:var(--tb3-text-dim);text-align:center">' +
+              'No walkthroughs available yet.</div>';
+    }
+
+    panel.innerHTML = html;
+
+    // Wire row clicks — scenario rows toggle focus-dim, walk rows start a walkthrough
+    var scenRows = panel.querySelectorAll('.tb3-walk-scen-row');
+    for (var r = 0; r < scenRows.length; r++) {
+      scenRows[r].addEventListener('click', _onCatalogRowClick);
+    }
+    var walkRows = panel.querySelectorAll('.tb3-walk-row');
+    for (var wr = 0; wr < walkRows.length; wr++) {
+      walkRows[wr].addEventListener('click', _onWalkRowClick);
+    }
+    var closeBtn = panel.querySelector('.tb3-walk-catalog-close');
+    if (closeBtn) closeBtn.addEventListener('click', _closeWalkCatalog);
+  }
+
+  function _onCatalogRowClick(ev) {
+    var row = ev.currentTarget;
+    var scenarioId = row.dataset.scenarioId;
+    if (!scenarioId) return;
+    // Toggle: clicking the active scenario again deactivates focus
+    if (state.activeScenarioId === scenarioId) {
+      state.activeScenarioId = null;
+    } else {
+      state.activeScenarioId = scenarioId;
+      var scenario = TB_V3_SCENARIOS.find(function (s) { return s.id === scenarioId; });
+      if (scenario && typeof loadScenarioOnCanvas === 'function') {
+        state = loadScenarioOnCanvas(state, scenario);
+      }
+    }
+    renderWalkCatalog();
+    if (typeof _saveStateImmediate === 'function') _saveStateImmediate();
+  }
+
+  function _onWalkRowClick(ev) {
+    var row = ev.currentTarget;
+    var walkthroughId = row.dataset.walkId;
+    if (!walkthroughId) return;
+    walkStart(walkthroughId);
+  }                     // Task 12
+  function markCardAsResumed() {
+    var card = document.querySelector('.tb3-walk-card');
+    if (!card) return;
+    if (card.querySelector('.tb3-walk-card-resume-link')) return;
+    var link = document.createElement('div');
+    link.className = 'tb3-walk-card-resume-link';
+    link.textContent = '↺ Restart from beginning';
+    link.onclick = function () {
+      state.walkStepIdx = 0;
+      if (typeof _saveStateImmediate === 'function') _saveStateImmediate();
+      var walk = (typeof TB_V3_WALKTHROUGHS !== 'undefined' ? TB_V3_WALKTHROUGHS : [])
+        .find(function (w) { return w.id === state.activeWalkthroughId; });
+      if (walk && walk.steps.length > 0) runStep(walk.steps[0], state.walkMode);
+    };
+    card.appendChild(link);
+  }                                                    // Task 15
+
+  function walkStart(walkthroughId) {
+    var walk = TB_V3_WALKTHROUGHS.find(function (w) { return w.id === walkthroughId; });
+    if (!walk) { console.warn('[walk] unknown walkthroughId', walkthroughId); return; }
+    // If the active scenario doesn't match, load it
+    if (state.activeScenarioId !== walk.scenarioId) {
+      var scenario = TB_V3_SCENARIOS.find(function (s) { return s.id === walk.scenarioId; });
+      if (scenario) loadScenarioOnCanvas(state, scenario);
+    }
+    state.priorIntent = state.intent;
+    state.intent = 'walk';
+    state.activeWalkthroughId = walkthroughId;
+    state.walkStepIdx = 0;
+    _saveStateImmediate();
+    if (walk.steps && walk.steps.length > 0) runStep(walk.steps[0], state.walkMode);
+    renderWalkCatalog();
+  }
+
+  function walkNext() {
+    if (!state.activeWalkthroughId) return;
+    var walk = TB_V3_WALKTHROUGHS.find(function (w) { return w.id === state.activeWalkthroughId; });
+    if (!walk) return;
+    if (state.walkStepIdx >= walk.steps.length - 1) {
+      walkComplete();
+      return;
+    }
+    state.walkStepIdx += 1;
+    _bumpProgress(state.activeWalkthroughId);
+    _saveStateImmediate();
+    runStep(walk.steps[state.walkStepIdx], state.walkMode);
+  }
+
+  function walkBack() {
+    if (!state.activeWalkthroughId || state.walkStepIdx <= 0) return;
+    state.walkStepIdx -= 1;
+    _saveStateImmediate();
+    var walk = TB_V3_WALKTHROUGHS.find(function (w) { return w.id === state.activeWalkthroughId; });
+    if (!walk) return;
+    runStep(walk.steps[state.walkStepIdx], state.walkMode);
+  }
+
+  function walkExit() {
+    if (!state.activeWalkthroughId) return;
+    clearEffects(state.walkMode);
+    hideStepCard();
+    state.intent = state.priorIntent || 'free-build';
+    state.activeWalkthroughId = null;
+    state.walkStepIdx = 0;
+    state.walkCardAnchor = null;
+    _saveStateImmediate();
+    renderWalkCatalog();
+  }
+
+  // Esc-to-exit walk (bind once)
+  if (typeof document !== 'undefined' && !window._tb3WalkEscBound) {
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && state.activeWalkthroughId) {
+        walkExit();
+      }
+    });
+    window._tb3WalkEscBound = true;
+  }
+
+  function walkComplete() {
+    var id = state.activeWalkthroughId;
+    if (!id) return;
+    var walk = TB_V3_WALKTHROUGHS.find(function (w) { return w.id === id; });
+    if (!walk) return;
+    var progress = _loadProgress();
+    progress[id] = progress[id] || { stepIdx: 0, completedAt: null, lastViewedAt: 0 };
+    progress[id].completedAt = Date.now();
+    progress[id].stepIdx = walk.steps.length - 1;
+    progress[id].lastViewedAt = Date.now();
+    localStorage.setItem(STORAGE.TB_V3_WALK_PROGRESS, JSON.stringify(progress));
+    showCompletionCard(id);
+    // Don't auto-exit — user clicks Replay or Catalog
+  }
+
+  function _loadProgress() {
+    try { return JSON.parse(localStorage.getItem(STORAGE.TB_V3_WALK_PROGRESS) || '{}'); }
+    catch (e) { return {}; }
+  }
+
+  function _bumpProgress(walkthroughId) {
+    var progress = _loadProgress();
+    progress[walkthroughId] = progress[walkthroughId] || { stepIdx: 0, completedAt: null, lastViewedAt: 0 };
+    progress[walkthroughId].stepIdx = state.walkStepIdx;
+    progress[walkthroughId].lastViewedAt = Date.now();
+    localStorage.setItem(STORAGE.TB_V3_WALK_PROGRESS, JSON.stringify(progress));
+  }
+
+  function _walkBadgeFor(walkthroughId) {
+    var progress = _loadProgress();
+    var entry = progress[walkthroughId];
+    if (!entry) return { kind: 'blank' };
+    if (entry.completedAt) return { kind: 'done' };
+    if (entry.stepIdx > 0) return { kind: 'resume', stepIdx: entry.stepIdx };
+    return { kind: 'blank' };
+  }
+
+  function _walksPillText(walks) {
+    var progress = _loadProgress();
+    var completed = walks.filter(function (w) {
+      return progress[w.id] && progress[w.id].completedAt;
+    }).length;
+    var anyTouched = walks.some(function (w) { return progress[w.id]; });
+    if (!anyTouched) {
+      return { text: walks.length + ' walk' + (walks.length === 1 ? '' : 's'), variant: 'default' };
+    }
+    var variant = completed === walks.length ? 'complete' : 'partial';
+    return { text: completed + ' / ' + walks.length + ' done', variant: variant };
+  }
 
   // Also expose openTopologyBuilderV3 directly on window for the sidebar handler
   window.openTopologyBuilderV3 = openTopologyBuilderV3;

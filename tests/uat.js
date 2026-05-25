@@ -44,6 +44,21 @@ const path = require('path');
 const ROOT = path.resolve(__dirname, '..');
 const read = (f) => fs.readFileSync(path.join(ROOT, f), 'utf8');
 
+// ── Reduced-motion test helper (added Phase 8) ──────────────────
+// Returns a fake matchMedia for behavioral tests that sandbox functions
+// reading `prefers-reduced-motion`. The fake responds to any query containing
+// "reduce" with the given value.
+function mockMatchMedia(reducedMotion) {
+  return function (query) {
+    return {
+      matches: typeof query === 'string' && query.indexOf('reduce') !== -1 && !!reducedMotion,
+      media: query,
+      addEventListener: function () {},
+      removeEventListener: function () {},
+    };
+  };
+}
+
 let html, js, css, sw, certNetplus, certSecplus, cloudStoreJs, authStateJs;
 try {
   html = read('index.html');
@@ -22833,7 +22848,7 @@ test('phase2: TB_V3_FREEBUILD_BACKUP does not collide with TB_V3_DRAFT', !/TB_V3
 
   // 6.2 Camera defaults updated
   test('STAGE6: _3dPopup camera defaults rotX:42 zoom:1.1',
-    /camera\s*:\s*\{\s*rotX\s*:\s*42\s*,\s*rotY\s*:\s*-18\s*,\s*zoom\s*:\s*1\.1\s*\}/.test(tbv3SrcS6)
+    /camera\s*:\s*\{\s*rotX\s*:\s*42\s*,\s*rotY\s*:\s*-18\s*,\s*zoom\s*:\s*1\.1\b/.test(tbv3SrcS6)
   );
   test('STAGE6: _on3DPopupDblClick reset targets use rotX 42 zoom 1.1',
     /targetRotX\s*=\s*42[\s\S]{0,100}targetZoom\s*=\s*1\.1/.test(tbv3SrcS6)
@@ -22915,6 +22930,702 @@ test('phase2: TB_V3_FREEBUILD_BACKUP does not collide with TB_V3_DRAFT', !/TB_V3
     /tb3-3d-popup-reset-btn[\s\S]{0,200}aria-label/.test(tbv3SrcPo)
   );
 })();
+
+// ════════════════════════════════════════════════════════════════════
+// TB v3 Walkthrough (Phase 8)
+// ════════════════════════════════════════════════════════════════════
+const tbV3JsForWalk = read('features/topology-builder-v3.js');
+
+test('TB v3 walk: domainsForRefs maps objectiveRefs to exam-domain names', (function () {
+  const constMatch = tbV3JsForWalk.match(/const _TB_V3_EXAM_DOMAINS = \{[\s\S]*?\};/);
+  const fnMatch = tbV3JsForWalk.match(/function domainsForRefs\([\s\S]*?\n  \}/);
+  if (!constMatch || !fnMatch) return false;
+  const fn = new Function(constMatch[0] + '\nreturn ' + fnMatch[0])();
+  const eq = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+  return eq(fn(['1.2']), ['Networking Concepts'])
+    && eq(fn(['4.1', '1.6']), ['Network Security', 'Networking Concepts'])
+    && eq(fn(['1.6', '1.8']), ['Networking Concepts'])
+    && eq(fn([]), ['Other'])
+    && eq(fn(null), ['Other'])
+    && eq(fn(['9.9']), ['Other']);
+})());
+
+test('TB v3 walk: walkthroughs file exists and exports array', (function () {
+  const walkJs = read('features/topology-builder-v3-walkthroughs.js');
+  return /var TB_V3_WALKTHROUGHS = \[/.test(walkJs);
+})());
+
+test('TB v3 walk: walkthroughs script tag is parser-friendly (no async / no module)', (function () {
+  const m = html.match(/<script[^>]*topology-builder-v3-walkthroughs\.js[^>]*><\/script>/);
+  return !!m && !/\basync\b|type=["']module/.test(m[0]);
+})());
+
+test('TB v3 walk: state declares activeWalkthroughId field', (function () {
+  return /activeWalkthroughId\s*:\s*null/.test(tbV3JsForWalk);
+})());
+
+test('TB v3 walk: state declares walkStepIdx field', (function () {
+  return /walkStepIdx\s*:\s*0/.test(tbV3JsForWalk);
+})());
+
+test('TB v3 walk: state declares walkMode field defaulting to 2d', (function () {
+  return /walkMode\s*:\s*['"]2d['"]/.test(tbV3JsForWalk);
+})());
+
+test('TB v3 walk: state declares walkCardAnchor field', (function () {
+  return /walkCardAnchor\s*:\s*null/.test(tbV3JsForWalk);
+})());
+
+test('TB v3 walk: state declares priorIntent field', (function () {
+  return /priorIntent\s*:\s*null/.test(tbV3JsForWalk);
+})());
+
+test('TB v3 walk: STORAGE adds TB_V3_WALK_PROGRESS key (registered in app.js)', (function () {
+  const appJs = read('app.js');
+  return /TB_V3_WALK_PROGRESS\s*:\s*['"]nplus_tb_v3_walk_progress/.test(appJs);
+})());
+
+test('TB v3 walk: walkStart, walkNext, walkBack, walkExit, walkComplete all defined', (function () {
+  return /function walkStart\(/.test(tbV3JsForWalk)
+      && /function walkNext\(/.test(tbV3JsForWalk)
+      && /function walkBack\(/.test(tbV3JsForWalk)
+      && /function walkExit\(/.test(tbV3JsForWalk)
+      && /function walkComplete\(/.test(tbV3JsForWalk);
+})());
+
+test('TB v3 walk: walkStart assigns intent="walk" and resets walkStepIdx', (function () {
+  var m = tbV3JsForWalk.match(/function walkStart\([\s\S]*?\n  \}/);
+  if (!m) return false;
+  var body = m[0];
+  return /intent\s*=\s*['"]walk['"]/.test(body)
+      && /walkStepIdx\s*=\s*0/.test(body)
+      && /activeWalkthroughId\s*=/.test(body);
+})());
+
+test('TB v3 walk: walkComplete writes completedAt to PROGRESS', (function () {
+  var m = tbV3JsForWalk.match(/function walkComplete\([\s\S]*?\n  \}/);
+  if (!m) return false;
+  return /completedAt\s*[:=]\s*Date\.now\(\)/.test(m[0]);
+})());
+
+test('TB v3 walk: _loadProgress + _bumpProgress helpers defined', (function () {
+  return /function _loadProgress\(/.test(tbV3JsForWalk)
+      && /function _bumpProgress\(/.test(tbV3JsForWalk);
+})());
+
+test('TB v3 walk: _loadState restores activeWalkthroughId from DRAFT', (function () {
+  var m = tbV3JsForWalk.match(/function _loadState[\s\S]*?\n  \}/);
+  if (!m) return false;
+  return /state\.activeWalkthroughId/.test(m[0])
+      && /requestAnimationFrame/.test(m[0]);
+})());
+
+test('TB v3 walk: _loadState clamps walkStepIdx via Math.min', (function () {
+  var m = tbV3JsForWalk.match(/function _loadState[\s\S]*?\n  \}/);
+  if (!m) return false;
+  return /Math\.min/.test(m[0]) && /walkStepIdx/.test(m[0]);
+})());
+
+test('TB v3 walk: markCardAsResumed stub defined', (function () {
+  return /function markCardAsResumed\(/.test(tbV3JsForWalk);
+})());
+
+test('TB v3 walk: runStep dispatches on step.type', (function () {
+  var m = tbV3JsForWalk.match(/function runStep\(step,\s*mode\)\s*\{[\s\S]*?\n  \}/);
+  if (!m) return false;
+  var body = m[0];
+  return /case ['"]narrate['"]/.test(body)
+      && /case ['"]highlight['"]/.test(body)
+      && /case ['"]flow['"]/.test(body);
+})());
+
+test('TB v3 walk: runStep calls renderStepCard before switch', (function () {
+  var m = tbV3JsForWalk.match(/function runStep\(step,\s*mode\)\s*\{[\s\S]*?\n  \}/);
+  if (!m) return false;
+  var body = m[0];
+  var renderIdx = body.indexOf('renderStepCard');
+  var switchIdx = body.indexOf('switch');
+  return renderIdx > -1 && switchIdx > -1 && renderIdx < switchIdx;
+})());
+
+test('TB v3 walk: runStep calls clearEffects before rendering', (function () {
+  var m = tbV3JsForWalk.match(/function runStep\(step,\s*mode\)\s*\{[\s\S]*?\n  \}/);
+  if (!m) return false;
+  var body = m[0];
+  var clearIdx = body.indexOf('clearEffects');
+  var renderIdx = body.indexOf('renderStepCard');
+  return clearIdx > -1 && renderIdx > -1 && clearIdx < renderIdx;
+})());
+
+test('TB v3 walk: clearEffects removes tb3-walk-pulse from SVG elements', (function () {
+  var m = tbV3JsForWalk.match(/function clearEffects\([\s\S]*?\n  \}/);
+  if (!m) return false;
+  return /tb3-walk-pulse/.test(m[0]) && /querySelectorAll/.test(m[0]);
+})());
+
+test('TB v3 walk: resolveTarget extracts deviceIds + cable pairs from each kind', (function () {
+  var m = tbV3JsForWalk.match(/function resolveTarget\(target\)\s*\{[\s\S]*?\n  \}/);
+  if (!m) return false;
+  var fn = new Function('return ' + m[0])();
+  var d1 = fn({ kind: 'device', id: 'rtr1' });
+  var d2 = fn({ kind: 'devices', ids: ['a', 'b'] });
+  var d3 = fn({ kind: 'cable', deviceA: 'a', deviceB: 'b' });
+  var d4 = fn(null);
+  return d1.devices.length === 1 && d1.devices[0] === 'rtr1' && d1.cables.length === 0
+      && d2.devices.length === 2 && d2.cables.length === 0
+      && d3.devices.length === 0 && d3.cables.length === 1
+        && d3.cables[0][0] === 'a' && d3.cables[0][1] === 'b'
+      && d4.devices.length === 0 && d4.cables.length === 0;
+})());
+
+test('TB v3 walk: targetExists helper defined', (function () {
+  return /function targetExists\(target\)/.test(tbV3JsForWalk);
+})());
+
+test('TB v3 walk: runStep falls back to narrate-style anchor when target is missing', (function () {
+  var m = tbV3JsForWalk.match(/function runStep\(step,\s*mode\)\s*\{[\s\S]*?\n  \}/);
+  if (!m) return false;
+  return /targetExists/.test(m[0]) && /anchorStepCardToViewportCenter/.test(m[0]);
+})());
+
+test('TB v3 walk: 2D applyHighlight adds tb3-walk-pulse to target SVG groups', (function () {
+  var m = tbV3JsForWalk.match(/function applyHighlight\(target,\s*mode\)\s*\{[\s\S]*?\n  \}/);
+  if (!m) return false;
+  var body = m[0];
+  return /tb3-walk-pulse/.test(body)
+      && /tb3-walk-cable-pulse/.test(body)
+      && /mode\s*===\s*['"]2d['"]/.test(body);
+})());
+
+test('TB v3 walk: CSS has pulse keyframes for SVG (filter or stroke)', (function () {
+  var tbCss = read('features/topology-builder-v3.css');
+  return /@keyframes\s+tb3-walk-pulse/.test(tbCss)
+      && /\.tb3-walk-pulse\b/.test(tbCss)
+      && /\.tb3-walk-cable-pulse\b/.test(tbCss);
+})());
+
+test('TB v3 walk: CSS has reduced-motion fallback for walk pulses', (function () {
+  var tbCss = read('features/topology-builder-v3.css');
+  return /@media\s*\(prefers-reduced-motion:\s*reduce\)[\s\S]*?\.tb3-walk-pulse/.test(tbCss);
+})());
+
+test('TB v3 walk: animateFlow 2D path defined and references flow.from / flow.to', (function () {
+  var m = tbV3JsForWalk.match(/function animateFlow\(flow,\s*mode\)\s*\{[\s\S]*?\n  \}/);
+  if (!m) return false;
+  var body = m[0];
+  return /mode\s*===\s*['"]2d['"]/.test(body)
+      && /_animateFlow2D/.test(body);
+})());
+
+test('TB v3 walk: _animateFlow2D creates SVG pellets via createElementNS', (function () {
+  var m = tbV3JsForWalk.match(/function _animateFlow2D\(flow\)\s*\{[\s\S]*?\n  \}/);
+  if (!m) return false;
+  var body = m[0];
+  return /createElementNS\(['"]http:\/\/www\.w3\.org\/2000\/svg['"]/.test(body)
+      || /tb3-walk-pellet/.test(body);  // accept either NS call here or in a spawn helper
+})());
+
+test('TB v3 walk: reduced-motion path renders a static arrow (no animation)', (function () {
+  return /_renderFlowArrowStatic2D/.test(tbV3JsForWalk)
+      && /prefers-reduced-motion:\s*reduce/.test(tbV3JsForWalk);
+})());
+
+test('TB v3 walk: CSS for pellet has reduced-motion arrow fallback', (function () {
+  var tbCss = read('features/topology-builder-v3.css');
+  return /\.tb3-walk-pellet\b/.test(tbCss)
+      && /@media\s*\(prefers-reduced-motion:\s*reduce\)[\s\S]*?tb3-walk-flow-arrow/.test(tbCss);
+})());
+
+test('TB v3 walk: applyHighlight has 3D branch', (function () {
+  var m = tbV3JsForWalk.match(/function applyHighlight\(target,\s*mode\)\s*\{[\s\S]*?\n  \}/);
+  if (!m) return false;
+  var body = m[0];
+  return /mode\s*===\s*['"]3d['"]/.test(body) && /tb3-3d-dev/.test(body);
+})());
+
+test('TB v3 walk: _focusCameraOnDevice3D helper exists', (function () {
+  return /function _focusCameraOnDevice3D\(/.test(tbV3JsForWalk);
+})());
+
+test('TB v3 walk: _focusCameraOnDevice3D animates the popup stage transform', (function () {
+  var m = tbV3JsForWalk.match(/function _focusCameraOnDevice3D[\s\S]*?\n  \}/);
+  if (!m) return false;
+  var body = m[0];
+  return /tb3-3d-popup-stage/.test(body) && /requestAnimationFrame/.test(body);
+})());
+
+test('TB v3 walk: _clearWalkHighlight3D removes walk classes from 3D popup', (function () {
+  return /function _clearWalkHighlight3D\(/.test(tbV3JsForWalk);
+})());
+
+test('TB v3 walk: clearEffects calls _clearWalkHighlight3D when mode is 3d', (function () {
+  var m = tbV3JsForWalk.match(/function clearEffects\([\s\S]*?\n  \}/);
+  if (!m) return false;
+  return /_clearWalkHighlight3D/.test(m[0]);
+})());
+
+test('TB v3 walk: _animateFlow3D defined and spawns SVG packets', (function () {
+  var m = tbV3JsForWalk.match(/function _animateFlow3D\(flow\)\s*\{[\s\S]*?\n  \}/);
+  if (!m) return false;
+  var body = m[0];
+  return /animateMotion/.test(body)
+      || /tb3-walk-3d-packet/.test(body);
+})());
+
+test('TB v3 walk: 3D flow path includes from + via + to', (function () {
+  var m = tbV3JsForWalk.match(/function _animateFlow3D\(flow\)\s*\{[\s\S]*?\n  \}/);
+  if (!m) return false;
+  var body = m[0];
+  return /flow\.from/.test(body) && /flow\.to/.test(body) && /flow\.via/.test(body);
+})());
+
+test('TB v3 walk: 3D flow has reduced-motion CSS gate', (function () {
+  var tbCss = read('features/topology-builder-v3.css');
+  return /\.tb3-walk-3d-packet\b/.test(tbCss)
+      && /@media\s*\(prefers-reduced-motion:\s*reduce\)[\s\S]*?tb3-walk-3d-packet/.test(tbCss);
+})());
+
+test('TB v3 walk: renderWalkCatalog builds tb3-rail-panel with data-mode="walk-catalog"', (function () {
+  var m = tbV3JsForWalk.match(/function renderWalkCatalog\([\s\S]*?\n  \}/);
+  if (!m) return false;
+  var body = m[0];
+  return /tb3-rail-panel/.test(body)
+      && /walk-catalog/.test(body);
+})());
+
+test('TB v3 walk: renderWalkCatalog groups by exam domain via domainsForRefs', (function () {
+  var m = tbV3JsForWalk.match(/function renderWalkCatalog\([\s\S]*?\n  \}/);
+  if (!m) return false;
+  return /domainsForRefs/.test(m[0]);
+})());
+
+test('TB v3 walk: renderWalkCatalog only lists scenarios with walks', (function () {
+  var m = tbV3JsForWalk.match(/function renderWalkCatalog\([\s\S]*?\n  \}/);
+  if (!m) return false;
+  var body = m[0];
+  return /TB_V3_WALKTHROUGHS/.test(body) && /scenarioId/.test(body);
+})());
+
+test('TB v3 walk: catalog CSS has domain header + scenario row + walks-pill styles', (function () {
+  var tbCss = read('features/topology-builder-v3.css');
+  return /\.tb3-walk-catalog-domain-h\b/.test(tbCss)
+      && /\.tb3-walk-scen-row\b/.test(tbCss)
+      && /\.tb3-walk-walks-pill\b/.test(tbCss);
+})());
+
+test('TB v3 walk: catalog row gets tb3-walk-scen-active class when activeScenarioId matches', (function () {
+  var m = tbV3JsForWalk.match(/function renderWalkCatalog\([\s\S]*?\n  \}/);
+  if (!m) return false;
+  return /tb3-walk-scen-active/.test(m[0]);
+})());
+
+test('TB v3 walk: catalog dims other rows when one is active', (function () {
+  var m = tbV3JsForWalk.match(/function renderWalkCatalog\([\s\S]*?\n  \}/);
+  if (!m) return false;
+  return /tb3-walk-dimmed/.test(m[0]);
+})());
+
+test('TB v3 walk: catalog renders nested walk rows under active scenario', (function () {
+  var m = tbV3JsForWalk.match(/function renderWalkCatalog\([\s\S]*?\n  \}/);
+  if (!m) return false;
+  return /tb3-walk-nest/.test(m[0]) && /tb3-walk-row/.test(m[0]);
+})());
+
+test('TB v3 walk: catalog walk-row click invokes walkStart', (function () {
+  return /function _onWalkRowClick/.test(tbV3JsForWalk)
+      && /walkStart\(/.test(tbV3JsForWalk);
+})());
+
+test('TB v3 walk: CSS has active + dimmed + nest styles', (function () {
+  var tbCss = read('features/topology-builder-v3.css');
+  return /\.tb3-walk-scen-active\b/.test(tbCss)
+      && /\.tb3-walk-dimmed\b/.test(tbCss)
+      && /\.tb3-walk-nest\b/.test(tbCss)
+      && /\.tb3-walk-row\b/.test(tbCss);
+})());
+
+test('TB v3 walk: _walkBadgeFor helper defined', (function () {
+  return /function _walkBadgeFor\(walkthroughId\)/.test(tbV3JsForWalk);
+})());
+
+test('TB v3 walk: _walksPillText returns done/total when any progress', (function () {
+  var m = tbV3JsForWalk.match(/function _walksPillText\([\s\S]*?\n  \}/);
+  if (!m) return false;
+  return /completedAt/.test(m[0]) && /\/.+walks\.length|walks\.length.+\//.test(m[0]);
+})());
+
+test('TB v3 walk: catalog walk row includes badge markup', (function () {
+  var m = tbV3JsForWalk.match(/function renderWalkCatalog\([\s\S]*?\n  \}/);
+  if (!m) return false;
+  return /tb3-walk-badge/.test(m[0]);
+})());
+
+test('TB v3 walk: CSS has done + resume + blank badge styles + complete pill', (function () {
+  var tbCss = read('features/topology-builder-v3.css');
+  return /\.tb3-walk-badge-done\b/.test(tbCss)
+      && /\.tb3-walk-badge-resume\b/.test(tbCss)
+      && /\.tb3-walk-badge-blank\b/.test(tbCss)
+      && /\.tb3-walk-walks-pill-complete\b/.test(tbCss);
+})());
+
+test('TB v3 walk: renderStepCard creates .tb3-walk-card element', (function () {
+  var m = tbV3JsForWalk.match(/function renderStepCard\(step\)[\s\S]*?\n  \}/);
+  if (!m) return false;
+  var body = m[0];
+  return /tb3-walk-card/.test(body)
+      && /step\.title/.test(body)
+      && /step\.body/.test(body);
+})());
+
+test('TB v3 walk: hideStepCard removes the card', (function () {
+  var m = tbV3JsForWalk.match(/function hideStepCard\(\)[\s\S]*?\n  \}/);
+  if (!m) return false;
+  return /remove/.test(m[0]) || /removeChild/.test(m[0]);
+})());
+
+test('TB v3 walk: markCardAsResumed adds resume link', (function () {
+  var m = tbV3JsForWalk.match(/function markCardAsResumed\(\)[\s\S]*?\n  \}/);
+  if (!m) return false;
+  return /tb3-walk-card-resume-link|Restart/.test(m[0]);
+})());
+
+test('TB v3 walk: card CSS has z-index 105 (2D) and popup variant has z-index 8', (function () {
+  var tbCss = read('features/topology-builder-v3.css');
+  return /\.tb3-walk-card\s*\{[\s\S]*z-index:\s*105/.test(tbCss)
+      && /tb3-walk-card-in-popup[\s\S]*z-index:\s*8/.test(tbCss);
+})());
+
+test('TB v3 walk: Esc keydown handler wired to walkExit', (function () {
+  return /['"]Escape['"][\s\S]{0,200}walkExit/.test(tbV3JsForWalk)
+      || /walkExit[\s\S]{0,200}['"]Escape['"]/.test(tbV3JsForWalk);
+})());
+
+test('TB v3 walk: anchor functions defined (target, device, viewportCenter)', (function () {
+  return /function anchorStepCardToTarget\(target,\s*mode\)/.test(tbV3JsForWalk)
+      && /function anchorStepCardToDevice\(deviceId,\s*mode\)/.test(tbV3JsForWalk)
+      && /function anchorStepCardToViewportCenter\(\)/.test(tbV3JsForWalk);
+})());
+
+test('TB v3 walk: _pickAnchorSide considers fallback order above-right → below-right → above-left → below-left → top-center', (function () {
+  var m = tbV3JsForWalk.match(/function _pickAnchorSide[\s\S]*?\n  \}/);
+  if (!m) return false;
+  var body = m[0];
+  var sides = ['above-right', 'below-right', 'above-left', 'below-left', 'top-center'];
+  return sides.every(function (s) { return body.includes("'" + s + "'") || body.includes('"' + s + '"'); });
+})());
+
+test('TB v3 walk: anchorStepCardToDevice uses getBoundingClientRect', (function () {
+  var m = tbV3JsForWalk.match(/function anchorStepCardToDevice[\s\S]*?\n  \}/);
+  if (!m) return false;
+  return /getBoundingClientRect/.test(m[0]);
+})());
+
+test('TB v3 walk: _computeAnchorPosition function exists', (function () {
+  return /function _computeAnchorPosition/.test(tbV3JsForWalk);
+})());
+
+test('TB v3 walk: _fadeCardThroughStepChange helper defined', (function () {
+  return /function _fadeCardThroughStepChange/.test(tbV3JsForWalk);
+})());
+
+test('TB v3 walk: fade-through uses 0.4 opacity midpoint', (function () {
+  var m = tbV3JsForWalk.match(/function _fadeCardThroughStepChange[\s\S]*?\n  \}/);
+  if (!m) return false;
+  return /opacity.*0\.4|0\.4.*opacity/.test(m[0]);
+})());
+
+test('TB v3 walk: runStep wraps renderStepCard in _fadeCardThroughStepChange', (function () {
+  var m = tbV3JsForWalk.match(/function runStep\(step,\s*mode\)\s*\{[\s\S]*?\n  \}/);
+  if (!m) return false;
+  return /_fadeCardThroughStepChange/.test(m[0]);
+})());
+
+test('TB v3 walk: fade-through respects prefers-reduced-motion', (function () {
+  var m = tbV3JsForWalk.match(/function _fadeCardThroughStepChange[\s\S]*?\n  \}/);
+  if (!m) return false;
+  return /prefers-reduced-motion/.test(m[0]) || /matchMedia/.test(m[0]);
+})());
+
+test('TB v3 walk: showCompletionCard renders Walkthrough complete text', (function () {
+  var m = tbV3JsForWalk.match(/function showCompletionCard\(walkthroughId\)[\s\S]*?\n  \}/);
+  if (!m) return false;
+  var body = m[0];
+  return /Walkthrough complete/.test(body)
+      && /Replay/.test(body)
+      && /Catalog/.test(body);
+})());
+
+test('TB v3 walk: showCompletionCard surfaces sibling walkthroughs', (function () {
+  var m = tbV3JsForWalk.match(/function showCompletionCard[\s\S]*?\n  \}/);
+  if (!m) return false;
+  return /sibling|scenarioId/.test(m[0]) && /TB_V3_WALKTHROUGHS/.test(m[0]);
+})());
+
+test('TB v3 walk: completion CSS has tb3-walk-card-complete styles', (function () {
+  var tbCss = read('features/topology-builder-v3.css');
+  return /\.tb3-walk-card-complete\b/.test(tbCss)
+      && /\.tb3-walk-card-complete-icon\b/.test(tbCss);
+})());
+
+test('TB v3 walk: home-network-comms walkthrough exists with 6 steps', (function () {
+  var walkJs = read('features/topology-builder-v3-walkthroughs.js');
+  var arrMatch = walkJs.match(/var TB_V3_WALKTHROUGHS = (\[[\s\S]*\]);/);
+  if (!arrMatch) return false;
+  var walks = new Function('return ' + arrMatch[1])();
+  var walk = walks.find(function (w) { return w.id === 'home-network-comms'; });
+  if (!walk) return false;
+  return walk.scenarioId === 'home-network'
+    && walk.steps.length === 6
+    && walk.steps.every(function (s) { return s.id && s.type && s.title && s.body; });
+})());
+
+test('TB v3 walk: home-network-comms steps reference valid device IDs', (function () {
+  var walkJs = read('features/topology-builder-v3-walkthroughs.js');
+  var tbJs = read('features/topology-builder-v3.js');
+  var arrMatch = walkJs.match(/var TB_V3_WALKTHROUGHS = (\[[\s\S]*\]);/);
+  if (!arrMatch) return false;
+  var walks = new Function('return ' + arrMatch[1])();
+  var walk = walks.find(function (w) { return w.id === 'home-network-comms'; });
+  if (!walk) return false;
+  // Find home-network scenario, then walk bracket depth to capture the full devices array
+  var anchor = tbJs.search(/id:\s*['"]home-network['"]/);
+  if (anchor === -1) return false;
+  var devKey = tbJs.indexOf('devices:', anchor);
+  if (devKey === -1) return false;
+  var start = tbJs.indexOf('[', devKey);
+  if (start === -1) return false;
+  var depth = 0, end = -1;
+  for (var p = start; p < tbJs.length; p++) {
+    var ch = tbJs.charAt(p);
+    if (ch === '[') depth++;
+    else if (ch === ']') { depth--; if (depth === 0) { end = p; break; } }
+  }
+  if (end === -1) return false;
+  var devicesBlock = tbJs.substring(start, end + 1);
+  // Each device entry is an object literal starting with `{ id: '…'` — capture only those top-level ids
+  var deviceIds = (devicesBlock.match(/\{\s*id:\s*['"]([^'"]+)['"]/g) || []).map(function (m) {
+    return m.match(/['"]([^'"]+)['"]/)[1];
+  });
+  // Validate each step's referenced ids
+  for (var i = 0; i < walk.steps.length; i++) {
+    var step = walk.steps[i];
+    if (step.type === 'highlight') {
+      var t = step.target;
+      var ids = t.kind === 'device' ? [t.id] : (t.kind === 'devices' ? t.ids : []);
+      for (var j = 0; j < ids.length; j++) {
+        if (deviceIds.indexOf(ids[j]) === -1) return false;
+      }
+    }
+    if (step.type === 'flow') {
+      var flowIds = [step.flow.from, step.flow.to].concat(step.flow.via || []);
+      for (var k = 0; k < flowIds.length; k++) {
+        if (deviceIds.indexOf(flowIds[k]) === -1) return false;
+      }
+    }
+  }
+  return true;
+})());
+
+test('TB v3 walk: home-network-attacks walkthrough exists with 6 steps + Network Security domainTag', (function () {
+  var walkJs = read('features/topology-builder-v3-walkthroughs.js');
+  var arrMatch = walkJs.match(/var TB_V3_WALKTHROUGHS = (\[[\s\S]*\]);/);
+  if (!arrMatch) return false;
+  var walks = new Function('return ' + arrMatch[1])();
+  var walk = walks.find(function (w) { return w.id === 'home-network-attacks'; });
+  return !!walk
+    && walk.scenarioId === 'home-network'
+    && walk.steps.length === 6
+    && walk.domainTags && walk.domainTags.indexOf('Network Security') !== -1;
+})());
+
+test('TB v3 walk: branch-office-wireless-lan walkthrough exists with 5 steps', (function () {
+  var walkJs = read('features/topology-builder-v3-walkthroughs.js');
+  var arrMatch = walkJs.match(/var TB_V3_WALKTHROUGHS = (\[[\s\S]*\]);/);
+  if (!arrMatch) return false;
+  var walks = new Function('return ' + arrMatch[1])();
+  var walk = walks.find(function (w) { return w.id === 'branch-office-wireless-lan'; });
+  return !!walk && walk.scenarioId === 'branch-office-wireless' && walk.steps.length === 5;
+})());
+
+test('TB v3 walk: dmz-defense-in-depth walkthrough exists with 7 steps + Network Security domainTag', (function () {
+  var walkJs = read('features/topology-builder-v3-walkthroughs.js');
+  var arrMatch = walkJs.match(/var TB_V3_WALKTHROUGHS = (\[[\s\S]*\]);/);
+  if (!arrMatch) return false;
+  var walks = new Function('return ' + arrMatch[1])();
+  var walk = walks.find(function (w) { return w.id === 'dmz-defense-in-depth'; });
+  return !!walk
+    && walk.scenarioId === 'dmz-screened-subnet'
+    && walk.steps.length === 7
+    && walk.domainTags && walk.domainTags.indexOf('Network Security') !== -1;
+})());
+
+test('TB v3 walk: hub-spoke-branches-reach-hq walkthrough exists with 6 steps', (function () {
+  var walkJs = read('features/topology-builder-v3-walkthroughs.js');
+  var arrMatch = walkJs.match(/var TB_V3_WALKTHROUGHS = (\[[\s\S]*\]);/);
+  if (!arrMatch) return false;
+  var walks = new Function('return ' + arrMatch[1])();
+  var walk = walks.find(function (w) { return w.id === 'hub-spoke-branches-reach-hq'; });
+  return !!walk && walk.scenarioId === 'hub-and-spoke-wan' && walk.steps.length === 6;
+})());
+
+test('TB v3 walk: ALL pilot walkthroughs pass data integrity (scenario + device ids exist)', (function () {
+  var walkJs = read('features/topology-builder-v3-walkthroughs.js');
+  var tbJs = read('features/topology-builder-v3.js');
+  var arrMatch = walkJs.match(/var TB_V3_WALKTHROUGHS = (\[[\s\S]*\]);/);
+  if (!arrMatch) return false;
+  var walks = new Function('return ' + arrMatch[1])();
+  if (walks.length === 0) return true;  // empty is valid
+
+  // Build a map: scenarioId -> Set of device ids (using bracket-depth walker
+  // for reliable parsing of nested arrays like interfaces:[...])
+  function extractScenarioDevices(scenId) {
+    var anchor = tbJs.indexOf("id: '" + scenId + "'");
+    if (anchor === -1) anchor = tbJs.indexOf('id: "' + scenId + '"');
+    if (anchor === -1) return null;
+    var devicesIdx = tbJs.indexOf('devices:', anchor);
+    if (devicesIdx === -1) return null;
+    var openBracket = tbJs.indexOf('[', devicesIdx);
+    if (openBracket === -1) return null;
+    var depth = 0, end = openBracket;
+    for (var i = openBracket; i < tbJs.length; i++) {
+      var ch = tbJs[i];
+      if (ch === '[') depth++;
+      else if (ch === ']') { depth--; if (depth === 0) { end = i; break; } }
+    }
+    var devSection = tbJs.slice(openBracket, end + 1);
+    // Find top-level `{ id: '...'` matches only
+    var ids = [];
+    var depth2 = 0;
+    var lineMatch;
+    var re = /\{\s*id:\s*['"]([^'"]+)['"]/g;
+    while ((lineMatch = re.exec(devSection)) !== null) {
+      ids.push(lineMatch[1]);
+    }
+    return ids;
+  }
+
+  for (var w = 0; w < walks.length; w++) {
+    var walk = walks[w];
+    var devIds = extractScenarioDevices(walk.scenarioId);
+    if (devIds === null) return false;  // scenario not found
+    for (var s = 0; s < walk.steps.length; s++) {
+      var step = walk.steps[s];
+      if (step.type === 'highlight' && step.target) {
+        var t = step.target;
+        var ids = t.kind === 'device' ? [t.id]
+                : t.kind === 'devices' ? (t.ids || [])
+                : t.kind === 'cable' ? [t.deviceA, t.deviceB]
+                : [];
+        for (var i = 0; i < ids.length; i++) {
+          if (devIds.indexOf(ids[i]) === -1) return false;
+        }
+      }
+      if (step.type === 'flow' && step.flow) {
+        var flowIds = [step.flow.from, step.flow.to].concat(step.flow.via || []);
+        for (var j = 0; j < flowIds.length; j++) {
+          if (devIds.indexOf(flowIds[j]) === -1) return false;
+        }
+      }
+    }
+  }
+  return true;
+})());
+
+test('TB v3 walk: _pickAnchorSide never returns a side that overflows the host', (function () {
+  var sidesMatch = tbV3JsForWalk.match(/function _pickAnchorSide[\s\S]*?\n  \}/);
+  var posMatch = tbV3JsForWalk.match(/function _computeAnchorPosition[\s\S]*?\n  \}/);
+  if (!sidesMatch || !posMatch) return false;
+  var ctx = new Function(
+    posMatch[0] + '\n' +
+    sidesMatch[0] + '\n' +
+    'return { _pickAnchorSide: _pickAnchorSide, _computeAnchorPosition: _computeAnchorPosition };'
+  )();
+  // Run 4 corner cases — device near each edge of a small host
+  var hostSize = { width: 600, height: 400 };
+  var cardRect = { width: 260, height: 180 };
+  var corners = [
+    { x: 50,  y: 50,  width: 32, height: 32 },   // top-left
+    { x: 550, y: 50,  width: 32, height: 32 },   // top-right
+    { x: 50,  y: 350, width: 32, height: 32 },   // bottom-left
+    { x: 550, y: 350, width: 32, height: 32 },   // bottom-right
+    { x: 300, y: 200, width: 32, height: 32 },   // center
+  ];
+  for (var c = 0; c < corners.length; c++) {
+    var side = ctx._pickAnchorSide(corners[c], hostSize, cardRect);
+    var pos = ctx._computeAnchorPosition(side, corners[c], cardRect);
+    // Top-center fallback can sit at (40, 40) which is inside; all sides must
+    // produce coords that don't overflow the host. The top-center fallback
+    // explicitly does not check bounds (it's the floor), so accept that
+    // anchorStepCardToViewportCenter handles its own clamping.
+    if (side !== 'top-center') {
+      if (pos.left < 0 || pos.top < 0
+          || pos.left + cardRect.width > hostSize.width
+          || pos.top + cardRect.height > hostSize.height) {
+        return false;
+      }
+    }
+  }
+  return true;
+})());
+
+test('TB v3 walk: mockMatchMedia helper produces correct reduced-motion fake', (function () {
+  var fakeOn = mockMatchMedia(true);
+  var fakeOff = mockMatchMedia(false);
+  return fakeOn('(prefers-reduced-motion: reduce)').matches === true
+      && fakeOff('(prefers-reduced-motion: reduce)').matches === false
+      && fakeOn('(min-width: 800px)').matches === false;
+})());
+
+test('TB v3 walk: walkthrough fns exported on tb3 registration object', (function () {
+  return /walkStart:\s*walkStart/.test(tbV3JsForWalk)
+      && /walkNext:\s*walkNext/.test(tbV3JsForWalk)
+      && /walkExit:\s*walkExit/.test(tbV3JsForWalk)
+      && /renderWalkCatalog:\s*renderWalkCatalog/.test(tbV3JsForWalk)
+      && /TB_V3_WALKTHROUGHS:/.test(tbV3JsForWalk);
+})());
+
+test('TB v3 walk: mode bar registers walk mode', (function () {
+  var m = tbV3JsForWalk.match(/function _renderModeBar[\s\S]*?\n  \}/);
+  if (!m) return false;
+  return /id:\s*['"]walk['"]/.test(m[0]) && /label:\s*['"]Walk['"]/.test(m[0]);
+})());
+
+test('TB v3 walk: _openWalkCatalog adds walk-catalog-open body class', (function () {
+  var m = tbV3JsForWalk.match(/function _openWalkCatalog\([\s\S]*?\n  \}/);
+  if (!m) return false;
+  return /walk-catalog-open/.test(m[0]) && /renderWalkCatalog/.test(m[0]);
+})());
+
+test('TB v3 walk: catalog panel hidden by default + shown when walk-catalog-open', (function () {
+  var css = read('features/topology-builder-v3.css');
+  return /\.tb3-rail-panel\[data-mode="walk-catalog"\]\s*\{[\s\S]*?display:\s*none/.test(css)
+      && /walk-catalog-open[\s\S]*?\.tb3-rail-panel\[data-mode="walk-catalog"\][\s\S]*?display:\s*flex/.test(css);
+})());
+
+test('TB v3 walk: _3dPopup.camera now has panX/panY', (function () {
+  return /camera:\s*\{[^}]*panX:\s*0[^}]*panY:\s*0/.test(tbV3JsForWalk);
+})());
+
+test('TB v3 walk: _apply3DCamera includes translate3d with panX/panY', (function () {
+  var m = tbV3JsForWalk.match(/function _apply3DCamera[\s\S]*?\n  \}/);
+  if (!m) return false;
+  return /translate3d/.test(m[0]) && /panX/.test(m[0]) && /panY/.test(m[0]);
+})());
+
+test('TB v3 walk: _focusCameraOnDevice3D mutates camera state (not stage.style directly)', (function () {
+  var m = tbV3JsForWalk.match(/function _focusCameraOnDevice3D[\s\S]*?\n  \}/);
+  if (!m) return false;
+  var body = m[0];
+  return /_3dPopup\.camera\.panX/.test(body)
+      && /_apply3DCamera\(\)/.test(body)
+      && !/stage\.style\.transform\s*=/.test(body);  // no direct mutation
+})());
+
+test('TB v3 walk: _clearWalkHighlight3D resets panX/panY via camera state', (function () {
+  var m = tbV3JsForWalk.match(/function _clearWalkHighlight3D[\s\S]*?\n  \}/);
+  if (!m) return false;
+  return /panX\s*=\s*0/.test(m[0]) && /_apply3DCamera/.test(m[0]);
+})());
 
 // ── Summary ──
 console.log('\n' + '═'.repeat(50));
