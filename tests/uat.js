@@ -23411,6 +23411,18 @@ test('TB v3 walk: home-network-comms steps reference valid device IDs', (functio
   return true;
 })());
 
+test('TB v3 walk: home-network-attacks walkthrough exists with 6 steps + Network Security domainTag', (function () {
+  var walkJs = read('features/topology-builder-v3-walkthroughs.js');
+  var arrMatch = walkJs.match(/var TB_V3_WALKTHROUGHS = (\[[\s\S]*\]);/);
+  if (!arrMatch) return false;
+  var walks = new Function('return ' + arrMatch[1])();
+  var walk = walks.find(function (w) { return w.id === 'home-network-attacks'; });
+  return !!walk
+    && walk.scenarioId === 'home-network'
+    && walk.steps.length === 6
+    && walk.domainTags && walk.domainTags.indexOf('Network Security') !== -1;
+})());
+
 // ── Summary ──
 console.log('\n' + '═'.repeat(50));
 const total = results.pass + results.fail;

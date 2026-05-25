@@ -67,4 +67,57 @@ var TB_V3_WALKTHROUGHS = [
       },
     ],
   },
+  {
+    id: 'home-network-attacks',
+    scenarioId: 'home-network',
+    title: 'Common attack vectors',
+    brief: 'See where outside attackers reach the home, and where local attackers pivot once they are on the Wi-Fi.',
+    durationMin: 7,
+    domainTags: ['Network Security'],
+    steps: [
+      {
+        id: 's1',
+        type: 'narrate',
+        title: 'Same threats, smaller scale',
+        body: 'A home network faces the same attack classes as an enterprise: port scans, credential stuffing, ARP spoofing, rogue access points. The shapes scale up; the names stay the same.',
+      },
+      {
+        id: 's2',
+        type: 'highlight',
+        title: 'The ISP edge is the front door',
+        body: 'Every internet-borne probe lands on the cloud link. Botnets sweep the public IPv4 range and knock on whatever public port your modem exposes.',
+        target: { kind: 'device', id: 'sc_hn_isp' },
+      },
+      {
+        id: 's3',
+        type: 'highlight',
+        title: 'The router is the firewall',
+        body: 'The home router runs NAT, which drops unsolicited inbound packets by default. That single rule blocks most opportunistic scans before they reach any device on the subnet.',
+        target: { kind: 'device', id: 'sc_hn_rtr' },
+      },
+      {
+        id: 's4',
+        type: 'flow',
+        title: 'ARP spoofing on the LAN',
+        body: 'Once an attacker joins the Wi-Fi, they broadcast forged ARP replies claiming to be the router. The laptop now sends gateway traffic to the attacker, who relays it and reads everything in the clear.',
+        flow: {
+          from: 'sc_hn_lap',
+          to: 'sc_hn_rtr',
+          direction: 'forward-back',
+        },
+      },
+      {
+        id: 's5',
+        type: 'narrate',
+        title: 'Defense in layers',
+        body: 'WPA3 stops the attacker from joining the Wi-Fi in the first place. Firmware updates patch the router itself. A guest network isolates untrusted devices from the laptop and console.',
+      },
+      {
+        id: 's6',
+        type: 'narrate',
+        title: 'Same shapes on the exam',
+        body: 'The objective list calls out NAT, firewalls, WPA3, and ARP poisoning. This six-device canvas is where you can see them; the enterprise diagrams on the exam are the same pattern with more nodes.',
+      },
+    ],
+  },
 ];
