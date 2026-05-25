@@ -22935,6 +22935,17 @@ test('TB v3 walk: domainsForRefs maps objectiveRefs to exam-domain names', (func
     && eq(fn(['9.9']), ['Other']);
 })());
 
+test('TB v3 walk: walkthroughs file exists and exports array', (function () {
+  const walkJs = read('features/topology-builder-v3-walkthroughs.js');
+  return /var TB_V3_WALKTHROUGHS = \[/.test(walkJs);
+})());
+
+test('TB v3 walk: walkthroughs file loaded before main TB v3 file in index.html', (function () {
+  const idx = html.indexOf('topology-builder-v3-walkthroughs.js');
+  const main = html.indexOf('topology-builder-v3.js"');
+  return idx > -1 && idx < main;
+})());
+
 // ── Summary ──
 console.log('\n' + '═'.repeat(50));
 const total = results.pass + results.fail;
