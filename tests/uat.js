@@ -23542,6 +23542,32 @@ test('TB v3 walk: 7 WAN walkthroughs (v6.5.10) present + bound + sized', (functi
   });
 })());
 
+// v6.5.11 — Phase 8e Cloud: 9 new walkthroughs covering the entire Cloud category
+// (hybrid · public-only · multi-cloud · Direct Connect · VPC + IGW/NAT/subnets ·
+// multi-VPC TGW · NAT-GW outbound · IGW + LB · VPC peering non-transitive).
+// Note: v6.5.7 quantification said 8; the actual Cloud category has 9. Shipping all 9.
+test('TB v3 walk: 9 Cloud walkthroughs (v6.5.11) present + bound + sized', (function () {
+  var walkJs = read('features/topology-builder-v3-walkthroughs.js');
+  var arrMatch = walkJs.match(/var TB_V3_WALKTHROUGHS = (\[[\s\S]*\]);/);
+  if (!arrMatch) return false;
+  var walks = new Function('return ' + arrMatch[1])();
+  var expected = [
+    { id: 'hybrid-cloud-vpn-bridge',          scenarioId: 'hybrid-cloud',                 steps: 6 },
+    { id: 'public-cloud-only-vpc',            scenarioId: 'public-cloud-only',            steps: 5 },
+    { id: 'multi-cloud-bridge',               scenarioId: 'multi-cloud',                  steps: 5 },
+    { id: 'direct-connect-private-wire',      scenarioId: 'direct-connect-private-link',  steps: 5 },
+    { id: 'cloud-vpc-public-private',         scenarioId: 'cloud-vpc-architecture',       steps: 6 },
+    { id: 'multi-vpc-tgw-hub',                scenarioId: 'multi-vpc-transit-gateway',    steps: 5 },
+    { id: 'nat-gateway-outbound',             scenarioId: 'nat-gateway-cloud',            steps: 5 },
+    { id: 'internet-gateway-public-tier',     scenarioId: 'internet-gateway-cloud',       steps: 5 },
+    { id: 'vpc-peering-non-transitive',       scenarioId: 'vpc-peering-cloud',            steps: 5 },
+  ];
+  return expected.every(function (e) {
+    var w = walks.find(function (x) { return x.id === e.id; });
+    return !!w && w.scenarioId === e.scenarioId && w.steps.length === e.steps;
+  });
+})());
+
 test('TB v3 walk: ALL pilot walkthroughs pass data integrity (scenario + device ids exist)', (function () {
   var walkJs = read('features/topology-builder-v3-walkthroughs.js');
   var tbJs = read('features/topology-builder-v3.js');
@@ -23703,23 +23729,23 @@ test('TB v3 walk: _clearWalkHighlight3D resets panX/panY via camera state', (fun
 
 // ── v6.5.2 hotfix tests ──
 
-test('v6.5.10: package.json version is 6.5.10', (function () {
+test('v6.5.11: package.json version is 6.5.11', (function () {
   var pkg = read('package.json');
-  return /"version":\s*"6\.5\.10"/.test(pkg);
+  return /"version":\s*"6\.5\.11"/.test(pkg);
 })());
 
-test('v6.5.10: sw.js CACHE_NAME is netplus-v6.5.10', (function () {
+test('v6.5.11: sw.js CACHE_NAME is netplus-v6.5.11', (function () {
   var sw = read('sw.js');
-  return /netplus-v6\.5\.10/.test(sw);
+  return /netplus-v6\.5\.11/.test(sw);
 })());
 
-test('v6.5.10: index.html version badge is v6.5.10', (function () {
-  return /version-badge[\s\S]*?v6\.5\.10/.test(html);
+test('v6.5.11: index.html version badge is v6.5.11', (function () {
+  return /version-badge[\s\S]*?v6\.5\.11/.test(html);
 })());
 
-test('v6.5.10: app.js APP_VERSION is 6.5.10', (function () {
+test('v6.5.11: app.js APP_VERSION is 6.5.11', (function () {
   var js = read('app.js');
-  return /APP_VERSION\s*=\s*['"]6\.5\.10['"]/.test(js);
+  return /APP_VERSION\s*=\s*['"]6\.5\.11['"]/.test(js);
 })());
 
 test('TB v3 walk: catalog text uses theme tokens, not hardcoded white rgba', (function () {

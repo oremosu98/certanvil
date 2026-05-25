@@ -3916,6 +3916,48 @@ test.describe('TB v3 Walkthrough Phase 8', () => {
     expect(progress['mpls-wan-provider-fabric']).toBeTruthy();
     expect(progress['mpls-wan-provider-fabric'].completedAt).toBeTruthy();
   });
+
+  // v6.5.11 — Phase 8e Cloud: 9 new walkthroughs. Spot-check cloud-vpc-public-private
+  // (the densest of the 9, covers IGW + NAT-GW + public/private subnet routing in one walk);
+  // the other 8 covered statically by the UAT v6.5.11 structural + data-integrity guards.
+  test('TB v3 WALK v6.5.11 — Cloud: start cloud-vpc-public-private, walk all 6 steps, completion writes PROGRESS', async ({ page }) => {
+    await page.goto('/?cert=netplus');
+    await page.waitForFunction(() => typeof window.showPage === 'function');
+    await page.evaluate(async () => {
+      window._gateProOnly = () => true;
+      window._certanvilSignedIn = true;
+      await window._loadFeature('topology-builder-v3');
+      window.showPage('topology-builder-v3');
+      if (typeof window.openTopologyBuilderV3 === 'function') window.openTopologyBuilderV3();
+    });
+    await page.waitForSelector('#tb3-canvas-svg', { timeout: 15000 });
+
+    await page.evaluate(() => {
+      var tb3 = window._certanvilFeatures['topology-builder-v3'];
+      if (tb3 && typeof tb3.walkStart === 'function') tb3.walkStart('cloud-vpc-public-private');
+      else if (typeof window.walkStart === 'function') window.walkStart('cloud-vpc-public-private');
+    });
+
+    await page.waitForSelector('.tb3-walk-card', { timeout: 5000 });
+    await expect(page.locator('.tb3-walk-card-pos')).toContainText('1 / 6');
+    await expect(page.locator('.tb3-walk-card-title')).toContainText('Two subnets, two routing tables');
+
+    for (var i = 0; i < 5; i++) {
+      await page.click('[data-walk-next]');
+      await page.waitForTimeout(200);
+    }
+
+    await expect(page.locator('[data-walk-next]')).toContainText('Finish');
+    await page.click('[data-walk-next]');
+
+    await expect(page.locator('.tb3-walk-card-complete-title')).toContainText('Walkthrough complete');
+
+    var progress = await page.evaluate(() => {
+      return JSON.parse(localStorage.getItem('nplus_tb_v3_walk_progress_v1') || '{}');
+    });
+    expect(progress['cloud-vpc-public-private']).toBeTruthy();
+    expect(progress['cloud-vpc-public-private'].completedAt).toBeTruthy();
+  });
 });
 
 
