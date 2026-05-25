@@ -229,4 +229,63 @@ var TB_V3_WALKTHROUGHS = [
       },
     ],
   },
+  {
+    id: 'hub-spoke-branches-reach-hq',
+    scenarioId: 'hub-and-spoke-wan',
+    title: 'How branches reach HQ',
+    brief: 'Trace a packet from a branch to HQ, then from one branch to another, and see why every spoke conversation hairpins through the hub router.',
+    durationMin: 5,
+    // inherits Network Implementation from objectiveRefs ['2.1']
+    steps: [
+      {
+        id: 's1',
+        type: 'narrate',
+        title: 'The simplest WAN shape',
+        body: 'Hub-and-spoke is the entry-level WAN: one router at HQ, every branch on its own point-to-point link to that hub. Branches never connect to each other directly. Anything one branch needs from another rides through the hub.',
+      },
+      {
+        id: 's2',
+        type: 'highlight',
+        title: 'HQ holds the central path',
+        body: 'The hub router carries every WAN conversation in the topology. Its routing table is small — one entry per branch subnet — but every branch-to-branch packet still passes through this single box. Small table, big responsibility.',
+        target: { kind: 'device', id: 'sc_hns_hub' },
+      },
+      {
+        id: 's3',
+        type: 'highlight',
+        title: 'Branches know two things',
+        body: 'Each branch router holds only its own local subnet plus a default route pointing at the hub. Local traffic stays local; everything else gets handed straight to HQ. That simplicity is the whole appeal of the shape.',
+        target: { kind: 'devices', ids: ['sc_hns_b1', 'sc_hns_b2', 'sc_hns_b3', 'sc_hns_b4'] },
+      },
+      {
+        id: 's4',
+        type: 'flow',
+        title: 'Branch to HQ is one hop',
+        body: 'A packet from BR-1 to a resource at HQ crosses one WAN link and lands on the hub. The reply retraces the same link. This is the path hub-and-spoke is built for, and it is as short as a branch conversation gets.',
+        flow: {
+          from: 'sc_hns_b1',
+          to: 'sc_hns_hub',
+          direction: 'forward-back',
+        },
+      },
+      {
+        id: 's5',
+        type: 'flow',
+        title: 'Branch to branch hairpins through HQ',
+        body: 'When BR-1 needs to reach BR-2, the packet leaves BR-1, transits the hub, and exits down the BR-2 spoke. Two WAN hops for traffic that is logically branch-to-branch — the hidden cost of the shape, and why a busy hub becomes a bottleneck.',
+        flow: {
+          from: 'sc_hns_b1',
+          to: 'sc_hns_b2',
+          via: ['sc_hns_hub'],
+          direction: 'forward',
+        },
+      },
+      {
+        id: 's6',
+        type: 'narrate',
+        title: 'When this shape fits and when it does not',
+        body: 'Hub-and-spoke works when branches mostly talk to HQ and rarely to each other — retail stores reaching a central ERP, clinics reaching a records system. The moment branches need real-time peer traffic (voice, video, replication), the hairpin hurts, and the topology evolves to partial-mesh or SD-WAN.',
+      },
+    ],
+  },
 ];

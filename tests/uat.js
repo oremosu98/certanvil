@@ -23444,6 +23444,15 @@ test('TB v3 walk: dmz-defense-in-depth walkthrough exists with 7 steps + Network
     && walk.domainTags && walk.domainTags.indexOf('Network Security') !== -1;
 })());
 
+test('TB v3 walk: hub-spoke-branches-reach-hq walkthrough exists with 6 steps', (function () {
+  var walkJs = read('features/topology-builder-v3-walkthroughs.js');
+  var arrMatch = walkJs.match(/var TB_V3_WALKTHROUGHS = (\[[\s\S]*\]);/);
+  if (!arrMatch) return false;
+  var walks = new Function('return ' + arrMatch[1])();
+  var walk = walks.find(function (w) { return w.id === 'hub-spoke-branches-reach-hq'; });
+  return !!walk && walk.scenarioId === 'hub-and-spoke-wan' && walk.steps.length === 6;
+})());
+
 // ── Summary ──
 console.log('\n' + '═'.repeat(50));
 const total = results.pass + results.fail;
