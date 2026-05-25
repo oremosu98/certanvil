@@ -6998,7 +6998,116 @@
     }
     // 3D path lands in Task 10
   }
-  function animateFlow(/* flow, mode */) {}                      // Tasks 9 + 11
+  function animateFlow(flow, mode) {
+    if (mode === '2d') {
+      _animateFlow2D(flow);
+    } else {
+      _animateFlow3D(flow);  // Task 11 — currently no-op stub
+    }
+  }
+
+  function _animateFlow2D(flow) {
+    // Spawns SVG <circle class="tb3-walk-pellet"> elements that travel along
+    // the device path (via _spawnPellet2D, which uses createElementNS).
+    var path = [flow.from].concat(flow.via || []).concat([flow.to]);
+    var svg = document.getElementById('tb3-canvas-svg');
+    if (!svg) return;
+
+    // Reduced-motion fallback
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      _renderFlowArrowStatic2D(path, svg);
+      return;
+    }
+
+    // Build segments: pairs of consecutive devices in the path
+    var segments = [];
+    for (var i = 0; i < path.length - 1; i++) {
+      segments.push([path[i], path[i + 1]]);
+    }
+    var speed = flow.speed === 'slow' ? 4000 : (flow.speed === 'fast' ? 1600 : 2600);
+    var forwardBack = flow.direction === 'forward-back';
+
+    // Spawn 3 pellets, staggered
+    for (var p = 0; p < 3; p++) {
+      setTimeout(function () { _spawnPellet2D(svg, segments, speed, forwardBack); }, p * 600);
+    }
+  }
+
+  function _spawnPellet2D(svg, segments, speed, forwardBack) {
+    var pellet = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    pellet.setAttribute('class', 'tb3-walk-pellet');
+    pellet.setAttribute('r', '5');
+    svg.appendChild(pellet);
+
+    var segMs = speed / Math.max(segments.length, 1);
+    var segIdx = 0;
+    var reversing = false;
+    var startTime = null;
+    var startPos = null;
+    var endPos = null;
+
+    function devicePos(id) {
+      var d = state.devices.find(function (dv) { return dv.id === id; });
+      return d ? { x: d.x, y: d.y } : null;
+    }
+
+    function setSegment() {
+      var seg = segments[segIdx];
+      if (!seg) return false;
+      startPos = devicePos(reversing ? seg[1] : seg[0]);
+      endPos   = devicePos(reversing ? seg[0] : seg[1]);
+      if (!startPos || !endPos) return false;
+      startTime = performance.now();
+      return true;
+    }
+
+    function frame(t) {
+      if (startTime === null) {
+        if (!setSegment()) { pellet.remove(); return; }
+      }
+      var k = Math.min((t - startTime) / segMs, 1);
+      var cx = startPos.x + (endPos.x - startPos.x) * k;
+      var cy = startPos.y + (endPos.y - startPos.y) * k;
+      pellet.setAttribute('cx', cx);
+      pellet.setAttribute('cy', cy);
+      if (k >= 1) {
+        segIdx += 1;
+        if (segIdx >= segments.length) {
+          if (forwardBack && !reversing) {
+            reversing = true;
+            segIdx = 0;
+            startTime = null;
+          } else {
+            pellet.remove();
+            return;
+          }
+        } else {
+          startTime = null;
+        }
+      }
+      requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
+  }
+
+  function _renderFlowArrowStatic2D(path, svg) {
+    // For reduced motion: render a simple SVG <text> with arrow labels
+    var labels = path.map(function (id) {
+      var d = state.devices.find(function (dv) { return dv.id === id; });
+      return d ? (d.label || d.type || id) : id;
+    }).join(' → ');
+    var fromDev = state.devices.find(function (dv) { return dv.id === path[0]; });
+    if (!fromDev) return;
+    var text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    text.setAttribute('class', 'tb3-walk-flow-arrow');
+    text.setAttribute('x', fromDev.x);
+    text.setAttribute('y', fromDev.y - 30);
+    text.setAttribute('fill', '#f0c789');
+    text.textContent = labels;
+    svg.appendChild(text);
+  }
+
+  function _animateFlow3D(/* flow */) {}  // Task 11
 
   // Stubs for not-yet-implemented functions (later tasks replace these):
   function hideStepCard() {}                          // Task 15

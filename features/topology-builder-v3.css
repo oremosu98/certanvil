@@ -2970,3 +2970,23 @@ html[data-theme="light"] #page-topology-builder-v3 {
     stroke-width: 3;
   }
 }
+
+/* ── Walkthrough flow (2D, SVG) ────────────────────────────────── */
+.tb3-walk-pellet {
+  fill: #f0c789;
+  filter: drop-shadow(0 0 6px rgba(240, 199, 137, 0.7));
+  pointer-events: none;
+}
+
+.tb3-walk-flow-arrow {
+  fill: #f0c789;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  pointer-events: none;
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tb3-walk-pellet { display: none; }
+  .tb3-walk-flow-arrow { display: inline; }
+}

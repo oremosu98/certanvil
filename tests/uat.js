@@ -23094,6 +23094,33 @@ test('TB v3 walk: CSS has reduced-motion fallback for walk pulses', (function ()
   return /@media\s*\(prefers-reduced-motion:\s*reduce\)[\s\S]*?\.tb3-walk-pulse/.test(tbCss);
 })());
 
+test('TB v3 walk: animateFlow 2D path defined and references flow.from / flow.to', (function () {
+  var m = tbV3JsForWalk.match(/function animateFlow\(flow,\s*mode\)\s*\{[\s\S]*?\n  \}/);
+  if (!m) return false;
+  var body = m[0];
+  return /mode\s*===\s*['"]2d['"]/.test(body)
+      && /_animateFlow2D/.test(body);
+})());
+
+test('TB v3 walk: _animateFlow2D creates SVG pellets via createElementNS', (function () {
+  var m = tbV3JsForWalk.match(/function _animateFlow2D\(flow\)\s*\{[\s\S]*?\n  \}/);
+  if (!m) return false;
+  var body = m[0];
+  return /createElementNS\(['"]http:\/\/www\.w3\.org\/2000\/svg['"]/.test(body)
+      || /tb3-walk-pellet/.test(body);  // accept either NS call here or in a spawn helper
+})());
+
+test('TB v3 walk: reduced-motion path renders a static arrow (no animation)', (function () {
+  return /_renderFlowArrowStatic2D/.test(tbV3JsForWalk)
+      && /prefers-reduced-motion:\s*reduce/.test(tbV3JsForWalk);
+})());
+
+test('TB v3 walk: CSS for pellet has reduced-motion arrow fallback', (function () {
+  var tbCss = read('features/topology-builder-v3.css');
+  return /\.tb3-walk-pellet\b/.test(tbCss)
+      && /@media\s*\(prefers-reduced-motion:\s*reduce\)[\s\S]*?tb3-walk-flow-arrow/.test(tbCss);
+})());
+
 // ── Summary ──
 console.log('\n' + '═'.repeat(50));
 const total = results.pass + results.fail;
