@@ -6893,6 +6893,34 @@
   // ── Walkthrough render primitives (Phase 8) ──
   // Replaces Task 4 stubs.
 
+  function resolveTarget(target) {
+    if (!target) return { devices: [], cables: [] };
+    switch (target.kind) {
+      case 'device':  return { devices: [target.id], cables: [] };
+      case 'devices': return { devices: target.ids.slice(), cables: [] };
+      case 'cable':   return { devices: [], cables: [[target.deviceA, target.deviceB]] };
+      default:        return { devices: [], cables: [] };
+    }
+  }
+
+  function targetExists(target) {
+    var resolved = resolveTarget(target);
+    var deviceIds = {};
+    for (var i = 0; i < state.devices.length; i++) deviceIds[state.devices[i].id] = true;
+    for (var j = 0; j < resolved.devices.length; j++) {
+      if (!deviceIds[resolved.devices[j]]) return false;
+    }
+    for (var k = 0; k < resolved.cables.length; k++) {
+      var a = resolved.cables[k][0], b = resolved.cables[k][1];
+      if (!deviceIds[a] || !deviceIds[b]) return false;
+      var found = state.cables.find(function (c) {
+        return (c.fromId === a && c.toId === b) || (c.fromId === b && c.toId === a);
+      });
+      if (!found) return false;
+    }
+    return true;
+  }
+
   function runStep(step, mode) {
     if (!step) return;
     clearEffects(mode);
@@ -6902,10 +6930,22 @@
         anchorStepCardToViewportCenter();
         break;
       case 'highlight':
+        if (!targetExists(step.target)) {
+          console.warn('[walk] missing target for step', step.id, step.target);
+          anchorStepCardToViewportCenter();
+          break;
+        }
         applyHighlight(step.target, mode);
         anchorStepCardToTarget(step.target, mode);
         break;
       case 'flow':
+        // For flow steps, validate every device in the path
+        var flowDevices = [step.flow.from, step.flow.to].concat(step.flow.via || []);
+        if (!targetExists({ kind: 'devices', ids: flowDevices })) {
+          console.warn('[walk] missing devices for flow step', step.id, step.flow);
+          anchorStepCardToViewportCenter();
+          break;
+        }
         animateFlow(step.flow, mode);
         anchorStepCardToDevice(step.flow.from, mode);
         break;

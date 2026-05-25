@@ -23048,6 +23048,31 @@ test('TB v3 walk: clearEffects removes tb3-walk-pulse from SVG elements', (funct
   return /tb3-walk-pulse/.test(m[0]) && /querySelectorAll/.test(m[0]);
 })());
 
+test('TB v3 walk: resolveTarget extracts deviceIds + cable pairs from each kind', (function () {
+  var m = tbV3JsForWalk.match(/function resolveTarget\(target\)\s*\{[\s\S]*?\n  \}/);
+  if (!m) return false;
+  var fn = new Function('return ' + m[0])();
+  var d1 = fn({ kind: 'device', id: 'rtr1' });
+  var d2 = fn({ kind: 'devices', ids: ['a', 'b'] });
+  var d3 = fn({ kind: 'cable', deviceA: 'a', deviceB: 'b' });
+  var d4 = fn(null);
+  return d1.devices.length === 1 && d1.devices[0] === 'rtr1' && d1.cables.length === 0
+      && d2.devices.length === 2 && d2.cables.length === 0
+      && d3.devices.length === 0 && d3.cables.length === 1
+        && d3.cables[0][0] === 'a' && d3.cables[0][1] === 'b'
+      && d4.devices.length === 0 && d4.cables.length === 0;
+})());
+
+test('TB v3 walk: targetExists helper defined', (function () {
+  return /function targetExists\(target\)/.test(tbV3JsForWalk);
+})());
+
+test('TB v3 walk: runStep falls back to narrate-style anchor when target is missing', (function () {
+  var m = tbV3JsForWalk.match(/function runStep\(step,\s*mode\)\s*\{[\s\S]*?\n  \}/);
+  if (!m) return false;
+  return /targetExists/.test(m[0]) && /anchorStepCardToViewportCenter/.test(m[0]);
+})());
+
 // ── Summary ──
 console.log('\n' + '═'.repeat(50));
 const total = results.pass + results.fail;
