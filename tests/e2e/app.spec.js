@@ -3636,4 +3636,151 @@ test.describe('topology-builder-v3', () => {
   });
 });
 
+// ── TB v3 Walkthrough (Phase 8) ──
+test.describe('TB v3 Walkthrough Phase 8', () => {
+  test('TB v3 WALK — happy path: start home-network-comms, step through all 6, complete writes PROGRESS', async ({ page }) => {
+    await page.goto('/?cert=netplus');
+    await page.waitForFunction(() => typeof window.showPage === 'function');
+    await page.evaluate(async () => {
+      window._gateProOnly = () => true;
+      window._certanvilSignedIn = true;
+      await window._loadFeature('topology-builder-v3');
+      window.showPage('topology-builder-v3');
+      if (typeof window.openTopologyBuilderV3 === 'function') window.openTopologyBuilderV3();
+    });
+    await page.waitForSelector('#tb3-canvas-svg', { timeout: 15000 });
+
+    // Start the walkthrough programmatically (rail UI integration is deferred)
+    await page.evaluate(() => {
+      var tb3 = window._certanvilFeatures['topology-builder-v3'];
+      if (tb3 && typeof tb3.walkStart === 'function') {
+        tb3.walkStart('home-network-comms');
+      } else if (typeof window.walkStart === 'function') {
+        window.walkStart('home-network-comms');
+      }
+    });
+
+    // Card should appear
+    await page.waitForSelector('.tb3-walk-card', { timeout: 5000 });
+    await expect(page.locator('.tb3-walk-card-pos')).toContainText('1 / 6');
+
+    // Advance through all 6 steps via Continue button
+    for (var i = 0; i < 5; i++) {
+      await page.click('[data-walk-next]');
+      await page.waitForTimeout(200);  // allow fade-through
+    }
+
+    // Last step (6/6) Continue button label is "Finish →"
+    await expect(page.locator('[data-walk-next]')).toContainText('Finish');
+    await page.click('[data-walk-next]');
+
+    // Completion card appears
+    await expect(page.locator('.tb3-walk-card-complete-title')).toContainText('Walkthrough complete');
+
+    // PROGRESS persisted with completedAt
+    var progress = await page.evaluate(() => {
+      return JSON.parse(localStorage.getItem('nplus_tb_v3_walk_progress_v1') || '{}');
+    });
+    expect(progress['home-network-comms']).toBeTruthy();
+    expect(progress['home-network-comms'].completedAt).toBeTruthy();
+  });
+
+  test('TB v3 WALK — resume: walk to step 3 then reload, card resumes at saved step with Restart link', async ({ page }) => {
+    await page.goto('/?cert=netplus');
+    await page.waitForFunction(() => typeof window.showPage === 'function');
+    await page.evaluate(async () => {
+      window._gateProOnly = () => true;
+      window._certanvilSignedIn = true;
+      await window._loadFeature('topology-builder-v3');
+      window.showPage('topology-builder-v3');
+      if (typeof window.openTopologyBuilderV3 === 'function') window.openTopologyBuilderV3();
+    });
+    await page.waitForSelector('#tb3-canvas-svg', { timeout: 15000 });
+
+    await page.evaluate(() => {
+      var tb3 = window._certanvilFeatures['topology-builder-v3'];
+      if (tb3 && tb3.walkStart) tb3.walkStart('home-network-comms');
+    });
+    await page.waitForSelector('.tb3-walk-card', { timeout: 5000 });
+
+    // Advance to step 3
+    await page.click('[data-walk-next]');
+    await page.waitForTimeout(200);
+    await page.click('[data-walk-next]');
+    await page.waitForTimeout(200);
+    await expect(page.locator('.tb3-walk-card-pos')).toContainText('3 / 6');
+
+    // Reload — should auto-resume at step 3 with Restart link
+    await page.reload();
+    await page.waitForFunction(() => typeof window.showPage === 'function');
+    await page.evaluate(async () => {
+      window._gateProOnly = () => true;
+      window._certanvilSignedIn = true;
+      await window._loadFeature('topology-builder-v3');
+      window.showPage('topology-builder-v3');
+      if (typeof window.openTopologyBuilderV3 === 'function') window.openTopologyBuilderV3();
+    });
+    await page.waitForSelector('.tb3-walk-card', { timeout: 5000 });
+    await expect(page.locator('.tb3-walk-card-pos')).toContainText('3 / 6');
+    await expect(page.locator('.tb3-walk-card-resume-link')).toBeVisible();
+  });
+
+  test('TB v3 WALK — Esc key exits the walkthrough', async ({ page }) => {
+    await page.goto('/?cert=netplus');
+    await page.waitForFunction(() => typeof window.showPage === 'function');
+    await page.evaluate(async () => {
+      window._gateProOnly = () => true;
+      window._certanvilSignedIn = true;
+      await window._loadFeature('topology-builder-v3');
+      window.showPage('topology-builder-v3');
+      if (typeof window.openTopologyBuilderV3 === 'function') window.openTopologyBuilderV3();
+    });
+    await page.waitForSelector('#tb3-canvas-svg', { timeout: 15000 });
+
+    await page.evaluate(() => {
+      var tb3 = window._certanvilFeatures['topology-builder-v3'];
+      if (tb3 && tb3.walkStart) tb3.walkStart('home-network-comms');
+    });
+    await page.waitForSelector('.tb3-walk-card', { timeout: 5000 });
+
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(300);
+    await expect(page.locator('.tb3-walk-card')).toHaveCount(0);
+  });
+
+  test('TB v3 WALK — reduced motion: pellets hidden during flow step', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.goto('/?cert=netplus');
+    await page.waitForFunction(() => typeof window.showPage === 'function');
+    await page.evaluate(async () => {
+      window._gateProOnly = () => true;
+      window._certanvilSignedIn = true;
+      await window._loadFeature('topology-builder-v3');
+      window.showPage('topology-builder-v3');
+      if (typeof window.openTopologyBuilderV3 === 'function') window.openTopologyBuilderV3();
+    });
+    await page.waitForSelector('#tb3-canvas-svg', { timeout: 15000 });
+
+    await page.evaluate(() => {
+      var tb3 = window._certanvilFeatures['topology-builder-v3'];
+      if (tb3 && tb3.walkStart) tb3.walkStart('home-network-comms');
+    });
+    await page.waitForSelector('.tb3-walk-card', { timeout: 5000 });
+
+    // Advance to step 4 (which is the first flow step in home-network-comms)
+    for (var i = 0; i < 3; i++) {
+      await page.click('[data-walk-next]');
+      await page.waitForTimeout(150);
+    }
+
+    // Reduced motion: no animated pellets
+    await page.waitForTimeout(500);
+    const pelletCount = await page.locator('.tb3-walk-pellet').count();
+    expect(pelletCount).toBe(0);
+    // Static arrow should be visible instead
+    const arrowCount = await page.locator('.tb3-walk-flow-arrow').count();
+    expect(arrowCount).toBeGreaterThan(0);
+  });
+});
+
 
