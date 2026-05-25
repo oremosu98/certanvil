@@ -2591,7 +2591,7 @@
         // ── Walkthrough auto-resume (Phase 8) ──
         if (state.activeWalkthroughId) {
           var walk = TB_V3_WALKTHROUGHS.find(function (w) { return w.id === state.activeWalkthroughId; });
-          if (walk) {
+          if (walk && walk.steps && walk.steps.length > 0) {
             // Clamp stepIdx in case content was trimmed since last visit
             state.walkStepIdx = Math.min(state.walkStepIdx || 0, walk.steps.length - 1);
             state.intent = 'walk';
@@ -2601,7 +2601,7 @@
               markCardAsResumed();
             });
           } else {
-            // Stale walkthrough id (content removed since last visit) — silently clear
+            // Stale walkthrough id OR empty steps — silently clear
             state.activeWalkthroughId = null;
             state.walkStepIdx = 0;
             state.intent = state.priorIntent || 'free-build';
