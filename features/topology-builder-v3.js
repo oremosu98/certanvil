@@ -6842,6 +6842,21 @@
     checkCompletion: checkCompletion,
     backupFreeBuild: backupFreeBuild,
     restoreFreeBuild: restoreFreeBuild,
+    // Walkthroughs (Phase 8)
+    TB_V3_WALKTHROUGHS: (typeof TB_V3_WALKTHROUGHS !== 'undefined' ? TB_V3_WALKTHROUGHS : []),
+    walkStart: walkStart,
+    walkNext: walkNext,
+    walkBack: walkBack,
+    walkExit: walkExit,
+    walkComplete: walkComplete,
+    renderWalkCatalog: renderWalkCatalog,
+    showCompletionCard: showCompletionCard,
+    // Walkthrough internals (for tests)
+    domainsForRefs: domainsForRefs,
+    resolveTarget: resolveTarget,
+    targetExists: targetExists,
+    _walkBadgeFor: _walkBadgeFor,
+    _walksPillText: _walksPillText,
     // State access (for tests)
     _getState: function () { return state; },
     _setState: function (s) { state = s; },

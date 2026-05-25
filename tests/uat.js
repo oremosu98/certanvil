@@ -23576,6 +23576,14 @@ test('TB v3 walk: mockMatchMedia helper produces correct reduced-motion fake', (
       && fakeOn('(min-width: 800px)').matches === false;
 })());
 
+test('TB v3 walk: walkthrough fns exported on tb3 registration object', (function () {
+  return /walkStart:\s*walkStart/.test(tbV3JsForWalk)
+      && /walkNext:\s*walkNext/.test(tbV3JsForWalk)
+      && /walkExit:\s*walkExit/.test(tbV3JsForWalk)
+      && /renderWalkCatalog:\s*renderWalkCatalog/.test(tbV3JsForWalk)
+      && /TB_V3_WALKTHROUGHS:/.test(tbV3JsForWalk);
+})());
+
 // ── Summary ──
 console.log('\n' + '═'.repeat(50));
 const total = results.pass + results.fail;
