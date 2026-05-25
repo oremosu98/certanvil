@@ -689,3 +689,36 @@ Each feature-day is end-to-end: code → UAT → Chrome MCP verify → bump → 
 - `PROJECT_TOKEN` repo secret is a PAT with `project` scope (not the default `GITHUB_TOKEN`). Powers both `auto-add-to-board.yml` and `auto-archive-done.yml`. If rotated, update in GitHub repo secrets or both workflows fail loud.
 - `deploy-verification.yml` runs post-deploy against the public URL — legit failures mean prod is broken; stale-cache failures mean give CDN a minute and re-run.
 - When UAT fails mid-session, check `tests/validation-audit.js` first — a change to `validateQuestions()`, the GT tables, or the prompt can trip the regression gate without any UAT-level error being obvious.
+
+---
+
+## Post-deploy verification (always run after ship)
+
+Headless UAT and Playwright pass while real users see broken UI — happened 7 times across v6.5.0 → v6.5.7. After any feature or fix lands on `main` and the Deploy Verification workflow reports success, **drive the live prod URL in a real browser before claiming done**.
+
+### Workflow
+
+1. **Cache-bust navigate** — open the prod URL with a `?_cb=<version>` query so the Service Worker cache is bypassed and you see the freshly-deployed code.
+   - Main app: `https://networkplus.certanvil.com/?cert=netplus&_cb=<ver>`
+   - Use the Chrome MCP tools (`mcp__Claude_in_Chrome__*`).
+
+2. **Reproduce the user's exact click path** — don't shortcut via JS calls. If the feature ships behind a mode pill / button / scenario picker, click through it the way a user would (using `MouseEvent` dispatch when `.click()` doesn't trigger handlers).
+
+3. **Measure DOM rects + computed styles, not just internal state**:
+   - Canvas / panel widths and heights (a 138px-tall canvas means layout is broken even if state looks correct)
+   - `getComputedStyle()` for text/background colors on the actual elements (catches theme-token bugs that look fine in mockups)
+   - `position`, `transform`, `display` on new rail panels (catches CSS Grid collisions)
+   - Element visibility via `offsetParent !== null` + bounding-rect inside the viewport
+
+4. **Walk through the full user flow end-to-end** — first interaction, advance, completion, exit, reload. Not just the first click.
+
+5. **Only then claim "shipped + verified".** If anything looks off, ship a hotfix before signing off — don't wait for the user to find it.
+
+### Skip the verification only when
+
+- The change is purely backend / data / docs with no user-facing surface
+- The change is behind a feature flag that's off in prod
+
+### Why this rule exists
+
+Pre-v6.5.x every CI pass was treated as "shipped". But UAT regex-tests source strings and Playwright runs fresh navigations — both miss live-interaction layout bugs, theme-mismatched colors, viewport state carry-over, and CSS Grid collisions. Every one of v6.5.1 → v6.5.7 was a bug the user found by clicking in their real browser that an automated post-deploy visual check would have caught.
