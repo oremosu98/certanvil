@@ -7304,10 +7304,11 @@
 
     // Group scenarios by primary exam domain (first objectiveRef)
     // Only include scenarios that have at least one walkthrough
+    var _walkSrc = (typeof TB_V3_WALKTHROUGHS !== 'undefined' ? TB_V3_WALKTHROUGHS : []);
     var groups = {};
     for (var i = 0; i < TB_V3_SCENARIOS.length; i++) {
       var scen = TB_V3_SCENARIOS[i];
-      var walks = TB_V3_WALKTHROUGHS.filter(function (w) { return w.scenarioId === scen.id; });
+      var walks = _walkSrc.filter(function (w) { return w.scenarioId === scen.id; });
       if (walks.length === 0) continue;
       var primaryDomain = domainsForRefs(scen.objectiveRefs || [])[0];
       groups[primaryDomain] = groups[primaryDomain] || [];
@@ -7339,8 +7340,8 @@
       for (var k = 0; k < items.length; k++) {
         var item = items[k];
         var walkCount = item.walks.length;
-        html += '<div class="tb3-walk-scen-row" data-scenario-id="' + item.scen.id + '">' +
-                '<span class="tb3-walk-scen-title">' + item.scen.title + '</span>' +
+        html += '<div class="tb3-walk-scen-row" data-scenario-id="' + _escAttr(item.scen.id) + '">' +
+                '<span class="tb3-walk-scen-title">' + _escAttr(item.scen.title) + '</span>' +
                 '<span class="tb3-walk-walks-pill">' + walkCount + ' walk' + (walkCount === 1 ? '' : 's') + '</span>' +
                 '<span class="tb3-walk-scen-chev">▸</span>' +
                 '</div>';
