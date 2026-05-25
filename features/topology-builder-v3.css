@@ -2939,3 +2939,34 @@ html[data-theme="light"] #page-topology-builder-v3 {
     transform: none !important;
   }
 }
+
+/* ── Walkthrough effects (2D, SVG) ───────────────────────────────── */
+@keyframes tb3-walk-pulse {
+  0%, 100% { filter: drop-shadow(0 0 0 transparent); }
+  50%      { filter: drop-shadow(0 0 10px rgba(201, 138, 54, 0.7)); }
+}
+
+.tb3-walk-pulse {
+  animation: tb3-walk-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes tb3-walk-cable-pulse {
+  0%, 100% { stroke: rgba(255, 255, 255, 0.35); stroke-width: 1.5; }
+  50%      { stroke: rgba(201, 138, 54, 0.95); stroke-width: 3; }
+}
+
+.tb3-walk-cable-pulse {
+  animation: tb3-walk-cable-pulse 1.6s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tb3-walk-pulse {
+    animation: none;
+    filter: drop-shadow(0 0 8px rgba(201, 138, 54, 0.9));
+  }
+  .tb3-walk-cable-pulse {
+    animation: none;
+    stroke: rgba(201, 138, 54, 0.95);
+    stroke-width: 3;
+  }
+}

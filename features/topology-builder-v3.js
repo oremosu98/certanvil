@@ -6976,7 +6976,28 @@
   function anchorStepCardToViewportCenter() {}                   // Task 16
   function anchorStepCardToTarget(/* target, mode */) {}         // Task 16
   function anchorStepCardToDevice(/* deviceId, mode */) {}       // Task 16
-  function applyHighlight(/* target, mode */) {}                 // Tasks 8 + 10
+  function applyHighlight(target, mode) {
+    var resolved = resolveTarget(target);
+    if (mode === '2d') {
+      // Device pulses (SVG groups)
+      for (var i = 0; i < resolved.devices.length; i++) {
+        var el = document.querySelector('.tb3-dev[data-device-id="' + resolved.devices[i] + '"]');
+        if (el) el.classList.add('tb3-walk-pulse');
+      }
+      // Cable pulses (SVG paths) — look up cable.id by endpoints, then querySelector
+      for (var j = 0; j < resolved.cables.length; j++) {
+        var a = resolved.cables[j][0], b = resolved.cables[j][1];
+        var cbl = state.cables.find(function (c) {
+          return (c.fromId === a && c.toId === b) || (c.fromId === b && c.toId === a);
+        });
+        if (cbl) {
+          var cblEl = document.querySelector('.tb3-cable[data-cable-id="' + cbl.id + '"]');
+          if (cblEl) cblEl.classList.add('tb3-walk-cable-pulse');
+        }
+      }
+    }
+    // 3D path lands in Task 10
+  }
   function animateFlow(/* flow, mode */) {}                      // Tasks 9 + 11
 
   // Stubs for not-yet-implemented functions (later tasks replace these):

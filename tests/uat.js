@@ -23073,6 +23073,27 @@ test('TB v3 walk: runStep falls back to narrate-style anchor when target is miss
   return /targetExists/.test(m[0]) && /anchorStepCardToViewportCenter/.test(m[0]);
 })());
 
+test('TB v3 walk: 2D applyHighlight adds tb3-walk-pulse to target SVG groups', (function () {
+  var m = tbV3JsForWalk.match(/function applyHighlight\(target,\s*mode\)\s*\{[\s\S]*?\n  \}/);
+  if (!m) return false;
+  var body = m[0];
+  return /tb3-walk-pulse/.test(body)
+      && /tb3-walk-cable-pulse/.test(body)
+      && /mode\s*===\s*['"]2d['"]/.test(body);
+})());
+
+test('TB v3 walk: CSS has pulse keyframes for SVG (filter or stroke)', (function () {
+  var tbCss = read('features/topology-builder-v3.css');
+  return /@keyframes\s+tb3-walk-pulse/.test(tbCss)
+      && /\.tb3-walk-pulse\b/.test(tbCss)
+      && /\.tb3-walk-cable-pulse\b/.test(tbCss);
+})());
+
+test('TB v3 walk: CSS has reduced-motion fallback for walk pulses', (function () {
+  var tbCss = read('features/topology-builder-v3.css');
+  return /@media\s*\(prefers-reduced-motion:\s*reduce\)[\s\S]*?\.tb3-walk-pulse/.test(tbCss);
+})());
+
 // ── Summary ──
 console.log('\n' + '═'.repeat(50));
 const total = results.pass + results.fail;
