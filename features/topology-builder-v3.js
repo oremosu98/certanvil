@@ -7327,24 +7327,54 @@
 
     var html = '<div class="tb3-walk-catalog-header">Walkthroughs</div>';
 
+    // Apply active/dim treatment + nested walkthroughs
+    var hasActive = !!state.activeScenarioId;
+
     for (var d = 0; d < domainOrder.length; d++) {
       var domain = domainOrder[d];
       var items = groups[domain];
       if (!items || items.length === 0) continue;
 
-      html += '<div class="tb3-walk-catalog-domain-h">' +
+      // Domain header dims if there's an active scenario AND no items in this domain are active
+      var domainHasActive = hasActive && items.some(function (it) { return it.scen.id === state.activeScenarioId; });
+      var domainDimClass = (hasActive && !domainHasActive) ? ' tb3-walk-dimmed' : '';
+
+      html += '<div class="tb3-walk-catalog-domain-h' + domainDimClass + '">' +
               '<span>' + domain + '</span>' +
               '<span class="tb3-walk-catalog-domain-count">' + items.length + '</span>' +
               '</div>';
 
       for (var k = 0; k < items.length; k++) {
         var item = items[k];
-        var walkCount = item.walks.length;
-        html += '<div class="tb3-walk-scen-row" data-scenario-id="' + _escAttr(item.scen.id) + '">' +
+        var isActive = state.activeScenarioId === item.scen.id;
+        var isDimmed = hasActive && !isActive;
+        var rowClasses = 'tb3-walk-scen-row';
+        if (isActive) rowClasses += ' tb3-walk-scen-active';
+        if (isDimmed) rowClasses += ' tb3-walk-dimmed';
+
+        html += '<div class="' + rowClasses + '" data-scenario-id="' + _escAttr(item.scen.id) + '">' +
                 '<span class="tb3-walk-scen-title">' + _escAttr(item.scen.title) + '</span>' +
-                '<span class="tb3-walk-walks-pill">' + walkCount + ' walk' + (walkCount === 1 ? '' : 's') + '</span>' +
-                '<span class="tb3-walk-scen-chev">▸</span>' +
+                '<span class="tb3-walk-walks-pill">' + item.walks.length + ' walk' + (item.walks.length === 1 ? '' : 's') + '</span>' +
+                '<span class="tb3-walk-scen-chev">' + (isActive ? '▾' : '▸') + '</span>' +
                 '</div>';
+
+        // Nested walk rows under the active scenario
+        if (isActive && item.walks.length > 0) {
+          html += '<div class="tb3-walk-nest">';
+          for (var w = 0; w < item.walks.length; w++) {
+            var walk = item.walks[w];
+            var running = state.activeWalkthroughId === walk.id;
+            var rowClass = 'tb3-walk-row' + (running ? ' tb3-walk-row-running' : '');
+            html += '<div class="' + rowClass + '" data-walk-id="' + _escAttr(walk.id) + '">' +
+                    '<span class="tb3-walk-lens-icon"></span>' +
+                    '<span class="tb3-walk-row-title">' + _escAttr(walk.title) + '</span>' +
+                    '<span class="tb3-walk-row-meta">' +
+                      (running ? '● Running' : (walk.durationMin || '?') + ' min') +
+                    '</span>' +
+                    '</div>';
+          }
+          html += '</div>';
+        }
       }
     }
 
@@ -7355,10 +7385,14 @@
 
     panel.innerHTML = html;
 
-    // Wire row clicks (Task 13 will replace this to activate the scenario in focus-dim mode)
-    var rows = panel.querySelectorAll('.tb3-walk-scen-row');
-    for (var r = 0; r < rows.length; r++) {
-      rows[r].addEventListener('click', _onCatalogRowClick);
+    // Wire row clicks — scenario rows toggle focus-dim, walk rows start a walkthrough
+    var scenRows = panel.querySelectorAll('.tb3-walk-scen-row');
+    for (var r = 0; r < scenRows.length; r++) {
+      scenRows[r].addEventListener('click', _onCatalogRowClick);
+    }
+    var walkRows = panel.querySelectorAll('.tb3-walk-row');
+    for (var wr = 0; wr < walkRows.length; wr++) {
+      walkRows[wr].addEventListener('click', _onWalkRowClick);
     }
   }
 
@@ -7366,14 +7400,25 @@
     var row = ev.currentTarget;
     var scenarioId = row.dataset.scenarioId;
     if (!scenarioId) return;
-    // Placeholder behavior — Task 13 implements activate-scenario-in-focus-dim
-    var scenario = TB_V3_SCENARIOS.find(function (s) { return s.id === scenarioId; });
-    if (scenario) {
+    // Toggle: clicking the active scenario again deactivates focus
+    if (state.activeScenarioId === scenarioId) {
+      state.activeScenarioId = null;
+    } else {
       state.activeScenarioId = scenarioId;
-      if (typeof loadScenarioOnCanvas === 'function') {
+      var scenario = TB_V3_SCENARIOS.find(function (s) { return s.id === scenarioId; });
+      if (scenario && typeof loadScenarioOnCanvas === 'function') {
         state = loadScenarioOnCanvas(state, scenario);
       }
     }
+    renderWalkCatalog();
+    if (typeof _saveState === 'function') _saveState();
+  }
+
+  function _onWalkRowClick(ev) {
+    var row = ev.currentTarget;
+    var walkthroughId = row.dataset.walkId;
+    if (!walkthroughId) return;
+    walkStart(walkthroughId);
   }                     // Task 12
   function markCardAsResumed() {}                     // Task 15
 

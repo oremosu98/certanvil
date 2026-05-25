@@ -23198,6 +23198,37 @@ test('TB v3 walk: catalog CSS has domain header + scenario row + walks-pill styl
       && /\.tb3-walk-walks-pill\b/.test(tbCss);
 })());
 
+test('TB v3 walk: catalog row gets tb3-walk-scen-active class when activeScenarioId matches', (function () {
+  var m = tbV3JsForWalk.match(/function renderWalkCatalog\([\s\S]*?\n  \}/);
+  if (!m) return false;
+  return /tb3-walk-scen-active/.test(m[0]);
+})());
+
+test('TB v3 walk: catalog dims other rows when one is active', (function () {
+  var m = tbV3JsForWalk.match(/function renderWalkCatalog\([\s\S]*?\n  \}/);
+  if (!m) return false;
+  return /tb3-walk-dimmed/.test(m[0]);
+})());
+
+test('TB v3 walk: catalog renders nested walk rows under active scenario', (function () {
+  var m = tbV3JsForWalk.match(/function renderWalkCatalog\([\s\S]*?\n  \}/);
+  if (!m) return false;
+  return /tb3-walk-nest/.test(m[0]) && /tb3-walk-row/.test(m[0]);
+})());
+
+test('TB v3 walk: catalog walk-row click invokes walkStart', (function () {
+  return /function _onWalkRowClick/.test(tbV3JsForWalk)
+      && /walkStart\(/.test(tbV3JsForWalk);
+})());
+
+test('TB v3 walk: CSS has active + dimmed + nest styles', (function () {
+  var tbCss = read('features/topology-builder-v3.css');
+  return /\.tb3-walk-scen-active\b/.test(tbCss)
+      && /\.tb3-walk-dimmed\b/.test(tbCss)
+      && /\.tb3-walk-nest\b/.test(tbCss)
+      && /\.tb3-walk-row\b/.test(tbCss);
+})());
+
 // ── Summary ──
 console.log('\n' + '═'.repeat(50));
 const total = results.pass + results.fail;
