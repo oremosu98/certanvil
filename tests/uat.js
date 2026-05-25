@@ -23423,6 +23423,15 @@ test('TB v3 walk: home-network-attacks walkthrough exists with 6 steps + Network
     && walk.domainTags && walk.domainTags.indexOf('Network Security') !== -1;
 })());
 
+test('TB v3 walk: branch-office-wireless-lan walkthrough exists with 5 steps', (function () {
+  var walkJs = read('features/topology-builder-v3-walkthroughs.js');
+  var arrMatch = walkJs.match(/var TB_V3_WALKTHROUGHS = (\[[\s\S]*\]);/);
+  if (!arrMatch) return false;
+  var walks = new Function('return ' + arrMatch[1])();
+  var walk = walks.find(function (w) { return w.id === 'branch-office-wireless-lan'; });
+  return !!walk && walk.scenarioId === 'branch-office-wireless' && walk.steps.length === 5;
+})());
+
 // ── Summary ──
 console.log('\n' + '═'.repeat(50));
 const total = results.pass + results.fail;

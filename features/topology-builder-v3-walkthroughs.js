@@ -120,4 +120,52 @@ var TB_V3_WALKTHROUGHS = [
       },
     ],
   },
+  {
+    id: 'branch-office-wireless-lan',
+    scenarioId: 'branch-office-wireless',
+    title: 'How wireless extends the LAN',
+    brief: 'See how a wireless laptop reaches a wired desktop through the WAP and switch on the same /24 LAN.',
+    durationMin: 5,
+    // domainTags omitted -> inherits from scenario.objectiveRefs ['2.4', '1.6']
+    steps: [
+      {
+        id: 's1',
+        type: 'narrate',
+        title: 'One LAN, two media',
+        body: 'Wired ports and wireless radios share the same 10.10.0.0/24 subnet here. The access point is a bridge, not a router: it has no IP routing job, it just translates Wi-Fi frames into Ethernet frames.',
+      },
+      {
+        id: 's2',
+        type: 'highlight',
+        title: 'The wireless access point',
+        body: 'WAP-01 is the translation layer. Radio frames arrive on the 2.4 or 5 GHz channel; the same payload leaves the wired port as a standard Ethernet frame with the original source MAC preserved.',
+        target: { kind: 'device', id: 'sc_bw_ap1' },
+      },
+      {
+        id: 's3',
+        type: 'highlight',
+        title: 'The switch is the backbone',
+        body: 'Branch-SW carries every wireless packet once it leaves the radio. The WAP backhaul, the wired PC, and the WLC all hang off this one switch, so every cross-LAN conversation rides it at least once.',
+        target: { kind: 'device', id: 'sc_bw_sw' },
+      },
+      {
+        id: 's4',
+        type: 'flow',
+        title: 'A wireless laptop reaches a wired server',
+        body: 'Laptop-01 sends a packet to the Reception PC. The frame crosses the air to WAP-01, hops over the WLC backhaul, then traverses Branch-SW to land on the wired port.',
+        flow: {
+          from: 'sc_bw_lap1',
+          to: 'sc_bw_pc',
+          via: ['sc_bw_ap1', 'sc_bw_wlc', 'sc_bw_sw'],
+          direction: 'forward',
+        },
+      },
+      {
+        id: 's5',
+        type: 'narrate',
+        title: 'Why this mental model matters',
+        body: 'Treat the WAP as a bridge and the picture stays simple: wireless and wired clients live on one broadcast domain, and the switch is always in the path. When the exam asks where to put an ACL or a VLAN tag, the switch is almost always the answer.',
+      },
+    ],
+  },
 ];
