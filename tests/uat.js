@@ -23309,6 +23309,28 @@ test('TB v3 walk: _computeAnchorPosition function exists', (function () {
   return /function _computeAnchorPosition/.test(tbV3JsForWalk);
 })());
 
+test('TB v3 walk: _fadeCardThroughStepChange helper defined', (function () {
+  return /function _fadeCardThroughStepChange/.test(tbV3JsForWalk);
+})());
+
+test('TB v3 walk: fade-through uses 0.4 opacity midpoint', (function () {
+  var m = tbV3JsForWalk.match(/function _fadeCardThroughStepChange[\s\S]*?\n  \}/);
+  if (!m) return false;
+  return /opacity.*0\.4|0\.4.*opacity/.test(m[0]);
+})());
+
+test('TB v3 walk: runStep wraps renderStepCard in _fadeCardThroughStepChange', (function () {
+  var m = tbV3JsForWalk.match(/function runStep\(step,\s*mode\)\s*\{[\s\S]*?\n  \}/);
+  if (!m) return false;
+  return /_fadeCardThroughStepChange/.test(m[0]);
+})());
+
+test('TB v3 walk: fade-through respects prefers-reduced-motion', (function () {
+  var m = tbV3JsForWalk.match(/function _fadeCardThroughStepChange[\s\S]*?\n  \}/);
+  if (!m) return false;
+  return /prefers-reduced-motion/.test(m[0]) || /matchMedia/.test(m[0]);
+})());
+
 // ── Summary ──
 console.log('\n' + '═'.repeat(50));
 const total = results.pass + results.fail;

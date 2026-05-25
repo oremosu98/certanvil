@@ -6921,37 +6921,59 @@
     return true;
   }
 
+  function _fadeCardThroughStepChange(applyChanges) {
+    var card = document.querySelector('.tb3-walk-card');
+    var reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (!card || reduced) {
+      applyChanges();
+      return;
+    }
+    // Fade out to 0.4, swap content, fade back to 1
+    card.style.transition = 'opacity 140ms ease-out';
+    card.style.opacity = '0.4';
+    setTimeout(function () {
+      applyChanges();
+      card.style.opacity = '1';
+      // Restore position transition for the next step's anchor move
+      requestAnimationFrame(function () {
+        card.style.transition = '';
+      });
+    }, 140);
+  }
+
   function runStep(step, mode) {
     if (!step) return;
     clearEffects(mode);
-    renderStepCard(step);
-    switch (step.type) {
-      case 'narrate':
-        anchorStepCardToViewportCenter();
-        break;
-      case 'highlight':
-        if (!targetExists(step.target)) {
-          console.warn('[walk] missing target for step', step.id, step.target);
+    _fadeCardThroughStepChange(function () {
+      renderStepCard(step);
+      switch (step.type) {
+        case 'narrate':
           anchorStepCardToViewportCenter();
           break;
-        }
-        applyHighlight(step.target, mode);
-        anchorStepCardToTarget(step.target, mode);
-        break;
-      case 'flow':
-        // For flow steps, validate every device in the path
-        var flowDevices = [step.flow.from, step.flow.to].concat(step.flow.via || []);
-        if (!targetExists({ kind: 'devices', ids: flowDevices })) {
-          console.warn('[walk] missing devices for flow step', step.id, step.flow);
-          anchorStepCardToViewportCenter();
+        case 'highlight':
+          if (!targetExists(step.target)) {
+            console.warn('[walk] missing target for step', step.id, step.target);
+            anchorStepCardToViewportCenter();
+            break;
+          }
+          applyHighlight(step.target, mode);
+          anchorStepCardToTarget(step.target, mode);
           break;
-        }
-        animateFlow(step.flow, mode);
-        anchorStepCardToDevice(step.flow.from, mode);
-        break;
-      default:
-        console.warn('[walk] unknown step.type', step.type);
-    }
+        case 'flow':
+          // For flow steps, validate every device in the path
+          var flowDevices = [step.flow.from, step.flow.to].concat(step.flow.via || []);
+          if (!targetExists({ kind: 'devices', ids: flowDevices })) {
+            console.warn('[walk] missing devices for flow step', step.id, step.flow);
+            anchorStepCardToViewportCenter();
+            break;
+          }
+          animateFlow(step.flow, mode);
+          anchorStepCardToDevice(step.flow.from, mode);
+          break;
+        default:
+          console.warn('[walk] unknown step.type', step.type);
+      }
+    });
   }
 
   function clearEffects(mode) {
