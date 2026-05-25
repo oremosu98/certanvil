@@ -7009,9 +7009,8 @@
     if (!step) return;
     mode = mode || '2d';  // v6.5.3 defensive default — handles edge cases where state.walkMode is undefined
     clearEffects(mode);
-    // Bug A fix (v6.5.2): track which flow step's pellets are currently in
-    // flight so the SVG mutation observer can decide whether to re-spawn.
-    state.walkActiveFlowStepId = (step.type === 'flow') ? step.id : null;
+    // v6.5.4: walkActiveFlowStepId removed — observer no longer re-spawns
+    // flow pellets (was an infinite-loop source). Pellets are one-shot per step.
     _fadeCardThroughStepChange(function () {
       renderStepCard(step);
       switch (step.type) {
@@ -7863,20 +7862,11 @@
       if (state.walkMode !== '2d') return;
       if (step.type === 'highlight' && step.target) {
         applyHighlight(step.target, '2d');
-      } else if (step.type === 'flow' && step.flow) {
-        // Pellets live inside the SVG too — the rewrite wipes them. Re-spawn
-        // only if we're still on this flow step (idempotent: clearEffects strips
-        // any leftover pellets before _animateFlow2D spawns fresh ones).
-        if (state.walkActiveFlowStepId === step.id) {
-          // Strip stale pellets/arrows that the rewrite may have orphaned in
-          // sibling DOM (none expected, but defensive), then respawn.
-          var stale = document.querySelectorAll('.tb3-walk-pellet, .tb3-walk-flow-arrow');
-          for (var s = 0; s < stale.length; s++) {
-            stale[s].parentNode && stale[s].parentNode.removeChild(stale[s]);
-          }
-          _animateFlow2D(step.flow);
-        }
       }
+      // v6.5.4: Flow pellets are one-shot per step — they live in the SVG too
+      // but auto-clean in ~2.6s. Re-spawning them in the observer creates an
+      // infinite loop because each pellet IS a childList change. Pellets get
+      // one chance per step from runStep. Highlights remain protected above.
     });
     _walkSvgObserver.observe(svg, { childList: true, subtree: false });
   }
@@ -7954,7 +7944,6 @@
     state.activeWalkthroughId = null;
     state.walkStepIdx = 0;
     state.walkCardAnchor = null;
-    state.walkActiveFlowStepId = null;
     _saveStateImmediate();
     renderWalkCatalog();
   }
