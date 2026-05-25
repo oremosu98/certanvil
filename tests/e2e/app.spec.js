@@ -2419,10 +2419,10 @@ test.describe('topology-builder-v3', () => {
     await expect(items).toHaveCount(37);
   });
 
-  test('04: mode bar shows 5 modes with Design active', async ({ page }) => {
+  test('04: mode bar shows 6 modes with Design active', async ({ page }) => {
     await page.click('[data-sb-page="topology-builder-v3"]');
     const modes = page.locator('#tb3-modes-row .tb3-mode');
-    await expect(modes).toHaveCount(5);
+    await expect(modes).toHaveCount(6);
     await expect(modes.first()).toHaveClass(/on/);
     await expect(modes.first()).toContainText('Design');
   });
@@ -3768,16 +3768,18 @@ test.describe('TB v3 Walkthrough Phase 8', () => {
     await page.waitForSelector('.tb3-walk-card', { timeout: 5000 });
 
     // Advance to step 4 (which is the first flow step in home-network-comms)
+    // Wait >140ms between clicks so the fade callback completes (runStep's
+    // _fadeCardThroughStepChange has a 140ms timeout); otherwise rapid clicks
+    // can race past the per-step render and clear any prior effects.
     for (var i = 0; i < 3; i++) {
       await page.click('[data-walk-next]');
-      await page.waitForTimeout(150);
+      await page.waitForTimeout(250);
     }
 
-    // Reduced motion: no animated pellets
-    await page.waitForTimeout(500);
+    // Reduced motion: no animated pellets, static arrow rendered instead
+    await page.waitForTimeout(800);
     const pelletCount = await page.locator('.tb3-walk-pellet').count();
     expect(pelletCount).toBe(0);
-    // Static arrow should be visible instead
     const arrowCount = await page.locator('.tb3-walk-flow-arrow').count();
     expect(arrowCount).toBeGreaterThan(0);
   });

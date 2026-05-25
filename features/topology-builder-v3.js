@@ -2568,6 +2568,18 @@
     _updateSaveIndicator('saving');
   }
 
+  // Immediate (non-debounced) flush — used by walkthrough state changes
+  // where a reload between steps must always rehydrate the latest step.
+  function _saveStateImmediate() {
+    if (_saveTimer) { clearTimeout(_saveTimer); _saveTimer = null; }
+    try {
+      localStorage.setItem(STORAGE.TB_V3_DRAFT, serialiseState(state));
+      _updateSaveIndicator('saved');
+    } catch (e) {
+      _updateSaveIndicator('error');
+    }
+  }
+
   function _updateSaveIndicator(status) {
     var el = document.getElementById('tb3-status-save');
     if (!el) return;
@@ -7744,7 +7756,7 @@
       }
     }
     renderWalkCatalog();
-    if (typeof _saveState === 'function') _saveState();
+    if (typeof _saveStateImmediate === 'function') _saveStateImmediate();
   }
 
   function _onWalkRowClick(ev) {
@@ -7762,7 +7774,7 @@
     link.textContent = '↺ Restart from beginning';
     link.onclick = function () {
       state.walkStepIdx = 0;
-      if (typeof _saveState === 'function') _saveState();
+      if (typeof _saveStateImmediate === 'function') _saveStateImmediate();
       var walk = (typeof TB_V3_WALKTHROUGHS !== 'undefined' ? TB_V3_WALKTHROUGHS : [])
         .find(function (w) { return w.id === state.activeWalkthroughId; });
       if (walk && walk.steps.length > 0) runStep(walk.steps[0], state.walkMode);
@@ -7782,7 +7794,7 @@
     state.intent = 'walk';
     state.activeWalkthroughId = walkthroughId;
     state.walkStepIdx = 0;
-    _saveState();
+    _saveStateImmediate();
     if (walk.steps && walk.steps.length > 0) runStep(walk.steps[0], state.walkMode);
     renderWalkCatalog();
   }
@@ -7797,14 +7809,14 @@
     }
     state.walkStepIdx += 1;
     _bumpProgress(state.activeWalkthroughId);
-    _saveState();
+    _saveStateImmediate();
     runStep(walk.steps[state.walkStepIdx], state.walkMode);
   }
 
   function walkBack() {
     if (!state.activeWalkthroughId || state.walkStepIdx <= 0) return;
     state.walkStepIdx -= 1;
-    _saveState();
+    _saveStateImmediate();
     var walk = TB_V3_WALKTHROUGHS.find(function (w) { return w.id === state.activeWalkthroughId; });
     if (!walk) return;
     runStep(walk.steps[state.walkStepIdx], state.walkMode);
@@ -7818,7 +7830,7 @@
     state.activeWalkthroughId = null;
     state.walkStepIdx = 0;
     state.walkCardAnchor = null;
-    _saveState();
+    _saveStateImmediate();
     renderWalkCatalog();
   }
 
