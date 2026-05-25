@@ -23637,23 +23637,23 @@ test('TB v3 walk: _clearWalkHighlight3D resets panX/panY via camera state', (fun
 
 // ── v6.5.2 hotfix tests ──
 
-test('v6.5.3: package.json version is 6.5.3', (function () {
+test('v6.5.4: package.json version is 6.5.4', (function () {
   var pkg = read('package.json');
-  return /"version":\s*"6\.5\.3"/.test(pkg);
+  return /"version":\s*"6\.5\.4"/.test(pkg);
 })());
 
-test('v6.5.3: sw.js CACHE_NAME is netplus-v6.5.3', (function () {
+test('v6.5.4: sw.js CACHE_NAME is netplus-v6.5.4', (function () {
   var sw = read('sw.js');
-  return /netplus-v6\.5\.3/.test(sw);
+  return /netplus-v6\.5\.4/.test(sw);
 })());
 
-test('v6.5.3: index.html version badge is v6.5.3', (function () {
-  return /version-badge[\s\S]*?v6\.5\.3/.test(html);
+test('v6.5.4: index.html version badge is v6.5.4', (function () {
+  return /version-badge[\s\S]*?v6\.5\.4/.test(html);
 })());
 
-test('v6.5.3: app.js APP_VERSION is 6.5.3', (function () {
+test('v6.5.4: app.js APP_VERSION is 6.5.4', (function () {
   var js = read('app.js');
-  return /APP_VERSION\s*=\s*['"]6\.5\.3['"]/.test(js);
+  return /APP_VERSION\s*=\s*['"]6\.5\.4['"]/.test(js);
 })());
 
 // Bug A: MutationObserver re-applies walk FX after canvas re-render
@@ -23683,18 +23683,18 @@ test('v6.5.2 Bug A: observer re-applies applyHighlight for current step', (funct
   return /applyHighlight\(step\.target/.test(m[0]);
 })());
 
-test('v6.5.2 Bug A: runStep tracks walkActiveFlowStepId for flow steps only', (function () {
-  var m = tbV3JsForWalk.match(/function runStep\(step,\s*mode\)[\s\S]*?\n  \}/);
-  if (!m) return false;
-  return /walkActiveFlowStepId/.test(m[0])
-      && /step\.type\s*===?\s*['"]flow['"]/.test(m[0]);
+test('v6.5.4 Bug A: walkActiveFlowStepId no longer assigned (removed from code paths)', (function () {
+  // v6.5.4: state.walkActiveFlowStepId no longer written or read — assignment patterns gone
+  // (a doc-comment may still mention the name; assertion targets actual usage)
+  return !/state\.walkActiveFlowStepId\s*=/.test(tbV3JsForWalk)
+      && !/walkActiveFlowStepId\s*===?/.test(tbV3JsForWalk);
 })());
 
-test('v6.5.2 Bug A: observer respawns pellets for current flow step', (function () {
+test('v6.5.4 Bug A: observer does NOT respawn flow pellets (infinite-loop fix)', (function () {
+  // v6.5.4: removed flow pellet re-spawn from observer — each pellet was a childList change → infinite loop
   var m = tbV3JsForWalk.match(/function _startWalkEffectObserver[\s\S]*?\n  \}/);
   if (!m) return false;
-  return /walkActiveFlowStepId/.test(m[0])
-      && /_animateFlow2D\(step\.flow\)/.test(m[0]);
+  return !/_animateFlow2D\(step\.flow\)/.test(m[0]);
 })());
 
 // Bug B: walkStart reassigns state from loadScenarioOnCanvas + re-renders
