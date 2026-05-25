@@ -23015,6 +23015,39 @@ test('TB v3 walk: markCardAsResumed stub defined', (function () {
   return /function markCardAsResumed\(/.test(tbV3JsForWalk);
 })());
 
+test('TB v3 walk: runStep dispatches on step.type', (function () {
+  var m = tbV3JsForWalk.match(/function runStep\(step,\s*mode\)\s*\{[\s\S]*?\n  \}/);
+  if (!m) return false;
+  var body = m[0];
+  return /case ['"]narrate['"]/.test(body)
+      && /case ['"]highlight['"]/.test(body)
+      && /case ['"]flow['"]/.test(body);
+})());
+
+test('TB v3 walk: runStep calls renderStepCard before switch', (function () {
+  var m = tbV3JsForWalk.match(/function runStep\(step,\s*mode\)\s*\{[\s\S]*?\n  \}/);
+  if (!m) return false;
+  var body = m[0];
+  var renderIdx = body.indexOf('renderStepCard');
+  var switchIdx = body.indexOf('switch');
+  return renderIdx > -1 && switchIdx > -1 && renderIdx < switchIdx;
+})());
+
+test('TB v3 walk: runStep calls clearEffects before rendering', (function () {
+  var m = tbV3JsForWalk.match(/function runStep\(step,\s*mode\)\s*\{[\s\S]*?\n  \}/);
+  if (!m) return false;
+  var body = m[0];
+  var clearIdx = body.indexOf('clearEffects');
+  var renderIdx = body.indexOf('renderStepCard');
+  return clearIdx > -1 && renderIdx > -1 && clearIdx < renderIdx;
+})());
+
+test('TB v3 walk: clearEffects removes tb3-walk-pulse from SVG elements', (function () {
+  var m = tbV3JsForWalk.match(/function clearEffects\([\s\S]*?\n  \}/);
+  if (!m) return false;
+  return /tb3-walk-pulse/.test(m[0]) && /querySelectorAll/.test(m[0]);
+})());
+
 // ── Summary ──
 console.log('\n' + '═'.repeat(50));
 const total = results.pass + results.fail;

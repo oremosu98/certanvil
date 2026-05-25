@@ -6890,9 +6890,56 @@
   // state.intent union: 'free-build' | 'lab' | 'pbq' | 'walk'
   // ════════════════════════════════════════════════════════════════════
 
+  // ── Walkthrough render primitives (Phase 8) ──
+  // Replaces Task 4 stubs.
+
+  function runStep(step, mode) {
+    if (!step) return;
+    clearEffects(mode);
+    renderStepCard(step);
+    switch (step.type) {
+      case 'narrate':
+        anchorStepCardToViewportCenter();
+        break;
+      case 'highlight':
+        applyHighlight(step.target, mode);
+        anchorStepCardToTarget(step.target, mode);
+        break;
+      case 'flow':
+        animateFlow(step.flow, mode);
+        anchorStepCardToDevice(step.flow.from, mode);
+        break;
+      default:
+        console.warn('[walk] unknown step.type', step.type);
+    }
+  }
+
+  function clearEffects(mode) {
+    // Remove walk effect classes from any SVG/HTML elements
+    var pulsed = document.querySelectorAll('.tb3-walk-pulse, .tb3-walk-cable-pulse');
+    for (var i = 0; i < pulsed.length; i++) {
+      pulsed[i].classList.remove('tb3-walk-pulse', 'tb3-walk-cable-pulse');
+    }
+    // Remove any pellet sprites
+    var pellets = document.querySelectorAll('.tb3-walk-pellet, .tb3-walk-flow-arrow');
+    for (var j = 0; j < pellets.length; j++) {
+      pellets[j].parentNode && pellets[j].parentNode.removeChild(pellets[j]);
+    }
+    // 3D-mode glow reset will plug in once Task 10 lands (_tb3ClearGlowMaterials)
+    if (mode === '3d' && typeof _tb3ClearGlowMaterials === 'function') {
+      _tb3ClearGlowMaterials();
+    }
+  }
+
+  // Stubs for downstream tasks (replaced by Tasks 8/9/15/16/18)
+  function renderStepCard(/* step */) {}                         // Task 15
+  function anchorStepCardToViewportCenter() {}                   // Task 16
+  function anchorStepCardToTarget(/* target, mode */) {}         // Task 16
+  function anchorStepCardToDevice(/* deviceId, mode */) {}       // Task 16
+  function applyHighlight(/* target, mode */) {}                 // Tasks 8 + 10
+  function animateFlow(/* flow, mode */) {}                      // Tasks 9 + 11
+
   // Stubs for not-yet-implemented functions (later tasks replace these):
-  function runStep(/* step, mode */) {}              // Task 6
-  function clearEffects(/* mode */) {}                // Task 6
   function hideStepCard() {}                          // Task 15
   function showCompletionCard(/* walkthroughId */) {} // Task 18
   function renderWalkCatalog() {}                     // Task 12
