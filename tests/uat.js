@@ -23149,6 +23149,27 @@ test('TB v3 walk: clearEffects calls _clearWalkHighlight3D when mode is 3d', (fu
   return /_clearWalkHighlight3D/.test(m[0]);
 })());
 
+test('TB v3 walk: _animateFlow3D defined and spawns SVG packets', (function () {
+  var m = tbV3JsForWalk.match(/function _animateFlow3D\(flow\)\s*\{[\s\S]*?\n  \}/);
+  if (!m) return false;
+  var body = m[0];
+  return /animateMotion/.test(body)
+      || /tb3-walk-3d-packet/.test(body);
+})());
+
+test('TB v3 walk: 3D flow path includes from + via + to', (function () {
+  var m = tbV3JsForWalk.match(/function _animateFlow3D\(flow\)\s*\{[\s\S]*?\n  \}/);
+  if (!m) return false;
+  var body = m[0];
+  return /flow\.from/.test(body) && /flow\.to/.test(body) && /flow\.via/.test(body);
+})());
+
+test('TB v3 walk: 3D flow has reduced-motion CSS gate', (function () {
+  var tbCss = read('features/topology-builder-v3.css');
+  return /\.tb3-walk-3d-packet\b/.test(tbCss)
+      && /@media\s*\(prefers-reduced-motion:\s*reduce\)[\s\S]*?tb3-walk-3d-packet/.test(tbCss);
+})());
+
 // ── Summary ──
 console.log('\n' + '═'.repeat(50));
 const total = results.pass + results.fail;

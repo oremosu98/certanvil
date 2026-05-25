@@ -2990,3 +2990,18 @@ html[data-theme="light"] #page-topology-builder-v3 {
   .tb3-walk-pellet { display: none; }
   .tb3-walk-flow-arrow { display: inline; }
 }
+
+/* ── Walkthrough flow (3D popup, CSS 3D + SVG) ──────────────────── */
+.tb3-walk-3d-packet {
+  position: absolute;
+  pointer-events: none;
+  z-index: 5;  /* sits above tb3-3d-ambient-packet (z-index 4-ish) */
+}
+.tb3-walk-3d-packet circle {
+  fill: #f0c789;
+  filter: drop-shadow(0 0 6px rgba(240, 199, 137, 0.85));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tb3-walk-3d-packet { display: none; }
+}

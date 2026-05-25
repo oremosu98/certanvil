@@ -7066,6 +7066,11 @@
     for (var i = 0; i < devs.length; i++) devs[i].classList.remove('tb3-walk-pulse');
     var cbls = document.querySelectorAll('.tb3-3d-cable.tb3-walk-cable-pulse');
     for (var j = 0; j < cbls.length; j++) cbls[j].classList.remove('tb3-walk-cable-pulse');
+    // Remove walk-spawned 3D SVG packets (Task 11).
+    var walkPackets = document.querySelectorAll('.tb3-walk-3d-packet');
+    for (var k = 0; k < walkPackets.length; k++) {
+      walkPackets[k].parentNode && walkPackets[k].parentNode.removeChild(walkPackets[k]);
+    }
     // Reset only the walk-added translate; preserve user-set rotation/scale.
     var stage = document.getElementById('tb3-3d-popup-stage');
     if (stage) {
@@ -7181,7 +7186,100 @@
     svg.appendChild(text);
   }
 
-  function _animateFlow3D(/* flow */) {}  // Task 11
+  function _animateFlow3D(flow) {
+    // Spawns .tb3-walk-3d-packet SVGs (animateMotion-driven) per segment via _spawnWalkPacket3D.
+    var path = [flow.from].concat(flow.via || []).concat([flow.to]);
+    var stage = document.getElementById('tb3-3d-popup-stage');
+    if (!stage) return;
+
+    // Reduced motion: skip animation entirely (CSS also hides the class)
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      return;
+    }
+
+    var speed = flow.speed === 'slow' ? '4s' : (flow.speed === 'fast' ? '1.6s' : '2.6s');
+    var forwardBack = flow.direction === 'forward-back';
+
+    // For each segment (from → to), find the cable + spawn an SVG packet that animates along it
+    for (var i = 0; i < path.length - 1; i++) {
+      var fromId = path[i];
+      var toId = path[i + 1];
+      _spawnWalkPacket3D(stage, fromId, toId, speed, forwardBack, i * 0.4);
+    }
+  }
+
+  function _spawnWalkPacket3D(stage, fromId, toId, dur, forwardBack, delayS) {
+    var fromDev = state.devices.find(function (d) { return d.id === fromId; });
+    var toDev = state.devices.find(function (d) { return d.id === toId; });
+    if (!fromDev || !toDev) return;
+
+    // Match _buildAmbientPacketEl bezier formula: x = dev.x + 44, y = dev.y + 60
+    var x1 = fromDev.x + 44;
+    var y1 = fromDev.y + 60;
+    var x2 = toDev.x + 44;
+    var y2 = toDev.y + 60;
+    var sagY = Math.min(70, Math.max(20, Math.abs(x2 - x1) * 0.12));
+    var cy1 = y1 + sagY;
+    var cy2 = y2 + sagY;
+    var midX = (x1 + x2) / 2;
+
+    var minX = Math.min(x1, x2) - 20;
+    var minY = Math.min(y1, y2) - 4;
+    var maxX = Math.max(x1, x2) + 20;
+    var maxY = Math.max(y1, y2) + sagY + 8;
+    var w = maxX - minX;
+    var h = maxY - minY;
+
+    var px1 = x1 - minX, py1 = y1 - minY;
+    var px2 = x2 - minX, py2 = y2 - minY;
+    var cpX = midX - minX, pcy1 = cy1 - minY, pcy2 = cy2 - minY;
+    var pathStr = 'M' + px1 + ',' + py1 +
+                  ' C' + cpX + ',' + pcy1 + ' ' + cpX + ',' + pcy2 + ' ' + px2 + ',' + py2;
+    var pathId = 'tb3-walk-3d-path-' + fromId + '-' + toId + '-' + Date.now();
+
+    var svgNs = 'http://www.w3.org/2000/svg';
+    var svg = document.createElementNS(svgNs, 'svg');
+    svg.setAttribute('class', 'tb3-walk-3d-packet');
+    svg.setAttribute('width', String(w));
+    svg.setAttribute('height', String(h));
+    svg.setAttribute('viewBox', '0 0 ' + w + ' ' + h);
+    svg.style.left = minX + 'px';
+    svg.style.top = minY + 'px';
+    svg.style.transform = 'translateZ(1px)';  // sit above ambient packets
+    svg.style.overflow = 'visible';
+
+    var defs = document.createElementNS(svgNs, 'defs');
+    var pathEl = document.createElementNS(svgNs, 'path');
+    pathEl.setAttribute('id', pathId);
+    pathEl.setAttribute('d', pathStr);
+    pathEl.setAttribute('fill', 'none');
+    pathEl.setAttribute('stroke', 'none');
+    defs.appendChild(pathEl);
+    svg.appendChild(defs);
+
+    // 3 staggered larger packets (r=4 vs ambient r=2)
+    var stagger = [0, 0.4, 0.8];
+    for (var p = 0; p < 3; p++) {
+      var pkt = document.createElementNS(svgNs, 'circle');
+      pkt.setAttribute('r', '4');
+      var anim = document.createElementNS(svgNs, 'animateMotion');
+      anim.setAttribute('dur', dur);
+      anim.setAttribute('repeatCount', forwardBack ? '2' : 'indefinite');
+      anim.setAttribute('begin', (stagger[p] + delayS) + 's');
+      // For forward-back: alternate direction via keyPoints (forward then reverse)
+      if (forwardBack) {
+        anim.setAttribute('keyPoints', '0;1;0');
+        anim.setAttribute('keyTimes', '0;0.5;1');
+        anim.setAttribute('calcMode', 'linear');
+      }
+      var mpath = document.createElementNS(svgNs, 'mpath');
+      mpath.setAttribute('href', '#' + pathId);
+      anim.appendChild(mpath);
+      pkt.appendChild(anim);
+      svg.appendChild(pkt);
+    }
+    stage.appendChild(svg);
+  }
 
   // Stubs for not-yet-implemented functions (later tasks replace these):
   function hideStepCard() {}                          // Task 15
