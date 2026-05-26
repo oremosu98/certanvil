@@ -23303,6 +23303,53 @@ test('TB v3 Coach: askAI source increments counter on success but not on cache h
   return cacheGetIdx >= 0 && incrementIdx > cacheGetIdx;
 })());
 
+// ─────────────────────────────────────────────────────────────────────
+// Phase 9 Coach · FB action narration (v6.5.19 Task 7)
+// Scripted strings keyed by canvas event type. AI is NOT invoked for
+// narration — silence is preferable to noise for unknown events.
+// ─────────────────────────────────────────────────────────────────────
+test('TB v3 Coach: narrateAction returns scripted text for known device-added', (function () {
+  const Coach = _loadCoachWithGlobals();
+  const r1 = Coach.narrateAction({ type: 'device-added', device: { type: 'router' } });
+  const r2 = Coach.narrateAction({ type: 'device-added', device: { type: 'soho-router' } });
+  const r3 = Coach.narrateAction({ type: 'device-added', device: { type: 'switch' } });
+  delete global.localStorage;
+  return typeof r1 === 'string' && /Routers move packets/.test(r1)
+      && typeof r2 === 'string' && /SOHO router is converged/.test(r2)
+      && typeof r3 === 'string' && /Switches forward frames/.test(r3);
+})());
+
+test('TB v3 Coach: narrateAction returns scripted text for cable-drawn', (function () {
+  const Coach = _loadCoachWithGlobals();
+  const r = Coach.narrateAction({ type: 'cable-drawn' });
+  delete global.localStorage;
+  return typeof r === 'string' && /Cables are L1/.test(r);
+})());
+
+test('TB v3 Coach: narrateAction returns null for unknown event types', (function () {
+  const Coach = _loadCoachWithGlobals();
+  const r1 = Coach.narrateAction({ type: 'mystery-event' });
+  const r2 = Coach.narrateAction(null);
+  const r3 = Coach.narrateAction({});
+  delete global.localStorage;
+  return r1 === null && r2 === null && r3 === null;
+})());
+
+test('TB v3 Coach: narrateAction returns null for device-deleted / cable-deleted (intentional silence)', (function () {
+  const Coach = _loadCoachWithGlobals();
+  const r1 = Coach.narrateAction({ type: 'device-deleted', device: { type: 'router' } });
+  const r2 = Coach.narrateAction({ type: 'cable-deleted' });
+  delete global.localStorage;
+  return r1 === null && r2 === null;
+})());
+
+test('TB v3 Coach: narrateAction returns null for unrecognised device.type within device-added', (function () {
+  const Coach = _loadCoachWithGlobals();
+  const r = Coach.narrateAction({ type: 'device-added', device: { type: 'mystery-device' } });
+  delete global.localStorage;
+  return r === null;
+})());
+
 test('TB v3 walk: state declares activeWalkthroughId field', (function () {
   return /activeWalkthroughId\s*:\s*null/.test(tbV3JsForWalk);
 })());

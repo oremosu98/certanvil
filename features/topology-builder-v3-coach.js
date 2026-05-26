@@ -191,6 +191,44 @@
       });
   }
 
+  // ── FB action narration templates (Task 7) ─────────────────────────
+  // Scripted strings keyed by canvas event type. Returned by
+  // narrateAction(event); appended to the FB message feed as a quiet
+  // ◯-marked narration line. Returns null for unknown events — the
+  // panel renders silence rather than noise (no AI fallback for
+  // narration; that's deliberate, the AI is reserved for student-
+  // typed questions + PBQ 4th-hint escape).
+  var NARRATION = {
+    'device-added': function (e) {
+      var t = (e && e.device && e.device.type) || null;
+      var map = {
+        'router': 'Routers move packets between subnets at L3. This one will likely be your gateway.',
+        'soho-router': 'A SOHO router is converged: routing + switching + DHCP + NAT in one device.',
+        'switch': 'Switches forward frames within a subnet at L2. Multiple endpoints share one L2 broadcast domain.',
+        'pc': 'Endpoints sit at the edge — they originate traffic and receive it.',
+        'phone': 'Endpoints sit at the edge — they originate traffic and receive it.',
+        'printer': 'Endpoints sit at the edge — they originate traffic and receive it.',
+        'endpoint': 'Endpoints sit at the edge — they originate traffic and receive it.',
+        'isp': 'The ISP represents the WAN side. Anything beyond it leaves your control.',
+        'firewall': 'Firewalls inspect traffic crossing a boundary and decide what passes.',
+      };
+      return map[t] || null;
+    },
+    'cable-drawn': function () {
+      return 'Cables are L1 — physical paths. Protocol decisions happen on the devices at each end.';
+    },
+    'device-deleted': function () { return null; },
+    'cable-deleted': function () { return null; },
+  };
+
+  function narrateAction(event) {
+    if (!event || !event.type) return null;
+    var fn = NARRATION[event.type];
+    if (!fn) return null;
+    var msg = fn(event);
+    return (typeof msg === 'string' && msg.length > 0) ? msg : null;
+  }
+
   // ── Module export ──────────────────────────────────────────────────
   var TbV3Coach = {
     COACH_VERSION: COACH_VERSION,
@@ -203,6 +241,7 @@
     buildPrompt: buildPrompt,
     askAI: askAI,
     PERSONA: PERSONA,
+    narrateAction: narrateAction,
   };
 
   if (typeof window !== 'undefined') {
