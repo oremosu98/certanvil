@@ -634,6 +634,10 @@ test('CSS: .progress-domain', css.includes('.progress-domain '));
 test('CSS: .topic-obj-badge', css.includes('.topic-obj-badge'));
 test('CSS: .prog-filter-active', css.includes('.prog-filter-active'));
 test('CSS: .ps2-cover-bar (v4.51.0: renamed from .ps-coverage-bar)', css.includes('.ps2-cover-bar'));
+// v7.2.0: dg-system.css ships the v2 scoped reskin (Batch 4b replacement). Above
+// CSS guards keep regression strength on the legacy styles.css surface; the
+// dg-system.css overrides win at runtime. No new CSS asserts added — dg-system.css
+// is not UAT-read (consistent with v4.99.65 / v4.99.66 / Batch 4l Settings pattern).
 
 // ── Port Drill family multi-select (v4.12 #27) ──
 console.log('\n\x1b[1m── PORT DRILL FAMILY Q (v4.12) ──\x1b[0m');
@@ -5128,55 +5132,116 @@ test('v4.50.1 CSS: narrow-viewport hides date at \u2264520px',
 test('v4.50.1 CSS: reduced-motion neutralises history-row transition',
   /prefers-reduced-motion[\s\S]{0,4000}\.history-row\s*\{[^}]*transition:\s*none/.test(css));
 
-// ── v4.51.0 TOPIC PROGRESS PAGE REVAMP ──
-// Topic Progress page polish: cleaner header, 2 premium summary cards
-// (Topic Mastery + Lab Progress), domain-tinted objective badges,
-// friendlier date formatting, 5-colour accordion border palette,
-// polished toolbar. User ask: "Better cleaner and polsihed UI. High quality."
-console.log('\n\x1b[1m── v4.51.0 TOPIC PROGRESS REVAMP ──\x1b[0m');
+// ── v7.2.0 PROGRESS PAGE v2 REDESIGN ──
+// Work-first dashboard rebuild: mastery instrument hero + domain readiness
+// strip + whole-row button + empty state + locked stop-slop copy. Supersedes
+// the v4.51.0 4-tile-stat-strip + 26x26 chevron-button surface.
+//
+// Migrated v4.51.0 guards: 5141-5147 (header) + 5150-5161 (mastery emission)
+// + 5168-5169 (topic-obj-domainKey badge — mockup has no obj badge by design).
+// KEPT v4.51.0 guards: 5163 (.ps-row tombstone), 5166-5167 (domainKey read),
+// 5170-5173 (friendlier date), 5176-5179 (data-domain-idx/key) — all true in v2.
+// KEPT all 5181-5267 styles.css CSS guards (legacy CSS retained; dg-system.css
+// Batch 4b override wins at runtime — same proven scoped-CSS pattern from
+// v4.99.66 / v4.99.67 / v4.99.68 / Batch 4l Settings et al).
+console.log('\n\x1b[1m── v7.2.0 PROGRESS v2 (mastery instrument + domain strip) ──\x1b[0m');
 
-// HTML — header structure
-// v4.54.9: Progress page header replaced by .ed-pagehead editorial treatment
-test('v4.51.0 (v4.54.9 update) HTML: progress page uses .ed-pagehead editorial header',
+// HTML — top eyebrow strip
+// v4.54.9: editorial .ed-pagehead retained as the page-progress chrome.
+test('v7.2.0 HTML: progress page uses .ed-pagehead editorial header',
   /id="page-progress"[\s\S]{0,400}class="ed-pagehead"/.test(html));
-test('v4.51.0 (v4.54.9 update) HTML: progress page title is italic-accent display heading',
+test('v7.2.0 HTML: progress page title kept (Topic progress.)',
   /id="page-progress"[\s\S]{0,800}ed-pagehead-display[^<]*>Topic\s*<em>progress\.<\/em>/.test(html));
 test('v4.51.0 HTML: regression — old inline-styled flex header removed',
   !html.includes('<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px">'));
 test('v4.51.0 HTML: regression — old inline legend dots removed from header',
   !html.includes('<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--green);margin-right:4px">'));
 
-// JS — _renderProgressSummary rewrite
-test('v4.51.0: _renderProgressSummary emits .progress-card-mastery card',
-  /_renderProgressSummary[\s\S]{0,4000}progress-card\s+progress-card-mastery/.test(js));
-test('v4.51.0: _renderProgressSummary emits .progress-card-labs card (gated on TB_LABS)',
-  /_renderProgressSummary[\s\S]{0,4000}progress-card\s+progress-card-labs/.test(js));
-test('v4.51.0: mastery card has 4-tile grid (Strong/Solid/Weak/Untouched)',
-  /ps2-grid\s+ps2-grid-mastery[\s\S]{0,1200}ps2-strong[\s\S]{0,300}ps2-solid[\s\S]{0,300}ps2-weak[\s\S]{0,300}ps2-untouched/.test(js));
-test('v4.51.0: mastery card has premium coverage bar w/ role=progressbar',
-  /progress-card-mastery[\s\S]{0,2000}ps2-cover-bar[\s\S]{0,200}role="progressbar"/.test(js));
-test('v4.51.0: labs card tiles use diffClassMap (ps2-diff-beg/int/adv)',
-  /diffClassMap[\s\S]{0,200}ps2-diff-beg[\s\S]{0,100}ps2-diff-int[\s\S]{0,100}ps2-diff-adv/.test(js));
-test('v4.51.0: legend lives inside mastery card (.progress-card-legend)',
-  /progress-card-mastery[\s\S]{0,2000}progress-card-legend[\s\S]{0,600}pcl-green[\s\S]{0,200}pcl-blue[\s\S]{0,200}pcl-red/.test(js));
-test('v4.51.0: regression — old flat .ps-row stat grid removed',
-  !/ps-row[\s\S]{0,200}ps-stat\s+ps-strong/.test(js));
+// JS — v2 mastery instrument emission (.pm-bar + .pm-ledger + 4 segments + 4 tier classes)
+test('v7.2.0: _renderProgressSummary emits .pm wrapper with role=region',
+  /_renderProgressSummary[\s\S]{0,5000}class="pm"[\s\S]{0,200}role="region"/.test(js));
+test('v7.2.0: _renderProgressSummary emits .pm-headline ({N} of {total} studied)',
+  /_renderProgressSummary[\s\S]{0,5000}class="pm-headline"/.test(js));
+test('v7.2.0: _renderProgressSummary emits .pm-bar with role=img',
+  /_renderProgressSummary[\s\S]{0,5000}class="pm-bar"[\s\S]{0,200}role="img"/.test(js));
+test('v7.2.0: _renderProgressSummary emits 4 .pm-seg segments (s/o/w/u)',
+  /_renderProgressSummary[\s\S]{0,5000}pm-seg s[\s\S]{0,400}pm-seg o[\s\S]{0,400}pm-seg w[\s\S]{0,400}pm-seg u/.test(js));
+test('v7.2.0: _renderProgressSummary emits .pm-ledger with 4 .pm-led tiles',
+  /_renderProgressSummary[\s\S]{0,5000}class="pm-ledger"[\s\S]{0,2000}pm-led s[\s\S]{0,400}pm-led o[\s\S]{0,400}pm-led w[\s\S]{0,400}pm-led u/.test(js));
+test('v7.2.0: _renderProgressSummary uses tabular nums in .pm-led-n',
+  /_renderProgressSummary[\s\S]{0,5000}class="pm-led-n"/.test(js));
+test('v7.2.0: _renderProgressSummary covered pct line derived from rows (off-by-one fix)',
+  /_renderProgressSummary[\s\S]{0,5000}buckets\.untouched[\s\S]{0,1500}coveragePct/.test(js));
 
-// JS — _progressRowHtml upgrades
+// JS — v2 domain readiness strip emission (.dr-strip with 5 .dr-row buttons + data-domain-jump)
+test('v7.2.0: _renderProgressSummary emits .dr-strip with role=region',
+  /_renderProgressSummary[\s\S]{0,8000}class="dr"[\s\S]{0,200}role="region"/.test(js));
+test('v7.2.0: _renderProgressSummary emits .dr-eyebrow strip header',
+  /_renderProgressSummary[\s\S]{0,8000}class="dr-eyebrow"/.test(js));
+test('v7.2.0: _renderProgressSummary emits .dr-row buttons with data-domain-jump',
+  /_renderProgressSummary[\s\S]{0,8000}class="dr-row"[\s\S]{0,400}data-domain-jump/.test(js));
+test('v7.2.0: _renderProgressSummary domain readiness rows include .dr-name + .dr-weight + .dr-bar + .dr-pct',
+  /_renderProgressSummary[\s\S]{0,8000}class="dr-name"[\s\S]{0,200}class="dr-weight"[\s\S]{0,200}class="dr-bar"[\s\S]{0,400}class="dr-pct/.test(js));
+test('v7.2.0: _renderProgressSummary cert-aware domain strip uses CERT_PACK.domainWeights',
+  /_renderProgressSummary[\s\S]{0,8000}(CERT_PACK\.domainWeights|DOMAIN_WEIGHTS)/.test(js));
+
+// JS — v2 empty-state branch (rows.every(r => !r.studied))
+test('v7.2.0: _renderProgressSummary has empty-state branch when no rows studied',
+  /_renderProgressSummary[\s\S]{0,8000}rows\.every\(/.test(js) ||
+  /_renderProgressSummary[\s\S]{0,8000}touched\s*===\s*0/.test(js));
+test('v7.2.0: empty-state copy "Take any quiz to start tracking your mastery."',
+  /Take any quiz to start tracking your mastery/.test(js));
+test('v7.2.0: empty-state CTA copy "Take the diagnostic"',
+  /Take the diagnostic/.test(js));
+
+// JS — v2 row-as-button + chevron pseudo + data-topic delegation
+test('v7.2.0: _progressRowHtml emits <button class="t-row" instead of <div class="t-row"',
+  /_progressRowHtml[\s\S]{0,2000}<button[^>]*class="t-row/.test(js));
+test('v7.2.0: _progressRowHtml emits data-topic for click delegation',
+  /_progressRowHtml[\s\S]{0,2000}data-topic=/.test(js));
+test('v7.2.0: _progressRowHtml emits aria-label on row',
+  /_progressRowHtml[\s\S]{0,2000}aria-label=/.test(js));
+test('v7.2.0: _progressRowHtml emits .tn/.tnm/.tsub/.tbar/.tpc structure (v2 markup)',
+  /_progressRowHtml[\s\S]{0,2000}class="tn"[\s\S]{0,400}class="tnm"[\s\S]{0,400}class="tbar"[\s\S]{0,400}class="tpc/.test(js));
+test('v7.2.0: _progressRowHtml applies .untouched class when no studied',
+  /_progressRowHtml[\s\S]{0,2000}untouched/.test(js));
+test('v7.2.0: tombstone — old div.topic-row markup removed from _progressRowHtml',
+  !/<div class="topic-row" onclick="drillTopic/.test(js));
+test('v7.2.0: tombstone — old 26x26 .topic-play-btn separate button removed',
+  !/_progressRowHtml[\s\S]{0,2500}topic-play-btn/.test(js));
+
+// JS — v2 click delegation (drillTopic via data-topic + .dr-row scroll-into-view)
+test('v7.2.0: _renderProgressGrouped wires .t-row[data-topic] click delegation',
+  /_renderProgressGrouped[\s\S]{0,5000}data-topic[\s\S]{0,2000}drillTopic/.test(js) ||
+  /_wireProgressDelegation/.test(js));
+test('v7.2.0: domain-jump click handler emits #domain-<slug> scroll',
+  /data-domain-jump[\s\S]{0,2000}scrollIntoView/.test(js));
+
+// JS — v2 domain sections carry id="domain-<slug>"
+test('v7.2.0: _renderProgressGrouped emits id="domain-<slug>" on each .dom section',
+  /_renderProgressGrouped[\s\S]{0,3500}id="domain-/.test(js));
+
+// JS — v2 prescription card locked copy (Where to drill next + per-minute language)
+test('v7.2.0: rec card eyebrow "WHERE TO DRILL NEXT" (locked stop-slop copy)',
+  /WHERE TO DRILL NEXT/i.test(js) || /Where to drill next/i.test(js));
+test('v7.2.0: rec card sub "Drilling here moves readiness furthest per minute."',
+  /Drilling here moves readiness furthest per minute/.test(js));
+test('v7.2.0: rec card empty-state copy "Start with the diagnostic"',
+  /Start with the diagnostic/.test(js));
+
+// JS — _progressRowHtml upgrades (KEPT from v4.51.0)
 test('v4.51.0: _progressRowHtml reads domainKey from row',
   /_progressRowHtml\([^)]*row[\s\S]{0,400}const\s*\{[^}]*domainKey/.test(js));
-test('v4.51.0: _progressRowHtml emits topic-obj-${domainKey} tinted badge',
-  /topic-obj-' \+ domainKey/.test(js) || /topic-obj-\$\{domainKey\}/.test(js));
 test('v4.51.0: _progressRowHtml uses friendlier date formatting (yesterday / weeks ago / months ago)',
-  /yesterday[\s\S]{0,300}days ago[\s\S]{0,300}week ago[\s\S]{0,300}weeks ago[\s\S]{0,300}month ago[\s\S]{0,300}months ago/.test(js));
+  /yesterday[\s\S]{0,400}days ago[\s\S]{0,400}week ago[\s\S]{0,400}weeks ago[\s\S]{0,400}month ago[\s\S]{0,400}months ago/.test(js));
 test('v4.51.0: regression — terse "Nd ago" date format removed from row renderer',
   !/metaRight\s*=\s*total\s*\+\s*'Q\s*·\s*'\s*\+\s*\(daysSince\s*===\s*0\s*\?\s*'today'\s*:\s*daysSince\s*\+\s*'d ago'/.test(js));
 
-// JS — _renderProgressGrouped domain idx
+// JS — _renderProgressGrouped domain idx (KEPT from v4.51.0)
 test('v4.51.0: _renderProgressGrouped emits data-domain-idx (1..5) on each accordion',
-  /_renderProgressGrouped[\s\S]{0,2500}data-domain-idx="\$\{domainIdx\s*\+\s*1\}"/.test(js));
+  /_renderProgressGrouped[\s\S]{0,5000}data-domain-idx="\$\{domainIdx\s*\+\s*1\}"/.test(js));
 test('v4.51.0: _renderProgressGrouped also emits data-domain-key for JS hooks',
-  /_renderProgressGrouped[\s\S]{0,2500}data-domain-key="\$\{dk\}"/.test(js));
+  /_renderProgressGrouped[\s\S]{0,5000}data-domain-key="\$\{dk\}"/.test(js));
 
 // CSS — header + cards
 test('v4.51.0 CSS: .progress-header flex layout',
