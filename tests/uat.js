@@ -23691,6 +23691,85 @@ test('TB v3 Coach: renderHeader counter reflects getCounter().count', (function 
   return ok;
 })());
 
+// ─────────────────────────────────────────────────────────────────────
+// Phase 9 Coach · PBQ body render (v6.5.19 Task 12)
+// renderPbqBody → lesson title + task + N-item checklist with
+// [data-done='true'] on completed steps + hint rail (3 scripted pips
+// + 'AI' rung) with [data-filled='true'] reflecting hintsUsed.
+// ─────────────────────────────────────────────────────────────────────
+function _smallPbqFixture() {
+  return [{
+    id: 'pbq-x',
+    task: 'Do the thing.',
+    steps: [
+      { id: 's1', instruction: 'first', hints: ['a', 'b', 'c'], aiPromptSeed: 'sx' },
+      { id: 's2', instruction: 'second', hints: ['a', 'b', 'c'], aiPromptSeed: 'sx' },
+      { id: 's3', instruction: 'third', hints: ['a', 'b', 'c'], aiPromptSeed: 'sx' },
+    ],
+  }];
+}
+
+test('TB v3 Coach: renderPbqBody renders lesson title + task + steps + hint rail', (function () {
+  const Coach = _loadCoachWithDom(_smallPbqFixture());
+  const body = Coach.renderPbqBody({ activePbqId: 'pbq-x', currentStepIndex: 0, hintsUsed: 0 });
+  const ok = !!body.querySelector('.tb3-coach__lesson-title')
+      && !!body.querySelector('.tb3-coach__lesson-task')
+      && !!body.querySelector('.tb3-coach__lesson-list')
+      && !!body.querySelector('.tb3-coach__hint-rail');
+  _teardownDom();
+  return ok;
+})());
+
+test('TB v3 Coach: renderPbqBody marks steps before currentStepIndex with data-done', (function () {
+  const Coach = _loadCoachWithDom(_smallPbqFixture());
+  const body = Coach.renderPbqBody({ activePbqId: 'pbq-x', currentStepIndex: 2, hintsUsed: 0 });
+  const list = body.querySelector('.tb3-coach__lesson-list');
+  const items = list.children;
+  const ok = items.length === 3
+      && items[0].getAttribute('data-done') === 'true'
+      && items[1].getAttribute('data-done') === 'true'
+      && items[2].getAttribute('data-done') === null;
+  _teardownDom();
+  return ok;
+})());
+
+test('TB v3 Coach: renderPbqBody hint pips reflect hintsUsed (N filled)', (function () {
+  const Coach = _loadCoachWithDom(_smallPbqFixture());
+  const body = Coach.renderPbqBody({ activePbqId: 'pbq-x', currentStepIndex: 0, hintsUsed: 2 });
+  const pips = body.querySelector('.tb3-coach__hint-pips').children;
+  // First 3 are scripted pips; index 3 is the AI rung. Pips 0 and 1 filled.
+  const ok = pips[0].getAttribute('data-filled') === 'true'
+      && pips[1].getAttribute('data-filled') === 'true'
+      && pips[2].getAttribute('data-filled') === null
+      && pips[3].className.indexOf('tb3-coach__hint-pip--ai') >= 0;
+  _teardownDom();
+  return ok;
+})());
+
+test('TB v3 Coach: renderPbqBody hint note text reflects hintsUsed transitions', (function () {
+  const Coach = _loadCoachWithDom(_smallPbqFixture());
+  const b0 = Coach.renderPbqBody({ activePbqId: 'pbq-x', currentStepIndex: 0, hintsUsed: 0 });
+  const b1 = Coach.renderPbqBody({ activePbqId: 'pbq-x', currentStepIndex: 0, hintsUsed: 1 });
+  const b4 = Coach.renderPbqBody({ activePbqId: 'pbq-x', currentStepIndex: 0, hintsUsed: 4 });
+  const t0 = b0.querySelector('.tb3-coach__hint-note').textContent;
+  const t1 = b1.querySelector('.tb3-coach__hint-note').textContent;
+  const t4 = b4.querySelector('.tb3-coach__hint-note').textContent;
+  _teardownDom();
+  return /3 scripted hints, then AI on the fourth/.test(t0)
+      && /^1 of 3 scripted hints used/.test(t1)
+      && /AI hint used/.test(t4);
+})());
+
+test('TB v3 Coach: renderPbqBody renders hint rail even when no PBQ active (empty header)', (function () {
+  const Coach = _loadCoachWithDom([]);
+  const body = Coach.renderPbqBody({ activePbqId: null, currentStepIndex: 0, hintsUsed: 0 });
+  // No PBQ → no lesson title/task/list, but the hint rail still renders.
+  const ok = !body.querySelector('.tb3-coach__lesson-list')
+      && !!body.querySelector('.tb3-coach__hint-rail');
+  _teardownDom();
+  return ok;
+})());
+
 test('TB v3 walk: state declares activeWalkthroughId field', (function () {
   return /activeWalkthroughId\s*:\s*null/.test(tbV3JsForWalk);
 })());

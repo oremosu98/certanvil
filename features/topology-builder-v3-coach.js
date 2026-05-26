@@ -374,6 +374,69 @@
     return root;
   }
 
+  // ── PBQ body render (Task 12) ──────────────────────────────────────
+  // Fraunces lesson title + Inter task + hairline-bordered step
+  // checklist (each step gets [data-done='true'] when index < current).
+  // Hint rail below: 3 scripted pips + 'AI' rung. Pips marked
+  // [data-filled='true'] when index < hintsUsed.
+  function renderPbqBody(state) {
+    state = state || {};
+    var pbq = getActivePbq(state);
+    var idx = (typeof state.currentStepIndex === 'number') ? state.currentStepIndex : 0;
+    var used = (typeof state.hintsUsed === 'number') ? state.hintsUsed : 0;
+    var wrap = el('div');
+
+    if (pbq) {
+      wrap.appendChild(el('h2', {
+        class: 'tb3-coach__lesson-title',
+        text: 'Build the SOHO topology',
+      }));
+      wrap.appendChild(el('p', {
+        class: 'tb3-coach__lesson-task',
+        text: pbq.task || '',
+      }));
+
+      var list = el('ul', { class: 'tb3-coach__lesson-list' });
+      var steps = pbq.steps || [];
+      for (var i = 0; i < steps.length; i++) {
+        var li = el('li', { text: steps[i].instruction || '' });
+        if (i < idx) li.setAttribute('data-done', 'true');
+        list.appendChild(li);
+      }
+      wrap.appendChild(list);
+    }
+
+    var rail = el('div', { class: 'tb3-coach__hint-rail' });
+    rail.appendChild(el('div', {
+      class: 'tb3-coach__hint-rail-label',
+      text: 'Stuck-escape',
+    }));
+    var pips = el('div', { class: 'tb3-coach__hint-pips' });
+    for (var p = 0; p < 3; p++) {
+      var pip = el('span', { class: 'tb3-coach__hint-pip' });
+      if (p < used) pip.setAttribute('data-filled', 'true');
+      pips.appendChild(pip);
+    }
+    pips.appendChild(el('span', {
+      class: 'tb3-coach__hint-pip tb3-coach__hint-pip--ai',
+      text: 'AI',
+    }));
+    rail.appendChild(pips);
+
+    var note;
+    if (used === 0) {
+      note = '3 scripted hints, then AI on the fourth.';
+    } else if (used <= 3) {
+      note = used + ' of 3 scripted hints used. AI fires on the fourth.';
+    } else {
+      note = 'AI hint used.';
+    }
+    rail.appendChild(el('p', { class: 'tb3-coach__hint-note', text: note }));
+    wrap.appendChild(rail);
+
+    return wrap;
+  }
+
   // ── Module export ──────────────────────────────────────────────────
   var TbV3Coach = {
     COACH_VERSION: COACH_VERSION,
@@ -395,6 +458,7 @@
     renderShell: renderShell,
     renderHeader: renderHeader,
     renderModeStrip: renderModeStrip,
+    renderPbqBody: renderPbqBody,
     el: el,
   };
 
