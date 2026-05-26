@@ -23125,6 +23125,58 @@ test('TB v3 Coach: coach script tag is parser-friendly (no async / no module)', 
   return !!m && !/\basync\b|type=["']module/.test(m[0]);
 })());
 
+// ─────────────────────────────────────────────────────────────────────
+// Phase 9 Coach · AI session counter (v6.5.19 Task 4)
+// Per-day counter persisted to localStorage. Tests use a fresh mock
+// localStorage per case + clear the require-cache so each invocation
+// re-runs the IIFE module bootstrap against the new global.
+// ─────────────────────────────────────────────────────────────────────
+function _mockLocalStorage() {
+  var store = {};
+  return {
+    getItem: function (k) { return k in store ? store[k] : null; },
+    setItem: function (k, v) { store[k] = String(v); },
+    removeItem: function (k) { delete store[k]; },
+    _seed: function (k, v) { store[k] = v; },
+    _peek: function (k) { return store[k]; },
+  };
+}
+
+function _loadCoachWithGlobals(ls) {
+  const path = require('path');
+  delete require.cache[require.resolve(path.join(ROOT, 'features/topology-builder-v3-coach.js'))];
+  global.localStorage = ls || _mockLocalStorage();
+  global.window = global.window || {};
+  global.window.localStorage = global.localStorage;
+  return require(path.join(ROOT, 'features/topology-builder-v3-coach.js'));
+}
+
+test('TB v3 Coach: getCounter starts at 0 for a fresh day', (function () {
+  const Coach = _loadCoachWithGlobals();
+  const c = Coach.getCounter();
+  delete global.localStorage;
+  return c && c.count === 0 && typeof c.date === 'string' && c.date.length === 10;
+})());
+
+test('TB v3 Coach: incrementCounter persists today\'s count', (function () {
+  const ls = _mockLocalStorage();
+  const Coach = _loadCoachWithGlobals(ls);
+  Coach.incrementCounter();
+  Coach.incrementCounter();
+  const c = Coach.getCounter();
+  delete global.localStorage;
+  return c.count === 2;
+})());
+
+test('TB v3 Coach: getCounter resets when the persisted date is stale', (function () {
+  const ls = _mockLocalStorage();
+  ls._seed('tbV3CoachCounter', JSON.stringify({ date: '2000-01-01', count: 99 }));
+  const Coach = _loadCoachWithGlobals(ls);
+  const c = Coach.getCounter();
+  delete global.localStorage;
+  return c.count === 0;
+})());
+
 test('TB v3 walk: state declares activeWalkthroughId field', (function () {
   return /activeWalkthroughId\s*:\s*null/.test(tbV3JsForWalk);
 })());

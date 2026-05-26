@@ -28,10 +28,47 @@
     return 'pbq';
   }
 
+  // ── AI session counter (Task 4) ────────────────────────────────────
+  // Per-day counter persisted to localStorage. Renders top-right of the
+  // panel header as a cost-conscious affordance — students always see
+  // how many AI calls they have fired today. Resets when the calendar
+  // date rolls over (UTC ISO date). Defensive try/catch for Safari
+  // incognito SecurityError on localStorage access.
+  var COUNTER_KEY = 'tbV3CoachCounter';
+
+  function today() {
+    return new Date().toISOString().slice(0, 10);
+  }
+
+  function getCounter() {
+    try {
+      var raw = (typeof localStorage !== 'undefined') ? localStorage.getItem(COUNTER_KEY) : null;
+      if (!raw) return { date: today(), count: 0 };
+      var parsed = JSON.parse(raw);
+      if (!parsed || parsed.date !== today()) return { date: today(), count: 0 };
+      return parsed;
+    } catch (e) {
+      return { date: today(), count: 0 };
+    }
+  }
+
+  function incrementCounter() {
+    var cur = getCounter();
+    var next = { date: today(), count: cur.count + 1 };
+    try {
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem(COUNTER_KEY, JSON.stringify(next));
+      }
+    } catch (e) { /* swallow — quota exceeded / SecurityError */ }
+    return next;
+  }
+
   // ── Module export ──────────────────────────────────────────────────
   var TbV3Coach = {
     COACH_VERSION: COACH_VERSION,
     getCoachMode: getCoachMode,
+    getCounter: getCounter,
+    incrementCounter: incrementCounter,
   };
 
   if (typeof window !== 'undefined') {
