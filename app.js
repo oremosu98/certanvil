@@ -9522,22 +9522,9 @@ function _formatStaleTopicsForPrompt(staleTopics) {
 // than a 10-Q MCQ drill. This map routes weak subnetting topics to the
 // Subnet Trainer.
 //
-// Deliberately scoped to Subnet Trainer only. Topology Builder is kept as
-// a standalone activity — not factored into weak-spots routing, because
-// topology labs are self-directed exploration rather than reactive drilling.
-const WEAK_SPOT_DRILL_BRIDGES = {
-  'Subnetting & IP Addressing': { kind: 'subnet', label: 'Drill in Subnet Trainer', icon: '🧮' },
-  'IPv6':                       { kind: 'subnet', label: 'Practice IPv6 math',       icon: '🧮' },
-  'NAT & IP Services':          { kind: 'subnet', label: 'Drill NAT / IP math',      icon: '🧮' },
-};
-
-// v4.43.1: Click handler for the weak-spot → Subnet Trainer bridge.
-function openWeakSpotBridge(kind) {
-  if (kind === 'subnet') {
-    showPage('subnet');
-    if (typeof startSubnetTrainer === 'function') startSubnetTrainer();
-  }
-}
+// MVP-QUIZ-ONLY (Ship 6): WEAK_SPOT_DRILL_BRIDGES + openWeakSpotBridge
+// deleted (Subnet Trainer no longer exists; the weak-spot routing now
+// surfaces topics via the quiz flow only).
 // v4.81.23: legacy renderTodaysFocus + renderRotationChips removed. Both
 // were thin shims that delegated to renderTodayPlan. All callers now invoke
 // renderTodayPlan directly. The signals these functions used to surface
@@ -10350,32 +10337,10 @@ function renderTodayPlan() {
   // so users get the deeper binary-breakdown affordance instead of just
   // the regular MCQ quiz drill. Dedupe by kind+labId so we don't show
   // multiple identical buttons when 2 subnet topics are in the plan.
-  let bridgesHtml = '';
-  try {
-    if (typeof WEAK_SPOT_DRILL_BRIDGES !== 'undefined') {
-      const seenBridgeKeys = new Set();
-      const bridges = [];
-      plan.forEach(item => {
-        const bridge = WEAK_SPOT_DRILL_BRIDGES[item.topic];
-        if (!bridge) return;
-        const key = bridge.kind + '::' + (bridge.labId || '');
-        if (seenBridgeKeys.has(key)) return;
-        seenBridgeKeys.add(key);
-        bridges.push(bridge);
-      });
-      if (bridges.length > 0) {
-        bridgesHtml = '<div class="tplan-bridges" role="group" aria-label="Specialized drill alternatives">'
-          + bridges.map(b =>
-              '<button type="button" class="tplan-bridge-btn" onclick="openWeakSpotBridge(\'' + b.kind + '\')" title="' + escHtml(b.label) + '">'
-                + '<span class="tplan-bridge-icon" aria-hidden="true">' + b.icon + '</span>'
-                + '<span class="tplan-bridge-label">' + escHtml(b.label) + '</span>'
-                + '<span class="tplan-bridge-arrow" aria-hidden="true">→</span>'
-              + '</button>'
-            ).join('')
-          + '</div>';
-      }
-    }
-  } catch (_) { bridgesHtml = ''; }
+  // MVP-QUIZ-ONLY (Ship 6): weak-spot drill bridge buttons removed (the
+  // Subnet Trainer they routed to is deleted). The weak-spot topics now
+  // surface only via the regular drill-this-topic quiz flow.
+  const bridgesHtml = '';
 
   card.innerHTML = ''
     + '<div class="tplan-eyebrow">Today\'s plan</div>'
