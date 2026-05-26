@@ -23056,6 +23056,75 @@ test('TB v3 PBQs: soho step instructions cover place/endpoints/wire/WAN/DHCP/NAT
       && /Enable NAT/.test(pbqsJs);
 })());
 
+// ─────────────────────────────────────────────────────────────────────
+// Phase 9 Coach · module scaffold + mode detection (v6.5.19 Task 3)
+// Structural guards that the Coach module exists with the locked
+// IIFE shape, exposes window.TbV3Coach, declares COACH_VERSION, and
+// implements getCoachMode(state). Behavioural correctness is sandbox-
+// tested via the require()-able CommonJS export at the bottom.
+// ─────────────────────────────────────────────────────────────────────
+test('TB v3 Coach: module file exists wrapped in IIFE with strict mode', (function () {
+  const coachJs = read('features/topology-builder-v3-coach.js');
+  return /\(function \(\) \{[\s\S]*'use strict'/.test(coachJs)
+      && /\}\)\(\)\s*;?\s*$/.test(coachJs.trim());
+})());
+
+test('TB v3 Coach: declares COACH_VERSION semver constant', (function () {
+  const coachJs = read('features/topology-builder-v3-coach.js');
+  return /var COACH_VERSION = ['"][0-9]+\.[0-9]+\.[0-9]+['"]/.test(coachJs);
+})());
+
+test('TB v3 Coach: defines getCoachMode + exposes window.TbV3Coach', (function () {
+  const coachJs = read('features/topology-builder-v3-coach.js');
+  return /function getCoachMode\(state\)/.test(coachJs)
+      && /window\.TbV3Coach\s*=\s*TbV3Coach/.test(coachJs);
+})());
+
+test('TB v3 Coach: getCoachMode returns "pbq" when activePbqId is in catalog and step is in range', (function () {
+  // Sandbox eval — set window globals first, then require the module.
+  const Module = require('module');
+  const path = require('path');
+  delete require.cache[require.resolve(path.join(ROOT, 'features/topology-builder-v3-coach.js'))];
+  global.window = { TB_V3_PBQS: [{ id: 'pbq-x', steps: [{ id: 's1' }, { id: 's2' }] }] };
+  const Coach = require(path.join(ROOT, 'features/topology-builder-v3-coach.js'));
+  const mode = Coach.getCoachMode({ activePbqId: 'pbq-x', currentStepIndex: 0 });
+  delete global.window;
+  return mode === 'pbq';
+})());
+
+test('TB v3 Coach: getCoachMode returns "fb" when no PBQ active', (function () {
+  const Module = require('module');
+  const path = require('path');
+  delete require.cache[require.resolve(path.join(ROOT, 'features/topology-builder-v3-coach.js'))];
+  global.window = { TB_V3_PBQS: [] };
+  const Coach = require(path.join(ROOT, 'features/topology-builder-v3-coach.js'));
+  const mode = Coach.getCoachMode({ activePbqId: null });
+  delete global.window;
+  return mode === 'fb';
+})());
+
+test('TB v3 Coach: getCoachMode returns "fb" when currentStepIndex past last step', (function () {
+  const Module = require('module');
+  const path = require('path');
+  delete require.cache[require.resolve(path.join(ROOT, 'features/topology-builder-v3-coach.js'))];
+  global.window = { TB_V3_PBQS: [{ id: 'pbq-x', steps: [{ id: 's1' }, { id: 's2' }] }] };
+  const Coach = require(path.join(ROOT, 'features/topology-builder-v3-coach.js'));
+  const mode = Coach.getCoachMode({ activePbqId: 'pbq-x', currentStepIndex: 5 });
+  delete global.window;
+  return mode === 'fb';
+})());
+
+test('TB v3 Coach: coach.js script tag loaded after pbqs.js in index.html', (function () {
+  const pbqsIdx = html.indexOf('topology-builder-v3-pbqs.js');
+  const coachIdx = html.indexOf('topology-builder-v3-coach.js');
+  return pbqsIdx > 0 && coachIdx > 0 && coachIdx > pbqsIdx;
+})());
+
+test('TB v3 Coach: coach script tag is parser-friendly (no async / no module)', (function () {
+  const m = html.match(/<script[^>]*topology-builder-v3-coach\.js[^>]*><\/script>/);
+  return !!m && !/\basync\b|type=["']module/.test(m[0]);
+})());
+
 test('TB v3 walk: state declares activeWalkthroughId field', (function () {
   return /activeWalkthroughId\s*:\s*null/.test(tbV3JsForWalk);
 })());
