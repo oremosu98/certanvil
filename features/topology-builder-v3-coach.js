@@ -300,6 +300,80 @@
     };
   }
 
+  // ── DOM helpers (Task 11) ──────────────────────────────────────────
+  // Tiny render primitives. Pure DOM, no framework. Each renderX
+  // returns a detached element the caller appends.
+  function el(tag, opts, children) {
+    opts = opts || {};
+    var node = document.createElement(tag);
+    if (opts.class) node.className = opts.class;
+    if (opts.text != null) node.textContent = String(opts.text);
+    if (opts.attrs) {
+      for (var k in opts.attrs) {
+        if (Object.prototype.hasOwnProperty.call(opts.attrs, k)) {
+          node.setAttribute(k, opts.attrs[k]);
+        }
+      }
+    }
+    if (children) {
+      for (var i = 0; i < children.length; i++) {
+        if (children[i]) node.appendChild(children[i]);
+      }
+    }
+    return node;
+  }
+
+  // ── Panel shell render (Task 11) ───────────────────────────────────
+  // Three-band header → mode strip → body → footer. Body + footer are
+  // empty containers; Tasks 12-14 fill them based on mode.
+  function renderHeader() {
+    return el('header', { class: 'tb3-coach__header' }, [
+      el('div', { class: 'tb3-coach__brand' }, [
+        el('span', { class: 'tb3-coach__mono', text: 'CA' }),
+        el('span', { class: 'tb3-coach__name', text: 'Coach' }),
+      ]),
+      el('div', {
+        class: 'tb3-coach__counter',
+        text: getCounter().count + ' today',
+      }),
+    ]);
+  }
+
+  function renderModeStrip(input) {
+    input = input || {};
+    var mode = input.mode;
+    var state = input.state || {};
+    if (mode === 'pbq') {
+      var pbq = getActivePbq(state);
+      var idx = (typeof state.currentStepIndex === 'number') ? state.currentStepIndex : 0;
+      var totalSteps = pbq ? pbq.steps.length : 0;
+      var labelText = pbq ? ('PBQ · ' + (pbq.task ? pbq.task.split('.')[0] : pbq.id)) : 'PBQ';
+      return el('div', { class: 'tb3-coach__mode tb3-coach__mode--pbq' }, [
+        el('span', { class: 'tb3-coach__mode-dot' }),
+        el('span', { class: 'tb3-coach__mode-label', text: labelText }),
+        el('span', {
+          class: 'tb3-coach__mode-step',
+          text: 'Step ' + (idx + 1) + ' of ' + totalSteps,
+        }),
+      ]);
+    }
+    return el('div', { class: 'tb3-coach__mode tb3-coach__mode--fb' }, [
+      el('span', { class: 'tb3-coach__mode-dot' }),
+      el('span', { class: 'tb3-coach__mode-label', text: 'Free Build' }),
+      el('span', { class: 'tb3-coach__mode-hint', text: 'ask anything about your topology' }),
+    ]);
+  }
+
+  function renderShell(input) {
+    input = input || {};
+    var root = el('section', { class: 'tb3-coach', attrs: { 'aria-label': 'Coach' } });
+    root.appendChild(renderHeader());
+    root.appendChild(renderModeStrip(input));
+    root.appendChild(el('main', { class: 'tb3-coach__body' }));
+    root.appendChild(el('footer', { class: 'tb3-coach__footer' }));
+    return root;
+  }
+
   // ── Module export ──────────────────────────────────────────────────
   var TbV3Coach = {
     COACH_VERSION: COACH_VERSION,
@@ -318,6 +392,10 @@
     isStepComplete: isStepComplete,
     advanceStep: advanceStep,
     useHint: useHint,
+    renderShell: renderShell,
+    renderHeader: renderHeader,
+    renderModeStrip: renderModeStrip,
+    el: el,
   };
 
   if (typeof window !== 'undefined') {

@@ -23569,6 +23569,128 @@ test('TB v3 Coach CSS: prefers-reduced-motion opt-out neutralises Coach transiti
   return !!m && /transition:\s*none\s*!important/.test(m[0]);
 })());
 
+// ─────────────────────────────────────────────────────────────────────
+// Phase 9 Coach · panel shell render (v6.5.19 Task 11)
+// renderShell builds the chrome — header (Coach badge + counter),
+// mode strip (PBQ or FB variant), empty body, empty footer. Bodies
+// fill in Tasks 12-14. Uses a tiny jsdom shim to test in Node.
+// ─────────────────────────────────────────────────────────────────────
+function _jsdomShim() {
+  // Minimal element factory shim — enough for the renderX helpers in
+  // coach.js. Avoids pulling in a real jsdom dep.
+  function elNode(tag) {
+    var attrs = {};
+    var children = [];
+    var classList = [];
+    var node = {
+      tagName: String(tag).toUpperCase(),
+      className: '',
+      textContent: '',
+      children: children,
+      attributes: attrs,
+      setAttribute: function (k, v) { attrs[k] = String(v); },
+      getAttribute: function (k) { return k in attrs ? attrs[k] : null; },
+      appendChild: function (child) { children.push(child); child.parentNode = node; return child; },
+      get classList() { return classList; },
+      querySelector: function (sel) {
+        // Trivial selector engine: '.foo' or 'tag' or '.foo.bar'.
+        function match(n) {
+          if (!n || !n.tagName) return false;
+          if (sel.indexOf('.') === 0) {
+            var classes = sel.slice(1).split('.');
+            var nClasses = (n.className || '').split(/\s+/);
+            return classes.every(function (c) { return nClasses.indexOf(c) >= 0; });
+          }
+          return n.tagName === sel.toUpperCase();
+        }
+        function walk(n) {
+          if (!n || !n.children) return null;
+          for (var i = 0; i < n.children.length; i++) {
+            if (match(n.children[i])) return n.children[i];
+            var found = walk(n.children[i]);
+            if (found) return found;
+          }
+          return null;
+        }
+        return walk(node);
+      },
+    };
+    return node;
+  }
+  return {
+    createElement: function (t) { return elNode(t); },
+  };
+}
+
+function _loadCoachWithDom(catalog) {
+  const path = require('path');
+  delete require.cache[require.resolve(path.join(ROOT, 'features/topology-builder-v3-coach.js'))];
+  global.localStorage = _mockLocalStorage();
+  global.document = _jsdomShim();
+  global.window = { TB_V3_PBQS: catalog || [], localStorage: global.localStorage, document: global.document };
+  return require(path.join(ROOT, 'features/topology-builder-v3-coach.js'));
+}
+
+function _teardownDom() {
+  delete global.window; delete global.document; delete global.localStorage;
+}
+
+test('TB v3 Coach: el() helper creates elements with class + text + attrs', (function () {
+  const Coach = _loadCoachWithDom();
+  const n = Coach.el('div', { class: 'x y', text: 'hi', attrs: { 'data-k': 'v' } });
+  const ok = n.className === 'x y' && n.textContent === 'hi' && n.getAttribute('data-k') === 'v';
+  _teardownDom();
+  return ok;
+})());
+
+test('TB v3 Coach: renderShell mounts header + mode strip + body + footer', (function () {
+  const Coach = _loadCoachWithDom();
+  const root = Coach.renderShell({ mode: 'fb', state: {} });
+  const ok = root.className === 'tb3-coach'
+      && root.getAttribute('aria-label') === 'Coach'
+      && !!root.querySelector('.tb3-coach__header')
+      && !!root.querySelector('.tb3-coach__mode')
+      && !!root.querySelector('.tb3-coach__body')
+      && !!root.querySelector('.tb3-coach__footer');
+  _teardownDom();
+  return ok;
+})());
+
+test('TB v3 Coach: renderModeStrip emits --pbq variant with step indicator', (function () {
+  const Coach = _loadCoachWithDom([{ id: 'pbq-x', task: 'Build the SOHO topology.', steps: [{ id: 's1' }, { id: 's2' }, { id: 's3' }] }]);
+  const strip = Coach.renderModeStrip({ mode: 'pbq', state: { activePbqId: 'pbq-x', currentStepIndex: 1 } });
+  const ok = strip.className.indexOf('tb3-coach__mode--pbq') >= 0
+      && !!strip.querySelector('.tb3-coach__mode-step');
+  _teardownDom();
+  return ok;
+})());
+
+test('TB v3 Coach: renderModeStrip emits --fb variant with ask hint', (function () {
+  const Coach = _loadCoachWithDom();
+  const strip = Coach.renderModeStrip({ mode: 'fb', state: {} });
+  const hint = strip.querySelector('.tb3-coach__mode-hint');
+  const ok = strip.className.indexOf('tb3-coach__mode--fb') >= 0
+      && hint && /ask anything/.test(hint.textContent);
+  _teardownDom();
+  return ok;
+})());
+
+test('TB v3 Coach: renderHeader counter reflects getCounter().count', (function () {
+  const ls = _mockLocalStorage();
+  ls._seed('tbV3CoachCounter', JSON.stringify({ date: new Date().toISOString().slice(0, 10), count: 7 }));
+  const path = require('path');
+  delete require.cache[require.resolve(path.join(ROOT, 'features/topology-builder-v3-coach.js'))];
+  global.localStorage = ls;
+  global.document = _jsdomShim();
+  global.window = { TB_V3_PBQS: [], localStorage: ls, document: global.document };
+  const Coach = require(path.join(ROOT, 'features/topology-builder-v3-coach.js'));
+  const h = Coach.renderHeader();
+  const counter = h.querySelector('.tb3-coach__counter');
+  const ok = counter && /^7 today$/.test(counter.textContent);
+  _teardownDom();
+  return ok;
+})());
+
 test('TB v3 walk: state declares activeWalkthroughId field', (function () {
   return /activeWalkthroughId\s*:\s*null/.test(tbV3JsForWalk);
 })());
