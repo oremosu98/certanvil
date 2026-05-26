@@ -2247,21 +2247,8 @@ function _renderSecPlusDrillsLauncher() {
     +     '<div class="secplus-drill-tile-sub">120 security controls across the CompTIA 6×4 matrix. Pick TYPE + CATEGORY for each control. Domain 1.1\'s hardest concept.</div>'
     +     '<div class="secplus-drill-tile-meta">Domain 1.1 · ~5 min/session</div>'
     +   '</a>'
-    +   '<a class="secplus-drill-tile secplus-drill-tile-flagship" href="#" onclick="showPage(\'irw\');startIncidentResponseWarRoom();return false;">'
-    +     '<span class="secplus-drill-tile-badge is-flagship">FLAGSHIP · LIVE</span>'
-    +     '<div class="secplus-drill-tile-icon" aria-hidden="true"></div>'
-    +     '<div class="secplus-drill-tile-title">Incident Response War Room</div>'
-    +     '<div class="secplus-drill-tile-sub">20 scenarios (ransomware, BEC, S3 breach, APT, etc.). Walk PICERL phases. Practice + Pressure modes + AI generator. The flagship for D4.</div>'
-    +     '<div class="secplus-drill-tile-meta">Domain 4 (28%) · ~10-15 min/scenario</div>'
-    +   '</a>'
-    +   '<a class="secplus-drill-tile secplus-drill-tile-flagship" href="#" onclick="showPage(\'pht\');startPhishingTriageLab();return false;">'
-    +     '<span class="secplus-drill-tile-badge is-flagship">FLAGSHIP · NEW</span>'
-    +     '<div class="secplus-drill-tile-icon" aria-hidden="true"></div>'
-    +     '<div class="secplus-drill-tile-title">Phishing Triage Lab</div>'
-    +     '<div class="secplus-drill-tile-sub">6 email phish at v1 (SMS/voice/QR variants land in v4.98.1+). Click-the-flag inbox simulator. Pick the right action. The flagship for D2.</div>'
-    +     '<div class="secplus-drill-tile-meta">Domain 2 (22%) · ~3-5 min/phish</div>'
-    +   '</a>'
     + '</div>';
+  // MVP-QUIZ-ONLY: IRW + PHT flagship tiles deleted (see Ship 1 commit).
 }
 
 // v4.41.0: Progressive disclosure — hide Marathon Mode until user has completed 1+ quiz.
@@ -16517,60 +16504,12 @@ const PT_DATA = _USE_NETPLUS_PT ? CERT_PACK.packetTraceScenarios : [];
 const PT_LESSONS = _USE_NETPLUS_PT && Array.isArray(CERT_PACK.packetTraceLessons)
   ? CERT_PACK.packetTraceLessons : [];
 
-// ── Incident Response War Room (v4.97.0, issue #312) ───────────────────
-// Flagship Security+ drill #1 (SY0-701 Domain 4, 28%). 6-phase SANS PICERL
-// scenario walkthrough — Preparation, Identification, Containment,
-// Eradication, Recovery, Lessons Learned. 5 scenarios at v1; expands to
-// 25 by v4.97.3. Practice mode in v4.97.0; Pressure + AI gen + dashboard
-// in subsequent batches. Visual contract locked to mockups/security-
-// incident-response-war-room-concept.html (8 states).
-// ══════════════════════════════════════════
-// v4.99.39 (MOBILE_OPTIMIZATION_PLAN Phase 11b session 4) — IRW
-// EXTRACTED to features/incident-response.js. Loaded lazily on first nav
-// to #page-irw. Constants block (this region) + state+functions+init-IIFE
-// block (was at lines 32883-33929 pre-extract) consolidated into a single
-// IIFE. Saves ~1,060 LOC + ~50 KB transfer from the shell on first paint.
-// ══════════════════════════════════════════
-async function startIncidentResponseWarRoom() {
-  if (typeof _gateActivityForQuota === "function" && !_gateActivityForQuota("Incident Response War Room")) return;
-  // v4.99.48 Phase 8: desktop-only nudge for phones + iPad portrait.
-  if (_isDesktopOnlyViewport()) {
-    _showDesktopOnlyNudge('Incident Response War Room',
-      'Multi-pane SOC console with live timeline, evidence panes, and pressure-timer drills. Designed for 13"+ screens — open this on a laptop or desktop.');
-    return;
-  }
-  try {
-    var mod = await _loadFeature("incident-response");
-    return mod.enter();
-  } catch (err) {
-    if (typeof showErrorToast === "function") showErrorToast("Incident Response War Room failed to load. Please refresh and try again.");
-    if (typeof logError === "function") logError("feature-load:incident-response", err);
-  }
-}
-
-// ══════════════════════════════════════════
-// v4.99.37 (MOBILE_OPTIMIZATION_PLAN Phase 11b session 2) — Phishing Triage Lab
-// EXTRACTED to features/phishing-triage.js. Loaded lazily on first navigation
-// to #page-pht. Original constants block (this region) + functions block (was
-// at lines 34992-36071 pre-extract) consolidated into a single IIFE.
-// Saves ~1,094 LOC + ~50 KB transfer from the shell on first paint.
-// ══════════════════════════════════════════
-async function startPhishingTriageLab() {
-  if (typeof _gateActivityForQuota === "function" && !_gateActivityForQuota("Phishing Triage Lab")) return;
-  // v4.99.48 Phase 8: desktop-only nudge for phones + iPad portrait.
-  if (_isDesktopOnlyViewport()) {
-    _showDesktopOnlyNudge('Phishing Triage Lab',
-      'Email-inbox UI with header inspector, link-hover preview, and a side-panel evidence builder. The inbox layout needs landscape room — open this on a laptop or desktop.');
-    return;
-  }
-  try {
-    var mod = await _loadFeature("phishing-triage");
-    return mod.enter();
-  } catch (err) {
-    if (typeof showErrorToast === "function") showErrorToast("Phishing Triage Lab failed to load. Please refresh and try again.");
-    if (typeof logError === "function") logError("feature-load:phishing-triage", err);
-  }
-}
+// ── MVP-QUIZ-ONLY (v6.5.18+): IRW + PHT removed.
+// Sec+ flagships deleted as part of the MVP quiz-only pivot. Feature files
+// (features/incident-response.js, features/phishing-triage.js) deleted along
+// with their lazy-load shell stubs, sidebar entries, page divs, and CSS.
+// See git history (branch feat/mvp-quiz-only) for the pre-deletion state if
+// resurrecting either drill post-MVP.
 
 // ── Acronym Blitz state ──
 let abQ = null, abIdx = 0, abCorrect = 0, abTotal = 0, abStreak = 0;
@@ -18286,21 +18225,7 @@ function startPacketTrace() {
   }
 }
 
-// ════════════════════════════════════════════════════════════════════
-// INCIDENT RESPONSE WAR ROOM (v4.97.0, issue #312) — Flagship #1 for Sec+
-// SY0-701 Domain 4 (28%) flagship. 6-phase SANS PICERL drill. Practice
-// mode only at v1; Pressure + AI gen + dashboard land v4.97.1+.
-// ════════════════════════════════════════════════════════════════════
-// ══════════════════════════════════════════
-// v4.99.39 (Phase 11b) — IRW state + functions + init-IIFE block REMOVED.
-// Full body lives in features/incident-response.js IIFE wrapper.
-// ══════════════════════════════════════════
-
-// ══════════════════════════════════════════
-// v4.99.37 (Phase 11b) — Phishing Triage Lab functions block REMOVED.
-// Full body lives in features/phishing-triage.js IIFE wrapper. Shell stub
-// is at the constants region above (line ~32230).
-// ══════════════════════════════════════════
+// MVP-QUIZ-ONLY: IRW + PHT state/functions stub block removed (see Ship 1 commit).
 function setOsDifficulty(diff) {
   osDifficulty = diff;
   // v4.42.5 (#128): ARIA state sync for difficulty toggle buttons.
@@ -19073,9 +18998,9 @@ const APP_SIDEBAR_PRACTICE_NETPLUS_TAIL = [
   { page: 'topology-builder-v2', label: 'Builder V2 (legacy)',  icon: '\u25C8', handler: async () => { await _loadFeature('topology-builder-v2'); showPage('topology-builder-v2'); if (typeof openTopologyBuilderV2 === 'function') openTopologyBuilderV2(); } },
   { page: 'acl',               label: 'ACL Builder',      icon: '\u25A3', handler: () => { showPage('acl'); if (typeof openAclBuilder === 'function') openAclBuilder(); } }
 ];
+// MVP-QUIZ-ONLY: Sec+ flagship sidebar entries (IRW + PHT) removed.
+// AMM + CTS entries handled in the next AMM/CTS deletion pass.
 const APP_SIDEBAR_PRACTICE_SECPLUS_TAIL = [
-  { page: 'irw',               label: 'IR War Room',      icon: '\u26A0', handler: () => { showPage('irw'); if (typeof startIncidentResponseWarRoom === 'function') startIncidentResponseWarRoom(); } },
-  { page: 'pht',               label: 'Phishing Triage',  icon: '\u2709', handler: () => { showPage('pht'); if (typeof startPhishingTriageLab === 'function') startPhishingTriageLab(); } }
 ];
 const APP_SIDEBAR_PRACTICE = [
   ...APP_SIDEBAR_PRACTICE_BASE,
