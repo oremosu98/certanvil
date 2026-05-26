@@ -1,9 +1,9 @@
 // ══════════════════════════════════════════
-// Network+ AI Quiz — app.js  v7.2.2
+// Network+ AI Quiz — app.js  v7.2.3
 // ══════════════════════════════════════════
 
 // ── CONSTANTS ──
-const APP_VERSION = '7.2.2';
+const APP_VERSION = '7.2.3';
 // v4.99.45 (Phase 6b): expose APP_VERSION on window so the web-vitals
 // collector (lib/web-vitals-collector.js, loaded BEFORE app.js so its
 // PerformanceObservers attach earlier) can stamp this version onto every
@@ -8608,8 +8608,15 @@ function getReadinessScore() {
   // sessions per topic, so noise control still works at the topic level.
   // MIXED + EXAM summary rows still filtered explicitly to avoid double-
   // counting (the per-topic splits cover them).
+  // v7.2.3: cert-filter so readiness reflects only the current cert's exam.
+  // Pre-v7.2.3 this was unfiltered → Sec+ users saw Net+ topics leak into their
+  // whatIf chips (e.g. PKI showing on Net+) AND the Sec+ readiness card stayed
+  // hidden because the downstream TOPIC_DOMAINS lookup filtered every cross-cert
+  // history entry out anyway. _isCurrentCertTopic is the canonical helper for
+  // this (see v4.99.26 buildSessionPlan, v5.5.7 renderHeroV2 lede +
+  // renderContinueCard for the same class-of-bug-grep precedent).
   const h = loadHistory().filter(e =>
-    e.topic !== MIXED_TOPIC && e.topic !== EXAM_TOPIC
+    e.topic !== MIXED_TOPIC && e.topic !== EXAM_TOPIC && _isCurrentCertTopic(e.topic)
   );
   if (h.length === 0) return null;
 
@@ -8834,8 +8841,11 @@ function getDaysToExam() {
 function getReadinessForecast() {
   // Linear regression on raw score over the last N sessions to project when we
   // hit the pass threshold. Returns null if insufficient data or flat/negative trend.
+  // v7.2.3: cert-filter mirrors getReadinessScore — forecast projects the
+  // current cert's exam only (the only sensible semantic since each cert has
+  // its own pass mark + domain weights).
   const h = loadHistory().filter(e =>
-    e.topic !== MIXED_TOPIC && e.topic !== EXAM_TOPIC && e.total >= 3
+    e.topic !== MIXED_TOPIC && e.topic !== EXAM_TOPIC && e.total >= 3 && _isCurrentCertTopic(e.topic)
   );
   if (h.length < 5) return null;
   // Use the last 14 sessions (history is newest-first, so take .slice(0, 14).reverse())

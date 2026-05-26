@@ -16190,6 +16190,19 @@ test('v4.86.0 CertPack: certs/netplus.js declares window.CERT_PACKS.netplus',
 test('v4.86.0 CertPack: certs/secplus.js declares window.CERT_PACKS.secplus',
   /window\.CERT_PACKS\.secplus\s*=\s*\{/.test(certSecplus));
 
+// v7.2.3: cert-filter the readiness model so the Drill These To Move Your
+// Score what-if chips (+ readiness card / pass probability / forecast) work
+// on Sec+ instead of staying hidden because every history entry got filtered
+// out by the downstream TOPIC_DOMAINS lookup. Same class-of-bug-grep
+// precedent as v5.5.7 (renderHeroV2 lede, renderContinueCard) + v4.99.26
+// (buildSessionPlan). Without these tombstones, a future refactor that drops
+// the _isCurrentCertTopic call would silently re-introduce the Sec+ blank-
+// readiness regression + the PKI-on-Net+ cross-cert leak in the what-if chips.
+test('v7.2.3 Readiness: getReadinessScore cert-filters loadHistory via _isCurrentCertTopic',
+  /function\s+getReadinessScore[\s\S]{0,2000}loadHistory\(\)[\s\S]{0,300}_isCurrentCertTopic\s*\(\s*e\.topic\s*\)/.test(js));
+test('v7.2.3 Readiness: getReadinessForecast cert-filters loadHistory via _isCurrentCertTopic',
+  /function\s+getReadinessForecast[\s\S]{0,2000}loadHistory\(\)[\s\S]{0,300}_isCurrentCertTopic\s*\(\s*e\.topic\s*\)/.test(js));
+
 // ── Network+ cert metadata (preserves existing exam constants) ──
 test('v4.86.0 netplus meta: id is netplus',
   /id:\s*['"]netplus['"]/.test(certNetplus));
