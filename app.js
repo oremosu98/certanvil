@@ -2076,7 +2076,7 @@ function syncChipAriaPressed(groupSelector) {
 // locked and the upgrade is contextual. Quiz/exam/analytics/progress/
 // settings/setup/etc. remain Free-accessible.
 const PRO_ONLY_PAGES = {
-  'topology-builder': 'Network Builder',
+  // MVP-QUIZ-ONLY (Ship 2): 'topology-builder' Pro-only entry removed.
   'acl': 'ACL Builder',
   'acronyms': 'Acronym Blitz',
   // MVP-QUIZ-ONLY (Ship 1): 'amm'/'cts'/'irw'/'pht' Pro-only page labels removed.
@@ -2097,8 +2097,7 @@ function showPage(name) {
   if (PRO_ONLY_PAGES[name] && typeof _gateProOnly === 'function') {
     if (!_gateProOnly(PRO_ONLY_PAGES[name])) return;
   }
-  // Stop ambient packets when leaving topology builder
-  if (name !== 'topology-builder' && typeof tbStopAmbient === 'function') tbStopAmbient();
+  // MVP-QUIZ-ONLY (Ship 2): tbStopAmbient hook removed (Topology Builder deleted).
   // v4.53.0: sync sidebar active state on every page change
   if (typeof updateSidebarActiveState === 'function') updateSidebarActiveState(name);
   // v4.54.0: update topbar breadcrumb
@@ -14130,44 +14129,16 @@ function openGuidedLab(topicName) {
   showPage('guided-lab');
 }
 
-// ══════════════════════════════════════════
-// v4.99.44 (MOBILE_OPTIMIZATION_PLAN Phase 11c) — Topology Builder
-// EXTRACTED to features/topology-builder.js. Loaded lazily on first
-// navigation to #page-topology-builder. Original ~14,330 LOC at lines
-// 13629-27958 (pre-extract). Saves ~350-400 KB transfer from the shell
-// on first paint — biggest single extraction of Phase 11.
-//
-// PHASE 8 INTEGRATION (mobile-only redirect): the shell stub below
-// performs a viewport check BEFORE _loadFeature fires. Mobile users
-// (window.innerWidth < 900) get a toast and never download the module.
-// This is the lazy-load + desktop-only synergy: mobile users save
-// ~350-400 KB they would never have used anyway.
-//
-// tb3d.js (3D View) remains its own separate lazy-load — dynamically
-// imported from inside the TB module on first 3D click (the v4.63.0
-// contract). NOT folded into this extraction.
-// ══════════════════════════════════════════
-async function openTopologyBuilder() {
-  if (typeof _gateProOnly === "function" && !_gateProOnly("Topology Builder")) return;
-  // Phase 8: desktop-only viewport check. Mobile users get a clear toast
-  // + the existing in-page #tb-mobile-nudge UX (rendered by the module
-  // on enter()). Without lazy-load this check would still happen but
-  // the user would have already paid the ~400 KB download cost.
-  // v4.99.48 Phase 8: upgraded from toast → page-level nudge with Web Share /
-  // copy-link affordances. Same viewport gate (<900) — phones + iPad portrait.
-  if (_isDesktopOnlyViewport()) {
-    _showDesktopOnlyNudge('Topology Builder',
-      'Drag-drop network topology canvas with STP, OSPF, BGP simulation, 3D view, and 16 guided scenarios. Drag-drop and the dense toolbar are not built for touch — open this on a laptop or desktop.');
-    return;
-  }
-  try {
-    var mod = await _loadFeature("topology-builder");
-    return mod.enter();
-  } catch (err) {
-    if (typeof showErrorToast === "function") showErrorToast("Topology Builder failed to load. Please refresh and try again.");
-    if (typeof logError === "function") logError("feature-load:topology-builder", err);
-  }
-}
+// MVP-QUIZ-ONLY (Ship 2): Topology Builder (v1/v2/v3 + 3D + walkthroughs +
+// Coach v2) DELETED for the quiz-only MVP. Files removed:
+//   - features/topology-builder.js          (TB v1)
+//   - features/topology-builder-v2.{js,css} (TB v2)
+//   - features/topology-builder-v3.{js,css} (TB v3)
+//   - features/topology-builder-v3-walkthroughs.js
+//   - tb3d.js + vendor/three/*              (3D View + Three.js bundle)
+// TB v3 + Coach v2 are preserved on branch `feat/tb-v3-coach-v2` via
+// the snapshot tag `tb-v3-coach-v2-snapshot-2026-05-26` (pushed to origin)
+// for reinstatement post-MVP (e.g. at the 1000-paid-user milestone).
 // ══════════════════════════════════════════
 // v4.99.42 (MOBILE_OPTIMIZATION_PLAN Phase 11b session 5) — Subnet Trainer
 // EXTRACTED to features/subnet-trainer.js. Loaded lazily on first navigation
@@ -18189,9 +18160,9 @@ const APP_SIDEBAR_PRACTICE_BASE = [
   { page: 'analytics',         label: 'Analytics',        icon: '\u25A9', handler: () => { showPage('analytics'); if (typeof renderAnalytics === 'function') renderAnalytics(); } }
 ];
 const APP_SIDEBAR_PRACTICE_NETPLUS_TAIL = [
-  { page: 'topology-builder-v3', label: 'Network Builder', icon: '\u25C7', handler: async () => { await _loadFeature('topology-builder-v3'); showPage('topology-builder-v3'); if (typeof openTopologyBuilderV3 === 'function') openTopologyBuilderV3(); } },
-  { page: 'topology-builder',  label: 'Network Builder (v1)',  icon: '\u25C7', handler: () => { showPage('topology-builder'); if (typeof openTopologyBuilder === 'function') openTopologyBuilder(); } },
-  { page: 'topology-builder-v2', label: 'Builder V2 (legacy)',  icon: '\u25C8', handler: async () => { await _loadFeature('topology-builder-v2'); showPage('topology-builder-v2'); if (typeof openTopologyBuilderV2 === 'function') openTopologyBuilderV2(); } },
+  // MVP-QUIZ-ONLY (Ship 2): Network Builder v3/v1/v2 sidebar entries removed.
+  // TB v3 + Coach v2 preserved on branch feat/tb-v3-coach-v2 via tag
+  // tb-v3-coach-v2-snapshot-2026-05-26 for post-MVP reinstatement.
   { page: 'acl',               label: 'ACL Builder',      icon: '\u25A3', handler: () => { showPage('acl'); if (typeof openAclBuilder === 'function') openAclBuilder(); } }
 ];
 // MVP-QUIZ-ONLY: Sec+ flagship sidebar entries (IRW + PHT) removed.
@@ -18242,8 +18213,9 @@ const SIDEBAR_ACTIVE_MAP = {
   'session-transition': 'setup', 'session-complete': 'setup', 'loading': 'setup',
   'progress': 'progress',
   'analytics': 'analytics',
-  'topology-builder': 'topology-builder',
-  'guided-lab': 'topology-builder',
+  // MVP-QUIZ-ONLY (Ship 2): 'topology-builder' highlight removed.
+  // 'guided-lab' still exists (Topic Deep Dive CLI labs); maps to 'setup' instead.
+  'guided-lab': 'setup',
   'acl': 'acl',
   'subnet': 'subnet',
   'ports': 'ports',
@@ -18265,7 +18237,7 @@ function _sbNavIcon(pageId) {
     'setup': '<svg viewBox="0 0 24 24" fill="none"><path d="M4 6h16M4 12h10M4 18h7" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>',
     'progress': '<svg viewBox="0 0 24 24" fill="none"><path d="M3 3v18h18" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M7 14l4-4 4 4 5-5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>',
     'analytics': '<svg viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.6"/><rect x="14" y="3" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.6"/><rect x="3" y="14" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.6"/><rect x="14" y="14" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.6"/></svg>',
-    'topology-builder': '<svg viewBox="0 0 24 24" fill="none"><circle cx="7" cy="7" r="2.5" stroke="currentColor" stroke-width="1.6"/><circle cx="17" cy="7" r="2.5" stroke="currentColor" stroke-width="1.6"/><circle cx="12" cy="17" r="2.5" stroke="currentColor" stroke-width="1.6"/><path d="M9 8l3 7M15 8l-3 7" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>',
+    // MVP-QUIZ-ONLY (Ship 2): 'topology-builder' sidebar nav icon removed.
     'acl': '<svg viewBox="0 0 24 24" fill="none"><path d="M4 6h16M4 10h16M4 14h16M4 18h16" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M8 6v12" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" opacity="0.5"/></svg>',
     // MVP-QUIZ-ONLY (Ship 1): 'irw' + 'pht' sidebar nav icons removed.
     'subnet': '<svg viewBox="0 0 24 24" fill="none"><path d="M12 3v1M12 20v1M4.22 4.22l.7.7M18.36 18.36l.7.7M1 12h1M22 12h1M4.22 19.78l.7-.7M18.36 5.64l.7-.7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="1.6"/></svg>',
@@ -18277,7 +18249,7 @@ function _sbNavIcon(pageId) {
     'ptr': '<svg viewBox="0 0 24 24" fill="none"><path d="M5 12h14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M12 5l7 7-7 7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>',
     'settings': '<svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.6"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1.08-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1.08 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1.08 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1.08z" stroke="currentColor" stroke-width="1.4"/></svg>',
     // MVP-QUIZ-ONLY (Ship 1): 'amm' + 'cts' sidebar nav icons removed.
-    'topology-builder-v2': '<svg viewBox="0 0 24 24" fill="none"><circle cx="7" cy="7" r="2.5" stroke="currentColor" stroke-width="1.6"/><circle cx="17" cy="7" r="2.5" stroke="currentColor" stroke-width="1.6"/><circle cx="12" cy="17" r="2.5" stroke="currentColor" stroke-width="1.6"/><path d="M9 8l3 7M15 8l-3 7" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M7 10v2M17 10v2" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" opacity="0.5"/></svg>'
+    // MVP-QUIZ-ONLY (Ship 2): 'topology-builder-v2' nav icon removed.
   };
   return icons[pageId] || '<svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="2" fill="currentColor"/></svg>';
 }
@@ -18536,8 +18508,8 @@ const TOPBAR_CRUMBS = {
   'loading': 'Home / Loading',
   'progress': 'Progress',
   'analytics': 'Analytics',
-  'topology-builder': 'Network Builder',
-  'guided-lab': 'Network Builder / Lab',
+  // MVP-QUIZ-ONLY (Ship 2): 'topology-builder' crumb removed.
+  'guided-lab': 'Topic Deep Dive / Lab',  // CLI lab (ipconfig/ping/etc) from Topic Deep Dive
   'topic-dive': 'Progress / Topic Dive',
   'acl': 'ACL Builder',
   'subnet': 'Subnet Mastery',
