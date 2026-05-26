@@ -2077,7 +2077,7 @@ function syncChipAriaPressed(groupSelector) {
 // settings/setup/etc. remain Free-accessible.
 const PRO_ONLY_PAGES = {
   // MVP-QUIZ-ONLY (Ship 2): 'topology-builder' Pro-only entry removed.
-  'acl': 'ACL Builder',
+  // MVP-QUIZ-ONLY (Ship 3): 'acl' Pro-only entry removed.
   'acronyms': 'Acronym Blitz',
   // MVP-QUIZ-ONLY (Ship 1): 'amm'/'cts'/'irw'/'pht' Pro-only page labels removed.
   'cables': 'Cable & Connector ID',
@@ -18110,32 +18110,10 @@ function setQuestionText(el, raw) {
 // Bare addresses are treated as /32. "any" / "0.0.0.0/0" → { base: 0, mask: 0 }.
 // Returns null on unparseable input (defensive — UI should prevent, but JS
 // is forgiving; we prefer a clean null to a silent NaN-everywhere bug).
-// ══════════════════════════════════════════
-// v4.99.43 (MOBILE_OPTIMIZATION_PLAN Phase 11b session 6) — ACL Builder
-// EXTRACTED to features/acl-builder.js. Loaded lazily on first navigation
-// to #page-acl. Original ~1,980 LOC at lines 32748-34727 (pre-extract).
-// Saves ~75 KB transfer from the shell on first paint.
-//
-// NOTE: ACL Pass-Plan PBQ (early-block functions at lines 3425 + 4170 +
-// 4253 + 4379-4430) is a DIFFERENT feature that shares the acl* prefix.
-// It stays in shell — part of the Pass-Plan exam-readiness flow.
-// ══════════════════════════════════════════
-async function openAclBuilder() {
-  if (typeof _gateProOnly === "function" && !_gateProOnly("ACL Builder")) return;
-  // v4.99.48 Phase 8: desktop-only nudge for phones + iPad portrait.
-  if (_isDesktopOnlyViewport()) {
-    _showDesktopOnlyNudge('ACL Builder',
-      'Multi-column firewall-rule editor with test-traffic playback and live PASS/DENY animation. The rule-table layout needs landscape room — open this on a laptop or desktop.');
-    return;
-  }
-  try {
-    var mod = await _loadFeature("acl-builder");
-    return mod.enter();
-  } catch (err) {
-    if (typeof showErrorToast === "function") showErrorToast("ACL Builder failed to load. Please refresh and try again.");
-    if (typeof logError === "function") logError("feature-load:acl-builder", err);
-  }
-}
+// MVP-QUIZ-ONLY (Ship 3): ACL Builder flagship DELETED. features/acl-builder.js
+// removed; #page-acl div removed; sidebar/PRO-gate/crumb refs scrubbed.
+// NOTE: ACL Pass-Plan PBQ (different feature, same prefix) STAYS — part of
+// the quiz/Pass-Plan exam-readiness flow (uses #page-acl-pbq, not #page-acl).
 
 // ══════════════════════════════════════════
 // v4.53.0 — EDITORIAL REDESIGN
@@ -18163,7 +18141,7 @@ const APP_SIDEBAR_PRACTICE_NETPLUS_TAIL = [
   // MVP-QUIZ-ONLY (Ship 2): Network Builder v3/v1/v2 sidebar entries removed.
   // TB v3 + Coach v2 preserved on branch feat/tb-v3-coach-v2 via tag
   // tb-v3-coach-v2-snapshot-2026-05-26 for post-MVP reinstatement.
-  { page: 'acl',               label: 'ACL Builder',      icon: '\u25A3', handler: () => { showPage('acl'); if (typeof openAclBuilder === 'function') openAclBuilder(); } }
+  // MVP-QUIZ-ONLY (Ship 3): 'acl' (ACL Builder flagship) sidebar entry removed.
 ];
 // MVP-QUIZ-ONLY: Sec+ flagship sidebar entries (IRW + PHT) removed.
 // AMM + CTS entries handled in the next AMM/CTS deletion pass.
@@ -18216,7 +18194,7 @@ const SIDEBAR_ACTIVE_MAP = {
   // MVP-QUIZ-ONLY (Ship 2): 'topology-builder' highlight removed.
   // 'guided-lab' still exists (Topic Deep Dive CLI labs); maps to 'setup' instead.
   'guided-lab': 'setup',
-  'acl': 'acl',
+  // MVP-QUIZ-ONLY (Ship 3): 'acl' highlight entry removed.
   'subnet': 'subnet',
   'ports': 'ports',
   'acronyms': 'acronyms',
@@ -18238,7 +18216,7 @@ function _sbNavIcon(pageId) {
     'progress': '<svg viewBox="0 0 24 24" fill="none"><path d="M3 3v18h18" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M7 14l4-4 4 4 5-5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>',
     'analytics': '<svg viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.6"/><rect x="14" y="3" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.6"/><rect x="3" y="14" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.6"/><rect x="14" y="14" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.6"/></svg>',
     // MVP-QUIZ-ONLY (Ship 2): 'topology-builder' sidebar nav icon removed.
-    'acl': '<svg viewBox="0 0 24 24" fill="none"><path d="M4 6h16M4 10h16M4 14h16M4 18h16" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M8 6v12" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" opacity="0.5"/></svg>',
+    // MVP-QUIZ-ONLY (Ship 3): 'acl' sidebar nav icon removed.
     // MVP-QUIZ-ONLY (Ship 1): 'irw' + 'pht' sidebar nav icons removed.
     'subnet': '<svg viewBox="0 0 24 24" fill="none"><path d="M12 3v1M12 20v1M4.22 4.22l.7.7M18.36 18.36l.7.7M1 12h1M22 12h1M4.22 19.78l.7-.7M18.36 5.64l.7-.7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="1.6"/></svg>',
     'ports': '<svg viewBox="0 0 24 24" fill="none"><path d="M5 5h4v4H5zM15 5h4v4h-4zM5 15h4v4H5z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M17 15v6M14 18h6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>',
@@ -18511,7 +18489,7 @@ const TOPBAR_CRUMBS = {
   // MVP-QUIZ-ONLY (Ship 2): 'topology-builder' crumb removed.
   'guided-lab': 'Topic Deep Dive / Lab',  // CLI lab (ipconfig/ping/etc) from Topic Deep Dive
   'topic-dive': 'Progress / Topic Dive',
-  'acl': 'ACL Builder',
+  // MVP-QUIZ-ONLY (Ship 3): 'acl' crumb label removed.
   'subnet': 'Subnet Mastery',
   'ports': 'Port Drill',
   'acronyms': 'Acronym Blitz',
