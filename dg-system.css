@@ -1700,6 +1700,8 @@ html[data-theme] body .tad-cert-row:hover{background:color-mix(in oklab,var(--te
 html[data-theme] body .tad-cert-row.is-active{background:color-mix(in oklab,var(--accent) 10%,transparent)!important;}
 html[data-theme] body .tad-cert-name{font-size:12.5px!important;font-weight:700!important;color:var(--text)!important;}
 html[data-theme] body .tad-cert-code{font-size:10.5px!important;color:var(--text-dim)!important;font-family:ui-monospace,"SF Mono",Menlo,monospace!important;}
+/* v7.1.0 Sec+ public launch — "PRO" badge on Pro-tier cert row for Free users */
+html[data-theme] body .tad-cert-tier-pill{margin-left:auto!important;display:inline-block!important;font-size:9.5px!important;font-weight:800!important;letter-spacing:0.08em!important;color:var(--accent)!important;background:color-mix(in oklab,var(--accent) 12%,transparent)!important;border:1px solid color-mix(in oklab,var(--accent) 30%,transparent)!important;border-radius:999px!important;padding:2px 7px!important;text-transform:uppercase!important;line-height:1!important;}
 html[data-theme] body .tad-cert-check{color:var(--accent)!important;}
 
 /* ── Web Vitals: editorial ── */

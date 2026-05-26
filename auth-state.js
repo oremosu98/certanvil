@@ -110,21 +110,36 @@
   var CERT_OVERRIDE_KEY = 'nplus_' + 'dev_cert';
 
   // Public: called from inline onclick when user picks a cert in the dropdown.
-  // v7.1.0 Sec+ public launch: Sec+ is Pro-only. Free users see Sec+ in the
-  // dropdown (so they know it exists) but switching to it triggers the Pro
-  // upgrade modal instead of swapping. Pro/admin users switch normally.
+  // v7.1.0 hotfix: delegate to the canonical _gateProOnly() (which reads
+  // _quotaState.tier — the real source of Pro/admin truth) instead of
+  // rolling our own role check against window._certanvilRole (which was
+  // never set anywhere — every user got Pro-gated, including admin).
+  //
+  // v7.1.0 Pattern A: switching certs navigates to the cert's canonical
+  // subdomain rather than reloading the current URL with a localStorage
+  // override. localhost still uses the override fallback for local dev
+  // where subdomain hosts aren't available.
   window.tadSwitchCert = function (certId) {
     if (certId !== 'netplus' && certId !== 'secplus') return false;
-    if (certId === 'secplus') {
-      var role = (window._certanvilRole || '').toLowerCase();
-      var isPro = role === 'pro' || role === 'admin';
-      if (!isPro && typeof window._gateProOnly === 'function') {
-        try { window._gateProOnly('Security+ (SY0-701)'); } catch (e) {}
-        return false;
-      }
+    // Pro gate for Sec+: delegate to canonical _gateProOnly. Returns true if
+    // Pro/admin (proceed) OR false if Free (modal already shown, abort).
+    if (certId === 'secplus' && typeof window._gateProOnly === 'function') {
+      if (!window._gateProOnly('Security+ (SY0-701)')) return false;
     }
-    try { localStorage.setItem(CERT_OVERRIDE_KEY, certId); } catch (e) {}
-    try { window.location.reload(); } catch (e) {}
+    var host = '';
+    try { host = window.location.hostname || ''; } catch (e) {}
+    var isLocalhost = host === 'localhost' || host === '127.0.0.1' || host.indexOf('192.168.') === 0;
+    if (isLocalhost) {
+      // Local dev — keep override + reload (no subdomain alias on localhost).
+      try { localStorage.setItem(CERT_OVERRIDE_KEY, certId); } catch (e) {}
+      try { window.location.reload(); } catch (e) {}
+    } else {
+      // Pattern A: navigate to the cert's subdomain. Clear any stale override
+      // so getActiveCertId() trusts the subdomain on arrival.
+      try { localStorage.removeItem(CERT_OVERRIDE_KEY); } catch (e) {}
+      var targetHost = (certId === 'secplus') ? 'secplus.certanvil.com' : 'networkplus.certanvil.com';
+      try { window.location.href = 'https://' + targetHost + '/'; } catch (e) {}
+    }
     return false;
   };
 
@@ -132,9 +147,20 @@
     var certs = getAvailableCerts(role);
     if (certs.length < 2) return ''; // hide entirely if user has only one cert
     // v7.1.0: surface Pro tier on Sec+ for Free users so they understand
-    // why switching triggers an upgrade modal.
-    var roleLower = (role || '').toLowerCase();
-    var isPro = roleLower === 'pro' || roleLower === 'admin';
+    // why switching triggers an upgrade modal. Pro detection uses the
+    // canonical _quotaState.tier (set by app.js post-hydration) +
+    // profile.role === 'admin'. profile.role for paid Pro users is 'user',
+    // NOT 'pro' — Pro tier lives in _quotaState. If _quotaState hasn't
+    // hydrated yet we skip the badge (avoids a flash on Pro users at
+    // page load); the gate at click-time still works via _gateProOnly's
+    // optimistic-allow path.
+    var qs = (typeof window !== 'undefined' && window._quotaState) || null;
+    var isPro = (qs && qs.tier === 'pro')
+      || ((role || '').toLowerCase() === 'admin')
+      || !qs; // skip badge during hydration to prevent flash for Pro users
+    // Note: setting isPro=true while not-yet-hydrated means we DON'T show
+    // the badge. Free users will see it once hydration completes + the
+    // dropdown re-renders (next account-menu open).
     var rows = certs.map(function (c) {
       var isActive = c.id === activeCertId;
       var checkmark = isActive
