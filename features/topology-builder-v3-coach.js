@@ -114,6 +114,83 @@
     _writeCache(cache);
   }
 
+  // ── AI call (Task 6) ───────────────────────────────────────────────
+  // buildPrompt assembles the persona + cert pack + state + step
+  // context + student question into a single Sonnet 4.6 prompt.
+  // askAI is the routing surface: cache check → provider call with
+  // 10s timeout → cache write + counter increment on success →
+  // calm fallback on timeout/rate-limit. Provider is a STUB at this
+  // stage (Task 17 wires the real BYOK proxy).
+  var PERSONA = 'You are a Network+ (N10-009) tutor inside the Topology Builder. Keep responses under 500 tokens, calm and direct. Do not spoiler the PBQ answer when one is active. Stay on TB v3 topics.';
+
+  function buildPrompt(input) {
+    input = input || {};
+    var mode = input.mode || 'fb';
+    var state = input.state || {};
+    var stepId = input.stepId || null;
+    var hintsUsed = input.hintsUsed || 0;
+    var certPack = input.certPack || 'netplus';
+    var aiPromptSeed = input.aiPromptSeed || '';
+    var question = input.question || '';
+    var stateJson = JSON.stringify({
+      devices: (state.devices || []).map(function (d) {
+        return { id: d.id, type: d.type, config: d.config };
+      }),
+      cables: (state.cables || []).map(function (c) {
+        return { from: c.from, to: c.to };
+      }),
+    });
+    var seed = aiPromptSeed.replace('{{state}}', stateJson);
+    var lines = [
+      PERSONA,
+      'Cert pack: ' + certPack + '.',
+      'Mode: ' + mode + '.',
+      stepId ? ('Current step: ' + stepId + '. Hints used: ' + hintsUsed + '.') : '',
+      seed,
+      question ? ('Student question: ' + question) : '',
+    ];
+    return lines.filter(function (s) { return !!s; }).join('\n\n');
+  }
+
+  function defaultProvider() {
+    // Stub at Task 6 — every askAI() call must pass { provider } until
+    // Task 17 wires the real BYOK proxy. The error message identifies
+    // the call site as a missing-integration, not a network failure.
+    throw new Error('AI provider not wired — supply { provider } or wait for Task 17 integration');
+  }
+
+  function _withTimeout(promise, ms) {
+    return new Promise(function (resolve, reject) {
+      var timer = setTimeout(function () {
+        var e = new Error('timeout');
+        e.code = 'timeout';
+        reject(e);
+      }, ms);
+      Promise.resolve(promise).then(
+        function (v) { clearTimeout(timer); resolve(v); },
+        function (e) { clearTimeout(timer); reject(e); }
+      );
+    });
+  }
+
+  function askAI(input, opts) {
+    opts = opts || {};
+    var provider = opts.provider || defaultProvider;
+    var timeoutMs = typeof opts.timeoutMs === 'number' ? opts.timeoutMs : 10000;
+    var cached = cacheGet(input);
+    if (cached) return Promise.resolve(cached);
+    return _withTimeout(Promise.resolve().then(function () { return provider(buildPrompt(input)); }), timeoutMs)
+      .then(function (result) {
+        cacheSet(input, result);
+        incrementCounter();
+        return result;
+      })
+      .catch(function (err) {
+        if (err && err.status === 429) return 'BYOK quota reached for today.';
+        return "I couldn't reach the tutor — try rephrasing, or check your connection.";
+      });
+  }
+
   // ── Module export ──────────────────────────────────────────────────
   var TbV3Coach = {
     COACH_VERSION: COACH_VERSION,
@@ -123,6 +200,9 @@
     cacheKey: cacheKey,
     cacheGet: cacheGet,
     cacheSet: cacheSet,
+    buildPrompt: buildPrompt,
+    askAI: askAI,
+    PERSONA: PERSONA,
   };
 
   if (typeof window !== 'undefined') {

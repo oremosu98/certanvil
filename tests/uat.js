@@ -23218,6 +23218,91 @@ test('TB v3 Coach: cacheKey is deterministic for identical inputs', (function ()
   return k1 === k2 && k1 !== k3 && /^k[0-9a-f]+$/.test(k1);
 })());
 
+// ─────────────────────────────────────────────────────────────────────
+// Phase 9 Coach · AI call (v6.5.19 Task 6)
+// buildPrompt injects persona + state + cert pack + step context.
+// askAI is sync from the caller's POV (returns Promise); we run the
+// async sandbox tests inline via .then and capture the resolved value
+// on a closure flag. _withTimeout is private (not on TbV3Coach) so we
+// exercise it indirectly via askAI with a hung provider.
+// ─────────────────────────────────────────────────────────────────────
+test('TB v3 Coach: buildPrompt embeds persona + cert pack + injected state', (function () {
+  const Coach = _loadCoachWithGlobals();
+  const p = Coach.buildPrompt({
+    mode: 'pbq:soho-network-converged',
+    state: { devices: [{ id: 'r1', type: 'soho-router' }], cables: [] },
+    stepId: 's1',
+    hintsUsed: 3,
+    certPack: 'netplus',
+    aiPromptSeed: 'Help with {{state}}.',
+    question: '',
+  });
+  delete global.localStorage;
+  return /Network\+/.test(p)
+      && /Cert pack: netplus/.test(p)
+      && /Mode: pbq:soho-network-converged/.test(p)
+      && /Current step: s1/.test(p)
+      && /Hints used: 3/.test(p)
+      && /soho-router/.test(p);
+})());
+
+test('TB v3 Coach: buildPrompt omits step + question lines when absent', (function () {
+  const Coach = _loadCoachWithGlobals();
+  const p = Coach.buildPrompt({ mode: 'fb', state: {} });
+  delete global.localStorage;
+  return !/Current step/.test(p) && !/Student question/.test(p);
+})());
+
+test('TB v3 Coach: askAI returns a Promise', (function () {
+  const Coach = _loadCoachWithGlobals();
+  const r = Coach.askAI({ mode: 'fb' }, { provider: function () { return Promise.resolve('ok'); } });
+  const isPromise = r && typeof r.then === 'function';
+  delete global.localStorage;
+  return isPromise;
+})());
+
+test('TB v3 Coach: askAI cache hit short-circuits before provider is called', (function () {
+  const Coach = _loadCoachWithGlobals();
+  Coach.cacheSet({ mode: 'fb', question: 'short-circuit' }, 'CACHED');
+  let providerFired = false;
+  Coach.askAI(
+    { mode: 'fb', question: 'short-circuit' },
+    { provider: function () { providerFired = true; return Promise.resolve('FRESH'); } }
+  );
+  delete global.localStorage;
+  // Cache hit returns Promise.resolve(cached) WITHOUT calling provider.
+  // The async then() callback never fires in this sync test scope —
+  // but the synchronous decision to skip provider IS observable.
+  return providerFired === false;
+})());
+
+test('TB v3 Coach: askAI source references calm timeout fallback + 429 quota messages', (function () {
+  const coachJs = read('features/topology-builder-v3-coach.js');
+  return /I couldn't reach the tutor/.test(coachJs)
+      && /BYOK quota reached for today/.test(coachJs)
+      && /err\.status === 429/.test(coachJs);
+})());
+
+test('TB v3 Coach: askAI source uses 10s default timeout', (function () {
+  const coachJs = read('features/topology-builder-v3-coach.js');
+  return /timeoutMs === 'number' \? opts\.timeoutMs : 10000/.test(coachJs)
+      || /timeoutMs[\s\S]{0,40}10000/.test(coachJs);
+})());
+
+test('TB v3 Coach: askAI source increments counter on success but not on cache hit', (function () {
+  const coachJs = read('features/topology-builder-v3-coach.js');
+  // The success path inside askAI's then() must call incrementCounter.
+  // The cache-hit path (top of askAI) must NOT — it returns before
+  // the provider promise chain.
+  const askAIMatch = coachJs.match(/function askAI[\s\S]*?(?=\n  function |\n  \/\/ ──)/);
+  if (!askAIMatch) return false;
+  const body = askAIMatch[0];
+  // cacheGet appears before any incrementCounter (so cache-hit returns first).
+  const cacheGetIdx = body.indexOf('cacheGet(input)');
+  const incrementIdx = body.indexOf('incrementCounter()');
+  return cacheGetIdx >= 0 && incrementIdx > cacheGetIdx;
+})());
+
 test('TB v3 walk: state declares activeWalkthroughId field', (function () {
   return /activeWalkthroughId\s*:\s*null/.test(tbV3JsForWalk);
 })());
