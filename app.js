@@ -1,9 +1,9 @@
 // ══════════════════════════════════════════
-// Network+ AI Quiz — app.js  v7.2.0
+// Network+ AI Quiz — app.js  v7.2.1
 // ══════════════════════════════════════════
 
 // ── CONSTANTS ──
-const APP_VERSION = '7.2.0';
+const APP_VERSION = '7.2.1';
 // v4.99.45 (Phase 6b): expose APP_VERSION on window so the web-vitals
 // collector (lib/web-vitals-collector.js, loaded BEFORE app.js so its
 // PerformanceObservers attach earlier) can stamp this version onto every
@@ -58,20 +58,38 @@ function detectCert() {
     }
   } catch (e) {}
 
-  // 2. localStorage dev override — switches cert without changing URL
+  // 2. v7.2.1 Pattern A subdomain detection — hostname MUST win over any
+  //    session/profile-stored cert preference for known cert subdomains.
+  //    Pre-v7.2.1 the only host check was a `secplus-` prefix (Vercel preview
+  //    branches only); production `secplus.certanvil.com` fell through to the
+  //    localStorage override and rendered Net+ content when a stale override
+  //    was set (e.g. from a prior visit to networkplus.certanvil.com that
+  //    persisted `nplus_dev_cert='netplus'` via the ?cert= entry-point path).
+  //    Mirrors auth-state.js getActiveCertId() which already had the correct
+  //    subdomain check. Root certanvil.com + localhost have no hostname-cert
+  //    mapping here, so they correctly fall through to the localStorage path
+  //    below (preserving the session-stored preference + dev override).
+  try {
+    if (typeof location !== 'undefined' && location.hostname) {
+      const host = location.hostname;
+      if (host.indexOf('secplus.') === 0
+          || host.indexOf('secplus-') === 0
+          || host === 'secplus.certanvil.com') return 'secplus';
+      if (host.indexOf('networkplus.') === 0
+          || host.indexOf('networkplus-') === 0
+          || host === 'networkplus.certanvil.com') return 'netplus';
+    }
+  } catch (e) { /* not in browser context */ }
+
+  // 3. localStorage dev override — switches cert without changing URL.
+  //    Only reached when on root certanvil.com or localhost (where the
+  //    Pattern A subdomain check above doesn't match any known cert host).
   try {
     if (typeof localStorage !== 'undefined') {
       const dev = localStorage.getItem('nplus_dev_cert');
       if (dev === 'secplus' || dev === 'netplus') return dev;
     }
   } catch (e) { /* localStorage may be blocked */ }
-
-  // 3. URL host detection — production deploys
-  try {
-    if (typeof location !== 'undefined' && location.host) {
-      if (location.host.startsWith('secplus-')) return 'secplus';
-    }
-  } catch (e) { /* not in browser context */ }
 
   // 4. Default
   return 'netplus';

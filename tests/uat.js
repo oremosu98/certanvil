@@ -16121,10 +16121,36 @@ test('v4.86.0 CertPack: detectCert handles localStorage dev override',
 // v4.89.5: detectCert added a `?cert=` URL param branch at the top, which
 // pushed the location.host check + final netplus return further down.
 // Window sizes widened to accommodate.
-test('v4.86.0 CertPack: detectCert handles URL host detection (secplus- prefix)',
-  /detectCert[\s\S]{0,1500}location\.host[\s\S]{0,400}secplus-/.test(js));
+// v7.2.1: Pattern A subdomain detection — hostname MUST win over the
+// localStorage override for known cert subdomains (secplus.certanvil.com /
+// networkplus.certanvil.com). Pre-v7.2.1 the host check was a single
+// `secplus-` prefix sufficient for Vercel preview branches only;
+// production `secplus.` subdomains fell through to localStorage and
+// rendered the wrong cert when a stale override was set. Guard migrated
+// from the legacy `secplus-` prefix assertion to the v7.2.1 Pattern A
+// contract: detectCert reads location.hostname AND maps both `secplus.`
+// and `networkplus.` patterns; window widened to span the new Pattern A
+// branch + the demoted localStorage step.
+test('v7.2.1 CertPack: detectCert handles Pattern A subdomain detection (secplus. + networkplus.)',
+  /function\s+detectCert[\s\S]{0,3000}location\.hostname[\s\S]{0,600}secplus\.[\s\S]{0,200}networkplus\./.test(js));
+test('v7.2.1 CertPack: detectCert Pattern A hostname check runs BEFORE localStorage override',
+  // Tombstone the pre-v7.2.1 ordering where localStorage won over hostname.
+  // Assert: the hostname/Pattern A block (location.hostname read) appears
+  // BEFORE the localStorage nplus_dev_cert read inside detectCert.
+  (function () {
+    var m = /function\s+detectCert\s*\(\s*\)\s*\{[\s\S]*?\n\}/.exec(js);
+    if (!m) return false;
+    var body = m[0];
+    var hostIdx = body.indexOf('location.hostname');
+    var lsIdx = body.indexOf("getItem('nplus_dev_cert')");
+    return hostIdx > 0 && lsIdx > 0 && hostIdx < lsIdx;
+  })());
+test('v7.2.1 CertPack: detectCert maps secplus.certanvil.com to secplus',
+  /function\s+detectCert[\s\S]{0,3000}secplus\.certanvil\.com[\s\S]{0,200}return\s+['"]secplus['"]/.test(js));
+test('v7.2.1 CertPack: detectCert maps networkplus.certanvil.com to netplus',
+  /function\s+detectCert[\s\S]{0,3000}networkplus\.certanvil\.com[\s\S]{0,200}return\s+['"]netplus['"]/.test(js));
 test('v4.86.0 CertPack: detectCert defaults to netplus',
-  /function\s+detectCert[\s\S]{0,2000}return\s+['"]netplus['"]/.test(js));
+  /function\s+detectCert[\s\S]{0,3000}return\s+['"]netplus['"]/.test(js));
 test('v4.86.0 CertPack: CURRENT_CERT and CERT_PACK constants declared',
   /const\s+CURRENT_CERT\s*=\s*detectCert\(\)/.test(js) &&
   /const\s+CERT_PACK\s*=.*window\.CERT_PACKS\[CURRENT_CERT\]/.test(js));
