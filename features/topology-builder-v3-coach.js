@@ -267,6 +267,39 @@
     return next;
   }
 
+  // ── PBQ stuck-escape hint cascade (Task 9) ─────────────────────────
+  // useHint(state) is the routing surface for "I'm stuck" — returns
+  // one of three shapes:
+  //   { kind: 'scripted', index, text, nextState }  for hints 1..3
+  //   { kind: 'ai-escape', step, nextState }        for the 4th press
+  //   null                                          past the 4th
+  // The caller (Task 16 wiring) renders scripted hints inline and
+  // invokes askAI() with the step's aiPromptSeed on ai-escape.
+  function useHint(state) {
+    var step = getCurrentStep(state);
+    if (!step) return null;
+    var used = (state && typeof state.hintsUsed === 'number') ? state.hintsUsed : 0;
+    if (used >= 4) return null;
+    var nextState = {};
+    for (var k in state) { if (Object.prototype.hasOwnProperty.call(state, k)) nextState[k] = state[k]; }
+    nextState.hintsUsed = used + 1;
+    if (used < 3) {
+      var hints = Array.isArray(step.hints) ? step.hints : [];
+      return {
+        kind: 'scripted',
+        index: used,
+        text: hints[used] || '',
+        nextState: nextState,
+      };
+    }
+    // used === 3 → 4th press → AI escape rung.
+    return {
+      kind: 'ai-escape',
+      step: step,
+      nextState: nextState,
+    };
+  }
+
   // ── Module export ──────────────────────────────────────────────────
   var TbV3Coach = {
     COACH_VERSION: COACH_VERSION,
@@ -284,6 +317,7 @@
     getCurrentStep: getCurrentStep,
     isStepComplete: isStepComplete,
     advanceStep: advanceStep,
+    useHint: useHint,
   };
 
   if (typeof window !== 'undefined') {

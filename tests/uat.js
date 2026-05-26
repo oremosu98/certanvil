@@ -23428,6 +23428,80 @@ test('TB v3 Coach: advanceStep increments currentStepIndex and resets hintsUsed'
       && next.otherField === 'kept';
 })());
 
+// ─────────────────────────────────────────────────────────────────────
+// Phase 9 Coach · PBQ stuck-escape hint cascade (v6.5.19 Task 9)
+// 3 scripted hints, then AI escape on the 4th press, then null.
+// The 4th-press result carries the step so the caller can invoke
+// askAI with the step's aiPromptSeed.
+// ─────────────────────────────────────────────────────────────────────
+function _stepWithHints() {
+  return {
+    id: 's1',
+    hints: ['hint-a', 'hint-b', 'hint-c'],
+    aiPromptSeed: 'Help with step s1. State: {{state}}',
+    check: function () { return false; },
+  };
+}
+
+test('TB v3 Coach: useHint returns scripted hints 1..3 with index + text + bumped state', (function () {
+  const Coach = _loadCoachWithCatalog([{ id: 'pbq-x', steps: [_stepWithHints()] }]);
+  const r1 = Coach.useHint({ activePbqId: 'pbq-x', currentStepIndex: 0, hintsUsed: 0 });
+  const r2 = Coach.useHint({ activePbqId: 'pbq-x', currentStepIndex: 0, hintsUsed: 1 });
+  const r3 = Coach.useHint({ activePbqId: 'pbq-x', currentStepIndex: 0, hintsUsed: 2 });
+  delete global.window;
+  delete global.localStorage;
+  return r1.kind === 'scripted' && r1.index === 0 && r1.text === 'hint-a' && r1.nextState.hintsUsed === 1
+      && r2.kind === 'scripted' && r2.index === 1 && r2.text === 'hint-b' && r2.nextState.hintsUsed === 2
+      && r3.kind === 'scripted' && r3.index === 2 && r3.text === 'hint-c' && r3.nextState.hintsUsed === 3;
+})());
+
+test('TB v3 Coach: useHint returns ai-escape on the 4th press (hintsUsed === 3)', (function () {
+  const Coach = _loadCoachWithCatalog([{ id: 'pbq-x', steps: [_stepWithHints()] }]);
+  const r = Coach.useHint({ activePbqId: 'pbq-x', currentStepIndex: 0, hintsUsed: 3 });
+  delete global.window;
+  delete global.localStorage;
+  return r.kind === 'ai-escape'
+      && r.step && r.step.id === 's1'
+      && r.step.aiPromptSeed.indexOf('Help with step s1') >= 0
+      && r.nextState.hintsUsed === 4;
+})());
+
+test('TB v3 Coach: useHint returns null past the 4th press', (function () {
+  const Coach = _loadCoachWithCatalog([{ id: 'pbq-x', steps: [_stepWithHints()] }]);
+  const r4 = Coach.useHint({ activePbqId: 'pbq-x', currentStepIndex: 0, hintsUsed: 4 });
+  const r99 = Coach.useHint({ activePbqId: 'pbq-x', currentStepIndex: 0, hintsUsed: 99 });
+  delete global.window;
+  delete global.localStorage;
+  return r4 === null && r99 === null;
+})());
+
+test('TB v3 Coach: useHint returns null when no PBQ active', (function () {
+  const Coach = _loadCoachWithCatalog([]);
+  const r = Coach.useHint({ activePbqId: null, hintsUsed: 0 });
+  delete global.window;
+  delete global.localStorage;
+  return r === null;
+})());
+
+test('TB v3 Coach: SOHO PBQ wired end-to-end via useHint produces real hints', (function () {
+  // Sanity check that Tasks 2 + 9 compose — the real SOHO PBQ from
+  // features/topology-builder-v3-pbqs.js feeds useHint cleanly.
+  const path = require('path');
+  delete require.cache[require.resolve(path.join(ROOT, 'features/topology-builder-v3-coach.js'))];
+  // Inline-load the PBQ data file under a controlled global.window.
+  global.localStorage = _mockLocalStorage();
+  global.window = { TB_V3_PBQS: [], localStorage: global.localStorage };
+  const fs = require('fs');
+  const pbqsSrc = fs.readFileSync(path.join(ROOT, 'features/topology-builder-v3-pbqs.js'), 'utf8');
+  // Execute the file in a context where `var TB_V3_PBQS = [...]` becomes window.TB_V3_PBQS.
+  new Function('window', pbqsSrc + '\nwindow.TB_V3_PBQS = TB_V3_PBQS;')(global.window);
+  const Coach = require(path.join(ROOT, 'features/topology-builder-v3-coach.js'));
+  const r = Coach.useHint({ activePbqId: 'soho-network-converged', currentStepIndex: 0, hintsUsed: 0 });
+  delete global.window;
+  delete global.localStorage;
+  return r && r.kind === 'scripted' && /palette/.test(r.text);
+})());
+
 test('TB v3 walk: state declares activeWalkthroughId field', (function () {
   return /activeWalkthroughId\s*:\s*null/.test(tbV3JsForWalk);
 })());
