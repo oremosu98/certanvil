@@ -2961,6 +2961,9 @@
 <link rel="preload" as="script" href="app.js">
 <!-- Walkthroughs constant must be globally defined before TB v3 lazy-loads via _loadFeature() -->
 <script defer src="features/topology-builder-v3-walkthroughs.js"></script>
+<!-- TB v3 Coach v2: PBQ catalog must load before the coach module reads it. -->
+<script defer src="features/topology-builder-v3-pbqs.js"></script>
+<script defer src="features/topology-builder-v3-coach.js"></script>
 <script defer src="lib/supabase-umd.min.js"></script>
 <script defer src="lib/supabase.js"></script>
 <script defer src="cloud-store.js"></script>

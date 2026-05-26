@@ -2738,8 +2738,8 @@
           '<div class="tb3-rrail-btn" id="tb3-rrail-scenarios" title="Scenarios — pick a lab">' +
             '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 9h18M7 5v14"/></svg>' +
           '</div>' +
-          '<div class="tb3-rrail-btn locked" title="Coach (Phase 7)">' +
-            '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 2l3 7h7l-5.5 4 2 7-6.5-4.5L5.5 20l2-7L2 9h7z"/></svg>' +
+          '<div class="tb3-rrail-btn" id="tb3-rrail-coach" role="button" tabindex="0" title="Coach" aria-label="Open Coach panel">' +
+            '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M12 2l3 7h7l-5.5 4 2 7-6.5-4.5L5.5 20l2-7L2 9h7z"/></svg>' +
           '</div>' +
         '</div>' +
         '<div class="tb3-inspector" id="tb3-inspector"></div>' +
@@ -2778,6 +2778,10 @@
           '<div id="tb3-trace-hops-host" class="tb3-trace-section"></div>' +
           '<div id="tb3-trace-annotation-host" class="tb3-trace-section"></div>' +
         '</aside>' +
+        // Coach v2 mount host. Hidden until #tb3-body.coach-open is set
+        // (see dg-system.css: #tb3-body.coach-open opens a 3rd grid column
+        // and reveals this host). Coach module renders into this on _openCoach.
+        '<div class="tb3-coach-host" id="tb3-coach-host" aria-label="Coach panel host"></div>' +
       '</div>' +
 
       // Status bar
@@ -4111,9 +4115,60 @@
     body.classList.remove('picker-open');
   }
 
+  // ───────────────────────────────────────────────────────────
+  // COACH v2 — open / close / wire
+  // ───────────────────────────────────────────────────────────
+  // The Coach panel is a third grid column on #tb3-body. CSS in
+  // dg-system.css (#tb3-body.coach-open) opens the column and reveals
+  // .tb3-coach-host. The Coach module (window.TbV3Coach) mounts into
+  // that host. Same single-track-rail discipline as picker/diagnostic:
+  // opening Coach closes every other rail panel first.
+  function _openCoach() {
+    var body = document.getElementById('tb3-body');
+    var host = document.getElementById('tb3-coach-host');
+    if (!body || !host) return;
+    if (body.classList.contains('simulate-open')) _closeSimulate();
+    if (body.classList.contains('trace-open')) _closeTrace();
+    if (body.classList.contains('osi-open')) _closeOSI();
+    if (body.classList.contains('picker-open')) _closePicker();
+    if (body.classList.contains('diagnostic-open')) _closeDiagnostic();
+    body.classList.remove('inspector-open');
+    body.classList.add('coach-open');
+    if (typeof window !== 'undefined' && window.TbV3Coach && typeof window.TbV3Coach.mount === 'function') {
+      window.TbV3Coach.mount(host);
+    } else {
+      host.textContent = 'Coach module is still loading.';
+    }
+  }
+
+  function _closeCoach() {
+    var body = document.getElementById('tb3-body');
+    if (!body) return;
+    body.classList.remove('coach-open');
+  }
+
   function _wirePicker() {
     var btn = document.getElementById('tb3-rrail-scenarios');
     if (btn) btn.addEventListener('click', _openPicker);
+    // Coach rrail button — same wiring shape as scenarios.
+    var coachBtn = document.getElementById('tb3-rrail-coach');
+    if (coachBtn) {
+      coachBtn.addEventListener('click', function () {
+        var body = document.getElementById('tb3-body');
+        if (body && body.classList.contains('coach-open')) {
+          _closeCoach();
+        } else {
+          _openCoach();
+        }
+      });
+      // Keyboard parity: Enter/Space activate the role=button div.
+      coachBtn.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          coachBtn.click();
+        }
+      });
+    }
 
     // Picker delegated handlers — close + row click + Enter on focused row.
     var panel = document.getElementById('tb3-picker');
@@ -6695,6 +6750,7 @@
         }
         if (body && body.classList.contains('trace-open')) { _closeTrace(); return; }
         if (body && body.classList.contains('diagnostic-open')) { _closeDiagnostic(); return; }
+        if (body && body.classList.contains('coach-open')) { _closeCoach(); return; }
         if (document.getElementById('tb3-body').classList.contains('picker-open')) {
           _closePicker();
           return;
@@ -6917,6 +6973,9 @@
     _loadScenario: function (id) { _onPickerRowActivate(id); },
     _openPicker: _openPicker,
     _closePicker: _closePicker,
+    // Phase 9 Coach v2 hooks (same precedent as picker/diagnostic).
+    _openCoach: _openCoach,
+    _closeCoach: _closeCoach,
     _renderCompletionPill: _renderCompletionPill,
     _openDiagnostic: _openDiagnostic,
     _closeDiagnostic: _closeDiagnostic,
