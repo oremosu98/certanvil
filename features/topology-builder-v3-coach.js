@@ -480,6 +480,45 @@
     return feed;
   }
 
+  // ── Footers (Task 14) ──────────────────────────────────────────────
+  // PBQ footer: ghost "I'm stuck" + primary "Next step". No free-form
+  // input — escape only via the hint cascade (Task 9 routing).
+  // FB footer:  text input + primary "Send". AI fires on Send.
+  // Both buttons carry data-action attrs that Task 16 wiring listens to.
+  function renderPbqFooter() {
+    var wrap = el('div', { class: 'tb3-coach__footer-wrap' });
+    wrap.appendChild(el('button', {
+      class: 'tb3-coach__btn tb3-coach__btn--ghost',
+      text: "I'm stuck",
+      attrs: { type: 'button', 'data-action': 'stuck' },
+    }));
+    wrap.appendChild(el('button', {
+      class: 'tb3-coach__btn tb3-coach__btn--primary',
+      text: 'Next step',
+      attrs: { type: 'button', 'data-action': 'next' },
+    }));
+    return wrap;
+  }
+
+  function renderFbFooter() {
+    var wrap = el('div', { class: 'tb3-coach__footer-wrap tb3-coach__footer-wrap--fb' });
+    wrap.appendChild(el('input', {
+      class: 'tb3-coach__ask',
+      attrs: {
+        type: 'text',
+        placeholder: 'Ask Coach about your topology…',
+        'aria-label': 'Ask Coach',
+        'data-action': 'ask-input',
+      },
+    }));
+    wrap.appendChild(el('button', {
+      class: 'tb3-coach__btn tb3-coach__btn--primary',
+      text: 'Send',
+      attrs: { type: 'button', 'data-action': 'send' },
+    }));
+    return wrap;
+  }
+
   // ── Module export ──────────────────────────────────────────────────
   var TbV3Coach = {
     COACH_VERSION: COACH_VERSION,
@@ -504,6 +543,8 @@
     renderPbqBody: renderPbqBody,
     renderFbBody: renderFbBody,
     renderMsg: renderMsg,
+    renderPbqFooter: renderPbqFooter,
+    renderFbFooter: renderFbFooter,
     el: el,
   };
 

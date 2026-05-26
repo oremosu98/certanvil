@@ -23835,6 +23835,74 @@ test('TB v3 Coach: renderFbBody on empty input renders empty feed container', (f
   return ok;
 })());
 
+// ─────────────────────────────────────────────────────────────────────
+// Phase 9 Coach · Footers (v6.5.19 Task 14)
+// renderPbqFooter: ghost stuck + primary Next. No input. Escape only
+// via the hint cascade.
+// renderFbFooter:  input + primary Send. AI fires on send.
+// data-action attrs wire to Task 16 click handler.
+// ─────────────────────────────────────────────────────────────────────
+test('TB v3 Coach: renderPbqFooter has ghost Stuck + primary Next with data-action attrs', (function () {
+  const Coach = _loadCoachWithDom();
+  const f = Coach.renderPbqFooter();
+  const stuckBtn = f.children[0];
+  const nextBtn = f.children[1];
+  const ok = f.children.length === 2
+      && stuckBtn.className.indexOf('tb3-coach__btn--ghost') >= 0
+      && stuckBtn.getAttribute('data-action') === 'stuck'
+      && /stuck/i.test(stuckBtn.textContent)
+      && nextBtn.className.indexOf('tb3-coach__btn--primary') >= 0
+      && nextBtn.getAttribute('data-action') === 'next'
+      && /Next/.test(nextBtn.textContent);
+  _teardownDom();
+  return ok;
+})());
+
+test('TB v3 Coach: renderPbqFooter buttons declare type=button (no implicit form submit)', (function () {
+  const Coach = _loadCoachWithDom();
+  const f = Coach.renderPbqFooter();
+  const ok = f.children[0].getAttribute('type') === 'button'
+      && f.children[1].getAttribute('type') === 'button';
+  _teardownDom();
+  return ok;
+})());
+
+test('TB v3 Coach: renderFbFooter has input + Send with data-action attrs', (function () {
+  const Coach = _loadCoachWithDom();
+  const f = Coach.renderFbFooter();
+  const input = f.children[0];
+  const sendBtn = f.children[1];
+  const ok = f.children.length === 2
+      && input.tagName === 'INPUT'
+      && input.className.indexOf('tb3-coach__ask') >= 0
+      && input.getAttribute('data-action') === 'ask-input'
+      && input.getAttribute('placeholder')
+      && /Ask Coach/.test(input.getAttribute('placeholder'))
+      && sendBtn.className.indexOf('tb3-coach__btn--primary') >= 0
+      && sendBtn.getAttribute('data-action') === 'send'
+      && /Send/.test(sendBtn.textContent);
+  _teardownDom();
+  return ok;
+})());
+
+test('TB v3 Coach: renderFbFooter input has aria-label for screen readers', (function () {
+  const Coach = _loadCoachWithDom();
+  const f = Coach.renderFbFooter();
+  const input = f.children[0];
+  const ok = input.getAttribute('aria-label') === 'Ask Coach';
+  _teardownDom();
+  return ok;
+})());
+
+test('TB v3 Coach: PBQ footer has NO free-form input (no .tb3-coach__ask)', (function () {
+  const Coach = _loadCoachWithDom();
+  const f = Coach.renderPbqFooter();
+  const ok = !f.querySelector('.tb3-coach__ask')
+      && !f.querySelector('input');
+  _teardownDom();
+  return ok;
+})());
+
 test('TB v3 walk: state declares activeWalkthroughId field', (function () {
   return /activeWalkthroughId\s*:\s*null/.test(tbV3JsForWalk);
 })());
