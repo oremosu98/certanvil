@@ -85,16 +85,17 @@
   // than new subdomains (founder lock 2026-05-26).
   function getAvailableCerts(role) {
     return [
-      { id: 'netplus', name: 'Network+',                code: 'N10-009', tier: 'free' },
-      { id: 'secplus', name: 'Security+',               code: 'SY0-701', tier: 'pro'  },
-      { id: 'az900',   name: 'Microsoft Azure Fundamentals', code: 'AZ-900',  tier: 'pro'  }
+      { id: 'netplus', name: 'Network+',                       code: 'N10-009', tier: 'free' },
+      { id: 'secplus', name: 'Security+',                      code: 'SY0-701', tier: 'pro'  },
+      { id: 'az900',   name: 'Microsoft Azure Fundamentals',   code: 'AZ-900',  tier: 'pro'  },
+      { id: 'ai900',   name: 'Microsoft Azure AI Fundamentals',code: 'AI-900',  tier: 'pro'  }
     ];
   }
 
   function getActiveCertId() {
     try {
       var dev = localStorage.getItem(CERT_OVERRIDE_KEY);
-      if (dev === 'secplus' || dev === 'netplus' || dev === 'az900') return dev;
+      if (dev === 'secplus' || dev === 'netplus' || dev === 'az900' || dev === 'ai900') return dev;
     } catch (e) {}
     try {
       var host = window.location.hostname || '';
@@ -110,6 +111,11 @@
       if (host.indexOf('azure.') === 0
           || host.indexOf('azure-') === 0
           || host === 'azure.certanvil.com') return 'az900';
+      // v7.5.0 — fourth cert AI-900 on ai.certanvil.com (Pattern A;
+      // founder lock 2026-05-27 — AI/data role family separation).
+      if (host.indexOf('ai.') === 0
+          || host.indexOf('ai-') === 0
+          || host === 'ai.certanvil.com') return 'ai900';
     } catch (e) {}
     return 'netplus';
   }
@@ -132,15 +138,19 @@
   // override. localhost still uses the override fallback for local dev
   // where subdomain hosts aren't available.
   window.tadSwitchCert = function (certId) {
-    if (certId !== 'netplus' && certId !== 'secplus' && certId !== 'az900') return false;
-    // Pro gate for Sec+ + AZ-900: delegate to canonical _gateProOnly. Returns
-    // true if Pro/admin (proceed) OR false if Free (modal already shown, abort).
-    // v7.3.0: az900 joins secplus on the Pro tier (founder lock 2026-05-26).
+    if (certId !== 'netplus' && certId !== 'secplus' && certId !== 'az900' && certId !== 'ai900') return false;
+    // Pro gate for Sec+ + AZ-900 + AI-900: delegate to canonical _gateProOnly.
+    // Returns true if Pro/admin (proceed) OR false if Free (modal already shown, abort).
+    // v7.3.0: az900 joins secplus on the Pro tier.
+    // v7.5.0: ai900 joins as the fourth Pro-tier cert (founder lock 2026-05-27).
     if (certId === 'secplus' && typeof window._gateProOnly === 'function') {
       if (!window._gateProOnly('Security+ (SY0-701)')) return false;
     }
     if (certId === 'az900' && typeof window._gateProOnly === 'function') {
       if (!window._gateProOnly('Azure Fundamentals (AZ-900)')) return false;
+    }
+    if (certId === 'ai900' && typeof window._gateProOnly === 'function') {
+      if (!window._gateProOnly('Azure AI Fundamentals (AI-900)')) return false;
     }
     var host = '';
     try { host = window.location.hostname || ''; } catch (e) {}
@@ -158,7 +168,9 @@
         ? 'secplus.certanvil.com'
         : (certId === 'az900')
           ? 'azure.certanvil.com'
-          : 'networkplus.certanvil.com';
+          : (certId === 'ai900')
+            ? 'ai.certanvil.com'
+            : 'networkplus.certanvil.com';
       try { window.location.href = 'https://' + targetHost + '/'; } catch (e) {}
     }
     return false;
