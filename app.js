@@ -1,9 +1,9 @@
 // ══════════════════════════════════════════
-// Network+ AI Quiz — app.js  v7.4.0
+// Network+ AI Quiz — app.js  v7.5.0
 // ══════════════════════════════════════════
 
 // ── CONSTANTS ──
-const APP_VERSION = '7.4.0';
+const APP_VERSION = '7.5.0';
 // v4.99.45 (Phase 6b): expose APP_VERSION on window so the web-vitals
 // collector (lib/web-vitals-collector.js, loaded BEFORE app.js so its
 // PerformanceObservers attach earlier) can stamp this version onto every
@@ -47,7 +47,7 @@ function detectCert() {
       const certOverrideKey = 'nplus_' + 'dev_cert';
       const url = new URL(location.href);
       const param = (url.searchParams.get('cert') || '').toLowerCase().trim();
-      if (param === 'netplus' || param === 'secplus' || param === 'az900') {
+      if (param === 'netplus' || param === 'secplus' || param === 'az900' || param === 'ai900') {
         try { localStorage.setItem(certOverrideKey, param); } catch (e) {}
         try {
           url.searchParams.delete('cert');
@@ -84,6 +84,13 @@ function detectCert() {
       if (host.indexOf('azure.') === 0
           || host.indexOf('azure-') === 0
           || host === 'azure.certanvil.com') return 'az900';
+      // v7.5.0 — fourth cert AI-900 on ai.certanvil.com (Pattern A; founder
+      // lock 2026-05-27 — AI/data role family gets its own subdomain,
+      // re-scoping the v7.3.0 azure.certanvil.com lock to "AZ-* infra certs
+      // only"). Future AI certs (AI-102, DP-100) share ai.certanvil.com.
+      if (host.indexOf('ai.') === 0
+          || host.indexOf('ai-') === 0
+          || host === 'ai.certanvil.com') return 'ai900';
     }
   } catch (e) { /* not in browser context */ }
 
@@ -93,7 +100,7 @@ function detectCert() {
   try {
     if (typeof localStorage !== 'undefined') {
       const dev = localStorage.getItem('nplus_dev_cert');
-      if (dev === 'secplus' || dev === 'netplus' || dev === 'az900') return dev;
+      if (dev === 'secplus' || dev === 'netplus' || dev === 'az900' || dev === 'ai900') return dev;
     }
   } catch (e) { /* localStorage may be blocked */ }
 
@@ -16833,13 +16840,57 @@ function renderSetupDomainGrid() {
       { label: 'Monitor & Logs',        key: 'Azure Monitor & Log Analytics' },
     ],
   };
-  // v7.3.0 — 3-way cert selector (was 2-way ternary). Falls through to Net+
+  // v7.5.0 — AI-900 canonical topic shortlist (5 representative topics per
+  // domain) for the home-page domain grid. Mirrors the _CANONICAL_AZ900 +
+  // _CANONICAL_SECPLUS shape — { domainKey: [{ label, key }, …] } where
+  // `key` matches CERT_PACK.topicDomains[key] for weak-spot routing. Domain 5
+  // (GenAI) emphasises Foundry + Azure OpenAI per VoC §13.6 competitor gap.
+  const _CANONICAL_AI900 = {
+    'ai-workloads': [
+      { label: 'Workload Types',        key: 'AI Workload Types' },
+      { label: 'Responsible AI',        key: 'Responsible AI Principles' },
+      { label: 'Fairness',              key: 'Fairness in AI' },
+      { label: 'Reliability & Safety',  key: 'Reliability & Safety in AI' },
+      { label: 'Privacy & Inclusiveness', key: 'Privacy, Security & Inclusiveness in AI' },
+    ],
+    'ml-fundamentals': [
+      { label: 'ML Types',              key: 'Common Machine Learning Types' },
+      { label: 'Regression',            key: 'Regression Workloads' },
+      { label: 'Classification',        key: 'Classification Workloads' },
+      { label: 'Clustering',            key: 'Clustering Workloads' },
+      { label: 'Confusion Matrix',      key: 'Confusion Matrix & Model Evaluation' },
+    ],
+    'computer-vision': [
+      { label: 'CV Solutions',          key: 'Computer Vision Common Solutions' },
+      { label: 'Image Classification',  key: 'Image Classification' },
+      { label: 'Object Detection',      key: 'Object Detection' },
+      { label: 'OCR',                   key: 'Optical Character Recognition (OCR)' },
+      { label: 'Face Detection',        key: 'Facial Detection & Analysis' },
+    ],
+    'nlp-workloads': [
+      { label: 'NLP Solutions',         key: 'NLP Common Solutions' },
+      { label: 'Sentiment Analysis',    key: 'Sentiment Analysis' },
+      { label: 'Language Modeling',     key: 'Language Modeling' },
+      { label: 'Speech',                key: 'Speech Recognition & Synthesis' },
+      { label: 'Translation',           key: 'Translation & Transliteration' },
+    ],
+    'genai-workloads': [
+      { label: 'GenAI Features',        key: 'Generative AI Common Features' },
+      { label: 'Foundation vs Fine-tuned', key: 'Foundation Models vs Fine-tuned Models' },
+      { label: 'RAG / Grounding',       key: 'Grounding & RAG (Retrieval-Augmented Generation)' },
+      { label: 'Azure OpenAI',          key: 'Azure OpenAI Service' },
+      { label: 'AI Foundry',            key: 'Azure AI Foundry & Model Catalog' },
+    ],
+  };
+  // v7.5.0 — 4-way cert selector (was 3-way ternary). Falls through to Net+
   // when CURRENT_CERT isn't recognised (defensive; preserves prior behavior).
   const CANONICAL_DOMAIN_TOPICS = (typeof CURRENT_CERT !== 'undefined' && CURRENT_CERT === 'secplus')
     ? _CANONICAL_SECPLUS
     : ((typeof CURRENT_CERT !== 'undefined' && CURRENT_CERT === 'az900')
         ? _CANONICAL_AZ900
-        : _CANONICAL_NETPLUS);
+        : ((typeof CURRENT_CERT !== 'undefined' && CURRENT_CERT === 'ai900')
+            ? _CANONICAL_AI900
+            : _CANONICAL_NETPLUS));
   // Build a set of weak topic keys for quick lookup
   const weakSet = new Set();
   try {

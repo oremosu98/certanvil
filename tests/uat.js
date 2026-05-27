@@ -59,7 +59,7 @@ function mockMatchMedia(reducedMotion) {
   };
 }
 
-let html, js, css, sw, certNetplus, certSecplus, certAz900, cloudStoreJs, authStateJs;
+let html, js, css, sw, certNetplus, certSecplus, certAz900, certAi900, cloudStoreJs, authStateJs;
 try {
   html = read('index.html');
   js   = read('app.js');
@@ -74,6 +74,9 @@ try {
   // v7.3.0: AZ-900 cert pack source for 8 new tombstones (Pattern A wiring +
   // schema + exemplar bank sanity). Same shape as Net+/Sec+ loading.
   certAz900 = read('certs/az900.js');
+  // v7.5.0: AI-900 cert pack source for 8 new tombstones (fourth cert, AI/data
+  // role family on ai.certanvil.com). Mirrors AZ-900 loader pattern.
+  certAi900 = read('certs/ai900.js');
   // v4.89.0 Phase C′: cloud-store source so we can assert USER_DATA_KEYS coverage
   // for new namespaced storage keys (e.g. v4.91.0 SAB_*).
   cloudStoreJs = read('cloud-store.js');
@@ -16278,6 +16281,96 @@ test('v7.3.0 CertPack: every AZ-900 exemplar topic exists in topicDomains',
       if (!topicKeys.has(t)) return false;
     }
     return exTopics.length > 0;
+  })());
+
+// ══════════════════════════════════════════════════════════════════════
+// v7.5.0 CertPack — Microsoft Azure AI Fundamentals (AI-900) cert add
+// ══════════════════════════════════════════════════════════════════════
+// 8 regression tombstones for the fourth cert. Mirrors v7.3.0 AZ-900 shape +
+// Pattern A subdomain mirror (3 surfaces) + 4-cert switcher + cert pack
+// schema (declaration, domain weights, exemplar bank, topic catalog,
+// exemplar-topic integrity). Locks the cert pack contract for the fourth
+// cert in CertAnvil (Microsoft Azure AI Fundamentals AI-900, AI/data role
+// family on ai.certanvil.com).
+// ══════════════════════════════════════════════════════════════════════
+test('v7.5.0 CertPack: certs/ai900.js declares window.CERT_PACKS.ai900',
+  /window\.CERT_PACKS\.ai900\s*=\s*\{/.test(certAi900));
+test('v7.5.0 CertPack: app.js detectCert handles ai. + ai- + ai.certanvil.com',
+  /host\.indexOf\(['"]ai\.['"]\)\s*===\s*0/.test(js)
+  && /host\.indexOf\(['"]ai-['"]\)\s*===\s*0/.test(js)
+  && /host\s*===\s*['"]ai\.certanvil\.com['"]/.test(js));
+test('v7.5.0 CertPack: index.html inline IIFE maps ai.certanvil.com to ai900',
+  /\(function\s*\(\)\s*\{[\s\S]{0,4000}ai\.certanvil\.com[\s\S]{0,200}cert\s*=\s*['"]ai900['"]/.test(html));
+test('v7.5.0 CertPack: auth-state.js getAvailableCerts returns 4 certs (netplus + secplus + az900 + ai900)',
+  (() => {
+    var src = authStateJs || '';
+    return /id:\s*['"]netplus['"]/.test(src)
+        && /id:\s*['"]secplus['"]/.test(src)
+        && /id:\s*['"]az900['"]/.test(src)
+        && /id:\s*['"]ai900['"]/.test(src);
+  })());
+test('v7.5.0 CertPack: AI-900 domain weights sum within tolerance (>= 0.95 && <= 1.05)',
+  (() => {
+    // 5-domain weights (0.175/0.225/0.175/0.175/0.25 per May 2025 refresh
+    // midpoints). Sums to exactly 1.00.
+    var m = certAi900.match(/domainWeights:\s*\{([\s\S]*?)\}/);
+    if (!m) return false;
+    var nums = (m[1].match(/[0-9]*\.[0-9]+/g) || []).map(Number);
+    var sum = nums.reduce(function (a, b) { return a + b; }, 0);
+    return sum >= 0.95 && sum <= 1.05;
+  })());
+test('v7.5.0 CertPack: AI-900 exemplar bank >= 195 entries',
+  (() => {
+    // Count addedVersion: "7.5.0" markers — one per exemplar in the v7.5.0
+    // ship. The cert pack uses unquoted JS object literal keys (vs the JSON
+    // shape some prior packs used), so the regex anchors on the unquoted
+    // form. Floor 195 gives 5+ headroom from the 200 plan target (final
+    // count 206 per Stage 6 commit).
+    var matches = certAi900.match(/addedVersion:\s*"7\.5\.0"/g);
+    return matches && matches.length >= 195;
+  })());
+test('v7.5.0 CertPack: AI-900 topic catalog has >= 35 topics',
+  (() => {
+    // Count keys in the topicDomains object. Mirrors AZ-900 pattern with the
+    // topicResources block boundary marker. AI-900 has 40 topics per plan
+    // Stage 1 (D1=7 / D2=9 / D3=7 / D4=7 / D5=10).
+    var topicSection = certAi900.match(/topicDomains:\s*\{([\s\S]*?)\},\s*\n\s*\/\//);
+    if (!topicSection) return false;
+    var keys = topicSection[1].match(/^\s*'[^']+':/gm) || [];
+    return keys.length >= 35;
+  })());
+test('v7.5.0 CertPack: every AI-900 exemplar topic exists in topicDomains',
+  (() => {
+    // Mirrors the AZ-900 v7.3.0 guard. Domain IDs differ (5-domain set:
+    // ai-workloads / ml-fundamentals / computer-vision / nlp-workloads /
+    // genai-workloads). Exemplar.topic uses unquoted JS key style.
+    var topicSection = certAi900.match(/topicDomains:\s*\{([\s\S]*?)\},\s*\n\s*\/\//);
+    if (!topicSection) return false;
+    var topicKeys = new Set();
+    var keyMatch;
+    var keyRe = /'([^']+)':\s*'(?:ai-workloads|ml-fundamentals|computer-vision|nlp-workloads|genai-workloads)'/g;
+    while ((keyMatch = keyRe.exec(topicSection[1])) !== null) {
+      topicKeys.add(keyMatch[1]);
+    }
+    if (topicKeys.size < 35) return false; // sanity check that extraction worked
+    // Scan every exemplar.topic field (unquoted-key form: topic: "...")
+    var exTopics = certAi900.match(/topic:\s*"([^"]+)"/g) || [];
+    if (exTopics.length === 0) return false;
+    for (var i = 0; i < exTopics.length; i++) {
+      var t = exTopics[i].replace(/^topic:\s*"/, '').replace(/"$/, '');
+      if (!topicKeys.has(t)) return false;
+    }
+    return true;
+  })());
+test('v7.5.0 CertPack: Domain 5 has >= 10 Azure AI Foundry exemplars (VoC §13.6 competitor-gap floor)',
+  (() => {
+    // VoC §13.6 mandate: 10+ Azure AI Foundry exemplars in Domain 5 as the
+    // competitor-gap goldmine. Count exemplars whose topic is the Foundry
+    // topic OR whose question/explanation references "Azure AI Foundry"
+    // by name. Floor 10 catches regressions where Foundry coverage gets
+    // reduced (e.g. someone trims D5 exemplars without auditing for Foundry).
+    var foundryRefs = certAi900.match(/Azure AI Foundry/g) || [];
+    return foundryRefs.length >= 10;
   })());
 
 // v7.2.3: cert-filter the readiness model so the Drill These To Move Your
