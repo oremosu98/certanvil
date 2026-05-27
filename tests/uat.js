@@ -5673,8 +5673,10 @@ test('v4.53.0 JS: domain grid aggregates via TOPIC_DOMAINS lookup',
 // v4.54.10: renderSetupDomainGrid body grew \u2014 widen the regex window.
 // v4.88.1: cert-aware bail at top of fn pushes drillDomain further down.
 // v4.99.80: window widened 7000→10000 (cert-aware canonical topic maps added)
+// v7.3.0: window widened 10000→12000 (AZ-900 _CANONICAL_AZ900 block + 3-way
+// CANONICAL_DOMAIN_TOPICS ternary added ~1.5K chars inside renderSetupDomainGrid)
 test('v4.53.0 JS: domain grid click wires drillDomain',
-  /renderSetupDomainGrid[\s\S]{0,10000}drillDomain\(/.test(js));
+  /renderSetupDomainGrid[\s\S]{0,12000}drillDomain\(/.test(js));
 // v4.81.23: renderSetupFocusBanner stopped being called from goSetup (retired
 // in v4.81.20 as a shim; element removed entirely in v4.81.23). goSetup
 // still calls renderSetupDomainGrid + renderTodayPlan.
@@ -6404,9 +6406,14 @@ test('v4.54.8 JS: updateCqSummaryBar defined + called from initChips click handl
 // Legacy dg-weak-chips class retired + hidden via CSS !important.
 // v4.99.80: CANONICAL_DOMAIN_TOPICS split into _CANONICAL_NETPLUS + _CANONICAL_SECPLUS
 // (cert-aware domain grid). Retargeted to assert the new structure.
-test('v4.54.8 (v4.54.10 update) JS: renderSetupDomainGrid emits .dg-topic-list with canonical topics',
-  /renderSetupDomainGrid[\s\S]{0,9000}dg-topic-list/.test(js) &&
-  /renderSetupDomainGrid[\s\S]{0,9000}_CANONICAL_NETPLUS/.test(js));
+// v7.3.0: window widened 9000→11000 (AZ-900 _CANONICAL_AZ900 added ~1.5K chars)
+// + asserts _CANONICAL_AZ900 exists alongside the netplus + secplus maps so the
+// 3-way CANONICAL_DOMAIN_TOPICS ternary stays cert-complete (regression strength
+// preserved per CLAUDE.md "guards MUST be migrated, never bypassed" rule).
+test('v4.54.8 (v4.54.10 update, v7.3.0 update) JS: renderSetupDomainGrid emits .dg-topic-list with canonical topics for all 3 certs',
+  /renderSetupDomainGrid[\s\S]{0,11000}dg-topic-list/.test(js) &&
+  /renderSetupDomainGrid[\s\S]{0,11000}_CANONICAL_NETPLUS/.test(js) &&
+  /renderSetupDomainGrid[\s\S]{0,11000}_CANONICAL_AZ900/.test(js));
 test('v4.54.8 CSS: Quick Start preset tiles color-cycle (4 nth-child ::after backgrounds)',
   /\.quiz-presets\s+\.preset-tile:nth-child\(1\)::after\s*\{[^}]*background:\s*var\(--accent\)/.test(css) &&
   /\.quiz-presets\s+\.preset-tile:nth-child\(2\)::after\s*\{[^}]*background:\s*var\(--green\)/.test(css) &&

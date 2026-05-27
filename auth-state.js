@@ -78,10 +78,16 @@
   // see the cert in the dropdown but switching triggers the Pro upgrade modal).
   // Future Phase G (entitlements) replaces this with a query against
   // cert_entitlements table.
+  // v7.3.0 (AZ-900 public launch — third cert on azure.certanvil.com):
+  // Microsoft Azure Fundamentals added as Pro tier (same gating mechanism
+  // as Sec+). Future Azure certs (AZ-104, AZ-204, AZ-305) co-exist on the
+  // same azure.certanvil.com subdomain via in-app cert switcher rather
+  // than new subdomains (founder lock 2026-05-26).
   function getAvailableCerts(role) {
     return [
-      { id: 'netplus', name: 'Network+',  code: 'N10-009', tier: 'free' },
-      { id: 'secplus', name: 'Security+', code: 'SY0-701', tier: 'pro'  }
+      { id: 'netplus', name: 'Network+',                code: 'N10-009', tier: 'free' },
+      { id: 'secplus', name: 'Security+',               code: 'SY0-701', tier: 'pro'  },
+      { id: 'az900',   name: 'Microsoft Azure Fundamentals', code: 'AZ-900',  tier: 'pro'  }
     ];
   }
 
@@ -126,11 +132,15 @@
   // override. localhost still uses the override fallback for local dev
   // where subdomain hosts aren't available.
   window.tadSwitchCert = function (certId) {
-    if (certId !== 'netplus' && certId !== 'secplus') return false;
-    // Pro gate for Sec+: delegate to canonical _gateProOnly. Returns true if
-    // Pro/admin (proceed) OR false if Free (modal already shown, abort).
+    if (certId !== 'netplus' && certId !== 'secplus' && certId !== 'az900') return false;
+    // Pro gate for Sec+ + AZ-900: delegate to canonical _gateProOnly. Returns
+    // true if Pro/admin (proceed) OR false if Free (modal already shown, abort).
+    // v7.3.0: az900 joins secplus on the Pro tier (founder lock 2026-05-26).
     if (certId === 'secplus' && typeof window._gateProOnly === 'function') {
       if (!window._gateProOnly('Security+ (SY0-701)')) return false;
+    }
+    if (certId === 'az900' && typeof window._gateProOnly === 'function') {
+      if (!window._gateProOnly('Azure Fundamentals (AZ-900)')) return false;
     }
     var host = '';
     try { host = window.location.hostname || ''; } catch (e) {}
@@ -142,8 +152,13 @@
     } else {
       // Pattern A: navigate to the cert's subdomain. Clear any stale override
       // so getActiveCertId() trusts the subdomain on arrival.
+      // v7.3.0: az900 → azure.certanvil.com (the third Pattern A subdomain).
       try { localStorage.removeItem(CERT_OVERRIDE_KEY); } catch (e) {}
-      var targetHost = (certId === 'secplus') ? 'secplus.certanvil.com' : 'networkplus.certanvil.com';
+      var targetHost = (certId === 'secplus')
+        ? 'secplus.certanvil.com'
+        : (certId === 'az900')
+          ? 'azure.certanvil.com'
+          : 'networkplus.certanvil.com';
       try { window.location.href = 'https://' + targetHost + '/'; } catch (e) {}
     }
     return false;
