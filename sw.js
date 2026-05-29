@@ -1,5 +1,5 @@
-// Service Worker v7.8.2 — Network+ Quiz App (Phase C′ cloud-first)
-const CACHE_NAME = 'netplus-v7.8.2';
+// Service Worker v7.8.3 — Network+ Quiz App (Phase C′ cloud-first)
+const CACHE_NAME = 'netplus-v7.8.3';
 const SHELL_ASSETS = [
   './',
   './index.html',
@@ -22,6 +22,9 @@ const SHELL_ASSETS = [
   // the CDN 503'd intermittently and broke auth flow — auth.js bails out
   // when window.supabase is missing). Local copy is precached for offline.
   './lib/supabase-umd.min.js',
+  // Sec-P4/M6: vendored DOMPurify (XSS defence-in-depth). Loaded before app.js
+  // in index.html; precached for offline so sanitizeHTML() never silently no-ops.
+  './lib/dompurify.min.js',
   './lib/supabase.js',
   './cloud-store.js',
   './auth-state.js',

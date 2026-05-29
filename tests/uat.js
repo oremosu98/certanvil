@@ -24980,6 +24980,79 @@ console.log('\n\x1b[1m── Security Phase 3 — NOTIFY RATE LIMIT + CORS ─�
     /persisted_to_supabase:\s*persistedToSupabase/.test(notify));
 })();
 
+// ══════════════════════════════════════════════════════════════════════════
+// Security Phase 4 · XSS defence-in-depth (M6 DOMPurify + L2 + L5)
+// M6 vendors DOMPurify (no build step — committed .min.js + <script>) and runs
+// the innerHTML sinks carrying untrusted data through it as a backstop to the
+// always-on escHtml/escapeHtml layer: cert-app AI output (topic guide + "explain
+// further" deep-dive) and landing cross-user/remote rows (admin user table from
+// Supabase profiles + ship commits from the GitHub API). L2 keeps guide.diagram
+// escHtml-escaped AND routes the guide body through the DOMPurify backstop. L5
+// adds secret-file patterns to .gitignore. See SECURITY-AUDIT-2026-05-29.md.
+// ══════════════════════════════════════════════════════════════════════════
+console.log('\n\x1b[1m── Security Phase 4 — XSS DEFENCE-IN-DEPTH (DOMPurify) ──\x1b[0m');
+(function () {
+  const rd = (p) => { const f = path.join(ROOT, p); return fs.existsSync(f) ? fs.readFileSync(f, 'utf8') : ''; };
+  const appjs   = rd('app.js');
+  const indexer = rd('index.html');
+  const swjs    = rd('sw.js');
+  const adminjs = rd('landing/lib/admin.js');
+  const adminht = rd('landing/admin.html');
+  const gitig   = rd('.gitignore');
+  const dpCert  = rd('lib/dompurify.min.js');
+  const dpLand  = rd('landing/lib/dompurify.min.js');
+
+  // — M6 vendoring: genuine DOMPurify committed in both apps (no npm dep) —
+  test('Sec-P4 M6: lib/dompurify.min.js vendored (genuine Cure53 DOMPurify 3.x bundle)',
+    dpCert.length > 10000 && /DOMPurify\s+3\./.test(dpCert) && /Cure53/.test(dpCert));
+  test('Sec-P4 M6: landing/lib/dompurify.min.js vendored (same bundle)',
+    dpLand.length > 10000 && /DOMPurify\s+3\./.test(dpLand));
+  test('Sec-P4 M6: cert + landing vendored bundles are byte-identical',
+    dpCert.length > 0 && dpCert === dpLand);
+
+  // — M6 load order: the DOMPurify <script> precedes the script that consumes it —
+  test('Sec-P4 M6: index.html loads lib/dompurify.min.js before app.js',
+    /src="lib\/dompurify\.min\.js"/.test(indexer)
+    && indexer.indexOf('src="lib/dompurify.min.js"') < indexer.indexOf('src="app.js"'));
+  test('Sec-P4 M6: admin.html loads lib/dompurify.min.js before lib/admin.js',
+    /src="lib\/dompurify\.min\.js"/.test(adminht)
+    && adminht.indexOf('src="lib/dompurify.min.js"') < adminht.indexOf('src="lib/admin.js"'));
+
+  // — M6 offline: precached in the service-worker shell —
+  test('Sec-P4 M6: sw.js SHELL_ASSETS precaches ./lib/dompurify.min.js',
+    /['"]\.\/lib\/dompurify\.min\.js['"]/.test(swjs));
+
+  // — M6 helper wired (cert app), fails OPEN to escHtml if the bundle is missing —
+  test('Sec-P4 M6: app.js defines sanitizeHTML() backed by window.DOMPurify',
+    /function\s+sanitizeHTML\s*\(/.test(appjs) && /window\.DOMPurify/.test(appjs) && /DP\.sanitize/.test(appjs));
+  test('Sec-P4 M6: app.js sanitizeHTML fails OPEN (returns input when DOMPurify absent)',
+    /function\s+sanitizeHTML\([\s\S]{0,360}return\s+s;/.test(appjs));
+
+  // — M6 + L2: cert-app AI sinks routed through the backstop —
+  test('Sec-P4 L2: AI topic-guide body assigned via sanitizeHTML(aiGuideHtml)',
+    /contentEl\.innerHTML\s*=\s*sanitizeHTML\(aiGuideHtml\)/.test(appjs));
+  test('Sec-P4 L2: guide.diagram still escHtml-escaped inside <pre> (primary layer intact)',
+    /<pre class="td-diagram">\$\{escHtml\(guide\.diagram\)\}/.test(appjs));
+  test('Sec-P4 M6: AI "Explain further" deep-dive sink wrapped in sanitizeHTML',
+    /deepDiv\.innerHTML\s*=\s*sanitizeHTML\(/.test(appjs));
+  test('Sec-P4 M6: trusted onclick terminal/lab sections kept OUTSIDE sanitizeHTML',
+    /sanitizeHTML\(aiGuideHtml\)\s*\+\s*_renderTopicTerminalSection/.test(appjs));
+
+  // — M6 landing admin (cross-user + remote) sinks, table-context-safe —
+  test('Sec-P4 M6: admin.js defines table-aware sanitizeRows (wraps <table>, extracts tbody)',
+    /function\s+sanitizeRows\s*\(/.test(adminjs)
+    && /'<table><tbody>'\s*\+\s*s\s*\+\s*'<\/tbody><\/table>'/.test(adminjs)
+    && /querySelector\('tbody'\)/.test(adminjs));
+  test('Sec-P4 M6: admin renderUsers (other-user rows) routed through sanitizeRows',
+    /elUsersTbody\.innerHTML\s*=\s*sanitizeRows\(/.test(adminjs));
+  test('Sec-P4 M6: admin renderShips (GitHub commits) routed through sanitizeRows',
+    /elShipsTbody\.innerHTML\s*=\s*sanitizeRows\(/.test(adminjs));
+
+  // — L5 .gitignore secret-file guard —
+  test('Sec-P4 L5: .gitignore guards .env / *.key / *.pem / secrets/',
+    /^\.env$/m.test(gitig) && /^\*\.key$/m.test(gitig) && /^\*\.pem$/m.test(gitig) && /^secrets\/$/m.test(gitig));
+})();
+
 // ── Summary ──
 console.log('\n' + '═'.repeat(50));
 const total = results.pass + results.fail;

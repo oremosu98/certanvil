@@ -34,3 +34,12 @@ AI_QUIZ_HANDOFF.md
 
 # brainstorming visual companion (transient session files)
 .superpowers/
+
+# Sec-P4 / L5 — secret-bearing files must never enter git history. No secrets
+# have leaked to date (audit Phase 0); these patterns are a forward guard
+# against an accidental commit of env files, private keys, or a secrets dir.
+.env
+.env.*
+*.key
+*.pem
+secrets/
