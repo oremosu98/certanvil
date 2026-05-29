@@ -25,12 +25,14 @@
 -- IP hashes are SHA-256 truncated to 16 hex chars · raw IP never stored. Rows
 -- auto-age via the cleanup helper below.
 --
--- How to apply: Supabase Dashboard → SQL Editor → paste → Run. Idempotent
--- (IF NOT EXISTS / OR REPLACE / DROP-then-CREATE). Run once per environment.
+-- How to apply: Supabase Dashboard → SQL Editor → paste WHOLE file → Run.
+-- Idempotent (IF NOT EXISTS / OR REPLACE / DROP-then-CREATE). Run once per env.
+-- NOTE: uses uniquely-named dollar-quote tags ($pf$ / $rl$ / $purge$) instead of
+-- bare $$ so a partial/truncated paste fails loudly rather than mis-pairing.
 -- ══════════════════════════════════════════════════════════════════════════
 
 -- Preflight guards — fail loud if a prerequisite migration hasn't been applied.
-do $$
+do $pf$
 begin
   if not exists (select 1 from pg_class where relname = 'notify_signups') then
     raise exception 'notify_signups not found — apply 20260509_notify_signups.sql first.';
@@ -38,7 +40,8 @@ begin
   if not exists (select 1 from pg_proc where proname = 'is_admin') then
     raise exception 'is_admin() not found — apply 20260506_phase_c_prime.sql first.';
   end if;
-end$$;
+end
+$pf$;
 
 -- ── 1. notify_rate_limit table ────────────────────────────────────────────
 -- Separate counter from D.3's diagnostic_rate_limit and D.5's
@@ -84,7 +87,7 @@ returns table(
 language plpgsql
 security definer
 set search_path = public
-as $$
+as $rl$
 declare
   v_count int;
   v_first_at timestamptz;
@@ -129,8 +132,8 @@ begin
     set call_count = call_count + 1, last_at = now()
     where ip_hash = p_ip_hash;
   return query select true, v_count + 1, v_limit, v_first_at + v_window;
-end;
-$$;
+end
+$rl$;
 
 comment on function notify_rl_check_and_increment is
   'Atomic check + increment for the notify-me waitlist rate limit. 10/hour/IP-hash. Returns (allowed, current_count, hourly_limit, resets_at). Service-role only — clients should never call this directly. Security Phase 3 (M3).';
@@ -143,7 +146,7 @@ returns int
 language plpgsql
 security definer
 set search_path = public
-as $$
+as $purge$
 declare
   v_deleted int;
 begin
@@ -151,8 +154,8 @@ begin
     where last_at < (now() - interval '7 days');
   get diagnostics v_deleted = row_count;
   return v_deleted;
-end;
-$$;
+end
+$purge$;
 
 comment on function notify_rl_purge_old is
   'Deletes notify_rate_limit rows whose last_at is more than 7 days old. Safe to run via cron.';
@@ -160,7 +163,7 @@ comment on function notify_rl_purge_old is
 -- ══════════════════════════════════════════════════════════════════════════
 -- Verify (run manually as the relevant role)
 -- ══════════════════════════════════════════════════════════════════════════
--- select notify_rl_check_and_increment('test-hash-001');
+-- select notify_rl_check_and_increment('test-hash-001'::text);
 --   → (true, 1, 10, now() + 1h)
 -- repeat 10× quickly:
 --   → after 10th call: (true, 10, 10, ...) → 11th: (false, 10, 10, ...)
@@ -171,12 +174,12 @@ comment on function notify_rl_purge_old is
 -- ROLLBACK  (backout plan — change-management discipline · v5.x Phase 3)
 -- ══════════════════════════════════════════════════════════════════════════
 -- Forward-only in prod. This block is the documented MANUAL reversal, tested on
--- a throwaway run before merge. To revert, run the following in Supabase
--- Dashboard → SQL Editor (production), in this order. NOTE: only roll this back
--- together with reverting landing/api/notify.js to the no-rate-limit version —
--- the endpoint fails OPEN, so dropping the RPC alone just disables enforcement
--- (signups still succeed), but leaving the endpoint calling a missing RPC means
--- every POST logs a fail-open warning.
+-- live before merge. To revert, run the following in Supabase Dashboard → SQL
+-- Editor (production), in this order. NOTE: only roll this back together with
+-- reverting landing/api/notify.js to the no-rate-limit version — the endpoint
+-- fails OPEN, so dropping the RPC alone just disables enforcement (signups still
+-- succeed), but leaving the endpoint calling a missing RPC means every POST logs
+-- a fail-open warning.
 --
 --   drop function if exists notify_rl_purge_old();
 --   drop function if exists notify_rl_check_and_increment(text);
