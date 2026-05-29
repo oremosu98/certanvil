@@ -1802,11 +1802,11 @@ html[data-theme] body .tad-link.is-danger{color:var(--text-dim)!important;}
 html[data-theme] body .tad-link.is-danger:hover,html[data-theme] body .tad-link.is-danger:focus-visible{color:var(--accent)!important;background:color-mix(in oklab,var(--text) 6%,transparent)!important;}
 html[data-theme] body .tad-cert-section{border-top:1px solid var(--border)!important;border-bottom:1px solid var(--border)!important;margin:5px 0!important;padding:6px!important;background:none!important;}
 html[data-theme] body .tad-cert-section-label{font-size:10px!important;font-weight:700!important;letter-spacing:.1em!important;text-transform:uppercase!important;color:var(--text-dim)!important;padding:6px 12px 4px!important;}
-html[data-theme] body .tad-cert-row{padding:9px 12px!important;border-radius:8px!important;border:0!important;background:none!important;transition:background .12s ease!important;}
+html[data-theme] body .tad-cert-row{padding:9px 12px!important;border-radius:8px!important;border:0!important;background:none!important;gap:8px!important;transition:background .12s ease!important;}
 html[data-theme] body .tad-cert-row:hover{background:color-mix(in oklab,var(--text) 6%,transparent)!important;}
 html[data-theme] body .tad-cert-row.is-active{background:color-mix(in oklab,var(--accent) 10%,transparent)!important;}
-html[data-theme] body .tad-cert-name{font-size:12.5px!important;font-weight:700!important;color:var(--text)!important;}
-html[data-theme] body .tad-cert-code{font-size:10.5px!important;color:var(--text-dim)!important;font-family:ui-monospace,"SF Mono",Menlo,monospace!important;}
+html[data-theme] body .tad-cert-name{font-size:12.5px!important;font-weight:700!important;color:var(--text)!important;min-width:0!important;overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important;}
+html[data-theme] body .tad-cert-code{font-size:10.5px!important;color:var(--text-dim)!important;font-family:ui-monospace,"SF Mono",Menlo,monospace!important;white-space:nowrap!important;flex:0 0 auto!important;}
 /* v7.1.0 Sec+ public launch — "PRO" badge on Pro-tier cert row for Free users */
 html[data-theme] body .tad-cert-tier-pill{margin-left:auto!important;display:inline-block!important;font-size:9.5px!important;font-weight:800!important;letter-spacing:0.08em!important;color:var(--accent)!important;background:color-mix(in oklab,var(--accent) 12%,transparent)!important;border:1px solid color-mix(in oklab,var(--accent) 30%,transparent)!important;border-radius:999px!important;padding:2px 7px!important;text-transform:uppercase!important;line-height:1!important;}
 html[data-theme] body .tad-cert-check{color:var(--accent)!important;}
