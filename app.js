@@ -1,9 +1,9 @@
 // ══════════════════════════════════════════
-// Network+ AI Quiz — app.js  v7.8.2
+// Network+ AI Quiz — app.js  v7.8.3
 // ══════════════════════════════════════════
 
 // ── CONSTANTS ──
-const APP_VERSION = '7.8.2';
+const APP_VERSION = '7.8.3';
 // v4.99.45 (Phase 6b): expose APP_VERSION on window so the web-vitals
 // collector (lib/web-vitals-collector.js, loaded BEFORE app.js so its
 // PerformanceObservers attach earlier) can stamp this version onto every
@@ -13409,7 +13409,9 @@ Use plain text, no markdown. Label each section clearly. Aim for 250-350 words t
   const deepDiv = document.getElementById('deep-explain') || document.createElement('div');
   deepDiv.id = 'deep-explain';
   deepDiv.className = 'deep-explain show';
-  deepDiv.innerHTML = '<strong>\ud83d\udca1 Deep Dive</strong><div class="deep-explain-text">' + formatted + '</div>';
+  // Sec-P4/M6: AI ("Explain further") output \u2014 DOMPurify backstop over the
+  // already-escHtml'd `formatted` text. No trusted inline handlers here.
+  deepDiv.innerHTML = sanitizeHTML('<strong>\ud83d\udca1 Deep Dive</strong><div class="deep-explain-text">' + formatted + '</div>');
 
   const expBox = document.getElementById('exp-box');
   if (expBox && !document.getElementById('deep-explain')) {
@@ -13550,7 +13552,9 @@ function renderTopicDive(guide, topicName) {
     `<li>${escHtml(t)}</li>`
   ).join('');
 
-  contentEl.innerHTML = `
+  // Sec-P4/M6: AI ("Topic Deep Dive") guide body is untrusted content — built
+  // here then passed through the DOMPurify backstop at assignment below.
+  const aiGuideHtml = `
     <div class="td-section td-summary">
       <div class="td-section-icon">📋</div>
       <div class="td-section-body">
@@ -13607,9 +13611,14 @@ function renderTopicDive(guide, topicName) {
       </div>
     </div>
 
-    ${_renderTopicTerminalSection(topicName)}
-    ${_renderTopicLabSection(topicName)}
   `;
+  // Strict DOMPurify over the AI body; the terminal/lab sections are TRUSTED,
+  // topic-catalog-derived static HTML carrying inline onclick launch buttons —
+  // concatenated OUTSIDE sanitizeHTML so the handlers survive (M7 removes inline
+  // handlers later). topicName originates from the curated cert pack, not user input.
+  contentEl.innerHTML = sanitizeHTML(aiGuideHtml)
+    + _renderTopicTerminalSection(topicName)
+    + _renderTopicLabSection(topicName);
 }
 
 // v4.16 / #68 — "Try it in Terminal" static section appended to the
@@ -15712,6 +15721,26 @@ function escHtml(str) {
 // it's safe to alias for HTML attribute contexts.
 function escAttr(str) {
   return escHtml(str == null ? '' : str);
+}
+
+// ── Security Phase 4 / M6 — DOMPurify defence-in-depth ───────────────
+// escHtml above is the primary, always-on escape for every dynamic sink.
+// sanitizeHTML is a SECOND, robust backstop for the innerHTML sinks that
+// carry untrusted data (AI/Claude output, other-user data, remote fetches):
+// if a single escHtml is ever missed upstream, DOMPurify still neutralises
+// injected <script>/<img onerror>/<svg onload>/<iframe>/javascript: URIs.
+// DOMPurify is vendored at lib/dompurify.min.js (no build step) and loaded
+// before app.js in index.html. STRICT config (defaults) — it strips ALL
+// inline on* handlers, so only run it over untrusted *content*; concatenate
+// any trusted onclick-bearing template parts OUTSIDE this call. Fully removing
+// inline handlers app-wide is M7 (deferred). Fails OPEN (returns the input) if
+// the vendored bundle ever fails to load — the escHtml layer still applies.
+function sanitizeHTML(dirty) {
+  if (dirty == null) return '';
+  const s = String(dirty);
+  const DP = (typeof window !== 'undefined') ? window.DOMPurify : null;
+  if (DP && typeof DP.sanitize === 'function') return DP.sanitize(s);
+  return s;
 }
 
 // ── v4.43.0: exam-convention keyword highlighting ────────────────────

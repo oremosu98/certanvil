@@ -194,7 +194,7 @@
       elUsersTbody.innerHTML = '<tr><td colspan="6" class="admin-table-empty">No users yet.</td></tr>';
       return;
     }
-    elUsersTbody.innerHTML = users.map(function (u) {
+    elUsersTbody.innerHTML = sanitizeRows(users.map(function (u) {
       var role = u.role || 'user';
       var roleClass = role === 'admin' ? 'admin' : 'user';
       var roleLabel = role === 'admin' ? 'Admin' : 'User';
@@ -212,7 +212,7 @@
         +   '<td>' + escapeHtml(activeCert) + '</td>'
         +   '<td class="mono">' + escapeHtml(lastSeenLabel) + '</td>'
         + '</tr>';
-    }).join('');
+    }).join(''));
   }
 
   function renderCertPacks() {
@@ -243,7 +243,7 @@
       elShipsTbody.innerHTML = '<tr><td colspan="3" class="admin-table-empty">Couldn\'t load commits from GitHub.</td></tr>';
       return;
     }
-    elShipsTbody.innerHTML = ships.map(function (s) {
+    elShipsTbody.innerHTML = sanitizeRows(ships.map(function (s) {
       var dateStr = s.date ? formatRelative(s.date) : '—';
       var msgEsc = escapeHtml(s.msg);
       // Truncate very long messages for the table
@@ -254,7 +254,7 @@
         +   '<td>' + msgEsc + '</td>'
         +   '<td class="mono">' + escapeHtml(dateStr) + '</td>'
         + '</tr>';
-    }).join('');
+    }).join(''));
   }
 
   // ── Helpers ──────────────────────────────────────────────────────────
@@ -279,6 +279,33 @@
       .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;')
       .replace(/'/g, '&#39;');
+  }
+
+  // Sec-P4/M6: DOMPurify defence-in-depth backstop over the innerHTML sinks
+  // rendering cross-user / remote data (admin user rows from Supabase profiles,
+  // ship commits from the GitHub API). escapeHtml above is the primary, always-on
+  // escape; this is the second layer that still neutralises an injected
+  // <script>/<img onerror>/<iframe> if a single escape is ever missed upstream.
+  //
+  // The sinks emit bare <tr>…</tr> fragments. DOMPurify parses input in a
+  // detached context where table rows outside a <table> are DROPPED by the HTML
+  // parser (verified: a bare <tr> collapses to its text node). So wrap the rows
+  // in a <table> to preserve parser context, sanitize, then hand back the
+  // sanitized <tbody> HTML. ADD_ATTR:['target'] keeps the GitHub ship links
+  // opening in a new tab (rel="noopener" already guards tabnabbing). DOMPurify
+  // is vendored at landing/lib/dompurify.min.js, loaded before this file in
+  // admin.html. Fails OPEN (returns input) if the bundle didn't load — escapeHtml
+  // still applies.
+  function sanitizeRows(rowsHtml) {
+    if (rowsHtml == null) return '';
+    var s = String(rowsHtml);
+    var DP = (typeof window !== 'undefined') ? window.DOMPurify : null;
+    if (!DP || typeof DP.sanitize !== 'function') return s;
+    var clean = DP.sanitize('<table><tbody>' + s + '</tbody></table>', { ADD_ATTR: ['target'] });
+    var tmp = document.createElement('div');
+    tmp.innerHTML = clean;
+    var tb = tmp.querySelector('tbody');
+    return tb ? tb.innerHTML : s;
   }
 
   init();
