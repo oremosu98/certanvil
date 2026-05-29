@@ -65,12 +65,48 @@
       'Security Architecture': 18,
       'Security Operations': 28,
       'Security Program Management and Oversight': 20
+    },
+    az900: {
+      'Cloud Concepts': 27.5,
+      'Azure Architecture & Services': 37.5,
+      'Azure Management & Governance': 32.5
+    },
+    ai900: {
+      'AI Workloads & Considerations': 17.5,
+      'Machine Learning Fundamentals': 22.5,
+      'Computer Vision Workloads': 17.5,
+      'NLP Workloads': 17.5,
+      'Generative AI Workloads': 25
+    },
+    sc900: {
+      'Security, Compliance & Identity Concepts': 12.5,
+      'Microsoft Entra': 27.5,
+      'Microsoft Security Solutions': 37.5,
+      'Microsoft Compliance Solutions': 22.5
+    },
+    'aplus-core1': {
+      'Mobile Devices': 13,
+      'Networking': 23,
+      'Hardware': 25,
+      'Virtualization & Cloud': 11,
+      'Hardware & Network Troubleshooting': 28
+    },
+    'aplus-core2': {
+      'Operating Systems': 28,
+      'Security': 28,
+      'Software Troubleshooting': 23,
+      'Operational Procedures': 21
+    },
+    clfc02: {
+      'Cloud Concepts': 24,
+      'Security & Compliance': 30,
+      'Cloud Technology & Services': 34,
+      'Billing, Pricing & Support': 12
     }
-    // AZ-900 / CCNA / AWS / AZ-104 added when those certs ship
   };
 
   // ── Cert catalog ────────────────────────────────────────────────────────
-  // Local source of truth for the analytics page. Six certs in the pipeline.
+  // Local source of truth for the analytics page. Eight exams (7 certs / 3 vendors).
   // Phase G consolidates this with cert_entitlements DB table.
   //
   // Status semantics:
@@ -110,56 +146,88 @@
         coachActive: 'Builds on N+. 65% knowledge transfer from Network+.'
       },
       {
+        id: 'aplus-core1',
+        name: 'CompTIA A+ Core 1',
+        code: '220-1201',
+        glyphClass: 'aplus-core1',
+        glyph: 'A+',
+        status: 'active',
+        examFormat: 'scaled',
+        maxScore: 900,
+        passScore: 675,
+        examName: 'CompTIA A+ Core 1 220-1201',
+        cta: { label: 'Open →', href: 'https://aplus.certanvil.com/?exam=core1' },
+        coachActive: 'First half of CompTIA A+. Hardware, networking, and mobile devices.'
+      },
+      {
+        id: 'aplus-core2',
+        name: 'CompTIA A+ Core 2',
+        code: '220-1202',
+        glyphClass: 'aplus-core2',
+        glyph: 'A+',
+        status: 'active',
+        examFormat: 'scaled',
+        maxScore: 900,
+        passScore: 700,
+        examName: 'CompTIA A+ Core 2 220-1202',
+        cta: { label: 'Open →', href: 'https://aplus.certanvil.com/?exam=core2' },
+        coachActive: 'Second half of CompTIA A+. OS, security, and operational procedures.'
+      },
+      {
         id: 'az900',
-        name: 'Azure Fundamentals',
+        name: 'Microsoft Azure Fundamentals',
         code: 'AZ-900',
         glyphClass: 'az900',
         glyph: 'AZ',
-        status: 'soon',
+        status: 'active',
         examFormat: 'percent',
         maxScore: 1000,
         passScore: 700,
-        examName: 'Azure Fundamentals AZ-900',
-        soonEta: '~6 weeks ETA'
+        examName: 'Microsoft Azure Fundamentals AZ-900',
+        cta: { label: 'Open →', href: 'https://azure.certanvil.com/?cert=az900' },
+        coachActive: 'Cloud fundamentals. Pairs with Sec+ on shared responsibility and IAM.'
       },
       {
-        id: 'ccna',
-        name: 'Cisco CCNA',
-        code: '200-301',
-        glyphClass: 'ccna',
-        glyph: 'CC',
-        status: 'soon',
+        id: 'ai900',
+        name: 'Microsoft Azure AI Fundamentals',
+        code: 'AI-900',
+        glyphClass: 'ai900',
+        glyph: 'AI',
+        status: 'active',
         examFormat: 'percent',
         maxScore: 1000,
-        passScore: 825,
-        examName: 'Cisco CCNA 200-301',
-        soonEta: '~10 weeks ETA · 85% N+ overlap'
+        passScore: 700,
+        examName: 'Microsoft Azure AI Fundamentals AI-900',
+        cta: { label: 'Open →', href: 'https://ai.certanvil.com/?cert=ai900' },
+        coachActive: 'AI and ML fundamentals on Azure. Builds on AZ-900 cloud concepts.'
       },
       {
-        id: 'aws-saa',
-        name: 'AWS Solutions Architect',
-        code: 'SAA-C03',
-        glyphClass: 'aws',
-        glyph: 'AW',
-        status: 'soon',
+        id: 'sc900',
+        name: 'Microsoft SC-900',
+        code: 'SC-900',
+        glyphClass: 'sc900',
+        glyph: 'SC',
+        status: 'active',
+        examFormat: 'percent',
+        maxScore: 1000,
+        passScore: 700,
+        examName: 'Microsoft SC-900 SC-900',
+        cta: { label: 'Open →', href: 'https://sc900.certanvil.com/?cert=sc900' },
+        coachActive: 'Security, compliance, and identity fundamentals. 35% transfer from Sec+.'
+      },
+      {
+        id: 'clfc02',
+        name: 'AWS Cloud Practitioner',
+        code: 'CLF-C02',
+        glyphClass: 'clfc02',
+        glyph: 'AWS',
+        status: 'active',
         examFormat: 'scaled',
         maxScore: 1000,
-        passScore: 720,
-        examName: 'AWS SAA-C03',
-        soonEta: '~12 weeks ETA'
-      },
-      {
-        id: 'az104',
-        name: 'Azure Administrator',
-        code: 'AZ-104',
-        glyphClass: 'az104',
-        glyph: 'AZ',
-        status: 'soon',
-        examFormat: 'percent',
-        maxScore: 1000,
         passScore: 700,
-        examName: 'Azure Administrator AZ-104',
-        soonEta: '~14 weeks ETA · 90% AZ-900 overlap'
+        examName: 'AWS Cloud Practitioner CLF-C02',
+        cta: { label: 'Open →', href: 'https://clfc02.certanvil.com/?cert=clfc02' },
+        coachActive: 'AWS cloud fundamentals. Cloud-concepts overlap with AZ-900.'
       }
     ];
   }

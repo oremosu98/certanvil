@@ -142,6 +142,42 @@
         cta: { label: 'Upgrade →', href: '#', disabled: true, title: 'Stripe billing coming with Phase G' }
       });
     }
+    // The remaining 6 canonical MVP certs follow the same Pro-gating pattern as
+    // Security+: admins get them active (open the cert app), non-admins see them
+    // locked behind the Phase-G upgrade tease. Order matches the canonical set.
+    var rest = [
+      { id: 'aplus-core1', name: 'CompTIA A+ Core 1', code: '220-1201', glyph: 'A+' },
+      { id: 'aplus-core2', name: 'CompTIA A+ Core 2', code: '220-1202', glyph: 'A+' },
+      { id: 'az900',       name: 'Azure Fundamentals', code: 'AZ-900',  glyph: 'AZ' },
+      { id: 'ai900',       name: 'Azure AI Fundamentals', code: 'AI-900', glyph: 'AI' },
+      { id: 'sc900',       name: 'Microsoft SC-900',  code: 'SC-900',   glyph: 'SC' },
+      { id: 'clfc02',      name: 'AWS Cloud Practitioner', code: 'CLF-C02', glyph: 'AWS' }
+    ];
+    rest.forEach(function (c) {
+      if (role === 'admin') {
+        certs.push({
+          id: c.id,
+          name: c.name,
+          code: c.code,
+          glyphClass: c.id,
+          glyph: c.glyph,
+          meta: 'private builder · admin access',
+          status: 'active',
+          cta: { label: 'Open →', href: 'https://networkplus.certanvil.com/?cert=' + c.id }
+        });
+      } else {
+        certs.push({
+          id: c.id,
+          name: c.name,
+          code: c.code,
+          glyphClass: 'locked',
+          glyph: c.glyph,
+          meta: 'upgrade to Pro to unlock',
+          status: 'locked',
+          cta: { label: 'Upgrade →', href: '#', disabled: true, title: 'Stripe billing coming with Phase G' }
+        });
+      }
+    });
     return certs;
   }
 
@@ -269,12 +305,14 @@
   // Exam-format defaults per cert. CompTIA uses 100-900 scaled with cert-
   // specific cutoffs. Future certs (CCNA, AWS) override here when added.
   var EXAM_FORMATS = {
-    netplus:  { format: 'scaled', maxScore: 900, passScore: 720, examName: 'Network+ N10-009' },
-    secplus:  { format: 'scaled', maxScore: 900, passScore: 750, examName: 'Security+ SY0-701' },
-    az900:    { format: 'percent', maxScore: 1000, passScore: 700, examName: 'Azure Fundamentals AZ-900' },
-    ccna:     { format: 'percent', maxScore: 1000, passScore: 825, examName: 'Cisco CCNA 200-301' },
-    'aws-saa':{ format: 'scaled', maxScore: 1000, passScore: 720, examName: 'AWS SAA-C03' },
-    az104:    { format: 'percent', maxScore: 1000, passScore: 700, examName: 'Azure Administrator AZ-104' }
+    netplus:       { format: 'scaled', maxScore: 900, passScore: 720, examName: 'Network+ N10-009' },
+    secplus:       { format: 'scaled', maxScore: 900, passScore: 750, examName: 'Security+ SY0-701' },
+    'aplus-core1': { format: 'scaled', maxScore: 900, passScore: 675, examName: 'CompTIA A+ Core 1 220-1201' },
+    'aplus-core2': { format: 'scaled', maxScore: 900, passScore: 700, examName: 'CompTIA A+ Core 2 220-1202' },
+    az900:         { format: 'percent', maxScore: 1000, passScore: 700, examName: 'Azure Fundamentals AZ-900' },
+    ai900:         { format: 'percent', maxScore: 1000, passScore: 700, examName: 'Azure AI Fundamentals AI-900' },
+    sc900:         { format: 'percent', maxScore: 1000, passScore: 700, examName: 'Microsoft SC-900' },
+    clfc02:        { format: 'percent', maxScore: 1000, passScore: 700, examName: 'AWS Cloud Practitioner CLF-C02' }
   };
 
   function renderExamResultsList(role, profile) {

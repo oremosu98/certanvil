@@ -486,6 +486,16 @@
       activeMeta: 'available now',
       href: 'https://azure.certanvil.com/'
     }));
+    // v7.5.0 — Microsoft AI-900 row (single-exam, AI/data). Pattern A.
+    rows.push(rowForCert({
+      id: 'ai900',
+      glyph: 'AI',
+      glyphClass: 'cert-glyph-ai900',
+      name: 'Microsoft Azure AI Fundamentals',
+      code: 'AI-900',
+      activeMeta: 'available now',
+      href: 'https://ai.certanvil.com/'
+    }));
     // Stage 4 — CompTIA A+ Core 1 + Core 2 rows. Mirror the az900 Pattern A
     // entry; in-app Pro gating happens on the aplus.certanvil.com subdomain.
     rows.push(rowForCert({
