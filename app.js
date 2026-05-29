@@ -16995,7 +16995,41 @@ function renderSetupDomainGrid() {
       { label: 'Remote Access',         key: 'Remote Access Technologies' },
     ],
   };
-  // v7.6.0 — 6-way cert selector (was 4-way ternary). Falls through to Net+
+  // v7.7.0 — sixth cert SC-900. 4 domains (matches A+ Core 2's 4-domain shape).
+  // 5 canonical topics per domain for the home-page domain grid. Mirrors the
+  // _CANONICAL_* shape verbatim — { domainKey: [{ label, key }, …] } where key
+  // matches a topicDomains key in certs/sc900.js exactly.
+  const _CANONICAL_SC900 = {
+    'sci-concepts': [
+      { label: 'Zero Trust',            key: 'Zero Trust Model' },
+      { label: 'Defense in Depth',      key: 'Defense in Depth' },
+      { label: 'Shared Responsibility', key: 'Shared Responsibility Model' },
+      { label: 'AuthN vs AuthZ',        key: 'Authentication vs Authorization' },
+      { label: 'Encryption & Hashing',  key: 'Encryption & Hashing' },
+    ],
+    'entra': [
+      { label: 'Entra ID',              key: 'Entra ID Function & Identity Types' },
+      { label: 'Conditional Access',    key: 'Conditional Access' },
+      { label: 'MFA',                   key: 'Multifactor Authentication (Entra)' },
+      { label: 'PIM',                   key: 'Privileged Identity Management (PIM)' },
+      { label: 'ID Protection',         key: 'Entra ID Protection' },
+    ],
+    'security-solutions': [
+      { label: 'Defender XDR',          key: 'Microsoft Defender XDR' },
+      { label: 'Defender for Cloud',    key: 'Microsoft Defender for Cloud' },
+      { label: 'Sentinel',              key: 'Microsoft Sentinel' },
+      { label: 'Azure Firewall',        key: 'Azure Firewall' },
+      { label: 'Key Vault',             key: 'Azure Key Vault' },
+    ],
+    'compliance-solutions': [
+      { label: 'Purview Portal',        key: 'Microsoft Purview Portal' },
+      { label: 'Compliance Manager',    key: 'Compliance Manager & Compliance Score' },
+      { label: 'Sensitivity Labels',    key: 'Sensitivity Labels & Policies' },
+      { label: 'DLP',                   key: 'Data Loss Prevention (DLP)' },
+      { label: 'Insider Risk',          key: 'Insider Risk Management' },
+    ],
+  };
+  // v7.7.0 — 7-way cert selector (was 6-way ternary). Falls through to Net+
   // when CURRENT_CERT isn't recognised (defensive; preserves prior behavior).
   const CANONICAL_DOMAIN_TOPICS = (typeof CURRENT_CERT !== 'undefined' && CURRENT_CERT === 'secplus')
     ? _CANONICAL_SECPLUS
@@ -17003,11 +17037,13 @@ function renderSetupDomainGrid() {
         ? _CANONICAL_AZ900
         : ((typeof CURRENT_CERT !== 'undefined' && CURRENT_CERT === 'ai900')
             ? _CANONICAL_AI900
-            : ((typeof CURRENT_CERT !== 'undefined' && CURRENT_CERT === 'aplus-core1')
-                ? _CANONICAL_APLUS_CORE1
-                : ((typeof CURRENT_CERT !== 'undefined' && CURRENT_CERT === 'aplus-core2')
-                    ? _CANONICAL_APLUS_CORE2
-                    : _CANONICAL_NETPLUS))));
+            : ((typeof CURRENT_CERT !== 'undefined' && CURRENT_CERT === 'sc900')
+                ? _CANONICAL_SC900
+                : ((typeof CURRENT_CERT !== 'undefined' && CURRENT_CERT === 'aplus-core1')
+                    ? _CANONICAL_APLUS_CORE1
+                    : ((typeof CURRENT_CERT !== 'undefined' && CURRENT_CERT === 'aplus-core2')
+                        ? _CANONICAL_APLUS_CORE2
+                        : _CANONICAL_NETPLUS)))));
   // Build a set of weak topic keys for quick lookup
   const weakSet = new Set();
   try {
