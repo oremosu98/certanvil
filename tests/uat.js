@@ -25179,6 +25179,44 @@ console.log('\n\x1b[1m── Security Phase 5 — RBAC + ADMIN AUDIT LOG ──\
     /NOT a role-system expansion/i.test(adr2));
 })();
 
+// ══════════════════════════════════════════════════════════════════════════
+// Security Phase 7 (M7) — remove CSP script-src 'unsafe-inline'
+// (event-actions.js delegation core + staged handler migration; see
+//  docs/superpowers/plans/2026-05-31-m7-csp-unsafe-inline.md)
+// ══════════════════════════════════════════════════════════════════════════
+console.log('\n\x1b[1m── Security Phase 7 — CSP script-src unsafe-inline removal (M7) ──\x1b[0m');
+(function () {
+  const rd = (p) => { const f = path.join(ROOT, p); return fs.existsSync(f) ? fs.readFileSync(f, 'utf8') : ''; };
+  const ea  = rd('event-actions.js');
+  const idx = rd('index.html');
+  const app = rd('app.js');
+  const sw  = rd('sw.js');
+
+  // — scaffold (PR-1) —
+  test('Sec-P7 scaffold: event-actions.js installs click/change/input delegated listeners',
+    /addEventListener\(['"]click['"]/.test(ea)
+    && /addEventListener\(['"]change['"]/.test(ea)
+    && /addEventListener\(['"]input['"]/.test(ea));
+  test('Sec-P7 scaffold: event-actions.js dispatches via closest([data-action]) + dataset.action',
+    /closest\(['"]\[data-action\]['"]\)/.test(ea) && /dataset\.action/.test(ea));
+  test('Sec-P7 scaffold: index.html loads event-actions.js BEFORE app.js',
+    idx.indexOf('event-actions.js') > -1
+    && idx.indexOf('event-actions.js') < idx.indexOf('src="app.js"'));
+  test('Sec-P7 scaffold: sw.js precaches ./event-actions.js',
+    /['"]\.\/event-actions\.js['"]/.test(sw));
+
+  // — migration ratchet (literals lowered toward 0 across PR-2..PR-5) —
+  const idxHandlers = (idx.match(/\son(click|change|input|keydown|keyup|submit)=/gi) || []).length;
+  const appHandlers = (app.match(/onclick=\\?["']/g) || []).length;
+  test('Sec-P7 ratchet: index.html inline on*= within ceiling (target 0 by PR-5)',
+    idxHandlers <= 102);
+  test('Sec-P7 ratchet: app.js generated onclick within ceiling (target 0 by PR-5)',
+    appHandlers <= 73);
+
+  // — flip guard placeholder (becomes the real CSP assertion in PR-6) —
+  test('Sec-P7 flip (pending until PR-6): placeholder', true);
+})();
+
 // ── Summary ──
 console.log('\n' + '═'.repeat(50));
 const total = results.pass + results.fail;

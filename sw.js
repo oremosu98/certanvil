@@ -1,11 +1,14 @@
-// Service Worker v7.8.3 — Network+ Quiz App (Phase C′ cloud-first)
-const CACHE_NAME = 'netplus-v7.8.3';
+// Service Worker v7.9.0 — Network+ Quiz App (Phase C′ cloud-first)
+const CACHE_NAME = 'netplus-v7.9.0';
 const SHELL_ASSETS = [
   './',
   './index.html',
   './styles.css',
   './dg-system.css',
   './app.js',
+  // M7: CSP-clean event-delegation core (loads before app.js). Precached so
+  // delegated handlers keep working offline.
+  './event-actions.js',
   './manifest.json',
   // v4.87.4: CertAnvil M14 logo. Single SVG = favicon + apple-touch-icon
   // + PWA manifest icon. Modern browsers handle all sizes from one source.
