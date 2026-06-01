@@ -377,6 +377,7 @@
     font-size:12.5px;font-weight:600;color:color-mix(in oklab,var(--on-accent) 82%,transparent);
   }
   #pricing-v2 .pp-pro-foot svg{flex:none;width:15px;height:15px;stroke:var(--on-accent);opacity:.85}
+  #pricing-v2 .pp-pro-built{margin:10px 0 0;font-family:Inter,sans-serif;font-size:12.5px;line-height:1.5;color:var(--muted);text-align:center}
 
   /* Side column — Free (quiet) + Team (footnote) */
   #pricing-v2 .pp-side{display:flex;flex-direction:column;gap:20px}
@@ -425,7 +426,7 @@
     @keyframes ppFade{to{opacity:1}}
   }
 
-  /* ══ Bottom sections (#pricing-v2b): pass-guarantee band + FAQ ══ */
+  /* ══ Bottom sections (#pricing-v2b): FAQ ══ */
   #pricing-v2b{
     --bg:oklch(0.975 0.007 85);--surface:oklch(0.992 0.004 85);--surface-2:oklch(0.965 0.010 84);
     --ink:oklch(0.22 0.015 280);--ink-soft:oklch(0.36 0.014 280);--muted:oklch(0.50 0.013 280);
@@ -446,22 +447,6 @@
   }
   #pricing-v2b *{box-sizing:border-box}
   #pricing-v2b .pp-wrap{max-width:1080px;margin:0 auto}
-
-  /* Pass-guarantee — confident bronze-tinted trust band (not a second bronze fill) */
-  #pricing-v2b .pp-guarantee{
-    display:flex;align-items:flex-start;gap:18px;
-    background:color-mix(in oklab,var(--accent) 7%,var(--surface));
-    border:1px solid color-mix(in oklab,var(--accent) 22%,var(--border));
-    border-radius:18px;padding:clamp(22px,2.6vw,30px);
-    margin:0 0 clamp(40px,5vw,60px);
-  }
-  #pricing-v2b .pp-guarantee-shield{flex:none;display:grid;place-items:center;width:46px;height:46px;border-radius:12px;background:color-mix(in oklab,var(--accent) 12%,transparent)}
-  #pricing-v2b .pp-guarantee-shield svg{width:26px;height:26px;stroke:var(--accent);fill:none}
-  #pricing-v2b .pp-guarantee h3{font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:clamp(20px,2.4vw,26px);letter-spacing:-.01em;color:var(--ink);margin:0}
-  #pricing-v2b .pp-guarantee h3 em{font-style:normal;color:var(--accent)}
-  #pricing-v2b .pp-guarantee p{font-size:14.5px;line-height:1.6;color:var(--ink-soft);margin:9px 0 0;max-width:660px}
-  #pricing-v2b .pp-guarantee a{color:var(--accent);font-weight:650;text-decoration:none}
-  @media (hover:hover) and (pointer:fine){#pricing-v2b .pp-guarantee a:hover{text-decoration:underline}}
 
   /* FAQ — de-carded hairline accordion */
   #pricing-v2b .pp-faq-eyebrow{display:block;text-align:center;font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--accent)}
@@ -535,6 +520,7 @@
           <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 4 6v6c0 5 3.5 7.5 8 9 4.5-1.5 8-4 8-9V6z"/><path d="M9 12l2 2 4-4"/></svg>
           <span>14-day money-back · cancel anytime.</span>
         </div>
+        <p class="pp-pro-built">Built by someone who sat N10-009 and passed (767/900).</p>
       </div>
 
       <!-- SIDE · Free (quiet) + Team (footnote) -->
@@ -566,7 +552,7 @@
 </section>
 
 <!-- ══════════════════════════════════════════
-     PRICING v2 · bottom — pass-guarantee band + de-carded FAQ. Scoped under
+     PRICING v2 · bottom · de-carded FAQ. Scoped under
      #pricing-v2b (shares the editorial token system with the hero above).
 ══════════════════════════════════════════ -->
 <section id="pricing-v2b">
