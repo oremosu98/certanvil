@@ -407,7 +407,7 @@ window.CertAnvilResults = (function () {
               '<span class="dr-cta-icon">⚡</span>' +
               '<span class="dr-cta-body">' +
                 '<span class="dr-cta-title">Get CertAnvil Pro at launch</span>' +
-                '<span class="dr-cta-sub">Unlimited AI · all certs · pass guarantee · $9.99/mo or $89/yr</span>' +
+                '<span class="dr-cta-sub">Unlimited AI · all certs · 14-day money-back · $9.99/mo or $89/yr</span>' +
               '</span>' +
               '<span class="dr-cta-chev">→</span>' +
             '</button>' +
@@ -440,7 +440,7 @@ window.CertAnvilResults = (function () {
           '</div>' +
           '<div class="dr-stub-body">' +
             '<span class="dr-stub-pill">Launching soon</span>' +
-            '<p><strong>Pro launches soon</strong> with unlimited AI question generation, every cert, a pass guarantee, and the full Exam Simulator + practice modes.</p>' +
+            '<p><strong>Pro launches soon</strong> with unlimited AI question generation, every cert, the full Exam Simulator, and advanced readiness analytics.</p>' +
             '<p>For now, your results are saved locally in this browser session. Add your email below and you\'ll be first in when subscriptions open.</p>' +
             '<p style="margin-top:14px"><a href="/pricing" class="dr-cta dr-cta-secondary" style="text-decoration:none;display:inline-grid;grid-template-columns:auto 1fr auto;padding:10px 16px"><span class="dr-cta-icon">💎</span><span class="dr-cta-body"><span class="dr-cta-title">See full pricing</span></span><span class="dr-cta-chev">→</span></a></p>' +
           '</div>' +
