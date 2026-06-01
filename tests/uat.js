@@ -16023,8 +16023,8 @@ test('v4.99.51 Privacy: footer links to /terms',
 // Terms of Service structural guards
 test('v4.99.51 Terms: landing/terms.html exists',
   _termsRaw.length > 10000);
-test('v4.99.51 Terms: page has the 16 required sections',
-  ['agreement', 'eligibility', 'account', 'subscriptions', 'pass-guarantee',
+test('v5.6.0 Terms: page has the 15 required sections (pass-guarantee removed)',
+  ['agreement', 'eligibility', 'account', 'subscriptions',
    'refunds', 'cancellation', 'acceptable-use', 'ip', 'ai-content',
    'service', 'liability', 'termination', 'disputes', 'changes', 'contact'].every(id =>
     _termsRaw.includes('id="' + id + '"')));
@@ -16033,10 +16033,6 @@ test('v4.99.51 Terms: documents actual pricing ($9.99/mo + $89/yr)',
   && /\$89[\s\S]{0,80}year/.test(_termsRaw));
 test('v4.99.51 Terms: 14-day refund window for first-time subscribers',
   /14[\s\S]{0,80}day[\s\S]{0,500}refund/i.test(_termsRaw));
-test('v4.99.51 Terms: pass guarantee criteria specified (30-day Pro + diagnostic + score report)',
-  /30 consecutive days|30 days/i.test(_termsRaw)
-  && /Baseline Diagnostic/.test(_termsRaw)
-  && /score report/i.test(_termsRaw));
 test('v4.99.51 Terms: AI-generated content disclaimer present',
   /AI-generated|Anthropic|Claude/.test(_termsRaw)
   && /validation|cross-check|hallucinat/i.test(_termsRaw));
