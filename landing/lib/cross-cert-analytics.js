@@ -277,8 +277,17 @@
       .replace(/'/g, '&#39;');
   }
 
+  function certGlyphHTML(glyph, glyphClass){
+    var g = String(glyph || '');
+    if (!g) return '';
+    var sup = glyphClass === 'aplus-core1' ? '1' : glyphClass === 'aplus-core2' ? '2' : '';
+    var esc = function(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); };
+    var head = esc(g.slice(0, -1)), last = esc(g.slice(-1));
+    return head + '<span class="cg-ac">' + last + '</span>' + (sup ? '<span class="cg-sup">' + sup + '</span>' : '');
+  }
+
   function renderGlyph(cert) {
-    return '<div class="cca-pr-glyph cca-pr-glyph-' + cert.glyphClass + '">' + escapeHtml(cert.glyph) + '</div>';
+    return '<div class="cca-pr-glyph cca-pr-glyph-' + cert.glyphClass + '">' + certGlyphHTML(cert.glyph, cert.glyphClass) + '</div>';
   }
 
   function renderGroupHeader(label, count, kind) {
@@ -609,9 +618,9 @@
     var summaryHtml = ''
       + '<button type="button" class="cca-so-summary" data-pair="' + escapeHtml(pair.from + '__' + pair.to) + '" aria-expanded="' + (isExpanded ? 'true' : 'false') + '">'
       +   '<div class="cca-so-pair">'
-      +     '<div class="cca-so-pair-glyph cca-pr-glyph-' + fromCert.glyphClass + '">' + escapeHtml(fromCert.glyph) + '</div>'
+      +     '<div class="cca-so-pair-glyph cca-pr-glyph-' + fromCert.glyphClass + '">' + certGlyphHTML(fromCert.glyph, fromCert.glyphClass) + '</div>'
       +     '<span class="cca-so-pair-arrow" aria-hidden="true">→</span>'
-      +     '<div class="cca-so-pair-glyph cca-pr-glyph-' + toCert.glyphClass + '">' + escapeHtml(toCert.glyph) + '</div>'
+      +     '<div class="cca-so-pair-glyph cca-pr-glyph-' + toCert.glyphClass + '">' + certGlyphHTML(toCert.glyph, toCert.glyphClass) + '</div>'
       +   '</div>'
       +   '<div class="cca-so-bar-wrap">'
       +     '<div class="cca-so-bar-track"><div class="cca-so-bar-fill" style="width: ' + pair.pct + '%;"></div></div>'

@@ -287,6 +287,15 @@
       .replace(/'/g, '&#39;');
   }
 
+  function certGlyphHTML(glyph, glyphClass){
+    var g = String(glyph || '');
+    if (!g) return '';
+    var sup = glyphClass === 'aplus-core1' ? '1' : glyphClass === 'aplus-core2' ? '2' : '';
+    var esc = function(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); };
+    var head = esc(g.slice(0, -1)), last = esc(g.slice(-1));
+    return head + '<span class="cg-ac">' + last + '</span>' + (sup ? '<span class="cg-sup">' + sup + '</span>' : '');
+  }
+
   // ── Return-URL plumbing (Phase C′) ──────────────────────────────────────
   // When the cert app at networkplus.certanvil.com (or a Vercel preview)
   // routes the user here for sign-in, it appends `?action=signin&return=<url>`.
@@ -554,7 +563,7 @@
   function buildMyCertRow(c) {
     return ''
       + '<a class="my-cert-row" href="' + escapeHtml(c.href) + '">'
-      +   '<span class="my-cert-glyph ' + c.glyphClass + '">' + escapeHtml(c.glyph) + '</span>'
+      +   '<span class="my-cert-glyph ' + c.glyphClass + '">' + certGlyphHTML(c.glyph, c.glyphClass) + '</span>'
       +   '<div class="my-cert-info">'
       +     '<div class="my-cert-name-row">'
       +       '<span class="my-cert-name">' + escapeHtml(c.name) + '</span>'
