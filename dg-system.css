@@ -1810,6 +1810,11 @@ html[data-theme] body .tad-cert-code{font-size:10.5px!important;color:var(--text
 /* v7.1.0 Sec+ public launch — "PRO" badge on Pro-tier cert row for Free users */
 html[data-theme] body .tad-cert-tier-pill{margin-left:auto!important;display:inline-block!important;font-size:9.5px!important;font-weight:800!important;letter-spacing:0.08em!important;color:var(--accent)!important;background:color-mix(in oklab,var(--accent) 12%,transparent)!important;border:1px solid color-mix(in oklab,var(--accent) 30%,transparent)!important;border-radius:999px!important;padding:2px 7px!important;text-transform:uppercase!important;line-height:1!important;}
 html[data-theme] body .tad-cert-check{color:var(--accent)!important;}
+/* v7.8.1 — cert lettermark glyph tile in switcher dropdown */
+html[data-theme] body .tad-cert-glyph{flex:none!important;width:30px!important;height:30px!important;border-radius:8px!important;background-color:#FFFBF3!important;border:1px solid var(--border)!important;display:inline-flex!important;align-items:center!important;justify-content:center!important;font-family:'Fraunces',Georgia,serif!important;font-weight:600!important;font-size:13px!important;line-height:1!important;letter-spacing:-.02em!important;color:var(--text)!important;}
+html[data-theme] body .tad-cert-glyph .cg{display:inline-flex!important;align-items:baseline!important;white-space:nowrap!important;}
+html[data-theme] body .tad-cert-glyph .cg-ac{color:var(--accent)!important;}
+html[data-theme] body .tad-cert-glyph .cg-sup{font-size:.55em!important;align-self:flex-start!important;color:var(--accent)!important;font-weight:700!important;margin-left:.5px!important;}
 
 /* ── Web Vitals: editorial ── */
 html[data-theme] body #page-web-vitals{max-width:1120px!important;margin:0 auto!important;padding:0 28px 90px!important;}

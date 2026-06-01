@@ -85,18 +85,18 @@
   // than new subdomains (founder lock 2026-05-26).
   function getAvailableCerts(role) {
     return [
-      { id: 'netplus', name: 'Network+',                       code: 'N10-009', tier: 'free' },
-      { id: 'secplus', name: 'Security+',                      code: 'SY0-701', tier: 'pro'  },
-      { id: 'az900',   name: 'Microsoft Azure Fundamentals',   code: 'AZ-900',  tier: 'pro'  },
-      { id: 'ai900',   name: 'Microsoft Azure AI Fundamentals',code: 'AI-900',  tier: 'pro'  },
+      { id: 'netplus', name: 'Network+',                       code: 'N10-009', tier: 'free', glyph: 'N+' },
+      { id: 'secplus', name: 'Security+',                      code: 'SY0-701', tier: 'pro',  glyph: 'S+' },
+      { id: 'az900',   name: 'Microsoft Azure Fundamentals',   code: 'AZ-900',  tier: 'pro',  glyph: 'AZ' },
+      { id: 'ai900',   name: 'Microsoft Azure AI Fundamentals',code: 'AI-900',  tier: 'pro',  glyph: 'AI' },
       // v7.7.0 — sixth cert SC-900 (single-exam, Microsoft Security/Compliance/Identity)
-      { id: 'sc900',   name: 'Microsoft SC-900',                code: 'SC-900',  tier: 'pro'  },
+      { id: 'sc900',   name: 'Microsoft SC-900',                code: 'SC-900',  tier: 'pro',  glyph: 'SC' },
       // v7.8.0 — seventh cert AWS Cloud Practitioner CLF-C02 (single-exam, AWS — third vendor)
-      { id: 'clfc02',  name: 'AWS Cloud Practitioner',          code: 'CLF-C02', tier: 'pro'  },
+      { id: 'clfc02',  name: 'AWS Cloud Practitioner',          code: 'CLF-C02', tier: 'pro',  glyph: 'AWS' },
       // v7.6.0 — fifth cert family CompTIA A+ (dual-exam): both Core 1 + Core 2
       // are selectable rows on the shared aplus.certanvil.com subdomain.
-      { id: 'aplus-core1', name: 'CompTIA A+ Core 1', code: '220-1201', tier: 'pro' },
-      { id: 'aplus-core2', name: 'CompTIA A+ Core 2', code: '220-1202', tier: 'pro' }
+      { id: 'aplus-core1', name: 'CompTIA A+ Core 1', code: '220-1201', tier: 'pro', glyph: 'A+' },
+      { id: 'aplus-core2', name: 'CompTIA A+ Core 2', code: '220-1202', tier: 'pro', glyph: 'A+' }
     ];
   }
 
@@ -278,6 +278,7 @@
       return ''
         + '<a class="tad-cert-row' + (isActive ? ' is-active' : '') + '" href="#"' + clickAttr + '>'
         +   checkmark
+        +   '<span class="tad-cert-glyph">' + certGlyphHTML(c.glyph, c.id) + '</span>'
         +   '<span class="tad-cert-name">' + escapeHtml(c.name) + '</span>'
         +   '<span class="tad-cert-code">' + escapeHtml(c.code) + '</span>'
         +   proBadge
@@ -596,6 +597,14 @@
       .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;')
       .replace(/'/g, '&#39;');
+  }
+
+  function certGlyphHTML(glyph, certId) {
+    var g = String(glyph || '');
+    if (!g) return '';
+    var sup = certId === 'aplus-core1' ? '1' : certId === 'aplus-core2' ? '2' : '';
+    var head = escapeHtml(g.slice(0, -1)), last = escapeHtml(g.slice(-1));
+    return '<span class="cg">' + head + '<span class="cg-ac">' + last + '</span>' + (sup ? '<span class="cg-sup">' + sup + '</span>' : '') + '</span>';
   }
 
   if (document.readyState === 'loading') {
