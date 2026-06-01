@@ -107,6 +107,7 @@ npx playwright test              # E2E (tests/e2e/app.spec.js)
 
 | Version | Features Added |
 |---|---|
+| v7.11.0 | Cert switcher lettermark glyphs (Phase 2 cert-icon rollout) |
 | v7.10.0 | Onboarding funnel: 6 cert diagnostic results pages (shared renderer + thin shells), free-path-primary CTAs, quota wall reframed as streak/SR retention hook, post-BYOK sign-in prompt, dead-tag + waitlist-modal fixes |
 | v7.9.0 | M7 PR-1: event-delegation scaffold (event-actions.js) — no handlers migrated yet |
 | v7.8.4 | Minify-on-deploy build step — esbuild JS+CSS, app.js -44% gzip, ~28% smaller cold load |
