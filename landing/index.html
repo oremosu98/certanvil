@@ -1094,9 +1094,10 @@
   #certs .cert-tile.is-live,#certs .cert-tile.is-private{display:flex;flex-direction:column;background:linear-gradient(180deg,var(--surface),var(--surface-2));border:1px solid var(--border);border-radius:24px;box-shadow:var(--shadow-card);padding:clamp(26px,3vw,40px);height:100%;transition:transform 200ms var(--eo),box-shadow 200ms ease}
   @media (hover:hover){#certs .cert-tile.is-live:hover{transform:translateY(-3px)}}
   #certs .cert-tile.is-live .cert-tile-top,#certs .cert-tile.is-private .cert-tile-top{display:flex;flex-direction:row;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:22px}
-  #certs .cert-tile.is-live .cert-glyph,#certs .cert-tile.is-private .cert-glyph{width:84px;height:84px;flex:none;font-size:0;background-color:#FFFBF3;border:1px solid var(--border);border-radius:20px;box-shadow:var(--shadow-soft);background-size:62px 62px;background-position:center;background-repeat:no-repeat}
-  #certs .cert-glyph-netplus{background-image:url('assets/certs/cert-netplus.png')}
-  #certs .cert-glyph-secplus{background-image:url('assets/certs/cert-secplus.png')}
+  #certs .cert-tile.is-live .cert-glyph,#certs .cert-tile.is-private .cert-glyph{width:84px;height:84px;flex:none;background-color:#FFFBF3;border:1px solid var(--border);border-radius:20px;box-shadow:var(--shadow-soft);display:grid;place-items:center;font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:34px;line-height:1;letter-spacing:-.02em;color:oklch(0.24 0.018 280)}
+  #certs .cert-tile.is-live .cert-glyph-clfc02{font-size:27px;letter-spacing:-.03em}
+  #certs .cert-glyph .cg-ac{color:var(--accent)}
+  #certs .cert-glyph .cg-sup{font-size:15px;vertical-align:super;color:var(--accent);font-weight:700;margin-left:1px}
   #certs .cert-status{display:inline-flex;align-items:center;gap:7px;font-size:11.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;padding:7px 13px;border-radius:999px}
   #certs .cert-status.status-live{color:var(--accent);background:color-mix(in oklab,var(--accent) 11%,transparent);border:1px solid color-mix(in oklab,var(--accent) 35%,transparent)}
   #certs .cert-status.status-private{color:var(--muted);background:color-mix(in oklab,var(--muted) 12%,transparent);border:1px solid var(--border)}
@@ -1115,11 +1116,7 @@
   #certs .cert-tile.is-soon:last-child{border-bottom:0}
   @media (hover:hover){#certs .cert-tile.is-soon:hover{background:color-mix(in oklab,var(--accent) 4%,transparent)}}
   #certs .cert-tile.is-soon .cert-tile-top{flex:none}
-  #certs .cert-tile.is-soon .cert-glyph{width:46px;height:46px;font-size:0;background-color:#FFFBF3;border:1px solid var(--border);border-radius:13px;background-size:34px 34px;background-position:center;background-repeat:no-repeat}
-  #certs .cert-tile.is-soon .cert-glyph-secplus{background-image:url('assets/certs/cert-secplus.png')}
-  #certs .cert-tile.is-soon .cert-glyph-az900,#certs .cert-tile.is-soon .cert-glyph-az104{background-image:url('assets/certs/cert-az.png')}
-  #certs .cert-tile.is-soon .cert-glyph-ccna{background-image:url('assets/certs/cert-ccna.png')}
-  #certs .cert-tile.is-soon .cert-glyph-aws{background-image:url('assets/certs/cert-aws.png')}
+  #certs .cert-tile.is-soon .cert-glyph{width:46px;height:46px;background-color:#FFFBF3;border:1px solid var(--border);border-radius:13px;display:grid;place-items:center;font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:19px;line-height:1;letter-spacing:-.02em;color:oklch(0.24 0.018 280)}
   #certs .cert-tile.is-soon .cert-status{display:none}
   #certs .cl-soon-body{flex:1;min-width:0}
   #certs .cert-tile.is-soon .cert-name{font-size:15.5px;font-weight:650;color:var(--ink);margin-bottom:2px}
@@ -1169,7 +1166,7 @@
            to a "Passed" state for signed-in passers. -->
       <a class="cert-tile is-live cl-r" data-d="2" href="https://networkplus.certanvil.com/?cert=netplus" data-cert="netplus" id="cert-tile-netplus">
         <div class="cert-tile-top">
-          <div class="cert-glyph cert-glyph-netplus">N+</div>
+          <div class="cert-glyph cert-glyph-netplus">N<span class="cg-ac">+</span></div>
           <span class="cert-status status-live" id="cert-tile-netplus-status"><span class="status-dot"></span>Live</span>
         </div>
         <div class="cert-name">Network+</div>
@@ -1184,7 +1181,7 @@
       <!-- Security+ · LIVE (Pro tier). v7.1.0 public launch on secplus.certanvil.com. -->
       <a class="cert-tile is-live" href="https://secplus.certanvil.com/" data-cert="secplus" id="cert-tile-secplus">
         <div class="cert-tile-top">
-          <div class="cert-glyph cert-glyph-secplus">S+</div>
+          <div class="cert-glyph cert-glyph-secplus">S<span class="cg-ac">+</span></div>
           <span class="cert-status status-live" id="cert-tile-secplus-status">Live · Pro</span>
         </div>
         <div class="cert-name">Security+</div>
@@ -1199,7 +1196,7 @@
       <!-- Azure Fundamentals · LIVE (Pro tier). v7.3.0 public launch on azure.certanvil.com. -->
       <a class="cert-tile is-live" href="https://azure.certanvil.com/" data-cert="az900" id="cert-tile-az900">
         <div class="cert-tile-top">
-          <div class="cert-glyph cert-glyph-az900">AZ</div>
+          <div class="cert-glyph cert-glyph-az900">A<span class="cg-ac">Z</span></div>
           <span class="cert-status status-live" id="cert-tile-az900-status">Live · Pro</span>
         </div>
         <div class="cert-name">Microsoft Azure Fundamentals</div>
@@ -1214,7 +1211,7 @@
       <!-- Azure AI Fundamentals · LIVE (Pro tier). v7.5.0 public launch on ai.certanvil.com. -->
       <a class="cert-tile is-live" href="https://ai.certanvil.com/" data-cert="ai900" id="cert-tile-ai900">
         <div class="cert-tile-top">
-          <div class="cert-glyph cert-glyph-ai900">AI</div>
+          <div class="cert-glyph cert-glyph-ai900">A<span class="cg-ac">I</span></div>
           <span class="cert-status status-live" id="cert-tile-ai900-status">Live · Pro</span>
         </div>
         <div class="cert-name">Microsoft Azure AI Fundamentals</div>
@@ -1231,7 +1228,7 @@
            ?exam= deep-link selects the exam on arrival (in-app cert switcher). -->
       <a class="cert-tile is-live" href="https://aplus.certanvil.com/?exam=core1" data-cert="aplus-core1" id="cert-tile-aplus-core1">
         <div class="cert-tile-top">
-          <div class="cert-glyph cert-glyph-aplus">A+</div>
+          <div class="cert-glyph cert-glyph-aplus">A<span class="cg-ac">+</span><span class="cg-sup">1</span></div>
           <span class="cert-status status-live" id="cert-tile-aplus-core1-status">Live · Pro</span>
         </div>
         <div class="cert-name">CompTIA A+ Core 1</div>
@@ -1247,7 +1244,7 @@
            ?exam=core2 selects Core 2 on arrival. -->
       <a class="cert-tile is-live" href="https://aplus.certanvil.com/?exam=core2" data-cert="aplus-core2" id="cert-tile-aplus-core2">
         <div class="cert-tile-top">
-          <div class="cert-glyph cert-glyph-aplus">A+</div>
+          <div class="cert-glyph cert-glyph-aplus">A<span class="cg-ac">+</span><span class="cg-sup">2</span></div>
           <span class="cert-status status-live" id="cert-tile-aplus-core2-status">Live · Pro</span>
         </div>
         <div class="cert-name">CompTIA A+ Core 2</div>
@@ -1263,7 +1260,7 @@
            Microsoft Security/Compliance/Identity) on sc900.certanvil.com. -->
       <a class="cert-tile is-live" href="https://sc900.certanvil.com/" data-cert="sc900" id="cert-tile-sc900">
         <div class="cert-tile-top">
-          <div class="cert-glyph cert-glyph-sc900">SC</div>
+          <div class="cert-glyph cert-glyph-sc900">S<span class="cg-ac">C</span></div>
           <span class="cert-status status-live" id="cert-tile-sc900-status">Live · Pro</span>
         </div>
         <div class="cert-name">Microsoft SC-900</div>
@@ -1279,7 +1276,7 @@
            AWS · third vendor) on clfc02.certanvil.com. -->
       <a class="cert-tile is-live" href="https://clfc02.certanvil.com/" data-cert="clfc02" id="cert-tile-clfc02">
         <div class="cert-tile-top">
-          <div class="cert-glyph cert-glyph-clfc02">AWS</div>
+          <div class="cert-glyph cert-glyph-clfc02">AW<span class="cg-ac">S</span></div>
           <span class="cert-status status-live" id="cert-tile-clfc02-status">Live · Pro</span>
         </div>
         <div class="cert-name">AWS Cloud Practitioner</div>
@@ -1298,7 +1295,7 @@
 
         <div class="cert-tile is-soon" data-cert="ccna">
           <div class="cert-tile-top">
-            <div class="cert-glyph cert-glyph-ccna">CC</div>
+            <div class="cert-glyph cert-glyph-ccna">C<span class="cg-ac">C</span></div>
             <span class="cert-status status-soon">Coming soon</span>
           </div>
           <div class="cl-soon-body">
@@ -1314,7 +1311,7 @@
 
         <div class="cert-tile is-soon" data-cert="aws-saa">
           <div class="cert-tile-top">
-            <div class="cert-glyph cert-glyph-aws">AW</div>
+            <div class="cert-glyph cert-glyph-aws">A<span class="cg-ac">W</span></div>
             <span class="cert-status status-soon">Coming soon</span>
           </div>
           <div class="cl-soon-body">
@@ -1330,7 +1327,7 @@
 
         <div class="cert-tile is-soon" data-cert="az104">
           <div class="cert-tile-top">
-            <div class="cert-glyph cert-glyph-az104">AZ</div>
+            <div class="cert-glyph cert-glyph-az104">A<span class="cg-ac">Z</span></div>
             <span class="cert-status status-soon">Coming soon</span>
           </div>
           <div class="cl-soon-body">
@@ -1949,15 +1946,10 @@
   }
   #why .wyx-certs-cap{font-size:13.5px;line-height:1.6;color:var(--muted);max-width:52ch}
   #why .wyx-certs-cap strong{color:var(--ink-soft);font-weight:650}
-  #why .wyx-badges{display:flex;align-items:center;justify-content:center;gap:clamp(14px,2.6vw,30px);flex-wrap:wrap}
-  #why .wyx-badge{display:flex;flex-direction:column;align-items:center;gap:9px}
-  #why .wyx-badge img{
-    width:clamp(46px,5vw,58px);height:auto;display:block;border-radius:13px;
-    filter:drop-shadow(0 6px 14px oklch(0.22 0.015 280 / .14));
-  }
-  #why .wyx-badge.is-soon img{opacity:.52;filter:grayscale(.35) drop-shadow(0 5px 12px oklch(0.22 0.015 280 / .10))}
-  #why .wyx-badge-tag{font-size:10.5px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--accent)}
-  #why .wyx-badge.is-soon .wyx-badge-tag{color:var(--muted)}
+  #why .wyx-badges{display:flex;align-items:center;justify-content:center;gap:clamp(10px,2vw,18px);flex-wrap:wrap}
+  #why .wyx-badge{width:clamp(48px,5vw,58px);height:clamp(48px,5vw,58px);background-color:#FFFBF3;border:1px solid var(--border);border-radius:14px;box-shadow:0 6px 14px -8px oklch(0.22 0.015 280 / .18);display:grid;place-items:center;font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:20px;line-height:1;letter-spacing:-.02em;color:oklch(0.24 0.018 280)}
+  #why .wyx-badge .cg-ac{color:var(--accent)}
+  #why .wyx-badge .cg-sup{font-size:11px;vertical-align:super;color:var(--accent);font-weight:700;margin-left:.5px}
 
   /* entrance (emil) · scoped #why.wyx-in */
   #why .wyx-r{opacity:0;transform:translateY(16px);transition:opacity 600ms var(--eo),transform 600ms var(--eo)}
@@ -2044,13 +2036,16 @@
     </div>
 
     <div class="wyx-certs">
-      <p class="wyx-certs-cap">And the same engine sits behind every cert. <strong>Network+ is live today; Security+, Azure, CCNA and AWS are on the way.</strong></p>
+      <p class="wyx-certs-cap">And the same engine sits behind every cert. <strong>Eight certs live today, with more on the anvil.</strong></p>
       <div class="wyx-badges">
-        <div class="wyx-badge"><img src="assets/certs/cert-netplus.png" alt="CompTIA Network+"><span class="wyx-badge-tag">Live</span></div>
-        <div class="wyx-badge is-soon"><img src="assets/certs/cert-secplus.png" alt="CompTIA Security+"><span class="wyx-badge-tag">Soon</span></div>
-        <div class="wyx-badge is-soon"><img src="assets/certs/cert-az.png" alt="Microsoft Azure"><span class="wyx-badge-tag">Soon</span></div>
-        <div class="wyx-badge is-soon"><img src="assets/certs/cert-ccna.png" alt="Cisco CCNA"><span class="wyx-badge-tag">Soon</span></div>
-        <div class="wyx-badge is-soon"><img src="assets/certs/cert-aws.png" alt="AWS"><span class="wyx-badge-tag">Soon</span></div>
+        <div class="wyx-badge" aria-label="Network+">N<span class="cg-ac">+</span></div>
+        <div class="wyx-badge" aria-label="Security+">S<span class="cg-ac">+</span></div>
+        <div class="wyx-badge" aria-label="Azure AZ-900">A<span class="cg-ac">Z</span></div>
+        <div class="wyx-badge" aria-label="Azure AI AI-900">A<span class="cg-ac">I</span></div>
+        <div class="wyx-badge" aria-label="A+ Core 1">A<span class="cg-ac">+</span><span class="cg-sup">1</span></div>
+        <div class="wyx-badge" aria-label="A+ Core 2">A<span class="cg-ac">+</span><span class="cg-sup">2</span></div>
+        <div class="wyx-badge" aria-label="SC-900">S<span class="cg-ac">C</span></div>
+        <div class="wyx-badge" aria-label="AWS Cloud Practitioner">AW<span class="cg-ac">S</span></div>
       </div>
     </div>
 
