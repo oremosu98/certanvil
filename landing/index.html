@@ -1385,7 +1385,7 @@
      This section reuses production .pp-* class names, so a complete
      scoped reset + pseudo-kill is applied (DESIGN_PLAYBOOK Phase 3).
      [data-theme="dark"] matches the prod theme system. Fonts from the
-     hero-v2 head. #certs above + #pass-guarantee below untouched.
+     hero-v2 head. #certs above + #why-ready below untouched.
 ══════════════════════════════════════════ -->
 <style id="pp-styles">
   #proof-of-product{
@@ -1739,7 +1739,7 @@
 ══════════════════════════════════════════ -->
 <!-- ══════════════════════════════════════════
      PASS GUARANTEE v2 — confident promise + "the deal in 3 numbered
-     steps" (not a 3-equal-card row). FULLY SCOPED under #pass-guarantee
+     steps" (not a 3-equal-card row). FULLY SCOPED under #why-ready
      (the id is kept as the anchor + scoping root; no script.js / UAT
      contract on this section). Fresh .pgx-* classes → zero production
      .pg-* bleed. Green accent removed → the locked forged-bronze system.
@@ -1747,7 +1747,7 @@
      hero-v2 head. #proof-of-product above + #why below untouched.
 ══════════════════════════════════════════ -->
 <style id="pgx-styles">
-  #pass-guarantee{
+  #why-ready{
     --bg:oklch(0.975 0.007 85);
     --surface:oklch(0.992 0.004 85);
     --surface-2:oklch(0.965 0.010 84);
@@ -1768,7 +1768,7 @@
     padding:clamp(56px,9vh,108px) clamp(20px,4vw,56px);
     border-top:1px solid var(--border-soft);
   }
-  [data-theme="dark"] #pass-guarantee{
+  [data-theme="dark"] #why-ready{
     --bg:oklch(0.16 0.009 275);
     --surface:oklch(0.205 0.009 275);--surface-2:oklch(0.185 0.009 275);
     --ink:oklch(0.96 0.006 275);--ink-soft:oklch(0.78 0.010 275);--muted:oklch(0.60 0.013 275);
@@ -1778,64 +1778,67 @@
     --shadow-soft:0 1px 0 rgba(255,255,255,.04),0 20px 40px -18px rgba(0,0,0,.55);
     --shadow-card:0 2px 4px rgba(0,0,0,.3),0 32px 60px -24px rgba(0,0,0,.62);
   }
-  #pass-guarantee *{box-sizing:border-box}
+  #why-ready *{box-sizing:border-box}
   /* defensive: styles.css .pass-guarantee may carry a green-shield
      pseudo-accent (cert-library lesson — production ::before bled). This
      layer uses no section-root pseudo; .pgx-eyebrow::after is separate. */
-  #pass-guarantee::before,#pass-guarantee::after{content:none!important}
-  #pass-guarantee .pgx-wrap{
+  #why-ready::before,#why-ready::after{content:none!important}
+  #why-ready .pgx-wrap{
     max-width:1180px;margin:0 auto;
     display:grid;grid-template-columns:0.92fr 1.08fr;gap:clamp(34px,6vw,84px);align-items:start;
   }
-  #pass-guarantee .pgx-eyebrow{display:inline-flex;align-items:center;gap:9px;font-size:12.5px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin-bottom:20px}
-  #pass-guarantee .pgx-eyebrow::after{content:"";width:26px;height:1px;background:linear-gradient(90deg,var(--accent),transparent)}
-  #pass-guarantee .pgx-title{font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:clamp(30px,3.8vw,52px);line-height:1.05;letter-spacing:-.02em;color:var(--ink);margin-bottom:22px}
-  #pass-guarantee .pgx-title .pgx-em{font-style:italic;color:var(--accent);display:block}
-  #pass-guarantee .pgx-prose{font-size:clamp(15px,1.2vw,17.5px);line-height:1.62;color:var(--ink-soft);max-width:42ch;margin-bottom:24px}
-  #pass-guarantee .pgx-prose strong{color:var(--ink);font-weight:650}
-  #pass-guarantee .pgx-finer{font-size:12.5px;line-height:1.6;color:var(--muted);max-width:40ch;padding-top:20px;border-top:1px solid var(--border)}
-  #pass-guarantee .pgx-steps{display:flex;flex-direction:column;background:linear-gradient(180deg,var(--surface),var(--surface-2));border:1px solid var(--border);border-radius:22px;box-shadow:var(--shadow-card);overflow:hidden}
-  #pass-guarantee .pgx-steps-h{display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:20px 26px 16px;border-bottom:1px solid var(--border);font-size:11.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
-  #pass-guarantee .pgx-steps-h span{font-size:11.5px;font-weight:600;letter-spacing:.04em;text-transform:none;color:var(--accent)}
-  #pass-guarantee .pgx-step{display:grid;grid-template-columns:auto 56px 1fr;align-items:start;gap:18px;padding:24px 26px;border-bottom:1px solid var(--border);transition:background 160ms ease}
-  #pass-guarantee .pgx-step:last-child{border-bottom:0}
-  @media (hover:hover){#pass-guarantee .pgx-step:hover{background:color-mix(in oklab,var(--accent) 4%,transparent)}}
-  #pass-guarantee .pgx-step-n{font-family:'Fraunces',Georgia,serif;font-size:20px;font-weight:600;color:var(--accent);font-variant-numeric:tabular-nums;line-height:1.4;width:26px;text-align:center;flex:none}
-  #pass-guarantee .pgx-step-ic{width:56px;height:56px;border-radius:15px;flex:none;background-color:#FFFBF3;border:1px solid var(--border);box-shadow:var(--shadow-soft);display:grid;place-items:center}
-  #pass-guarantee .pgx-step-ic svg{width:38px;height:38px;display:block}
-  #pass-guarantee .pgx-step-body{min-width:0;padding-top:2px}
-  #pass-guarantee .pgx-step-name{font-size:15.5px;font-weight:650;color:var(--ink);margin-bottom:5px}
-  #pass-guarantee .pgx-step-desc{font-size:13.5px;line-height:1.6;color:var(--ink-soft)}
-  #pass-guarantee .pgx-steps-foot{padding:16px 26px;font-size:12.5px;font-weight:500;color:var(--muted);display:flex;align-items:center;gap:9px}
-  #pass-guarantee .pgx-steps-foot svg{width:16px;height:16px;flex:none;color:var(--accent)}
-  #pass-guarantee .pgx-r{opacity:0;transform:translateY(16px);transition:opacity 600ms var(--eo),transform 600ms var(--eo)}
-  #pass-guarantee.pgx-in .pgx-r{opacity:1;transform:none}
-  #pass-guarantee.pgx-in .pgx-r[data-d="1"]{transition-delay:40ms}
-  #pass-guarantee.pgx-in .pgx-r[data-d="2"]{transition-delay:110ms}
-  #pass-guarantee.pgx-in .pgx-r[data-d="3"]{transition-delay:180ms}
-  #pass-guarantee .pgx-steps{opacity:0;transform:translateY(20px) scale(0.99);transition:opacity 700ms var(--eo) 160ms,transform 700ms var(--eo) 160ms}
-  #pass-guarantee.pgx-in .pgx-steps{opacity:1;transform:none}
-  #pass-guarantee .pgx-step{opacity:0;transform:translateX(10px);transition:opacity 460ms var(--eo),transform 460ms var(--eo)}
-  #pass-guarantee.pgx-in .pgx-step{opacity:1;transform:none}
-  #pass-guarantee.pgx-in .pgx-step:nth-child(2){transition-delay:320ms}
-  #pass-guarantee.pgx-in .pgx-step:nth-child(3){transition-delay:390ms}
-  #pass-guarantee.pgx-in .pgx-step:nth-child(4){transition-delay:460ms}
+  #why-ready .pgx-eyebrow{display:inline-flex;align-items:center;gap:9px;font-size:12.5px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin-bottom:20px}
+  #why-ready .pgx-eyebrow::after{content:"";width:26px;height:1px;background:linear-gradient(90deg,var(--accent),transparent)}
+  #why-ready .pgx-title{font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:clamp(30px,3.8vw,52px);line-height:1.05;letter-spacing:-.02em;color:var(--ink);margin-bottom:22px}
+  #why-ready .pgx-title .pgx-em{font-style:italic;color:var(--accent);display:block}
+  #why-ready .pgx-prose{font-size:clamp(15px,1.2vw,17.5px);line-height:1.62;color:var(--ink-soft);max-width:42ch;margin-bottom:24px}
+  #why-ready .pgx-prose strong{color:var(--ink);font-weight:650}
+  #why-ready .pgx-finer{font-size:12.5px;line-height:1.6;color:var(--muted);max-width:40ch;padding-top:20px;border-top:1px solid var(--border)}
+  #why-ready .pgx-steps{display:flex;flex-direction:column;background:linear-gradient(180deg,var(--surface),var(--surface-2));border:1px solid var(--border);border-radius:22px;box-shadow:var(--shadow-card);overflow:hidden}
+  #why-ready .pgx-steps-h{display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:20px 26px 16px;border-bottom:1px solid var(--border);font-size:11.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+  #why-ready .pgx-steps-h span{font-size:11.5px;font-weight:600;letter-spacing:.04em;text-transform:none;color:var(--accent)}
+  #why-ready .pgx-step{display:grid;grid-template-columns:auto 56px 1fr;align-items:start;gap:18px;padding:24px 26px;border-bottom:1px solid var(--border);transition:background 160ms ease}
+  #why-ready .pgx-step:last-child{border-bottom:0}
+  @media (hover:hover){#why-ready .pgx-step:hover{background:color-mix(in oklab,var(--accent) 4%,transparent)}}
+  #why-ready .pgx-step-n{font-family:'Fraunces',Georgia,serif;font-size:20px;font-weight:600;color:var(--accent);font-variant-numeric:tabular-nums;line-height:1.4;width:26px;text-align:center;flex:none}
+  #why-ready .pgx-step-ic{width:56px;height:56px;border-radius:15px;flex:none;background-color:#FFFBF3;border:1px solid var(--border);box-shadow:var(--shadow-soft);display:grid;place-items:center}
+  #why-ready .pgx-step-ic svg{width:38px;height:38px;display:block}
+  #why-ready .pgx-step-body{min-width:0;padding-top:2px}
+  #why-ready .pgx-step-name{font-size:15.5px;font-weight:650;color:var(--ink);margin-bottom:5px}
+  #why-ready .pgx-step-desc{font-size:13.5px;line-height:1.6;color:var(--ink-soft)}
+  #why-ready .pgx-steps-foot{padding:16px 26px;font-size:12.5px;font-weight:500;color:var(--muted);display:flex;align-items:center;gap:9px}
+  #why-ready .pgx-steps-foot svg{width:16px;height:16px;flex:none;color:var(--accent)}
+  #why-ready .pgx-cta{display:inline-flex;align-items:center;gap:9px;margin-top:6px;padding:11px 18px;border-radius:10px;font-family:Inter,sans-serif;font-size:14px;font-weight:650;color:var(--accent);border:1px solid color-mix(in oklab,var(--accent) 30%,var(--border));background:color-mix(in oklab,var(--accent) 6%,transparent);text-decoration:none;transition:transform 150ms var(--eo),background 150ms var(--eo)}
+  @media (hover:hover){#why-ready .pgx-cta:hover{background:color-mix(in oklab,var(--accent) 12%,transparent)}}
+  #why-ready .pgx-cta:active{transform:scale(0.97)}
+  #why-ready .pgx-r{opacity:0;transform:translateY(16px);transition:opacity 600ms var(--eo),transform 600ms var(--eo)}
+  #why-ready.pgx-in .pgx-r{opacity:1;transform:none}
+  #why-ready.pgx-in .pgx-r[data-d="1"]{transition-delay:40ms}
+  #why-ready.pgx-in .pgx-r[data-d="2"]{transition-delay:110ms}
+  #why-ready.pgx-in .pgx-r[data-d="3"]{transition-delay:180ms}
+  #why-ready .pgx-steps{opacity:0;transform:translateY(20px) scale(0.99);transition:opacity 700ms var(--eo) 160ms,transform 700ms var(--eo) 160ms}
+  #why-ready.pgx-in .pgx-steps{opacity:1;transform:none}
+  #why-ready .pgx-step{opacity:0;transform:translateX(10px);transition:opacity 460ms var(--eo),transform 460ms var(--eo)}
+  #why-ready.pgx-in .pgx-step{opacity:1;transform:none}
+  #why-ready.pgx-in .pgx-step:nth-child(2){transition-delay:320ms}
+  #why-ready.pgx-in .pgx-step:nth-child(3){transition-delay:390ms}
+  #why-ready.pgx-in .pgx-step:nth-child(4){transition-delay:460ms}
   @media (max-width:900px){
-    #pass-guarantee .pgx-wrap{grid-template-columns:1fr;gap:36px}
-    #pass-guarantee .pgx-prose,#pass-guarantee .pgx-finer{max-width:none}
+    #why-ready .pgx-wrap{grid-template-columns:1fr;gap:36px}
+    #why-ready .pgx-prose,#why-ready .pgx-finer{max-width:none}
   }
   @media (max-width:560px){
-    #pass-guarantee .pgx-title{font-size:clamp(27px,8vw,36px)}
-    #pass-guarantee .pgx-step{grid-template-columns:auto 1fr;gap:14px}
-    #pass-guarantee .pgx-step-ic{display:none}
+    #why-ready .pgx-title{font-size:clamp(27px,8vw,36px)}
+    #why-ready .pgx-step{grid-template-columns:auto 1fr;gap:14px}
+    #why-ready .pgx-step-ic{display:none}
   }
   @media (prefers-reduced-motion:reduce){
-    #pass-guarantee .pgx-r,#pass-guarantee .pgx-steps,#pass-guarantee .pgx-step{transition:opacity 220ms ease !important;transform:none !important}
-    #pass-guarantee.pgx-in .pgx-r,#pass-guarantee.pgx-in .pgx-step{transform:none !important}
+    #why-ready .pgx-r,#why-ready .pgx-steps,#why-ready .pgx-step{transition:opacity 220ms ease !important;transform:none !important}
+    #why-ready.pgx-in .pgx-r,#why-ready.pgx-in .pgx-step{transform:none !important}
   }
 </style>
 
-<section class="pass-guarantee" id="pass-guarantee">
+<section class="why-ready" id="why-ready">
   <svg width="0" height="0" aria-hidden="true" style="position:absolute">
     <defs>
       <linearGradient id="pgx-brass" x1="22" y1="18" x2="106" y2="110" gradientUnits="userSpaceOnUse">
@@ -1873,21 +1876,22 @@
 
   <div class="pgx-wrap">
     <div class="pgx-promise">
-      <span class="pgx-eyebrow pgx-r" data-d="1">We stand behind the work</span>
-      <h2 class="pgx-title pgx-r" data-d="1">Put in the work, take the exam.<span class="pgx-em">We'll back you up.</span></h2>
-      <p class="pgx-prose pgx-r" data-d="2">Pro users who put in the work and don't pass first time: <strong>we review your case and extend your access until you do.</strong> No fine-print fight.</p>
-      <p class="pgx-finer pgx-r" data-d="2">Exact eligibility is published when Pro pricing launches. Until then, reach out and we'll work with you.</p>
+      <span class="pgx-eyebrow pgx-r" data-d="1">Why CertAnvil</span>
+      <h2 class="pgx-title pgx-r" data-d="1">Walk in knowing.<span class="pgx-em">Not hoping.</span></h2>
+      <p class="pgx-prose pgx-r" data-d="2">Most people book the exam on a gut feeling. CertAnvil tracks every objective on the blueprint until it's closed, then gives you one honest readiness score. You sit the test when it reads green, not when nerves say maybe.</p>
+      <p class="pgx-finer pgx-r" data-d="2">Built by someone who sat N10-009 and passed at 767/900, then built the prep they wish they'd had.</p>
+      <a class="pgx-cta pgx-r" data-d="2" href="/diagnostic">Take the free baseline diagnostic <span aria-hidden="true">&rarr;</span></a>
     </div>
 
     <div class="pgx-steps pgx-r" data-d="3">
-      <div class="pgx-steps-h">The deal <span>3 steps, no fine print</span></div>
+      <div class="pgx-steps-h">How readiness works <span>3 steps</span></div>
 
       <div class="pgx-step">
         <span class="pgx-step-n">1</span>
         <span class="pgx-step-ic"><svg viewBox="0 0 128 128"><use href="#pgx-ic-streak"/></svg></span>
         <div class="pgx-step-body">
-          <div class="pgx-step-name">Show the effort</div>
-          <p class="pgx-step-desc">Active use for 30+ days, a completed mock exam, a maintained streak. Your study history is the proof — nothing extra to submit.</p>
+          <div class="pgx-step-name">Diagnose</div>
+          <p class="pgx-step-desc">A free baseline diagnostic maps your weak spots across the full exam blueprint.</p>
         </div>
       </div>
 
@@ -1895,8 +1899,8 @@
         <span class="pgx-step-n">2</span>
         <span class="pgx-step-ic"><svg viewBox="0 0 128 128"><use href="#pgx-ic-voucher"/></svg></span>
         <div class="pgx-step-body">
-          <div class="pgx-step-name">Send two artifacts</div>
-          <p class="pgx-step-desc">Your Pearson VUE booking confirmation and your score report. Two documents so we can verify the full attempt.</p>
+          <div class="pgx-step-name">Close the gaps</div>
+          <p class="pgx-step-desc">Targeted questions and an AI teacher work each weak objective until it holds.</p>
         </div>
       </div>
 
@@ -1904,14 +1908,14 @@
         <span class="pgx-step-n">3</span>
         <span class="pgx-step-ic"><svg viewBox="0 0 128 128"><use href="#pgx-ic-promise"/></svg></span>
         <div class="pgx-step-body">
-          <div class="pgx-step-name">We extend your access</div>
-          <p class="pgx-step-desc">Manual case review, a reply within 7 days. Pro access extended so you can prep and retake without paying twice.</p>
+          <div class="pgx-step-name">Know you're ready</div>
+          <p class="pgx-step-desc">One readiness score tracks coverage to green, including a full timed mock exam.</p>
         </div>
       </div>
 
       <div class="pgx-steps-foot">
         <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#pgx-ic-check"/></svg>
-        On the fence? Reach out — we'll work with you either way.
+        No guesswork. The blueprint, closed.
       </div>
     </div>
   </div>
@@ -1920,7 +1924,7 @@
     /* Scoped entrance trigger only — no script.js contract on this
        section. script.js never touches .pgx-in. */
     (function(){
-      var s=document.getElementById('pass-guarantee');
+      var s=document.getElementById('why-ready');
       if(!s)return;
       if('IntersectionObserver' in window){
         var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){s.classList.add('pgx-in');io.disconnect();}});},{threshold:0.15});
@@ -1940,7 +1944,7 @@
      system. [data-theme="dark"] matches the prod theme system; fonts
      from the hero-v2 head. The 4 reason icons live in assets/why/*;
      the cert proof band reuses assets/certs/* (already in prod from
-     the cert-library ship). #pass-guarantee above + #faq below
+     the cert-library ship). #why-ready above + #faq below
      untouched.
 ══════════════════════════════════════════ -->
 <style id="wyx-styles">
