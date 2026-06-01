@@ -1362,30 +1362,16 @@
 </section>
 
 <!-- ══════════════════════════════════════════
-     PROOF OF PRODUCT — "What you'll actually use" panel (v4.92.0)
-     Per-cert mosaic showing real interactive surfaces. Tabs auto-rotate
-     every 6s on idle (paused on click). N+ shows TB 2D + 3D + packet
-     trace; S+ shows Acronym Blitz live + 2 coming-soon previews; AZ/CCNA
-     show honest "being forged" placeholder. CTAs link to pricing — the
-     real "try it" path comes after Stripe integration.
-     Visual contracts on #301, #303 lock the coming-soon drill snippets.
-══════════════════════════════════════════ -->
-<!-- ══════════════════════════════════════════
-     PROOF OF PRODUCT v2 — featured surface + supporting roster per cert,
-     editorial "in the forge" for locked certs. FULLY SCOPED under
-     #proof-of-product (ID specificity beats styles.css .pp-* rules; the
-     id is kept as the anchor + scoping root). The production script.js
-     initProofOfProductPanel OWNS the tab state machine — every contract
-     hook is preserved so showCert()/6s auto-rotate/pause-on-click/
-     [data-cert-notify]→cert-library .cert-cta-notify all still resolve:
-     #pp-tabs[role=tablist] + 4 .pp-tab[data-pp-tab]+.pp-tab-dot+is-active/
-     is-soon, 4 .pp-content[data-pp-content]+is-active+hidden, .pp-cta-btn,
-     [data-cert-notify=az900|ccna], #pp-sub. This layer adds NO tab JS
-     (only a scoped entrance trigger) so it can't double-bind script.js.
-     This section reuses production .pp-* class names, so a complete
-     scoped reset + pseudo-kill is applied (DESIGN_PLAYBOOK Phase 3).
-     [data-theme="dark"] matches the prod theme system. Fonts from the
-     hero-v2 head. #certs above + #why-ready below untouched.
+     PROOF OF PRODUCT v3 · "What you'll actually use".
+     Honest rebuild: the engine is uniform across certs, so the old
+     per-cert feature tabs are replaced by one feature grid (the AI
+     question engine + a roster of real surfaces) and a cert-coverage
+     chip strip (8 live + CCNA in development + PBQs coming soon).
+     FULLY SCOPED under #proof-of-product (the id is the anchor +
+     scoping root). Reuses production .pp-* class names so the scoped
+     reset below still applies. The inline script only adds the .pp-in
+     entrance trigger; the old script.js tab machine is removed.
+     [data-theme="dark"] matches prod. #certs above + #why-ready below.
 ══════════════════════════════════════════ -->
 <style id="pp-styles">
   #proof-of-product{
@@ -1492,6 +1478,14 @@
   #proof-of-product .pp-row-tag.is-soon{color:var(--muted);border:1px solid var(--border)}
   #proof-of-product .pp-row-desc{font-size:12.5px;line-height:1.55;color:var(--muted)}
   #proof-of-product .pp-roster-foot{margin-top:auto;padding:16px 20px;border-top:1px solid var(--border);font-size:12.5px;color:var(--muted);line-height:1.5}
+  #proof-of-product .pp-certs{margin-top:clamp(20px,2.6vw,34px);border:1px solid var(--border);border-radius:20px;background:linear-gradient(180deg,var(--surface),var(--surface-2));padding:clamp(20px,2.4vw,28px)}
+  #proof-of-product .pp-certs-h{font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-bottom:15px}
+  #proof-of-product .pp-cert-list{display:flex;flex-flow:row wrap;gap:9px}
+  #proof-of-product .pp-cert-chip{display:inline-flex;flex-direction:row;align-items:center;gap:8px;font-size:13px;font-weight:600;color:var(--ink-soft);background:var(--surface-2);border:1px solid var(--border);border-radius:999px;padding:8px 14px}
+  #proof-of-product .pp-cert-chip .pp-cert-dot{width:7px;height:7px;border-radius:50%;background:var(--accent);flex:none}
+  #proof-of-product .pp-cert-chip.is-soon{color:var(--muted)}
+  #proof-of-product .pp-cert-chip.is-soon .pp-cert-dot{background:none;border:1.5px solid var(--muted)}
+  #proof-of-product .pp-certs-foot{margin-top:14px;font-size:12.5px;line-height:1.55;color:var(--muted)}
 
   #proof-of-product .pp-locked{display:flex;flex-direction:column;align-items:flex-start;text-align:left;background:linear-gradient(180deg,var(--surface),var(--surface-2));border:1px solid var(--border);border-radius:22px;box-shadow:var(--shadow-card);padding:clamp(36px,5vw,64px);max-width:760px}
   #proof-of-product .pp-locked-ic{width:64px;height:64px;border-radius:18px;background-color:#FFFBF3;border:1px solid var(--border);display:grid;place-items:center;margin-bottom:24px;box-shadow:var(--shadow-soft)}
@@ -1598,131 +1592,76 @@
       <div class="pp-head-text">
         <div class="pp-eyebrow pp-r" data-d="1">Proof of product</div>
         <h2 class="pp-title pp-r" data-d="1">What you'll <span class="pp-em">actually</span> use</h2>
-        <p class="pp-sub pp-r" data-d="2" id="pp-sub">These run in your browser, no signup. The same surfaces you'll drill with every day.</p>
-      </div>
-      <div class="pp-tabs pp-r" data-d="2" role="tablist" id="pp-tabs">
-        <button class="pp-tab is-active" role="tab" data-pp-tab="netplus" aria-selected="true"><span class="pp-tab-dot live"></span>Network+</button>
-        <button class="pp-tab" role="tab" data-pp-tab="secplus" aria-selected="false"><span class="pp-tab-dot active"></span>Security+</button>
-        <button class="pp-tab is-soon" role="tab" data-pp-tab="az900" aria-selected="false"><span class="pp-tab-dot soon"></span>AZ-900</button>
-        <button class="pp-tab is-soon" role="tab" data-pp-tab="ccna" aria-selected="false"><span class="pp-tab-dot soon"></span>CCNA</button>
+        <p class="pp-sub pp-r" data-d="2" id="pp-sub">One adaptive question engine, the same across every cert we cover.</p>
       </div>
     </div>
 
-    <!-- ── Network+ panel ── -->
-    <div class="pp-content is-active" data-pp-content="netplus">
+    <div class="pp-content is-active">
       <div class="pp-grid">
         <div class="pp-feature">
           <div class="pp-screen">
-            <svg viewBox="0 0 128 128"><use href="#pp-ic-tb"/></svg>
-            <span class="pp-screen-pill">Topology lab</span>
+            <svg viewBox="0 0 128 128" role="img" aria-label="AI question engine"><use href="#pp-ic-quiz"/></svg>
+            <span class="pp-screen-pill is-live">Live</span>
           </div>
           <div class="pp-feature-body">
-            <div class="pp-feature-label">Build a real network</div>
-            <div class="pp-feature-name">Topology Builder</div>
-            <p class="pp-feature-desc">Drag routers, switches and endpoints onto a grid. Configure interfaces, assign subnets, run ping. The same kind of lab the exam tests, except you can break it and try again.</p>
+            <div class="pp-feature-label">The engine</div>
+            <div class="pp-feature-name">AI questions that adapt to you</div>
+            <p class="pp-feature-desc">Every session generates fresh questions across the full blueprint, each with an explanation that teaches the reasoning behind the right answer. The more you practise, the harder it leans on your weak spots.</p>
             <div class="pp-feature-foot">
-              <span class="pp-foot-prose">No signup to try it. Build something, see how it works.</span>
-              <a class="pp-cta-btn" href="/pricing.html">Try the topology lab →</a>
+              <span class="pp-foot-prose">Free covers 20 a day. Pro removes the cap.</span>
+              <a class="pp-cta-btn" href="/diagnostic">Start the free diagnostic <span aria-hidden="true">→</span></a>
             </div>
           </div>
         </div>
         <div class="pp-roster">
-          <div class="pp-roster-h">Also in the Network+ workspace</div>
+          <div class="pp-roster-h">In every workspace</div>
           <div class="pp-row">
-            <span class="pp-row-ic"><svg viewBox="0 0 128 128"><use href="#pp-ic-brain"/></svg></span>
+            <span class="pp-row-ic"><svg viewBox="0 0 128 128" role="img" aria-label="Readiness score"><use href="#pp-ic-brain"/></svg></span>
             <div class="pp-row-body">
-              <div class="pp-row-name">3D Explorer</div>
-              <p class="pp-row-desc">The same network rotated into 3D. Toggle the OSI stack to see how layers map to your devices. 19 guided tours.</p>
+              <div class="pp-row-name">Readiness score</div>
+              <p class="pp-row-desc">One number tracks your coverage and accuracy across the blueprint. When it reads green, you book.</p>
             </div>
           </div>
           <div class="pp-row">
-            <span class="pp-row-ic"><svg viewBox="0 0 128 128"><use href="#pp-ic-trace"/></svg></span>
+            <span class="pp-row-ic"><svg viewBox="0 0 128 128" role="img" aria-label="Exam simulator"><use href="#pp-ic-badge"/></svg></span>
             <div class="pp-row-body">
-              <div class="pp-row-name">Packet Trace</div>
-              <p class="pp-row-desc">Step a ping or HTTP request frame-by-frame. Watch ARP resolve and routing decisions get made.</p>
+              <div class="pp-row-name">Full Exam Simulator <span class="pp-row-tag is-live">Pro</span></div>
+              <p class="pp-row-desc">A 90-question, 90-minute exam scored 100-900, built to mirror the real CompTIA sitting.</p>
             </div>
           </div>
-          <div class="pp-roster-foot">All five N10-009 domains, one workspace. The exam mode mirrors the real 90-question test.</div>
+          <div class="pp-row">
+            <span class="pp-row-ic"><svg viewBox="0 0 128 128" role="img" aria-label="Spaced repetition"><use href="#pp-ic-quiz"/></svg></span>
+            <div class="pp-row-body">
+              <div class="pp-row-name">Weak-spots + spaced repetition</div>
+              <p class="pp-row-desc">Your weak objectives resurface on a spaced-repetition schedule until they hold.</p>
+            </div>
+          </div>
+          <div class="pp-roster-foot">The diagnostic runs free in your browser, no signup.</div>
         </div>
       </div>
-    </div>
 
-    <!-- ── Security+ panel ── -->
-    <div class="pp-content" data-pp-content="secplus" hidden>
-      <div class="pp-grid">
-        <div class="pp-feature">
-          <div class="pp-screen">
-            <svg viewBox="0 0 128 128"><use href="#pp-ic-quiz"/></svg>
-            <span class="pp-screen-pill is-live">Live drill</span>
-          </div>
-          <div class="pp-feature-body">
-            <div class="pp-feature-label">Live now</div>
-            <div class="pp-feature-name">Acronym Blitz</div>
-            <p class="pp-feature-desc">The 120 SY0-701 acronyms CompTIA loves to ask about, sorted into seven buckets with spaced repetition built in. Threats, detection, identity, crypto, network, compliance, ops.</p>
-            <div class="pp-feature-foot">
-              <span class="pp-foot-prose">Live now. The other two ship over the next 6 weeks.</span>
-              <a class="pp-cta-btn" href="/pricing.html">Try Acronym Blitz →</a>
-            </div>
-          </div>
+      <div class="pp-certs pp-r" data-d="2">
+        <div class="pp-certs-h">Eight certs live, one engine</div>
+        <div class="pp-cert-list">
+          <span class="pp-cert-chip"><span class="pp-cert-dot"></span>Network+ (N10-009)</span>
+          <span class="pp-cert-chip"><span class="pp-cert-dot"></span>Security+ (SY0-701)</span>
+          <span class="pp-cert-chip"><span class="pp-cert-dot"></span>A+ Core 1</span>
+          <span class="pp-cert-chip"><span class="pp-cert-dot"></span>A+ Core 2</span>
+          <span class="pp-cert-chip"><span class="pp-cert-dot"></span>AZ-900</span>
+          <span class="pp-cert-chip"><span class="pp-cert-dot"></span>AI-900</span>
+          <span class="pp-cert-chip"><span class="pp-cert-dot"></span>SC-900</span>
+          <span class="pp-cert-chip"><span class="pp-cert-dot"></span>CLF-C02</span>
+          <span class="pp-cert-chip is-soon"><span class="pp-cert-dot"></span>CCNA · in development</span>
         </div>
-        <div class="pp-roster">
-          <div class="pp-roster-h">Shipping next for Security+</div>
-          <div class="pp-row">
-            <span class="pp-row-ic"><svg viewBox="0 0 128 128"><use href="#pp-ic-fw"/></svg></span>
-            <div class="pp-row-body">
-              <div class="pp-row-name">Attack-to-Mitigation Match <span class="pp-row-tag is-soon">~6 wks</span></div>
-              <p class="pp-row-desc">Match the right control to the right attack. Builds the "if I see X, the answer is Y" reflex the exam traps test.</p>
-            </div>
-          </div>
-          <div class="pp-row">
-            <span class="pp-row-ic"><svg viewBox="0 0 128 128"><use href="#pp-ic-map"/></svg></span>
-            <div class="pp-row-body">
-              <div class="pp-row-name">IR Phase Sorter <span class="pp-row-tag is-soon">~6 wks</span></div>
-              <p class="pp-row-desc">Drag scenario steps into the right NIST IR phase. The hardest single-question domain, drilled as drag-and-drop.</p>
-            </div>
-          </div>
-          <div class="pp-roster-foot">Same engine that got Network+ across the line, retuned for SecOps.</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- ── AZ-900 (in the forge) ── -->
-    <div class="pp-content" data-pp-content="az900" hidden>
-      <div class="pp-locked">
-        <span class="pp-locked-ic"><svg viewBox="0 0 128 128"><use href="#pp-ic-badge"/></svg></span>
-        <div class="pp-locked-eyebrow">In the forge</div>
-        <div class="pp-locked-title">AZ-900 is being built</div>
-        <p class="pp-locked-sub">The same engine as Network+ and Security+, retuned for Microsoft's cloud blueprint: compute, storage, identity, governance, cost management, with Microsoft Learn references in every explanation.</p>
-        <span class="pp-locked-eta">~6 weeks · target Q3 2026</span>
-        <div class="pp-locked-foot">
-          <a class="pp-cta-btn pp-cta-btn-ghost" href="#" data-cert-notify="az900">Notify me ↗</a>
-          <span class="pp-foot-prose">Signed-up users get the launch email + a 7-day Pro trial.</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- ── CCNA (in the forge) ── -->
-    <div class="pp-content" data-pp-content="ccna" hidden>
-      <div class="pp-locked">
-        <span class="pp-locked-ic"><svg viewBox="0 0 128 128"><use href="#pp-ic-badge"/></svg></span>
-        <div class="pp-locked-eyebrow">In the forge</div>
-        <div class="pp-locked-title">CCNA is being built</div>
-        <p class="pp-locked-sub">Cisco's flagship associate cert. Goes deeper on routing: OSPF, BGP, and a full IOS CLI lab. We're authoring the scenarios and exemplar bank now.</p>
-        <span class="pp-locked-eta">~10 weeks · target Q3 2026</span>
-        <div class="pp-locked-foot">
-          <a class="pp-cta-btn pp-cta-btn-ghost" href="#" data-cert-notify="ccna">Notify me ↗</a>
-          <span class="pp-foot-prose">Signed-up users get the launch email + a 7-day Pro trial.</span>
-        </div>
+        <p class="pp-certs-foot">Performance-based questions (CLI sim, topology builder, ACL builder) are coming to Pro.</p>
       </div>
     </div>
   </div>
 
   <script>
-    /* Scoped entrance trigger ONLY. The production script.js
-       initProofOfProductPanel owns the tab state machine + 6s auto-rotate
-       + [data-cert-notify] wiring against the preserved .pp-tab /
-       .pp-content / [data-cert-notify] hooks — this adds no tab JS so it
-       cannot double-bind. script.js never touches .pp-in. */
+    /* Scoped entrance trigger ONLY: adds .pp-in when the section scrolls
+       into view so the .pp-r / .pp-feature / .pp-roster reveals fire.
+       The old script.js tab machine has been removed (no tabs remain). */
     (function(){
       var s=document.getElementById('proof-of-product');
       if(!s)return;
