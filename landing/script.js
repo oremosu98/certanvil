@@ -22,15 +22,9 @@
   }
 
   // ── Theme toggle ────────────────────────────────────────────────────────
-  const themeToggle = document.getElementById('theme-toggle');
-  if (themeToggle) {
-    themeToggle.addEventListener('click', function() {
-      const current = document.documentElement.getAttribute('data-theme') || 'light';
-      const next = current === 'light' ? 'dark' : 'light';
-      document.documentElement.setAttribute('data-theme', next);
-      try { localStorage.setItem('certanvil_theme', next); } catch (e) {}
-    });
-  }
+  // Moved to auth.js (loaded on every landing page) so the toggle also works
+  // on account/analytics/admin. auth.js loads before script.js on index.html,
+  // so wiring it here too would double-bind and cancel the flip. Do NOT re-add.
 
   // ── Builder mode ────────────────────────────────────────────────────────
   // Reveal Security+ tile + builder pill when localStorage flag is set.

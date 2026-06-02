@@ -17,7 +17,8 @@
 // Sections:
 //   - 4-stat hero (total users, active this week, cert packs live, app version)
 //   - Users table (one row per profile)
-//   - Cert packs table (static for now — public/private/coming-soon)
+//   - Cert packs table (static roster — 8 live + 3 on the anvil; exemplar
+//     counts mirror certs/*.js questionExemplars lengths, hand-synced on ship)
 //   - Recent ships (last 10 commits via GitHub REST API, no auth needed for public repo)
 //   - Telemetry placeholder (no backing data yet)
 // ══════════════════════════════════════════════════════════════════════════
@@ -178,8 +179,8 @@
         : '—';
     }
 
-    if (elStatCertPacks) elStatCertPacks.textContent = '2';
-    if (elStatCertPacksDelta) elStatCertPacksDelta.textContent = 'Network+ public · Security+ private';
+    if (elStatCertPacks) elStatCertPacks.textContent = '8';
+    if (elStatCertPacksDelta) elStatCertPacksDelta.textContent = '8 live · 3 on the anvil';
 
     if (elStatAppVersion) elStatAppVersion.textContent = appVersion ? ('v' + appVersion) : 'v—';
     if (elStatAppVersionDelta) elStatAppVersionDelta.textContent = appVersion ? 'live on networkplus.certanvil.com' : 'unable to read version';
@@ -218,16 +219,21 @@
   function renderCertPacks() {
     if (!elCertsTbody) return;
     var packs = [
-      { name: 'Network+', code: 'N10-009', visibility: 'Public', bank: '320 exemplars', status: 'Live · public tile + auto-deploy' },
-      { name: 'Security+', code: 'SY0-701', visibility: 'Private (admin-only)', bank: '77 exemplars + Phase 2 growing', status: 'Hidden tile · admin-only via role check' },
-      { name: 'AZ-900', code: 'AZ-900', visibility: 'Coming-soon tile', bank: '—', status: 'Notify-me CTA' },
-      { name: 'Cisco CCNA', code: '200-301', visibility: 'Coming-soon tile', bank: '—', status: 'Notify-me CTA' },
-      { name: 'AWS SAA', code: 'SAA-C03', visibility: 'Coming-soon tile', bank: '—', status: 'Notify-me CTA' },
-      { name: 'Azure Admin', code: 'AZ-104', visibility: 'Coming-soon tile', bank: '—', status: 'Notify-me CTA' },
+      { name: 'Network+', code: 'N10-009', visibility: 'Public · Free', bank: '320 exemplars', status: 'Live · networkplus.certanvil.com', live: true },
+      { name: 'Security+', code: 'SY0-701', visibility: 'Public · Pro', bank: '237 exemplars', status: 'Live · secplus.certanvil.com', live: true },
+      { name: 'Azure Fundamentals', code: 'AZ-900', visibility: 'Public · Pro', bank: '194 exemplars', status: 'Live · azure.certanvil.com', live: true },
+      { name: 'Azure AI Fundamentals', code: 'AI-900', visibility: 'Public · Pro', bank: '206 exemplars', status: 'Live · ai.certanvil.com', live: true },
+      { name: 'CompTIA A+ Core 1', code: '220-1201', visibility: 'Public · Pro', bank: '200 exemplars', status: 'Live · aplus.certanvil.com', live: true },
+      { name: 'CompTIA A+ Core 2', code: '220-1202', visibility: 'Public · Pro', bank: '200 exemplars', status: 'Live · aplus.certanvil.com', live: true },
+      { name: 'Microsoft SC-900', code: 'SC-900', visibility: 'Public · Pro', bank: '200 exemplars', status: 'Live · sc900.certanvil.com', live: true },
+      { name: 'AWS Cloud Practitioner', code: 'CLF-C02', visibility: 'Public · Pro', bank: '200 exemplars', status: 'Live · clfc02.certanvil.com', live: true },
+      { name: 'Cisco CCNA', code: '200-301', visibility: 'Coming-soon tile', bank: '—', status: 'Notify-me CTA', live: false },
+      { name: 'AWS Solutions Architect', code: 'SAA-C03', visibility: 'Coming-soon tile', bank: '—', status: 'Notify-me CTA', live: false },
+      { name: 'Azure Administrator', code: 'AZ-104', visibility: 'Coming-soon tile', bank: '—', status: 'Notify-me CTA', live: false },
     ];
     elCertsTbody.innerHTML = packs.map(function (p) {
       return ''
-        + '<tr' + (p.code !== 'N10-009' && p.code !== 'SY0-701' ? ' style="opacity:.65"' : '') + '>'
+        + '<tr' + (p.live ? '' : ' style="opacity:.65"') + '>'
         +   '<td><strong>' + escapeHtml(p.name) + '</strong></td>'
         +   '<td class="mono">' + escapeHtml(p.code) + '</td>'
         +   '<td>' + escapeHtml(p.visibility) + '</td>'

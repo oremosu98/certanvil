@@ -28,6 +28,23 @@
 
   if (typeof window === 'undefined' || typeof document === 'undefined') return;
 
+  // ── Theme toggle ────────────────────────────────────────────────────────
+  // Wired HERE (not in script.js) because auth.js is the only script loaded
+  // on every landing-surface page (index, account, analytics, admin). script.js
+  // loads on index.html only, so its old copy of this handler left the toggle
+  // dead on the account-family pages. Sits above the Supabase early-return so
+  // theme switching works even if the auth client fails to load.
+  (function wireThemeToggle() {
+    var themeToggle = document.getElementById('theme-toggle');
+    if (!themeToggle) return;
+    themeToggle.addEventListener('click', function () {
+      var current = document.documentElement.getAttribute('data-theme') || 'light';
+      var next = current === 'light' ? 'dark' : 'light';
+      document.documentElement.setAttribute('data-theme', next);
+      try { localStorage.setItem('certanvil_theme', next); } catch (e) {}
+    });
+  })();
+
   var supabase = window.certanvilSupabase;
   if (!supabase) {
     console.warn('[certanvil-auth] Supabase client missing — auth UI disabled');
@@ -910,6 +927,13 @@
   var myCertsLink = document.getElementById('dropdown-my-certs');
   if (myCertsLink) {
     myCertsLink.addEventListener('click', function (e) {
+      // Only intercept when the My-certs modal exists on THIS page (the
+      // homepage). On /account the link carries href="/?modal=my-certs" and
+      // must be allowed to navigate to the homepage, where handleModalUrlParam()
+      // opens the modal on arrival. Pre-fix this handler preventDefault()'d the
+      // click then called openMyCertsModal(), which no-ops without the modal —
+      // so the link did nothing at all on account-family pages.
+      if (!document.getElementById('my-certs-modal')) return;
       e.preventDefault();
       closeAccountDropdown();
       openMyCertsModal();
