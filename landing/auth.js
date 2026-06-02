@@ -386,54 +386,13 @@
   // Anonymous visitors keep seeing the static "Start studying" / "Notify me"
   // CTAs. The hardcoded 767/900 string is gone.
   function personalizeCertTilesForSignedIn(profile) {
-    var role = profile && profile.role || 'user';
-    var results = (profile && profile.metadata && profile.metadata.cert_results) || {};
-
-    // Apply per-cert state to a tile + CTA. Default ("active") is what every
-    // signed-in user sees with no exam result on file.
-    function applyTileState(certId, defaultStatus, defaultCta) {
-      var statusEl = document.getElementById('cert-tile-' + certId + '-status');
-      var ctaEl = document.getElementById('cert-tile-' + certId + '-cta');
-      var result = results[certId];
-      if (result && result.status === 'passed') {
-        if (statusEl) {
-          statusEl.className = 'cert-status status-passed';
-          statusEl.innerHTML = '<span class="status-dot"></span>Passed';
-        }
-        if (ctaEl) ctaEl.textContent = '✓ ' + result.score + '/' + result.max_score + ' · keep practicing →';
-      } else if (result && result.status === 'attempted') {
-        if (statusEl) {
-          statusEl.className = 'cert-status status-attempted';
-          statusEl.innerHTML = '<span class="status-dot"></span>Attempted';
-        }
-        if (ctaEl) ctaEl.textContent = result.score + '/' + result.max_score + ' · keep going →';
-      } else {
-        // Default: Active (signed-in but no result marked)
-        if (statusEl) {
-          statusEl.className = 'cert-status status-' + defaultStatus;
-          statusEl.innerHTML = '<span class="status-dot"></span>' + (defaultStatus === 'active' ? 'Active' : 'Live');
-        }
-        if (ctaEl) ctaEl.textContent = defaultCta;
-      }
-    }
-
-    // Network+ — every signed-in user sees it (everyone's entitled to N+ free)
-    applyTileState('netplus', 'active', 'Resume studying →');
-
-    // v7.1.0 Sec+ public launch: Sec+ tile visible to ALL signed-in users.
-    // Pro gating happens in-app on the secplus.certanvil.com subdomain, not
-    // at landing-tile visibility. Pro users see "Resume studying →"; Free
-    // users see the tile + upgrade prompt when they click in.
-    var secTile = document.getElementById('cert-tile-secplus');
-    if (secTile) secTile.removeAttribute('hidden');
-    applyTileState('secplus', 'active', 'Resume studying →');
-
-    // v7.3.0 AZ-900 public launch: Azure Fundamentals tile visible to ALL
-    // signed-in users. Pro gating happens in-app on the azure.certanvil.com
-    // subdomain, mirrors the Sec+ Pattern A founder lock.
-    var azTile = document.getElementById('cert-tile-az900');
-    if (azTile) azTile.removeAttribute('hidden');
-    applyTileState('az900', 'active', 'Resume studying →');
+    // The cert section is now the Blueprint Wall (landing/index.html · scoped
+    // IIFE). It exposes window.__cbApplyCertResults(results), keyed by cert id
+    // (netplus, secplus, az900, ai900, aplus-core1, aplus-core2, sc900, clfc02).
+    // Hand it this user's real results so their passed certs get the green
+    // PASSED stamp; anonymous users never call this, so they see no stamps.
+    var r = (profile && profile.metadata && profile.metadata.cert_results) || {};
+    if (window.__cbApplyCertResults) window.__cbApplyCertResults(r);
   }
 
   // ── My certs modal (v4.93.0 — data-driven) ─────────────────────────────

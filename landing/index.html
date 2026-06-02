@@ -498,29 +498,39 @@
   #hero-v2 .hv2-trust span:last-child::after{display:none}
   #hero-v2 .hv2-trust b{color:var(--ink-soft);font-weight:600}
 
-  #hero-v2 .hv2-anchor{position:relative;aspect-ratio:1/1;width:100%;max-width:540px;margin-left:auto}
-  #hero-v2 .hv2-wire{position:absolute;inset:0;width:100%;height:100%;overflow:visible;z-index:0}
-  #hero-v2 .hv2-wire path{fill:none;stroke:var(--accent);stroke-width:1.5;stroke-linecap:round;opacity:.34;stroke-dasharray:1;stroke-dashoffset:1}
-  #hero-v2 .hv2-tile{
-    position:absolute;
-    background:linear-gradient(180deg,var(--tile-top),var(--tile-bot));
-    border:1px solid var(--border);border-radius:22px;box-shadow:var(--shadow-tile);
-    display:grid;place-items:center;z-index:1;
+  /* right column · holds the Readiness Meridian instrument */
+  #hero-v2 .hv2-anchor{position:relative;width:100%;max-width:600px;margin-left:auto;display:flex;align-items:center;justify-content:center}
+
+  /* ===== Readiness Meridian · ported from hero-meridian.html, re-scoped
+     under #hero-v2. Reuses the hero's --accent/--surface/--muted/--border
+     tokens (light+dark) + --hv2-eo / --hv2-eio easings. ===== */
+  #hero-v2 .mer-instrument{
+    position:relative;width:100%;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
   }
-  #hero-v2 .hv2-tile svg{width:78%;height:78%;display:block}
-  #hero-v2 .hv2-t-score{width:50%;left:24%;top:30%;border-radius:26px;z-index:3}
-  #hero-v2 .hv2-t-score::after{
-    content:"Network+ N10-009 · passed";position:absolute;left:50%;bottom:-15px;
-    transform:translateX(-50%);white-space:nowrap;font-size:11px;font-weight:600;
-    letter-spacing:.05em;text-transform:uppercase;color:var(--on-accent);
-    background:var(--accent);padding:6px 12px;border-radius:999px;
-    box-shadow:0 10px 18px -10px color-mix(in oklab,var(--accent-deep) 55%,transparent);
+  #hero-v2 .mer-gauge-svg{width:100%;max-width:600px;aspect-ratio:680/440;overflow:visible;display:block}
+  #hero-v2 .mer-engraved{font-family:'Inter',system-ui,sans-serif;fill:var(--muted)}
+  #hero-v2 .mer-tick{stroke:var(--accent)}
+  #hero-v2 .mer-arc-base{fill:none;stroke:var(--accent);opacity:0.85}
+  #hero-v2 .mer-readout{position:absolute;left:50%;top:calc(50% + 10px);transform:translate(-50%,-50%);text-align:center;pointer-events:none}
+  #hero-v2 .mer-num{
+    font-family:'Fraunces',Georgia,serif;font-style:italic;font-weight:600;
+    font-size:clamp(40px,5.4vw,78px);line-height:0.9;color:var(--accent);
+    letter-spacing:-0.01em;font-variant-numeric:tabular-nums;
   }
-  #hero-v2 .hv2-t-gauge{width:33%;left:0;top:3%}
-  #hero-v2 .hv2-t-ai{width:30%;right:1%;top:8%;z-index:2}
-  #hero-v2 .hv2-t-pulse{width:31%;left:4%;bottom:5%}
-  #hero-v2 .hv2-t-streak{width:27%;right:3%;bottom:9%;z-index:2}
-  #hero-v2 .hv2-t-quiz{width:23%;right:20%;top:0;z-index:1}
+  [data-theme="dark"] #hero-v2 .mer-num{text-shadow:0 0 22px color-mix(in oklab, var(--accent-bright) 40%, transparent)}
+  #hero-v2 .mer-cap{margin-top:6px;font-size:11px;letter-spacing:0.1em;color:var(--muted);font-weight:500;text-transform:lowercase}
+  #hero-v2 .mer-verdict{margin-top:9px;font-size:11px;letter-spacing:0.22em;text-transform:uppercase;font-weight:600;color:var(--accent);transition:opacity 0.5s var(--hv2-eo)}
+  #hero-v2 .mer-replay{
+    margin-top:4px;display:inline-flex;align-items:center;gap:7px;
+    font-size:11.5px;font-weight:500;letter-spacing:0.04em;color:var(--muted);
+    background:transparent;border:none;cursor:pointer;padding:6px 10px;border-radius:8px;
+    transition:color 0.3s var(--hv2-eio), background 0.3s var(--hv2-eio);
+  }
+  #hero-v2 .mer-replay svg{width:13px;height:13px;transition:transform 0.6s var(--hv2-eo)}
+  #hero-v2 .mer-weakdot{transform-box:fill-box;transform-origin:center}
+  #hero-v2 .mer-weakdot.pulse{animation:hv2-merBreathe 2.6s var(--hv2-eio) infinite}
+  @keyframes hv2-merBreathe{0%,100%{opacity:0.55;transform:scale(1)}50%{opacity:1;transform:scale(1.35)}}
 
   /* entrance · scoped trigger class, not body[data-ready] */
   #hero-v2 .hv2-reveal{opacity:0;transform:translateY(14px);transition:opacity 560ms var(--hv2-eo),transform 560ms var(--hv2-eo)}
@@ -531,20 +541,6 @@
   #hero-v2.hv2-ready .hv2-reveal[data-d="4"]{transition-delay:270ms}
   #hero-v2.hv2-ready .hv2-reveal[data-d="5"]{transition-delay:340ms}
   #hero-v2.hv2-ready .hv2-reveal[data-d="6"]{transition-delay:410ms}
-  #hero-v2 .hv2-tile{opacity:0;transform:translateY(16px) scale(0.965);filter:blur(6px);transition:opacity 620ms var(--hv2-eo),transform 620ms var(--hv2-eo),filter 620ms var(--hv2-eo)}
-  #hero-v2.hv2-ready .hv2-tile{opacity:1;transform:none;filter:none}
-  #hero-v2.hv2-ready .hv2-t-score{transition-delay:240ms}
-  #hero-v2.hv2-ready .hv2-t-gauge{transition-delay:360ms}
-  #hero-v2.hv2-ready .hv2-t-ai{transition-delay:430ms}
-  #hero-v2.hv2-ready .hv2-t-pulse{transition-delay:500ms}
-  #hero-v2.hv2-ready .hv2-t-streak{transition-delay:560ms}
-  #hero-v2.hv2-ready .hv2-t-quiz{transition-delay:620ms}
-  #hero-v2.hv2-ready .hv2-wire path{stroke-dashoffset:0;transition:stroke-dashoffset 1100ms var(--hv2-eio) 220ms}
-  @keyframes hv2-drift{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
-  #hero-v2.hv2-ready .hv2-t-gauge{animation:hv2-drift 9.5s ease-in-out 1.4s infinite}
-  #hero-v2.hv2-ready .hv2-t-ai{animation:hv2-drift 10.5s ease-in-out 1.9s infinite}
-  #hero-v2.hv2-ready .hv2-t-streak{animation:hv2-drift 11s ease-in-out 2.3s infinite}
-  #hero-v2.hv2-ready .hv2-t-quiz{animation:hv2-drift 9s ease-in-out 2.7s infinite}
 
   @media (max-width:1000px){
     #hero-v2 .hv2-hero{grid-template-columns:1fr;gap:48px}
@@ -556,18 +552,17 @@
     #hero-v2 .hv2-proof{flex-wrap:wrap;gap:14px}
     #hero-v2 .hv2-proof-div{display:none}
     #hero-v2 .hv2-cta-primary{width:100%}
-    #hero-v2 .hv2-anchor{max-width:340px}
-    #hero-v2 .hv2-t-score::after{font-size:10px;padding:5px 10px}
+    #hero-v2 .hv2-anchor{max-width:360px}
   }
   @media (prefers-reduced-motion:reduce){
-    #hero-v2 .hv2-reveal,#hero-v2 .hv2-tile{transition:opacity 260ms ease !important;transform:none !important;filter:none !important}
-    #hero-v2.hv2-ready .hv2-reveal,#hero-v2.hv2-ready .hv2-tile{transform:none !important}
-    #hero-v2.hv2-ready .hv2-t-gauge,#hero-v2.hv2-ready .hv2-t-ai,#hero-v2.hv2-ready .hv2-t-streak,#hero-v2.hv2-ready .hv2-t-quiz{animation:none !important}
-    #hero-v2 .hv2-wire path{stroke-dashoffset:0 !important;transition:none !important}
+    #hero-v2 .hv2-reveal{transition:opacity 260ms ease !important;transform:none !important;filter:none !important}
+    #hero-v2.hv2-ready .hv2-reveal{transform:none !important}
+    #hero-v2 .mer-weakdot.pulse{animation:none !important}
     #hero-v2 .hv2-cta-primary::before{transition:none}
   }
   @media (hover:hover) and (pointer:fine){
-    #hero-v2 .hv2-tile{transition:opacity 620ms var(--hv2-eo),transform 620ms var(--hv2-eo),filter 620ms var(--hv2-eo),box-shadow 260ms ease}
+    #hero-v2 .mer-replay:hover{color:var(--accent);background:color-mix(in oklab, var(--accent) 8%, transparent)}
+    #hero-v2 .mer-replay:hover svg{transform:rotate(-180deg)}
   }
 </style>
 
@@ -693,28 +688,375 @@
       </div>
     </div>
 
-    <div class="hv2-anchor" aria-hidden="true">
-      <svg class="hv2-wire" viewBox="0 0 540 540" fill="none" preserveAspectRatio="none">
-        <path d="M95 95 C 160 170, 210 200, 270 235" pathLength="1"/>
-        <path d="M450 110 C 380 175, 340 205, 300 240" pathLength="1"/>
-        <path d="M110 430 C 175 360, 215 320, 262 280" pathLength="1"/>
-        <path d="M440 420 C 385 355, 345 320, 305 282" pathLength="1"/>
-      </svg>
-      <div class="hv2-tile hv2-t-quiz"><svg class="hv2-ic" viewBox="0 0 256 256"><use href="#hv2-ic-quiz"/></svg></div>
-      <div class="hv2-tile hv2-t-gauge"><svg class="hv2-ic" viewBox="0 0 256 256"><use href="#hv2-ic-gauge"/></svg></div>
-      <div class="hv2-tile hv2-t-ai"><svg class="hv2-ic" viewBox="0 0 256 256"><use href="#hv2-ic-ai"/></svg></div>
-      <div class="hv2-tile hv2-t-pulse"><svg class="hv2-ic" viewBox="0 0 256 256"><use href="#hv2-ic-pulse"/></svg></div>
-      <div class="hv2-tile hv2-t-streak"><svg class="hv2-ic" viewBox="0 0 256 256"><use href="#hv2-ic-streak"/></svg></div>
-      <div class="hv2-tile hv2-t-score"><svg class="hv2-ic" viewBox="0 0 256 256"><use href="#hv2-ic-score"/></svg></div>
+    <div class="hv2-anchor" id="hv2-mer" aria-hidden="true">
+      <!-- Readiness Meridian · ported from mockups/hero-concepts/hero-meridian.html.
+           Scoped under #hero-v2 .mer-* · reuses the hero's brand tokens
+           (--accent / --surface / --muted / --border) + easings. The IIFE
+           below builds + animates it; reduced-motion paints the final state. -->
+      <div class="mer-instrument">
+        <svg class="mer-gauge-svg" viewBox="0 0 680 440" id="mer-gauge" aria-label="Readiness meridian gauge">
+          <defs>
+            <radialGradient id="merGlowSeg" cx="50%" cy="100%" r="80%">
+              <stop offset="0%" stop-color="var(--accent-bright)" stop-opacity="0.55"/>
+              <stop offset="100%" stop-color="var(--accent)" stop-opacity="0.05"/>
+            </radialGradient>
+            <linearGradient id="merNeedleGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="var(--accent-bright)"/>
+              <stop offset="100%" stop-color="var(--accent-deep)"/>
+            </linearGradient>
+            <filter id="merSegGlow" x="-40%" y="-40%" width="180%" height="180%">
+              <feGaussianBlur stdDeviation="3.2" result="b"/>
+              <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+            </filter>
+          </defs>
+          <g id="mer-segGroup"></g>
+          <g id="mer-tickGroup"></g>
+          <path id="mer-mainArc" class="mer-arc-base" stroke-width="1.6"/>
+          <g id="mer-labelGroup"></g>
+          <g id="mer-benchGroup"></g>
+          <g id="mer-needleGroup"></g>
+        </svg>
+
+        <div class="mer-readout">
+          <div class="mer-num" id="mer-readNum">0%</div>
+          <div class="mer-cap">ready · blueprint-weighted</div>
+          <div class="mer-verdict" id="mer-verdict">Calibrating…</div>
+        </div>
+
+        <button class="mer-replay" id="mer-replay" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/>
+          </svg>
+          replay
+        </button>
+      </div>
     </div>
   </div>
 
   <script>
-    /* scoped entrance trigger · touches only #hero-v2, never body/global */
+    /* scoped entrance trigger · touches only #hero-v2, never body/global.
+       Drives the LEFT copy reveal (.hv2-reveal). */
     (function(){
       var h=document.getElementById('hero-v2');
       if(!h)return;
       requestAnimationFrame(function(){requestAnimationFrame(function(){h.classList.add('hv2-ready');});});
+    })();
+
+    /* Readiness Meridian · ported from hero-meridian.html (scoped IIFE).
+       Builds the arc, fills 5 domain segments, settles the needle, counts
+       "78%" up, pulses the weak spot, flips the verdict; replay control +
+       reduced-motion final-state. Themes via the #hero-v2 brand tokens. */
+    (function(){
+      "use strict";
+      const root = document.getElementById("hv2-mer");
+      if(!root) return;
+      const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+      /* ---------- gauge geometry ---------- */
+      const CX = 340, CY = 360;
+      const R  = 270;
+      const START = 200, END = 340;
+      const SPAN = END - START;
+
+      function rad(d){ return d * Math.PI/180; }
+      function ptAt(frac, r){
+        const a = rad(START + SPAN*frac);
+        return { x: CX + r*Math.cos(a), y: CY + r*Math.sin(a) };
+      }
+      function arcPath(r, f0, f1){
+        const p0 = ptAt(f0, r), p1 = ptAt(f1, r);
+        const large = (SPAN*(f1-f0)) > 180 ? 1 : 0;
+        return `M ${p0.x.toFixed(2)} ${p0.y.toFixed(2)} A ${r} ${r} 0 ${large} 1 ${p1.x.toFixed(2)} ${p1.y.toFixed(2)}`;
+      }
+
+      const NS = "http://www.w3.org/2000/svg";
+      const q = id => root.querySelector("#" + id);
+      const mainArc   = q("mer-mainArc");
+      const tickGroup = q("mer-tickGroup");
+      const segGroup  = q("mer-segGroup");
+      const labelGrp  = q("mer-labelGroup");
+      const benchGrp  = q("mer-benchGroup");
+      const needleGrp = q("mer-needleGroup");
+      const readNum   = q("mer-readNum");
+      const verdict   = q("mer-verdict");
+      if(!mainArc) return;
+
+      /* ---------- domains (uneven, honest mastery) ---------- */
+      const domains = [
+        { name:"Networking\nConcepts",      val:0.88, weak:false },
+        { name:"Network\nImplementation",   val:0.81, weak:false },
+        { name:"Network\nOperations",       val:0.70, weak:false },
+        { name:"Network\nSecurity",         val:0.46, weak:true  },
+        { name:"Trouble-\nshooting",        val:0.74, weak:false }
+      ];
+      const AGG = 78;
+      const segR = R - 30;
+      const gap = 0.012;
+
+      /* ---------- build main arc ---------- */
+      mainArc.setAttribute("d", arcPath(R, 0, 1));
+      const arcLen = mainArc.getTotalLength();
+      mainArc.style.strokeDasharray = arcLen;
+      mainArc.style.strokeDashoffset = reduce ? 0 : arcLen;
+
+      /* ---------- ticks ---------- */
+      const TICKS = 57;
+      for(let i=0;i<TICKS;i++){
+        const f = i/(TICKS-1);
+        const major = (i % 7 === 0);
+        const tlen = major ? 15 : 7;
+        const o = ptAt(f, R - 2);
+        const inr = ptAt(f, R - 2 - tlen);
+        const t = document.createElementNS(NS,"line");
+        t.setAttribute("x1", o.x.toFixed(2)); t.setAttribute("y1", o.y.toFixed(2));
+        t.setAttribute("x2", inr.x.toFixed(2)); t.setAttribute("y2", inr.y.toFixed(2));
+        t.setAttribute("class","mer-tick");
+        t.setAttribute("stroke-width", major ? 1.5 : 1);
+        t.setAttribute("opacity", major ? 0.8 : 0.42);
+        tickGroup.appendChild(t);
+
+        if(major){
+          const lab = document.createElementNS(NS,"text");
+          const lp = ptAt(f, R + 16);
+          lab.setAttribute("x", lp.x.toFixed(2)); lab.setAttribute("y", lp.y.toFixed(2));
+          lab.setAttribute("text-anchor","middle");
+          lab.setAttribute("dominant-baseline","middle");
+          lab.setAttribute("class","mer-engraved");
+          lab.setAttribute("font-size","10.5");
+          lab.setAttribute("opacity","0.6");
+          lab.setAttribute("letter-spacing","0.04em");
+          lab.textContent = Math.round(f*100);
+          tickGroup.appendChild(lab);
+        }
+      }
+
+      /* ---------- benchmark notch "767 cleared" ---------- */
+      (function(){
+        const f = 767/900;
+        const o = ptAt(f, R - 2);
+        const inr = ptAt(f, R - 24);
+        const ln = document.createElementNS(NS,"line");
+        ln.setAttribute("x1",o.x.toFixed(2)); ln.setAttribute("y1",o.y.toFixed(2));
+        ln.setAttribute("x2",inr.x.toFixed(2)); ln.setAttribute("y2",inr.y.toFixed(2));
+        ln.setAttribute("stroke","var(--accent)");
+        ln.setAttribute("stroke-width","2.2");
+        ln.setAttribute("opacity","0.9");
+        benchGrp.appendChild(ln);
+
+        const dot = document.createElementNS(NS,"circle");
+        dot.setAttribute("cx",o.x.toFixed(2)); dot.setAttribute("cy",o.y.toFixed(2));
+        dot.setAttribute("r","2.6"); dot.setAttribute("fill","var(--accent)");
+        benchGrp.appendChild(dot);
+
+        const lp = ptAt(f, R + 40);
+        const tx = document.createElementNS(NS,"text");
+        tx.setAttribute("x", lp.x.toFixed(2)); tx.setAttribute("y", lp.y.toFixed(2));
+        tx.setAttribute("text-anchor","middle");
+        tx.setAttribute("class","mer-engraved");
+        tx.setAttribute("font-size","10");
+        tx.setAttribute("font-weight","600");
+        tx.setAttribute("fill","var(--accent)");
+        tx.setAttribute("letter-spacing","0.08em");
+        tx.textContent = "767 CLEARED";
+        benchGrp.appendChild(tx);
+      })();
+
+      /* ---------- domain segments ---------- */
+      const segObjs = [];
+      const segWidth = (1 - gap*(domains.length+1)) / domains.length;
+      domains.forEach((d, i)=>{
+        const f0 = gap + i*(segWidth+gap);
+        const f1 = f0 + segWidth;
+        const mid = (f0+f1)/2;
+
+        const track = document.createElementNS(NS,"path");
+        track.setAttribute("d", arcPath(segR, f0, f1));
+        track.setAttribute("fill","none");
+        track.setAttribute("stroke","var(--border)");
+        track.setAttribute("stroke-width","8");
+        track.setAttribute("stroke-linecap","round");
+        track.setAttribute("opacity","0.55");
+        segGroup.appendChild(track);
+
+        const fill = document.createElementNS(NS,"path");
+        fill.setAttribute("d", arcPath(segR, f0, f1));
+        fill.setAttribute("fill","none");
+        fill.setAttribute("stroke", "var(--accent)");
+        fill.setAttribute("stroke-width","8");
+        fill.setAttribute("stroke-linecap","round");
+        fill.setAttribute("filter","url(#merSegGlow)");
+        fill.setAttribute("opacity", d.weak ? "0.92" : "1");
+        segGroup.appendChild(fill);
+
+        const segL = fill.getTotalLength();
+        fill.style.strokeDasharray = segL;
+        fill.style.strokeDashoffset = reduce ? (segL*(1-d.val)) : segL;
+        segObjs.push({ fill, segL, val:d.val });
+
+        const lp = ptAt(mid, segR - 26);
+        const lines = d.name.split("\n");
+        const lab = document.createElementNS(NS,"text");
+        lab.setAttribute("x", lp.x.toFixed(2)); lab.setAttribute("y", lp.y.toFixed(2));
+        lab.setAttribute("text-anchor","middle");
+        lab.setAttribute("class","mer-engraved");
+        lab.setAttribute("font-size","9.5");
+        lab.setAttribute("font-weight","500");
+        lab.setAttribute("opacity","0.78");
+        lab.setAttribute("letter-spacing","0.02em");
+        lines.forEach((ln,li)=>{
+          const ts = document.createElementNS(NS,"tspan");
+          ts.setAttribute("x", lp.x.toFixed(2));
+          ts.setAttribute("dy", li===0 ? "0" : "11");
+          ts.textContent = ln;
+          lab.appendChild(ts);
+        });
+        labelGrp.appendChild(lab);
+
+        if(d.weak){
+          const dp = ptAt(mid, segR + 16);
+          const wd = document.createElementNS(NS,"circle");
+          wd.setAttribute("cx", dp.x.toFixed(2)); wd.setAttribute("cy", dp.y.toFixed(2));
+          wd.setAttribute("r","4");
+          wd.setAttribute("fill","var(--accent-bright)");
+          wd.setAttribute("class","mer-weakdot");
+          wd.setAttribute("id","mer-weakdot");
+          segGroup.appendChild(wd);
+
+          const wl = ptAt(mid, segR + 44);
+          const wt = document.createElementNS(NS,"text");
+          wt.setAttribute("x", wl.x.toFixed(2)); wt.setAttribute("y", wl.y.toFixed(2));
+          wt.setAttribute("text-anchor","middle");
+          wt.setAttribute("class","mer-engraved");
+          wt.setAttribute("font-size","9");
+          wt.setAttribute("font-weight","600");
+          wt.setAttribute("fill","var(--accent)");
+          wt.setAttribute("letter-spacing","0.06em");
+          wt.textContent = "weak spot → routed next";
+          segGroup.appendChild(wt);
+        }
+      });
+
+      /* ---------- needle ---------- */
+      const needle = document.createElementNS(NS,"g");
+      const nLine = document.createElementNS(NS,"line");
+      nLine.setAttribute("x1", CX); nLine.setAttribute("y1", CY);
+      const nTip = ptAt(0, R - 46);
+      nLine.setAttribute("x2", nTip.x.toFixed(2)); nLine.setAttribute("y2", nTip.y.toFixed(2));
+      nLine.setAttribute("stroke","url(#merNeedleGrad)");
+      nLine.setAttribute("stroke-width","3");
+      nLine.setAttribute("stroke-linecap","round");
+      needle.appendChild(nLine);
+
+      const hub = document.createElementNS(NS,"circle");
+      hub.setAttribute("cx", CX); hub.setAttribute("cy", CY);
+      hub.setAttribute("r","9");
+      hub.setAttribute("fill","var(--surface)");
+      hub.setAttribute("stroke","var(--accent)");
+      hub.setAttribute("stroke-width","2");
+      const hubDot = document.createElementNS(NS,"circle");
+      hubDot.setAttribute("cx", CX); hubDot.setAttribute("cy", CY);
+      hubDot.setAttribute("r","3"); hubDot.setAttribute("fill","var(--accent)");
+      needleGrp.appendChild(needle);
+      needleGrp.appendChild(hub);
+      needleGrp.appendChild(hubDot);
+
+      function setNeedle(frac){
+        const tip = ptAt(frac, R - 46);
+        nLine.setAttribute("x2", tip.x.toFixed(2));
+        nLine.setAttribute("y2", tip.y.toFixed(2));
+      }
+
+      /* ---------- easing / spring helpers ---------- */
+      function springEase(t){
+        if(t>=1) return 1;
+        const decay = Math.exp(-6.5*t);
+        return 1 - decay*Math.cos(7.2*t);
+      }
+
+      let rafs = [];
+      let timers = [];
+      function clearRafs(){ rafs.forEach(id=>cancelAnimationFrame(id)); rafs=[]; timers.forEach(id=>clearTimeout(id)); timers=[]; }
+
+      function animate(dur, fn, ease, onDone){
+        const t0 = performance.now();
+        function frame(now){
+          let p = Math.min(1,(now-t0)/dur);
+          fn(ease?ease(p):p, p);
+          if(p<1){ rafs.push(requestAnimationFrame(frame)); }
+          else if(onDone) onDone();
+        }
+        rafs.push(requestAnimationFrame(frame));
+      }
+
+      /* ---------- the signature sequence ---------- */
+      const weakdot = ()=> root.querySelector("#mer-weakdot");
+
+      function runFinalState(){
+        mainArc.style.strokeDashoffset = 0;
+        segObjs.forEach(s=> s.fill.style.strokeDashoffset = s.segL*(1-s.val));
+        setNeedle(AGG/100);
+        readNum.textContent = AGG + "%";
+        verdict.textContent = "ready";
+        verdict.style.opacity = 1;
+        const wd = weakdot(); if(wd) wd.classList.add("pulse");
+      }
+
+      function play(){
+        clearRafs();
+        if(reduce){ runFinalState(); return; }
+
+        mainArc.style.strokeDashoffset = arcLen;
+        segObjs.forEach(s=> s.fill.style.strokeDashoffset = s.segL);
+        setNeedle(0);
+        readNum.textContent = "0%";
+        verdict.textContent = "Calibrating…";
+        verdict.style.opacity = 0.7;
+        const wd0 = weakdot(); if(wd0) wd0.classList.remove("pulse");
+
+        animate(620, (e)=>{ mainArc.style.strokeDashoffset = arcLen*(1-e); }, t=>t<1?1-Math.pow(1-t,3):1);
+
+        segObjs.forEach((s, i)=>{
+          const delay = 360 + i*60;
+          timers.push(setTimeout(()=>{
+            animate(720, (e)=>{
+              let v = s.val * e;
+              if(v > s.val) v = s.val + (v-s.val)*0.5;
+              v = Math.min(v, 1);
+              s.fill.style.strokeDashoffset = s.segL*(1 - v);
+            }, springEase);
+          }, delay));
+        });
+
+        const needleDelay = 760;
+        timers.push(setTimeout(()=>{
+          animate(1100, (e)=>{
+            let frac = (AGG/100) * e;
+            setNeedle(frac);
+            let n = AGG * e;
+            if(n > AGG) n = AGG + Math.min(n-AGG, 2);
+            readNum.textContent = Math.round(n) + "%";
+          }, springEase, ()=>{
+            setNeedle(AGG/100);
+            readNum.textContent = AGG + "%";
+          });
+        }, needleDelay));
+
+        timers.push(setTimeout(()=>{ const wd=weakdot(); if(wd) wd.classList.add("pulse"); }, 1900));
+
+        timers.push(setTimeout(()=>{
+          verdict.style.opacity = 0;
+          timers.push(setTimeout(()=>{ verdict.textContent = "ready"; verdict.style.opacity = 1; }, 280));
+        }, 2000));
+      }
+
+      const replayBtn = q("mer-replay");
+      if(replayBtn) replayBtn.addEventListener("click", play);
+
+      if(reduce){ runFinalState(); }
+      else {
+        if(document.readyState === "complete") requestAnimationFrame(play);
+        else window.addEventListener("load", ()=> requestAnimationFrame(play));
+      }
     })();
   </script>
 </section>
@@ -1049,6 +1391,8 @@
     --on-accent:oklch(0.985 0.010 85);
     --shadow-soft:0 1px 0 rgba(255,255,255,.55),0 18px 38px -18px oklch(0.22 0.015 280 / .20);
     --shadow-card:0 2px 4px oklch(0.22 0.015 280 / .05),0 30px 60px -24px oklch(0.22 0.015 280 / .28);
+    --shadow-plate:0 1px 0 rgba(255,255,255,.5),0 20px 44px -26px oklch(0.22 0.015 280 / .26);
+    --pass:#16a34a;
     --eo:cubic-bezier(0.23,1,0.32,1);
     --eio:cubic-bezier(0.77,0,0.175,1);
     position:relative;display:block;background:var(--bg);color:var(--ink);
@@ -1065,6 +1409,8 @@
     --accent-deep:oklch(0.70 0.150 62);--on-accent:oklch(0.18 0.020 275);
     --shadow-soft:0 1px 0 rgba(255,255,255,.04),0 20px 40px -18px rgba(0,0,0,.55);
     --shadow-card:0 2px 4px rgba(0,0,0,.3),0 32px 60px -24px rgba(0,0,0,.62);
+    --shadow-plate:0 1px 0 rgba(255,255,255,.04),0 24px 50px -26px rgba(0,0,0,.6);
+    --pass:#22c55e;
   }
   #certs *{box-sizing:border-box}
   #certs a{color:inherit;text-decoration:none}
@@ -1090,66 +1436,121 @@
   #certs .cl-title{font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:clamp(30px,3.6vw,50px);line-height:1.05;letter-spacing:-.02em;color:var(--ink);margin-bottom:14px}
   #certs .cl-title .cl-em{font-style:italic;color:var(--accent)}
   #certs .cl-sub{font-size:clamp(15px,1.15vw,17.5px);line-height:1.6;color:var(--ink-soft);max-width:48ch}
-  #certs .cl-grid{display:grid;grid-template-columns:1.05fr 0.95fr;gap:clamp(24px,3vw,40px);align-items:start}
-  #certs .cert-tile.is-live,#certs .cert-tile.is-private{display:flex;flex-direction:column;background:linear-gradient(180deg,var(--surface),var(--surface-2));border:1px solid var(--border);border-radius:24px;box-shadow:var(--shadow-card);padding:clamp(26px,3vw,40px);height:100%;transition:transform 200ms var(--eo),box-shadow 200ms ease}
-  @media (hover:hover){#certs .cert-tile.is-live:hover{transform:translateY(-3px)}}
-  #certs .cert-tile.is-live .cert-tile-top,#certs .cert-tile.is-private .cert-tile-top{display:flex;flex-direction:row;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:22px}
-  #certs .cert-tile.is-live .cert-glyph,#certs .cert-tile.is-private .cert-glyph{width:84px;height:84px;flex:none;background-color:#FFFBF3;border:1px solid var(--border);border-radius:20px;box-shadow:var(--shadow-soft);display:grid;place-items:center;font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:34px;line-height:1;letter-spacing:-.02em;color:oklch(0.24 0.018 280)}
-  #certs .cert-tile.is-live .cert-glyph-clfc02{font-size:27px;letter-spacing:-.03em}
-  #certs .cert-glyph .cg-ac{color:var(--accent)}
-  #certs .cert-glyph .cg-sup{font-size:15px;vertical-align:super;color:var(--accent);font-weight:700;margin-left:1px}
-  #certs .cert-status{display:inline-flex;align-items:center;gap:7px;font-size:11.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;padding:7px 13px;border-radius:999px}
-  #certs .cert-status.status-live{color:var(--accent);background:color-mix(in oklab,var(--accent) 11%,transparent);border:1px solid color-mix(in oklab,var(--accent) 35%,transparent)}
-  #certs .cert-status.status-private{color:var(--muted);background:color-mix(in oklab,var(--muted) 12%,transparent);border:1px solid var(--border)}
-  #certs .cert-status .status-dot{width:7px;height:7px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 3px color-mix(in oklab,var(--accent) 22%,transparent)}
-  #certs .cert-tile.is-live .cert-name,#certs .cert-tile.is-private .cert-name{font-family:'Fraunces',Georgia,serif;font-size:clamp(26px,2.6vw,36px);font-weight:600;letter-spacing:-.02em;color:var(--ink);margin-bottom:8px}
-  #certs .cert-tile.is-live .cert-code,#certs .cert-tile.is-private .cert-code{font-size:13px;font-weight:600;letter-spacing:.02em;color:var(--muted);font-variant-numeric:tabular-nums;margin-bottom:18px}
-  #certs .cert-tile.is-live .cert-desc,#certs .cert-tile.is-private .cert-desc{font-size:15px;line-height:1.62;color:var(--ink-soft);margin-bottom:26px}
-  #certs .cert-tile.is-live .cert-foot,#certs .cert-tile.is-private .cert-foot{margin-top:auto;display:flex;flex-direction:row;align-items:center;justify-content:space-between;gap:16px;padding-top:20px;border-top:1px solid var(--border)}
-  #certs .cert-tile.is-live .cert-progress,#certs .cert-tile.is-private .cert-progress{font-size:13px;font-weight:500;color:var(--muted)}
-  #certs .cert-tile.is-live .cert-cta,#certs .cert-tile.is-private .cert-cta{display:inline-flex;align-items:center;gap:9px;font-size:15px;font-weight:600;color:var(--on-accent);background:var(--accent);padding:13px 22px;border-radius:12px;box-shadow:0 1px 0 rgba(255,255,255,.16) inset,0 12px 22px -12px color-mix(in oklab,var(--accent-deep) 58%,transparent);transition:transform 150ms var(--eo),background 180ms ease}
-  @media (hover:hover){#certs .cert-tile.is-live:hover .cert-cta{background:var(--accent-deep)}}
-  #certs .cert-tile.is-live .cert-cta:active,#certs .cert-tile.is-private .cert-cta:active{transform:scale(0.97)}
-  #certs .cl-roster{display:flex;flex-direction:column;border:1px solid var(--border);border-radius:20px;background:linear-gradient(180deg,var(--surface),var(--surface-2));overflow:hidden}
-  #certs .cl-roster-h{font-size:11.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);padding:18px 22px 14px;border-bottom:1px solid var(--border)}
-  #certs .cert-tile.is-soon{display:flex;flex-direction:row;align-items:center;gap:16px;padding:16px 22px;border-bottom:1px solid var(--border);transition:background 160ms ease}
-  #certs .cert-tile.is-soon:last-child{border-bottom:0}
-  @media (hover:hover){#certs .cert-tile.is-soon:hover{background:color-mix(in oklab,var(--accent) 4%,transparent)}}
-  #certs .cert-tile.is-soon .cert-tile-top{flex:none}
-  #certs .cert-tile.is-soon .cert-glyph{width:46px;height:46px;background-color:#FFFBF3;border:1px solid var(--border);border-radius:13px;display:grid;place-items:center;font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:19px;line-height:1;letter-spacing:-.02em;color:oklch(0.24 0.018 280)}
-  #certs .cert-tile.is-soon .cert-status{display:none}
-  #certs .cl-soon-body{flex:1;min-width:0}
-  #certs .cert-tile.is-soon .cert-name{font-size:15.5px;font-weight:650;color:var(--ink);margin-bottom:2px}
-  #certs .cert-tile.is-soon .cert-code{font-size:12.5px;color:var(--muted);font-variant-numeric:tabular-nums}
-  #certs .cert-tile.is-soon .cert-desc{display:none}
-  #certs .cert-tile.is-soon .cert-foot{display:flex;flex-direction:row;align-items:center;gap:18px;flex:none}
-  #certs .cert-tile.is-soon .cert-progress{font-size:12px;font-weight:500;color:var(--muted);white-space:nowrap}
-  #certs .cert-tile.is-soon .cert-cta-notify{font:inherit;font-size:13px;font-weight:600;color:var(--ink-soft);background:none;border:1px solid var(--border);border-radius:9px;padding:8px 14px;cursor:pointer;white-space:nowrap;transition:color 150ms ease,border-color 150ms ease,transform 150ms var(--eo)}
-  @media (hover:hover){#certs .cert-tile.is-soon .cert-cta-notify:hover{color:var(--accent);border-color:color-mix(in oklab,var(--accent) 45%,var(--border))}}
-  #certs .cert-tile.is-soon .cert-cta-notify:active{transform:scale(0.97)}
+  /* header entrance · .cl-r reveal driven by #certs.cl-in (eyebrow/title/lede/toolbar) */
   #certs .cl-r{opacity:0;transform:translateY(16px);transition:opacity 600ms var(--eo),transform 600ms var(--eo)}
   #certs.cl-in .cl-r{opacity:1;transform:none}
   #certs.cl-in .cl-r[data-d="1"]{transition-delay:40ms}
   #certs.cl-in .cl-r[data-d="2"]{transition-delay:110ms}
-  #certs .cert-tile.is-live,#certs .cl-roster{opacity:0;transform:translateY(20px) scale(0.985);transition:opacity 680ms var(--eo) 140ms,transform 680ms var(--eo) 140ms}
-  #certs.cl-in .cert-tile.is-live,#certs.cl-in .cl-roster{opacity:1;transform:none}
-  #certs .cert-tile.is-soon{opacity:0;transform:translateX(10px);transition:opacity 460ms var(--eo),transform 460ms var(--eo)}
-  #certs.cl-in .cert-tile.is-soon{opacity:1;transform:none}
-  #certs.cl-in .cert-tile.is-soon:nth-child(2){transition-delay:260ms}
-  #certs.cl-in .cert-tile.is-soon:nth-child(3){transition-delay:320ms}
-  #certs.cl-in .cert-tile.is-soon:nth-child(4){transition-delay:380ms}
-  #certs.cl-in .cert-tile.is-soon:nth-child(5){transition-delay:440ms}
-  #certs.cl-in .cert-tile.is-soon:nth-child(6){transition-delay:500ms}
-  @media (max-width:940px){#certs .cl-grid{grid-template-columns:1fr;gap:28px}}
-  @media (max-width:560px){
-    #certs .cl-title{font-size:clamp(26px,8vw,34px)}
-    #certs .cert-tile.is-soon{flex-wrap:wrap;gap:12px}
-    #certs .cert-tile.is-soon .cert-foot{width:100%;justify-content:space-between;padding-left:62px}
+
+  /* ── replay toolbar ── */
+  #certs .toolbar{margin:26px 0 0;display:flex;align-items:center;gap:18px;flex-wrap:wrap}
+  #certs .cl-replay{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;font-weight:600;color:var(--muted);background:none;border:1px solid var(--border);border-radius:999px;padding:8px 14px;cursor:pointer;transition:color 180ms var(--eo),border-color 180ms var(--eo),transform 140ms var(--eo)}
+  @media (hover:hover){#certs .cl-replay:hover{color:var(--accent);border-color:color-mix(in oklab,var(--accent) 40%,var(--border))}}
+  #certs .cl-replay:active{transform:scale(0.96)}
+
+  /* ===== Blueprint Wall · ported from cert-picker-blueprint.html,
+     re-scoped under #certs. Reuses the section's brand tokens + --pass
+     green for the PASSED stamp. ===== */
+  /* grid holds 8 plates: 4 cols → 3 → 2 → 1 */
+  #certs .wall{margin:34px 0 0;display:grid;grid-template-columns:repeat(4,1fr);gap:clamp(16px,1.8vw,22px)}
+  @media (max-width:1180px){#certs .wall{grid-template-columns:repeat(3,1fr)}}
+  @media (max-width:880px){#certs .wall{grid-template-columns:repeat(2,1fr)}}
+  @media (max-width:560px){#certs .wall{grid-template-columns:1fr}}
+
+  /* "on the anvil" divider + subheader */
+  #certs .anvil-head{margin:clamp(48px,6vw,80px) 0 0;display:flex;align-items:baseline;gap:16px;flex-wrap:wrap}
+  #certs .anvil-head::before{content:"";flex:0 0 28px;height:1px;background:linear-gradient(90deg,var(--border),transparent);align-self:center}
+  #certs .anvil-eyebrow{font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:clamp(20px,2.4vw,26px);letter-spacing:-.01em;color:var(--ink)}
+  #certs .anvil-cap{font-size:13px;color:var(--muted);line-height:1.5}
+  #certs .wall-soon{margin:22px 0 0;display:grid;grid-template-columns:repeat(4,1fr);gap:clamp(16px,1.8vw,22px)}
+  @media (max-width:1180px){#certs .wall-soon{grid-template-columns:repeat(3,1fr)}}
+  @media (max-width:880px){#certs .wall-soon{grid-template-columns:repeat(2,1fr)}}
+  @media (max-width:560px){#certs .wall-soon{grid-template-columns:1fr}}
+
+  #certs .plate{display:block;text-decoration:none;color:inherit;position:relative;background:linear-gradient(180deg,var(--surface),var(--surface-2));border:1px solid var(--border);border-radius:18px;padding:8px;box-shadow:var(--shadow-plate);transition:transform 240ms var(--eo),box-shadow 240ms var(--eo),border-color 240ms var(--eo)}
+  /* button-plate reset (coming-soon) */
+  #certs button.plate{width:100%;text-align:left;font:inherit;cursor:pointer;-webkit-appearance:none;appearance:none}
+  #certs .pl-go{fill:var(--accent);font:600 8.4px Inter,sans-serif;letter-spacing:.01em;opacity:0;transform:translateX(-4px);transform-box:fill-box;transition:opacity 200ms var(--eo),transform 200ms var(--eo)}
+  @media (hover:hover) and (pointer:fine){#certs .plate:hover .pl-go{opacity:1;transform:none}#certs .plate.drawn:hover .pl-sub{opacity:0;transition:opacity 160ms var(--eo)}}
+  @media (hover:hover) and (pointer:fine){#certs .plate:hover{transform:translateY(-4px);border-color:color-mix(in oklab,var(--accent) 38%,var(--border));box-shadow:0 1px 0 rgba(255,255,255,.05),0 30px 56px -28px rgba(0,0,0,.4)}}
+  #certs .plate:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+  #certs .plate svg{display:block;width:100%;height:auto}
+
+  /* blueprint draftsman strokes */
+  #certs .pl-frame{fill:none;stroke:var(--border-soft);stroke-width:1}
+  #certs .pl-tick{stroke:var(--accent);stroke-width:1.2;opacity:.6}
+  #certs .pl-divider{stroke:var(--border);stroke-width:1}
+  #certs .pl-title{fill:var(--muted);font:600 7.5px Inter,sans-serif;letter-spacing:.18em}
+  #certs .pl-vendor{fill:var(--accent);font:700 7.5px Inter,sans-serif;letter-spacing:.1em}
+  #certs .pl-seal{fill:var(--surface-2);stroke:var(--accent);stroke-width:1.3}
+  [data-theme="dark"] #certs .pl-seal{fill:color-mix(in oklab,var(--accent) 8%,var(--surface-2))}
+  #certs .pl-mark{font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:30px;letter-spacing:-.02em}
+  #certs .pl-mark .m{fill:var(--ink)}
+  #certs .pl-mark .a{fill:var(--accent)}
+  #certs .pl-mark .s{fill:var(--accent);font-size:16px;font-weight:700}
+  #certs .pl-code{fill:var(--muted);font:600 8px Inter,sans-serif;letter-spacing:.06em}
+  #certs .pl-branch{fill:none;stroke:var(--accent);stroke-width:1.1;opacity:.7}
+  #certs .pl-node{fill:var(--accent)}
+  #certs .pl-dom{fill:var(--ink-soft);font:500 8.6px Inter,sans-serif}
+  #certs .pl-bar{fill:var(--accent);opacity:.32;rx:.8}
+  #certs .pl-wt{fill:var(--accent);font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:10.5px;font-variant-numeric:tabular-nums}
+  #certs .pl-name{fill:var(--ink);font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:15px;letter-spacing:-.01em}
+  #certs .pl-sub{fill:var(--muted);font:500 8.4px Inter,sans-serif;letter-spacing:.03em}
+  #certs .pl-scale{fill:var(--muted);font:600 6.6px Inter,sans-serif;letter-spacing:.14em}
+
+  /* ── coming-soon "un-forged" treatment ── */
+  #certs .plate.soon{border-color:var(--border-soft)}
+  @media (hover:hover) and (pointer:fine){
+    #certs .plate.soon:hover{transform:translateY(-2px);border-color:var(--border);box-shadow:var(--shadow-plate)}
+    #certs .plate.soon:hover .pl-go{opacity:1;transform:none}
+    #certs .plate.soon.drawn:hover .pl-sub{opacity:0}
   }
+  #certs .plate.soon .pl-seal{fill:none;stroke:var(--muted);stroke-width:1.1;stroke-dasharray:4 3;opacity:.7}
+  [data-theme="dark"] #certs .plate.soon .pl-seal{fill:none}
+  #certs .plate.soon .pl-mark .m,#certs .plate.soon .pl-mark .a,#certs .plate.soon .pl-mark .s{fill:var(--muted)}
+  #certs .plate.soon .pl-branch{stroke:var(--muted);stroke-dasharray:3 2.5;opacity:.45}
+  #certs .plate.soon .pl-node{fill:var(--muted);opacity:.6}
+  #certs .plate.soon .pl-vendor{fill:var(--muted)}
+  #certs .plate.soon .pl-dom{fill:var(--muted)}
+  #certs .plate.soon .pl-bar{fill:var(--muted);opacity:.22}
+  #certs .plate.soon .pl-wt{fill:var(--muted)}
+  #certs .plate.soon .pl-name{fill:var(--ink-soft)}
+  #certs .plate.soon .pl-go{fill:var(--muted)}
+  #certs .pl-pill-box{fill:none;stroke:var(--muted);stroke-width:.8;opacity:.65;rx:5}
+  #certs .pl-pill-txt{fill:var(--muted);font:700 6.4px Inter,sans-serif;letter-spacing:.14em}
+  #certs .pl-watermark{fill:var(--muted);font:700 17px Inter,sans-serif;letter-spacing:.22em;opacity:.05}
+
+  /* ── Emil draw-on (transform/opacity/dashoffset only) ── */
+  #certs .draw{stroke-dasharray:1;stroke-dashoffset:1;transition:stroke-dashoffset 640ms var(--eo)}
+  #certs .plate.drawn .draw{stroke-dashoffset:0;transition-delay:calc(var(--d,0)*1ms)}
+  #certs .pop{opacity:0;transform:scale(.9);transform-box:fill-box;transform-origin:center;transition:opacity 320ms var(--eo),transform 320ms var(--eo)}
+  #certs .plate.drawn .pop{opacity:1;transform:none;transition-delay:calc(var(--d,0)*1ms)}
+  #certs .fade{opacity:0;transform:translateY(4px);transform-box:fill-box;transition:opacity 380ms var(--eo),transform 380ms var(--eo)}
+  #certs .plate.drawn .fade{opacity:1;transform:none;transition-delay:calc(var(--d,0)*1ms)}
+  #certs .plate.soon.drawn .pl-seal.draw{stroke-dasharray:4 3}
+
+  /* ── PASSED treatment (live plates with a passed cert_result) ── */
+  #certs .pl-go.is-pass{fill:var(--pass)}
+  #certs .pl-go.is-attempt{fill:var(--ink-soft)}
+  #certs .pl-seal-check{fill:none;stroke:var(--pass);stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+  #certs .pl-attempt-dot{fill:var(--ink-soft);opacity:.55}
+  #certs .pl-attempt-txt{fill:var(--muted);font:600 6px Inter,sans-serif;letter-spacing:.14em}
+  #certs .pl-stamp-box{fill:none;stroke:var(--pass);stroke-width:1.6;opacity:.9}
+  #certs .pl-stamp-box2{fill:none;stroke:var(--pass);stroke-width:.7;opacity:.5}
+  #certs .pl-stamp-word{fill:var(--pass);font:800 11px Inter,sans-serif;letter-spacing:.16em}
+  #certs .pl-stamp-score{fill:var(--pass);font:700 7.4px Inter,sans-serif;letter-spacing:.04em;font-variant-numeric:tabular-nums;opacity:.92}
+  #certs .pl-stamp-date{fill:var(--pass);font:600 5.6px Inter,sans-serif;letter-spacing:.08em;opacity:.62}
+  #certs .pl-stamp{opacity:0;transform:scale(1.08);transform-box:fill-box;transform-origin:center;transition:opacity 260ms var(--eo),transform 260ms var(--eo)}
+  #certs .plate.drawn .pl-stamp{opacity:1;transform:none;transition-delay:1000ms}
+
+  @media (max-width:560px){#certs .cl-title{font-size:clamp(26px,8vw,34px)}}
   @media (prefers-reduced-motion:reduce){
-    #certs .cl-r,#certs .cert-tile.is-live,#certs .cl-roster,#certs .cert-tile.is-soon{transition:opacity 240ms ease !important;transform:none !important}
-    #certs.cl-in .cl-r,#certs.cl-in .cert-tile.is-live,#certs.cl-in .cl-roster,#certs.cl-in .cert-tile.is-soon{transform:none !important}
-    #certs .cert-tile.is-live,#certs .cert-tile.is-soon .cert-cta-notify,#certs .cert-tile.is-live .cert-cta{transition:background 160ms ease,color 160ms ease !important;transform:none !important}
+    #certs .cl-r{transition:opacity 240ms ease !important;transform:none !important}
+    #certs.cl-in .cl-r{transform:none !important}
+    #certs .draw{stroke-dashoffset:0 !important;transition:none !important}
+    #certs .pop,#certs .fade{opacity:1 !important;transform:none !important;transition:none !important}
+    #certs .pl-stamp{opacity:1 !important;transform:none !important;transition:none !important}
+    #certs .plate.soon .pl-seal.draw{stroke-dasharray:4 3 !important}
   }
 </style>
 
@@ -1161,190 +1562,26 @@
       <p class="cl-sub cl-r" data-d="2">Eight certs live today, with more on the anvil. Get pinged the day each new one ships.</p>
     </div>
 
-    <div class="cl-grid">
-      <!-- Network+ · LIVE (featured). script.js swaps #cert-tile-netplus-status/-cta
-           to a "Passed" state for signed-in passers. -->
-      <a class="cert-tile is-live cl-r" data-d="2" href="https://networkplus.certanvil.com/?cert=netplus" data-cert="netplus" id="cert-tile-netplus">
-        <div class="cert-tile-top">
-          <div class="cert-glyph cert-glyph-netplus"><span class="cg">N<span class="cg-ac">+</span></span></div>
-          <span class="cert-status status-live" id="cert-tile-netplus-status"><span class="status-dot"></span>Live</span>
-        </div>
-        <div class="cert-name">Network+</div>
-        <div class="cert-code">N10-009 · 90 questions · 90 min</div>
-        <div class="cert-desc">All five N10-009 domains. AI-generated questions with teaching explanations, a baseline diagnostic, and an exam mode that mirrors the real 90-question test.</div>
-        <div class="cert-foot">
-          <span class="cert-progress">5 domains · 50 topics</span>
-          <span class="cert-cta" id="cert-tile-netplus-cta">Start studying →</span>
-        </div>
-      </a>
-
-      <!-- Security+ · LIVE (Pro tier). v7.1.0 public launch on secplus.certanvil.com. -->
-      <a class="cert-tile is-live" href="https://secplus.certanvil.com/" data-cert="secplus" id="cert-tile-secplus">
-        <div class="cert-tile-top">
-          <div class="cert-glyph cert-glyph-secplus"><span class="cg">S<span class="cg-ac">+</span></span></div>
-          <span class="cert-status status-live" id="cert-tile-secplus-status">Live · Pro</span>
-        </div>
-        <div class="cert-name">Security+</div>
-        <div class="cert-code">SY0-701 · target exam 2026-07-29</div>
-        <div class="cert-desc">Get exam-ready for SY0-701. Threat actors, identity, SIEM, incident response, and governance, built with the same engine that got Network+ across the line.</div>
-        <div class="cert-foot">
-          <span class="cert-progress">5 domains · 37 topics</span>
-          <span class="cert-cta" id="cert-tile-secplus-cta">Continue prep →</span>
-        </div>
-      </a>
-
-      <!-- Azure Fundamentals · LIVE (Pro tier). v7.3.0 public launch on azure.certanvil.com. -->
-      <a class="cert-tile is-live" href="https://azure.certanvil.com/" data-cert="az900" id="cert-tile-az900">
-        <div class="cert-tile-top">
-          <div class="cert-glyph cert-glyph-az900"><span class="cg">A<span class="cg-ac">Z</span></span></div>
-          <span class="cert-status status-live" id="cert-tile-az900-status">Live · Pro</span>
-        </div>
-        <div class="cert-name">Microsoft Azure Fundamentals</div>
-        <div class="cert-code">AZ-900 · cloud entry-point</div>
-        <div class="cert-desc">Cloud concepts, Azure architecture, governance.</div>
-        <div class="cert-foot">
-          <span class="cert-progress">3 domains · 11 topics</span>
-          <span class="cert-cta" id="cert-tile-az900-cta">Continue prep →</span>
-        </div>
-      </a>
-
-      <!-- Azure AI Fundamentals · LIVE (Pro tier). v7.5.0 public launch on ai.certanvil.com. -->
-      <a class="cert-tile is-live" href="https://ai.certanvil.com/" data-cert="ai900" id="cert-tile-ai900">
-        <div class="cert-tile-top">
-          <div class="cert-glyph cert-glyph-ai900"><span class="cg">A<span class="cg-ac">I</span></span></div>
-          <span class="cert-status status-live" id="cert-tile-ai900-status">Live · Pro</span>
-        </div>
-        <div class="cert-name">Microsoft Azure AI Fundamentals</div>
-        <div class="cert-code">AI-900 · AI/ML entry-point</div>
-        <div class="cert-desc">AI workloads, ML fundamentals, computer vision, NLP, generative AI on Azure.</div>
-        <div class="cert-foot">
-          <span class="cert-progress">5 domains · 40 topics</span>
-          <span class="cert-cta" id="cert-tile-ai900-cta">Continue prep →</span>
-        </div>
-      </a>
-
-      <!-- CompTIA A+ Core 1 · LIVE (Pro tier). v7.6.0 fifth cert family (dual-exam)
-           on aplus.certanvil.com. Core 1 + Core 2 share the subdomain; the
-           ?exam= deep-link selects the exam on arrival (in-app cert switcher). -->
-      <a class="cert-tile is-live" href="https://aplus.certanvil.com/?exam=core1" data-cert="aplus-core1" id="cert-tile-aplus-core1">
-        <div class="cert-tile-top">
-          <div class="cert-glyph cert-glyph-aplus"><span class="cg">A<span class="cg-ac">+</span><span class="cg-sup">1</span></span></div>
-          <span class="cert-status status-live" id="cert-tile-aplus-core1-status">Live · Pro</span>
-        </div>
-        <div class="cert-name">CompTIA A+ Core 1</div>
-        <div class="cert-code">220-1201 · IT generalist entry-point</div>
-        <div class="cert-desc">Mobile devices, networking, hardware, virtualization &amp; cloud, hardware/network troubleshooting.</div>
-        <div class="cert-foot">
-          <span class="cert-progress">5 domains · 46 topics</span>
-          <span class="cert-cta" id="cert-tile-aplus-core1-cta">Continue prep →</span>
-        </div>
-      </a>
-
-      <!-- CompTIA A+ Core 2 · LIVE (Pro tier). v7.6.0. Same subdomain as Core 1;
-           ?exam=core2 selects Core 2 on arrival. -->
-      <a class="cert-tile is-live" href="https://aplus.certanvil.com/?exam=core2" data-cert="aplus-core2" id="cert-tile-aplus-core2">
-        <div class="cert-tile-top">
-          <div class="cert-glyph cert-glyph-aplus"><span class="cg">A<span class="cg-ac">+</span><span class="cg-sup">2</span></span></div>
-          <span class="cert-status status-live" id="cert-tile-aplus-core2-status">Live · Pro</span>
-        </div>
-        <div class="cert-name">CompTIA A+ Core 2</div>
-        <div class="cert-code">220-1202 · IT generalist entry-point</div>
-        <div class="cert-desc">Operating systems, security, software troubleshooting, operational procedures.</div>
-        <div class="cert-foot">
-          <span class="cert-progress">4 domains · 46 topics</span>
-          <span class="cert-cta" id="cert-tile-aplus-core2-cta">Continue prep →</span>
-        </div>
-      </a>
-
-      <!-- Microsoft SC-900 · LIVE (Pro tier). v7.7.0 sixth cert (single-exam,
-           Microsoft Security/Compliance/Identity) on sc900.certanvil.com. -->
-      <a class="cert-tile is-live" href="https://sc900.certanvil.com/" data-cert="sc900" id="cert-tile-sc900">
-        <div class="cert-tile-top">
-          <div class="cert-glyph cert-glyph-sc900"><span class="cg">S<span class="cg-ac">C</span></span></div>
-          <span class="cert-status status-live" id="cert-tile-sc900-status">Live · Pro</span>
-        </div>
-        <div class="cert-name">Microsoft SC-900</div>
-        <div class="cert-code">SC-900 · Security, Compliance &amp; Identity</div>
-        <div class="cert-desc">Security/compliance/identity concepts, Microsoft Entra, security solutions (Defender, Sentinel), Microsoft Purview compliance.</div>
-        <div class="cert-foot">
-          <span class="cert-progress">4 domains · 53 topics</span>
-          <span class="cert-cta" id="cert-tile-sc900-cta">Continue prep →</span>
-        </div>
-      </a>
-
-      <!-- AWS Cloud Practitioner · LIVE (Pro tier). v7.8.0 seventh cert (single-exam,
-           AWS · third vendor) on clfc02.certanvil.com. -->
-      <a class="cert-tile is-live" href="https://clfc02.certanvil.com/" data-cert="clfc02" id="cert-tile-clfc02">
-        <div class="cert-tile-top">
-          <div class="cert-glyph cert-glyph-clfc02"><span class="cg">AW<span class="cg-ac">S</span></span></div>
-          <span class="cert-status status-live" id="cert-tile-clfc02-status">Live · Pro</span>
-        </div>
-        <div class="cert-name">AWS Cloud Practitioner</div>
-        <div class="cert-code">CLF-C02 · Cloud Foundations</div>
-        <div class="cert-desc">Cloud concepts and the Well-Architected Framework, AWS core services (EC2, S3, RDS, Lambda), security &amp; compliance, billing, pricing &amp; support.</div>
-        <div class="cert-foot">
-          <span class="cert-progress">4 domains · 54 topics</span>
-          <span class="cert-cta" id="cert-tile-clfc02-cta">Continue prep →</span>
-        </div>
-      </a>
-
-      <!-- ROSTER · the four being forged. script.js hides #cert-tile-secplus-soon
-           in builder mode (mutually exclusive with the private tile above). -->
-      <div class="cl-roster cl-r" data-d="2">
-        <div class="cl-roster-h">On the anvil</div>
-
-        <div class="cert-tile is-soon" data-cert="ccna">
-          <div class="cert-tile-top">
-            <div class="cert-glyph cert-glyph-ccna"><span class="cg">C<span class="cg-ac">C</span></span></div>
-            <span class="cert-status status-soon">Coming soon</span>
-          </div>
-          <div class="cl-soon-body">
-            <div class="cert-name">Cisco CCNA</div>
-            <div class="cert-code">200-301 · routing + switching</div>
-            <div class="cert-desc">Cisco's flagship associate cert. OSPF, BGP, and IOS configuration.</div>
-          </div>
-          <div class="cert-foot">
-            <span class="cert-progress">In development</span>
-            <button class="cert-cta cert-cta-notify" type="button">Notify me ↗</button>
-          </div>
-        </div>
-
-        <div class="cert-tile is-soon" data-cert="aws-saa">
-          <div class="cert-tile-top">
-            <div class="cert-glyph cert-glyph-aws"><span class="cg">A<span class="cg-ac">W</span></span></div>
-            <span class="cert-status status-soon">Coming soon</span>
-          </div>
-          <div class="cl-soon-body">
-            <div class="cert-name">AWS Solutions Architect</div>
-            <div class="cert-code">SAA-C03 · associate level</div>
-            <div class="cert-desc">AWS's most-requested associate cert. VPC, IAM, and the services on the exam.</div>
-          </div>
-          <div class="cert-foot">
-            <span class="cert-progress">In development</span>
-            <button class="cert-cta cert-cta-notify" type="button">Notify me ↗</button>
-          </div>
-        </div>
-
-        <div class="cert-tile is-soon" data-cert="az104">
-          <div class="cert-tile-top">
-            <div class="cert-glyph cert-glyph-az104"><span class="cg">A<span class="cg-ac">Z</span></span></div>
-            <span class="cert-status status-soon">Coming soon</span>
-          </div>
-          <div class="cl-soon-body">
-            <div class="cert-name">Azure Administrator</div>
-            <div class="cert-code">AZ-104 · associate level</div>
-            <div class="cert-desc">The day-to-day Azure admin cert. Identity, governance, storage, networking, compute.</div>
-          </div>
-          <div class="cert-foot">
-            <span class="cert-progress">In development</span>
-            <button class="cert-cta cert-cta-notify" type="button">Notify me ↗</button>
-          </div>
-        </div>
-      </div>
+    <div class="toolbar cl-r" data-d="2">
+      <button class="cl-replay" id="cl-replay" type="button">↻ <span>Replay the draw</span></button>
     </div>
+
+    <!-- Blueprint wall · ported from mockups/hero-concepts/cert-picker-blueprint.html.
+         8 forged <a> plates (live) populate #cl-wall; 3 on-the-anvil <button>
+         plates populate #cl-wall-soon. Plates are built by the scoped IIFE
+         below (buildPlate + draw-on IntersectionObserver). The PASSED stamp
+         is data-driven via window.__cbApplyCertResults — anonymous = none. -->
+    <div class="wall" id="cl-wall"></div>
+
+    <div class="anvil-head">
+      <span class="anvil-eyebrow">On the anvil</span>
+      <span class="anvil-cap">Forging next — get pinged the day each ships.</span>
+    </div>
+    <div class="wall-soon" id="cl-wall-soon"></div>
   </div>
 
   <script>
+    /* header reveal · adds #certs.cl-in so the .cl-r eyebrow/title/lede animate */
     (function(){
       var sec=document.getElementById('certs');
       if(!sec)return;
@@ -1354,6 +1591,264 @@
         },{threshold:0.15});
         io.observe(sec);
       } else { sec.classList.add('cl-in'); }
+    })();
+
+    /* Blueprint Wall · ported from cert-picker-blueprint.html (scoped IIFE).
+       Builds 8 live <a> plates + 3 on-the-anvil <button> plates, draws them
+       on scroll (IntersectionObserver), supports replay + hover-redraw, and
+       exposes window.__cbApplyCertResults(results) so auth.js can (re)stamp
+       passed certs. Initial render shows NO stamps (anonymous). */
+    (function(){
+      "use strict";
+      var wall=document.getElementById('cl-wall');
+      var wallSoon=document.getElementById('cl-wall-soon');
+      if(!wall||!wallSoon)return;
+
+      // The active results map. Empty by default (anonymous → no stamps).
+      // auth.js calls window.__cbApplyCertResults(profile.metadata.cert_results)
+      // on sign-in to light up whichever certs THIS user has passed/attempted.
+      var activeResults = {};
+
+      /* ── 8 live certs · real exam blueprints (domains + % weights) ── */
+      var CERTS = [
+        { id:'netplus', name:'Network+', code:'N10-009', vendor:'CompTIA', mark:{m:'N',a:'+'}, href:'https://networkplus.certanvil.com/?cert=netplus',
+          domains:[['Networking Concepts',23],['Network Implementation',20],['Network Operations',19],['Network Security',19],['Troubleshooting',22]] },
+        { id:'secplus', name:'Security+', code:'SY0-701', vendor:'CompTIA', mark:{m:'S',a:'+'}, href:'https://secplus.certanvil.com/',
+          domains:[['General Security Concepts',12],['Threats & Vulnerabilities',22],['Security Architecture',18],['Security Operations',28],['Program Management',20]] },
+        { id:'aplus-core1', name:'CompTIA A+ Core 1', code:'220-1201', vendor:'CompTIA', mark:{m:'A',a:'+',s:'1'}, href:'https://aplus.certanvil.com/?exam=core1',
+          domains:[['Mobile Devices',15],['Networking',20],['Hardware',25],['Virtualization & Cloud',11],['Troubleshooting',29]] },
+        { id:'aplus-core2', name:'CompTIA A+ Core 2', code:'220-1202', vendor:'CompTIA', mark:{m:'A',a:'+',s:'2'}, href:'https://aplus.certanvil.com/?exam=core2',
+          domains:[['Operating Systems',31],['Security',25],['Software Troubleshooting',22],['Operational Procedures',22]] },
+        { id:'az900', name:'Azure Fundamentals', code:'AZ-900', vendor:'Microsoft', mark:{m:'A',a:'Z'}, href:'https://azure.certanvil.com/',
+          domains:[['Cloud Concepts',28],['Azure Architecture & Services',37],['Management & Governance',35]] },
+        { id:'ai900', name:'Azure AI Fundamentals', code:'AI-900', vendor:'Microsoft', mark:{m:'A',a:'I'}, href:'https://ai.certanvil.com/',
+          domains:[['AI Workloads',18],['ML Principles',22],['Computer Vision',18],['Natural Language Processing',20],['Generative AI',22]] },
+        { id:'sc900', name:'Microsoft SC-900', code:'SC-900', vendor:'Microsoft', mark:{m:'S',a:'C'}, href:'https://sc900.certanvil.com/',
+          domains:[['Security, Compliance & Identity',12],['Microsoft Entra (identity)',30],['Security solutions',29],['Compliance solutions',29]] },
+        { id:'clfc02', name:'AWS Cloud Practitioner', code:'CLF-C02', vendor:'AWS', mark:{m:'AW',a:'S'}, href:'https://clfc02.certanvil.com/',
+          domains:[['Cloud Concepts',24],['Security & Compliance',30],['Cloud Technology & Services',34],['Billing & Support',12]] }
+      ];
+
+      /* ── 3 coming-soon certs · soon:true → un-forged treatment ── */
+      var SOON = [
+        { name:'Cisco CCNA', code:'200-301', vendor:'Cisco', mark:{m:'C',a:'C'}, soon:true,
+          domains:[['Network Fundamentals',20],['Network Access',20],['IP Connectivity',25],['IP Services',10],['Security Fundamentals',15],['Automation & Programmability',10]] },
+        { name:'AWS Solutions Architect', code:'SAA-C03', vendor:'AWS', mark:{m:'A',a:'W'}, soon:true,
+          domains:[['Secure Architectures',30],['Resilient Architectures',26],['High-Performing Architectures',24],['Cost-Optimized Architectures',20]] },
+        { name:'Azure Administrator', code:'AZ-104', vendor:'Microsoft', mark:{m:'A',a:'Z'}, soon:true,
+          domains:[['Identity & Governance',22],['Storage',18],['Compute',23],['Virtual Networking',22],['Monitor & Maintain',15]] }
+      ];
+
+      var NS='http://www.w3.org/2000/svg';
+      function el(tag,attrs,txt){var e=document.createElementNS(NS,tag);for(var k in attrs)e.setAttribute(k,attrs[k]);if(txt!=null)e.textContent=txt;return e;}
+      function trunc(s,n){return s.length>n? s.slice(0,n-1)+'…':s;}
+
+      function buildPlate(cert){
+        var soon=!!cert.soon;
+        // look up THIS user's result for this cert (data-driven; no hardcoded plates)
+        var res = (!soon && cert.id && activeResults) ? activeResults[cert.id] : null;
+        var passed   = !!res && res.status==='passed';
+        var attempted= !!res && res.status==='attempted';
+        var W=360,H=214;
+        var svg=el('svg',{viewBox:'0 0 '+W+' '+H,role:'img'});
+
+        // very subtle rotated watermark (soon only), behind everything
+        if(soon){
+          svg.appendChild(el('text',{class:'pl-watermark','text-anchor':'middle',x:W/2,y:H/2,transform:'rotate(-16 '+(W/2)+' '+(H/2)+')'},'ON THE ANVIL'));
+        }
+
+        // frame + corner ticks
+        svg.appendChild(el('rect',{class:'pl-frame',x:6,y:6,width:W-12,height:H-12,rx:10}));
+        var corners=[[10,10,1,1],[W-10,10,-1,1],[10,H-10,1,-1],[W-10,H-10,-1,-1]];
+        corners.forEach(function(c){
+          svg.appendChild(el('path',{class:'pl-tick fade',d:'M'+c[0]+' '+c[1]+'h'+(7*c[2]),style:'--d:60'}));
+          svg.appendChild(el('path',{class:'pl-tick fade',d:'M'+c[0]+' '+c[1]+'v'+(7*c[3]),style:'--d:60'}));
+        });
+
+        // title block
+        svg.appendChild(el('text',{class:'pl-title fade',x:18,y:24,style:'--d:80'},'EXAM BLUEPRINT'));
+        // vendor / coming-soon pill
+        if(soon){
+          svg.appendChild(el('rect',{class:'pl-pill-box fade',x:W-92,y:16,width:74,height:12,rx:6,style:'--d:80'}));
+          svg.appendChild(el('text',{class:'pl-pill-txt fade','text-anchor':'middle',x:W-55,y:24.5,style:'--d:80'},'COMING SOON'));
+        }else if(!passed){
+          // passed plates hide the vendor tag — the PASSED stamp occupies that corner
+          svg.appendChild(el('text',{class:'pl-vendor fade','text-anchor':'end',x:W-18,y:24,style:'--d:80'},cert.vendor.toUpperCase()));
+        }
+        svg.appendChild(el('line',{class:'pl-divider draw',x1:18,y1:32,x2:W-18,y2:32,pathLength:1,style:'--d:120'}));
+
+        // seal + lettermark
+        svg.appendChild(el('rect',{class:'pl-seal draw',x:18,y:46,width:74,height:74,rx:15,pathLength:1,style:'--d:200'}));
+        var mk=el('text',{class:'pl-mark pop','text-anchor':'middle',x:55,y:95,style:'--d:420'});
+        mk.appendChild(el('tspan',{class:'m'},cert.mark.m));
+        mk.appendChild(el('tspan',{class:'a'},cert.mark.a));
+        if(cert.mark.s){var sup=el('tspan',{class:'s','baseline-shift':'super'},cert.mark.s);mk.appendChild(sup);}
+        svg.appendChild(mk);
+        svg.appendChild(el('text',{class:'pl-code fade','text-anchor':'middle',x:55,y:135,style:'--d:520'},cert.code));
+        // subtle green check on the seal's top-right notch (passed only)
+        if(passed){
+          svg.appendChild(el('path',{class:'pl-seal-check pop',d:'M83 50 l3 3 l5.5 -6',style:'--d:560'}));
+        }
+
+        // domain branches
+        var doms=cert.domains, N=doms.length;
+        var top=52, bot=140, sx=92, sy=83;
+        doms.forEach(function(d,i){
+          var y= N===1? (top+bot)/2 : top + i*(bot-top)/(N-1);
+          var base=240+i*70;
+          // connector
+          svg.appendChild(el('path',{class:'pl-branch draw',d:'M'+sx+' '+sy+' C'+(sx+12)+' '+sy+' '+(sx+6)+' '+y+' '+(sx+18)+' '+y,pathLength:1,style:'--d:'+base}));
+          // node
+          svg.appendChild(el('circle',{class:'pl-node pop',cx:sx+18,cy:y,r:2.3,style:'--d:'+(base+180)}));
+          // name (denser truncation when 6 domains so labels don't collide)
+          var nameMax = N>=6 ? 24 : 27;
+          svg.appendChild(el('text',{class:'pl-dom fade',x:sx+27,y:y+3,style:'--d:'+(base+240)},trunc(d[0],nameMax)));
+          // weight bar
+          svg.appendChild(el('rect',{class:'pl-bar fade',x:sx+27,y:y+6,width:Math.max(6,d[1]*1.35),height:2,rx:1,style:'--d:'+(base+260)}));
+          // weight %
+          svg.appendChild(el('text',{class:'pl-wt fade','text-anchor':'end',x:W-18,y:y+3.5,style:'--d:'+(base+240)},d[1]+'%'));
+        });
+
+        // footer
+        svg.appendChild(el('line',{class:'pl-divider draw',x1:18,y1:166,x2:W-18,y2:166,pathLength:1,style:'--d:760'}));
+        svg.appendChild(el('text',{class:'pl-name fade',x:18,y:188,style:'--d:820'},cert.name));
+        svg.appendChild(el('text',{class:'pl-sub fade',x:18,y:204,style:'--d:880'},cert.code+'  ·  '+N+' domains  ·  blueprint-weighted'));
+        // footer CTA affordance — mirrors the live copy per result state
+        var goText, goClass='pl-go';
+        if(soon){
+          goText='Notify me ↗';
+        }else if(passed){
+          goText='✓ '+res.score+'/'+res.max_score+' · keep practicing →';
+          goClass='pl-go is-pass';
+        }else if(attempted){
+          goText=res.score+'/'+res.max_score+' · keep going →';
+          goClass='pl-go is-attempt';
+        }else{
+          goText='Start studying →';
+        }
+        var go=el('text',{class:goClass,'text-anchor':'end',x:W-18,y:204},goText);
+        svg.appendChild(go);
+
+        // attempted marker (small dot + label by the cert name), lighter than passed
+        if(attempted){
+          svg.appendChild(el('circle',{class:'pl-attempt-dot fade',cx:21,cy:206,r:2,style:'--d:900'}));
+          svg.appendChild(el('text',{class:'pl-attempt-txt fade',x:27,y:208.5,style:'--d:900'},'ATTEMPTED'));
+        }
+
+        // PASSED rubber stamp — top-right corner, rotated, pressed in once after draw.
+        if(passed){
+          var cx=W-54, cy=28;          // centre of the stamp
+          var halfW=42, halfH=17;      // → box 84×34
+          var g=el('g',{class:'pl-stamp',transform:'rotate(-7 '+cx+' '+cy+')'});
+          g.appendChild(el('rect',{class:'pl-stamp-box',x:cx-halfW,y:cy-halfH,width:halfW*2,height:halfH*2,rx:6}));
+          g.appendChild(el('rect',{class:'pl-stamp-box2',x:cx-halfW+4,y:cy-halfH+3,width:halfW*2-8,height:halfH*2-6,rx:4}));
+          g.appendChild(el('text',{class:'pl-stamp-word','text-anchor':'middle',x:cx,y:cy-3},'PASSED'));
+          g.appendChild(el('text',{class:'pl-stamp-score','text-anchor':'middle',x:cx,y:cy+7},res.score+' / '+res.max_score));
+          g.appendChild(el('text',{class:'pl-stamp-date','text-anchor':'middle',x:cx,y:cy+14.5},res.date));
+          svg.appendChild(g);
+        }
+
+        var wrap;
+        if(soon){
+          // not a link yet (no subdomain) — keyboard-focusable button with a notify affordance
+          wrap=document.createElement('button');
+          wrap.type='button';
+          wrap.className='plate soon';
+          wrap.setAttribute('data-cert', (cert.code||'').toLowerCase());
+          wrap.setAttribute('aria-label',cert.name+' '+cert.code+' — coming soon, get notified');
+          // open the existing notify modal (#notify-modal lives outside this
+          // section; script.js owns its submit/close wiring). We only need to
+          // reveal it + set the cert label — same DOM ops script.js performs.
+          wrap.addEventListener('click',function(){
+            var modal=document.getElementById('notify-modal');
+            if(!modal)return;
+            var n1=document.getElementById('notify-cert-name');
+            var n2=document.getElementById('notify-cert-name-2');
+            if(n1)n1.textContent=cert.name;
+            if(n2)n2.textContent=cert.name;
+            modal.removeAttribute('hidden');
+            document.body.style.overflow='hidden';
+            var email=document.getElementById('notify-email');
+            if(email){try{email.focus();}catch(e){}}
+          });
+        }else{
+          wrap=document.createElement('a');
+          wrap.className='plate';
+          wrap.setAttribute('href',cert.href);
+          wrap.setAttribute('data-cert', cert.id);
+          wrap.setAttribute('aria-label',cert.name+' '+cert.code+' — start studying');
+        }
+        wrap.appendChild(svg);
+        return wrap;
+      }
+
+      var fine=window.matchMedia&&window.matchMedia('(hover:hover) and (pointer:fine)').matches;
+      var reduce=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+      function mount(cert,container){
+        var p=buildPlate(cert);
+        // hover-to-redraw a single plate (desktop, not reduced-motion); debounced
+        if(fine&&!reduce){
+          var busy=false;
+          p.addEventListener('mouseenter',function(){
+            if(busy||!p.classList.contains('drawn'))return;
+            busy=true;
+            p.classList.remove('drawn'); void p.offsetWidth; p.classList.add('drawn');
+            setTimeout(function(){busy=false;},1400);
+          });
+        }
+        container.appendChild(p);
+        return p;
+      }
+
+      // draw-on observer (shared) — drawn-once per plate, gentle cross-plate cascade.
+      var plates=[];
+      var io=('IntersectionObserver' in window) ? new IntersectionObserver(function(entries){
+        entries.forEach(function(en){
+          if(en.isIntersecting){
+            var idx=plates.indexOf(en.target);
+            setTimeout(function(){en.target.classList.add('drawn');}, ((idx<0?0:idx)%4)*100);
+            io.unobserve(en.target);
+          }
+        });
+      },{threshold:0.32}) : null;
+
+      var soonPlates=SOON.map(function(c){return mount(c,wallSoon);});
+
+      // (re)build the live wall from CERTS, reading the current activeResults map.
+      function renderLiveWall(forceDrawn){
+        wall.innerHTML='';
+        var live=CERTS.map(function(c){return mount(c,wall);});
+        plates=live.concat(soonPlates);
+        live.forEach(function(p){
+          if(forceDrawn || !io){ p.classList.add('drawn'); }
+          else { io.observe(p); }
+        });
+      }
+
+      renderLiveWall(false);
+      if(io){ soonPlates.forEach(function(p){io.observe(p);}); }
+      else { soonPlates.forEach(function(p){p.classList.add('drawn');}); }
+
+      // replay the draw on every currently-visible plate
+      var replayBtn=document.getElementById('cl-replay');
+      if(replayBtn) replayBtn.addEventListener('click',function(){
+        plates.forEach(function(p){p.classList.remove('drawn');});
+        void wall.offsetWidth; // reflow
+        plates.forEach(function(p,i){
+          var r=p.getBoundingClientRect();
+          if(r.top<window.innerHeight&&r.bottom>0) setTimeout(function(){p.classList.add('drawn');},(i%4)*100);
+        });
+      });
+
+      // ── Public hook · auth.js (re)stamps live plates from a cert_results map
+      //    keyed by cert id (netplus, secplus, az900, ai900, aplus-core1,
+      //    aplus-core2, sc900, clfc02). Re-renders the live wall, force-drawn,
+      //    so stamps appear without needing a scroll. Anonymous → {} → no stamps.
+      window.__cbApplyCertResults = function(results){
+        activeResults = results || {};
+        renderLiveWall(true);
+      };
     })();
   </script>
 </section>
