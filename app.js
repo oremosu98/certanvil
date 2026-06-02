@@ -9548,6 +9548,13 @@ function renderContinueCard() {
   setTxt('cc-m1n', streak);
   setTxt('cc-m2n', todayN);
   setTxt('cc-m3n', totalQ);
+  // v7.13.0: ease-out count-up on the resume metrics (bigger target → longer).
+  // animateCount writes textContent, so the setTxt above stays the fallback.
+  if (typeof animateCount === 'function') {
+    animateCount('cc-m1n', 0, streak, 700);
+    animateCount('cc-m2n', 0, todayN, 700);
+    animateCount('cc-m3n', 0, totalQ, 850);
+  }
 
   let daysAgo = 0;
   try {
@@ -14454,11 +14461,21 @@ function _renderAnaReadiness(h) {
   // v4.46.0: Stats strip — icons above numbers, hairline dividers between tiles.
   // v4.54.8: inline sparkline under each number showing ~12-week trend.
   const _series = _weeklyStatSeries(h, 12);
-  const _mkSpark = (vals, strokeVar) => {
+  // v7.13.0: cardiac-monitor sweep — a dim full trend line (.spark-base) plus a
+  // bright phosphor scan (.spark-scan, same path) animated via stroke-dashoffset.
+  // Per-card color + a stagger index keep the 4 cards out of sync. CSS drives the
+  // sweep cadence; reduced-motion hides .spark-scan (static base only).
+  const _SPARK_DUR = [2.6, 2.9, 2.3, 3.05];   // sessions, questions, accuracy, studyDays
+  const _SPARK_DELAY = [0, 0.5, 0.25, 0.8];
+  const _mkSpark = (vals, strokeVar, idx) => {
     const d = _sparkPath(vals, 160, 28);
     if (!d) return '';
-    return `<svg class="ana-hero-stat-spark" viewBox="0 0 160 28" preserveAspectRatio="none" aria-hidden="true">
-      <path d="${d}" fill="none" stroke="${strokeVar}" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+    const i = idx || 0;
+    const dur = _SPARK_DUR[i] || 2.6;
+    const delay = _SPARK_DELAY[i] || 0;
+    return `<svg class="ana-hero-stat-spark" viewBox="0 0 160 28" preserveAspectRatio="none" aria-hidden="true" style="--spark-color:${strokeVar};--sweep-dur:${dur}s;--sweep-delay:${delay}s">
+      <path class="spark-base" d="${d}" pathLength="100" fill="none" stroke="${strokeVar}" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+      <path class="spark-scan" d="${d}" pathLength="100" fill="none" stroke="${strokeVar}" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/>
     </svg>`;
   };
   const statsHtml = `
@@ -14466,25 +14483,25 @@ function _renderAnaReadiness(h) {
         <div class="ana-hero-stat-icon" aria-hidden="true">📚</div>
         <div class="ana-hero-stat-val">${h.length}</div>
         <div class="ana-hero-stat-lbl">Sessions</div>
-        ${_mkSpark(_series.sessions, 'var(--accent-light)')}
+        ${_mkSpark(_series.sessions, 'var(--accent-light)', 0)}
       </div>
       <div class="ana-hero-stat">
         <div class="ana-hero-stat-icon" aria-hidden="true">📝</div>
         <div class="ana-hero-stat-val">${totalQ.toLocaleString()}</div>
         <div class="ana-hero-stat-lbl">Questions</div>
-        ${_mkSpark(_series.questions, 'var(--accent-light)')}
+        ${_mkSpark(_series.questions, 'var(--accent-light)', 1)}
       </div>
       <div class="ana-hero-stat">
         <div class="ana-hero-stat-icon" aria-hidden="true">🎯</div>
         <div class="ana-hero-stat-val">${totalQ > 0 ? Math.round(totalCorrect/totalQ*100) : 0}%</div>
         <div class="ana-hero-stat-lbl">Accuracy</div>
-        ${_mkSpark(_series.accuracy, 'var(--green)')}
+        ${_mkSpark(_series.accuracy, 'var(--green)', 2)}
       </div>
       <div class="ana-hero-stat">
         <div class="ana-hero-stat-icon" aria-hidden="true">🔥</div>
         <div class="ana-hero-stat-val">${studyDays}</div>
         <div class="ana-hero-stat-lbl">Study Days</div>
-        ${_mkSpark(_series.studyDays, 'var(--orange)')}
+        ${_mkSpark(_series.studyDays, 'var(--orange)', 3)}
       </div>`;
 
   return `<div class="ana-card ana-ready-hero" id="ana-s-readiness">
@@ -15303,7 +15320,9 @@ function _renderAnaConstellation(h) {
     // tooltip; user reads, then clicks the button to drill. Works cleanly
     // on both desktop and touch. Topic name stored on the node so the
     // wireup helper can pull it for the button.
-    return `<g class="ana-const-node ana-const-tier-${n.tier}" data-domain-idx="${CLUSTERS[n.domain].idx}" data-tt-topic="${esc(n.topic)}" data-tt-topic-raw="${topicEsc}" data-tt-domain="${ttDomain}" data-tt-tier="${esc(n.tier)}" data-tt-mastery="${ttMastery}" data-tt-attempts="${ttAttempts}" data-tt-last="${ttLast}" tabindex="0" aria-label="${title}">
+    // v7.13.0: --tw gives each star a different twinkle phase (delay/duration)
+    // so the field shimmers asynchronously instead of pulsing in unison.
+    return `<g class="ana-const-node ana-const-tier-${n.tier}" data-domain-idx="${CLUSTERS[n.domain].idx}" style="--tw:${i % 7}" data-tt-topic="${esc(n.topic)}" data-tt-topic-raw="${topicEsc}" data-tt-domain="${ttDomain}" data-tt-tier="${esc(n.tier)}" data-tt-mastery="${ttMastery}" data-tt-attempts="${ttAttempts}" data-tt-last="${ttLast}" tabindex="0" aria-label="${title}">
       <title>${title}</title>
       <circle cx="${n.cx.toFixed(1)}" cy="${n.cy.toFixed(1)}" r="${n.r.toFixed(1)}" class="ana-const-halo" />
       <circle cx="${n.cx.toFixed(1)}" cy="${n.cy.toFixed(1)}" r="${innerR.toFixed(1)}" class="ana-const-core" />
@@ -16796,6 +16815,8 @@ function renderHeroV2MiniCards() {
       goalEl.textContent = dg;
       const pct = dg > 0 ? Math.round((done / dg) * 100) : 0;
       subEl.textContent = `daily goal \u00B7 ${Math.min(100, pct)}%`;
+      // v7.13.0: ease-out count-up (textContent above stays the fallback)
+      if (typeof animateCount === 'function') animateCount('mc-today-done', 0, done, 700);
     }
   } catch (_) {}
 
@@ -16805,9 +16826,12 @@ function renderHeroV2MiniCards() {
     const subEl = document.getElementById('mc-streak-sub');
     if (numEl && subEl && typeof getStreak === 'function') {
       const s = getStreak();
-      numEl.textContent = (s && s.current) ? s.current : 0;
+      const cur = (s && s.current) ? s.current : 0;
+      numEl.textContent = cur;
       const best = (s && s.best) ? s.best : 0;
       subEl.textContent = `longest \u00B7 ${best} days`;
+      // v7.13.0: ease-out count-up (textContent above stays the fallback)
+      if (typeof animateCount === 'function') animateCount('mc-streak-num', 0, cur, 700);
     }
   } catch (_) {}
 }
