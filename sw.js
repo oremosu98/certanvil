@@ -1,10 +1,11 @@
-// Service Worker v7.13.4 — Network+ Quiz App (Phase C′ cloud-first)
-const CACHE_NAME = 'netplus-v7.13.4';
+// Service Worker v7.13.5 — Network+ Quiz App (Phase C′ cloud-first)
+const CACHE_NAME = 'netplus-v7.13.5';
 const SHELL_ASSETS = [
   './',
   './index.html',
   './styles.css',
   './dg-system.css',
+  './dg-depurple.css',
   './app.js',
   // M7: CSP-clean event-delegation core (loads before app.js). Precached so
   // delegated handlers keep working offline.

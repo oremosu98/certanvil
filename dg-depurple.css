@@ -1,0 +1,305 @@
+/* Light-theme de-purple sweep (v7.13.5) — repaint legacy styles.css purple to bronze; styles.css untouched (css-guard) */
+/*
+ * Loaded AFTER dg-system.css. Repaints hardcoded purple (hex + rgba literals) that
+ * slipped past dg-system token redefinition. Tints -> color-mix(... var(--accent*) X%).
+ * EXCLUDED: all [data-domain-idx] rules (5-domain identity palette) + .sb-brand-mark monogram gradient.
+ * Scope mirrors styles.css: [data-theme="light"] -> html[data-theme="light"] body; unscoped -> html[data-theme] body.
+ */
+
+/* ───────── HERO (hero-v2 / session-hero eyebrows, display, lede) ───────── */
+html[data-theme="light"] body .hero-v2-eyebrow { color:var(--accent); }
+html[data-theme="light"] body .hero-v2-eyebrow::before { background:var(--accent); }
+html[data-theme="light"] body .hero-v2-lede strong { color:var(--accent); }
+html[data-theme] body .hero-v2-cta { box-shadow:0 8px 24px color-mix(in oklab,var(--accent-light) 32%,transparent); }
+
+/* ───────── HEADINGS (editorial section/page headers) ───────── */
+html[data-theme="light"] body .ed-cardhead-eyebrow, html[data-theme="light"] body .ed-cardhead-eyebrow::before, html[data-theme="light"] body .ed-cardhead-title em { color:var(--accent); }
+
+/* ───────── RESULTS (results-v2 surface) ───────── */
+html[data-theme="light"] body .results-v2-eyebrow::before { background:var(--accent); }
+html[data-theme="light"] body .results-v2-review::before { background:var(--accent); }
+html[data-theme] body .exam-results-v2-hero { border:1px solid color-mix(in oklab,var(--accent-light) 25%,transparent); }
+html[data-theme] body .exam-results-v2-hero::before { background:radial-gradient(circle at top right, color-mix(in oklab,var(--accent-light) 14%,transparent), transparent 70%); }
+
+/* ───────── ANALYTICS (dashboard, heatmap, constellation, prog-dots, editorial headers, dg-*) ───────── */
+html[data-theme] body .ana-row-clickable:hover { background:color-mix(in oklab,var(--accent-light) 8%,transparent); }
+html[data-theme] body .readiness-prediction { background:color-mix(in oklab,var(--accent-light) 8%,transparent); }
+html[data-theme] body .readiness-whatif-chip { background:color-mix(in oklab,var(--accent-light) 10%,transparent); border:1px solid color-mix(in oklab,var(--accent-light) 32%,transparent); }
+html[data-theme] body .readiness-whatif-chip:hover { background:color-mix(in oklab,var(--accent-light) 20%,transparent); box-shadow:0 2px 6px color-mix(in oklab,var(--accent-light) 18%,transparent); }
+html[data-theme="light"] body .ed-section-head { border-bottom-color:color-mix(in oklab,var(--accent) 24%,transparent); }
+html[data-theme="light"] body .ed-section-num, html[data-theme="light"] body .ed-section-title em, html[data-theme="light"] body .readiness-pass-tick::after { color:var(--accent); }
+html[data-theme] body .ana-why-score .why-action-card:hover { border-color:color-mix(in oklab,var(--accent-light) 35%,transparent); }
+html[data-theme] body .ana-const-map { background:radial-gradient(circle at 20% 30%, color-mix(in oklab,var(--accent-light) 4%,transparent), transparent 50%),
+    radial-gradient(circle at 70% 60%, rgba(59, 130, 246, .04), transparent 50%),
+    radial-gradient(circle at 90% 25%, rgba(239, 68, 68, .04), transparent 50%),
+    linear-gradient(160deg, rgba(var(--accent-rgb), .03), rgba(var(--accent-rgb), .01)); }
+html[data-theme="light"] body .ana-const-map { background:radial-gradient(circle at 20% 30%, color-mix(in oklab,var(--accent) 5%,transparent), transparent 50%),
+    radial-gradient(circle at 70% 60%, rgba(37, 99, 235, .04), transparent 50%),
+    radial-gradient(circle at 90% 25%, rgba(220, 38, 38, .04), transparent 50%),
+    linear-gradient(160deg, color-mix(in oklab,var(--accent) 4%,transparent), color-mix(in oklab,var(--accent) 1%,transparent)); border-color:color-mix(in oklab,var(--accent) 20%,transparent); }
+html[data-theme="light"] body .ana-const-tether { stroke:color-mix(in oklab,var(--accent) 20%,transparent); }
+html[data-theme="light"] body .ana-const-empty { background:color-mix(in oklab,var(--accent) 4%,transparent); border-color:color-mix(in oklab,var(--accent) 22%,transparent); }
+html[data-theme="light"] body .ed-section-head { border-bottom-color:color-mix(in oklab,var(--accent) 20%,transparent); }
+html[data-theme="light"] body .dg-weak-chip { border-color:color-mix(in oklab,var(--accent) 40%,transparent); color:var(--accent); }
+html[data-theme="light"] body .ana-accchart-eyebrow, html[data-theme="light"] body .ana-accchart-title em { color:var(--accent); }
+html[data-theme="light"] body .qpd-cell { background:color-mix(in oklab,var(--accent) 14%,transparent); }
+html[data-theme="light"] body .qpd-cell.qpd-now { background:var(--accent); box-shadow:0 0 0 2px color-mix(in oklab,var(--accent) 20%,transparent); }
+html[data-theme="light"] body #quiz-prog-dots .qpd-cell { border-color:color-mix(in oklab,var(--accent) 25%,transparent); }
+html[data-theme="light"] body #quiz-prog-dots .qpd-cell.qpd-now { background:var(--accent); }
+html[data-theme="light"] body .dg-topic-weak .dg-topic-dot { background:var(--accent); box-shadow:0 0 0 2px color-mix(in oklab,var(--accent) 20%,transparent); }
+html[data-theme="light"] body .ana-const-map::before { background-image:linear-gradient(to right, color-mix(in oklab,var(--accent) 7%,transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in oklab,var(--accent) 7%,transparent) 1px, transparent 1px); }
+html[data-theme="light"] body .hm-cell-t0 { fill:color-mix(in oklab,var(--accent) 8%,transparent); }
+html[data-theme="light"] body .hm-cell-t1 { fill:color-mix(in oklab,var(--accent) 28%,transparent); }
+html[data-theme="light"] body .hm-cell-t2 { fill:color-mix(in oklab,var(--accent) 52%,transparent); }
+html[data-theme="light"] body .hm-cell-t3 { fill:color-mix(in oklab,var(--accent) 78%,transparent); }
+html[data-theme="light"] body .hm-cell-t4 { fill:var(--accent); }
+html[data-theme="light"] body .ana-heatmap-title em { color:var(--accent); }
+html[data-theme] body .ana-action-headline { box-shadow:0 6px 20px color-mix(in oklab,var(--accent-light) 28%,transparent); }
+
+/* ───────── TOPOLOGY-BUILDER (tb-*, topo-*, acl-*, cli-*, port-*, td-*, resource/explain) ───────── */
+html[data-theme] body .cli-cmd-btn:hover { background:color-mix(in oklab,var(--accent-light) 10%,transparent); }
+html[data-theme] body .topo-device:hover { background:color-mix(in oklab,var(--accent-light) 8%,transparent); }
+html[data-theme] body .topo-device.selected { background:color-mix(in oklab,var(--accent-light) 20%,transparent); box-shadow:0 0 0 2px color-mix(in oklab,var(--accent-light) 30%,transparent); }
+html[data-theme] body .topo-zone:hover { background:color-mix(in oklab,var(--accent-light) 4%,transparent); }
+html[data-theme] body .topo-placed-device { background:color-mix(in oklab,var(--accent-light) 12%,transparent); }
+html[data-theme] body .explain-btn { background:color-mix(in oklab,var(--accent-light) 8%,transparent); }
+html[data-theme] body .explain-btn:hover { background:color-mix(in oklab,var(--accent-light) 18%,transparent); }
+html[data-theme] body .topo-zone-dragover { background:color-mix(in oklab,var(--accent-light) 10%,transparent) !important; box-shadow:inset 0 0 20px color-mix(in oklab,var(--accent-light) 10%,transparent); }
+html[data-theme] body .btn-tool { background:linear-gradient(135deg,color-mix(in oklab,var(--accent-light) 8%,transparent),color-mix(in oklab,var(--accent-light) 3%,transparent)); border:1.5px solid color-mix(in oklab,var(--accent-light) 30%,transparent); }
+html[data-theme] body .btn-tool:hover { background:color-mix(in oklab,var(--accent-light) 15%,transparent); }
+html[data-theme] body .td-section-icon { background:color-mix(in oklab,var(--accent-light) 8%,transparent); }
+html[data-theme] body .td-summary { background:linear-gradient(135deg, color-mix(in oklab,var(--accent-light) 6%,transparent), rgba(34,197,94,.04)); border-color:color-mix(in oklab,var(--accent-light) 20%,transparent); }
+html[data-theme] body .td-concept-card { background:color-mix(in oklab,var(--accent-light) 4%,transparent); border:1px solid color-mix(in oklab,var(--accent-light) 8%,transparent); }
+html[data-theme] body .td-concept-card:hover { background:color-mix(in oklab,var(--accent-light) 7%,transparent); }
+html[data-theme] body .td-diagram-section pre.td-diagram { border:1px solid color-mix(in oklab,var(--accent-light) 15%,transparent); }
+html[data-theme="light"] body .td-diagram-section pre.td-diagram { background:color-mix(in oklab,var(--accent-light) 4%,transparent); }
+html[data-theme] body .port-focus-info { background:color-mix(in oklab,var(--accent-light) 10%,transparent); border:1px solid color-mix(in oklab,var(--accent-light) 30%,transparent); }
+html[data-theme] body .port-mode-btn.port-mode-active { box-shadow:0 2px 8px color-mix(in oklab,var(--accent-light) 35%,transparent); }
+html[data-theme] body .port-ref-summary:hover { background:color-mix(in oklab,var(--accent-light) 8%,transparent); }
+html[data-theme] body .port-ref-search:focus { box-shadow:0 0 0 2px color-mix(in oklab,var(--accent-light) 25%,transparent); }
+html[data-theme] body .port-opt:hover { background:color-mix(in oklab,var(--accent-light) 10%,transparent); }
+html[data-theme] body .port-opt-multi.port-opt-selected { background:color-mix(in oklab,var(--accent-light) 18%,transparent); }
+html[data-theme] body .tb-fix-obj-badge { background:color-mix(in oklab,var(--accent-light) 15%,transparent); }
+html[data-theme] body .tb-fix-reveal-tip { background:color-mix(in oklab,var(--accent-light) 8%,transparent); border:1px solid color-mix(in oklab,var(--accent-light) 20%,transparent); }
+html[data-theme="light"] body .tb-palette-item { background:color-mix(in oklab,var(--accent) 6%,transparent); border-color:color-mix(in oklab,var(--accent) 20%,transparent); }
+html[data-theme="light"] body .tb-palette-item:hover { background:color-mix(in oklab,var(--accent) 14%,transparent); }
+html[data-theme="light"] body .tb-cable-chip { background:color-mix(in oklab,var(--accent) 6%,transparent); border-color:color-mix(in oklab,var(--accent) 20%,transparent); }
+html[data-theme="light"] body .tb-cable-chip:hover { background:color-mix(in oklab,var(--accent) 14%,transparent); }
+html[data-theme="light"] body .tb-cable-chip-active { background:color-mix(in oklab,var(--accent) 18%,transparent); }
+html[data-theme="light"] body .tb-load-select { background:color-mix(in oklab,var(--accent) 6%,transparent); border-color:color-mix(in oklab,var(--accent) 20%,transparent); }
+html[data-theme="light"] body .tb-grade-card { border-color:color-mix(in oklab,var(--accent) 25%,transparent); box-shadow:0 24px 64px rgba(0,0,0,.12), 0 0 0 1px color-mix(in oklab,var(--accent) 15%,transparent); }
+html[data-theme="light"] body .tb-coach-cached { background:color-mix(in oklab,var(--accent) 10%,transparent); color:var(--accent); border-color:color-mix(in oklab,var(--accent) 25%,transparent); }
+html[data-theme="light"] body .tb-coach-tip { background:color-mix(in oklab,var(--accent) 6%,transparent); border-color:color-mix(in oklab,var(--accent) 25%,transparent); }
+html[data-theme="light"] body .tb-toolbar { background:color-mix(in oklab,var(--accent) 6%,transparent); border-color:color-mix(in oklab,var(--accent) 15%,transparent); }
+html[data-theme="light"] body .tb-toolbar-divider { background:color-mix(in oklab,var(--accent) 18%,transparent); }
+html[data-theme="light"] body .tb-palette { background:color-mix(in oklab,var(--accent) 4%,transparent); border-color:color-mix(in oklab,var(--accent) 15%,transparent); }
+html[data-theme="light"] body .tb-palette-item { border-color:color-mix(in oklab,var(--accent) 18%,transparent); border-left-color:var(--tb-device-color, color-mix(in oklab,var(--accent) 40%,transparent)); }
+html[data-theme="light"] body .tb-palette-item:hover { background:color-mix(in oklab,var(--accent) 8%,transparent); }
+html[data-theme="light"] body .tb-cable-chip { border-color:color-mix(in oklab,var(--accent) 18%,transparent); }
+html[data-theme="light"] body .tb-cable-chip:hover { background:color-mix(in oklab,var(--accent) 8%,transparent); }
+html[data-theme="light"] body .tb-cable-chip-active { background:color-mix(in oklab,var(--accent) 12%,transparent); }
+html[data-theme="light"] body .tb-load-select { border-color:color-mix(in oklab,var(--accent) 20%,transparent); }
+html[data-theme="light"] body .tb-palette-hint { border-top-color:color-mix(in oklab,var(--accent) 12%,transparent); }
+html[data-theme="light"] body .tb-canvas-wrap { border-color:color-mix(in oklab,var(--accent) 12%,transparent); }
+html[data-theme="light"] body .tb-intro-details { background:color-mix(in oklab,var(--accent) 4%,transparent); border-color:color-mix(in oklab,var(--accent) 15%,transparent); }
+html[data-theme="light"] body .tb-howto-details { background:color-mix(in oklab,var(--accent) 4%,transparent); border-color:color-mix(in oklab,var(--accent) 15%,transparent); }
+html[data-theme="light"] body .tb-howto-step { background:radial-gradient(140% 160% at 0% 0%, color-mix(in oklab,var(--accent) 6%,transparent), transparent 55%),
+    linear-gradient(160deg, color-mix(in oklab,var(--accent) 4%,transparent), color-mix(in oklab,var(--accent) 1%,transparent)); border-color:color-mix(in oklab,var(--accent) 22%,transparent); }
+html[data-theme="light"] body .tb-howto-step:hover { border-color:color-mix(in oklab,var(--accent) 40%,transparent); box-shadow:0 6px 16px -8px color-mix(in oklab,var(--accent) 25%,transparent); }
+html[data-theme="light"] body .tb-howto-step-title { color:var(--accent); }
+html[data-theme="light"] body .tb-howto-step-desc strong { color:var(--accent); }
+html[data-theme="light"] body .tb-sim-log { border-color:color-mix(in oklab,var(--accent) 15%,transparent); }
+html[data-theme="light"] body .tb-sim-log-head { border-bottom-color:color-mix(in oklab,var(--accent) 12%,transparent); }
+html[data-theme="light"] body .tb-wire-overlay { background:linear-gradient(90deg, rgba(22,163,74,.16), color-mix(in oklab,var(--accent-light) 12%,transparent)); }
+html[data-theme="light"] body .tb-scenario-panel { background:color-mix(in oklab,var(--accent) 4%,transparent); border-color:color-mix(in oklab,var(--accent) 15%,transparent); }
+html[data-theme="light"] body .tb-lab-card:hover { background:color-mix(in oklab,var(--accent) 6%,transparent); }
+html[data-theme="light"] body .tb-lab-step-instr code { background:color-mix(in oklab,var(--accent) 8%,transparent); color:var(--accent); }
+html[data-theme="light"] body .tb-config-head { background:color-mix(in oklab,var(--accent) 6%,transparent); border-bottom-color:color-mix(in oklab,var(--accent) 15%,transparent); }
+html[data-theme="light"] body .tb-ov-hostname:focus { background:color-mix(in oklab,var(--accent) 4%,transparent) !important; }
+html[data-theme="light"] body .tb-ov-action:hover { background:color-mix(in oklab,var(--accent) 8%,transparent) !important; }
+html[data-theme="light"] body .tb-cloud-card { background:color-mix(in oklab,var(--accent) 2%,transparent); border-color:color-mix(in oklab,var(--accent) 15%,transparent); }
+html[data-theme="light"] body .tb-tool-btn-primary { background:linear-gradient(135deg, color-mix(in oklab,var(--accent) 15%,transparent), color-mix(in oklab,var(--accent) 8%,transparent)); border-color:color-mix(in oklab,var(--accent) 40%,transparent); }
+html[data-theme="light"] body .tb-tool-btn-primary:hover { background:linear-gradient(135deg, color-mix(in oklab,var(--accent) 25%,transparent), color-mix(in oklab,var(--accent) 12%,transparent)); }
+html[data-theme] body .tb-hero { background:linear-gradient(135deg, color-mix(in oklab,var(--accent-light) 8%,transparent), color-mix(in oklab,var(--accent) 4%,transparent)); border:1px solid color-mix(in oklab,var(--accent-light) 18%,transparent); }
+html[data-theme] body .tb-empty-cta:hover { border-color:color-mix(in oklab,var(--accent-light) 40%,transparent); box-shadow:0 4px 12px color-mix(in oklab,var(--accent-light) 15%,transparent); }
+html[data-theme] body .tb-empty-cta-primary { background:linear-gradient(135deg, color-mix(in oklab,var(--accent-light) 15%,transparent), color-mix(in oklab,var(--accent) 8%,transparent)); border-color:color-mix(in oklab,var(--accent-light) 35%,transparent); }
+html[data-theme] body .tb-empty-cta-primary:hover { background:linear-gradient(135deg, color-mix(in oklab,var(--accent-light) 25%,transparent), color-mix(in oklab,var(--accent) 15%,transparent)); }
+html[data-theme] body .tb-empty-cta-scenario { background:linear-gradient(135deg, rgba(34,197,94,.10), color-mix(in oklab,var(--accent-light) 6%,transparent)); }
+html[data-theme] body .tb-empty-cta-scenario:hover { background:linear-gradient(135deg, rgba(34,197,94,.18), color-mix(in oklab,var(--accent-light) 12%,transparent)); }
+html[data-theme] body .tb-sc-loaded { background:radial-gradient(120% 140% at 0% 0%, color-mix(in oklab,var(--accent-light) 14%,transparent), transparent 55%),
+    linear-gradient(160deg, color-mix(in oklab,var(--accent-light) 12%,transparent), color-mix(in oklab,var(--accent-light) 3%,transparent)); border:1px solid color-mix(in oklab,var(--accent-light) 35%,transparent); box-shadow:0 1px 2px rgba(0,0,0,.04), 0 10px 30px -12px color-mix(in oklab,var(--accent-light) 35%,transparent); }
+html[data-theme] body .tb-sc-loaded-badge { background:color-mix(in oklab,var(--accent-light) 14%,transparent); border:1px solid color-mix(in oklab,var(--accent-light) 30%,transparent); }
+html[data-theme] body .tb-sc-loaded-reqs { border:1px solid color-mix(in oklab,var(--accent-light) 15%,transparent); }
+html[data-theme] body .tb-sc-loaded-chip { background:color-mix(in oklab,var(--accent-light) 12%,transparent); border:1px solid color-mix(in oklab,var(--accent-light) 22%,transparent); }
+html[data-theme] body .tb-sc-loaded-cta:hover { box-shadow:0 4px 12px color-mix(in oklab,var(--accent-light) 20%,transparent); }
+html[data-theme] body .tb-sc-loaded-cta-primary { background:linear-gradient(135deg, var(--accent, #7c6ff7), var(--accent)); box-shadow:0 2px 8px color-mix(in oklab,var(--accent-light) 30%,transparent); }
+html[data-theme] body .tb-sc-loaded-cta-primary:hover { box-shadow:0 6px 16px color-mix(in oklab,var(--accent-light) 40%,transparent); }
+html[data-theme="light"] body .tb-sc-loaded { background:radial-gradient(120% 140% at 0% 0%, color-mix(in oklab,var(--accent) 10%,transparent), transparent 55%),
+    linear-gradient(160deg, color-mix(in oklab,var(--accent) 8%,transparent), color-mix(in oklab,var(--accent) 2%,transparent)); border-color:color-mix(in oklab,var(--accent) 30%,transparent); box-shadow:0 1px 2px rgba(0,0,0,.04), 0 10px 30px -12px color-mix(in oklab,var(--accent) 25%,transparent); }
+html[data-theme="light"] body .tb-sc-loaded-reqs { background:color-mix(in oklab,var(--accent) 4%,transparent); border-color:color-mix(in oklab,var(--accent) 15%,transparent); }
+html[data-theme="light"] body .tb-sc-loaded-chip { background:color-mix(in oklab,var(--accent) 8%,transparent); border-color:color-mix(in oklab,var(--accent) 18%,transparent); }
+html[data-theme="light"] body .tb-sc-loaded-cta-primary { background:linear-gradient(135deg, var(--accent), var(--accent)); }
+html[data-theme] body .tb-scenario-picker-intro { background:color-mix(in oklab,var(--accent-light) 6%,transparent); }
+html[data-theme] body .tb-scenario-picker-cat { border:1px solid color-mix(in oklab,var(--accent-light) 18%,transparent); }
+html[data-theme] body .tb-scenario-picker-cat-head { background:color-mix(in oklab,var(--accent-light) 8%,transparent); }
+html[data-theme] body .tb-scenario-picker-cat-head:hover { background:color-mix(in oklab,var(--accent-light) 14%,transparent); }
+html[data-theme] body .tb-scenario-picker-cat-count { background:color-mix(in oklab,var(--accent-light) 18%,transparent); }
+html[data-theme] body .tb-scenario-card:hover { border-color:color-mix(in oklab,var(--accent-light) 50%,transparent); box-shadow:0 6px 16px -8px color-mix(in oklab,var(--accent-light) 30%,transparent); }
+html[data-theme] body .tb-scenario-card-active { background:linear-gradient(135deg, color-mix(in oklab,var(--accent-light) 12%,transparent), color-mix(in oklab,var(--accent-light) 4%,transparent)); box-shadow:0 0 0 1px color-mix(in oklab,var(--accent-light) 20%,transparent); }
+html[data-theme] body .tb-scenario-card-chip { background:color-mix(in oklab,var(--accent-light) 10%,transparent); }
+html[data-theme] body .tb-scenario-reset-btn:hover { background:color-mix(in oklab,var(--accent-light) 5%,transparent); }
+html[data-theme="light"] body .tb-scenario-picker-cat { background:color-mix(in oklab,var(--accent) 3%,transparent); border-color:color-mix(in oklab,var(--accent) 14%,transparent); }
+html[data-theme="light"] body .tb-scenario-picker-cat-head { background:color-mix(in oklab,var(--accent) 6%,transparent); color:var(--accent); }
+html[data-theme="light"] body .tb-scenario-picker-cat-head:hover { background:color-mix(in oklab,var(--accent) 12%,transparent); }
+html[data-theme="light"] body .tb-scenario-picker-cat-count { background:color-mix(in oklab,var(--accent) 12%,transparent); color:var(--accent); }
+html[data-theme="light"] body .tb-scenario-picker-intro { background:color-mix(in oklab,var(--accent) 5%,transparent); border-left-color:var(--accent); }
+html[data-theme="light"] body .tb-scenario-card-chip { background:color-mix(in oklab,var(--accent) 8%,transparent); color:var(--accent); }
+html[data-theme="light"] body .tb-v2-eyebrow, html[data-theme="light"] body .tb-v2-display em { color:var(--accent); }
+html[data-theme="light"] body .tb-v2-eyebrow::before { background:var(--accent); }
+html[data-theme="light"] body .tb-v2-stats { background:linear-gradient(180deg, color-mix(in oklab,var(--accent) 5%,transparent), color-mix(in oklab,var(--accent) 8%,transparent)); border-color:color-mix(in oklab,var(--accent) 20%,transparent); }
+html[data-theme="light"] body .tb-v2-stats strong { color:var(--accent); }
+html[data-theme="light"] body .tb-toolbar.tb-toolbar-v2 { background:radial-gradient(120% 140% at 0% 0%, color-mix(in oklab,var(--accent) 5%,transparent), transparent 55%),
+    linear-gradient(160deg, color-mix(in oklab,var(--accent) 2.5%,transparent), color-mix(in oklab,var(--accent) 0.8%,transparent)); border-color:color-mix(in oklab,var(--accent) 20%,transparent); }
+html[data-theme="light"] body .tb-insp-eyebrow { color:var(--accent); }
+html[data-theme="light"] body .tb-insp-cell-iface { color:var(--accent); }
+html[data-theme="light"] body .tb-insp-learned { color:var(--accent); }
+html[data-theme="light"] body .tb-insp-tbl tr.tb-insp-row-flash td { background:color-mix(in oklab,var(--accent) 8%,transparent); box-shadow:inset 3px 0 0 var(--accent); }
+html[data-theme="light"] body .tb-insp-inapplicable strong { color:var(--accent); }
+html[data-theme="light"] body .tb-pane-head em { color:var(--accent); }
+html[data-theme="light"] body .tb-v3-scn-active { background:linear-gradient(135deg, color-mix(in oklab,var(--accent) 18%,transparent), color-mix(in oklab,var(--accent) 8%,transparent)); border-color:var(--accent); }
+html[data-theme="light"] body .tb-v3-scn-active .tb-v3-scn-title { color:var(--accent); }
+html[data-theme="light"] body .tb-v3-inspect-edit { background:linear-gradient(135deg, color-mix(in oklab,var(--accent) 12%,transparent), color-mix(in oklab,var(--accent) 4%,transparent)); border-color:color-mix(in oklab,var(--accent) 30%,transparent); color:var(--accent); }
+html[data-theme] body .tb-canvas-pills { border:1px solid color-mix(in oklab,var(--accent-light) 22%,transparent); }
+html[data-theme] body .tb-canvas-pills-sep { background:color-mix(in oklab,var(--accent-light) 22%,transparent); }
+html[data-theme] body .tb-pill:hover { background:color-mix(in oklab,var(--accent-light) 14%,transparent); }
+html[data-theme] body .tb-pill-active { background:linear-gradient(135deg, color-mix(in oklab,var(--accent-light) 26%,transparent), color-mix(in oklab,var(--accent-light) 14%,transparent)); border-color:color-mix(in oklab,var(--accent-light) 42%,transparent); box-shadow:0 1px 4px -1px color-mix(in oklab,var(--accent-light) 35%,transparent); }
+html[data-theme] body .tb-zoom-ctrls { border:1px solid color-mix(in oklab,var(--accent-light) 22%,transparent); }
+html[data-theme] body .tb-zoom-btn:hover { background:color-mix(in oklab,var(--accent-light) 20%,transparent); }
+html[data-theme] body .tb-inspector-pop { border:1px solid color-mix(in oklab,var(--accent-light) 32%,transparent); }
+html[data-theme] body .tb-inspector-pop-head { background:linear-gradient(135deg, color-mix(in oklab,var(--accent-light) 22%,transparent), color-mix(in oklab,var(--accent-light) 8%,transparent)); border-bottom:1px solid color-mix(in oklab,var(--accent-light) 22%,transparent); }
+html[data-theme="light"] body .tb-trace-panel { border-color:color-mix(in oklab,var(--accent) 25%,transparent); }
+html[data-theme="light"] body .tb-trace-eyebrow, html[data-theme="light"] body .tb-trace-title em, html[data-theme="light"] body .tb-trace-current-pill { color:var(--accent); }
+html[data-theme="light"] body .tb-trace-hop-layer-l2, html[data-theme="light"] body .tb-trace-hop-layer-arp { background:color-mix(in oklab,var(--accent) 10%,transparent); color:var(--accent); }
+html[data-theme="light"] body .tb-trace-badge-head { fill:var(--accent); }
+html[data-theme="light"] body .tb-trace-badge-bg { stroke:var(--accent); }
+html[data-theme="light"] body .tb-canvas-pills { border-color:color-mix(in oklab,var(--accent) 25%,transparent); }
+html[data-theme="light"] body .tb-canvas-pills-sep { background:color-mix(in oklab,var(--accent) 20%,transparent); }
+html[data-theme="light"] body .tb-pill:hover { background:color-mix(in oklab,var(--accent) 12%,transparent); }
+html[data-theme="light"] body .tb-pill-active { background:linear-gradient(135deg, color-mix(in oklab,var(--accent) 22%,transparent), color-mix(in oklab,var(--accent) 10%,transparent)); border-color:color-mix(in oklab,var(--accent) 42%,transparent); }
+html[data-theme="light"] body .tb-zoom-ctrls { border-color:color-mix(in oklab,var(--accent) 25%,transparent); }
+html[data-theme="light"] body .tb-zoom-btn:hover { background:color-mix(in oklab,var(--accent) 14%,transparent); }
+html[data-theme="light"] body .tb-inspector-pop { border-color:color-mix(in oklab,var(--accent) 25%,transparent); }
+html[data-theme="light"] body .tb-inspector-pop-head { background:linear-gradient(135deg, color-mix(in oklab,var(--accent) 18%,transparent), color-mix(in oklab,var(--accent) 8%,transparent)); border-bottom-color:color-mix(in oklab,var(--accent) 25%,transparent); }
+html[data-theme="light"] body .tb-v3-scn-cat-head { color:var(--accent); }
+html[data-theme="light"] body .tb-v3-scn-cat-count { background:color-mix(in oklab,var(--accent) 10%,transparent); border-color:color-mix(in oklab,var(--accent) 22%,transparent); color:var(--accent); }
+html[data-theme="light"] body .tb-pane-collapse-btn { background:color-mix(in oklab,var(--accent) 10%,transparent); border-color:color-mix(in oklab,var(--accent) 30%,transparent); color:var(--accent); }
+html[data-theme="light"] body .tb-pane-collapse-btn:hover { background:color-mix(in oklab,var(--accent) 22%,transparent); }
+html[data-theme="light"] body .tb-pane-rail-label:hover { color:var(--accent); }
+html[data-theme] body .tb-toolbar-details { border:1px solid color-mix(in oklab,var(--accent-light) 20%,transparent); background:color-mix(in oklab,var(--accent-light) 4%,transparent); }
+html[data-theme] body .tb-toolbar-summary:hover { background:color-mix(in oklab,var(--accent-light) 8%,transparent); }
+html[data-theme] body .tb-toolbar-details[open] > .tb-toolbar-summary { border-bottom:1px dashed color-mix(in oklab,var(--accent-light) 20%,transparent); }
+html[data-theme] body .tb-config-panel { border:1px solid color-mix(in oklab,var(--accent-light) 35%,transparent); border-left:1px solid color-mix(in oklab,var(--accent-light) 35%,transparent); }
+html[data-theme] body .tb-config-panel .tb-config-head { background:linear-gradient(135deg, color-mix(in oklab,var(--accent-light) 26%,transparent), color-mix(in oklab,var(--accent-light) 10%,transparent)); border-bottom:1px solid color-mix(in oklab,var(--accent-light) 25%,transparent); }
+html[data-theme="light"] body .tb-toolbar-details { background:color-mix(in oklab,var(--accent) 4%,transparent); border-color:color-mix(in oklab,var(--accent) 20%,transparent); }
+html[data-theme="light"] body .tb-toolbar-summary::before { color:var(--accent); }
+html[data-theme="light"] body .tb-toolbar-summary:hover { background:color-mix(in oklab,var(--accent) 8%,transparent); }
+html[data-theme="light"] body .tb-config-panel { border-color:color-mix(in oklab,var(--accent) 28%,transparent); box-shadow:0 16px 48px -12px color-mix(in oklab,var(--accent) 25%,transparent); }
+html[data-theme="light"] body .tb-config-panel .tb-config-head { background:linear-gradient(135deg, color-mix(in oklab,var(--accent) 18%,transparent), color-mix(in oklab,var(--accent) 8%,transparent)); border-bottom-color:color-mix(in oklab,var(--accent) 25%,transparent); }
+html[data-theme="light"] body .explain-btn-followup { color:var(--accent) !important; border-color:color-mix(in oklab,var(--accent) 30%,transparent) !important; }
+html[data-theme] body .acl-packet-pill { border:1px solid color-mix(in oklab,var(--accent-light) 45%,transparent); box-shadow:0 4px 12px -2px color-mix(in oklab,var(--accent-light) 45%,transparent); }
+html[data-theme] body .acl-packet-pill-0 { border-color:color-mix(in oklab,var(--accent-light) 55%,transparent); box-shadow:0 4px 14px -2px color-mix(in oklab,var(--accent-light) 50%,transparent); }
+html[data-theme] body .acl-rule-inspecting { box-shadow:0 0 0 2px color-mix(in oklab,var(--accent-light) 55%,transparent), 0 0 24px -4px color-mix(in oklab,var(--accent-light) 45%,transparent); }
+html[data-theme="light"] body .acl-packet-pill { border-color:color-mix(in oklab,var(--accent) 45%,transparent); box-shadow:0 4px 12px -2px color-mix(in oklab,var(--accent) 35%,transparent); }
+html[data-theme="light"] body .acl-packet-proto { border-color:color-mix(in oklab,var(--accent) 28%,transparent); }
+html[data-theme="light"] body .acl-rule-inspecting { box-shadow:0 0 0 2px color-mix(in oklab,var(--accent) 45%,transparent), 0 0 20px -4px color-mix(in oklab,var(--accent) 35%,transparent); border-color:var(--accent) !important; }
+html[data-theme="light"] body .acl-sc-mode-stateful { color:var(--accent); background:color-mix(in oklab,var(--accent) 10%,transparent); border-color:color-mix(in oklab,var(--accent) 35%,transparent); }
+html[data-theme] body .tb-pill.tb-pill-3d { border-color:color-mix(in oklab,var(--accent-light) 40%,transparent); }
+html[data-theme] body .tb-pill.tb-pill-3d:hover { background:color-mix(in oklab,var(--accent-light) 16%,transparent); }
+html[data-theme] body .tb-3d-node-label.is-selected { box-shadow:0 0 16px color-mix(in oklab,var(--accent-light) 45%,transparent); }
+html[data-theme] body .tb-3d-loading-spinner { border:3px solid color-mix(in oklab,var(--accent-light) 25%,transparent); }
+html[data-theme] body .tb-3d-mobile-nudge .tb-3d-mobile-icon { filter:drop-shadow(0 0 12px color-mix(in oklab,var(--accent-light) 40%,transparent)); }
+html[data-theme] body .tb-3d-trace-hud { background:color-mix(in oklab,var(--accent-light) 14%,transparent); border:1px solid color-mix(in oklab,var(--accent-light) 40%,transparent); }
+html[data-theme] body .tb-pill.tb-pill-playback:hover { background:color-mix(in oklab,var(--accent-light) 14%,transparent); border-color:color-mix(in oklab,var(--accent-light) 30%,transparent); }
+html[data-theme] body .tb-3d-hop-card.tb-3d-hop-card-current { box-shadow:0 0 0 2px color-mix(in oklab,var(--accent-light) 25%,transparent), 0 6px 20px color-mix(in oklab,var(--accent-light) 20%,transparent); }
+html[data-theme] body .tb-3d-hop-card-num { background:color-mix(in oklab,var(--accent-light) 18%,transparent); }
+html[data-theme] body .tb-3d-hop-card-layer { background:color-mix(in oklab,var(--accent-light) 14%,transparent); }
+html[data-theme] body .tb-3d-hop-card-layer.layer-L3 { background:color-mix(in oklab,var(--accent-light) 15%,transparent); color:var(--accent-light); }
+html[data-theme] body .tb-3d-frame-badge { border:1px solid color-mix(in oklab,var(--accent-light) 50%,transparent); box-shadow:0 0 14px color-mix(in oklab,var(--accent-light) 30%,transparent); }
+html[data-theme="light"] body .tb-3d-trace-hud { background:color-mix(in oklab,var(--accent) 10%,transparent); color:var(--accent); border-color:color-mix(in oklab,var(--accent) 30%,transparent); }
+html[data-theme] body .tb-3d-node-label.tb-3d-trace-current { box-shadow:0 0 18px color-mix(in oklab,var(--accent-light) 60%,transparent); }
+html[data-theme] body .tb-3d-osi-btn:not([disabled]):hover { background:color-mix(in oklab,var(--accent-light) 14%,transparent); border-color:color-mix(in oklab,var(--accent-light) 40%,transparent); }
+html[data-theme] body .tb-3d-osi-btn.tb-3d-osi-active { background:color-mix(in oklab,var(--accent-light) 22%,transparent); }
+html[data-theme] body .tb-3d-osi-label.layer-7 { border-left-color:var(--accent-light); }
+html[data-theme] body .tb-3d-host.tb-3d-osi-active .tb-3d-node-label.tb-3d-osi-focus { box-shadow:0 0 18px color-mix(in oklab,var(--accent-light) 50%,transparent); }
+html[data-theme] body .tb-3d-osi-title { border:1px solid color-mix(in oklab,var(--accent-light) 40%,transparent); box-shadow:0 4px 24px color-mix(in oklab,var(--accent-light) 20%,transparent); }
+html[data-theme] body .tb-3d-tour-caption { border:1px solid color-mix(in oklab,var(--accent-light) 35%,transparent); box-shadow:0 12px 40px rgba(0, 0, 0, .45), 0 0 0 1px color-mix(in oklab,var(--accent-light) 12%,transparent); }
+html[data-theme] body .acl-picker-card:hover { background:color-mix(in oklab,var(--accent-light) 6%,transparent); box-shadow:0 4px 12px color-mix(in oklab,var(--accent-light) 18%,transparent); }
+html[data-theme] body .acl-traffic-section { background:color-mix(in oklab,var(--accent-light) 4%,transparent); border:1px solid color-mix(in oklab,var(--accent-light) 18%,transparent); }
+html[data-theme] body .acl-result-explanation { background:color-mix(in oklab,var(--accent-light) 6%,transparent); }
+html[data-theme] body .acl-rm-helper { background:color-mix(in oklab,var(--accent-light) 12%,transparent); border:1px solid color-mix(in oklab,var(--accent-light) 30%,transparent); }
+html[data-theme="light"] body .acl-rm-helper { background:color-mix(in oklab,var(--accent) 8%,transparent); border-color:color-mix(in oklab,var(--accent) 30%,transparent); }
+html[data-theme] body .acl-rm-chip:hover { background:color-mix(in oklab,var(--accent-light) 15%,transparent); border-color:color-mix(in oklab,var(--accent-light) 35%,transparent); }
+
+/* ───────── SIDEBAR (sb-item counts/toggles) ───────── */
+html[data-theme="light"] body .sb-item-count { background:color-mix(in oklab,var(--accent) 8%,transparent); border-color:color-mix(in oklab,var(--accent) 20%,transparent); }
+html[data-theme="light"] body .sb-mobile-toggle:hover { background:color-mix(in oklab,var(--accent) 6%,transparent); }
+html[data-theme] body .sb-item-count { background:color-mix(in oklab,var(--accent-light) 8%,transparent); border:1px solid color-mix(in oklab,var(--accent-light) 16%,transparent); }
+html[data-theme] body .sb-item-active .sb-item-count { background:color-mix(in oklab,var(--accent-light) 20%,transparent); border-color:color-mix(in oklab,var(--accent-light) 30%,transparent); }
+html[data-theme="light"] body .sb-item-count { background:color-mix(in oklab,var(--accent) 8%,transparent); border-color:color-mix(in oklab,var(--accent) 18%,transparent); }
+html[data-theme="light"] body .sb-item-active .sb-item-count { background:color-mix(in oklab,var(--accent) 16%,transparent); color:var(--accent); border-color:color-mix(in oklab,var(--accent) 30%,transparent); }
+
+/* ───────── QUIZ (options, qnav, chips, pbq, order, cq-*, diag-quiz) ───────── */
+html[data-theme] body .order-item:hover { background:color-mix(in oklab,var(--accent-light) 7%,transparent); }
+html[data-theme] body .order-placed-item { background:color-mix(in oklab,var(--accent-light) 8%,transparent); }
+html[data-theme] body .cq-generate-btn { background:linear-gradient(135deg, var(--accent), var(--accent)) !important; }
+html[data-theme] body .na-option:hover:not([disabled]) { background:color-mix(in oklab,var(--accent-light) 6%,transparent); }
+html[data-theme] body .na-option code { background:color-mix(in oklab,var(--accent-light) 10%,transparent); }
+html[data-theme="light"] body #topic-group .chip:not(.cq-mode-card).on { outline-color:color-mix(in oklab,var(--accent) 35%,transparent); }
+html[data-theme] body .diag-quiz-timer { background:color-mix(in oklab,var(--accent-light) 10%,transparent); }
+html[data-theme] body .topbar-quota-chip.is-pro { background:color-mix(in oklab,var(--accent-light) 12%,transparent); border-color:color-mix(in oklab,var(--accent-light) 40%,transparent); }
+
+/* ───────── MISC (mon-page, topic-obj, ps2-stat, daily, exam-domain, pass-plan, settings, etc.) ───────── */
+html[data-theme] body .mon-page { background:color-mix(in oklab,var(--accent-light) 8%,transparent); }
+html[data-theme] body .topic-obj-concepts { background:color-mix(in oklab,var(--accent-light) 12%,transparent); border-color:color-mix(in oklab,var(--accent-light) 32%,transparent); color:var(--accent-light); }
+html[data-theme="light"] body .ps2-stat { background:color-mix(in oklab,var(--accent) 4%,transparent); border-color:color-mix(in oklab,var(--accent) 16%,transparent); }
+html[data-theme="light"] body .pd-count { background:color-mix(in oklab,var(--accent) 8%,transparent); border-color:color-mix(in oklab,var(--accent) 22%,transparent); }
+html[data-theme="light"] body .topic-obj-concepts { color:var(--accent); background:color-mix(in oklab,var(--accent) 10%,transparent); border-color:color-mix(in oklab,var(--accent) 30%,transparent); }
+html[data-theme] body .topic-dive-obj { background:color-mix(in oklab,var(--accent-light) 8%,transparent); }
+html[data-theme] body .daily-challenge-card { background:linear-gradient(135deg, color-mix(in oklab,var(--accent-light) 12%,transparent), rgba(147, 197, 253, 0.06)); border:1px solid color-mix(in oklab,var(--accent-light) 35%,transparent); }
+html[data-theme="light"] body #tb-grid path { stroke:color-mix(in oklab,var(--accent) 8%,transparent); }
+html[data-theme] body .celebration-toast { background:linear-gradient(135deg, color-mix(in oklab,var(--accent-light) 96%,transparent), color-mix(in oklab,var(--accent) 96%,transparent)); box-shadow:0 8px 32px color-mix(in oklab,var(--accent-light) 45%,transparent), 0 0 0 1px rgba(251,191,36,.55); }
+html[data-theme] body .st-dash-callout-types { border-color:color-mix(in oklab,var(--accent-light) 30%,transparent); background:linear-gradient(135deg, color-mix(in oklab,var(--accent-light) 5%,transparent), color-mix(in oklab,var(--accent-light) 2%,transparent)); }
+html[data-theme] body .st-dash-callout-row:hover { border-color:color-mix(in oklab,var(--accent-light) 40%,transparent); }
+html[data-theme="light"] body .sb-collapse-btn:hover { background:color-mix(in oklab,var(--accent) 8%,transparent); color:var(--accent); border-color:color-mix(in oklab,var(--accent) 22%,transparent); }
+html[data-theme="light"] body .topbar-avatar { background:linear-gradient(135deg, var(--accent), var(--accent-light)); box-shadow:0 3px 8px -2px color-mix(in oklab,var(--accent) 40%,transparent); }
+html[data-theme="light"] body .mini-card-v2 { background:color-mix(in oklab,var(--accent) 4%,transparent); border-color:color-mix(in oklab,var(--accent) 14%,transparent); }
+html[data-theme="light"] body .hot-area-stage { border-color:color-mix(in oklab,var(--accent) 14%,transparent); }
+html[data-theme="light"] body .osi-layer { border-color:color-mix(in oklab,var(--accent) 14%,transparent); }
+html[data-theme="light"] body .cable-card { border-color:color-mix(in oklab,var(--accent) 14%,transparent); }
+html[data-theme] body .na-q-stem code { background:color-mix(in oklab,var(--accent-light) 10%,transparent); }
+html[data-theme="light"] body .na-output-block { border-color:color-mix(in oklab,var(--accent) 25%,transparent); }
+html[data-theme] body .na-exp-text code { background:color-mix(in oklab,var(--accent-light) 10%,transparent); }
+html[data-theme] body .na-dash-callout { background:linear-gradient(135deg, color-mix(in oklab,var(--accent-light) 12%,transparent), color-mix(in oklab,var(--accent-light) 4%,transparent)); border:1px solid color-mix(in oklab,var(--accent-light) 30%,transparent); }
+html[data-theme] body .na-step-body code { background:color-mix(in oklab,var(--accent-light) 10%,transparent); }
+html[data-theme="light"] body .na-cat-card, html[data-theme="light"] body .na-step-card { border-color:color-mix(in oklab,var(--accent) 14%,transparent); }
+html[data-theme="light"] body .exp-wrong-explain { background:color-mix(in oklab,var(--accent) 5%,transparent); border-left-color:color-mix(in oklab,var(--accent) 40%,transparent); }
+html[data-theme] body .sb-streak-active:hover { border-color:color-mix(in oklab,var(--accent-light) 45%,transparent); box-shadow:0 10px 28px -8px color-mix(in oklab,var(--accent-light) 35%,transparent); }
+html[data-theme="light"] body .sb-streak-active:hover { border-color:color-mix(in oklab,var(--accent) 50%,transparent); box-shadow:0 10px 28px -8px color-mix(in oklab,var(--accent) 35%,transparent); }
+html[data-theme] body .daily-recap-card { border:1px solid color-mix(in oklab,var(--accent-light) 32%,transparent); }
+html[data-theme] body .daily-recap-card .ed-modalhead { border-bottom-color:color-mix(in oklab,var(--accent-light) 28%,transparent); }
+html[data-theme="light"] body .q-scenario .q-scenario-rule { background:var(--accent); }
+html[data-theme] body .sr-review-card { background:linear-gradient(135deg, color-mix(in oklab,var(--accent-light) 12%,transparent), color-mix(in oklab,var(--accent-light) 4%,transparent)); border:1px solid color-mix(in oklab,var(--accent-light) 40%,transparent); }
+html[data-theme] body .sr-review-card::before { background:radial-gradient(circle at top right, color-mix(in oklab,var(--accent-light) 18%,transparent), transparent 60%); }
+html[data-theme] body .modes-card:hover { background:color-mix(in oklab,var(--accent-light) 8%,transparent); box-shadow:0 4px 12px color-mix(in oklab,var(--accent-light) 15%,transparent); }
+html[data-theme] body .modes-card-featured { background:linear-gradient(135deg, color-mix(in oklab,var(--accent-light) 14%,transparent), color-mix(in oklab,var(--accent-light) 6%,transparent)); border-color:color-mix(in oklab,var(--accent-light) 42%,transparent); }
+html[data-theme] body .st-lesson-placeholder-v2::before { background:radial-gradient(circle at top, color-mix(in oklab,var(--accent-light) 10%,transparent), transparent 60%); }
+html[data-theme] body .diagnostic-cta-card { background:linear-gradient(135deg, color-mix(in oklab,var(--accent-light) 14%,transparent), color-mix(in oklab,var(--accent-light) 4%,transparent)); border:1px solid color-mix(in oklab,var(--accent-light) 40%,transparent); }
+html[data-theme] body .diagnostic-cta-card::before { background:radial-gradient(circle, color-mix(in oklab,var(--accent-light) 18%,transparent) 0%, transparent 60%); }
+html[data-theme] body .pass-plan-prob-ring { box-shadow:0 0 40px color-mix(in oklab,var(--accent-light) 30%,transparent); }
+html[data-theme] body .pass-plan-weak-btn { background:color-mix(in oklab,var(--accent-light) 15%,transparent); border:1px solid color-mix(in oklab,var(--accent-light) 35%,transparent); }
+html[data-theme] body .pass-plan-weak-btn:hover { background:color-mix(in oklab,var(--accent-light) 25%,transparent); }
+html[data-theme] body .pass-plan-day.today { background:color-mix(in oklab,var(--accent-light) 12%,transparent); }
+html[data-theme] body .settings-health-card { background:linear-gradient(135deg, color-mix(in oklab,var(--accent-light) 8%,transparent), color-mix(in oklab,var(--accent-light) 2%,transparent)); border:1px solid color-mix(in oklab,var(--accent-light) 25%,transparent); }
+html[data-theme="light"] body .settings-health-card { background:linear-gradient(135deg, color-mix(in oklab,var(--accent) 6%,transparent), color-mix(in oklab,var(--accent) 2%,transparent)); border-color:color-mix(in oklab,var(--accent) 25%,transparent); }
+html[data-theme] body .donudge-card { box-shadow:0 30px 80px color-mix(in oklab,var(--accent-light) 15%,transparent), 0 6px 24px rgba(0, 0, 0, .5); }
