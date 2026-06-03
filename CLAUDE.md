@@ -107,6 +107,7 @@ npx playwright test              # E2E (tests/e2e/app.spec.js)
 
 | Version | Features Added |
 |---|---|
+| v7.13.2 | remove author pass-proof banner from setup page |
 | v7.13.1 | SW cross-origin passthrough — fixes Google Fonts (Fraunces) load on cert-app |
 | v7.13.0 | Analytics motion — ECG sparkline sweeps, knowledge-constellation starfield (twinkle/pulsar/hover-flare), dashboard stat count-ups |
 | v7.12.0 | Readiness card score load-up + conditional pass celebration (ring, stamp, confetti); UAT green |

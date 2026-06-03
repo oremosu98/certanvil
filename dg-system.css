@@ -141,17 +141,15 @@ html[data-theme] body #page-setup{background:var(--bg);color:var(--text);}
 /* v3 reimagining — refined status pill (was a full-bleed bottom-ruled
    band). Visual only; the [data-cert] display gate below is preserved
    EXACTLY (pass-proof in netplus, private in secplus, never both). */
-html[data-theme] body #page-setup .pass-proof-banner,html[data-theme] body #page-setup .secplus-private-banner{align-items:center;justify-content:flex-start;gap:11px;width:fit-content;max-width:100%;margin:22px auto 4px;padding:8px 16px 8px 12px;border:1px solid color-mix(in oklab,var(--accent) 22%,var(--border));border-bottom:1px solid color-mix(in oklab,var(--accent) 22%,var(--border));border-radius:999px;background:color-mix(in oklab,var(--accent) 6%,var(--surface));box-shadow:none;font-size:var(--t-1);color:var(--text-mid);text-align:left;}
+html[data-theme] body #page-setup .secplus-private-banner{align-items:center;justify-content:flex-start;gap:11px;width:fit-content;max-width:100%;margin:22px auto 4px;padding:8px 16px 8px 12px;border:1px solid color-mix(in oklab,var(--accent) 22%,var(--border));border-bottom:1px solid color-mix(in oklab,var(--accent) 22%,var(--border));border-radius:999px;background:color-mix(in oklab,var(--accent) 6%,var(--surface));box-shadow:none;font-size:var(--t-1);color:var(--text-mid);text-align:left;}
 /* scoped per cert so the gate holds (do NOT add a blanket display) */
-#page-setup .pass-proof-banner{display:flex;}
-html[data-cert="secplus"] body #page-setup .pass-proof-banner{display:none;}
 html[data-cert="secplus"] body #page-setup .secplus-private-banner{display:flex;}
 /* dg = 0 emoji: the ✓ / 🔒 dingbats are decorative (aria-hidden); the
    banner sentence carries the meaning. The SVG sits in an accent chip. */
-#page-setup .pass-proof-icon,#page-setup .secplus-private-icon{display:grid!important;place-items:center;width:22px;height:22px;border-radius:50%;flex:none;background:var(--accent);}
-#page-setup .pass-proof-icon svg,#page-setup .secplus-private-icon svg{color:var(--bg);width:13px;height:13px;}
-html[data-theme] body #page-setup .pass-proof-text strong,html[data-theme] body #page-setup .secplus-private-text strong{color:var(--text);font-weight:700;}
-html[data-theme] body #page-setup .pass-proof-text em,html[data-theme] body #page-setup .secplus-private-text em{font-style:normal;color:var(--accent);font-weight:600;}
+#page-setup .secplus-private-icon{display:grid!important;place-items:center;width:22px;height:22px;border-radius:50%;flex:none;background:var(--accent);}
+#page-setup .secplus-private-icon svg{color:var(--bg);width:13px;height:13px;}
+html[data-theme] body #page-setup .secplus-private-text strong{color:var(--text);font-weight:700;}
+html[data-theme] body #page-setup .secplus-private-text em{font-style:normal;color:var(--accent);font-weight:600;}
 
 /* ── codex-home 2-column grid (mockups/codex-home-concept.html) ────────────
    Mockup hex mapped onto the app OKLCH tokens so dark / light / cert all

@@ -13495,51 +13495,6 @@ test('v4.86.0 CertPack: sw.js SHELL_ASSETS includes certs/secplus.js',
   /SHELL_ASSETS\s*=\s*\[[\s\S]{0,700}certs\/secplus\.js/.test(sw));
 
 // ═══════════════════════════════════════════════════════════════════════
-// v4.85.27 — Pass-proof banner. First-time-visitor trust signal per
-// cert_mode_launch_checklist.md Day 1 #3 post-pass action. Author
-// passed Network+ N10-009 (767/900) on 2026-05-05 using this tool.
-// Static markup, no JS state. Banner is the credibility anchor for
-// the cert-mode SaaS launch — must stay above the hero.
-// ═══════════════════════════════════════════════════════════════════════
-
-test('v4.85.27 PassProof: banner element exists in #page-setup',
-  /<div class="pass-proof-banner"/.test(html));
-
-test('v4.85.27 PassProof: banner cites the correct cert + score (Network\\+ + 767)',
-  /Network\+ N10-009.*767\/900/.test(html));
-
-test('v4.85.27 PassProof: banner cites the correct exam date (2026-05-05)',
-  html.includes('2026-05-05'));
-
-test('v4.85.27 PassProof: banner mentions Security+ as next cert',
-  /Security\+/.test(html));
-
-test('v4.85.27 PassProof: banner has aria-label for accessibility',
-  /aria-label="Author's exam result"/.test(html));
-
-test('v4.85.27 PassProof: banner sits BEFORE the hero (above-the-fold trust)',
-  (() => {
-    const bannerIdx = html.indexOf('class="pass-proof-banner"');
-    const heroIdx = html.indexOf('id="setup-hero-v2"');
-    return bannerIdx > 0 && heroIdx > 0 && bannerIdx < heroIdx;
-  })());
-
-test('v4.85.27 PassProof: .pass-proof-banner CSS declared',
-  /\.pass-proof-banner\s*\{/.test(css));
-
-test('v4.85.27 PassProof: .pass-proof-icon CSS declared',
-  /\.pass-proof-icon\s*\{/.test(css));
-
-test('v4.85.27 PassProof: green-success gradient (rgba(34,197,94))',
-  /\.pass-proof-banner[\s\S]{0,400}rgba\(34,197,94/.test(css));
-
-test('v4.85.27 PassProof: mobile breakpoint at 540px',
-  /max-width:\s*540px[\s\S]{0,400}\.pass-proof-banner/.test(css));
-
-test('v4.85.27 PassProof: light-theme variant declared',
-  /\[data-theme="light"\]\s*\.pass-proof-banner/.test(css));
-
-// ═══════════════════════════════════════════════════════════════════════
 // v4.87.0 — Security+ pack content + cert-aware prompt + private banner.
 // First substantive Security+ ship. Cert pack stub gets full SY0-701 topic
 // catalog (32 topics), domain weights, Professor Messer URLs. Generation
@@ -13573,8 +13528,6 @@ test('v4.87.0 SecplusBanner: .secplus-private-banner CSS declared',
   /\.secplus-private-banner\s*\{/.test(css));
 test('v4.87.0 SecplusBanner: cert-mode visibility rule — show on data-cert="secplus"',
   /\[data-cert="secplus"\]\s*\.secplus-private-banner\s*\{\s*display:\s*inline-flex/.test(css));
-test('v4.87.0 SecplusBanner: cert-mode visibility rule — hide pass-proof in Security+ mode',
-  /\[data-cert="secplus"\]\s*\.pass-proof-banner\s*\{\s*display:\s*none/.test(css));
 test('v4.87.0 SecplusBanner: orange-amber gradient (rgba(245,158,11))',
   /\.secplus-private-banner[\s\S]{0,400}rgba\(245,158,11/.test(css));
 
@@ -13952,11 +13905,6 @@ test('v4.87.3 Sidebar: tombstone — N+/Network+ literal sidebar mark removed',
   !/sb-brand-mark[^>]*>N\+<\/div>/.test(js) && !/sb-brand-name[^>]*>Network\+</.test(js));
 test('v4.87.3 Sidebar: tombstone — S+/Security+ literal sidebar mark removed',
   !/sb-brand-mark[^>]*>S\+<\/div>/.test(js) && !/sb-brand-name[^>]*>Security\+</.test(js));
-
-test('v4.87.3 PassProof: banner credits CertAnvil ("using CertAnvil")',
-  /using\s+<em>CertAnvil<\/em>/.test(html));
-test('v4.87.3 PassProof: tombstone — old "using this tool" copy removed',
-  !/767\/900[\s\S]{0,200}using this tool/.test(html));
 
 // ═══════════════════════════════════════════════════════════════════════
 // v4.87.4 → v5.0.2: brand mark upgraded from M14 hammer+anvil to C/A monogram.
