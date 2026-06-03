@@ -139,53 +139,50 @@
   // ───────────────────────────────────────────────────────────
 
   function _drawerHtml(ctx) {
-    var c = ctx || {};
-    var lq = c.last_quiz;
-    var ctxLine =
-      '<b>' + (c.version || '?') + '</b> &middot; ' +
-      (c.page || '?') + ' &middot; ' +
-      (c.cert || '?') + ' &middot; ' +
-      (c.theme || '?') + ' &middot; ' +
-      (c.viewport || '?') + ' &middot; ' +
-      (lq ? 'last quiz: ' + lq.topic + ' <b>' + lq.score + '</b> ' + lq.minutes_ago + 'm ago' : 'no recent quiz') +
-      ' &middot; wrong-bank: <b>' + (typeof c.wrong_bank_size === 'number' ? c.wrong_bank_size : 0) + '</b>';
-
+    // ctx is still consumed by the GitHub issue body (see buildIssueBody / the
+    // POST path); the in-drawer "Auto-attached" panel was removed in v7.13.3 —
+    // end users don't need to see the diagnostic line, but it still travels in
+    // the filed issue.
     return (
       '<div class="br-backdrop" id="br-backdrop"></div>' +
       '<div class="br-drawer" id="bug-report-drawer" role="dialog" aria-modal="true" aria-labelledby="br-title">' +
         '<div class="br-head">' +
           '<div>' +
-            '<div class="br-eyebrow">&sect; Report</div>' +
+            '<div class="br-eyebrow">' +
+              '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3v18"/><path d="M5 4h12l-2 3 2 3H5"/></svg>' +
+              'Report' +
+            '</div>' +
             '<h3 class="br-title" id="br-title">Report an issue</h3>' +
+            '<p class="br-sub">Tell us what went wrong and we&rsquo;ll take a look.</p>' +
           '</div>' +
-          '<button type="button" class="br-close" id="br-close" aria-label="Close">&times;</button>' +
+          '<button type="button" class="br-close" id="br-close" aria-label="Close">' +
+            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>' +
+          '</button>' +
         '</div>' +
         '<div class="br-body">' +
           '<div class="br-field">' +
             '<label class="br-label" for="br-input-title">Title <span class="br-req">*</span></label>' +
-            '<input class="br-input" id="br-input-title" type="text" maxlength="200" placeholder="What happened in one line?">' +
+            '<input class="br-input" id="br-input-title" type="text" maxlength="200" placeholder="What happened, in one line?">' +
             '<div class="br-caption br-caption-err" id="br-title-err" hidden>Title is required</div>' +
           '</div>' +
           '<div class="br-field">' +
             '<label class="br-label" for="br-input-desc">Description <span class="br-req">*</span><span class="br-counter" id="br-desc-counter" hidden></span></label>' +
-            '<textarea class="br-textarea" id="br-input-desc" maxlength="5000" placeholder="What you did, what happened, what you expected."></textarea>' +
+            '<textarea class="br-textarea" id="br-input-desc" maxlength="5000" placeholder="What you did &middot; what happened &middot; what you expected."></textarea>' +
             '<div class="br-caption br-caption-err" id="br-desc-err" hidden>Description is required</div>' +
           '</div>' +
           '<button type="button" class="br-steps-link" id="br-steps-toggle">' +
-            '<span class="br-plus">+</span><span>Add steps to reproduce</span>' +
+            '<span class="br-plus"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></span><span>Add steps to reproduce</span>' +
           '</button>' +
-          '<div class="br-ctx">' +
-            '<span class="br-ctx-h">Auto-attached</span>' +
-            '<span class="br-ctx-fields">' + ctxLine + '</span>' +
-          '</div>' +
           '<div class="br-no-token" id="br-no-token" hidden>' +
-            '<b>Setup needed</b>' +
-            '<span>Add a GitHub personal access token in <a href="#" id="br-open-settings">Settings &rsaquo; Integrations</a> to file reports.</span>' +
+            '<span class="br-note-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/></svg></span>' +
+            '<span class="br-note-tx"><b>Setup needed</b>Add a GitHub personal access token in <a href="#" id="br-open-settings">Settings &rsaquo; Integrations</a> to file reports.</span>' +
           '</div>' +
         '</div>' +
         '<div class="br-foot">' +
           '<button type="button" class="br-cancel" id="br-cancel">Cancel</button>' +
-          '<button type="button" class="br-send" id="br-send">Send report</button>' +
+          '<button type="button" class="br-send" id="br-send">Send report' +
+            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>' +
+          '</button>' +
         '</div>' +
       '</div>'
     );

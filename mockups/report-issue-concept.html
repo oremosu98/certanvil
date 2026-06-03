@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Report an issue — redesign concept</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* ════════════════════════════════════════════════════════════════════
+   CertAnvil · "Report an issue" drawer — redesign concept (mockup-first).
+   Forged-bronze editorial system, tokens lifted verbatim from brand/BRAND.md.
+   Shown over a faux app backdrop so the new scrim+blur (fixes the bleed-
+   through) is visible. Light + dark via the toggle, top-left.
+   ════════════════════════════════════════════════════════════════════ */
+:root{ --ease: cubic-bezier(0.16, 1, 0.3, 1); }
+
+html[data-theme="light"]{
+  --bg:oklch(0.975 0.007 85); --surface:oklch(0.992 0.004 85); --surface-2:oklch(0.965 0.010 84);
+  --text:oklch(0.22 0.015 280); --text-mid:oklch(0.36 0.014 280); --text-dim:oklch(0.50 0.013 280);
+  --border:oklch(0.86 0.008 85); --border-soft:oklch(0.91 0.006 85);
+  --accent:oklch(0.50 0.155 55); --accent-deep:oklch(0.42 0.150 52); --on-accent:oklch(0.985 0.010 85);
+  --pass:oklch(0.52 0.13 150); --warn:oklch(0.62 0.14 70);
+}
+html[data-theme="dark"]{
+  --bg:oklch(0.16 0.009 275); --surface:oklch(0.205 0.009 275); --surface-2:oklch(0.185 0.009 275);
+  --text:oklch(0.96 0.006 275); --text-mid:oklch(0.78 0.010 275); --text-dim:oklch(0.60 0.013 275);
+  --border:oklch(0.30 0.008 275); --border-soft:oklch(0.26 0.008 275);
+  --accent:oklch(0.80 0.155 64); --accent-deep:oklch(0.70 0.150 62); --on-accent:oklch(0.18 0.020 275);
+  --pass:oklch(0.74 0.150 152); --warn:oklch(0.80 0.130 75);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,sans-serif;-webkit-font-smoothing:antialiased;min-height:100vh}
+
+/* ── faux app behind (so the scrim improvement reads) ───────────────── */
+.app-bg{padding:28px clamp(20px,4vw,60px)}
+.app-bg .eyb{font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);margin-bottom:10px}
+.app-bg h1{font-family:'Fraunces',serif;font-weight:600;font-size:clamp(26px,4vw,40px);letter-spacing:-.02em;margin:0 0 22px}
+.fake-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:16px;max-width:1100px}
+.fake-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:20px}
+.fake-card .n{font-family:'Fraunces',serif;font-weight:600;font-size:40px;line-height:1;letter-spacing:-.02em;font-variant-numeric:lining-nums tabular-nums}
+.fake-card .l{margin-top:10px;font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--text-dim)}
+
+/* ── toolbar ────────────────────────────────────────────────────────── */
+.bar{position:fixed;top:14px;left:14px;z-index:10;display:flex;gap:8px}
+.bar button{font:inherit;font-size:13px;font-weight:600;cursor:pointer;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:9px;padding:8px 13px;transition:transform 140ms var(--ease),background 140ms ease}
+.bar button:active{transform:scale(.97)}
+
+/* ════════ THE DRAWER ════════════════════════════════════════════════ */
+.br-backdrop{
+  position:fixed;inset:0;z-index:9000;
+  background:color-mix(in oklab, var(--text) 55%, transparent);   /* was 36% — too sheer */
+  backdrop-filter:blur(3px) saturate(108%);
+  -webkit-backdrop-filter:blur(3px) saturate(108%);
+}
+
+.br-drawer{
+  position:fixed;top:14px;right:14px;z-index:9001;
+  width:min(480px, 94vw);max-height:calc(100vh - 28px);
+  display:flex;flex-direction:column;overflow:hidden;
+  background:var(--surface);              /* flat editorial surface, not a gradient */
+  border:1px solid var(--border);border-radius:18px;
+  box-shadow:
+    0 1px 0 color-mix(in oklab, var(--text) 4%, transparent),
+    0 24px 60px -22px color-mix(in oklab, var(--text) 30%, transparent);
+  color:var(--text);
+}
+
+/* header */
+.br-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;padding:22px 22px 16px;flex:none}
+.br-eyebrow{display:flex;align-items:center;gap:9px;margin:0 0 9px;font-size:10.5px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--accent)}
+.br-eyebrow svg{width:14px;height:14px;flex:none}
+.br-eyebrow::after{content:"";flex:none;width:22px;height:1px;background:color-mix(in oklab,var(--accent) 55%,transparent)}
+.br-title{font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:22px;letter-spacing:-.015em;line-height:1.08;margin:0}
+.br-sub{margin:6px 0 0;font-size:12.5px;line-height:1.5;color:var(--text-dim)}
+.br-close{flex:none;width:34px;height:34px;border-radius:9px;background:none;border:1px solid transparent;color:var(--text-dim);cursor:pointer;display:grid;place-items:center;transition:color .15s ease,background .15s ease,border-color .15s ease}
+.br-close svg{width:16px;height:16px}
+.br-close:hover{color:var(--text);background:color-mix(in oklab,var(--text) 6%,transparent)}
+.br-close:active{transform:scale(.96)}
+
+/* body */
+.br-body{flex:0 1 auto;overflow-y:auto;padding:6px 22px 20px;display:flex;flex-direction:column;gap:18px}
+.br-field{display:flex;flex-direction:column;gap:8px}
+.br-label{display:flex;align-items:center;font-size:10.5px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--text-dim)}
+.br-req{color:var(--accent);margin-left:4px}
+.br-counter{margin-left:auto;font-family:ui-monospace,Menlo,monospace;font-size:11px;font-weight:600;letter-spacing:0;text-transform:none;color:var(--text-dim)}
+.br-input,.br-textarea{
+  width:100%;font-family:Inter,sans-serif;font-size:14px;line-height:1.5;color:var(--text);
+  background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:11px 13px;
+  transition:border-color .15s ease, box-shadow .15s ease;
+}
+.br-input{min-height:44px}
+.br-input::placeholder,.br-textarea::placeholder{font-family:Inter,sans-serif;color:var(--text-dim);opacity:.85}
+.br-textarea{min-height:96px;resize:vertical}
+.br-input:focus-visible,.br-textarea:focus-visible{
+  outline:none;border-color:var(--accent);
+  box-shadow:0 0 0 3px color-mix(in oklab,var(--accent) 22%,transparent);
+}
+
+/* steps expander */
+.br-steps{display:inline-flex;align-items:center;gap:9px;align-self:flex-start;background:none;border:0;padding:2px 0;font:inherit;font-size:12.5px;font-weight:600;color:var(--text-mid);cursor:pointer;transition:color .15s ease}
+.br-steps:hover{color:var(--accent)}
+.br-steps .plus{width:18px;height:18px;border-radius:50%;display:grid;place-items:center;background:color-mix(in oklab,var(--accent) 12%,transparent);color:var(--accent);flex:none}
+.br-steps .plus svg{width:11px;height:11px}
+
+/* auto-attached technical readout */
+.br-ctx{border:1px solid color-mix(in oklab,var(--accent) 20%,var(--border));border-radius:12px;background:color-mix(in oklab,var(--accent) 5%,transparent);overflow:hidden}
+.br-ctx-h{display:flex;align-items:center;gap:8px;padding:9px 13px;font-size:9.5px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);border-bottom:1px solid color-mix(in oklab,var(--accent) 16%,transparent)}
+.br-ctx-h svg{width:12px;height:12px}
+.br-ctx-h .dot{margin-left:auto;width:6px;height:6px;border-radius:50%;background:var(--pass)}
+.br-ctx-fields{padding:11px 13px;font-family:ui-monospace,Menlo,monospace;font-size:11.5px;line-height:1.75;color:var(--text-mid);word-break:break-word}
+.br-ctx-fields b{color:var(--text);font-weight:600}
+
+/* setup-needed — informational (warn/amber), not error red */
+.br-note{display:flex;gap:11px;padding:12px 14px;border-radius:12px;background:color-mix(in oklab,var(--warn) 9%,transparent);border:1px solid color-mix(in oklab,var(--warn) 30%,transparent)}
+.br-note .ico{flex:none;width:22px;height:22px;border-radius:7px;display:grid;place-items:center;color:var(--warn);background:color-mix(in oklab,var(--warn) 16%,transparent)}
+.br-note .ico svg{width:13px;height:13px}
+.br-note .tx{font-size:12px;line-height:1.5;color:var(--text-mid)}
+.br-note .tx b{display:block;color:var(--text);font-weight:700;font-size:10px;letter-spacing:.08em;text-transform:uppercase;margin-bottom:3px}
+.br-note a{color:var(--accent);font-weight:600;text-decoration:none;border-bottom:1px solid color-mix(in oklab,var(--accent) 45%,transparent)}
+.br-note a:hover{border-bottom-color:var(--accent)}
+
+/* footer */
+.br-foot{display:flex;align-items:center;justify-content:flex-end;gap:10px;padding:16px 22px;border-top:1px solid var(--border-soft);background:var(--surface-2);flex:none}
+.br-cancel{background:none;border:0;color:var(--text-dim);font:inherit;font-size:13px;font-weight:600;cursor:pointer;padding:10px 12px;border-radius:9px;transition:color .15s ease,background .15s ease}
+.br-cancel:hover{color:var(--text);background:color-mix(in oklab,var(--text) 5%,transparent)}
+.br-cancel:active{transform:scale(.97)}
+.br-send{display:inline-flex;align-items:center;gap:8px;font:inherit;font-size:13px;font-weight:700;padding:11px 20px;border-radius:11px;cursor:pointer;color:var(--on-accent);background:var(--accent);border:1px solid var(--accent-deep);transition:filter .15s ease,transform .12s ease}
+.br-send svg{width:14px;height:14px}
+.br-send:hover{filter:brightness(1.05)}
+.br-send:active{transform:scale(.97)}
+
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+<div class="bar">
+  <button id="toggle-theme">Toggle theme</button>
+</div>
+
+<!-- faux app content behind the scrim (note the "43 / UNTOUCHED" that used to bleed through) -->
+<div class="app-bg" aria-hidden="true">
+  <div class="eyb">— Dashboard</div>
+  <h1>Welcome back, Simi</h1>
+  <div class="fake-grid">
+    <div class="fake-card"><div class="n">9</div><div class="l">Day streak</div></div>
+    <div class="fake-card"><div class="n">43</div><div class="l">Untouched</div></div>
+    <div class="fake-card"><div class="n">78%</div><div class="l">Readiness</div></div>
+    <div class="fake-card"><div class="n">7/50</div><div class="l">Topics studied</div></div>
+  </div>
+</div>
+
+<!-- ════ the redesigned drawer ════ -->
+<div class="br-backdrop"></div>
+<div class="br-drawer" role="dialog" aria-modal="true" aria-labelledby="br-title">
+  <div class="br-head">
+    <div>
+      <div class="br-eyebrow">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3v18"/><path d="M5 4h12l-2 3 2 3H5"/></svg>
+        Report
+      </div>
+      <h3 class="br-title" id="br-title">Report an issue</h3>
+      <p class="br-sub">Tell us what went wrong and we'll take a look.</p>
+    </div>
+    <button class="br-close" aria-label="Close">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </button>
+  </div>
+
+  <div class="br-body">
+    <div class="br-field">
+      <label class="br-label" for="t">Title <span class="br-req">*</span></label>
+      <input class="br-input" id="t" type="text" placeholder="What happened, in one line?">
+    </div>
+
+    <div class="br-field">
+      <label class="br-label" for="d">Description <span class="br-req">*</span><span class="br-counter">0 / 5,000</span></label>
+      <textarea class="br-textarea" id="d" placeholder="What you did · what happened · what you expected."></textarea>
+    </div>
+
+    <button class="br-steps" type="button">
+      <span class="plus"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></span>
+      Add steps to reproduce
+    </button>
+
+    <div class="br-note">
+      <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/></svg></span>
+      <span class="tx"><b>Setup needed</b>Add a GitHub personal access token in <a href="#" onclick="return false">Settings › Integrations</a> to file reports.</span>
+    </div>
+  </div>
+
+  <div class="br-foot">
+    <button class="br-cancel" type="button">Cancel</button>
+    <button class="br-send" type="button">
+      Send report
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+    </button>
+  </div>
+</div>
+
+<script>
+  const r = document.documentElement;
+  document.getElementById('toggle-theme').addEventListener('click', () => {
+    r.setAttribute('data-theme', r.getAttribute('data-theme') === 'light' ? 'dark' : 'light');
+  });
+  // live counter demo
+  const d = document.getElementById('d'), c = document.querySelector('.br-counter');
+  d.addEventListener('input', () => { c.textContent = d.value.length.toLocaleString() + ' / 5,000'; });
+</script>
+</body>
+</html>
