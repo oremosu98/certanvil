@@ -89,7 +89,7 @@ border:     1px solid color-mix(in oklab, var(--accent) 22%, var(--border));
 box-shadow: 0 18px 40px -16px color-mix(in oklab, var(--text) 22%, transparent);
 ```
 
-Never hardcode hex for chrome (gradients, borders, shadows, tints). Hardcoded hex is allowed only for **brand-illustrative SVG fills** (the orange flame / sync gradients in `SVG ICONS/`) where the brand identity is the point.
+Never hardcode hex for chrome (gradients, borders, shadows, tints). Hardcoded hex is allowed only for **brand-illustrative SVG fills** (the orange flame / sync gradients in `design/svg-icons/`) where the brand identity is the point.
 
 ### Source-of-truth files
 
@@ -284,7 +284,7 @@ For sidebar nav, topbar buttons, card-eyebrow glyphs, chevrons, common UI afford
 
 For specific brand moments where character is the point. Used sparingly — never for routine UI.
 
-- **Source**: `SVG ICONS/Transparanet svgs/` (198 files; the founder's brand library).
+- **Source**: `design/svg-icons/Transparanet svgs/` (198 files; the founder's brand library).
 - **Style**: cream/orange/ink illustrative with gradients + optional drop-shadow.
 - **Used in**:
   - **Streak flame** (sidebar) — `07_study_streak.svg` (v5.5.8)
