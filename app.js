@@ -1,9 +1,9 @@
 // ══════════════════════════════════════════
-// Network+ AI Quiz — app.js  v7.15.0
+// Network+ AI Quiz — app.js  v7.16.0
 // ══════════════════════════════════════════
 
 // ── CONSTANTS ──
-const APP_VERSION = '7.15.0';
+const APP_VERSION = '7.16.0';
 // v4.99.45 (Phase 6b): expose APP_VERSION on window so the web-vitals
 // collector (lib/web-vitals-collector.js, loaded BEFORE app.js so its
 // PerformanceObservers attach earlier) can stamp this version onto every
@@ -16210,6 +16210,839 @@ function _renderAnaMilestones() {
   </div>`;
 }
 
+// ══════════════════════════════════════════════════════════════════════════
+// v7.16.0 — ANALYTICS BENTO BOARD
+// ──────────────────────────────────────────────────────────────────────────
+// Faithful lift-and-shift of mockups/analytics/mockup-3-bento.html into the
+// live Analytics page, powered by REAL app data. _anaBentoData(h) produces the
+// exact ANALYTICS_SAMPLE shape the mockup tiles consume; the _anaBt* renderers
+// reproduce the mockup's markup + class names verbatim (only the grid container
+// is renamed .bento → .ana-bento). Motion is CSS-driven (initial values live in
+// inline template styles; CSS classes/transitions animate them) so the JS
+// inline-style ratchet stays under budget. All theming is class + CSS-var only;
+// no literal colors are emitted here.
+// ══════════════════════════════════════════════════════════════════════════
+
+// Build the ANALYTICS_SAMPLE-shaped data object from real history `h`.
+function _anaBentoData(h) {
+  const esc = (typeof escHtml === 'function') ? escHtml : (s => String(s));
+  const PASS = (typeof EXAM_PASS_SCORE === 'number') ? EXAM_PASS_SCORE : 720;
+
+  // ── Readiness ───────────────────────────────────────────────────────────
+  const r = (typeof getReadinessScore === 'function') ? getReadinessScore() : null;
+  const predicted = r ? r.predicted : 0;
+  const examDate = (typeof getExamDate === 'function') ? getExamDate() : null;
+  const daysToExam = (typeof getDaysToExam === 'function') ? getDaysToExam() : null;
+  let tier;
+  if (predicted >= PASS)      tier = 'Exam Ready';
+  else if (predicted >= 650)  tier = 'Getting Close';
+  else if (predicted >= 500)  tier = 'Building';
+  else                        tier = 'Not Ready';
+  const pointsToPass = Math.max(0, PASS - predicted);
+  const barPct = Math.max(0, Math.min(100, ((predicted - 420) / 450) * 100));
+  const passTickPct = ((PASS - 420) / 450) * 100;
+
+  // Forecast: project a scaled score on current pace from the accuracy-trend
+  // regression (getReadinessForecast). currentProj is a projected per-session
+  // pct; map pct→scaled (100 + pct/100*800) and clamp to the 420-870 display
+  // band. Falls back to predicted when the trend is flat / insufficient data.
+  let forecast = predicted;
+  try {
+    const f = (typeof getReadinessForecast === 'function') ? getReadinessForecast() : null;
+    if (f && !f.trendFlat && typeof f.currentProj === 'number') {
+      const projScaled = Math.round(100 + (f.currentProj / 100) * 800);
+      forecast = Math.max(420, Math.min(870, Math.max(predicted, projScaled)));
+    }
+  } catch (_) {}
+
+  const totalQ = h.reduce((a, e) => a + (e.total || 0), 0);
+  const totalCorrect = h.reduce((a, e) => a + (e.score || 0), 0);
+  const studyDays = new Set(h.map(e => new Date(e.date).toISOString().slice(0, 10))).size;
+  const accuracyPct = totalQ > 0 ? Math.round(totalCorrect / totalQ * 100) : 0;
+  const _series = (typeof _weeklyStatSeries === 'function') ? _weeklyStatSeries(h, 12)
+    : { sessions: [], questions: [], accuracy: [], studyDays: [] };
+
+  const readiness = {
+    predicted, passScore: PASS, forecast, daysToExam, examDate, tier, pointsToPass,
+    barPct, passTickPct,
+    stats: { sessions: h.length, questions: totalQ, accuracy: accuracyPct, studyDays },
+    spark: {
+      sessions: _series.sessions, questions: _series.questions,
+      accuracy: _series.accuracy, studyDays: _series.studyDays,
+    },
+  };
+
+  // ── Pass-trend accuracy series (week / month / all) ──────────────────────
+  // Reuses _renderAnaAccuracyChart's bucketing. Each bucket is daily (week,
+  // month) or weekly (all); null buckets are dropped, the last point is "Now".
+  const now = Date.now(), DAY = 86400000, WK = 7 * DAY;
+  const bucketAcc = (i, span) => {
+    const bStart = now - (i + 1) * span, bEnd = now - i * span;
+    const ent = h.filter(e => { const t = new Date(e.date).getTime(); return t >= bStart && t < bEnd; });
+    const qs = ent.reduce((a, e) => a + (e.total || 0), 0);
+    const cs = ent.reduce((a, e) => a + (e.score || 0), 0);
+    return qs > 0 ? Math.round((cs / qs) * 100) : null;
+  };
+  const weekRaw = [];
+  for (let i = 6; i >= 0; i--) weekRaw.push({ acc: bucketAcc(i, DAY), lbl: ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'][6 - i] });
+  const monthRaw = [];
+  for (let i = 29; i >= 0; i--) monthRaw.push({ acc: bucketAcc(i, DAY), wk: Math.floor((29 - i) / 7) });
+  const allRaw = [];
+  if (h.length > 0) {
+    const oldest = Math.min(...h.map(e => new Date(e.date).getTime()));
+    const weeks = Math.max(2, Math.min(26, Math.ceil((now - oldest) / WK)));
+    for (let i = weeks - 1; i >= 0; i--) allRaw.push({ acc: bucketAcc(i, WK) });
+  }
+  // Map to {acc,label} arrays; drop nulls, label sparsely, last = "Now".
+  const mkWeek = () => {
+    const pts = weekRaw.filter(p => p.acc !== null).map(p => ({ acc: p.acc, label: p.lbl }));
+    return pts;
+  };
+  const mkMonth = () => {
+    const valid = monthRaw.filter(p => p.acc !== null);
+    return valid.map((p, i) => {
+      const isLast = i === valid.length - 1;
+      const label = isLast ? 'Now' : (i % 4 === 0 ? 'W' + (Math.floor(i / 4) + 1) : '');
+      return { acc: p.acc, label };
+    });
+  };
+  const mkAll = () => {
+    const valid = allRaw.filter(p => p.acc !== null);
+    return valid.map((p, i) => ({ acc: p.acc, label: i === valid.length - 1 ? 'Now' : '' }));
+  };
+  let weekPts = mkWeek(), monthPts = mkMonth(), allPts = mkAll();
+  // Y-axis bounds: pad around the data, clamp to a sensible 40-100 band.
+  const allAcc = [].concat(weekPts, monthPts, allPts).map(p => p.acc);
+  let yMin = 52, yMax = 96;
+  if (allAcc.length) {
+    yMin = Math.max(0, Math.min(60, Math.floor(Math.min.apply(null, allAcc) / 10) * 10 - 4));
+    yMax = Math.min(100, Math.max(80, Math.ceil(Math.max.apply(null, allAcc) / 10) * 10 + 4));
+  }
+  const passTrend = {
+    passAcc: 72, yMin, yMax, current: 'month',
+    data: { week: weekPts, month: monthPts, all: allPts },
+  };
+
+  // ── Domains (5 N10-009 domains, real raw accuracy) ───────────────────────
+  const rawAcc = (typeof computeDomainRawAccuracy === 'function') ? computeDomainRawAccuracy(h) : {};
+  const domByKey = { concepts: { c: 0, t: 0 }, implementation: { c: 0, t: 0 }, operations: { c: 0, t: 0 }, security: { c: 0, t: 0 }, troubleshooting: { c: 0, t: 0 } };
+  h.forEach(e => {
+    if (!e.topic || e.topic === MIXED_TOPIC || e.topic === EXAM_TOPIC) return;
+    const d = TOPIC_DOMAINS[e.topic];
+    if (!d || !domByKey[d]) return;
+    domByKey[d].c += (e.score || 0); domByKey[d].t += (e.total || 0);
+  });
+  const tierOf = (pct) => {
+    if (pct >= 80) return 'mastered';
+    if (pct >= 70) return 'proficient';
+    if (pct >= 55) return 'developing';
+    if (pct > 0)   return 'novice';
+    return 'unstudied';
+  };
+  const DOMAIN_NUMS = { concepts: '1.0', implementation: '2.0', operations: '3.0', security: '4.0', troubleshooting: '5.0' };
+  const domainKeys = Object.keys(DOMAIN_WEIGHTS);
+  const domains = domainKeys.map((k, i) => {
+    const pct = Math.round(rawAcc[k] || 0);
+    return {
+      idx: i + 1, id: k, num: DOMAIN_NUMS[k] || (i + 1) + '.0',
+      name: DOMAIN_LABELS[k] || k, weight: Math.round((DOMAIN_WEIGHTS[k] || 0) * 100),
+      accuracy: pct, tier: tierOf(pct), questions: domByKey[k] ? domByKey[k].t : 0,
+    };
+  });
+
+  // ── Topics (constellation nodes) ─────────────────────────────────────────
+  // Mirror _computeConstellationData: per-topic real history → mastery/tier.
+  // tier 'unstudied' for zero attempts so the sky shows untouched stars.
+  const topics = (typeof _computeConstellationData === 'function' ? _computeConstellationData(h) : [])
+    .map(t => ({
+      domainIdx: (t.domainIdx >= 0 ? t.domainIdx : 0) + 1,
+      domainId: t.domain,
+      topic: t.topic,
+      attempts: t.attempts,
+      mastery: t.attempts > 0 ? (t.mastery || 0) : 0,
+      tier: t.attempts > 0 ? t.tier : 'unstudied',
+    }));
+
+  // ── Why-score (highest-leverage move) ────────────────────────────────────
+  const whyScore = _anaBtWhyData(r, domains, esc);
+
+  // ── Wrong-answer patterns ────────────────────────────────────────────────
+  const wrongPatterns = _anaBtWrongData(h);
+
+  // ── Difficulty breakdown ─────────────────────────────────────────────────
+  const diffAgg = {};
+  h.forEach(e => {
+    const d = e.difficulty || e.diff || DEFAULT_DIFF;
+    if (!diffAgg[d]) diffAgg[d] = { correct: 0, total: 0 };
+    diffAgg[d].correct += (e.score || 0); diffAgg[d].total += (e.total || 0);
+  });
+  // Normalise the app's free-form difficulty labels into Easy/Medium/Hard buckets.
+  const diffBuckets = { Easy: { correct: 0, total: 0 }, Medium: { correct: 0, total: 0 }, Hard: { correct: 0, total: 0 } };
+  Object.entries(diffAgg).forEach(([label, v]) => {
+    const l = label.toLowerCase();
+    let key = 'Medium';
+    if (l.includes('easy') || l.includes('found') || l.includes('begin')) key = 'Easy';
+    else if (l.includes('hard') || l.includes('trick') || l.includes('expert') || l.includes('advanced')) key = 'Hard';
+    diffBuckets[key].correct += v.correct; diffBuckets[key].total += v.total;
+  });
+  const difficulty = ['Easy', 'Medium', 'Hard'].map(label => {
+    const v = diffBuckets[label];
+    return { label, accuracy: v.total > 0 ? Math.round(v.correct / v.total * 100) : 0, count: v.total };
+  }).filter(d => d.count > 0);
+
+  // ── Streak + week dots + 365-day heatmap ─────────────────────────────────
+  const sd = (typeof getStreakData === 'function') ? getStreakData() : { currentStreak: 0, longestStreak: 0, lastStudyDate: null };
+  let heatTier;
+  if (sd.currentStreak <= 0)       heatTier = 'cold';
+  else if (sd.currentStreak < 3)   heatTier = 'starting';
+  else if (sd.currentStreak < 7)   heatTier = 'warm';
+  else if (sd.currentStreak < 14)  heatTier = 'hot';
+  else                             heatTier = 'blazing';
+  // 365-day count-per-day map (questions answered).
+  const dayQ = new Map();
+  h.forEach(e => {
+    const d = new Date(e.date); if (isNaN(d.getTime())) return;
+    const key = d.toISOString().slice(0, 10);
+    dayQ.set(key, (dayQ.get(key) || 0) + (e.total || 0));
+  });
+  const today0 = new Date(); today0.setHours(0, 0, 0, 0);
+  const heatmap = [];
+  for (let i = 364; i >= 0; i--) {
+    const d = new Date(today0.getTime() - i * DAY);
+    heatmap.push({ daysAgo: i, count: dayQ.get(d.toISOString().slice(0, 10)) || 0 });
+  }
+  const totalActiveDays = heatmap.filter(d => d.count > 0).length;
+  const dayLabels = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+  const todayKey = today0.toISOString().slice(0, 10);
+  const week = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(today0.getTime() - i * DAY);
+    const key = d.toISOString().slice(0, 10);
+    week.push({ dayLabel: dayLabels[d.getDay()], studied: (dayQ.get(key) || 0) > 0, isToday: key === todayKey, questions: dayQ.get(key) || 0 });
+  }
+  const streak = {
+    current: sd.currentStreak, longest: sd.longestStreak, heatTier,
+    lastStudy: sd.lastStudyDate ? (sd.lastStudyDate === todayKey ? 'Today' : new Date(sd.lastStudyDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })) : 'never',
+    totalActiveDays, week,
+  };
+
+  // ── Milestones (unlocked / total / recent / locked-with-progress) ────────
+  const milestones = _anaBtMilestoneData();
+
+  // ── Exam history (full simulations) ──────────────────────────────────────
+  const examHistory = h.filter(e => e.mode === 'exam' && e.topic === EXAM_TOPIC).slice(0, 5).map((e, i) => {
+    const scaled = Math.round(100 + (e.score / e.total) * 800);
+    return {
+      date: new Date(e.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }),
+      label: 'Full exam', pct: e.pct, score: scaled, questions: e.total, mode: 'exam',
+    };
+  });
+
+  // ── Exam vs quiz ─────────────────────────────────────────────────────────
+  const quizEntries = h.filter(e => e.mode !== 'exam' && e.topic !== MIXED_TOPIC && e.topic !== EXAM_TOPIC);
+  const examEntries = h.filter(e => e.mode === 'exam' && e.topic === EXAM_TOPIC);
+  let examVsQuiz = null;
+  if (quizEntries.length >= 2 && examEntries.length >= 1) {
+    const quizAvg = Math.round(quizEntries.reduce((a, e) => a + e.pct, 0) / quizEntries.length);
+    const examAvg = Math.round(examEntries.reduce((a, e) => a + e.pct, 0) / examEntries.length);
+    const delta = quizAvg - examAvg;
+    let insight;
+    if (Math.abs(delta) <= 3) insight = 'Consistent performance across modes, a good sign that timed pressure is not costing you.';
+    else if (delta > 3) insight = 'Your practice average beats your timed-exam average by ' + delta + ' points. Timed pressure is costing you a little, so book more full simulations before the real thing.';
+    else insight = 'Your timed-exam average beats your practice average by ' + Math.abs(delta) + ' points. You rise to the occasion under pressure.';
+    examVsQuiz = { quizAvg, examAvg, quizSessions: quizEntries.length, examSessions: examEntries.length, delta, insight };
+  }
+
+  // ── Recent sessions ──────────────────────────────────────────────────────
+  const recent = h.slice(0, 5).map(e => ({
+    date: new Date(e.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }),
+    topic: e.topic === EXAM_TOPIC ? 'Full exam' : (e.topic === MIXED_TOPIC ? 'Mixed' : e.topic),
+    pct: e.pct, n: e.total, mode: e.mode === 'exam' ? 'exam' : 'quiz',
+  }));
+
+  return {
+    readiness, passTrend, domains, topics, whyScore, wrongPatterns, difficulty,
+    streak, heatmap, milestones, examHistory, examVsQuiz, recent,
+  };
+}
+
+// Why-score: highest-leverage move, derived from real readiness + domains.
+function _anaBtWhyData(r, domains, esc) {
+  // Weakest studied domain by accuracy (carries weight) = the leverage target.
+  const studied = domains.filter(d => d.questions > 0);
+  const weakest = studied.slice().sort((a, b) => a.accuracy - b.accuracy)[0] || domains[0];
+  const strongest = studied.slice().sort((a, b) => b.accuracy - a.accuracy)[0] || domains[0];
+  // Leverage estimate: closing weakest domain to the 70% line, valued by weight.
+  // deltaAccPts * weight * accuracyWeight(0.40) * scale(4.5) mirrors the readiness
+  // what-if math; we approximate at the domain level for a headline number.
+  let leveragePts = 0;
+  if (weakest && weakest.accuracy < 70) {
+    leveragePts = Math.max(1, Math.round((70 - weakest.accuracy) * (weakest.weight / 100) * 0.40 * 4.5));
+  } else if (r && Array.isArray(r.whatIf) && r.whatIf.length) {
+    leveragePts = r.whatIf.reduce((s, w) => s + (w.deltaPredicted || 0), 0);
+  }
+  const headline = weakest && weakest.accuracy < 70
+    ? 'Drill ' + weakest.name + ' next.'
+    : 'Keep your rotation fresh.';
+  const body = weakest && weakest.accuracy < 70
+    ? weakest.name + ' sits at ' + weakest.accuracy + '%, your weakest domain, and it carries ' + weakest.weight + '% of the exam. Lifting it toward the 70% line is the fastest single move you have right now.'
+    : 'Every studied domain is holding above the developing line. Spread practice across topics and refresh the staleest ones to keep your score climbing.';
+  const factors = [];
+  if (weakest && weakest.questions > 0) factors.push({ label: weakest.name + ' at ' + weakest.accuracy + '%', effect: 'down', note: 'biggest drag on the score' });
+  if (strongest && strongest.questions > 0 && strongest.id !== (weakest && weakest.id)) factors.push({ label: strongest.name + ' at ' + strongest.accuracy + '%', effect: 'up', note: 'carrying you, ' + strongest.weight + '% of exam' });
+  if (r && typeof r.recencyScore === 'number') factors.push({ label: 'Recency at ' + Math.round(r.recencyScore) + '%', effect: r.recencyScore >= 60 ? 'up' : 'down', note: r.recencyScore >= 60 ? 'topics staying fresh' : 'some topics decaying' });
+  return {
+    headline, body,
+    leverage: '+' + leveragePts + ' pts',
+    targetDomain: weakest ? weakest.name : '',
+    factors: factors.slice(0, 3),
+  };
+}
+
+// Wrong-answer patterns: top clusters from the real wrong bank.
+function _anaBtWrongData(h) {
+  const bank = (typeof loadWrongBank === 'function') ? loadWrongBank() : [];
+  if (!bank || !bank.length) return [];
+  const recent = bank.slice().sort((a, b) => new Date(b.addedDate || 0) - new Date(a.addedDate || 0)).slice(0, 40);
+  // Cluster by domain (most actionable signal); note carries the topic spread.
+  const byDomain = {};
+  recent.forEach(w => {
+    const d = TOPIC_DOMAINS[w.topic];
+    if (!d) return;
+    (byDomain[d] = byDomain[d] || { count: 0, topics: {} });
+    byDomain[d].count++;
+    if (w.topic) byDomain[d].topics[w.topic] = (byDomain[d].topics[w.topic] || 0) + 1;
+  });
+  const labels = { concepts: 'Networking Concepts', implementation: 'Network Implementation', operations: 'Network Operations', security: 'Network Security', troubleshooting: 'Network Troubleshooting' };
+  return Object.entries(byDomain)
+    .sort((a, b) => b[1].count - a[1].count)
+    .slice(0, 4)
+    .map(([id, v]) => {
+      const topTopics = Object.entries(v.topics).sort((a, b) => b[1] - a[1]).slice(0, 2).map(t => t[0]);
+      return { label: labels[id] || id, count: v.count, domain: labels[id] || id, note: topTopics.length ? topTopics.join(', ') : 'mixed topics' };
+    });
+}
+
+// Milestones: real unlocked/total + recent unlocks + next locked w/ progress.
+function _anaBtMilestoneData() {
+  if (typeof MILESTONE_DEFS === 'undefined' || typeof getMilestones !== 'function') {
+    return { unlocked: 0, total: 0, recent: [], locked: [] };
+  }
+  try { if (typeof evaluateMilestones === 'function') evaluateMilestones(); } catch (_) {}
+  const unlockedMap = getMilestones();
+  const total = MILESTONE_DEFS.length;
+  const unlockedDefs = MILESTONE_DEFS.filter(m => unlockedMap[m.id]);
+  const unlocked = unlockedDefs.length;
+  const relDate = (iso) => {
+    try {
+      const days = Math.floor((Date.now() - new Date(iso).getTime()) / 86400000);
+      if (days <= 0) return 'Earned today';
+      if (days === 1) return 'Earned yesterday';
+      if (days < 7) return 'Earned ' + days + ' days ago';
+      if (days < 14) return 'Earned last week';
+      return 'Earned ' + new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+    } catch (_) { return 'Earned'; }
+  };
+  // Generic checkmark/star/badge icon paths so the tiles render stroke-only SVGs.
+  const ICONS = ['M5 13l4 4L19 7', 'M12 2l3 7h7l-6 4 2 7-6-4-6 4 2-7-6-4h7z', 'M12 2v20M2 12h20', 'M12 12m-9 0a9 9 0 1018 0a9 9 0 10-18 0'];
+  const recent = unlockedDefs.slice()
+    .sort((a, b) => new Date(unlockedMap[b.id]) - new Date(unlockedMap[a.id]))
+    .slice(0, 4)
+    .map((m, i) => ({ label: m.label, desc: m.desc, icon: ICONS[i % ICONS.length], earned: relDate(unlockedMap[m.id]) }));
+  // Next locked milestones with numeric progress (reuse MILESTONE_PROGRESS).
+  let ctx = null;
+  try { if (typeof _buildMilestoneCtx === 'function') ctx = _buildMilestoneCtx(); } catch (_) {}
+  const locked = [];
+  if (ctx && typeof MILESTONE_PROGRESS !== 'undefined') {
+    MILESTONE_DEFS.forEach(m => {
+      if (unlockedMap[m.id]) return;
+      const f = MILESTONE_PROGRESS[m.id];
+      if (!f) return;
+      try {
+        const p = f(ctx);
+        if (!p || !(p[1] > 0)) return;
+        const cur = Math.max(0, Math.min(p[0] || 0, p[1]));
+        if (cur >= p[1]) return;
+        locked.push({ label: m.label, desc: m.desc, progress: [cur, p[1]], _ratio: cur / p[1] });
+      } catch (_) {}
+    });
+    locked.sort((a, b) => b._ratio - a._ratio);
+  }
+  return { unlocked, total, recent, locked: locked.slice(0, 3) };
+}
+
+// ── Bento tile renderers (mockup markup, verbatim class names) ─────────────
+function _anaBtEsc(s) {
+  return (typeof escHtml === 'function') ? escHtml(String(s)) : String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+}
+// sparkline path over a fixed 60x18 viewbox (matches the mockup readiness sparks).
+function _anaBtSparkPath(vals, w, h) {
+  if (!Array.isArray(vals) || vals.length < 2) return '';
+  const min = Math.min.apply(null, vals), max = Math.max.apply(null, vals), rng = (max - min) || 1;
+  return vals.map((v, i) => {
+    const x = (i / (vals.length - 1)) * w;
+    const y = h - ((v - min) / rng) * h;
+    return (i ? 'L' : 'M') + x.toFixed(1) + ' ' + y.toFixed(1);
+  }).join(' ');
+}
+
+function _anaBtReadiness(D) {
+  const r = D.readiness, s = r.stats, sp = r.spark;
+  const esc = _anaBtEsc;
+  const sparkSvg = (key) => {
+    const d = _anaBtSparkPath(sp[key] || [], 60, 18);
+    return d ? `<svg viewBox="0 0 60 18" preserveAspectRatio="none"><path d="${d}"/></svg>` : '';
+  };
+  return `<div class="tile s-read">
+      <div>
+        <div class="read-top">
+          <div class="tile-eyebrow" style="margin:0">Readiness</div>
+          <span class="read-tier">${esc(r.tier)}</span>
+        </div>
+        <div class="read-score"><span class="big mono" data-cnt="${r.predicted}">0</span><span class="of">/ 900</span></div>
+        <p class="read-cap"><b>${r.pointsToPass} points</b> to the pass mark. Hold your pace and you cross it.</p>
+        <div class="read-bar-wrap">
+          <div class="read-bar">
+            <i data-w="${r.barPct.toFixed(1)}" style="width:0"></i>
+            <span class="read-tick" style="left:${r.passTickPct.toFixed(1)}%"></span>
+          </div>
+        </div>
+        <div class="read-fore">
+          <span>Forecast on this pace <span class="fv fg">${r.forecast}</span></span>
+          <span><span class="fv">${r.daysToExam != null ? r.daysToExam : '—'}</span> days to exam</span>
+        </div>
+      </div>
+      <div class="read-stats">
+        <div class="rstat"><span class="n mono" data-cnt="${s.sessions}">0</span><span class="l">Sessions</span>${sparkSvg('sessions')}</div>
+        <div class="rstat"><span class="n mono" data-cnt="${s.questions}">0</span><span class="l">Questions</span>${sparkSvg('questions')}</div>
+        <div class="rstat"><span class="n mono" data-cnt="${s.accuracy}" data-suffix="%">0</span><span class="l">Accuracy</span>${sparkSvg('accuracy')}</div>
+        <div class="rstat"><span class="n mono" data-cnt="${s.studyDays}">0</span><span class="l">Study days</span>${sparkSvg('studyDays')}</div>
+      </div>
+    </div>`;
+}
+
+function _anaBtConstellation(D) {
+  return `<div class="tile s-const">
+      <div>
+        <div class="tile-eyebrow" style="margin-bottom:8px">Knowledge constellation <span class="count">${D.topics.length} topics · ${D.domains.length} domains</span></div>
+        <h2>Your sky tonight</h2>
+        <p class="const-sub">Each star is a topic. Bigger means more practiced, brighter means closer to mastered. Color marks the domain.</p>
+      </div>
+      <div class="const-mount" id="anaBtConstMount"></div>
+      <div class="const-legend">
+        <span><i></i>Mastered</span><span><i class="t2"></i>Proficient</span>
+        <span><i class="t3"></i>Developing</span><span><i class="t4"></i>Untouched</span>
+      </div>
+    </div>`;
+}
+
+function _anaBtTrend(D) {
+  const t = D.passTrend;
+  const verdict = t.data.month.length ? t.data.month[t.data.month.length - 1].acc : (t.data.all.length ? t.data.all[t.data.all.length - 1].acc : t.passAcc);
+  const climbing = verdict >= t.passAcc;
+  return `<div class="tile s-trend">
+      <div class="trend-head">
+        <div class="trend-title">
+          <div class="tile-eyebrow" style="margin-bottom:6px">Accuracy over time</div>
+          <h2>Trending <em>toward pass</em></h2>
+          <p class="trend-verdict">At <b>${verdict}%</b> now, ${climbing ? 'above' : 'below'} the ${t.passAcc}% line.</p>
+        </div>
+        <div class="acc-tabs" role="group" aria-label="Time range">
+          <button class="acc-tab" data-range="week" aria-pressed="false">Week</button>
+          <button class="acc-tab" data-range="month" aria-pressed="true">Month</button>
+          <button class="acc-tab" data-range="all" aria-pressed="false">All</button>
+        </div>
+      </div>
+      <div class="acc-wrap" id="anaBtAccWrap"></div>
+    </div>`;
+}
+
+function _anaBtWhy(D) {
+  const w = D.whyScore, esc = _anaBtEsc;
+  const factors = w.factors.map(f => `
+      <div class="why-f">
+        <span class="ar ${f.effect}">${f.effect === 'up' ? '▲' : '▼'}</span>
+        <span><span class="ft">${esc(f.label)}</span><span class="fn">${esc(f.note)}</span></span>
+      </div>`).join('');
+  return `<div class="tile s-why">
+      <div>
+        <div class="tile-eyebrow">Highest-leverage move</div>
+        <div class="why-lev"><span class="v">${esc(w.leverage)}</span><span class="l">on your readiness score</span></div>
+        <div class="why-head">${esc(w.headline)}</div>
+        <p class="why-body">${esc(w.body)}</p>
+      </div>
+      <div class="why-factors">${factors}</div>
+    </div>`;
+}
+
+function _anaBtDomains(D) {
+  const esc = _anaBtEsc;
+  const rows = D.domains.slice().sort((a, b) => a.accuracy - b.accuracy).map(d => {
+    const weak = d.accuracy > 0 && d.accuracy < 60;
+    return `<div class="dom-row">
+        <div class="dl"><span class="obj mono">${d.num}</span><span class="txt">${esc(d.name)}</span></div>
+        <div class="dm mono">${d.accuracy > 0 ? d.accuracy + '%' : '—'}</div>
+        <div class="dom-bar"><i data-d="${d.idx}" data-w="${d.accuracy}" style="width:0"></i></div>
+        <div class="dom-meta">${d.questions} questions · ${d.weight}% of exam${weak ? ' · <span class="flag">weakest, drill here</span>' : ''}</div>
+      </div>`;
+  }).join('');
+  return `<div class="tile s-domains"><div class="tile-eyebrow">Mastery by domain <span class="count">${D.domains.length} domains · worst first</span></div><div class="dom-list">${rows}</div></div>`;
+}
+
+function _anaBtStreak(D) {
+  const s = D.streak, esc = _anaBtEsc;
+  const dots = s.week.map(d => `
+      <div class="wd ${d.studied ? 'on' : ''} ${d.isToday ? 'today' : ''}">
+        <span class="dot"></span><span class="wl">${d.dayLabel}</span>
+      </div>`).join('');
+  return `<div class="tile s-streak">
+      <div class="tile-eyebrow" style="margin-bottom:8px">Study streak</div>
+      <div class="streak-main"><span class="v mono" data-cnt="${s.current}">0</span><span class="l">day streak</span></div>
+      <div class="streak-sub">Longest ${s.longest} · ${s.totalActiveDays} active days · last studied ${esc(String(s.lastStudy).toLowerCase())}</div>
+      <div class="week-dots">${dots}</div>
+    </div>`;
+}
+
+function _anaBtDiff(D) {
+  const esc = _anaBtEsc;
+  const cls = { Easy: 'e', Medium: 'm', Hard: 'h' };
+  const rows = D.difficulty.map(d => `
+      <div class="diff-row">
+        <div class="diff-top"><span class="dk">${esc(d.label)}</span>
+          <span><span class="dv">${d.accuracy}%</span> <span class="dc">${d.count}q</span></span></div>
+        <div class="diff-bar"><i class="${cls[d.label] || 'm'}" data-w="${d.accuracy}" style="width:0"></i></div>
+      </div>`).join('');
+  return `<div class="tile s-diff"><div class="tile-eyebrow">By difficulty</div><div class="diff-list">${rows}</div></div>`;
+}
+
+function _anaBtEvq(D) {
+  const e = D.examVsQuiz, esc = _anaBtEsc;
+  if (!e) {
+    return `<div class="tile s-evq">
+      <div class="tile-eyebrow">Practice vs timed</div>
+      <div class="evq-nums">
+        <div class="evq-cell"><div class="n mono">—</div><div class="t">Quiz avg</div><div class="s">building data</div></div>
+        <div class="evq-cell"><div class="n mono lo">—</div><div class="t">Exam avg</div><div class="s">no exams yet</div></div>
+      </div>
+      <p class="evq-note">Complete a few quizzes and at least one full exam simulation to compare timed pressure against practice.</p>
+    </div>`;
+  }
+  return `<div class="tile s-evq">
+      <div class="tile-eyebrow">Practice vs timed</div>
+      <div class="evq-nums">
+        <div class="evq-cell"><div class="n mono">${e.quizAvg}%</div><div class="t">Quiz avg</div><div class="s">${e.quizSessions} sessions</div></div>
+        <div class="evq-cell"><div class="n mono lo">${e.examAvg}%</div><div class="t">Exam avg</div><div class="s">${e.examSessions} sessions</div></div>
+      </div>
+      <p class="evq-note">${esc(e.insight)}</p>
+    </div>`;
+}
+
+function _anaBtHeat(D) {
+  const days = D.heatmap.slice(-182);
+  const lvl = c => c === 0 ? '' : c < 4 ? 'l1' : c < 10 ? 'l2' : c < 20 ? 'l3' : 'l4';
+  const cells = days.map(d => `<span class="heat-cell ${lvl(d.count)}"></span>`).join('');
+  const active = D.streak.totalActiveDays;
+  return `<div class="tile s-heat">
+      <div class="tile-eyebrow">Activity <span class="count">last 26 weeks · ${active} active days total</span></div>
+      <div class="heat-wrap"><div class="heat-grid">${cells}</div></div>
+      <div class="heat-foot">
+        <span>Each cell is one day</span>
+        <span class="heat-scale">Less <i class="heat-cell"></i><i class="heat-cell l1"></i><i class="heat-cell l2"></i><i class="heat-cell l3"></i><i class="heat-cell l4"></i> More</span>
+      </div>
+    </div>`;
+}
+
+function _anaBtWrong(D) {
+  const esc = _anaBtEsc;
+  if (!D.wrongPatterns.length) {
+    return `<div class="tile s-wrong"><div class="tile-eyebrow">Where you slip most <span class="count">top patterns</span></div>
+      <div class="wrong-list"><div class="wrong-row"><div class="wrong-mid"><div class="n">No clear pattern yet</div><div class="d">Your recent misses are scattered, a good sign. Keep drilling and patterns will surface if they exist.</div></div></div></div></div>`;
+  }
+  const rows = D.wrongPatterns.map((p, i) => `
+      <div class="wrong-row">
+        <div class="wrong-rank mono">${i + 1}</div>
+        <div class="wrong-mid"><div class="n">${esc(p.label)}</div><div class="d">${esc(p.domain)} · ${esc(p.note)}</div></div>
+        <div class="wrong-cnt"><b>${p.count}</b>missed</div>
+      </div>`).join('');
+  return `<div class="tile s-wrong"><div class="tile-eyebrow">Where you slip most <span class="count">top ${D.wrongPatterns.length} patterns</span></div><div class="wrong-list">${rows}</div></div>`;
+}
+
+function _anaBtMiles(D) {
+  const m = D.milestones, esc = _anaBtEsc;
+  const recent = m.recent.slice(0, 3).map(r => `
+      <div class="mile-row">
+        <div class="mile-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="${r.icon}"/></svg></div>
+        <div class="mile-txt"><div class="n">${esc(r.label)}</div><div class="d">${esc(r.earned)}</div></div>
+      </div>`).join('');
+  const next = m.locked[0];
+  const lockRow = next ? `
+      <div class="mile-row">
+        <div class="mile-ic lock"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></div>
+        <div class="mile-txt"><div class="n">${esc(next.label)}</div><div class="lk mono">${next.progress[0]} / ${next.progress[1]} · ${esc(next.desc)}</div></div>
+      </div>` : '';
+  const pct = m.total > 0 ? (m.unlocked / m.total * 100).toFixed(0) : '0';
+  return `<div class="tile s-miles">
+      <div class="tile-eyebrow">Milestones <span class="mile-count">${m.unlocked} / ${m.total}</span></div>
+      <div class="mile-prog"><i data-w="${pct}" style="width:0"></i></div>
+      <div class="mile-list">${recent}${lockRow}</div>
+    </div>`;
+}
+
+function _anaBtExam(D) {
+  const esc = _anaBtEsc;
+  const PASS = (typeof EXAM_PASS_SCORE === 'number') ? EXAM_PASS_SCORE : 720;
+  if (!D.examHistory.length) {
+    return `<div class="tile s-exam"><div class="tile-eyebrow">Full exams <span class="count">none yet</span></div>
+      <div class="exam-list"><div class="exam-row"><div><div class="el">No exam simulations yet</div><div class="ed mono">run one to track scaled scores</div></div></div></div></div>`;
+  }
+  const rows = D.examHistory.map((e, i) => {
+    const pass = e.score >= PASS;
+    return `<div class="exam-row">
+        <div><div class="el">${esc(e.label)} #${D.examHistory.length - i}</div><div class="ed mono">${esc(e.date)} · ${e.questions}q</div></div>
+        <div class="es ${pass ? 'pass' : ''} mono">${e.score}</div>
+        <div class="exam-bar"><i class="${pass ? 'pass' : ''}" data-w="${(e.pct).toFixed(0)}" style="width:0"></i></div>
+      </div>`;
+  }).join('');
+  return `<div class="tile s-exam"><div class="tile-eyebrow">Full exams <span class="count">last ${D.examHistory.length}</span></div><div class="exam-list">${rows}</div></div>`;
+}
+
+// ── Bento interaction wiring (count-ups, constellation, trend) ─────────────
+function _anaBtReduce() {
+  return !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+}
+
+// count-up that writes textContent only (allowed under the inline-style ratchet).
+function _anaBtCountUp(el, target, suffix) {
+  suffix = suffix || '';
+  if (_anaBtReduce()) { el.textContent = target + suffix; return; }
+  const dur = 820, t0 = performance.now();
+  (function step(now) {
+    const p = Math.min(1, (now - t0) / dur), e = 1 - Math.pow(1 - p, 3);
+    el.textContent = Math.round(target * e) + suffix;
+    if (p < 1) requestAnimationFrame(step);
+    else el.textContent = target + suffix;
+  })(performance.now());
+}
+
+// Constellation starfield: golden-angle spiral, twinkle, pulsar, hover tooltip.
+function _anaBtRenderConstellation(mount, D) {
+  if (!mount) return;
+  const SVGNS = 'http://www.w3.org/2000/svg';
+  const esc = _anaBtEsc;
+  const reduce = _anaBtReduce();
+  const svgEl = (tag, attrs) => { const e = document.createElementNS(SVGNS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); return e; };
+  const W = 1000, H = 440;
+  const DOMAINS = [
+    { idx: 1, cx: W * 0.16, cy: H * 0.40, kicker: 'DOMAIN 1', name: (D.domains[0] && D.domains[0].name) || 'Networking Concepts' },
+    { idx: 2, cx: W * 0.40, cy: H * 0.72, kicker: 'DOMAIN 2', name: (D.domains[1] && D.domains[1].name) || 'Network Implementation' },
+    { idx: 3, cx: W * 0.56, cy: H * 0.26, kicker: 'DOMAIN 3', name: (D.domains[2] && D.domains[2].name) || 'Network Operations' },
+    { idx: 4, cx: W * 0.78, cy: H * 0.66, kicker: 'DOMAIN 4', name: (D.domains[3] && D.domains[3].name) || 'Network Security' },
+    { idx: 5, cx: W * 0.92, cy: H * 0.32, kicker: 'DOMAIN 5', name: (D.domains[4] && D.domains[4].name) || 'Network Troubleshooting' },
+  ];
+  const clusters = {}; DOMAINS.forEach(c => clusters[c.idx] = c);
+  const svg = svgEl('svg', { viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': 'Knowledge constellation: topics clustered by exam domain' });
+
+  const grid = svgEl('g', { class: 'const-grid' });
+  for (let x = 0; x <= W; x += 100) grid.appendChild(svgEl('line', { x1: x, y1: 0, x2: x, y2: H }));
+  for (let y = 0; y <= H; y += 80) grid.appendChild(svgEl('line', { x1: 0, y1: y, x2: W, y2: y }));
+  svg.appendChild(grid);
+
+  const tetherLayer = svgEl('g', {}), nodeLayer = svgEl('g', {}), labelLayer = svgEl('g', {});
+  svg.appendChild(tetherLayer); svg.appendChild(nodeLayer); svg.appendChild(labelLayer);
+
+  DOMAINS.forEach(c => {
+    const g = svgEl('g', { class: 'const-cluster-label' });
+    const k = svgEl('text', { x: c.cx, y: c.cy - 104, 'text-anchor': 'middle', class: 'kicker' }); k.textContent = c.kicker;
+    const n = svgEl('text', { x: c.cx, y: c.cy - 90, 'text-anchor': 'middle', class: 'name' }); n.textContent = c.name;
+    g.appendChild(k); g.appendChild(n); labelLayer.appendChild(g);
+  });
+
+  const byDomain = {};
+  D.topics.forEach(t => { (byDomain[t.domainIdx] = byDomain[t.domainIdx] || []).push(t); });
+
+  const tierOpacity = { novice: .34, developing: .58, proficient: .82, mastered: 1, unstudied: .18 };
+  const nodes = [];
+  let igCount = 0;
+  Object.entries(byDomain).forEach(([dom, topics]) => {
+    const c = clusters[dom];
+    if (!c) return;
+    topics.forEach((t, i) => {
+      const angle = (i * 2.399) + (c.idx * 0.7);            // golden-angle spiral
+      const baseDist = 42 + (i % 4) * 20;
+      const cx = c.cx + Math.cos(angle) * baseDist;
+      const cy = c.cy + Math.sin(angle) * baseDist;
+      const r = t.attempts > 0 ? Math.min(22, 6 + Math.sqrt(t.attempts) * 2.2) : 5;
+      const innerR = Math.max(2, r * ((t.mastery || 0) / 100) + 2);
+      const g = svgEl('g', { class: 'const-node', 'data-domain': c.idx, 'data-tier': t.tier, tabindex: 0,
+        'aria-label': `${t.topic}, ${t.domainId}: ${t.mastery}% mastery, ${t.attempts} attempt${t.attempts === 1 ? '' : 's'}` });
+      const halo = svgEl('circle', { cx, cy, r, class: 'const-halo' });
+      const core = svgEl('circle', { cx, cy, r: innerR, class: 'const-core' });
+      const base = tierOpacity[t.tier] || .3;
+      if (!reduce && t.tier !== 'unstudied') {
+        core.classList.add('twinkle');
+        core.style.setProperty('--base', base);
+        core.style.setProperty('--tw', (3.4 + (i % 5) * 0.5) + 's');
+        core.style.setProperty('--td', ((i * 0.37) % 3).toFixed(2) + 's');
+      }
+      g.appendChild(halo); g.appendChild(core);
+      g.style.setProperty('--ig', (igCount++ * 11) + 'ms');
+      tetherLayer.appendChild(svgEl('line', { x1: c.cx, y1: c.cy, x2: cx, y2: cy, class: 'const-tether' }));
+      nodeLayer.appendChild(g);
+      nodes.push({ gEl: g, haloEl: halo, coreEl: core, cx, cy, r, mastery: t.mastery, attempts: t.attempts, topic: t.topic });
+    });
+  });
+
+  // pulsar: brightest mastered star
+  if (!reduce) {
+    let best = null;
+    nodes.forEach(n => { if (n.mastery >= 80 && (!best || n.mastery > best.mastery)) best = n; });
+    if (best) { best.gEl.classList.add('const-pulsar'); best.haloEl.style.setProperty('--r0', best.r + 'px'); }
+  }
+
+  mount.appendChild(svg);
+
+  // tooltip (a handful of .style writes — within the ratchet's tooltip allowance)
+  const tt = document.createElement('div'); tt.className = 'const-tt'; mount.appendChild(tt);
+  function showTip(n) {
+    tt.innerHTML = `<b>${esc(n.topic)}</b><span class="tt-meta">${n.mastery}% mastery · ${n.attempts} attempt${n.attempts === 1 ? '' : 's'}</span>`;
+    const rect = mount.getBoundingClientRect();
+    const sx = (n.cx / W) * rect.width, sy = (n.cy / H) * rect.height;
+    tt.style.setProperty('left', Math.min(rect.width - 160, Math.max(6, sx + 12)) + 'px');
+    tt.style.setProperty('top', Math.max(4, sy - 48) + 'px');
+    tt.classList.add('show');
+  }
+  function hideTip() { tt.classList.remove('show'); }
+  nodes.forEach(n => {
+    n.gEl.addEventListener('pointerenter', () => showTip(n));
+    n.gEl.addEventListener('pointerleave', hideTip);
+    n.gEl.addEventListener('focus', () => showTip(n));
+    n.gEl.addEventListener('blur', hideTip);
+  });
+}
+
+// Pass-trend chart: pass line, area+line draw-in, dots, week/month/all tabs.
+function _anaBtRenderTrend(wrap, D) {
+  if (!wrap) return;
+  const SVGNS = 'http://www.w3.org/2000/svg';
+  const reduce = _anaBtReduce();
+  const svgEl = (tag, attrs) => { const e = document.createElementNS(SVGNS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); return e; };
+  const W = 960, H = 240, PAD = 46;
+  const innerW = W - 2 * PAD, innerH = H - 2 * PAD;
+  const yMin = D.passTrend.yMin, yMax = D.passTrend.yMax, passAcc = D.passTrend.passAcc;
+  const yOf = acc => PAD + (1 - (acc - yMin) / (yMax - yMin)) * innerH;
+  const xOf = (i, n) => PAD + (n > 1 ? (i / (n - 1)) * innerW : innerW / 2);
+  const passY = yOf(passAcc);
+
+  const svg = svgEl('svg', { class: 'acc-svg', viewBox: `0 0 ${W} ${H}` });
+
+  const grid = svgEl('g', { class: 'acc-grid' });
+  [60, 70, 80, 90].forEach(pct => {
+    if (pct < yMin || pct > yMax) return;
+    const y = yOf(pct);
+    grid.appendChild(svgEl('line', { x1: PAD, y1: y, x2: W - PAD, y2: y }));
+    const t = svgEl('text', { x: PAD - 10, y: y + 3, 'text-anchor': 'end' }); t.textContent = pct + '%';
+    grid.appendChild(t);
+  });
+  svg.appendChild(grid);
+
+  const passG = svgEl('g', {});
+  passG.appendChild(svgEl('line', { class: 'acc-pass-line', x1: PAD, y1: passY, x2: W - PAD, y2: passY }));
+  const pt = svgEl('text', { class: 'acc-pass-label', x: W - PAD + 6, y: passY + 4 }); pt.textContent = 'PASS';
+  passG.appendChild(pt);
+  svg.appendChild(passG);
+
+  const dataLayer = svgEl('g', {}); svg.appendChild(dataLayer);
+  const labelLayer = svgEl('g', {}); svg.appendChild(labelLayer);
+  wrap.appendChild(svg);
+
+  function ptsFor(key) {
+    const arr = D.passTrend.data[key] || [];
+    return arr.map((d, i) => ({ x: xOf(i, arr.length), y: yOf(d.acc), acc: d.acc, label: d.label }));
+  }
+  function buildLine(pts) { return pts.map((p, i) => (i ? 'L' : 'M') + p.x.toFixed(1) + ' ' + p.y.toFixed(1)).join(' '); }
+  function buildArea(pts) {
+    if (!pts.length) return '';
+    const base = (H - PAD).toFixed(1);
+    return 'M' + pts[0].x.toFixed(1) + ' ' + base + ' ' + pts.map(p => 'L' + p.x.toFixed(1) + ' ' + p.y.toFixed(1)).join(' ') +
+      ' L' + pts[pts.length - 1].x.toFixed(1) + ' ' + base + ' Z';
+  }
+  function draw(key, animate) {
+    dataLayer.innerHTML = ''; labelLayer.innerHTML = '';
+    const pts = ptsFor(key);
+    const area = svgEl('path', { class: 'acc-area', d: buildArea(pts) });
+    const line = svgEl('path', { class: 'acc-line', d: buildLine(pts) });
+    dataLayer.appendChild(area); dataLayer.appendChild(line);
+    const dots = pts.map(p => {
+      const c = svgEl('circle', { class: 'acc-dot', cx: p.x.toFixed(1), cy: p.y.toFixed(1), r: 4 });
+      dataLayer.appendChild(c); return c;
+    });
+    pts.forEach(p => { if (p.label) { const t = svgEl('text', { class: 'acc-xlabel', x: p.x.toFixed(1), y: H - PAD + 18, 'text-anchor': 'middle' }); t.textContent = p.label; labelLayer.appendChild(t); } });
+
+    if (animate && !reduce && line.getTotalLength) {
+      const len = line.getTotalLength();
+      line.style.setProperty('--len', len);
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        line.classList.add('drawn'); area.classList.add('drawn');
+        dots.forEach((d, i) => { d.style.setProperty('transition-delay', (0.62 + i * 0.045) + 's'); d.classList.add('drawn'); });
+      }));
+    } else {
+      // static final state (reduced motion): area + dots visible via .drawn class
+      area.classList.add('drawn');
+      dots.forEach(d => d.classList.add('drawn'));
+    }
+  }
+  wrap._drawTrend = (animate) => draw('month', animate);
+  if (reduce) draw('month', false);
+
+  const tile = wrap.closest('.tile');
+  const tabs = tile ? tile.querySelectorAll('.acc-tab') : [];
+  tabs.forEach(b => b.addEventListener('click', () => {
+    tabs.forEach(x => x.setAttribute('aria-pressed', x === b ? 'true' : 'false'));
+    draw(b.dataset.range, true);
+  }));
+}
+
+// After innerHTML: run all bento wiring. Motion gated by reduced-motion; under
+// reduced motion every tile resolves to its final values (nothing stays hidden).
+function _anaBtWire(D) {
+  const reduce = _anaBtReduce();
+  const bento = document.querySelector('.ana-bento');
+  if (!bento) return;
+  const tiles = Array.prototype.slice.call(bento.querySelectorAll('.tile'));
+  tiles.forEach((t, i) => t.style.setProperty('--index', i));
+
+  // Render the two interactive keepers into their mounts.
+  _anaBtRenderConstellation(document.getElementById('anaBtConstMount'), D);
+  _anaBtRenderTrend(document.getElementById('anaBtAccWrap'), D);
+
+  function runFills(t) {
+    t.querySelectorAll('[data-cnt]').forEach(n => _anaBtCountUp(n, +n.dataset.cnt, n.dataset.suffix || ''));
+    t.querySelectorAll('[data-w]').forEach(i => { i.style.setProperty('width', i.dataset.w + '%'); });
+    if (t.classList.contains('s-const')) t.classList.add('lit');
+    if (t.classList.contains('s-trend')) {
+      const w = t.querySelector('#anaBtAccWrap');
+      if (w && w._drawTrend) w._drawTrend(!reduce);
+    }
+  }
+
+  if (reduce || !('IntersectionObserver' in window)) {
+    tiles.forEach(t => { t.classList.add('in', 'lit'); runFills(t); });
+    return;
+  }
+  const io = new IntersectionObserver((entries, obs) => {
+    entries.forEach(en => {
+      if (en.isIntersecting) {
+        en.target.classList.add('in');
+        const idx = +(en.target.style.getPropertyValue('--index') || 0);
+        const lead = 120 + Math.min(idx, 6) * 52;
+        setTimeout(() => runFills(en.target), lead);
+        obs.unobserve(en.target);
+      }
+    });
+  }, { threshold: 0.12 });
+  tiles.forEach(t => io.observe(t));
+}
+
 // ── Analytics orchestrator ──
 
 function renderAnalytics() {
@@ -16247,66 +17080,36 @@ function renderAnalytics() {
   // v4.79.0: data path — restore page header (was hidden if user previously hit empty state)
   const pageHead = document.querySelector('#page-analytics > .ed-pagehead');
   if (pageHead) pageHead.classList.remove('is-hidden');
-  // v4.76.0: surface highest-leverage drill at the top of Analytics
-  if (typeof renderAnalyticsActionHeadline === 'function') renderAnalyticsActionHeadline();
-  let html = '';
-  html += _renderAnaNav();
-  html += _renderAnaReadiness(h);
-  // v4.85.14: "Why your score?" breakdown card sits directly under the
-  // Exam Readiness card. Reads existing readiness data, no new compute.
-  if (typeof _renderAnaWhyScore === 'function') {
-    try {
-      const _readiness = (typeof getReadinessScore === 'function') ? getReadinessScore() : null;
-      if (_readiness) html += _renderAnaWhyScore(_readiness);
-    } catch (_) { /* defensive — never block the rest of the page on this card */ }
-  }
-  // v4.54.8: Accuracy-over-time chart with pass-mark line + week/month/all tabs
-  html += _renderAnaAccuracyChart(h);
-  // v4.54.10: GitHub-style study activity heatmap (365 days). Named
-  // _renderAnaStudyHeatmap (not _renderAnaHeatmap) to avoid collision with
-  // the retired v4.45.0 heatmap that regression-guards forbid.
-  html += _renderAnaStudyHeatmap(h);
-  html += _renderAnaTrend(h);
-  html += _renderAnaDifficulty(h);
-  html += _renderAnaTopicsCta();
-  // v4.45.0 — Domain Mastery is promoted OUT of the 2-col grid because it's
-  // the most prescriptive card on the page and deserves full-width. It
-  // sits right after Topics CTA so domain-level mastery reads alongside
-  // topic-level progress.
-  html += _renderAnaDomainMastery(h);
-  // v4.54.2: Knowledge Constellation — topics as nodes sized by practice count,
-  // tinted by mastery, clustered by domain. Inspired by the Claude Design
-  // prototype; ported to our 5-domain palette + real state.
-  html += _renderAnaConstellation(h);
-  html += _renderAnaActivity(h);
-  html += _renderAnaExams(h);
-  // v4.32: Priority Study Areas + Weekly Volume + All-Time Stats removed.
-  // v4.45.0: Difficulty × Topic Heatmap + Question Type Breakdown removed.
-  //          Replaced by Domain Mastery (above) + Wrong-Answer Patterns (here).
-  // v4.45.2 — _renderAnaWeakSpots + _renderAnaDrills removed per user direction
-  // (redundant with homepage weak-spots chip row + in-drill dashboards). Grid
-  // now holds Streak + Wrong-Answer Patterns + Exam-vs-Quiz (3 cards).
-  html += '<div class="ana-grid-2col">';
-  html += _renderAnaStreak();
-  html += _renderAnaWrongPatterns();
-  html += _renderAnaExamVsQuiz(h);
-  html += '</div>';
-  html += _renderAnaMilestones();
+  // v7.16.0: the action-headline band is removed from Analytics. Its
+  // highest-leverage drill now lives in the bento "highest-leverage move" tile,
+  // and its gradient clashed with the forged-bronze system. Keep it hidden + empty.
+  (function () { var _ah = document.getElementById('ana-action-headline'); if (_ah) { _ah.hidden = true; _ah.innerHTML = ''; } })();
+  // v7.16.0 — Bento board: faithful lift of mockups/analytics/mockup-3-bento.html
+  // powered by real data. _anaBentoData(h) yields the ANALYTICS_SAMPLE shape; the
+  // _anaBt* renderers reproduce the mockup markup. Tile order matches the mockup
+  // grid children exactly (readiness, constellation, trend, why, domains, streak,
+  // diff, evq, heat, wrong, miles, exam). The two keepers (constellation
+  // starfield, pass-trend chart) and all motion are wired in _anaBtWire() below.
+  const D = _anaBentoData(h);
+  let html = '<div class="ana-bento">'
+    + _anaBtReadiness(D)
+    + _anaBtConstellation(D)
+    + _anaBtTrend(D)
+    + _anaBtWhy(D)
+    + _anaBtDomains(D)
+    + _anaBtStreak(D)
+    + _anaBtDiff(D)
+    + _anaBtEvq(D)
+    + _anaBtHeat(D)
+    + _anaBtWrong(D)
+    + _anaBtMiles(D)
+    + _anaBtExam(D)
+    + '</div>';
   container.innerHTML = html;
-  // v4.85.12: wire constellation hover tooltip after innerHTML insertion.
-  // Idempotent (data-tooltip-wired guard) so re-renders don't double-bind.
-  if (typeof _anaConstWireTooltip === 'function') _anaConstWireTooltip();
-  // v7.14.0: start the Living Constellation ambient drift (re-binds to the
-  // freshly rendered nodes; cancels any prior loop so detached nodes don't leak).
-  if (typeof _anaConstWireDrift === 'function') _anaConstWireDrift();
-  // v7.14.0: reveal the accuracy chart's "trending toward pass?" verdict + pulse.
-  if (typeof _anaAccChartPlay === 'function') _anaAccChartPlay('month');
-  // v7.14.0: play the Study Rhythm "streak flame" reveal (count-up + fuse + flare).
-  if (typeof _anaHeatmapPlayFlame === 'function') _anaHeatmapPlayFlame();
-  // v7.14.0: Domain Mastery reveal (bars grow + count-up + badge pop) + hover expand.
-  if (typeof _anaDomainMasteryPlay === 'function') _anaDomainMasteryPlay();
-  // v7.14.0: Milestones trophy-shine (recent tiles) + hover detail reveal.
-  if (typeof _anaMilestonesPlay === 'function') _anaMilestonesPlay();
+  // Wire the keepers + entrance choreography (count-ups, bar/ring fills,
+  // constellation twinkle/pulsar/tooltip, trend tabs + draw-in). Reduced-motion
+  // is handled inside: every tile resolves to its final values, nothing hidden.
+  _anaBtWire(D);
 }
 
 // Wired to the exam date input on the analytics page

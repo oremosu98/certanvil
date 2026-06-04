@@ -109,6 +109,7 @@ npx playwright test              # E2E (tests/e2e/app.spec.js)
 
 | Version | Features Added |
 |---|---|
+| v7.16.0 | Analytics bento redesign (lift of approved mockup, real data) + N10-009 kicker title; drop action-headline band |
 | v7.15.0 | Progress redesign: bento grid (domain tiles, weakest/strong/untouched/recent, drill-next spotlight) |
 | v7.14.0 | Analytics-page motion: constellation drift, accuracy pass-verdict, streak flame, domain-mastery reveal/expand, milestones shine+hover; taste fixes (rail/emoji) |
 | v7.13.5 | light-theme de-purple sweep — dg-depurple.css repaints legacy purple to bronze |

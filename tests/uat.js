@@ -1200,7 +1200,7 @@ test('Analytics: Topics pill removed from ana-nav',
 test('Analytics: no lingering ana-topic-alert in renderAnalytics body',
   !js.includes('ana-topic-alert'));
 // Analytics 2-col grid
-test('Analytics: 2-column grid wrapper', js.includes('ana-grid-2col'));
+test('Analytics: bento grid wrapper', js.includes('ana-bento'));
 // CSS
 test('CSS: .ana-nav styles', css.includes('.ana-nav'));
 test('CSS: .ana-nav-pill styles', css.includes('.ana-nav-pill'));
@@ -2941,10 +2941,10 @@ test('v4.45.0: old _renderAnaHeatmap is gone (regression guard)',
   !/function\s+_renderAnaHeatmap/.test(js));
 test('v4.45.0: old _renderAnaQuestionTypes is gone (regression guard)',
   !/function\s+_renderAnaQuestionTypes/.test(js));
-test('v4.45.0: renderAnalytics calls _renderAnaDomainMastery (full-width, above grid)',
-  /html\s*\+=\s*_renderAnaDomainMastery\(h\)/.test(js));
-test('v4.45.0: renderAnalytics calls _renderAnaWrongPatterns (inside 2-col grid)',
-  /html\s*\+=\s*_renderAnaWrongPatterns\(\)/.test(js));
+test('v4.45.0: renderAnalytics bento composes the domains tile (_anaBtDomains)',
+  /_anaBtDomains\(/.test(js));
+test('v4.45.0: renderAnalytics bento composes the wrong-patterns tile (_anaBtWrong)',
+  /_anaBtWrong\(/.test(js));
 test('v4.45.0: renderAnalytics no longer calls _renderAnaHeatmap (regression guard)',
   !/html\s*\+=\s*_renderAnaHeatmap/.test(js));
 test('v4.45.0: renderAnalytics no longer calls _renderAnaQuestionTypes (regression guard)',
@@ -4124,8 +4124,8 @@ test('v4.54.2 JS: _computeConstellationData function defined',
   js.includes('function _computeConstellationData('));
 test('v4.54.2 JS: _renderAnaConstellation function defined',
   js.includes('function _renderAnaConstellation('));
-test('v4.54.2 JS: renderAnalytics calls _renderAnaConstellation after Domain Mastery',
-  /_renderAnaDomainMastery\(h\);[\s\S]{0,400}_renderAnaConstellation\(h\)/.test(js));
+test('v4.54.2 JS: renderAnalytics bento composes the constellation tile (_anaBtConstellation)',
+  /_anaBtConstellation\(/.test(js));
 test('v4.54.2 JS: constellation uses TOPIC_DOMAINS for domain lookup',
   /_computeConstellationData[\s\S]{0,800}TOPIC_DOMAINS\[topic\]/.test(js));
 test('v4.54.2 JS: tier thresholds match Domain Mastery (v4.85.11: 55/70/80, lowered from 85)',
@@ -4468,8 +4468,8 @@ test('v4.54.8 JS: _renderAnaAccuracyChart defined with SVG 960x220 + pass line',
 test('v4.54.8 JS: _anaAccChartTab tab-switcher defined + 3 ranges (week/month/all)',
   js.includes('function _anaAccChartTab(') &&
   /_anaAccChartTab[\s\S]{0,800}ana-accchart-tab-active/.test(js));
-test('v4.54.8 JS: renderAnalytics chains _renderAnaAccuracyChart after _renderAnaReadiness (v4.85.14: _renderAnaWhyScore now sits between them)',
-  /_renderAnaReadiness\(h\)[\s\S]{0,800}_renderAnaAccuracyChart\(h\)/.test(js));
+test('v4.54.8 JS: renderAnalytics bento composes readiness then the trend/accuracy tile',
+  /_anaBtReadiness\(D\)[\s\S]{0,600}_anaBtTrend\(D\)/.test(js));
 test('v4.54.8 CSS: .ana-accchart-card editorial head (eyebrow + italic-accent title)',
   /\.ana-accchart-eyebrow\s*\{[\s\S]{0,400}font-family:\s*monospace[\s\S]{0,300}text-transform:\s*uppercase/.test(css) &&
   /\.ana-accchart-title\s+em\s*\{[\s\S]{0,200}color:\s*var\(--accent-light\)/.test(css));
@@ -4630,9 +4630,8 @@ test('v4.54.10 CSS: .ana-const-map::before 40px grid overlay',
   /\.ana-const-map::before\s*\{[\s\S]{0,800}background-size:\s*40px\s+40px/.test(css));
 
 // Daily Study Streak Heatmap
-test('v4.54.10 JS: _renderAnaStudyHeatmap defined + called from renderAnalytics',
-  js.includes('function _renderAnaStudyHeatmap(') &&
-  /renderAnalytics[\s\S]{0,4000}_renderAnaStudyHeatmap\(h\)/.test(js));
+test('v4.54.10 JS: renderAnalytics bento composes the study-heatmap tile (_anaBtHeat)',
+  /_anaBtHeat\(/.test(js));
 test('v4.54.10 JS: heatmap renders 53-week grid ending today',
   /_renderAnaStudyHeatmap[\s\S]{0,4000}WEEKS\s*=\s*53/.test(js));
 test('v4.54.10 JS: heatmap tier intensity thresholds (0/5/15/40/41+)',
@@ -4660,8 +4659,8 @@ test('v4.54.10 JS: renderAnalytics hides #history-panel (Recent Performance reti
 
 // ── v4.54.12 Editorial headers on drill pages + Analytics ──
 console.log('\n\x1b[1m\u2500\u2500 v4.54.12 DRILL PAGES + ANALYTICS EDITORIAL HEADERS \u2500\u2500\x1b[0m');
-test('v4.54.12 HTML: Analytics page uses .ed-pagehead with "Performance analytics."',
-  /id="page-analytics"[\s\S]{0,500}class="ed-pagehead"[\s\S]{0,800}Performance\s*<em>analytics\.<\/em>/.test(html));
+test('v7.16.0 HTML: Analytics page uses .ed-pagehead with the N10-009 kicker title',
+  /id="page-analytics"[\s\S]{0,500}class="ed-pagehead"[\s\S]{0,800}ana-pagehead-title[\s\S]{0,160}Network\+ N10-009/.test(html));
 test('v4.54.14 CSS: .ed-cardhead reusable card-level header defined',
   /\.ed-cardhead\s*\{[\s\S]{0,400}border-bottom:\s*1px\s+dashed/.test(css) &&
   /\.ed-cardhead-eyebrow\s*\{[\s\S]{0,400}font-family:\s*monospace[\s\S]{0,400}text-transform:\s*uppercase/.test(css) &&
@@ -9808,8 +9807,9 @@ test('v4.85.12 Tooltip: wireup is idempotent via data-tooltip-wired guard',
     const body = _fnBody(js, '_anaConstWireTooltip');
     return body && /tooltipWired\s*===\s*'1'/.test(body) && /tooltipWired\s*=\s*'1'/.test(body);
   })());
-test('v4.85.12 Tooltip: renderAnalytics calls _anaConstWireTooltip after innerHTML',
-  /container\.innerHTML\s*=\s*html;[\s\S]{0,400}_anaConstWireTooltip\(\)/.test(js));
+test('Analytics bento: constellation wired via _anaBtWire after innerHTML',
+  /container\.innerHTML\s*=\s*html;[\s\S]{0,400}_anaBtWire\(/.test(js) &&
+  js.includes('_anaBtRenderConstellation'));
 test('v4.85.12 Tooltip: <g> nodes no longer have inline onmouseenter (moved to delegation)',
   !/data-tt-topic[^>]*onmouseenter/.test(js));
 
@@ -9869,8 +9869,8 @@ test('v4.85.14 WhyScore: getReadinessScore returns staleTopics array (sorted old
     const body = _fnBody(js, 'getReadinessScore');
     return body && /staleTopics/.test(body) && /sort\(\(a, b\) => b\.daysSince - a\.daysSince\)/.test(body);
   })());
-test('v4.85.14 WhyScore: card wired into renderAnalytics after _renderAnaReadiness',
-  /_renderAnaReadiness\(h\)[\s\S]{0,500}_renderAnaWhyScore\(_readiness\)/.test(js));
+test('v4.85.14 WhyScore: bento composes the why tile after readiness',
+  /_anaBtReadiness\(D\)[\s\S]{0,400}_anaBtWhy\(D\)/.test(js));
 test('v4.85.14 WhyScore: 4 component bars (accuracy, coverage, recency, volume)',
   (() => {
     const body = _fnBody(js, '_renderAnaWhyScore');
