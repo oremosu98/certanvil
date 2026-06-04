@@ -21,7 +21,7 @@ check('served entry files copied', () => {
     .forEach(f => assert(fs.existsSync(path.join(DIST, f)), 'missing ' + f));
 });
 check('dev/infra dirs NOT copied', () => {
-  ['node_modules', '.git', 'tests', 'scripts', 'docs', 'api', 'supabase', 'landing']
+  ['node_modules', '.git', 'tests', 'scripts', 'docs', 'api', 'supabase', 'landing', 'design']
     .forEach(d => assert(!fs.existsSync(path.join(DIST, d)), 'should not ship ' + d));
 });
 check('root markdown NOT copied', () => {
