@@ -1,7 +1,7 @@
 # TB v3 Phase 5 — Trace mode: design spec
 
 > Date: 2026-05-23 · Phase 5 design lock · branch `feat/tb-v3-phase5` · main currently at `181cd77` (v6.1.0).
-> References: Phase 4 spec at [docs/superpowers/specs/2026-05-22-tb-v3-phase4-simulate-design.md](2026-05-22-tb-v3-phase4-simulate-design.md), Phase 3 spec at [docs/superpowers/specs/2026-05-20-tb-v3-phase3-design.md](2026-05-20-tb-v3-phase3-design.md), resume doc at [RESUME-TB-V3-PHASE5.md](../../../RESUME-TB-V3-PHASE5.md).
+> References: Phase 4 spec at [docs/superpowers/specs/2026-05-22-tb-v3-phase4-simulate-design.md](2026-05-22-tb-v3-phase4-simulate-design.md), Phase 3 spec at [docs/superpowers/specs/2026-05-20-tb-v3-phase3-design.md](2026-05-20-tb-v3-phase3-design.md), resume doc at [RESUME-TB-V3-PHASE5.md](../../handoffs/RESUME-TB-V3-PHASE5.md).
 
 ---
 
