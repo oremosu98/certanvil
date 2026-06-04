@@ -1,9 +1,9 @@
 // ══════════════════════════════════════════
-// Network+ AI Quiz — app.js  v7.14.0
+// Network+ AI Quiz — app.js  v7.15.0
 // ══════════════════════════════════════════
 
 // ── CONSTANTS ──
-const APP_VERSION = '7.14.0';
+const APP_VERSION = '7.15.0';
 // v4.99.45 (Phase 6b): expose APP_VERSION on window so the web-vitals
 // collector (lib/web-vitals-collector.js, loaded BEFORE app.js so its
 // PerformanceObservers attach earlier) can stamp this version onto every
@@ -2639,20 +2639,13 @@ function _progressRowHtml(row) {
   return `<button type="button" class="t-row${untouchedCls}${staleCls}" data-topic="${safeTopicId}" aria-label="${ariaLabel}"><span class="tn"><span class="tnm">${escHtml(display)}</span><span class="tsub">${subLine}${trendHtml}</span></span><span class="tbar"><i${tierCls ? ' class="' + tierCls + '"' : ''} style="width:${barW}%"></i></span><span class="tpc${tierCls ? ' ' + tierCls : ''}">${pctTxt}</span></button>`;
 }
 
-// v7.2.0 (supersedes v4.51.0): Progress v2 \u2014 mastery instrument as hero
-// (work-first dashboards skill: one stacked-bar instrument, not 4 detached
-// tiles) + domain readiness strip (the new diagram, doubles as jump nav)
-// + empty-state branch (modeled per spec \u00a73.8). Emits the .pm-* and .dr-*
-// markup contract from mockups/netplus-progress-concept-v2.html.
-//
-// Off-by-one fix from v4.99.66 (spec Q6-A): counts derived from `rows` array
-// directly (the param) \u2014 not from cached state \u2014 so "2 of 50" stays
-// consistent with the underlying source of truth.
-//
-// Legacy ps2-* / progress-card-* classes retained as inline classes the
-// existing styles.css guards read; dg-system.css Batch 4b kills them at
-// runtime via display:none. The v2 emission lives alongside via .pm + .dr.
-// Same pattern as the prior 16+ scoped-CSS surfaces.
+// Emits the .pm-* (mastery instrument) + .dr-* (domain readiness strip) markup
+// contract into #progress-summary. v7.15.0: this surface is folded by
+// dg-system.css (coverage + domain tiles now live in the bento) but the markup
+// stays as the UAT anchor contract (.pm-led/.pm-seg/.dr-row/progress-card-labs)
+// and the cert-aware domain math + empty-state branch. Counts derive from the
+// `rows` param directly (off-by-one fix, spec Q6-A). Legacy ps2-*/progress-card-*
+// classes retained for the styles.css UAT guards.
 function _renderProgressSummary(rows) {
   const el = document.getElementById('progress-summary');
   if (!el) return;
@@ -2871,132 +2864,177 @@ function _wireProgressDomainStripDelegation(host) {
   };
 }
 
-// Sentinel — old legacy template literal block removed at v7.2.0; the v2
-// emission is built via string concat above. Function ends with the v2
-// pmHtml + drHtml emission + delegation wiring above. The remainder of
-// the original `el.innerHTML = \`` template lives below as dead code that
-// the parser will swallow. To avoid keeping unreachable lines, we close
-// here properly:
-function _renderProgressSummary_dead_v451_template() {
-  /* This entire block is the v4.51.0 emission, kept commented as a dead
-     reference for the UAT regex anchors. It is never invoked. */
-  return `
-    <div class="progress-card progress-card-mastery">
-      <div class="progress-card-head">
-        <span class="progress-card-ico" aria-hidden="true">\u{1F393}</span>
-        <div class="progress-card-title">Topic Mastery</div>
-        <div class="progress-card-sub">${touched} of ${total} topics studied \u00b7 <strong>${coveragePct}%</strong> coverage</div>
-        <div class="progress-card-legend" aria-hidden="true">
-          <span class="pcl-item pcl-green"><span class="pcl-dot"></span>\u226580%</span>
-          <span class="pcl-item pcl-blue"><span class="pcl-dot"></span>60\u201379%</span>
-          <span class="pcl-item pcl-red"><span class="pcl-dot"></span>&lt;60%</span>
-        </div>
-      </div>
-      <div class="ps2-cover-bar" role="progressbar" aria-valuenow="${coveragePct}" aria-valuemin="0" aria-valuemax="100">
-        <div class="ps2-cover-fill" style="width:${coveragePct}%"></div>
-      </div>
-      <div class="ps2-grid ps2-grid-mastery">
-        <div class="ps2-stat ps2-strong">
-          <div class="ps2-stat-ico" aria-hidden="true">\u{1F7E2}</div>
-          <div class="ps2-stat-val">${buckets.strong}</div>
-          <div class="ps2-stat-lbl">Strong</div>
-        </div>
-        <div class="ps2-stat ps2-solid">
-          <div class="ps2-stat-ico" aria-hidden="true">\u{1F535}</div>
-          <div class="ps2-stat-val">${buckets.solid}</div>
-          <div class="ps2-stat-lbl">Solid</div>
-        </div>
-        <div class="ps2-stat ps2-weak">
-          <div class="ps2-stat-ico" aria-hidden="true">\u{1F534}</div>
-          <div class="ps2-stat-val">${buckets.weak}</div>
-          <div class="ps2-stat-lbl">Weak</div>
-        </div>
-        <div class="ps2-stat ps2-untouched">
-          <div class="ps2-stat-ico" aria-hidden="true">\u26AA</div>
-          <div class="ps2-stat-val">${buckets.untouched}</div>
-          <div class="ps2-stat-lbl">Untouched</div>
-        </div>
-      </div>
-    </div>
-    ${labsHtml}`;
-}
-
+// v7.15.0 (supersedes v7.2.0): Progress page rebuilt as the approved "Bento
+// Grid" (mockups/progress/mockup-3-bento.html), powered by the REAL rows.
+// _renderProgressGrouped composes the bento into #progress-topic-grid: a
+// spotlight "Drill this next" hero (reuses computeWeakSpotScores), a coverage
+// "Where you stand" stat tile, per-domain mastery tiles (the SAME <details
+// class="progress-domain dom" id="domain-<slug>" data-domain-idx
+// data-domain-key> sections with .t-row buttons, so every UAT anchor + the
+// delegated drillTopic dispatch survive), and weakest/untouched/strong/recent
+// tiles. Filter/search switches to a scoped focus tile of matching .t-row
+// buttons. Motion is CSS-only (animation-delay via --i + an .in toggle) and
+// collapses under reduce; dynamic widths are inline style="width:NN%" in the
+// template strings (no rAF .style loops, no ratchet cost).
 function _renderProgressGrouped(rows) {
-  // Group by domain in official 1→5 order, compute avg pct per domain, honor filter/search.
-  // v4.51.0: each accordion gets a data-domain-idx (1..5) so CSS can paint
-  // the 5-colour left-border accent (purple/green/blue/amber/red) matching
-  // Domain Mastery + Custom Quiz chip accordions — single source of
-  // visual consistency across every domain-grouped surface in the app.
-  // v4.88.2: cert-aware order so Security+ topics group into the correct
-  // 5 domains (threats / architecture / governance) instead of getting
-  // bucketed into nonexistent Network+ keys.
   const order = (typeof DOMAIN_WEIGHTS === 'object' && DOMAIN_WEIGHTS)
     ? Object.keys(DOMAIN_WEIGHTS)
     : ['concepts','implementation','operations','security','troubleshooting'];
   const grouped = {};
   order.forEach(k => { grouped[k] = []; });
   rows.forEach(r => { (grouped[r.domainKey] || (grouped[r.domainKey] = [])).push(r); });
-  let html = '';
-  order.forEach((dk, domainIdx) => {
+
+  const tierClsOf = pct => (pct === null ? '' : (pct >= 80 ? 's' : pct >= 60 ? 'o' : 'w'));
+  const scoped = (progressState.filter && progressState.filter !== 'all') || !!(progressState.search && progressState.search.trim());
+  // per-domain mastery tiles. KEEP the <details class="progress-domain dom"
+  // id="domain-<slug>" data-domain-idx data-domain-key> contract + the .t-row
+  // buttons via _progressRowHtml so every UAT anchor + the delegated drillTopic
+  // dispatch survive. Styled as a bento tile by dg-system.css.
+  function domainTiles(startIdx) {
+    let html = '', i = startIdx;
+    order.forEach((dk, domainIdx) => {
     const groupRows = _sortProgressRows(grouped[dk] || [], progressState.sort);
     const visible = groupRows.filter(_progressRowMatches);
     if (!visible.length) return;
-    // Domain average uses touched topics only
     const touched = groupRows.filter(r => r.pct !== null);
     const avg = touched.length ? Math.round(touched.reduce((a, r) => a + r.pct, 0) / touched.length) : null;
-    let avgColor = 'var(--text-dim)';
-    if (avg !== null) {
-      avgColor = avg >= 80 ? 'var(--green)' : (avg >= 60 ? 'var(--blue)' : 'var(--red)');
-    }
-    const weightPct = Math.round(DOMAIN_WEIGHTS[dk] * 100);
-    const barColor = avg !== null ? (avg >= 80 ? 'var(--green)' : avg >= 60 ? 'var(--blue)' : 'var(--red)') : 'var(--surface3)';
-    // v7.2.0: id="domain-<slug>" so the .dr-row data-domain-jump handler can
-    // scroll-into-view + the URL hash can deep-link to a specific section.
-    // .dom class added alongside .progress-domain so the dg-system.css v2
-    // CSS picks it up at runtime. data-domain-idx/key both preserved for
-    // the v4.51.0 UAT regex anchors + 5-colour rainbow border (killed at
-    // runtime by dg-system.css Batch 4b but kept in markup).
-    const slug = _progressDomainSlug(dk);
-    html += `<details class="progress-domain dom" id="domain-${slug}" data-domain-idx="${domainIdx + 1}" data-domain-key="${dk}" open>
-      <summary class="progress-domain-head dh">
-        <span class="pd-name">${DOMAIN_LABELS[dk]}</span>
-        <span class="pd-weight">${weightPct}% of exam</span>
-        <span class="pd-bar"><span class="pd-bar-fill" style="width:${avg !== null ? avg : 0}%;background:${barColor}"></span></span>
-        <span class="pd-avg" style="color:${avgColor}">${avg !== null ? avg + '%' : '\u2014'}</span>
-        <span class="pd-count">${visible.length}/${groupRows.length}</span>
-      </summary>
-      <div class="progress-domain-rows">${visible.map(_progressRowHtml).join('')}</div>
-    </details>`;
-  });
-  const grid = document.getElementById('progress-topic-grid');
-  if (grid) grid.innerHTML = html || '<p style="color:var(--text-dim);text-align:center;padding:24px">No topics match this filter.</p>';
-  // v7.2.0: delegated click handler on the grid host for .t-row[data-topic].
-  // Idempotent .onclick assignment so repeat renders don't accumulate
-  // listeners (the proven Phase 4 pattern from v6.1.0 TB v3).
-  if (grid) {
-    grid.onclick = function(ev) {
-      const row = ev.target && ev.target.closest && ev.target.closest('.t-row[data-topic]');
-      if (!row) return;
-      const topicId = row.getAttribute('data-topic');
-      if (!topicId) return;
-      try { if (typeof drillTopic === 'function') drillTopic(topicId); } catch (_) {}
-    };
+    const tier = tierClsOf(avg), weightPct = Math.round(DOMAIN_WEIGHTS[dk] * 100), slug = _progressDomainSlug(dk);
+    html += `<details class="tile t-dom progress-domain dom" id="domain-${slug}" data-domain-idx="${domainIdx + 1}" data-domain-key="${dk}" style="--i:${i}" open><summary class="progress-domain-head dh"><span class="pd-name">${escHtml(DOMAIN_LABELS[dk] || dk)}</span><span class="pd-weight">${weightPct}% of exam</span><span class="pd-bar"><span class="pd-bar-fill${tier ? ' ' + tier : ''}" style="width:${avg !== null ? avg : 0}%"></span></span><span class="pd-avg${tier ? ' ' + tier : ''}">${avg !== null ? avg + '%' : '\u2014'}</span><span class="pd-count">${visible.length}/${groupRows.length}</span></summary><div class="progress-domain-rows">${visible.map(_progressRowHtml).join('')}</div></details>`;
+      i++;
+    });
+    return { html, next: i };
   }
-  // v7.2.0: scroll-into-view + highlight on initial load when URL carries
-  // #domain-<slug>. Fires once on render; subsequent renders skip via the
-  // _progressHashConsumed flag (the handler from the strip uses scrollTo
-  // afterwards so we don't fight it).
+  // spotlight hero: highest-leverage topic to drill next. Reuse the
+  // recommendation signal (computeWeakSpotScores), then bind it to its real row
+  // so the whole tile is a .t-row[data-topic] drillTopic fires on.
+  function spotlightTile(i) {
+    let recName = null;
+    try {
+      const w = (typeof computeWeakSpotScores === 'function') ? computeWeakSpotScores() : null;
+      if (w && w.length) recName = w[0].topic;
+    } catch (_) {}
+    let recRow = recName ? (rows.find(r => r.t === recName || r.label === recName) || null) : null;
+    if (!recRow) {
+      // Empty/fresh user: anchor on the heaviest-weight untouched topic.
+      const untouched = rows.filter(r => r.pct === null);
+      const pool = (untouched.length ? untouched : rows).slice().sort((a, b) => ((DOMAIN_WEIGHTS[b.domainKey] || 0) - (DOMAIN_WEIGHTS[a.domainKey] || 0)));
+      recRow = pool[0] || null;
+    }
+    if (!recRow) return '';
+    const dLabel = (DOMAIN_LABELS && DOMAIN_LABELS[recRow.domainKey]) || '';
+    const objTxt = recRow.obj ? ' · Objective ' + escHtml(recRow.obj) : '';
+    const isFresh = recRow.pct === null;
+    const why = isFresh ? 'It carries heavy exam weight and you have not started it yet. Clearing it now moves your overall score the most.' : 'Your weakest studied topic. Drilling here moves readiness furthest per minute.';
+    const masteryHtml = isFresh ? '<span class="spot-mastery-lbl">Not started yet</span>' : '<span class="spot-mastery"><span class="num mono">' + recRow.pct + '</span><span class="lbl">% mastery</span></span>';
+    const aria = escAttr((recRow.label || recRow.t) + ', drill this next');
+    return '<button type="button" class="tile t-spot t-row" data-topic="' + escAttr(recRow.t) + '" style="--i:' + i + '" aria-label="' + aria + '">'
+      + '<span class="spot-top"><span class="spot-eyebrow">Drill this next<span class="spot-flag">Highest impact</span></span>'
+      + '<span class="spot-name">' + escHtml(recRow.label || recRow.t) + '</span><span class="spot-domain">' + escHtml(dLabel) + objTxt + '</span>'
+      + '<span class="spot-why">' + escHtml(why) + '</span></span><span class="spot-foot">' + masteryHtml
+      + '<span class="spot-cta">Start drill <span class="spot-cta-arrow" aria-hidden="true">→</span></span></span></button>';
+  }
+  // coverage / "Where you stand" stat tile (computed from rows), bucket math
+  // mirrors _renderProgressSummary so the numbers always agree.
+  function coverageTile(i) {
+    const b = { strong: 0, solid: 0, weak: 0, untouched: 0 };
+    rows.forEach(r => { b[_bucketOf(r.pct)]++; });
+    const total = rows.length, touched = total - b.untouched;
+    const coveragePct = total ? Math.round((touched / total) * 100) : 0;
+    const touchedRows = rows.filter(r => r.pct !== null);
+    const avgMastery = touchedRows.length ? Math.round(touchedRows.reduce((a, r) => a + r.pct, 0) / touchedRows.length) : 0;
+    const C = (2 * Math.PI * 44).toFixed(1), dash = (C * (1 - coveragePct / 100)).toFixed(1);
+    return '<div class="tile t-cov" style="--i:' + i + '"><div class="tile-eyebrow">Where you stand</div>'
+      + '<div class="cov-rings"><div class="ring"><svg width="104" height="104" viewBox="0 0 104 104" aria-hidden="true">'
+      + '<circle class="ring-c-bg" cx="52" cy="52" r="44" fill="none" stroke-width="9"/>'
+      + '<circle class="ring-c-cov" cx="52" cy="52" r="44" fill="none" stroke-width="9" stroke-dasharray="' + C + '" stroke-dashoffset="' + dash + '"/></svg>'
+      + '<div class="ring-mid"><span class="num mono">' + coveragePct + '<span class="pcsym">%</span></span><span class="lbl">coverage</span></div></div>'
+      + '<div class="cov-legend"><div class="row"><span class="k">Avg mastery</span><span class="v mono">' + avgMastery + '%</span></div>'
+      + '<div class="row"><span class="k">Topics seen</span><span class="v mono">' + touched + '/' + total + '</span></div>'
+      + '<div class="row"><span class="k">Solid</span><span class="v mono">' + b.solid + '</span></div></div></div>'
+      + '<div class="cov-split"><div class="cell"><div class="n mono">' + b.weak + '</div><div class="t">Weak</div></div>'
+      + '<div class="cell"><div class="n mono">' + b.untouched + '</div><div class="t">Untouched</div></div>'
+      + '<div class="cell"><div class="n mono">' + b.strong + '</div><div class="t">Strong</div></div></div></div>';
+  }
+
+
+  // weakest touched topics (ranked lowest mastery first)
+  function weakestTile(i) {
+    const list = rows.filter(r => r.pct !== null).sort((a, b) => a.pct - b.pct).slice(0, 5);
+    if (!list.length) return '';
+    const items = list.map((r, n) => '<button type="button" class="weak-row t-row" data-topic="' + escAttr(r.t) + '" aria-label="' + escAttr((r.label || r.t) + ', ' + r.pct + ' percent mastery') + '"><span class="weak-rank mono">' + (n + 1) + '</span><span class="weak-name"><span class="n">' + escHtml(r.label || r.t) + '</span><span class="d">' + escHtml((DOMAIN_LABELS && DOMAIN_LABELS[r.domainKey]) || '') + '</span></span><span class="weak-pct mono">' + r.pct + '%</span></button>').join('');
+    return '<div class="tile t-weak" style="--i:' + i + '"><div class="tile-eyebrow">Weakest topics <span class="tile-count">lowest ' + list.length + '</span></div><div class="weak-list">' + items + '</div></div>';
+  }
+
+  // untouched (pct === null) + strong (pct >= 80) chip tiles
+  function untouchedTile(i) {
+    const list = rows.filter(r => r.pct === null);
+    if (!list.length) return '';
+    const chips = list.map(r => '<button type="button" class="chip ghost t-row" data-topic="' + escAttr(r.t) + '">' + escHtml(r.label || r.t) + '</button>').join('');
+    return '<div class="tile t-untouched" style="--i:' + i + '"><div class="tile-eyebrow">Untouched <span class="tile-count">' + list.length + ' never studied</span></div><div class="chips">' + chips + '</div></div>';
+  }
+  function strongTile(i) {
+    const list = rows.filter(r => r.pct !== null && r.pct >= 80).sort((a, b) => b.pct - a.pct);
+    if (!list.length) return '';
+    const chips = list.map(r => '<button type="button" class="chip good t-row" data-topic="' + escAttr(r.t) + '">' + escHtml(r.label || r.t) + '<span class="m mono">' + r.pct + '%</span></button>').join('');
+    return '<div class="tile t-strong" style="--i:' + i + '"><div class="tile-eyebrow">Strong and mastered <span class="tile-count">' + list.length + ' solid</span></div><div class="chips">' + chips + '</div></div>';
+  }
+
+  function recentTile(i) {  // recently studied (lowest daysSince)
+    const list = rows.filter(r => r.pct !== null && r.daysSince != null).sort((a, b) => a.daysSince - b.daysSince).slice(0, 8);
+    if (!list.length) return '';
+    const cards = list.map(r => {
+      const when = r.daysSince === 0 ? 'today' : r.daysSince === 1 ? '1 day ago' : r.daysSince + ' days ago';
+      return '<button type="button" class="recent-card t-row" data-topic="' + escAttr(r.t) + '"><span class="rn">' + escHtml(r.label || r.t) + '</span><span class="rb"><span class="rm mono">' + r.pct + '% mastery</span><span class="rt mono">' + when + '</span></span></button>';
+    }).join('');
+    return '<div class="tile t-recent" style="--i:' + i + '"><div class="tile-eyebrow">Recently studied <span class="tile-count">last ' + list.length + '</span></div><div class="recent-track">' + cards + '</div></div>';
+  }
+
+  // scoped/filtered view: one focused tile of the matching .t-row buttons
+  function scopedTile(i) {
+    let visible = [];
+    order.forEach(dk => { visible = visible.concat(_sortProgressRows(grouped[dk] || [], progressState.sort).filter(_progressRowMatches)); });
+    const flabel = { weak: 'Weak only', untouched: 'Untouched', strong: 'Strong' }[progressState.filter] || 'All topics';
+    const q = (progressState.search || '').trim();
+    const head = '<div class="tile-eyebrow">' + escHtml(flabel) + (q ? ' \u00b7 matching \u201c' + escHtml(q) + '\u201d' : '') + ' <span class="tile-count">' + visible.length + ' of ' + rows.length + '</span></div>';
+    const body = visible.length ? '<div class="scoped-list">' + visible.map(_progressRowHtml).join('') + '</div>' : '<div class="empty-note">No topics match this search and filter.</div>';
+    return '<div class="tile t-scoped" style="--i:' + i + '">' + head + body + '</div>';
+  }
+
+  // compose: spotlight + coverage always lead; then either the scoped focus
+  // tile (filter/search active) or the full domain + weakest/untouched/strong/
+  // recent set.
+  let html = spotlightTile(0) + coverageTile(1);
+  if (scoped) {
+    html += scopedTile(2);
+  } else {
+    const dom = domainTiles(2);
+    let i = dom.next;
+    html += dom.html + weakestTile(i++) + untouchedTile(i++) + strongTile(i++) + recentTile(i++);
+  }
+
+  const grid = document.getElementById('progress-topic-grid');
+  if (!grid) return;
+  grid.classList.add('progress-bento');
+  grid.innerHTML = html || '<div class="tile t-scoped"><div class="empty-note">No topics match this filter.</div></div>';
+  // Delegated click on the grid host: every clickable tile/row/chip carries
+  // .t-row[data-topic], so this single idempotent handler fires drillTopic
+  // for all of them (no listener accumulation across re-renders).
+  grid.onclick = function(ev) {
+    const row = ev.target && ev.target.closest && ev.target.closest('.t-row[data-topic]');
+    const topicId = row && row.getAttribute('data-topic');
+    if (topicId) { try { if (typeof drillTopic === 'function') drillTopic(topicId); } catch (_) {} }
+  };
+  // Entrance: toggle .in next frame so the staggered CSS transition (gated
+  // behind prefers-reduced-motion: no-preference, driven by --i) plays. Under
+  // reduce the CSS keeps tiles static, so this is a harmless no-op.
+  requestAnimationFrame(() => requestAnimationFrame(() => grid.classList.add('in')));
+  // Scroll-into-view on initial load when URL carries #domain-<slug>.
   try {
     const hash = (typeof window !== 'undefined' && window.location && window.location.hash) || '';
     if (hash && hash.indexOf('#domain-') === 0 && !window._progressHashConsumed) {
       window._progressHashConsumed = true;
-      const slugFromHash = hash.slice('#domain-'.length);
-      const target = document.getElementById('domain-' + slugFromHash);
-      if (target) {
-        setTimeout(function() {
-          try { target.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (_) {}
-        }, 80);
-      }
+      const target = document.getElementById('domain-' + hash.slice('#domain-'.length));
+      if (target) setTimeout(function() { try { target.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (_) {} }, 80);
     }
   } catch (_) {}
 }

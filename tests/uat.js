@@ -1430,7 +1430,12 @@ test('Solid range mapped to .o tier in v2 row markup (v7.2.0 supersedes v4.38.0 
 test('CSS has rag-blue class', css.includes('.rag-blue'));
 test('No rag-yellow in CSS', !css.includes('.rag-yellow'));
 test('No pct >= 60 with var(--yellow) in JS', !js.match(/>=\s*60.*var\(--yellow\)/));
-test('Solid emoji is blue circle (v4.51.0: \\u{1F535} blue disc in .ps2-solid tile)', /\\u\{1F535\}[\s\S]{0,300}ps2-solid|ps2-solid[\s\S]{0,300}\\u\{1F535\}/.test(js));
+// v7.15.0: the Solid ledger tile renders emoji-free (the v4.51.0 \u{1F535}
+// blue-disc lived only in the removed dead _renderProgressSummary template;
+// the live .ps2-solid / .pm-led tile is icon-free per the no-emoji design
+// rule). Assert the live structure: the .ps2-solid tile carries the solid
+// bucket count + label and NO emoji disc anywhere on the page surface.
+test('Solid ledger tile renders emoji-free (v7.15.0: \\u{1F535} blue disc removed)', /ps2-solid[\s\S]{0,160}buckets\.solid/.test(js) && !js.includes('\\u{1F535}'));
 
 // ── v4.38.0: Acronym Blitz ──
 console.log('\n\x1b[1m── ACRONYM BLITZ (v4.38.0) ──\x1b[0m');
