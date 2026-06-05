@@ -17804,7 +17804,7 @@ function renderSettingsHealthCard() {
   if (typeof _quotaState !== 'undefined' && _quotaState) {
     rows.push({
       icon: '✓', tier: 'ok', label: 'Cloud sync',
-      value: 'Active — your progress is saved across devices'
+      value: 'Active. Your progress is saved across devices'
     });
   } else {
     rows.push({
@@ -17828,7 +17828,7 @@ function renderSettingsHealthCard() {
   } else {
     rows.push({
       icon: '⚠', tier: 'warn', label: 'Exam date',
-      value: 'Not set — keeps your countdown honest'
+      value: 'Not set. Add it to start your exam countdown'
     });
   }
 
@@ -17855,7 +17855,7 @@ function renderSettingsHealthCard() {
   } else {
     rows.push({
       icon: '⚠', tier: 'warn', label: 'Daily goal',
-      value: 'Not set — pick something you can hit every day'
+      value: 'Not set. Pick one you can hit every day'
     });
   }
 

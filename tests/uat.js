@@ -1113,9 +1113,9 @@ test('Label: preset "20-min Deep Scan" (v4.50.1: time corrected from 30-min to h
 test('Label: no legacy "30-min Grind" preset text', !html.includes('30-min Grind'));
 test('Label: exam toggle "Strict Mode" (was Hardcore)', html.includes('Strict Mode'));
 test('Label: no legacy "Hardcore Mode" UI text', !html.includes('Hardcore Mode <span class="hardcore-sub"'));
-// v4.54.9: Settings page h2 replaced by editorial .ed-pagehead-display "Your settings."
-test('Label: Settings page editorial heading (v4.54.9: .ed-pagehead-display "Your settings.")',
-  /id="page-settings"[\s\S]{0,800}ed-pagehead-display[^<]*>Your\s*<em>settings\.<\/em>/.test(html));
+// v7.18.0: Settings page header is now the bento mono kicker (matches Analytics/Progress).
+test('Label: Settings page bento kicker heading (v7.18.0: Network+ N10-009 · Settings)',
+  /id="page-settings"[\s\S]{0,800}ana-pagehead-title[^>]*>Network\+ N10-009\s*<span class="ana-ph-dot"[^>]*>&middot;<\/span>\s*Settings/.test(html));
 test('codex-home: legacy #marathon-section stub + Marathon presets in session picker', html.includes('id="marathon-section"') && html.includes("applyPreset('bulk30')") && html.includes("applyPreset('bulk45')"));
 // Internal code identifiers must NOT have been renamed
 test('Code: examHardcore state var preserved', js.includes('let examHardcore'));
@@ -3472,8 +3472,8 @@ console.log('\n\x1b[1m── v7.2.0 PROGRESS v2 (mastery instrument + domain str
 // v4.54.9: editorial .ed-pagehead retained as the page-progress chrome.
 test('v7.2.0 HTML: progress page uses .ed-pagehead editorial header',
   /id="page-progress"[\s\S]{0,400}class="ed-pagehead"/.test(html));
-test('v7.2.0 HTML: progress page title kept (Topic progress.)',
-  /id="page-progress"[\s\S]{0,800}ed-pagehead-display[^<]*>Topic\s*<em>progress\.<\/em>/.test(html));
+test('v7.18.0 HTML: progress page uses the analytics-style mono kicker title (Network+ N10-009 · Progress)',
+  /id="page-progress"[\s\S]{0,800}ana-pagehead-title[^>]*>Network\+ N10-009\s*<span class="ana-ph-dot"[^>]*>&middot;<\/span>\s*Progress/.test(html));
 test('v4.51.0 HTML: regression — old inline-styled flex header removed',
   !html.includes('<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px">'));
 test('v4.51.0 HTML: regression — old inline legend dots removed from header',
@@ -4562,10 +4562,10 @@ test('v4.54.9 CSS: .ed-pagehead-eyebrow monospace small-caps with leading-dash p
 // Per-page adoption
 test('v4.54.9 HTML: Review page uses .ed-pagehead with italic-accent "Every answer."',
   /id="page-review"[\s\S]{0,400}class="ed-pagehead"[\s\S]{0,1000}Every\s*<em>answer\.<\/em>/.test(html));
-test('v4.54.9 HTML: Progress page uses .ed-pagehead with "Topic progress."',
-  /id="page-progress"[\s\S]{0,500}class="ed-pagehead"[\s\S]{0,1000}Topic\s*<em>progress\.<\/em>/.test(html));
-test('v4.54.9 HTML: Settings page uses .ed-pagehead with "Your settings."',
-  /id="page-settings"[\s\S]{0,500}class="ed-pagehead"[\s\S]{0,1000}Your\s*<em>settings\.<\/em>/.test(html));
+test('v4.54.9 HTML: Progress page uses .ed-pagehead with the analytics-style kicker title',
+  /id="page-progress"[\s\S]{0,500}class="ed-pagehead"[\s\S]{0,1000}ana-pagehead-title[^>]*>Network\+ N10-009/.test(html));
+test('v7.18.0 HTML: Settings page uses .ed-pagehead with the bento kicker title',
+  /id="page-settings"[\s\S]{0,500}class="ed-pagehead"[\s\S]{0,1000}ana-pagehead-title[^>]*>Network\+ N10-009/.test(html));
 
 // Exam parity: progress dots + kbd hints + wrongExplain
 test('v4.54.9 HTML: Exam page has #exam-prog-dots segmented progress container',
@@ -14869,13 +14869,13 @@ test('v4.99.5 SettingsHealth: API key tile retired (BYOK gone)',
   !/icon: '✓'.*tier: 'ok'.*label: 'API key'/.test(js)
   && !/Connected · ' \+ apiKey\.slice/.test(js));
 test('v4.99.5 SettingsHealth: Cloud sync tile added',
-  /label: 'Cloud sync'[\s\S]{0,200}your progress is saved/.test(js));
+  /label: 'Cloud sync'[\s\S]{0,200}[Yy]our progress is saved/.test(js));
 // v4.99.6: backup tile retired entirely (cloud sync is the primary recovery path)
 test('v4.99.6 SettingsHealth: backup tile retired',
   !/label: 'Local safety net'/.test(js)
   && !/label: 'Automatic backup'/.test(js));
-test('v4.99.5 SettingsPage: eyebrow updated from "Account · configuration" to "Configuration"',
-  /<div class="ed-pagehead-eyebrow">Configuration<\/div>/.test(html)
+test('v7.18.0 SettingsPage: legacy ed-pagehead-eyebrow retired for the bento kicker (no "Account · configuration")',
+  !/id="page-settings"[\s\S]{0,400}class="ed-pagehead-eyebrow"/.test(html)
   && !/Account &middot; configuration/.test(html));
 
 // ── v4.99.6 — Phase E.5 polish + Settings card bug fixes ──
