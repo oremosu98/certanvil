@@ -1092,6 +1092,18 @@ function showSuccessToast(msg) {
   setTimeout(() => { toast.classList.remove('show'); setTimeout(() => toast.remove(), 300); }, 4000);
 }
 
+// v7.19.1 (mobile-polish P1.5): unified toast API. 13+ call sites invoke
+// showToast(msg, type, duration) which never existed — user-feedback messages
+// (storage full, "restored N keys from <date>", "no cards due for review")
+// threw ReferenceError and showed nothing. Delegate to the existing red/green
+// renderers; 'error' → red, everything else → green. (A neutral 'info' style
+// is a later polish item — green is acceptable interim styling.)
+function showToast(msg, type) {
+  if (type === 'error') { showErrorToast(msg); return; }
+  showSuccessToast(msg);
+}
+if (typeof window !== 'undefined') window.showToast = showToast;
+
 // ══════════════════════════════════════════
 // v4.99.48 (Phase 8) — Desktop-only nudge
 // ══════════════════════════════════════════

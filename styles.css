@@ -4029,7 +4029,7 @@ body.has-sidebar { padding-left: 240px; transition: padding-left .25s cubic-bezi
   position: fixed;
   top: 0; left: 0;
   width: 240px;
-  height: 100vh;
+  height: 100vh; height: 100dvh; /* P1.5: drawer fills the true visible viewport on iOS (100vh leaks under the Safari toolbar, cutting the footer). verify-on-device */
   background: var(--surface2);
   border-right: 1px solid var(--border);
   display: flex;

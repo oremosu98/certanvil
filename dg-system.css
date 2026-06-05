@@ -3137,3 +3137,12 @@ html[data-theme] body #page-setup .dw-launch{flex:0 0 auto;padding:13px 22px;bor
   html[data-theme] body .btn{min-height:44px!important}
 }
 
+/* ===== P1.5 mobile-polish: lock body scroll behind full-screen overlays (touch-only) =====
+   Stops the page scrolling behind the open sidebar drawer / custom-quiz modal. Touch-gated so
+   the persistent desktop sidebar is unaffected. verify-on-device: iOS may also need a JS
+   position:fixed body-lock if background scroll still bleeds through under momentum. */
+@media (hover:none) and (pointer:coarse){
+  body.sidebar-open{overflow:hidden!important}
+  body:has(#custom-quiz-section[open]){overflow:hidden!important}
+}
+
