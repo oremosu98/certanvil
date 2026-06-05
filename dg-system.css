@@ -3146,3 +3146,54 @@ html[data-theme] body #page-setup .dw-launch{flex:0 0 auto;padding:13px 22px;bor
   body:has(#custom-quiz-section[open]){overflow:hidden!important}
 }
 
+/* ===== P2 mobile-polish (core-loop audit 2026-06): quiz/exam question chrome =====
+   The audit could not reach the quiz/exam card before; once reachable it showed the
+   same class of issue P0/P1 fixed elsewhere — a horizontally overflowing topbar and
+   sub-44px in-card controls. Two gated blocks: width-gated overflow containment +
+   touch-gated 44px hit areas (desktop chrome stays pixel-identical). */
+
+/* Finding 1 — kill the quiz/exam topbar horizontal overflow. .quiz-prog-dots is a
+   flex ITEM with no min-width, so it expands to max-content (every dot on one line)
+   and pushes the bar past 375px. Let the bar wrap so the dot row drops to its own
+   full-width line and wraps there (matches the base margin-top:22px intent). Covers
+   quiz + exam (shared .quiz-prog-dots class; exam dots are #page-exam-scoped). */
+@media (max-width:680px){
+  html[data-theme] body #page-quiz .quiz-topbar{flex-wrap:wrap!important;gap:10px 12px!important;}
+  html[data-theme] body #page-quiz .quiz-topbar .progress-label{min-width:0!important;flex:1 1 auto!important;}
+  html[data-theme] body #page-exam .exam-topbar{flex-wrap:wrap!important;gap:10px 12px!important;}
+  html[data-theme] body #page-quiz .quiz-prog-dots,
+  html[data-theme] body #page-exam .quiz-prog-dots{flex:1 1 100%!important;min-width:0!important;display:flex!important;flex-wrap:wrap!important;}
+  /* exam prev/next/end button row overflows at 375px — let it wrap */
+  html[data-theme] body #page-exam .exam-nav-row{flex-wrap:wrap!important;}
+  html[data-theme] body #page-exam .exam-nav-row>*{min-width:0!important;}
+}
+
+/* Finding 2 — tap targets >=44px on the in-card question controls (TOUCH-ONLY; same
+   mechanism as eef0bb0). On their own full-width line the per-question dots become a
+   proper tappable question-nav grid. */
+@media (hover:none) and (pointer:coarse){
+  /* flag (quiz + exam) */
+  html[data-theme] body #page-quiz .flag-btn{min-height:44px!important;}
+  html[data-theme] body #page-exam .exam-flag-btn{min-height:44px!important;display:inline-flex!important;align-items:center!important;}
+  /* back-to-menu */
+  html[data-theme] body #page-quiz .back-btn{min-height:44px!important;}
+  /* exam countdown chip (P1 set min-height; width can still fall short) */
+  html[data-theme] body .topbar-countdown{min-width:44px!important;}
+  /* quiz prev/next nav arrows (30px -> 44px) */
+  html[data-theme] body #page-quiz .quiz-nav-arrow{width:44px!important;height:44px!important;}
+  /* per-question dots -> 44px nav grid (quiz + exam). flex:0 0 44px is required —
+     the base .qpd-cell sets flex:0 0 18px, whose flex-basis pins width below a
+     plain width:44px override. */
+  html[data-theme] body #page-quiz .quiz-prog-dots>*,
+  html[data-theme] body #page-exam .quiz-prog-dots>*{flex:0 0 44px!important;width:44px!important;height:44px!important;}
+  /* answer-area actions */
+  html[data-theme] body .explain-btn,
+  html[data-theme] body .report-btn{min-height:44px!important;}
+  /* CLI-sim command buttons */
+  html[data-theme] body .cli-cmd-btn{min-height:44px!important;}
+  /* exam nav-row controls + question-navigator toggle + shortfall-banner close */
+  html[data-theme] body #page-exam .end-exam-btn{min-height:44px!important;}
+  html[data-theme] body #page-exam .qnav-toggle{min-height:44px!important;}
+  html[data-theme] body #page-exam .exam-shortfall-dismiss{min-width:44px!important;min-height:44px!important;display:inline-flex!important;align-items:center!important;justify-content:center!important;}
+}
+
