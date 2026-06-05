@@ -3106,3 +3106,34 @@ html[data-theme] body #page-setup .dw-launch{flex:0 0 auto;padding:13px 22px;bor
 #page-setup #custom-quiz-section:not([open]){display:none!important;}
 /* ===== end Cert Home bento ===== */
 
+/* ===== P1 mobile-polish: tap targets >=44px (TOUCH-ONLY; desktop chrome unchanged) =====
+   iOS HIG minimum. Gated on hover:none + pointer:coarse so the v7.19.0 desktop look is
+   pixel-identical; only real touch devices get enlarged hit areas. min-height/min-width
+   keep content centered (bases are already flex/grid-centered). */
+@media (hover:none) and (pointer:coarse){
+  /* topbar chrome */
+  html[data-theme] body .topbar-iconbtn{width:44px!important;height:44px!important;border-radius:9px!important}
+  html[data-theme] body .app-topbar .tb-actions .topbar-iconbtn{width:44px!important;height:44px!important}
+  html[data-theme] body .topbar-toggle{min-width:44px!important;min-height:44px!important;display:inline-grid!important;place-items:center!important}
+  html[data-theme] body .topbar-countdown{min-height:44px!important;display:inline-flex!important;align-items:center!important}
+  html[data-theme] body .topbar-account-pill{min-height:44px!important}
+  html[data-theme] body .topbar-signin-pill{min-height:44px!important;display:inline-flex!important;align-items:center!important}
+  /* sidebar nav rows */
+  html[data-theme] body .sb-item{min-height:44px!important;display:flex!important;align-items:center!important}
+  /* analytics range tabs */
+  html[data-theme] body #page-analytics .acc-tab{min-height:44px!important;display:inline-flex!important;align-items:center!important;justify-content:center!important}
+  /* progress filter pills + sort select */
+  html[data-theme] body #page-progress .prog-filter-btn{min-height:44px!important;min-width:44px!important;display:inline-flex!important;align-items:center!important;justify-content:center!important}
+  html[data-theme] body #page-progress .prog-sort-select{height:44px!important;min-height:44px!important;padding-top:0!important;padding-bottom:0!important}
+  /* custom-quiz topic accordion headers */
+  html[data-theme] body #custom-quiz-section summary{min-height:46px!important}
+  /* settings daily-goal chips + exam-date controls */
+  html[data-theme] body #page-settings .settings-daily-chip{min-height:44px!important;display:inline-flex!important;align-items:center!important;justify-content:center!important}
+  html[data-theme] body #page-settings .ana-exam-date-btn,html[data-theme] body #page-settings .ana-ready-datechip{min-height:44px!important;display:inline-flex!important;align-items:center!important}
+  html[data-theme] body #page-settings .ana-ready-datechip-clear{min-width:40px!important;min-height:40px!important;display:inline-flex!important;align-items:center!important;justify-content:center!important}
+  /* topic-pick pills */
+  html[data-theme] body .tdp-pill{min-height:44px!important;display:inline-flex!important;align-items:center!important;justify-content:center!important}
+  /* generic buttons (base .btn is already inline-flex centered) */
+  html[data-theme] body .btn{min-height:44px!important}
+}
+
