@@ -3209,6 +3209,21 @@
     #my-certs-modal,#my-certs-modal .my-certs-modal-card{animation:none!important}
     #my-certs-modal .modal-close,#my-certs-modal .my-cert-row,#my-certs-modal .my-cert-cta::after,#my-certs-modal .my-certs-foot-link{transition:none!important}
   }
+  /* Mobile fit — the canonical 8-cert list runs ~880–1450px tall, overflowing
+     every phone viewport with no way to scroll (overlay is fixed + grid-centred).
+     Touch-only: cap the card to the viewport and let the LIST scroll, keeping the
+     title, close button and footer pinned. Desktop is untouched. */
+  @media (hover:none) and (pointer:coarse){
+    #my-certs-modal{padding:16px}
+    #my-certs-modal .my-certs-modal-card{
+      max-height:calc(100dvh - 32px);
+      display:flex;flex-direction:column;overflow:hidden;
+    }
+    #my-certs-modal .my-certs-list{
+      flex:1 1 auto;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;
+      overscroll-behavior:contain;
+    }
+  }
 </style>
 
 <div class="modal my-certs-modal" id="my-certs-modal" role="dialog" aria-labelledby="my-certs-modal-title" aria-modal="true" hidden>

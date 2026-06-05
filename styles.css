@@ -4303,6 +4303,18 @@ body.is-state-resolved:not(.is-pro-tier) .sb-item.is-pro-only .sb-item-lock { di
   .sb-mobile-toggle { display: flex; }
   .app-sidebar { transform: translateX(-100%); box-shadow: 0 12px 40px -8px rgba(0, 0, 0, .4); transition: transform .25s cubic-bezier(0.23, 1, 0.32, 1); }
   body.sidebar-open .app-sidebar { transform: translateX(0); }
+  /* Drawer must fill the phone viewport. The desktop dock-cap at line ~9940
+     (.app-sidebar height:calc(100vh-140px)!important, v4.54.12 — lifts the
+     streak card above the desktop dock) is ungated, so on a phone it leaves
+     the open drawer ~140px short and the page bleeds through below it. Restore
+     full height here (higher specificity beats the capped !important rule).
+     Desktop keeps the dock-cap untouched. */
+  body.sidebar-open .app-sidebar {
+    box-sizing: border-box;
+    height: 100vh !important;
+    height: 100dvh !important;
+    max-height: 100dvh !important;
+  }
   body.sidebar-open::after {
     content: '';
     position: fixed;

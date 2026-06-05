@@ -1120,6 +1120,15 @@ button { font: inherit; border: 0; background: transparent; cursor: pointer; col
   border-color: var(--accent);
   box-shadow: 0 0 0 3px var(--accent-soft-bg);
 }
+/* iOS focus-zoom guard — Safari auto-zooms when a focused field's font is
+   <16px. The auth + notify-me email/password inputs ship at 14px, so a phone
+   jolts/zooms on sign-in. Bump to 16px on touch only; desktop stays 14px. */
+@media (hover: none) and (pointer: coarse) {
+  .auth-input,
+  .modal-input {
+    font-size: 16px !important;
+  }
+}
 
 .auth-error {
   font-size: 12px;
