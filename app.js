@@ -18040,11 +18040,241 @@ function renderHeroV2() {
     }
   }
 
-  // ── Readiness card v2 (dark, compact, orange bar) ──
+  // KEEPER readiness hero (lives in bento .cell-hero; unchanged).
   renderReadinessCardV2();
 
-  // ── Mini cards: Today + Streak ──
+  // Today + Streak mini-cards now write to hidden legacy #mc-* stubs (kept
+  // callable); the bento momentum cell is the live surface.
   renderHeroV2MiniCards();
+
+  // v7.17.0 Bento board population (mockup-3 port). Each helper wires a tile's
+  // real ids to real data; the real onclick actions are baked into the markup.
+  try { renderBentoTopbar(); } catch (_) {}
+  try { renderBentoRecommended(); } catch (_) {}
+  try { renderBentoMomentum(); } catch (_) {}
+  try { renderBentoQuickStart(); } catch (_) {}
+  try { renderBentoDomains(); } catch (_) {}
+}
+
+// v7.17.0 — HOME BENTO BOARD renderers (faithful port of mockup-3-bento.html).
+// Populate the bento tiles in #page-setup with real data + real actions.
+// Motion is CSS-driven; JS sets initial inline values, animates via class/
+// transition + a textContent count-up (mockup countUp + setTimeout(dur+90)
+// settle). No per-frame inline-style rAF loops (tech-debt cap honoured).
+
+// Mockup-faithful count-up: writes textContent each frame, settles at dur+90ms.
+function _bentoCountUp(id, to, dur) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (reduce) { el.textContent = to; return; }
+  const st = performance.now();
+  (function step(n) {
+    const t = Math.min((n - st) / dur, 1);
+    el.textContent = Math.round(to * (1 - Math.pow(1 - t, 3)));
+    if (t < 1) requestAnimationFrame(step);
+  })(st);
+  setTimeout(function () { el.textContent = to; }, dur + 90);
+}
+
+// TOP BAR — cert name + code (CERT_PACK.meta), days-to-exam + streak chips.
+// (Theme toggle dropped; the app topbar #topbar-theme already owns it.)
+function renderBentoTopbar() {
+  try {
+    const certEl = document.getElementById('cb-cert');
+    if (certEl) {
+      const name = (typeof CERT_PACK === 'object' && CERT_PACK && CERT_PACK.meta && CERT_PACK.meta.name) ? CERT_PACK.meta.name : 'CompTIA Network+';
+      const code = (typeof CERT_CODE !== 'undefined' && CERT_CODE) ? CERT_CODE : 'N10-009';
+      // Drop vendor prefix for a tighter eyebrow; keep the code in <b>.
+      certEl.innerHTML = `${escHtml(String(name).replace(/^(CompTIA|Microsoft|Amazon|AWS)\s+/, ''))} <b>${escHtml(code)}</b>`;
+    }
+    const daysEl = document.getElementById('cb-days');
+    if (daysEl) {
+      const d = (typeof getDaysToExam === 'function') ? getDaysToExam() : null;
+      if (typeof d === 'number' && d >= 0) _bentoCountUp('cb-days', d, 900);
+      else daysEl.textContent = '—';
+    }
+    const streakEl = document.getElementById('cb-streak');
+    if (streakEl && typeof getStreak === 'function') {
+      const s = getStreak();
+      _bentoCountUp('cb-streak', (s && s.current) ? s.current : 0, 900);
+    }
+  } catch (_) {}
+}
+
+// RECOMMENDED-NEXT tile — the focused preset (onclick=applyPreset('focused')
+// baked into markup). Meta nods to the weakest topic when readiness has one.
+function renderBentoRecommended() {
+  const minEl = document.getElementById('pl-min');
+  const titleEl = document.getElementById('pl-title');
+  const metaEl = document.getElementById('pl-meta');
+  const launchEl = document.getElementById('primaryLaunch');
+
+  // v7.17.0: when spaced-repetition cards are due, the recommend tile becomes
+  // the SR-review entry. The old #sr-review-card home prompt + Next-Best-Move
+  // CTA are hidden legacy stubs in the bento, so this cell is the only home
+  // surface that can launch a review. "Recommended next" should lead with
+  // overdue reviews over a fresh weak-spots set. We override the click handler
+  // via the .onclick PROPERTY (the static onclick="applyPreset('focused')"
+  // attribute stays in the markup as the not-due default + UAT contract).
+  let srDue = 0;
+  try {
+    if (typeof getSrStats === 'function') {
+      const s = getSrStats();
+      srDue = (s && typeof s.due === 'number') ? s.due : 0;
+    }
+  } catch (_) { srDue = 0; }
+
+  if (srDue > 0) {
+    const cap = (typeof SR_SESSION_CAP === 'number') ? SR_SESSION_CAP : srDue;
+    const sessionN = Math.min(srDue, cap);
+    const mins = Math.max(2, Math.round(sessionN * 0.5));
+    if (minEl) minEl.textContent = String(mins);
+    if (titleEl) titleEl.textContent = srDue === 1 ? 'Review 1 card' : `Review ${srDue} cards`;
+    if (metaEl) {
+      metaEl.textContent = srDue > cap
+        ? `spaced repetition · ${cap} of ${srDue} due now`
+        : 'spaced repetition · re-encounter what you forgot';
+    }
+    if (launchEl) launchEl.onclick = function () { if (typeof startSrReview === 'function') startSrReview(); };
+    return;
+  }
+
+  if (minEl) minEl.textContent = '15';
+  if (titleEl) titleEl.textContent = '15-min Weak Spots';
+  if (metaEl) {
+    let meta = '10 questions, exam level, your weakest topic';
+    try {
+      const r = (typeof getReadinessScore === 'function') ? getReadinessScore() : null;
+      if (r && Array.isArray(r.whatIf) && r.whatIf.length && r.whatIf[0].topic) {
+        meta = `10 questions, exam level · ${r.whatIf[0].topic}`;
+      }
+    } catch (_) {}
+    metaEl.textContent = meta;
+  }
+  if (launchEl) launchEl.onclick = function () { if (typeof applyPreset === 'function') applyPreset('focused'); };
+}
+
+// MOMENTUM tile — today done/goal + streak + ring + resume context. Ring fill
+// and count-ups gate on scroll-into-view (mockup IntersectionObserver).
+function renderBentoMomentum() {
+  const done = (typeof getTodayQuestionCount === 'function') ? getTodayQuestionCount() : 0;
+  const goal = (typeof getDailyGoal === 'function') ? getDailyGoal() : 20;
+  const s = (typeof getStreak === 'function') ? getStreak() : { current: 0, best: 0 };
+  const cur = (s && s.current) ? s.current : 0;
+  const best = (s && s.best) ? s.best : 0;
+  const pct = goal > 0 ? Math.min(100, Math.round((done / goal) * 100)) : 0;
+
+  const goalEl = document.getElementById('moGoal'); if (goalEl) goalEl.textContent = goal;
+  const bestEl = document.getElementById('moBest'); if (bestEl) bestEl.textContent = best;
+
+  // Resume context: top weak/stale plan item, else a today/fresh fallback.
+  const resumeEl = document.getElementById('moResume');
+  if (resumeEl) {
+    let ctx = '';
+    try {
+      const plan = (typeof buildSessionPlan === 'function') ? buildSessionPlan(1) : null;
+      if (plan && plan[0] && plan[0].topic) {
+        ctx = `<b>Pick up:</b> ${escHtml(plan[0].topic)} · ${escHtml(plan[0].meta || plan[0].reason || '')}`.replace(/\s*·\s*$/, '') + '.';
+      }
+    } catch (_) {}
+    if (!ctx) ctx = done > 0 ? `<b>Pick up:</b> ${done} of ${goal} done today.` : '<b>Start fresh:</b> a quick warmup keeps the streak.';
+    resumeEl.innerHTML = ctx;
+  }
+
+  const moFill = document.getElementById('moFill');
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const C = 2 * Math.PI * 31;
+  // Use setProperty (CSS transitions the stroke-dashoffset) — no per-frame loop.
+  if (moFill) { moFill.style.setProperty('stroke-dasharray', C); moFill.style.setProperty('stroke-dashoffset', C); }
+
+  const fill = () => {
+    _bentoCountUp('moDone', done, 900);
+    _bentoCountUp('moStreak', cur, 900);
+    _bentoCountUp('moPct', pct, 1000);
+    if (moFill) moFill.style.setProperty('stroke-dashoffset', C * (1 - pct / 100));
+  };
+
+  if (reduce || !moFill) {
+    const d = document.getElementById('moDone'); if (d) d.textContent = done;
+    const st = document.getElementById('moStreak'); if (st) st.textContent = cur;
+    const p = document.getElementById('moPct'); if (p) p.textContent = pct;
+    if (moFill) moFill.style.setProperty('stroke-dashoffset', C * (1 - pct / 100));
+    return;
+  }
+  const host = moFill.closest('.tile') || moFill;
+  try {
+    const io = new IntersectionObserver(es => es.forEach(e => {
+      if (e.isIntersecting) { fill(); io.disconnect(); }
+    }), { threshold: 0.4 });
+    io.observe(host);
+  } catch (_) { fill(); }
+}
+
+// QUICK-START tile — reveal Drill Mistakes only when the wrong bank is non-empty
+// (mockup hides at zero) + show real count. Warmup/Daily onclicks in markup.
+function renderBentoQuickStart() {
+  try {
+    const opt = document.getElementById('bento-wrong-opt');
+    const sub = document.getElementById('bento-wrong-sub');
+    if (!opt) return;
+    const bank = (typeof loadWrongBank === 'function') ? loadWrongBank() : [];
+    const n = Array.isArray(bank) ? bank.length : 0;
+    if (n > 0) {
+      if (sub) sub.textContent = `${n} wrong answer${n === 1 ? '' : 's'} saved`;
+      opt.classList.remove('is-hidden');
+    } else {
+      opt.classList.add('is-hidden');
+    }
+  } catch (_) {}
+}
+
+// DOMAIN quick-pick tile — 5 domains. Weights from DOMAIN_WEIGHTS; mastery
+// aggregated exactly as renderSetupDomainGrid (sum score/total over history via
+// TOPIC_DOMAINS). Each → applyDomainPreset(key). Bars reveal on scroll-in.
+function renderBentoDomains() {
+  const grid = document.getElementById('domainGrid');
+  if (!grid) return;
+  const order = (typeof DOMAIN_WEIGHTS === 'object' && DOMAIN_WEIGHTS) ? Object.keys(DOMAIN_WEIGHTS) : ['concepts', 'implementation', 'operations', 'security', 'troubleshooting'];
+  // Aggregate mastery per domain — same shape as renderSetupDomainGrid.
+  const history = (typeof loadHistory === 'function') ? loadHistory() : [];
+  const stats = {};
+  order.forEach(d => { stats[d] = { score: 0, total: 0 }; });
+  history.forEach(e => {
+    const dk = (typeof TOPIC_DOMAINS !== 'undefined') ? TOPIC_DOMAINS[e.topic] : null;
+    if (!dk || !stats[dk]) return;
+    stats[dk].score += e.score || 0;
+    stats[dk].total += e.total || 0;
+  });
+
+  const labels = (typeof DOMAIN_LABELS === 'object' && DOMAIN_LABELS) ? DOMAIN_LABELS : {};
+  const html = order.map((dk, i) => {
+    const weight = Math.round(((DOMAIN_WEIGHTS && DOMAIN_WEIGHTS[dk]) || 0) * 100);
+    const mastery = stats[dk].total > 0 ? Math.round((stats[dk].score / stats[dk].total) * 100) : 0;
+    const name = labels[dk] || dk;
+    const weak = mastery > 0 && mastery < 50 ? ' weak' : '';
+    return `<button type="button" class="ld${weak}" onclick="applyDomainPreset('${String(dk).replace(/'/g, "\\'")}')">`
+      + `<span class="ld-k">${i + 1}.0 &middot; ${weight}%</span>`
+      + `<span class="ld-n">${escHtml(name)}</span>`
+      + `<span class="ld-bar"><i data-w="${mastery}" style="width:0%"></i></span>`
+      + `<span class="ld-m"><span>10 Qs</span><b>${mastery}%</b></span>`
+      + `</button>`;
+  }).join('');
+  grid.innerHTML = html;
+
+  // Animate bars to their width on scroll-into-view (CSS transitions the width;
+  // we only flip the initial inline 0% → data-w%). Reduced-motion: set directly.
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const bars = grid.querySelectorAll('.ld-bar i');
+  // setProperty (CSS transitions width) — flips initial 0% → data-w%, no rAF.
+  const paint = () => bars.forEach(i => i.style.setProperty('width', (i.dataset.w || 0) + '%'));
+  if (reduce) { paint(); return; }
+  try {
+    const io = new IntersectionObserver(es => es.forEach(e => {
+      if (e.isIntersecting) { paint(); io.disconnect(); }
+    }), { threshold: 0.3 });
+    io.observe(grid);
+  } catch (_) { paint(); }
 }
 
 function renderReadinessCardV2() {

@@ -87,13 +87,12 @@ test.describe('App Load & Setup Page', () => {
     const setupPage = page.locator('#page-setup');
     await expect(setupPage).toHaveClass(/active/);
 
-    // v4.54.0: hero v2 display heading replaces "Network+ AI Quiz" h1
-    await expect(page.locator('#hero-v2-display')).toBeVisible();
-    // v4.99.32 — was `toContainText('Simi')` but anonymous test users get
-    // the generic "there" greeting (display name only resolves post-signin).
-    // Assert the greeting form, not the name — this also passes for any
-    // future test user (real signed-in or anonymous).
-    await expect(page.locator('#hero-v2-display')).toContainText(/Good (morning|afternoon|evening)|Working late/i);
+    // v7.17.0 (home bento): the greeting heading (#hero-v2-display, now a hidden
+    // legacy stub) is replaced by the bento command bar — cert identity +
+    // days-to-exam + streak chips. Assert the cmd-bar rendered with the cert.
+    await expect(page.locator('#page-setup .cmd-bar')).toBeVisible();
+    await expect(page.locator('#cb-cert')).toBeVisible();
+    await expect(page.locator('#cb-streak')).toBeVisible();
 
     // API key input is present (now type="hidden" since v4.99.3 retired BYOK
     // — stays in DOM as a vestigial bind target for legacy code paths).
@@ -264,8 +263,8 @@ test.describe('Responsive Layout', () => {
     await page.goto('/');
 
     await expect(page.locator('#page-setup')).toHaveClass(/active/);
-    // v4.54.0: hero v2 display heading, not the hidden legacy h1
-    await expect(page.locator('#hero-v2-display')).toBeVisible();
+    // v7.17.0 (home bento): bento command bar replaces the greeting heading.
+    await expect(page.locator('#page-setup .cmd-bar')).toBeVisible();
     // API key is inside collapsed Settings — just needs to be attached to DOM
     await expect(page.locator('#api-key')).toBeAttached();
   });
@@ -447,11 +446,13 @@ test.describe('History & Stats Rendering', () => {
     expect(listContent).toContain('TCP/IP');
   });
 
-  test('hero v2 mini cards show when history exists', async ({ page }) => {
+  test('bento momentum cell shows today + streak counters when history exists', async ({ page }) => {
     // v4.54.0: #stats-card retired; hero-v2 mini cards (Today + Streak) are the replacement.
     // v4.99.65 (dg Batch 4): wrapper rebuilt to the editorial .dgh-stats strip.
-    // v5.4.0 (codex-home): rebuilt again to the .stat-row 2-card grid in
-    // .col-main; the #mc-* contract ids are still preserved.
+    // v5.4.0 (codex-home): rebuilt again to the .stat-row 2-card grid in .col-main.
+    // v7.17.0 (home bento): the .stat-row / #mc-* mini cards are now hidden legacy
+    // stubs; the live Today+Streak surface is the bento .cell-momentum tile
+    // (#moDone questions-today, #moStreak day-streak). Re-point at the bento tile.
     await page.goto('/');
 
     await page.evaluate(() => {
@@ -464,9 +465,9 @@ test.describe('History & Stats Rendering', () => {
 
     await page.reload();
 
-    await expect(page.locator('#page-setup .stat-row')).toBeVisible();
-    await expect(page.locator('#mc-today-done')).toBeVisible();
-    await expect(page.locator('#mc-streak-num')).toBeVisible();
+    await expect(page.locator('#page-setup .cell-momentum')).toBeVisible();
+    await expect(page.locator('#moDone')).toBeVisible();
+    await expect(page.locator('#moStreak')).toBeVisible();
   });
 
   test('legacy stats-card is hidden (v4.54.0 retired via body.hero-v2-active)', async ({ page }) => {
@@ -541,8 +542,10 @@ test.describe('Wrong Bank Behavior', () => {
 
     await page.reload();
 
-    await expect(page.locator('#modes-wrong-tile')).toBeVisible();
-    await expect(page.locator('#modes-wrong-sub')).toContainText('1');
+    // v7.17.0 (home bento): Drill Mistakes moved to the quick-start cell's
+    // #bento-wrong-opt (shown by renderBentoQuickStart when the bank has items).
+    await expect(page.locator('#bento-wrong-opt')).toBeVisible();
+    await expect(page.locator('#bento-wrong-sub')).toContainText('1');
   });
 
   test('Settings clear button triggers confirm dialog', async ({ page }) => {
@@ -939,12 +942,13 @@ test.describe('SR Review — MCQ happy path', () => {
 
     await page.goto('/');
 
-    // Homepage card should be visible since we have 1 due card.
-    await expect(page.locator('#sr-review-card')).not.toHaveClass(/is-hidden/);
-    await expect(page.locator('#sr-review-card-headline')).toContainText('1 card due');
+    // v7.17.0 (home bento): the #sr-review-card home prompt is a hidden legacy
+    // stub. When cards are due, the bento recommend cell (#primaryLaunch) becomes
+    // the review entry (renderBentoRecommended → startSrReview()).
+    await expect(page.locator('#primaryLaunch #pl-title')).toContainText('Review 1 card');
 
-    // Start review.
-    await page.locator('#sr-review-start-btn').click();
+    // Start review via the recommend cell.
+    await page.locator('#primaryLaunch').click();
     await expect(page.locator('#page-sr-review')).toHaveClass(/active/);
 
     // Card should render with 4 options and the stem.
@@ -992,7 +996,10 @@ test.describe('SR Review — MCQ happy path', () => {
     });
 
     await page.goto('/');
-    await page.locator('#sr-review-start-btn').click();
+    // v7.17.0 (home bento): enter review via the bento recommend cell.
+    await expect(page.locator('#primaryLaunch #pl-title')).toContainText('Review 1 card');
+    await page.locator('#primaryLaunch').click();
+    await expect(page.locator('#page-sr-review')).toHaveClass(/active/);
 
     // Pick A (wrong — answer is B).
     await page.locator('.sr-option[data-letter="A"]').click();
@@ -1039,7 +1046,9 @@ test.describe('SR Review — Multi-select happy path', () => {
     });
 
     await page.goto('/');
-    await page.locator('#sr-review-start-btn').click();
+    // v7.17.0 (home bento): enter review via the bento recommend cell.
+    await expect(page.locator('#primaryLaunch #pl-title')).toContainText('Review 1 card');
+    await page.locator('#primaryLaunch').click();
     await expect(page.locator('#page-sr-review')).toHaveClass(/active/);
 
     // Submit row should exist with disabled button.
@@ -1409,11 +1418,12 @@ test.describe('SR Review — v4.81.31 legacy-card scrub', () => {
 
     await page.goto('/');
 
-    // Homepage card shows 2 due (queue has 2 entries before scrub — this is
-    // by design; getSrDueCount runs before startSrReview's scrub).
-    await expect(page.locator('#sr-review-card-headline')).toContainText('2 cards due');
+    // Recommend cell shows 2 due (queue has 2 entries before scrub — this is
+    // by design; getSrStats().due runs before startSrReview's scrub).
+    // v7.17.0 (home bento): entry moved from #sr-review-card to #primaryLaunch.
+    await expect(page.locator('#primaryLaunch #pl-title')).toContainText('Review 2 cards');
 
-    await page.locator('#sr-review-start-btn').click();
+    await page.locator('#primaryLaunch').click();
     await expect(page.locator('#page-sr-review')).toHaveClass(/active/);
 
     // Session should only have 1 card — the MCQ. Order card filtered out.

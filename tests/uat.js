@@ -395,8 +395,12 @@ test('hardcore_pass evaluated against history',
 test('HTML: hardcore-checkbox', html.includes('id="hardcore-checkbox"'));
 // v4.79.0: legacy .hardcore-toggle label retired — Strict Mode now lives
 // inside Mode Ladder Exam tier as .modes-strict-toggle (Codex round-3).
-test('v4.79.0/dg4: Strict Mode toggle present in session-picker Exam group',
-  html.includes('class="dgh-strict"') && html.includes('id="modes-strict-checkbox"'));
+// bento: the v7.16-era session-picker `.dgh-strict` Exam-group toggle was replaced
+// by the bento composition; Strict Mode lives on as the #modes-strict-checkbox legacy
+// stub (still wired → setHardcoreMode + syncs #hardcore-checkbox).
+test('bento: Strict Mode toggle preserved as #modes-strict-checkbox (wired to setHardcoreMode)',
+  html.includes('id="modes-strict-checkbox"')
+    && /id="modes-strict-checkbox"[\s\S]{0,160}setHardcoreMode\(this\.checked\)/.test(html));
 test('HTML: exam-hardcore-badge', html.includes('id="exam-hardcore-badge"'));
 test('CSS: .hardcore-toggle', css.includes('.hardcore-toggle'));
 test('CSS: .hardcore-badge', css.includes('.hardcore-badge'));
@@ -523,7 +527,10 @@ test('daily-challenge-card element', html.includes('id="daily-challenge-card"'))
 // v4.81.23 tombstone: #todays-focus element removed (consolidated into #today-plan)
 test('v4.81.23 tombstone: #todays-focus element removed', !html.includes('id="todays-focus"'));
 // v4.76.0: legacy `.quiz-presets` block replaced by `.modes-tier-cards` inside the Mode Ladder
-test('v4.76.0/dg4: session-picker option grid present (was .modes-tier-cards)', html.includes('class="dgh-opts"'));
+// bento: the v7.16-era `.dgh-opts` session-picker option grid was replaced by the
+// bento quick-start tile — assert the bento `#grp-quick` .opts list instead.
+test('bento: quick-start option grid present (#grp-quick .opts, was .dgh-opts)',
+  /class="opts"\s+id="grp-quick"|id="grp-quick"\s+class="opts"/.test(html));
 test('Preset tile: warmup', html.includes("applyPreset('warmup')"));
 test('Preset tile: focused', html.includes("applyPreset('focused')"));
 test('Preset tile: grind', html.includes("applyPreset('grind')"));
@@ -1031,12 +1038,23 @@ console.log('\n\x1b[1m── v4.32 LAYOUT RESTRUCTURE ──\x1b[0m');
 test('HTML: today-section wrapper exists', html.includes('id="today-section"'));
 test('HTML: today-section contains daily-goal-card', html.includes('today-section') && html.indexOf('id="daily-goal-card"') > html.indexOf('id="today-section"'));
 test('HTML: today-section contains streak-defender', html.indexOf('id="streak-defender"') > html.indexOf('id="today-section"'));
-test('codex-home: #daily-challenge-card promoted into .col-side (was in #today-section)', html.includes('id="daily-challenge-card"') && /id="daily-challenge-card"[^>]*class="[^"]*\bchallenge-card\b|class="[^"]*\bchallenge-card\b[^"]*"[^>]*id="daily-challenge-card"/.test(html) && html.indexOf('id="daily-challenge-card"') < html.indexOf('id="today-section"'));
+// bento: the v7.16-era codex-home `.col-side` rail was replaced by the bento board;
+// #daily-challenge-card survives as a hidden legacy stub, still filled by
+// renderDailyChallengeCard. Assert the stub exists (action preserved, layout gone).
+test('bento: #daily-challenge-card preserved as hidden legacy stub (was .col-side rail)',
+  html.includes('id="daily-challenge-card"')
+    && /id="daily-challenge-card"[^>]*\bis-hidden\b/.test(html)
+    && /function renderDailyChallengeCard\s*\(/.test(js));
 // v4.81.23 tombstones: legacy chip rows + session banner removed; #today-plan
 // is now the single canonical card inside #today-section.
 test('v4.81.23 tombstone: #todays-focus removed from today-section', !html.includes('id="todays-focus"'));
 test('v4.81.23 tombstone: #session-banner removed from today-section', !html.includes('id="session-banner"'));
-test('codex-home: #today-plan promoted into .col-main (was in #today-section)', html.includes('id="today-plan"') && /id="today-plan"[^>]*class="[^"]*\bplan-card\b/.test(html) && html.indexOf('id="today-plan"') < html.indexOf('id="today-section"'));
+// bento: the v7.16-era codex-home `.col-main` placement was replaced by the bento
+// board; #today-plan survives as a hidden legacy stub, still filled by renderTodayPlan.
+test('bento: #today-plan preserved as hidden legacy stub (was .col-main, + renderTodayPlan defined)',
+  html.includes('id="today-plan"')
+    && /id="today-plan"[^>]*\bis-hidden\b/.test(html)
+    && /function renderTodayPlan\s*\(/.test(js));
 // v4.41.0: #weak-banner removed from Today section (redundant with #todays-focus chip row)
 test('HTML: weak-banner REMOVED (v4.41.0 density pass)', !html.includes('id="weak-banner"'));
 test('HTML: persistent sidebar exists (v4.53.0 replaces old setup-nav row)',
@@ -1058,8 +1076,12 @@ test('v4.76.0 tombstone: legacy "Quick start" \u00a701 heading replaced',
   !/Quick\s*<em>start<\/em>/.test(html));
 test('v4.76.0 tombstone: legacy "Marathon mode" \u00a702 heading replaced',
   !/Marathon\s*<em>mode<\/em>/.test(html));
-test('v4.76.0/dg4: session picker uses \u00a701 numbering with "Pick your session"',
-  html.includes('&#167; 01') && /Pick your\s*<i>session<\/i>/.test(html));
+// bento: the v7.16-era "\u00a7 01 \u00b7 Pick your session" editorial head was replaced by the
+// bento command bar; the "Pick your session" picker survives as the #modes-ladder
+// legacy stub (aria-label preserved).
+test('bento: session picker preserved as #modes-ladder "Pick your session" stub (was \u00a7 01 numbered head)',
+  /id="modes-ladder"[^>]*aria-label="Pick your session"/.test(html)
+    && /<header class="cmd-bar/.test(html));
 test('HTML: wrong-preset-tile exists', html.includes('id="wrong-preset-tile"'));
 test('HTML: custom-quiz-section details exists', html.includes('id="custom-quiz-section"'));
 test('HTML: topic-group inside custom-quiz-section', html.indexOf('id="topic-group"') > html.indexOf('id="custom-quiz-section"'));
@@ -3767,12 +3789,22 @@ test('v4.53.0 HTML: mobile sidebar toggle button',
 test('v4.81.23 tombstone: #focus-banner element removed', !html.includes('id="focus-banner"'));
 // v4.76.0 update: \u00a701 + \u00a702 retired. Mode Ladder now uses \u00a701 with
 // "Pick your session" heading; Marathon presets are inside Practice tier.
-test('v4.53.0/dg4 HTML: \u00a7 01 editorial section head (session picker)',
-  /&#167;\s*01[\s\S]{0,400}Pick your\s*<i>session<\/i>/.test(html));
+// bento: the v7.16-era "\u00a7 01 \u00b7 Pick your session" editorial head was replaced by the
+// bento command bar (the board's top chrome). The "Pick your session" picker survives
+// as the #modes-ladder legacy stub (aria-label preserved). Assert the bento cmd-bar +
+// the preserved session-picker stub.
+test('bento HTML: command bar header + #modes-ladder "Pick your session" stub (was \u00a7 01 head)',
+  /<header class="cmd-bar[\s\S]{0,400}id="cb-cert"/.test(html)
+    && /id="modes-ladder"[^>]*aria-label="Pick your session"/.test(html));
 test('v4.76.0 HTML: \u00a7 02 retired (Marathon Mode merged into Mode Ladder Practice tier)',
   !/&#167;\s*02[\s\S]{0,400}Marathon\s*<em>mode<\/em>/.test(html));
-test('codex-home HTML: By Domain section head + #setup-domain-grid container',
-  /class="domain-header"[\s\S]{0,160}<h3>By Domain<\/h3>/.test(html) && html.includes('id="setup-domain-grid"') && html.includes('id="domain-grid-section"'));
+// bento: the v7.16-era `.domain-header`/"By Domain" head + #setup-domain-grid was
+// replaced by the bento domain tile (head "Drill by domain", live #domainGrid built by
+// renderBentoDomains). #setup-domain-grid/#domain-grid-section live on as legacy stubs.
+test('bento HTML: domain tile head ("Drill by domain") + #domainGrid container (+ legacy #setup-domain-grid stub)',
+  /class="tile-title">Drill by <i>domain<\/i>/.test(html)
+    && html.includes('id="domainGrid"')
+    && html.includes('id="setup-domain-grid"') && html.includes('id="domain-grid-section"'));
 // v4.79.0: \u00a704 Custom Quiz editorial section head retired per Codex
 // round-3 \u2014 Mode Ladder's "Custom Quiz" tile is the single entry point;
 // the <details> form below is the implementation.
@@ -3926,8 +3958,12 @@ test('v4.54.0 HTML: topbar toggle calls toggleSidebarCollapsed',
   /id="topbar-toggle"[\s\S]{0,200}onclick="toggleSidebarCollapsed/.test(html));
 
 // HTML \u2014 hero v2
-test('codex-home HTML: #setup-hero-v2 hero + #readiness-card-v2 split across .col-main/.col-side',
-  /id="setup-hero-v2"[^>]*class="[^"]*\bch-hero\b|class="[^"]*\bch-hero\b[^"]*"[^>]*id="setup-hero-v2"/.test(html) && /id="readiness-card-v2"[^>]*class="[^"]*\breadiness-card\b|class="[^"]*\breadiness-card\b[^"]*"[^>]*id="readiness-card-v2"/.test(html) && html.includes('class="col-main"') && html.includes('class="col-side"'));
+// bento: the v7.16-era `.col-main`/`.col-side` split was replaced by the bento board.
+// The KEEPER readiness hero #readiness-card-v2 now lives in `.cell-hero` (markup
+// verbatim); #setup-hero-v2 survives as a hidden legacy stub.
+test('bento HTML: #readiness-card-v2 hero in .cell-hero (+ legacy #setup-hero-v2 stub, was .col split)',
+  /class="cell-hero[^"]*"[\s\S]{0,200}class="[^"]*\breadiness-card\b[^"]*"\s+id="readiness-card-v2"/.test(html)
+    && html.includes('id="setup-hero-v2"'));
 test('v4.54.0 HTML: display heading defaults to "Good afternoon, Simi."',
   /id="hero-v2-display"[\s\S]{0,200}Good afternoon, <span class="name">Simi\.<\/span>/.test(html));
 test('v4.54.0/dg4 HTML: readiness card v2 has score + bar fill + prediction + delta',
@@ -7445,11 +7481,15 @@ test('v4.76.0 HTML: #hero-v2-cta-reason element exists', html.includes('id="hero
 // v5.4.0 gave the By-Domain matrix. This guard keeps equal regression
 // strength: asserts the new structure AND tombstones the old col-side
 // placement so it can't silently regress to the vertical rail dropdown.
-test('codex-home HTML v5.5.3: session-picker reshuffled full-width (#modes-ladder + .dgh-sess + .dgh-board, OUT of .col-side rail)',
-  /class="[^"]*\bdgh-sess\b/.test(html)
+// bento: the v7.16-era `.dgh-board`/`.dgh-sess` full-width session-picker (and the
+// `.col-side` rail it was pulled out of) were replaced by the bento `.board` > `.bento`
+// grid. #modes-ladder survives as a hidden legacy stub. Assert the bento board scaffold
+// + the preserved stub ordering inside the legacy block.
+test('bento HTML: board > cmd-bar + bento grid (was .dgh-board full-width session picker); #modes-ladder stub preserved',
+  /<main class="board"[\s\S]{0,400}<header class="cmd-bar/.test(html)
+  && /<header class="cmd-bar[\s\S]{0,700}<div class="bento"/.test(html)
   && html.includes('id="modes-ladder"')
-  && html.includes('class="dgh-board"')
-  && !/id="modes-ladder"[^>]*\bcol-side-card\b|\bcol-side-card\b[^"]*"[^>]*id="modes-ladder"/.test(html)
+  && !html.includes('class="dgh-board"') && !/class="[^"]*\bdgh-sess\b/.test(html)
   && html.indexOf('id="daily-challenge-card"') < html.indexOf('id="modes-ladder"')
   && html.indexOf('id="modes-ladder"') < html.indexOf('id="domain-grid-section"'));
 // v5.5.5 — Continue anchor: the right rail's ALWAYS-present bottom (founder
@@ -7460,12 +7500,15 @@ test('codex-home HTML v5.5.3: session-picker reshuffled full-width (#modes-ladde
 // it tombstones any future is-hidden regression. dg-system.css carries the
 // look (not UAT-read), so this guard is HTML structure + the always-called
 // renderContinueCard contract only.
-test('codex-home HTML v5.5.5: #continue-card always-present rail anchor (in .col-side after #daily-challenge-card, before #modes-ladder; NOT is-hidden; renderContinueCard defined + called both render paths)',
+// bento: the v7.16-era `.col-side` rail was replaced by the bento board. #continue-card
+// survives as an always-present legacy stub (still after #daily-challenge-card, before
+// #modes-ladder in the legacy block; never is-hidden — its always-present contract is
+// preserved). renderContinueCard stays defined + called on both render paths.
+test('bento HTML: #continue-card always-present legacy stub (after #daily-challenge-card, before #modes-ladder; NOT is-hidden; renderContinueCard defined + called both render paths)',
   html.includes('id="continue-card"')
-  && /id="continue-card"[^>]*class="[^"]*\bcontinue-card\b|class="[^"]*\bcontinue-card\b[^"]*"[^>]*id="continue-card"/.test(html)
   && html.indexOf('id="daily-challenge-card"') < html.indexOf('id="continue-card"')
   && html.indexOf('id="continue-card"') < html.indexOf('id="modes-ladder"')
-  && !/id="continue-card"[^>]*\bis-hidden\b|\bis-hidden\b[^"]*"[^>]*id="continue-card"/.test(html)
+  && !/id="continue-card"[^>]*\bis-hidden\b/.test(html)
   && /function renderContinueCard\s*\(/.test(js)
   && (js.match(/typeof renderContinueCard === 'function'\) renderContinueCard\(\)/g) || []).length >= 2);
 // v5.5.7 — cert-leak fix. Quiz history + wrong bank are global per user
@@ -7491,8 +7534,14 @@ test('v5.5.8 StreakRedesign: sidebar streak render = brand flame + Longest sub, 
   /const\s+streakFlameSvg\s*=\s*'<svg viewBox="0 0 128 128"[\s\S]{0,260}sbStreakFlame[\s\S]{0,400}sb-streak-core/.test(js)
   && /class="sb-streak sb-streak-active" onclick="goSetup\(\)"[\s\S]{0,220}sb-streak-ico[\s\S]{0,220}sb-streak-num[\s\S]{0,140}sb-streak-label[\s\S]{0,140}sb-streak-sub/.test(js)
   && /class="sb-streak sb-streak-empty"[\s\S]{0,220}sb-streak-ico[\s\S]{0,200}sb-streak-empty-t/.test(js));
-test('v4.76.0/dg4 HTML: 3 commitment groups (quick / practice / exam)',
-  (html.match(/class="dgh-grp"/g) || []).length === 3 && html.includes('Quick &middot; 3-5 min') && html.includes('Practice &middot; 10-30 min') && html.includes('Exam simulation &middot; 60-90 min'));
+// bento: the v7.16-era `.dgh-grp` 3-tier session picker was replaced by three bento
+// tiles — Quick start (#grp-quick), Practice (#grp-practice), Exam simulation
+// (#grp-exam) — each in its own `.cell-*` tile with a `.tile-title` head.
+test('bento HTML: 3 commitment tiles (quick / practice / exam simulation)',
+  html.includes('id="grp-quick"') && html.includes('id="grp-practice"') && html.includes('id="grp-exam"')
+    && /class="tile-title">Quick start</.test(html)
+    && /class="tile-title">Practice</.test(html)
+    && /class="tile-title">Exam <i>simulation<\/i>/.test(html));
 test('v4.76.0 HTML: Daily Challenge tile in Quick tier', html.includes('id="modes-dc-tile"'));
 test('v4.76.0 HTML: Drill Mistakes tile in Quick tier', html.includes('id="modes-wrong-tile"'));
 test('v4.76.0 HTML: Custom Quiz card delegates to _jumpToCustomQuiz',
@@ -7539,8 +7588,14 @@ test('v4.76.0 CSS: reduced-motion gate present for new elements',
 console.log('\n\x1b[1m── v4.77.0 CODEX ROUND-2 POLISH ──\x1b[0m');
 
 // 1. Eyebrow upgrade
-test('v4.77.0/dg4 HTML: NBM eyebrow reads "Next best move" (not "Your next best move")',
-  /Next best move/.test(html) && !/Your next best move/.test(html));
+// bento: the v7.16-era visible "Next best move" eyebrow was dropped (the bento
+// Recommended tile #primaryLaunch is the surfaced next move). The NBM machinery is
+// preserved: renderNextBestMove (defined + called) fills the #hero-v2-cta legacy stub.
+test('bento: Next-Best-Move machinery preserved (renderNextBestMove defined + called; #hero-v2-cta stub) — visible eyebrow replaced by #primaryLaunch tile',
+  /function renderNextBestMove\s*\(/.test(js)
+    && (js.match(/\brenderNextBestMove\s*\(/g) || []).length >= 2
+    && html.includes('id="hero-v2-cta"')
+    && /id="primaryLaunch"[^>]*onclick="applyPreset\('focused'\)"/.test(html));
 test('v4.77.0 CSS: eyebrow is now an inline pill (display: inline-flex)',
   /\.hero-v2-cta-eyebrow\s*\{[\s\S]{0,500}display:\s*inline-flex/.test(css));
 test('v4.77.0 CSS: eyebrow has pill background',
@@ -7617,8 +7672,12 @@ test('v4.79.0 home: standalone exam-section retired (was duplicating Mode Ladder
   !/<div class="exam-section">[\s\S]{0,800}Simulate Full Exam/.test(html));
 test('v4.79.0 home: legacy #hardcore-checkbox preserved as hidden compat shim',
   /id="hardcore-checkbox"[^>]*hidden/.test(html));
-test('v4.79.0/dg4 home: Strict Mode toggle in session-picker Exam group',
-  html.includes('id="modes-strict-checkbox"') && html.includes('class="dgh-strict"'));
+// bento: the v7.16-era `.dgh-strict` Exam-group toggle was replaced by the bento
+// composition; #modes-strict-checkbox survives as a hidden legacy stub still wired to
+// setHardcoreMode (the next assertion guards the dual-checkbox sync).
+test('bento home: Strict Mode toggle preserved as #modes-strict-checkbox legacy stub (→ setHardcoreMode)',
+  html.includes('id="modes-strict-checkbox"')
+    && /id="modes-strict-checkbox"[\s\S]{0,160}setHardcoreMode\(/.test(html));
 test('v4.79.0 home: Strict Mode toggle syncs both checkboxes',
   /modes-strict-checkbox[\s\S]{0,400}hardcore-checkbox/.test(html));
 test('v4.79.0 CSS: .modes-strict-toggle styled', css.includes('.modes-strict-toggle'));
@@ -9256,16 +9315,44 @@ test('v4.81.17 DomainDrill: prefillDomainTopics opens the matching accordion',
   /details\[data-domain-idx=/.test(_fnBody(js, 'prefillDomainTopics') || ''));
 test('v4.81.17 DomainDrill: prefillDomainTopics jumps to Custom Quiz section',
   /_jumpToCustomQuiz/.test(_fnBody(js, 'prefillDomainTopics') || ''));
-test('v4.81.17/dg4 DomainDrill: session-picker drill-by-domain row present',
-  html.includes('class="dgh-dbd"'));
-test('v4.81.17/dg4 DomainDrill: 5 drill-by-domain buttons',
-  (html.match(/class="dgh-db"/g) || []).length === 5);
-test('v4.81.17 DomainDrill: Mode Ladder tiles wired to applyDomainPreset for all 5 domains',
-  /applyDomainPreset\('concepts'\)/.test(html)
-    && /applyDomainPreset\('implementation'\)/.test(html)
-    && /applyDomainPreset\('operations'\)/.test(html)
-    && /applyDomainPreset\('security'\)/.test(html)
-    && /applyDomainPreset\('troubleshooting'\)/.test(html));
+// bento: the v7.16-era `.dgh-dbd` drill-by-domain row was replaced by the bento domain
+// tile (#domainGrid .ld-grid, built by renderBentoDomains).
+test('bento DomainDrill: drill-by-domain tile present (#domainGrid .ld-grid, was .dgh-dbd)',
+  /class="ld-grid"\s+id="domainGrid"|id="domainGrid"\s+class="ld-grid"/.test(html));
+// bento: the 5 static `.dgh-db` buttons were replaced by renderBentoDomains, which maps
+// over the 5 DOMAIN_WEIGHTS keys (concepts/implementation/operations/security/
+// troubleshooting — explicit fallback) and emits one `.ld` <button> per domain into
+// #domainGrid. Assert the renderer's 5-domain order + the per-domain `.ld` button.
+test('bento DomainDrill: renderBentoDomains emits a .ld button per domain (5 domains, was 5 .dgh-db)',
+  (() => {
+    const body = _fnBody(js, 'renderBentoDomains') || '';
+    return /\['concepts',\s*'implementation',\s*'operations',\s*'security',\s*'troubleshooting'\]/.test(body)
+      && /class="ld\$\{weak\}"/.test(body)
+      && /Object\.keys\(DOMAIN_WEIGHTS\)/.test(body);
+  })());
+// bento: the static Mode-Ladder per-domain applyDomainPreset wiring moved into
+// renderBentoDomains — it emits `onclick="applyDomainPreset('<domainKey>')"` per domain,
+// driven by the 5-key order (concepts/implementation/operations/security/
+// troubleshooting). Assert the renderer's onclick wiring + the 5-domain key list.
+test('bento DomainDrill: renderBentoDomains wires applyDomainPreset for all 5 domains',
+  (() => {
+    const body = _fnBody(js, 'renderBentoDomains') || '';
+    return /onclick="applyDomainPreset\('\$\{String\(dk\)/.test(body)
+      && /\['concepts',\s*'implementation',\s*'operations',\s*'security',\s*'troubleshooting'\]/.test(body);
+  })());
+// bento: the old #sr-review-card home prompt + Next-Best-Move CTA are hidden
+// legacy stubs, so the recommend tile is the only home surface that can launch a
+// spaced-repetition review. renderBentoRecommended checks getSrStats().due and,
+// when cards are due, overrides #primaryLaunch's click handler to startSrReview()
+// (the static onclick="applyPreset('focused')" stays as the not-due default).
+test('bento Recommend: renderBentoRecommended routes #primaryLaunch to SR review when cards are due (v7.17.0)',
+  (() => {
+    const body = _fnBody(js, 'renderBentoRecommended') || '';
+    return /getSrStats\(\)/.test(body)
+      && /srDue\s*>\s*0/.test(body)
+      && /startSrReview\(\)/.test(body)
+      && /launchEl\.onclick\s*=/.test(body);
+  })());
 test('v4.81.17 DomainDrill: Custom Quiz pre-fill pill row present in topic-group',
   html.includes('class="topic-domain-prefill"'));
 test('v4.81.17 DomainDrill: Custom Quiz has 5 tdp-pill buttons',
@@ -11074,8 +11161,13 @@ test('v4.81.31 SRScrub: Playwright spec covers SR Review MCQ happy path',
       const path = require('path');
       const specPath = path.join(__dirname, 'e2e', 'app.spec.js');
       const spec = fs.readFileSync(specPath, 'utf8');
+      // v7.17.0 (home bento): the SR entry moved from the hidden #sr-review-card
+      // home prompt to the bento recommend cell (#primaryLaunch → startSrReview).
+      // The guard still proves the full flow is covered: bento entry → SR page →
+      // confidence advance.
       return /SR Review.*MCQ happy path/.test(spec)
-        && /sr-review-start-btn/.test(spec)
+        && /primaryLaunch/.test(spec)
+        && /page-sr-review/.test(spec)
         && /sr-confidence-confident/.test(spec);
     } catch (e) { return false; }
   })());
@@ -15326,9 +15418,12 @@ test('v4.99.32 PlaywrightTriage: beforeEach stubs _quotaState with tier: pro',
 test('v4.99.32 PlaywrightTriage: beforeEach adds is-pro-tier + is-state-resolved body classes',
   /classList\.add\(['"]is-pro-tier['"],\s*['"]is-state-resolved['"]/.test(e2eSpec));
 
-// 2. Greeting test now asserts greeting form not "Simi" — covers anonymous user
-test('v4.99.32 PlaywrightTriage: greeting test asserts form (Good morning/afternoon/evening) not name',
-  /toContainText\(\s*\/Good \(morning\|afternoon\|evening\)\|Working late/.test(e2eSpec));
+// 2. v7.17.0 (home bento): the time-of-day greeting heading (#hero-v2-display)
+//    is retired from the home page — the bento leads with the readiness hero +
+//    command bar (cert / days-to-exam / streak). The setup-page e2e test now
+//    asserts the bento command bar rendered instead of the greeting form.
+test('v7.17.0 PlaywrightTriage: setup-page test asserts the bento command bar (greeting heading retired)',
+  /#page-setup \.cmd-bar/.test(e2eSpec) && /cb-cert/.test(e2eSpec));
 test('v4.99.32 PlaywrightTriage: hardcoded toContainText("Simi") removed (regression tombstone)',
   // Tighten to match only actual expect(...).toContainText('Simi') calls,
   // not the explanatory comment that mentions the old pattern.

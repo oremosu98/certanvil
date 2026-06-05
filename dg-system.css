@@ -2731,3 +2731,272 @@ html[data-theme] body #page-setup #readiness-card-v2.is-pass .readiness-score #r
 html[data-theme="light"] body .ed-pagehead::after,
 html[data-theme="light"] body .ed-section-head::after{background:var(--accent);}
 
+/* ===== Cert Home bento (port of mockups/home/mockup-3-bento.html) ===== */
+/* Ports mockup-3's bento/tile/modal/motion CSS, scoped under #page-setup so the
+   live Cert Home page renders like the mockup in both themes. EXCLUDED (already
+   live above): the :root/[data-theme] token blocks, and every .readiness-* /
+   #readiness-card-v2 / .rc-v2-whatif* hero rule. Colour comes only from the
+   var(--*) tokens the mockup already uses (0 hardcoded hex). The custom-quiz
+   modal/scrim are position:fixed but their markup lives INSIDE #page-setup, so
+   #page-setup scoping reaches them; the extra design vars are defined on the
+   #page-setup subtree below so both the in-page tiles and the modal inherit
+   them. !important is applied only on tile/modal chrome (background/border/
+   padding/radius) where the generic de-card / button rules above fight. */
+
+/* extra design vars the mockup uses that are NOT live tokens - defined on the
+   #page-setup subtree (reaches the modal/scrim too); verbatim mockup values.
+   Note: #page-setup already sets --dgh-ease (line ~118); this higher-specificity
+   selector intentionally overrides it for the bento subtree to the mockup value. */
+html[data-theme] body #page-setup{
+  --dgh-ease:cubic-bezier(.2,.8,.2,1);
+  --ease-out:cubic-bezier(0.23,1,0.32,1);
+  --ease-in-out:cubic-bezier(0.77,0,0.175,1);
+  --accent-soft:color-mix(in oklab,var(--accent) 12%,transparent);
+  --accent-line:color-mix(in oklab,var(--accent) 30%,transparent);
+  --hairline:color-mix(in oklab,var(--border) 72%,transparent);
+}
+
+#page-setup .mono{font-family:'Roboto Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums}
+#page-setup .board{max-width:1280px;margin:0 auto;padding:26px 28px 80px}
+
+/* ── TOP BAR ── */
+#page-setup .cmd-bar{display:flex;align-items:center;justify-content:space-between;gap:18px;
+  padding:14px 18px;border:1px solid var(--border);border-radius:14px;
+  background:linear-gradient(180deg,var(--surface),color-mix(in oklab,var(--surface) 88%,var(--bg)));margin-bottom:24px}
+#page-setup .cmd-id{display:flex;flex-direction:column;gap:3px}
+#page-setup .cmd-sys{font:600 10.5px/1 'Roboto Mono',monospace;letter-spacing:.18em;text-transform:uppercase;color:var(--text-dim)}
+#page-setup .cmd-cert{font:600 21px/1.1 'Fraunces',Georgia,serif;color:var(--text)}
+#page-setup .cmd-cert b{color:var(--accent);font-weight:600}
+#page-setup .cmd-meta{display:flex;align-items:center;gap:12px}
+#page-setup .cmd-chip{display:flex;align-items:baseline;gap:7px;padding:8px 13px;border:1px solid var(--hairline);border-radius:10px;background:var(--surface2)}
+#page-setup .cmd-chip-n{font:600 19px/1 'Roboto Mono',monospace;color:var(--text);font-variant-numeric:tabular-nums}
+#page-setup .cmd-chip span:last-child{font-size:11px;color:var(--text-dim)}
+#page-setup .theme-toggle{width:40px;height:40px;border-radius:10px;border:1px solid var(--hairline);background:var(--surface2);
+  color:var(--text-mid);cursor:pointer;display:grid;place-items:center;font-size:17px;transition:border-color .2s,transform .14s var(--ease-out),color .2s}
+@media (hover:hover) and (pointer:fine){
+  #page-setup .theme-toggle:hover{border-color:var(--accent);color:var(--accent);transform:translateY(-1px)}
+}
+#page-setup .theme-toggle:active{transform:scale(.97)}
+[data-theme="dark"] #page-setup .theme-toggle .sun{display:none}[data-theme="dark"] #page-setup .theme-toggle .moon{display:block}
+[data-theme="light"] #page-setup .theme-toggle .sun{display:block}[data-theme="light"] #page-setup .theme-toggle .moon{display:none}
+
+/* ── BENTO GRID ── */
+#page-setup .bento{display:grid;grid-template-columns:repeat(6,1fr);grid-auto-rows:minmax(10px,auto);gap:16px;align-items:stretch}
+#page-setup .cell-hero      {grid-column:span 2;grid-row:span 2}
+#page-setup .cell-recommend {grid-column:span 4}
+#page-setup .cell-momentum  {grid-column:span 2}
+#page-setup .cell-quick     {grid-column:span 2}
+#page-setup .cell-practice  {grid-column:span 2}
+#page-setup .cell-exam      {grid-column:span 2}
+#page-setup .cell-domains   {grid-column:span 6}
+#page-setup .cell-custom    {grid-column:span 2}
+@media (max-width:980px){
+  #page-setup .bento{grid-template-columns:repeat(4,1fr)}
+  #page-setup .cell-hero{grid-column:span 4;grid-row:span 1}
+  #page-setup .cell-recommend{grid-column:span 4}
+  #page-setup .cell-momentum,#page-setup .cell-quick,#page-setup .cell-practice,#page-setup .cell-exam{grid-column:span 2}
+  #page-setup .cell-custom{grid-column:span 4}
+  #page-setup .cell-domains{grid-column:span 4}
+}
+@media (max-width:620px){
+  #page-setup .bento{grid-template-columns:1fr}
+  #page-setup .cell-hero,#page-setup .cell-recommend,#page-setup .cell-momentum,#page-setup .cell-quick,#page-setup .cell-practice,#page-setup .cell-exam,#page-setup .cell-domains,#page-setup .cell-custom{grid-column:1 / -1}
+}
+
+/* shared tile shell - chrome props use !important to beat the de-card band */
+html[data-theme] body #page-setup .tile{position:relative;border:1px solid var(--hairline)!important;border-radius:18px!important;padding:18px 19px!important;background:var(--surface)!important;
+  display:flex;flex-direction:column;min-width:0;box-shadow:none;
+  transition:transform .24s var(--ease-out),border-color .24s,box-shadow .24s}
+@media (hover:hover) and (pointer:fine){
+  #page-setup .tile.lift:hover{transform:translateY(-3px);border-color:var(--accent-line);
+    box-shadow:0 18px 44px -28px color-mix(in oklab,var(--accent) 55%,transparent)}
+}
+#page-setup button.tile:active{transform:scale(.97)}
+html[data-theme] body #page-setup .tile-title{font:600 17px/1.15 'Fraunces',Georgia,serif;color:var(--text)}
+#page-setup .tile-title i{font-style:italic;color:var(--accent)}
+#page-setup .tile-sub{font-size:12px;color:var(--text-dim);margin-top:4px;line-height:1.45}
+#page-setup .tile-eyebrow{font:600 10px/1 'Roboto Mono',monospace;letter-spacing:.16em;text-transform:uppercase;color:var(--text-dim)}
+
+#page-setup .cell-hero .readiness-card{height:100%}
+
+/* recommended-next (prominent) */
+html[data-theme] body #page-setup .tile-recommend{flex-direction:row;align-items:center;gap:18px;cursor:pointer;text-align:left;width:100%;
+  border-color:var(--accent-line)!important;overflow:hidden;
+  background:linear-gradient(120deg,color-mix(in oklab,var(--accent) 16%,var(--surface)),var(--surface))!important}
+#page-setup .tile-recommend::after{content:"";position:absolute;inset:0;pointer-events:none;z-index:1;
+  background:linear-gradient(105deg,transparent 38%,color-mix(in oklab,var(--accent-light) 30%,transparent) 50%,transparent 62%);
+  clip-path:inset(0 100% 0 0);opacity:0}
+#page-setup .tile-recommend>*{position:relative;z-index:2}
+@media (hover:hover) and (pointer:fine){
+  #page-setup .tile-recommend:hover{border-color:var(--accent)}
+  #page-setup .tile-recommend:hover::after{clip-path:inset(0 0 0 0);opacity:1;
+    transition:clip-path .8s var(--ease-out),opacity .2s ease}
+}
+#page-setup .rc-min{flex:0 0 auto;width:64px;height:64px;border-radius:14px;display:grid;place-content:center;text-align:center;
+  background:var(--bg);border:1px solid var(--accent-line)}
+#page-setup .rc-min b{font:600 25px/1 'Roboto Mono',monospace;color:var(--accent)}
+#page-setup .rc-min span{font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--text-dim)}
+#page-setup .rc-body{flex:1 1 auto;min-width:0}
+#page-setup .rc-tag{font:600 10px/1 'Roboto Mono',monospace;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin-bottom:5px}
+#page-setup .rc-title{font:600 20px/1.15 'Fraunces',Georgia,serif;color:var(--text)}
+#page-setup .rc-meta{font-size:12.5px;color:var(--text-dim);margin-top:3px}
+#page-setup .rc-go{flex:0 0 auto;width:44px;height:44px;border-radius:12px;display:grid;place-items:center;
+  border:1px solid var(--accent-line);color:var(--accent);background:var(--surface);transition:transform .4s cubic-bezier(.34,1.56,.64,1),background .22s}
+@media (hover:hover) and (pointer:fine){
+  #page-setup .tile-recommend:hover .rc-go{transform:translateX(4px);background:var(--accent-soft)}
+}
+
+/* momentum tile (tinted bronze) */
+html[data-theme] body #page-setup .tile-momentum{background:linear-gradient(150deg,color-mix(in oklab,var(--accent) 13%,var(--surface)),color-mix(in oklab,var(--surface) 92%,var(--bg)))!important}
+#page-setup .mo-top{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+#page-setup .mo-ring-row{display:flex;align-items:center;gap:16px;margin-top:14px}
+#page-setup .mo-ring{position:relative;width:74px;height:74px;flex:0 0 auto}
+#page-setup .mo-ring svg{transform:rotate(-90deg)}
+#page-setup .mo-ring .track{stroke:color-mix(in oklab,var(--text) 14%,transparent)}
+#page-setup .mo-ring .fill{stroke:var(--accent);stroke-linecap:round;transition:stroke-dashoffset 1.1s var(--dgh-ease)}
+#page-setup .mo-ring .ctr{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px}
+#page-setup .mo-ring .ctr b{font:600 19px/1 'Roboto Mono',monospace;color:var(--text)}
+#page-setup .mo-ring .ctr span{font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-dim)}
+#page-setup .mo-stats{display:flex;flex-direction:column;gap:8px;min-width:0}
+#page-setup .mo-stat{display:flex;align-items:baseline;gap:8px}
+#page-setup .mo-stat .n{font:600 22px/1 'Roboto Mono',monospace;color:var(--text)}
+#page-setup .mo-stat .k{font-size:11.5px;color:var(--text-dim)}
+#page-setup .mo-resume{margin-top:14px;padding-top:13px;border-top:1px solid var(--hairline);font-size:12px;color:var(--text-dim);line-height:1.5}
+#page-setup .mo-resume b{color:var(--text-mid);font-weight:600}
+
+/* generic preset option (quick / practice) */
+#page-setup .tile-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:12px}
+#page-setup .tile-head .meta{font:600 11px/1 'Roboto Mono',monospace;color:var(--text-dim);letter-spacing:.04em}
+#page-setup .opts{display:grid;gap:9px}
+#page-setup .opts.cols2{grid-template-columns:1fr 1fr}
+@media (max-width:480px){#page-setup .opts.cols2{grid-template-columns:1fr}}
+html[data-theme] body #page-setup .opt{display:flex;flex-direction:column;gap:3px;text-align:left;cursor:pointer;padding:12px 13px!important;border-radius:11px;
+  border:1px solid var(--hairline)!important;background:var(--surface2)!important;color:var(--text);box-shadow:none;
+  transition:transform .18s var(--ease-out),border-color .18s,background .18s}
+@media (hover:hover) and (pointer:fine){
+  #page-setup .opt:hover{transform:translateY(-2px);border-color:var(--accent);background:color-mix(in oklab,var(--accent) 7%,var(--surface2))}
+}
+#page-setup .opt:active{transform:scale(.97)}
+#page-setup .opt .on{font:600 14px/1.15 Inter,sans-serif;color:var(--text)}
+#page-setup .opt .od{font-size:11.5px;color:var(--text-dim)}
+
+/* exam tile (darker tinted treatment) */
+html[data-theme] body #page-setup .tile-exam{background:linear-gradient(160deg,color-mix(in oklab,var(--bg) 78%,var(--surface)),color-mix(in oklab,var(--accent) 9%,var(--bg)))!important;border-color:var(--accent-line)!important}
+html[data-theme] body #page-setup .tile-exam .opt{background:color-mix(in oklab,var(--bg) 60%,var(--surface2))!important;border-color:color-mix(in oklab,var(--accent) 22%,var(--border))!important}
+#page-setup .tile-exam .opt .on{font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:15px}
+@media (hover:hover) and (pointer:fine){
+  #page-setup .tile-exam .opt:hover{background:color-mix(in oklab,var(--accent) 12%,var(--bg))}
+}
+
+/* domain quick-pick tile */
+#page-setup .ld-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:9px}
+@media (max-width:880px){#page-setup .ld-grid{grid-template-columns:repeat(5,1fr)}}
+@media (max-width:620px){#page-setup .ld-grid{grid-template-columns:repeat(2,1fr)}}
+html[data-theme] body #page-setup .ld{display:flex;flex-direction:column;gap:8px;cursor:pointer;text-align:left;padding:12px 12px 13px!important;border-radius:12px;
+  border:1px solid var(--hairline)!important;background:var(--surface2)!important;color:var(--text);box-shadow:none;
+  transition:transform .18s var(--ease-out),border-color .18s}
+@media (hover:hover) and (pointer:fine){
+  #page-setup .ld:hover{transform:translateY(-2px);border-color:var(--accent)}
+}
+#page-setup .ld:active{transform:scale(.97)}
+#page-setup .ld-k{font:600 11px/1 'Roboto Mono',monospace;color:var(--accent)}
+#page-setup .ld-n{font-size:12px;font-weight:600;line-height:1.25;color:var(--text);min-height:2.5em}
+#page-setup .ld-bar{height:5px;border-radius:99px;background:color-mix(in oklab,var(--text) 13%,transparent);overflow:hidden}
+#page-setup .ld-bar i{display:block;height:100%;border-radius:99px;background:var(--accent);width:0;transition:width .9s var(--dgh-ease)}
+#page-setup .ld.weak .ld-bar i{background:var(--yellow)}
+#page-setup .ld-m{font-size:10.5px;color:var(--text-dim);display:flex;justify-content:space-between}
+#page-setup .ld-m b{color:var(--text-mid);font-weight:600;font-family:'Roboto Mono',monospace}
+
+/* custom-quiz launcher tile (accent-soft) */
+html[data-theme] body #page-setup .tile-custom{cursor:pointer;text-align:left;align-items:flex-start;justify-content:space-between;
+  background:linear-gradient(135deg,var(--accent-soft),var(--surface))!important;border-color:var(--accent-line)!important}
+#page-setup .cu-ico{width:42px;height:42px;border-radius:11px;display:grid;place-items:center;border:1px solid var(--accent-line);
+  color:var(--accent);background:var(--surface);transition:transform .25s var(--ease-out)}
+#page-setup .cu-foot{margin-top:auto;padding-top:14px;display:flex;align-items:center;gap:8px;font:600 12px Inter,sans-serif;color:var(--accent)}
+#page-setup .cu-foot svg{transition:transform .22s var(--ease-out)}
+@media (hover:hover) and (pointer:fine){
+  #page-setup .tile-custom:hover{border-color:var(--accent)}
+  #page-setup .tile-custom:hover .cu-ico{transform:rotate(-8deg) scale(1.06)}
+  #page-setup .tile-custom:hover .cu-foot svg{transform:translateX(3px)}
+}
+
+/* ── CUSTOM QUIZ MODAL (springs open from launcher tile) ── */
+html[data-theme] body #page-setup .modal-scrim{position:fixed;inset:0;background:color-mix(in oklab,var(--bg) 58%,#000);backdrop-filter:blur(3px);
+  opacity:0;visibility:hidden;transition:opacity .18s ease,visibility .18s;z-index:40}
+#page-setup .modal-scrim.open{opacity:1;visibility:visible;transition:opacity .3s ease,visibility .3s}
+html[data-theme] body #page-setup .modal{position:fixed;z-index:50;left:50%;top:50%;width:min(540px,94vw);max-height:88dvh;
+  display:flex;flex-direction:column;overflow:hidden;
+  background:var(--surface)!important;border:1px solid var(--border)!important;border-radius:20px!important;padding:0!important;box-shadow:0 40px 90px -40px rgba(0,0,0,.7);
+  transform-origin:var(--mox,80%) var(--moy,90%);
+  transform:translate(-50%,-50%) scale(.955);opacity:0;visibility:hidden;
+  transition:transform .2s var(--ease-out),opacity .16s ease,visibility .2s}
+#page-setup .modal.open{transform:translate(-50%,-50%) scale(1);opacity:1;visibility:visible;
+  transition:transform .42s cubic-bezier(.34,1.4,.5,1),opacity .24s ease,visibility .42s}
+#page-setup .dw-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;padding:22px 22px 16px;border-bottom:1px solid var(--hairline)}
+html[data-theme] body #page-setup .dw-head h3{font:600 22px/1.1 'Fraunces',Georgia,serif;color:var(--text)}
+#page-setup .dw-head p{font-size:12.5px;color:var(--text-dim);margin-top:4px}
+#page-setup .dw-close{width:36px;height:36px;border-radius:9px;border:1px solid var(--hairline);background:var(--surface2);color:var(--text-mid);cursor:pointer;display:grid;place-items:center;font-size:18px;transition:border-color .2s,color .2s,transform .14s var(--ease-out)}
+@media (hover:hover) and (pointer:fine){
+  #page-setup .dw-close:hover{border-color:var(--accent);color:var(--accent)}
+}
+#page-setup .dw-close:active{transform:scale(.97)}
+#page-setup .dw-body{flex:1 1 auto;overflow-y:auto;padding:20px 22px 24px;display:flex;flex-direction:column;gap:20px}
+#page-setup .dw-block-h{font:600 11px/1 'Roboto Mono',monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--text-dim);margin-bottom:10px}
+#page-setup .seg{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+#page-setup .seg.three{grid-template-columns:1fr 1fr 1fr}
+@media (max-width:480px){#page-setup .seg.three{grid-template-columns:1fr}}
+html[data-theme] body #page-setup .seg button{display:flex;flex-direction:column;gap:2px;text-align:left;cursor:pointer;padding:11px 12px;border-radius:10px;border:1px solid var(--hairline);background:var(--surface2);color:var(--text);box-shadow:none;transition:border-color .18s,background .18s,transform .18s var(--ease-out)}
+@media (hover:hover) and (pointer:fine){
+  #page-setup .seg button:hover{transform:translateY(-1px);border-color:var(--accent)}
+}
+#page-setup .seg button:active{transform:scale(.97)}
+html[data-theme] body #page-setup .seg button.sel{border-color:var(--accent);background:var(--accent-soft)}
+#page-setup .seg button .st{font-weight:600;font-size:13.5px}
+#page-setup .seg button .ss{font-size:11px;color:var(--text-dim)}
+#page-setup .count-row{display:flex;flex-wrap:wrap;gap:7px}
+html[data-theme] body #page-setup .count-row button{min-width:46px;padding:9px 0;text-align:center;border-radius:9px;border:1px solid var(--hairline);background:var(--surface2);color:var(--text);font:600 14px 'Roboto Mono',monospace;cursor:pointer;box-shadow:none;transition:border-color .18s,background .18s,transform .18s var(--ease-out)}
+@media (hover:hover) and (pointer:fine){
+  #page-setup .count-row button:hover{transform:translateY(-1px);border-color:var(--accent)}
+}
+#page-setup .count-row button:active{transform:scale(.97)}
+html[data-theme] body #page-setup .count-row button.sel{border-color:var(--accent);background:var(--accent-soft);color:var(--accent)}
+html[data-theme] body #page-setup .topic-acc{border:1px solid var(--hairline);border-radius:11px;overflow:hidden;margin-bottom:8px;background:var(--surface2)}
+#page-setup .topic-acc>summary{list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:space-between;padding:12px 14px;font-weight:600;font-size:13.5px}
+#page-setup .topic-acc>summary::-webkit-details-marker{display:none}
+#page-setup .topic-acc>summary .w{font:600 11px 'Roboto Mono',monospace;color:var(--text-dim)}
+#page-setup .topic-acc[open]>summary{border-bottom:1px solid var(--hairline)}
+#page-setup .topic-chips{display:flex;flex-wrap:wrap;gap:7px;padding:12px 14px}
+html[data-theme] body #page-setup .tchip{padding:7px 12px;border-radius:99px;border:1px solid var(--hairline);background:var(--surface);color:var(--text-mid);font-size:11.5px;cursor:pointer;box-shadow:none;transition:border-color .16s,color .16s,background .16s,transform .14s var(--ease-out)}
+@media (hover:hover) and (pointer:fine){
+  #page-setup .tchip:hover{border-color:var(--accent);color:var(--text)}
+}
+#page-setup .tchip:active{transform:scale(.97)}
+html[data-theme] body #page-setup .tchip.on{border-color:var(--accent);background:var(--accent-soft);color:var(--accent);font-weight:600}
+#page-setup .dw-foot{padding:16px 22px 22px;border-top:1px solid var(--hairline);display:flex;align-items:center;gap:14px;background:var(--surface)}
+#page-setup .dw-foot .cnt{font-size:12px;color:var(--text-dim);flex:1}
+#page-setup .dw-foot .cnt b{color:var(--text);font-family:'Roboto Mono',monospace}
+html[data-theme] body #page-setup .dw-launch{flex:0 0 auto;padding:13px 22px;border-radius:11px;border:0;cursor:pointer;
+  background:var(--accent);color:var(--bg);font:700 14px Inter,sans-serif;box-shadow:none;transition:transform .2s var(--ease-out),filter .2s}
+@media (hover:hover) and (pointer:fine){
+  #page-setup .dw-launch:hover{transform:translateY(-2px);filter:brightness(1.05)}
+}
+#page-setup .dw-launch:active{transform:scale(.97)}
+
+/* ── ENTRANCE MOTION (verbatim .reveal pattern) ── */
+@media (prefers-reduced-motion:no-preference){
+  #page-setup .reveal{opacity:0;transform:translateY(14px) scale(.97);animation:certHomeBentoRise .55s var(--ease-out) forwards;animation-delay:calc(var(--d,0)*55ms)}
+  @keyframes certHomeBentoRise{to{opacity:1;transform:none}}
+}
+
+@media (prefers-reduced-motion:reduce){
+  #page-setup .reveal{animation:none!important;opacity:1!important;transform:none!important}
+  #page-setup .ld-bar i,#page-setup .opt,#page-setup .ld,#page-setup .tile,#page-setup .tile-recommend,#page-setup .tile-recommend .rc-go,#page-setup .cu-ico,#page-setup .cu-foot svg,#page-setup .theme-toggle,#page-setup .modal,#page-setup .modal-scrim,#page-setup .dw-close,#page-setup .seg button,#page-setup .count-row button,#page-setup .tchip,#page-setup .dw-launch,#page-setup .mo-ring .fill{transition:none!important}
+  #page-setup .opt:hover,#page-setup .ld:hover,#page-setup .tile.lift:hover,#page-setup button.tile:active,#page-setup .opt:active,#page-setup .ld:active,#page-setup .theme-toggle:active,#page-setup .dw-close:active,#page-setup .seg button:active,#page-setup .count-row button:active,#page-setup .tchip:active,#page-setup .dw-launch:active{transform:none!important}
+  #page-setup .tile-recommend::after{display:none!important}
+}
+/* Custom-quiz launcher: the bento custom tile opens the existing v5.5.4 [open]-portal
+   modal (#custom-quiz-section). Hide the closed <details> so it never shows inline in
+   the bento; when [open] it portals to <body> and the existing modal CSS renders it. */
+#page-setup #custom-quiz-section:not([open]){display:none!important;}
+/* ===== end Cert Home bento ===== */
+

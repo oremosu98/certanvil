@@ -253,328 +253,163 @@
        launched at secplus.certanvil.com (Pro-tier-gated). The subdomain
        itself signals the cert; no banner needed. -->
 
-  <!-- dg-system Batch 4 · HOME editorial rebuild (faithful to
-       mockups/netplus-home-concept.html). Markup restructured to the
-       editorial .dgh-* system; every render-fn id contract preserved
-       (hero-v2-eyebrow/display/lede, rc-v2-*, mc-*, hero-v2-cta*,
-       readiness-card-v2/setup-hero-v2 container guards). Zero app.js
-       render-logic change. -->
-  <div class="ch-wrap">
-  <!-- mockups/codex-home-concept.html · 2-column home grid. Faithful
-       structural rebuild; every render-fn id + onclick + the chip data-v
-       contract preserved. getElementById is position-free, so the bands
-       are redistributed across .col-main / .col-side with zero app.js
-       render-logic change. Tokens map onto the app OKLCH system (dark /
-       light / cert aware). Sidebar + topbar untouched. -->
-  <div class="home-grid">
+  <!-- ════════════════════════════════════════════════════════════════
+       v7.17.0 · HOME BENTO BOARD — faithful production port of the approved
+       mockup mockups/home/mockup-3-bento.html. Mockup markup + class names
+       are emitted VERBATIM (.board / .bento / .cell-* / .tile / .tile-* /
+       .mo-* / .opt / .ld / .cu-* / .modal-scrim / .modal / .dw-* / .seg /
+       .count-row / .topic-acc / .tchip / .reveal). Tiles are wired to real
+       data + real onclick actions by renderHeroV2() and its bento helpers
+       (renderBentoTopbar / renderBentoRecommended / renderBentoMomentum /
+       renderBentoQuickStart / renderBentoDomains in app.js). The keeper
+       readiness hero (#readiness-card-v2 + all child ids) sits VERBATIM in
+       .cell-hero; renderReadinessCardV2() still runs unchanged. The in-bento
+       theme toggle is intentionally DROPPED — the page lives inside the app
+       chrome whose topbar already owns #topbar-theme → toggleTheme(). -->
+  <main class="board">
 
-    <!-- ── LEFT COLUMN ──────────────────────────────────────── -->
-    <div class="col-main">
+    <!-- TOP BAR · cert id + days-to-exam/streak chips. Theme toggle omitted
+         (existing topbar #topbar-theme handles it). #cb-* filled by
+         renderBentoTopbar(). -->
+    <header class="cmd-bar reveal" style="--d:0">
+      <div class="cmd-id">
+        <span class="cmd-sys">CertAnvil console</span>
+        <span class="cmd-cert" id="cb-cert">&mdash;</span>
+      </div>
+      <div class="cmd-meta">
+        <div class="cmd-chip"><span class="cmd-chip-n" id="cb-days">0</span><span>days to exam</span></div>
+        <div class="cmd-chip"><span class="cmd-chip-n" id="cb-streak">0</span><span>day streak</span></div>
+      </div>
+    </header>
 
-      <div class="ch-hero reveal" style="--d:0" id="setup-hero-v2">
-        <div class="hero-date" id="hero-v2-eyebrow">&mdash;</div>
-        <h1 class="hero-greet" id="hero-v2-display">Good afternoon, <span class="name">Simi.</span></h1>
-        <p class="hero-body" id="hero-v2-lede">Complete your first quiz to see your readiness score. Start with <strong>fifteen minutes</strong> today.</p>
+    <div class="bento">
+
+      <!-- CELL 1 · FEATURED · readiness hero (KEEPER · markup verbatim) -->
+      <div class="cell-hero reveal" style="--d:1">
+        <div class="card readiness-card" id="readiness-card-v2">
+          <div class="readiness-eyebrow">Exam readiness &middot; scaled 100&ndash;900</div>
+          <div class="readiness-score"><span class="rc-v2-numwrap"><span class="rc-v2-glow" aria-hidden="true"></span><svg class="rc-v2-ring" viewBox="0 0 600 320" preserveAspectRatio="none" aria-hidden="true"><path d="M306,26 C470,16 590,86 582,164 C574,250 432,300 292,296 C150,292 20,232 24,156 C28,78 152,30 318,32" fill="none" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"></path></svg><span id="rc-v2-num">&mdash;</span></span><span>out of 900</span></div>
+          <div class="readiness-tier" id="rc-v2-tier" hidden></div>
+          <div class="readiness-prob" id="rc-v2-prediction" hidden></div>
+          <div class="readiness-bar-track"><span class="readiness-bar-fill" id="rc-v2-bar-fill" style="width:0%"></span><span class="rc-v2-bar-fill-green" id="rc-v2-bar-fill-green" style="width:0%"></span><div class="readiness-bar-mark" aria-hidden="true" style="left:62.5%"></div></div>
+          <div class="readiness-range"><span id="rc-v2-delta">&mdash;</span><span>pass mark <b id="rc-v2-passmark">720</b></span></div>
+          <div class="readiness-traj" id="rc-v2-trajectory" hidden></div>
+          <div class="rc-v2-stamp" aria-hidden="true"><span class="txt">Exam ready</span><svg width="120" height="12" viewBox="0 0 120 12" preserveAspectRatio="none"><path d="M3,7 Q18,2 33,7 Q48,12 63,6 Q78,1 93,7 Q108,12 117,6" fill="none" stroke-width="3" stroke-linecap="round"></path></svg></div>
+          <div class="rc-v2-confetti" aria-hidden="true"></div>
+        </div>
       </div>
 
-      <div class="stat-row reveal" style="--d:1">
-        <div class="stat-card">
-          <div class="stat-info">
-            <div class="stat-label">Today</div>
-            <div class="stat-big"><span id="mc-today-done">0</span> <span class="mini-sub">/ <span id="mc-today-goal">20</span></span></div>
-            <div class="stat-sub" id="mc-today-sub">daily goal</div>
+      <!-- CELL 2 · recommended next → applyPreset('focused'). #pl-* filled by
+           renderBentoRecommended(). -->
+      <button type="button" class="tile lift tile-recommend cell-recommend reveal" style="--d:2" id="primaryLaunch" onclick="applyPreset('focused')">
+        <span class="rc-min"><b id="pl-min">15</b><span>min</span></span>
+        <span class="rc-body">
+          <span class="rc-tag">Recommended next</span>
+          <span class="rc-title" id="pl-title">15-min Weak Spots</span>
+          <span class="rc-meta" id="pl-meta">10 questions, exam level, your weakest topic</span>
+        </span>
+        <span class="rc-go" aria-hidden="true">&rarr;</span>
+      </button>
+
+      <!-- CELL 3 · momentum (count-up + ring). #mo* + #mc-* dual ids: mc-* keep
+           renderHeroV2MiniCards()'s contract alive; mo* drive the ring/stats.
+           Filled by renderBentoMomentum(). -->
+      <section class="tile lift tile-momentum cell-momentum reveal" style="--d:3">
+        <div class="mo-top">
+          <h3 class="tile-title">Today's <i>momentum</i></h3>
+        </div>
+        <div class="mo-ring-row">
+          <div class="mo-ring">
+            <svg width="74" height="74" viewBox="0 0 74 74"><circle class="track" cx="37" cy="37" r="31" fill="none" stroke-width="7"/><circle class="fill" id="moFill" cx="37" cy="37" r="31" fill="none" stroke-width="7"/></svg>
+            <div class="ctr"><b id="moPct">0</b><span>of goal</span></div>
+          </div>
+          <div class="mo-stats">
+            <div class="mo-stat"><span class="n mono"><span id="moDone">0</span>/<span id="moGoal">20</span></span><span class="k">questions today</span></div>
+            <div class="mo-stat"><span class="n mono" id="moStreak">0</span><span class="k">day streak, best <span id="moBest">0</span></span></div>
           </div>
         </div>
-        <div class="stat-card">
-          <div class="stat-info">
-            <div class="stat-label">Streak</div>
-            <div class="stat-big"><span id="mc-streak-num">0</span> <span class="mini-sub">days</span></div>
-            <div class="stat-sub" id="mc-streak-sub">longest &middot; 0 days</div>
-          </div>
+        <div class="mo-resume" id="moResume"></div>
+      </section>
+
+      <!-- CELL 4 · quick-start. Warmup / Daily Challenge / Drill Mistakes.
+           #grp-quick built by renderBentoQuickStart() (Drill Mistakes hidden
+           when wrong-bank empty). -->
+      <section class="tile lift cell-quick reveal" style="--d:3">
+        <div class="tile-head">
+          <div><h3 class="tile-title">Quick start</h3><p class="tile-sub" id="quick-note">A daily habit that keeps your streak</p></div>
+          <span class="meta" id="quick-range">3-5 min</span>
         </div>
-      </div>
-
-      <!-- What-if attribution (renderReadinessCardV2 fills #rc-v2-whatif-row
-           + toggles #rc-v2-whatif.hidden; getElementById is position-free) -->
-      <div class="drill-section reveal" style="--d:2" id="rc-v2-whatif" hidden>
-        <div class="drill-header">Drill these to move your score</div>
-        <div class="drill-chips dgh-whatif-row" id="rc-v2-whatif-row" style="margin-top:9px"></div>
-      </div>
-
-      <!-- Baseline Diagnostic surface. renderDiagnosticSurface() swaps
-           #diagnostic-cta-card <-> #pass-plan-tile via .is-hidden.
-           ids/classes/onclicks preserved (diagnostic-cta-title kept for
-           _renderCertAwareCopy Security+ swap). -->
-      <div class="card diag-card reveal is-hidden" style="--d:3" id="diagnostic-cta-card">
-        <div class="card-eyebrow"><span class="tag tag-new">New</span> Recommended</div>
-        <div class="card-title diagnostic-cta-title">Where do you stand on N10-009?</div>
-        <div class="card-desc">Take a 20-question Baseline Diagnostic. Get your pass probability, weak-domain priorities, and your first review cards, all in one go.</div>
-        <a class="diag-skip" href="#" onclick="dismissDiagnosticCta(event)">Skip for now, I'd rather just practise</a>
-        <div class="diag-stats">
-          <div class="diag-stat"><div class="diag-stat-num">20</div><div class="diag-stat-label">Questions</div></div>
-          <div class="diag-stat"><div class="diag-stat-num">~30</div><div class="diag-stat-label">Minutes</div></div>
-          <div class="diag-stat"><div class="diag-stat-num">5</div><div class="diag-stat-label">Domains</div></div>
+        <div class="opts" id="grp-quick">
+          <button type="button" class="opt" onclick="applyPreset('warmup')"><span class="on">5-min Warmup</span><span class="od">5 questions, foundational</span></button>
+          <button type="button" class="opt" onclick="startDailyChallenge()"><span class="on">Daily Challenge</span><span class="od">1 question, about a minute, streak +1</span></button>
+          <button type="button" class="opt is-hidden" id="bento-wrong-opt" onclick="startWrongDrill()"><span class="on">Drill Mistakes</span><span class="od" id="bento-wrong-sub">0 wrong answers saved</span></button>
         </div>
-        <button type="button" class="btn-primary" onclick="startDiagnostic()">Take the diagnostic</button>
-      </div>
-      <div class="card diag-card reveal is-hidden" style="--d:3" id="pass-plan-tile">
-        <div class="card-eyebrow">Baseline diagnostic</div>
-        <div class="card-title">Your Pass Plan is active</div>
-        <div class="card-desc" id="pass-plan-tile-sub">Diagnostic complete</div>
-        <div class="plan-header" style="margin-top:14px;align-items:center;justify-content:flex-start;gap:18px">
-          <button type="button" class="btn-primary" style="margin-top:0" onclick="event.preventDefault();viewPassPlan()">View report</button>
-          <a href="#" class="pass-plan-tile-retake" id="pass-plan-tile-retake" onclick="event.preventDefault();retakeDiagnostic()" style="color:var(--text-dim);text-decoration:none;font-size:12px">Retake in 7d</a>
+      </section>
+
+      <!-- CELL 5 · practice. Deep Scan / 30Q / 45Q. -->
+      <section class="tile lift cell-practice reveal" style="--d:4">
+        <div class="tile-head">
+          <div><h3 class="tile-title">Practice</h3><p class="tile-sub" id="prac-note">Focused study on your weak spots</p></div>
+          <span class="meta" id="prac-range">10-30 min</span>
         </div>
-      </div>
-
-      <!-- v4.81.18 / v4.81.23: Consolidated Today's Plan card. Painted by
-           renderTodayPlan() which reads weak + stale signals. Pulled out
-           of #today-section into the left column per the codex mockup;
-           renderTodayPlan toggles its own .is-hidden (position-free). -->
-      <div id="today-plan" class="card plan-card today-plan dgh-plan reveal is-hidden" style="--d:4" role="region" aria-label="Today's study plan"></div>
-
-    </div>
-
-    <!-- ── RIGHT COLUMN ─────────────────────────────────────── -->
-    <div class="col-side">
-
-      <div class="card readiness-card reveal" style="--d:1" id="readiness-card-v2">
-        <div class="readiness-eyebrow">Exam readiness &middot; scaled 100&ndash;900</div>
-        <div class="readiness-score"><span class="rc-v2-numwrap"><span class="rc-v2-glow" aria-hidden="true"></span><svg class="rc-v2-ring" viewBox="0 0 600 320" preserveAspectRatio="none" aria-hidden="true"><path d="M306,26 C470,16 590,86 582,164 C574,250 432,300 292,296 C150,292 20,232 24,156 C28,78 152,30 318,32" fill="none" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"></path></svg><span id="rc-v2-num">&mdash;</span></span><span>out of 900</span></div>
-        <div class="readiness-tier" id="rc-v2-tier" hidden></div>
-        <div class="readiness-prob" id="rc-v2-prediction" hidden></div>
-        <div class="readiness-bar-track"><span class="readiness-bar-fill" id="rc-v2-bar-fill" style="width:0%"></span><span class="rc-v2-bar-fill-green" id="rc-v2-bar-fill-green" style="width:0%"></span><div class="readiness-bar-mark" aria-hidden="true" style="left:62.5%"></div></div>
-        <div class="readiness-range"><span id="rc-v2-delta">&mdash;</span><span>pass mark <b id="rc-v2-passmark">720</b></span></div>
-        <div class="readiness-traj" id="rc-v2-trajectory" hidden></div>
-        <div class="rc-v2-stamp" aria-hidden="true"><span class="txt">Exam ready</span><svg width="120" height="12" viewBox="0 0 120 12" preserveAspectRatio="none"><path d="M3,7 Q18,2 33,7 Q48,12 63,6 Q78,1 93,7 Q108,12 117,6" fill="none" stroke-width="3" stroke-linecap="round"></path></svg></div>
-        <div class="rc-v2-confetti" aria-hidden="true"></div>
-      </div>
-
-      <!-- Next best move (decision-tree CTA; renderNextBestMove fills the
-           sub-ids + sets #hero-v2-cta-btn onclick + toggles .hidden) -->
-      <div class="card nbm-card reveal" style="--d:2" id="hero-v2-cta" hidden>
-        <div class="card-eyebrow"><span id="hero-v2-cta-icon" aria-hidden="true"></span> Next best move</div>
-        <div class="nbm-header">
-          <div>
-            <div class="card-title" id="hero-v2-cta-title">&mdash;</div>
-            <div class="card-desc" id="hero-v2-cta-sub">&mdash;</div>
-            <div class="card-desc" id="hero-v2-cta-reason" style="margin-top:5px;opacity:.85"></div>
-          </div>
-          <button type="button" class="btn-white" id="hero-v2-cta-btn">Start</button>
+        <div class="opts cols2" id="grp-practice">
+          <button type="button" class="opt" onclick="applyPreset('grind')"><span class="on">20-min Deep Scan</span><span class="od">20 questions, exam level, mixed</span></button>
+          <button type="button" class="opt" onclick="applyPreset('bulk30')"><span class="on">30 Questions</span><span class="od">Marathon mixed, about 25 min</span></button>
+          <button type="button" class="opt" onclick="applyPreset('bulk45')"><span class="on">45 Questions</span><span class="od">Marathon mixed, about 38 min</span></button>
         </div>
-      </div>
+      </section>
 
-      <!-- Spaced Repetition daily review. renderSrReviewCard() fills
-           #sr-review-card-headline + #sr-review-card-stats, toggles .is-hidden. -->
-      <div class="card sr-card reveal is-hidden" style="--d:3" id="sr-review-card">
-        <div class="card-eyebrow">Spaced repetition &middot; daily review</div>
-        <div class="sr-header">
-          <div>
-            <div class="card-title" id="sr-review-card-headline">0 cards due</div>
-            <div class="card-desc">Re-encounter what you have forgotten. Each card comes back on a growing interval.</div>
-            <div class="sr-meta" id="sr-review-card-stats"></div>
-          </div>
-          <button type="button" class="btn-ghost" id="sr-review-start-btn" onclick="startSrReview()">Start review</button>
+      <!-- CELL 6 · exam simulation. 60-Q SIM / Full Exam. -->
+      <section class="tile lift tile-exam cell-exam reveal" style="--d:4">
+        <div class="tile-head">
+          <div><h3 class="tile-title">Exam <i>simulation</i></h3><p class="tile-sub" id="exam-note">Pressure-test your readiness, scored 100-900</p></div>
+          <span class="meta" id="exam-range">60-90 min</span>
         </div>
-      </div>
-
-      <!-- Daily Challenge card (conditional). renderDailyChallengeCard()
-           fills innerHTML + toggles .is-hidden. Pulled out of #today-section
-           into the right column per the codex mockup (position-free). -->
-      <div id="daily-challenge-card" class="card challenge-card daily-challenge-card reveal is-hidden" style="--d:4" role="region" aria-label="Daily Challenge"></div>
-
-      <!-- Continue anchor (v5.5.5) — the rail's ALWAYS-present bottom.
-           Founder spotted dead space below Daily Challenge: on a low-data
-           account #hero-v2-cta (NBM) + #sr-review-card collapse while the
-           tall left column keeps going. renderContinueCard() reads existing
-           signals only (loadHistory · getStreak · getTodayQuestionCount ·
-           buildSessionPlan · loadWrongBank) and is ALWAYS called, never
-           collapsed away, so the rail can't shrink. Net-new additive DOM;
-           zero existing id/onclick touched; getElementById is position-
-           free so no other render fn moves. Last in .col-side by design.
-           (Comment intentionally avoids the literal hidden-class token so
-           the v5.5.5 tombstone regex cannot false-trip on prose.) -->
-      <div class="card continue-card reveal" style="--d:5" id="continue-card" data-state="fresh" role="region" aria-label="Continue where you left off">
-        <div class="cc-eyebrow">
-          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 12h13M12 5l7 7-7 7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          <span id="cc-eyebrow-t">Pick up where you left off</span>
+        <div class="opts cols2" id="grp-exam">
+          <button type="button" class="opt" onclick="applyPreset('bulk60')"><span class="on">60-Question SIM</span><span class="od">Closest to the real thing, no timer</span></button>
+          <button type="button" class="opt" onclick="startExam()"><span class="on">Full Exam Simulator</span><span class="od">90 questions, 90-min timer, scored 100-900</span></button>
         </div>
-        <div class="cc-momentum" id="cc-momentum">
-          <div class="cc-m"><span class="cc-mn is-accent" id="cc-m1n">0</span><span class="cc-ml">day streak</span></div>
-          <div class="cc-m"><span class="cc-mn" id="cc-m2n">0</span><span class="cc-ml">done today</span></div>
-          <div class="cc-m"><span class="cc-mn" id="cc-m3n">0</span><span class="cc-ml">questions</span></div>
+      </section>
+
+      <!-- CELL 7 · custom quiz launcher → opens the modal below (real Generate
+           flow). onclick calls _jumpToCustomQuiz() which opens
+           #custom-quiz-section (already a portal-to-body modal mechanism). -->
+      <button type="button" class="tile lift tile-custom cell-custom reveal" style="--d:5" id="openCustom" onclick="_jumpToCustomQuiz()">
+        <span class="cu-ico" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg></span>
+        <span>
+          <span class="tile-title" style="display:block;margin-top:13px">Build a <i>custom quiz</i></span>
+          <span class="tile-sub">Tune topic, difficulty and length, then launch.</span>
+        </span>
+        <span class="cu-foot">Configure<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+      </button>
+
+      <!-- CELL 8 · domain quick-pick (N10-009 weights + mastery, → applyDomainPreset).
+           #domainGrid built by renderBentoDomains() (weights from DOMAIN_WEIGHTS,
+           mastery aggregated as renderSetupDomainGrid does). -->
+      <section class="tile lift cell-domains reveal" style="--d:6">
+        <div class="tile-head">
+          <div><h3 class="tile-title">Drill by <i>domain</i></h3><p class="tile-sub">Exam weighting, 10 questions each</p></div>
         </div>
-        <div class="cc-body">
-          <div class="cc-headline" id="cc-headline">&mdash;</div>
-          <div class="cc-context" id="cc-context">&mdash;</div>
-        </div>
-        <button type="button" class="cc-action" id="cc-action">
-          <span id="cc-action-t">Start</span>
-          <span class="cc-arrow" aria-hidden="true">&rarr;</span>
-        </button>
-      </div>
+        <div class="ld-grid" id="domainGrid"></div>
+      </section>
 
     </div>
-  </div>
+  </main>
 
-  <!-- session picker — v3 reshuffle. Pulled OUT of the 372px .col-side rail
-       into a FULL-WIDTH horizontal board (.col-side overrides forced it
-       vertical though it was designed 3-col). Same full-width treatment
-       v5.4.0 gave the By-Domain matrix. Every onclick + render-fn id
-       (#modes-dc-tile / #modes-dc-sub / #modes-wrong-tile / #modes-wrong-sub
-       / #modes-strict-checkbox) + the .dgh-db cert-aware contract + exactly
-       3 .dgh-grp tier strings preserved; the rail-wrapper class is dropped
-       (it is now a full-width .ch-wrap sibling, not a side-rail card). -->
-  <div class="dgh-sess reveal" style="--d:0" id="modes-ladder" role="region" aria-label="Pick your session">
-    <div class="dgh-sess-head">
-      <div>
-        <div class="dgh-sec-k">&#167; 01</div>
-        <div class="dgh-sec-t">Pick your <i>session</i></div>
-      </div>
-      <p class="dgh-sub">A quick habit, focused study, or a full exam. Pick what fits the time you have.</p>
-    </div>
-
-    <div class="dgh-board">
-      <div class="dgh-grp">
-        <div class="dgh-grp-h"><span class="t">Quick &middot; 3-5 min</span><span class="d">Daily habit &middot; keeps your streak</span></div>
-        <div class="dgh-opts">
-          <button type="button" class="dgh-opt" onclick="applyPreset('warmup')"><span class="on">5-min Warmup</span><span class="od">5 Qs &middot; Foundational</span></button>
-          <button type="button" class="dgh-opt" id="modes-dc-tile" onclick="startDailyChallenge()"><span class="on">Daily Challenge</span><span class="od" id="modes-dc-sub">1 Q &middot; ~1 min &middot; streak +1</span></button>
-          <button type="button" class="dgh-opt is-hidden" id="modes-wrong-tile" onclick="startWrongDrill()"><span class="on">Drill Mistakes</span><span class="od" id="modes-wrong-sub">0 wrong answers saved</span></button>
-        </div>
-      </div>
-
-      <div class="dgh-grp">
-        <div class="dgh-grp-h"><span class="t">Practice &middot; 10-30 min</span><span class="d">Focused study &middot; fix your weak spots</span></div>
-        <div class="dgh-opts">
-          <button type="button" class="dgh-opt" onclick="applyPreset('focused')"><span class="on">15-min Weak Spots</span><span class="od">10 Qs &middot; Exam level &middot; your weakest topic</span></button>
-          <button type="button" class="dgh-opt" onclick="applyPreset('grind')"><span class="on">20-min Deep Scan</span><span class="od">20 Qs &middot; Exam level &middot; mixed</span></button>
-          <button type="button" class="dgh-opt" onclick="applyPreset('bulk30')"><span class="on">30 Questions</span><span class="od">Marathon mixed &middot; ~25 min</span></button>
-          <button type="button" class="dgh-opt" onclick="applyPreset('bulk45')"><span class="on">45 Questions</span><span class="od">Marathon mixed &middot; ~38 min</span></button>
-          <button type="button" class="dgh-opt" onclick="_jumpToCustomQuiz()"><span class="on">Custom Quiz</span><span class="od">Tune topic, difficulty, length</span></button>
-          <button type="button" class="dgh-opt" style="opacity:0;pointer-events:none" tabindex="-1" aria-hidden="true"></button>
-        </div>
-      </div>
-
-      <div class="dgh-grp">
-        <div class="dgh-grp-h"><span class="t">Exam simulation &middot; 60-90 min</span><span class="d">Pressure-test your readiness &middot; scored 100-900</span></div>
-        <div class="dgh-opts">
-          <button type="button" class="dgh-opt exam" onclick="applyPreset('bulk60')"><span class="on">60-Question SIM</span><span class="od">Closest to the real thing without the timer</span></button>
-          <button type="button" class="dgh-opt exam" onclick="startExam()"><span class="on">Full Exam Simulator</span><span class="od">90 questions &middot; 90-min timer &middot; scored 100-900</span></button>
-          <button type="button" class="dgh-opt" style="opacity:0;pointer-events:none" tabindex="-1" aria-hidden="true"></button>
-        </div>
-      </div>
-    </div>
-
-    <div class="dgh-dbd-wrap">
-      <div class="dgh-grp-h dbd-h"><span class="t">Drill by domain</span><span class="d">Exam weighting &middot; 10 Qs each</span></div>
-      <div class="dgh-dbd">
-        <button type="button" class="dgh-db" data-domain-idx="1" onclick="applyDomainPreset('concepts')" title="10 Qs &middot; Exam Level &middot; all 13 Networking Concepts topics"><span class="dbk">1.0 &middot; 23%</span><span class="dbn">Networking Concepts</span><span class="dbm">10 Qs</span></button>
-        <button type="button" class="dgh-db" data-domain-idx="2" onclick="applyDomainPreset('implementation')" title="10 Qs &middot; Exam Level &middot; all 13 Network Implementation topics"><span class="dbk">2.0 &middot; 20%</span><span class="dbn">Network Implementation</span><span class="dbm">10 Qs</span></button>
-        <button type="button" class="dgh-db" data-domain-idx="3" onclick="applyDomainPreset('operations')" title="10 Qs &middot; Exam Level &middot; all 7 Network Operations topics"><span class="dbk">3.0 &middot; 19%</span><span class="dbn">Network Operations</span><span class="dbm">10 Qs</span></button>
-        <button type="button" class="dgh-db" data-domain-idx="4" onclick="applyDomainPreset('security')" title="10 Qs &middot; Exam Level &middot; all 11 Network Security topics"><span class="dbk">4.0 &middot; 14%</span><span class="dbn">Network Security</span><span class="dbm">10 Qs</span></button>
-        <button type="button" class="dgh-db" data-domain-idx="5" onclick="applyDomainPreset('troubleshooting')" title="10 Qs &middot; Exam Level &middot; all 6 Network Troubleshooting topics"><span class="dbk">5.0 &middot; 24%</span><span class="dbn">Network Troubleshooting</span><span class="dbm">10 Qs</span></button>
-      </div>
-    </div>
-
-    <div class="dgh-foot">
-      <label class="dgh-strict" for="modes-strict-checkbox" title="Locked Question Order, No Flagging, No Navigator">
-        <input type="checkbox" id="modes-strict-checkbox" onchange="setHardcoreMode(this.checked); document.getElementById('hardcore-checkbox').checked = this.checked;">
-        <span class="box" aria-hidden="true"></span>
-        <span><b>Strict Mode</b> &middot; locked order &middot; no flagging &middot; no navigator</span>
-      </label>
-      <div class="custom-row">
-        <span class="custom-label">Custom Quiz &middot; Topic, Difficulty &amp; Count</span>
-        <button type="button" class="custom-config" onclick="_jumpToCustomQuiz()">Configure &rarr;</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- By domain — full-width data matrix (taste-skill · dashboards: a wide
-       5-domain table needs room; trapped in .col-main it clipped). Cert-aware
-       (DOMAIN_WEIGHTS N10-009 + SY0-701). renderSetupDomainGrid() fills
-       #setup-domain-grid + toggles #domain-grid-section .is-hidden; ids preserved. -->
-  <div class="domain-section home-domain reveal is-hidden" style="--d:0" id="domain-grid-section">
-    <div class="domain-header">
-      <h3>By Domain</h3>
-      <span class="desc">Exam weighting and where you stand in each.</span>
-    </div>
-    <div id="setup-domain-grid" class="domain-grid dgh-dom-grid" role="list" aria-label="Domain mastery overview">
-      <!-- Filled by renderSetupDomainGrid() -->
-    </div>
-    <div class="custom-row" style="margin-top:14px"><span class="custom-label"><b>Custom Quiz</b> &middot; topic, difficulty &amp; count</span><button type="button" class="custom-config" onclick="_jumpToCustomQuiz()">Configure &rarr;</button></div>
-  </div>
-
-  <!-- Today section — legacy/conditional stubs kept grouped + CSS-clipped.
-       #today-plan + #daily-challenge-card were promoted into the grid above;
-       renderTodaySection() still manages this wrapper's visibility and the
-       #daily-goal-card ring is still written by finish()/submitExam(). -->
-  <div id="today-section" class="today-section is-hidden" role="region" aria-label="Today's activity">
-    <div id="daily-goal-card" class="daily-goal-card" style="margin-bottom:0">
-      <div class="dg-ring-wrap">
-        <svg class="dg-ring" width="72" height="72" viewBox="0 0 72 72" aria-hidden="true">
-          <circle class="dg-ring-track" cx="36" cy="36" r="30" />
-          <circle class="dg-ring-fill" id="dg-ring-fill" cx="36" cy="36" r="30" />
-        </svg>
-        <div class="dg-ring-center"><span id="dg-ring-pct">0%</span></div>
-      </div>
-      <div class="dg-info">
-        <div class="dg-title">DAILY GOAL</div>
-        <div class="dg-progress"><strong id="dg-progress-count">0</strong> / <span id="dg-goal-num">20</span> questions today</div>
-        <div class="dg-msg" id="dg-msg">Let's get started today</div>
-      </div>
-      <button class="dg-edit-btn" onclick="editDailyGoal()" aria-label="Edit daily question goal" title="Edit goal">&#9881;&#65039;</button>
-    </div>
-    <div id="streak-defender" class="streak-defender is-hidden" role="status" aria-live="polite"></div>
-  </div>
-
-  <!-- v4.76.0: legacy hidden wrong-preset-tile + sub kept so existing
-       renderWrongBankBtn() code still works without modification. -->
-  <button type="button" id="wrong-preset-tile" class="is-hidden" onclick="startWrongDrill()" hidden></button>
-  <span id="wrong-preset-sub" hidden></span>
-  <div id="marathon-section" class="ed-section is-hidden" hidden></div>
-
-  <!-- Hidden legacy hero + readiness stubs (CSS-clipped). finish()/
-       submitExam()/renderTodaySection still write them; do not remove. -->
-  <div class="hero is-hidden">
-    <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()" aria-label="Toggle light/dark theme">&#9728;&#65039;</button>
-    <span class="hero-icon">&#9889;</span>
-    <h1>Network+ AI Quiz</h1>
-    <p>AI-generated MCQs every session. Never the same quiz twice.</p>
-    <span id="version-badge" style="display:inline-block;margin-top:10px;font-size:11px;font-weight:700;letter-spacing:.08em;color:var(--accent-light);background:color-mix(in oklab,var(--accent) 12%,transparent);border:1px solid color-mix(in oklab,var(--accent) 30%,transparent);padding:3px 10px;border-radius:99px;cursor:default;user-select:none">v7.16.0</span>
-    <div id="streak-badge" class="streak-badge"></div>
-    <div id="stats-card" class="hero-stats-strip is-hidden">
-      <div class="stats-grid" id="stats-grid"></div>
-    </div>
-  </div>
-  <div id="readiness-card" class="readiness-card">
-    <h3 style="margin-bottom:10px">EXAM READINESS</h3>
-    <div class="readiness-top">
-      <div class="readiness-score-block">
-        <span class="readiness-num" id="readiness-num">&#8212;</span>
-        <span class="readiness-denom">/ 900</span>
-      </div>
-      <span class="readiness-badge" id="readiness-badge"></span>
-    </div>
-    <div class="readiness-bar-wrap">
-      <div class="readiness-bar-fill" id="readiness-bar-fill" style="width:0%"></div>
-      <div class="readiness-pass-tick" aria-hidden="true" style="left:62.5%"></div>
-    </div>
-    <div class="readiness-prediction" id="readiness-prediction" hidden></div>
-    <div class="readiness-action" id="readiness-action">Complete your first quiz to see your readiness score.</div>
-    <div class="readiness-exam-row" id="readiness-exam-row"></div>
-    <div class="readiness-whatif" id="readiness-whatif" hidden>
-      <div class="readiness-whatif-label">📊 Drill these to move your score</div>
-      <div class="readiness-whatif-row" id="readiness-whatif-row"></div>
-    </div>
-    <div class="readiness-trajectory" id="readiness-trajectory" hidden></div>
-  </div>
-
-  <!-- v4.79.0: §04 Custom Quiz section heading retired per Codex round-3.
-       v4.80.0: tried hiding the <details> by default (cq-collapsed class)
-       per Codex round-4 but reverted — too many downstream tests + flows
-       depend on the form being visible by default. The Mode Ladder's
-       "Custom Quiz" tile still calls _jumpToCustomQuiz to scroll/open. -->
+  <!-- ════════════════════════════════════════════════════════════════
+       CUSTOM QUIZ MODAL · preserves the REAL generation flow.
+       This IS the live #custom-quiz-section <details> (the working
+       configurator). Its REAL inner controls — every .chip[data-v], the
+       .cq-mode-card mode cards, #diff-group, #count-group, the
+       prefillDomainTopics pills, and the Generate button onclick="startQuiz()"
+       — are kept VERBATIM so initChips/initTopicGroupMulti (wired at DOM-ready
+       by getElementById/querySelectorAll, which are position-free) still set
+       the globals topic/diff/qCount, and startQuiz() reads them unchanged.
+       The mockup's modal shell classes (.modal-scrim/.modal/.dw-head/.dw-body/
+       .dw-foot/.seg/.count-row/.topic-acc/.tchip) are layered around them.
+       _jumpToCustomQuiz() sets .open=true; _cqModalInit portals it to <body>
+       and handles Esc/backdrop close — that mechanism is untouched. The modal
+       lives inside #page-setup so the scoped CSS reaches it. -->
   <details class="card custom-quiz-section" id="custom-quiz-section">
     <summary class="custom-quiz-summary">Custom Quiz <span class="adv-hint">&middot; Topic, Difficulty &amp; Count</span></summary>
     <div class="custom-quiz-body">
@@ -750,9 +585,167 @@
       </div>
     </div>
   </details>
-  </div><!-- /ch-wrap : codex-home 2-column rebuild. Closes the .ch-wrap
-       opened above; the Custom Quiz <details> sits full-width below the
-       grid inside it. page-setup is structurally balanced. -->
+
+  <!-- ════════════════════════════════════════════════════════════════
+       HIDDEN LEGACY STUBS (CSS-clipped). The bento has no slots for these
+       surfaces, but other code still writes to their ids — so they are kept
+       here as no-op render targets (grouped, .is-hidden) rather than deleted,
+       to avoid runtime errors AND dead-function churn. The render fns
+       (renderHeroV2MiniCards via #mc-* ABOVE in the momentum cell; the rest
+       below) still find their targets and no-op safely. Visible layout only
+       was removed. -->
+  <div class="bento-legacy-stubs is-hidden" aria-hidden="true" hidden>
+
+    <!-- renderHeroV2 sets greeting/eyebrow/lede on these (kept callable). -->
+    <div id="setup-hero-v2">
+      <div id="hero-v2-eyebrow">&mdash;</div>
+      <h1 id="hero-v2-display">Good afternoon, <span class="name">Simi.</span></h1>
+      <p id="hero-v2-lede">&mdash;</p>
+    </div>
+
+    <!-- renderHeroV2MiniCards Today mini-card stub (#mc-* — note the bento
+         momentum cell uses #mo*; these keep the legacy fn fully callable). -->
+    <div id="mc-today-done">0</div><div id="mc-today-goal">20</div><div id="mc-today-sub">daily goal</div>
+    <div id="mc-streak-num">0</div><div id="mc-streak-sub">longest &middot; 0 days</div>
+
+    <!-- renderReadinessCardV2 what-if attribution stub (#rc-v2-whatif* — the
+         bento surfaces what-if via the domain tile instead). -->
+    <div id="rc-v2-whatif" hidden><div id="rc-v2-whatif-row"></div></div>
+
+    <!-- Baseline Diagnostic surface (renderDiagnosticSurface swaps these). -->
+    <div class="is-hidden" id="diagnostic-cta-card">
+      <div class="diagnostic-cta-title">Where do you stand on N10-009?</div>
+      <a href="#" onclick="dismissDiagnosticCta(event)">Skip</a>
+      <button type="button" onclick="startDiagnostic()">Take the diagnostic</button>
+    </div>
+    <div class="is-hidden" id="pass-plan-tile">
+      <div id="pass-plan-tile-sub">Diagnostic complete</div>
+      <button type="button" onclick="event.preventDefault();viewPassPlan()">View report</button>
+      <a href="#" id="pass-plan-tile-retake" onclick="event.preventDefault();retakeDiagnostic()">Retake in 7d</a>
+    </div>
+
+    <!-- renderTodayPlan paints this (#today-plan). -->
+    <div id="today-plan" class="is-hidden" role="region" aria-label="Today's study plan"></div>
+
+    <!-- renderNextBestMove fills these (#hero-v2-cta*). -->
+    <div id="hero-v2-cta" hidden>
+      <span id="hero-v2-cta-icon" aria-hidden="true"></span>
+      <div id="hero-v2-cta-title">&mdash;</div>
+      <div id="hero-v2-cta-sub">&mdash;</div>
+      <div id="hero-v2-cta-reason"></div>
+      <button type="button" id="hero-v2-cta-btn">Start</button>
+    </div>
+
+    <!-- renderSrReviewCard fills these (#sr-review-card*). -->
+    <div class="is-hidden" id="sr-review-card">
+      <div id="sr-review-card-headline">0 cards due</div>
+      <div id="sr-review-card-stats"></div>
+      <button type="button" id="sr-review-start-btn" onclick="startSrReview()">Start review</button>
+    </div>
+
+    <!-- renderDailyChallengeCard fills this (#daily-challenge-card). -->
+    <div id="daily-challenge-card" class="is-hidden" role="region" aria-label="Daily Challenge"></div>
+
+    <!-- renderContinueCard fills these (#continue-card + #cc-*). -->
+    <div id="continue-card" data-state="fresh" role="region" aria-label="Continue where you left off">
+      <span id="cc-eyebrow-t">Pick up where you left off</span>
+      <div id="cc-momentum">
+        <span id="cc-m1n">0</span><span id="cc-m2n">0</span><span id="cc-m3n">0</span>
+      </div>
+      <div id="cc-headline">&mdash;</div>
+      <div id="cc-context">&mdash;</div>
+      <button type="button" id="cc-action"><span id="cc-action-t">Start</span></button>
+    </div>
+
+    <!-- Legacy session-picker mode-ladder stubs. renderWrongBankBtn /
+         renderDailyChallengeCard / the daily-challenge sub still write
+         #modes-dc-tile/#modes-dc-sub/#modes-wrong-tile/#modes-wrong-sub.
+         #modes-strict-checkbox keeps the strict-mode action reachable here;
+         the bento strict toggle proxies to it. -->
+    <div id="modes-ladder" role="region" aria-label="Pick your session">
+      <button type="button" id="modes-dc-tile" onclick="startDailyChallenge()"><span id="modes-dc-sub">1 Q &middot; ~1 min &middot; streak +1</span></button>
+      <button type="button" class="is-hidden" id="modes-wrong-tile" onclick="startWrongDrill()"><span id="modes-wrong-sub">0 wrong answers saved</span></button>
+      <label for="modes-strict-checkbox">
+        <input type="checkbox" id="modes-strict-checkbox" onchange="setHardcoreMode(this.checked); document.getElementById('hardcore-checkbox').checked = this.checked;">
+        <span><b>Strict Mode</b> &middot; locked order &middot; no flagging &middot; no navigator</span>
+      </label>
+    </div>
+
+    <!-- renderSetupDomainGrid fills #setup-domain-grid + toggles
+         #domain-grid-section. The bento domain tile (#domainGrid) renders its
+         own copy via renderBentoDomains(); this stub keeps the legacy fn
+         callable. -->
+    <div class="is-hidden" id="domain-grid-section">
+      <div id="setup-domain-grid" role="list" aria-label="Domain mastery overview"></div>
+    </div>
+
+  <!-- Today section — legacy/conditional stubs kept grouped + CSS-clipped.
+       renderTodaySection() still manages this wrapper's visibility and the
+       #daily-goal-card ring is still written by finish()/submitExam(). -->
+  <div id="today-section" class="today-section is-hidden" role="region" aria-label="Today's activity">
+    <div id="daily-goal-card" class="daily-goal-card" style="margin-bottom:0">
+      <div class="dg-ring-wrap">
+        <svg class="dg-ring" width="72" height="72" viewBox="0 0 72 72" aria-hidden="true">
+          <circle class="dg-ring-track" cx="36" cy="36" r="30" />
+          <circle class="dg-ring-fill" id="dg-ring-fill" cx="36" cy="36" r="30" />
+        </svg>
+        <div class="dg-ring-center"><span id="dg-ring-pct">0%</span></div>
+      </div>
+      <div class="dg-info">
+        <div class="dg-title">DAILY GOAL</div>
+        <div class="dg-progress"><strong id="dg-progress-count">0</strong> / <span id="dg-goal-num">20</span> questions today</div>
+        <div class="dg-msg" id="dg-msg">Let's get started today</div>
+      </div>
+      <button class="dg-edit-btn" onclick="editDailyGoal()" aria-label="Edit daily question goal" title="Edit goal">&#9881;&#65039;</button>
+    </div>
+    <div id="streak-defender" class="streak-defender is-hidden" role="status" aria-live="polite"></div>
+  </div>
+
+  <!-- v4.76.0: legacy hidden wrong-preset-tile + sub kept so existing
+       renderWrongBankBtn() code still works without modification. -->
+  <button type="button" id="wrong-preset-tile" class="is-hidden" onclick="startWrongDrill()" hidden></button>
+  <span id="wrong-preset-sub" hidden></span>
+  <div id="marathon-section" class="ed-section is-hidden" hidden></div>
+
+  <!-- Hidden legacy hero + readiness stubs (CSS-clipped). finish()/
+       submitExam()/renderTodaySection still write them; do not remove. -->
+  <div class="hero is-hidden">
+    <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()" aria-label="Toggle light/dark theme">&#9728;&#65039;</button>
+    <span class="hero-icon">&#9889;</span>
+    <h1>Network+ AI Quiz</h1>
+    <p>AI-generated MCQs every session. Never the same quiz twice.</p>
+    <span id="version-badge" style="display:inline-block;margin-top:10px;font-size:11px;font-weight:700;letter-spacing:.08em;color:var(--accent-light);background:color-mix(in oklab,var(--accent) 12%,transparent);border:1px solid color-mix(in oklab,var(--accent) 30%,transparent);padding:3px 10px;border-radius:99px;cursor:default;user-select:none">v7.16.0</span>
+    <div id="streak-badge" class="streak-badge"></div>
+    <div id="stats-card" class="hero-stats-strip is-hidden">
+      <div class="stats-grid" id="stats-grid"></div>
+    </div>
+  </div>
+  <div id="readiness-card" class="readiness-card">
+    <h3 style="margin-bottom:10px">EXAM READINESS</h3>
+    <div class="readiness-top">
+      <div class="readiness-score-block">
+        <span class="readiness-num" id="readiness-num">&#8212;</span>
+        <span class="readiness-denom">/ 900</span>
+      </div>
+      <span class="readiness-badge" id="readiness-badge"></span>
+    </div>
+    <div class="readiness-bar-wrap">
+      <div class="readiness-bar-fill" id="readiness-bar-fill" style="width:0%"></div>
+      <div class="readiness-pass-tick" aria-hidden="true" style="left:62.5%"></div>
+    </div>
+    <div class="readiness-prediction" id="readiness-prediction" hidden></div>
+    <div class="readiness-action" id="readiness-action">Complete your first quiz to see your readiness score.</div>
+    <div class="readiness-exam-row" id="readiness-exam-row"></div>
+    <div class="readiness-whatif" id="readiness-whatif" hidden>
+      <div class="readiness-whatif-label">📊 Drill these to move your score</div>
+      <div class="readiness-whatif-row" id="readiness-whatif-row"></div>
+    </div>
+    <div class="readiness-trajectory" id="readiness-trajectory" hidden></div>
+  </div>
+
+  </div><!-- /bento-legacy-stubs : hidden no-op render targets for
+       legacy surfaces the bento has no slot for. Visible layout removed;
+       render fns still find their ids and no-op safely. -->
 
   <!-- v4.80.0: #setup-err relocated OUT of the Custom Quiz <details> per
        Codex round-4 hide-by-default. When the Custom Quiz section is
