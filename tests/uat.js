@@ -7359,6 +7359,59 @@ test('v7.22.0 SR #8: Daily Review settings group in HTML',
   html.includes('sr-size-chip') && html.includes('sr-topup-toggle') && /Daily Review/.test(html));
 test('v7.22.0 SR #8: top-up toggle styled in dg-system',
   (function(){ const dg = read('dg-system.css'); return dg.includes('.sr-topup-toggle'); })());
+// ── v7.23.0 SR enhancements · Phase 4 (#6 review forecast: 7-day projection) ──
+test('v7.23.0 SR #6: buildSrForecast + renderSrForecast helpers defined',
+  /function\s+buildSrForecast\s*\(/.test(js) && /function\s+renderSrForecast\s*\(/.test(js));
+test('v7.23.0 SR #6: forecast is a true projection (reads nextReview off the live queue)',
+  (() => { const b = _fnBody(js, 'buildSrForecast'); return b && /loadSrQueue\(\)/.test(b) && /nextReview/.test(b) && !/getSrDueEntries/.test(b); })());
+test('v7.23.0 SR #6: today bucket uses due-now semantics (nr <= now), matching getSrDueCount',
+  (() => { const b = _fnBody(js, 'buildSrForecast'); return b && /i\s*===\s*0\s*\?\s*nr\s*<=\s*now/.test(b); })());
+test('v7.23.0 SR #6: renderBentoRecommended drives the home mini-forecast strip',
+  (() => { const b = _fnBody(js, 'renderBentoRecommended'); return b && /_renderHomeForecast\(true\)/.test(b) && /_renderHomeForecast\(false\)/.test(b); })());
+test('v7.23.0 SR #6: _renderHomeForecast renders the compact strip into #sr-forecast-home',
+  (() => { const b = _fnBody(js, '_renderHomeForecast'); return b && /sr-forecast-home/.test(b) && /renderSrForecast/.test(b) && /compact:\s*true/.test(b); })());
+test('v7.23.0 SR #6: _srEndReview renders the full forecast on the complete screen',
+  (() => { const b = _fnBody(js, '_srEndReview'); return b && /sr-forecast-complete/.test(b) && /renderSrForecast/.test(b); })());
+test('v7.23.0 SR #6: forecast containers present in HTML',
+  html.includes('id="sr-forecast-home"') && html.includes('id="sr-forecast-complete"'));
+test('v7.23.0 SR #6: forecast CSS scoped in dg-system (strip + bar)',
+  (() => { const dg = read('dg-system.css'); return dg.includes('.sr-fc-strip') && dg.includes('.sr-fc-bar'); })());
+test('v7.23.0 SR #6: forecast bars collapse under prefers-reduced-motion',
+  (() => { const dg = read('dg-system.css'); return /prefers-reduced-motion[\s\S]{0,400}\.sr-fc-bar\{animation:none/.test(dg); })());
+test('v7.23.0 SR #6: forecast phone strip is a scroll-snap swipe strip',
+  (() => { const dg = read('dg-system.css'); return /\.sr-fc-strip\{[^}]*scroll-snap-type:x mandatory/.test(dg); })());
+test('v7.23.0 SR #6: forecast tablet+ fits the full week in one row',
+  (() => { const dg = read('dg-system.css'); return /min-width:601px\)[\s\S]{0,400}\.sr-fc-strip\{overflow-x:visible/.test(dg); })());
+test('v7.23.0 SR #6: open-ended forecast caption present (humanizer copy)',
+  /Intervals expand freely/.test(js));
+// vm-fixture: known queue → today bucket = due-now count, sum = due-within-7, graduated/beyond-7 excluded
+test('v7.23.0 SR #6: vm fixture — buildSrForecast buckets (today=due-now, sum=due-within-7)',
+  (() => {
+    try {
+      const body = _fnBody(js, 'buildSrForecast');
+      if (!body) return false;
+      const vm = require('vm');
+      const now = Date.now();
+      const DAY = 86400000;
+      const t0 = new Date(now); t0.setHours(0, 0, 0, 0); const sot = t0.getTime();
+      const fakeQueue = [
+        { topic: 'A', nextReview: now - 5 * DAY, graduated: false },        // overdue → today
+        { topic: 'B', nextReview: now - 100, graduated: false },            // due now → today
+        { topic: 'C', nextReview: sot + 1 * DAY + 1000, graduated: false }, // tomorrow
+        { topic: 'C', nextReview: sot + 1 * DAY + 2000, graduated: false }, // tomorrow
+        { topic: 'D', nextReview: sot + 3 * DAY + 5000, graduated: false }, // day 3
+        { topic: 'E', nextReview: sot + 6 * DAY + 5000, graduated: false }, // day 6 (within 7)
+        { topic: 'F', nextReview: sot + 9 * DAY, graduated: false },        // beyond 7 → excluded
+        { topic: 'G', nextReview: now - DAY, graduated: true }              // graduated → excluded
+      ];
+      const ctx = { loadSrQueue: () => fakeQueue.map(c => Object.assign({}, c)), Date: Date, Math: Math };
+      vm.createContext(ctx);
+      const fc = vm.runInContext(body + '\nbuildSrForecast();', ctx);
+      if (!fc || !Array.isArray(fc.days) || fc.days.length !== 7) return false;
+      const sum = fc.days.reduce((s, d) => s + d.count, 0);
+      return fc.days[0].count === 2 && fc.days[0].isToday === true && sum === 6 && fc.maxCount === 2;
+    } catch (e) { return false; }
+  })());
 test('v4.74.0 CSS: .sr-option pickable button styled', css.includes('.sr-option'));
 test('v4.74.0 CSS: .sr-confidence-confident green styled', css.includes('.sr-confidence-confident'));
 test('v4.74.0 CSS: .sr-confidence-uncertain yellow styled', css.includes('.sr-confidence-uncertain'));

@@ -1,9 +1,9 @@
 // ══════════════════════════════════════════
-// Network+ AI Quiz — app.js  v7.22.0
+// Network+ AI Quiz — app.js  v7.23.0
 // ══════════════════════════════════════════
 
 // ── CONSTANTS ──
-const APP_VERSION = '7.22.0';
+const APP_VERSION = '7.23.0';
 // v4.99.45 (Phase 6b): expose APP_VERSION on window so the web-vitals
 // collector (lib/web-vitals-collector.js, loaded BEFORE app.js so its
 // PerformanceObservers attach earlier) can stamp this version onto every
@@ -3598,6 +3598,94 @@ function getSrStats() {
   return { total, graduated, active, due };
 }
 
+// #6 — Review forecast. Build a 7-day projection of upcoming due cards by
+// reading nextReview straight off the live queue, so a card answered earlier
+// today already counts toward its own future due-day (true projection, not the
+// simplified mock view). Today's bucket = everything due now or overdue, so it
+// equals getSrDueCount(); future buckets are exact local-calendar-day windows.
+// Returns { days:[{label, count, isToday, topics:[...]}], total, maxCount }.
+function buildSrForecast() {
+  const queue = loadSrQueue();
+  const now = Date.now();
+  const DAY = 86400000;
+  const t0 = new Date(now); t0.setHours(0, 0, 0, 0);
+  const startOfToday = t0.getTime();
+  const WD = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const active = queue.filter(e => !e.graduated);
+  const days = [];
+  for (let i = 0; i < 7; i++) {
+    const winStart = startOfToday + i * DAY;
+    const winEnd = winStart + DAY;
+    const inBucket = active.filter(e => {
+      const nr = e.nextReview || 0;
+      return i === 0 ? nr <= now : (nr >= winStart && nr < winEnd);
+    });
+    const topics = [];
+    inBucket.forEach(e => {
+      const t = e.topic || 'Review';
+      if (topics.indexOf(t) === -1) topics.push(t);
+    });
+    const d = new Date(winStart);
+    days.push({ label: i === 0 ? 'Today' : WD[d.getDay()], count: inBucket.length, isToday: i === 0, topics: topics });
+  }
+  const maxCount = days.reduce((m, x) => Math.max(m, x.count), 0);
+  const total = days.reduce((s, x) => s + x.count, 0);
+  return { days: days, total: total, maxCount: maxCount };
+}
+
+// Render the forecast into `container`. opts.compact = home-tile mini strip
+// (bars only); the full surface adds a caption + an agenda of the next busy
+// days. Display-only — no event handlers to bind (Sec-P7: nothing inline).
+function renderSrForecast(container, opts) {
+  if (!container) return;
+  opts = opts || {};
+  const fc = buildSrForecast();
+  const max = fc.maxCount;
+  let strip = '<div class="sr-fc-strip">';
+  fc.days.forEach((d, i) => {
+    const pct = (max > 0 && d.count > 0) ? Math.max(10, Math.round((d.count / max) * 100)) : 0;
+    const todayCls = d.isToday ? ' sr-fc-day-today' : '';
+    let countHtml;
+    if (d.isToday) {
+      countHtml = d.count > 0
+        ? '<span class="sr-fc-count">' + d.count + ' due</span>'
+        : '<span class="sr-fc-count sr-fc-done">&#10003; done</span>';
+    } else {
+      countHtml = d.count > 0
+        ? '<span class="sr-fc-count">' + d.count + ' due</span>'
+        : '<span class="sr-fc-count sr-fc-zero">0</span>';
+    }
+    // Bar grows 0 → --h via a CSS keyframe (see dg-system.css). Target height
+    // and stagger index ride in the style attribute, so there are no JS .style
+    // writes and the sweep stays declarative.
+    strip += '<div class="sr-fc-day' + todayCls + '">'
+      + '<span class="sr-fc-lbl">' + d.label + '</span>'
+      + '<div class="sr-fc-track"><div class="sr-fc-bar" style="--fi:' + i + ';--h:' + pct + '%"></div></div>'
+      + countHtml + '</div>';
+  });
+  strip += '</div>';
+
+  let html = (opts.eyebrow ? '<span class="sr-fc-eyebrow">' + opts.eyebrow + '</span>' : '') + strip;
+  if (!opts.compact) {
+    html += '<p class="sr-fc-cap">Intervals expand freely: a few days, then a couple of weeks, then a month. The load stays light and gaps are fine.</p>';
+    const upcoming = fc.days.filter((d, i) => i > 0 && d.count > 0);
+    if (upcoming.length > 0) {
+      let rows = '';
+      upcoming.forEach(d => {
+        const topicTxt = d.topics.slice(0, 3).map(t => escHtml(t)).join(' · ');
+        rows += '<div class="sr-fc-arow">'
+          + '<span class="sr-fc-when">' + d.label + '</span>'
+          + '<span class="sr-fc-topics">' + (topicTxt || 'Review') + '</span>'
+          + '<span class="sr-fc-n">' + d.count + '</span></div>';
+      });
+      html += '<div class="sr-fc-agenda">' + rows + '</div>';
+    }
+  }
+  container.innerHTML = html;
+  // The bar sweep (0 → --h) is a pure CSS keyframe; it collapses to instant
+  // under prefers-reduced-motion via the gate in dg-system.css.
+}
+
 // ── SR Review session state ──
 // Module-scoped state for the daily-review flow. Tracks the active
 // session (loaded due cards + position + per-card answer state).
@@ -3630,6 +3718,8 @@ function renderSrReviewCard() {
     if (stats.graduated > 0) parts.push(stats.graduated + ' graduated');
     statsEl.textContent = parts.length > 0 ? parts.join(' · ') : '';
   }
+  // #6 — the home mini-forecast renders from renderBentoRecommended (the live
+  // bento home surface); #sr-review-card is a hidden legacy stub.
 }
 
 // v4.85.7: SR queue scrub helper — extracted from startSrReview() to keep that
@@ -4158,6 +4248,9 @@ function _srEndReview() {
     stats.innerHTML = html;
   }
   if (completeEl) completeEl.hidden = false;
+  // #6 — show the next-7-days forecast on the complete screen (full variant).
+  const fcEl = document.getElementById('sr-forecast-complete');
+  if (fcEl && typeof renderSrForecast === 'function') renderSrForecast(fcEl, {});
   // Refresh the homepage card since the queue changed
   if (typeof renderSrReviewCard === 'function') renderSrReviewCard();
 }
@@ -18285,6 +18378,21 @@ function renderBentoTopbar() {
   } catch (_) {}
 }
 
+// #6 — the home mini-forecast lives in a slim strip directly beneath the
+// Recommended-next tile, shown only when SR cards are due (driven by
+// renderBentoRecommended). #sr-review-card is a hidden legacy stub.
+function _renderHomeForecast(show) {
+  const el = document.getElementById('sr-forecast-home');
+  if (!el) return;
+  if (show && typeof renderSrForecast === 'function') {
+    renderSrForecast(el, { compact: true, eyebrow: 'Coming up · next 7 days' });
+    el.hidden = false;
+  } else {
+    el.hidden = true;
+    el.innerHTML = '';
+  }
+}
+
 // RECOMMENDED-NEXT tile — the focused preset (onclick=applyPreset('focused')
 // baked into markup). Meta nods to the weakest topic when readiness has one.
 function renderBentoRecommended() {
@@ -18320,9 +18428,11 @@ function renderBentoRecommended() {
         : 'spaced repetition · re-encounter what you forgot';
     }
     if (launchEl) launchEl.onclick = function () { if (typeof startSrReview === 'function') startSrReview(); };
+    _renderHomeForecast(true);   // #6 — slim 7-day strip under the tile
     return;
   }
 
+  _renderHomeForecast(false);    // #6 — no reviews due, hide the strip
   if (minEl) minEl.textContent = '15';
   if (titleEl) titleEl.textContent = '15-min Weak Spots';
   if (metaEl) {

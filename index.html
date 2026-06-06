@@ -32,7 +32,7 @@
   html[data-theme="light"] body { color: #1a1a2e; }
 </style>
 <link rel="stylesheet" href="styles.css">
-<link rel="stylesheet" href="dg-system.css?v=7.22.0">
+<link rel="stylesheet" href="dg-system.css?v=7.23.0">
 <link rel="stylesheet" href="dg-depurple.css?v=7.13.5">
 <!-- v5.5.1 — Fraunces display face for the editorial system (Home v3
      reimagining + cross-surface). Body stays the app font; Fraunces is
@@ -300,16 +300,20 @@
       </div>
 
       <!-- CELL 2 · recommended next → applyPreset('focused'). #pl-* filled by
-           renderBentoRecommended(). -->
-      <button type="button" class="tile lift tile-recommend cell-recommend reveal" style="--d:2" id="primaryLaunch" onclick="applyPreset('focused')">
-        <span class="rc-min"><b id="pl-min">15</b><span>min</span></span>
-        <span class="rc-body">
-          <span class="rc-tag">Recommended next</span>
-          <span class="rc-title" id="pl-title">15-min Weak Spots</span>
-          <span class="rc-meta" id="pl-meta">10 questions, exam level, your weakest topic</span>
-        </span>
-        <span class="rc-go" aria-hidden="true">&rarr;</span>
-      </button>
+           renderBentoRecommended(). Wrapper stacks the launch tile + the #6
+           home forecast strip (shown only when SR cards are due) in one cell. -->
+      <div class="cell-recommend reveal" style="--d:2">
+        <button type="button" class="tile lift tile-recommend" id="primaryLaunch" onclick="applyPreset('focused')">
+          <span class="rc-min"><b id="pl-min">15</b><span>min</span></span>
+          <span class="rc-body">
+            <span class="rc-tag">Recommended next</span>
+            <span class="rc-title" id="pl-title">15-min Weak Spots</span>
+            <span class="rc-meta" id="pl-meta">10 questions, exam level, your weakest topic</span>
+          </span>
+          <span class="rc-go" aria-hidden="true">&rarr;</span>
+        </button>
+        <div id="sr-forecast-home" class="sr-fc-home" hidden></div>
+      </div>
 
       <!-- CELL 3 · momentum (count-up + ring). #mo* + #mc-* dual ids: mc-* keep
            renderHeroV2MiniCards()'s contract alive; mo* drive the ring/stats.
@@ -714,7 +718,7 @@
     <span class="hero-icon">&#9889;</span>
     <h1>Network+ AI Quiz</h1>
     <p>AI-generated MCQs every session. Never the same quiz twice.</p>
-    <span id="version-badge" style="display:inline-block;margin-top:10px;font-size:11px;font-weight:700;letter-spacing:.08em;color:var(--accent-light);background:color-mix(in oklab,var(--accent) 12%,transparent);border:1px solid color-mix(in oklab,var(--accent) 30%,transparent);padding:3px 10px;border-radius:99px;cursor:default;user-select:none">v7.22.0</span>
+    <span id="version-badge" style="display:inline-block;margin-top:10px;font-size:11px;font-weight:700;letter-spacing:.08em;color:var(--accent-light);background:color-mix(in oklab,var(--accent) 12%,transparent);border:1px solid color-mix(in oklab,var(--accent) 30%,transparent);padding:3px 10px;border-radius:99px;cursor:default;user-select:none">v7.23.0</span>
     <div id="streak-badge" class="streak-badge"></div>
     <div id="stats-card" class="hero-stats-strip is-hidden">
       <div class="stats-grid" id="stats-grid"></div>
@@ -1076,6 +1080,7 @@
     <div class="sr-empty-icon"></div>
     <h2>Review complete</h2>
     <p id="sr-complete-stats">All cards reviewed.</p>
+    <div id="sr-forecast-complete"></div>
     <button class="btn btn-primary" onclick="goSetup()">Back to home</button>
   </div>
 </div>
