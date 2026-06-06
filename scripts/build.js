@@ -15,14 +15,14 @@ const DIST = path.join(ROOT, 'dist');
 // Everything else in the repo root is copied (there is no .vercelignore
 // today, so Vercel would otherwise serve the whole root); we strip
 // dev/infra/docs + api (served from root as functions) + supabase
-// (migrations) + landing (separate Vercel project) + design (dev-only
-// brand/icon/mockup scratch — not referenced by the deployed app) +
+// (migrations) + landing (separate Vercel project) + design + tablet-audit
+// (both dev-only scratch — not referenced by the deployed app) +
 // root config + *.md.
 const DENY_DIRS = new Set([
   'node_modules', '.git', '.github', '.githooks', '.vercel', '.claude',
   '.planning', '.superpowers', '.agents', '.design-reference',
   'docs', 'scripts', 'tests', 'test-results', 'playwright-report',
-  'dist', 'api', 'supabase', 'landing', 'design',
+  'dist', 'api', 'supabase', 'landing', 'design', 'tablet-audit',
 ]);
 const DENY_FILES = new Set([
   '.DS_Store', '.gitignore', '.lighthouserc.json', 'package.json',

@@ -19,8 +19,8 @@
 | File | Purpose | Size |
 |---|---|---|
 | `index.html` | All page structures (30+ pages: setup, quiz, exam, results, review, subnet, ports, drills launcher, topology, topology-builder-v3, analytics, progress, guided labs, …) + global chrome (sidebar + topbar incl. `#topbar-bug-report` iconbtn that lazy-loads `features/reports.js`) | ~115 KB |
-| `app.js` | All app logic — state, AI calls, rendering, game loops, analytics, 5 activity sub-systems, cloud-flush hooks. Exposes `window.CURRENT_CERT` + `window.CERT_PACK` for lazy-loaded feature modules. | **~2.0 MB / ~32K lines** |
-| `styles.css` | Full dark/light theme styling + account pill + cert switcher + `@media (prefers-reduced-motion)` gate | ~485 KB |
+| `app.js` | All app logic — state, AI calls, rendering, game loops, analytics, 5 activity sub-systems, cloud-flush hooks. Exposes `window.CURRENT_CERT` + `window.CERT_PACK` for lazy-loaded feature modules. | **~964 KB / ~19K lines** |
+| `styles.css` | Full dark/light theme styling + account pill + cert switcher + `@media (prefers-reduced-motion)` gate | ~540 KB / ~14.5K lines |
 | `dg-system.css` | Editorial design-system overrides — forged-bronze tokens, scoped page reskins, `.br-*` bug-report drawer block (incl. scoped `[hidden]{display:none!important}` since component `display:flex` rules otherwise override the attribute) | growing |
 | `sw.js` | Service worker — stale-while-revalidate, shell-asset precache, 60-entry LRU cap, Supabase API pass-through, auto-update broadcast | ~120 lines |
 | **`lib/supabase.js`** | **Phase C′** — Supabase client init with cookie-backed storage adapter (cross-subdomain session sharing) | ~150 lines |
@@ -33,7 +33,7 @@
 | **`supabase/migrations/`** | Schema migrations — `20260506_phase_c_prime.sql` adds `profiles.role` + `is_admin()` + RLS updates | — |
 | `manifest.json` | PWA manifest | 646 B |
 | `vercel.json` | Vercel config (minimal) | 806 B |
-| `tests/uat.js` | UAT suite — **5,100 assertions** as of v4.89.8, embeds validation-audit gate | ~16K lines |
+| `tests/uat.js` | UAT suite — **~4,005 checks** as of v7.19.4, embeds validation-audit gate | ~19.7K lines |
 | `tests/tech-debt.js` | CI thresholds: long-function count, LOC, global count, etc. | 131 lines |
 | `tests/validation-audit.js` | 23-Q broken-corpus regression fixture (60% catch floor, 0 FP ceiling) | 589 lines |
 | `tests/deploy-verify.js` | Post-deploy smoke against prod (comment-strip fix v4.89.9 / dc844a2) | 335 lines |
@@ -93,6 +93,8 @@ python3 -m http.server 3131   # → http://localhost:3131
 ```
 Pre-commit hook (`.githooks/pre-commit`, wired via the `package.json` `prepare` script): runs `node tests/uat.js` + the CLAUDE.md-freshness check + a data-safety scan; skips UAT for docs-only commits. Bypass with `git commit --no-verify`.
 
+**Moving/renaming files:** use `git mv old new` (never raw `mv`) so `git blame`/history follows — confirm the staged diff reads `renamed:`. Full lesson → [docs/conventions/conventions.md](docs/conventions/conventions.md).
+
 ## Test Suite
 ```bash
 export PATH="$HOME/.nvm/versions/node/v20.20.2/bin:$PATH"
@@ -109,31 +111,9 @@ npx playwright test              # E2E (tests/e2e/app.spec.js)
 
 | Version | Features Added |
 |---|---|
+| v7.19.5 | Strip tablet-audit (~40MB dev-only) from prod deploy + build.test guard; CLAUDE.md size-figure refresh + version-history trim; /ship skill + git-mv convention |
 | v7.19.4 | Mobile fit #2 — My Certs modal scroll, landing iOS input zoom, hamburger drawer full-height on phones (touch-only; desktop unchanged) |
 | v7.19.3 | P2-density mobile fit — readiness ribbon, drill-by-domain, mastery stats, Progress topic names fit on phones (touch-only; desktop unchanged) |
-| v7.19.2 | Core-loop mobile polish — quiz/exam topbar overflow fix + in-card tap targets >=44px (touch-only) |
-| v7.19.1 | Mobile polish — kill horizontal overflow + iOS input focus-zoom, all tap targets >=44px, showToast revival + scroll-lock + drawer dvh |
-| v7.19.0 | Forged-bronze topbar refinement (segmented action group, refined pills, polished account pill) |
-| v7.18.0 | Desktop breathing-room widths (Home/Analytics/Progress) + Progress kicker title + Settings control-center bento redesign |
-| v7.17.0 | Cert Home bento redesign (lift of approved mockup-3, real data; keeper readiness hero kept) |
-| v7.16.0 | Analytics bento redesign (lift of approved mockup, real data) + N10-009 kicker title; drop action-headline band |
-| v7.15.0 | Progress redesign: bento grid (domain tiles, weakest/strong/untouched/recent, drill-next spotlight) |
-| v7.14.0 | Analytics-page motion: constellation drift, accuracy pass-verdict, streak flame, domain-mastery reveal/expand, milestones shine+hover; taste fixes (rail/emoji) |
-| v7.13.5 | light-theme de-purple sweep — dg-depurple.css repaints legacy purple to bronze |
-| v7.13.4 | light-theme heading underline bronze (was hardcoded purple) |
-| v7.13.3 | redesign Report-an-issue drawer (forged-bronze) · drop auto-attached panel from UI |
-| v7.13.2 | remove author pass-proof banner from setup page |
-| v7.13.1 | SW cross-origin passthrough — fixes Google Fonts (Fraunces) load on cert-app |
-| v7.13.0 | Analytics motion — ECG sparkline sweeps, knowledge-constellation starfield (twinkle/pulsar/hover-flare), dashboard stat count-ups |
-| v7.12.0 | Readiness card score load-up + conditional pass celebration (ring, stamp, confetti); UAT green |
-| v7.11.0 | Cert switcher lettermark glyphs (Phase 2 cert-icon rollout) |
-| v7.10.0 | Onboarding funnel: 6 cert diagnostic results pages (shared renderer + thin shells), free-path-primary CTAs, quota wall reframed as streak/SR retention hook, post-BYOK sign-in prompt, dead-tag + waitlist-modal fixes |
-| v7.9.0 | M7 PR-1: event-delegation scaffold (event-actions.js) — no handlers migrated yet |
-| v7.8.4 | Minify-on-deploy build step — esbuild JS+CSS, app.js -44% gzip, ~28% smaller cold load |
-| v7.8.3 | Sec-P4 XSS defence-in-depth: vendored DOMPurify (M6) over AI + cross-user sinks, guide.diagram backstop (L2), .gitignore secrets (L5) |
-| v7.8.2 | Landing E2E coverage — a Playwright `landing` project guards the canonical 8-exam set across Account / My Certs / Cross-Cert Analytics. |
-| v7.8.1 | CI fix — pruned the orphaned Playwright suite (deleted-feature describe blocks); restores the green gate + cert-app push-deploy. |
-| v7.8.0 | AWS Cloud Practitioner (CLF-C02) added — 7th cert, 3rd vendor, on clfc02.certanvil.com (Pattern A, Pro-tier). |
 
 ## CSS Theme System
 Dark theme in `:root`, light theme in `[data-theme="light"]`. Key variables: `--bg`, `--surface`, `--accent`, `--text`, `--green`, `--red`, `--yellow`. Toggle via `toggleTheme()`.

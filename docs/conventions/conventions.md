@@ -115,3 +115,13 @@ Scenarios seed the canvas via a two-helper pattern that hides the 13-field devic
 - `_tbMkCable(a, b, type='cat6', aIdx=0, bIdx=0)` — **auto-provisions additional interfaces** on either endpoint if the requested index doesn't exist yet. A hub device (MPLS-Core, TGW, firewall) can be connected via `_tbMkCable(hub, x, 'fiber', 0)`, `_tbMkCable(hub, y, 'fiber', 1)`, `_tbMkCable(hub, z, 'fiber', 2)` without pre-declaring 3 interfaces on `hub`.
 
 **Without the auto-provision, cables silently throw** inside the `tbLoadScenarioWithBuild` try/catch, leaving scenarios with 0 cables while the device list looks fine — a very misleading failure mode. When authoring new scenarios, iterate in a Chrome session and verify `tbState.cables.length === expected` after each scenario select.
+
+### Moving / reorganising files — preserve git history (2026-06-06 lesson)
+When relocating or renaming files (folder reorgs, doc moves, splitting a module), use **`git mv old new`**, never a raw `mv` + re-`add`. A plain `mv` makes git record a delete + an unrelated add, which severs `git blame` / `git log --follow` and makes the move noisy to review. Pattern for a reorg:
+```bash
+git mv path/old.md docs/new-area/old.md      # one per file — keeps history attached
+git status                                    # confirm "renamed:" not "deleted/new file"
+```
+- Verify the staged diff reads **`renamed:`** (rename detection), not `deleted:` + `new file:` — that's the signal history survived.
+- After the move, fix inbound references (links in CLAUDE.md pointers, `require`/`import` paths, `vercel.json` served paths) **before** pushing, and let CI confirm green before merging — a reorg that builds locally can still break a path the bundler/tests resolve differently.
+- This came out of the 2026-06-03 folder-reorg (PR #423): git recorded **217 of 223 files as pure renames** with only +20/−10 content delta — about as safe as a 223-file change gets, precisely *because* every move went through `git mv`. Make `git mv` the default for any relocation.
