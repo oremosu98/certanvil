@@ -7327,6 +7327,21 @@ test('v7.20.0 SR #1: retry pill markup present',
   js.includes('sr-retry-pill') && /bring this back once more before you finish/.test(js));
 test('v7.20.0 SR CSS: .sr-why-due + .sr-retry-pill scoped in dg-system',
   (function(){ const dg = read('dg-system.css'); return dg.includes('.sr-why-due') && dg.includes('.sr-retry-pill'); })());
+// ── v7.21.0 SR enhancements · Phase 2 (#2 missed-card recap, #4 streak bridge) ──
+test('v7.21.0 SR data: _srSession records per-card results',
+  js.includes('results: []') && js.includes('_srSession.results.push'));
+test('v7.21.0 SR #2: _srCorrectText helper defined',
+  /function\s+_srCorrectText\s*\(/.test(js));
+test('v7.21.0 SR #2: recap filters wrong + uncertain',
+  js.includes("r.outcome === 'wrong' || r.outcome === 'correct-uncertain'"));
+test('v7.21.0 SR #2: recap markup rendered in end screen',
+  js.includes('sr-recap') && /Review what you missed/.test(js));
+test('v7.21.0 SR #4: _srEndReview credits the daily streak',
+  /function _srEndReview[\s\S]{0,2400}updateStreak\(\)/.test(js));
+test('v7.21.0 SR #4: streak credit gated on at least one card marked',
+  /total > 0[\s\S]{0,200}updateStreak\(\)/.test(js));
+test('v7.21.0 SR CSS: .sr-recap + .sr-streak + .sr-miss scoped in dg-system',
+  (function(){ const dg = read('dg-system.css'); return dg.includes('.sr-recap') && dg.includes('.sr-streak') && dg.includes('.sr-miss'); })());
 test('v4.74.0 CSS: .sr-option pickable button styled', css.includes('.sr-option'));
 test('v4.74.0 CSS: .sr-confidence-confident green styled', css.includes('.sr-confidence-confident'));
 test('v4.74.0 CSS: .sr-confidence-uncertain yellow styled', css.includes('.sr-confidence-uncertain'));

@@ -1,9 +1,9 @@
 // ══════════════════════════════════════════
-// Network+ AI Quiz — app.js  v7.20.0
+// Network+ AI Quiz — app.js  v7.21.0
 // ══════════════════════════════════════════
 
 // ── CONSTANTS ──
-const APP_VERSION = '7.20.0';
+const APP_VERSION = '7.21.0';
 // v4.99.45 (Phase 6b): expose APP_VERSION on window so the web-vitals
 // collector (lib/web-vitals-collector.js, loaded BEFORE app.js so its
 // PerformanceObservers attach earlier) can stamp this version onto every
@@ -3681,6 +3681,7 @@ function startSrReview() {
     correctConfident: 0,
     correctUncertain: 0,
     wrong: 0,
+    results: [],               // #2: per-card outcomes for the missed-card recap
     pickedLetter: null,        // v4.81.27 — letter-keyed pick for MCQ + commit-then-self-grade modes
     pickedLetters: new Set(),  // v4.81.30 — multi-letter picks for multi-select auto-grade mode
     pickedIdx: null,           // legacy — kept for any external observer
@@ -4012,6 +4013,9 @@ function srMarkConfidence(outcome) {
     else if (outcome === 'correct-uncertain') _srSession.correctUncertain++;
     else _srSession.wrong++;
 
+    // #2: record the outcome for the end-of-session recap.
+    _srSession.results.push({ card: card, outcome: outcome });
+
     // Advance
     _srSession.index++;
 
@@ -4035,6 +4039,24 @@ function srMarkConfidence(outcome) {
   }
 }
 
+// #2 helper: resolve the human-readable correct answer for a recap row.
+function _srCorrectText(card) {
+  let opts = {};
+  if (card.options && typeof card.options === 'object' && !Array.isArray(card.options)) {
+    opts = card.options;
+  } else if (Array.isArray(card.options)) {
+    card.options.forEach((o, i) => { opts[String.fromCharCode(65 + i)] = o; });
+  }
+  if (card.type === 'multi-select' && Array.isArray(card.answers) && card.answers.length) {
+    return card.answers.map(l => opts[l]).filter(Boolean).join(', ');
+  }
+  if (card.answer != null && card.answer !== '') {
+    const letter = (typeof card.answer === 'number') ? String.fromCharCode(65 + card.answer) : String(card.answer);
+    return opts[letter] || '';
+  }
+  return '';
+}
+
 function _srEndReview() {
   document.getElementById('sr-card-host').innerHTML = '';
   document.getElementById('sr-progress-row').hidden = true;
@@ -4045,13 +4067,68 @@ function _srEndReview() {
     const cc = _srSession.correctConfident;
     const cu = _srSession.correctUncertain;
     const w = _srSession.wrong;
+
     let html = total === 0
       ? 'No cards reviewed.'
-      : '<strong>' + total + ' cards reviewed</strong> — '
+      : '<strong>' + total + ' cards reviewed.</strong> '
         + '<span style="color: var(--green)">' + cc + ' confident</span> · '
         + '<span style="color: var(--yellow)">' + cu + ' uncertain</span> · '
-        + '<span style="color: var(--red)">' + w + ' wrong</span>. '
-        + 'Confident answers grow the interval fastest. Wrong cards reset to tomorrow.';
+        + '<span style="color: var(--red)">' + w + ' wrong</span>.';
+
+    // #4 — finishing a review credits the daily streak (idempotent per day,
+    // gated on at least one card marked). Reuses updateStreak()'s same-day guard.
+    if (total > 0) {
+      const beforeStreak = getStreak().current;
+      const s = updateStreak();
+      const gained = s.current > beforeStreak;
+      if (gained) _pendingStreakPulse = true;
+      const flame = '<svg class="sr-streak-flame" viewBox="0 0 32 38" aria-hidden="true">'
+        + '<defs><linearGradient id="srEndFlame" x1="0" y1="0" x2="0" y2="1">'
+        + '<stop offset="0" stop-color="#ffb24d"/><stop offset="0.55" stop-color="#f9852f"/>'
+        + '<stop offset="1" stop-color="#e0561c"/></linearGradient></defs>'
+        + '<path fill="url(#srEndFlame)" d="M16 1c3 6-2 9-2 13 0 0-3-2-3-6C7 11 4 17 4 23a12 12 0 0 0 24 0c0-7-6-10-8-15-1-3-3-5-4-7z"/></svg>';
+      html += '<div class="sr-streak">' + flame
+        + '<div class="sr-streak-txt"><strong>Today\'s review counts.</strong><br>'
+        + s.current + '-day streak · today\'s review keeps it going.</div>'
+        + (gained ? '<span class="sr-streak-plus">+1</span>' : '')
+        + '</div>';
+    }
+
+    // #2 — missed-card recap: wrong + uncertain, each with the correct answer
+    // and a one-line why. Reads in-memory session results before they're discarded.
+    const misses = (_srSession.results || []).filter(r => r.outcome === 'wrong' || r.outcome === 'correct-uncertain');
+    if (misses.length > 0) {
+      const queue = loadSrQueue();
+      // Collapsed by default on phones, open on tablet/desktop.
+      const open = (typeof window !== 'undefined' && window.matchMedia
+        && window.matchMedia('(min-width: 601px)').matches) ? ' open' : '';
+      let rows = '';
+      misses.forEach(r => {
+        const c = r.card;
+        const entry = queue.find(e => e.qHash === c.qHash);
+        const iv = entry ? Math.round(entry.intervalDays || 1) : 1;
+        const chip = iv <= 1 ? 'back tomorrow' : ('back in ~' + iv + 'd');
+        const chipCls = iv <= 1 ? 'sr-miss-resched' : 'sr-miss-resched sr-miss-later';
+        const ans = _srCorrectText(c);
+        const ansHtml = ans
+          ? '<div class="sr-miss-ans"><span class="sr-miss-ok">✓</span> ' + escHtml(ans) + '</div>'
+          : '';
+        const whyHtml = c.explanation
+          ? '<div class="sr-miss-why">' + escHtml(c.explanation) + '</div>'
+          : '';
+        rows += '<div class="sr-miss">'
+          + '<div class="sr-miss-top"><span class="sr-miss-topic">' + escHtml(c.topic || 'Review') + '</span>'
+          + '<span class="' + chipCls + '">' + chip + '</span></div>'
+          + '<div class="sr-miss-stem">' + escHtml(c.question || '') + '</div>'
+          + ansHtml + whyHtml
+          + '</div>';
+      });
+      html += '<details class="sr-recap"' + open + '>'
+        + '<summary class="sr-recap-summary">Review what you missed'
+        + '<span class="sr-recap-count">' + misses.length + '</span></summary>'
+        + rows + '</details>';
+    }
+
     // v4.85.1: show remaining cards count + "Continue" button when session was capped
     const remaining = (typeof getSrStats === 'function') ? getSrStats().due : 0;
     if (remaining > 0) {
