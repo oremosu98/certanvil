@@ -7412,6 +7412,42 @@ test('v7.23.0 SR #6: vm fixture — buildSrForecast buckets (today=due-now, sum=
       return fc.days[0].count === 2 && fc.days[0].isToday === true && sum === 6 && fc.maxCount === 2;
     } catch (e) { return false; }
   })());
+// ── v7.24.0 SR enhancements · Phase 5 (#7 exam-aware scheduling) ──
+test('v7.24.0 SR #7: SR_EXAM_BUFFER_PCT constant defined (0.15)',
+  /const\s+SR_EXAM_BUFFER_PCT\s*=\s*0\.15/.test(js));
+test('v7.24.0 SR #7: _srSchedule caps the interval to land before exam day',
+  (() => { const b = _fnBody(js, '_srSchedule'); return b && /getDaysToExam\s*===\s*'function'/.test(b) && /SR_EXAM_BUFFER_PCT/.test(b) && /Math\.min\(entry\.intervalDays,\s*Math\.max\(1,\s*_daysToExam\s*-\s*buffer\)\)/.test(b); })());
+test('v7.24.0 SR #7: exam cap reuses the existing exam date (no new examDates field)',
+  !/STORAGE\.SR_PREFS[\s\S]{0,200}examDates/.test(js) && /function\s+getDaysToExam\s*\(/.test(js));
+test('v7.24.0 SR #7: _srExamPriority front-load score defined (weakness + blueprint)',
+  (() => { const b = _fnBody(js, '_srExamPriority'); return b && /correctStreak/.test(b) && /easeFactor/.test(b) && /DOMAIN_WEIGHTS/.test(b); })());
+test('v7.24.0 SR #7: startSrReview front-loads weak/high-blueprint cards when exam set',
+  (() => { const b = _fnBody(js, 'startSrReview'); return b && /getDaysToExam/.test(b) && /_srExamPriority/.test(b) && /due\.sort/.test(b); })());
+test('v7.24.0 SR #7: forecast shows exam countdown pill + exam caption when exam set',
+  (() => { const b = _fnBody(js, 'renderSrForecast'); return b && /sr-fc-exam-pill/.test(b) && /Exam in /.test(b) && /capped to land before exam day/.test(b); })());
+test('v7.24.0 SR #7: exam countdown pill styled in dg-system',
+  (() => { const dg = read('dg-system.css'); return dg.includes('.sr-fc-exam-pill'); })());
+// vm-fixture: exam +14d caps a 75d interval to (14 - round(14*0.15)=2) = 12; null = uncapped; closer = smaller
+test('v7.24.0 SR #7: vm fixture — _srSchedule exam cap (14d→12, null→75, 7d→6)',
+  (() => {
+    try {
+      const body = _fnBody(js, '_srSchedule');
+      if (!body) return false;
+      const vm = require('vm');
+      const ctx = { Date: Date, Math: Math, SR_EXAM_BUFFER_PCT: 0.15, SR_GRADUATION_STREAK: 3, SR_GRADUATION_EASE: 2.5, SR_GRADUATION_INTERVAL: 30 };
+      vm.createContext(ctx);
+      const script = body + '\n'
+        + 'let cur = 14; function getDaysToExam(){ return cur; }\n'
+        + 'const e1 = _srSchedule({intervalDays:30,easeFactor:2.5,correctStreak:0},"correct-confident");\n'
+        + 'cur = null;\n'
+        + 'const e2 = _srSchedule({intervalDays:30,easeFactor:2.5,correctStreak:0},"correct-confident");\n'
+        + 'cur = 7;\n'
+        + 'const e3 = _srSchedule({intervalDays:30,easeFactor:2.5,correctStreak:0},"correct-confident");\n'
+        + '({a:e1.intervalDays,b:e2.intervalDays,c:e3.intervalDays});';
+      const r = vm.runInContext(script, ctx);
+      return r.a === 12 && r.b === 75 && r.c === 6 && r.c < r.a;
+    } catch (e) { return false; }
+  })());
 test('v4.74.0 CSS: .sr-option pickable button styled', css.includes('.sr-option'));
 test('v4.74.0 CSS: .sr-confidence-confident green styled', css.includes('.sr-confidence-confident'));
 test('v4.74.0 CSS: .sr-confidence-uncertain yellow styled', css.includes('.sr-confidence-uncertain'));

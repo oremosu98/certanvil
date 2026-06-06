@@ -1,9 +1,9 @@
 // ══════════════════════════════════════════
-// Network+ AI Quiz — app.js  v7.23.0
+// Network+ AI Quiz — app.js  v7.24.0
 // ══════════════════════════════════════════
 
 // ── CONSTANTS ──
-const APP_VERSION = '7.23.0';
+const APP_VERSION = '7.24.0';
 // v4.99.45 (Phase 6b): expose APP_VERSION on window so the web-vitals
 // collector (lib/web-vitals-collector.js, loaded BEFORE app.js so its
 // PerformanceObservers attach earlier) can stamp this version onto every
@@ -3402,6 +3402,7 @@ const SR_SESSION_CAP = 30;            // #8: max cards per review session (was 2
 const SR_GRADUATION_STREAK = 3;       // correct streak needed to graduate
 const SR_GRADUATION_EASE = 2.5;       // ease factor needed at graduation
 const SR_GRADUATION_INTERVAL = 30;    // days interval needed at graduation
+const SR_EXAM_BUFFER_PCT = 0.15;      // #7: leave 15% of days-to-exam as a final-pass buffer
 
 // #8: review session preferences (session size + top-up). Cloud-flushed like
 // the queue. sessionSize is 10 | 20 | 30 | 'all' (capped at SR_SESSION_CAP).
@@ -3463,6 +3464,19 @@ function _srSchedule(entry, outcome) {
 
   // Cap interval at 180 days — beyond that, just keep it at 180.
   entry.intervalDays = Math.min(180, entry.intervalDays);
+
+  // #7 exam-aware: when an exam date is set for this cert, cap the interval so
+  // every review lands before exam day. One continuous dial — the closer the
+  // date, the harder it compresses (a 2-week date pins to ~1d, a 2-month date
+  // barely bites). Reuses the existing per-cert exam date (subdomain-isolated
+  // localStorage via getDaysToExam); no new field. days<=0/null reverts to the
+  // open-ended schedule above.
+  const _daysToExam = (typeof getDaysToExam === 'function') ? getDaysToExam() : null;
+  if (_daysToExam != null && _daysToExam > 0) {
+    const buffer = Math.max(1, Math.round(_daysToExam * SR_EXAM_BUFFER_PCT));
+    entry.intervalDays = Math.min(entry.intervalDays, Math.max(1, _daysToExam - buffer));
+  }
+
   entry.nextReview = now + entry.intervalDays * 86400000;
 
   // Graduation: sustained mastery means it leaves the active queue.
@@ -3665,9 +3679,25 @@ function renderSrForecast(container, opts) {
   });
   strip += '</div>';
 
-  let html = (opts.eyebrow ? '<span class="sr-fc-eyebrow">' + opts.eyebrow + '</span>' : '') + strip;
+  // #7 exam-aware: when an exam is booked, lead with a countdown pill and swap
+  // the caption to explain the continuous compression.
+  const _exDays = (typeof getDaysToExam === 'function') ? getDaysToExam() : null;
+  const _examOn = (_exDays != null && _exDays > 0);
+  let header = (opts.eyebrow ? '<span class="sr-fc-eyebrow">' + opts.eyebrow + '</span>' : '');
+  if (_examOn) {
+    let dateLabel = '';
+    try {
+      const raw = (typeof getExamDate === 'function') ? getExamDate() : null;
+      if (raw) dateLabel = ' · ' + new Date(raw).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
+    } catch (_) {}
+    header += '<div class="sr-fc-exam"><span class="sr-fc-exam-pill">Exam in ' + _exDays + (_exDays === 1 ? ' day' : ' days') + dateLabel + '</span></div>';
+  }
+
+  let html = header + strip;
   if (!opts.compact) {
-    html += '<p class="sr-fc-cap">Intervals expand freely: a few days, then a couple of weeks, then a month. The load stays light and gaps are fine.</p>';
+    html += '<p class="sr-fc-cap">' + (_examOn
+      ? 'Intervals are capped to land before exam day, so the closer the exam the harder it works: two weeks out runs intensive, a month is steadier, two months barely changes anything.'
+      : 'Intervals expand freely: a few days, then a couple of weeks, then a month. The load stays light and gaps are fine.') + '</p>';
     const upcoming = fc.days.filter((d, i) => i > 0 && d.count > 0);
     if (upcoming.length > 0) {
       let rows = '';
@@ -3760,12 +3790,38 @@ function _srScrubQueue(due) {
   return due;
 }
 
+// #7 exam-aware front-load score (higher = review earlier). Combines weakness
+// (low streak, low ease, more lapses) with blueprint weight (the topic's exam
+// domain weight). Only used when an exam date is set; pure read of the entry.
+function _srExamPriority(e) {
+  if (!e) return 0;
+  const streak = e.correctStreak || 0;
+  const ease = (typeof e.easeFactor === 'number') ? e.easeFactor : 2.5;
+  const lapses = e.lapses || 0;
+  let weak = (3 - Math.min(3, streak)) * 1.0 + (2.8 - ease) * 0.8 + Math.min(3, lapses) * 0.5;
+  let bp = 0;
+  try {
+    if (typeof TOPIC_DOMAINS === 'object' && TOPIC_DOMAINS && typeof DOMAIN_WEIGHTS === 'object' && DOMAIN_WEIGHTS) {
+      const dk = TOPIC_DOMAINS[e.topic];
+      bp = (dk && DOMAIN_WEIGHTS[dk]) ? DOMAIN_WEIGHTS[dk] : 0;
+    }
+  } catch (_) {}
+  return weak + bp * 2;   // blueprint nudge on top of weakness
+}
+
 function startSrReview() {
   let due = _srScrubQueue(getSrDueEntries());
 
   if (due.length === 0) {
     showToast('No cards due for review right now', 'info');
     return;
+  }
+  // #7 exam-aware front-load: when an exam is booked, surface weak + high-
+  // blueprint-weight cards earlier (the cap below still bounds session length).
+  // No exam set -> getSrDueEntries' oldest-first order is preserved untouched.
+  const _examDays = (typeof getDaysToExam === 'function') ? getDaysToExam() : null;
+  if (_examDays != null && _examDays > 0 && typeof _srExamPriority === 'function') {
+    due.sort((a, b) => _srExamPriority(b) - _srExamPriority(a));
   }
   // v4.85.1: cap session size to SR_SESSION_CAP (20) to prevent review fatigue.
   // Queue stays intact — remaining cards surface on the next session or the

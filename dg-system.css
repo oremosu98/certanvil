@@ -2318,6 +2318,9 @@ html[data-theme] body .sr-fc-when{font-size:10px;font-weight:800;letter-spacing:
 html[data-theme] body .sr-fc-topics{color:var(--text-mid);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 html[data-theme] body .sr-fc-n{margin-left:auto;font-weight:700;color:var(--text-dim);font-variant-numeric:tabular-nums;white-space:nowrap;}
 html[data-theme] body .sr-fc-eyebrow{display:block;font-size:10px;font-weight:800;letter-spacing:.13em;text-transform:uppercase;color:var(--text-dim);}
+/* #7 exam-aware: countdown pill above the strip when an exam date is set. */
+html[data-theme] body .sr-fc-exam{margin-top:12px;}
+html[data-theme] body .sr-fc-exam-pill{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.02em;color:var(--accent);background:color-mix(in oklab,var(--accent) 10%,transparent);border:1px solid color-mix(in oklab,var(--accent) 28%,var(--border));border-radius:999px;padding:6px 13px;}
 /* #6 home forecast — slim strip beneath the Recommended-next tile, same cell. */
 #page-setup .cell-recommend{display:flex;flex-direction:column;gap:14px;}
 html[data-theme] body #page-setup .sr-fc-home{border:1px solid var(--border);border-radius:14px;background:var(--surface);padding:13px 16px 12px;}
