@@ -1,9 +1,9 @@
 // ══════════════════════════════════════════
-// Network+ AI Quiz — app.js  v7.25.0
+// Network+ AI Quiz — app.js  v7.26.0
 // ══════════════════════════════════════════
 
 // ── CONSTANTS ──
-const APP_VERSION = '7.25.0';
+const APP_VERSION = '7.26.0';
 // v4.99.45 (Phase 6b): expose APP_VERSION on window so the web-vitals
 // collector (lib/web-vitals-collector.js, loaded BEFORE app.js so its
 // PerformanceObservers attach earlier) can stamp this version onto every
@@ -3404,6 +3404,7 @@ const SR_GRADUATION_EASE = 2.5;       // ease factor needed at graduation
 const SR_GRADUATION_INTERVAL = 30;    // days interval needed at graduation
 const SR_EXAM_BUFFER_PCT = 0.15;      // #7: leave 15% of days-to-exam as a final-pass buffer
 const SR_LAPSE_FACTOR = 0.30;         // #3: a wrong answer drops the interval to ~30% of prior (floor 1d), not a hard reset to 1
+const SR_LIGHT_DAY_THRESHOLD = 8;     // #8: fewer than this many due cards = a "light day" that offers top-up practice
 
 // #8: review session preferences (session size + top-up). Cloud-flushed like
 // the queue. sessionSize is 10 | 20 | 30 | 'all' (capped at SR_SESSION_CAP).
@@ -4173,8 +4174,9 @@ function srMarkConfidence(outcome) {
     // do not append it again (one retry per card, max).
     _srSession.index++;
   } else {
-    // Apply SM-2 scheduling
-    updateSrEntry(card.qHash, outcome);
+    // Apply SM-2 scheduling — skipped in #8 top-up practice mode so extra
+    // practice never reschedules real cards early (spacing stays pure).
+    if (!_srSession.practice) updateSrEntry(card.qHash, outcome);
 
     // Tally
     _srSession.answersGiven++;
@@ -4307,7 +4309,13 @@ function _srEndReview() {
         + '<button class="btn btn-primary sr-continue-btn" onclick="startSrReview()">Continue · ~' + remMin + ' min →</button>'
         + '</div>';
     }
+    // #8 top-up — on a light day, offer extra practice on weak topics (helper
+    // returns the block or ''). Never shown after a practice session itself.
+    if (!_srSession.practice && typeof _srTopUpHtml === 'function') html += _srTopUpHtml(remaining);
     stats.innerHTML = html;
+    // Bind the top-up launcher in JS (Sec-P7: no inline on*= handlers).
+    const _topBtn = document.getElementById('sr-topup-btn');
+    if (_topBtn) _topBtn.addEventListener('click', function () { if (typeof startSrTopUp === 'function') startSrTopUp(); });
   }
   if (completeEl) completeEl.hidden = false;
   // #6 — show the next-7-days forecast on the complete screen (full variant).
@@ -4315,6 +4323,62 @@ function _srEndReview() {
   if (fcEl && typeof renderSrForecast === 'function') renderSrForecast(fcEl, {});
   // Refresh the homepage card since the queue changed
   if (typeof renderSrReviewCard === 'function') renderSrReviewCard();
+}
+
+// #8 top-up source (decision #3): ahead-of-schedule weak SR cards for this cert,
+// weakest first. These are real cards practiced WITHOUT rescheduling, so the
+// top-up never pulls a not-yet-due card into the real review path.
+function _srBuildTopUp(limit) {
+  const queue = (typeof loadSrQueue === 'function') ? loadSrQueue() : [];
+  const now = Date.now();
+  const lim = limit || SR_SESSION_CAP;
+  const ahead = queue.filter(e => e && !e.graduated && (e.nextReview || 0) > now);
+  const clean = (typeof _srScrubQueue === 'function') ? _srScrubQueue(ahead) : ahead;
+  clean.sort((a, b) => _srExamPriority(b) - _srExamPriority(a));
+  return clean.slice(0, lim).map(c => Object.assign({}, c));
+}
+
+// #8 top-up block on the complete screen — only on a light day (due below the
+// threshold) when the user has top-up enabled and weak ahead-of-schedule cards
+// exist. Returns the block html or '' (clearly separate "extra practice" panel).
+function _srTopUpHtml(remaining) {
+  const prefs = (typeof loadSrPrefs === 'function') ? loadSrPrefs() : { topUp: true };
+  if (!prefs.topUp || remaining >= SR_LIGHT_DAY_THRESHOLD) return '';
+  const extra = _srBuildTopUp(SR_SESSION_CAP);
+  if (!extra.length) return '';
+  const n = Math.min(extra.length, 10);
+  return '<div class="sr-topup">'
+    + '<div class="sr-topup-eyebrow">Light day · extra practice</div>'
+    + '<div class="sr-topup-body">Top up with ' + n + ' weak-topic card' + (n === 1 ? '' : 's') + '. Practice only, it won\'t change your review schedule.</div>'
+    + '<button type="button" class="btn sr-topup-btn" id="sr-topup-btn">Top up · extra practice &rarr;</button>'
+    + '</div>';
+}
+
+// #8 launch a top-up practice session. Reuses the review UI but flags the
+// session as practice so srMarkConfidence skips rescheduling.
+function startSrTopUp() {
+  const cards = _srBuildTopUp(SR_SESSION_CAP);
+  if (!cards.length) { showToast('No extra practice cards available right now', 'info'); return; }
+  _srSession = {
+    cards: cards,
+    totalDueCount: cards.length,
+    index: 0,
+    answersGiven: 0,
+    correctConfident: 0,
+    correctUncertain: 0,
+    wrong: 0,
+    results: [],
+    pickedLetter: null,
+    pickedLetters: new Set(),
+    pickedIdx: null,
+    revealed: false,
+    practice: true   // #8: extra practice — never reschedules real cards
+  };
+  showPage('sr-review');
+  document.getElementById('sr-empty').hidden = true;
+  document.getElementById('sr-complete').hidden = true;
+  document.getElementById('sr-progress-row').hidden = false;
+  _renderSrCard();
 }
 
 // ══════════════════════════════════════════

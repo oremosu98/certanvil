@@ -7299,7 +7299,7 @@ test('v4.74.0 flow: srPickAnswer defined',
 test('v4.74.0 flow: srMarkConfidence defined',
   /function\s+srMarkConfidence\s*\(/.test(js));
 test('v4.74.0 flow: srMarkConfidence dispatches to updateSrEntry',
-  /srMarkConfidence[\s\S]{0,500}updateSrEntry/.test(js));
+  (() => { const b = _fnBody(js, 'srMarkConfidence'); return b && /updateSrEntry\s*\(card\.qHash,\s*outcome\)/.test(b); })());
 test('v4.74.0 flow: goSetup hooks renderSrReviewCard',
   (() => {
     const body = _fnBody(js, 'goSetup');
@@ -7466,6 +7466,47 @@ test('v7.25.0 SR #3: vm fixture — wrong on 30d->9, 2d->1, 1d->1, lapses increm
         + '({a:a.intervalDays,al:a.lapses,b:b.intervalDays,c:c.intervalDays,cl:c.lapses,ae:a.easeFactor});';
       const r = vm.runInContext(script, ctx);
       return r.a === 9 && r.al === 1 && r.b === 1 && r.c === 1 && r.cl === 2 && Math.abs(r.ae - 2.3) < 0.001;
+    } catch (e) { return false; }
+  })());
+// ── v7.26.0 SR enhancements · Phase 6b (#8 top-up light-day practice) ──
+test('v7.26.0 SR #8: SR_LIGHT_DAY_THRESHOLD constant defined (8)',
+  /const\s+SR_LIGHT_DAY_THRESHOLD\s*=\s*8/.test(js));
+test('v7.26.0 SR #8: top-up helpers defined (_srBuildTopUp + startSrTopUp + _srTopUpHtml)',
+  /function\s+_srBuildTopUp\s*\(/.test(js) && /function\s+startSrTopUp\s*\(/.test(js) && /function\s+_srTopUpHtml\s*\(/.test(js));
+test('v7.26.0 SR #8: _srBuildTopUp sources ahead-of-schedule non-graduated cards',
+  (() => { const b = _fnBody(js, '_srBuildTopUp'); return b && /!e\.graduated/.test(b) && /\(e\.nextReview\s*\|\|\s*0\)\s*>\s*now/.test(b) && /_srExamPriority/.test(b); })());
+test('v7.26.0 SR #8: srMarkConfidence skips reschedule in practice mode',
+  (() => { const b = _fnBody(js, 'srMarkConfidence'); return b && /if\s*\(!_srSession\.practice\)\s*updateSrEntry/.test(b); })());
+test('v7.26.0 SR #8: startSrTopUp launches a practice session (practice:true)',
+  (() => { const b = _fnBody(js, 'startSrTopUp'); return b && /practice:\s*true/.test(b); })());
+test('v7.26.0 SR #8: _srTopUpHtml gated on light day + topUp pref',
+  (() => { const b = _fnBody(js, '_srTopUpHtml'); return b && /prefs\.topUp/.test(b) && /remaining\s*>=\s*SR_LIGHT_DAY_THRESHOLD/.test(b); })());
+test('v7.26.0 SR #8: top-up launcher bound in JS, no inline onclick (Sec-P7)',
+  (() => { const b = _fnBody(js, '_srEndReview'); return b && /sr-topup-btn/.test(b) && /addEventListener/.test(b); })()
+    && !/id="sr-topup-btn"[^>]*onclick/.test(js));
+test('v7.26.0 SR #8: top-up block styled in dg-system',
+  (() => { const dg = read('dg-system.css'); return dg.includes('.sr-topup'); })());
+// vm-fixture: top-up excludes due + graduated, keeps ahead-of-schedule, weakest first
+test('v7.26.0 SR #8: vm fixture — _srBuildTopUp ahead-weak-only, weakest first',
+  (() => {
+    try {
+      const prio = _fnBody(js, '_srExamPriority');
+      const build = _fnBody(js, '_srBuildTopUp');
+      if (!prio || !build) return false;
+      const vm = require('vm');
+      const now = Date.now(), DAY = 86400000;
+      const queue = [
+        { nextReview: now - DAY, graduated: false, correctStreak: 0, easeFactor: 1.4, lapses: 3, topic: 'A' }, // due -> exclude
+        { nextReview: now + 5 * DAY, graduated: false, correctStreak: 0, easeFactor: 1.5, lapses: 2, topic: 'B' }, // ahead weak -> include
+        { nextReview: now + 5 * DAY, graduated: false, correctStreak: 3, easeFactor: 2.7, lapses: 0, topic: 'C' }, // ahead strong -> include
+        { nextReview: now + 9 * DAY, graduated: true, correctStreak: 0, easeFactor: 1.3, lapses: 5, topic: 'D' }  // graduated -> exclude
+      ];
+      const ctx = { Date: Date, Math: Math, SR_SESSION_CAP: 30, loadSrQueue: () => queue.map(x => Object.assign({}, x)), _srScrubQueue: (x) => x };
+      vm.createContext(ctx);
+      const out = vm.runInContext(prio + '\n' + build + '\n_srBuildTopUp(30);', ctx);
+      if (!Array.isArray(out) || out.length !== 2) return false;
+      const allAhead = out.every(c => c.nextReview > now && !c.graduated);
+      return allAhead && out[0].topic === 'B' && out[1].topic === 'C';
     } catch (e) { return false; }
   })());
 test('v4.74.0 CSS: .sr-option pickable button styled', css.includes('.sr-option'));
