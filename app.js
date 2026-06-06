@@ -1,9 +1,9 @@
 // ══════════════════════════════════════════
-// Network+ AI Quiz — app.js  v7.19.5
+// Network+ AI Quiz — app.js  v7.20.0
 // ══════════════════════════════════════════
 
 // ── CONSTANTS ──
-const APP_VERSION = '7.19.5';
+const APP_VERSION = '7.20.0';
 // v4.99.45 (Phase 6b): expose APP_VERSION on window so the web-vitals
 // collector (lib/web-vitals-collector.js, loaded BEFORE app.js so its
 // PerformanceObservers attach earlier) can stamp this version onto every
@@ -3432,6 +3432,7 @@ function _srSchedule(entry, outcome) {
     entry.intervalDays = 1;
     entry.easeFactor = Math.max(1.3, (entry.easeFactor || 2.5) - 0.20);
     entry.correctStreak = 0;
+    entry.lapses = (entry.lapses || 0) + 1;   // #5: powers the "Rebuilding" microcopy
     entry.graduated = false;
   } else if (outcome === 'correct-uncertain') {
     // Same growth direction but slower (×1.5 vs ×ease). Ease unchanged
@@ -3530,6 +3531,7 @@ function addToSrQueue(q) {
     easeFactor: 2.5,
     attempts: 0,
     correctStreak: 0,
+    lapses: 0,                         // #5 data: count of wrong outcomes, powers "Rebuilding" microcopy
     graduated: false,
     nextReview: Date.now() + 86400000  // due tomorrow by default
   };
@@ -3728,6 +3730,25 @@ function _renderSrCard() {
     ? 'last interval ' + (card.intervalDays < 1 ? '<1' : Math.round(card.intervalDays)) + 'd'
     : 'first review';
 
+  // #5 — why-it's-due microcopy (read-only from the entry).
+  const _srRefreshIco = '<svg class="sr-why-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>';
+  const _srStreak = card.correctStreak || 0;
+  const _srLapses = card.lapses || 0;
+  const _srIv = Math.round(card.intervalDays || 0);
+  let whyDueHtml;
+  if (_srStreak === 0 && _srLapses > 0) {
+    whyDueHtml = '<div class="sr-why-due sr-why-rebuild">' + _srRefreshIco + 'Rebuilding · you missed this one last time</div>';
+  } else if (_srIv >= 7) {
+    whyDueHtml = '<div class="sr-why-due">' + _srRefreshIco + 'Last seen ' + _srIv + 'd ago</div>';
+  } else {
+    whyDueHtml = '<div class="sr-why-due">First few reviews</div>';
+  }
+
+  // #1 — retry pill (only on the wrong reveal of a card that has not already been retried).
+  const srRetryPillHtml = !card._retry
+    ? '<div class="sr-retry-pill">' + _srRefreshIco + 'We\'ll bring this back once more before you finish</div>'
+    : '';
+
   const cardType = card.type || 'mcq';
 
   // Normalise options shape — accept either letter-keyed object {A:'..'}
@@ -3804,7 +3825,8 @@ function _renderSrCard() {
         confidenceHtml = explanation
           + '<div class="sr-confidence-row">'
           + '<div class="sr-confidence-label" style="color: var(--red); font-weight: 600;">'
-          + '✗ Wrong — this card resets to tomorrow.</div>'
+          + '✗ Wrong. This card resets to tomorrow.</div>'
+          + srRetryPillHtml
           + '<button type="button" class="sr-confidence-btn sr-confidence-wrong" onclick="srMarkConfidence(\'wrong\')">'
           + 'Got it wrong → next card</button>'
           + '</div>';
@@ -3874,7 +3896,8 @@ function _renderSrCard() {
         confidenceHtml = explanation
           + '<div class="sr-confidence-row">'
           + '<div class="sr-confidence-label" style="color: var(--red); font-weight: 600;">'
-          + '✗ Not quite — correct answers were ' + escHtml(correctList) + '. This card resets to tomorrow.</div>'
+          + '✗ Not quite. Correct answers were ' + escHtml(correctList) + '. This card resets to tomorrow.</div>'
+          + srRetryPillHtml
           + '<button type="button" class="sr-confidence-btn sr-confidence-wrong" onclick="srMarkConfidence(\'wrong\')">'
           + 'Got it wrong → next card</button>'
           + '</div>';
@@ -3929,6 +3952,7 @@ function _renderSrCard() {
     + '<span class="sr-meta-sep">·</span>'
     + '<span class="sr-meta-streak">streak ' + (card.correctStreak || 0) + '</span>'
     + '</div>'
+    + whyDueHtml
     + '<div class="sr-question">' + escHtml(stem) + '</div>'
     + optionsHtml
     + confidenceHtml
@@ -3973,17 +3997,32 @@ function srMarkConfidence(outcome) {
   const card = _srSession.cards[_srSession.index];
   if (!card) return;
 
-  // Apply SM-2 scheduling
-  updateSrEntry(card.qHash, outcome);
+  if (card._retry) {
+    // #1: retry pass — re-exposure only. The card was already scheduled and
+    // tallied on its first attempt this session, so do not re-do either, and
+    // do not append it again (one retry per card, max).
+    _srSession.index++;
+  } else {
+    // Apply SM-2 scheduling
+    updateSrEntry(card.qHash, outcome);
 
-  // Tally
-  _srSession.answersGiven++;
-  if (outcome === 'correct-confident') _srSession.correctConfident++;
-  else if (outcome === 'correct-uncertain') _srSession.correctUncertain++;
-  else _srSession.wrong++;
+    // Tally
+    _srSession.answersGiven++;
+    if (outcome === 'correct-confident') _srSession.correctConfident++;
+    else if (outcome === 'correct-uncertain') _srSession.correctUncertain++;
+    else _srSession.wrong++;
 
-  // Advance
-  _srSession.index++;
+    // Advance
+    _srSession.index++;
+
+    // #1: a wrong answer comes back once more before the session ends — a
+    // second active retrieval while it is fresh. The persisted reschedule
+    // (reset to tomorrow, above) is unchanged; this clone is in-session only.
+    if (outcome === 'wrong') {
+      _srSession.cards.push(Object.assign({}, card, { _retry: true }));
+    }
+  }
+
   _srSession.pickedLetter = null;
   _srSession.pickedLetters = new Set(); // v4.81.30 — clear multi-select picks for next card
   _srSession.pickedIdx = null;          // legacy — kept for any external observer

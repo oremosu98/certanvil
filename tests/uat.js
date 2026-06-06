@@ -7312,6 +7312,21 @@ test('v4.74.0 flow: goSetup hooks renderSrReviewCard',
 test('v4.74.0 CSS: .sr-review-card homepage card styled', css.includes('.sr-review-card'));
 test('v4.74.0 CSS: .sr-card review card styled',
   /\.sr-card\s*\{/.test(css) || /\.sr-card\s*[,{]/.test(css));
+// ── v7.20.0 SR enhancements · Phase 1 (#1 same-session retry, #5 why-due) ──
+test('v7.20.0 SR data: lapses field defaulted in addToSrQueue',
+  js.includes('lapses: 0,'));
+test('v7.20.0 SR data: _srSchedule increments lapses on wrong',
+  /outcome === 'wrong'[\s\S]{0,200}entry\.lapses\s*=\s*\(entry\.lapses/.test(js));
+test('v7.20.0 SR #5: why-due microcopy rendered in card',
+  js.includes('sr-why-due') && /Rebuilding[\s\S]{0,60}you missed this one last time/.test(js));
+test('v7.20.0 SR #1: same-session retry appends a _retry clone on wrong',
+  /outcome === 'wrong'[\s\S]{0,160}_srSession\.cards\.push\([\s\S]{0,80}_retry:\s*true/.test(js));
+test('v7.20.0 SR #1: retry pass does not re-tally or re-append',
+  /if \(card\._retry\)[\s\S]{0,400}_srSession\.index\+\+/.test(js));
+test('v7.20.0 SR #1: retry pill markup present',
+  js.includes('sr-retry-pill') && /bring this back once more before you finish/.test(js));
+test('v7.20.0 SR CSS: .sr-why-due + .sr-retry-pill scoped in dg-system',
+  (function(){ const dg = read('dg-system.css'); return dg.includes('.sr-why-due') && dg.includes('.sr-retry-pill'); })());
 test('v4.74.0 CSS: .sr-option pickable button styled', css.includes('.sr-option'));
 test('v4.74.0 CSS: .sr-confidence-confident green styled', css.includes('.sr-confidence-confident'));
 test('v4.74.0 CSS: .sr-confidence-uncertain yellow styled', css.includes('.sr-confidence-uncertain'));

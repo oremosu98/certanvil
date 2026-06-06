@@ -111,6 +111,7 @@ npx playwright test              # E2E (tests/e2e/app.spec.js)
 
 | Version | Features Added |
 |---|---|
+| v7.20.0 | SR Phase 1 — same-session retry (#1) + why-it's-due microcopy (#5) |
 | v7.19.5 | Strip tablet-audit (~40MB dev-only) from prod deploy + build.test guard; CLAUDE.md size-figure refresh + version-history trim; /ship skill + git-mv convention |
 | v7.19.4 | Mobile fit #2 — My Certs modal scroll, landing iOS input zoom, hamburger drawer full-height on phones (touch-only; desktop unchanged) |
 | v7.19.3 | P2-density mobile fit — readiness ribbon, drill-by-domain, mastery stats, Progress topic names fit on phones (touch-only; desktop unchanged) |
