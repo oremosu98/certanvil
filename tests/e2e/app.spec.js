@@ -1012,6 +1012,14 @@ test.describe('SR Review — MCQ happy path', () => {
     await expect(page.locator('.sr-confidence-wrong')).toBeVisible();
     await expect(page.locator('.sr-confidence-confident')).toHaveCount(0);
 
+    // v7.20.0 (#1): a wrong card shows the same-session retry pill and returns
+    // once more before the session can complete.
+    await expect(page.locator('.sr-retry-pill')).toBeVisible();
+    await page.locator('.sr-confidence-wrong').click();
+    // Not done yet — the retry clone is re-queued (progress now "2 of 2").
+    await expect(page.locator('#sr-progress-text')).toContainText('2 of 2');
+    // Answer the retry card → the session now completes.
+    await page.locator('.sr-option[data-letter="A"]').click();
     await page.locator('.sr-confidence-wrong').click();
     await expect(page.locator('#sr-complete')).toBeVisible();
   });
@@ -1080,7 +1088,14 @@ test.describe('SR Review — Multi-select happy path', () => {
     await expect(page.locator('.sr-confidence-wrong')).toBeVisible();
     await expect(page.locator('.sr-confidence-confident')).toHaveCount(0);
 
-    // Advance.
+    // v7.20.0 (#1): wrong card re-queues for one same-session retry before
+    // the session can complete (progress goes to "2 of 2").
+    await page.locator('.sr-confidence-wrong').click();
+    await expect(page.locator('#sr-progress-text')).toContainText('2 of 2');
+    // Re-answer the retry card (same picks) → Submit → mark → complete.
+    await page.locator('.sr-option[data-letter="A"]').click();
+    await page.locator('.sr-option[data-letter="C"]').click();
+    await page.locator('.sr-multi-submit-btn').click();
     await page.locator('.sr-confidence-wrong').click();
     await expect(page.locator('#sr-complete')).toBeVisible();
   });
