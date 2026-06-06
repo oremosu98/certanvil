@@ -7569,6 +7569,11 @@ test('cloud cert-keying: vm — applyJsonb extracts this cert; legacy flat sr_qu
       return perCert && legacy;
     } catch (e) { return false; }
   })());
+// ── v7.29.1: cert-switcher lettermark glyphs visible in dark mode (cream tile) ──
+test('v7.29.1 cert-switcher: dark-mode .tad-cert-glyph pins dark ink + darker bronze (not var --text/--accent)',
+  (() => { const dg = read('dg-system.css');
+    return /html\[data-theme="dark"\]\s*body\s*\.tad-cert-glyph\{color:oklch\(0\.26\s/.test(dg)
+      && /html\[data-theme="dark"\][^{]*\.tad-cert-glyph\s*\.cg-ac[\s\S]{0,160}\.cg-sup\{color:oklch\(0\.50\s/.test(dg); })());
 test('v4.74.0 CSS: .sr-option pickable button styled', css.includes('.sr-option'));
 test('v4.74.0 CSS: .sr-confidence-confident green styled', css.includes('.sr-confidence-confident'));
 test('v4.74.0 CSS: .sr-confidence-uncertain yellow styled', css.includes('.sr-confidence-uncertain'));

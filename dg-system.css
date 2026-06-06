@@ -2431,6 +2431,11 @@ html[data-theme] body .tad-cert-glyph{flex:none!important;width:30px!important;h
 html[data-theme] body .tad-cert-glyph .cg{display:inline-flex!important;align-items:baseline!important;white-space:nowrap!important;}
 html[data-theme] body .tad-cert-glyph .cg-ac{color:var(--accent)!important;}
 html[data-theme] body .tad-cert-glyph .cg-sup{font-size:.55em!important;align-self:flex-start!important;color:var(--accent)!important;font-weight:700!important;margin-left:.5px!important;}
+/* Dark mode: the glyph tile is always a cream chip (#FFFBF3 in both themes), so
+   pin the ink to the light-theme dark text + darker bronze accent. Otherwise
+   var(--text)/var(--accent) flip light in dark mode and the letters vanish. */
+html[data-theme="dark"] body .tad-cert-glyph{color:oklch(0.26 0.015 280)!important;}
+html[data-theme="dark"] body .tad-cert-glyph .cg-ac,html[data-theme="dark"] body .tad-cert-glyph .cg-sup{color:oklch(0.50 0.155 55)!important;}
 
 /* ── Web Vitals: editorial ── */
 html[data-theme] body #page-web-vitals{max-width:1120px!important;margin:0 auto!important;padding:0 28px 90px!important;}
