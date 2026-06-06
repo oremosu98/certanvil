@@ -1,9 +1,9 @@
 // ══════════════════════════════════════════
-// Network+ AI Quiz — app.js  v7.26.0
+// Network+ AI Quiz — app.js  v7.27.0
 // ══════════════════════════════════════════
 
 // ── CONSTANTS ──
-const APP_VERSION = '7.26.0';
+const APP_VERSION = '7.27.0';
 // v4.99.45 (Phase 6b): expose APP_VERSION on window so the web-vitals
 // collector (lib/web-vitals-collector.js, loaded BEFORE app.js so its
 // PerformanceObservers attach earlier) can stamp this version onto every
@@ -4316,6 +4316,9 @@ function _srEndReview() {
     // Bind the top-up launcher in JS (Sec-P7: no inline on*= handlers).
     const _topBtn = document.getElementById('sr-topup-btn');
     if (_topBtn) _topBtn.addEventListener('click', function () { if (typeof startSrTopUp === 'function') startSrTopUp(); });
+    // #8 AI-fallback launcher (generate fresh weak-topic practice).
+    const _genBtn = document.getElementById('sr-topup-gen-btn');
+    if (_genBtn) _genBtn.addEventListener('click', function () { if (typeof startSrGenTopUp === 'function') startSrGenTopUp(); });
   }
   if (completeEl) completeEl.hidden = false;
   // #6 — show the next-7-days forecast on the complete screen (full variant).
@@ -4345,13 +4348,36 @@ function _srTopUpHtml(remaining) {
   const prefs = (typeof loadSrPrefs === 'function') ? loadSrPrefs() : { topUp: true };
   if (!prefs.topUp || remaining >= SR_LIGHT_DAY_THRESHOLD) return '';
   const extra = _srBuildTopUp(SR_SESSION_CAP);
-  if (!extra.length) return '';
-  const n = Math.min(extra.length, 10);
+  if (extra.length) {
+    const n = Math.min(extra.length, 10);
+    return '<div class="sr-topup">'
+      + '<div class="sr-topup-eyebrow">Light day · extra practice</div>'
+      + '<div class="sr-topup-body">Top up with ' + n + ' weak-topic card' + (n === 1 ? '' : 's') + '. Practice only, it won\'t change your review schedule.</div>'
+      + '<button type="button" class="btn sr-topup-btn" id="sr-topup-btn">Top up · extra practice &rarr;</button>'
+      + '</div>';
+  }
+  // Fallback (decision #3): too few ahead-of-schedule cards to practice. Offer
+  // a freshly generated weak-topic set instead — but only when an API key is
+  // set, since it runs the same validated quiz pipeline (fetchQuestions ->
+  // aiValidateQuestions -> validateQuestions). No key -> hide (nothing to do).
+  const _key = (typeof getApiKey === 'function')
+    ? getApiKey()
+    : (function () { try { return localStorage.getItem(STORAGE.KEY) || ''; } catch (e) { return ''; } })();
+  if (!_key) return '';
   return '<div class="sr-topup">'
     + '<div class="sr-topup-eyebrow">Light day · extra practice</div>'
-    + '<div class="sr-topup-body">Top up with ' + n + ' weak-topic card' + (n === 1 ? '' : 's') + '. Practice only, it won\'t change your review schedule.</div>'
-    + '<button type="button" class="btn sr-topup-btn" id="sr-topup-btn">Top up · extra practice &rarr;</button>'
+    + '<div class="sr-topup-body">No spare review cards right now. Generate a fresh 10-question set on your weakest topics, checked the same way as every quiz.</div>'
+    + '<button type="button" class="btn sr-topup-btn" id="sr-topup-gen-btn">Generate weak-topic practice &rarr;</button>'
     + '</div>';
+}
+
+// #8 top-up AI fallback — generate a fresh weak-topic practice quiz through the
+// standard validated pipeline. Reuses the 'focused' preset (weakest topic ->
+// fetchQuestions -> aiValidateQuestions -> validateQuestions -> quiz), so the
+// questions get the identical 7-layer validation as every other quiz, and any
+// the user misses enrol into the SR queue (the normal learning loop).
+function startSrGenTopUp() {
+  if (typeof applyPreset === 'function') applyPreset('focused');
 }
 
 // #8 launch a top-up practice session. Reuses the review UI but flags the

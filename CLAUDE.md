@@ -111,6 +111,7 @@ npx playwright test              # E2E (tests/e2e/app.spec.js)
 
 | Version | Features Added |
 |---|---|
+| v7.27.0 | SR #8 top-up AI fallback — generate fresh weak-topic practice when no spare review cards |
 | v7.26.0 | SR Phase 6b: #8 top-up light-day practice — extra practice on weak topics, never reschedules |
 | v7.25.0 | SR Phase 6a: lapse-aware partial reset (#3) — wrong drops interval to ~30% of prior, not hard 1 |
 | v7.24.0 | SR Phase 5: exam-aware scheduling (#7) — interval cap to exam day, weak/blueprint front-load, countdown |

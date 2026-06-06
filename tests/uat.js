@@ -7509,6 +7509,14 @@ test('v7.26.0 SR #8: vm fixture — _srBuildTopUp ahead-weak-only, weakest first
       return allAhead && out[0].topic === 'B' && out[1].topic === 'C';
     } catch (e) { return false; }
   })());
+// ── v7.27.0 SR #8 top-up AI fallback (generate weak-topic practice) ──
+test('v7.27.0 SR #8 fallback: startSrGenTopUp reuses the validated focused-quiz pipeline',
+  (() => { const b = _fnBody(js, 'startSrGenTopUp'); return b && /applyPreset\(\s*['"]focused['"]\s*\)/.test(b); })());
+test('v7.27.0 SR #8 fallback: _srTopUpHtml offers AI-gen only when an API key is set',
+  (() => { const b = _fnBody(js, '_srTopUpHtml'); return b && /sr-topup-gen-btn/.test(b) && /STORAGE\.KEY|getApiKey/.test(b) && /if\s*\(!_key\)\s*return\s*''/.test(b); })());
+test('v7.27.0 SR #8 fallback: gen launcher bound in JS, no inline onclick (Sec-P7)',
+  (() => { const b = _fnBody(js, '_srEndReview'); return b && /sr-topup-gen-btn/.test(b) && /startSrGenTopUp/.test(b); })()
+    && !/id="sr-topup-gen-btn"[^>]*onclick/.test(js));
 test('v4.74.0 CSS: .sr-option pickable button styled', css.includes('.sr-option'));
 test('v4.74.0 CSS: .sr-confidence-confident green styled', css.includes('.sr-confidence-confident'));
 test('v4.74.0 CSS: .sr-confidence-uncertain yellow styled', css.includes('.sr-confidence-uncertain'));
