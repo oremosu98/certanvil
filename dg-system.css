@@ -3339,8 +3339,9 @@ html[data-theme] body #page-setup .dw-launch{flex:0 0 auto;padding:13px 22px;bor
    logged-in launch never flashes the wrong surface (decision doc §6). Hidden by
    default; the router wiring toggles [hidden]. Fully token-driven -> themes
    automatically. Brand: skeleton shimmer over a generic spinner; no emoji. */
-.onb-resolve{position:fixed;inset:0;z-index:9000;display:flex;align-items:center;justify-content:center;background:var(--bg);color:var(--text);}
+.onb-resolve{position:fixed;inset:0;z-index:9000;display:flex;align-items:center;justify-content:center;background:var(--bg);color:var(--text);transition:opacity .3s cubic-bezier(0.16,1,0.3,1);}
 .onb-resolve[hidden]{display:none!important;}
+.onb-resolve.onb-resolve-out{opacity:0;pointer-events:none;}
 .onb-resolve-inner{display:flex;flex-direction:column;align-items:center;gap:20px;padding:24px;}
 .onb-resolve-mark svg{width:58px;height:58px;display:block;}
 .onb-resolve-word{font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:21px;letter-spacing:-0.01em;color:var(--text);}

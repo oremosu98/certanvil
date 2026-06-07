@@ -1639,9 +1639,12 @@
 <!-- M7: CSP-clean event delegation. Must load before app.js so its document
      listeners are installed; dispatches to app.js globals lazily at event time. -->
 <script defer src="event-actions.js"></script>
-<!-- Onboarding lobby router (Phase 0). Pure decision logic (window.certanvilRouter);
-     inert until the boot/auth wiring calls it. Loads before app.js so it's available. -->
+<!-- Onboarding lobby router + wiring (Phase 0). router.js = pure decision logic
+     (window.certanvilRouter); onboarding-boot.js = guarded wiring (OFF by default,
+     ?onb=1 to enable). Both load before app.js so they're available + the resolve
+     skeleton handler registers before the home-render handler. -->
 <script defer src="lib/router.js"></script>
+<script defer src="lib/onboarding-boot.js"></script>
 <script defer src="app.js"></script>
 <!-- codex-home reveal animation. Purely presentational + additive: a
      staggered IntersectionObserver fade-up for #page-setup .reveal blocks,
