@@ -90,6 +90,28 @@
 - MODIFY: `lib/onboarding-firstrun.js` (confirm + claim), `auth-state.js` (2 call lines — **gated**), `cloud-store.js` (1 key — **gated**), `index.html` (script tag + nothing else), `sw.js` (precache — **gated**).
 - **GATED LANE** (touches `auth-state.js` + `cloud-store.js` + `sw.js`): feature branch → PR (branch DB + preview + CI) → smoke → squash-merge. Walk `SHIP_CHECKLIST.md`. No migration needed (uses existing `profiles.metadata`).
 
+## Required skills / discipline (HARD RULE)
+
+This build MUST go through the same skill discipline used across today's sessions. These are not optional passes — do not skip them.
+
+**Process (superpowers) — the spine we have followed all day:**
+- `brainstorming` → this spec ✅ (done).
+- `writing-plans` → the implementation plan (next step).
+- `executing-plans` (or `subagent-driven-development`) → execute the plan task-by-task with checkpoints.
+- `verification-before-completion` → before claiming any task or the feature "done."
+- `finishing-a-development-branch` → push + PR.
+
+**The upsell wall is a NEW UI surface → mandatory 3-pass design treatment** (CLAUDE.md hard rule):
+- `design-taste-frontend` → `emil-design-eng` → `humanizer`, applied to the wall, in that order.
+- `onboarding` activation lens — the wall is the "wanting a 2nd cert" conversion moment, so review it through the onboarding/activation lens too.
+- Match the existing onboarding surfaces: forged-bronze (`dg-system.css`), Fraunces + Inter, light-primary + dark, reduced-motion gated, real CertAnvil monogram, zero em-dashes.
+
+**Gated-lane ship:**
+- `ship` skill + `SHIP_CHECKLIST.md` for the PR (auth-state.js / cloud-store.js / sw.js). Version bump via `bump-version.js` (5 surfaces) + manual `dg-system.css?v=` bump in `index.html`.
+
+**If anything misbehaves:**
+- `systematic-debugging` (it is what correctly diagnosed Bug B as a browser extension, not the app).
+
 ## Testing
 - **UAT structural** (`tests/uat.js`): `cert-lock.js` exports `check`/`claimIfUnset`; admin/pro exemption present; `auth-state` calls `_certLock.check`; `cloud-store` carries `nplus_freeCertId`; `index.html` + `sw.js` include `cert-lock.js`.
 - **UAT VM behavioral:** extract and run the `check` decision logic — assert: free+wrong-cert → wall; free+owned → no wall; admin/pro → no wall; anon → no wall; unset → no wall.
