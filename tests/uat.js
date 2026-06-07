@@ -7575,6 +7575,44 @@ test('onb gate: onboarding-boot reads app_config via refreshConfig + onb_cfg cac
   (() => { const b = read('lib/onboarding-boot.js'); return /app_config/.test(b) && /refreshConfig/.test(b) && /onb_cfg/.test(b) && /onboarding_enabled/.test(b); })());
 test('onb gate: firstrun writes activation (baseline+moved) and skip record',
   (() => { const f = read('lib/onboarding-firstrun.js'); return /function\s+writeActivation/.test(f) && /function\s+recordSkip/.test(f) && /baseline:\s*real\.calibScore/.test(f) && /nplus_onb_skips/.test(f); })());
+// ── Free-tier cert lock ───────────────────────────────────────────────────────
+test('cert-lock: router.certHost maps all 8 certs + defaults to networkplus',
+  (() => { const r = read('lib/router.js'); return /CERT_HOST\s*=/.test(r) && /aplus\.certanvil\.com\/\?exam=core2/.test(r) && /certHost:\s*certHost/.test(r); })());
+test('cert-lock: module exposes _certLock.check + claimIfUnset, fails open',
+  (() => { const c = read('lib/cert-lock.js'); return /window\._certLock\s*=\s*\{\s*check/.test(c) && /claimIfUnset/.test(c) && /fail open/i.test(c); })());
+test('cert-lock: gate exempts pro/admin + anonymous, walls wrong cert',
+  (() => { const c = read('lib/cert-lock.js'); return /getTier\(opts\.profile\)\s*!==\s*'free'/.test(c) && /!opts\.isLoggedIn/.test(c) && /here\s*!==\s*locked/.test(c); })());
+test('cert-lock: _onbRoute calls _certLock.check BEFORE the ENABLED guard (always-on)',
+  (() => { const b = read('lib/onboarding-boot.js'); const i = b.indexOf('_certLock'); const g = b.indexOf('if (!ENABLED) return;'); return i > -1 && g > -1 && i < g; })());
+test('cert-lock: cloud-store carries nplus_freeCertId + preserves it on flush',
+  (() => { const c = read('cloud-store.js'); return /'nplus_freeCertId'/.test(c) && /jsonb\.freeCertId == null && existingMeta && existingMeta\.freeCertId/.test(c); })());
+test('cert-lock: firstrun persists freeCertId on confirm-cert for free users',
+  (() => { const f = read('lib/onboarding-firstrun.js'); return /persistFreeCert/.test(f) && /nplus_freeCertId/.test(f) && /state\.tier !== 'pro'/.test(f); })());
+test('cert-lock: index.html loads cert-lock.js after router.js, before app.js',
+  (() => { const h = read('index.html'); return h.indexOf('lib/router.js') < h.indexOf('lib/cert-lock.js') && h.indexOf('lib/cert-lock.js') < h.indexOf('src="app.js"'); })());
+test('cert-lock: vm — free+wrong cert walls; owned/pro/admin/anon/unset do not',
+  (() => {
+    try {
+      const c = read('lib/cert-lock.js');
+      const vm = require('vm');
+      const walls = [];
+      const router = { getTier: (p) => ((p && p.role === 'admin') || (p && p.metadata && p.metadata.tier === 'pro')) ? 'pro' : 'free', certHost: () => 'x' };
+      const mkCtx = (cert) => ({
+        window: { certanvilRouter: router, CURRENT_CERT: cert, cloudStore: { flush() {} } },
+        document: { getElementById: () => null, createElement: () => ({ setAttribute() {}, classList: { add() {} }, style: {} }), body: { appendChild: (el) => walls.push(el) }, documentElement: { classList: { add() {} } } },
+        localStorage: { setItem() {} }, Object: Object
+      });
+      const run = (cert, opts) => { const ctx = mkCtx(cert); vm.createContext(ctx); vm.runInContext(c + '\nwindow._certLock.check(' + JSON.stringify(opts) + ');', ctx); };
+      const before = walls.length;
+      run('secplus', { isLoggedIn: true, profile: { role: 'user', metadata: { freeCertId: 'netplus' } } });  // free, wrong -> WALL
+      const afterWrong = walls.length;
+      run('netplus', { isLoggedIn: true, profile: { role: 'user', metadata: { freeCertId: 'netplus' } } });  // owned -> no wall
+      run('secplus', { isLoggedIn: true, profile: { role: 'admin', metadata: {} } });                         // admin -> no wall
+      run('secplus', { isLoggedIn: false });                                                                   // anon -> no wall
+      run('secplus', { isLoggedIn: true, profile: { role: 'user', metadata: {} } });                          // unset -> no wall
+      return (afterWrong === before + 1) && (walls.length === afterWrong);
+    } catch (e) { return false; }
+  })());
 test('cloud cert-keying: vm — buildJsonb cert-scopes sr_queue, leaves other keys flat',
   (() => {
     try {
