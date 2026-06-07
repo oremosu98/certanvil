@@ -3515,3 +3515,25 @@ html[data-theme] body #page-setup .dw-launch{flex:0 0 auto;padding:13px 22px;bor
 .onb-ov .onb-sw-link{display:block;width:100%;text-align:center;background:none;border:none;color:var(--accent);font:600 13px/1 Inter,sans-serif;padding:14px 0 4px;cursor:pointer;}
 .onb-ov .onb-sw-link:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:6px;}
 
+/* ══ Onboarding tier chrome (Phase 2) · coachmark (one-time switcher nav hint) ══
+   Anchored popover under the Pro switcher pill, which is lifted above a light
+   scrim. Rendered into #onb-overlay by lib/onboarding-home.js; ?onb=1 only. */
+.onb-ov .onb-coach-scrim{background:oklch(0.12 0.01 275 / 0.30);}
+.onb-coach-target{position:relative;z-index:9002;border-radius:12px;box-shadow:0 0 0 3px color-mix(in oklab,var(--accent) 55%,transparent),0 0 0 6px color-mix(in oklab,var(--accent) 18%,transparent);}
+.onb-ov .onb-coach-pop{position:fixed;z-index:9003;max-width:300px;margin-right:16px;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:15px 16px;box-shadow:0 18px 40px -16px color-mix(in oklab,var(--text) 34%,transparent);}
+.onb-ov .onb-coach-pop::before{content:"";position:absolute;top:-7px;left:24px;width:13px;height:13px;background:var(--surface);border-left:1px solid var(--border);border-top:1px solid var(--border);transform:rotate(45deg);}
+.onb-ov .onb-coach-title{font-weight:700;font-size:14px;color:var(--text);margin-bottom:5px;}
+.onb-ov .onb-coach-body{font-size:13px;line-height:1.45;color:var(--text-mid);margin-bottom:14px;}
+.onb-ov .onb-coach-actions{display:flex;align-items:center;justify-content:space-between;gap:10px;}
+.onb-ov .onb-coach-skip{background:none;border:none;color:var(--text-dim);font:600 12.5px/1 Inter,sans-serif;cursor:pointer;padding:6px 2px;}
+.onb-ov .onb-coach-skip:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:6px;}
+.onb-ov .onb-coach-got{background:var(--accent);color:var(--bg);border:1px solid var(--accent);border-radius:10px;font:700 13px/1 Inter,sans-serif;padding:9px 16px;cursor:pointer;transition:transform .15s cubic-bezier(0.16,1,0.3,1),filter .2s;}
+.onb-ov .onb-coach-got:active{transform:scale(0.97);}
+.onb-ov .onb-coach-got:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+@media (hover:hover) and (pointer:fine){.onb-ov .onb-coach-got:hover{filter:brightness(1.04);}}
+/* entrance (emil): popover pops from its anchor as the scrim fades */
+.onb-ov .onb-coach-pop{opacity:0;transform:translateY(-6px) scale(0.97);transform-origin:top left;}
+.onb-ov.onb-ov-in .onb-coach-pop{opacity:1;transform:none;transition:opacity .26s cubic-bezier(0.16,1,0.3,1) .06s,transform .34s cubic-bezier(0.34,1.4,0.64,1) .06s;}
+.onb-ov.onb-ov-out .onb-coach-pop{opacity:0;transform:translateY(-4px) scale(0.98);transition:opacity .2s ease,transform .2s ease;}
+@media (prefers-reduced-motion:reduce){.onb-ov .onb-coach-pop{transform:none;}.onb-ov.onb-ov-in .onb-coach-pop{transition:opacity .2s ease;}}
+
