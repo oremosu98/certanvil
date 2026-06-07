@@ -3334,3 +3334,20 @@ html[data-theme] body #page-setup .dw-launch{flex:0 0 auto;padding:13px 22px;bor
   #page-setup .mo-stat{flex-direction:column!important;align-items:flex-start!important;gap:1px!important;}
 }
 
+/* ══ Onboarding lobby · boot resolve skeleton (Phase 0) ═══════════════════════
+   Neutral forged-bronze loading state shown while auth + routing resolve, so a
+   logged-in launch never flashes the wrong surface (decision doc §6). Hidden by
+   default; the router wiring toggles [hidden]. Fully token-driven -> themes
+   automatically. Brand: skeleton shimmer over a generic spinner; no emoji. */
+.onb-resolve{position:fixed;inset:0;z-index:9000;display:flex;align-items:center;justify-content:center;background:var(--bg);color:var(--text);}
+.onb-resolve[hidden]{display:none!important;}
+.onb-resolve-inner{display:flex;flex-direction:column;align-items:center;gap:20px;padding:24px;}
+.onb-resolve-mark svg{width:58px;height:58px;display:block;}
+.onb-resolve-word{font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:21px;letter-spacing:-0.01em;color:var(--text);}
+.onb-resolve-skel{display:flex;flex-direction:column;gap:10px;width:210px;margin-top:2px;}
+.onb-resolve-skel span{height:11px;border-radius:999px;background:linear-gradient(90deg,var(--surface2) 0%,var(--accent-dim) 50%,var(--surface2) 100%);background-size:200% 100%;animation:onbShimmer 1.4s cubic-bezier(0.16,1,0.3,1) infinite;}
+.onb-resolve-skel span:nth-child(2){width:62%;align-self:center;}
+.onb-resolve-note{font-size:12.5px;color:var(--text-dim);}
+@keyframes onbShimmer{0%{background-position:200% 0;}100%{background-position:-200% 0;}}
+@media (prefers-reduced-motion: reduce){.onb-resolve-skel span{animation:none;background:var(--surface2);}}
+
