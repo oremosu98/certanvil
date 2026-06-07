@@ -38,8 +38,9 @@
   .sbx-tag { margin-left:auto; font:600 10px Inter,sans-serif; padding:3px 8px; border-radius:999px; }
   .sbx-tag.live { color:#1c7a47; background:color-mix(in oklab,#1c7a47 16%,transparent); }
   .sbx-tag.design { color:var(--text-dim); background:color-mix(in oklab,var(--text) 10%,transparent); }
-  .sbx-card-t { font-weight:600; font-size:15px; }
-  .sbx-card-s { font-size:12.5px; color:var(--text-dim); margin-top:2px; }
+  .sbx-card > span:first-child { display:flex; flex-direction:column; gap:2px; min-width:0; }
+  .sbx-card-t { display:block; font-weight:600; font-size:15px; }
+  .sbx-card-s { display:block; font-size:12.5px; color:var(--text-dim); }
   /* panels (full-frame overlays) */
   .sbx-panel { position:absolute; inset:0; background:var(--bg); display:none; flex-direction:column; z-index:50; }
   .sbx-panel.open { display:flex; }
@@ -135,6 +136,16 @@
   ];
   function $(id){ return document.getElementById(id); }
 
+  // The sandbox is served from the prod origin, so the live first-run module's
+  // localStorage writes (onb_mock, nplus_freeCertId) would otherwise leak into the
+  // real app's state on this origin. Snapshot those keys on load and restore them
+  // (remove if originally absent) whenever we leave first-run / close the app, so
+  // the sandbox is non-destructive to real state.
+  var SNAP_KEYS = ['onb_mock', 'nplus_freeCertId', 'nplus_activated', 'nplus_onb_skips'];
+  var SNAP = {}; SNAP_KEYS.forEach(function(k){ try { SNAP[k] = localStorage.getItem(k); } catch(_) { SNAP[k] = null; } });
+  function restoreLS(){ SNAP_KEYS.forEach(function(k){ try { if (SNAP[k] === null) localStorage.removeItem(k); else localStorage.setItem(k, SNAP[k]); } catch(_){} }); }
+  window.addEventListener('pagehide', restoreLS);
+
   // theme toggle
   var themeBtn = $('sbx-theme');
   function applyTheme(t){ document.documentElement.setAttribute('data-theme', t); try{ localStorage.setItem('sbx_theme', t); }catch(_){} themeBtn.textContent = t === 'light' ? 'Light' : 'Dark'; }
@@ -168,7 +179,7 @@
     }
     var mock = e.target.closest('[data-mock]');
     if (mock){ $('sbx-mock-frame').src = mock.getAttribute('data-mock'); $('sbx-mock-title').textContent = mock.getAttribute('data-mock-title'); openPanel('sbx-panel-mock'); return; }
-    if (e.target.closest('[data-back]')){ if (e.target.closest('[data-fr-close]') && window.onbFirstRun && window.onbFirstRun.close) { try{ window.onbFirstRun.close(); }catch(_){} } var f=$('sbx-mock-frame'); if(f) f.removeAttribute('src'); closePanels(); }
+    if (e.target.closest('[data-back]')){ if (e.target.closest('[data-fr-close]') && window.onbFirstRun && window.onbFirstRun.close) { try{ window.onbFirstRun.close(); }catch(_){} } var f=$('sbx-mock-frame'); if(f) f.removeAttribute('src'); closePanels(); restoreLS(); }
   });
 
   // cert-lock: drive the real module
@@ -185,6 +196,14 @@
     try { localStorage.setItem('onb_mock','1'); } catch(_){}
     openPanel('sbx-panel-firstrun');
     try { if (window.onbFirstRun && window.onbFirstRun.start) window.onbFirstRun.start({ certId:null, tier:'free', reason:'no-cert' }); } catch(_){}
+  }
+  // First-run finishing/skipping hides #onb-firstrun (handToHome). There's no real
+  // home underneath in the sandbox, so return to the menu cleanly when that happens.
+  var frEl = $('onb-firstrun');
+  if (frEl && window.MutationObserver) {
+    new MutationObserver(function(){
+      if (frEl.hidden && $('sbx-panel-firstrun').classList.contains('open')) { closePanels(); restoreLS(); }
+    }).observe(frEl, { attributes:true, attributeFilter:['hidden'] });
   }
 })();
 </script>
