@@ -188,6 +188,13 @@
 <div id="onb-firstrun" class="onb-fr" hidden></div>
 
 <!-- ══════════════════════════════════════════
+     ONBOARDING TIER CHROME (Phase 2) — upgrade sheets + coachmark.
+     Rendered by lib/onboarding-chrome.js. Sheets fire post-aha (daily cap / add
+     a cert); tier/quota are saas-gated (#136) so triggers are stubbed for now.
+══════════════════════════════════════════ -->
+<div id="onb-overlay" class="onb-ov" hidden></div>
+
+<!-- ══════════════════════════════════════════
      PERSISTENT APP SIDEBAR (v4.53.0)
      Rendered client-side by renderAppSidebar() so the active state
      stays in sync with showPage(). Mobile: hidden off-screen, opens
@@ -1653,6 +1660,7 @@
 <script defer src="lib/router.js"></script>
 <script defer src="lib/onboarding-boot.js"></script>
 <script defer src="lib/onboarding-firstrun.js"></script>
+<script defer src="lib/onboarding-chrome.js"></script>
 <script defer src="app.js"></script>
 <!-- codex-home reveal animation. Purely presentational + additive: a
      staggered IntersectionObserver fade-up for #page-setup .reveal blocks,

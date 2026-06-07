@@ -3408,6 +3408,39 @@ html[data-theme] body #page-setup .dw-launch{flex:0 0 auto;padding:13px 22px;bor
 .onb-fr .fr-streak{display:inline-flex;align-items:center;gap:7px;margin-top:14px;font-size:12.5px;color:var(--text-dim);}
 .onb-fr .fr-streak b{color:var(--text);}
 @media (prefers-reduced-motion:reduce){.onb-fr .fr-bar-fill{transition:none;}.onb-fr .fr-delta{transition:opacity .2s ease;transform:none;}}
+
+/* ══ Onboarding tier chrome (Phase 2) · upgrade sheets ═══════════════════════ */
+.onb-ov{position:fixed;inset:0;z-index:9001;}
+.onb-ov[hidden]{display:none!important;}
+.onb-ov .onb-ov-scrim{position:absolute;inset:0;background:oklch(0.12 0.01 275 / 0.52);opacity:0;transition:opacity .3s cubic-bezier(0.16,1,0.3,1);}
+.onb-ov .onb-sheet{position:absolute;left:0;right:0;bottom:0;max-width:480px;margin:0 auto;background:var(--surface);border-radius:22px 22px 0 0;border-top:1px solid var(--border);padding:10px 22px max(26px,env(safe-area-inset-bottom));box-shadow:0 -18px 50px -20px color-mix(in oklab,var(--text) 30%,transparent);transform:translateY(100%);transition:transform .4s cubic-bezier(0.16,1,0.3,1);}
+.onb-ov.onb-ov-in .onb-ov-scrim{opacity:1;}
+.onb-ov.onb-ov-in .onb-sheet{transform:translateY(0);}
+.onb-ov.onb-ov-out .onb-ov-scrim{opacity:0;}
+.onb-ov.onb-ov-out .onb-sheet{transform:translateY(100%);}
+.onb-ov .onb-grab{width:38px;height:4px;border-radius:999px;background:var(--border);margin:4px auto 16px;}
+.onb-ov .onb-sh-title{font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:21px;line-height:1.15;letter-spacing:-0.01em;color:var(--text);margin:0 0 8px;}
+.onb-ov .onb-sh-body{font-size:14px;line-height:1.5;color:var(--text-mid);margin:0 0 16px;}
+.onb-ov .onb-reset{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;color:var(--text-dim);margin:0 0 16px;}
+.onb-ov .onb-reset svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
+.onb-ov .onb-feat{display:flex;align-items:flex-start;gap:10px;padding:7px 0;}
+.onb-ov .onb-feat svg{flex:0 0 auto;width:18px;height:18px;stroke:var(--accent);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;margin-top:1px;}
+.onb-ov .onb-feat span{font-size:13.5px;line-height:1.4;color:var(--text-mid);}
+.onb-ov .onb-feat b{color:var(--text);font-weight:650;}
+.onb-ov .onb-price-row{display:flex;gap:10px;margin:14px 0 16px;}
+.onb-ov .onb-price{flex:1 1 0;border:1px solid var(--border);border-radius:13px;padding:13px 14px;}
+.onb-ov .onb-price-sel{border-color:var(--accent);background:color-mix(in oklab,var(--accent) 7%,var(--surface));}
+.onb-ov .onb-pl{font-size:11.5px;color:var(--text-dim);font-weight:650;}
+.onb-ov .onb-pv{font-family:'Fraunces',serif;font-weight:600;font-size:22px;color:var(--text);margin-top:4px;font-variant-numeric:lining-nums;}
+.onb-ov .onb-pp{font-size:11.5px;color:var(--text-dim);margin-top:2px;}
+.onb-ov .onb-save{display:inline-block;margin-top:7px;font:800 10px/1 Inter,sans-serif;letter-spacing:0.04em;text-transform:uppercase;color:var(--green);background:var(--green-bg);border-radius:999px;padding:4px 8px;}
+.onb-ov .onb-btn{display:block;width:100%;text-align:center;font:700 15px/1 Inter,sans-serif;border-radius:13px;padding:16px 18px;cursor:pointer;border:1px solid transparent;transition:transform .15s cubic-bezier(0.16,1,0.3,1),filter .2s;}
+.onb-ov .onb-btn:active{transform:scale(0.978);}
+.onb-ov .onb-btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+.onb-ov .onb-btn-primary{background:var(--accent);color:var(--bg);border-color:var(--accent);}
+.onb-ov .onb-btn-ghost{background:transparent;color:var(--accent);border:1px solid color-mix(in oklab,var(--accent) 32%,var(--border));margin-top:9px;}
+.onb-ov .onb-fine{text-align:center;font-size:11.5px;color:var(--text-dim);margin:12px 0 0;}
+@media (hover:hover) and (pointer:fine){.onb-ov .onb-btn-primary:hover{filter:brightness(1.04);}}
 .onb-resolve-inner{display:flex;flex-direction:column;align-items:center;gap:20px;padding:24px;}
 .onb-resolve-mark svg{width:58px;height:58px;display:block;}
 .onb-resolve-word{font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:21px;letter-spacing:-0.01em;color:var(--text);}
