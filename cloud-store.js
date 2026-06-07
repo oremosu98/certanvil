@@ -112,6 +112,7 @@
     'nplus_lab_completions',
     'nplus_activated',   // onboarding: per-cert activation (metadata.activated.<certId>)
     'nplus_onb_skips',   // onboarding: per-cert diagnostic-skip record (metadata.onb_skips.<certId>)
+    'nplus_freeCertId',  // free-tier cert lock: metadata.freeCertId (single global value)
   ]);
 
   // Subset of USER_DATA that goes to a dedicated table, NOT profiles.metadata
@@ -443,6 +444,12 @@
           var merged = Object.assign({}, existing, ours);   // our cert overrides, siblings preserved
           if (Object.keys(merged).length) jsonb[k] = merged;
         });
+        // freeCertId is a single global value (not cert-scoped). If THIS flush's
+        // localStorage didn't carry it (e.g. a subdomain that hasn't hydrated it),
+        // keep the cloud value so the full-metadata replace can't drop the lock.
+        if (jsonb.freeCertId == null && existingMeta && existingMeta.freeCertId != null) {
+          jsonb.freeCertId = existingMeta.freeCertId;
+        }
         var update = { metadata: jsonb };
         if (examDate) update.exam_date = examDate;
         return sb.from('profiles').update(update).eq('id', userId);
