@@ -3378,6 +3378,36 @@ html[data-theme] body #page-setup .dw-launch{flex:0 0 auto;padding:13px 22px;bor
 .onb-fr .fr-btn-ghost{background:transparent;color:var(--accent);border:1px solid color-mix(in oklab,var(--accent) 32%,var(--border));margin-top:9px;}
 .onb-fr .fr-micro{text-align:center;font-size:12px;line-height:1.45;color:var(--text-dim);margin:11px 0 0;}
 @media (hover:hover) and (pointer:fine){.onb-fr .fr-btn-primary:hover{filter:brightness(1.04);}.onb-fr .fr-cert:hover{border-color:color-mix(in oklab,var(--accent) 40%,var(--border));}}
+/* first-run · score-reveal / +5 movement / habit screen elements */
+.onb-fr .fr-screen-center{text-align:center;}
+.onb-fr .fr-kicker-dim{color:var(--text-dim);}
+.onb-fr .fr-readiness{display:flex;flex-direction:column;align-items:center;margin:10px 0 4px;}
+.onb-fr .fr-num{font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:clamp(76px,22vw,104px);line-height:1;letter-spacing:-0.03em;color:var(--text);font-variant-numeric:lining-nums tabular-nums;font-feature-settings:"lnum","tnum";}
+.onb-fr .fr-outof{font-size:12px;font-weight:700;letter-spacing:0.09em;text-transform:uppercase;color:var(--text-dim);margin-top:4px;}
+.onb-fr .fr-delta{display:inline-flex;align-items:center;gap:5px;margin-top:12px;padding:6px 12px;border-radius:999px;font-size:13px;font-weight:700;color:var(--green);background:var(--green-bg);border:1px solid var(--green-border);opacity:0;transform:translateY(4px) scale(0.92);transition:opacity .32s cubic-bezier(0.16,1,0.3,1),transform .42s cubic-bezier(0.34,1.4,0.64,1);}
+.onb-fr .fr-delta.show{opacity:1;transform:none;}
+.onb-fr .fr-delta svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;}
+.onb-fr .fr-bar-wrap{margin:20px 0 6px;}
+.onb-fr .fr-bar-track{position:relative;height:9px;border-radius:999px;background:var(--surface2);border:1px solid var(--border);}
+.onb-fr .fr-bar-fill{position:absolute;left:0;top:0;bottom:0;border-radius:999px;background:linear-gradient(90deg,color-mix(in oklab,var(--accent) 70%,var(--text)),var(--accent));width:0;transition:width 1s cubic-bezier(0.16,1,0.3,1);}
+.onb-fr .fr-bar-tick{position:absolute;top:-7px;bottom:-7px;width:2px;background:var(--text-mid);left:80%;border-radius:2px;}
+.onb-fr .fr-bar-legend{display:flex;justify-content:space-between;margin-top:9px;font-size:11px;color:var(--text-dim);}
+.onb-fr .fr-bar-legend .fr-pass{color:var(--text-mid);font-weight:700;}
+.onb-fr .fr-gap{font-size:14px;color:var(--text-mid);margin:16px 0 0;}
+.onb-fr .fr-gap b{color:var(--text);font-weight:700;}
+.onb-fr .fr-honest{font-size:12.5px;line-height:1.5;color:var(--text-dim);margin:16px 2px 0;}
+.onb-fr .fr-chip-wrap{margin-bottom:18px;}
+.onb-fr .fr-chip{display:inline-flex;align-items:center;gap:7px;padding:7px 13px;border-radius:999px;background:color-mix(in oklab,var(--accent) 11%,var(--surface));border:1px solid color-mix(in oklab,var(--accent) 22%,var(--border));font-size:12.5px;font-weight:650;color:var(--accent);}
+.onb-fr .fr-chip .fr-dot{width:6px;height:6px;border-radius:50%;background:var(--accent);}
+.onb-fr .fr-card-focal{border:1px solid var(--accent);border-radius:16px;background:var(--accent);color:var(--bg);padding:18px;}
+.onb-fr .fr-rev{display:flex;align-items:center;gap:14px;}
+.onb-fr .fr-rev-ring{flex:0 0 auto;width:54px;height:54px;border-radius:14px;display:grid;place-items:center;background:color-mix(in oklab,var(--bg) 20%,transparent);border:1px solid color-mix(in oklab,var(--bg) 30%,transparent);}
+.onb-fr .fr-rev-ring span{font-family:'Fraunces',serif;font-weight:600;font-size:24px;color:var(--bg);font-variant-numeric:lining-nums;}
+.onb-fr .fr-rev-title{font-weight:700;font-size:15px;color:var(--bg);}
+.onb-fr .fr-rev-sub{font-size:12.5px;color:color-mix(in oklab,var(--bg) 78%,transparent);margin-top:2px;}
+.onb-fr .fr-streak{display:inline-flex;align-items:center;gap:7px;margin-top:14px;font-size:12.5px;color:var(--text-dim);}
+.onb-fr .fr-streak b{color:var(--text);}
+@media (prefers-reduced-motion:reduce){.onb-fr .fr-bar-fill{transition:none;}.onb-fr .fr-delta{transition:opacity .2s ease;transform:none;}}
 .onb-resolve-inner{display:flex;flex-direction:column;align-items:center;gap:20px;padding:24px;}
 .onb-resolve-mark svg{width:58px;height:58px;display:block;}
 .onb-resolve-word{font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:21px;letter-spacing:-0.01em;color:var(--text);}
