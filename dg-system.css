@@ -2972,6 +2972,17 @@ html[data-theme] body #page-setup{
 #page-setup .cmd-cert{font:600 21px/1.1 'Fraunces',Georgia,serif;color:var(--text)}
 #page-setup .cmd-cert b{color:var(--accent);font-weight:600}
 #page-setup .cmd-meta{display:flex;align-items:center;gap:12px;flex-wrap:wrap;min-width:0}
+/* Pro (gated, ?onb=1): the console cert id doubles as the cert switcher. The
+   onboarding module adds .onb-cmd-switch; these rules give it the affordance.
+   The chevron is absolutely placed on the id block so it never disturbs how the
+   cert name wraps. */
+#page-setup .cmd-bar.onb-cmd-switch .cmd-id{position:relative;cursor:pointer;border-radius:10px;padding-right:24px;transition:transform 160ms cubic-bezier(0.23,1,0.32,1)}
+#page-setup .cmd-bar.onb-cmd-switch .cmd-id:active{transform:scale(0.985)}  /* tactile press feedback */
+#page-setup .cmd-bar.onb-cmd-switch .cmd-id::after{content:"";position:absolute;right:7px;top:50%;width:9px;height:9px;border-right:2px solid var(--text-dim);border-bottom:2px solid var(--text-dim);transform:translateY(-60%) rotate(45deg);opacity:.75;transition:border-color .15s ease}
+#page-setup .cmd-bar.onb-cmd-switch .cmd-cert{transition:color .15s ease}
+#page-setup .cmd-bar.onb-cmd-switch .cmd-cert b{white-space:nowrap}  /* don't break the code at its hyphen - wrap at the space instead */
+#page-setup .cmd-bar.onb-cmd-switch .cmd-id:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+@media (hover:hover) and (pointer:fine){#page-setup .cmd-bar.onb-cmd-switch .cmd-id:hover .cmd-cert{color:var(--accent)}#page-setup .cmd-bar.onb-cmd-switch .cmd-id:hover::after{border-color:var(--accent)}}
 #page-setup .cmd-chip{display:flex;align-items:baseline;gap:7px;padding:8px 13px;border:1px solid var(--hairline);border-radius:10px;background:var(--surface2)}
 #page-setup .cmd-chip-n{font:600 19px/1 'Roboto Mono',monospace;color:var(--text);font-variant-numeric:tabular-nums}
 #page-setup .cmd-chip span:last-child{font-size:11px;color:var(--text-dim)}
@@ -3514,4 +3525,33 @@ html[data-theme] body #page-setup .dw-launch{flex:0 0 auto;padding:13px 22px;bor
 .onb-ov .onb-sw-add > span:nth-child(2){flex:1 1 auto;text-align:left;font-size:13.5px;font-weight:600;color:var(--text-mid);}
 .onb-ov .onb-sw-link{display:block;width:100%;text-align:center;background:none;border:none;color:var(--accent);font:600 13px/1 Inter,sans-serif;padding:14px 0 4px;cursor:pointer;}
 .onb-ov .onb-sw-link:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:6px;}
+
+/* ══ Onboarding tier chrome (Phase 2) · walkthrough tour ══════════════════════
+   One-time Joyride-style tour of the setup page. Each step lifts its target above
+   a scrim and anchors a popover below it (or above, for targets low in the
+   viewport). Rendered into #onb-overlay by lib/onboarding-home.js; ?onb=1 only. */
+.onb-ov .onb-coach-scrim{background:oklch(0.12 0.01 275 / 0.30);}
+.onb-coach-target{position:relative;z-index:9002;border-radius:12px;box-shadow:0 0 0 3px color-mix(in oklab,var(--accent) 55%,transparent),0 0 0 6px color-mix(in oklab,var(--accent) 18%,transparent);}
+.onb-ov .onb-coach-pop{position:fixed;z-index:9003;max-width:300px;margin-right:16px;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:15px 16px;box-shadow:0 18px 40px -16px color-mix(in oklab,var(--text) 34%,transparent);}
+.onb-ov .onb-coach-pop::before{content:"";position:absolute;top:-7px;left:var(--coach-arrow,24px);width:13px;height:13px;background:var(--surface);border-left:1px solid var(--border);border-top:1px solid var(--border);transform:rotate(45deg);}
+.onb-ov .onb-coach-pop--above::before{top:auto;bottom:-7px;border-left:none;border-top:none;border-right:1px solid var(--border);border-bottom:1px solid var(--border);}
+.onb-ov .onb-coach-title{font-weight:700;font-size:14px;color:var(--text);margin-bottom:5px;}
+.onb-ov .onb-coach-body{font-size:13px;line-height:1.45;color:var(--text-mid);margin-bottom:14px;}
+.onb-ov .onb-coach-actions{display:flex;align-items:center;justify-content:space-between;gap:10px;}
+.onb-ov .onb-coach-nav-grp{display:flex;align-items:center;gap:11px;}
+.onb-ov .onb-coach-count{font:600 11.5px/1 Inter,sans-serif;color:var(--text-dim);letter-spacing:.02em;}
+.onb-ov .onb-coach-nav{background:none;border:none;color:var(--text-mid);font:600 12.5px/1 Inter,sans-serif;cursor:pointer;padding:6px 2px;}
+.onb-ov .onb-coach-nav:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:6px;}
+.onb-ov .onb-coach-skip{background:none;border:none;color:var(--text-dim);font:600 12.5px/1 Inter,sans-serif;cursor:pointer;padding:6px 2px;}
+.onb-ov .onb-coach-skip:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:6px;}
+.onb-ov .onb-coach-got{background:var(--accent);color:var(--bg);border:1px solid var(--accent);border-radius:10px;font:700 13px/1 Inter,sans-serif;padding:9px 16px;cursor:pointer;transition:transform .15s cubic-bezier(0.16,1,0.3,1),filter .2s;}
+.onb-ov .onb-coach-got:active{transform:scale(0.97);}
+.onb-ov .onb-coach-got:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+@media (hover:hover) and (pointer:fine){.onb-ov .onb-coach-got:hover{filter:brightness(1.04);}}
+/* entrance (emil): popover pops from its anchor as the scrim fades */
+.onb-ov .onb-coach-pop{opacity:0;transform:translateY(-6px) scale(0.97);transform-origin:var(--coach-arrow,24px) top;}
+.onb-ov .onb-coach-pop--above{transform:translateY(6px) scale(0.97);transform-origin:var(--coach-arrow,24px) bottom;}
+.onb-ov.onb-ov-in .onb-coach-pop{opacity:1;transform:none;transition:opacity .26s cubic-bezier(0.16,1,0.3,1) .06s,transform .34s cubic-bezier(0.34,1.4,0.64,1) .06s;}
+.onb-ov.onb-ov-out .onb-coach-pop{opacity:0;transform:translateY(-4px) scale(0.98);transition:opacity .2s ease,transform .2s ease;}
+@media (prefers-reduced-motion:reduce){.onb-ov .onb-coach-pop{transform:none;}.onb-ov.onb-ov-in .onb-coach-pop{transition:opacity .2s ease;}}
 
