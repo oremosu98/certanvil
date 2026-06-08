@@ -62,6 +62,10 @@
   .hdr .back svg { width: 17px; height: 17px; stroke: currentColor; fill: none; stroke-width: 2.1; stroke-linecap: round; stroke-linejoin: round; }
   .hdr h1 { font-family: Fraunces, Georgia, serif; font-weight: 600; font-size: 21px; letter-spacing: -0.01em; margin: 0; color: var(--ink); flex: 1; }
   .hdr .plan-tag { font: 800 9.5px/1 Inter, sans-serif; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); background: color-mix(in oklab, var(--ink) 6%, transparent); border: 1px solid var(--border); border-radius: 999px; padding: 6px 9px; }
+  .app-theme { flex:0 0 auto; width:34px; height:34px; border-radius:10px; border:1px solid var(--border); background:var(--surface); display:grid; place-items:center; cursor:pointer; color:var(--ink-soft); transition:transform .14s var(--ease), border-color .18s; }
+  .app-theme:active{ transform:scale(.94); }
+  @media (hover:hover) and (pointer:fine){ .app-theme:hover{ border-color:color-mix(in oklab,var(--accent) 36%,var(--border)); } }
+  .app-theme svg{ width:17px; height:17px; stroke:currentColor; fill:none; stroke-width:1.9; stroke-linecap:round; stroke-linejoin:round; }
 
   .body { flex: 1; overflow-y: auto; padding: 4px 22px 22px; }
   .body::-webkit-scrollbar { width: 0; }
@@ -197,6 +201,7 @@
             <button class="back" type="button" aria-label="Back"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 18l-6-6 6-6"></path></svg></button>
             <h1>Settings</h1>
             <span class="plan-tag">N10-009</span>
+            <button class="app-theme" id="appTheme" type="button" aria-label="Switch theme"><svg id="appThemeIcon" viewBox="0 0 24 24" aria-hidden="true"></svg></button>
           </div>
 
           <div class="body">
@@ -342,10 +347,25 @@
   <script>
     (function () {
       var html = document.documentElement, label = document.getElementById('themeLabel'), icon = document.getElementById('themeIcon');
-      var sun = '<circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path>';
-      var moon = '<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"></path>';
-      function paint(){ var dark = html.getAttribute('data-theme') !== 'light'; label.textContent = dark ? 'Light' : 'Dark'; icon.innerHTML = dark ? moon : sun; }
-      document.getElementById('themeToggle').addEventListener('click', function(){ html.setAttribute('data-theme', html.getAttribute('data-theme') === 'light' ? 'dark' : 'light'); paint(); });
+      var appIcon = document.getElementById('appThemeIcon');
+      var SUN = '<circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path>';
+      var MOON = '<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"></path>';
+      var sun = SUN, moon = MOON;
+      try { var saved = localStorage.getItem('ca-theme'); if (saved) html.setAttribute('data-theme', saved); } catch (e) {}
+      function paint(){
+        var light = html.getAttribute('data-theme') === 'light';
+        label.textContent = light ? 'Dark' : 'Light';
+        icon.innerHTML = light ? sun : moon;
+        if (appIcon) appIcon.innerHTML = light ? MOON : SUN;
+      }
+      function toggleTheme(){
+        var next = html.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+        html.setAttribute('data-theme', next);
+        try { localStorage.setItem('ca-theme', next); } catch (e) {}
+        paint();
+      }
+      document.getElementById('themeToggle').addEventListener('click', toggleTheme);
+      document.getElementById('appTheme').addEventListener('click', toggleTheme);
       paint();
 
       // segmented preset controls (single selection per group)

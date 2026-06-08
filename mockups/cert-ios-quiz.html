@@ -42,6 +42,15 @@
   .theme-toggle svg { width: 15px; height: 15px; stroke: currentColor; fill: none; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
   .theme-toggle:active { transform: scale(0.97); }
 
+  /* State switcher (gallery chips above the phone) */
+  .switcher { display: flex; gap: 8px; justify-content: center; margin-bottom: 20px; flex-wrap: wrap; }
+  .switch-chip { font: 700 12px/1 Inter, sans-serif; color: var(--page-dim); background: transparent;
+    border: 1px solid color-mix(in oklab, var(--page-dim) 34%, transparent); border-radius: 999px; padding: 8px 14px; cursor: pointer;
+    transition: transform .14s var(--ease), color .18s, border-color .18s, background .18s; }
+  .switch-chip:active { transform: scale(0.96); }
+  @media (hover:hover) and (pointer:fine) { .switch-chip:hover { border-color: color-mix(in oklab, var(--accent-bright) 50%, transparent); color: var(--page-ink); } }
+  .switch-chip.on { color: var(--on-accent); background: var(--accent); border-color: var(--accent); }
+
   .phone-wrap { display: flex; flex-direction: column; align-items: center; }
   .phone { width: 390px; height: 844px; border-radius: 52px; padding: 11px; flex: 0 0 auto;
     background: linear-gradient(165deg, #23262f, #0c0d11); box-shadow: 0 40px 90px -34px rgba(0,0,0,0.6), 0 0 0 1.5px rgba(255,255,255,0.06) inset; }
@@ -52,20 +61,48 @@
   .sb-icons { display: inline-flex; gap: 6px; align-items: center; }
   .sb-icons svg { width: 17px; height: 12px; fill: var(--ink); }
 
-  /* quiz top bar: exit + progress */
+  /* quiz top bar: exit + progress + in-app theme toggle */
   .qbar { display: flex; align-items: center; gap: 13px; padding: 13px 20px 12px; }
   .qbar .exit { flex: 0 0 auto; width: 34px; height: 34px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface); display: grid; place-items: center; cursor: pointer; color: var(--ink-soft); transition: transform .14s var(--ease), border-color .18s; }
   .qbar .exit:active { transform: scale(0.94); }
   .qbar .exit svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
   .qprog { flex: 1 1 auto; }
   .qprog-track { height: 6px; border-radius: 999px; background: var(--track); overflow: hidden; }
-  .qprog-fill { height: 100%; border-radius: 999px; background: var(--accent); width: 35%; transition: width .5s var(--ease); }
+  .qprog-fill { height: 100%; border-radius: 999px; background: var(--accent); width: 20%; transition: width .5s var(--ease); }
   .qprog-num { display: block; font: 700 11px/1 Inter, sans-serif; color: var(--muted); margin-top: 6px; letter-spacing: 0.02em; }
+
+  /* in-app theme toggle (separate from the stage-head preview toggle) */
+  .app-theme { flex:0 0 auto; width:34px; height:34px; border-radius:10px; border:1px solid var(--border); background:var(--surface); display:grid; place-items:center; cursor:pointer; color:var(--ink-soft); transition:transform .14s var(--ease), border-color .18s; }
+  .app-theme:active{ transform:scale(.94); }
+  @media (hover:hover) and (pointer:fine){ .app-theme:hover{ border-color:color-mix(in oklab,var(--accent) 36%,var(--border)); } }
+  .app-theme svg{ width:17px; height:17px; stroke:currentColor; fill:none; stroke-width:1.9; stroke-linecap:round; stroke-linejoin:round; }
 
   .body { flex: 1; overflow-y: auto; padding: 8px 20px 14px; }
   .body::-webkit-scrollbar { width: 0; }
-  .q-topic { display: inline-flex; align-items: center; gap: 7px; font: 800 9.5px/1 Inter, sans-serif; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent-deep); background: color-mix(in oklab, var(--accent) 11%, transparent); border: 1px solid color-mix(in oklab, var(--accent) 26%, var(--border)); border-radius: 999px; padding: 6px 10px; }
-  .q-stem { font-family: Fraunces, Georgia, serif; font-weight: 600; font-size: 22px; line-height: 1.28; letter-spacing: -0.01em; color: var(--ink); margin: 15px 0 18px; }
+
+  /* numbered question pills */
+  .qpills { display: flex; gap: 7px; margin: 2px 0 16px; }
+  .qpills .qp { flex: 0 0 auto; width: 28px; height: 28px; border-radius: 9px; display: grid; place-items: center;
+    font: 800 12px/1 Inter, sans-serif; color: var(--muted); background: var(--surface-2); border: 1px solid transparent;
+    transition: background .18s, color .18s, border-color .18s; }
+  .qpills .qp.on { color: var(--on-accent); background: var(--accent); }
+  .qpills .qp.done { color: var(--accent-deep); background: color-mix(in oklab, var(--accent) 12%, var(--surface-2)); border-color: color-mix(in oklab, var(--accent) 30%, var(--border)); }
+
+  /* question head: Q-number + difficulty tag */
+  .q-head { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+  .q-num { font: 800 12px/1 Inter, sans-serif; letter-spacing: 0.04em; color: var(--ink-soft); }
+  .q-diff { font: 800 9.5px/1 Inter, sans-serif; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent-deep);
+    background: color-mix(in oklab, var(--accent) 11%, transparent); border: 1px solid color-mix(in oklab, var(--accent) 26%, var(--border)); border-radius: 999px; padding: 6px 10px; }
+
+  .q-stem { font-family: Fraunces, Georgia, serif; font-weight: 600; font-size: 22px; line-height: 1.28; letter-spacing: -0.01em; color: var(--ink); margin: 0 0 16px; }
+  .q-stem .kw { color: var(--accent-deep); font-style: italic; }
+
+  /* scenario context box (tinted card, left accent border) */
+  .scenario { border: 1px solid color-mix(in oklab, var(--accent) 22%, var(--border)); border-left: 3px solid var(--accent);
+    border-radius: 12px; background: color-mix(in oklab, var(--accent) 6%, var(--surface)); padding: 11px 13px; margin-bottom: 18px; }
+  .scenario .sc-k { display: flex; align-items: center; gap: 7px; font: 800 9.5px/1 Inter, sans-serif; letter-spacing: 0.11em; text-transform: uppercase; color: var(--accent-deep); margin-bottom: 7px; }
+  .scenario .sc-k svg { width: 13px; height: 13px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .scenario p { margin: 0; font: 500 13px/1.5 Inter, sans-serif; color: var(--ink-soft); }
 
   .opt { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; border: 1px solid var(--border); border-radius: 14px; background: var(--surface); padding: 13px 14px; margin-bottom: 10px; cursor: pointer; font: inherit; color: var(--ink); transition: border-color .18s, background .18s, opacity .2s, transform .12s var(--ease); }
   .opt:active { transform: scale(0.99); }
@@ -84,17 +121,53 @@
   .answered .opt.wrong { border-color: color-mix(in oklab, var(--miss) 50%, var(--border)); background: color-mix(in oklab, var(--miss) 8%, var(--surface)); }
   .answered .opt.wrong .ltr { background: var(--miss); color: var(--on-accent); }
   .answered .opt.wrong .ock { opacity: 1; color: var(--miss); }
-  .answered .opt.dim { opacity: 0.6; }
+  .answered .opt.dim { opacity: 0.55; }
 
-  /* explanation */
-  .why { border: 1px solid color-mix(in oklab, var(--pass) 26%, var(--border)); border-radius: 15px; background: color-mix(in oklab, var(--pass) 5%, var(--surface)); padding: 14px 15px; margin-top: 4px; }
-  .why-h { display: flex; align-items: center; gap: 8px; font: 800 10px/1 Inter, sans-serif; letter-spacing: 0.1em; text-transform: uppercase; color: var(--pass); margin-bottom: 9px; }
-  .why-h svg { width: 14px; height: 14px; stroke: var(--pass); fill: none; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
-  .why p { margin: 0; font-size: 13px; line-height: 1.5; color: var(--ink-soft); }
+  /* verdict + explanation */
+  .why { border: 1px solid color-mix(in oklab, var(--miss) 26%, var(--border)); border-radius: 15px; background: color-mix(in oklab, var(--miss) 5%, var(--surface)); padding: 14px 15px; margin-top: 4px; }
+  .why-h { display: flex; align-items: center; gap: 8px; font: 800 11px/1.3 Inter, sans-serif; letter-spacing: 0.04em; color: var(--miss); margin-bottom: 9px; }
+  .why-h svg { width: 15px; height: 15px; stroke: var(--miss); fill: none; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; flex: 0 0 auto; }
+  .why p { margin: 0; font-size: 13px; line-height: 1.52; color: var(--ink-soft); }
   .why p b { color: var(--ink); font-weight: 650; }
-  .why-more { display: inline-flex; align-items: center; gap: 6px; margin-top: 12px; font: 700 12.5px/1 Inter, sans-serif; color: var(--accent-deep); background: color-mix(in oklab, var(--accent) 10%, transparent); border: 1px solid color-mix(in oklab, var(--accent) 30%, var(--border)); border-radius: 999px; padding: 8px 12px; cursor: pointer; transition: background .2s, transform .14s var(--ease); }
-  .why-more:active { transform: scale(0.97); }
-  .why-more svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+  /* study link chip */
+  .why-study { display: inline-flex; align-items: center; gap: 7px; margin-top: 13px; font: 700 12px/1 Inter, sans-serif; color: var(--accent-deep);
+    background: color-mix(in oklab, var(--accent) 10%, transparent); border: 1px solid color-mix(in oklab, var(--accent) 30%, var(--border)); border-radius: 999px; padding: 8px 12px; cursor: pointer; transition: background .2s, transform .14s var(--ease); }
+  .why-study:active { transform: scale(0.97); }
+  @media (hover:hover) and (pointer:fine) { .why-study:hover { background: color-mix(in oklab, var(--accent) 16%, transparent); } }
+  .why-study svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+  /* secondary action row */
+  .why-acts { display: flex; gap: 8px; margin-top: 13px; }
+  .why-act { flex: 1 1 0; display: inline-flex; align-items: center; justify-content: center; gap: 6px; font: 700 11.5px/1.1 Inter, sans-serif; color: var(--ink-soft);
+    background: var(--surface-2); border: 1px solid var(--border); border-radius: 11px; padding: 10px 6px; cursor: pointer; text-align: center;
+    transition: border-color .18s, color .18s, transform .12s var(--ease); }
+  .why-act:active { transform: scale(0.97); }
+  @media (hover:hover) and (pointer:fine) { .why-act:hover { border-color: color-mix(in oklab, var(--accent) 36%, var(--border)); color: var(--ink); } }
+  .why-act svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex: 0 0 auto; }
+
+  /* generating (AI question-generation loading) */
+  .gen-line { font-family: Fraunces, Georgia, serif; font-weight: 600; font-size: 16px; line-height: 1.4; letter-spacing: -0.008em; color: var(--ink); text-align: center; margin: 18px 14px 22px; }
+  .sk { border-radius: 12px; background: var(--surface-2); }
+  .sk-stem { height: 18px; margin-bottom: 10px; }
+  .sk-stem.short { width: 62%; margin-bottom: 22px; }
+  .sk-opt { height: 50px; border-radius: 14px; margin-bottom: 10px; background: var(--surface); border: 1px solid var(--border); position: relative; overflow: hidden; }
+  .sk-opt::before { content: ""; position: absolute; left: 14px; top: 50%; transform: translateY(-50%); width: 30px; height: 30px; border-radius: 9px; background: var(--surface-2); }
+  .gen-prog { margin: 8px 2px 0; }
+  .gen-prog-track { height: 4px; border-radius: 999px; background: var(--track); overflow: hidden; position: relative; }
+  .gen-prog-bar { position: absolute; top: 0; bottom: 0; width: 40%; border-radius: 999px; background: var(--accent); left: -40%; }
+  .gen-prog-cap { display: block; text-align: center; font: 600 11.5px/1 Inter, sans-serif; color: var(--muted); margin-top: 10px; letter-spacing: 0.01em; }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .sk, .sk-opt::before { position: relative; }
+    .shimmer { position: relative; overflow: hidden; }
+    .shimmer::after { content: ""; position: absolute; inset: 0; transform: translateX(-100%);
+      background: linear-gradient(90deg, transparent, color-mix(in oklab, var(--ink) 9%, transparent), transparent);
+      animation: shimmer 1.35s var(--ease) infinite; }
+    @keyframes shimmer { to { transform: translateX(100%); } }
+    .gen-prog-bar { animation: indeterminate 1.5s var(--ease) infinite; }
+    @keyframes indeterminate { 0% { left: -40%; } 100% { left: 100%; } }
+  }
 
   /* footer action */
   .qfoot { flex: 0 0 auto; padding: 12px 20px calc(12px + env(safe-area-inset-bottom)); border-top: 1px solid color-mix(in oklab, var(--border) 70%, transparent); background: var(--bg); }
@@ -108,9 +181,13 @@
     .reveal { opacity: 0; transform: translateY(9px); animation: rise .5s var(--ease) forwards; }
     .reveal:nth-child(1){animation-delay:.04s}.reveal:nth-child(2){animation-delay:.08s}.reveal:nth-child(3){animation-delay:.12s}
     .reveal:nth-child(4){animation-delay:.16s}.reveal:nth-child(5){animation-delay:.20s}.reveal:nth-child(6){animation-delay:.24s}
+    .reveal:nth-child(7){animation-delay:.28s}.reveal:nth-child(8){animation-delay:.32s}
     @keyframes rise { to { opacity: 1; transform: none; } }
     .why { animation: rise .4s var(--ease) both; }
   }
+
+  .state { display: none; }
+  .state.on { display: block; }
   .hint { text-align: center; color: var(--page-dim); font-size: 12px; margin-top: 18px; }
   @media (max-width: 440px) { .phone { transform: scale(.92); transform-origin: top center; } }
 </style>
@@ -121,12 +198,18 @@
       <div>
         <p class="stage-eyebrow">Cert app · iOS</p>
         <h1 class="stage-title">Quiz</h1>
-        <p class="stage-sub">The core study screen, in the onboarding language. One question at a time, then the answer reveal with a plain explanation and the option to go deeper.</p>
+        <p class="stage-sub">The live study loop, in the onboarding language. AI generates the set, you answer one question at a time, then the reveal explains the miss and points you to the next move.</p>
       </div>
       <button class="theme-toggle" id="themeToggle" type="button" aria-label="Toggle light and dark">
         <svg id="themeIcon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></svg>
         <span id="themeLabel">Dark</span>
       </button>
+    </div>
+
+    <div class="switcher" id="switcher">
+      <button class="switch-chip" type="button" data-state="gen">Generating</button>
+      <button class="switch-chip on" type="button" data-state="q">Question</button>
+      <button class="switch-chip" type="button" data-state="ans">Answered</button>
     </div>
 
     <div class="phone-wrap">
@@ -145,79 +228,157 @@
             <button class="exit" type="button" aria-label="Exit session"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
             <div class="qprog">
               <div class="qprog-track"><div class="qprog-fill" id="qfill"></div></div>
-              <span class="qprog-num">Question 7 of 20</span>
+              <span class="qprog-num" id="qprogNum">Question 1 of 5</span>
+            </div>
+            <button class="app-theme" id="appTheme" type="button" aria-label="Switch theme"><svg id="appThemeIcon" viewBox="0 0 24 24" aria-hidden="true"></svg></button>
+          </div>
+
+          <!-- STATE 1: GENERATING -->
+          <div class="state" id="stateGen">
+            <div class="body">
+              <div class="reveal sk sk-stem shimmer"></div>
+              <div class="reveal sk sk-stem shimmer"></div>
+              <div class="reveal sk sk-stem short shimmer"></div>
+              <div class="reveal sk-opt shimmer"></div>
+              <div class="reveal sk-opt shimmer"></div>
+              <div class="reveal sk-opt shimmer"></div>
+              <div class="reveal sk-opt shimmer"></div>
+              <p class="gen-line reveal">Generating 5 Foundational questions on Mixed - All Topics...</p>
+              <div class="gen-prog reveal">
+                <div class="gen-prog-track"><div class="gen-prog-bar"></div></div>
+                <span class="gen-prog-cap">Generating questions...</span>
+              </div>
+            </div>
+            <div class="qfoot">
+              <button class="btn-primary" type="button" disabled>Preparing your set</button>
             </div>
           </div>
 
-          <div class="body" id="qbody">
-            <span class="q-topic reveal">Switching</span>
-            <p class="q-stem reveal">A switch port needs to carry traffic for several VLANs to a neighbouring switch. How should the port be configured?</p>
+          <!-- STATE 2: QUESTION -->
+          <div class="state on" id="stateQ">
+            <div class="body" id="qbody">
+              <div class="qpills reveal">
+                <span class="qp on">1</span><span class="qp">2</span><span class="qp">3</span><span class="qp">4</span><span class="qp">5</span>
+              </div>
+              <div class="q-head reveal">
+                <span class="q-num">Q1</span>
+                <span class="q-diff">Exam level</span>
+              </div>
+              <p class="q-stem reveal">A network administrator is deploying a DHCP server and needs to ensure that a critical server <span class="kw">always</span> receives the same IP address. Which DHCP feature should be configured?</p>
 
-            <div class="opt reveal" data-opt="a"><span class="ltr">A</span><span class="otx">As an access port</span><span class="ock"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"></path></svg></span></div>
-            <div class="opt reveal" data-opt="b" data-correct="1"><span class="ltr">B</span><span class="otx">As a trunk port</span><span class="ock"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"></path></svg></span></div>
-            <div class="opt reveal" data-opt="c"><span class="ltr">C</span><span class="otx">As a mirror port</span><span class="ock"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"></path></svg></span></div>
-            <div class="opt reveal" data-opt="d"><span class="ltr">D</span><span class="otx">As a console port</span><span class="ock"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"></path></svg></span></div>
+              <div class="scenario reveal">
+                <div class="sc-k"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 8v.01M11 12h1v4h1"></path></svg>Scenario</div>
+                <p>The server's MAC address is known, and it must remain on the same subnet for monitoring and backup systems to function correctly.</p>
+              </div>
 
-            <div class="why" id="why" hidden>
-              <div class="why-h"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6L9 17l-5-5"></path></svg><span id="whyVerdict">Correct</span></div>
-              <p>A <b>trunk port</b> carries traffic for multiple VLANs between switches, tagging each frame with 802.1Q so the other side knows which VLAN it belongs to. An access port only carries one VLAN, and a mirror port just copies traffic for monitoring.</p>
-              <button class="why-more" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 8v.01M11 12h1v4h1"></path></svg>Explain further</button>
+              <div class="opt reveal" data-opt="a"><span class="ltr">A</span><span class="otx">DHCP option 66 to specify the TFTP server address</span><span class="ock"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"></path></svg></span></div>
+              <div class="opt reveal" data-opt="b" data-correct="1"><span class="ltr">B</span><span class="otx">DHCP reservation to bind the server's MAC address to a specific IP</span><span class="ock"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"></path></svg></span></div>
+              <div class="opt reveal" data-opt="c"><span class="ltr">C</span><span class="otx">DHCP option 51 to extend the lease time indefinitely</span><span class="ock"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"></path></svg></span></div>
+              <div class="opt reveal" data-opt="d"><span class="ltr">D</span><span class="otx">DHCP snooping to prevent unauthorised DHCP servers on the network</span><span class="ock"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"></path></svg></span></div>
+            </div>
+            <div class="qfoot">
+              <button class="btn-primary" id="qaction" type="button" disabled>Next</button>
             </div>
           </div>
 
-          <div class="qfoot">
-            <button class="btn-primary" id="qaction" type="button" disabled>Check answer</button>
+          <!-- STATE 3: ANSWERED -->
+          <div class="state" id="stateAns">
+            <div class="body answered">
+              <div class="qpills reveal">
+                <span class="qp done">1</span><span class="qp">2</span><span class="qp">3</span><span class="qp">4</span><span class="qp">5</span>
+              </div>
+              <div class="q-head reveal">
+                <span class="q-num">Q1</span>
+                <span class="q-diff">Exam level</span>
+              </div>
+              <p class="q-stem reveal">A network administrator is deploying a DHCP server and needs to ensure that a critical server <span class="kw">always</span> receives the same IP address. Which DHCP feature should be configured?</p>
+
+              <div class="opt wrong reveal"><span class="ltr">A</span><span class="otx">DHCP option 66 to specify the TFTP server address</span><span class="ock"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"></path></svg></span></div>
+              <div class="opt correct reveal"><span class="ltr">B</span><span class="otx">DHCP reservation to bind the server's MAC address to a specific IP</span><span class="ock"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"></path></svg></span></div>
+              <div class="opt dim reveal"><span class="ltr">C</span><span class="otx">DHCP option 51 to extend the lease time indefinitely</span><span class="ock"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"></path></svg></span></div>
+              <div class="opt dim reveal"><span class="ltr">D</span><span class="otx">DHCP snooping to prevent unauthorised DHCP servers on the network</span><span class="ock"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"></path></svg></span></div>
+
+              <div class="why">
+                <div class="why-h"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg><span>Wrong - correct answer: B</span></div>
+                <p>DHCP reservation ties a specific MAC address to a fixed IP address within the DHCP scope, ensuring the server <b>always</b> receives the same IP while remaining centrally managed by DHCP. Option A (DHCP option 66) specifies a TFTP server for boot operations, not IP assignment. Option C (DHCP option 51) controls lease time but does not guarantee the same IP, other hosts could receive it. Option D (DHCP snooping) is a security feature that validates DHCP messages, not an assignment mechanism.</p>
+                <button class="why-study" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h11a3 3 0 0 1 3 3v11M4 5v13a2 2 0 0 0 2 2h12"></path><path d="M4 5a2 2 0 0 1 2-2h9"></path></svg>Study: DNS &amp; DHCP (Obj 1.6)</button>
+                <div class="why-acts">
+                  <button class="why-act" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.3-1 .8-1 1.7M12 17v.01"></path></svg>Explain further</button>
+                  <button class="why-act" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10"></path></svg>Drill this concept</button>
+                  <button class="why-act" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 9v4M12 17v.01M10.3 4.3 3.4 16a2 2 0 0 0 1.7 3h13.8a2 2 0 0 0 1.7-3L13.7 4.3a2 2 0 0 0-3.4 0z"></path></svg>Report issue</button>
+                </div>
+              </div>
+            </div>
+            <div class="qfoot">
+              <button class="btn-primary" type="button">Next question</button>
+            </div>
           </div>
+
         </div>
       </div>
-      <p class="hint">Tap an answer, then Check. Try the wrong one to see the miss state.</p>
+      <p class="hint" id="hint">In the Question state, tap an answer, then Next. Switch states with the chips above.</p>
     </div>
   </div>
 
   <script>
     (function () {
-      var html = document.documentElement, label = document.getElementById('themeLabel'), icon = document.getElementById('themeIcon');
-      var sun = '<circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path>';
-      var moon = '<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"></path>';
-      function paint(){ var dark = html.getAttribute('data-theme') !== 'light'; label.textContent = dark ? 'Light' : 'Dark'; icon.innerHTML = dark ? moon : sun; }
-      document.getElementById('themeToggle').addEventListener('click', function(){ html.setAttribute('data-theme', html.getAttribute('data-theme') === 'light' ? 'dark' : 'light'); paint(); });
+      var html = document.documentElement,
+          label = document.getElementById('themeLabel'), icon = document.getElementById('themeIcon'),
+          appIcon = document.getElementById('appThemeIcon');
+      var SUN = '<circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path>';
+      var MOON = '<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"></path>';
+      var STORE = 'ca-theme';
+
+      function paint(){
+        var light = html.getAttribute('data-theme') === 'light';
+        // stage-head preview toggle: label + icon point to where a tap goes next
+        label.textContent = light ? 'Dark' : 'Light';
+        icon.innerHTML = light ? MOON : SUN;
+        // in-app toggle: light shows moon (tap to go dark)
+        appIcon.innerHTML = light ? MOON : SUN;
+      }
+      function toggle(){
+        var next = html.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+        html.setAttribute('data-theme', next);
+        try { localStorage.setItem(STORE, next); } catch (e) {}
+        paint();
+      }
+      // load persisted theme
+      try { var saved = localStorage.getItem(STORE); if (saved) html.setAttribute('data-theme', saved); } catch (e) {}
+
+      document.getElementById('themeToggle').addEventListener('click', toggle);
+      document.getElementById('appTheme').addEventListener('click', toggle);
       paint();
 
-      var body = document.getElementById('qbody'), action = document.getElementById('qaction'),
-          why = document.getElementById('why'), whyVerdict = document.getElementById('whyVerdict');
-      var opts = [].slice.call(body.querySelectorAll('.opt'));
-      var selected = null, answered = false;
+      // State switcher
+      var states = { gen: document.getElementById('stateGen'), q: document.getElementById('stateQ'), ans: document.getElementById('stateAns') };
+      var fill = document.getElementById('qfill'), progNum = document.getElementById('qprogNum'), hint = document.getElementById('hint');
+      var chips = [].slice.call(document.querySelectorAll('#switcher .switch-chip'));
+      var META = {
+        gen: { w: '8%',  num: 'Building set...', hint: 'Generating state. AI is writing the question set before the first card.' },
+        q:   { w: '20%', num: 'Question 1 of 5', hint: 'Question state. Tap an answer, then Next. Switch states with the chips above.' },
+        ans: { w: '20%', num: 'Question 1 of 5', hint: 'Answered state. The reveal leads with the right answer, then the explanation and next moves.' }
+      };
+      function show(key){
+        for (var k in states) states[k].classList.toggle('on', k === key);
+        chips.forEach(function(c){ c.classList.toggle('on', c.getAttribute('data-state') === key); });
+        var m = META[key]; fill.style.width = m.w; progNum.textContent = m.num; hint.textContent = m.hint;
+        if (key === 'q') resetQuestion();
+      }
+      chips.forEach(function(c){ c.addEventListener('click', function(){ show(c.getAttribute('data-state')); }); });
 
+      // Question-state interaction (answer then Next)
+      var qbody = document.getElementById('qbody'), action = document.getElementById('qaction');
+      var opts = [].slice.call(qbody.querySelectorAll('.opt'));
+      var selected = null;
+      function resetQuestion(){ selected = null; action.disabled = true; opts.forEach(function(o){ o.classList.remove('sel'); }); }
       opts.forEach(function(o){
         o.addEventListener('click', function(){
-          if (answered) return;
           opts.forEach(function(x){ x.classList.remove('sel'); });
           o.classList.add('sel'); selected = o; action.disabled = false;
         });
       });
-
-      function reveal(){
-        answered = true; body.classList.add('answered');
-        var correct = selected.getAttribute('data-correct') === '1';
-        opts.forEach(function(o){
-          var isC = o.getAttribute('data-correct') === '1';
-          o.classList.remove('sel');
-          if (isC) o.classList.add('correct');
-          else if (o === selected) o.classList.add('wrong');
-          else o.classList.add('dim');
-        });
-        whyVerdict.textContent = correct ? 'Correct' : 'Not quite';
-        why.querySelector('.why-h').style.color = correct ? 'var(--pass)' : 'var(--miss)';
-        why.querySelector('.why-h svg').style.stroke = correct ? 'var(--pass)' : 'var(--miss)';
-        why.style.borderColor = correct ? 'color-mix(in oklab, var(--pass) 26%, var(--border))' : 'color-mix(in oklab, var(--miss) 26%, var(--border))';
-        why.style.background = correct ? 'color-mix(in oklab, var(--pass) 5%, var(--surface))' : 'color-mix(in oklab, var(--miss) 5%, var(--surface))';
-        why.hidden = false;
-        action.textContent = 'Next question';
-      }
-      action.addEventListener('click', function(){
-        if (!answered){ if (selected) reveal(); }
-        else { /* mockup: would advance to the next question */ }
-      });
+      action.addEventListener('click', function(){ if (selected) show('ans'); });
     })();
   </script>
 </body>

@@ -61,6 +61,10 @@
   .tb-set { flex: 0 0 auto; width: 34px; height: 34px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface); display: grid; place-items: center; cursor: pointer; color: var(--ink-soft); transition: transform .14s var(--ease), border-color .18s; }
   .tb-set:active { transform: scale(0.94); }
   .tb-set svg { width: 17px; height: 17px; stroke: currentColor; fill: none; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+  .app-theme { flex:0 0 auto; width:34px; height:34px; border-radius:10px; border:1px solid var(--border); background:var(--surface); display:grid; place-items:center; cursor:pointer; color:var(--ink-soft); transition:transform .14s var(--ease), border-color .18s; }
+  .app-theme:active{ transform:scale(.94); }
+  @media (hover:hover) and (pointer:fine){ .app-theme:hover{ border-color:color-mix(in oklab,var(--accent) 36%,var(--border)); } }
+  .app-theme svg{ width:17px; height:17px; stroke:currentColor; fill:none; stroke-width:1.9; stroke-linecap:round; stroke-linejoin:round; }
 
   /* swipe-paged shell: sticky segmented control + horizontal scroll-snap pager */
   .seg { flex:0 0 auto; display:flex; gap:8px; overflow-x:auto; padding:8px 16px 10px; scrollbar-width:none; }
@@ -253,6 +257,7 @@
             <span class="tb-mark">N+</span>
             <span class="tb-name"><b>Network+</b><span>N10-009</span></span>
             <button class="tb-set" type="button" aria-label="Settings"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M19 12a7 7 0 0 0-.1-1l2-1.5-2-3.5-2.4 1a7 7 0 0 0-1.7-1L16.5 2h-4l-.3 2.6a7 7 0 0 0-1.7 1l-2.4-1-2 3.5 2 1.5a7 7 0 0 0 0 2l-2 1.5 2 3.5 2.4-1a7 7 0 0 0 1.7 1l.3 2.6h4l.3-2.6a7 7 0 0 0 1.7-1l2.4 1 2-3.5-2-1.5a7 7 0 0 0 .1-1z"></path></svg></button>
+            <button class="app-theme" id="appTheme" type="button" aria-label="Switch theme"><svg id="appThemeIcon" viewBox="0 0 24 24" aria-hidden="true"></svg></button>
           </div>
 
           <!-- SEGMENTED CONTROL (chips) -->
@@ -523,10 +528,25 @@
   <script>
     (function () {
       var html = document.documentElement, label = document.getElementById('themeLabel'), icon = document.getElementById('themeIcon');
-      var sun = '<circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path>';
-      var moon = '<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"></path>';
-      function paint(){ var dark = html.getAttribute('data-theme') !== 'light'; label.textContent = dark ? 'Light' : 'Dark'; icon.innerHTML = dark ? moon : sun; }
-      document.getElementById('themeToggle').addEventListener('click', function(){ html.setAttribute('data-theme', html.getAttribute('data-theme') === 'light' ? 'dark' : 'light'); paint(); });
+      var appIcon = document.getElementById('appThemeIcon');
+      var SUN = '<circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path>';
+      var MOON = '<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"></path>';
+      var sun = SUN, moon = MOON;
+      try { var saved = localStorage.getItem('ca-theme'); if (saved) html.setAttribute('data-theme', saved); } catch (e) {}
+      function paint(){
+        var light = html.getAttribute('data-theme') === 'light';
+        label.textContent = light ? 'Dark' : 'Light';
+        icon.innerHTML = light ? sun : moon;
+        if (appIcon) appIcon.innerHTML = light ? MOON : SUN;
+      }
+      function toggleTheme(){
+        var next = html.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+        html.setAttribute('data-theme', next);
+        try { localStorage.setItem('ca-theme', next); } catch (e) {}
+        paint();
+      }
+      document.getElementById('themeToggle').addEventListener('click', toggleTheme);
+      document.getElementById('appTheme').addEventListener('click', toggleTheme);
       paint();
 
       var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
