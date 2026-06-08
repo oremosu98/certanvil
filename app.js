@@ -6191,6 +6191,36 @@ function showSetupError() {
   if (errBox) errBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
+// v7.x: surface the gate message in-view, anchored under the tapped control,
+// with one-tap sign-in. Falls back to top of the active page if no anchor.
+// Only shown for the signed-out "Sign in to study free" gate — never for
+// signed-in users or BYO-key validation errors.
+function _showSignInPrompt(anchorEl, message) {
+  document.querySelectorAll('.signin-inline').forEach(function(n) { n.remove(); });
+  var box = document.createElement('div');
+  box.className = 'signin-inline';
+  box.setAttribute('role', 'status');
+  box.innerHTML = '<span class="signin-inline-msg"></span>' +
+    '<button type="button" class="btn btn-primary signin-inline-cta">Sign in to start free</button>';
+  box.querySelector('.signin-inline-msg').textContent = message ||
+    'Sign in to study free: 20 questions a day, no API key needed.';
+  box.querySelector('.signin-inline-cta').addEventListener('click', function() {
+    // Prefer clicking the topbar pill so auth-state.js owns the URL-build logic.
+    var pill = document.querySelector('.topbar-signin-pill');
+    if (pill) { pill.click(); return; }
+    // Fallback: navigate directly to the certanvil.com sign-in page.
+    var here = window.location.origin + window.location.pathname;
+    window.location.href = 'https://certanvil.com/?action=signin&return=' + encodeURIComponent(here);
+  });
+  if (anchorEl && anchorEl.parentNode) {
+    anchorEl.insertAdjacentElement('afterend', box);
+  } else {
+    var page = document.querySelector('.page.active') || document.body;
+    page.insertBefore(box, page.firstChild);
+  }
+  box.scrollIntoView({ block: 'center', behavior: 'smooth' });
+}
+
 // ══════════════════════════════════════════
 // START REGULAR QUIZ
 // ══════════════════════════════════════════
@@ -6203,6 +6233,13 @@ async function startQuiz() {
   if (keyErr) {
     errBox.textContent = keyErr; errBox.classList.remove('is-hidden');
     showSetupError();
+    // v7.x: if this is the signed-out gate (no key, not signed in), surface an
+    // in-view prompt anchored to the Generate Quiz CTA or the primaryLaunch tile.
+    if (window._certanvilSignedIn !== true && !key) {
+      var anchor = document.querySelector('.cq-summary-cta') ||
+                   document.getElementById('primaryLaunch');
+      _showSignInPrompt(anchor, keyErr);
+    }
     return;
   }
   apiKey = key;
@@ -10843,7 +10880,14 @@ async function startBulkQuiz(count) {
   const errBox = document.getElementById('setup-err');
   errBox.classList.add('is-hidden');
   const keyErr = validateApiKey(key);
-  if (keyErr) { errBox.textContent = keyErr; errBox.classList.remove('is-hidden'); showSetupError(); return; }
+  if (keyErr) {
+    errBox.textContent = keyErr; errBox.classList.remove('is-hidden'); showSetupError();
+    // v7.x: signed-out gate — anchor to primaryLaunch tile (bulk presets live on home)
+    if (window._certanvilSignedIn !== true && !key) {
+      _showSignInPrompt(document.getElementById('primaryLaunch'), keyErr);
+    }
+    return;
+  }
   apiKey = key;
   localStorage.setItem(STORAGE.KEY, key);
   examMode = false;

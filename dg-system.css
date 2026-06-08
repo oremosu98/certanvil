@@ -3620,3 +3620,9 @@ html.cl-locked,html.cl-locked body{overflow:hidden;}
   .a2hs-banner-dismiss{min-width:44px!important;min-height:44px!important}
 }
 
+/* v7.x: signed-out gate inline prompt — renders anchored under the tapped control */
+.signin-inline{display:flex;flex-direction:column;gap:10px;margin:12px 0;padding:14px;border-radius:12px;
+  background:color-mix(in oklab,var(--accent) 12%,var(--surface));border:1px solid var(--accent-line,color-mix(in oklab,var(--accent) 30%,transparent))}
+.signin-inline-msg{font-size:13.5px;line-height:1.5;color:var(--text)}
+.signin-inline-cta{min-height:44px;border-radius:10px;font-weight:700}
+

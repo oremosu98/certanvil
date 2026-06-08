@@ -630,7 +630,7 @@ test('startBulkQuiz function defined', js.includes('async function startBulkQuiz
 test('applyPreset handles bulk sizes', js.includes('bulk30: 30, bulk45: 45, bulk60: 60'));
 test('v4.45.3: bulk100 mapping removed', !js.includes('bulk100:'));
 test('applyPreset routes bulk to startBulkQuiz', /bulkSizes\[name\][\s\S]{0,900}startBulkQuiz\(/.test(js));
-test('startBulkQuiz batches via fetchQuestions', /startBulkQuiz[\s\S]{0,2000}fetchQuestions\(key, MIXED_TOPIC, 'Exam Level', thisBatch(?:,\s*i)?\)/.test(js));
+test('startBulkQuiz batches via fetchQuestions', /startBulkQuiz[\s\S]{0,2500}fetchQuestions\(key, MIXED_TOPIC, 'Exam Level', thisBatch(?:,\s*i)?\)/.test(js));
 test('startBulkQuiz uses 18-Q batches', /startBulkQuiz[\s\S]{0,1500}BATCH_SIZE = 18/.test(js));
 test('startBulkQuiz has retry logic', /startBulkQuiz[\s\S]{0,2000}MAX_RETRIES/.test(js));
 test('startBulkQuiz runs validation pipeline', /startBulkQuiz[\s\S]{0,3000}aiValidateQuestions[\s\S]{0,200}validateQuestions/.test(js));
@@ -20001,6 +20001,14 @@ console.log('\n\x1b[1m── Security Phase 7 — CSP script-src unsafe-inline r
     /hover:none[\s\S]{0,2000}pass-plan-weak-btn/.test(dg));
   test('v7.x Tap targets: .a2hs-banner-dismiss in touch block',
     /hover:none[\s\S]{0,2000}a2hs-banner-dismiss/.test(dg));
+})();
+
+// ── audit 5: signed-out gate renders in-view sign-in prompt ──
+(function(){
+  test('v7.x Signed-out gate shows an in-view sign-in prompt (helper present)',
+    /function _showSignInPrompt\b/.test(js));
+  test('v7.x showSetupError scrolls the message into view (no off-screen gate)',
+    /function showSetupError[\s\S]{0,500}scrollIntoView/.test(js));
 })();
 
 // ── Summary ──
