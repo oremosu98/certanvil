@@ -18896,6 +18896,14 @@ function renderReadinessCardV2() {
   // hero so the empty card isn't a 2-row dead box - see dg-system.css). Cleared
   // by default; re-added below only when there's no quiz history yet.
   card.classList.remove('is-pending');
+  // Phone one-line strip: wire card tap \u2192 Progress page on phones only.
+  // matchMedia guard ensures the onclick is never active on desktop/tablet.
+  const _stripEl = document.getElementById('rc-strip-text');
+  if (window.matchMedia('(max-width:620px)').matches) {
+    card.onclick = function() { showPage('progress'); };
+  } else {
+    card.onclick = null;
+  }
   const history = (typeof loadHistory === 'function') ? loadHistory() : [];
   if (history.length === 0 || typeof getReadinessScore !== 'function') {
     numEl.textContent = '\u2014';
@@ -18904,6 +18912,7 @@ function renderReadinessCardV2() {
     if (predEl) predEl.hidden = true;
     if (whatIfEl) whatIfEl.hidden = true;
     if (trajEl) trajEl.hidden = true;
+    if (_stripEl) _stripEl.textContent = 'Readiness \u2014/900 \u00b7 take a quiz to unlock';
     card.classList.add('is-pending');
     return;
   }
@@ -18912,6 +18921,14 @@ function renderReadinessCardV2() {
     const r = getReadinessScore();
     if (r && typeof r.predicted === 'number') {
       numEl.textContent = r.predicted;
+      // Phone strip: compact one-liner shown <=620px
+      if (_stripEl) {
+        if (typeof r.passProbability === 'number') {
+          _stripEl.textContent = 'Readiness ' + r.predicted + '/900 \u00b7 ' + Math.round(r.passProbability * 100) + '% pass';
+        } else {
+          _stripEl.textContent = 'Readiness ' + r.predicted + '/900';
+        }
+      }
       const pct = Math.max(0, Math.min(100, ((r.predicted - 420) / 450) * 100));
       barEl.style.width = pct + '%';
       queueReadinessAnimation(r.predicted, pct);

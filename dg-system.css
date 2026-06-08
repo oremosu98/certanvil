@@ -3645,3 +3645,22 @@ html.cl-locked,html.cl-locked body{overflow:hidden;}
   #page-diagnostic-result .passplan-cta-bar .btn-primary{width:100%;min-height:48px}
 }
 
+/* ── audit 7: readiness card phone strip (Task 7) ──────────────────────────────
+   On phones (≤620px) the full gauge collapses to a tappable one-line strip.
+   Desktop/tablet (≥621px) is visually identical to before — only the strip
+   element (a new addition) is hidden there via the default rule below.
+   ──────────────────────────────────────────────────────────────────────────── */
+/* default: strip hidden on desktop/tablet */
+#page-setup .readiness-strip-line{display:none}
+@media (max-width:620px){
+  #page-setup .readiness-strip-line{display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:13.5px;color:var(--text);cursor:pointer}
+  #page-setup .readiness-strip-line #rc-strip-text b{font-family:'Fraunces',Georgia,serif}
+  /* hide the full gauge guts on phone */
+  #page-setup .readiness-card .readiness-score,
+  #page-setup .readiness-card .readiness-bar-track,
+  #page-setup .readiness-card .readiness-range,
+  #page-setup .readiness-card .rc-v2-stamp{display:none}
+  #page-setup .cell-hero .readiness-card{min-height:0;padding:14px 16px}
+  #page-setup .readiness-eyebrow{margin-bottom:8px}
+}
+

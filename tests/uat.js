@@ -4008,9 +4008,9 @@ test('v4.54.0 JS: display heading uses time-aware greeting (Good morning/afterno
   /renderHeroV2[\s\S]{0,2500}Good morning[\s\S]{0,300}Good afternoon[\s\S]{0,300}Good evening/.test(js));
 test('v4.54.0 JS: renderReadinessCardV2 pulls from getReadinessScore + computes bar %',
   js.includes('function renderReadinessCardV2(') &&
-  /renderReadinessCardV2[\s\S]{0,1500}getReadinessScore\(\)/.test(js));
+  /renderReadinessCardV2[\s\S]{0,2500}getReadinessScore\(\)/.test(js));
 test('v4.54.0 JS: readiness bar uses (predicted - 420) / 450 formula (matches existing scale)',
-  /renderReadinessCardV2[\s\S]{0,2000}r\.predicted\s*-\s*420[\s\S]{0,80}\/ 450/.test(js));
+  /renderReadinessCardV2[\s\S]{0,3000}r\.predicted\s*-\s*420[\s\S]{0,80}\/ 450/.test(js));
 test('v4.54.0 JS: renderHeroV2MiniCards pulls from getDailyGoal + getStreak',
   js.includes('function renderHeroV2MiniCards(') &&
   /renderHeroV2MiniCards[\s\S]{0,2500}getDailyGoal[\s\S]{0,1000}getStreak/.test(js));
@@ -20022,6 +20022,16 @@ console.log('\n\x1b[1m── Security Phase 7 — CSP script-src unsafe-inline r
     /function _showSignInPrompt\b/.test(js));
   test('v7.x showSetupError scrolls the message into view (no off-screen gate)',
     /function showSetupError[\s\S]{0,500}scrollIntoView/.test(js));
+})();
+
+// ── audit 7: readiness card phone strip ──
+(function(){
+  const dg = read('dg-system.css');
+  test('v7.x Readiness phone strip line present (markup + populated)',
+    /readiness-strip-line/.test(html) && /rc-strip-text/.test(js));
+  test('v7.x Readiness gauge hidden on phones',
+    /@media\s*\(max-width:620px\)[\s\S]{0,600}readiness-bar-track[\s\S]{0,40}display:none/.test(dg.replace(/\n/g,' '))
+    || /readiness-bar-track,?\s*[^{]*\{display:none/.test(dg.replace(/\n/g,' ')));
 })();
 
 // ── Summary ──
