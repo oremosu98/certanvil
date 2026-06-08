@@ -8950,8 +8950,6 @@ function _renderReviewList() {
 
   // Empty state when filter returns 0
   if (filtered.length === 0) {
-    const activeChip = chipDef.find(c => c.key === _reviewFilter);
-    const label = activeChip ? activeChip.label.toLowerCase() : '';
     host.innerHTML = filterRowHtml + `
       <div class="review-filter-empty">
         <span class="review-filter-empty-ico"></span>
