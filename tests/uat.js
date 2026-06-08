@@ -10566,6 +10566,8 @@ test('v4.85.17 ReviewFilter: empty state renders when filter returns 0',
       && /review-filter-empty/.test(body)
       && /Show all/.test(body);
   })());
+test('v7.x Review empty-state copy is grammatical (no "no <label> answers")',
+  !/no \$\{[^}]*label[^}]*\} answers/.test(js) && /No answers to show yet/.test(js));
 test('v4.85.17 ReviewFilter: per-question item shows status + flag + domain meta tags',
   (() => {
     const body = _fnBody(js, '_buildReviewItemHtml');

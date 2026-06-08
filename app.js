@@ -8955,7 +8955,7 @@ function _renderReviewList() {
     host.innerHTML = filterRowHtml + `
       <div class="review-filter-empty">
         <span class="review-filter-empty-ico"></span>
-        <div class="review-filter-empty-title">Nothing here \u2014 no ${escHtml(label)} answers</div>
+        <div class="review-filter-empty-title">No answers to show yet</div>
         <div class="review-filter-empty-body">Try a different filter to review your answers.</div>
         <button type="button" class="review-filter-empty-cta" onclick="_setReviewFilter('all')">Show all ${log.length} \u2192</button>
       </div>`;
