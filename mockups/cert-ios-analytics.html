@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>CertAnvil · Analytics (iOS)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700;800&family=Roboto+Mono:wght@500;600;700&display=swap" rel="stylesheet" />
+<style>
+  /* Forged-bronze tokens (matches dg-system.css + the onboarding mockups). */
+  :root {
+    --bg: oklch(0.15 0.010 275); --surface: oklch(0.205 0.009 275); --surface-2: oklch(0.255 0.010 275);
+    --ink: oklch(0.97 0.006 275); --ink-soft: oklch(0.80 0.010 275); --muted: oklch(0.62 0.013 275);
+    --border: oklch(0.34 0.009 275);
+    --accent: oklch(0.82 0.150 66); --accent-bright: oklch(0.88 0.140 72); --accent-deep: oklch(0.72 0.150 62);
+    --on-accent: oklch(0.18 0.020 275); --pass: oklch(0.78 0.150 152); --miss: oklch(0.68 0.165 25); --track: oklch(0.30 0.010 275);
+    --page-bg: oklch(0.22 0.012 275); --page-ink: oklch(0.92 0.008 275); --page-dim: oklch(0.66 0.012 275);
+  }
+  [data-theme="light"] {
+    --bg: oklch(0.975 0.007 85); --surface: oklch(0.955 0.009 84); --surface-2: oklch(0.92 0.010 84);
+    --ink: oklch(0.22 0.015 280); --ink-soft: oklch(0.38 0.014 280); --muted: oklch(0.52 0.013 280);
+    --border: oklch(0.85 0.010 85);
+    --accent: oklch(0.55 0.155 55); --accent-bright: oklch(0.62 0.150 58); --accent-deep: oklch(0.46 0.150 52);
+    --on-accent: oklch(0.99 0.008 85); --pass: oklch(0.52 0.13 150); --miss: oklch(0.55 0.18 25); --track: oklch(0.88 0.010 85);
+    --page-bg: oklch(0.93 0.010 84); --page-ink: oklch(0.28 0.015 280); --page-dim: oklch(0.46 0.013 280);
+  }
+  :root { --ease: cubic-bezier(0.16,1,0.3,1); --ease-drawer: cubic-bezier(0.32,0.72,0,1); }
+
+  * { box-sizing: border-box; }
+  html { color-scheme: light dark; }
+  body { margin: 0; background: var(--page-bg); color: var(--page-ink);
+    font: 15px/1.55 Inter, -apple-system, BlinkMacSystemFont, sans-serif; padding: 30px 20px 64px;
+    transition: background .35s var(--ease), color .35s var(--ease); }
+  .stage { max-width: 520px; margin: 0 auto; }
+  .stage-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 24px; }
+  .stage-eyebrow { font-size: 10.5px; font-weight: 800; letter-spacing: 0.16em; text-transform: uppercase; color: var(--accent-bright); margin: 0 0 7px; }
+  .stage-title { font-family: Fraunces, Georgia, serif; font-weight: 600; font-size: 24px; letter-spacing: -0.012em; margin: 0; color: var(--page-ink); }
+  .stage-sub { color: var(--page-dim); font-size: 13px; margin: 7px 0 0; max-width: 48ch; line-height: 1.5; }
+  .theme-toggle { flex: 0 0 auto; display: inline-flex; align-items: center; gap: 7px; font: 600 12px/1 Inter, sans-serif; color: var(--accent-bright);
+    background: transparent; border: 1px solid color-mix(in oklab, var(--accent-bright) 38%, var(--page-dim)); border-radius: 999px; padding: 8px 13px; cursor: pointer; transition: transform .15s var(--ease), background .2s; }
+  .theme-toggle svg { width: 15px; height: 15px; stroke: currentColor; fill: none; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+  .theme-toggle:active { transform: scale(0.97); }
+
+  .phone-wrap { display: flex; flex-direction: column; align-items: center; }
+  .phone { width: 390px; height: 844px; border-radius: 52px; padding: 11px; flex: 0 0 auto;
+    background: linear-gradient(165deg, #23262f, #0c0d11); box-shadow: 0 40px 90px -34px rgba(0,0,0,0.6), 0 0 0 1.5px rgba(255,255,255,0.06) inset; }
+  .screen { width: 100%; height: 100%; border-radius: 42px; overflow: hidden; position: relative; background: var(--bg); color: var(--ink);
+    display: flex; flex-direction: column; transition: background .35s var(--ease), color .35s var(--ease); }
+  .notch { position: absolute; top: 9px; left: 50%; transform: translateX(-50%); width: 122px; height: 32px; background: #07080b; border-radius: 18px; z-index: 6; }
+  .statusbar { display: flex; align-items: center; justify-content: space-between; padding: 14px 26px 0; font: 700 13px/1 Inter, sans-serif; color: var(--ink); }
+  .sb-icons { display: inline-flex; gap: 6px; align-items: center; }
+  .sb-icons svg { width: 17px; height: 12px; fill: var(--ink); }
+
+  /* app top bar */
+  .topbar { display: flex; align-items: center; gap: 11px; padding: 12px 20px 8px; }
+  .tb-mark { flex: 0 0 auto; width: 34px; height: 34px; border-radius: 10px; background: color-mix(in oklab, var(--accent) 13%, var(--surface-2)); color: var(--accent-deep); display: grid; place-items: center; font: 800 12px/1 Inter, sans-serif; }
+  .tb-name { flex: 1 1 auto; min-width: 0; }
+  .tb-name b { display: block; font: 650 16px/1.05 Inter, sans-serif; color: var(--ink); }
+  .tb-name span { display: block; font: 600 11px/1 'Roboto Mono', monospace; color: var(--muted); margin-top: 2px; }
+  .tb-set { flex: 0 0 auto; width: 34px; height: 34px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface); display: grid; place-items: center; cursor: pointer; color: var(--ink-soft); transition: transform .14s var(--ease), border-color .18s; }
+  .tb-set:active { transform: scale(0.94); }
+  .tb-set svg { width: 17px; height: 17px; stroke: currentColor; fill: none; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+
+  .body { flex: 1; overflow-y: auto; padding: 6px 20px 18px; }
+  .body::-webkit-scrollbar { width: 0; }
+
+  /* shared data labels (Roboto Mono, uppercase) */
+  .dlabel { font: 700 9.5px/1 'Roboto Mono', monospace; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+  .pct { font-family: 'Roboto Mono', monospace; font-variant-numeric: lining-nums tabular-nums; }
+
+  /* shared bar (same .bar style used everywhere) */
+  .bar { height: 8px; border-radius: 999px; background: var(--track); position: relative; overflow: hidden; margin-bottom: 6px; }
+  .bar > span { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 999px; background: var(--accent); transition: width .9s var(--ease), background .4s ease; }
+  .bar .tick { position: absolute; top: -2px; bottom: -2px; width: 2px; background: color-mix(in oklab, var(--ink) 45%, var(--track)); }
+
+  /* generic card */
+  .card { border: 1px solid var(--border); border-radius: 17px; background: var(--surface); padding: 15px 16px; margin-bottom: 12px; }
+  .card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
+  .card-kick { font: 700 9.5px/1 'Roboto Mono', monospace; letter-spacing: 0.11em; text-transform: uppercase; color: var(--accent-deep); margin: 0 0 6px; }
+  .card-title { font: 600 17px/1.15 Fraunces, serif; color: var(--ink); margin: 0; letter-spacing: -0.01em; }
+  .card-sub { font-size: 12px; line-height: 1.5; color: var(--ink-soft); margin: 6px 0 0; }
+  .card-meta { font: 600 10.5px/1 'Roboto Mono', monospace; color: var(--muted); white-space: nowrap; }
+
+  .sect { font: 800 10px/1 Inter, sans-serif; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin: 20px 2px 11px; }
+
+  /* readiness hero */
+  .rd { position: relative; overflow: hidden; border: 1px solid color-mix(in oklab, var(--accent) 22%, var(--border)); border-radius: 18px; background: color-mix(in oklab, var(--accent) 5%, var(--surface)); padding: 16px 17px; margin-bottom: 12px; }
+  .rd-top { display: flex; align-items: center; justify-content: space-between; }
+  .rd-eyebrow { font: 800 10px/1 Inter, sans-serif; letter-spacing: 0.13em; text-transform: uppercase; color: var(--muted); }
+  .rd-tier { font: 800 9.5px/1 Inter, sans-serif; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent-deep); background: color-mix(in oklab, var(--accent) 13%, transparent); border: 1px solid color-mix(in oklab, var(--accent) 32%, transparent); border-radius: 999px; padding: 5px 9px; }
+  .rd-score { display: flex; align-items: baseline; gap: 8px; margin: 12px 0 9px; }
+  .rd-num { font: 600 44px/1 Fraunces, serif; color: var(--ink); font-variant-numeric: lining-nums tabular-nums; font-feature-settings: "lnum","tnum"; }
+  .rd-of { font: 700 11px/1 'Roboto Mono', monospace; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+  .rd-legend { display: flex; justify-content: space-between; font: 600 10.5px/1 'Roboto Mono', monospace; color: var(--muted); }
+  .rd-legend .p { color: var(--accent-deep); }
+  .rd-insight { font-size: 12.5px; line-height: 1.45; color: var(--ink-soft); margin: 11px 0 0; }
+  .rd-insight b { color: var(--ink); font-weight: 650; }
+  .rd-forecast { display: flex; gap: 9px; margin-top: 12px; }
+  .rd-fc { flex: 1 1 0; border: 1px solid var(--border); border-radius: 12px; background: color-mix(in oklab, var(--surface-2) 60%, var(--surface)); padding: 10px 11px; }
+  .rd-fc .fl { display: block; font: 700 8.5px/1.2 'Roboto Mono', monospace; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+  .rd-fc .fv { display: block; font: 600 17px/1 Fraunces, serif; color: var(--ink); margin-top: 5px; font-variant-numeric: lining-nums; }
+  .rd-fc .fv.dim { font-size: 13px; color: var(--muted); }
+
+  /* stat tiles with sparklines */
+  .tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+  .tile { border: 1px solid var(--border); border-radius: 14px; background: var(--surface); padding: 12px 13px; }
+  .tile .tv { font: 600 26px/1 Fraunces, serif; color: var(--ink); font-variant-numeric: lining-nums tabular-nums; font-feature-settings: "lnum","tnum"; }
+  .tile .tl { display: block; font: 600 10.5px/1.2 'Roboto Mono', monospace; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); margin-top: 5px; }
+  .tile svg.spark { display: block; width: 100%; height: 22px; margin-top: 8px; overflow: visible; }
+  .tile svg.spark polyline { fill: none; stroke: var(--accent); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+  /* constellation (dark navy card built from oklch) */
+  .const { position: relative; overflow: hidden; border-radius: 17px; margin-bottom: 12px; padding: 16px 16px 15px;
+    background: linear-gradient(165deg, oklch(0.26 0.05 265), oklch(0.17 0.045 270));
+    border: 1px solid oklch(0.40 0.05 265); color: oklch(0.95 0.01 265); }
+  .const .card-kick { color: oklch(0.80 0.11 75); }
+  .const .card-title { color: oklch(0.97 0.01 265); }
+  .const .const-meta { font: 600 10.5px/1 'Roboto Mono', monospace; color: oklch(0.70 0.03 265); }
+  .const-line { font-size: 12px; line-height: 1.5; color: oklch(0.82 0.02 265); margin: 8px 0 12px; }
+  .sky { position: relative; height: 190px; border-radius: 13px; overflow: hidden;
+    background: radial-gradient(120% 80% at 30% 10%, oklch(0.30 0.06 270), oklch(0.15 0.04 272)); }
+  .star { position: absolute; border-radius: 999px; transform: translate(-50%, -50%); }
+  .dlbl { position: absolute; transform: translate(-50%, -50%); font: 700 8px/1 'Roboto Mono', monospace; letter-spacing: 0.04em; text-transform: uppercase; color: oklch(0.78 0.02 265); white-space: nowrap; pointer-events: none; }
+  .const-legend { display: flex; flex-wrap: wrap; gap: 10px 14px; margin-top: 13px; }
+  .const-legend span { display: inline-flex; align-items: center; gap: 6px; font: 600 10px/1 'Roboto Mono', monospace; letter-spacing: 0.03em; color: oklch(0.80 0.02 265); }
+  .const-legend i { width: 9px; height: 9px; border-radius: 999px; }
+
+  /* accuracy line chart */
+  .acc-top { display: flex; align-items: baseline; gap: 9px; margin-bottom: 4px; }
+  .acc-now { font: 600 30px/1 Fraunces, serif; color: var(--ink); font-variant-numeric: lining-nums tabular-nums; }
+  .acc-note { font: 600 11px/1.3 'Roboto Mono', monospace; color: var(--miss); }
+  .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 999px; padding: 2px; background: var(--surface-2); }
+  .seg button { border: none; background: none; cursor: pointer; font: 700 10px/1 'Roboto Mono', monospace; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); padding: 6px 10px; border-radius: 999px; transition: color .18s, background .18s; }
+  .seg button.on { color: var(--on-accent); background: var(--accent); }
+  .seg button:active { transform: scale(0.96); transition: transform .12s var(--ease); }
+  .acc-chart { width: 100%; height: 96px; margin-top: 12px; overflow: visible; }
+  .acc-chart polyline.dat { fill: none; stroke: var(--accent); stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+  .acc-chart line.pass { stroke: var(--pass); stroke-width: 1.4; stroke-dasharray: 4 4; }
+  .acc-chart circle { fill: var(--accent); }
+  .acc-chart text { font: 600 8px/1 'Roboto Mono', monospace; fill: var(--muted); }
+
+  /* highest-leverage move */
+  .lev { border: 1px solid color-mix(in oklab, var(--accent) 26%, var(--border)); border-radius: 18px; background: color-mix(in oklab, var(--accent) 6%, var(--surface)); padding: 16px 16px; margin-bottom: 12px; }
+  .lev-gain { font: 600 26px/1.05 Fraunces, serif; color: var(--accent-deep); letter-spacing: -0.01em; }
+  .lev-gain .u { font: 700 12px/1 'Roboto Mono', monospace; color: var(--muted); }
+  .lev-act { font: 700 14px/1.3 Inter, sans-serif; color: var(--ink); margin: 8px 0 0; }
+  .lev-body { font-size: 12.5px; line-height: 1.55; color: var(--ink-soft); margin: 9px 0 13px; }
+  .lev-list { display: flex; flex-direction: column; gap: 9px; }
+  .lev-row { display: flex; align-items: flex-start; gap: 9px; font-size: 12px; line-height: 1.4; color: var(--ink-soft); }
+  .lev-row b { color: var(--ink); font-weight: 650; }
+  .lev-mark { flex: 0 0 auto; margin-top: 1px; }
+  .lev-mark svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+  .lev-mark.dn { color: var(--miss); }
+  .lev-mark.up { color: var(--pass); }
+
+  /* mastery rows */
+  .mrow { margin-bottom: 13px; }
+  .mrow:last-child { margin-bottom: 0; }
+  .mrow-top { display: flex; align-items: baseline; justify-content: space-between; gap: 9px; margin-bottom: 7px; }
+  .mrow-nm { font: 650 13.5px/1.2 Inter, sans-serif; color: var(--ink); }
+  .mrow-sc { font: 700 12px/1 'Roboto Mono', monospace; color: var(--muted); font-variant-numeric: lining-nums tabular-nums; }
+  .mrow-sc.weak { color: var(--miss); }
+  .mrow-sc.strong { color: var(--pass); }
+  .mrow-meta { font-size: 11px; line-height: 1.4; color: var(--muted); margin-top: 6px; }
+  .mrow-meta .tag { color: var(--miss); font-weight: 600; }
+  .bar.weakbar > span { background: var(--miss); }
+  .bar.strongbar > span { background: var(--pass); }
+
+  /* streak */
+  .streak-top { display: flex; align-items: baseline; gap: 10px; }
+  .streak-num { font: 600 36px/1 Fraunces, serif; color: var(--ink); font-variant-numeric: lining-nums; }
+  .streak-unit { font: 700 11px/1 'Roboto Mono', monospace; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+  .streak-meta { font-size: 11.5px; line-height: 1.5; color: var(--ink-soft); margin: 9px 0 12px; }
+  .streak-meta b { color: var(--ink); font-weight: 650; }
+  .days { display: flex; gap: 7px; }
+  .day { flex: 1 1 0; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  .day .dc { width: 100%; aspect-ratio: 1; border-radius: 9px; background: var(--surface-2); border: 1px solid var(--border); }
+  .day.active .dc { background: color-mix(in oklab, var(--accent) 30%, var(--surface)); border-color: color-mix(in oklab, var(--accent) 45%, var(--border)); }
+  .day .dl { font: 700 9px/1 'Roboto Mono', monospace; color: var(--muted); }
+  .day.active .dl { color: var(--accent-deep); }
+
+  /* difficulty */
+  .diff-row { margin-bottom: 13px; }
+  .diff-row:last-child { margin-bottom: 0; }
+  .diff-top { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 7px; }
+  .diff-nm { font: 650 13px/1 Inter, sans-serif; color: var(--ink); }
+  .diff-nm span { font: 600 10.5px/1 'Roboto Mono', monospace; color: var(--muted); margin-left: 7px; }
+  .diff-val { font: 700 12px/1 'Roboto Mono', monospace; font-variant-numeric: lining-nums tabular-nums; }
+  .diff-val.g { color: var(--pass); }
+  .diff-val.a { color: var(--accent-deep); }
+  .bar.passbar > span { background: var(--pass); }
+
+  /* practice vs timed */
+  .pvt { display: flex; gap: 10px; }
+  .pvt-col { flex: 1 1 0; border: 1px solid var(--border); border-radius: 13px; background: var(--surface-2); padding: 12px 13px; text-align: center; }
+  .pvt-col .pl { display: block; font: 700 9px/1 'Roboto Mono', monospace; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+  .pvt-col .pv { display: block; font: 600 13px/1.2 Fraunces, serif; color: var(--ink-soft); margin-top: 8px; }
+
+  /* heatmap */
+  .heat { display: grid; grid-template-columns: repeat(26, 1fr); grid-auto-flow: column; grid-template-rows: repeat(7, 1fr); gap: 3px; }
+  .heat i { aspect-ratio: 1; border-radius: 2.5px; background: var(--surface-2); }
+  .heat i.l1 { background: color-mix(in oklab, var(--accent) 28%, var(--surface)); }
+  .heat i.l2 { background: color-mix(in oklab, var(--accent) 55%, var(--surface)); }
+  .heat i.l3 { background: color-mix(in oklab, var(--accent) 82%, var(--surface)); }
+  .heat-legend { display: flex; align-items: center; justify-content: flex-end; gap: 6px; margin-top: 11px; font: 700 9px/1 'Roboto Mono', monospace; letter-spacing: 0.05em; text-transform: uppercase; color: var(--muted); }
+  .heat-legend .sw { display: inline-flex; gap: 3px; }
+  .heat-legend .sw i { width: 10px; height: 10px; border-radius: 2.5px; background: var(--surface-2); }
+  .heat-legend .sw i.l1 { background: color-mix(in oklab, var(--accent) 28%, var(--surface)); }
+  .heat-legend .sw i.l2 { background: color-mix(in oklab, var(--accent) 55%, var(--surface)); }
+  .heat-legend .sw i.l3 { background: color-mix(in oklab, var(--accent) 82%, var(--surface)); }
+
+  /* slip rows */
+  .slip { display: flex; align-items: center; gap: 12px; border-bottom: 1px solid color-mix(in oklab, var(--border) 60%, transparent); padding: 11px 0; }
+  .slip:last-child { border-bottom: none; padding-bottom: 0; }
+  .slip:first-child { padding-top: 0; }
+  .slip .rank { flex: 0 0 auto; width: 24px; height: 24px; border-radius: 8px; background: color-mix(in oklab, var(--miss) 14%, var(--surface-2)); color: var(--miss); display: grid; place-items: center; font: 700 12px/1 'Roboto Mono', monospace; }
+  .slip .stxt { flex: 1 1 auto; min-width: 0; }
+  .slip .stxt b { display: block; font: 650 13px/1.2 Inter, sans-serif; color: var(--ink); }
+  .slip .stxt span { display: block; font: 500 11px/1.3 Inter, sans-serif; color: var(--muted); margin-top: 2px; }
+  .slip .smiss { flex: 0 0 auto; font: 700 11px/1 'Roboto Mono', monospace; color: var(--miss); }
+
+  /* milestones */
+  .mile-count { font: 600 24px/1 Fraunces, serif; color: var(--ink); }
+  .mile-count small { font: 700 13px/1 'Roboto Mono', monospace; color: var(--muted); }
+  .mile { display: flex; align-items: center; gap: 11px; padding: 10px 0; border-bottom: 1px solid color-mix(in oklab, var(--border) 60%, transparent); }
+  .mile:last-child { border-bottom: none; padding-bottom: 0; }
+  .mile .mi { flex: 0 0 auto; width: 32px; height: 32px; border-radius: 10px; display: grid; place-items: center; background: color-mix(in oklab, var(--accent) 14%, var(--surface-2)); color: var(--accent-deep); }
+  .mile.locked .mi { background: var(--surface-2); color: var(--muted); }
+  .mile .mi svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .mile .mtx { flex: 1 1 auto; min-width: 0; }
+  .mile .mtx b { display: block; font: 650 13px/1.2 Inter, sans-serif; color: var(--ink); }
+  .mile .mtx span { display: block; font: 500 10.5px/1.3 'Roboto Mono', monospace; color: var(--muted); margin-top: 3px; }
+  .mile.locked .mtx b { color: var(--ink-soft); }
+  .mile .mtick { flex: 0 0 auto; color: var(--pass); }
+  .mile .mtick svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
+  .mile.locked .mtick { color: var(--muted); }
+  .mile-prog { margin-top: 8px; }
+  .mile-prog .mp-meta { display: flex; justify-content: space-between; font: 600 10px/1 'Roboto Mono', monospace; color: var(--muted); margin-top: 6px; }
+
+  /* full exams empty */
+  .empty { text-align: center; padding: 6px 6px 2px; }
+  .empty .ei { width: 38px; height: 38px; border-radius: 11px; margin: 0 auto 11px; display: grid; place-items: center; background: var(--surface-2); color: var(--muted); }
+  .empty .ei svg { width: 20px; height: 20px; stroke: currentColor; fill: none; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+  .empty b { display: block; font: 650 14px/1.2 Inter, sans-serif; color: var(--ink); }
+  .empty span { display: block; font-size: 11.5px; color: var(--muted); margin-top: 5px; }
+
+  /* bottom tab bar */
+  .tabbar { flex: 0 0 auto; display: flex; border-top: 1px solid color-mix(in oklab, var(--border) 70%, transparent); background: color-mix(in oklab, var(--bg) 86%, var(--surface)); padding: 8px 8px calc(8px + env(safe-area-inset-bottom)); }
+  .tab { flex: 1 1 0; display: flex; flex-direction: column; align-items: center; gap: 4px; background: none; border: none; cursor: pointer; padding: 5px 0; color: var(--muted); transition: color .18s, transform .14s var(--ease); }
+  .tab svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+  .tab span { font: 700 10px/1 Inter, sans-serif; letter-spacing: 0.01em; }
+  .tab.on { color: var(--accent-deep); }
+  .tab:active { transform: scale(0.94); }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .reveal { opacity: 0; transform: translateY(9px); animation: rise .5s var(--ease) forwards; }
+    .reveal:nth-child(1){animation-delay:.04s}.reveal:nth-child(2){animation-delay:.09s}.reveal:nth-child(3){animation-delay:.14s}
+    .reveal:nth-child(4){animation-delay:.19s}.reveal:nth-child(5){animation-delay:.24s}.reveal:nth-child(6){animation-delay:.29s}
+    .reveal:nth-child(7){animation-delay:.34s}.reveal:nth-child(8){animation-delay:.39s}
+    @keyframes rise { to { opacity: 1; transform: none; } }
+  }
+  .hint { text-align: center; color: var(--page-dim); font-size: 12px; margin-top: 18px; }
+  @media (max-width: 440px) { .phone { transform: scale(.92); transform-origin: top center; } }
+</style>
+</head>
+<body>
+  <div class="stage">
+    <div class="stage-head">
+      <div>
+        <p class="stage-eyebrow">Cert app · iOS</p>
+        <h1 class="stage-title">Analytics</h1>
+        <p class="stage-sub">The whole readiness story on one calm scroll. Where you stand, where the next points come from, and the single move that earns them fastest, rebuilt in the onboarding language.</p>
+      </div>
+      <button class="theme-toggle" id="themeToggle" type="button" aria-label="Toggle light and dark">
+        <svg id="themeIcon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></svg>
+        <span id="themeLabel">Dark</span>
+      </button>
+    </div>
+
+    <div class="phone-wrap">
+      <div class="phone">
+        <div class="screen">
+          <div class="notch"></div>
+          <div class="statusbar">
+            <span>9:41</span>
+            <span class="sb-icons">
+              <svg viewBox="0 0 18 12" aria-hidden="true"><rect x="0" y="7" width="3" height="5" rx="1"/><rect x="5" y="4" width="3" height="8" rx="1"/><rect x="10" y="1" width="3" height="11" rx="1" opacity="0.4"/></svg>
+              <svg viewBox="0 0 18 12" aria-hidden="true"><rect x="1" y="2" width="14" height="8" rx="2.4" fill="none" stroke="currentColor" stroke-width="1.4"/><rect x="2.6" y="3.6" width="9" height="4.8" rx="1.2"/><rect x="16" y="4.6" width="1.4" height="2.8" rx="0.7"/></svg>
+            </span>
+          </div>
+
+          <div class="topbar">
+            <span class="tb-mark">N+</span>
+            <span class="tb-name"><b>Network+</b><span>N10-009</span></span>
+            <button class="tb-set" type="button" aria-label="Settings"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M19 12a7 7 0 0 0-.1-1l2-1.5-2-3.5-2.4 1a7 7 0 0 0-1.7-1L16.5 2h-4l-.3 2.6a7 7 0 0 0-1.7 1l-2.4-1-2 3.5 2 1.5a7 7 0 0 0 0 2l-2 1.5 2 3.5 2.4-1a7 7 0 0 0 1.7 1l.3 2.6h4l.3-2.6a7 7 0 0 0 1.7-1l2.4 1 2-3.5-2-1.5a7 7 0 0 0 .1-1z"></path></svg></button>
+          </div>
+
+          <div class="body">
+
+            <!-- READINESS HERO -->
+            <div class="rd reveal">
+              <div class="rd-top"><span class="rd-eyebrow">Readiness</span><span class="rd-tier">Building</span></div>
+              <div class="rd-score"><span class="rd-num" id="rdNum">553</span><span class="rd-of">/ 900</span></div>
+              <div class="bar"><span id="rdFill" style="width:0%"></span><span class="tick" style="left:80%"></span></div>
+              <div class="rd-legend"><span>Now</span><span class="p">Pass 720</span></div>
+              <p class="rd-insight"><b>167 points</b> to the pass mark. Hold your pace and you'll cross it.</p>
+              <div class="rd-forecast">
+                <div class="rd-fc"><span class="fl">Forecast on this pace</span><span class="fv">553</span></div>
+                <div class="rd-fc"><span class="fl">Days to exam</span><span class="fv dim">Not set</span></div>
+              </div>
+            </div>
+
+            <!-- STAT TILES -->
+            <div class="tiles reveal">
+              <div class="tile">
+                <div class="tv">23</div><span class="tl">Sessions</span>
+                <svg class="spark" viewBox="0 0 100 22" preserveAspectRatio="none" aria-hidden="true"><polyline points="0,18 17,15 34,16 50,10 67,11 84,6 100,4"/></svg>
+              </div>
+              <div class="tile">
+                <div class="tv">75</div><span class="tl">Questions</span>
+                <svg class="spark" viewBox="0 0 100 22" preserveAspectRatio="none" aria-hidden="true"><polyline points="0,20 17,17 34,13 50,12 67,9 84,7 100,3"/></svg>
+              </div>
+              <div class="tile">
+                <div class="tv">92<span style="font:600 14px/1 'Roboto Mono',monospace;color:var(--muted)">%</span></div><span class="tl">Accuracy</span>
+                <svg class="spark" viewBox="0 0 100 22" preserveAspectRatio="none" aria-hidden="true"><polyline points="0,12 17,9 34,11 50,7 67,8 84,5 100,4"/></svg>
+              </div>
+              <div class="tile">
+                <div class="tv">7</div><span class="tl">Study days</span>
+                <svg class="spark" viewBox="0 0 100 22" preserveAspectRatio="none" aria-hidden="true"><polyline points="0,17 17,17 34,12 50,14 67,9 84,10 100,6"/></svg>
+              </div>
+            </div>
+
+            <!-- KNOWLEDGE CONSTELLATION -->
+            <div class="const reveal">
+              <div class="card-head">
+                <div>
+                  <p class="card-kick">Knowledge constellation</p>
+                  <h2 class="card-title">Your sky tonight</h2>
+                </div>
+                <span class="const-meta">50 topics · 5 domains</span>
+              </div>
+              <p class="const-line">Each star is a topic. Bigger means more practised, brighter means closer to mastered. Colour marks the domain.</p>
+              <div class="sky" id="sky" aria-hidden="true"></div>
+              <div class="const-legend">
+                <span><i style="background:oklch(0.80 0.15 152)"></i>Mastered</span>
+                <span><i style="background:oklch(0.78 0.13 75)"></i>Proficient</span>
+                <span><i style="background:oklch(0.62 0.10 75)"></i>Developing</span>
+                <span><i style="background:oklch(0.50 0.02 265)"></i>Untouched</span>
+              </div>
+            </div>
+
+            <!-- ACCURACY OVER TIME -->
+            <div class="card reveal">
+              <div class="card-head">
+                <div>
+                  <p class="card-kick">Accuracy over time</p>
+                  <h2 class="card-title">Trending toward pass</h2>
+                </div>
+                <div class="seg" role="group" aria-label="Range">
+                  <button type="button">Week</button>
+                  <button type="button" class="on">Month</button>
+                  <button type="button">All</button>
+                </div>
+              </div>
+              <div class="acc-top">
+                <span class="acc-now pct">60%</span>
+                <span class="acc-note">now, below the 72% line</span>
+              </div>
+              <svg class="acc-chart" viewBox="0 0 300 96" preserveAspectRatio="none" aria-hidden="true">
+                <line class="pass" x1="0" y1="27" x2="300" y2="27"></line>
+                <text x="2" y="22">Pass 72%</text>
+                <polyline class="dat" points="6,72 56,60 106,66 156,50 206,55 256,42 294,38"></polyline>
+                <circle cx="6" cy="72" r="2.6"></circle>
+                <circle cx="56" cy="60" r="2.6"></circle>
+                <circle cx="106" cy="66" r="2.6"></circle>
+                <circle cx="156" cy="50" r="2.6"></circle>
+                <circle cx="206" cy="55" r="2.6"></circle>
+                <circle cx="256" cy="42" r="2.6"></circle>
+                <circle cx="294" cy="38" r="2.6"></circle>
+              </svg>
+            </div>
+
+            <!-- HIGHEST-LEVERAGE MOVE -->
+            <div class="lev reveal">
+              <p class="card-kick">Highest-leverage move</p>
+              <div class="lev-gain">+25 pts<span class="u"> on your readiness score</span></div>
+              <p class="lev-act">Drill Network Implementation next.</p>
+              <p class="lev-body">Network Implementation sits at 0%, your weakest domain, and it carries 20% of the exam. Lifting it toward the 70% line is the fastest single move you have right now.</p>
+              <div class="lev-list">
+                <div class="lev-row"><span class="lev-mark dn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M19 12l-7 7-7-7"></path></svg></span><span><b>Network Implementation at 0%</b> biggest drag on the score</span></div>
+                <div class="lev-row"><span class="lev-mark up"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"></path></svg></span><span><b>Networking Concepts at 100%</b> carrying you, 23% of exam</span></div>
+                <div class="lev-row"><span class="lev-mark dn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M19 12l-7 7-7-7"></path></svg></span><span><b>Recency at 0%</b> some topics decaying</span></div>
+              </div>
+            </div>
+
+            <!-- MASTERY BY DOMAIN -->
+            <div class="card reveal">
+              <div class="card-head">
+                <div>
+                  <p class="card-kick">Mastery by domain</p>
+                  <h2 class="card-title">Worst first</h2>
+                </div>
+              </div>
+
+              <div class="mrow">
+                <div class="mrow-top"><span class="mrow-nm">Network Implementation</span><span class="mrow-sc weak">2.0 · no % yet</span></div>
+                <div class="bar weakbar"><span style="width:4%"></span></div>
+                <p class="mrow-meta">1 question · 20% of exam</p>
+              </div>
+              <div class="mrow">
+                <div class="mrow-top"><span class="mrow-nm">Network Troubleshooting</span><span class="mrow-sc weak">5.0 · <span class="pct">50%</span></span></div>
+                <div class="bar weakbar"><span style="width:50%"></span></div>
+                <p class="mrow-meta">2 questions · 24% of exam · <span class="tag">weakest, drill here</span></p>
+              </div>
+              <div class="mrow">
+                <div class="mrow-top"><span class="mrow-nm">Network Security</span><span class="mrow-sc">4.0 · <span class="pct">75%</span></span></div>
+                <div class="bar"><span style="width:75%"></span></div>
+                <p class="mrow-meta">4 questions · 14% of exam</p>
+              </div>
+              <div class="mrow">
+                <div class="mrow-top"><span class="mrow-nm">Networking Concepts</span><span class="mrow-sc strong">1.0 · <span class="pct">100%</span></span></div>
+                <div class="bar strongbar"><span style="width:100%"></span></div>
+                <p class="mrow-meta">2 questions · 23% of exam</p>
+              </div>
+              <div class="mrow">
+                <div class="mrow-top"><span class="mrow-nm">Network Operations</span><span class="mrow-sc strong">3.0 · <span class="pct">100%</span></span></div>
+                <div class="bar strongbar"><span style="width:100%"></span></div>
+                <p class="mrow-meta">1 question · 19% of exam</p>
+              </div>
+            </div>
+
+            <!-- STUDY STREAK -->
+            <div class="card reveal">
+              <div class="card-head">
+                <div><p class="card-kick">Study streak</p><h2 class="card-title">Keep the chain</h2></div>
+              </div>
+              <div class="streak-top"><span class="streak-num">0</span><span class="streak-unit">day streak</span></div>
+              <p class="streak-meta">Longest <b>4</b> · <b>7</b> active days · last studied <b>16 May</b>.</p>
+              <div class="days">
+                <div class="day"><span class="dc"></span><span class="dl">T</span></div>
+                <div class="day"><span class="dc"></span><span class="dl">W</span></div>
+                <div class="day"><span class="dc"></span><span class="dl">T</span></div>
+                <div class="day"><span class="dc"></span><span class="dl">F</span></div>
+                <div class="day"><span class="dc"></span><span class="dl">S</span></div>
+                <div class="day"><span class="dc"></span><span class="dl">S</span></div>
+                <div class="day active"><span class="dc"></span><span class="dl">M</span></div>
+              </div>
+            </div>
+
+            <!-- BY DIFFICULTY -->
+            <div class="card reveal">
+              <div class="card-head">
+                <div><p class="card-kick">By difficulty</p><h2 class="card-title">Where you hold up</h2></div>
+              </div>
+              <div class="diff-row">
+                <div class="diff-top"><span class="diff-nm">Easy <span>15q</span></span><span class="diff-val g pct">73%</span></div>
+                <div class="bar passbar"><span style="width:73%"></span></div>
+              </div>
+              <div class="diff-row">
+                <div class="diff-top"><span class="diff-nm">Medium <span>60q</span></span><span class="diff-val a pct">97%</span></div>
+                <div class="bar"><span style="width:97%"></span></div>
+              </div>
+            </div>
+
+            <!-- PRACTICE VS TIMED -->
+            <div class="card reveal">
+              <div class="card-head">
+                <div><p class="card-kick">Practice vs timed</p><h2 class="card-title">Pressure check</h2></div>
+              </div>
+              <div class="pvt">
+                <div class="pvt-col"><span class="pl">Quiz avg</span><span class="pv">Building data</span></div>
+                <div class="pvt-col"><span class="pl">Exam avg</span><span class="pv">No exams yet</span></div>
+              </div>
+              <p class="card-sub">Complete a few quizzes and at least one full exam simulation to compare timed pressure against practice.</p>
+            </div>
+
+            <!-- ACTIVITY HEATMAP -->
+            <div class="card reveal">
+              <div class="card-head">
+                <div><p class="card-kick">Activity</p><h2 class="card-title">Last 26 weeks</h2></div>
+                <span class="card-meta">7 active days</span>
+              </div>
+              <div class="heat" id="heat" aria-hidden="true"></div>
+              <div class="heat-legend">Less <span class="sw"><i></i><i class="l1"></i><i class="l2"></i><i class="l3"></i></span> More</div>
+            </div>
+
+            <!-- WHERE YOU SLIP MOST -->
+            <div class="card reveal">
+              <div class="card-head">
+                <div><p class="card-kick">Where you slip most</p><h2 class="card-title">Top 3 patterns</h2></div>
+              </div>
+              <div class="slip">
+                <span class="rank">1</span>
+                <span class="stxt"><b>Network Implementation</b><span>Network Implementation · Ethernet Basics</span></span>
+                <span class="smiss">2 missed</span>
+              </div>
+              <div class="slip">
+                <span class="rank">2</span>
+                <span class="stxt"><b>Network Security</b><span>Network Security · PKI &amp; Certificate Management</span></span>
+                <span class="smiss">2 missed</span>
+              </div>
+              <div class="slip">
+                <span class="rank">3</span>
+                <span class="stxt"><b>Network Troubleshooting</b><span>Network Troubleshooting · Cable Issues</span></span>
+                <span class="smiss">1 missed</span>
+              </div>
+            </div>
+
+            <!-- MILESTONES -->
+            <div class="card reveal">
+              <div class="card-head">
+                <div><p class="card-kick">Milestones</p><h2 class="card-title">Badges earned</h2></div>
+                <span class="mile-count">6<small> / 49</small></span>
+              </div>
+              <div class="mile">
+                <span class="mi"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 21h8M12 17v4M6 4h12v4a6 6 0 0 1-12 0z"></path><path d="M6 5H3v2a3 3 0 0 0 3 3M18 5h3v2a3 3 0 0 1-3 3"></path></svg></span>
+                <span class="mtx"><b>Completionist</b><span>Earned 18 May</span></span>
+                <span class="mtick"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6L9 17l-5-5"></path></svg></span>
+              </div>
+              <div class="mile">
+                <span class="mi"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"></path></svg></span>
+                <span class="mtx"><b>Full coverage</b><span>Earned 16 May</span></span>
+                <span class="mtick"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6L9 17l-5-5"></path></svg></span>
+              </div>
+              <div class="mile">
+                <span class="mi"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2L3 14h7l-1 8 10-12h-7z"></path></svg></span>
+                <span class="mtx"><b>Weekend warrior</b><span>Earned 10 May</span></span>
+                <span class="mtick"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6L9 17l-5-5"></path></svg></span>
+              </div>
+              <div class="mile locked">
+                <span class="mi"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg></span>
+                <span class="mtx" style="flex:1 1 auto">
+                  <b>Getting close</b><span>Reach a readiness score of 650</span>
+                  <span class="mile-prog">
+                    <span class="bar"><span style="width:85.1%"></span></span>
+                    <span class="mp-meta"><span>553</span><span>650</span></span>
+                  </span>
+                </span>
+              </div>
+            </div>
+
+            <!-- FULL EXAMS -->
+            <div class="card reveal">
+              <div class="card-head">
+                <div><p class="card-kick">Full exams</p><h2 class="card-title">Scaled scores</h2></div>
+              </div>
+              <div class="empty">
+                <span class="ei"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 11l3 3L22 4"></path><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg></span>
+                <b>None yet</b>
+                <span>Run one to track scaled scores.</span>
+              </div>
+            </div>
+
+          </div>
+
+          <div class="tabbar">
+            <button class="tab" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11l8-7 8 7"></path><path d="M6 10v9h12v-9"></path></svg><span>Home</span></button>
+            <button class="tab" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19V9M12 19V4M19 19v-7"></path></svg><span>Progress</span></button>
+            <button class="tab on" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="6" r="1.6"></circle><circle cx="12" cy="5" r="1.6"></circle><circle cx="18" cy="7" r="1.6"></circle><circle cx="5" cy="13" r="1.6"></circle><circle cx="12" cy="12" r="1.6"></circle><circle cx="19" cy="14" r="1.6"></circle><circle cx="7" cy="19" r="1.6"></circle><circle cx="14" cy="19" r="1.6"></circle></svg><span>Analytics</span></button>
+            <button class="tab" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M19 12a7 7 0 0 0-.1-1l2-1.5-2-3.5-2.4 1a7 7 0 0 0-1.7-1L16.5 2h-4l-.3 2.6a7 7 0 0 0-1.7 1l-2.4-1-2 3.5 2 1.5a7 7 0 0 0 0 2l-2 1.5 2 3.5 2.4-1a7 7 0 0 0 1.7 1l.3 2.6h4l.3-2.6a7 7 0 0 0 1.7-1l2.4 1 2-3.5-2-1.5a7 7 0 0 0 .1-1z"></path></svg><span>Settings</span></button>
+          </div>
+
+        </div>
+      </div>
+      <p class="hint">Phase 1 mockup. One calm scroll: where you stand, and the next 25 points.</p>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      var html = document.documentElement, label = document.getElementById('themeLabel'), icon = document.getElementById('themeIcon');
+      var sun = '<circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path>';
+      var moon = '<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"></path>';
+      function paint(){ var dark = html.getAttribute('data-theme') !== 'light'; label.textContent = dark ? 'Light' : 'Dark'; icon.innerHTML = dark ? moon : sun; }
+      document.getElementById('themeToggle').addEventListener('click', function(){ html.setAttribute('data-theme', html.getAttribute('data-theme') === 'light' ? 'dark' : 'light'); paint(); });
+      paint();
+
+      var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+      // Readiness: bar fills to 553/900 (61.4%); number counts up. Pass tick sits at 80% (720/900).
+      var rdNum = document.getElementById('rdNum'), rdFill = document.getElementById('rdFill');
+      function countUp(el, from, to, ms){ var s = null; function step(t){ if (!s) s = t; var p = Math.min((t - s) / ms, 1); el.textContent = Math.round(from + (to - from) * p); if (p < 1) requestAnimationFrame(step); } requestAnimationFrame(step); }
+      if (reduce){ rdFill.style.width = '61.4%'; rdNum.textContent = '553'; }
+      else { requestAnimationFrame(function(){ rdFill.style.width = '61.4%'; countUp(rdNum, 0, 553, 900); }); }
+
+      // Constellation: 5 domain clusters of small stars, varied size and colour by mastery.
+      // Colours from oklch only. Bigger = more practised, brighter = closer to mastered.
+      var sky = document.getElementById('sky');
+      if (sky) {
+        var domains = [
+          { name: 'Networking Concepts', cx: 24, cy: 30, hue: 75 },
+          { name: 'Implementation',           cx: 73, cy: 26, hue: 30 },
+          { name: 'Operations',               cx: 80, cy: 66, hue: 200 },
+          { name: 'Security',                 cx: 30, cy: 70, hue: 290 },
+          { name: 'Troubleshooting',          cx: 52, cy: 48, hue: 150 }
+        ];
+        var html2 = '';
+        domains.forEach(function (d, di) {
+          // 6-8 stars per cluster, scattered around the centre
+          var n = 6 + (di % 3);
+          for (var i = 0; i < n; i++) {
+            var ang = (i / n) * 6.283 + di;
+            var rad = 4 + (i % 4) * 3.4;
+            var x = d.cx + Math.cos(ang) * rad;
+            var y = d.cy + Math.sin(ang) * (rad * 0.78);
+            var sz = 2.4 + (i % 4) * 1.5;                 // size = practised
+            var light = 0.46 + (i % 5) * 0.085;           // lightness = mastered (brighter)
+            var chroma = (i % 5 === 0) ? 0.02 : 0.12;     // untouched = near-grey
+            var col = 'oklch(' + light.toFixed(2) + ' ' + chroma + ' ' + d.hue + ')';
+            var glow = (light > 0.7) ? '0 0 ' + (sz * 2.2).toFixed(1) + 'px oklch(' + light.toFixed(2) + ' ' + chroma + ' ' + d.hue + ' / 0.6)' : 'none';
+            html2 += '<span class="star" style="left:' + x.toFixed(1) + '%;top:' + y.toFixed(1) + '%;width:' + sz.toFixed(1) + 'px;height:' + sz.toFixed(1) + 'px;background:' + col + ';box-shadow:' + glow + '"></span>';
+          }
+          html2 += '<span class="dlbl" style="left:' + d.cx + '%;top:' + (d.cy + 17) + '%">' + d.name + '</span>';
+        });
+        sky.innerHTML = html2;
+      }
+
+      // Activity heatmap: 26 weeks x 7 days, mostly empty with a few active cells.
+      var heat = document.getElementById('heat');
+      if (heat) {
+        var active = { 60: 2, 61: 1, 67: 3, 74: 1, 75: 2, 82: 1, 110: 2 }; // sparse real-looking week
+        var cells = '';
+        for (var k = 0; k < 26 * 7; k++) {
+          var lvl = active[k] || 0;
+          cells += '<i' + (lvl ? ' class="l' + lvl + '"' : '') + '></i>';
+        }
+        heat.innerHTML = cells;
+      }
+    })();
+  </script>
+</body>
+</html>
