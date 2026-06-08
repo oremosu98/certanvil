@@ -85,6 +85,9 @@
   <div class="sbx-group">Design mockups</div>
   <div class="sbx-cards" id="sbx-mock-cards"><!-- filled by JS --></div>
 
+  <div class="sbx-group">Cert app · iOS redesign</div>
+  <div class="sbx-cards" id="sbx-cert-cards"><!-- filled by JS --></div>
+
   <div class="sbx-group">The real app</div>
   <div class="sbx-cards">
     <button class="sbx-card" data-act="realapp"><span><span class="sbx-card-t">Open the live app</span><span class="sbx-card-s">The actual home chrome, with ?onb=1.</span></span><span class="sbx-tag design">link</span></button>
@@ -178,6 +181,19 @@
     var b=document.createElement('button'); b.className='sbx-card'; b.setAttribute('data-mock', m[0]); b.setAttribute('data-mock-title', m[1]);
     b.innerHTML='<span><span class="sbx-card-t">'+m[1]+'</span><span class="sbx-card-s">'+m[2]+'</span></span><span class="sbx-tag design">design</span>';
     wrap.appendChild(b);
+  });
+
+  // cert-app redesign cards (Phase 1: the core loop in the iOS language)
+  var CERT_MOCKS = [
+    ['cert-ios-home.html','Cert Home','Readiness, one session, pass-mark confetti.'],
+    ['cert-ios-quiz.html','Quiz','Question, then the answer reveal.'],
+    ['cert-ios-results.html','Results','The score and the readiness jump.']
+  ];
+  var cwrap = $('sbx-cert-cards');
+  CERT_MOCKS.forEach(function(m){
+    var b=document.createElement('button'); b.className='sbx-card'; b.setAttribute('data-mock', m[0]); b.setAttribute('data-mock-title', m[1]);
+    b.innerHTML='<span><span class="sbx-card-t">'+m[1]+'</span><span class="sbx-card-s">'+m[2]+'</span></span><span class="sbx-tag design">design</span>';
+    cwrap.appendChild(b);
   });
 
   function openPanel(id){ var p=$(id); if(p) p.classList.add('open'); }

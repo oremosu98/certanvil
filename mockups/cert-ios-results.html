@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>CertAnvil · Results (iOS)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<style>
+  /* Forged-bronze tokens (matches dg-system.css + the onboarding mockups). */
+  :root {
+    --bg: oklch(0.15 0.010 275); --surface: oklch(0.205 0.009 275); --surface-2: oklch(0.255 0.010 275);
+    --ink: oklch(0.97 0.006 275); --ink-soft: oklch(0.80 0.010 275); --muted: oklch(0.62 0.013 275);
+    --border: oklch(0.34 0.009 275);
+    --accent: oklch(0.82 0.150 66); --accent-bright: oklch(0.88 0.140 72); --accent-deep: oklch(0.72 0.150 62);
+    --on-accent: oklch(0.18 0.020 275); --pass: oklch(0.78 0.150 152); --miss: oklch(0.68 0.165 25); --track: oklch(0.30 0.010 275);
+    --page-bg: oklch(0.22 0.012 275); --page-ink: oklch(0.92 0.008 275); --page-dim: oklch(0.66 0.012 275);
+  }
+  [data-theme="light"] {
+    --bg: oklch(0.975 0.007 85); --surface: oklch(0.955 0.009 84); --surface-2: oklch(0.92 0.010 84);
+    --ink: oklch(0.22 0.015 280); --ink-soft: oklch(0.38 0.014 280); --muted: oklch(0.52 0.013 280);
+    --border: oklch(0.85 0.010 85);
+    --accent: oklch(0.55 0.155 55); --accent-bright: oklch(0.62 0.150 58); --accent-deep: oklch(0.46 0.150 52);
+    --on-accent: oklch(0.99 0.008 85); --pass: oklch(0.52 0.13 150); --miss: oklch(0.55 0.18 25); --track: oklch(0.88 0.010 85);
+    --page-bg: oklch(0.93 0.010 84); --page-ink: oklch(0.28 0.015 280); --page-dim: oklch(0.46 0.013 280);
+  }
+  :root { --ease: cubic-bezier(0.16,1,0.3,1); --ease-drawer: cubic-bezier(0.32,0.72,0,1); }
+
+  * { box-sizing: border-box; }
+  html { color-scheme: light dark; }
+  body { margin: 0; background: var(--page-bg); color: var(--page-ink);
+    font: 15px/1.55 Inter, -apple-system, BlinkMacSystemFont, sans-serif; padding: 30px 20px 64px;
+    transition: background .35s var(--ease), color .35s var(--ease); }
+  .stage { max-width: 520px; margin: 0 auto; }
+  .stage-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 24px; }
+  .stage-eyebrow { font-size: 10.5px; font-weight: 800; letter-spacing: 0.16em; text-transform: uppercase; color: var(--accent-bright); margin: 0 0 7px; }
+  .stage-title { font-family: Fraunces, Georgia, serif; font-weight: 600; font-size: 24px; letter-spacing: -0.012em; margin: 0; color: var(--page-ink); }
+  .stage-sub { color: var(--page-dim); font-size: 13px; margin: 7px 0 0; max-width: 48ch; line-height: 1.5; }
+  .theme-toggle { flex: 0 0 auto; display: inline-flex; align-items: center; gap: 7px; font: 600 12px/1 Inter, sans-serif; color: var(--accent-bright);
+    background: transparent; border: 1px solid color-mix(in oklab, var(--accent-bright) 38%, var(--page-dim)); border-radius: 999px; padding: 8px 13px; cursor: pointer; transition: transform .15s var(--ease), background .2s; }
+  .theme-toggle svg { width: 15px; height: 15px; stroke: currentColor; fill: none; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+  .theme-toggle:active { transform: scale(0.97); }
+
+  .phone-wrap { display: flex; flex-direction: column; align-items: center; }
+  .phone { width: 390px; height: 844px; border-radius: 52px; padding: 11px; flex: 0 0 auto;
+    background: linear-gradient(165deg, #23262f, #0c0d11); box-shadow: 0 40px 90px -34px rgba(0,0,0,0.6), 0 0 0 1.5px rgba(255,255,255,0.06) inset; }
+  .screen { width: 100%; height: 100%; border-radius: 42px; overflow: hidden; position: relative; background: var(--bg); color: var(--ink);
+    display: flex; flex-direction: column; transition: background .35s var(--ease), color .35s var(--ease); }
+  .notch { position: absolute; top: 9px; left: 50%; transform: translateX(-50%); width: 122px; height: 32px; background: #07080b; border-radius: 18px; z-index: 6; }
+  .statusbar { display: flex; align-items: center; justify-content: space-between; padding: 14px 26px 0; font: 700 13px/1 Inter, sans-serif; color: var(--ink); }
+  .sb-icons { display: inline-flex; gap: 6px; align-items: center; }
+  .sb-icons svg { width: 17px; height: 12px; fill: var(--ink); }
+
+  .body { flex: 1; overflow-y: auto; padding: 14px 22px 14px; }
+  .body::-webkit-scrollbar { width: 0; }
+
+  /* session complete header */
+  .done-head { text-align: center; margin: 10px 0 18px; }
+  .done-kick { font: 800 10px/1 Inter, sans-serif; letter-spacing: 0.14em; text-transform: uppercase; color: var(--pass); display: inline-flex; align-items: center; gap: 7px; margin-bottom: 11px; }
+  .done-kick svg { width: 14px; height: 14px; stroke: var(--pass); fill: none; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+  .score { font: 600 52px/1 Fraunces, serif; color: var(--ink); font-variant-numeric: lining-nums tabular-nums; font-feature-settings: "lnum","tnum"; }
+  .score small { font: 700 15px/1 Inter, sans-serif; color: var(--muted); letter-spacing: 0.01em; }
+  .done-line { font-size: 13.5px; line-height: 1.5; color: var(--ink-soft); margin: 9px auto 0; max-width: 32ch; }
+
+  /* readiness moved (the aha) */
+  .moved { border: 1px solid color-mix(in oklab, var(--accent) 24%, var(--border)); border-radius: 17px; background: color-mix(in oklab, var(--accent) 6%, var(--surface)); padding: 15px 16px; }
+  .moved-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+  .moved-lbl { font: 800 10px/1 Inter, sans-serif; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+  .moved-delta { font: 800 11px/1 Inter, sans-serif; color: var(--pass); background: color-mix(in oklab, var(--pass) 14%, transparent); border: 1px solid color-mix(in oklab, var(--pass) 34%, transparent); border-radius: 999px; padding: 5px 9px; }
+  .moved-row { display: flex; align-items: baseline; gap: 9px; margin-bottom: 10px; }
+  .moved-from { font: 600 18px/1 Fraunces, serif; color: var(--muted); font-variant-numeric: lining-nums; font-feature-settings: "lnum"; }
+  .moved-arrow { color: var(--muted); }
+  .moved-arrow svg { width: 15px; height: 15px; stroke: currentColor; fill: none; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+  .moved-to { font: 600 30px/1 Fraunces, serif; color: var(--accent-deep); font-variant-numeric: lining-nums; font-feature-settings: "lnum"; }
+  .bar { height: 8px; border-radius: 999px; background: var(--track); position: relative; overflow: hidden; margin-bottom: 6px; }
+  .bar > span { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 999px; background: var(--accent); transition: width .9s var(--ease); }
+  .bar .tick { position: absolute; top: -2px; bottom: -2px; width: 2px; background: color-mix(in oklab, var(--ink) 45%, var(--track)); }
+  .moved-legend { display: flex; justify-content: space-between; font: 600 10.5px/1 Inter, sans-serif; color: var(--muted); }
+  .moved-legend .p { color: var(--accent-deep); }
+
+  .sect { font: 800 10px/1 Inter, sans-serif; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin: 19px 2px 11px; }
+
+  /* topic rows */
+  .topic { display: flex; align-items: center; gap: 12px; border: 1px solid var(--border); border-radius: 13px; background: var(--surface); padding: 11px 13px; margin-bottom: 9px; }
+  .topic .tdot { flex: 0 0 auto; width: 9px; height: 9px; border-radius: 999px; }
+  .topic.up .tdot { background: var(--pass); }
+  .topic.weak .tdot { background: var(--miss); }
+  .topic .tnm { flex: 1 1 auto; font: 600 14px/1.2 Inter, sans-serif; color: var(--ink); }
+  .topic .tvl { font: 600 12.5px/1 Inter, sans-serif; color: var(--muted); }
+  .topic.up .tvl { color: var(--pass); }
+  .topic.weak .tvl { color: var(--miss); }
+
+  /* footer actions */
+  .rfoot { flex: 0 0 auto; padding: 12px 22px calc(12px + env(safe-area-inset-bottom)); border-top: 1px solid color-mix(in oklab, var(--border) 70%, transparent); background: var(--bg); display: flex; flex-direction: column; gap: 9px; }
+  .btn-primary { width: 100%; border: none; border-radius: 13px; padding: 14px; cursor: pointer; background: var(--accent); color: var(--on-accent); font: 700 15px/1 Inter, sans-serif;
+    box-shadow: 0 10px 22px -12px color-mix(in oklab, var(--accent) 70%, transparent); transition: transform .15s var(--ease), filter .2s; }
+  .btn-primary:active { transform: scale(0.985); }
+  @media (hover:hover) and (pointer:fine) { .btn-primary:hover { filter: brightness(1.05); } }
+  .btn-ghost { width: 100%; border: 1px solid var(--border); border-radius: 13px; padding: 13px; cursor: pointer; background: transparent; color: var(--ink-soft); font: 650 14px/1 Inter, sans-serif; transition: background .2s, transform .15s var(--ease); }
+  .btn-ghost:active { transform: scale(0.98); }
+  @media (hover:hover) and (pointer:fine) { .btn-ghost:hover { background: color-mix(in oklab, var(--ink) 5%, transparent); } }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .reveal { opacity: 0; transform: translateY(10px); animation: rise .5s var(--ease) forwards; }
+    .done-head { animation-delay: .04s; } .moved { animation-delay: .12s; } .sect { animation-delay: .18s; }
+    @keyframes rise { to { opacity: 1; transform: none; } }
+  }
+  .hint { text-align: center; color: var(--page-dim); font-size: 12px; margin-top: 18px; }
+  @media (max-width: 440px) { .phone { transform: scale(.92); transform-origin: top center; } }
+</style>
+</head>
+<body>
+  <div class="stage">
+    <div class="stage-head">
+      <div>
+        <p class="stage-eyebrow">Cert app · iOS</p>
+        <h1 class="stage-title">Results</h1>
+        <p class="stage-sub">The end of a session. The score is there, but the moment is the readiness number moving. The next step is fixing the misses, not closing the app.</p>
+      </div>
+      <button class="theme-toggle" id="themeToggle" type="button" aria-label="Toggle light and dark">
+        <svg id="themeIcon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></svg>
+        <span id="themeLabel">Dark</span>
+      </button>
+    </div>
+
+    <div class="phone-wrap">
+      <div class="phone">
+        <div class="screen">
+          <div class="notch"></div>
+          <div class="statusbar">
+            <span>9:41</span>
+            <span class="sb-icons">
+              <svg viewBox="0 0 18 12" aria-hidden="true"><rect x="0" y="7" width="3" height="5" rx="1"/><rect x="5" y="4" width="3" height="8" rx="1"/><rect x="10" y="1" width="3" height="11" rx="1" opacity="0.4"/></svg>
+              <svg viewBox="0 0 18 12" aria-hidden="true"><rect x="1" y="2" width="14" height="8" rx="2.4" fill="none" stroke="currentColor" stroke-width="1.4"/><rect x="2.6" y="3.6" width="9" height="4.8" rx="1.2"/><rect x="16" y="4.6" width="1.4" height="2.8" rx="0.7"/></svg>
+            </span>
+          </div>
+
+          <div class="body">
+            <div class="done-head reveal">
+              <span class="done-kick"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6L9 17l-5-5"></path></svg>Session complete</span>
+              <div class="score">13<small> of 15 correct</small></div>
+              <p class="done-line">Your best session this week. Two to clean up below.</p>
+            </div>
+
+            <div class="moved reveal">
+              <div class="moved-top"><span class="moved-lbl">Readiness</span><span class="moved-delta">+12 today</span></div>
+              <div class="moved-row"><span class="moved-from">453</span><span class="moved-arrow"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></span><span class="moved-to" id="movedTo">453</span></div>
+              <div class="bar"><span id="movedFill" style="width:50.3%"></span><span class="tick" style="left:80%"></span></div>
+              <div class="moved-legend"><span>Now</span><span class="p">Pass 720</span></div>
+            </div>
+
+            <div class="sect reveal">Where it moved</div>
+            <div class="topic up"><span class="tdot"></span><span class="tnm">VLANs and trunking</span><span class="tvl">Stronger</span></div>
+            <div class="topic up"><span class="tdot"></span><span class="tnm">IP addressing</span><span class="tvl">Stronger</span></div>
+            <div class="topic weak"><span class="tdot"></span><span class="tnm">Wireless standards</span><span class="tvl">Still weak</span></div>
+          </div>
+
+          <div class="rfoot">
+            <button class="btn-primary" type="button">Review your 2 misses</button>
+            <button class="btn-ghost" type="button">Back to home</button>
+          </div>
+        </div>
+      </div>
+      <p class="hint">Phase 1 mockup. The win is the readiness jump, and the next tap fixes a weak spot.</p>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      var html = document.documentElement, label = document.getElementById('themeLabel'), icon = document.getElementById('themeIcon');
+      var sun = '<circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path>';
+      var moon = '<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"></path>';
+      function paint(){ var dark = html.getAttribute('data-theme') !== 'light'; label.textContent = dark ? 'Light' : 'Dark'; icon.innerHTML = dark ? moon : sun; }
+      document.getElementById('themeToggle').addEventListener('click', function(){ html.setAttribute('data-theme', html.getAttribute('data-theme') === 'light' ? 'dark' : 'light'); paint(); });
+      paint();
+
+      // The aha: the readiness number climbs and the bar nudges up on load.
+      var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      var movedTo = document.getElementById('movedTo'), movedFill = document.getElementById('movedFill');
+      function countUp(el, from, to, ms){ var s = null; function step(t){ if (!s) s = t; var p = Math.min((t - s) / ms, 1); el.textContent = Math.round(from + (to - from) * p); if (p < 1) requestAnimationFrame(step); } requestAnimationFrame(step); }
+      if (reduce){ movedTo.textContent = '465'; movedFill.style.width = '51.6%'; }
+      else { requestAnimationFrame(function(){ movedFill.style.width = '51.6%'; countUp(movedTo, 453, 465, 900); }); }
+    })();
+  </script>
+</body>
+</html>
