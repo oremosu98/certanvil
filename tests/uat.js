@@ -19986,6 +19986,21 @@ console.log('\n\x1b[1m── Security Phase 7 — CSP script-src unsafe-inline r
   test('Sec-P7 flip (pending until PR-6): placeholder', true);
 })();
 
+// ── audit 1.6: >=44px tap targets on touch devices ──
+(function(){
+  const dg = read('dg-system.css');
+  test('v7.x Tap targets >=44px coarse-pointer block present',
+    /@media\s*\(hover:none\)\s*and\s*\(pointer:coarse\)\{[\s\S]{0,800}44px/.test(dg));
+  test('v7.x Tap targets: .sb-mobile-toggle in touch block',
+    /hover:none[\s\S]{0,2000}sb-mobile-toggle/.test(dg));
+  test('v7.x Tap targets: .diag-conf-tier in touch block',
+    /hover:none[\s\S]{0,2000}diag-conf-tier/.test(dg));
+  test('v7.x Tap targets: .pass-plan-weak-btn in touch block',
+    /hover:none[\s\S]{0,2000}pass-plan-weak-btn/.test(dg));
+  test('v7.x Tap targets: .a2hs-banner-dismiss in touch block',
+    /hover:none[\s\S]{0,2000}a2hs-banner-dismiss/.test(dg));
+})();
+
 // ── Summary ──
 console.log('\n' + '═'.repeat(50));
 const total = results.pass + results.fail;

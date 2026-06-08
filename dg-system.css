@@ -3592,3 +3592,16 @@ html.cl-locked,html.cl-locked body{overflow:hidden;}
 .onb-ov.onb-ov-out .onb-coach-pop{opacity:0;transform:translateY(-4px) scale(0.98);transition:opacity .2s ease,transform .2s ease;}
 @media (prefers-reduced-motion:reduce){.onb-ov .onb-coach-pop{transform:none;}.onb-ov.onb-ov-in .onb-coach-pop{transition:opacity .2s ease;}}
 
+/* ===== audit 1.6: remaining sub-44px tap targets (TOUCH-ONLY; desktop unchanged) =====
+   Gated on hover:none + pointer:coarse — real touch devices only. min-width/min-height
+   keeps the visual size intact while enlarging the hit area. Controls here were not
+   covered by the earlier P1/P2 blocks: hamburger (.sb-mobile-toggle), diagnostic
+   confidence chips (.diag-conf-tier), results "Fix this" buttons (.pass-plan-weak-btn),
+   and the A2HS banner dismiss (.a2hs-banner-dismiss). */
+@media (hover:none) and (pointer:coarse){
+  .sb-mobile-toggle{min-width:44px!important;min-height:44px!important}
+  .diag-conf-tier{min-height:44px!important}
+  .pass-plan-weak-btn{min-height:44px!important}
+  .a2hs-banner-dismiss{min-width:44px!important;min-height:44px!important}
+}
+
