@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>CertAnvil · Report an issue (iOS)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700;800&family=Roboto+Mono:wght@500;600&display=swap" rel="stylesheet" />
+<style>
+  /* Forged-bronze tokens (matches dg-system.css + the cert-ios + onboarding mockups). */
+  :root {
+    --bg: oklch(0.15 0.010 275); --surface: oklch(0.205 0.009 275); --surface-2: oklch(0.255 0.010 275);
+    --ink: oklch(0.97 0.006 275); --ink-soft: oklch(0.80 0.010 275); --muted: oklch(0.62 0.013 275);
+    --border: oklch(0.34 0.009 275);
+    --accent: oklch(0.82 0.150 66); --accent-bright: oklch(0.88 0.140 72); --accent-deep: oklch(0.72 0.150 62);
+    --on-accent: oklch(0.18 0.020 275); --pass: oklch(0.78 0.150 152); --warn: oklch(0.80 0.130 75); --miss: oklch(0.68 0.165 25); --track: oklch(0.30 0.010 275);
+    --page-bg: oklch(0.22 0.012 275); --page-ink: oklch(0.92 0.008 275); --page-dim: oklch(0.66 0.012 275);
+  }
+  [data-theme="light"] {
+    --bg: oklch(0.975 0.007 85); --surface: oklch(0.955 0.009 84); --surface-2: oklch(0.92 0.010 84);
+    --ink: oklch(0.22 0.015 280); --ink-soft: oklch(0.38 0.014 280); --muted: oklch(0.52 0.013 280);
+    --border: oklch(0.85 0.010 85);
+    --accent: oklch(0.55 0.155 55); --accent-bright: oklch(0.62 0.150 58); --accent-deep: oklch(0.46 0.150 52);
+    --on-accent: oklch(0.99 0.008 85); --pass: oklch(0.52 0.13 150); --warn: oklch(0.58 0.13 70); --miss: oklch(0.55 0.18 25); --track: oklch(0.88 0.010 85);
+    --page-bg: oklch(0.93 0.010 84); --page-ink: oklch(0.28 0.015 280); --page-dim: oklch(0.46 0.013 280);
+  }
+  :root { --ease: cubic-bezier(0.16,1,0.3,1); --ease-drawer: cubic-bezier(0.32,0.72,0,1); }
+
+  * { box-sizing: border-box; }
+  html { color-scheme: light dark; }
+  body { margin: 0; background: var(--page-bg); color: var(--page-ink);
+    font: 15px/1.55 Inter, -apple-system, BlinkMacSystemFont, sans-serif; padding: 30px 20px 64px;
+    transition: background .35s var(--ease), color .35s var(--ease); }
+  .stage { max-width: 520px; margin: 0 auto; }
+  .stage-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 24px; }
+  .stage-eyebrow { font-size: 10.5px; font-weight: 800; letter-spacing: 0.16em; text-transform: uppercase; color: var(--accent-bright); margin: 0 0 7px; }
+  .stage-title { font-family: Fraunces, Georgia, serif; font-weight: 600; font-size: 24px; letter-spacing: -0.012em; margin: 0; color: var(--page-ink); }
+  .stage-sub { color: var(--page-dim); font-size: 13px; margin: 7px 0 0; max-width: 48ch; line-height: 1.5; }
+  .theme-toggle { flex: 0 0 auto; display: inline-flex; align-items: center; gap: 7px; font: 600 12px/1 Inter, sans-serif; color: var(--accent-bright);
+    background: transparent; border: 1px solid color-mix(in oklab, var(--accent-bright) 38%, var(--page-dim)); border-radius: 999px; padding: 8px 13px; cursor: pointer; transition: transform .15s var(--ease), background .2s; }
+  .theme-toggle svg { width: 15px; height: 15px; stroke: currentColor; fill: none; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+  .theme-toggle:active { transform: scale(0.97); }
+
+  .phone-wrap { display: flex; flex-direction: column; align-items: center; }
+  .phone { width: 390px; height: 844px; border-radius: 52px; padding: 11px; flex: 0 0 auto;
+    background: linear-gradient(165deg, #23262f, #0c0d11); box-shadow: 0 40px 90px -34px rgba(0,0,0,0.6), 0 0 0 1.5px rgba(255,255,255,0.06) inset; }
+  .screen { width: 100%; height: 100%; border-radius: 42px; overflow: hidden; position: relative; background: var(--bg); color: var(--ink);
+    display: flex; flex-direction: column; transition: background .35s var(--ease), color .35s var(--ease); }
+  .notch { position: absolute; top: 9px; left: 50%; transform: translateX(-50%); width: 122px; height: 32px; background: #07080b; border-radius: 18px; z-index: 6; }
+  .statusbar { display: flex; align-items: center; justify-content: space-between; padding: 14px 26px 0; font: 700 13px/1 Inter, sans-serif; color: var(--ink); position: relative; z-index: 2; }
+  .sb-icons { display: inline-flex; gap: 6px; align-items: center; }
+  .sb-icons svg { width: 17px; height: 12px; fill: var(--ink); }
+
+  /* faint app behind the sheet, so the report reads as a sheet over a screen */
+  .behind { position: absolute; inset: 0; padding: 52px 22px 0; opacity: .5; }
+  .behind .bt { display: flex; align-items: center; gap: 9px; }
+  .behind .bt-mark { width: 30px; height: 30px; border-radius: 9px; background: color-mix(in oklab, var(--accent) 13%, var(--surface-2)); }
+  .behind .bt-line { height: 11px; border-radius: 5px; background: var(--surface-2); }
+  .behind .bsk { margin-top: 22px; display: flex; flex-direction: column; gap: 12px; }
+  .behind .bsk i { height: 56px; border-radius: 14px; background: var(--surface); border: 1px solid var(--border); display: block; }
+
+  /* scrim + form sheet */
+  .scrim { position: absolute; inset: 0; z-index: 7; background: color-mix(in oklab, var(--bg) 52%, transparent); }
+  .sheet { position: absolute; z-index: 8; left: 0; right: 0; bottom: 0; top: 64px; background: var(--surface); border-top-left-radius: 26px; border-top-right-radius: 26px;
+    border-top: 1px solid var(--border); box-shadow: 0 -24px 60px -30px rgba(0,0,0,.55); display: flex; flex-direction: column; overflow: hidden; }
+  .grab { flex: 0 0 auto; width: 38px; height: 4px; border-radius: 999px; background: var(--border); margin: 9px auto 2px; }
+
+  .sheet-head { flex: 0 0 auto; display: flex; align-items: flex-start; gap: 10px; padding: 10px 20px 0; }
+  .eyebrow { flex: 1 1 auto; display: inline-flex; align-items: center; gap: 8px; font: 800 10px/1 Inter, sans-serif; letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent-deep); padding-top: 5px; }
+  .eyebrow svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .eyebrow::after { content: ""; flex: 1 1 auto; height: 1px; background: color-mix(in oklab, var(--accent) 45%, transparent); }
+  .close { flex: 0 0 auto; width: 30px; height: 30px; border-radius: 9px; border: none; background: transparent; color: var(--muted); display: grid; place-items: center; cursor: pointer; transition: background .16s, color .16s, transform .14s var(--ease); }
+  .close svg { width: 17px; height: 17px; stroke: currentColor; fill: none; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+  .close:active { transform: scale(.94); }
+  @media (hover:hover) and (pointer:fine) { .close:hover { background: color-mix(in oklab, var(--ink) 6%, transparent); color: var(--ink); } }
+
+  .sheet-scroll { flex: 1 1 auto; overflow-y: auto; padding: 4px 20px 8px; }
+  .sheet-scroll::-webkit-scrollbar { width: 0; }
+  .r-title { font: 600 24px/1.12 Fraunces, serif; letter-spacing: -0.012em; color: var(--ink); margin: 8px 0 0; }
+  .r-sub { font: 500 13px/1.5 Inter, sans-serif; color: var(--ink-soft); margin: 7px 0 0; }
+
+  .context { display: inline-flex; align-items: center; gap: 7px; margin: 14px 0 4px; padding: 7px 11px; border-radius: 999px;
+    background: color-mix(in oklab, var(--accent) 8%, var(--surface-2)); border: 1px solid color-mix(in oklab, var(--accent) 22%, var(--border)); }
+  .context svg { width: 13px; height: 13px; stroke: var(--accent-deep); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .context span { font: 600 11.5px/1 Inter, sans-serif; color: var(--ink-soft); }
+  .context b { color: var(--ink); font-weight: 700; }
+
+  .field { margin-top: 16px; }
+  .f-top { display: flex; align-items: baseline; gap: 8px; margin-bottom: 8px; }
+  .f-label { font: 800 10px/1 Inter, sans-serif; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+  .f-req { color: var(--accent-deep); margin-left: 3px; }
+  .f-counter { margin-left: auto; font: 600 10.5px/1 'Roboto Mono', monospace; color: var(--muted); }
+  .f-counter.warn { color: var(--warn); }
+  .f-input, .f-textarea { width: 100%; border: 1px solid var(--border); border-radius: 13px; background: var(--bg); color: var(--ink);
+    font: 500 14px/1.45 Inter, sans-serif; padding: 13px 14px; outline: none; transition: border-color .16s, box-shadow .16s; resize: none; }
+  .f-input { min-height: 48px; }
+  .f-textarea { min-height: 104px; }
+  .f-input::placeholder, .f-textarea::placeholder { color: var(--muted); }
+  .f-input:focus, .f-textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in oklab, var(--accent) 22%, transparent); }
+
+  .steps-link { display: inline-flex; align-items: center; gap: 8px; margin: 14px 0 2px; border: none; background: transparent; cursor: pointer;
+    font: 650 13px/1 Inter, sans-serif; color: var(--ink-soft); padding: 4px 0; transition: color .16s; }
+  .steps-link .plus { width: 20px; height: 20px; border-radius: 7px; display: grid; place-items: center; background: color-mix(in oklab, var(--accent) 12%, var(--surface-2)); color: var(--accent-deep); }
+  .steps-link .plus svg { width: 12px; height: 12px; stroke: currentColor; fill: none; stroke-width: 2.4; stroke-linecap: round; }
+  @media (hover:hover) and (pointer:fine) { .steps-link:hover { color: var(--accent-deep); } }
+  .steps-link[hidden] { display: none; }
+  .steps-field[hidden] { display: none; }
+
+  .sheet-foot { flex: 0 0 auto; display: flex; gap: 10px; padding: 12px 20px calc(14px + env(safe-area-inset-bottom)); border-top: 1px solid color-mix(in oklab, var(--border) 70%, transparent); background: var(--surface); }
+  .btn-cancel { flex: 0 0 auto; border: 1px solid var(--border); border-radius: 13px; background: transparent; color: var(--ink-soft); font: 650 14px/1 Inter, sans-serif; padding: 0 18px; cursor: pointer; transition: background .18s, border-color .18s, transform .14s var(--ease); }
+  .btn-cancel:active { transform: scale(.97); }
+  @media (hover:hover) and (pointer:fine) { .btn-cancel:hover { background: color-mix(in oklab, var(--ink) 5%, transparent); } }
+  .btn-send { flex: 1 1 auto; border: none; border-radius: 13px; padding: 14px; cursor: pointer; background: var(--accent); color: var(--on-accent); font: 700 14.5px/1 Inter, sans-serif;
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 10px 22px -12px color-mix(in oklab, var(--accent) 70%, transparent); transition: transform .15s var(--ease), filter .2s, opacity .2s; }
+  .btn-send svg { width: 15px; height: 15px; stroke: currentColor; fill: none; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+  .btn-send:active { transform: scale(.985); }
+  @media (hover:hover) and (pointer:fine) { .btn-send:hover { filter: brightness(1.05); } }
+  .btn-send:disabled { opacity: .45; cursor: not-allowed; box-shadow: none; }
+
+  /* success toast */
+  .toast { position: absolute; z-index: 9; left: 16px; right: 16px; bottom: calc(16px + env(safe-area-inset-bottom)); display: flex; align-items: center; gap: 12px;
+    background: var(--surface); border: 1px solid color-mix(in oklab, var(--pass) 50%, var(--border)); border-radius: 16px; padding: 14px 15px;
+    box-shadow: 0 20px 50px -24px rgba(0,0,0,.5); transform: translateY(140%); opacity: 0; transition: transform .22s var(--ease-drawer), opacity .2s var(--ease); }
+  .toast.open { transform: translateY(0); opacity: 1; transition: transform .34s var(--ease-drawer), opacity .25s var(--ease); }
+  @media (prefers-reduced-motion: reduce) {
+    .toast, .toast.open { transform: none; transition: opacity .18s ease; }
+  }
+  .toast-i { flex: 0 0 auto; width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; color: var(--pass); background: color-mix(in oklab, var(--pass) 15%, transparent); }
+  .toast-i svg { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+  .toast-t { font: 700 13.5px/1.2 Inter, sans-serif; color: var(--ink); }
+  .toast-l { font: 500 11.5px/1.3 Inter, sans-serif; color: var(--muted); margin-top: 3px; }
+
+  .hint { text-align: center; color: var(--page-dim); font-size: 12px; margin-top: 18px; max-width: 44ch; margin-left: auto; margin-right: auto; }
+  @media (max-width: 440px) { .phone { transform: scale(.92); transform-origin: top center; } }
+</style>
+</head>
+<body>
+  <div class="stage">
+    <div class="stage-head">
+      <div>
+        <p class="stage-eyebrow">Cert app · iOS</p>
+        <h1 class="stage-title">Report an issue</h1>
+        <p class="stage-sub">The global feedback sheet, reachable from any screen. It carries the cert and screen you were on, so the report arrives with context already attached.</p>
+      </div>
+      <button class="theme-toggle" id="themeToggle" type="button" aria-label="Toggle light and dark">
+        <svg id="themeIcon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></svg>
+        <span id="themeLabel">Dark</span>
+      </button>
+    </div>
+
+    <div class="phone-wrap">
+      <div class="phone">
+        <div class="screen" id="screen">
+          <div class="notch"></div>
+          <div class="statusbar">
+            <span>9:41</span>
+            <span class="sb-icons">
+              <svg viewBox="0 0 18 12" aria-hidden="true"><rect x="0" y="7" width="3" height="5" rx="1"/><rect x="5" y="4" width="3" height="8" rx="1"/><rect x="10" y="1" width="3" height="11" rx="1" opacity="0.4"/></svg>
+              <svg viewBox="0 0 18 12" aria-hidden="true"><rect x="1" y="2" width="14" height="8" rx="2.4" fill="none" stroke="currentColor" stroke-width="1.4"/><rect x="2.6" y="3.6" width="9" height="4.8" rx="1.2"/><rect x="16" y="4.6" width="1.4" height="2.8" rx="0.7"/></svg>
+            </span>
+          </div>
+
+          <!-- faint app behind, dimmed by the scrim -->
+          <div class="behind" aria-hidden="true">
+            <div class="bt"><span class="bt-mark"></span><span class="bt-line" style="width:120px"></span></div>
+            <div class="bsk"><i></i><i></i><i></i></div>
+          </div>
+          <div class="scrim"></div>
+
+          <!-- REPORT SHEET -->
+          <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="rTitle">
+            <div class="grab"></div>
+            <div class="sheet-head">
+              <span class="eyebrow"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 21V4h11l-1.5 4L16 12H5"></path></svg>Report</span>
+              <button class="close" id="closeBtn" type="button" aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+            </div>
+
+            <div class="sheet-scroll">
+              <h2 class="r-title" id="rTitle">Report an issue</h2>
+              <p class="r-sub">Tell us what went wrong and we'll take a look.</p>
+
+              <div class="context">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s7-5.4 7-11a7 7 0 0 0-14 0c0 5.6 7 11 7 11z"></path><circle cx="12" cy="10" r="2.5"></circle></svg>
+                <span>From <b>Security+</b> · Exam</span>
+              </div>
+
+              <div class="field">
+                <div class="f-top">
+                  <label class="f-label" for="rTitleInput">Title<span class="f-req">*</span></label>
+                  <span class="f-counter" id="titleCount">0 / 80</span>
+                </div>
+                <input class="f-input" id="rTitleInput" type="text" maxlength="80" placeholder="What happened, in one line?" />
+              </div>
+
+              <div class="field">
+                <div class="f-top">
+                  <label class="f-label" for="rDesc">Description<span class="f-req">*</span></label>
+                  <span class="f-counter" id="descCount">0 / 5,000</span>
+                </div>
+                <textarea class="f-textarea" id="rDesc" maxlength="5000" placeholder="What you did · what happened · what you expected."></textarea>
+              </div>
+
+              <button class="steps-link" id="stepsLink" type="button">
+                <span class="plus"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg></span>
+                Add steps to reproduce
+              </button>
+              <div class="field steps-field" id="stepsField" hidden>
+                <div class="f-top">
+                  <label class="f-label" for="rSteps">Steps to reproduce</label>
+                  <span class="f-counter">optional</span>
+                </div>
+                <textarea class="f-textarea" id="rSteps" maxlength="2000" placeholder="1. Open the exam&#10;2. Tap End&#10;3. ..."></textarea>
+              </div>
+            </div>
+
+            <div class="sheet-foot">
+              <button class="btn-cancel" id="cancelBtn" type="button">Cancel</button>
+              <button class="btn-send" id="sendBtn" type="button" disabled>Send report<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"></path></svg></button>
+            </div>
+          </div>
+
+          <!-- success toast -->
+          <div class="toast" id="toast" role="status">
+            <span class="toast-i"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6L9 17l-5-5"></path></svg></span>
+            <span><span class="toast-t">Report sent</span><span class="toast-l">Thanks. A real person reads every one.</span></span>
+          </div>
+        </div>
+      </div>
+      <p class="hint" id="hint">Report-an-issue sheet. Type a title and description to enable Send. Add steps to reproduce, then send to see the confirmation.</p>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      var html = document.documentElement;
+      var label = document.getElementById('themeLabel'), icon = document.getElementById('themeIcon');
+      var SUN = '<circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path>';
+      var MOON = '<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"></path>';
+      try { var saved = localStorage.getItem('ca-theme'); if (saved) html.setAttribute('data-theme', saved); } catch (e) {}
+      function paint(){ var light = html.getAttribute('data-theme') === 'light'; label.textContent = light ? 'Dark' : 'Light'; icon.innerHTML = light ? SUN : MOON; }
+      function toggleTheme(){ var next = html.getAttribute('data-theme') === 'light' ? 'dark' : 'light'; html.setAttribute('data-theme', next); try { localStorage.setItem('ca-theme', next); } catch (e) {} paint(); }
+      document.getElementById('themeToggle').addEventListener('click', toggleTheme);
+      paint();
+
+      var titleInput = document.getElementById('rTitleInput'), desc = document.getElementById('rDesc');
+      var titleCount = document.getElementById('titleCount'), descCount = document.getElementById('descCount');
+      var sendBtn = document.getElementById('sendBtn');
+      function fmt(n){ return n.toLocaleString('en-US'); }
+      function refresh(){
+        var tl = titleInput.value.length, dl = desc.value.length;
+        titleCount.textContent = tl + ' / 80';
+        descCount.textContent = fmt(dl) + ' / 5,000';
+        titleCount.classList.toggle('warn', tl > 70);
+        descCount.classList.toggle('warn', dl > 4750);
+        sendBtn.disabled = !(titleInput.value.trim() && desc.value.trim());
+      }
+      titleInput.addEventListener('input', refresh);
+      desc.addEventListener('input', refresh);
+
+      // Add steps to reproduce
+      var stepsLink = document.getElementById('stepsLink'), stepsField = document.getElementById('stepsField');
+      stepsLink.addEventListener('click', function () {
+        stepsField.hidden = false; stepsLink.hidden = true;
+        document.getElementById('rSteps').focus();
+      });
+
+      // Send -> success toast, then reset
+      var toast = document.getElementById('toast');
+      var toastTimer = null;
+      document.getElementById('sendBtn').addEventListener('click', function () {
+        if (sendBtn.disabled) return;
+        toast.classList.add('open');
+        if (toastTimer) clearTimeout(toastTimer);
+        toastTimer = setTimeout(function () { toast.classList.remove('open'); }, 3200);
+        resetForm();
+      });
+
+      function resetForm(){
+        titleInput.value = ''; desc.value = '';
+        var rs = document.getElementById('rSteps'); if (rs) rs.value = '';
+        stepsField.hidden = true; stepsLink.hidden = false;
+        refresh();
+      }
+      document.getElementById('cancelBtn').addEventListener('click', resetForm);
+      document.getElementById('closeBtn').addEventListener('click', resetForm);
+
+      refresh();
+    })();
+  </script>
+</body>
+</html>
