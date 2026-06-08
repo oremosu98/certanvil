@@ -20003,6 +20003,17 @@ console.log('\n\x1b[1m── Security Phase 7 — CSP script-src unsafe-inline r
     /hover:none[\s\S]{0,2000}a2hs-banner-dismiss/.test(dg));
 })();
 
+// ── audit 1.7: sticky "Start today's session" CTA on Pass Plan result screen (phone-only) ──
+(function(){
+  const dg = read('dg-system.css');
+  test('v7.x Pass Plan primary CTA is sticky on phones',
+    /passplan-cta-bar/.test(js + html) && /@media\s*\(max-width:620px\)[\s\S]{0,500}passplan-cta-bar[\s\S]{0,200}position:sticky/.test(dg.replace(/\n/g,' ')));
+  test('v7.x Pass Plan sticky CTA safe-area padding present',
+    /passplan-cta-bar[\s\S]{0,400}safe-area-inset-bottom/.test(dg.replace(/\n/g,' ')));
+  test('v7.x Pass Plan sticky CTA scoped to #page-diagnostic-result (desktop unchanged)',
+    /#page-diagnostic-result\s*\.passplan-cta-bar/.test(dg));
+})();
+
 // ── audit 5: signed-out gate renders in-view sign-in prompt ──
 (function(){
   test('v7.x Signed-out gate shows an in-view sign-in prompt (helper present)',

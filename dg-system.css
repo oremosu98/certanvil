@@ -3626,3 +3626,16 @@ html.cl-locked,html.cl-locked body{overflow:hidden;}
 .signin-inline-msg{font-size:13.5px;line-height:1.5;color:var(--text)}
 .signin-inline-cta{min-height:44px;border-radius:10px;font-weight:700}
 
+/* ── audit 1.7: sticky "Start today's session" CTA on Pass Plan result screen (PHONE-ONLY) ──
+   Pins the primary CTA to the bottom of the viewport on phones so it's always reachable
+   without scrolling. Respects iOS home-indicator safe area via env(safe-area-inset-bottom).
+   Scoped to #page-diagnostic-result .passplan-cta-bar — does NOT affect any other screen. */
+@media (max-width:620px){
+  #page-diagnostic-result .passplan-cta-bar{
+    position:sticky;bottom:0;z-index:50;display:flex;
+    padding:12px 16px calc(12px + env(safe-area-inset-bottom));
+    background:linear-gradient(180deg,transparent,var(--bg) 28%);
+  }
+  #page-diagnostic-result .passplan-cta-bar .btn-primary{width:100%;min-height:48px}
+}
+
