@@ -3038,6 +3038,17 @@ html[data-theme] body #page-setup{
   #page-setup .bento{grid-template-columns:1fr}
   #page-setup .cell-hero,#page-setup .cell-recommend,#page-setup .cell-momentum,#page-setup .cell-quick,#page-setup .cell-practice,#page-setup .cell-exam,#page-setup .cell-domains,#page-setup .cell-custom{grid-column:1 / -1}
 }
+/* audit 8: phones lead with the Start action — reorder bento cells via CSS order (DOM untouched) */
+@media (max-width:620px){
+  #page-setup .cell-recommend{order:1}
+  #page-setup .cell-hero    {order:2}
+  #page-setup .cell-momentum{order:3}
+  #page-setup .cell-quick   {order:4}
+  #page-setup .cell-practice{order:5}
+  #page-setup .cell-exam    {order:6}
+  #page-setup .cell-domains {order:7}
+  #page-setup .cell-custom  {order:8}
+}
 
 /* shared tile shell - chrome props use !important to beat the de-card band */
 html[data-theme] body #page-setup .tile{position:relative;border:1px solid var(--hairline)!important;border-radius:18px!important;padding:22px 24px!important;background:var(--surface)!important;
