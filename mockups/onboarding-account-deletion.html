@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>CertAnvil · Delete account</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<style>
+  /* ── Forged-bronze tokens (matches dg-system.css + the onboarding mockups). ── */
+  :root {
+    --bg: oklch(0.15 0.010 275); --surface: oklch(0.205 0.009 275); --surface-2: oklch(0.255 0.010 275);
+    --ink: oklch(0.97 0.006 275); --ink-soft: oklch(0.80 0.010 275); --muted: oklch(0.62 0.013 275);
+    --border: oklch(0.34 0.009 275);
+    --accent: oklch(0.82 0.150 66); --accent-bright: oklch(0.88 0.140 72); --accent-deep: oklch(0.72 0.150 62);
+    --on-accent: oklch(0.18 0.020 275); --pass: oklch(0.78 0.150 152); --track: oklch(0.30 0.010 275);
+    --danger: oklch(0.62 0.190 25); --danger-deep: oklch(0.55 0.200 26); --on-danger: oklch(0.98 0.010 30);
+    --page-bg: oklch(0.22 0.012 275); --page-ink: oklch(0.92 0.008 275); --page-dim: oklch(0.66 0.012 275);
+  }
+  [data-theme="light"] {
+    --bg: oklch(0.975 0.007 85); --surface: oklch(0.955 0.009 84); --surface-2: oklch(0.92 0.010 84);
+    --ink: oklch(0.22 0.015 280); --ink-soft: oklch(0.38 0.014 280); --muted: oklch(0.52 0.013 280);
+    --border: oklch(0.85 0.010 85);
+    --accent: oklch(0.55 0.155 55); --accent-bright: oklch(0.62 0.150 58); --accent-deep: oklch(0.46 0.150 52);
+    --on-accent: oklch(0.99 0.008 85); --pass: oklch(0.52 0.13 150); --track: oklch(0.88 0.010 85);
+    --danger: oklch(0.52 0.195 26); --danger-deep: oklch(0.45 0.200 27); --on-danger: oklch(0.99 0.010 30);
+    --page-bg: oklch(0.93 0.010 84); --page-ink: oklch(0.28 0.015 280); --page-dim: oklch(0.46 0.013 280);
+  }
+  :root { --ease: cubic-bezier(0.16,1,0.3,1); --ease-drawer: cubic-bezier(0.32,0.72,0,1); }
+
+  * { box-sizing: border-box; }
+  html { color-scheme: light dark; }
+  body { margin: 0; background: var(--page-bg); color: var(--page-ink);
+    font: 15px/1.55 Inter, -apple-system, BlinkMacSystemFont, sans-serif; padding: 30px 20px 64px;
+    transition: background .35s var(--ease), color .35s var(--ease); }
+  .stage { max-width: 520px; margin: 0 auto; }
+  .stage-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 24px; }
+  .stage-eyebrow { font-size: 10.5px; font-weight: 800; letter-spacing: 0.16em; text-transform: uppercase; color: var(--accent-bright); margin: 0 0 7px; }
+  .stage-title { font-family: Fraunces, Georgia, serif; font-weight: 600; font-size: 24px; letter-spacing: -0.012em; margin: 0; color: var(--page-ink); }
+  .stage-sub { color: var(--page-dim); font-size: 13px; margin: 7px 0 0; max-width: 48ch; line-height: 1.5; }
+  .theme-toggle { flex: 0 0 auto; display: inline-flex; align-items: center; gap: 7px; font: 600 12px/1 Inter, sans-serif; color: var(--accent-bright);
+    background: transparent; border: 1px solid color-mix(in oklab, var(--accent-bright) 38%, var(--page-dim)); border-radius: 999px; padding: 8px 13px; cursor: pointer; transition: transform .15s var(--ease), background .2s; }
+  .theme-toggle svg { width: 15px; height: 15px; stroke: currentColor; fill: none; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+  .theme-toggle:active { transform: scale(0.97); }
+
+  .phone-wrap { display: flex; flex-direction: column; align-items: center; }
+  .phone { width: 390px; height: 844px; border-radius: 52px; padding: 11px; flex: 0 0 auto;
+    background: linear-gradient(165deg, #23262f, #0c0d11); box-shadow: 0 40px 90px -34px rgba(0,0,0,0.6), 0 0 0 1.5px rgba(255,255,255,0.06) inset; }
+  .screen { width: 100%; height: 100%; border-radius: 42px; overflow: hidden; position: relative; background: var(--bg); color: var(--ink);
+    display: flex; flex-direction: column; transition: background .35s var(--ease), color .35s var(--ease); }
+  .notch { position: absolute; top: 9px; left: 50%; transform: translateX(-50%); width: 122px; height: 32px; background: #07080b; border-radius: 18px; z-index: 6; }
+  .statusbar { display: flex; align-items: center; justify-content: space-between; padding: 14px 26px 0; font: 700 13px/1 Inter, sans-serif; color: var(--ink); }
+  .sb-icons { display: inline-flex; gap: 6px; align-items: center; }
+  .sb-icons svg { width: 17px; height: 12px; fill: var(--ink); }
+
+  .hdr { display: flex; align-items: center; gap: 11px; padding: 14px 22px 10px; }
+  .hdr .back { width: 36px; height: 36px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface); display: grid; place-items: center; cursor: pointer; color: var(--ink-soft); transition: transform .14s var(--ease), border-color .18s; }
+  .hdr .back:active { transform: scale(0.94); }
+  @media (hover:hover) and (pointer:fine) { .hdr .back:hover { border-color: color-mix(in oklab, var(--accent) 36%, var(--border)); } }
+  .hdr .back svg { width: 17px; height: 17px; stroke: currentColor; fill: none; stroke-width: 2.1; stroke-linecap: round; stroke-linejoin: round; }
+  .hdr h1 { font-family: Fraunces, Georgia, serif; font-weight: 600; font-size: 21px; letter-spacing: -0.01em; margin: 0; color: var(--ink); flex: 1; }
+  .hdr .plan-tag { font: 800 9.5px/1 Inter, sans-serif; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); background: color-mix(in oklab, var(--ink) 6%, transparent); border: 1px solid var(--border); border-radius: 999px; padding: 6px 9px; }
+
+  .body { flex: 1; overflow-y: auto; padding: 4px 22px 22px; }
+  .body::-webkit-scrollbar { width: 0; }
+  .sect { font: 800 10px/1 Inter, sans-serif; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin: 18px 2px 10px; }
+
+  /* identity card at the top of Settings */
+  .acct { display: flex; align-items: center; gap: 13px; border: 1px solid var(--border); border-radius: 16px; background: var(--surface); padding: 14px; }
+  .acct .avatar { flex: 0 0 auto; width: 46px; height: 46px; border-radius: 13px; background: color-mix(in oklab, var(--accent) 16%, var(--surface-2)); color: var(--accent-deep); display: grid; place-items: center; font: 800 16px/1 Inter, sans-serif; }
+  .acct .who { min-width: 0; }
+  .acct .nm { font: 650 15px/1.2 Inter, sans-serif; color: var(--ink); }
+  .acct .em { font-size: 12.5px; color: var(--muted); margin-top: 3px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .acct .pro { flex: 0 0 auto; margin-left: auto; font: 800 9.5px/1 Inter, sans-serif; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent-deep); background: color-mix(in oklab, var(--accent) 12%, var(--surface)); border: 1px solid color-mix(in oklab, var(--accent) 32%, var(--border)); border-radius: 999px; padding: 6px 9px; }
+
+  /* settings rows group */
+  .group { border: 1px solid var(--border); border-radius: 16px; background: var(--surface); overflow: hidden; }
+  .row { display: flex; align-items: center; gap: 12px; padding: 13px 14px; cursor: pointer; background: transparent; border: none; width: 100%; text-align: left; color: var(--ink); transition: background .18s; }
+  .row + .row { border-top: 1px solid color-mix(in oklab, var(--border) 64%, transparent); }
+  .row:active { background: color-mix(in oklab, var(--ink) 5%, transparent); }
+  @media (hover:hover) and (pointer:fine) { .row:hover { background: color-mix(in oklab, var(--ink) 4%, transparent); } }
+  .row .ri { flex: 0 0 auto; width: 32px; height: 32px; border-radius: 9px; display: grid; place-items: center; background: color-mix(in oklab, var(--ink) 6%, var(--surface-2)); color: var(--ink-soft); }
+  .row .ri svg { width: 17px; height: 17px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .row .rl { flex: 1 1 auto; font: 600 14px/1.25 Inter, sans-serif; }
+  .row .chev { flex: 0 0 auto; color: var(--muted); }
+  .row .chev svg { width: 17px; height: 17px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  /* destructive row */
+  .row.danger .rl { color: var(--danger-deep); }
+  .row.danger .ri { background: color-mix(in oklab, var(--danger) 12%, var(--surface-2)); color: var(--danger-deep); }
+  .group.solo { border-color: color-mix(in oklab, var(--danger) 26%, var(--border)); }
+  .group-note { font-size: 12px; line-height: 1.45; color: var(--muted); margin: 9px 4px 0; }
+
+  /* sticky bar reused on the goodbye screen */
+  .footer { flex: 0 0 auto; padding: 12px 22px calc(12px + env(safe-area-inset-bottom)); border-top: 1px solid color-mix(in oklab, var(--border) 70%, transparent); background: var(--bg); }
+  .btn-primary { width: 100%; border: none; border-radius: 13px; padding: 14px; cursor: pointer; background: var(--accent); color: var(--on-accent); font: 700 15px/1 Inter, sans-serif;
+    box-shadow: 0 10px 22px -12px color-mix(in oklab, var(--accent) 70%, transparent); transition: transform .15s var(--ease), filter .2s, opacity .2s; }
+  .btn-primary:active { transform: scale(0.985); }
+  @media (hover:hover) and (pointer:fine) { .btn-primary:hover { filter: brightness(1.05); } }
+  .btn-primary[disabled] { opacity: 0.45; box-shadow: none; cursor: default; }
+
+  /* destructive primary (reuses btn-primary shape, danger token) */
+  .btn-danger { background: var(--danger); color: var(--on-danger); box-shadow: 0 10px 22px -12px color-mix(in oklab, var(--danger) 70%, transparent); }
+  @media (hover:hover) and (pointer:fine) { .btn-danger:hover { filter: brightness(1.06); } }
+
+  /* confirm sheet (reuses the sibling pattern) */
+  .scrim { position: absolute; inset: 0; background: color-mix(in oklab, #07080b 52%, transparent); opacity: 0; pointer-events: none; transition: opacity .28s var(--ease); z-index: 8; }
+  .scrim.open { opacity: 1; pointer-events: auto; }
+  .sheet { position: absolute; left: 0; right: 0; bottom: 0; z-index: 9; background: var(--surface); border-top-left-radius: 26px; border-top-right-radius: 26px;
+    border-top: 1px solid var(--border); padding: 10px 20px calc(20px + env(safe-area-inset-bottom)); transform: translateY(102%); transition: transform .34s var(--ease-drawer); will-change: transform; box-shadow: 0 -24px 50px -30px rgba(0,0,0,0.5); max-height: 92%; overflow-y: auto; }
+  .sheet::-webkit-scrollbar { width: 0; }
+  .sheet.open { transform: none; }
+  .grab { width: 38px; height: 4px; border-radius: 999px; background: color-mix(in oklab, var(--ink) 22%, var(--track)); margin: 4px auto 14px; }
+  .sheet-head { display: flex; align-items: center; gap: 11px; margin-bottom: 6px; }
+  .sheet-lock { flex: 0 0 auto; width: 38px; height: 38px; border-radius: 11px; display: grid; place-items: center; background: color-mix(in oklab, var(--danger) 14%, var(--surface-2)); }
+  .sheet-lock svg { width: 19px; height: 19px; stroke: var(--danger-deep); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .sheet h2 { font-family: Fraunces, Georgia, serif; font-weight: 600; font-size: 20px; letter-spacing: -0.01em; margin: 0; color: var(--ink); }
+  .sheet-intro { font-size: 13px; line-height: 1.5; color: var(--ink-soft); margin: 8px 0 14px; }
+  .terms { list-style: none; margin: 0 0 14px; padding: 0; }
+  .terms li { display: flex; align-items: flex-start; gap: 12px; padding: 11px 0; }
+  .terms li + li { border-top: 1px solid color-mix(in oklab, var(--border) 60%, transparent); }
+  .ti { flex: 0 0 auto; width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center; background: color-mix(in oklab, var(--danger) 10%, var(--surface-2)); }
+  .ti svg { width: 16px; height: 16px; stroke: var(--danger-deep); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .terms .tt { font: 650 13.5px/1.3 Inter, sans-serif; color: var(--ink); }
+  .terms .ts { font-size: 12.5px; line-height: 1.45; color: var(--ink-soft); margin-top: 3px; }
+  .terms .ts b { color: var(--ink); font-weight: 650; }
+
+  /* permanence callout + subscription note */
+  .callout { display: flex; align-items: flex-start; gap: 10px; border-radius: 13px; padding: 11px 13px; margin: 0 0 12px; font-size: 12.5px; line-height: 1.45; }
+  .callout svg { flex: 0 0 auto; width: 16px; height: 16px; margin-top: 1px; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .callout.warn { border: 1px solid color-mix(in oklab, var(--danger) 30%, var(--border)); background: color-mix(in oklab, var(--danger) 7%, var(--surface)); color: var(--ink-soft); }
+  .callout.warn svg { stroke: var(--danger-deep); }
+  .callout.warn b { color: var(--ink); font-weight: 650; }
+  .callout.info { border: 1px solid color-mix(in oklab, var(--accent) 28%, var(--border)); background: color-mix(in oklab, var(--accent) 6%, var(--surface)); color: var(--ink-soft); }
+  .callout.info svg { stroke: var(--accent-deep); }
+  .callout.info b { color: var(--ink); font-weight: 650; }
+
+  /* type-to-confirm field */
+  .confirm-field { margin: 0 0 16px; }
+  .confirm-field label { display: block; font: 650 12.5px/1.4 Inter, sans-serif; color: var(--ink); margin-bottom: 7px; }
+  .confirm-field label .em { font-weight: 700; color: var(--danger-deep); }
+  .confirm-field input { width: 100%; border: 1.5px solid var(--border); border-radius: 12px; background: var(--bg); color: var(--ink); padding: 12px 13px; font: 500 14px/1.2 Inter, sans-serif; transition: border-color .18s, box-shadow .18s; }
+  .confirm-field input::placeholder { color: var(--muted); }
+  .confirm-field input:focus { outline: none; border-color: color-mix(in oklab, var(--danger) 55%, var(--border)); box-shadow: 0 0 0 3px color-mix(in oklab, var(--danger) 18%, transparent); }
+  .confirm-field input.match { border-color: color-mix(in oklab, var(--pass) 55%, var(--border)); box-shadow: 0 0 0 3px color-mix(in oklab, var(--pass) 16%, transparent); }
+  .confirm-hint { font-size: 11.5px; color: var(--muted); margin: 7px 0 0; }
+
+  .sheet-actions { display: flex; flex-direction: column; gap: 9px; }
+  .btn-ghost { width: 100%; border: 1px solid var(--border); border-radius: 13px; padding: 13px; cursor: pointer; background: transparent; color: var(--ink-soft); font: 650 14px/1 Inter, sans-serif; transition: background .2s, transform .15s var(--ease); }
+  .btn-ghost:active { transform: scale(0.98); }
+  @media (hover:hover) and (pointer:fine) { .btn-ghost:hover { background: color-mix(in oklab, var(--ink) 5%, transparent); } }
+
+  /* deleting state (overlay) */
+  .deleting { position: absolute; inset: 0; z-index: 11; background: var(--bg); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; padding: 0 40px; text-align: center; opacity: 0; pointer-events: none; transition: opacity .3s var(--ease); }
+  .deleting.open { opacity: 1; pointer-events: auto; }
+  .spinner { width: 38px; height: 38px; border-radius: 999px; border: 3px solid color-mix(in oklab, var(--ink) 14%, var(--track)); border-top-color: var(--accent); }
+  @media (prefers-reduced-motion: no-preference) { .deleting.open .spinner { animation: spin 0.9s linear infinite; } }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .deleting .dl-t { font: 650 16px/1.3 Inter, sans-serif; color: var(--ink); }
+  .deleting .dl-s { font-size: 12.5px; line-height: 1.5; color: var(--muted); max-width: 30ch; }
+
+  /* goodbye / signed-out state (overlay) */
+  .goodbye { position: absolute; inset: 0; z-index: 12; background: var(--bg); display: flex; flex-direction: column; opacity: 0; pointer-events: none; transition: opacity .35s var(--ease); }
+  .goodbye.open { opacity: 1; pointer-events: auto; }
+  .goodbye-body { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; padding: 0 38px; text-align: center; }
+  .gb-mark { width: 60px; height: 60px; border-radius: 17px; display: grid; place-items: center; background: color-mix(in oklab, var(--pass) 13%, var(--surface-2)); }
+  .gb-mark svg { width: 28px; height: 28px; stroke: var(--pass); fill: none; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+  .goodbye h2 { font-family: Fraunces, Georgia, serif; font-weight: 600; font-size: 23px; letter-spacing: -0.012em; margin: 0; color: var(--ink); }
+  .goodbye p { font-size: 13.5px; line-height: 1.55; color: var(--ink-soft); margin: 0; max-width: 32ch; }
+  .goodbye .quiet { font-size: 12px; color: var(--muted); max-width: 32ch; }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .reveal { opacity: 0; transform: translateY(9px); animation: rise .5s var(--ease) forwards; }
+    .reveal:nth-child(1){animation-delay:.04s}.reveal:nth-child(2){animation-delay:.08s}.reveal:nth-child(3){animation-delay:.12s}
+    .reveal:nth-child(4){animation-delay:.16s}.reveal:nth-child(5){animation-delay:.20s}.reveal:nth-child(6){animation-delay:.24s}
+    .reveal:nth-child(7){animation-delay:.28s}.reveal:nth-child(8){animation-delay:.32s}
+    @keyframes rise { to { opacity: 1; transform: none; } }
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .sheet .terms li { opacity: 0; transform: translateY(6px); }
+    .sheet.open .terms li { animation: termIn .42s var(--ease) forwards; }
+    .sheet.open .terms li:nth-child(1) { animation-delay: .08s; }
+    .sheet.open .terms li:nth-child(2) { animation-delay: .14s; }
+    .sheet.open .terms li:nth-child(3) { animation-delay: .20s; }
+    .sheet.open .terms li:nth-child(4) { animation-delay: .26s; }
+    @keyframes termIn { to { opacity: 1; transform: none; } }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .scrim, .sheet, .deleting, .goodbye { transition: none; }
+  }
+  .hint { text-align: center; color: var(--page-dim); font-size: 12px; margin-top: 18px; }
+  @media (max-width: 440px) { .phone { transform: scale(.92); transform-origin: top center; } }
+</style>
+</head>
+<body>
+  <div class="stage">
+    <div class="stage-head">
+      <div>
+        <p class="stage-eyebrow">Settings · delete account</p>
+        <h1 class="stage-title">Delete account</h1>
+        <p class="stage-sub">Apple requires in-app account deletion for apps with accounts. This is the Settings row, a confirm sheet that is honest about what is lost, the brief deleting state, and the signed-out goodbye.</p>
+      </div>
+      <button class="theme-toggle" id="themeToggle" type="button" aria-label="Toggle light and dark">
+        <svg id="themeIcon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></svg>
+        <span id="themeLabel">Dark</span>
+      </button>
+    </div>
+
+    <div class="phone-wrap">
+      <div class="phone">
+        <div class="screen">
+          <div class="notch"></div>
+          <div class="statusbar">
+            <span>9:41</span>
+            <span class="sb-icons">
+              <svg viewBox="0 0 18 12" aria-hidden="true"><rect x="0" y="7" width="3" height="5" rx="1"/><rect x="5" y="4" width="3" height="8" rx="1"/><rect x="10" y="1" width="3" height="11" rx="1" opacity="0.4"/></svg>
+              <svg viewBox="0 0 18 12" aria-hidden="true"><rect x="1" y="2" width="14" height="8" rx="2.4" fill="none" stroke="currentColor" stroke-width="1.4"/><rect x="2.6" y="3.6" width="9" height="4.8" rx="1.2"/><rect x="16" y="4.6" width="1.4" height="2.8" rx="0.7"/></svg>
+            </span>
+          </div>
+
+          <div class="hdr">
+            <button class="back" type="button" aria-label="Back"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 18l-6-6 6-6"></path></svg></button>
+            <h1>Settings</h1>
+            <span class="plan-tag">Pro</span>
+          </div>
+
+          <div class="body">
+            <div class="acct reveal">
+              <span class="avatar">SO</span>
+              <div class="who">
+                <div class="nm">Simi Oremosu</div>
+                <div class="em">simi_oremosu@hotmail.com</div>
+              </div>
+              <span class="pro">Pro</span>
+            </div>
+
+            <div class="sect reveal">Account</div>
+            <div class="group reveal">
+              <button class="row" type="button">
+                <span class="ri"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 21a8 8 0 0 0-16 0"></path><circle cx="12" cy="7" r="4"></circle></svg></span>
+                <span class="rl">Manage profile</span>
+                <span class="chev"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18l6-6-6-6"></path></svg></span>
+              </button>
+              <button class="row" type="button">
+                <span class="ri"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg></span>
+                <span class="rl">Email and password</span>
+                <span class="chev"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18l6-6-6-6"></path></svg></span>
+              </button>
+              <button class="row" type="button">
+                <span class="ri"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg></span>
+                <span class="rl">Export my data</span>
+                <span class="chev"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18l6-6-6-6"></path></svg></span>
+              </button>
+            </div>
+
+            <div class="sect reveal">Subscription</div>
+            <div class="group reveal">
+              <button class="row" type="button">
+                <span class="ri"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="5" width="20" height="14" rx="2"></rect><path d="M2 10h20"></path></svg></span>
+                <span class="rl">Pro, billed through Apple</span>
+                <span class="chev"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18l6-6-6-6"></path></svg></span>
+              </button>
+            </div>
+
+            <div class="sect reveal">Danger zone</div>
+            <div class="group solo reveal">
+              <button class="row danger" id="deleteRow" type="button">
+                <span class="ri"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18"></path><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6M14 11v6"></path></svg></span>
+                <span class="rl">Delete my account</span>
+                <span class="chev"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18l6-6-6-6"></path></svg></span>
+              </button>
+            </div>
+            <p class="group-note reveal">Deleting your account removes your data for good. You can export it first from the Account section above.</p>
+          </div>
+
+          <!-- confirm sheet -->
+          <div class="scrim" id="scrim"></div>
+          <div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
+            <div class="grab"></div>
+            <div class="sheet-head">
+              <span class="sheet-lock"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18"></path><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6M14 11v6"></path></svg></span>
+              <h2 id="sheetTitle">Delete your account?</h2>
+            </div>
+            <p class="sheet-intro">Here is exactly what gets removed. Read it, then confirm by typing your email.</p>
+
+            <ul class="terms">
+              <li>
+                <span class="ti"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3v18h18"></path><path d="M7 15l4-4 3 3 5-6"></path></svg></span>
+                <div><div class="tt">Your progress and history</div><div class="ts">Every quiz, exam, and review you have done. Gone, not paused.</div></div>
+              </li>
+              <li>
+                <span class="ti"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2L3 14h7l-1 8 10-12h-7z"></path></svg></span>
+                <div><div class="tt">Your streak and readiness</div><div class="ts">Your current <b>14 day streak</b> and your readiness score reset to zero.</div></div>
+              </li>
+              <li>
+                <span class="ti"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 11l3 3L22 4"></path><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg></span>
+                <div><div class="tt">Your saved Pass Plan</div><div class="ts">The study plan built around your exam date is deleted with everything else.</div></div>
+              </li>
+            </ul>
+
+            <div class="callout warn">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"></path><path d="M12 9v4M12 17h.01"></path></svg>
+              <span><b>This cannot be undone.</b> We do not keep a backup. To return later you would start a new account from scratch.</span>
+            </div>
+
+            <div class="callout info" id="subNote">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 8h.01M11 12h1v4h1"></path></svg>
+              <span>Your <b>Pro subscription is billed by Apple</b>, so deleting your account does not cancel it. To stop billing, cancel in Apple Settings, your name, Subscriptions. You can cancel any time.</span>
+            </div>
+
+            <div class="confirm-field">
+              <label for="confirmEmail">Type <span class="em">simi_oremosu@hotmail.com</span> to confirm</label>
+              <input id="confirmEmail" type="email" inputmode="email" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Your email" />
+              <p class="confirm-hint">This makes sure the delete is really you.</p>
+            </div>
+
+            <div class="sheet-actions">
+              <button class="btn-primary btn-danger" id="confirmBtn" type="button" disabled>Delete account</button>
+              <button class="btn-ghost" id="cancelBtn" type="button">Cancel</button>
+            </div>
+          </div>
+
+          <!-- deleting state -->
+          <div class="deleting" id="deleting">
+            <div class="spinner"></div>
+            <div class="dl-t">Deleting your account...</div>
+            <div class="dl-s">Removing your data. This takes a moment.</div>
+          </div>
+
+          <!-- goodbye / signed-out -->
+          <div class="goodbye" id="goodbye">
+            <div class="goodbye-body">
+              <span class="gb-mark"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6L9 17l-5-5"></path></svg></span>
+              <h2>You are signed out</h2>
+              <p>Your account and data are gone. Thanks for studying with CertAnvil.</p>
+              <p class="quiet" id="goodbyeSub">If you had Pro, remember to cancel it in Apple Settings so you are not billed again.</p>
+            </div>
+            <div class="footer">
+              <button class="btn-primary" id="restartBtn" type="button">Back to start</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="hint">Tap Delete my account to open the confirm sheet. Type the email to enable the delete.</p>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      var html = document.documentElement, label = document.getElementById('themeLabel'), icon = document.getElementById('themeIcon');
+      var sun = '<circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path>';
+      var moon = '<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"></path>';
+      function paint(){ var dark = html.getAttribute('data-theme') !== 'light'; label.textContent = dark ? 'Light' : 'Dark'; icon.innerHTML = dark ? moon : sun; }
+      document.getElementById('themeToggle').addEventListener('click', function(){ html.setAttribute('data-theme', html.getAttribute('data-theme') === 'light' ? 'dark' : 'light'); paint(); });
+      paint();
+
+      var EMAIL = 'simi_oremosu@hotmail.com';
+      var scrim = document.getElementById('scrim'), sheet = document.getElementById('sheet');
+      var input = document.getElementById('confirmEmail');
+      var confirmBtn = document.getElementById('confirmBtn');
+      var deleting = document.getElementById('deleting');
+      var goodbye = document.getElementById('goodbye');
+
+      function openSheet(){ scrim.classList.add('open'); sheet.classList.add('open'); }
+      function closeSheet(){ scrim.classList.remove('open'); sheet.classList.remove('open'); input.value = ''; sync(); }
+
+      // type-to-confirm gate
+      function sync(){
+        var ok = input.value.trim().toLowerCase() === EMAIL;
+        confirmBtn.disabled = !ok;
+        input.classList.toggle('match', ok && input.value.length > 0);
+      }
+      input.addEventListener('input', sync);
+
+      document.getElementById('deleteRow').addEventListener('click', openSheet);
+      scrim.addEventListener('click', closeSheet);
+      document.getElementById('cancelBtn').addEventListener('click', closeSheet);
+
+      confirmBtn.addEventListener('click', function(){
+        if (confirmBtn.disabled) return;
+        closeSheet();
+        deleting.classList.add('open');
+        // mockup: real flow would call the delete endpoint then sign out
+        setTimeout(function(){
+          goodbye.classList.add('open');
+          setTimeout(function(){ deleting.classList.remove('open'); }, 400);
+        }, 1700);
+      });
+
+      // restart the demo
+      document.getElementById('restartBtn').addEventListener('click', function(){
+        goodbye.classList.remove('open');
+      });
+    })();
+  </script>
+</body>
+</html>

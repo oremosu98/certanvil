@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>CertAnvil · Free home (day 0)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<style>
+  /* ── Forged-bronze tokens (matches dg-system.css + the onboarding mockups). ── */
+  :root {
+    --bg: oklch(0.15 0.010 275); --surface: oklch(0.205 0.009 275); --surface-2: oklch(0.255 0.010 275);
+    --ink: oklch(0.97 0.006 275); --ink-soft: oklch(0.80 0.010 275); --muted: oklch(0.62 0.013 275);
+    --border: oklch(0.34 0.009 275);
+    --accent: oklch(0.82 0.150 66); --accent-bright: oklch(0.88 0.140 72); --accent-deep: oklch(0.72 0.150 62);
+    --on-accent: oklch(0.18 0.020 275); --pass: oklch(0.78 0.150 152); --track: oklch(0.30 0.010 275);
+    --page-bg: oklch(0.22 0.012 275); --page-ink: oklch(0.92 0.008 275); --page-dim: oklch(0.66 0.012 275);
+  }
+  [data-theme="light"] {
+    --bg: oklch(0.975 0.007 85); --surface: oklch(0.955 0.009 84); --surface-2: oklch(0.92 0.010 84);
+    --ink: oklch(0.22 0.015 280); --ink-soft: oklch(0.38 0.014 280); --muted: oklch(0.52 0.013 280);
+    --border: oklch(0.85 0.010 85);
+    --accent: oklch(0.55 0.155 55); --accent-bright: oklch(0.62 0.150 58); --accent-deep: oklch(0.46 0.150 52);
+    --on-accent: oklch(0.99 0.008 85); --pass: oklch(0.52 0.13 150); --track: oklch(0.88 0.010 85);
+    --page-bg: oklch(0.93 0.010 84); --page-ink: oklch(0.28 0.015 280); --page-dim: oklch(0.46 0.013 280);
+  }
+  :root { --ease: cubic-bezier(0.16,1,0.3,1); --ease-drawer: cubic-bezier(0.32,0.72,0,1); }
+
+  * { box-sizing: border-box; }
+  html { color-scheme: light dark; }
+  body { margin: 0; background: var(--page-bg); color: var(--page-ink);
+    font: 15px/1.55 Inter, -apple-system, BlinkMacSystemFont, sans-serif; padding: 30px 20px 64px;
+    transition: background .35s var(--ease), color .35s var(--ease); }
+  .stage { max-width: 520px; margin: 0 auto; }
+  .stage-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 24px; }
+  .stage-eyebrow { font-size: 10.5px; font-weight: 800; letter-spacing: 0.16em; text-transform: uppercase; color: var(--accent-bright); margin: 0 0 7px; }
+  .stage-title { font-family: Fraunces, Georgia, serif; font-weight: 600; font-size: 24px; letter-spacing: -0.012em; margin: 0; color: var(--page-ink); }
+  .stage-sub { color: var(--page-dim); font-size: 13px; margin: 7px 0 0; max-width: 48ch; line-height: 1.5; }
+  .theme-toggle { flex: 0 0 auto; display: inline-flex; align-items: center; gap: 7px; font: 600 12px/1 Inter, sans-serif; color: var(--accent-bright);
+    background: transparent; border: 1px solid color-mix(in oklab, var(--accent-bright) 38%, var(--page-dim)); border-radius: 999px; padding: 8px 13px; cursor: pointer; transition: transform .15s var(--ease), background .2s; }
+  .theme-toggle svg { width: 15px; height: 15px; stroke: currentColor; fill: none; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+  .theme-toggle:active { transform: scale(0.97); }
+
+  .phone-wrap { display: flex; flex-direction: column; align-items: center; }
+  .phone { width: 390px; height: 844px; border-radius: 52px; padding: 11px; flex: 0 0 auto;
+    background: linear-gradient(165deg, #23262f, #0c0d11); box-shadow: 0 40px 90px -34px rgba(0,0,0,0.6), 0 0 0 1.5px rgba(255,255,255,0.06) inset; }
+  .screen { width: 100%; height: 100%; border-radius: 42px; overflow: hidden; position: relative; background: var(--bg); color: var(--ink);
+    display: flex; flex-direction: column; transition: background .35s var(--ease), color .35s var(--ease); }
+  .notch { position: absolute; top: 9px; left: 50%; transform: translateX(-50%); width: 122px; height: 32px; background: #07080b; border-radius: 18px; z-index: 6; }
+  .statusbar { display: flex; align-items: center; justify-content: space-between; padding: 14px 26px 0; font: 700 13px/1 Inter, sans-serif; color: var(--ink); }
+  .sb-icons { display: inline-flex; gap: 6px; align-items: center; }
+  .sb-icons svg { width: 17px; height: 12px; fill: var(--ink); }
+
+  .home { flex: 1; padding: 10px 20px 24px; overflow-y: auto; }
+  .home::-webkit-scrollbar { width: 0; }
+
+  /* greeting */
+  .greet { margin: 10px 2px 4px; }
+  .greet .hi { font: 800 10px/1 Inter, sans-serif; letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent-bright); margin-bottom: 7px; }
+  .greet h2 { font-family: Fraunces, Georgia, serif; font-weight: 600; font-size: 24px; line-height: 1.12; letter-spacing: -0.015em; margin: 0; color: var(--ink); }
+
+  /* free home bar (fresh state) - same .hb family as the capped home */
+  .hb { border: 1px solid var(--border); border-radius: 16px; background: var(--surface); padding: 14px 15px; margin-top: 14px; }
+  .hb-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
+  .hb-cert { display: inline-flex; align-items: center; gap: 9px; min-width: 0; }
+  .hb-mark { flex: 0 0 auto; width: 34px; height: 34px; border-radius: 9px; background: color-mix(in oklab, var(--accent) 14%, var(--surface-2)); color: var(--accent-deep); display: grid; place-items: center; font: 800 13px/1 Inter, sans-serif; }
+  .hb-name { font: 650 15px/1.1 Inter, sans-serif; color: var(--ink); }
+  .hb-code { font: 600 11.5px/1 'Roboto Mono', monospace; color: var(--muted); margin-top: 3px; }
+  .hb-plan { flex: 0 0 auto; font: 800 10px/1 Inter, sans-serif; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); border: 1px solid var(--border); border-radius: 999px; padding: 5px 9px; }
+  .hb-quota { border-top: 1px solid color-mix(in oklab, var(--border) 60%, transparent); padding-top: 4px; }
+  .hb-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 9px 0; }
+  .hb-row + .hb-row { border-top: 1px solid color-mix(in oklab, var(--border) 55%, transparent); }
+  .hb-rn { font-size: 13.5px; color: var(--ink-soft); }
+  .hb-rv { font: 600 13px/1 Inter, sans-serif; color: var(--ink); }
+  .hb-full { display: inline-flex; align-items: center; gap: 6px; font: 700 11.5px/1 Inter, sans-serif; color: var(--pass); background: color-mix(in oklab, var(--pass) 12%, transparent); border: 1px solid color-mix(in oklab, var(--pass) 30%, var(--border)); border-radius: 999px; padding: 6px 10px; }
+  .hb-full svg { width: 12px; height: 12px; stroke: currentColor; fill: none; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+
+  /* readiness placeholder (no score yet) */
+  .ready { margin-top: 14px; border: 1px dashed color-mix(in oklab, var(--accent) 34%, var(--border)); border-radius: 16px; background: color-mix(in oklab, var(--accent) 4%, var(--surface)); padding: 16px 15px; display: flex; align-items: center; gap: 14px; }
+  .ready-dial { flex: 0 0 auto; width: 52px; height: 52px; border-radius: 999px; display: grid; place-items: center; background: var(--surface); border: 2px dashed color-mix(in oklab, var(--accent) 40%, var(--border)); }
+  .ready-dial svg { width: 22px; height: 22px; stroke: var(--accent-deep); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .ready-t { font: 650 14px/1.15 Inter, sans-serif; color: var(--ink); }
+  .ready-s { font-size: 12.5px; line-height: 1.45; color: var(--ink-soft); margin-top: 3px; }
+
+  /* first-run diagnostic invite (the prominent card) */
+  .diag { margin-top: 16px; border: 1px solid color-mix(in oklab, var(--accent) 38%, var(--border)); border-radius: 18px; background: color-mix(in oklab, var(--accent) 8%, var(--surface)); padding: 17px 16px; }
+  .diag-head { display: flex; align-items: center; gap: 12px; margin-bottom: 11px; }
+  .diag-badge { flex: 0 0 auto; width: 42px; height: 42px; border-radius: 12px; display: grid; place-items: center; background: color-mix(in oklab, var(--accent) 16%, var(--surface-2)); }
+  .diag-badge svg { width: 22px; height: 22px; stroke: var(--accent-deep); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .diag-kick { font: 800 9.5px/1 Inter, sans-serif; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent-deep); margin-bottom: 5px; }
+  .diag-h { font-family: Fraunces, Georgia, serif; font-weight: 600; font-size: 18px; line-height: 1.15; letter-spacing: -0.01em; color: var(--ink); }
+  .diag-p { font-size: 12.8px; line-height: 1.5; color: var(--ink-soft); margin: 0 0 14px; }
+  .diag-p b { color: var(--ink); font-weight: 650; }
+  .btn-primary { width: 100%; border: none; border-radius: 13px; padding: 14px; cursor: pointer; background: var(--accent); color: var(--on-accent); font: 700 15px/1 Inter, sans-serif;
+    box-shadow: 0 10px 22px -12px color-mix(in oklab, var(--accent) 70%, transparent); transition: transform .15s var(--ease), filter .2s; }
+  .btn-primary:active { transform: scale(0.985); }
+  @media (hover:hover) and (pointer:fine) { .btn-primary:hover { filter: brightness(1.05); } }
+
+  /* secondary path: just start practising */
+  .start { margin-top: 14px; border: 1px solid var(--border); border-radius: 16px; background: var(--surface); padding: 16px; }
+  .start-head { display: flex; align-items: center; gap: 12px; margin-bottom: 13px; }
+  .start-ring { flex: 0 0 auto; width: 44px; height: 44px; border-radius: 999px; display: grid; place-items: center; background: var(--surface); border: 2px solid color-mix(in oklab, var(--accent) 45%, var(--border)); font-family: Fraunces, serif; font-weight: 600; font-size: 18px; color: var(--accent-deep); font-variant-numeric: lining-nums; font-feature-settings: "lnum"; }
+  .start-t { font: 650 15px/1.1 Inter, sans-serif; color: var(--ink); }
+  .start-s { font-size: 12.5px; color: var(--ink-soft); margin-top: 3px; }
+  .btn-ghost { width: 100%; border: 1px solid color-mix(in oklab, var(--accent) 36%, var(--border)); border-radius: 13px; padding: 13px; cursor: pointer; background: transparent; color: var(--accent-bright); font: 650 14px/1 Inter, sans-serif; transition: background .2s, transform .15s var(--ease); }
+  .btn-ghost:active { transform: scale(0.985); }
+  @media (hover:hover) and (pointer:fine) { .btn-ghost:hover { background: color-mix(in oklab, var(--accent) 8%, transparent); } }
+
+  .aha { display: flex; align-items: center; gap: 8px; justify-content: center; margin-top: 18px; font-size: 12px; color: var(--muted); }
+  .aha svg { width: 14px; height: 14px; stroke: var(--accent-deep); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .reveal { opacity: 0; transform: translateY(10px); animation: rise .5s var(--ease) forwards; }
+    .greet { animation-delay: .04s; } .hb { animation-delay: .10s; } .ready { animation-delay: .16s; } .diag { animation-delay: .24s; } .start { animation-delay: .32s; } .aha { animation-delay: .40s; }
+    @keyframes rise { to { opacity: 1; transform: none; } }
+  }
+  .hint { text-align: center; color: var(--page-dim); font-size: 12px; margin-top: 18px; }
+  @media (max-width: 440px) { .phone { transform: scale(.92); transform-origin: top center; } }
+</style>
+</head>
+<body>
+  <div class="stage">
+    <div class="stage-head">
+      <div>
+        <p class="stage-eyebrow">Free · day 0</p>
+        <h1 class="stage-title">Free home (day 0)</h1>
+        <p class="stage-sub">The first home a free user sees right after locking their exam, before doing anything. A full quota waits, there's no readiness score yet, and a 30-second check is offered to place one.</p>
+      </div>
+      <button class="theme-toggle" id="themeToggle" type="button" aria-label="Toggle light and dark">
+        <svg id="themeIcon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></svg>
+        <span id="themeLabel">Dark</span>
+      </button>
+    </div>
+
+    <div class="phone-wrap">
+      <div class="phone">
+        <div class="screen">
+          <div class="notch"></div>
+          <div class="statusbar">
+            <span>9:41</span>
+            <span class="sb-icons">
+              <svg viewBox="0 0 18 12" aria-hidden="true"><rect x="0" y="7" width="3" height="5" rx="1"/><rect x="5" y="4" width="3" height="8" rx="1"/><rect x="10" y="1" width="3" height="11" rx="1" opacity="0.4"/></svg>
+              <svg viewBox="0 0 18 12" aria-hidden="true"><rect x="1" y="2" width="14" height="8" rx="2.4" fill="none" stroke="currentColor" stroke-width="1.4"/><rect x="2.6" y="3.6" width="9" height="4.8" rx="1.2"/><rect x="16" y="4.6" width="1.4" height="2.8" rx="0.7"/></svg>
+            </span>
+          </div>
+
+          <div class="home">
+            <div class="greet reveal">
+              <div class="hi">Your exam is set</div>
+              <h2>Let's place your readiness.</h2>
+            </div>
+
+            <div class="hb reveal">
+              <div class="hb-top">
+                <div class="hb-cert"><span class="hb-mark">N+</span><span><span class="hb-name">Network+</span><div class="hb-code">N10-009</div></span></div>
+                <span class="hb-plan">Free</span>
+              </div>
+              <div class="hb-quota">
+                <div class="hb-row"><span class="hb-rn">New practice</span><span class="hb-full"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6L9 17l-5-5"></path></svg>15 of 15 ready</span></div>
+                <div class="hb-row"><span class="hb-rn">Daily Review</span><span class="hb-rv">5 ready when you have cards</span></div>
+              </div>
+            </div>
+
+            <div class="ready reveal">
+              <span class="ready-dial"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 14l4-4"></path><path d="M3.5 18a9 9 0 1 1 17 0"></path></svg></span>
+              <div>
+                <div class="ready-t">Readiness: not placed yet</div>
+                <div class="ready-s">Scored 100 to 900, with 720 to pass. Answer a few and it appears here.</div>
+              </div>
+            </div>
+
+            <div class="diag reveal">
+              <div class="diag-head">
+                <span class="diag-badge"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20v-6"></path><path d="M6 20v-3"></path><path d="M18 20v-9"></path><path d="M4 11l6-5 4 3 6-6"></path></svg></span>
+                <div><div class="diag-kick">Recommended first step</div><div class="diag-h">Place your readiness</div></div>
+              </div>
+              <p class="diag-p">A 30-second check, free, and it never counts against <b>your daily 15</b>. It gives you a starting number so you can watch it move.</p>
+              <button class="btn-primary" type="button">Take the 30-second check</button>
+            </div>
+
+            <div class="start reveal">
+              <div class="start-head">
+                <div class="start-ring">15</div>
+                <div><div class="start-t">Just start practising</div><div class="start-s">Skip the check and dive into today's 15. Your readiness still builds as you go.</div></div>
+              </div>
+              <button class="btn-ghost" type="button">Start today's 15</button>
+            </div>
+
+            <div class="aha reveal">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 17l6-6 4 4 8-8"></path><path d="M21 7v5h-5"></path></svg>
+              <span>Answer a few and watch your readiness move.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="hint">Fresh counterpart to the "done for today" capped home: full quota, no score yet.</p>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      var html = document.documentElement, label = document.getElementById('themeLabel'), icon = document.getElementById('themeIcon');
+      var sun = '<circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path>';
+      var moon = '<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"></path>';
+      function paint(){ var dark = html.getAttribute('data-theme') !== 'light'; label.textContent = dark ? 'Light' : 'Dark'; icon.innerHTML = dark ? moon : sun; }
+      document.getElementById('themeToggle').addEventListener('click', function(){ html.setAttribute('data-theme', html.getAttribute('data-theme') === 'light' ? 'dark' : 'light'); paint(); });
+      paint();
+    })();
+  </script>
+</body>
+</html>

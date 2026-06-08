@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>CertAnvil · Error states</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700;800&family=Roboto+Mono:wght@500;600&display=swap" rel="stylesheet" />
+<style>
+  /* ── Forged-bronze tokens (matches dg-system.css + the onboarding mockups). ── */
+  :root {
+    --bg: oklch(0.15 0.010 275); --surface: oklch(0.205 0.009 275); --surface-2: oklch(0.255 0.010 275);
+    --ink: oklch(0.97 0.006 275); --ink-soft: oklch(0.80 0.010 275); --muted: oklch(0.62 0.013 275);
+    --border: oklch(0.34 0.009 275);
+    --accent: oklch(0.82 0.150 66); --accent-bright: oklch(0.88 0.140 72); --accent-deep: oklch(0.72 0.150 62);
+    --on-accent: oklch(0.18 0.020 275); --pass: oklch(0.78 0.150 152); --track: oklch(0.30 0.010 275);
+    --page-bg: oklch(0.22 0.012 275); --page-ink: oklch(0.92 0.008 275); --page-dim: oklch(0.66 0.012 275);
+  }
+  [data-theme="light"] {
+    --bg: oklch(0.975 0.007 85); --surface: oklch(0.955 0.009 84); --surface-2: oklch(0.92 0.010 84);
+    --ink: oklch(0.22 0.015 280); --ink-soft: oklch(0.38 0.014 280); --muted: oklch(0.52 0.013 280);
+    --border: oklch(0.85 0.010 85);
+    --accent: oklch(0.55 0.155 55); --accent-bright: oklch(0.62 0.150 58); --accent-deep: oklch(0.46 0.150 52);
+    --on-accent: oklch(0.99 0.008 85); --pass: oklch(0.52 0.13 150); --track: oklch(0.88 0.010 85);
+    --page-bg: oklch(0.93 0.010 84); --page-ink: oklch(0.28 0.015 280); --page-dim: oklch(0.46 0.013 280);
+  }
+  :root { --ease: cubic-bezier(0.16,1,0.3,1); --ease-drawer: cubic-bezier(0.32,0.72,0,1); }
+
+  * { box-sizing: border-box; }
+  html { color-scheme: light dark; }
+  body { margin: 0; background: var(--page-bg); color: var(--page-ink);
+    font: 15px/1.55 Inter, -apple-system, BlinkMacSystemFont, sans-serif; padding: 30px 20px 64px;
+    transition: background .35s var(--ease), color .35s var(--ease); }
+  .stage { max-width: 520px; margin: 0 auto; }
+  .stage-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 24px; }
+  .stage-eyebrow { font-size: 10.5px; font-weight: 800; letter-spacing: 0.16em; text-transform: uppercase; color: var(--accent-bright); margin: 0 0 7px; }
+  .stage-title { font-family: Fraunces, Georgia, serif; font-weight: 600; font-size: 24px; letter-spacing: -0.012em; margin: 0; color: var(--page-ink); }
+  .stage-sub { color: var(--page-dim); font-size: 13px; margin: 7px 0 0; max-width: 48ch; line-height: 1.5; }
+  .theme-toggle { flex: 0 0 auto; display: inline-flex; align-items: center; gap: 7px; font: 600 12px/1 Inter, sans-serif; color: var(--accent-bright);
+    background: transparent; border: 1px solid color-mix(in oklab, var(--accent-bright) 38%, var(--page-dim)); border-radius: 999px; padding: 8px 13px; cursor: pointer; transition: transform .15s var(--ease), background .2s; }
+  .theme-toggle svg { width: 15px; height: 15px; stroke: currentColor; fill: none; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+  .theme-toggle:active { transform: scale(0.97); }
+
+  /* chip row: switches which state the phone shows */
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
+  .chip { font: 650 12.5px/1 Inter, sans-serif; color: var(--page-dim); background: transparent;
+    border: 1px solid color-mix(in oklab, var(--page-dim) 34%, transparent); border-radius: 999px; padding: 9px 14px; cursor: pointer;
+    transition: transform .15s var(--ease), background .2s, border-color .2s, color .2s; }
+  .chip:active { transform: scale(0.96); }
+  @media (hover:hover) and (pointer:fine) { .chip:hover { border-color: color-mix(in oklab, var(--accent-bright) 45%, var(--page-dim)); color: var(--page-ink); } }
+  .chip[aria-pressed="true"] { color: var(--on-accent); background: var(--accent); border-color: var(--accent); }
+
+  .phone-wrap { display: flex; flex-direction: column; align-items: center; }
+  .phone { width: 390px; height: 844px; border-radius: 52px; padding: 11px; flex: 0 0 auto;
+    background: linear-gradient(165deg, #23262f, #0c0d11); box-shadow: 0 40px 90px -34px rgba(0,0,0,0.6), 0 0 0 1.5px rgba(255,255,255,0.06) inset; }
+  .screen { width: 100%; height: 100%; border-radius: 42px; overflow: hidden; position: relative; background: var(--bg); color: var(--ink);
+    display: flex; flex-direction: column; transition: background .35s var(--ease), color .35s var(--ease); }
+  .notch { position: absolute; top: 9px; left: 50%; transform: translateX(-50%); width: 122px; height: 32px; background: #07080b; border-radius: 18px; z-index: 6; }
+  .statusbar { display: flex; align-items: center; justify-content: space-between; padding: 14px 26px 0; font: 700 13px/1 Inter, sans-serif; color: var(--ink); }
+  .sb-icons { display: inline-flex; gap: 6px; align-items: center; }
+  .sb-icons svg { width: 17px; height: 12px; fill: var(--ink); }
+
+  .hdr { display: flex; align-items: center; gap: 11px; padding: 14px 22px 10px; }
+  .hdr .back { width: 36px; height: 36px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface); display: grid; place-items: center; cursor: pointer; color: var(--ink-soft); transition: transform .14s var(--ease), border-color .18s; }
+  .hdr .back:active { transform: scale(0.94); }
+  @media (hover:hover) and (pointer:fine) { .hdr .back:hover { border-color: color-mix(in oklab, var(--accent) 36%, var(--border)); } }
+  .hdr .back svg { width: 17px; height: 17px; stroke: currentColor; fill: none; stroke-width: 2.1; stroke-linecap: round; stroke-linejoin: round; }
+  .hdr h1 { font-family: Fraunces, Georgia, serif; font-weight: 600; font-size: 21px; letter-spacing: -0.01em; margin: 0; color: var(--ink); flex: 1; }
+  .hdr .plan-tag { font: 800 9.5px/1 Inter, sans-serif; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); background: color-mix(in oklab, var(--ink) 6%, transparent); border: 1px solid var(--border); border-radius: 999px; padding: 6px 9px; }
+
+  .body { flex: 1; overflow-y: auto; padding: 6px 22px 20px; display: flex; flex-direction: column; }
+  .body::-webkit-scrollbar { width: 0; }
+
+  /* one error state: centred, calm, one clear action */
+  .state { display: none; flex: 1; flex-direction: column; }
+  .state.on { display: flex; }
+  .state-mid { flex: 1; display: flex; flex-direction: column; justify-content: center; padding: 4px 0 8px; }
+
+  .glyph { width: 56px; height: 56px; border-radius: 16px; display: grid; place-items: center; margin-bottom: 18px;
+    background: color-mix(in oklab, var(--accent) 13%, var(--surface-2)); }
+  .glyph svg { width: 26px; height: 26px; stroke: var(--accent-deep); fill: none; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+
+  .state h2 { font-family: Fraunces, Georgia, serif; font-weight: 600; font-size: 24px; line-height: 1.14; letter-spacing: -0.014em; margin: 0 0 10px; color: var(--ink); }
+  .state h2 .mono { font-family: 'Roboto Mono', monospace; font-weight: 600; font-size: 0.82em; letter-spacing: -0.01em; }
+  .state p { font-size: 14px; line-height: 1.55; color: var(--ink-soft); margin: 0; max-width: 38ch; }
+  .state p b { color: var(--ink); font-weight: 650; }
+
+  /* small contextual line under the message */
+  .fineline { display: flex; align-items: flex-start; gap: 9px; margin-top: 16px; padding: 11px 13px;
+    border: 1px solid var(--border); border-radius: 12px; background: var(--surface); }
+  .fineline svg { flex: 0 0 auto; width: 15px; height: 15px; margin-top: 1px; stroke: var(--muted); fill: none; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+  .fineline p { font-size: 12.5px; line-height: 1.45; color: var(--muted); margin: 0; }
+
+  /* a suggested-fix row (email typo) */
+  .suggest { margin-top: 16px; display: flex; align-items: center; gap: 12px; border: 1px solid color-mix(in oklab, var(--accent) 30%, var(--border));
+    border-radius: 14px; background: color-mix(in oklab, var(--accent) 6%, var(--surface)); padding: 13px 15px; }
+  .suggest .em { font: 600 14px/1.2 'Roboto Mono', monospace; color: var(--ink); word-break: break-all; }
+  .suggest .lbl { font-size: 11.5px; color: var(--muted); margin-bottom: 3px; }
+
+  /* footer action(s) */
+  .footer { flex: 0 0 auto; padding: 12px 22px calc(14px + env(safe-area-inset-bottom)); border-top: 1px solid color-mix(in oklab, var(--border) 70%, transparent); background: var(--bg); }
+  .btn-primary { width: 100%; border: none; border-radius: 13px; padding: 14px; cursor: pointer; background: var(--accent); color: var(--on-accent); font: 700 15px/1 Inter, sans-serif;
+    box-shadow: 0 10px 22px -12px color-mix(in oklab, var(--accent) 70%, transparent); transition: transform .15s var(--ease), filter .2s; }
+  .btn-primary:active { transform: scale(0.985); }
+  @media (hover:hover) and (pointer:fine) { .btn-primary:hover { filter: brightness(1.05); } }
+  .btn-ghost { width: 100%; border: 1px solid var(--border); border-radius: 13px; padding: 13px; cursor: pointer; background: transparent; color: var(--ink-soft); font: 650 14px/1 Inter, sans-serif; transition: background .2s, transform .15s var(--ease); }
+  .btn-ghost:active { transform: scale(0.98); }
+  @media (hover:hover) and (pointer:fine) { .btn-ghost:hover { background: color-mix(in oklab, var(--ink) 5%, transparent); } }
+  .footer .stack { display: flex; flex-direction: column; gap: 9px; }
+  .foot-hint { text-align: center; font-size: 11.5px; color: var(--muted); margin: 9px 0 0; }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .state.on .glyph, .state.on h2, .state.on p, .state.on .fineline, .state.on .suggest {
+      opacity: 0; transform: translateY(9px); animation: rise .5s var(--ease) forwards; }
+    .state.on .glyph { animation-delay: .03s; }
+    .state.on h2 { animation-delay: .09s; }
+    .state.on p { animation-delay: .15s; }
+    .state.on .fineline, .state.on .suggest { animation-delay: .21s; }
+    @keyframes rise { to { opacity: 1; transform: none; } }
+  }
+  .hint { text-align: center; color: var(--page-dim); font-size: 12px; margin-top: 18px; }
+  @media (max-width: 440px) { .phone { transform: scale(.92); transform-origin: top center; } }
+</style>
+</head>
+<body>
+  <div class="stage">
+    <div class="stage-head">
+      <div>
+        <p class="stage-eyebrow">Onboarding · error states</p>
+        <h1 class="stage-title">Error states</h1>
+        <p class="stage-sub">The moments that can go wrong during sign-up and checkout. Each one is a calm, plain message that names the situation and offers one clear way forward. Tap a chip to switch states.</p>
+      </div>
+      <button class="theme-toggle" id="themeToggle" type="button" aria-label="Toggle light and dark">
+        <svg id="themeIcon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></svg>
+        <span id="themeLabel">Dark</span>
+      </button>
+    </div>
+
+    <div class="chips" id="chips" role="tablist" aria-label="Error state">
+      <button class="chip" type="button" data-state="declined" aria-pressed="true">Card declined</button>
+      <button class="chip" type="button" data-state="renewal" aria-pressed="false">Renewal failed</button>
+      <button class="chip" type="button" data-state="link" aria-pressed="false">Link expired</button>
+      <button class="chip" type="button" data-state="exists" aria-pressed="false">Account exists</button>
+      <button class="chip" type="button" data-state="typo" aria-pressed="false">Email typo</button>
+    </div>
+
+    <div class="phone-wrap">
+      <div class="phone">
+        <div class="screen">
+          <div class="notch"></div>
+          <div class="statusbar">
+            <span>9:41</span>
+            <span class="sb-icons">
+              <svg viewBox="0 0 18 12" aria-hidden="true"><rect x="0" y="7" width="3" height="5" rx="1"/><rect x="5" y="4" width="3" height="8" rx="1"/><rect x="10" y="1" width="3" height="11" rx="1" opacity="0.4"/></svg>
+              <svg viewBox="0 0 18 12" aria-hidden="true"><rect x="1" y="2" width="14" height="8" rx="2.4" fill="none" stroke="currentColor" stroke-width="1.4"/><rect x="2.6" y="3.6" width="9" height="4.8" rx="1.2"/><rect x="16" y="4.6" width="1.4" height="2.8" rx="0.7"/></svg>
+            </span>
+          </div>
+
+          <div class="hdr">
+            <button class="back" type="button" aria-label="Back"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 18l-6-6 6-6"></path></svg></button>
+            <h1 id="hdrTitle">Checkout</h1>
+            <span class="plan-tag" id="hdrTag">Pro</span>
+          </div>
+
+          <div class="body">
+            <!-- Card declined -->
+            <section class="state on" data-state="declined">
+              <div class="state-mid">
+                <span class="glyph"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="5" width="20" height="14" rx="2.5"></rect><path d="M2 10h20"></path></svg></span>
+                <h2>That payment didn't go through.</h2>
+                <p>Apple couldn't charge your card. Nothing was taken, and your account is unchanged. You can try again whenever you're ready.</p>
+                <div class="fineline">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 11v5M12 8h.01"></path></svg>
+                  <p>Payment is handled by Apple in Settings. To update a card, open Settings, then your name, then Payment.</p>
+                </div>
+              </div>
+              <div class="footer">
+                <button class="btn-primary" type="button">Try again</button>
+              </div>
+            </section>
+
+            <!-- Renewal failed -->
+            <section class="state" data-state="renewal">
+              <div class="state-mid">
+                <span class="glyph"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 1 1-3-6.7"></path><path d="M21 4v4h-4"></path></svg></span>
+                <h2>Your Pro renewal didn't go through.</h2>
+                <p>You have a few days to update payment before Pro pauses. Until then, everything stays exactly where it is and your progress is safe.</p>
+                <div class="fineline">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"></rect><path d="M16 2v4M8 2v4M3 10h18"></path></svg>
+                  <p>Pro stays active until the grace period ends. Update payment any time before then and nothing changes.</p>
+                </div>
+              </div>
+              <div class="footer">
+                <button class="btn-primary" type="button">Update payment</button>
+              </div>
+            </section>
+
+            <!-- Magic-link expired -->
+            <section class="state" data-state="link">
+              <div class="state-mid">
+                <span class="glyph"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg></span>
+                <h2>This sign-in link expired.</h2>
+                <p>Links are good for 15 minutes, so this one timed out. Send a fresh one and it will land in your inbox in a moment.</p>
+                <div class="fineline">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"></rect><path d="M4 7l8 6 8-6"></path></svg>
+                  <p>The new link goes to the same email. If it's slow to arrive, check your spam folder.</p>
+                </div>
+              </div>
+              <div class="footer">
+                <button class="btn-primary" type="button">Send a new link</button>
+              </div>
+            </section>
+
+            <!-- Account already exists -->
+            <section class="state" data-state="exists">
+              <div class="state-mid">
+                <span class="glyph"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"></circle><path d="M4 21a8 8 0 0 1 16 0"></path></svg></span>
+                <h2>You already have an account with this email.</h2>
+                <p>Good news, your progress is already saved to it. Sign in and you'll pick up right where you left off.</p>
+                <div class="fineline">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M9 12l2 2 4-4"></path></svg>
+                  <p>Forgot the password? You can sign in with a one-time email link instead.</p>
+                </div>
+              </div>
+              <div class="footer">
+                <button class="btn-primary" type="button">Sign in instead</button>
+              </div>
+            </section>
+
+            <!-- Email typo -->
+            <section class="state" data-state="typo">
+              <div class="state-mid">
+                <span class="glyph"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"></rect><path d="M4 7l8 6 8-6"></path></svg></span>
+                <h2>Did you mean <span class="mono">you@gmail.com</span>?</h2>
+                <p>The address you typed looks a little off, so we want to be sure your sign-in link reaches you.</p>
+                <div class="suggest">
+                  <svg viewBox="0 0 24 24" aria-hidden="true" style="flex:0 0 auto;width:18px;height:18px;stroke:var(--accent-deep);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><path d="M20 6L9 17l-5-5"></path></svg>
+                  <div><div class="lbl">Suggested</div><div class="em">you@gmail.com</div></div>
+                </div>
+              </div>
+              <div class="footer">
+                <div class="stack">
+                  <button class="btn-primary" type="button">Yes, fix it</button>
+                  <button class="btn-ghost" type="button">No, keep mine</button>
+                </div>
+              </div>
+            </section>
+          </div>
+        </div>
+      </div>
+      <p class="hint">Each state names what happened and offers one clear next step. Nothing blames the person.</p>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      var html = document.documentElement, label = document.getElementById('themeLabel'), icon = document.getElementById('themeIcon');
+      var sun = '<circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path>';
+      var moon = '<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"></path>';
+      function paint(){ var dark = html.getAttribute('data-theme') !== 'light'; label.textContent = dark ? 'Light' : 'Dark'; icon.innerHTML = dark ? moon : sun; }
+      document.getElementById('themeToggle').addEventListener('click', function(){ html.setAttribute('data-theme', html.getAttribute('data-theme') === 'light' ? 'dark' : 'light'); paint(); });
+      paint();
+
+      // chip selector switches which state the phone shows
+      var chips = document.getElementById('chips');
+      var states = document.querySelectorAll('.state');
+      var hdrTitle = document.getElementById('hdrTitle');
+      var hdrTag = document.getElementById('hdrTag');
+      // header context per state: { title, tag(or null) }
+      var ctx = {
+        declined: { title: 'Checkout', tag: 'Pro' },
+        renewal:  { title: 'Your plan', tag: 'Pro' },
+        link:     { title: 'Sign in', tag: null },
+        exists:   { title: 'Create account', tag: null },
+        typo:     { title: 'Sign in', tag: null }
+      };
+      function show(name){
+        states.forEach(function(s){ s.classList.toggle('on', s.getAttribute('data-state') === name); });
+        chips.querySelectorAll('.chip').forEach(function(c){ c.setAttribute('aria-pressed', String(c.getAttribute('data-state') === name)); });
+        var c = ctx[name] || { title: 'CertAnvil', tag: null };
+        hdrTitle.textContent = c.title;
+        if (c.tag) { hdrTag.textContent = c.tag; hdrTag.style.display = ''; } else { hdrTag.style.display = 'none'; }
+      }
+      chips.addEventListener('click', function(e){
+        var chip = e.target.closest('.chip'); if (!chip) return;
+        show(chip.getAttribute('data-state'));
+      });
+      show('declined');
+    })();
+  </script>
+</body>
+</html>
