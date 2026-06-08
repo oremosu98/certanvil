@@ -62,8 +62,18 @@
   .tb-set:active { transform: scale(0.94); }
   .tb-set svg { width: 17px; height: 17px; stroke: currentColor; fill: none; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
 
-  .body { flex: 1; overflow-y: auto; padding: 6px 20px 18px; }
-  .body::-webkit-scrollbar { width: 0; }
+  /* swipe-paged segmented control (chip row) */
+  .seg { flex:0 0 auto; display:flex; gap:8px; overflow-x:auto; padding:8px 16px 10px; scrollbar-width:none; }
+  .seg::-webkit-scrollbar{ display:none; }
+  .chip { flex:0 0 auto; font:700 12px/1 Inter,sans-serif; padding:8px 13px; border-radius:999px; border:1px solid var(--border); background:var(--surface); color:var(--ink-soft); cursor:pointer; white-space:nowrap; transition:background .2s, color .2s, border-color .2s, transform .14s var(--ease); }
+  .chip:active{ transform:scale(.96); }
+  .chip.on { background:color-mix(in oklab,var(--accent) 12%,var(--surface)); border-color:color-mix(in oklab,var(--accent) 45%,var(--border)); color:var(--accent-deep); }
+
+  /* horizontal scroll-snap pager */
+  .pager { flex:1 1 auto; display:flex; overflow-x:auto; overflow-y:hidden; scroll-snap-type:x mandatory; -webkit-overflow-scrolling:touch; scrollbar-width:none; }
+  .pager::-webkit-scrollbar{ display:none; }
+  .page { flex:0 0 100%; scroll-snap-align:start; overflow-y:auto; padding:6px 18px 16px; }
+  .page::-webkit-scrollbar{ display:none; }
 
   /* shared data labels (Roboto Mono, uppercase) */
   .dlabel { font: 700 9.5px/1 'Roboto Mono', monospace; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
@@ -130,10 +140,10 @@
   .acc-top { display: flex; align-items: baseline; gap: 9px; margin-bottom: 4px; }
   .acc-now { font: 600 30px/1 Fraunces, serif; color: var(--ink); font-variant-numeric: lining-nums tabular-nums; }
   .acc-note { font: 600 11px/1.3 'Roboto Mono', monospace; color: var(--miss); }
-  .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 999px; padding: 2px; background: var(--surface-2); }
-  .seg button { border: none; background: none; cursor: pointer; font: 700 10px/1 'Roboto Mono', monospace; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); padding: 6px 10px; border-radius: 999px; transition: color .18s, background .18s; }
-  .seg button.on { color: var(--on-accent); background: var(--accent); }
-  .seg button:active { transform: scale(0.96); transition: transform .12s var(--ease); }
+  .rangeseg { display: inline-flex; border: 1px solid var(--border); border-radius: 999px; padding: 2px; background: var(--surface-2); }
+  .rangeseg button { border: none; background: none; cursor: pointer; font: 700 10px/1 'Roboto Mono', monospace; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); padding: 6px 10px; border-radius: 999px; transition: color .18s, background .18s; }
+  .rangeseg button.on { color: var(--on-accent); background: var(--accent); }
+  .rangeseg button:active { transform: scale(0.96); transition: transform .12s var(--ease); }
   .acc-chart { width: 100%; height: 96px; margin-top: 12px; overflow: visible; }
   .acc-chart polyline.dat { fill: none; stroke: var(--accent); stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
   .acc-chart line.pass { stroke: var(--pass); stroke-width: 1.4; stroke-dasharray: 4 4; }
@@ -270,7 +280,7 @@
       <div>
         <p class="stage-eyebrow">Cert app · iOS</p>
         <h1 class="stage-title">Analytics</h1>
-        <p class="stage-sub">The whole readiness story on one calm scroll. Where you stand, where the next points come from, and the single move that earns them fastest, rebuilt in the onboarding language.</p>
+        <p class="stage-sub">The whole readiness story, swiped one focused page at a time. Where you stand, where the next points come from, and the single move that earns them fastest, in the onboarding language.</p>
       </div>
       <button class="theme-toggle" id="themeToggle" type="button" aria-label="Toggle light and dark">
         <svg id="themeIcon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></svg>
@@ -296,261 +306,290 @@
             <button class="tb-set" type="button" aria-label="Settings"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M19 12a7 7 0 0 0-.1-1l2-1.5-2-3.5-2.4 1a7 7 0 0 0-1.7-1L16.5 2h-4l-.3 2.6a7 7 0 0 0-1.7 1l-2.4-1-2 3.5 2 1.5a7 7 0 0 0 0 2l-2 1.5 2 3.5 2.4-1a7 7 0 0 0 1.7 1l.3 2.6h4l.3-2.6a7 7 0 0 0 1.7-1l2.4 1 2-3.5-2-1.5a7 7 0 0 0 .1-1z"></path></svg></button>
           </div>
 
-          <div class="body">
+          <!-- SWIPE-PAGED SEGMENTED CONTROL -->
+          <div class="seg" id="seg" role="tablist" aria-label="Analytics sections">
+            <button class="chip on" type="button" role="tab" aria-selected="true" data-page="0">Readiness</button>
+            <button class="chip" type="button" role="tab" aria-selected="false" data-page="1">Sky</button>
+            <button class="chip" type="button" role="tab" aria-selected="false" data-page="2">Trends</button>
+            <button class="chip" type="button" role="tab" aria-selected="false" data-page="3">Domains</button>
+            <button class="chip" type="button" role="tab" aria-selected="false" data-page="4">Activity</button>
+            <button class="chip" type="button" role="tab" aria-selected="false" data-page="5">Wins</button>
+          </div>
 
-            <!-- READINESS HERO -->
-            <div class="rd reveal">
-              <div class="rd-top"><span class="rd-eyebrow">Readiness</span><span class="rd-tier">Building</span></div>
-              <div class="rd-score"><span class="rd-num" id="rdNum">553</span><span class="rd-of">/ 900</span></div>
-              <div class="bar"><span id="rdFill" style="width:0%"></span><span class="tick" style="left:80%"></span></div>
-              <div class="rd-legend"><span>Now</span><span class="p">Pass 720</span></div>
-              <p class="rd-insight"><b>167 points</b> to the pass mark. Hold your pace and you'll cross it.</p>
-              <div class="rd-forecast">
-                <div class="rd-fc"><span class="fl">Forecast on this pace</span><span class="fv">553</span></div>
-                <div class="rd-fc"><span class="fl">Days to exam</span><span class="fv dim">Not set</span></div>
-              </div>
-            </div>
+          <!-- HORIZONTAL SCROLL-SNAP PAGER -->
+          <div class="pager" id="pager">
 
-            <!-- STAT TILES -->
-            <div class="tiles reveal">
-              <div class="tile">
-                <div class="tv">23</div><span class="tl">Sessions</span>
-                <svg class="spark" viewBox="0 0 100 22" preserveAspectRatio="none" aria-hidden="true"><polyline points="0,18 17,15 34,16 50,10 67,11 84,6 100,4"/></svg>
-              </div>
-              <div class="tile">
-                <div class="tv">75</div><span class="tl">Questions</span>
-                <svg class="spark" viewBox="0 0 100 22" preserveAspectRatio="none" aria-hidden="true"><polyline points="0,20 17,17 34,13 50,12 67,9 84,7 100,3"/></svg>
-              </div>
-              <div class="tile">
-                <div class="tv">92<span style="font:600 14px/1 'Roboto Mono',monospace;color:var(--muted)">%</span></div><span class="tl">Accuracy</span>
-                <svg class="spark" viewBox="0 0 100 22" preserveAspectRatio="none" aria-hidden="true"><polyline points="0,12 17,9 34,11 50,7 67,8 84,5 100,4"/></svg>
-              </div>
-              <div class="tile">
-                <div class="tv">7</div><span class="tl">Study days</span>
-                <svg class="spark" viewBox="0 0 100 22" preserveAspectRatio="none" aria-hidden="true"><polyline points="0,17 17,17 34,12 50,14 67,9 84,10 100,6"/></svg>
-              </div>
-            </div>
-
-            <!-- KNOWLEDGE CONSTELLATION -->
-            <div class="const reveal">
-              <div class="card-head">
-                <div>
-                  <p class="card-kick">Knowledge constellation</p>
-                  <h2 class="card-title">Your sky tonight</h2>
-                </div>
-                <span class="const-meta">50 topics · 5 domains</span>
-              </div>
-              <p class="const-line">Each star is a topic. Bigger means more practised, brighter means closer to mastered. Colour marks the domain.</p>
-              <div class="sky" id="sky" aria-hidden="true"></div>
-              <div class="const-legend">
-                <span><i style="background:oklch(0.80 0.15 152)"></i>Mastered</span>
-                <span><i style="background:oklch(0.78 0.13 75)"></i>Proficient</span>
-                <span><i style="background:oklch(0.62 0.10 75)"></i>Developing</span>
-                <span><i style="background:oklch(0.50 0.02 265)"></i>Untouched</span>
-              </div>
-            </div>
-
-            <!-- ACCURACY OVER TIME -->
-            <div class="card reveal">
-              <div class="card-head">
-                <div>
-                  <p class="card-kick">Accuracy over time</p>
-                  <h2 class="card-title">Trending toward pass</h2>
-                </div>
-                <div class="seg" role="group" aria-label="Range">
-                  <button type="button">Week</button>
-                  <button type="button" class="on">Month</button>
-                  <button type="button">All</button>
-                </div>
-              </div>
-              <div class="acc-top">
-                <span class="acc-now pct">60%</span>
-                <span class="acc-note">now, below the 72% line</span>
-              </div>
-              <svg class="acc-chart" viewBox="0 0 300 96" preserveAspectRatio="none" aria-hidden="true">
-                <line class="pass" x1="0" y1="27" x2="300" y2="27"></line>
-                <text x="2" y="22">Pass 72%</text>
-                <polyline class="dat" points="6,72 56,60 106,66 156,50 206,55 256,42 294,38"></polyline>
-                <circle cx="6" cy="72" r="2.6"></circle>
-                <circle cx="56" cy="60" r="2.6"></circle>
-                <circle cx="106" cy="66" r="2.6"></circle>
-                <circle cx="156" cy="50" r="2.6"></circle>
-                <circle cx="206" cy="55" r="2.6"></circle>
-                <circle cx="256" cy="42" r="2.6"></circle>
-                <circle cx="294" cy="38" r="2.6"></circle>
-              </svg>
-            </div>
-
-            <!-- HIGHEST-LEVERAGE MOVE -->
-            <div class="lev reveal">
-              <p class="card-kick">Highest-leverage move</p>
-              <div class="lev-gain">+25 pts<span class="u"> on your readiness score</span></div>
-              <p class="lev-act">Drill Network Implementation next.</p>
-              <p class="lev-body">Network Implementation sits at 0%, your weakest domain, and it carries 20% of the exam. Lifting it toward the 70% line is the fastest single move you have right now.</p>
-              <div class="lev-list">
-                <div class="lev-row"><span class="lev-mark dn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M19 12l-7 7-7-7"></path></svg></span><span><b>Network Implementation at 0%</b> biggest drag on the score</span></div>
-                <div class="lev-row"><span class="lev-mark up"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"></path></svg></span><span><b>Networking Concepts at 100%</b> carrying you, 23% of exam</span></div>
-                <div class="lev-row"><span class="lev-mark dn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M19 12l-7 7-7-7"></path></svg></span><span><b>Recency at 0%</b> some topics decaying</span></div>
-              </div>
-            </div>
-
-            <!-- MASTERY BY DOMAIN -->
-            <div class="card reveal">
-              <div class="card-head">
-                <div>
-                  <p class="card-kick">Mastery by domain</p>
-                  <h2 class="card-title">Worst first</h2>
+            <!-- PAGE 1 · READINESS -->
+            <section class="page" role="tabpanel" aria-label="Readiness">
+              <!-- READINESS HERO -->
+              <div class="rd reveal">
+                <div class="rd-top"><span class="rd-eyebrow">Readiness</span><span class="rd-tier">Building</span></div>
+                <div class="rd-score"><span class="rd-num" id="rdNum">553</span><span class="rd-of">/ 900</span></div>
+                <div class="bar"><span id="rdFill" style="width:0%"></span><span class="tick" style="left:80%"></span></div>
+                <div class="rd-legend"><span>Now</span><span class="p">Pass 720</span></div>
+                <p class="rd-insight"><b>167 points</b> to the pass mark. Hold your pace and you'll cross it.</p>
+                <div class="rd-forecast">
+                  <div class="rd-fc"><span class="fl">Forecast on this pace</span><span class="fv">553</span></div>
+                  <div class="rd-fc"><span class="fl">Days to exam</span><span class="fv dim">Not set</span></div>
                 </div>
               </div>
 
-              <div class="mrow">
-                <div class="mrow-top"><span class="mrow-nm">Network Implementation</span><span class="mrow-sc weak">2.0 · no % yet</span></div>
-                <div class="bar weakbar"><span style="width:4%"></span></div>
-                <p class="mrow-meta">1 question · 20% of exam</p>
+              <!-- STAT TILES -->
+              <div class="tiles reveal">
+                <div class="tile">
+                  <div class="tv">23</div><span class="tl">Sessions</span>
+                  <svg class="spark" viewBox="0 0 100 22" preserveAspectRatio="none" aria-hidden="true"><polyline points="0,18 17,15 34,16 50,10 67,11 84,6 100,4"/></svg>
+                </div>
+                <div class="tile">
+                  <div class="tv">75</div><span class="tl">Questions</span>
+                  <svg class="spark" viewBox="0 0 100 22" preserveAspectRatio="none" aria-hidden="true"><polyline points="0,20 17,17 34,13 50,12 67,9 84,7 100,3"/></svg>
+                </div>
+                <div class="tile">
+                  <div class="tv">92<span style="font:600 14px/1 'Roboto Mono',monospace;color:var(--muted)">%</span></div><span class="tl">Accuracy</span>
+                  <svg class="spark" viewBox="0 0 100 22" preserveAspectRatio="none" aria-hidden="true"><polyline points="0,12 17,9 34,11 50,7 67,8 84,5 100,4"/></svg>
+                </div>
+                <div class="tile">
+                  <div class="tv">7</div><span class="tl">Study days</span>
+                  <svg class="spark" viewBox="0 0 100 22" preserveAspectRatio="none" aria-hidden="true"><polyline points="0,17 17,17 34,12 50,14 67,9 84,10 100,6"/></svg>
+                </div>
               </div>
-              <div class="mrow">
-                <div class="mrow-top"><span class="mrow-nm">Network Troubleshooting</span><span class="mrow-sc weak">5.0 · <span class="pct">50%</span></span></div>
-                <div class="bar weakbar"><span style="width:50%"></span></div>
-                <p class="mrow-meta">2 questions · 24% of exam · <span class="tag">weakest, drill here</span></p>
-              </div>
-              <div class="mrow">
-                <div class="mrow-top"><span class="mrow-nm">Network Security</span><span class="mrow-sc">4.0 · <span class="pct">75%</span></span></div>
-                <div class="bar"><span style="width:75%"></span></div>
-                <p class="mrow-meta">4 questions · 14% of exam</p>
-              </div>
-              <div class="mrow">
-                <div class="mrow-top"><span class="mrow-nm">Networking Concepts</span><span class="mrow-sc strong">1.0 · <span class="pct">100%</span></span></div>
-                <div class="bar strongbar"><span style="width:100%"></span></div>
-                <p class="mrow-meta">2 questions · 23% of exam</p>
-              </div>
-              <div class="mrow">
-                <div class="mrow-top"><span class="mrow-nm">Network Operations</span><span class="mrow-sc strong">3.0 · <span class="pct">100%</span></span></div>
-                <div class="bar strongbar"><span style="width:100%"></span></div>
-                <p class="mrow-meta">1 question · 19% of exam</p>
-              </div>
-            </div>
+            </section>
 
-            <!-- STUDY STREAK -->
-            <div class="card reveal">
-              <div class="card-head">
-                <div><p class="card-kick">Study streak</p><h2 class="card-title">Keep the chain</h2></div>
+            <!-- PAGE 2 · SKY -->
+            <section class="page" role="tabpanel" aria-label="Sky">
+              <!-- KNOWLEDGE CONSTELLATION -->
+              <div class="const reveal">
+                <div class="card-head">
+                  <div>
+                    <p class="card-kick">Knowledge constellation</p>
+                    <h2 class="card-title">Your sky tonight</h2>
+                  </div>
+                  <span class="const-meta">50 topics · 5 domains</span>
+                </div>
+                <p class="const-line">Each star is a topic. Bigger means more practised, brighter means closer to mastered. Colour marks the domain.</p>
+                <div class="sky" id="sky" aria-hidden="true"></div>
+                <div class="const-legend">
+                  <span><i style="background:oklch(0.80 0.15 152)"></i>Mastered</span>
+                  <span><i style="background:oklch(0.78 0.13 75)"></i>Proficient</span>
+                  <span><i style="background:oklch(0.62 0.10 75)"></i>Developing</span>
+                  <span><i style="background:oklch(0.50 0.02 265)"></i>Untouched</span>
+                </div>
               </div>
-              <div class="streak-top"><span class="streak-num">0</span><span class="streak-unit">day streak</span></div>
-              <p class="streak-meta">Longest <b>4</b> · <b>7</b> active days · last studied <b>16 May</b>.</p>
-              <div class="days">
-                <div class="day"><span class="dc"></span><span class="dl">T</span></div>
-                <div class="day"><span class="dc"></span><span class="dl">W</span></div>
-                <div class="day"><span class="dc"></span><span class="dl">T</span></div>
-                <div class="day"><span class="dc"></span><span class="dl">F</span></div>
-                <div class="day"><span class="dc"></span><span class="dl">S</span></div>
-                <div class="day"><span class="dc"></span><span class="dl">S</span></div>
-                <div class="day active"><span class="dc"></span><span class="dl">M</span></div>
-              </div>
-            </div>
+            </section>
 
-            <!-- BY DIFFICULTY -->
-            <div class="card reveal">
-              <div class="card-head">
-                <div><p class="card-kick">By difficulty</p><h2 class="card-title">Where you hold up</h2></div>
+            <!-- PAGE 3 · TRENDS -->
+            <section class="page" role="tabpanel" aria-label="Trends">
+              <!-- ACCURACY OVER TIME -->
+              <div class="card reveal">
+                <div class="card-head">
+                  <div>
+                    <p class="card-kick">Accuracy over time</p>
+                    <h2 class="card-title">Trending toward pass</h2>
+                  </div>
+                  <div class="rangeseg" role="group" aria-label="Range">
+                    <button type="button">Week</button>
+                    <button type="button" class="on">Month</button>
+                    <button type="button">All</button>
+                  </div>
+                </div>
+                <div class="acc-top">
+                  <span class="acc-now pct">60%</span>
+                  <span class="acc-note">now, below the 72% line</span>
+                </div>
+                <svg class="acc-chart" viewBox="0 0 300 96" preserveAspectRatio="none" aria-hidden="true">
+                  <line class="pass" x1="0" y1="27" x2="300" y2="27"></line>
+                  <text x="2" y="22">Pass 72%</text>
+                  <polyline class="dat" points="6,72 56,60 106,66 156,50 206,55 256,42 294,38"></polyline>
+                  <circle cx="6" cy="72" r="2.6"></circle>
+                  <circle cx="56" cy="60" r="2.6"></circle>
+                  <circle cx="106" cy="66" r="2.6"></circle>
+                  <circle cx="156" cy="50" r="2.6"></circle>
+                  <circle cx="206" cy="55" r="2.6"></circle>
+                  <circle cx="256" cy="42" r="2.6"></circle>
+                  <circle cx="294" cy="38" r="2.6"></circle>
+                </svg>
               </div>
-              <div class="diff-row">
-                <div class="diff-top"><span class="diff-nm">Easy <span>15q</span></span><span class="diff-val g pct">73%</span></div>
-                <div class="bar passbar"><span style="width:73%"></span></div>
-              </div>
-              <div class="diff-row">
-                <div class="diff-top"><span class="diff-nm">Medium <span>60q</span></span><span class="diff-val a pct">97%</span></div>
-                <div class="bar"><span style="width:97%"></span></div>
-              </div>
-            </div>
 
-            <!-- PRACTICE VS TIMED -->
-            <div class="card reveal">
-              <div class="card-head">
-                <div><p class="card-kick">Practice vs timed</p><h2 class="card-title">Pressure check</h2></div>
+              <!-- BY DIFFICULTY -->
+              <div class="card reveal">
+                <div class="card-head">
+                  <div><p class="card-kick">By difficulty</p><h2 class="card-title">Where you hold up</h2></div>
+                </div>
+                <div class="diff-row">
+                  <div class="diff-top"><span class="diff-nm">Easy <span>15q</span></span><span class="diff-val g pct">73%</span></div>
+                  <div class="bar passbar"><span style="width:73%"></span></div>
+                </div>
+                <div class="diff-row">
+                  <div class="diff-top"><span class="diff-nm">Medium <span>60q</span></span><span class="diff-val a pct">97%</span></div>
+                  <div class="bar"><span style="width:97%"></span></div>
+                </div>
               </div>
-              <div class="pvt">
-                <div class="pvt-col"><span class="pl">Quiz avg</span><span class="pv">Building data</span></div>
-                <div class="pvt-col"><span class="pl">Exam avg</span><span class="pv">No exams yet</span></div>
-              </div>
-              <p class="card-sub">Complete a few quizzes and at least one full exam simulation to compare timed pressure against practice.</p>
-            </div>
 
-            <!-- ACTIVITY HEATMAP -->
-            <div class="card reveal">
-              <div class="card-head">
-                <div><p class="card-kick">Activity</p><h2 class="card-title">Last 26 weeks</h2></div>
-                <span class="card-meta">7 active days</span>
+              <!-- PRACTICE VS TIMED -->
+              <div class="card reveal">
+                <div class="card-head">
+                  <div><p class="card-kick">Practice vs timed</p><h2 class="card-title">Pressure check</h2></div>
+                </div>
+                <div class="pvt">
+                  <div class="pvt-col"><span class="pl">Quiz avg</span><span class="pv">Building data</span></div>
+                  <div class="pvt-col"><span class="pl">Exam avg</span><span class="pv">No exams yet</span></div>
+                </div>
+                <p class="card-sub">Complete a few quizzes and at least one full exam simulation to compare timed pressure against practice.</p>
               </div>
-              <div class="heat" id="heat" aria-hidden="true"></div>
-              <div class="heat-legend">Less <span class="sw"><i></i><i class="l1"></i><i class="l2"></i><i class="l3"></i></span> More</div>
-            </div>
+            </section>
 
-            <!-- WHERE YOU SLIP MOST -->
-            <div class="card reveal">
-              <div class="card-head">
-                <div><p class="card-kick">Where you slip most</p><h2 class="card-title">Top 3 patterns</h2></div>
-              </div>
-              <div class="slip">
-                <span class="rank">1</span>
-                <span class="stxt"><b>Network Implementation</b><span>Network Implementation · Ethernet Basics</span></span>
-                <span class="smiss">2 missed</span>
-              </div>
-              <div class="slip">
-                <span class="rank">2</span>
-                <span class="stxt"><b>Network Security</b><span>Network Security · PKI &amp; Certificate Management</span></span>
-                <span class="smiss">2 missed</span>
-              </div>
-              <div class="slip">
-                <span class="rank">3</span>
-                <span class="stxt"><b>Network Troubleshooting</b><span>Network Troubleshooting · Cable Issues</span></span>
-                <span class="smiss">1 missed</span>
-              </div>
-            </div>
+            <!-- PAGE 4 · DOMAINS -->
+            <section class="page" role="tabpanel" aria-label="Domains">
+              <!-- MASTERY BY DOMAIN -->
+              <div class="card reveal">
+                <div class="card-head">
+                  <div>
+                    <p class="card-kick">Mastery by domain</p>
+                    <h2 class="card-title">Worst first</h2>
+                  </div>
+                </div>
 
-            <!-- MILESTONES -->
-            <div class="card reveal">
-              <div class="card-head">
-                <div><p class="card-kick">Milestones</p><h2 class="card-title">Badges earned</h2></div>
-                <span class="mile-count">6<small> / 49</small></span>
+                <div class="mrow">
+                  <div class="mrow-top"><span class="mrow-nm">Network Implementation</span><span class="mrow-sc weak">2.0 · no % yet</span></div>
+                  <div class="bar weakbar"><span style="width:4%"></span></div>
+                  <p class="mrow-meta">1 question · 20% of exam</p>
+                </div>
+                <div class="mrow">
+                  <div class="mrow-top"><span class="mrow-nm">Network Troubleshooting</span><span class="mrow-sc weak">5.0 · <span class="pct">50%</span></span></div>
+                  <div class="bar weakbar"><span style="width:50%"></span></div>
+                  <p class="mrow-meta">2 questions · 24% of exam · <span class="tag">weakest, drill here</span></p>
+                </div>
+                <div class="mrow">
+                  <div class="mrow-top"><span class="mrow-nm">Network Security</span><span class="mrow-sc">4.0 · <span class="pct">75%</span></span></div>
+                  <div class="bar"><span style="width:75%"></span></div>
+                  <p class="mrow-meta">4 questions · 14% of exam</p>
+                </div>
+                <div class="mrow">
+                  <div class="mrow-top"><span class="mrow-nm">Networking Concepts</span><span class="mrow-sc strong">1.0 · <span class="pct">100%</span></span></div>
+                  <div class="bar strongbar"><span style="width:100%"></span></div>
+                  <p class="mrow-meta">2 questions · 23% of exam</p>
+                </div>
+                <div class="mrow">
+                  <div class="mrow-top"><span class="mrow-nm">Network Operations</span><span class="mrow-sc strong">3.0 · <span class="pct">100%</span></span></div>
+                  <div class="bar strongbar"><span style="width:100%"></span></div>
+                  <p class="mrow-meta">1 question · 19% of exam</p>
+                </div>
               </div>
-              <div class="mile">
-                <span class="mi"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 21h8M12 17v4M6 4h12v4a6 6 0 0 1-12 0z"></path><path d="M6 5H3v2a3 3 0 0 0 3 3M18 5h3v2a3 3 0 0 1-3 3"></path></svg></span>
-                <span class="mtx"><b>Completionist</b><span>Earned 18 May</span></span>
-                <span class="mtick"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6L9 17l-5-5"></path></svg></span>
+
+              <!-- HIGHEST-LEVERAGE MOVE -->
+              <div class="lev reveal">
+                <p class="card-kick">Highest-leverage move</p>
+                <div class="lev-gain">+25 pts<span class="u"> on your readiness score</span></div>
+                <p class="lev-act">Drill Network Implementation next.</p>
+                <p class="lev-body">Network Implementation sits at 0%, your weakest domain, and it carries 20% of the exam. Lifting it toward the 70% line is the fastest single move you have right now.</p>
+                <div class="lev-list">
+                  <div class="lev-row"><span class="lev-mark dn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M19 12l-7 7-7-7"></path></svg></span><span><b>Network Implementation at 0%</b> biggest drag on the score</span></div>
+                  <div class="lev-row"><span class="lev-mark up"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"></path></svg></span><span><b>Networking Concepts at 100%</b> carrying you, 23% of exam</span></div>
+                  <div class="lev-row"><span class="lev-mark dn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M19 12l-7 7-7-7"></path></svg></span><span><b>Recency at 0%</b> some topics decaying</span></div>
+                </div>
               </div>
-              <div class="mile">
-                <span class="mi"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"></path></svg></span>
-                <span class="mtx"><b>Full coverage</b><span>Earned 16 May</span></span>
-                <span class="mtick"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6L9 17l-5-5"></path></svg></span>
+
+              <!-- WHERE YOU SLIP MOST -->
+              <div class="card reveal">
+                <div class="card-head">
+                  <div><p class="card-kick">Where you slip most</p><h2 class="card-title">Top 3 patterns</h2></div>
+                </div>
+                <div class="slip">
+                  <span class="rank">1</span>
+                  <span class="stxt"><b>Network Implementation</b><span>Network Implementation · Ethernet Basics</span></span>
+                  <span class="smiss">2 missed</span>
+                </div>
+                <div class="slip">
+                  <span class="rank">2</span>
+                  <span class="stxt"><b>Network Security</b><span>Network Security · PKI &amp; Certificate Management</span></span>
+                  <span class="smiss">2 missed</span>
+                </div>
+                <div class="slip">
+                  <span class="rank">3</span>
+                  <span class="stxt"><b>Network Troubleshooting</b><span>Network Troubleshooting · Cable Issues</span></span>
+                  <span class="smiss">1 missed</span>
+                </div>
               </div>
-              <div class="mile">
-                <span class="mi"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2L3 14h7l-1 8 10-12h-7z"></path></svg></span>
-                <span class="mtx"><b>Weekend warrior</b><span>Earned 10 May</span></span>
-                <span class="mtick"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6L9 17l-5-5"></path></svg></span>
+            </section>
+
+            <!-- PAGE 5 · ACTIVITY -->
+            <section class="page" role="tabpanel" aria-label="Activity">
+              <!-- STUDY STREAK -->
+              <div class="card reveal">
+                <div class="card-head">
+                  <div><p class="card-kick">Study streak</p><h2 class="card-title">Keep the chain</h2></div>
+                </div>
+                <div class="streak-top"><span class="streak-num">0</span><span class="streak-unit">day streak</span></div>
+                <p class="streak-meta">Longest <b>4</b> · <b>7</b> active days · last studied <b>16 May</b>.</p>
+                <div class="days">
+                  <div class="day"><span class="dc"></span><span class="dl">T</span></div>
+                  <div class="day"><span class="dc"></span><span class="dl">W</span></div>
+                  <div class="day"><span class="dc"></span><span class="dl">T</span></div>
+                  <div class="day"><span class="dc"></span><span class="dl">F</span></div>
+                  <div class="day"><span class="dc"></span><span class="dl">S</span></div>
+                  <div class="day"><span class="dc"></span><span class="dl">S</span></div>
+                  <div class="day active"><span class="dc"></span><span class="dl">M</span></div>
+                </div>
               </div>
-              <div class="mile locked">
-                <span class="mi"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg></span>
-                <span class="mtx" style="flex:1 1 auto">
-                  <b>Getting close</b><span>Reach a readiness score of 650</span>
-                  <span class="mile-prog">
-                    <span class="bar"><span style="width:85.1%"></span></span>
-                    <span class="mp-meta"><span>553</span><span>650</span></span>
+
+              <!-- ACTIVITY HEATMAP -->
+              <div class="card reveal">
+                <div class="card-head">
+                  <div><p class="card-kick">Activity</p><h2 class="card-title">Last 26 weeks</h2></div>
+                  <span class="card-meta">7 active days</span>
+                </div>
+                <div class="heat" id="heat" aria-hidden="true"></div>
+                <div class="heat-legend">Less <span class="sw"><i></i><i class="l1"></i><i class="l2"></i><i class="l3"></i></span> More</div>
+              </div>
+            </section>
+
+            <!-- PAGE 6 · WINS -->
+            <section class="page" role="tabpanel" aria-label="Wins">
+              <!-- MILESTONES -->
+              <div class="card reveal">
+                <div class="card-head">
+                  <div><p class="card-kick">Milestones</p><h2 class="card-title">Badges earned</h2></div>
+                  <span class="mile-count">6<small> / 49</small></span>
+                </div>
+                <div class="mile">
+                  <span class="mi"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 21h8M12 17v4M6 4h12v4a6 6 0 0 1-12 0z"></path><path d="M6 5H3v2a3 3 0 0 0 3 3M18 5h3v2a3 3 0 0 1-3 3"></path></svg></span>
+                  <span class="mtx"><b>Completionist</b><span>Earned 18 May</span></span>
+                  <span class="mtick"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6L9 17l-5-5"></path></svg></span>
+                </div>
+                <div class="mile">
+                  <span class="mi"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"></path></svg></span>
+                  <span class="mtx"><b>Full coverage</b><span>Earned 16 May</span></span>
+                  <span class="mtick"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6L9 17l-5-5"></path></svg></span>
+                </div>
+                <div class="mile">
+                  <span class="mi"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2L3 14h7l-1 8 10-12h-7z"></path></svg></span>
+                  <span class="mtx"><b>Weekend warrior</b><span>Earned 10 May</span></span>
+                  <span class="mtick"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6L9 17l-5-5"></path></svg></span>
+                </div>
+                <div class="mile locked">
+                  <span class="mi"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg></span>
+                  <span class="mtx" style="flex:1 1 auto">
+                    <b>Getting close</b><span>Reach a readiness score of 650</span>
+                    <span class="mile-prog">
+                      <span class="bar"><span style="width:85.1%"></span></span>
+                      <span class="mp-meta"><span>553</span><span>650</span></span>
+                    </span>
                   </span>
-                </span>
+                </div>
               </div>
-            </div>
 
-            <!-- FULL EXAMS -->
-            <div class="card reveal">
-              <div class="card-head">
-                <div><p class="card-kick">Full exams</p><h2 class="card-title">Scaled scores</h2></div>
+              <!-- FULL EXAMS -->
+              <div class="card reveal">
+                <div class="card-head">
+                  <div><p class="card-kick">Full exams</p><h2 class="card-title">Scaled scores</h2></div>
+                </div>
+                <div class="empty">
+                  <span class="ei"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 11l3 3L22 4"></path><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg></span>
+                  <b>None yet</b>
+                  <span>Run one to track scaled scores.</span>
+                </div>
               </div>
-              <div class="empty">
-                <span class="ei"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 11l3 3L22 4"></path><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg></span>
-                <b>None yet</b>
-                <span>Run one to track scaled scores.</span>
-              </div>
-            </div>
+            </section>
 
           </div>
 
@@ -563,7 +602,7 @@
 
         </div>
       </div>
-      <p class="hint">Phase 1 mockup. One calm scroll: where you stand, and the next 25 points.</p>
+      <p class="hint">Phase 1 mockup. Swipe through: Readiness · Sky · Trends · Domains · Activity · Wins.</p>
     </div>
   </div>
 
@@ -589,7 +628,7 @@
       var sky = document.getElementById('sky');
       if (sky) {
         var domains = [
-          { name: 'Networking Concepts', cx: 24, cy: 30, hue: 75 },
+          { name: 'Networking Concepts', cx: 24, cy: 30, hue: 75 },
           { name: 'Implementation',           cx: 73, cy: 26, hue: 30 },
           { name: 'Operations',               cx: 80, cy: 66, hue: 200 },
           { name: 'Security',                 cx: 30, cy: 70, hue: 290 },
@@ -626,6 +665,46 @@
           cells += '<i' + (lvl ? ' class="l' + lvl + '"' : '') + '></i>';
         }
         heat.innerHTML = cells;
+      }
+
+      // Swipe pager: chips drive the pager, the pager drives the active chip.
+      var pager = document.getElementById('pager');
+      var seg = document.getElementById('seg');
+      var chips = Array.prototype.slice.call(seg.querySelectorAll('.chip'));
+      var pages = Array.prototype.slice.call(pager.querySelectorAll('.page'));
+
+      function setActive(idx){
+        chips.forEach(function (c, i) {
+          var on = i === idx;
+          c.classList.toggle('on', on);
+          c.setAttribute('aria-selected', on ? 'true' : 'false');
+        });
+      }
+
+      // Tap a chip -> jump that page into view.
+      chips.forEach(function (chip) {
+        chip.addEventListener('click', function () {
+          var idx = parseInt(chip.getAttribute('data-page'), 10) || 0;
+          var page = pages[idx];
+          if (!page) return;
+          pager.scrollTo({ left: page.offsetLeft, behavior: reduce ? 'auto' : 'smooth' });
+          setActive(idx);
+        });
+      });
+
+      // Swipe the pager -> light the matching chip and scroll it into view (no scroll listeners).
+      if ('IntersectionObserver' in window) {
+        var io = new IntersectionObserver(function (entries) {
+          entries.forEach(function (entry) {
+            if (!entry.isIntersecting) return;
+            var idx = pages.indexOf(entry.target);
+            if (idx < 0) return;
+            setActive(idx);
+            var chip = chips[idx];
+            if (chip) chip.scrollIntoView({ inline: 'center', block: 'nearest' });
+          });
+        }, { root: pager, threshold: 0.6 });
+        pages.forEach(function (p) { io.observe(p); });
       }
     })();
   </script>

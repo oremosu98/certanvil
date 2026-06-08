@@ -62,10 +62,19 @@
   .tb-set:active { transform: scale(0.94); }
   .tb-set svg { width: 17px; height: 17px; stroke: currentColor; fill: none; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
 
-  .body { flex: 1; overflow-y: auto; padding: 6px 20px 16px; }
-  .body::-webkit-scrollbar { width: 0; }
+  /* swipe-paged shell: sticky segmented control + horizontal scroll-snap pager */
+  .seg { flex:0 0 auto; display:flex; gap:8px; overflow-x:auto; padding:8px 16px 10px; scrollbar-width:none; }
+  .seg::-webkit-scrollbar{ display:none; }
+  .chip { flex:0 0 auto; font:700 12px/1 Inter,sans-serif; padding:8px 13px; border-radius:999px; border:1px solid var(--border); background:var(--surface); color:var(--ink-soft); cursor:pointer; white-space:nowrap; transition:background .2s, color .2s, border-color .2s, transform .14s var(--ease); }
+  .chip:active{ transform:scale(.96); }
+  .chip.on { background:color-mix(in oklab,var(--accent) 12%,var(--surface)); border-color:color-mix(in oklab,var(--accent) 45%,var(--border)); color:var(--accent-deep); }
+  .pager { flex:1 1 auto; display:flex; overflow-x:auto; overflow-y:hidden; scroll-snap-type:x mandatory; -webkit-overflow-scrolling:touch; scrollbar-width:none; }
+  .pager::-webkit-scrollbar{ display:none; }
+  .page { flex:0 0 100%; scroll-snap-align:start; overflow-y:auto; padding:6px 18px 16px; }
+  .page::-webkit-scrollbar{ display:none; }
 
   .sect { font: 800 10px/1 Inter, sans-serif; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin: 20px 2px 11px; }
+  .sect:first-child { margin-top: 4px; }
   .bar { height: 8px; border-radius: 999px; background: var(--track); position: relative; overflow: hidden; }
   .bar > span { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 999px; background: var(--accent); transition: width .8s var(--ease), background .4s ease; }
   .bar > span.pass { background: var(--pass); }
@@ -114,10 +123,10 @@
 
   /* filter chips + sort */
   .controls { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; margin-top: 16px; }
-  .chip { border: 1px solid var(--border); border-radius: 999px; background: var(--surface); color: var(--ink-soft); font: 700 11.5px/1 Inter, sans-serif; padding: 8px 12px; cursor: pointer; transition: transform .14s var(--ease), border-color .18s, background .18s, color .18s; }
-  .chip:active { transform: scale(0.96); }
-  @media (hover:hover) and (pointer:fine) { .chip:hover { border-color: color-mix(in oklab, var(--accent) 36%, var(--border)); } }
-  .chip.on { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+  .fchip { border: 1px solid var(--border); border-radius: 999px; background: var(--surface); color: var(--ink-soft); font: 700 11.5px/1 Inter, sans-serif; padding: 8px 12px; cursor: pointer; transition: transform .14s var(--ease), border-color .18s, background .18s, color .18s; }
+  .fchip:active { transform: scale(0.96); }
+  @media (hover:hover) and (pointer:fine) { .fchip:hover { border-color: color-mix(in oklab, var(--accent) 36%, var(--border)); } }
+  .fchip.on { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
   .sort { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface); color: var(--muted); font: 700 11px/1 Inter, sans-serif; padding: 8px 11px; cursor: pointer; transition: transform .14s var(--ease), border-color .18s; }
   .sort:active { transform: scale(0.96); }
   .sort svg { width: 13px; height: 13px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
@@ -185,7 +194,7 @@
   .tag { font: 600 11px/1 Inter, sans-serif; color: var(--muted); background: var(--surface); border: 1px solid var(--border); border-radius: 999px; padding: 7px 10px; }
 
   /* recently studied strip */
-  .strip { display: flex; gap: 10px; overflow-x: auto; padding: 2px 20px 6px; margin: 0 -20px; scroll-snap-type: x mandatory; }
+  .strip { display: flex; gap: 10px; overflow-x: auto; padding: 2px 18px 6px; margin: 0 -18px; scroll-snap-type: x mandatory; }
   .strip::-webkit-scrollbar { height: 0; }
   .rcard { flex: 0 0 auto; width: 138px; scroll-snap-align: start; border: 1px solid var(--border); border-radius: 14px; background: var(--surface); padding: 12px 13px; }
   .rcard b { display: block; font: 650 13px/1.2 Inter, sans-serif; color: var(--ink); min-height: 32px; }
@@ -220,7 +229,7 @@
       <div>
         <p class="stage-eyebrow">Cert app · iOS</p>
         <h1 class="stage-title">Progress</h1>
-        <p class="stage-sub">The topic-level mastery map for a cert, rebuilt in the onboarding language. Every capability from the live page, organised into calm scrollable cards with one clear thing to drill next.</p>
+        <p class="stage-sub">The topic-level mastery map for a cert, rebuilt in the onboarding language. Every capability from the live page, now organised into focused swipe pages with one clear thing to drill next.</p>
       </div>
       <button class="theme-toggle" id="themeToggle" type="button" aria-label="Toggle light and dark">
         <svg id="themeIcon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></svg>
@@ -246,224 +255,255 @@
             <button class="tb-set" type="button" aria-label="Settings"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M19 12a7 7 0 0 0-.1-1l2-1.5-2-3.5-2.4 1a7 7 0 0 0-1.7-1L16.5 2h-4l-.3 2.6a7 7 0 0 0-1.7 1l-2.4-1-2 3.5 2 1.5a7 7 0 0 0 0 2l-2 1.5 2 3.5 2.4-1a7 7 0 0 0 1.7 1l.3 2.6h4l.3-2.6a7 7 0 0 0 1.7-1l2.4 1 2-3.5-2-1.5a7 7 0 0 0 .1-1z"></path></svg></button>
           </div>
 
-          <div class="body">
+          <!-- SEGMENTED CONTROL (chips) -->
+          <div class="seg" id="seg">
+            <button class="chip on" type="button" data-page="0">Overview</button>
+            <button class="chip" type="button" data-page="1">Concepts</button>
+            <button class="chip" type="button" data-page="2">Implementation</button>
+            <button class="chip" type="button" data-page="3">Operations</button>
+            <button class="chip" type="button" data-page="4">Security</button>
+            <button class="chip" type="button" data-page="5">Troubleshooting</button>
+            <button class="chip" type="button" data-page="6">Insights</button>
+          </div>
 
-            <!-- DRILL THIS NEXT (hero, highest impact) -->
-            <div class="hero reveal">
-              <span class="hero-kick"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2L3 14h7l-1 8 10-12h-7l1-8z"></path></svg>Drill this next</span>
-              <h2 class="hero-topic">Ethernet Basics</h2>
-              <span class="hero-obj">Network Implementation · Objective 1.3</span>
-              <p class="hero-line">Your weakest studied topic. Drilling here moves your readiness fastest per minute.</p>
-              <div class="hero-foot">
-                <span class="hero-mast"><b>0%</b><span>Mastery</span></span>
-                <button class="hero-btn" type="button">Start drill<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg></button>
-              </div>
-            </div>
+          <!-- HORIZONTAL SCROLL-SNAP PAGER -->
+          <div class="pager" id="pager">
 
-            <!-- WHERE YOU STAND -->
-            <div class="stand reveal">
-              <div class="stand-top">
-                <div class="ring">
-                  <svg viewBox="0 0 64 64" aria-hidden="true">
-                    <circle class="track" cx="32" cy="32" r="27" fill="none" stroke-width="7"></circle>
-                    <circle class="fill" id="standRing" cx="32" cy="32" r="27" fill="none" stroke-width="7" stroke-dasharray="169.6" stroke-dashoffset="169.6"></circle>
-                  </svg>
-                  <span class="ring-lbl"><b>14%</b><span>Covered</span></span>
-                </div>
-                <div class="stand-pair">
-                  <div class="stand-col"><b>68%</b><span>Avg mastery</span></div>
-                  <div class="stand-col"><b>7<span style="display:inline;font-size:13px;color:var(--muted)"> of 50</span></b><span>Topics seen</span></div>
+            <!-- PAGE 1: OVERVIEW -->
+            <section class="page" data-page="0">
+              <!-- DRILL THIS NEXT (hero, highest impact) -->
+              <div class="hero reveal">
+                <span class="hero-kick"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2L3 14h7l-1 8 10-12h-7l1-8z"></path></svg>Drill this next</span>
+                <h2 class="hero-topic">Ethernet Basics</h2>
+                <span class="hero-obj">Network Implementation · Objective 1.3</span>
+                <p class="hero-line">Your weakest studied topic. Drilling here moves your readiness fastest per minute.</p>
+                <div class="hero-foot">
+                  <span class="hero-mast"><b>0%</b><span>Mastery</span></span>
+                  <button class="hero-btn" type="button">Start drill<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg></button>
                 </div>
               </div>
-              <div class="stand-counts">
-                <div class="count weak"><b>2</b><span>Weak</span></div>
-                <div class="count untouched"><b>43</b><span>Untouched</span></div>
-                <div class="count strong"><b>4</b><span>Strong</span></div>
-              </div>
-            </div>
 
-            <!-- FILTERS + SORT (static) -->
-            <div class="controls reveal">
-              <button class="chip on" type="button">All</button>
-              <button class="chip" type="button">Weak only</button>
-              <button class="chip" type="button">Untouched</button>
-              <button class="chip" type="button">Strong</button>
-              <button class="sort" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h12M3 12h9M3 18h5M17 8V18M17 18l3-3M17 18l-3-3"></path></svg>Worst first</button>
-            </div>
-
-            <div class="sect reveal">Mastery by domain</div>
-
-            <!-- DOMAIN 1: Networking Concepts -->
-            <div class="domain open reveal">
-              <button class="dhead" type="button">
-                <span class="dhead-main">
-                  <span class="dhead-row"><b>Networking Concepts</b><span class="exam">23% of exam</span></span>
-                  <span class="dhead-bar"><span class="bar"><span class="pass" style="width:100%"></span></span><span class="dhead-pct">100%</span></span>
-                  <span class="dhead-count">2 of 13 studied · 11 untouched</span>
-                </span>
-                <span class="dchev"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg></span>
-              </button>
-              <div class="dbody">
-                <div class="trow strong"><span class="tdot"></span><span class="tnm">Network Models &amp; OSI</span><span class="bar tbar"><span class="pass" style="width:100%"></span></span><span class="tval">100%</span></div>
-                <div class="trow strong"><span class="tdot"></span><span class="tnm">DNS Records &amp; DNSSEC</span><span class="bar tbar"><span class="pass" style="width:100%"></span></span><span class="tval">100%</span></div>
-                <button class="disclose" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg>11 untouched topics</button>
-                <div class="untouched-list">
-                  <div class="trow untouched"><span class="tdot"></span><span class="tnm">Cloud Networking &amp; VPCs</span><span class="bar tbar"></span><span class="tval">--</span></div>
-                  <div class="trow untouched"><span class="tdot"></span><span class="tnm">DNS &amp; DHCP</span><span class="bar tbar"></span><span class="tval">--</span></div>
-                  <div class="trow untouched"><span class="tdot"></span><span class="tnm">IPv6</span><span class="bar tbar"></span><span class="tval">--</span></div>
-                  <div class="trow untouched"><span class="tdot"></span><span class="tnm">NAT &amp; IP Services</span><span class="bar tbar"></span><span class="tval">--</span></div>
-                  <div class="trow untouched"><span class="tdot"></span><span class="tnm">Network Appliances</span><span class="bar tbar"></span><span class="tval">--</span></div>
-                  <div class="trow untouched"><span class="tdot"></span><span class="tnm">NTP/ICMP &amp; Traffic Types</span><span class="bar tbar"></span><span class="tval">--</span></div>
-                  <div class="trow untouched"><span class="tdot"></span><span class="tnm">Port Numbers</span><span class="bar tbar"></span><span class="tval">--</span></div>
-                  <div class="trow untouched"><span class="tdot"></span><span class="tnm">Subnetting &amp; IP Addressing</span><span class="bar tbar"></span><span class="tval">--</span></div>
-                  <div class="trow untouched"><span class="tdot"></span><span class="tnm">TCP/IP Applications</span><span class="bar tbar"></span><span class="tval">--</span></div>
-                  <div class="trow untouched"><span class="tdot"></span><span class="tnm">TCP/IP Basics</span><span class="bar tbar"></span><span class="tval">--</span></div>
-                  <div class="trow untouched"><span class="tdot"></span><span class="tnm">Virtualisation &amp; Cloud</span><span class="bar tbar"></span><span class="tval">--</span></div>
+              <!-- WHERE YOU STAND -->
+              <div class="stand reveal">
+                <div class="stand-top">
+                  <div class="ring">
+                    <svg viewBox="0 0 64 64" aria-hidden="true">
+                      <circle class="track" cx="32" cy="32" r="27" fill="none" stroke-width="7"></circle>
+                      <circle class="fill" id="standRing" cx="32" cy="32" r="27" fill="none" stroke-width="7" stroke-dasharray="169.6" stroke-dashoffset="169.6"></circle>
+                    </svg>
+                    <span class="ring-lbl"><b>14%</b><span>Covered</span></span>
+                  </div>
+                  <div class="stand-pair">
+                    <div class="stand-col"><b>68%</b><span>Avg mastery</span></div>
+                    <div class="stand-col"><b>7<span style="display:inline;font-size:13px;color:var(--muted)"> of 50</span></b><span>Topics seen</span></div>
+                  </div>
+                </div>
+                <div class="stand-counts">
+                  <div class="count weak"><b>2</b><span>Weak</span></div>
+                  <div class="count untouched"><b>43</b><span>Untouched</span></div>
+                  <div class="count strong"><b>4</b><span>Strong</span></div>
                 </div>
               </div>
-            </div>
 
-            <!-- DOMAIN 2: Network Implementation -->
-            <div class="domain open reveal">
-              <button class="dhead" type="button">
-                <span class="dhead-main">
-                  <span class="dhead-row"><b>Network Implementation</b><span class="exam">20% of exam</span></span>
-                  <span class="dhead-bar"><span class="bar"><span class="miss" style="width:3%"></span></span><span class="dhead-pct">0%</span></span>
-                  <span class="dhead-count">1 of 13 studied · 12 untouched</span>
-                </span>
-                <span class="dchev"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg></span>
-              </button>
-              <div class="dbody">
-                <div class="trow weak"><span class="tdot"></span><span class="tnm">Ethernet Basics</span><span class="bar tbar"><span class="miss" style="width:4%"></span></span><span class="tval">0%</span></div>
-                <button class="disclose" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg>12 untouched topics</button>
-                <div class="untouched-list">
-                  <div class="trow untouched"><span class="tdot"></span><span class="tnm">BGP</span><span class="bar tbar"></span><span class="tval">--</span></div>
-                  <div class="trow untouched"><span class="tdot"></span><span class="tnm">Cabling &amp; Topology</span><span class="bar tbar"></span><span class="tval">--</span></div>
-                  <div class="trow untouched"><span class="tdot"></span><span class="tnm">DC Architectures</span><span class="bar tbar"></span><span class="tval">--</span></div>
-                  <div class="trow untouched"><span class="tdot"></span><span class="tnm">Ethernet Standards</span><span class="bar tbar"></span><span class="tval">--</span></div>
-                  <div class="trow untouched"><span class="tdot"></span><span class="tnm">Networked Devices &amp; IoT</span><span class="bar tbar"></span><span class="tval">--</span></div>
-                  <div class="trow untouched"><span class="tdot"></span><span class="tnm">OSPF</span><span class="bar tbar"></span><span class="tval">--</span></div>
-                  <div class="trow untouched"><span class="tdot"></span><span class="tnm">Routing Protocols</span><span class="bar tbar"></span><span class="tval">--</span></div>
-                  <div class="trow untouched"><span class="tdot"></span><span class="tnm">SDN &amp; Automation</span><span class="bar tbar"></span><span class="tval">--</span></div>
-                  <div class="trow untouched"><span class="tdot"></span><span class="tnm">STP/RSTP</span><span class="bar tbar"></span><span class="tval">--</span></div>
-                  <div class="trow untouched"><span class="tdot"></span><span class="tnm">Switch &amp; VLANs</span><span class="bar tbar"></span><span class="tval">--</span></div>
-                  <div class="trow untouched"><span class="tdot"></span><span class="tnm">VLAN Trunking</span><span class="bar tbar"></span><span class="tval">--</span></div>
-                  <div class="trow untouched"><span class="tdot"></span><span class="tnm">Wireless Networking</span><span class="bar tbar"></span><span class="tval">--</span></div>
+              <!-- FILTERS + SORT (static) -->
+              <div class="controls reveal">
+                <button class="fchip on" type="button">All</button>
+                <button class="fchip" type="button">Weak only</button>
+                <button class="fchip" type="button">Untouched</button>
+                <button class="fchip" type="button">Strong</button>
+                <button class="sort" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h12M3 12h9M3 18h5M17 8V18M17 18l3-3M17 18l-3-3"></path></svg>Worst first</button>
+              </div>
+            </section>
+
+            <!-- PAGE 2: CONCEPTS -->
+            <section class="page" data-page="1">
+              <div class="sect reveal">Networking Concepts</div>
+              <div class="domain open reveal">
+                <button class="dhead" type="button">
+                  <span class="dhead-main">
+                    <span class="dhead-row"><b>Networking Concepts</b><span class="exam">23% of exam</span></span>
+                    <span class="dhead-bar"><span class="bar"><span class="pass" style="width:100%"></span></span><span class="dhead-pct">100%</span></span>
+                    <span class="dhead-count">2 of 13 studied · 11 untouched</span>
+                  </span>
+                  <span class="dchev"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg></span>
+                </button>
+                <div class="dbody">
+                  <div class="trow strong"><span class="tdot"></span><span class="tnm">Network Models &amp; OSI</span><span class="bar tbar"><span class="pass" style="width:100%"></span></span><span class="tval">100%</span></div>
+                  <div class="trow strong"><span class="tdot"></span><span class="tnm">DNS Records &amp; DNSSEC</span><span class="bar tbar"><span class="pass" style="width:100%"></span></span><span class="tval">100%</span></div>
+                  <button class="disclose" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg>11 untouched topics</button>
+                  <div class="untouched-list">
+                    <div class="trow untouched"><span class="tdot"></span><span class="tnm">Cloud Networking &amp; VPCs</span><span class="bar tbar"></span><span class="tval">--</span></div>
+                    <div class="trow untouched"><span class="tdot"></span><span class="tnm">DNS &amp; DHCP</span><span class="bar tbar"></span><span class="tval">--</span></div>
+                    <div class="trow untouched"><span class="tdot"></span><span class="tnm">IPv6</span><span class="bar tbar"></span><span class="tval">--</span></div>
+                    <div class="trow untouched"><span class="tdot"></span><span class="tnm">NAT &amp; IP Services</span><span class="bar tbar"></span><span class="tval">--</span></div>
+                    <div class="trow untouched"><span class="tdot"></span><span class="tnm">Network Appliances</span><span class="bar tbar"></span><span class="tval">--</span></div>
+                    <div class="trow untouched"><span class="tdot"></span><span class="tnm">NTP/ICMP &amp; Traffic Types</span><span class="bar tbar"></span><span class="tval">--</span></div>
+                    <div class="trow untouched"><span class="tdot"></span><span class="tnm">Port Numbers</span><span class="bar tbar"></span><span class="tval">--</span></div>
+                    <div class="trow untouched"><span class="tdot"></span><span class="tnm">Subnetting &amp; IP Addressing</span><span class="bar tbar"></span><span class="tval">--</span></div>
+                    <div class="trow untouched"><span class="tdot"></span><span class="tnm">TCP/IP Applications</span><span class="bar tbar"></span><span class="tval">--</span></div>
+                    <div class="trow untouched"><span class="tdot"></span><span class="tnm">TCP/IP Basics</span><span class="bar tbar"></span><span class="tval">--</span></div>
+                    <div class="trow untouched"><span class="tdot"></span><span class="tnm">Virtualisation &amp; Cloud</span><span class="bar tbar"></span><span class="tval">--</span></div>
+                  </div>
                 </div>
               </div>
-            </div>
+            </section>
 
-            <!-- DOMAIN 3: Network Operations -->
-            <div class="domain reveal">
-              <button class="dhead" type="button">
-                <span class="dhead-main">
-                  <span class="dhead-row"><b>Network Operations</b><span class="exam">19% of exam</span></span>
-                  <span class="dhead-bar"><span class="bar"><span class="pass" style="width:100%"></span></span><span class="dhead-pct">100%</span></span>
-                  <span class="dhead-count">1 of 7 studied · 6 untouched</span>
-                </span>
-                <span class="dchev"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg></span>
-              </button>
-              <div class="dbody">
-                <div class="trow strong"><span class="tdot"></span><span class="tnm">BCDR &amp; Failover</span><span class="bar tbar"><span class="pass" style="width:100%"></span></span><span class="tval">100%</span></div>
-                <button class="disclose" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg>6 untouched topics</button>
-                <div class="untouched-list">
-                  <div class="trow untouched"><span class="tdot"></span><span class="tnm">Data Centres</span><span class="bar tbar"></span><span class="tval">--</span></div>
-                  <div class="trow untouched"><span class="tdot"></span><span class="tnm">Monitoring &amp; SNMP</span><span class="bar tbar"></span><span class="tval">--</span></div>
-                  <div class="trow untouched"><span class="tdot"></span><span class="tnm">Network Operations</span><span class="bar tbar"></span><span class="tval">--</span></div>
-                  <div class="trow untouched"><span class="tdot"></span><span class="tnm">SD-WAN &amp; SASE</span><span class="bar tbar"></span><span class="tval">--</span></div>
-                  <div class="trow untouched"><span class="tdot"></span><span class="tnm">SMB &amp; File Services</span><span class="bar tbar"></span><span class="tval">--</span></div>
-                  <div class="trow untouched"><span class="tdot"></span><span class="tnm">WAN Connectivity</span><span class="bar tbar"></span><span class="tval">--</span></div>
+            <!-- PAGE 3: IMPLEMENTATION -->
+            <section class="page" data-page="2">
+              <div class="sect reveal">Network Implementation</div>
+              <div class="domain open reveal">
+                <button class="dhead" type="button">
+                  <span class="dhead-main">
+                    <span class="dhead-row"><b>Network Implementation</b><span class="exam">20% of exam</span></span>
+                    <span class="dhead-bar"><span class="bar"><span class="miss" style="width:3%"></span></span><span class="dhead-pct">0%</span></span>
+                    <span class="dhead-count">1 of 13 studied · 12 untouched</span>
+                  </span>
+                  <span class="dchev"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg></span>
+                </button>
+                <div class="dbody">
+                  <div class="trow weak"><span class="tdot"></span><span class="tnm">Ethernet Basics</span><span class="bar tbar"><span class="miss" style="width:4%"></span></span><span class="tval">0%</span></div>
+                  <button class="disclose" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg>12 untouched topics</button>
+                  <div class="untouched-list">
+                    <div class="trow untouched"><span class="tdot"></span><span class="tnm">BGP</span><span class="bar tbar"></span><span class="tval">--</span></div>
+                    <div class="trow untouched"><span class="tdot"></span><span class="tnm">Cabling &amp; Topology</span><span class="bar tbar"></span><span class="tval">--</span></div>
+                    <div class="trow untouched"><span class="tdot"></span><span class="tnm">DC Architectures</span><span class="bar tbar"></span><span class="tval">--</span></div>
+                    <div class="trow untouched"><span class="tdot"></span><span class="tnm">Ethernet Standards</span><span class="bar tbar"></span><span class="tval">--</span></div>
+                    <div class="trow untouched"><span class="tdot"></span><span class="tnm">Networked Devices &amp; IoT</span><span class="bar tbar"></span><span class="tval">--</span></div>
+                    <div class="trow untouched"><span class="tdot"></span><span class="tnm">OSPF</span><span class="bar tbar"></span><span class="tval">--</span></div>
+                    <div class="trow untouched"><span class="tdot"></span><span class="tnm">Routing Protocols</span><span class="bar tbar"></span><span class="tval">--</span></div>
+                    <div class="trow untouched"><span class="tdot"></span><span class="tnm">SDN &amp; Automation</span><span class="bar tbar"></span><span class="tval">--</span></div>
+                    <div class="trow untouched"><span class="tdot"></span><span class="tnm">STP/RSTP</span><span class="bar tbar"></span><span class="tval">--</span></div>
+                    <div class="trow untouched"><span class="tdot"></span><span class="tnm">Switch &amp; VLANs</span><span class="bar tbar"></span><span class="tval">--</span></div>
+                    <div class="trow untouched"><span class="tdot"></span><span class="tnm">VLAN Trunking</span><span class="bar tbar"></span><span class="tval">--</span></div>
+                    <div class="trow untouched"><span class="tdot"></span><span class="tnm">Wireless Networking</span><span class="bar tbar"></span><span class="tval">--</span></div>
+                  </div>
                 </div>
               </div>
-            </div>
+            </section>
 
-            <!-- DOMAIN 4: Network Security -->
-            <div class="domain reveal">
-              <button class="dhead" type="button">
-                <span class="dhead-main">
-                  <span class="dhead-row"><b>Network Security</b><span class="exam">14% of exam</span></span>
-                  <span class="dhead-bar"><span class="bar"><span style="width:75%"></span></span><span class="dhead-pct">75%</span></span>
-                  <span class="dhead-count">1 of 11 studied · 10 untouched</span>
-                </span>
-                <span class="dchev"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg></span>
-              </button>
-              <div class="dbody">
-                <div class="trow partial"><span class="tdot"></span><span class="tnm">PKI &amp; Certificates</span><span class="bar tbar"><span style="width:75%"></span></span><span class="tval">75%</span></div>
-                <button class="disclose" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg>10 untouched topics</button>
-                <div class="untouched-list">
-                  <div class="trow untouched"><span class="tdot"></span><span class="tnm">AAA &amp; Authentication</span><span class="bar tbar"></span><span class="tval">--</span></div>
-                  <div class="trow untouched"><span class="tdot"></span><span class="tnm">Attacks &amp; Threats</span><span class="bar tbar"></span><span class="tval">--</span></div>
-                  <div class="trow untouched"><span class="tdot"></span><span class="tnm">Firewalls &amp; DMZ</span><span class="bar tbar"></span><span class="tval">--</span></div>
-                  <div class="trow untouched"><span class="tdot"></span><span class="tnm">IPsec &amp; VPN Protocols</span><span class="bar tbar"></span><span class="tval">--</span></div>
-                  <div class="trow untouched"><span class="tdot"></span><span class="tnm">IPsec VPN</span><span class="bar tbar"></span><span class="tval">--</span></div>
-                  <div class="trow untouched"><span class="tdot"></span><span class="tnm">Physical Security</span><span class="bar tbar"></span><span class="tval">--</span></div>
-                  <div class="trow untouched"><span class="tdot"></span><span class="tnm">Protecting Networks</span><span class="bar tbar"></span><span class="tval">--</span></div>
-                  <div class="trow untouched"><span class="tdot"></span><span class="tnm">Securing TCP/IP</span><span class="bar tbar"></span><span class="tval">--</span></div>
-                  <div class="trow untouched"><span class="tdot"></span><span class="tnm">SSL/TLS VPN</span><span class="bar tbar"></span><span class="tval">--</span></div>
-                  <div class="trow untouched"><span class="tdot"></span><span class="tnm">WPA3 &amp; EAP</span><span class="bar tbar"></span><span class="tval">--</span></div>
+            <!-- PAGE 4: OPERATIONS -->
+            <section class="page" data-page="3">
+              <div class="sect reveal">Network Operations</div>
+              <div class="domain open reveal">
+                <button class="dhead" type="button">
+                  <span class="dhead-main">
+                    <span class="dhead-row"><b>Network Operations</b><span class="exam">19% of exam</span></span>
+                    <span class="dhead-bar"><span class="bar"><span class="pass" style="width:100%"></span></span><span class="dhead-pct">100%</span></span>
+                    <span class="dhead-count">1 of 7 studied · 6 untouched</span>
+                  </span>
+                  <span class="dchev"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg></span>
+                </button>
+                <div class="dbody">
+                  <div class="trow strong"><span class="tdot"></span><span class="tnm">BCDR &amp; Failover</span><span class="bar tbar"><span class="pass" style="width:100%"></span></span><span class="tval">100%</span></div>
+                  <button class="disclose" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg>6 untouched topics</button>
+                  <div class="untouched-list">
+                    <div class="trow untouched"><span class="tdot"></span><span class="tnm">Data Centres</span><span class="bar tbar"></span><span class="tval">--</span></div>
+                    <div class="trow untouched"><span class="tdot"></span><span class="tnm">Monitoring &amp; SNMP</span><span class="bar tbar"></span><span class="tval">--</span></div>
+                    <div class="trow untouched"><span class="tdot"></span><span class="tnm">Network Operations</span><span class="bar tbar"></span><span class="tval">--</span></div>
+                    <div class="trow untouched"><span class="tdot"></span><span class="tnm">SD-WAN &amp; SASE</span><span class="bar tbar"></span><span class="tval">--</span></div>
+                    <div class="trow untouched"><span class="tdot"></span><span class="tnm">SMB &amp; File Services</span><span class="bar tbar"></span><span class="tval">--</span></div>
+                    <div class="trow untouched"><span class="tdot"></span><span class="tnm">WAN Connectivity</span><span class="bar tbar"></span><span class="tval">--</span></div>
+                  </div>
                 </div>
               </div>
-            </div>
+            </section>
 
-            <!-- DOMAIN 5: Network Troubleshooting -->
-            <div class="domain reveal">
-              <button class="dhead" type="button">
-                <span class="dhead-main">
-                  <span class="dhead-row"><b>Network Troubleshooting</b><span class="exam">24% of exam</span></span>
-                  <span class="dhead-bar"><span class="bar"><span style="width:50%"></span></span><span class="dhead-pct">50%</span></span>
-                  <span class="dhead-count">2 of 7 studied · 5 untouched</span>
-                </span>
-                <span class="dchev"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg></span>
-              </button>
-              <div class="dbody">
-                <div class="trow weak"><span class="tdot"></span><span class="tnm">Cable Issues</span><span class="bar tbar"><span class="miss" style="width:4%"></span></span><span class="tval">0%</span></div>
-                <div class="trow strong"><span class="tdot"></span><span class="tnm">7-Step Methodology</span><span class="bar tbar"><span class="pass" style="width:100%"></span></span><span class="tval">100%</span></div>
-                <button class="disclose" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg>5 untouched topics</button>
-                <div class="untouched-list">
-                  <div class="trow untouched"><span class="tdot"></span><span class="tnm">Connection Issues</span><span class="bar tbar"></span><span class="tval">--</span></div>
-                  <div class="trow untouched"><span class="tdot"></span><span class="tnm">Perf Issues</span><span class="bar tbar"></span><span class="tval">--</span></div>
-                  <div class="trow untouched"><span class="tdot"></span><span class="tnm">Service Issues</span><span class="bar tbar"></span><span class="tval">--</span></div>
-                  <div class="trow untouched"><span class="tdot"></span><span class="tnm">Troubleshooting &amp; Tools</span><span class="bar tbar"></span><span class="tval">--</span></div>
+            <!-- PAGE 5: SECURITY -->
+            <section class="page" data-page="4">
+              <div class="sect reveal">Network Security</div>
+              <div class="domain open reveal">
+                <button class="dhead" type="button">
+                  <span class="dhead-main">
+                    <span class="dhead-row"><b>Network Security</b><span class="exam">14% of exam</span></span>
+                    <span class="dhead-bar"><span class="bar"><span style="width:75%"></span></span><span class="dhead-pct">75%</span></span>
+                    <span class="dhead-count">1 of 11 studied · 10 untouched</span>
+                  </span>
+                  <span class="dchev"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg></span>
+                </button>
+                <div class="dbody">
+                  <div class="trow partial"><span class="tdot"></span><span class="tnm">PKI &amp; Certificates</span><span class="bar tbar"><span style="width:75%"></span></span><span class="tval">75%</span></div>
+                  <button class="disclose" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg>10 untouched topics</button>
+                  <div class="untouched-list">
+                    <div class="trow untouched"><span class="tdot"></span><span class="tnm">AAA &amp; Authentication</span><span class="bar tbar"></span><span class="tval">--</span></div>
+                    <div class="trow untouched"><span class="tdot"></span><span class="tnm">Attacks &amp; Threats</span><span class="bar tbar"></span><span class="tval">--</span></div>
+                    <div class="trow untouched"><span class="tdot"></span><span class="tnm">Firewalls &amp; DMZ</span><span class="bar tbar"></span><span class="tval">--</span></div>
+                    <div class="trow untouched"><span class="tdot"></span><span class="tnm">IPsec &amp; VPN Protocols</span><span class="bar tbar"></span><span class="tval">--</span></div>
+                    <div class="trow untouched"><span class="tdot"></span><span class="tnm">IPsec VPN</span><span class="bar tbar"></span><span class="tval">--</span></div>
+                    <div class="trow untouched"><span class="tdot"></span><span class="tnm">Physical Security</span><span class="bar tbar"></span><span class="tval">--</span></div>
+                    <div class="trow untouched"><span class="tdot"></span><span class="tnm">Protecting Networks</span><span class="bar tbar"></span><span class="tval">--</span></div>
+                    <div class="trow untouched"><span class="tdot"></span><span class="tnm">Securing TCP/IP</span><span class="bar tbar"></span><span class="tval">--</span></div>
+                    <div class="trow untouched"><span class="tdot"></span><span class="tnm">SSL/TLS VPN</span><span class="bar tbar"></span><span class="tval">--</span></div>
+                    <div class="trow untouched"><span class="tdot"></span><span class="tnm">WPA3 &amp; EAP</span><span class="bar tbar"></span><span class="tval">--</span></div>
+                  </div>
                 </div>
               </div>
-            </div>
+            </section>
 
-            <!-- WEAKEST TOPICS -->
-            <div class="sect reveal">Your weakest topics</div>
-            <div class="listcard reveal">
-              <div class="lrow weak"><span class="tdot"></span><span class="lt"><b>Ethernet Basics</b><span>Network Implementation</span></span><span class="lpct">0%</span></div>
-              <div class="lrow weak"><span class="tdot"></span><span class="lt"><b>Cable Issues</b><span>Network Troubleshooting</span></span><span class="lpct">0%</span></div>
-              <div class="lrow partial"><span class="tdot"></span><span class="lt"><b>PKI &amp; Certificates</b><span>Network Security</span></span><span class="lpct">75%</span></div>
-              <div class="lrow strong"><span class="tdot"></span><span class="lt"><b>Network Models &amp; OSI</b><span>Networking Concepts</span></span><span class="lpct">100%</span></div>
-              <div class="lrow strong"><span class="tdot"></span><span class="lt"><b>DNS Records &amp; DNSSEC</b><span>Networking Concepts</span></span><span class="lpct">100%</span></div>
-            </div>
+            <!-- PAGE 6: TROUBLESHOOTING -->
+            <section class="page" data-page="5">
+              <div class="sect reveal">Network Troubleshooting</div>
+              <div class="domain open reveal">
+                <button class="dhead" type="button">
+                  <span class="dhead-main">
+                    <span class="dhead-row"><b>Network Troubleshooting</b><span class="exam">24% of exam</span></span>
+                    <span class="dhead-bar"><span class="bar"><span style="width:50%"></span></span><span class="dhead-pct">50%</span></span>
+                    <span class="dhead-count">2 of 7 studied · 5 untouched</span>
+                  </span>
+                  <span class="dchev"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg></span>
+                </button>
+                <div class="dbody">
+                  <div class="trow weak"><span class="tdot"></span><span class="tnm">Cable Issues</span><span class="bar tbar"><span class="miss" style="width:4%"></span></span><span class="tval">0%</span></div>
+                  <div class="trow strong"><span class="tdot"></span><span class="tnm">7-Step Methodology</span><span class="bar tbar"><span class="pass" style="width:100%"></span></span><span class="tval">100%</span></div>
+                  <button class="disclose" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg>5 untouched topics</button>
+                  <div class="untouched-list">
+                    <div class="trow untouched"><span class="tdot"></span><span class="tnm">Connection Issues</span><span class="bar tbar"></span><span class="tval">--</span></div>
+                    <div class="trow untouched"><span class="tdot"></span><span class="tnm">Perf Issues</span><span class="bar tbar"></span><span class="tval">--</span></div>
+                    <div class="trow untouched"><span class="tdot"></span><span class="tnm">Service Issues</span><span class="bar tbar"></span><span class="tval">--</span></div>
+                    <div class="trow untouched"><span class="tdot"></span><span class="tnm">Troubleshooting &amp; Tools</span><span class="bar tbar"></span><span class="tval">--</span></div>
+                  </div>
+                </div>
+              </div>
+            </section>
 
-            <!-- STRONG AND MASTERED -->
-            <div class="sect reveal">Strong and mastered</div>
-            <div class="listcard reveal">
-              <div class="lrow strong"><span class="tdot"></span><span class="lt"><b>Network Models &amp; OSI</b><span>Networking Concepts</span></span><span class="lchip">100% mastered</span></div>
-              <div class="lrow strong"><span class="tdot"></span><span class="lt"><b>DNS Records &amp; DNSSEC</b><span>Networking Concepts</span></span><span class="lchip">100% mastered</span></div>
-              <div class="lrow strong"><span class="tdot"></span><span class="lt"><b>BCDR &amp; Failover</b><span>Network Operations</span></span><span class="lchip">100% mastered</span></div>
-              <div class="lrow strong"><span class="tdot"></span><span class="lt"><b>7-Step Methodology</b><span>Network Troubleshooting</span></span><span class="lchip">100% mastered</span></div>
-            </div>
+            <!-- PAGE 7: INSIGHTS -->
+            <section class="page" data-page="6">
+              <!-- WEAKEST TOPICS -->
+              <div class="sect reveal">Your weakest topics</div>
+              <div class="listcard reveal">
+                <div class="lrow weak"><span class="tdot"></span><span class="lt"><b>Ethernet Basics</b><span>Network Implementation</span></span><span class="lpct">0%</span></div>
+                <div class="lrow weak"><span class="tdot"></span><span class="lt"><b>Cable Issues</b><span>Network Troubleshooting</span></span><span class="lpct">0%</span></div>
+                <div class="lrow partial"><span class="tdot"></span><span class="lt"><b>PKI &amp; Certificates</b><span>Network Security</span></span><span class="lpct">75%</span></div>
+                <div class="lrow strong"><span class="tdot"></span><span class="lt"><b>Network Models &amp; OSI</b><span>Networking Concepts</span></span><span class="lpct">100%</span></div>
+                <div class="lrow strong"><span class="tdot"></span><span class="lt"><b>DNS Records &amp; DNSSEC</b><span>Networking Concepts</span></span><span class="lpct">100%</span></div>
+              </div>
 
-            <!-- UNTOUCHED TAG CLOUD -->
-            <div class="sect reveal">Untouched · 43 never studied</div>
-            <div class="cloud reveal">
-              <span class="tag">Cloud Networking &amp; VPCs</span><span class="tag">DNS &amp; DHCP</span><span class="tag">IPv6</span><span class="tag">NAT &amp; IP Services</span><span class="tag">Network Appliances</span><span class="tag">NTP/ICMP &amp; Traffic Types</span><span class="tag">Port Numbers</span><span class="tag">Subnetting &amp; IP Addressing</span><span class="tag">TCP/IP Applications</span><span class="tag">TCP/IP Basics</span><span class="tag">Virtualisation &amp; Cloud</span><span class="tag">BGP</span><span class="tag">Cabling &amp; Topology</span><span class="tag">DC Architectures</span><span class="tag">Ethernet Standards</span><span class="tag">Networked Devices &amp; IoT</span><span class="tag">OSPF</span><span class="tag">Routing Protocols</span><span class="tag">SDN &amp; Automation</span><span class="tag">STP/RSTP</span><span class="tag">Switch &amp; VLANs</span><span class="tag">VLAN Trunking</span><span class="tag">Wireless Networking</span><span class="tag">Data Centres</span><span class="tag">Monitoring &amp; SNMP</span><span class="tag">Network Operations</span><span class="tag">SD-WAN &amp; SASE</span><span class="tag">SMB &amp; File Services</span><span class="tag">WAN Connectivity</span><span class="tag">AAA &amp; Authentication</span><span class="tag">Attacks &amp; Threats</span><span class="tag">Firewalls &amp; DMZ</span><span class="tag">IPsec &amp; VPN Protocols</span><span class="tag">IPsec VPN</span><span class="tag">Physical Security</span><span class="tag">Protecting Networks</span><span class="tag">Securing TCP/IP</span><span class="tag">SSL/TLS VPN</span><span class="tag">WPA3 &amp; EAP</span><span class="tag">Connection Issues</span><span class="tag">Perf Issues</span><span class="tag">Service Issues</span><span class="tag">Troubleshooting &amp; Tools</span>
-            </div>
+              <!-- STRONG AND MASTERED -->
+              <div class="sect reveal">Strong and mastered</div>
+              <div class="listcard reveal">
+                <div class="lrow strong"><span class="tdot"></span><span class="lt"><b>Network Models &amp; OSI</b><span>Networking Concepts</span></span><span class="lchip">100% mastered</span></div>
+                <div class="lrow strong"><span class="tdot"></span><span class="lt"><b>DNS Records &amp; DNSSEC</b><span>Networking Concepts</span></span><span class="lchip">100% mastered</span></div>
+                <div class="lrow strong"><span class="tdot"></span><span class="lt"><b>BCDR &amp; Failover</b><span>Network Operations</span></span><span class="lchip">100% mastered</span></div>
+                <div class="lrow strong"><span class="tdot"></span><span class="lt"><b>7-Step Methodology</b><span>Network Troubleshooting</span></span><span class="lchip">100% mastered</span></div>
+              </div>
 
-            <!-- RECENTLY STUDIED -->
-            <div class="sect reveal">Recently studied</div>
-            <div class="strip reveal">
-              <div class="rcard"><b>Network Models &amp; OSI</b><span class="bar rbar"><span class="pass" style="width:100%"></span></span><span class="rmeta"><span class="rpct">100%</span><span class="rago">1 day ago</span></span></div>
-              <div class="rcard"><b>DNS Records &amp; DNSSEC</b><span class="bar rbar"><span class="pass" style="width:100%"></span></span><span class="rmeta"><span class="rpct">100%</span><span class="rago">1 day ago</span></span></div>
-              <div class="rcard"><b>BCDR &amp; Failover</b><span class="bar rbar"><span class="pass" style="width:100%"></span></span><span class="rmeta"><span class="rpct">100%</span><span class="rago">2 days ago</span></span></div>
-              <div class="rcard"><b>7-Step Methodology</b><span class="bar rbar"><span class="pass" style="width:100%"></span></span><span class="rmeta"><span class="rpct">100%</span><span class="rago">2 days ago</span></span></div>
-              <div class="rcard"><b>PKI &amp; Certificates</b><span class="bar rbar"><span style="width:75%"></span></span><span class="rmeta"><span class="rpct">75%</span><span class="rago">3 days ago</span></span></div>
-              <div class="rcard"><b>Cable Issues</b><span class="bar rbar"><span class="miss" style="width:4%"></span></span><span class="rmeta"><span class="rpct" style="color:var(--miss)">0%</span><span class="rago">4 days ago</span></span></div>
-              <div class="rcard"><b>Ethernet Basics</b><span class="bar rbar"><span class="miss" style="width:4%"></span></span><span class="rmeta"><span class="rpct" style="color:var(--miss)">0%</span><span class="rago">5 days ago</span></span></div>
-            </div>
+              <!-- UNTOUCHED TAG CLOUD -->
+              <div class="sect reveal">Untouched · 43 never studied</div>
+              <div class="cloud reveal">
+                <span class="tag">Cloud Networking &amp; VPCs</span><span class="tag">DNS &amp; DHCP</span><span class="tag">IPv6</span><span class="tag">NAT &amp; IP Services</span><span class="tag">Network Appliances</span><span class="tag">NTP/ICMP &amp; Traffic Types</span><span class="tag">Port Numbers</span><span class="tag">Subnetting &amp; IP Addressing</span><span class="tag">TCP/IP Applications</span><span class="tag">TCP/IP Basics</span><span class="tag">Virtualisation &amp; Cloud</span><span class="tag">BGP</span><span class="tag">Cabling &amp; Topology</span><span class="tag">DC Architectures</span><span class="tag">Ethernet Standards</span><span class="tag">Networked Devices &amp; IoT</span><span class="tag">OSPF</span><span class="tag">Routing Protocols</span><span class="tag">SDN &amp; Automation</span><span class="tag">STP/RSTP</span><span class="tag">Switch &amp; VLANs</span><span class="tag">VLAN Trunking</span><span class="tag">Wireless Networking</span><span class="tag">Data Centres</span><span class="tag">Monitoring &amp; SNMP</span><span class="tag">Network Operations</span><span class="tag">SD-WAN &amp; SASE</span><span class="tag">SMB &amp; File Services</span><span class="tag">WAN Connectivity</span><span class="tag">AAA &amp; Authentication</span><span class="tag">Attacks &amp; Threats</span><span class="tag">Firewalls &amp; DMZ</span><span class="tag">IPsec &amp; VPN Protocols</span><span class="tag">IPsec VPN</span><span class="tag">Physical Security</span><span class="tag">Protecting Networks</span><span class="tag">Securing TCP/IP</span><span class="tag">SSL/TLS VPN</span><span class="tag">WPA3 &amp; EAP</span><span class="tag">Connection Issues</span><span class="tag">Perf Issues</span><span class="tag">Service Issues</span><span class="tag">Troubleshooting &amp; Tools</span>
+              </div>
+
+              <!-- RECENTLY STUDIED -->
+              <div class="sect reveal">Recently studied</div>
+              <div class="strip reveal">
+                <div class="rcard"><b>Network Models &amp; OSI</b><span class="bar rbar"><span class="pass" style="width:100%"></span></span><span class="rmeta"><span class="rpct">100%</span><span class="rago">1 day ago</span></span></div>
+                <div class="rcard"><b>DNS Records &amp; DNSSEC</b><span class="bar rbar"><span class="pass" style="width:100%"></span></span><span class="rmeta"><span class="rpct">100%</span><span class="rago">1 day ago</span></span></div>
+                <div class="rcard"><b>BCDR &amp; Failover</b><span class="bar rbar"><span class="pass" style="width:100%"></span></span><span class="rmeta"><span class="rpct">100%</span><span class="rago">2 days ago</span></span></div>
+                <div class="rcard"><b>7-Step Methodology</b><span class="bar rbar"><span class="pass" style="width:100%"></span></span><span class="rmeta"><span class="rpct">100%</span><span class="rago">2 days ago</span></span></div>
+                <div class="rcard"><b>PKI &amp; Certificates</b><span class="bar rbar"><span style="width:75%"></span></span><span class="rmeta"><span class="rpct">75%</span><span class="rago">3 days ago</span></span></div>
+                <div class="rcard"><b>Cable Issues</b><span class="bar rbar"><span class="miss" style="width:4%"></span></span><span class="rmeta"><span class="rpct" style="color:var(--miss)">0%</span><span class="rago">4 days ago</span></span></div>
+                <div class="rcard"><b>Ethernet Basics</b><span class="bar rbar"><span class="miss" style="width:4%"></span></span><span class="rmeta"><span class="rpct" style="color:var(--miss)">0%</span><span class="rago">5 days ago</span></span></div>
+              </div>
+            </section>
 
           </div>
 
@@ -476,7 +516,7 @@
 
         </div>
       </div>
-      <p class="hint">Phase 1 mockup. Tap a domain header to collapse it, or open the untouched lists within each domain.</p>
+      <p class="hint">Phase 1 mockup. Swipe left or right to move between pages, or tap a chip to jump. Tap a domain header to collapse it.</p>
     </div>
   </div>
 
@@ -489,14 +529,45 @@
       document.getElementById('themeToggle').addEventListener('click', function(){ html.setAttribute('data-theme', html.getAttribute('data-theme') === 'light' ? 'dark' : 'light'); paint(); });
       paint();
 
-      // Coverage ring fills toward 14% on load (goal-gradient, honest framing).
       var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+      // Coverage ring fills toward 14% on load (goal-gradient, honest framing).
       var ring = document.getElementById('standRing');
       if (ring){
         var circ = 169.6, off = circ * (1 - 0.14);
         if (reduce){ ring.style.strokeDashoffset = off; }
         else { requestAnimationFrame(function(){ ring.style.strokeDashoffset = off; }); }
       }
+
+      // Swipe-paged segmented control + pager. Native scroll-snap, no libraries.
+      var seg = document.getElementById('seg');
+      var pager = document.getElementById('pager');
+      var chips = Array.prototype.slice.call(seg.querySelectorAll('.chip'));
+      var pages = Array.prototype.slice.call(pager.querySelectorAll('.page'));
+
+      // Tap a chip -> jump the pager to that page.
+      chips.forEach(function(chip){
+        chip.addEventListener('click', function(){
+          var i = +chip.getAttribute('data-page');
+          var page = pages[i];
+          if (page) pager.scrollTo({ left: page.offsetLeft, behavior: reduce ? 'auto' : 'smooth' });
+        });
+      });
+
+      // Swiping the pager updates the active chip (no scroll listeners).
+      function setActive(i){
+        chips.forEach(function(c, j){ c.classList.toggle('on', j === i); });
+        var chip = chips[i];
+        if (chip) chip.scrollIntoView({ inline: 'center', block: 'nearest' });
+      }
+      var io = new IntersectionObserver(function(entries){
+        entries.forEach(function(entry){
+          if (entry.isIntersecting && entry.intersectionRatio >= 0.6){
+            setActive(+entry.target.getAttribute('data-page'));
+          }
+        });
+      }, { root: pager, threshold: 0.6 });
+      pages.forEach(function(p){ io.observe(p); });
 
       // Domain headers collapse; untouched lists disclose. Calm, tidy.
       document.querySelectorAll('.dhead').forEach(function(btn){
