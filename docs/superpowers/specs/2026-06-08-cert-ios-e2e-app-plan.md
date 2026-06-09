@@ -1,6 +1,6 @@
 # CertAnvil iOS E2E Dummy App — Build Plan
 
-**Status:** ✅ Built — Phases 0–4 done; MVP flow complete & verified in-browser. Phase 5 (fidelity harness) + Phase 6 (Capacitor) remain. See **§11 Build log** for the as-built state (the plan §1–§10 below is preserved as original design intent).
+**Status:** ✅ Built — Phases 0–5 done; MVP flow complete & verified in-browser; fidelity gate green (80 baselines). Phase 6 (Capacitor) remains. See **§11 Build log** for the as-built state (the plan §1–§10 below is preserved as original design intent).
 **Date:** 2026-06-08 (plan) · last updated 2026-06-09 (build log)
 **Branch:** `feat/cert-ios-e2e` off `origin/main` — **not pushed, nothing merged.**
 **Author:** planning session
@@ -421,13 +421,28 @@ screens** were created (4-pass pipeline) and wired in:
 - Two independent agent reviews (wiring + onboarding/persona) confirmed **no missing screens,
   no dead-ends** across the MVP flow.
 
-### 11e. Remaining / next steps
-1. **Phase 5 — Playwright pixel-diff fidelity harness** (assert each live `.screen` == mockup,
-   both themes; `playwright.config.js` exists). *Blocking check once built.*
-2. **Phase 6 — Capacitor wrap + iOS Simulator** (needs Xcode/CocoaPods). ⚠️ Open tension:
+### 11e. Phase 5 — fidelity harness (DONE, 2026-06-09)
+- **`tests/e2e/cert-ios-fidelity.spec.js`** + a dedicated `cert-ios-fidelity` Playwright
+  project (390×844 @1x, `reducedMotion:'reduce'`) on its own **static** server (`python3
+  -m http.server 3133` — the :3131 `serve -s` SPA-rewrite masks `/mockups/*.html`).
+- **80 golden baselines** committed under `tests/e2e/cert-ios-fidelity.spec.js-snapshots/`:
+  every registered screen × {light, dark} + Pro variants of {home, hub, settings,
+  my-certs-pro}. Run: `npm run test:fidelity`; reseed after an INTENDED change with
+  `npm run test:fidelity -- --update-snapshots`. **A diff = release blocker.**
+- **Mechanism:** captures the live shell's `.screen` (golden-baseline mode, not two-buffer
+  mockup-vs-live — avoids a pixelmatch/pngjs dep; baselines seeded from a build verified
+  faithful to the mockups). Animations frozen (reducedMotion + `animations:'disabled'`);
+  `<canvas>` masked (constellation / ECG / confetti draw via rAF). `maxDiffPixelRatio 0.01`.
+- **Notes:** `rollout` (onboarding-rollout-flow) is excluded — it's a flow-diagram explainer
+  with no `.screen`. Local-only gate for now; CI promotion needs web-font determinism.
+  Test-side gotcha handled: `resetTo` no-ops during the boot push's `animating` lock, so
+  showScreen re-issues it in a poll loop until the target screen mounts.
+
+### 11f. Remaining / next steps
+1. **Phase 6 — Capacitor wrap + iOS Simulator** (needs Xcode/CocoaPods). ⚠️ Open tension:
    pixel-fidelity may not survive **Mobile Safari → WKWebView** (fonts, antialiasing, scroll,
    tap-highlight) — test WKWebView render early (see §7).
-3. **Post-MVP:** real **Drills**; real SR cadence algorithm; minor copy nits.
-4. **Known stub:** Settings readiness reveal's "See how readiness works" link is a no-op
+2. **Post-MVP:** real **Drills**; real SR cadence algorithm; minor copy nits.
+3. **Known stub:** Settings readiness reveal's "See how readiness works" link is a no-op
    (would open an explainer in the real app).
-5. **Later:** push branch / open PR; real-app Apple-compliance wiring.
+4. **Later:** push branch / open PR; real-app Apple-compliance wiring.

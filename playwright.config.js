@@ -16,7 +16,7 @@ module.exports = defineConfig({
     // Tests must pass here before any deploy.
     // v7.8.2: cert-app projects ignore landing.spec.js — that targets the
     // landing/ codebase on :3132 via the `landing` project below.
-    { name: 'chromium', testIgnore: /landing\.spec\.js/, use: { browserName: 'chromium' } },
+    { name: 'chromium', testIgnore: /landing\.spec\.js|cert-ios-fidelity\.spec\.js/, use: { browserName: 'chromium' } },
 
     // v4.99.29 (iOS Plan Phase 3) — WebKit + Mobile Safari projects.
     // These run iOS Safari behavior locally (~95% match — Playwright's
@@ -34,14 +34,32 @@ module.exports = defineConfig({
     // Once stable, promote to CI by removing the --project=chromium
     // filter in .github/workflows/ci.yml. See IOS_TESTING.md for the
     // full recipe + iPhone-via-USB Develop-menu setup.
-    { name: 'webkit', testIgnore: /landing\.spec\.js/, use: { ...devices['Desktop Safari'] } },
-    { name: 'mobile-safari', testIgnore: /landing\.spec\.js/, use: { ...devices['iPhone 14'] } },
+    { name: 'webkit', testIgnore: /landing\.spec\.js|cert-ios-fidelity\.spec\.js/, use: { ...devices['Desktop Safari'] } },
+    { name: 'mobile-safari', testIgnore: /landing\.spec\.js|cert-ios-fidelity\.spec\.js/, use: { ...devices['iPhone 14'] } },
 
     // v7.8.2: landing-site E2E project. Runs ONLY landing.spec.js against the
     // landing/ codebase served on :3132 (second webServer below). CI gates on
     // it via `--project=landing` alongside chromium. Guards the cd8c784
     // cert-coverage contract (8 canonical exams, no phantom certs).
     { name: 'landing', testMatch: /landing\.spec\.js/, use: { browserName: 'chromium', baseURL: 'http://localhost:3132' } },
+
+    // Phase 5 — cert-ios fidelity pixel-diff harness. Fixed iPhone canvas
+    // (390×844 @1x so the shell renders .screen at native scale=1), reduced
+    // motion. Local-only gate for now (web-font determinism + canvas screens
+    // need triage before CI promotion). Run: npm run test:fidelity
+    {
+      name: 'cert-ios-fidelity',
+      testMatch: /cert-ios-fidelity\.spec\.js/,
+      use: {
+        browserName: 'chromium',
+        // plain static server (:3133) — the :3131 server uses `serve -s` (SPA
+        // rewrite), which would mask /mockups/*.html behind index.html.
+        baseURL: 'http://localhost:3133',
+        viewport: { width: 390, height: 844 },
+        deviceScaleFactor: 1,
+        reducedMotion: 'reduce',
+      },
+    },
   ],
   webServer: [
     {
@@ -59,6 +77,14 @@ module.exports = defineConfig({
       port: 3132,
       reuseExistingServer: !process.env.CI,
       timeout: 10000,
+    },
+    // Phase 5 fidelity — plain static file server (NO SPA rewrite) so the shell
+    // and its /mockups/*.html iframes resolve to real files.
+    {
+      command: 'python3 -m http.server 3133',
+      port: 3133,
+      reuseExistingServer: !process.env.CI,
+      timeout: 15000,
     },
   ],
 });

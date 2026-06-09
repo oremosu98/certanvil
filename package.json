@@ -9,6 +9,7 @@
     "test:webkit": "npx playwright test --project=webkit",
     "test:mobile-safari": "npx playwright test --project=mobile-safari",
     "test:ios": "npx playwright test --project=webkit --project=mobile-safari",
+    "test:fidelity": "npx playwright test --project=cert-ios-fidelity",
     "test": "npm run test:uat && npm run test:e2e",
     "serve": "npx serve . -l 3131 -s",
     "serve:dist": "npx serve dist -l 3132 -s",
