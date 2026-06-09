@@ -324,19 +324,20 @@
 
             <!-- COUNT -->
             <div class="sect reveal">Count</div>
-            <div class="count-echo reveal"><span class="bn" id="countNum">20</span><span class="bl">questions</span></div>
+            <div class="count-echo reveal"><span class="bn" id="countNum">10</span><span class="bl">questions</span></div>
             <div class="seg reveal" id="countSeg" role="group" aria-label="Question count">
-              <button type="button" aria-pressed="false">10</button>
-              <button type="button" aria-pressed="true">20</button>
-              <button type="button" aria-pressed="false">30</button>
-              <button type="button" aria-pressed="false">45</button>
+              <button type="button" aria-pressed="true">10</button>
+              <button type="button" aria-pressed="false" data-overcap="20">20</button>
+              <button type="button" aria-pressed="false" data-overcap="30">30</button>
+              <button type="button" aria-pressed="false" data-overcap="45">45</button>
             </div>
+            <p class="reveal" id="freeCapNote" style="margin:9px 2px 0;font:600 12px/1.45 Inter,sans-serif;color:var(--muted);">Free covers <b style="color:var(--ink-soft)">15 questions a day</b>. Longer sets are Pro.</p>
           </div>
 
           <div class="foot">
             <button class="btn-primary" type="button">
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4l14 8-14 8V4z"></path></svg>
-              Start quiz <span class="qc" id="footCount">20 Q</span>
+              Start quiz <span class="qc" id="footCount">10 Q</span>
             </button>
             <p class="foot-note">Mixed spread across all topics, mixed difficulty.</p>
           </div>

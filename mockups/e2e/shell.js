@@ -44,6 +44,7 @@
     'log-result'        : 'cert-ios-log-result.html',
     'review'            : 'cert-ios-review.html',
     'review-answers'    : 'cert-ios-review-answers.html',
+    'daily-limit'       : 'cert-ios-daily-limit.html',
     'free-capped-home'  : 'onboarding-free-capped-home.html',
     'upgrade-sheet'     : 'onboarding-upgrade-sheet.html',
     'pro-iap'           : 'onboarding-pro-iap.html',
@@ -137,6 +138,8 @@
                            {text:'Review all',    to:'review-answers'},
                            {text:'Menu',          to:'home'} ],
     'review-answers'   : [ {sel:'#done', to:'pop'} ],
+    // free daily-limit blocker: upsell -> paywall; "do 15" -> a (free-sized) quiz
+    'daily-limit'      : [ {sel:'#goPro', to:'upgrade-sheet'}, {sel:'#do15', to:'quiz'} ],
     // log-result: after saving, "See it in your hub" -> hub (Passed state)
     'log-result'       : [ {sel:'#toHub', to:'hub'} ]
   };
@@ -232,6 +235,12 @@
         planFree.click();  // back to free view
       }
     }
+    if (id === 'custom-quiz') {
+      // free: show the cap note + dim the over-cap options; pro: clear both
+      var note = doc.getElementById('freeCapNote');
+      if (note) note.style.display = demoPro ? 'none' : '';
+      doc.querySelectorAll('[data-overcap]').forEach(function (el) { el.style.opacity = demoPro ? '' : '0.5'; });
+    }
   }
 
   function fit() {
@@ -313,6 +322,18 @@
               setTimeout(function () { push('pro-welcome'); }, 120);
             });
           }
+        });
+      }
+      // custom-quiz: a FREE user picking a set bigger than the daily cap (20/30/45)
+      // hits the daily-limit blocker. Pro removes the cap (mockup selects normally).
+      if (id === 'custom-quiz') {
+        doc.querySelectorAll('[data-overcap]').forEach(function (el) {
+          if (el.__e2e_bound) return; el.__e2e_bound = 1;
+          el.addEventListener('click', function () {
+            if (isDemoPro()) return; // Pro: no cap
+            try { localStorage.setItem('e2e_overcap', el.getAttribute('data-overcap')); } catch (_) {}
+            setTimeout(function () { push('daily-limit'); }, 60);
+          });
         });
       }
       // reflect current Pro state into this screen (e.g. unlock the hub)
