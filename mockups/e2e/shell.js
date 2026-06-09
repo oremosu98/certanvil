@@ -84,6 +84,8 @@
                            {sel:'.rec.only-returning', to:'review'},
                            {sel:'.rec.only-new', to:'quiz'} ],
     'review'           : [ {sel:'#toHome', to:'home'} ],
+    // report is a sheet; its X / Cancel close it (pop back to the previous screen)
+    'report'           : [ {sel:'#closeBtn', to:'pop'}, {sel:'#cancelBtn', to:'pop'} ],
     // hub: tapping a locked cert opens the upsell sheet (mockup JS); the sheet's
     // "Unlock with Pro" and the "Go Pro" CTA drive the paywall arc
     // .pro-cta / tapping a locked cert opens the mockup's own upsell sheet;
@@ -127,15 +129,20 @@
   var STRIP_CSS = [
     'html,body{margin:0!important;padding:0!important;background:transparent!important;',
       'overflow:hidden!important;width:' + CANVAS_W + 'px!important;height:' + CANVAS_H + 'px!important;max-width:none!important;}',
-    '.stage{max-width:none!important;width:100%!important;margin:0!important;padding:0!important;}',
+    '.stage{max-width:none!important;width:100%!important;height:100%!important;margin:0!important;padding:0!important;}',
     '.stage-head{display:none!important;}',
+    /* kill any below-phone gallery caption (e.g. the report screen's .hint) */
+    '.hint{display:none!important;}',
     '.phone-wrap{display:block!important;width:100%!important;height:100%!important;max-width:none!important;margin:0!important;padding:0!important;}',
     /* force .phone to fill the canvas (overrides the gallery ~92vw max-width media
        query); strip only bezel decoration; blend the 11px gutter to the screen bg
-       so the .screen still renders at its exact DESIGN size — true 1:1 */
+       so the .screen still renders at its exact DESIGN size — true 1:1.
+       The explicit height chain (stage->phone->screen all 100%) is REQUIRED: some
+       screens (report) have all-absolute content, so without it the screen
+       collapses to the status-bar height. */
     '.phone{box-sizing:border-box!important;width:100%!important;height:100%!important;max-width:none!important;',
       'margin:0!important;border-radius:0!important;box-shadow:none!important;background:var(--bg,#fff)!important;}',
-    '.screen{box-shadow:none!important;}'
+    '.screen{box-shadow:none!important;height:100%!important;}'
   ].join('');
 
   // ── App-wide theme (D: light/dark picker on every screen) ───────────────
