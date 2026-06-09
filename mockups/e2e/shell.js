@@ -88,8 +88,9 @@
                            {sel:'.btn-primary',to:'quiz'} ],
     'upgrade-sheet'    : [ {sel:'.btn-primary',to:'pro-iap'},
                            {sel:'#maybeLater', to:'pop'} ],
-    'pro-iap'          : [ {sel:'#startBtn',   to:'pro-welcome'},
-                           {sel:'#skCancel',   to:'pop'} ],
+    // pro-iap purchase buttons handled by the Pro-bypass block (sets demoPro);
+    // here we only wire the cancel path.
+    'pro-iap'          : [ {sel:'#skCancel',   to:'pop'} ],
     'pro-welcome'      : [ {sel:'.btn-primary',to:'my-certs-pro'} ],
     'my-certs-pro'     : [ {sel:'.btn-primary',to:'home'} ],
     'quiz'             : [ {sel:'.btn-primary', to:'results'} ],
@@ -120,9 +121,43 @@
   ].join('');
 
   // ── Shell state ─────────────────────────────────────────────────────────
-  var stackEl, scalerEl, hudCrumb, hudBack;
+  var stackEl, scalerEl, hudCrumb, hudBack, hudPro;
   var stack = [];          // [{id, viewEl, iframeEl}]
   var animating = false;
+
+  // ── Pro demo-bypass (D2) ────────────────────────────────────────────────
+  //  A single, clearly-labelled demo flag. When ON it (a) flips the hub to its
+  //  unlocked Pro view, and (b) lets the simulated Apple IAP "purchase"
+  //  complete without real payment. One chokepoint, trivially removable.
+  var DEMO_KEY = 'e2e_demo_pro';
+  var demoPro = false;
+  function isDemoPro() { return demoPro; }
+  function setDemoPro(v) {
+    demoPro = !!v;
+    try { localStorage.setItem(DEMO_KEY, demoPro ? '1' : '0'); } catch (_) {}
+    if (hudPro) {
+      hudPro.textContent = demoPro ? '◈ Pro: ON' : '◈ Pro: off';
+      hudPro.classList.toggle('on', demoPro);
+    }
+    // re-apply to whatever is currently on screen
+    if (stack.length) {
+      var top = stack[stack.length - 1];
+      try { applyProState(top.iframeEl.contentDocument, top.id); } catch (_) {}
+    }
+  }
+  // reflect Pro state inside a gated mockup (without editing the mockup file)
+  function applyProState(doc, id) {
+    if (!doc) return;
+    if (id === 'hub') {
+      var planPro = doc.querySelector('#planPro');
+      var planFree = doc.querySelector('#planFree');
+      if (demoPro && planPro && planFree && planFree.classList.contains('is-on')) {
+        planPro.click();   // flip the hub to its unlocked Pro view (mockup JS)
+      } else if (!demoPro && planFree && planPro && planPro.getAttribute('aria-pressed') === 'true') {
+        planFree.click();  // back to free view
+      }
+    }
+  }
 
   function fit() {
     // scale the 390x844 canvas to fit the viewport, preserving aspect.
@@ -176,6 +211,26 @@
           setTimeout(function () { push(to); }, 90);
         });
       });
+      // Pro bypass: the simulated Apple IAP "purchase" flips demoPro on and
+      // advances — no real StoreKit transaction. Subscribe opens the mockup's
+      // own sheet; confirming it (or the post-purchase Start) becomes Pro.
+      if (id === 'pro-iap') {
+        var subBtn = doc.querySelector('#subscribeBtn');
+        if (subBtn && !subBtn.__e2e_bound) { subBtn.__e2e_bound = 1;
+          subBtn.addEventListener('click', function () { setDemoPro(true); });
+        }
+        ['#skConfirm', '#startBtn'].forEach(function (sel) {
+          var el = doc.querySelector(sel);
+          if (el && !el.__e2e_bound) { el.__e2e_bound = 1;
+            el.addEventListener('click', function () {
+              setDemoPro(true);
+              setTimeout(function () { push('pro-welcome'); }, 120);
+            });
+          }
+        });
+      }
+      // reflect current Pro state into this screen (e.g. unlock the hub)
+      applyProState(doc, id);
     } catch (e) { /* fail soft */ }
   }
 
@@ -257,6 +312,8 @@
     document.getElementById('hud-toggle').addEventListener('click', function () {
       document.body.classList.toggle('hud-collapsed');
     });
+    hudPro = document.getElementById('hud-pro');
+    if (hudPro) hudPro.addEventListener('click', function () { setDemoPro(!demoPro); });
     var sel = document.getElementById('hud-jump');
     Object.keys(SCREENS).forEach(function (id) {
       var o = document.createElement('option'); o.value = id; o.textContent = id; sel.appendChild(o);
@@ -273,14 +330,20 @@
     wireHud();
     fit();
     window.addEventListener('resize', fit);
-    // Phase 1: start at the happy-path entry
+    // restore Pro demo state (?pro=1 wins, else persisted flag)
+    var qpPro = /[?&]pro=1\b/.test(location.search);
+    var saved = false;
+    try { saved = localStorage.getItem(DEMO_KEY) === '1'; } catch (_) {}
+    setDemoPro(qpPro || saved);
+    // start at the happy-path entry (or #screen)
     var start = (location.hash || '').replace('#', '') || HAPPY_PATH[0];
     if (!SCREENS[start]) start = HAPPY_PATH[0];
     push(start);
   }
 
-  // expose for console / future bypass shim
-  window.E2E = { push: push, pop: pop, resetTo: resetTo, next: nextInPath, SCREENS: SCREENS };
+  // expose for console / bypass control
+  window.E2E = { push: push, pop: pop, resetTo: resetTo, next: nextInPath,
+                 setPro: setDemoPro, isPro: isDemoPro, SCREENS: SCREENS };
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
   else boot();
