@@ -1,0 +1,11 @@
+{
+  "appId": "com.certanvil.e2e",
+  "appName": "CertAnvil E2E",
+  "webDir": "capacitor-www",
+  "ios": {
+    "contentInset": "never"
+  },
+  "server": {
+    "iosScheme": "capacitor"
+  }
+}
