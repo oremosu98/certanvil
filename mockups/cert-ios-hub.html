@@ -539,5 +539,37 @@
       if (xc) xc.addEventListener('click', function(){ if (screen.getAttribute('data-plan') === 'free') openSheet('Cross-cert analytics'); });
     })();
   </script>
+  <script>
+    /* Reflect a logged exam result (saved by cert-ios-log-result) onto the active
+       cert: flip its badge to Passed, add a banner with the score + test center.
+       Inert when nothing is logged, so the default hub is unchanged. */
+    (function () {
+      try {
+        var r = JSON.parse(localStorage.getItem('ca-exam-result') || 'null');
+        if (!r || !r.passed) return;
+        var card = document.querySelector('.active-card');
+        if (!card) return;
+        var P = 'var(--pass,#3a9d6b)';
+        var badge = card.querySelector('.ac-badge');
+        if (badge) {
+          badge.textContent = '✓ Passed';
+          badge.style.cssText += ';background:color-mix(in oklab,' + P + ' 16%,transparent);color:' + P + ';border-color:color-mix(in oklab,' + P + ' 34%,transparent);';
+        }
+        if (!card.querySelector('.ac-passed')) {
+          var b = document.createElement('div');
+          b.className = 'ac-passed';
+          b.style.cssText = 'margin-top:11px;display:flex;align-items:center;gap:8px;font:700 12.5px/1.35 Inter,sans-serif;color:' + P +
+            ';background:color-mix(in oklab,' + P + ' 13%,transparent);border:1px solid color-mix(in oklab,' + P + ' 30%,transparent);border-radius:11px;padding:10px 12px;';
+          b.innerHTML = '✓ Passed · ' + (r.score ? r.score + '/900' : 'logged') + (r.center ? ' · ' + r.center : '');
+          var cont = card.querySelector('.btn-primary');
+          if (cont) card.insertBefore(b, cont); else card.appendChild(b);
+        }
+        var cont2 = card.querySelector('.btn-primary');
+        if (cont2) cont2.textContent = 'Review Security+';
+        var ll = document.getElementById('logResultLink');
+        if (ll) ll.style.display = 'none';
+      } catch (e) {}
+    })();
+  </script>
 </body>
 </html>

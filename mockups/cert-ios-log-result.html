@@ -182,8 +182,8 @@
 
           <div class="body">
             <div class="cert reveal" style="--d:0">
-              <span class="gl">N+</span>
-              <div><b>Network+</b><span>N10-009 · your active cert</span></div>
+              <span class="gl">S+</span>
+              <div><b>Security+</b><span>SY0-701 · your active cert</span></div>
             </div>
 
             <p class="lede reveal" style="--d:1">Took it for real? Add the result and your hub marks it passed, so the readiness nudges stop.</p>
@@ -200,12 +200,12 @@
               <label for="score">Your scaled score</label>
               <div class="score-wrap">
                 <div class="score-box">
-                  <input id="score" type="number" inputmode="numeric" min="100" max="900" value="781" aria-describedby="passhelp" />
+                  <input id="score" type="number" inputmode="numeric" min="100" max="900" value="782" aria-describedby="passhelp" />
                   <span class="of">&nbsp;/ 900</span>
                 </div>
-                <span class="passline">pass mark<b>720</b></span>
+                <span class="passline">pass mark<b>750</b></span>
               </div>
-              <p class="help" id="passhelp">CompTIA scores Network+ from 100 to 900. 720 is a pass.</p>
+              <p class="help" id="passhelp">CompTIA scores Security+ from 100 to 900. 750 is a pass.</p>
             </div>
 
             <div class="field reveal" style="--d:4">
@@ -289,15 +289,23 @@
 
     save.addEventListener('click', function () {
       var center = (document.getElementById('center').value || '').trim() || 'a test center';
+      var dateV = document.getElementById('date').value || '';
       var done = document.getElementById('done');
       var title = document.getElementById('doneTitle'), big = document.getElementById('doneBig');
+      var s = readScore();
+      // persist so the hub reflects it (shared same-origin key)
+      try {
+        localStorage.setItem('ca-exam-result', JSON.stringify({
+          cert: 'secplus', name: 'Security+', code: 'SY0-701',
+          passed: outcome === 'pass', score: s, center: center, date: dateV
+        }));
+      } catch (e) {}
       if (outcome === 'pass') {
-        var s = readScore();
-        title.textContent = 'Network+ is passed';
+        title.textContent = 'Security+ is passed';
         big.textContent = (s ? s + ' / 900' : 'Score saved') + ' · ' + center;
       } else {
         title.textContent = 'Result saved';
-        big.textContent = 'Network+ · attempt logged · ' + center;
+        big.textContent = 'Security+ · attempt logged · ' + center;
       }
       done.classList.add('show');
     });
