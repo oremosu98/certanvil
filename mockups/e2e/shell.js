@@ -368,6 +368,13 @@
     hudTheme = document.getElementById('hud-theme');
     if (hudTheme) hudTheme.addEventListener('click', toggleTheme);
     syncThemeHud();
+    var hudReset = document.getElementById('hud-reset');
+    if (hudReset) hudReset.addEventListener('click', function () {
+      // clear demo-only state (logged result + Pro bypass), keep theme, go to start
+      try { localStorage.removeItem('ca-exam-result'); } catch (_) {}
+      setDemoPro(false);
+      resetTo(HAPPY_PATH[0]);
+    });
     var sel = document.getElementById('hud-jump');
     Object.keys(SCREENS).forEach(function (id) {
       var o = document.createElement('option'); o.value = id; o.textContent = id; sel.appendChild(o);
