@@ -87,6 +87,10 @@
     'review'           : [ {sel:'#toHome', to:'home'} ],
     // report is a sheet; its X / Cancel close it (pop back to the previous screen)
     'report'           : [ {sel:'#closeBtn', to:'pop'}, {sel:'#cancelBtn', to:'pop'} ],
+    // account-lifecycle exits (no dead-ends): restore success -> home; after
+    // account deletion -> back to the welcome screen.
+    'restore-purchase' : [ {text:'Continue to CertAnvil', to:'home'} ],
+    'account-deletion' : [ {sel:'#restartBtn', to:'native-welcome'} ],
     // hub: tapping a locked cert opens the upsell sheet (mockup JS); the sheet's
     // "Unlock with Pro" and the "Go Pro" CTA drive the paywall arc
     // .pro-cta / tapping a locked cert opens the mockup's own upsell sheet;
@@ -105,9 +109,12 @@
                            {sel:'#restoreLink', to:'restore-purchase'} ],
     'pro-welcome'      : [ {sel:'.btn-primary',to:'my-certs-pro'} ],
     'my-certs-pro'     : [ {sel:'.btn-primary',to:'home'} ],
-    // study loop: quiz advances to a session result; exam submits to exam-results
-    'quiz'             : [ {sel:'.btn-primary:not([disabled])', to:'results'} ],
-    'custom-quiz'      : [ {sel:'.btn-primary:not([disabled])', to:'results'} ],
+    // study loop: quiz advances to a session result; exam submits to exam-results.
+    // the top-bar exit/close leaves the session back to home (no dead-end).
+    'quiz'             : [ {sel:'.btn-primary:not([disabled])', to:'results'},
+                           {sel:'.exit', to:'home'} ],
+    'custom-quiz'      : [ {sel:'.btn-primary:not([disabled])', to:'results'},
+                           {sel:'.tb-close', to:'home'} ],
     'exam'             : [ {sel:'#mSubmit',  to:'exam-results'},
                            {sel:'#endBtn',   to:'pop'},
                            {sel:'#mAbandon', to:'pop'} ],
