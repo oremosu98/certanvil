@@ -129,8 +129,35 @@
     '.screen{box-shadow:none!important;}'
   ].join('');
 
+  // ── App-wide theme (D: light/dark picker on every screen) ───────────────
+  //  Every cert-ios-*/onboarding-* screen is data-theme aware and persists to
+  //  the shared 'ca-theme' key. The shell applies the saved theme to each
+  //  screen on load (so screens whose own toggle is stripped still theme
+  //  correctly), exposes one persistent toggle, and listens for in-screen
+  //  toggles so everything stays in sync.
+  var THEME_KEY = 'ca-theme';
+  function currentTheme() {
+    try { return localStorage.getItem(THEME_KEY) === 'dark' ? 'dark' : 'light'; } catch (_) { return 'light'; }
+  }
+  function applyThemeToDoc(doc) {
+    try { if (doc && doc.documentElement) doc.documentElement.setAttribute('data-theme', currentTheme()); } catch (_) {}
+  }
+  function setTheme(theme) {
+    try { localStorage.setItem(THEME_KEY, theme); } catch (_) {}
+    // re-apply to every screen currently in the stack (not just the top)
+    stack.forEach(function (v) { try { applyThemeToDoc(v.iframeEl.contentDocument); } catch (_) {} });
+    syncThemeHud();
+  }
+  function toggleTheme() { setTheme(currentTheme() === 'dark' ? 'light' : 'dark'); }
+  function syncThemeHud() {
+    if (!hudTheme) return;
+    var dark = currentTheme() === 'dark';
+    hudTheme.textContent = dark ? '☀ Light' : '☾ Dark';
+    hudTheme.setAttribute('aria-label', dark ? 'Switch to light theme' : 'Switch to dark theme');
+  }
+
   // ── Shell state ─────────────────────────────────────────────────────────
-  var stackEl, scalerEl, hudCrumb, hudBack, hudPro;
+  var stackEl, scalerEl, hudCrumb, hudBack, hudPro, hudTheme;
   var stack = [];          // [{id, viewEl, iframeEl}]
   var animating = false;
 
@@ -184,6 +211,8 @@
       style.id = '__e2e_strip__';
       style.textContent = STRIP_CSS;
       (doc.head || doc.documentElement).appendChild(style);
+      // apply the app-wide theme last, so it wins over the screen's own default
+      applyThemeToDoc(doc);
     } catch (e) { /* cross-origin shouldn't happen (same dir) — fail soft */ }
   }
 
@@ -332,6 +361,9 @@
     });
     hudPro = document.getElementById('hud-pro');
     if (hudPro) hudPro.addEventListener('click', function () { setDemoPro(!demoPro); });
+    hudTheme = document.getElementById('hud-theme');
+    if (hudTheme) hudTheme.addEventListener('click', toggleTheme);
+    syncThemeHud();
     var sel = document.getElementById('hud-jump');
     Object.keys(SCREENS).forEach(function (id) {
       var o = document.createElement('option'); o.value = id; o.textContent = id; sel.appendChild(o);
@@ -348,6 +380,14 @@
     wireHud();
     fit();
     window.addEventListener('resize', fit);
+    // when a screen's own in-screen toggle changes the theme, keep the shell +
+    // all other stacked screens in sync (storage events fire across same-origin frames)
+    window.addEventListener('storage', function (e) {
+      if (e && e.key === THEME_KEY) {
+        stack.forEach(function (v) { try { applyThemeToDoc(v.iframeEl.contentDocument); } catch (_) {} });
+        syncThemeHud();
+      }
+    });
     // restore Pro demo state (?pro=1 wins, else persisted flag)
     var qpPro = /[?&]pro=1\b/.test(location.search);
     var saved = false;
