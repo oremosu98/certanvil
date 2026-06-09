@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>CertAnvil · Review answers · Concept</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: oklch(0.15 0.010 275); --surface: oklch(0.205 0.009 275); --surface-2: oklch(0.255 0.010 275);
+    --ink: oklch(0.97 0.006 275); --ink-soft: oklch(0.80 0.010 275); --muted: oklch(0.62 0.013 275);
+    --border: oklch(0.34 0.009 275);
+    --accent: oklch(0.82 0.150 66); --accent-bright: oklch(0.88 0.140 72); --accent-deep: oklch(0.72 0.150 62);
+    --on-accent: oklch(0.18 0.020 275); --pass: oklch(0.78 0.150 152); --miss: oklch(0.66 0.17 25); --track: oklch(0.30 0.010 275);
+    --page-bg: oklch(0.22 0.012 275); --page-ink: oklch(0.92 0.008 275); --page-dim: oklch(0.66 0.012 275);
+  }
+  [data-theme="light"] {
+    --bg: oklch(0.975 0.007 85); --surface: oklch(0.955 0.009 84); --surface-2: oklch(0.92 0.010 84);
+    --ink: oklch(0.22 0.015 280); --ink-soft: oklch(0.38 0.014 280); --muted: oklch(0.52 0.013 280);
+    --border: oklch(0.85 0.010 85);
+    --accent: oklch(0.55 0.155 55); --accent-bright: oklch(0.62 0.150 58); --accent-deep: oklch(0.46 0.150 52);
+    --on-accent: oklch(0.99 0.008 85); --pass: oklch(0.52 0.13 150); --miss: oklch(0.55 0.19 25); --track: oklch(0.88 0.010 85);
+    --page-bg: oklch(0.93 0.010 84); --page-ink: oklch(0.28 0.015 280); --page-dim: oklch(0.46 0.013 280);
+  }
+  :root { --ease: cubic-bezier(0.16,1,0.3,1); }
+
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html { color-scheme: light dark; }
+  body { margin: 0; background: var(--page-bg); color: var(--page-ink);
+    font: 15px/1.55 Inter, -apple-system, BlinkMacSystemFont, sans-serif; padding: 30px 20px 64px;
+    transition: background .35s var(--ease), color .35s var(--ease); }
+  .stage { max-width: 520px; margin: 0 auto; }
+  .stage-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 24px; }
+  .stage-eyebrow { font-size: 10.5px; font-weight: 800; letter-spacing: 0.16em; text-transform: uppercase; color: var(--accent-bright); margin: 0 0 7px; }
+  .stage-title { font-family: Fraunces, Georgia, serif; font-weight: 600; font-size: 24px; letter-spacing: -0.012em; margin: 0; color: var(--page-ink); }
+  .stage-sub { color: var(--page-dim); font-size: 13px; margin: 7px 0 0; max-width: 48ch; line-height: 1.5; }
+  .theme-toggle { flex: 0 0 auto; display: inline-flex; align-items: center; gap: 7px; font: 600 12px/1 Inter, sans-serif; color: var(--accent-bright);
+    background: transparent; border: 1px solid color-mix(in oklab, var(--accent-bright) 38%, var(--page-dim)); border-radius: 999px; padding: 8px 13px; cursor: pointer; transition: transform .15s var(--ease), background .2s; }
+  .theme-toggle svg { width: 15px; height: 15px; stroke: currentColor; fill: none; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+  .theme-toggle:active { transform: scale(0.97); }
+
+  .phone-wrap { display: flex; flex-direction: column; align-items: center; }
+  .phone { width: 390px; height: 844px; border-radius: 52px; padding: 11px; flex: 0 0 auto;
+    background: linear-gradient(165deg, #23262f, #0c0d11); box-shadow: 0 40px 90px -34px rgba(0,0,0,0.6), 0 0 0 1.5px rgba(255,255,255,0.06) inset; }
+  .screen { width: 100%; height: 100%; border-radius: 42px; overflow: hidden; position: relative; background: var(--bg); color: var(--ink);
+    display: flex; flex-direction: column; transition: background .35s var(--ease), color .35s var(--ease); }
+  .notch { position: absolute; top: 9px; left: 50%; transform: translateX(-50%); width: 122px; height: 32px; background: #07080b; border-radius: 18px; z-index: 6; }
+  .statusbar { display: flex; align-items: center; justify-content: space-between; padding: 14px 26px 0; font: 700 13px/1 Inter, sans-serif; color: var(--ink); }
+  .sb-icons { display: inline-flex; gap: 6px; align-items: center; }
+  .sb-icons svg { width: 17px; height: 12px; fill: var(--ink); }
+
+  .hdr { display: flex; align-items: center; gap: 11px; padding: 12px 20px 6px; }
+  .hdr .back { width: 36px; height: 36px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface); display: grid; place-items: center; cursor: pointer; color: var(--ink-soft); transition: transform .14s var(--ease), border-color .18s; }
+  .hdr .back svg { width: 17px; height: 17px; stroke: currentColor; fill: none; stroke-width: 2.1; stroke-linecap: round; stroke-linejoin: round; }
+  .hdr .back:active { transform: scale(0.94); }
+  .hdr h1 { font-family: Fraunces, Georgia, serif; font-weight: 600; font-size: 20px; letter-spacing: -0.01em; margin: 0; color: var(--ink); flex: 1; }
+  .app-theme { width: 38px; height: 38px; border-radius: 11px; border: 1px solid var(--border); background: var(--surface); display: grid; place-items: center; cursor: pointer; color: var(--ink-soft); transition: transform .14s var(--ease), border-color .18s, color .18s; }
+  .app-theme svg { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; transition: transform .28s var(--ease); }
+  .app-theme:active { transform: scale(0.94); }
+  .app-theme.spin svg { transform: rotate(40deg) scale(0.9); }
+  @media (hover:hover) and (pointer:fine) { .app-theme:hover, .hdr .back:hover { border-color: color-mix(in oklab, var(--accent) 40%, var(--border)); color: var(--accent); } }
+
+  /* summary + filter */
+  .summary { padding: 4px 22px 0; }
+  .sline { font-size: 13px; color: var(--ink-soft); margin: 0 0 12px; }
+  .sline b { color: var(--ink); font-weight: 800; }
+  .seg { display: inline-flex; gap: 5px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 11px; padding: 4px; }
+  .seg button { border: none; background: transparent; border-radius: 8px; padding: 8px 14px; cursor: pointer; font: 700 12.5px/1 Inter, sans-serif; color: var(--ink-soft);
+    transition: background .18s var(--ease), color .18s var(--ease); }
+  .seg button.on { background: var(--surface); color: var(--ink); box-shadow: 0 1px 3px color-mix(in oklab, var(--ink) 10%, transparent); }
+
+  .body { flex: 1; overflow-y: auto; padding: 16px 22px 18px; display: grid; gap: 14px; }
+  .body::-webkit-scrollbar { width: 0; }
+
+  .qa { border: 1px solid var(--border); border-radius: 16px; background: var(--surface); padding: 15px 15px 14px; }
+  .qa-top { display: flex; align-items: center; gap: 9px; margin-bottom: 10px; }
+  .qa-num { font: 800 11px/1 Inter, sans-serif; letter-spacing: 0.04em; color: var(--muted); }
+  .qa-badge { margin-left: auto; display: inline-flex; align-items: center; gap: 5px; font: 800 10px/1 Inter, sans-serif; letter-spacing: 0.05em; text-transform: uppercase; padding: 5px 9px; border-radius: 999px; }
+  .qa-badge svg { width: 11px; height: 11px; stroke: currentColor; fill: none; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
+  .qa-badge.ok { color: var(--pass); background: color-mix(in oklab, var(--pass) 13%, transparent); }
+  .qa-badge.no { color: var(--miss); background: color-mix(in oklab, var(--miss) 12%, transparent); }
+  .qa-q { font: 650 14.5px/1.4 Inter, sans-serif; color: var(--ink); margin: 0 0 11px; }
+  .qa-opts { display: grid; gap: 7px; }
+  .qa-opt { display: flex; align-items: center; gap: 9px; font: 500 13px/1.3 Inter, sans-serif; color: var(--ink-soft);
+    border: 1.5px solid var(--border); border-radius: 11px; padding: 10px 12px; }
+  .qa-opt .mk { flex: 0 0 auto; width: 18px; height: 18px; border-radius: 6px; display: grid; place-items: center; }
+  .qa-opt .mk svg { width: 12px; height: 12px; stroke: currentColor; fill: none; stroke-width: 2.8; stroke-linecap: round; stroke-linejoin: round; }
+  .qa-opt.correct { border-color: var(--pass); background: color-mix(in oklab, var(--pass) 10%, var(--surface)); color: var(--ink); }
+  .qa-opt.correct .mk { background: var(--pass); color: var(--on-accent); }
+  .qa-opt.yours-wrong { border-color: var(--miss); background: color-mix(in oklab, var(--miss) 9%, var(--surface)); color: var(--ink); }
+  .qa-opt.yours-wrong .mk { background: var(--miss); color: #fff; }
+  .qa-opt .tag { margin-left: auto; font: 700 9.5px/1 Inter, sans-serif; letter-spacing: 0.05em; text-transform: uppercase; color: var(--muted); }
+  .qa-ex { margin-top: 11px; font-size: 12.5px; line-height: 1.45; color: var(--muted); padding-left: 12px; border-left: 2px solid color-mix(in oklab, var(--accent) 40%, var(--border)); }
+  .qa-ex b { color: var(--ink-soft); }
+
+  .empty { text-align: center; color: var(--muted); font-size: 13.5px; padding: 30px 10px; }
+  .empty b { display: block; color: var(--ink); font: 600 16px/1.3 Fraunces, Georgia, serif; margin-bottom: 5px; }
+
+  .seg button:focus-visible, .back:focus-visible, .app-theme:focus-visible, .cta:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+  @media (prefers-reduced-motion: reduce) { .app-theme svg { transition: none; } }
+
+  .footer { flex: 0 0 auto; padding: 12px 22px calc(12px + env(safe-area-inset-bottom)); border-top: 1px solid color-mix(in oklab, var(--border) 70%, transparent); background: var(--bg); }
+  .cta { width: 100%; border: none; border-radius: 13px; padding: 15px; cursor: pointer; background: var(--accent); color: var(--on-accent); font: 800 15.5px/1 Inter, sans-serif; letter-spacing: -0.005em;
+    box-shadow: 0 10px 22px -12px color-mix(in oklab, var(--accent) 70%, transparent); transition: transform .15s var(--ease), filter .2s; }
+  .cta:active { transform: scale(0.985); }
+  @media (hover:hover) and (pointer:fine) { .cta:hover { filter: brightness(1.05); } }
+
+  .flag { position: absolute; left: 14px; bottom: 96px; z-index: 7; font: 800 9px/1 Inter, sans-serif; letter-spacing: 0.06em; text-transform: uppercase; color: var(--accent-deep); background: color-mix(in oklab, var(--accent) 12%, var(--bg)); border: 1px solid color-mix(in oklab, var(--accent) 30%, transparent); border-radius: 999px; padding: 4px 9px; pointer-events: none; }
+
+  @media (max-width: 440px) { .phone { transform: scale(.92); transform-origin: top center; } }
+</style>
+</head>
+<body>
+  <div class="stage">
+    <div class="stage-head">
+      <div>
+        <p class="stage-eyebrow">Cert app · iOS</p>
+        <h1 class="stage-title">Review answers</h1>
+        <p class="stage-sub">The question-by-question breakdown after a quiz or exam — your answer vs the correct one, with a short why. Filter to just the ones you missed.</p>
+      </div>
+      <button class="theme-toggle" id="themeToggle" type="button" aria-label="Toggle light and dark">
+        <svg id="themeIconA" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></svg>
+        <span id="themeLabelA">Dark</span>
+      </button>
+    </div>
+
+    <div class="phone-wrap">
+      <div class="phone">
+        <div class="screen">
+          <div class="notch"></div>
+          <div class="statusbar">
+            <span>9:41</span>
+            <span class="sb-icons">
+              <svg viewBox="0 0 18 12" aria-hidden="true"><rect x="0" y="7" width="3" height="5" rx="1"/><rect x="5" y="4" width="3" height="8" rx="1"/><rect x="10" y="1" width="3" height="11" rx="1" opacity="0.4"/></svg>
+              <svg viewBox="0 0 18 12" aria-hidden="true"><rect x="1" y="2" width="14" height="8" rx="2.4" fill="none" stroke="currentColor" stroke-width="1.4"/><rect x="2.6" y="3.6" width="9" height="4.8" rx="1.2"/><rect x="16" y="4.6" width="1.4" height="2.8" rx="0.7"/></svg>
+            </span>
+          </div>
+
+          <div class="hdr">
+            <button class="back" type="button" aria-label="Back"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 18l-6-6 6-6"></path></svg></button>
+            <h1>Review answers</h1>
+            <button class="app-theme" id="appTheme" type="button" aria-label="Switch between light and dark">
+              <svg id="themeIcon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></svg>
+            </button>
+          </div>
+
+          <div class="summary">
+            <p class="sline">Network+ practice · <b id="sCount">8 questions</b> · <b id="sRight">6 correct</b></p>
+            <div class="seg" role="tablist" aria-label="Filter answers">
+              <button id="fAll" class="on" type="button" role="tab" aria-selected="true">All</button>
+              <button id="fWrong" type="button" role="tab" aria-selected="false">Wrong only</button>
+            </div>
+          </div>
+
+          <div class="body" id="list"></div>
+
+          <div class="flag">Concept · sample answers</div>
+
+          <div class="footer">
+            <button class="cta" id="done" type="button">Done</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+  /* theme — shared 'ca-theme' key */
+  (function () {
+    var root = document.documentElement;
+    try { var saved = localStorage.getItem('ca-theme'); if (saved) root.setAttribute('data-theme', saved); } catch (e) {}
+    function isLight() { return root.getAttribute('data-theme') === 'light'; }
+    function sync() {
+      var light = isLight(), moon = 'M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8z';
+      ['themeIcon', 'themeIconA'].forEach(function (id) {
+        var svg = document.getElementById(id); if (!svg) return;
+        svg.innerHTML = light ? '<path d="' + moon + '"></path>'
+          : '<circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path>';
+      });
+      var lab = document.getElementById('themeLabelA'); if (lab) lab.textContent = light ? 'Dark' : 'Light';
+    }
+    window.toggleTheme = function () {
+      root.setAttribute('data-theme', isLight() ? 'dark' : 'light');
+      try { localStorage.setItem('ca-theme', isLight() ? 'light' : 'dark'); } catch (e) {}
+      sync();
+      var at = document.getElementById('appTheme'); if (at) { at.classList.add('spin'); setTimeout(function () { at.classList.remove('spin'); }, 280); }
+    };
+    var a = document.getElementById('appTheme'), b = document.getElementById('themeToggle');
+    if (a) a.addEventListener('click', window.toggleTheme);
+    if (b) b.addEventListener('click', window.toggleTheme);
+    sync();
+  })();
+
+  /* answer breakdown — sample completed set */
+  (function () {
+    var QS = [
+      { q: 'Which port does HTTPS use?', opts: ['443', '80', '22', '53'], a: 0, you: 0, ex: 'HTTPS is HTTP over TLS, on TCP 443.' },
+      { q: 'Which protocol resolves an IP address to a MAC address on a LAN?', opts: ['DNS', 'ARP', 'DHCP', 'ICMP'], a: 1, you: 1, ex: 'ARP maps a known IP to its MAC on the local segment.' },
+      { q: 'How many usable hosts does a /26 subnet provide?', opts: ['30', '62', '64', '126'], a: 1, you: 2, ex: '/26 = 64 addresses, minus the network and broadcast = 62 usable.' },
+      { q: 'Which device makes forwarding decisions at Layer 3?', opts: ['Switch', 'Hub', 'Router', 'Bridge'], a: 2, you: 2, ex: 'A router forwards by IP (Layer 3); a switch works at Layer 2.' },
+      { q: 'What is the first message a DHCP client sends?', opts: ['OFFER', 'REQUEST', 'DISCOVER', 'ACK'], a: 2, you: 2, ex: 'DORA starts with the client broadcasting DISCOVER.' },
+      { q: 'Which port does SSH use?', opts: ['23', '22', '443', '3389'], a: 1, you: 0, ex: 'SSH runs on TCP 22; Telnet (insecure) is 23.' },
+      { q: 'Which record maps a hostname to an IPv6 address?', opts: ['A', 'CNAME', 'AAAA', 'MX'], a: 2, you: 2, ex: 'AAAA ("quad-A") holds an IPv6 address; A holds IPv4.' },
+      { q: 'What is the default subnet mask for a /24 network?', opts: ['255.255.0.0', '255.255.255.0', '255.255.255.128', '255.0.0.0'], a: 1, you: 1, ex: 'A /24 has 24 network bits = 255.255.255.0.' }
+    ];
+    var keys = ['A', 'B', 'C', 'D'];
+    var CHECK = '<svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>';
+    var CROSS = '<svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg>';
+    var list = document.getElementById('list');
+    var fAll = document.getElementById('fAll'), fWrong = document.getElementById('fWrong');
+    var rightCount = QS.filter(function (q) { return q.you === q.a; }).length;
+    document.getElementById('sCount').textContent = QS.length + ' questions';
+    document.getElementById('sRight').textContent = rightCount + ' correct';
+
+    function card(q, n) {
+      var correct = q.you === q.a;
+      var opts = q.opts.map(function (text, i) {
+        var cls = 'qa-opt', mk = '', tag = '';
+        if (i === q.a) { cls += ' correct'; mk = '<span class="mk">' + CHECK + '</span>'; tag = '<span class="tag">Correct</span>'; }
+        else if (i === q.you && !correct) { cls += ' yours-wrong'; mk = '<span class="mk">' + CROSS + '</span>'; tag = '<span class="tag">Your pick</span>'; }
+        else { mk = '<span class="mk"></span>'; }
+        return '<div class="' + cls + '">' + mk + '<span>' + keys[i] + '. ' + text + '</span>' + tag + '</div>';
+      }).join('');
+      return '<div class="qa" data-wrong="' + (correct ? '0' : '1') + '">' +
+        '<div class="qa-top"><span class="qa-num">Question ' + n + '</span>' +
+          '<span class="qa-badge ' + (correct ? 'ok' : 'no') + '">' + (correct ? CHECK + 'Correct' : CROSS + 'Missed') + '</span></div>' +
+        '<p class="qa-q">' + q.q + '</p>' +
+        '<div class="qa-opts">' + opts + '</div>' +
+        '<p class="qa-ex"><b>Why:</b> ' + q.ex + '</p>' +
+      '</div>';
+    }
+
+    function render(wrongOnly) {
+      var shown = QS.map(function (q, i) { return { q: q, n: i + 1 }; })
+        .filter(function (o) { return !wrongOnly || o.q.you !== o.q.a; });
+      if (!shown.length) {
+        list.innerHTML = '<div class="empty"><b>Nothing missed</b>Every answer was correct. Clean run.</div>';
+        return;
+      }
+      list.innerHTML = shown.map(function (o) { return card(o.q, o.n); }).join('');
+      list.scrollTop = 0;
+    }
+
+    fAll.addEventListener('click', function () { fAll.classList.add('on'); fAll.setAttribute('aria-selected', 'true'); fWrong.classList.remove('on'); fWrong.setAttribute('aria-selected', 'false'); render(false); });
+    fWrong.addEventListener('click', function () { fWrong.classList.add('on'); fWrong.setAttribute('aria-selected', 'true'); fAll.classList.remove('on'); fAll.setAttribute('aria-selected', 'false'); render(true); });
+    // #done and header .back are wired by the shell nav-bridge
+    render(false);
+  })();
+</script>
+</body>
+</html>

@@ -43,6 +43,7 @@
     'settings'          : 'cert-ios-settings.html',
     'log-result'        : 'cert-ios-log-result.html',
     'review'            : 'cert-ios-review.html',
+    'review-answers'    : 'cert-ios-review-answers.html',
     'free-capped-home'  : 'onboarding-free-capped-home.html',
     'upgrade-sheet'     : 'onboarding-upgrade-sheet.html',
     'pro-iap'           : 'onboarding-pro-iap.html',
@@ -112,9 +113,12 @@
                            {sel:'#mAbandon', to:'pop'} ],
     'results'          : [ {text:'New session',          to:'quiz'},
                            {text:'Drill my 3 mistakes',  to:'quiz'},
+                           {text:'Review answers',       to:'review-answers'},
                            {text:'Back to menu',         to:'home'} ],
     'exam-results'     : [ {text:'Drill the gap', to:'quiz'},
+                           {text:'Review all',    to:'review-answers'},
                            {text:'Menu',          to:'home'} ],
+    'review-answers'   : [ {sel:'#done', to:'pop'} ],
     // log-result: after saving, "See it in your hub" -> hub (Passed state)
     'log-result'       : [ {sel:'#toHub', to:'hub'} ]
   };
