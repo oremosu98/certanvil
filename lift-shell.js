@@ -63,6 +63,13 @@
 
   function esc(s) { var d = document.createElement('i'); d.textContent = s == null ? '' : String(s); return d.innerHTML; }
 
+  function certCode() {
+    try {
+      var m = (typeof CERT_PACK === 'object' && CERT_PACK && CERT_PACK.meta) || null;
+      return m ? (m.code || m.examCode || null) : null;
+    } catch (_) { return null; }
+  }
+
   /* Drills tab screen — 1:1 of mockups/cert-ios-drills.html fed by real data.
      Reads the same sources as the app's own surfaces: loadWrongBank (mistakes
      count behind startWrongDrill), computeWeakSpotScores (weak chips →
@@ -136,12 +143,7 @@
       }
 
       var tag = document.getElementById('drills-plan-tag');
-      if (tag) {
-        try {
-          var pk = (typeof CERT_PACK === 'object' && CERT_PACK) ? (CERT_PACK.examCode || CERT_PACK.code || null) : null;
-          if (pk) tag.textContent = pk;
-        } catch (_) {}
-      }
+      if (tag) { var pk = certCode(); if (pk) tag.textContent = pk; }
     } catch (_) { /* drills render must never block navigation */ }
   }
 
@@ -153,6 +155,123 @@
       tabs[i].classList.toggle('on', tabs[i].getAttribute('data-page') === lit);
     }
   }
+
+  /* ── Exam-date bottom sheet (Phase 2 leftover, mockup cert-ios-settings) ──
+     Replaces the native showPicker() date input on the Settings exam chip
+     with the mockup's scrim + calendar sheet. Saves through the app's own
+     updateExamDate() so the chip, topbar countdown, Home and Analytics all
+     re-sync. Sheet DOM is lazy-built on first open; the chip's inline
+     onclick is intercepted in capture phase (clear × stays native). */
+  var MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  var DOWS = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
+  var sheetBuilt = false, selISO = '', viewY = 0, viewM = 0;
+
+  function dayStart(d) { var x = new Date(d); x.setHours(0, 0, 0, 0); return x; }
+  function isoOf(d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+
+  function buildExamSheet() {
+    if (sheetBuilt) return;
+    sheetBuilt = true;
+    var scrim = document.createElement('div');
+    scrim.className = 'lift-sheet-scrim';
+    scrim.id = 'lift-exam-scrim';
+    var sheet = document.createElement('div');
+    sheet.className = 'lift-sheet';
+    sheet.id = 'lift-exam-sheet';
+    sheet.setAttribute('role', 'dialog');
+    sheet.setAttribute('aria-modal', 'true');
+    sheet.setAttribute('aria-label', 'Set your exam date');
+    var cert = certCode() || '';
+    sheet.innerHTML = '<div class="lift-sheet-grab"></div>'
+      + '<h2 class="lift-sheet-title">Set your exam date</h2>'
+      + '<p class="lift-sheet-sub">Pick the day you sit ' + (cert ? esc(cert) : 'your exam') + '. You can change it any time.</p>'
+      + '<div class="lift-cal-head">'
+      + '<span class="lift-cal-month" id="lift-cal-month"></span>'
+      + '<span class="lift-cal-nav">'
+      + '<button type="button" id="lift-cal-prev" aria-label="Previous month"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></button>'
+      + '<button type="button" id="lift-cal-next" aria-label="Next month"><svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>'
+      + '</span></div>'
+      + '<div class="lift-cal-grid" id="lift-cal-grid"></div>'
+      + '<button class="lift-sheet-save" id="lift-exam-save" type="button" disabled>Save exam date</button>'
+      + '<button class="lift-sheet-clear" id="lift-exam-clear" type="button" hidden>Remove exam date</button>';
+    document.body.appendChild(scrim);
+    document.body.appendChild(sheet);
+
+    scrim.addEventListener('click', closeExamSheet);
+    document.getElementById('lift-cal-prev').addEventListener('click', function () { if (--viewM < 0) { viewM = 11; viewY--; } renderCal(); });
+    document.getElementById('lift-cal-next').addEventListener('click', function () { if (++viewM > 11) { viewM = 0; viewY++; } renderCal(); });
+    document.getElementById('lift-cal-grid').addEventListener('click', function (e) {
+      var b = e.target.closest('.lift-cal-day');
+      if (!b || b.disabled) return;
+      selISO = b.getAttribute('data-iso');
+      renderCal();
+    });
+    document.getElementById('lift-exam-save').addEventListener('click', function () {
+      if (!selISO) return;
+      if (typeof updateExamDate === 'function') updateExamDate(selISO);
+      closeExamSheet();
+    });
+    document.getElementById('lift-exam-clear').addEventListener('click', function () {
+      if (typeof updateExamDate === 'function') updateExamDate('');
+      closeExamSheet();
+    });
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && sheet.classList.contains('on')) closeExamSheet();
+    });
+  }
+
+  function renderCal() {
+    var today = dayStart(new Date());
+    var monthEl = document.getElementById('lift-cal-month');
+    var prevBtn = document.getElementById('lift-cal-prev');
+    var grid = document.getElementById('lift-cal-grid');
+    var save = document.getElementById('lift-exam-save');
+    monthEl.textContent = MONTHS[viewM] + ' ' + viewY;
+    prevBtn.disabled = (viewY === today.getFullYear() && viewM === today.getMonth());
+    var html = DOWS.map(function (d) { return '<span class="lift-cal-dow">' + d + '</span>'; }).join('');
+    var lead = (new Date(viewY, viewM, 1).getDay() + 6) % 7; /* Monday-start offset */
+    for (var i = 0; i < lead; i++) html += '<span></span>';
+    var days = new Date(viewY, viewM + 1, 0).getDate();
+    for (var d = 1; d <= days; d++) {
+      var dt = new Date(viewY, viewM, d), dISO = isoOf(dt);
+      var cls = 'lift-cal-day' + (dISO === selISO ? ' sel' : '') + (dt.getTime() === today.getTime() ? ' today' : '');
+      html += '<button type="button" class="' + cls + '" data-iso="' + dISO + '"' + (dt < today ? ' disabled' : '') + '>' + d + '</button>';
+    }
+    grid.innerHTML = html;
+    save.disabled = !selISO;
+  }
+
+  function openExamSheet() {
+    buildExamSheet();
+    var today = dayStart(new Date());
+    selISO = '';
+    try { selISO = (typeof getExamDate === 'function' && getExamDate()) || ''; } catch (_) {}
+    if (selISO) { var p = selISO.split('-'); viewY = +p[0]; viewM = +p[1] - 1; }
+    else { viewY = today.getFullYear(); viewM = today.getMonth(); }
+    renderCal();
+    document.getElementById('lift-exam-clear').hidden = !selISO;
+    document.getElementById('lift-exam-save').textContent = selISO ? 'Save exam date' : 'Save exam date';
+    document.getElementById('lift-exam-scrim').classList.add('on');
+    document.getElementById('lift-exam-sheet').classList.add('on');
+  }
+
+  function closeExamSheet() {
+    var scrim = document.getElementById('lift-exam-scrim'), sheet = document.getElementById('lift-exam-sheet');
+    if (scrim) scrim.classList.remove('on');
+    if (sheet) sheet.classList.remove('on');
+  }
+
+  /* capture-phase intercept: the chip's inline onclick (native showPicker)
+     never fires; the clear × keeps its native updateExamDate('') path */
+  document.addEventListener('click', function (ev) {
+    if (!ev.target.closest) return;
+    var row = ev.target.closest('#settings-exam-row');
+    if (!row) return;
+    if (ev.target.closest('.ana-ready-datechip-clear')) return;
+    ev.preventDefault();
+    ev.stopPropagation();
+    openExamSheet();
+  }, true);
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);

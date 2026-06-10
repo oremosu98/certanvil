@@ -1297,3 +1297,169 @@ html[data-theme] body #page-drills .drills-domain-mast { display: block; font: 6
 html[data-theme] body #page-drills .drills-domain-mast b { color: var(--text-mid); font-weight: 700; }
 
 html[data-theme] body #page-drills .drills-foot-note { font: 500 11px/1.5 Inter, sans-serif; color: var(--text-dim); text-align: center; margin: 16px 8px 4px; }
+
+/* ─────────────────────── EXAM-DATE BOTTOM SHEET (Phase 2 leftover) ─────────────────────── */
+/* Source: cert-ios-settings.html .sheet block. Injected by lift-shell.js;
+   fixed to the viewport and width-capped to the app column. */
+
+html[data-theme] body .lift-sheet-scrim {
+  position: fixed; inset: 0; z-index: 130;
+  background: color-mix(in oklab, #000 44%, transparent);
+  opacity: 0; pointer-events: none; transition: opacity .32s cubic-bezier(0.16, 1, 0.3, 1);
+}
+html[data-theme] body .lift-sheet-scrim.on { opacity: 1; pointer-events: auto; }
+html[data-theme] body .lift-sheet {
+  position: fixed; left: 50%; bottom: 0; z-index: 131;
+  width: min(430px, 100vw); box-sizing: border-box;
+  background: var(--surface); border: 1px solid var(--border); border-bottom: none;
+  border-radius: 22px 22px 0 0;
+  padding: 10px 18px calc(16px + env(safe-area-inset-bottom));
+  transform: translate(-50%, 104%); transition: transform .42s cubic-bezier(0.32, 0.72, 0, 1);
+  box-shadow: 0 -18px 50px -18px color-mix(in oklab, #000 50%, transparent);
+}
+html[data-theme] body .lift-sheet.on { transform: translate(-50%, 0); }
+html[data-theme] body .lift-sheet-grab { width: 38px; height: 5px; border-radius: 999px; background: color-mix(in oklab, var(--text) 18%, var(--surface)); margin: 0 auto 13px; }
+html[data-theme] body .lift-sheet-title { font: 600 18px/1.2 Fraunces, Georgia, serif; color: var(--text); margin: 0 0 2px; }
+html[data-theme] body .lift-sheet-sub { font: 500 12.5px/1.45 Inter, sans-serif; color: var(--text-mid); margin: 0 0 13px; }
+html[data-theme] body .lift-cal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+html[data-theme] body .lift-cal-month { font: 700 13.5px/1 Inter, sans-serif; color: var(--text); }
+html[data-theme] body .lift-cal-nav { display: inline-flex; gap: 6px; }
+html[data-theme] body .lift-cal-nav button {
+  width: 30px; height: 30px; border-radius: 9px; border: 1px solid var(--border); background: transparent;
+  color: var(--text); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; padding: 0;
+}
+html[data-theme] body .lift-cal-nav button:disabled { opacity: .35; cursor: default; }
+html[data-theme] body .lift-cal-nav svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+html[data-theme] body .lift-cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; }
+html[data-theme] body .lift-cal-dow { text-align: center; font: 700 10px/1 Inter, sans-serif; letter-spacing: .08em; color: var(--text-dim); padding: 5px 0 7px; text-transform: uppercase; }
+html[data-theme] body .lift-cal-day {
+  aspect-ratio: 1; border: none; background: transparent; border-radius: 10px;
+  font: 600 13px/1 Inter, sans-serif; color: var(--text); cursor: pointer;
+  font-variant-numeric: lining-nums tabular-nums; padding: 0;
+}
+html[data-theme] body .lift-cal-day:disabled { color: color-mix(in oklab, var(--text) 26%, transparent); cursor: default; }
+html[data-theme] body .lift-cal-day.sel { background: var(--accent); color: var(--on-accent, var(--bg)); font-weight: 800; }
+html[data-theme] body .lift-cal-day.today { box-shadow: inset 0 0 0 1.5px color-mix(in oklab, var(--accent) 65%, transparent); }
+html[data-theme] body .lift-sheet-save {
+  width: 100%; margin-top: 12px; border: none; border-radius: 12px; padding: 13px; cursor: pointer;
+  background: var(--accent); color: var(--on-accent, var(--bg)); font: 700 14px/1 Inter, sans-serif;
+  transition: transform .14s cubic-bezier(0.16, 1, 0.3, 1), filter .2s, opacity .2s;
+}
+html[data-theme] body .lift-sheet-save:disabled { opacity: .45; cursor: default; }
+html[data-theme] body .lift-sheet-save:active:not(:disabled) { transform: scale(0.985); }
+html[data-theme] body .lift-sheet-clear { width: 100%; margin-top: 9px; background: none; border: none; font: 600 12.5px/1 Inter, sans-serif; color: var(--text-mid); cursor: pointer; padding: 9px; }
+
+/* ─────────────────── HOME DAY-0: locked readiness hero (Phase 2 leftover) ─────────────────── */
+/* Source: cert-ios-home.html .rd.locked (new-user state). The real pending
+   card (.readiness-card.is-pending) becomes the mockup's locked hero:
+   eyebrow + Locked chip, big em-dash score, empty bar, unlock line. */
+
+html[data-theme] body #page-setup .readiness-card.is-pending {
+  border: 1px solid var(--border) !important; border-radius: 18px !important;
+  background: var(--surface) !important; padding: 16px 17px !important; box-shadow: none !important;
+  display: flex !important; flex-direction: column !important;
+}
+/* mockup order: eyebrow+chip · score · bar · range · unlock line */
+html[data-theme] body #page-setup .readiness-card.is-pending .readiness-eyebrow { order: 1; }
+html[data-theme] body #page-setup .readiness-card.is-pending .readiness-score { order: 2; flex-direction: row !important; }
+html[data-theme] body #page-setup .readiness-card.is-pending .readiness-bar-track { order: 3; }
+html[data-theme] body #page-setup .readiness-card.is-pending .readiness-range { order: 4; }
+html[data-theme] body #page-setup .readiness-card.is-pending .readiness-strip-line { order: 5; }
+html[data-theme] body #page-setup .readiness-card.is-pending .rc-v2-numwrap { display: inline-flex !important; align-items: baseline !important; }
+html[data-theme] body #page-setup .readiness-card.is-pending .readiness-eyebrow {
+  display: flex !important; align-items: center !important; justify-content: space-between !important;
+  font: 800 10px/1 Inter, sans-serif !important; letter-spacing: 0.13em !important; text-transform: uppercase !important;
+  color: var(--text-dim) !important; margin: 0 0 4px !important; background: none !important; border: 0 !important;
+}
+html[data-theme] body #page-setup .readiness-card.is-pending .readiness-eyebrow::after {
+  content: 'Locked'; font: 800 9.5px/1 Inter, sans-serif; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--text-dim); background: var(--surface3); border: 1px solid var(--border);
+  border-radius: 999px; padding: 5px 9px;
+}
+html[data-theme] body #page-setup .readiness-card.is-pending .readiness-score {
+  display: flex !important; align-items: center !important; gap: 8px !important; margin: 8px 0 9px !important;
+}
+html[data-theme] body #page-setup .readiness-card.is-pending .rc-v2-ring,
+html[data-theme] body #page-setup .readiness-card.is-pending .rc-v2-glow,
+html[data-theme] body #page-setup .readiness-card.is-pending .rc-v2-stamp { display: none !important; }
+html[data-theme] body #page-setup .readiness-card.is-pending #rc-v2-num {
+  font: 600 40px/1 Fraunces, Georgia, serif !important; color: var(--text) !important;
+  font-variant-numeric: lining-nums tabular-nums; font-feature-settings: "lnum","tnum";
+  background: none !important; -webkit-text-fill-color: currentColor;
+}
+html[data-theme] body #page-setup .readiness-card.is-pending .readiness-score > span:last-child {
+  font: 700 11px/1 'Roboto Mono', ui-monospace, monospace !important; letter-spacing: 0.1em !important;
+  text-transform: uppercase !important; color: var(--text-dim) !important;
+}
+/* empty track (mockup locked hero keeps the bar, unfilled) */
+html[data-theme] body #page-setup .readiness-card.is-pending .readiness-bar-track {
+  display: block !important; height: 8px !important; border-radius: 999px !important;
+  background: var(--surface3) !important; overflow: hidden; margin: 0 0 9px !important;
+}
+html[data-theme] body #page-setup .readiness-card.is-pending .readiness-bar-track > span { display: none !important; }
+html[data-theme] body #page-setup .readiness-card.is-pending .readiness-range {
+  font: 600 10.5px/1 'Roboto Mono', ui-monospace, monospace !important; color: var(--text-dim) !important;
+}
+/* the compressed strip carries the unlock copy — surface it as the rd-insight line */
+html[data-theme] body #page-setup .readiness-card.is-pending .readiness-strip-line {
+  display: block !important; font: 400 12.5px/1.45 Inter, sans-serif !important;
+  color: var(--text-mid) !important; margin: 10px 0 0 !important; background: none !important;
+  border: 0 !important; padding: 0 !important; cursor: default !important;
+}
+html[data-theme] body #page-setup .readiness-card.is-pending .readiness-strip-go { display: none !important; }
+
+/* ─────────────────── FREE-TIER CAP: quota-exceeded modal (Phase 2 leftover) ─────────────────── */
+/* Source: cert-ios-daily-limit.html (free-tier gate). The real
+   #quota-exceeded-modal becomes the mockup's calm centered gate:
+   lockmark, Fraunces headline, lede, accent CTA + ghost + quiet dismiss. */
+
+html[data-theme] body .quota-exceeded-modal {
+  position: fixed !important; inset: 0 !important; z-index: 140 !important;
+  display: flex !important; align-items: center !important; justify-content: center !important;
+  background: color-mix(in oklab, #000 44%, transparent) !important; padding: 20px;
+}
+html[data-theme] body .quota-exceeded-card {
+  width: min(394px, 100%) !important; box-sizing: border-box;
+  background: var(--bg) !important; border: 1px solid var(--border) !important;
+  border-radius: 22px !important; padding: 26px 20px 18px !important; text-align: center !important;
+  box-shadow: 0 24px 60px -24px color-mix(in oklab, #000 55%, transparent) !important;
+}
+html[data-theme] body .quota-exceeded-icon {
+  width: 46px !important; height: 46px !important; margin: 0 auto 12px !important;
+  display: grid !important; place-items: center !important; overflow: visible !important;
+  font-size: 22px !important; line-height: 1 !important; background: var(--surface3) !important;
+  border: 1px solid var(--border) !important; border-radius: 13px !important;
+}
+html[data-theme] body .quota-exceeded-card::before, html[data-theme] body .quota-exceeded-card::after { content: none !important; }
+html[data-theme] body .quota-exceeded-title {
+  font: 600 22px/1.15 Fraunces, Georgia, serif !important; letter-spacing: -0.012em !important;
+  color: var(--text) !important; margin: 0 0 8px !important;
+}
+html[data-theme] body .quota-exceeded-sub {
+  font: 400 13px/1.5 Inter, sans-serif !important; color: var(--text-mid) !important; margin: 0 0 16px !important;
+}
+html[data-theme] body .quota-exceeded-sub strong { color: var(--text) !important; font-weight: 650 !important; }
+html[data-theme] body .quota-exceeded-actions { display: flex !important; flex-direction: column !important; gap: 9px !important; }
+/* upgrade link = the accent CTA (mockup .cta) */
+html[data-theme] body a.quota-exceeded-cta {
+  display: block; width: 100%; box-sizing: border-box; border: 0 !important; border-radius: 13px !important;
+  padding: 15px !important; cursor: pointer; text-decoration: none !important;
+  background: var(--accent) !important; color: var(--on-accent, var(--bg)) !important;
+  font: 800 15px/1 Inter, sans-serif !important; letter-spacing: -0.005em;
+  box-shadow: 0 10px 22px -12px color-mix(in oklab, var(--accent) 70%, transparent) !important;
+  transition: transform .15s cubic-bezier(0.16, 1, 0.3, 1), filter .2s !important;
+}
+html[data-theme] body a.quota-exceeded-cta:active { transform: scale(0.985); }
+/* SR-review escape hatch = the ghost (mockup .ghost) */
+html[data-theme] body button.quota-exceeded-cta {
+  display: block; width: 100%; box-sizing: border-box; cursor: pointer;
+  background: transparent !important; border: 1.5px solid var(--border) !important;
+  color: var(--text) !important; border-radius: 13px !important; padding: 13px !important;
+  font: 700 14px/1 Inter, sans-serif !important;
+  transition: transform .14s cubic-bezier(0.16, 1, 0.3, 1), border-color .18s !important;
+}
+html[data-theme] body button.quota-exceeded-cta:active { transform: scale(0.985); }
+html[data-theme] body .quota-exceeded-dismiss {
+  background: none !important; border: 0 !important; cursor: pointer;
+  font: 600 12.5px/1 Inter, sans-serif !important; color: var(--text-mid) !important; padding: 9px !important;
+}
