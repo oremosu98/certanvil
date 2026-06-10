@@ -15,11 +15,13 @@
   /* session/immersive pages render without the tab bar (mockup behaviour) */
   var HIDE_ON = {
     'quiz': 1, 'exam': 1, 'diagnostic-quiz': 1, 'loading': 1, 'review': 1,
-    'sr-review': 1, 'session-transition': 1, 'acl-pbq': 1, 'guided-lab': 1
+    'sr-review': 1, 'session-transition': 1, 'acl-pbq': 1, 'guided-lab': 1,
+    /* session-end screens carry their own mockup footer (rfoot) */
+    'results': 1, 'exam-results': 1, 'session-complete': 1
   };
 
   /* tab to light when a non-tab page is active */
-  var LIGHT_AS = { 'analytics': 'progress', 'topic-dive': 'progress', 'diagnostic-result': 'setup', 'session-complete': 'setup', 'results': 'setup', 'exam-results': 'setup' };
+  var LIGHT_AS = { 'analytics': 'progress', 'topic-dive': 'progress', 'diagnostic-result': 'setup' };
 
   function init() {
     if (document.getElementById('lift-tabbar')) return;
