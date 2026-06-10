@@ -79,3 +79,6 @@ body.lift-no-tabbar .page { padding-bottom: calc(24px + env(safe-area-inset-bott
 #page-setup .bento > * { grid-column: auto !important; grid-row: auto !important; }
 #page-setup #setup-domain-grid.dgh-dom-grid { grid-template-columns: 1fr !important; }
 #page-setup .stat-row { grid-template-columns: 1fr !important; }
+/* bento drill-by-domain quick-pick: 5-up never fits the column */
+#page-setup .ld-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+#page-setup .ld-grid > * { min-width: 0; }
