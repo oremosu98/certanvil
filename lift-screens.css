@@ -796,3 +796,267 @@ html[data-theme] body #page-progress .recent-card .rt { font: 500 10px/1 Inter, 
 
 /* scoped (filter/search) rows reuse the .t-row treatment above */
 html[data-theme] body #page-progress .empty-note { font: 500 12.5px/1.5 Inter, sans-serif !important; color: var(--text-dim) !important; padding: 6px 0 12px; }
+
+/* ─────────────────────────── ANALYTICS (Phase 3) ─────────────────────────── */
+/* Source: cert-ios-analytics.html — pager flattened to one scroll. The v7.16
+   .ana-bento tiles map 1:1 onto the mockup blocks: s-read→.rd+.tiles ·
+   s-const→.const · s-trend→acc card · s-why→.lev · s-domains→.mrow card ·
+   s-streak→streak card · s-diff→diff card · s-evq→.pvt · s-heat→heatmap ·
+   s-wrong→.slip card · s-miles→milestones · s-exam→full-exams. */
+
+#page-analytics { --lift-ease: cubic-bezier(0.16, 1, 0.3, 1); }
+html[data-theme] body #page-analytics { padding-top: 10px !important; }
+html[data-theme] body #page-analytics > .ed-pagehead { display: none !important; }
+
+/* bento → single mockup column */
+html[data-theme] body #page-analytics .ana-bento {
+  display: block !important; column-count: auto !important; grid-template-columns: none !important;
+}
+html[data-theme] body #page-analytics .ana-bento .tile {
+  width: auto !important; margin: 0 0 12px !important; box-shadow: none !important;
+  border: 1px solid var(--border) !important; border-radius: 17px !important;
+  background: var(--surface) !important; padding: 15px 16px !important;
+}
+
+/* eyebrow → mockup .card-kick (mono, accent) · count → .card-meta */
+html[data-theme] body #page-analytics .tile-eyebrow {
+  font: 700 9.5px/1 'Roboto Mono', ui-monospace, monospace !important; letter-spacing: 0.11em !important;
+  text-transform: uppercase !important; color: var(--accent) !important; margin-bottom: 6px !important;
+  display: flex; align-items: baseline; justify-content: space-between; gap: 10px;
+}
+html[data-theme] body #page-analytics .tile-eyebrow .count {
+  font: 600 10.5px/1 'Roboto Mono', ui-monospace, monospace !important; letter-spacing: 0 !important;
+  text-transform: none !important; color: var(--text-dim) !important; white-space: nowrap;
+}
+/* tile titles → mockup .card-title (Fraunces) */
+html[data-theme] body #page-analytics .ana-bento .tile h2 {
+  font: 600 17px/1.15 Fraunces, Georgia, serif !important; letter-spacing: -0.01em !important;
+  color: var(--text) !important; margin: 0 !important;
+}
+html[data-theme] body #page-analytics .ana-bento .tile h2 em { font-style: normal !important; color: var(--accent) !important; }
+
+/* readiness hero → mockup .rd */
+html[data-theme] body #page-analytics .s-read {
+  border-color: color-mix(in oklab, var(--accent) 22%, var(--border)) !important; border-radius: 18px !important;
+  background: color-mix(in oklab, var(--accent) 5%, var(--surface)) !important; padding: 16px 17px !important;
+}
+html[data-theme] body #page-analytics .read-top { display: flex !important; align-items: center !important; justify-content: space-between !important; gap: 10px; }
+html[data-theme] body #page-analytics .read-top .tile-eyebrow { color: var(--text-dim) !important; letter-spacing: 0.13em !important; }
+html[data-theme] body #page-analytics .read-tier {
+  font: 800 9.5px/1 Inter, sans-serif !important; letter-spacing: 0.08em !important; text-transform: uppercase !important;
+  color: var(--accent) !important; background: color-mix(in oklab, var(--accent) 13%, transparent) !important;
+  border: 1px solid color-mix(in oklab, var(--accent) 32%, transparent) !important;
+  border-radius: 999px !important; padding: 5px 9px !important;
+}
+html[data-theme] body #page-analytics .read-score { display: flex !important; align-items: baseline !important; gap: 8px !important; margin: 12px 0 9px !important; }
+html[data-theme] body #page-analytics .read-score .big {
+  font: 600 44px/1 Fraunces, Georgia, serif !important; color: var(--text) !important;
+  font-variant-numeric: lining-nums tabular-nums; font-feature-settings: "lnum","tnum";
+}
+html[data-theme] body #page-analytics .read-score .of {
+  font: 700 11px/1 'Roboto Mono', ui-monospace, monospace !important; letter-spacing: 0.1em !important;
+  text-transform: uppercase !important; color: var(--text-dim) !important;
+}
+html[data-theme] body #page-analytics .read-cap { font: 400 12.5px/1.45 Inter, sans-serif !important; color: var(--text-mid) !important; margin: 0 0 11px !important; }
+html[data-theme] body #page-analytics .read-cap b { color: var(--text) !important; font-weight: 650 !important; }
+html[data-theme] body #page-analytics .read-bar {
+  height: 8px !important; border-radius: 999px !important; background: var(--surface3) !important;
+  position: relative; overflow: visible !important;
+}
+html[data-theme] body #page-analytics .read-bar i {
+  position: absolute; left: 0; top: 0; bottom: 0; display: block; border-radius: 999px !important;
+  background: var(--accent) !important; transition: width .9s var(--lift-ease);
+}
+html[data-theme] body #page-analytics .read-tick {
+  position: absolute; top: -2px !important; bottom: -2px !important; width: 2px !important;
+  background: color-mix(in oklab, var(--text) 45%, var(--surface3)) !important; border-radius: 0 !important;
+}
+html[data-theme] body #page-analytics .read-fore { display: flex !important; gap: 9px !important; margin-top: 12px !important; }
+html[data-theme] body #page-analytics .read-fore > span {
+  flex: 1 1 0 !important; display: flex !important; flex-direction: column !important; justify-content: flex-start; gap: 5px;
+  border: 1px solid var(--border) !important; border-radius: 12px !important;
+  background: color-mix(in oklab, var(--surface3) 60%, var(--surface)) !important; padding: 10px 11px !important;
+  font: 700 8.5px/1.25 'Roboto Mono', ui-monospace, monospace !important; letter-spacing: 0.08em !important;
+  text-transform: uppercase !important; color: var(--text-dim) !important;
+}
+html[data-theme] body #page-analytics .read-fore .fv { font: 600 17px/1 Fraunces, Georgia, serif !important; color: var(--text) !important; letter-spacing: 0 !important; }
+/* stat tiles 2-up → mockup .tiles/.tile */
+html[data-theme] body #page-analytics .read-stats { display: grid !important; grid-template-columns: 1fr 1fr !important; gap: 10px !important; margin-top: 12px !important; }
+html[data-theme] body #page-analytics .rstat {
+  border: 1px solid var(--border) !important; border-radius: 14px !important;
+  background: var(--surface) !important; padding: 12px 13px !important; display: block !important;
+}
+html[data-theme] body #page-analytics .rstat .n {
+  display: block !important; font: 600 26px/1 Fraunces, Georgia, serif !important; color: var(--text) !important;
+  font-variant-numeric: lining-nums tabular-nums; font-feature-settings: "lnum","tnum";
+}
+html[data-theme] body #page-analytics .rstat .l {
+  display: block !important; font: 600 10.5px/1.2 'Roboto Mono', ui-monospace, monospace !important;
+  letter-spacing: 0.04em !important; text-transform: uppercase !important; color: var(--text-dim) !important; margin-top: 5px !important;
+}
+html[data-theme] body #page-analytics .rstat svg { display: block !important; width: 100% !important; height: 22px !important; margin-top: 8px !important; overflow: visible; }
+html[data-theme] body #page-analytics .rstat svg path { fill: none !important; stroke: var(--accent) !important; stroke-width: 2 !important; stroke-linecap: round; stroke-linejoin: round; }
+
+/* constellation: keep the navy sky, normalize chrome (mockup .const) */
+html[data-theme] body #page-analytics .s-const { border-radius: 17px !important; }
+html[data-theme] body #page-analytics .s-const .const-sub { font-size: 12px !important; line-height: 1.5 !important; margin: 8px 0 12px !important; }
+html[data-theme] body #page-analytics .s-const .const-legend { display: flex !important; flex-wrap: wrap !important; gap: 10px 14px !important; margin-top: 13px !important; }
+
+/* accuracy trend → mockup acc card + .rangeseg */
+html[data-theme] body #page-analytics .trend-head { display: flex !important; align-items: flex-start !important; justify-content: space-between !important; gap: 10px !important; }
+html[data-theme] body #page-analytics .trend-verdict { font: 600 11px/1.35 'Roboto Mono', ui-monospace, monospace !important; color: var(--text-dim) !important; margin: 6px 0 0 !important; }
+html[data-theme] body #page-analytics .acc-tabs {
+  display: inline-flex !important; border: 1px solid var(--border) !important; border-radius: 999px !important;
+  padding: 2px !important; background: var(--surface3) !important; gap: 0 !important; flex: 0 0 auto;
+}
+html[data-theme] body #page-analytics .acc-tab {
+  border: 0 !important; background: none !important; cursor: pointer;
+  font: 700 10px/1 'Roboto Mono', ui-monospace, monospace !important; letter-spacing: 0.04em !important;
+  text-transform: uppercase !important; color: var(--text-dim) !important; padding: 6px 10px !important;
+  border-radius: 999px !important; transition: color .18s, background .18s !important; box-shadow: none !important;
+}
+html[data-theme] body #page-analytics .acc-tab.on, html[data-theme] body #page-analytics .acc-tab[aria-pressed="true"] {
+  color: var(--on-accent, var(--bg)) !important; background: var(--accent) !important;
+}
+html[data-theme] body #page-analytics .acc-wrap { margin-top: 12px !important; }
+
+/* highest-leverage → mockup .lev */
+html[data-theme] body #page-analytics .s-why {
+  border-color: color-mix(in oklab, var(--accent) 26%, var(--border)) !important; border-radius: 18px !important;
+  background: color-mix(in oklab, var(--accent) 6%, var(--surface)) !important; padding: 16px !important;
+}
+html[data-theme] body #page-analytics .why-lev { display: flex !important; align-items: baseline !important; gap: 7px !important; margin-top: 2px; }
+html[data-theme] body #page-analytics .why-lev .v { font: 600 26px/1.05 Fraunces, Georgia, serif !important; color: var(--accent) !important; letter-spacing: -0.01em !important; }
+html[data-theme] body #page-analytics .why-lev .l { font: 700 12px/1.3 'Roboto Mono', ui-monospace, monospace !important; color: var(--text-dim) !important; }
+html[data-theme] body #page-analytics .why-head { font: 700 14px/1.3 Inter, sans-serif !important; color: var(--text) !important; margin: 8px 0 0 !important; }
+html[data-theme] body #page-analytics .why-body { font: 400 12.5px/1.55 Inter, sans-serif !important; color: var(--text-mid) !important; margin: 9px 0 13px !important; }
+html[data-theme] body #page-analytics .why-factors { display: flex !important; flex-direction: column !important; gap: 9px !important; }
+html[data-theme] body #page-analytics .why-f { display: flex !important; align-items: flex-start !important; gap: 9px !important; font: 400 12px/1.4 Inter, sans-serif !important; color: var(--text-mid) !important; }
+html[data-theme] body #page-analytics .why-f .ar { flex: 0 0 auto; font-size: 11px !important; margin-top: 1px; }
+html[data-theme] body #page-analytics .why-f .ar.down { color: var(--red) !important; }
+html[data-theme] body #page-analytics .why-f .ar.up { color: var(--green) !important; }
+html[data-theme] body #page-analytics .why-f .ft { color: var(--text) !important; font-weight: 650 !important; }
+
+/* mastery by domain → mockup .mrow */
+html[data-theme] body #page-analytics .dom-list { display: block !important; }
+html[data-theme] body #page-analytics .dom-row { display: block !important; margin: 0 0 13px !important; padding: 0 !important; border: 0 !important; background: none !important; }
+html[data-theme] body #page-analytics .dom-row:last-child { margin-bottom: 0 !important; }
+html[data-theme] body #page-analytics .dom-row .dl { display: flex !important; align-items: baseline !important; gap: 7px !important; float: left; }
+html[data-theme] body #page-analytics .dom-row .dl .obj { font: 600 10.5px/1 'Roboto Mono', ui-monospace, monospace !important; color: var(--text-dim) !important; }
+html[data-theme] body #page-analytics .dom-row .dl .txt { font: 650 13.5px/1.2 Inter, sans-serif !important; color: var(--text) !important; }
+html[data-theme] body #page-analytics .dom-row .dm { float: right; font: 700 12px/1 'Roboto Mono', ui-monospace, monospace !important; color: var(--text-dim) !important; font-variant-numeric: lining-nums tabular-nums; }
+html[data-theme] body #page-analytics .dom-bar {
+  clear: both; height: 8px !important; border-radius: 999px !important; background: var(--surface3) !important;
+  position: relative; overflow: hidden; margin-top: 7px !important;
+}
+html[data-theme] body #page-analytics .dom-bar i { position: absolute; left: 0; top: 0; bottom: 0; display: block; border-radius: 999px !important; transition: width .9s var(--lift-ease); }
+html[data-theme] body #page-analytics .dom-meta { font: 400 11px/1.4 Inter, sans-serif !important; color: var(--text-dim) !important; margin-top: 6px !important; }
+html[data-theme] body #page-analytics .dom-meta .tag { color: var(--red) !important; font-weight: 600 !important; background: none !important; border: 0 !important; padding: 0 !important; }
+
+/* streak → mockup streak card */
+html[data-theme] body #page-analytics .streak-main { display: flex !important; align-items: baseline !important; gap: 10px !important; }
+html[data-theme] body #page-analytics .streak-main .v { font: 600 36px/1 Fraunces, Georgia, serif !important; color: var(--text) !important; font-variant-numeric: lining-nums; }
+html[data-theme] body #page-analytics .streak-main .l {
+  font: 700 11px/1 'Roboto Mono', ui-monospace, monospace !important; letter-spacing: 0.06em !important;
+  text-transform: uppercase !important; color: var(--text-dim) !important;
+}
+html[data-theme] body #page-analytics .streak-sub { font: 400 11.5px/1.5 Inter, sans-serif !important; color: var(--text-mid) !important; margin: 9px 0 12px !important; }
+html[data-theme] body #page-analytics .week-dots { display: flex !important; gap: 7px !important; }
+html[data-theme] body #page-analytics .week-dots .wd { flex: 1 1 0 !important; display: flex !important; flex-direction: column !important; align-items: center !important; gap: 6px !important; }
+html[data-theme] body #page-analytics .week-dots .dot {
+  width: 100% !important; height: auto !important; aspect-ratio: 1 !important; border-radius: 9px !important;
+  background: var(--surface3) !important; border: 1px solid var(--border) !important;
+}
+html[data-theme] body #page-analytics .week-dots .wd.on .dot {
+  background: color-mix(in oklab, var(--accent) 30%, var(--surface)) !important;
+  border-color: color-mix(in oklab, var(--accent) 45%, var(--border)) !important;
+}
+html[data-theme] body #page-analytics .week-dots .wl { font: 700 9px/1 'Roboto Mono', ui-monospace, monospace !important; color: var(--text-dim) !important; }
+html[data-theme] body #page-analytics .week-dots .wd.on .wl { color: var(--accent) !important; }
+
+/* difficulty → mockup diff rows */
+html[data-theme] body #page-analytics .diff-list { display: block !important; }
+html[data-theme] body #page-analytics .s-diff .diff-row { margin: 0 0 13px !important; padding: 0 !important; border: 0 !important; background: none !important; }
+html[data-theme] body #page-analytics .s-diff .diff-row:last-child { margin-bottom: 0 !important; }
+html[data-theme] body #page-analytics .diff-top { display: flex !important; align-items: baseline !important; justify-content: space-between !important; margin-bottom: 7px !important; }
+html[data-theme] body #page-analytics .diff-top .dk { font: 650 13px/1 Inter, sans-serif !important; color: var(--text) !important; }
+html[data-theme] body #page-analytics .diff-top .dv { font: 700 12px/1 'Roboto Mono', ui-monospace, monospace !important; color: var(--accent) !important; font-variant-numeric: lining-nums tabular-nums; }
+html[data-theme] body #page-analytics .diff-top .dc { font: 600 10.5px/1 'Roboto Mono', ui-monospace, monospace !important; color: var(--text-dim) !important; margin-left: 7px; }
+html[data-theme] body #page-analytics .diff-bar { height: 8px !important; border-radius: 999px !important; background: var(--surface3) !important; position: relative; overflow: hidden; }
+html[data-theme] body #page-analytics .diff-bar i { position: absolute; left: 0; top: 0; bottom: 0; display: block; border-radius: 999px !important; background: var(--accent) !important; transition: width .9s var(--lift-ease); }
+
+/* practice vs timed → mockup .pvt */
+html[data-theme] body #page-analytics .evq-nums { display: flex !important; gap: 10px !important; margin-top: 4px; }
+html[data-theme] body #page-analytics .evq-cell {
+  flex: 1 1 0 !important; border: 1px solid var(--border) !important; border-radius: 13px !important;
+  background: var(--surface3) !important; padding: 12px 13px !important; text-align: center !important;
+}
+html[data-theme] body #page-analytics .evq-cell .n { font: 600 16px/1.2 Fraunces, Georgia, serif !important; color: var(--text-mid) !important; }
+html[data-theme] body #page-analytics .evq-cell .t {
+  font: 700 9px/1 'Roboto Mono', ui-monospace, monospace !important; letter-spacing: 0.08em !important;
+  text-transform: uppercase !important; color: var(--text-dim) !important; margin-top: 6px !important;
+}
+html[data-theme] body #page-analytics .evq-cell .s { font: 500 10px/1.3 Inter, sans-serif !important; color: var(--text-dim) !important; margin-top: 3px !important; }
+html[data-theme] body #page-analytics .evq-note { font: 400 12px/1.5 Inter, sans-serif !important; color: var(--text-mid) !important; margin: 10px 0 0 !important; }
+
+/* heatmap foot → mockup .heat-legend */
+html[data-theme] body #page-analytics .heat-wrap { margin-top: 8px; }
+html[data-theme] body #page-analytics .heat-foot {
+  display: flex !important; align-items: center !important; justify-content: space-between !important;
+  margin-top: 11px !important; font: 700 9px/1 'Roboto Mono', ui-monospace, monospace !important;
+  letter-spacing: 0.05em !important; text-transform: uppercase !important; color: var(--text-dim) !important;
+}
+html[data-theme] body #page-analytics .heat-scale { display: inline-flex !important; align-items: center; gap: 3px !important; }
+html[data-theme] body #page-analytics .heat-scale .heat-cell { width: 10px !important; height: 10px !important; border-radius: 2.5px !important; }
+
+/* where you slip → mockup .slip rows */
+html[data-theme] body #page-analytics .wrong-list { display: block !important; }
+html[data-theme] body #page-analytics .wrong-row {
+  display: flex !important; align-items: center !important; gap: 12px !important;
+  padding: 11px 0 !important; margin: 0 !important; border: 0 !important; background: none !important;
+  border-bottom: 1px solid color-mix(in oklab, var(--border) 60%, transparent) !important; border-radius: 0 !important;
+}
+html[data-theme] body #page-analytics .wrong-row:last-child { border-bottom: 0 !important; padding-bottom: 2px !important; }
+html[data-theme] body #page-analytics .wrong-row .rank, html[data-theme] body #page-analytics .wrong-rank {
+  flex: 0 0 auto; width: 24px !important; height: 24px !important; border-radius: 8px !important;
+  background: color-mix(in oklab, var(--red) 14%, var(--surface3)) !important; color: var(--red) !important;
+  display: grid !important; place-items: center !important; font: 700 12px/1 'Roboto Mono', ui-monospace, monospace !important;
+}
+html[data-theme] body #page-analytics .wrong-mid { flex: 1 1 auto; min-width: 0; }
+html[data-theme] body #page-analytics .wrong-mid .n { font: 650 13px/1.2 Inter, sans-serif !important; color: var(--text) !important; }
+html[data-theme] body #page-analytics .wrong-mid .d { font: 500 11px/1.4 Inter, sans-serif !important; color: var(--text-dim) !important; margin-top: 2px !important; }
+html[data-theme] body #page-analytics .wrong-row .miss, html[data-theme] body #page-analytics .wrong-miss { flex: 0 0 auto; font: 700 11px/1 'Roboto Mono', ui-monospace, monospace !important; color: var(--red) !important; }
+
+/* milestones → mockup .mile rows */
+html[data-theme] body #page-analytics .mile-count { font: 600 24px/1 Fraunces, Georgia, serif !important; color: var(--text) !important; text-transform: none !important; letter-spacing: 0 !important; }
+html[data-theme] body #page-analytics .mile-count small { font: 700 13px/1 'Roboto Mono', ui-monospace, monospace !important; color: var(--text-dim) !important; }
+html[data-theme] body #page-analytics .mile-prog { height: 8px !important; border-radius: 999px !important; background: var(--surface3) !important; position: relative; overflow: hidden; margin: 10px 0 4px !important; }
+html[data-theme] body #page-analytics .mile-prog i { position: absolute; left: 0; top: 0; bottom: 0; display: block; border-radius: 999px !important; background: var(--accent) !important; transition: width .9s var(--lift-ease); }
+html[data-theme] body #page-analytics .mile-list { display: block !important; margin-top: 4px; }
+html[data-theme] body #page-analytics .mile-row {
+  display: flex !important; align-items: center !important; gap: 11px !important; padding: 10px 0 !important;
+  margin: 0 !important; border: 0 !important; background: none !important;
+  border-bottom: 1px solid color-mix(in oklab, var(--border) 60%, transparent) !important; border-radius: 0 !important;
+}
+html[data-theme] body #page-analytics .mile-row:last-child { border-bottom: 0 !important; padding-bottom: 2px !important; }
+html[data-theme] body #page-analytics .mile-ic {
+  flex: 0 0 auto; width: 32px !important; height: 32px !important; border-radius: 10px !important;
+  display: grid !important; place-items: center !important;
+  background: color-mix(in oklab, var(--accent) 14%, var(--surface3)) !important; color: var(--accent) !important;
+}
+html[data-theme] body #page-analytics .mile-ic svg { width: 16px !important; height: 16px !important; }
+html[data-theme] body #page-analytics .mile-txt { flex: 1 1 auto; min-width: 0; }
+html[data-theme] body #page-analytics .mile-txt .n { font: 650 13px/1.2 Inter, sans-serif !important; color: var(--text) !important; }
+html[data-theme] body #page-analytics .mile-txt .d { font: 500 10.5px/1.3 'Roboto Mono', ui-monospace, monospace !important; color: var(--text-dim) !important; margin-top: 3px !important; }
+
+/* full exams */
+html[data-theme] body #page-analytics .exam-list { display: block !important; }
+html[data-theme] body #page-analytics .exam-row { padding: 8px 0 2px !important; margin: 0 !important; border: 0 !important; background: none !important; }
+html[data-theme] body #page-analytics .exam-row .el { font: 650 13px/1.3 Inter, sans-serif !important; color: var(--text) !important; }
+html[data-theme] body #page-analytics .exam-row .ed { font: 500 10.5px/1.4 'Roboto Mono', ui-monospace, monospace !important; color: var(--text-dim) !important; margin-top: 3px !important; }
+
+/* analytics empty state: calm centered card */
+html[data-theme] body #page-analytics .ana-empty-card {
+  border: 1px solid var(--border) !important; border-radius: 17px !important;
+  background: var(--surface) !important; padding: 26px 18px !important; text-align: center;
+}
