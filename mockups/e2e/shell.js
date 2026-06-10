@@ -30,6 +30,7 @@
     'first-run-diag'    : 'onboarding-first-run-diagnostic.html',
     'notifications'     : 'onboarding-notifications-prime.html',
     'home'              : 'cert-ios-home.html',
+    'drills'            : 'cert-ios-drills.html',
     'hub'               : 'cert-ios-hub.html',
     'quiz'              : 'cert-ios-quiz.html',
     'custom-quiz'       : 'cert-ios-custom-quiz.html',
@@ -96,6 +97,10 @@
                            {sel:'.opt', to:'quiz'},                // remaining practice options
                            {sel:'.custom', to:'custom-quiz'},      // Build a custom quiz
                            {sel:'.domain', to:'quiz'} ],           // drill-by-domain (stand-in)
+    // drills launcher: every drill CTA starts a (10-Q) drill session -> quiz
+    'drills'           : [ {sel:'#drillMistakes', to:'quiz'},
+                           {sel:'#drillWeak',     to:'quiz'},
+                           {sel:'.domain',        to:'quiz'} ],
     'review'           : [ {sel:'#toHome', to:'home'} ],
     // report is a sheet; its X / Cancel close it (pop back to the previous screen)
     'report'           : [ {sel:'#closeBtn', to:'pop'}, {sel:'#cancelBtn', to:'pop'} ],
@@ -156,7 +161,7 @@
 
   // The dashboard tab bar (Home/Drills/Progress/Account) recurs across screens.
   // Wire it generically by label so every screen that has it navigates.
-  var TABS = { 'Home':'home', 'Drills':'quiz', 'Progress':'progress', 'Account':'settings',
+  var TABS = { 'Home':'home', 'Drills':'drills', 'Progress':'progress', 'Account':'settings',
                'Analytics':'analytics', 'Settings':'settings' };
 
   // ── Injected CSS: strip the gallery frame, render .screen full-bleed ────

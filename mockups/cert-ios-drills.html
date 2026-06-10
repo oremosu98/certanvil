@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>CertAnvil · Drills (iOS)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700;800&family=Roboto+Mono:wght@500;600&display=swap" rel="stylesheet" />
+<style>
+  /* Forged-bronze tokens (matches dg-system.css + the onboarding mockups). */
+  :root {
+    --bg: oklch(0.15 0.010 275); --surface: oklch(0.205 0.009 275); --surface-2: oklch(0.255 0.010 275);
+    --ink: oklch(0.97 0.006 275); --ink-soft: oklch(0.80 0.010 275); --muted: oklch(0.62 0.013 275);
+    --border: oklch(0.34 0.009 275);
+    --accent: oklch(0.82 0.150 66); --accent-bright: oklch(0.88 0.140 72); --accent-deep: oklch(0.72 0.150 62);
+    --on-accent: oklch(0.18 0.020 275); --pass: oklch(0.78 0.150 152); --miss: oklch(0.68 0.165 25); --track: oklch(0.30 0.010 275);
+    --page-bg: oklch(0.22 0.012 275); --page-ink: oklch(0.92 0.008 275); --page-dim: oklch(0.66 0.012 275);
+  }
+  [data-theme="light"] {
+    --bg: oklch(0.975 0.007 85); --surface: oklch(0.955 0.009 84); --surface-2: oklch(0.92 0.010 84);
+    --ink: oklch(0.22 0.015 280); --ink-soft: oklch(0.38 0.014 280); --muted: oklch(0.52 0.013 280);
+    --border: oklch(0.85 0.010 85);
+    --accent: oklch(0.55 0.155 55); --accent-bright: oklch(0.62 0.150 58); --accent-deep: oklch(0.46 0.150 52);
+    --on-accent: oklch(0.99 0.008 85); --pass: oklch(0.52 0.13 150); --miss: oklch(0.55 0.18 25); --track: oklch(0.88 0.010 85);
+    --page-bg: oklch(0.93 0.010 84); --page-ink: oklch(0.28 0.015 280); --page-dim: oklch(0.46 0.013 280);
+  }
+  :root { --ease: cubic-bezier(0.16,1,0.3,1); }
+
+  * { box-sizing: border-box; }
+  html { color-scheme: light dark; }
+  body { margin: 0; background: var(--page-bg); color: var(--page-ink);
+    font: 15px/1.55 Inter, -apple-system, BlinkMacSystemFont, sans-serif; padding: 30px 20px 64px;
+    transition: background .35s var(--ease), color .35s var(--ease); }
+  .stage { max-width: 520px; margin: 0 auto; }
+  .stage-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 24px; }
+  .stage-eyebrow { font-size: 10.5px; font-weight: 800; letter-spacing: 0.16em; text-transform: uppercase; color: var(--accent-bright); margin: 0 0 7px; }
+  .stage-title { font-family: Fraunces, Georgia, serif; font-weight: 600; font-size: 24px; letter-spacing: -0.012em; margin: 0; color: var(--page-ink); }
+  .stage-sub { color: var(--page-dim); font-size: 13px; margin: 7px 0 0; max-width: 48ch; line-height: 1.5; }
+  .theme-toggle { flex: 0 0 auto; display: inline-flex; align-items: center; gap: 7px; font: 600 12px/1 Inter, sans-serif; color: var(--accent-bright);
+    background: transparent; border: 1px solid color-mix(in oklab, var(--accent-bright) 38%, var(--page-dim)); border-radius: 999px; padding: 8px 13px; cursor: pointer; transition: transform .15s var(--ease), background .2s; }
+  .theme-toggle svg { width: 15px; height: 15px; stroke: currentColor; fill: none; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+  .theme-toggle:active { transform: scale(0.97); }
+
+  .phone-wrap { display: flex; flex-direction: column; align-items: center; }
+  .phone { width: 390px; height: 844px; border-radius: 52px; padding: 11px; flex: 0 0 auto;
+    background: linear-gradient(165deg, #23262f, #0c0d11); box-shadow: 0 40px 90px -34px rgba(0,0,0,0.6), 0 0 0 1.5px rgba(255,255,255,0.06) inset; }
+  .screen { width: 100%; height: 100%; border-radius: 42px; overflow: hidden; position: relative; background: var(--bg); color: var(--ink);
+    display: flex; flex-direction: column; transition: background .35s var(--ease), color .35s var(--ease); }
+  .notch { position: absolute; top: 9px; left: 50%; transform: translateX(-50%); width: 122px; height: 32px; background: #07080b; border-radius: 18px; z-index: 6; }
+  .statusbar { display: flex; align-items: center; justify-content: space-between; padding: 14px 26px 0; font: 700 13px/1 Inter, sans-serif; color: var(--ink); }
+  .sb-icons { display: inline-flex; gap: 6px; align-items: center; }
+  .sb-icons svg { width: 17px; height: 12px; fill: var(--ink); }
+
+  /* header — tab root: no back button, title + cert tag + theme */
+  .hdr { display: flex; align-items: center; gap: 11px; padding: 14px 22px 10px; }
+  .hdr h1 { font-family: Fraunces, Georgia, serif; font-weight: 600; font-size: 21px; letter-spacing: -0.01em; margin: 0; color: var(--ink); flex: 1; }
+  .hdr .plan-tag { font: 800 9.5px/1 Inter, sans-serif; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); background: color-mix(in oklab, var(--ink) 6%, transparent); border: 1px solid var(--border); border-radius: 999px; padding: 6px 9px; }
+  .app-theme { flex:0 0 auto; width:34px; height:34px; border-radius:10px; border:1px solid var(--border); background:var(--surface); display:grid; place-items:center; cursor:pointer; color:var(--ink-soft); transition:transform .14s var(--ease), border-color .18s; }
+  .app-theme:active{ transform:scale(.94); }
+  @media (hover:hover) and (pointer:fine){ .app-theme:hover{ border-color:color-mix(in oklab,var(--accent) 36%,var(--border)); } }
+  .app-theme svg{ width:17px; height:17px; stroke:currentColor; fill:none; stroke-width:1.9; stroke-linecap:round; stroke-linejoin:round; }
+
+  .body { flex: 1; min-height: 0; overflow-y: auto; padding: 4px 22px 22px; }
+  .lede { font: 500 12.5px/1.5 Inter, sans-serif; color: var(--muted); margin: 2px 2px 14px; }
+
+  .sect { font: 800 10px/1 Inter, sans-serif; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin: 18px 2px 11px; }
+  .card { border: 1px solid var(--border); border-radius: 16px; background: var(--surface); padding: 15px 16px; margin-bottom: 11px; }
+  .card-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .card-title { font: 650 14.5px/1.2 Inter, sans-serif; color: var(--ink); }
+  .card-note { font-size: 12px; line-height: 1.45; color: var(--muted); margin: 9px 0 0; }
+  .card-note b { color: var(--ink-soft); font-weight: 650; }
+
+  .count-pill { flex: 0 0 auto; font: 700 10.5px/1 'Roboto Mono', monospace; color: var(--accent-deep);
+    border: 1px solid color-mix(in oklab, var(--accent) 38%, var(--border)); background: color-mix(in oklab, var(--accent) 10%, var(--surface));
+    border-radius: 999px; padding: 6px 10px; }
+
+  .btn-drill { width: 100%; margin-top: 12px; border: none; border-radius: 12px; padding: 12px; cursor: pointer; background: var(--accent); color: var(--on-accent); font: 700 14px/1 Inter, sans-serif; transition: transform .14s var(--ease), filter .2s; }
+  .btn-drill:active { transform: scale(0.985); }
+  @media (hover:hover) and (pointer:fine) { .btn-drill:hover { filter: brightness(1.06); } }
+
+  .topic-chips { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 11px; }
+  .chip { font: 600 11.5px/1 Inter, sans-serif; color: var(--ink-soft); border: 1px solid var(--border); background: var(--surface-2); border-radius: 999px; padding: 7px 11px; }
+  .chip b { color: var(--miss); font-weight: 700; font-variant-numeric: tabular-nums; }
+
+  /* domain rows (same shape as the home accordion) */
+  .domain { border: 1px solid var(--border); border-radius: 14px; background: var(--surface-2); padding: 12px 14px; margin-bottom: 9px; cursor: pointer; transition: border-color .18s, transform .12s var(--ease); }
+  .domain:active { transform: scale(0.995); }
+  @media (hover:hover) and (pointer:fine) { .domain:hover { border-color: color-mix(in oklab, var(--accent) 36%, var(--border)); } }
+  .domain-top { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+  .domain-top b { font: 650 13.5px/1.2 Inter, sans-serif; color: var(--ink); }
+  .domain-wt { flex: 0 0 auto; font: 600 10px/1 'Roboto Mono', monospace; color: var(--muted); }
+  .domain-bar { height: 6px; border-radius: 999px; background: var(--track); overflow: hidden; margin-top: 8px; position: relative; }
+  .domain-bar > span { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 999px; background: var(--accent); transition: width .7s var(--ease); }
+  .domain-bar.full > span { background: var(--pass); }
+  .domain-mast { font: 600 9.5px/1 Inter, sans-serif; color: var(--muted); margin-top: 6px; }
+  .domain-mast b { color: var(--ink-soft); font-weight: 700; }
+
+  .foot-note { font: 500 11px/1.5 Inter, sans-serif; color: var(--muted); text-align: center; margin: 16px 8px 4px; }
+
+  .tabbar { flex: 0 0 auto; display: flex; border-top: 1px solid color-mix(in oklab, var(--border) 70%, transparent); background: color-mix(in oklab, var(--bg) 86%, var(--surface)); padding: 8px 8px calc(8px + env(safe-area-inset-bottom)); }
+  .tab { flex: 1 1 0; display: flex; flex-direction: column; align-items: center; gap: 4px; background: none; border: none; cursor: pointer; padding: 5px 0; color: var(--muted); transition: color .18s, transform .14s var(--ease); }
+  .tab svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+  .tab span { font: 700 10px/1 Inter, sans-serif; letter-spacing: 0.01em; }
+  .tab.on { color: var(--accent-deep); }
+
+  @media (prefers-reduced-motion: no-preference) {
+    @keyframes rise { to { opacity: 1; transform: none; } }
+    .reveal { opacity: 0; transform: translateY(9px); animation: rise .5s var(--ease) forwards; }
+    .reveal:nth-child(1){animation-delay:.04s}.reveal:nth-child(2){animation-delay:.08s}.reveal:nth-child(3){animation-delay:.12s}
+    .reveal:nth-child(4){animation-delay:.16s}.reveal:nth-child(5){animation-delay:.20s}.reveal:nth-child(6){animation-delay:.24s}
+    .reveal:nth-child(7){animation-delay:.28s}.reveal:nth-child(8){animation-delay:.32s}.reveal:nth-child(9){animation-delay:.36s}
+    .reveal:nth-child(10){animation-delay:.40s}.reveal:nth-child(11){animation-delay:.44s}.reveal:nth-child(12){animation-delay:.48s}
+  }
+
+  .hint { color: var(--page-dim); font-size: 12px; margin: 18px 0 0; text-align: center; }
+</style>
+</head>
+<body>
+  <div class="stage">
+    <div class="stage-head">
+      <div>
+        <p class="stage-eyebrow">Cert app · iOS</p>
+        <h1 class="stage-title">Drills</h1>
+        <p class="stage-sub">The Drills tab home: targeted reps on saved mistakes, weakest topics, and any exam domain. New ground stays in Practice — this tab only sharpens what you've already met.</p>
+      </div>
+      <button class="theme-toggle" id="themeToggle" type="button">
+        <svg id="themeIcon" viewBox="0 0 24 24" aria-hidden="true"></svg><span id="themeLabel">Dark</span>
+      </button>
+    </div>
+
+    <div class="phone-wrap">
+      <div class="phone">
+        <div class="screen" id="screen">
+          <div class="notch"></div>
+          <div class="statusbar">
+            <span>9:41</span>
+            <span class="sb-icons">
+              <svg viewBox="0 0 18 12" aria-hidden="true"><rect x="0" y="7" width="3" height="5" rx="1"/><rect x="5" y="4" width="3" height="8" rx="1"/><rect x="10" y="1" width="3" height="11" rx="1" opacity="0.4"/></svg>
+              <svg viewBox="0 0 18 12" aria-hidden="true"><rect x="1" y="2" width="14" height="8" rx="2.4" fill="none" stroke="currentColor" stroke-width="1.4"/><rect x="2.6" y="3.6" width="9" height="4.8" rx="1.2"/><rect x="16" y="4.6" width="1.4" height="2.8" rx="0.7"/></svg>
+            </span>
+          </div>
+
+          <div class="hdr">
+            <h1>Drills</h1>
+            <span class="plan-tag">N10-009</span>
+            <button class="app-theme" id="appTheme" type="button" aria-label="Switch theme"><svg id="appThemeIcon" viewBox="0 0 24 24" aria-hidden="true"></svg></button>
+          </div>
+
+          <div class="body">
+            <p class="lede reveal">Short, repeat passes on the things you get wrong. Ten questions or fewer, scored like practice.</p>
+
+            <!-- ── Mistakes first: the highest-value drill ── -->
+            <div class="card reveal">
+              <div class="card-head"><span class="card-title">Drill Mistakes</span><span class="count-pill">9 saved</span></div>
+              <p class="card-note">Clear the <b>9 wrong answers</b> in your bank. Get one right twice in a row and it leaves the bank for good.</p>
+              <button class="btn-drill" id="drillMistakes" type="button">Drill the 9 you missed</button>
+            </div>
+
+            <!-- ── Weakest topics from the readiness model ── -->
+            <div class="card reveal">
+              <div class="card-head"><span class="card-title">Weakest topics</span></div>
+              <div class="topic-chips">
+                <span class="chip">OSPF vs RIP behaviour <b>41%</b></span>
+                <span class="chip">Port security <b>48%</b></span>
+                <span class="chip">QoS marking <b>55%</b></span>
+              </div>
+              <p class="card-note">Your three lowest-mastery topics right now. The drill leads with these and stops when each one clears 70%.</p>
+              <button class="btn-drill" id="drillWeak" type="button">Drill weakest topics</button>
+            </div>
+
+            <!-- ── Domain drills ── -->
+            <div class="sect reveal">Drill by domain</div>
+            <div class="reveal">
+              <div class="domain" role="button" tabindex="0">
+                <div class="domain-top"><b>Networking Concepts</b><span class="domain-wt">23% of exam</span></div>
+                <div class="domain-bar full"><span style="width:100%"></span></div>
+                <div class="domain-mast">Mastery <b>100%</b> · 10 Q</div>
+              </div>
+              <div class="domain" role="button" tabindex="0">
+                <div class="domain-top"><b>Network Implementation</b><span class="domain-wt">20% of exam</span></div>
+                <div class="domain-bar"><span style="width:0%"></span></div>
+                <div class="domain-mast">Mastery <b>0%</b>, untouched · 10 Q</div>
+              </div>
+              <div class="domain" role="button" tabindex="0">
+                <div class="domain-top"><b>Network Operations</b><span class="domain-wt">19% of exam</span></div>
+                <div class="domain-bar full"><span style="width:100%"></span></div>
+                <div class="domain-mast">Mastery <b>100%</b> · 10 Q</div>
+              </div>
+              <div class="domain" role="button" tabindex="0">
+                <div class="domain-top"><b>Network Security</b><span class="domain-wt">14% of exam</span></div>
+                <div class="domain-bar"><span style="width:75%"></span></div>
+                <div class="domain-mast">Mastery <b>75%</b> · 10 Q</div>
+              </div>
+              <div class="domain" role="button" tabindex="0">
+                <div class="domain-top"><b>Network Troubleshooting</b><span class="domain-wt">24% of exam</span></div>
+                <div class="domain-bar"><span style="width:50%"></span></div>
+                <div class="domain-mast">Mastery <b>50%</b> · 10 Q</div>
+              </div>
+            </div>
+
+            <p class="foot-note reveal">Drills don't touch your daily review queue — those cards stay scheduled.</p>
+          </div>
+
+          <div class="tabbar">
+            <button class="tab" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11l8-7 8 7"></path><path d="M6 10v9h12v-9"></path></svg><span>Home</span></button>
+            <button class="tab on" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10"></path></svg><span>Drills</span></button>
+            <button class="tab" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19V9M12 19V4M19 19v-7"></path></svg><span>Progress</span></button>
+            <button class="tab" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"></circle><path d="M4 21a8 8 0 0 1 16 0"></path></svg><span>Account</span></button>
+          </div>
+        </div>
+      </div>
+      <p class="hint">Drills tab home. Mistakes bank and weak-topic drills lead; domain drills below. CTAs launch a 10-question drill session.</p>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      var html = document.documentElement, label = document.getElementById('themeLabel'), icon = document.getElementById('themeIcon');
+      var appIcon = document.getElementById('appThemeIcon');
+      var SUN = '<circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path>';
+      var MOON = '<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"></path>';
+      try { var saved = localStorage.getItem('ca-theme'); if (saved) html.setAttribute('data-theme', saved); } catch (e) {}
+      function paint(){
+        var dark = html.getAttribute('data-theme') !== 'light';
+        if (icon) icon.innerHTML = dark ? SUN : MOON;
+        if (label) label.textContent = dark ? 'Light' : 'Dark';
+        if (appIcon) appIcon.innerHTML = dark ? SUN : MOON;
+      }
+      function toggleTheme(){
+        var next = html.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+        html.setAttribute('data-theme', next);
+        try { localStorage.setItem('ca-theme', next); } catch (e) {}
+        paint();
+      }
+      var tt = document.getElementById('themeToggle'); if (tt) tt.addEventListener('click', toggleTheme);
+      var at = document.getElementById('appTheme'); if (at) at.addEventListener('click', toggleTheme);
+      paint();
+    })();
+  </script>
+</body>
+</html>

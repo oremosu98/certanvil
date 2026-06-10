@@ -30,7 +30,7 @@ const SHELL = '/mockups/cert-ios-app.html';
 const ALL_SCREENS = [
   'native-welcome', 'rollout', 'signup-signin', 'magic-link', 'welcome-back',
   'plan-picker', 'free-cert-picker', 'free-home-day0', 'first-run-diag',
-  'notifications', 'home', 'hub', 'quiz', 'custom-quiz', 'exam', 'results',
+  'notifications', 'home', 'drills', 'hub', 'quiz', 'custom-quiz', 'exam', 'results',
   'exam-results', 'progress', 'analytics', 'report', 'cross-cert', 'settings',
   'log-result', 'review', 'review-answers', 'daily-limit', 'free-capped-home',
   'upgrade-sheet', 'pro-iap', 'pro-welcome', 'my-certs-pro', 'restore-purchase',
@@ -47,7 +47,7 @@ const SCREENS = ALL_SCREENS.filter((id) => !NO_SCREEN.includes(id));
 const PRO_VARIANTS = ['home', 'hub', 'settings', 'my-certs-pro'];
 
 const THEMES = /** @type {const} */ (['light', 'dark']);
-const DEMO_KEYS = ['e2e_daily15', 'e2e_overcap', 'e2e_daily_goal', 'e2e_review_size', 'e2e_topup'];
+const DEMO_KEYS = ['e2e_daily15', 'e2e_overcap', 'e2e_daily_goal', 'e2e_review_size', 'e2e_topup', 'e2e_exam_date'];
 
 // The active screen's `.screen` element, inside the top iframe of the stack.
 function activeScreen(page) {
