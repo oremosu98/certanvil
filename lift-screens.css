@@ -499,6 +499,21 @@ html[data-theme] body #page-settings > .ed-pagehead { display: none !important; 
 #page-progress { --lift-ease: cubic-bezier(0.16, 1, 0.3, 1); }
 html[data-theme] body #page-progress { padding-top: 10px !important; }
 
+/* Progress ⇄ Analytics seg switcher (lift-shell injects; mockup .seg chips) */
+html[data-theme] body .lift-seg { display: flex; gap: 8px; margin: 2px 0 12px; }
+html[data-theme] body .lift-seg-chip {
+  font: 700 12px/1 Inter, sans-serif; padding: 8px 13px; border-radius: 999px;
+  border: 1px solid var(--border); background: var(--surface); color: var(--text-mid);
+  cursor: pointer; white-space: nowrap;
+  transition: background .2s, color .2s, border-color .2s, transform .14s cubic-bezier(0.16, 1, 0.3, 1);
+}
+html[data-theme] body .lift-seg-chip:active { transform: scale(.96); }
+html[data-theme] body .lift-seg-chip.on {
+  background: color-mix(in oklab, var(--accent) 12%, var(--surface));
+  border-color: color-mix(in oklab, var(--accent) 45%, var(--border));
+  color: var(--accent);
+}
+
 /* surfaces the mockup doesn't carry */
 html[data-theme] body #page-progress .ed-pagehead { display: none !important; }
 html[data-theme] body #page-progress #progress-rec-host { display: none !important; }

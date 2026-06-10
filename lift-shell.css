@@ -40,8 +40,10 @@ html[data-theme] body {
   padding-bottom: calc(24px + var(--lift-tab-h) + env(safe-area-inset-bottom)) !important;
 }
 
-/* desktop-era topbar extras have no place in the phone column */
-#topbar-time, .topbar-version-pill, #topbar-toggle { display: none !important; }
+/* desktop-era topbar extras have no place in the phone column.
+   The version pill STAYS — it's the triple-tap production-monitor entry. */
+#topbar-time, #topbar-toggle { display: none !important; }
+.topbar-version-pill { font-size: 9px !important; opacity: .7; }
 
 /* ─ bottom tab bar (mockup tabbar: Home / Drills / Progress / Account) ─ */
 #lift-tabbar {

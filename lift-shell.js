@@ -37,10 +37,9 @@
     bar.addEventListener('click', function (e) {
       var b = e.target.closest('.lift-tab');
       if (!b || typeof window.showPage !== 'function') return;
-      var page = b.getAttribute('data-page');
-      if (page === 'drills') liftRenderDrills();
-      window.showPage(page);
+      navTo(b.getAttribute('data-page'));
     });
+    injectSeg();
 
     /* keep tab state + tab bar visibility in sync with navigation */
     if (typeof window.showPage === 'function' && !window.showPage.__liftWrapped) {
@@ -59,6 +58,46 @@
   function currentPage() {
     var el = document.querySelector('.page.active');
     return el ? el.id.replace(/^page-/, '') : 'setup';
+  }
+
+  /* showPage() only swaps pages — content renderers were historically invoked
+     by the (now retired) sidebar item handlers. Mirror that dispatch here so
+     tab/seg navigation always lands on fresh content. */
+  var RENDER = {
+    drills: function () { liftRenderDrills(); },
+    progress: function () { if (typeof renderProgressPage === 'function') renderProgressPage(); },
+    analytics: function () { if (typeof renderAnalytics === 'function') renderAnalytics(); },
+    settings: function () { if (typeof renderSettingsPage === 'function') renderSettingsPage(); }
+  };
+
+  function navTo(page) {
+    if (page === 'setup' && typeof window.goSetup === 'function') { window.goSetup(); return; }
+    try { if (RENDER[page]) RENDER[page](); } catch (_) { /* render must never block nav */ }
+    window.showPage(page);
+  }
+
+  /* Progress ⇄ Analytics segmented switcher (mockup .seg chip language).
+     Analytics lost its only entry point when the sidebar retired — this
+     restores it inside the lift's own chrome, on both pages. */
+  function injectSeg() {
+    ['progress', 'analytics'].forEach(function (pid) {
+      var page = document.getElementById('page-' + pid);
+      if (!page || page.querySelector('.lift-seg')) return;
+      var seg = document.createElement('div');
+      seg.className = 'lift-seg';
+      seg.setAttribute('role', 'tablist');
+      seg.setAttribute('aria-label', 'Progress and analytics');
+      seg.innerHTML = [['progress', 'Progress'], ['analytics', 'Analytics']].map(function (t) {
+        var on = t[0] === pid;
+        return '<button type="button" class="lift-seg-chip' + (on ? ' on' : '') + '" data-page="' + t[0] + '" role="tab" aria-selected="' + on + '">' + t[1] + '</button>';
+      }).join('');
+      seg.addEventListener('click', function (e) {
+        var b = e.target.closest('.lift-seg-chip');
+        if (!b || b.classList.contains('on')) return;
+        navTo(b.getAttribute('data-page'));
+      });
+      page.insertBefore(seg, page.firstChild);
+    });
   }
 
   function esc(s) { var d = document.createElement('i'); d.textContent = s == null ? '' : String(s); return d.innerHTML; }
