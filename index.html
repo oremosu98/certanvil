@@ -35,6 +35,7 @@
 <link rel="stylesheet" href="dg-system.css?v=7.33.0">
 <link rel="stylesheet" href="dg-depurple.css?v=7.13.5">
 <link rel="stylesheet" href="lift-shell.css?v=7.36.0">
+<link rel="stylesheet" href="lift-screens.css?v=7.36.0">
 <!-- v5.5.1 — Fraunces display face for the editorial system (Home v3
      reimagining + cross-surface). Body stays the app font; Fraunces is
      scoped to display moments in dg-system.css. preconnect + display=swap
@@ -948,7 +949,19 @@
 ══════════════════════════════════════════ -->
 <div id="page-quiz" class="page">
   <div class="quiz-topbar">
-    <button class="back-btn" onclick="confirmBack()" aria-label="Back to menu">&#8592; Menu</button>
+    <button class="back-btn" onclick="confirmBack()" aria-label="Back to menu" title="Exit session"><svg viewBox="0 0 24 24" aria-hidden="true" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6L6 18"></path></svg><span class="back-btn-label">Menu</span></button>
+    <!-- lift Phase 1: progress track lives in the bar (mockup .qbar anatomy) -->
+    <div class="progress-wrap">
+      <div class="progress-label">
+        <button class="quiz-nav-arrow" id="quiz-prev-btn" onclick="prevQuestion()"
+                title="Previous question (←)" aria-label="Previous question" disabled>&#8249;</button>
+        <span id="q-label">Question 1 of 10</span>
+        <button class="quiz-nav-arrow" id="quiz-next-arrow-btn" onclick="nextQuestion()"
+                title="Next question (→)" aria-label="Next question" disabled>&#8250;</button>
+        <span id="q-pct">0%</span>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" id="prog-fill" style="width:0%"></div></div>
+    </div>
     <div class="quiz-stats">
       <div class="stat-pill score" id="live-score" role="status" aria-live="polite" aria-label="Score">0 / 0</div>
       <div class="stat-pill streak" id="live-streak" role="status" aria-live="polite" aria-label="Current streak">Streak 0</div>
@@ -957,26 +970,10 @@
     </div>
   </div>
 
-  <div class="progress-wrap">
-    <div class="progress-label">
-      <!-- v4.82.0: Prev/Next nav arrows for revisiting previously answered
-           questions. Disabled appropriately based on current/total. Keyboard:
-           ArrowLeft / ArrowRight bound in the global keydown handler. -->
-      <button class="quiz-nav-arrow" id="quiz-prev-btn" onclick="prevQuestion()"
-              title="Previous question (←)" aria-label="Previous question" disabled>&#8249;</button>
-      <span id="q-label">Question 1 of 10</span>
-      <button class="quiz-nav-arrow" id="quiz-next-arrow-btn" onclick="nextQuestion()"
-              title="Next question (→)" aria-label="Next question" disabled>&#8250;</button>
-      <span id="q-pct">0%</span>
-    </div>
-    <div class="progress-bar"><div class="progress-fill" id="prog-fill" style="width:0%"></div></div>
-    <!-- v4.54.8: segmented per-question progress dots (prototype pattern).
-         One dot per question: moss-green=correct, red=wrong, tall ink=current,
-         grey=pending. Rendered by _renderQuizProgressDots() in render().
-         v4.82.0: dots are now clickable buttons. Click any answered dot to
-         revisit that question; click any pending dot to jump ahead. -->
-    <div class="quiz-prog-dots" id="quiz-prog-dots" role="progressbar" aria-label="Per-question progress"></div>
-  </div>
+  <!-- v4.54.8 dots (now styled as the mockup's numbered question pills; still
+       rendered + wired by _renderQuizProgressDots(): click to revisit/jump).
+       The progress track + label moved into .quiz-topbar (lift Phase 1). -->
+  <div class="quiz-prog-dots" id="quiz-prog-dots" role="progressbar" aria-label="Per-question progress"></div>
 
   <div class="q-card">
     <div class="q-meta">

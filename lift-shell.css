@@ -65,8 +65,10 @@ html[data-theme] body {
 #lift-tabbar .lift-tab span { font: 700 10px/1 Inter, 'Segoe UI', system-ui, sans-serif; letter-spacing: 0.01em; }
 #lift-tabbar .lift-tab.on { color: var(--accent); }
 
-/* immersive session pages own the whole screen — no tab bar */
+/* immersive session pages own the whole screen — no tab bar, no app topbar
+   (the session screens carry their own mockup header, e.g. the quiz qbar) */
 body.lift-no-tabbar #lift-tabbar { display: none; }
+body.lift-no-tabbar #app-topbar { display: none !important; }
 body.lift-no-tabbar .page { padding-bottom: calc(24px + env(safe-area-inset-bottom)) !important; }
 
 /* ─ Phase-0 interim: un-lifted pages built desktop grids whose narrow-viewport

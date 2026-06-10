@@ -1,0 +1,169 @@
+/* ═══════════════════════════════════════════════════════════════════════
+   LIFT-SCREENS · Phase 1 of the mockup lift-and-shift (2026-06-10)
+   Per-screen 1:1 ports of the cert-ios mockups onto the REAL app pages.
+   Source of truth: mockups/cert-ios-quiz.html (this file: quiz session).
+   Loads LAST — selectors mirror dg-system's `html[data-theme] body #page-X`
+   pattern so later-order wins the specificity tie.
+   Token map (mockup → app): --ink→--text · --ink-soft→--text-mid ·
+   --muted→--text-dim · --surface-2→--surface3 · --track→--surface3 ·
+   --pass→--green · --miss→--red · --on-accent→var(--on-accent, var(--bg))
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* ─────────────────────────── QUIZ SESSION ─────────────────────────── */
+
+#page-quiz { --lift-ease: cubic-bezier(0.16, 1, 0.3, 1); }
+html[data-theme] body #page-quiz { padding-top: 0 !important; }
+
+/* qbar: exit ✕ + track + flag (mockup .qbar) */
+html[data-theme] body #page-quiz .quiz-topbar {
+  display: flex !important; align-items: center !important; gap: 13px !important;
+  padding: 13px 0 12px !important; margin: 0 !important;
+  border: 0 !important; border-bottom: 0 !important; background: none !important;
+}
+html[data-theme] body #page-quiz .back-btn {
+  flex: 0 0 auto; width: 34px !important; height: 34px !important;
+  display: grid !important; place-items: center !important;
+  border: 1px solid var(--border) !important; border-radius: 10px !important;
+  background: var(--surface) !important; color: var(--text-mid) !important;
+  padding: 0 !important; cursor: pointer;
+  transition: transform .14s var(--lift-ease), border-color .18s !important;
+}
+html[data-theme] body #page-quiz .back-btn:active { transform: scale(0.94); }
+html[data-theme] body #page-quiz .back-btn:hover { border-color: color-mix(in oklab, var(--accent) 36%, var(--border)) !important; color: var(--text-mid) !important; }
+#page-quiz .back-btn .back-btn-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* progress track inside the bar */
+html[data-theme] body #page-quiz .progress-wrap { flex: 1 1 auto; display: flex; flex-direction: column; max-width: none !important; margin: 0 !important; padding: 0 !important; background: none !important; border: 0 !important; }
+#page-quiz .progress-bar { height: 6px; border-radius: 999px; background: var(--surface3); overflow: hidden; order: 1; }
+#page-quiz .progress-fill { height: 100%; border-radius: 999px; background: var(--accent); transition: width .5s var(--lift-ease); }
+#page-quiz .progress-label { display: flex; align-items: center; gap: 8px; margin: 6px 0 0; order: 2; }
+#page-quiz #q-label { font: 700 11px/1 Inter, 'Segoe UI', sans-serif; color: var(--text-dim); letter-spacing: 0.02em; }
+#page-quiz #q-pct,
+html[data-theme] body #page-quiz .quiz-nav-arrow { display: none !important; }
+
+/* session chrome the mockup doesn't carry */
+html[data-theme] body #page-quiz .stat-pill { display: none !important; }
+html[data-theme] body #page-quiz .cache-notice, html[data-theme] body #page-quiz #cache-notice.show { display: none !important; }
+#page-quiz .quiz-kbd-hints { display: none !important; }
+html[data-theme] body #page-quiz .quiz-stats { gap: 0 !important; }
+html[data-theme] body #page-quiz .flag-btn {
+  width: 34px; height: 34px; display: grid !important; place-items: center !important;
+  border: 1px solid var(--border) !important; border-radius: 10px !important;
+  background: var(--surface) !important; color: var(--text-dim) !important;
+  font: 700 10px/1 Inter, sans-serif !important; padding: 0 !important;
+  transition: transform .14s var(--lift-ease), border-color .18s, color .18s !important;
+}
+html[data-theme] body #page-quiz .flag-btn:active { transform: scale(0.94); }
+html[data-theme] body #page-quiz .flag-btn.flagged { border-color: var(--accent) !important; color: var(--accent) !important; }
+
+/* numbered question pills (mockup .qpills) — dots renumbered via CSS counter */
+#page-quiz .quiz-prog-dots { display: flex; gap: 7px; margin: 2px 0 16px; padding: 0; overflow-x: auto; scrollbar-width: none; counter-reset: liftqp; background: none; border: 0; }
+#page-quiz .quiz-prog-dots::-webkit-scrollbar { display: none; }
+html[data-theme] body #page-quiz .qpd-cell {
+  flex: 0 0 auto; width: 28px !important; height: 28px !important;
+  border-radius: 9px !important; display: grid; place-items: center;
+  background: var(--surface3) !important; border: 1px solid transparent !important;
+  color: var(--text-dim) !important; font: 800 12px/1 Inter, sans-serif !important;
+  counter-increment: liftqp; cursor: pointer; padding: 0 !important;
+  transition: background .18s, color .18s, border-color .18s;
+}
+#page-quiz .qpd-cell::before { content: counter(liftqp); }
+html[data-theme] body #page-quiz .qpd-cell.qpd-done { color: var(--green) !important; background: color-mix(in oklab, var(--green) 12%, var(--surface3)) !important; border-color: color-mix(in oklab, var(--green) 30%, var(--border)) !important; }
+html[data-theme] body #page-quiz .qpd-cell.qpd-wrong { color: var(--red) !important; background: color-mix(in oklab, var(--red) 11%, var(--surface3)) !important; border-color: color-mix(in oklab, var(--red) 30%, var(--border)) !important; }
+html[data-theme] body #page-quiz .qpd-cell.qpd-now { color: var(--on-accent, var(--bg)) !important; background: var(--accent) !important; border-color: var(--accent) !important; }
+
+/* question block: flat typographic flow (mockup has no card) */
+html[data-theme] body #page-quiz .q-card { background: none !important; border: 0 !important; border-radius: 0 !important; box-shadow: none !important; padding: 0 !important; margin: 0 !important; max-width: none !important; }
+#page-quiz .q-meta { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+html[data-theme] body #page-quiz .q-num { font: 800 12px/1 Inter, sans-serif !important; letter-spacing: 0.04em; color: var(--text-mid) !important; background: none !important; border: 0 !important; padding: 0 !important; }
+html[data-theme] body #page-quiz .diff-badge, html[data-theme] body #page-quiz .pbq-badge {
+  font: 800 9.5px/1 Inter, sans-serif !important; letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--accent) !important; background: color-mix(in oklab, var(--accent) 11%, transparent) !important;
+  border: 1px solid color-mix(in oklab, var(--accent) 26%, var(--border)) !important;
+  border-radius: 999px !important; padding: 6px 10px !important;
+}
+html[data-theme] body #page-quiz .q-text {
+  font-family: Fraunces, Georgia, serif !important; font-weight: 600 !important;
+  font-size: 22px !important; line-height: 1.28 !important; letter-spacing: -0.01em !important;
+  color: var(--text) !important; margin: 0 0 16px !important;
+}
+#page-quiz .q-text .hl-keyword, #page-quiz .q-text .kw { color: var(--accent); font-style: italic; }
+
+/* scenario context (mockup .scenario) */
+html[data-theme] body #page-quiz .q-scenario {
+  border: 1px solid color-mix(in oklab, var(--accent) 22%, var(--border)) !important;
+  border-left: 3px solid var(--accent) !important;
+  border-radius: 12px !important;
+  background: color-mix(in oklab, var(--accent) 6%, var(--surface)) !important;
+  padding: 11px 13px !important; margin: 0 0 18px !important;
+  font: 500 13px/1.5 Inter, sans-serif !important; color: var(--text-mid) !important;
+}
+
+/* options (mockup .opt — app DOM is .option > .opt-letter + .opt-text) */
+html[data-theme] body #page-quiz .option {
+  display: flex !important; align-items: center !important; gap: 12px !important;
+  width: 100%; text-align: left;
+  border: 1px solid var(--border) !important; border-radius: 14px !important;
+  background: var(--surface) !important; padding: 13px 14px !important; margin: 0 0 10px !important;
+  color: var(--text) !important; box-shadow: none !important; cursor: pointer;
+  transition: border-color .18s, background .18s, opacity .2s, transform .12s var(--lift-ease) !important;
+}
+html[data-theme] body #page-quiz .option:active { transform: scale(0.99); }
+@media (hover:hover) and (pointer:fine) { html[data-theme] body #page-quiz .option:hover { border-color: color-mix(in oklab, var(--accent) 38%, var(--border)) !important; } }
+html[data-theme] body #page-quiz .option .opt-letter {
+  flex: 0 0 auto; width: 30px !important; height: 30px !important; border-radius: 9px !important;
+  background: var(--surface3) !important; color: var(--text-mid) !important;
+  display: grid !important; place-items: center !important;
+  font: 800 13px/1 Inter, sans-serif !important; transition: background .18s, color .18s;
+}
+html[data-theme] body #page-quiz .option .opt-text { flex: 1 1 auto; font: 500 14.5px/1.35 Inter, sans-serif !important; color: inherit !important; }
+/* answered states (mockup .answered .opt.*) — keep app's class hooks */
+html[data-theme] body #page-quiz .option.correct,
+html[data-theme] body #page-quiz .option.reveal-correct {
+  border-color: color-mix(in oklab, var(--green) 55%, var(--border)) !important;
+  background: color-mix(in oklab, var(--green) 9%, var(--surface)) !important;
+}
+html[data-theme] body #page-quiz .option.correct .opt-letter,
+html[data-theme] body #page-quiz .option.reveal-correct .opt-letter { background: var(--green) !important; color: var(--on-accent, var(--bg)) !important; }
+html[data-theme] body #page-quiz .option.wrong {
+  border-color: color-mix(in oklab, var(--red) 50%, var(--border)) !important;
+  background: color-mix(in oklab, var(--red) 8%, var(--surface)) !important;
+}
+html[data-theme] body #page-quiz .option.wrong .opt-letter { background: var(--red) !important; color: var(--on-accent, var(--bg)) !important; }
+html[data-theme] body #page-quiz .option.dimmed { opacity: .55; }
+
+/* explanation (mockup .why) */
+html[data-theme] body #page-quiz .explanation-box {
+  border: 1px solid color-mix(in oklab, var(--accent) 24%, var(--border)) !important;
+  border-radius: 15px !important;
+  background: color-mix(in oklab, var(--accent) 5%, var(--surface)) !important;
+  padding: 14px 15px !important; margin: 4px 0 0 !important;
+  font-size: 13px !important; line-height: 1.52 !important; color: var(--text-mid) !important;
+  box-shadow: none !important;
+}
+html[data-theme] body #page-quiz .explanation-box strong { display: block; font: 800 11px/1.3 Inter, sans-serif !important; letter-spacing: 0.04em; color: var(--accent) !important; margin-bottom: 9px; text-transform: none; }
+#page-quiz .exp-wrong-explain { margin-top: 9px; padding-top: 9px; border-top: 1px solid color-mix(in oklab, var(--border) 60%, transparent); }
+
+/* revisit banner: quiet pill */
+html[data-theme] body #page-quiz .quiz-revisit-banner {
+  display: flex; align-items: center; gap: 8px;
+  border: 1px solid var(--border) !important; border-radius: 11px !important;
+  background: var(--surface3) !important; color: var(--text-mid) !important;
+  font: 600 11.5px/1.4 Inter, sans-serif !important; padding: 9px 12px !important; margin: 10px 0 0 !important;
+}
+
+/* pinned footer action (mockup .qfoot + .btn-primary) */
+#page-quiz .next-btn-row {
+  position: sticky; bottom: 0; margin: 14px -20px 0; padding: 12px 20px calc(12px + env(safe-area-inset-bottom));
+  border-top: 1px solid color-mix(in oklab, var(--border) 70%, transparent);
+  background: var(--bg); z-index: 5;
+}
+html[data-theme] body #page-quiz .btn-next {
+  width: 100% !important; justify-content: center !important;
+  border: 0 !important; border-radius: 13px !important; padding: 14px !important;
+  background: var(--accent) !important; color: var(--on-accent, var(--bg)) !important;
+  font: 700 15px/1 Inter, sans-serif !important; cursor: pointer;
+  transition: transform .14s var(--lift-ease), filter .2s !important; box-shadow: none !important;
+}
+html[data-theme] body #page-quiz .btn-next:active { transform: scale(0.985); }
+@media (hover:hover) and (pointer:fine) { html[data-theme] body #page-quiz .btn-next:hover { filter: brightness(1.05); } }
