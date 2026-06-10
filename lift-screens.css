@@ -417,3 +417,74 @@ html[data-theme] body #page-review .resource-dive-btn {
 /* back chip: arrow glyph only (the 'Back' word doesn't fit the 34px chip) */
 html[data-theme] body #page-review .ed-pagehead-back { font-size: 0 !important; }
 html[data-theme] body #page-review .ed-pagehead-back::after { content: '\2190'; font: 700 15px/1 Inter, sans-serif; }
+
+/* ─────────────────────────── SETTINGS (Phase 2) ─────────────────────────── */
+/* Source: cert-ios-settings.html — sect labels, calm cards, seg chips, full-
+   width save buttons — onto #page-settings. The v7.18 12-col control-center
+   bento collapses to the mockup's single scrollable column at EVERY viewport. */
+
+html[data-theme] body #page-settings { max-width: none !important; margin: 0 auto !important; padding: 10px 0 90px !important; }
+html[data-theme] body #page-settings .settings-group { display: flex !important; flex-direction: column !important; gap: 11px !important; margin-top: 26px !important; }
+html[data-theme] body #page-settings .settings-group .settings-section { grid-column: auto !important; }
+
+/* group head → mockup .sect kicker (small caps over the cards) */
+html[data-theme] body #page-settings .settings-group-head { display: block !important; margin-bottom: 0 !important; padding-bottom: 0 !important; border: 0 !important; }
+html[data-theme] body #page-settings .settings-group-num { display: none !important; }
+html[data-theme] body #page-settings .settings-group-h {
+  font: 800 10px/1 Inter, sans-serif !important; letter-spacing: 0.12em !important; text-transform: uppercase !important;
+  color: var(--text-dim) !important; margin: 0 2px 4px !important;
+}
+html[data-theme] body #page-settings .settings-group-h em { color: var(--text-dim) !important; }
+html[data-theme] body #page-settings .settings-group-sub { font-size: 12px !important; color: var(--text-dim) !important; margin: 0 2px 7px !important; line-height: 1.45 !important; }
+
+/* cards (mockup .card) */
+html[data-theme] body #page-settings .settings-section {
+  border: 1px solid var(--border) !important; border-radius: 16px !important;
+  background: var(--surface) !important; padding: 15px 16px !important;
+  margin: 0 !important; box-shadow: none !important;
+}
+html[data-theme] body #page-settings .settings-section-title {
+  font: 650 14.5px/1.2 Inter, sans-serif !important; letter-spacing: 0 !important; text-transform: none !important;
+  color: var(--text) !important; margin: 0 0 6px !important;
+}
+html[data-theme] body #page-settings .settings-section-hint { font-size: 12px !important; line-height: 1.45 !important; color: var(--text-dim) !important; margin-top: 9px !important; }
+
+/* health/at-a-glance grid → single column rows */
+html[data-theme] body #page-settings .settings-health-grid { grid-template-columns: 1fr !important; gap: 0 !important; margin-top: 4px !important; }
+
+/* segmented chips (mockup .seg) */
+html[data-theme] body #page-settings .settings-daily-chip {
+  font: 700 12.5px/1 Inter, sans-serif !important; border-radius: 10px !important; padding: 10px 12px !important;
+  background: var(--surface3) !important; border: 1px solid var(--border) !important; color: var(--text-mid) !important;
+  cursor: pointer; transition: background .18s, color .18s, border-color .18s, transform .12s var(--lift-ease) !important;
+}
+html[data-theme] body #page-settings .settings-daily-chip:active { transform: scale(0.97); }
+html[data-theme] body #page-settings .settings-daily-chip.is-active {
+  background: color-mix(in oklab, var(--accent) 14%, transparent) !important;
+  border-color: color-mix(in oklab, var(--accent) 45%, var(--border)) !important; color: var(--accent) !important;
+}
+
+/* buttons inside settings: full-width accent saves, quiet ghosts */
+html[data-theme] body #page-settings .settings-section .btn {
+  border-radius: 12px !important; font: 700 13px/1 Inter, sans-serif !important; padding: 12px 14px !important;
+  transition: transform .14s var(--lift-ease), filter .2s !important; box-shadow: none !important;
+}
+html[data-theme] body #page-settings .settings-section .btn:active { transform: scale(0.985); }
+html[data-theme] body #page-settings .settings-section .btn-primary { width: 100%; background: var(--accent) !important; color: var(--on-accent, var(--bg)) !important; border: 0 !important; }
+html[data-theme] body #page-settings .settings-section .btn-ghost { background: var(--surface3) !important; border: 1px solid var(--border) !important; color: var(--text-mid) !important; }
+
+/* ─────────────────────────── HOME tune (Phase 2) ─────────────────────────── */
+/* The v7.17 bento already descends from an approved mockup; in the column it
+   just needs mockup-scale cards + type (cert-ios-home rhythm). */
+html[data-theme] body #page-setup .tile, html[data-theme] body #page-setup .cell-hero, html[data-theme] body #page-setup .cmd-bar {
+  border-radius: 16px !important; box-shadow: none !important;
+}
+html[data-theme] body #page-setup .tile { padding: 15px 16px !important; }
+html[data-theme] body #page-setup .tile-title { font: 650 15px/1.25 Fraunces, Georgia, serif !important; letter-spacing: -0.008em !important; }
+html[data-theme] body #page-setup .tile-sub { font-size: 12px !important; line-height: 1.45 !important; color: var(--text-dim) !important; }
+html[data-theme] body #page-setup .bento { gap: 11px !important; }
+html[data-theme] body #page-setup .home-grid { gap: 11px !important; padding-top: 12px !important; }
+
+/* settings page header: the topbar crumb + Account tab already say where we
+   are (mockup has no in-page header) */
+html[data-theme] body #page-settings > .ed-pagehead { display: none !important; }
