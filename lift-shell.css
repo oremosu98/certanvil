@@ -68,3 +68,14 @@ html[data-theme] body {
 /* immersive session pages own the whole screen — no tab bar */
 body.lift-no-tabbar #lift-tabbar { display: none; }
 body.lift-no-tabbar .page { padding-bottom: calc(24px + env(safe-area-inset-bottom)) !important; }
+
+/* ─ Phase-0 interim: un-lifted pages built desktop grids whose narrow-viewport
+   collapses key on @media viewport width, which never fires on desktop now
+   that the app lives in a 430px column. Force the narrow collapse at every
+   viewport. Each rule dies when its screen's real lift lands. ─ */
+#page-setup .home-grid { grid-template-columns: minmax(0, 1fr) !important; }
+#page-setup .col-side { order: 2; }
+#page-setup .bento { grid-template-columns: 1fr !important; }
+#page-setup .bento > * { grid-column: auto !important; grid-row: auto !important; }
+#page-setup #setup-domain-grid.dgh-dom-grid { grid-template-columns: 1fr !important; }
+#page-setup .stat-row { grid-template-columns: 1fr !important; }
