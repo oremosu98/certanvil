@@ -189,6 +189,33 @@
   }
   .hint { text-align: center; color: var(--page-dim); font-size: 12px; margin-top: 18px; }
   @media (max-width: 440px) { .phone { transform: scale(.92); transform-origin: top center; } }
+  /* ── exam-date bottom sheet ── */
+  .sheet-scrim { position: absolute; inset: 0; z-index: 30; background: color-mix(in oklab, #000 44%, transparent);
+    opacity: 0; pointer-events: none; transition: opacity .32s var(--ease); }
+  .sheet-scrim.on { opacity: 1; pointer-events: auto; }
+  .sheet { position: absolute; left: 0; right: 0; bottom: 0; z-index: 31; background: var(--surface);
+    border: 1px solid var(--border); border-bottom: none; border-radius: 22px 22px 0 0;
+    padding: 10px 18px calc(16px + env(safe-area-inset-bottom));
+    transform: translateY(104%); transition: transform .42s var(--ease-drawer);
+    box-shadow: 0 -18px 50px -18px color-mix(in oklab, #000 50%, transparent); }
+  .sheet.on { transform: translateY(0); }
+  .sheet-grab { width: 38px; height: 5px; border-radius: 999px; background: color-mix(in oklab, var(--ink) 18%, var(--surface)); margin: 0 auto 13px; }
+  .sheet-title { font-family: Fraunces, Georgia, serif; font-weight: 600; font-size: 18px; color: var(--ink); margin: 0 0 2px; }
+  .sheet-sub { font: 500 12.5px/1.45 Inter, sans-serif; color: var(--ink-soft); margin: 0 0 13px; }
+  .cal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+  .cal-month { font: 700 13.5px/1 Inter, sans-serif; color: var(--ink); }
+  .cal-nav { display: inline-flex; gap: 6px; }
+  .cal-nav button { width: 30px; height: 30px; border-radius: 9px; border: 1px solid var(--border); background: transparent; color: var(--ink); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
+  .cal-nav button:disabled { opacity: .35; cursor: default; }
+  .cal-nav svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+  .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; }
+  .cal-dow { text-align: center; font: 700 10px/1 Inter, sans-serif; letter-spacing: .08em; color: var(--muted); padding: 5px 0 7px; text-transform: uppercase; }
+  .cal-day { aspect-ratio: 1; border: none; background: transparent; border-radius: 10px; font: 600 13px/1 Inter, sans-serif; color: var(--ink); cursor: pointer; font-variant-numeric: lining-nums tabular-nums; }
+  .cal-day:disabled { color: color-mix(in oklab, var(--ink) 26%, transparent); cursor: default; }
+  .cal-day.sel { background: var(--accent); color: var(--on-accent); font-weight: 800; }
+  .cal-day.today { box-shadow: inset 0 0 0 1.5px color-mix(in oklab, var(--accent) 65%, transparent); }
+  .sheet .btn-save:disabled { opacity: .45; cursor: default; }
+  .sheet-clear { width: 100%; margin-top: 9px; background: none; border: none; font: 600 12.5px/1 Inter, sans-serif; color: var(--ink-soft); cursor: pointer; padding: 9px; }
 </style>
 </head>
 <body>
@@ -234,9 +261,9 @@
                 <span class="gdot"></span>
                 <span class="gtxt"><span class="gl">Cloud sync</span><span class="gv">Active. Your progress is saved across devices.</span></span>
               </div>
-              <div class="glance">
+              <div class="glance" id="glanceExamRow">
                 <span class="gdot"></span>
-                <span class="gtxt"><span class="gl">Exam date</span><span class="gv">Not set. Add it to start your exam countdown.</span></span>
+                <span class="gtxt"><span class="gl">Exam date</span><span class="gv" id="glanceExam">Not set. Add it to start your exam countdown.</span></span>
               </div>
               <div class="glance ok">
                 <span class="gdot"></span>
@@ -250,7 +277,7 @@
 
             <div class="card reveal">
               <div class="card-head"><span class="card-title">Exam date</span></div>
-              <button class="btn-save" type="button">Set your exam date</button>
+              <button class="btn-save" id="examDateBtn" type="button">Set your exam date</button>
               <p class="card-note">Powers the days-until-exam countdown on Home and Analytics, and the marker on the 365-day study heatmap.</p>
             </div>
 
@@ -388,6 +415,24 @@
             <button class="tab" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="6" r="1.6"></circle><circle cx="18" cy="6" r="1.6"></circle><circle cx="12" cy="12" r="1.6"></circle><circle cx="6" cy="18" r="1.6"></circle><circle cx="18" cy="18" r="1.6"></circle><path d="M7.4 6.8 10.8 11M17.4 7l-4.2 4M7.2 17l4.2-4.2M16.8 17l-4-4"></path></svg><span>Analytics</span></button>
             <button class="tab on" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M19 12a7 7 0 0 0-.1-1l2-1.5-2-3.5-2.4 1a7 7 0 0 0-1.7-1L16.5 2h-4l-.3 2.6a7 7 0 0 0-1.7 1l-2.4-1-2 3.5 2 1.5a7 7 0 0 0 0 2l-2 1.5 2 3.5 2.4-1a7 7 0 0 0 1.7 1l.3 2.6h4l.3-2.6a7 7 0 0 0 1.7-1l2.4 1 2-3.5-2-1.5a7 7 0 0 0 .1-1z"></path></svg><span>Settings</span></button>
           </div>
+
+          <!-- ── exam-date bottom sheet ── -->
+          <div class="sheet-scrim" id="examScrim"></div>
+          <div class="sheet" id="examSheet" role="dialog" aria-modal="true" aria-label="Set your exam date">
+            <div class="sheet-grab"></div>
+            <h2 class="sheet-title">Set your exam date</h2>
+            <p class="sheet-sub">Pick the day you sit N10-009. You can change it any time.</p>
+            <div class="cal-head">
+              <span class="cal-month" id="calMonth"></span>
+              <span class="cal-nav">
+                <button type="button" id="calPrev" aria-label="Previous month"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></button>
+                <button type="button" id="calNext" aria-label="Next month"><svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
+              </span>
+            </div>
+            <div class="cal-grid" id="calGrid"></div>
+            <button class="btn-save" id="examSave" type="button" disabled>Save exam date</button>
+            <button class="sheet-clear" id="examClear" type="button" hidden>Remove exam date</button>
+          </div>
         </div>
       </div>
       <p class="hint">Phase 1 mockup. Tap a preset to switch the daily goal; the light-day toggle and theme toggle are live.</p>
@@ -489,6 +534,75 @@
       var startPro = false;
       try { startPro = localStorage.getItem('e2e_demo_pro') === '1'; } catch (e) {}
       setPlan(startPro);
+
+      // ── Exam date: bottom-sheet calendar + At-a-glance countdown ────────
+      var EXAM_KEY = 'e2e_exam_date';
+      var examBtn = document.getElementById('examDateBtn'), examSheet = document.getElementById('examSheet'),
+          examScrim = document.getElementById('examScrim'), examSave = document.getElementById('examSave'),
+          examClear = document.getElementById('examClear'), calGrid = document.getElementById('calGrid'),
+          calMonth = document.getElementById('calMonth'), calPrev = document.getElementById('calPrev'),
+          calNext = document.getElementById('calNext'),
+          glanceExam = document.getElementById('glanceExam'), glanceExamRow = document.getElementById('glanceExamRow');
+      var MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+      var DOWS = ['Mo','Tu','We','Th','Fr','Sa','Su'];
+      function dayStart(d){ var x = new Date(d); x.setHours(0,0,0,0); return x; }
+      var today = dayStart(new Date());
+      var selISO = lsGet(EXAM_KEY, '');
+      var viewY = today.getFullYear(), viewM = today.getMonth();
+      function iso(d){ return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); }
+      function fromISO(s){ var p = s.split('-'); return new Date(+p[0], +p[1]-1, +p[2]); }
+      function fmt(d){ return d.getDate() + ' ' + MONTHS[d.getMonth()].slice(0,3) + ' ' + d.getFullYear(); }
+
+      function renderCal(){
+        calMonth.textContent = MONTHS[viewM] + ' ' + viewY;
+        calPrev.disabled = (viewY === today.getFullYear() && viewM === today.getMonth());
+        var html = DOWS.map(function(d){ return '<span class="cal-dow">' + d + '</span>'; }).join('');
+        var first = new Date(viewY, viewM, 1);
+        var lead = (first.getDay() + 6) % 7;            // Monday-start offset
+        for (var i = 0; i < lead; i++) html += '<span></span>';
+        var days = new Date(viewY, viewM + 1, 0).getDate();
+        for (var d = 1; d <= days; d++){
+          var dt = new Date(viewY, viewM, d), dISO = iso(dt);
+          var cls = 'cal-day' + (dISO === selISO ? ' sel' : '') + (dt.getTime() === today.getTime() ? ' today' : '');
+          html += '<button type="button" class="' + cls + '" data-iso="' + dISO + '"' + (dt < today ? ' disabled' : '') + '>' + d + '</button>';
+        }
+        calGrid.innerHTML = html;
+        examSave.disabled = !selISO;
+      }
+      function openSheet(){
+        if (selISO){ var s = fromISO(selISO); viewY = s.getFullYear(); viewM = s.getMonth(); }
+        else { viewY = today.getFullYear(); viewM = today.getMonth(); }
+        renderCal();
+        examScrim.classList.add('on'); examSheet.classList.add('on');
+      }
+      function closeSheet(){ examScrim.classList.remove('on'); examSheet.classList.remove('on'); }
+      function applyExam(){
+        var set = !!selISO;
+        if (glanceExamRow) glanceExamRow.classList.toggle('ok', set);
+        if (glanceExam){
+          if (set){
+            var d = fromISO(selISO), n = Math.round((d - today) / 864e5);
+            glanceExam.textContent = fmt(d) + ' · ' + (n === 0 ? 'exam day is today.' : n === 1 ? 'tomorrow.' : n + ' days to go.');
+          } else {
+            glanceExam.textContent = 'Not set. Add it to start your exam countdown.';
+          }
+        }
+        if (examBtn) examBtn.textContent = set ? 'Change exam date' : 'Set your exam date';
+        if (examClear) examClear.hidden = !set;
+      }
+      if (examBtn){
+        examBtn.addEventListener('click', openSheet);
+        examScrim.addEventListener('click', closeSheet);
+        calPrev.addEventListener('click', function(){ if (--viewM < 0){ viewM = 11; viewY--; } renderCal(); });
+        calNext.addEventListener('click', function(){ if (++viewM > 11){ viewM = 0; viewY++; } renderCal(); });
+        calGrid.addEventListener('click', function(e){
+          var b = e.target.closest('.cal-day'); if (!b || b.disabled) return;
+          selISO = b.getAttribute('data-iso'); renderCal();
+        });
+        examSave.addEventListener('click', function(){ lsSet(EXAM_KEY, selISO); closeSheet(); applyExam(); });
+        examClear.addEventListener('click', function(){ selISO = ''; try { localStorage.removeItem(EXAM_KEY); } catch (e) {} closeSheet(); applyExam(); });
+        applyExam();
+      }
     })();
   </script>
 </body>
