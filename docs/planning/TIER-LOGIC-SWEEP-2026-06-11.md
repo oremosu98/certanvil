@@ -23,16 +23,16 @@ notes (`stage-sub` annotations + `free-only`/`pro-only` markup in
 | A10 | Exam-result logging ("Mark result") + Passed badges | /account er-list (v4.93.0) — but see GAP-4 for the Pro-gating nuance |
 | A11 | Account deletion (7-day grace) | /account danger zone — see GAP-6 for the Apple in-app requirement check |
 
-## ❌ Decided in the iOS build but NOT implemented (the work list)
+## ✅ The work list — ALL DONE (2026-06-11, v7.40.0 → v7.45.0)
 
-| # | Rule (as decided) | Current reality | Effort / lane |
-|---|---|---|---|
-| GAP-1 | **Free daily allowance = 15 practice questions + 5 review cards.** Decision: "fixed caps of 5 cards/day and 15 questions/day". Mockup: cert-ios-daily-limit ("15 practice + 5 review. Pro removes the cap.") | Live cap is **20 questions/day**, and Daily Review has **no free cap at all** | Gated lane: migration changes `consume_daily_quota` 20→15 + proxy `FREE_DAILY_LIMIT` + app copy; new client+server logic for the 5-cards/day review cap |
-| GAP-2 | **Soft blocker when a free user picks a session bigger than the remaining allowance** ("You picked a 25-question set… Start a 15-question set instead") | Wall appears only after quota is exhausted mid-flow; no pre-emptive size check | Client-side, fast lane; depends on GAP-1 numbers |
-| GAP-3 | **Settings: Daily Goal + Daily Review size controls locked for free users** (pro-lock pills, lock-note, Go Pro button; Pro gets live controls). Mockup: cert-ios-settings `.plan-free`/`.plan-pro` system | Controls are live for everyone | Client-side UI gating off `_quotaState.tier`, fast lane |
-| GAP-4 | **Cross-cert analytics is a Pro feature** (hub mockup: "Pro" pill; cross-cert mockup: "One Pro dashboard") | /analytics only requires sign-in; free users see everything | landing/lib JS gate + upsell state, fast lane |
-| GAP-5 | **Log-your-exam-result is a Pro feature** (mockup: "a Pro user records the score") + the lifted log-result screen styling | Feature exists on /account for ALL unlocked certs, not Pro-gated; mockup styling not lifted | Decide: keep free (generous) or gate to Pro per decision; styling lift optional |
-| GAP-6 | **Apple requires in-app account deletion** (onboarding-account-deletion mockup: Settings row + confirm sheet inside the app) | Deletion exists on certanvil.com/account, but the cert app's Settings has no deletion row — verify the wrap path satisfies Apple | Check + likely small Settings addition before submission |
+| # | Rule (as decided) | Shipped as |
+|---|---|---|
+| GAP-1 ✅ | **Free daily allowance = 15 practice questions + 5 review cards.** | v7.40.0 (PR #442, gated): migration `20260611_free_tier_15_questions.sql` + proxy `FREE_DAILY_LIMIT` + `SR_FREE_DAILY_CAP` client cap. ⚠️ Migration still needs pasting in Supabase SQL Editor (bundled with June 20). |
+| GAP-2 ✅ | **Soft blocker when a free user picks a session bigger than the remaining allowance** | v7.41.0 (PR #443): `_gateSessionSizeForQuota` + daily-limit pre-block screen in startQuiz / startExam / startBulkQuiz (bulk previously had no gate at all). |
+| GAP-3 ✅ | **Settings: Daily Goal + Daily Review size controls locked for free users** | v7.42.0 (PR #444): `.tier-pro-only`/`.tier-free-only` body-class system, pro-lock pills, lock-notes, Go Pro CTAs, JS guards. |
+| GAP-4 ✅ | **Cross-cert analytics is a Pro feature** | v7.43.0 (PR #445): tier resolved via `get_daily_quota_usage` RPC before render; free → `#cca-pro-gate` upsell; fails open on RPC error. |
+| GAP-5 ✅ | **Log-your-exam-result is a Pro feature** | v7.44.0 (PR #446): `renderExamResultsList` returns `.er-pro-lock` upsell for non-admin. Gate-vs-keep-free decided as GATE per mockup-as-spec (Simi may veto). Styling lift of the log-result screen deferred (optional). |
+| GAP-6 ✅ | **Apple requires in-app account deletion** | v7.45.0 (PR #447): Settings §03 Danger Zone "Delete my account" row (signed-in only) + mockup confirm flow; same `deletion_requested_at` 7-day-grace mechanism as /account. |
 
 ## ⏸ Correctly parked (cannot be built yet — needs billing)
 
