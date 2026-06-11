@@ -4109,7 +4109,7 @@ test('v4.54.1 HTML: #page-settings exists',
 // Backups. Also bumped importData → clearWrongBank window 2500 → 3500 for
 // headroom (current gap ~2250 with §04 Danger Zone wrapper).
 test('v4.54.1 (v4.54.16 update) HTML: settings has API key + Exam Date + Daily Goal + Export/Import + Clear Wrong Bank',
-  html.includes('id="api-key"') && /id="page-settings"[\s\S]{0,7000}exportData\(\)[\s\S]{0,800}importData\([\s\S]{0,3500}clearWrongBank/.test(html));
+  html.includes('id="api-key"') && /id="page-settings"[\s\S]{0,9500}exportData\(\)[\s\S]{0,800}importData\([\s\S]{0,3500}clearWrongBank/.test(html));  // window 7000→9500: v7.42.0 GAP-3 tier-lock markup grew the settings page
 test('v4.54.1 HTML: #history-panel moved to #page-analytics',
   /id="page-analytics"[\s\S]{0,1500}id="history-panel"/.test(html));
 test('v4.54.1 HTML: regression \u2014 #advanced-section removed from home',
@@ -4648,7 +4648,7 @@ test('v4.54.10 CSS: legacy .dg-weak-chips hidden via !important',
 
 // Settings: editable daily goal
 test('v4.54.10 HTML: Settings page has Daily Goal section with input + presets',
-  /id="page-settings"[\s\S]{0,3000}settings-daily-input[\s\S]{0,800}settings-daily-chip/.test(html));
+  /id="page-settings"[\s\S]{0,3800}settings-daily-input[\s\S]{0,800}settings-daily-chip/.test(html));  // window 3000→3800: v7.42.0 GAP-3 pro-lock pill + comment before the input
 test('v4.54.10 JS: saveSettingsDailyGoal + pickSettingsDailyPreset + syncSettingsDailyGoal defined',
   js.includes('function saveSettingsDailyGoal(') &&
   js.includes('function pickSettingsDailyPreset(') &&

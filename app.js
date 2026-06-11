@@ -1,9 +1,9 @@
 // ══════════════════════════════════════════
-// Network+ AI Quiz — app.js  v7.41.0
+// Network+ AI Quiz — app.js  v7.42.0
 // ══════════════════════════════════════════
 
 // ── CONSTANTS ──
-const APP_VERSION = '7.41.0';
+const APP_VERSION = '7.42.0';
 // v4.99.45 (Phase 6b): expose APP_VERSION on window so the web-vitals
 // collector (lib/web-vitals-collector.js, loaded BEFORE app.js so its
 // PerformanceObservers attach earlier) can stamp this version onto every
@@ -18713,6 +18713,9 @@ function pickSettingsDailyPreset(n) {
   });
 }
 function saveSettingsDailyGoal() {
+  // GAP-3: free tier has a fixed 15/day allowance — controls are CSS-hidden,
+  // this guard is the enforcement behind the curtain.
+  if (typeof _srIsFreeTier === 'function' && _srIsFreeTier()) return;
   const input = document.getElementById('settings-daily-input');
   if (!input) return;
   const v = parseInt(input.value, 10);
@@ -18731,6 +18734,8 @@ function saveSettingsDailyGoal() {
 
 // #8: Daily Review (spaced repetition) settings — session size + top-up.
 function pickSrSessionSize(n) {
+  // GAP-3: free tier reviews a fixed 5 cards/day (SR_FREE_DAILY_CAP)
+  if (typeof _srIsFreeTier === 'function' && _srIsFreeTier()) return;
   const prefs = loadSrPrefs();
   prefs.sessionSize = n;
   saveSrPrefs(prefs);
@@ -18740,6 +18745,8 @@ function pickSrSessionSize(n) {
   }
 }
 function toggleSrTopUp() {
+  // GAP-3: light-day top-ups are Pro-only
+  if (typeof _srIsFreeTier === 'function' && _srIsFreeTier()) return;
   const prefs = loadSrPrefs();
   prefs.topUp = !prefs.topUp;
   saveSrPrefs(prefs);

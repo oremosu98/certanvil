@@ -1841,6 +1841,11 @@ html[data-theme] body #page-settings .ana-ready-datechip,html[data-theme] body #
 html[data-theme] body #page-settings .ana-ready-datechip:hover,html[data-theme] body #page-settings .ana-exam-date-btn:hover{border-color:var(--accent)!important;color:var(--accent)!important;}
 #page-settings .ana-ready-datechip-days,#page-settings .ana-ready-datechip-date{color:var(--text-mid)!important;}
 html[data-theme] body #page-settings .settings-daily-row{display:flex!important;align-items:center!important;gap:12px!important;flex-wrap:wrap!important;margin:14px 0 0!important;}
+/* v7.42.0 GAP-3: tier locks must beat the display:flex!important rules above —
+   resolved free users lose the live controls regardless of dg reskin. */
+html[data-theme] body.is-state-resolved:not(.is-pro-tier) #page-settings .tier-pro-only{display:none!important;}
+html[data-theme] body:not(.is-state-resolved) #page-settings .tier-free-only,
+html[data-theme] body.is-pro-tier #page-settings .tier-free-only{display:none!important;}
 html[data-theme] body #page-settings .settings-daily-input{background:color-mix(in oklab,var(--accent) 5%,var(--surface))!important;border:1px solid color-mix(in oklab,var(--accent) 22%,var(--border))!important;border-radius:11px!important;color:var(--text)!important;font:600 32px/1 'Fraunces',Georgia,serif!important;padding:10px 14px!important;width:auto!important;min-width:86px!important;max-width:132px!important;text-align:center!important;font-variant-numeric:tabular-nums!important;box-shadow:none!important;}
 html[data-theme] body #page-settings .settings-daily-input:focus{border-color:var(--accent)!important;outline:none!important;}
 html[data-theme] body #page-settings .settings-daily-unit{font-size:var(--t-1)!important;color:var(--text-dim)!important;}
