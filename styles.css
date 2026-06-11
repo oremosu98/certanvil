@@ -1,5 +1,5 @@
 /* ══════════════════════════════════════════
-   Network+ AI Quiz — styles.css  v7.44.0
+   Network+ AI Quiz — styles.css  v7.45.0
    ══════════════════════════════════════════ */
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -14081,6 +14081,54 @@ body.is-pro-tier .tier-free-only { display: none !important; }
 @media (hover: hover) and (pointer: fine) {
   .settings-go-pro-btn:hover { filter: brightness(1.05); }
 }
+
+/* ── GAP-6 — in-app account deletion confirm (mockup onboarding-account-deletion) ── */
+.dla-card { text-align: left; }
+.dla-card .dlpb-title, .dla-card .dlpb-lede { text-align: center; }
+.dla-mark {
+  background: color-mix(in oklab, var(--red, #f87171) 12%, transparent);
+  border-color: color-mix(in oklab, var(--red, #f87171) 38%, transparent);
+  color: var(--red, #f87171);
+}
+.dla-terms .dlpb-row { padding: 10px 14px; }
+.dla-confirm { margin-bottom: 16px; }
+.dla-confirm label {
+  display: block;
+  font-size: 12px;
+  color: var(--text-mid, #b0b0cc);
+  margin-bottom: 7px;
+}
+.dla-confirm label b { color: var(--text, #f0f0f8); word-break: break-all; }
+.dla-confirm input {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 12px 13px;
+  border-radius: 10px;
+  border: 1px solid var(--border, rgba(255,255,255,0.16));
+  background: var(--surface, #131320);
+  color: var(--text, #f0f0f8);
+  font-size: 14px;
+  font-family: inherit;
+}
+.dla-confirm input:focus {
+  outline: none;
+  border-color: color-mix(in oklab, var(--red, #f87171) 55%, transparent);
+}
+.dla-danger-btn {
+  display: block;
+  background: var(--red, #f87171);
+  color: #14110b;
+  padding: 13px 22px;
+  font-size: 13.5px;
+  font-weight: 700;
+  border-radius: 10px;
+  border: 0;
+  cursor: pointer;
+  font-family: inherit;
+  transition: transform 0.16s cubic-bezier(0.23, 1, 0.32, 1), opacity 0.16s ease;
+}
+.dla-danger-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.dla-danger-btn:not(:disabled):active { transform: scale(0.97); }
 
 @media (prefers-reduced-motion: reduce) {
   .quota-exceeded-modal { animation: none; }
