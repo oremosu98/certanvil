@@ -1,9 +1,9 @@
 // ══════════════════════════════════════════
-// Network+ AI Quiz — app.js  v7.45.0
+// Network+ AI Quiz — app.js  v7.46.0
 // ══════════════════════════════════════════
 
 // ── CONSTANTS ──
-const APP_VERSION = '7.45.0';
+const APP_VERSION = '7.46.0';
 // v4.99.45 (Phase 6b): expose APP_VERSION on window so the web-vitals
 // collector (lib/web-vitals-collector.js, loaded BEFORE app.js so its
 // PerformanceObservers attach earlier) can stamp this version onto every
@@ -918,7 +918,7 @@ function _showProOnlyUI(detail) {
     '<div class="quota-exceeded-card pro-only-card">' +
       '<div class="quota-exceeded-icon pro-only-icon">&#9889;</div>' +
       '<div class="quota-exceeded-title">' + feature + ' is a Pro feature</div>' +
-      '<div class="quota-exceeded-sub">Drills, the topology builder, ACL labs, and the Sec+ flagships are all part of Pro. Free users get unlimited days at 20 AI-generated questions a day. Upgrade to unlock everything.</div>' +
+      '<div class="quota-exceeded-sub">The Exam Simulator, marathon sets, Deep Scan, and drills are all part of Pro. Free is 15 practice questions plus 5 review cards a day, every day. Upgrade to unlock everything.</div>' +
       '<div class="quota-exceeded-actions">' +
         '<a class="quota-exceeded-cta" href="https://certanvil.com/pricing" target="_blank" rel="noopener">Upgrade to Pro &middot; $9.99/mo &rarr;</a>' +
         '<button type="button" class="quota-exceeded-dismiss" id="pro-only-dismiss">Maybe later</button>' +
@@ -930,6 +930,22 @@ function _showProOnlyUI(detail) {
   if (dismissBtn) dismissBtn.addEventListener('click', function () { modal.remove(); });
   modal.addEventListener('click', function (e) { if (e.target === modal) modal.remove(); });
 }
+
+// v7.46.0: free custom quizzes cap at 15 questions. Capture-phase listener
+// beats the generic chip handler, so a free user tapping the 20 chip gets
+// the Pro modal and the selection never changes. startQuiz() re-checks as
+// the enforcement layer.
+document.addEventListener('click', function (e) {
+  var chip = e.target && e.target.closest ? e.target.closest('#count-group .chip') : null;
+  if (!chip) return;
+  var v = parseInt(chip.getAttribute('data-v'), 10);
+  if (!(v > 15)) return;
+  if (typeof _srIsFreeTier === 'function' && _srIsFreeTier()) {
+    e.preventDefault();
+    e.stopPropagation();
+    if (typeof _gateProOnly === 'function') _gateProOnly('Going past 15 questions per set');
+  }
+}, true);
 
 // Self-contained auth listener — keeps the quota chip in sync with auth state
 // (fires on initial load, sign-in, sign-out, and token refresh). Safe to call
@@ -6263,6 +6279,8 @@ function clearWrongBank() {
 // Builds a fresh quiz from THIS session's wrong log entries (not the global
 // wrong-bank). If every answer was correct the button is hidden upstream.
 function drillMistakesFromResults() {
+  // v7.46.0: Drill Mistakes is Pro-only — same gate as startWrongDrill
+  if (typeof _gateProOnly === 'function' && !_gateProOnly('Drill Mistakes')) return;
   if (!Array.isArray(log) || log.length === 0) return;
   const wrongEntries = log.filter(e => e && e.isRight === false);
   if (wrongEntries.length === 0) {
@@ -6318,6 +6336,8 @@ function _renderResultsReviewList() {
 }
 
 function startWrongDrill() {
+  // v7.46.0: Drill Mistakes is Pro-only (Simi, 2026-06-11)
+  if (typeof _gateProOnly === 'function' && !_gateProOnly('Drill Mistakes')) return;
   const bank = loadWrongBank();
   if (bank.length === 0) {
     alert('No wrong answers saved yet. Keep quizzing!');
@@ -6456,6 +6476,12 @@ function _showSignInPrompt(anchorEl, message) {
 // ══════════════════════════════════════════
 async function startQuiz() {
   if (!_gateActivityForQuota('practice quizzes')) return;
+  // v7.46.0: free custom quizzes cap at 15 questions — the full daily
+  // allowance in one set (Simi, 2026-06-11). The count-chip interceptor
+  // blocks the picker; this is the enforcement behind it.
+  if (qCount > 15 && typeof _srIsFreeTier === 'function' && _srIsFreeTier()) {
+    if (!_gateProOnly('Going past 15 questions per set')) return;
+  }
   if (!_gateSessionSizeForQuota(qCount, { mode: 'quiz' })) return;
   const key = document.getElementById('api-key').value.trim();
   const errBox = document.getElementById('setup-err');
@@ -6855,6 +6881,9 @@ function _formatElapsed(ms) {
 // START EXAM SIMULATION
 // ══════════════════════════════════════════
 async function startExam() {
+  // v7.46.0: the Exam Simulator is Pro-only (Simi, 2026-06-11). The quota
+  // and size gates below only matter for Pro edge states now.
+  if (!_gateProOnly('The Exam Simulator')) return;
   if (!_gateActivityForQuota('exam simulator')) return;
   if (!_gateSessionSizeForQuota(90, { mode: 'exam' })) return;
   const key = document.getElementById('api-key').value.trim();
@@ -10777,6 +10806,15 @@ function startStreakSave() {
 
 // ── Quiz Presets (3 one-click starting configs) ──
 function applyPreset(name) {
+  // v7.46.0: Deep Scan + all marathon presets are Pro-only (Simi, 2026-06-11).
+  // Free stays on Warmup (5), Focused (10), and custom sets up to 15.
+  const PRO_PRESETS = {
+    grind: 'The 20-min Deep Scan',
+    bulk30: '30-question marathons',
+    bulk45: '45-question marathons',
+    bulk60: 'The 60-Question SIM'
+  };
+  if (PRO_PRESETS[name] && typeof _gateProOnly === 'function' && !_gateProOnly(PRO_PRESETS[name])) return;
   // Bulk Mixed presets — large counts that exceed the single-call ceiling are
   // batched via startBulkQuiz so the AI never gets asked for >20 Qs at once.
   const bulkSizes = { bulk30: 30, bulk45: 45, bulk60: 60 };
@@ -11130,6 +11168,10 @@ async function startBulkQuiz(count) {
   diff = 'Exam Level';
   qCount = count;
 
+  // v7.46.0: marathons are Pro-only — belt behind the applyPreset gate so a
+  // direct startBulkQuiz() call can't sidestep it. The GAP-2 gates below
+  // only matter for Pro edge states now.
+  if (typeof _gateProOnly === 'function' && !_gateProOnly('Marathon sets')) return;
   // GAP-2: bulk presets previously had no quota gate (free user would 429 mid-run)
   if (!_gateActivityForQuota('practice quizzes')) return;
   if (!_gateSessionSizeForQuota(count, { mode: 'bulk' })) return;
