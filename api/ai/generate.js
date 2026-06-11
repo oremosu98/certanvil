@@ -27,7 +27,8 @@ const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || '';
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY || '';
 
 const ANTHROPIC_VERSION = '2023-06-01';
-const FREE_DAILY_LIMIT = 20;  // mirrors consume_daily_quota's hardcoded limit
+const FREE_DAILY_LIMIT = 15;  // mirrors consume_daily_quota's hardcoded limit
+                              // (15/day since 20260611_free_tier_15_questions.sql)
 
 // ── Security Phase 1 (2026-05-29) — abuse hardening (audit C1/C2/H1/L1) ──
 const crypto = require('crypto');

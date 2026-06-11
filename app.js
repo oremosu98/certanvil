@@ -1,9 +1,9 @@
 // ══════════════════════════════════════════
-// Network+ AI Quiz — app.js  v7.39.0
+// Network+ AI Quiz — app.js  v7.40.0
 // ══════════════════════════════════════════
 
 // ── CONSTANTS ──
-const APP_VERSION = '7.39.0';
+const APP_VERSION = '7.40.0';
 // v4.99.45 (Phase 6b): expose APP_VERSION on window so the web-vitals
 // collector (lib/web-vitals-collector.js, loaded BEFORE app.js so its
 // PerformanceObservers attach earlier) can stamp this version onto every
@@ -345,7 +345,7 @@ const CLAUDE_MODEL = 'claude-haiku-4-5-20251001';
 //     fallback). Phase E.4 removes this fallback once the server proxy
 //     ships with the daily-quota guarantee.
 //   • Anonymous user with no stored key → throws err.needsAuth, caller
-//     surfaces a "sign in for free 20 questions/day" UI.
+//     surfaces a "sign in for free 15 questions/day" UI.
 //
 // The wrapper preserves the same call shape as fetch(url, init) so all 13
 // existing Anthropic call sites in this file collapsed to a single global
@@ -443,7 +443,7 @@ async function _claudeFetch(init) {
   }
 
   // No session, no key — surface a sign-in nag
-  var err = new Error('Sign in to study — 20 free questions/day at certanvil.com.');
+  var err = new Error('Sign in to study — 15 free questions/day at certanvil.com.');
   err.needsAuth = true;
   throw err;
 }
@@ -670,7 +670,7 @@ function _showQuotaExceededUI(detail) {
     '<div class="quota-exceeded-card">' +
       '<div class="quota-exceeded-icon">&#128267;</div>' +
       '<div class="quota-exceeded-title">You&rsquo;ve used today&rsquo;s free questions</div>' +
-      '<div class="quota-exceeded-sub">' + _streakPrefix + 'Free is 20 questions a day, every day, no card required &middot; resets in <strong>' + resetText + '</strong> (midnight UTC).</div>' +
+      '<div class="quota-exceeded-sub">' + _streakPrefix + 'Free is 15 questions a day, every day, no card required &middot; resets in <strong>' + resetText + '</strong> (midnight UTC).</div>' +
       '<div class="quota-exceeded-actions">' +
         _srBtnHtml +
         '<a class="quota-exceeded-cta" href="https://certanvil.com/pricing" target="_blank" rel="noopener">Upgrade to Pro &middot; $9.99/mo &rarr;</a>' +
@@ -701,7 +701,7 @@ function _showQuotaExceededUI(detail) {
 // v4.99.4 Phase E.4.1 — drills moved to Pro-only via _gateProOnly() below.
 //
 // Called at quiz entry points (startQuiz, startExam). If a Free user is at
-// 20/20 today, blocks the action and shows the quota-exceeded modal.
+// 15/15 today, blocks the action and shows the quota-exceeded modal.
 // Pro users + admins always pass through (is_pro() in Postgres returns true
 // for both, so _quotaState.daily_limit comes back as -1 and tier='pro' —
 // chip + paywall both fall through to "unlimited" automatically).
@@ -863,6 +863,7 @@ const STORAGE = {
   WRONG_BANK: 'nplus_wrong_bank',
   SR_QUEUE: 'nplus_sr_queue',
   SR_PREFS: 'nplus_sr_prefs',     // #8: review session prefs (sessionSize, topUp)
+  SR_FREE_COUNT: 'nplus_sr_free_count', // GAP-1: free-tier reviews used today ({date, count})
   REPORTS: 'nplus_reports',
   BUG_REPORTS: 'nplus_bug_reports', // v5.6.x bug-report drawer retry queue
   TB_V3_DRAFT: 'nplus_tb_v3_draft', // v6.x topology-builder v3 canvas state (Net+ only)
@@ -2455,7 +2456,7 @@ function getTodayQuestionCount() {
 }
 
 // ── Daily goal ──
-// Kept BELOW the 20/day free quota cap so completing the goal leaves headroom
+// Kept BELOW the 15/day free quota cap so completing the goal leaves headroom
 // for "one more" instead of landing the user on the paywall at the same moment.
 const DEFAULT_DAILY_GOAL = 15;
 function getDailyGoal() {
@@ -3455,6 +3456,37 @@ const SR_GRADUATION_INTERVAL = 30;    // days interval needed at graduation
 const SR_EXAM_BUFFER_PCT = 0.15;      // #7: leave 15% of days-to-exam as a final-pass buffer
 const SR_LAPSE_FACTOR = 0.30;         // #3: a wrong answer drops the interval to ~30% of prior (floor 1d), not a hard reset to 1
 const SR_LIGHT_DAY_THRESHOLD = 8;     // #8: fewer than this many due cards = a "light day" that offers top-up practice
+const SR_FREE_DAILY_CAP = 5;          // GAP-1 (2026-06-11): free tier reviews 5 cards/day
+                                      // (cert-ios-daily-limit mockup: "15 practice + 5 review").
+                                      // Gentle queue, not a wall — extra due cards simply wait
+                                      // for tomorrow. Pro/admin and anonymous users are uncapped
+                                      // (anonymous = BYOK self-pay; cap applies to free accounts).
+
+// ── GAP-1: free-tier review-cap helpers ─────────────────────────────────
+// The 5/day cap is enforced client-side on purpose: review cards are saved
+// questions with zero AI spend, so this is product gating, not cost
+// protection (the 15/day question quota is the server-enforced half).
+// Counter is a per-day localStorage cell; resets implicitly when the
+// stored date rolls over.
+function _srIsFreeTier() {
+  return !!(_quotaState && _quotaState.tier === 'free');
+}
+function _srFreeReviewedToday() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(STORAGE.SR_FREE_COUNT) || 'null');
+    if (raw && raw.date === new Date().toISOString().slice(0, 10)) return raw.count || 0;
+  } catch (_) {}
+  return 0;
+}
+function _srBumpFreeReviewed() {
+  if (!_srIsFreeTier()) return;
+  try {
+    localStorage.setItem(STORAGE.SR_FREE_COUNT, JSON.stringify({
+      date: new Date().toISOString().slice(0, 10),
+      count: _srFreeReviewedToday() + 1
+    }));
+  } catch (_) {}
+}
 
 // #8: review session preferences (session size + top-up). Cloud-flushed like
 // the queue. sessionSize is 10 | 20 | 30 | 'all' (capped at SR_SESSION_CAP).
@@ -3887,9 +3919,20 @@ function startSrReview() {
   const totalDueCount = due.length;
   // #8: cap to the user's chosen session size (default 30; hard ceiling SR_SESSION_CAP).
   const _srPrefs = loadSrPrefs();
-  const _srCap = (_srPrefs.sessionSize === 'all')
+  let _srCap = (_srPrefs.sessionSize === 'all')
     ? due.length
     : Math.min(_srPrefs.sessionSize || SR_SESSION_CAP, SR_SESSION_CAP);
+  // GAP-1: free tier reviews 5 cards/day — gentle queue, extras wait for
+  // tomorrow. If today's 5 are already done, say so instead of starting.
+  // typeof guard: UAT vm fixtures eval this body without the helpers.
+  if (typeof _srIsFreeTier === 'function' && _srIsFreeTier()) {
+    const _freeLeft = Math.max(0, SR_FREE_DAILY_CAP - _srFreeReviewedToday());
+    if (_freeLeft === 0) {
+      showToast("Today's " + SR_FREE_DAILY_CAP + ' free reviews are done. ' + due.length + ' card' + (due.length === 1 ? ' is' : 's are') + ' saved for tomorrow — Pro clears the whole queue daily.', 'info');
+      return;
+    }
+    _srCap = Math.min(_srCap, _freeLeft);
+  }
   if (due.length > _srCap) {
     due = due.slice(0, _srCap);
   }
@@ -4228,6 +4271,11 @@ function srMarkConfidence(outcome) {
     // practice never reschedules real cards early (spacing stays pure).
     if (!_srSession.practice) updateSrEntry(card.qHash, outcome);
 
+    // GAP-1: real (non-practice) reviews count against the free 5/day cap.
+    // Retries don't reach this branch, so a card costs exactly one credit.
+    // typeof guard: UAT vm fixtures eval this body without the helpers.
+    if (!_srSession.practice && typeof _srBumpFreeReviewed === 'function') _srBumpFreeReviewed();
+
     // Tally
     _srSession.answersGiven++;
     if (outcome === 'correct-confident') _srSession.correctConfident++;
@@ -4353,11 +4401,21 @@ function _srEndReview() {
     // v4.85.1: show remaining cards count + "Continue" button when session was capped
     const remaining = (typeof getSrStats === 'function') ? getSrStats().due : 0;
     if (remaining > 0) {
-      const remMin = Math.max(2, Math.round(Math.min(remaining, SR_SESSION_CAP) * 0.5));
-      html += '<div class="sr-remaining-row">'
-        + '<span class="sr-remaining-text">' + remaining + ' more card' + (remaining === 1 ? '' : 's') + ' still due</span>'
-        + '<button class="btn btn-primary sr-continue-btn" onclick="startSrReview()">Continue · ~' + remMin + ' min →</button>'
-        + '</div>';
+      if (typeof _srIsFreeTier === 'function' && _srIsFreeTier()
+          && (SR_FREE_DAILY_CAP - _srFreeReviewedToday()) <= 0) {
+        // GAP-1: today's 5 free reviews are spent — gentle queue note instead
+        // of a Continue button that would bounce off the cap.
+        html += '<div class="sr-remaining-row">'
+          + '<span class="sr-remaining-text">' + remaining + ' more card' + (remaining === 1 ? '' : 's') + ' waiting — ready tomorrow. Pro clears the whole queue daily.</span>'
+          + '<a class="btn btn-primary sr-continue-btn" href="https://certanvil.com/pricing" target="_blank" rel="noopener">Go Pro →</a>'
+          + '</div>';
+      } else {
+        const remMin = Math.max(2, Math.round(Math.min(remaining, SR_SESSION_CAP) * 0.5));
+        html += '<div class="sr-remaining-row">'
+          + '<span class="sr-remaining-text">' + remaining + ' more card' + (remaining === 1 ? '' : 's') + ' still due</span>'
+          + '<button class="btn btn-primary sr-continue-btn" onclick="startSrReview()">Continue · ~' + remMin + ' min →</button>'
+          + '</div>';
+      }
     }
     // #8 top-up — on a light day, offer extra practice on weak topics (helper
     // returns the block or ''). Never shown after a practice session itself.
@@ -6225,9 +6283,9 @@ function validateApiKey(key) {
   // (line 270) handles the actual routing based on session presence.
   if (typeof window !== 'undefined' && window._certanvilSignedIn === true) return null;
   // BYOK retired (v4.99.3): a signed-out user with no key can't reach the proxy.
-  // Prompt sign-in (free, 20/day) up front instead of the stale "enter API key"
+  // Prompt sign-in (free, 15/day) up front instead of the stale "enter API key"
   // wall or a thrown needsAuth error mid-quiz.
-  if (!key) return 'Sign in to study free: 20 questions a day, no API key needed. Tap "Sign in" at the top right.';
+  if (!key) return 'Sign in to study free: 15 questions a day, no API key needed. Tap "Sign in" at the top right.';
   if (!key.startsWith('sk-ant-')) return 'Invalid API key format. Anthropic keys start with "sk-ant-".';
   if (key.length < 20) return 'API key looks too short. Please check and try again.';
   return null;
@@ -6253,7 +6311,7 @@ function _showSignInPrompt(anchorEl, message) {
   box.innerHTML = '<span class="signin-inline-msg"></span>' +
     '<button type="button" class="btn btn-primary signin-inline-cta">Sign in to start free</button>';
   box.querySelector('.signin-inline-msg').textContent = message ||
-    'Sign in to study free: 20 questions a day, no API key needed.';
+    'Sign in to study free: 15 questions a day, no API key needed.';
   box.querySelector('.signin-inline-cta').addEventListener('click', function() {
     // Prefer clicking the topbar pill so auth-state.js owns the URL-build logic.
     var pill = document.querySelector('.topbar-signin-pill');
