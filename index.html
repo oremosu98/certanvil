@@ -761,7 +761,7 @@
     <span class="hero-icon">&#9889;</span>
     <h1>Network+ AI Quiz</h1>
     <p>AI-generated MCQs every session. Never the same quiz twice.</p>
-    <span id="version-badge" style="display:inline-block;margin-top:10px;font-size:11px;font-weight:700;letter-spacing:.08em;color:var(--accent-light);background:color-mix(in oklab,var(--accent) 12%,transparent);border:1px solid color-mix(in oklab,var(--accent) 30%,transparent);padding:3px 10px;border-radius:99px;cursor:default;user-select:none">v7.41.0</span>
+    <span id="version-badge" style="display:inline-block;margin-top:10px;font-size:11px;font-weight:700;letter-spacing:.08em;color:var(--accent-light);background:color-mix(in oklab,var(--accent) 12%,transparent);border:1px solid color-mix(in oklab,var(--accent) 30%,transparent);padding:3px 10px;border-radius:99px;cursor:default;user-select:none">v7.42.0</span>
     <div id="streak-badge" class="streak-badge"></div>
     <div id="stats-card" class="hero-stats-strip is-hidden">
       <div class="stats-grid" id="stats-grid"></div>
@@ -1447,36 +1447,53 @@
         </div>
         <p class="settings-section-hint">Powers the <strong>days until exam</strong> countdown on Home + Analytics, and the red marker cell on the 365-day study heatmap. Set it to keep your study pressure honest.</p>
       </section>
-      <!-- v4.54.10: editable daily question goal. -->
+      <!-- v4.54.10: editable daily question goal.
+           v7.42.0 GAP-3: pro-locked for free users (mockup cert-ios-settings
+           .plan-free system) — body.is-state-resolved:not(.is-pro-tier) hides
+           .tier-pro-only and reveals .tier-free-only. Anonymous/unresolved
+           users keep the live controls (GAP-1 left anon uncapped). -->
       <section class="card settings-section">
-        <h3 class="settings-section-title">Daily Goal</h3>
-        <div class="settings-daily-row">
+        <h3 class="settings-section-title">Daily Goal <span class="pro-lock-pill tier-free-only"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path></svg>Pro</span></h3>
+        <div class="settings-daily-row tier-pro-only">
           <input type="number" inputmode="numeric" id="settings-daily-input" min="1" max="500" step="1" aria-label="Daily question goal" class="settings-daily-input" />
           <span class="settings-daily-unit">questions per day</span>
           <button class="btn btn-primary settings-daily-save" id="settings-daily-save" onclick="saveSettingsDailyGoal()">Save</button>
         </div>
-        <div class="settings-daily-presets" role="group" aria-label="Daily goal presets">
+        <div class="settings-daily-presets tier-pro-only" role="group" aria-label="Daily goal presets">
           <button type="button" class="settings-daily-chip" data-goal="10" onclick="pickSettingsDailyPreset(10)">10</button>
           <button type="button" class="settings-daily-chip" data-goal="20" onclick="pickSettingsDailyPreset(20)">20</button>
           <button type="button" class="settings-daily-chip" data-goal="30" onclick="pickSettingsDailyPreset(30)">30</button>
           <button type="button" class="settings-daily-chip" data-goal="50" onclick="pickSettingsDailyPreset(50)">50</button>
         </div>
-        <p class="settings-section-hint">The count behind the "Today" card on your home page. Aim for something you can hit every day without burning out.</p>
+        <p class="settings-section-hint tier-pro-only">The count behind the "Today" card on your home page. Aim for something you can hit every day without burning out.</p>
+        <div class="settings-lock-bignum tier-free-only"><span class="slb-n">15</span><span class="slb-l">questions per day</span></div>
+        <div class="lock-note tier-free-only">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 8v4l3 2"></path></svg>
+          <p>Free is fixed at <b>15 questions a day</b> &mdash; that&rsquo;s your daily allowance. Go Pro to set a higher goal.</p>
+        </div>
+        <a class="settings-go-pro-btn tier-free-only" href="https://certanvil.com/pricing" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l2.5 5.5L20 9l-4 4 1 6-5-3-5 3 1-6-4-4 5.5-.5z"></path></svg>Go Pro to raise your goal</a>
       </section>
-      <!-- v7.22.0: Daily Review (spaced repetition) session settings (#8) -->
+      <!-- v7.22.0: Daily Review (spaced repetition) session settings (#8)
+           v7.42.0 GAP-3: pro-locked for free users (5 cards/day fixed). -->
       <section class="card settings-section">
-        <h3 class="settings-section-title">Daily Review <span class="settings-health-eyebrow">spaced repetition</span></h3>
-        <div class="settings-daily-presets sr-size-presets" role="group" aria-label="Review session size">
+        <h3 class="settings-section-title">Daily Review <span class="settings-health-eyebrow">spaced repetition</span> <span class="pro-lock-pill tier-free-only"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path></svg>Pro</span></h3>
+        <div class="settings-daily-presets sr-size-presets tier-pro-only" role="group" aria-label="Review session size">
           <button type="button" class="settings-daily-chip sr-size-chip" data-size="10">10</button>
           <button type="button" class="settings-daily-chip sr-size-chip" data-size="20">20</button>
           <button type="button" class="settings-daily-chip sr-size-chip" data-size="30">30</button>
           <button type="button" class="settings-daily-chip sr-size-chip" data-size="all">All due</button>
         </div>
-        <label class="sr-topup-row">
+        <label class="sr-topup-row tier-pro-only">
           <span class="sr-topup-label">Top up on light days<span class="sr-topup-sub">When few cards are due, offer extra practice on your weakest topics.</span></span>
           <button type="button" class="sr-topup-toggle" id="sr-topup-toggle" role="switch" aria-checked="true" aria-label="Top up on light days"></button>
         </label>
-        <p class="settings-section-hint">How many due review cards per session (about 30 seconds each), up to 30. Anything over waits for a second pass. These only affect <strong>Daily Review</strong>, not your standard quizzes or exams.</p>
+        <p class="settings-section-hint tier-pro-only">How many due review cards per session (about 30 seconds each), up to 30. Anything over waits for a second pass. These only affect <strong>Daily Review</strong>, not your standard quizzes or exams.</p>
+        <div class="settings-lock-bignum tier-free-only"><span class="slb-n">5</span><span class="slb-l">cards a day</span></div>
+        <div class="lock-note tier-free-only">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 8v4l3 2"></path></svg>
+          <p>Free review is capped at <b>5 cards a day</b>, with no light-day top-ups. Go Pro for custom sizes, All-due sessions, and top-ups.</p>
+        </div>
+        <a class="settings-go-pro-btn tier-free-only" href="https://certanvil.com/pricing" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l2.5 5.5L20 9l-4 4 1 6-5-3-5 3 1-6-4-4 5.5-.5z"></path></svg>Go Pro for full review control</a>
       </section>
     </div>
 
