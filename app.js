@@ -1,9 +1,9 @@
 // ══════════════════════════════════════════
-// Network+ AI Quiz — app.js  v7.44.0
+// Network+ AI Quiz — app.js  v7.45.0
 // ══════════════════════════════════════════
 
 // ── CONSTANTS ──
-const APP_VERSION = '7.44.0';
+const APP_VERSION = '7.45.0';
 // v4.99.45 (Phase 6b): expose APP_VERSION on window so the web-vitals
 // collector (lib/web-vitals-collector.js, loaded BEFORE app.js so its
 // PerformanceObservers attach earlier) can stamp this version onto every
@@ -18530,6 +18530,8 @@ function renderSettingsPage() {
   if (typeof syncSettingsExamDate === 'function') syncSettingsExamDate();
   // #8: sync the Daily Review session-size chips + top-up toggle
   if (typeof renderSrSettings === 'function') renderSrSettings();
+  // v7.45.0 GAP-6: show the Delete-my-account row for signed-in users
+  if (typeof _syncDeleteAccountRow === 'function') _syncDeleteAccountRow();
   // v4.81.2: refresh the auto-backup list every time Settings opens so the
   // user sees what's available + can restore/download from any snapshot.
   if (typeof renderAutoBackupList === 'function') renderAutoBackupList();
@@ -18770,6 +18772,126 @@ function renderSrSettings() {
     tog.classList.toggle('is-on', !!prefs.topUp);
     tog.setAttribute('aria-checked', prefs.topUp ? 'true' : 'false');
   }
+}
+
+// ── GAP-6 (v7.45.0): in-app account deletion (Apple 5.1.1(v)) ───────────
+// Settings danger-zone row, signed-in users only. Same 7-day-grace
+// mechanism as the /account danger zone: stamps
+// profiles.metadata.deletion_requested_at, then signs the user out.
+// Mockup: onboarding-account-deletion.html (row → honest confirm sheet
+// with type-your-email → deleting state → goodbye).
+function _syncDeleteAccountRow() {
+  var section = document.getElementById('settings-delete-account');
+  if (!section) return;
+  var signedIn = (typeof window !== 'undefined' && window._certanvilSignedIn === true);
+  if (signedIn) section.removeAttribute('hidden');
+  else section.setAttribute('hidden', '');
+  var btn = document.getElementById('btn-app-delete-account');
+  if (btn && !btn._dlaBound) {
+    btn._dlaBound = true;
+    btn.addEventListener('click', function () {
+      if (typeof _showDeleteAccountConfirmUI === 'function') _showDeleteAccountConfirmUI();
+    });
+  }
+}
+
+function _showDeleteAccountConfirmUI() {
+  var sb = window.certanvilSupabase;
+  if (!sb) return;
+  sb.auth.getSession().then(function (s) {
+    var session = s && s.data && s.data.session;
+    if (!session || !session.user) return;
+    var email = session.user.email || '';
+    var userId = session.user.id;
+
+    var prev = document.getElementById('delete-account-modal');
+    if (prev) prev.remove();
+
+    var modal = document.createElement('div');
+    modal.id = 'delete-account-modal';
+    modal.className = 'quota-exceeded-modal';  // reuse overlay scrim
+    modal.innerHTML =
+      '<div class="dlpb-card dla-card" role="dialog" aria-modal="true" aria-label="Delete your account">' +
+        '<div class="dlpb-lockmark dla-mark" aria-hidden="true">' +
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' +
+            '<path d="M3 6h18"></path><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6M14 11v6"></path>' +
+          '</svg>' +
+        '</div>' +
+        '<h2 class="dlpb-title">Delete your account?</h2>' +
+        '<p class="dlpb-lede">Here is exactly what gets removed after the 7-day grace window:</p>' +
+        '<div class="dlpb-allow dla-terms">' +
+          '<div class="dlpb-row"><span class="dlpb-row-tx"><b>Progress and history</b><span>Quiz history, streaks, and readiness scores</span></span></div>' +
+          '<div class="dlpb-row"><span class="dlpb-row-tx"><b>Review queue</b><span>Saved cards and their schedule</span></span></div>' +
+          '<div class="dlpb-row"><span class="dlpb-row-tx"><b>Your profile</b><span>Email, exam date, and cert results</span></span></div>' +
+        '</div>' +
+        '<p class="dlpb-pro-line">Sign in any time in the next <b>7 days</b> to cancel. After that it&rsquo;s gone for good.</p>' +
+        '<div class="dla-confirm">' +
+          '<label for="dla-email">Type <b>' + email.replace(/&/g, '&amp;').replace(/</g, '&lt;') + '</b> to confirm</label>' +
+          '<input id="dla-email" type="email" inputmode="email" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Your email" />' +
+        '</div>' +
+        '<div class="dlpb-actions">' +
+          '<button type="button" class="dla-danger-btn" id="dla-confirm" disabled>Delete account</button>' +
+          '<button type="button" class="dlpb-ghost" id="dla-cancel">Cancel</button>' +
+        '</div>' +
+      '</div>';
+    document.body.appendChild(modal);
+
+    var input = document.getElementById('dla-email');
+    var confirmBtn = document.getElementById('dla-confirm');
+    if (input && confirmBtn) {
+      input.addEventListener('input', function () {
+        confirmBtn.disabled = (input.value.trim().toLowerCase() !== email.toLowerCase());
+      });
+    }
+    var cancelBtn = document.getElementById('dla-cancel');
+    if (cancelBtn) cancelBtn.addEventListener('click', function () { modal.remove(); });
+    modal.addEventListener('click', function (e) { if (e.target === modal) modal.remove(); });
+    if (confirmBtn) {
+      confirmBtn.addEventListener('click', function () {
+        if (confirmBtn.disabled) return;
+        if (typeof _confirmDeleteAccount === 'function') _confirmDeleteAccount(modal, userId);
+      });
+    }
+  });
+}
+
+function _confirmDeleteAccount(modal, userId) {
+  var sb = window.certanvilSupabase;
+  if (!sb) return;
+  var card = modal.querySelector('.dla-card');
+  if (card) {
+    card.innerHTML =
+      '<h2 class="dlpb-title">Deleting your account&hellip;</h2>' +
+      '<p class="dlpb-lede">Scheduling removal. This takes a moment.</p>';
+  }
+  // Read metadata fresh so we don't clobber keys written since page load
+  // (cloud-store debounce flushes into the same jsonb column).
+  sb.from('profiles').select('metadata').eq('id', userId).single().then(function (pr) {
+    var meta = (pr && pr.data && pr.data.metadata) || {};
+    var nextMeta = Object.assign({}, meta, { deletion_requested_at: new Date().toISOString() });
+    return sb.from('profiles').update({ metadata: nextMeta }).eq('id', userId);
+  }).then(function (r) {
+    if (r && r.error) throw r.error;
+    return sb.auth.signOut();
+  }).then(function () {
+    if (card) {
+      card.innerHTML =
+        '<h2 class="dlpb-title">Account scheduled for deletion</h2>' +
+        '<p class="dlpb-lede">You&rsquo;re signed out. Sign back in within <b>7 days</b> if you change your mind &mdash; after that, your data is permanently purged.</p>' +
+        '<div class="dlpb-actions"><button type="button" class="dlpb-ghost" id="dla-done">Done</button></div>';
+      var done = document.getElementById('dla-done');
+      if (done) done.addEventListener('click', function () { modal.remove(); window.location.reload(); });
+    }
+  }).catch(function () {
+    if (card) {
+      card.innerHTML =
+        '<h2 class="dlpb-title">Couldn&rsquo;t schedule deletion</h2>' +
+        '<p class="dlpb-lede">Something went wrong on our side. Nothing was deleted &mdash; try again in a minute.</p>' +
+        '<div class="dlpb-actions"><button type="button" class="dlpb-ghost" id="dla-err-close">Close</button></div>';
+      var closeBtn = document.getElementById('dla-err-close');
+      if (closeBtn) closeBtn.addEventListener('click', function () { modal.remove(); });
+    }
+  });
 }
 
 // ── Sidebar collapse ──
