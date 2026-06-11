@@ -4442,7 +4442,7 @@ test('v4.54.8 HTML: #results-review-list container + eyebrow + italic-accent tit
 test('v4.54.8 HTML: Drill my mistakes CTA button exists',
   /id="btn-drill-mistakes"[\s\S]{0,200}drillMistakesFromResults\(\)/.test(html));
 test('v4.54.8 JS: _sessionStartTs tracked on startQuiz + drillMistakesFromResults',
-  /function startQuiz\([\s\S]{0,6000}_sessionStartTs\s*=\s*Date\.now\(\)/.test(js) &&
+  /function startQuiz\([\s\S]{0,6800}_sessionStartTs\s*=\s*Date\.now\(\)/.test(js) &&  // window 6000→6800: v7.46.0 free-tier hard gates grew the startQuiz preamble
   js.includes('let _sessionStartTs') &&
   js.includes('function drillMistakesFromResults(') &&
   js.includes('function _formatElapsed('));
@@ -15196,7 +15196,7 @@ test('v4.99.3 gate: shows quota-exceeded modal when blocked',
 test('v4.99.3 gate: startQuiz protected',
   /async function startQuiz[\s\S]{0,200}_gateActivityForQuota/.test(js));
 test('v4.99.3 gate: startExam protected',
-  /async function startExam[\s\S]{0,200}_gateActivityForQuota/.test(js));
+  /async function startExam[\s\S]{0,420}_gateActivityForQuota/.test(js));  // window 200→420: v7.46.0 _gateProOnly now precedes the quota gate
 // v4.99.4: drill entry points now use _gateProOnly (drills are Pro-only).
 // Quizzes (startQuiz/startExam) still use _gateActivityForQuota (20/day quota).
 test('v4.99.4 ProOnly: _gateProOnly helper defined',

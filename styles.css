@@ -1,5 +1,5 @@
 /* ══════════════════════════════════════════
-   Network+ AI Quiz — styles.css  v7.45.0
+   Network+ AI Quiz — styles.css  v7.46.0
    ══════════════════════════════════════════ */
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -14012,6 +14012,9 @@ body.is-pro-tier .tier-free-only { display: none !important; }
   stroke: currentColor; fill: none;
   stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round;
 }
+/* v7.46.0: pill variants inside home tiles + custom-quiz count chips */
+.opt .on .pro-lock-pill { font-size: 8px; padding: 3px 6px; margin-left: 4px; }
+.chip-count .chip-count-pro { font-size: 8px; padding: 3px 6px; margin: 4px auto 0; }
 .settings-lock-bignum {
   display: flex;
   align-items: baseline;
