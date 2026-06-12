@@ -1,9 +1,9 @@
 // ══════════════════════════════════════════
-// Network+ AI Quiz — app.js  v7.49.0
+// Network+ AI Quiz — app.js  v7.50.0
 // ══════════════════════════════════════════
 
 // ── CONSTANTS ──
-const APP_VERSION = '7.49.0';
+const APP_VERSION = '7.50.0';
 // v4.99.45 (Phase 6b): expose APP_VERSION on window so the web-vitals
 // collector (lib/web-vitals-collector.js, loaded BEFORE app.js so its
 // PerformanceObservers attach earlier) can stamp this version onto every
@@ -1163,6 +1163,14 @@ let _gauntletReturn = 'setup'; // v7.48.1: where Back/exit returns to — 'drill
                                // drills page; #page-drills is unstyled on
                                // desktop (cert-ios lift surface), so desktop
                                // users must route back to Home
+
+// v7.50.0 — Why-Not session state (second flagship drill)
+let whyNotMode = false;   // a Why-Not round's question is riding the quiz engine
+let _wnSession = null;    // { topic, rounds, roundIdx, points, roundResults: [] }
+let _wnRound = null;      // { wrongLetters, wrongIdx, answerRight, reasons: {}, map }
+let _wnBusy = false;      // in-flight guard on Start
+let _wnTopic = null;      // entry-screen topic override (null = weakest)
+let _wnReturn = 'setup';  // origin-aware back routing (the v7.48.1 lesson)
 
 // Multi-select state (regular quiz)
 let msSelections = [];
@@ -2453,6 +2461,12 @@ function goSetup() {
   // no penalty. Reset the mode + restore the standard quiz chrome.
   gauntletMode = false;
   _gauntletRun = null;
+  // v7.50.0: quitting a Why-Not session mid-run = same contract (no penalty);
+  // the ladder renderer's idle path restores the shared quiz chrome (dots,
+  // topic strip) for both drills.
+  whyNotMode = false;
+  _wnSession = null;
+  _wnRound = null;
   if (typeof _renderGauntletLadder === 'function') { try { _renderGauntletLadder(); } catch (_) {} }
   navOpen = false;
   // v4.54.1: renderHistoryPanel moved to renderAnalytics (Recent Performance now lives on Analytics page)
@@ -3566,6 +3580,8 @@ function addToWrongBank(q, chosen) {
   // v7.48.0: Gauntlet runs are parallel to the wrong-bank loop — a gauntlet
   // miss is answered by "Run it again" (fresh wordings), not bank/SR enrolment.
   if (typeof gauntletMode !== 'undefined' && gauntletMode) return;
+  // v7.50.0: Why-Not sessions are parallel to bank/SR too (same spec rule)
+  if (typeof whyNotMode !== 'undefined' && whyNotMode) return;
   // v4.74.0: also enroll into the spaced-repetition queue. SR runs ahead
   // of the dedup check below — we WANT a repeated miss on the same
   // question to re-trigger SR (resets interval, drops ease) even though
@@ -6939,6 +6955,437 @@ function gauntletExit() {
   gauntletBack(); // v7.48.1: origin-aware — never the unstyled drills page on desktop
 }
 
+// ══════════════════════════════════════════
+// WHY-NOT (v7.50.0) — the second flagship drill
+// ══════════════════════════════════════════
+// Research-verified pain (FLAGSHIP-DRILL-RESEARCH-2026-06-11, pain 4): the
+// tools people praise explain why every option is right or wrong. Why-Not
+// turns that into the game: answer the question, then each wrong option
+// returns and you pick WHY it loses from three reasons (one true, two
+// tempting fakes). Round = 4 points (answer + 3 reasons). Session = 3
+// rounds, one topic, breadth — the Gauntlet owns concept depth. Spec:
+// docs/planning/WHY-NOT-DRILL-SPEC-2026-06-12.md. Pro-only at Start;
+// parallel to bank/SR; reasons are a MENU, scoring is exact-match.
+const WHY_NOT_ROUNDS = 3;
+
+// Entry points (Drills flagship card + Home Practice option). Entry screen
+// viewable by free users; the Pro gate fires on Start — the Gauntlet pattern.
+function startWhyNot() {
+  _wnTopic = null;
+  const active = document.querySelector('.page.active');
+  _wnReturn = (active && active.id === 'page-drills') ? 'drills' : 'setup';
+  renderWhyNotEntry();
+  showPage('whynot');
+}
+
+function whyNotBack() {
+  if (_wnReturn === 'drills') showPage('drills');
+  else goSetup();
+}
+
+function renderWhyNotEntry() {
+  const backLabel = document.getElementById('wn-back-label');
+  if (backLabel) backLabel.textContent = _wnReturn === 'drills' ? 'Drills' : 'Home';
+  const w = getWeakTopic();
+  let topicName = _wnTopic || (w && w.topic) || null;
+  if (!topicName && typeof getTodaysFocusTopics === 'function') {
+    const f = getTodaysFocusTopics(1);
+    const first = Array.isArray(f) ? f[0] : null;
+    topicName = typeof first === 'string' ? first : (first && first.topic) || null;
+  }
+  if (!topicName) topicName = Object.keys((typeof TOPIC_DOMAINS !== 'undefined' && TOPIC_DOMAINS) || {})[0] || MIXED_TOPIC;
+  const nameEl = document.getElementById('wn-topic-name');
+  if (nameEl) nameEl.textContent = topicName;
+  const whyEl = document.getElementById('wn-topic-why');
+  if (whyEl) whyEl.textContent = _wnTopic ? 'Your pick' : ((w && w.topic === topicName) ? 'Your weakest topic right now' : 'A good place to start');
+  const listEl = document.getElementById('wn-topic-list');
+  if (listEl) listEl.classList.add('is-hidden');
+}
+
+function whyNotToggleTopicList() {
+  const el = document.getElementById('wn-topic-list');
+  if (!el) return;
+  if (!el.classList.contains('is-hidden')) { el.classList.add('is-hidden'); return; }
+  const topics = Object.keys((typeof TOPIC_DOMAINS !== 'undefined' && TOPIC_DOMAINS) || {});
+  el.innerHTML = topics.map(t =>
+    '<button type="button" class="gnt-topic-opt" data-action="whyNotChooseTopic" data-args="' + escAttr(JSON.stringify([t])) + '">' + escHtml(t) + '</button>'
+  ).join('');
+  el.classList.remove('is-hidden');
+}
+
+function whyNotChooseTopic(t) {
+  _wnTopic = t;
+  renderWhyNotEntry();
+}
+
+// One metered call per SESSION: 3 questions inside the topic, each carrying
+// its full interrogation kit. Any malformed piece rejects the whole session
+// (friendly retry, nothing recorded) — the Gauntlet validation contract.
+async function _fetchWhyNotSession(topicName) {
+  const exemplars = (typeof _pickExemplarsForTopic === 'function') ? _pickExemplarsForTopic(topicName, 3) : [];
+  const exemplarBlock = (exemplars && exemplars.length && typeof _formatExemplarsForPrompt === 'function')
+    ? _formatExemplarsForPrompt(exemplars) : '';
+  const prompt =
+    'Write a 3-question "Why-Not" drill session for the certification exam topic "' + topicName + '". ' +
+    'Each question is a 4-option multiple-choice exam question (plain text options, no letter prefixes, exactly one correct, vary the correct position across the three).\n\n' +
+    'For EACH of the three WRONG options of each question, provide an interrogation kit:\n' +
+    '- "reason": the one TRUE reason that option loses, stated in one plain sentence\n' +
+    '- "fakes": exactly 2 tempting but FACTUALLY FALSE reasons. A fake must be false about the option itself, not merely a weaker argument. Make them genuinely tempting.\n' +
+    '- "note": 1-2 sentences shown after the pick, naming why the true reason decides it and why the fakes are false.\n\n' +
+    'Wrong options should lose for DIFFERENT kinds of reasons across a question (different job, missing a must-have the question demands, wrong scope, true-but-not-best, wrong layer).\n' +
+    (exemplarBlock ? '\n' + exemplarBlock + '\n' : '') +
+    '\nReturn ONLY JSON:\n' +
+    '{"rounds":[{"question":"...","options":["...","...","...","..."],"answer":"A","explanation":"...","whynot":{"B":{"reason":"...","fakes":["...","..."],"note":"..."},"C":{...},"D":{...}}}]}\n' +
+    '"answer" is the letter (A-D) of the correct option by position. The "whynot" object has EXACTLY the three wrong letters as keys. Exactly 3 rounds.';
+
+  const res = await _claudeFetch({
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true'
+    },
+    // _metered: true — counts toward quota + the global kill-switch.
+    body: JSON.stringify({ model: CLAUDE_MODEL, max_tokens: MAX_TOKENS_GENERATION, messages: [{ role: 'user', content: prompt }], _metered: true })
+  });
+  if (!res.ok) throw new Error('whynot API error ' + res.status);
+  const data = await res.json();
+  const raw = (data.content && data.content[0] && data.content[0].text) || '';
+  const m = raw.match(/\{[\s\S]*\}/);
+  if (!m) throw new Error('whynot: no JSON object in response');
+  const parsed = JSON.parse(m[0]);
+  const rounds = (parsed && Array.isArray(parsed.rounds)) ? parsed.rounds : [];
+  const isStr = s => typeof s === 'string' && s.length > 0;
+  const ok = rounds.length === WHY_NOT_ROUNDS && rounds.every(r => {
+    if (!r || typeof r.question !== 'string' || r.question.length <= 20) return false;
+    if (!Array.isArray(r.options) || r.options.length !== 4 || !r.options.every(o => isStr(o))) return false;
+    if (typeof r.answer !== 'string' || !/^[A-D]$/.test(r.answer.trim().toUpperCase())) return false;
+    if (!isStr(r.explanation)) return false;
+    const ans = r.answer.trim().toUpperCase();
+    const wrong = ['A', 'B', 'C', 'D'].filter(l => l !== ans);
+    if (!r.whynot || typeof r.whynot !== 'object') return false;
+    return wrong.every(l => {
+      const k = r.whynot[l];
+      return k && isStr(k.reason) && Array.isArray(k.fakes) && k.fakes.length === 2 &&
+        k.fakes.every(f => isStr(f)) && isStr(k.note);
+    });
+  });
+  if (!ok) throw new Error('whynot: malformed session shape');
+  return rounds;
+}
+
+// Start CTA. opts: { topic } — used by the loop-closers.
+async function whyNotStart(opts) {
+  opts = opts || {};
+  if (_wnBusy) return; // double-tap guard
+  if (typeof _gateProOnly === 'function' && !_gateProOnly('Why-Not', {
+    title: 'Why-Not is a Pro feature',
+    body: 'The right answer is one point. Knowing why the wrong ones are wrong is the other three. Go Pro to run Why-Not on every cert in the library.'
+  })) return;
+  if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+    showToast('Why-Not builds fresh case files, so it needs a connection.', 'info');
+    return;
+  }
+  if (typeof _canMakeMeteredCall === 'function' && !_canMakeMeteredCall('Why-Not')) return;
+
+  let topicName = opts.topic || _wnTopic || null;
+  if (!topicName) { const w = getWeakTopic(); topicName = (w && w.topic) || null; }
+  if (!topicName && typeof getTodaysFocusTopics === 'function') {
+    const f = getTodaysFocusTopics(1);
+    const first = Array.isArray(f) ? f[0] : null;
+    topicName = typeof first === 'string' ? first : (first && first.topic) || null;
+  }
+  if (!topicName) topicName = Object.keys((typeof TOPIC_DOMAINS !== 'undefined' && TOPIC_DOMAINS) || {})[0] || MIXED_TOPIC;
+
+  apiKey = (document.getElementById('api-key') || { value: '' }).value.trim();
+  _wnBusy = true;
+  const lp = document.getElementById('load-progress');
+  if (lp) lp.classList.add('is-hidden');
+  showPage('loading');
+  const lm = document.getElementById('loading-msg');
+  if (lm) lm.textContent = 'Building the case files…';
+  if (typeof _loadingProgressBegin === 'function') _loadingProgressBegin('Building the case files…');
+
+  let rounds;
+  try {
+    rounds = await _fetchWhyNotSession(topicName);
+  } catch (e) {
+    _wnBusy = false;
+    if (typeof _loadingProgressFinish === 'function') { try { _loadingProgressFinish(); } catch (_) {} }
+    renderWhyNotEntry();
+    showPage('whynot');
+    try { showToast('The forge misfired. Nothing was used up. Hit Start to try again.', 'error'); } catch (_) {}
+    return;
+  }
+  if (typeof _loadingProgressFinish === 'function') { try { _loadingProgressFinish(); } catch (_) {} }
+  _wnBusy = false;
+
+  _wnSession = { topic: topicName, rounds, roundIdx: 0, points: 0, roundResults: [] };
+  _wnBeginRound(0);
+}
+
+// Phase one: the round's question rides the existing quiz engine, exactly
+// like a 1-question Gauntlet. finish() hands off to _wnFinishQuestion().
+function _wnBeginRound(i) {
+  const r = _wnSession.rounds[i];
+  _wnSession.roundIdx = i;
+  _wnRound = { answerRight: undefined, wrongLetters: [], wrongIdx: 0, reasons: {}, map: null };
+  whyNotMode = true;
+  gauntletMode = false;
+  wrongDrillMode = false;
+  examMode = false;
+  sessionMode = false;
+  activeQuizTopic = _wnSession.topic;
+  questions = [{
+    question: r.question,
+    // letterize — renderMCQ reads q.options[letter] (the v7.48.1 contract)
+    options: _letterizeOptions(r.options),
+    answer: r.answer.trim().toUpperCase(),
+    explanation: r.explanation,
+    topic: _wnSession.topic,
+    difficulty: 'Exam Level',
+    type: 'mcq'
+  }];
+  current = 0; score = 0; streak = 0; bestStreak = 0; answered = 0; log = [];
+  quizFlags = [false];
+  if (i === 0) _sessionStartTs = Date.now();
+  showCacheNotice(false);
+  showPage('quiz');
+  render();
+  _wnQuizChrome();
+}
+
+// Quiz-page chrome for a Why-Not question: topic strip on, dot strip off
+// (reuses the v7.49 gauntlet strip element; the ladder stays gauntlet-only).
+function _wnQuizChrome() {
+  const topicEl = document.getElementById('gauntlet-run-topic');
+  const dots = document.getElementById('quiz-prog-dots');
+  if (topicEl) {
+    topicEl.innerHTML = '<span>Why-Not</span> · ' + escHtml(_wnSession.topic) + ' · Round ' + (_wnSession.roundIdx + 1) + ' of ' + WHY_NOT_ROUNDS;
+    topicEl.classList.remove('is-hidden');
+  }
+  if (dots) dots.classList.add('is-hidden');
+}
+
+// Phase one done — the answer point is frozen; move to the reason picker.
+function _wnFinishQuestion() {
+  const r = _wnSession.rounds[_wnSession.roundIdx];
+  const ans = r.answer.trim().toUpperCase();
+  if (_wnRound.answerRight === undefined) _wnRound.answerRight = false;
+  _wnRound.wrongLetters = ['A', 'B', 'C', 'D'].filter(l => l !== ans);
+  _wnRound.wrongIdx = 0;
+  renderWhyNotPicker();
+  showPage('whynot-round');
+}
+
+// The reason picker: one wrong option at a time, three shuffled reasons.
+function renderWhyNotPicker() {
+  const root = document.getElementById('wn-round-root');
+  if (!root || !_wnSession || !_wnRound) return;
+  const r = _wnSession.rounds[_wnSession.roundIdx];
+  const letter = _wnRound.wrongLetters[_wnRound.wrongIdx];
+  const kit = r.whynot[letter];
+  const optText = r.options[['A', 'B', 'C', 'D'].indexOf(letter)];
+  // shuffle [true, fake, fake]; remember where the true reason landed
+  const entries = [{ t: kit.reason, real: true }, { t: kit.fakes[0], real: false }, { t: kit.fakes[1], real: false }]
+    .sort(() => Math.random() - 0.5);
+  _wnRound.map = entries;
+  const segs = ['answer'].concat(_wnRound.wrongLetters).map((k, i) => {
+    if (i === 0) return '<i class="' + (_wnRound.answerRight ? 'done' : 'bad') + '"></i>';
+    const li = i - 1;
+    if (li < _wnRound.wrongIdx) return '<i class="' + (_wnRound.reasons[_wnRound.wrongLetters[li]] ? 'done' : 'bad') + '"></i>';
+    return '<i class="' + (li === _wnRound.wrongIdx ? 'live' : '') + '"></i>';
+  }).join('');
+  root.innerHTML =
+    '<p class="wn-strip"><span>Why-Not</span> · ' + escHtml(_wnSession.topic) + ' · Round ' + (_wnSession.roundIdx + 1) + ' of ' + WHY_NOT_ROUNDS + '</p>' +
+    '<div class="wn-answered">' + (_wnRound.answerRight
+      ? '<span class="wn-tick ok">✓</span><span>You answered: <b>' + escHtml(r.options[['A','B','C','D'].indexOf(r.answer.trim().toUpperCase())]) + '</b>. Right. Now earn the other three points.</span>'
+      : '<span class="wn-tick bad">✗</span><span>The answer was <b>' + escHtml(r.options[['A','B','C','D'].indexOf(r.answer.trim().toUpperCase())]) + '</b>. The reasons below still score.</span>') +
+    '</div>' +
+    '<div class="wn-card">' +
+      '<div class="wn-target"><span class="wn-lt">' + letter + '</span><b>' + escHtml(optText) + '</b></div>' +
+      '<p class="wn-ask">Why does it lose?</p>' +
+      entries.map((e, i) =>
+        '<button type="button" class="wn-reason" id="wn-reason-' + i + '" data-action="whyNotPickReason" data-args="[' + i + ']">' + escHtml(e.t) + '</button>'
+      ).join('') +
+      '<div class="wn-note is-hidden" id="wn-note"></div>' +
+    '</div>' +
+    '<div class="wn-prog">' + segs + '</div>' +
+    '<div class="gnt-result-footer">' +
+      '<button type="button" class="btn btn-primary gnt-cta is-hidden" id="wn-next-btn" data-action="whyNotNextTarget">Next →</button>' +
+      '<button type="button" class="btn gnt-ghost" data-action="whyNotExit">Leave session</button>' +
+    '</div>';
+}
+
+function whyNotPickReason(i) {
+  if (!_wnSession || !_wnRound || !_wnRound.map) return;
+  if (_wnRound.reasons[_wnRound.wrongLetters[_wnRound.wrongIdx]] !== undefined) return; // already picked
+  const r = _wnSession.rounds[_wnSession.roundIdx];
+  const letter = _wnRound.wrongLetters[_wnRound.wrongIdx];
+  const kit = r.whynot[letter];
+  const pick = _wnRound.map[i];
+  const right = !!(pick && pick.real);
+  _wnRound.reasons[letter] = right;
+  if (right) _wnSession.points++;
+  _wnRound.map.forEach((e, j) => {
+    const btn = document.getElementById('wn-reason-' + j);
+    if (!btn) return;
+    btn.setAttribute('disabled', '');
+    if (e.real) btn.classList.add('is-right');
+    else if (j === i) btn.classList.add('is-wrong-pick');
+  });
+  const note = document.getElementById('wn-note');
+  if (note) {
+    note.className = 'wn-note ' + (right ? 'good' : 'bad');
+    note.innerHTML = '<b>' + (right ? 'Right reason' : 'Wrong reason') + '</b>' + escHtml(kit.note);
+  }
+  const nextBtn = document.getElementById('wn-next-btn');
+  if (nextBtn) {
+    const last = _wnRound.wrongIdx >= _wnRound.wrongLetters.length - 1;
+    nextBtn.textContent = last ? 'See the round verdict →'
+      : 'Next: why does ' + _wnRound.wrongLetters[_wnRound.wrongIdx + 1] + ' lose? →';
+    nextBtn.classList.remove('is-hidden');
+  }
+  // progress segment repaint
+  const prog = document.querySelector('#wn-round-root .wn-prog');
+  if (prog && prog.children[_wnRound.wrongIdx + 1]) {
+    prog.children[_wnRound.wrongIdx + 1].className = right ? 'done' : 'bad';
+  }
+}
+
+function whyNotNextTarget() {
+  if (!_wnSession || !_wnRound) return;
+  if (_wnRound.wrongIdx < _wnRound.wrongLetters.length - 1) {
+    _wnRound.wrongIdx++;
+    renderWhyNotPicker();
+    const sh = document.querySelector('#page-whynot-round .gnt-shell');
+    if (sh) sh.scrollTop = 0;
+    window.scrollTo(0, 0);
+  } else {
+    _wnFinishRound();
+  }
+}
+
+// Round done: bank the result, show the round verdict (or roll into the
+// session verdict after round 3).
+function _wnFinishRound() {
+  const answerPt = _wnRound.answerRight ? 1 : 0;
+  if (_wnRound.answerRight) _wnSession.points++;
+  const reasonPts = _wnRound.wrongLetters.filter(l => _wnRound.reasons[l]).length;
+  _wnSession.roundResults.push({
+    answerRight: !!_wnRound.answerRight,
+    reasons: Object.assign({}, _wnRound.reasons),
+    points: answerPt + reasonPts
+  });
+  renderWhyNotVerdict();
+  showPage('whynot-verdict');
+}
+
+function renderWhyNotVerdict() {
+  const root = document.getElementById('wn-verdict-root');
+  if (!root || !_wnSession) return;
+  const i = _wnSession.roundIdx;
+  const r = _wnSession.rounds[i];
+  const res = _wnSession.roundResults[i];
+  const ans = r.answer.trim().toUpperCase();
+  const lastRound = i >= WHY_NOT_ROUNDS - 1;
+  const missedReasons = _wnRound.wrongLetters.filter(l => !res.reasons[l]);
+  const optName = l => escHtml(r.options[['A', 'B', 'C', 'D'].indexOf(l)]);
+  const callout = res.points === 4
+    ? 'Clean sweep. Answer and all three reasons.'
+    : (!res.answerRight && missedReasons.length === 0)
+      ? 'You missed the answer but diagnosed every wrong option. The understanding is there.'
+      : missedReasons.length === 1 && res.answerRight
+        ? 'You knew the answer. You misdiagnosed why <b>' + optName(missedReasons[0]) + '</b> loses.'
+        : missedReasons.length
+          ? 'The reasons need work: ' + missedReasons.map(optName).join(' and ') + ' got past you.'
+          : 'The reasons were all right. The answer got away.';
+  const rows = [
+    '<div class="gnt-rr ' + (res.answerRight ? 'ok' : 'bad') + '"><span class="gnt-rr-ic"><svg viewBox="0 0 24 24" aria-hidden="true">' +
+      (res.answerRight ? '<path d="M20 6 9 17l-5-5"/>' : '<path d="M18 6 6 18M6 6l12 12"/>') +
+      '</svg></span><span class="gnt-rr-t"><b>The answer: ' + escHtml(r.options[['A','B','C','D'].indexOf(ans)]) + '</b><span>' + (res.answerRight ? 'Picked first time' : 'Missed on the first pick') + '</span></span></div>'
+  ].concat(_wnRound.wrongLetters.map(l => {
+    const ok = !!res.reasons[l];
+    const optText = r.options[['A', 'B', 'C', 'D'].indexOf(l)];
+    return '<div class="gnt-rr ' + (ok ? 'ok' : 'bad') + '"><span class="gnt-rr-ic"><svg viewBox="0 0 24 24" aria-hidden="true">' +
+      (ok ? '<path d="M20 6 9 17l-5-5"/>' : '<path d="M18 6 6 18M6 6l12 12"/>') +
+      '</svg></span><span class="gnt-rr-t"><b>' + escHtml(optText) + '</b><span>' + escHtml(r.whynot[l].reason) + '</span></span></div>';
+  })).join('');
+  root.innerHTML =
+    '<div class="wn-vd-head">' +
+      '<div class="wn-vd-score">You earned <b>' + res.points + ' of 4</b></div>' +
+      '<p class="wn-vd-call">' + callout + '</p>' +
+    '</div>' +
+    '<div class="gnt-rung-report">' + rows + '</div>' +
+    '<div class="gnt-result-footer">' +
+      '<button type="button" class="btn btn-primary gnt-cta" data-action="' + (lastRound ? 'whyNotFinishSession' : 'whyNotNextRound') + '">' + (lastRound ? 'Session verdict →' : 'Next round →') + '</button>' +
+      '<button type="button" class="btn gnt-ghost" data-action="whyNotExit">Leave session</button>' +
+    '</div>';
+}
+
+function whyNotNextRound() {
+  if (!_wnSession) { startWhyNot(); return; }
+  // bounds guard: past the last round, the only valid move is the session
+  // verdict (the real button already says so; this protects double-fires)
+  if (_wnSession.roundIdx + 1 >= WHY_NOT_ROUNDS) { whyNotFinishSession(); return; }
+  _wnBeginRound(_wnSession.roundIdx + 1);
+}
+
+// Session complete: history feeds Today's goal (3 questions answered),
+// streak credits like any finished session, then the session verdict.
+function whyNotFinishSession() {
+  if (!_wnSession) { startWhyNot(); return; }
+  const answersRight = _wnSession.roundResults.filter(x => x.answerRight).length;
+  const pct = Math.round((answersRight / WHY_NOT_ROUNDS) * 100);
+  try { saveToHistory({ date: new Date().toISOString(), topic: _wnSession.topic, difficulty: 'Exam Level', score: answersRight, total: WHY_NOT_ROUNDS, pct, mode: 'whynot' }); } catch (_) {}
+  try { updateStreak(); renderStreakBadge(); } catch (_) {}
+  try { if (typeof _writeReadinessSnapshot === 'function') _writeReadinessSnapshot(); } catch (_) {}
+  try { renderStatsCard(); renderReadinessCard(); } catch (_) {}
+  whyNotMode = false;
+  if (typeof _renderGauntletLadder === 'function') { try { _renderGauntletLadder(); } catch (_) {} }
+  const root = document.getElementById('wn-verdict-root');
+  if (root) {
+    const pts = _wnSession.points;
+    const perRound = _wnSession.roundResults.map((x, i) =>
+      '<div class="gnt-rr ' + (x.points === 4 ? 'ok' : 'bad') + '"><span class="gnt-rr-ic"><svg viewBox="0 0 24 24" aria-hidden="true">' +
+      (x.points === 4 ? '<path d="M20 6 9 17l-5-5"/>' : '<path d="M18 6 6 18M6 6l12 12"/>') +
+      '</svg></span><span class="gnt-rr-t"><b>Round ' + (i + 1) + '</b><span>' + x.points + ' of 4</span></span></div>'
+    ).join('');
+    root.innerHTML =
+      '<div class="wn-vd-head">' +
+        '<div class="wn-vd-score">Session: <b>' + pts + ' of 12</b></div>' +
+        '<p class="wn-vd-call">' + escHtml(_wnSession.topic) + ' · 3 questions answered toward today’s goal</p>' +
+      '</div>' +
+      '<div class="gnt-rung-report">' + perRound + '</div>' +
+      '<div class="gnt-result-footer">' +
+        '<button type="button" class="btn btn-primary gnt-cta" data-action="whyNotNextTopic">Next target →</button>' +
+        '<button type="button" class="btn gnt-ghost" data-action="whyNotExit">' + (_wnReturn === 'drills' ? 'Back to Drills' : 'Back to Home') + '</button>' +
+      '</div>';
+  }
+  _wnSession = null;
+  _wnRound = null;
+  // the user is usually ALREADY on the verdict page (round verdict re-uses
+  // it) — re-showing the active page can race the transition animation
+  var _act = document.querySelector('.page.active');
+  if (!_act || _act.id !== 'page-whynot-verdict') showPage('whynot-verdict');
+}
+
+function whyNotNextTopic() {
+  _wnTopic = null;
+  _wnSession = null;
+  _wnRound = null;
+  whyNotStart({});
+}
+
+function whyNotExit() {
+  whyNotMode = false;
+  _wnSession = null;
+  _wnRound = null;
+  if (typeof _renderGauntletLadder === 'function') { try { _renderGauntletLadder(); } catch (_) {} }
+  whyNotBack();
+}
+
 // Drills-page hero card pill ("N cracked").
 function renderGauntletDrillsCard() {
   const pill = document.getElementById('drills-gauntlet-pill');
@@ -8699,6 +9146,11 @@ function showExplanation(q, isRight, entryOverride) {
     if (typeof _gauntletApplyHinge === 'function') _gauntletApplyHinge(q);
     if (typeof _renderGauntletLadder === 'function') _renderGauntletLadder();
   }
+  // v7.50.0 Why-Not: freeze the answer point on the FIRST answer, same
+  // contract as the Gauntlet (re-picks stay study aids).
+  if (whyNotMode && _wnRound && _wnRound.answerRight === undefined) {
+    _wnRound.answerRight = isRight;
+  }
   document.getElementById('exp-label').textContent = label;
   document.getElementById('exp-text').textContent  = q.explanation;
   // v4.54.8: per-choice wrongExplain paragraph. If the question carries a
@@ -8736,7 +9188,7 @@ function showExplanation(q, isRight, entryOverride) {
   // after the current question.
   // v7.48.0: suppressed in gauntlet runs — injecting follow-up questions
   // would corrupt the fixed 5-rung structure.
-  if (!isRight && !gauntletMode && typeof followUpOnMistake === 'function') {
+  if (!isRight && !gauntletMode && !whyNotMode && typeof followUpOnMistake === 'function') {
     extraHtml += '<button class="explain-btn explain-btn-followup" onclick="followUpOnMistake()">Drill this concept</button>';
   }
 
@@ -8801,6 +9253,9 @@ function finish() {
   // v7.48.0: a Gauntlet run has its own verdict surface (cracked / near-miss)
   // instead of the standard results page.
   if (gauntletMode && _gauntletRun) { _finishGauntlet(); return; }
+  // v7.50.0: a Why-Not round's question finishing hands off to phase two
+  // (the reason picker) instead of the results page.
+  if (whyNotMode && _wnSession) { _wnFinishQuestion(); return; }
   // v4.42.0: snapshot streak BEFORE updateStreak so we can detect an
   // increment and flag a pulse animation for the next goSetup() render.
   const _prevStreakBefore = (function(){ try { return getStreak().current || 0; } catch (_) { return 0; } })();

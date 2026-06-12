@@ -112,6 +112,7 @@ npx playwright test              # E2E (tests/e2e/app.spec.js)
 
 | Version | Features Added |
 |---|---|
+| v7.50.0 | Why-Not — second flagship drill: score the reasons, not just the answer; combined landing section |
 | v7.49.0 | Gauntlet run topic strip — the topic shows above the ladder throughout the run |
 | v7.48.1 | Gauntlet back routing — desktop returns Home, never the mobile-only drills page |
 | v7.48.0 | Reword Gauntlet — flagship drill: one concept five ways, crack on 5/5, Pro-only |
