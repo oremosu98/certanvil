@@ -3797,3 +3797,46 @@ mark.gnt-hinge{background:color-mix(in oklab,var(--red) 26%,transparent);color:i
 .gnt-cta{border-radius:12px;padding:14px;font:700 14.5px/1 Inter,sans-serif;transition:transform 0.16s cubic-bezier(0.16,1,0.3,1);}
 .gnt-cta:active{transform:scale(0.97);}
 @media (prefers-reduced-motion:reduce){.gnt-seal,.gnt-seal-ladder i,.gnt-rung-bar i,mark.gnt-hinge{animation:none!important;transition:none!important;}}
+
+/* ════════════════════════════════════════════════════════════════════════
+   v7.50.0 · WHY-NOT — reason picker + verdict screens
+   Lift of mockups/why-not-drill.html (four-pass audited 2026-06-12) onto
+   the app tokens, reusing the gnt-* anatomy (shell, hdr, target, topic
+   list, rung-report rows, footers). Literal easing curve (portal lesson).
+   NOTE: no left-accent-border callouts anywhere — full tinted hairlines
+   (the 2026-06-12 BRAND.md anti-slop rule).
+   ═══════════════════════════════════════════════════════════════════════ */
+.wn-strip{text-align:center;font:800 10px/1 Inter,sans-serif;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-dim);margin:6px 0 14px;}
+.wn-strip span{color:var(--accent);}
+.wn-answered{display:flex;align-items:center;gap:9px;border:1px solid color-mix(in oklab,var(--green) 30%,var(--dg-rule-soft));background:color-mix(in oklab,var(--green) 8%,transparent);border-radius:11px;padding:10px 13px;font:550 13px/1.4 Inter,sans-serif;color:var(--text-mid);margin-bottom:14px;}
+.wn-answered b{color:var(--text);}
+.wn-tick{width:20px;height:20px;border-radius:50%;display:grid;place-items:center;flex:none;font-size:11px;color:var(--bg);}
+.wn-tick.ok{background:var(--green);}
+.wn-tick.bad{background:var(--red);}
+.wn-answered:has(.wn-tick.bad){border-color:color-mix(in oklab,var(--red) 30%,var(--dg-rule-soft));background:color-mix(in oklab,var(--red) 7%,transparent);}
+.wn-card{background:var(--surface);border:1px solid var(--dg-rule-soft);border-radius:16px;padding:16px 15px;}
+.wn-target{display:flex;align-items:center;gap:10px;border:1px solid color-mix(in oklab,var(--red) 40%,var(--dg-rule-soft));border-radius:11px;padding:10px 12px;margin-bottom:13px;}
+.wn-lt{width:22px;height:22px;border-radius:50%;background:var(--red);color:var(--bg);display:grid;place-items:center;flex:none;font:800 11px/1 Inter,sans-serif;}
+.wn-target b{font:650 14px/1.3 Inter,sans-serif;color:var(--text);}
+.wn-ask{font-family:Fraunces,Georgia,serif;font-weight:600;font-size:18px;letter-spacing:-0.01em;color:var(--text);margin:2px 1px 12px;}
+.wn-reason{display:block;width:100%;text-align:left;border:1px solid var(--dg-rule-soft);background:var(--bg);border-radius:11px;padding:11px 13px;font:550 13px/1.45 Inter,sans-serif;color:var(--text-mid);margin-bottom:8px;cursor:pointer;transition:transform 0.16s cubic-bezier(0.16,1,0.3,1);}
+.wn-reason:active{transform:scale(0.985);}
+.wn-reason.is-right{border-color:color-mix(in oklab,var(--green) 55%,transparent);background:color-mix(in oklab,var(--green) 10%,transparent);color:var(--text);}
+.wn-reason.is-wrong-pick{border-color:color-mix(in oklab,var(--red) 50%,transparent);background:color-mix(in oklab,var(--red) 8%,transparent);color:var(--text);}
+.wn-reason[disabled]{cursor:default;}
+.wn-note{border:1px solid var(--dg-rule-soft);border-radius:11px;padding:10px 13px;margin-top:12px;font-size:12.5px;color:var(--text-mid);}
+.wn-note.good{border-color:color-mix(in oklab,var(--green) 32%,var(--dg-rule-soft));background:color-mix(in oklab,var(--green) 8%,transparent);}
+.wn-note.bad{border-color:color-mix(in oklab,var(--red) 32%,var(--dg-rule-soft));background:color-mix(in oklab,var(--red) 7%,transparent);}
+.wn-note b{display:block;font:800 10px/1 Inter,sans-serif;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:5px;}
+.wn-note.good b{color:var(--green);}
+.wn-note.bad b{color:var(--red);}
+.wn-prog{display:flex;gap:6px;margin-top:14px;max-width:560px;}
+.wn-prog i{flex:1;height:4px;border-radius:3px;background:var(--surface3);}
+.wn-prog i.done{background:var(--green);}
+.wn-prog i.bad{background:var(--red);}
+.wn-prog i.live{background:var(--accent);}
+.wn-vd-head{text-align:center;margin-top:12px;}
+.wn-vd-score{font-family:Fraunces,Georgia,serif;font-weight:600;font-size:26px;letter-spacing:-0.012em;color:var(--text);font-variant-numeric:lining-nums tabular-nums;font-feature-settings:"lnum","tnum";}
+.wn-vd-score b{color:var(--accent);}
+.wn-vd-call{font-size:13.5px;color:var(--text-mid);margin:8px auto 18px;max-width:38ch;}
+.wn-vd-call b{color:var(--red);}

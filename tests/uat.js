@@ -1177,7 +1177,8 @@ test('Tier1: renderMarathonSection called in goSetup',
   // v4.99.39: window 1500 → 2500. goSetup has accumulated 3 teardown hooks
   // (_portDrillTeardown, _irwTeardown) pushing renderMarathonSection further
   // down the function body.
-  js.match(/function goSetup\(\)[\s\S]{0,2500}renderMarathonSection\(\)/));
+  // v7.50.0: window 2500 → 2900 after the gauntlet + why-not mode-reset blocks.
+  js.match(/function goSetup\(\)[\s\S]{0,2900}renderMarathonSection\(\)/));
 test('Tier1: renderMarathonSection called on DOMContentLoaded', js.match(/DOMContentLoaded[\s\S]{0,3000}renderMarathonSection\(\)/));
 // Marathon preset buttons still present inside the wrapper
 test('Tier1: Marathon 30-question preset still wired', html.includes("applyPreset('bulk30')"));
@@ -3865,7 +3866,8 @@ test('v4.53.0 JS: domain grid aggregates via TOPIC_DOMAINS lookup',
 // still calls renderSetupDomainGrid + renderTodayPlan.
 test('v4.53.0 JS (retargeted): goSetup calls renderSetupDomainGrid + renderTodayPlan',
   // v4.99.39: windows 1500 → 2500 (same reason as Tier1: teardown-hook accumulation)
-  /function goSetup\([\s\S]{0,2500}renderSetupDomainGrid[\s\S]{0,200}renderTodayPlan|function goSetup\([\s\S]{0,2500}renderTodayPlan[\s\S]{0,200}renderSetupDomainGrid/.test(js));
+  // v7.50.0: 2500 → 2900 after the gauntlet + why-not mode-reset blocks.
+  /function goSetup\([\s\S]{0,2900}renderSetupDomainGrid[\s\S]{0,200}renderTodayPlan|function goSetup\([\s\S]{0,2900}renderTodayPlan[\s\S]{0,200}renderSetupDomainGrid/.test(js));
 
 // CSS \u2014 sidebar
 test('v4.53.0 CSS: body.has-sidebar adds 240px left padding',
@@ -20073,6 +20075,27 @@ console.log('\n\x1b[1m── Security Phase 7 — CSP script-src unsafe-inline r
     /_optionCount\(q\.options\)\s*>=\s*3/.test(js));
   test('v7.48.1 OptShape: gauntlet run validation rejects non-string/empty option elements',
     /r\.options\.every\(o => typeof o === 'string' && o\.length > 0\)/.test(js));
+})();
+
+// ── v7.50.0: Why-Not — the second flagship drill ──
+(function(){
+  test('v7.50.0 WhyNot: core functions defined (start/fetch/picker/verdict)',
+    js.includes('function startWhyNot(') && js.includes('async function _fetchWhyNotSession(') &&
+    js.includes('function whyNotPickReason(') && js.includes('function renderWhyNotVerdict('));
+  test('v7.50.0 WhyNot: finish() branches to the reason picker in whyNotMode',
+    /function finish\(\)[\s\S]{0,900}whyNotMode && _wnSession\) \{ _wnFinishQuestion\(\); return; \}/.test(js));
+  test('v7.50.0 WhyNot: round question letterizes options before the quiz engine',
+    /options: _letterizeOptions\(r\.options\),[\s\S]{0,400}_wnSession\.topic/.test(js) || /_wnBeginRound[\s\S]{0,800}_letterizeOptions\(r\.options\)/.test(js));
+  test('v7.50.0 WhyNot: wrong-bank no-ops during sessions (parallel to bank/SR)',
+    /function addToWrongBank\([\s\S]{0,700}whyNotMode !== 'undefined' && whyNotMode\) return;/.test(js));
+  test('v7.50.0 WhyNot: follow-up drill suppressed in whyNot runs',
+    /!gauntletMode && !whyNotMode && typeof followUpOnMistake/.test(js));
+  test('v7.50.0 WhyNot: session validation pins 3 rounds + 2 factually-false fakes per wrong option',
+    /WHY_NOT_ROUNDS = 3/.test(js) && /k\.fakes\) && k\.fakes\.length === 2/.test(js));
+  test('v7.50.0 WhyNot: pages present (entry, round, verdict)',
+    html.includes('id="page-whynot"') && html.includes('id="page-whynot-round"') && html.includes('id="page-whynot-verdict"'));
+  test('v7.50.0 WhyNot: entries wired via data-action (Sec-P7, no inline onclick)',
+    html.includes('data-action="startWhyNot"') && /data-action="whyNotPickReason"/.test(js));
 })();
 
 // ── Summary ──
