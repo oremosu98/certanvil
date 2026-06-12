@@ -1,9 +1,9 @@
 // ══════════════════════════════════════════
-// Network+ AI Quiz — app.js  v7.48.1
+// Network+ AI Quiz — app.js  v7.49.0
 // ══════════════════════════════════════════
 
 // ── CONSTANTS ──
-const APP_VERSION = '7.48.1';
+const APP_VERSION = '7.49.0';
 // v4.99.45 (Phase 6b): expose APP_VERSION on window so the web-vitals
 // collector (lib/web-vitals-collector.js, loaded BEFORE app.js so its
 // PerformanceObservers attach earlier) can stamp this version onto every
@@ -6782,15 +6782,23 @@ function _renderGauntletLadder() {
   const el = document.getElementById('gauntlet-ladder');
   const dots = document.getElementById('quiz-prog-dots');
   const chip = document.getElementById('gauntlet-rung-chip');
+  const topicEl = document.getElementById('gauntlet-run-topic');
   if (!el) return;
   if (!gauntletMode || !_gauntletRun) {
     el.classList.add('is-hidden');
     if (dots) dots.classList.remove('is-hidden');
     if (chip) chip.classList.add('is-hidden');
+    if (topicEl) topicEl.classList.add('is-hidden');
     return;
   }
   if (dots) dots.classList.add('is-hidden');
   el.classList.remove('is-hidden');
+  // v7.49.0: name the battlefield — topic visible throughout the run (Simi).
+  // The precise concept stays hidden until the verdict: it IS the answer key.
+  if (topicEl) {
+    topicEl.innerHTML = '<span>The Gauntlet</span> · ' + escHtml(_gauntletRun.topic);
+    topicEl.classList.remove('is-hidden');
+  }
   // Build the five rung nodes ONCE, then reconcile classes in place — an
   // innerHTML rebuild would restart the bar-fill transition on every
   // already-done rung at each advance (emil pass 2, 2026-06-12).

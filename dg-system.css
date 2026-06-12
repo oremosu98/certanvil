@@ -3743,6 +3743,9 @@ html.cl-locked,html.cl-locked body{overflow:hidden;}
 .gnt-ladder-preview{display:flex;gap:5px;margin:16px 2px 22px;}
 .gnt-ladder-preview span{flex:1;font:800 10px/1 Inter,sans-serif;letter-spacing:0.05em;text-transform:uppercase;color:var(--text-dim);text-align:center;padding-top:8px;border-top:3px solid var(--surface3);}
 /* ── in-rung ladder (rides #page-quiz in place of the dot strip) ── */
+/* v7.49.0: topic strip above the ladder — names the run's topic throughout */
+.gnt-run-topic{max-width:760px;margin:10px auto 6px;text-align:center;font:800 10px/1 Inter,sans-serif;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-dim);}
+.gnt-run-topic span{color:var(--accent);}
 .gnt-ladder{display:flex;gap:6px;max-width:760px;margin:6px auto 14px;}
 .gnt-rung{flex:1;text-align:center;}
 .gnt-rung-bar{height:5px;border-radius:3px;background:var(--surface3);overflow:hidden;position:relative;}
