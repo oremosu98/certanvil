@@ -6661,10 +6661,10 @@ async function gauntletStart(opts) {
   if (_gauntletBusy) return; // double-tap guard
   if (typeof _gateProOnly === 'function' && !_gateProOnly('Reword Gauntlet', {
     title: 'The Reword Gauntlet is a Pro feature',
-    body: 'One concept, asked five ways — crack all five and you own it in any wording. Go Pro to run the Gauntlet on every cert in the library.'
+    body: 'One concept, asked five ways. Crack all five and you own it in any wording. Go Pro to run the Gauntlet on every cert in the library.'
   })) return;
   if (typeof navigator !== 'undefined' && navigator.onLine === false) {
-    showToast('The Gauntlet forges fresh questions — it needs a connection.', 'info');
+    showToast('The Gauntlet forges fresh questions, so it needs a connection.', 'info');
     return;
   }
   if (typeof _canMakeMeteredCall === 'function' && !_canMakeMeteredCall('Reword Gauntlet')) return;
@@ -6696,7 +6696,7 @@ async function gauntletStart(opts) {
     if (typeof _loadingProgressFinish === 'function') { try { _loadingProgressFinish(); } catch (_) {} }
     renderGauntletEntry();
     showPage('gauntlet');
-    try { showToast('The forge misfired — nothing was used. Hit Start to try again.', 'error'); } catch (_) {}
+    try { showToast('The forge misfired. Nothing was used up. Hit Start to try again.', 'error'); } catch (_) {}
     return;
   }
   if (typeof _loadingProgressFinish === 'function') { try { _loadingProgressFinish(); } catch (_) {} }
@@ -6742,11 +6742,22 @@ function _renderGauntletLadder() {
   }
   if (dots) dots.classList.add('is-hidden');
   el.classList.remove('is-hidden');
-  el.innerHTML = GAUNTLET_RUNGS.map((r, i) => {
+  // Build the five rung nodes ONCE, then reconcile classes in place — an
+  // innerHTML rebuild would restart the bar-fill transition on every
+  // already-done rung at each advance (emil pass 2, 2026-06-12).
+  if (el.children.length !== GAUNTLET_RUNGS.length) {
+    el.innerHTML = GAUNTLET_RUNGS.map(r =>
+      '<div class="gnt-rung"><div class="gnt-rung-bar"><i></i></div><div class="gnt-rung-name">' + r.key + '</div></div>'
+    ).join('');
+  }
+  GAUNTLET_RUNGS.forEach((r, i) => {
+    const node = el.children[i];
+    if (!node) return;
     const res = _gauntletRun.results[i];
-    const cls = 'gnt-rung' + (res === true ? ' done' : '') + (res === false ? ' missed' : '') + (i === current && current < GAUNTLET_RUNGS.length ? ' live' : '');
-    return '<div class="' + cls + '"><div class="gnt-rung-bar"><i></i></div><div class="gnt-rung-name">' + r.key + '</div></div>';
-  }).join('');
+    node.classList.toggle('done', res === true);
+    node.classList.toggle('missed', res === false);
+    node.classList.toggle('live', i === current && current < GAUNTLET_RUNGS.length);
+  });
   if (chip) {
     chip.textContent = GAUNTLET_RUNGS[current] ? GAUNTLET_RUNGS[current].key : '';
     chip.classList.toggle('is-hidden', !GAUNTLET_RUNGS[current]);
@@ -6876,7 +6887,8 @@ function renderGauntletDrillsCard() {
   const pill = document.getElementById('drills-gauntlet-pill');
   if (!pill) return;
   const n = loadGauntletCracked().length;
-  pill.textContent = n === 1 ? '1 cracked' : n + ' cracked';
+  // Zero-state invites instead of anchoring on no progress (marketing pass 4)
+  pill.textContent = n === 0 ? 'Flagship drill' : (n === 1 ? '1 cracked' : n + ' cracked');
 }
 
 // ══════════════════════════════════════════
