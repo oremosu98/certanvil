@@ -1,9 +1,9 @@
 // ══════════════════════════════════════════
-// Network+ AI Quiz — app.js  v7.48.0
+// Network+ AI Quiz — app.js  v7.48.1
 // ══════════════════════════════════════════
 
 // ── CONSTANTS ──
-const APP_VERSION = '7.48.0';
+const APP_VERSION = '7.48.1';
 // v4.99.45 (Phase 6b): expose APP_VERSION on window so the web-vitals
 // collector (lib/web-vitals-collector.js, loaded BEFORE app.js so its
 // PerformanceObservers attach earlier) can stamp this version onto every
@@ -1158,6 +1158,11 @@ let gauntletMode = false;     // a gauntlet run is riding the quiz engine
 let _gauntletRun = null;      // { concept, topic, results: [bool x5], attempts }
 let _gauntletBusy = false;    // in-flight guard: double-tap on Start
 let _gauntletTopic = null;    // entry-screen topic override (null = weakest)
+let _gauntletReturn = 'setup'; // v7.48.1: where Back/exit returns to — 'drills'
+                               // only when entered FROM the (mobile-only)
+                               // drills page; #page-drills is unstyled on
+                               // desktop (cert-ios lift surface), so desktop
+                               // users must route back to Home
 
 // Multi-select state (regular quiz)
 let msSelections = [];
@@ -6556,11 +6561,26 @@ function loadGauntletCracked() {
 // viewable by free users (funnel tease) — the Pro gate fires on Start.
 function startRewordGauntlet() {
   _gauntletTopic = null;
+  // v7.48.1: remember the entry origin — Back must never route a desktop
+  // user to the mobile-only drills page.
+  const active = document.querySelector('.page.active');
+  _gauntletReturn = (active && active.id === 'page-drills') ? 'drills' : 'setup';
   renderGauntletEntry();
   showPage('gauntlet');
 }
 
+// Back/exit routing for the gauntlet surfaces (entry back button + result
+// screen ghost CTA). 'setup' goes through goSetup() for the full home
+// re-render + mode reset.
+function gauntletBack() {
+  if (_gauntletReturn === 'drills') showPage('drills');
+  else goSetup();
+}
+
 function renderGauntletEntry() {
+  // v7.48.1: back label names the actual destination
+  const backLabel = document.getElementById('gnt-back-label');
+  if (backLabel) backLabel.textContent = _gauntletReturn === 'drills' ? 'Drills' : 'Home';
   const w = getWeakTopic();
   let topicName = _gauntletTopic || (w && w.topic) || null;
   if (!topicName && typeof getTodaysFocusTopics === 'function') {
@@ -6830,7 +6850,7 @@ function renderGauntletResult(cracked, results) {
       '</div>' +
       '<div class="gnt-result-footer">' +
         '<button type="button" class="btn btn-primary gnt-cta" data-action="gauntletNextTarget">Next target →</button>' +
-        '<button type="button" class="btn gnt-ghost" data-action="gauntletExit">Back to Drills</button>' +
+        '<button type="button" class="btn gnt-ghost" data-action="gauntletExit">' + (_gauntletReturn === 'drills' ? 'Back to Drills' : 'Back to Home') + '</button>' +
       '</div>';
   } else {
     const crackCount = results.filter(Boolean).length;
@@ -6879,7 +6899,7 @@ function gauntletNextTarget() {
 function gauntletExit() {
   _gauntletRun = null;
   if (typeof renderGauntletDrillsCard === 'function') { try { renderGauntletDrillsCard(); } catch (_) {} }
-  showPage('drills');
+  gauntletBack(); // v7.48.1: origin-aware — never the unstyled drills page on desktop
 }
 
 // Drills-page hero card pill ("N cracked").
