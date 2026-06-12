@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Why-Not drill · app mockup</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600;650;700;800&display=swap" rel="stylesheet">
+<style>
+  /* ── Tokens: design/brand/mockup-starter-tokens.css, verbatim ─────────── */
+  :root, [data-theme="dark"] {
+    --bg: oklch(0.17 0.008 275); --surface: oklch(0.205 0.009 275); --surface-2: oklch(0.23 0.009 275);
+    --ink: oklch(0.96 0.006 275); --ink-soft: oklch(0.80 0.012 275); --muted: oklch(0.725 0.013 275);
+    --border: oklch(0.32 0.011 275); --border-soft: oklch(0.255 0.010 275);
+    --accent: oklch(0.80 0.155 64); --accent-deep: oklch(0.86 0.135 64); --on-accent: oklch(0.18 0.020 275);
+    --pass: oklch(0.74 0.150 152); --fail: oklch(0.66 0.17 25);
+    --ease: cubic-bezier(0.16, 1, 0.3, 1);
+    --page-bg: oklch(0.13 0.008 275); --page-ink: oklch(0.96 0.006 275); --page-dim: oklch(0.66 0.012 275);
+  }
+  [data-theme="light"] {
+    --bg: oklch(0.975 0.007 85); --surface: oklch(0.992 0.004 85); --surface-2: oklch(0.965 0.010 84);
+    --ink: oklch(0.22 0.015 280); --ink-soft: oklch(0.36 0.014 280); --muted: oklch(0.50 0.013 280);
+    --border: oklch(0.86 0.008 85); --border-soft: oklch(0.91 0.006 85);
+    --accent: oklch(0.50 0.155 55); --accent-deep: oklch(0.42 0.150 52); --on-accent: oklch(0.985 0.010 85);
+    --pass: oklch(0.50 0.15 150); --fail: oklch(0.52 0.19 25);
+    --page-bg: oklch(0.94 0.008 85); --page-ink: oklch(0.22 0.015 280); --page-dim: oklch(0.50 0.013 280);
+  }
+  * { box-sizing: border-box; margin: 0; }
+  body { background: var(--page-bg); color: var(--page-ink); font: 400 15px/1.55 Inter, -apple-system, sans-serif; padding: 36px 20px 80px; }
+
+  /* ── stage chrome ── */
+  .stage { max-width: 1240px; margin: 0 auto; }
+  .stage-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 10px; }
+  .stage-eyebrow { font: 800 10.5px/1 Inter, sans-serif; letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent); margin-bottom: 9px; }
+  .stage-title { font-family: Fraunces, Georgia, serif; font-weight: 600; font-size: 26px; letter-spacing: -0.014em; }
+  .stage-sub { color: var(--page-dim); font-size: 13px; margin-top: 8px; max-width: 86ch; }
+  .stage-sub b { color: var(--page-ink); }
+  .theme-btn { border: 1px solid var(--border); background: var(--surface); color: var(--ink); border-radius: 999px; padding: 9px 16px; font: 650 12.5px/1 Inter, sans-serif; cursor: pointer; transition: transform 0.16s var(--ease); }
+  .theme-btn:active { transform: scale(0.97); }
+
+  .units { display: grid; grid-template-columns: repeat(auto-fit, minmax(330px, 1fr)); gap: 34px; margin-top: 26px; }
+  .flag { font: 800 10px/1 Inter, sans-serif; letter-spacing: 0.14em; text-transform: uppercase; color: var(--page-dim); margin: 0 0 12px 6px; }
+  .unit-note { font-size: 12px; color: var(--page-dim); margin: 12px 6px 0; max-width: 48ch; }
+  .unit-note b { color: var(--page-ink); }
+
+  /* ── phone frame ── */
+  .phone { background: var(--bg); border: 1px solid var(--border-soft); border-radius: 34px; padding: 18px 16px 22px; box-shadow: 0 1px 0 color-mix(in oklab, var(--ink) 4%, transparent), 0 28px 60px -34px color-mix(in oklab, var(--ink) 30%, transparent); min-height: 660px; display: flex; flex-direction: column; }
+  .statusbar { display: flex; justify-content: space-between; align-items: center; font: 650 11px/1 Inter, sans-serif; color: var(--muted); padding: 2px 8px 14px; }
+  .ph-hdr { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 2px 2px 12px; }
+  .back { display: inline-flex; align-items: center; gap: 5px; font: 650 12px/1 Inter, sans-serif; color: var(--muted); }
+  .back svg { width: 13px; height: 13px; stroke: currentColor; fill: none; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+  .ph-title { font: 650 14px/1 Inter, sans-serif; color: var(--ink); }
+  .pill { font: 800 10px/1 Inter, sans-serif; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent-deep); border: 1px solid color-mix(in oklab, var(--accent) 35%, transparent); border-radius: 999px; padding: 5px 9px; display: inline-flex; align-items: center; gap: 5px; }
+  .pill svg { width: 9px; height: 9px; stroke: currentColor; fill: none; stroke-width: 2.4; }
+
+  /* ── shared run chrome ── */
+  .run-topic { text-align: center; font: 800 10px/1 Inter, sans-serif; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin: 2px 0 12px; }
+  .run-topic span { color: var(--accent); }
+  .answered-strip { display: flex; align-items: center; gap: 8px; border: 1px solid color-mix(in oklab, var(--pass) 30%, var(--border-soft)); background: color-mix(in oklab, var(--pass) 8%, transparent); border-radius: 11px; padding: 9px 12px; font: 550 12.5px/1.35 Inter, sans-serif; color: var(--ink-soft); margin-bottom: 14px; }
+  .answered-strip b { color: var(--ink); }
+  .answered-strip .tick { width: 18px; height: 18px; border-radius: 50%; background: var(--pass); color: var(--bg); display: grid; place-items: center; flex: none; font-size: 11px; }
+
+  .q-card { background: var(--surface); border: 1px solid var(--border-soft); border-radius: 16px; padding: 16px 15px; }
+  .wn-target { display: flex; align-items: center; gap: 10px; border: 1px solid color-mix(in oklab, var(--fail) 40%, var(--border-soft)); border-radius: 11px; padding: 10px 12px; margin-bottom: 13px; }
+  .wn-target .lt { width: 22px; height: 22px; border-radius: 50%; background: var(--fail); color: var(--bg); display: grid; place-items: center; flex: none; font: 800 11px/1 Inter, sans-serif; }
+  .wn-target b { font: 650 14px/1.3 Inter, sans-serif; color: var(--ink); }
+  .wn-ask { font-family: Fraunces, Georgia, serif; font-weight: 600; font-size: 18px; letter-spacing: -0.01em; color: var(--ink); margin: 2px 1px 12px; }
+  .reason { display: block; width: 100%; text-align: left; border: 1px solid var(--border-soft); background: var(--bg); border-radius: 11px; padding: 11px 13px; font: 550 13px/1.45 Inter, sans-serif; color: var(--ink-soft); margin-bottom: 8px; transition: transform 0.16s var(--ease); }
+  .reason:active { transform: scale(0.985); }
+  .reason.picked-right { border-color: color-mix(in oklab, var(--pass) 55%, transparent); background: color-mix(in oklab, var(--pass) 10%, transparent); color: var(--ink); }
+  .wn-verdict { border-left: 3px solid var(--pass); background: color-mix(in oklab, var(--pass) 8%, transparent); border-radius: 0 10px 10px 0; padding: 10px 13px; margin-top: 12px; font-size: 12.5px; color: var(--ink-soft); }
+  .wn-verdict b { display: block; font: 800 10px/1 Inter, sans-serif; letter-spacing: 0.1em; text-transform: uppercase; color: var(--pass); margin-bottom: 5px; }
+  .wn-progress { display: flex; gap: 6px; margin-top: 14px; }
+  .wn-progress i { flex: 1; height: 4px; border-radius: 3px; background: var(--surface-2); }
+  .wn-progress i.done { background: var(--pass); }
+  .wn-progress i.bad { background: var(--fail); }
+  .wn-progress i.live { background: var(--accent); }
+  .wn-prog-k { font: 800 10px/1 Inter, sans-serif; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin-top: 6px; text-align: center; }
+
+  /* ── verdict screen ── */
+  .vd-wrap { display: flex; flex-direction: column; align-items: center; text-align: center; padding-top: 26px; flex: 1; }
+  .vd-score { font-family: Fraunces, Georgia, serif; font-weight: 600; font-size: 30px; letter-spacing: -0.014em; color: var(--ink); font-variant-numeric: lining-nums tabular-nums; font-feature-settings: "lnum", "tnum"; }
+  .vd-score b { color: var(--accent); }
+  .vd-call { font-size: 13.5px; color: var(--ink-soft); margin: 8px 0 18px; max-width: 30ch; }
+  .vd-call b { color: var(--fail); }
+  .vd-rows { width: 100%; display: flex; flex-direction: column; gap: 8px; text-align: left; }
+  .vd-row { display: flex; align-items: flex-start; gap: 10px; border: 1px solid var(--border-soft); background: var(--surface); border-radius: 12px; padding: 11px 13px; }
+  .vd-ic { width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; flex: none; }
+  .vd-ic svg { width: 12px; height: 12px; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; fill: none; stroke: currentColor; }
+  .vd-row.ok .vd-ic { background: color-mix(in oklab, var(--pass) 14%, transparent); color: var(--pass); }
+  .vd-row.bad .vd-ic { background: color-mix(in oklab, var(--fail) 14%, transparent); color: var(--fail); }
+  .vd-row b { display: block; font: 650 12.5px/1.3 Inter, sans-serif; color: var(--ink); }
+  .vd-row span { font-size: 11.5px; color: var(--muted); }
+  .blindspot { margin-top: 14px; border: 1px solid color-mix(in oklab, var(--accent) 30%, var(--border-soft)); background: color-mix(in oklab, var(--accent) 8%, transparent); border-radius: 999px; padding: 8px 14px; font: 650 11.5px/1.3 Inter, sans-serif; color: var(--ink-soft); }
+  .blindspot b { color: var(--accent-deep); }
+  .ph-footer { margin-top: auto; display: flex; flex-direction: column; gap: 9px; padding-top: 18px; }
+  .cta { background: var(--accent); color: var(--on-accent); border: 0; border-radius: 12px; padding: 14px; font: 700 14.5px/1 Inter, sans-serif; text-align: center; transition: transform 0.16s var(--ease); }
+  .cta:active { transform: scale(0.97); }
+  .ghost { background: none; border: 1px solid var(--border); border-radius: 12px; padding: 13px; color: var(--ink); font: 600 13px/1 Inter, sans-serif; text-align: center; transition: transform 0.16s var(--ease); }
+  .ghost:active { transform: scale(0.97); }
+
+  /* ── drills page unit ── */
+  .drills-h1 { font-family: Fraunces, Georgia, serif; font-weight: 600; font-size: 24px; letter-spacing: -0.012em; color: var(--ink); margin: 4px 2px 2px; }
+  .drills-lede { font-size: 12.5px; color: var(--muted); margin: 0 2px 14px; }
+  .dcard { background: var(--surface); border: 1px solid var(--border-soft); border-radius: 16px; padding: 15px 15px 16px; margin-bottom: 12px; }
+  .dcard.flagship { border-color: color-mix(in oklab, var(--accent) 30%, var(--border)); }
+  .dcard-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 7px; }
+  .dcard-title { font: 650 15px/1.2 Inter, sans-serif; color: var(--ink); display: inline-flex; align-items: center; gap: 8px; }
+  .count-pill { font: 650 10.5px/1 Inter, sans-serif; color: var(--muted); border: 1px solid var(--border-soft); border-radius: 999px; padding: 5px 9px; }
+  .dcard-note { font-size: 12.5px; color: var(--muted); line-height: 1.5; margin-bottom: 12px; }
+  .dcard-btn { display: block; width: 100%; background: var(--accent); color: var(--on-accent); border: 0; border-radius: 11px; padding: 12px; font: 700 13.5px/1 Inter, sans-serif; text-align: center; transition: transform 0.16s var(--ease); }
+  .dcard-btn:active { transform: scale(0.97); }
+  .dcard.quiet .dcard-btn { background: none; border: 1px solid var(--border); color: var(--ink); font-weight: 600; }
+
+  /* entrance reveals (one-shot) */
+  .reveal { opacity: 0; transform: translateY(12px); animation: rv 0.55s var(--ease) forwards; }
+  .reveal.d2 { animation-delay: 0.1s; } .reveal.d3 { animation-delay: 0.2s; } .reveal.d4 { animation-delay: 0.3s; }
+  @keyframes rv { to { opacity: 1; transform: none; } }
+  @media (prefers-reduced-motion: reduce) { .reveal { animation: none; opacity: 1; transform: none; } }
+</style>
+</head>
+<body>
+<div class="stage">
+  <div class="stage-top">
+    <div>
+      <p class="stage-eyebrow">Cert app · all platforms · Pro · second flagship</p>
+      <h1 class="stage-title">Why-Not: score the reasons</h1>
+      <p class="stage-sub">A round is one question plus its interrogation. Phase one is the normal quiz question (existing screens, untouched). Phase two is below: each wrong option comes back and you pick <b>why it loses</b> from three reasons, one true and two tempting fakes. Score is out of 4: the answer plus three reasons. One metered call generates the whole round, Gauntlet-style validation, Pro-gated at Start. <b>These mockups ARE the pages.</b></p>
+    </div>
+    <button type="button" class="theme-btn" id="themeToggle">Light / Dark</button>
+  </div>
+
+  <div class="units">
+
+    <!-- ① reason picker -->
+    <div>
+      <p class="flag">&#9312; The reason picker · right after a correct pick</p>
+      <div class="phone">
+        <div class="statusbar"><span>9:41</span><span>&#9679;&#9679;&#9679;</span></div>
+        <div class="ph-hdr">
+          <span class="back"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>Menu</span>
+          <span class="ph-title">Why-Not</span>
+          <span class="pill"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path></svg>Pro</span>
+        </div>
+        <p class="run-topic"><span>Why-Not</span> · Network Security · Round 2 of 3</p>
+        <div class="answered-strip reveal"><span class="tick">&#10003;</span><span>You answered: <b>VPN</b>. Right. Now earn the other three points.</span></div>
+        <div class="q-card">
+          <div class="wn-target reveal d2"><span class="lt">B</span><b>Telnet</b></div>
+          <p class="wn-ask reveal d2">Why does Telnet lose?</p>
+          <button type="button" class="reason reveal d3">It only works on the local network</button>
+          <button type="button" class="reason picked-right reveal d3">It sends everything in plain text, and the question demands encryption</button>
+          <button type="button" class="reason reveal d3">It was deprecated, so it no longer exists</button>
+          <div class="wn-verdict reveal d4"><b>Right reason</b>The other two sound plausible and are false: Telnet works fine remotely, and it very much still exists. What kills it here is one word in the question: encrypted.</div>
+        </div>
+        <div class="wn-progress"><i class="done"></i><i class="done"></i><i class="live"></i><i></i></div>
+        <p class="wn-prog-k">Answer &#10003; · Telnet &#10003; · Port 80 · SNMP</p>
+        <div class="ph-footer"><button type="button" class="cta">Next: why does port 80 lose? &#8594;</button></div>
+      </div>
+      <p class="unit-note">The chosen reason locks in green; the verdict names why the fakes were tempting. The thin progress bar tracks the round's four points. <b>Wrong picks turn the segment red and show the true reason</b>, same verdict card in fail colors.</p>
+    </div>
+
+    <!-- ② round verdict -->
+    <div>
+      <p class="flag">&#9313; Round verdict · 3 of 4</p>
+      <div class="phone">
+        <div class="statusbar"><span>9:44</span><span>&#9679;&#9679;&#9679;</span></div>
+        <div class="ph-hdr">
+          <span class="back"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>Menu</span>
+          <span class="ph-title">Why-Not</span>
+          <span class="pill"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path></svg>Pro</span>
+        </div>
+        <div class="vd-wrap">
+          <div class="vd-score reveal">You earned <b>3 of 4</b></div>
+          <p class="vd-call reveal d2">You knew the answer. You misdiagnosed why <b>port 80</b> loses.</p>
+          <div class="vd-rows">
+            <div class="vd-row ok reveal d2"><span class="vd-ic"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></span><span><b>The answer: VPN</b><span>Picked first time</span></span></div>
+            <div class="vd-row ok reveal d3"><span class="vd-ic"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></span><span><b>Telnet</b><span>Plain text, question demanded encryption</span></span></div>
+            <div class="vd-row bad reveal d3"><span class="vd-ic"><svg viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg></span><span><b>Port 80</b><span>You said "deprecated". The real reason: no encryption at all</span></span></div>
+            <div class="vd-row ok reveal d4"><span class="vd-ic"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></span><span><b>SNMP</b><span>Different job: monitoring, not remote access</span></span></div>
+          </div>
+          <div class="blindspot reveal d4">Watch for: <b>missing the must-have</b>. Twice this week you reached for "deprecated" when the real killer was a missing requirement.</div>
+        </div>
+        <div class="ph-footer">
+          <button type="button" class="cta">Next round &#8594;</button>
+          <button type="button" class="ghost">Back to Home</button>
+        </div>
+      </div>
+      <p class="unit-note">The verdict names the exact miss in one sentence, then the blind-spot chip turns repeated misses into coaching. <b>Reason-type accuracy is the only new stat stored</b>; it feeds weak spots later (Phase B).</p>
+    </div>
+
+    <!-- ③ drills entry -->
+    <div>
+      <p class="flag">&#9314; Drills page · the two flagships together</p>
+      <div class="phone">
+        <div class="statusbar"><span>9:40</span><span>&#9679;&#9679;&#9679;</span></div>
+        <h2 class="drills-h1">Drills</h2>
+        <p class="drills-lede">Short, repeat passes on the things you get wrong.</p>
+        <div class="dcard flagship reveal">
+          <div class="dcard-head"><span class="dcard-title">Reword Gauntlet <span class="pill"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path></svg>Pro</span></span><span class="count-pill">14 cracked</span></div>
+          <p class="dcard-note">One concept, asked five ways. Crack all five and you own it in any wording.</p>
+          <button type="button" class="dcard-btn">Run the Gauntlet</button>
+        </div>
+        <div class="dcard flagship reveal d2">
+          <div class="dcard-head"><span class="dcard-title">Why-Not <span class="pill"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path></svg>Pro</span></span><span class="count-pill">Flagship drill</span></div>
+          <p class="dcard-note">Score the reasons, not just the answer. Every wrong option comes back: say why it loses.</p>
+          <button type="button" class="dcard-btn">Run Why-Not</button>
+        </div>
+        <div class="dcard quiet reveal d3">
+          <div class="dcard-head"><span class="dcard-title">Drill Mistakes <span class="pill"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path></svg>Pro</span></span><span class="count-pill">12 saved</span></div>
+          <p class="dcard-note">Your missed questions come back re-worded, so you beat the concept, not the question.</p>
+          <button type="button" class="dcard-btn">Drill the 12 you missed</button>
+        </div>
+      </div>
+      <p class="unit-note">The two flagships sit together at the top with matching bronze-edged cards; Drill Mistakes drops to the quiet style below. <b>Home Practice tile gains a fourth option</b> ("Why-Not · score the reasons") mirroring the Gauntlet's entry.</p>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  document.getElementById('themeToggle').addEventListener('click', function () {
+    var h = document.documentElement;
+    h.setAttribute('data-theme', h.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
+  });
+</script>
+</body>
+</html>
