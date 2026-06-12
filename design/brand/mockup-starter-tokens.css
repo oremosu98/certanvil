@@ -35,7 +35,13 @@
   --pass: oklch(0.50 0.15 150); --fail: oklch(0.52 0.19 25);
 }
 
-/* ── Landing (certanvil.com) mockups — light only ──────────────────────── */
+/* ── Landing (certanvil.com) mockups — light only ──────────────────────────
+   ⚠ LIFT RULE: when lifting into landing/index.html, these tokens MUST be
+   redefined SCOPED TO THE SECTION ID (`#my-section{--accent:...}` + a
+   `[data-theme="dark"] #my-section{...}` block) — landing/styles.css :root
+   still defines the LEGACY PURPLE --accent (#5b4fdb/#7c6ff7). A section that
+   relies on inherited var(--accent) renders purple (the 2026-06-12 Gauntlet
+   landing-section incident). Copy the #sq2 / #proof-of-product pattern. ── */
 /*
 :root {
   --bg: oklch(0.975 0.007 85); --surface: oklch(0.992 0.004 85);
