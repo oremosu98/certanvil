@@ -13,6 +13,15 @@
 8. **Generation:** one metered `CLAUDE_MODEL` call per round; Gauntlet-style whole-round shape validation (malformed = friendly retry, nothing consumed). **Letterize option arrays at the boundary** (the v7.48.1 contract, UAT-pinned).
 9. **Parallel to bank/SR** in v1, like the Gauntlet (no addToWrongBank writes during rounds).
 
+## Full flow (locked with Simi, 2026-06-12 evening)
+1. **Entry screen mirrors the Gauntlet's**: "Today's target: <weakest TOPIC>" via the same weak-spot data, "Pick a different topic" reuses the same topic list, Start carries the Pro gate. Same code paths (`getWeakTopic`, the gnt topic-picker pattern).
+2. **Topic-level targeting, NOT concept-level** (the deliberate difference): the Gauntlet = one concept, five wordings (depth). Why-Not = 3 different questions inside the topic, wrong answers interrogated (breadth). No overlap between the flagships; matches the landing story.
+3. Start → loading page → ONE metered call generates the whole session (3 questions + per-wrong-option reason sets), Gauntlet-style validation.
+4. **Topic strip throughout** (reuse the v7.49 strip): "WHY-NOT · <TOPIC> · ROUND n OF 3".
+5. Round = answer normally → 3 reason picks → round verdict ("You earned 3 of 4").
+6. After round 3: session summary (x of 12 + blind-spot chip in Phase B) → "Next target" (next weakest topic) / "Different topic" / Home.
+7. **No "Run it again"** retry: Why-Not has no crack condition; "Next round/target" always generates fresh questions.
+
 ## Build phases
 - **Phase A (shippable alone):** generation + validation, reason-picker card (visual cousin of the Gauntlet verdict card), round scoring + verdict screen, entries, Pro gate, history/streak/goal hooks.
 - **Phase B:** reason-type accuracy stat (the only new stored number) + blind-spot chip + weak-spot feed.
