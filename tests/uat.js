@@ -7649,11 +7649,17 @@ test('cloud cert-keying: vm — applyJsonb extracts this cert; legacy flat sr_qu
       return perCert && legacy;
     } catch (e) { return false; }
   })());
-// ── v7.29.1: cert-switcher lettermark glyphs visible in dark mode (cream tile) ──
-test('v7.29.1 cert-switcher: dark-mode .tad-cert-glyph pins dark ink + darker bronze (not var --text/--accent)',
+// ── v7.29.1 (rev v7.50.x): cert-switcher lettermark glyphs visible in dark mode ──
+// Original pinned dark ink because the tile was a fixed cream chip (#FFFBF3).
+// The tile bg now adapts (color-mix on var(--surface)), so ink + accent must
+// adapt with it via the base rule (var(--text)/var(--accent)). The dark-theme
+// dark-ink pin became the dark-on-dark regression and was removed — guard that
+// it does not return, and that the base rule keeps adapting tokens.
+test('v7.29.1 cert-switcher: .tad-cert-glyph uses adapting ink (visible in dark, no dark-on-dark pin)',
   (() => { const dg = read('dg-system.css');
-    return /html\[data-theme="dark"\]\s*body\s*\.tad-cert-glyph\{color:oklch\(0\.26\s/.test(dg)
-      && /html\[data-theme="dark"\][^{]*\.tad-cert-glyph\s*\.cg-ac[\s\S]{0,160}\.cg-sup\{color:oklch\(0\.50\s/.test(dg); })());
+    const baseAdapts = /\.tad-cert-glyph\{[^}]*background-color:color-mix\(in oklab, var\(--accent\)[^}]*color:var\(--text\)/.test(dg);
+    const noDarkPin = !/html\[data-theme="dark"\][^{]*\.tad-cert-glyph\{color:oklch\(0\.26/.test(dg);
+    return baseAdapts && noDarkPin; })());
 test('v4.74.0 CSS: .sr-option pickable button styled', css.includes('.sr-option'));
 test('v4.74.0 CSS: .sr-confidence-confident green styled', css.includes('.sr-confidence-confident'));
 test('v4.74.0 CSS: .sr-confidence-uncertain yellow styled', css.includes('.sr-confidence-uncertain'));
