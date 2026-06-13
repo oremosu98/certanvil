@@ -5778,7 +5778,7 @@ function _renderAclPbq() {
     + '<div class="acl-goal">'
     + '<div class="acl-goal-eyebrow">Goal · ' + escHtml(s.domain) + ' &middot; ' + escHtml(s.difficulty) + '</div>'
     + '<div class="acl-goal-text">' + escHtml(s.goal) + '</div>'
-    + (s.hint && !submitted ? '<div class="acl-goal-hint">💡 ' + escHtml(s.hint) + '</div>' : '')
+    + (s.hint && !submitted ? '<div class="acl-goal-hint">' + escHtml(s.hint) + '</div>' : '')
     + '</div>'
     + '<div class="acl-rules-section">'
     + '<div class="acl-rules-label">Rules (top-down · first match wins)</div>'
@@ -5913,7 +5913,7 @@ function _computeNextBestMove() {
     if (hist.length === 0 && !diag && !_diagnosticCtaSessionDismissed) {
       return {
         type: 'baseline-diagnostic',
-        icon: '🩺',
+        icon: '',
         title: 'Take the Baseline Diagnostic',
         sub: '20 questions · ~30 min · seeds your review queue',
         ctaLabel: 'Take diagnostic →',
@@ -5937,7 +5937,7 @@ function _computeNextBestMove() {
           : 'Review ' + capped + ' of ' + srStats.due + ' cards due';
         return {
           type: 'sr-review',
-          icon: '📚',
+          icon: '',
           title: titleText,
           sub: '~' + minutes + ' min · re-encounter what you forgot',
           ctaLabel: 'Start review →',
@@ -5956,7 +5956,7 @@ function _computeNextBestMove() {
       const streakSub = streak > 0 ? ' · streak ' + streak + ' → ' + (streak + 1) : '';
       return {
         type: 'daily-challenge',
-        icon: '🎯',
+        icon: '',
         title: 'Today’s daily challenge',
         sub: '1 question · ~1 min' + streakSub,
         ctaLabel: 'Take challenge →',
@@ -5976,7 +5976,7 @@ function _computeNextBestMove() {
       if (weak && weak.length > 0) {
         return {
           type: 'weak-warmup',
-          icon: '⚡',
+          icon: '',
           title: '5-min warmup on ' + weak[0].topic,
           sub: '5 questions · your weakest topic right now',
           ctaLabel: 'Start warmup →',
@@ -5995,7 +5995,7 @@ function _computeNextBestMove() {
         const top = r.whatIf[0];
         return {
           type: 'what-if-drill',
-          icon: '📈',
+          icon: '',
           title: 'Drill ' + top.topic,
           sub: '+' + top.deltaPredicted + ' pts predicted · ' + top.currentPct + '% → 80%',
           ctaLabel: 'Drill now →',
@@ -6009,7 +6009,7 @@ function _computeNextBestMove() {
   // 5. Fallback
   return {
     type: 'custom-quiz',
-    icon: '✏️',
+    icon: '',
     title: 'Take a custom quiz',
     sub: 'Pick a topic + length · build your study habit',
     ctaLabel: 'Start quiz →',
@@ -10251,11 +10251,14 @@ function _renderReviewList() {
 
   // Filter chip row
   const chipDef = [
+    // \u2713/\u2717 stay \u2014 semantic verdict marks (BRAND \u00A79 allows \u2713 \u2717 \u2192). The Flagged \u2691
+    // and Skipped \u21B7 glyphs were off the allowed set + decorative; the labels carry
+    // the meaning, so the icons are dropped (v7.50.x).
     { key: 'all',       label: 'All',         icon: '' },
     { key: 'correct',   label: 'Correct',     icon: '\u2713 ' },
     { key: 'incorrect', label: 'Incorrect',   icon: '\u2717 ' },
-    { key: 'flagged',   label: 'Flagged',     icon: '\u2691 ' },
-    { key: 'skipped',   label: 'Skipped',     icon: '\u21B7 ' }
+    { key: 'flagged',   label: 'Flagged',     icon: '' },
+    { key: 'skipped',   label: 'Skipped',     icon: '' }
   ];
   const filterRowHtml = `<div class="review-filter-row">
     <span class="review-filter-eyebrow">Filter</span>
@@ -10901,60 +10904,63 @@ function unlockMilestone(key) {
 
 // Milestone definitions — keyed by id, evaluated against current state
 const MILESTONE_DEFS = [
-  { id: 'first_quiz',       label: 'First steps',         desc: 'Complete your first quiz',               icon: '🎯' },
-  { id: 'hundred_qs',       label: 'Century',             desc: 'Answer 100 questions',                   icon: '💯' },
-  { id: 'five_hundred_qs',  label: 'Grinder',             desc: 'Answer 500 questions',                   icon: '🔥' },
-  { id: 'thousand_qs',      label: 'Iron will',           desc: 'Answer 1,000 questions',                 icon: '⚡' },
-  { id: 'first_exam',       label: 'Exam rehearsal',      desc: 'Complete your first exam simulation',    icon: '📝' },
-  { id: 'exam_pass',        label: 'Passing grade',       desc: `Score ${EXAM_PASS_SCORE}+ on any exam simulation`,      icon: '🎓' },
-  { id: 'all_domains',      label: 'Full coverage',       desc: 'Study at least one topic in all 5 domains', icon: '🗺️' },
-  { id: 'all_topics',       label: 'Completionist',       desc: 'Attempt every topic at least once',      icon: '🏆' },
-  { id: 'streak_7',         label: 'Week warrior',        desc: '7-day study streak',                     icon: '🔥' },
-  { id: 'streak_30',        label: 'Month master',        desc: '30-day study streak',                    icon: '🌟' },
-  { id: 'ready_650',        label: 'Getting close',       desc: 'Reach a readiness score of 650',         icon: '📈' },
-  { id: 'ready_720',        label: 'Exam ready',          desc: `Reach a readiness score of ${EXAM_PASS_SCORE} (pass)`,  icon: '🚀' },
-  { id: 'perfect_port',     label: 'Port master',         desc: 'Perfect round on Port Drill (40 correct)', icon: '🔌' },
-  { id: 'streak_port_25',   label: 'Streak keeper',       desc: 'Reach a 25+ streak in Port Drill Endless mode', icon: '⛓️' },
+  // v7.50.x: decorative emoji icons removed — the .ana-milestone-icon slot is
+  // display:none in the editorial theme (dg-system.css), so these were dead
+  // markup (BRAND §9 · no emoji-as-icons). Labels/descs are the real surface.
+  { id: 'first_quiz',       label: 'First steps',         desc: 'Complete your first quiz' },
+  { id: 'hundred_qs',       label: 'Century',             desc: 'Answer 100 questions' },
+  { id: 'five_hundred_qs',  label: 'Grinder',             desc: 'Answer 500 questions' },
+  { id: 'thousand_qs',      label: 'Iron will',           desc: 'Answer 1,000 questions' },
+  { id: 'first_exam',       label: 'Exam rehearsal',      desc: 'Complete your first exam simulation' },
+  { id: 'exam_pass',        label: 'Passing grade',       desc: `Score ${EXAM_PASS_SCORE}+ on any exam simulation` },
+  { id: 'all_domains',      label: 'Full coverage',       desc: 'Study at least one topic in all 5 domains' },
+  { id: 'all_topics',       label: 'Completionist',       desc: 'Attempt every topic at least once' },
+  { id: 'streak_7',         label: 'Week warrior',        desc: '7-day study streak' },
+  { id: 'streak_30',        label: 'Month master',        desc: '30-day study streak' },
+  { id: 'ready_650',        label: 'Getting close',       desc: 'Reach a readiness score of 650' },
+  { id: 'ready_720',        label: 'Exam ready',          desc: `Reach a readiness score of ${EXAM_PASS_SCORE} (pass)` },
+  { id: 'perfect_port',     label: 'Port master',         desc: 'Perfect round on Port Drill (40 correct)' },
+  { id: 'streak_port_25',   label: 'Streak keeper',       desc: 'Reach a 25+ streak in Port Drill Endless mode' },
   // ── v4.10 expansion ──
-  { id: 'perfect_quiz',     label: 'Flawless',            desc: 'Score 100% on a 10+ question quiz',      icon: '💎' },
-  { id: 'five_exams',       label: 'Exam veteran',        desc: 'Complete 5 exam simulations',            icon: '🎖️' },
-  { id: 'ten_exams',        label: 'Exam marathon',       desc: 'Complete 10 exam simulations',           icon: '🏅' },
-  { id: 'first_subnet',     label: 'Subnet initiate',     desc: 'Complete your first subnet drill',       icon: '🧮' },
-  { id: 'subnet_50',        label: 'Subnet surgeon',      desc: 'Answer 50 subnet drill questions',       icon: '🧬' },
-  { id: 'first_port_drill', label: 'Port pioneer',        desc: 'Complete your first Port Drill run',     icon: '🔭' },
-  { id: 'all_ports_seen',   label: 'Port cartographer',   desc: 'See every port in the Port Drill bank',  icon: '🗺️' },
-  { id: 'first_session',    label: 'Plan starter',        desc: "Complete your first Study Plan",         icon: '📚' },
-  { id: 'night_owl',        label: 'Night owl',           desc: 'Study between midnight and 5am',         icon: '🦉' },
-  { id: 'early_bird',       label: 'Early bird',          desc: 'Study before 7am',                       icon: '🐦' },
-  { id: 'weekend_warrior',  label: 'Weekend warrior',     desc: 'Study on both Saturday and Sunday of the same week', icon: '🎽' },
-  { id: 'diversity_5',      label: 'Renaissance',         desc: 'Study 5 different topics in a single day', icon: '🎨' },
-  { id: 'deep_dive_10',     label: 'Curious mind',          desc: 'Use Explain Further 10 times',           icon: '🌊' },
-  { id: 'daily_challenge_7',label: 'Daily disciple',      desc: '7-day Daily Challenge streak',           icon: '📅' },
-  { id: 'daily_challenge_30',label:'Daily devotee',       desc: '30-day Daily Challenge streak',          icon: '🗓️' },
+  { id: 'perfect_quiz',     label: 'Flawless',            desc: 'Score 100% on a 10+ question quiz' },
+  { id: 'five_exams',       label: 'Exam veteran',        desc: 'Complete 5 exam simulations' },
+  { id: 'ten_exams',        label: 'Exam marathon',       desc: 'Complete 10 exam simulations' },
+  { id: 'first_subnet',     label: 'Subnet initiate',     desc: 'Complete your first subnet drill' },
+  { id: 'subnet_50',        label: 'Subnet surgeon',      desc: 'Answer 50 subnet drill questions' },
+  { id: 'first_port_drill', label: 'Port pioneer',        desc: 'Complete your first Port Drill run' },
+  { id: 'all_ports_seen',   label: 'Port cartographer',   desc: 'See every port in the Port Drill bank' },
+  { id: 'first_session',    label: 'Plan starter',        desc: "Complete your first Study Plan" },
+  { id: 'night_owl',        label: 'Night owl',           desc: 'Study between midnight and 5am' },
+  { id: 'early_bird',       label: 'Early bird',          desc: 'Study before 7am' },
+  { id: 'weekend_warrior',  label: 'Weekend warrior',     desc: 'Study on both Saturday and Sunday of the same week' },
+  { id: 'diversity_5',      label: 'Renaissance',         desc: 'Study 5 different topics in a single day' },
+  { id: 'deep_dive_10',     label: 'Curious mind',          desc: 'Use Explain Further 10 times' },
+  { id: 'daily_challenge_7',label: 'Daily disciple',      desc: '7-day Daily Challenge streak' },
+  { id: 'daily_challenge_30',label:'Daily devotee',       desc: '30-day Daily Challenge streak' },
   // ── v4.13: Hardcore exam (#48) ──
-  { id: 'hardcore_pass',    label: 'Hardcore pass',       desc: `Score ${EXAM_PASS_SCORE}+ on a Hardcore exam simulation`, icon: '🔥' },
+  { id: 'hardcore_pass',    label: 'Hardcore pass',       desc: `Score ${EXAM_PASS_SCORE}+ on a Hardcore exam simulation` },
   // ── v4.30.2: Lab milestones ──
-  { id: 'first_lab',        label: 'Lab rat',             desc: 'Complete your first topology lab',         icon: '🧪' },
-  { id: 'labs_5',            label: 'Lab regular',         desc: 'Complete 5 different labs',                icon: '🔬' },
-  { id: 'labs_10',           label: 'Lab master',          desc: 'Complete 10 different labs',               icon: '🏗️' },
-  { id: 'labs_all',          label: 'Lab completionist',   desc: 'Complete every available lab',             icon: '🧬' },
+  { id: 'first_lab',        label: 'Lab rat',             desc: 'Complete your first topology lab' },
+  { id: 'labs_5',            label: 'Lab regular',         desc: 'Complete 5 different labs' },
+  { id: 'labs_10',           label: 'Lab master',          desc: 'Complete 10 different labs' },
+  { id: 'labs_all',          label: 'Lab completionist',   desc: 'Complete every available lab' },
   // ── v4.37.0: Fix This Network milestones ──
-  { id: 'fix_first',         label: 'First responder',     desc: 'Complete your first Fix This Network challenge', icon: '🔧' },
-  { id: 'fix_5',             label: 'Network medic',       desc: 'Complete 5 Fix This Network challenges',   icon: '🩺' },
-  { id: 'fix_all_easy',      label: 'Easy sweep',          desc: 'Complete every Easy Fix challenge',         icon: '🧹' },
+  { id: 'fix_first',         label: 'First responder',     desc: 'Complete your first Fix This Network challenge' },
+  { id: 'fix_5',             label: 'Network medic',       desc: 'Complete 5 Fix This Network challenges' },
+  { id: 'fix_all_easy',      label: 'Easy sweep',          desc: 'Complete every Easy Fix challenge' },
   // ── v4.38.0: Acronym / OSI / Cable drill milestones ──
-  { id: 'ab_first',          label: 'Acronym rookie',      desc: 'Answer your first Acronym Blitz question',  icon: '💡' },
-  { id: 'ab_50',             label: 'Acronym adept',       desc: 'Answer 50 Acronym Blitz questions',         icon: '📖' },
-  { id: 'ab_all_seen',       label: 'Acronym encyclopedia',desc: 'See every acronym at least once',           icon: '📚' },
-  { id: 'ab_streak_15',      label: 'Acronym streak',      desc: 'Reach a 15 streak in Acronym Blitz',        icon: '⚡' },
-  { id: 'os_first',          label: 'OSI initiate',        desc: 'Answer your first OSI Sorter question',     icon: '🌐' },
-  { id: 'os_50',             label: 'OSI scholar',         desc: 'Answer 50 OSI Sorter questions',            icon: '🎓' },
-  { id: 'os_all_seen',       label: 'OSI master',          desc: 'See every OSI item at least once',          icon: '🗺️' },
-  { id: 'os_streak_10',      label: 'OSI streak',          desc: 'Reach a 10 streak in OSI Sorter',           icon: '🔥' },
-  { id: 'cb_first',          label: 'Cable spotter',       desc: 'Answer your first Cable ID question',       icon: '🔌' },
-  { id: 'cb_50',             label: 'Cable expert',        desc: 'Answer 50 Cable ID questions',              icon: '🏅' },
-  { id: 'cb_all_seen',       label: 'Cable encyclopedia',  desc: 'See every cable and connector at least once', icon: '📕' },
-  { id: 'cb_streak_10',      label: 'Cable streak',        desc: 'Reach a 10 streak in Cable ID',             icon: '⛓️' },
+  { id: 'ab_first',          label: 'Acronym rookie',      desc: 'Answer your first Acronym Blitz question' },
+  { id: 'ab_50',             label: 'Acronym adept',       desc: 'Answer 50 Acronym Blitz questions' },
+  { id: 'ab_all_seen',       label: 'Acronym encyclopedia',desc: 'See every acronym at least once' },
+  { id: 'ab_streak_15',      label: 'Acronym streak',      desc: 'Reach a 15 streak in Acronym Blitz' },
+  { id: 'os_first',          label: 'OSI initiate',        desc: 'Answer your first OSI Sorter question' },
+  { id: 'os_50',             label: 'OSI scholar',         desc: 'Answer 50 OSI Sorter questions' },
+  { id: 'os_all_seen',       label: 'OSI master',          desc: 'See every OSI item at least once' },
+  { id: 'os_streak_10',      label: 'OSI streak',          desc: 'Reach a 10 streak in OSI Sorter' },
+  { id: 'cb_first',          label: 'Cable spotter',       desc: 'Answer your first Cable ID question' },
+  { id: 'cb_50',             label: 'Cable expert',        desc: 'Answer 50 Cable ID questions' },
+  { id: 'cb_all_seen',       label: 'Cable encyclopedia',  desc: 'See every cable and connector at least once' },
+  { id: 'cb_streak_10',      label: 'Cable streak',        desc: 'Reach a 10 streak in Cable ID' },
 ];
 
 // ── Milestone evaluation — table-driven (v4.42.5) ───────────────────────
@@ -11474,7 +11480,6 @@ function renderDailyChallengeCard() {
     ? `${dc.currentStreak}-day streak${dc.bestStreak > dc.currentStreak ? ' · Best ' + dc.bestStreak : ''}`
     : 'Start your streak today';
   card.innerHTML = `
-    <div class="dc-icon">🎯</div>
     <div class="dc-body">
       <div class="dc-title">DAILY CHALLENGE</div>
       <div class="dc-sub">One question · Topic: <strong>${escHtml(topicToday)}</strong> · ${escHtml(streakText)}</div>
@@ -11802,7 +11807,6 @@ function renderStreakDefender() {
   // Active threat: current streak ≥ 3 AND no activity today yet
   if (s.current >= 3 && s.last !== today) {
     card.innerHTML = `
-      <div class="sd-icon">🔥</div>
       <div class="sd-body">
         <div class="sd-title">Don't break your ${s.current}-day streak!</div>
         <div class="sd-sub">One question is all it takes to keep it alive.</div>
@@ -12376,7 +12380,7 @@ function renderReadinessCard() {
     let probClass = 'high';
     if (probPct < 50) probClass = 'low';
     else if (probPct < 80) probClass = 'med';
-    predEl.innerHTML = '🎯 <strong>' + predicted + '</strong> '
+    predEl.innerHTML = '<strong>' + predicted + '</strong> '
       + '<span class="ci">± ' + data.ciHalfWidth + '</span> '
       + '<span class="sep">·</span> '
       + '<span class="prob ' + probClass + '">' + probPct + '% pass probability</span>';
@@ -12410,13 +12414,13 @@ function renderReadinessCard() {
     if (data.daysToExam !== null && data.daysToExam !== undefined) {
       if (data.targetGap > 0) {
         const cls = data.targetGap > 60 ? 'warn' : (data.targetGap > 20 ? 'mid' : 'good');
-        trajEl.innerHTML = '⏰ <strong>' + data.daysToExam + ' days</strong> to exam &middot; '
+        trajEl.innerHTML = '<strong>' + data.daysToExam + ' days</strong> to exam &middot; '
           + 'need <strong>+' + data.targetGap + ' pts</strong> for confident pass '
           + '<span class="hint">(lower bound → ' + EXAM_PASS_SCORE + ')</span>';
         trajEl.className = 'readiness-trajectory ' + cls;
         trajEl.hidden = false;
       } else {
-        trajEl.innerHTML = '✅ <strong>' + data.daysToExam + ' days</strong> to exam &middot; '
+        trajEl.innerHTML = '<strong>' + data.daysToExam + ' days</strong> to exam &middot; '
           + 'already confidently above pass.';
         trajEl.className = 'readiness-trajectory good';
         trajEl.hidden = false;
@@ -15524,10 +15528,11 @@ async function showTopicDeepDive(topicName) {
 function renderTopicDive(guide, topicName) {
   const contentEl = document.getElementById('topic-dive-content');
 
-  const conceptCards = (guide.keyConcepts || []).map((c, i) => {
-    const icons = ['🔹', '🔸', '💠', '🔷', '⚡', '🔶'];
+  // v7.50.x: decorative concept bullet emoji (🔹🔸💠🔷⚡🔶) removed per BRAND §9
+  // (no emoji-as-icons). No suitable monoline glyph in the vocabulary for an
+  // abstract "concept" bullet, so the icon slot is dropped rather than hand-rolled.
+  const conceptCards = (guide.keyConcepts || []).map((c) => {
     return `<div class="td-concept-card">
-      <div class="td-concept-icon">${icons[i % icons.length]}</div>
       <div class="td-concept-body">
         <div class="td-concept-name">${escHtml(c.name)}</div>
         <div class="td-concept-detail">${escHtml(c.detail)}</div>
@@ -15543,7 +15548,6 @@ function renderTopicDive(guide, topicName) {
   // here then passed through the DOMPurify backstop at assignment below.
   const aiGuideHtml = `
     <div class="td-section td-summary">
-      <div class="td-section-icon">📋</div>
       <div class="td-section-body">
         <h3>Overview</h3>
         <p>${escHtml(guide.summary || '')}</p>
@@ -15551,7 +15555,6 @@ function renderTopicDive(guide, topicName) {
     </div>
 
     <div class="td-section">
-      <div class="td-section-icon">🧩</div>
       <div class="td-section-body">
         <h3>Key Concepts</h3>
         <div class="td-concept-grid">${conceptCards}</div>
@@ -15559,7 +15562,6 @@ function renderTopicDive(guide, topicName) {
     </div>
 
     <div class="td-section">
-      <div class="td-section-icon">⚙️</div>
       <div class="td-section-body">
         <h3>How It Works</h3>
         <p>${escHtml(guide.howItWorks || '')}</p>
@@ -15567,7 +15569,6 @@ function renderTopicDive(guide, topicName) {
     </div>
 
     ${guide.diagram ? `<div class="td-section td-diagram-section">
-      <div class="td-section-icon">📐</div>
       <div class="td-section-body">
         <h3>Visual Diagram</h3>
         <pre class="td-diagram">${escHtml(guide.diagram)}</pre>
@@ -15575,7 +15576,6 @@ function renderTopicDive(guide, topicName) {
     </div>` : ''}
 
     <div class="td-section td-scenario">
-      <div class="td-section-icon">🏢</div>
       <div class="td-section-body">
         <h3>Real-World Scenario</h3>
         <p>${escHtml(guide.scenario || '')}</p>
@@ -15583,7 +15583,6 @@ function renderTopicDive(guide, topicName) {
     </div>
 
     <div class="td-section">
-      <div class="td-section-icon">🎯</div>
       <div class="td-section-body">
         <h3>Exam Tips &amp; Traps</h3>
         <ul class="td-tips-list">${examTips}</ul>
@@ -15591,7 +15590,6 @@ function renderTopicDive(guide, topicName) {
     </div>
 
     <div class="td-section td-memory">
-      <div class="td-section-icon">🧠</div>
       <div class="td-section-body">
         <h3>Memory Trick</h3>
         <p class="td-memory-text">${escHtml(guide.memoryTrick || '')}</p>
@@ -15615,7 +15613,6 @@ function _renderTopicTerminalSection(topicName) {
   if (!cmds || cmds.length === 0) return '';
   const cards = cmds.map(c => _terminalCardHtml(c.cmd, c.note)).join('');
   return `<div class="td-section td-terminal">
-    <div class="td-section-icon">💻</div>
     <div class="td-section-body">
       <h3>Try It In Terminal</h3>
       <p class="td-terminal-intro">Run these on macOS / iOS Terminal to see this topic live:</p>
@@ -15631,7 +15628,6 @@ function _renderTopicLabSection(topicName) {
   if (!lab) return '';
   const topicAttr = escHtml(topicName).replace(/'/g, '&#39;');
   return `<div class="td-section td-lab-callout">
-    <div class="td-section-icon">🖥️</div>
     <div class="td-section-body">
       <h3>Guided Terminal Lab</h3>
       <p>Want to go deeper? There\'s a coached walkthrough for this topic — ${escHtml(lab.title)} (${escHtml(lab.duration)}).</p>
@@ -15967,20 +15963,22 @@ function _buildExamDateChipHtml(examDateStr, daysToExam, inputId) {
   let dateChipState = '';
   if (examDateStr) {
     const dateLabel = new Date(examDateStr).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+    // v7.50.x: urgency emoji (🔥⏰📅🎯✅) removed — urgency is already carried by
+    // the ana-ready-datechip-{urgent|soon|ok|past} state class (colour), so the
+    // glyph was redundant decoration (BRAND §9 · no emoji-as-icons).
     if (daysToExam !== null && daysToExam > 0) {
-      const emoji = daysToExam <= 7 ? '🔥' : daysToExam <= 30 ? '⏰' : '📅';
       const urgency = daysToExam <= 7 ? 'urgent' : daysToExam <= 30 ? 'soon' : 'ok';
       dateChipState = ` ana-ready-datechip-${urgency}`;
-      dateChipInner = `<span class="ana-ready-datechip-icon">${emoji}</span><span class="ana-ready-datechip-date">${dateLabel}</span><span class="ana-ready-datechip-sep">·</span><span class="ana-ready-datechip-days"><strong>${daysToExam}</strong> day${daysToExam === 1 ? '' : 's'}</span>`;
+      dateChipInner = `<span class="ana-ready-datechip-date">${dateLabel}</span><span class="ana-ready-datechip-sep">·</span><span class="ana-ready-datechip-days"><strong>${daysToExam}</strong> day${daysToExam === 1 ? '' : 's'}</span>`;
     } else if (daysToExam === 0) {
       dateChipState = ' ana-ready-datechip-urgent';
-      dateChipInner = `<span class="ana-ready-datechip-icon">🎯</span><span class="ana-ready-datechip-date">${dateLabel}</span><span class="ana-ready-datechip-sep">·</span><span class="ana-ready-datechip-days"><strong>Today!</strong></span>`;
+      dateChipInner = `<span class="ana-ready-datechip-date">${dateLabel}</span><span class="ana-ready-datechip-sep">·</span><span class="ana-ready-datechip-days"><strong>Today!</strong></span>`;
     } else {
       dateChipState = ' ana-ready-datechip-past';
-      dateChipInner = `<span class="ana-ready-datechip-icon">✅</span><span class="ana-ready-datechip-date">${dateLabel}</span><span class="ana-ready-datechip-sep">·</span><span class="ana-ready-datechip-days">${Math.abs(daysToExam)} day${Math.abs(daysToExam) === 1 ? '' : 's'} ago</span>`;
+      dateChipInner = `<span class="ana-ready-datechip-date">${dateLabel}</span><span class="ana-ready-datechip-sep">·</span><span class="ana-ready-datechip-days">${Math.abs(daysToExam)} day${Math.abs(daysToExam) === 1 ? '' : 's'} ago</span>`;
     }
   } else {
-    dateChipInner = `<span class="ana-ready-datechip-icon">🎯</span><span class="ana-ready-datechip-date ana-ready-datechip-placeholder">Set your exam date</span>`;
+    dateChipInner = `<span class="ana-ready-datechip-date ana-ready-datechip-placeholder">Set your exam date</span>`;
   }
   return `<button type="button" class="ana-exam-date-btn ana-ready-datechip${dateChipState}" onclick="document.getElementById('${inputId}').showPicker && document.getElementById('${inputId}').showPicker()" aria-label="${examDateStr ? 'Change exam date' : 'Set exam date'}">
       ${dateChipInner}
@@ -16603,19 +16601,19 @@ function _renderAnaReadiness(h) {
         ${_mkSpark(_series.sessions, 'var(--accent-light)', 0)}
       </div>
       <div class="ana-hero-stat">
-        <div class="ana-hero-stat-icon" aria-hidden="true">📝</div>
+        <div class="ana-hero-stat-icon" aria-hidden="true"></div>
         <div class="ana-hero-stat-val">${totalQ.toLocaleString()}</div>
         <div class="ana-hero-stat-lbl">Questions</div>
         ${_mkSpark(_series.questions, 'var(--accent-light)', 1)}
       </div>
       <div class="ana-hero-stat">
-        <div class="ana-hero-stat-icon" aria-hidden="true">🎯</div>
+        <div class="ana-hero-stat-icon" aria-hidden="true"></div>
         <div class="ana-hero-stat-val">${totalQ > 0 ? Math.round(totalCorrect/totalQ*100) : 0}%</div>
         <div class="ana-hero-stat-lbl">Accuracy</div>
         ${_mkSpark(_series.accuracy, 'var(--green)', 2)}
       </div>
       <div class="ana-hero-stat">
-        <div class="ana-hero-stat-icon" aria-hidden="true">🔥</div>
+        <div class="ana-hero-stat-icon" aria-hidden="true"></div>
         <div class="ana-hero-stat-val">${studyDays}</div>
         <div class="ana-hero-stat-lbl">Study Days</div>
         ${_mkSpark(_series.studyDays, 'var(--orange)', 3)}
@@ -17040,7 +17038,13 @@ function _renderAnaStreak() {
   else if (streak.currentStreak < 14)  heatTier = 'hot';       // 7-13 days, locked in
   else                                 heatTier = 'blazing';   // 14+ days, on fire
 
-  const flameIcon = isActive ? '🔥' : '💤';
+  // v7.50.x: brand-illustrative flame (07_study_streak.svg, trimmed per BRAND
+  // §7B — no <filter>/<title>/<style>, gradient id namespaced to anaStreakFlame
+  // to avoid colliding with the sidebar's sbStreakFlame, outline on currentColor
+  // for theme adaptation). Replaces the decorative 🔥/💤 emoji (BRAND §9). The
+  // active/dormant distinction is carried by the .ana-streak-card-${heatTier}
+  // class (cold tier dims the flame), same convention as the sidebar streak.
+  const flameIcon = '<svg viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs><linearGradient id="anaStreakFlame" x1="22" y1="18" x2="106" y2="110" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#E27822"/><stop offset="1" stop-color="#C95500"/></linearGradient></defs><path d="M67 19c12 18-2 29 13 41 5 4 11 10 11 22 0 18-13 31-28 31S35 100 35 82c0-14 8-25 19-34 8-7 11-15 13-29z" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/><path class="ana-streak-core" d="M66 57c8 10-1 17 8 25 3 3 5 6 5 11 0 9-7 16-16 16s-16-7-16-16c0-8 5-14 11-19 5-5 7-9 8-17z" fill="url(#anaStreakFlame)" stroke="#C95500" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 
   // v4.46.1: last-7-days dot row — visualises the week as filled/empty circles.
   // Today is the rightmost dot. Studied = filled (with flame on today if
@@ -18048,7 +18052,6 @@ function _renderAnaMilestones() {
       ? ` data-ms-earned="${escHtml(_msRel(unlockedMap[m.id]))}"`
       : (function () { const p = _msProg(m.id); return p ? ` data-ms-progress="${p}"` : ''; })();
     return `<div class="ana-milestone ${unlocked ? 'ana-milestone-on' : 'ana-milestone-off'}" title="${escHtml(m.desc)}"${dataAttr}>
-    <div class="ana-milestone-icon">${m.icon}</div>
     <div class="ana-milestone-label">${escHtml(m.label)}</div>
     <div class="ana-milestone-desc">${escHtml(m.desc)}</div>
   </div>`;
@@ -18931,8 +18934,11 @@ function renderAnalytics() {
     // "Performance analytics.").
     const pageHead = document.querySelector('#page-analytics > .ed-pagehead');
     if (pageHead) pageHead.classList.add('is-hidden');
+    // v7.50.x: 📊 decorative emoji replaced with the monoline chart glyph from
+    // the existing vocabulary (_sbNavIcon('progress') — axis + rising trend line,
+    // stroke on currentColor). BRAND §7A · §9 (no emoji-as-icons).
     container.innerHTML = '<div class="ana-empty-card">'
-      + '<div class="ana-empty-icon">📊</div>'
+      + '<div class="ana-empty-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M3 3v18h18" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M7 14l4-4 4 4 5-5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></div>'
       + '<h1 class="ana-empty-title">Unlock your first insight</h1>'
       + '<p class="ana-empty-body">Complete one 5-minute warmup and we\'ll show your '
       + '<strong>weakest topic</strong>, <strong>readiness trend</strong>, and '

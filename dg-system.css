@@ -2514,6 +2514,23 @@ html[data-theme] body .chip-smart.on{background:color-mix(in oklab,var(--accent)
 /* ── P3: Milestone + A2HS emoji hide ── */
 html[data-theme] body .ana-milestone-icon{display:none!important;}
 html[data-theme] body .a2hs-banner-icon{display:none!important;}
+/* v7.50.x: analytics hero-stat icons were decorative emoji (📝🎯🔥) above the
+   stat values — emptied in app.js and hidden here so the de-carded stats strip
+   reads as numerals only (BRAND §9; matches the "0 emoji" intent of this block). */
+html[data-theme] body #page-analytics .ana-hero-stat-icon{display:none!important;}
+/* v7.50.x: analytics empty-state 📊 → monoline chart glyph. Size the inline SVG
+   (styles.css set font-size:56px for the emoji) + ride the accent colour. */
+html[data-theme] body #page-analytics .ana-empty-icon{font-size:0!important;color:var(--accent)!important;display:flex!important;justify-content:center!important;}
+html[data-theme] body #page-analytics .ana-empty-icon svg{width:48px!important;height:48px!important;}
+
+/* v7.50.x: analytics streak flame is now the brand-illustrative SVG (07_study_streak,
+   BRAND §7B) instead of the 🔥/💤 emoji. Size the inline SVG + theme the outline on
+   --accent (same recipe as the sidebar .sb-streak-ico flame). The cold/dormant tier
+   dims it to text-dim so the active/dormant distinction the emoji carried survives. */
+html[data-theme] body .ana-streak-flame{font-size:0!important;color:var(--accent)!important;display:grid!important;place-items:center!important;}
+html[data-theme] body .ana-streak-flame svg{width:34px!important;height:34px!important;}
+html[data-theme] body .ana-streak-card-cold .ana-streak-flame{color:var(--text-dim)!important;opacity:0.55!important;}
+html[data-theme] body .ana-streak-card-cold .ana-streak-core{fill:none!important;stroke:currentColor!important;opacity:0.6!important;}
 
 /* ── P2: Session transition + complete ── */
 html[data-theme] body #page-session-transition .session-emoji,html[data-theme] body #page-session-complete .session-emoji{display:none!important;}

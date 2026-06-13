@@ -32,7 +32,7 @@
   html[data-theme="light"] body { color: #1a1a2e; }
 </style>
 <link rel="stylesheet" href="styles.css">
-<link rel="stylesheet" href="dg-system.css?v=7.50.1">
+<link rel="stylesheet" href="dg-system.css?v=7.50.2">
 <link rel="stylesheet" href="dg-depurple.css?v=7.13.5">
 <!-- v7.36.1: the cert-ios lift is viewport-gated — phone/tablet-portrait
      viewports get the mockup column + tab bar; desktop keeps the classic
@@ -789,7 +789,7 @@
     <div class="readiness-action" id="readiness-action">Complete your first quiz to see your readiness score.</div>
     <div class="readiness-exam-row" id="readiness-exam-row"></div>
     <div class="readiness-whatif" id="readiness-whatif" hidden>
-      <div class="readiness-whatif-label">📊 Drill these to move your score</div>
+      <div class="readiness-whatif-label"><svg viewBox="0 0 24 24" fill="none" width="11" height="11" aria-hidden="true" style="vertical-align:-1px;margin-right:5px"><path d="M3 3v18h18" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M7 14l4-4 4 4 5-5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>Drill these to move your score</div>
       <div class="readiness-whatif-row" id="readiness-whatif-row"></div>
     </div>
     <div class="readiness-trajectory" id="readiness-trajectory" hidden></div>
@@ -842,15 +842,12 @@
       <div class="diag-quiz-confidence-lbl">How confident are you?</div>
       <div class="diag-quiz-confidence-tiers" id="diag-quiz-confidence-tiers">
         <button type="button" class="diag-conf-tier" data-tier="confident" onclick="setDiagnosticConfidence('confident')">
-          <span class="diag-conf-icon">✅</span>
           <span class="diag-conf-lbl">Confident</span>
         </button>
         <button type="button" class="diag-conf-tier" data-tier="uncertain" onclick="setDiagnosticConfidence('uncertain')">
-          <span class="diag-conf-icon">🤔</span>
           <span class="diag-conf-lbl">Uncertain</span>
         </button>
         <button type="button" class="diag-conf-tier" data-tier="guessing" onclick="setDiagnosticConfidence('guessing')">
-          <span class="diag-conf-icon">🎲</span>
           <span class="diag-conf-lbl">Guessing</span>
         </button>
       </div>
@@ -888,14 +885,13 @@
   </section>
 
   <section class="pass-plan-section">
-    <h2 class="pass-plan-section-h"><span class="icon">🎯</span> Top 3 weak domains <span class="count" id="pass-plan-weak-count">—</span></h2>
+    <h2 class="pass-plan-section-h">Top 3 weak domains <span class="count" id="pass-plan-weak-count">—</span></h2>
     <div id="pass-plan-weak-domains"></div>
   </section>
 
   <section class="pass-plan-section">
-    <h2 class="pass-plan-section-h"><span class="icon">📭</span> Review queue seeded</h2>
+    <h2 class="pass-plan-section-h">Review queue seeded</h2>
     <div class="pass-plan-review-seeded" id="pass-plan-review-seeded">
-      <div class="pass-plan-review-icon">📭</div>
       <div class="pass-plan-review-text">
         <div><span class="pass-plan-review-num" id="pass-plan-review-num">0</span> <span class="pass-plan-review-lbl">cards added to your spaced-repetition queue</span></div>
         <div class="pass-plan-review-sub" id="pass-plan-review-sub">First review session: tomorrow morning · auto-paced by SM-2</div>
@@ -904,14 +900,13 @@
   </section>
 
   <section class="pass-plan-section">
-    <h2 class="pass-plan-section-h"><span class="icon">📅</span> Recommended next 7 days</h2>
+    <h2 class="pass-plan-section-h">Recommended next 7 days</h2>
     <div class="pass-plan-week-strip" id="pass-plan-week-strip"></div>
   </section>
 
   <section class="pass-plan-section">
-    <h2 class="pass-plan-section-h"><span class="icon">🧪</span> Recommended for you</h2>
+    <h2 class="pass-plan-section-h">Recommended for you</h2>
     <div class="pass-plan-pbq-rec">
-      <div class="pass-plan-pbq-icon">🔧</div>
       <div class="pass-plan-pbq-text">
         <div class="pass-plan-pbq-title" id="pass-plan-pbq-title">Try the ACL Ordering PBQ</div>
         <div class="pass-plan-pbq-sub" id="pass-plan-pbq-sub">PBQs carry 3-4× weight on the real exam. Start practising now.</div>

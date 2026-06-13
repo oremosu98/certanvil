@@ -1937,7 +1937,7 @@ test('v4.42.0: showMilestoneCelebration helper defined',
   js.includes('function showMilestoneCelebration('));
 test('v4.42.0: showCelebrationToast helper defined',
   js.includes('function showCelebrationToast('));
-test('v4.42.0: celebration toast reads MILESTONE_DEFS for icon+label',
+test('v4.42.0: celebration toast reads MILESTONE_DEFS for label+desc (v7.50.x: decorative milestone emoji removed)',
   _fnBody(js, 'showMilestoneCelebration').includes('MILESTONE_DEFS'));
 test('v4.42.0: showCelebrationToast emits .celebration-toast DOM',
   _fnBody(js, 'showCelebrationToast').includes("'celebration-toast'"));
