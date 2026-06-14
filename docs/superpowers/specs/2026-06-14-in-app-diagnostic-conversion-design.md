@@ -87,12 +87,14 @@ When a free user opens the builder from a plan:
 - The landing-web diagnostic funnel (separate, already shipped).
 - Any change to the free 15/day or 5-review limits themselves.
 
-## 8. Open questions to resolve during planning
+## 8. Resolved decisions (2026-06-14, with Simi)
 
-1. **Account surface:** confirm the exact host page (the cert-app `#page-settings`/account area vs a new view) and how navigation reaches it on each platform.
-2. **Pro multi-plan data:** the per-cert plan list needs cross-cert data. Confirm the cloud profile (`profiles.metadata`) stores a diagnostic per cert and how the list is read across subdomains (cross-cert analytics already aggregates readiness — reuse that path).
-3. **Retake cooldown for Pro:** keep the 7-day cooldown for all tiers, or exempt Pro? (Default: keep 7 days for everyone.)
-4. **Lane check:** the UI is fast-lane (app.js/index.html/styles). Verify whether the Pro cross-cert list or the signup trigger touches gated files (auth-state.js, cloud-store.js, RLS/migrations). Any gated touchpoint goes through the gated lane (feature branch → PR + Supabase/preview).
+1. **Account surface:** the Pass Plan home lives on the cert-app **account / settings page** (reuse the existing `#page-settings`/account area, not a new tab).
+2. **Pro multi-plan data:** **yes, aggregate every cert's plan into one account view**, read from the cloud profile (`profiles.metadata`), reusing the cross-cert analytics aggregation path (already shipped, v7.43.0).
+3. **Retake cooldown:** **keep the 7-day cooldown for all tiers** (Pro included). The wait protects score validity, it is not a paywall.
+4. **Lane check:** engineering to verify during the plan (Simi delegated). UI work is fast-lane (app.js/index.html/styles); any touch of gated files (auth-state.js, cloud-store.js, RLS/migrations) for the cross-cert read or the signup trigger routes through the gated lane.
+
+**Reuse note (verified against shipped versions):** the tier infrastructure already exists — free **15 questions + 5 reviews/day** (v7.40.0), **custom quiz already capped at 15 for free** (v7.46.0), **one-cert lock until Pro** (v7.33.0), **cross-cert analytics as a Pro feature** (v7.43.0), account/settings surfaces lifted (v7.37–7.39). This feature is mostly **new UI surfaces wired onto existing tier logic**, not new entitlement plumbing.
 
 ## 9. Build process
 
