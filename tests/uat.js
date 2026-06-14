@@ -8126,6 +8126,10 @@ test('v4.81.0 Diagnostic: _seedReviewQueueFromDiagnostic function defined',
   /function\s+_seedReviewQueueFromDiagnostic\b/.test(js));
 test('v4.81.0 Diagnostic: renderDiagnosticResult function defined',
   /function\s+renderDiagnosticResult\b/.test(js));
+// v7.52.0 · state-aware conversion block at the bottom of the Pass Plan.
+test('diagnostic conversion block present', html.includes('id="dq-conversion"'));
+test('conversion renders states', _fnBody(js, '_renderDiagnosticConversion').includes('_certanvilSignedIn'));
+test('Pro teaser has no pricing link', !_fnBody(js, '_showProWaitlist').includes('certanvil.com/pricing'));
 test('v4.81.0 Diagnostic: renderDiagnosticSurface function defined',
   /function\s+renderDiagnosticSurface\b/.test(js));
 test('v4.81.0 Diagnostic: getDiagnosticCooldownDays function defined',

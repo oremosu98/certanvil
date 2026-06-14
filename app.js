@@ -5502,6 +5502,124 @@ function renderDiagnosticResult() {
   if (pbqSub && p.pbqRec) pbqSub.textContent = p.pbqRec.sub;
   const pbqCta = document.getElementById('pass-plan-pbq-cta');
   if (pbqCta && p.pbqRec) pbqCta.textContent = p.pbqRec.cta;
+
+  _renderDiagnosticConversion();
+}
+
+// v7.52.0: state-aware conversion moment at the bottom of the Pass Plan.
+// Anonymous → save-it-free panel + Pro waitlist teaser + soft escape.
+// Signed-in free → "saved to your account" + soft Pro line. Pro → hidden.
+function _renderDiagnosticConversion() {
+  const host = document.getElementById('dq-conversion');
+  if (!host) return;
+  const signedIn = window._certanvilSignedIn === true;
+  const isPro = !!_quotaState && (_quotaState.tier === 'pro' ||
+    (typeof _quotaState.daily_limit === 'number' && _quotaState.daily_limit < 0));
+
+  if (isPro) {                              // Pro: nothing to sell
+    host.hidden = true;
+    host.innerHTML = '';
+    return;
+  }
+  host.hidden = false;
+  if (signedIn) {                           // signed-in free: saved + soft Pro line
+    host.innerHTML =
+      '<p class="dq-affirm">' + _checkSvg() + 'Saved to your account</p>' +
+      '<a href="#" class="dq-affirm-link" data-act="dq-view-account">View it on your account page</a>' +
+      '<p class="dq-pro-soft">Want unlimited questions and every cert? ' +
+      '<a href="#" data-act="dq-pro-teaser">Get Pro at launch · $9.99/mo</a></p>';
+  } else {                                  // anonymous: save-free + Pro waitlist + escape
+    host.innerHTML = _dqAnonConversionHtml();
+  }
+  _wireDiagnosticConversion(host);
+}
+
+// Anonymous save-panel + Pro waitlist teaser + escape (ported from mockup Frame 1).
+function _dqAnonConversionHtml() {
+  return '' +
+    '<div class="dq-save-panel">' +
+      '<p class="dq-save-eyebrow">Before you start</p>' +
+      '<h2 class="dq-save-h">Don\'t lose your Pass Plan</h2>' +
+      '<p class="dq-save-sub">Right now it lives only on this device. Save it free and pick up where you left off on any device.</p>' +
+      '<div class="dq-email-row">' +
+        '<input class="dq-email-input" type="email" placeholder="you@email.com" aria-label="Email" data-act="dq-email">' +
+        '<button type="button" class="btn btn-primary" data-act="dq-save-free">Save it free</button>' +
+      '</div>' +
+      '<p class="dq-save-micro"><b>Just your email.</b> No password <span class="dq-sep"></span> no card <span class="dq-sep"></span> 15 questions a day</p>' +
+      '<p class="dq-save-home">' +
+        '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 12h14M12 5v14" stroke="var(--accent)" stroke-width="2" stroke-linecap="round"/></svg>' +
+        'It lands on your account page, ready whenever you come back.</p>' +
+    '</div>' +
+    '<div class="dq-pro">' +
+      '<div class="dq-pro-top"><span class="dq-pro-h">Going all in?</span><span class="dq-pro-tag">At launch</span></div>' +
+      '<p class="dq-pro-sub">CertAnvil Pro: unlimited questions, every cert, the topology builder and labs. <span class="dq-pro-price">$9.99/mo</span> when it ships.</p>' +
+      '<button type="button" class="btn btn-ghost dq-btn-ghost" data-act="dq-pro-teaser">Get Pro at launch</button>' +
+    '</div>' +
+    '<a href="#" class="dq-escape" data-act="dq-escape">Start today\'s session without saving</a>';
+}
+
+// Inline green check glyph for the "Saved" affirmation.
+function _checkSvg() {
+  return '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M20 6 9 17l-5-5" ' +
+    'stroke="var(--green)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+}
+
+// Bind the conversion block's data-act controls to existing app flows.
+function _wireDiagnosticConversion(host) {
+  host.querySelectorAll('[data-act]').forEach(function (el) {
+    el.addEventListener('click', function (e) {
+      const act = el.getAttribute('data-act');
+      if (act === 'dq-email') return;       // input, no click action
+      e.preventDefault();
+      if (act === 'dq-save-free') {
+        if (typeof _showSignInPrompt === 'function') {
+          _showSignInPrompt(host, 'Save your Pass Plan free: 15 questions a day, no password, no card.');
+        } else if (typeof buildSignInUrl === 'function') {
+          window.location.href = buildSignInUrl();
+        }
+      } else if (act === 'dq-pro-teaser') {
+        _showProWaitlist();
+      } else if (act === 'dq-escape') {
+        closePassPlanReview();
+      } else if (act === 'dq-view-account') {
+        showPage('settings');
+      }
+    });
+  });
+}
+
+// v7.52.0: App-Store-safe Pro teaser. Reuses the _showProOnlyUI visual shell
+// but carries NO external pricing/purchase link (Apple forbids external
+// purchase links for digital subscriptions). The action is a launch waitlist.
+function _showProWaitlist() {
+  var prev = document.getElementById('pro-only-modal');
+  if (prev) prev.remove();
+  var modal = document.createElement('div');
+  modal.id = 'pro-only-modal';
+  modal.className = 'quota-exceeded-modal';   // reuse overlay scrim
+  modal.innerHTML =
+    '<div class="dlpb-card" role="dialog" aria-modal="true" aria-label="CertAnvil Pro at launch">' +
+      '<div class="dlpb-lockmark" aria-hidden="true">' +
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' +
+          '<rect x="4" y="11" width="16" height="9" rx="2.5"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path>' +
+        '</svg>' +
+      '</div>' +
+      '<h2 class="dlpb-title">CertAnvil Pro at launch</h2>' +
+      '<p class="dlpb-lede">CertAnvil Pro at launch · unlimited questions · every cert · $9.99/mo</p>' +
+      '<div class="dlpb-actions">' +
+        '<button type="button" class="dlpb-cta" id="pro-waitlist-notify">Notify me at launch</button>' +
+        '<button type="button" class="dlpb-ghost" id="pro-waitlist-dismiss">Not now</button>' +
+      '</div>' +
+    '</div>';
+  document.body.appendChild(modal);
+  var notify = document.getElementById('pro-waitlist-notify');
+  if (notify) notify.addEventListener('click', function () {
+    if (typeof showToast === 'function') showToast('You\'re on the list · we\'ll let you know when Pro ships', 'info', 4000);
+    modal.remove();
+  });
+  var dismiss = document.getElementById('pro-waitlist-dismiss');
+  if (dismiss) dismiss.addEventListener('click', function () { modal.remove(); });
+  modal.addEventListener('click', function (e) { if (e.target === modal) modal.remove(); });
 }
 
 // Click-through helper — picks the first topic in a domain and routes to
