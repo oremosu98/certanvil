@@ -5574,8 +5574,8 @@ function _wireDiagnosticConversion(host) {
       if (act === 'dq-save-free') {
         if (typeof _showSignInPrompt === 'function') {
           _showSignInPrompt(host, 'Save your Pass Plan free: 15 questions a day, no password, no card.');
-        } else if (typeof buildSignInUrl === 'function') {
-          window.location.href = buildSignInUrl();
+        } else if (typeof window.buildSignInUrl === 'function') {
+          window.location.href = window.buildSignInUrl();
         }
       } else if (act === 'dq-pro-teaser') {
         _showProWaitlist();
@@ -12499,8 +12499,12 @@ function prefillDomainTopics(domainKey) {
 
 // v7.52.0: open the Custom Quiz builder pre-loaded with a weak domain's topics (no auto-start).
 function _drillWeakDomainToBuilder(domainKey) {
-  prefillDomainTopics(domainKey);                  // selects topics + opens builder, no auto-start
   const rem = _quotaRemainingToday();              // Infinity for Pro/admin; N for free
+  if (rem === 0) {                                 // free user out of questions today: show the wall, do not open a builder they cannot run
+    if (typeof _gateActivityForQuota === 'function') _gateActivityForQuota('practice quizzes');
+    return;
+  }
+  prefillDomainTopics(domainKey);                  // selects topics + opens builder, no auto-start
   const want = (rem === Infinity) ? 15 : Math.max(5, Math.min(15, rem));
   qCount = want;
   document.querySelectorAll('#count-group .chip').forEach(c =>
