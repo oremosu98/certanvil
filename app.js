@@ -5702,7 +5702,14 @@ function renderPassPlanSection() {
   if (!host) return;
   var isPro = !!_quotaState && (_quotaState.tier === 'pro' ||
     (typeof _quotaState.daily_limit === 'number' && _quotaState.daily_limit < 0));
-  host.innerHTML = isPro ? _renderPassPlanProHtml() : _renderPassPlanFreeHtml();
+  // Installed app (iOS PWA) shows all certs' plans; a plain browser tab is one
+  // cert per subdomain, so Settings shows only the current cert's plan.
+  var standalone = document.body.classList.contains('is-standalone');
+  if (standalone) {
+    host.innerHTML = isPro ? _renderPassPlanProHtml() : _renderPassPlanFreeHtml();
+  } else {
+    host.innerHTML = isPro ? _renderPassPlanBrowserProHtml() : _renderPassPlanFreeHtml();
+  }
   _wirePassPlanSection(host);
 }
 
@@ -5721,47 +5728,56 @@ function _passPlanLockSvg() {
     '<path d="M8 11V8a4 4 0 0 1 8 0v3" stroke="var(--text-dim)" stroke-width="2"/></svg>';
 }
 
-// Free tier: one plan card from the on-file diagnostic (or an empty state),
-// then the locked-certs Pro upsell. Stays under 80 lines.
-function _renderPassPlanFreeHtml() {
+// Shared: the single current-cert plan card from the on-file diagnostic, or
+// the "take the baseline diagnostic" empty state. Used by both the Free path
+// and the browser-tab Pro path so each cert shows only its own plan. <80 lines.
+function _passPlanCurrentCertCardHtml() {
   var rec = (typeof loadDiagnostic === 'function') ? loadDiagnostic() : null;
   var pp = rec && rec.passPlan;
   var certName = (typeof CERT_PACK !== 'undefined' && CERT_PACK && CERT_PACK.meta && CERT_PACK.meta.name)
     ? CERT_PACK.meta.name : 'CompTIA Network+';
-  var card;
-  if (pp) {
-    var prob = Math.round((pp.passProbability || 0) * 100);
-    var weak = (pp.weakDomains || []).slice(0, 2).map(function (d) {
-      return '<b>' + escHtml(d.label || d.key || '') + '</b>';
-    }).join(', ');
-    var detail = (typeof pp.correctCount === 'number' && typeof pp.questionCount === 'number')
-      ? (pp.correctCount + ' of ' + pp.questionCount + ' correct')
-      : ((typeof pp.accPct === 'number') ? (pp.accPct + '% accuracy') : '');
-    card =
-      '<div class="plan-card">' +
-        '<div class="pcard-eyebrow"><span>' + escHtml(certName) + '</span><span>' + escHtml(_passPlanDate(pp.completedAt)) + '</span></div>' +
-        '<div class="pcard-main">' +
-          '<div class="prob-ring" style="background:conic-gradient(var(--accent) 0 ' + prob + '%, var(--surface3) ' + prob + '% 100%)">' +
-            '<div class="inner"><span class="pct">' + prob + '%</span><span class="lbl">pass</span></div></div>' +
-          '<div class="pcard-detail">' +
-            (detail ? '<p class="meta">' + escHtml(detail) + '</p>' : '') +
-            (weak ? '<p class="weak">Weakest: ' + weak + '</p>' : '') +
-          '</div>' +
-        '</div>' +
-        '<div class="pcard-cta">' +
-          '<button type="button" class="btn btn-primary btn-sm" data-act="pp-view">View full plan</button>' +
-          '<button type="button" class="btn btn-ghost btn-sm" style="width:auto" data-act="pp-retake">Retake</button>' +
-        '</div>' +
-      '</div>';
-  } else {
-    card =
-      '<div class="plan-card pp-empty">' +
+  if (!pp) {
+    return '<div class="plan-card pp-empty">' +
         '<p class="pp-empty-h">Take the baseline diagnostic</p>' +
         '<p class="pp-empty-sub">20 questions across every domain build your Pass Plan, your readiness and the topics to drill first.</p>' +
         '<button type="button" class="btn btn-primary btn-sm" data-act="pp-empty">Start the diagnostic</button>' +
       '</div>';
   }
-  return '<div class="sub-label">Your Pass Plan</div>' + card + _passPlanLockedCertsHtml();
+  var prob = Math.round((pp.passProbability || 0) * 100);
+  var weak = (pp.weakDomains || []).slice(0, 2).map(function (d) {
+    return '<b>' + escHtml(d.label || d.key || '') + '</b>';
+  }).join(', ');
+  var detail = (typeof pp.correctCount === 'number' && typeof pp.questionCount === 'number')
+    ? (pp.correctCount + ' of ' + pp.questionCount + ' correct')
+    : ((typeof pp.accPct === 'number') ? (pp.accPct + '% accuracy') : '');
+  return '<div class="plan-card">' +
+      '<div class="pcard-eyebrow"><span>' + escHtml(certName) + '</span><span>' + escHtml(_passPlanDate(pp.completedAt)) + '</span></div>' +
+      '<div class="pcard-main">' +
+        '<div class="prob-ring" style="background:conic-gradient(var(--accent) 0 ' + prob + '%, var(--surface3) ' + prob + '% 100%)">' +
+          '<div class="inner"><span class="pct">' + prob + '%</span><span class="lbl">pass</span></div></div>' +
+        '<div class="pcard-detail">' +
+          (detail ? '<p class="meta">' + escHtml(detail) + '</p>' : '') +
+          (weak ? '<p class="weak">Weakest: ' + weak + '</p>' : '') +
+        '</div>' +
+      '</div>' +
+      '<div class="pcard-cta">' +
+        '<button type="button" class="btn btn-primary btn-sm" data-act="pp-view">View full plan</button>' +
+        '<button type="button" class="btn btn-ghost btn-sm" style="width:auto" data-act="pp-retake">Retake</button>' +
+      '</div>' +
+    '</div>';
+}
+
+// Free tier: one plan card from the on-file diagnostic (or an empty state),
+// then the locked-certs Pro upsell. Stays under 80 lines.
+function _renderPassPlanFreeHtml() {
+  return '<div class="sub-label">Your Pass Plan</div>' +
+    _passPlanCurrentCertCardHtml() + _passPlanLockedCertsHtml();
+}
+
+// Browser tab, Pro user: just the current cert's single plan card. Each cert is
+// its own subdomain in a browser, so no multi-cert list and no upsell here.
+function _renderPassPlanBrowserProHtml() {
+  return '<div class="sub-label">Your Pass Plan</div>' + _passPlanCurrentCertCardHtml();
 }
 
 // Free upsell: the Pro certs as locked chips + a launch-waitlist button.
