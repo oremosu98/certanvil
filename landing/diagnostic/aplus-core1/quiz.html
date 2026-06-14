@@ -171,7 +171,7 @@
       explanation: 'Exchange ActiveSync (used by Microsoft 365/Exchange) pushes mail, contacts, and calendar to all linked devices. POP3 only downloads mail and does not sync folders or calendar; SMTP only sends mail.'
     },
 
-    // ── Domain 2.0 Networking (6 · ~23%) — biased to ports-in-scenario + DNS records ──
+    // ── Domain 2.0 Networking (6 · ~23%), biased to ports-in-scenario + DNS records ──
     {
       id: 4, domain: 'Networking', topic: 'Ports & Protocols', objective: '2.1', difficulty: 'Easy',
       question: 'A technician must allow secure remote command-line access to a Linux server. Which port should be open on the firewall?',
@@ -210,12 +210,12 @@
     {
       id: 9, domain: 'Networking', topic: 'IP Addressing', objective: '2.5', difficulty: 'Medium',
       question: 'A workstation shows an IP address of 169.254.12.50 and cannot reach other hosts. What does this address indicate?',
-      options: { A: 'A valid public IP', B: 'A static IP misconfiguration', C: 'An APIPA address — DHCP failed', D: 'A loopback address' },
+      options: { A: 'A valid public IP', B: 'A static IP misconfiguration', C: 'An APIPA address · DHCP failed', D: 'A loopback address' },
       answer: 'C',
       explanation: 'The 169.254.x.x range is APIPA (Automatic Private IP Addressing), assigned when a client cannot reach a DHCP server. The loopback address is 127.0.0.1.'
     },
 
-    // ── Domain 3.0 Hardware (6 · ~25%) — biased to RAID + printers ──
+    // ── Domain 3.0 Hardware (6 · ~25%), biased to RAID + printers ──
     {
       id: 10, domain: 'Hardware', topic: 'RAID', objective: '3.4', difficulty: 'Medium',
       question: 'Which RAID level mirrors data across two drives, providing redundancy with no striping?',
@@ -259,7 +259,7 @@
       explanation: 'NVMe drives communicate over the PCIe bus, typically via an M.2 slot, far outpacing SATA. SATA M.2 drives are slower; IDE/PATA and parallel SCSI are legacy.'
     },
 
-    // ── Domain 4.0 Virtualization & Cloud (3 · ~11%) — biased to cloud models ──
+    // ── Domain 4.0 Virtualization & Cloud (3 · ~11%), biased to cloud models ──
     {
       id: 16, domain: 'Virtualization & Cloud', topic: 'Cloud Models', objective: '4.1', difficulty: 'Easy',
       question: 'Which cloud deployment model is dedicated to a single organization and not shared with the public?',
@@ -302,14 +302,14 @@
       question: 'A laptop screen is very dim but an external monitor connected to it displays normally. What is the MOST likely cause?',
       options: { A: 'Failed GPU', B: 'Faulty backlight or inverter', C: 'Corrupt display driver', D: 'Bad RAM' },
       answer: 'B',
-      explanation: 'If the external monitor works but the built-in panel is dim, the GPU is fine — the backlight (or its inverter on older laptops) is failing. A driver or GPU fault would usually affect both displays.'
+      explanation: 'If the external monitor works but the built-in panel is dim, the GPU is fine · the backlight (or its inverter on older laptops) is failing. A driver or GPU fault would usually affect both displays.'
     },
     {
       id: 22, domain: 'Hardware & Network Troubleshooting', topic: 'Storage Troubleshooting', objective: '5.3', difficulty: 'Medium',
       question: 'A user reports loud clicking from the PC and frequent read errors on a mechanical hard drive. What should the technician do FIRST?',
       options: { A: 'Run a disk defragmentation', B: 'Back up the data immediately', C: 'Reinstall the operating system', D: 'Update the storage driver' },
       answer: 'B',
-      explanation: 'Clicking plus read errors signals imminent mechanical drive failure — back up the data immediately before doing anything else. Defragmenting or reinstalling stresses a failing drive and risks total loss.'
+      explanation: 'Clicking plus read errors signals imminent mechanical drive failure · back up the data immediately before doing anything else. Defragmenting or reinstalling stresses a failing drive and risks total loss.'
     },
     {
       id: 23, domain: 'Hardware & Network Troubleshooting', topic: 'Network Troubleshooting', objective: '5.5', difficulty: 'Medium',
@@ -323,7 +323,7 @@
       question: 'A laser printer produces pages where the toner smears and rubs off easily. Which component is MOST likely faulty?',
       options: { A: 'The toner cartridge drum', B: 'The fuser assembly', C: 'The transfer roller', D: 'The pickup roller' },
       answer: 'B',
-      explanation: 'Toner that smears or rubs off was never bonded to the paper — the fuser assembly (heat/pressure) is failing. The transfer roller moves toner to paper; the pickup roller feeds paper.'
+      explanation: 'Toner that smears or rubs off was never bonded to the paper · the fuser assembly (heat/pressure) is failing. The transfer roller moves toner to paper; the pickup roller feeds paper.'
     },
     {
       id: 25, domain: 'Hardware & Network Troubleshooting', topic: 'Connectivity Troubleshooting', objective: '5.5', difficulty: 'Hard',

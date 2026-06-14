@@ -164,14 +164,14 @@
       question: 'A company wants to run virtual machines in the cloud but manage the OS, middleware, and applications themselves. Which service model is best?',
       options: { A: 'SaaS (Software as a Service)', B: 'PaaS (Platform as a Service)', C: 'IaaS (Infrastructure as a Service)', D: 'FaaS (Function as a Service)' },
       answer: 'C',
-      explanation: 'IaaS provides virtualized compute, storage, and networking — the customer manages everything above the hypervisor (OS, middleware, apps). PaaS abstracts the OS layer; SaaS delivers the entire app.'
+      explanation: 'IaaS provides virtualized compute, storage, and networking · the customer manages everything above the hypervisor (OS, middleware, apps). PaaS abstracts the OS layer; SaaS delivers the entire app.'
     },
     {
       id: 4, domain: 'Cloud Concepts', topic: 'CapEx vs OpEx', objective: '1.1', difficulty: 'Medium',
       question: 'Moving from on-premises infrastructure to Azure typically shifts IT spending from which model to which?',
       options: { A: 'OpEx to CapEx', B: 'CapEx to OpEx', C: 'CapEx to fixed cost', D: 'OpEx to subscription tax' },
       answer: 'B',
-      explanation: 'On-premises requires upfront Capital Expenditure (servers, networking, datacenter). Cloud shifts spend to Operational Expenditure (pay-as-you-go billing) — no large upfront purchase, predictable monthly costs.'
+      explanation: 'On-premises requires upfront Capital Expenditure (servers, networking, datacenter). Cloud shifts spend to Operational Expenditure (pay-as-you-go billing) · no large upfront purchase, predictable monthly costs.'
     },
     {
       id: 5, domain: 'Cloud Concepts', topic: 'Shared Responsibility', objective: '1.1', difficulty: 'Medium',
@@ -185,7 +185,7 @@
       question: 'What is the primary distinction between high availability and disaster recovery in Azure architecture?',
       options: { A: 'HA prevents downtime within a region; DR restores service after a regional failure', B: 'They are synonyms', C: 'HA is for VMs; DR is for storage only', D: 'HA is automatic; DR is manual only' },
       answer: 'A',
-      explanation: 'High availability uses redundancy (availability sets/zones) to keep services running through localized failures. Disaster recovery (Azure Site Recovery, geo-redundant storage) restores service after a regional event — different problem, different toolkit.'
+      explanation: 'High availability uses redundancy (availability sets/zones) to keep services running through localized failures. Disaster recovery (Azure Site Recovery, geo-redundant storage) restores service after a regional event · different problem, different toolkit.'
     },
 
     // ── Domain 2.0 Azure Architecture & Services (8 · ~38%) ──
@@ -215,7 +215,7 @@
       question: 'Which Azure networking service provides a private, dedicated connection between an on-premises network and Azure, bypassing the public internet?',
       options: { A: 'VPN Gateway', B: 'ExpressRoute', C: 'Azure Bastion', D: 'Application Gateway' },
       answer: 'B',
-      explanation: 'ExpressRoute provides a private, dedicated, high-bandwidth connection through a connectivity provider — no public internet traversal. VPN Gateway is encrypted over the internet; Bastion is for secure RDP/SSH; App Gateway is L7 load balancing.'
+      explanation: 'ExpressRoute provides a private, dedicated, high-bandwidth connection through a connectivity provider · no public internet traversal. VPN Gateway is encrypted over the internet; Bastion is for secure RDP/SSH; App Gateway is L7 load balancing.'
     },
     {
       id: 11, domain: 'Azure Architecture & Services', topic: 'Databases', objective: '2.2', difficulty: 'Medium',
@@ -236,7 +236,7 @@
       question: 'A developer wants to run code in response to an HTTP request without provisioning servers and pay only for execution time. Which service fits?',
       options: { A: 'Azure Virtual Machines', B: 'Azure App Service', C: 'Azure Functions', D: 'Azure Kubernetes Service' },
       answer: 'C',
-      explanation: 'Azure Functions is the serverless compute service — code runs in response to triggers (HTTP, queue, timer, blob), and you pay per execution. App Service is for web apps but provisions an App Service Plan; AKS is for container orchestration.'
+      explanation: 'Azure Functions is the serverless compute service · code runs in response to triggers (HTTP, queue, timer, blob), and you pay per execution. App Service is for web apps but provisions an App Service Plan; AKS is for container orchestration.'
     },
     {
       id: 14, domain: 'Azure Architecture & Services', topic: 'Management Hierarchy', objective: '2.4', difficulty: 'Hard',
@@ -287,7 +287,7 @@
       question: 'Which Azure service provides a unified view of metrics, logs, and alerts across resources for observability?',
       options: { A: 'Azure Advisor', B: 'Azure Monitor', C: 'Azure Service Health', D: 'Azure Policy' },
       answer: 'B',
-      explanation: 'Azure Monitor is the unified observability platform — collects metrics (numeric time-series), logs (Kusto-queryable via Log Analytics), and drives alerting. Advisor gives optimization recommendations; Service Health shows incidents; Policy enforces compliance.'
+      explanation: 'Azure Monitor is the unified observability platform · collects metrics (numeric time-series), logs (Kusto-queryable via Log Analytics), and drives alerting. Advisor gives optimization recommendations; Service Health shows incidents; Policy enforces compliance.'
     }
   ];
 

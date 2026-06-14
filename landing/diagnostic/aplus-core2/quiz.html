@@ -149,7 +149,7 @@
   // engineering, Windows command-line, malware removal, Windows editions,
   // and MFA per Stage 4 spec.
   var QUESTION_POOL = [
-    // ── Domain 1.0 Operating Systems (7 · ~28%) — biased to Windows CLI + editions ──
+    // ── Domain 1.0 Operating Systems (7 · ~28%), biased to Windows CLI + editions ──
     {
       id: 1, domain: 'Operating Systems', topic: 'Windows Command Line', objective: '1.2', difficulty: 'Easy',
       question: 'Which Windows command displays the full IP configuration, including DNS servers and the default gateway, for all adapters?',
@@ -200,7 +200,7 @@
       explanation: 'ls lists directory contents. pwd prints the working directory; cd changes directory; chmod modifies permissions.'
     },
 
-    // ── Domain 2.0 Security (7 · ~28%) — biased to social engineering + MFA ──
+    // ── Domain 2.0 Security (7 · ~28%), biased to social engineering + MFA ──
     {
       id: 8, domain: 'Security', topic: 'Social Engineering', objective: '2.4', difficulty: 'Easy',
       question: 'A user receives an email appearing to be from their bank, urging them to click a link and confirm their password. What type of attack is this?',
@@ -234,7 +234,7 @@
       question: 'Which of the following is the BEST example of a "something you are" authentication factor used in MFA?',
       options: { A: 'A hardware security key', B: 'A one-time SMS code', C: 'A fingerprint scan', D: 'A PIN' },
       answer: 'C',
-      explanation: 'A fingerprint is a biometric — "something you are." A hardware key and SMS code are "something you have"; a PIN is "something you know."'
+      explanation: 'A fingerprint is a biometric · "something you are." A hardware key and SMS code are "something you have"; a PIN is "something you know."'
     },
     {
       id: 13, domain: 'Security', topic: 'Wireless Security', objective: '2.2', difficulty: 'Medium',
@@ -251,7 +251,7 @@
       explanation: 'Ransomware encrypts data and demands payment for the key. Spyware secretly collects data; a rootkit hides at a privileged level; adware displays unwanted ads.'
     },
 
-    // ── Domain 3.0 Software Troubleshooting (5 · ~23%) — biased to malware removal ──
+    // ── Domain 3.0 Software Troubleshooting (5 · ~23%), biased to malware removal ──
     {
       id: 15, domain: 'Software Troubleshooting', topic: 'Malware Removal', objective: '3.3', difficulty: 'Hard',
       question: 'According to the CompTIA best-practice malware removal procedure, which step comes IMMEDIATELY after identifying and verifying malware symptoms?',
