@@ -5708,6 +5708,195 @@ function closePassPlanReview() {
   goSetup();
 }
 
+// v7.52.0: render the account Pass Plan home, tier-aware. Free = one plan
+// card + locked-cert upsell; Pro = a plan per diagnosed cert + "diagnose
+// another". Ported from the approved mockup Section 2.
+function renderPassPlanSection() {
+  var host = document.getElementById('passplan-section');
+  if (!host) return;
+  var isPro = !!_quotaState && (_quotaState.tier === 'pro' ||
+    (typeof _quotaState.daily_limit === 'number' && _quotaState.daily_limit < 0));
+  host.innerHTML = isPro ? _renderPassPlanProHtml() : _renderPassPlanFreeHtml();
+  _wirePassPlanSection(host);
+}
+
+// Short "Taken Jun 14" style date for the Pass Plan cards.
+function _passPlanDate(ms) {
+  if (!ms) return '';
+  try {
+    return 'Taken ' + new Date(ms).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  } catch (_) { return ''; }
+}
+
+// Lock chip SVG (padlock), reused by the Free upsell cert chips.
+function _passPlanLockSvg() {
+  return '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true">' +
+    '<rect x="5" y="11" width="14" height="9" rx="2" stroke="var(--text-dim)" stroke-width="2"/>' +
+    '<path d="M8 11V8a4 4 0 0 1 8 0v3" stroke="var(--text-dim)" stroke-width="2"/></svg>';
+}
+
+// Free tier: one plan card from the on-file diagnostic (or an empty state),
+// then the locked-certs Pro upsell. Stays under 80 lines.
+function _renderPassPlanFreeHtml() {
+  var rec = (typeof loadDiagnostic === 'function') ? loadDiagnostic() : null;
+  var pp = rec && rec.passPlan;
+  var certName = (typeof CERT_PACK !== 'undefined' && CERT_PACK && CERT_PACK.meta && CERT_PACK.meta.name)
+    ? CERT_PACK.meta.name : 'CompTIA Network+';
+  var card;
+  if (pp) {
+    var prob = Math.round((pp.passProbability || 0) * 100);
+    var weak = (pp.weakDomains || []).slice(0, 2).map(function (d) {
+      return '<b>' + escHtml(d.label || d.key || '') + '</b>';
+    }).join(', ');
+    var detail = (typeof pp.correctCount === 'number' && typeof pp.questionCount === 'number')
+      ? (pp.correctCount + ' of ' + pp.questionCount + ' correct')
+      : ((typeof pp.accPct === 'number') ? (pp.accPct + '% accuracy') : '');
+    card =
+      '<div class="plan-card">' +
+        '<div class="pcard-eyebrow"><span>' + escHtml(certName) + '</span><span>' + escHtml(_passPlanDate(pp.completedAt)) + '</span></div>' +
+        '<div class="pcard-main">' +
+          '<div class="prob-ring" style="background:conic-gradient(var(--accent) 0 ' + prob + '%, var(--surface3) ' + prob + '% 100%)">' +
+            '<div class="inner"><span class="pct">' + prob + '%</span><span class="lbl">pass</span></div></div>' +
+          '<div class="pcard-detail">' +
+            (detail ? '<p class="meta">' + escHtml(detail) + '</p>' : '') +
+            (weak ? '<p class="weak">Weakest: ' + weak + '</p>' : '') +
+          '</div>' +
+        '</div>' +
+        '<div class="pcard-cta">' +
+          '<button type="button" class="btn btn-primary btn-sm" data-act="pp-view">View full plan</button>' +
+          '<button type="button" class="btn btn-ghost btn-sm" style="width:auto" data-act="pp-retake">Retake</button>' +
+        '</div>' +
+      '</div>';
+  } else {
+    card =
+      '<div class="plan-card pp-empty">' +
+        '<p class="pp-empty-h">Take the baseline diagnostic</p>' +
+        '<p class="pp-empty-sub">20 questions across every domain build your Pass Plan, your readiness and the topics to drill first.</p>' +
+        '<button type="button" class="btn btn-primary btn-sm" data-act="pp-empty">Start the diagnostic</button>' +
+      '</div>';
+  }
+  return '<div class="sub-label">Your Pass Plan</div>' + card + _passPlanLockedCertsHtml();
+}
+
+// Free upsell: the Pro certs as locked chips + a launch-waitlist button.
+function _passPlanLockedCertsHtml() {
+  var certs = (typeof window.getAvailableCerts === 'function')
+    ? window.getAvailableCerts('user').filter(function (c) { return c.tier === 'pro'; }) : [];
+  if (!certs.length) return '';
+  var chips = certs.map(function (c) {
+    return '<span class="cert-chip">' + _passPlanLockSvg() + escHtml(c.name) + '</span>';
+  }).join('');
+  return '<div class="locked-certs">' +
+    '<p class="locked-h">Every other cert, one plan each</p>' +
+    '<p class="locked-sub">Pro unlocks a baseline diagnostic and Pass Plan for every cert, plus unlimited questions instead of 15 questions a day.</p>' +
+    '<div class="cert-chips">' + chips + '</div>' +
+    '<button type="button" class="btn btn-primary btn-full btn-sm" data-act="pp-pro">Get Pro at launch &middot; $9.99/mo</button>' +
+  '</div>';
+}
+
+// Pro tier: a plan row per diagnosed cert (from the readiness snapshots),
+// plus "diagnose another cert". Stays under 80 lines.
+function _renderPassPlanProHtml() {
+  var snaps = _readReadinessSnapshots();
+  var certs = (typeof window.getAvailableCerts === 'function') ? window.getAvailableCerts('user') : [];
+  var byId = {};
+  certs.forEach(function (c) { byId[c.id] = c; });
+  var ids = Object.keys(snaps).filter(function (id) { return snaps[id]; });
+  var rows = ids.map(function (id) {
+    var s = snaps[id];
+    var meta = byId[id] || { name: id, code: '', glyph: '' };
+    var score = (typeof s.score === 'number') ? Math.round(s.score) : null;
+    var when = '';
+    if (s.computed_at) {
+      try { when = 'Taken ' + new Date(s.computed_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }); }
+      catch (_) { when = ''; }
+    }
+    var bits = [];
+    if (when) bits.push(when);
+    if (s.weak_domain) bits.push('weakest: ' + escHtml(s.weak_domain));
+    var ringPct = (score !== null) ? score : 0;
+    var name = escHtml(meta.name) + (meta.code ? ' ' + escHtml(meta.code) : '');
+    return '<div class="plan-item" data-act="pp-open-cert" data-cert="' + escHtml(id) + '" role="button" tabindex="0">' +
+      '<span class="pi-ring" style="background:conic-gradient(var(--accent) 0 ' + ringPct + '%, var(--surface3) ' + ringPct + '% 100%)">' +
+        '<span class="pi-ring-inner">' + (score !== null ? score : '&ndash;') + '</span></span>' +
+      '<span class="pi-body"><span class="pi-cert">' + name + '</span>' +
+        '<div class="pi-meta">' + (bits.length ? bits.join(' &middot; ') : 'Open this cert') + '</div></span>' +
+      '<span class="pi-go" aria-hidden="true">&rsaquo;</span></div>';
+  }).join('');
+  if (!rows) {
+    rows = '<div class="plan-card pp-empty"><p class="pp-empty-h">No diagnostics yet</p>' +
+      '<p class="pp-empty-sub">Run a baseline diagnostic on any cert to start building plans here.</p></div>';
+  }
+  return '<div class="sub-label">Your Pass Plans</div>' +
+    '<div class="plan-list">' + rows + '</div>' +
+    '<button type="button" class="add-cert" data-act="pp-add">' +
+      '<svg viewBox="0 0 24 24" fill="none" width="15" height="15" aria-hidden="true">' +
+        '<path d="M5 12h14M12 5v14" stroke="var(--accent)" stroke-width="2" stroke-linecap="round"/></svg>' +
+      'Diagnose another cert</button>';
+}
+
+// Bind the Pass Plan section's data-act controls to existing app flows.
+function _wirePassPlanSection(host) {
+  host.querySelectorAll('[data-act]').forEach(function (el) {
+    var act = el.getAttribute('data-act');
+    var run = function (e) {
+      if (e) e.preventDefault();
+      if (act === 'pp-view') { viewPassPlan(); }
+      else if (act === 'pp-retake') { retakeDiagnostic(); }
+      else if (act === 'pp-empty') { startDiagnostic(); }
+      else if (act === 'pp-pro') { _showProWaitlist(); }
+      else if (act === 'pp-add') { _showPassPlanCertPicker(); }
+      else if (act === 'pp-open-cert') {
+        var id = el.getAttribute('data-cert');
+        if (id && typeof tadSwitchCert === 'function') tadSwitchCert(id);
+      }
+    };
+    el.addEventListener('click', run);
+    if (el.getAttribute('role') === 'button') {
+      el.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' || e.key === ' ') run(e);
+      });
+    }
+  });
+}
+
+// v7.52.0: Pro "Diagnose another cert" picker. Lists the certs and switches
+// to the chosen one via tadSwitchCert (Pro-gated internally), which loads
+// that cert so the user can run its baseline diagnostic.
+function _showPassPlanCertPicker() {
+  var certs = (typeof window.getAvailableCerts === 'function') ? window.getAvailableCerts('user') : [];
+  if (!certs.length) return;
+  var prev = document.getElementById('pp-cert-picker');
+  if (prev) prev.remove();
+  var rows = certs.map(function (c) {
+    return '<button type="button" class="pp-pick-row" data-cert="' + escHtml(c.id) + '">' +
+      '<span class="pp-pick-glyph">' + escHtml(c.glyph || '') + '</span>' +
+      '<span class="pp-pick-body"><span class="pp-pick-name">' + escHtml(c.name) + '</span>' +
+      '<span class="pp-pick-code">' + escHtml(c.code || '') + '</span></span></button>';
+  }).join('');
+  var modal = document.createElement('div');
+  modal.id = 'pp-cert-picker';
+  modal.className = 'quota-exceeded-modal';
+  modal.innerHTML =
+    '<div class="dlpb-card" role="dialog" aria-modal="true" aria-label="Diagnose another cert">' +
+      '<h2 class="dlpb-title">Diagnose another cert</h2>' +
+      '<p class="dlpb-lede">Pick a cert to load, then run its baseline diagnostic.</p>' +
+      '<div class="pp-pick-list">' + rows + '</div>' +
+      '<button type="button" class="dlpb-ghost" data-act="pp-pick-close">Close</button>' +
+    '</div>';
+  document.body.appendChild(modal);
+  modal.querySelectorAll('.pp-pick-row').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var id = b.getAttribute('data-cert');
+      modal.remove();
+      if (id && typeof tadSwitchCert === 'function') tadSwitchCert(id);
+    });
+  });
+  var close = modal.querySelector('[data-act="pp-pick-close"]');
+  if (close) close.addEventListener('click', function () { modal.remove(); });
+  modal.addEventListener('click', function (e) { if (e.target === modal) modal.remove(); });
+}
+
 // Render the home-page diagnostic surface. Three states:
 // 1. CTA visible (no diagnostic taken, or session-dismissed=false)
 // 2. Pass Plan tile visible (diagnostic completed)
@@ -10902,6 +11091,12 @@ function getReadinessScore() {
 // Defensive: silently no-ops on any failure so a snapshot write never
 // blocks a quiz/exam from finishing. The score will get rewritten on the
 // next quiz finish anyway.
+// v7.52.0: read the per-cert readiness snapshot map for the Pro multi-plan list.
+function _readReadinessSnapshots() {
+  try { return JSON.parse(localStorage.getItem(STORAGE.READINESS_SNAPSHOTS) || '{}') || {}; }
+  catch (_) { return {}; }
+}
+
 function _writeReadinessSnapshot() {
   try {
     var readiness = getReadinessScore();
@@ -19744,6 +19939,8 @@ function scrollToSettings() {
 // v4.54.1: Settings page render (updates the wrong-bank count badge).
 // Inputs (#api-key + Export/Import) are stateless and just work.
 function renderSettingsPage() {
+  // v7.52.0: account Pass Plan home (Free one-plan + upsell, Pro plan-per-cert)
+  if (typeof renderPassPlanSection === 'function') renderPassPlanSection();
   if (typeof renderWrongBankBtn === 'function') renderWrongBankBtn();
   // v4.54.10: sync the editable Daily Goal input with current value
   if (typeof syncSettingsDailyGoal === 'function') syncSettingsDailyGoal();

@@ -1519,6 +1519,18 @@
        the wrapping structure changes. Section ordering reflects the trust
        hierarchy (read-only health → study cadence → AI → data → destruct). -->
   <div class="settings-layout">
+    <!-- ═══════ § 00 PASS PLAN ═══════ -->
+    <!-- v7.52.0: Pass Plan home (Free=one plan + upsell, Pro=plan per cert), rendered by renderPassPlanSection() -->
+    <div class="settings-group" id="settings-passplan-group" data-group="passplan">
+      <div class="settings-group-head">
+        <span class="settings-group-num">&sect; 00</span>
+        <div class="settings-group-titles">
+          <h2 class="settings-group-h">Your <em>Pass Plan</em></h2>
+          <p class="settings-group-sub">Your baseline diagnostic and where it points you next.</p>
+        </div>
+      </div>
+      <section class="card settings-section" id="passplan-section"></section>
+    </div>
     <!-- ═══════ § 01 STUDY SETUP ═══════ -->
     <div class="settings-group" data-group="study-setup">
       <div class="settings-group-head">

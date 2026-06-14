@@ -100,6 +100,9 @@
     ];
   }
 
+  // v7.52.0: expose the cert registry so app.js can render the Pass Plan account section.
+  window.getAvailableCerts = getAvailableCerts;
+
   function getActiveCertId() {
     try {
       var dev = localStorage.getItem(CERT_OVERRIDE_KEY);

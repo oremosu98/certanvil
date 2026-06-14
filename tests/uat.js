@@ -8130,6 +8130,12 @@ test('v4.81.0 Diagnostic: renderDiagnosticResult function defined',
 test('diagnostic conversion block present', html.includes('id="dq-conversion"'));
 test('conversion renders states', _fnBody(js, '_renderDiagnosticConversion').includes('_certanvilSignedIn'));
 test('Pro teaser has no pricing link', !_fnBody(js, '_showProWaitlist').includes('certanvil.com/pricing'));
+// v7.52.0: account Pass Plan home (Free one-plan+upsell, Pro plan-per-cert)
+test('account Pass Plan section', html.includes('id="passplan-section"'));
+test('Pass Plan section tier-aware', _fnBody(js, 'renderPassPlanSection').includes('_renderPassPlanProHtml'));
+test('Pro plan list uses snapshots', _fnBody(js, '_renderPassPlanProHtml').includes('_readReadinessSnapshots'));
+test('getAvailableCerts exposed', /window\.getAvailableCerts\s*=/.test(authStateJs));
+test('readiness snapshot reader', /function _readReadinessSnapshots\(/.test(js));
 test('v4.81.0 Diagnostic: renderDiagnosticSurface function defined',
   /function\s+renderDiagnosticSurface\b/.test(js));
 test('v4.81.0 Diagnostic: getDiagnosticCooldownDays function defined',
