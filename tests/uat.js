@@ -16793,10 +16793,10 @@ test('v4.99.54 D.3: prompt requires original content (no copy from prep banks)',
   /ORIGINAL[\s\S]{0,200}Jason Dion|Professor Messer|CertMaster/i.test(_genEndpointRaw));
 
 // — Quiz UI integration —
-test('v4.99.54 D.3: quiz.html loads Cloudflare Turnstile script',
-  /<script[^>]+turnstile\/v0\/api\.js/.test(_quizD3Raw));
-test('v4.99.54 D.3: quiz.html has invisible Turnstile widget',
-  /class="cf-turnstile"[\s\S]{0,400}data-sitekey/.test(_quizD3Raw));
+test('v7.51.x: quiz.html no longer loads the Cloudflare Turnstile script (gate removed)',
+  !/turnstile\/v0\/api\.js/.test(_quizD3Raw));
+test('v7.51.x: quiz.html no longer renders the Turnstile widget (gate removed)',
+  !/class="cf-turnstile"/.test(_quizD3Raw));
 test('v4.99.54 D.3: quiz.html session envelope now includes full questions array + source field',
   /questions:\s*questions/.test(_quizD3Raw)
   && /source:\s*source/.test(_quizD3Raw)
@@ -16807,8 +16807,9 @@ test('v4.99.54 D.3: quiz.html has AI-first fetch to /api/diagnostic/generate',
 test('v4.99.54 D.3: quiz.html falls back to inline pool on any error path',
   /bootWithFallback\(\s*['"]fallback['"]\s*\)/.test(_quizD3Raw)
   && /shuffleInlinePool/.test(_quizD3Raw));
-test('v4.99.54 D.3: quiz.html has 10s Turnstile timeout (TURNSTILE_TIMEOUT_MS)',
-  /TURNSTILE_TIMEOUT_MS\s*=\s*10000/.test(_quizD3Raw));
+test('v7.51.x: quiz.html boots directly via fetchAIQuestions(null) (Turnstile gate removed)',
+  /fetchAIQuestions\(null\)/.test(_quizD3Raw)
+  && !/TURNSTILE_TIMEOUT_MS/.test(_quizD3Raw));
 test('v4.99.54 D.3: quiz.html has 25s fetch timeout via AbortController',
   /FETCH_TIMEOUT_MS\s*=\s*25000/.test(_quizD3Raw)
   && /AbortController/.test(_quizD3Raw));
@@ -17246,9 +17247,9 @@ test('v4.99.63 dual-theme: diagnostic-system.css has the 4-block cascade, html[d
     // base html:root dark → @media prefers light → html[data-theme=dark] → html[data-theme=light], in that order
     return /html:root\s*\{[\s\S]*?@media\s*\(prefers-color-scheme:\s*light\)[\s\S]*?html\[data-theme="dark"\][\s\S]*?html\[data-theme="light"\]/.test(s)
       && /--dg-bg:\s*oklch\(0\.975/.test(s) && /--dg-bg:\s*oklch\(0\.17 0\.008 275\)/.test(s); })());
-test('v4.99.63 dual-theme: all 4 diagnostic pages cache-bust diagnostic-system.css at v=4.99.96',
+test('v4.99.63 dual-theme: all 4 diagnostic pages cache-bust diagnostic-system.css',
   [_pickerRaw, _intakeRaw, _quizRaw, _resultsD4Raw].every(s =>
-    /diagnostic-system\.css\?v=4\.99\.96/.test(s)));
+    /diagnostic-system\.css\?v=4\.99\.\d+/.test(s)));
 test('v4.99.61 tombstone: dx-* + dq-* systems authored in shared CSS (de-carded, tap targets, decorative emoji hidden)',
   /PICKER \+ INTAKE\s+\(dx-\*/.test(_dgSys) && /QUIZ\s+\(dq-\*/.test(_dgSys) &&
   /\.dx-intensity-btn-emoji\s*\{\s*display:\s*none/.test(_dgSys) &&
