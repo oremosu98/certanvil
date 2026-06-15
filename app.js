@@ -1,9 +1,9 @@
 // ══════════════════════════════════════════
-// Network+ AI Quiz — app.js  v7.54.0
+// Network+ AI Quiz — app.js  v7.54.1
 // ══════════════════════════════════════════
 
 // ── CONSTANTS ──
-const APP_VERSION = '7.54.0';
+const APP_VERSION = '7.54.1';
 // v4.99.45 (Phase 6b): expose APP_VERSION on window so the web-vitals
 // collector (lib/web-vitals-collector.js, loaded BEFORE app.js so its
 // PerformanceObservers attach earlier) can stamp this version onto every
@@ -533,6 +533,11 @@ function _renderQuotaChip() {
     e.stopPropagation();
     _toggleQuotaTooltip();
   };
+
+  // v7.54.1: keep the Gauntlet drills card's free-daily pill in sync once tier is
+  // known (quota hydrates after the drills page may have first rendered). No-op
+  // when the card isn't in the DOM.
+  if (typeof renderGauntletDrillsCard === 'function') { try { renderGauntletDrillsCard(); } catch (_) {} }
 }
 
 // v4.99.6 Phase E.5 — chip-click tooltip showing reset countdown + plan + upgrade CTA.
@@ -7764,10 +7769,39 @@ function whyNotExit() {
 // Drills-page hero card pill ("N cracked").
 function renderGauntletDrillsCard() {
   const pill = document.getElementById('drills-gauntlet-pill');
-  if (!pill) return;
+  const card = document.getElementById('drills-gauntlet-card');
+  if (!pill || !card) return;
   const n = loadGauntletCracked().length;
   // Zero-state invites instead of anchoring on no progress (marketing pass 4)
   pill.textContent = n === 0 ? 'Flagship drill' : (n === 1 ? '1 cracked' : n + ' cracked');
+
+  // v7.54.1: free-tier daily-run state on the card (mirrors the free-gauntlet-states
+  // mockup). Pro/admin/anonymous are uncapped → no daily pill. Free → "1 free today"
+  // until used, then "Done today" with the CTA pointing at Pro. Re-rendered from
+  // _renderQuotaChip once tier hydrates (the drills page can render before that).
+  const btn = document.getElementById('drills-gauntlet-btn');
+  const titleEl = card.querySelector('.drills-card-title');
+  let state = document.getElementById('drills-gauntlet-state');
+  if (!state && titleEl) {
+    state = document.createElement('span');
+    state.id = 'drills-gauntlet-state';
+    state.className = 'gnt-daily-pill';
+    titleEl.appendChild(state);
+  }
+  const isFree = !!(_quotaState && _quotaState.tier === 'free');
+  if (state) {
+    if (isFree) {
+      const spent = (typeof _gauntletFreeRunsToday === 'function')
+        && _gauntletFreeRunsToday() >= GAUNTLET_FREE_DAILY_CAP;
+      state.textContent = spent ? 'Done today' : '1 free today';
+      state.classList.toggle('is-spent', spent);
+      state.hidden = false;
+      if (btn) btn.textContent = spent ? 'Go Pro for unlimited' : 'Run the Gauntlet';
+    } else {
+      state.hidden = true;
+      if (btn) btn.textContent = 'Run the Gauntlet';
+    }
+  }
 }
 
 // ══════════════════════════════════════════
