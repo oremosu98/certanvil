@@ -120,6 +120,7 @@
 
   function _slBindMovable(container, opts) {
     var picked = null; // currently picked-up item element
+    var suppressClick = false; // Bug 1: swallow the trailing click after a real drag
 
     function clearPicked() {
       if (picked) picked.classList.remove('sl-picked');
@@ -142,6 +143,7 @@
     // Tap-to-place + keyboard (universal baseline). 'click' fires for mouse tap,
     // touch tap, and keyboard Enter/Space on a focusable button.
     container.addEventListener('click', function (e) {
+      if (suppressClick) { suppressClick = false; return; } // Bug 1: swallow post-drag stray click
       var item = e.target.closest(opts.itemSel);
       if (item && container.contains(item)) { pick(item); return; }
       var target = e.target.closest(opts.targetSel);
@@ -172,17 +174,32 @@
         item.releasePointerCapture(e.pointerId);
         item.removeEventListener('pointermove', move);
         item.removeEventListener('pointerup', up);
-        item.style.transform = '';
+        item.removeEventListener('pointercancel', cancel); // Bug 2: clean up cancel listener
         item.classList.remove('sl-dragging');
         if (dragging) {
+          suppressClick = true; // Bug 1: flag to swallow the trailing click
+          item.style.transform = ''; // clear transform before hit-testing so item doesn't occlude target
           var under = document.elementFromPoint(ev.clientX, ev.clientY);
           var target = under && under.closest(opts.targetSel);
           if (target && container.contains(target)) drop(target);
           else clearPicked();
+        } else {
+          item.style.transform = '';
         }
+      }
+      // Bug 2: handle pointercancel to avoid listener leak and stale state
+      function cancel() {
+        try { item.releasePointerCapture(e.pointerId); } catch (err) {}
+        item.removeEventListener('pointermove', move);
+        item.removeEventListener('pointerup', up);
+        item.removeEventListener('pointercancel', cancel);
+        item.style.transform = '';
+        item.classList.remove('sl-dragging');
+        clearPicked();
       }
       item.addEventListener('pointermove', move);
       item.addEventListener('pointerup', up);
+      item.addEventListener('pointercancel', cancel); // Bug 2: register cancel handler
     });
 
     return { clearPicked: clearPicked };

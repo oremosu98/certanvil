@@ -185,3 +185,33 @@ test('input controller works on mobile-safari (touch taps place)', async ({ page
   });
   expect(placed).toEqual(['x', 'b1']);
 });
+
+test('input controller: a real mouse drag drops once and does not leave the item picked', async ({ page }) => {
+  await gotoApp(page);
+  await page.evaluate(() => {
+    const root = document.createElement('div');
+    root.id = 'sl-drag-test';
+    root.style.cssText = 'position:fixed;left:0;top:0;width:400px;z-index:99999;background:transparent';
+    root.innerHTML =
+      '<button class="sl-item" data-item="x" style="display:block;width:120px;height:40px">X</button>' +
+      '<div class="sl-target" data-target="b1" style="width:200px;height:80px;margin-top:60px"></div>';
+    document.body.appendChild(root);
+    window.__slDrops = [];
+    window._simLab.bindMovable(root, {
+      itemSel: '.sl-item', targetSel: '.sl-target',
+      onPlace: (i, t) => { window.__slDrops.push([i, t]); }
+    });
+  });
+  const item = page.locator('#sl-drag-test .sl-item');
+  const target = page.locator('#sl-drag-test .sl-target');
+  const ib = await item.boundingBox();
+  const tb = await target.boundingBox();
+  await page.mouse.move(ib.x + ib.width/2, ib.y + ib.height/2);
+  await page.mouse.down();
+  await page.mouse.move(tb.x + tb.width/2, tb.y + tb.height/2, { steps: 8 });
+  await page.mouse.up();
+  const drops = await page.evaluate(() => window.__slDrops);
+  expect(drops).toEqual([['x','b1']]);                       // exactly one drop
+  const picked = await item.evaluate(el => el.classList.contains('sl-picked'));
+  expect(picked).toBe(false);                                 // not left re-picked by stray click
+});
