@@ -354,3 +354,14 @@ test('feedback reveals explanation for wrong steps, withholds for right ones (fr
   expect(html).not.toContain('WHY_A'); // right step: withheld in free mode
   expect(html).toContain('WHY_B');     // wrong step: revealed
 });
+
+test('practice timer counts up and fires the pacing nudge past estMinutes', async ({ page }) => {
+  await gotoApp(page);
+  const fired = await page.evaluate(() => {
+    const host = document.createElement('div'); document.body.appendChild(host);
+    let nudged = false;
+    const t = window._simLab.startPracticeTimer(host, { estMinutes: 0.001, onNudge: () => { nudged = true; } });
+    return new Promise((resolve) => setTimeout(() => { t.stop(); resolve(nudged); }, 250));
+  });
+  expect(fired).toBe(true);
+});

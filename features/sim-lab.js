@@ -457,6 +457,31 @@
     host.appendChild(root);
   }
 
+  function _slStartPracticeTimer(host, opts) {
+    var started = Date.now();
+    var nudged = false;
+    var thresholdMs = (opts.estMinutes || 6) * 60 * 1000;
+    var el = _el('div', 'sl-timer');
+    var nudgeEl = _el('div', 'sl-nudge sl-hidden',
+      "You've spent a while here. Partial credit counts, so lock in your best answer and move on.");
+    host.appendChild(el); host.appendChild(nudgeEl);
+
+    function fmt(ms) {
+      var s = Math.floor(ms / 1000), m = Math.floor(s / 60);
+      return m + ':' + String(s % 60).padStart(2, '0');
+    }
+    var iv = setInterval(function () {
+      var elapsed = Date.now() - started;
+      el.textContent = '⏱ ' + fmt(elapsed);
+      if (!nudged && elapsed >= thresholdMs) {
+        nudged = true;
+        nudgeEl.classList.remove('sl-hidden');
+        if (opts.onNudge) opts.onNudge();
+      }
+    }, 250);
+    return { stop: function () { clearInterval(iv); }, elapsedMs: function () { return Date.now() - started; } };
+  }
+
   // --- exports (more added in later tasks) ---
   window.simLabValidateScenario = simLabValidateScenario;
   window.simLabScoreScenario = simLabScoreScenario;
@@ -469,4 +494,5 @@
   window._simLab.mountScenario = _slMountScenario;
   window._simLab.renderFeedback = _slRenderFeedback;
   window._simLab.__test_moveOrder = function (el, id, idx) { el.__moveTo(id, idx); };
+  window._simLab.startPracticeTimer = _slStartPracticeTimer;
 })();
