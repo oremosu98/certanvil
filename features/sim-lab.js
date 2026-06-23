@@ -482,6 +482,45 @@
     return { stop: function () { clearInterval(iv); }, elapsedMs: function () { return Date.now() - started; } };
   }
 
+  // --- scenario generation with validation + seed fallback (Task 13) ---
+
+  var _slFetcher = null; // injectable for tests; the real metered fetcher is set in Task 14
+
+  function _slPickSeed(cert) {
+    var bank = (cert === 'netplus' && window.SIM_LAB_SEED_NETPLUS) ? window.SIM_LAB_SEED_NETPLUS : [];
+    if (!bank.length) return null;
+    // vary by minute so repeated taster runs rotate without Math.random
+    var idx = (new Date().getMinutes()) % bank.length;
+    return bank[idx];
+  }
+
+  function _slBuildPrompt(cert, objectiveHint) {
+    return 'Generate ONE CompTIA ' + cert + ' performance-based question as strict JSON matching this shape: '
+      + '{id,cert,objective,topic,title,scenario,estMinutes,steps:[{id,type,prompt,explanation,points:1,payload,answer}]}. '
+      + 'type is one of order|categorize|match|analyze|fillin. 2-4 steps, mixed types. '
+      + 'Answers must be deterministic. Objective focus: ' + (objectiveHint || 'any core objective') + '. '
+      + 'Return ONLY the JSON object, no prose.';
+  }
+
+  function _slGenerateScenario(cert, objectiveHint) {
+    return Promise.resolve().then(function () {
+      if (!_slFetcher) return null;
+      return _slFetcher(_slBuildPrompt(cert, objectiveHint));
+    }).then(function (raw) {
+      if (raw) {
+        var v = simLabValidateScenario(raw);
+        if (v.ok) return raw;
+      }
+      var seed = _slPickSeed(cert);
+      if (seed) return seed;
+      throw new Error('Sim Lab: no scenario available for ' + cert);
+    }).catch(function (e) {
+      var seed = _slPickSeed(cert);
+      if (seed) return seed;
+      throw e;
+    });
+  }
+
   // --- exports (more added in later tasks) ---
   window.simLabValidateScenario = simLabValidateScenario;
   window.simLabScoreScenario = simLabScoreScenario;
@@ -495,4 +534,6 @@
   window._simLab.renderFeedback = _slRenderFeedback;
   window._simLab.__test_moveOrder = function (el, id, idx) { el.__moveTo(id, idx); };
   window._simLab.startPracticeTimer = _slStartPracticeTimer;
+  window._simLab.generateScenario = _slGenerateScenario;
+  window._simLab.__setFetcher = function (fn) { _slFetcher = fn; };
 })();

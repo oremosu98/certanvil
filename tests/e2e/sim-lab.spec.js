@@ -355,6 +355,16 @@ test('feedback reveals explanation for wrong steps, withholds for right ones (fr
   expect(html).toContain('WHY_B');     // wrong step: revealed
 });
 
+test('generateScenario validates model output and falls back to seed on failure', async ({ page }) => {
+  await gotoApp(page);
+  const id = await page.evaluate(async () => {
+    window._simLab.__setFetcher(async () => ({ nonsense: true })); // bad model output
+    const scn = await window._simLab.generateScenario('netplus');
+    return scn.id;
+  });
+  expect(id).toMatch(/^np-seed-/); // fell back to a seed scenario
+});
+
 test('practice timer counts up and fires the pacing nudge past estMinutes', async ({ page }) => {
   await gotoApp(page);
   const fired = await page.evaluate(() => {
