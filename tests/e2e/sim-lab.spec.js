@@ -386,7 +386,6 @@ test('free user gets 1 practice run, second is gated to Pro', async ({ page }) =
     window._gateProOnly = (label) => { gateShown++; return false; };
     window._simLab.__setFetcher(async () => ({})); // force seed fallback
     const first  = await window.simLabStart({ cert: 'netplus', __test: true });
-    window._bumpPbqFreeRun(); // first run consumes the free credit
     const second = await window.simLabStart({ cert: 'netplus', __test: true });
     window._gateProOnly = realGate;
     return { first, second, gateShown };

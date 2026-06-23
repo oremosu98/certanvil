@@ -545,6 +545,7 @@
       window._simLab.__setFetcher(window._slMeteredGenerate);
     }
     return _slGenerateScenario(cert, opts.objective).then(function (scn) {
+      if (!pro && typeof window._bumpPbqFreeRun === 'function') window._bumpPbqFreeRun(); // consume the free run on a successful start
       if (opts.__test) return true;
       if (typeof _slRenderPracticePage === 'function') { _slRenderPracticePage(scn, pro); return true; }
       return true; // Task 15 adds the page render
