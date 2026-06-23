@@ -115,9 +115,8 @@ npx playwright test              # E2E (tests/e2e/app.spec.js)
 | v7.55.0 | Sim Lab: free daily PBQ practice taster (Net+) |
 | v7.54.1 | Drills card: free-tier daily Gauntlet state pill (1 free today / done today) |
 | v7.54.0 | Free tier: 1 Reword Gauntlet run/day, separate from the 15-q quota |
-| v7.53.2 | Tech debt: carve out false-positive dead _renderAna* funcs + re-baseline stale file-size thresholds |
 
-_Older releases (v7.53.1 and back) live in [CHANGELOG.md](./CHANGELOG.md) — trimmed here during the 2026-06-15 free-Gauntlet consolidation (v7.53.0 + v7.53.1 ported to CHANGELOG)._
+_Older releases (v7.53.2 and back) live in [CHANGELOG.md](./CHANGELOG.md) — v7.53.2 trimmed here during the 2026-06-23 Sim Lab consolidation; v7.53.0 + v7.53.1 ported during the 2026-06-15 free-Gauntlet consolidation._
 
 ## CSS Theme System
 Dark theme in `:root`, light theme in `[data-theme="light"]`. Key variables: `--bg`, `--surface`, `--accent`, `--text`, `--green`, `--red`, `--yellow`. Toggle via `toggleTheme()`.
