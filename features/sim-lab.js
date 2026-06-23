@@ -101,7 +101,7 @@
         return step.payload.fields.every(function (f) {
           var accept = step.answer[f.id] || [];
           var given = resp && resp[f.id];
-          return _simLabNormalizeMatch(given, accept); // defined fully in Task 3
+          return _simLabNormalizeMatch(given, accept); // see _simLabNormalizeMatch above
         });
       default: return false;
     }
@@ -215,6 +215,7 @@
     return e;
   }
   function _esc(s) { var d = document.createElement('div'); d.textContent = s == null ? '' : s; return d.innerHTML; }
+  function _slAttr(v) { return (window.CSS && CSS.escape) ? CSS.escape(v) : String(v).replace(/["\\]/g, '\\$&'); }
 
   // --- order renderer ---
   function _slRenderOrder(step, onChange) {
@@ -280,8 +281,8 @@
       itemSel: '.sl-chip', targetSel: '.sl-cat-drop',
       onPlace: function (itemId, bucketId) {
         map[itemId] = bucketId;
-        var chip = root.querySelector('.sl-chip[data-item="' + itemId + '"]');
-        var drop = root.querySelector('.sl-cat-drop[data-target="' + bucketId + '"]');
+        var chip = root.querySelector('.sl-chip[data-item="' + _slAttr(itemId) + '"]');
+        var drop = root.querySelector('.sl-cat-drop[data-target="' + _slAttr(bucketId) + '"]');
         if (chip && drop) drop.appendChild(chip);
         onChange({ map: Object.assign({}, map) });
       }
@@ -344,7 +345,7 @@
       itemSel: '.sl-match-l', targetSel: '.sl-match-r',
       onPlace: function (leftId, rightId) {
         pairs[leftId] = rightId;
-        var lEl = root.querySelector('.sl-match-l[data-item="' + leftId + '"]');
+        var lEl = root.querySelector('.sl-match-l[data-item="' + _slAttr(leftId) + '"]');
         if (lEl) {
           var rLabel = step.payload.right.filter(function (x){return x.id===rightId;})[0];
           lEl.setAttribute('data-paired', rightId);
@@ -493,7 +494,9 @@
     if (!bank.length) return null;
     // vary by minute so repeated taster runs rotate without Math.random
     var idx = (new Date().getMinutes()) % bank.length;
-    return bank[idx];
+    var seed = bank[idx];
+    if (!simLabValidateScenario(seed).ok) return null;
+    return seed;
   }
 
   function _slBuildPrompt(cert, objectiveHint) {
@@ -547,6 +550,7 @@
     _slMountScenario(body, scn, {
       onSubmit: function (result) {
         if (_slTimer) _slTimer.stop();
+        _slTimer = null;
         body.innerHTML = '';
         _slRenderFeedback(body, scn, result, { mode: pro ? 'pro' : 'free' });
         var footer = _el('div', 'gnt-result-footer');

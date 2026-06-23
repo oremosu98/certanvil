@@ -14052,7 +14052,7 @@ body.is-pro-tier .tier-free-only { display: none !important; }
 .sl-match-col{display:flex;flex-direction:column;gap:6px}
 .sl-match-l,.sl-match-r{padding:10px 12px;background:var(--surface);border:1px solid var(--border);border-radius:8px;text-align:left}
 .sl-pairtag{opacity:.7;margin-left:6px;font-size:12px}
-@media (max-width:640px){ .sl-match-grid{grid-template-columns:1fr 1fr} }
+.sl-item:focus-visible,.sl-analyze-line:focus-visible,.sl-match-r:focus-visible,.sl-field-input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .sl-analyze-block{font-family:ui-monospace,Menlo,monospace;font-size:12.5px;border:1px solid var(--border);border-radius:8px;overflow:hidden}
 .sl-analyze-line{display:block;width:100%;text-align:left;padding:7px 10px;background:transparent;border:0;border-bottom:1px solid var(--border);color:var(--text);cursor:pointer}
 .sl-analyze-line:last-child{border-bottom:0}

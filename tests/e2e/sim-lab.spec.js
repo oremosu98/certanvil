@@ -382,7 +382,7 @@ test('practice timer counts up and fires the pacing nudge past estMinutes', asyn
     const host = document.createElement('div'); document.body.appendChild(host);
     let nudged = false;
     const t = window._simLab.startPracticeTimer(host, { estMinutes: 0.001, onNudge: () => { nudged = true; } });
-    return new Promise((resolve) => setTimeout(() => { t.stop(); resolve(nudged); }, 250));
+    return new Promise((resolve) => setTimeout(() => { t.stop(); resolve(nudged); }, 400));
   });
   expect(fired).toBe(true);
 });

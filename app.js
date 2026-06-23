@@ -2018,11 +2018,15 @@ async function _loadFeature(name) {
 function _ensureSimLabLoaded(cb) {
   if (window.renderSimLabDrillsCard) { if (cb) cb(); return; }
   if (window.__slLoading) { if (cb) window.__slLoading.push(cb); return; }
+  // Allow one retry after a prior failed attempt; clear the flag so injection proceeds.
+  if (window.__slLoadAttempted && !window.renderSimLabDrillsCard) {
+    window.__slLoadAttempted = false;
+  }
   window.__slLoading = cb ? [cb] : [];
+  window.__slLoadAttempted = true;
   function _slInject(src, next) {
     const s = document.createElement('script');
     s.src = src;
-    s.defer = true;
     s.onload = next;
     s.onerror = next; // never block navigation on load failure
     document.head.appendChild(s);
