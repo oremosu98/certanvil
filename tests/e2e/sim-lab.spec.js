@@ -264,3 +264,20 @@ test('match renderer records left->right pair on place', async ({ page }) => {
   });
   expect(pairs['443']).toBe('https');
 });
+
+test('analyze renderer toggles selected line ids', async ({ page }) => {
+  await gotoApp(page);
+  const sel = await page.evaluate(() => {
+    const step = { id:'s', type:'analyze', prompt:'find the bad flow',
+      payload:{ multi:false, lines:[
+        {id:'l1',text:'10.0.2.4 > 10.0.9.1 :443 ALLOW'},
+        {id:'l2',text:'10.0.2.4 > 185.1.1.1 :4444 ALLOW'}] },
+      answer:{ selected:['l2'] } };
+    let last = null;
+    const el = window._simLab.renderStep(step, (r)=>{ last = r; });
+    document.body.appendChild(el);
+    el.querySelector('[data-line="l2"]').click();
+    return last.selected;
+  });
+  expect(sel).toEqual(['l2']);
+});

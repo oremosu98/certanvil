@@ -288,6 +288,36 @@
     return root;
   }
 
+  // --- analyze renderer ---
+  function _slRenderAnalyze(step, onChange) {
+    var multi = !!step.payload.multi;
+    var selected = [];
+    var root = _el('div', 'sl-analyze');
+    root.appendChild(_el('p', 'sl-prompt', _esc(step.prompt)));
+    var block = _el('div', 'sl-analyze-block'); root.appendChild(block);
+
+    step.payload.lines.forEach(function (ln) {
+      var row = _el('button', 'sl-analyze-line');
+      row.setAttribute('type', 'button'); row.setAttribute('data-line', ln.id);
+      row.textContent = ln.text;
+      row.addEventListener('click', function () {
+        var idx = selected.indexOf(ln.id);
+        if (multi) {
+          if (idx === -1) selected.push(ln.id); else selected.splice(idx, 1);
+        } else {
+          selected = (idx === -1) ? [ln.id] : [];
+        }
+        Array.prototype.forEach.call(block.children, function (c) {
+          c.classList.toggle('sl-sel', selected.indexOf(c.getAttribute('data-line')) !== -1);
+        });
+        onChange({ selected: selected.slice() });
+      });
+      block.appendChild(row);
+    });
+    onChange({ selected: [] });
+    return root;
+  }
+
   // --- match renderer ---
   function _slRenderMatch(step, onChange) {
     var pairs = {};
@@ -334,7 +364,8 @@
       case 'order': return _slRenderOrder(step, onChange);
       case 'categorize': return _slRenderCategorize(step, onChange);
       case 'match': return _slRenderMatch(step, onChange);
-      // analyze/fillin added in later tasks
+      case 'analyze': return _slRenderAnalyze(step, onChange);
+      // fillin added in later tasks
       default: return _el('div', 'sl-unknown', 'Unsupported step');
     }
   }
