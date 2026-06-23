@@ -521,6 +521,52 @@
     });
   }
 
+  // --- Task 15: practice page + verdict + exit ---
+
+  var _slMode = null, _slTimer = null;
+
+  function _slShowPage() {
+    // Real routing: showPage('sim-lab') manages .page.active via its own activate() closure.
+    // showPage is always defined by app.js (loaded before features/sim-lab.js).
+    if (typeof showPage === 'function') { showPage('sim-lab'); return; }
+    // Safety no-op if somehow called before app.js (should never happen in production)
+    if (typeof console !== 'undefined') console.warn('simLab: showPage not available');
+  }
+
+  function _slRenderPracticePage(scn, pro) {
+    _slShowPage();
+    var topicEl = document.getElementById('sl-topic'); if (topicEl) topicEl.textContent = scn.topic || 'PBQ';
+    var timerSlot = document.getElementById('sl-timer-slot');
+    if (timerSlot) timerSlot.innerHTML = '';
+    if (_slTimer) _slTimer.stop();
+    if (timerSlot) _slTimer = _slStartPracticeTimer(timerSlot, { estMinutes: scn.estMinutes });
+
+    var body = document.getElementById('sl-body');
+    _slMountScenario(body, scn, {
+      onSubmit: function (result) {
+        if (_slTimer) _slTimer.stop();
+        body.innerHTML = '';
+        _slRenderFeedback(body, scn, result, { mode: pro ? 'pro' : 'free' });
+        var footer = _el('div', 'gnt-result-footer');
+        var exit = _el('button', 'btn gnt-ghost', 'Back to Drills');
+        exit.setAttribute('type', 'button'); exit.setAttribute('data-action', 'simLabExit');
+        footer.appendChild(exit);
+        body.appendChild(footer);
+        if (typeof window.renderSimLabDrillsCard === 'function') window.renderSimLabDrillsCard(); // refresh pill (Task 16)
+      }
+    });
+  }
+
+  function simLabExit() {
+    if (_slTimer) { _slTimer.stop(); _slTimer = null; }
+    _slMode = null;
+    // Return to drills page using the real routing function
+    if (typeof showPage === 'function') { showPage('drills'); return; }
+    // Safety no-op (showPage is always defined by app.js before features/sim-lab.js runs)
+    if (typeof console !== 'undefined') console.warn('simLab: showPage not available');
+  }
+  window.simLabExit = simLabExit;
+
   // --- Task 14: launcher + free-gating ---
 
   function _slIsPro() {

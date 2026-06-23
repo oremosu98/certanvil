@@ -1755,6 +1755,18 @@
   <div id="wv-recent" class="wv-section"></div>
 </div>
 
+<!-- Sim Lab (Task 15): PBQ practice page container -->
+<div id="page-sim-lab" class="page">
+  <div class="sl-shell">
+    <div class="sl-topbar">
+      <span class="sl-strip"><span>Sim Lab</span> · <span id="sl-topic">PBQ</span></span>
+      <span id="sl-timer-slot"></span>
+      <button type="button" class="btn gnt-ghost" data-action="simLabExit">Leave</button>
+    </div>
+    <div id="sl-body"></div>
+  </div>
+</div>
+
 <!-- v4.63.0: import map for the 3D View mode (issue #199). Resolves bare
      `three` + `three/addons/*` imports in vendored files + tb3d.js. Loaded
      BEFORE app.js so tbOpen3DView's dynamic import() picks it up. Three.js

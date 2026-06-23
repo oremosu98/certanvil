@@ -14893,3 +14893,8 @@ body.is-standalone {
     transform: none !important;
   }
 }
+
+/* Sim Lab — Task 15: practice page shell */
+.sl-shell{max-width:760px;margin:0 auto;padding:16px}
+.sl-topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px}
+.sl-strip{font-size:13px;font-weight:600;color:var(--ink-soft,var(--text))}

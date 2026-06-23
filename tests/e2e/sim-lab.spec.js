@@ -394,3 +394,33 @@ test('free user gets 1 practice run, second is gated to Pro', async ({ page }) =
   expect(r.second).toBe(false);
   expect(r.gateShown).toBe(1);
 });
+
+test('practice page renders a scenario, submits, shows verdict, exits to drills', async ({ page }) => {
+  await gotoApp(page);
+  await page.evaluate(async () => {
+    window._quotaState = { tier: 'free', daily_limit: 0 };
+    localStorage.removeItem('nplus_pbq_free_count');
+    // Stub the metered fetcher so generation always falls back to seed deterministically.
+    // simLabStart re-sets the fetcher to _slMeteredGenerate when !opts.__test —
+    // pre-seeding it here AND stubbing _slMeteredGenerate means the "real" path
+    // also yields a valid-looking but empty response → seed fallback fires.
+    window._slMeteredGenerate = async () => ({ bad: true });
+    window._simLab.__setFetcher(async () => ({})); // seed fallback
+    await window.simLabStart({ cert: 'netplus' });
+  });
+  // Page should now be visible
+  await expect(page.locator('#page-sim-lab')).toHaveClass(/active/);
+  // Fill in the fillin step fields present in the seed scenario
+  const cidrInput = page.locator('[data-field="cidr"]');
+  const hostsInput = page.locator('[data-field="hosts"]');
+  if (await cidrInput.isVisible()) await page.fill('[data-field="cidr"]', '/26');
+  if (await hostsInput.isVisible()) await page.fill('[data-field="hosts"]', '62');
+  // Submit
+  await page.click('[data-action="simLabSubmitScenario"]');
+  // Verdict should appear with score
+  await expect(page.locator('.sl-fb-score')).toBeVisible();
+  // Exit via Leave / Back to Drills button
+  await page.click('[data-action="simLabExit"]');
+  // sim-lab page should no longer be active, drills should be
+  await expect(page.locator('#page-sim-lab')).not.toHaveClass(/active/);
+});
