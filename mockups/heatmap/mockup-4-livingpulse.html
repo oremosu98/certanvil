@@ -1,0 +1,131 @@
+<!DOCTYPE html><html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Study Rhythm — 4 · Living Pulse</title>
+<link rel="stylesheet" href="heatmap.css">
+</head><body>
+  <div class="mock-banner">
+    <h2>4 · Living Pulse</h2>
+    <p>The grid quietly breathes. Recent study days pulse with a slow, individual rhythm, today wears a soft expanding ring — a living “you are here” — and every so often a faint shimmer drifts across the year. Always-on, whisper-quiet.</p>
+    <span class="mock-hint">Just watch — the motion is subtle by design.</span>
+  </div>
+  <div class="hm-shell"><div id="mount"></div></div>
+  <script src="heatmap.js"></script>
+  <script>
+    const HM = window.Heatmap.render('#mount');
+    /* ANIMATION LAYER — "Living Pulse" */
+    (function () {
+      const reduce = window.matchMedia('(prefers-reduced-motion: reduce)');
+      if (reduce.matches) return; // honor reduced-motion: leave the grid perfectly still
+
+      const TAU = Math.PI * 2;
+
+      // ---- 2. RECENT-CELL BREATHE -------------------------------------------
+      // Recent active days each breathe on their own slow, desynced phase.
+      const breathers = HM.activeCells
+        .filter(c => c.daysAgo < 35)
+        .map(c => {
+          c.rect.style.transformBox = 'fill-box';
+          c.rect.style.transformOrigin = 'center';
+          // Seed two incommensurate phases + slightly varied periods from daysAgo
+          // so the field never pulses in unison (incoherent starlight).
+          const seed = c.daysAgo * 0.6180339887; // golden-ratio scatter
+          return {
+            rect: c.rect,
+            // scale period 3.5–6s
+            sPeriod: 3500 + ((c.daysAgo * 137) % 2500),
+            sPhase: (seed % 1) * TAU,
+            // opacity period offset from scale so they desync
+            oPeriod: 4200 + ((c.daysAgo * 211) % 1800),
+            oPhase: ((seed * 1.7) % 1) * TAU,
+          };
+        });
+
+      // ---- 3. TODAY RING ----------------------------------------------------
+      // A persistent soft ember ring expanding from today's cell center.
+      const today = HM.byDaysAgo.get(0);
+      let ring = null, ringCx = 0, ringCy = 0;
+      const RING_PERIOD = 2200;           // ms per expansion cycle
+      const RING_BASE_R = HM.geom.CELL / 2; // ~5.5, the cell half-size
+      const RING_MAX_SCALE = 2.6;
+      if (today) {
+        ringCx = today.x + 5.5;
+        ringCy = today.y + 5.5;
+        ring = HM.el('circle', {
+          cx: ringCx, cy: ringCy, r: RING_BASE_R,
+          fill: 'none', stroke: '#c97b3c', 'stroke-width': 1.4,
+          opacity: 0,
+        });
+        ring.style.pointerEvents = 'none';
+        HM.svg.appendChild(ring); // sits above the cell layer (last child)
+      }
+
+      // ---- 4. SHIMMER SWEEP -------------------------------------------------
+      // Every ~8s a faint band drifts left→right, lifting cell opacity slightly.
+      const SHIMMER_INTERVAL = 8000;  // gap between sweeps
+      const SHIMMER_DURATION = 1800;  // travel time across the grid
+      const SHIMMER_WIDTH = 70;       // px half-influence of the band
+      const SHIMMER_LIFT = 0.18;      // max brightness lift (tiny)
+      const gridLeft = HM.geom.LEFT_PAD - SHIMMER_WIDTH;
+      const gridRight = HM.geom.W;
+      // Track per-cell shimmer so we can cleanly reset opacity afterward.
+      const allCells = HM.cells.filter(c => c.rect);
+      let shimmerActive = false;
+
+      // ---- 1. ONE rAF LOOP --------------------------------------------------
+      const t0 = performance.now();
+      function frame(now) {
+        const t = now - t0;
+
+        // breathe
+        for (let i = 0; i < breathers.length; i++) {
+          const b = breathers[i];
+          // scale 1.0 ↔ 1.06
+          const s = 1 + 0.03 + 0.03 * Math.sin((t / b.sPeriod) * TAU + b.sPhase);
+          // opacity 0.85 ↔ 1.0
+          const o = 0.925 + 0.075 * Math.sin((t / b.oPeriod) * TAU + b.oPhase);
+          b.rect.style.transform = 'scale(' + s.toFixed(4) + ')';
+          b.rect.style.opacity = o.toFixed(3);
+        }
+
+        // today ring: loop r/opacity over RING_PERIOD
+        if (ring) {
+          const p = (t % RING_PERIOD) / RING_PERIOD; // 0→1
+          const r = RING_BASE_R * (1 + (RING_MAX_SCALE - 1) * p);
+          const op = 0.6 * (1 - p); // 0.6 → 0
+          ring.setAttribute('r', r.toFixed(2));
+          ring.setAttribute('opacity', op.toFixed(3));
+        }
+
+        // shimmer sweep
+        const cycle = t % SHIMMER_INTERVAL;
+        if (cycle < SHIMMER_DURATION) {
+          shimmerActive = true;
+          const sp = cycle / SHIMMER_DURATION; // 0→1
+          const bandX = gridLeft + (gridRight - gridLeft) * sp;
+          for (let i = 0; i < allCells.length; i++) {
+            const c = allCells[i];
+            const cx = c.x + 5.5;
+            const d = Math.abs(cx - bandX);
+            if (d < SHIMMER_WIDTH) {
+              const lift = SHIMMER_LIFT * (1 - d / SHIMMER_WIDTH);
+              // additive brightness via filter; breathers also set opacity,
+              // but the lift here is purely a brightness filter so it stacks.
+              c.rect.style.filter = 'brightness(' + (1 + lift).toFixed(3) + ')';
+            } else if (c.rect.style.filter) {
+              c.rect.style.filter = '';
+            }
+          }
+        } else if (shimmerActive) {
+          // sweep just finished — clear any lingering brightness
+          shimmerActive = false;
+          for (let i = 0; i < allCells.length; i++) {
+            if (allCells[i].rect.style.filter) allCells[i].rect.style.filter = '';
+          }
+        }
+
+        requestAnimationFrame(frame);
+      }
+      requestAnimationFrame(frame);
+    })();
+  </script>
+</body></html>

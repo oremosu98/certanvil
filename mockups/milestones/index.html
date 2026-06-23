@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Milestones — 5 Motion Mockups</title>
+<link rel="stylesheet" href="ms.css">
+<style>
+  .hub { max-width: 760px; margin: 0 auto; padding: 56px 24px; }
+  .hub h1 { font-family: Georgia, serif; font-weight: 700; font-size: 29px; margin: 0 0 6px; letter-spacing: -0.01em; }
+  .hub h1 em { font-style: normal; color: var(--accent); }
+  .hub .lede { color: var(--muted); font-size: 15px; margin: 0 0 32px; line-height: 1.55; }
+  .cards { display: grid; gap: 14px; }
+  a.card { display: block; text-decoration: none; color: inherit; background: var(--panel); border: 1px solid var(--hair); border-radius: 14px; padding: 18px 20px; transition: transform 180ms var(--ease-out), box-shadow 180ms var(--ease-out), border-color 180ms var(--ease-out); }
+  a.card:hover { transform: translateY(-2px); box-shadow: 0 18px 40px -22px rgba(40,30,20,0.5); border-color: rgba(181,105,42,0.4); }
+  a.card:active { transform: translateY(0) scale(0.995); }
+  .card .num { font-family: ui-monospace, monospace; font-size: 12px; color: var(--accent); letter-spacing: 0.1em; font-weight: 700; }
+  .card h3 { font-family: Georgia, serif; font-size: 18px; margin: 4px 0 6px; }
+  .card p { margin: 0; font-size: 13px; color: var(--muted); line-height: 1.5; }
+  .card .tag { display: inline-block; margin-top: 10px; font-family: ui-monospace, monospace; font-size: 10px; letter-spacing: 0.06em; color: #6b6259; background: rgba(60,50,40,0.06); padding: 3px 8px; border-radius: 5px; }
+  .foot { margin-top: 30px; font-size: 12px; color: var(--muted); line-height: 1.6; }
+</style>
+</head>
+<body>
+  <div class="hub">
+    <h1>Recently <em>unlocked.</em></h1>
+    <p class="lede">Five motion directions for the milestones / achievements wall, same 49 badges on every one. Open each, play with it, then tell me what to keep, kill, or combine. Emil Kowalski's framework — GPU-friendly, custom easing, reduced-motion safe. (A taste pass comes next.)</p>
+    <div class="cards">
+      <a class="card" href="mockup-1-reveal.html">
+        <span class="num">01</span><h3>Unlock Reveal</h3>
+        <p>The wall develops on load: progress bar fills + counts up, recent badges arrive first, then the grid reveals in a soft diagonal wave.</p>
+        <span class="tag">entrance · foundational</span>
+      </a>
+      <a class="card" href="mockup-2-shine.html">
+        <span class="num">02</span><h3>Trophy Shine</h3>
+        <p>The badges you just earned get a gold gleam sweep + ember settle — a small ceremony — while the rest of the wall stays calm.</p>
+        <span class="tag">earned reward · celebration</span>
+      </a>
+      <a class="card" href="mockup-3-hover.html">
+        <span class="num">03</span><h3>Hover Detail</h3>
+        <p>Hover lifts a badge and reveals more — when you earned it, or exactly how close you are ("73 / 100"). Makes the wall explorable.</p>
+        <span class="tag">interactive · feedback</span>
+      </a>
+      <a class="card" href="mockup-4-almostthere.html">
+        <span class="num">04</span><h3>Almost There</h3>
+        <p>Locked badges you're close to earning carry a soft pulse + "N to go" — a living nudge toward your most reachable next win.</p>
+        <span class="tag">ambient · attention direction</span>
+      </a>
+      <a class="card" href="mockup-5-filter.html">
+        <span class="num">05</span><h3>Filter Morph</h3>
+        <p>Filter to Earned / In progress / Locked and the grid reorganizes in place with FLIP — tiles glide to new homes, the pill slides.</p>
+        <span class="tag">transition · continuity</span>
+      </a>
+    </div>
+    <p class="foot">My read: <strong>01 + 02</strong> together — the wall assembles, then your fresh badges get their moment. <strong>04</strong> makes it motivating (what's next), <strong>03</strong> adds depth, <strong>05</strong> makes 49 badges navigable.</p>
+  </div>
+</body>
+</html>

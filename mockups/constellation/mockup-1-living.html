@@ -1,0 +1,124 @@
+<!DOCTYPE html><html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mockup 1 — Living Constellation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="constellation.css">
+<style>
+  /* Extra styles for the living-drift animation layer only — base styles live in constellation.css */
+  .const-core { transition: filter 360ms ease-out; will-change: filter; }
+  /* Hint to the compositor that node groups will be transformed every frame */
+  .const-shell svg g[data-i] { will-change: transform; }
+</style>
+</head><body>
+  <div class="mock-banner">
+    <h2>1 · Living Constellation — ambient idle drift</h2>
+    <p>Nodes never fully stop. Each drifts in a tiny, slow, individual orbit and halos breathe on offset cycles — the field feels alive and looked-at, not a frozen screenshot.</p>
+    <span class="mock-hint">Just watch — motion is always-on and whisper-quiet by design.</span>
+  </div>
+  <div class="const-shell">
+    <div class="const-head">
+      <h1 class="const-title"><span class="spark">✨</span> Knowledge <em>Constellation</em></h1>
+      <span class="const-sub">size = practice · color = domain · brightness = mastery</span>
+    </div>
+    <div id="mount"></div>
+    <div class="const-legend">
+      <span><i class="dot"></i>≥80% mastered</span>
+      <span><i class="dot t2"></i>≥70% proficient</span>
+      <span><i class="dot t3"></i>≥55% developing</span>
+      <span><i class="dot t4"></i>&lt;55% / not studied</span>
+    </div>
+  </div>
+  <script src="constellation.js"></script>
+  <script>
+    const C = window.Constellation.render('#mount');
+
+    /* ── Living Constellation: always-on ambient drift ──────────────────────
+       One rAF loop drives every node. Each node drifts on two desynced sine
+       waves (x and y), seeded from its index + domain so no two move alike.
+       Amplitude is whisper-quiet (2–3px); periods are long (6–10s). Halos of
+       studied nodes breathe on offset phases; an occasional faint twinkle
+       lifts one core's glow. Transform + opacity only — never a CSS var on the
+       parent SVG. Respect reduced motion by skipping the loop entirely.       */
+    (function livingConstellation() {
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+      if (!C || !C.nodes || !C.nodes.length) return;
+
+      const TAU = Math.PI * 2;
+
+      // Per-node motion parameters, all derived deterministically from the seed.
+      const nodes = C.nodes.map((n, i) => {
+        const seed = (n._i != null ? n._i : i) + (n.domain || 0) * 7.31;
+        // Two amplitudes between ~2 and ~3px, distinct for x and y.
+        const ampX = 2.0 + ((seed * 0.37) % 1) * 1.0;       // 2.0–3.0px
+        const ampY = 2.0 + ((seed * 0.61 + 0.4) % 1) * 1.0; // 2.0–3.0px
+        // Long, varied periods 6000–10000ms; x and y differ so the orbit is elliptical/looping.
+        const perX = 6000 + ((seed * 0.53) % 1) * 4000;
+        const perY = 6500 + ((seed * 0.29 + 0.3) % 1) * 3500;
+        // Offset starting phases so the field is incoherent from frame zero.
+        const phX = (seed * 1.7) % TAU;
+        const phY = (seed * 2.3 + 1.1) % TAU;
+        // Halo breathing: only studied (reasonably bright) nodes breathe.
+        const studied = (n.mastery || 0) > 0 && (n.attempts || 0) > 0 && (n.r || 0) > 0;
+        const breathPer = 4200 + ((seed * 0.41) % 1) * 3000; // 4.2–7.2s
+        const breathPh = (seed * 0.9 + 0.5) % TAU;
+
+        // Prepare the group for cheap, isolated transforms.
+        n.gEl.style.transformBox = 'fill-box';
+        n.gEl.style.transformOrigin = 'center';
+        n.gEl.setAttribute('data-i', i);
+
+        return { n, ampX, ampY, perX, perY, phX, phY, studied, breathPer, breathPh };
+      });
+
+      const breathing = nodes.filter(d => d.studied);
+
+      // ── Twinkle: every few seconds, briefly lift one studied core's glow ──
+      let nextTwinkleAt = 1800; // first twinkle ~1.8s in
+      let twinkle = null;       // { core, prevFilter, until }
+
+      function pickTwinkle(now) {
+        if (!breathing.length) return;
+        const d = breathing[(Math.random() * breathing.length) | 0];
+        const core = d.n.coreEl;
+        if (!core) return;
+        const prevFilter = core.style.filter || '';
+        core.style.filter = 'drop-shadow(0 0 6px rgba(255,255,255,0.85))';
+        twinkle = { core, prevFilter, until: now + 400 };
+      }
+
+      function frame(now) {
+        // Drift every node.
+        for (let k = 0; k < nodes.length; k++) {
+          const d = nodes[k];
+          const dx = Math.sin((now / d.perX) * TAU + d.phX) * d.ampX;
+          const dy = Math.sin((now / d.perY) * TAU + d.phY) * d.ampY;
+          d.n.gEl.style.transform = 'translate(' + dx.toFixed(3) + 'px,' + dy.toFixed(3) + 'px)';
+        }
+
+        // Breathe studied halos between ~0.20 and ~0.40 on offset cycles.
+        for (let k = 0; k < breathing.length; k++) {
+          const d = breathing[k];
+          if (!d.n.haloEl) continue;
+          const s = (Math.sin((now / d.breathPer) * TAU + d.breathPh) + 1) * 0.5; // 0..1
+          const op = 0.20 + s * 0.20; // 0.20..0.40
+          d.n.haloEl.style.opacity = op.toFixed(3);
+        }
+
+        // Twinkle scheduling + fade-out.
+        if (now >= nextTwinkleAt && !twinkle) {
+          pickTwinkle(now);
+          nextTwinkleAt = now + 2600 + Math.random() * 2800; // every ~2.6–5.4s
+        }
+        if (twinkle && now >= twinkle.until) {
+          twinkle.core.style.filter = twinkle.prevFilter; // CSS transition eases it back out
+          twinkle = null;
+        }
+
+        requestAnimationFrame(frame);
+      }
+
+      requestAnimationFrame(frame);
+    })();
+  </script>
+</body></html>

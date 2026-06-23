@@ -1,0 +1,143 @@
+<!DOCTYPE html><html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Milestones — 1 · Unlock Reveal</title>
+<link rel="stylesheet" href="ms.css">
+<style>
+  #replay {
+    background:#b5692a;color:#fff;border:none;padding:8px 14px;border-radius:99px;
+    font-family:ui-monospace,monospace;font-size:12px;cursor:pointer;
+    transition:transform 140ms ease-out;
+  }
+  #replay:active { transform:scale(0.97); }
+</style>
+</head><body>
+  <div class="mock-banner">
+    <h2>1 · Unlock Reveal</h2>
+    <p>On load the badge wall develops: the progress bar fills as the count ticks up, the recently-unlocked tiles arrive first with a confident settle, then the full grid reveals in a soft diagonal wave — earned badges crisp, locked ones quietly faded.</p>
+    <span class="mock-hint">Watch on load · press Replay.</span>
+  </div>
+  <div class="ms-shell"><div id="mount"></div></div>
+  <button id="replay" style="position:fixed;right:18px;bottom:18px;">↻ Replay</button>
+  <script src="ms.js"></script>
+  <script>
+    const M = window.Milestones.render('#mount');
+    /* ANIMATION LAYER */
+
+    const REDUCED = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    // --- helpers -------------------------------------------------
+    function setHidden(el) {
+      el.style.opacity = '0';
+      el.style.willChange = 'opacity, transform';
+    }
+    function clearProps(el) {
+      el.style.opacity = '';
+      el.style.transform = '';
+      el.style.willChange = '';
+    }
+
+    // count + percent tick (0 -> target) over ~800ms ease-out
+    let countRAF = null;
+    function tickCounts(dur) {
+      if (countRAF) cancelAnimationFrame(countRAF);
+      const start = performance.now();
+      const targetCount = M.unlockedCount;
+      const targetPct = M.pct;
+      const ease = t => 1 - Math.pow(1 - t, 3); // ease-out cubic
+      function frame(now) {
+        const t = Math.min(1, (now - start) / dur);
+        const e = ease(t);
+        const c = Math.round(targetCount * e);
+        const p = Math.round(targetPct * e);
+        M.countEl.innerHTML = c + '<span class="ms-total"> / ' + M.total + '</span>';
+        M.pctEl.textContent = p + '%';
+        if (t < 1) { countRAF = requestAnimationFrame(frame); }
+      }
+      countRAF = requestAnimationFrame(frame);
+    }
+
+    function showFinalInstant() {
+      M.barFill.style.width = M.pct + '%';
+      M.countEl.innerHTML = M.unlockedCount + '<span class="ms-total"> / ' + M.total + '</span>';
+      M.pctEl.textContent = M.pct + '%';
+      M.recent.forEach(r => clearProps(r.el));
+      M.tiles.forEach(t => clearProps(t.el));
+    }
+
+    // --- the reveal ----------------------------------------------
+    function reveal() {
+      if (REDUCED) { showFinalInstant(); return; }
+
+      // reset progress bar to 0, then trigger CSS width transition to target
+      M.barFill.style.width = '0%';
+      M.countEl.innerHTML = '0<span class="ms-total"> / ' + M.total + '</span>';
+      M.pctEl.textContent = '0%';
+
+      // hide all tiles up front
+      M.recent.forEach(r => setHidden(r.el));
+      M.tiles.forEach(t => setHidden(t.el));
+
+      // a) bar fills + counts tick
+      requestAnimationFrame(() => {
+        M.barFill.style.width = M.pct + '%';
+      });
+      tickCounts(800);
+
+      // b) recent tiles first — confident settle, ~70ms stagger
+      const RECENT_STEP = 70;
+      M.recent.forEach((r, i) => {
+        r.el.animate(
+          [
+            { opacity: 0, transform: 'scale(0.94)' },
+            { opacity: 1, transform: 'scale(1)' },
+          ],
+          {
+            duration: 340,
+            delay: i * RECENT_STEP,
+            easing: 'cubic-bezier(0.23, 1, 0.32, 1)', // confident ease-out
+            fill: 'both',
+          }
+        ).onfinish = () => clearProps(r.el);
+      });
+
+      // c) grid wave — soft left->right diagonal, after recent group lands
+      const COLS = 4; // desktop grid columns
+      const recentEnd = (M.recent.length - 1) * RECENT_STEP + 340;
+      const GRID_BASE = Math.max(recentEnd - 120, 260); // overlap the tail slightly
+
+      M.tiles.forEach((t, i) => {
+        const col = i % COLS;
+        const row = Math.floor(i / COLS);
+        const delay = GRID_BASE + col * 26 + row * 70;
+        const on = t.el.classList.contains('ms-tile-on');
+        t.el.animate(
+          [
+            { opacity: 0, transform: 'translateY(6px) scale(0.97)' },
+            on
+              ? { opacity: 1, transform: 'translateY(0) scale(1)' }
+              : { opacity: 0.62, transform: 'translateY(0) scale(1)' },
+          ],
+          {
+            duration: 320,
+            delay: delay,
+            // unlocked pop crisper (overshoot); locked gentle ease-out + stay faded
+            easing: on ? 'cubic-bezier(0.34, 1.56, 0.64, 1)' : 'cubic-bezier(0.23, 1, 0.32, 1)',
+            fill: 'both',
+          }
+        ).onfinish = () => {
+          // clear transform; keep faded look for locked via CSS (already faint),
+          // but remove inline opacity so the base stylesheet governs final state
+          t.el.style.transform = '';
+          t.el.style.opacity = '';
+          t.el.style.willChange = '';
+        };
+      });
+    }
+
+    // run on load
+    reveal();
+
+    // replay re-runs (reset handled inside reveal())
+    document.getElementById('replay').addEventListener('click', reveal);
+  </script>
+</body></html>

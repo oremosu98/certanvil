@@ -1,0 +1,289 @@
+<!DOCTYPE html><html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Trending Toward Pass? — Combined Studio (Drama + Trajectory)</title>
+<link rel="stylesheet" href="accchart.css">
+<style>
+  body { display: flex; min-height: 100vh; }
+  .stage { flex: 1; min-width: 0; }
+
+  .acc-wrap { position: relative; }            /* anchor the badge */
+
+  /* unified verdict badge (top-right of chart) */
+  .verdict {
+    position: absolute; top: 6px; right: 6px; text-align: right;
+    opacity: 0; transform: translateY(-4px);
+    transition: opacity .3s var(--ease-out), transform .3s var(--ease-out);
+    pointer-events: none;
+  }
+  .verdict.show { opacity: 1; transform: translateY(0); }
+  .verdict .proj {
+    font-family: ui-monospace, monospace; font-weight: 800; font-size: 26px;
+    line-height: 1; color: var(--danger); letter-spacing: -0.01em;
+  }
+  .verdict .proj.good { color: var(--good); }
+  .verdict .projcap {
+    font-family: ui-monospace, monospace; font-size: 9.5px; letter-spacing: .12em;
+    text-transform: uppercase; color: var(--muted); margin-top: 3px;
+  }
+  .verdict .pill {
+    display: inline-block; margin-top: 7px; font-family: ui-monospace, monospace;
+    font-size: 10px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+    padding: 4px 9px; border-radius: 6px;
+    background: rgba(var(--danger-rgb), .12); color: var(--danger);
+    border: 1px solid rgba(var(--danger-rgb), .3);
+  }
+  .verdict .pill.good {
+    background: rgba(90,143,78,.14); color: var(--good); border-color: rgba(90,143,78,.35);
+  }
+
+  .acc-forecast { fill: none; stroke: var(--accent); stroke-width: 2; stroke-dasharray: 7 5; opacity: .9; }
+  .acc-exam-line { stroke: var(--muted); stroke-width: 1; stroke-dasharray: 3 4; opacity: .55; }
+  .acc-exam-label { font-family: ui-monospace, monospace; font-size: 10px; letter-spacing: .12em; fill: var(--muted); }
+  .acc-redline { fill: none; stroke: var(--danger); stroke-width: 2.5; stroke-linejoin: round; stroke-linecap: round; }
+  .acc-redarea { fill: var(--danger); }
+
+  /* ---- tuning panel ---- */
+  .tuner {
+    width: 280px; flex: 0 0 280px; background: #fffdfa;
+    border-left: 1px solid var(--hair); padding: 22px 18px 28px;
+    position: sticky; top: 0; align-self: flex-start; height: 100vh; overflow-y: auto;
+  }
+  .tuner h2 { font-family: Georgia, serif; font-size: 16px; margin: 0 0 2px; }
+  .tuner .sub { font-family: ui-monospace, monospace; font-size: 10px; color: var(--muted); margin: 0 0 18px; letter-spacing: .04em; }
+  .ctrl { margin-bottom: 16px; }
+  .ctrl label { display: flex; justify-content: space-between; align-items: baseline; font-size: 12px; margin-bottom: 5px; }
+  .ctrl label .val { font-family: ui-monospace, monospace; font-size: 11px; color: var(--accent); font-weight: 700; }
+  .ctrl input[type=range] { -webkit-appearance: none; appearance: none; width: 100%; height: 4px; background: #e7e0d6; border-radius: 4px; outline: none; cursor: pointer; }
+  .ctrl input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 15px; height: 15px; border-radius: 50%; background: var(--accent); cursor: pointer; box-shadow: 0 1px 4px rgba(0,0,0,.25); transition: transform 120ms var(--ease-out); }
+  .ctrl input[type=range]::-webkit-slider-thumb:active { transform: scale(1.2); }
+  .ctrl .hint { font-size: 10px; color: var(--muted); margin-top: 3px; }
+  .toggles { display: flex; flex-direction: column; gap: 8px; margin: 4px 0 18px; }
+  .toggle { display: flex; align-items: center; justify-content: space-between; font-family: ui-monospace, monospace; font-size: 11px; padding: 8px 11px; border-radius: 8px; cursor: pointer; background: #f1ece4; border: 1px solid var(--hair); color: #5b5249; user-select: none; transition: transform 140ms var(--ease-out); }
+  .toggle:active { transform: scale(0.98); }
+  .toggle .sw { width: 30px; height: 17px; border-radius: 9px; background: #cfc6ba; position: relative; transition: background .18s ease; flex: 0 0 auto; }
+  .toggle .sw::after { content: ''; position: absolute; top: 2px; left: 2px; width: 13px; height: 13px; border-radius: 50%; background: #fff; transition: transform .18s var(--ease-out); }
+  .toggle.on { background: #faf3ea; border-color: rgba(181,105,42,.4); color: var(--accent); }
+  .toggle.on .sw { background: var(--accent); }
+  .toggle.on .sw::after { transform: translateX(13px); }
+  .divider { height: 1px; background: var(--hair); margin: 4px 0 16px; }
+  .replay-btn { width: 100%; padding: 10px; border: none; border-radius: 9px; background: var(--accent); color: #fff; font-size: 13px; font-weight: 700; cursor: pointer; font-family: ui-sans-serif, sans-serif; transition: transform 140ms var(--ease-out), background 140ms ease; }
+  .replay-btn:active { transform: scale(0.98); }
+  .note { margin-top: 14px; font-size: 11px; color: var(--muted); line-height: 1.5; }
+
+  @media (max-width: 920px) { body { flex-direction: column; } .tuner { width: auto; flex: none; height: auto; border-left: none; border-top: 1px solid var(--hair); position: static; } }
+</style>
+</head><body>
+  <div class="stage">
+    <div class="mock-banner">
+      <h2>Combined Studio — Pass-Line Drama × Trajectory Projection</h2>
+      <p>Your two picks, fused into one chart: it shows where you <em>are</em> (the dip below PASS lit red) and where you're <em>headed</em> (the dashed forecast to exam day), closing on a single honest verdict. Dial the sequence on the right; when it feels right I'll bake it into the real chart.</p>
+      <span class="mock-hint">Tune the panel · press Replay to re-run the sequence.</span>
+    </div>
+    <div class="acc-shell"><div id="mount"></div></div>
+  </div>
+
+  <aside class="tuner">
+    <h2>Sequence Studio</h2>
+    <p class="sub">DRAMA × TRAJECTORY</p>
+
+    <div class="ctrl">
+      <label>Sequence speed <span class="val" id="v-speed"></span></label>
+      <input type="range" id="s-speed" min="0.5" max="2" step="0.05" value="1">
+      <div class="hint">Pace of the whole reveal. 1.0 = baseline.</div>
+    </div>
+    <div class="ctrl">
+      <label>Dip-pulse beats <span class="val" id="v-pulse"></span></label>
+      <input type="range" id="s-pulse" min="0" max="6" step="1" value="3">
+      <div class="hint">Attention pulses on the latest point. 0 = none.</div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="toggles">
+      <div class="toggle on" id="t-red"><span>Below-pass red</span><span class="sw"></span></div>
+      <div class="toggle on" id="t-forecast"><span>Forecast to exam</span><span class="sw"></span></div>
+      <div class="toggle on" id="t-verdict"><span>Verdict badge</span><span class="sw"></span></div>
+    </div>
+
+    <button class="replay-btn" id="replay">↻ Replay sequence</button>
+    <p class="note">Reduced-motion safe: everything resolves to its final state with no motion when the OS pref is set.</p>
+  </aside>
+
+  <script src="accchart.js"></script>
+  <script>
+    const A = window.AccChart.render('#mount');
+    const G = A.geom, S = A.series.month, EL = A.el;
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    // ---- tunable params ----
+    const P = { speed: 1, pulseBeats: 3, red: true, forecast: true, verdict: true };
+
+    // ===== build the static pieces (hidden until the sequence reveals them) =====
+    // 1. below-pass clip + red line/area clones
+    const defs = EL('defs', {});
+    const clip = EL('clipPath', { id: 'belowPassC' });
+    clip.appendChild(EL('rect', { x: G.PAD, y: G.passY, width: G.innerW, height: (G.H - G.passY) }));
+    defs.appendChild(clip);
+    A.svg.insertBefore(defs, A.svg.firstChild);
+
+    const redArea = EL('path', { class: 'acc-redarea', d: S.areaEl.getAttribute('d'), 'clip-path': 'url(#belowPassC)' });
+    redArea.style.opacity = '0';
+    const redLine = EL('path', { class: 'acc-redline', d: S.lineEl.getAttribute('d'), 'clip-path': 'url(#belowPassC)' });
+    redLine.style.opacity = '0';
+    S.groupEl.appendChild(redArea);
+    S.groupEl.appendChild(redLine);
+
+    // 2. linear regression over month points  (acc vs index)
+    const pts = S.pts, n = pts.length;
+    let sx = 0, sy = 0, sxy = 0, sxx = 0;
+    pts.forEach((p, i) => { sx += i; sy += p.acc; sxy += i * p.acc; sxx += i * i; });
+    const m = (n * sxy - sx * sy) / (n * sxx - sx * sx);
+    const b = (sy - m * sx) / n;
+    const accAt = (i) => m * i + b;
+    const projAcc = Math.round(accAt(n - 1) * 10) / 10;        // projected exam-day score
+    const lastAcc = pts[n - 1].acc;
+    const xL = pts[0].x, xR = pts[n - 1].x;
+    const yL = G.yOf(accAt(0)), yR = G.yOf(accAt(n - 1));
+    const willPass = projAcc >= G.passAcc;
+
+    // 3. forecast group (exam marker + dashed regression line)
+    const fG = EL('g', {});
+    const examLine = EL('line', { class: 'acc-exam-line', x1: xR, y1: G.PAD - 6, x2: xR, y2: G.H - G.PAD });
+    const examLabel = EL('text', { class: 'acc-exam-label', x: xR - 4, y: G.PAD - 10, 'text-anchor': 'end' });
+    examLabel.textContent = 'EXAM';
+    const fcast = EL('path', { class: 'acc-forecast', d: 'M' + xL.toFixed(1) + ' ' + yL.toFixed(1) + ' L' + xR.toFixed(1) + ' ' + yR.toFixed(1) });
+    fG.appendChild(examLine); fG.appendChild(examLabel); fG.appendChild(fcast);
+    A.svg.appendChild(fG);
+
+    // 4. attention ring holder (on the latest point)
+    const ringHolder = EL('g', {});
+    A.svg.appendChild(ringHolder);
+
+    // 5. verdict badge (HTML overlay)
+    const wrap = A.svg.parentElement; // .acc-wrap (position:relative)
+    const badge = document.createElement('div');
+    badge.className = 'verdict';
+    badge.innerHTML =
+      '<div class="proj' + (willPass ? ' good' : '') + '"><span id="projnum">' + lastAcc + '</span>%</div>' +
+      '<div class="projcap">projected at exam</div>' +
+      '<div class="pill' + (willPass ? ' good' : '') + '">' + (willPass ? '▲ On track to pass' : '▼ Trending below pass') + '</div>';
+    wrap.appendChild(badge);
+    const projNum = badge.querySelector('#projnum');
+
+    // ===== sequencing helpers =====
+    let timers = [], anims = [], pulseTimer = null;
+    const at = (ms, fn) => timers.push(setTimeout(fn, ms / P.speed));
+    function clearAll() {
+      timers.forEach(clearTimeout); timers = [];
+      anims.forEach(a => { try { a.cancel(); } catch (e) {} }); anims = [];
+      if (pulseTimer) { clearInterval(pulseTimer); pulseTimer = null; }
+    }
+
+    function setFinalState() {
+      // used both for reduced-motion and as the resting state
+      redArea.style.opacity = P.red ? '0.10' : '0';
+      redLine.style.opacity = P.red ? '1' : '0';
+      fG.style.display = P.forecast ? '' : 'none';
+      if (P.forecast) { fcast.style.strokeDasharray = '7 5'; fcast.style.strokeDashoffset = '0'; }
+      badge.style.display = P.verdict ? '' : 'none';
+      if (P.verdict) { badge.classList.add('show'); projNum.textContent = P.forecast ? projAcc : lastAcc; }
+    }
+
+    function pulse(beats) {
+      if (beats <= 0) return;
+      const cx = pts[n - 1].x, cy = pts[n - 1].y;
+      let count = 0;
+      const fire = () => {
+        if (count >= beats) { clearInterval(pulseTimer); pulseTimer = null; return; }
+        count++;
+        const ring = EL('circle', { cx: cx, cy: cy, r: 5, fill: 'none', stroke: 'var(--danger)', 'stroke-width': 2 });
+        ring.style.transformBox = 'fill-box'; ring.style.transformOrigin = 'center';
+        ringHolder.appendChild(ring);
+        const a = ring.animate(
+          [{ transform: 'scale(1)', opacity: 0.85 }, { transform: 'scale(3.4)', opacity: 0 }],
+          { duration: 750 / P.speed, easing: 'cubic-bezier(0.23,1,0.32,1)', fill: 'forwards' }
+        );
+        a.onfinish = () => ring.remove();
+        anims.push(a);
+      };
+      fire();
+      pulseTimer = setInterval(fire, 900 / P.speed);
+    }
+
+    function run() {
+      clearAll();
+      // reset to pre-reveal state
+      redArea.style.opacity = '0'; redLine.style.opacity = '0';
+      badge.classList.remove('show');
+      ringHolder.innerHTML = '';
+      fG.style.display = P.forecast ? '' : 'none';
+      badge.style.display = P.verdict ? '' : 'none';
+      projNum.textContent = lastAcc;
+
+      if (reduce) { setFinalState(); return; }
+
+      // 1) PASS line confident pulse
+      const passEl = A.svg.querySelector('.acc-pass-line');
+      at(300, () => {
+        if (!passEl) return;
+        anims.push(passEl.animate(
+          [{ strokeWidth: 1.5, opacity: .85 }, { strokeWidth: 2.6, opacity: 1 }, { strokeWidth: 1.5, opacity: .85 }],
+          { duration: 560 / P.speed, easing: 'cubic-bezier(0.23,1,0.32,1)' }
+        ));
+      });
+
+      // 2) below-pass red tints in
+      if (P.red) at(600, () => {
+        anims.push(redLine.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 360 / P.speed, easing: 'cubic-bezier(0.23,1,0.32,1)', fill: 'forwards' }));
+        anims.push(redArea.animate([{ opacity: 0 }, { opacity: 0.10 }], { duration: 360 / P.speed, easing: 'cubic-bezier(0.23,1,0.32,1)', fill: 'forwards' }));
+      });
+
+      // 3) forecast draws to exam
+      if (P.forecast) at(950, () => {
+        const len = fcast.getTotalLength();
+        fcast.style.strokeDasharray = len; fcast.style.strokeDashoffset = len;
+        anims.push(fcast.animate([{ strokeDashoffset: len }, { strokeDashoffset: 0 }], { duration: 820 / P.speed, easing: 'cubic-bezier(0.23,1,0.32,1)', fill: 'forwards' }));
+        examLine.style.opacity = '0';
+        anims.push(examLine.animate([{ opacity: 0 }, { opacity: .55 }], { duration: 500 / P.speed, fill: 'forwards' }));
+      });
+
+      // 4) projected value counts up + verdict in
+      const verdictAt = P.forecast ? 1650 : 950;
+      if (P.verdict) at(verdictAt, () => {
+        badge.classList.add('show');
+        const target = P.forecast ? projAcc : lastAcc;
+        const from = lastAcc, dur = 700 / P.speed, t0 = performance.now();
+        const tick = (now) => {
+          const k = Math.min(1, (now - t0) / dur);
+          const e = 1 - Math.pow(1 - k, 3); // ease-out
+          projNum.textContent = (from + (target - from) * e).toFixed(P.forecast ? 1 : 0);
+          if (k < 1) requestAnimationFrame(tick); else projNum.textContent = P.forecast ? target : Math.round(target);
+        };
+        requestAnimationFrame(tick);
+      });
+
+      // 5) dip-pulse beats
+      at(verdictAt + 50, () => pulse(P.pulseBeats));
+    }
+
+    // ===== UI wiring =====
+    function fmtSpeed(v) { return v.toFixed(2) + '×'; }
+    const sSpeed = document.getElementById('s-speed'), vSpeed = document.getElementById('v-speed');
+    const sPulse = document.getElementById('s-pulse'), vPulse = document.getElementById('v-pulse');
+    vSpeed.textContent = fmtSpeed(P.speed); vPulse.textContent = P.pulseBeats;
+    sSpeed.addEventListener('input', e => { P.speed = parseFloat(e.target.value); vSpeed.textContent = fmtSpeed(P.speed); });
+    sPulse.addEventListener('input', e => { P.pulseBeats = parseInt(e.target.value, 10); vPulse.textContent = P.pulseBeats; });
+
+    function bindToggle(id, key) {
+      const elt = document.getElementById(id);
+      elt.addEventListener('click', () => { P[key] = !P[key]; elt.classList.toggle('on', P[key]); run(); });
+    }
+    bindToggle('t-red', 'red');
+    bindToggle('t-forecast', 'forecast');
+    bindToggle('t-verdict', 'verdict');
+    document.getElementById('replay').addEventListener('click', run);
+
+    // first run (slight beat so the chart is settled)
+    setTimeout(run, 350);
+  </script>
+</body></html>

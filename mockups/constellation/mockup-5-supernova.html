@@ -1,0 +1,177 @@
+<!DOCTYPE html><html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mockup 5 — Supernova Moment</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="constellation.css">
+<style>
+  /* Replay button — small ember-tinted pill, right-aligned above the map */
+  .replay-btn {
+    display: block;
+    margin: 0 0 12px auto;
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: 11px;
+    letter-spacing: 0.02em;
+    color: #a35e10;
+    background: rgba(232, 148, 58, 0.14);
+    border: 1px solid rgba(232, 148, 58, 0.30);
+    border-radius: 999px;
+    padding: 6px 14px;
+    cursor: pointer;
+    transition: transform 140ms var(--ease-out), background 140ms var(--ease-out);
+  }
+  .replay-btn:hover { background: rgba(232, 148, 58, 0.22); }
+  .replay-btn:active { transform: scale(0.97); }
+  .replay-btn:focus-visible { outline: 2px solid var(--ember); outline-offset: 2px; }
+
+  /* lingering glow that a celebrated node keeps after its supernova */
+  .const-node.is-promoted .const-core {
+    filter: drop-shadow(0 0 6px currentColor) drop-shadow(0 0 2px currentColor);
+  }
+</style>
+</head><body>
+  <div class="mock-banner">
+    <h2>5 · Supernova Moment — the level-up reward</h2>
+    <p>When a topic crosses a mastery threshold, that node performs: a bright ring expands outward, ember sparks burst, and it settles brighter than before. The constellation celebrates your progress — a screen worth coming back to.</p>
+    <span class="mock-hint">Watch on load, then press “Replay level-up”.</span>
+  </div>
+  <div class="const-shell">
+    <div class="const-head">
+      <h1 class="const-title"><span class="spark">✨</span> Knowledge <em>Constellation</em></h1>
+      <span class="const-sub">size = practice · color = domain · brightness = mastery</span>
+    </div>
+    <button id="replay" class="replay-btn">↻ Replay level-up</button>
+    <div id="mount"></div>
+    <div class="const-legend">
+      <span><i class="dot"></i>≥80% mastered</span>
+      <span><i class="dot t2"></i>≥70% proficient</span>
+      <span><i class="dot t3"></i>≥55% developing</span>
+      <span><i class="dot t4"></i>&lt;55% / not studied</span>
+    </div>
+  </div>
+  <script src="constellation.js"></script>
+  <script>
+    const C = window.Constellation.render('#mount');
+
+    const DOMAIN_COLOR = { 1: '#7c5cff', 2: '#46b67a', 3: '#4f7fd6', 4: '#e8943a', 5: '#e8503a' };
+    const EMBER = '#e8943a';
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    // FX layer ABOVE the nodes — rings/sparks render on top.
+    const fx = C.el('g', {});
+    C.svg.appendChild(fx);
+
+    // --- Pick ~3 "newly promoted" nodes: higher-mastery studied nodes,
+    //     spread across DIFFERENT domains for visual variety. ---
+    function pickCelebrated() {
+      const eligible = C.nodes.filter(n =>
+        n.attempts > 0 && (n.tier === 'proficient' || n.tier === 'mastered'));
+      const byDomain = new Map();
+      // prefer one strong node per domain
+      eligible.sort((a, b) => b.mastery - a.mastery).forEach(n => {
+        if (!byDomain.has(n.domain)) byDomain.set(n.domain, n);
+      });
+      const spread = [...byDomain.values()];
+      // spread domains apart so the cascade reads across the field
+      spread.sort((a, b) => a.domain - b.domain);
+      const picks = [];
+      if (spread.length) {
+        const step = Math.max(1, Math.floor(spread.length / 3));
+        for (let i = 0; i < spread.length && picks.length < 3; i += step) picks.push(spread[i]);
+      }
+      // fallback top-up
+      for (const n of eligible) {
+        if (picks.length >= 3) break;
+        if (!picks.includes(n)) picks.push(n);
+      }
+      return picks.slice(0, 3);
+    }
+
+    const celebrated = pickCelebrated();
+
+    function supernova(node) {
+      const color = DOMAIN_COLOR[node.domain] || EMBER;
+
+      if (reduce) {
+        // RESPECT reduced motion: simple brightness fade-up, no expanding/bursting.
+        node.gEl.classList.add('is-promoted');
+        node.coreEl.animate(
+          [{ opacity: getComputedStyle(node.coreEl).opacity || 1 }, { opacity: 1 }],
+          { duration: 400, easing: 'ease-out', fill: 'forwards' }
+        );
+        return;
+      }
+
+      // a. EXPANDING RING — node color, no fill, scales OUTWARD as energy dissipates.
+      const ring = C.el('circle', {
+        cx: node.cx, cy: node.cy, r: node.r,
+        fill: 'none', stroke: color, 'stroke-width': 2,
+      });
+      ring.style.transformBox = 'fill-box';
+      ring.style.transformOrigin = 'center';
+      fx.appendChild(ring);
+      ring.animate(
+        [
+          { transform: 'scale(1)',   strokeOpacity: 0.9, strokeWidth: 2.4 },
+          { transform: 'scale(3.5)', strokeOpacity: 0,   strokeWidth: 0.6 },
+        ],
+        { duration: 700, easing: 'cubic-bezier(0.23,1,0.32,1)', fill: 'forwards' }
+      ).onfinish = () => ring.remove();
+
+      // b. EMBER SPARKS — 5–7 tiny circles bursting radially, fade + shrink.
+      const sparkCount = 6;
+      for (let i = 0; i < sparkCount; i++) {
+        const ang = (i / sparkCount) * Math.PI * 2 + (Math.random() - 0.5) * 0.7;
+        const dist = 18 + Math.random() * 16;          // 18–34px
+        const dx = Math.cos(ang) * dist;
+        const dy = Math.sin(ang) * dist;
+        const spark = C.el('circle', {
+          cx: node.cx, cy: node.cy, r: 1.8 + Math.random() * 1.2, fill: EMBER,
+        });
+        fx.appendChild(spark);
+        spark.animate(
+          [
+            { transform: 'translate(0px,0px) scale(1)', opacity: 0.95 },
+            { transform: `translate(${dx}px,${dy}px) scale(0.2)`, opacity: 0 },
+          ],
+          { duration: 600, easing: 'cubic-bezier(0.23,1,0.32,1)', fill: 'forwards' }
+        ).onfinish = () => spark.remove();
+      }
+
+      // c. CORE SETTLE — pop to ~1.4x then settle with overshoot; ends brighter.
+      node.coreEl.style.transformBox = 'fill-box';
+      node.coreEl.style.transformOrigin = 'center';
+      node.coreEl.animate(
+        [
+          { transform: 'scale(1)' },
+          { transform: 'scale(1.4)', offset: 0.35 },
+          { transform: 'scale(1)' },
+        ],
+        { duration: 600, easing: 'cubic-bezier(0.34,1.56,0.64,1)', fill: 'none' }
+      );
+      // lingering brightness bump — it ends visibly brighter than before.
+      node.coreEl.animate(
+        [{ opacity: getComputedStyle(node.coreEl).opacity || 1 }, { opacity: 1 }],
+        { duration: 600, easing: 'ease-out', fill: 'forwards' }
+      );
+      node.gEl.classList.add('is-promoted');
+    }
+
+    let running = false;
+    function runSequence() {
+      if (running) return;
+      running = true;
+      // clear any prior lingering glow so a replay reads cleanly
+      celebrated.forEach(n => n.gEl.classList.remove('is-promoted'));
+      // STAGGER the 3 across ~1.2s (~400ms apart) so they cascade.
+      const gap = reduce ? 160 : 400;
+      celebrated.forEach((n, i) => setTimeout(() => supernova(n), i * gap));
+      setTimeout(() => { running = false; }, celebrated.length * gap + 800);
+    }
+
+    // Trigger once on load, after a short beat so the entrance fade settles.
+    setTimeout(runSequence, reduce ? 0 : 500);
+
+    document.getElementById('replay').addEventListener('click', runSequence);
+  </script>
+</body></html>

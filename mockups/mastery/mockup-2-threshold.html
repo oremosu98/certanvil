@@ -1,0 +1,225 @@
+<!DOCTYPE html><html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Domain Mastery — 2 · Threshold Drama</title>
+<link rel="stylesheet" href="dm.css">
+<style>
+  /* ---- Mockup 2 · Threshold Drama — animation-layer styling only ---- */
+
+  /* Replay button — bronze pill */
+  #replay {
+    background: #b5692a; color: #fff; border: none;
+    padding: 8px 14px; border-radius: 99px;
+    font-family: ui-monospace, monospace; font-size: 12px;
+    cursor: pointer; transition: transform 140ms ease-out;
+  }
+  #replay:active { transform: scale(0.97); }
+
+  /* MASTERED — confident green glow on the fill */
+  .dm-bar-fill.is-mastered {
+    filter: drop-shadow(0 0 4px rgba(74, 140, 86, .6));
+    transition: filter 350ms var(--ease-out, ease-out);
+  }
+  /* small ✓ accent floated just past the fill */
+  .dm-mastered-check {
+    position: absolute; top: 50%; transform: translateY(-50%);
+    font-size: 11px; font-weight: 900; line-height: 1;
+    color: #3c7a45; pointer-events: none;
+    opacity: 0;
+    transition: opacity 350ms var(--ease-out, ease-out);
+  }
+  .dm-mastered-check.is-on { opacity: 1; }
+
+  /* BELOW — the GAP GHOST reaching toward the 80% line */
+  .dm-gap-ghost {
+    position: absolute; top: 0; bottom: 0;
+    border-radius: 99px;
+    /* hatched / dashed warm low-opacity look */
+    background-image: repeating-linear-gradient(
+      45deg,
+      rgba(181, 105, 42, 0.30) 0px,
+      rgba(181, 105, 42, 0.30) 4px,
+      rgba(181, 105, 42, 0.07) 4px,
+      rgba(181, 105, 42, 0.07) 8px
+    );
+    border: 1px dashed rgba(181, 105, 42, 0.55);
+    box-sizing: border-box;
+    pointer-events: none;
+    /* grow from the fill edge toward the line */
+    transform-origin: left center;
+    transform: scaleX(0);
+    opacity: 0;
+    transition: transform 400ms var(--ease-out, ease-out),
+                opacity 400ms var(--ease-out, ease-out);
+  }
+  .dm-gap-ghost.is-on { transform: scaleX(1); opacity: 1; }
+
+  /* tiny floating "+N% to mastery" label over the ghost */
+  .dm-gap-label {
+    position: absolute; bottom: 13px;
+    transform: translateX(-50%);
+    white-space: nowrap;
+    font-family: ui-monospace, monospace;
+    font-size: 9.5px; font-weight: 700; letter-spacing: .03em;
+    color: #8a4e1c;
+    background: rgba(181, 105, 42, 0.12);
+    padding: 1.5px 6px; border-radius: 5px;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 400ms var(--ease-out, ease-out);
+  }
+  .dm-gap-label.is-on { opacity: 1; }
+
+  /* single confident pulse on the 80% tick */
+  @keyframes dm-tick-pulse {
+    0%   { opacity: .5; width: 2px; }
+    45%  { opacity: 1;  width: 3px; }
+    100% { opacity: .5; width: 2px; }
+  }
+  .dm-bar-target.is-pulsing { animation: dm-tick-pulse 500ms var(--ease-out, ease-out); }
+
+  /* one gentle attention shimmer on a below-threshold badge */
+  @keyframes dm-badge-shimmer {
+    0%   { transform: scale(1);    box-shadow: 0 0 0 0 rgba(181,105,42,0); }
+    40%  { transform: scale(1.06); box-shadow: 0 0 0 4px rgba(181,105,42,.18); }
+    100% { transform: scale(1);    box-shadow: 0 0 0 0 rgba(181,105,42,0); }
+  }
+  .dm-row-badge.is-shimmer { animation: dm-badge-shimmer 520ms var(--ease-out, ease-out); }
+
+  /* reduced motion — final state, no motion */
+  @media (prefers-reduced-motion: reduce) {
+    .dm-bar-fill.is-mastered { transition: none; }
+    .dm-mastered-check { transition: none; }
+    .dm-gap-ghost { transition: none; }
+    .dm-gap-label { transition: none; }
+    .dm-bar-target.is-pulsing { animation: none; }
+    .dm-row-badge.is-shimmer { animation: none; }
+  }
+</style>
+</head><body>
+  <div class="mock-banner">
+    <h2>2 · Threshold Drama</h2>
+    <p>The 80% line is the whole point. Domains that clear it settle with a confident glow; the ones below show the exact gap left to mastery as a ghost segment reaching for the line, so "how far do I have to go" is visible at a glance.</p>
+    <span class="mock-hint">Watch the gaps to 80% light up · press Replay.</span>
+  </div>
+  <div class="dm-shell"><div id="mount"></div></div>
+  <button id="replay" style="position:fixed;right:18px;bottom:18px;">↻ Replay</button>
+  <script src="dm.js"></script>
+  <script>
+    const DM = window.DomainMastery.render('#mount');
+    /* ANIMATION LAYER — "Threshold Drama" */
+
+    const T = DM.threshold; // 80
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const timers = [];
+    const after = (ms, fn) => timers.push(setTimeout(fn, ms));
+
+    // Build the persistent decoration nodes once per row (ghost / label / check).
+    DM.rows.forEach(r => {
+      if (r.pct >= T) {
+        // MASTERED — a small checkmark accent near the fill edge
+        const chk = DM.el('span', { class: 'dm-mastered-check' });
+        chk.textContent = '✓';
+        chk.style.left = 'calc(' + Math.min(r.pct, 100) + '% + 5px)';
+        if (r.pct >= 100) { chk.style.left = 'auto'; chk.style.right = '5px'; }
+        r.trackEl.appendChild(chk);
+        r.checkEl = chk;
+      } else {
+        // BELOW — gap ghost from current fill width to the 80% mark
+        const gap = T - r.pct;
+        const ghost = DM.el('div', { class: 'dm-gap-ghost' });
+        ghost.style.left = r.pct + '%';
+        ghost.style.width = gap + '%';
+        r.trackEl.appendChild(ghost);
+        r.ghostEl = ghost;
+
+        const label = DM.el('div', { class: 'dm-gap-label' });
+        label.textContent = '+' + gap + '% to mastery';
+        // centre the label over the middle of the ghost span
+        label.style.left = (r.pct + gap / 2) + '%';
+        r.trackEl.appendChild(label);
+        r.labelEl = label;
+      }
+    });
+
+    function clearState() {
+      timers.splice(0).forEach(clearTimeout);
+      DM.rows.forEach(r => {
+        r.fillEl.classList.remove('is-mastered');
+        if (r.checkEl) r.checkEl.classList.remove('is-on');
+        if (r.ghostEl) r.ghostEl.classList.remove('is-on');
+        if (r.labelEl) r.labelEl.classList.remove('is-on');
+        r.badgeEl.classList.remove('is-shimmer');
+        r.targetEl.classList.remove('is-pulsing');
+      });
+      // force reflow so re-adding animation classes restarts them
+      void DM.card.offsetWidth;
+    }
+
+    function showFinalInstant() {
+      DM.rows.forEach(r => {
+        if (r.pct >= T) {
+          r.fillEl.classList.add('is-mastered');
+          if (r.checkEl) r.checkEl.classList.add('is-on');
+        } else {
+          if (r.ghostEl) r.ghostEl.classList.add('is-on');
+          if (r.labelEl) r.labelEl.classList.add('is-on');
+        }
+      });
+    }
+
+    function runSequence() {
+      clearState();
+
+      if (reduce) { showFinalInstant(); return; }
+
+      // 1) ~300ms beat, then a single confident pulse of the 80% tick (one per row tick).
+      after(300, () => {
+        DM.rows.forEach(r => {
+          r.targetEl.classList.add('is-pulsing');
+          r.targetEl.addEventListener('animationend', function h() {
+            r.targetEl.classList.remove('is-pulsing');
+            r.targetEl.removeEventListener('animationend', h);
+          });
+        });
+      });
+
+      // 2) ~600ms — mastered glows + checks fade in.
+      after(600, () => {
+        DM.rows.forEach(r => {
+          if (r.pct >= T) {
+            r.fillEl.classList.add('is-mastered');
+            if (r.checkEl) r.checkEl.classList.add('is-on');
+          }
+        });
+      });
+
+      // 3) ~900ms — below-gap ghosts grow toward the line with their "+N%" labels.
+      after(900, () => {
+        DM.rows.forEach(r => {
+          if (r.pct < T) {
+            if (r.ghostEl) r.ghostEl.classList.add('is-on');
+            if (r.labelEl) r.labelEl.classList.add('is-on');
+          }
+        });
+      });
+
+      // 4) ~1250ms — one gentle, staggered shimmer on below-threshold badges.
+      let i = 0;
+      DM.rows.forEach(r => {
+        if (r.pct < T) {
+          const delay = 1250 + (i++ * 120);
+          after(delay, () => {
+            r.badgeEl.classList.add('is-shimmer');
+            r.badgeEl.addEventListener('animationend', function h() {
+              r.badgeEl.classList.remove('is-shimmer');
+              r.badgeEl.removeEventListener('animationend', h);
+            });
+          });
+        }
+      });
+    }
+
+    document.getElementById('replay').addEventListener('click', runSequence);
+    runSequence();
+  </script>
+</body></html>

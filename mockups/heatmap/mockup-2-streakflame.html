@@ -1,0 +1,189 @@
+<!DOCTYPE html><html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Study Rhythm — 2 · Streak Flame</title>
+<link rel="stylesheet" href="heatmap.css">
+<style>
+  #replay {
+    appearance: none; cursor: pointer;
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: 11px; font-weight: 700; letter-spacing: .04em;
+    color: #fbf3e8;
+    background: linear-gradient(180deg, #c5833f, #b5692a);
+    border: 1px solid rgba(120, 64, 22, 0.55);
+    border-radius: 999px;
+    padding: 7px 14px;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.25) inset, 0 6px 16px -8px rgba(120,64,22,0.7);
+    transition: transform 140ms ease-out;
+  }
+  #replay:active { transform: scale(0.97); }
+
+  /* ember ring flare particles */
+  .ember-ring { pointer-events: none; }
+
+  /* persistent today glow + slow soft pulse */
+  @keyframes today-pulse {
+    0%, 100% { filter: drop-shadow(0 0 3px #e8a23a) drop-shadow(0 0 6px rgba(181,105,42,0.55)); }
+    50%      { filter: drop-shadow(0 0 5px #e8a23a) drop-shadow(0 0 11px rgba(181,105,42,0.8)); }
+  }
+  .today-ember {
+    transform-box: fill-box; transform-origin: center;
+    animation: today-pulse 2.4s ease-in-out infinite;
+  }
+  /* static fallback glow for reduced-motion / non-animated streak cells */
+  .ember-static {
+    filter: drop-shadow(0 0 4px #e8a23a) drop-shadow(0 0 8px #b5692a);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .today-ember { animation: none; filter: drop-shadow(0 0 4px #e8a23a) drop-shadow(0 0 8px #b5692a); }
+  }
+</style>
+</head><body>
+  <div class="mock-banner">
+    <h2>2 · Streak Flame</h2>
+    <p>Your streak is the story. The stat numbers count up, then your best run ignites cell-by-cell like a fuse burning toward today, where a warm ember settles — a living reward for showing up.</p>
+    <span class="mock-hint">Watch on load · press Replay.</span>
+  </div>
+  <div class="hm-shell"><div id="mount"></div></div>
+  <button id="replay" style="position:fixed;right:18px;bottom:18px;">↻ Replay</button>
+  <script src="heatmap.js"></script>
+  <script>
+    const HM = window.Heatmap.render('#mount');
+    /* ANIMATION LAYER */
+    (function () {
+      const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const EMBER_GLOW = 'drop-shadow(0 0 5px #e8a23a) drop-shadow(0 0 10px #b5692a)';
+      const EASE_OVERSHOOT = 'cubic-bezier(0.34,1.56,0.64,1)';
+
+      const statKeys = ['current', 'best', 'last30', 'last90'];
+      let timers = [];
+      let rafs = [];
+
+      function clearScheduled() {
+        timers.forEach(clearTimeout); timers = [];
+        rafs.forEach(cancelAnimationFrame); rafs = [];
+      }
+
+      function after(ms, fn) { timers.push(setTimeout(fn, ms)); }
+
+      // prep transform origins on streak rects
+      function primeRect(cell) {
+        const r = cell.rect;
+        r.style.transformBox = 'fill-box';
+        r.style.transformOrigin = 'center';
+      }
+      HM.bestStreakCells.forEach(primeRect);
+      if (HM.currentStreakCells[0]) primeRect(HM.currentStreakCells[0]);
+
+      // ---- count-up one stat node ----
+      function countUp(node, target, durationMs, delayMs) {
+        after(delayMs, function () {
+          const start = performance.now();
+          function frame(now) {
+            const t = Math.min(1, (now - start) / durationMs);
+            const eased = 1 - Math.pow(1 - t, 3);   // ease-out cubic
+            node.textContent = Math.round(eased * target);
+            if (t < 1) rafs.push(requestAnimationFrame(frame));
+            else node.textContent = target;
+          }
+          rafs.push(requestAnimationFrame(frame));
+        });
+      }
+
+      // ---- ignite one best-streak cell (fuse step) ----
+      function igniteCell(cell, isLast) {
+        const r = cell.rect;
+        r.style.transition = 'transform 420ms ' + EASE_OVERSHOOT + ', filter 220ms ease-out';
+        r.style.filter = EMBER_GLOW;
+        // brighten: bump to brightest tier color via overlay-free approach
+        r.style.transform = 'scale(1.35)';
+        // settle to a steady ember rest
+        after(180, function () { r.style.transform = 'scale(1.12)'; });
+        if (isLast) after(300, emberFlare.bind(null, cell));
+      }
+
+      // ---- ember ring flare (rare reward) on last streak cell ----
+      function emberFlare(cell) {
+        if (reduce) return;
+        const cx = cell.x + 5.5, cy = cell.y + 5.5;
+        const colors = ['#e8a23a', '#c5833f', '#b5692a'];
+        for (let i = 0; i < 3; i++) {
+          after(i * 110, function () {
+            const ring = HM.el('circle', {
+              cx: cx, cy: cy, r: 4,
+              fill: 'none', stroke: colors[i], 'stroke-width': 1.4,
+              class: 'ember-ring',
+            });
+            ring.style.transformBox = 'fill-box';
+            ring.style.transformOrigin = 'center';
+            ring.style.opacity = '0.9';
+            HM.svg.appendChild(ring);
+            // force reflow then animate
+            requestAnimationFrame(function () {
+              ring.style.transition = 'transform 650ms cubic-bezier(0.23,1,0.32,1), opacity 650ms ease-out';
+              ring.style.transform = 'scale(3)';
+              ring.style.opacity = '0';
+            });
+            after(700, function () { ring.remove(); });
+          });
+        }
+      }
+
+      // ---- today: persistent soft ember + slow pulse ----
+      function lightToday() {
+        const cell = HM.currentStreakCells[0];
+        if (!cell) return;
+        cell.rect.classList.add('today-ember');
+      }
+
+      // ---- reset everything to pre-animation state ----
+      function reset() {
+        clearScheduled();
+        statKeys.forEach(function (k) { HM.statEls[k].textContent = '0'; });
+        HM.bestStreakCells.forEach(function (cell) {
+          const r = cell.rect;
+          r.style.transition = 'none';
+          r.style.transform = 'none';
+          r.style.filter = 'none';
+          r.classList.remove('ember-static');
+        });
+        const t = HM.currentStreakCells[0];
+        if (t) { t.rect.classList.remove('today-ember', 'ember-static'); t.rect.style.filter = 'none'; }
+        HM.svg.querySelectorAll('.ember-ring').forEach(function (n) { n.remove(); });
+      }
+
+      // ---- reduced-motion: static end state, no sequence ----
+      function staticState() {
+        statKeys.forEach(function (k) { HM.statEls[k].textContent = HM.stats[k]; });
+        HM.bestStreakCells.forEach(function (cell) { cell.rect.classList.add('ember-static'); });
+        const t = HM.currentStreakCells[0];
+        if (t) t.rect.classList.add('today-ember'); // CSS gives it static glow under reduced-motion
+      }
+
+      // ---- full sequence ----
+      function play() {
+        reset();
+        if (reduce) { staticState(); return; }
+
+        // 1. STAT COUNT-UP — staggered ~80ms, ~700ms each
+        statKeys.forEach(function (k, i) {
+          countUp(HM.statEls[k], HM.stats[k], 700, i * 80);
+        });
+
+        // 2. FUSE IGNITION — after count-up (~700ms), oldest -> newest, 140ms apart
+        const fuseStart = 760;
+        HM.bestStreakCells.forEach(function (cell, i) {
+          const isLast = i === HM.bestStreakCells.length - 1;
+          after(fuseStart + i * 140, function () { igniteCell(cell, isLast); });
+        });
+
+        // 4. TODAY GLOW — settle the persistent pulse shortly after the fuse completes
+        const todayAt = fuseStart + HM.bestStreakCells.length * 140 + 500;
+        after(todayAt, lightToday);
+      }
+
+      document.getElementById('replay').addEventListener('click', play);
+      play();
+    })();
+  </script>
+</body></html>

@@ -1,0 +1,184 @@
+<!DOCTYPE html><html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Domain Mastery — 5 · Rank Sort</title>
+<link rel="stylesheet" href="dm.css">
+<style>
+  /* ----- Sort bar ----- */
+  .dm-sortbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 16px;
+    align-items: center;
+  }
+  .dm-sort-label {
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: 10px;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-right: 4px;
+  }
+  .dm-sort-pill {
+    appearance: none;
+    border: 1px solid var(--hair);
+    background: var(--panel);
+    color: var(--ink);
+    font-family: inherit;
+    font-size: 11.5px;
+    font-weight: 700;
+    letter-spacing: .01em;
+    padding: 6px 13px;
+    border-radius: 99px;
+    cursor: pointer;
+    transition: transform 140ms ease-out, background 160ms ease-out,
+                border-color 160ms ease-out, color 160ms ease-out, box-shadow 160ms ease-out;
+    will-change: transform;
+  }
+  .dm-sort-pill:hover { border-color: rgba(181,105,42,0.5); color: #8a4e1c; }
+  .dm-sort-pill:active { transform: scale(0.97); }
+  .dm-sort-pill:focus-visible { outline: 2px solid rgba(181,105,42,0.5); outline-offset: 2px; }
+  .dm-sort-pill.is-active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+    box-shadow: 0 6px 16px -10px rgba(181,105,42,0.9);
+  }
+
+  /* rows need positioning context so FLIP translateY behaves predictably */
+  .dm-row { will-change: transform; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .dm-sort-pill { transition: background 120ms linear, color 120ms linear, border-color 120ms linear; }
+  }
+</style>
+</head><body>
+  <div class="mock-banner">
+    <h2>5 · Rank Sort</h2>
+    <p>Re-rank the domains and the rows physically glide into their new order instead of snapping — sort by weakest-first to see where to spend time, by exam weight to see what matters most, or back to blueprint order. The list reorganizes like real objects.</p>
+    <span class="mock-hint">Click the sort buttons and watch the rows glide.</span>
+  </div>
+  <div class="dm-shell">
+    <div class="dm-sortbar" id="sortbar"></div>
+    <div id="mount"></div>
+  </div>
+  <script src="dm.js"></script>
+  <script>
+    const DM = window.DomainMastery.render('#mount');
+    /* ANIMATION LAYER — "Rank Sort" (transition/continuity; FLIP reorder, Emil Kowalski) */
+
+    const REDUCED = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    // Snapshot the original (blueprint) order so we can always restore it.
+    const BLUEPRINT = DM.rows.slice();
+
+    // ---- comparators -------------------------------------------------------
+    const SORTS = [
+      {
+        id: 'blueprint',
+        label: 'Blueprint order',
+        // original array order (domain id sequence)
+        compare: (a, b) => BLUEPRINT.indexOf(a) - BLUEPRINT.indexOf(b),
+      },
+      {
+        id: 'weakest',
+        label: 'Weakest first',
+        // pct ascending; ties → higher exam weight first
+        compare: (a, b) => (a.pct - b.pct) || (b.domain.weight - a.domain.weight),
+      },
+      {
+        id: 'weight',
+        label: 'Exam weight',
+        // domain weight descending
+        compare: (a, b) => (b.domain.weight - a.domain.weight) || (BLUEPRINT.indexOf(a) - BLUEPRINT.indexOf(b)),
+      },
+      {
+        id: 'mastery',
+        label: 'Mastery ↓',
+        // pct descending; ties → higher exam weight first
+        compare: (a, b) => (b.pct - a.pct) || (b.domain.weight - a.domain.weight),
+      },
+    ];
+
+    // ---- build the sort bar ------------------------------------------------
+    const sortbar = document.getElementById('sortbar');
+    const lbl = DM.el('span', { class: 'dm-sort-label' });
+    lbl.textContent = 'Sort';
+    sortbar.appendChild(lbl);
+
+    const pills = {};
+    SORTS.forEach(s => {
+      const btn = DM.el('button', { class: 'dm-sort-pill', type: 'button', 'data-sort': s.id });
+      btn.textContent = s.label;
+      btn.addEventListener('click', () => applySort(s.id));
+      sortbar.appendChild(btn);
+      pills[s.id] = btn;
+    });
+
+    let activeSort = 'blueprint';
+    function markActive(id) {
+      activeSort = id;
+      SORTS.forEach(s => pills[s.id].classList.toggle('is-active', s.id === id));
+    }
+    markActive('blueprint'); // Blueprint order active initially
+
+    // ---- FLIP reorder ------------------------------------------------------
+    const GLIDE = 'transform 420ms cubic-bezier(0.77,0,0.175,1)'; // ease-in-out, on-screen movement
+
+    function applySort(id) {
+      const sort = SORTS.find(s => s.id === id);
+      if (!sort) return;
+      markActive(id);
+
+      // Compute the new ordering. We sort a copy of the *current* DM.rows so a
+      // stable base is preserved; comparators are total so order is deterministic.
+      const ordered = DM.rows.slice().sort(sort.compare);
+
+      // No visual change needed if order is identical — still cheap to run.
+      if (REDUCED) {
+        ordered.forEach(row => DM.list.appendChild(row.el));
+        return;
+      }
+
+      // FIRST: record current top positions (captures mid-glide positions too,
+      // making interruptions retarget smoothly).
+      const firstTops = new Map();
+      DM.rows.forEach(row => {
+        firstTops.set(row, row.el.getBoundingClientRect().top);
+      });
+
+      // Reorder the DOM: append rows in the new sorted order.
+      ordered.forEach(row => DM.list.appendChild(row.el));
+
+      // LAST + INVERT: read new positions, apply inverse transform with no transition.
+      DM.rows.forEach(row => {
+        const newTop = row.el.getBoundingClientRect().top;
+        const delta = firstTops.get(row) - newTop;
+        // Cancel any in-flight transition so the invert lands instantly.
+        row.el.style.transition = 'none';
+        row.el.style.transform = delta ? 'translateY(' + delta + 'px)' : 'translateY(0)';
+      });
+
+      // PLAY: next frame, release transforms with the glide transition.
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          ordered.forEach((row, i) => {
+            // tiny stagger toward final index for polish — kept tight (<100ms total)
+            const delay = Math.min(i * 20, 80);
+            row.el.style.transition = GLIDE + ' ' + delay + 'ms';
+            row.el.style.transform = '';
+          });
+        });
+      });
+    }
+
+    // Clear inline transition once a glide settles so future inverts are instant.
+    DM.rows.forEach(row => {
+      row.el.addEventListener('transitionend', e => {
+        if (e.target === row.el && e.propertyName === 'transform') {
+          row.el.style.transition = '';
+        }
+      });
+    });
+  </script>
+</body></html>

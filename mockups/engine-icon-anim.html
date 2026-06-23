@@ -1,0 +1,301 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>THE ENGINE — icon animation variations</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ─────────────────────────────────────────────────────────────────────────
+   Emil-style animation study for the "THE ENGINE / AI questions that adapt
+   to you" card icon (#pp-ic-quiz). Icon SVG is inlined (instead of <use>) so
+   individual parts — text lines, curve, brass nodes, arrow — are animatable.
+   Visual is pixel-faithful to the live card. 5 variations, autoplay loops.
+   Custom easing curves; all motion gated behind prefers-reduced-motion.
+   ───────────────────────────────────────────────────────────────────────── */
+:root{
+  --spd: 1;                                    /* slow-mo multiplier */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);  /* strong ease-out */
+  --ease-io:  cubic-bezier(0.77, 0, 0.175, 1); /* strong ease-in-out */
+
+  --bg:        #ECE8E1;
+  --card:      #F6F3EE;
+  --surface-2: #EFEAE1;
+  --border:    #E3DDD2;
+  --ink:       #25282F;
+  --muted:     #6F6A5F;
+  --navy:      #2C2F39;
+  --brass-a:   oklch(0.74 0.150 60);
+  --brass-b:   oklch(0.50 0.155 55);
+  --brass-glow: oklch(0.66 0.16 60 / .85);
+}
+*{box-sizing:border-box}
+body{
+  margin:0; background:var(--bg); color:var(--ink);
+  font-family:'Inter',system-ui,-apple-system,sans-serif;
+  -webkit-font-smoothing:antialiased; padding:40px 28px 80px;
+}
+.page-head{max-width:1180px;margin:0 auto 26px;display:flex;flex-wrap:wrap;gap:18px;align-items:flex-end;justify-content:space-between}
+.page-head h1{font-family:'Fraunces',serif;font-weight:600;font-size:clamp(22px,3vw,30px);margin:0 0 4px;letter-spacing:-.01em}
+.page-head p{margin:0;color:var(--muted);font-size:14px;max-width:560px;line-height:1.5}
+.controls{display:flex;gap:8px;flex-wrap:wrap}
+.controls button{
+  font:inherit;font-size:13px;font-weight:500;cursor:pointer;
+  background:var(--card);color:var(--ink);border:1px solid var(--border);
+  border-radius:9px;padding:8px 13px;transition:transform 140ms var(--ease-out),background 140ms ease;
+}
+.controls button:hover{background:#fff}
+.controls button:active{transform:scale(.97)}
+.controls button[aria-pressed="true"]{background:var(--navy);color:#fff;border-color:var(--navy)}
+
+.grid{
+  max-width:1180px;margin:0 auto;display:grid;gap:24px;
+  grid-template-columns:repeat(auto-fit,minmax(330px,1fr));
+}
+
+/* ── The card (faithful to landing .pp-feature) ─────────────────────────── */
+.pp-feature{
+  background:var(--card);border:1px solid var(--border);border-radius:18px;
+  overflow:hidden;box-shadow:0 1px 2px rgba(40,40,40,.04),0 16px 40px -28px rgba(40,40,40,.5);
+  position:relative;
+}
+.var-tag{
+  position:absolute;top:14px;left:14px;z-index:3;font-size:11px;font-weight:600;
+  letter-spacing:.06em;text-transform:uppercase;color:var(--muted);
+  background:rgba(255,255,255,.7);backdrop-filter:blur(4px);
+  border:1px solid var(--border);border-radius:7px;padding:4px 8px;
+}
+.pp-screen{
+  position:relative;
+  background:
+    radial-gradient(120% 90% at 80% 0%, color-mix(in oklab, var(--brass-a) 11%, transparent), transparent 55%),
+    var(--surface-2);
+  border-bottom:1px solid var(--border);
+  padding:clamp(26px,3vw,40px);min-height:230px;
+  display:flex;align-items:center;justify-content:center;
+}
+.pp-screen .q-ico{
+  width:128px;height:128px;display:block;transform-origin:center;
+  filter:drop-shadow(0 14px 26px oklch(0.22 0.015 280 / .14));
+}
+.pp-screen-pill{
+  position:absolute;top:18px;right:18px;display:inline-flex;align-items:center;gap:6px;
+  font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--brass-b);background:rgba(255,255,255,.55);
+  border:1px solid color-mix(in oklab,var(--brass-b) 40%, var(--border));
+  border-radius:999px;padding:5px 11px 5px 9px;
+}
+.pill-dot{width:6px;height:6px;border-radius:50%;background:var(--brass-a)}
+
+.pp-feature-body{padding:26px clamp(22px,3vw,30px) clamp(22px,3vw,30px)}
+.pp-feature-label{font-size:12px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:12px}
+.pp-feature-name{font-family:'Fraunces',serif;font-weight:600;font-size:26px;line-height:1.15;letter-spacing:-.015em;margin-bottom:14px}
+.pp-feature-desc{font-size:15px;line-height:1.62;color:#56514a;margin:0 0 22px}
+.pp-feature-foot{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.pp-foot-prose{font-size:13px;color:var(--muted)}
+.pp-cta-btn{
+  display:inline-flex;align-items:center;gap:9px;font-size:14px;font-weight:600;
+  color:#fff;text-decoration:none;border-radius:11px;padding:13px 18px;
+  background:linear-gradient(180deg,#7a481a,#623710);
+  box-shadow:0 1px 0 rgba(255,255,255,.12) inset,0 10px 20px -12px rgba(80,45,10,.8);
+  transition:transform 150ms var(--ease-out);
+}
+.pp-cta-btn:active{transform:scale(.98)}
+
+/* ════════════════════════════════════════════════════════════════════════
+   ANIMATIONS — all declarations live inside prefers-reduced-motion:no-preference
+   so reduced-motion users get a perfect static icon (every part fully drawn).
+   Base state (here, outside the query) is the finished/visible icon.
+   ════════════════════════════════════════════════════════════════════════ */
+.q-line1,.q-line2,.q-curve,.q-arrow{stroke-dasharray:1}     /* pathLength=1 → harmless when static */
+.q-dot1,.q-dot2,.q-arrow,.q-line1,.q-line2,.q-curve,.q-card,.q-ico,.pill-dot{
+  transform-box:fill-box;transform-origin:center;
+}
+.q-spark{opacity:0}  /* decorative; only visible mid-animation */
+
+body.paused .pp-screen *{animation-play-state:paused !important}
+
+@media (prefers-reduced-motion: no-preference){
+
+  /* shared loop-reset fade so dash/clip resets never "pop" at loop restart */
+  @keyframes icoFade{0%{opacity:0}5%{opacity:1}90%{opacity:1}100%{opacity:0}}
+  @keyframes drawIn{from{stroke-dashoffset:1}to{stroke-dashoffset:0}}
+
+  /* ───────── V1 · COMPOSE — the card writes itself, nodes pop, arrow extends.
+     Reads as: a fresh question being generated each session. ───────── */
+  .v1{--cyc:calc(5s * var(--spd))}
+  .v1 .q-ico{animation:icoFade var(--cyc) linear infinite}
+  .v1 .q-line1{animation:v1l1 var(--cyc) var(--ease-out) infinite}
+  .v1 .q-line2{animation:v1l2 var(--cyc) var(--ease-out) infinite}
+  .v1 .q-curve{animation:v1cv var(--cyc) var(--ease-out) infinite}
+  .v1 .q-arrow{animation:v1ar var(--cyc) var(--ease-out) infinite}
+  .v1 .q-dot1{animation:v1d1 var(--cyc) var(--ease-out) infinite}
+  .v1 .q-dot2{animation:v1d2 var(--cyc) var(--ease-out) infinite}
+  @keyframes v1l1{0%,5%{stroke-dashoffset:1}19%,100%{stroke-dashoffset:0}}
+  @keyframes v1l2{0%,11%{stroke-dashoffset:1}25%,100%{stroke-dashoffset:0}}
+  @keyframes v1cv{0%,24%{stroke-dashoffset:1}36%,100%{stroke-dashoffset:0}}
+  @keyframes v1ar{0%,42%{stroke-dashoffset:1}56%,100%{stroke-dashoffset:0}}
+  @keyframes v1d1{0%,30%{transform:scale(.2);opacity:0}38%{transform:scale(1.18);opacity:1}44%,100%{transform:scale(1);opacity:1}}
+  @keyframes v1d2{0%,36%{transform:scale(.2);opacity:0}44%{transform:scale(1.18);opacity:1}50%,100%{transform:scale(1);opacity:1}}
+
+  /* ───────── V2 · ADAPTIVE LEAN — connector draws, the two nodes light in
+     sequence, the brass arrow nudges toward the weak spot. ───────── */
+  .v2{--cyc:calc(4.6s * var(--spd))}
+  .v2 .q-curve{animation:v2cv var(--cyc) var(--ease-out) infinite}
+  .v2 .q-dot1{animation:v2d1 var(--cyc) ease infinite}
+  .v2 .q-dot2{animation:v2d2 var(--cyc) ease infinite}
+  .v2 .q-arrow{animation:v2ar var(--cyc) var(--ease-out) infinite}
+  @keyframes v2cv{0%{stroke-dashoffset:1}14%,86%{stroke-dashoffset:0}100%{stroke-dashoffset:0}}
+  @keyframes v2d1{0%,16%{filter:none;transform:scale(1)}24%{filter:drop-shadow(0 0 5px var(--brass-glow));transform:scale(1.28)}34%,100%{filter:none;transform:scale(1)}}
+  @keyframes v2d2{0%,30%{filter:none;transform:scale(1)}40%{filter:drop-shadow(0 0 6px var(--brass-glow));transform:scale(1.34)}52%,100%{filter:none;transform:scale(1)}}
+  @keyframes v2ar{0%,52%{transform:translateX(0)}58%{transform:translateX(3.5px)}64%{transform:translateX(0)}70%{transform:translateX(3.5px)}76%,100%{transform:translateX(0)}}
+
+  /* ───────── V3 · LIVE PULSE — whole glyph breathes, brass parts beat like a
+     working engine, the LIVE dot pulses in time. Continuous, premium. ───── */
+  .v3{--cyc:calc(2.6s * var(--spd))}
+  .v3 .q-ico{animation:v3breathe var(--cyc) var(--ease-io) infinite}
+  .v3 .q-dot1,.v3 .q-dot2,.v3 .q-arrow{animation:v3beat var(--cyc) var(--ease-io) infinite}
+  .v3 .q-dot2{animation-delay:calc(.12s * var(--spd))}
+  .v3 .pill-dot{animation:v3pill var(--cyc) var(--ease-io) infinite}
+  @keyframes v3breathe{0%,100%{transform:scale(1)}50%{transform:scale(1.035)}}
+  @keyframes v3beat{0%,100%{filter:drop-shadow(0 0 0 transparent)}50%{filter:drop-shadow(0 0 5px var(--brass-glow))}}
+  @keyframes v3pill{0%,100%{opacity:.45;transform:scale(.9)}50%{opacity:1;transform:scale(1.1)}}
+
+  /* ───────── V4 · REFRESH — the question text wipes out and rewrites (a new
+     question), the arrow advances one notch. Like flipping to the next Q. ── */
+  .v4{--cyc:calc(3.8s * var(--spd))}
+  .v4 .q-line1{animation:v4wipe var(--cyc) var(--ease-io) infinite}
+  .v4 .q-line2{animation:v4wipe var(--cyc) var(--ease-io) infinite;animation-delay:calc(.18s * var(--spd))}
+  .v4 .q-arrow{animation:v4step var(--cyc) var(--ease-out) infinite}
+  .v4 .q-dot1,.v4 .q-dot2{animation:v4blink var(--cyc) ease infinite}
+  .v4 .q-dot2{animation-delay:calc(.1s * var(--spd))}
+  @keyframes v4wipe{
+    0%,14%{clip-path:inset(-30% 0 -30% 0)}
+    30%{clip-path:inset(-30% 100% -30% 0)}   /* erase right→left */
+    46%,100%{clip-path:inset(-30% 0 -30% 0)} /* rewrite left→right */
+  }
+  @keyframes v4step{0%,52%{transform:translateX(0)}66%{transform:translateX(5px)}82%,100%{transform:translateX(0)}}
+  @keyframes v4blink{0%,30%{transform:scale(1)}34%{transform:scale(.55);opacity:.4}40%,100%{transform:scale(1);opacity:1}}
+
+  /* ───────── V5 · MAGNETIC TRACE — a brass spark travels the connector node→
+     node, each node flares as it arrives, then the arrow fires right. The most
+     literal "the path adapts to you". ───────── */
+  .v5{--cyc:calc(4s * var(--spd))}
+  .v5 .q-ico{animation:icoFade var(--cyc) linear infinite}
+  .v5 .q-spark{
+    offset-path:path('M42 84c10-15 27-15 38 0');offset-rotate:0deg;
+    animation:v5travel var(--cyc) var(--ease-io) infinite;
+  }
+  .v5 .q-dot1{animation:v5d1 var(--cyc) ease infinite}
+  .v5 .q-dot2{animation:v5d2 var(--cyc) ease infinite}
+  .v5 .q-arrow{animation:v5ar var(--cyc) var(--ease-out) infinite}
+  @keyframes v5travel{
+    0%,12%{offset-distance:0%;opacity:0}
+    18%{opacity:1}
+    50%{offset-distance:100%;opacity:1}
+    58%{offset-distance:100%;opacity:0}
+    100%{offset-distance:100%;opacity:0}
+  }
+  @keyframes v5d1{0%,10%{filter:none;transform:scale(1)}16%{filter:drop-shadow(0 0 5px var(--brass-glow));transform:scale(1.3)}26%,100%{filter:none;transform:scale(1)}}
+  @keyframes v5d2{0%,46%{filter:none;transform:scale(1)}54%{filter:drop-shadow(0 0 6px var(--brass-glow));transform:scale(1.36)}64%,100%{filter:none;transform:scale(1)}}
+  @keyframes v5ar{0%,58%{stroke-dashoffset:1;transform:translateX(0)}72%{stroke-dashoffset:0;transform:translateX(0)}80%{transform:translateX(3px)}88%,100%{stroke-dashoffset:0;transform:translateX(0)}}
+}
+</style>
+</head>
+<body>
+
+<!-- master defs (gradient + drop-shadow), referenced by every card's icon -->
+<svg width="0" height="0" aria-hidden="true" style="position:absolute">
+  <defs>
+    <linearGradient id="brass" x1="22" y1="18" x2="106" y2="110" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="oklch(0.74 0.150 60)"/>
+      <stop offset="1" stop-color="oklch(0.50 0.155 55)"/>
+    </linearGradient>
+    <filter id="sh" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="3" stdDeviation="3" flood-color="#202932" flood-opacity=".10"/>
+    </filter>
+  </defs>
+</svg>
+
+<div class="page-head">
+  <div>
+    <h1>THE ENGINE — icon motion studies</h1>
+    <p>Five takes on animating just the question-card glyph. Copy &amp; layout are the live card, untouched. Pick one and I'll wire it into <code>landing/index.html</code>.</p>
+  </div>
+  <div class="controls">
+    <button id="btn-slow" aria-pressed="false">Slow-mo 3×</button>
+    <button id="btn-pause" aria-pressed="false">Pause</button>
+    <button id="btn-restart">Restart all</button>
+  </div>
+</div>
+
+<div class="grid" id="grid"></div>
+
+<script>
+// One source-of-truth card template; only the variation class + tag differ.
+const ICON = `
+  <svg class="q-ico" viewBox="0 0 128 128" role="img" aria-label="AI question engine">
+    <g fill="none" stroke="#2C2F39" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" filter="url(#sh)">
+      <rect class="q-card" x="20" y="22" width="88" height="84" rx="15" fill="#FFF8EE"/>
+      <path class="q-line1" pathLength="1" d="M39 45h36"/>
+      <path class="q-line2" pathLength="1" d="M39 59h49"/>
+      <path class="q-curve" pathLength="1" d="M42 84c10-15 27-15 38 0"/>
+      <path class="q-arrow" pathLength="1" d="M80 84h16M96 84l-6-6M96 84l-6 6" stroke="url(#brass)" stroke-width="5"/>
+      <circle class="q-dot1" cx="43" cy="78" r="5" fill="url(#brass)" stroke="#9A5E16"/>
+      <circle class="q-dot2" cx="80" cy="78" r="5" fill="url(#brass)" stroke="#9A5E16"/>
+      <circle class="q-spark" cx="0" cy="0" r="4.5" fill="url(#brass)" stroke="#9A5E16" stroke-width="2"/>
+    </g>
+  </svg>`;
+
+const VARIANTS = [
+  ['v1','V1 · Compose'],
+  ['v2','V2 · Adaptive lean'],
+  ['v3','V3 · Live pulse'],
+  ['v4','V4 · Refresh'],
+  ['v5','V5 · Magnetic trace'],
+];
+
+document.getElementById('grid').innerHTML = VARIANTS.map(([cls,tag]) => `
+  <div class="pp-feature">
+    <span class="var-tag">${tag}</span>
+    <div class="pp-screen ${cls}">
+      ${ICON}
+      <span class="pp-screen-pill"><span class="pill-dot"></span>Live</span>
+    </div>
+    <div class="pp-feature-body">
+      <div class="pp-feature-label">The engine</div>
+      <div class="pp-feature-name">AI questions that adapt to you</div>
+      <p class="pp-feature-desc">Every session generates fresh questions across the full blueprint, each with an explanation that teaches the reasoning behind the right answer. The more you practise, the harder it leans on your weak spots.</p>
+      <div class="pp-feature-foot">
+        <span class="pp-foot-prose">Free covers 20 a day. Pro removes the cap.</span>
+        <a class="pp-cta-btn" href="#" onclick="return false">Start the free diagnostic <span aria-hidden="true">→</span></a>
+      </div>
+    </div>
+  </div>`).join('');
+
+// ── Controls ──────────────────────────────────────────────────────────────
+const root = document.documentElement, body = document.body;
+const bSlow = document.getElementById('btn-slow');
+const bPause = document.getElementById('btn-pause');
+
+bSlow.addEventListener('click', () => {
+  const on = bSlow.getAttribute('aria-pressed') !== 'true';
+  bSlow.setAttribute('aria-pressed', on);
+  root.style.setProperty('--spd', on ? 3 : 1);
+});
+bPause.addEventListener('click', () => {
+  const on = bPause.getAttribute('aria-pressed') !== 'true';
+  bPause.setAttribute('aria-pressed', on);
+  body.classList.toggle('paused', on);
+  bPause.textContent = on ? 'Play' : 'Pause';
+});
+document.getElementById('btn-restart').addEventListener('click', () => {
+  document.querySelectorAll('.pp-screen').forEach(el => {
+    el.style.display = 'none'; void el.offsetWidth; el.style.display = '';
+  });
+});
+</script>
+</body>
+</html>

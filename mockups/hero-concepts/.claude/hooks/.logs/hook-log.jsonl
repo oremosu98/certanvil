@@ -1,0 +1,9 @@
+{"ts":"2026-06-02T19:10:24.583Z","hook":"subagent-context","action":"skip","reason":"no-active-tsv"}
+{"ts":"2026-06-02T19:10:43.554Z","hook":"subagent-context","action":"skip","reason":"no-active-tsv"}
+{"ts":"2026-06-02T19:10:59.451Z","hook":"subagent-context","action":"skip","reason":"no-active-tsv"}
+{"ts":"2026-06-02T19:11:17.951Z","hook":"subagent-context","action":"skip","reason":"no-active-tsv"}
+{"ts":"2026-06-02T19:11:37.066Z","hook":"subagent-context","action":"skip","reason":"no-active-tsv"}
+{"ts":"2026-06-02T19:12:25.056Z","hook":"scout-block","action":"block","tool":"Bash","path":"/tmp/hero-srv.log","matched":"/tmp/hero-srv.log"}
+{"ts":"2026-06-02T19:13:52.068Z","hook":"scout-block","action":"block","tool":"Bash","path":"/tmp/spec_srv.log","matched":"/tmp/spec_srv.log"}
+{"ts":"2026-06-02T19:15:55.961Z","hook":"dangerous-cmd-block","action":"block","matched":"rm -rf .","command":"cd \"/Users/simioremosu/Desktop/Dev Projects/networkplus-quiz/mockups/hero-concepts\" && rm -rf .playwright-mcp 2>/dev/null; lsof -ti:4747 2>/dev/null | xargs kill 2>/dev/null; echo \"cleaned\""}
+{"ts":"2026-06-02T20:32:18.254Z","hook":"subagent-context","action":"skip","reason":"no-active-tsv"}

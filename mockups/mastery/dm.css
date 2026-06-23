@@ -1,0 +1,83 @@
+/* ============================================================
+   "Domain Mastery" — shared base styles
+   Brand: Certanvil cream canvas; per-domain accent colours kept
+   (they're part of the data viz). Mirrors production .dm-* classes.
+   ============================================================ */
+:root {
+  --bg: #f7f4ef;
+  --panel: #fbf9f5;
+  --ink: #2a2622;
+  --muted: #6b6157;        /* darkened for 4.5:1 contrast on cream (was #978d83 ~2.8:1) */
+  --muted-soft: #978d83;   /* decorative only — never load-bearing text */
+  --hair: rgba(60, 50, 40, 0.12);
+  --row: #f3eee6;
+  --track: #e7ded1;
+  --accent: #b5692a;
+
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-overshoot: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: ui-sans-serif, -apple-system, "Segoe UI", Roboto, sans-serif; -webkit-font-smoothing: antialiased; }
+.dm-shell { max-width: 1000px; margin: 0 auto; padding: 24px 24px 40px; }
+
+.dm-card { background: var(--panel); border: 1px solid var(--hair); border-radius: 16px; padding: 24px 26px 20px; box-shadow: 0 1px 0 rgba(255,255,255,0.6) inset, 0 14px 44px -28px rgba(40,30,20,0.45); }
+.dm-card > h3 { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 12px; letter-spacing: .16em; text-transform: uppercase; color: var(--ink); font-weight: 700; margin: 0 0 5px; padding-left: 16px; position: relative; }
+.dm-card > h3::before { content: ''; position: absolute; left: 0; top: 50%; transform: translateY(-50%); width: 9px; height: 2px; border-radius: 1px; background: var(--accent); }
+.dm-subtitle { font-family: ui-monospace, monospace; font-size: 10.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 0 0 20px; padding-left: 16px; }
+
+/* Editorial ledger — rows divided by hairlines, NOT boxed cards with a colored
+   rail. Domain identity is carried by the dot + the bar fill (functional color),
+   not a decorative per-row accent slab. */
+.dm-list { display: flex; flex-direction: column; gap: 0; }
+.dm-row {
+  padding: 17px 6px;
+  /* fixed badge column (120px) so every bar starts at the SAME x */
+  display: grid; grid-template-columns: minmax(0, 1.5fr) 120px minmax(0, 1.5fr) minmax(0, 1.05fr);
+  align-items: center; gap: 20px;
+  border-bottom: 1px solid var(--hair);
+  transition: background 200ms var(--ease-out), box-shadow 200ms var(--ease-out);
+}
+.dm-list .dm-row:last-child { border-bottom: none; }
+.dm-row:focus-visible { outline: 2px solid var(--dm-accent, var(--accent)); outline-offset: -2px; border-radius: 10px; }
+.dm-row-label { display: flex; align-items: center; gap: 11px; min-width: 0; }
+/* the quiet identity cue: a domain dot with a soft halo, legend-style */
+.dm-dot { width: 8px; height: 8px; border-radius: 50%; flex: none; background: var(--dm-accent, var(--accent)); box-shadow: 0 0 0 3px color-mix(in srgb, var(--dm-accent, var(--accent)) 16%, transparent); }
+.dm-row-text { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.dm-row-name { font-size: 14px; font-weight: 700; color: var(--ink); letter-spacing: -0.005em; }
+.dm-row-weight { font-size: 9.5px; font-weight: 600; color: var(--muted); letter-spacing: .07em; text-transform: uppercase; }
+
+.dm-row-badge { justify-self: center; font-size: 9.5px; font-weight: 800; padding: 4px 0; width: 100%; max-width: 104px; text-align: center; border-radius: 99px; letter-spacing: .06em; text-transform: uppercase; white-space: nowrap; }
+.dm-badge-novice     { background: rgba(216, 70, 50, 0.14);  color: #c2402f; }
+.dm-badge-developing { background: rgba(214, 138, 40, 0.16); color: #b06a18; }
+.dm-badge-proficient { background: rgba(90, 110, 190, 0.16); color: #4a5fb0; }
+.dm-badge-mastered   { background: rgba(74, 140, 86, 0.16);  color: #3c7a45; }
+
+.dm-bar-wrap { display: flex; align-items: center; gap: 12px; }
+.dm-bar-track { flex: 1; height: 10px; background: var(--track); border-radius: 99px; position: relative; overflow: visible; box-shadow: inset 0 1px 2px rgba(60,50,40,0.10); }
+.dm-bar-fill { height: 100%; background: linear-gradient(90deg, var(--dm-accent, var(--accent)), color-mix(in srgb, var(--dm-accent, var(--accent)) 55%, #e8c08a)); border-radius: 99px; transition: width 800ms cubic-bezier(0.23, 1, 0.32, 1); }
+.dm-bar-target { position: absolute; top: -3px; bottom: -3px; width: 2px; background: var(--ink); opacity: .5; border-radius: 1px; transform: translateX(-50%); pointer-events: none; }
+.dm-bar-pct { font-size: 18px; font-weight: 800; color: var(--ink); min-width: 50px; text-align: right; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+
+.dm-row-foot { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
+.dm-row-stats { font-size: 11px; color: var(--muted); text-align: right; line-height: 1.4; }
+.dm-drill-btn { background: transparent; border: 1px solid var(--dm-accent, var(--accent)); color: var(--dm-accent, var(--accent)); font-size: 11px; font-weight: 700; padding: 6px 13px; border-radius: 99px; cursor: pointer; transition: background 160ms var(--ease-out), color 160ms var(--ease-out), transform 160ms var(--ease-out), box-shadow 160ms var(--ease-out); white-space: nowrap; }
+.dm-drill-btn:hover { background: var(--dm-accent, var(--accent)); color: #fff; transform: translateX(2px); box-shadow: 0 4px 12px -4px color-mix(in srgb, var(--dm-accent, var(--accent)) 60%, transparent); }
+.dm-drill-btn:active { transform: translateX(2px) scale(0.97); }
+.dm-drill-btn:focus-visible { outline: 2px solid var(--dm-accent, var(--accent)); outline-offset: 2px; }
+
+.dm-footer { margin-top: 14px; font-size: 10px; color: var(--muted); text-align: center; letter-spacing: .04em; }
+
+@media (max-width: 760px) {
+  .dm-row { grid-template-columns: 1fr; gap: 10px; }
+  .dm-row-badge, .dm-row-foot { justify-self: start; align-items: flex-start; }
+}
+
+/* caption banner */
+.mock-banner { max-width: 1000px; margin: 0 auto; padding: 18px 24px 0; }
+.mock-banner h2 { font-family: Georgia, serif; font-size: 16px; margin: 0 0 4px; }
+.mock-banner p { margin: 0; font-size: 13px; color: var(--muted); max-width: 780px; line-height: 1.5; }
+.mock-hint { display: inline-block; margin-top: 8px; font-family: ui-monospace, monospace; font-size: 11px; background: rgba(181,105,42,0.14); color: #8a4e1c; padding: 4px 9px; border-radius: 6px; }
+
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; } }

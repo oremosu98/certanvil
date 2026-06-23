@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CertAnvil · Analytics motion prototype</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;1,9..144,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   BRAND TOKENS
+   ============================================================ */
+:root{
+  --bg:oklch(0.975 0.007 85);
+  --surface:oklch(0.992 0.004 85);
+  --surface-2:oklch(0.965 0.010 84);
+  --ink:oklch(0.22 0.015 280);
+  --ink-soft:oklch(0.36 0.014 280);
+  --muted:oklch(0.50 0.013 280);
+  --border:oklch(0.86 0.008 85);
+  --accent:oklch(0.50 0.155 55);
+  --accent-light:oklch(0.62 0.16 58);
+  --green:#16a34a;
+  --orange:#c2630f;
+
+  /* constellation domain colors (same both themes) */
+  --d1:#6366f1; /* indigo  - Networking Concepts */
+  --d2:#16a34a; /* green   - Network Implementation */
+  --d3:#3b82f6; /* blue    - Network Operations */
+  --d4:#e0820f; /* amber   - Network Security */
+  --d5:#ef4444; /* red     - Network Troubleshooting */
+
+  /* easing */
+  --ease-out:cubic-bezier(0.23,1,0.32,1);
+  --ease-in-out:cubic-bezier(0.77,0,0.175,1);
+  --ease-spring:cubic-bezier(0.34,1.56,0.64,1);
+
+  --mono:"Inter",ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  --serif:"Fraunces",Georgia,serif;
+}
+[data-theme="dark"]{
+  --bg:oklch(0.16 0.009 275);
+  --surface:oklch(0.205 0.009 275);
+  --surface-2:oklch(0.185 0.009 275);
+  --ink:oklch(0.96 0.006 275);
+  --ink-soft:oklch(0.78 0.010 275);
+  --muted:oklch(0.60 0.013 275);
+  --border:oklch(0.30 0.008 275);
+  --accent:oklch(0.80 0.155 64);
+  --accent-light:oklch(0.84 0.15 66);
+  --green:#22c55e;
+  --orange:#e8852e;
+}
+
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  background:var(--bg);
+  color:var(--ink);
+  font-family:"Inter",system-ui,sans-serif;
+  -webkit-font-smoothing:antialiased;
+  line-height:1.5;
+  padding:48px 28px 96px;
+  transition:background-color .5s var(--ease-out),color .5s var(--ease-out);
+}
+.wrap{max-width:1040px;margin:0 auto;}
+
+/* page heading */
+.page-head{margin:0 0 44px;}
+.page-head h1{
+  font-family:var(--serif);
+  font-weight:600;
+  font-size:30px;
+  letter-spacing:-.01em;
+  margin:0 0 6px;
+  color:var(--ink);
+}
+.page-head p{margin:0;color:var(--muted);font-size:14px;}
+
+/* section labels */
+.section-label{
+  display:flex;align-items:baseline;gap:10px;
+  font-family:var(--mono);
+  font-size:12px;font-weight:600;
+  letter-spacing:.14em;text-transform:uppercase;
+  color:var(--ink-soft);
+  margin:0 0 18px;
+}
+.section-label .num{
+  font-family:var(--serif);
+  font-size:18px;font-weight:600;letter-spacing:0;
+  color:var(--accent);
+}
+.section + .section{margin-top:72px;}
+
+/* replay control */
+.replay{
+  margin-top:18px;
+  display:inline-flex;align-items:center;gap:7px;
+  font-family:var(--mono);font-size:12px;font-weight:500;
+  letter-spacing:.04em;
+  color:var(--muted);
+  background:transparent;
+  border:1px solid var(--border);
+  border-radius:999px;
+  padding:6px 14px;
+  cursor:pointer;
+  transition:color .25s var(--ease-out),border-color .25s var(--ease-out),background-color .25s var(--ease-out);
+}
+.replay .ic{display:inline-block;font-size:13px;}
+@media (hover:hover) and (pointer:fine){
+  .replay:hover{color:var(--ink);border-color:var(--accent-light);background:var(--surface-2);}
+}
+
+/* ============================================================
+   COMPONENT 1 — ECG SPARKLINES
+   ============================================================ */
+.ana-hero-stats{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:16px;
+}
+@media (max-width:720px){.ana-hero-stats{grid-template-columns:repeat(2,1fr);}}
+
+.ana-hero-stat{
+  position:relative;
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:14px;
+  padding:18px 18px 14px;
+  overflow:hidden;
+  /* entrance */
+  opacity:0;
+  transform:translateY(10px);
+  animation:ana-stat-in .6s var(--ease-out) forwards;
+}
+.ana-hero-stat:nth-child(1){animation-delay:.05s;}
+.ana-hero-stat:nth-child(2){animation-delay:.11s;}
+.ana-hero-stat:nth-child(3){animation-delay:.17s;}
+.ana-hero-stat:nth-child(4){animation-delay:.23s;}
+@keyframes ana-stat-in{
+  from{opacity:0;transform:translateY(10px);}
+  to{opacity:1;transform:translateY(0);}
+}
+
+.ana-hero-stat-val{
+  font-family:var(--serif);
+  font-weight:600;
+  font-size:34px;
+  line-height:1;
+  letter-spacing:-.02em;
+  color:var(--ink);
+}
+.ana-hero-stat-lbl{
+  margin-top:7px;
+  font-family:var(--mono);
+  font-size:10.5px;font-weight:600;
+  letter-spacing:.13em;text-transform:uppercase;
+  color:var(--muted);
+}
+
+.ana-hero-stat-spark{
+  display:block;
+  width:100%;
+  height:30px;
+  margin-top:14px;
+  overflow:visible;
+}
+/* dim baseline trend */
+.spark-base{
+  stroke:var(--spark-color,var(--accent-light));
+  opacity:.26;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+}
+/* bright travelling comet sweep */
+.spark-scan{
+  stroke:var(--spark-color,var(--accent-light));
+  stroke-linecap:round;
+  stroke-linejoin:round;
+  /* short bright dash + long gap => sweep then rest */
+  stroke-dasharray:18 100;
+  filter:drop-shadow(0 0 2.5px var(--spark-color,var(--accent-light)))
+         drop-shadow(0 0 5px var(--spark-color,var(--accent-light)));
+  animation:ana-ecg-sweep var(--sweep-dur,2.6s) linear infinite;
+  animation-delay:var(--sweep-delay,0s);
+}
+/* sweeps the dash across the full pathLength (100) plus the dash + a rest gap.
+   travel range 0 -> -135 means: dash crosses path then parks off-screen (rest). */
+@keyframes ana-ecg-sweep{
+  0%   {stroke-dashoffset:18;}
+  62%  {stroke-dashoffset:-100;}
+  100% {stroke-dashoffset:-100;} /* rest before next sweep */
+}
+
+/* per-card color + stagger */
+.stat-sessions {--spark-color:var(--accent-light);--sweep-dur:2.6s;--sweep-delay:.0s;}
+.stat-questions{--spark-color:var(--accent-light);--sweep-dur:2.9s;--sweep-delay:.5s;}
+.stat-accuracy {--spark-color:var(--green);       --sweep-dur:2.3s;--sweep-delay:.25s;}
+.stat-studydays{--spark-color:var(--orange);      --sweep-dur:3.05s;--sweep-delay:.8s;}
+
+/* ============================================================
+   COMPONENT 2 — KNOWLEDGE CONSTELLATION
+   ============================================================ */
+.ana-const-head{margin-bottom:14px;}
+.ana-const-title{
+  font-family:var(--serif);
+  font-weight:600;font-size:17px;
+  letter-spacing:.02em;
+  color:var(--ink);
+  display:flex;align-items:center;gap:8px;
+}
+.ana-const-title .spark{color:var(--accent);}
+.ana-const-sub{
+  margin-top:5px;
+  font-family:var(--mono);
+  font-size:11.5px;font-weight:400;
+  letter-spacing:.02em;
+  color:var(--muted);
+}
+
+.ana-const-panel{
+  position:relative;
+  border:1px solid var(--border);
+  border-radius:16px;
+  overflow:hidden;
+  /* always a deep night sky, both themes */
+  background:
+    radial-gradient(120% 90% at 30% 18%, oklch(0.26 0.03 275) 0%, oklch(0.17 0.018 275) 55%, oklch(0.12 0.015 275) 100%);
+}
+[data-theme="dark"] .ana-const-panel{
+  background:
+    radial-gradient(120% 90% at 30% 18%, oklch(0.235 0.026 275) 0%, oklch(0.155 0.014 275) 55%, oklch(0.11 0.012 275) 100%);
+  border-color:oklch(0.28 0.01 275);
+}
+.ana-const-svg{
+  display:block;
+  width:100%;
+  height:auto;
+  aspect-ratio:1040 / 560;
+}
+
+/* slow parallax drift wrapper */
+.const-drift{
+  animation:ana-const-drift 34s ease-in-out infinite alternate;
+  transform-box:fill-box;
+}
+@keyframes ana-const-drift{
+  from{transform:translate(0,0);}
+  to{transform:translate(7px,-5px);}
+}
+
+/* cluster labels */
+.const-cluster-lbl{
+  font-family:var(--mono);
+  font-size:10px;font-weight:600;
+  letter-spacing:.16em;text-transform:uppercase;
+  fill:oklch(0.72 0.02 275);
+  opacity:.55;
+}
+
+/* tether lines */
+.const-tether{
+  stroke:oklch(0.7 0.03 275);
+  stroke-width:.7;
+  opacity:.18;
+  /* draw-on entrance — dasharray + start offset set inline per-element via --len */
+  stroke-dashoffset:var(--len,0);
+  animation:ana-tether-draw .9s var(--ease-out) forwards;
+  animation-delay:1.05s;
+}
+@keyframes ana-tether-draw{
+  from{stroke-dashoffset:var(--len,0);}
+  to{stroke-dashoffset:0;}
+}
+
+/* nodes */
+.ana-const-node{
+  cursor:pointer;
+  transform-box:fill-box;
+  transform-origin:center;
+  /* ignite entrance — staggered via inline --i */
+  opacity:0;
+  animation:ana-node-ignite .7s var(--ease-out) forwards;
+  animation-delay:calc(.15s + var(--i,0) * 42ms);
+}
+@keyframes ana-node-ignite{
+  0%  {opacity:0;transform:scale(.85);}
+  100%{opacity:1;transform:scale(1);}
+}
+
+/* node core (size = practice), twinkle after ignite settles */
+.ana-const-core{
+  transform-box:fill-box;
+  transform-origin:center;
+  animation:ana-twinkle var(--tw-dur,5s) ease-in-out infinite;
+  animation-delay:var(--tw-delay,0s);
+}
+@keyframes ana-twinkle{
+  0%,100%{opacity:var(--tw-lo,.7);transform:scale(1);}
+  50%    {opacity:var(--tw-hi,1);transform:scale(1.04);}
+}
+
+/* halo (glow / brightness by tier) */
+.ana-const-halo{
+  transform-box:fill-box;
+  transform-origin:center;
+  pointer-events:none;
+}
+
+/* ---- tiers: brightness/saturation by mastery ---- */
+.ana-const-tier-mastered  .ana-const-core{filter:drop-shadow(0 0 5px currentColor) drop-shadow(0 0 10px currentColor);}
+.ana-const-tier-mastered  .ana-const-halo{opacity:.22;}
+.ana-const-tier-proficient .ana-const-core{filter:drop-shadow(0 0 3px currentColor);}
+.ana-const-tier-proficient .ana-const-halo{opacity:.12;}
+.ana-const-tier-developing .ana-const-core{opacity:.78;}
+.ana-const-tier-developing .ana-const-halo{opacity:.06;}
+.ana-const-tier-novice     .ana-const-core{opacity:.42;}
+.ana-const-tier-novice     .ana-const-halo{opacity:0;}
+
+/* twinkle intensity per tier */
+.ana-const-tier-mastered  .ana-const-core{--tw-lo:.82;--tw-hi:1;}
+.ana-const-tier-proficient .ana-const-core{--tw-lo:.62;--tw-hi:.92;}
+.ana-const-tier-developing .ana-const-core{--tw-lo:.6;--tw-hi:.82;}
+.ana-const-tier-novice     .ana-const-core{--tw-lo:.36;--tw-hi:.5;}
+
+/* PULSAR on mastered halos */
+.ana-const-tier-mastered .ana-const-halo{
+  animation:ana-pulsar var(--pulse-dur,3.4s) ease-in-out infinite;
+  animation-delay:var(--pulse-delay,0s);
+}
+@keyframes ana-pulsar{
+  0%,100%{opacity:.10;transform:scale(.9);}
+  50%    {opacity:.32;transform:scale(1.28);}
+}
+
+/* HOVER / FOCUS flare (desktop) */
+@media (hover:hover) and (pointer:fine){
+  .ana-const-node:hover .ana-const-core,
+  .ana-const-node:focus-visible .ana-const-core{
+    transform:scale(1.18);
+    filter:drop-shadow(0 0 7px currentColor) drop-shadow(0 0 14px currentColor);
+    animation-play-state:paused;
+    transition:transform .35s var(--ease-spring),filter .35s var(--ease-out);
+  }
+  .ana-const-node:hover .ana-const-halo,
+  .ana-const-node:focus-visible .ana-const-halo{
+    opacity:.4;
+    transform:scale(1.35);
+    transition:opacity .3s var(--ease-out),transform .35s var(--ease-spring);
+  }
+}
+.ana-const-node:focus{outline:none;}
+.ana-const-node:focus-visible .ana-const-core{outline:none;}
+
+/* domain color via class on <g> applied to currentColor */
+.dom-d1{color:var(--d1);}
+.dom-d2{color:var(--d2);}
+.dom-d3{color:var(--d3);}
+.dom-d4{color:var(--d4);}
+.dom-d5{color:var(--d5);}
+.ana-const-core{fill:currentColor;}
+.ana-const-halo{fill:currentColor;}
+
+/* ============================================================
+   FIXED CHROME — theme toggle + caption
+   ============================================================ */
+.theme-toggle{
+  position:fixed;top:18px;right:18px;z-index:50;
+  width:40px;height:40px;border-radius:999px;
+  display:grid;place-items:center;
+  background:var(--surface);
+  border:1px solid var(--border);
+  color:var(--ink-soft);
+  font-size:17px;cursor:pointer;
+  box-shadow:0 1px 3px oklch(0 0 0 / .08);
+  transition:background-color .3s var(--ease-out),color .3s var(--ease-out),transform .3s var(--ease-spring);
+}
+@media (hover:hover) and (pointer:fine){
+  .theme-toggle:hover{transform:scale(1.08);color:var(--accent);}
+}
+.caption{
+  position:fixed;left:50%;bottom:16px;transform:translateX(-50%);
+  z-index:40;
+  font-family:var(--mono);font-size:11px;font-weight:500;
+  letter-spacing:.04em;
+  color:var(--muted);
+  background:color-mix(in oklch,var(--surface) 80%,transparent);
+  border:1px solid var(--border);
+  border-radius:999px;
+  padding:6px 14px;
+  backdrop-filter:blur(6px);
+  white-space:nowrap;
+}
+
+/* ============================================================
+   REDUCED MOTION — freeze to finished static state
+   ============================================================ */
+@media (prefers-reduced-motion:reduce){
+  .ana-hero-stat{animation:none!important;opacity:1;transform:none;}
+  .spark-scan{display:none;}              /* only dim base remains */
+  .const-drift{animation:none!important;transform:none;}
+  .ana-const-node{animation:none!important;opacity:1;transform:none;}
+  .ana-const-core{animation:none!important;transform:none;}
+  .ana-const-tier-mastered .ana-const-halo{animation:none!important;transform:none;}
+  .const-tether{animation:none!important;stroke-dashoffset:0;}
+}
+
+/* JS-driven manual reduced-motion mirror (so the toggle/replay respect it) */
+.rm .ana-hero-stat{animation:none!important;opacity:1;transform:none;}
+.rm .spark-scan{display:none;}
+.rm .const-drift{animation:none!important;transform:none;}
+.rm .ana-const-node{animation:none!important;opacity:1;transform:none;}
+.rm .ana-const-core{animation:none!important;transform:none;}
+.rm .ana-const-tier-mastered .ana-const-halo{animation:none!important;transform:none;}
+.rm .const-tether{animation:none!important;stroke-dashoffset:0;}
+</style>
+</head>
+<body>
+
+<button class="theme-toggle" id="themeToggle" aria-label="Toggle theme" title="Toggle theme">☾</button>
+
+<div class="wrap">
+
+  <header class="page-head">
+    <h1>Analytics motion prototype</h1>
+    <p>CertAnvil · cert-app analytics page — ECG sparklines &amp; the knowledge starfield.</p>
+  </header>
+
+  <!-- ============ ① ECG SPARKLINES ============ -->
+  <section class="section" id="sec-ecg">
+    <div class="section-label"><span class="num">①</span> ECG sparklines (stat cards)</div>
+
+    <div class="ana-hero-stats" id="ecgStats">
+
+      <div class="ana-hero-stat stat-sessions">
+        <div class="ana-hero-stat-val">23</div>
+        <div class="ana-hero-stat-lbl">Sessions</div>
+        <svg class="ana-hero-stat-spark" viewBox="0 0 160 28" preserveAspectRatio="none" aria-hidden="true">
+          <path class="spark-base" d="M0,20 L14,19 L28,20 L42,18 L56,19 L70,17 L84,8 L92,21 L100,18 L116,19 L132,18 L146,19 L160,18" pathLength="100" fill="none" stroke-width="1.5"/>
+          <path class="spark-scan" d="M0,20 L14,19 L28,20 L42,18 L56,19 L70,17 L84,8 L92,21 L100,18 L116,19 L132,18 L146,19 L160,18" pathLength="100" fill="none" stroke-width="1.8"/>
+        </svg>
+      </div>
+
+      <div class="ana-hero-stat stat-questions">
+        <div class="ana-hero-stat-val">75</div>
+        <div class="ana-hero-stat-lbl">Questions</div>
+        <svg class="ana-hero-stat-spark" viewBox="0 0 160 28" preserveAspectRatio="none" aria-hidden="true">
+          <path class="spark-base" d="M0,21 L14,20 L28,21 L42,20 L56,21 L70,19 L84,20 L98,18 L110,9 L118,22 L132,20 L146,21 L160,20" pathLength="100" fill="none" stroke-width="1.5"/>
+          <path class="spark-scan" d="M0,21 L14,20 L28,21 L42,20 L56,21 L70,19 L84,20 L98,18 L110,9 L118,22 L132,20 L146,21 L160,20" pathLength="100" fill="none" stroke-width="1.8"/>
+        </svg>
+      </div>
+
+      <div class="ana-hero-stat stat-accuracy">
+        <div class="ana-hero-stat-val">92%</div>
+        <div class="ana-hero-stat-lbl">Accuracy</div>
+        <svg class="ana-hero-stat-spark" viewBox="0 0 160 28" preserveAspectRatio="none" aria-hidden="true">
+          <path class="spark-base" d="M0,19 L14,20 L28,18 L42,19 L56,18 L64,6 L72,22 L80,18 L96,19 L112,17 L128,18 L144,16 L160,15" pathLength="100" fill="none" stroke-width="1.5"/>
+          <path class="spark-scan" d="M0,19 L14,20 L28,18 L42,19 L56,18 L64,6 L72,22 L80,18 L96,19 L112,17 L128,18 L144,16 L160,15" pathLength="100" fill="none" stroke-width="1.8"/>
+        </svg>
+      </div>
+
+      <div class="ana-hero-stat stat-studydays">
+        <div class="ana-hero-stat-val">7</div>
+        <div class="ana-hero-stat-lbl">Study Days</div>
+        <svg class="ana-hero-stat-spark" viewBox="0 0 160 28" preserveAspectRatio="none" aria-hidden="true">
+          <path class="spark-base" d="M0,21 L16,20 L32,21 L48,20 L60,21 L74,19 L88,20 L102,10 L110,22 L124,20 L138,21 L150,20 L160,21" pathLength="100" fill="none" stroke-width="1.5"/>
+          <path class="spark-scan" d="M0,21 L16,20 L32,21 L48,20 L60,21 L74,19 L88,20 L102,10 L110,22 L124,20 L138,21 L150,20 L160,21" pathLength="100" fill="none" stroke-width="1.8"/>
+        </svg>
+      </div>
+
+    </div>
+
+    <button class="replay" data-replay="ecg"><span class="ic">↻</span> replay</button>
+  </section>
+
+  <!-- ============ ② KNOWLEDGE CONSTELLATION ============ -->
+  <section class="section" id="sec-const">
+    <div class="section-label"><span class="num">②</span> Knowledge constellation (starfield)</div>
+
+    <div class="ana-const-head">
+      <div class="ana-const-title"><span class="spark">✦</span> KNOWLEDGE CONSTELLATION</div>
+      <div class="ana-const-sub">7 of 50 topics studied · size = practice, color = domain, brightness = mastery</div>
+    </div>
+
+    <div class="ana-const-panel">
+      <svg class="ana-const-svg" id="constSvg" viewBox="0 0 1040 560" aria-label="Knowledge constellation"></svg>
+    </div>
+
+    <button class="replay" data-replay="const"><span class="ic">↻</span> replay</button>
+  </section>
+
+</div>
+
+<div class="caption">Analytics motion · ECG sparklines + Knowledge starfield</div>
+
+<script>
+/* ============================================================
+   THEME TOGGLE
+   ============================================================ */
+const html = document.documentElement;
+const toggle = document.getElementById('themeToggle');
+function setIcon(){ toggle.textContent = html.dataset.theme === 'dark' ? '☀' : '☾'; }
+setIcon();
+toggle.addEventListener('click', ()=>{
+  html.dataset.theme = html.dataset.theme === 'dark' ? 'light' : 'dark';
+  setIcon();
+});
+
+/* honor reduced-motion as a JS mirror so replay/toggle behave */
+const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)');
+function syncRM(){ document.body.classList.toggle('rm', prefersReduced.matches); }
+syncRM();
+prefersReduced.addEventListener('change', syncRM);
+
+/* ============================================================
+   CONSTELLATION DATA — ~26 nodes, 5 loose clusters
+   tier: mastered | proficient | developing | novice
+   r = practice (size), dom = domain color class
+   ============================================================ */
+const clusters = [
+  { dom:'d1', label:'NETWORKING CONCEPTS', lx:175, ly:120,
+    nodes:[
+      {x:150,y:150,r:11,tier:'mastered'},
+      {x:230,y:110,r:6, tier:'developing'},
+      {x:120,y:215,r:5, tier:'novice'},
+      {x:215,y:200,r:7, tier:'proficient'},
+      {x:285,y:165,r:4.5,tier:'novice'},
+      {x:175,y:95, r:5.5,tier:'developing'},
+    ]},
+  { dom:'d2', label:'NETWORK IMPLEMENTATION', lx:560, ly:90,
+    nodes:[
+      {x:560,y:135,r:10,tier:'mastered'},
+      {x:640,y:110,r:6.5,tier:'proficient'},
+      {x:505,y:175,r:5, tier:'developing'},
+      {x:615,y:185,r:5.5,tier:'developing'},
+      {x:680,y:150,r:4.5,tier:'novice'},
+    ]},
+  { dom:'d3', label:'NETWORK OPERATIONS', lx:850, ly:230,
+    nodes:[
+      {x:865,y:265,r:9, tier:'mastered'},
+      {x:930,y:225,r:6, tier:'proficient'},
+      {x:805,y:290,r:5, tier:'developing'},
+      {x:910,y:310,r:4.5,tier:'novice'},
+      {x:855,y:200,r:5, tier:'novice'},
+    ]},
+  { dom:'d4', label:'NETWORK SECURITY', lx:300, ly:380,
+    nodes:[
+      {x:300,y:415,r:10.5,tier:'mastered'},
+      {x:380,y:385,r:6.5,tier:'proficient'},
+      {x:245,y:460,r:5, tier:'developing'},
+      {x:360,y:470,r:5.5,tier:'developing'},
+      {x:200,y:390,r:4.5,tier:'novice'},
+    ]},
+  { dom:'d5', label:'NETWORK TROUBLESHOOTING', lx:680, ly:400,
+    nodes:[
+      {x:690,y:435,r:9.5,tier:'mastered'},
+      {x:760,y:405,r:6, tier:'proficient'},
+      {x:635,y:480,r:5, tier:'developing'},
+      {x:765,y:480,r:5, tier:'novice'},
+      {x:610,y:410,r:4.5,tier:'novice'},
+    ]},
+];
+
+const SVGNS = 'http://www.w3.org/2000/svg';
+const svg = document.getElementById('constSvg');
+
+function buildConstellation(){
+  // clear
+  while(svg.firstChild) svg.removeChild(svg.firstChild);
+
+  // drift group (whole field)
+  const drift = document.createElementNS(SVGNS,'g');
+  drift.setAttribute('class','const-drift');
+  svg.appendChild(drift);
+
+  // layer order: tethers, then labels, then nodes
+  const gTethers = document.createElementNS(SVGNS,'g');
+  const gLabels  = document.createElementNS(SVGNS,'g');
+  const gNodes   = document.createElementNS(SVGNS,'g');
+  drift.appendChild(gTethers);
+  drift.appendChild(gLabels);
+  drift.appendChild(gNodes);
+
+  let nodeIndex = 0;
+
+  clusters.forEach(cl=>{
+    // tethers: connect a few near nodes within the cluster (chain first 3-4)
+    const n = cl.nodes;
+    const links = [[0,1],[0,2],[1,3]].filter(([a,b])=> n[a] && n[b]);
+    links.forEach(([a,b])=>{
+      const A=n[a], B=n[b];
+      const len = Math.hypot(B.x-A.x, B.y-A.y);
+      const line = document.createElementNS(SVGNS,'line');
+      line.setAttribute('class','const-tether');
+      line.setAttribute('x1',A.x); line.setAttribute('y1',A.y);
+      line.setAttribute('x2',B.x); line.setAttribute('y2',B.y);
+      line.style.strokeDasharray = len;
+      // start offset + keyframe endpoints driven by --len (no inline offset, so the
+      // animation can land at 0 = fully drawn):
+      line.style.setProperty('--len', len);
+      gTethers.appendChild(line);
+    });
+
+    // cluster label
+    const lbl = document.createElementNS(SVGNS,'text');
+    lbl.setAttribute('class','const-cluster-lbl');
+    lbl.setAttribute('x', cl.lx);
+    lbl.setAttribute('y', cl.ly);
+    lbl.setAttribute('text-anchor','middle');
+    lbl.textContent = cl.label;
+    gLabels.appendChild(lbl);
+
+    // nodes
+    n.forEach(node=>{
+      const g = document.createElementNS(SVGNS,'g');
+      g.setAttribute('class', `ana-const-node ana-const-tier-${node.tier} dom-${cl.dom}`);
+      g.setAttribute('tabindex','0');
+      g.style.setProperty('--i', nodeIndex);
+      // randomized twinkle phase/duration so they never sync
+      const twDur = (4 + Math.random()*4.5).toFixed(2) + 's';
+      const twDelay = (Math.random()*-6).toFixed(2) + 's';
+      const pulseDur = (3 + Math.random()*2).toFixed(2) + 's';
+      const pulseDelay = (Math.random()*-3).toFixed(2) + 's';
+
+      const halo = document.createElementNS(SVGNS,'circle');
+      halo.setAttribute('class','ana-const-halo');
+      halo.setAttribute('cx',node.x); halo.setAttribute('cy',node.y);
+      halo.setAttribute('r', node.r * 2.6);
+      halo.style.setProperty('--pulse-dur', pulseDur);
+      halo.style.setProperty('--pulse-delay', pulseDelay);
+
+      const core = document.createElementNS(SVGNS,'circle');
+      core.setAttribute('class','ana-const-core');
+      core.setAttribute('cx',node.x); core.setAttribute('cy',node.y);
+      core.setAttribute('r', node.r);
+      core.style.setProperty('--tw-dur', twDur);
+      core.style.setProperty('--tw-delay', twDelay);
+
+      g.appendChild(halo);
+      g.appendChild(core);
+      gNodes.appendChild(g);
+      nodeIndex++;
+    });
+  });
+}
+buildConstellation();
+
+/* ============================================================
+   REPLAY — re-trigger entrances by re-flowing animations
+   ============================================================ */
+document.querySelectorAll('[data-replay]').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    const which = btn.dataset.replay;
+    if(which === 'ecg'){
+      const stats = document.getElementById('ecgStats');
+      const clone = stats.cloneNode(true);
+      stats.parentNode.replaceChild(clone, stats);
+      clone.id = 'ecgStats';
+    } else if(which === 'const'){
+      // rebuild fully so ignite + twinkle restart
+      buildConstellation();
+    }
+  });
+});
+</script>
+</body>
+</html>

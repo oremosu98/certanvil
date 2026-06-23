@@ -1,0 +1,223 @@
+<!DOCTYPE html><html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Accuracy Chart — 5 · Trajectory Projection</title>
+<link rel="stylesheet" href="accchart.css">
+<style>
+  /* ---- replay pill (small bronze) ---- */
+  #replay {
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: 11px; font-weight: 700; letter-spacing: 0.04em;
+    color: #fff; background: linear-gradient(135deg, var(--accent), var(--accent-light));
+    border: none; border-radius: 999px; padding: 7px 14px; cursor: pointer;
+    box-shadow: 0 6px 16px -8px rgba(60,40,20,0.6);
+    transition: transform 140ms ease-out;
+  }
+  #replay:active { transform: scale(0.97); }
+
+  /* ---- exam-day marker label ---- */
+  .traj-exam-label {
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: 10px; font-weight: 700; letter-spacing: 0.14em;
+    fill: var(--accent); text-transform: uppercase;
+  }
+  .traj-exam-line { stroke: var(--accent); stroke-width: 1.25; stroke-dasharray: 4 4; opacity: 0.7; }
+  .traj-line { fill: none; stroke: var(--accent); stroke-width: 2; stroke-dasharray: 7 5; stroke-linecap: round; opacity: 0.95; }
+
+  /* ---- projected value + verdict (foreignObject content) ---- */
+  .traj-readout {
+    display: flex; flex-direction: column; align-items: flex-end; gap: 5px;
+    font-family: ui-sans-serif, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  .traj-value {
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: 21px; font-weight: 800; line-height: 1; letter-spacing: -0.01em;
+    color: var(--danger);
+  }
+  .traj-value.is-good { color: var(--good); }
+  .traj-badge {
+    font-family: ui-monospace, monospace; font-size: 9.5px; font-weight: 700;
+    letter-spacing: 0.05em; text-transform: uppercase;
+    padding: 3px 8px; border-radius: 999px; white-space: nowrap;
+    opacity: 0; transform: translateY(5px);
+    transition: opacity 360ms var(--ease-out), transform 360ms var(--ease-out);
+  }
+  .traj-badge.show { opacity: 1; transform: translateY(0); }
+  .traj-badge.is-danger { color: var(--danger); background: rgba(var(--danger-rgb), 0.12); }
+  .traj-badge.is-good { color: var(--good); background: rgba(90,143,78,0.14); }
+
+  @media (prefers-reduced-motion: reduce) {
+    .traj-badge { transition: none; }
+  }
+</style>
+</head><body>
+  <div class="mock-banner">
+    <h2>5 · Trajectory Projection</h2>
+    <p>The chart literally answers its headline: a dashed best-fit trajectory draws through your trend and projects it to exam day, with the forecasted score counting up and a verdict — on track, or trending below pass. It shows where you're heading, not just where you've been.</p>
+    <span class="mock-hint">Watch the projection draw to “EXAM” · press Replay.</span>
+  </div>
+  <div class="acc-shell"><div id="mount"></div></div>
+  <button id="replay" style="position:fixed;right:18px;bottom:18px;">↻ Replay</button>
+  <script src="accchart.js"></script>
+  <script>
+    const A = window.AccChart.render('#mount');
+    /* ANIMATION LAYER — Trajectory Projection */
+    (function () {
+      const { W, PAD, yOf, passAcc } = A.geom;
+      const EXAM_X = W - PAD;        // 910 — right edge = exam day
+      const pts = A.series.month.pts; // 10 points, 92% -> 68%
+      const last = pts[pts.length - 1];
+      const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+      // ---- 1. least-squares regression of acc vs index ----
+      const n = pts.length;
+      let sx = 0, sy = 0, sxx = 0, sxy = 0;
+      pts.forEach((p, i) => { sx += i; sy += p.acc; sxx += i * i; sxy += i * p.acc; });
+      const slope = (n * sxy - sx * sy) / (n * sxx - sx * sx);
+      const intercept = (sy - slope * sx) / n;
+      const regAcc = (i) => intercept + slope * i;
+
+      // map exam x back to a fractional point-index so the regression extends to the edge
+      const x0 = pts[0].x, xN = last.x;
+      const idxAtX = (x) => (x - x0) / (xN - x0) * (n - 1);
+
+      const leftAcc = regAcc(0);
+      const examIdx = idxAtX(EXAM_X);
+      const projAcc = regAcc(examIdx);
+
+      const leftPt = { x: x0, y: yOf(leftAcc) };
+      const examPt = { x: EXAM_X, y: yOf(projAcc) };
+
+      // ---- group above everything else ----
+      const g = A.el('g', { 'data-traj': '1' });
+      A.svg.appendChild(g);
+
+      // ---- 3. exam-day vertical marker + label ----
+      const examLine = A.el('line', {
+        class: 'traj-exam-line',
+        x1: EXAM_X, y1: (PAD - 6).toFixed(1), x2: EXAM_X, y2: (A.geom.H - PAD).toFixed(1),
+      });
+      g.appendChild(examLine);
+      const examLabel = A.el('text', {
+        class: 'traj-exam-label',
+        x: (EXAM_X - 4).toFixed(1), y: (PAD - 12).toFixed(1),
+        'text-anchor': 'end',
+      });
+      examLabel.textContent = 'EXAM';
+      g.appendChild(examLabel);
+
+      // ---- 2. regression / trajectory line ----
+      const trajLine = A.el('line', {
+        class: 'traj-line',
+        x1: leftPt.x.toFixed(1), y1: leftPt.y.toFixed(1),
+        x2: examPt.x.toFixed(1), y2: examPt.y.toFixed(1),
+      });
+      g.appendChild(trajLine);
+
+      // ---- 6. ambient pulse ring on the latest actual point ----
+      const pulse = A.el('circle', {
+        cx: last.x.toFixed(1), cy: last.y.toFixed(1), r: 4,
+        fill: 'none', stroke: 'var(--accent)', 'stroke-width': 2, opacity: 0,
+      });
+      g.appendChild(pulse);
+
+      // ---- 4. projected value + verdict (foreignObject so we get CSS layout) ----
+      const isGood = projAcc >= passAcc;
+      // position readout near exam end; nudge left/up so it stays in view
+      const foX = EXAM_X - 132;
+      const foY = Math.max(PAD - 8, Math.min(examPt.y - 56, A.geom.H - PAD - 64));
+      const fo = A.el('foreignObject', { x: foX.toFixed(1), y: foY.toFixed(1), width: 130, height: 64 });
+      const readout = document.createElement('div');
+      readout.className = 'traj-readout';
+      readout.setAttribute('xmlns', 'http://www.w3.org/1999/xhtml');
+      const valEl = document.createElement('div');
+      valEl.className = 'traj-value' + (isGood ? ' is-good' : '');
+      const badgeEl = document.createElement('div');
+      badgeEl.className = 'traj-badge ' + (isGood ? 'is-good' : 'is-danger');
+      badgeEl.textContent = isGood ? 'On track to pass' : 'Trending below pass';
+      readout.appendChild(valEl);
+      readout.appendChild(badgeEl);
+      fo.appendChild(readout);
+      g.appendChild(fo);
+
+      const fmt = (v) => v.toFixed(1) + '%';
+
+      // ---- animation helpers ----
+      let pulseTimer = null;
+      function ambientPulse() {
+        if (reduce) return;
+        pulse.style.transition = 'none';
+        pulse.setAttribute('r', '4');
+        pulse.setAttribute('opacity', '0.5');
+        // force reflow
+        void pulse.getBoundingClientRect();
+        pulse.style.transition = 'r 1800ms var(--ease-out), opacity 1800ms ease-out';
+        pulse.setAttribute('r', '15');
+        pulse.setAttribute('opacity', '0');
+      }
+      function startPulse() {
+        clearInterval(pulseTimer);
+        if (reduce) return;
+        ambientPulse();
+        pulseTimer = setInterval(ambientPulse, 3200);
+      }
+
+      function countUp(from, to, ms) {
+        const t0 = performance.now();
+        const easeOut = (t) => 1 - Math.pow(1 - t, 3);
+        function frame(now) {
+          const t = Math.min(1, (now - t0) / ms);
+          const v = from + (to - from) * easeOut(t);
+          valEl.textContent = fmt(v);
+          if (t < 1) requestAnimationFrame(frame);
+          else valEl.textContent = fmt(to);
+        }
+        requestAnimationFrame(frame);
+      }
+
+      let beatTimer = null, drawTimer = null;
+      function showFinalInstant() {
+        const len = trajLine.getTotalLength();
+        trajLine.style.transition = 'none';
+        trajLine.style.strokeDasharray = '7 5';
+        trajLine.style.strokeDashoffset = '0';
+        valEl.textContent = fmt(projAcc);
+        badgeEl.classList.add('show');
+      }
+
+      function run() {
+        clearTimeout(beatTimer); clearTimeout(drawTimer); clearInterval(pulseTimer);
+        // reset
+        badgeEl.classList.remove('show');
+        valEl.textContent = fmt(last.acc);
+
+        if (reduce) { showFinalInstant(); return; }
+
+        const len = trajLine.getTotalLength();
+        trajLine.style.transition = 'none';
+        trajLine.style.strokeDasharray = len + ' ' + len;
+        trajLine.style.strokeDashoffset = len;
+        void trajLine.getBoundingClientRect();
+
+        // 5a. after ~400ms beat, draw the trajectory ~800ms ease-out
+        beatTimer = setTimeout(() => {
+          trajLine.style.transition = 'stroke-dashoffset 800ms cubic-bezier(0.23,1,0.32,1)';
+          trajLine.style.strokeDashoffset = '0';
+          // restore the dashed look right as the draw completes
+          drawTimer = setTimeout(() => {
+            trajLine.style.transition = 'none';
+            trajLine.style.strokeDasharray = '7 5';
+            trajLine.style.strokeDashoffset = '0';
+          }, 810);
+          // 5b. count-up + verdict as it reaches the exam marker (~620ms in)
+          setTimeout(() => countUp(last.acc, projAcc, 700), 560);
+          setTimeout(() => badgeEl.classList.add('show'), 680);
+        }, 400);
+
+        startPulse();
+      }
+
+      run();
+      document.getElementById('replay').addEventListener('click', run);
+    })();
+  </script>
+</body></html>

@@ -1,0 +1,891 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Topic progress, Command Center</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+:root{
+  --bg: oklch(0.975 0.007 85);
+  --surface: oklch(0.992 0.004 85);
+  --surface-2: oklch(0.965 0.010 84);
+  --ink: oklch(0.22 0.015 280);
+  --ink-soft: oklch(0.36 0.014 280);
+  --muted: oklch(0.50 0.013 280);
+  --border: oklch(0.86 0.008 85);
+  --border-soft: oklch(0.91 0.006 85);
+  --accent: oklch(0.50 0.155 55);
+  --accent-bright: oklch(0.80 0.155 64);
+  --accent-deep: oklch(0.42 0.150 52);
+  --on-accent: oklch(0.985 0.010 85);
+  --pass: oklch(0.52 0.13 150);
+  --shadow: 0 1px 2px oklch(0.22 0.015 280 / 0.05), 0 8px 24px oklch(0.22 0.015 280 / 0.06);
+  --shadow-lift: 0 2px 4px oklch(0.22 0.015 280 / 0.07), 0 18px 40px oklch(0.22 0.015 280 / 0.12);
+  --mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, monospace;
+}
+[data-theme="dark"]{
+  --bg: oklch(0.16 0.009 275);
+  --surface: oklch(0.205 0.009 275);
+  --surface-2: oklch(0.185 0.009 275);
+  --ink: oklch(0.96 0.006 275);
+  --ink-soft: oklch(0.78 0.010 275);
+  --muted: oklch(0.60 0.013 275);
+  --border: oklch(0.30 0.008 275);
+  --border-soft: oklch(0.26 0.008 275);
+  --accent: oklch(0.80 0.155 64);
+  --accent-bright: oklch(0.86 0.140 70);
+  --accent-deep: oklch(0.70 0.150 62);
+  --on-accent: oklch(0.18 0.020 275);
+  --pass: oklch(0.74 0.150 152);
+  --shadow: 0 1px 2px oklch(0 0 0 / 0.3), 0 8px 24px oklch(0 0 0 / 0.35);
+  --shadow-lift: 0 2px 4px oklch(0 0 0 / 0.4), 0 18px 44px oklch(0 0 0 / 0.5);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{background:var(--bg)}
+body{
+  background:var(--bg);
+  color:var(--ink);
+  font-family:"Inter",system-ui,sans-serif;
+  font-size:15px;
+  line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+  min-height:100vh;
+  transition:background .4s ease,color .4s ease;
+}
+.wrap{max-width:1100px;margin:0 auto;padding:40px 28px 96px}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums;font-feature-settings:"tnum"}
+
+/* ---- theme toggle ---- */
+.theme-toggle{
+  position:fixed;top:20px;right:20px;z-index:60;
+  width:42px;height:42px;border-radius:50%;
+  border:1px solid var(--border);
+  background:var(--surface);
+  color:var(--ink-soft);
+  cursor:pointer;display:grid;place-items:center;
+  box-shadow:var(--shadow);
+  transition:transform .25s cubic-bezier(0.16,1,0.3,1),border-color .2s,color .2s;
+}
+.theme-toggle:hover{color:var(--accent);border-color:var(--accent)}
+.theme-toggle:active{transform:scale(0.92)}
+.theme-toggle svg{width:19px;height:19px}
+.theme-toggle .moon{display:none}
+[data-theme="dark"] .theme-toggle .sun{display:none}
+[data-theme="dark"] .theme-toggle .moon{display:block}
+
+/* ---- header ---- */
+.page-head{margin-bottom:26px}
+.eyebrow{
+  font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--muted);margin-bottom:10px;
+}
+h1{
+  font-family:"Fraunces",serif;
+  font-weight:600;
+  font-size:clamp(30px,5vw,44px);
+  letter-spacing:-0.01em;
+  line-height:1.05;
+  color:var(--ink);
+}
+.page-head p{color:var(--ink-soft);margin-top:8px;max-width:54ch;font-size:14.5px}
+
+/* ---- hero strip ---- */
+.hero{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) minmax(0,1.35fr);
+  gap:18px;
+  margin-bottom:22px;
+}
+.card{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:18px;
+  box-shadow:var(--shadow);
+}
+.hero-readiness{
+  padding:26px 28px;
+  display:flex;align-items:center;gap:26px;
+}
+.arc-wrap{position:relative;flex:0 0 auto;width:148px;height:148px}
+.arc-wrap svg{transform:rotate(-90deg);overflow:visible}
+.arc-track{fill:none;stroke:var(--surface-2);stroke-width:13}
+.arc-fill{fill:none;stroke:url(#bronzeGrad);stroke-width:13;stroke-linecap:round;
+  transition:stroke-dashoffset 1.1s cubic-bezier(0.16,1,0.3,1)}
+.arc-center{
+  position:absolute;inset:0;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;text-align:center;
+}
+.arc-center .big{font-family:var(--mono);font-weight:600;font-size:36px;color:var(--ink);line-height:1}
+.arc-center .lbl{font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-top:5px}
+.readiness-meta h2{
+  font-family:"Fraunces",serif;font-weight:600;font-size:19px;color:var(--ink);margin-bottom:4px;
+}
+.readiness-meta .sub{font-size:13px;color:var(--ink-soft);max-width:30ch}
+.mini-coverage{margin-top:16px;display:flex;align-items:center;gap:11px}
+.mini-bar{flex:1;height:7px;border-radius:99px;background:var(--surface-2);overflow:hidden;min-width:80px}
+.mini-bar i{display:block;height:100%;border-radius:99px;background:var(--accent);width:0;
+  transition:width 1s cubic-bezier(0.16,1,0.3,1)}
+.mini-coverage .num{font-size:13px;color:var(--ink-soft);font-weight:600}
+.mini-coverage span.cap{font-size:11.5px;color:var(--muted)}
+
+/* recommendation */
+.hero-rec{
+  padding:24px 26px;
+  display:flex;flex-direction:column;justify-content:center;
+  background:
+    radial-gradient(120% 140% at 100% 0%, oklch(0.50 0.155 55 / 0.10), transparent 55%),
+    var(--surface);
+  position:relative;overflow:hidden;
+}
+[data-theme="dark"] .hero-rec{
+  background:radial-gradient(120% 140% at 100% 0%, oklch(0.80 0.155 64 / 0.13), transparent 55%),var(--surface);
+}
+.rec-tag{font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin-bottom:12px}
+.rec-name{font-family:"Fraunces",serif;font-weight:600;font-size:26px;color:var(--ink);line-height:1.1;letter-spacing:-0.01em}
+.rec-domain{font-size:13px;color:var(--ink-soft);margin-top:6px}
+.rec-reason{font-size:13.5px;color:var(--ink-soft);margin-top:12px;max-width:42ch}
+.rec-foot{display:flex;align-items:center;gap:14px;margin-top:18px}
+.rec-mastery{font-family:var(--mono);font-size:13px;color:var(--muted)}
+.rec-mastery b{color:var(--ink);font-weight:600}
+.btn-drill{
+  margin-left:auto;
+  border:none;cursor:pointer;
+  background:var(--accent);color:var(--on-accent);
+  font-family:"Inter";font-weight:600;font-size:13.5px;
+  padding:11px 20px;border-radius:11px;
+  box-shadow:0 6px 16px oklch(0.50 0.155 55 / 0.25);
+  transition:transform .22s cubic-bezier(0.16,1,0.3,1),background .2s;
+}
+.btn-drill:hover{background:var(--accent-deep);transform:translateY(-2px)}
+.btn-drill:active{transform:scale(0.97)}
+[data-theme="dark"] .btn-drill{box-shadow:0 6px 16px oklch(0 0 0 / 0.4)}
+
+/* ---- summary stats row ---- */
+.stats{
+  display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:26px;
+}
+.stat{
+  background:var(--surface);border:1px solid var(--border-soft);border-radius:14px;
+  padding:15px 16px;
+}
+.stat .v{font-family:var(--mono);font-weight:600;font-size:25px;color:var(--ink);line-height:1}
+.stat .k{font-size:11.5px;color:var(--muted);margin-top:6px;letter-spacing:.01em}
+.stat.is-pass .v{color:var(--pass)}
+
+/* ---- toolbar ---- */
+.toolbar{
+  display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+  margin-bottom:22px;
+}
+.search{position:relative;flex:1;min-width:200px}
+.search svg{position:absolute;left:13px;top:50%;transform:translateY(-50%);width:16px;height:16px;color:var(--muted)}
+.search input{
+  width:100%;padding:11px 14px 11px 38px;
+  background:var(--surface);border:1px solid var(--border);border-radius:11px;
+  color:var(--ink);font-family:"Inter";font-size:14px;
+  transition:border-color .2s,box-shadow .2s;
+}
+.search input::placeholder{color:var(--muted)}
+.search input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px oklch(0.50 0.155 55 / 0.13)}
+[data-theme="dark"] .search input:focus{box-shadow:0 0 0 3px oklch(0.80 0.155 64 / 0.18)}
+.seg{display:inline-flex;background:var(--surface-2);border:1px solid var(--border-soft);border-radius:11px;padding:3px;gap:2px}
+.seg button{
+  border:none;background:transparent;cursor:pointer;
+  font-family:"Inter";font-size:12.5px;font-weight:500;color:var(--ink-soft);
+  padding:7px 12px;border-radius:8px;white-space:nowrap;
+  transition:background .2s,color .2s;
+}
+.seg button:hover{color:var(--ink)}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--ink);font-weight:600;box-shadow:var(--shadow)}
+.sort-wrap{position:relative}
+.sort-wrap select{
+  appearance:none;cursor:pointer;
+  background:var(--surface);border:1px solid var(--border);border-radius:11px;
+  color:var(--ink);font-family:"Inter";font-size:13px;font-weight:500;
+  padding:10px 34px 10px 14px;
+  transition:border-color .2s;
+}
+.sort-wrap select:focus{outline:none;border-color:var(--accent)}
+.sort-wrap svg{position:absolute;right:12px;top:50%;transform:translateY(-50%);width:14px;height:14px;color:var(--muted);pointer-events:none}
+
+/* ---- domain grid ---- */
+.grid{display:grid;grid-template-columns:repeat(6,1fr);gap:16px}
+.panel{
+  grid-column:span 2;
+  background:var(--surface);border:1px solid var(--border);border-radius:18px;
+  padding:20px 20px 18px;cursor:pointer;
+  box-shadow:var(--shadow);
+  transition:transform .25s cubic-bezier(0.16,1,0.3,1),box-shadow .25s,border-color .2s;
+  position:relative;
+}
+/* size by importance (exam weight) */
+.panel[data-key="troubleshooting"]{grid-column:span 3}
+.panel[data-key="concepts"]{grid-column:span 3}
+.panel:hover{transform:translateY(-3px);box-shadow:var(--shadow-lift);border-color:var(--accent)}
+.panel:active{transform:scale(0.99)}
+.panel[aria-expanded="true"]{border-color:var(--accent)}
+.panel-head{display:flex;align-items:flex-start;gap:14px}
+.gauge{position:relative;flex:0 0 auto;width:62px;height:62px}
+.gauge svg{transform:rotate(-90deg)}
+.gauge .g-track{fill:none;stroke:var(--surface-2);stroke-width:7}
+.gauge .g-fill{fill:none;stroke:var(--accent);stroke-width:7;stroke-linecap:round;
+  transition:stroke-dashoffset 1s cubic-bezier(0.16,1,0.3,1)}
+.gauge .g-num{position:absolute;inset:0;display:grid;place-items:center;
+  font-family:var(--mono);font-weight:600;font-size:15px;color:var(--ink)}
+.panel-titles{flex:1;min-width:0}
+.panel-titles h3{font-family:"Fraunces",serif;font-weight:600;font-size:17px;color:var(--ink);line-height:1.15;letter-spacing:-0.005em}
+.panel-meta{display:flex;align-items:center;gap:8px;margin-top:8px;flex-wrap:wrap}
+.weight-badge{
+  font-family:var(--mono);font-size:11.5px;font-weight:600;
+  background:var(--surface-2);color:var(--ink-soft);
+  border:1px solid var(--border-soft);
+  padding:3px 8px;border-radius:7px;
+}
+.topic-count{font-size:12px;color:var(--muted)}
+.spark{display:flex;align-items:flex-end;gap:3px;height:34px;margin-top:16px}
+.spark i{
+  flex:1;border-radius:2px 2px 0 0;background:var(--accent);
+  min-height:3px;opacity:.85;
+  transform-origin:bottom;transform:scaleY(0);
+  transition:transform .7s cubic-bezier(0.16,1,0.3,1);
+}
+.spark i.is-pass{background:var(--pass)}
+.spark i.is-ghost{background:var(--border);opacity:.7}
+.panel-foot{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-top:16px;padding-top:13px;border-top:1px solid var(--border-soft);
+}
+.panel-foot .legend{font-size:11.5px;color:var(--muted)}
+.panel-foot .legend b{color:var(--ink-soft);font-weight:600;font-family:var(--mono)}
+.chevron{width:17px;height:17px;color:var(--muted);transition:transform .3s cubic-bezier(0.16,1,0.3,1)}
+.panel[aria-expanded="true"] .chevron{transform:rotate(180deg);color:var(--accent)}
+
+/* ---- detail region ---- */
+.detail{
+  grid-column:1 / -1;
+  background:var(--surface-2);
+  border:1px solid var(--border);
+  border-radius:18px;
+  overflow:hidden;
+  display:none;
+}
+.detail.open{display:block;animation:detailIn .45s cubic-bezier(0.16,1,0.3,1)}
+@keyframes detailIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:none}}
+.detail-head{
+  display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;
+  padding:18px 22px 14px;
+}
+.detail-head h4{font-family:"Fraunces",serif;font-weight:600;font-size:18px;color:var(--ink)}
+.detail-head .dh-meta{font-size:12.5px;color:var(--muted)}
+.detail-grid{padding:0 14px 16px;display:grid;grid-template-columns:1fr 1fr;gap:8px}
+@media(max-width:680px){.detail-grid{grid-template-columns:1fr}}
+.trow{
+  display:grid;
+  grid-template-columns:minmax(0,1.6fr) 64px 56px 52px 64px;
+  align-items:center;gap:12px;
+  padding:11px 14px;border-radius:11px;
+  background:var(--surface);border:1px solid var(--border-soft);
+  cursor:pointer;
+  transition:transform .2s cubic-bezier(0.16,1,0.3,1),box-shadow .2s,border-color .2s;
+}
+.trow:hover{transform:translateY(-2px);box-shadow:var(--shadow);border-color:var(--accent)}
+.trow:active{transform:scale(0.985)}
+.trow.pulse{animation:pulse .5s cubic-bezier(0.16,1,0.3,1)}
+@keyframes pulse{0%{transform:scale(1)}40%{transform:scale(1.025);box-shadow:var(--shadow-lift)}100%{transform:scale(1)}}
+.t-name{min-width:0}
+.t-name .nm{font-size:13.5px;font-weight:500;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.t-mastery{display:flex;flex-direction:column;gap:4px}
+.t-mastery .mbar{height:6px;border-radius:99px;background:var(--surface-2);overflow:hidden}
+.t-mastery .mbar i{display:block;height:100%;border-radius:99px;background:var(--accent);width:0;
+  transition:width .8s cubic-bezier(0.16,1,0.3,1)}
+.t-mastery .mbar i.is-pass{background:var(--pass)}
+.t-mastery .mval{font-family:var(--mono);font-size:11px;color:var(--muted)}
+.t-stat{font-family:var(--mono);font-size:12.5px;color:var(--ink-soft);text-align:right}
+.t-stat.ghost{color:var(--muted);opacity:.7}
+.t-status{justify-self:end;font-size:10.5px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;
+  padding:3px 8px;border-radius:6px;white-space:nowrap}
+.st-weak{background:oklch(0.50 0.155 55 / 0.12);color:var(--accent-deep)}
+[data-theme="dark"] .st-weak{background:oklch(0.80 0.155 64 / 0.16);color:var(--accent-bright)}
+.st-developing{background:var(--surface-2);color:var(--ink-soft);border:1px solid var(--border-soft)}
+.st-strong{background:oklch(0.52 0.13 150 / 0.13);color:var(--pass)}
+[data-theme="dark"] .st-strong{background:oklch(0.74 0.150 152 / 0.16)}
+.st-untouched{background:transparent;color:var(--muted);border:1px dashed var(--border)}
+.detail-empty{padding:24px 22px 28px;color:var(--muted);font-size:13.5px;text-align:center}
+
+/* hidden by filter */
+.panel.hidden,.stat.hidden{display:none}
+
+/* ---- toast ---- */
+.toast-stack{position:fixed;right:22px;bottom:22px;z-index:80;display:flex;flex-direction:column;gap:10px}
+.toast{
+  background:var(--ink);color:var(--bg);
+  font-size:13.5px;font-weight:500;
+  padding:13px 18px;border-radius:12px;
+  box-shadow:var(--shadow-lift);
+  display:flex;align-items:center;gap:10px;
+  min-width:230px;max-width:330px;
+  transform:translateX(120%);opacity:0;
+  transition:transform .4s cubic-bezier(0.16,1,0.3,1),opacity .4s;
+}
+.toast.show{transform:translateX(0);opacity:1}
+.toast .dot{width:7px;height:7px;border-radius:50%;background:var(--accent-bright);flex:0 0 auto}
+.toast b{color:var(--accent-bright);font-weight:600}
+
+/* ---- entrance ---- */
+.reveal{opacity:0;transform:translateY(16px)}
+
+@media (prefers-reduced-motion: no-preference){
+  .reveal{animation:revealIn .65s cubic-bezier(0.16,1,0.3,1) forwards;animation-delay:var(--d,0ms)}
+  @keyframes revealIn{to{opacity:1;transform:none}}
+}
+@media (prefers-reduced-motion: reduce){
+  .reveal{opacity:1;transform:none}
+  *{transition:none !important;animation:none !important}
+  .arc-fill,.g-fill,.mini-bar i,.spark i,.t-mastery .mbar i{transition:none !important}
+}
+
+/* ---- responsive ---- */
+@media(max-width:860px){
+  .hero{grid-template-columns:1fr}
+  .stats{grid-template-columns:repeat(3,1fr)}
+  .grid{grid-template-columns:repeat(2,1fr)}
+  .panel,.panel[data-key="troubleshooting"],.panel[data-key="concepts"]{grid-column:span 1}
+}
+@media(max-width:768px){
+  .wrap{padding:28px 16px 80px}
+  .trow{grid-template-columns:minmax(0,1.4fr) 56px 56px;gap:10px}
+  .trow .t-stat.attempts,.trow .t-status{display:none}
+}
+@media(max-width:560px){
+  .stats{grid-template-columns:repeat(2,1fr)}
+  .grid{grid-template-columns:1fr}
+  .toolbar{flex-direction:column;align-items:stretch}
+  .seg{justify-content:space-between}
+  .hero-readiness{flex-direction:column;text-align:center}
+}
+</style>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">
+  <svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+  <svg class="moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+</button>
+
+<div class="wrap">
+  <header class="page-head reveal" style="--d:0ms">
+    <div class="eyebrow">Network+ N10-009 readiness</div>
+    <h1>Topic progress</h1>
+    <p>A command center across the five exam domains. Drill into any domain to inspect its topics by mastery, accuracy and recency.</p>
+  </header>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="card hero-readiness reveal" style="--d:70ms">
+      <div class="arc-wrap">
+        <svg width="148" height="148" viewBox="0 0 148 148">
+          <defs>
+            <linearGradient id="bronzeGrad" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="var(--accent-bright)"/>
+              <stop offset="100%" stop-color="var(--accent-deep)"/>
+            </linearGradient>
+          </defs>
+          <circle class="arc-track" cx="74" cy="74" r="62"/>
+          <circle class="arc-fill" id="readinessArc" cx="74" cy="74" r="62"/>
+        </svg>
+        <div class="arc-center">
+          <div class="big"><span class="num" id="readinessNum">0</span>%</div>
+          <div class="lbl">Readiness</div>
+        </div>
+      </div>
+      <div class="readiness-meta">
+        <h2>Building momentum</h2>
+        <div class="sub">Average mastery across all 50 topics. Lift the weak domains to move this number.</div>
+        <div class="mini-coverage">
+          <span class="cap">Coverage</span>
+          <div class="mini-bar"><i id="coverageBar"></i></div>
+          <span class="num" id="coverageNum">0%</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card hero-rec reveal" style="--d:140ms" id="recCard">
+      <div class="rec-tag">Drill this next</div>
+      <div class="rec-name" id="recName">Network Models &amp; OSI</div>
+      <div class="rec-domain" id="recDomain">Networking Concepts</div>
+      <div class="rec-reason" id="recReason">Highest leverage: heavy exam weight, low mastery.</div>
+      <div class="rec-foot">
+        <div class="rec-mastery">Mastery <b id="recMastery">0%</b></div>
+        <button class="btn-drill" id="recDrill">Start drill</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- SUMMARY STATS -->
+  <section class="stats" id="statsRow"></section>
+
+  <!-- TOOLBAR -->
+  <div class="toolbar reveal" style="--d:210ms">
+    <div class="search">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3-3"/></svg>
+      <input type="text" id="searchInput" placeholder="Search topics by name…" autocomplete="off" />
+    </div>
+    <div class="seg" id="filterSeg" role="group" aria-label="Filter">
+      <button data-filter="all" aria-pressed="true">All</button>
+      <button data-filter="weak" aria-pressed="false">Weak only</button>
+      <button data-filter="untouched" aria-pressed="false">Untouched</button>
+      <button data-filter="strong" aria-pressed="false">Strong</button>
+    </div>
+    <div class="sort-wrap">
+      <select id="sortSelect" aria-label="Sort topics">
+        <option value="worst">Worst first</option>
+        <option value="recent">Most recent</option>
+        <option value="studied">Most studied</option>
+        <option value="az">A-Z</option>
+      </select>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m6 9 6 6 6-6"/></svg>
+    </div>
+  </div>
+
+  <!-- DOMAIN GRID -->
+  <section class="grid" id="domainGrid"></section>
+</div>
+
+<div class="toast-stack" id="toastStack"></div>
+
+<script>
+window.PROGRESS_DATA = {
+  "summary": { "total": 50, "weak": 18, "untouched": 10, "strong": 10, "developing": 12, "coverage": 80, "avgMastery": 38 },
+  "domains": [
+    { "key": "concepts", "label": "Networking Concepts", "weight": 23, "obj": "1.0", "count": 13, "avgMastery": 32 },
+    { "key": "implementation", "label": "Network Implementation", "weight": 20, "obj": "2.0", "count": 13, "avgMastery": 50 },
+    { "key": "operations", "label": "Network Operations", "weight": 19, "obj": "3.0", "count": 7, "avgMastery": 28 },
+    { "key": "security", "label": "Network Security", "weight": 14, "obj": "4.0", "count": 11, "avgMastery": 35 },
+    { "key": "troubleshooting", "label": "Network Troubleshooting", "weight": 24, "obj": "5.0", "count": 6, "avgMastery": 45 }
+  ],
+  "recommendation": { "name": "Network Models & OSI", "domainLabel": "Networking Concepts", "mastery": 0, "reason": "Highest leverage: heavy exam weight, low mastery" },
+  "topics": [
+    { "name": "Network Models & OSI", "domain": "concepts", "domainLabel": "Networking Concepts", "obj": "1.0", "mastery": 0, "accuracy": 0, "attempts": 0, "lastSeenDays": null, "status": "untouched" },
+    { "name": "TCP/IP Basics", "domain": "concepts", "domainLabel": "Networking Concepts", "obj": "1.0", "mastery": 20, "accuracy": 21, "attempts": 19, "lastSeenDays": 34, "status": "weak" },
+    { "name": "Subnetting & IP Addressing", "domain": "concepts", "domainLabel": "Networking Concepts", "obj": "1.0", "mastery": 88, "accuracy": 76, "attempts": 35, "lastSeenDays": 21, "status": "strong" },
+    { "name": "TCP/IP Applications", "domain": "concepts", "domainLabel": "Networking Concepts", "obj": "1.0", "mastery": 48, "accuracy": 38, "attempts": 9, "lastSeenDays": 2, "status": "developing" },
+    { "name": "Network Naming (DNS & DHCP)", "domain": "concepts", "domainLabel": "Networking Concepts", "obj": "1.0", "mastery": 57, "accuracy": 58, "attempts": 40, "lastSeenDays": 5, "status": "developing" },
+    { "name": "IPv6", "domain": "concepts", "domainLabel": "Networking Concepts", "obj": "1.0", "mastery": 30, "accuracy": 21, "attempts": 18, "lastSeenDays": 21, "status": "weak" },
+    { "name": "NAT & IP Services", "domain": "concepts", "domainLabel": "Networking Concepts", "obj": "1.0", "mastery": 0, "accuracy": 0, "attempts": 0, "lastSeenDays": null, "status": "untouched" },
+    { "name": "NTP, ICMP & Traffic Types", "domain": "concepts", "domainLabel": "Networking Concepts", "obj": "1.0", "mastery": 0, "accuracy": 0, "attempts": 0, "lastSeenDays": null, "status": "untouched" },
+    { "name": "Port Numbers", "domain": "concepts", "domainLabel": "Networking Concepts", "obj": "1.0", "mastery": 95, "accuracy": 73, "attempts": 22, "lastSeenDays": 2, "status": "strong" },
+    { "name": "Virtualisation & Cloud", "domain": "concepts", "domainLabel": "Networking Concepts", "obj": "1.0", "mastery": 47, "accuracy": 49, "attempts": 6, "lastSeenDays": 1, "status": "developing" },
+    { "name": "Cloud Networking & VPCs", "domain": "concepts", "domainLabel": "Networking Concepts", "obj": "1.0", "mastery": 9, "accuracy": 20, "attempts": 16, "lastSeenDays": 5, "status": "weak" },
+    { "name": "Network Appliances & Device Functions", "domain": "concepts", "domainLabel": "Networking Concepts", "obj": "1.0", "mastery": 15, "accuracy": 22, "attempts": 22, "lastSeenDays": 8, "status": "weak" },
+    { "name": "DNS Records & DNSSEC", "domain": "concepts", "domainLabel": "Networking Concepts", "obj": "1.0", "mastery": 10, "accuracy": 20, "attempts": 18, "lastSeenDays": 5, "status": "weak" },
+    { "name": "Routing Protocols", "domain": "implementation", "domainLabel": "Network Implementation", "obj": "2.0", "mastery": 85, "accuracy": 62, "attempts": 20, "lastSeenDays": 1, "status": "strong" },
+    { "name": "OSPF", "domain": "implementation", "domainLabel": "Network Implementation", "obj": "2.0", "mastery": 18, "accuracy": 20, "attempts": 5, "lastSeenDays": 13, "status": "weak" },
+    { "name": "BGP", "domain": "implementation", "domainLabel": "Network Implementation", "obj": "2.0", "mastery": 27, "accuracy": 23, "attempts": 30, "lastSeenDays": 21, "status": "weak" },
+    { "name": "Switch Features & VLANs", "domain": "implementation", "domainLabel": "Network Implementation", "obj": "2.0", "mastery": 6, "accuracy": 20, "attempts": 18, "lastSeenDays": 8, "status": "weak" },
+    { "name": "VLAN Trunking", "domain": "implementation", "domainLabel": "Network Implementation", "obj": "2.0", "mastery": 77, "accuracy": 55, "attempts": 30, "lastSeenDays": 2, "status": "strong" },
+    { "name": "STP/RSTP", "domain": "implementation", "domainLabel": "Network Implementation", "obj": "2.0", "mastery": 57, "accuracy": 37, "attempts": 32, "lastSeenDays": 2, "status": "developing" },
+    { "name": "Wireless Networking", "domain": "implementation", "domainLabel": "Network Implementation", "obj": "2.0", "mastery": 0, "accuracy": 0, "attempts": 0, "lastSeenDays": null, "status": "untouched" },
+    { "name": "Ethernet Basics", "domain": "implementation", "domainLabel": "Network Implementation", "obj": "2.0", "mastery": 22, "accuracy": 26, "attempts": 25, "lastSeenDays": 2, "status": "weak" },
+    { "name": "Ethernet Standards", "domain": "implementation", "domainLabel": "Network Implementation", "obj": "2.0", "mastery": 73, "accuracy": 53, "attempts": 40, "lastSeenDays": 2, "status": "developing" },
+    { "name": "Cabling & Topology", "domain": "implementation", "domainLabel": "Network Implementation", "obj": "2.0", "mastery": 47, "accuracy": 25, "attempts": 34, "lastSeenDays": 13, "status": "developing" },
+    { "name": "Integrating Networked Devices", "domain": "implementation", "domainLabel": "Network Implementation", "obj": "2.0", "mastery": 76, "accuracy": 60, "attempts": 11, "lastSeenDays": 2, "status": "strong" },
+    { "name": "SDN, NFV & Automation", "domain": "implementation", "domainLabel": "Network Implementation", "obj": "2.0", "mastery": 60, "accuracy": 57, "attempts": 7, "lastSeenDays": 21, "status": "developing" },
+    { "name": "Data Center Architectures", "domain": "implementation", "domainLabel": "Network Implementation", "obj": "2.0", "mastery": 99, "accuracy": 97, "attempts": 14, "lastSeenDays": 8, "status": "strong" },
+    { "name": "Network Operations", "domain": "operations", "domainLabel": "Network Operations", "obj": "3.0", "mastery": 38, "accuracy": 38, "attempts": 9, "lastSeenDays": 13, "status": "weak" },
+    { "name": "Data Centres", "domain": "operations", "domainLabel": "Network Operations", "obj": "3.0", "mastery": 17, "accuracy": 20, "attempts": 13, "lastSeenDays": 34, "status": "weak" },
+    { "name": "WAN Connectivity", "domain": "operations", "domainLabel": "Network Operations", "obj": "3.0", "mastery": 0, "accuracy": 0, "attempts": 0, "lastSeenDays": null, "status": "untouched" },
+    { "name": "SD-WAN & SASE", "domain": "operations", "domainLabel": "Network Operations", "obj": "3.0", "mastery": 42, "accuracy": 20, "attempts": 37, "lastSeenDays": 2, "status": "developing" },
+    { "name": "SMB & Network File Services", "domain": "operations", "domainLabel": "Network Operations", "obj": "3.0", "mastery": 62, "accuracy": 46, "attempts": 41, "lastSeenDays": 34, "status": "developing" },
+    { "name": "Business Continuity & Disaster Recovery", "domain": "operations", "domainLabel": "Network Operations", "obj": "3.0", "mastery": 38, "accuracy": 22, "attempts": 29, "lastSeenDays": 5, "status": "weak" },
+    { "name": "Network Monitoring & Observability", "domain": "operations", "domainLabel": "Network Operations", "obj": "3.0", "mastery": 0, "accuracy": 0, "attempts": 0, "lastSeenDays": null, "status": "untouched" },
+    { "name": "Securing TCP/IP", "domain": "security", "domainLabel": "Network Security", "obj": "4.0", "mastery": 28, "accuracy": 27, "attempts": 28, "lastSeenDays": 2, "status": "weak" },
+    { "name": "Protecting Networks", "domain": "security", "domainLabel": "Network Security", "obj": "4.0", "mastery": 37, "accuracy": 38, "attempts": 13, "lastSeenDays": 1, "status": "weak" },
+    { "name": "AAA & Authentication", "domain": "security", "domainLabel": "Network Security", "obj": "4.0", "mastery": 89, "accuracy": 68, "attempts": 36, "lastSeenDays": 34, "status": "strong" },
+    { "name": "IPsec & VPN Protocols", "domain": "security", "domainLabel": "Network Security", "obj": "4.0", "mastery": 59, "accuracy": 39, "attempts": 42, "lastSeenDays": 5, "status": "developing" },
+    { "name": "IPsec VPN", "domain": "security", "domainLabel": "Network Security", "obj": "4.0", "mastery": 0, "accuracy": 0, "attempts": 0, "lastSeenDays": null, "status": "untouched" },
+    { "name": "SSL/TLS VPN", "domain": "security", "domainLabel": "Network Security", "obj": "4.0", "mastery": 0, "accuracy": 0, "attempts": 0, "lastSeenDays": null, "status": "untouched" },
+    { "name": "PKI & Certificate Management", "domain": "security", "domainLabel": "Network Security", "obj": "4.0", "mastery": 44, "accuracy": 34, "attempts": 19, "lastSeenDays": 8, "status": "developing" },
+    { "name": "Firewalls, DMZ & Security Zones", "domain": "security", "domainLabel": "Network Security", "obj": "4.0", "mastery": 95, "accuracy": 92, "attempts": 10, "lastSeenDays": 1, "status": "strong" },
+    { "name": "WPA3 & EAP Authentication", "domain": "security", "domainLabel": "Network Security", "obj": "4.0", "mastery": 0, "accuracy": 0, "attempts": 0, "lastSeenDays": null, "status": "untouched" },
+    { "name": "Network Attacks & Threats", "domain": "security", "domainLabel": "Network Security", "obj": "4.0", "mastery": 36, "accuracy": 20, "attempts": 19, "lastSeenDays": 34, "status": "weak" },
+    { "name": "Physical Security Controls", "domain": "security", "domainLabel": "Network Security", "obj": "4.0", "mastery": 0, "accuracy": 0, "attempts": 0, "lastSeenDays": null, "status": "untouched" },
+    { "name": "Network Troubleshooting & Tools", "domain": "troubleshooting", "domainLabel": "Network Troubleshooting", "obj": "5.0", "mastery": 81, "accuracy": 81, "attempts": 12, "lastSeenDays": 1, "status": "strong" },
+    { "name": "Cable Issues", "domain": "troubleshooting", "domainLabel": "Network Troubleshooting", "obj": "5.0", "mastery": 22, "accuracy": 20, "attempts": 8, "lastSeenDays": 1, "status": "weak" },
+    { "name": "Service Issues", "domain": "troubleshooting", "domainLabel": "Network Troubleshooting", "obj": "5.0", "mastery": 41, "accuracy": 48, "attempts": 32, "lastSeenDays": 21, "status": "developing" },
+    { "name": "Perf Issues", "domain": "troubleshooting", "domainLabel": "Network Troubleshooting", "obj": "5.0", "mastery": 89, "accuracy": 86, "attempts": 12, "lastSeenDays": 5, "status": "strong" },
+    { "name": "Connection Issues", "domain": "troubleshooting", "domainLabel": "Network Troubleshooting", "obj": "5.0", "mastery": 16, "accuracy": 20, "attempts": 39, "lastSeenDays": 34, "status": "weak" },
+    { "name": "CompTIA Troubleshooting Methodology", "domain": "troubleshooting", "domainLabel": "Network Troubleshooting", "obj": "5.0", "mastery": 22, "accuracy": 20, "attempts": 21, "lastSeenDays": 13, "status": "weak" }
+  ]
+};
+
+(function(){
+  "use strict";
+  var D = window.PROGRESS_DATA;
+  var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  var ARC_R = 62, ARC_C = 2 * Math.PI * ARC_R;
+  var GA_R = 27, GA_C = 2 * Math.PI * GA_R; // panel gauge radius
+
+  // ---- state ----
+  var state = { search: "", filter: "all", sort: "worst", openKey: null };
+
+  // ---- helpers ----
+  function esc(s){ return String(s).replace(/[&<>"]/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]; }); }
+  function pass(t){ return t.status === "strong"; }
+  function lastSeenLabel(d){ if (d === null) return "··"; if (d === 0) return "today"; if (d === 1) return "1d"; return d + "d"; }
+
+  function statusClass(s){ return "st-" + s; }
+  function statusLabel(s){ return s; }
+
+  // ---- count-up ----
+  function countUp(el, target, suffix){
+    suffix = suffix || "";
+    if (reduceMotion){ el.textContent = target + suffix; return; }
+    var dur = 700, start = performance.now();
+    function step(now){
+      var p = Math.min(1, (now - start) / dur);
+      var e = 1 - Math.pow(1 - p, 3);
+      el.textContent = Math.round(target * e) + suffix;
+      if (p < 1) requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  }
+
+  // ---- topics by domain ----
+  function topicsFor(key){ return D.topics.filter(function(t){ return t.domain === key; }); }
+
+  function applyToolbarToTopics(list){
+    var s = state.search.trim().toLowerCase();
+    var out = list.filter(function(t){
+      if (s && t.name.toLowerCase().indexOf(s) === -1) return false;
+      if (state.filter === "weak" && t.status !== "weak") return false;
+      if (state.filter === "untouched" && t.status !== "untouched") return false;
+      if (state.filter === "strong" && t.status !== "strong") return false;
+      return true;
+    });
+    out.sort(function(a,b){
+      switch(state.sort){
+        case "worst": return a.mastery - b.mastery;
+        case "recent": {
+          var av = a.lastSeenDays === null ? Infinity : a.lastSeenDays;
+          var bv = b.lastSeenDays === null ? Infinity : b.lastSeenDays;
+          return av - bv;
+        }
+        case "studied": return b.attempts - a.attempts;
+        case "az": return a.name.localeCompare(b.name);
+      }
+      return 0;
+    });
+    return out;
+  }
+
+  // ---- SUMMARY STATS ----
+  function buildStats(){
+    var row = document.getElementById("statsRow");
+    var defs = [
+      { v: D.summary.coverage, suffix: "%", k: "Coverage", id: "cov" },
+      { v: D.summary.avgMastery, suffix: "%", k: "Avg mastery", id: "avg" },
+      { v: D.summary.weak, suffix: "", k: "Weak topics", id: "weak" },
+      { v: D.summary.untouched, suffix: "", k: "Untouched", id: "unt" },
+      { v: D.summary.strong, suffix: "", k: "Strong", id: "str", pass: true }
+    ];
+    defs.forEach(function(def, i){
+      var el = document.createElement("div");
+      el.className = "stat reveal" + (def.pass ? " is-pass" : "");
+      el.style.setProperty("--d", (160 + i*30) + "ms");
+      el.innerHTML = '<div class="v"><span class="num" data-v="'+def.v+'" data-suffix="'+def.suffix+'">0</span></div><div class="k">'+def.k+'</div>';
+      row.appendChild(el);
+    });
+  }
+
+  // ---- DOMAIN PANELS ----
+  function spark(topics){
+    // mini bars: one per topic, height by mastery
+    return topics.map(function(t){
+      var h = t.status === "untouched" ? 6 : Math.max(8, t.mastery);
+      var cls = t.status === "untouched" ? "is-ghost" : (pass(t) ? "is-pass" : "");
+      return '<i class="'+cls+'" data-h="'+h+'" style="height:'+h+'%"></i>';
+    }).join("");
+  }
+
+  function buildPanels(){
+    var grid = document.getElementById("domainGrid");
+    grid.innerHTML = "";
+    D.domains.forEach(function(dom, i){
+      var topics = topicsFor(dom.key);
+      var strongN = topics.filter(pass).length;
+      var weakN = topics.filter(function(t){ return t.status === "weak"; }).length;
+      var panel = document.createElement("div");
+      panel.className = "panel reveal";
+      panel.setAttribute("data-key", dom.key);
+      panel.setAttribute("role", "button");
+      panel.setAttribute("tabindex", "0");
+      panel.setAttribute("aria-expanded", "false");
+      panel.style.setProperty("--d", (290 + i*70) + "ms");
+      panel.innerHTML =
+        '<div class="panel-head">'+
+          '<div class="gauge">'+
+            '<svg width="62" height="62" viewBox="0 0 62 62">'+
+              '<circle class="g-track" cx="31" cy="31" r="'+GA_R+'"/>'+
+              '<circle class="g-fill" cx="31" cy="31" r="'+GA_R+'" data-val="'+dom.avgMastery+'" '+
+                'stroke-dasharray="'+GA_C.toFixed(2)+'" stroke-dashoffset="'+GA_C.toFixed(2)+'"/>'+
+            '</svg>'+
+            '<div class="g-num num">'+dom.avgMastery+'</div>'+
+          '</div>'+
+          '<div class="panel-titles">'+
+            '<h3>'+esc(dom.label)+'</h3>'+
+            '<div class="panel-meta">'+
+              '<span class="weight-badge">'+dom.weight+'% exam</span>'+
+              '<span class="topic-count">'+dom.count+' topics</span>'+
+            '</div>'+
+          '</div>'+
+        '</div>'+
+        '<div class="spark">'+spark(topics)+'</div>'+
+        '<div class="panel-foot">'+
+          '<div class="legend"><b>'+weakN+'</b> weak &middot; <b>'+strongN+'</b> strong</div>'+
+          '<svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m6 9 6 6 6-6"/></svg>'+
+        '</div>';
+
+      panel.addEventListener("click", function(){ toggleDomain(dom.key); });
+      panel.addEventListener("keydown", function(e){
+        if (e.key === "Enter" || e.key === " "){ e.preventDefault(); toggleDomain(dom.key); }
+      });
+      grid.appendChild(panel);
+    });
+  }
+
+  function animatePanelVisuals(){
+    if (reduceMotion){
+      document.querySelectorAll(".g-fill").forEach(function(c){
+        var v = +c.getAttribute("data-val");
+        c.style.strokeDashoffset = (GA_C * (1 - v/100)).toFixed(2);
+      });
+      document.querySelectorAll(".spark i").forEach(function(b){ b.style.transform = "scaleY(1)"; });
+      return;
+    }
+    requestAnimationFrame(function(){
+      setTimeout(function(){
+        document.querySelectorAll(".g-fill").forEach(function(c){
+          var v = +c.getAttribute("data-val");
+          c.style.strokeDashoffset = (GA_C * (1 - v/100)).toFixed(2);
+        });
+        document.querySelectorAll(".spark i").forEach(function(b, idx){
+          setTimeout(function(){ b.style.transform = "scaleY(1)"; }, idx * 8);
+        });
+      }, 360);
+    });
+  }
+
+  // ---- DETAIL REGION ----
+  function rowHtml(t){
+    var pcls = pass(t) ? "is-pass" : "";
+    var ghost = t.status === "untouched" ? "ghost" : "";
+    return '<div class="trow" data-name="'+esc(t.name)+'">'+
+      '<div class="t-name"><div class="nm">'+esc(t.name)+'</div></div>'+
+      '<div class="t-mastery">'+
+        '<div class="mbar"><i class="'+pcls+'" data-w="'+t.mastery+'"></i></div>'+
+        '<div class="mval">'+t.mastery+'% mastery</div>'+
+      '</div>'+
+      '<div class="t-stat '+ghost+'">'+(t.attempts ? t.accuracy+'%' : '··')+'</div>'+
+      '<div class="t-stat attempts '+ghost+'">'+(t.attempts ? t.attempts+'×' : '··')+'</div>'+
+      '<div class="t-status '+statusClass(t.status)+'">'+statusLabel(t.status)+'</div>'+
+    '</div>';
+  }
+
+  function renderDetail(panel, dom){
+    var existing = document.querySelector(".detail");
+    if (existing) existing.remove();
+
+    var topics = applyToolbarToTopics(topicsFor(dom.key));
+    var detail = document.createElement("div");
+    detail.className = "detail";
+    var inner = '<div class="detail-head">'+
+        '<h4>'+esc(dom.label)+'</h4>'+
+        '<span class="dh-meta">Objective '+dom.obj+' &middot; '+dom.weight+'% of exam &middot; '+dom.count+' topics</span>'+
+      '</div>';
+    if (topics.length === 0){
+      inner += '<div class="detail-empty">No topics match the current search or filter in this domain.</div>';
+    } else {
+      inner += '<div class="detail-grid">' + topics.map(rowHtml).join("") + '</div>';
+    }
+    detail.innerHTML = inner;
+
+    // insert detail right after the panel's grid row: append to grid, then place after the panel
+    var grid = document.getElementById("domainGrid");
+    if (panel.nextSibling) grid.insertBefore(detail, panel.nextSibling);
+    else grid.appendChild(detail);
+
+    // wire row drill
+    detail.querySelectorAll(".trow").forEach(function(r){
+      r.addEventListener("click", function(){
+        var nm = r.getAttribute("data-name");
+        if (!reduceMotion){ r.classList.remove("pulse"); void r.offsetWidth; r.classList.add("pulse"); }
+        showToast(nm);
+      });
+    });
+
+    // animate bars
+    requestAnimationFrame(function(){
+      setTimeout(function(){
+        detail.querySelectorAll(".mbar i").forEach(function(b){
+          b.style.width = b.getAttribute("data-w") + "%";
+        });
+      }, reduceMotion ? 0 : 40);
+    });
+
+    // open
+    requestAnimationFrame(function(){ detail.classList.add("open"); });
+  }
+
+  function toggleDomain(key){
+    var panels = document.querySelectorAll(".panel");
+    if (state.openKey === key){
+      state.openKey = null;
+      panels.forEach(function(p){ p.setAttribute("aria-expanded","false"); });
+      var d = document.querySelector(".detail");
+      if (d) d.remove();
+      return;
+    }
+    state.openKey = key;
+    var dom = D.domains.filter(function(x){ return x.key === key; })[0];
+    var panel = null;
+    panels.forEach(function(p){
+      var match = p.getAttribute("data-key") === key;
+      p.setAttribute("aria-expanded", match ? "true" : "false");
+      if (match) panel = p;
+    });
+    if (panel) renderDetail(panel, dom);
+  }
+
+  // ---- toolbar re-scope ----
+  function reRender(){
+    // re-scope panels: hide a domain panel if NONE of its topics survive search+filter
+    var anyVisible = false;
+    document.querySelectorAll(".panel").forEach(function(p){
+      var key = p.getAttribute("data-key");
+      var survivors = applyToolbarToTopics(topicsFor(key));
+      var show = survivors.length > 0;
+      p.classList.toggle("hidden", !show);
+      if (show) anyVisible = true;
+      // update legend counts to scoped
+      var weakN = survivors.filter(function(t){ return t.status==="weak"; }).length;
+      var strongN = survivors.filter(pass).length;
+      var legend = p.querySelector(".legend");
+      if (legend) legend.innerHTML = '<b>'+weakN+'</b> weak &middot; <b>'+strongN+'</b> strong';
+    });
+    // if open domain still visible, refresh its detail; else close
+    if (state.openKey){
+      var p = document.querySelector('.panel[data-key="'+state.openKey+'"]');
+      if (p && !p.classList.contains("hidden")){
+        var dom = D.domains.filter(function(x){ return x.key === state.openKey; })[0];
+        renderDetail(p, dom);
+      } else {
+        state.openKey = null;
+        var d = document.querySelector(".detail");
+        if (d) d.remove();
+        document.querySelectorAll(".panel").forEach(function(pp){ pp.setAttribute("aria-expanded","false"); });
+      }
+    }
+  }
+
+  // ---- toast ----
+  function showToast(name){
+    var stack = document.getElementById("toastStack");
+    var t = document.createElement("div");
+    t.className = "toast";
+    t.innerHTML = '<span class="dot"></span><span>Starting drill: <b>'+esc(name)+'</b></span>';
+    stack.appendChild(t);
+    requestAnimationFrame(function(){ requestAnimationFrame(function(){ t.classList.add("show"); }); });
+    setTimeout(function(){
+      t.classList.remove("show");
+      setTimeout(function(){ if (t.parentNode) t.parentNode.removeChild(t); }, 450);
+    }, 2600);
+  }
+
+  // ---- HERO ----
+  function buildHero(){
+    document.getElementById("recName").textContent = D.recommendation.name;
+    document.getElementById("recDomain").textContent = D.recommendation.domainLabel;
+    var reason = D.recommendation.reason;
+    if (reason.indexOf(":") === -1 && reason.slice(-1) !== ".") reason += ".";
+    else if (reason.slice(-1) !== "." ) reason += ".";
+    document.getElementById("recReason").textContent = reason;
+
+    document.getElementById("recDrill").addEventListener("click", function(){
+      var card = document.getElementById("recCard");
+      if (!reduceMotion){ card.style.transition="transform .45s cubic-bezier(0.16,1,0.3,1)"; card.style.transform="scale(0.985)"; setTimeout(function(){ card.style.transform=""; }, 200); }
+      showToast(D.recommendation.name);
+    });
+  }
+
+  function animateHero(){
+    var arc = document.getElementById("readinessArc");
+    arc.setAttribute("stroke-dasharray", ARC_C.toFixed(2));
+    arc.setAttribute("stroke-dashoffset", ARC_C.toFixed(2));
+    var avg = D.summary.avgMastery, cov = D.summary.coverage, recM = D.recommendation.mastery;
+
+    countUp(document.getElementById("readinessNum"), avg, "");
+    countUp(document.getElementById("coverageNum"), cov, "%");
+    countUp(document.getElementById("recMastery"), recM, "%");
+
+    if (reduceMotion){
+      arc.style.strokeDashoffset = (ARC_C * (1 - avg/100)).toFixed(2);
+      document.getElementById("coverageBar").style.width = cov + "%";
+    } else {
+      requestAnimationFrame(function(){ setTimeout(function(){
+        arc.style.strokeDashoffset = (ARC_C * (1 - avg/100)).toFixed(2);
+        document.getElementById("coverageBar").style.width = cov + "%";
+      }, 120); });
+    }
+  }
+
+  function animateStats(){
+    document.querySelectorAll("#statsRow .v .num").forEach(function(el){
+      countUp(el, +el.getAttribute("data-v"), el.getAttribute("data-suffix") || "");
+    });
+  }
+
+  // ---- toolbar wiring ----
+  function wireToolbar(){
+    var search = document.getElementById("searchInput");
+    search.addEventListener("input", function(){ state.search = search.value; reRender(); });
+
+    document.getElementById("filterSeg").addEventListener("click", function(e){
+      var b = e.target.closest("button"); if (!b) return;
+      state.filter = b.getAttribute("data-filter");
+      this.querySelectorAll("button").forEach(function(x){ x.setAttribute("aria-pressed", x === b ? "true" : "false"); });
+      reRender();
+    });
+
+    document.getElementById("sortSelect").addEventListener("change", function(){
+      state.sort = this.value; reRender();
+    });
+  }
+
+  // ---- theme ----
+  document.getElementById("themeToggle").addEventListener("click", function(){
+    var html = document.documentElement;
+    html.setAttribute("data-theme", html.getAttribute("data-theme") === "dark" ? "light" : "dark");
+  });
+
+  // ---- init ----
+  buildHero();
+  buildStats();
+  buildPanels();
+  wireToolbar();
+
+  if (reduceMotion){
+    animateHero(); animateStats(); animatePanelVisuals();
+  } else {
+    requestAnimationFrame(function(){
+      animateHero();
+      setTimeout(animateStats, 120);
+      animatePanelVisuals();
+    });
+  }
+})();
+</script>
+</body>
+</html>

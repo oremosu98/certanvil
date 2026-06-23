@@ -1,0 +1,172 @@
+<!DOCTYPE html><html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Milestones — 4 · Almost There</title>
+<link rel="stylesheet" href="ms.css">
+<style>
+  /* ---- "Almost There" ambient helpers (Emil: whisper-quiet) ---- */
+  /* near-complete tiles get a CSS var the rAF loop drives; default 0 = calm */
+  .ms-tile.is-near {
+    --pulse: 0;          /* 0..1 breathing value, set by rAF */
+    --near-amp: 1;       /* closeness-scaled prominence (closest = larger) */
+  }
+  /* warm wash + ember glow, both gated on --pulse and --near-amp.
+     Amplitudes are tiny on purpose. */
+  .ms-tile.is-near::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    border-radius: 4px;
+    /* faint warm wash */
+    background: radial-gradient(120% 140% at 80% 0%,
+                  rgba(181, 105, 42, calc(0.05 + 0.05 * var(--pulse) * var(--near-amp))),
+                  rgba(181, 105, 42, 0) 70%);
+    /* soft ember glow */
+    box-shadow: 0 0 calc(8px + 10px * var(--pulse) * var(--near-amp))
+                 calc(-3px) rgba(197, 131, 63, calc(0.10 + 0.12 * var(--pulse) * var(--near-amp)));
+    transition: none;
+    z-index: 0;
+  }
+  .ms-tile.is-near > * { position: relative; z-index: 1; }
+
+  /* the quiet "N to go" pill */
+  .ms-togo {
+    display: inline-block;
+    margin-top: 7px;
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: 9.5px;
+    font-weight: 700;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: #8a4e1c;
+    background: rgba(181, 105, 42, 0.10);
+    border: 1px solid rgba(181, 105, 42, 0.18);
+    padding: 2px 7px;
+    border-radius: 999px;
+    line-height: 1.4;
+    white-space: nowrap;
+  }
+  .ms-tile.is-closest .ms-togo {
+    color: #7a4316;
+    background: rgba(181, 105, 42, 0.14);
+    border-color: rgba(181, 105, 42, 0.26);
+  }
+
+  /* hair-thin progress underline at the bottom of the tile */
+  .ms-progline {
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    height: 1.5px;
+    width: var(--fill, 0%);
+    background: linear-gradient(90deg,
+                  rgba(181, 105, 42, 0.30),
+                  rgba(197, 131, 63, calc(0.45 + 0.30 * var(--pulse, 0))));
+    border-radius: 0 1px 1px 0;
+    z-index: 2;
+    transition: width 900ms var(--ease-out);
+  }
+
+  /* Reduced motion: no rAF, no pulse — static guidance only. */
+  @media (prefers-reduced-motion: reduce) {
+    .ms-tile.is-near { --pulse: 1; --near-amp: 0.6; }
+    .ms-tile.is-near::before {
+      background: radial-gradient(120% 140% at 80% 0%,
+                    rgba(181, 105, 42, 0.06), rgba(181, 105, 42, 0) 70%);
+      box-shadow: 0 0 9px -3px rgba(197, 131, 63, 0.12);
+    }
+    .ms-tile.is-closest.is-near::before {
+      background: radial-gradient(120% 140% at 80% 0%,
+                    rgba(181, 105, 42, 0.09), rgba(181, 105, 42, 0) 70%);
+      box-shadow: 0 0 11px -3px rgba(197, 131, 63, 0.16);
+    }
+    .ms-progline { transition: none; }
+  }
+</style>
+</head><body>
+  <div class="mock-banner">
+    <h2>4 · Almost There</h2>
+    <p>The wall nudges you toward your next win. Locked badges you’re close to earning carry a soft, slow pulse and a quiet “N to go” cue — a living hint at the most reachable next achievement — while distant and earned ones rest calmly.</p>
+    <span class="mock-hint">Watch the near-complete badges breathe. Subtle by design.</span>
+  </div>
+  <div class="ms-shell"><div id="mount"></div></div>
+  <script src="ms.js"></script>
+  <script>
+    const M = window.Milestones.render('#mount');
+    /* ANIMATION LAYER */
+    (function () {
+      const REDUCED = window.matchMedia &&
+        window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+      // 1. Find "almost there" tiles: locked, with progress, reachable (>= 0.55).
+      const near = M.tiles
+        .filter(t => t.progress && !t.unlocked)
+        .map(t => {
+          const [cur, target] = t.progress;
+          return { t, cur, target, closeness: cur / target, togo: target - cur };
+        })
+        .filter(n => n.closeness >= 0.55)
+        .sort((a, b) => b.closeness - a.closeness); // closest first
+
+      if (!near.length) return;
+
+      // unit-string per def so the pill reads naturally
+      const UNIT = {
+        ready_650: 'pts to go',
+        streak_7: 'to go',
+        hundred_qs: 'to go',
+        deep_dive_10: 'to go',
+        labs_5: 'to go',
+      };
+
+      near.forEach((n, rank) => {
+        const tile = n.t.el;
+        tile.classList.add('is-near');
+        if (rank === 0) tile.classList.add('is-closest');
+
+        // closest a touch more prominent; #2 slightly less; rest gentler still.
+        const amp = rank === 0 ? 1.0 : rank === 1 ? 0.72 : 0.5;
+        tile.style.setProperty('--near-amp', amp.toFixed(3));
+
+        // 2a. quiet "N to go" pill (built via M.el)
+        const unit = UNIT[n.t.def.id] || 'to go';
+        const pill = M.el('div', { class: 'ms-togo' });
+        pill.textContent = n.togo + ' ' + unit;
+        tile.appendChild(pill);
+
+        // 2c. hair-thin progress underline gently shimmering toward fill
+        const line = M.el('div', { class: 'ms-progline' });
+        tile.appendChild(line);
+        // let layout settle, then animate width toward current/target
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            line.style.setProperty('--fill',
+              (n.closeness * 100).toFixed(1) + '%');
+          });
+        });
+
+        // seed a phase so tiles don't breathe in unison
+        n.phase = rank * 1.7 + (n.cur % 5) * 0.31;
+      });
+
+      if (REDUCED) return; // static guidance already applied via CSS
+
+      // 2b. ONE shared rAF loop, framerate-independent via performance.now().
+      const PERIOD = 2600; // ~2.6s breathing period
+      const TWO_PI = Math.PI * 2;
+
+      function frame(now) {
+        const tBase = (now / PERIOD) * TWO_PI;
+        for (let i = 0; i < near.length; i++) {
+          const n = near[i];
+          // raw sine -> 0..1; eased slightly for a softer dwell at the lows
+          const s = (Math.sin(tBase + n.phase) + 1) * 0.5; // 0..1
+          const pulse = s * s * (3 - 2 * s); // smoothstep, keeps it gentle
+          n.t.el.style.setProperty('--pulse', pulse.toFixed(4));
+        }
+        requestAnimationFrame(frame);
+      }
+      requestAnimationFrame(frame);
+    })();
+  </script>
+</body></html>

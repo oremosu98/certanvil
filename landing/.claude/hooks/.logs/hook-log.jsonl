@@ -1,0 +1,13 @@
+{"ts":"2026-06-02T20:21:23.668Z","hook":"subagent-context","action":"skip","reason":"no-active-tsv"}
+{"ts":"2026-06-05T17:35:30.749Z","hook":"scout-block","action":"block","tool":"Bash","path":"/tmp/landing-serve.log","matched":"/tmp/landing-serve.log"}
+{"ts":"2026-06-05T17:35:39.160Z","hook":"scout-block","action":"block","tool":"Bash","path":".claude/worktrees/feat-mobile-polish/.audit/landing-serve.log","matched":"landing/.claude/worktrees/feat-mobile-polish/.audit/landing-serve.log"}
+{"ts":"2026-06-13T09:11:49.529Z","hook":"subagent-context","action":"skip","reason":"no-active-tsv"}
+{"ts":"2026-06-13T09:12:02.595Z","hook":"subagent-context","action":"skip","reason":"no-active-tsv"}
+{"ts":"2026-06-13T09:12:12.899Z","hook":"subagent-context","action":"skip","reason":"no-active-tsv"}
+{"ts":"2026-06-13T09:12:25.129Z","hook":"subagent-context","action":"skip","reason":"no-active-tsv"}
+{"ts":"2026-06-13T09:17:44.984Z","hook":"subagent-context","action":"skip","reason":"no-active-tsv"}
+{"ts":"2026-06-13T09:21:47.379Z","hook":"subagent-context","action":"skip","reason":"no-active-tsv"}
+{"ts":"2026-06-13T09:22:10.880Z","hook":"subagent-context","action":"skip","reason":"no-active-tsv"}
+{"ts":"2026-06-13T09:22:31.987Z","hook":"subagent-context","action":"skip","reason":"no-active-tsv"}
+{"ts":"2026-06-13T09:29:25.664Z","hook":"subagent-context","action":"skip","reason":"no-active-tsv"}
+{"ts":"2026-06-13T09:29:39.307Z","hook":"subagent-context","action":"skip","reason":"no-active-tsv"}

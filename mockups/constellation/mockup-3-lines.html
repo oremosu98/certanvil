@@ -1,0 +1,190 @@
+<!DOCTYPE html><html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mockup 3 — Constellation Lines</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="constellation.css">
+<style>
+  .const-edge-layer line { pointer-events: none; }
+</style>
+</head><body>
+  <div class="mock-banner">
+    <h2>3 · Constellation Lines — relationships on focus</h2>
+    <p>Hover or focus a node and glowing tethers trace outward to its sibling topics, like a constellation being drawn. Unrelated nodes dim back. A scatter of dots becomes a map of how knowledge connects.</p>
+    <span class="mock-hint">Hover any node. Tab through them with the keyboard too.</span>
+  </div>
+  <div class="const-shell">
+    <div class="const-head">
+      <h1 class="const-title"><span class="spark">✨</span> Knowledge <em>Constellation</em></h1>
+      <span class="const-sub">size = practice · color = domain · brightness = mastery</span>
+    </div>
+    <div id="mount"></div>
+    <div class="const-legend">
+      <span><i class="dot"></i>≥80% mastered</span>
+      <span><i class="dot t2"></i>≥70% proficient</span>
+      <span><i class="dot t3"></i>≥55% developing</span>
+      <span><i class="dot t4"></i>&lt;55% / not studied</span>
+    </div>
+  </div>
+  <script src="constellation.js"></script>
+  <script>
+    const C = window.Constellation.render('#mount');
+
+    const DOMAIN_COLOR = { 1: '#7c5cff', 2: '#46b67a', 3: '#4f7fd6', 4: '#e8943a', 5: '#e8503a' };
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    // ---- 1. PRECOMPUTE edges: 2-3 nearest same-domain siblings, deduped ----
+    const nodes = C.nodes;
+    const edgeMap = new Map();        // sorted pair key -> { a, b }
+    const incident = new Map();       // node -> [lineEl, ...]
+    nodes.forEach(n => incident.set(n, []));
+
+    nodes.forEach((node) => {
+      const sameDomain = nodes.filter(o => o !== node && o.domain === node.domain);
+      sameDomain.sort((p, q) => {
+        const dp = (p.cx - node.cx) ** 2 + (p.cy - node.cy) ** 2;
+        const dq = (q.cx - node.cx) ** 2 + (q.cy - node.cy) ** 2;
+        return dp - dq;
+      });
+      const k = Math.min(3, Math.max(2, sameDomain.length));
+      sameDomain.slice(0, k).forEach((nbr) => {
+        const key = node._i < nbr._i ? node._i + '-' + nbr._i : nbr._i + '-' + node._i;
+        if (!edgeMap.has(key)) edgeMap.set(key, { a: node, b: nbr });
+      });
+    });
+
+    // ---- 2. Create one <line> per edge inside the edge layer ----
+    edgeMap.forEach(({ a, b }) => {
+      const line = C.el('line', {
+        x1: a.cx, y1: a.cy, x2: b.cx, y2: b.cy,
+        'stroke-linecap': 'round'
+      });
+      const color = DOMAIN_COLOR[a.domain] || '#7c5cff';
+      line.style.stroke = color;
+      line.style.strokeWidth = '1.5';
+      line.style.opacity = '0';
+      const len = Math.hypot(b.cx - a.cx, b.cy - a.cy);
+      line._len = len;
+      if (!reduceMotion) {
+        line.style.strokeDasharray = len;
+        line.style.strokeDashoffset = len;
+      }
+      C.layers.edge.appendChild(line);
+      incident.get(a).push(line);
+      incident.get(b).push(line);
+    });
+
+    // ---- timing / first-hover delay flag (Emil's tooltip rule) ----
+    let revealArmed = false;          // becomes true after first reveal; instant thereafter
+    let firstTimer = null;
+    let disarmTimer = null;
+
+    function neighborsOf(node) {
+      const set = new Set([node]);
+      incident.get(node).forEach((line) => {
+        // resolve the two endpoints back from coords would be fragile; track on line
+      });
+      return set;
+    }
+
+    // attach endpoint refs for neighbor lookup
+    edgeMap.forEach(({ a, b }) => {});
+    const lineEnds = new Map();
+    {
+      let idx = 0;
+      edgeMap.forEach(({ a, b }) => {
+        const line = C.layers.edge.children[idx++];
+        lineEnds.set(line, [a, b]);
+      });
+    }
+
+    function activeNeighbors(node) {
+      const set = new Set([node]);
+      incident.get(node).forEach((line) => {
+        const [a, b] = lineEnds.get(line);
+        set.add(a); set.add(b);
+      });
+      return set;
+    }
+
+    function doReveal(node) {
+      const lines = incident.get(node);
+      lines.forEach((line, i) => {
+        const len = line._len;
+        if (reduceMotion) {
+          line.style.transition = 'opacity 200ms ease';
+          line.style.opacity = '0.7';
+        } else {
+          const delay = i * 40;
+          line.style.transition =
+            'stroke-dashoffset 220ms cubic-bezier(0.23,1,0.32,1) ' + delay + 'ms, ' +
+            'opacity 220ms cubic-bezier(0.23,1,0.32,1) ' + delay + 'ms';
+          line.style.strokeDashoffset = '0';
+          line.style.opacity = '0.7';
+        }
+      });
+
+      // dim unrelated nodes
+      const keep = activeNeighbors(node);
+      nodes.forEach((n) => {
+        n.gEl.style.transition = 'opacity 200ms ease';
+        n.gEl.style.opacity = keep.has(n) ? '1' : '0.25';
+      });
+
+      // enlarge hovered core
+      node.coreEl.style.transformBox = 'fill-box';
+      node.coreEl.style.transformOrigin = 'center';
+      node.coreEl.style.transition = 'transform 200ms cubic-bezier(0.23,1,0.32,1)';
+      node.coreEl.style.transform = 'scale(1.15)';
+    }
+
+    function retract(node) {
+      const lines = incident.get(node);
+      lines.forEach((line) => {
+        if (reduceMotion) {
+          line.style.transition = 'opacity 150ms ease';
+          line.style.opacity = '0';
+        } else {
+          line.style.transition =
+            'stroke-dashoffset 150ms cubic-bezier(0.4,0,1,1), opacity 150ms cubic-bezier(0.4,0,1,1)';
+          line.style.strokeDashoffset = line._len;
+          line.style.opacity = '0';
+        }
+      });
+      nodes.forEach((n) => {
+        n.gEl.style.transition = 'opacity 150ms ease';
+        n.gEl.style.opacity = '1';
+      });
+      node.coreEl.style.transform = 'scale(1)';
+    }
+
+    function onEnter(node) {
+      if (disarmTimer) { clearTimeout(disarmTimer); disarmTimer = null; }
+      if (revealArmed) {
+        doReveal(node);
+      } else {
+        if (firstTimer) clearTimeout(firstTimer);
+        firstTimer = setTimeout(() => {
+          revealArmed = true;
+          doReveal(node);
+        }, 120);
+      }
+    }
+
+    function onLeave(node) {
+      if (firstTimer) { clearTimeout(firstTimer); firstTimer = null; }
+      retract(node);
+      // disarm after a brief gap of no hovering, so next hover waits again
+      if (disarmTimer) clearTimeout(disarmTimer);
+      disarmTimer = setTimeout(() => { revealArmed = false; }, 260);
+    }
+
+    nodes.forEach((node) => {
+      const g = node.gEl;
+      g.addEventListener('pointerenter', () => onEnter(node));
+      g.addEventListener('pointerleave', () => onLeave(node));
+      g.addEventListener('focus', () => onEnter(node), true);
+      g.addEventListener('blur', () => onLeave(node), true);
+    });
+  </script>
+</body></html>

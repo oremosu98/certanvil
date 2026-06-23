@@ -1,0 +1,91 @@
+<!DOCTYPE html><html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Study Rhythm — 1 · Ripple Reveal</title>
+<link rel="stylesheet" href="heatmap.css">
+<style>
+  #replay {
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: 11px; font-weight: 700; letter-spacing: .04em;
+    color: #fff; background: var(--accent);
+    border: 1px solid rgba(0,0,0,0.12); border-radius: 999px;
+    padding: 7px 14px; cursor: pointer;
+    box-shadow: 0 6px 18px -8px rgba(156,95,31,0.7);
+    transition: transform 140ms ease-out;
+  }
+  #replay:hover { background: var(--accent-light); }
+  #replay:active { transform: scale(0.97); }
+</style>
+</head><body>
+  <div class="mock-banner">
+    <h2>1 · Ripple Reveal</h2>
+    <p>The year develops like film: cells fade and scale in as a wave sweeps across the grid, the brighter study days popping a touch harder. Your whole rhythm assembles itself instead of appearing all at once.</p>
+    <span class="mock-hint">Watch on load · press Replay.</span>
+  </div>
+  <div class="hm-shell"><div id="mount"></div></div>
+  <button id="replay" style="position:fixed;right:18px;bottom:18px;">↻ Replay</button>
+  <script src="heatmap.js"></script>
+  <script>
+    const HM = window.Heatmap.render('#mount');
+    /* ANIMATION LAYER — "Ripple Reveal" */
+
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    // Easing per Emil: active days overshoot (sparkle), tier-0 gentle ease-out.
+    const EASE_ACTIVE = 'cubic-bezier(0.34,1.56,0.64,1)';
+    const EASE_QUIET  = 'cubic-bezier(0.23,1,0.32,1)';
+    const DUR = 360;
+
+    function hide(cell) {
+      const r = cell.rect;
+      r.style.opacity = '0';
+      r.style.transform = 'scale(0.6)';
+      r.style.transformBox = 'fill-box';
+      r.style.transformOrigin = 'center';
+    }
+
+    function show(cell) {
+      const r = cell.rect;
+      r.style.opacity = '1';
+      r.style.transform = 'none';
+    }
+
+    function reveal() {
+      // Wave sweeps left→right with a slight diagonal stagger.
+      HM.cells.forEach(cell => {
+        const r = cell.rect;
+        r.getAnimations && r.getAnimations().forEach(a => a.cancel());
+
+        const delay = cell.col * 24 + cell.row * 8;
+        const active = cell.tier > 0;
+        const fromScale = active ? 0.5 : 0.7;
+        const easing = active ? EASE_ACTIVE : EASE_QUIET;
+
+        // start hidden
+        r.style.opacity = '0';
+        r.style.transform = 'scale(' + fromScale + ')';
+        r.style.transformBox = 'fill-box';
+        r.style.transformOrigin = 'center';
+
+        r.animate(
+          [
+            { opacity: 0, transform: 'scale(' + fromScale + ')' },
+            { opacity: 1, transform: 'scale(1)' }
+          ],
+          { duration: DUR, delay, easing, fill: 'forwards' }
+        );
+      });
+    }
+
+    if (reduceMotion) {
+      // Full grid instantly — no hidden state, no wave.
+      HM.cells.forEach(show);
+    } else {
+      reveal();
+    }
+
+    document.getElementById('replay').addEventListener('click', () => {
+      if (reduceMotion) { HM.cells.forEach(show); return; }
+      reveal();
+    });
+  </script>
+</body></html>

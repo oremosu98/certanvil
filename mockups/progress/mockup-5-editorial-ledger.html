@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Topic progress · CertAnvil</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+:root{
+  --bg: oklch(0.975 0.007 85);
+  --surface: oklch(0.992 0.004 85);
+  --surface-2: oklch(0.965 0.010 84);
+  --ink: oklch(0.22 0.015 280);
+  --ink-soft: oklch(0.36 0.014 280);
+  --muted: oklch(0.50 0.013 280);
+  --border: oklch(0.86 0.008 85);
+  --border-soft: oklch(0.91 0.006 85);
+  --accent: oklch(0.50 0.155 55);
+  --accent-bright: oklch(0.80 0.155 64);
+  --accent-deep: oklch(0.42 0.150 52);
+  --on-accent: oklch(0.985 0.010 85);
+  --pass: oklch(0.52 0.13 150);
+  --track: oklch(0.90 0.008 85);
+}
+[data-theme="dark"]{
+  --bg: oklch(0.16 0.009 275);
+  --surface: oklch(0.205 0.009 275);
+  --surface-2: oklch(0.185 0.009 275);
+  --ink: oklch(0.96 0.006 275);
+  --ink-soft: oklch(0.78 0.010 275);
+  --muted: oklch(0.60 0.013 275);
+  --border: oklch(0.30 0.008 275);
+  --border-soft: oklch(0.26 0.008 275);
+  --accent: oklch(0.80 0.155 64);
+  --accent-bright: oklch(0.86 0.140 70);
+  --accent-deep: oklch(0.70 0.150 62);
+  --on-accent: oklch(0.18 0.020 275);
+  --pass: oklch(0.74 0.150 152);
+  --track: oklch(0.27 0.010 275);
+}
+
+*{ box-sizing:border-box; }
+html{ -webkit-text-size-adjust:100%; }
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--ink);
+  font-family:"Inter",system-ui,-apple-system,sans-serif;
+  font-size:15px;
+  line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+  text-rendering:optimizeLegibility;
+}
+.mono{ font-family:ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,monospace; font-variant-numeric:tabular-nums; font-feature-settings:"tnum" 1; }
+
+/* ---- shell ---- */
+.wrap{ max-width:820px; margin:0 auto; padding:64px 28px 120px; }
+@media (max-width:640px){ .wrap{ padding:40px 18px 96px; } }
+
+/* ---- theme toggle ---- */
+.theme-toggle{
+  position:fixed; top:18px; right:18px; z-index:50;
+  width:40px; height:40px; border-radius:999px;
+  display:grid; place-items:center;
+  background:var(--surface); color:var(--ink-soft);
+  border:1px solid var(--border);
+  cursor:pointer; padding:0;
+  transition:color .2s ease, border-color .2s ease, background .2s ease;
+}
+.theme-toggle:hover{ color:var(--ink); border-color:var(--accent); }
+.theme-toggle svg{ width:18px; height:18px; }
+.theme-toggle .moon{ display:none; }
+[data-theme="dark"] .theme-toggle .sun{ display:none; }
+[data-theme="dark"] .theme-toggle .moon{ display:block; }
+
+/* ---- header ---- */
+.eyebrow{
+  font-size:11px; letter-spacing:.18em; text-transform:uppercase;
+  color:var(--muted); font-weight:600; margin:0 0 14px;
+}
+h1.title{
+  font-family:"Fraunces",serif; font-weight:600;
+  font-size:clamp(34px,6vw,46px); line-height:1.02; letter-spacing:-.015em;
+  margin:0 0 18px; color:var(--ink);
+}
+.lede{ color:var(--ink-soft); font-size:16px; max-width:60ch; margin:0 0 26px; }
+
+/* ---- summary strip ---- */
+.summary{
+  display:flex; flex-wrap:wrap; gap:0;
+  border-top:1px solid var(--border);
+  border-bottom:1px solid var(--border);
+  padding:18px 0; margin-bottom:48px;
+}
+.summary .stat{ padding:0 26px; border-left:1px solid var(--border-soft); }
+.summary .stat:first-child{ padding-left:0; border-left:0; }
+.summary .stat .num{ font-size:22px; font-weight:600; letter-spacing:-.01em; display:block; color:var(--ink); }
+.summary .stat .lbl{ font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--muted); font-weight:600; margin-top:3px; }
+@media (max-width:640px){
+  .summary{ gap:16px 0; }
+  .summary .stat{ padding:0 18px; flex:0 0 33.33%; border-left:1px solid var(--border-soft); }
+  .summary .stat:nth-child(3n+1){ padding-left:0; border-left:0; }
+}
+
+/* ---- focus band ---- */
+.focus{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:16px;
+  padding:30px 32px;
+  margin-bottom:60px;
+}
+@media (max-width:640px){ .focus{ padding:24px 20px; } }
+.focus-head{ display:flex; align-items:baseline; justify-content:space-between; gap:16px; margin-bottom:6px; flex-wrap:wrap; }
+.focus-eyebrow{ font-size:11px; letter-spacing:.16em; text-transform:uppercase; color:var(--accent-deep); font-weight:700; }
+[data-theme="dark"] .focus-eyebrow{ color:var(--accent); }
+.readiness{ display:flex; gap:20px; align-items:baseline; }
+.readiness .r-item{ font-size:12.5px; color:var(--muted); }
+.readiness .r-item b{ color:var(--ink); font-weight:600; }
+.rec-name{
+  font-family:"Fraunces",serif; font-weight:600;
+  font-size:26px; line-height:1.1; letter-spacing:-.01em;
+  margin:8px 0 6px; color:var(--ink);
+}
+.rec-reason{ color:var(--ink-soft); font-size:14.5px; margin:0 0 4px; }
+.rec-meta{ font-size:12.5px; color:var(--muted); margin-bottom:22px; }
+.rec-cta{
+  display:inline-flex; align-items:center; gap:8px;
+  background:var(--accent); color:var(--on-accent);
+  border:0; border-radius:999px;
+  font:inherit; font-weight:600; font-size:13.5px;
+  padding:9px 18px; cursor:pointer; margin-bottom:26px;
+  transition:transform .12s ease, background .2s ease;
+}
+.rec-cta:hover{ background:var(--accent-deep); }
+[data-theme="dark"] .rec-cta:hover{ background:var(--accent-bright); }
+.rec-cta:active{ transform:scale(.97); }
+.rec-cta svg{ width:14px; height:14px; }
+
+.weak-rank-label{ font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); font-weight:600; margin:0 0 12px; border-top:1px solid var(--border-soft); padding-top:20px; }
+.weak-list{ display:flex; flex-direction:column; gap:2px; }
+.weak-row{
+  display:grid; grid-template-columns:22px 1fr 130px 52px;
+  align-items:center; gap:14px;
+  padding:9px 8px; border-radius:9px;
+  cursor:pointer; background:transparent;
+  transition:background .15s ease, transform .12s ease;
+}
+.weak-row:hover{ background:var(--surface-2); }
+.weak-row:active{ transform:scale(.99); }
+.weak-row .wr-idx{ font-size:13px; color:var(--muted); font-weight:600; text-align:right; }
+.weak-row .wr-name{ font-weight:500; font-size:14.5px; color:var(--ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.weak-row .wr-name span{ display:block; font-size:11.5px; color:var(--muted); font-weight:400; }
+.weak-row .wr-bar{ height:4px; border-radius:999px; background:var(--track); overflow:hidden; }
+.weak-row .wr-bar i{ display:block; height:100%; background:var(--accent); border-radius:999px; width:0; transition:width .9s cubic-bezier(.16,1,.3,1); }
+.weak-row .wr-pct{ font-size:13.5px; font-weight:600; text-align:right; color:var(--ink); }
+@media (max-width:560px){
+  .weak-row{ grid-template-columns:20px 1fr 46px; }
+  .weak-row .wr-bar{ display:none; }
+}
+
+/* ---- controls ---- */
+.controls{ margin-bottom:14px; }
+.search{
+  width:100%; background:var(--surface); color:var(--ink);
+  border:1px solid var(--border); border-radius:11px;
+  padding:11px 14px; font:inherit; font-size:14.5px;
+  margin-bottom:14px;
+  transition:border-color .2s ease;
+}
+.search::placeholder{ color:var(--muted); }
+.search:focus{ outline:none; border-color:var(--accent); }
+.control-rows{ display:flex; flex-wrap:wrap; gap:10px 28px; align-items:center; }
+.control-group{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.control-group > .cg-label{ font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--muted); font-weight:600; }
+.chip{
+  background:transparent; color:var(--ink-soft);
+  border:1px solid var(--border); border-radius:999px;
+  font:inherit; font-size:12.5px; font-weight:500;
+  padding:5px 12px; cursor:pointer;
+  transition:color .15s ease, border-color .15s ease, background .15s ease;
+}
+.chip:hover{ color:var(--ink); border-color:var(--muted); }
+.chip[aria-pressed="true"]{ background:var(--ink); color:var(--bg); border-color:var(--ink); }
+.empty{ color:var(--muted); font-size:14px; padding:40px 0; text-align:center; display:none; }
+
+/* ---- domain sections ---- */
+.sections{ margin-top:30px; }
+.domain{ margin-bottom:54px; }
+.domain.is-hidden{ display:none; }
+.domain-head{ margin-bottom:14px; }
+.domain-head .dh-top{ display:flex; align-items:baseline; justify-content:space-between; gap:14px; }
+.domain-head h2{
+  font-family:"Fraunces",serif; font-weight:600;
+  font-size:24px; line-height:1.1; letter-spacing:-.01em;
+  margin:0; color:var(--ink);
+}
+.domain-head .dh-obj{ font-size:12px; color:var(--muted); font-weight:600; }
+.domain-summary{ display:flex; flex-wrap:wrap; gap:6px 18px; margin:9px 0 12px; font-size:12.5px; color:var(--muted); }
+.domain-summary b{ color:var(--ink-soft); font-weight:600; }
+.domain-bar{ height:5px; border-radius:999px; background:var(--track); overflow:hidden; }
+.domain-bar i{ display:block; height:100%; background:var(--accent); border-radius:999px; width:0; transition:width 1s cubic-bezier(.16,1,.3,1); }
+
+.rows{ margin-top:6px; }
+.row{
+  display:grid;
+  grid-template-columns:1fr 56px 110px 64px 70px 78px;
+  align-items:center; gap:16px;
+  padding:13px 10px;
+  border-bottom:1px solid var(--border-soft);
+  cursor:pointer; background:transparent;
+  position:relative;
+  transition:background .15s ease, padding-left .18s cubic-bezier(.16,1,.3,1), transform .12s ease;
+}
+.row:first-child{ border-top:1px solid var(--border-soft); }
+.row:hover{ background:var(--surface-2); padding-left:18px; }
+.row:active{ transform:scale(.995); }
+.row.pulse{ animation:rowPulse .7s cubic-bezier(.16,1,.3,1); }
+@keyframes rowPulse{
+  0%{ background:var(--surface-2); }
+  30%{ background:color-mix(in oklch, var(--accent) 22%, var(--surface)); }
+  100%{ background:transparent; }
+}
+.row .r-name{ font-weight:500; font-size:14.5px; color:var(--ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.row .r-pct{ font-size:14px; font-weight:600; text-align:right; color:var(--ink); transition:color .15s ease; }
+.row:hover .r-pct{ color:var(--accent-deep); }
+[data-theme="dark"] .row:hover .r-pct{ color:var(--accent-bright); }
+.row.is-strong .r-pct{ color:var(--pass); }
+.row.is-untouched .r-name{ color:var(--muted); font-weight:400; }
+.row.is-untouched .r-pct{ color:var(--muted); }
+.row .r-bar{ height:4px; border-radius:999px; background:var(--track); overflow:hidden; }
+.row .r-bar i{ display:block; height:100%; background:var(--accent); border-radius:999px; width:0; transition:width .9s cubic-bezier(.16,1,.3,1); }
+.row.is-strong .r-bar i{ background:var(--pass); }
+.row.is-untouched .r-bar i{ background:var(--muted); opacity:.4; }
+.row .r-cell{ font-size:12.5px; color:var(--muted); text-align:right; }
+.row .r-cell.r-acc{ color:var(--ink-soft); }
+.r-colhead{
+  display:grid; grid-template-columns:1fr 56px 110px 64px 70px 78px;
+  gap:16px; padding:0 10px 8px;
+  font-size:10.5px; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); font-weight:600;
+}
+.r-colhead span:not(:first-child){ text-align:right; }
+@media (max-width:680px){
+  .row{ grid-template-columns:1fr 48px 56px; gap:12px; }
+  .row .r-bar, .row .r-acc, .row .r-last{ display:none; }
+  .r-colhead{ grid-template-columns:1fr 48px 56px; gap:12px; }
+  .r-colhead .h-bar, .r-colhead .h-acc, .r-colhead .h-last{ display:none; }
+}
+
+/* flatten / sorted global view */
+.flat-note{
+  font-size:12.5px; color:var(--muted);
+  border-top:1px solid var(--border); padding-top:18px; margin-bottom:8px;
+  display:none;
+}
+body.is-flat .domain-head, body.is-flat .domain-summary, body.is-flat .domain-bar{ display:none; }
+body.is-flat .domain{ margin-bottom:0; }
+body.is-flat .r-colhead{ display:none; }
+body.is-flat .flat-note{ display:block; }
+body.is-flat .row .r-dom{ display:inline; }
+.row .r-dom{ display:none; font-size:11px; color:var(--muted); font-weight:400; }
+.row .r-name b{ font-weight:500; display:block; }
+
+/* ---- toast ---- */
+.toast{
+  position:fixed; left:50%; bottom:28px; transform:translate(-50%,140%);
+  background:var(--ink); color:var(--bg);
+  font-size:13.5px; font-weight:500;
+  padding:11px 20px; border-radius:999px;
+  z-index:60; box-shadow:0 8px 30px rgba(0,0,0,.22);
+  opacity:0; transition:transform .4s cubic-bezier(.16,1,.3,1), opacity .3s ease;
+  max-width:90vw; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.toast.show{ transform:translate(-50%,0); opacity:1; }
+
+/* ---- entrance (gated) ---- */
+@media (prefers-reduced-motion: no-preference){
+  .reveal{ opacity:0; transform:translateY(12px); }
+  .reveal.in{ opacity:1; transform:translateY(0); transition:opacity .6s cubic-bezier(.16,1,.3,1), transform .6s cubic-bezier(.16,1,.3,1); }
+}
+@media (prefers-reduced-motion: reduce){
+  *{ animation:none !important; transition:none !important; }
+}
+</style>
+</head>
+<body>
+
+<button class="theme-toggle" id="themeToggle" aria-label="Toggle colour theme">
+  <svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+  <svg class="moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+</button>
+
+<main class="wrap">
+  <header>
+    <p class="eyebrow">Network+ N10-009</p>
+    <h1 class="title">Topic progress</h1>
+    <p class="lede">A running ledger of every topic on the blueprint, ranked by where your next session pays off most.</p>
+
+    <div class="summary" id="summary" aria-label="Overall summary">
+      <div class="stat"><span class="num mono" data-count="50">0</span><span class="lbl">Topics</span></div>
+      <div class="stat"><span class="num mono" data-count="18">0</span><span class="lbl">Weak</span></div>
+      <div class="stat"><span class="num mono" data-count="12">0</span><span class="lbl">Developing</span></div>
+      <div class="stat"><span class="num mono" data-count="10">0</span><span class="lbl">Strong</span></div>
+      <div class="stat"><span class="num mono" data-count="10">0</span><span class="lbl">Untouched</span></div>
+    </div>
+  </header>
+
+  <!-- FOCUS BAND -->
+  <section class="focus reveal" id="focusBand" aria-label="Where to focus">
+    <div class="focus-head">
+      <span class="focus-eyebrow">Start here</span>
+      <div class="readiness">
+        <span class="r-item">Readiness <b><span class="mono" data-count="38">0</span>%</b></span>
+        <span class="r-item">Coverage <b><span class="mono" data-count="80">0</span>%</b></span>
+      </div>
+    </div>
+    <h2 class="rec-name" id="recName"></h2>
+    <p class="rec-reason" id="recReason"></p>
+    <p class="rec-meta mono" id="recMeta"></p>
+    <button class="rec-cta" id="recCta">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+      Start this drill
+    </button>
+
+    <p class="weak-rank-label">Then clear the weakest topics</p>
+    <div class="weak-list" id="weakList"></div>
+  </section>
+
+  <!-- CONTROLS -->
+  <section class="controls" aria-label="Search, filter and sort">
+    <input class="search" id="search" type="search" placeholder="Search topics…" autocomplete="off" />
+    <div class="control-rows">
+      <div class="control-group" id="filterGroup">
+        <span class="cg-label">Show</span>
+        <button class="chip" data-filter="all" aria-pressed="true">All</button>
+        <button class="chip" data-filter="weak" aria-pressed="false">Weak only</button>
+        <button class="chip" data-filter="untouched" aria-pressed="false">Untouched</button>
+        <button class="chip" data-filter="strong" aria-pressed="false">Strong</button>
+      </div>
+      <div class="control-group" id="sortGroup">
+        <span class="cg-label">Sort</span>
+        <button class="chip" data-sort="grouped" aria-pressed="true">By domain</button>
+        <button class="chip" data-sort="worst" aria-pressed="false">Worst first</button>
+        <button class="chip" data-sort="recent" aria-pressed="false">Most recent</button>
+        <button class="chip" data-sort="studied" aria-pressed="false">Most studied</button>
+        <button class="chip" data-sort="az" aria-pressed="false">A-Z</button>
+      </div>
+    </div>
+  </section>
+
+  <p class="flat-note" id="flatNote"></p>
+
+  <section class="sections" id="sections"></section>
+  <p class="empty" id="empty">No topics match those filters.</p>
+</main>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+window.PROGRESS_DATA = {
+  "summary": { "total": 50, "weak": 18, "untouched": 10, "strong": 10, "developing": 12, "coverage": 80, "avgMastery": 38 },
+  "domains": [
+    { "key": "concepts", "label": "Networking Concepts", "weight": 23, "obj": "1.0", "count": 13, "avgMastery": 32 },
+    { "key": "implementation", "label": "Network Implementation", "weight": 20, "obj": "2.0", "count": 13, "avgMastery": 50 },
+    { "key": "operations", "label": "Network Operations", "weight": 19, "obj": "3.0", "count": 7, "avgMastery": 28 },
+    { "key": "security", "label": "Network Security", "weight": 14, "obj": "4.0", "count": 11, "avgMastery": 35 },
+    { "key": "troubleshooting", "label": "Network Troubleshooting", "weight": 24, "obj": "5.0", "count": 6, "avgMastery": 45 }
+  ],
+  "recommendation": { "name": "Network Models & OSI", "domainLabel": "Networking Concepts", "mastery": 0, "reason": "Highest leverage: heavy exam weight, low mastery" },
+  "topics": [
+    { "name": "Network Models & OSI", "domain": "concepts", "domainLabel": "Networking Concepts", "obj": "1.0", "mastery": 0, "accuracy": 0, "attempts": 0, "lastSeenDays": null, "status": "untouched" },
+    { "name": "TCP/IP Basics", "domain": "concepts", "domainLabel": "Networking Concepts", "obj": "1.0", "mastery": 20, "accuracy": 21, "attempts": 19, "lastSeenDays": 34, "status": "weak" },
+    { "name": "Subnetting & IP Addressing", "domain": "concepts", "domainLabel": "Networking Concepts", "obj": "1.0", "mastery": 88, "accuracy": 76, "attempts": 35, "lastSeenDays": 21, "status": "strong" },
+    { "name": "TCP/IP Applications", "domain": "concepts", "domainLabel": "Networking Concepts", "obj": "1.0", "mastery": 48, "accuracy": 38, "attempts": 9, "lastSeenDays": 2, "status": "developing" },
+    { "name": "Network Naming (DNS & DHCP)", "domain": "concepts", "domainLabel": "Networking Concepts", "obj": "1.0", "mastery": 57, "accuracy": 58, "attempts": 40, "lastSeenDays": 5, "status": "developing" },
+    { "name": "IPv6", "domain": "concepts", "domainLabel": "Networking Concepts", "obj": "1.0", "mastery": 30, "accuracy": 21, "attempts": 18, "lastSeenDays": 21, "status": "weak" },
+    { "name": "NAT & IP Services", "domain": "concepts", "domainLabel": "Networking Concepts", "obj": "1.0", "mastery": 0, "accuracy": 0, "attempts": 0, "lastSeenDays": null, "status": "untouched" },
+    { "name": "NTP, ICMP & Traffic Types", "domain": "concepts", "domainLabel": "Networking Concepts", "obj": "1.0", "mastery": 0, "accuracy": 0, "attempts": 0, "lastSeenDays": null, "status": "untouched" },
+    { "name": "Port Numbers", "domain": "concepts", "domainLabel": "Networking Concepts", "obj": "1.0", "mastery": 95, "accuracy": 73, "attempts": 22, "lastSeenDays": 2, "status": "strong" },
+    { "name": "Virtualisation & Cloud", "domain": "concepts", "domainLabel": "Networking Concepts", "obj": "1.0", "mastery": 47, "accuracy": 49, "attempts": 6, "lastSeenDays": 1, "status": "developing" },
+    { "name": "Cloud Networking & VPCs", "domain": "concepts", "domainLabel": "Networking Concepts", "obj": "1.0", "mastery": 9, "accuracy": 20, "attempts": 16, "lastSeenDays": 5, "status": "weak" },
+    { "name": "Network Appliances & Device Functions", "domain": "concepts", "domainLabel": "Networking Concepts", "obj": "1.0", "mastery": 15, "accuracy": 22, "attempts": 22, "lastSeenDays": 8, "status": "weak" },
+    { "name": "DNS Records & DNSSEC", "domain": "concepts", "domainLabel": "Networking Concepts", "obj": "1.0", "mastery": 10, "accuracy": 20, "attempts": 18, "lastSeenDays": 5, "status": "weak" },
+    { "name": "Routing Protocols", "domain": "implementation", "domainLabel": "Network Implementation", "obj": "2.0", "mastery": 85, "accuracy": 62, "attempts": 20, "lastSeenDays": 1, "status": "strong" },
+    { "name": "OSPF", "domain": "implementation", "domainLabel": "Network Implementation", "obj": "2.0", "mastery": 18, "accuracy": 20, "attempts": 5, "lastSeenDays": 13, "status": "weak" },
+    { "name": "BGP", "domain": "implementation", "domainLabel": "Network Implementation", "obj": "2.0", "mastery": 27, "accuracy": 23, "attempts": 30, "lastSeenDays": 21, "status": "weak" },
+    { "name": "Switch Features & VLANs", "domain": "implementation", "domainLabel": "Network Implementation", "obj": "2.0", "mastery": 6, "accuracy": 20, "attempts": 18, "lastSeenDays": 8, "status": "weak" },
+    { "name": "VLAN Trunking", "domain": "implementation", "domainLabel": "Network Implementation", "obj": "2.0", "mastery": 77, "accuracy": 55, "attempts": 30, "lastSeenDays": 2, "status": "strong" },
+    { "name": "STP/RSTP", "domain": "implementation", "domainLabel": "Network Implementation", "obj": "2.0", "mastery": 57, "accuracy": 37, "attempts": 32, "lastSeenDays": 2, "status": "developing" },
+    { "name": "Wireless Networking", "domain": "implementation", "domainLabel": "Network Implementation", "obj": "2.0", "mastery": 0, "accuracy": 0, "attempts": 0, "lastSeenDays": null, "status": "untouched" },
+    { "name": "Ethernet Basics", "domain": "implementation", "domainLabel": "Network Implementation", "obj": "2.0", "mastery": 22, "accuracy": 26, "attempts": 25, "lastSeenDays": 2, "status": "weak" },
+    { "name": "Ethernet Standards", "domain": "implementation", "domainLabel": "Network Implementation", "obj": "2.0", "mastery": 73, "accuracy": 53, "attempts": 40, "lastSeenDays": 2, "status": "developing" },
+    { "name": "Cabling & Topology", "domain": "implementation", "domainLabel": "Network Implementation", "obj": "2.0", "mastery": 47, "accuracy": 25, "attempts": 34, "lastSeenDays": 13, "status": "developing" },
+    { "name": "Integrating Networked Devices", "domain": "implementation", "domainLabel": "Network Implementation", "obj": "2.0", "mastery": 76, "accuracy": 60, "attempts": 11, "lastSeenDays": 2, "status": "strong" },
+    { "name": "SDN, NFV & Automation", "domain": "implementation", "domainLabel": "Network Implementation", "obj": "2.0", "mastery": 60, "accuracy": 57, "attempts": 7, "lastSeenDays": 21, "status": "developing" },
+    { "name": "Data Center Architectures", "domain": "implementation", "domainLabel": "Network Implementation", "obj": "2.0", "mastery": 99, "accuracy": 97, "attempts": 14, "lastSeenDays": 8, "status": "strong" },
+    { "name": "Network Operations", "domain": "operations", "domainLabel": "Network Operations", "obj": "3.0", "mastery": 38, "accuracy": 38, "attempts": 9, "lastSeenDays": 13, "status": "weak" },
+    { "name": "Data Centres", "domain": "operations", "domainLabel": "Network Operations", "obj": "3.0", "mastery": 17, "accuracy": 20, "attempts": 13, "lastSeenDays": 34, "status": "weak" },
+    { "name": "WAN Connectivity", "domain": "operations", "domainLabel": "Network Operations", "obj": "3.0", "mastery": 0, "accuracy": 0, "attempts": 0, "lastSeenDays": null, "status": "untouched" },
+    { "name": "SD-WAN & SASE", "domain": "operations", "domainLabel": "Network Operations", "obj": "3.0", "mastery": 42, "accuracy": 20, "attempts": 37, "lastSeenDays": 2, "status": "developing" },
+    { "name": "SMB & Network File Services", "domain": "operations", "domainLabel": "Network Operations", "obj": "3.0", "mastery": 62, "accuracy": 46, "attempts": 41, "lastSeenDays": 34, "status": "developing" },
+    { "name": "Business Continuity & Disaster Recovery", "domain": "operations", "domainLabel": "Network Operations", "obj": "3.0", "mastery": 38, "accuracy": 22, "attempts": 29, "lastSeenDays": 5, "status": "weak" },
+    { "name": "Network Monitoring & Observability", "domain": "operations", "domainLabel": "Network Operations", "obj": "3.0", "mastery": 0, "accuracy": 0, "attempts": 0, "lastSeenDays": null, "status": "untouched" },
+    { "name": "Securing TCP/IP", "domain": "security", "domainLabel": "Network Security", "obj": "4.0", "mastery": 28, "accuracy": 27, "attempts": 28, "lastSeenDays": 2, "status": "weak" },
+    { "name": "Protecting Networks", "domain": "security", "domainLabel": "Network Security", "obj": "4.0", "mastery": 37, "accuracy": 38, "attempts": 13, "lastSeenDays": 1, "status": "weak" },
+    { "name": "AAA & Authentication", "domain": "security", "domainLabel": "Network Security", "obj": "4.0", "mastery": 89, "accuracy": 68, "attempts": 36, "lastSeenDays": 34, "status": "strong" },
+    { "name": "IPsec & VPN Protocols", "domain": "security", "domainLabel": "Network Security", "obj": "4.0", "mastery": 59, "accuracy": 39, "attempts": 42, "lastSeenDays": 5, "status": "developing" },
+    { "name": "IPsec VPN", "domain": "security", "domainLabel": "Network Security", "obj": "4.0", "mastery": 0, "accuracy": 0, "attempts": 0, "lastSeenDays": null, "status": "untouched" },
+    { "name": "SSL/TLS VPN", "domain": "security", "domainLabel": "Network Security", "obj": "4.0", "mastery": 0, "accuracy": 0, "attempts": 0, "lastSeenDays": null, "status": "untouched" },
+    { "name": "PKI & Certificate Management", "domain": "security", "domainLabel": "Network Security", "obj": "4.0", "mastery": 44, "accuracy": 34, "attempts": 19, "lastSeenDays": 8, "status": "developing" },
+    { "name": "Firewalls, DMZ & Security Zones", "domain": "security", "domainLabel": "Network Security", "obj": "4.0", "mastery": 95, "accuracy": 92, "attempts": 10, "lastSeenDays": 1, "status": "strong" },
+    { "name": "WPA3 & EAP Authentication", "domain": "security", "domainLabel": "Network Security", "obj": "4.0", "mastery": 0, "accuracy": 0, "attempts": 0, "lastSeenDays": null, "status": "untouched" },
+    { "name": "Network Attacks & Threats", "domain": "security", "domainLabel": "Network Security", "obj": "4.0", "mastery": 36, "accuracy": 20, "attempts": 19, "lastSeenDays": 34, "status": "weak" },
+    { "name": "Physical Security Controls", "domain": "security", "domainLabel": "Network Security", "obj": "4.0", "mastery": 0, "accuracy": 0, "attempts": 0, "lastSeenDays": null, "status": "untouched" },
+    { "name": "Network Troubleshooting & Tools", "domain": "troubleshooting", "domainLabel": "Network Troubleshooting", "obj": "5.0", "mastery": 81, "accuracy": 81, "attempts": 12, "lastSeenDays": 1, "status": "strong" },
+    { "name": "Cable Issues", "domain": "troubleshooting", "domainLabel": "Network Troubleshooting", "obj": "5.0", "mastery": 22, "accuracy": 20, "attempts": 8, "lastSeenDays": 1, "status": "weak" },
+    { "name": "Service Issues", "domain": "troubleshooting", "domainLabel": "Network Troubleshooting", "obj": "5.0", "mastery": 41, "accuracy": 48, "attempts": 32, "lastSeenDays": 21, "status": "developing" },
+    { "name": "Perf Issues", "domain": "troubleshooting", "domainLabel": "Network Troubleshooting", "obj": "5.0", "mastery": 89, "accuracy": 86, "attempts": 12, "lastSeenDays": 5, "status": "strong" },
+    { "name": "Connection Issues", "domain": "troubleshooting", "domainLabel": "Network Troubleshooting", "obj": "5.0", "mastery": 16, "accuracy": 20, "attempts": 39, "lastSeenDays": 34, "status": "weak" },
+    { "name": "CompTIA Troubleshooting Methodology", "domain": "troubleshooting", "domainLabel": "Network Troubleshooting", "obj": "5.0", "mastery": 22, "accuracy": 20, "attempts": 21, "lastSeenDays": 13, "status": "weak" }
+  ]
+};
+
+(function(){
+  "use strict";
+  var D = window.PROGRESS_DATA;
+  var REDUCE = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var $ = function(s,c){ return (c||document).querySelector(s); };
+
+  // ---- state ----
+  var state = { q:"", filter:"all", sort:"grouped" };
+
+  function lastSeenText(d){
+    if(d===null||d===undefined) return "-";
+    if(d===0) return "today";
+    if(d===1) return "1d ago";
+    return d+"d ago";
+  }
+  function statusClass(t){
+    if(t.status==="strong") return "is-strong";
+    if(t.status==="untouched") return "is-untouched";
+    return "";
+  }
+
+  // ---- focus band ----
+  function renderFocus(){
+    $("#recName").textContent = D.recommendation.name;
+    $("#recReason").textContent = D.recommendation.reason + ".";
+    $("#recMeta").textContent = D.recommendation.domainLabel + "  ·  Mastery " + D.recommendation.mastery + "%";
+    $("#recCta").addEventListener("click", function(){ drill(D.recommendation.name); });
+
+    // weakest 4 topics (touched, lowest mastery), excluding the recommendation
+    var weak = D.topics.filter(function(t){ return t.status!=="untouched" && t.name!==D.recommendation.name; })
+      .sort(function(a,b){ return a.mastery-b.mastery; }).slice(0,4);
+    var wl = $("#weakList");
+    weak.forEach(function(t,i){
+      var row = document.createElement("button");
+      row.className = "weak-row";
+      row.type = "button";
+      row.innerHTML =
+        '<span class="wr-idx mono">'+(i+1)+'</span>'+
+        '<span class="wr-name">'+esc(t.name)+'<span>'+esc(t.domainLabel)+'</span></span>'+
+        '<span class="wr-bar"><i data-w="'+t.mastery+'"></i></span>'+
+        '<span class="wr-pct mono">'+t.mastery+'%</span>';
+      row.addEventListener("click", function(){ drill(t.name); });
+      wl.appendChild(row);
+    });
+  }
+
+  function esc(s){ var d=document.createElement("div"); d.textContent=s; return d.innerHTML; }
+
+  // ---- sections ----
+  var sectionsEl = $("#sections");
+
+  function topicMatches(t){
+    if(state.q && t.name.toLowerCase().indexOf(state.q)===-1 && t.domainLabel.toLowerCase().indexOf(state.q)===-1) return false;
+    if(state.filter==="weak" && t.status!=="weak") return false;
+    if(state.filter==="untouched" && t.status!=="untouched") return false;
+    if(state.filter==="strong" && t.status!=="strong") return false;
+    return true;
+  }
+
+  function sortTopics(arr){
+    var a = arr.slice();
+    if(state.sort==="worst" || state.sort==="grouped"){
+      a.sort(function(x,y){ return x.mastery-y.mastery; });
+    } else if(state.sort==="recent"){
+      a.sort(function(x,y){
+        var xs = x.lastSeenDays===null?Infinity:x.lastSeenDays;
+        var ys = y.lastSeenDays===null?Infinity:y.lastSeenDays;
+        return xs-ys;
+      });
+    } else if(state.sort==="studied"){
+      a.sort(function(x,y){ return y.attempts-x.attempts; });
+    } else if(state.sort==="az"){
+      a.sort(function(x,y){ return x.name.localeCompare(y.name); });
+    }
+    return a;
+  }
+
+  function rowHTML(t){
+    var cls = "row "+statusClass(t);
+    var domLine = state.sort!=="grouped" ? '<span class="r-dom">'+esc(t.domainLabel)+'</span>' : '';
+    return '<button class="'+cls.trim()+'" type="button" data-name="'+esc(t.name)+'" role="listitem">'+
+      '<span class="r-name"><b>'+esc(t.name)+'</b>'+domLine+'</span>'+
+      '<span class="r-pct mono" data-count="'+t.mastery+'">0%</span>'+
+      '<span class="r-bar"><i data-w="'+t.mastery+'"></i></span>'+
+      '<span class="r-cell r-acc mono">'+(t.status==="untouched"?"-":t.accuracy+"%")+'</span>'+
+      '<span class="r-cell r-att mono">'+(t.attempts||"-")+'</span>'+
+      '<span class="r-cell r-last mono">'+lastSeenText(t.lastSeenDays)+'</span>'+
+    '</button>';
+  }
+
+  function colHead(){
+    return '<div class="r-colhead"><span>Topic</span><span class="h-pct">Mastery</span>'+
+      '<span class="h-bar"></span><span class="h-acc">Acc</span><span class="h-att">Att</span>'+
+      '<span class="h-last">Last</span></div>';
+  }
+
+  function build(){
+    var grouped = state.sort==="grouped";
+    document.body.classList.toggle("is-flat", !grouped);
+    sectionsEl.innerHTML = "";
+
+    var visibleCount = 0;
+
+    if(grouped){
+      D.domains.forEach(function(dom){
+        var topics = sortTopics(D.topics.filter(function(t){ return t.domain===dom.key && topicMatches(t); }));
+        var sec = document.createElement("div");
+        sec.className = "domain reveal";
+        if(topics.length===0) sec.classList.add("is-hidden");
+        visibleCount += topics.length;
+        sec.innerHTML =
+          '<div class="domain-head">'+
+            '<div class="dh-top"><h2>'+esc(dom.label)+'</h2><span class="dh-obj mono">Obj '+dom.obj+'</span></div>'+
+            '<div class="domain-summary">'+
+              '<span>Avg mastery <b class="mono">'+dom.avgMastery+'%</b></span>'+
+              '<span>Exam weight <b class="mono">'+dom.weight+'%</b></span>'+
+              '<span><b class="mono">'+dom.count+'</b> topics</span>'+
+            '</div>'+
+            '<div class="domain-bar"><i data-w="'+dom.avgMastery+'"></i></div>'+
+          '</div>'+
+          '<div class="rows" role="list">'+ colHead() + topics.map(rowHTML).join("") +'</div>';
+        sectionsEl.appendChild(sec);
+      });
+    } else {
+      var all = sortTopics(D.topics.filter(topicMatches));
+      visibleCount = all.length;
+      var note = $("#flatNote");
+      var label = {worst:"Worst first",recent:"Most recent",studied:"Most studied",az:"A-Z"}[state.sort]||"";
+      note.textContent = "Ranked across all domains · "+label+" · "+all.length+" topics";
+      var sec = document.createElement("div");
+      sec.className = "domain reveal";
+      sec.innerHTML = '<div class="rows" role="list">'+ all.map(rowHTML).join("") +'</div>';
+      sectionsEl.appendChild(sec);
+    }
+
+    $("#empty").style.display = visibleCount===0 ? "block" : "none";
+
+    wireRows();
+    animateBars(sectionsEl);
+    countUps(sectionsEl);
+    staggerReveal(sectionsEl.querySelectorAll(".domain"));
+  }
+
+  function wireRows(){
+    Array.prototype.forEach.call(sectionsEl.querySelectorAll(".row"), function(r){
+      r.addEventListener("click", function(){
+        drill(r.getAttribute("data-name"), r);
+      });
+    });
+  }
+
+  // ---- bars + countups ----
+  function animateBars(scope){
+    var bars = scope.querySelectorAll("i[data-w]");
+    if(REDUCE){ Array.prototype.forEach.call(bars,function(b){ b.style.width=b.getAttribute("data-w")+"%"; }); return; }
+    requestAnimationFrame(function(){ requestAnimationFrame(function(){
+      Array.prototype.forEach.call(bars,function(b){ b.style.width=b.getAttribute("data-w")+"%"; });
+    });});
+  }
+
+  function countUps(scope){
+    var els = scope.querySelectorAll("[data-count]");
+    Array.prototype.forEach.call(els, function(el){ countEl(el); });
+  }
+  function countEl(el){
+    var target = parseInt(el.getAttribute("data-count"),10) || 0;
+    var suffix = /%/.test(el.textContent) ? "%" : "";
+    if(REDUCE){ el.textContent = target+suffix; return; }
+    var dur = 700, start = null;
+    function step(ts){
+      if(start===null) start=ts;
+      var p = Math.min((ts-start)/dur,1);
+      var eased = 1-Math.pow(1-p,3);
+      el.textContent = Math.round(target*eased)+suffix;
+      if(p<1) requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  }
+
+  function staggerReveal(nodes){
+    if(REDUCE){ Array.prototype.forEach.call(nodes,function(n){ n.classList.add("in"); }); return; }
+    Array.prototype.forEach.call(nodes, function(n,i){
+      setTimeout(function(){ n.classList.add("in"); }, 70 + i*55);
+    });
+  }
+
+  // ---- drill ----
+  var toastTimer;
+  function drill(name, rowEl){
+    var t = $("#toast");
+    t.textContent = "Starting drill: "+name;
+    t.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function(){ t.classList.remove("show"); }, 2600);
+    if(rowEl && !REDUCE){
+      rowEl.classList.remove("pulse");
+      void rowEl.offsetWidth;
+      rowEl.classList.add("pulse");
+    }
+  }
+
+  // ---- controls ----
+  var searchTimer;
+  $("#search").addEventListener("input", function(e){
+    clearTimeout(searchTimer);
+    var v = e.target.value.toLowerCase();
+    searchTimer = setTimeout(function(){ state.q=v; build(); }, 120);
+  });
+
+  $("#filterGroup").addEventListener("click", function(e){
+    var b = e.target.closest(".chip"); if(!b) return;
+    state.filter = b.getAttribute("data-filter");
+    Array.prototype.forEach.call(this.querySelectorAll(".chip"), function(c){
+      c.setAttribute("aria-pressed", c===b ? "true":"false");
+    });
+    build();
+  });
+
+  $("#sortGroup").addEventListener("click", function(e){
+    var b = e.target.closest(".chip"); if(!b) return;
+    state.sort = b.getAttribute("data-sort");
+    Array.prototype.forEach.call(this.querySelectorAll(".chip"), function(c){
+      c.setAttribute("aria-pressed", c===b ? "true":"false");
+    });
+    build();
+  });
+
+  // ---- theme ----
+  $("#themeToggle").addEventListener("click", function(){
+    var cur = document.documentElement.getAttribute("data-theme");
+    document.documentElement.setAttribute("data-theme", cur==="dark" ? "light":"dark");
+  });
+
+  // ---- summary count-ups + focus reveal ----
+  function init(){
+    countUps($("#summary"));
+    renderFocus();
+    var fb = $("#focusBand");
+    if(REDUCE){ fb.classList.add("in"); }
+    else { setTimeout(function(){ fb.classList.add("in"); }, 60); }
+    // focus readiness + weak bars
+    countUps(fb);
+    animateBars(fb);
+    build();
+  }
+
+  if(document.readyState!=="loading") init();
+  else document.addEventListener("DOMContentLoaded", init);
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,197 @@
+/* ============================================================
+   Knowledge Constellation — shared base styles
+   Brand: Certanvil (cream canvas, ember accent, domain palette)
+   All 5 mockups share this. Motion lives in each mockup file.
+   ============================================================ */
+:root {
+  --bg: #f7f4ef;
+  --panel: #faf8f4;
+  --ink: #2a2622;
+  --muted: #9a9088;
+  --hair: rgba(60, 50, 40, 0.10);
+  --ember: #e8943a;
+
+  --d1: #7c5cff; /* Networking Concepts */
+  --d2: #46b67a; /* Network Implementation */
+  --d3: #4f7fd6; /* Network Operations */
+  --d4: #e8943a; /* Network Security */
+  --d5: #e8503a; /* Network Troubleshooting */
+
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-overshoot: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: ui-sans-serif, -apple-system, "Segoe UI", Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.const-shell {
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: 28px 24px 40px;
+}
+
+/* ---- header ---- */
+.const-head {
+  display: flex;
+  align-items: baseline;
+  gap: 18px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+.const-title {
+  font-family: "Fraunces", Georgia, serif;
+  font-weight: 600;
+  font-size: 20px;
+  letter-spacing: 0.04em;
+  margin: 0;
+  text-transform: uppercase;
+}
+.const-title .spark { color: var(--ember); }
+.const-title em { color: var(--ember); font-style: normal; }
+.const-sub {
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 11px;
+  color: var(--muted);
+  letter-spacing: 0.02em;
+}
+
+/* ---- map ---- */
+.const-map {
+  position: relative;
+  background: var(--panel);
+  border: 1px solid var(--hair);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 1px 0 rgba(255,255,255,0.6) inset, 0 12px 40px -24px rgba(40,30,20,0.4);
+}
+.const-map svg { display: block; width: 100%; height: auto; }
+
+/* faint grid */
+.const-grid line { stroke: rgba(60,50,40,0.05); stroke-width: 1; }
+
+/* cluster labels */
+.const-cluster-label .kicker {
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  fill: var(--muted);
+  text-transform: uppercase;
+}
+.const-cluster-label .name {
+  font-family: "Fraunces", Georgia, serif;
+  font-size: 13px;
+  font-weight: 600;
+  fill: var(--ink);
+}
+
+/* tether lines from cluster anchor to its nodes */
+.const-tether { stroke: rgba(60,50,40,0.08); stroke-width: 1; }
+
+/* shared staggered entrance — opacity only, so it never conflicts
+   with the JS transform-driven motion in mockups 1/2/4 */
+@keyframes constFadeIn { from { opacity: 0; } to { opacity: 1; } }
+.const-node { animation: constFadeIn 0.5s var(--ease-out) backwards; }
+.const-node[data-domain="1"] { animation-delay: 0.04s; }
+.const-node[data-domain="2"] { animation-delay: 0.12s; }
+.const-node[data-domain="3"] { animation-delay: 0.20s; }
+.const-node[data-domain="4"] { animation-delay: 0.28s; }
+.const-node[data-domain="5"] { animation-delay: 0.36s; }
+
+/* nodes */
+.const-node { cursor: pointer; }
+.const-halo { opacity: 0.28; }
+.const-core { }
+
+.const-node[data-domain="1"] .const-halo,
+.const-node[data-domain="1"] .const-core { color: var(--d1); fill: var(--d1); }
+.const-node[data-domain="2"] .const-halo,
+.const-node[data-domain="2"] .const-core { color: var(--d2); fill: var(--d2); }
+.const-node[data-domain="3"] .const-halo,
+.const-node[data-domain="3"] .const-core { color: var(--d3); fill: var(--d3); }
+.const-node[data-domain="4"] .const-halo,
+.const-node[data-domain="4"] .const-core { color: var(--d4); fill: var(--d4); }
+.const-node[data-domain="5"] .const-halo,
+.const-node[data-domain="5"] .const-core { color: var(--d5); fill: var(--d5); }
+
+/* mastery tiers control core brightness */
+.const-node[data-tier="novice"]      .const-core { opacity: 0.30; }
+.const-node[data-tier="developing"]  .const-core { opacity: 0.55; }
+.const-node[data-tier="proficient"]  .const-core { opacity: 0.80; }
+.const-node[data-tier="mastered"]    .const-core { opacity: 1.00; }
+.const-node[data-tier="unstudied"]   .const-halo { opacity: 0.12; }
+.const-node[data-tier="unstudied"]   .const-core { opacity: 0.16; }
+
+/* ---- legend ---- */
+.const-legend {
+  display: flex;
+  gap: 22px;
+  margin-top: 14px;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 11px;
+  color: var(--muted);
+  flex-wrap: wrap;
+}
+.const-legend .dot {
+  display: inline-block;
+  width: 9px; height: 9px;
+  border-radius: 50%;
+  background: var(--ink);
+  margin-right: 6px;
+  vertical-align: middle;
+}
+.const-legend .dot.t2 { opacity: 0.7; }
+.const-legend .dot.t3 { opacity: 0.45; }
+.const-legend .dot.t4 { opacity: 0.2; }
+
+/* ---- tooltip ---- */
+.const-tt {
+  position: absolute;
+  pointer-events: none;
+  background: rgba(28,24,20,0.96);
+  color: #fff;
+  border-radius: 8px;
+  padding: 8px 11px;
+  font-size: 12px;
+  line-height: 1.5;
+  opacity: 0;
+  transform: translateY(4px) scale(0.97);
+  transition: opacity 140ms var(--ease-out), transform 140ms var(--ease-out);
+  z-index: 10;
+  white-space: nowrap;
+  box-shadow: 0 8px 24px -8px rgba(0,0,0,0.5);
+}
+.const-tt.show { opacity: 1; transform: translateY(0) scale(1); }
+.const-tt b { font-weight: 600; }
+.const-tt .tt-meta { color: rgba(255,255,255,0.6); font-size: 11px; }
+
+/* mockup caption banner */
+.mock-banner {
+  max-width: 1040px;
+  margin: 0 auto 0;
+  padding: 18px 24px 0;
+}
+.mock-banner h2 {
+  font-family: "Fraunces", Georgia, serif;
+  font-size: 16px; margin: 0 0 4px;
+}
+.mock-banner p {
+  margin: 0; font-size: 13px; color: var(--muted); max-width: 720px; line-height: 1.5;
+}
+.mock-hint {
+  display: inline-block; margin-top: 8px;
+  font-family: ui-monospace, monospace; font-size: 11px;
+  background: rgba(232,148,58,0.14); color: #a35e10;
+  padding: 4px 9px; border-radius: 6px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; }
+}

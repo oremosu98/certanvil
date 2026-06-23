@@ -1,0 +1,190 @@
+<!DOCTYPE html><html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Accuracy Chart — 2 · Pass-Line Drama</title>
+<link rel="stylesheet" href="accchart.css">
+<style>
+  /* ---- #replay pill ---- */
+  #replay {
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: 11px; font-weight: 700; letter-spacing: 0.06em;
+    color: #fff; border: none; cursor: pointer;
+    padding: 7px 13px; border-radius: 999px;
+    background: linear-gradient(135deg, var(--accent), var(--accent-light));
+    box-shadow: 0 6px 18px -8px rgba(var(--accent-rgb), 0.8);
+    transition: transform 140ms ease-out;
+  }
+  #replay:active { transform: scale(0.97); }
+
+  /* ---- verdict badge ---- */
+  .acc-wrap { position: relative; }
+  .verdict-badge {
+    position: absolute; top: 8px; right: 8px;
+    display: inline-flex; align-items: center; gap: 5px;
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: 11px; font-weight: 700; letter-spacing: 0.05em;
+    color: var(--danger);
+    background: rgba(var(--danger-rgb), 0.12);
+    border: 1px solid rgba(var(--danger-rgb), 0.34);
+    padding: 4px 10px; border-radius: 999px;
+    box-shadow: 0 4px 14px -8px rgba(var(--danger-rgb), 0.7);
+    opacity: 0; transform: translateY(-6px);
+    transition: opacity 320ms var(--ease-out), transform 320ms var(--ease-out);
+    pointer-events: none;
+  }
+  .verdict-badge.show { opacity: 1; transform: translateY(0); }
+  .verdict-badge .vb-arrow { font-size: 12px; line-height: 1; }
+
+  /* below-pass red overlays start hidden, ease in */
+  .below-line, .below-area { opacity: 0; transition: opacity 350ms var(--ease-out); }
+  .below-line.lit, .below-area.lit { opacity: 1; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .below-line, .below-area { transition: none; opacity: 1; }
+    .verdict-badge { transition: none; opacity: 1; transform: none; }
+  }
+</style>
+</head><body>
+  <div class="mock-banner">
+    <h2>2 · Pass-Line Drama</h2>
+    <p>The PASS line is the whole story. Wherever the trend sits above it the line reads confident; the moment it dips below, that stretch turns to warning red, the danger zone tints, and the final point pulses for attention. The chart answers its own headline at a glance.</p>
+    <span class="mock-hint">Watch the dip below PASS light up · press Replay.</span>
+  </div>
+  <div class="acc-shell"><div id="mount"></div></div>
+  <button id="replay" style="position:fixed;right:18px;bottom:18px;">↻ Replay</button>
+  <script src="accchart.js"></script>
+  <script>
+    const A = window.AccChart.render('#mount');
+    /* ANIMATION LAYER */
+    (function () {
+      const { svg, geom, el } = A;
+      const { PAD, W, H, innerW, passY } = geom;
+      const month = A.series.month;
+      const lastPt = month.pts[month.pts.length - 1]; // 68%, below pass
+      const DANGER = getComputedStyle(document.documentElement)
+        .getPropertyValue('--danger').trim() || '#c2402f';
+
+      const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+      // ---- 1. Below-pass clip + red overlays ----
+      let defs = svg.querySelector('defs');
+      if (!defs) { defs = el('defs', {}); svg.insertBefore(defs, svg.firstChild); }
+      const clip = el('clipPath', { id: 'belowPass' });
+      clip.appendChild(el('rect', {
+        x: PAD, y: passY, width: innerW, height: (H - passY)
+      }));
+      defs.appendChild(clip);
+
+      // red danger-zone fill (low opacity), clipped below pass
+      const belowArea = el('path', {
+        class: 'below-area',
+        d: month.areaEl.getAttribute('d'),
+        fill: DANGER,
+        'fill-opacity': 0.10,
+        'clip-path': 'url(#belowPass)'
+      });
+      // red line clone, clipped below pass — sits atop bronze line
+      const belowLine = el('path', {
+        class: 'below-line',
+        d: month.lineEl.getAttribute('d'),
+        fill: 'none',
+        stroke: DANGER,
+        'stroke-width': 2.5,
+        'stroke-linejoin': 'round',
+        'stroke-linecap': 'round',
+        'clip-path': 'url(#belowPass)'
+      });
+      // red area sits just above the bronze area; red line just above the bronze line
+      month.groupEl.insertBefore(belowArea, month.areaEl.nextSibling);
+      month.groupEl.insertBefore(belowLine, month.lineEl.nextSibling);
+
+      // ---- 4. Verdict badge ----
+      const badge = document.createElement('div');
+      badge.className = 'verdict-badge';
+      badge.innerHTML = '<span class="vb-arrow">▼</span> Below pass';
+      A.svg.parentElement.appendChild(badge);
+
+      const passLine = svg.querySelector('.acc-pass-line');
+
+      // ---- ring pulse machinery ----
+      let ringTimers = [];
+      function clearRings() {
+        ringTimers.forEach(t => clearTimeout(t));
+        ringTimers = [];
+        svg.querySelectorAll('.alert-ring').forEach(r => r.remove());
+      }
+      function emitRing() {
+        const ring = el('circle', {
+          class: 'alert-ring',
+          cx: lastPt.x, cy: lastPt.y, r: 5,
+          fill: 'none', stroke: DANGER, 'stroke-width': 2,
+          'stroke-opacity': 0.9
+        });
+        // scale the ring outward around the dot (viewBox user units)
+        ring.style.transformBox = 'view-box';
+        ring.style.transformOrigin = lastPt.x + 'px ' + lastPt.y + 'px';
+        month.groupEl.appendChild(ring);
+        const anim = ring.animate(
+          [
+            { transform: 'scale(1)', strokeOpacity: 0.9 },
+            { transform: 'scale(3)', strokeOpacity: 0 }
+          ],
+          { duration: 750, easing: 'cubic-bezier(0.23,1,0.32,1)', fill: 'forwards' }
+        );
+        anim.onfinish = () => ring.remove();
+      }
+      function pulseRings() {
+        if (reduce) return;
+        for (let i = 0; i < 3; i++) {
+          ringTimers.push(setTimeout(emitRing, i * 900));
+        }
+      }
+
+      // ---- pass-line confident pulse ----
+      function passPulse() {
+        if (!passLine || reduce) return;
+        passLine.animate(
+          [
+            { opacity: 0.85, strokeWidth: 1.5 },
+            { opacity: 1, strokeWidth: 2.5, offset: 0.5 },
+            { opacity: 0.85, strokeWidth: 1.5 }
+          ],
+          { duration: 500, easing: 'cubic-bezier(0.23,1,0.32,1)' }
+        );
+      }
+
+      // ---- full sequence ----
+      function reset() {
+        clearRings();
+        belowLine.classList.remove('lit');
+        belowArea.classList.remove('lit');
+        badge.classList.remove('show');
+      }
+
+      function runSequence() {
+        if (reduce) {
+          belowLine.classList.add('lit');
+          belowArea.classList.add('lit');
+          badge.classList.add('show');
+          return;
+        }
+        reset();
+        // a. beat, then pass-line pulse
+        setTimeout(passPulse, 300);
+        // b. tint in the red below-pass overlays after the pass line asserts
+        setTimeout(() => {
+          belowLine.classList.add('lit');
+          belowArea.classList.add('lit');
+        }, 300 + 500);
+        // 4. verdict badge slides in after the tint
+        setTimeout(() => badge.classList.add('show'), 300 + 500 + 350);
+        // 3. final-dip attention pulse (3 beats then rest)
+        setTimeout(pulseRings, 300 + 500 + 350 + 150);
+      }
+
+      A.runSequence = runSequence;
+      runSequence();
+
+      document.getElementById('replay').addEventListener('click', runSequence);
+    })();
+  </script>
+</body></html>

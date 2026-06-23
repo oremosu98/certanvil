@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Your Study Rhythm — 5 Motion Mockups</title>
+<link rel="stylesheet" href="heatmap.css">
+<style>
+  .hub { max-width: 760px; margin: 0 auto; padding: 56px 24px; }
+  .hub h1 { font-family: Georgia, serif; font-weight: 700; font-size: 29px; margin: 0 0 6px; letter-spacing: -0.01em; }
+  .hub h1 em { font-style: normal; color: var(--accent); }
+  .hub .lede { color: var(--muted); font-size: 15px; margin: 0 0 32px; line-height: 1.55; }
+  .cards { display: grid; gap: 14px; }
+  a.card { display: block; text-decoration: none; color: inherit; background: var(--panel); border: 1px solid var(--hair); border-radius: 14px; padding: 18px 20px; transition: transform 180ms var(--ease-out), box-shadow 180ms var(--ease-out), border-color 180ms var(--ease-out); }
+  a.card:hover { transform: translateY(-2px); box-shadow: 0 18px 40px -22px rgba(40,30,20,0.5); border-color: rgba(181,105,42,0.4); }
+  a.card:active { transform: translateY(0) scale(0.995); }
+  .card .num { font-family: ui-monospace, monospace; font-size: 12px; color: var(--accent); letter-spacing: 0.1em; font-weight: 700; }
+  .card h3 { font-family: Georgia, serif; font-size: 18px; margin: 4px 0 6px; }
+  .card p { margin: 0; font-size: 13px; color: var(--muted); line-height: 1.5; }
+  .card .tag { display: inline-block; margin-top: 10px; font-family: ui-monospace, monospace; font-size: 10px; letter-spacing: 0.06em; color: #6b6259; background: rgba(60,50,40,0.06); padding: 3px 8px; border-radius: 5px; }
+  .foot { margin-top: 30px; font-size: 12px; color: var(--muted); line-height: 1.6; }
+</style>
+</head>
+<body>
+  <div class="hub">
+    <h1>Your study <em>rhythm.</em></h1>
+    <p class="lede">Five motion directions for the activity heatmap, same grid on every one. Open each, play with it, then tell me what to keep, kill, or combine. All built on Emil Kowalski's animation framework — GPU-only, custom easing, reduced-motion safe.</p>
+    <div class="cards">
+      <a class="card" href="mockup-1-ripple.html">
+        <span class="num">01</span><h3>Ripple Reveal</h3>
+        <p>Cells develop in a wave sweeping across the grid, brighter study days popping harder. The year assembles itself.</p>
+        <span class="tag">entrance · foundational</span>
+      </a>
+      <a class="card" href="mockup-2-streakflame.html">
+        <span class="num">02</span><h3>Streak Flame</h3>
+        <p>Stats count up, then your best run ignites cell-by-cell like a fuse to today, ending on a warm ember.</p>
+        <span class="tag">streak · earned reward</span>
+      </a>
+      <a class="card" href="mockup-3-bloom.html">
+        <span class="num">03</span><h3>Hover Bloom</h3>
+        <p>Hover a day and it springs up with a glow + read-out; the week lifts, the year quiets. Explorable like GitHub.</p>
+        <span class="tag">interactive · feedback</span>
+      </a>
+      <a class="card" href="mockup-4-livingpulse.html">
+        <span class="num">04</span><h3>Living Pulse</h3>
+        <p>Recent days breathe, today wears a soft "you are here" ring, a faint shimmer drifts across. Ambient, always-on.</p>
+        <span class="tag">ambient · whisper-quiet</span>
+      </a>
+      <a class="card" href="mockup-5-statlink.html">
+        <span class="num">05</span><h3>Stat-Linked Highlight</h3>
+        <p>Hover a stat and the grid answers — "best streak" lights the run, "of last 30" frames the window, rest dims.</p>
+        <span class="tag">explanation · numbers↔grid</span>
+      </a>
+    </div>
+    <p class="foot">My read: <strong>02</strong> (the streak is the emotional hook of a study app) paired with <strong>01</strong> as the entrance. <strong>05</strong> makes the stats actually mean something; <strong>03</strong> adds depth; <strong>04</strong> is the ambient "alive" layer.</p>
+  </div>
+</body>
+</html>

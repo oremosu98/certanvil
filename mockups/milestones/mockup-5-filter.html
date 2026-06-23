@@ -1,0 +1,253 @@
+<!DOCTYPE html><html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Milestones — 5 · Filter Morph</title>
+<link rel="stylesheet" href="ms.css">
+<style>
+  /* ---- Filter bar ---- */
+  .ms-filterbar {
+    position: relative;
+    display: flex;
+    gap: 4px;
+    margin: 0 0 14px;
+    padding: 4px;
+    background: #efe9e0;
+    border: 1px solid var(--hair);
+    border-radius: 99px;
+    width: fit-content;
+    box-shadow: inset 0 1px 2px rgba(60,50,40,0.07);
+  }
+
+  /* sliding indicator that sits under the active pill */
+  .ms-pill {
+    position: absolute;
+    top: 4px;
+    left: 0;
+    height: calc(100% - 8px);
+    border-radius: 99px;
+    background: var(--accent);
+    box-shadow: 0 2px 8px -3px rgba(181,105,42,0.7);
+    transition: transform .32s cubic-bezier(0.77,0,0.175,1), width .32s cubic-bezier(0.77,0,0.175,1);
+    z-index: 0;
+    pointer-events: none;
+    will-change: transform, width;
+  }
+
+  .ms-fpill {
+    position: relative;
+    z-index: 1;
+    appearance: none;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: 11.5px;
+    font-weight: 700;
+    letter-spacing: .02em;
+    color: var(--muted);
+    padding: 6px 14px;
+    border-radius: 99px;
+    white-space: nowrap;
+    transition: transform 140ms ease-out, color 180ms ease-out;
+  }
+  .ms-fpill:hover { color: var(--ink); }
+  .ms-fpill:active { transform: scale(0.97); }
+  .ms-fpill[aria-pressed="true"] { color: #fff; }
+  .ms-fpill .ms-fcount {
+    opacity: .7;
+    margin-left: 5px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* the morphing tiles: lift onto own layer during a glide */
+  .ms-tile.ms-morphing { will-change: transform, opacity; z-index: 2; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .ms-pill { transition: none !important; }
+    .ms-tile { transition: none !important; }
+  }
+</style>
+</head><body>
+  <div class="mock-banner">
+    <h2>5 · Filter Morph</h2>
+    <p>Slice the wall and it reorganizes in place: filter to Earned to savour what you’ve done, to Locked to see what’s left, or In-progress to find your next target — tiles glide to their new positions and fade in/out instead of snapping. The active filter pill slides.</p>
+    <span class="mock-hint">Click the filter pills and watch the grid morph.</span>
+  </div>
+  <div class="ms-shell">
+    <div class="ms-filterbar" id="filterbar"></div>
+    <div id="mount"></div>
+  </div>
+  <script src="ms.js"></script>
+  <script>
+    const M = window.Milestones.render('#mount');
+    /* ANIMATION LAYER */
+
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    // ---- Filter predicates over M.tiles -------------------------------------
+    const FILTERS = [
+      { id: 'all',      label: 'All',         test: t => true },
+      { id: 'earned',   label: 'Earned',      test: t => t.unlocked },
+      { id: 'progress', label: 'In progress', test: t => !t.unlocked && !!t.progress },
+      { id: 'locked',   label: 'Locked',      test: t => !t.unlocked },
+    ];
+
+    let activeId = 'all';
+
+    // ---- Build the filter bar ----------------------------------------------
+    const bar = document.getElementById('filterbar');
+
+    // sliding indicator behind the labels
+    const slider = M.el('div', { class: 'ms-pill' });
+    bar.appendChild(slider);
+
+    const pillEls = {};
+    FILTERS.forEach(f => {
+      const n = M.tiles.filter(f.test).length;
+      const btn = M.el('button', {
+        class: 'ms-fpill',
+        type: 'button',
+        'data-filter': f.id,
+        'aria-pressed': String(f.id === activeId),
+      });
+      btn.innerHTML = f.label + '<span class="ms-fcount">' + n + '</span>';
+      btn.addEventListener('click', () => applyFilter(f.id));
+      bar.appendChild(btn);
+      pillEls[f.id] = btn;
+    });
+
+    // Move the sliding indicator under a given pill (measure offsetLeft/Width).
+    function moveSlider(id) {
+      const el = pillEls[id];
+      slider.style.width = el.offsetWidth + 'px';
+      slider.style.transform = 'translateX(' + el.offsetLeft + 'px)';
+    }
+
+    // position slider on the active pill after layout settles
+    requestAnimationFrame(() => moveSlider(activeId));
+
+    // ---- FLIP morph ---------------------------------------------------------
+    function applyFilter(id) {
+      if (id === activeId) return;
+      activeId = id;
+
+      // pill pressed-state + slide
+      FILTERS.forEach(f => pillEls[f.id].setAttribute('aria-pressed', String(f.id === id)));
+      moveSlider(id);
+
+      const test = FILTERS.find(f => f.id === id).test;
+
+      // Reduced motion → hard show/hide, no FLIP, no fade.
+      if (reduced) {
+        M.tiles.forEach(t => { t.el.style.display = test(t) ? '' : 'none'; });
+        return;
+      }
+
+      // a. FIRST — record rects of currently-VISIBLE tiles (anything not display:none)
+      const first = new Map();
+      M.tiles.forEach(t => {
+        if (t.el.style.display !== 'none') {
+          first.set(t.el, t.el.getBoundingClientRect());
+        }
+      });
+
+      // b. Update DOM. Tiles to hide animate out then go display:none; tiles to
+      //    show are revealed so the grid re-flows.
+      const willShow = [];
+      const wasHidden = new Map(); // el -> true if it was display:none before
+      M.tiles.forEach(t => {
+        const show = test(t);
+        const isHidden = t.el.style.display === 'none';
+        if (show) {
+          if (isHidden) wasHidden.set(t.el, true);
+          t.el.style.display = '';
+          willShow.push(t);
+        } else {
+          // animate out (opacity + scale) then remove from flow
+          if (!isHidden) {
+            t.el.classList.add('ms-morphing');
+            t.el.style.transition = 'opacity 180ms ease-out, transform 180ms ease-out';
+            t.el.style.transformOrigin = 'center';
+            // next frame so the transition takes
+            requestAnimationFrame(() => {
+              t.el.style.opacity = '0';
+              t.el.style.transform = 'scale(0.92)';
+            });
+            const el = t.el;
+            setTimeout(() => {
+              // only hide if still meant to be hidden (interrupt-safe)
+              if (!FILTERS.find(f => f.id === activeId).test(t)) {
+                el.style.display = 'none';
+              }
+              el.style.transition = '';
+              el.style.opacity = '';
+              el.style.transform = '';
+              el.classList.remove('ms-morphing');
+            }, 190);
+          } else {
+            t.el.style.display = 'none';
+          }
+        }
+      });
+
+      // c. LAST — read new rects of now-visible tiles.
+      // d. INVERT + PLAY.
+      requestAnimationFrame(() => {
+        willShow.forEach(t => {
+          const el = t.el;
+          const last = el.getBoundingClientRect();
+          const prev = first.get(el);
+          const freshlyShown = wasHidden.get(el);
+
+          el.classList.add('ms-morphing');
+
+          if (prev) {
+            // glide from old position
+            const dx = prev.left - last.left;
+            const dy = prev.top - last.top;
+            el.style.transition = 'none';
+            el.style.transform = 'translate(' + dx + 'px,' + dy + 'px)';
+            if (freshlyShown) el.style.opacity = '0';
+          } else {
+            // newly entering the flow — fade in from a hair down
+            el.style.transition = 'none';
+            el.style.transform = 'translateY(6px)';
+            el.style.opacity = '0';
+          }
+        });
+
+        // PLAY next frame
+        requestAnimationFrame(() => {
+          willShow.forEach(t => {
+            const el = t.el;
+            el.style.transition =
+              'transform 420ms cubic-bezier(0.77,0,0.175,1), opacity 300ms ease-out';
+            el.style.transform = '';
+            el.style.opacity = '';
+          });
+          // cleanup after the glide
+          setTimeout(() => {
+            willShow.forEach(t => {
+              t.el.style.transition = '';
+              t.el.style.transform = '';
+              t.el.style.opacity = '';
+              t.el.classList.remove('ms-morphing');
+            });
+            // keep the toggle text honest about what's visible
+            updateToggleText();
+          }, 440);
+        });
+      });
+    }
+
+    // Optional: reflect the visible count in the toggle button.
+    function updateToggleText() {
+      const visible = M.tiles.filter(t => t.el.style.display !== 'none').length;
+      if (activeId === 'all') {
+        M.toggleBtn.textContent = 'Show all ' + M.total + ' milestones';
+      } else {
+        M.toggleBtn.textContent = 'Showing ' + visible + ' of ' + M.total + ' milestones';
+      }
+    }
+  </script>
+</body></html>

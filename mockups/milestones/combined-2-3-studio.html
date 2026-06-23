@@ -1,0 +1,206 @@
+<!DOCTYPE html><html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Milestones — Combined Studio (Trophy Shine × Hover Detail)</title>
+<link rel="stylesheet" href="ms.css">
+<style>
+  body { display: flex; min-height: 100vh; }
+  .stage { flex: 1; min-width: 0; }
+
+  /* ---------- SHINE (mockup 2) ---------- */
+  .shine-tile { position: relative; overflow: hidden; }
+  .shine-gleam {
+    position: absolute; inset: 0; pointer-events: none; z-index: 3;
+    background: linear-gradient(105deg, transparent 32%, rgba(255,250,240,.62) 50%, transparent 68%);
+    transform: translateX(-130%);
+  }
+  .shine-spark { position: absolute; width: 4px; height: 4px; border-radius: 50%; background: #e8a23a; pointer-events: none; z-index: 4; box-shadow: 0 0 5px 1px rgba(232,162,58,.7); opacity: 0; }
+
+  /* ---------- HOVER DETAIL (mockup 3) ---------- */
+  .ms-tile { transition: background-color 200ms var(--ease-out), box-shadow 200ms var(--ease-out), opacity 160ms ease; }
+  .ms-tile.ms-lift { z-index: 2; background: #fffdf8; box-shadow: 0 16px 34px -18px rgba(40,30,20,.45), 0 3px 12px -7px rgba(40,30,20,.28); }
+  .ms-tile.ms-lift.ms-tile-off { opacity: 1; }
+  .ms-tile.ms-dim { opacity: 0.55; }
+  .ms-tile-extra { overflow: hidden; max-height: 0; opacity: 0; margin-top: 0; transition: max-height 220ms var(--ease-out), opacity 200ms var(--ease-out), margin-top 200ms var(--ease-out); }
+  .ms-tile.ms-lift .ms-tile-extra { max-height: 40px; opacity: 1; margin-top: 8px; }
+  .ms-extra-inner { border-top: 1px solid var(--rule); padding-top: 8px; font-size: 10.5px; color: var(--muted); }
+  .ms-extra-earned { color: var(--good); font-weight: 700; }
+  .ms-mini-track { height: 5px; border-radius: 99px; background: #e7ded1; overflow: hidden; margin-top: 5px; }
+  .ms-mini-fill { height: 100%; width: 0; border-radius: 99px; background: linear-gradient(90deg, var(--accent), var(--accent-light)); transition: width 420ms var(--ease-out); }
+  .ms-mini-label { font-family: ui-monospace, monospace; font-weight: 700; color: var(--ink); }
+
+  /* ---------- tuning panel ---------- */
+  .tuner { width: 280px; flex: 0 0 280px; background: #fffdfa; border-left: 1px solid var(--hair); padding: 22px 18px 28px; position: sticky; top: 0; align-self: flex-start; height: 100vh; overflow-y: auto; }
+  .tuner h2 { font-family: Georgia, serif; font-size: 16px; margin: 0 0 2px; }
+  .tuner .sub { font-family: ui-monospace, monospace; font-size: 10px; color: var(--muted); margin: 0 0 18px; letter-spacing: .04em; }
+  .ctrl { margin-bottom: 16px; }
+  .ctrl label { display: flex; justify-content: space-between; align-items: baseline; font-size: 12px; margin-bottom: 5px; }
+  .ctrl label .val { font-family: ui-monospace, monospace; font-size: 11px; color: var(--accent); font-weight: 700; }
+  .ctrl input[type=range] { -webkit-appearance: none; appearance: none; width: 100%; height: 4px; background: #e7e0d6; border-radius: 4px; outline: none; cursor: pointer; }
+  .ctrl input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 15px; height: 15px; border-radius: 50%; background: var(--accent); cursor: pointer; box-shadow: 0 1px 4px rgba(0,0,0,.25); transition: transform 120ms var(--ease-out); }
+  .ctrl input[type=range]::-webkit-slider-thumb:active { transform: scale(1.2); }
+  .ctrl .hint { font-size: 10px; color: var(--muted); margin-top: 3px; }
+  .toggles { display: flex; flex-direction: column; gap: 8px; margin: 4px 0 18px; }
+  .toggle { display: flex; align-items: center; justify-content: space-between; font-family: ui-monospace, monospace; font-size: 11px; padding: 8px 11px; border-radius: 8px; cursor: pointer; background: #f1ece4; border: 1px solid var(--hair); color: #5b5249; user-select: none; transition: transform 140ms var(--ease-out); }
+  .toggle:active { transform: scale(0.98); }
+  .toggle .sw { width: 30px; height: 17px; border-radius: 9px; background: #cfc6ba; position: relative; transition: background .18s ease; flex: 0 0 auto; }
+  .toggle .sw::after { content: ''; position: absolute; top: 2px; left: 2px; width: 13px; height: 13px; border-radius: 50%; background: #fff; transition: transform .18s var(--ease-out); }
+  .toggle.on { background: #faf3ea; border-color: rgba(181,105,42,.4); color: var(--accent); }
+  .toggle.on .sw { background: var(--accent); }
+  .toggle.on .sw::after { transform: translateX(13px); }
+  .divider { height: 1px; background: var(--hair); margin: 4px 0 16px; }
+  .replay-btn { width: 100%; padding: 10px; border: none; border-radius: 9px; background: var(--accent); color: #fff; font-size: 13px; font-weight: 700; cursor: pointer; font-family: ui-sans-serif, sans-serif; transition: transform 140ms var(--ease-out); }
+  .replay-btn:active { transform: scale(0.98); }
+  .note { margin-top: 14px; font-size: 11px; color: var(--muted); line-height: 1.5; }
+
+  @media (max-width: 920px) { body { flex-direction: column; } .tuner { width: auto; flex: none; height: auto; border-left: none; border-top: 1px solid var(--hair); position: static; } }
+  @media (prefers-reduced-motion: reduce) {
+    .ms-tile, .ms-tile-extra, .ms-mini-fill { transition: opacity 140ms linear !important; }
+    .shine-gleam { display: none; }
+  }
+</style>
+</head><body>
+  <div class="stage">
+    <div class="mock-banner">
+      <h2>Combined Studio — Trophy Shine × Hover Detail</h2>
+      <p>Your two picks fused: on load the badges you just earned get their gold gleam ceremony, then hovering any badge lifts it and reveals more — when you earned it, or exactly how close you are. Dial it on the right; when it feels right I’ll bake it into the real wall.</p>
+      <span class="mock-hint">Watch the recent tiles gleam, then hover any badge · press Replay.</span>
+    </div>
+    <div class="ms-shell"><div id="mount"></div></div>
+  </div>
+
+  <aside class="tuner">
+    <h2>Shine + Detail Studio</h2>
+    <p class="sub">MILESTONES</p>
+
+    <div class="ctrl">
+      <label>Gleam duration <span class="val" id="v-gleam"></span></label>
+      <input type="range" id="s-gleam" min="350" max="1100" step="25" value="650">
+      <div class="hint">How long the light sweeps across each earned tile.</div>
+    </div>
+    <div class="ctrl">
+      <label>Tile stagger <span class="val" id="v-stagger"></span></label>
+      <input type="range" id="s-stagger" min="80" max="500" step="20" value="260">
+      <div class="hint">Delay between each recent tile’s ceremony.</div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="toggles">
+      <div class="toggle on" id="t-spark"><span>Ember sparkles</span><span class="sw"></span></div>
+      <div class="toggle on" id="t-lift"><span>Hover lift</span><span class="sw"></span></div>
+      <div class="toggle on" id="t-dim"><span>Dim others on hover</span><span class="sw"></span></div>
+    </div>
+
+    <button class="replay-btn" id="replay">↻ Replay shine</button>
+    <p class="note">Reduced-motion safe: earned tiles keep a static warm highlight, details still reveal — no gleam or lift motion.</p>
+  </aside>
+
+  <script src="ms.js"></script>
+  <script>
+    const M = window.Milestones.render('#mount');
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const fine = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+    const P = { gleam: 650, stagger: 260, sparkles: true, lift: true, dim: true };
+    const EARNED_WHEN = ['Earned today', 'Earned 2 days ago', 'Earned 4 days ago', 'Earned last week'];
+
+    // ===== HOVER DETAIL (mockup 3) — build extras + wire =====
+    const allTiles = M.tiles.concat(M.recent.map(r => ({ el: r.el, def: r.def, unlocked: true, recent: true, progress: null })));
+    let earnedIdx = 0;
+    allTiles.forEach(t => {
+      if (t.el.querySelector('.ms-tile-extra')) return;
+      const extra = document.createElement('div');
+      extra.className = 'ms-tile-extra';
+      let inner;
+      if (t.unlocked) {
+        inner = '<span class="ms-extra-earned">' + EARNED_WHEN[earnedIdx++ % EARNED_WHEN.length] + '</span>';
+      } else if (t.progress) {
+        inner = '<span class="ms-mini-label">' + t.progress[0] + ' / ' + t.progress[1] + '</span>' +
+          '<div class="ms-mini-track"><div class="ms-mini-fill" data-w="' + Math.round(t.progress[0] / t.progress[1] * 100) + '"></div></div>';
+      } else {
+        inner = 'Not yet — keep going';
+      }
+      extra.innerHTML = '<div class="ms-extra-inner">' + inner + '</div>';
+      t.el.appendChild(extra);
+    });
+
+    const tilesByEl = new Map(allTiles.map(t => [t.el, t]));
+    allTiles.forEach(t => {
+      const r = t.el;
+      r.setAttribute('tabindex', '0');
+      const enter = () => {
+        if (!P.lift) return;
+        r.classList.add('ms-lift');
+        if (P.dim) allTiles.forEach(o => { if (o.el !== r) o.el.classList.add('ms-dim'); });
+        const fill = r.querySelector('.ms-mini-fill');
+        if (fill) fill.style.width = (fill.getAttribute('data-w') || 0) + '%';
+        if (!reduce && fine) r.animate(
+          [{ transform: 'translateY(0) scale(1)' }, { transform: 'translateY(-3px) scale(1.03)' }],
+          { duration: 240, easing: 'cubic-bezier(0.34,1.56,0.64,1)', fill: 'forwards' });
+      };
+      const leave = () => {
+        r.classList.remove('ms-lift');
+        allTiles.forEach(o => o.el.classList.remove('ms-dim'));
+        const fill = r.querySelector('.ms-mini-fill');
+        if (fill) fill.style.width = '0';
+        if (!reduce && fine) r.animate(
+          [{ transform: 'translateY(-3px) scale(1.03)' }, { transform: 'translateY(0) scale(1)' }],
+          { duration: 180, easing: 'cubic-bezier(0.23,1,0.32,1)', fill: 'forwards' });
+      };
+      r.addEventListener('pointerenter', enter);
+      r.addEventListener('pointerleave', leave);
+      r.addEventListener('focus', enter);
+      r.addEventListener('blur', leave);
+    });
+
+    // ===== TROPHY SHINE (mockup 2) — gleam ceremony on recent tiles =====
+    let shineTimers = [];
+    function shine() {
+      shineTimers.forEach(clearTimeout); shineTimers = [];
+      M.recent.forEach(rt => {
+        rt.el.classList.add('shine-tile');
+        rt.el.querySelectorAll('.shine-gleam,.shine-spark').forEach(n => n.remove());
+      });
+      if (reduce) { M.recent.forEach(rt => rt.el.style.background = 'rgba(232,162,58,0.10)'); return; }
+      M.recent.forEach((rt, i) => {
+        shineTimers.push(setTimeout(() => {
+          const el = rt.el;
+          // settle
+          el.animate([{ transform: 'scale(0.97)' }, { transform: 'scale(1.02)' }, { transform: 'scale(1)' }],
+            { duration: 420, easing: 'cubic-bezier(0.34,1.56,0.64,1)' });
+          // warm tint wash
+          el.animate([{ background: 'rgba(232,162,58,0.22)' }, { background: 'rgba(232,162,58,0)' }],
+            { duration: 700, easing: 'cubic-bezier(0.23,1,0.32,1)' });
+          // gleam sweep
+          const g = document.createElement('div'); g.className = 'shine-gleam'; el.appendChild(g);
+          const ga = g.animate([{ transform: 'translateX(-130%)' }, { transform: 'translateX(130%)' }],
+            { duration: P.gleam, easing: 'cubic-bezier(0.23,1,0.32,1)', fill: 'forwards' });
+          ga.onfinish = () => g.remove();
+          // sparkles
+          if (P.sparkles) {
+            for (let s = 0; s < 3; s++) {
+              const sp = document.createElement('div'); sp.className = 'shine-spark';
+              sp.style.left = (60 + Math.random() * 30) + '%'; sp.style.top = (18 + Math.random() * 50) + '%';
+              el.appendChild(sp);
+              const sa = sp.animate(
+                [{ opacity: 0, transform: 'scale(0.4) translate(0,0)' }, { opacity: 1, transform: 'scale(1) translate(0,-4px)' }, { opacity: 0, transform: 'scale(0.6) translate(0,-10px)' }],
+                { duration: 560, delay: P.gleam * 0.4 + s * 90, easing: 'cubic-bezier(0.23,1,0.32,1)', fill: 'forwards' });
+              sa.onfinish = () => sp.remove();
+            }
+          }
+        }, i * P.stagger));
+      });
+    }
+
+    // ===== panel =====
+    const fmt = { gleam: v => v + 'ms', stagger: v => v + 'ms' };
+    [['gleam', 's-gleam', 'v-gleam'], ['stagger', 's-stagger', 'v-stagger']].forEach(([k, sid, vid]) => {
+      const s = document.getElementById(sid); document.getElementById(vid).textContent = fmt[k](P[k]);
+      s.addEventListener('input', e => { P[k] = parseFloat(e.target.value); document.getElementById(vid).textContent = fmt[k](P[k]); });
+    });
+    function bind(id, key) { const el = document.getElementById(id); el.addEventListener('click', () => { P[key] = el.classList.toggle('on'); }); }
+    bind('t-spark', 'sparkles'); bind('t-lift', 'lift'); bind('t-dim', 'dim');
+    document.getElementById('replay').addEventListener('click', shine);
+
+    setTimeout(shine, 450);
+  </script>
+</body></html>

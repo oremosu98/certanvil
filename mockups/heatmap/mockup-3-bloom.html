@@ -1,0 +1,224 @@
+<!DOCTYPE html><html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Study Rhythm — 3 · Hover Bloom</title>
+<link rel="stylesheet" href="heatmap.css">
+<style>
+  /* ---- floating read-out tooltip ---- */
+  .hm-tip {
+    position: absolute; left: 0; top: 0;
+    pointer-events: none; z-index: 40;
+    transform-origin: center bottom;
+    background: #211c17;
+    color: #f7f1e8;
+    border-radius: 10px;
+    padding: 9px 12px 10px;
+    box-shadow: 0 14px 34px -14px rgba(20,14,8,0.7), 0 0 0 1px rgba(255,255,255,0.06) inset;
+    min-width: 132px;
+    opacity: 0;
+    transform: translate(-50%, -6px) scale(0.92);
+    transition: opacity 140ms ease-out, transform 140ms ease-out;
+    will-change: opacity, transform;
+  }
+  .hm-tip.is-on { opacity: 1; transform: translate(-50%, -10px) scale(1); }
+  .hm-tip-big {
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: 21px; font-weight: 800; line-height: 1;
+    letter-spacing: -0.01em; color: #e3c9a4;
+    font-variant-numeric: tabular-nums;
+    margin-bottom: 6px;
+  }
+  .hm-tip-big.is-empty { color: #8c8378; font-size: 15px; font-weight: 700; }
+  .hm-tip-date {
+    font-family: ui-sans-serif, -apple-system, sans-serif;
+    font-size: 12px; font-weight: 700; color: #f3eadd;
+    margin-bottom: 3px;
+  }
+  .hm-tip-sub {
+    font-family: ui-monospace, monospace;
+    font-size: 10.5px; letter-spacing: .02em; color: #a59a8d;
+  }
+  /* little pointer triangle */
+  .hm-tip::after {
+    content: ''; position: absolute; left: 50%; bottom: -5px;
+    width: 9px; height: 9px; background: #211c17;
+    transform: translateX(-50%) rotate(45deg);
+    border-radius: 0 0 2px 0;
+  }
+  /* reduced-motion: a plain outline highlight instead of a spring */
+  .hm-cell.hm-rm-active { outline: 2px solid var(--today-ring); outline-offset: 1px; }
+</style>
+</head><body>
+  <div class="mock-banner">
+    <h2>3 · Hover Bloom</h2>
+    <p>Hover any day and it blooms — springs up with a warm glow — while the rest of that week lifts gently and the year quiets behind it. A read-out shows the date, questions and accuracy. The grid becomes something you explore, not just glance at.</p>
+    <span class="mock-hint">Hover the cells (try the bright recent ones).</span>
+  </div>
+  <div class="hm-shell"><div id="mount"></div></div>
+  <script src="heatmap.js"></script>
+  <script>
+    const HM = window.Heatmap.render('#mount');
+    /* ANIMATION LAYER — "Hover Bloom" (Emil Kowalski: feedback/exploration; spring for the bloom) */
+
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    // Emil's rule: a spring, not a linear snap. Overshoot cubic for the bloom.
+    const SPRING = 'cubic-bezier(0.34,1.56,0.64,1)';
+    const EASE   = 'cubic-bezier(0.23,1,0.32,1)';
+    const TIER_TINT = ['#a59a8d', '#d8b98a', '#dcb27e', '#e8a23a', '#f0ad3e'];
+
+    // ---- tooltip element (one, floating inside the position:relative wrap) ----
+    const tip = document.createElement('div');
+    tip.className = 'hm-tip';
+    tip.innerHTML =
+      '<div class="hm-tip-big"></div>' +
+      '<div class="hm-tip-date"></div>' +
+      '<div class="hm-tip-sub"></div>';
+    HM.wrap.appendChild(tip);
+    const tipBig  = tip.querySelector('.hm-tip-big');
+    const tipDate = tip.querySelector('.hm-tip-date');
+    const tipSub  = tip.querySelector('.hm-tip-sub');
+
+    let hideTimer = null;
+
+    function fillTip(cell) {
+      const dateStr = cell.date.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+      tipDate.textContent = dateStr;
+      if (cell.q === 0) {
+        tipBig.textContent = 'no study';
+        tipBig.classList.add('is-empty');
+        tipBig.style.color = '';
+        tipSub.textContent = 'a quiet day';
+      } else {
+        const acc = Math.round(cell.c / cell.q * 100);
+        tipBig.textContent = acc + '%';
+        tipBig.classList.remove('is-empty');
+        tipBig.style.color = TIER_TINT[cell.tier] || '';   // tint by tier — nice touch
+        tipSub.textContent = cell.q + ' question' + (cell.q === 1 ? '' : 's') + ' · accuracy';
+      }
+    }
+
+    function positionTip(cell) {
+      const r = cell.rect.getBoundingClientRect();
+      const w = HM.wrap.getBoundingClientRect();
+      const x = r.left - w.left + r.width / 2;
+      const y = r.top - w.top;        // anchor above the cell; tip translates up
+      tip.style.left = x + 'px';
+      tip.style.top  = y + 'px';
+    }
+
+    function showTip(cell) {
+      clearTimeout(hideTimer);
+      fillTip(cell);
+      positionTip(cell);
+      tip.classList.add('is-on');
+    }
+    function hideTip() {
+      tip.classList.remove('is-on');
+    }
+
+    // ---- bloom + week-highlight + dim ----
+    function enter(cell) {
+      // dim the year, lift the same column, bloom the hovered cell.
+      HM.cells.forEach(c => {
+        const r = c.rect;
+        if (c === cell) return;
+        if (c.col === cell.col) {
+          // same week — lift gently to full presence
+          r.style.opacity = '1';
+          if (!reduceMotion) {
+            r.style.transformBox = 'fill-box';
+            r.style.transformOrigin = 'center';
+            r.style.transition = 'transform 180ms ' + EASE + ', opacity 180ms ease';
+            r.style.transform = 'scale(1.15)';
+          }
+        } else {
+          // the rest of the year quiets behind it
+          r.style.transition = 'opacity 180ms ease, transform 180ms ease';
+          r.style.opacity = '0.4';
+          if (!reduceMotion) r.style.transform = 'none';
+        }
+      });
+
+      const r = cell.rect;
+      r.style.opacity = '1';
+      r.style.transformBox = 'fill-box';
+      r.style.transformOrigin = 'center';
+
+      if (reduceMotion) {
+        // skip the spring scale — keep comprehension via outline + dim + tooltip
+        cell.rect.classList.add('hm-rm-active');
+      } else {
+        // raise above siblings so the glow isn't clipped by later-drawn cells
+        const parent = r.parentNode;
+        if (parent && r !== parent.lastChild) parent.appendChild(r);
+
+        r.getAnimations && r.getAnimations().forEach(a => a.cancel());
+        r.animate(
+          [
+            { transform: 'scale(1)',    filter: 'drop-shadow(0 0 0 rgba(232,162,58,0))' },
+            { transform: 'scale(1.82)', filter: 'drop-shadow(0 0 7px #e8a23a)', offset: 0.6 },
+            { transform: 'scale(1.7)',  filter: 'drop-shadow(0 0 5px #e8a23a)' }
+          ],
+          { duration: 260, easing: SPRING, fill: 'forwards' }
+        );
+      }
+
+      showTip(cell);
+    }
+
+    function leave(cell) {
+      // restore everything
+      HM.cells.forEach(c => {
+        const r = c.rect;
+        r.style.transition = 'opacity 180ms ease, transform 180ms ' + EASE;
+        r.style.opacity = '';
+        if (!reduceMotion) r.style.transform = 'none';
+      });
+
+      const r = cell.rect;
+      if (reduceMotion) {
+        r.classList.remove('hm-rm-active');
+      } else {
+        r.getAnimations && r.getAnimations().forEach(a => a.cancel());
+        r.animate(
+          [
+            { transform: 'scale(1.7)', filter: 'drop-shadow(0 0 5px #e8a23a)' },
+            { transform: 'scale(1)',   filter: 'drop-shadow(0 0 0 rgba(232,162,58,0))' }
+          ],
+          { duration: 200, easing: EASE, fill: 'forwards' }
+        );
+      }
+
+      hideTip();
+    }
+
+    // ---- wire every cell (pointer covers mouse + touch tap) ----
+    HM.cells.forEach(cell => {
+      const r = cell.rect;
+      r.style.transformBox = 'fill-box';
+      r.style.transformOrigin = 'center';
+      r.style.cursor = 'pointer';
+      r.setAttribute('tabindex', '0');
+
+      r.addEventListener('pointerenter', () => enter(cell));
+      r.addEventListener('pointerleave', () => leave(cell));
+      // focus/blur for keyboard exploration
+      r.addEventListener('focus', () => enter(cell));
+      r.addEventListener('blur',  () => leave(cell));
+      // touch tap: pointerenter fires on tap; also make a tap re-bloom cleanly
+      r.addEventListener('pointerdown', () => enter(cell));
+    });
+
+    // dismiss the tooltip if a tap lands off the grid (touch)
+    document.addEventListener('pointerdown', (e) => {
+      if (!e.target.classList || !e.target.classList.contains('hm-cell')) {
+        HM.cells.forEach(c => {
+          c.rect.style.opacity = '';
+          if (!reduceMotion) c.rect.style.transform = 'none';
+          c.rect.classList.remove('hm-rm-active');
+        });
+        hideTip();
+      }
+    }, true);
+  </script>
+</body></html>

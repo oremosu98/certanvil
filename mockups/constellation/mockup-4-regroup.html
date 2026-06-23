@@ -1,0 +1,243 @@
+<!DOCTYPE html><html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mockup 4 — Magnetic Regroup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="constellation.css">
+<style>
+  /* Regroup-only additions — base styling lives in constellation.css */
+  .regroup-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+    padding: 4px 2px 14px;
+    align-items: center;
+  }
+  .regroup-bar button {
+    font: 500 12.5px/1 ui-sans-serif, -apple-system, "Segoe UI", Roboto, sans-serif;
+    letter-spacing: 0.01em;
+    color: var(--ink);
+    background: var(--panel);
+    border: 1px solid var(--hair);
+    border-radius: 999px;
+    padding: 7px 13px;
+    cursor: pointer;
+    transition: transform 140ms ease-out, background 180ms ease, color 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+    -webkit-font-smoothing: antialiased;
+    will-change: transform;
+  }
+  .regroup-bar button:hover {
+    border-color: rgba(232, 148, 58, 0.45);
+    background: #fff;
+  }
+  .regroup-bar button:active {
+    transform: scale(0.97);
+  }
+  .regroup-bar button.is-active {
+    background: var(--ember);
+    border-color: var(--ember);
+    color: #fff;
+    box-shadow: 0 2px 10px rgba(232, 148, 58, 0.28);
+  }
+  .const-map .const-node { will-change: transform, opacity; }
+  .const-tether-layer {
+    transition: opacity 360ms var(--ease-in-out);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .regroup-bar button { transition: background 120ms ease, color 120ms ease; }
+  }
+</style>
+</head><body>
+  <div class="mock-banner">
+    <h2>4 · Magnetic Regroup — filter morph</h2>
+    <p>Pick a filter and nodes physically fly into new arrangements: matches surge forward and cluster, the rest scatter to the edges and fade. Changing what you look at feels like reorganizing real objects, not a hard re-render.</p>
+    <span class="mock-hint">Click the filter buttons below.</span>
+  </div>
+  <div class="const-shell">
+    <div class="const-head">
+      <h1 class="const-title"><span class="spark">✨</span> Knowledge <em>Constellation</em></h1>
+      <span class="const-sub">size = practice · color = domain · brightness = mastery</span>
+    </div>
+    <div class="regroup-bar" id="bar"></div>
+    <div id="mount"></div>
+    <div class="const-legend">
+      <span><i class="dot"></i>≥80% mastered</span>
+      <span><i class="dot t2"></i>≥70% proficient</span>
+      <span><i class="dot t3"></i>≥55% developing</span>
+      <span><i class="dot t4"></i>&lt;55% / not studied</span>
+    </div>
+  </div>
+  <script src="constellation.js"></script>
+  <script>
+    const C = window.Constellation.render('#mount');
+
+    (function magneticRegroup(){
+      const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const { nodes, W, H, layers } = C;
+      const CX = W / 2, CY = H / 2;   // viewBox center (500, 220)
+
+      // ----- Filter definitions -----
+      const FILTERS = [
+        { key: 'all',   label: 'All',          test: () => true },
+        { key: 'mast',  label: 'Mastered',     test: n => n.tier === 'mastered' },
+        { key: 'prof',  label: 'Proficient+',  test: n => n.tier === 'proficient' || n.tier === 'mastered' },
+        { key: 'stud',  label: 'Studied',      test: n => n.attempts > 0 },
+        { key: 'd1',    label: 'Domain 1',     test: n => n.domain === 1 },
+        { key: 'd2',    label: 'Domain 2',     test: n => n.domain === 2 },
+        { key: 'd3',    label: 'Domain 3',     test: n => n.domain === 3 },
+        { key: 'd4',    label: 'Domain 4',     test: n => n.domain === 4 },
+        { key: 'd5',    label: 'Domain 5',     test: n => n.domain === 5 },
+      ];
+
+      // ----- Per-node transform state -----
+      // We move each node by a transform delta from its HOME (n.cx, n.cy).
+      // Track the last TARGET transform string so interruptions retarget smoothly.
+      nodes.forEach(n => {
+        n.gEl.style.transformBox = 'fill-box';
+        n.gEl.style.transformOrigin = 'center';
+        n._tf = 'translate(0px, 0px) scale(1)';   // current target transform
+        n._op = 1;                                  // current target opacity
+        n._anim = null;
+      });
+
+      // Read whatever transform/opacity is *currently visible* (mid-animation safe).
+      function currentVisual(n){
+        const cs = getComputedStyle(n.gEl);
+        let tf = cs.transform;
+        if (!tf || tf === 'none') tf = 'translate(0px, 0px) scale(1)';
+        const op = cs.opacity === '' ? 1 : parseFloat(cs.opacity);
+        return { tf, op: isNaN(op) ? 1 : op };
+      }
+
+      // Animate a node from its current visual state to a new target.
+      function moveNode(n, targetTf, targetOp, delay){
+        if (n._anim) { n._anim.cancel(); n._anim = null; }
+
+        // Commit the final state immediately as inline style so it persists
+        // even if the animation is interrupted/cancelled later.
+        n._tf = targetTf;
+        n._op = targetOp;
+
+        if (reduce){
+          // Reduced motion: jump to final position, only a quick opacity fade.
+          n.gEl.style.transform = targetTf;
+          const from = currentVisual(n);
+          n._anim = n.gEl.animate(
+            [{ opacity: from.op }, { opacity: targetOp }],
+            { duration: 160, easing: 'linear', fill: 'forwards' }
+          );
+          n.gEl.style.opacity = targetOp;
+          return;
+        }
+
+        const from = currentVisual(n);
+        n.gEl.style.transform = targetTf;
+        n.gEl.style.opacity = targetOp;
+
+        n._anim = n.gEl.animate(
+          [
+            { transform: from.tf, opacity: from.op },
+            { transform: targetTf, opacity: targetOp },
+          ],
+          {
+            duration: 420,
+            delay: delay || 0,
+            easing: 'cubic-bezier(0.77,0,0.175,1)',  // ease-in-out, deliberate
+            fill: 'forwards',
+          }
+        );
+      }
+
+      // ----- Layout helpers -----
+      // Pack matches into a loose grid centered on (CX, CY).
+      function matchTargets(matches){
+        const count = matches.length;
+        if (count === 0) return [];
+        const cols = Math.max(1, Math.ceil(Math.sqrt(count * (W / H))));
+        const rows = Math.ceil(count / cols);
+        const gapX = 78, gapY = 70;
+        const gridW = (cols - 1) * gapX;
+        const gridH = (rows - 1) * gapY;
+        const out = [];
+        matches.forEach((n, i) => {
+          const col = i % cols;
+          const row = Math.floor(i / cols);
+          // center the last (possibly short) row
+          const itemsInRow = Math.min(cols, count - row * cols);
+          const rowW = (itemsInRow - 1) * gapX;
+          const rowOffset = (gridW - rowW) / 2;
+          const tx = CX - gridW / 2 + rowOffset + col * gapX;
+          const ty = CY - gridH / 2 + row * gapY;
+          out.push({ x: tx, y: ty });
+        });
+        return out;
+      }
+
+      // Push a non-match node outward toward the nearest edge, away from center.
+      function scatterTransform(n){
+        let dx = n.cx - CX, dy = n.cy - CY;
+        const len = Math.hypot(dx, dy) || 1;
+        dx /= len; dy /= len;
+        // distance to push so it heads off toward the frame edge
+        const push = 340;
+        const tx = dx * push;
+        const ty = dy * push;
+        return 'translate(' + tx.toFixed(1) + 'px, ' + ty.toFixed(1) + 'px) scale(0.7)';
+      }
+
+      // ----- Apply a filter -----
+      function applyFilter(filter){
+        const isAll = filter.key === 'all';
+
+        // Fade tethers out for any non-All filter so the morph reads cleanly.
+        layers.tether.style.opacity = isAll ? '' : '0';
+
+        const matches = [];
+        const nonMatches = [];
+        nodes.forEach(n => (filter.test(n) ? matches : nonMatches).push(n));
+
+        if (isAll){
+          // Everyone returns home: identity transform, full opacity & scale.
+          nodes.forEach((n, i) => {
+            const delay = reduce ? 0 : (i % 12) * 12;
+            moveNode(n, 'translate(0px, 0px) scale(1)', 1, delay);
+          });
+          return;
+        }
+
+        // Matches: pack into a tidy central grid, bump scale, full opacity.
+        const targets = matchTargets(matches);
+        matches.forEach((n, i) => {
+          const t = targets[i];
+          const tx = t.x - n.cx;
+          const ty = t.y - n.cy;
+          const tf = 'translate(' + tx.toFixed(1) + 'px, ' + ty.toFixed(1) + 'px) scale(1.12)';
+          const delay = reduce ? 0 : i * 25;   // staggered cascade settling
+          moveNode(n, tf, 1, delay);
+        });
+
+        // Non-matches: scatter toward nearest edge, fade + shrink.
+        nonMatches.forEach(n => {
+          moveNode(n, scatterTransform(n), 0.12, 0);
+        });
+      }
+
+      // ----- Build filter buttons -----
+      const bar = document.getElementById('bar');
+      let activeBtn = null;
+      FILTERS.forEach(f => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.textContent = f.label;
+        if (f.key === 'all'){ b.classList.add('is-active'); activeBtn = b; }
+        b.addEventListener('click', () => {
+          if (activeBtn) activeBtn.classList.remove('is-active');
+          b.classList.add('is-active');
+          activeBtn = b;
+          applyFilter(f);
+        });
+        bar.appendChild(b);
+      });
+    })();
+  </script>
+</body></html>

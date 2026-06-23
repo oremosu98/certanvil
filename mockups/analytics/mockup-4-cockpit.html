@@ -1,0 +1,1280 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CertAnvil Analytics · Cockpit</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..600&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    /* motion language — instruments settle with a springy ease-out; UI micro-interactions snap */
+    --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+    --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+    --ease-settle: cubic-bezier(0.34, 1.32, 0.5, 1); /* needle settle: slight overshoot then back */
+  }
+  :root, [data-theme="dark"] {
+    --bg: oklch(0.17 0.012 60); --surface: oklch(0.21 0.014 60); --surface2: oklch(0.25 0.016 60);
+    --surface3: oklch(0.30 0.018 60); --text: oklch(0.93 0.010 75); --text-dim: oklch(0.72 0.012 70);
+    --text-faint: oklch(0.56 0.012 70); --accent: oklch(0.80 0.155 64); --accent-2: oklch(0.86 0.10 75);
+    --accent-soft: oklch(0.80 0.155 64 / 0.16); --green: oklch(0.74 0.150 152); --green-soft: oklch(0.74 0.15 152 / 0.16);
+    --yellow: oklch(0.82 0.13 85); --red: oklch(0.68 0.17 25); --border: oklch(0.32 0.016 60); --hairline: oklch(0.29 0.016 60);
+    --scope-ink: oklch(0.82 0.10 152 / 0.55);
+  }
+  [data-theme="light"] {
+    --bg: oklch(0.965 0.008 75); --surface: oklch(0.99 0.005 75); --surface2: oklch(0.945 0.010 72);
+    --surface3: oklch(0.91 0.012 68); --text: oklch(0.27 0.020 55); --text-dim: oklch(0.46 0.020 58);
+    --text-faint: oklch(0.60 0.016 60); --accent: oklch(0.50 0.155 55); --accent-2: oklch(0.46 0.13 50);
+    --accent-soft: oklch(0.50 0.155 55 / 0.12); --green: oklch(0.52 0.13 150); --green-soft: oklch(0.52 0.13 150 / 0.12);
+    --yellow: oklch(0.66 0.13 80); --red: oklch(0.55 0.20 25); --border: oklch(0.87 0.012 68); --hairline: oklch(0.84 0.012 68);
+    --scope-ink: oklch(0.45 0.10 150 / 0.5);
+  }
+
+  /* domain / tier instrument colours, theme-aware */
+  :root, [data-theme="dark"] {
+    --d1: oklch(0.78 0.12 230); --d2: var(--green); --d3: oklch(0.80 0.13 250);
+    --d4: var(--accent); --d5: oklch(0.70 0.16 30);
+  }
+  [data-theme="light"] {
+    --d1: oklch(0.52 0.13 245); --d2: var(--green); --d3: oklch(0.50 0.15 260);
+    --d4: var(--accent); --d5: oklch(0.55 0.18 30);
+  }
+
+  * { box-sizing: border-box; }
+  html { color-scheme: dark; }
+  [data-theme="light"] { color-scheme: light; }
+
+  body {
+    margin: 0;
+    background:
+      radial-gradient(1200px 700px at 50% -10%, oklch(0.24 0.02 60 / 0.45), transparent 60%),
+      var(--bg);
+    color: var(--text);
+    font-family: 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    transition: background 280ms ease, color 280ms ease;
+  }
+  [data-theme="light"] body {
+    background:
+      radial-gradient(1200px 700px at 50% -10%, oklch(0.90 0.015 70 / 0.7), transparent 60%),
+      var(--bg);
+  }
+
+  .mono { font-family: 'JetBrains Mono', ui-monospace, monospace; font-variant-numeric: tabular-nums; }
+  .serif { font-family: 'Fraunces', Georgia, serif; }
+
+  .shell { max-width: 1240px; margin: 0 auto; padding: 26px 22px 64px; }
+
+  /* ---------- top bar ---------- */
+  .topbar { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; flex-wrap: wrap; margin-bottom: 22px; }
+  .ident { display: flex; flex-direction: column; gap: 2px; }
+  .ident .reg {
+    font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.32em;
+    color: var(--text-faint); text-transform: uppercase;
+  }
+  .ident h1 {
+    font-family: 'Fraunces', serif; font-weight: 600; font-size: 19px; margin: 0;
+    letter-spacing: 0.01em; color: var(--text);
+  }
+  .theme-toggle {
+    font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 500; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--text-dim); background: var(--surface2);
+    border: 1px solid var(--border); border-radius: 999px; padding: 8px 15px; cursor: pointer;
+    display: inline-flex; align-items: center; gap: 8px;
+    transition: border-color 160ms var(--ease-out), color 160ms var(--ease-out), background 160ms var(--ease-out), transform 120ms var(--ease-out);
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .theme-toggle:hover { color: var(--text); border-color: var(--accent); }
+  }
+  .theme-toggle:active { transform: scale(0.98); }
+  .theme-toggle .dotmark { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 8px var(--accent); }
+
+  /* ---------- verdict banner (the captain's call) ---------- */
+  .verdict {
+    position: relative; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 16px; padding: 22px 26px; margin-bottom: 18px; overflow: hidden;
+    display: flex; align-items: center; gap: 26px; flex-wrap: wrap;
+    box-shadow: 0 18px 48px -32px oklch(0 0 0 / 0.7);
+  }
+  .verdict-stamp {
+    flex: 0 0 auto; display: flex; flex-direction: column; align-items: center; gap: 7px;
+    padding: 14px 20px; border-radius: 13px;
+    border: 1.5px solid color-mix(in oklch, var(--yellow) 60%, var(--border));
+    background: color-mix(in oklch, var(--yellow) 9%, transparent);
+  }
+  .verdict-stamp .lamp {
+    width: 14px; height: 14px; border-radius: 50%; background: var(--yellow);
+    box-shadow: 0 0 14px var(--yellow);
+  }
+  .verdict-stamp .word {
+    font-family: 'JetBrains Mono', monospace; font-weight: 600; font-size: 13px;
+    letter-spacing: 0.22em; color: var(--yellow); text-transform: uppercase;
+  }
+  .verdict-body { flex: 1 1 320px; }
+  .verdict-body .line {
+    font-family: 'Fraunces', serif; font-size: clamp(20px, 3.1vw, 30px); font-weight: 600;
+    line-height: 1.18; margin: 0 0 7px; letter-spacing: -0.01em;
+  }
+  .verdict-body .line em { font-style: italic; color: var(--accent); }
+  .verdict-body .sub {
+    font-family: 'JetBrains Mono', monospace; font-size: 12.5px; color: var(--text-dim);
+    line-height: 1.5; margin: 0;
+  }
+  .verdict-clock { flex: 0 0 auto; text-align: right; display: flex; flex-direction: column; gap: 3px; }
+  .verdict-clock .big { font-family: 'JetBrains Mono', monospace; font-size: 30px; font-weight: 600; color: var(--text); line-height: 1; }
+  .verdict-clock .cap { font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--text-faint); }
+
+  /* ---------- instrument grid ---------- */
+  .panel-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+    gap: 16px;
+    align-items: start;
+  }
+  .stack { display: grid; gap: 16px; }
+
+  .instrument {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
+    padding: 18px 20px; position: relative;
+    box-shadow: 0 14px 40px -34px oklch(0 0 0 / 0.8);
+  }
+  .instrument > .ihead { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+  .instrument .ititle { font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: var(--text-dim); margin: 0; }
+  .instrument .iread { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--text-faint); letter-spacing: 0.04em; }
+
+  /* ---------- primary readiness gauge ---------- */
+  .gauge-instrument { padding-bottom: 8px; }
+  .gauge-wrap { position: relative; width: 100%; max-width: 480px; margin: 0 auto; }
+  .gauge-wrap svg { display: block; width: 100%; height: auto; overflow: visible; }
+  .gauge-center {
+    position: absolute; left: 50%; top: 60%; transform: translate(-50%, -50%);
+    text-align: center; pointer-events: none;
+  }
+  .gauge-center .score { font-family: 'JetBrains Mono', monospace; font-size: clamp(40px, 8vw, 58px); font-weight: 600; line-height: 0.95; color: var(--text); }
+  .gauge-center .of { font-family: 'JetBrains Mono', monospace; font-size: 13px; color: var(--text-faint); letter-spacing: 0.06em; }
+  .gauge-center .tierword {
+    margin-top: 7px; display: inline-block; font-family: 'JetBrains Mono', monospace; font-size: 10.5px; font-weight: 600;
+    letter-spacing: 0.16em; text-transform: uppercase; color: var(--yellow);
+    border: 1px solid color-mix(in oklch, var(--yellow) 45%, var(--border)); border-radius: 999px; padding: 3px 11px;
+  }
+  .gauge-foot {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 4px;
+    border-top: 1px solid var(--hairline); padding-top: 14px;
+  }
+  .gfoot { text-align: center; }
+  .gfoot .v { font-family: 'JetBrains Mono', monospace; font-size: 19px; font-weight: 600; color: var(--text); }
+  .gfoot .v.warn { color: var(--yellow); }
+  .gfoot .v.good { color: var(--green); }
+  .gfoot .k { font-family: 'JetBrains Mono', monospace; font-size: 9.5px; letter-spacing: 0.13em; text-transform: uppercase; color: var(--text-faint); margin-top: 3px; }
+
+  .needle-line { transform-box: fill-box; }
+
+  /* ---------- digital stat readouts ---------- */
+  .readout-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: var(--hairline); border: 1px solid var(--border); border-radius: 13px; overflow: hidden; }
+  .readout { background: var(--surface); padding: 13px 14px; }
+  .readout .rv { font-family: 'JetBrains Mono', monospace; font-size: 21px; font-weight: 600; color: var(--text); line-height: 1; }
+  .readout .rk { font-family: 'JetBrains Mono', monospace; font-size: 9.5px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-faint); margin-top: 5px; }
+  .readout .spark { display: block; margin-top: 8px; width: 100%; height: 20px; }
+
+  /* ---------- advisory annunciator ---------- */
+  .advisory {
+    background: var(--surface); border: 1px solid color-mix(in oklch, var(--accent) 38%, var(--border));
+    border-radius: 16px; padding: 16px 18px; position: relative; overflow: hidden;
+  }
+  .advisory .anhead { display: flex; align-items: center; gap: 10px; margin-bottom: 9px; }
+  .advisory .anlamp {
+    width: 11px; height: 11px; border-radius: 2px; background: var(--accent);
+    box-shadow: 0 0 12px var(--accent); flex: 0 0 auto;
+  }
+  .advisory .antag { font-family: 'JetBrains Mono', monospace; font-size: 10.5px; font-weight: 600; letter-spacing: 0.2em; text-transform: uppercase; color: var(--accent); }
+  .advisory .anlev { margin-left: auto; font-family: 'JetBrains Mono', monospace; font-size: 14px; font-weight: 600; color: var(--green); }
+  .advisory h3 { font-family: 'Fraunces', serif; font-size: 18px; font-weight: 600; margin: 0 0 6px; color: var(--text); }
+  .advisory p { font-size: 13px; line-height: 1.55; color: var(--text-dim); margin: 0; }
+
+  /* ---------- glideslope (pass-trend) ---------- */
+  .glide-instrument .ghead-tabs { display: flex; gap: 3px; padding: 3px; background: var(--surface2); border: 1px solid var(--border); border-radius: 9px; }
+  .gtab {
+    font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--text-faint); background: transparent; border: none; border-radius: 6px; padding: 5px 11px; cursor: pointer;
+    transition: color 150ms var(--ease-out), background 150ms var(--ease-out), transform 120ms var(--ease-out);
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .gtab:hover { color: var(--text); }
+  }
+  .gtab:active { transform: scale(0.98); }
+  .gtab[aria-selected="true"] { color: var(--bg); background: var(--accent); }
+  [data-theme="light"] .gtab[aria-selected="true"] { color: var(--surface); }
+  .glide-wrap { width: 100%; aspect-ratio: 960 / 300; }
+  .glide-wrap svg { width: 100%; height: 100%; display: block; overflow: visible; }
+  .glide-grid line { stroke: var(--hairline); stroke-width: 1; }
+  .glide-grid text { font-family: 'JetBrains Mono', monospace; font-size: 10px; fill: var(--text-faint); }
+  .glide-pass-line { stroke: var(--accent); stroke-width: 1.5; stroke-dasharray: 7 5; opacity: 0.9; }
+  .glide-pass-label { font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 600; fill: var(--accent); letter-spacing: 0.1em; }
+  .glide-beam line { stroke: var(--accent); stroke-width: 1; opacity: 0.22; }
+  .glide-area { fill: var(--accent); opacity: 0.07; }
+  .glide-line { fill: none; stroke: var(--accent); stroke-width: 2.4; stroke-linejoin: round; stroke-linecap: round; }
+  .glide-dot { fill: var(--surface); stroke: var(--accent); stroke-width: 2; }
+  .glide-dot.last { fill: var(--accent); }
+  .glide-verdict {
+    display: flex; align-items: center; gap: 14px; margin-top: 12px; padding-top: 13px; border-top: 1px solid var(--hairline);
+  }
+  .glide-verdict .gv-word { font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--green); }
+  .glide-verdict .gv-detail { font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: var(--text-dim); }
+  .glide-verdict .gv-now { margin-left: auto; font-family: 'JetBrains Mono', monospace; font-size: 22px; font-weight: 600; color: var(--text); }
+
+  /* ---------- radar scope (constellation) ---------- */
+  .scope-instrument { padding-bottom: 16px; }
+  .scope-wrap { position: relative; width: 100%; aspect-ratio: 1 / 1; max-width: 520px; margin: 4px auto 0; }
+  .scope-wrap svg { display: block; width: 100%; height: 100%; overflow: visible; }
+  .scope-ring { fill: none; stroke: var(--scope-ink); stroke-width: 1; opacity: 0.4; }
+  .scope-cross { stroke: var(--scope-ink); stroke-width: 1; opacity: 0.28; }
+  .scope-bearing { font-family: 'JetBrains Mono', monospace; font-size: 9px; fill: var(--text-faint); letter-spacing: 0.08em; }
+  .scope-sector-label { font-family: 'JetBrains Mono', monospace; font-size: 9.5px; letter-spacing: 0.12em; text-transform: uppercase; }
+  .contact { cursor: pointer; }
+  .contact .halo { opacity: 0.26; }
+  .contact[data-tier="novice"] .core { opacity: 0.34; }
+  .contact[data-tier="developing"] .core { opacity: 0.6; }
+  .contact[data-tier="proficient"] .core { opacity: 0.84; }
+  .contact[data-tier="mastered"] .core { opacity: 1; }
+  .contact[data-tier="unstudied"] .core { opacity: 0.18; }
+  .contact[data-tier="unstudied"] .halo { opacity: 0.1; }
+  .contact:focus { outline: none; }
+  .contact:focus .core { stroke: var(--text); stroke-width: 1.5; }
+  .scope-tt {
+    position: absolute; pointer-events: none; z-index: 5;
+    background: var(--surface3); color: var(--text); border: 1px solid var(--border);
+    border-radius: 8px; padding: 7px 10px; font-family: 'JetBrains Mono', monospace; font-size: 11px; line-height: 1.5;
+    white-space: nowrap; opacity: 0; transform: translateY(4px); transition: opacity 130ms ease, transform 130ms ease;
+    box-shadow: 0 10px 28px -10px oklch(0 0 0 / 0.6);
+  }
+  .scope-tt.show { opacity: 1; transform: translateY(0); }
+  .scope-tt b { font-weight: 600; }
+  .scope-tt .ttm { color: var(--text-faint); }
+  .scope-legend { display: flex; flex-wrap: wrap; gap: 8px 18px; margin-top: 12px; font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--text-faint); justify-content: center; }
+  .scope-legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .scope-legend i { width: 8px; height: 8px; border-radius: 50%; background: var(--text); }
+  .scope-legend i.t2 { opacity: 0.7; } .scope-legend i.t3 { opacity: 0.45; } .scope-legend i.t4 { opacity: 0.2; }
+
+  /* ---------- domain gauge row ---------- */
+  .domains-instrument .domain-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
+  .dgauge { text-align: center; padding: 6px 2px; }
+  .dgauge svg { width: 100%; height: auto; max-width: 96px; display: block; margin: 0 auto; overflow: visible; }
+  .dgauge .dv { font-family: 'JetBrains Mono', monospace; font-size: 16px; font-weight: 600; margin-top: -4px; }
+  .dgauge .dn { font-family: 'Inter', sans-serif; font-size: 10px; color: var(--text-dim); margin-top: 4px; line-height: 1.2; min-height: 24px; }
+  .dgauge .dw { font-family: 'JetBrains Mono', monospace; font-size: 9px; color: var(--text-faint); letter-spacing: 0.08em; margin-top: 2px; }
+  .dgauge[data-caution="true"] .dv { color: var(--yellow); }
+
+  /* ---------- cadence + heatmap strip ---------- */
+  .cadence-row { display: flex; align-items: center; gap: 7px; margin-bottom: 14px; }
+  .cad-cell { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 5px; }
+  .cad-bar { width: 100%; height: 30px; border-radius: 4px; background: var(--surface2); border: 1px solid var(--hairline); position: relative; overflow: hidden; }
+  .cad-fill { position: absolute; left: 0; right: 0; bottom: 0; background: var(--green); opacity: 0.85; border-radius: 0 0 3px 3px; }
+  .cad-cell.empty .cad-bar { border-style: dashed; }
+  .cad-cell .lbl { font-family: 'JetBrains Mono', monospace; font-size: 9px; color: var(--text-faint); }
+  .cad-cell.today .lbl { color: var(--accent); }
+  .streak-readout { display: flex; gap: 22px; padding-top: 12px; border-top: 1px solid var(--hairline); }
+  .streak-readout .s { }
+  .streak-readout .sv { font-family: 'JetBrains Mono', monospace; font-size: 20px; font-weight: 600; color: var(--text); }
+  .streak-readout .sk { font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-faint); margin-top: 3px; }
+
+  .heat-strip { display: flex; gap: 1.5px; align-items: flex-end; height: 38px; }
+  .heat-week { display: flex; flex-direction: column; gap: 1.5px; flex: 1; }
+  .heat-cell { width: 100%; aspect-ratio: 1; border-radius: 1.5px; background: var(--surface2); }
+  .heat-foot { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--text-faint); margin-top: 9px; display: flex; justify-content: space-between; }
+
+  /* ---------- secondary readouts ---------- */
+  .sub-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-top: 16px; }
+  .list-row { display: flex; align-items: center; gap: 12px; padding: 9px 0; border-bottom: 1px solid var(--hairline); font-family: 'JetBrains Mono', monospace; }
+  .list-row:last-child { border-bottom: none; }
+  .list-row .lr-main { flex: 1; min-width: 0; }
+  .list-row .lr-label { font-size: 12.5px; color: var(--text); font-family: 'Inter', sans-serif; }
+  .list-row .lr-note { font-size: 10.5px; color: var(--text-faint); margin-top: 2px; }
+  .list-row .lr-val { font-size: 14px; font-weight: 600; color: var(--text); flex: 0 0 auto; }
+  .list-row .lr-val.warn { color: var(--yellow); }
+  .list-row .lr-val.bad { color: var(--red); }
+  .list-row .lr-val.good { color: var(--green); }
+
+  .bar-track { height: 6px; background: var(--surface2); border-radius: 3px; overflow: hidden; border: 1px solid var(--hairline); margin-top: 6px; }
+  .bar-fill { height: 100%; background: var(--accent); border-radius: 3px; }
+  .bar-fill.good { background: var(--green); } .bar-fill.warn { background: var(--yellow); } .bar-fill.bad { background: var(--red); }
+
+  .evq { display: flex; gap: 16px; align-items: stretch; }
+  .evq-col { flex: 1; text-align: center; padding: 12px; border: 1px solid var(--border); border-radius: 11px; background: var(--surface2); }
+  .evq-col .vv { font-family: 'JetBrains Mono', monospace; font-size: 28px; font-weight: 600; color: var(--text); }
+  .evq-col .vk { font-family: 'JetBrains Mono', monospace; font-size: 9.5px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-faint); margin-top: 4px; }
+  .evq-col .vn { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--text-faint); margin-top: 3px; }
+  .evq-note { font-size: 12px; line-height: 1.5; color: var(--text-dim); margin: 12px 0 0; }
+
+  .why-chip { font-family: 'JetBrains Mono', monospace; font-size: 11px; }
+
+  /* milestones */
+  .ms-bar { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+  .ms-bar .mv { font-family: 'JetBrains Mono', monospace; font-size: 24px; font-weight: 600; color: var(--text); }
+  .ms-bar .mtrack { flex: 1; height: 7px; background: var(--surface2); border-radius: 4px; overflow: hidden; border: 1px solid var(--hairline); }
+  .ms-bar .mfill { height: 100%; background: var(--accent); border-radius: 4px; }
+  .ms-list { display: grid; gap: 7px; }
+  .ms-item { display: flex; align-items: center; gap: 10px; font-family: 'JetBrains Mono', monospace; font-size: 11.5px; }
+  .ms-item .mlock { font-size: 10px; color: var(--text-faint); }
+  .ms-item .mprog { margin-left: auto; color: var(--text-dim); }
+
+  .full-span { grid-column: 1 / -1; }
+
+  @media (max-width: 980px) {
+    .panel-grid { grid-template-columns: 1fr; }
+    .domains-instrument .domain-row { grid-template-columns: repeat(5, 1fr); }
+  }
+  @media (max-width: 768px) {
+    .panel-grid { grid-template-columns: 1fr; }
+    .readout-row { grid-template-columns: repeat(2, 1fr); }
+    .domains-instrument .domain-row { grid-template-columns: repeat(2, 1fr); }
+    .sub-grid { grid-template-columns: 1fr; }
+    .verdict { flex-direction: column; align-items: flex-start; }
+    .verdict-clock { text-align: left; }
+  }
+
+  /* ---------- motion ---------- */
+  /* instruments come online dimmed + slightly small, then settle into place */
+  .instrument, .verdict, .advisory, .readout-row { will-change: opacity, transform; }
+  @media (prefers-reduced-motion: no-preference) {
+    /* power-up: bezels/readouts fade + scale in (ease-out, never scale(0)) */
+    .powerup { opacity: 0; transform: translateY(8px) scale(0.985); }
+    .powerup.online { opacity: 1; transform: none; transition: opacity 420ms var(--ease-out), transform 520ms var(--ease-out); }
+
+    .arc-fill { transition: stroke-dashoffset 1100ms var(--ease-out); }
+    /* needle settle is driven by a bounded rAF in JS; this is the CSS fallback path only */
+    .needle-line { transition: transform 1100ms var(--ease-settle); }
+    .glide-draw { transition: stroke-dashoffset 950ms var(--ease-out); }
+    .glide-area { transition: opacity 600ms var(--ease-out) 600ms; }
+    .glide-dot { transition: opacity 300ms var(--ease-out); }
+    .glide-beam { transition: opacity 700ms var(--ease-out) 450ms; }
+
+    @keyframes twinkle { 0%, 100% { opacity: var(--base-op, 1); } 50% { opacity: calc(var(--base-op, 1) * 0.55); } }
+    @keyframes sweep { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    @keyframes pulsar { 0% { r: var(--r0); opacity: 0.5; } 100% { r: var(--r1); opacity: 0; } }
+    @keyframes lampPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+    /* HOLD annunciator: dark until armed, then blinks alive when the needle crosses into its zone */
+    @keyframes lampArm { 0% { opacity: 0.25; } 12% { opacity: 1; } 26% { opacity: 0.4; } 42% { opacity: 1; } 58% { opacity: 0.55; } 100% { opacity: 1; } }
+    /* single emphasis pulse for the PASS bug + forecast tick when the needle passes */
+    @keyframes tickPulse { 0% { transform: scale(1); } 35% { transform: scale(1.45); } 100% { transform: scale(1); } }
+    .scope-sweep { animation: sweep 9s linear infinite; transform-origin: center; }
+    .contact .core.tw { animation: twinkle 3.4s ease-in-out infinite; }
+    .pulsar-ring { animation: pulsar 2.6s ease-out infinite; }
+    .anlamp { animation: lampPulse 2.4s ease-in-out infinite; }
+    /* verdict HOLD lamp arms dark, then blinks on when the needle settles into the hold zone */
+    .verdict-stamp .lamp { opacity: 0.25; }
+    .verdict-stamp .lamp.armed { animation: lampArm 900ms var(--ease-out) forwards; }
+    .tick-pulse { transform-box: fill-box; transform-origin: center; animation: tickPulse 620ms var(--ease-out); }
+  }
+  .contact .core { transition: transform 180ms var(--ease-out); transform-box: fill-box; transform-origin: center; }
+  @media (hover: hover) and (pointer: fine) {
+    .contact:hover .core { transform: scale(1.3); }
+  }
+  .contact:focus .core { transform: scale(1.3); }
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <header class="topbar">
+    <div class="ident">
+      <span class="reg">N10-009 · CertAnvil flight deck</span>
+      <h1>Exam readiness panel</h1>
+    </div>
+    <button class="theme-toggle" id="themeToggle" type="button" aria-label="Switch to light theme">
+      <span class="dotmark"></span><span id="themeLabel">Night</span>
+    </button>
+  </header>
+
+  <!-- VERDICT -->
+  <section class="verdict" aria-label="Clearance verdict">
+    <div class="verdict-stamp">
+      <span class="lamp"></span>
+      <span class="word">Hold</span>
+    </div>
+    <div class="verdict-body">
+      <p class="line">Not yet cleared to book. You are <em>32 points</em> short of the line, and climbing.</p>
+      <p class="sub">Forecast crosses 720 in about 18 days at the current pace. Close the Network Security gap and you book early.</p>
+    </div>
+    <div class="verdict-clock">
+      <span class="big mono" id="daysClock">24</span>
+      <span class="cap">days to exam</span>
+    </div>
+  </section>
+
+  <div class="panel-grid">
+    <!-- LEFT COLUMN -->
+    <div class="stack">
+
+      <!-- PRIMARY GAUGE -->
+      <section class="instrument gauge-instrument" aria-label="Readiness gauge">
+        <div class="ihead">
+          <p class="ititle">Readiness · primary</p>
+          <span class="iread">scale 420 to 870 · pass 720</span>
+        </div>
+        <div class="gauge-wrap">
+          <svg viewBox="0 0 480 300" id="readyGauge" role="img" aria-label="Readiness 688 of 900, pass mark 720, forecast 731">
+            <!-- arcs + ticks injected -->
+          </svg>
+          <div class="gauge-center">
+            <div class="score mono" id="gaugeScore">420</div>
+            <div class="of">of 900</div>
+            <div class="tierword">Getting close</div>
+          </div>
+        </div>
+        <div class="gauge-foot">
+          <div class="gfoot"><div class="v warn">720</div><div class="k">Pass mark</div></div>
+          <div class="gfoot"><div class="v">32</div><div class="k">Points to go</div></div>
+          <div class="gfoot"><div class="v good">731</div><div class="k">Forecast</div></div>
+        </div>
+      </section>
+
+      <!-- DIGITAL READOUTS -->
+      <section aria-label="Session readouts">
+        <div class="readout-row" id="readoutRow"></div>
+      </section>
+
+      <!-- ADVISORY -->
+      <section class="advisory" aria-label="Advisory">
+        <div class="anhead">
+          <span class="anlamp"></span>
+          <span class="antag">Advisory</span>
+          <span class="anlev" id="anLev">+18 pts</span>
+        </div>
+        <h3>Drill Network Security next.</h3>
+        <p>Network Security sits at 58%, the only domain still in developing range, and it carries 14% of the exam. Lifting it to the 70% line is worth about 18 points of readiness, the fastest single move you have right now.</p>
+      </section>
+
+      <!-- GLIDESLOPE -->
+      <section class="instrument glide-instrument" aria-label="Pass-trend glideslope">
+        <div class="ihead">
+          <p class="ititle">Approach · glideslope to 72%</p>
+          <div class="ghead-tabs" role="tablist" aria-label="Trend range">
+            <button class="gtab" role="tab" data-range="week" aria-selected="false">Week</button>
+            <button class="gtab" role="tab" data-range="month" aria-selected="true">Month</button>
+            <button class="gtab" role="tab" data-range="all" aria-selected="false">All</button>
+          </div>
+        </div>
+        <div class="glide-wrap">
+          <svg viewBox="0 0 960 300" id="glideSvg" role="img" aria-label="Accuracy trend climbing toward the 72 percent pass line"></svg>
+        </div>
+        <div class="glide-verdict">
+          <span class="gv-word" id="glideWord">Climbing to intercept</span>
+          <span class="gv-detail" id="glideDetail">Above the 72% glideslope and holding</span>
+          <span class="gv-now mono" id="glideNow">74%</span>
+        </div>
+      </section>
+
+    </div>
+
+    <!-- RIGHT COLUMN -->
+    <div class="stack">
+
+      <!-- RADAR SCOPE -->
+      <section class="instrument scope-instrument" aria-label="Knowledge radar scope">
+        <div class="ihead">
+          <p class="ititle">Radar · 50 topics</p>
+          <span class="iread">size = attempts · brightness = mastery</span>
+        </div>
+        <div class="scope-wrap">
+          <svg viewBox="0 0 520 520" id="scopeSvg" role="img" aria-label="Radar scope of 50 study topics clustered by domain"></svg>
+          <div class="scope-tt" id="scopeTt"></div>
+        </div>
+        <div class="scope-legend">
+          <span><i></i>Mastered</span>
+          <span><i class="t2"></i>Proficient</span>
+          <span><i class="t3"></i>Developing</span>
+          <span><i class="t4"></i>Novice / unstudied</span>
+        </div>
+      </section>
+
+      <!-- CADENCE -->
+      <section class="instrument" aria-label="Study cadence">
+        <div class="ihead">
+          <p class="ititle">Cadence · last 7 days</p>
+          <span class="iread">streak active</span>
+        </div>
+        <div class="cadence-row" id="cadenceRow"></div>
+        <div class="streak-readout">
+          <div class="s"><div class="sv">6</div><div class="sk">Current</div></div>
+          <div class="s"><div class="sv">19</div><div class="sk">Longest</div></div>
+          <div class="s"><div class="sv" id="activeDays">·</div><div class="sk">Active days</div></div>
+        </div>
+      </section>
+
+      <!-- HEATMAP STRIP -->
+      <section class="instrument" aria-label="Activity strip">
+        <div class="ihead">
+          <p class="ititle">Activity · 365 days</p>
+          <span class="iread" id="heatTotal">·</span>
+        </div>
+        <div class="heat-strip" id="heatStrip"></div>
+        <div class="heat-foot"><span>1 yr ago</span><span>today</span></div>
+      </section>
+
+    </div>
+  </div>
+
+  <!-- DOMAIN GAUGES -->
+  <section class="instrument domains-instrument full-span" style="margin-top:16px" aria-label="Domain gauges">
+    <div class="ihead">
+      <p class="ititle">Domains · five subsystems</p>
+      <span class="iread">marks at 70 / 80</span>
+    </div>
+    <div class="domain-row" id="domainRow"></div>
+  </section>
+
+  <!-- SECONDARY READOUTS -->
+  <div class="sub-grid">
+
+    <section class="instrument" aria-label="Wrong-answer patterns">
+      <div class="ihead"><p class="ititle">Miss patterns</p><span class="iread">recurring</span></div>
+      <div id="wrongList"></div>
+    </section>
+
+    <section class="instrument" aria-label="Difficulty breakdown">
+      <div class="ihead"><p class="ititle">By difficulty</p><span class="iread">accuracy</span></div>
+      <div id="diffList"></div>
+    </section>
+
+    <section class="instrument" aria-label="Exam history">
+      <div class="ihead"><p class="ititle">Full simulations</p><span class="iread">last 5</span></div>
+      <div id="examList"></div>
+    </section>
+
+    <section class="instrument" aria-label="Exam versus quiz">
+      <div class="ihead"><p class="ititle">Timed vs practice</p><span class="iread" id="evqDelta">·</span></div>
+      <div class="evq">
+        <div class="evq-col"><div class="vv" id="quizAvg">·</div><div class="vk">Practice</div><div class="vn" id="quizN">·</div></div>
+        <div class="evq-col"><div class="vv" id="examAvg">·</div><div class="vk">Timed exam</div><div class="vn" id="examN">·</div></div>
+      </div>
+      <p class="evq-note">Your practice average beats your timed-exam average by 5 points. Timed pressure is costing you a little, so book more full simulations before the real thing.</p>
+    </section>
+
+    <section class="instrument" aria-label="Milestones">
+      <div class="ihead"><p class="ititle">Milestones</p><span class="iread">unlocked</span></div>
+      <div class="ms-bar"><span class="mv" id="msCount">·</span><div class="mtrack"><div class="mfill" id="msFill"></div></div></div>
+      <div class="ms-list" id="msList"></div>
+    </section>
+
+    <section class="instrument" aria-label="Recent sessions">
+      <div class="ihead"><p class="ititle">Recent sessions</p><span class="iread">log</span></div>
+      <div id="recentList"></div>
+    </section>
+
+  </div>
+
+</div>
+
+<script src="./_sample-data.js"></script>
+<script>
+(function () {
+  'use strict';
+  var D = window.ANALYTICS_SAMPLE;
+  var SVGNS = 'http://www.w3.org/2000/svg';
+  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  function svg(tag, attrs) {
+    var e = document.createElementNS(SVGNS, tag);
+    for (var k in attrs) e.setAttribute(k, attrs[k]);
+    return e;
+  }
+  function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+  function easeOutCubic(t) { return 1 - Math.pow(1 - t, 3); }
+
+  /* Bounded rAF count-up that writes textContent (never .style) and stops at target.
+     prefix/suffix wrap the number; `decimals` for fractional readouts. */
+  function countUp(el, to, opts) {
+    opts = opts || {};
+    var from = opts.from || 0, dur = opts.dur || 900, delay = opts.delay || 0,
+        prefix = opts.prefix || '', suffix = opts.suffix || '', decimals = opts.decimals || 0,
+        locale = opts.locale || false;
+    function render(v) {
+      var num = decimals ? v.toFixed(decimals) : Math.round(v);
+      if (locale && !decimals) num = Math.round(v).toLocaleString();
+      el.textContent = prefix + num + suffix;
+    }
+    if (reduce) { render(to); return; }
+    render(from);
+    setTimeout(function () {
+      var t0 = performance.now();
+      function frame(now) {
+        var t = clamp((now - t0) / dur, 0, 1);
+        render(from + (to - from) * easeOutCubic(t));
+        if (t < 1) requestAnimationFrame(frame);
+        else render(to);
+      }
+      requestAnimationFrame(frame);
+    }, delay);
+  }
+
+  /* ============ POWER-UP SEQUENCE ============
+     Instruments come online in a quick stagger (50-80ms) on load. */
+  var powerSeq = [];
+  function registerPowerup(el) {
+    if (!el || reduce) return;
+    el.classList.add('powerup');
+    powerSeq.push(el);
+  }
+  function runPowerup() {
+    if (reduce) return;
+    powerSeq.forEach(function (el, i) {
+      setTimeout(function () { el.classList.add('online'); }, 60 + i * 64);
+    });
+  }
+  // register the major bezels in reading order (top-left → down the stacks)
+  (function () {
+    if (reduce) return;
+    ['.verdict', '.gauge-instrument', '.readout-row', '.advisory', '.glide-instrument',
+     '.scope-instrument', '[aria-label="Study cadence"]', '[aria-label="Activity strip"]',
+     '.domains-instrument'].forEach(function (sel) {
+      registerPowerup(document.querySelector(sel));
+    });
+    document.querySelectorAll('.sub-grid .instrument').forEach(registerPowerup);
+  })();
+
+  /* ============ THEME TOGGLE ============ */
+  var toggle = document.getElementById('themeToggle');
+  var label = document.getElementById('themeLabel');
+  toggle.addEventListener('click', function () {
+    var light = document.documentElement.dataset.theme === 'light';
+    document.documentElement.dataset.theme = light ? 'dark' : 'light';
+    label.textContent = light ? 'Night' : 'Day';
+    toggle.setAttribute('aria-label', 'Switch to ' + (light ? 'light' : 'dark') + ' theme');
+  });
+
+  /* ============ PRIMARY READINESS GAUGE ============
+     Arc dial 420..870, needle at predicted, redline bug at 720, forecast tick. */
+  (function () {
+    var R = D.readiness;
+    var MIN = 420, MAX = 870;
+    var g = document.getElementById('readyGauge');
+    var cx = 240, cy = 240, rad = 180;
+    var startA = 150, endA = 390;          // degrees, sweep clockwise (-> 30deg past horizontal)
+    var sweep = endA - startA;             // 240deg
+    function val2ang(v) { return startA + (clamp(v, MIN, MAX) - MIN) / (MAX - MIN) * sweep; }
+    function polar(ang, r) {
+      var a = ang * Math.PI / 180;
+      return { x: cx + Math.cos(a) * r, y: cy + Math.sin(a) * r };
+    }
+    function arcPath(a0, a1, r) {
+      var p0 = polar(a0, r), p1 = polar(a1, r);
+      var large = (a1 - a0) > 180 ? 1 : 0;
+      return 'M' + p0.x.toFixed(2) + ' ' + p0.y.toFixed(2) +
+             ' A' + r + ' ' + r + ' 0 ' + large + ' 1 ' + p1.x.toFixed(2) + ' ' + p1.y.toFixed(2);
+    }
+
+    // base track
+    var track = svg('path', { d: arcPath(startA, endA, rad), fill: 'none', stroke: 'var(--surface2)', 'stroke-width': 22, 'stroke-linecap': 'round' });
+    g.appendChild(track);
+
+    // colored zones: below pass (caution) up to 720, above pass (go) to max
+    var passAng = val2ang(720);
+    var zoneCaution = svg('path', { d: arcPath(startA, passAng, rad), fill: 'none', stroke: 'var(--yellow)', 'stroke-width': 6, opacity: 0.35, 'stroke-linecap': 'round' });
+    var zoneGo = svg('path', { d: arcPath(passAng, endA, rad), fill: 'none', stroke: 'var(--green)', 'stroke-width': 6, opacity: 0.32, 'stroke-linecap': 'round' });
+    g.appendChild(zoneCaution); g.appendChild(zoneGo);
+
+    // ticks every 50
+    for (var v = MIN; v <= MAX; v += 50) {
+      var ang = val2ang(v);
+      var major = (v % 100 === 0);
+      var o = polar(ang, rad - 14), i2 = polar(ang, rad - (major ? 26 : 20));
+      g.appendChild(svg('line', { x1: o.x, y1: o.y, x2: i2.x, y2: i2.y, stroke: 'var(--text-faint)', 'stroke-width': major ? 1.6 : 1, opacity: major ? 0.8 : 0.45 }));
+      if (major) {
+        var lp = polar(ang, rad - 40);
+        var t = svg('text', { x: lp.x, y: lp.y + 3.5, 'text-anchor': 'middle', fill: 'var(--text-faint)', 'font-size': 10, 'font-family': "'JetBrains Mono', monospace" });
+        t.textContent = v;
+        g.appendChild(t);
+      }
+    }
+
+    // animated value arc (fills to predicted)
+    var arcLen = 2 * Math.PI * rad * (sweep / 360);
+    var valArc = svg('path', { d: arcPath(startA, endA, rad), fill: 'none', stroke: 'var(--accent)', 'stroke-width': 10, 'stroke-linecap': 'round', class: 'arc-fill' });
+    valArc.style.strokeDasharray = arcLen + ' ' + (arcLen * 2);
+    var fillFrac = (clamp(R.predicted, MIN, MAX) - MIN) / (MAX - MIN);
+    valArc.style.strokeDashoffset = reduce ? (arcLen * (1 - fillFrac)) : arcLen;
+    g.appendChild(valArc);
+
+    // pass redline "bug" marker (grouped so we can pulse it as one unit)
+    var bo = polar(passAng, rad + 4), bi = polar(passAng, rad - 28);
+    var passBug = svg('g', {});
+    passBug.appendChild(svg('line', { x1: bo.x, y1: bo.y, x2: bi.x, y2: bi.y, stroke: 'var(--yellow)', 'stroke-width': 3 }));
+    var bugTxt = polar(passAng, rad + 18);
+    var bt = svg('text', { x: bugTxt.x, y: bugTxt.y + 3, 'text-anchor': 'middle', fill: 'var(--yellow)', 'font-size': 9.5, 'font-weight': 600, 'font-family': "'JetBrains Mono', monospace" });
+    bt.textContent = 'PASS'; passBug.appendChild(bt);
+    g.appendChild(passBug);
+
+    // forecast tick (green chevron)
+    var fAng = val2ang(R.forecast);
+    var fo = polar(fAng, rad + 2), fi = polar(fAng, rad - 24);
+    var fcTick = svg('g', {});
+    fcTick.appendChild(svg('line', { x1: fo.x, y1: fo.y, x2: fi.x, y2: fi.y, stroke: 'var(--green)', 'stroke-width': 2.5, 'stroke-dasharray': '2 2' }));
+    g.appendChild(fcTick);
+
+    // needle (rotates to predicted)
+    var needle = svg('g', { class: 'needle-line' });
+    var tip = polar(0, 0); // placeholder; we draw at 0deg then rotate
+    var nTip = { x: cx + rad - 30, y: cy };
+    var nBack = { x: cx - 26, y: cy };
+    needle.appendChild(svg('line', { x1: nBack.x, y1: nBack.y, x2: nTip.x, y2: nTip.y, stroke: 'var(--accent)', 'stroke-width': 3, 'stroke-linecap': 'round' }));
+    needle.appendChild(svg('circle', { cx: cx, cy: cy, r: 11, fill: 'var(--surface3)', stroke: 'var(--accent)', 'stroke-width': 2 }));
+    needle.appendChild(svg('circle', { cx: cx, cy: cy, r: 3.5, fill: 'var(--accent)' }));
+    needle.style.transformBox = 'view-box';
+    needle.style.transformOrigin = cx + 'px ' + cy + 'px';
+    var targetAng = val2ang(R.predicted);
+    var restAng = startA; // start pointing at scale floor
+    needle.style.transform = 'rotate(' + (reduce ? (targetAng) : restAng) + 'deg)';
+    g.appendChild(needle);
+
+    // SIGNATURE MOMENT — readiness needle spool-up.
+    // One bounded rAF eases the needle from the scale floor up to 688 with a real
+    // settle (overshoot a few degrees past target, then ease back). The arc tracks it,
+    // the digital readout counts up in sync, the PASS bug + forecast tick get a single
+    // emphasis pulse as the needle passes, and the HOLD annunciator blinks alive as the
+    // needle crosses into its final zone. Total spool ~1.25s, under the 1.4s budget.
+    var scoreEl = document.getElementById('gaugeScore');
+    var holdLamp = document.querySelector('.verdict-stamp .lamp');
+    // freeze CSS fallback transition so the rAF owns the needle entirely
+    needle.style.transition = 'none';
+
+    function spoolUp() {
+      var t0 = performance.now(), dur = 1250;
+      var fromAng = restAng, span = targetAng - restAng;
+      // overshoot magnitude: ~4 degrees past target, settling back. mapped onto t via a
+      // damped term so it overshoots near the end then returns.
+      var overshootDeg = 4.2;
+      var passedTick = false, armedLamp = false;
+      // 688 settles in the caution band below the 720 pass bug. Fire the mark pulse +
+      // arm HOLD as the needle enters its final resting zone (last fifth of the swing).
+      var enterZoneT = 0.82;
+
+      function frame(now) {
+        var t = clamp((now - t0) / dur, 0, 1);
+        var e = easeOutCubic(t);
+        // damped overshoot: the needle reaches target near t~0.6, swings ~4deg past,
+        // then settles back to 0 by t=1. A single positive sine hump over the last 40%.
+        var bump = 0;
+        if (t > 0.6) {
+          var u = (t - 0.6) / 0.4;            // 0 -> 1 across the settle window
+          bump = Math.sin(u * Math.PI) * overshootDeg * (1 - u * 0.15);
+        }
+        var ang = fromAng + span * e + bump;
+        needle.style.transform = 'rotate(' + ang.toFixed(2) + 'deg)';
+
+        var curVal = MIN + (R.predicted - MIN) * e;
+        scoreEl.textContent = Math.round(curVal);
+
+        // single emphasis pulse on the PASS bug + forecast tick as the needle settles
+        if (!passedTick && t >= enterZoneT) {
+          passedTick = true;
+          passBug.classList.add('tick-pulse');
+          fcTick.classList.add('tick-pulse');
+          setTimeout(function () { passBug.classList.remove('tick-pulse'); fcTick.classList.remove('tick-pulse'); }, 640);
+        }
+        // arm the HOLD annunciator as the needle crosses into its final (hold) zone
+        if (!armedLamp && t >= enterZoneT && holdLamp) {
+          armedLamp = true;
+          holdLamp.classList.add('armed');
+        }
+
+        if (t < 1) requestAnimationFrame(frame);
+        else { needle.style.transform = 'rotate(' + targetAng + 'deg)'; scoreEl.textContent = R.predicted; }
+      }
+      // arc fills in sync via its own CSS transition (stroke-dashoffset)
+      valArc.style.strokeDashoffset = (arcLen * (1 - fillFrac));
+      requestAnimationFrame(frame);
+    }
+
+    if (reduce) {
+      scoreEl.textContent = R.predicted;
+      if (holdLamp) holdLamp.style.opacity = '1';
+    } else {
+      // brief instrument power-up flicker, then the needle spools up
+      setTimeout(spoolUp, 520);
+    }
+  })();
+
+  /* ============ DIGITAL READOUTS (4 stats + sparklines) ============ */
+  (function () {
+    var R = D.readiness, S = R.stats, sp = R.spark;
+    var defs = [
+      { k: 'Sessions', v: S.sessions, key: 'sessions', suffix: '' },
+      { k: 'Questions', v: S.questions, key: 'questions', suffix: '' },
+      { k: 'Accuracy', v: S.accuracy, key: 'accuracy', suffix: '%' },
+      { k: 'Study days', v: S.studyDays, key: 'studyDays', suffix: '' },
+    ];
+    var row = document.getElementById('readoutRow');
+    defs.forEach(function (d, di) {
+      var cell = document.createElement('div');
+      cell.className = 'readout';
+      var arr = sp[d.key], mn = Math.min.apply(null, arr), mx = Math.max.apply(null, arr);
+      var W = 100, H = 20, n = arr.length;
+      var pts = arr.map(function (y, i) {
+        var x = (i / (n - 1)) * W;
+        var yy = H - ((y - mn) / (mx - mn || 1)) * (H - 3) - 1.5;
+        return x.toFixed(1) + ',' + yy.toFixed(1);
+      }).join(' ');
+      cell.innerHTML = '<div class="rv mono"></div><div class="rk">' + d.k + '</div>' +
+        '<svg class="spark" viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none" aria-hidden="true">' +
+        '<polyline points="' + pts + '" fill="none" stroke="var(--accent)" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round" opacity="0.85"/></svg>';
+      row.appendChild(cell);
+      // digital readout counts up, staggered across the four cells
+      countUp(cell.querySelector('.rv'), d.v, { dur: 900, delay: 620 + di * 70, suffix: d.suffix });
+    });
+  })();
+
+  /* ============ GAUGE FOOTER + VERDICT CLOCK COUNT-UPS ============ */
+  (function () {
+    var feet = document.querySelectorAll('.gauge-foot .gfoot .v');
+    var targets = [720, 32, 731];
+    feet.forEach(function (el, i) {
+      if (targets[i] == null) return;
+      countUp(el, targets[i], { dur: 1000, delay: 560 });
+    });
+    var clock = document.getElementById('daysClock');
+    if (clock) countUp(clock, 24, { dur: 900, delay: 420 });
+  })();
+
+  /* ============ GLIDESLOPE (pass-trend) ============ */
+  (function () {
+    var P = D.passTrend;
+    var W = 960, H = 300, PAD = 52;
+    var innerW = W - 2 * PAD, innerH = H - 2 * PAD;
+    var yMin = P.yMin, yMax = P.yMax, passAcc = P.passAcc;
+    var yOf = function (a) { return PAD + (1 - (a - yMin) / (yMax - yMin)) * innerH; };
+    var xOf = function (i, n) { return PAD + (n > 1 ? (i / (n - 1)) * innerW : innerW / 2); };
+    var passY = yOf(passAcc);
+    var s = document.getElementById('glideSvg');
+
+    // grid
+    var grid = svg('g', { class: 'glide-grid' });
+    [60, 70, 80, 90].forEach(function (p) {
+      var y = yOf(p);
+      grid.appendChild(svg('line', { x1: PAD, y1: y, x2: W - PAD, y2: y, 'stroke-dasharray': '3 5', opacity: 0.5 }));
+      var t = svg('text', { x: PAD - 10, y: y + 3, 'text-anchor': 'end' }); t.textContent = p + '%';
+      grid.appendChild(t);
+    });
+    s.appendChild(grid);
+
+    // glideslope beam: faint converging guide lines toward the pass line on the right
+    var beam = svg('g', { class: 'glide-beam' });
+    var bx = W - PAD;
+    beam.appendChild(svg('line', { x1: PAD, y1: yOf(passAcc - 9), x2: bx, y2: passY }));
+    beam.appendChild(svg('line', { x1: PAD, y1: yOf(passAcc + 9), x2: bx, y2: passY }));
+    if (!reduce) beam.style.opacity = '0';
+    s.appendChild(beam);
+
+    // pass line
+    var passG = svg('g');
+    passG.appendChild(svg('line', { class: 'glide-pass-line', x1: PAD, y1: passY, x2: W - PAD, y2: passY }));
+    var pl = svg('text', { class: 'glide-pass-label', x: W - PAD + 8, y: passY + 4 }); pl.textContent = 'PASS 72%';
+    passG.appendChild(pl);
+    s.appendChild(passG);
+
+    function buildLine(pts) { return pts.map(function (p, i) { return (i ? 'L' : 'M') + p.x.toFixed(1) + ' ' + p.y.toFixed(1); }).join(' '); }
+    function buildArea(pts) {
+      var base = (H - PAD).toFixed(1);
+      return 'M' + pts[0].x.toFixed(1) + ' ' + base + ' ' + pts.map(function (p) { return 'L' + p.x.toFixed(1) + ' ' + p.y.toFixed(1); }).join(' ') + ' L' + pts[pts.length - 1].x.toFixed(1) + ' ' + base + ' Z';
+    }
+
+    var series = {};
+    ['week', 'month', 'all'].forEach(function (key) {
+      var arr = P.data[key];
+      var pts = arr.map(function (d, i) { return { x: xOf(i, arr.length), y: yOf(d.acc), acc: d.acc, label: d.label }; });
+      var g = svg('g', { 'data-range': key });
+      if (key !== P.current) g.setAttribute('style', 'display:none');
+      var area = svg('path', { class: 'glide-area', d: buildArea(pts) });
+      var line = svg('path', { class: 'glide-line glide-draw', d: buildLine(pts) });
+      g.appendChild(area); g.appendChild(line);
+      var dots = pts.map(function (p, i) {
+        var c = svg('circle', { class: 'glide-dot' + (i === pts.length - 1 ? ' last' : ''), cx: p.x.toFixed(1), cy: p.y.toFixed(1), r: i === pts.length - 1 ? 5 : 3.5 });
+        g.appendChild(c); return c;
+      });
+      s.appendChild(g);
+      series[key] = { g: g, line: line, area: area, dots: dots, pts: pts, arr: arr };
+    });
+
+    var wordEl = document.getElementById('glideWord'), detailEl = document.getElementById('glideDetail'), nowEl = document.getElementById('glideNow');
+
+    function drawIn(key) {
+      var sObj = series[key];
+      var line = sObj.line;
+      if (reduce) { line.style.strokeDashoffset = '0'; sObj.area.style.opacity = ''; return; }
+      var len = line.getTotalLength();
+      line.style.transition = 'none';
+      line.style.strokeDasharray = len;
+      line.style.strokeDashoffset = len;
+      sObj.area.style.opacity = '0';
+      beam.style.opacity = '0';
+      sObj.dots.forEach(function (d) { d.style.opacity = '0'; });
+      void line.getBoundingClientRect();
+      line.style.transition = '';
+      requestAnimationFrame(function () {
+        line.style.strokeDashoffset = '0';
+        sObj.area.style.opacity = '';
+        beam.style.opacity = '';   // converging guide beam fades in behind the trajectory
+        sObj.dots.forEach(function (d, i) { setTimeout(function () { d.style.opacity = '1'; }, 200 + i * (700 / sObj.dots.length)); });
+      });
+    }
+
+    function setVerdict(key, animateNow) {
+      var arr = P.data[key];
+      var now = arr[arr.length - 1].acc;
+      if (animateNow && !reduce) {
+        countUp(nowEl, now, { dur: 700, delay: 380, suffix: '%' });
+      } else {
+        nowEl.textContent = now + '%';
+      }
+      var above = now >= passAcc;
+      var first = arr[0].acc, climbing = now > first;
+      if (above && climbing) { wordEl.textContent = 'Climbing to intercept'; wordEl.style.color = 'var(--green)'; detailEl.textContent = 'Above the 72% glideslope and trending up'; }
+      else if (above) { wordEl.textContent = 'On glideslope'; wordEl.style.color = 'var(--green)'; detailEl.textContent = 'Holding above the 72% pass line'; }
+      else if (climbing) { wordEl.textContent = 'Below glideslope, climbing'; wordEl.style.color = 'var(--yellow)'; detailEl.textContent = 'Under the 72% line but trending up'; }
+      else { wordEl.textContent = 'Below glideslope'; wordEl.style.color = 'var(--yellow)'; detailEl.textContent = 'Sitting under the 72% pass line'; }
+    }
+
+    function setRange(key) {
+      Object.keys(series).forEach(function (k) { series[k].g.setAttribute('style', k === key ? '' : 'display:none'); });
+      document.querySelectorAll('.gtab').forEach(function (b) { b.setAttribute('aria-selected', b.dataset.range === key ? 'true' : 'false'); });
+      setVerdict(key);
+      drawIn(key);
+    }
+
+    document.querySelectorAll('.gtab').forEach(function (b) {
+      b.addEventListener('click', function () { setRange(b.dataset.range); });
+    });
+
+    setVerdict(P.current, true);
+    setTimeout(function () { drawIn(P.current); }, 560);
+  })();
+
+  /* ============ RADAR SCOPE (constellation) ============ */
+  (function () {
+    var W = 520, H = 520, cx = W / 2, cy = H / 2, R = 230;
+    var s = document.getElementById('scopeSvg');
+
+    // domain sectors arranged around the scope (5 clusters by bearing)
+    var DOMS = [
+      { idx: 1, bearing: -90, dist: 0.42, name: 'Concepts', color: 'var(--d1)' },
+      { idx: 2, bearing: -18, dist: 0.5, name: 'Implement', color: 'var(--d2)' },
+      { idx: 3, bearing: 54, dist: 0.42, name: 'Operations', color: 'var(--d3)' },
+      { idx: 4, bearing: 126, dist: 0.52, name: 'Security', color: 'var(--d4)' },
+      { idx: 5, bearing: 198, dist: 0.44, name: 'Troublesh.', color: 'var(--d5)' },
+    ];
+
+    // range rings
+    [0.33, 0.66, 1].forEach(function (f) {
+      s.appendChild(svg('circle', { class: 'scope-ring', cx: cx, cy: cy, r: R * f }));
+    });
+    // crosshairs
+    s.appendChild(svg('line', { class: 'scope-cross', x1: cx - R, y1: cy, x2: cx + R, y2: cy }));
+    s.appendChild(svg('line', { class: 'scope-cross', x1: cx, y1: cy - R, x2: cx, y2: cy + R }));
+    // diagonal spokes
+    [45, 135].forEach(function (a) {
+      var rad = a * Math.PI / 180;
+      s.appendChild(svg('line', { class: 'scope-cross', x1: cx - Math.cos(rad) * R, y1: cy - Math.sin(rad) * R, x2: cx + Math.cos(rad) * R, y2: cy + Math.sin(rad) * R, opacity: 0.16 }));
+    });
+    // bearing ticks
+    [0, 90, 180, 270].forEach(function (deg) {
+      var rad = (deg - 90) * Math.PI / 180;
+      var t = svg('text', { class: 'scope-bearing', x: cx + Math.cos(rad) * (R + 12), y: cy + Math.sin(rad) * (R + 12) + 3, 'text-anchor': 'middle' });
+      t.textContent = ('00' + deg).slice(-3);
+      s.appendChild(t);
+    });
+
+    // sweep line (gradient triangle behind contacts)
+    var sweepG = svg('g', { class: 'scope-sweep' });
+    var grad = svg('linearGradient', { id: 'sweepGrad', x1: '0', y1: '0', x2: '1', y2: '0' });
+    grad.appendChild(svg('stop', { offset: '0', 'stop-color': 'var(--scope-ink)', 'stop-opacity': '0.35' }));
+    grad.appendChild(svg('stop', { offset: '1', 'stop-color': 'var(--scope-ink)', 'stop-opacity': '0' }));
+    var defs = svg('defs', {}); defs.appendChild(grad); s.appendChild(defs);
+    var wedge = svg('path', { d: 'M' + cx + ' ' + cy + ' L' + (cx + R) + ' ' + cy + ' A' + R + ' ' + R + ' 0 0 0 ' + (cx + R * Math.cos(-0.45)) + ' ' + (cy + R * Math.sin(-0.45)) + ' Z', fill: 'url(#sweepGrad)' });
+    sweepG.appendChild(wedge);
+    sweepG.appendChild(svg('line', { x1: cx, y1: cy, x2: cx + R, y2: cy, stroke: 'var(--scope-ink)', 'stroke-width': 1.5, opacity: 0.6 }));
+    s.appendChild(sweepG);
+
+    // sector labels
+    DOMS.forEach(function (dm) {
+      var rad = (dm.bearing) * Math.PI / 180;
+      var lx = cx + Math.cos(rad) * (R * dm.dist + 64);
+      var ly = cy + Math.sin(rad) * (R * dm.dist + 64);
+      var t = svg('text', { class: 'scope-sector-label', x: lx, y: ly, 'text-anchor': 'middle', fill: dm.color, opacity: 0.85 });
+      t.textContent = dm.name;
+      s.appendChild(t);
+    });
+
+    // contacts (topics) via golden-angle spiral around each sector center
+    var contactLayer = svg('g', {});
+    s.appendChild(contactLayer);
+    var byDom = {};
+    D.topics.forEach(function (t) { (byDom[t.domainIdx] = byDom[t.domainIdx] || []).push(t); });
+
+    var nodes = [];
+    DOMS.forEach(function (dm) {
+      var list = byDom[dm.idx] || [];
+      var brad = dm.bearing * Math.PI / 180;
+      var ccx = cx + Math.cos(brad) * (R * dm.dist);
+      var ccy = cy + Math.sin(brad) * (R * dm.dist);
+      list.forEach(function (t, i) {
+        var angle = (i * 2.399) + (dm.idx * 0.7);
+        var baseDist = 14 + (i % 4) * 11;
+        var x = ccx + Math.cos(angle) * baseDist;
+        var y = ccy + Math.sin(angle) * baseDist;
+        var r = t.attempts > 0 ? Math.min(11, 3.2 + Math.sqrt(t.attempts) * 1.15) : 2.6;
+        var w = (t.mastery || 0) / 100;
+        var innerR = Math.max(1.4, r * w + 1.2);
+        var op = t.tier === 'mastered' ? 1 : t.tier === 'proficient' ? 0.84 : t.tier === 'developing' ? 0.6 : t.tier === 'novice' ? 0.34 : 0.18;
+
+        var g = svg('g', { class: 'contact', 'data-tier': t.tier, tabindex: 0, role: 'img',
+          'aria-label': t.topic + ', ' + t.mastery + '% mastery, ' + t.attempts + ' attempts' });
+        var halo = svg('circle', { class: 'halo', cx: x, cy: y, r: r, fill: dm.color });
+        var core = svg('circle', { class: 'core', cx: x, cy: y, r: innerR, fill: dm.color });
+        core.style.setProperty('--base-op', op);
+        g.appendChild(halo); g.appendChild(core);
+        contactLayer.appendChild(g);
+        nodes.push({ g: g, core: core, x: x, y: y, t: t });
+      });
+    });
+
+    // twinkle on a subset; pulsar on the strongest studied contact per domain
+    if (!reduce) {
+      nodes.forEach(function (n, i) { if (i % 3 === 0 && n.t.attempts > 0) n.core.classList.add('tw'); });
+      DOMS.forEach(function (dm) {
+        var list = nodes.filter(function (n) { return n.t.domainIdx === dm.idx && n.t.attempts > 0; });
+        if (!list.length) return;
+        list.sort(function (a, b) { return b.t.mastery - a.t.mastery; });
+        var best = list[0];
+        var ring = svg('circle', { class: 'pulsar-ring', cx: best.x, cy: best.y, fill: 'none', stroke: dm.color, 'stroke-width': 1.4 });
+        ring.style.setProperty('--r0', (best.core.getAttribute('r') * 1 + 1) + 'px');
+        ring.style.setProperty('--r1', (best.core.getAttribute('r') * 1 + 10) + 'px');
+        contactLayer.insertBefore(ring, best.g);
+      });
+    }
+
+    // tooltip
+    var tt = document.getElementById('scopeTt');
+    var wrap = s.parentElement;
+    function show(n) {
+      tt.innerHTML = '<b>' + n.t.topic + '</b><br><span class="ttm">' + n.t.mastery + '% mastery · ' + n.t.attempts + ' attempt' + (n.t.attempts === 1 ? '' : 's') + '</span>';
+      var rect = wrap.getBoundingClientRect();
+      var sx = (n.x / W) * rect.width, sy = (n.y / H) * rect.height;
+      tt.style.left = clamp(sx + 10, 6, rect.width - 160) + 'px';
+      tt.style.top = Math.max(4, sy - 44) + 'px';
+      tt.classList.add('show');
+    }
+    function hide() { tt.classList.remove('show'); }
+    nodes.forEach(function (n) {
+      n.g.addEventListener('pointerenter', function () { show(n); });
+      n.g.addEventListener('pointerleave', hide);
+      n.g.addEventListener('focus', function () { show(n); });
+      n.g.addEventListener('blur', hide);
+    });
+  })();
+
+  /* ============ DOMAIN GAUGES (5 small dials) ============ */
+  (function () {
+    var row = document.getElementById('domainRow');
+    D.domains.forEach(function (d, di) {
+      var caution = d.accuracy < 65;
+      var cell = document.createElement('div');
+      cell.className = 'dgauge';
+      cell.setAttribute('data-caution', caution ? 'true' : 'false');
+
+      var W = 96, H = 60, cx = 48, cy = 50, rad = 38;
+      var startA = 180, endA = 360, sweep = 180;
+      function a2(v) { return startA + (v / 100) * sweep; }
+      function polar(ang, r) { var a = ang * Math.PI / 180; return { x: cx + Math.cos(a) * r, y: cy + Math.sin(a) * r }; }
+      function arc(a0, a1, r) {
+        var p0 = polar(a0, r), p1 = polar(a1, r), large = (a1 - a0) > 180 ? 1 : 0;
+        return 'M' + p0.x.toFixed(2) + ' ' + p0.y.toFixed(2) + ' A' + r + ' ' + r + ' 0 ' + large + ' 1 ' + p1.x.toFixed(2) + ' ' + p1.y.toFixed(2);
+      }
+      var color = caution ? 'var(--yellow)' : (d.accuracy >= 80 ? 'var(--green)' : 'var(--accent)');
+      var arcLen = Math.PI * rad;
+      var frac = d.accuracy / 100;
+
+      var ns = svg('svg', { viewBox: '0 0 ' + W + ' ' + H, role: 'img', 'aria-label': d.name + ' ' + d.accuracy + ' percent' });
+      ns.appendChild(svg('path', { d: arc(startA, endA, rad), fill: 'none', stroke: 'var(--surface2)', 'stroke-width': 7, 'stroke-linecap': 'round' }));
+      // tier marks 70 / 80
+      [70, 80].forEach(function (m) {
+        var ang = a2(m), o = polar(ang, rad + 5), ii = polar(ang, rad - 5);
+        ns.appendChild(svg('line', { x1: o.x, y1: o.y, x2: ii.x, y2: ii.y, stroke: 'var(--text-faint)', 'stroke-width': 1.4, opacity: 0.7 }));
+      });
+      var val = svg('path', { d: arc(startA, endA, rad), fill: 'none', stroke: color, 'stroke-width': 7, 'stroke-linecap': 'round', class: 'arc-fill' });
+      val.style.strokeDasharray = arcLen + ' ' + (arcLen * 2);
+      val.style.strokeDashoffset = reduce ? (arcLen * (1 - frac)) : arcLen;
+      ns.appendChild(val);
+      cell.appendChild(ns);
+
+      var dv = document.createElement('div'); dv.className = 'dv mono'; dv.textContent = (reduce ? d.accuracy + '%' : '0%'); cell.appendChild(dv);
+      var dn = document.createElement('div'); dn.className = 'dn'; dn.textContent = d.name; cell.appendChild(dn);
+      var dw = document.createElement('div'); dw.className = 'dw'; dw.textContent = d.weight + '% of exam'; cell.appendChild(dw);
+      row.appendChild(cell);
+
+      // the five dials fill + swing in sequence (staggered 75ms), readout counts up in sync.
+      // the Network Security dial settles in the caution range (yellow) — handled by [data-caution].
+      if (!reduce) {
+        var delay = 700 + di * 75;
+        setTimeout(function () { val.style.strokeDashoffset = (arcLen * (1 - frac)); }, delay);
+        countUp(dv, d.accuracy, { dur: 1000, delay: delay, suffix: '%' });
+      }
+    });
+  })();
+
+  /* ============ CADENCE ============ */
+  (function () {
+    var row = document.getElementById('cadenceRow');
+    var max = Math.max.apply(null, D.streak.week.map(function (w) { return w.questions; }).concat([1]));
+    D.streak.week.forEach(function (w, i) {
+      var cell = document.createElement('div');
+      cell.className = 'cad-cell' + (w.studied ? '' : ' empty') + (w.isToday ? ' today' : '');
+      var h = w.studied ? clamp(Math.round((w.questions / max) * 100), 22, 100) : 0;
+      cell.innerHTML = '<div class="cad-bar"><div class="cad-fill"></div></div><div class="lbl mono">' + w.dayLabel + '</div>';
+      row.appendChild(cell);
+      var fill = cell.querySelector('.cad-fill');
+      if (reduce) { fill.style.height = h + '%'; return; }
+      // bars rise in sequence (ease-out), left → right
+      fill.style.height = '0%';
+      fill.style.transition = 'height 520ms var(--ease-out)';
+      setTimeout(function () { fill.style.height = h + '%'; }, 760 + i * 55);
+    });
+    // streak readouts count up (current 6, longest 19), active-days too
+    var svEls = document.querySelectorAll('.streak-readout .sv');
+    if (svEls[0]) countUp(svEls[0], 6, { dur: 800, delay: 640 });
+    if (svEls[1]) countUp(svEls[1], 19, { dur: 900, delay: 700 });
+    countUp(document.getElementById('activeDays'), D.streak.totalActiveDays, { dur: 900, delay: 760 });
+  })();
+
+  /* ============ HEATMAP STRIP ============ */
+  (function () {
+    var strip = document.getElementById('heatStrip');
+    var days = D.heatmap;
+    var total = days.reduce(function (a, d) { return a + d.count; }, 0);
+    countUp(document.getElementById('heatTotal'), total, { dur: 1100, delay: 800, suffix: ' questions', locale: true });
+    // 53 weeks x 7 days; render as columns
+    var weeks = Math.ceil(days.length / 7);
+    var max = Math.max.apply(null, days.map(function (d) { return d.count; }).concat([1]));
+    for (var wi = 0; wi < weeks; wi++) {
+      var col = document.createElement('div'); col.className = 'heat-week';
+      for (var di = 0; di < 7; di++) {
+        var idx = wi * 7 + di;
+        var cell = document.createElement('div'); cell.className = 'heat-cell';
+        if (idx < days.length) {
+          var c = days[idx].count;
+          if (c > 0) {
+            var lvl = c / max;
+            cell.style.background = 'color-mix(in oklch, var(--accent) ' + clamp(Math.round(18 + lvl * 82), 18, 100) + '%, var(--surface2))';
+          }
+        }
+        col.appendChild(cell);
+      }
+      strip.appendChild(col);
+    }
+  })();
+
+  /* ============ WRONG PATTERNS ============ */
+  (function () {
+    var el = document.getElementById('wrongList');
+    D.wrongPatterns.forEach(function (w) {
+      var r = document.createElement('div'); r.className = 'list-row';
+      r.innerHTML = '<div class="lr-main"><div class="lr-label">' + w.label + '</div><div class="lr-note">' + w.domain + ' · ' + w.note + '</div></div>' +
+        '<div class="lr-val bad">' + w.count + '</div>';
+      el.appendChild(r);
+    });
+  })();
+
+  /* ============ DIFFICULTY ============ */
+  (function () {
+    var el = document.getElementById('diffList');
+    D.difficulty.forEach(function (d, i) {
+      var cls = d.accuracy >= 80 ? 'good' : d.accuracy >= 65 ? 'warn' : 'bad';
+      var r = document.createElement('div'); r.className = 'list-row';
+      r.style.display = 'block';
+      r.innerHTML = '<div style="display:flex;align-items:center;gap:12px"><div class="lr-main"><div class="lr-label">' + d.label +
+        '</div><div class="lr-note">' + d.count + ' questions</div></div><div class="lr-val ' + cls + '"></div></div>' +
+        '<div class="bar-track"><div class="bar-fill ' + cls + '"></div></div>';
+      el.appendChild(r);
+      var val = r.querySelector('.lr-val'), bar = r.querySelector('.bar-fill');
+      if (reduce) { val.textContent = d.accuracy + '%'; bar.style.width = d.accuracy + '%'; return; }
+      bar.style.width = '0%';
+      bar.style.transition = 'width 850ms var(--ease-out)';
+      countUp(val, d.accuracy, { dur: 850, delay: 700 + i * 70, suffix: '%' });
+      setTimeout(function () { bar.style.width = d.accuracy + '%'; }, 700 + i * 70);
+    });
+  })();
+
+  /* ============ EXAM HISTORY ============ */
+  (function () {
+    var el = document.getElementById('examList');
+    D.examHistory.forEach(function (e, i) {
+      var cls = e.score >= 720 ? 'good' : e.score >= 650 ? 'warn' : 'bad';
+      var r = document.createElement('div'); r.className = 'list-row';
+      r.innerHTML = '<div class="lr-main"><div class="lr-label">' + e.label + '</div><div class="lr-note">' + e.date + ' · ' + e.questions + ' questions · ' + e.pct + '%</div></div>' +
+        '<div class="lr-val ' + cls + '"></div>';
+      el.appendChild(r);
+      countUp(r.querySelector('.lr-val'), e.score, { dur: 900, delay: 760 + i * 60 });
+    });
+  })();
+
+  /* ============ EXAM VS QUIZ ============ */
+  (function () {
+    var e = D.examVsQuiz;
+    countUp(document.getElementById('quizAvg'), e.quizAvg, { dur: 900, delay: 720, suffix: '%' });
+    countUp(document.getElementById('examAvg'), e.examAvg, { dur: 900, delay: 780, suffix: '%' });
+    document.getElementById('quizN').textContent = e.quizSessions + ' sessions';
+    document.getElementById('examN').textContent = e.examSessions + ' sessions';
+    document.getElementById('evqDelta').textContent = '+' + e.delta + ' pts practice';
+  })();
+
+  /* ============ MILESTONES ============ */
+  (function () {
+    var m = D.milestones;
+    document.getElementById('msCount').textContent = m.unlocked + '/' + m.total;
+    var msFill = document.getElementById('msFill');
+    var msPct = Math.round(m.unlocked / m.total * 100);
+    if (reduce) { msFill.style.width = msPct + '%'; }
+    else {
+      msFill.style.width = '0%';
+      msFill.style.transition = 'width 900ms var(--ease-out)';
+      setTimeout(function () { msFill.style.width = msPct + '%'; }, 740);
+    }
+    var list = document.getElementById('msList');
+    m.recent.slice(0, 2).forEach(function (r) {
+      var row = document.createElement('div'); row.className = 'ms-item';
+      row.innerHTML = '<span>' + r.label + '</span><span class="mprog">' + r.earned + '</span>';
+      list.appendChild(row);
+    });
+    m.locked.forEach(function (r) {
+      var row = document.createElement('div'); row.className = 'ms-item';
+      row.innerHTML = '<span class="mlock">' + r.label + '</span><span class="mprog">' + r.progress[0] + ' / ' + r.progress[1] + '</span>';
+      list.appendChild(row);
+    });
+  })();
+
+  /* ============ RECENT SESSIONS ============ */
+  (function () {
+    var el = document.getElementById('recentList');
+    D.recent.forEach(function (r) {
+      var cls = r.pct >= 80 ? 'good' : r.pct >= 65 ? 'warn' : 'bad';
+      var row = document.createElement('div'); row.className = 'list-row';
+      row.innerHTML = '<div class="lr-main"><div class="lr-label">' + r.topic + '</div><div class="lr-note">' + r.date + ' · ' + r.mode + ' · ' + r.n + ' Q</div></div>' +
+        '<div class="lr-val ' + cls + '">' + r.pct + '%</div>';
+      el.appendChild(row);
+    });
+  })();
+
+  /* ============ ADVISORY LEVEL COUNT-UP ============ */
+  (function () {
+    var lev = document.getElementById('anLev');
+    if (lev) countUp(lev, 18, { dur: 900, delay: 640, prefix: '+', suffix: ' pts' });
+  })();
+
+  /* ============ KICK OFF POWER-UP SEQUENCE ============
+     Instruments come online in a quick stagger, then the gauges/dials swing to value
+     (each instrument schedules its own value animation on its own delay above). */
+  runPowerup();
+
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,172 @@
+<!DOCTYPE html><html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Accuracy Chart — 1 · Draw-On Reveal</title>
+<link rel="stylesheet" href="accchart.css">
+<style>
+  #replay {
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: 11px; font-weight: 700; letter-spacing: 0.06em;
+    color: #fff; cursor: pointer;
+    padding: 7px 14px; border-radius: 999px; border: none;
+    background: linear-gradient(135deg, var(--accent), var(--accent-light));
+    box-shadow: 0 6px 18px -8px rgba(40,30,20,0.6);
+    transition: transform 140ms ease-out;
+  }
+  #replay:active { transform: scale(0.97); }
+</style>
+</head><body>
+  <div class="mock-banner">
+    <h2>1 · Draw-On Reveal</h2>
+    <p>The line draws itself left-to-right as the area fills up beneath it and each dot pops in just as the line reaches it. The chart builds your story through time instead of appearing all at once.</p>
+    <span class="mock-hint">Watch on load · press Replay · switching range re-draws.</span>
+  </div>
+  <div class="acc-shell"><div id="mount"></div></div>
+  <button id="replay" style="position:fixed;right:18px;bottom:18px;">↻ Replay</button>
+  <script src="accchart.js"></script>
+  <script>
+    const A = window.AccChart.render('#mount');
+    /* ANIMATION LAYER */
+
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    const DRAW_MS  = 900;   // line sweep
+    const LINE_EASE = 'cubic-bezier(0.23,1,0.32,1)';   // ease-out
+    const POP_MS   = 260;
+    const POP_EASE = 'cubic-bezier(0.34,1.56,0.64,1)'; // overshoot
+    const PASS_MS  = 400;
+
+    const { PAD, innerW } = A.geom;
+
+    // Track pending dot timers so a re-draw can cancel them.
+    let dotTimers = [];
+    function clearDotTimers() {
+      dotTimers.forEach(clearTimeout);
+      dotTimers = [];
+    }
+
+    // Pass line draws once, up front, then stays.
+    const passLine = A.svg.querySelector('.acc-pass-line');
+    function drawPassLine() {
+      if (!passLine) return;
+      if (reduce) { passLine.style.strokeDashoffset = '0'; return; }
+      // Pass line is dashed (6 4); animate a wipe via a long offset rather than
+      // touching its dash pattern — gently fade + slide it in instead.
+      passLine.animate(
+        [
+          { opacity: 0, transform: 'translateX(-10px)' },
+          { opacity: 0.85, transform: 'translateX(0)' }
+        ],
+        { duration: PASS_MS, easing: LINE_EASE, fill: 'both' }
+      );
+    }
+
+    // Snap a series to its final, fully-revealed state (no motion).
+    function showSeriesInstant(key) {
+      const s = A.series[key];
+      s.lineEl.style.strokeDasharray = 'none';
+      s.lineEl.style.strokeDashoffset = '0';
+      s.areaEl.style.opacity = '';        // back to CSS default (0.08)
+      s.dotEls.forEach(d => {
+        d.style.opacity = '1';
+        d.style.transform = 'none';
+        d.setAttribute('r', '4');
+      });
+    }
+
+    // Reset a series to hidden, pre-draw state.
+    function hideSeries(key) {
+      const s = A.series[key];
+      const len = s.lineEl.getTotalLength();
+      s.lineEl.style.strokeDasharray = len;
+      s.lineEl.style.strokeDashoffset = len;
+      s.areaEl.style.opacity = '0';
+      s.dotEls.forEach(d => {
+        d.style.transformBox = 'fill-box';
+        d.style.transformOrigin = 'center';
+        d.style.opacity = '0';
+        d.style.transform = 'scale(0.4)';
+      });
+    }
+
+    function drawSeries(key) {
+      clearDotTimers();
+      const s = A.series[key];
+      if (!s) return;
+
+      if (reduce) {
+        drawPassLine();
+        showSeriesInstant(key);
+        return;
+      }
+
+      drawPassLine();
+
+      // a. LINE — stroke-dashoffset sweep left→right.
+      const len = s.lineEl.getTotalLength();
+      s.lineEl.style.strokeDasharray = len;
+      s.lineEl.style.strokeDashoffset = len;
+      s.lineEl.animate(
+        [{ strokeDashoffset: len }, { strokeDashoffset: 0 }],
+        { duration: DRAW_MS, easing: LINE_EASE, fill: 'forwards' }
+      );
+
+      // b. AREA — fade in synced to the sweep (settles to CSS default 0.08).
+      s.areaEl.style.opacity = '0';
+      s.areaEl.animate(
+        [{ opacity: 0 }, { opacity: 0.08 }],
+        { duration: DRAW_MS, easing: LINE_EASE, delay: 60, fill: 'forwards' }
+      );
+
+      // c. DOTS — each pops when the draw reaches its x.
+      s.dotEls.forEach(d => {
+        d.style.transformBox = 'fill-box';
+        d.style.transformOrigin = 'center';
+        d.style.opacity = '0';
+        d.style.transform = 'scale(0.4)';
+      });
+      s.pts.forEach((p, i) => {
+        const frac = (p.x - PAD) / innerW;            // 0..1 along the sweep
+        const delay = Math.max(0, frac * DRAW_MS);
+        const dot = s.dotEls[i];
+        const t = setTimeout(() => {
+          const a = dot.animate(
+            [
+              { opacity: 0, transform: 'scale(0.4)' },
+              { opacity: 1, transform: 'scale(1)' }
+            ],
+            { duration: POP_MS, easing: POP_EASE, fill: 'forwards' }
+          );
+          a.finished.then(() => {
+            dot.style.opacity = '1';
+            dot.style.transform = 'none';
+          }).catch(() => {});
+        }, delay);
+        dotTimers.push(t);
+      });
+    }
+
+    // 2. Run on load for the default range.
+    drawSeries(A.current);
+
+    // 3. Re-draw on range switch — replace default tab listeners.
+    A.tabs.forEach(b => {
+      const fresh = b.cloneNode(true);
+      b.parentNode.replaceChild(fresh, b);
+    });
+    A.tabs = Array.prototype.slice.call(A.card.querySelectorAll('.acc-tab'));
+    A.tabs.forEach(b => {
+      b.addEventListener('click', () => {
+        const r = b.dataset.range;
+        A.setRange(r);
+        hideSeries(r);
+        drawSeries(r);
+      });
+    });
+
+    // 4. Replay button — replays the current range.
+    document.getElementById('replay').addEventListener('click', () => {
+      hideSeries(A.current);
+      drawSeries(A.current);
+    });
+  </script>
+</body></html>

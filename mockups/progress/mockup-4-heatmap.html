@@ -1,0 +1,759 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Topic progress · Mastery Heatmap</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+:root{
+  --bg: oklch(0.975 0.007 85);
+  --surface: oklch(0.992 0.004 85);
+  --surface-2: oklch(0.965 0.010 84);
+  --ink: oklch(0.22 0.015 280);
+  --ink-soft: oklch(0.36 0.014 280);
+  --muted: oklch(0.50 0.013 280);
+  --border: oklch(0.86 0.008 85);
+  --border-soft: oklch(0.91 0.006 85);
+  --accent: oklch(0.50 0.155 55);
+  --accent-bright: oklch(0.80 0.155 64);
+  --accent-deep: oklch(0.42 0.150 52);
+  --on-accent: oklch(0.985 0.010 85);
+  --pass: oklch(0.52 0.13 150);
+  --hatch: oklch(0.50 0.013 280 / 0.16);
+  --ghost-bd: oklch(0.50 0.013 280 / 0.30);
+  --shadow: oklch(0.22 0.015 280 / 0.10);
+  --cell-ink: var(--ink);
+}
+[data-theme="dark"]{
+  --bg: oklch(0.16 0.009 275);
+  --surface: oklch(0.205 0.009 275);
+  --surface-2: oklch(0.185 0.009 275);
+  --ink: oklch(0.96 0.006 275);
+  --ink-soft: oklch(0.78 0.010 275);
+  --muted: oklch(0.60 0.013 275);
+  --border: oklch(0.30 0.008 275);
+  --border-soft: oklch(0.26 0.008 275);
+  --accent: oklch(0.80 0.155 64);
+  --accent-bright: oklch(0.86 0.140 70);
+  --accent-deep: oklch(0.70 0.150 62);
+  --on-accent: oklch(0.18 0.020 275);
+  --pass: oklch(0.74 0.150 152);
+  --hatch: oklch(0.78 0.010 275 / 0.14);
+  --ghost-bd: oklch(0.60 0.013 275 / 0.34);
+  --shadow: oklch(0 0 0 / 0.40);
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{
+  background:var(--bg);
+  color:var(--ink);
+  font-family:'Inter',system-ui,sans-serif;
+  line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+  padding:32px 24px 96px;
+}
+.mono{font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1}
+.tnum{font-variant-numeric:tabular-nums}
+
+.wrap{max-width:1180px;margin:0 auto}
+
+/* ---- Header ---- */
+.head{display:flex;flex-direction:column;gap:6px;margin-bottom:26px}
+.eyebrow{
+  font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--accent-deep);
+}
+[data-theme="dark"] .eyebrow{color:var(--accent-bright)}
+h1{
+  font-family:'Fraunces',serif;font-weight:600;font-size:clamp(30px,5vw,44px);
+  letter-spacing:-.01em;line-height:1.04;color:var(--ink);
+}
+.sub{color:var(--muted);font-size:14.5px;max-width:60ch}
+
+/* ---- Top band ---- */
+.band{
+  display:grid;grid-template-columns:1.15fr 1fr;gap:16px;margin:26px 0 22px;
+}
+.panel{
+  background:var(--surface);border:1px solid var(--border);border-radius:16px;
+  padding:20px 22px;
+}
+.readiness{display:flex;gap:26px;align-items:center;flex-wrap:wrap}
+.ring-wrap{position:relative;width:96px;height:96px;flex:0 0 auto}
+.ring-wrap svg{transform:rotate(-90deg)}
+.ring-num{
+  position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
+}
+.ring-num b{font-family:'Fraunces',serif;font-weight:600;font-size:25px;line-height:1}
+.ring-num span{font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-top:3px}
+.r-stats{display:flex;flex-direction:column;gap:14px}
+.r-row{display:flex;gap:22px}
+.stat .k{font-family:'Fraunces',serif;font-weight:600;font-size:24px;line-height:1}
+.stat .l{font-size:11px;color:var(--muted);letter-spacing:.03em;margin-top:3px}
+.stat .k.good{color:var(--pass)}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:2px}
+.chip{
+  font-size:11.5px;font-weight:500;padding:4px 10px;border-radius:999px;
+  background:var(--surface-2);border:1px solid var(--border-soft);color:var(--ink-soft);
+}
+.chip b{font-weight:700;font-variant-numeric:tabular-nums}
+
+.rec{display:flex;flex-direction:column;gap:9px;justify-content:center}
+.rec-tag{
+  font-size:10.5px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--accent-deep);
+}
+[data-theme="dark"] .rec-tag{color:var(--accent-bright)}
+.rec-name{font-family:'Fraunces',serif;font-weight:600;font-size:20px;line-height:1.12;letter-spacing:-.01em}
+.rec-meta{font-size:13px;color:var(--ink-soft)}
+.rec-meta b{color:var(--accent-deep);font-weight:600}
+[data-theme="dark"] .rec-meta b{color:var(--accent-bright)}
+.rec-why{font-size:12.5px;color:var(--muted)}
+.rec-cta{
+  align-self:flex-start;margin-top:4px;font-family:'Inter';font-size:12.5px;font-weight:600;
+  color:var(--on-accent);background:var(--accent);border:none;border-radius:9px;
+  padding:8px 14px;cursor:pointer;transition:transform .18s cubic-bezier(.16,1,.3,1),background .18s;
+}
+.rec-cta:hover{background:var(--accent-deep)}
+[data-theme="dark"] .rec-cta:hover{background:var(--accent-bright)}
+.rec-cta:active{transform:scale(.97)}
+
+/* ---- Toolbar ---- */
+.toolbar{
+  display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:0 0 14px;
+}
+.search{position:relative;flex:1 1 220px;min-width:180px}
+.search input{
+  width:100%;font-family:'Inter';font-size:13.5px;color:var(--ink);
+  background:var(--surface);border:1px solid var(--border);border-radius:10px;
+  padding:9px 12px 9px 34px;outline:none;transition:border-color .18s,box-shadow .18s;
+}
+.search input:focus{border-color:var(--accent);box-shadow:0 0 0 3px oklch(0.50 0.155 55 / .14)}
+[data-theme="dark"] .search input:focus{box-shadow:0 0 0 3px oklch(0.80 0.155 64 / .18)}
+.search svg{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--muted)}
+.segwrap{display:flex;flex-direction:column;gap:4px}
+.seglabel{font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);padding-left:2px}
+.seg{display:flex;background:var(--surface-2);border:1px solid var(--border);border-radius:10px;padding:3px;gap:2px}
+.seg button{
+  font-family:'Inter';font-size:12px;font-weight:500;color:var(--ink-soft);
+  background:transparent;border:none;border-radius:7px;padding:6px 11px;cursor:pointer;white-space:nowrap;
+  transition:color .16s;position:relative;
+}
+.seg button[aria-pressed="true"]{color:var(--on-accent)}
+.seg button .segbg{
+  position:absolute;inset:0;border-radius:7px;background:var(--accent);z-index:-1;opacity:0;
+}
+.seg button[aria-pressed="true"] .segbg{opacity:1}
+.seg button span{position:relative;z-index:1}
+
+/* ---- Legend ---- */
+.legend{
+  display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin:0 0 16px;
+  font-size:11.5px;color:var(--muted);
+}
+.legend-scale{display:flex;align-items:center;gap:8px}
+.ramp{display:flex;border-radius:6px;overflow:hidden;border:1px solid var(--border)}
+.ramp i{width:26px;height:14px;display:block}
+.legend-item{display:flex;align-items:center;gap:6px}
+.swatch{width:14px;height:14px;border-radius:4px;border:1px solid var(--border)}
+.swatch.pass{background:color-mix(in oklab,var(--pass) 78%,var(--surface));border-color:var(--pass)}
+.swatch.ghost{background:var(--surface);border:1px dashed var(--ghost-bd);
+  background-image:repeating-linear-gradient(45deg,transparent 0 4px,var(--hatch) 4px 5px);}
+
+/* ---- Matrix ---- */
+.matrix{
+  background:var(--surface);border:1px solid var(--border);border-radius:18px;
+  overflow:hidden;
+}
+.mrow{
+  display:grid;grid-template-columns:236px 1fr;
+  border-top:1px solid var(--border-soft);
+}
+.mrow:first-child{border-top:none}
+.rowhead{
+  padding:16px 18px;border-right:1px solid var(--border-soft);
+  background:var(--surface-2);display:flex;flex-direction:column;gap:5px;min-width:0;
+}
+.rh-top{display:flex;align-items:baseline;gap:8px}
+.rh-obj{
+  font-family:'Fraunces',serif;font-weight:600;font-size:13px;color:var(--accent-deep);
+  font-variant-numeric:tabular-nums;flex:0 0 auto;
+}
+[data-theme="dark"] .rh-obj{color:var(--accent-bright)}
+.rh-label{font-weight:600;font-size:13.5px;line-height:1.2;color:var(--ink)}
+.rh-meta{display:flex;align-items:center;gap:10px;font-size:11px;color:var(--muted)}
+.rh-meta .dot{width:3px;height:3px;border-radius:50%;background:var(--muted);opacity:.6}
+.rh-avg{display:flex;align-items:center;gap:7px;margin-top:3px}
+.rh-bar{flex:1;height:5px;border-radius:3px;background:var(--surface);border:1px solid var(--border-soft);overflow:hidden}
+.rh-bar i{display:block;height:100%;width:0;border-radius:3px;background:var(--accent);transition:width 1s cubic-bezier(.16,1,.3,1)}
+.rh-bar i.good{background:var(--pass)}
+.rh-pct{font-size:11.5px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--ink-soft);min-width:30px;text-align:right}
+
+.cells{
+  display:flex;flex-wrap:wrap;gap:6px;padding:14px 16px;align-content:flex-start;
+}
+.cell{
+  position:relative;width:34px;height:34px;border-radius:8px;cursor:pointer;
+  border:1px solid var(--border-soft);
+  display:flex;align-items:center;justify-content:center;
+  opacity:0;transform:scale(.5);
+  transition:opacity .35s,transform .2s cubic-bezier(.16,1,.3,1),box-shadow .2s,filter .25s;
+  will-change:transform,opacity;
+}
+.cell.in{opacity:1;transform:scale(1)}
+.cell .fill{
+  position:absolute;inset:0;border-radius:7px;background:var(--cellbg);
+  transform:scale(var(--fillscale,0));transform-origin:center;
+  transition:transform .7s cubic-bezier(.16,1,.3,1);
+}
+.cell.filled .fill{transform:scale(1)}
+.cell .val{
+  position:relative;z-index:1;font-size:10.5px;font-weight:700;font-variant-numeric:tabular-nums;
+  color:var(--cell-ink);opacity:0;transition:opacity .4s .25s;
+}
+.cell.filled .val{opacity:1}
+.cell.ghost{
+  border:1px dashed var(--ghost-bd);
+  background-image:repeating-linear-gradient(45deg,transparent 0 4px,var(--hatch) 4px 5px);
+}
+.cell.ghost .fill{display:none}
+.cell.ghost .val{color:var(--muted);opacity:.55;font-size:11px}
+.cell:hover{transform:scale(1.16);z-index:5;box-shadow:0 6px 18px var(--shadow)}
+.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.cell.dim{filter:saturate(.35) opacity(.32)}
+.cell.match{box-shadow:0 0 0 2px var(--accent),0 4px 14px var(--shadow);z-index:4}
+.cell.emph{box-shadow:0 0 0 2px var(--accent-deep);z-index:3}
+[data-theme="dark"] .cell.emph{box-shadow:0 0 0 2px var(--accent-bright)}
+.cell.pulse{animation:pulse .55s cubic-bezier(.16,1,.3,1)}
+@keyframes pulse{
+  0%{box-shadow:0 0 0 0 oklch(0.50 0.155 55 / .55)}
+  100%{box-shadow:0 0 0 16px oklch(0.50 0.155 55 / 0)}
+}
+
+/* ---- Tooltip ---- */
+.tip{
+  position:fixed;z-index:50;pointer-events:none;
+  background:var(--surface);border:1px solid var(--border);border-radius:12px;
+  box-shadow:0 14px 40px var(--shadow);padding:12px 14px;width:230px;
+  opacity:0;transform:translateY(4px) scale(.98);transition:opacity .15s,transform .15s;
+}
+.tip.show{opacity:1;transform:translateY(0) scale(1)}
+.tip-name{font-family:'Fraunces',serif;font-weight:600;font-size:14px;line-height:1.2;margin-bottom:2px}
+.tip-dom{font-size:11px;color:var(--muted);margin-bottom:9px}
+.tip-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px 12px}
+.tip-cell .tk{font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.tip-cell .tv{font-size:14px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--ink)}
+.tip-cell .tv.good{color:var(--pass)}
+.tip-status{
+  margin-top:9px;font-size:11px;font-weight:600;padding:3px 9px;border-radius:999px;display:inline-block;
+  background:var(--surface-2);border:1px solid var(--border-soft);color:var(--ink-soft);
+}
+
+/* ---- Toast ---- */
+.toast{
+  position:fixed;left:50%;bottom:28px;transform:translateX(-50%) translateY(120%);
+  background:var(--accent);color:var(--on-accent);font-size:13.5px;font-weight:600;
+  padding:12px 20px;border-radius:12px;box-shadow:0 12px 30px var(--shadow);
+  z-index:60;transition:transform .4s cubic-bezier(.16,1,.3,1);max-width:90vw;
+}
+.toast.show{transform:translateX(-50%) translateY(0)}
+
+/* ---- Theme toggle ---- */
+.themebtn{
+  position:fixed;top:18px;right:18px;z-index:70;
+  width:42px;height:42px;border-radius:12px;cursor:pointer;
+  background:var(--surface);border:1px solid var(--border);color:var(--ink-soft);
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 4px 14px var(--shadow);transition:transform .18s,color .18s;
+}
+.themebtn:hover{color:var(--accent-deep)}
+[data-theme="dark"] .themebtn:hover{color:var(--accent-bright)}
+.themebtn:active{transform:scale(.92)}
+.themebtn .moon{display:none}
+[data-theme="dark"] .themebtn .sun{display:none}
+[data-theme="dark"] .themebtn .moon{display:block}
+
+.empty{font-size:12px;color:var(--muted);font-style:italic;padding:6px 2px}
+
+@media (max-width:768px){
+  body{padding:24px 14px 96px}
+  .band{grid-template-columns:1fr}
+  .mrow{grid-template-columns:1fr}
+  .rowhead{border-right:none;border-bottom:1px solid var(--border-soft)}
+  .cells{overflow-x:auto;flex-wrap:nowrap;padding-bottom:18px}
+  .cell{flex:0 0 auto}
+}
+
+@media (prefers-reduced-motion:reduce){
+  .cell,.cell .fill,.cell .val,.rh-bar i,.tip,.toast,.rec-cta,.themebtn,.segbg{transition:none!important;animation:none!important}
+  .cell{opacity:1;transform:none}
+  .cell .fill{transform:scale(1)}
+  .cell .val{opacity:1}
+  .cell.ghost .val{opacity:.55}
+}
+</style>
+</head>
+<body>
+<button class="themebtn" id="themeBtn" aria-label="Toggle colour theme">
+  <svg class="sun" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+  <svg class="moon" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+</button>
+
+<div class="wrap">
+  <header class="head">
+    <span class="eyebrow">Network+ N10-009</span>
+    <h1>Topic progress</h1>
+    <p class="sub">Every topic, one grid. Colour depth is mastery; deep bronze ramps to a green pass at the strong end. Hatched cells are untouched.</p>
+  </header>
+
+  <!-- Top band -->
+  <div class="band">
+    <div class="panel">
+      <div class="readiness">
+        <div class="ring-wrap">
+          <svg width="96" height="96" viewBox="0 0 96 96">
+            <circle cx="48" cy="48" r="42" fill="none" stroke="var(--border)" stroke-width="8"/>
+            <circle id="ring" cx="48" cy="48" r="42" fill="none" stroke="var(--accent)" stroke-width="8" stroke-linecap="round" stroke-dasharray="263.9" stroke-dashoffset="263.9"/>
+          </svg>
+          <div class="ring-num"><b class="mono" id="avgNum">0%</b><span>Mastery</span></div>
+        </div>
+        <div class="r-stats">
+          <div class="r-row">
+            <div class="stat"><div class="k mono" id="covNum">0%</div><div class="l">Coverage</div></div>
+            <div class="stat"><div class="k good mono" id="strongNum">0</div><div class="l">Strong</div></div>
+            <div class="stat"><div class="k mono" id="weakNum">0</div><div class="l">Weak</div></div>
+          </div>
+          <div class="chips">
+            <span class="chip">Total <b class="mono">50</b></span>
+            <span class="chip">Untouched <b class="mono">10</b></span>
+            <span class="chip">Developing <b class="mono">12</b></span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="panel rec">
+      <span class="rec-tag">Highest-leverage next move</span>
+      <div class="rec-name" id="recName"></div>
+      <div class="rec-meta"><b id="recDom"></b> · mastery <span class="mono" id="recMast"></span></div>
+      <div class="rec-why" id="recWhy"></div>
+      <button class="rec-cta" id="recCta">Start drill</button>
+    </div>
+  </div>
+
+  <!-- Toolbar -->
+  <div class="toolbar">
+    <label class="search">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+      <input id="search" type="text" placeholder="Search topics…" autocomplete="off" />
+    </label>
+    <div class="segwrap">
+      <span class="seglabel">Filter</span>
+      <div class="seg" id="filterSeg">
+        <button data-f="all" aria-pressed="true"><span class="segbg"></span><span>All</span></button>
+        <button data-f="weak" aria-pressed="false"><span class="segbg"></span><span>Weak only</span></button>
+        <button data-f="untouched" aria-pressed="false"><span class="segbg"></span><span>Untouched</span></button>
+        <button data-f="strong" aria-pressed="false"><span class="segbg"></span><span>Strong</span></button>
+      </div>
+    </div>
+    <div class="segwrap">
+      <span class="seglabel">Sort</span>
+      <div class="seg" id="sortSeg">
+        <button data-s="worst" aria-pressed="true"><span class="segbg"></span><span>Worst first</span></button>
+        <button data-s="recent" aria-pressed="false"><span class="segbg"></span><span>Most recent</span></button>
+        <button data-s="studied" aria-pressed="false"><span class="segbg"></span><span>Most studied</span></button>
+        <button data-s="az" aria-pressed="false"><span class="segbg"></span><span>A-Z</span></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Legend -->
+  <div class="legend">
+    <div class="legend-scale">
+      <span>Mastery</span>
+      <div class="ramp" id="ramp"></div>
+      <span>low → high</span>
+    </div>
+    <div class="legend-item"><span class="swatch pass"></span> Strong / mastered</div>
+    <div class="legend-item"><span class="swatch ghost"></span> Untouched (0 attempts)</div>
+  </div>
+
+  <!-- Matrix -->
+  <div class="matrix" id="matrix"></div>
+</div>
+
+<div class="tip" id="tip" role="status" aria-live="polite"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+window.PROGRESS_DATA = {
+  "summary": { "total": 50, "weak": 18, "untouched": 10, "strong": 10, "developing": 12, "coverage": 80, "avgMastery": 38 },
+  "domains": [
+    { "key": "concepts", "label": "Networking Concepts", "weight": 23, "obj": "1.0", "count": 13, "avgMastery": 32 },
+    { "key": "implementation", "label": "Network Implementation", "weight": 20, "obj": "2.0", "count": 13, "avgMastery": 50 },
+    { "key": "operations", "label": "Network Operations", "weight": 19, "obj": "3.0", "count": 7, "avgMastery": 28 },
+    { "key": "security", "label": "Network Security", "weight": 14, "obj": "4.0", "count": 11, "avgMastery": 35 },
+    { "key": "troubleshooting", "label": "Network Troubleshooting", "weight": 24, "obj": "5.0", "count": 6, "avgMastery": 45 }
+  ],
+  "recommendation": { "name": "Network Models & OSI", "domainLabel": "Networking Concepts", "mastery": 0, "reason": "Highest leverage: heavy exam weight, low mastery" },
+  "topics": [
+    { "name": "Network Models & OSI", "domain": "concepts", "domainLabel": "Networking Concepts", "obj": "1.0", "mastery": 0, "accuracy": 0, "attempts": 0, "lastSeenDays": null, "status": "untouched" },
+    { "name": "TCP/IP Basics", "domain": "concepts", "domainLabel": "Networking Concepts", "obj": "1.0", "mastery": 20, "accuracy": 21, "attempts": 19, "lastSeenDays": 34, "status": "weak" },
+    { "name": "Subnetting & IP Addressing", "domain": "concepts", "domainLabel": "Networking Concepts", "obj": "1.0", "mastery": 88, "accuracy": 76, "attempts": 35, "lastSeenDays": 21, "status": "strong" },
+    { "name": "TCP/IP Applications", "domain": "concepts", "domainLabel": "Networking Concepts", "obj": "1.0", "mastery": 48, "accuracy": 38, "attempts": 9, "lastSeenDays": 2, "status": "developing" },
+    { "name": "Network Naming (DNS & DHCP)", "domain": "concepts", "domainLabel": "Networking Concepts", "obj": "1.0", "mastery": 57, "accuracy": 58, "attempts": 40, "lastSeenDays": 5, "status": "developing" },
+    { "name": "IPv6", "domain": "concepts", "domainLabel": "Networking Concepts", "obj": "1.0", "mastery": 30, "accuracy": 21, "attempts": 18, "lastSeenDays": 21, "status": "weak" },
+    { "name": "NAT & IP Services", "domain": "concepts", "domainLabel": "Networking Concepts", "obj": "1.0", "mastery": 0, "accuracy": 0, "attempts": 0, "lastSeenDays": null, "status": "untouched" },
+    { "name": "NTP, ICMP & Traffic Types", "domain": "concepts", "domainLabel": "Networking Concepts", "obj": "1.0", "mastery": 0, "accuracy": 0, "attempts": 0, "lastSeenDays": null, "status": "untouched" },
+    { "name": "Port Numbers", "domain": "concepts", "domainLabel": "Networking Concepts", "obj": "1.0", "mastery": 95, "accuracy": 73, "attempts": 22, "lastSeenDays": 2, "status": "strong" },
+    { "name": "Virtualisation & Cloud", "domain": "concepts", "domainLabel": "Networking Concepts", "obj": "1.0", "mastery": 47, "accuracy": 49, "attempts": 6, "lastSeenDays": 1, "status": "developing" },
+    { "name": "Cloud Networking & VPCs", "domain": "concepts", "domainLabel": "Networking Concepts", "obj": "1.0", "mastery": 9, "accuracy": 20, "attempts": 16, "lastSeenDays": 5, "status": "weak" },
+    { "name": "Network Appliances & Device Functions", "domain": "concepts", "domainLabel": "Networking Concepts", "obj": "1.0", "mastery": 15, "accuracy": 22, "attempts": 22, "lastSeenDays": 8, "status": "weak" },
+    { "name": "DNS Records & DNSSEC", "domain": "concepts", "domainLabel": "Networking Concepts", "obj": "1.0", "mastery": 10, "accuracy": 20, "attempts": 18, "lastSeenDays": 5, "status": "weak" },
+    { "name": "Routing Protocols", "domain": "implementation", "domainLabel": "Network Implementation", "obj": "2.0", "mastery": 85, "accuracy": 62, "attempts": 20, "lastSeenDays": 1, "status": "strong" },
+    { "name": "OSPF", "domain": "implementation", "domainLabel": "Network Implementation", "obj": "2.0", "mastery": 18, "accuracy": 20, "attempts": 5, "lastSeenDays": 13, "status": "weak" },
+    { "name": "BGP", "domain": "implementation", "domainLabel": "Network Implementation", "obj": "2.0", "mastery": 27, "accuracy": 23, "attempts": 30, "lastSeenDays": 21, "status": "weak" },
+    { "name": "Switch Features & VLANs", "domain": "implementation", "domainLabel": "Network Implementation", "obj": "2.0", "mastery": 6, "accuracy": 20, "attempts": 18, "lastSeenDays": 8, "status": "weak" },
+    { "name": "VLAN Trunking", "domain": "implementation", "domainLabel": "Network Implementation", "obj": "2.0", "mastery": 77, "accuracy": 55, "attempts": 30, "lastSeenDays": 2, "status": "strong" },
+    { "name": "STP/RSTP", "domain": "implementation", "domainLabel": "Network Implementation", "obj": "2.0", "mastery": 57, "accuracy": 37, "attempts": 32, "lastSeenDays": 2, "status": "developing" },
+    { "name": "Wireless Networking", "domain": "implementation", "domainLabel": "Network Implementation", "obj": "2.0", "mastery": 0, "accuracy": 0, "attempts": 0, "lastSeenDays": null, "status": "untouched" },
+    { "name": "Ethernet Basics", "domain": "implementation", "domainLabel": "Network Implementation", "obj": "2.0", "mastery": 22, "accuracy": 26, "attempts": 25, "lastSeenDays": 2, "status": "weak" },
+    { "name": "Ethernet Standards", "domain": "implementation", "domainLabel": "Network Implementation", "obj": "2.0", "mastery": 73, "accuracy": 53, "attempts": 40, "lastSeenDays": 2, "status": "developing" },
+    { "name": "Cabling & Topology", "domain": "implementation", "domainLabel": "Network Implementation", "obj": "2.0", "mastery": 47, "accuracy": 25, "attempts": 34, "lastSeenDays": 13, "status": "developing" },
+    { "name": "Integrating Networked Devices", "domain": "implementation", "domainLabel": "Network Implementation", "obj": "2.0", "mastery": 76, "accuracy": 60, "attempts": 11, "lastSeenDays": 2, "status": "strong" },
+    { "name": "SDN, NFV & Automation", "domain": "implementation", "domainLabel": "Network Implementation", "obj": "2.0", "mastery": 60, "accuracy": 57, "attempts": 7, "lastSeenDays": 21, "status": "developing" },
+    { "name": "Data Center Architectures", "domain": "implementation", "domainLabel": "Network Implementation", "obj": "2.0", "mastery": 99, "accuracy": 97, "attempts": 14, "lastSeenDays": 8, "status": "strong" },
+    { "name": "Network Operations", "domain": "operations", "domainLabel": "Network Operations", "obj": "3.0", "mastery": 38, "accuracy": 38, "attempts": 9, "lastSeenDays": 13, "status": "weak" },
+    { "name": "Data Centres", "domain": "operations", "domainLabel": "Network Operations", "obj": "3.0", "mastery": 17, "accuracy": 20, "attempts": 13, "lastSeenDays": 34, "status": "weak" },
+    { "name": "WAN Connectivity", "domain": "operations", "domainLabel": "Network Operations", "obj": "3.0", "mastery": 0, "accuracy": 0, "attempts": 0, "lastSeenDays": null, "status": "untouched" },
+    { "name": "SD-WAN & SASE", "domain": "operations", "domainLabel": "Network Operations", "obj": "3.0", "mastery": 42, "accuracy": 20, "attempts": 37, "lastSeenDays": 2, "status": "developing" },
+    { "name": "SMB & Network File Services", "domain": "operations", "domainLabel": "Network Operations", "obj": "3.0", "mastery": 62, "accuracy": 46, "attempts": 41, "lastSeenDays": 34, "status": "developing" },
+    { "name": "Business Continuity & Disaster Recovery", "domain": "operations", "domainLabel": "Network Operations", "obj": "3.0", "mastery": 38, "accuracy": 22, "attempts": 29, "lastSeenDays": 5, "status": "weak" },
+    { "name": "Network Monitoring & Observability", "domain": "operations", "domainLabel": "Network Operations", "obj": "3.0", "mastery": 0, "accuracy": 0, "attempts": 0, "lastSeenDays": null, "status": "untouched" },
+    { "name": "Securing TCP/IP", "domain": "security", "domainLabel": "Network Security", "obj": "4.0", "mastery": 28, "accuracy": 27, "attempts": 28, "lastSeenDays": 2, "status": "weak" },
+    { "name": "Protecting Networks", "domain": "security", "domainLabel": "Network Security", "obj": "4.0", "mastery": 37, "accuracy": 38, "attempts": 13, "lastSeenDays": 1, "status": "weak" },
+    { "name": "AAA & Authentication", "domain": "security", "domainLabel": "Network Security", "obj": "4.0", "mastery": 89, "accuracy": 68, "attempts": 36, "lastSeenDays": 34, "status": "strong" },
+    { "name": "IPsec & VPN Protocols", "domain": "security", "domainLabel": "Network Security", "obj": "4.0", "mastery": 59, "accuracy": 39, "attempts": 42, "lastSeenDays": 5, "status": "developing" },
+    { "name": "IPsec VPN", "domain": "security", "domainLabel": "Network Security", "obj": "4.0", "mastery": 0, "accuracy": 0, "attempts": 0, "lastSeenDays": null, "status": "untouched" },
+    { "name": "SSL/TLS VPN", "domain": "security", "domainLabel": "Network Security", "obj": "4.0", "mastery": 0, "accuracy": 0, "attempts": 0, "lastSeenDays": null, "status": "untouched" },
+    { "name": "PKI & Certificate Management", "domain": "security", "domainLabel": "Network Security", "obj": "4.0", "mastery": 44, "accuracy": 34, "attempts": 19, "lastSeenDays": 8, "status": "developing" },
+    { "name": "Firewalls, DMZ & Security Zones", "domain": "security", "domainLabel": "Network Security", "obj": "4.0", "mastery": 95, "accuracy": 92, "attempts": 10, "lastSeenDays": 1, "status": "strong" },
+    { "name": "WPA3 & EAP Authentication", "domain": "security", "domainLabel": "Network Security", "obj": "4.0", "mastery": 0, "accuracy": 0, "attempts": 0, "lastSeenDays": null, "status": "untouched" },
+    { "name": "Network Attacks & Threats", "domain": "security", "domainLabel": "Network Security", "obj": "4.0", "mastery": 36, "accuracy": 20, "attempts": 19, "lastSeenDays": 34, "status": "weak" },
+    { "name": "Physical Security Controls", "domain": "security", "domainLabel": "Network Security", "obj": "4.0", "mastery": 0, "accuracy": 0, "attempts": 0, "lastSeenDays": null, "status": "untouched" },
+    { "name": "Network Troubleshooting & Tools", "domain": "troubleshooting", "domainLabel": "Network Troubleshooting", "obj": "5.0", "mastery": 81, "accuracy": 81, "attempts": 12, "lastSeenDays": 1, "status": "strong" },
+    { "name": "Cable Issues", "domain": "troubleshooting", "domainLabel": "Network Troubleshooting", "obj": "5.0", "mastery": 22, "accuracy": 20, "attempts": 8, "lastSeenDays": 1, "status": "weak" },
+    { "name": "Service Issues", "domain": "troubleshooting", "domainLabel": "Network Troubleshooting", "obj": "5.0", "mastery": 41, "accuracy": 48, "attempts": 32, "lastSeenDays": 21, "status": "developing" },
+    { "name": "Perf Issues", "domain": "troubleshooting", "domainLabel": "Network Troubleshooting", "obj": "5.0", "mastery": 89, "accuracy": 86, "attempts": 12, "lastSeenDays": 5, "status": "strong" },
+    { "name": "Connection Issues", "domain": "troubleshooting", "domainLabel": "Network Troubleshooting", "obj": "5.0", "mastery": 16, "accuracy": 20, "attempts": 39, "lastSeenDays": 34, "status": "weak" },
+    { "name": "CompTIA Troubleshooting Methodology", "domain": "troubleshooting", "domainLabel": "Network Troubleshooting", "obj": "5.0", "mastery": 22, "accuracy": 20, "attempts": 21, "lastSeenDays": 13, "status": "weak" }
+  ]
+};
+
+(function(){
+  const D = window.PROGRESS_DATA;
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const $ = s => document.querySelector(s);
+
+  // ---- Heat ramp: bronze for low/mid, green pass at strong end ----
+  // mastery 0..100 -> background. Untouched handled separately (ghost).
+  function cellBg(m){
+    if(m >= 80){
+      // strong: green pass, depth scales 80..100
+      const t = (m - 80) / 20; // 0..1
+      const mix = 55 + t * 30;  // 55..85% pass
+      return `color-mix(in oklab, var(--pass) ${mix.toFixed(0)}%, var(--surface))`;
+    }
+    // bronze ramp: faint -> deep across 1..80
+    const t = Math.min(1, m / 80); // 0..1
+    // blend faint accent toward accent-deep as mastery rises
+    const intensity = (12 + t * 76).toFixed(0); // 12..88% accent presence
+    const base = t > 0.6 ? 'var(--accent-deep)' : 'var(--accent)';
+    return `color-mix(in oklab, ${base} ${intensity}%, var(--surface))`;
+  }
+  // ink color for readability on the cell
+  function cellInk(m){
+    if(m >= 60) return 'var(--on-accent)';
+    if(m >= 38) return 'var(--ink)';
+    return 'var(--ink-soft)';
+  }
+
+  // ---- Build legend ramp ----
+  const ramp = $('#ramp');
+  [6,22,40,58,76,90,99].forEach(m=>{
+    const i = document.createElement('i');
+    i.style.background = cellBg(m);
+    ramp.appendChild(i);
+  });
+
+  // ---- Recommendation ----
+  $('#recName').textContent = D.recommendation.name;
+  $('#recDom').textContent = D.recommendation.domainLabel;
+  $('#recMast').textContent = D.recommendation.mastery + '%';
+  $('#recWhy').textContent = D.recommendation.reason;
+
+  // ---- State ----
+  let filter = 'all';
+  let sort = 'worst';
+  let query = '';
+
+  // group topics by domain
+  const byDomain = {};
+  D.domains.forEach(d => byDomain[d.key] = []);
+  D.topics.forEach(t => byDomain[t.domain].push(t));
+
+  // ---- Render matrix scaffold ----
+  const matrix = $('#matrix');
+  const cellMap = []; // {el, topic}
+  D.domains.forEach(dom => {
+    const row = document.createElement('div');
+    row.className = 'mrow';
+    const good = dom.avgMastery >= 80;
+    row.innerHTML = `
+      <div class="rowhead">
+        <div class="rh-top"><span class="rh-obj mono">${dom.obj}</span><span class="rh-label">${dom.label}</span></div>
+        <div class="rh-meta"><span>Weight <b class="tnum">${dom.weight}%</b></span><span class="dot"></span><span><span class="tnum">${dom.count}</span> topics</span></div>
+        <div class="rh-avg">
+          <div class="rh-bar"><i class="${good?'good':''}" data-w="${dom.avgMastery}"></i></div>
+          <span class="rh-pct tnum">${dom.avgMastery}%</span>
+        </div>
+      </div>
+      <div class="cells" data-dom="${dom.key}"><div class="empty" hidden>No matching topics in this domain.</div></div>`;
+    matrix.appendChild(row);
+
+    const cellsEl = row.querySelector('.cells');
+    byDomain[dom.key].forEach(t => {
+      const cell = document.createElement('button');
+      cell.className = 'cell' + (t.status === 'untouched' ? ' ghost' : '');
+      cell.setAttribute('role','gridcell');
+      cell.setAttribute('aria-label', `${t.name}, mastery ${t.mastery}%`);
+      if(t.status === 'untouched'){
+        cell.innerHTML = `<span class="val">-</span>`;
+      }else{
+        cell.style.setProperty('--cellbg', cellBg(t.mastery));
+        cell.style.setProperty('--cell-ink', cellInk(t.mastery));
+        cell.innerHTML = `<span class="fill"></span><span class="val mono">${t.mastery}</span>`;
+      }
+      cell._topic = t;
+      cellsEl.appendChild(cell);
+      cellMap.push({el:cell, topic:t, dom:dom.key});
+
+      cell.addEventListener('mouseenter', e => showTip(cell, t));
+      cell.addEventListener('mousemove', moveTip);
+      cell.addEventListener('mouseleave', hideTip);
+      cell.addEventListener('focus', () => showTip(cell, t));
+      cell.addEventListener('blur', hideTip);
+      cell.addEventListener('click', () => drill(cell, t));
+    });
+  });
+
+  // ---- Tooltip ----
+  const tip = $('#tip');
+  let tipTopic = null;
+  function showTip(cell, t){
+    tipTopic = t;
+    const last = t.lastSeenDays === null ? 'Never' : (t.lastSeenDays === 1 ? 'Yesterday' : t.lastSeenDays + 'd ago');
+    const statusTxt = {weak:'Weak',developing:'Developing',strong:'Strong',untouched:'Untouched'}[t.status];
+    const mGood = t.mastery >= 80 ? ' good' : '';
+    tip.innerHTML = `
+      <div class="tip-name">${t.name}</div>
+      <div class="tip-dom">${t.obj} · ${t.domainLabel}</div>
+      <div class="tip-grid">
+        <div class="tip-cell"><div class="tk">Mastery</div><div class="tv${mGood} mono">${t.mastery}%</div></div>
+        <div class="tip-cell"><div class="tk">Accuracy</div><div class="tv mono">${t.attempts? t.accuracy+'%':'-'}</div></div>
+        <div class="tip-cell"><div class="tk">Attempts</div><div class="tv mono">${t.attempts}</div></div>
+        <div class="tip-cell"><div class="tk">Last seen</div><div class="tv mono" style="font-size:12.5px">${last}</div></div>
+      </div>
+      <span class="tip-status">${statusTxt}</span>`;
+    const r = cell.getBoundingClientRect();
+    positionTip(r);
+    tip.classList.add('show');
+  }
+  function positionTip(r){
+    let x = r.left + r.width/2 - 115;
+    let y = r.top - tip.offsetHeight - 10;
+    if(y < 8) y = r.bottom + 10;
+    x = Math.max(10, Math.min(x, window.innerWidth - 240));
+    tip.style.left = x + 'px';
+    tip.style.top = y + 'px';
+  }
+  function moveTip(e){
+    // keep anchored to cell; reposition on first move for accurate height
+    if(tipTopic){
+      const r = e.currentTarget.getBoundingClientRect();
+      positionTip(r);
+    }
+  }
+  function hideTip(){ tip.classList.remove('show'); tipTopic = null; }
+
+  // ---- Drill ----
+  const toast = $('#toast');
+  let toastT = null;
+  function drill(cell, t){
+    if(!reduceMotion){
+      cell.classList.remove('pulse'); void cell.offsetWidth; cell.classList.add('pulse');
+    }
+    showToast('Starting drill: ' + t.name);
+  }
+  function showToast(msg){
+    toast.textContent = msg;
+    toast.classList.add('show');
+    clearTimeout(toastT);
+    toastT = setTimeout(()=>toast.classList.remove('show'), 2600);
+  }
+  $('#recCta').addEventListener('click', ()=> showToast('Starting drill: ' + D.recommendation.name));
+
+  // ---- Filter / sort / search apply ----
+  function matchesFilter(t){
+    if(filter === 'all') return true;
+    if(filter === 'weak') return t.status === 'weak';
+    if(filter === 'untouched') return t.status === 'untouched';
+    if(filter === 'strong') return t.status === 'strong';
+    return true;
+  }
+  function sortVal(t){
+    if(sort === 'worst') return t.mastery; // ascending
+    if(sort === 'recent') return t.lastSeenDays === null ? Infinity : t.lastSeenDays; // ascending = most recent first
+    if(sort === 'studied') return -t.attempts; // most studied first
+    if(sort === 'az') return t.name.toLowerCase();
+    return 0;
+  }
+
+  function apply(){
+    // sort within each domain row using FLIP
+    D.domains.forEach(dom => {
+      const cont = matrix.querySelector(`.cells[data-dom="${dom.key}"]`);
+      const items = cellMap.filter(c => c.dom === dom.key);
+      // record first rects
+      const first = new Map();
+      if(!reduceMotion) items.forEach(c => first.set(c.el, c.el.getBoundingClientRect()));
+
+      const sorted = items.slice().sort((a,b)=>{
+        const va = sortVal(a.topic), vb = sortVal(b.topic);
+        if(typeof va === 'string') return va < vb ? -1 : va > vb ? 1 : 0;
+        return va - vb;
+      });
+      sorted.forEach(c => cont.appendChild(c.el));
+
+      // FLIP
+      if(!reduceMotion){
+        items.forEach(c => {
+          const last = c.el.getBoundingClientRect();
+          const f = first.get(c.el);
+          const dx = f.left - last.left, dy = f.top - last.top;
+          if(dx || dy){
+            c.el.style.transition = 'none';
+            c.el.style.transform = `translate(${dx}px,${dy}px)`;
+            requestAnimationFrame(()=>{
+              c.el.style.transition = 'transform .5s cubic-bezier(.16,1,.3,1), box-shadow .2s, filter .25s';
+              c.el.style.transform = '';
+            });
+          }
+        });
+      }
+    });
+
+    // filter dim + search match/emphasis
+    const q = query.trim().toLowerCase();
+    cellMap.forEach(c => {
+      const t = c.topic;
+      const passFilter = matchesFilter(t);
+      const searchHit = q && t.name.toLowerCase().includes(q);
+      c.el.classList.toggle('dim', !passFilter || (q && !searchHit));
+      c.el.classList.toggle('match', !!searchHit);
+      // emphasise weak cells when "weak only" filter active
+      c.el.classList.toggle('emph', filter === 'weak' && t.status === 'weak' && !q);
+    });
+
+    // per-domain empty state
+    D.domains.forEach(dom => {
+      const cont = matrix.querySelector(`.cells[data-dom="${dom.key}"]`);
+      const visible = cellMap.filter(c => c.dom === dom.key && !c.el.classList.contains('dim')).length;
+      cont.querySelector('.empty').hidden = visible > 0;
+    });
+  }
+
+  // ---- Wire toolbar ----
+  $('#search').addEventListener('input', e => { query = e.target.value; apply(); });
+  $('#filterSeg').addEventListener('click', e => {
+    const btn = e.target.closest('button'); if(!btn) return;
+    $('#filterSeg').querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed', b===btn));
+    filter = btn.dataset.f; apply();
+  });
+  $('#sortSeg').addEventListener('click', e => {
+    const btn = e.target.closest('button'); if(!btn) return;
+    $('#sortSeg').querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed', b===btn));
+    sort = btn.dataset.s; apply();
+  });
+
+  // ---- Theme toggle ----
+  $('#themeBtn').addEventListener('click', ()=>{
+    const cur = document.documentElement.getAttribute('data-theme');
+    document.documentElement.setAttribute('data-theme', cur === 'dark' ? 'light' : 'dark');
+    // refresh legend ramp + cell bgs (color-mix re-evaluates via vars, but ramp inline needs nudge)
+    ramp.querySelectorAll('i').forEach((i,idx)=>{ /* uses vars, auto-updates */ });
+  });
+
+  // ---- Count-ups ----
+  function countUp(el, target, suffix, dur){
+    if(reduceMotion){ el.textContent = target + (suffix||''); return; }
+    const start = performance.now();
+    function step(now){
+      const p = Math.min(1, (now - start) / dur);
+      const e = 1 - Math.pow(1 - p, 3);
+      el.textContent = Math.round(target * e) + (suffix||'');
+      if(p < 1) requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  }
+
+  // ---- Initial sort (no FLIP needed pre-paint), then entrance ----
+  // do an initial silent sort
+  D.domains.forEach(dom => {
+    const cont = matrix.querySelector(`.cells[data-dom="${dom.key}"]`);
+    const items = cellMap.filter(c => c.dom === dom.key);
+    items.slice().sort((a,b)=> sortVal(a.topic) - sortVal(b.topic)).forEach(c => cont.appendChild(c.el));
+  });
+
+  function start(){
+    // count-ups
+    countUp($('#avgNum'), D.summary.avgMastery, '%', 1100);
+    countUp($('#covNum'), D.summary.coverage, '%', 1100);
+    countUp($('#strongNum'), D.summary.strong, '', 900);
+    countUp($('#weakNum'), D.summary.weak, '', 900);
+    // ring
+    const ring = $('#ring');
+    const C = 263.9;
+    if(reduceMotion){ ring.style.strokeDashoffset = C * (1 - D.summary.avgMastery/100); }
+    else { setTimeout(()=>{ ring.style.transition = 'stroke-dashoffset 1.2s cubic-bezier(.16,1,.3,1)'; ring.style.strokeDashoffset = C * (1 - D.summary.avgMastery/100); }, 120); }
+
+    // domain bars
+    matrix.querySelectorAll('.rh-bar i').forEach((bar, di) => {
+      const w = bar.dataset.w + '%';
+      if(reduceMotion){ bar.style.width = w; }
+      else setTimeout(()=>{ bar.style.width = w; }, 300 + di*120);
+    });
+
+    // cells: ripple stagger by row then column
+    if(reduceMotion){
+      cellMap.forEach(c => { c.el.classList.add('in','filled'); });
+      return;
+    }
+    let rowIndex = 0;
+    D.domains.forEach((dom, di) => {
+      const items = Array.from(matrix.querySelector(`.cells[data-dom="${dom.key}"]`).querySelectorAll('.cell'));
+      items.forEach((el, ci) => {
+        const delay = 220 + di*150 + ci*32;
+        setTimeout(()=>{ el.classList.add('in'); }, delay);
+        setTimeout(()=>{ el.classList.add('filled'); el.style.setProperty('--fillscale', '1'); }, delay + 120);
+      });
+    });
+  }
+
+  requestAnimationFrame(()=> requestAnimationFrame(start));
+})();
+</script>
+</body>
+</html>

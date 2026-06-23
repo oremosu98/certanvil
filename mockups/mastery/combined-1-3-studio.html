@@ -1,0 +1,216 @@
+<!DOCTYPE html><html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Domain Mastery — Combined Studio (Bar Fill × Row Expand)</title>
+<link rel="stylesheet" href="dm.css">
+<style>
+  body { display: flex; min-height: 100vh; }
+  .stage { flex: 1; min-width: 0; }
+
+  /* ---------- REVEAL (mockup 1) ---------- */
+  .dm-row .dm-row-badge { transform-origin: center; }
+  .dm-row.dm-pre .dm-row-badge { opacity: 0; transform: scale(0.9); }
+  .dm-bar-target.dm-flash { box-shadow: 0 0 0 0 color-mix(in srgb, var(--good, #3c7a45) 70%, transparent); }
+
+  /* ---------- EXPAND (mockup 3) ---------- */
+  .dm-row { position: relative; transform-origin: center; }
+  .dm-row.dm-lifted {
+    z-index: 2; background: #fffdf8; border-radius: 12px; border-bottom-color: transparent;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.7) inset, 0 18px 40px -20px rgba(40,30,20,0.50), 0 4px 14px -8px rgba(40,30,20,0.30);
+  }
+  .dm-row.dm-dim { opacity: 0.55; }
+  .dm-bar-track { transition: height 200ms var(--ease-out); }
+  .dm-row.dm-lifted .dm-bar-fill { filter: brightness(1.06) saturate(1.04); }
+  .dm-detail {
+    grid-column: 1 / -1; overflow: hidden; height: 0; opacity: 0;
+    border-top: 1px solid var(--hair);
+    transition: height 220ms var(--ease-out), opacity 220ms var(--ease-out), margin-top 220ms var(--ease-out);
+    margin-top: 0;
+  }
+  .dm-row.dm-lifted .dm-detail { opacity: 1; margin-top: 6px; }
+  .dm-detail-inner { display: flex; flex-wrap: wrap; gap: 20px; padding-top: 12px; font-size: 11px; line-height: 1.4; color: var(--muted); }
+  .dm-detail-item { display: inline-flex; align-items: baseline; gap: 5px; }
+  .dm-detail-item strong { color: var(--ink); font-weight: 800; font-variant-numeric: tabular-nums; }
+  .dm-detail-item.met strong { color: var(--good, #3c7a45); }
+  .dm-detail-action { color: var(--dm-accent, var(--accent)); font-weight: 700; }
+
+  /* ---------- tuning panel ---------- */
+  .tuner { width: 280px; flex: 0 0 280px; background: #fffdfa; border-left: 1px solid var(--hair); padding: 22px 18px 28px; position: sticky; top: 0; align-self: flex-start; height: 100vh; overflow-y: auto; }
+  .tuner h2 { font-family: Georgia, serif; font-size: 16px; margin: 0 0 2px; }
+  .tuner .sub { font-family: ui-monospace, monospace; font-size: 10px; color: var(--muted); margin: 0 0 18px; letter-spacing: .04em; }
+  .ctrl { margin-bottom: 16px; }
+  .ctrl label { display: flex; justify-content: space-between; align-items: baseline; font-size: 12px; margin-bottom: 5px; }
+  .ctrl label .val { font-family: ui-monospace, monospace; font-size: 11px; color: var(--accent); font-weight: 700; }
+  .ctrl input[type=range] { -webkit-appearance: none; appearance: none; width: 100%; height: 4px; background: #e7e0d6; border-radius: 4px; outline: none; cursor: pointer; }
+  .ctrl input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 15px; height: 15px; border-radius: 50%; background: var(--accent); cursor: pointer; box-shadow: 0 1px 4px rgba(0,0,0,.25); transition: transform 120ms var(--ease-out); }
+  .ctrl input[type=range]::-webkit-slider-thumb:active { transform: scale(1.2); }
+  .ctrl .hint { font-size: 10px; color: var(--muted); margin-top: 3px; }
+  .toggles { display: flex; flex-direction: column; gap: 8px; margin: 4px 0 18px; }
+  .toggle { display: flex; align-items: center; justify-content: space-between; font-family: ui-monospace, monospace; font-size: 11px; padding: 8px 11px; border-radius: 8px; cursor: pointer; background: #f1ece4; border: 1px solid var(--hair); color: #5b5249; user-select: none; transition: transform 140ms var(--ease-out); }
+  .toggle:active { transform: scale(0.98); }
+  .toggle .sw { width: 30px; height: 17px; border-radius: 9px; background: #cfc6ba; position: relative; transition: background .18s ease; flex: 0 0 auto; }
+  .toggle .sw::after { content: ''; position: absolute; top: 2px; left: 2px; width: 13px; height: 13px; border-radius: 50%; background: #fff; transition: transform .18s var(--ease-out); }
+  .toggle.on { background: #faf3ea; border-color: rgba(181,105,42,.4); color: var(--accent); }
+  .toggle.on .sw { background: var(--accent); }
+  .toggle.on .sw::after { transform: translateX(13px); }
+  .divider { height: 1px; background: var(--hair); margin: 4px 0 16px; }
+  .replay-btn { width: 100%; padding: 10px; border: none; border-radius: 9px; background: var(--accent); color: #fff; font-size: 13px; font-weight: 700; cursor: pointer; font-family: ui-sans-serif, sans-serif; transition: transform 140ms var(--ease-out); }
+  .replay-btn:active { transform: scale(0.98); }
+  .note { margin-top: 14px; font-size: 11px; color: var(--muted); line-height: 1.5; }
+
+  @media (max-width: 920px) { body { flex-direction: column; } .tuner { width: auto; flex: none; height: auto; border-left: none; border-top: 1px solid var(--hair); position: static; } }
+  @media (prefers-reduced-motion: reduce) {
+    .dm-row, .dm-bar-track, .dm-detail, .dm-row-badge { transition: opacity 160ms linear !important; }
+    .dm-row.dm-lifted { box-shadow: 0 8px 24px -16px rgba(40,30,20,.5); }
+  }
+</style>
+</head><body>
+  <div class="stage">
+    <div class="mock-banner">
+      <h2>Combined Studio — Bar Fill × Row Expand</h2>
+      <p>Your two picks fused: on load the ledger builds itself — bars grow, percentages tick up, badges settle, mastered bars flash as they clear 80%. Then hovering any domain lifts it out of the ledger into a card with a detail strip. Dial it on the right; when it feels right I'll bake it into the real card.</p>
+      <span class="mock-hint">Watch the load reveal, then hover the rows · press Replay.</span>
+    </div>
+    <div class="dm-shell"><div id="mount"></div></div>
+  </div>
+
+  <aside class="tuner">
+    <h2>Reveal + Expand Studio</h2>
+    <p class="sub">DOMAIN MASTERY</p>
+
+    <div class="ctrl">
+      <label>Row stagger <span class="val" id="v-stagger"></span></label>
+      <input type="range" id="s-stagger" min="40" max="240" step="10" value="110">
+      <div class="hint">Delay between each row revealing on load.</div>
+    </div>
+    <div class="ctrl">
+      <label>Bar grow + count <span class="val" id="v-fill"></span></label>
+      <input type="range" id="s-fill" min="400" max="1400" step="50" value="800">
+      <div class="hint">How long each bar fills + its % counts up.</div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="toggles">
+      <div class="toggle on" id="t-flash"><span>Mastery flash (≥80%)</span><span class="sw"></span></div>
+      <div class="toggle on" id="t-expand"><span>Hover to expand</span><span class="sw"></span></div>
+      <div class="toggle on" id="t-dim"><span>Dim neighbours on hover</span><span class="sw"></span></div>
+    </div>
+
+    <button class="replay-btn" id="replay">↻ Replay reveal</button>
+    <p class="note">Reduced-motion safe: final state resolves with no growth or lift when the OS pref is set.</p>
+  </aside>
+
+  <script src="dm.js"></script>
+  <script>
+    const DM = window.DomainMastery.render('#mount');
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const P = { stagger: 110, fill: 800, flash: true, expand: true, dim: true };
+
+    // ---- build the detail strip for each row (mockup 3) ----
+    DM.rows.forEach(r => {
+      const gap = Math.max(0, DM.threshold - r.pct);
+      const met = r.pct >= DM.threshold;
+      const detail = document.createElement('div');
+      detail.className = 'dm-detail';
+      detail.innerHTML =
+        '<div class="dm-detail-inner">' +
+          '<span class="dm-detail-item ' + (met ? 'met' : '') + '">' +
+            (met ? '<strong>Mastered ✓</strong> at or above the 80% line' :
+                   '<strong>' + gap + '% to mastery</strong> from ' + r.pct + '%') + '</span>' +
+          '<span class="dm-detail-item"><strong>' + r.domain.weight + '%</strong> of the exam blueprint</span>' +
+          '<span class="dm-detail-item">Next: <span class="dm-detail-action">' +
+            (met ? 'Review to keep it sharp' : 'Drill weakest topics first') + '</span></span>' +
+        '</div>';
+      r.el.appendChild(detail);
+      r._detail = detail;
+    });
+
+    // ---- REVEAL (mockup 1) ----
+    let revealTimers = [];
+    function reveal() {
+      revealTimers.forEach(clearTimeout); revealTimers = [];
+      DM.rows.forEach(r => {
+        r.el.classList.add('dm-pre');
+        r.fillEl.style.transition = 'none';
+        r.fillEl.style.width = '0%';
+        r.pctEl.textContent = '0%';
+      });
+      if (reduce) {
+        DM.rows.forEach(r => { r.el.classList.remove('dm-pre'); r.fillEl.style.width = Math.min(r.pct, 100) + '%'; r.pctEl.textContent = r.pct + '%'; });
+        return;
+      }
+      // force reflow so width:0 applies before transitions
+      void DM.card.offsetWidth;
+      DM.rows.forEach((r, i) => {
+        revealTimers.push(setTimeout(() => {
+          // bar grow
+          r.fillEl.style.transition = 'width ' + P.fill + 'ms cubic-bezier(0.23,1,0.32,1)';
+          r.fillEl.style.width = Math.min(r.pct, 100) + '%';
+          // badge pop
+          r.el.classList.remove('dm-pre');
+          r.badgeEl.animate([{ opacity: 0, transform: 'scale(0.9)' }, { opacity: 1, transform: 'scale(1)' }],
+            { duration: 300, delay: 120, easing: 'cubic-bezier(0.34,1.56,0.64,1)', fill: 'backwards' });
+          // count up synced to fill
+          const target = r.pct, t0 = performance.now();
+          const tick = (now) => {
+            const t = Math.min(1, (now - t0) / P.fill);
+            r.pctEl.textContent = Math.round(target * (1 - Math.pow(1 - t, 3))) + '%';
+            if (t < 1) requestAnimationFrame(tick); else r.pctEl.textContent = target + '%';
+          };
+          requestAnimationFrame(tick);
+          // mastery flash as the fill crosses 80%
+          if (P.flash && r.pct >= DM.threshold && r.targetEl) {
+            const crossMs = (DM.threshold / r.pct) * P.fill;
+            revealTimers.push(setTimeout(() => {
+              r.targetEl.animate(
+                [{ boxShadow: '0 0 0 0 ' + cssGood(0.8) }, { boxShadow: '0 0 0 7px ' + cssGood(0) }],
+                { duration: 560, easing: 'cubic-bezier(0.23,1,0.32,1)' });
+            }, crossMs));
+          }
+        }, i * P.stagger));
+      });
+    }
+    function cssGood(a) { return 'rgba(60,122,69,' + a + ')'; }
+
+    // ---- EXPAND (mockup 3) ----
+    const fine = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+    DM.rows.forEach(r => {
+      const enter = () => {
+        if (!P.expand) return;
+        r.el.classList.add('dm-lifted');
+        r.trackEl.style.height = '16px';
+        if (P.dim) DM.rows.forEach(o => { if (o !== r) o.el.classList.add('dm-dim'); });
+        if (!reduce && fine) r.el.animate([{ transform: 'translateY(0) scale(1)' }, { transform: 'translateY(-2px) scale(1.012)' }],
+          { duration: 240, easing: 'cubic-bezier(0.34,1.56,0.64,1)', fill: 'forwards' });
+        const h = r._detail.querySelector('.dm-detail-inner').offsetHeight + 12;
+        r._detail.style.height = h + 'px';
+      };
+      const leave = () => {
+        r.el.classList.remove('dm-lifted');
+        r.trackEl.style.height = '';
+        DM.rows.forEach(o => o.el.classList.remove('dm-dim'));
+        if (!reduce && fine) r.el.animate([{ transform: 'translateY(-2px) scale(1.012)' }, { transform: 'translateY(0) scale(1)' }],
+          { duration: 180, easing: 'cubic-bezier(0.23,1,0.32,1)', fill: 'forwards' });
+        r._detail.style.height = '0px';
+      };
+      r.el.addEventListener('pointerenter', enter);
+      r.el.addEventListener('pointerleave', leave);
+      r.el.setAttribute('tabindex', '0');
+      r.el.addEventListener('focus', enter);
+      r.el.addEventListener('blur', leave);
+    });
+
+    // ---- panel ----
+    const fmt = { stagger: v => v + 'ms', fill: v => v + 'ms' };
+    [['stagger', 's-stagger', 'v-stagger'], ['fill', 's-fill', 'v-fill']].forEach(([k, sid, vid]) => {
+      const s = document.getElementById(sid);
+      document.getElementById(vid).textContent = fmt[k](P[k]);
+      s.addEventListener('input', e => { P[k] = parseFloat(e.target.value); document.getElementById(vid).textContent = fmt[k](P[k]); });
+    });
+    function bind(id, key) { const el = document.getElementById(id); el.addEventListener('click', () => { P[key] = el.classList.toggle('on'); }); }
+    bind('t-flash', 'flash'); bind('t-expand', 'expand'); bind('t-dim', 'dim');
+    document.getElementById('replay').addEventListener('click', reveal);
+
+    setTimeout(reveal, 350);
+  </script>
+</body></html>

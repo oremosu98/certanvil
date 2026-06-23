@@ -1,0 +1,7 @@
+{"ts":"2026-06-04T20:00:02.993Z","hook":"subagent-context","action":"skip","reason":"no-active-tsv"}
+{"ts":"2026-06-04T20:00:19.507Z","hook":"subagent-context","action":"skip","reason":"no-active-tsv"}
+{"ts":"2026-06-04T20:00:35.550Z","hook":"subagent-context","action":"skip","reason":"no-active-tsv"}
+{"ts":"2026-06-04T20:00:53.803Z","hook":"subagent-context","action":"skip","reason":"no-active-tsv"}
+{"ts":"2026-06-04T20:01:09.408Z","hook":"subagent-context","action":"skip","reason":"no-active-tsv"}
+{"ts":"2026-06-04T20:03:42.456Z","hook":"scout-block","action":"block","tool":"Bash","path":"/tmp/mockup-srv.log","matched":"/tmp/mockup-srv.log"}
+{"ts":"2026-06-04T20:05:21.730Z","hook":"scout-block","action":"block","tool":"Bash","path":"/tmp/srv5.log","matched":"/tmp/srv5.log"}

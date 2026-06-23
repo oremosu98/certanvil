@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Knowledge Constellation — 5 Motion Mockups</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="constellation.css">
+<style>
+  .hub { max-width: 760px; margin: 0 auto; padding: 56px 24px; }
+  .hub h1 {
+    font-family: "Fraunces", Georgia, serif; font-weight: 600;
+    font-size: 30px; letter-spacing: 0.01em; margin: 0 0 6px;
+  }
+  .hub h1 .spark { color: var(--ember); }
+  .hub .lede { color: var(--muted); font-size: 15px; margin: 0 0 32px; line-height: 1.5; }
+  .cards { display: grid; gap: 14px; }
+  a.card {
+    display: block; text-decoration: none; color: inherit;
+    background: var(--panel); border: 1px solid var(--hair);
+    border-radius: 14px; padding: 18px 20px;
+    transition: transform 180ms var(--ease-out), box-shadow 180ms var(--ease-out), border-color 180ms var(--ease-out);
+  }
+  a.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 18px 40px -22px rgba(40,30,20,0.5);
+    border-color: rgba(232,148,58,0.4);
+  }
+  a.card:active { transform: translateY(0) scale(0.995); }
+  .card .num {
+    font-family: ui-monospace, monospace; font-size: 12px; color: var(--ember);
+    letter-spacing: 0.1em; font-weight: 600;
+  }
+  .card h3 { font-family: "Fraunces", Georgia, serif; font-size: 18px; margin: 4px 0 6px; }
+  .card p { margin: 0; font-size: 13px; color: var(--muted); line-height: 1.5; }
+  .card .tag {
+    display: inline-block; margin-top: 10px; font-family: ui-monospace, monospace;
+    font-size: 10px; letter-spacing: 0.06em; color: #6b6259;
+    background: rgba(60,50,40,0.06); padding: 3px 8px; border-radius: 5px;
+  }
+  .foot { margin-top: 30px; font-size: 12px; color: var(--muted); line-height: 1.6; }
+</style>
+</head>
+<body>
+  <div class="hub">
+    <h1><span class="spark">✨</span> Knowledge Constellation</h1>
+    <p class="lede">Five motion directions, same node field. Open each, live with it for a few seconds, then tell me what to keep, kill, or combine. All built on Emil Kowalski's animation framework — GPU-only transforms, custom easing, reduced-motion safe.</p>
+    <div class="cards">
+      <a class="card" href="mockup-1-living.html">
+        <span class="num">01</span>
+        <h3>Living Constellation</h3>
+        <p>Ambient idle drift — nodes never freeze. Tiny individual orbits + breathing halos. Fixes the "it's dead" feeling on its own.</p>
+        <span class="tag">always-on · whisper-quiet · low risk</span>
+      </a>
+      <a class="card" href="mockup-2-parallax.html">
+        <span class="num">02</span>
+        <h3>Parallax Depth</h3>
+        <p>Mastery becomes the z-axis. Move the pointer; bright nodes float closer, faint ones sink back. Spring-driven momentum.</p>
+        <span class="tag">pointer-driven · faux-3D · high "whoa"</span>
+      </a>
+      <a class="card" href="mockup-3-lines.html">
+        <span class="num">03</span>
+        <h3>Constellation Lines</h3>
+        <p>Hover traces glowing tethers to sibling topics, dims the rest. Turns a scatter into a map of how knowledge connects.</p>
+        <span class="tag">on focus · highest meaning</span>
+      </a>
+      <a class="card" href="mockup-4-regroup.html">
+        <span class="num">04</span>
+        <h3>Magnetic Regroup</h3>
+        <p>Filter buttons make nodes physically fly into new arrangements — matches cluster, rest scatter. FLIP-style morph.</p>
+        <span class="tag">interactive · adds filtering</span>
+      </a>
+      <a class="card" href="mockup-5-supernova.html">
+        <span class="num">05</span>
+        <h3>Supernova Moment</h3>
+        <p>A topic levels up → ring burst + ember sparks + brighter settle. The rare, earned celebration. Retention hook.</p>
+        <span class="tag">rare reward · highest emotional ROI</span>
+      </a>
+    </div>
+    <p class="foot">Recommendation: <strong>01 + 03</strong> together gives the biggest perceived jump for the least risk; <strong>05</strong> as the retention hook. <strong>02</strong> and <strong>04</strong> are the showpiece swings.</p>
+  </div>
+</body>
+</html>

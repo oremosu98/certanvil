@@ -1,0 +1,242 @@
+<!DOCTYPE html><html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Study Rhythm — 5 · Stat-Linked Highlight</title>
+<link rel="stylesheet" href="heatmap.css">
+<style>
+  /* ---- stat hover/accent styling ---------------------------------- */
+  /* each .hm-stat is the hover target; widen it a touch so the whole
+     number+label reads as one button-like region */
+  .hm-stat {
+    cursor: pointer;
+    border-radius: 8px;
+    padding: 4px 6px;
+    margin: -4px -6px;
+    transition: background 200ms var(--ease-out);
+    -webkit-tap-highlight-color: transparent;
+    outline: none;
+  }
+  .hm-stat:hover { background: rgba(var(--accent-rgb), 0.06); }
+  .hm-stat:focus-visible { box-shadow: 0 0 0 2px rgba(var(--accent-rgb), 0.45); }
+
+  /* the bronze accent the hovered/active stat gets */
+  .hm-stat .hms-val {
+    transition: color 200ms var(--ease-out);
+    position: relative;
+  }
+  /* underline drawn as a pseudo-element so it can animate width */
+  .hm-stat .hms-val::after {
+    content: '';
+    position: absolute;
+    left: 0; right: 0; bottom: -4px;
+    height: 2px; border-radius: 2px;
+    background: var(--accent);
+    transform: scaleX(0);
+    transform-origin: right center;
+    transition: transform 180ms var(--ease-out);
+  }
+  .hm-stat.is-active .hms-val { color: var(--accent); }
+  .hm-stat.is-active .hms-val::after {
+    transform: scaleX(1);
+    transform-origin: left center;
+  }
+
+  /* SVG cell dim/highlight states. Cells transition opacity + transform.
+     Members lift; non-members dim. Enter is ~200ms, exit a touch faster. */
+  .hm-cell {
+    /* override base .hm-cell (transform .1s) so opacity + transform both
+       animate at our timings; transform-box set inline per-cell.
+       Default (resting) = exit transition, slightly faster than enter (160ms). */
+    transition: opacity 160ms var(--ease-out), transform 160ms var(--ease-out), filter 160ms var(--ease-out);
+  }
+  /* enter timing (200ms) applies while the grid is dimmed */
+  .hm-grid-dimmed .hm-cell {
+    transition: opacity 200ms var(--ease-out), transform 200ms var(--ease-out), filter 200ms var(--ease-out);
+    opacity: 0.25;
+  }
+  .hm-grid-dimmed .hm-cell.hm-member { opacity: 1; }
+  .hm-grid-dimmed .hm-cell.hm-member-lift {
+    transform: scale(1.2);
+    filter: drop-shadow(0 0 4px var(--today-ring));
+  }
+
+  /* the window bracket rect */
+  .hm-bracket {
+    fill: none;
+    stroke: var(--accent);
+    stroke-width: 1.4;
+    rx: 5; ry: 5;
+    opacity: 0;
+    transition: opacity 200ms var(--ease-out), transform 240ms var(--ease-out);
+    transform-box: fill-box;
+    transform-origin: center;
+    transform: scale(0.985);
+    pointer-events: none;
+  }
+  .hm-bracket.is-shown {
+    opacity: 0.55;
+    transform: scale(1);
+  }
+
+  /* reduced motion: keep dim + outline + bracket, drop the scale lift */
+  @media (prefers-reduced-motion: reduce) {
+    .hm-grid-dimmed .hm-cell.hm-member-lift {
+      transform: none;
+      filter: drop-shadow(0 0 4px var(--today-ring));
+    }
+    .hm-bracket { transition: opacity 200ms var(--ease-out); transform: none; }
+    .hm-bracket.is-shown { transform: none; }
+  }
+</style>
+</head><body>
+  <div class="mock-banner">
+    <h2>5 · Stat-Linked Highlight</h2>
+    <p>The numbers and the grid are one. Hover a stat and the grid answers: “best streak” lights your 4-day run, “of last 30” frames the last 30 days and dims the rest. The abstract count becomes a place you can see.</p>
+    <span class="mock-hint">Hover (or tap) the four stat numbers above the grid.</span>
+  </div>
+  <div class="hm-shell"><div id="mount"></div></div>
+  <script src="heatmap.js"></script>
+  <script>
+    const HM = window.Heatmap.render('#mount');
+    /* ANIMATION LAYER */
+    (function () {
+      const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const statKeys = ['current', 'best', 'last30', 'last90'];
+
+      // ---- 1. COUNT-UP on load ------------------------------------
+      function countUp(node, target, durationMs, delayMs) {
+        if (reduce) { node.textContent = target; return; }
+        setTimeout(function () {
+          const start = performance.now();
+          function frame(now) {
+            const t = Math.min(1, (now - start) / durationMs);
+            const eased = 1 - Math.pow(1 - t, 3);   // ease-out cubic
+            node.textContent = Math.round(eased * target);
+            if (t < 1) requestAnimationFrame(frame);
+            else node.textContent = target;
+          }
+          requestAnimationFrame(frame);
+        }, delayMs);
+      }
+      statKeys.forEach(function (k, i) {
+        countUp(HM.statEls[k], HM.stats[k], 700, i * 80);
+      });
+
+      // ---- 2. cell set per stat -----------------------------------
+      const MEMBERS = {
+        current: HM.currentStreakCells,
+        best:    HM.bestStreakCells,
+        last30:  HM.cells.filter(function (c) { return c.daysAgo < 30; }),
+        last90:  HM.cells.filter(function (c) { return c.daysAgo < 90; }),
+      };
+      const WINDOW_STATS = { last30: true, last90: true };
+
+      // prime transform-box on every cell so the lift scales about center
+      HM.cells.forEach(function (c) {
+        c.rect.style.transformBox = 'fill-box';
+        c.rect.style.transformOrigin = 'center';
+      });
+
+      // bracket rect lives in the SVG, reused across hovers
+      let bracket = null;
+      function ensureBracket() {
+        if (bracket) return bracket;
+        bracket = HM.el('rect', { class: 'hm-bracket', x: 0, y: 0, width: 0, height: 0 });
+        HM.svg.appendChild(bracket);   // append last => on top of cells
+        return bracket;
+      }
+
+      const G = HM.geom;
+      function frameWindow(cells) {
+        // bounding box over member cells, padded by ~3px so it reads as a frame
+        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+        cells.forEach(function (c) {
+          if (c.x < minX) minX = c.x;
+          if (c.y < minY) minY = c.y;
+          if (c.x + G.CELL > maxX) maxX = c.x + G.CELL;
+          if (c.y + G.CELL > maxY) maxY = c.y + G.CELL;
+        });
+        if (minX === Infinity) return;
+        const pad = 3;
+        const b = ensureBracket();
+        b.setAttribute('x', minX - pad);
+        b.setAttribute('y', minY - pad);
+        b.setAttribute('width', (maxX - minX) + pad * 2);
+        b.setAttribute('height', (maxY - minY) + pad * 2);
+        // next frame so the opacity/scale transition runs from the resting state
+        requestAnimationFrame(function () {
+          requestAnimationFrame(function () { b.classList.add('is-shown'); });
+        });
+      }
+
+      // ---- 3. highlight a stat ------------------------------------
+      let activeKey = null;
+
+      function highlight(key) {
+        if (activeKey === key) return;
+        clear();
+        activeKey = key;
+        const members = MEMBERS[key] || [];
+        const memberSet = new Set(members.map(function (c) { return c.rect; }));
+
+        HM.svg.classList.add('hm-grid-dimmed');
+        members.forEach(function (c) {
+          c.rect.classList.add('hm-member');
+          if (c.active) c.rect.classList.add('hm-member-lift');  // tier>0 gets the lift/glow
+        });
+
+        // accent the stat itself
+        const wrap = HM.statEls[key].closest('.hm-stat');
+        if (wrap) wrap.classList.add('is-active');
+
+        // window stats also draw the frame
+        if (WINDOW_STATS[key]) frameWindow(members);
+      }
+
+      function clear() {
+        if (activeKey === null) return;
+        HM.svg.classList.remove('hm-grid-dimmed');
+        HM.cells.forEach(function (c) {
+          c.rect.classList.remove('hm-member', 'hm-member-lift');
+        });
+        document.querySelectorAll('.hm-stat.is-active').forEach(function (n) {
+          n.classList.remove('is-active');
+        });
+        if (bracket) bracket.classList.remove('is-shown');
+        activeKey = null;
+      }
+
+      // ---- wire up each .hm-stat wrapper --------------------------
+      statKeys.forEach(function (key) {
+        const node = HM.statEls[key];
+        const wrap = node.closest('.hm-stat');
+        if (!wrap) return;
+        wrap.setAttribute('tabindex', '0');
+
+        // hover (desktop)
+        wrap.addEventListener('pointerenter', function (e) {
+          if (e.pointerType === 'touch') return;   // touch handled by click toggle
+          highlight(key);
+        });
+        wrap.addEventListener('pointerleave', function (e) {
+          if (e.pointerType === 'touch') return;
+          clear();
+        });
+
+        // keyboard focus mirrors hover
+        wrap.addEventListener('focus', function () { highlight(key); });
+        wrap.addEventListener('blur', function () { clear(); });
+
+        // 6. touch / click toggle
+        wrap.addEventListener('click', function () {
+          if (activeKey === key) clear();
+          else highlight(key);
+        });
+      });
+
+      // tapping / clicking elsewhere clears
+      document.addEventListener('pointerdown', function (e) {
+        if (!e.target.closest('.hm-stat')) clear();
+      });
+    })();
+  </script>
+</body></html>

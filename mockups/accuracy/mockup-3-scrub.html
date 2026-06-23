@@ -1,0 +1,232 @@
+<!DOCTYPE html><html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Accuracy Chart — 3 · Scrub Marker</title>
+<link rel="stylesheet" href="accchart.css">
+<style>
+  /* ---- scrub overlay helpers (base styles live in accchart.css) ---- */
+  .acc-wrap { position: relative; }     /* anchor the HTML tooltip over the card */
+
+  .scrub-tip {
+    position: absolute;
+    top: 0; left: 0;
+    transform: translate(-50%, -120%) scale(0.92);
+    transform-origin: center bottom;
+    pointer-events: none;
+    opacity: 0;
+    z-index: 5;
+    background: #2a2622;
+    color: #fff;
+    border-radius: 9px;
+    padding: 7px 11px 8px;
+    box-shadow: 0 10px 30px -12px rgba(20,14,8,0.7), 0 0 0 1px rgba(255,255,255,0.06) inset;
+    white-space: nowrap;
+    line-height: 1;
+    transition: opacity 140ms var(--ease-out), transform 140ms var(--ease-out);
+  }
+  .scrub-tip.is-on {
+    opacity: 1;
+    transform: translate(-50%, -120%) scale(1);
+  }
+  .scrub-tip-acc {
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: 20px; font-weight: 800; letter-spacing: -0.01em;
+    color: var(--accent-light);
+    transition: color 120ms ease;
+  }
+  .scrub-tip-acc .pct { font-size: 12px; font-weight: 700; opacity: 0.7; margin-left: 1px; }
+  .scrub-tip-label {
+    margin-top: 5px;
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: 10px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase;
+    color: rgba(255,255,255,0.55);
+  }
+  /* little pointer notch under the pill */
+  .scrub-tip::after {
+    content: '';
+    position: absolute;
+    left: 50%; bottom: -5px;
+    width: 10px; height: 10px;
+    background: #2a2622;
+    transform: translateX(-50%) rotate(45deg);
+    border-radius: 2px;
+  }
+
+  /* color cues driven by JS via these classes */
+  .scrub-tip.below .scrub-tip-acc { color: #ff9a87; }
+  .scrub-tip.above .scrub-tip-acc { color: #9bd28e; }
+
+  /* overlay svg elements */
+  .scrub-guide { stroke: var(--accent); stroke-width: 1; stroke-dasharray: 3 4; opacity: 0; }
+  .scrub-marker-halo { fill: rgba(var(--accent-rgb), 0.18); opacity: 0; }
+  .scrub-marker { stroke: #fff; stroke-width: 2.5; opacity: 0; }
+  .scrub-marker-core { fill: #fff; opacity: 0; }
+</style>
+</head><body>
+  <div class="mock-banner">
+    <h2>3 · Scrub Marker</h2>
+    <p>Move across the chart and a marker rides the line — a vertical guide, a dot snapped to the curve, and a floating read-out of the exact accuracy and date, the number counting as you scrub. The static line becomes something you can explore.</p>
+    <span class="mock-hint">Hover or drag across the chart.</span>
+  </div>
+  <div class="acc-shell"><div id="mount"></div></div>
+  <script src="accchart.js"></script>
+  <script>
+    const A = window.AccChart.render('#mount');
+    /* ANIMATION LAYER */
+
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    const { W, PAD, passAcc } = A.geom;
+    const wrap   = A.card.querySelector('.acc-wrap');
+    const series = A.series.month;
+    const pts    = series.pts;
+    const x0     = pts[0].x;
+    const x1     = pts[pts.length - 1].x;
+
+    // ---- 1. build the SVG scrub overlay (scales with the chart) ----
+    const overlay = A.el('g', { class: 'scrub-overlay' });
+
+    const guide = A.el('line', {
+      class: 'scrub-guide',
+      x1: x0, y1: PAD, x2: x0, y2: A.geom.H - PAD,
+    });
+    const halo   = A.el('circle', { class: 'scrub-marker-halo', cx: x0, cy: pts[0].y, r: 11 });
+    const marker = A.el('circle', { class: 'scrub-marker',      cx: x0, cy: pts[0].y, r: 6 });
+    const core   = A.el('circle', { class: 'scrub-marker-core', cx: x0, cy: pts[0].y, r: 2.4 });
+
+    overlay.appendChild(guide);
+    overlay.appendChild(halo);
+    overlay.appendChild(marker);
+    overlay.appendChild(core);
+    A.svg.appendChild(overlay);   // appended last → rides on top of line + dots
+
+    // ---- 2. floating HTML tooltip over the card ----
+    const tip = document.createElement('div');
+    tip.className = 'scrub-tip';
+    tip.innerHTML =
+      '<div class="scrub-tip-acc"><span class="num">68</span><span class="pct">%</span></div>' +
+      '<div class="scrub-tip-label">—</div>';
+    wrap.appendChild(tip);
+    const tipNum   = tip.querySelector('.num');
+    const tipLabel = tip.querySelector('.scrub-tip-label');
+
+    // ---- geometry: interpolate y + acc + nearest label at a given svg x ----
+    function sampleAt(x) {
+      // clamp into data domain
+      if (x <= pts[0].x)  { const p = pts[0];               return { y: p.y, acc: p.acc, label: p.label }; }
+      const last = pts[pts.length - 1];
+      if (x >= last.x)    return { y: last.y, acc: last.acc, label: last.label };
+      for (let i = 0; i < pts.length - 1; i++) {
+        const a = pts[i], b = pts[i + 1];
+        if (x >= a.x && x <= b.x) {
+          const t = (x - a.x) / (b.x - a.x);
+          const y   = a.y   + (b.y   - a.y)   * t;
+          const acc = a.acc + (b.acc - a.acc) * t;
+          // label: take the nearer point's label (skip blanks → fall to whichever has one)
+          let label = (t < 0.5 ? a.label : b.label);
+          if (!label) label = a.label || b.label;
+          return { y, acc, label };
+        }
+      }
+      return { y: last.y, acc: last.acc, label: last.label };
+    }
+
+    // ---- 3 + 4. pointer → target svg x, spring-followed currentX ----
+    let targetX  = x0;
+    let currentX = x0;
+    let active   = false;
+    let rafId    = null;
+
+    function clientToSvgX(clientX) {
+      const r = A.svg.getBoundingClientRect();
+      const sx = (clientX - r.left) / r.width * W;   // map screen px → viewBox units
+      return Math.max(x0, Math.min(x1, sx));
+    }
+
+    function applyColorCue(acc) {
+      const below = acc < passAcc;
+      tip.classList.toggle('below', below);
+      tip.classList.toggle('above', !below);
+      const col = below ? 'var(--danger)' : 'var(--good)';
+      marker.setAttribute('stroke', '#fff');
+      marker.setAttribute('fill', col);
+      halo.setAttribute('fill', below
+        ? 'rgba(var(--danger-rgb), 0.20)'
+        : 'rgba(90, 143, 78, 0.20)');
+    }
+
+    function paint(x) {
+      const s = sampleAt(x);
+
+      guide.setAttribute('x1', x.toFixed(2));
+      guide.setAttribute('x2', x.toFixed(2));
+
+      marker.setAttribute('cx', x.toFixed(2));
+      marker.setAttribute('cy', s.y.toFixed(2));
+      core.setAttribute('cx', x.toFixed(2));
+      core.setAttribute('cy', s.y.toFixed(2));
+      halo.setAttribute('cx', x.toFixed(2));
+      halo.setAttribute('cy', s.y.toFixed(2));
+
+      // read-out — rounds, so it "counts" as the spring eases
+      tipNum.textContent = Math.round(s.acc);
+      tipLabel.textContent = s.label || '·';
+      applyColorCue(s.acc);
+
+      // position the HTML tooltip in card-px from the svg coords
+      const r = A.svg.getBoundingClientRect();
+      const wr = wrap.getBoundingClientRect();
+      const px = (x  / W) * r.width  + (r.left - wr.left);
+      const py = (s.y / A.geom.H) * r.height + (r.top  - wr.top);
+      tip.style.left = px.toFixed(1) + 'px';
+      tip.style.top  = py.toFixed(1) + 'px';
+    }
+
+    // spring follow loop (skipped under reduced-motion)
+    function loop() {
+      currentX += (targetX - currentX) * 0.18;
+      if (Math.abs(targetX - currentX) < 0.05) currentX = targetX;
+      paint(currentX);
+      if (active || Math.abs(targetX - currentX) >= 0.05) {
+        rafId = requestAnimationFrame(loop);
+      } else {
+        rafId = null;
+      }
+    }
+
+    function showOverlay() {
+      [guide, halo, marker, core].forEach(e => e.style.opacity = '1');
+      tip.classList.add('is-on');
+    }
+    function hideOverlay() {
+      [guide, halo, marker, core].forEach(e => e.style.opacity = '0');
+      tip.classList.remove('is-on');
+    }
+
+    // ---- 5/6/8. pointer wiring (covers mouse + touch-drag) ----
+    function onEnter(e) {
+      active = true;
+      targetX = clientToSvgX(e.clientX);
+      if (reduce) { currentX = targetX; }   // 9. snap, no spring
+      showOverlay();
+      if (reduce) { paint(currentX); }
+      else if (!rafId) { rafId = requestAnimationFrame(loop); }
+    }
+    function onMove(e) {
+      if (!active) { onEnter(e); return; }
+      targetX = clientToSvgX(e.clientX);
+      if (reduce) { currentX = targetX; paint(currentX); }
+      else if (!rafId) { rafId = requestAnimationFrame(loop); }
+    }
+    function onLeave() {
+      active = false;
+      hideOverlay();
+    }
+
+    // listen on the wrap so the whole chart area is scrubbable
+    wrap.addEventListener('pointerenter', onEnter);
+    wrap.addEventListener('pointermove',  onMove);
+    wrap.addEventListener('pointerleave', onLeave);
+    // touch: keep the page from scrolling while dragging the chart
+    wrap.style.touchAction = 'none';
+  </script>
+</body></html>

@@ -112,6 +112,7 @@ npx playwright test              # E2E (tests/e2e/app.spec.js)
 
 | Version | Features Added |
 |---|---|
+| v7.55.0 | Sim Lab: free daily PBQ practice taster (Net+) |
 | v7.54.1 | Drills card: free-tier daily Gauntlet state pill (1 free today / done today) |
 | v7.54.0 | Free tier: 1 Reword Gauntlet run/day, separate from the 15-q quota |
 | v7.53.2 | Tech debt: carve out false-positive dead _renderAna* funcs + re-baseline stale file-size thresholds |

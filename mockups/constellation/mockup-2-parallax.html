@@ -1,0 +1,107 @@
+<!DOCTYPE html><html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mockup 2 — Parallax Depth</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="constellation.css">
+<style>
+  /* Parallax-only additions — base styling lives in constellation.css */
+  .const-map { perspective: 1000px; }
+  .const-map svg { transform-style: preserve-3d; will-change: transform; }
+  .const-map .const-node { will-change: transform; }
+  .const-map .const-node .core { transition: filter .4s ease; }
+</style>
+</head><body>
+  <div class="mock-banner">
+    <h2>2 · Parallax Depth — mastery becomes the z-axis</h2>
+    <p>Move your pointer across the field. It tilts in faux-3D: mastered (bright) nodes sit closer and parallax more; faint nodes sit deeper and barely move. Mastery stops being just brightness — it becomes physical depth you can feel.</p>
+    <span class="mock-hint">Move your mouse across the constellation.</span>
+  </div>
+  <div class="const-shell">
+    <div class="const-head">
+      <h1 class="const-title"><span class="spark">✨</span> Knowledge <em>Constellation</em></h1>
+      <span class="const-sub">size = practice · color = domain · brightness = mastery</span>
+    </div>
+    <div id="mount"></div>
+    <div class="const-legend">
+      <span><i class="dot"></i>≥80% mastered</span>
+      <span><i class="dot t2"></i>≥70% proficient</span>
+      <span><i class="dot t3"></i>≥55% developing</span>
+      <span><i class="dot t4"></i>&lt;55% / not studied</span>
+    </div>
+  </div>
+  <script src="constellation.js"></script>
+  <script>
+    const C = window.Constellation.render('#mount');
+
+    (function parallaxDepth(){
+      const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const fine = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+      if (reduce || !fine) return;
+
+      const map = C.map, svg = C.svg, nodes = C.nodes;
+
+      // 1. Depth from mastery (0 = deep/far, 1 = close). Unstudied nodes sit deepest.
+      nodes.forEach(n => {
+        const m = (n.mastery || 0);
+        const depth = m < 1 ? 0.05 : Math.max(0.05, m / 100);
+        n._depth = depth;
+        n.gEl.style.transformBox = 'fill-box';
+        n.gEl.style.willChange = 'transform';
+        // 6. Closer (brighter) cores get a soft drop-shadow so depth reads visually.
+        if (depth > 0.55 && n.coreEl) {
+          const blur = (6 + depth * 10).toFixed(1);
+          const a = (0.18 + depth * 0.30).toFixed(2);
+          n.coreEl.style.filter = 'drop-shadow(0 ' + (depth * 6).toFixed(1) + 'px ' + blur + 'px rgba(0,0,0,' + a + '))';
+        }
+      });
+
+      // Spring state: target updated on pointermove, current lerped each frame.
+      let tx = 0, ty = 0;   // target  (-1..1)
+      let cx = 0, cy = 0;   // current (sprung)
+      let raf = null, settling = false;
+
+      function frame(){
+        cx += (tx - cx) * 0.12;
+        cy += (ty - cy) * 0.12;
+
+        // 3. Subtle faux-3D tilt of the whole field (capped small).
+        svg.style.transform = 'rotateY(' + (cx * 5).toFixed(3) + 'deg) rotateX(' + (-cy * 5).toFixed(3) + 'deg)';
+
+        // 4. Per-node parallax — deeper-z (mastered) nodes shift more, opposite the tilt.
+        for (let i = 0; i < nodes.length; i++){
+          const n = nodes[i], d = n._depth;
+          n.gEl.style.transform =
+            'translate(' + (-cx * d * 26).toFixed(2) + 'px,' + (-cy * d * 26).toFixed(2) + 'px)';
+        }
+
+        // Keep looping until the spring has effectively settled at rest.
+        if (Math.abs(tx - cx) > 0.0005 || Math.abs(ty - cy) > 0.0005 ||
+            Math.abs(tx) > 0.0005 || Math.abs(ty) > 0.0005) {
+          raf = requestAnimationFrame(frame);
+        } else {
+          raf = null; settling = false;
+        }
+      }
+
+      function ensureLoop(){
+        if (raf == null) raf = requestAnimationFrame(frame);
+      }
+
+      map.addEventListener('pointermove', function(e){
+        const rect = map.getBoundingClientRect();
+        const px = (e.clientX - (rect.left + rect.width / 2)) / (rect.width / 2);
+        const py = (e.clientY - (rect.top + rect.height / 2)) / (rect.height / 2);
+        tx = Math.max(-1, Math.min(1, px));
+        ty = Math.max(-1, Math.min(1, py));
+        ensureLoop();
+      });
+
+      // 5. Ease back to rest on leave.
+      map.addEventListener('pointerleave', function(){
+        tx = 0; ty = 0;
+        ensureLoop();
+      });
+    })();
+  </script>
+</body></html>

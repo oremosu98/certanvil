@@ -1,0 +1,154 @@
+<!DOCTYPE html><html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Milestones — 2 · Trophy Shine</title>
+<link rel="stylesheet" href="ms.css">
+<style>
+  /* ---- Replay button ---- */
+  #replay {
+    background:#b5692a; color:#fff; border:none; padding:8px 14px;
+    border-radius:99px; font-family:ui-monospace,monospace; font-size:12px;
+    cursor:pointer; transition:transform 140ms ease-out, background 140ms ease-out;
+  }
+  #replay:active { transform:scale(0.97); }
+
+  /* ---- Recent tile: clip the gleam, host overlays ---- */
+  .shine-tile { position:relative; overflow:hidden; }
+
+  /* ---- Gold tint wash (overlay element, fades in then out) ---- */
+  .shine-tint {
+    position:absolute; inset:0; pointer-events:none; z-index:1;
+    background:color-mix(in srgb, #e8a23a 26%, transparent);
+    opacity:0; border-radius:inherit;
+  }
+  .shine-go .shine-tint { animation:shine-tint-wash 920ms var(--ease-out) both; }
+  @keyframes shine-tint-wash {
+    0%   { opacity:0; }
+    24%  { opacity:1; }
+    100% { opacity:0; }
+  }
+
+  /* ---- Gleam: skewed highlight sweeping across ---- */
+  .shine-gleam {
+    position:absolute; top:0; bottom:0; left:0; width:100%;
+    pointer-events:none; z-index:3;
+    transform:translateX(-120%);
+    background:linear-gradient(105deg, transparent 30%, rgba(255,255,255,.55) 50%, transparent 70%);
+  }
+  .shine-go .shine-gleam { animation:shine-sweep 650ms ease-out both; }
+  @keyframes shine-sweep {
+    from { transform:translateX(-120%); }
+    to   { transform:translateX(120%); }
+  }
+
+  /* ---- Settle: scale overshoot on the tile content ---- */
+  .shine-go .shine-inner { animation:shine-settle 420ms cubic-bezier(0.34,1.56,0.64,1) both; }
+  @keyframes shine-settle {
+    0%   { transform:scale(0.96); }
+    55%  { transform:scale(1.02); }
+    100% { transform:scale(1); }
+  }
+  .shine-inner { position:relative; z-index:2; transform-origin:left center; }
+
+  /* ---- Sparkle embers ---- */
+  .shine-spark {
+    position:absolute; z-index:4; width:4px; height:4px; border-radius:50%;
+    background:#e8a23a; pointer-events:none; opacity:0;
+    box-shadow:0 0 5px 1px rgba(232,162,58,.7);
+  }
+  .shine-go .shine-spark { animation:shine-pop 500ms ease-out both; }
+  @keyframes shine-pop {
+    0%   { opacity:0; transform:translate(0,0) scale(0.4); }
+    30%  { opacity:1; transform:translate(var(--dx), var(--dy)) scale(1); }
+    100% { opacity:0; transform:translate(calc(var(--dx)*1.7), calc(var(--dy)*1.7)) scale(0.3); }
+  }
+
+  /* ---- Tick pop as the gleam passes ---- */
+  .shine-go.shine-tick .ms-tile-label::after { animation:shine-tick-pop 360ms cubic-bezier(0.34,1.56,0.64,1) both; }
+  @keyframes shine-tick-pop {
+    0%   { transform:scale(1); }
+    50%  { transform:scale(1.7); }
+    100% { transform:scale(1); }
+  }
+
+  /* ---- Reduced motion: static earned warmth, no motion ---- */
+  @media (prefers-reduced-motion: reduce) {
+    .shine-tile { box-shadow:inset 0 0 0 1px rgba(232,162,58,.45); }
+    .shine-tint { opacity:.16 !important; animation:none !important; }
+    .shine-gleam, .shine-spark { display:none !important; }
+    .shine-inner { animation:none !important; transform:none !important; }
+  }
+</style>
+</head><body>
+  <div class="mock-banner">
+    <h2>2 · Trophy Shine</h2>
+    <p>The badges you just earned get their moment: each recently-unlocked tile lights with a warm gold gleam that sweeps across it, a soft ember settle, and a one-time sparkle — a small ceremony for showing up — while the rest of the wall stays calm.</p>
+    <span class="mock-hint">Watch the recently-unlocked tiles gleam · press Replay.</span>
+  </div>
+  <div class="ms-shell"><div id="mount"></div></div>
+  <button id="replay" style="position:fixed;right:18px;bottom:18px;">↻ Replay</button>
+  <script src="ms.js"></script>
+  <script>
+    const M = window.Milestones.render('#mount');
+    /* ANIMATION LAYER */
+
+    const STAGGER = 260; // ms between each tile's ceremony
+
+    // Wrap each recent tile's content in .shine-inner and attach overlays once.
+    function prepare(item) {
+      const tile = item.el;
+      if (tile.dataset.shinePrepared) return;
+      tile.dataset.shinePrepared = '1';
+      tile.classList.add('shine-tile');
+
+      // Move existing children into an inner wrapper so we can scale them
+      // independently of the absolutely-positioned overlays.
+      const inner = M.el('div', { class: 'shine-inner' });
+      while (tile.firstChild) inner.appendChild(tile.firstChild);
+      tile.appendChild(inner);
+
+      // Tint wash overlay
+      tile.appendChild(M.el('div', { class: 'shine-tint' }));
+
+      // Gleam overlay
+      tile.appendChild(M.el('div', { class: 'shine-gleam' }));
+
+      // 3 ember sparks near the top-right corner
+      const sparks = [
+        { x: '78%', y: '20%', dx: '5px',  dy: '-7px', d: 80 },
+        { x: '86%', y: '34%', dx: '8px',  dy: '-4px', d: 160 },
+        { x: '70%', y: '30%', dx: '3px',  dy: '-9px', d: 230 },
+      ];
+      sparks.forEach(s => {
+        const dot = M.el('div', { class: 'shine-spark' });
+        dot.style.left = s.x;
+        dot.style.top = s.y;
+        dot.style.setProperty('--dx', s.dx);
+        dot.style.setProperty('--dy', s.dy);
+        dot.style.animationDelay = s.d + 'ms';
+        tile.appendChild(dot);
+      });
+    }
+
+    function playOne(item) {
+      const tile = item.el;
+      // restart: strip the class, force reflow, re-add to replay animations
+      tile.classList.remove('shine-go', 'shine-tick');
+      void tile.offsetWidth;
+      tile.classList.add('shine-go');
+      // tick pop fires partway through the gleam sweep
+      setTimeout(() => tile.classList.add('shine-tick'), 220);
+    }
+
+    function runSequence() {
+      M.recent.forEach((item, i) => {
+        prepare(item);
+        setTimeout(() => playOne(item), i * STAGGER);
+      });
+    }
+
+    // Initial ceremony on load (slight beat so layout settles).
+    setTimeout(runSequence, 220);
+
+    document.getElementById('replay').addEventListener('click', runSequence);
+  </script>
+</body></html>

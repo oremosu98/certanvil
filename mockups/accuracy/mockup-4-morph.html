@@ -1,0 +1,261 @@
+<!DOCTYPE html><html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Accuracy Chart — 4 · Range Morph</title>
+<link rel="stylesheet" href="accchart.css">
+<style>
+  /* Sliding pill — replaces the static active-tab background.
+     Sits behind the labels (z-index:0), tabs keep z-index:1 from base. */
+  .acc-tabs { isolation: isolate; }
+  .acc-pill {
+    position: absolute;
+    top: 3px;                /* matches .acc-tabs padding */
+    left: 0;
+    height: calc(100% - 6px);
+    z-index: 0;
+    border-radius: 6px;
+    background: linear-gradient(135deg, var(--accent), var(--accent-light));
+    box-shadow: 0 1px 2px rgba(40,30,20,0.18);
+    transform: translateX(0);
+    transition:
+      transform .32s cubic-bezier(0.77,0,0.175,1),
+      width .32s cubic-bezier(0.77,0,0.175,1);
+    will-change: transform, width;
+    pointer-events: none;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .acc-pill { transition: none; }
+  }
+</style>
+</head><body>
+  <div class="mock-banner">
+    <h2>4 · Range Morph</h2>
+    <p>Switching Week / Month / All doesn't hard-cut between charts — the line flows into its new shape, points glide to new positions, the area re-pours, and the active pill slides under your choice. Changing the lens feels continuous, not jarring.</p>
+    <span class="mock-hint">Click Week / Month / All and watch it morph.</span>
+  </div>
+  <div class="acc-shell"><div id="mount"></div></div>
+  <script src="accchart.js"></script>
+  <script>
+    const A = window.AccChart.render('#mount');
+    /* ANIMATION LAYER — "Range Morph" (Emil Kowalski: prevent jarring change / spatial continuity) */
+    (function () {
+      const G = A.geom;
+      const N = 64;                                  // resample resolution
+      const DUR = 400;                               // morph duration (ms) — under 500
+      const EASE = (t) => {                          // cubic-bezier(0.77,0,0.175,1) ease-in-out
+        // numeric solve of the cubic bezier for the easing curve
+        return cubicBezier(0.77, 0, 0.175, 1, t);
+      };
+      const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+      // ---- cubic-bezier evaluator (x→y), Newton + bisection fallback ----
+      function cubicBezier(x1, y1, x2, y2, x) {
+        if (x <= 0) return 0;
+        if (x >= 1) return 1;
+        const cx = 3 * x1, bx = 3 * (x2 - x1) - cx, ax = 1 - cx - bx;
+        const cy = 3 * y1, by = 3 * (y2 - y1) - cy, ay = 1 - cy - by;
+        const fx = (t) => ((ax * t + bx) * t + cx) * t;
+        const dfx = (t) => (3 * ax * t + 2 * bx) * t + cx;
+        let t = x;
+        for (let i = 0; i < 8; i++) {
+          const xe = fx(t) - x;
+          if (Math.abs(xe) < 1e-6) break;
+          const d = dfx(t);
+          if (Math.abs(d) < 1e-6) break;
+          t -= xe / d;
+        }
+        if (t < 0) t = 0; else if (t > 1) t = 1;
+        return ((ay * t + by) * t + cy) * t;
+      }
+
+      // ---- resample a range to N evenly-spaced sample points (in pixel space) ----
+      // Raw acc values treated as evenly spaced 0..1 along x; linear-interp acc; map to px.
+      function resample(key) {
+        const raw = A.data[key];            // [{acc,label}]
+        const m = raw.length;
+        const out = new Array(N);
+        for (let s = 0; s < N; s++) {
+          const u = N > 1 ? s / (N - 1) : 0.5;          // 0..1 along x
+          // position along raw array
+          const fp = u * (m - 1);
+          const i0 = Math.floor(fp);
+          const i1 = Math.min(i0 + 1, m - 1);
+          const f = fp - i0;
+          const acc = raw[i0].acc + (raw[i1].acc - raw[i0].acc) * f;
+          out[s] = {
+            x: G.PAD + u * G.innerW,                    // even spacing across innerW
+            y: G.yOf(acc),
+            acc: acc,
+          };
+        }
+        return out;
+      }
+
+      // ---- original data-point positions for a range (for the dots) ----
+      function dataPts(key) {
+        const raw = A.data[key];
+        const n = raw.length;
+        return raw.map((d, i) => ({ x: G.xOf(i, n), y: G.yOf(d.acc), acc: d.acc, label: d.label }));
+      }
+
+      // Single morphing series = the 'month' group. Hide week/all groups.
+      const SRC = A.series.month;
+      A.series.week.groupEl.setAttribute('style', 'display:none');
+      A.series.all.groupEl.setAttribute('style', 'display:none');
+      SRC.groupEl.setAttribute('style', '');          // always visible morph host
+      const lineEl = SRC.lineEl;
+      const areaEl = SRC.areaEl;
+      const dotGroup = SRC.groupEl;
+
+      // current interpolated 64-pt shape (start at month)
+      let current = resample('month');
+      let curRange = 'month';
+
+      // ---- paint helpers ----
+      function paint(pts) {
+        lineEl.setAttribute('d', A.buildLine(pts));
+        areaEl.setAttribute('d', A.buildArea(pts));
+      }
+      paint(current);
+
+      // ---- DOTS management: independent circle set at original data points ----
+      // We manage our own dot circles inside the morph group so counts can differ.
+      // Remove the base dotEls (they belong to the month layout) and own the dots.
+      SRC.dotEls.forEach(c => c.remove());
+      let dotCircles = [];
+      function buildDots(key, instant) {
+        const target = dataPts(key);
+        // reposition existing, fade extras out, add+fade new ones in
+        const max = Math.max(dotCircles.length, target.length);
+        for (let i = 0; i < max; i++) {
+          let c = dotCircles[i];
+          if (i < target.length) {
+            const p = target[i];
+            if (!c) {
+              c = A.el('circle', { class: 'acc-dot', r: 4, cx: p.x.toFixed(1), cy: p.y.toFixed(1) });
+              c.style.opacity = '0';
+              c.style.transition = instant ? 'none' : 'opacity .26s ease, cx .3s cubic-bezier(0.77,0,0.175,1), cy .3s cubic-bezier(0.77,0,0.175,1)';
+              dotGroup.appendChild(c);
+              dotCircles[i] = c;
+              // fade in next frame
+              requestAnimationFrame(() => { c.style.opacity = '1'; });
+            } else {
+              c.style.transition = instant ? 'none' : 'opacity .26s ease, cx .3s cubic-bezier(0.77,0,0.175,1), cy .3s cubic-bezier(0.77,0,0.175,1)';
+              c.setAttribute('cx', p.x.toFixed(1));
+              c.setAttribute('cy', p.y.toFixed(1));
+              c.style.opacity = '1';
+            }
+          } else if (c) {
+            // extra dot — fade out then remove
+            c.style.transition = instant ? 'none' : 'opacity .22s ease';
+            c.style.opacity = '0';
+            const dead = c;
+            if (instant) { dead.remove(); }
+            else { setTimeout(() => dead.remove(), 240); }
+            dotCircles[i] = null;
+          }
+        }
+        dotCircles = dotCircles.filter(Boolean);
+      }
+      buildDots('month', true);
+      requestAnimationFrame(() => dotCircles.forEach(c => { c.style.opacity = '1'; }));
+
+      // ---- the morph tween (interruptible) ----
+      let rafId = null;
+      function morphTo(key) {
+        if (key === curRange) return;
+        const target = resample(key);
+
+        if (reduce) {
+          if (rafId) cancelAnimationFrame(rafId);
+          current = target.map(p => ({ x: p.x, y: p.y, acc: p.acc }));
+          paint(current);
+          curRange = key;
+          buildDots(key, true);
+          slidePill(key, true);
+          return;
+        }
+
+        // interruptible: start FROM the current interpolated points
+        if (rafId) cancelAnimationFrame(rafId);
+        const from = current.map(p => ({ x: p.x, y: p.y, acc: p.acc }));
+        const start = performance.now();
+        curRange = key;
+        slidePill(key, false);
+        // dots glide to the new range positions in parallel
+        buildDots(key, false);
+
+        function frame(now) {
+          const raw = Math.min(1, (now - start) / DUR);
+          const e = EASE(raw);
+          for (let s = 0; s < N; s++) {
+            current[s].x = from[s].x + (target[s].x - from[s].x) * e;
+            current[s].y = from[s].y + (target[s].y - from[s].y) * e;
+            current[s].acc = from[s].acc + (target[s].acc - from[s].acc) * e;
+          }
+          paint(current);
+          if (raw < 1) {
+            rafId = requestAnimationFrame(frame);
+          } else {
+            rafId = null;
+          }
+        }
+        rafId = requestAnimationFrame(frame);
+      }
+
+      // ---- sliding pill ----
+      const tabsEl = A.card.querySelector('.acc-tabs');
+      const pill = document.createElement('span');
+      pill.className = 'acc-pill';
+      tabsEl.insertBefore(pill, tabsEl.firstChild);
+      A.tabs.forEach(b => b.classList.add('no-static-pill'));
+
+      function slidePill(key, instant) {
+        const tab = A.tabs.find(b => b.dataset.range === key);
+        if (!tab) return;
+        if (instant) {
+          const prev = pill.style.transition;
+          pill.style.transition = 'none';
+          pill.style.width = tab.offsetWidth + 'px';
+          pill.style.transform = 'translateX(' + tab.offsetLeft + 'px)';
+          // force reflow so a later transitioned move doesn't animate from 0
+          void pill.offsetWidth;
+          pill.style.transition = prev || '';
+        } else {
+          pill.style.width = tab.offsetWidth + 'px';
+          pill.style.transform = 'translateX(' + tab.offsetLeft + 'px)';
+        }
+      }
+
+      // active-class bookkeeping (so the label turns white via base .acc-tab-active)
+      function setActiveClass(key) {
+        A.tabs.forEach(b => b.classList.toggle('acc-tab-active', b.dataset.range === key));
+      }
+
+      // ---- wire tabs (replace base listeners) ----
+      A.tabs.forEach(orig => {
+        const clone = orig.cloneNode(true);
+        clone.classList.add('no-static-pill');
+        orig.parentNode.replaceChild(clone, orig);
+      });
+      // refresh tab refs after cloning
+      A.tabs = Array.prototype.slice.call(tabsEl.querySelectorAll('.acc-tab'));
+      A.tabs.forEach(b => {
+        b.addEventListener('click', () => {
+          setActiveClass(b.dataset.range);
+          morphTo(b.dataset.range);
+        });
+      });
+
+      // position pill under Month on load (after layout settles)
+      function initPill() {
+        setActiveClass('month');
+        slidePill('month', true);
+      }
+      if (document.readyState === 'complete') requestAnimationFrame(initPill);
+      else window.addEventListener('load', () => requestAnimationFrame(initPill));
+      // also try immediately (offsets are usually available) + on resize
+      requestAnimationFrame(initPill);
+      window.addEventListener('resize', () => slidePill(curRange, true));
+    })();
+  </script>
+</body></html>

@@ -1,0 +1,86 @@
+/* ============================================================
+   "Your Study Rhythm" — shared base styles
+   Brand: Certanvil (cream canvas, bronze ramp)
+   All 5 mockups share this. Motion lives in each mockup file.
+   ============================================================ */
+:root {
+  --bg: #f7f4ef;
+  --panel: #fbf9f5;
+  --ink: #2a2622;
+  --muted: #9a9088;
+  --hair: rgba(60, 50, 40, 0.12);
+
+  --accent: #b5692a;
+  --accent-light: #c5833f;
+  --accent-rgb: 181, 105, 42;
+
+  /* intensity ramp — LESS -> MORE */
+  --t0: #ece4d8;
+  --t1: #e3c9a4;
+  --t2: #d2a061;
+  --t3: #ba7d36;
+  --t4: #9c5f1f;
+  --today-ring: #e8a23a;
+
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-overshoot: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--bg); color: var(--ink);
+  font-family: ui-sans-serif, -apple-system, "Segoe UI", Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+.hm-shell { max-width: 1000px; margin: 0 auto; padding: 24px 24px 40px; }
+
+.hm-card {
+  background: var(--panel); border: 1px solid var(--hair); border-radius: 16px;
+  padding: 22px 24px 18px;
+  box-shadow: 0 1px 0 rgba(255,255,255,0.6) inset, 0 14px 44px -28px rgba(40,30,20,0.45);
+}
+
+.hm-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; flex-wrap: wrap; margin-bottom: 16px; }
+.hm-eyebrow {
+  font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 10.5px; letter-spacing: .15em;
+  text-transform: uppercase; color: var(--accent-light); font-weight: 700; margin: 0 0 6px; padding-left: 16px; position: relative;
+}
+.hm-eyebrow::before { content: '—'; position: absolute; left: 0; top: 0; }
+.hm-title { font-size: 23px; font-weight: 800; letter-spacing: -0.02em; margin: 0; color: var(--ink); }
+.hm-title em { font-style: normal; color: var(--accent); }
+
+.hm-stats { display: flex; gap: 26px; align-items: flex-end; }
+.hm-stat { text-align: right; }
+.hms-val { font-family: ui-monospace, monospace; font-size: 24px; font-weight: 800; color: var(--ink); line-height: 1; font-variant-numeric: tabular-nums; margin-bottom: 5px; }
+.hms-lbl { font-family: ui-monospace, monospace; font-size: 9px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); font-weight: 700; }
+
+.hm-wrap { width: 100%; overflow-x: auto; padding: 4px 0; position: relative; }
+.hm-svg { width: 100%; min-width: 760px; height: auto; display: block; }
+
+.hm-cell { transition: transform .1s ease; }
+.hm-cell-t0 { fill: var(--t0); }
+.hm-cell-t1 { fill: var(--t1); }
+.hm-cell-t2 { fill: var(--t2); }
+.hm-cell-t3 { fill: var(--t3); }
+.hm-cell-t4 { fill: var(--t4); }
+
+.hm-month, .hm-dow {
+  font-family: ui-monospace, monospace; font-size: 9px; fill: var(--muted); font-weight: 600; letter-spacing: .04em; text-transform: uppercase;
+}
+
+.hm-legend { display: flex; align-items: center; gap: 9px; margin-top: 14px; font-family: ui-monospace, monospace; font-size: 10px; color: var(--muted); letter-spacing: .08em; text-transform: uppercase; }
+.hm-legend .sw { width: 11px; height: 11px; border-radius: 2px; display: inline-block; }
+.hm-legend .sw0 { background: var(--t0); }
+.hm-legend .sw1 { background: var(--t1); }
+.hm-legend .sw2 { background: var(--t2); }
+.hm-legend .sw3 { background: var(--t3); }
+.hm-legend .sw4 { background: var(--t4); }
+
+/* caption banner */
+.mock-banner { max-width: 1000px; margin: 0 auto; padding: 18px 24px 0; }
+.mock-banner h2 { font-family: Georgia, serif; font-size: 16px; margin: 0 0 4px; }
+.mock-banner p { margin: 0; font-size: 13px; color: var(--muted); max-width: 770px; line-height: 1.5; }
+.mock-hint { display: inline-block; margin-top: 8px; font-family: ui-monospace, monospace; font-size: 11px; background: rgba(181,105,42,0.14); color: #8a4e1c; padding: 4px 9px; border-radius: 6px; }
+
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; } }

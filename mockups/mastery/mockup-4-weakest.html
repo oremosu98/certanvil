@@ -1,0 +1,172 @@
+<!DOCTYPE html><html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Domain Mastery — 4 · Weakest Pulse</title>
+<link rel="stylesheet" href="dm.css">
+<style>
+  /* ---- Weakest Pulse helpers (glow / tint / focus cue / reduced-motion tag) ---- */
+
+  /* The focus rows get a CSS var the rAF loop drives (0..1). We express the
+     ambient tint + accent-glow off that var so JS only touches one property. */
+  .dm-row.dm-focus {
+    --dm-pulse: 0;
+    position: relative;
+    border-radius: 10px;
+    /* soft full-row warm wash that breathes via the pulse var — no left rail */
+    background:
+      linear-gradient(90deg,
+        color-mix(in srgb, var(--dm-accent) calc(5% + var(--dm-pulse) * 7%), transparent),
+        color-mix(in srgb, var(--dm-accent) calc(2% + var(--dm-pulse) * 3%), transparent) 65%,
+        transparent);
+    box-shadow:
+      0 0 calc(8px + var(--dm-pulse) * 14px) -6px color-mix(in srgb, var(--dm-accent) calc(26% + var(--dm-pulse) * 40%), transparent);
+  }
+  /* the new identity dot is the attention cue — it breathes on the weakest rows
+     (scale + halo driven by the same --dm-pulse var the rAF loop writes) */
+  .dm-row.dm-focus .dm-dot {
+    transform: scale(calc(1 + var(--dm-pulse) * 0.30));
+    box-shadow: 0 0 0 calc(3px + var(--dm-pulse) * 3px) color-mix(in srgb, var(--dm-accent) calc(16% + var(--dm-pulse) * 32%), transparent);
+  }
+
+  /* the old left-edge ember dot is retired with the rail — the label dot carries it now */
+  .dm-focus-dot { display: none; }
+
+  /* the breathing CTA — JS drives transform + box-shadow inline; base just
+     gives it a will-change hint and keeps the transition snappy on hover */
+  .dm-drill-btn.dm-breathe { will-change: transform, box-shadow; }
+
+  /* mastered rows get a one-time calm settle on load */
+  .dm-row.dm-settle {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  .dm-row.dm-settle.dm-settled {
+    opacity: 1;
+    transform: none;
+    transition: opacity 620ms var(--ease-out), transform 620ms var(--ease-out);
+  }
+
+  /* ---- Reduced-motion: static guidance, no pulsing ---- */
+  @media (prefers-reduced-motion: reduce) {
+    .dm-row.dm-focus {
+      --dm-pulse: 0.5;  /* fixed mid value → persistent tint + ring, no motion */
+    }
+    .dm-focus-dot { opacity: .85; transform: scale(1); }
+    .dm-row.dm-settle, .dm-row.dm-settle.dm-settled {
+      opacity: 1; transform: none; transition: none;
+    }
+    /* "Start here" tag on the #1 weakest row */
+    .dm-focus-tag {
+      display: inline-block;
+      margin-left: 8px;
+      font-family: ui-monospace, monospace;
+      font-size: 9px; font-weight: 800;
+      letter-spacing: .08em; text-transform: uppercase;
+      color: var(--dm-accent);
+      background: color-mix(in srgb, var(--dm-accent) 14%, transparent);
+      border: 1px solid color-mix(in srgb, var(--dm-accent) 40%, transparent);
+      padding: 2px 7px; border-radius: 99px;
+      vertical-align: middle;
+    }
+  }
+  /* hidden by default (only shown under reduced-motion) */
+  .dm-focus-tag { display: none; }
+</style>
+</head><body>
+  <div class="mock-banner">
+    <h2>4 · Weakest Pulse</h2>
+    <p>The list quietly points you to where it matters. Your weakest domains carry a soft, slow pulse and a gently breathing “Drill weakest” button — a living nudge toward the highest-leverage work — while the mastered ones rest calmly.</p>
+    <span class="mock-hint">Watch — the weakest domains draw your eye. Subtle by design.</span>
+  </div>
+  <div class="dm-shell"><div id="mount"></div></div>
+  <script src="dm.js"></script>
+  <script>
+    const DM = window.DomainMastery.render('#mount');
+    /* ANIMATION LAYER — "Weakest Pulse" (Emil: ambient + attention direction, whisper-quiet) */
+
+    const REDUCED = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    // 1) Identify the weakest domains: sort ascending by pct, take those below
+    //    the 80% threshold; the lowest 1–2 are the "focus" rows.
+    const belowThreshold = DM.rows
+      .filter(r => r.pct < DM.threshold)
+      .sort((a, b) => a.pct - b.pct);
+    const focus = belowThreshold.slice(0, 2);   // [#1 weakest, #2 weakest]
+    const focusSet = new Set(focus);
+
+    // tag focus rows + give each a phase + a prominence weight
+    focus.forEach((row, i) => {
+      row.el.classList.add('dm-focus');
+      row._rank = i;                       // 0 = #1 weakest (most prominent)
+      row._phase = i * 1.31;               // seeded phase offset → not in unison
+      // ember focus dot
+      const dot = DM.el('span', { class: 'dm-focus-dot' });
+      row.el.appendChild(dot);
+      row._dotEl = dot;
+      // breathing CTA
+      row.btnEl.classList.add('dm-breathe');
+    });
+
+    // 2/4) Mastered + non-focus rows: one-time calm settle on load, NO ongoing motion.
+    const calmRows = DM.rows.filter(r => !focusSet.has(r));
+    calmRows.forEach(r => r.el.classList.add('dm-settle'));
+
+    if (REDUCED) {
+      // 7) Reduced motion: skip ALL pulsing. Mark the weakest statically and add
+      //    a "Start here" tag to the #1 weakest so guidance still lands.
+      if (focus[0]) {
+        const tag = DM.el('span', { class: 'dm-focus-tag' });
+        tag.textContent = 'Start here';
+        // place it right after the row name
+        const nameEl = focus[0].el.querySelector('.dm-row-name');
+        if (nameEl) nameEl.appendChild(tag);
+      }
+      // settle rows are shown statically via the reduced-motion CSS
+    } else {
+      // calm settle: stagger the mastered/non-focus rows up once
+      DM.rows.forEach((row, i) => {
+        if (focusSet.has(row)) return;
+        setTimeout(() => row.el.classList.add('dm-settled'), 80 + i * 70);
+      });
+
+      // 2/3/5/6) FOCUS PULSE — single shared rAF loop, framerate-independent
+      // via performance.now(). Amplitudes TINY (scale ≤ 1.03, slow periods,
+      // low-opacity glow). Seeded phases so the two rows never pulse in unison.
+      const ROW_PERIOD = 2600;   // ms — accent/tint breathe (~2.6s)
+      const BTN_PERIOD = 2200;   // ms — CTA glow + micro-scale (~2.2s)
+      const TAU = Math.PI * 2;
+
+      // smooth 0..1 oscillator
+      const osc = (now, period, phase) =>
+        0.5 - 0.5 * Math.cos((now / period) * TAU + phase);
+
+      function loop(now) {
+        focus.forEach(row => {
+          // #1 weakest a touch more prominent than #2
+          const prom = row._rank === 0 ? 1.0 : 0.66;
+
+          // ROW: accent border + faint tint breathe (drives --dm-pulse 0..1)
+          const rowP = osc(now, ROW_PERIOD, row._phase) * prom;
+          row.el.style.setProperty('--dm-pulse', rowP.toFixed(3));
+
+          // FOCUS DOT: softly pulse opacity + scale, slightly out of phase
+          const dotP = osc(now, ROW_PERIOD, row._phase + 0.6);
+          row._dotEl.style.opacity = (0.18 + dotP * 0.55 * prom).toFixed(3);
+          row._dotEl.style.transform =
+            'scale(' + (0.7 + dotP * 0.4 * prom).toFixed(3) + ')';
+
+          // BUTTON: soft glow box-shadow in/out + tiny scale 1.0↔1.03 (press-me)
+          const btnP = osc(now, BTN_PERIOD, row._phase + 1.1);
+          const scale = (1 + btnP * 0.03 * prom).toFixed(4);   // ≤ 1.03
+          const glow  = (4 + btnP * 9 * prom).toFixed(1);      // px blur
+          const glowA = (0.10 + btnP * 0.28 * prom).toFixed(3);// low-opacity
+          row.btnEl.style.transform = 'scale(' + scale + ')';
+          row.btnEl.style.boxShadow =
+            '0 0 ' + glow + 'px color-mix(in srgb, var(--dm-accent) ' +
+            (glowA * 100).toFixed(0) + '%, transparent)';
+        });
+        requestAnimationFrame(loop);
+      }
+      requestAnimationFrame(loop);
+    }
+  </script>
+</body></html>

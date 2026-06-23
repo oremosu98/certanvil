@@ -1,0 +1,212 @@
+<!DOCTYPE html><html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Streak Flame — Tuning Studio</title>
+<link rel="stylesheet" href="heatmap.css">
+<style>
+  body { display: flex; min-height: 100vh; }
+  .stage { flex: 1; min-width: 0; }
+
+  /* ---- tuning panel (matches the constellation studio) ---- */
+  .tuner {
+    width: 290px; flex: 0 0 290px; background: #fffdfa;
+    border-left: 1px solid var(--hair); padding: 22px 18px 28px;
+    position: sticky; top: 0; align-self: flex-start; height: 100vh; overflow-y: auto;
+  }
+  .tuner h2 { font-family: Georgia, serif; font-size: 16px; margin: 0 0 2px; }
+  .tuner .sub { font-family: ui-monospace, monospace; font-size: 10px; color: var(--muted); margin: 0 0 18px; letter-spacing: .04em; }
+  .ctrl { margin-bottom: 15px; }
+  .ctrl label { display: flex; justify-content: space-between; align-items: baseline; font-size: 12px; margin-bottom: 5px; }
+  .ctrl label .val { font-family: ui-monospace, monospace; font-size: 11px; color: var(--accent); font-weight: 700; }
+  .ctrl input[type=range] { -webkit-appearance: none; appearance: none; width: 100%; height: 4px; background: #e7e0d6; border-radius: 4px; outline: none; cursor: pointer; }
+  .ctrl input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 15px; height: 15px; border-radius: 50%; background: var(--accent); cursor: pointer; box-shadow: 0 1px 4px rgba(0,0,0,.25); transition: transform 120ms var(--ease-out); }
+  .ctrl input[type=range]::-webkit-slider-thumb:active { transform: scale(1.2); }
+  .ctrl .hint { font-size: 10px; color: var(--muted); margin-top: 3px; }
+  .toggle { display: flex; align-items: center; justify-content: space-between; font-family: ui-monospace, monospace; font-size: 11px; padding: 8px 11px; border-radius: 8px; cursor: pointer; background: #f1ece4; border: 1px solid var(--hair); color: #5b5249; user-select: none; transition: transform 140ms var(--ease-out); margin-bottom: 16px; }
+  .toggle:active { transform: scale(0.98); }
+  .toggle .sw { width: 30px; height: 17px; border-radius: 9px; background: #cfc6ba; position: relative; transition: background .18s ease; flex: 0 0 auto; }
+  .toggle .sw::after { content: ''; position: absolute; top: 2px; left: 2px; width: 13px; height: 13px; border-radius: 50%; background: #fff; transition: transform .18s var(--ease-out); }
+  .toggle.on { background: #faf3ea; border-color: rgba(181,105,42,.4); color: var(--accent); }
+  .toggle.on .sw { background: var(--accent); }
+  .toggle.on .sw::after { transform: translateX(13px); }
+  .divider { height: 1px; background: var(--hair); margin: 4px 0 16px; }
+  .replay-btn { width: 100%; padding: 10px; border: none; border-radius: 9px; background: var(--accent); color: #fff; font-size: 13px; font-weight: 700; cursor: pointer; font-family: ui-sans-serif, sans-serif; transition: transform 140ms var(--ease-out); }
+  .replay-btn:active { transform: scale(0.98); }
+  .readout-label { font-size: 11px; color: var(--muted); margin: 16px 0 6px; font-family: ui-monospace, monospace; letter-spacing: .04em; }
+  .readout { background: #2a2622; color: #f0e9df; border-radius: 9px; padding: 12px 13px; font-family: ui-monospace, monospace; font-size: 10.5px; line-height: 1.6; white-space: pre; }
+  .readout .k { color: #e8a55f; }
+
+  @media (max-width: 920px) { body { flex-direction: column; } .tuner { width: auto; flex: none; height: auto; border-left: none; border-top: 1px solid var(--hair); position: static; } }
+</style>
+</head><body>
+  <div class="stage">
+    <div class="mock-banner">
+      <h2>Streak Flame — Tuning Studio</h2>
+      <p>Dial the celebration. The stats count up, your best run ignites cell-by-cell like a fuse to today, an ember flare lands, and today keeps a soft glow. Tune it on the right; when it feels right I'll bake the exact values into the real heatmap.</p>
+      <span class="mock-hint">Adjust the panel · press Replay to re-run.</span>
+    </div>
+    <div class="hm-shell"><div id="mount"></div></div>
+  </div>
+
+  <aside class="tuner">
+    <h2>Streak Studio</h2>
+    <p class="sub">STREAK FLAME · HEATMAP</p>
+
+    <div class="ctrl">
+      <label>Fuse stagger <span class="val" id="v-fuse"></span></label>
+      <input type="range" id="s-fuse" min="40" max="320" step="10" value="140">
+      <div class="hint">Delay between each streak cell igniting. Lower = faster fuse.</div>
+    </div>
+    <div class="ctrl">
+      <label>Ember glow <span class="val" id="v-glow"></span></label>
+      <input type="range" id="s-glow" min="0" max="14" step="1" value="6">
+      <div class="hint">Warm glow radius on the igniting cells.</div>
+    </div>
+    <div class="ctrl">
+      <label>Cell pop <span class="val" id="v-pop"></span></label>
+      <input type="range" id="s-pop" min="1.1" max="1.6" step="0.05" value="1.35">
+      <div class="hint">How hard each cell jumps as it lights.</div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="ctrl">
+      <label>Flare rings <span class="val" id="v-rings"></span></label>
+      <input type="range" id="s-rings" min="0" max="5" step="1" value="3">
+      <div class="hint">Ember rings bursting at the end of the run.</div>
+    </div>
+    <div class="ctrl">
+      <label>Count-up <span class="val" id="v-count"></span></label>
+      <input type="range" id="s-count" min="300" max="1500" step="50" value="700">
+      <div class="hint">How long the stat numbers take to tick up.</div>
+    </div>
+
+    <div class="toggle on" id="t-pulse"><span>Today keeps glowing</span><span class="sw"></span></div>
+
+    <button class="replay-btn" id="replay">↻ Replay flame</button>
+
+    <div class="readout-label">CURRENT SETTINGS</div>
+    <div class="readout" id="readout"></div>
+  </aside>
+
+  <script src="heatmap.js"></script>
+  <script>
+    const HM = window.Heatmap.render('#mount');
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const EMBER1 = '#e8a23a', EMBER2 = '#b5692a';
+
+    const P = { fuse: 140, glow: 6, pop: 1.35, rings: 3, count: 700, todayPulse: true };
+
+    const stats = HM.stats, statEls = HM.statEls;
+    const runCells = HM.bestStreakCells;          // ordered oldest -> newest
+    const todayCell = HM.currentStreakCells[0] || HM.byDaysAgo.get(0);
+
+    let timers = [], anims = [], pulseIv = null, pulseRaf = null;
+    const at = (ms, fn) => timers.push(setTimeout(fn, ms));
+    function clearAll() {
+      timers.forEach(clearTimeout); timers = [];
+      anims.forEach(a => { try { a.cancel(); } catch (e) {} }); anims = [];
+      if (pulseIv) { clearInterval(pulseIv); pulseIv = null; }
+      HM.svg.querySelectorAll('.flame-ring,.today-ring').forEach(n => n.remove());
+    }
+    function glowStr(scale) { return 'drop-shadow(0 0 ' + (P.glow * scale).toFixed(1) + 'px ' + EMBER1 + ') drop-shadow(0 0 ' + (P.glow * scale * 2).toFixed(1) + 'px ' + EMBER2 + ')'; }
+
+    function igniteCell(c, isLast) {
+      const r = c.rect;
+      r.style.transformBox = 'fill-box'; r.style.transformOrigin = 'center';
+      r.style.filter = P.glow > 0 ? glowStr(1) : '';
+      const a = r.animate(
+        [{ transform: 'scale(1)' }, { transform: 'scale(' + P.pop + ')' }, { transform: 'scale(1.12)' }],
+        { duration: 420, easing: 'cubic-bezier(0.34,1.56,0.64,1)', fill: 'forwards' }
+      );
+      anims.push(a);
+      if (isLast) flare(c);
+    }
+
+    function flare(c) {
+      const cx = c.x + 5.5, cy = c.y + 5.5;
+      for (let i = 0; i < P.rings; i++) {
+        at(i * 150, () => {
+          const ring = HM.el('circle', { cx, cy, r: 6, fill: 'none', stroke: EMBER1, 'stroke-width': 1.6, class: 'flame-ring' });
+          ring.style.transformBox = 'fill-box'; ring.style.transformOrigin = 'center';
+          HM.svg.appendChild(ring);
+          const a = ring.animate([{ transform: 'scale(1)', opacity: .85 }, { transform: 'scale(3.4)', opacity: 0 }],
+            { duration: 650, easing: 'cubic-bezier(0.23,1,0.32,1)', fill: 'forwards' });
+          a.onfinish = () => ring.remove(); anims.push(a);
+        });
+      }
+    }
+
+    function countUp() {
+      const keys = ['current', 'best', 'last30', 'last90'];
+      keys.forEach((k, i) => {
+        at(i * 80, () => {
+          const target = stats[k], t0 = performance.now();
+          const tick = (now) => {
+            const t = Math.min(1, (now - t0) / P.count);
+            const e = 1 - Math.pow(1 - t, 3);
+            statEls[k].textContent = Math.round(target * e);
+            if (t < 1) requestAnimationFrame(tick); else statEls[k].textContent = target;
+          };
+          requestAnimationFrame(tick);
+        });
+      });
+    }
+
+    function startTodayPulse() {
+      if (!todayCell) return;
+      if (!P.todayPulse) { todayCell.rect.style.filter = ''; return; }
+      todayCell.rect.style.filter = 'drop-shadow(0 0 4px ' + EMBER1 + ')';
+      const cx = todayCell.x + 5.5, cy = todayCell.y + 5.5;
+      const emit = () => {
+        const ring = HM.el('circle', { cx, cy, r: 6, fill: 'none', stroke: EMBER1, 'stroke-width': 1.3, class: 'today-ring' });
+        ring.style.transformBox = 'fill-box'; ring.style.transformOrigin = 'center';
+        HM.svg.appendChild(ring);
+        const a = ring.animate([{ transform: 'scale(1)', opacity: .5 }, { transform: 'scale(2.6)', opacity: 0 }],
+          { duration: 2200, easing: 'cubic-bezier(0.23,1,0.32,1)', fill: 'forwards' });
+        a.onfinish = () => ring.remove(); anims.push(a);
+      };
+      emit();
+      pulseIv = setInterval(emit, 2400);
+    }
+
+    function setFinal() {
+      ['current', 'best', 'last30', 'last90'].forEach(k => statEls[k].textContent = stats[k]);
+      runCells.forEach(c => { c.rect.style.filter = P.glow > 0 ? glowStr(1) : ''; });
+      if (todayCell && P.todayPulse) todayCell.rect.style.filter = 'drop-shadow(0 0 4px ' + EMBER1 + ')';
+    }
+
+    function run() {
+      clearAll();
+      runCells.forEach(c => { c.rect.style.filter = ''; c.rect.style.transform = ''; });
+      if (todayCell) todayCell.rect.style.filter = '';
+      ['current', 'best', 'last30', 'last90'].forEach(k => statEls[k].textContent = '0');
+      if (reduce) { setFinal(); return; }
+      countUp();
+      runCells.forEach((c, i) => at(P.count + i * P.fuse, () => igniteCell(c, i === runCells.length - 1)));
+      at(P.count + runCells.length * P.fuse + 250, startTodayPulse);
+    }
+
+    // ---- UI ----
+    const fmt = { fuse: v => v + 'ms', glow: v => v + 'px', pop: v => v.toFixed(2) + '×', rings: v => '' + v, count: v => v + 'ms' };
+    const map = [['fuse', 's-fuse', 'v-fuse'], ['glow', 's-glow', 'v-glow'], ['pop', 's-pop', 'v-pop'], ['rings', 's-rings', 'v-rings'], ['count', 's-count', 'v-count']];
+    map.forEach(([key, sid, vid]) => {
+      const s = document.getElementById(sid);
+      document.getElementById(vid).textContent = fmt[key](P[key]);
+      s.addEventListener('input', e => { P[key] = parseFloat(e.target.value); document.getElementById(vid).textContent = fmt[key](P[key]); renderReadout(); });
+    });
+    document.getElementById('t-pulse').addEventListener('click', e => { P.todayPulse = e.currentTarget.classList.toggle('on'); });
+    document.getElementById('replay').addEventListener('click', run);
+
+    function renderReadout() {
+      document.getElementById('readout').innerHTML =
+        '<span class="k">fuseStagger</span> ' + P.fuse + 'ms\n' +
+        '<span class="k">emberGlow</span>   ' + P.glow + 'px\n' +
+        '<span class="k">cellPop</span>     ' + P.pop.toFixed(2) + '\n' +
+        '<span class="k">flareRings</span>  ' + P.rings + '\n' +
+        '<span class="k">countUp</span>     ' + P.count + 'ms\n' +
+        '<span class="k">todayGlow</span>   ' + (P.todayPulse ? 'on' : 'off');
+    }
+    renderReadout();
+    setTimeout(run, 400);
+  </script>
+</body></html>

@@ -1,0 +1,330 @@
+<!DOCTYPE html><html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Living Constellation — Tuning Studio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="constellation.css">
+<style>
+  body { display: flex; min-height: 100vh; }
+  .stage { flex: 1; min-width: 0; }
+  .const-core { transition: filter 360ms ease-out; will-change: filter; }
+
+  /* ---- tuning panel ---- */
+  .tuner {
+    width: 308px; flex: 0 0 308px;
+    background: #fffdfa;
+    border-left: 1px solid var(--hair);
+    padding: 20px 18px 28px;
+    position: sticky; top: 0; align-self: flex-start;
+    height: 100vh; overflow-y: auto;
+    font-family: ui-sans-serif, -apple-system, sans-serif;
+  }
+  .tuner h2 {
+    font-family: "Fraunces", Georgia, serif; font-size: 16px; margin: 0 0 2px;
+  }
+  .tuner .sub { font-family: ui-monospace, monospace; font-size: 10px; color: var(--muted); margin: 0 0 16px; letter-spacing: .04em; }
+
+  .preset-row { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 18px; }
+  .preset {
+    font-family: ui-monospace, monospace; font-size: 11px;
+    padding: 6px 10px; border-radius: 7px; cursor: pointer;
+    background: #f1ece4; border: 1px solid var(--hair); color: #5b5249;
+    transition: transform 140ms var(--ease-out), background 140ms ease, color 140ms ease;
+  }
+  .preset:hover { background: #ece5da; }
+  .preset:active { transform: scale(0.96); }
+  .preset.on { background: var(--ember); color: #fff; border-color: var(--ember); }
+
+  .ctrl { margin-bottom: 15px; }
+  .ctrl label {
+    display: flex; justify-content: space-between; align-items: baseline;
+    font-size: 12px; color: var(--ink); margin-bottom: 5px;
+  }
+  .ctrl label .val {
+    font-family: ui-monospace, monospace; font-size: 11px; color: var(--ember); font-weight: 600;
+  }
+  .ctrl input[type=range] {
+    -webkit-appearance: none; appearance: none; width: 100%; height: 4px;
+    background: #e7e0d6; border-radius: 4px; outline: none; cursor: pointer;
+  }
+  .ctrl input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none; appearance: none; width: 15px; height: 15px;
+    border-radius: 50%; background: var(--ember); cursor: pointer;
+    box-shadow: 0 1px 4px rgba(0,0,0,.25); transition: transform 120ms var(--ease-out);
+  }
+  .ctrl input[type=range]::-webkit-slider-thumb:active { transform: scale(1.2); }
+  .ctrl .hint { font-size: 10px; color: var(--muted); margin-top: 3px; }
+
+  .toggles { display: flex; gap: 8px; flex-wrap: wrap; margin: 6px 0 16px; }
+  .toggle {
+    font-family: ui-monospace, monospace; font-size: 11px;
+    padding: 6px 10px; border-radius: 7px; cursor: pointer;
+    background: #f1ece4; border: 1px solid var(--hair); color: #5b5249; user-select: none;
+    transition: transform 140ms var(--ease-out);
+  }
+  .toggle:active { transform: scale(0.96); }
+  .toggle.on { background: #2a2622; color: #fff; border-color: #2a2622; }
+
+  .divider { height: 1px; background: var(--hair); margin: 4px 0 16px; }
+
+  .readout-label { font-size: 11px; color: var(--muted); margin: 0 0 6px; font-family: ui-monospace, monospace; letter-spacing: .04em; }
+  .readout {
+    background: #2a2622; color: #f0e9df; border-radius: 9px; padding: 12px 13px;
+    font-family: ui-monospace, "SF Mono", monospace; font-size: 10.5px; line-height: 1.6;
+    white-space: pre; overflow-x: auto;
+  }
+  .readout .k { color: #e8a55f; }
+  .copy-btn {
+    margin-top: 8px; width: 100%; padding: 9px; border: none; border-radius: 8px;
+    background: var(--ember); color: #fff; font-size: 12px; font-weight: 600; cursor: pointer;
+    font-family: ui-sans-serif, sans-serif;
+    transition: transform 140ms var(--ease-out), background 140ms ease;
+  }
+  .copy-btn:active { transform: scale(0.98); }
+  .copy-btn.done { background: #46b67a; }
+
+  @media (max-width: 900px) {
+    body { flex-direction: column; }
+    .tuner { width: auto; flex: none; height: auto; border-left: none; border-top: 1px solid var(--hair); position: static; }
+  }
+</style>
+</head><body>
+  <div class="stage">
+    <div class="mock-banner">
+      <h2>Living Constellation — Tuning Studio</h2>
+      <p>Drag the sliders and watch the field respond in real time. When it feels right, hit “Copy settings” (or just tell me) and I’ll bake the exact numbers into the real analytics page.</p>
+      <span class="mock-hint">Try the presets first, then fine-tune. Use “Slow-mo” to inspect the motion.</span>
+    </div>
+    <div class="const-shell">
+      <div class="const-head">
+        <h1 class="const-title"><span class="spark">✨</span> Knowledge <em>Constellation</em></h1>
+        <span class="const-sub">size = practice · color = domain · brightness = mastery</span>
+      </div>
+      <div id="mount"></div>
+      <div class="const-legend">
+        <span><i class="dot"></i>≥80% mastered</span>
+        <span><i class="dot t2"></i>≥70% proficient</span>
+        <span><i class="dot t3"></i>≥55% developing</span>
+        <span><i class="dot t4"></i>&lt;55% / not studied</span>
+      </div>
+    </div>
+  </div>
+
+  <aside class="tuner">
+    <h2>Tuning Studio</h2>
+    <p class="sub">LIVING CONSTELLATION · DRIFT</p>
+
+    <div class="preset-row" id="presets">
+      <button class="preset" data-preset="calm">Calm</button>
+      <button class="preset" data-preset="cosmic">Cosmic</button>
+      <button class="preset" data-preset="energetic">Energetic</button>
+      <button class="preset" data-preset="minimal">Minimal</button>
+    </div>
+
+    <div class="ctrl">
+      <label>Drift amount <span class="val" id="v-amp"></span></label>
+      <input type="range" id="s-amp" min="0" max="6" step="0.1">
+      <div class="hint">How far each node wanders from home (px).</div>
+    </div>
+    <div class="ctrl">
+      <label>Drift speed <span class="val" id="v-speed"></span></label>
+      <input type="range" id="s-speed" min="0.2" max="2.5" step="0.05">
+      <div class="hint">Higher = quicker orbits. 1.0 = baseline (6–10s).</div>
+    </div>
+    <div class="ctrl">
+      <label>Orbit looseness <span class="val" id="v-spread"></span></label>
+      <input type="range" id="s-spread" min="0" max="1" step="0.05">
+      <div class="hint">0 = every node moves alike · 1 = wildly varied periods.</div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="ctrl">
+      <label>Halo breathe depth <span class="val" id="v-bdepth"></span></label>
+      <input type="range" id="s-bdepth" min="0" max="0.35" step="0.01">
+      <div class="hint">How much studied halos pulse in opacity.</div>
+    </div>
+    <div class="ctrl">
+      <label>Halo breathe speed <span class="val" id="v-bspeed"></span></label>
+      <input type="range" id="s-bspeed" min="0.2" max="2.5" step="0.05">
+      <div class="hint">Pace of the halo pulse.</div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="ctrl">
+      <label>Twinkle every <span class="val" id="v-twrate"></span></label>
+      <input type="range" id="s-twrate" min="0" max="12" step="0.5">
+      <div class="hint">Avg seconds between random core sparkles. 0 = off.</div>
+    </div>
+    <div class="ctrl">
+      <label>Twinkle strength <span class="val" id="v-twstr"></span></label>
+      <input type="range" id="s-twstr" min="0" max="12" step="0.5">
+      <div class="hint">Glow radius of the sparkle (px).</div>
+    </div>
+
+    <div class="toggles">
+      <div class="toggle" id="t-slowmo">Slow-mo</div>
+      <div class="toggle" id="t-pause">Pause</div>
+    </div>
+
+    <div class="readout-label">CURRENT SETTINGS</div>
+    <div class="readout" id="readout"></div>
+    <button class="copy-btn" id="copy">Copy settings</button>
+  </aside>
+
+  <script src="constellation.js"></script>
+  <script>
+    const C = window.Constellation.render('#mount');
+    const TAU = Math.PI * 2;
+
+    // ---- live, mutable params (sliders write here; loop reads here) ----
+    const P = {
+      amp: 2.5,        // px drift amplitude
+      speed: 1.0,      // orbit speed multiplier
+      spread: 0.5,     // 0..1 variance of per-node periods
+      bdepth: 0.20,    // halo breathe opacity swing
+      bspeed: 1.0,     // halo breathe speed multiplier
+      twrate: 4.0,     // avg seconds between twinkles (0 = off)
+      twstr: 6.0,      // twinkle glow radius px
+      timeScale: 1.0,  // slow-mo
+      paused: false,
+    };
+
+    const PRESETS = {
+      calm:      { amp: 2.5, speed: 1.0, spread: 0.5, bdepth: 0.20, bspeed: 1.0, twrate: 4.0, twstr: 6.0 },
+      cosmic:    { amp: 4.2, speed: 0.55, spread: 0.7, bdepth: 0.26, bspeed: 0.6, twrate: 3.0, twstr: 8.0 },
+      energetic: { amp: 2.0, speed: 1.7, spread: 0.35, bdepth: 0.16, bspeed: 1.6, twrate: 2.0, twstr: 5.0 },
+      minimal:   { amp: 1.4, speed: 0.8, spread: 0.4, bdepth: 0.10, bspeed: 0.8, twrate: 0, twstr: 4.0 },
+    };
+
+    // ---- per-node deterministic seeds (shape stays stable; magnitude from P) ----
+    const seeds = C.nodes.map((n, i) => {
+      const s = (n._i != null ? n._i : i) + (n.domain || 0) * 7.31;
+      n.gEl.style.transformBox = 'fill-box';
+      n.gEl.style.transformOrigin = 'center';
+      const studied = (n.mastery || 0) > 0 && (n.attempts || 0) > 0 && (n.r || 0) > 0;
+      return {
+        n, studied,
+        fAmpX: 0.7 + ((s * 0.37) % 1) * 0.6,
+        fAmpY: 0.7 + ((s * 0.61 + 0.4) % 1) * 0.6,
+        fPerX: ((s * 0.53) % 1),           // 0..1 -> period variance
+        fPerY: ((s * 0.29 + 0.3) % 1),
+        phX: (s * 1.7) % TAU,
+        phY: (s * 2.3 + 1.1) % TAU,
+        fBper: ((s * 0.41) % 1),
+        bph: (s * 0.9 + 0.5) % TAU,
+      };
+    });
+    const breathing = seeds.filter(d => d.studied);
+
+    // ---- twinkle scheduler ----
+    let nextTwinkle = 1500, tw = null;
+    function fireTwinkle(t) {
+      if (P.twrate <= 0 || !breathing.length) return;
+      const d = breathing[(Math.random() * breathing.length) | 0];
+      const core = d.n.coreEl; if (!core) return;
+      const prev = core.style.filter || '';
+      core.style.filter = 'drop-shadow(0 0 ' + P.twstr.toFixed(1) + 'px rgba(255,255,255,0.9))';
+      tw = { core, prev, until: t + 420 };
+    }
+
+    // ---- main loop: framerate-independent virtual clock ----
+    let last = performance.now(), vclock = 0;
+    function frame(now) {
+      const dt = now - last; last = now;
+      if (!P.paused) vclock += dt * P.timeScale;
+      const t = vclock;
+
+      for (let k = 0; k < seeds.length; k++) {
+        const d = seeds[k];
+        // base periods 6000..10000 widened/narrowed by spread, scaled by speed
+        const perX = (6000 + d.fPerX * (4000 * P.spread + 1500)) / P.speed;
+        const perY = (6500 + d.fPerY * (3500 * P.spread + 1500)) / P.speed;
+        const dx = Math.sin((t / perX) * TAU + d.phX) * P.amp * d.fAmpX;
+        const dy = Math.sin((t / perY) * TAU + d.phY) * P.amp * d.fAmpY;
+        d.n.gEl.style.transform = 'translate(' + dx.toFixed(3) + 'px,' + dy.toFixed(3) + 'px)';
+      }
+
+      for (let k = 0; k < breathing.length; k++) {
+        const d = breathing[k];
+        if (!d.n.haloEl) continue;
+        const bper = (4200 + d.fBper * 3000) / P.bspeed;
+        const s = (Math.sin((t / bper) * TAU + d.bph) + 1) * 0.5;
+        d.n.haloEl.style.opacity = (0.20 + s * P.bdepth).toFixed(3);
+      }
+
+      if (!P.paused && P.twrate > 0 && t >= nextTwinkle && !tw) {
+        fireTwinkle(t);
+        nextTwinkle = t + P.twrate * 1000 * (0.6 + Math.random() * 0.8);
+      }
+      if (tw && t >= tw.until) { tw.core.style.filter = tw.prev; tw = null; }
+
+      requestAnimationFrame(frame);
+    }
+    if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) requestAnimationFrame(frame);
+
+    // ================= UI wiring =================
+    const fmt = {
+      amp: v => v.toFixed(1) + 'px', speed: v => v.toFixed(2) + '×', spread: v => Math.round(v * 100) + '%',
+      bdepth: v => '±' + Math.round(v * 100) / 100, bspeed: v => v.toFixed(2) + '×',
+      twrate: v => v <= 0 ? 'off' : v.toFixed(1) + 's', twstr: v => v.toFixed(0) + 'px',
+    };
+    const map = [
+      ['amp', 's-amp', 'v-amp'], ['speed', 's-speed', 'v-speed'], ['spread', 's-spread', 'v-spread'],
+      ['bdepth', 's-bdepth', 'v-bdepth'], ['bspeed', 's-bspeed', 'v-bspeed'],
+      ['twrate', 's-twrate', 'v-twrate'], ['twstr', 's-twstr', 'v-twstr'],
+    ];
+    function syncUI() {
+      map.forEach(([key, sid, vid]) => {
+        document.getElementById(sid).value = P[key];
+        document.getElementById(vid).textContent = fmt[key](P[key]);
+      });
+      renderReadout();
+    }
+    map.forEach(([key, sid, vid]) => {
+      document.getElementById(sid).addEventListener('input', e => {
+        P[key] = parseFloat(e.target.value);
+        document.getElementById(vid).textContent = fmt[key](P[key]);
+        clearPreset(); renderReadout();
+      });
+    });
+
+    const presetBtns = [...document.querySelectorAll('.preset')];
+    function clearPreset() { presetBtns.forEach(b => b.classList.remove('on')); }
+    presetBtns.forEach(b => b.addEventListener('click', () => {
+      Object.assign(P, PRESETS[b.dataset.preset]);
+      clearPreset(); b.classList.add('on'); syncUI();
+    }));
+
+    document.getElementById('t-slowmo').addEventListener('click', e => {
+      const on = e.currentTarget.classList.toggle('on');
+      P.timeScale = on ? 0.25 : 1.0;
+    });
+    document.getElementById('t-pause').addEventListener('click', e => {
+      P.paused = e.currentTarget.classList.toggle('on');
+    });
+
+    function renderReadout() {
+      const r = document.getElementById('readout');
+      r.innerHTML =
+        '<span class="k">amp</span>        ' + P.amp.toFixed(1) + '\n' +
+        '<span class="k">speed</span>      ' + P.speed.toFixed(2) + '\n' +
+        '<span class="k">spread</span>     ' + P.spread.toFixed(2) + '\n' +
+        '<span class="k">breatheDepth</span> ' + P.bdepth.toFixed(2) + '\n' +
+        '<span class="k">breatheSpeed</span> ' + P.bspeed.toFixed(2) + '\n' +
+        '<span class="k">twinkleEvery</span> ' + P.twrate.toFixed(1) + 's\n' +
+        '<span class="k">twinkleGlow</span>  ' + P.twstr.toFixed(0) + 'px';
+    }
+    document.getElementById('copy').addEventListener('click', e => {
+      const txt = `amp:${P.amp.toFixed(1)} speed:${P.speed.toFixed(2)} spread:${P.spread.toFixed(2)} breatheDepth:${P.bdepth.toFixed(2)} breatheSpeed:${P.bspeed.toFixed(2)} twinkleEvery:${P.twrate.toFixed(1)}s twinkleGlow:${P.twstr.toFixed(0)}px`;
+      navigator.clipboard && navigator.clipboard.writeText(txt);
+      const b = e.currentTarget; b.textContent = '✓ Copied — paste it to me'; b.classList.add('done');
+      setTimeout(() => { b.textContent = 'Copy settings'; b.classList.remove('done'); }, 2200);
+    });
+
+    // init on "Calm"
+    presetBtns[0].classList.add('on');
+    syncUI();
+  </script>
+</body></html>

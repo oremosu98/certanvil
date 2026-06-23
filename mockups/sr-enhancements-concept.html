@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>CertAnvil · Spaced Repetition · 8 enhancements (concept)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   CertAnvil · forged-bronze editorial · tokens from design/brand/BRAND.md
+   Concept mockup · visualises 8 Spaced Repetition enhancements in context.
+   ============================================================ */
+:root{
+  --bg:oklch(0.975 0.007 85); --surface:oklch(0.992 0.004 85); --surface-2:oklch(0.965 0.010 84);
+  --text:oklch(0.22 0.015 280); --text-mid:oklch(0.36 0.014 280); --text-dim:oklch(0.50 0.013 280);
+  --border:oklch(0.86 0.008 85); --border-soft:oklch(0.91 0.006 85);
+  --accent:oklch(0.50 0.155 55); --accent-bright:oklch(0.80 0.155 64); --accent-deep:oklch(0.42 0.150 52);
+  --on-accent:oklch(0.985 0.010 85); --pass:oklch(0.52 0.13 150); --warn:oklch(0.62 0.14 70);
+  --ease:cubic-bezier(0.16,1,0.3,1);
+}
+html[data-theme="dark"]{
+  --bg:oklch(0.16 0.009 275); --surface:oklch(0.205 0.009 275); --surface-2:oklch(0.185 0.009 275);
+  --text:oklch(0.96 0.006 275); --text-mid:oklch(0.78 0.010 275); --text-dim:oklch(0.60 0.013 275);
+  --border:oklch(0.30 0.008 275); --border-soft:oklch(0.26 0.008 275);
+  --accent:oklch(0.80 0.155 64); --accent-bright:oklch(0.86 0.140 70); --accent-deep:oklch(0.70 0.150 62);
+  --on-accent:oklch(0.18 0.020 275); --pass:oklch(0.74 0.150 152); --warn:oklch(0.80 0.130 75);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{
+  background:var(--bg); color:var(--text);
+  font-family:Inter,system-ui,sans-serif; font-size:14px; line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+  transition:background .5s var(--ease), color .5s var(--ease);
+}
+.wrap{max-width:1140px; margin:0 auto; padding:clamp(20px,4vw,40px) clamp(18px,4vw,32px) 80px}
+
+/* ---- top bar ---- */
+.topbar{display:flex; align-items:center; justify-content:space-between; gap:16px; padding-bottom:clamp(28px,5vw,48px)}
+.brand{display:flex; align-items:center; gap:11px}
+.ca-mark{width:30px; height:30px; flex:none}
+.ca-mark .c,.ca-mark .a{stroke:var(--accent); stroke-width:7; fill:none; stroke-linecap:round}
+.ca-mark .slash{stroke:var(--accent); stroke-width:5; opacity:.55; stroke-linecap:round}
+.brand-name{font-weight:700; letter-spacing:-0.01em; font-size:16px}
+.theme-toggle{
+  appearance:none; border:1px solid var(--border); background:var(--surface); color:var(--text-mid);
+  border-radius:999px; padding:8px 14px; font:inherit; font-size:12px; font-weight:600; cursor:pointer;
+  display:inline-flex; align-items:center; gap:7px; transition:transform .16s var(--ease), border-color .16s var(--ease), color .16s var(--ease);
+}
+.theme-toggle svg{width:14px; height:14px}
+.theme-toggle:active{transform:scale(.97)}
+
+/* ---- eyebrows ---- */
+.eyebrow{font-size:10.5px; font-weight:800; letter-spacing:.14em; text-transform:uppercase; color:var(--accent)}
+.eyebrow.dim{color:var(--text-dim)}
+
+/* ---- intro ---- */
+.intro{max-width:680px}
+.intro h1{
+  font-family:Fraunces,Georgia,serif; font-weight:600; letter-spacing:-0.02em; line-height:1.04;
+  font-size:clamp(30px,5vw,46px); margin:14px 0 12px;
+}
+.intro p{font-size:15px; color:var(--text-mid); max-width:60ch}
+
+/* ---- legend ---- */
+.legend{display:flex; flex-wrap:wrap; gap:9px; margin-top:26px}
+.legend-chip{
+  display:inline-flex; align-items:center; gap:9px; padding:7px 13px 7px 8px;
+  border:1px solid var(--border); border-radius:999px; background:var(--surface);
+  font-size:12.5px; font-weight:550; color:var(--text-mid);
+}
+.num{
+  flex:none; width:20px; height:20px; border-radius:999px; display:grid; place-items:center;
+  background:color-mix(in oklab, var(--accent) 14%, transparent); color:var(--accent);
+  border:1px solid color-mix(in oklab, var(--accent) 32%, transparent);
+  font-size:11px; font-weight:800; font-variant-numeric:tabular-nums;
+}
+
+/* ---- frames grid ---- */
+.frames{display:grid; grid-template-columns:1fr; gap:clamp(28px,4vw,44px); margin-top:clamp(40px,6vw,64px)}
+@media(min-width:920px){ .frames{grid-template-columns:1fr 1fr; align-items:start} }
+.frame-head{display:flex; align-items:baseline; gap:12px; margin-bottom:16px}
+.frame-head h2{font-family:Fraunces,Georgia,serif; font-weight:600; font-size:21px; letter-spacing:-0.01em}
+.frame-cap{font-size:12.5px; color:var(--text-dim); margin:-6px 0 16px}
+
+/* ---- device ---- */
+.device{
+  background:var(--surface); border:1px solid var(--border); border-radius:22px;
+  padding:clamp(18px,2.4vw,24px);
+  box-shadow:0 1px 0 color-mix(in oklab, var(--text) 4%, transparent),
+             0 22px 48px -22px color-mix(in oklab, var(--text) 24%, transparent);
+}
+.device-bar{display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:18px}
+.back{
+  display:inline-flex; align-items:center; gap:6px; font-size:12px; font-weight:600; color:var(--text-mid);
+  border:1px solid var(--border); border-radius:9px; padding:6px 11px; background:var(--bg);
+}
+.srq{font-family:Fraunces,Georgia,serif; font-weight:600; font-size:17px; letter-spacing:-0.01em}
+.srq em{font-style:italic; color:var(--accent)}
+.kicker{font-size:9.5px; font-weight:800; letter-spacing:.13em; text-transform:uppercase; color:var(--text-dim); text-align:right; line-height:1.3}
+
+/* ---- progress ---- */
+.prog-row{display:flex; align-items:center; gap:12px; margin-bottom:20px}
+.prog-label{font-size:11px; font-weight:700; color:var(--text-dim); letter-spacing:.04em; white-space:nowrap; font-variant-numeric:tabular-nums}
+.prog-track{flex:1; height:6px; border-radius:999px; background:var(--surface-2); border:1px solid var(--border-soft); overflow:hidden}
+.prog-fill{height:100%; border-radius:999px; background:linear-gradient(90deg,var(--accent-deep),var(--accent)); width:0; transition:width 1s var(--ease)}
+
+/* ---- review card ---- */
+.rcard{border:1px solid var(--border); border-radius:16px; background:var(--bg); padding:clamp(15px,2vw,20px)}
+.meta-row{font-size:11.5px; font-weight:700; color:var(--text-dim); letter-spacing:.02em; margin-bottom:2px}
+.meta-row .topic{color:var(--accent)}
+.why-due{ /* (5) why-it's-due microcopy */
+  display:inline-flex; align-items:center; gap:6px; margin:8px 0 4px;
+  font-size:11.5px; font-weight:650; color:var(--warn);
+}
+.why-due svg{width:13px; height:13px}
+.q-stem{font-size:15px; font-weight:600; line-height:1.45; color:var(--text); margin:14px 0 16px}
+.opts{display:flex; flex-direction:column; gap:9px}
+.opt{
+  display:flex; gap:11px; align-items:flex-start; padding:12px 13px; border-radius:11px;
+  border:1px solid var(--border); background:var(--surface); font-size:12.5px; line-height:1.4; color:var(--text-mid);
+}
+.opt .tag{flex:none; width:20px; height:20px; border-radius:999px; border:1px solid var(--border); display:grid; place-items:center; font-size:11px; font-weight:700; color:var(--text-dim); background:var(--bg)}
+.opt.correct{border-color:color-mix(in oklab,var(--pass) 50%,var(--border)); background:color-mix(in oklab,var(--pass) 9%,transparent)}
+.opt.correct .tag{background:var(--pass); color:var(--on-accent); border-color:var(--pass)}
+.opt.correct .body{color:var(--text)}
+.opt.wrong{border-color:color-mix(in oklab,var(--warn) 48%,var(--border)); background:color-mix(in oklab,var(--warn) 8%,transparent)}
+.opt.wrong .tag{background:var(--warn); color:var(--on-accent); border-color:var(--warn)}
+.opt .mark{margin-left:auto; font-weight:800; font-size:13px}
+.opt.correct .mark{color:var(--pass)} .opt.wrong .mark{color:var(--warn)}
+.explain{margin-top:13px; padding:12px 13px; border-left:2px solid color-mix(in oklab,var(--accent) 40%,transparent); background:var(--surface-2); border-radius:0 10px 10px 0; font-size:12px; color:var(--text-mid); line-height:1.5}
+.explain b{color:var(--text); font-weight:650}
+
+/* wrong-state action row + (1) retry pill */
+.act-row{display:flex; align-items:center; gap:12px; margin-top:16px; flex-wrap:wrap}
+.retry-pill{ /* (1) same-session retry */
+  display:inline-flex; align-items:center; gap:8px; padding:8px 13px; border-radius:999px;
+  background:color-mix(in oklab,var(--accent) 9%,transparent);
+  border:1px solid color-mix(in oklab,var(--accent) 26%,var(--border));
+  font-size:11.5px; font-weight:600; color:var(--accent);
+}
+.retry-pill svg{width:14px; height:14px}
+
+/* ---- results screen ---- */
+.res-hero{margin-bottom:22px}
+.res-hero .eyebrow{margin-bottom:10px; display:block}
+.res-hero h3{font-family:Fraunces,Georgia,serif; font-weight:600; font-size:26px; letter-spacing:-0.02em; line-height:1.05}
+.res-hero .sub{font-size:13px; color:var(--text-mid); margin-top:6px}
+.res-hero .sub b{color:var(--text); font-weight:650; font-variant-numeric:lining-nums tabular-nums}
+.tally{display:flex; gap:8px; margin-top:16px; flex-wrap:wrap}
+.tchip{display:inline-flex; align-items:baseline; gap:6px; padding:8px 13px; border-radius:999px; border:1px solid var(--border); background:var(--surface); font-size:12px; font-weight:600; color:var(--text-mid)}
+.tchip b{font-family:Fraunces,serif; font-size:15px; font-weight:600; font-variant-numeric:lining-nums tabular-nums; line-height:1}
+.tchip.good b{color:var(--pass)} .tchip.bad b{color:var(--warn)}
+
+/* (4) streak bridge */
+.streak{
+  display:flex; align-items:center; gap:12px; margin-top:18px; padding:13px 15px; border-radius:14px;
+  background:color-mix(in oklab,var(--warn) 7%,var(--surface)); border:1px solid color-mix(in oklab,var(--warn) 24%,var(--border));
+}
+.streak .flame{flex:none; width:30px; height:34px}
+.streak .st-txt{font-size:12.5px; color:var(--text-mid); line-height:1.4}
+.streak .st-txt b{color:var(--text); font-weight:700}
+.streak .plus{margin-left:auto; font-family:Fraunces,serif; font-weight:600; font-size:22px; color:var(--warn); font-variant-numeric:lining-nums tabular-nums; line-height:1}
+
+/* (2) missed-card recap */
+.recap{margin-top:22px}
+.recap-head{display:flex; align-items:center; justify-content:space-between; gap:10px; padding-bottom:12px}
+.recap-head .lbl{font-size:11px; font-weight:800; letter-spacing:.12em; text-transform:uppercase; color:var(--text-dim)}
+.recap-head .chev{color:var(--text-dim); font-size:12px; font-weight:700}
+.miss{border-top:1px solid var(--border-soft); padding:13px 0; display:flex; flex-direction:column; gap:6px}
+.miss-top{display:flex; align-items:center; gap:8px; flex-wrap:wrap}
+.miss-topic{font-size:10px; font-weight:800; letter-spacing:.1em; text-transform:uppercase; color:var(--accent)}
+.resched{ /* reschedule chip; (3) lapse-aware on the ~5d one */
+  margin-left:auto; font-size:10.5px; font-weight:700; letter-spacing:.02em; padding:4px 9px; border-radius:999px;
+  border:1px solid var(--border); color:var(--text-dim); background:var(--surface); white-space:nowrap;
+}
+.resched.later{color:var(--accent); border-color:color-mix(in oklab,var(--accent) 30%,var(--border)); background:color-mix(in oklab,var(--accent) 9%,transparent)}
+.miss-stem{font-size:12.5px; color:var(--text); font-weight:550; line-height:1.4}
+.miss-ans{font-size:12px; color:var(--text-mid); display:flex; gap:7px; align-items:baseline}
+.miss-ans .ok{color:var(--pass); font-weight:800; flex:none}
+.miss-why{font-size:11.5px; color:var(--text-dim); font-style:italic}
+
+/* result actions */
+.res-act{display:flex; gap:11px; margin-top:24px; flex-wrap:wrap}
+.btn{font:inherit; font-weight:650; font-size:13px; border-radius:11px; padding:12px 18px; cursor:pointer; border:1px solid transparent; transition:transform .15s var(--ease), filter .15s var(--ease); display:inline-flex; align-items:center; gap:8px}
+.btn:active{transform:scale(.97)}
+.btn-primary{background:var(--accent); color:var(--on-accent); border-color:var(--accent-deep)}
+.btn-ghost{background:transparent; color:var(--accent); border:1px solid color-mix(in oklab,var(--accent) 30%,var(--border))}
+@media(hover:hover) and (pointer:fine){
+  .btn-primary:hover{filter:brightness(1.06); transform:translateY(-1px)}
+  .btn-ghost:hover{background:color-mix(in oklab,var(--accent) 8%,transparent)}
+  .theme-toggle:hover{color:var(--text); border-color:color-mix(in oklab,var(--accent) 30%,var(--border))}
+}
+
+/* ---- annotation badge pinned to a feature ---- */
+.anno{position:relative}
+.anno-badge{
+  position:absolute; top:-9px; left:-9px; z-index:2; width:22px; height:22px; border-radius:999px;
+  background:var(--accent); color:var(--on-accent); display:grid; place-items:center;
+  font-size:11px; font-weight:800; font-variant-numeric:tabular-nums;
+  box-shadow:0 2px 8px -2px color-mix(in oklab,var(--accent) 60%,transparent); border:1.5px solid var(--surface);
+}
+.anno-badge.tr{left:auto; right:-9px}
+
+/* ---- per-frame "what's new" notes ---- */
+.notes{margin-top:18px; display:flex; flex-direction:column; gap:9px}
+.note{display:flex; gap:10px; align-items:flex-start; font-size:12.5px; color:var(--text-mid); line-height:1.45}
+.note .num{margin-top:1px}
+.note b{color:var(--text); font-weight:650}
+
+/* ---- forecast (6) ---- */
+.forecast{margin-top:clamp(40px,6vw,64px)}
+.fc-strip{display:flex; gap:9px; overflow-x:auto; padding:4px 2px 8px; scroll-snap-type:x mandatory; -webkit-overflow-scrolling:touch}
+.fc-day{flex:0 0 auto; width:100px; scroll-snap-align:start; border:1px solid var(--border); border-radius:13px; background:var(--surface); padding:12px 11px 13px; display:flex; flex-direction:column; align-items:center; gap:8px; text-align:center}
+.fc-day .d-lbl{font-size:9.5px; font-weight:800; letter-spacing:.1em; text-transform:uppercase; color:var(--text-dim)}
+.fc-bartrack{height:56px; width:26px; display:flex; align-items:flex-end}
+.fc-bar{width:100%; border-radius:6px; background:linear-gradient(180deg,var(--accent),var(--accent-deep)); height:0; transition:height .9s var(--ease); transition-delay:calc(var(--fi,0) * 45ms)}
+.fc-count{font-size:10.5px; font-weight:700; color:var(--text-mid); font-variant-numeric:tabular-nums}
+.fc-count.zero{color:var(--text-dim); font-weight:600}
+.fc-day.today{border-color:color-mix(in oklab,var(--accent) 42%,var(--border)); background:color-mix(in oklab,var(--accent) 9%,transparent)}
+.fc-day.today .d-lbl{color:var(--accent)}
+.fc-cap{font-size:12.5px; color:var(--text-dim); max-width:64ch; margin-top:10px; line-height:1.55}
+.fc-cap b{color:var(--text-mid); font-weight:650}
+.fc-agenda{margin-top:16px; border-top:1px solid var(--border-soft)}
+.fc-arow{display:flex; align-items:center; gap:12px; padding:11px 2px; border-bottom:1px solid var(--border-soft); font-size:12.5px}
+.fc-when{font-size:10px; font-weight:800; letter-spacing:.09em; text-transform:uppercase; color:var(--accent); width:74px; flex:none}
+.fc-topics{color:var(--text-mid)}
+.fc-n{margin-left:auto; font-weight:700; color:var(--text-dim); font-variant-numeric:tabular-nums; white-space:nowrap}
+/* (7) two modes */
+.fc-mode{position:relative}
+.fc-mode-head{display:flex; align-items:center; gap:10px; margin-bottom:14px; flex-wrap:wrap}
+.fc-mode-tag{font-size:11px; font-weight:800; letter-spacing:.1em; text-transform:uppercase; color:var(--text-dim)}
+.fc-add{font-size:11px; font-weight:600; color:var(--accent); border:1px dashed color-mix(in oklab,var(--accent) 34%,var(--border)); border-radius:999px; padding:5px 12px; cursor:pointer; background:transparent}
+.fc-exam-pill{font-size:11px; font-weight:700; letter-spacing:.02em; color:var(--accent); background:color-mix(in oklab,var(--accent) 10%,transparent); border:1px solid color-mix(in oklab,var(--accent) 28%,var(--border)); border-radius:999px; padding:6px 13px}
+.fc-ready{margin-left:auto; font-size:11px; font-weight:700; color:var(--pass); font-variant-numeric:tabular-nums; white-space:nowrap}
+.fc-divider{height:1px; background:var(--border); margin:24px 0}
+/* (8) review settings */
+.set-row{display:flex; align-items:flex-start; gap:14px; padding:15px 2px; border-bottom:1px solid var(--border-soft)}
+.set-row:last-child{border-bottom:0}
+.set-label{font-size:13px; font-weight:650; color:var(--text)}
+.set-label .sub{display:block; font-size:11.5px; font-weight:500; color:var(--text-dim); margin-top:3px; max-width:42ch; line-height:1.45}
+.set-ctrl{margin-left:auto; flex:none; padding-top:2px}
+.seg{display:inline-flex; border:1px solid var(--border); border-radius:10px; overflow:hidden; background:var(--bg)}
+.seg button{appearance:none; border:0; border-right:1px solid var(--border); background:transparent; font:inherit; font-size:12px; font-weight:650; color:var(--text-mid); padding:8px 13px; cursor:pointer}
+.seg button:last-child{border-right:0}
+.seg button.on{background:color-mix(in oklab,var(--accent) 14%,transparent); color:var(--accent)}
+.set-pill{font-size:12px; font-weight:650; color:var(--accent); background:color-mix(in oklab,var(--accent) 10%,transparent); border:1px solid color-mix(in oklab,var(--accent) 28%,var(--border)); border-radius:999px; padding:7px 13px; white-space:nowrap}
+.tog{display:inline-block; width:42px; height:24px; border-radius:999px; background:var(--accent); position:relative; border:1px solid var(--accent-deep); cursor:pointer}
+.tog::after{content:""; position:absolute; top:2px; left:20px; width:18px; height:18px; border-radius:999px; background:var(--on-accent); transition:left .2s var(--ease)}
+.set-group{padding:2px 2px 13px; border-bottom:1px solid var(--border); margin-bottom:4px}
+.set-group-title{display:block; font-size:11px; font-weight:800; letter-spacing:.12em; text-transform:uppercase; color:var(--accent)}
+.set-group-sub{display:block; font-size:11.5px; color:var(--text-dim); margin-top:5px; max-width:48ch; line-height:1.45}
+
+/* ---- reveal motion ---- */
+.reveal{opacity:0; transform:translateY(14px) scale(.99); transition:opacity .55s var(--ease), transform .55s var(--ease); transition-delay:calc(var(--d,0) * 70ms)}
+.reveal.visible{opacity:1; transform:none}
+
+/* (1) retry pill arrives a beat after the wrong-state card settles */
+.retry-pill{opacity:0}
+.device.visible .retry-pill{animation:pillIn .46s var(--ease) .45s both}
+@keyframes pillIn{from{opacity:0; transform:translateY(7px) scale(.97)} to{opacity:1; transform:none}}
+
+/* (4) the +1 lands with a little authority */
+.streak .plus{opacity:0}
+.device.visible .streak .plus{animation:plusPop .5s var(--ease) .62s both}
+@keyframes plusPop{0%{opacity:0; transform:translateY(6px) scale(.6)} 60%{opacity:1; transform:translateY(0) scale(1.12)} 100%{transform:scale(1)}}
+
+/* (2) recap rows reveal in sequence */
+.miss{opacity:0}
+.device.visible .miss{animation:missIn .5s var(--ease) both; animation-delay:calc(.55s + var(--md,0) * 70ms)}
+@keyframes missIn{from{opacity:0; transform:translateY(8px)} to{opacity:1; transform:none}}
+
+/* theme toggle: tactile icon rotate on press */
+.theme-toggle svg{transition:transform .4s var(--ease)}
+.theme-toggle:active svg{transform:rotate(-35deg)}
+
+@media(prefers-reduced-motion:reduce){
+  .reveal{opacity:1; transform:none; transition:none}
+  .prog-fill,.fc-bar{transition:none}
+  body,.theme-toggle,.theme-toggle svg{transition:none}
+  .retry-pill,.streak .plus,.miss{opacity:1; animation:none}
+}
+
+footer{margin-top:56px; padding-top:22px; border-top:1px solid var(--border); font-size:11.5px; color:var(--text-dim); display:flex; justify-content:space-between; gap:16px; flex-wrap:wrap}
+footer .eyebrow{font-size:10px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- top bar -->
+  <div class="topbar reveal" style="--d:0">
+    <div class="brand">
+      <svg class="ca-mark" viewBox="0 0 40 40" aria-hidden="true">
+        <path class="c" d="M26 11 A11 11 0 1 0 26 29" />
+        <line class="slash" x1="27" y1="9" x2="13" y2="31" />
+        <path class="a" d="M15 29 L20 13 L25 29 M16.6 24 H23.4" />
+      </svg>
+      <span class="brand-name">CertAnvil</span>
+    </div>
+    <button class="theme-toggle" id="themeBtn" aria-label="Toggle theme">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 3v2M12 19v2M5 12H3M21 12h-2M6 6 4.6 4.6M19.4 19.4 18 18M18 6l1.4-1.4M4.6 19.4 6 18"/><circle cx="12" cy="12" r="4"/></svg>
+      <span id="themeLbl">Dark</span>
+    </button>
+  </div>
+
+  <!-- intro -->
+  <div class="intro">
+    <span class="eyebrow reveal" style="--d:1">Spaced repetition · concept</span>
+    <h1 class="reveal" style="--d:2">Eight ways to make review hold.</h1>
+    <p class="reveal" style="--d:3">The flow works today. These eight changes give it more to hold onto: how a wrong answer is handled, the screen at the end, a forward view that bends around your exam date, and sessions sized to be worth opening. Each one builds on the queue you already have.</p>
+    <div class="legend reveal" style="--d:4">
+      <span class="legend-chip"><span class="num">1</span> Retry wrong cards in-session</span>
+      <span class="legend-chip"><span class="num">2</span> Missed-card recap</span>
+      <span class="legend-chip"><span class="num">3</span> Lapse-aware reschedule</span>
+      <span class="legend-chip"><span class="num">4</span> Review feeds your streak</span>
+      <span class="legend-chip"><span class="num">5</span> Why this card is back</span>
+      <span class="legend-chip"><span class="num">6</span> See your review schedule</span>
+      <span class="legend-chip"><span class="num">7</span> Schedule around your exam</span>
+      <span class="legend-chip"><span class="num">8</span> Right-sized sessions</span>
+    </div>
+  </div>
+
+  <!-- frames -->
+  <div class="frames">
+
+    <!-- FRAME A · in session -->
+    <section>
+      <div class="frame-head reveal" style="--d:5"><span class="eyebrow dim">In session</span><h2>The card</h2></div>
+      <p class="frame-cap reveal" style="--d:5">A wrong answer, revealed. Notice the line under the topic, and the pill below the explanation.</p>
+
+      <div class="device reveal" style="--d:6">
+        <div class="device-bar">
+          <span class="back">&larr; Back</span>
+          <span class="kicker">Daily review<br>spaced repetition</span>
+        </div>
+        <div class="srq">SR <em>queue.</em></div>
+
+        <div class="prog-row" style="margin-top:16px">
+          <span class="prog-label">3 of 9</span>
+          <div class="prog-track"><div class="prog-fill" data-w="33%"></div></div>
+        </div>
+
+        <div class="rcard">
+          <div class="meta-row"><span class="topic">Cryptography Fundamentals</span> · last seen 5d ago · streak 0</div>
+          <!-- (5) why-it's-due microcopy -->
+          <div class="anno">
+            <span class="anno-badge">5</span>
+            <span class="why-due">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>
+              Rebuilding · you missed this one last time
+            </span>
+          </div>
+
+          <p class="q-stem">An organization is migrating to TLS 1.3. Which component protects the confidentiality of data once the session is established?</p>
+
+          <div class="opts">
+            <div class="opt"><span class="tag">A</span><span class="body">The asymmetric key exchange (RSA / ECDHE) that authenticates the server and shares keys</span></div>
+            <div class="opt wrong"><span class="tag">B</span><span class="body">The handshake signature that proves the certificate chain</span><span class="mark">&#10007;</span></div>
+            <div class="opt correct"><span class="tag">C</span><span class="body">The symmetric cipher (AES-GCM) that encrypts application data with the negotiated session key</span><span class="mark">&#10003;</span></div>
+            <div class="opt"><span class="tag">D</span><span class="body">The certificate, which carries the public key and identifies the server</span></div>
+          </div>
+
+          <div class="explain">Key exchange <b>sets up</b> the session; the <b>symmetric cipher</b> does the bulk encryption that keeps the data confidential. Easy to swap the two under time pressure.</div>
+
+          <!-- (1) same-session retry -->
+          <div class="act-row">
+            <button class="btn btn-ghost">Got it wrong</button>
+            <div class="anno">
+              <span class="anno-badge">1</span>
+              <span class="retry-pill">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>
+                We'll bring this back once more before you finish
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div class="notes">
+          <div class="note"><span class="num">5</span><span><b>Why this card is back.</b> One line, built from what the card already tracks, so the schedule feels deliberate instead of random. A reset card reads as "rebuilding," not "streak 0."</span></div>
+          <div class="note"><span class="num">1</span><span><b>Retry wrong cards in-session.</b> A miss reappears once at the end of this session, so you actually produce the right answer while it's fresh instead of waiting a day. It still reschedules to tomorrow underneath.</span></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- FRAME B · results -->
+    <section>
+      <div class="frame-head reveal" style="--d:6"><span class="eyebrow dim">At the end</span><h2>The recap</h2></div>
+      <p class="frame-cap reveal" style="--d:6">The end screen that's thin today, doing more.</p>
+
+      <div class="device reveal" style="--d:7">
+        <div class="res-hero">
+          <span class="eyebrow">Review complete</span>
+          <h3>Nice work today.</h3>
+          <p class="sub"><b>9</b> cards reviewed. The ones you nailed won't be back for a while. The ones you missed return soon.</p>
+          <div class="tally">
+            <span class="tchip good"><b>2</b> confident</span>
+            <span class="tchip"><b>0</b> uncertain</span>
+            <span class="tchip bad"><b>7</b> wrong</span>
+          </div>
+        </div>
+
+        <!-- (4) streak bridge -->
+        <div class="anno">
+          <span class="anno-badge">4</span>
+          <div class="streak">
+            <svg class="flame" viewBox="0 0 32 38" aria-hidden="true">
+              <defs>
+                <linearGradient id="srFlame" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0" stop-color="#ffb24d"/><stop offset="0.55" stop-color="#f9852f"/><stop offset="1" stop-color="#e0561c"/>
+                </linearGradient>
+              </defs>
+              <path fill="url(#srFlame)" d="M16 1c3 6-2 9-2 13 0 0-3-2-3-6C7 11 4 17 4 23a12 12 0 0 0 24 0c0-7-6-10-8-15-1-3-3-5-4-7z"/>
+              <path fill="#ffd9a0" opacity="0.85" d="M16 19c1.6 2 3 3.6 3 6.4a3 3 0 0 1-6 0c0-2 1.4-3.4 3-6.4z"/>
+            </svg>
+            <div class="st-txt"><b>Today's review counts.</b><br>6-day streak · today's review keeps it going.</div>
+            <span class="plus">+1</span>
+          </div>
+        </div>
+
+        <!-- (2) missed-card recap -->
+        <div class="recap anno">
+          <span class="anno-badge">2</span>
+          <div class="recap-head"><span class="lbl">Review what you missed</span><span class="chev">3 cards &#8964;</span></div>
+
+          <div class="miss" style="--md:0">
+            <div class="miss-top"><span class="miss-topic">Cryptography</span><span class="resched">back tomorrow</span></div>
+            <div class="miss-stem">Which component protects confidentiality after the TLS 1.3 session is set up?</div>
+            <div class="miss-ans"><span class="ok">&#10003;</span><span>The symmetric cipher (AES-GCM)</span></div>
+            <div class="miss-why">You picked the handshake signature · that authenticates, it doesn't encrypt.</div>
+          </div>
+
+          <!-- (3) lapse-aware reschedule lives on this chip -->
+          <div class="miss" style="--md:1">
+            <div class="miss-top"><span class="miss-topic">Subnetting</span>
+              <span class="anno" style="margin-left:auto"><span class="anno-badge tr">3</span><span class="resched later">back in ~5d</span></span>
+            </div>
+            <div class="miss-stem">Usable hosts on a /29?</div>
+            <div class="miss-ans"><span class="ok">&#10003;</span><span>6 hosts</span></div>
+            <div class="miss-why">You've known this one before, so it returns in days, not tomorrow.</div>
+          </div>
+
+          <div class="miss" style="--md:2">
+            <div class="miss-top"><span class="miss-topic">Routing</span><span class="resched">back tomorrow</span></div>
+            <div class="miss-stem">Which OSPF area type blocks external LSAs but allows summaries?</div>
+            <div class="miss-ans"><span class="ok">&#10003;</span><span>Stub area</span></div>
+            <div class="miss-why">Mixed it up with totally stubby · that blocks summaries too.</div>
+          </div>
+        </div>
+
+        <div class="res-act">
+          <button class="btn btn-primary">Keep going · 7 still due &rarr;</button>
+          <button class="btn btn-ghost">Back to home</button>
+        </div>
+      </div>
+
+      <div class="notes">
+        <div class="note"><span class="num">2</span><span><b>Missed-card recap.</b> The wrong and uncertain cards, gathered in one place with the right answer and a one-line "why." Today this data is shown for a second then thrown away.</span></div>
+        <div class="note"><span class="num">3</span><span><b>Lapse-aware reschedule.</b> A card you used to know comes back in days, not tomorrow, so daily slots go to what you're actually shaky on. See the bronze "back in ~5d" chip.</span></div>
+        <div class="note"><span class="num">4</span><span><b>Review feeds your streak.</b> Finishing a session keeps the streak you already care about alive, so the reward matches the habit that actually builds recall.</span></div>
+      </div>
+    </section>
+
+  </div>
+
+  <!-- FRAME C · forecast -->
+  <section class="forecast">
+    <div class="frame-head reveal" style="--d:1"><span class="eyebrow dim">Looking ahead</span><h2>The forecast</h2></div>
+    <p class="frame-cap reveal" style="--d:1">Your review schedule, read from each card's next-review date. The same engine, but it bends depending on whether you've booked an exam.</p>
+
+    <div class="device reveal" style="--d:2">
+
+      <!-- Mode A: no exam booked (6) -->
+      <div class="fc-mode anno">
+        <span class="anno-badge">6</span>
+        <div class="fc-mode-head">
+          <span class="fc-mode-tag">No exam booked</span>
+          <span class="fc-add">+ Add exam date in Settings</span>
+        </div>
+        <div class="fc-strip">
+          <div class="fc-day today"><span class="d-lbl">Today</span><div class="fc-bartrack"><div class="fc-bar" data-h="28" style="--fi:0; opacity:.5"></div></div><span class="fc-count" style="color:var(--pass)">&#10003; done</span></div>
+          <div class="fc-day"><span class="d-lbl">Tue</span><div class="fc-bartrack"><div class="fc-bar" data-h="48" style="--fi:1"></div></div><span class="fc-count">7 due</span></div>
+          <div class="fc-day"><span class="d-lbl">Wed</span><div class="fc-bartrack"><div class="fc-bar" data-h="0" style="--fi:2"></div></div><span class="fc-count zero">0</span></div>
+          <div class="fc-day"><span class="d-lbl">Thu</span><div class="fc-bartrack"><div class="fc-bar" data-h="16" style="--fi:3"></div></div><span class="fc-count">2 due</span></div>
+          <div class="fc-day"><span class="d-lbl">Fri</span><div class="fc-bartrack"><div class="fc-bar" data-h="0" style="--fi:4"></div></div><span class="fc-count zero">0</span></div>
+          <div class="fc-day"><span class="d-lbl">Sat</span><div class="fc-bartrack"><div class="fc-bar" data-h="8" style="--fi:5"></div></div><span class="fc-count">1 due</span></div>
+          <div class="fc-day"><span class="d-lbl">Sun</span><div class="fc-bartrack"><div class="fc-bar" data-h="30" style="--fi:6"></div></div><span class="fc-count">4 due</span></div>
+        </div>
+        <p class="fc-cap">Intervals expand freely: a few days, then a couple of weeks, then a month. The load stays light and gaps are fine. Built to keep it in memory for the long term.</p>
+      </div>
+
+      <div class="fc-divider"></div>
+
+      <!-- Mode B: exam booked (7) -->
+      <div class="fc-mode anno">
+        <span class="anno-badge">7</span>
+        <div class="fc-mode-head">
+          <span class="fc-exam-pill">Exam in 21 days · Tue 27 May</span>
+          <span class="fc-ready">Readiness 72% &rarr; 81%</span>
+        </div>
+        <div class="fc-strip">
+          <div class="fc-day today"><span class="d-lbl">Today</span><div class="fc-bartrack"><div class="fc-bar" data-h="28" style="--fi:0; opacity:.5"></div></div><span class="fc-count" style="color:var(--pass)">&#10003; done</span></div>
+          <div class="fc-day"><span class="d-lbl">Tue</span><div class="fc-bartrack"><div class="fc-bar" data-h="52" style="--fi:1"></div></div><span class="fc-count">9 due</span></div>
+          <div class="fc-day"><span class="d-lbl">Wed</span><div class="fc-bartrack"><div class="fc-bar" data-h="44" style="--fi:2"></div></div><span class="fc-count">7 due</span></div>
+          <div class="fc-day"><span class="d-lbl">Thu</span><div class="fc-bartrack"><div class="fc-bar" data-h="48" style="--fi:3"></div></div><span class="fc-count">8 due</span></div>
+          <div class="fc-day"><span class="d-lbl">Fri</span><div class="fc-bartrack"><div class="fc-bar" data-h="36" style="--fi:4"></div></div><span class="fc-count">6 due</span></div>
+          <div class="fc-day"><span class="d-lbl">Sat</span><div class="fc-bartrack"><div class="fc-bar" data-h="24" style="--fi:5"></div></div><span class="fc-count">4 due</span></div>
+          <div class="fc-day"><span class="d-lbl">Sun</span><div class="fc-bartrack"><div class="fc-bar" data-h="14" style="--fi:6"></div></div><span class="fc-count">2 due</span></div>
+        </div>
+        <p class="fc-cap">Intervals are capped to land before exam day, so the closer the exam the harder it works: two weeks out runs intensive, a month is steadier, two months barely changes anything. Weak and high-weight topics come back first, then the final days taper to a light sweep.</p>
+      </div>
+    </div>
+
+    <div class="notes">
+      <div class="note"><span class="num">6</span><span><b>See your review schedule.</b> A forward look at what's due and when, grouped by day from each card's next-review date, so the spacing feels chosen rather than arbitrary.</span></div>
+      <div class="note"><span class="num">7</span><span><b>Schedule around your exam.</b> Set your exam date in Settings on the review page and the same engine works backward from it. The pace scales with how far off the exam is: a date two weeks out compresses hard, two months out barely changes anything. Intervals are capped so every weak card is seen before the test, high-weight topics first, with a taper at the end. No date set keeps it open-ended.</span></div>
+    </div>
+  </section>
+
+  <!-- FRAME D · setup / settings -->
+  <section class="forecast">
+    <div class="frame-head reveal" style="--d:1"><span class="eyebrow dim">In Settings</span><h2>The setup</h2></div>
+    <p class="frame-cap reveal" style="--d:1">A few controls, grouped under Daily Review so they read clearly as review settings, decide how big each session feels and how it behaves when the queue is light.</p>
+
+    <div class="device reveal anno" style="--d:2">
+      <span class="anno-badge">8</span>
+      <div class="set-group">
+        <span class="set-group-title">Daily Review · Spaced Repetition</span>
+        <span class="set-group-sub">A labelled group inside the existing Settings page. These only affect your review sessions, separate from the standard quiz and exam setup.</span>
+      </div>
+      <div class="set-row">
+        <span class="set-label">Exam date<span class="sub">Drives the pace (enhancement 7). Clear it any time to go open-ended.</span></span>
+        <span class="set-ctrl"><span class="set-pill">Tue 27 May · change</span></span>
+      </div>
+      <div class="set-row">
+        <span class="set-label">Session size<span class="sub">How many due review cards per session, about 30 seconds each. Up to 30; anything over waits for a second pass.</span></span>
+        <span class="set-ctrl"><span class="seg"><button type="button">10</button><button type="button">20</button><button type="button" class="on">30</button><button type="button">All due</button></span></span>
+      </div>
+      <div class="set-row">
+        <span class="set-label">Top up on light days<span class="sub">When fewer than 8 are due, offer extra practice on your weakest topics. Due reviews stay due-only; the extra is clearly separate so spacing isn't broken.</span></span>
+        <span class="set-ctrl"><span class="tog" role="switch" aria-checked="true" aria-label="Top up on light days"></span></span>
+      </div>
+    </div>
+
+    <div class="notes">
+      <div class="note"><span class="num">8</span><span><b>Right-sized sessions.</b> A session is whatever's actually due, capped at your chosen size (up to 30 cards, about 15 minutes), with a "keep going" pass on heavy days. On quiet days the optional top-up adds extra practice so it's still worth opening, without reviewing cards early and breaking their spacing. The controls sit under a Daily Review heading in Settings, so they're never confused with the standard quiz setup.</span></div>
+    </div>
+  </section>
+
+  <footer>
+    <span class="eyebrow dim">CertAnvil · forged-bronze editorial · concept mockup</span>
+    <span>Light + dark · brand tokens per design/brand/BRAND.md</span>
+  </footer>
+
+</div>
+
+<script>
+(function(){
+  /* theme toggle */
+  var root=document.documentElement, btn=document.getElementById('themeBtn'), lbl=document.getElementById('themeLbl');
+  btn.addEventListener('click',function(){
+    var dark=root.getAttribute('data-theme')==='dark';
+    root.setAttribute('data-theme', dark?'light':'dark');
+    lbl.textContent = dark?'Dark':'Light';
+  });
+
+  /* reveal on scroll (transform+opacity only) */
+  var reduce = matchMedia('(prefers-reduced-motion:reduce)').matches;
+  var fills = function(){
+    document.querySelectorAll('.prog-fill').forEach(function(f){ f.style.width=f.dataset.w; });
+    document.querySelectorAll('.fc-bar').forEach(function(b){ b.style.height=b.dataset.h+'px'; });
+  };
+  if(reduce){
+    document.querySelectorAll('.reveal').forEach(function(el){el.classList.add('visible');}); fills(); return;
+  }
+  var io=new IntersectionObserver(function(es){
+    es.forEach(function(e){ if(e.isIntersecting){ e.target.classList.add('visible'); io.unobserve(e.target);} });
+  },{threshold:0.18});
+  document.querySelectorAll('.reveal').forEach(function(el){io.observe(el);});
+  /* progress bars fill shortly after load (data-motion) */
+  setTimeout(fills, 480);
+  /* safety net: un-hide anything still hidden */
+  setTimeout(function(){ document.querySelectorAll('.reveal:not(.visible)').forEach(function(el){el.classList.add('visible');}); }, 1800);
+})();
+</script>
+</body>
+</html>

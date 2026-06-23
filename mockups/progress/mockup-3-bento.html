@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Topic progress · Bento</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg: oklch(0.975 0.007 85);
+  --surface: oklch(0.992 0.004 85);
+  --surface-2: oklch(0.965 0.010 84);
+  --ink: oklch(0.22 0.015 280);
+  --ink-soft: oklch(0.36 0.014 280);
+  --muted: oklch(0.50 0.013 280);
+  --border: oklch(0.86 0.008 85);
+  --border-soft: oklch(0.91 0.006 85);
+  --accent: oklch(0.50 0.155 55);
+  --accent-bright: oklch(0.80 0.155 64);
+  --accent-deep: oklch(0.42 0.150 52);
+  --on-accent: oklch(0.985 0.010 85);
+  --pass: oklch(0.52 0.13 150);
+  --accent-tint: oklch(0.50 0.155 55 / 0.07);
+  --accent-tint-2: oklch(0.50 0.155 55 / 0.13);
+  --pass-tint: oklch(0.52 0.13 150 / 0.09);
+  --shadow-sm: 0 1px 2px oklch(0.22 0.015 280 / 0.05), 0 2px 8px oklch(0.22 0.015 280 / 0.04);
+  --shadow-lg: 0 8px 28px oklch(0.22 0.015 280 / 0.12), 0 2px 6px oklch(0.22 0.015 280 / 0.06);
+}
+[data-theme="dark"]{
+  --bg: oklch(0.16 0.009 275);
+  --surface: oklch(0.205 0.009 275);
+  --surface-2: oklch(0.185 0.009 275);
+  --ink: oklch(0.96 0.006 275);
+  --ink-soft: oklch(0.78 0.010 275);
+  --muted: oklch(0.60 0.013 275);
+  --border: oklch(0.30 0.008 275);
+  --border-soft: oklch(0.26 0.008 275);
+  --accent: oklch(0.80 0.155 64);
+  --accent-bright: oklch(0.86 0.140 70);
+  --accent-deep: oklch(0.70 0.150 62);
+  --on-accent: oklch(0.18 0.020 275);
+  --pass: oklch(0.74 0.150 152);
+  --accent-tint: oklch(0.80 0.155 64 / 0.10);
+  --accent-tint-2: oklch(0.80 0.155 64 / 0.18);
+  --pass-tint: oklch(0.74 0.150 152 / 0.12);
+  --shadow-sm: 0 1px 2px oklch(0 0 0 / 0.3), 0 2px 8px oklch(0 0 0 / 0.25);
+  --shadow-lg: 0 10px 34px oklch(0 0 0 / 0.45), 0 2px 6px oklch(0 0 0 / 0.3);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--bg);color:var(--ink)}
+body{
+  font-family:'Inter',system-ui,sans-serif;
+  -webkit-font-smoothing:antialiased;
+  line-height:1.5;
+  min-height:100vh;
+  padding:clamp(20px,4vw,48px) clamp(16px,4vw,40px) 80px;
+}
+.wrap{max-width:1160px;margin:0 auto}
+.mono{font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1;font-family:'Inter',sans-serif}
+
+/* ---------- Header ---------- */
+.eyebrow{
+  font-size:11px;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;
+  color:var(--accent);margin-bottom:10px;
+}
+h1{
+  font-family:'Fraunces',serif;font-weight:600;font-size:clamp(30px,5vw,46px);
+  letter-spacing:-0.02em;line-height:1.02;color:var(--ink);
+}
+.sub{color:var(--ink-soft);font-size:15px;margin-top:10px;max-width:60ch}
+.sub b{color:var(--ink);font-weight:600}
+
+/* ---------- Toolbar ---------- */
+.toolbar{
+  display:flex;flex-wrap:wrap;gap:10px;align-items:center;
+  margin:26px 0 22px;
+}
+.search{
+  position:relative;flex:1 1 220px;min-width:180px;
+}
+.search input{
+  width:100%;padding:10px 14px 10px 38px;border-radius:11px;
+  border:1px solid var(--border);background:var(--surface);color:var(--ink);
+  font:inherit;font-size:14px;transition:border-color .18s,box-shadow .18s;
+}
+.search input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-tint)}
+.search input::placeholder{color:var(--muted)}
+.search svg{position:absolute;left:13px;top:50%;transform:translateY(-50%);width:16px;height:16px;color:var(--muted)}
+.segs{display:flex;gap:4px;background:var(--surface-2);border:1px solid var(--border-soft);border-radius:11px;padding:4px}
+.segs button{
+  font:inherit;font-size:13px;font-weight:500;color:var(--ink-soft);
+  background:transparent;border:none;border-radius:8px;padding:7px 12px;cursor:pointer;
+  transition:color .15s,background .15s;white-space:nowrap;
+}
+.segs button:hover{color:var(--ink)}
+.segs button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:var(--shadow-sm);font-weight:600}
+.sortsel{position:relative}
+.sortsel select{
+  font:inherit;font-size:13px;font-weight:500;color:var(--ink);
+  background:var(--surface);border:1px solid var(--border);border-radius:11px;
+  padding:9px 32px 9px 13px;cursor:pointer;appearance:none;
+}
+.sortsel select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-tint)}
+.sortsel svg{position:absolute;right:11px;top:50%;transform:translateY(-50%);width:14px;height:14px;color:var(--muted);pointer-events:none}
+
+/* ---------- Bento grid ---------- */
+.bento{
+  display:grid;
+  grid-template-columns:repeat(6,1fr);
+  grid-auto-rows:minmax(118px,auto);
+  gap:14px;
+}
+.tile{
+  background:var(--surface);border:1px solid var(--border-soft);border-radius:18px;
+  padding:20px;position:relative;overflow:hidden;
+  box-shadow:var(--shadow-sm);
+  transition:transform .22s cubic-bezier(.16,1,.3,1),box-shadow .22s,border-color .2s;
+  will-change:transform;
+}
+.tile.click{cursor:pointer}
+.tile.click:hover{transform:translateY(-3px);box-shadow:var(--shadow-lg);border-color:var(--border)}
+.tile.click:active{transform:scale(.985)}
+.tile-eyebrow{
+  font-size:10.5px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;
+  color:var(--muted);margin-bottom:12px;display:flex;align-items:center;gap:7px;
+}
+
+/* spotlight (large) */
+.t-spot{grid-column:span 4;grid-row:span 2;
+  background:
+    radial-gradient(120% 140% at 100% 0%, var(--accent-tint-2), transparent 60%),
+    linear-gradient(155deg, var(--surface), var(--surface-2));
+  display:flex;flex-direction:column;justify-content:space-between;
+}
+.t-spot:hover{transform:translateY(-4px)}
+.spot-eyebrow{color:var(--accent);font-size:11px;font-weight:600;letter-spacing:0.13em;text-transform:uppercase;display:flex;align-items:center;gap:8px}
+.spot-flag{display:inline-flex;align-items:center;gap:6px;background:var(--accent-tint-2);color:var(--accent-deep);border-radius:999px;padding:3px 10px;font-size:10.5px;font-weight:600;letter-spacing:.04em}
+[data-theme="dark"] .spot-flag{color:var(--accent-bright)}
+.spot-name{font-family:'Fraunces',serif;font-weight:600;font-size:clamp(26px,3.4vw,38px);line-height:1.04;letter-spacing:-0.02em;color:var(--ink);margin:14px 0 8px;max-width:18ch}
+.spot-domain{font-size:13px;color:var(--ink-soft);font-weight:500}
+.spot-why{font-size:14px;color:var(--ink-soft);margin-top:14px;max-width:46ch;line-height:1.5}
+.spot-foot{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-top:18px}
+.spot-mastery{display:flex;align-items:baseline;gap:8px}
+.spot-mastery .num{font-family:'Fraunces',serif;font-weight:600;font-size:30px;color:var(--ink);font-variant-numeric:tabular-nums}
+.spot-mastery .lbl{font-size:12px;color:var(--muted)}
+.spot-cta{
+  display:inline-flex;align-items:center;gap:8px;background:var(--accent);color:var(--on-accent);
+  border:none;border-radius:11px;padding:11px 18px;font:inherit;font-size:14px;font-weight:600;cursor:pointer;
+  transition:transform .15s,background .15s;box-shadow:var(--shadow-sm);
+}
+.spot-cta:hover{background:var(--accent-deep)}
+.spot-cta:active{transform:scale(.97)}
+
+/* coverage stat tile */
+.t-cov{grid-column:span 2;grid-row:span 2;
+  background:linear-gradient(165deg,var(--surface),var(--surface-2));
+  display:flex;flex-direction:column;
+}
+.cov-rings{display:flex;gap:18px;align-items:center;margin:6px 0 16px;flex:1}
+.ring{position:relative;width:104px;height:104px;flex:0 0 auto}
+.ring svg{transform:rotate(-90deg)}
+.ring-c-bg{stroke:var(--border);}
+.ring-c-cov{stroke:var(--pass);stroke-linecap:round;transition:stroke-dashoffset 1s cubic-bezier(.16,1,.3,1)}
+.ring-c-mast{stroke:var(--accent);stroke-linecap:round;transition:stroke-dashoffset 1s cubic-bezier(.16,1,.3,1)}
+.ring-mid{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.ring-mid .num{font-family:'Fraunces',serif;font-weight:600;font-size:24px;color:var(--ink);font-variant-numeric:tabular-nums;line-height:1}
+.ring-mid .lbl{font-size:9.5px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin-top:3px}
+.cov-legend{display:flex;flex-direction:column;gap:10px}
+.cov-legend .row{display:flex;align-items:baseline;justify-content:space-between;gap:10px;font-size:12.5px}
+.cov-legend .k{color:var(--ink-soft);font-weight:500}
+.cov-legend .v{font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums}
+.cov-split{display:flex;gap:0;margin-top:14px;border-top:1px solid var(--border-soft);padding-top:14px;justify-content:space-between}
+.cov-split .cell{text-align:left}
+.cov-split .cell .n{font-family:'Fraunces',serif;font-weight:600;font-size:20px;color:var(--ink);font-variant-numeric:tabular-nums}
+.cov-split .cell .t{font-size:10.5px;color:var(--muted);letter-spacing:.05em;text-transform:uppercase;margin-top:2px}
+
+/* domain cluster tile */
+.t-dom{grid-column:span 3;grid-row:span 2}
+.dom-list{display:flex;flex-direction:column;gap:2px;margin-top:4px}
+.dom-row{
+  display:grid;grid-template-columns:1fr auto;gap:6px 12px;align-items:center;
+  padding:9px 8px;border-radius:10px;cursor:pointer;transition:background .15s;
+}
+.dom-row:hover{background:var(--accent-tint)}
+.dom-row .dl{font-size:13.5px;font-weight:500;color:var(--ink);display:flex;align-items:center;gap:8px;min-width:0}
+.dom-row .dl .obj{font-size:10px;color:var(--muted);font-variant-numeric:tabular-nums;background:var(--surface-2);border:1px solid var(--border-soft);border-radius:5px;padding:1px 5px;flex:0 0 auto}
+.dom-row .dl .txt{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dom-row .dm{font-size:13px;font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums;text-align:right}
+.dom-bar{grid-column:1 / -1;height:5px;background:var(--border-soft);border-radius:3px;overflow:hidden}
+.dom-bar i{display:block;height:100%;background:var(--accent);border-radius:3px;width:0;transition:width .9s cubic-bezier(.16,1,.3,1)}
+.dom-meta{font-size:10.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+
+/* weakest topics tile */
+.t-weak{grid-column:span 3;grid-row:span 2}
+.weak-list{display:flex;flex-direction:column;gap:3px;margin-top:2px}
+.weak-row{
+  display:grid;grid-template-columns:auto 1fr auto;gap:11px;align-items:center;
+  padding:8px;border-radius:10px;cursor:pointer;transition:background .15s;
+}
+.weak-row:hover{background:var(--accent-tint)}
+.weak-rank{font-family:'Fraunces',serif;font-weight:600;font-size:15px;color:var(--muted);font-variant-numeric:tabular-nums;width:18px;text-align:center}
+.weak-name{min-width:0}
+.weak-name .n{font-size:13.5px;font-weight:500;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.weak-name .d{font-size:11px;color:var(--muted)}
+.weak-pct{font-size:13px;font-weight:600;color:var(--accent-deep);font-variant-numeric:tabular-nums}
+[data-theme="dark"] .weak-pct{color:var(--accent-bright)}
+
+/* untouched / strong list tiles */
+.t-untouched{grid-column:span 3;grid-row:span 2;background:var(--surface-2)}
+.t-strong{grid-column:span 3;grid-row:span 2;
+  background:linear-gradient(160deg,var(--surface),var(--pass-tint));
+}
+.chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:6px}
+.chip{
+  font-size:12.5px;font-weight:500;padding:6px 11px;border-radius:9px;cursor:pointer;
+  border:1px solid var(--border-soft);transition:transform .15s,border-color .15s,background .15s;
+  white-space:nowrap;
+}
+.chip:hover{transform:translateY(-2px)}
+.chip:active{transform:scale(.96)}
+.chip.ghost{background:transparent;color:var(--ink-soft);border-style:dashed;border-color:var(--border)}
+.chip.ghost:hover{border-color:var(--accent);color:var(--ink)}
+.chip.good{background:var(--pass-tint);color:var(--pass);border-color:transparent}
+.chip.good .m{font-variant-numeric:tabular-nums;opacity:.75;margin-left:5px;font-size:11px}
+.chip.good:hover{border-color:var(--pass)}
+
+/* recently studied tile */
+.t-recent{grid-column:span 6;grid-row:span 1}
+.recent-track{display:flex;gap:10px;overflow-x:auto;padding-bottom:4px;margin-top:4px;scrollbar-width:thin}
+.recent-card{
+  flex:0 0 auto;min-width:158px;background:var(--surface-2);border:1px solid var(--border-soft);
+  border-radius:12px;padding:12px 14px;cursor:pointer;transition:transform .18s,box-shadow .18s,border-color .18s;
+}
+.recent-card:hover{transform:translateY(-3px);box-shadow:var(--shadow-sm);border-color:var(--border)}
+.recent-card:active{transform:scale(.97)}
+.recent-card .rn{font-size:13px;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.recent-card .rb{display:flex;align-items:baseline;justify-content:space-between;margin-top:8px}
+.recent-card .rm{font-size:12px;color:var(--ink-soft);font-variant-numeric:tabular-nums}
+.recent-card .rt{font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums}
+
+.tile-count{font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums;font-weight:500}
+.empty-note{font-size:13px;color:var(--muted);padding:14px 4px}
+
+/* ---------- Theme toggle ---------- */
+.theme-toggle{
+  position:fixed;top:18px;right:18px;z-index:50;
+  width:42px;height:42px;border-radius:12px;border:1px solid var(--border);
+  background:var(--surface);color:var(--ink);cursor:pointer;box-shadow:var(--shadow-sm);
+  display:flex;align-items:center;justify-content:center;transition:transform .18s,background .18s;
+}
+.theme-toggle:hover{transform:translateY(-2px)}
+.theme-toggle:active{transform:scale(.94)}
+.theme-toggle svg{width:19px;height:19px}
+.theme-toggle .moon{display:none}
+[data-theme="dark"] .theme-toggle .sun{display:none}
+[data-theme="dark"] .theme-toggle .moon{display:block}
+
+/* ---------- Toast ---------- */
+.toast{
+  position:fixed;left:50%;bottom:30px;transform:translate(-50%,28px);
+  background:var(--ink);color:var(--bg);padding:13px 20px;border-radius:13px;
+  font-size:14px;font-weight:600;box-shadow:var(--shadow-lg);z-index:60;
+  opacity:0;pointer-events:none;display:flex;align-items:center;gap:10px;
+  transition:opacity .28s cubic-bezier(.16,1,.3,1),transform .28s cubic-bezier(.16,1,.3,1);
+  max-width:90vw;
+}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+.toast svg{width:17px;height:17px;color:var(--accent-bright);flex:0 0 auto}
+
+@keyframes pulse{0%{box-shadow:0 0 0 0 var(--accent-tint-2)}70%{box-shadow:0 0 0 14px transparent}100%{box-shadow:0 0 0 0 transparent}}
+.pulsing{animation:pulse .6s cubic-bezier(.16,1,.3,1)}
+
+/* ---------- Entrance ---------- */
+@media (prefers-reduced-motion: no-preference){
+  .tile{opacity:0;transform:translateY(14px) scale(.96)}
+  .tile.in{opacity:1;transform:none;transition:opacity .5s cubic-bezier(.16,1,.3,1),transform .5s cubic-bezier(.16,1,.3,1)}
+}
+
+/* ---------- Reflow ---------- */
+.tile.reflow{transition:transform .4s cubic-bezier(.16,1,.3,1),box-shadow .22s,border-color .2s,opacity .25s}
+
+/* ---------- Responsive ---------- */
+@media (max-width:980px){
+  .bento{grid-template-columns:repeat(4,1fr)}
+  .t-spot{grid-column:span 4;grid-row:span 2}
+  .t-cov{grid-column:span 4;grid-row:auto}
+  .t-dom,.t-weak,.t-untouched,.t-strong{grid-column:span 2;grid-row:span 2}
+  .t-recent{grid-column:span 4}
+}
+@media (max-width:640px){
+  .bento{grid-template-columns:1fr}
+  .t-spot,.t-cov,.t-dom,.t-weak,.t-untouched,.t-strong,.t-recent{grid-column:span 1;grid-row:auto}
+  .cov-rings{flex-direction:column;align-items:flex-start}
+}
+</style>
+</head>
+<body>
+<button class="theme-toggle" id="themeBtn" aria-label="Toggle theme">
+  <svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+  <svg class="moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+</button>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Network+ N10-009</div>
+    <h1>Topic progress</h1>
+    <p class="sub">You've touched <b class="mono" id="hCov">80%</b> of 50 topics, averaging <b class="mono" id="hMast">38%</b> mastery. Start with the one below, it moves your score the most.</p>
+  </header>
+
+  <div class="toolbar">
+    <div class="search">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+      <input id="search" type="search" placeholder="Search 50 topics…" autocomplete="off">
+    </div>
+    <div class="segs" id="filters" role="group" aria-label="Filter">
+      <button data-filter="all" aria-pressed="true">All</button>
+      <button data-filter="weak" aria-pressed="false">Weak only</button>
+      <button data-filter="untouched" aria-pressed="false">Untouched</button>
+      <button data-filter="strong" aria-pressed="false">Strong</button>
+    </div>
+    <div class="sortsel">
+      <select id="sort" aria-label="Sort">
+        <option value="worst">Worst first</option>
+        <option value="recent">Most recent</option>
+        <option value="studied">Most studied</option>
+        <option value="az">A-Z</option>
+      </select>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg>
+    </div>
+  </div>
+
+  <div class="bento" id="bento"></div>
+</div>
+
+<div class="toast" id="toast">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h7l-1 8 10-12h-7z"/></svg>
+  <span id="toastMsg"></span>
+</div>
+
+<script>
+window.PROGRESS_DATA = {
+  "summary": { "total": 50, "weak": 18, "untouched": 10, "strong": 10, "developing": 12, "coverage": 80, "avgMastery": 38 },
+  "domains": [
+    { "key": "concepts", "label": "Networking Concepts", "weight": 23, "obj": "1.0", "count": 13, "avgMastery": 32 },
+    { "key": "implementation", "label": "Network Implementation", "weight": 20, "obj": "2.0", "count": 13, "avgMastery": 50 },
+    { "key": "operations", "label": "Network Operations", "weight": 19, "obj": "3.0", "count": 7, "avgMastery": 28 },
+    { "key": "security", "label": "Network Security", "weight": 14, "obj": "4.0", "count": 11, "avgMastery": 35 },
+    { "key": "troubleshooting", "label": "Network Troubleshooting", "weight": 24, "obj": "5.0", "count": 6, "avgMastery": 45 }
+  ],
+  "recommendation": { "name": "Network Models & OSI", "domainLabel": "Networking Concepts", "mastery": 0, "reason": "It carries heavy exam weight and you haven't started it yet" },
+  "topics": [
+    { "name": "Network Models & OSI", "domain": "concepts", "domainLabel": "Networking Concepts", "obj": "1.0", "mastery": 0, "accuracy": 0, "attempts": 0, "lastSeenDays": null, "status": "untouched" },
+    { "name": "TCP/IP Basics", "domain": "concepts", "domainLabel": "Networking Concepts", "obj": "1.0", "mastery": 20, "accuracy": 21, "attempts": 19, "lastSeenDays": 34, "status": "weak" },
+    { "name": "Subnetting & IP Addressing", "domain": "concepts", "domainLabel": "Networking Concepts", "obj": "1.0", "mastery": 88, "accuracy": 76, "attempts": 35, "lastSeenDays": 21, "status": "strong" },
+    { "name": "TCP/IP Applications", "domain": "concepts", "domainLabel": "Networking Concepts", "obj": "1.0", "mastery": 48, "accuracy": 38, "attempts": 9, "lastSeenDays": 2, "status": "developing" },
+    { "name": "Network Naming (DNS & DHCP)", "domain": "concepts", "domainLabel": "Networking Concepts", "obj": "1.0", "mastery": 57, "accuracy": 58, "attempts": 40, "lastSeenDays": 5, "status": "developing" },
+    { "name": "IPv6", "domain": "concepts", "domainLabel": "Networking Concepts", "obj": "1.0", "mastery": 30, "accuracy": 21, "attempts": 18, "lastSeenDays": 21, "status": "weak" },
+    { "name": "NAT & IP Services", "domain": "concepts", "domainLabel": "Networking Concepts", "obj": "1.0", "mastery": 0, "accuracy": 0, "attempts": 0, "lastSeenDays": null, "status": "untouched" },
+    { "name": "NTP, ICMP & Traffic Types", "domain": "concepts", "domainLabel": "Networking Concepts", "obj": "1.0", "mastery": 0, "accuracy": 0, "attempts": 0, "lastSeenDays": null, "status": "untouched" },
+    { "name": "Port Numbers", "domain": "concepts", "domainLabel": "Networking Concepts", "obj": "1.0", "mastery": 95, "accuracy": 73, "attempts": 22, "lastSeenDays": 2, "status": "strong" },
+    { "name": "Virtualisation & Cloud", "domain": "concepts", "domainLabel": "Networking Concepts", "obj": "1.0", "mastery": 47, "accuracy": 49, "attempts": 6, "lastSeenDays": 1, "status": "developing" },
+    { "name": "Cloud Networking & VPCs", "domain": "concepts", "domainLabel": "Networking Concepts", "obj": "1.0", "mastery": 9, "accuracy": 20, "attempts": 16, "lastSeenDays": 5, "status": "weak" },
+    { "name": "Network Appliances & Device Functions", "domain": "concepts", "domainLabel": "Networking Concepts", "obj": "1.0", "mastery": 15, "accuracy": 22, "attempts": 22, "lastSeenDays": 8, "status": "weak" },
+    { "name": "DNS Records & DNSSEC", "domain": "concepts", "domainLabel": "Networking Concepts", "obj": "1.0", "mastery": 10, "accuracy": 20, "attempts": 18, "lastSeenDays": 5, "status": "weak" },
+    { "name": "Routing Protocols", "domain": "implementation", "domainLabel": "Network Implementation", "obj": "2.0", "mastery": 85, "accuracy": 62, "attempts": 20, "lastSeenDays": 1, "status": "strong" },
+    { "name": "OSPF", "domain": "implementation", "domainLabel": "Network Implementation", "obj": "2.0", "mastery": 18, "accuracy": 20, "attempts": 5, "lastSeenDays": 13, "status": "weak" },
+    { "name": "BGP", "domain": "implementation", "domainLabel": "Network Implementation", "obj": "2.0", "mastery": 27, "accuracy": 23, "attempts": 30, "lastSeenDays": 21, "status": "weak" },
+    { "name": "Switch Features & VLANs", "domain": "implementation", "domainLabel": "Network Implementation", "obj": "2.0", "mastery": 6, "accuracy": 20, "attempts": 18, "lastSeenDays": 8, "status": "weak" },
+    { "name": "VLAN Trunking", "domain": "implementation", "domainLabel": "Network Implementation", "obj": "2.0", "mastery": 77, "accuracy": 55, "attempts": 30, "lastSeenDays": 2, "status": "strong" },
+    { "name": "STP/RSTP", "domain": "implementation", "domainLabel": "Network Implementation", "obj": "2.0", "mastery": 57, "accuracy": 37, "attempts": 32, "lastSeenDays": 2, "status": "developing" },
+    { "name": "Wireless Networking", "domain": "implementation", "domainLabel": "Network Implementation", "obj": "2.0", "mastery": 0, "accuracy": 0, "attempts": 0, "lastSeenDays": null, "status": "untouched" },
+    { "name": "Ethernet Basics", "domain": "implementation", "domainLabel": "Network Implementation", "obj": "2.0", "mastery": 22, "accuracy": 26, "attempts": 25, "lastSeenDays": 2, "status": "weak" },
+    { "name": "Ethernet Standards", "domain": "implementation", "domainLabel": "Network Implementation", "obj": "2.0", "mastery": 73, "accuracy": 53, "attempts": 40, "lastSeenDays": 2, "status": "developing" },
+    { "name": "Cabling & Topology", "domain": "implementation", "domainLabel": "Network Implementation", "obj": "2.0", "mastery": 47, "accuracy": 25, "attempts": 34, "lastSeenDays": 13, "status": "developing" },
+    { "name": "Integrating Networked Devices", "domain": "implementation", "domainLabel": "Network Implementation", "obj": "2.0", "mastery": 76, "accuracy": 60, "attempts": 11, "lastSeenDays": 2, "status": "strong" },
+    { "name": "SDN, NFV & Automation", "domain": "implementation", "domainLabel": "Network Implementation", "obj": "2.0", "mastery": 60, "accuracy": 57, "attempts": 7, "lastSeenDays": 21, "status": "developing" },
+    { "name": "Data Center Architectures", "domain": "implementation", "domainLabel": "Network Implementation", "obj": "2.0", "mastery": 99, "accuracy": 97, "attempts": 14, "lastSeenDays": 8, "status": "strong" },
+    { "name": "Network Operations", "domain": "operations", "domainLabel": "Network Operations", "obj": "3.0", "mastery": 38, "accuracy": 38, "attempts": 9, "lastSeenDays": 13, "status": "weak" },
+    { "name": "Data Centres", "domain": "operations", "domainLabel": "Network Operations", "obj": "3.0", "mastery": 17, "accuracy": 20, "attempts": 13, "lastSeenDays": 34, "status": "weak" },
+    { "name": "WAN Connectivity", "domain": "operations", "domainLabel": "Network Operations", "obj": "3.0", "mastery": 0, "accuracy": 0, "attempts": 0, "lastSeenDays": null, "status": "untouched" },
+    { "name": "SD-WAN & SASE", "domain": "operations", "domainLabel": "Network Operations", "obj": "3.0", "mastery": 42, "accuracy": 20, "attempts": 37, "lastSeenDays": 2, "status": "developing" },
+    { "name": "SMB & Network File Services", "domain": "operations", "domainLabel": "Network Operations", "obj": "3.0", "mastery": 62, "accuracy": 46, "attempts": 41, "lastSeenDays": 34, "status": "developing" },
+    { "name": "Business Continuity & Disaster Recovery", "domain": "operations", "domainLabel": "Network Operations", "obj": "3.0", "mastery": 38, "accuracy": 22, "attempts": 29, "lastSeenDays": 5, "status": "weak" },
+    { "name": "Network Monitoring & Observability", "domain": "operations", "domainLabel": "Network Operations", "obj": "3.0", "mastery": 0, "accuracy": 0, "attempts": 0, "lastSeenDays": null, "status": "untouched" },
+    { "name": "Securing TCP/IP", "domain": "security", "domainLabel": "Network Security", "obj": "4.0", "mastery": 28, "accuracy": 27, "attempts": 28, "lastSeenDays": 2, "status": "weak" },
+    { "name": "Protecting Networks", "domain": "security", "domainLabel": "Network Security", "obj": "4.0", "mastery": 37, "accuracy": 38, "attempts": 13, "lastSeenDays": 1, "status": "weak" },
+    { "name": "AAA & Authentication", "domain": "security", "domainLabel": "Network Security", "obj": "4.0", "mastery": 89, "accuracy": 68, "attempts": 36, "lastSeenDays": 34, "status": "strong" },
+    { "name": "IPsec & VPN Protocols", "domain": "security", "domainLabel": "Network Security", "obj": "4.0", "mastery": 59, "accuracy": 39, "attempts": 42, "lastSeenDays": 5, "status": "developing" },
+    { "name": "IPsec VPN", "domain": "security", "domainLabel": "Network Security", "obj": "4.0", "mastery": 0, "accuracy": 0, "attempts": 0, "lastSeenDays": null, "status": "untouched" },
+    { "name": "SSL/TLS VPN", "domain": "security", "domainLabel": "Network Security", "obj": "4.0", "mastery": 0, "accuracy": 0, "attempts": 0, "lastSeenDays": null, "status": "untouched" },
+    { "name": "PKI & Certificate Management", "domain": "security", "domainLabel": "Network Security", "obj": "4.0", "mastery": 44, "accuracy": 34, "attempts": 19, "lastSeenDays": 8, "status": "developing" },
+    { "name": "Firewalls, DMZ & Security Zones", "domain": "security", "domainLabel": "Network Security", "obj": "4.0", "mastery": 95, "accuracy": 92, "attempts": 10, "lastSeenDays": 1, "status": "strong" },
+    { "name": "WPA3 & EAP Authentication", "domain": "security", "domainLabel": "Network Security", "obj": "4.0", "mastery": 0, "accuracy": 0, "attempts": 0, "lastSeenDays": null, "status": "untouched" },
+    { "name": "Network Attacks & Threats", "domain": "security", "domainLabel": "Network Security", "obj": "4.0", "mastery": 36, "accuracy": 20, "attempts": 19, "lastSeenDays": 34, "status": "weak" },
+    { "name": "Physical Security Controls", "domain": "security", "domainLabel": "Network Security", "obj": "4.0", "mastery": 0, "accuracy": 0, "attempts": 0, "lastSeenDays": null, "status": "untouched" },
+    { "name": "Network Troubleshooting & Tools", "domain": "troubleshooting", "domainLabel": "Network Troubleshooting", "obj": "5.0", "mastery": 81, "accuracy": 81, "attempts": 12, "lastSeenDays": 1, "status": "strong" },
+    { "name": "Cable Issues", "domain": "troubleshooting", "domainLabel": "Network Troubleshooting", "obj": "5.0", "mastery": 22, "accuracy": 20, "attempts": 8, "lastSeenDays": 1, "status": "weak" },
+    { "name": "Service Issues", "domain": "troubleshooting", "domainLabel": "Network Troubleshooting", "obj": "5.0", "mastery": 41, "accuracy": 48, "attempts": 32, "lastSeenDays": 21, "status": "developing" },
+    { "name": "Perf Issues", "domain": "troubleshooting", "domainLabel": "Network Troubleshooting", "obj": "5.0", "mastery": 89, "accuracy": 86, "attempts": 12, "lastSeenDays": 5, "status": "strong" },
+    { "name": "Connection Issues", "domain": "troubleshooting", "domainLabel": "Network Troubleshooting", "obj": "5.0", "mastery": 16, "accuracy": 20, "attempts": 39, "lastSeenDays": 34, "status": "weak" },
+    { "name": "CompTIA Troubleshooting Methodology", "domain": "troubleshooting", "domainLabel": "Network Troubleshooting", "obj": "5.0", "mastery": 22, "accuracy": 20, "attempts": 21, "lastSeenDays": 13, "status": "weak" }
+  ]
+};
+
+(function(){
+  "use strict";
+  const D = window.PROGRESS_DATA;
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const bento = document.getElementById('bento');
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+  /* ---------- state ---------- */
+  let filter = 'all';
+  let sort = 'worst';
+  let query = '';
+
+  /* ---------- helpers ---------- */
+  function matchTopic(t){
+    if(query && !t.name.toLowerCase().includes(query) && !t.domainLabel.toLowerCase().includes(query)) return false;
+    if(filter==='weak') return t.status==='weak';
+    if(filter==='untouched') return t.status==='untouched';
+    if(filter==='strong') return t.status==='strong';
+    return true;
+  }
+  function sortTopics(arr){
+    const a = arr.slice();
+    if(sort==='worst') a.sort((x,y)=>x.mastery-y.mastery);
+    else if(sort==='recent') a.sort((x,y)=>(x.lastSeenDays==null?1e9:x.lastSeenDays)-(y.lastSeenDays==null?1e9:y.lastSeenDays));
+    else if(sort==='studied') a.sort((x,y)=>y.attempts-x.attempts);
+    else if(sort==='az') a.sort((x,y)=>x.name.localeCompare(y.name));
+    return a;
+  }
+
+  /* ---------- toast + pulse ---------- */
+  const toast = document.getElementById('toast'), toastMsg = document.getElementById('toastMsg');
+  let toastT;
+  function drill(name, el){
+    toastMsg.textContent = 'Starting drill: ' + name;
+    toast.classList.add('show');
+    clearTimeout(toastT);
+    toastT = setTimeout(()=>toast.classList.remove('show'), 2400);
+    if(el && !reduce){ el.classList.remove('pulsing'); void el.offsetWidth; el.classList.add('pulsing'); }
+  }
+
+  /* ---------- count-up ---------- */
+  function countUp(el, target, suffix){
+    suffix = suffix||'';
+    if(reduce){ el.textContent = target + suffix; return; }
+    const dur = 900, t0 = performance.now();
+    function step(now){
+      const p = Math.min(1,(now-t0)/dur);
+      const e = 1-Math.pow(1-p,3);
+      el.textContent = Math.round(target*e) + suffix;
+      if(p<1) requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  }
+
+  /* ---------- tile builders ---------- */
+  function spotlightTile(){
+    const r = D.recommendation;
+    const recObj = (D.domains.find(d=>d.label===r.domainLabel)||{}).obj || '';
+    const el = document.createElement('div');
+    el.className = 'tile t-spot click';
+    el.innerHTML = `
+      <div>
+        <div class="spot-eyebrow">Drill this next
+          <span class="spot-flag">Highest impact</span>
+        </div>
+        <div class="spot-name">${esc(r.name)}</div>
+        <div class="spot-domain">${esc(r.domainLabel)}${recObj?' · Objective '+recObj:''}</div>
+        <div class="spot-why">${esc(r.reason)}. Clearing it now moves your overall score more than anything else.</div>
+      </div>
+      <div class="spot-foot">
+        <div class="spot-mastery">${r.mastery===0?'<span class="lbl" style="font-size:13px;color:var(--ink-soft)">Not started yet</span>':'<span class="num mono" data-cnt="'+r.mastery+'">0</span><span class="lbl">% mastery</span>'}</div>
+        <button class="spot-cta" tabindex="-1">Start drill
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+        </button>
+      </div>`;
+    el.addEventListener('click', ()=>drill(r.name, el));
+    return el;
+  }
+
+  function coverageTile(){
+    const s = D.summary;
+    const el = document.createElement('div');
+    el.className = 'tile t-cov';
+    const C = 2*Math.PI*44;
+    el.innerHTML = `
+      <div class="tile-eyebrow">Where you stand</div>
+      <div class="cov-rings">
+        <div class="ring">
+          <svg width="104" height="104" viewBox="0 0 104 104">
+            <circle class="ring-c-bg" cx="52" cy="52" r="44" fill="none" stroke-width="9"/>
+            <circle class="ring-c-cov" cx="52" cy="52" r="44" fill="none" stroke-width="9" stroke-dasharray="${C}" stroke-dashoffset="${C}"/>
+          </svg>
+          <div class="ring-mid"><span class="num mono" data-cnt="${s.coverage}" data-suffix="%">0</span><span class="lbl">coverage</span></div>
+        </div>
+        <div class="cov-legend">
+          <div class="row"><span class="k">Avg mastery</span><span class="v mono" data-cnt="${s.avgMastery}" data-suffix="%">0%</span></div>
+          <div class="row"><span class="k">Topics seen</span><span class="v mono">${s.total-s.untouched}/${s.total}</span></div>
+          <div class="row"><span class="k">Developing</span><span class="v mono">${s.developing}</span></div>
+        </div>
+      </div>
+      <div class="cov-split">
+        <div class="cell"><div class="n mono" data-cnt="${s.weak}">0</div><div class="t">Weak</div></div>
+        <div class="cell"><div class="n mono" data-cnt="${s.untouched}">0</div><div class="t">Untouched</div></div>
+        <div class="cell"><div class="n mono" data-cnt="${s.strong}">0</div><div class="t">Strong</div></div>
+      </div>`;
+    const cov = el.querySelector('.ring-c-cov');
+    requestAnimationFrame(()=>requestAnimationFrame(()=>{
+      cov.style.strokeDashoffset = reduce ? (C*(1-s.coverage/100)) : (C*(1-s.coverage/100));
+    }));
+    return el;
+  }
+
+  function domainTile(){
+    const el = document.createElement('div');
+    el.className = 'tile t-dom';
+    const rows = D.domains.map(d=>`
+      <div class="dom-row" data-domain="${d.key}" data-label="${esc(d.label)}">
+        <div class="dl"><span class="obj mono">${d.obj}</span><span class="txt">${esc(d.label)}</span></div>
+        <div class="dm mono">${d.avgMastery}%</div>
+        <div class="dom-bar"><i data-w="${d.avgMastery}"></i></div>
+        <div class="dom-meta">${d.count} topics · ${d.weight}% of exam</div>
+      </div>`).join('');
+    el.innerHTML = `<div class="tile-eyebrow">Mastery by domain <span class="tile-count">5 domains</span></div><div class="dom-list">${rows}</div>`;
+    el.querySelectorAll('.dom-row').forEach(row=>{
+      row.addEventListener('click', ()=>drill(row.dataset.label + ' (domain)', row));
+    });
+    requestAnimationFrame(()=>requestAnimationFrame(()=>{
+      el.querySelectorAll('.dom-bar i').forEach(i=>{ i.style.width = i.dataset.w + '%'; });
+    }));
+    return el;
+  }
+
+  function weakestTile(){
+    const el = document.createElement('div');
+    el.className = 'tile t-weak';
+    const list = D.topics.filter(t=>t.status!=='untouched').slice().sort((a,b)=>a.mastery-b.mastery).slice(0,5);
+    const rows = list.map((t,i)=>`
+      <div class="weak-row" data-name="${esc(t.name)}">
+        <div class="weak-rank mono">${i+1}</div>
+        <div class="weak-name"><div class="n">${esc(t.name)}</div><div class="d">${esc(t.domainLabel)}</div></div>
+        <div class="weak-pct mono">${t.mastery}%</div>
+      </div>`).join('');
+    el.innerHTML = `<div class="tile-eyebrow">Weakest topics <span class="tile-count">lowest 5</span></div><div class="weak-list">${rows}</div>`;
+    el.querySelectorAll('.weak-row').forEach(r=>r.addEventListener('click', ()=>drill(r.dataset.name, r)));
+    return el;
+  }
+
+  function untouchedTile(){
+    const el = document.createElement('div');
+    el.className = 'tile t-untouched';
+    const list = D.topics.filter(t=>t.status==='untouched');
+    const chips = list.map(t=>`<span class="chip ghost" data-name="${esc(t.name)}">${esc(t.name)}</span>`).join('');
+    el.innerHTML = `<div class="tile-eyebrow">Untouched <span class="tile-count">${list.length} never studied</span></div><div class="chips">${chips}</div>`;
+    el.querySelectorAll('.chip').forEach(c=>c.addEventListener('click', ()=>drill(c.dataset.name, c)));
+    return el;
+  }
+
+  function strongTile(){
+    const el = document.createElement('div');
+    el.className = 'tile t-strong';
+    const list = D.topics.filter(t=>t.status==='strong').slice().sort((a,b)=>b.mastery-a.mastery);
+    const chips = list.map(t=>`<span class="chip good" data-name="${esc(t.name)}">${esc(t.name)}<span class="m mono">${t.mastery}%</span></span>`).join('');
+    el.innerHTML = `<div class="tile-eyebrow">Strong &amp; mastered <span class="tile-count">${list.length} solid</span></div><div class="chips">${chips}</div>`;
+    el.querySelectorAll('.chip').forEach(c=>c.addEventListener('click', ()=>drill(c.dataset.name, c)));
+    return el;
+  }
+
+  function recentTile(){
+    const el = document.createElement('div');
+    el.className = 'tile t-recent';
+    const list = D.topics.filter(t=>t.lastSeenDays!=null).slice().sort((a,b)=>a.lastSeenDays-b.lastSeenDays).slice(0,8);
+    const cards = list.map(t=>`
+      <div class="recent-card" data-name="${esc(t.name)}">
+        <div class="rn">${esc(t.name)}</div>
+        <div class="rb"><span class="rm mono">${t.mastery}% mastery</span><span class="rt mono">${t.lastSeenDays===1?'1 day':t.lastSeenDays+' days'} ago</span></div>
+      </div>`).join('');
+    el.innerHTML = `<div class="tile-eyebrow">Recently studied <span class="tile-count">last ${list.length} sessions</span></div><div class="recent-track">${cards}</div>`;
+    el.querySelectorAll('.recent-card').forEach(c=>c.addEventListener('click', ()=>drill(c.dataset.name, c)));
+    return el;
+  }
+
+  /* ---------- scoped/filtered view (a focused topic grid) ---------- */
+  function scopedTile(){
+    const el = document.createElement('div');
+    el.className = 'tile t-recent';
+    const list = sortTopics(D.topics.filter(matchTopic));
+    if(!list.length){
+      el.innerHTML = `<div class="tile-eyebrow">Filtered topics</div><div class="empty-note">No topics match this search and filter.</div>`;
+      return el;
+    }
+    const cards = list.map(t=>{
+      const cls = t.status==='untouched'?'ghost':(t.status==='strong'?'good':'');
+      const tail = t.status==='untouched' ? '' : `<span class="m mono">${t.mastery}%</span>`;
+      return `<span class="chip ${cls}" data-name="${esc(t.name)}">${esc(t.name)}${tail}</span>`;
+    }).join('');
+    const flabel = {weak:'Weak only',untouched:'Untouched',strong:'Strong'}[filter] || 'All topics';
+    el.innerHTML = `<div class="tile-eyebrow">${esc(flabel)}${query?' · matching “'+esc(query)+'”':''} <span class="tile-count">${list.length} of 50</span></div><div class="chips" style="max-height:none">${cards}</div>`;
+    el.querySelectorAll('.chip').forEach(c=>c.addEventListener('click', ()=>drill(c.dataset.name, c)));
+    return el;
+  }
+
+  /* ---------- render ---------- */
+  function render(animate){
+    bento.innerHTML = '';
+    const tiles = [];
+    const active = (filter!=='all') || query;
+
+    if(active){
+      // Scoped mode: keep spotlight + coverage as anchors, replace the rest with a focused topic grid.
+      tiles.push(spotlightTile());
+      tiles.push(coverageTile());
+      tiles.push(scopedTile());
+    } else {
+      tiles.push(spotlightTile());
+      tiles.push(coverageTile());
+      tiles.push(domainTile());
+      tiles.push(weakestTile());
+      tiles.push(untouchedTile());
+      tiles.push(strongTile());
+      tiles.push(recentTile());
+    }
+
+    tiles.forEach((t,i)=>{
+      bento.appendChild(t);
+      if(animate && !reduce){
+        setTimeout(()=>{ t.classList.add('in'); runCounts(t); }, 60*i);
+      } else {
+        t.classList.add('in');
+        runCounts(t);
+      }
+    });
+  }
+
+  function runCounts(tile){
+    tile.querySelectorAll('[data-cnt]').forEach(n=>{
+      const target = +n.dataset.cnt;
+      const suffix = n.dataset.suffix || '';
+      countUp(n, target, suffix);
+    });
+  }
+
+  /* ---------- controls ---------- */
+  const filtersEl = document.getElementById('filters');
+  filtersEl.addEventListener('click', e=>{
+    const b = e.target.closest('button'); if(!b) return;
+    filtersEl.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed', x===b?'true':'false'));
+    filter = b.dataset.filter;
+    render(false);
+  });
+  document.getElementById('sort').addEventListener('change', e=>{ sort = e.target.value; render(false); });
+  let qT;
+  document.getElementById('search').addEventListener('input', e=>{
+    clearTimeout(qT);
+    qT = setTimeout(()=>{ query = e.target.value.trim().toLowerCase(); render(false); }, 120);
+  });
+
+  /* ---------- theme ---------- */
+  document.getElementById('themeBtn').addEventListener('click', ()=>{
+    const html = document.documentElement;
+    html.setAttribute('data-theme', html.getAttribute('data-theme')==='dark' ? 'light' : 'dark');
+  });
+
+  /* ---------- header count-ups ---------- */
+  countUp(document.getElementById('hCov'), D.summary.coverage, '%');
+  countUp(document.getElementById('hMast'), D.summary.avgMastery, '%');
+
+  /* ---------- init ---------- */
+  render(true);
+})();
+</script>
+</body>
+</html>

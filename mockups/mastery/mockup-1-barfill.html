@@ -1,0 +1,131 @@
+<!DOCTYPE html><html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Domain Mastery — 1 · Bar Fill Reveal</title>
+<link rel="stylesheet" href="dm.css">
+<style>
+  #replay {
+    background:#b5692a;color:#fff;border:none;padding:8px 14px;border-radius:99px;
+    font-family:ui-monospace,monospace;font-size:12px;cursor:pointer;
+    transition:transform 140ms ease-out;
+  }
+  #replay:active { transform:scale(0.97); }
+  /* threshold lock flash helper — brief glow on the 80% tick + fill brightness pulse */
+  .dm-bar-target.dm-lock-flash {
+    animation: dm-lock-glow 520ms ease-out;
+  }
+  @keyframes dm-lock-glow {
+    0%   { opacity:.5;  box-shadow:0 0 0 0 rgba(74,140,86,0); background:var(--ink); }
+    35%  { opacity:1;   box-shadow:0 0 10px 3px rgba(74,140,86,0.65); background:#3c7a45; }
+    100% { opacity:.5;  box-shadow:0 0 0 0 rgba(74,140,86,0); background:var(--ink); }
+  }
+  .dm-bar-fill.dm-lock-pulse {
+    animation: dm-lock-pulse 420ms ease-out;
+  }
+  @keyframes dm-lock-pulse {
+    0%   { filter:brightness(1); }
+    40%  { filter:brightness(1.35); }
+    100% { filter:brightness(1); }
+  }
+</style>
+</head><body>
+  <div class="mock-banner">
+    <h2>1 · Bar Fill Reveal</h2>
+    <p>Each domain's bar grows from zero to its score as the percentage counts up beside it and the tier badge pops in — bars that clear the 80% line flash as they lock into mastery. Your standing builds in front of you.</p>
+    <span class="mock-hint">Watch on load · press Replay.</span>
+  </div>
+  <div class="dm-shell"><div id="mount"></div></div>
+  <button id="replay" style="position:fixed;right:18px;bottom:18px;">↻ Replay</button>
+  <script src="dm.js"></script>
+  <script>
+    const DM = window.DomainMastery.render('#mount');
+    /* ANIMATION LAYER — "Bar Fill Reveal" */
+
+    const REDUCED = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const STAGGER = 110;   // ms between rows, top→bottom
+    const FILL_MS = 800;   // bar + count-up duration (in sync)
+    const BADGE_DELAY = 140; // badge pops slightly after the bar starts
+
+    const easeOutCubic = t => 1 - Math.pow(1 - t, 3);
+
+    function showFinal(row) {
+      // reduced-motion: settled final state, no growth/count/flash
+      row.fillEl.style.width = Math.min(row.pct, 100) + '%';
+      row.pctEl.textContent = row.pct + '%';
+      row.badgeEl.style.opacity = '1';
+      row.badgeEl.style.transform = 'none';
+    }
+
+    function countUp(row, ms) {
+      const target = row.pct;
+      const start = performance.now();
+      function frame(now) {
+        const t = Math.min((now - start) / ms, 1);
+        const v = Math.round(target * easeOutCubic(t));
+        row.pctEl.textContent = v + '%';
+        if (t < 1) requestAnimationFrame(frame);
+        else row.pctEl.textContent = target + '%';
+      }
+      requestAnimationFrame(frame);
+    }
+
+    function animateRow(row) {
+      // BAR: base CSS transitions width 800ms ease-out — set width to trigger it
+      // force reflow so the 0% start is committed before the new width
+      void row.fillEl.offsetWidth;
+      row.fillEl.style.width = Math.min(row.pct, 100) + '%';
+
+      // PCT COUNT-UP: synced to the same duration
+      countUp(row, FILL_MS);
+
+      // BADGE POP: fade + scale in with overshoot, slightly after bar starts
+      setTimeout(() => {
+        row.badgeEl.style.transition =
+          'opacity 300ms ease-out, transform 300ms cubic-bezier(0.34,1.56,0.64,1)';
+        row.badgeEl.style.opacity = '1';
+        row.badgeEl.style.transform = 'scale(1)';
+      }, BADGE_DELAY);
+
+      // THRESHOLD LOCK FLASH: only for bars that reach/exceed 80%,
+      // timed to ≈ when the fill passes the 80% mark
+      if (row.pct >= DM.threshold) {
+        const crossMs = FILL_MS * (DM.threshold / row.pct);
+        setTimeout(() => {
+          row.targetEl.classList.add('dm-lock-flash');
+          row.fillEl.classList.add('dm-lock-pulse');
+          setTimeout(() => {
+            row.targetEl.classList.remove('dm-lock-flash');
+            row.fillEl.classList.remove('dm-lock-pulse');
+          }, 560);
+        }, crossMs);
+      }
+    }
+
+    function reveal() {
+      if (REDUCED) {
+        DM.rows.forEach(showFinal);
+        return;
+      }
+      // reset every row to its zero/hidden start state
+      DM.rows.forEach(row => {
+        row.fillEl.style.transition = 'none';
+        row.fillEl.style.width = '0%';
+        row.fillEl.classList.remove('dm-lock-pulse');
+        row.targetEl.classList.remove('dm-lock-flash');
+        row.pctEl.textContent = '0%';
+        row.badgeEl.style.transition = 'none';
+        row.badgeEl.style.opacity = '0';
+        row.badgeEl.style.transform = 'scale(0.9)';
+      });
+      // commit the reset, then restore the width transition and stagger in
+      void DM.list.offsetWidth;
+      DM.rows.forEach(row => { row.fillEl.style.transition = ''; });
+
+      DM.rows.forEach((row, i) => {
+        setTimeout(() => animateRow(row), i * STAGGER);
+      });
+    }
+
+    reveal();
+    document.getElementById('replay').addEventListener('click', reveal);
+  </script>
+</body></html>

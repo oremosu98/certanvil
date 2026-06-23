@@ -1,0 +1,176 @@
+<!DOCTYPE html><html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Domain Mastery — 3 · Row Expand</title>
+<link rel="stylesheet" href="dm.css">
+<style>
+  /* ----- Row lift: relative stacking + soft elevation while hovered ----- */
+  .dm-row { position: relative; transform-origin: center; will-change: transform; }
+  .dm-row.dm-lifted {
+    z-index: 2;
+    /* rows are now a flat ledger; the lifted one gains a raised warm surface so
+       it reads as a card being picked up out of the list */
+    background: #fffdf8;
+    border-radius: 12px;
+    border-bottom-color: transparent;
+    box-shadow:
+      0 1px 0 rgba(255,255,255,0.7) inset,
+      0 18px 40px -20px rgba(40,30,20,0.50),
+      0 4px 14px -8px rgba(40,30,20,0.30);
+  }
+  /* dimmed neighbours when a sibling is lifted */
+  .dm-row.dm-dim { opacity: 0.6; transition: opacity 180ms ease-out; }
+
+  /* bar bloom — base track keeps a smooth height transition for the hover thicken */
+  .dm-bar-track { transition: height 200ms ease-out; }
+  .dm-row.dm-lifted .dm-bar-fill { filter: brightness(1.08) saturate(1.05); }
+
+  /* ----- Detail strip (unfolds under the row content) ----- */
+  .dm-detail {
+    grid-column: 1 / -1;
+    overflow: hidden;
+    height: 0;
+    opacity: 0;
+    margin-top: 0;
+    border-top: 1px solid var(--hair);
+    transition: height 220ms ease-out, opacity 220ms ease-out, margin-top 220ms ease-out;
+  }
+  .dm-row.dm-lifted .dm-detail { opacity: 1; margin-top: 4px; }
+  .dm-detail-inner {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 18px;
+    padding-top: 11px;
+    font-size: 11px;
+    line-height: 1.4;
+    color: var(--muted);
+  }
+  .dm-detail-item { display: inline-flex; align-items: baseline; gap: 5px; }
+  .dm-detail-item strong {
+    color: var(--ink); font-weight: 800; font-variant-numeric: tabular-nums;
+  }
+  .dm-detail-gap.dm-detail-met strong { color: #3c7a45; }
+  .dm-detail-action {
+    color: var(--dm-accent, var(--accent)); font-weight: 700;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .dm-row, .dm-bar-track, .dm-row.dm-dim { transition: opacity 160ms linear; }
+    .dm-detail { transition: height 200ms ease-out, opacity 200ms ease-out; }
+  }
+</style>
+</head><body>
+  <div class="mock-banner">
+    <h2>3 · Row Expand</h2>
+    <p>Hover a domain and the row lifts toward you — a soft elevation, the bar thickens, and a detail strip unfolds showing the gap to mastery and a recommended next step. The list feels like cards you can pick up.</p>
+    <span class="mock-hint">Hover (or tap) the domain rows.</span>
+  </div>
+  <div class="dm-shell"><div id="mount"></div></div>
+  <script src="dm.js"></script>
+  <script>
+    const DM = window.DomainMastery.render('#mount');
+    /* ANIMATION LAYER — "Row Expand" (interaction/feedback; spring lift) */
+
+    const REDUCED = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const CAN_HOVER = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+
+    const TRACK_BASE = 10;   // px — base track height
+    const TRACK_BLOOM = 16;  // px — thickened track height on hover
+    const SPRING_IN = 'transform 240ms cubic-bezier(0.34,1.56,0.64,1), box-shadow 240ms ease-out';
+    const SPRING_OUT = 'transform 180ms ease-out, box-shadow 180ms ease-out';
+
+    // ---- build the detail strip once per row ----
+    DM.rows.forEach(row => {
+      const gap = Math.max(0, DM.threshold - row.pct);
+      const met = row.pct >= DM.threshold;
+
+      const detail = DM.el('div', { class: 'dm-detail' });
+      const inner = DM.el('div', { class: 'dm-detail-inner' });
+
+      const gapItem = DM.el('div', { class: 'dm-detail-item dm-detail-gap' + (met ? ' dm-detail-met' : '') });
+      gapItem.innerHTML = met
+        ? '<strong>Mastered ✓</strong>'
+        : '<strong>' + gap + '%</strong> to mastery';
+
+      const weightItem = DM.el('div', { class: 'dm-detail-item' });
+      weightItem.innerHTML = 'worth <strong>' + row.domain.weight + '%</strong> of the exam';
+
+      const actionItem = DM.el('div', { class: 'dm-detail-item' });
+      const actionLabel = met ? 'Review' : 'Drill weakest topics first';
+      actionItem.innerHTML = '<span class="dm-detail-action">' + actionLabel + '</span>';
+
+      inner.appendChild(gapItem);
+      inner.appendChild(weightItem);
+      inner.appendChild(actionItem);
+      detail.appendChild(inner);
+      row.el.appendChild(detail);
+      row._detail = detail;
+      row._lifted = false;
+    });
+
+    function unfoldDetail(row) {
+      const inner = row._detail.firstElementChild;
+      row._detail.style.height = inner.offsetHeight + 'px';
+    }
+    function foldDetail(row) {
+      row._detail.style.height = '0px';
+    }
+
+    function lift(row) {
+      if (row._lifted) return;
+      row._lifted = true;
+      row.el.classList.add('dm-lifted');
+
+      // spring lift (skip the movement under reduced motion — keep shadow + unfold only)
+      if (!REDUCED) {
+        row.el.style.transition = SPRING_IN;
+        row.el.style.transform = 'translateY(-2px) scale(1.015)';
+      }
+
+      // bar bloom
+      row.trackEl.style.height = TRACK_BLOOM + 'px';
+
+      // detail unfold
+      unfoldDetail(row);
+
+      // dim the others
+      DM.rows.forEach(other => {
+        if (other !== row) other.el.classList.add('dm-dim');
+      });
+    }
+
+    function settle(row) {
+      if (!row._lifted) return;
+      row._lifted = false;
+      row.el.classList.remove('dm-lifted');
+
+      if (!REDUCED) {
+        row.el.style.transition = SPRING_OUT;
+        row.el.style.transform = 'translateY(0) scale(1)';
+      }
+
+      row.trackEl.style.height = TRACK_BASE + 'px';
+      foldDetail(row);
+
+      DM.rows.forEach(other => other.el.classList.remove('dm-dim'));
+    }
+
+    DM.rows.forEach(row => {
+      // keyboard focusability for the lift
+      row.el.setAttribute('tabindex', '0');
+
+      // pointer events keep tap working on touch; gate dim/lift visuals where it makes sense
+      row.el.addEventListener('pointerenter', () => lift(row));
+      row.el.addEventListener('pointerleave', () => settle(row));
+
+      // touch: tap to toggle (pointerenter fires on tap but pointerleave may not)
+      row.el.addEventListener('pointerdown', (e) => {
+        if (e.pointerType === 'touch') {
+          if (row._lifted) settle(row); else lift(row);
+        }
+      });
+
+      row.el.addEventListener('focus', () => lift(row));
+      row.el.addEventListener('blur', () => settle(row));
+    });
+  </script>
+</body></html>
