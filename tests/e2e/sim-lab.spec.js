@@ -1,8 +1,19 @@
 const { test, expect } = require('@playwright/test');
 
-// Loads the app shell so window.simLabValidateScenario is defined.
+// Loads the app shell and triggers the sim-lab lazy-load so
+// window.simLabValidateScenario is defined (Task 17: no longer on page load).
 async function gotoApp(page) {
   await page.goto('http://localhost:3131/?_cb=test');
+  // Wait for the shell to boot, then trigger the lazy-load the same way
+  // a real drills-page visit would — either via the exposed helper or showPage.
+  await page.waitForFunction(() =>
+    typeof window._ensureSimLabLoaded === 'function' ||
+    typeof window.showPage === 'function'
+  );
+  await page.evaluate(() => {
+    if (typeof window._ensureSimLabLoaded === 'function') window._ensureSimLabLoaded();
+    else if (typeof window.showPage === 'function') window.showPage('drills');
+  });
   await page.waitForFunction(() => typeof window.simLabValidateScenario === 'function');
 }
 
@@ -469,7 +480,17 @@ test('drills Sim Lab card shows Pro pill for pro tier', async ({ page }) => {
 
 test('Sim Lab card is absent on non-CompTIA certs (no PBQs)', async ({ page }) => {
   await page.goto('http://localhost:3131/?_cb=test');
-  await page.waitForFunction(() => typeof window.renderSimLabDrillsCard === 'function');
+  // Must trigger the lazy-load before waiting for renderSimLabDrillsCard
+  // (Task 17: module no longer loads on page boot).
+  await page.waitForFunction(() =>
+    typeof window._ensureSimLabLoaded === 'function' ||
+    typeof window.showPage === 'function'
+  );
+  await page.evaluate(() => {
+    if (typeof window._ensureSimLabLoaded === 'function') window._ensureSimLabLoaded();
+    else if (typeof window.showPage === 'function') window.showPage('drills');
+  });
+  await page.waitForFunction(() => typeof window.renderSimLabDrillsCard === 'function', { timeout: 5000 });
   await page.evaluate(() => {
     window.showPage('drills');
     window._quotaState = { tier: 'free' };
@@ -477,4 +498,18 @@ test('Sim Lab card is absent on non-CompTIA certs (no PBQs)', async ({ page }) =
     window.renderSimLabDrillsCard();
   });
   await expect(page.locator('#drills-simlab-card')).toHaveCount(0);
+});
+
+test('sim-lab module lazy-loads when the drills page is shown', async ({ page }) => {
+  await page.goto('http://localhost:3131/?_cb=test');
+  await page.waitForFunction(() => typeof window.showPage === 'function');
+  // Ensure CURRENT_CERT is netplus so the card renders for CompTIA certs.
+  await page.evaluate(() => {
+    window._quotaState = { tier: 'free' };
+    window.CURRENT_CERT = 'netplus';
+    window.showPage('drills');
+  });
+  // The module should load and expose renderSimLabDrillsCard within 5 s.
+  await page.waitForFunction(() => typeof window.renderSimLabDrillsCard === 'function', { timeout: 5000 });
+  await expect(page.locator('#drills-simlab-card')).toBeVisible();
 });

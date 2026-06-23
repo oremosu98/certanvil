@@ -2008,6 +2008,37 @@ async function _loadFeature(name) {
 }
 
 // ════════════════════════════════════════════════════════════════════
+// Task 17 — Sim Lab lazy-loader
+//
+// Injects features/sim-lab-seed-netplus.js THEN features/sim-lab.js on first
+// drills-page visit. Order matters: the seed global (SIM_LAB_SEED_NETPLUS)
+// must exist before sim-lab.js runs. Idempotent + queues concurrent callers
+// so parallel showPage('drills') calls don't double-inject scripts.
+// ════════════════════════════════════════════════════════════════════
+function _ensureSimLabLoaded(cb) {
+  if (window.renderSimLabDrillsCard) { if (cb) cb(); return; }
+  if (window.__slLoading) { if (cb) window.__slLoading.push(cb); return; }
+  window.__slLoading = cb ? [cb] : [];
+  function _slInject(src, next) {
+    const s = document.createElement('script');
+    s.src = src;
+    s.defer = true;
+    s.onload = next;
+    s.onerror = next; // never block navigation on load failure
+    document.head.appendChild(s);
+  }
+  _slInject('features/sim-lab-seed-netplus.js', function () {
+    _slInject('features/sim-lab.js', function () {
+      const q = window.__slLoading || [];
+      window.__slLoading = null;
+      q.forEach(function (fn) { if (fn) fn(); });
+    });
+  });
+}
+// Expose on window so tests can trigger the lazy-load directly.
+window._ensureSimLabLoaded = _ensureSimLabLoaded;
+
+// ════════════════════════════════════════════════════════════════════
 // v4.99.31 (iOS Plan Phase 5 — PWA polish)
 //
 // Three pieces, all defensively wrapped (PWA APIs vary across browsers
@@ -2407,6 +2438,8 @@ function showPage(name) {
   if (typeof updateSidebarActiveState === 'function') updateSidebarActiveState(name);
   // v4.54.0: update topbar breadcrumb
   if (typeof updateTopbarCrumb === 'function') updateTopbarCrumb(name);
+  // Task 17: lazy-load Sim Lab on first drills visit; card renders post-load.
+  if (name === 'drills') _ensureSimLabLoaded(function () { if (typeof window.renderSimLabDrillsCard === 'function') window.renderSimLabDrillsCard(); });
   // v4.53.0: auto-close mobile drawer when navigating
   try { document.body.classList.remove('sidebar-open'); } catch (_) {}
   // v4.85.16: clear any stale .err-box banners on every page change so a
