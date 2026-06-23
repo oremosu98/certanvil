@@ -288,12 +288,53 @@
     return root;
   }
 
+  // --- match renderer ---
+  function _slRenderMatch(step, onChange) {
+    var pairs = {};
+    var root = _el('div', 'sl-match');
+    root.appendChild(_el('p', 'sl-prompt', _esc(step.prompt)));
+    var grid = _el('div', 'sl-match-grid'); root.appendChild(grid);
+    var lcol = _el('div', 'sl-match-col'), rcol = _el('div', 'sl-match-col');
+    grid.appendChild(lcol); grid.appendChild(rcol);
+
+    step.payload.left.forEach(function (l) {
+      var b = _el('button', 'sl-item sl-match-l', _esc(l.label));
+      b.setAttribute('type', 'button'); b.setAttribute('data-item', l.id);
+      lcol.appendChild(b);
+    });
+    step.payload.right.forEach(function (r) {
+      var t = _el('div', 'sl-target sl-match-r', _esc(r.label));
+      t.setAttribute('data-target', r.id); t.setAttribute('tabindex', '0');
+      rcol.appendChild(t);
+    });
+
+    _slBindMovable(root, {
+      itemSel: '.sl-match-l', targetSel: '.sl-match-r',
+      onPlace: function (leftId, rightId) {
+        pairs[leftId] = rightId;
+        var lEl = root.querySelector('.sl-match-l[data-item="' + leftId + '"]');
+        if (lEl) {
+          var rLabel = step.payload.right.filter(function (x){return x.id===rightId;})[0];
+          lEl.setAttribute('data-paired', rightId);
+          var existing = lEl.querySelector('.sl-pairtag');
+          if (existing) existing.remove();
+          var tag = _el('span', 'sl-pairtag', '→ ' + _esc(rLabel ? rLabel.label : rightId));
+          lEl.appendChild(tag);
+        }
+        onChange({ pairs: Object.assign({}, pairs) });
+      }
+    });
+    onChange({ pairs: {} });
+    return root;
+  }
+
   // --- renderStep dispatcher ---
   function simLabRenderStep(step, onChange) {
     switch (step.type) {
       case 'order': return _slRenderOrder(step, onChange);
       case 'categorize': return _slRenderCategorize(step, onChange);
-      // match/analyze/fillin added in later tasks
+      case 'match': return _slRenderMatch(step, onChange);
+      // analyze/fillin added in later tasks
       default: return _el('div', 'sl-unknown', 'Unsupported step');
     }
   }

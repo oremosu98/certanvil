@@ -247,3 +247,20 @@ test('order renderer reports the current sequence on reorder', async ({ page }) 
   });
   expect(seq[0]).toBe('c');
 });
+
+test('match renderer records left->right pair on place', async ({ page }) => {
+  await gotoApp(page);
+  const pairs = await page.evaluate(() => {
+    const step = { id:'s', type:'match', prompt:'match',
+      payload:{ left:[{id:'443',label:'443'},{id:'53',label:'53'}],
+                right:[{id:'https',label:'HTTPS'},{id:'dns',label:'DNS'}] },
+      answer:{ pairs:{ '443':'https', '53':'dns' } } };
+    let last = null;
+    const el = window._simLab.renderStep(step, (r) => { last = r; });
+    document.body.appendChild(el);
+    el.querySelector('[data-item="443"]').click();
+    el.querySelector('[data-target="https"]').click();
+    return last.pairs;
+  });
+  expect(pairs['443']).toBe('https');
+});
