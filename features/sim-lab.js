@@ -4,6 +4,8 @@
 
   var STEP_TYPES = ['order', 'categorize', 'match', 'analyze', 'fillin'];
 
+  var _SL_PBQ_CERTS = ['netplus', 'secplus', 'aplus-core1', 'aplus-core2'];
+
   function _isNonEmptyStr(v) { return typeof v === 'string' && v.trim().length > 0; }
 
   function _validateStepPayload(step) {
@@ -609,13 +611,15 @@
     if (!host) return;
     var existing = document.getElementById('drills-simlab-card');
     if (existing) existing.remove();
+    // Sim Lab (PBQs) only exists on CompTIA certs — absent everywhere else.
+    if (_SL_PBQ_CERTS.indexOf(window.CURRENT_CERT || 'netplus') === -1) return;
     var pro = _slIsPro();
     var used = (typeof window._pbqFreeRunsToday === 'function') ? window._pbqFreeRunsToday() : 0;
     var cap = window.PBQ_FREE_DAILY_CAP || 1;
     var pill;
     if (!pro) {
       pill = (used >= cap)
-        ? '<span id="drills-simlab-state" class="gnt-daily-pill">Done today</span>'
+        ? '<span id="drills-simlab-state" class="gnt-daily-pill is-spent">Done today</span>'
         : '<span id="drills-simlab-state" class="gnt-daily-pill">1 free today</span>';
     } else {
       pill = '<span id="drills-simlab-state" class="gnt-daily-pill">Pro</span>';

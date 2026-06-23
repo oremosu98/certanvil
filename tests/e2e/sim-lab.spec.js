@@ -430,6 +430,7 @@ test('drills page shows a Sim Lab card with a daily-state pill', async ({ page }
   await page.waitForFunction(() => typeof window.renderSimLabDrillsCard === 'function');
   // Navigate to drills page so #page-drills exists as active container before calling render.
   await page.evaluate(() => {
+    window.CURRENT_CERT = 'netplus';
     window._quotaState = { tier: 'free' };
     localStorage.removeItem('nplus_pbq_free_count');
     if (typeof showPage === 'function') showPage('drills');
@@ -442,6 +443,7 @@ test('drills Sim Lab card shows Done today when free cap reached', async ({ page
   await gotoApp(page);
   await page.waitForFunction(() => typeof window.renderSimLabDrillsCard === 'function');
   await page.evaluate(() => {
+    window.CURRENT_CERT = 'netplus';
     window._quotaState = { tier: 'free' };
     // Bump the free run count to cap
     var cap = window.PBQ_FREE_DAILY_CAP || 1;
@@ -457,9 +459,22 @@ test('drills Sim Lab card shows Pro pill for pro tier', async ({ page }) => {
   await gotoApp(page);
   await page.waitForFunction(() => typeof window.renderSimLabDrillsCard === 'function');
   await page.evaluate(() => {
+    window.CURRENT_CERT = 'netplus';
     window._quotaState = { tier: 'pro' };
     if (typeof showPage === 'function') showPage('drills');
     window.renderSimLabDrillsCard();
   });
   await expect(page.locator('#drills-simlab-state')).toContainText('Pro');
+});
+
+test('Sim Lab card is absent on non-CompTIA certs (no PBQs)', async ({ page }) => {
+  await page.goto('http://localhost:3131/?_cb=test');
+  await page.waitForFunction(() => typeof window.renderSimLabDrillsCard === 'function');
+  await page.evaluate(() => {
+    window.showPage('drills');
+    window._quotaState = { tier: 'free' };
+    window.CURRENT_CERT = 'az900';   // a Microsoft cert with no PBQs
+    window.renderSimLabDrillsCard();
+  });
+  await expect(page.locator('#drills-simlab-card')).toHaveCount(0);
 });

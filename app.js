@@ -539,11 +539,6 @@ function _renderQuotaChip() {
   // when the card isn't in the DOM.
   if (typeof renderGauntletDrillsCard === 'function') { try { renderGauntletDrillsCard(); } catch (_) {} }
   if (typeof window.renderSimLabDrillsCard === 'function') { try { window.renderSimLabDrillsCard(); } catch (_) {} }
-  // Sim Lab (PBQs) only exists on CompTIA certs:
-  var _PBQ_CERTS = ['netplus', 'secplus', 'aplus-core1', 'aplus-core2'];
-  if (_PBQ_CERTS.indexOf(window.CURRENT_CERT || 'netplus') === -1) {
-    var _slc = document.getElementById('drills-simlab-card'); if (_slc) _slc.remove();
-  }
 }
 
 // v4.99.6 Phase E.5 — chip-click tooltip showing reset countdown + plan + upgrade CTA.
