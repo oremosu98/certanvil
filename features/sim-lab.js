@@ -418,11 +418,13 @@
     var submit = _el('button', 'btn btn-primary gnt-cta', 'Submit answers');
     submit.setAttribute('type', 'button');
     submit.setAttribute('data-action', 'simLabSubmitScenario');
-    submit.addEventListener('click', function () { simLabSubmitScenario(); });
     wrap.appendChild(submit);
     host.appendChild(wrap);
 
+    var submitted = false;
     window.__slActiveSubmit = function () {
+      if (submitted) return;
+      submitted = true;
       var score = simLabScoreScenario(scn, responses);
       opts.onSubmit(Object.assign({ responses: responses, scenario: scn }, score));
     };

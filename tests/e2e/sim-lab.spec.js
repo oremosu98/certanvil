@@ -319,3 +319,22 @@ test('orchestrator renders all steps and returns a score on submit', async ({ pa
   expect(res.correct).toBe(1);
   expect(res.total).toBe(1);
 });
+
+test('orchestrator submit fires onSubmit exactly once per click (no double-fire)', async ({ page }) => {
+  await gotoApp(page);
+  const count = await page.evaluate(() => {
+    return new Promise((resolve) => {
+      const scn = { id:'s1', cert:'netplus', objective:'1.4', topic:'IPv4', title:'t',
+        scenario:'x', estMinutes:5,
+        steps:[{ id:'st1', type:'fillin', prompt:'mask?', points:1, explanation:'e',
+          payload:{ fields:[{id:'mask',label:'Mask'}] }, answer:{ mask:['/26'] } }]};
+      const host = document.createElement('div'); document.body.appendChild(host);
+      let calls = 0;
+      window._simLab.mountScenario(host, scn, { onSubmit: () => { calls++; } });
+      host.querySelector('[data-action="simLabSubmitScenario"]').click();
+      // give any delegation a tick, then report
+      setTimeout(() => resolve(calls), 50);
+    });
+  });
+  expect(count).toBe(1);
+});
