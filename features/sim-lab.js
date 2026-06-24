@@ -441,7 +441,7 @@
     host.innerHTML = '';
     var root = _el('div', 'sl-feedback');
     var pct = Math.round(score.fraction * 100);
-    root.appendChild(_el('div', 'sl-fb-score', score.correct + ' / ' + score.total + ' steps · ' + pct + '%'));
+    root.appendChild(_el('div', 'sl-fb-score', score.correct + ' of ' + score.total + ' steps · ' + pct + '%'));
 
     scn.steps.forEach(function (st, i) {
       var ok = score.perStep[st.id];
@@ -452,7 +452,7 @@
       if (reveal) {
         row.appendChild(_el('p', 'sl-fb-why', _esc(st.explanation)));
       } else {
-        var lock = _el('p', 'sl-fb-locked', 'You nailed this one. Pro shows the full reasoning on every step.');
+        var lock = _el('p', 'sl-fb-locked', 'You nailed this one. Pro explains the why behind your right answers too, so it sticks.');
         row.appendChild(lock);
       }
       root.appendChild(row);
@@ -466,7 +466,7 @@
     var thresholdMs = (opts.estMinutes || 6) * 60 * 1000;
     var el = _el('div', 'sl-timer');
     var nudgeEl = _el('div', 'sl-nudge sl-hidden',
-      "You've spent a while here. Partial credit counts, so lock in your best answer and move on.");
+      "You've been on this one a while. Partial credit counts, so lock in your best answer and move on.");
     host.appendChild(el); host.appendChild(nudgeEl);
 
     function fmt(ms) {
@@ -499,11 +499,31 @@
     return seed;
   }
 
+  // Pull up to 2 hand-reviewed seeds of distinct step types from the bank to use
+  // as few-shot format/quality exemplars. Reads the live bank so they never drift.
+  function _slPickExemplars(cert) {
+    var bank = (cert === 'netplus' && window.SIM_LAB_SEED_NETPLUS) ? window.SIM_LAB_SEED_NETPLUS : [];
+    var picked = [], seenType = {};
+    for (var i = 0; i < bank.length && picked.length < 2; i++) {
+      var st = bank[i].steps && bank[i].steps[0];
+      var t = st && st.type;
+      if (t && !seenType[t] && simLabValidateScenario(bank[i]).ok) { seenType[t] = 1; picked.push(bank[i]); }
+    }
+    return picked;
+  }
+
   function _slBuildPrompt(cert, objectiveHint) {
+    var ex = _slPickExemplars(cert);
+    var exText = ex.length
+      ? ' Here ' + (ex.length === 1 ? 'is an example' : 'are example scenarios') +
+        ' in the exact format — study the shape and the deterministic answers, then write a DIFFERENT scenario on another topic: '
+        + ex.map(function (s) { return JSON.stringify(s); }).join(' ') + '.'
+      : '';
     return 'Generate ONE CompTIA ' + cert + ' performance-based question as strict JSON matching this shape: '
       + '{id,cert,objective,topic,title,scenario,estMinutes,steps:[{id,type,prompt,explanation,points:1,payload,answer}]}. '
-      + 'type is one of order|categorize|match|analyze|fillin. 2-4 steps, mixed types. '
-      + 'Answers must be deterministic. Objective focus: ' + (objectiveHint || 'any core objective') + '. '
+      + 'type is one of order|categorize|match|analyze|fillin. 1 to 4 steps. '
+      + 'Answers must be deterministic and verifiably correct.' + exText
+      + ' Do not copy the examples; cover a different objective or topic. Objective focus: ' + (objectiveHint || 'any core objective') + '. '
       + 'Return ONLY the JSON object, no prose.';
   }
 
@@ -588,8 +608,8 @@
       var cap = window.PBQ_FREE_DAILY_CAP || 1;
       if (used >= cap) {
         return Promise.resolve(window._gateProOnly('Sim Lab', {
-          title: "You have used today's free Sim Lab",
-          body: 'PBQs are the part most people fail on. Go Pro for unlimited sims on every cert, plus the full reasoning on every step.'
+          title: "That's your free sim for today.",
+          body: "You're in the rhythm now. Pro keeps it unlimited on every cert, with the full reasoning on every step, not just the ones you missed."
         }));
       }
     }
@@ -633,7 +653,7 @@
     card.id = 'drills-simlab-card';
     card.innerHTML =
       '<div class="drills-card-head"><span class="drills-card-title">Sim Lab ' + pill + '</span></div>' +
-      '<p class="drills-card-note">Practice the hands-on PBQs the exam throws first. One free sim a day.</p>' +
+      '<p class="drills-card-note">The exam opens with hands-on PBQs. One free sim a day.</p>' +
       '<button type="button" class="drills-btn" data-action="simLabLaunch">Start a sim →</button>';
     host.appendChild(card);
   }
