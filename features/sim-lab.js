@@ -499,6 +499,28 @@
     return seed;
   }
 
+  // No-repeat seed pick within a session. Falls back to plain pick if the bank
+  // is exhausted (won't happen: 50 seeds >> 10 max rounds).
+  function _slPickSeedFresh(cert, usedIds) {
+    var bank = (cert === 'netplus' && window.SIM_LAB_SEED_NETPLUS) ? window.SIM_LAB_SEED_NETPLUS : [];
+    var fresh = bank.filter(function (s) { return !usedIds.has(s.id) && simLabValidateScenario(s).ok; });
+    var pool = fresh.length ? fresh : bank.filter(function (s) { return simLabValidateScenario(s).ok; });
+    if (!pool.length) return null;
+    var idx = (usedIds.size + (new Date().getMinutes())) % pool.length;
+    return pool[idx];
+  }
+
+  // Aggregate per-round results into a session summary.
+  function _slAggregateSession(results) {
+    var passed = 0, stepsCorrect = 0, stepsTotal = 0;
+    results.forEach(function (r) {
+      if (r.passed) passed++;
+      stepsCorrect += r.score.correct; stepsTotal += r.score.total;
+    });
+    var pct = stepsTotal ? Math.round((stepsCorrect / stepsTotal) * 100) : 0;
+    return { passed: passed, rounds: results.length, stepsCorrect: stepsCorrect, stepsTotal: stepsTotal, pct: pct };
+  }
+
   // Pull up to 2 hand-reviewed seeds of distinct step types from the bank to use
   // as few-shot format/quality exemplars. Reads the live bank so they never drift.
   function _slPickExemplars(cert) {
@@ -680,4 +702,6 @@
   window._simLab.startPracticeTimer = _slStartPracticeTimer;
   window._simLab.generateScenario = _slGenerateScenario;
   window._simLab.__setFetcher = function (fn) { _slFetcher = fn; };
+  window._simLab.pickSeedFresh = _slPickSeedFresh;
+  window._simLab.aggregateSession = _slAggregateSession;
 })();

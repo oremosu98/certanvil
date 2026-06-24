@@ -513,3 +513,27 @@ test('sim-lab module lazy-loads when the drills page is shown', async ({ page })
   await page.waitForFunction(() => typeof window.renderSimLabDrillsCard === 'function', { timeout: 5000 });
   await expect(page.locator('#drills-simlab-card')).toBeVisible();
 });
+
+test('session core: builds a session, picks distinct seeds, aggregates results', async ({ page }) => {
+  await gotoApp(page);
+  const r = await page.evaluate(() => {
+    const S = window._simLab;
+    const used = new Set();
+    const a = S.pickSeedFresh('netplus', used); used.add(a.id);
+    const b = S.pickSeedFresh('netplus', used); used.add(b.id);
+    const distinct = a && b && a.id !== b.id;
+    const results = [
+      { score: { correct: 2, total: 2, fraction: 1, perStep: {} }, passed: true },
+      { score: { correct: 1, total: 2, fraction: 0.5, perStep: {} }, passed: false },
+      { score: { correct: 1, total: 1, fraction: 1, perStep: {} }, passed: true },
+    ];
+    const agg = S.aggregateSession(results);
+    return { distinct, passed: agg.passed, rounds: agg.rounds, stepsCorrect: agg.stepsCorrect, stepsTotal: agg.stepsTotal, pct: agg.pct };
+  });
+  expect(r.distinct).toBe(true);
+  expect(r.passed).toBe(2);
+  expect(r.rounds).toBe(3);
+  expect(r.stepsCorrect).toBe(4);
+  expect(r.stepsTotal).toBe(5);
+  expect(r.pct).toBe(80);
+});
