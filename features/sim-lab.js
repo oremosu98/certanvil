@@ -770,6 +770,15 @@
   }
 
   function _slGetRoundScenario() {
+    var pf = _slSession.prefetch;
+    if (pf && pf.idx === _slSession.idx) {
+      _slSession.prefetch = null;
+      return pf.promise.then(function (scn) {
+        // suspended/failed prefetch (e.g. iOS background) → regenerate on demand
+        if (!scn || _slSession.usedSeedIds.has(scn.id)) return _slGenerateScenarioFresh(_slSession.cert, _slSession.usedSeedIds);
+        return scn;
+      });
+    }
     return _slGenerateScenarioFresh(_slSession.cert, _slSession.usedSeedIds);
   }
 
@@ -780,7 +789,17 @@
     }).catch(function () { return _slPickSeedFresh(cert, usedIds); });
   }
 
-  function _slStartPrefetch() {}        // real implementation lands in Task 6
+  function _slStartPrefetch() {
+    if (!_slSession) return;
+    var nextIdx = _slSession.idx + 1;
+    if (nextIdx >= _slSession.rounds) { _slSession.prefetch = null; return; }
+    // one in flight; snapshot the used-set so the prefetched scenario stays distinct
+    var snapshot = new Set(_slSession.usedSeedIds);
+    var p = _slGenerateScenarioFresh(_slSession.cert, snapshot).then(function (scn) {
+      return scn;
+    }).catch(function () { return null; });
+    _slSession.prefetch = { idx: nextIdx, promise: p };
+  }
   function _slRenderSummary() {}        // real implementation lands in Task 7
 
   // --- Task 16: Drills-page card with daily-state pill ---
@@ -842,4 +861,5 @@
   window.simLabEntryBack = simLabEntryBack;
   window.simLabSessionStart = _slSessionStart;
   window._simLab.sessionRounds = function () { return _slPickedRounds; };
+  window._simLab.hasPrefetch = function () { return !!(_slSession && _slSession.prefetch); };
 })();

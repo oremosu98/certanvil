@@ -612,3 +612,21 @@ test('session: 3-round run renders rounds with loader then advances on submit', 
   await page.click('[data-action="simLabSubmitScenario"]');
   await expect(page.locator('#sl-round-pill')).toContainText('Round 2 of 3', { timeout: 8000 });
 });
+
+test('prefetch: round N+1 is fetched during round N', async ({ page }) => {
+  await gotoApp(page);
+  const had = await page.evaluate(async () => {
+    window._quotaState = { tier: 'free' };
+    localStorage.removeItem('nplus_pbq_free_count');
+    window.CURRENT_CERT = 'netplus';
+    await new Promise(res => window._ensureSimLabLoaded(res));
+    window._slMeteredGenerate = async () => ({ bad: true });
+    window.simLabOpenEntry();
+    await new Promise(res => setTimeout(res, 450));
+    document.querySelector('.sle-chip[data-rounds="3"]').click();
+    window.simLabSessionStart();
+    await new Promise(r => setTimeout(r, 700)); // let round 1 mount + prefetch kick off
+    return window._simLab.hasPrefetch();
+  });
+  expect(had).toBe(true);
+});
