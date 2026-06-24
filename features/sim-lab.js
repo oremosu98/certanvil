@@ -506,7 +506,9 @@
     var fresh = bank.filter(function (s) { return !usedIds.has(s.id) && simLabValidateScenario(s).ok; });
     var pool = fresh.length ? fresh : bank.filter(function (s) { return simLabValidateScenario(s).ok; });
     if (!pool.length) return null;
-    var idx = (usedIds.size + (new Date().getMinutes())) % pool.length;
+    // Index by how many we've already shown — pure, clock-independent, and within
+    // the `fresh` pool every pick is a distinct unused seed by construction.
+    var idx = usedIds.size % pool.length;
     return pool[idx];
   }
 

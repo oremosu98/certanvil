@@ -537,3 +537,18 @@ test('session core: builds a session, picks distinct seeds, aggregates results',
   expect(r.stepsTotal).toBe(5);
   expect(r.pct).toBe(80);
 });
+
+test('session core: pickSeedFresh returns null when no valid seeds remain', async ({ page }) => {
+  await gotoApp(page);
+  const r = await page.evaluate(() => {
+    const S = window._simLab;
+    const saved = window.SIM_LAB_SEED_NETPLUS;
+    window.SIM_LAB_SEED_NETPLUS = []; // empty bank
+    const empty = S.pickSeedFresh('netplus', new Set());
+    window.SIM_LAB_SEED_NETPLUS = saved; // restore for other tests
+    const wrongCert = S.pickSeedFresh('secplus', new Set());
+    return { empty, wrongCert };
+  });
+  expect(r.empty).toBe(null);
+  expect(r.wrongCert).toBe(null);
+});
