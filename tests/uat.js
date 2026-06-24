@@ -20120,6 +20120,24 @@ console.log('\n\x1b[1m── Security Phase 7 — CSP script-src unsafe-inline r
     html.includes('data-action="startWhyNot"') && /data-action="whyNotPickReason"/.test(js));
 })();
 
+// ── v7.55.x: Sim Lab — structural pins (Task 11) ──
+(function(){
+  test('v7.56 Session: entry page present in index.html',
+    html.includes('id="page-sim-lab-entry"'));
+  test('v7.56 Session: result page present in index.html',
+    html.includes('id="page-sim-lab-result"'));
+  test('v7.56 Session: round pill present in index.html',
+    html.includes('id="sl-round-pill"'));
+  test('v7.56 Session: _slSessionStart defined in sim-lab source',
+    js.includes('function _slSessionStart('));
+  test('v7.56 Session: _slAggregateSession defined in sim-lab source',
+    js.includes('function _slAggregateSession('));
+  test('v7.56 Session: _slStartPrefetch defined in sim-lab source',
+    js.includes('function _slStartPrefetch('));
+  test('v7.56 Session: _slRecordWeakSpots defined in app.js',
+    js.includes('function _slRecordWeakSpots('));
+})();
+
 // ── Summary ──
 console.log('\n' + '═'.repeat(50));
 const total = results.pass + results.fail;
