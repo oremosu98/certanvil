@@ -591,3 +591,24 @@ test('entry: Home tile opens entry; picking 10 on free gates to Pro; 5 starts a 
   expect(r.gatedOn10).toBe(true);
   expect(r.rounds).toBe(3);
 });
+
+test('session: 3-round run renders rounds with loader then advances on submit', async ({ page }) => {
+  await gotoApp(page);
+  await page.evaluate(async () => {
+    window._quotaState = { tier: 'free' };
+    localStorage.removeItem('nplus_pbq_free_count');
+    window.CURRENT_CERT = 'netplus';
+    await new Promise(res => window._ensureSimLabLoaded(res));
+    window._slMeteredGenerate = async () => ({ bad: true }); // force seed fallback
+    window.simLabOpenEntry();
+    await new Promise(res => setTimeout(res, 450));
+    document.querySelector('.sle-chip[data-rounds="3"]').click();
+    window.simLabSessionStart();
+  });
+  await expect(page.locator('#page-sim-lab')).toHaveClass(/active/);
+  await expect(page.locator('#sl-round-pill')).toContainText('Round 1 of 3');
+  await expect(page.locator('#sl-dots .slr-dot')).toHaveCount(3);
+  await page.waitForSelector('[data-action="simLabSubmitScenario"]', { timeout: 8000 });
+  await page.click('[data-action="simLabSubmitScenario"]');
+  await expect(page.locator('#sl-round-pill')).toContainText('Round 2 of 3', { timeout: 8000 });
+});

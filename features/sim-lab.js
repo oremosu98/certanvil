@@ -698,6 +698,91 @@
   }
   window.simLabStart = simLabStart;
 
+  // --- Task 5: in-session round chrome + loader + round loop ---
+
+  function _slUpdateChrome() {
+    var pill = document.getElementById('sl-round-pill');
+    if (pill) { pill.textContent = 'Round ' + (_slSession.idx + 1) + ' of ' + _slSession.rounds; pill.classList.remove('is-hidden'); }
+    var dotsHost = document.getElementById('sl-dots');
+    if (dotsHost) {
+      dotsHost.classList.remove('is-hidden');
+      dotsHost.innerHTML = '';
+      for (var i = 0; i < _slSession.rounds; i++) {
+        var d = _el('span', 'slr-dot' + (i < _slSession.idx ? ' done' : (i === _slSession.idx ? ' now' : '')));
+        dotsHost.appendChild(d);
+      }
+    }
+  }
+
+  function _slRenderLoader(host, roundNum) {
+    host.innerHTML = '';
+    var box = _el('div', 'slr-loader');
+    box.innerHTML = '<div class="slr-spin" aria-hidden="true"></div>' +
+      '<div class="slr-loader-t">Building round ' + roundNum + '…</div>' +
+      '<div class="slr-loader-s">A fresh scenario. This takes a few seconds.</div>';
+    host.appendChild(box);
+  }
+
+  function _slSessionStart() {
+    var cert = window.CURRENT_CERT || 'netplus';
+    var pro = _slIsPro();
+    if (!pro) {
+      var used = (typeof window._pbqFreeRunsToday === 'function') ? window._pbqFreeRunsToday() : 0;
+      var cap = window.PBQ_FREE_DAILY_CAP || 1;
+      if (used >= cap) {
+        return window._gateProOnly('Sim Lab', {
+          title: "That's your free session for today.",
+          body: "You're in the rhythm now. Pro keeps it unlimited on every cert, with the full reasoning on every step, not just the ones you missed."
+        });
+      }
+    }
+    _slSessionBumped = false;
+    if (!pro) _slSessionBumpOnce();
+    if (typeof window._slMeteredGenerate === 'function') window._simLab.__setFetcher(window._slMeteredGenerate);
+    _slSession = { mode: 'practice', rounds: _slPickedRounds, idx: 0, pro: pro, cert: cert, results: [], usedSeedIds: new (window.Set || Set)(), prefetch: null, timer: null };
+    if (typeof showPage === 'function') showPage('sim-lab');
+    _slUpdateChrome();
+    _slRunRound();
+  }
+
+  function _slRunRound() {
+    var body = document.getElementById('sl-body');
+    var topic = document.getElementById('sl-topic');
+    _slUpdateChrome();
+    _slRenderLoader(body, _slSession.idx + 1);
+    _slGetRoundScenario().then(function (scn) {
+      _slSession.usedSeedIds.add(scn.id);
+      if (topic) topic.textContent = scn.topic || 'PBQ';
+      var slot = document.getElementById('sl-timer-slot');
+      if (slot) { slot.innerHTML = ''; _slSession.timer = _slStartPracticeTimer(slot, { estMinutes: scn.estMinutes }); }
+      _slMountScenario(body, scn, {
+        onSubmit: function (result) {
+          if (_slSession.timer) { _slSession.timer.stop(); _slSession.timer = null; }
+          var passed = result.fraction === 1;
+          _slSession.results.push({ scenario: scn, score: result, passed: passed });
+          _slSession.idx++;
+          if (_slSession.idx >= _slSession.rounds) { _slRenderSummary(); }
+          else { _slRunRound(); }
+        }
+      });
+      _slStartPrefetch();
+    });
+  }
+
+  function _slGetRoundScenario() {
+    return _slGenerateScenarioFresh(_slSession.cert, _slSession.usedSeedIds);
+  }
+
+  function _slGenerateScenarioFresh(cert, usedIds) {
+    return _slGenerateScenario(cert).then(function (scn) {
+      if (scn && usedIds.has(scn.id)) { var alt = _slPickSeedFresh(cert, usedIds); if (alt) return alt; }
+      return scn;
+    }).catch(function () { return _slPickSeedFresh(cert, usedIds); });
+  }
+
+  function _slStartPrefetch() {}        // real implementation lands in Task 6
+  function _slRenderSummary() {}        // real implementation lands in Task 7
+
   // --- Task 16: Drills-page card with daily-state pill ---
 
   function renderSimLabDrillsCard() {
@@ -755,5 +840,6 @@
   window._simLab.sessionBumpOnce = function () { _slSessionBumpOnce(); };
   window.simLabOpenEntry = simLabOpenEntry;
   window.simLabEntryBack = simLabEntryBack;
+  window.simLabSessionStart = _slSessionStart;
   window._simLab.sessionRounds = function () { return _slPickedRounds; };
 })();

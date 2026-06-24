@@ -3956,3 +3956,16 @@ mark.gnt-hinge{background:color-mix(in oklab,var(--red) 26%,transparent);color:i
 #page-sim-lab-entry .sle-chip-pro svg{width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:2}
 @media (hover:hover) and (pointer:fine){#page-sim-lab-entry .sle-chip:hover{border-color:color-mix(in oklab,var(--accent) 40%,var(--border))}}
 @media (prefers-reduced-motion:reduce){#page-sim-lab-entry .sle-chip{transition:none}}
+
+/* Sim Lab session: in-round chrome + loader (Task 5, lifted from mockup panels 2-3) */
+#page-sim-lab .slr-round-pill{font:800 11px/1 Inter,sans-serif;letter-spacing:.06em;color:var(--accent);border:1px solid color-mix(in oklab,var(--accent) 30%,var(--border));background:color-mix(in oklab,var(--accent) 8%,transparent);padding:3px 9px;border-radius:999px;margin-left:8px}
+#page-sim-lab .slr-dots{display:flex;gap:5px;margin:0 0 16px}
+#page-sim-lab .slr-dot{width:22px;height:4px;border-radius:999px;background:var(--border)}
+#page-sim-lab .slr-dot.done{background:var(--green,var(--pass))}
+#page-sim-lab .slr-dot.now{background:var(--accent)}
+#page-sim-lab .slr-loader{text-align:center;padding:40px 0}
+#page-sim-lab .slr-spin{width:34px;height:34px;margin:0 auto 16px;border-radius:50%;border:3px solid color-mix(in oklab,var(--accent) 22%,transparent);border-top-color:var(--accent);animation:slrspin .8s linear infinite}
+@keyframes slrspin{to{transform:rotate(360deg)}}
+#page-sim-lab .slr-loader-t{font:600 15px/1.3 Inter,sans-serif}
+#page-sim-lab .slr-loader-s{font:400 13px/1.4 Inter,sans-serif;color:var(--text-dim);margin-top:5px}
+@media (prefers-reduced-motion:reduce){#page-sim-lab .slr-spin{animation:none}}
