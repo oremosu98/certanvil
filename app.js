@@ -2032,13 +2032,25 @@ function _ensureSimLabLoaded(cb) {
     s.onerror = next; // never block navigation on load failure
     document.head.appendChild(s);
   }
-  _slInject('features/sim-lab-seed-netplus.js', function () {
+  // Cert → hand-reviewed seed file. Inject the current cert's bank (if one exists)
+  // before sim-lab.js so its global is present when the engine runs. Certs without
+  // a bank (or an unknown cert) load the engine alone and fall back to AI-gen.
+  // NOTE: the loader is once-per-page (guarded above); a mid-session cert switch
+  // that needs a different bank should follow the app's normal cert-switch reload.
+  const _SL_SEED_FILES = {
+    netplus: 'features/sim-lab-seed-netplus.js',
+    secplus: 'features/sim-lab-seed-secplus.js'
+    // 'aplus-core1' / 'aplus-core2' — add when their banks ship
+  };
+  function _slLoadCore() {
     _slInject('features/sim-lab.js', function () {
       const q = window.__slLoading || [];
       window.__slLoading = null;
       q.forEach(function (fn) { if (fn) fn(); });
     });
-  });
+  }
+  const _slSeedFile = _SL_SEED_FILES[window.CURRENT_CERT || 'netplus'];
+  if (_slSeedFile) { _slInject(_slSeedFile, _slLoadCore); } else { _slLoadCore(); }
 }
 // Expose on window so tests can trigger the lazy-load directly.
 window._ensureSimLabLoaded = _ensureSimLabLoaded;

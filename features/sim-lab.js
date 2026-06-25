@@ -489,8 +489,22 @@
 
   var _slFetcher = null; // injectable for tests; the real metered fetcher is set in Task 14
 
+  // Cert → seed-bank resolver. Reads the live window global each call so a lazily
+  // injected bank is picked up without re-wiring, and tests that swap the global
+  // still work. Unknown or contentless certs return [] → AI-gen + fallback path.
+  var _SL_SEED_GLOBALS = {
+    netplus: 'SIM_LAB_SEED_NETPLUS',
+    secplus: 'SIM_LAB_SEED_SECPLUS'
+    // 'aplus-core1' / 'aplus-core2' — add when their banks ship
+  };
+  function _slBank(cert) {
+    var g = _SL_SEED_GLOBALS[cert];
+    var b = g && window[g];
+    return Array.isArray(b) ? b : [];
+  }
+
   function _slPickSeed(cert) {
-    var bank = (cert === 'netplus' && window.SIM_LAB_SEED_NETPLUS) ? window.SIM_LAB_SEED_NETPLUS : [];
+    var bank = _slBank(cert);
     if (!bank.length) return null;
     // vary by minute so repeated taster runs rotate without Math.random
     var idx = (new Date().getMinutes()) % bank.length;
@@ -502,7 +516,7 @@
   // No-repeat seed pick within a session. Falls back to plain pick if the bank
   // is exhausted (won't happen: 50 seeds >> 10 max rounds).
   function _slPickSeedFresh(cert, usedIds) {
-    var bank = (cert === 'netplus' && window.SIM_LAB_SEED_NETPLUS) ? window.SIM_LAB_SEED_NETPLUS : [];
+    var bank = _slBank(cert);
     var fresh = bank.filter(function (s) { return !usedIds.has(s.id) && simLabValidateScenario(s).ok; });
     var pool = fresh.length ? fresh : bank.filter(function (s) { return simLabValidateScenario(s).ok; });
     if (!pool.length) return null;
@@ -573,7 +587,7 @@
   // Pull up to 2 hand-reviewed seeds of distinct step types from the bank to use
   // as few-shot format/quality exemplars. Reads the live bank so they never drift.
   function _slPickExemplars(cert) {
-    var bank = (cert === 'netplus' && window.SIM_LAB_SEED_NETPLUS) ? window.SIM_LAB_SEED_NETPLUS : [];
+    var bank = _slBank(cert);
     var picked = [], seenType = {};
     for (var i = 0; i < bank.length && picked.length < 2; i++) {
       var st = bank[i].steps && bank[i].steps[0];
@@ -631,6 +645,10 @@
 
   function _slRenderPracticePage(scn, pro) {
     _slShowPage();
+    // Defensive: the legacy single-scenario flow has no rounds — keep session-mode
+    // chrome hidden so it can't leak in if both paths are ever exercised (mirrors simLabExit).
+    var rp = document.getElementById('sl-round-pill'); if (rp) rp.classList.add('is-hidden');
+    var rd = document.getElementById('sl-dots'); if (rd) rd.classList.add('is-hidden');
     var topicEl = document.getElementById('sl-topic'); if (topicEl) topicEl.textContent = scn.topic || 'PBQ';
     var timerSlot = document.getElementById('sl-timer-slot');
     if (timerSlot) timerSlot.innerHTML = '';
