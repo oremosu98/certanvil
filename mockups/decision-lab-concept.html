@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Decision Lab · design concept</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  /* Live dg-system.css token names (no --surface-2 trap): --surface / --surface2 / --surface3 */
+  :root, [data-theme="dark"] {
+    --bg: oklch(0.16 0.009 275); --surface: oklch(0.205 0.009 275); --surface2: oklch(0.205 0.009 275); --surface3: oklch(0.23 0.009 275);
+    --text: oklch(0.96 0.006 275); --text-mid: oklch(0.80 0.012 275); --text-dim: oklch(0.62 0.013 275);
+    --border: oklch(0.30 0.009 275); --border-soft: oklch(0.255 0.009 275);
+    --accent: oklch(0.80 0.155 64); --accent-deep: oklch(0.70 0.150 62); --on-accent: oklch(0.18 0.020 275);
+    --green: oklch(0.74 0.150 152); --red: oklch(0.66 0.17 25); --yellow: oklch(0.80 0.130 75);
+    --ease: cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  /* Light = founder's primary theme; both must be verified (BRAND.md §3). Build pulls these from live dg-system.css. */
+  [data-theme="light"] {
+    --bg: oklch(0.975 0.007 85); --surface: oklch(0.992 0.004 85); --surface2: oklch(0.965 0.010 84); --surface3: oklch(0.945 0.012 84);
+    --text: oklch(0.22 0.015 280); --text-mid: oklch(0.36 0.014 280); --text-dim: oklch(0.50 0.013 280);
+    --border: oklch(0.86 0.008 85); --border-soft: oklch(0.91 0.006 85);
+    --accent: oklch(0.50 0.155 55); --accent-deep: oklch(0.42 0.150 52); --on-accent: oklch(0.985 0.010 85);
+    --green: oklch(0.52 0.13 150); --red: oklch(0.52 0.19 25); --yellow: oklch(0.62 0.14 70);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: Inter, system-ui, sans-serif; line-height: 1.5; padding: clamp(20px,4vw,44px); -webkit-font-smoothing: antialiased; }
+  .eyebrow { font-size: 11px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent); margin-bottom: 12px; }
+  h1 { font-family: Fraunces, Georgia, serif; font-weight: 600; font-size: clamp(26px,4vw,38px); letter-spacing: -0.02em; line-height: 1.06; }
+  h1 i { font-style: italic; color: var(--accent); }
+  .sub { color: var(--text-mid); font-size: 15px; max-width: 72ch; margin: 12px 0 30px; }
+
+  .seq { display: grid; grid-template-columns: repeat(auto-fit, minmax(330px, 1fr)); gap: 22px; align-items: start; }
+  .panel-label { font-size: 11px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-dim); margin-bottom: 10px; }
+  .panel-label b { color: var(--accent); }
+
+  .shell { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 22px 22px 24px; box-shadow: 0 1px 0 color-mix(in oklab, var(--text) 4%, transparent), 0 18px 40px -16px color-mix(in oklab, var(--text) 22%, transparent); }
+  .hdr { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+  .back { display: inline-flex; align-items: center; gap: 5px; font-size: 13px; font-weight: 600; color: var(--text-mid); }
+  .hdr-title { font-size: 14px; font-weight: 700; letter-spacing: 0.01em; }
+  .pro-pill { margin-left: auto; display: inline-flex; align-items: center; gap: 4px; font-size: 10px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); border: 1px solid color-mix(in oklab, var(--accent) 32%, var(--border)); padding: 3px 8px; border-radius: 999px; }
+  .pro-pill svg { width: 11px; height: 11px; fill: none; stroke: currentColor; stroke-width: 2; }
+  .mark { width: 34px; height: 34px; border-radius: 9px; display: grid; place-items: center; color: var(--accent); background: color-mix(in oklab, var(--accent) 10%, transparent); border: 1px solid color-mix(in oklab, var(--accent) 24%, var(--border)); margin-bottom: 14px; }
+  .mark svg { width: 19px; height: 19px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .entry-title { font-family: Fraunces, serif; font-weight: 600; font-size: 24px; letter-spacing: -0.02em; line-height: 1.1; }
+  .entry-title i { font-style: italic; color: var(--accent); }
+  .lede { color: var(--text-mid); font-size: 14px; margin: 7px 0 18px; }
+  .pick-k { font-size: 10px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-dim); margin-bottom: 9px; }
+
+  /* mode toggle */
+  .seg { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; padding: 4px; background: var(--surface3); border: 1px solid var(--border); border-radius: 12px; margin-bottom: 18px; }
+  .seg-opt { display: flex; flex-direction: column; gap: 2px; text-align: left; padding: 10px 12px; border-radius: 9px; border: 1px solid transparent; }
+  .seg-opt .t { font-size: 13.5px; font-weight: 700; display: inline-flex; align-items: center; gap: 6px; }
+  .seg-opt .d { font-size: 11.5px; color: var(--text-dim); font-weight: 500; }
+  .seg-opt.on { background: var(--surface); border-color: color-mix(in oklab, var(--accent) 30%, var(--border)); }
+  .seg-opt.on .t { color: var(--accent); }
+  .seg-opt svg { width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 2; }
+  .seg-pro { font-size: 8.5px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); border: 1px solid color-mix(in oklab, var(--accent) 32%, var(--border)); padding: 1px 5px; border-radius: 999px; margin-left: 6px; }
+
+  .target { background: var(--surface3); border: 1px solid var(--border-soft); border-radius: 12px; padding: 12px 14px; margin-bottom: 18px; }
+  .target-k { font-size: 10px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-dim); }
+  .target-v { font-size: 15px; font-weight: 600; margin-top: 3px; }
+  .chips { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; }
+  .chip { font-size: 13px; font-weight: 600; color: var(--text-mid); background: var(--surface3); border: 1px solid var(--border); border-radius: 9px; padding: 9px 14px; }
+  .chip.on { color: var(--on-accent); background: var(--accent); border-color: var(--accent); }
+  .cta { display: block; width: 100%; text-align: center; font-size: 15px; font-weight: 700; color: var(--on-accent); background: var(--accent); border: 1px solid var(--accent-deep); border-radius: 11px; padding: 13px; cursor: pointer; }
+  .note { font-size: 12px; color: var(--text-dim); margin-top: 11px; text-align: center; }
+
+  /* in-session topbar */
+  .sbar { display: flex; align-items: center; gap: 10px; padding-bottom: 14px; margin-bottom: 16px; border-bottom: 1px solid var(--border-soft); }
+  .sbar-strip { font-size: 13px; font-weight: 600; color: var(--text-mid); }
+  .round-pill { font-size: 11px; font-weight: 800; letter-spacing: 0.06em; color: var(--accent); border: 1px solid color-mix(in oklab, var(--accent) 30%, var(--border)); background: color-mix(in oklab, var(--accent) 8%, transparent); padding: 3px 9px; border-radius: 999px; }
+  .leave { margin-left: auto; font-size: 13px; font-weight: 600; color: var(--text-mid); }
+  .dots { display: flex; gap: 5px; margin: 0 0 16px; }
+  .dot { width: 22px; height: 4px; border-radius: 999px; background: var(--border); }
+  .dot.done { background: var(--green); } .dot.now { background: var(--accent); }
+
+  /* scenario card (the hero) */
+  .scn-k { font-size: 10px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-dim); margin-bottom: 8px; }
+  .scn { font-size: 15px; font-weight: 500; color: var(--text); margin-bottom: 6px; line-height: 1.55; }
+  .scn mark { background: color-mix(in oklab, var(--accent) 18%, transparent); color: var(--accent); font-weight: 700; padding: 0 3px; border-radius: 4px; }
+  .constraint { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 700; color: var(--accent); background: color-mix(in oklab, var(--accent) 9%, transparent); border: 1px solid color-mix(in oklab, var(--accent) 26%, var(--border)); padding: 4px 9px; border-radius: 999px; margin: 6px 0 16px; }
+  .constraint svg { width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 2; }
+  .opts { display: flex; flex-direction: column; gap: 9px; }
+  .opt { display: flex; gap: 11px; align-items: flex-start; padding: 13px 14px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface3); cursor: pointer; }
+  .opt .key { width: 22px; height: 22px; flex: none; border-radius: 6px; display: grid; place-items: center; font-size: 11px; font-weight: 800; background: var(--surface); border: 1px solid var(--border); color: var(--text-dim); }
+  .opt .lab { font-size: 14px; font-weight: 600; }
+  .opt .why { font-size: 12.5px; color: var(--text-dim); margin-top: 4px; line-height: 1.45; display: none; }
+  .opt .verdict { margin-left: auto; flex: none; font-size: 12px; font-weight: 800; display: none; }
+  /* graded states */
+  .opt.correct { border-color: color-mix(in oklab, var(--green) 45%, var(--border)); background: color-mix(in oklab, var(--green) 10%, transparent); }
+  .opt.correct .key { background: var(--green); border-color: var(--green); color: var(--on-accent); }
+  .opt.correct .verdict { color: var(--green); display: inline; }
+  .opt.wrong { border-color: color-mix(in oklab, var(--red) 28%, var(--border)); }
+  .opt.wrong .key { color: var(--red); border-color: color-mix(in oklab, var(--red) 40%, var(--border)); }
+  .opt.wrong .verdict { color: var(--red); display: inline; }
+  .graded .opt .why { display: block; }
+  .picked-wrong { border-color: color-mix(in oklab, var(--red) 45%, var(--border)); background: color-mix(in oklab, var(--red) 8%, transparent); }
+  .teach { margin-top: 14px; border: 1px solid var(--border-soft); background: var(--surface3); border-radius: 12px; padding: 13px 15px; }
+  .teach-k { font-size: 10px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); margin-bottom: 6px; }
+  .teach-b { font-size: 13px; color: var(--text-mid); line-height: 1.5; }
+  .cta-row { display: flex; gap: 9px; margin-top: 16px; }
+  .cta-row .cta { flex: 1; }
+  .cta.ghost { color: var(--accent); background: color-mix(in oklab, var(--accent) 9%, transparent); border-color: color-mix(in oklab, var(--accent) 30%, var(--border)); }
+
+  /* shared-responsibility sorter */
+  .srv-sel { display: flex; gap: 7px; flex-wrap: wrap; margin-bottom: 14px; }
+  .srv { font-size: 12.5px; font-weight: 700; min-height: 44px; display: inline-flex; align-items: center; padding: 7px 14px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface3); color: var(--text-mid); }
+  .srv.on { color: var(--on-accent); background: var(--accent); border-color: var(--accent); }
+  .tray { display: flex; gap: 7px; flex-wrap: wrap; margin-bottom: 14px; }
+  .tok { font-size: 12.5px; font-weight: 600; background: var(--surface3); border: 1px solid var(--border); border-radius: 8px; padding: 11px 13px; }
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .col { border: 1px dashed var(--border); border-radius: 12px; padding: 11px; min-height: 92px; }
+  .col-h { font-size: 11px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-dim); margin-bottom: 9px; }
+  .tok.placed { background: color-mix(in oklab, var(--accent) 12%, transparent); border-color: color-mix(in oklab, var(--accent) 30%, var(--border)); color: var(--text); margin-bottom: 6px; display: block; }
+  .shift { font-size: 11.5px; color: var(--accent); margin-top: 12px; display: inline-flex; gap: 6px; align-items: center; }
+  .shift svg { width: 13px; height: 13px; fill: none; stroke: currentColor; stroke-width: 2; }
+
+  /* verdict */
+  .score-row { display: flex; align-items: baseline; gap: 12px; margin-bottom: 16px; }
+  .score-fig { font-family: Fraunces, serif; font-weight: 600; font-size: 52px; line-height: 1.05; letter-spacing: -0.02em; font-variant-numeric: lining-nums tabular-nums; font-feature-settings: "lnum","tnum"; }
+  .score-fig small { font-size: 24px; color: var(--text-dim); }
+  .score-cap { font-size: 11px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-dim); }
+  .vsec { border: 1px solid var(--border-soft); border-radius: 12px; padding: 13px 15px; margin-top: 10px; background: var(--surface3); }
+  .vsec-k { font-size: 10px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); margin-bottom: 9px; }
+  .confrow { display: flex; align-items: center; gap: 9px; font-size: 13px; padding: 6px 0; border-bottom: 1px solid var(--border-soft); }
+  .confrow:last-child { border-bottom: 0; }
+  .confrow .vs { color: var(--text); font-weight: 600; }
+  .confrow .tag { margin-left: auto; font-size: 10.5px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; color: var(--red); }
+  .weak { display: flex; gap: 7px; flex-wrap: wrap; }
+  .weak .w { font-size: 12px; font-weight: 700; color: var(--accent); background: color-mix(in oklab, var(--accent) 10%, transparent); border: 1px solid color-mix(in oklab, var(--accent) 26%, var(--border)); padding: 5px 10px; border-radius: 999px; }
+
+  .foot { margin-top: 30px; font-size: 13px; color: var(--text-dim); max-width: 76ch; }
+  .foot b { color: var(--text-mid); }
+  .foot .q { color: var(--accent); font-weight: 700; }
+</style>
+</head>
+<body>
+  <div class="eyebrow">Decision Lab · design concept</div>
+  <h1>The cloud-cert drill: <i>read the constraint, kill the look-alikes, choose</i></h1>
+  <p class="sub">Azure and AWS fundamentals exams have no PBQs. They test one thing under pressure: given a scenario with a buried constraint, pick the right service when three of four options look right. Decision Lab is the sibling to Sim Lab that drills exactly that. Same engine, honest framing: nothing is "simulated" or "hands-on", so it is never called a PBQ. One drill spans AZ-900 · AI-900 · SC-900 · AWS CLF-C02, and every future cloud cert.</p>
+
+  <div class="seq">
+    <!-- 1 · entry -->
+    <div>
+      <div class="panel-label"><b>1</b> · Entry · mode + cert</div>
+      <div class="shell">
+        <div class="hdr">
+          <span class="back">‹ Back</span>
+          <span class="hdr-title">Decision Lab</span>
+          <span class="pro-pill"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path></svg>Pro</span>
+        </div>
+        <div class="mark"><svg viewBox="0 0 24 24"><path d="M6 3v6a3 3 0 0 0 3 3h6"></path><path d="M18 9V3M15 6l3-3 3 3M18 12v9"></path></svg></div>
+        <div class="entry-title">Make the <i>right call</i></div>
+        <p class="lede">Stop getting blindsided by look-alike service questions. Three of four options look right; the buried constraint picks the winner. Practice shows the why; exam-style hides it and starts the clock.</p>
+        <div class="pick-k">Mode</div>
+        <div class="seg">
+          <div class="seg-opt on"><span class="t">Practice</span><span class="d">Why each wrong option is wrong</span></div>
+          <div class="seg-opt"><span class="t"><svg viewBox="0 0 24 24"><circle cx="12" cy="13" r="8"></circle><path d="M12 9v4l2 2M9 2h6"></path></svg> Exam-style<span class="seg-pro">Pro</span></span><span class="d">Timed · no feedback till the end</span></div>
+        </div>
+        <div class="target">
+          <div class="target-k">Today's target</div>
+          <div class="target-v">Mixed · Azure AZ-900</div>
+        </div>
+        <div class="pick-k">How many decisions</div>
+        <div class="chips"><span class="chip">5</span><span class="chip on">10</span><span class="chip">20 · full set</span></div>
+        <span class="cta">Start the drill →</span>
+        <div class="note">Free · 1 set a day, full reasoning on every miss. Pro · unlimited sets, exam-style timing, and weak-spots that follow you across sessions</div>
+      </div>
+    </div>
+
+    <!-- 2 · the hero: scenario -> pick, graded with reasoning -->
+    <div>
+      <div class="panel-label"><b>2</b> · A decision · graded with reasoning (the core)</div>
+      <div class="shell">
+        <div class="sbar">
+          <span class="sbar-strip">Decision Lab</span>
+          <span class="round-pill">Decision 3 of 10</span>
+          <span class="leave">Leave</span>
+        </div>
+        <div class="dots"><span class="dot done"></span><span class="dot done"></span><span class="dot now"></span><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+        <div class="scn-k">Pick the best service</div>
+        <div class="scn">A finance team wants to know how much they'll save <mark>before moving</mark> their existing on-prem datacenter to Azure.</div>
+        <span class="constraint"><svg viewBox="0 0 24 24"><path d="M3 6h18M7 12h10M10 18h4"></path></svg>Constraint · compare on-prem vs cloud, before migrating</span>
+        <div class="opts graded">
+          <div class="opt wrong"><span class="key">A</span><span><span class="lab">Pricing Calculator</span><span class="why">Estimates the cost of new Azure services you configure. It doesn't know your on-prem costs, so it can't show savings.</span></span><span class="verdict">✗</span></div>
+          <div class="opt correct"><span class="key">B</span><span><span class="lab">TCO Calculator</span><span class="why">Compares current on-prem spend against the Azure equivalent. That's the "how much will we save before moving" question.</span></span><span class="verdict">✓ Best</span></div>
+          <div class="opt wrong picked-wrong"><span class="key">C</span><span><span class="lab">Cost Management</span><span class="why">Monitors spend on resources you already run in Azure. There's nothing to monitor before you migrate. (Your pick.)</span></span><span class="verdict">✗</span></div>
+          <div class="opt wrong"><span class="key">D</span><span><span class="lab">Azure Advisor</span><span class="why">Recommends optimizations on deployed resources. Same problem: it needs live Azure usage first.</span></span><span class="verdict">✗</span></div>
+        </div>
+        <div class="teach">
+          <div class="teach-k">The tell</div>
+          <div class="teach-b">"Before moving" + "how much they'll save" means compare two worlds. Only the TCO Calculator compares on-prem against cloud. The other three need resources already running in Azure.</div>
+        </div>
+        <div class="cta-row"><span class="cta ghost">Flag</span><span class="cta">Next decision →</span></div>
+      </div>
+    </div>
+
+    <!-- 3 · shared-responsibility sorter -->
+    <div>
+      <div class="panel-label"><b>3</b> · A different round type · shared-responsibility sorter</div>
+      <div class="shell">
+        <div class="sbar">
+          <span class="sbar-strip">Decision Lab</span>
+          <span class="round-pill">Decision 6 of 10</span>
+          <span class="leave">Leave</span>
+        </div>
+        <div class="dots"><span class="dot done"></span><span class="dot done"></span><span class="dot done"></span><span class="dot done"></span><span class="dot done"></span><span class="dot now"></span><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+        <div class="scn-k">Who is responsible?</div>
+        <div class="scn">Sort each task under who owns it. The service selector changes the answer, and that's the trap.</div>
+        <div class="srv-sel"><span class="srv">EC2</span><span class="srv on">RDS (managed)</span><span class="srv">Lambda</span></div>
+        <div class="tray"><span class="tok">Encrypt application data</span><span class="tok">Manage IAM users + keys</span></div>
+        <div class="cols">
+          <div class="col"><div class="col-h">Customer</div><span class="tok placed">App-level config</span><span class="tok placed">Data classification</span></div>
+          <div class="col"><div class="col-h">AWS (provider)</div><span class="tok placed">Patch the guest OS</span><span class="tok placed">DB engine + hardware</span></div>
+        </div>
+        <span class="shift"><svg viewBox="0 0 24 24"><path d="M3 12h18M14 7l5 5-5 5"></path></svg>Switch to EC2 and "patch the guest OS" jumps back to Customer.</span>
+        <div class="cta-row"><span class="cta ghost">Flag</span><span class="cta">Submit</span></div>
+      </div>
+    </div>
+
+    <!-- 4 · verdict -->
+    <div>
+      <div class="panel-label"><b>4</b> · Verdict · the decision-skill read</div>
+      <div class="shell">
+        <div class="sbar"><span class="sbar-strip">Decision Lab</span><span class="round-pill">Set complete</span></div>
+        <div class="score-row">
+          <span class="score-fig">7<small>/10</small></span>
+          <span><span class="score-cap">Right calls</span><br><span class="lede" style="margin:2px 0 0">Solid · the misses cluster in two look-alike pairs</span></span>
+        </div>
+        <div class="vsec">
+          <div class="vsec-k">Look-alikes you still confuse</div>
+          <div class="confrow"><span class="vs">Pricing Calculator</span> vs <span class="vs">TCO Calculator</span><span class="tag">missed ×2</span></div>
+          <div class="confrow"><span class="vs">CloudWatch</span> vs <span class="vs">CloudTrail</span><span class="tag">missed ×1</span></div>
+        </div>
+        <div class="vsec">
+          <div class="vsec-k">Weak service families</div>
+          <div class="weak"><span class="w">Cost &amp; pricing tools</span><span class="w">Monitoring &amp; logging</span></div>
+        </div>
+        <div class="cta-row"><span class="cta">Drill your 3 look-alikes →</span><span class="cta ghost">Back to Practice</span></div>
+      </div>
+    </div>
+  </div>
+
+  <p class="foot"><b>Engine reuse:</b> every round is the existing Sim Lab step engine: the scenario pick is <b>analyze</b> (single-best), the sorter is <b>categorize</b>, look-alike face-offs are <b>match</b>, workflows are <b>order</b>, composite-SLA is <b>fillin</b>. New = four cloud seed banks (AZ-900 · AI-900 · SC-900 · CLF-C02) + a per-option "why wrong" schema field + this honest re-brand, not a new engine. <span class="q">Decisions locked:</span> name <b>Decision Lab</b> · per-distractor reasoning on every practice round · "look-alikes you still confuse" verdict. This concept is the build contract.</p>
+</body>
+</html>
