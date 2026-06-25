@@ -554,17 +554,31 @@
   // Cert → seed-bank resolver. Reads the live window global each call so a lazily
   // injected bank is picked up without re-wiring, and tests that swap the global
   // still work. Unknown or contentless certs return [] → AI-gen + fallback path.
+  // Shared cert->seed-bank resolver. Reads the live window global each call so a
+  // lazily injected bank is picked up without re-wiring. Unknown/contentless certs return [].
+  function _seedBank(registry, cert) {
+    var g = registry[cert];
+    var b = g && window[g];
+    return Array.isArray(b) ? b : [];
+  }
+
   var _SL_SEED_GLOBALS = {
     netplus: 'SIM_LAB_SEED_NETPLUS',
     secplus: 'SIM_LAB_SEED_SECPLUS',
     'aplus-core1': 'SIM_LAB_SEED_APLUS_CORE1',
     'aplus-core2': 'SIM_LAB_SEED_APLUS_CORE2'
   };
-  function _slBank(cert) {
-    var g = _SL_SEED_GLOBALS[cert];
-    var b = g && window[g];
-    return Array.isArray(b) ? b : [];
-  }
+  function _slBank(cert) { return _seedBank(_SL_SEED_GLOBALS, cert); }
+
+  // --- Decision Lab: cloud-fundamentals cert allowlist + seed registry (spec 3.2) ---
+  var _DL_CERTS = ['az900', 'ai900', 'sc900', 'clfc02'];
+  var _DL_SEED_GLOBALS = {
+    az900: 'DECISION_LAB_SEED_AZ900',
+    ai900: 'DECISION_LAB_SEED_AI900',
+    sc900: 'DECISION_LAB_SEED_SC900',
+    clfc02: 'DECISION_LAB_SEED_CLFC02'
+  };
+  function _dlBank(cert) { return _seedBank(_DL_SEED_GLOBALS, cert); }
 
   function _slPickSeed(cert) {
     var bank = _slBank(cert);
@@ -1607,4 +1621,7 @@
   window._simLab.renderReview = _slRenderReview;
   window._simLab.renderExamResult = _slRenderExamResult;
   window._simLab.renderPaceBlock = _slRenderPaceBlock;
+  window._simLab.slBank = _slBank;
+  window._simLab.dlBank = _dlBank;
+  window._simLab.dlCerts = function () { return _DL_CERTS.slice(); };
 })();

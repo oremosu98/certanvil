@@ -2056,6 +2056,27 @@ function _ensureSimLabLoaded(cb) {
 // Expose on window so tests can trigger the lazy-load directly.
 window._ensureSimLabLoaded = _ensureSimLabLoaded;
 
+const _DL_SEED_FILES = {
+  az900: 'features/decision-lab-seed-az900.js',
+  ai900: 'features/decision-lab-seed-ai900.js',
+  sc900: 'features/decision-lab-seed-sc900.js',
+  clfc02: 'features/decision-lab-seed-clfc02.js'
+};
+function _ensureDecisionLabLoaded(cb) {
+  function _afterEngine() {
+    var seedFile = _DL_SEED_FILES[window.CURRENT_CERT];
+    if (!seedFile || window.__dlSeedLoaded === window.CURRENT_CERT) { if (cb) cb(); return; }
+    var s = document.createElement('script');
+    s.src = seedFile;
+    s.onload = function () { window.__dlSeedLoaded = window.CURRENT_CERT; if (cb) cb(); };
+    s.onerror = function () { if (cb) cb(); };
+    document.head.appendChild(s);
+  }
+  if (typeof _ensureSimLabLoaded === 'function') _ensureSimLabLoaded(_afterEngine);
+  else _afterEngine();
+}
+window._ensureDecisionLabLoaded = _ensureDecisionLabLoaded;
+
 // ════════════════════════════════════════════════════════════════════
 // v4.99.31 (iOS Plan Phase 5 — PWA polish)
 //
