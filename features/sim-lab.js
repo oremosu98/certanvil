@@ -721,6 +721,15 @@
       _slStartCountdown(_slSession.deadlineMs);   // Task 4
       _slExamShowExamChrome();                     // Task 4 (badge + palette container visibility)
       _slRenderRound(0);                           // Task 4 (exam round wrapper)
+    }).catch(function (e) {
+      console.warn('Sim Lab exam start failed', e);
+      if (typeof showToast === 'function') {
+        showToast('Could not build the exam. Please try again.', 'error');
+      } else {
+        var body = document.getElementById('sl-body');
+        if (body) { body.textContent = 'Could not build the exam. Please try again.'; }
+      }
+      if (typeof showPage === 'function') showPage('sim-lab-entry');
     });
   }
 

@@ -758,7 +758,7 @@ test('exam pre-gen: builds ALL rounds up front (seed fallback), distinct ids, bu
     window._quotaState = { tier: 'pro' };
     window.CURRENT_CERT = 'netplus';
     await new Promise(res => window._ensureSimLabLoaded(res));
-    window._slMeteredGenerate = async () => ({ bad: true });   // force seed fallback for every round
+    window._slMeteredGenerate = async () => ({ bad: true });   // AI path returns invalid object; simLabValidateScenario rejects it, seed fallback fires for every round
     const scns = await window._simLab.examGenerateAll('netplus', 3);
     const ids = scns.map(s => s.id);
     const distinct = new Set(ids).size === ids.length;
