@@ -321,7 +321,11 @@
     step.payload.lines.forEach(function (ln) {
       var row = _el('button', 'sl-analyze-line');
       row.setAttribute('type', 'button'); row.setAttribute('data-line', ln.id);
-      row.textContent = ln.text;
+      var lab = _el('span', 'dl-lab', _esc(ln.text));
+      row.textContent = '';
+      row.appendChild(lab);
+      if (ln.why) { row.appendChild(_el('span', 'dl-why', _esc(ln.why))); }
+      row.appendChild(_el('span', 'dl-verdict', ''));
       row.addEventListener('click', function () {
         var idx = selected.indexOf(ln.id);
         if (multi) {
@@ -1621,7 +1625,32 @@
   window._simLab.renderReview = _slRenderReview;
   window._simLab.renderExamResult = _slRenderExamResult;
   window._simLab.renderPaceBlock = _slRenderPaceBlock;
+  function _dlGradeAnalyze(host, step, pickedIds) {
+    if (!step || step.type !== 'analyze') return;
+    var block = host.querySelector('.sl-analyze-block');
+    if (!block) return;
+    block.classList.add('dl-graded');
+    var correct = (step.answer && step.answer.selected) || [];
+    var picked = pickedIds || [];
+    Array.prototype.forEach.call(block.children, function (row) {
+      var id = row.getAttribute('data-line');
+      var isCorrect = correct.indexOf(id) !== -1;
+      var wasPicked = picked.indexOf(id) !== -1;
+      var v = row.querySelector('.dl-verdict');
+      row.classList.add('dl-opt');
+      row.setAttribute('aria-disabled', 'true');
+      if (isCorrect) { row.classList.add('dl-correct'); if (v) v.textContent = '✓ Best'; }
+      else { row.classList.add('dl-wrong'); if (wasPicked) row.classList.add('dl-picked-wrong'); if (v) v.textContent = '✗'; }
+    });
+    if (step.explanation && !host.querySelector('.dl-teach')) {
+      var teach = _el('div', 'dl-teach',
+        '<div class="dl-teach-k">The tell</div><div class="dl-teach-b">' + _esc(step.explanation) + '</div>');
+      block.parentNode.insertBefore(teach, block.nextSibling);
+    }
+  }
+
   window._simLab.slBank = _slBank;
   window._simLab.dlBank = _dlBank;
   window._simLab.dlCerts = function () { return _DL_CERTS.slice(); };
+  window._simLab.dlGradeAnalyze = _dlGradeAnalyze;
 })();
