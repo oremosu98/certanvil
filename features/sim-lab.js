@@ -942,8 +942,65 @@
     _slRenderExamFooter(idx);
   }
 
-  // Stub — Task 7 implements the review body-state.
-  function _slRenderReview() {}
+  function _slReviewCounts() {
+    var answered = 0, flagged = _slSession.flagged.size, miss = 0;
+    for (var i = 0; i < _slSession.rounds; i++) { if (_slIsAnswered(i)) answered++; else miss++; }
+    return { answered: answered, flagged: flagged, miss: miss };
+  }
+  function _slFirstFlagged() {
+    for (var i = 0; i < _slSession.rounds; i++) { if (_slSession.flagged.has(i)) return i; }
+    return -1;
+  }
+  function _slRenderReview() {
+    // accrue time on the round being left + snapshot its answer
+    _slSession.roundMs[_slSession.idx] += Math.max(0, Date.now() - _slSession.roundEnteredAt);
+    _slCaptureAnswer(_slSession.idx);
+    _slSession.view = 'review';
+    var pal = document.getElementById('sl-palette'); if (pal) pal.classList.add('is-hidden');
+    var body = document.getElementById('sl-body');
+    body.innerHTML = '';
+    var c = _slReviewCounts();
+    var root = _el('div', 'slv-review');
+    root.appendChild(_el('div', 'slv-rev-h', 'Review before you submit'));
+    root.appendChild(_el('div', 'slv-rev-sub', 'Tap any round to jump back. Flagged rounds are highlighted.'));
+    var counts = _el('div', 'slv-rev-counts');
+    counts.appendChild(_el('span', 'slv-rc ok', c.answered + ' answered'));
+    counts.appendChild(_el('span', 'slv-rc flag', c.flagged + ' flagged'));
+    counts.appendChild(_el('span', 'slv-rc miss', c.miss + ' not answered'));
+    root.appendChild(counts);
+    var list = _el('div', 'slv-rev-list');
+    _slSession.scenarios.forEach(function (scn, i) {
+      var row = _el('div', 'slv-rev-row');
+      row.setAttribute('data-jump', String(i));
+      var status, sLabel, ic;
+      if (_slSession.flagged.has(i)) { status = 'flag'; sLabel = 'Flagged'; ic = '<path d="M5 21V4M5 4h11l-2 4 2 4H5"></path>'; }
+      else if (_slIsAnswered(i)) { status = 'ok'; sLabel = 'Answered'; ic = '<path d="M5 12l4 4L19 7"></path>'; }
+      else { status = 'miss'; sLabel = 'Not answered'; ic = '<circle cx="12" cy="12" r="9"></circle><path d="M12 8v4M12 16h.01"></path>'; }
+      row.innerHTML = '<span class="slv-rev-n">' + (i + 1) + '</span>' +
+        '<span><span class="slv-rev-t">' + _esc(scn.topic || 'PBQ') + '</span><br>' +
+        '<span class="slv-rev-o">' + _esc(scn.objective || '') + '</span></span>' +
+        '<span class="slv-rev-status ' + status + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">' + ic + '</svg>' + sLabel + '</span>';
+      row.addEventListener('click', function () { _slExamNav(i); });
+      list.appendChild(row);
+    });
+    root.appendChild(list);
+    var ctaRow = _el('div', 'slv-cta-row');
+    var firstFlag = _slFirstFlagged();
+    var back = _el('button', 'btn gnt-ghost', 'Back to flagged'); back.setAttribute('type', 'button');
+    if (firstFlag === -1) back.setAttribute('disabled', 'disabled');
+    back.addEventListener('click', function () { if (firstFlag !== -1) _slExamNav(firstFlag); });
+    var submit = _el('button', 'btn btn-primary', 'Submit exam'); submit.setAttribute('type', 'button');
+    submit.addEventListener('click', function () {
+      if (c.miss > 0) {
+        var ok = window.confirm(c.miss + ' round' + (c.miss === 1 ? '' : 's') + ' unanswered. Submit anyway?');
+        if (!ok) return;
+      }
+      _slExamSubmit(false);   // reason='manual' (Task 8)
+    });
+    ctaRow.appendChild(back); ctaRow.appendChild(submit);
+    root.appendChild(ctaRow);
+    body.appendChild(root);
+  }
 
   function _slExamStart() {
     if (typeof window._slMeteredGenerate === 'function') window._simLab.__setFetcher(window._slMeteredGenerate);
@@ -1396,4 +1453,5 @@
   window._simLab.examNav = _slExamNav;
   window._simLab.toggleFlag = _slToggleFlag;
   window._simLab.renderRound = _slRenderRound;
+  window._simLab.renderReview = _slRenderReview;
 })();

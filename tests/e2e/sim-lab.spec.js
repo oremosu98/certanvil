@@ -923,3 +923,103 @@ test('exam nav: flag toggles + per-round answers persist across Prev/Next', asyn
   expect(r.responsesSeeded).toBe(true); // live __slResponses pre-populated
   expect(r.idx).toBe(0);
 });
+
+// Task 7 — Review body-state
+
+test('exam review: counts answered/flagged/unanswered + tap-to-jump', async ({ page }) => {
+  await gotoApp(page);
+  const r = await page.evaluate(async () => {
+    window._quotaState = { tier: 'pro' };
+    window.CURRENT_CERT = 'netplus';
+    await new Promise(res => window._ensureSimLabLoaded(res));
+    // Stub the AI fetcher so the session builds from seed instantly
+    window._slMeteredGenerate = async () => ({ bad: true });
+    window.simLabOpenEntry();
+    document.querySelector('#sle-mode .sle-seg-opt[data-mode="exam"]').click();
+    document.querySelector('.sle-chip[data-rounds="3"]').click();
+    window.simLabSessionStart();
+    await new Promise(res => setTimeout(res, 400));
+    const sess = window._simLab.examSession();
+    const roundCount = sess.scenarios.length;
+    // Mark round 0 as answered (direct write into answers array)
+    sess.answers[0] = { st1: { order: ['a'] } };
+    // Mark round 1 as flagged (but still unanswered — flagged != answered)
+    sess.flagged.add(1);
+    // Round 2 (and any beyond) remain untouched / unanswered
+    window._simLab.renderReview();
+    // Verify the review screen rendered into #sl-body
+    const counts = Array.from(document.querySelectorAll('#sl-body .slv-rc')).map(e => e.textContent.trim());
+    const rows = document.querySelectorAll('#sl-body .slv-rev-row').length;
+    const viewBefore = sess.view;
+    // Tap row at index (roundCount - 1) — should jump back to that round
+    const revRows = document.querySelectorAll('#sl-body .slv-rev-row');
+    revRows[revRows.length - 1].click();
+    return { counts, rows, roundCount, viewBefore, idx: sess.idx, viewAfter: sess.view };
+  });
+  expect(r.viewBefore).toBe('review');
+  // answered = 1 (round 0 has a non-empty answer object)
+  expect(r.counts).toContain('1 answered');
+  // flagged count = badge reports flagged.size = 1
+  expect(r.counts).toContain('1 flagged');
+  // miss = rounds - answered (flagged rounds that have no answer are counted as miss)
+  // With 3 rounds: 1 answered, 2 miss (rounds 1+2 have no answers)
+  expect(r.counts).toContain((r.roundCount - 1) + ' not answered');
+  // One row per round
+  expect(r.rows).toBe(r.roundCount);
+  // After clicking the last row we jumped to that round index
+  expect(r.idx).toBe(r.roundCount - 1);
+  expect(r.viewAfter).toBe('round');   // jumping leaves review
+});
+
+test('exam review: submit with unanswered rounds triggers confirm dialog', async ({ page }) => {
+  await gotoApp(page);
+  // Intercept the confirm dialog that the submit button fires
+  let dialogMessage = null;
+  let dialogFired = false;
+  page.on('dialog', async dialog => {
+    dialogMessage = dialog.message();
+    // Dismiss (cancel) so we can assert the dialog appeared without proceeding to submit
+    await dialog.dismiss();
+    dialogFired = true;
+  });
+  const r = await page.evaluate(async () => {
+    window._quotaState = { tier: 'pro' };
+    window.CURRENT_CERT = 'netplus';
+    await new Promise(res => window._ensureSimLabLoaded(res));
+    window._slMeteredGenerate = async () => ({ bad: true });
+    window.simLabOpenEntry();
+    document.querySelector('#sle-mode .sle-seg-opt[data-mode="exam"]').click();
+    document.querySelector('.sle-chip[data-rounds="3"]').click();
+    window.simLabSessionStart();
+    await new Promise(res => setTimeout(res, 400));
+    const sess = window._simLab.examSession();
+    const roundCount = sess.scenarios.length;
+    // Leave all rounds unanswered, then open review
+    window._simLab.renderReview();
+    const missChip = document.querySelector('#sl-body .slv-rc.miss');
+    const missText = missChip ? missChip.textContent.trim() : '';
+    // Parse the actual miss count from the rendered chip (e.g. "2 not answered" → 2)
+    const missCount = parseInt(missText, 10) || 0;
+    // Back-to-flagged should be disabled (no flagged rounds)
+    const backBtn = document.querySelector('#sl-body .slv-cta-row .btn.gnt-ghost');
+    const backDisabled = backBtn ? backBtn.hasAttribute('disabled') : null;
+    // Click submit — this fires window.confirm because miss > 0
+    const submitBtn = document.querySelector('#sl-body .slv-cta-row .btn.btn-primary');
+    submitBtn.click();
+    return { missText, missCount, backDisabled, roundCount, view: sess.view };
+  });
+  // Wait briefly for the dialog event to fire
+  await page.waitForTimeout(200);
+  // Dialog should have appeared with an unanswered-rounds message
+  expect(dialogFired).toBe(true);
+  expect(dialogMessage).toMatch(/unanswered/i);
+  // Dialog message should include the actual miss count
+  expect(dialogMessage).toMatch(new RegExp(String(r.missCount)));
+  // Counts badge shows "N not answered" and the N is > 0 (all rounds unanswered)
+  expect(r.missCount).toBeGreaterThan(0);
+  expect(r.missText).toMatch(/not answered/);
+  // Back-to-flagged is disabled when no rounds are flagged
+  expect(r.backDisabled).toBe(true);
+  // View stays 'review' because we dismissed the confirm
+  expect(r.view).toBe('review');
+});
