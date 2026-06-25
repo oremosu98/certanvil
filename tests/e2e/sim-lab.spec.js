@@ -1118,6 +1118,7 @@ test('exam pace verdict: under-par shows "On exam pace", over-par shows coaching
     sess.roundMs = sess.scenarios.map(() => 0);
     window._simLab.examSubmit(false);
     const underVerdict = document.querySelector('#sl-result-root .slp-pace-verdict').textContent;
+    const underSub = document.querySelector('#sl-result-root .slp-pace-sub').textContent;
     // over par: directly set session state and call renderExamResult (examSubmit clamps elapsedMs via max(0,remaining))
     sess.elapsedMs = Math.round(sess.budgetMs * 1.2); // 20% over budget
     sess.roundMs = sess.scenarios.map((s, i) => i === 1 ? sess.budgetMs : 0); // round 2 ran long
@@ -1129,13 +1130,15 @@ test('exam pace verdict: under-par shows "On exam pace", over-par shows coaching
     const overV = document.querySelector('#sl-result-root .slp-pace-verdict');
     return {
       underVerdict,
+      underSub,
       overVerdict: overV.textContent,
       overClass: overV.classList.contains('over'),
       coaching: document.querySelector('#sl-result-root .slp-pace-sub').textContent
     };
   });
-  expect(r.underVerdict).toContain('On exam pace');
+  expect(r.underVerdict).toContain('On exam pace ✓');
+  expect(r.underSub).toContain('to spare. On the real exam that leaves room to revisit a hard PBQ.');
   expect(r.overVerdict).toContain('over exam pace');
   expect(r.overClass).toBe(true);
-  expect(r.coaching).toContain('triage');
+  expect(r.coaching).toContain('ran long. On test day that\'s the round to triage: flag it and move.');
 });
