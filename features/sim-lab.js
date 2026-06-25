@@ -1297,6 +1297,10 @@
   }
 
   function simLabExit() {
+    // §3.7 confirm gate: mid-exam only (clock still running, not yet submitted)
+    if (_slSession && _slSession.mode === 'exam' && !_slSession.__submitted) {
+      if (!window.confirm('Leave? Your exam ends and won\'t be scored.')) return;
+    }
     if (_slTimer) { _slTimer.stop(); _slTimer = null; }
     if (_slSession && _slSession.mode === 'exam') _slStopCountdown();   // clear interval + visibility/focus listeners
     _slMode = null;

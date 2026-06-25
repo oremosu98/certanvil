@@ -1146,6 +1146,8 @@ test('exam pace verdict: under-par shows "On exam pace", over-par shows coaching
 // Task 10: simLabExit cleanup + exam chrome teardown
 test('exam exit: stops the clock and tears down exam chrome', async ({ page }) => {
   await gotoApp(page);
+  // The §3.7 confirm gate fires for a mid-exam session — accept it so teardown proceeds.
+  page.on('dialog', dialog => dialog.accept());
   const r = await page.evaluate(async () => {
     window._quotaState = { tier: 'pro' };
     window.CURRENT_CERT = 'netplus';
@@ -1168,4 +1170,48 @@ test('exam exit: stops the clock and tears down exam chrome', async ({ page }) =
   expect(r.badgeHidden).toBe(true);
   expect(r.paletteHidden).toBe(true);
   expect(r.clockEmpty).toBe(true);
+});
+
+// §3.7 confirm gate: cancel stays in exam, accept exits
+test('exam leave: confirm gate — cancel stays, accept exits', async ({ page }) => {
+  await gotoApp(page);
+
+  // --- CANCEL path: dismiss the confirm → exam must remain active ---
+  let dialogMessage = null;
+  let dialogFired = false;
+  page.once('dialog', async dialog => {
+    dialogMessage = dialog.message();
+    dialogFired = true;
+    await dialog.dismiss();
+  });
+
+  const cancelResult = await page.evaluate(async () => {
+    window._quotaState = { tier: 'pro' };
+    window.CURRENT_CERT = 'netplus';
+    await new Promise(res => window._ensureSimLabLoaded(res));
+    window._slMeteredGenerate = async () => ({ bad: true });
+    window.simLabOpenEntry();
+    document.querySelector('#sle-mode .sle-seg-opt[data-mode="exam"]').click();
+    document.querySelector('.sle-chip[data-rounds="3"]').click();
+    window.simLabSessionStart();
+    await new Promise(res => setTimeout(res, 200));
+    window.simLabExit();   // triggers the confirm; dialog handler above will dismiss
+    return { session: window._simLab.examSession() };
+  });
+
+  // Dialog fired with the spec §3.7 copy
+  expect(dialogFired).toBe(true);
+  expect(dialogMessage).toBe('Leave? Your exam ends and won\'t be scored.');
+  // Session still live — exam was NOT torn down
+  expect(cancelResult.session).not.toBe(null);
+
+  // --- ACCEPT path: confirm → exam must be torn down ---
+  page.once('dialog', dialog => dialog.accept());
+
+  const acceptResult = await page.evaluate(async () => {
+    window.simLabExit();   // session already running from the cancel path above
+    return { session: window._simLab.examSession() };
+  });
+
+  expect(acceptResult.session).toBe(null);
 });
