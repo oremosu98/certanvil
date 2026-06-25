@@ -752,6 +752,33 @@ test('exam entry: free tapping Exam gates; Pro toggles Exam + shows budget; CTA 
   expect(r.cta).toContain('Start exam sim');
 });
 
+test("exam entry: Today's target is cert-driven (never the hardcoded Network+)", async ({ page }) => {
+  await gotoApp(page);
+  const r = await page.evaluate(async () => {
+    await new Promise(res => window._ensureSimLabLoaded(res));
+    window._quotaState = { tier: 'pro' };
+    // Network+ pack → Network+ label
+    window.CERT_PACK = { meta: { id: 'netplus', name: 'CompTIA Network+', code: 'N10-009' } };
+    window.CURRENT_CERT = 'netplus';
+    window.simLabOpenEntry();
+    const netTarget = document.getElementById('sle-target').textContent;
+    // Security+ pack → Security+ label (must NOT say Network+)
+    window.CERT_PACK = { meta: { id: 'secplus', name: 'CompTIA Security+', code: 'SY0-701' } };
+    window.CURRENT_CERT = 'secplus';
+    window.simLabOpenEntry();
+    const secTarget = document.getElementById('sle-target').textContent;
+    // pack with no usable meta → cert-neutral fallback, never a hardcoded cert
+    window.CERT_PACK = { meta: {} };
+    window.simLabOpenEntry();
+    const bareTarget = document.getElementById('sle-target').textContent;
+    return { netTarget, secTarget, bareTarget };
+  });
+  expect(r.netTarget).toBe('Mixed · Network+ N10-009');
+  expect(r.secTarget).toBe('Mixed · Security+ SY0-701');
+  expect(r.secTarget).not.toContain('Network+');
+  expect(r.bareTarget).toBe('Mixed');
+});
+
 test('exam pre-gen: builds ALL rounds up front (seed fallback), distinct ids, budget set', async ({ page }) => {
   await gotoApp(page);
   const r = await page.evaluate(async () => {

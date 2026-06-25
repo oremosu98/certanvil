@@ -112,6 +112,7 @@ npx playwright test              # E2E (tests/e2e/app.spec.js)
 
 | Version | Features Added |
 |---|---|
+| v7.57.2 | Sim Lab entry target: derive cert label from pack name+code (Sec+ now shows Security+ SY0-701, not bare Mixed) |
 | v7.57.1 | Sim Lab entry: cert-neutral Today's target (drop hardcoded Network+ that misled on Sec+) |
 | v7.57.0 | Sim Lab Exam mode (Pro): whole-session countdown + flag-and-return + pacing report; Sec+ 50-seed bank |
 | v7.56.0 | Sim Lab: multi-round sessions (pick 3/5, Pro 10) + prefetch + verdict summary + landing section |
