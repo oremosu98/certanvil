@@ -781,7 +781,9 @@
       var sq = _el('button', cls, String(i + 1));
       sq.setAttribute('type', 'button');
       sq.setAttribute('data-jump', String(i));
-      sq.setAttribute('aria-label', 'Jump to round ' + (i + 1));
+      var stateHint = (i === _slSession.idx) ? ', current' : (_slIsAnswered(i) ? ', answered' : ', not yet answered');
+      if (_slSession.flagged.has(i)) stateHint += ', flagged';
+      sq.setAttribute('aria-label', 'Round ' + (i + 1) + stateHint);
       sq.addEventListener('click', function () { _slExamNav(i); });   // Task 6
       host.appendChild(sq);
     });
