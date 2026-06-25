@@ -861,20 +861,65 @@ test('exam nav: flag toggles + per-round answers persist across Prev/Next', asyn
     document.querySelector('.sle-chip[data-rounds="3"]').click();
     window.simLabSessionStart();
     await new Promise(res => setTimeout(res, 400));
+
+    // Inject a controlled fillin scenario at round 0 so we can assert on
+    // a specific field value — this makes the test deterministic regardless
+    // of what seed scenarios the session happens to load.
     const sess = window._simLab.examSession();
+    const fixedScenario = {
+      id: 'test-fillin-persist', cert: 'netplus', objective: '1.4',
+      topic: 'IPv4', title: 'Subnet mask', estMinutes: 2,
+      scenario: 'What is the CIDR notation for a /26 subnet?',
+      steps: [{
+        id: 'st1', type: 'fillin', points: 1,
+        prompt: 'Enter the CIDR notation.',
+        explanation: '/26 = 255.255.255.192',
+        payload: { fields: [{ id: 'cidr', label: 'CIDR', inputmode: 'text' }] },
+        answer: { cidr: ['/26'] }
+      }]
+    };
+    sess.scenarios[0] = fixedScenario;
+    window._simLab.renderRound(0);
+
     // flag round 0 via the footer button
     document.querySelector('#sl-body .sl-flagbtn').click();
     const flaggedAfter = sess.flagged.has(0);
-    // simulate an answer on round 0, navigate away, come back, answer retained
-    window.__slResponses = { st1: { order: ['z'] } };
-    window._simLab.examNav(1);      // leaves 0 → snapshots answer
-    const savedOn0 = !!(sess.answers[0] && sess.answers[0].st1);
-    window._simLab.examNav(0);      // back to 0 → seeds responses
-    const reseeded = !!(window.__slResponses && window.__slResponses.st1);
-    return { flaggedAfter, savedOn0, reseeded, idx: sess.idx };
+
+    // Drive a REAL interaction through the rendered fillin input so the value
+    // flows through onChange into window.__slResponses (the live responses object
+    // _slMountScenario exposes).  This is the same idiom used by the
+    // 'fillin renderer reports typed values' test above.
+    const input = document.querySelector('#sl-body [data-field="cidr"]');
+    input.value = '/26';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+
+    // Navigate away: _slCaptureAnswer deep-clones window.__slResponses into
+    // sess.answers[0] and then renders round 1.
+    window._simLab.examNav(1);
+
+    // Verify the answer was actually captured (not just a reference equality pass)
+    const saved = sess.answers[0];
+    const savedCidr = saved && saved.st1 && saved.st1.cidr;
+
+    // Navigate back: _slRenderRound passes the saved clone as `initial` to
+    // _slMountScenario, which re-hydrates every step widget.
+    window._simLab.examNav(0);
+
+    // (a) Data assertion — the saved answer contains the typed value
+    const dataOk = savedCidr === '/26';
+
+    // (b) UI re-hydration assertion — the re-rendered input has the value in DOM
+    const rehydratedInput = document.querySelector('#sl-body [data-field="cidr"]');
+    const domOk = !!(rehydratedInput && rehydratedInput.value === '/26');
+
+    // (c) window.__slResponses was seeded from the saved answer (not blank)
+    const responsesSeeded = !!(window.__slResponses && window.__slResponses.st1 && window.__slResponses.st1.cidr === '/26');
+
+    return { flaggedAfter, dataOk, domOk, responsesSeeded, idx: sess.idx };
   });
   expect(r.flaggedAfter).toBe(true);
-  expect(r.savedOn0).toBe(true);
-  expect(r.reseeded).toBe(true);
+  expect(r.dataOk).toBe(true);       // captured value is '/26', not just truthy
+  expect(r.domOk).toBe(true);        // DOM input re-hydrated to '/26'
+  expect(r.responsesSeeded).toBe(true); // live __slResponses pre-populated
   expect(r.idx).toBe(0);
 });

@@ -218,8 +218,14 @@
   function _slAttr(v) { return (window.CSS && CSS.escape) ? CSS.escape(v) : String(v).replace(/["\\]/g, '\\$&'); }
 
   // --- order renderer ---
-  function _slRenderOrder(step, onChange) {
+  function _slRenderOrder(step, onChange, initial) {
     var order = step.payload.items.map(function (it) { return it.id; }); // initial = given order
+    // Re-hydrate from a saved response: adopt the prior order if it's a valid
+    // permutation of this step's items (ignore anything stale/mismatched).
+    if (initial && Array.isArray(initial.order) && initial.order.length === order.length &&
+        initial.order.slice().sort().join(' ') === order.slice().sort().join(' ')) {
+      order = initial.order.slice();
+    }
     var root = _el('div', 'sl-order');
     root.appendChild(_el('p', 'sl-prompt', _esc(step.prompt)));
     var list = _el('div', 'sl-order-list');
@@ -257,7 +263,7 @@
   }
 
   // --- categorize renderer ---
-  function _slRenderCategorize(step, onChange) {
+  function _slRenderCategorize(step, onChange, initial) {
     var map = {};                 // itemId -> bucketId
     var root = _el('div', 'sl-cat');
     root.appendChild(_el('p', 'sl-prompt', _esc(step.prompt)));
@@ -277,22 +283,35 @@
       col.appendChild(drop); cols.appendChild(col);
     });
 
+    function place(itemId, bucketId) {
+      map[itemId] = bucketId;
+      var chip = root.querySelector('.sl-chip[data-item="' + _slAttr(itemId) + '"]');
+      var drop = root.querySelector('.sl-cat-drop[data-target="' + _slAttr(bucketId) + '"]');
+      if (chip && drop) drop.appendChild(chip);
+      onChange({ map: Object.assign({}, map) });
+    }
     _slBindMovable(root, {
       itemSel: '.sl-chip', targetSel: '.sl-cat-drop',
-      onPlace: function (itemId, bucketId) {
-        map[itemId] = bucketId;
-        var chip = root.querySelector('.sl-chip[data-item="' + _slAttr(itemId) + '"]');
-        var drop = root.querySelector('.sl-cat-drop[data-target="' + _slAttr(bucketId) + '"]');
-        if (chip && drop) drop.appendChild(chip);
-        onChange({ map: Object.assign({}, map) });
-      }
+      onPlace: place
     });
-    onChange({ map: {} });
+    // Re-hydrate: replay saved placements through the same path so the chips
+    // visually land in their buckets and the reported state matches.
+    if (initial && initial.map && typeof initial.map === 'object') {
+      Object.keys(initial.map).forEach(function (itemId) {
+        var bucketId = initial.map[itemId];
+        if (root.querySelector('.sl-chip[data-item="' + _slAttr(itemId) + '"]') &&
+            root.querySelector('.sl-cat-drop[data-target="' + _slAttr(bucketId) + '"]')) {
+          place(itemId, bucketId);
+        }
+      });
+    } else {
+      onChange({ map: {} });
+    }
     return root;
   }
 
   // --- analyze renderer ---
-  function _slRenderAnalyze(step, onChange) {
+  function _slRenderAnalyze(step, onChange, initial) {
     var multi = !!step.payload.multi;
     var selected = [];
     var root = _el('div', 'sl-analyze');
@@ -317,12 +336,23 @@
       });
       block.appendChild(row);
     });
-    onChange({ selected: [] });
+    // Re-hydrate: restore prior selection (only ids that exist on this step) and
+    // paint the selected rows so the choice is visible again.
+    if (initial && Array.isArray(initial.selected)) {
+      var valid = {};
+      step.payload.lines.forEach(function (ln) { valid[ln.id] = true; });
+      selected = initial.selected.filter(function (id) { return valid[id]; });
+      if (!multi && selected.length > 1) selected = selected.slice(0, 1);
+      Array.prototype.forEach.call(block.children, function (c) {
+        c.classList.toggle('sl-sel', selected.indexOf(c.getAttribute('data-line')) !== -1);
+      });
+    }
+    onChange({ selected: selected.slice() });
     return root;
   }
 
   // --- match renderer ---
-  function _slRenderMatch(step, onChange) {
+  function _slRenderMatch(step, onChange, initial) {
     var pairs = {};
     var root = _el('div', 'sl-match');
     root.appendChild(_el('p', 'sl-prompt', _esc(step.prompt)));
@@ -341,28 +371,41 @@
       rcol.appendChild(t);
     });
 
+    function place(leftId, rightId) {
+      pairs[leftId] = rightId;
+      var lEl = root.querySelector('.sl-match-l[data-item="' + _slAttr(leftId) + '"]');
+      if (lEl) {
+        var rLabel = step.payload.right.filter(function (x){return x.id===rightId;})[0];
+        lEl.setAttribute('data-paired', rightId);
+        var existing = lEl.querySelector('.sl-pairtag');
+        if (existing) existing.remove();
+        var tag = _el('span', 'sl-pairtag', '→ ' + _esc(rLabel ? rLabel.label : rightId));
+        lEl.appendChild(tag);
+      }
+      onChange({ pairs: Object.assign({}, pairs) });
+    }
     _slBindMovable(root, {
       itemSel: '.sl-match-l', targetSel: '.sl-match-r',
-      onPlace: function (leftId, rightId) {
-        pairs[leftId] = rightId;
-        var lEl = root.querySelector('.sl-match-l[data-item="' + _slAttr(leftId) + '"]');
-        if (lEl) {
-          var rLabel = step.payload.right.filter(function (x){return x.id===rightId;})[0];
-          lEl.setAttribute('data-paired', rightId);
-          var existing = lEl.querySelector('.sl-pairtag');
-          if (existing) existing.remove();
-          var tag = _el('span', 'sl-pairtag', '→ ' + _esc(rLabel ? rLabel.label : rightId));
-          lEl.appendChild(tag);
-        }
-        onChange({ pairs: Object.assign({}, pairs) });
-      }
+      onPlace: place
     });
-    onChange({ pairs: {} });
+    // Re-hydrate: replay saved pairs through the same path so each left item shows
+    // its "→ right" tag again and the reported state matches.
+    if (initial && initial.pairs && typeof initial.pairs === 'object') {
+      Object.keys(initial.pairs).forEach(function (leftId) {
+        var rightId = initial.pairs[leftId];
+        if (root.querySelector('.sl-match-l[data-item="' + _slAttr(leftId) + '"]') &&
+            step.payload.right.some(function (x) { return x.id === rightId; })) {
+          place(leftId, rightId);
+        }
+      });
+    } else {
+      onChange({ pairs: {} });
+    }
     return root;
   }
 
   // --- fillin renderer ---
-  function _slRenderFillin(step, onChange) {
+  function _slRenderFillin(step, onChange, initial) {
     var vals = {};
     var root = _el('div', 'sl-fillin');
     root.appendChild(_el('p', 'sl-prompt', _esc(step.prompt)));
@@ -381,28 +424,43 @@
         vals[f.id] = input.value;
         onChange(Object.assign({}, vals));
       });
+      // Re-hydrate: restore the prior typed value into the input (response shape
+      // is a flat {fieldId: string} map).
+      if (initial && typeof initial === 'object' && typeof initial[f.id] === 'string') {
+        input.value = initial[f.id];
+        vals[f.id] = initial[f.id];
+      }
       wrap.appendChild(input);
       root.appendChild(wrap);
     });
-    onChange({});
+    onChange(Object.assign({}, vals));
     return root;
   }
 
   // --- renderStep dispatcher ---
-  function simLabRenderStep(step, onChange) {
+  // `initial` (optional) seeds the widget with a prior response so it re-hydrates
+  // visually — used by exam free-nav to restore a saved round. Omitted in
+  // practice/session mode, where every step starts blank (behaviour unchanged).
+  function simLabRenderStep(step, onChange, initial) {
     switch (step.type) {
-      case 'order': return _slRenderOrder(step, onChange);
-      case 'categorize': return _slRenderCategorize(step, onChange);
-      case 'match': return _slRenderMatch(step, onChange);
-      case 'analyze': return _slRenderAnalyze(step, onChange);
-      case 'fillin': return _slRenderFillin(step, onChange);
+      case 'order': return _slRenderOrder(step, onChange, initial);
+      case 'categorize': return _slRenderCategorize(step, onChange, initial);
+      case 'match': return _slRenderMatch(step, onChange, initial);
+      case 'analyze': return _slRenderAnalyze(step, onChange, initial);
+      case 'fillin': return _slRenderFillin(step, onChange, initial);
       default: return _el('div', 'sl-unknown', 'Unsupported step');
     }
   }
 
   // --- scenario orchestrator (Task 10) ---
+  // opts.initial (optional): a per-step seed map { stepId: response } used by exam
+  // free-nav to re-hydrate a previously-answered round. Practice/session mode omits
+  // it, so every step mounts blank exactly as before. The live `responses` object
+  // is exposed on window.__slResponses so the exam layer can snapshot REAL answers
+  // (user interactions mutate this same object via each step's onChange).
   function _slMountScenario(host, scn, opts) {
     var responses = {};
+    var initial = (opts && opts.initial) || null;
     host.innerHTML = '';
     var wrap = _el('div', 'sl-scenario');
     wrap.appendChild(_el('div', 'sl-scn-prose', _esc(scn.scenario)));
@@ -414,10 +472,14 @@
     scn.steps.forEach(function (st, i) {
       var stepWrap = _el('div', 'sl-step');
       stepWrap.appendChild(_el('div', 'sl-step-k', 'Step ' + (i + 1) + ' of ' + scn.steps.length));
-      var el = simLabRenderStep(st, function (resp) { responses[st.id] = resp; });
+      var seed = initial ? initial[st.id] : null;
+      var el = simLabRenderStep(st, function (resp) { responses[st.id] = resp; }, seed);
       stepWrap.appendChild(el);
       wrap.appendChild(stepWrap);
     });
+    // Expose the live responses object so the exam layer can snapshot real answers
+    // (closure over `responses`; user edits flow into it via each onChange).
+    window.__slResponses = responses;
     var submit = _el('button', 'btn btn-primary gnt-cta', 'Submit answers');
     submit.setAttribute('type', 'button');
     submit.setAttribute('data-action', 'simLabSubmitScenario');
@@ -796,11 +858,22 @@
     host.appendChild(key);
   }
 
+  // Deep-ish clone of a responses object so a captured snapshot can't be mutated
+  // by later edits to the live object (or to another round that aliases it).
+  function _slCloneResp(src) {
+    if (src == null || typeof src !== 'object') return src;
+    if (Array.isArray(src)) return src.map(_slCloneResp);
+    var out = {};
+    Object.keys(src).forEach(function (k) { out[k] = _slCloneResp(src[k]); });
+    return out;
+  }
+
   // Snapshot the current round's in-flight responses into answers[idx].
-  // The active mount writes responses into window.__slResponses (a plain object
-  // keyed by step id). Capturing it preserves edits across free navigation.
+  // _slMountScenario exposes the LIVE responses object (the one user interactions
+  // mutate) on window.__slResponses. Capturing a deep copy preserves edits across
+  // free navigation without aliasing the live object into saved state.
   function _slCaptureAnswer(idx) {
-    if (window.__slResponses) _slSession.answers[idx] = Object.assign({}, window.__slResponses);
+    if (window.__slResponses) _slSession.answers[idx] = _slCloneResp(window.__slResponses);
   }
 
   function _slExamNav(toIdx) {
@@ -823,13 +896,14 @@
     var body = document.getElementById('sl-body');
     // Clear body so _slMountScenario + footer start fresh.
     body.innerHTML = '';
-    // Reset the live responses object; _slMountScenario will populate it.
-    window.__slResponses = {};
-    _slMountScenario(body, scn, { onSubmit: function () {} }); // exam never per-round-submits
-    // Restore any saved answer so edits survive free navigation.
-    if (_slSession.answers[idx]) {
-      Object.assign(window.__slResponses, _slSession.answers[idx]);
-    }
+    // Re-hydrate from the saved answer: pass it as `initial` so the step widgets
+    // are seeded to SHOW the prior answer, and so the live window.__slResponses
+    // (which _slMountScenario exposes) starts populated with it. A deep copy keeps
+    // the saved snapshot insulated from edits made on this re-entry.
+    _slMountScenario(body, scn, {
+      onSubmit: function () {},                                 // exam never per-round-submits; nav/Review drives flow
+      initial: _slSession.answers[idx] ? _slCloneResp(_slSession.answers[idx]) : null
+    });
     _slRenderExamFooter(idx);
   }
 
