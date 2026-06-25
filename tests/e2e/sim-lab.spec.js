@@ -948,7 +948,11 @@ test('exam review: counts answered/flagged/unanswered + tap-to-jump', async ({ p
     });
     const sess = window._simLab.examSession();
     const roundCount = sess.scenarios.length;
-    // Mark round 0 as answered (direct write into answers array)
+    // Mark round 0 as answered (direct write into answers array).
+    // Clear __slResponses first so _slCaptureAnswer (called inside renderReview)
+    // does not overwrite the direct assignment — webkit can leave __slResponses
+    // populated from the session-start generate path.
+    window.__slResponses = null;
     sess.answers[0] = { st1: { order: ['a'] } };
     // Mark round 1 as flagged (but still unanswered — flagged != answered)
     sess.flagged.add(1);
@@ -1214,4 +1218,52 @@ test('exam leave: confirm gate — cancel stays, accept exits', async ({ page })
   });
 
   expect(acceptResult.session).toBe(null);
+});
+
+test('practice regression: practice mode runs unchanged, no exam chrome, count-up timer only', async ({ page }) => {
+  await gotoApp(page);
+  const r = await page.evaluate(async () => {
+    window._quotaState = { tier: 'free' };
+    localStorage.removeItem('nplus_pbq_free_count');
+    window.CURRENT_CERT = 'netplus';
+    await new Promise(res => window._ensureSimLabLoaded(res));
+    window._slMeteredGenerate = async () => ({ bad: true });
+    window.simLabOpenEntry();
+    // mode stays practice (default); pick 3 and start
+    document.querySelector('.sle-chip[data-rounds="3"]').click();
+    window.simLabSessionStart();
+    await new Promise(res => setTimeout(res, 400));
+    return {
+      onSession: document.getElementById('page-sim-lab').classList.contains('active'),
+      badgeHidden: document.getElementById('sl-exam-badge').classList.contains('is-hidden'),
+      paletteHidden: document.getElementById('sl-palette').classList.contains('is-hidden'),
+      clockEmpty: document.getElementById('sl-clock-slot').innerHTML === '',
+      dotsShown: !document.getElementById('sl-dots').classList.contains('is-hidden')
+    };
+  });
+  expect(r.onSession).toBe(true);
+  expect(r.badgeHidden).toBe(true);   // no exam badge in practice
+  expect(r.paletteHidden).toBe(true); // no palette in practice
+  expect(r.clockEmpty).toBe(true);    // no countdown in practice
+  expect(r.dotsShown).toBe(true);     // practice keeps the dots
+});
+
+test('exam never bumps the free daily counter', async ({ page }) => {
+  await gotoApp(page);
+  const r = await page.evaluate(async () => {
+    window._quotaState = { tier: 'pro' };
+    localStorage.removeItem('nplus_pbq_free_count');
+    window.CURRENT_CERT = 'netplus';
+    await new Promise(res => window._ensureSimLabLoaded(res));
+    window._slMeteredGenerate = async () => ({ bad: true });
+    const before = window._pbqFreeRunsToday();
+    window.simLabOpenEntry();
+    document.querySelector('#sle-mode .sle-seg-opt[data-mode="exam"]').click();
+    document.querySelector('.sle-chip[data-rounds="3"]').click();
+    window.simLabSessionStart();
+    await new Promise(res => setTimeout(res, 400));
+    return { before, after: window._pbqFreeRunsToday() };
+  });
+  expect(r.before).toBe(0);
+  expect(r.after).toBe(0);   // exam is Pro/unlimited — no bump (§3.7)
 });

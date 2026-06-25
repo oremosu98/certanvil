@@ -20138,6 +20138,33 @@ console.log('\n\x1b[1m── Security Phase 7 — CSP script-src unsafe-inline r
     js.includes('function _slRecordWeakSpots('));
 })();
 
+// ── v7.57: Sim Lab — Exam mode structural pins (Task 12) ──
+(function(){
+  var dgCss = fs.readFileSync(path.join(ROOT, 'dg-system.css'), 'utf8');
+  var pricingHtml = fs.readFileSync(path.join(ROOT, 'landing/pricing.html'), 'utf8');
+  test('v7.57 Exam: entry mode toggle present in index.html',
+    html.includes('id="sle-mode"') && html.includes('data-mode="exam"'));
+  test('v7.57 Exam: exam topbar clock + badge slots present',
+    html.includes('id="sl-clock-slot"') && html.includes('id="sl-exam-badge"'));
+  test('v7.57 Exam: question palette container present',
+    html.includes('id="sl-palette"'));
+  test('v7.57 Exam: result page pace markers present in css',
+    dgCss.includes('.slp-pace-card') && dgCss.includes('.slp-par-track'));
+  test('v7.57 Exam: exam-mode path defined in sim-lab source',
+    js.includes('function _slExamStart(') && js.includes("mode: 'exam'") &&
+    js.includes('function _slStartCountdown(') && js.includes('function _slComputePace(') &&
+    js.includes('function _slExamSubmit('));
+  test('v7.57 Exam: countdown is deadline-derived, not decremented',
+    js.includes('_slSession.deadlineMs - Date.now()'));
+  test('v7.57 Exam: exam never calls _bumpPbqFreeRun (Pro/unlimited)',
+    js.includes('function _slExamStart(') &&
+    !js.replace(/\/\/.*/g, '').match(/function _slExamStart[\s\S]{0,2000}window\._bumpPbqFreeRun\(\)/));
+  test('v7.57 Exam: exact Pro gate copy present',
+    js.includes('The real exam is timed. Practice that way.'));
+  test('v7.57 Exam: pricing carries the exam-mode Pro bullet',
+    pricingHtml.includes('a real timed PBQ simulation with a pacing report'));
+})();
+
 // ── Summary ──
 console.log('\n' + '═'.repeat(50));
 const total = results.pass + results.fail;
