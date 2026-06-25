@@ -198,7 +198,7 @@ window.SIM_LAB_SEED_SECPLUS = [
   },
 
   {
-    id: 'sp-seed-vuln-scan-analyze-1', cert: 'secplus', objective: '2.5', topic: 'Vulnerability management',
+    id: 'sp-seed-vuln-scan-analyze-1', cert: 'secplus', objective: '4.3', topic: 'Vulnerability management',
     title: 'Read the vulnerability scan', estMinutes: 3,
     scenario: 'A vulnerability scanner returned the findings below for one host. Click the single finding that should be remediated first.',
     steps: [
@@ -296,7 +296,7 @@ window.SIM_LAB_SEED_SECPLUS = [
             { id: 'p161', label: '161' }
           ]
         },
-        // REVIEW: FTPS is commonly cited as 989/990 (data/control); implicit-FTPS control port is 990. Confirm the founder wants 990 as the single answer and not 989.
+        // Reviewed (security-eng + CompTIA examiner): implicit-FTPS control port 990 confirmed correct; 989 (data) is not an option here, so no ambiguity.
         answer: { pairs: { https: 'p443', sftp: 'p22', ftps: 'p990', ldaps: 'p636', snmp3: 'p161' } } }
     ]
   },
@@ -346,17 +346,17 @@ window.SIM_LAB_SEED_SECPLUS = [
     steps: [
       { id: 's1', type: 'order', points: 1,
         prompt: 'Arrange the incident-response phases in order.',
-        explanation: 'SY0-701 order: Preparation, Detection (Identification), Analysis, Containment, Eradication, Recovery, Lessons Learned. Preparation comes first; Lessons Learned closes the loop.',
+        explanation: 'SY0-701 order: Preparation, Detection, Analysis, Containment, Eradication, Recovery, Lessons Learned. Preparation comes first; Lessons Learned closes the loop.',
         payload: { items: [
           { id: 'contain', label: 'Containment' },
           { id: 'prep', label: 'Preparation' },
           { id: 'lessons', label: 'Lessons Learned' },
-          { id: 'detect', label: 'Detection (Identification)' },
+          { id: 'detect', label: 'Detection' },
           { id: 'recover', label: 'Recovery' },
           { id: 'analyze', label: 'Analysis' },
           { id: 'eradicate', label: 'Eradication' }
         ] },
-        // REVIEW: SY0-701 lists 7 phases (Preparation, Detection, Analysis, Containment, Eradication, Recovery, Lessons Learned). Older NIST/Sec+ material collapses Detection+Analysis into "Identification" (6 phases). Confirm the founder's preferred canonical list before ship.
+        // Reviewed (security-eng + CompTIA examiner): SY0-701 4.8 canonical 7-phase order confirmed; keep Detection and Analysis as separate phases.
         answer: { correctOrder: ['prep', 'detect', 'analyze', 'contain', 'eradicate', 'recover', 'lessons'] } }
     ]
   },
@@ -492,7 +492,7 @@ window.SIM_LAB_SEED_SECPLUS = [
     steps: [
       { id: 's1', type: 'categorize', points: 1,
         prompt: 'Place each description under Full, Incremental, or Differential.',
-        explanation: 'A full backup copies all data and clears the archive bit. An incremental backup copies only data changed since the last backup of any kind and clears the archive bit. A differential backup copies all data changed since the last full backup and does not clear the archive bit.',
+        explanation: 'A full backup copies all selected data. An incremental backup copies only data changed since the last backup of any type (full or incremental). A differential backup copies all data changed since the last full backup, so it grows each day until the next full.',
         payload: {
           items: [
             { id: 'all', label: 'Copies all selected data every time' },
@@ -588,13 +588,13 @@ window.SIM_LAB_SEED_SECPLUS = [
             { id: 'dquality', label: 'Manages day-to-day data quality and compliance' }
           ]
         },
-        // REVIEW: "Data steward" vs "data custodian" responsibilities overlap in some sources; SY0-701 separates steward (policy/quality) from custodian (technical). Confirm wording matches the founder's source.
+        // Reviewed (security-eng + CompTIA examiner): SY0-701 split confirmed — custodian = technical handling, steward = data quality/policy; mapping is exam-safe.
         answer: { pairs: { owner: 'daccount', controller: 'dpurpose', processor: 'dbehalf', custodian: 'dtech', steward: 'dquality' } } }
     ]
   },
 
   {
-    id: 'sp-seed-bcdr-fillin-1', cert: 'secplus', objective: '5.2', topic: 'BC/DR metrics',
+    id: 'sp-seed-bcdr-fillin-1', cert: 'secplus', objective: '3.4', topic: 'BC/DR metrics',
     title: 'Recovery objectives and SLE', estMinutes: 4,
     scenario: 'A business-impact analysis asks you to define two recovery metrics and compute one risk figure. Answer all fields.',
     steps: [
@@ -628,24 +628,22 @@ window.SIM_LAB_SEED_SECPLUS = [
     steps: [
       { id: 's1', type: 'match', points: 1,
         prompt: 'Pair each Zero Trust component with its function.',
-        explanation: 'The Policy Engine decides whether to grant access using policy and signals. The Policy Administrator establishes/terminates the connection based on the engine’s decision. The Policy Enforcement Point (PEP) is the gateway that enforces the decision on the data plane. The Policy Decision Point (PDP) is the control-plane pairing of engine + administrator. Adaptive identity adjusts trust based on context (location, device, behavior).',
+        explanation: 'The Policy Engine decides whether to grant access using policy and signals. The Policy Administrator establishes or terminates the connection based on that decision. The Policy Enforcement Point (PEP) is the gateway that enforces the decision on the data plane. Adaptive identity adjusts trust based on context (location, device, behavior).',
         payload: {
           left: [
             { id: 'pe', label: 'Policy Engine' },
             { id: 'pa', label: 'Policy Administrator' },
             { id: 'pep', label: 'Policy Enforcement Point' },
-            { id: 'pdp', label: 'Policy Decision Point' },
             { id: 'adapt', label: 'Adaptive identity' }
           ],
           right: [
             { id: 'ddecide', label: 'Decides to grant access using policy and signals' },
             { id: 'dconnect', label: 'Establishes or terminates the connection per the decision' },
             { id: 'dgateway', label: 'Gateway that enforces the decision on the data plane' },
-            { id: 'dcontrol', label: 'Control-plane pairing of engine and administrator' },
             { id: 'dcontext', label: 'Adjusts trust based on context such as location or device' }
           ]
         },
-        answer: { pairs: { pe: 'ddecide', pa: 'dconnect', pep: 'dgateway', pdp: 'dcontrol', adapt: 'dcontext' } } }
+        answer: { pairs: { pe: 'ddecide', pa: 'dconnect', pep: 'dgateway', adapt: 'dcontext' } } }
     ]
   },
 
@@ -995,8 +993,8 @@ window.SIM_LAB_SEED_SECPLUS = [
         prompt: 'A web server in the screened subnet is compromised. What network design property limits the attacker from reaching internal databases? (one word)',
         explanation: 'Segmentation (network segmentation) isolates the screened subnet from the internal network, so a compromised DMZ host cannot freely reach internal systems.',
         payload: { fields: [{ id: 'seg', label: 'One word', inputmode: 'text' }] },
-        // REVIEW: "isolation" is an equally defensible one-word answer to this prompt; accepting both segmentation and isolation.
-        answer: { seg: ['segmentation', 'segment', 'isolation'] } }
+        // Reviewed (CompTIA examiner): SY0-701 keys "segmentation"; "isolation" is a distractor (air-gap/quarantine) and is NOT accepted in exam mode.
+        answer: { seg: ['segmentation', 'segment'] } }
     ]
   },
 
@@ -1165,7 +1163,7 @@ window.SIM_LAB_SEED_SECPLUS = [
   {
     id: 'sp-seed-dataclass-cat-1', cert: 'secplus', objective: '5.1', topic: 'Data classification',
     title: 'Classify the regulated data type', estMinutes: 4,
-    scenario: 'Sort each data example by the category it belongs to: PII, PHI, or Financial/PCI.',
+    scenario: 'Sort each data example by its inherent type, out of context: PII, PHI, or Financial/PCI.',
     steps: [
       { id: 's1', type: 'categorize', points: 1,
         prompt: 'Place each data item under PII, PHI, or Financial / PCI.',
@@ -1185,7 +1183,7 @@ window.SIM_LAB_SEED_SECPLUS = [
             { id: 'fin', label: 'Financial / PCI' }
           ]
         },
-        // REVIEW: An SSN and home address are also PII when found in a medical record (then treated as PHI); classified here as PII in isolation. Confirm the founder wants the standalone-context classification.
+        // Reviewed (CompTIA examiner): stem now specifies "by inherent type, out of context", so SSN/address = PII is exam-safe (they become PHI only inside a medical record).
         answer: { map: { ssn: 'pii', address: 'pii', diagnosis: 'phi', mrn: 'phi', pan: 'fin', bank: 'fin' } } }
     ]
   },
