@@ -556,8 +556,9 @@
   // still work. Unknown or contentless certs return [] → AI-gen + fallback path.
   var _SL_SEED_GLOBALS = {
     netplus: 'SIM_LAB_SEED_NETPLUS',
-    secplus: 'SIM_LAB_SEED_SECPLUS'
-    // 'aplus-core1' / 'aplus-core2' — add when their banks ship
+    secplus: 'SIM_LAB_SEED_SECPLUS',
+    'aplus-core1': 'SIM_LAB_SEED_APLUS_CORE1',
+    'aplus-core2': 'SIM_LAB_SEED_APLUS_CORE2'
   };
   function _slBank(cert) {
     var g = _SL_SEED_GLOBALS[cert];

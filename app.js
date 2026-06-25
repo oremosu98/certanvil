@@ -1,9 +1,9 @@
 // ══════════════════════════════════════════
-// Network+ AI Quiz — app.js  v7.57.2
+// Network+ AI Quiz — app.js  v7.58.0
 // ══════════════════════════════════════════
 
 // ── CONSTANTS ──
-const APP_VERSION = '7.57.2';
+const APP_VERSION = '7.58.0';
 // v4.99.45 (Phase 6b): expose APP_VERSION on window so the web-vitals
 // collector (lib/web-vitals-collector.js, loaded BEFORE app.js so its
 // PerformanceObservers attach earlier) can stamp this version onto every
@@ -2039,8 +2039,9 @@ function _ensureSimLabLoaded(cb) {
   // that needs a different bank should follow the app's normal cert-switch reload.
   const _SL_SEED_FILES = {
     netplus: 'features/sim-lab-seed-netplus.js',
-    secplus: 'features/sim-lab-seed-secplus.js'
-    // 'aplus-core1' / 'aplus-core2' — add when their banks ship
+    secplus: 'features/sim-lab-seed-secplus.js',
+    'aplus-core1': 'features/sim-lab-seed-aplus-core1.js',
+    'aplus-core2': 'features/sim-lab-seed-aplus-core2.js'
   };
   function _slLoadCore() {
     _slInject('features/sim-lab.js', function () {
