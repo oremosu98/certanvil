@@ -1,9 +1,9 @@
 // ══════════════════════════════════════════
-// Network+ AI Quiz — app.js  v7.58.0
+// Network+ AI Quiz — app.js  v7.59.0
 // ══════════════════════════════════════════
 
 // ── CONSTANTS ──
-const APP_VERSION = '7.58.0';
+const APP_VERSION = '7.59.0';
 // v4.99.45 (Phase 6b): expose APP_VERSION on window so the web-vitals
 // collector (lib/web-vitals-collector.js, loaded BEFORE app.js so its
 // PerformanceObservers attach earlier) can stamp this version onto every
@@ -1120,7 +1120,9 @@ const STORAGE = {
   // hasn't installed yet but also hasn't actively dismissed gets a calm cadence.
   A2HS_LAST_SHOWN_AT: 'nplus_a2hs_last_shown_at',
   PBQ_FREE_COUNT: 'nplus_pbq_free_count', // v7.55.0 Sim Lab: free-tier daily PBQ drill runs ({date, count}) — mirrors GAUNTLET_FREE_COUNT shape
+  DL_FREE_COUNT: 'nplus_dl_free_count',   // Decision Lab free-tier daily set runs ({date, count}) — independent of PBQ_FREE_COUNT
   SIMLAB_WEAK: 'nplus_simlab_weak',       // v7.56 Sim Lab: Pro cross-session weak-spot map ({topic: count})
+  DL_WEAK: 'nplus_dl_weak',               // Decision Lab Pro cross-session look-alike map ({pairLabel: count})
 };
 // v4.81.2: how many daily snapshots to keep before pruning oldest
 const AUTOBACKUP_KEEP_DAYS = 7;
@@ -2056,6 +2058,27 @@ function _ensureSimLabLoaded(cb) {
 // Expose on window so tests can trigger the lazy-load directly.
 window._ensureSimLabLoaded = _ensureSimLabLoaded;
 
+const _DL_SEED_FILES = {
+  az900: 'features/decision-lab-seed-az900.js',
+  ai900: 'features/decision-lab-seed-ai900.js',
+  sc900: 'features/decision-lab-seed-sc900.js',
+  clfc02: 'features/decision-lab-seed-clfc02.js'
+};
+function _ensureDecisionLabLoaded(cb) {
+  function _afterEngine() {
+    var seedFile = _DL_SEED_FILES[window.CURRENT_CERT];
+    if (!seedFile || window.__dlSeedLoaded === window.CURRENT_CERT) { if (cb) cb(); return; }
+    var s = document.createElement('script');
+    s.src = seedFile;
+    s.onload = function () { window.__dlSeedLoaded = window.CURRENT_CERT; if (cb) cb(); };
+    s.onerror = function () { if (cb) cb(); };
+    document.head.appendChild(s);
+  }
+  if (typeof _ensureSimLabLoaded === 'function') _ensureSimLabLoaded(_afterEngine);
+  else _afterEngine();
+}
+window._ensureDecisionLabLoaded = _ensureDecisionLabLoaded;
+
 // ════════════════════════════════════════════════════════════════════
 // v4.99.31 (iOS Plan Phase 5 — PWA polish)
 //
@@ -2462,6 +2485,7 @@ function showPage(name) {
   // without loading the feature module (cert/pro/daily-state are in app.js); the
   // module lazy-loads on click via startSimLabHome().
   if (name === 'setup' && typeof renderSimLabHomeEntry === 'function') renderSimLabHomeEntry();
+  if (name === 'setup' && typeof renderDecisionLabHomeEntry === 'function') renderDecisionLabHomeEntry();
   // v4.53.0: auto-close mobile drawer when navigating
   try { document.body.classList.remove('sidebar-open'); } catch (_) {}
   // v4.85.16: clear any stale .err-box banners on every page change so a
@@ -7056,6 +7080,28 @@ window._pbqFreeRunsToday = _pbqFreeRunsToday;
 window._bumpPbqFreeRun = _bumpPbqFreeRun;
 window.PBQ_FREE_DAILY_CAP = PBQ_FREE_DAILY_CAP;
 
+// Decision Lab free daily cap — INDEPENDENT of Sim Lab's PBQ counter (§4).
+const DL_FREE_DAILY_CAP = 1;
+function _dlFreeRunsToday() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(STORAGE.DL_FREE_COUNT) || 'null');
+    if (raw && raw.date === new Date().toISOString().slice(0, 10)) return raw.count || 0;
+  } catch (_) {}
+  return 0;
+}
+function _dlBumpFreeRun() {
+  if (!(_quotaState && _quotaState.tier === 'free')) return;   // only free accrues
+  try {
+    localStorage.setItem(STORAGE.DL_FREE_COUNT, JSON.stringify({
+      date: new Date().toISOString().slice(0, 10),
+      count: _dlFreeRunsToday() + 1
+    }));
+  } catch (_) {}
+}
+window._dlFreeRunsToday = _dlFreeRunsToday;
+window._dlBumpFreeRun = _dlBumpFreeRun;
+window.DL_FREE_DAILY_CAP = DL_FREE_DAILY_CAP;
+
 // v7.56 — Sim Lab Pro cross-session weak-spot tracking. Pro persists missed
 // topics across sessions; free does not (the within-session cluster shows to all).
 function _slRecordWeakSpots(topics) {
@@ -7072,6 +7118,23 @@ function _slGetWeakSpots() {
 }
 window._slRecordWeakSpots = _slRecordWeakSpots;
 window._slGetWeakSpots = _slGetWeakSpots;
+
+// Decision Lab Pro cross-session look-alike persistence (mirror _slRecordWeakSpots).
+// Free does not persist (the within-set cluster shows to all; persistence is Pro).
+function _dlRecordWeakSpots(pairLabels) {
+  if (!(_quotaState && (_quotaState.tier === 'pro' || _quotaState.tier === 'admin'))) return;
+  try {
+    var cur = JSON.parse(localStorage.getItem(STORAGE.DL_WEAK) || '{}');
+    (pairLabels || []).forEach(function (p) { if (p) cur[p] = (cur[p] || 0) + 1; });
+    localStorage.setItem(STORAGE.DL_WEAK, JSON.stringify(cur));
+    if (typeof _cloudFlush === 'function') _cloudFlush(STORAGE.DL_WEAK);
+  } catch (_) {}
+}
+function _dlGetWeakSpots() {
+  try { return JSON.parse(localStorage.getItem(STORAGE.DL_WEAK) || '{}'); } catch (_) { return {}; }
+}
+window._dlRecordWeakSpots = _dlRecordWeakSpots;
+window._dlGetWeakSpots = _dlGetWeakSpots;
 
 // v7.55.2 — Sim Lab Home entry (Home → Practice section). The drill must live
 // where the other drills are, not only on the legacy #page-drills page. This
@@ -7105,13 +7168,41 @@ function startSimLabHome() {
 }
 window.renderSimLabHomeEntry = renderSimLabHomeEntry;
 window.startSimLabHome = startSimLabHome;
+
+// Decision Lab Home entry (Home → Practice). Renders WITHOUT loading the module
+// (cert/pro/daily-state live here); the module lazy-loads on click.
+const _DL_CERTS = ['az900', 'ai900', 'sc900', 'clfc02'];
+function renderDecisionLabHomeEntry() {
+  const btn = document.getElementById('dl-home-opt');
+  if (!btn) return;
+  if (_DL_CERTS.indexOf(window.CURRENT_CERT) === -1) { btn.classList.add('is-hidden'); return; }
+  btn.classList.remove('is-hidden');
+  const sub = document.getElementById('dl-home-sub');
+  if (sub) {
+    const pro = !!(typeof _quotaState !== 'undefined' && _quotaState && (_quotaState.tier === 'pro' || _quotaState.tier === 'admin'));
+    if (pro) { sub.textContent = 'Read the constraint, kill the look-alikes'; }
+    else {
+      const used = (typeof _dlFreeRunsToday === 'function') ? _dlFreeRunsToday() : 0;
+      sub.textContent = used >= 1 ? 'Done today · Pro for more' : 'Read the constraint · one free set a day';
+    }
+  }
+}
+function startDecisionLabHome() {
+  if (typeof _ensureDecisionLabLoaded !== 'function') return;
+  _ensureDecisionLabLoaded(function () {
+    if (typeof window.decisionLabOpenEntry === 'function') window.decisionLabOpenEntry();
+  });
+}
+window.renderDecisionLabHomeEntry = renderDecisionLabHomeEntry;
+window.startDecisionLabHome = startDecisionLabHome;
 // Initial paint: the Home page is default-active at boot (no showPage('setup')
 // call fires on first load), so render the entry once the DOM is ready. The
 // active cert is resolved before app.js runs, so the cert gate is correct here.
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', function () { try { renderSimLabHomeEntry(); } catch (_) {} });
+  document.addEventListener('DOMContentLoaded', function () { try { renderSimLabHomeEntry(); } catch (_) {} try { renderDecisionLabHomeEntry(); } catch (_) {} });
 } else {
   try { renderSimLabHomeEntry(); } catch (_) {}
+  try { renderDecisionLabHomeEntry(); } catch (_) {}
 }
 
 // Thin metered-generate wrapper for Sim Lab. Reuses the exact same transport

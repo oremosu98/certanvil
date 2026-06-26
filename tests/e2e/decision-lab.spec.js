@@ -1,0 +1,369 @@
+const { test, expect } = require('@playwright/test');
+
+async function gotoApp(page) {
+  await page.goto('http://localhost:3131/?_cb=test');
+  await page.waitForFunction(() =>
+    typeof window._ensureDecisionLabLoaded === 'function' ||
+    typeof window._ensureSimLabLoaded === 'function');
+  await page.evaluate(() => {
+    if (typeof window._ensureDecisionLabLoaded === 'function') window._ensureDecisionLabLoaded();
+    else if (typeof window._ensureSimLabLoaded === 'function') window._ensureSimLabLoaded();
+  });
+  await page.waitForFunction(() => typeof window.simLabValidateScenario === 'function');
+}
+
+function installSeedFixture(page, globalName, count) {
+  return page.evaluate(({ globalName, count }) => {
+    function scn(i) {
+      return {
+        id: globalName + '-' + i, cert: 'az900', objective: '1.1',
+        topic: 'Cost tools', title: 'Pick', scenario: 'A team needs X.',
+        estMinutes: 2, pair: 'Pricing Calculator vs TCO Calculator',
+        family: 'Cost & pricing tools',
+        steps: [{
+          id: 's1', type: 'analyze', points: 1, prompt: 'Pick the best service',
+          explanation: 'Compare two worlds.',
+          payload: { multi: false, lines: [
+            { id: 'a', text: 'Pricing Calculator', why: 'No on-prem baseline.' },
+            { id: 'b', text: 'TCO Calculator' },
+            { id: 'c', text: 'Cost Management', why: 'Needs live Azure usage.' },
+            { id: 'd', text: 'Azure Advisor', why: 'Needs deployed resources.' }
+          ] },
+          answer: { selected: ['b'] }
+        }]
+      };
+    }
+    window[globalName] = Array.from({ length: count }, (_, i) => scn(i + 1));
+  }, { globalName, count });
+}
+module.exports.installSeedFixture = installSeedFixture;
+
+test('dl scaffold: _dlBank resolves its own registry; _slBank unchanged (no regression)', async ({ page }) => {
+  await gotoApp(page);
+  await installSeedFixture(page, 'DECISION_LAB_SEED_AZ900', 6);
+  const r = await page.evaluate(() => {
+    const S = window._simLab;
+    const dlAz = S.dlBank('az900');
+    const dlUnknown = S.dlBank('netplus');
+    window.SIM_LAB_SEED_NETPLUS = [{ id: 'x' }];
+    const slNet = S.slBank('netplus');
+    const slAz = S.slBank('az900');
+    return {
+      certs: S.dlCerts(),
+      dlAzLen: dlAz.length, dlUnknownLen: dlUnknown.length,
+      slNetLen: slNet.length, slAzLen: slAz.length
+    };
+  });
+  expect(r.certs).toEqual(['az900', 'ai900', 'sc900', 'clfc02']);
+  expect(r.dlAzLen).toBe(6);
+  expect(r.dlUnknownLen).toBe(0);
+  expect(r.slNetLen).toBe(1);
+  expect(r.slAzLen).toBe(0);
+});
+
+test('dl analyze why: graded reveal shows per-option why (with) and stays clean (without)', async ({ page }) => {
+  await gotoApp(page);
+  const r = await page.evaluate(() => {
+    const S = window._simLab;
+    const withWhy = {
+      type: 'analyze', points: 1, prompt: 'Pick', explanation: 'The tell.',
+      payload: { multi: false, lines: [
+        { id: 'a', text: 'Pricing Calculator', why: 'No on-prem baseline.' },
+        { id: 'b', text: 'TCO Calculator' },
+        { id: 'c', text: 'Cost Management', why: 'Needs live usage.' }
+      ] },
+      answer: { selected: ['b'] }
+    };
+    const host1 = document.createElement('div'); document.body.appendChild(host1);
+    const el1 = S.renderStep(withWhy, function () {});
+    host1.appendChild(el1);
+    S.dlGradeAnalyze(host1, withWhy, ['c']);
+    const correct = host1.querySelector('.correct, .dl-correct');
+    const pickedWrong = host1.querySelector('.picked-wrong, .dl-picked-wrong');
+    const whyShown = Array.from(host1.querySelectorAll('.why, .dl-why')).filter(e => e.textContent.trim()).length;
+    const teach = host1.querySelector('.teach, .dl-teach');
+    const noWhy = {
+      type: 'analyze', points: 1, prompt: 'Pick', explanation: 'Because.',
+      payload: { multi: false, lines: [{ id: 'a', text: 'A' }, { id: 'b', text: 'B' }] },
+      answer: { selected: ['a'] }
+    };
+    const host2 = document.createElement('div'); document.body.appendChild(host2);
+    const el2 = S.renderStep(noWhy, function () {});
+    host2.appendChild(el2);
+    const whyNodesBefore = host2.querySelectorAll('.why, .dl-why').length;
+    return {
+      hasCorrect: !!correct, hasPickedWrong: !!pickedWrong,
+      whyShown, hasTeach: !!teach, teachText: teach ? teach.textContent : '',
+      noWhyClean: whyNodesBefore === 0
+    };
+  });
+  expect(r.hasCorrect).toBe(true);
+  expect(r.hasPickedWrong).toBe(true);
+  expect(r.whyShown).toBeGreaterThanOrEqual(2);
+  expect(r.hasTeach).toBe(true);
+  expect(r.teachText).toContain('The tell');
+  expect(r.noWhyClean).toBe(true);
+});
+
+test('dl entry: tile gated to _DL_CERTS; free taps Exam-style/20 gate; Pro toggles; copy verbatim', async ({ page }) => {
+  await gotoApp(page);
+  const r = await page.evaluate(async () => {
+    // Home tile gating
+    window.CURRENT_CERT = 'netplus';
+    window.renderDecisionLabHomeEntry();
+    const hiddenOnNet = document.getElementById('dl-home-opt').classList.contains('is-hidden');
+    window.CURRENT_CERT = 'az900';
+    window.CERT_PACK = { meta: { name: 'Azure Fundamentals', code: 'AZ-900' } };
+    window.renderDecisionLabHomeEntry();
+    const shownOnAz = !document.getElementById('dl-home-opt').classList.contains('is-hidden');
+    // free → Exam-style + 20 gate
+    window._quotaState = { tier: 'free' };
+    let gate = 0, gTitle = '', gBody = '';
+    window._gateProOnly = (feat, opts) => { gate++; gTitle = opts && opts.title; gBody = opts && opts.body; return false; };
+    window.decisionLabOpenEntry();
+    document.querySelector('#dl-mode .dl-seg-opt[data-mode="exam"]').click();
+    const examGated = gate === 1 && gTitle === 'Exam-style mode is Pro' && /never gives you the clock back/.test(gBody);
+    const stillPractice = document.querySelector('#dl-mode .dl-seg-opt[data-mode="practice"]').classList.contains('is-on');
+    document.querySelector('#dl-decisions .dl-chip[data-decisions="20"]').click();
+    const set20Gated = gate === 2 && gTitle === 'The full 20-decision set is Pro';
+    // Pro → toggles work
+    window._quotaState = { tier: 'pro' };
+    document.querySelector('#dl-mode .dl-seg-opt[data-mode="exam"]').click();
+    const examOn = document.querySelector('#dl-mode .dl-seg-opt[data-mode="exam"]').classList.contains('is-on');
+    document.querySelector('#dl-decisions .dl-chip[data-decisions="20"]').click();
+    const set20On = document.querySelector('#dl-decisions .dl-chip[data-decisions="20"]').classList.contains('is-on');
+    const target = document.getElementById('dl-target').textContent;
+    return { hiddenOnNet, shownOnAz, examGated, stillPractice, set20Gated, examOn, set20On, target };
+  });
+  expect(r.hiddenOnNet).toBe(true);
+  expect(r.shownOnAz).toBe(true);
+  expect(r.examGated).toBe(true);
+  expect(r.stillPractice).toBe(true);
+  expect(r.set20Gated).toBe(true);
+  expect(r.examOn).toBe(true);
+  expect(r.set20On).toBe(true);
+  expect(r.target).toContain('Azure Fundamentals AZ-900');
+});
+
+test('dl runner: builds set from bank, renders Decision N of M + scenario, advances on submit', async ({ page }) => {
+  await gotoApp(page);
+  await installSeedFixture(page, 'DECISION_LAB_SEED_AZ900', 12);
+  await page.evaluate(async () => {
+    window._quotaState = { tier: 'pro' };
+    window.CURRENT_CERT = 'az900';
+    window.CERT_PACK = { meta: { name: 'Azure Fundamentals', code: 'AZ-900' } };
+    window.decisionLabOpenEntry();
+    document.querySelector('#dl-decisions .dl-chip[data-decisions="5"]').click();
+    window.decisionLabSessionStart();
+  });
+  // showPage activates the target page asynchronously (page-exit transition),
+  // so wait for the runner page to become active before asserting.
+  await page.waitForFunction(() => document.getElementById('page-decision-lab').classList.contains('active'));
+  const r = await page.evaluate(() => {
+    const sess = window._simLab.dlSession();
+    return {
+      rounds: sess.rounds,
+      onPage: document.getElementById('page-decision-lab').classList.contains('active'),
+      pill: document.getElementById('dl-round-pill').textContent,
+      dots: document.querySelectorAll('#dl-dots .dl-dot').length,
+      hasScenario: !!document.querySelector('#dl-body .sl-scenario')
+    };
+  });
+  expect(r.rounds).toBe(5);
+  expect(r.onPage).toBe(true);
+  expect(r.pill).toBe('Decision 1 of 5');
+  expect(r.dots).toBe(5);
+  expect(r.hasScenario).toBe(true);
+});
+
+test('dl practice grade: submitting a wrong pick reveals per-option why + teach, Next advances', async ({ page }) => {
+  await gotoApp(page);
+  await installSeedFixture(page, 'DECISION_LAB_SEED_AZ900', 3);
+  const r = await page.evaluate(async () => {
+    window._quotaState = { tier: 'pro' };
+    window.CURRENT_CERT = 'az900';
+    window.CERT_PACK = { meta: { name: 'Azure Fundamentals', code: 'AZ-900' } };
+    window.decisionLabOpenEntry();
+    document.querySelector('#dl-decisions .dl-chip[data-decisions="5"]').click();
+    window.decisionLabSessionStart();
+    const lines = document.querySelectorAll('#dl-body .sl-analyze-line');
+    Array.from(lines).find(l => l.getAttribute('data-line') === 'c').click();
+    document.querySelector('#dl-body [data-action="simLabSubmitScenario"]').click();
+    const graded = !!document.querySelector('#dl-body .dl-graded');
+    const correct = !!document.querySelector('#dl-body .dl-correct');
+    const pickedWrong = !!document.querySelector('#dl-body .dl-picked-wrong');
+    const teach = !!document.querySelector('#dl-body .dl-teach');
+    const whyShown = document.querySelectorAll('#dl-body .dl-why').length;
+    const sess = window._simLab.dlSession();
+    const idxBefore = sess.idx;
+    document.querySelector('#dl-body .dl-cta-row .dl-cta:not(.ghost)').click();
+    return { graded, correct, pickedWrong, teach, whyShown, idxBefore, idxAfter: sess.idx };
+  });
+  expect(r.graded).toBe(true);
+  expect(r.correct).toBe(true);
+  expect(r.pickedWrong).toBe(true);
+  expect(r.teach).toBe(true);
+  expect(r.whyShown).toBeGreaterThanOrEqual(2);
+  expect(r.idxBefore).toBe(0);
+  expect(r.idxAfter).toBe(1);
+});
+
+test('dl exam-style: suppresses per-round feedback; countdown time-up auto-submits to verdict', async ({ page }) => {
+  await gotoApp(page);
+  await installSeedFixture(page, 'DECISION_LAB_SEED_AZ900', 5);
+  const r = await page.evaluate(async () => {
+    window._quotaState = { tier: 'pro' };
+    window.CURRENT_CERT = 'az900';
+    window.CERT_PACK = { meta: { name: 'Azure Fundamentals', code: 'AZ-900' } };
+    const realNow = Date.now; const base = realNow.call(Date); let nowVal = base; Date.now = () => nowVal;
+    window.decisionLabOpenEntry();
+    document.querySelector('#dl-mode .dl-seg-opt[data-mode="exam"]').click();
+    document.querySelector('#dl-decisions .dl-chip[data-decisions="5"]').click();
+    window.decisionLabSessionStart();
+    const sess = window._simLab.dlSession();
+    const clockShown = !!document.querySelector('#dl-clock-slot .sl-clock');
+    // submit round 1 — exam-style must NOT reveal feedback
+    document.querySelector('#dl-body .sl-analyze-line').click();
+    document.querySelector('#dl-body [data-action="simLabSubmitScenario"]').click();
+    const noReveal = !document.querySelector('#dl-body .dl-graded') && sess.idx === 1;
+    // jump past the deadline + tick → auto-submit to verdict
+    nowVal = base + sess.budgetMs + 5000;
+    window._simLab.dlTick();
+    Date.now = realNow;
+    return { clockShown, noReveal, results: sess.results.length, timeUp: sess.timeUp };
+  });
+  // _dlRenderResult navigates to the result page asynchronously (showPage transition)
+  await page.waitForFunction(() => document.getElementById('page-decision-lab-result').classList.contains('active'));
+  expect(r.clockShown).toBe(true);
+  expect(r.noReveal).toBe(true);
+  expect(r.results).toBe(5);
+  expect(r.timeUp).toBe(true);
+});
+
+test('dl sorter: service selector swaps the boundary and re-grades on submit', async ({ page }) => {
+  await gotoApp(page);
+  const r = await page.evaluate(async () => {
+    // a single-scenario fixture whose only step is a shared-responsibility categorize
+    window.DECISION_LAB_SEED_AZ900 = [{
+      id: 'sorter1', cert: 'az900', objective: '2.1', topic: 'Shared responsibility',
+      title: 'Who owns it', scenario: 'Sort each task under who owns it.', estMinutes: 2,
+      family: 'Shared responsibility',
+      steps: [{
+        id: 's1', type: 'categorize', points: 1, prompt: 'Who is responsible?',
+        explanation: 'The service tier moves the line.',
+        payload: {
+          items: [{ id: 'os', label: 'Patch the guest OS' }],
+          buckets: [{ id: 'cust', label: 'Customer' }, { id: 'aws', label: 'AWS' }],
+          services: [
+            { id: 'ec2', label: 'EC2', map: { os: 'cust' } },
+            { id: 'rds', label: 'RDS (managed)', map: { os: 'aws' } }
+          ]
+        },
+        answer: { map: { os: 'cust' } }
+      }]
+    }];
+    window._quotaState = { tier: 'pro' };
+    window.CURRENT_CERT = 'az900';
+    window.CERT_PACK = { meta: { name: 'Azure Fundamentals', code: 'AZ-900' } };
+    window.decisionLabOpenEntry();
+    document.querySelector('#dl-decisions .dl-chip[data-decisions="5"]').click();
+    window.decisionLabSessionStart();
+    const step = window._simLab.dlSession().scenarios[0].steps[0];
+    const initialMap = JSON.stringify(step.answer.map);
+    const srvShown = !!document.querySelector('#dl-body .dl-srv-sel');
+    document.querySelectorAll('#dl-body .dl-srv')[1].click();
+    const shiftedMap = JSON.stringify(step.answer.map);
+    return { srvShown, initialMap, shiftedMap, hasShiftNote: !!document.querySelector('#dl-body .dl-shift') };
+  });
+  expect(r.srvShown).toBe(true);
+  expect(r.initialMap).toBe('{"os":"cust"}');
+  expect(r.shiftedMap).toBe('{"os":"aws"}');
+  expect(r.hasShiftNote).toBe(true);
+});
+
+test('dl verdict: clusters missed look-alikes + weak families; Pro persists across sessions', async ({ page }) => {
+  await gotoApp(page);
+  const r = await page.evaluate(async () => {
+    const S = window._simLab;
+    // results carry score (real rounds always do); pair/family drive the clusters
+    const mk = (passed, pair, family) => ({ passed, score: { correct: passed ? 1 : 0, total: 1 }, scenario: { pair, family } });
+    const results = [
+      mk(false, 'Pricing Calculator vs TCO Calculator', 'Cost & pricing tools'),
+      mk(false, 'Pricing Calculator vs TCO Calculator', 'Cost & pricing tools'),
+      mk(false, 'CloudWatch vs CloudTrail', 'Monitoring & logging'),
+      mk(true,  'IAM vs Resource policy', 'Identity')
+    ];
+    const clusters = S.dlVerdictClusters(results);
+    window._quotaState = { tier: 'pro' };
+    localStorage.removeItem('nplus_dl_weak');
+    window.CURRENT_CERT = 'az900';
+    window.CERT_PACK = { meta: { name: 'Azure Fundamentals', code: 'AZ-900' } };
+    window.DECISION_LAB_SEED_AZ900 = [];
+    window.decisionLabOpenEntry();
+    window.decisionLabSessionStart();   // empty set → empty state, session exists
+    const live = window._simLab.dlSession();
+    live.results = results; live.rounds = 4; live.idx = 4;
+    window._simLab.dlRenderResult();
+    const pairRows = document.querySelectorAll('#dl-result-root .dl-confrow').length;
+    const firstTag = document.querySelector('#dl-result-root .dl-confrow .tag').textContent;
+    const families = Array.from(document.querySelectorAll('#dl-result-root .dl-weak .w')).map(e => e.textContent);
+    const persisted = JSON.parse(localStorage.getItem('nplus_dl_weak') || '{}');
+    return {
+      topPair: clusters.pairs[0].label, topPairCount: clusters.pairs[0].count,
+      pairRows, firstTag, families, persistedCount: persisted['Pricing Calculator vs TCO Calculator']
+    };
+  });
+  expect(r.topPair).toBe('Pricing Calculator vs TCO Calculator');
+  expect(r.topPairCount).toBe(2);
+  expect(r.pairRows).toBe(2);
+  expect(r.firstTag).toContain('missed');
+  expect(r.families).toContain('Cost & pricing tools');
+  expect(r.families).toContain('Monitoring & logging');
+  expect(r.persistedCount).toBe(1);
+});
+
+test('dl free cap: 1 set/day uses _dlBumpFreeRun (not _bumpPbqFreeRun); 2nd set gated', async ({ page }) => {
+  await gotoApp(page);
+  await installSeedFixture(page, 'DECISION_LAB_SEED_AZ900', 8);
+  const r = await page.evaluate(async () => {
+    window._quotaState = { tier: 'free' };
+    localStorage.removeItem('nplus_dl_free_count');
+    localStorage.removeItem('nplus_pbq_free_count');
+    window.CURRENT_CERT = 'az900';
+    window.CERT_PACK = { meta: { name: 'Azure Fundamentals', code: 'AZ-900' } };
+    const pbqBefore = window._pbqFreeRunsToday();
+    window.decisionLabOpenEntry();
+    document.querySelector('#dl-decisions .dl-chip[data-decisions="5"]').click();
+    window.decisionLabSessionStart();                 // 1st free set → bumps DL counter
+    const dlAfterFirst = window._dlFreeRunsToday();
+    const pbqAfter = window._pbqFreeRunsToday();        // must stay 0 (independent)
+    let gate = 0, gTitle = '';
+    window._gateProOnly = (feat, opts) => { gate++; gTitle = opts && opts.title; return false; };
+    window.decisionLabOpenEntry();
+    window.decisionLabSessionStart();
+    return { dlAfterFirst, pbqBefore, pbqAfter, gate, gTitle };
+  });
+  expect(r.dlAfterFirst).toBe(1);
+  expect(r.pbqBefore).toBe(0);
+  expect(r.pbqAfter).toBe(0);
+  expect(r.gate).toBe(1);
+  expect(r.gTitle).toBe("That's today's free set");
+});
+
+test('dl cross-cert: set builds on sc900 too (registry is per-cert)', async ({ page }) => {
+  await gotoApp(page);
+  await installSeedFixture(page, 'DECISION_LAB_SEED_SC900', 6);
+  const r = await page.evaluate(async () => {
+    window._quotaState = { tier: 'pro' };
+    window.CURRENT_CERT = 'sc900';
+    window.CERT_PACK = { meta: { name: 'Security, Compliance & Identity', code: 'SC-900' } };
+    window.decisionLabOpenEntry();
+    document.querySelector('#dl-decisions .dl-chip[data-decisions="5"]').click();
+    window.decisionLabSessionStart();
+    const sess = window._simLab.dlSession();
+    return { rounds: sess.rounds, target: document.getElementById('dl-target').textContent, bank: window._simLab.dlBank('sc900').length };
+  });
+  expect(r.rounds).toBe(5);
+  expect(r.bank).toBe(6);
+  expect(r.target).toContain('SC-900');
+});

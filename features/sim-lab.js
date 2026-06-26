@@ -321,7 +321,11 @@
     step.payload.lines.forEach(function (ln) {
       var row = _el('button', 'sl-analyze-line');
       row.setAttribute('type', 'button'); row.setAttribute('data-line', ln.id);
-      row.textContent = ln.text;
+      var lab = _el('span', 'dl-lab', _esc(ln.text));
+      row.textContent = '';
+      row.appendChild(lab);
+      if (ln.why) { row.appendChild(_el('span', 'dl-why', _esc(ln.why))); }
+      row.appendChild(_el('span', 'dl-verdict', ''));
       row.addEventListener('click', function () {
         var idx = selected.indexOf(ln.id);
         if (multi) {
@@ -554,17 +558,31 @@
   // Cert → seed-bank resolver. Reads the live window global each call so a lazily
   // injected bank is picked up without re-wiring, and tests that swap the global
   // still work. Unknown or contentless certs return [] → AI-gen + fallback path.
+  // Shared cert->seed-bank resolver. Reads the live window global each call so a
+  // lazily injected bank is picked up without re-wiring. Unknown/contentless certs return [].
+  function _seedBank(registry, cert) {
+    var g = registry[cert];
+    var b = g && window[g];
+    return Array.isArray(b) ? b : [];
+  }
+
   var _SL_SEED_GLOBALS = {
     netplus: 'SIM_LAB_SEED_NETPLUS',
     secplus: 'SIM_LAB_SEED_SECPLUS',
     'aplus-core1': 'SIM_LAB_SEED_APLUS_CORE1',
     'aplus-core2': 'SIM_LAB_SEED_APLUS_CORE2'
   };
-  function _slBank(cert) {
-    var g = _SL_SEED_GLOBALS[cert];
-    var b = g && window[g];
-    return Array.isArray(b) ? b : [];
-  }
+  function _slBank(cert) { return _seedBank(_SL_SEED_GLOBALS, cert); }
+
+  // --- Decision Lab: cloud-fundamentals cert allowlist + seed registry (spec 3.2) ---
+  var _DL_CERTS = ['az900', 'ai900', 'sc900', 'clfc02'];
+  var _DL_SEED_GLOBALS = {
+    az900: 'DECISION_LAB_SEED_AZ900',
+    ai900: 'DECISION_LAB_SEED_AI900',
+    sc900: 'DECISION_LAB_SEED_SC900',
+    clfc02: 'DECISION_LAB_SEED_CLFC02'
+  };
+  function _dlBank(cert) { return _seedBank(_DL_SEED_GLOBALS, cert); }
 
   function _slPickSeed(cert) {
     var bank = _slBank(cert);
@@ -673,6 +691,353 @@
   var _slPickedRounds = 5;
   var _slPickedMode = 'practice';
 
+  // --- Decision Lab entry state + Pro gate (Task 3) ---
+  var _dlPickedMode = 'practice';
+  var _dlPickedDecisions = 10;
+
+  // Spec §4 — EXACT gate copy. Do not paraphrase. Keyed by the locked surface.
+  var _DL_GATE = {
+    exam: {
+      title: 'Exam-style mode is Pro',
+      body: "The real exam never explains why your pick was wrong, and never gives you the clock back. Exam-style runs a timed, no-feedback set so the first time you feel that pressure isn't on test day. Pro unlocks it, plus unlimited sets and weak-spots that follow you across sessions.",
+      primary: 'Go Pro', secondary: 'Keep practicing'
+    },
+    full20: {
+      title: 'The full 20-decision set is Pro',
+      body: 'Short sets warm you up; the real exam is a marathon of back-to-back calls. The 20-set rehearses that stamina. Pro removes the cap.'
+    },
+    second: {
+      title: "That's today's free set",
+      body: 'Come back tomorrow free, or go Pro to keep drilling now while the misses are fresh. Same-day re-drill on the services you just confused is where the look-alikes stick.',
+      primary: 'Continue with Pro', secondary: 'Remind me tomorrow'
+    }
+  };
+  function _dlGateCopy(which) { return _DL_GATE[which]; }
+
+  function _dlSyncEntry() {
+    var opts = document.querySelectorAll('#dl-mode .dl-seg-opt');
+    Array.prototype.forEach.call(opts, function (o) {
+      var on = o.getAttribute('data-mode') === _dlPickedMode;
+      o.classList.toggle('is-on', on);
+      o.setAttribute('aria-pressed', on ? 'true' : 'false');
+    });
+    var chips = document.querySelectorAll('#dl-decisions .dl-chip');
+    Array.prototype.forEach.call(chips, function (c) {
+      var on = parseInt(c.getAttribute('data-decisions'), 10) === _dlPickedDecisions;
+      c.classList.toggle('is-on', on);
+      c.setAttribute('aria-pressed', on ? 'true' : 'false');
+    });
+  }
+
+  function _dlBindModeToggle() {
+    var host = document.getElementById('dl-mode');
+    if (!host || host.__bound) return; host.__bound = true;
+    host.addEventListener('click', function (e) {
+      var opt = e.target.closest('.dl-seg-opt'); if (!opt) return;
+      var m = opt.getAttribute('data-mode');
+      if (m === 'exam' && !_slIsPro()) { window._gateProOnly('Decision Lab', _dlGateCopy('exam')); return; }
+      _dlPickedMode = m; _dlSyncEntry();
+    });
+  }
+
+  function _dlBindDecisionChips() {
+    var host = document.getElementById('dl-decisions');
+    if (!host || host.__bound) return; host.__bound = true;
+    host.addEventListener('click', function (e) {
+      var chip = e.target.closest('.dl-chip'); if (!chip) return;
+      var n = parseInt(chip.getAttribute('data-decisions'), 10);
+      if (n === 20 && !_slIsPro()) { window._gateProOnly('Decision Lab', _dlGateCopy('full20')); return; }
+      _dlPickedDecisions = n; _dlSyncEntry();
+    });
+  }
+
+  // Cert target label from the live pack (honest names; spec §6 — no hardcoded cert).
+  function _dlTargetLabel() {
+    var pack = window.CERT_PACK && window.CERT_PACK.meta;
+    if (pack && pack.name) return 'Mixed · ' + pack.name + (pack.code ? ' ' + pack.code : '');
+    return 'Mixed';
+  }
+
+  // --- Decision Lab runner / session (Task 4) ---
+  var _dlSession = null;
+
+  // Build a set of `count` Decision Lab scenarios for `cert` from _dlBank,
+  // no-repeat, rotating by minute so re-runs vary. Returns [] if the bank is
+  // empty (the runner then shows the empty state).
+  function _dlBuildSet(cert, count) {
+    var bank = _dlBank(cert).filter(function (s) { return simLabValidateScenario(s).ok; });
+    if (!bank.length) return [];
+    var start = (new Date().getMinutes()) % bank.length;
+    var out = [];
+    for (var i = 0; i < bank.length && out.length < count; i++) {
+      out.push(bank[(start + i) % bank.length]);
+    }
+    return out;
+  }
+
+  function _dlUpdateChrome() {
+    var pill = document.getElementById('dl-round-pill');
+    if (pill) {
+      pill.classList.remove('is-hidden');
+      pill.textContent = 'Decision ' + (_dlSession.idx + 1) + ' of ' + _dlSession.rounds;
+    }
+    var dots = document.getElementById('dl-dots');
+    if (dots) {
+      dots.classList.remove('is-hidden');
+      dots.innerHTML = '';
+      for (var i = 0; i < _dlSession.rounds; i++) {
+        var cls = 'dl-dot' + (i < _dlSession.idx ? ' done' : (i === _dlSession.idx ? ' now' : ''));
+        dots.appendChild(_el('span', cls));
+      }
+    }
+  }
+
+  function _dlSessionStart() {
+    var cert = window.CURRENT_CERT || 'az900';
+    var set = _dlBuildSet(cert, _dlPickedDecisions);
+    _dlSession = {
+      mode: _dlPickedMode, rounds: set.length, idx: 0, pro: _slIsPro(),
+      cert: cert, scenarios: set, results: [],
+      deadlineMs: 0, budgetMs: 0, clock: null, amber: false, view: 'round'
+    };
+    if (typeof showPage === 'function') showPage('decision-lab');
+    if (!set.length) { _dlRenderEmpty(); return; }
+    if (_dlSession.mode === 'exam') { _dlStartExamStyle(); return; }   // Task 6
+    _dlRunRound();
+  }
+
+  function _dlRenderEmpty() {
+    var body = document.getElementById('dl-body');
+    if (body) body.innerHTML = '<p class="dl-scn">No decision scenarios are loaded for this cert yet.</p>';
+  }
+
+  // Render the current round: scenario->pick analyze via _slMountScenario, with
+  // Decision Lab chrome. Practice grade-reveal is wired in Task 5; exam-style
+  // suppression in Task 6. Here: render + advance on submit.
+  function _dlAdvance() {
+    _dlSession.idx++;
+    if (_dlSession.idx >= _dlSession.rounds) {
+      if (_dlSession.mode === 'exam') { _dlExamSubmit(false); } else { _dlRenderResult(); }
+    } else { _dlRunRound(); }
+  }
+
+  function _dlRunRound() {
+    _dlUpdateChrome();
+    var scn = _dlSession.scenarios[_dlSession.idx];
+    var step = scn.steps[0];   // the hero scenario->pick is a single analyze step
+    var body = document.getElementById('dl-body');
+    body.innerHTML = '';
+    _slMountScenario(body, scn, {
+      onSubmit: function (result) {
+        _dlSession.results.push({ scenario: scn, score: result, passed: result.fraction === 1, responses: result.responses });
+        if (_dlSession.mode === 'exam') { _dlAdvance(); return; }   // exam-style: no reveal (Task 6 overrides flow)
+        // Practice: grade in place with per-option reasoning, then offer Next.
+        var picked = (result.responses && result.responses[step.id] && result.responses[step.id].selected) || [];
+        var host = body.querySelector('.sl-scenario') || body;
+        _dlGradeAnalyze(host, step, picked);
+        var oldSubmit = body.querySelector('[data-action="simLabSubmitScenario"]');
+        if (oldSubmit) oldSubmit.remove();
+        var row = _el('div', 'dl-cta-row');
+        var flag = _el('button', 'dl-cta ghost', 'Flag'); flag.setAttribute('type', 'button');
+        var next = _el('button', 'dl-cta',
+          _dlSession.idx + 1 >= _dlSession.rounds ? 'See results →' : 'Next decision →');
+        next.setAttribute('type', 'button');
+        next.addEventListener('click', _dlAdvance);
+        row.appendChild(flag); row.appendChild(next);
+        host.appendChild(row);
+        // §8 tall-card: keep the primary CTA reachable after the reveal grows the card.
+        if (next.scrollIntoView) next.scrollIntoView({ block: 'nearest' });
+      }
+    });
+    // Shared-responsibility sorter: if the round's step is a categorize with a
+    // services array, mount the service selector that shifts the boundary (Task 7).
+    var first = scn.steps[0];
+    if (first && first.type === 'categorize' && first.payload && first.payload.services) {
+      var host2 = body.querySelector('.sl-scenario') || body;
+      _dlBindServiceSelector(host2, first);
+    }
+  }
+
+  // Shared-responsibility sorter (spec §7). The step is a normal `categorize`
+  // step PLUS payload.services: [{ id, label, map:{itemId:bucketId} }]. Selecting
+  // a service swaps the step's answer map to that service's boundary (the
+  // boundary-shift) and re-grades on Submit. Placed tokens follow the new map.
+  function _dlBindServiceSelector(host, step) {
+    var services = step.payload && step.payload.services;
+    if (!Array.isArray(services) || !services.length) return;
+    var bar = _el('div', 'dl-srv-sel');
+    var active = 0;
+    services.forEach(function (svc, i) {
+      var b = _el('button', 'dl-srv' + (i === 0 ? ' on' : ''), _esc(svc.label));
+      b.setAttribute('type', 'button'); b.setAttribute('data-svc', svc.id);
+      b.addEventListener('click', function () {
+        if (active === i) return;
+        active = i;
+        Array.prototype.forEach.call(bar.children, function (c, n) { c.classList.toggle('on', n === i); });
+        // boundary-shift: swap the answer map so Submit grades the new service.
+        step.answer = step.answer || {};
+        step.answer.map = Object.assign({}, services[i].map);
+        _dlReplaceTokens(host, step, services[i].map);
+      });
+      bar.appendChild(b);
+    });
+    // initial boundary = first service
+    step.answer = step.answer || {};
+    step.answer.map = Object.assign({}, services[0].map);
+    var stepEl = host.querySelector('.sl-cat');
+    if (stepEl && stepEl.parentNode) stepEl.parentNode.insertBefore(bar, stepEl);
+    else host.insertBefore(bar, host.firstChild);
+    var shift = _el('div', 'dl-shift',
+      '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h18M14 7l5 5-5 5"></path></svg>' +
+      'Switch the service and the boundary moves. That shift is the trap.');
+    host.appendChild(shift);
+  }
+
+  // Move already-placed tokens (those sitting inside a drop column) to the column
+  // the new boundary map expects. The graded response is the learner's placement;
+  // this keeps the visible board consistent with the active service's boundary.
+  function _dlReplaceTokens(host, step, map) {
+    Object.keys(map).forEach(function (itemId) {
+      var item = host.querySelector('.sl-chip[data-item="' + _slAttr(itemId) + '"]');
+      var col = host.querySelector('.sl-cat-drop[data-target="' + _slAttr(map[itemId]) + '"]');
+      if (item && col && item.parentNode && item.parentNode.classList &&
+          item.parentNode.classList.contains('sl-cat-drop') && item.parentNode !== col) {
+        col.appendChild(item);
+      }
+    });
+  }
+
+  // Budget = Σ per-decision estMinutes × 1.0 × 60000 (spec §3.6 — no tightening v1).
+  function _dlExamBudgetMs(scenarios) {
+    var minutes = scenarios.reduce(function (a, s) {
+      return a + (typeof s.estMinutes === 'number' && s.estMinutes > 0 ? s.estMinutes : 3);
+    }, 0);
+    return Math.round(minutes * 60000);
+  }
+
+  function _dlStartExamStyle() {
+    _dlSession.budgetMs = _dlExamBudgetMs(_dlSession.scenarios);
+    _dlSession.deadlineMs = Date.now() + _dlSession.budgetMs;
+    _slStartCountdown(_dlSession.deadlineMs);   // shared wall-clock countdown
+    _dlRunRound();                               // feedback suppressed inside (mode==='exam')
+  }
+
+  // Time-up or last-round submit → score everything + route to verdict (retro-reveal lives there).
+  function _dlExamSubmit(timeUp) {
+    if (!_dlSession || _dlSession.__submitted) return;
+    _dlSession.__submitted = true;
+    _slStopCountdown();
+    // any rounds not yet answered score as missed (responses absent)
+    while (_dlSession.results.length < _dlSession.rounds) {
+      var i = _dlSession.results.length;
+      var scn = _dlSession.scenarios[i];
+      var score = simLabScoreScenario(scn, {});
+      _dlSession.results.push({ scenario: scn, score: score, passed: false, responses: {} });
+    }
+    _dlSession.timeUp = !!timeUp;
+    _dlRenderResult();
+  }
+
+  // Aggregate MISSED rounds into look-alike pairs + weak families (spec §3.4).
+  // Both fields are display labels carried on the scenario; absent → no contribution.
+  function _dlVerdictClusters(results) {
+    var pairs = {}, families = {};
+    results.forEach(function (r) {
+      if (r.passed) return;
+      var scn = r.scenario || {};
+      if (scn.pair) pairs[scn.pair] = (pairs[scn.pair] || 0) + 1;
+      if (scn.family) families[scn.family] = (families[scn.family] || 0) + 1;
+    });
+    var pairList = Object.keys(pairs).map(function (k) { return { label: k, count: pairs[k] }; })
+      .sort(function (a, b) { return b.count - a.count; });
+    var familyList = Object.keys(families).sort(function (a, b) { return families[b] - families[a]; });
+    return { pairs: pairList, families: familyList };
+  }
+
+  function _dlRenderResult() {
+    if (_dlSession && _dlSession.mode === 'exam') _slStopCountdown();
+    var agg = _slAggregateSession(_dlSession.results);
+    var clusters = _dlVerdictClusters(_dlSession.results);
+    var root = document.getElementById('dl-result-root');
+    root.innerHTML = '';
+    var sbar = _el('div', 'dl-sbar');
+    sbar.innerHTML = '<span class="dl-sbar-strip">Decision Lab</span>' +
+      '<span class="dl-round-pill">' + (_dlSession.timeUp ? "Time's up" : 'Set complete') + '</span>';
+    root.appendChild(sbar);
+    var scoreRow = _el('div', 'dl-score-row');
+    scoreRow.innerHTML = '<span class="dl-score-fig" data-count="' + agg.passed + '">' + agg.passed +
+      '<small>/' + agg.rounds + '</small></span>' +
+      '<span><span class="dl-score-cap">Right calls</span></span>';
+    root.appendChild(scoreRow);
+    if (clusters.pairs.length) {
+      var vs = _el('div', 'dl-vsec');
+      vs.appendChild(_el('div', 'dl-vsec-k', 'Look-alikes you still confuse'));
+      clusters.pairs.forEach(function (p) {
+        var parts = String(p.label).split(' vs ');
+        var row = _el('div', 'dl-confrow');
+        row.innerHTML = '<span class="vs">' + _esc(parts[0] || p.label) + '</span>' +
+          (parts[1] ? ' vs <span class="vs">' + _esc(parts[1]) + '</span>' : '') +
+          '<span class="tag">missed &times;' + p.count + '</span>';
+        vs.appendChild(row);
+      });
+      root.appendChild(vs);
+    }
+    if (clusters.families.length) {
+      var wf = _el('div', 'dl-vsec');
+      wf.appendChild(_el('div', 'dl-vsec-k', 'Weak service families'));
+      var weak = _el('div', 'dl-weak');
+      clusters.families.forEach(function (f) { weak.appendChild(_el('span', 'w', _esc(f))); });
+      wf.appendChild(weak);
+      root.appendChild(wf);
+    }
+    var ctaRow = _el('div', 'dl-cta-row');
+    var drill = _el('button', 'btn btn-primary', 'Drill your 3 look-alikes →');
+    drill.setAttribute('type', 'button'); drill.setAttribute('data-action', 'decisionLabSessionStart');
+    var back = _el('button', 'btn gnt-ghost', 'Back to Practice');
+    back.setAttribute('type', 'button'); back.setAttribute('data-action', 'decisionLabExit');
+    ctaRow.appendChild(drill); ctaRow.appendChild(back);
+    root.appendChild(ctaRow);
+    // Pro cross-session persistence of look-alike clusters (free = current set only)
+    if (typeof window._dlRecordWeakSpots === 'function') {
+      window._dlRecordWeakSpots(clusters.pairs.map(function (p) { return p.label; }));
+    }
+    // score count-up (reduced-motion → instant; CSS shows final already)
+    if (!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches)) {
+      var fig = root.querySelector('.dl-score-fig');
+      if (fig) {
+        var target = agg.passed, t0 = null;
+        var stepFn = function (ts) {
+          if (!t0) t0 = ts; var p = Math.min(1, (ts - t0) / 800);
+          fig.firstChild.textContent = Math.round(p * target);
+          if (p < 1) requestAnimationFrame(stepFn); else fig.firstChild.textContent = target;
+        };
+        requestAnimationFrame(stepFn);
+      }
+    }
+    if (typeof showPage === 'function') showPage('decision-lab-result');
+  }
+
+  function _dlSessionStartDispatch() {
+    if (_dlPickedMode === 'exam' && !_slIsPro()) { window._gateProOnly('Decision Lab', _dlGateCopy('exam')); return; }
+    if (_dlPickedDecisions === 20 && !_slIsPro()) { window._gateProOnly('Decision Lab', _dlGateCopy('full20')); return; }
+    // free practice 1/day cap (Task 9) — checked here for the practice path
+    if (_dlPickedMode === 'practice' && !_slIsPro() &&
+        typeof window._dlFreeRunsToday === 'function' && window._dlFreeRunsToday() >= 1) {
+      window._gateProOnly('Decision Lab', _dlGateCopy('second')); return;
+    }
+    if (_dlPickedMode === 'practice' && !_slIsPro() && typeof window._dlBumpFreeRun === 'function') window._dlBumpFreeRun();
+    return _dlSessionStart();
+  }
+
+  function decisionLabOpenEntry() {
+    _dlPickedMode = 'practice';
+    _dlPickedDecisions = 10;
+    var tgt = document.getElementById('dl-target'); if (tgt) tgt.textContent = _dlTargetLabel();
+    _dlBindModeToggle(); _dlBindDecisionChips(); _dlSyncEntry();
+    if (typeof showPage === 'function') showPage('decision-lab-entry');
+  }
+  function decisionLabEntryBack() { if (typeof showPage === 'function') showPage('setup'); }
+
   // Spec §4 — the revenue tap. EXACT copy; do not paraphrase.
   function _slExamGateCopy() {
     return {
@@ -769,16 +1134,27 @@
   // Task 4: wall-clock countdown handlers (removed after _slStopCountdown)
   var _slVisHandler = null, _slFocusHandler = null;
 
+  // The countdown serves whichever exam-style session is active. Sim Lab uses
+  // _slSession (mode 'exam'); Decision Lab uses _dlSession (mode 'exam'). One
+  // accessor keeps _slStartCountdown/_slTickClock shared (spec §3.1).
+  function _activeExamSession() {
+    if (_slSession && _slSession.mode === 'exam') return _slSession;
+    if (_dlSession && _dlSession.mode === 'exam') return _dlSession;
+    return null;
+  }
+
   function _slStartCountdown(deadlineMs) {
     _slStopCountdown();
-    var slot = document.getElementById('sl-clock-slot');
+    var sess = _activeExamSession(); if (!sess) return;
+    var slotId = (sess === _dlSession) ? 'dl-clock-slot' : 'sl-clock-slot';
+    var slot = document.getElementById(slotId);
     if (!slot) return;
     slot.innerHTML = '';
     var clk = _el('span', 'sl-clock');
     clk.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="13" r="8"></circle><path d="M12 9v4l2 2M9 2h6"></path></svg><span class="sl-clock-t">' +
       _slFmtClock(deadlineMs - Date.now()) + '</span> <span class="cap">left</span>';
     slot.appendChild(clk);
-    _slSession.clock = setInterval(_slTickClock, 1000);
+    sess.clock = setInterval(_slTickClock, 1000);
     _slTickClock();
     _slVisHandler = function () { if (document.visibilityState === 'visible') _slTickClock(); };
     _slFocusHandler = function () { _slTickClock(); };
@@ -787,7 +1163,7 @@
   }
 
   function _slStopCountdown() {
-    if (_slSession && _slSession.clock) { clearInterval(_slSession.clock); _slSession.clock = null; }
+    [_slSession, _dlSession].forEach(function (s) { if (s && s.clock) { clearInterval(s.clock); s.clock = null; } });
     if (_slVisHandler) { document.removeEventListener('visibilitychange', _slVisHandler); _slVisHandler = null; }
     if (_slFocusHandler) { window.removeEventListener('focus', _slFocusHandler); _slFocusHandler = null; }
   }
@@ -795,17 +1171,20 @@
   // Build the clock node once; ticks only mutate the time string (digits never
   // transition — §6.5). Amber latches via .is-low.
   function _slTickClock() {
-    if (!_slSession || _slSession.mode !== 'exam') return;
-    var remaining = _slSession.deadlineMs - Date.now();   // wall-clock truth, never decremented
-    var clk = document.querySelector('#sl-clock-slot .sl-clock');
+    var sess = _activeExamSession(); if (!sess) return;
+    var remaining = sess.deadlineMs - Date.now();   // wall-clock truth, never decremented
+    var clk = document.querySelector('.sl-clock');
     var t = clk && clk.querySelector('.sl-clock-t');
     if (t) t.textContent = _slFmtClock(Math.max(0, remaining));
     // amber latch at ≤10% remaining (one-way)
-    if (!_slSession.amber && remaining <= _slSession.budgetMs * 0.10) {
-      _slSession.amber = true;
+    if (!sess.amber && remaining <= sess.budgetMs * 0.10) {
+      sess.amber = true;
       if (clk) clk.classList.add('is-low');
     }
-    if (remaining <= 0) { _slStopCountdown(); _slExamSubmit(true); }   // time-up (Task 8); reason='time'
+    if (remaining <= 0) {
+      _slStopCountdown();
+      if (sess === _dlSession) _dlExamSubmit(true); else _slExamSubmit(true);
+    }
   }
 
   function _slExamShowExamChrome() {
@@ -1607,4 +1986,42 @@
   window._simLab.renderReview = _slRenderReview;
   window._simLab.renderExamResult = _slRenderExamResult;
   window._simLab.renderPaceBlock = _slRenderPaceBlock;
+  function _dlGradeAnalyze(host, step, pickedIds) {
+    if (!step || step.type !== 'analyze') return;
+    var block = host.querySelector('.sl-analyze-block');
+    if (!block) return;
+    block.classList.add('dl-graded');
+    var correct = (step.answer && step.answer.selected) || [];
+    var picked = pickedIds || [];
+    Array.prototype.forEach.call(block.children, function (row) {
+      var id = row.getAttribute('data-line');
+      var isCorrect = correct.indexOf(id) !== -1;
+      var wasPicked = picked.indexOf(id) !== -1;
+      var v = row.querySelector('.dl-verdict');
+      row.classList.add('dl-opt');
+      row.setAttribute('aria-disabled', 'true');
+      if (isCorrect) { row.classList.add('dl-correct'); if (v) v.textContent = '✓ Best'; }
+      else { row.classList.add('dl-wrong'); if (wasPicked) row.classList.add('dl-picked-wrong'); if (v) v.textContent = '✗'; }
+    });
+    if (step.explanation && !host.querySelector('.dl-teach')) {
+      var teach = _el('div', 'dl-teach',
+        '<div class="dl-teach-k">The tell</div><div class="dl-teach-b">' + _esc(step.explanation) + '</div>');
+      block.parentNode.insertBefore(teach, block.nextSibling);
+    }
+  }
+
+  window._simLab.slBank = _slBank;
+  window._simLab.dlBank = _dlBank;
+  window._simLab.dlCerts = function () { return _DL_CERTS.slice(); };
+  window._simLab.dlGradeAnalyze = _dlGradeAnalyze;
+  window._simLab.dlGateCopy = _dlGateCopy;
+  window.decisionLabOpenEntry = decisionLabOpenEntry;
+  window.decisionLabEntryBack = decisionLabEntryBack;
+  window.decisionLabSessionStart = _dlSessionStartDispatch;
+  window._simLab.dlBuildSet = _dlBuildSet;
+  window._simLab.dlSession = function () { return _dlSession; };
+  window._simLab.dlExamSubmit = function (t) { _dlExamSubmit(t); };
+  window._simLab.dlTick = _slTickClock;
+  window._simLab.dlVerdictClusters = _dlVerdictClusters;
+  window._simLab.dlRenderResult = _dlRenderResult;
 })();

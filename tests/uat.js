@@ -20165,6 +20165,35 @@ console.log('\n\x1b[1m── Security Phase 7 — CSP script-src unsafe-inline r
     pricingHtml.includes('a real timed PBQ simulation with a pacing report'));
 })();
 
+// ── v7.59: Decision Lab — structural pins ──
+(function(){
+  var dgCss = fs.readFileSync(path.join(ROOT, 'dg-system.css'), 'utf8');
+  var pricingHtml = fs.readFileSync(path.join(ROOT, 'landing/pricing.html'), 'utf8');
+  test('v7.59 Decision Lab: entry + result pages present in index.html',
+    html.includes('id="page-decision-lab-entry"') && html.includes('id="page-decision-lab-result"'));
+  test('v7.59 Decision Lab: runner page + Home tile present in index.html',
+    html.includes('id="page-decision-lab"') && html.includes('id="dl-home-opt"'));
+  test('v7.59 Decision Lab: _DL_CERTS allowlist defined (engine + app gate)',
+    js.includes("_DL_CERTS = ['az900', 'ai900', 'sc900', 'clfc02']"));
+  test('v7.59 Decision Lab: _dlBank + shared _seedBank resolver defined',
+    js.includes('function _dlBank(') && js.includes('function _seedBank('));
+  test('v7.59 Decision Lab: per-option why render path (_dlGradeAnalyze) defined',
+    js.includes('function _dlGradeAnalyze('));
+  test('v7.59 Decision Lab: uses _dlBumpFreeRun, not _bumpPbqFreeRun',
+    js.includes('function _dlBumpFreeRun(') &&
+    !js.replace(/\/\/.*/g, '').match(/_dlSessionStartDispatch[\s\S]{0,1500}window\._bumpPbqFreeRun\(\)/));
+  test('v7.59 Decision Lab: exact §4 gate copy present',
+    js.includes('Exam-style mode is Pro') &&
+    js.includes('The full 20-decision set is Pro') &&
+    js.includes("That's today's free set"));
+  test('v7.59 Decision Lab: Home tile gated to _DL_CERTS in app.js',
+    js.includes('function renderDecisionLabHomeEntry(') && js.includes("_DL_CERTS.indexOf(window.CURRENT_CERT)"));
+  test('v7.59 Decision Lab: verdict + sorter markers present in css',
+    dgCss.includes('.dl-confrow') && dgCss.includes('.dl-srv-sel') && dgCss.includes('.dl-graded'));
+  test('v7.59 Decision Lab: pricing carries the Decision Lab Pro bullet',
+    pricingHtml.includes('cloud-cert scenario drills with per-distractor reasoning'));
+})();
+
 // ── Summary ──
 console.log('\n' + '═'.repeat(50));
 const total = results.pass + results.fail;
