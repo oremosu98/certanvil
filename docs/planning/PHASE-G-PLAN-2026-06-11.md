@@ -46,3 +46,46 @@ So "email = identity" (decision 9) is the *user-facing principle*; the *implemen
 - All four G pieces are **gated lane** (PR + preview smoke + squash-merge): they touch api/stripe, auth files, entitlements.
 - Migrations need `-- ROLLBACK:` blocks; endpoints must graceful-503 on missing env vars.
 - The four polish passes apply to every user-facing surface (design-taste → emil → humanizer → **marketing-psychology** for upsell surfaces — Simi's updated rotation).
+
+---
+
+## Council review addendum (2026-06-26)
+
+An agent-council critique of this plan + the G1 Stripe plan (`docs/superpowers/plans/2026-06-16-g1-stripe-entitlements.md`) surfaced two must-fix-before-launch gaps and a set of follow-ups. **Do when ready — all gated lane, blocked on the G0 Stripe setup (account/keys/webhook). Nothing here changes live behaviour today (the `subscriptions` table is empty; Stripe never activated).**
+
+### Two P0 fixes — folded into G-1 (plan written, parked)
+Both are captured in **`docs/superpowers/plans/2026-06-26-g1-hardening-webhook-and-multiprovider-schema.md`** and **supersede G1 Stripe Tasks 1–2's `subscriptions`-shaped webhook + schema.** When G-1 is built, build the hardening plan as its foundation, then continue G1 Tasks 3–5 (portal, client wiring, ship) unchanged.
+
+1. **"Paid-but-no-Pro" webhook bug** — the webhook can mark an event handled *before* the entitlement write succeeds, permanently dropping a paid upgrade on a failed write + retry. Fix = one transactional Postgres RPC (`apply_provider_subscription_event`) that claims the event AND writes the entitlement together (all-or-nothing); failures commit nothing and Stripe retries. Bonus folded in: refund/chargeback → revoke, and an out-of-order-event guard.
+2. **One-row Stripe-shaped entitlement table can't hold Apple** — replace `subscriptions` (one row/user, Stripe columns) with `provider_subscriptions` (one row per provider sub) + a rewritten `is_pro()` that aggregates across providers + a `user_entitlements` view. Apple-ready fields baked in (`original_transaction_id`, `environment`, `revoked_at`). Zero data migration (table is empty pre-launch).
+
+**Can the foundation go in before Stripe?** The *database* half (table + `is_pro()` + RPC) is pure Postgres and could ship early, risk-free (everyone stays Free until a real payment writes in). The *webhook* half can be written but only works/tested once Stripe exists. Decision: **do the whole fix in one trip when Stripe G0 is done** — no benefit to splitting.
+
+### Remaining follow-ups (the "attack the rest" batch — not yet planned)
+- [x] **DRAFTED (G-3 plan): Purchase coordinator (App Store blocker).** Every in-app "Go Pro" CTA currently hardcodes a web pricing link (`app.js` ~611/682/939) — Apple Guideline 3.1.1 forbids that in a native app. Build ONE chokepoint behind `_gateProOnly()`: `web→Stripe`, `ios-native→IAP`, `already-Pro→"You're already Pro"`, `signed-out→sign-in`. G-1 should introduce the seam (web branch only) so G-3 *adds* the iOS branch instead of ripping out links. (Tracked task chip already filed.)
+- [x] **DECIDED (2026-06-26): RevenueCat** — resolves the doc contradiction (this doc's "StoreKit + server receipt validation" vs the G1 doc's "RevenueCat"). G-3 implements Apple IAP **via RevenueCat as the managed layer** (StoreKit under the hood), not hand-rolled receipt validation. Rationale: solo-founder time >> the ~1% fee (which only applies past ~$2.5k/mo app-store revenue), and RevenueCat becomes the cross-store entitlement source of truth the new `provider_subscriptions` schema is built to receive (RevenueCat webhook → `apply_provider_subscription_event`). This refines decision 1 / build-order G-3.
+- [x] **DRAFTED (ai-proxy plan): Server-side entitlement enforcement.** The AI proxy (`landing/api/ai`) must check `is_pro()` + the daily cap on every call — client gates (`_gateProOnly`, `_quotaState`) are UX only and bypassable. This is what actually protects the AI-cost margin (decisions 6–7).
+- [ ] **Checkout-time "already Pro" guard (decision 8) — server-side.** `create-checkout-session` must call `is_pro()` before creating a session; it currently doesn't.
+- [ ] **Restore Purchases hardening.** Server-validate the restore (never let the client grant Pro); add network-error / Ask-to-Buy / deferred states (the restore design spec admits these are missing).
+- [x] **DRAFTED (account-merge plan): Account-merge support tooling before launch.** D10's manual-merge fallback is only safe with a lookup tool (by Apple `original_transaction_id` / Stripe customer / relay email) that can move entitlement + history. Doesn't exist yet.
+- [ ] **Checkout→webhook race UX.** The single 2.5s retry on return-from-checkout can leave a just-paid user seeing "Free". Poll a few times or use a realtime subscription.
+- [ ] **Unit-economics gate (business, not code).** Before locking iOS pricing: (a) confirm real heavy-user AI cost at the **20 June cost-measurement session**, and (b) confirm enrolment in **Apple's Small Business Program** — the 15% rate in decision 7 is NOT automatic; without it Apple takes 30% (≈ halves iOS margin).
+
+### Status synthesis (2026-06-26) — the ball is in the founder's court, not in more planning
+
+**Decided & captured (no further decisions needed):** the 2 P0 fixes (parked plan); iPhone payments = RevenueCat; free caps stay per-drill.
+
+**Build-when-ready (no decisions left, just blocked on accounts existing):** purchase coordinator, server-side enforcement, already-Pro guard, restore hardening, account-merge tool, refund handling. Plans get written to sit on the shelf; they can't be *built/tested* until the founder-action items below exist.
+
+**🔴 Founder-only actions that unblock everything (only Simi can do these):**
+1. **Stripe setup** — account + 2 products ($9.99/mo, $89/yr) + webhook keys → unblocks the 2 P0 fixes + web payments (G-1).
+2. **RevenueCat + App Store Connect** — RevenueCat account, App Store Connect subscription products, link the two, copy RC API keys → unblocks iPhone payments (G-3).
+3. **20 June AI-cost measurement** — know the real per-user margin before locking price.
+4. **Apple Small Business Program enrolment** — secures the 15% rate (else 30%, ≈ halves iOS margin).
+
+**Shelf plans (written, parked, build when the accounts above exist):**
+- `docs/superpowers/plans/2026-06-26-g1-hardening-webhook-and-multiprovider-schema.md` — the 2 P0 fixes (G-1 foundation): atomic webhook + multi-provider `provider_subscriptions`.
+- `docs/superpowers/plans/2026-06-26-g2-apple-google-signin.md` — **G-2** Apple + Google sign-in (extends the landing-owned auth modal; account-linking priority; Apple 4.8 compliance). Note found during drafting: the quiz app has no modal of its own — it redirects to the `landing/` modal, which already ships a disabled "Continue with Google" button.
+- `docs/superpowers/plans/2026-06-26-g3-ios-revenuecat-purchase-coordinator.md` — **G-3** iPhone payments via RevenueCat + the Go-Pro purchase coordinator that fixes the App Store 3.1.1 blocker.
+- `docs/superpowers/plans/2026-06-26-ai-proxy-server-enforcement.md` — server-side AI quota/entitlement enforcement (the metered `/api/ai/generate` proxy + Pro 150/day soft cap). Note found during drafting: the client (`_claudeFetch`) already routes signed-in users to `/api/ai/generate`; the endpoint itself was never built.
+- `docs/superpowers/plans/2026-06-26-account-merge-support-tool.md` — admin-only lookup + merge RPCs for the Apple Hide-My-Email split (the manual "contact us to merge" path).
