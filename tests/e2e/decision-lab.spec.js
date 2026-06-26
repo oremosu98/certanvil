@@ -349,3 +349,21 @@ test('dl free cap: 1 set/day uses _dlBumpFreeRun (not _bumpPbqFreeRun); 2nd set 
   expect(r.gate).toBe(1);
   expect(r.gTitle).toBe("That's today's free set");
 });
+
+test('dl cross-cert: set builds on sc900 too (registry is per-cert)', async ({ page }) => {
+  await gotoApp(page);
+  await installSeedFixture(page, 'DECISION_LAB_SEED_SC900', 6);
+  const r = await page.evaluate(async () => {
+    window._quotaState = { tier: 'pro' };
+    window.CURRENT_CERT = 'sc900';
+    window.CERT_PACK = { meta: { name: 'Security, Compliance & Identity', code: 'SC-900' } };
+    window.decisionLabOpenEntry();
+    document.querySelector('#dl-decisions .dl-chip[data-decisions="5"]').click();
+    window.decisionLabSessionStart();
+    const sess = window._simLab.dlSession();
+    return { rounds: sess.rounds, target: document.getElementById('dl-target').textContent, bank: window._simLab.dlBank('sc900').length };
+  });
+  expect(r.rounds).toBe(5);
+  expect(r.bank).toBe(6);
+  expect(r.target).toContain('SC-900');
+});
