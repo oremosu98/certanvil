@@ -321,3 +321,31 @@ test('dl verdict: clusters missed look-alikes + weak families; Pro persists acro
   expect(r.families).toContain('Monitoring & logging');
   expect(r.persistedCount).toBe(1);
 });
+
+test('dl free cap: 1 set/day uses _dlBumpFreeRun (not _bumpPbqFreeRun); 2nd set gated', async ({ page }) => {
+  await gotoApp(page);
+  await installSeedFixture(page, 'DECISION_LAB_SEED_AZ900', 8);
+  const r = await page.evaluate(async () => {
+    window._quotaState = { tier: 'free' };
+    localStorage.removeItem('nplus_dl_free_count');
+    localStorage.removeItem('nplus_pbq_free_count');
+    window.CURRENT_CERT = 'az900';
+    window.CERT_PACK = { meta: { name: 'Azure Fundamentals', code: 'AZ-900' } };
+    const pbqBefore = window._pbqFreeRunsToday();
+    window.decisionLabOpenEntry();
+    document.querySelector('#dl-decisions .dl-chip[data-decisions="5"]').click();
+    window.decisionLabSessionStart();                 // 1st free set → bumps DL counter
+    const dlAfterFirst = window._dlFreeRunsToday();
+    const pbqAfter = window._pbqFreeRunsToday();        // must stay 0 (independent)
+    let gate = 0, gTitle = '';
+    window._gateProOnly = (feat, opts) => { gate++; gTitle = opts && opts.title; return false; };
+    window.decisionLabOpenEntry();
+    window.decisionLabSessionStart();
+    return { dlAfterFirst, pbqBefore, pbqAfter, gate, gTitle };
+  });
+  expect(r.dlAfterFirst).toBe(1);
+  expect(r.pbqBefore).toBe(0);
+  expect(r.pbqAfter).toBe(0);
+  expect(r.gate).toBe(1);
+  expect(r.gTitle).toBe("That's today's free set");
+});

@@ -1120,6 +1120,7 @@ const STORAGE = {
   // hasn't installed yet but also hasn't actively dismissed gets a calm cadence.
   A2HS_LAST_SHOWN_AT: 'nplus_a2hs_last_shown_at',
   PBQ_FREE_COUNT: 'nplus_pbq_free_count', // v7.55.0 Sim Lab: free-tier daily PBQ drill runs ({date, count}) — mirrors GAUNTLET_FREE_COUNT shape
+  DL_FREE_COUNT: 'nplus_dl_free_count',   // Decision Lab free-tier daily set runs ({date, count}) — independent of PBQ_FREE_COUNT
   SIMLAB_WEAK: 'nplus_simlab_weak',       // v7.56 Sim Lab: Pro cross-session weak-spot map ({topic: count})
   DL_WEAK: 'nplus_dl_weak',               // Decision Lab Pro cross-session look-alike map ({pairLabel: count})
 };
@@ -7078,6 +7079,28 @@ function _bumpPbqFreeRun() {
 window._pbqFreeRunsToday = _pbqFreeRunsToday;
 window._bumpPbqFreeRun = _bumpPbqFreeRun;
 window.PBQ_FREE_DAILY_CAP = PBQ_FREE_DAILY_CAP;
+
+// Decision Lab free daily cap — INDEPENDENT of Sim Lab's PBQ counter (§4).
+const DL_FREE_DAILY_CAP = 1;
+function _dlFreeRunsToday() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(STORAGE.DL_FREE_COUNT) || 'null');
+    if (raw && raw.date === new Date().toISOString().slice(0, 10)) return raw.count || 0;
+  } catch (_) {}
+  return 0;
+}
+function _dlBumpFreeRun() {
+  if (!(_quotaState && _quotaState.tier === 'free')) return;   // only free accrues
+  try {
+    localStorage.setItem(STORAGE.DL_FREE_COUNT, JSON.stringify({
+      date: new Date().toISOString().slice(0, 10),
+      count: _dlFreeRunsToday() + 1
+    }));
+  } catch (_) {}
+}
+window._dlFreeRunsToday = _dlFreeRunsToday;
+window._dlBumpFreeRun = _dlBumpFreeRun;
+window.DL_FREE_DAILY_CAP = DL_FREE_DAILY_CAP;
 
 // v7.56 — Sim Lab Pro cross-session weak-spot tracking. Pro persists missed
 // topics across sessions; free does not (the within-session cluster shows to all).
