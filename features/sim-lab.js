@@ -938,7 +938,82 @@
     _dlRenderResult();
   }
 
-  function _dlRenderResult() {                        // verdict content wired in Task 8
+  // Aggregate MISSED rounds into look-alike pairs + weak families (spec §3.4).
+  // Both fields are display labels carried on the scenario; absent → no contribution.
+  function _dlVerdictClusters(results) {
+    var pairs = {}, families = {};
+    results.forEach(function (r) {
+      if (r.passed) return;
+      var scn = r.scenario || {};
+      if (scn.pair) pairs[scn.pair] = (pairs[scn.pair] || 0) + 1;
+      if (scn.family) families[scn.family] = (families[scn.family] || 0) + 1;
+    });
+    var pairList = Object.keys(pairs).map(function (k) { return { label: k, count: pairs[k] }; })
+      .sort(function (a, b) { return b.count - a.count; });
+    var familyList = Object.keys(families).sort(function (a, b) { return families[b] - families[a]; });
+    return { pairs: pairList, families: familyList };
+  }
+
+  function _dlRenderResult() {
+    if (_dlSession && _dlSession.mode === 'exam') _slStopCountdown();
+    var agg = _slAggregateSession(_dlSession.results);
+    var clusters = _dlVerdictClusters(_dlSession.results);
+    var root = document.getElementById('dl-result-root');
+    root.innerHTML = '';
+    var sbar = _el('div', 'dl-sbar');
+    sbar.innerHTML = '<span class="dl-sbar-strip">Decision Lab</span>' +
+      '<span class="dl-round-pill">' + (_dlSession.timeUp ? "Time's up" : 'Set complete') + '</span>';
+    root.appendChild(sbar);
+    var scoreRow = _el('div', 'dl-score-row');
+    scoreRow.innerHTML = '<span class="dl-score-fig" data-count="' + agg.passed + '">' + agg.passed +
+      '<small>/' + agg.rounds + '</small></span>' +
+      '<span><span class="dl-score-cap">Right calls</span></span>';
+    root.appendChild(scoreRow);
+    if (clusters.pairs.length) {
+      var vs = _el('div', 'dl-vsec');
+      vs.appendChild(_el('div', 'dl-vsec-k', 'Look-alikes you still confuse'));
+      clusters.pairs.forEach(function (p) {
+        var parts = String(p.label).split(' vs ');
+        var row = _el('div', 'dl-confrow');
+        row.innerHTML = '<span class="vs">' + _esc(parts[0] || p.label) + '</span>' +
+          (parts[1] ? ' vs <span class="vs">' + _esc(parts[1]) + '</span>' : '') +
+          '<span class="tag">missed &times;' + p.count + '</span>';
+        vs.appendChild(row);
+      });
+      root.appendChild(vs);
+    }
+    if (clusters.families.length) {
+      var wf = _el('div', 'dl-vsec');
+      wf.appendChild(_el('div', 'dl-vsec-k', 'Weak service families'));
+      var weak = _el('div', 'dl-weak');
+      clusters.families.forEach(function (f) { weak.appendChild(_el('span', 'w', _esc(f))); });
+      wf.appendChild(weak);
+      root.appendChild(wf);
+    }
+    var ctaRow = _el('div', 'dl-cta-row');
+    var drill = _el('button', 'btn btn-primary', 'Drill your 3 look-alikes →');
+    drill.setAttribute('type', 'button'); drill.setAttribute('data-action', 'decisionLabSessionStart');
+    var back = _el('button', 'btn gnt-ghost', 'Back to Practice');
+    back.setAttribute('type', 'button'); back.setAttribute('data-action', 'decisionLabExit');
+    ctaRow.appendChild(drill); ctaRow.appendChild(back);
+    root.appendChild(ctaRow);
+    // Pro cross-session persistence of look-alike clusters (free = current set only)
+    if (typeof window._dlRecordWeakSpots === 'function') {
+      window._dlRecordWeakSpots(clusters.pairs.map(function (p) { return p.label; }));
+    }
+    // score count-up (reduced-motion → instant; CSS shows final already)
+    if (!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches)) {
+      var fig = root.querySelector('.dl-score-fig');
+      if (fig) {
+        var target = agg.passed, t0 = null;
+        var stepFn = function (ts) {
+          if (!t0) t0 = ts; var p = Math.min(1, (ts - t0) / 800);
+          fig.firstChild.textContent = Math.round(p * target);
+          if (p < 1) requestAnimationFrame(stepFn); else fig.firstChild.textContent = target;
+        };
+        requestAnimationFrame(stepFn);
+      }
+    }
     if (typeof showPage === 'function') showPage('decision-lab-result');
   }
 
@@ -1947,4 +2022,6 @@
   window._simLab.dlSession = function () { return _dlSession; };
   window._simLab.dlExamSubmit = function (t) { _dlExamSubmit(t); };
   window._simLab.dlTick = _slTickClock;
+  window._simLab.dlVerdictClusters = _dlVerdictClusters;
+  window._simLab.dlRenderResult = _dlRenderResult;
 })();

@@ -1121,6 +1121,7 @@ const STORAGE = {
   A2HS_LAST_SHOWN_AT: 'nplus_a2hs_last_shown_at',
   PBQ_FREE_COUNT: 'nplus_pbq_free_count', // v7.55.0 Sim Lab: free-tier daily PBQ drill runs ({date, count}) — mirrors GAUNTLET_FREE_COUNT shape
   SIMLAB_WEAK: 'nplus_simlab_weak',       // v7.56 Sim Lab: Pro cross-session weak-spot map ({topic: count})
+  DL_WEAK: 'nplus_dl_weak',               // Decision Lab Pro cross-session look-alike map ({pairLabel: count})
 };
 // v4.81.2: how many daily snapshots to keep before pruning oldest
 const AUTOBACKUP_KEEP_DAYS = 7;
@@ -7094,6 +7095,23 @@ function _slGetWeakSpots() {
 }
 window._slRecordWeakSpots = _slRecordWeakSpots;
 window._slGetWeakSpots = _slGetWeakSpots;
+
+// Decision Lab Pro cross-session look-alike persistence (mirror _slRecordWeakSpots).
+// Free does not persist (the within-set cluster shows to all; persistence is Pro).
+function _dlRecordWeakSpots(pairLabels) {
+  if (!(_quotaState && (_quotaState.tier === 'pro' || _quotaState.tier === 'admin'))) return;
+  try {
+    var cur = JSON.parse(localStorage.getItem(STORAGE.DL_WEAK) || '{}');
+    (pairLabels || []).forEach(function (p) { if (p) cur[p] = (cur[p] || 0) + 1; });
+    localStorage.setItem(STORAGE.DL_WEAK, JSON.stringify(cur));
+    if (typeof _cloudFlush === 'function') _cloudFlush(STORAGE.DL_WEAK);
+  } catch (_) {}
+}
+function _dlGetWeakSpots() {
+  try { return JSON.parse(localStorage.getItem(STORAGE.DL_WEAK) || '{}'); } catch (_) { return {}; }
+}
+window._dlRecordWeakSpots = _dlRecordWeakSpots;
+window._dlGetWeakSpots = _dlGetWeakSpots;
 
 // v7.55.2 — Sim Lab Home entry (Home → Practice section). The drill must live
 // where the other drills are, not only on the legacy #page-drills page. This

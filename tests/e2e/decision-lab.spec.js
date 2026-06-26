@@ -280,3 +280,44 @@ test('dl sorter: service selector swaps the boundary and re-grades on submit', a
   expect(r.shiftedMap).toBe('{"os":"aws"}');
   expect(r.hasShiftNote).toBe(true);
 });
+
+test('dl verdict: clusters missed look-alikes + weak families; Pro persists across sessions', async ({ page }) => {
+  await gotoApp(page);
+  const r = await page.evaluate(async () => {
+    const S = window._simLab;
+    // results carry score (real rounds always do); pair/family drive the clusters
+    const mk = (passed, pair, family) => ({ passed, score: { correct: passed ? 1 : 0, total: 1 }, scenario: { pair, family } });
+    const results = [
+      mk(false, 'Pricing Calculator vs TCO Calculator', 'Cost & pricing tools'),
+      mk(false, 'Pricing Calculator vs TCO Calculator', 'Cost & pricing tools'),
+      mk(false, 'CloudWatch vs CloudTrail', 'Monitoring & logging'),
+      mk(true,  'IAM vs Resource policy', 'Identity')
+    ];
+    const clusters = S.dlVerdictClusters(results);
+    window._quotaState = { tier: 'pro' };
+    localStorage.removeItem('nplus_dl_weak');
+    window.CURRENT_CERT = 'az900';
+    window.CERT_PACK = { meta: { name: 'Azure Fundamentals', code: 'AZ-900' } };
+    window.DECISION_LAB_SEED_AZ900 = [];
+    window.decisionLabOpenEntry();
+    window.decisionLabSessionStart();   // empty set → empty state, session exists
+    const live = window._simLab.dlSession();
+    live.results = results; live.rounds = 4; live.idx = 4;
+    window._simLab.dlRenderResult();
+    const pairRows = document.querySelectorAll('#dl-result-root .dl-confrow').length;
+    const firstTag = document.querySelector('#dl-result-root .dl-confrow .tag').textContent;
+    const families = Array.from(document.querySelectorAll('#dl-result-root .dl-weak .w')).map(e => e.textContent);
+    const persisted = JSON.parse(localStorage.getItem('nplus_dl_weak') || '{}');
+    return {
+      topPair: clusters.pairs[0].label, topPairCount: clusters.pairs[0].count,
+      pairRows, firstTag, families, persistedCount: persisted['Pricing Calculator vs TCO Calculator']
+    };
+  });
+  expect(r.topPair).toBe('Pricing Calculator vs TCO Calculator');
+  expect(r.topPairCount).toBe(2);
+  expect(r.pairRows).toBe(2);
+  expect(r.firstTag).toContain('missed');
+  expect(r.families).toContain('Cost & pricing tools');
+  expect(r.families).toContain('Monitoring & logging');
+  expect(r.persistedCount).toBe(1);
+});

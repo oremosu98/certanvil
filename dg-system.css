@@ -4166,3 +4166,18 @@ mark.gnt-hinge{background:color-mix(in oklab,var(--red) 26%,transparent);color:i
 #page-decision-lab .dl-shift{font:500 11.5px/1.4 Inter,sans-serif;color:var(--accent);margin-top:12px;display:inline-flex;gap:6px;align-items:center}
 #page-decision-lab .dl-shift svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:2}
 @media (prefers-reduced-motion:reduce){#page-decision-lab .dl-srv{transition:none}}
+/* Decision Lab: verdict (Task 8) */
+#page-decision-lab-result .dl-score-row{display:flex;align-items:baseline;gap:12px;margin-bottom:16px}
+#page-decision-lab-result .dl-score-fig{font-family:Fraunces,Georgia,serif;font-weight:600;font-size:52px;line-height:1.05;letter-spacing:-.02em;font-variant-numeric:lining-nums tabular-nums;font-feature-settings:"lnum","tnum";color:var(--text)}
+#page-decision-lab-result .dl-score-fig small{font-size:24px;color:var(--text-dim)}
+#page-decision-lab-result .dl-score-cap{font:800 11px/1 Inter,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:var(--text-dim)}
+#page-decision-lab-result .dl-vsec{border:1px solid var(--border-soft,var(--border));border-radius:12px;padding:13px 15px;margin-top:10px;background:var(--surface3)}
+#page-decision-lab-result .dl-vsec-k{font:800 10px/1 Inter,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin-bottom:9px}
+#page-decision-lab-result .dl-confrow{display:flex;align-items:center;gap:9px;font:400 13px/1.3 Inter,sans-serif;color:var(--text-mid);padding:6px 0;border-bottom:1px solid var(--border-soft,var(--border))}
+#page-decision-lab-result .dl-confrow:last-child{border-bottom:0}
+#page-decision-lab-result .dl-confrow .vs{color:var(--text);font-weight:600}
+#page-decision-lab-result .dl-confrow .tag{margin-left:auto;font:800 10.5px/1 Inter,sans-serif;letter-spacing:.04em;text-transform:uppercase;color:var(--red)}
+#page-decision-lab-result .dl-weak{display:flex;gap:7px;flex-wrap:wrap}
+#page-decision-lab-result .dl-weak .w{font:700 12px/1 Inter,sans-serif;color:var(--accent);background:color-mix(in oklab,var(--accent) 10%,transparent);border:1px solid color-mix(in oklab,var(--accent) 26%,var(--border));padding:5px 10px;border-radius:999px}
+#page-decision-lab-result .dl-cta-row{display:flex;gap:9px;margin-top:18px}
+#page-decision-lab-result .dl-cta-row .btn{flex:1}
