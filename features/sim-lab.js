@@ -814,17 +814,38 @@
   // Render the current round: scenario->pick analyze via _slMountScenario, with
   // Decision Lab chrome. Practice grade-reveal is wired in Task 5; exam-style
   // suppression in Task 6. Here: render + advance on submit.
+  function _dlAdvance() {
+    _dlSession.idx++;
+    if (_dlSession.idx >= _dlSession.rounds) { _dlRenderResult(); }
+    else { _dlRunRound(); }
+  }
+
   function _dlRunRound() {
     _dlUpdateChrome();
     var scn = _dlSession.scenarios[_dlSession.idx];
+    var step = scn.steps[0];   // the hero scenario->pick is a single analyze step
     var body = document.getElementById('dl-body');
     body.innerHTML = '';
     _slMountScenario(body, scn, {
       onSubmit: function (result) {
         _dlSession.results.push({ scenario: scn, score: result, passed: result.fraction === 1, responses: result.responses });
-        _dlSession.idx++;
-        if (_dlSession.idx >= _dlSession.rounds) { _dlRenderResult(); }   // Task 8
-        else { _dlRunRound(); }
+        if (_dlSession.mode === 'exam') { _dlAdvance(); return; }   // exam-style: no reveal (Task 6 overrides flow)
+        // Practice: grade in place with per-option reasoning, then offer Next.
+        var picked = (result.responses && result.responses[step.id] && result.responses[step.id].selected) || [];
+        var host = body.querySelector('.sl-scenario') || body;
+        _dlGradeAnalyze(host, step, picked);
+        var oldSubmit = body.querySelector('[data-action="simLabSubmitScenario"]');
+        if (oldSubmit) oldSubmit.remove();
+        var row = _el('div', 'dl-cta-row');
+        var flag = _el('button', 'dl-cta ghost', 'Flag'); flag.setAttribute('type', 'button');
+        var next = _el('button', 'dl-cta',
+          _dlSession.idx + 1 >= _dlSession.rounds ? 'See results →' : 'Next decision →');
+        next.setAttribute('type', 'button');
+        next.addEventListener('click', _dlAdvance);
+        row.appendChild(flag); row.appendChild(next);
+        host.appendChild(row);
+        // §8 tall-card: keep the primary CTA reachable after the reveal grows the card.
+        if (next.scrollIntoView) next.scrollIntoView({ block: 'nearest' });
       }
     });
   }

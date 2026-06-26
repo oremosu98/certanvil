@@ -175,3 +175,35 @@ test('dl runner: builds set from bank, renders Decision N of M + scenario, advan
   expect(r.dots).toBe(5);
   expect(r.hasScenario).toBe(true);
 });
+
+test('dl practice grade: submitting a wrong pick reveals per-option why + teach, Next advances', async ({ page }) => {
+  await gotoApp(page);
+  await installSeedFixture(page, 'DECISION_LAB_SEED_AZ900', 3);
+  const r = await page.evaluate(async () => {
+    window._quotaState = { tier: 'pro' };
+    window.CURRENT_CERT = 'az900';
+    window.CERT_PACK = { meta: { name: 'Azure Fundamentals', code: 'AZ-900' } };
+    window.decisionLabOpenEntry();
+    document.querySelector('#dl-decisions .dl-chip[data-decisions="5"]').click();
+    window.decisionLabSessionStart();
+    const lines = document.querySelectorAll('#dl-body .sl-analyze-line');
+    Array.from(lines).find(l => l.getAttribute('data-line') === 'c').click();
+    document.querySelector('#dl-body [data-action="simLabSubmitScenario"]').click();
+    const graded = !!document.querySelector('#dl-body .dl-graded');
+    const correct = !!document.querySelector('#dl-body .dl-correct');
+    const pickedWrong = !!document.querySelector('#dl-body .dl-picked-wrong');
+    const teach = !!document.querySelector('#dl-body .dl-teach');
+    const whyShown = document.querySelectorAll('#dl-body .dl-why').length;
+    const sess = window._simLab.dlSession();
+    const idxBefore = sess.idx;
+    document.querySelector('#dl-body .dl-cta-row .dl-cta:not(.ghost)').click();
+    return { graded, correct, pickedWrong, teach, whyShown, idxBefore, idxAfter: sess.idx };
+  });
+  expect(r.graded).toBe(true);
+  expect(r.correct).toBe(true);
+  expect(r.pickedWrong).toBe(true);
+  expect(r.teach).toBe(true);
+  expect(r.whyShown).toBeGreaterThanOrEqual(2);
+  expect(r.idxBefore).toBe(0);
+  expect(r.idxAfter).toBe(1);
+});
