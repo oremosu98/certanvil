@@ -6,6 +6,8 @@
 
 **Architecture:** Capacitor puts the existing static site inside a native WKWebView shell (bundle `com.certanvil.app`). The webview is configured to serve as the `https://certanvil.com` origin so the cookie-scoped Supabase session (`Domain=.certanvil.com`) and cross-origin `certanvil.com/api/*` calls keep working unchanged. Pre-wrap fixes neutralise the service worker, keep internal navigations inside the webview, send genuinely-external links to the system browser, handle WKWebView safe-area/keyboard, and add one native plugin to satisfy Apple Guideline 4.2.
 
+**The view being wrapped already exists — this is not new UI.** The WKWebView the iOS Simulator has been previewing (the `npm run ios:real` workflow) **IS this exact view** — the simulator was already rendering the CertAnvil site inside a WKWebView. Wrapping does not build a new iOS interface; it turns that already-previewed view into a real installable app, pins it to the Option A origin, and adds the native plugins. There is **no from-scratch native rebuild** in this plan. The visual result on device should match what you have already seen in the simulator (the additions are: correct origin, safe-area insets, status-bar theming, splash, and haptics).
+
 **Tech Stack:** Capacitor 6 (`@capacitor/core`, `@capacitor/cli`, `@capacitor/ios`), Xcode + CocoaPods, the existing vanilla HTML/JS/CSS app, Node 20.20.2 (nvm).
 
 > **This is the Phase G "Stage 2 — build the iOS app" deliverable.** Hub: [`docs/planning/PHASE-G-PLAN-2026-06-11.md`](../../planning/PHASE-G-PLAN-2026-06-11.md). It is a hard prerequisite for **G-3** (RevenueCat IAP). See **Scope boundaries** below for what is explicitly NOT in this plan.
