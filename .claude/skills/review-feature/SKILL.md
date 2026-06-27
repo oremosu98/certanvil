@@ -29,7 +29,7 @@ subagent_type: general-purpose
 prompt: |
   You are the architecture reviewer for a CertAnvil cert-prep SaaS feature.
   
-  Read /Users/simioremosu/Desktop/Dev Projects/networkplus-quiz/CLAUDE.md to ground
+  Read /Users/simioremosu/Desktop/Dev Projects/certanvil/CLAUDE.md to ground
   yourself in the codebase's conventions, especially: Architecture, Key Patterns
   (validation pipeline, AI teacher tiers, Phase C′ cookie-backed sessions, cert-aware
   module-load gating), Conventions (saas-gated label, regression-guard tombstones,
@@ -63,8 +63,8 @@ prompt: |
   You are the engineer drafting implementation for a CertAnvil cert-prep SaaS feature.
   
   Read both:
-  - /Users/simioremosu/Desktop/Dev Projects/networkplus-quiz/CLAUDE.md
-  - /Users/simioremosu/Desktop/Dev Projects/networkplus-quiz/SHIP_CHECKLIST.md
+  - /Users/simioremosu/Desktop/Dev Projects/certanvil/CLAUDE.md
+  - /Users/simioremosu/Desktop/Dev Projects/certanvil/SHIP_CHECKLIST.md
   
   The proposed change is:
   [DESCRIPTION GOES HERE]
@@ -95,7 +95,7 @@ subagent_type: general-purpose
 prompt: |
   You are the senior code reviewer for a CertAnvil cert-prep SaaS feature.
   
-  Read /Users/simioremosu/Desktop/Dev Projects/networkplus-quiz/CLAUDE.md
+  Read /Users/simioremosu/Desktop/Dev Projects/certanvil/CLAUDE.md
   for codebase context.
   
   The proposed change is:
@@ -129,7 +129,7 @@ subagent_type: general-purpose
 prompt: |
   You are the perf + clarity optimizer for a CertAnvil cert-prep SaaS feature.
   
-  Read /Users/simioremosu/Desktop/Dev Projects/networkplus-quiz/CLAUDE.md, especially
+  Read /Users/simioremosu/Desktop/Dev Projects/certanvil/CLAUDE.md, especially
   Conventions (magic-number constants, regression-guard tombstones) and Common Gotchas.
   
   The proposed change is:

@@ -1,4 +1,4 @@
-# Network+ AI Quiz — Project Guide
+# CertAnvil — Project Guide
 
 > **This file reloads on every tool call — keep it lean.** Hard cap: **~200 lines / ~25KB** — CI (`tests/uat.js`) fails the build past **250 lines or 30KB**. Deep or task-specific detail lives in `docs/` and `CHANGELOG.md` behind the one-line pointers below; rule of thumb — if it's only needed for *some* tasks, it doesn't belong in this always-loaded file. Version History: inline only the **last 3 ships**, one terse line each.
 
@@ -40,7 +40,7 @@
 | `tests/deploy-verify.js` | Post-deploy smoke against prod (comment-strip fix v4.89.9 / dc844a2) | 335 lines |
 | `tests/e2e/app.spec.js` | Playwright E2E (99 tests as of v4.89.x) | — |
 
-**Reality check:** `app.js` size is the driver for [#138](https://github.com/oremosu98/networkplus-quiz/issues/138) (module split) — `saas-gated`, don't start without pivot trigger. `styles.css` growth drove [#55](https://github.com/oremosu98/networkplus-quiz/issues/55) — same gate.
+**Reality check:** `app.js` size is the driver for [#138](https://github.com/oremosu98/certanvil/issues/138) (module split) — `saas-gated`, don't start without pivot trigger. `styles.css` growth drove [#55](https://github.com/oremosu98/certanvil/issues/55) — same gate.
 
 ## Deep reference (read on demand)
 - **Key patterns** — quiz flow, question types, exam mode, AI teacher tiers, ground-truth tables, curated exemplar bank, 7-layer validation pipeline, weak-spots, readiness, milestones, keyword highlighting, animation inventory → [docs/architecture/key-patterns.md](docs/architecture/key-patterns.md)
@@ -54,7 +54,7 @@
 ## Decision rules
 
 ### `saas-gated` label
-Items tagged `saas-gated` on either board are **frozen until the paid-SaaS pivot triggers — do NOT pull one without explicit pivot direction.** Currently gated: [#21](https://github.com/oremosu98/networkplus-quiz/issues/21) (wrap globals into state objects), [#55](https://github.com/oremosu98/networkplus-quiz/issues/55) (split `styles.css`), [#123](https://github.com/oremosu98/networkplus-quiz/issues/123) (social-proof counter), [#135](https://github.com/oremosu98/networkplus-quiz/issues/135) (per-user API cost telemetry), [#136](https://github.com/oremosu98/networkplus-quiz/issues/136) (entitlements + tier quotas), [#137](https://github.com/oremosu98/networkplus-quiz/issues/137) (cost-floor model), [#138](https://github.com/oremosu98/networkplus-quiz/issues/138) (module-split `app.js`, v5.0 trigger), [#139](https://github.com/oremosu98/networkplus-quiz/issues/139) (readiness-algorithm tuning).
+Items tagged `saas-gated` on either board are **frozen until the paid-SaaS pivot triggers — do NOT pull one without explicit pivot direction.** Currently gated: [#21](https://github.com/oremosu98/certanvil/issues/21) (wrap globals into state objects), [#55](https://github.com/oremosu98/certanvil/issues/55) (split `styles.css`), [#123](https://github.com/oremosu98/certanvil/issues/123) (social-proof counter), [#135](https://github.com/oremosu98/certanvil/issues/135) (per-user API cost telemetry), [#136](https://github.com/oremosu98/certanvil/issues/136) (entitlements + tier quotas), [#137](https://github.com/oremosu98/certanvil/issues/137) (cost-floor model), [#138](https://github.com/oremosu98/certanvil/issues/138) (module-split `app.js`, v5.0 trigger), [#139](https://github.com/oremosu98/certanvil/issues/139) (readiness-algorithm tuning).
 
 ### Testing Discipline — NEVER write to user-state localStorage on prod
 **Hard rule, no exceptions.** When using the Chrome MCP `javascript_tool` (or anything that runs JS in the user's connected browser), NEVER call `localStorage.setItem/removeItem/clear` on a prod or `*.vercel.app` host — it overwrites the user's real `nplus_*` progress with no undo (this rule was bought with a real v4.81.x data-loss incident). Use one of: a **local server** (`python3 -m http.server 3131` → `localhost`), a **Vercel preview deploy**, or a fresh **incognito window**. Read-only evals on prod are fine. Full incident write-up + the shipped recovery layers live in [docs/conventions/conventions.md](docs/conventions/conventions.md).
@@ -89,7 +89,7 @@ Items tagged `saas-gated` on either board are **frozen until the paid-SaaS pivot
 
 ## Local Development
 ```bash
-cd "/Users/simioremosu/Desktop/Dev Projects/networkplus-quiz"
+cd "/Users/simioremosu/Desktop/Dev Projects/certanvil"
 python3 -m http.server 3131   # → http://localhost:3131
 ```
 Pre-commit hook (`.githooks/pre-commit`, wired via the `package.json` `prepare` script): runs `node tests/uat.js` + the CLAUDE.md-freshness check + a data-safety scan; skips UAT for docs-only commits. Bypass with `git commit --no-verify`.
