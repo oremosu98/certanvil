@@ -43,6 +43,7 @@
 **Reality check:** `app.js` size is the driver for [#138](https://github.com/oremosu98/certanvil/issues/138) (module split) — `saas-gated`, don't start without pivot trigger. `styles.css` growth drove [#55](https://github.com/oremosu98/certanvil/issues/55) — same gate.
 
 ## Deep reference (read on demand)
+- **Project & folder map** — where everything lives + how it deploys (1 repo → certanvil-app serving all 7 certs + certanvil-landing) + the sibling archive → [docs/architecture/structure-overview.md](docs/architecture/structure-overview.md)
 - **Key patterns** — quiz flow, question types, exam mode, AI teacher tiers, ground-truth tables, curated exemplar bank, 7-layer validation pipeline, weak-spots, readiness, milestones, keyword highlighting, animation inventory → [docs/architecture/key-patterns.md](docs/architecture/key-patterns.md)
 - **Feature sub-architectures** — Topology Builder, Subnet Trainer, Drills launcher → [docs/architecture/feature-subsystems.md](docs/architecture/feature-subsystems.md)
 - **Conventions & lessons** — testing philosophy, progressive disclosure, magic-number constants, tier-threshold anchoring, prescriptive analytics, lesson authoring, scope disambiguation, live-verify, scenario `autoBuild` → [docs/conventions/conventions.md](docs/conventions/conventions.md)
