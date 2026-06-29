@@ -20345,6 +20345,34 @@ test('M5: Gauntlet _finishGauntlet calls evaluateMilestones()',
 test('M5: Gauntlet _finishGauntlet calls showMilestoneCelebration',
   _m5GntBody.includes('showMilestoneCelebration'));
 
+// ── T6: Analytics milestone display is per-cert ──
+// Guard: _renderAnaMilestones() must derive its unlocked map from getMilestones()
+// (the cert-scoped, pruned view) — NOT from a raw localStorage.getItem or the
+// all-certs blob. Task 1 made getMilestones() cert-scoped; this guard ensures
+// the analytics renderer stays wired to that path.
+console.log('\n\x1b[1m── T6: ANALYTICS MILESTONE DISPLAY (per-cert guard) ──\x1b[0m');
+(function() {
+  const anaBody = _fnBody(js, '_renderAnaMilestones');
+  test('T6: _renderAnaMilestones exists',
+    anaBody.length > 0);
+  test('T6: _renderAnaMilestones calls getMilestones() for unlocked map (per-cert)',
+    /getMilestones\s*\(/.test(anaBody));
+  test('T6: _renderAnaMilestones does NOT read localStorage directly',
+    !anaBody.includes('localStorage.getItem'));
+  // All 12 drill milestone ids must be present in MILESTONE_DEFS
+  const drillIds = [
+    'simlab_first','simlab_25','simlab_ace',
+    'decision_first','decision_25','decision_flawless',
+    'whynot_first','whynot_25','whynot_master',
+    'gauntlet_first','gauntlet_25','gauntlet_survivor'
+  ];
+  drillIds.forEach(id => test(`T6: drill milestone '${id}' in MILESTONE_DEFS`,
+    new RegExp("id:\\s*'" + id + "'").test(js)));
+  // No orphaned pt_* milestone ids in MILESTONE_DEFS
+  test('T6: no pt_first/pt_25/pt_master orphans in MILESTONE_DEFS',
+    !new RegExp("id:\\s*'pt_(first|25|master)'").test(js));
+})();
+
 // ── Summary ──
 console.log('\n' + '═'.repeat(50));
 const total = results.pass + results.fail;
