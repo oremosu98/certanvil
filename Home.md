@@ -56,3 +56,4 @@ LIST FROM #decision SORT updated DESC
 
 ---
 *Tip: everything not linked here is still searchable + shows in the graph view. Add new specs/plans/decisions as notes and they'll appear automatically.*
+*Daily driver: prefer **Local Graph** (open a note → "Open local graph", depth 1–2) over the global hairball — it shows what connects to THIS doc. New decisions get captured at ship time (the `/ship` runbook's Step 7), so the map stays current.*

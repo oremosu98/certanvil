@@ -114,6 +114,19 @@ curl -sS "https://networkplus.certanvil.com/?nocache=$(date +%s)" | grep -oE 'v[
 ```
 If a live endpoint changed (`/api/notify`, AI, Stripe webhook), run a real request against prod — "logged-as-success-but-actually-broken" is the failure this catches.
 
+## Step 7 — Capture the decision (only if this ship embodied one)
+
+The Obsidian vault is the project's *why* map (see CLAUDE.md → Architecture → Decision map). Its one weakness vs the graphify code map is that it has no auto-rebuild — it only stays current if decisions get captured when they're freshest, which is **right now, at ship time.**
+
+Ask: did this ship encode a real decision — a tradeoff taken, an alternative rejected, a constraint adopted, a convention set? Routine bug-fixes and copy tweaks usually don't. If it did, drop one dated `#decision` note from the template:
+
+- New note → apply the **Decision** template (`docs/_templates/Decision.md`); name it `YYYY-MM-DD-<slug>.md`.
+- Fill **Context / Decision / Why / Affects / Rejected alternatives**. In **Affects**, name the function/file the decision touches and `[[wikilink]]` the spec/plan it came from — do **not** mirror the call graph (that's graphify's job).
+- Stick to the 12-tag controlled vocab (`decision, spec, plan, convention, audit, mobile, drill, design, research, architecture, shipped, saas-gated`) — no new tags.
+- It auto-surfaces in `[[Decision Log]]` + `[[Home]]` via the `FROM #decision` Dataview query; no manual index edit needed.
+
+Docs-only vault notes ship fast-lane (commit → push); no version bump.
+
 ## Sign-off
 
-Report: new version + UAT count, any user TODOs (migrations to apply, env vars), what was deferred and why, and **every phase you deliberately skipped** ("Skipped Step 3 — no UI change"). The checklist's value is that skips are explicit, not silent.
+Report: new version + UAT count, any user TODOs (migrations to apply, env vars), what was deferred and why, whether a `#decision` note was captured (or "Step 7 — no decision to capture"), and **every phase you deliberately skipped** ("Skipped Step 3 — no UI change"). The checklist's value is that skips are explicit, not silent.
