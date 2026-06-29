@@ -2496,6 +2496,12 @@ const EXPECTED_MILESTONES = [
   'night_owl','early_bird','weekend_warrior','diversity_5','deep_dive_10',
   'daily_challenge_7','daily_challenge_30',
   'first_lab','labs_5','labs_10','labs_all',
+  // M4: drill milestones
+  'simlab_first','simlab_25','simlab_ace',
+  'decision_first','decision_25','decision_flawless',
+  'whynot_first','whynot_25','whynot_master',
+  'pt_first','pt_25','pt_master',
+  'gauntlet_first','gauntlet_25','gauntlet_survivor',
 ];
 (function() {
   const body = _fnBody(js, '_buildMilestoneCtx') || '';
@@ -2504,9 +2510,16 @@ const EXPECTED_MILESTONES = [
     test(`v4.42.5 #141: milestone '${id}' present in table`,
       checksSrc.includes(`'${id}'`));
   });
-  test(`v4.42.5 #141: all 32 expected milestones tracked (found ${EXPECTED_MILESTONES.length})`,
-    EXPECTED_MILESTONES.length === 32);
+  test(`v4.42.5 #141: all 47 expected milestones tracked (found ${EXPECTED_MILESTONES.length})`,
+    EXPECTED_MILESTONES.length === 47);
 })();
+
+// ── M4: drill milestone definitions ──
+console.log('\n\x1b[1m── M4: DRILL MILESTONE DEFS ──\x1b[0m');
+['simlab_first','simlab_25','simlab_ace','decision_first','decision_25','decision_flawless',
+ 'whynot_first','whynot_25','whynot_master','pt_first','pt_25','pt_master',
+ 'gauntlet_first','gauntlet_25','gauntlet_survivor'].forEach(id =>
+  test('M4: drill milestone '+id+' defined', new RegExp("id:\\s*'"+id+"'").test(js)));
 
 // ──────────────────────────────────────────────────────────
 // v4.43.0 EXAM-CONVENTION KEYWORD HIGHLIGHTING
