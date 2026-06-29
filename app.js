@@ -11663,23 +11663,6 @@ const MILESTONE_DEFS = [
   { id: 'labs_5',            label: 'Lab regular',         desc: 'Complete 5 different labs' },
   { id: 'labs_10',           label: 'Lab master',          desc: 'Complete 10 different labs' },
   { id: 'labs_all',          label: 'Lab completionist',   desc: 'Complete every available lab' },
-  // ── v4.37.0: Fix This Network milestones ──
-  { id: 'fix_first',         label: 'First responder',     desc: 'Complete your first Fix This Network challenge' },
-  { id: 'fix_5',             label: 'Network medic',       desc: 'Complete 5 Fix This Network challenges' },
-  { id: 'fix_all_easy',      label: 'Easy sweep',          desc: 'Complete every Easy Fix challenge' },
-  // ── v4.38.0: Acronym / OSI / Cable drill milestones ──
-  { id: 'ab_first',          label: 'Acronym rookie',      desc: 'Answer your first Acronym Blitz question' },
-  { id: 'ab_50',             label: 'Acronym adept',       desc: 'Answer 50 Acronym Blitz questions' },
-  { id: 'ab_all_seen',       label: 'Acronym encyclopedia',desc: 'See every acronym at least once' },
-  { id: 'ab_streak_15',      label: 'Acronym streak',      desc: 'Reach a 15 streak in Acronym Blitz' },
-  { id: 'os_first',          label: 'OSI initiate',        desc: 'Answer your first OSI Sorter question' },
-  { id: 'os_50',             label: 'OSI scholar',         desc: 'Answer 50 OSI Sorter questions' },
-  { id: 'os_all_seen',       label: 'OSI master',          desc: 'See every OSI item at least once' },
-  { id: 'os_streak_10',      label: 'OSI streak',          desc: 'Reach a 10 streak in OSI Sorter' },
-  { id: 'cb_first',          label: 'Cable spotter',       desc: 'Answer your first Cable ID question' },
-  { id: 'cb_50',             label: 'Cable expert',        desc: 'Answer 50 Cable ID questions' },
-  { id: 'cb_all_seen',       label: 'Cable encyclopedia',  desc: 'See every cable and connector at least once' },
-  { id: 'cb_streak_10',      label: 'Cable streak',        desc: 'Reach a 10 streak in Cable ID' },
 ];
 
 // ── Milestone evaluation — table-driven (v4.42.5) ───────────────────────
@@ -11930,21 +11913,6 @@ const MILESTONE_CHECKS = [
   { id: 'labs_5',              check: c => c.labsDone >= 5 },
   { id: 'labs_10',             check: c => c.labsDone >= 10 },
   { id: 'labs_all',            check: c => c.labsDone >= c.totalLabs },
-  { id: 'ab_first',            check: c => c.abM.totalAnswered >= 1 },
-  { id: 'ab_50',               check: c => c.abM.totalAnswered >= 50 },
-  { id: 'ab_all_seen',         check: c => c.abSeenCount >= c.abTotalItems && c.abTotalItems > 0 },
-  { id: 'ab_streak_15',        check: c => Object.values(c.abM.perItem).some(p => p.streak >= 15) },
-  { id: 'os_first',            check: c => c.osM.totalAnswered >= 1 },
-  { id: 'os_50',               check: c => c.osM.totalAnswered >= 50 },
-  { id: 'os_all_seen',         check: c => c.osSeenCount >= c.osTotalItems && c.osTotalItems > 0 },
-  { id: 'os_streak_10',        check: c => Object.values(c.osM.perItem).some(p => p.streak >= 10) },
-  { id: 'cb_first',            check: c => c.cbM.totalAnswered >= 1 },
-  { id: 'cb_50',               check: c => c.cbM.totalAnswered >= 50 },
-  { id: 'cb_all_seen',         check: c => c.cbSeenCount >= c.cbTotalItems && c.cbTotalItems > 0 },
-  { id: 'cb_streak_10',        check: c => Object.values(c.cbM.perItem).some(p => p.streak >= 10) },
-  { id: 'fix_first',           check: c => c.fixDone >= 1 },
-  { id: 'fix_5',               check: c => c.fixDone >= 5 },
-  { id: 'fix_all_easy',        check: c => c.fixAllEasy },
 ];
 
 function evaluateMilestones() {

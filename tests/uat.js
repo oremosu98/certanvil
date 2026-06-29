@@ -1313,11 +1313,7 @@ test('TB_FIX_CHALLENGES array', js.includes('TB_FIX_CHALLENGES'));
 // Engine functions
 test('STORAGE.FIX_CHALLENGES key', js.includes("FIX_CHALLENGES"));
 
-// Milestones
-test('Milestone: fix_first', js.includes("id: 'fix_first'"));
-test('Milestone: fix_5', js.includes("id: 'fix_5'"));
-test('Milestone: fix_all_easy', js.includes("id: 'fix_all_easy'"));
-test('evaluateMilestones checks fix challenges', js.includes("fixSaved") || js.includes("fix_first"));
+// Milestones — fix_first/fix_5/fix_all_easy removed in M2 (Fix This Network drill deleted)
 
 // HTML wiring
 
@@ -1465,30 +1461,21 @@ console.log('\n\x1b[1m── ACRONYM BLITZ (v4.38.0) ──\x1b[0m');
 test('AB_MASTERY storage key', js.includes("AB_MASTERY: 'nplus_ab_mastery'"));
 test('AB_LESSONS storage key', js.includes("AB_LESSONS: 'nplus_ab_lessons'"));
 test('getAbMastery defined', js.includes('getAbMastery'));
-test('Milestone: ab_first', js.includes("'ab_first'"));
-test('Milestone: ab_50', js.includes("'ab_50'"));
-test('Milestone: ab_all_seen', js.includes("'ab_all_seen'"));
-test('Milestone: ab_streak_15', js.includes("'ab_streak_15'"));
+// ab_first/ab_50/ab_all_seen/ab_streak_15 removed in M2 (Acronym Blitz drill deleted)
 
 // ── v4.38.0: OSI Layer Sorter ──
 console.log('\n\x1b[1m── OSI LAYER SORTER (v4.38.0) ──\x1b[0m');
 test('OS_MASTERY storage key', js.includes("OS_MASTERY: 'nplus_os_mastery'"));
 test('OS_LESSONS storage key', js.includes("OS_LESSONS: 'nplus_os_lessons'"));
 test('getOsMastery defined', js.includes('getOsMastery'));
-test('Milestone: os_first', js.includes("'os_first'"));
-test('Milestone: os_50', js.includes("'os_50'"));
-test('Milestone: os_all_seen', js.includes("'os_all_seen'"));
-test('Milestone: os_streak_10', js.includes("'os_streak_10'"));
+// os_first/os_50/os_all_seen/os_streak_10 removed in M2 (OSI Sorter drill deleted)
 
 // ── v4.38.0: Cable & Connector ID ──
 console.log('\n\x1b[1m── CABLE & CONNECTOR ID (v4.38.0) ──\x1b[0m');
 test('CB_MASTERY storage key', js.includes("CB_MASTERY: 'nplus_cb_mastery'"));
 test('CB_LESSONS storage key', js.includes("CB_LESSONS: 'nplus_cb_lessons'"));
 test('getCbMastery defined', js.includes('getCbMastery'));
-test('Milestone: cb_first', js.includes("'cb_first'"));
-test('Milestone: cb_50', js.includes("'cb_50'"));
-test('Milestone: cb_all_seen', js.includes("'cb_all_seen'"));
-test('Milestone: cb_streak_10', js.includes("'cb_streak_10'"));
+// cb_first/cb_50/cb_all_seen/cb_streak_10 removed in M2 (Cable ID drill deleted)
 
 // ── v4.41.0 AI teacher pipeline (Tier A/B/C) structural assertions ──
 // We can't test AI output offline, but we CAN assert the fixes are wired:
@@ -2495,7 +2482,8 @@ test('v4.42.5 #141: _scaledExamScore helper extracted',
   test('v4.42.5 #141: evaluateMilestones preserves try/catch resilience per-check',
     body.includes('try {') && body.includes('catch (_)'));
 })();
-// Regression guard: all 47 original milestone IDs still in the checks table
+// Regression guard: all 32 live milestone IDs still in the checks table
+// (was 47; 15 orphaned ids for deleted drills removed in M2 — ab_*, os_*, cb_*, fix_*)
 const EXPECTED_MILESTONES = [
   'first_quiz','hundred_qs','five_hundred_qs','thousand_qs','first_exam',
   'exam_pass','hardcore_pass','all_domains','all_topics','streak_7','streak_30',
@@ -2504,10 +2492,6 @@ const EXPECTED_MILESTONES = [
   'night_owl','early_bird','weekend_warrior','diversity_5','deep_dive_10',
   'daily_challenge_7','daily_challenge_30',
   'first_lab','labs_5','labs_10','labs_all',
-  'ab_first','ab_50','ab_all_seen','ab_streak_15',
-  'os_first','os_50','os_all_seen','os_streak_10',
-  'cb_first','cb_50','cb_all_seen','cb_streak_10',
-  'fix_first','fix_5','fix_all_easy',
 ];
 (function() {
   const body = _fnBody(js, '_buildMilestoneCtx') || '';
@@ -2516,8 +2500,8 @@ const EXPECTED_MILESTONES = [
     test(`v4.42.5 #141: milestone '${id}' present in table`,
       checksSrc.includes(`'${id}'`));
   });
-  test(`v4.42.5 #141: all 47 expected milestones tracked (found ${EXPECTED_MILESTONES.length})`,
-    EXPECTED_MILESTONES.length === 47);
+  test(`v4.42.5 #141: all 32 expected milestones tracked (found ${EXPECTED_MILESTONES.length})`,
+    EXPECTED_MILESTONES.length === 32);
 })();
 
 // ──────────────────────────────────────────────────────────
@@ -20267,6 +20251,15 @@ try {
   test('M1 behavioral: _migrateMilestoneShape smoke test', false);
   results.errors.push('_migrateMilestoneShape smoke test threw: ' + err.message);
 }
+
+// ── M2: orphaned milestone ids removed (drills deleted long ago) ──
+console.log('\n\x1b[1m── M2: ORPHANED MILESTONE REMOVAL ──\x1b[0m');
+['ab_first','ab_50','ab_all_seen','ab_streak_15',
+ 'os_first','os_50','os_all_seen','os_streak_10',
+ 'cb_first','cb_50','cb_all_seen','cb_streak_10',
+ 'fix_first','fix_5','fix_all_easy',
+].forEach(id => test(`M2: orphan '${id}' removed from app.js`,
+  !new RegExp("id:\\s*'" + id + "'").test(js)));
 
 // ── Summary ──
 console.log('\n' + '═'.repeat(50));
