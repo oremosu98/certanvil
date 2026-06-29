@@ -18752,6 +18752,12 @@ function _anaMilestonesPlay() {
   }));
 }
 
+// NOTE: _renderAnaMilestones() below is a legacy pre-bento full-card milestones
+// renderer that is NOT mounted on the live page (the live Analytics page is the
+// bento board: _anaBtMiles + _anaBtMilestoneData, with the Drills group from
+// _anaDrillsGroupHtml mounted by renderAnalytics + revealed by _anaBtWire).
+// It is retained because tests/uat.js asserts on its markup contract; do not
+// delete without repointing those guards.
 function _renderAnaMilestones() {
   evaluateMilestones(); // unlock any newly-earned milestones on render
   const unlockedMap = getMilestones();
@@ -18759,13 +18765,7 @@ function _renderAnaMilestones() {
   const unlockedDefs = MILESTONE_DEFS.filter(m => unlockedMap[m.id]);
   const unlockedCount = unlockedDefs.length;
   const pct = totalMilestones > 0 ? Math.round((unlockedCount / totalMilestones) * 100) : 0;
-
-  // Sort unlocked by date desc; take 4 most recent
-  const recent = unlockedDefs.slice().sort((a, b) => {
-    return new Date(unlockedMap[b.id]) - new Date(unlockedMap[a.id]);
-  }).slice(0, 4);
-
-  // v7.14.0: context for locked-progress (built once; guarded)
+  const recent = unlockedDefs.slice().sort((a, b) => new Date(unlockedMap[b.id]) - new Date(unlockedMap[a.id])).slice(0, 4);
   let _msCtx = null;
   try { if (typeof _buildMilestoneCtx === 'function') _msCtx = _buildMilestoneCtx(); } catch (_) {}
   const _msRel = (iso) => {
@@ -18785,8 +18785,7 @@ function _renderAnaMilestones() {
       const r = f(_msCtx);
       if (!r || !(r[1] > 0)) return '';
       const cur = Math.max(0, Math.min(r[0] || 0, r[1]));
-      if (cur >= r[1]) return '';
-      return cur + ',' + r[1];
+      return cur >= r[1] ? '' : cur + ',' + r[1];
     } catch (_) { return ''; }
   };
   const renderTile = (m, unlocked) => {
@@ -18798,86 +18797,12 @@ function _renderAnaMilestones() {
     <div class="ana-milestone-desc">${escHtml(m.desc)}</div>
   </div>`;
   };
-
   const recentBlock = recent.length > 0
     ? `<div class="ana-ms-section-title">Recently unlocked</div>
        <div class="ana-ms-recent">${recent.map(m => renderTile(m, true)).join('')}</div>`
     : `<div class="ana-ms-empty">No milestones unlocked yet \u2014 complete a quiz to earn your first badge.</div>`;
-
-  // \u2500\u2500 Drills milestone group (faithful lift of mockups/milestone-drills-concept.html) \u2500\u2500
-  // De-carded editorial rows: hairline borders, 3 slots per drill, state via ink+dot.
-  const DRILL_GROUPS = [
-    { name: 'Sim Lab',      meta: 'PBQ console',     ids: ['simlab_first','simlab_25','simlab_ace'] },
-    { name: 'Decision Lab', meta: 'cloud scenarios',  ids: ['decision_first','decision_25','decision_flawless'] },
-    { name: 'Why-Not',      meta: 'distractor drill', ids: ['whynot_first','whynot_25','whynot_master'] },
-    { name: 'Gauntlet',     meta: 'timed endurance',  ids: ['gauntlet_first','gauntlet_25','gauntlet_survivor'] },
-  ];
-  const drillDefsAll = DRILL_GROUPS.flatMap(g => g.ids).map(id => MILESTONE_DEFS.find(m => m.id === id)).filter(Boolean);
-  const drillEarnedCount = drillDefsAll.filter(m => unlockedMap[m.id]).length;
-  const drillTotal = drillDefsAll.length;
-
-  const renderDrillTile = (m) => {
-    const unlocked = !!unlockedMap[m.id];
-    const prog = _msProg(m.id);
-    if (unlocked) {
-      const relDate = _msRel(unlockedMap[m.id]);
-      const isFresh = relDate === 'Earned today';
-      return `<div class="ms ms-earned${isFresh ? ' ms-fresh' : ''}">
-        ${isFresh ? '<div class="ms-gleam"></div>' : ''}
-        <div class="ms-top"><span class="ms-dot"></span><span class="ms-label">${escHtml(m.label)}</span><span class="ms-check">\u2713</span></div>
-        <div class="ms-desc">${escHtml(m.desc)}</div>
-        <div class="ms-meta">${escHtml(relDate)}</div>
-      </div>`;
-    }
-    if (prog) {
-      const [cur, tar] = prog.split(',').map(Number);
-      const pctFill = Math.round((cur / tar) * 100);
-      const isMastery = tar === 1;
-      return `<div class="ms ms-prog">
-        <div class="ms-top"><span class="ms-dot"></span><span class="ms-label">${escHtml(m.label)}</span></div>
-        <div class="ms-desc">${escHtml(m.desc)}</div>
-        <div class="ms-prog-row">
-          <div class="ms-track"><div class="ms-fill" data-fill="${pctFill}"></div></div>
-          <span class="ms-frac">${isMastery ? 'In reach' : `${cur} <span class="of">/ ${tar}</span>`}</span>
-        </div>
-      </div>`;
-    }
-    return `<div class="ms ms-locked">
-      <div class="ms-top"><span class="ms-dot"></span><span class="ms-label">${escHtml(m.label)}</span></div>
-      <div class="ms-desc">${escHtml(m.desc)}</div>
-    </div>`;
-  };
-
-  const drillRows = DRILL_GROUPS.map((g, i) => {
-    const slots = g.ids.map(id => {
-      const def = MILESTONE_DEFS.find(m => m.id === id);
-      return def ? renderDrillTile(def) : '';
-    }).join('');
-    return `<div class="dg-drill reveal" style="--d:${i + 1}">
-      <div class="dg-drill-name">${escHtml(g.name)} <span class="meta">${escHtml(g.meta)}</span></div>
-      <div class="dg-slots">${slots}</div>
-    </div>`;
-  }).join('');
-
-  const drillsGroup = `<div class="ana-drills-group" id="ana-ms-drills-section">
-    <div class="dg-head">
-      <div>
-        <p class="dg-eyebrow">Drills</p>
-        <h2 class="dg-title">Hands-on milestones</h2>
-      </div>
-      <div class="dg-count">
-        <span class="n">${drillEarnedCount}</span><span class="of">of ${drillTotal} earned</span>
-      </div>
-    </div>
-    <hr class="dg-rule">
-    ${drillRows}
-    <div class="dg-legend">
-      <span class="legend-item"><span class="ms-dot" style="background:var(--accent)"></span> Earned</span>
-      <span class="legend-item"><span class="ms-dot" style="background:color-mix(in oklab,var(--accent) 55%,transparent)"></span> In progress</span>
-      <span class="legend-item"><span class="ms-dot" style="background:transparent;border:1px solid var(--border)"></span> Locked</span>
-    </div>
-  </div>`;
-
+  // Drills group shares the single-source helper (also used by the live bento path).
+  const drillsGroup = (typeof _anaDrillsGroupHtml === 'function') ? _anaDrillsGroupHtml() : '';
   return `<div class="ana-card ana-card-ms" id="ana-s-milestones">
     <div class="ana-ms-head">
       ${_edCardhead(`Badges \u00b7 ${unlockedCount} of ${totalMilestones} unlocked`, '', 'Milestones.')}
@@ -19476,6 +19401,94 @@ function _anaBtMiles(D) {
     </div>`;
 }
 
+// ── v7.61.0: Analytics "Drills" milestone group (faithful lift of
+// mockups/milestone-drills-concept.html) — rendered as its own editorial
+// section appended below the bento grid in renderAnalytics(). De-carded
+// hairline rows, 3 slots/drill, earned/locked/in-progress states, n/25 bar.
+// Entrance (.dg-drill.reveal → .visible) + bar-fill are wired in _anaBtWire()
+// because the page-setup reveal IIFE is scoped to #page-setup only and never
+// touches #page-analytics. Returns '' when milestone plumbing is unavailable.
+function _anaDrillsGroupHtml() {
+  if (typeof MILESTONE_DEFS === 'undefined' || typeof getMilestones !== 'function') return '';
+  try { if (typeof evaluateMilestones === 'function') evaluateMilestones(); } catch (_) {}
+  const esc = _anaBtEsc;
+  const unlockedMap = getMilestones() || {};
+  let ctx = null;
+  try { if (typeof _buildMilestoneCtx === 'function') ctx = _buildMilestoneCtx(); } catch (_) {}
+  // relDate: reuse the shared helper from _anaBtMilestoneData's data shape — same
+  // wording ("Earned today" / "N days ago"). Inlined compactly here.
+  const relDate = (iso) => {
+    try {
+      const d = Math.floor((Date.now() - new Date(iso).getTime()) / 86400000);
+      if (d <= 0) return 'Earned today';
+      if (d === 1) return 'Earned yesterday';
+      if (d < 7) return 'Earned ' + d + ' days ago';
+      if (d < 14) return 'Earned last week';
+      return 'Earned ' + new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+    } catch (_) { return 'Earned'; }
+  };
+  const progOf = (id) => {
+    try {
+      if (!ctx || typeof MILESTONE_PROGRESS === 'undefined') return null;
+      const f = MILESTONE_PROGRESS[id]; if (!f) return null;
+      const r = f(ctx); if (!r || !(r[1] > 0)) return null;
+      const cur = Math.max(0, Math.min(r[0] || 0, r[1]));
+      return cur >= r[1] ? null : [cur, r[1]];
+    } catch (_) { return null; }
+  };
+  const DRILL_GROUPS = [
+    { name: 'Sim Lab',      meta: 'PBQ console',      ids: ['simlab_first', 'simlab_25', 'simlab_ace'] },
+    { name: 'Decision Lab', meta: 'cloud scenarios',  ids: ['decision_first', 'decision_25', 'decision_flawless'] },
+    { name: 'Why-Not',      meta: 'distractor drill', ids: ['whynot_first', 'whynot_25', 'whynot_master'] },
+    { name: 'Gauntlet',     meta: 'timed endurance',  ids: ['gauntlet_first', 'gauntlet_25', 'gauntlet_survivor'] },
+  ];
+  const allDefs = DRILL_GROUPS.flatMap(g => g.ids).map(id => MILESTONE_DEFS.find(m => m.id === id)).filter(Boolean);
+  if (!allDefs.length) return '';
+  const earnedCount = allDefs.filter(m => unlockedMap[m.id]).length;
+
+  // A milestone slot: earned (dot+✓+gleam-if-today) / in-progress (n/25 bar) / locked.
+  const tile = (m) => {
+    if (unlockedMap[m.id]) {
+      const rel = relDate(unlockedMap[m.id]); const fresh = rel === 'Earned today';
+      return `<div class="ms ms-earned${fresh ? ' ms-fresh' : ''}">${fresh ? '<div class="ms-gleam"></div>' : ''}` +
+        `<div class="ms-top"><span class="ms-dot"></span><span class="ms-label">${esc(m.label)}</span><span class="ms-check">✓</span></div>` +
+        `<div class="ms-desc">${esc(m.desc)}</div><div class="ms-meta">${esc(rel)}</div></div>`;
+    }
+    const p = progOf(m.id);
+    if (p) {
+      const [cur, tar] = p; const pctFill = Math.round((cur / tar) * 100);
+      const frac = tar === 1 ? 'In reach' : `${cur} <span class="of">/ ${tar}</span>`;
+      return `<div class="ms ms-prog"><div class="ms-top"><span class="ms-dot"></span><span class="ms-label">${esc(m.label)}</span></div>` +
+        `<div class="ms-desc">${esc(m.desc)}</div>` +
+        `<div class="ms-prog-row"><div class="ms-track"><div class="ms-fill" data-fill="${pctFill}"></div></div>` +
+        `<span class="ms-frac">${frac}</span></div></div>`;
+    }
+    return `<div class="ms ms-locked"><div class="ms-top"><span class="ms-dot"></span><span class="ms-label">${esc(m.label)}</span></div>` +
+      `<div class="ms-desc">${esc(m.desc)}</div></div>`;
+  };
+
+  const rows = DRILL_GROUPS.map((g, i) => {
+    const slots = g.ids.map(id => { const def = MILESTONE_DEFS.find(m => m.id === id); return def ? tile(def) : ''; }).join('');
+    return `<div class="dg-drill reveal" style="--d:${i + 1}">` +
+      `<div class="dg-drill-name">${esc(g.name)} <span class="meta">${esc(g.meta)}</span></div>` +
+      `<div class="dg-slots">${slots}</div></div>`;
+  }).join('');
+
+  return `<div class="ana-drills-group" id="ana-ms-drills-section">
+    <div class="dg-head">
+      <div><p class="dg-eyebrow">Drills</p><h2 class="dg-title">Hands-on milestones</h2></div>
+      <div class="dg-count"><span class="n">${earnedCount}</span><span class="of">of ${allDefs.length} earned</span></div>
+    </div>
+    <hr class="dg-rule">
+    ${rows}
+    <div class="dg-legend">
+      <span class="legend-item"><span class="ms-dot" style="background:var(--accent)"></span> Earned</span>
+      <span class="legend-item"><span class="ms-dot" style="background:color-mix(in oklab,var(--accent) 55%,transparent)"></span> In progress</span>
+      <span class="legend-item"><span class="ms-dot" style="background:transparent;border:1px solid var(--border)"></span> Locked</span>
+    </div>
+  </div>`;
+}
+
 function _anaBtExam(D) {
   const esc = _anaBtEsc;
   const PASS = (typeof EXAM_PASS_SCORE === 'number') ? EXAM_PASS_SCORE : 720;
@@ -19729,6 +19742,43 @@ function _anaBtWire(D) {
     });
   }, { threshold: 0.12 });
   tiles.forEach(t => io.observe(t));
+
+  // v7.61.0: Drills milestone group entrance + bar-fill. The #page-setup reveal
+  // IIFE (index.html) is scoped to #page-setup and never reaches #page-analytics,
+  // so the .dg-drill.reveal rows would otherwise stay at opacity:0 forever. Wire
+  // the staggered .visible reveal + n/25 ms-fill widths here, matching the mockup.
+  const drillRows = Array.prototype.slice.call(document.querySelectorAll('#ana-ms-drills-section .dg-drill.reveal'));
+  if (drillRows.length) {
+    const fillBars = (row) => {
+      row.querySelectorAll('.ms-fill').forEach(f => {
+        const w = f.getAttribute('data-fill');
+        // Use setProperty to match the existing analytics fill pattern + stay
+        // under the inline-style-assignment tech-debt gate.
+        if (w != null && !f.style.width) f.style.setProperty('width', w + '%');
+      });
+    };
+    if (reduce || !('IntersectionObserver' in window)) {
+      // Visible immediately, bars at final width, no transform/animation.
+      drillRows.forEach(r => { r.classList.add('visible'); fillBars(r); });
+    } else {
+      const dio = new IntersectionObserver((entries, obs) => {
+        entries.forEach(en => {
+          if (!en.isIntersecting) return;
+          en.target.classList.add('visible');
+          const d = +(en.target.style.getPropertyValue('--d') || 0);
+          const lead = 360 + d * 70; // mirrors the mockup's bar-fill choreography
+          setTimeout(() => fillBars(en.target), lead);
+          obs.unobserve(en.target);
+        });
+      }, { threshold: 0.2 });
+      drillRows.forEach(r => dio.observe(r));
+      // Safety net: if IO never fires (e.g. tab hidden / display toggle race),
+      // un-hide + fill after 1.6s so the group can never get stuck invisible.
+      setTimeout(() => {
+        drillRows.forEach(r => { r.classList.add('visible'); fillBars(r); });
+      }, 1600);
+    }
+  }
 }
 
 // ── Analytics orchestrator ──
@@ -19795,7 +19845,10 @@ function renderAnalytics() {
     + _anaBtWrong(D)
     + _anaBtMiles(D)
     + _anaBtExam(D)
-    + '</div>';
+    + '</div>'
+    // v7.61.0: Drills milestone group — its own editorial section below the
+    // bento grid (faithful lift of mockups/milestone-drills-concept.html).
+    + _anaDrillsGroupHtml();
   container.innerHTML = html;
   // Wire the keepers + entrance choreography (count-ups, bar/ring fills,
   // constellation twinkle/pulsar/tooltip, trend tabs + draw-in). Reduced-motion
