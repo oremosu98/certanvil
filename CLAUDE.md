@@ -114,14 +114,9 @@ npx playwright test              # E2E (tests/e2e/app.spec.js)
 
 | Version | Features Added |
 |---|---|
+| v7.60.0 | Per-cert milestones + 12 drill milestones (Sim Lab/Decision Lab/Why-Not/Gauntlet) + orphan cleanup + bronze celebration toast |
 | v7.59.0 | Decision Lab: cloud-cert scenario decision drill (engine + 4 seed banks) |
 | v7.58.0 | Sim Lab: A+ Core 1 (220-1201) + Core 2 (220-1202) PBQ seed banks live (cert rollout) |
-| v7.57.2 | Sim Lab entry target: derive cert label from pack name+code (Sec+ now shows Security+ SY0-701, not bare Mixed) |
-| v7.57.1 | Sim Lab entry: cert-neutral Today's target (drop hardcoded Network+ that misled on Sec+) |
-| v7.57.0 | Sim Lab Exam mode (Pro): whole-session countdown + flag-and-return + pacing report; Sec+ 50-seed bank |
-| v7.56.0 | Sim Lab: multi-round sessions (pick 3/5, Pro 10) + prefetch + verdict summary + landing section |
-| v7.55.2 | Sim Lab: surface the drill in Home Practice (was orphaned on the unreachable drills page) |
-| v7.55.1 | Sim Lab + paywall: 4-stage copy polish (gate/lock/nudge/card + Pro drills line) |
 
 _Older releases (v7.55.0 and back) live in [CHANGELOG.md](./CHANGELOG.md) — v7.55.0 + v7.54.1 + v7.54.0 ported during the 2026-06-25 v7.56.0 night-end consolidation (Sim Lab session-mode marathon)._
 

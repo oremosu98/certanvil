@@ -1,9 +1,9 @@
 // ══════════════════════════════════════════
-// Network+ AI Quiz — app.js  v7.59.0
+// Network+ AI Quiz — app.js  v7.60.0
 // ══════════════════════════════════════════
 
 // ── CONSTANTS ──
-const APP_VERSION = '7.59.0';
+const APP_VERSION = '7.60.0';
 // v4.99.45 (Phase 6b): expose APP_VERSION on window so the web-vitals
 // collector (lib/web-vitals-collector.js, loaded BEFORE app.js so its
 // PerformanceObservers attach earlier) can stamp this version onto every
@@ -1123,6 +1123,7 @@ const STORAGE = {
   DL_FREE_COUNT: 'nplus_dl_free_count',   // Decision Lab free-tier daily set runs ({date, count}) — independent of PBQ_FREE_COUNT
   SIMLAB_WEAK: 'nplus_simlab_weak',       // v7.56 Sim Lab: Pro cross-session weak-spot map ({topic: count})
   DL_WEAK: 'nplus_dl_weak',               // Decision Lab Pro cross-session look-alike map ({pairLabel: count})
+  DRILL_STATS: 'nplus_drill_stats',       // Task 3: per-cert drill stats {cert:{drill:{done,perfect}}}
 };
 // v4.81.2: how many daily snapshots to keep before pruning oldest
 const AUTOBACKUP_KEEP_DAYS = 7;
@@ -7513,6 +7514,16 @@ function _finishGauntlet() {
   try { renderStatsCard(); renderReadinessCard(); } catch (_) {}
   try { if (typeof _maybeShowDailyRecap === 'function') _maybeShowDailyRecap(); } catch (_) {}
   gauntletMode = false;
+  try {
+    if (typeof bumpDrillStat === 'function') {
+      bumpDrillStat('gauntlet', 'done', 1);
+      if (cracked) bumpDrillStat('gauntlet', 'perfect', 1);
+    }
+    if (typeof evaluateMilestones === 'function') {
+      const _nu = evaluateMilestones();
+      _nu.forEach((id, i) => setTimeout(() => showMilestoneCelebration(id), 500 + i * 900));
+    }
+  } catch (_) {}
   _renderGauntletLadder();
   renderGauntletResult(cracked, results);
   showPage('gauntlet-result');
@@ -7998,6 +8009,16 @@ function whyNotFinishSession() {
         '<button type="button" class="btn gnt-ghost" data-action="whyNotExit">' + (_wnReturn === 'drills' ? 'Back to Drills' : 'Back to Home') + '</button>' +
       '</div>';
   }
+  try {
+    if (typeof bumpDrillStat === 'function') {
+      bumpDrillStat('whynot', 'done', 1);
+      if (answersRight === WHY_NOT_ROUNDS) bumpDrillStat('whynot', 'perfect', 1);
+    }
+    if (typeof evaluateMilestones === 'function') {
+      const _nu = evaluateMilestones();
+      _nu.forEach((id, i) => setTimeout(() => showMilestoneCelebration(id), 500 + i * 900));
+    }
+  } catch (_) {}
   _wnSession = null;
   _wnRound = null;
   // the user is usually ALREADY on the verdict page (round verdict re-uses
@@ -11561,15 +11582,85 @@ function updateTypeStat(type, wasCorrect) {
 }
 
 // ── Milestones tracking ──
+// Canonical cert key for namespacing (falls back to 'netplus' = legacy cert).
+function _certKey() {
+  try { return (window.CURRENT_CERT || CURRENT_CERT || 'netplus'); } catch (_) { return 'netplus'; }
+}
+// Read the whole {cert:{id:ts}} map, migrating the legacy flat shape on the fly.
+// opts.prune (default off) is passed straight through to _migrateMilestoneShape:
+// callers that DISPLAY want the pruned view; the WRITE path must NOT prune
+// (see unlockMilestone) so a write never deletes other certs'/devices' ids.
+function _allMilestones(opts) {
+  let raw;
+  try { raw = JSON.parse(localStorage.getItem(STORAGE.MILESTONES) || '{}'); } catch { raw = {}; }
+  return _migrateMilestoneShape(raw, opts);
+}
+// Old shape = {id: ISOstring}. New shape = {cert: {id: ISOstring}}.
+// Detect old: every value is a string (and there's at least one). The flat→nested
+// wrap ALWAYS happens; orphan-pruning (delete ids not in the live-defs set) is
+// OPT-IN via opts.prune === true so it can be kept off the write path.
+// Pure: references only its args + (opts.liveIds || MILESTONE_DEFS) — vm-testable.
+// Idempotent: object values pass through; empty {} stays {} (not {netplus:{}}).
+function _migrateMilestoneShape(raw, opts) {
+  if (!raw || typeof raw !== 'object') return {};
+  const vals = Object.values(raw);
+  const isOldFlat = vals.length > 0 && vals.every(v => typeof v === 'string');
+  let map = isOldFlat ? { netplus: raw } : raw;
+  if (opts && opts.prune === true) {
+    const liveIds = (opts && opts.liveIds) ? opts.liveIds
+      : (typeof MILESTONE_DEFS !== 'undefined' ? new Set(MILESTONE_DEFS.map(d => d.id)) : null);
+    if (liveIds) {
+      Object.keys(map).forEach(cert => {
+        const sub = map[cert];
+        if (sub && typeof sub === 'object') {
+          Object.keys(sub).forEach(id => { if (!liveIds.has(id)) delete sub[id]; });
+        }
+      });
+    }
+  }
+  return map;
+}
 function getMilestones() {
-  try { return JSON.parse(localStorage.getItem(STORAGE.MILESTONES) || '{}'); } catch { return {}; }
+  // Display path: prune orphaned (no-longer-defined) ids from the current cert's
+  // view. Return a shallow copy so callers can't mutate the freshly-parsed map.
+  const all = _allMilestones({ prune: true });
+  return { ...(all[_certKey()] || {}) };
 }
 function unlockMilestone(key) {
-  const m = getMilestones();
-  if (m[key]) return false;
-  m[key] = new Date().toISOString();
-  try { localStorage.setItem(STORAGE.MILESTONES, JSON.stringify(m)); _cloudFlush(STORAGE.MILESTONES); } catch {}
+  // Persist the UNPRUNED map: an unlock must never delete other ids/certs from
+  // the cloud-flushed blob (cloud is source of truth on iOS/Safari; a staged
+  // rollout where this device has a newer MILESTONE_DEFS could otherwise wipe
+  // another device's still-valid entries). Orphan-pruning is display-only.
+  const all = _allMilestones(); // no prune
+  const cert = _certKey();
+  const sub = all[cert] || (all[cert] = {});
+  if (sub[key]) return false;
+  sub[key] = new Date().toISOString();
+  // _cloudFlush relies on cloudStore.flush being hydration-gated, so a
+  // pre-hydrate unlock can't clobber cloud with a stale/partial map.
+  try { localStorage.setItem(STORAGE.MILESTONES, JSON.stringify(all)); _cloudFlush(STORAGE.MILESTONES); } catch {}
   return true;
+}
+
+// ── Task 3: per-cert drill stats ─────────────────────────────────────────────
+// Shape: { cert: { simlab:{done,perfect}, decision:{done,perfect}, whynot:{done,perfect},
+//                  gauntlet:{done,perfect} } }
+function _allDrillStats() {
+  try { return JSON.parse(localStorage.getItem(STORAGE.DRILL_STATS) || '{}'); } catch { return {}; }
+}
+function getDrillStats() {
+  const all = _allDrillStats();
+  return all[_certKey()] || {};
+}
+// drill: 'simlab'|'decision'|'whynot'|'gauntlet'; field: 'done'|'perfect'
+function bumpDrillStat(drill, field, by) {
+  const all = _allDrillStats();
+  const cert = _certKey();
+  const sub = all[cert] || (all[cert] = {});
+  const d = sub[drill] || (sub[drill] = { done: 0, perfect: 0 });
+  d[field] = (d[field] || 0) + (by || 1);
+  try { localStorage.setItem(STORAGE.DRILL_STATS, JSON.stringify(all)); _cloudFlush(STORAGE.DRILL_STATS); } catch {}
+  return d;
 }
 
 // Milestone definitions — keyed by id, evaluated against current state
@@ -11614,23 +11705,18 @@ const MILESTONE_DEFS = [
   { id: 'labs_5',            label: 'Lab regular',         desc: 'Complete 5 different labs' },
   { id: 'labs_10',           label: 'Lab master',          desc: 'Complete 10 different labs' },
   { id: 'labs_all',          label: 'Lab completionist',   desc: 'Complete every available lab' },
-  // ── v4.37.0: Fix This Network milestones ──
-  { id: 'fix_first',         label: 'First responder',     desc: 'Complete your first Fix This Network challenge' },
-  { id: 'fix_5',             label: 'Network medic',       desc: 'Complete 5 Fix This Network challenges' },
-  { id: 'fix_all_easy',      label: 'Easy sweep',          desc: 'Complete every Easy Fix challenge' },
-  // ── v4.38.0: Acronym / OSI / Cable drill milestones ──
-  { id: 'ab_first',          label: 'Acronym rookie',      desc: 'Answer your first Acronym Blitz question' },
-  { id: 'ab_50',             label: 'Acronym adept',       desc: 'Answer 50 Acronym Blitz questions' },
-  { id: 'ab_all_seen',       label: 'Acronym encyclopedia',desc: 'See every acronym at least once' },
-  { id: 'ab_streak_15',      label: 'Acronym streak',      desc: 'Reach a 15 streak in Acronym Blitz' },
-  { id: 'os_first',          label: 'OSI initiate',        desc: 'Answer your first OSI Sorter question' },
-  { id: 'os_50',             label: 'OSI scholar',         desc: 'Answer 50 OSI Sorter questions' },
-  { id: 'os_all_seen',       label: 'OSI master',          desc: 'See every OSI item at least once' },
-  { id: 'os_streak_10',      label: 'OSI streak',          desc: 'Reach a 10 streak in OSI Sorter' },
-  { id: 'cb_first',          label: 'Cable spotter',       desc: 'Answer your first Cable ID question' },
-  { id: 'cb_50',             label: 'Cable expert',        desc: 'Answer 50 Cable ID questions' },
-  { id: 'cb_all_seen',       label: 'Cable encyclopedia',  desc: 'See every cable and connector at least once' },
-  { id: 'cb_streak_10',      label: 'Cable streak',        desc: 'Reach a 10 streak in Cable ID' },
+  { id: 'simlab_first',      label: 'First console',    desc: 'Finish your first Sim Lab PBQ.' },
+  { id: 'simlab_25',         label: 'Bench hours',      desc: 'Work through 25 Sim Lab PBQs.' },
+  { id: 'simlab_ace',        label: 'Clean board',      desc: 'Finish a Sim Lab run with nothing wrong.' },
+  { id: 'decision_first',    label: 'First call',       desc: 'Finish your first Decision Lab scenario.' },
+  { id: 'decision_25',       label: 'On the clock',     desc: 'Work through 25 Decision Lab scenarios.' },
+  { id: 'decision_flawless', label: 'Right every time', desc: 'Clear a Decision Lab scenario with no missed calls.' },
+  { id: 'whynot_first',      label: 'First round',      desc: 'Finish your first Why-Not round.' },
+  { id: 'whynot_25',         label: 'Why-Not regular',  desc: 'Work through 25 Why-Not rounds.' },
+  { id: 'whynot_master',     label: 'Reads the trap',   desc: 'Clear a Why-Not round without a single wrong rule-out.' },
+  { id: 'gauntlet_first',    label: 'First gauntlet',   desc: 'Finish your first Gauntlet.' },
+  { id: 'gauntlet_25',       label: 'Goes the distance',desc: 'Run 25 Gauntlets to the end.' },
+  { id: 'gauntlet_survivor', label: 'Walks out clean',  desc: 'Finish a full Gauntlet without a single miss.' },
 ];
 
 // ── Milestone evaluation — table-driven (v4.42.5) ───────────────────────
@@ -11694,6 +11780,7 @@ function _buildMilestoneCtx() {
     h, totalQs, studied, exams, readiness, streak, allDomainsHit, allTopicCount,
     subStats, portBest, portStreakBest, portStats, ddUses, dc,
     nightOwl, earlyBird, weekendWarrior, diversity5,
+    drill: getDrillStats(),  // Task 3: per-cert drill stats map (ctx.drill.simlab?.done etc.)
     ...drill,
   };
 }
@@ -11708,39 +11795,8 @@ function _buildMilestoneDrillCtx() {
     labsDone = Object.keys(JSON.parse(localStorage.getItem(STORAGE.LAB_COMPLETIONS) || '{}')).length;
     totalLabs = (typeof TB_LABS !== 'undefined') ? TB_LABS.length : 22;
   } catch (_) {}
-  let abM = { totalAnswered: 0, perItem: {} }, abSeenCount = 0, abTotalItems = 0;
-  try {
-    abM = (typeof getAbMastery === 'function') ? getAbMastery() : abM;
-    abSeenCount = Object.values(abM.perItem).filter(p => p.seen > 0).length;
-    abTotalItems = (typeof AB_DATA !== 'undefined') ? AB_DATA.length : 120;
-  } catch (_) {}
-  let osM = { totalAnswered: 0, perItem: {} }, osSeenCount = 0, osTotalItems = 0;
-  try {
-    osM = (typeof getOsMastery === 'function') ? getOsMastery() : osM;
-    osSeenCount = Object.values(osM.perItem).filter(p => p.seen > 0).length;
-    osTotalItems = (typeof OS_DATA !== 'undefined') ? OS_DATA.length : 50;
-  } catch (_) {}
-  let cbM = { totalAnswered: 0, perItem: {} }, cbSeenCount = 0, cbTotalItems = 0;
-  try {
-    cbM = (typeof getCbMastery === 'function') ? getCbMastery() : cbM;
-    cbSeenCount = Object.values(cbM.perItem).filter(p => p.seen > 0).length;
-    cbTotalItems = ((typeof CB_CABLES !== 'undefined') ? CB_CABLES.length : 15) + ((typeof CB_CONNECTORS !== 'undefined') ? CB_CONNECTORS.length : 13);
-  } catch (_) {}
-  let fixDone = 0, fixAllEasy = false;
-  try {
-    const fixSaved = JSON.parse(localStorage.getItem(STORAGE.FIX_CHALLENGES) || '{}');
-    fixDone = Object.keys(fixSaved).length;
-    if (typeof TB_FIX_CHALLENGES !== 'undefined') {
-      const easyIds = TB_FIX_CHALLENGES.filter(c => c.difficulty === 'Easy').map(c => c.id);
-      fixAllEasy = easyIds.length > 0 && easyIds.every(id => fixSaved[id]);
-    }
-  } catch (_) {}
   return {
     labsDone, totalLabs,
-    abM, abSeenCount, abTotalItems,
-    osM, osSeenCount, osTotalItems,
-    cbM, cbSeenCount, cbTotalItems,
-    fixDone, fixAllEasy,
   };
 }
 
@@ -11881,21 +11937,18 @@ const MILESTONE_CHECKS = [
   { id: 'labs_5',              check: c => c.labsDone >= 5 },
   { id: 'labs_10',             check: c => c.labsDone >= 10 },
   { id: 'labs_all',            check: c => c.labsDone >= c.totalLabs },
-  { id: 'ab_first',            check: c => c.abM.totalAnswered >= 1 },
-  { id: 'ab_50',               check: c => c.abM.totalAnswered >= 50 },
-  { id: 'ab_all_seen',         check: c => c.abSeenCount >= c.abTotalItems && c.abTotalItems > 0 },
-  { id: 'ab_streak_15',        check: c => Object.values(c.abM.perItem).some(p => p.streak >= 15) },
-  { id: 'os_first',            check: c => c.osM.totalAnswered >= 1 },
-  { id: 'os_50',               check: c => c.osM.totalAnswered >= 50 },
-  { id: 'os_all_seen',         check: c => c.osSeenCount >= c.osTotalItems && c.osTotalItems > 0 },
-  { id: 'os_streak_10',        check: c => Object.values(c.osM.perItem).some(p => p.streak >= 10) },
-  { id: 'cb_first',            check: c => c.cbM.totalAnswered >= 1 },
-  { id: 'cb_50',               check: c => c.cbM.totalAnswered >= 50 },
-  { id: 'cb_all_seen',         check: c => c.cbSeenCount >= c.cbTotalItems && c.cbTotalItems > 0 },
-  { id: 'cb_streak_10',        check: c => Object.values(c.cbM.perItem).some(p => p.streak >= 10) },
-  { id: 'fix_first',           check: c => c.fixDone >= 1 },
-  { id: 'fix_5',               check: c => c.fixDone >= 5 },
-  { id: 'fix_all_easy',        check: c => c.fixAllEasy },
+  { id: 'simlab_first',      check: c => (c.drill.simlab && c.drill.simlab.done || 0) >= 1 },
+  { id: 'simlab_25',         check: c => (c.drill.simlab && c.drill.simlab.done || 0) >= 25 },
+  { id: 'simlab_ace',        check: c => (c.drill.simlab && c.drill.simlab.perfect || 0) >= 1 },
+  { id: 'decision_first',    check: c => (c.drill.decision && c.drill.decision.done || 0) >= 1 },
+  { id: 'decision_25',       check: c => (c.drill.decision && c.drill.decision.done || 0) >= 25 },
+  { id: 'decision_flawless', check: c => (c.drill.decision && c.drill.decision.perfect || 0) >= 1 },
+  { id: 'whynot_first',      check: c => (c.drill.whynot && c.drill.whynot.done || 0) >= 1 },
+  { id: 'whynot_25',         check: c => (c.drill.whynot && c.drill.whynot.done || 0) >= 25 },
+  { id: 'whynot_master',     check: c => (c.drill.whynot && c.drill.whynot.perfect || 0) >= 1 },
+  { id: 'gauntlet_first',    check: c => (c.drill.gauntlet && c.drill.gauntlet.done || 0) >= 1 },
+  { id: 'gauntlet_25',       check: c => (c.drill.gauntlet && c.drill.gauntlet.done || 0) >= 25 },
+  { id: 'gauntlet_survivor', check: c => (c.drill.gauntlet && c.drill.gauntlet.perfect || 0) >= 1 },
 ];
 
 function evaluateMilestones() {
@@ -18624,8 +18677,11 @@ const MILESTONE_PROGRESS = {
   five_exams: c => [c.exams.length, 5], ten_exams: c => [c.exams.length, 10],
   subnet_50: c => [c.subStats.seen, 50], deep_dive_10: c => [c.ddUses, 10],
   daily_challenge_7: c => [c.dc.bestStreak, 7], daily_challenge_30: c => [c.dc.bestStreak, 30],
-  labs_5: c => [c.labsDone, 5], labs_10: c => [c.labsDone, 10], fix_5: c => [c.fixDone, 5],
-  ab_50: c => [c.abM.totalAnswered, 50], os_50: c => [c.osM.totalAnswered, 50], cb_50: c => [c.cbM.totalAnswered, 50],
+  labs_5: c => [c.labsDone, 5], labs_10: c => [c.labsDone, 10],
+  simlab_25:   c => [c.drill.simlab && c.drill.simlab.done || 0, 25],
+  decision_25: c => [c.drill.decision && c.drill.decision.done || 0, 25],
+  whynot_25:   c => [c.drill.whynot && c.drill.whynot.done || 0, 25],
+  gauntlet_25: c => [c.drill.gauntlet && c.drill.gauntlet.done || 0, 25],
 };
 // v7.14.0 — Milestones "Trophy Shine × Hover Detail". Shine: recent tiles get a
 // staggered gleam + sparkle on load. Detail: hover lifts + reveals earned-date /
@@ -18696,6 +18752,12 @@ function _anaMilestonesPlay() {
   }));
 }
 
+// NOTE: _renderAnaMilestones() below is a legacy pre-bento full-card milestones
+// renderer that is NOT mounted on the live page (the live Analytics page is the
+// bento board: _anaBtMiles + _anaBtMilestoneData, with the Drills group from
+// _anaDrillsGroupHtml mounted by renderAnalytics + revealed by _anaBtWire).
+// It is retained because tests/uat.js asserts on its markup contract; do not
+// delete without repointing those guards.
 function _renderAnaMilestones() {
   evaluateMilestones(); // unlock any newly-earned milestones on render
   const unlockedMap = getMilestones();
@@ -18703,13 +18765,7 @@ function _renderAnaMilestones() {
   const unlockedDefs = MILESTONE_DEFS.filter(m => unlockedMap[m.id]);
   const unlockedCount = unlockedDefs.length;
   const pct = totalMilestones > 0 ? Math.round((unlockedCount / totalMilestones) * 100) : 0;
-
-  // Sort unlocked by date desc; take 4 most recent
-  const recent = unlockedDefs.slice().sort((a, b) => {
-    return new Date(unlockedMap[b.id]) - new Date(unlockedMap[a.id]);
-  }).slice(0, 4);
-
-  // v7.14.0: context for locked-progress (built once; guarded)
+  const recent = unlockedDefs.slice().sort((a, b) => new Date(unlockedMap[b.id]) - new Date(unlockedMap[a.id])).slice(0, 4);
   let _msCtx = null;
   try { if (typeof _buildMilestoneCtx === 'function') _msCtx = _buildMilestoneCtx(); } catch (_) {}
   const _msRel = (iso) => {
@@ -18729,8 +18785,7 @@ function _renderAnaMilestones() {
       const r = f(_msCtx);
       if (!r || !(r[1] > 0)) return '';
       const cur = Math.max(0, Math.min(r[0] || 0, r[1]));
-      if (cur >= r[1]) return '';
-      return cur + ',' + r[1];
+      return cur >= r[1] ? '' : cur + ',' + r[1];
     } catch (_) { return ''; }
   };
   const renderTile = (m, unlocked) => {
@@ -18742,12 +18797,12 @@ function _renderAnaMilestones() {
     <div class="ana-milestone-desc">${escHtml(m.desc)}</div>
   </div>`;
   };
-
   const recentBlock = recent.length > 0
     ? `<div class="ana-ms-section-title">Recently unlocked</div>
        <div class="ana-ms-recent">${recent.map(m => renderTile(m, true)).join('')}</div>`
     : `<div class="ana-ms-empty">No milestones unlocked yet \u2014 complete a quiz to earn your first badge.</div>`;
-
+  // Drills group shares the single-source helper (also used by the live bento path).
+  const drillsGroup = (typeof _anaDrillsGroupHtml === 'function') ? _anaDrillsGroupHtml() : '';
   return `<div class="ana-card ana-card-ms" id="ana-s-milestones">
     <div class="ana-ms-head">
       ${_edCardhead(`Badges \u00b7 ${unlockedCount} of ${totalMilestones} unlocked`, '', 'Milestones.')}
@@ -18758,6 +18813,7 @@ function _renderAnaMilestones() {
       </div>
     </div>
     ${recentBlock}
+    ${drillsGroup}
     <details class="ana-ms-details">
       <summary class="ana-ms-details-summary">Show all ${totalMilestones} milestones</summary>
       <div class="ana-milestones ana-ms-full-grid">
@@ -19345,6 +19401,94 @@ function _anaBtMiles(D) {
     </div>`;
 }
 
+// ── v7.61.0: Analytics "Drills" milestone group (faithful lift of
+// mockups/milestone-drills-concept.html) — rendered as its own editorial
+// section appended below the bento grid in renderAnalytics(). De-carded
+// hairline rows, 3 slots/drill, earned/locked/in-progress states, n/25 bar.
+// Entrance (.dg-drill.reveal → .visible) + bar-fill are wired in _anaBtWire()
+// because the page-setup reveal IIFE is scoped to #page-setup only and never
+// touches #page-analytics. Returns '' when milestone plumbing is unavailable.
+function _anaDrillsGroupHtml() {
+  if (typeof MILESTONE_DEFS === 'undefined' || typeof getMilestones !== 'function') return '';
+  try { if (typeof evaluateMilestones === 'function') evaluateMilestones(); } catch (_) {}
+  const esc = _anaBtEsc;
+  const unlockedMap = getMilestones() || {};
+  let ctx = null;
+  try { if (typeof _buildMilestoneCtx === 'function') ctx = _buildMilestoneCtx(); } catch (_) {}
+  // relDate: reuse the shared helper from _anaBtMilestoneData's data shape — same
+  // wording ("Earned today" / "N days ago"). Inlined compactly here.
+  const relDate = (iso) => {
+    try {
+      const d = Math.floor((Date.now() - new Date(iso).getTime()) / 86400000);
+      if (d <= 0) return 'Earned today';
+      if (d === 1) return 'Earned yesterday';
+      if (d < 7) return 'Earned ' + d + ' days ago';
+      if (d < 14) return 'Earned last week';
+      return 'Earned ' + new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+    } catch (_) { return 'Earned'; }
+  };
+  const progOf = (id) => {
+    try {
+      if (!ctx || typeof MILESTONE_PROGRESS === 'undefined') return null;
+      const f = MILESTONE_PROGRESS[id]; if (!f) return null;
+      const r = f(ctx); if (!r || !(r[1] > 0)) return null;
+      const cur = Math.max(0, Math.min(r[0] || 0, r[1]));
+      return cur >= r[1] ? null : [cur, r[1]];
+    } catch (_) { return null; }
+  };
+  const DRILL_GROUPS = [
+    { name: 'Sim Lab',      meta: 'PBQ console',      ids: ['simlab_first', 'simlab_25', 'simlab_ace'] },
+    { name: 'Decision Lab', meta: 'cloud scenarios',  ids: ['decision_first', 'decision_25', 'decision_flawless'] },
+    { name: 'Why-Not',      meta: 'distractor drill', ids: ['whynot_first', 'whynot_25', 'whynot_master'] },
+    { name: 'Gauntlet',     meta: 'timed endurance',  ids: ['gauntlet_first', 'gauntlet_25', 'gauntlet_survivor'] },
+  ];
+  const allDefs = DRILL_GROUPS.flatMap(g => g.ids).map(id => MILESTONE_DEFS.find(m => m.id === id)).filter(Boolean);
+  if (!allDefs.length) return '';
+  const earnedCount = allDefs.filter(m => unlockedMap[m.id]).length;
+
+  // A milestone slot: earned (dot+✓+gleam-if-today) / in-progress (n/25 bar) / locked.
+  const tile = (m) => {
+    if (unlockedMap[m.id]) {
+      const rel = relDate(unlockedMap[m.id]); const fresh = rel === 'Earned today';
+      return `<div class="ms ms-earned${fresh ? ' ms-fresh' : ''}">${fresh ? '<div class="ms-gleam"></div>' : ''}` +
+        `<div class="ms-top"><span class="ms-dot"></span><span class="ms-label">${esc(m.label)}</span><span class="ms-check">✓</span></div>` +
+        `<div class="ms-desc">${esc(m.desc)}</div><div class="ms-meta">${esc(rel)}</div></div>`;
+    }
+    const p = progOf(m.id);
+    if (p) {
+      const [cur, tar] = p; const pctFill = Math.round((cur / tar) * 100);
+      const frac = tar === 1 ? 'In reach' : `${cur} <span class="of">/ ${tar}</span>`;
+      return `<div class="ms ms-prog"><div class="ms-top"><span class="ms-dot"></span><span class="ms-label">${esc(m.label)}</span></div>` +
+        `<div class="ms-desc">${esc(m.desc)}</div>` +
+        `<div class="ms-prog-row"><div class="ms-track"><div class="ms-fill" data-fill="${pctFill}"></div></div>` +
+        `<span class="ms-frac">${frac}</span></div></div>`;
+    }
+    return `<div class="ms ms-locked"><div class="ms-top"><span class="ms-dot"></span><span class="ms-label">${esc(m.label)}</span></div>` +
+      `<div class="ms-desc">${esc(m.desc)}</div></div>`;
+  };
+
+  const rows = DRILL_GROUPS.map((g, i) => {
+    const slots = g.ids.map(id => { const def = MILESTONE_DEFS.find(m => m.id === id); return def ? tile(def) : ''; }).join('');
+    return `<div class="dg-drill reveal" style="--d:${i + 1}">` +
+      `<div class="dg-drill-name">${esc(g.name)} <span class="meta">${esc(g.meta)}</span></div>` +
+      `<div class="dg-slots">${slots}</div></div>`;
+  }).join('');
+
+  return `<div class="ana-drills-group" id="ana-ms-drills-section">
+    <div class="dg-head">
+      <div><p class="dg-eyebrow">Drills</p><h2 class="dg-title">Hands-on milestones</h2></div>
+      <div class="dg-count"><span class="n">${earnedCount}</span><span class="of">of ${allDefs.length} earned</span></div>
+    </div>
+    <hr class="dg-rule">
+    ${rows}
+    <div class="dg-legend">
+      <span class="legend-item"><span class="ms-dot" style="background:var(--accent)"></span> Earned</span>
+      <span class="legend-item"><span class="ms-dot" style="background:color-mix(in oklab,var(--accent) 55%,transparent)"></span> In progress</span>
+      <span class="legend-item"><span class="ms-dot" style="background:transparent;border:1px solid var(--border)"></span> Locked</span>
+    </div>
+  </div>`;
+}
+
 function _anaBtExam(D) {
   const esc = _anaBtEsc;
   const PASS = (typeof EXAM_PASS_SCORE === 'number') ? EXAM_PASS_SCORE : 720;
@@ -19598,6 +19742,43 @@ function _anaBtWire(D) {
     });
   }, { threshold: 0.12 });
   tiles.forEach(t => io.observe(t));
+
+  // v7.61.0: Drills milestone group entrance + bar-fill. The #page-setup reveal
+  // IIFE (index.html) is scoped to #page-setup and never reaches #page-analytics,
+  // so the .dg-drill.reveal rows would otherwise stay at opacity:0 forever. Wire
+  // the staggered .visible reveal + n/25 ms-fill widths here, matching the mockup.
+  const drillRows = Array.prototype.slice.call(document.querySelectorAll('#ana-ms-drills-section .dg-drill.reveal'));
+  if (drillRows.length) {
+    const fillBars = (row) => {
+      row.querySelectorAll('.ms-fill').forEach(f => {
+        const w = f.getAttribute('data-fill');
+        // Use setProperty to match the existing analytics fill pattern + stay
+        // under the inline-style-assignment tech-debt gate.
+        if (w != null && !f.style.width) f.style.setProperty('width', w + '%');
+      });
+    };
+    if (reduce || !('IntersectionObserver' in window)) {
+      // Visible immediately, bars at final width, no transform/animation.
+      drillRows.forEach(r => { r.classList.add('visible'); fillBars(r); });
+    } else {
+      const dio = new IntersectionObserver((entries, obs) => {
+        entries.forEach(en => {
+          if (!en.isIntersecting) return;
+          en.target.classList.add('visible');
+          const d = +(en.target.style.getPropertyValue('--d') || 0);
+          const lead = 360 + d * 70; // mirrors the mockup's bar-fill choreography
+          setTimeout(() => fillBars(en.target), lead);
+          obs.unobserve(en.target);
+        });
+      }, { threshold: 0.2 });
+      drillRows.forEach(r => dio.observe(r));
+      // Safety net: if IO never fires (e.g. tab hidden / display toggle race),
+      // un-hide + fill after 1.6s so the group can never get stuck invisible.
+      setTimeout(() => {
+        drillRows.forEach(r => { r.classList.add('visible'); fillBars(r); });
+      }, 1600);
+    }
+  }
 }
 
 // ── Analytics orchestrator ──
@@ -19664,7 +19845,10 @@ function renderAnalytics() {
     + _anaBtWrong(D)
     + _anaBtMiles(D)
     + _anaBtExam(D)
-    + '</div>';
+    + '</div>'
+    // v7.61.0: Drills milestone group — its own editorial section below the
+    // bento grid (faithful lift of mockups/milestone-drills-concept.html).
+    + _anaDrillsGroupHtml();
   container.innerHTML = html;
   // Wire the keepers + entrance choreography (count-ups, bar/ring fills,
   // constellation twinkle/pulsar/tooltip, trend tabs + draw-in). Reduced-motion
