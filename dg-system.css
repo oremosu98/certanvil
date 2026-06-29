@@ -4181,3 +4181,96 @@ mark.gnt-hinge{background:color-mix(in oklab,var(--red) 26%,transparent);color:i
 #page-decision-lab-result .dl-weak .w{font:700 12px/1 Inter,sans-serif;color:var(--accent);background:color-mix(in oklab,var(--accent) 10%,transparent);border:1px solid color-mix(in oklab,var(--accent) 26%,var(--border));padding:5px 10px;border-radius:999px}
 #page-decision-lab-result .dl-cta-row{display:flex;gap:9px;margin-top:18px}
 #page-decision-lab-result .dl-cta-row .btn{flex:1}
+
+/* ── v7.60.0: Analytics Drills milestone group (faithful lift of mockups/milestone-drills-concept.html) ──
+   De-carded editorial rows: hairline borders, type-led hierarchy, one bronze accent.
+   State shown by ink + 7px dot, not card elevation. Class names mirror the mockup verbatim.
+   ─────────────────────────────────────────────────────────────────────────────────────────────────── */
+html[data-theme] body .ana-drills-group{font-family:Inter,sans-serif;margin-top:24px}
+
+/* Group head */
+html[data-theme] body .ana-drills-group .dg-head{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;flex-wrap:wrap}
+html[data-theme] body .ana-drills-group .dg-eyebrow{font-size:10.5px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);margin:0 0 7px}
+html[data-theme] body .ana-drills-group .dg-title{font-family:Fraunces,Georgia,serif;font-weight:600;font-size:23px;letter-spacing:-.015em;margin:0;line-height:1.05;color:var(--text)}
+html[data-theme] body .ana-drills-group .dg-count{display:flex;align-items:baseline;gap:8px}
+html[data-theme] body .ana-drills-group .dg-count .n{font-family:Fraunces,Georgia,serif;font-weight:600;font-size:28px;line-height:1;letter-spacing:-.02em;color:var(--accent);font-variant-numeric:lining-nums tabular-nums;font-feature-settings:"lnum","tnum"}
+html[data-theme] body .ana-drills-group .dg-count .of{font-size:12.5px;font-weight:600;color:var(--text-dim);letter-spacing:.01em}
+html[data-theme] body .ana-drills-group .dg-rule{height:1px;background:var(--border);margin:18px 0 4px;border:0}
+
+/* Each drill row: left-label + 3 hairline-separated slots, no card elevation */
+html[data-theme] body .ana-drills-group .dg-drill{display:grid;grid-template-columns:1fr;gap:0;padding:18px 0;border-bottom:1px solid var(--border-soft,var(--border))}
+html[data-theme] body .ana-drills-group .dg-drill:last-of-type{border-bottom:0}
+html[data-theme] body .ana-drills-group .dg-drill-name{font-size:13px;font-weight:700;letter-spacing:-.005em;color:var(--text);margin:0 0 13px;display:flex;align-items:center;gap:9px}
+html[data-theme] body .ana-drills-group .dg-drill-name .meta{font-size:11px;font-weight:550;color:var(--text-dim);letter-spacing:.005em}
+html[data-theme] body .ana-drills-group .dg-slots{display:grid;grid-template-columns:repeat(3,1fr);gap:0}
+@media(max-width:560px){html[data-theme] body .ana-drills-group .dg-slots{grid-template-columns:1fr}}
+
+/* Milestone slot */
+html[data-theme] body .ana-drills-group .ms{padding:2px 16px;position:relative;min-width:0;border-left:1px solid var(--border-soft,var(--border))}
+html[data-theme] body .ana-drills-group .ms:first-child{border-left:0;padding-left:0}
+@media(max-width:560px){
+  html[data-theme] body .ana-drills-group .ms{border-left:0;padding-left:0;padding-top:14px;border-top:1px solid var(--border-soft,var(--border))}
+  html[data-theme] body .ana-drills-group .ms:first-child{padding-top:2px;border-top:0}
+}
+html[data-theme] body .ana-drills-group .ms-top{display:flex;align-items:center;gap:8px;margin-bottom:3px}
+html[data-theme] body .ana-drills-group .ms-dot{width:7px;height:7px;border-radius:50%;flex:none}
+html[data-theme] body .ana-drills-group .ms-label{font-size:12.5px;font-weight:700;letter-spacing:-.005em;line-height:1.2}
+html[data-theme] body .ana-drills-group .ms-desc{font-size:11px;font-weight:450;line-height:1.35;color:var(--text-dim)}
+
+/* Earned */
+html[data-theme] body .ana-drills-group .ms-earned .ms-dot{background:var(--accent)}
+html[data-theme] body .ana-drills-group .ms-earned .ms-label{color:var(--text)}
+html[data-theme] body .ana-drills-group .ms-earned .ms-meta{font-size:10px;font-weight:650;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);margin-top:6px}
+html[data-theme] body .ana-drills-group .ms-check{margin-left:auto;font-size:12px;color:var(--accent);font-weight:700;line-height:1}
+
+/* Locked */
+html[data-theme] body .ana-drills-group .ms-locked .ms-dot{background:transparent;border:1px solid var(--border)}
+html[data-theme] body .ana-drills-group .ms-locked .ms-label{color:var(--text-mid,var(--text-dim))}
+html[data-theme] body .ana-drills-group .ms-locked{opacity:.62}
+
+/* In-progress (n/25 bar) */
+html[data-theme] body .ana-drills-group .ms-prog .ms-dot{background:color-mix(in oklab,var(--accent) 55%,transparent)}
+html[data-theme] body .ana-drills-group .ms-prog .ms-label{color:var(--text)}
+html[data-theme] body .ana-drills-group .ms-prog-row{display:flex;align-items:center;gap:10px;margin-top:8px}
+html[data-theme] body .ana-drills-group .ms-track{flex:1;height:5px;border-radius:999px;min-width:0;background:color-mix(in oklab,var(--text) 9%,transparent);overflow:hidden}
+html[data-theme] body .ana-drills-group .ms-fill{height:100%;border-radius:999px;width:0;background:linear-gradient(90deg,color-mix(in oklab,var(--accent) 78%,transparent),var(--accent));transition:width 950ms linear}
+html[data-theme] body .ana-drills-group .ms-frac{font-size:11px;font-weight:700;letter-spacing:.01em;color:var(--text-dim);flex:none;font-variant-numeric:lining-nums tabular-nums;font-feature-settings:"lnum","tnum"}
+html[data-theme] body .ana-drills-group .ms-frac .of{color:var(--text-dim);font-weight:550}
+
+/* Fresh gleam (just-unlocked) */
+html[data-theme] body .ana-drills-group .ms-fresh{position:relative}
+html[data-theme] body .ana-drills-group .ms-fresh .ms-gleam{position:absolute;inset:-2px 0;pointer-events:none;overflow:hidden;border-radius:8px}
+html[data-theme] body .ana-drills-group .ms-fresh .ms-gleam::after{content:"";position:absolute;top:0;bottom:0;width:46%;background:linear-gradient(90deg,transparent,color-mix(in oklab,var(--accent) 26%,transparent),transparent);transform:translateX(-160%);animation:dg-gleam 700ms cubic-bezier(0.16,1,0.3,1) 350ms 1 forwards}
+@keyframes dg-gleam{to{transform:translateX(240%)}}
+
+/* Entrance reveal (BRAND §6): transform+opacity, system cubic-bezier, staggered */
+html[data-theme] body .ana-drills-group .dg-drill.reveal{opacity:0;transform:translateY(15px)}
+html[data-theme] body .ana-drills-group .dg-drill.reveal.visible{opacity:1;transform:none;transition:opacity .55s cubic-bezier(0.16,1,0.3,1),transform .55s cubic-bezier(0.16,1,0.3,1);transition-delay:calc(var(--d,0) * 70ms)}
+
+/* Legend */
+html[data-theme] body .ana-drills-group .dg-legend{display:flex;gap:18px;flex-wrap:wrap;margin-top:18px;padding-top:16px;border-top:1px solid var(--border-soft,var(--border))}
+html[data-theme] body .ana-drills-group .legend-item{display:flex;align-items:center;gap:7px;font-size:11px;color:var(--text-dim);font-weight:550}
+html[data-theme] body .ana-drills-group .legend-item .ms-dot{position:static}
+
+/* Reduced motion */
+@media(prefers-reduced-motion:reduce){
+  html[data-theme] body .ana-drills-group .dg-drill.reveal{opacity:1;transform:none;transition:opacity .2s linear}
+  html[data-theme] body .ana-drills-group .ms-fill{transition:none}
+  html[data-theme] body .ana-drills-group .ms-fresh .ms-gleam::after{animation:none}
+}
+
+/* ── v7.60.0: Celebration toast — bronze reskin (overrides legacy purple in styles.css ~l3185) ──
+   BRAND §3: forged-bronze only. Both light + dark: surface+border via accent tokens, no purple.
+   ─────────────────────────────────────────────────────────────────────────────────────────────── */
+html[data-theme] body .celebration-toast{
+  background:color-mix(in oklab,var(--accent) 14%,var(--surface,#1e1e2e));
+  border:1px solid color-mix(in oklab,var(--accent) 40%,var(--border,rgba(255,255,255,.12)));
+  box-shadow:0 1px 0 color-mix(in oklab,var(--text,#fff) 4%,transparent),0 18px 40px -16px color-mix(in oklab,var(--accent) 35%,transparent);
+  color:var(--text,#fff)
+}
+html[data-theme="light"] body .celebration-toast{
+  background:color-mix(in oklab,var(--accent) 10%,var(--surface,#fff));
+  color:var(--text,#1a1a1a)
+}
+html[data-theme] body .celebration-toast-title{color:var(--text)}
+html[data-theme] body .celebration-toast-sub{color:var(--text-dim,rgba(255,255,255,.75));opacity:1}

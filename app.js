@@ -11705,18 +11705,18 @@ const MILESTONE_DEFS = [
   { id: 'labs_5',            label: 'Lab regular',         desc: 'Complete 5 different labs' },
   { id: 'labs_10',           label: 'Lab master',          desc: 'Complete 10 different labs' },
   { id: 'labs_all',          label: 'Lab completionist',   desc: 'Complete every available lab' },
-  { id: 'simlab_first',      label: 'Sim initiate',     desc: 'Complete your first Sim Lab PBQ' },
-  { id: 'simlab_25',         label: 'Sim regular',      desc: 'Complete 25 Sim Lab PBQs' },
-  { id: 'simlab_ace',        label: 'Sim ace',          desc: 'Score a perfect Sim Lab run' },
-  { id: 'decision_first',    label: 'Decision rookie',  desc: 'Complete your first Decision Lab set' },
-  { id: 'decision_25',       label: 'Decision regular', desc: 'Complete 25 Decision Lab sets' },
-  { id: 'decision_flawless', label: 'Flawless call',    desc: 'Score a perfect Decision Lab set' },
-  { id: 'whynot_first',      label: 'Why-Not novice',   desc: 'Complete your first Why-Not round' },
-  { id: 'whynot_25',         label: 'Why-Not regular',  desc: 'Complete 25 Why-Not rounds' },
-  { id: 'whynot_master',     label: 'Reasoned master',  desc: 'Score a perfect Why-Not round' },
-  { id: 'gauntlet_first',    label: 'Gauntlet runner',  desc: 'Complete your first Gauntlet' },
-  { id: 'gauntlet_25',       label: 'Gauntlet regular', desc: 'Complete 25 Gauntlets' },
-  { id: 'gauntlet_survivor', label: 'Gauntlet survivor',desc: 'Complete a full perfect Gauntlet' },
+  { id: 'simlab_first',      label: 'First console',    desc: 'Finish your first Sim Lab PBQ.' },
+  { id: 'simlab_25',         label: 'Bench hours',      desc: 'Work through 25 Sim Lab PBQs.' },
+  { id: 'simlab_ace',        label: 'Clean board',      desc: 'Finish a Sim Lab run with nothing wrong.' },
+  { id: 'decision_first',    label: 'First call',       desc: 'Finish your first Decision Lab scenario.' },
+  { id: 'decision_25',       label: 'On the clock',     desc: 'Work through 25 Decision Lab scenarios.' },
+  { id: 'decision_flawless', label: 'Right every time', desc: 'Clear a Decision Lab scenario with no missed calls.' },
+  { id: 'whynot_first',      label: 'First round',      desc: 'Finish your first Why-Not round.' },
+  { id: 'whynot_25',         label: 'Why-Not regular',  desc: 'Work through 25 Why-Not rounds.' },
+  { id: 'whynot_master',     label: 'Reads the trap',   desc: 'Clear a Why-Not round without a single wrong rule-out.' },
+  { id: 'gauntlet_first',    label: 'First gauntlet',   desc: 'Finish your first Gauntlet.' },
+  { id: 'gauntlet_25',       label: 'Goes the distance',desc: 'Run 25 Gauntlets to the end.' },
+  { id: 'gauntlet_survivor', label: 'Walks out clean',  desc: 'Finish a full Gauntlet without a single miss.' },
 ];
 
 // ── Milestone evaluation — table-driven (v4.42.5) ───────────────────────
@@ -18804,6 +18804,80 @@ function _renderAnaMilestones() {
        <div class="ana-ms-recent">${recent.map(m => renderTile(m, true)).join('')}</div>`
     : `<div class="ana-ms-empty">No milestones unlocked yet \u2014 complete a quiz to earn your first badge.</div>`;
 
+  // \u2500\u2500 Drills milestone group (faithful lift of mockups/milestone-drills-concept.html) \u2500\u2500
+  // De-carded editorial rows: hairline borders, 3 slots per drill, state via ink+dot.
+  const DRILL_GROUPS = [
+    { name: 'Sim Lab',      meta: 'PBQ console',     ids: ['simlab_first','simlab_25','simlab_ace'] },
+    { name: 'Decision Lab', meta: 'cloud scenarios',  ids: ['decision_first','decision_25','decision_flawless'] },
+    { name: 'Why-Not',      meta: 'distractor drill', ids: ['whynot_first','whynot_25','whynot_master'] },
+    { name: 'Gauntlet',     meta: 'timed endurance',  ids: ['gauntlet_first','gauntlet_25','gauntlet_survivor'] },
+  ];
+  const drillDefsAll = DRILL_GROUPS.flatMap(g => g.ids).map(id => MILESTONE_DEFS.find(m => m.id === id)).filter(Boolean);
+  const drillEarnedCount = drillDefsAll.filter(m => unlockedMap[m.id]).length;
+  const drillTotal = drillDefsAll.length;
+
+  const renderDrillTile = (m) => {
+    const unlocked = !!unlockedMap[m.id];
+    const prog = _msProg(m.id);
+    if (unlocked) {
+      const relDate = _msRel(unlockedMap[m.id]);
+      const isFresh = relDate === 'Earned today';
+      return `<div class="ms ms-earned${isFresh ? ' ms-fresh' : ''}">
+        ${isFresh ? '<div class="ms-gleam"></div>' : ''}
+        <div class="ms-top"><span class="ms-dot"></span><span class="ms-label">${escHtml(m.label)}</span><span class="ms-check">\u2713</span></div>
+        <div class="ms-desc">${escHtml(m.desc)}</div>
+        <div class="ms-meta">${escHtml(relDate)}</div>
+      </div>`;
+    }
+    if (prog) {
+      const [cur, tar] = prog.split(',').map(Number);
+      const pctFill = Math.round((cur / tar) * 100);
+      const isMastery = tar === 1;
+      return `<div class="ms ms-prog">
+        <div class="ms-top"><span class="ms-dot"></span><span class="ms-label">${escHtml(m.label)}</span></div>
+        <div class="ms-desc">${escHtml(m.desc)}</div>
+        <div class="ms-prog-row">
+          <div class="ms-track"><div class="ms-fill" data-fill="${pctFill}"></div></div>
+          <span class="ms-frac">${isMastery ? 'In reach' : `${cur} <span class="of">/ ${tar}</span>`}</span>
+        </div>
+      </div>`;
+    }
+    return `<div class="ms ms-locked">
+      <div class="ms-top"><span class="ms-dot"></span><span class="ms-label">${escHtml(m.label)}</span></div>
+      <div class="ms-desc">${escHtml(m.desc)}</div>
+    </div>`;
+  };
+
+  const drillRows = DRILL_GROUPS.map((g, i) => {
+    const slots = g.ids.map(id => {
+      const def = MILESTONE_DEFS.find(m => m.id === id);
+      return def ? renderDrillTile(def) : '';
+    }).join('');
+    return `<div class="dg-drill reveal" style="--d:${i + 1}">
+      <div class="dg-drill-name">${escHtml(g.name)} <span class="meta">${escHtml(g.meta)}</span></div>
+      <div class="dg-slots">${slots}</div>
+    </div>`;
+  }).join('');
+
+  const drillsGroup = `<div class="ana-drills-group" id="ana-ms-drills-section">
+    <div class="dg-head">
+      <div>
+        <p class="dg-eyebrow">Drills</p>
+        <h2 class="dg-title">Hands-on milestones</h2>
+      </div>
+      <div class="dg-count">
+        <span class="n">${drillEarnedCount}</span><span class="of">of ${drillTotal} earned</span>
+      </div>
+    </div>
+    <hr class="dg-rule">
+    ${drillRows}
+    <div class="dg-legend">
+      <span class="legend-item"><span class="ms-dot" style="background:var(--accent)"></span> Earned</span>
+      <span class="legend-item"><span class="ms-dot" style="background:color-mix(in oklab,var(--accent) 55%,transparent)"></span> In progress</span>
+      <span class="legend-item"><span class="ms-dot" style="background:transparent;border:1px solid var(--border)"></span> Locked</span>
+    </div>
+  </div>`;
+
   return `<div class="ana-card ana-card-ms" id="ana-s-milestones">
     <div class="ana-ms-head">
       ${_edCardhead(`Badges \u00b7 ${unlockedCount} of ${totalMilestones} unlocked`, '', 'Milestones.')}
@@ -18814,6 +18888,7 @@ function _renderAnaMilestones() {
       </div>
     </div>
     ${recentBlock}
+    ${drillsGroup}
     <details class="ana-ms-details">
       <summary class="ana-ms-details-summary">Show all ${totalMilestones} milestones</summary>
       <div class="ana-milestones ana-ms-full-grid">

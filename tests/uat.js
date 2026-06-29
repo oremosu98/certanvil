@@ -20373,6 +20373,46 @@ console.log('\n\x1b[1m── T6: ANALYTICS MILESTONE DISPLAY (per-cert guard) �
     !new RegExp("id:\\s*'pt_(first|25|master)'").test(js));
 })();
 
+// ── T7: v7.60.0 — Drills analytics group + final copy + bronze celebration toast ──
+console.log('\n\x1b[1m── T7: DRILLS ANALYTICS GROUP + FINAL COPY + BRONZE TOAST ──\x1b[0m');
+(function() {
+  // (a) The 12 final approved labels are present in app.js MILESTONE_DEFS
+  const finalLabels = [
+    'First console', 'Bench hours', 'Clean board',
+    'First call', 'On the clock', 'Right every time',
+    'First round', 'Why-Not regular', 'Reads the trap',
+    'First gauntlet', 'Goes the distance', 'Walks out clean',
+  ];
+  finalLabels.forEach(label => test(`T7: final label '${label}' in MILESTONE_DEFS`,
+    js.includes(`'${label}'`)));
+
+  // (b) dg-system.css contains a .celebration-toast override AND the override
+  // block itself uses no purple tokens (forged-bronze only per BRAND §3).
+  // Note: dg-system.css has pre-existing prose outside comment delimiters that
+  // mentions old purple hex values as documentation — we scope the check to the
+  // celebration-toast override block only (the new v7.60.0 addition).
+  const dgCss = read('dg-system.css');
+  test('T7: dg-system.css contains .celebration-toast override',
+    dgCss.includes('.celebration-toast'));
+  // Extract the celebration-toast override section for the purple check
+  const toastBlockStart = dgCss.indexOf('/* ── v7.60.0: Celebration toast');
+  const toastBlock = toastBlockStart >= 0 ? dgCss.slice(toastBlockStart) : '';
+  const purplePatterns = ['5b4fdb','7c6ff7','124,111,247','99,85,224'];
+  purplePatterns.forEach(p => test(`T7: celebration-toast override contains NO purple token '${p}'`,
+    !toastBlock.includes(p)));
+
+  // (c) _renderAnaMilestones emits the drills grouping marker
+  const anaBody = _fnBody(js, '_renderAnaMilestones');
+  test('T7: _renderAnaMilestones emits ana-drills-group class',
+    anaBody.includes('ana-drills-group'));
+  test('T7: _renderAnaMilestones emits DRILL_GROUPS structure',
+    anaBody.includes('DRILL_GROUPS'));
+  test('T7: _renderAnaMilestones emits dg-eyebrow Drills label',
+    anaBody.includes('Drills'));
+  test('T7: _renderAnaMilestones emits dg-slots for 3-per-row layout',
+    anaBody.includes('dg-slots'));
+})();
+
 // ── Summary ──
 console.log('\n' + '═'.repeat(50));
 const total = results.pass + results.fail;

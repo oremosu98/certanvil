@@ -114,7 +114,7 @@ npx playwright test              # E2E (tests/e2e/app.spec.js)
 
 | Version | Features Added |
 |---|---|
-| feat | Milestones: per-cert storage + legacy-flat migration + orphan prune (Task 1); remove 15 orphaned ids + dead entries (Task 2); DRILL_STATS per-cert tracking (Task 3); add 12 drill milestone defs/checks/progress — simlab/decision/whynot/gauntlet only (Task 4, pt dropped — drill deleted); wire drill completion for simlab/decision/whynot/gauntlet (Task 5); drop 3 orphaned Packet Trace milestones pt_first/pt_25/pt_master (EXPECTED_MILESTONES 47→44) |
+| feat/per-cert-milestones-and-drill-milestones | Milestones: final copy for 12 drill ids; Analytics Drills group (faithful lift of mockup — de-carded hairline rows, 3 slots, earned/locked/prog states, n/25 bar, gleam); bronze celebration toast override (dg-system.css); dg-system.css?v=7.60.0; 21 new UAT assertions (T7) — 4238/4238 |
 | v7.59.0 | Decision Lab: cloud-cert scenario decision drill (engine + 4 seed banks) |
 | v7.58.0 | Sim Lab: A+ Core 1 (220-1201) + Core 2 (220-1202) PBQ seed banks live (cert rollout) |
 
