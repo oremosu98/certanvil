@@ -114,15 +114,9 @@ npx playwright test              # E2E (tests/e2e/app.spec.js)
 
 | Version | Features Added |
 |---|---|
-| feat | Milestones: per-cert storage + legacy-flat migration + orphan prune (Task 1); remove 15 orphaned milestone ids + dead MILESTONE_PROGRESS entries/ctx fields for 4 deleted drills, add progress-key⊆defs guard (Task 2); DRILL_STATS per-cert tracking (getDrillStats/bumpDrillStat) + ctx.drill wiring + cloud-store sync (Task 3); add 15 drill milestone defs/checks/progress structural copy — simlab/decision/whynot/pt/gauntlet (Task 4); wire drill completion → bumpDrillStat + evaluateMilestones + celebration for simlab/decision/whynot/gauntlet (Task 5; packettrace deferred — no active finish handler) |
+| feat | Milestones: per-cert storage + legacy-flat migration + orphan prune (Task 1); remove 15 orphaned ids + dead entries (Task 2); DRILL_STATS per-cert tracking (Task 3); add 12 drill milestone defs/checks/progress — simlab/decision/whynot/gauntlet only (Task 4, pt dropped — drill deleted); wire drill completion for simlab/decision/whynot/gauntlet (Task 5); drop 3 orphaned Packet Trace milestones pt_first/pt_25/pt_master (EXPECTED_MILESTONES 47→44) |
 | v7.59.0 | Decision Lab: cloud-cert scenario decision drill (engine + 4 seed banks) |
 | v7.58.0 | Sim Lab: A+ Core 1 (220-1201) + Core 2 (220-1202) PBQ seed banks live (cert rollout) |
-| v7.57.2 | Sim Lab entry target: derive cert label from pack name+code (Sec+ now shows Security+ SY0-701, not bare Mixed) |
-| v7.57.1 | Sim Lab entry: cert-neutral Today's target (drop hardcoded Network+ that misled on Sec+) |
-| v7.57.0 | Sim Lab Exam mode (Pro): whole-session countdown + flag-and-return + pacing report; Sec+ 50-seed bank |
-| v7.56.0 | Sim Lab: multi-round sessions (pick 3/5, Pro 10) + prefetch + verdict summary + landing section |
-| v7.55.2 | Sim Lab: surface the drill in Home Practice (was orphaned on the unreachable drills page) |
-| v7.55.1 | Sim Lab + paywall: 4-stage copy polish (gate/lock/nudge/card + Pro drills line) |
 
 _Older releases (v7.55.0 and back) live in [CHANGELOG.md](./CHANGELOG.md) — v7.55.0 + v7.54.1 + v7.54.0 ported during the 2026-06-25 v7.56.0 night-end consolidation (Sim Lab session-mode marathon)._
 

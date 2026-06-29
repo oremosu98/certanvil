@@ -2500,7 +2500,6 @@ const EXPECTED_MILESTONES = [
   'simlab_first','simlab_25','simlab_ace',
   'decision_first','decision_25','decision_flawless',
   'whynot_first','whynot_25','whynot_master',
-  'pt_first','pt_25','pt_master',
   'gauntlet_first','gauntlet_25','gauntlet_survivor',
 ];
 (function() {
@@ -2510,14 +2509,14 @@ const EXPECTED_MILESTONES = [
     test(`v4.42.5 #141: milestone '${id}' present in table`,
       checksSrc.includes(`'${id}'`));
   });
-  test(`v4.42.5 #141: all 47 expected milestones tracked (found ${EXPECTED_MILESTONES.length})`,
-    EXPECTED_MILESTONES.length === 47);
+  test(`v4.42.5 #141: all 44 expected milestones tracked (found ${EXPECTED_MILESTONES.length})`,
+    EXPECTED_MILESTONES.length === 44);
 })();
 
 // ── M4: drill milestone definitions ──
 console.log('\n\x1b[1m── M4: DRILL MILESTONE DEFS ──\x1b[0m');
 ['simlab_first','simlab_25','simlab_ace','decision_first','decision_25','decision_flawless',
- 'whynot_first','whynot_25','whynot_master','pt_first','pt_25','pt_master',
+ 'whynot_first','whynot_25','whynot_master',
  'gauntlet_first','gauntlet_25','gauntlet_survivor'].forEach(id =>
   test('M4: drill milestone '+id+' defined', new RegExp("id:\\s*'"+id+"'").test(js)));
 

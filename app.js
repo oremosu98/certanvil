@@ -11644,7 +11644,7 @@ function unlockMilestone(key) {
 
 // ── Task 3: per-cert drill stats ─────────────────────────────────────────────
 // Shape: { cert: { simlab:{done,perfect}, decision:{done,perfect}, whynot:{done,perfect},
-//                  packettrace:{done,perfect}, gauntlet:{done,perfect} } }
+//                  gauntlet:{done,perfect} } }
 function _allDrillStats() {
   try { return JSON.parse(localStorage.getItem(STORAGE.DRILL_STATS) || '{}'); } catch { return {}; }
 }
@@ -11652,7 +11652,7 @@ function getDrillStats() {
   const all = _allDrillStats();
   return all[_certKey()] || {};
 }
-// drill: 'simlab'|'decision'|'whynot'|'packettrace'|'gauntlet'; field: 'done'|'perfect'
+// drill: 'simlab'|'decision'|'whynot'|'gauntlet'; field: 'done'|'perfect'
 function bumpDrillStat(drill, field, by) {
   const all = _allDrillStats();
   const cert = _certKey();
@@ -11714,9 +11714,6 @@ const MILESTONE_DEFS = [
   { id: 'whynot_first',      label: 'Why-Not novice',   desc: 'Complete your first Why-Not round' },
   { id: 'whynot_25',         label: 'Why-Not regular',  desc: 'Complete 25 Why-Not rounds' },
   { id: 'whynot_master',     label: 'Reasoned master',  desc: 'Score a perfect Why-Not round' },
-  { id: 'pt_first',          label: 'Trace tenderfoot', desc: 'Complete your first Packet Trace' },
-  { id: 'pt_25',             label: 'Trace tactician',  desc: 'Complete 25 Packet Traces' },
-  { id: 'pt_master',         label: 'Trace master',     desc: 'Master a Packet Trace scenario' },
   { id: 'gauntlet_first',    label: 'Gauntlet runner',  desc: 'Complete your first Gauntlet' },
   { id: 'gauntlet_25',       label: 'Gauntlet regular', desc: 'Complete 25 Gauntlets' },
   { id: 'gauntlet_survivor', label: 'Gauntlet survivor',desc: 'Complete a full perfect Gauntlet' },
@@ -11949,9 +11946,6 @@ const MILESTONE_CHECKS = [
   { id: 'whynot_first',      check: c => (c.drill.whynot && c.drill.whynot.done || 0) >= 1 },
   { id: 'whynot_25',         check: c => (c.drill.whynot && c.drill.whynot.done || 0) >= 25 },
   { id: 'whynot_master',     check: c => (c.drill.whynot && c.drill.whynot.perfect || 0) >= 1 },
-  { id: 'pt_first',          check: c => (c.drill.packettrace && c.drill.packettrace.done || 0) >= 1 },
-  { id: 'pt_25',             check: c => (c.drill.packettrace && c.drill.packettrace.done || 0) >= 25 },
-  { id: 'pt_master',         check: c => (c.drill.packettrace && c.drill.packettrace.perfect || 0) >= 1 },
   { id: 'gauntlet_first',    check: c => (c.drill.gauntlet && c.drill.gauntlet.done || 0) >= 1 },
   { id: 'gauntlet_25',       check: c => (c.drill.gauntlet && c.drill.gauntlet.done || 0) >= 25 },
   { id: 'gauntlet_survivor', check: c => (c.drill.gauntlet && c.drill.gauntlet.perfect || 0) >= 1 },
@@ -18687,7 +18681,6 @@ const MILESTONE_PROGRESS = {
   simlab_25:   c => [c.drill.simlab && c.drill.simlab.done || 0, 25],
   decision_25: c => [c.drill.decision && c.drill.decision.done || 0, 25],
   whynot_25:   c => [c.drill.whynot && c.drill.whynot.done || 0, 25],
-  pt_25:       c => [c.drill.packettrace && c.drill.packettrace.done || 0, 25],
   gauntlet_25: c => [c.drill.gauntlet && c.drill.gauntlet.done || 0, 25],
 };
 // v7.14.0 — Milestones "Trophy Shine × Hover Detail". Shine: recent tiles get a
