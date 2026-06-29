@@ -17,6 +17,7 @@ Two outcomes in one coherent change to the milestone system:
 - **No data loss on migration.** Existing earned milestones (currently global) must be grandfathered, not wiped.
 - **Reuse existing machinery.** The celebration pop-up (`showMilestoneCelebration`) and analytics renderer (`_renderAnaMilestones`) already exist and already fire for quizzes/exams — extend, don't rebuild.
 - **Cross-platform: must work on Desktop browsers, Safari/WebKit, AND the iOS Capacitor wrap** — storage, cert detection, and the celebration pop-up all behave identically across the three. See §4.H.
+- **End-user visual surfaces follow the visual workflow** (see §4.I): mockup-first (`mockups/*-concept.html`, shown + approved before build), the 4-stage skill pass (`/design-taste-frontend` → `/emil-design-eng` → `/humanizer` → `/marketing-psychology`), and full **BRAND.md** compliance (forged-bronze, editorial, no purple/emoji/em-dash/left-border-callout/card-spam; `dg-system.css` overrides only — never `styles.css`; bump `dg-system.css?v=`).
 - Additive + cleanup only — no unrelated refactors.
 
 ## 3. Current state (verified via the graphify code map + targeted reads)
@@ -81,6 +82,13 @@ Cross-platform testing:
 - Run milestone E2E across existing Playwright projects: `test:webkit` + `test:mobile-safari` (not just Chromium).
 - Manual iOS Capacitor smoke: earn a drill milestone in the wrapped app → pop-up renders + unlock persists across relaunch (cloud round-trip).
 - Safari ITP scenario: simulate localStorage purge → milestones rehydrate per-cert from cloud; migration doesn't double-wrap or clobber.
+
+### I. Visual workflow for end-user surfaces (BRAND.md + mockup-first + 4-stage pass)
+Applies to the **visual** surfaces only — the milestone **labels/descriptions copy**, the **celebration moment**, and the **analytics drill-milestone display / "Drills" grouping**. NOT the engine/storage/migration/cleanup.
+
+1. **Mockup-first** (BRAND.md §10): build each new visual surface as a `mockups/*-concept.html` first, seeded from `brand/mockup-starter-tokens.css` (never freehand hex). Deploy-served at `/mockups/` → user previews on-device + approves **before** real implementation. The existing `showMilestoneCelebration` pop-up is reused (already brand-compliant) — a mockup is needed only if we alter it; the **new** analytics "Drills" grouping needs its own concept mockup.
+2. **4-stage skill pass, in order:** `/design-taste-frontend` (visual treatment) → `/emil-design-eng` (polish, motion, micro-interactions) → `/humanizer` (strip AI-tells from milestone copy) → `/marketing-psychology` (achievement framing / motivation).
+3. **BRAND.md compliance (hard):** forged-bronze accent (no purple), editorial hairlines (no card-spam, no left-accent-border callouts), Fraunces display + Inter UI with the `lining-nums tabular-nums` rule on any hero figure, motion per §6 (transform+opacity only, `cubic-bezier(0.16,1,0.3,1)`, reduced-motion fade-only, ≤600ms UI), no emoji-as-icons, no em-dashes (use `·`). **Implement in `dg-system.css` scoped overrides — NEVER edit `styles.css` — and hand-bump `dg-system.css?v=` (SW cache-bust).**
 
 ## 5. Key integration points (files)
 - `app.js`: `MILESTONE_DEFS`, `MILESTONE_CHECKS`, `MILESTONE_PROGRESS`, `getMilestones`/`unlockMilestone`/`evaluateMilestones`, `STORAGE` keys, the 5 drill completion functions, `_renderAnaMilestones`.
