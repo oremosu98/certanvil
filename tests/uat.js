@@ -21077,6 +21077,188 @@ console.log('\n\x1b[1m── T7: DRILLS ANALYTICS GROUP + FINAL COPY + BRONZE TO
   }
 })();
 
+// ── Sim Lab: network reference renderer (Task 6) ──
+// The renderer builds SVG as a STRING mounted via _el('div','sl-net', svg), so
+// assertions run against that string (read from the .sl-net child's innerHTML),
+// plus shim-queried child blocks for the given/CLI panels. Same vm-sandbox +
+// DOM-shim pattern as the Task 5 mount test. Read-only: no listeners to drive.
+(function () {
+  console.log('\n\x1b[1m── Sim Lab: network reference renderer (Task 6) ──\x1b[0m');
+  try {
+    var vm = require('vm');
+
+    var grab = function (name) {
+      var re = new RegExp('function ' + name + '\\([^)]*\\) \\{[\\s\\S]*?\\n\\}');
+      return (js.match(re) || [''])[0];
+    };
+    var grabLine = function (name) {
+      var re = new RegExp('function ' + name + '\\([^\\n]*\\)\\s*\\{[^\\n]*\\}');
+      return (js.match(re) || [''])[0];
+    };
+
+    // Structural: the stub is gone, real SVG-building landed
+    test('net renderer: stub replaced (no sl-ref-stub network branch)',
+      !/_slRenderRefNetwork\(ref\)\s*\{\s*return _el\('div', 'sl-ref-stub', 'network'\)/.test(js));
+    test('net renderer: builds an sl-net-svg element',
+      /sl-net-svg/.test(js));
+    test('net renderer: defines the attack arrow marker',
+      /id="sl-net-arrow"/.test(js));
+    test('net renderer: glyph map present',
+      /_SL_NET_GLYPHS/.test(js));
+
+    // ── DEV FIXTURE — Net+ Mercer & Hale branch (derived from
+    // mockups/diagram-pbq-concept.html). LABELED dev fixture for this test only.
+    // PC-2 is the flagged host → state 'compromised'; one synthetic 'attack'
+    // link exercises that path. Two distinct zones (v10 Staff, v20 Guest);
+    // RTR-1 has no zone (sits outside both, like the mockup gateway).
+    var _netFix = {
+      kind: 'network',
+      devices: [
+        { id: 'rtr', label: 'RTR-1', type: 'router', x: 1, y: 0, ip: 'gw .10.1 / .20.1' },
+        { id: 'swa', label: 'SW-A', type: 'switch', zone: 'VLAN 10 Staff', x: 0, y: 1, ip: 'access v10' },
+        { id: 'swb', label: 'SW-B', type: 'switch', zone: 'VLAN 20 Guest', x: 2, y: 1, ip: 'access v20' },
+        { id: 'fs1', label: 'FS-1', type: 'server', zone: 'VLAN 10 Staff', x: 0, y: 2, ip: '.10.20' },
+        { id: 'pc2', label: 'PC-2', type: 'pc', zone: 'VLAN 10 Staff', x: 1, y: 2, ip: '.20.45 ?', state: 'compromised' },
+        { id: 'pc7', label: 'PC-7', type: 'pc', zone: 'VLAN 20 Guest', x: 2, y: 2, ip: '.20.31' }
+      ],
+      links: [
+        { from: 'rtr', to: 'swa' },
+        { from: 'rtr', to: 'swb' },
+        { from: 'swa', to: 'fs1' },
+        { from: 'swa', to: 'pc2', kind: 'attack' },
+        { from: 'swb', to: 'pc7' }
+      ],
+      given: {
+        networkId: '192.168.10.0',
+        mask: '255.255.255.0  (/24)',
+        cli: ['PC-2> ipconfig', '  IPv4 Address . . : 192.168.20.45', 'PC-2> ping 192.168.10.20', '  Request timed out.']
+      }
+    };
+
+    var refNetBody = grab('_slRenderRefNetwork');
+    var elBody     = grab('_el');
+    var escBody    = grabLine('_esc');
+
+    if (!refNetBody || !elBody || !escBody) {
+      test('net renderer: vm extraction succeeded', false);
+      results.errors.push('could not extract _slRenderRefNetwork / helpers; check names/indenting');
+      return;
+    }
+
+    // Minimal DOM shim — _el needs createElement + className/innerHTML/appendChild.
+    // _esc() does `d.textContent = s; return d.innerHTML;`, so the textContent
+    // setter must populate innerHTML with HTML-escaped text for escaping to work.
+    var htmlEsc = function (s) {
+      return String(s == null ? '' : s)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    };
+    var makeEl = function (tag) {
+      var attrs = {}, children = [], cls = '', inner = '';
+      var el = {
+        tagName: tag.toUpperCase(),
+        get className() { return cls; },
+        set className(v) { cls = v; },
+        get innerHTML() { return inner; },
+        set innerHTML(v) { inner = v; children = []; },
+        get textContent() { return ''; },
+        set textContent(v) { inner = htmlEsc(v); },
+        style: {},
+        get _children() { return children; },
+        setAttribute: function (k, v) { attrs[k] = v; },
+        getAttribute: function (k) { return attrs[k] || null; },
+        appendChild: function (c) { children.push(c); return c; }
+      };
+      return el;
+    };
+    var docShim = { createElement: function (tag) { return makeEl(tag); } };
+
+    var nCtx = { document: docShim, window: { CSS: null }, Object: Object, Array: Array, String: String };
+    vm.createContext(nCtx);
+    vm.runInContext(elBody, nCtx);
+    vm.runInContext(escBody, nCtx);
+    vm.runInContext(refNetBody, nCtx);
+    nCtx.fix = _netFix;
+    var rootEl = vm.runInContext('_slRenderRefNetwork(fix);', nCtx);
+
+    // .sl-net child holds the SVG string in innerHTML
+    var netDiv = rootEl._children.filter(function (c) { return c.className === 'sl-net'; })[0];
+    var svg = netDiv ? netDiv.innerHTML : '';
+
+    test('net renderer: returns an sl-net-ref root', rootEl && rootEl.className === 'sl-net-ref');
+    test('net renderer: emits an <svg> with a computed viewBox',
+      /<svg class="sl-net-svg" viewBox="0 0 \d+ \d+"/.test(svg));
+
+    // one .sl-node group per device (6) — match the <g> opener, not sub-elements
+    var nodeCount = (svg.match(/<g class="sl-node/g) || []).length;
+    test('net renderer: one .sl-node per device (6)', nodeCount === 6);
+
+    // compromised device gets the compromised class
+    test('net renderer: compromised device gets compromised class',
+      /class="sl-node compromised"/.test(svg));
+
+    // attack link gets the attack class + arrow marker
+    test('net renderer: attack link gets .sl-link.attack class',
+      /class="sl-link attack"/.test(svg));
+    test('net renderer: attack link references the arrow marker',
+      /marker-end="url\(#sl-net-arrow\)"/.test(svg));
+
+    // one zone rect per distinct zone (2: v10, v20)
+    var zoneCount = (svg.match(/class="sl-vlan-zone"/g) || []).length;
+    test('net renderer: one zone rect per distinct zone (2)', zoneCount === 2);
+    test('net renderer: zone label uppercased', /VLAN 10 STAFF/.test(svg));
+
+    // RTR-1 has no zone → still rendered as a node, but not inside a zone count
+    test('net renderer: zoneless device still renders (RTR-1 node present)',
+      /sl-node-name[^>]*>RTR-1</.test(svg));
+
+    // node labels + ips escaped & present
+    test('net renderer: device label rendered', /sl-node-name[^>]*>PC-2</.test(svg));
+    test('net renderer: device ip rendered', /sl-node-ip[^>]*>\.20\.45 \?</.test(svg));
+
+    // glyph per node type (router/switch/server/pc all drawn)
+    test('net renderer: node glyph paths drawn', (svg.match(/class="sl-glyph"/g) || []).length === 6);
+
+    // given panel
+    var givenDiv = rootEl._children.filter(function (c) { return c.className === 'sl-net-given'; })[0];
+    test('net renderer: given panel rendered with Network ID + mask',
+      !!givenDiv && /Network ID/.test(givenDiv.innerHTML) && /192\.168\.10\.0/.test(givenDiv.innerHTML) && /255\.255\.255\.0/.test(givenDiv.innerHTML));
+
+    // CLI block lines present + escaped
+    var cliDiv = rootEl._children.filter(function (c) { return c.className === 'sl-net-cli'; })[0];
+    test('net renderer: given CLI lines appear',
+      !!cliDiv && /PC-2&gt; ipconfig/.test(cliDiv.innerHTML) && /Request timed out\./.test(cliDiv.innerHTML));
+
+    // ── arbitrary-scenario smoke: a totally different shape still renders ──
+    var _altFix = {
+      kind: 'network',
+      devices: [
+        { id: 'fw', label: 'FW', type: 'firewall', x: 1, y: 0 },
+        { id: 'srv', label: 'SRV', type: 'server', zone: 'DMZ', x: 0, y: 1 },
+        { id: 'wks', label: 'WKS', type: 'pc', zone: 'LAN', x: 2, y: 1, state: 'affected' }
+      ],
+      links: [{ from: 'fw', to: 'srv' }, { from: 'fw', to: 'wks' }]
+    };
+    nCtx.alt = _altFix;
+    var altRoot = vm.runInContext('_slRenderRefNetwork(alt);', nCtx);
+    var altNet = altRoot._children.filter(function (c) { return c.className === 'sl-net'; })[0];
+    var altSvg = altNet ? altNet.innerHTML : '';
+    test('net renderer: arbitrary scenario renders all nodes',
+      (altSvg.match(/<g class="sl-node/g) || []).length === 3);
+    test('net renderer: affected device gets affected class',
+      /class="sl-node affected"/.test(altSvg));
+    test('net renderer: arbitrary scenario zones (DMZ + LAN)',
+      (altSvg.match(/class="sl-vlan-zone"/g) || []).length === 2);
+    test('net renderer: unknown-coordinate firewall glyph drawn (no crash, 3 glyphs)',
+      (altSvg.match(/class="sl-glyph"/g) || []).length === 3);
+    test('net renderer: scenario without given renders no given/cli panel',
+      altRoot._children.every(function (c) { return c.className !== 'sl-net-given' && c.className !== 'sl-net-cli'; }));
+
+  } catch (err) {
+    test('net renderer: vm smoke test (threw)', false);
+    results.errors.push('network renderer smoke test threw: ' + err.message);
+  }
+})();
+
 // ── Summary ──
 console.log('\n' + '═'.repeat(50));
 const total = results.pass + results.fail;

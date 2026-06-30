@@ -528,7 +528,134 @@
   }
 
   // --- reference asset renderers (Task 5 — stubs; replaced by Tasks 6-8) ---
-  function _slRenderRefNetwork(ref) { return _el('div', 'sl-ref-stub', 'network'); }   // replaced in Task 6
+
+  // Real network reference renderer (Task 6). Data-driven: the mockups supply
+  // VISUAL STYLE only; layout is computed from each device's small-int grid
+  // coords so it works for any scenario, not just the dev fixture. Read-only
+  // (no listeners). SVG is built as a string and mounted via
+  // _el('div','sl-net', svg) so it is inert and trivially assertable. The
+  // glyph map lives inside the fn so the unit is self-contained.
+  function _slRenderRefNetwork(ref) {
+    // Monoline device glyphs (lifted from mockups/diagram-pbq-concept.html;
+    // each is drawn in a ~16px box and centered on the node by the renderer).
+    // Stroke is currentColor via .sl-glyph so state overlays recolour it.
+    var _SL_NET_GLYPHS = {
+      router:   { d: 'M1 8h7m-3.5-3.5v7M10 4l5 4-5 4', w: 16, h: 16 },
+      'switch': { d: 'M5 3l-5 5 5 5M13 3l5 5-5 5',     w: 18, h: 16 },
+      server:   { d: 'M0 3h16v10H0zM0 8h16',           w: 16, h: 16 },
+      pc:       { d: 'M0 3h16v9H0zM5 16h6',            w: 16, h: 18 },
+      firewall: { d: 'M0 2h16v12H0zM0 6h16M0 10h16M5 2v4M11 2v4M3 6v4M8 6v4M13 6v4', w: 16, h: 16 },
+      box:      { d: 'M1 3h14v10H1z',                  w: 16, h: 16 }
+    };
+    var root = _el('div', 'sl-net-ref');
+    if (!ref || !Array.isArray(ref.devices)) { return root; }
+
+    var CELL_W = 150, CELL_H = 110, NODE_W = 128, NODE_H = 62, PAD = 24;
+    var ZONE_PAD = 20, ZONE_LABEL_PAD = 34;
+    var devices = ref.devices, links = Array.isArray(ref.links) ? ref.links : [];
+
+    // index by id + precompute geometry; track max extents for the viewBox
+    var byId = {}, geo = {}, maxRight = 0, maxBottom = 0, i;
+    for (i = 0; i < devices.length; i++) {
+      var d = devices[i];
+      var nx = PAD + (d.x || 0) * CELL_W;
+      var ny = PAD + (d.y || 0) * CELL_H;
+      geo[d.id] = { nx: nx, ny: ny, cx: nx + NODE_W / 2, cy: ny + NODE_H / 2 };
+      byId[d.id] = d;
+      if (nx + NODE_W > maxRight) maxRight = nx + NODE_W;
+      if (ny + NODE_H > maxBottom) maxBottom = ny + NODE_H;
+    }
+    var W = maxRight + PAD, H = maxBottom + PAD;
+
+    // zones: bounding box per distinct (truthy) zone — devices with a falsy
+    // zone (router/firewall/internet) sit outside any zone box.
+    var zoneOrder = [], zoneBox = {};
+    for (i = 0; i < devices.length; i++) {
+      var dv = devices[i];
+      if (!dv.zone) continue;
+      var zg = geo[dv.id];
+      if (!zoneBox[dv.zone]) {
+        zoneOrder.push(dv.zone);
+        zoneBox[dv.zone] = { x1: zg.nx, y1: zg.ny, x2: zg.nx + NODE_W, y2: zg.ny + NODE_H };
+      } else {
+        var zb = zoneBox[dv.zone];
+        if (zg.nx < zb.x1) zb.x1 = zg.nx;
+        if (zg.ny < zb.y1) zb.y1 = zg.ny;
+        if (zg.nx + NODE_W > zb.x2) zb.x2 = zg.nx + NODE_W;
+        if (zg.ny + NODE_H > zb.y2) zb.y2 = zg.ny + NODE_H;
+      }
+    }
+
+    var svg = [];
+    svg.push('<svg class="sl-net-svg" viewBox="0 0 ' + W + ' ' + H + '" role="img" ' +
+             'aria-label="Network diagram reference" preserveAspectRatio="xMidYMid meet">');
+    // arrow marker for attack links (lifted from incident-response mockup)
+    svg.push('<defs><marker id="sl-net-arrow" markerWidth="7" markerHeight="7" refX="5.5" refY="3" orient="auto">' +
+             '<path d="M0 0L6 3L0 6z" class="sl-net-arrowhead"/></marker></defs>');
+
+    // zones first (behind nodes)
+    for (i = 0; i < zoneOrder.length; i++) {
+      var zname = zoneOrder[i], box = zoneBox[zname];
+      var zx = box.x1 - ZONE_PAD, zy = box.y1 - ZONE_LABEL_PAD;
+      var zw = (box.x2 - box.x1) + ZONE_PAD * 2;
+      var zh = (box.y2 - box.y1) + ZONE_LABEL_PAD + ZONE_PAD;
+      svg.push('<rect class="sl-vlan-zone" x="' + zx + '" y="' + zy + '" width="' + zw +
+               '" height="' + zh + '" rx="16"/>');
+      svg.push('<text class="sl-zone-lbl" x="' + (zx + 14) + '" y="' + (zy + 20) + '">' +
+               _esc(String(zname).toUpperCase()) + '</text>');
+    }
+
+    // links (node-center to node-center)
+    for (i = 0; i < links.length; i++) {
+      var lk = links[i];
+      var a = geo[lk.from], b = geo[lk.to];
+      if (!a || !b) continue;
+      var attack = lk.kind === 'attack';
+      svg.push('<line class="sl-link' + (attack ? ' attack' : '') + '" x1="' + a.cx + '" y1="' + a.cy +
+               '" x2="' + b.cx + '" y2="' + b.cy + '"' +
+               (attack ? ' marker-end="url(#sl-net-arrow)"' : '') + '/>');
+    }
+
+    // nodes (centered-stack: rect + glyph-on-top + name/ip centered)
+    for (i = 0; i < devices.length; i++) {
+      var nd = devices[i], ng = geo[nd.id];
+      var stateCls = nd.state === 'compromised' ? ' compromised'
+                   : (nd.state === 'affected' ? ' affected' : '');
+      var gl = _SL_NET_GLYPHS[nd.type] || _SL_NET_GLYPHS.box;
+      var glX = ng.nx + (NODE_W - gl.w) / 2;
+      var cxText = ng.nx + NODE_W / 2;
+      svg.push('<g class="sl-node' + stateCls + '">');
+      svg.push('<rect class="sl-node-box" x="' + ng.nx + '" y="' + ng.ny + '" width="' + NODE_W +
+               '" height="' + NODE_H + '" rx="12"/>');
+      svg.push('<path class="sl-glyph" transform="translate(' + glX + ',' + (ng.ny + 9) + ')" d="' + gl.d + '"/>');
+      svg.push('<text class="sl-node-name" x="' + cxText + '" y="' + (ng.ny + 40) + '">' + _esc(nd.label) + '</text>');
+      if (nd.ip) {
+        svg.push('<text class="sl-node-ip" x="' + cxText + '" y="' + (ng.ny + 54) + '">' + _esc(nd.ip) + '</text>');
+      }
+      svg.push('</g>');
+    }
+
+    svg.push('</svg>');
+    root.appendChild(_el('div', 'sl-net', svg.join('')));
+
+    // optional read-only given panel + mono CLI block
+    var given = ref.given;
+    if (given) {
+      if (given.networkId || given.mask) {
+        var rows = '';
+        if (given.networkId) rows += '<div class="sl-net-row"><span class="k">Network ID</span><span class="v">' + _esc(given.networkId) + '</span></div>';
+        if (given.mask) rows += '<div class="sl-net-row"><span class="k">Subnet mask</span><span class="v">' + _esc(given.mask) + '</span></div>';
+        root.appendChild(_el('div', 'sl-net-given', rows));
+      }
+      if (Array.isArray(given.cli) && given.cli.length) {
+        var lines = [];
+        for (i = 0; i < given.cli.length; i++) lines.push(_esc(given.cli[i]));
+        root.appendChild(_el('div', 'sl-net-cli', lines.join('<br>')));
+      }
+    }
+
+    return root;
+  }
   function _slRenderRefTimeline(ref) { return _el('div', 'sl-ref-stub', 'timeline'); } // replaced in Task 7
   function _slRenderRefLayered(ref) { return _el('div', 'sl-ref-stub', 'layered'); }   // replaced in Task 8
   function _slRenderReference(ref) {

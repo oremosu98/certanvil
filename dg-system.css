@@ -4284,3 +4284,52 @@ html[data-theme="light"] body .celebration-toast{
 }
 html[data-theme] body .celebration-toast-title{color:var(--text)}
 html[data-theme] body .celebration-toast-sub{color:var(--text-dim,rgba(255,255,255,.75));opacity:1}
+
+/* ════════════════════════════════════════════════════════════════════════
+   SIM LAB · network reference renderer (Task 6) — diagram + incident overlay
+   ────────────────────────────────────────────────────────────────────────
+   Faithful STYLE lift of mockups/diagram-pbq-concept.html (.vlan-zone /
+   centered-stack .node / .link / given+CLI) + the incident overlay states
+   from mockups/incident-response-pbq-concept.html (.compromised / .affected
+   / .link.attack animated dashes + marker#arrow). Layout is computed in JS
+   (data-driven); these are presentation only. Mockup tokens mapped to the
+   app's dg tokens: --ink→--text, --ink-soft→--text-mid, --muted→--text-dim,
+   --surface-2→--surface2, --fail→--red. The mockups' affected-state used
+   --warn, which is NOT defined in this stylesheet — the app's defined amber
+   is --yellow, so affected uses --yellow (matches the existing .sl-clock
+   .is-low precedent at line ~4168). Scoped to both labs that mount a
+   reference panel (#page-sim-lab + #page-decision-lab). 0 hardcoded hex. */
+#page-sim-lab .sl-net,#page-decision-lab .sl-net{padding:8px}
+#page-sim-lab .sl-net-svg,#page-decision-lab .sl-net-svg{width:100%;height:auto;display:block;touch-action:pan-x pan-y pinch-zoom}
+
+/* zones */
+#page-sim-lab .sl-vlan-zone,#page-decision-lab .sl-vlan-zone{fill:color-mix(in oklab,var(--accent) 7%,transparent);stroke:color-mix(in oklab,var(--accent) 26%,var(--border));stroke-width:1}
+#page-sim-lab .sl-zone-lbl,#page-decision-lab .sl-zone-lbl{font:800 10.5px Inter,sans-serif;letter-spacing:.1em;text-transform:uppercase;fill:var(--text-dim)}
+
+/* links */
+#page-sim-lab .sl-link,#page-decision-lab .sl-link{stroke:color-mix(in oklab,var(--text) 34%,transparent);stroke-width:1.6;fill:none}
+#page-sim-lab .sl-link.attack,#page-decision-lab .sl-link.attack{stroke:var(--red);stroke-width:2.2;fill:none;stroke-dasharray:5 6}
+#page-sim-lab .sl-net-arrowhead,#page-decision-lab .sl-net-arrowhead{fill:var(--red)}
+@media (prefers-reduced-motion:no-preference){#page-sim-lab .sl-link.attack,#page-decision-lab .sl-link.attack{animation:sl-net-flow 1s linear infinite}}
+@keyframes sl-net-flow{to{stroke-dashoffset:-22}}
+
+/* nodes — centered stack (rect + glyph-on-top + name/ip centered) */
+#page-sim-lab .sl-node-box,#page-decision-lab .sl-node-box{fill:var(--surface2);stroke:var(--border);stroke-width:1.2}
+#page-sim-lab .sl-node-name,#page-decision-lab .sl-node-name{font:700 13px Inter,sans-serif;fill:var(--text);text-anchor:middle}
+#page-sim-lab .sl-node-ip,#page-decision-lab .sl-node-ip{font:600 11px ui-monospace,Menlo,monospace;fill:var(--text-mid);text-anchor:middle}
+#page-sim-lab .sl-glyph,#page-decision-lab .sl-glyph{stroke:var(--accent);stroke-width:1.8;fill:none}
+
+/* incident overlay states */
+#page-sim-lab .sl-node.compromised .sl-node-box,#page-decision-lab .sl-node.compromised .sl-node-box{stroke:var(--red);stroke-width:2}
+#page-sim-lab .sl-node.compromised .sl-node-name,#page-decision-lab .sl-node.compromised .sl-node-name{fill:var(--red)}
+#page-sim-lab .sl-node.compromised .sl-glyph,#page-decision-lab .sl-node.compromised .sl-glyph{stroke:var(--red)}
+#page-sim-lab .sl-node.affected .sl-node-box,#page-decision-lab .sl-node.affected .sl-node-box{stroke:var(--yellow);stroke-width:1.8}
+#page-sim-lab .sl-node.affected .sl-node-name,#page-decision-lab .sl-node.affected .sl-node-name{fill:var(--yellow)}
+#page-sim-lab .sl-node.affected .sl-glyph,#page-decision-lab .sl-node.affected .sl-glyph{stroke:var(--yellow)}
+
+/* read-only given reference + CLI block */
+#page-sim-lab .sl-net-given,#page-decision-lab .sl-net-given{margin:2px 8px 10px;border-top:1px solid var(--border);padding-top:11px;display:grid;gap:9px}
+#page-sim-lab .sl-net-row,#page-decision-lab .sl-net-row{display:flex;align-items:baseline;gap:10px;font-size:12.5px}
+#page-sim-lab .sl-net-row .k,#page-decision-lab .sl-net-row .k{color:var(--text-dim);font-weight:700;min-width:86px}
+#page-sim-lab .sl-net-row .v,#page-decision-lab .sl-net-row .v{font-family:ui-monospace,Menlo,monospace;color:var(--text);font-size:12px}
+#page-sim-lab .sl-net-cli,#page-decision-lab .sl-net-cli{margin:0 8px 8px;background:color-mix(in oklab,var(--text) 5%,var(--surface));border:1px solid var(--border);border-radius:11px;padding:11px 13px;font-family:ui-monospace,Menlo,monospace;font-size:11.5px;line-height:1.6;color:var(--text-mid);white-space:pre-wrap;word-break:break-word}
