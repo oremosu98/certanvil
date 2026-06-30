@@ -92,6 +92,15 @@
     return _arrEq(sa, sb);
   }
 
+  function _scoreConfigureSlots(step, resp) {
+    var ans = step.answer.slots, total = 0, correct = 0;
+    Object.keys(ans).forEach(function (slotId) {
+      total++;
+      if (resp && resp.slots && resp.slots[slotId] === ans[slotId]) correct++;
+    });
+    return { total: total, correct: correct };
+  }
+
   function _scoreStep(step, resp) {
     if (!resp) return false;
     switch (step.type) {
@@ -113,18 +122,27 @@
           var given = resp && resp[f.id];
           return _simLabNormalizeMatch(given, accept); // see _simLabNormalizeMatch above
         });
+      case 'configure':
+        var _sc = _scoreConfigureSlots(step, resp);
+        return _sc.total > 0 && _sc.correct === _sc.total;
       default: return false;
     }
   }
 
   function simLabScoreScenario(scn, responses) {
-    var perStep = {}, correct = 0;
+    var perStep = {}, correct = 0, total = 0;
     scn.steps.forEach(function (st) {
-      var ok = _scoreStep(st, responses ? responses[st.id] : null);
-      perStep[st.id] = ok;
-      if (ok) correct++;
+      var resp = responses ? responses[st.id] : null;
+      if (st.type === 'configure') {
+        var sc = _scoreConfigureSlots(st, resp);
+        perStep[st.id] = sc;            // { total, correct } breakdown for configure
+        correct += sc.correct; total += sc.total;
+      } else {
+        var ok = _scoreStep(st, resp);
+        perStep[st.id] = ok;            // boolean for existing types
+        if (ok) correct++; total++;
+      }
     });
-    var total = scn.steps.length;
     return { perStep: perStep, correct: correct, total: total, fraction: total ? correct / total : 0 };
   }
 

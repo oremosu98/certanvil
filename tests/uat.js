@@ -20590,6 +20590,69 @@ console.log('\n\x1b[1m── T7: DRILLS ANALYTICS GROUP + FINAL COPY + BRONZE TO
   }
 })();
 
+// ── v7.62.x: Sim Lab — configure per-slot scoring (Task 2) ──
+// Behavioral smoke: extract simLabScoreScenario + its helpers into a vm
+// sandbox and prove configure steps score per-slot while other types stay 1-per-step.
+(function () {
+  console.log('\n\x1b[1m── Sim Lab: configure per-slot scoring ──\x1b[0m');
+  try {
+    var grab = function (name) {
+      var re = new RegExp('function ' + name + '\\([^)]*\\) \\{[\\s\\S]*?\\n\\}');
+      return (js.match(re) || [''])[0];
+    };
+    var normBody             = grab('_norm');
+    var normalizeMatchBody   = grab('_simLabNormalizeMatch');
+    var arrEqBody            = grab('_arrEq');
+    var setEqBody            = grab('_setEq');
+    var scoreSlotsBody       = grab('_scoreConfigureSlots');
+    var scoreStepBody        = grab('_scoreStep');
+    var scoreScenarioBody    = grab('simLabScoreScenario');
+
+    if (!normBody || !normalizeMatchBody || !arrEqBody || !setEqBody ||
+        !scoreSlotsBody || !scoreStepBody || !scoreScenarioBody) {
+      test('configure scoring: extraction of sim-lab scoring helpers', false);
+      results.errors.push('could not extract sim-lab scoring helpers from js; check function names/dedenting');
+      return;
+    }
+
+    var ctx = {};
+    vm.createContext(ctx);
+    vm.runInContext(normBody, ctx);
+    vm.runInContext(normalizeMatchBody, ctx);
+    vm.runInContext(arrEqBody, ctx);
+    vm.runInContext(setEqBody, ctx);
+    vm.runInContext(scoreSlotsBody, ctx);
+    vm.runInContext(scoreStepBody, ctx);
+    vm.runInContext(scoreScenarioBody, ctx);
+    vm.runInContext('globalThis.__slScore = simLabScoreScenario;', ctx);
+    var simLabScoreScenario = ctx.__slScore;
+
+    // 3-slot configure: 2 correct, 1 wrong → correct:2, total:3
+    var _scn3 = { id:'c2', cert:'netplus', scenario:'p', estMinutes:3, steps:[{
+      id:'s', type:'configure', prompt:'p', explanation:'e', points:1,
+      payload:{ slots:[
+        {id:'a',label:'A',options:[{id:'x',text:'x'},{id:'y',text:'y'}]},
+        {id:'b',label:'B',options:[{id:'x',text:'x'},{id:'y',text:'y'}]},
+        {id:'c',label:'C',options:[{id:'x',text:'x'},{id:'y',text:'y'}]} ]},
+      answer:{ slots:{ a:'x', b:'x', c:'x' } } }] };
+    var _r = simLabScoreScenario(_scn3, { s: { slots:{ a:'x', b:'x', c:'y' } } });
+    test('configure scores per-slot (2/3)',
+      _r.correct === 2 && _r.total === 3);
+
+    // non-configure (order): must still score 1 point per step
+    var _ord = { id:'c3', cert:'netplus', scenario:'p', estMinutes:3, steps:[{
+      id:'o', type:'order', prompt:'p', explanation:'e', points:1,
+      payload:{ items:[{id:'1',label:'1'},{id:'2',label:'2'}] }, answer:{ correctOrder:['1','2'] } }] };
+    var _ro = simLabScoreScenario(_ord, { o:{ order:['1','2'] } });
+    test('non-configure unchanged (1 per step)',
+      _ro.correct === 1 && _ro.total === 1);
+
+  } catch (err) {
+    test('configure scoring: vm smoke test (threw)', false);
+    results.errors.push('configure scoring vm smoke test threw: ' + err.message);
+  }
+})();
+
 // ── Summary ──
 console.log('\n' + '═'.repeat(50));
 const total = results.pass + results.fail;
