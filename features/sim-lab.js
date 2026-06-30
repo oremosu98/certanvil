@@ -61,6 +61,13 @@
         if (!_validateStepPayload(st)) errs.push('step ' + i + ': bad payload/answer for ' + st.type);
       });
     }
+    if (s.assets && s.assets.reference) {
+      var ref = s.assets.reference, kinds = ['network', 'timeline', 'layered'];
+      if (kinds.indexOf(ref.kind) === -1) errs.push('reference: bad kind');
+      else if (ref.kind === 'network' && !Array.isArray(ref.devices)) errs.push('reference network: devices[] required');
+      else if (ref.kind === 'timeline' && !Array.isArray(ref.stages)) errs.push('reference timeline: stages[] required');
+      else if (ref.kind === 'layered' && !Array.isArray(ref.layers)) errs.push('reference layered: layers[] required');
+    }
     return { ok: errs.length === 0, errors: errs };
   }
 
@@ -520,6 +527,19 @@
     }
   }
 
+  // --- reference asset renderers (Task 5 — stubs; replaced by Tasks 6-8) ---
+  function _slRenderRefNetwork(ref) { return _el('div', 'sl-ref-stub', 'network'); }   // replaced in Task 6
+  function _slRenderRefTimeline(ref) { return _el('div', 'sl-ref-stub', 'timeline'); } // replaced in Task 7
+  function _slRenderRefLayered(ref) { return _el('div', 'sl-ref-stub', 'layered'); }   // replaced in Task 8
+  function _slRenderReference(ref) {
+    if (!ref || !ref.kind) return null;
+    var panel = _el('div', 'sl-ref');
+    if (ref.kind === 'network') panel.appendChild(_slRenderRefNetwork(ref));
+    else if (ref.kind === 'timeline') panel.appendChild(_slRenderRefTimeline(ref));
+    else if (ref.kind === 'layered') panel.appendChild(_slRenderRefLayered(ref));
+    return panel;
+  }
+
   // --- scenario orchestrator (Task 10) ---
   // opts.initial (optional): a per-step seed map { stepId: response } used by exam
   // free-nav to re-hydrate a previously-answered round. Practice/session mode omits
@@ -536,6 +556,10 @@
       var pre = _el('pre', 'sl-scn-logs');
       pre.textContent = scn.assets.logs.join('\n');
       wrap.appendChild(pre);
+    }
+    if (scn.assets && scn.assets.reference) {
+      var refPanel = _slRenderReference(scn.assets.reference);
+      if (refPanel) wrap.appendChild(refPanel);
     }
     scn.steps.forEach(function (st, i) {
       var stepWrap = _el('div', 'sl-step');

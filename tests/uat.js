@@ -20819,6 +20819,264 @@ console.log('\n\x1b[1m── T7: DRILLS ANALYTICS GROUP + FINAL COPY + BRONZE TO
   }
 })();
 
+// ── Task 5: reference asset model + validation + mount wiring ──
+// Validation tests use the existing simLabValidateScenario extracted from `js`.
+// Mount test uses a vm-sandbox + DOM shim (same pattern as configure renderer).
+(function () {
+  console.log('\n\x1b[1m── Sim Lab: reference asset model (Task 5) ──\x1b[0m');
+  try {
+    var vm = require('vm');
+
+    // grab() pattern: matches dedented feature file functions (\n} closing brace)
+    var grab = function (name) {
+      var re = new RegExp('function ' + name + '\\([^)]*\\) \\{[\\s\\S]*?\\n\\}');
+      return (js.match(re) || [''])[0];
+    };
+    var grabLine = function (name) {
+      var re = new RegExp('function ' + name + '\\([^\\n]*\\)\\s*\\{[^\\n]*\\}');
+      return (js.match(re) || [''])[0];
+    };
+
+    // ── Structural checks ──
+    test('reference: _slRenderReference defined',
+      /function _slRenderReference\(/.test(js));
+    test('reference: _slRenderRefNetwork defined',
+      /function _slRenderRefNetwork\(/.test(js));
+    test('reference: _slRenderRefTimeline defined',
+      /function _slRenderRefTimeline\(/.test(js));
+    test('reference: _slRenderRefLayered defined',
+      /function _slRenderRefLayered\(/.test(js));
+    test('reference: _slMountScenario wires _slRenderReference',
+      /scn\.assets && scn\.assets\.reference/.test(js) && /_slRenderReference\(/.test(js));
+    test('reference: simLabValidateScenario checks reference kind',
+      /reference: bad kind/.test(js));
+
+    // ── Validation tests — extract simLabValidateScenario + helpers into vm ──
+    var isNonEmptyStrBody = grabLine('_isNonEmptyStr') || grab('_isNonEmptyStr');
+    var validatePayloadBody = grab('_validateStepPayload');
+    var validateScenarioBody = grab('simLabValidateScenario');
+
+    // STEP_TYPES array — grab from source
+    var stepTypesMatch = js.match(/var STEP_TYPES\s*=\s*\[[^\]]+\]/);
+    var stepTypesDecl = stepTypesMatch ? stepTypesMatch[0] + ';' : "var STEP_TYPES = ['order','categorize','match','analyze','fillin','configure'];";
+
+    if (!isNonEmptyStrBody || !validatePayloadBody || !validateScenarioBody) {
+      test('reference validation: helper extraction succeeded', false);
+      results.errors.push('could not extract simLabValidateScenario helpers; check names/indenting');
+      return;
+    }
+
+    var vCtx = {};
+    vm.createContext(vCtx);
+    vm.runInContext(stepTypesDecl, vCtx);
+    vm.runInContext(isNonEmptyStrBody, vCtx);
+    vm.runInContext(validatePayloadBody, vCtx);
+    vm.runInContext(validateScenarioBody, vCtx);
+    vm.runInContext('globalThis.__validate = simLabValidateScenario;', vCtx);
+    var simLabValidateScenario = vCtx.__validate;
+
+    // Minimal valid configure scenario used as base for all reference tests
+    var _baseScn = function () {
+      return {
+        id: 'r1', cert: 'netplus', scenario: 'Configure the router', estMinutes: 3,
+        steps: [{
+          id: 's1', type: 'configure', prompt: 'Set IP mode', explanation: 'e', points: 1,
+          payload: { slots: [{ id: 'ip', label: 'IP Mode', options: [{ id: 'a', text: 'Static' }, { id: 'b', text: 'DHCP' }] }] },
+          answer: { slots: { ip: 'a' } }
+        }]
+      };
+    };
+
+    // 1. Scenario without assets.reference still validates fine
+    var _plain = _baseScn();
+    test('reference validation: scenario without reference passes',
+      simLabValidateScenario(_plain).ok === true);
+
+    // 2. Valid network reference passes
+    var _scnNet = _baseScn();
+    _scnNet.assets = { reference: { kind: 'network', devices: [{ id: 'd1', label: 'PC', type: 'pc', zone: 'v10', x: 10, y: 10 }], links: [] } };
+    test('reference validation: valid network reference passes',
+      simLabValidateScenario(_scnNet).ok === true);
+
+    // 3. Unknown kind rejected
+    var _scnBad = _baseScn();
+    _scnBad.assets = { reference: { kind: 'nope' } };
+    var _badResult = simLabValidateScenario(_scnBad);
+    test('reference validation: unknown reference kind rejected',
+      _badResult.ok === false && _badResult.errors.some(function (e) { return /reference.*bad kind/i.test(e); }));
+
+    // 4. Network reference without devices[] rejected
+    var _scnNoDevs = _baseScn();
+    _scnNoDevs.assets = { reference: { kind: 'network' } };
+    var _noDevsResult = simLabValidateScenario(_scnNoDevs);
+    test('reference validation: network without devices[] rejected',
+      _noDevsResult.ok === false && _noDevsResult.errors.some(function (e) { return /devices/.test(e); }));
+
+    // 5. Valid timeline reference passes
+    var _scnTl = _baseScn();
+    _scnTl.assets = { reference: { kind: 'timeline', stages: [{ id: 'p', icon: '!', label: 'Prep', severity: 'low' }] } };
+    test('reference validation: valid timeline reference passes',
+      simLabValidateScenario(_scnTl).ok === true);
+
+    // 6. Valid layered reference passes
+    var _scnLy = _baseScn();
+    _scnLy.assets = { reference: { kind: 'layered', layers: [{ id: 'l1', label: 'Perimeter', state: 'ok' }], core: { label: 'Core', assets: [] } } };
+    test('reference validation: valid layered reference passes',
+      simLabValidateScenario(_scnLy).ok === true);
+
+    // ── Mount test — vm-sandbox + DOM shim ──
+    var elBody            = grab('_el');
+    var escBody           = grabLine('_esc');
+    var slAttrBody        = grabLine('_slAttr');
+    var renderCfgBody     = grab('_slRenderConfigure');
+    var renderStepBody    = grab('simLabRenderStep');
+    var refNetBody        = grab('_slRenderRefNetwork');
+    var refTimeBody       = grab('_slRenderRefTimeline');
+    var refLayBody        = grab('_slRenderRefLayered');
+    var refDispBody       = grab('_slRenderReference');
+    var mountBody         = grab('_slMountScenario');
+
+    if (!elBody || !escBody || !mountBody || !refDispBody || !refNetBody) {
+      test('reference mount: vm extraction succeeded', false);
+      results.errors.push('could not extract _slMountScenario / reference helpers; check names/indenting');
+      return;
+    }
+
+    // Minimal DOM shim (same as configure renderer test, with _children as getter
+    // so it tracks the live `children` array even after innerHTML resets it)
+    var makeEl = function (tag) {
+      var attrs = {}, listeners = {}, children = [], cls = '', inner = '', val = '';
+      var el = {
+        tagName: tag.toUpperCase(),
+        get className() { return cls; },
+        set className(v) { cls = v; },
+        get innerHTML() { return inner; },
+        set innerHTML(v) { inner = v; children = []; },
+        get value() { return val; },
+        set value(v) { val = v; },
+        selected: false,
+        textContent: '',
+        style: {},
+        get _children() { return children; },
+        setAttribute: function (k, v) { attrs[k] = v; },
+        getAttribute: function (k) { return attrs[k] || null; },
+        appendChild: function (c) { children.push(c); return c; },
+        querySelector: function (sel) {
+          for (var i = 0; i < children.length; i++) {
+            var c = children[i];
+            if (!c || !c.tagName) continue;
+            if (sel.toLowerCase() === c.tagName.toLowerCase()) return c;
+            if (c._children) {
+              for (var j = 0; j < c._children.length; j++) {
+                var gc = c._children[j];
+                if (gc && gc.tagName && sel.toLowerCase() === gc.tagName.toLowerCase()) return gc;
+              }
+            }
+          }
+          return null;
+        },
+        querySelectorAll: function (sel) {
+          var hits = [];
+          var search = function (node) {
+            if (!node || !node._children) return;
+            node._children.forEach(function (c) {
+              if (!c || !c.tagName) return;
+              var tag = sel.replace(/^\..*/, '').toUpperCase();
+              if (c.tagName === (tag || c.tagName)) hits.push(c);
+              search(c);
+            });
+          };
+          search(el);
+          return hits;
+        },
+        addEventListener: function (ev, fn) { listeners[ev] = (listeners[ev] || []); listeners[ev].push(fn); },
+        dispatchEvent: function (evObj) { var fns = listeners[evObj.type] || []; fns.forEach(function (fn) { fn(evObj); }); },
+        closest: function () { return null; },
+        remove: function () {}
+      };
+      return el;
+    };
+
+    var docShim = {
+      createElement: function (tag) { return makeEl(tag); },
+      createTextNode: function (t) { return { textContent: t, tagName: '#text' }; }
+    };
+    var windowShim = { CSS: null };
+
+    var mCtx = { document: docShim, window: windowShim, Object: Object, Array: Array, String: String };
+    vm.createContext(mCtx);
+    vm.runInContext(elBody, mCtx);
+    vm.runInContext(escBody, mCtx);
+    if (slAttrBody) vm.runInContext(slAttrBody, mCtx);
+    if (renderCfgBody) vm.runInContext(renderCfgBody, mCtx);
+    if (renderStepBody) vm.runInContext(renderStepBody, mCtx);
+    vm.runInContext(refNetBody, mCtx);
+    if (refTimeBody) vm.runInContext(refTimeBody, mCtx);
+    if (refLayBody) vm.runInContext(refLayBody, mCtx);
+    vm.runInContext(refDispBody, mCtx);
+    vm.runInContext(mountBody, mCtx);
+
+    // Scenario with a network reference
+    var _mountScn = {
+      id: 'r1', cert: 'netplus', scenario: 'Configure the router', estMinutes: 3,
+      assets: { reference: { kind: 'network', devices: [{ id: 'd1', label: 'PC', type: 'pc', zone: 'v10', x: 10, y: 10 }], links: [] } },
+      steps: [{
+        id: 's1', type: 'configure', prompt: 'Set IP mode', explanation: 'e', points: 1,
+        payload: { slots: [{ id: 'ip', label: 'IP Mode', options: [{ id: 'a', text: 'Static' }, { id: 'b', text: 'DHCP' }] }] },
+        answer: { slots: { ip: 'a' } }
+      }]
+    };
+
+    var host = makeEl('div');
+    mCtx.host = host;
+    mCtx.mountScn = _mountScn;
+    mCtx.mountOpts = { onSubmit: function () {} };
+    vm.runInContext('_slMountScenario(host, mountScn, mountOpts);', mCtx);
+
+    // host._children[0] is the sl-scenario wrap div
+    // wrap._children layout: [sl-scn-prose, sl-ref, ...steps, submit]
+    var wrap = host._children[0];
+    var refPanelFound = wrap && wrap._children.some(function (c) {
+      return c && c.className === 'sl-ref';
+    });
+    test('reference mount: _slMountScenario renders a .sl-ref panel',
+      refPanelFound === true);
+
+    // Verify reference panel comes before first step wrap
+    if (wrap) {
+      var refIdx = -1, stepIdx = -1;
+      wrap._children.forEach(function (c, i) {
+        if (c && c.className === 'sl-ref' && refIdx === -1) refIdx = i;
+        if (c && c.className === 'sl-step' && stepIdx === -1) stepIdx = i;
+      });
+      test('reference mount: reference panel is before first step',
+        refIdx !== -1 && stepIdx !== -1 && refIdx < stepIdx);
+    }
+
+    // Scenario WITHOUT reference: must still mount fine (no regression)
+    var _plainScn = {
+      id: 'r2', cert: 'netplus', scenario: 'Plain scenario', estMinutes: 3,
+      steps: [{
+        id: 's1', type: 'configure', prompt: 'Set IP mode', explanation: 'e', points: 1,
+        payload: { slots: [{ id: 'ip', label: 'IP Mode', options: [{ id: 'a', text: 'Static' }, { id: 'b', text: 'DHCP' }] }] },
+        answer: { slots: { ip: 'a' } }
+      }]
+    };
+    var host2 = makeEl('div');
+    mCtx.host2 = host2;
+    mCtx.plainScn = _plainScn;
+    vm.runInContext('_slMountScenario(host2, plainScn, mountOpts);', mCtx);
+    var wrap2 = host2._children[0];
+    var hasNoRefPanel = wrap2 && !wrap2._children.some(function (c) { return c && c.className === 'sl-ref'; });
+    test('reference mount: scenario without reference has no .sl-ref panel',
+      hasNoRefPanel === true);
+
+  } catch (err) {
+    test('reference asset model: vm smoke test (threw)', false);
+    results.errors.push('reference asset model smoke test threw: ' + err.message);
+  }
+})();
+
 // ── Summary ──
 console.log('\n' + '═'.repeat(50));
 const total = results.pass + results.fail;
