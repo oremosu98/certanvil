@@ -4092,6 +4092,16 @@ mark.gnt-hinge{background:color-mix(in oklab,var(--red) 26%,transparent);color:i
 #page-sim-lab-result .slp-pr-val.over{color:var(--yellow,var(--warn))}
 #page-sim-lab-result .slp-pr-val.under{color:var(--green,var(--pass))}
 @media (prefers-reduced-motion:reduce){#page-sim-lab-result .slp-par-fill,#page-sim-lab-result .slp-pr-bar i{transition:none;transform:scaleX(1)}}
+/* Sim Lab session: configure step dropdowns (Task 4) - grading task toggles .is-correct/.is-wrong on .sl-cfg-select */
+#page-sim-lab .sl-cfg{display:grid;gap:13px}
+#page-sim-lab .sl-cfg-slot{display:grid;gap:6px}
+#page-sim-lab .sl-cfg-label{font:700 12px/1 Inter,sans-serif;color:var(--text-dim)}
+#page-sim-lab .sl-cfg-select{width:100%;appearance:none;-webkit-appearance:none;font:inherit;font-size:13.5px;font-weight:600;color:var(--text);background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:11px 38px 11px 13px;cursor:pointer;transition:border-color .18s var(--ease),box-shadow .18s var(--ease);background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Cpolyline points='2,3 5,7 8,3' fill='none' stroke='%23888' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 13px center}
+#page-sim-lab .sl-cfg-select:focus{outline:none;border-color:color-mix(in oklab,var(--accent) 55%,var(--border));box-shadow:0 0 0 3px color-mix(in oklab,var(--accent) 18%,transparent)}
+#page-sim-lab .sl-cfg-select.is-correct{border-color:color-mix(in oklab,var(--pass) 60%,var(--border));box-shadow:0 0 0 3px color-mix(in oklab,var(--pass) 15%,transparent)}
+#page-sim-lab .sl-cfg-select.is-wrong{border-color:color-mix(in oklab,var(--fail) 60%,var(--border));box-shadow:0 0 0 3px color-mix(in oklab,var(--fail) 14%,transparent)}
+@media (hover:hover) and (pointer:fine){#page-sim-lab .sl-cfg-select:hover{border-color:color-mix(in oklab,var(--accent) 30%,var(--border))}}
+@media (prefers-reduced-motion:reduce){#page-sim-lab .sl-cfg-select{transition:none}}
 /* Decision Lab: per-option why reveal + teach block (Task 2) — v7.59.0 */
 #page-decision-lab .dl-opt .dl-why{font:500 12.5px/1.45 Inter,sans-serif;color:var(--text-dim);margin-top:4px;display:grid;grid-template-rows:0fr;opacity:0;overflow:hidden;transition:grid-template-rows .16s var(--ease,cubic-bezier(.16,1,.3,1)),opacity .16s,transform .16s;transform:translateY(2px)}
 #page-decision-lab .dl-graded .dl-opt .dl-why{grid-template-rows:1fr;opacity:1;transform:none}
