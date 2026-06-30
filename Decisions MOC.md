@@ -1,3 +1,7 @@
+---
+tags: [moc]
+up: "[[Home]]"
+---
 # Decisions MOC
 
 Map of content for CertAnvil's architectural decisions, conventions, and regression guards.

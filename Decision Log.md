@@ -1,3 +1,6 @@
+---
+up: "[[Decisions MOC]]"
+---
 # Decision Log
 Running log of project decisions (notes tagged `#decision`). Capture new ones from the Decision template.
 

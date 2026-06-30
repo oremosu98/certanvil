@@ -1,3 +1,7 @@
+---
+tags: [moc]
+up: "[[Home]]"
+---
 # Mobile MOC
 
 Map of content for CertAnvil's mobile and iOS work.

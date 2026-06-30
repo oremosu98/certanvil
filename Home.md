@@ -1,8 +1,17 @@
+---
+type: process
+status: active
+cert: all
+updated: 2026-06-30
+tags: [moc]
+down: ["[[Drills MOC]]", "[[Mobile MOC]]", "[[Design MOC]]", "[[Decisions MOC]]", "[[Dashboard]]"]
+---
 # CertAnvil — Knowledge Vault
 
 > Obsidian home / map-of-content for the CertAnvil project. Open this folder as a vault (`Open folder as vault` → select the repo root). Code folders are excluded via `.obsidian/`. Use the graph view + search; this note is just the curated entry point.
 
 ## Dashboard (Dataview)
+> 📊 Full auto-dashboard → [[Dashboard]]  ·  🗺️ Visual board → [[Code ↔ Decisions.canvas|Code ↔ Decisions]]
 ```dataview
 TABLE status, type, updated FROM "docs" WHERE status = "active" SORT updated DESC LIMIT 15
 ```
@@ -25,6 +34,7 @@ LIST FROM #decision SORT updated DESC
 
 ## Conventions & Decisions
 - [[conventions]] — testing philosophy, lessons, magic-number constants
+- [[vault-navigation]] — how this vault is wired (up/down, Dashboard, Canvas) — set-once, zero-upkeep
 - [[workflow]] — boards, cadence, references
 - [[regression-tombstones]] — deleted code that must stay deleted
 - [[ADR-001-m5-supabase-session-cookies]]

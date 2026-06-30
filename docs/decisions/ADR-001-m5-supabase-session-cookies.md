@@ -1,4 +1,5 @@
 ---
+up: "[[Decisions MOC]]"
 type: decision
 status: active
 cert: all

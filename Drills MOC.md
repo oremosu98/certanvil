@@ -1,3 +1,7 @@
+---
+tags: [moc]
+up: "[[Home]]"
+---
 # Drills MOC
 
 Map of content for everything related to CertAnvil's drill subsystems — specs, plans, and architecture.

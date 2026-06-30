@@ -1,0 +1,68 @@
+{
+  "nodes": [
+    {
+      "id": "title",
+      "type": "text",
+      "text": "# CertAnvil\n## Code ↔ Decisions\nLeft = **WHY** it's built this way (Obsidian vault).\nRight = **HOW** the code actually runs (Graphify).\nKeep the two sides next to each other.",
+      "x": -180,
+      "y": -360,
+      "width": 360,
+      "height": 180,
+      "color": "3"
+    },
+    {
+      "id": "bridge",
+      "type": "text",
+      "text": "### 🔗 Bridge a decision to code\nDrop this comment in any doc:\n`<!-- graphify:touches fnName -->`\n→ it surfaces in graph-plus' **Why** tab, linking the decision to the exact code it governs.",
+      "x": -180,
+      "y": 200,
+      "width": 360,
+      "height": 200,
+      "color": "4"
+    },
+    {
+      "id": "why-group",
+      "type": "group",
+      "label": "WHY — Decisions & Knowledge (Obsidian)",
+      "x": -760,
+      "y": -140,
+      "width": 380,
+      "height": 600,
+      "color": "6"
+    },
+    { "id": "n-dec",   "type": "file", "file": "Decisions MOC.md", "x": -740, "y": -60,  "width": 340, "height": 60 },
+    { "id": "n-drl",   "type": "file", "file": "Drills MOC.md",    "x": -740, "y": 40,   "width": 340, "height": 60 },
+    { "id": "n-mob",   "type": "file", "file": "Mobile MOC.md",    "x": -740, "y": 140,  "width": 340, "height": 60 },
+    { "id": "n-dsn",   "type": "file", "file": "Design MOC.md",    "x": -740, "y": 240,  "width": 340, "height": 60 },
+    { "id": "n-dash",  "type": "file", "file": "Dashboard.md",     "x": -740, "y": 340,  "width": 340, "height": 60 },
+    {
+      "id": "how-group",
+      "type": "group",
+      "label": "HOW — Code Structure (Graphify)",
+      "x": 380,
+      "y": -140,
+      "width": 400,
+      "height": 600,
+      "color": "5"
+    },
+    { "id": "n-gmap",  "type": "file", "file": "docs/architecture/graphify-code-map.md",  "x": 400, "y": -60, "width": 360, "height": 60 },
+    { "id": "n-struc", "type": "file", "file": "docs/architecture/structure-overview.md", "x": 400, "y": 40,  "width": 360, "height": 60 },
+    { "id": "n-key",   "type": "file", "file": "docs/architecture/key-patterns.md",       "x": 400, "y": 140, "width": 360, "height": 60 },
+    { "id": "n-feat",  "type": "file", "file": "docs/architecture/feature-subsystems.md", "x": 400, "y": 240, "width": 360, "height": 60 },
+    {
+      "id": "n-live",
+      "type": "text",
+      "text": "### 🗺️ Live code map\nOpen `graphify-out/graph-plus.html` (interactive impact explorer).\nOr query: `node scripts/graphq.js impact <fn>`\nAuto-rebuilds every commit.",
+      "x": 400,
+      "y": 340,
+      "width": 360,
+      "height": 110,
+      "color": "5"
+    }
+  ],
+  "edges": [
+    { "id": "e-title-bridge", "fromNode": "title",  "fromSide": "bottom", "toNode": "bridge",   "toSide": "top" },
+    { "id": "e-bridge-why",   "fromNode": "bridge", "fromSide": "left",   "toNode": "n-dec",    "toSide": "right", "label": "governs" },
+    { "id": "e-bridge-how",   "fromNode": "bridge", "fromSide": "right",  "toNode": "n-gmap",   "toSide": "left",  "label": "touches code" }
+  ]
+}
