@@ -115,6 +115,7 @@ npx playwright test              # E2E (tests/e2e/app.spec.js)
 
 | Version | Features Added |
 |---|---|
+| v7.60.5 | Sim Lab: fix undefined --fail token → --red in reference renderers (live-verify Task 18) |
 | v7.60.4 | Sim Lab: layered defense-in-depth reference renderer (nested-frames SVG + CSS; Task 8) |
 | v7.60.3 | Sim Lab: attack-timeline reference renderer (data-driven vertical timeline + CSS; Task 7) |
 | v7.60.2 | Sim Lab: network PBQ reference renderer (data-driven SVG diagram + incident overlay; Task 6) |
