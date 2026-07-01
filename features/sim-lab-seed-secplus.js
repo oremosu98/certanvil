@@ -1392,7 +1392,7 @@ window.SIM_LAB_SEED_SECPLUS = [
   // 4. Insider threat — Lessons learned emphasis, network reference
   {
     id: 'sp-ir-insider-exfil', cert: 'secplus', objective: '4.8', topic: 'Incident Response',
-    title: 'Departing employee data theft', esta: null, estMinutes: 5, archetype: 'incident',
+    title: 'Departing employee data theft', estMinutes: 5, archetype: 'incident',
     scenario: 'A sales engineer submitted their resignation this morning. DLP logs show that last night, from their laptop, the entire customer contract repository was copied to a personal USB drive and uploaded to a personal cloud storage account.',
     assets: { reference: { kind: 'network', devices: [
       { id: 'lap', label: 'SE-LAPTOP', type: 'workstation', zone: 'internal', x: 60, y: 90, state: 'compromised' },
