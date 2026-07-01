@@ -1607,6 +1607,209 @@ window.SIM_LAB_SEED_NETPLUS = [
         ] },
         answer: { slots: { mask: 'a', gateway: 'a' } } }
     ]
+  },
+
+  // ── Defense in Depth (Task 14, 2-agent gated) ──
+  { id: 'netplus-did-flat-office', cert: 'netplus',
+    objective: 'N10-009 Domain 4.1 — Explain common security concepts (defense in depth, network segmentation)',
+    topic: 'Defense in Depth', title: 'One firewall, one flat network', estMinutes: 5, archetype: 'defense',
+    scenario: 'A small office has a stateful firewall at the edge and nothing else. Behind it, every device including the public-facing web server sits on one flat internal subnet. The perimeter looks solid, but it is the only real control in the whole design.',
+    assets: { reference: { kind: 'layered',
+      layers: [
+        { id: 'perimeter', label: 'Perimeter', control: 'Stateful firewall', state: 'present' },
+        { id: 'dmz', label: 'Screened subnet (DMZ)', state: 'missing' },
+        { id: 'internal', label: 'Internal LAN', control: 'Single flat subnet, no VLANs', state: 'missing' }
+      ],
+      core: { label: 'Servers and data', assets: [
+        { id: 'web1', label: 'WEB-1 (public web server)', exposed: true },
+        { id: 'fs1', label: 'FS-1 (file server)', exposed: true }
+      ] }
+    } },
+    steps: [
+      { id: 'd1', type: 'configure', points: 1,
+        prompt: 'Which layer of defense is missing in this design?',
+        explanation: 'Past the one firewall, everything is flat. The public web server sits right next to internal data with no screened subnet or segmentation between them, so a single breach reaches everything.',
+        payload: { slots: [ { id: 'layer', label: 'Missing layer', options: [
+          { id: 'l1', text: 'A screened subnet (DMZ) isolating the public web server' },
+          { id: 'l2', text: 'A second stateful firewall at the edge' },
+          { id: 'l3', text: 'A faster internet connection' },
+          { id: 'l4', text: 'A larger switch chassis' }
+        ] } ] },
+        answer: { slots: { layer: 'l1' } } },
+      { id: 'f1', type: 'configure', points: 1,
+        prompt: 'Add the correct control at each layer.',
+        explanation: 'A DMZ isolates the public server between two firewalls so a compromise stays away from internal data, and VLAN segmentation stops one foothold from reaching every device.',
+        payload: { slots: [
+          { id: 'perimeter', label: 'Perimeter', options: [
+            { id: 'p1', text: 'Stateful firewall at the edge' }, { id: 'p2', text: 'Open all inbound ports for compatibility' } ] },
+          { id: 'dmz', label: 'Public-facing servers', options: [
+            { id: 'd1', text: 'Place in a screened subnet (DMZ) between two firewalls' }, { id: 'd2', text: 'Place directly on the internal LAN' } ] },
+          { id: 'internal', label: 'Internal network', options: [
+            { id: 'i1', text: 'Segment into VLANs by role' }, { id: 'i2', text: 'Keep as one flat subnet' } ] }
+        ] },
+        answer: { slots: { perimeter: 'p1', dmz: 'd1', internal: 'i1' } } }
+    ]
+  },
+
+  { id: 'netplus-did-wifi-no-acl', cert: 'netplus',
+    objective: 'N10-009 Domain 4.1 — Explain common security concepts (segmentation, access control lists, hardening)',
+    topic: 'Defense in Depth', title: 'Guest Wi-Fi with a straight line to payroll', estMinutes: 5, archetype: 'defense',
+    scenario: 'A retail branch has a firewall at the edge and a guest Wi-Fi SSID for customers. The guest network shares the same VLAN as the back-office LAN, and there is no ACL restricting traffic between them, so any guest device can reach the payroll server.',
+    assets: { reference: { kind: 'layered',
+      layers: [
+        { id: 'perimeter', label: 'Perimeter', control: 'Edge firewall', state: 'present' },
+        { id: 'network', label: 'Network segmentation', control: 'Guest Wi-Fi shares VLAN with back office, no ACL', state: 'missing' },
+        { id: 'endpoint', label: 'Endpoint', control: 'Host firewall on payroll server', state: 'present' }
+      ],
+      core: { label: 'Back-office systems', assets: [
+        { id: 'pay1', label: 'PAY-1 (payroll server)', exposed: true }
+      ] }
+    } },
+    steps: [
+      { id: 'd1', type: 'configure', points: 1,
+        prompt: 'Which layer has the gap in this design?',
+        explanation: 'The edge firewall and the payroll server\'s host firewall are both present, but guest and back-office traffic share one VLAN with no ACL between them, so the segmentation layer is the gap.',
+        payload: { slots: [ { id: 'layer', label: 'Missing layer', options: [
+          { id: 'l1', text: 'Network segmentation between guest Wi-Fi and back office' },
+          { id: 'l2', text: 'The edge firewall' },
+          { id: 'l3', text: 'The payroll server\'s host firewall' },
+          { id: 'l4', text: 'Physical door locks on the server room' }
+        ] } ] },
+        answer: { slots: { layer: 'l1' } } },
+      { id: 'f1', type: 'configure', points: 1,
+        prompt: 'Add the correct control at each layer.',
+        explanation: 'A dedicated guest VLAN with an ACL blocking guest-to-back-office traffic closes the gap, while keeping the existing perimeter and endpoint controls in place.',
+        payload: { slots: [
+          { id: 'perimeter', label: 'Perimeter', options: [
+            { id: 'p1', text: 'Edge firewall filtering inbound/outbound traffic' }, { id: 'p2', text: 'No perimeter control needed' } ] },
+          { id: 'network', label: 'Network', options: [
+            { id: 'n1', text: 'Separate guest VLAN with an ACL denying access to the back-office VLAN' }, { id: 'n2', text: 'Same VLAN for guests and staff to simplify support' } ] },
+          { id: 'endpoint', label: 'Endpoint', options: [
+            { id: 'e1', text: 'Host-based firewall on the payroll server' }, { id: 'e2', text: 'Disable the payroll server\'s firewall for easier troubleshooting' } ] }
+        ] },
+        answer: { slots: { perimeter: 'p1', network: 'n1', endpoint: 'e1' } } }
+    ]
+  },
+
+  { id: 'netplus-did-unmanaged-switch', cert: 'netplus',
+    objective: 'N10-009 Domain 4.1 — Explain common security concepts (port security, hardening, segmentation)',
+    topic: 'Defense in Depth', title: 'A closet switch anyone can plug into', estMinutes: 5, archetype: 'defense',
+    scenario: 'A branch office has a firewall at the edge and VLANs separating departments. In the wiring closet, an unmanaged switch feeds the finance VLAN, and any of its open ports will hand out an address and full access to whoever plugs in, no authentication required.',
+    assets: { reference: { kind: 'layered',
+      layers: [
+        { id: 'perimeter', label: 'Perimeter', control: 'Edge firewall', state: 'present' },
+        { id: 'network', label: 'Network segmentation', control: 'VLANs by department', state: 'present' },
+        { id: 'endpoint', label: 'Endpoint / port access', control: 'Open ports on an unmanaged switch, no port security', state: 'missing' }
+      ],
+      core: { label: 'Finance VLAN', assets: [
+        { id: 'fin1', label: 'FIN-DB (finance database)', exposed: true }
+      ] }
+    } },
+    steps: [
+      { id: 'd1', type: 'configure', points: 1,
+        prompt: 'Which layer has the gap in this design?',
+        explanation: 'The perimeter and VLAN segmentation are both in place, but the finance VLAN\'s wiring closet uses an unmanaged switch with no port security, so anyone who plugs in gets full network access. The endpoint/port-access layer is the gap.',
+        payload: { slots: [ { id: 'layer', label: 'Missing layer', options: [
+          { id: 'l1', text: 'Port security on the access-layer switch' },
+          { id: 'l2', text: 'The edge firewall' },
+          { id: 'l3', text: 'VLAN segmentation' },
+          { id: 'l4', text: 'DNS filtering' }
+        ] } ] },
+        answer: { slots: { layer: 'l1' } } },
+      { id: 'f1', type: 'configure', points: 1,
+        prompt: 'Add the correct control at each layer.',
+        explanation: 'Replacing the unmanaged switch with a managed switch running 802.1X or MAC-based port security stops unauthenticated devices from joining the finance VLAN, while the perimeter and segmentation layers stay as they are.',
+        payload: { slots: [
+          { id: 'perimeter', label: 'Perimeter', options: [
+            { id: 'p1', text: 'Edge firewall filtering traffic to the internet' }, { id: 'p2', text: 'No firewall, rely on VLANs alone' } ] },
+          { id: 'network', label: 'Network', options: [
+            { id: 'n1', text: 'VLANs segmenting finance from other departments' }, { id: 'n2', text: 'One VLAN for the entire building' } ] },
+          { id: 'endpoint', label: 'Port access', options: [
+            { id: 'e1', text: 'Managed switch with 802.1X port security' }, { id: 'e2', text: 'Unmanaged switch with all ports open' } ] }
+        ] },
+        answer: { slots: { perimeter: 'p1', network: 'n1', endpoint: 'e1' } } }
+    ]
+  },
+
+  { id: 'netplus-did-vpn-split-tunnel', cert: 'netplus',
+    objective: 'N10-009 Domain 4.1 — Explain common security concepts (remote access security, segmentation)',
+    topic: 'Defense in Depth', title: 'A remote worker with a shortcut around the firewall', estMinutes: 5, archetype: 'defense',
+    scenario: 'The company firewall inspects all traffic entering headquarters, and the internal LAN is segmented into VLANs. Remote employees connect over a site-to-site capable VPN, but split tunneling is enabled, so their internet traffic bypasses the corporate firewall entirely while their VPN tunnel still reaches internal servers.',
+    assets: { reference: { kind: 'layered',
+      layers: [
+        { id: 'perimeter', label: 'Perimeter', control: 'Edge firewall inspecting inbound HQ traffic', state: 'present' },
+        { id: 'remote', label: 'Remote access', control: 'VPN with split tunneling enabled', state: 'missing' },
+        { id: 'network', label: 'Network segmentation', control: 'VLANs by department', state: 'present' }
+      ],
+      core: { label: 'Internal servers', assets: [
+        { id: 'app1', label: 'APP-1 (internal app server)', exposed: true }
+      ] }
+    } },
+    steps: [
+      { id: 'd1', type: 'configure', points: 1,
+        prompt: 'Which layer has the gap in this design?',
+        explanation: 'The edge firewall and internal VLANs are both fine, but split tunneling lets a remote laptop reach the open internet unfiltered at the same time its VPN tunnel reaches internal servers. A compromised laptop becomes a bridge straight past the perimeter.',
+        payload: { slots: [ { id: 'layer', label: 'Missing layer', options: [
+          { id: 'l1', text: 'Remote access control (split tunneling bypasses the firewall)' },
+          { id: 'l2', text: 'The edge firewall inspecting HQ traffic' },
+          { id: 'l3', text: 'VLAN segmentation inside HQ' },
+          { id: 'l4', text: 'Physical security of the server room' }
+        ] } ] },
+        answer: { slots: { layer: 'l1' } } },
+      { id: 'f1', type: 'configure', points: 1,
+        prompt: 'Add the correct control at each layer.',
+        explanation: 'Forcing full-tunnel VPN routes all remote traffic through the corporate firewall for inspection, closing the bypass while the existing perimeter and segmentation layers remain effective.',
+        payload: { slots: [
+          { id: 'perimeter', label: 'Perimeter', options: [
+            { id: 'p1', text: 'Edge firewall inspecting all inbound and outbound traffic' }, { id: 'p2', text: 'Firewall inspecting only inbound traffic' } ] },
+          { id: 'remote', label: 'Remote access', options: [
+            { id: 'r1', text: 'Full-tunnel VPN routing all traffic through the corporate firewall' }, { id: 'r2', text: 'Split-tunnel VPN so internet traffic bypasses the firewall' } ] },
+          { id: 'network', label: 'Network', options: [
+            { id: 'n1', text: 'VLANs segmenting internal servers by department' }, { id: 'n2', text: 'One flat VLAN for all internal servers' } ] }
+        ] },
+        answer: { slots: { perimeter: 'p1', remote: 'r1', network: 'n1' } } }
+    ]
+  },
+
+  { id: 'netplus-did-iot-vlan', cert: 'netplus',
+    objective: 'N10-009 Domain 4.1 — Explain common security concepts (IoT segmentation, hardening)',
+    topic: 'Defense in Depth', title: 'Smart cameras on the same VLAN as the servers', estMinutes: 5, archetype: 'defense',
+    scenario: 'A warehouse has an edge firewall and VLAN segmentation for its office network. Recently installed IoT security cameras were plugged into the same VLAN as the inventory servers because it was the quickest way to get them online, and the cameras still use their factory-default credentials.',
+    assets: { reference: { kind: 'layered',
+      layers: [
+        { id: 'perimeter', label: 'Perimeter', control: 'Edge firewall', state: 'present' },
+        { id: 'network', label: 'Network segmentation', control: 'IoT cameras share the server VLAN', state: 'missing' },
+        { id: 'endpoint', label: 'Endpoint hardening', control: 'Cameras still use default credentials', state: 'missing' }
+      ],
+      core: { label: 'Inventory servers', assets: [
+        { id: 'inv1', label: 'INV-1 (inventory server)', exposed: true },
+        { id: 'cam1', label: 'CAM-1 (default-credential camera)', exposed: true }
+      ] }
+    } },
+    steps: [
+      { id: 'd1', type: 'configure', points: 1,
+        prompt: 'Which layer has the biggest gap here?',
+        explanation: 'Unhardened IoT devices sharing a VLAN with production servers is the core problem: a camera with default credentials is an easy foothold, and because there is no segmentation, that foothold reaches the inventory server directly.',
+        payload: { slots: [ { id: 'layer', label: 'Missing layer', options: [
+          { id: 'l1', text: 'IoT devices are not segmented from servers and still use default credentials' },
+          { id: 'l2', text: 'The edge firewall is misconfigured' },
+          { id: 'l3', text: 'The warehouse has too much bandwidth' },
+          { id: 'l4', text: 'The inventory server is too old' }
+        ] } ] },
+        answer: { slots: { layer: 'l1' } } },
+      { id: 'f1', type: 'configure', points: 1,
+        prompt: 'Add the correct control at each layer.',
+        explanation: 'Moving IoT devices to a dedicated VLAN with no route to servers, and changing default credentials on every camera, closes both gaps while the perimeter firewall stays as-is.',
+        payload: { slots: [
+          { id: 'perimeter', label: 'Perimeter', options: [
+            { id: 'p1', text: 'Edge firewall filtering internet-bound traffic' }, { id: 'p2', text: 'No firewall needed for a warehouse' } ] },
+          { id: 'network', label: 'Network', options: [
+            { id: 'n1', text: 'Dedicated IoT VLAN isolated from the server VLAN' }, { id: 'n2', text: 'Keep IoT devices on the server VLAN for convenience' } ] },
+          { id: 'endpoint', label: 'Endpoint', options: [
+            { id: 'e1', text: 'Change default credentials on every camera' }, { id: 'e2', text: 'Leave factory-default credentials in place' } ] }
+        ] },
+        answer: { slots: { perimeter: 'p1', network: 'n1', endpoint: 'e1' } } }
+    ]
   }
 
 ];

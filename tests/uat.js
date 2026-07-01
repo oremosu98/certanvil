@@ -22219,6 +22219,101 @@ console.log('\n\x1b[1m── T7: DRILLS ANALYTICS GROUP + FINAL COPY + BRONZE TO
   }
 })();
 
+// The 10 consensus-approved Defense in Depth scenarios (5 Net+, 5 Sec+) now
+// live for real in features/sim-lab-seed-netplus.js and
+// features/sim-lab-seed-secplus.js (window.SIM_LAB_SEED_NETPLUS /
+// window.SIM_LAB_SEED_SECPLUS). This proves every one of them is real,
+// production-ready content: each passes the same pure validator that gates
+// the dev fixture (simLabValidateScenario), extracted from features/sim-lab.js
+// by the same brace-matching approach as .superpowers/sdd/validate-drafts.js
+// (no reimplementation of validator logic). Defense scenarios use `layered`
+// refs without a deviceId configure step, so simLabValidateNetworkFidelity
+// does not apply here (mirrors Task 13's incident-bank test, minus the
+// fidelity check) — this is the real bank across BOTH cert seed banks
+// (Task 14).
+(function () {
+  console.log('\n\x1b[1m── Sim Lab: Defense in Depth seed-bank validation, Net+ & Sec+ (Task 14) ──\x1b[0m');
+  try {
+    var vm = require('vm');
+
+    var grab = function (name) {
+      var re = new RegExp('function ' + name + '\\([^)]*\\) \\{[\\s\\S]*?\\n\\}');
+      return (js.match(re) || [''])[0];
+    };
+
+    // ── Extract the REAL pure validator from features/sim-lab.js, exactly
+    // as .superpowers/sdd/validate-drafts.js does ──
+    var isNonEmptyStrBody   = grab('_isNonEmptyStr');
+    var validatePayloadBody = grab('_validateStepPayload');
+    var validateScenarioBody = grab('simLabValidateScenario');
+    var stepTypesMatch = js.match(/var STEP_TYPES\s*=\s*\[[^\]]+\]/);
+    var stepTypesDecl = stepTypesMatch ? stepTypesMatch[0] + ';' : "var STEP_TYPES = ['order','categorize','match','analyze','fillin','configure'];";
+
+    if (!isNonEmptyStrBody || !validatePayloadBody || !validateScenarioBody) {
+      test('Defense in Depth bank: validator helper extraction succeeded', false);
+      results.errors.push('could not extract validator helpers for Task 14 bank test; check names/indenting');
+      return;
+    }
+
+    var vCtx = {};
+    vm.createContext(vCtx);
+    vm.runInContext(stepTypesDecl, vCtx);
+    vm.runInContext(isNonEmptyStrBody, vCtx);
+    vm.runInContext(validatePayloadBody, vCtx);
+    vm.runInContext(validateScenarioBody, vCtx);
+    vm.runInContext('globalThis.__validate = simLabValidateScenario;', vCtx);
+    var simLabValidateScenario = vCtx.__validate;
+
+    // ── Load both real seed banks: eval features/sim-lab-seed-netplus.js and
+    // features/sim-lab-seed-secplus.js in a sandbox with `var window = {}` so
+    // window.SIM_LAB_SEED_NETPLUS / window.SIM_LAB_SEED_SECPLUS populate ──
+    var netplusSrc = read('features/sim-lab-seed-netplus.js');
+    var netplusCtx = {};
+    vm.createContext(netplusCtx);
+    vm.runInContext('var window = {};\n' + netplusSrc + '\nglobalThis.__seed = window.SIM_LAB_SEED_NETPLUS;', netplusCtx);
+    var netplusBank = netplusCtx.__seed;
+
+    var secplusSrc = read('features/sim-lab-seed-secplus.js');
+    var secplusCtx = {};
+    vm.createContext(secplusCtx);
+    vm.runInContext('var window = {};\n' + secplusSrc + '\nglobalThis.__seed = window.SIM_LAB_SEED_SECPLUS;', secplusCtx);
+    var secplusBank = secplusCtx.__seed;
+
+    test('Defense in Depth bank: window.SIM_LAB_SEED_NETPLUS loaded as an array',
+      Array.isArray(netplusBank));
+    test('Defense in Depth bank: window.SIM_LAB_SEED_SECPLUS loaded as an array',
+      Array.isArray(secplusBank));
+    if (!Array.isArray(netplusBank) || !Array.isArray(secplusBank)) {
+      results.errors.push('could not load one or both seed banks for Task 14 Defense in Depth test');
+      return;
+    }
+
+    var netplusDefense = netplusBank.filter(function (s) { return s && s.archetype === 'defense'; });
+    var secplusDefense = secplusBank.filter(function (s) { return s && s.archetype === 'defense'; });
+
+    test('Defense in Depth bank: at least 5 defense-archetype scenarios in Net+ bank',
+      netplusDefense.length >= 5);
+    test('Defense in Depth bank: at least 5 defense-archetype scenarios in Sec+ bank',
+      secplusDefense.length >= 5);
+
+    var allValidateOk = true;
+    netplusDefense.concat(secplusDefense).forEach(function (s) {
+      var vr = simLabValidateScenario(s);
+      if (!vr || vr.ok !== true) {
+        allValidateOk = false;
+        results.errors.push('Defense in Depth bank: ' + (s && s.id) + ' failed simLabValidateScenario: ' + JSON.stringify(vr && vr.errors));
+      }
+    });
+
+    test('Defense in Depth bank: every defense scenario (both banks) passes simLabValidateScenario',
+      allValidateOk);
+
+  } catch (err) {
+    test('Defense in Depth bank: vm smoke test (threw)', false);
+    results.errors.push('Defense in Depth bank smoke test threw: ' + err.message);
+  }
+})();
+
 // ── Summary ──
 console.log('\n' + '═'.repeat(50));
 const total = results.pass + results.fail;

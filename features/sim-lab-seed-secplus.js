@@ -2100,5 +2100,263 @@ window.SIM_LAB_SEED_SECPLUS = [
         ] },
         answer: { correctOrder: ['a', 'b', 'c', 'd'] } }
     ]
+  },
+
+  // ── Defense in Depth (Task 14, 2-agent gated) ──
+  { id: 'secplus-did-hollow-perimeter', cert: 'secplus',
+    objective: 'SY0-701 Domain 3.2 — Compare and contrast security implications of architecture models (defense in depth, control categories)',
+    topic: 'Defense in Depth', title: 'Strong wall, hollow inside', estMinutes: 6, archetype: 'defense',
+    scenario: 'A security review of Northwind HQ finds a capable next-gen firewall at the edge and almost nothing behind it. Endpoints are unmanaged, the database stores records in clear text, and one shared admin account opens everything. A single phishing click puts an attacker next to the crown jewels.',
+    assets: { reference: { kind: 'layered',
+      layers: [
+        { id: 'perimeter', label: 'Perimeter', control: 'Next-gen firewall', state: 'present' },
+        { id: 'endpoint', label: 'Endpoint', control: 'EDR and host hardening', state: 'missing' },
+        { id: 'data', label: 'Data', control: 'Encryption at rest and DLP', state: 'missing' },
+        { id: 'identity', label: 'Identity', control: 'MFA and least privilege', state: 'missing' }
+      ],
+      core: { label: 'Crown-jewel data', assets: [
+        { id: 'db1', label: 'DB-1 (customer records, clear text)', exposed: true },
+        { id: 'dc1', label: 'DC-1 (identity store)', exposed: true }
+      ] }
+    } },
+    steps: [
+      { id: 'd1', type: 'configure', points: 1,
+        prompt: 'What is the core flaw in this architecture?',
+        explanation: 'Everything rides on one control. Once the perimeter is bypassed, by phishing or an insider, nothing else slows the attacker before the data because there are no endpoint, data, or identity controls behind the firewall.',
+        payload: { slots: [ { id: 'flaw', label: 'Core flaw', options: [
+          { id: 'f1', text: 'It is a hard shell with a soft center: one perimeter, no inner controls' },
+          { id: 'f2', text: 'The firewall vendor is not on the approved list' },
+          { id: 'f3', text: 'The network uses too many subnets' },
+          { id: 'f4', text: 'The database server is running on outdated hardware' }
+        ] } ] },
+        answer: { slots: { flaw: 'f1' } } },
+      { id: 'f1', type: 'configure', points: 1,
+        prompt: 'Build the inner layers.',
+        explanation: 'EDR and hardening give each host its own line of defense, encryption and DLP protect the data itself, and MFA with least privilege shrinks what a stolen credential can do.',
+        payload: { slots: [
+          { id: 'endpoint', label: 'Endpoint layer', options: [
+            { id: 'a1', text: 'EDR plus host hardening' }, { id: 'a2', text: 'A louder antivirus pop-up' }, { id: 'a3', text: 'Local admin rights for every user' } ] },
+          { id: 'data', label: 'Data layer', options: [
+            { id: 'b1', text: 'Encryption at rest plus DLP' }, { id: 'b2', text: 'A nightly backup, nothing else' }, { id: 'b3', text: 'Public read access for convenience' } ] },
+          { id: 'identity', label: 'Identity layer', options: [
+            { id: 'c1', text: 'MFA plus least privilege' }, { id: 'c2', text: 'One shared admin account' }, { id: 'c3', text: 'Longer passwords, no other change' } ] }
+        ] },
+        answer: { slots: { endpoint: 'a1', data: 'b1', identity: 'c1' } } },
+      { id: 't1', type: 'configure', points: 1,
+        prompt: 'MFA is best classified as which control type?',
+        explanation: 'MFA is enforced by technology (technical) and stops misuse before it happens (preventive), not after an event has already occurred.',
+        payload: { slots: [ { id: 'type', label: 'Control type', options: [
+          { id: 't1', text: 'Technical, preventive' },
+          { id: 't2', text: 'Physical, detective' },
+          { id: 't3', text: 'Managerial, corrective' },
+          { id: 't4', text: 'Operational, compensating' }
+        ] } ] },
+        answer: { slots: { type: 't1' } } }
+    ]
+  },
+
+  { id: 'secplus-did-clinic-breach', cert: 'secplus',
+    objective: 'SY0-701 Domain 3.2 — Compare and contrast security implications of architecture models (zero trust, control categories)',
+    topic: 'Defense in Depth', title: 'A clinic that trusts anything already inside', estMinutes: 6, archetype: 'defense',
+    scenario: 'A regional clinic passed its firewall audit with flying colors, but once inside the network every workstation can reach the patient records database directly, there is no logging on that database, and staff share one login for the scheduling system. An attacker who lands on any workstation has an unmonitored path to patient data.',
+    assets: { reference: { kind: 'layered',
+      layers: [
+        { id: 'perimeter', label: 'Perimeter', control: 'Audited edge firewall', state: 'present' },
+        { id: 'network', label: 'Network segmentation', control: 'Micro-segmentation isolating the records database', state: 'missing' },
+        { id: 'monitoring', label: 'Monitoring', control: 'Database access logging and alerting', state: 'missing' },
+        { id: 'identity', label: 'Identity', control: 'Unique accounts and least privilege', state: 'missing' }
+      ],
+      core: { label: 'Patient records', assets: [
+        { id: 'phi1', label: 'PHI-DB (patient records)', exposed: true }
+      ] }
+    } },
+    steps: [
+      { id: 'd1', type: 'configure', points: 1,
+        prompt: 'What is the core flaw in this architecture?',
+        explanation: 'The design assumes anything past the firewall is safe. Every workstation has an unrestricted, unlogged path to the database, and shared logins mean no one can be held accountable for access. This is the opposite of zero trust.',
+        payload: { slots: [ { id: 'flaw', label: 'Core flaw', options: [
+          { id: 'f1', text: 'Implicit trust inside the network: no segmentation, no logging, no accountability' },
+          { id: 'f2', text: 'The firewall audit was performed by an unqualified vendor' },
+          { id: 'f3', text: 'The clinic uses too many workstations' },
+          { id: 'f4', text: 'The database server needs a hardware upgrade' }
+        ] } ] },
+        answer: { slots: { flaw: 'f1' } } },
+      { id: 'f1', type: 'configure', points: 1,
+        prompt: 'Build the inner layers.',
+        explanation: 'Micro-segmentation limits which hosts can reach the database at all, logging and alerting give visibility into who touches patient data, and unique accounts with least privilege restore accountability.',
+        payload: { slots: [
+          { id: 'network', label: 'Network layer', options: [
+            { id: 'a1', text: 'Micro-segmentation restricting database access to approved application servers' }, { id: 'a2', text: 'Allow every workstation to reach the database directly' }, { id: 'a3', text: 'Remove the firewall since it already passed audit' } ] },
+          { id: 'monitoring', label: 'Monitoring layer', options: [
+            { id: 'b1', text: 'Database access logging with alerting on anomalous queries' }, { id: 'b2', text: 'No logging, to save disk space' }, { id: 'b3', text: 'A monthly manual spreadsheet review' } ] },
+          { id: 'identity', label: 'Identity layer', options: [
+            { id: 'c1', text: 'Unique accounts per staff member with least privilege' }, { id: 'c2', text: 'One shared scheduling login for the whole clinic' }, { id: 'c3', text: 'Passwords that never expire' } ] }
+        ] },
+        answer: { slots: { network: 'a1', monitoring: 'b1', identity: 'c1' } } },
+      { id: 't1', type: 'configure', points: 1,
+        prompt: 'Database access logging and alerting is best classified as which control type?',
+        explanation: 'Logging and alerting are enforced through technology (technical) and identify malicious activity after it has started rather than preventing it outright, which makes it detective.',
+        payload: { slots: [ { id: 'type', label: 'Control type', options: [
+          { id: 't1', text: 'Technical, detective' },
+          { id: 't2', text: 'Managerial, preventive' },
+          { id: 't3', text: 'Physical, deterrent' },
+          { id: 't4', text: 'Operational, corrective' }
+        ] } ] },
+        answer: { slots: { type: 't1' } } }
+    ]
+  },
+
+  { id: 'secplus-did-cloud-bucket', cert: 'secplus',
+    objective: 'SY0-701 Domain 3.2 — Compare and contrast security implications of architecture models (cloud security, control categories)',
+    topic: 'Defense in Depth', title: 'A cloud app with one line of defense', estMinutes: 6, archetype: 'defense',
+    scenario: 'A startup moved its customer app to the cloud and configured a web application firewall in front of it. Behind the WAF, the storage bucket holding customer uploads is publicly readable, the application server runs with an overly permissive IAM role, and there is no vulnerability scanning of the container images before they deploy.',
+    assets: { reference: { kind: 'layered',
+      layers: [
+        { id: 'perimeter', label: 'Perimeter', control: 'Web application firewall', state: 'present' },
+        { id: 'data', label: 'Data', control: 'Private bucket policy with least-privilege access', state: 'missing' },
+        { id: 'identity', label: 'Identity', control: 'Scoped IAM role for the application server', state: 'missing' },
+        { id: 'application', label: 'Application', control: 'Vulnerability scanning in the CI/CD pipeline', state: 'missing' }
+      ],
+      core: { label: 'Customer data', assets: [
+        { id: 'bkt1', label: 'BKT-1 (public storage bucket)', exposed: true }
+      ] }
+    } },
+    steps: [
+      { id: 'd1', type: 'configure', points: 1,
+        prompt: 'What is the core flaw in this architecture?',
+        explanation: 'The WAF only inspects web traffic to the app; it does nothing to protect a publicly readable storage bucket, an overprivileged IAM role, or unscanned container images. One control at the edge cannot cover every layer of a cloud stack.',
+        payload: { slots: [ { id: 'flaw', label: 'Core flaw', options: [
+          { id: 'f1', text: 'A single WAF is treated as sufficient while storage, identity, and the build pipeline are left uncontrolled' },
+          { id: 'f2', text: 'The WAF vendor is not FedRAMP certified' },
+          { id: 'f3', text: 'The application server is undersized for the traffic' },
+          { id: 'f4', text: 'The cloud region is too far from customers' }
+        ] } ] },
+        answer: { slots: { flaw: 'f1' } } },
+      { id: 'f1', type: 'configure', points: 1,
+        prompt: 'Build the inner layers.',
+        explanation: 'A private bucket policy stops public read access to customer uploads, a scoped IAM role limits what the app server can do if compromised, and pipeline scanning catches vulnerable images before they ever deploy.',
+        payload: { slots: [
+          { id: 'data', label: 'Data layer', options: [
+            { id: 'a1', text: 'Private bucket policy granting access only to the application role' }, { id: 'a2', text: 'Public read access so the app can serve files directly' }, { id: 'a3', text: 'No bucket policy, rely on the WAF' } ] },
+          { id: 'identity', label: 'Identity layer', options: [
+            { id: 'b1', text: 'IAM role scoped to only the permissions the app needs' }, { id: 'b2', text: 'Administrator role for the application server, to avoid access errors' }, { id: 'b3', text: 'Shared root credentials for all services' } ] },
+          { id: 'application', label: 'Application layer', options: [
+            { id: 'c1', text: 'Vulnerability scanning of container images in CI/CD' }, { id: 'c2', text: 'Skip scanning to speed up deployments' }, { id: 'c3', text: 'Scan images once per year' } ] }
+        ] },
+        answer: { slots: { data: 'a1', identity: 'b1', application: 'c1' } } },
+      { id: 't1', type: 'configure', points: 1,
+        prompt: 'Scoping the IAM role to least privilege is best classified as which control type?',
+        explanation: 'Least-privilege IAM scoping is enforced by the cloud platform itself (technical) and limits what an attacker can do before any damage occurs, making it preventive.',
+        payload: { slots: [ { id: 'type', label: 'Control type', options: [
+          { id: 't1', text: 'Technical, preventive' },
+          { id: 't2', text: 'Managerial, detective' },
+          { id: 't3', text: 'Physical, preventive' },
+          { id: 't4', text: 'Operational, corrective' }
+        ] } ] },
+        answer: { slots: { type: 't1' } } }
+    ]
+  },
+
+  { id: 'secplus-did-vendor-remote-access', cert: 'secplus',
+    objective: 'SY0-701 Domain 3.2 — Compare and contrast security implications of architecture models (third-party access, control categories)',
+    topic: 'Defense in Depth', title: 'A vendor with the keys to everything', estMinutes: 6, archetype: 'defense',
+    scenario: 'A manufacturing plant lets a third-party HVAC vendor remote into its network to service building controls. The vendor connects through a properly configured VPN, but from there the vendor account can reach the plant\'s production control systems, sessions are never recorded, and the vendor account has never been reviewed since it was created two years ago.',
+    assets: { reference: { kind: 'layered',
+      layers: [
+        { id: 'perimeter', label: 'Perimeter', control: 'VPN gateway for vendor remote access', state: 'present' },
+        { id: 'network', label: 'Network segmentation', control: 'Jump host isolating vendor access from production systems', state: 'missing' },
+        { id: 'monitoring', label: 'Monitoring', control: 'Session recording for third-party access', state: 'missing' },
+        { id: 'identity', label: 'Identity', control: 'Periodic access review of vendor accounts', state: 'missing' }
+      ],
+      core: { label: 'Production control systems', assets: [
+        { id: 'ics1', label: 'ICS-1 (production controller)', exposed: true }
+      ] }
+    } },
+    steps: [
+      { id: 'd1', type: 'configure', points: 1,
+        prompt: 'What is the core flaw in this architecture?',
+        explanation: 'The VPN itself is fine, but past it the vendor has an unrestricted, unrecorded, never-reviewed path straight to production controllers. A compromised vendor credential or a disgruntled contractor would go unnoticed indefinitely.',
+        payload: { slots: [ { id: 'flaw', label: 'Core flaw', options: [
+          { id: 'f1', text: 'Third-party access is unrestricted, unmonitored, and never reviewed once inside the VPN' },
+          { id: 'f2', text: 'The VPN uses outdated encryption' },
+          { id: 'f3', text: 'The HVAC vendor is not licensed in the state' },
+          { id: 'f4', text: 'The production controllers need a firmware update' }
+        ] } ] },
+        answer: { slots: { flaw: 'f1' } } },
+      { id: 'f1', type: 'configure', points: 1,
+        prompt: 'Build the inner layers.',
+        explanation: 'A jump host limits the vendor to only the systems they need, session recording gives an audit trail of everything the vendor does, and periodic access review catches accounts that should have been revoked long ago.',
+        payload: { slots: [
+          { id: 'network', label: 'Network layer', options: [
+            { id: 'a1', text: 'Jump host restricting vendor access to HVAC systems only' }, { id: 'a2', text: 'Direct vendor access to the full production network' }, { id: 'a3', text: 'No restriction, since the VPN is already trusted' } ] },
+          { id: 'monitoring', label: 'Monitoring layer', options: [
+            { id: 'b1', text: 'Session recording for all third-party remote access' }, { id: 'b2', text: 'No session logging, to respect vendor privacy' }, { id: 'b3', text: 'A yearly vendor satisfaction survey' } ] },
+          { id: 'identity', label: 'Identity layer', options: [
+            { id: 'c1', text: 'Quarterly access review of vendor accounts' }, { id: 'c2', text: 'Vendor accounts that never expire or get reviewed' }, { id: 'c3', text: 'One shared vendor account for all contractors' } ] }
+        ] },
+        answer: { slots: { network: 'a1', monitoring: 'b1', identity: 'c1' } } },
+      { id: 't1', type: 'configure', points: 1,
+        prompt: 'Periodic access review of vendor accounts is best classified as which control type?',
+        explanation: 'Access reviews are a managerial policy activity, typically carried out on a schedule as part of governance, and they identify problems (like stale accounts) after the fact, which makes them detective.',
+        payload: { slots: [ { id: 'type', label: 'Control type', options: [
+          { id: 't1', text: 'Managerial, detective' },
+          { id: 't2', text: 'Technical, preventive' },
+          { id: 't3', text: 'Physical, deterrent' },
+          { id: 't4', text: 'Operational, compensating' }
+        ] } ] },
+        answer: { slots: { type: 't1' } } }
+    ]
+  },
+
+  { id: 'secplus-did-branch-office-ransomware', cert: 'secplus',
+    objective: 'SY0-701 Domain 3.2 — Compare and contrast security implications of architecture models (defense in depth, control categories)',
+    topic: 'Defense in Depth', title: 'One phishing email away from total loss', estMinutes: 6, archetype: 'defense',
+    scenario: 'A law firm\'s branch office relies on email spam filtering as its only defense against ransomware. Endpoints have no EDR, backups are stored on a network share reachable from every workstation, and there is no security awareness training, so staff routinely click on suspicious attachments.',
+    assets: { reference: { kind: 'layered',
+      layers: [
+        { id: 'perimeter', label: 'Perimeter', control: 'Email spam filtering', state: 'present' },
+        { id: 'endpoint', label: 'Endpoint', control: 'EDR with ransomware behavior detection', state: 'missing' },
+        { id: 'backup', label: 'Backup', control: 'Immutable, network-isolated backups', state: 'missing' },
+        { id: 'awareness', label: 'Personnel', control: 'Security awareness training', state: 'missing' }
+      ],
+      core: { label: 'Case files and client data', assets: [
+        { id: 'case-files', label: 'Case files & client data', exposed: true },
+        { id: 'shr1', label: 'SHR-1 (backup share reachable from every workstation)', exposed: true }
+      ] }
+    } },
+    steps: [
+      { id: 'd1', type: 'configure', points: 1,
+        prompt: 'What is the core flaw in this architecture?',
+        explanation: 'Spam filtering alone is not defense in depth. With no EDR to catch what slips through, no isolated backups to fall back on, and no trained staff to hesitate before clicking, one successful phishing email can encrypt both production data and its own backup.',
+        payload: { slots: [ { id: 'flaw', label: 'Core flaw', options: [
+          { id: 'f1', text: 'A single email filter is the only defense, with no endpoint, backup, or human layer behind it' },
+          { id: 'f2', text: 'The law firm uses too much email' },
+          { id: 'f3', text: 'The spam filter vendor changed pricing' },
+          { id: 'f4', text: 'The office needs a faster printer' }
+        ] } ] },
+        answer: { slots: { flaw: 'f1' } } },
+      { id: 'f1', type: 'configure', points: 1,
+        prompt: 'Build the inner layers.',
+        explanation: 'EDR catches ransomware behavior that slips past email filtering, immutable and network-isolated backups survive an encryption event, and trained staff are far less likely to trigger the infection in the first place.',
+        payload: { slots: [
+          { id: 'endpoint', label: 'Endpoint layer', options: [
+            { id: 'a1', text: 'EDR with ransomware behavior detection' }, { id: 'a2', text: 'Rely on spam filtering alone' }, { id: 'a3', text: 'Disable antivirus to improve performance' } ] },
+          { id: 'backup', label: 'Backup layer', options: [
+            { id: 'b1', text: 'Immutable backups isolated from the production network' }, { id: 'b2', text: 'Backups on a share reachable from every workstation' }, { id: 'b3', text: 'No backups, restore from vendor support instead' } ] },
+          { id: 'awareness', label: 'Personnel layer', options: [
+            { id: 'c1', text: 'Regular security awareness training with phishing simulations' }, { id: 'c2', text: 'No training, trust staff judgment' }, { id: 'c3', text: 'A one-time training video at hiring only' } ] }
+        ] },
+        answer: { slots: { endpoint: 'a1', backup: 'b1', awareness: 'c1' } } },
+      { id: 't1', type: 'configure', points: 1,
+        prompt: 'Security awareness training is best classified as which control type?',
+        explanation: 'Awareness training is a managerial/administrative program that reduces the likelihood of an incident before it happens, which makes it preventive rather than detective or corrective.',
+        payload: { slots: [ { id: 'type', label: 'Control type', options: [
+          { id: 't1', text: 'Managerial, preventive' },
+          { id: 't2', text: 'Technical, detective' },
+          { id: 't3', text: 'Physical, compensating' },
+          { id: 't4', text: 'Operational, corrective' }
+        ] } ] },
+        answer: { slots: { type: 't1' } } }
+    ]
   }
 ];
