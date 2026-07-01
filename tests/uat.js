@@ -22314,6 +22314,178 @@ console.log('\n\x1b[1m── T7: DRILLS ANALYTICS GROUP + FINAL COPY + BRONZE TO
   }
 })();
 
+// ── Task 15 (PBQ archetypes plan): archetype scenarios ride the EXISTING
+// free-1/day + Pro gating — reuse, no new metering. ──
+// Confirms two things behaviorally, not just structurally:
+//   1. The seed-bank pick path (_slBank/_slPickSeed/_slPickSeedFresh) treats
+//      an archetype-tagged scenario ('diagram'/'incident'/'defense') exactly
+//      like an ordinary scenario — same array, same index-based selection,
+//      no archetype branch exists that could special-case or bypass gating.
+//   2. simLabStart / _slSessionStart run the free-count check + Pro gate
+//      (_slIsPro, _pbqFreeRunsToday, PBQ_FREE_DAILY_CAP, _gateProOnly)
+//      BEFORE any scenario (archetype or not) is ever picked/generated — so
+//      an exhausted free cap blocks an archetype-only bank identically to a
+//      bank with zero archetype scenarios. Also confirms the free-tier
+//      session-bump path (_slSessionBumpOnce -> _bumpPbqFreeRun) is
+//      archetype-agnostic (fires once per session regardless of which
+//      scenario, archetype or not, gets served).
+(function () {
+  console.log('\n\x1b[1m── Sim Lab: archetypes ride existing free/Pro gating (Task 15) ──\x1b[0m');
+  try {
+    var vm = require('vm');
+
+    var grab = function (name) {
+      var re = new RegExp('function ' + name + '\\([^)]*\\) \\{[\\s\\S]*?\\n\\}');
+      return (js.match(re) || [''])[0];
+    };
+
+    // ── 1. Bank/pick path is archetype-agnostic ──
+    // Build a tiny mixed bank: one ordinary scenario, one 'diagram'-archetype
+    // scenario. Extract the REAL _seedBank/_slBank/_slPickSeed/_slPickSeedFresh
+    // (no reimplementation) and prove selection never inspects `.archetype`.
+    var seedBankBody     = grab('_seedBank');
+    var slBankBody       = grab('_slBank');
+    var pickSeedBody     = grab('_slPickSeed');
+    var pickSeedFreshBody = grab('_slPickSeedFresh');
+    var slGlobalsMatch   = js.match(/var _SL_SEED_GLOBALS\s*=\s*\{[\s\S]*?\};/);
+    // simLabValidateScenario is called inside the pick functions — extract the
+    // real validator chain too (same approach as the Task 11/12/13/14 blocks).
+    var isNonEmptyStrBody    = grab('_isNonEmptyStr');
+    var validatePayloadBody  = grab('_validateStepPayload');
+    var validateScenarioBody = grab('simLabValidateScenario');
+    var stepTypesMatch = js.match(/var STEP_TYPES\s*=\s*\[[^\]]+\]/);
+    var stepTypesDecl = stepTypesMatch ? stepTypesMatch[0] + ';' : "var STEP_TYPES = ['order','categorize','match','analyze','fillin','configure'];";
+
+    if (!seedBankBody || !slBankBody || !pickSeedBody || !pickSeedFreshBody || !slGlobalsMatch ||
+        !isNonEmptyStrBody || !validatePayloadBody || !validateScenarioBody) {
+      test('Task 15: bank/pick helper extraction succeeded', false);
+      results.errors.push('could not extract _seedBank/_slBank/_slPickSeed/_slPickSeedFresh for Task 15 test; check names/indenting');
+    } else {
+      var bankCtx = { window: {} };
+      vm.createContext(bankCtx);
+      vm.runInContext('var window = this.window;', bankCtx);
+      vm.runInContext(stepTypesDecl, bankCtx);
+      vm.runInContext(isNonEmptyStrBody, bankCtx);
+      vm.runInContext(validatePayloadBody, bankCtx);
+      vm.runInContext(validateScenarioBody, bankCtx);
+      vm.runInContext(seedBankBody, bankCtx);
+      vm.runInContext(slGlobalsMatch[0], bankCtx);
+      vm.runInContext(slBankBody, bankCtx);
+      vm.runInContext(pickSeedBody, bankCtx);
+      vm.runInContext(pickSeedFreshBody, bankCtx);
+
+      var _t15Ordinary = {
+        id: 't15-ordinary-1', cert: 'netplus', objective: '1.4', topic: 'Subnetting',
+        title: 'Ordinary scenario', estMinutes: 4,
+        scenario: 'Plain scenario, no archetype tag.',
+        steps: [{ id: 's1', type: 'fillin', points: 1, prompt: 'x?', explanation: 'y', payload: { fields: [{ id: 'a', label: 'A' }] }, answer: { a: ['1'] } }]
+      };
+      var _t15Archetype = {
+        id: 't15-archetype-1', cert: 'netplus', archetype: 'diagram', objective: '1.4', topic: 'Diagram',
+        title: 'Archetype scenario', estMinutes: 4,
+        scenario: 'Archetype-tagged scenario.',
+        steps: [{ id: 's1', type: 'fillin', points: 1, prompt: 'x?', explanation: 'y', payload: { fields: [{ id: 'a', label: 'A' }] }, answer: { a: ['1'] } }]
+      };
+
+      vm.runInContext('window.SIM_LAB_SEED_NETPLUS = [' + JSON.stringify(_t15Ordinary) + ', ' + JSON.stringify(_t15Archetype) + '];', bankCtx);
+      vm.runInContext('globalThis.__bank = _slBank("netplus"); globalThis.__pickAt0 = _slPickSeed; globalThis.__pickFresh = _slPickSeedFresh;', bankCtx);
+
+      var t15Bank = bankCtx.__bank;
+      test('Task 15: mixed bank (ordinary + archetype) loads via the real _slBank resolver',
+        Array.isArray(t15Bank) && t15Bank.length === 2);
+
+      // _slPickSeed indexes by clock minute % bank.length — drive it at both
+      // indices directly to prove BOTH the ordinary and the archetype entries
+      // are reachable through the identical, unfiltered code path (no archetype
+      // branch skips or special-cases the archetype-tagged entry).
+      var _origDate = Date;
+      function _fakeMinuteDate(min) {
+        return function () {
+          var d = new _origDate();
+          d.getMinutes = function () { return min; };
+          return d;
+        };
+      }
+      bankCtx.Date = _fakeMinuteDate(0);
+      vm.runInContext('globalThis.__pick0 = _slPickSeed("netplus");', bankCtx);
+      bankCtx.Date = _fakeMinuteDate(1);
+      vm.runInContext('globalThis.__pick1 = _slPickSeed("netplus");', bankCtx);
+      var _pick0 = bankCtx.__pick0, _pick1 = bankCtx.__pick1;
+
+      test('Task 15: _slPickSeed can select the ordinary (non-archetype) entry',
+        _pick0 && _pick0.id === 't15-ordinary-1' && !_pick0.archetype);
+      test('Task 15: _slPickSeed can select the archetype-tagged entry via the SAME function/index logic',
+        _pick1 && _pick1.id === 't15-archetype-1' && _pick1.archetype === 'diagram');
+
+      // _slPickSeedFresh: prove the archetype entry is a normal member of the
+      // "fresh" pool (usedIds-filtered), not excluded or treated specially.
+      vm.runInContext('globalThis.__freshPool = _slPickSeedFresh("netplus", new Set());', bankCtx);
+      var _freshPick = bankCtx.__freshPool;
+      test('Task 15: _slPickSeedFresh draws from the unfiltered mixed pool (archetype included)',
+        _freshPick && (_freshPick.id === 't15-ordinary-1' || _freshPick.id === 't15-archetype-1'));
+
+      vm.runInContext('globalThis.__usedArch = new Set(["t15-ordinary-1"]); globalThis.__freshAfterOrdinaryUsed = _slPickSeedFresh("netplus", globalThis.__usedArch);', bankCtx);
+      var _freshAfterOrdinaryUsed = bankCtx.__freshAfterOrdinaryUsed;
+      test('Task 15: _slPickSeedFresh falls through to the archetype entry once the ordinary one is marked used (no exclusion)',
+        _freshAfterOrdinaryUsed && _freshAfterOrdinaryUsed.id === 't15-archetype-1');
+    }
+
+    // ── 2. Gating runs BEFORE scenario selection, for both entry points ──
+    // Static-source proof (mirrors the existing v7.57 "exam never calls
+    // _bumpPbqFreeRun" style pin): simLabStart and _slSessionStart both check
+    // _slIsPro()/_pbqFreeRunsToday()/PBQ_FREE_DAILY_CAP and call
+    // window._gateProOnly('Sim Lab', ...) strictly before _slGenerateScenario /
+    // _slRunRound (which is what eventually resolves to _slPickSeed and can
+    // surface an archetype scenario). No archetype-aware branch exists in
+    // either gate — the same gate blocks regardless of what the bank contains.
+    var simLabStartSrc = grab('simLabStart');
+    var slSessionStartSrc = grab('_slSessionStart');
+
+    test('Task 15: simLabStart defined and checks the free-cap/Pro gate before generating a scenario',
+      !!simLabStartSrc &&
+      /_slIsPro\(\)/.test(simLabStartSrc) &&
+      /_pbqFreeRunsToday/.test(simLabStartSrc) &&
+      /PBQ_FREE_DAILY_CAP/.test(simLabStartSrc) &&
+      /_gateProOnly\(\s*'Sim Lab'/.test(simLabStartSrc) &&
+      (function () {
+        var gateIdx = simLabStartSrc.indexOf('_gateProOnly(');
+        var genIdx = simLabStartSrc.indexOf('_slGenerateScenario(');
+        return gateIdx > -1 && genIdx > -1 && gateIdx < genIdx;
+      })());
+
+    test('Task 15: _slSessionStart defined and checks the SAME free-cap/Pro gate before starting a round (which may pick an archetype scenario)',
+      !!slSessionStartSrc &&
+      /_slIsPro\(\)/.test(slSessionStartSrc) &&
+      /_pbqFreeRunsToday/.test(slSessionStartSrc) &&
+      /PBQ_FREE_DAILY_CAP/.test(slSessionStartSrc) &&
+      /_gateProOnly\(\s*'Sim Lab'/.test(slSessionStartSrc) &&
+      /_slSessionBumpOnce\(\)/.test(slSessionStartSrc) &&
+      (function () {
+        var gateIdx = slSessionStartSrc.indexOf('_gateProOnly(');
+        var runIdx = slSessionStartSrc.indexOf('_slRunRound(');
+        return gateIdx > -1 && runIdx > -1 && gateIdx < runIdx;
+      })());
+
+    // No archetype-specific gate/metering identifiers exist anywhere in the
+    // feature module — confirms Task 15 introduced no new gating surface.
+    test('Task 15: no archetype-specific gating/metering was added (reuse only)',
+      !/archetype[A-Za-z]*(FreeCount|FreeRun|Gate|Metered|Quota)/i.test(js) &&
+      !/(FreeCount|FreeRun|Gate|Metered|Quota)[A-Za-z]*[Aa]rchetype/.test(js));
+
+    // ── 3. Session bump path is archetype-agnostic ──
+    // _slSessionBumpOnce (called from _slSessionStart) always calls the SAME
+    // window._bumpPbqFreeRun — it has no knowledge of which scenario/archetype
+    // will be served this session, proving the metering key is shared.
+    var sessionBumpOnceSrc = grab('_slSessionBumpOnce');
+    test('Task 15: _slSessionBumpOnce calls the existing window._bumpPbqFreeRun (no new/second counter)',
+      !!sessionBumpOnceSrc && /window\._bumpPbqFreeRun\(\)/.test(sessionBumpOnceSrc));
+
+  } catch (err) {
+    test('Task 15: vm smoke test (threw)', false);
+    results.errors.push('Task 15 archetype-gating smoke test threw: ' + err.message);
+  }
+})();
+
 // ── Summary ──
 console.log('\n' + '═'.repeat(50));
 const total = results.pass + results.fail;
