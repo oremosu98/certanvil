@@ -22036,6 +22036,109 @@ console.log('\n\x1b[1m── T7: DRILLS ANALYTICS GROUP + FINAL COPY + BRONZE TO
   }
 })();
 
+// ── Task 12 (PBQ archetypes plan): Net+ Diagram seed-bank validation ──
+// The 16 consensus-approved Net+ Diagram scenarios now live for real in
+// features/sim-lab-seed-netplus.js (window.SIM_LAB_SEED_NETPLUS). This proves
+// every one of them is real, production-ready content: each passes the same
+// pure validators that gate the dev fixture above (simLabValidateScenario +
+// simLabValidateNetworkFidelity), extracted from features/sim-lab.js by the
+// same brace-matching approach as .superpowers/sdd/validate-drafts.js (no
+// reimplementation of validator logic). Not a fixture — this is the real bank.
+(function () {
+  console.log('\n\x1b[1m── Sim Lab: Net+ Diagram seed-bank validation (Task 12) ──\x1b[0m');
+  try {
+    var vm = require('vm');
+
+    var grab = function (name) {
+      var re = new RegExp('function ' + name + '\\([^)]*\\) \\{[\\s\\S]*?\\n\\}');
+      return (js.match(re) || [''])[0];
+    };
+
+    // ── Extract the REAL pure validators from features/sim-lab.js, exactly
+    // as .superpowers/sdd/validate-drafts.js does ──
+    var isNonEmptyStrBody   = grab('_isNonEmptyStr');
+    var validatePayloadBody = grab('_validateStepPayload');
+    var validateScenarioBody = grab('simLabValidateScenario');
+    var stepTypesMatch = js.match(/var STEP_TYPES\s*=\s*\[[^\]]+\]/);
+    var stepTypesDecl = stepTypesMatch ? stepTypesMatch[0] + ';' : "var STEP_TYPES = ['order','categorize','match','analyze','fillin','configure'];";
+
+    var ipToIntBody      = grab('_ipToInt');
+    var maskToIntBody    = grab('_maskToInt');
+    var inSubnetBody     = grab('_inSubnet');
+    var resolveSlotBody  = grab('_slFidelityResolveSlot');
+    var fidelityBody     = grab('simLabValidateNetworkFidelity');
+
+    if (!isNonEmptyStrBody || !validatePayloadBody || !validateScenarioBody ||
+        !ipToIntBody || !maskToIntBody || !inSubnetBody || !resolveSlotBody || !fidelityBody) {
+      test('Net+ Diagram bank: validator helper extraction succeeded', false);
+      results.errors.push('could not extract validator helpers for Task 12 bank test; check names/indenting');
+      return;
+    }
+
+    var vCtx = {};
+    vm.createContext(vCtx);
+    vm.runInContext(stepTypesDecl, vCtx);
+    vm.runInContext(isNonEmptyStrBody, vCtx);
+    vm.runInContext(validatePayloadBody, vCtx);
+    vm.runInContext(validateScenarioBody, vCtx);
+    vm.runInContext(ipToIntBody, vCtx);
+    vm.runInContext(maskToIntBody, vCtx);
+    vm.runInContext(inSubnetBody, vCtx);
+    vm.runInContext(resolveSlotBody, vCtx);
+    vm.runInContext(fidelityBody, vCtx);
+    vm.runInContext('globalThis.__validate = simLabValidateScenario; globalThis.__fidelity = simLabValidateNetworkFidelity;', vCtx);
+    var simLabValidateScenario = vCtx.__validate;
+    var simLabValidateNetworkFidelity = vCtx.__fidelity;
+
+    // ── Load the real seed bank: eval features/sim-lab-seed-netplus.js in a
+    // sandbox with `var window = {}` so window.SIM_LAB_SEED_NETPLUS populates ──
+    var seedSrc = read('features/sim-lab-seed-netplus.js');
+    var seedCtx = {};
+    vm.createContext(seedCtx);
+    vm.runInContext('var window = {};\n' + seedSrc + '\nglobalThis.__seed = window.SIM_LAB_SEED_NETPLUS;', seedCtx);
+    var seedBank = seedCtx.__seed;
+
+    test('Net+ Diagram bank: window.SIM_LAB_SEED_NETPLUS loaded as an array',
+      Array.isArray(seedBank));
+    if (!Array.isArray(seedBank)) {
+      results.errors.push('could not load window.SIM_LAB_SEED_NETPLUS from features/sim-lab-seed-netplus.js');
+      return;
+    }
+
+    var diagramScenarios = seedBank.filter(function (s) { return s && s.archetype === 'diagram'; });
+    test('Net+ Diagram bank: at least 16 diagram-archetype scenarios present',
+      diagramScenarios.length >= 16);
+
+    var allValidateOk = true, allFidelityOk = true;
+    diagramScenarios.forEach(function (s) {
+      var vr = simLabValidateScenario(s);
+      if (!vr || vr.ok !== true) {
+        allValidateOk = false;
+        results.errors.push('Net+ Diagram bank: ' + (s && s.id) + ' failed simLabValidateScenario: ' + JSON.stringify(vr && vr.errors));
+      }
+      if (s && s.assets && s.assets.reference) {
+        var cfgStep = (s.steps || []).filter(function (st) { return st.type === 'configure' && st.deviceId; })[0];
+        if (cfgStep) {
+          var fr = simLabValidateNetworkFidelity(s.assets.reference, cfgStep);
+          if (!fr || fr.ok !== true) {
+            allFidelityOk = false;
+            results.errors.push('Net+ Diagram bank: ' + (s && s.id) + ' failed simLabValidateNetworkFidelity: ' + JSON.stringify(fr && fr.errors));
+          }
+        }
+      }
+    });
+
+    test('Net+ Diagram bank: every diagram scenario passes simLabValidateScenario',
+      allValidateOk);
+    test('Net+ Diagram bank: every diagram scenario\'s configure(deviceId) step passes simLabValidateNetworkFidelity',
+      allFidelityOk);
+
+  } catch (err) {
+    test('Net+ Diagram bank: vm smoke test (threw)', false);
+    results.errors.push('Net+ Diagram bank smoke test threw: ' + err.message);
+  }
+})();
+
 // ── Summary ──
 console.log('\n' + '═'.repeat(50));
 const total = results.pass + results.fail;
