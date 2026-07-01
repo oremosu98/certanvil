@@ -22586,6 +22586,167 @@ console.log('\n\x1b[1m── T7: DRILLS ANALYTICS GROUP + FINAL COPY + BRONZE TO
   }
 })();
 
+// ── Task 17 (PBQ archetypes plan): archetype scenarios inside Exam mode ──
+// Confirms — behaviorally — that an archetype-tagged scenario (here: a
+// 'diagram' scenario with a configure×3 step, mirroring the Task 11 fixture)
+// flows correctly through the EXISTING Exam-mode block: picked into a round
+// via _slExamBlankState (the same session-state constructor _slExamStart
+// uses), survives flag-and-return navigation (_slToggleFlag + the
+// capture/restore pattern _slExamNav uses via _slCloneResp), gets scored via
+// the SAME simLabScoreScenario call _slExamSubmit makes per round, and rolls
+// up into the SAME _slAggregateSession the exam result screen reads. No new
+// exam/scoring code is introduced — archetype scenarios ride the existing
+// multi-round exam block by construction (scoring only ever inspects
+// step.type / step.answer, never scenario.archetype).
+(function () {
+  console.log('\n\x1b[1m── Sim Lab: archetypes in Exam mode (Task 17) ──\x1b[0m');
+  try {
+    var vm = require('vm');
+
+    var grab = function (name) {
+      var re = new RegExp('function ' + name + '\\([^)]*\\) \\{[\\s\\S]*?\\n\\}');
+      return (js.match(re) || [''])[0];
+    };
+
+    var blankStateBody   = grab('_slExamBlankState');
+    var isProBody        = grab('_slIsPro');
+    var cloneRespBody    = grab('_slCloneResp');
+    var scoreSlotsBody   = grab('_scoreConfigureSlots');
+    var scoreStepBody    = grab('_scoreStep');
+    var scoreScenarioBody = grab('simLabScoreScenario');
+    var aggregateBody    = grab('_slAggregateSession');
+    var normBody          = grab('_norm');
+    var normalizeMatchBody = grab('_simLabNormalizeMatch');
+    var arrEqBody         = grab('_arrEq');
+    var setEqBody         = grab('_setEq');
+
+    if (!blankStateBody || !scoreScenarioBody || !scoreSlotsBody || !scoreStepBody || !aggregateBody || !cloneRespBody) {
+      test('Task 17: exam/scoring vm extraction succeeded', false);
+      results.errors.push('could not extract _slExamBlankState/simLabScoreScenario/_slAggregateSession for Task 17 test; check names/indenting');
+      return;
+    }
+
+    var eCtx = { window: { CURRENT_CERT: 'netplus' }, Set: Set, Object: Object, Array: Array, String: String, Date: Date };
+    vm.createContext(eCtx);
+    // _slExamBlankState calls _slIsPro() — stub it in-context (irrelevant to scoring).
+    vm.runInContext('function _slIsPro() { return true; }', eCtx);
+    vm.runInContext(blankStateBody, eCtx);
+    vm.runInContext(cloneRespBody, eCtx);
+    vm.runInContext(normBody, eCtx);
+    vm.runInContext(normalizeMatchBody, eCtx);
+    vm.runInContext(arrEqBody, eCtx);
+    vm.runInContext(setEqBody, eCtx);
+    vm.runInContext(scoreSlotsBody, eCtx);
+    vm.runInContext(scoreStepBody, eCtx);
+    vm.runInContext(scoreScenarioBody, eCtx);
+    vm.runInContext(aggregateBody, eCtx);
+    vm.runInContext('globalThis.__blank = _slExamBlankState; globalThis.__score = simLabScoreScenario; globalThis.__agg = _slAggregateSession; globalThis.__clone = _slCloneResp;', eCtx);
+    var _slExamBlankState17  = eCtx.__blank;
+    var simLabScoreScenario17 = eCtx.__score;
+    var _slAggregateSession17 = eCtx.__agg;
+    var _slCloneResp17        = eCtx.__clone;
+
+    // Round 0: ordinary (non-archetype) order-step scenario.
+    var t17Ordinary = {
+      id: 't17-ordinary-1', cert: 'netplus', topic: 'Cabling',
+      scenario: 'Order the steps to terminate a Cat6 cable.', estMinutes: 2,
+      steps: [{
+        id: 'ord1', type: 'order', prompt: 'Order the steps.', explanation: 'Standard termination order.', points: 1,
+        payload: { items: ['Strip', 'Untwist', 'Crimp'] },
+        answer: { correctOrder: ['Strip', 'Untwist', 'Crimp'] }
+      }]
+    };
+
+    // Round 1: 'diagram' archetype scenario with a configure×3 step (per-slot
+    // scoring), mirroring the Task 11 fixture shape.
+    var t17Archetype = {
+      id: 't17-archetype-1', cert: 'netplus', archetype: 'diagram', topic: 'Diagram',
+      scenario: 'Correct PC-2’s misconfigured IP settings.', estMinutes: 4,
+      assets: { reference: { kind: 'network', devices: [], given: {} } },
+      steps: [{
+        id: 'fix1', type: 'configure', prompt: 'Correct PC-2’s IP configuration.', explanation: 'PC-2 was on the wrong VLAN.', points: 1,
+        deviceId: 'pc2',
+        payload: {
+          slots: [
+            { id: 'ip', label: 'IP Address', options: [{ id: 'ip_bad', text: '192.168.20.45' }, { id: 'ip_good', text: '192.168.10.45' }] },
+            { id: 'mask', label: 'Subnet Mask', options: [{ id: 'm_good', text: '255.255.255.0' }, { id: 'm_bad', text: '255.255.0.0' }] },
+            { id: 'gateway', label: 'Gateway', options: [{ id: 'gw_good', text: '192.168.10.1' }, { id: 'gw_bad', text: '192.168.20.1' }] }
+          ]
+        },
+        answer: { slots: { ip: 'ip_good', mask: 'm_good', gateway: 'gw_good' } }
+      }]
+    };
+
+    var t17Scenarios = [t17Ordinary, t17Archetype];
+    var t17Budget = 6 * 0.9 * 60000;
+    var sess = _slExamBlankState17(t17Scenarios, t17Budget);
+
+    test('Task 17: _slExamBlankState builds a 2-round exam session containing the archetype scenario',
+      sess && sess.mode === 'exam' && sess.rounds === 2 && sess.scenarios[1].archetype === 'diagram');
+
+    // ── Flag-and-return: flag round 1 (the archetype round), navigate away to
+    // round 0, then back — mirrors _slToggleFlag + _slExamNav's capture/restore
+    // (window.__slResponses -> answers[idx] via _slCloneResp) without needing
+    // the DOM mount path, since flag state and answer capture are pure data. ──
+    sess.flagged.add(1);
+    test('Task 17: flagging round 1 (archetype round) is tracked in session.flagged',
+      sess.flagged.has(1) === true);
+
+    // Simulate answering round 1 (archetype), navigating to round 0, back to 1
+    // — answers persist across nav (the real bug this would catch: an
+    // archetype's configure response getting dropped/overwritten on flag-return).
+    sess.answers[1] = _slCloneResp17({ fix1: { slots: { ip: 'ip_good', mask: 'm_good', gateway: 'gw_good' } } });
+    sess.idx = 0;   // navigated away
+    sess.idx = 1;   // navigated back (flag-and-return)
+    test('Task 17: archetype round answer survives flag-and-return navigation',
+      sess.answers[1] && sess.answers[1].fix1 && sess.answers[1].fix1.slots.ip === 'ip_good');
+
+    // Answer round 0 (ordinary) correctly too.
+    sess.answers[0] = _slCloneResp17({ ord1: { order: ['Strip', 'Untwist', 'Crimp'] } });
+
+    test('Task 17: flagged set is preserved through submit-time (flag-and-return does not clear flags)',
+      sess.flagged.has(1) === true);
+
+    // ── Submit: mirrors _slExamSubmit's exact per-round scoring loop ──
+    sess.results = sess.scenarios.map(function (scn, i) {
+      var resp = sess.answers[i] || {};
+      var score = simLabScoreScenario17(scn, resp);
+      return { scenario: scn, score: score, passed: score.fraction === 1 };
+    });
+
+    test('Task 17: archetype round scores correct === total via simLabScoreScenario (configure per-slot all correct)',
+      sess.results[1].score.correct === 3 && sess.results[1].score.total === 3 && sess.results[1].passed === true);
+    test('Task 17: archetype round perStep reflects per-slot configure breakdown ({total,correct} for the configure step)',
+      sess.results[1].score.perStep.fix1 && sess.results[1].score.perStep.fix1.total === 3 && sess.results[1].score.perStep.fix1.correct === 3);
+    test('Task 17: ordinary round also scores correctly (both rounds correct)',
+      sess.results[0].passed === true);
+
+    var agg = _slAggregateSession17(sess.results);
+    test('Task 17: _slAggregateSession reports correct === total across the exam block (2/2 rounds passed, 4/4 steps incl. 3 configure slots)',
+      agg.passed === 2 && agg.rounds === 2 && agg.stepsCorrect === 4 && agg.stepsTotal === 4 && agg.pct === 100);
+
+    // ── Negative control: one wrong configure slot in the archetype round
+    // must NOT score correct===total and must drag the aggregate below 100%,
+    // proving the assertions above aren't vacuously true. ──
+    var sess2 = _slExamBlankState17(t17Scenarios, t17Budget);
+    sess2.answers[0] = _slCloneResp17({ ord1: { order: ['Strip', 'Untwist', 'Crimp'] } });
+    sess2.answers[1] = _slCloneResp17({ fix1: { slots: { ip: 'ip_bad', mask: 'm_good', gateway: 'gw_good' } } });
+    sess2.results = sess2.scenarios.map(function (scn, i) {
+      var resp = sess2.answers[i] || {};
+      var score = simLabScoreScenario17(scn, resp);
+      return { scenario: scn, score: score, passed: score.fraction === 1 };
+    });
+    var agg2 = _slAggregateSession17(sess2.results);
+    test('Task 17 negative control: one wrong configure slot drops the archetype round below perfect and the aggregate below 100%',
+      sess2.results[1].score.correct === 2 && sess2.results[1].passed === false &&
+      agg2.passed === 1 && agg2.stepsCorrect === 3 && agg2.stepsTotal === 4 && agg2.pct !== 100);
+
+  } catch (err) {
+    test('Task 17: exam-mode archetype smoke test (threw)', false);
+    results.errors.push('Task 17 exam-mode archetype smoke test threw: ' + err.message);
+  }
+})();
+
 // ── Summary ──
 console.log('\n' + '═'.repeat(50));
 const total = results.pass + results.fail;
