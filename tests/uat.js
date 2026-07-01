@@ -22486,6 +22486,106 @@ console.log('\n\x1b[1m── T7: DRILLS ANALYTICS GROUP + FINAL COPY + BRONZE TO
   }
 })();
 
+// ── Task 16 (PBQ archetypes plan): cert-aware entry on the Sim Lab surface ──
+// Proves, behaviorally, that PBQ archetype scenarios are correctly SURFACED
+// for netplus/secplus and correctly ABSENT for non-PBQ certs (A+/Microsoft/
+// AWS), using the REAL cert-availability mechanisms already in the codebase
+// — no new allowlist/hook is introduced:
+//   1. `_SL_PBQ_CERTS_HOME` (app.js) is the Sim Lab entry-point allowlist
+//      consulted by `renderSimLabHomeEntry()` (called from `showPage('setup')`)
+//      to show/hide the Sim Lab tile. It includes netplus/secplus (PBQ certs)
+//      and correctly EXCLUDES the non-PBQ Decision Lab certs (az900/ai900/
+//      sc900/clfc02) — those get Decision Lab's own entry, not Sim Lab's.
+//   2. Archetype CONTENT is gated one level deeper, by which seed bank
+//      (`SIM_LAB_SEED_<CERT>`) actually contains `archetype`-tagged entries:
+//      netplus/secplus banks are non-empty for archetypes; a true non-PBQ
+//      cert has no Sim Lab seed bank global at all (`_slBank` returns []
+//      by construction, per `_SL_SEED_GLOBALS`); A+ has a Sim Lab bank but
+//      zero archetype-tagged scenarios in it (Phase 5 only authored netplus/
+//      secplus archetype content) — so even where Sim Lab entry is visible
+//      (A+), no archetype scenario can ever surface.
+(function () {
+  console.log('\n\x1b[1m── Sim Lab: cert-aware PBQ archetype entry (Task 16) ──\x1b[0m');
+  try {
+    // ── 1. Entry-point allowlist: PBQ certs in, non-PBQ certs out ──
+    var pbqCertsMatch = js.match(/_SL_PBQ_CERTS_HOME\s*=\s*\[([^\]]*)\]/);
+    test('Task 16: _SL_PBQ_CERTS_HOME allowlist exists', !!pbqCertsMatch);
+    if (pbqCertsMatch) {
+      var pbqCertsHome = pbqCertsMatch[1].split(',').map(function (s) { return s.replace(/['"\s]/g, ''); }).filter(Boolean);
+      test('Task 16: Sim Lab entry allowlist includes netplus', pbqCertsHome.indexOf('netplus') !== -1);
+      test('Task 16: Sim Lab entry allowlist includes secplus', pbqCertsHome.indexOf('secplus') !== -1);
+      test('Task 16: Sim Lab entry allowlist excludes az900/ai900/sc900/clfc02 (Decision Lab certs, not Sim Lab)',
+        ['az900', 'ai900', 'sc900', 'clfc02'].every(function (c) { return pbqCertsHome.indexOf(c) === -1; }));
+    }
+
+    // renderSimLabHomeEntry() must actually consult the allowlist to gate the
+    // tile, and must be wired into the setup-page render path (not orphaned).
+    var renderEntrySrc = (js.match(/function renderSimLabHomeEntry\(\) \{[\s\S]*?\n\}/) || [''])[0];
+    test('Task 16: renderSimLabHomeEntry() checks _SL_PBQ_CERTS_HOME before showing the tile',
+      !!renderEntrySrc && /_SL_PBQ_CERTS_HOME\.indexOf\(/.test(renderEntrySrc) && /is-hidden/.test(renderEntrySrc));
+    test('Task 16: renderSimLabHomeEntry() is called on setup-page render (real entry hook, not dead code)',
+      /if \(name === 'setup'[\s\S]{0,80}renderSimLabHomeEntry\(\)/.test(js));
+
+    // ── 2. Archetype content: present for netplus/secplus, absent for A+, and
+    //      no seed bank at all for a true non-PBQ cert (az900) ──
+    var netplusBankMatch = js.match(/window\.SIM_LAB_SEED_NETPLUS\s*=\s*\[[\s\S]*?\n\];/);
+    var secplusBankMatch = js.match(/window\.SIM_LAB_SEED_SECPLUS\s*=\s*\[[\s\S]*?\n\];/);
+    var aplus1BankMatch = js.match(/window\.SIM_LAB_SEED_APLUS_CORE1\s*=\s*\[[\s\S]*?\n\];/);
+    var aplus2BankMatch = js.match(/window\.SIM_LAB_SEED_APLUS_CORE2\s*=\s*\[[\s\S]*?\n\];/);
+
+    test('Task 16: Net+ Sim Lab seed bank has archetype-tagged scenarios (offered for netplus)',
+      !!netplusBankMatch && /archetype\s*:/.test(netplusBankMatch[0]));
+    test('Task 16: Sec+ Sim Lab seed bank has archetype-tagged scenarios (offered for secplus)',
+      !!secplusBankMatch && /archetype\s*:/.test(secplusBankMatch[0]));
+    test('Task 16: A+ Core1 Sim Lab seed bank exists but has NO archetype-tagged scenarios (not surfaced)',
+      !!aplus1BankMatch && !/archetype\s*:/.test(aplus1BankMatch[0]));
+    test('Task 16: A+ Core2 Sim Lab seed bank exists but has NO archetype-tagged scenarios (not surfaced)',
+      !!aplus2BankMatch && !/archetype\s*:/.test(aplus2BankMatch[0]));
+
+    // No SIM_LAB_SEED_<X> global exists at all for the non-PBQ Decision Lab
+    // certs — confirms _slBank('az900') etc. can only ever return [] via the
+    // _SL_SEED_GLOBALS registry (no accidental entry for a non-PBQ cert).
+    test('Task 16: no Sim Lab seed-bank global exists for az900/ai900/sc900/clfc02 (non-PBQ certs)',
+      ['AZ900', 'AI900', 'SC900', 'CLFC02'].every(function (c) {
+        return !new RegExp('window\\.SIM_LAB_SEED_' + c + '\\b').test(js);
+      }));
+
+    // ── 3. Behavioral proof via the real _slBank resolver (vm), mirroring the
+    //      Task 15 extraction approach: drive the ACTUAL selection function,
+    //      not a re-implementation, across a PBQ cert (netplus) and a non-PBQ
+    //      cert (az900) with no seed-bank entry in _SL_SEED_GLOBALS.
+    var vm = require('vm');
+    var grab16 = function (name) {
+      var re = new RegExp('function ' + name + '\\([^)]*\\) \\{[\\s\\S]*?\\n\\}');
+      return (js.match(re) || [''])[0];
+    };
+    var seedBankBody16 = grab16('_seedBank');
+    var slBankBody16 = grab16('_slBank');
+    var slGlobalsMatch16 = js.match(/var _SL_SEED_GLOBALS\s*=\s*\{[\s\S]*?\};/);
+
+    if (!seedBankBody16 || !slBankBody16 || !slGlobalsMatch16) {
+      test('Task 16: bank-resolver helper extraction succeeded', false);
+      results.errors.push('could not extract _seedBank/_slBank/_SL_SEED_GLOBALS for Task 16 test; check names/indenting');
+    } else {
+      var bankCtx16 = { window: { SIM_LAB_SEED_NETPLUS: [{ id: 'x', archetype: 'diagram' }] } };
+      vm.createContext(bankCtx16);
+      vm.runInContext('var window = this.window;', bankCtx16);
+      vm.runInContext(seedBankBody16, bankCtx16);
+      vm.runInContext(slGlobalsMatch16[0], bankCtx16);
+      vm.runInContext(slBankBody16, bankCtx16);
+      vm.runInContext('globalThis.__netplusBank = _slBank("netplus"); globalThis.__az900Bank = _slBank("az900");', bankCtx16);
+
+      test('Task 16: _slBank("netplus") returns a non-empty bank (archetype content reachable)',
+        Array.isArray(bankCtx16.__netplusBank) && bankCtx16.__netplusBank.length === 1 && bankCtx16.__netplusBank[0].archetype === 'diagram');
+      test('Task 16: _slBank("az900") returns [] — no PBQ/archetype content for a non-PBQ cert',
+        Array.isArray(bankCtx16.__az900Bank) && bankCtx16.__az900Bank.length === 0);
+    }
+  } catch (err) {
+    test('Task 16: vm smoke test (threw)', false);
+    results.errors.push('Task 16 cert-aware entry smoke test threw: ' + err.message);
+  }
+})();
+
 // ── Summary ──
 console.log('\n' + '═'.repeat(50));
 const total = results.pass + results.fail;
