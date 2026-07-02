@@ -75,8 +75,8 @@ body { min-height: 100dvh; padding: clamp(14px, 3vw, 32px); -webkit-font-smoothi
 .interfere { stroke: var(--fail); stroke-width: 2; fill: none; stroke-dasharray: 5 6; }
 .interfere-lbl { font: 700 10.5px ui-monospace, Menlo, monospace; fill: var(--fail); }
 .node rect { fill: var(--surface-2); stroke: var(--border); stroke-width: 1.2; }
-.node .name { font: 700 12.5px Inter, sans-serif; fill: var(--ink); text-anchor: middle; }
-.node .meta { font: 600 10.5px ui-monospace, Menlo, monospace; fill: var(--ink-soft); text-anchor: middle; }
+.node .name { font: 700 13px Inter, sans-serif; fill: var(--ink); text-anchor: middle; }
+.node .meta { font: 600 11px ui-monospace, Menlo, monospace; fill: var(--ink-soft); text-anchor: middle; }
 .node .glyph { stroke: var(--accent); stroke-width: 1.8; fill: none; }
 .node.foreign rect { stroke: var(--fail); stroke-width: 1.6; }
 .node.foreign .glyph { stroke: var(--fail); }
@@ -224,40 +224,42 @@ body { min-height: 100dvh; padding: clamp(14px, 3vw, 32px); -webkit-font-smoothi
 
           <!-- AP-1 café -->
           <g class="node" transform="translate(214,100)">
-            <rect width="128" height="58" rx="12"/>
-            <g class="glyph" transform="translate(54,10)"><path d="M2 12a10 10 0 0 1 16 0M5 15a6 6 0 0 1 10 0M10 18h.01"/></g>
-            <text class="name" x="64" y="40">AP-1</text>
-            <text class="meta" x="64" y="52">café · unset</text>
+            <rect width="128" height="62" rx="12"/>
+            <g class="glyph" transform="translate(56,11)"><path d="M0 8a11 11 0 0 1 16 0M3 11a7 7 0 0 1 10 0M8 15h.01"/></g>
+            <text class="name" x="64" y="42">AP-1</text>
+            <text class="meta" x="64" y="56">café · unset</text>
           </g>
           <text class="chan-tag" x="278" y="86">ch ?</text>
 
           <!-- AP-2 warehouse -->
           <g class="node" transform="translate(214,320)">
-            <rect width="128" height="58" rx="12"/>
-            <g class="glyph" transform="translate(54,10)"><path d="M2 12a10 10 0 0 1 16 0M5 15a6 6 0 0 1 10 0M10 18h.01"/></g>
-            <text class="name" x="64" y="40">AP-2</text>
-            <text class="meta" x="64" y="52">warehouse · unset</text>
+            <rect width="128" height="62" rx="12"/>
+            <g class="glyph" transform="translate(56,11)"><path d="M0 8a11 11 0 0 1 16 0M3 11a7 7 0 0 1 10 0M8 15h.01"/></g>
+            <text class="name" x="64" y="42">AP-2</text>
+            <text class="meta" x="64" y="56">warehouse · unset</text>
           </g>
           <text class="chan-tag" x="278" y="306">ch ?</text>
 
           <!-- neighbor AP -->
           <g class="node foreign" transform="translate(602,212)">
-            <rect width="128" height="58" rx="12"/>
-            <g class="glyph" transform="translate(54,10)"><path d="M2 12a10 10 0 0 1 16 0M5 15a6 6 0 0 1 10 0M10 18h.01"/></g>
-            <text class="name" x="64" y="40">Neighbor AP</text>
-            <text class="meta" x="64" y="52">2.4 GHz · ch 6</text>
+            <rect width="128" height="62" rx="12"/>
+            <g class="glyph" transform="translate(56,11)"><path d="M0 8a11 11 0 0 1 16 0M3 11a7 7 0 0 1 10 0M8 15h.01"/></g>
+            <text class="name" x="64" y="42">Neighbor AP</text>
+            <text class="meta" x="64" y="56">2.4 GHz · ch 6</text>
           </g>
 
           <!-- clients -->
-          <g class="node" transform="translate(70,150)">
-            <rect width="110" height="46" rx="10"/>
-            <text class="name" x="55" y="21" style="font-size:11.5px">Laptops</text>
-            <text class="meta" x="55" y="36">5 GHz capable</text>
+          <g class="node" transform="translate(62,146)">
+            <rect width="128" height="62" rx="12"/>
+            <g class="glyph" transform="translate(56,11)"><path d="M2 2h12v9H2zM0 14h16"/></g>
+            <text class="name" x="64" y="42">Laptops</text>
+            <text class="meta" x="64" y="56">5 GHz capable</text>
           </g>
-          <g class="node" transform="translate(70,370)">
-            <rect width="110" height="46" rx="10"/>
-            <text class="name" x="55" y="21" style="font-size:11.5px">Scanners</text>
-            <text class="meta" x="55" y="36">2.4 GHz only</text>
+          <g class="node" transform="translate(62,366)">
+            <rect width="128" height="62" rx="12"/>
+            <g class="glyph" transform="translate(56,11)"><path d="M4 0h8v16H4zM6.5 4v6M8 4v6M9.5 4v6"/></g>
+            <text class="name" x="64" y="42">Scanners</text>
+            <text class="meta" x="64" y="56">2.4 GHz only</text>
           </g>
         </svg>
       </div>

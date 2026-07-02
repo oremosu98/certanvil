@@ -68,8 +68,8 @@ body { min-height: 100dvh; padding: clamp(14px, 3vw, 32px); -webkit-font-smoothi
 .cloud { fill: color-mix(in oklab, var(--muted) 9%, transparent); stroke: color-mix(in oklab, var(--muted) 32%, var(--border)); stroke-width: 1.2; }
 .link { stroke: color-mix(in oklab, var(--ink) 34%, transparent); stroke-width: 1.6; fill: none; }
 .node rect { fill: var(--surface-2); stroke: var(--border); stroke-width: 1.2; }
-.node .name { font: 700 12.5px Inter, sans-serif; fill: var(--ink); text-anchor: middle; }
-.node .meta { font: 600 10.5px ui-monospace, Menlo, monospace; fill: var(--ink-soft); text-anchor: middle; }
+.node .name { font: 700 13px Inter, sans-serif; fill: var(--ink); text-anchor: middle; }
+.node .meta { font: 600 11px ui-monospace, Menlo, monospace; fill: var(--ink-soft); text-anchor: middle; }
 .node .glyph { stroke: var(--accent); stroke-width: 1.8; fill: none; }
 .node.static rect { stroke: color-mix(in oklab, var(--accent) 55%, var(--border)); stroke-width: 1.6; }
 
@@ -210,37 +210,40 @@ body { min-height: 100dvh; padding: clamp(14px, 3vw, 32px); -webkit-font-smoothi
 
           <!-- links -->
           <path class="link" d="M200 62 L318 130"/>
-          <path class="link" d="M414 166 L414 236"/>
-          <path class="link" d="M462 148 L588 110"/>
-          <path class="link" d="M462 160 L588 230"/>
+          <path class="link" d="M390 170 L410 236"/>
+          <path class="link" d="M462 130 L588 102"/>
+          <path class="link" d="M462 152 L588 234"/>
 
           <!-- router -->
           <g class="node" transform="translate(318,108)">
-            <rect width="144" height="58" rx="12"/>
-            <g class="glyph" transform="translate(62,10)"><path d="M1 8h7m-3.5-3.5v7M10 4l5 4-5 4"/></g>
-            <text class="name" x="72" y="40">RTR-Bluebird</text>
-            <text class="meta" x="72" y="52">LAN 192.168.1.1</text>
+            <rect width="144" height="62" rx="12"/>
+            <g class="glyph" transform="translate(64,11)"><path d="M1 8h7m-3.5-3.5v7M10 4l5 4-5 4"/></g>
+            <text class="name" x="72" y="42">RTR-Bluebird</text>
+            <text class="meta" x="72" y="56">LAN 192.168.1.1</text>
           </g>
 
           <!-- workstations -->
           <g class="node" transform="translate(588,74)">
-            <rect width="150" height="56" rx="11"/>
-            <text class="name" x="75" y="24" style="font-size:11.5px">Front desk + ops</text>
-            <text class="meta" x="75" y="40">18 DHCP clients</text>
+            <rect width="144" height="62" rx="12"/>
+            <g class="glyph" transform="translate(64,11)"><path d="M0 3h16v9H0zM5 16h6"/></g>
+            <text class="name" x="72" y="42">Front desk + ops</text>
+            <text class="meta" x="72" y="56">18 DHCP clients</text>
           </g>
 
           <!-- NVR static -->
           <g class="node static" transform="translate(588,206)">
-            <rect width="150" height="56" rx="11"/>
-            <text class="name" x="75" y="24" style="font-size:11.5px">Camera NVR</text>
-            <text class="meta" x="75" y="40">static .1.200 · web 443</text>
+            <rect width="144" height="62" rx="12"/>
+            <g class="glyph" transform="translate(64,11)"><path d="M0 4h11v9H0zM11 8l5-2.5v7L11 10"/></g>
+            <text class="name" x="72" y="42">Camera NVR</text>
+            <text class="meta" x="72" y="56">static .1.200 · 443</text>
           </g>
 
           <!-- guest tablet -->
           <g class="node" transform="translate(340,236)">
-            <rect width="148" height="56" rx="11"/>
-            <text class="name" x="74" y="24" style="font-size:11.5px">Waiting-room tablets</text>
-            <text class="meta" x="74" y="40">guests only</text>
+            <rect width="144" height="62" rx="12"/>
+            <g class="glyph" transform="translate(64,11)"><path d="M4 0h8v16H4zM7 13h2"/></g>
+            <text class="name" x="72" y="42">Waiting-room tablets</text>
+            <text class="meta" x="72" y="56">guests only</text>
           </g>
         </svg>
       </div>

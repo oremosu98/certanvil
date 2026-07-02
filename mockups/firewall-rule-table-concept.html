@@ -68,8 +68,8 @@ body { min-height: 100dvh; padding: clamp(14px, 3vw, 32px); -webkit-font-smoothi
 .zone-lbl { font: 800 10.5px Inter, sans-serif; letter-spacing: 0.1em; text-transform: uppercase; fill: var(--muted); }
 .link { stroke: color-mix(in oklab, var(--ink) 34%, transparent); stroke-width: 1.6; fill: none; }
 .node rect { fill: var(--surface-2); stroke: var(--border); stroke-width: 1.2; }
-.node .name { font: 700 12.5px Inter, sans-serif; fill: var(--ink); text-anchor: middle; }
-.node .meta { font: 600 10.5px ui-monospace, Menlo, monospace; fill: var(--ink-soft); text-anchor: middle; }
+.node .name { font: 700 13px Inter, sans-serif; fill: var(--ink); text-anchor: middle; }
+.node .meta { font: 600 11px ui-monospace, Menlo, monospace; fill: var(--ink-soft); text-anchor: middle; }
 .node .glyph { stroke: var(--accent); stroke-width: 1.8; fill: none; }
 .node.fw rect { stroke: color-mix(in oklab, var(--accent) 55%, var(--border)); stroke-width: 1.8; }
 
@@ -232,35 +232,39 @@ body { min-height: 100dvh; padding: clamp(14px, 3vw, 32px); -webkit-font-smoothi
           <path class="link" d="M448 192 L482 192"/>
 
           <!-- firewall -->
-          <g class="node fw" transform="translate(352,158)">
-            <rect width="96" height="68" rx="12"/>
-            <g class="glyph" transform="translate(38,12)"><path d="M2 1v14M8 1v14M14 1v14M-1 5h18M-1 11h18"/></g>
-            <text class="name" x="48" y="48">FW-1</text>
-            <text class="meta" x="48" y="61">top-down</text>
+          <g class="node fw" transform="translate(352,161)">
+            <rect width="96" height="62" rx="12"/>
+            <g class="glyph" transform="translate(40,11)"><path d="M2 1v14M8 1v14M14 1v14M-1 5h18M-1 11h18"/></g>
+            <text class="name" x="48" y="42">FW-1</text>
+            <text class="meta" x="48" y="56">top-down</text>
           </g>
 
           <!-- users side -->
-          <g class="node" transform="translate(60,120)">
-            <rect width="110" height="52" rx="10"/>
-            <text class="name" x="55" y="24" style="font-size:11.5px">Staff PCs</text>
-            <text class="meta" x="55" y="40">.10.50-.99</text>
+          <g class="node" transform="translate(52,118)">
+            <rect width="128" height="62" rx="12"/>
+            <g class="glyph" transform="translate(56,11)"><path d="M0 3h16v9H0zM5 16h6"/></g>
+            <text class="name" x="64" y="42">Staff PCs</text>
+            <text class="meta" x="64" y="56">.10.50-.99</text>
           </g>
-          <g class="node" transform="translate(60,220)">
-            <rect width="110" height="52" rx="10"/>
-            <text class="name" x="55" y="24" style="font-size:11.5px">IT admin</text>
-            <text class="meta" x="55" y="40">10.10.10.5</text>
+          <g class="node" transform="translate(52,218)">
+            <rect width="128" height="62" rx="12"/>
+            <g class="glyph" transform="translate(56,11)"><path d="M0 3h16v9H0zM5 16h6"/></g>
+            <text class="name" x="64" y="42">IT admin</text>
+            <text class="meta" x="64" y="56">10.10.10.5</text>
           </g>
 
           <!-- servers side -->
-          <g class="node" transform="translate(560,120)">
-            <rect width="120" height="52" rx="10"/>
-            <text class="name" x="60" y="24" style="font-size:11.5px">Web app</text>
-            <text class="meta" x="60" y="40">.30.10 · 443</text>
+          <g class="node" transform="translate(560,118)">
+            <rect width="128" height="62" rx="12"/>
+            <g class="glyph" transform="translate(56,11)"><path d="M0 3h16v10H0zM0 8h16"/></g>
+            <text class="name" x="64" y="42">Web app</text>
+            <text class="meta" x="64" y="56">.30.10 · 443</text>
           </g>
-          <g class="node" transform="translate(560,220)">
-            <rect width="120" height="52" rx="10"/>
-            <text class="name" x="60" y="24" style="font-size:11.5px">DB + SSH</text>
-            <text class="meta" x="60" y="40">.30.20 · 22</text>
+          <g class="node" transform="translate(560,218)">
+            <rect width="128" height="62" rx="12"/>
+            <g class="glyph" transform="translate(56,11)"><path d="M0 3c0-1.6 3.6-3 8-3s8 1.4 8 3v10c0 1.6-3.6 3-8 3s-8-1.4-8-3zM0 3c0 1.6 3.6 3 8 3s8-1.4 8-3"/></g>
+            <text class="name" x="64" y="42">DB + SSH</text>
+            <text class="meta" x="64" y="56">.30.20 · 22</text>
           </g>
         </svg>
       </div>
