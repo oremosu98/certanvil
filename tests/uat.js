@@ -21294,6 +21294,70 @@ console.log('\n\x1b[1m── T7: DRILLS ANALYTICS GROUP + FINAL COPY + BRONZE TO
   }
 })();
 
+// ── Sim Lab: firewall fidelity validator (Wave 1 Task 3) ──
+// Runs the scenario's acceptance flows through the KEYED rule table with
+// first-match-wins + implicit deny, and proves the phase-3 shadow exhibit is
+// genuinely shadowed. Pure-logic, no DOM — extract via vm same as Task 2.
+(function () {
+  console.log('\n\x1b[1m── Sim Lab: firewall fidelity validator (Wave 1 Task 3) ──\x1b[0m');
+  try {
+    var vm = require('vm');
+    function assert(cond, msg) { test(msg, !!cond); }
+
+    var grab = function (name) {
+      var re = new RegExp('function ' + name + '\\([^)]*\\) \\{[\\s\\S]*?\\n\\}');
+      return (js.match(re) || [''])[0];
+    };
+
+    var ipToIntBody = grab('_ipToInt');
+    var fwMatchAddrBody = grab('_fwMatchAddr');
+    var fwRuleMatchesBody = grab('_fwRuleMatches');
+    var fwFidelityBody = grab('simLabValidateFirewallFidelity');
+
+    if (!ipToIntBody || !fwMatchAddrBody || !fwRuleMatchesBody || !fwFidelityBody) {
+      test('fw fidelity: vm extraction succeeded', false);
+      results.errors.push('could not extract firewall fidelity validator helpers; check names/indenting');
+      return;
+    }
+
+    var fwCtx = {};
+    vm.createContext(fwCtx);
+    vm.runInContext(ipToIntBody, fwCtx);
+    vm.runInContext(fwMatchAddrBody, fwCtx);
+    vm.runInContext(fwRuleMatchesBody, fwCtx);
+    vm.runInContext(fwFidelityBody, fwCtx);
+    vm.runInContext('globalThis.__fwFidelity = simLabValidateFirewallFidelity;', fwCtx);
+    var simLabValidateFirewallFidelity = fwCtx.__fwFidelity;
+
+    var _fwScn = { fwSpec: {
+      rules: [
+        { id:'ssh',  action:'allow', proto:'tcp', src:'10.10.10.5/32', dst:'10.10.30.20/32', port:22 },
+        { id:'web',  action:'allow', proto:'tcp', src:'10.10.10.0/24', dst:'10.10.30.10/32', port:443 },
+        { id:'deny', action:'deny',  proto:'any', src:'any', dst:'any', port:'any' } ],
+      flows: [
+        { name:'admin ssh',   proto:'tcp', src:'10.10.10.5',  dst:'10.10.30.20', port:22,  expect:'allow' },
+        { name:'staff https', proto:'tcp', src:'10.10.10.77', dst:'10.10.30.10', port:443, expect:'allow' },
+        { name:'staff ssh',   proto:'tcp', src:'10.10.10.77', dst:'10.10.30.20', port:22,  expect:'deny' } ],
+      shadowTable: {
+        rules: [
+          { id:'ssh',  action:'allow', proto:'tcp', src:'10.10.10.5/32', dst:'10.10.30.20/32', port:22 },
+          { id:'blk',  action:'deny',  proto:'any', src:'10.10.10.0/24', dst:'any', port:'any' },
+          { id:'web',  action:'allow', proto:'tcp', src:'10.10.10.0/24', dst:'10.10.30.10/32', port:443 } ],
+        shadowedRuleId: 'web' } } };
+    assert(simLabValidateFirewallFidelity(_fwScn).ok === true, 'fw: sound spec passes');
+    var _fwBad = JSON.parse(JSON.stringify(_fwScn));
+    _fwBad.fwSpec.rules[2] = _fwBad.fwSpec.rules[0]; _fwBad.fwSpec.rules[0] = { id:'deny', action:'deny', proto:'any', src:'any', dst:'any', port:'any' };
+    assert(simLabValidateFirewallFidelity(_fwBad).ok === false, 'fw: deny-first table fails its own flows');
+    var _fwBad2 = JSON.parse(JSON.stringify(_fwScn));
+    _fwBad2.fwSpec.shadowTable.rules[1].src = '10.10.99.0/24';   // no longer shadows web
+    assert(simLabValidateFirewallFidelity(_fwBad2).ok === false, 'fw: declared-shadowed rule that actually fires is rejected');
+
+  } catch (err) {
+    test('firewall fidelity validator: vm smoke test (threw)', false);
+    results.errors.push('firewall fidelity validator smoke test threw: ' + err.message);
+  }
+})();
+
 // ── Sim Lab: network reference renderer (Task 6) ──
 // The renderer builds SVG as a STRING mounted via _el('div','sl-net', svg), so
 // assertions run against that string (read from the .sl-net child's innerHTML),

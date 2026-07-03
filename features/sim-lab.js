@@ -220,6 +220,63 @@
     return { ok: errs.length === 0, errors: errs };
   }
 
+  // --- firewall fidelity validator (Wave 1 Task 3) ---
+  // Executes the scenario's acceptance flows through the KEYED rule table with
+  // first-match-wins + implicit deny, and proves the phase-3 shadow exhibit is
+  // genuinely shadowed. This is the archetype's differentiator: the seed's
+  // correctness is demonstrated by running traffic, not asserted by hand.
+  function _fwMatchAddr(spec, ip) {
+    if (!spec || spec === 'any') return true;
+    var parts = String(spec).split('/');
+    if (parts.length === 2) {
+      var bits = parseInt(parts[1], 10);
+      var mask = bits === 0 ? 0 : (0xFFFFFFFF << (32 - bits)) >>> 0;
+      return (_ipToInt(ip) & mask) === (_ipToInt(parts[0]) & mask);
+    }
+    return spec === ip;
+  }
+  function _fwRuleMatches(rule, flow) {
+    return (rule.proto === 'any' || rule.proto === flow.proto) &&
+           (rule.port === 'any' || String(rule.port) === String(flow.port)) &&
+           _fwMatchAddr(rule.src, flow.src) && _fwMatchAddr(rule.dst, flow.dst);
+  }
+  function simLabValidateFirewallFidelity(scn) {
+    var errs = [];
+    var spec = scn && scn.fwSpec;
+    if (!spec || !Array.isArray(spec.rules) || !Array.isArray(spec.flows) || !spec.flows.length) {
+      return { ok: false, errors: ['fw fidelity: scenario.fwSpec{rules[],flows[]} required'] };
+    }
+    spec.flows.forEach(function (flow) {
+      var hit = null;
+      for (var i = 0; i < spec.rules.length; i++) {
+        if (_fwRuleMatches(spec.rules[i], flow)) { hit = spec.rules[i]; break; }
+      }
+      var outcome = hit ? hit.action : 'deny';
+      if (outcome !== flow.expect) {
+        errs.push('flow ' + (flow.name || flow.src + '->' + flow.dst + ':' + flow.port) + ': got ' + outcome + ', expected ' + flow.expect);
+      }
+    });
+    var st = spec.shadowTable;
+    if (st && Array.isArray(st.rules) && st.shadowedRuleId) {
+      var shadow = st.rules.filter(function (r) { return r.id === st.shadowedRuleId; })[0];
+      if (!shadow) {
+        errs.push('shadowTable: shadowedRuleId "' + st.shadowedRuleId + '" not found');
+      } else {
+        var exercised = false, fired = false;
+        spec.flows.forEach(function (flow) {
+          if (!_fwRuleMatches(shadow, flow)) return;
+          exercised = true;
+          for (var i = 0; i < st.rules.length; i++) {
+            if (_fwRuleMatches(st.rules[i], flow)) { if (st.rules[i].id === st.shadowedRuleId) fired = true; break; }
+          }
+        });
+        if (!exercised) errs.push('shadowTable: no acceptance flow exercises the shadowed rule');
+        if (fired) errs.push('shadowTable: declared-shadowed rule actually fires');
+      }
+    }
+    return { ok: errs.length === 0, errors: errs };
+  }
+
   // --- scoring (Task 2) ---
 
   function _norm(v) {
