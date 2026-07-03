@@ -20962,6 +20962,16 @@ console.log('\n\x1b[1m── T7: DRILLS ANALYTICS GROUP + FINAL COPY + BRONZE TO
     test('archetype validation: unknown archetype rejected',
       _badArchResult.ok === false && _badArchResult.errors.some(function (e) { return /archetype/i.test(e); }));
 
+    // 10. New archetype tags ('wireless'/'firewall'/'soho') accepted; unknown still rejected.
+    ['wireless', 'firewall', 'soho'].forEach(function (tag) {
+      var _s = _baseScn(); _s.archetype = tag;
+      test('archetype validation: archetype ' + tag + ' accepted',
+        simLabValidateScenario(_s).ok === true);
+    });
+    var _sx = _baseScn(); _sx.archetype = 'printer';
+    test('archetype validation: unknown archetype "printer" still rejected',
+      simLabValidateScenario(_sx).ok === false);
+
     // ── Mount test — vm-sandbox + DOM shim ──
     var elBody            = grab('_el');
     var escBody           = grabLine('_esc');
