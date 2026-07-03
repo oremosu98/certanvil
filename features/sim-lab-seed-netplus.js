@@ -1810,6 +1810,550 @@ window.SIM_LAB_SEED_NETPLUS = [
         ] },
         answer: { slots: { perimeter: 'p1', network: 'n1', endpoint: 'e1' } } }
     ]
+  },
+
+  // 01 — band steering: 2.4-only clients force AP onto 2.4, channel-plan around ch6 neighbor
+  {
+    id: 'np-wifi-01',
+    cert: 'netplus', objective: '2.3', topic: 'Wireless deployment',
+    title: 'Warehouse scanners can’t see the new AP',
+    estMinutes: 4, archetype: 'wireless',
+    scenario: 'A roastery just mounted AP-2 in the warehouse. The barcode scanners are 2.4 GHz-only, and the print shop next door runs a loud neighbor AP on 2.4 GHz channel 6. Plan the band, then configure AP-2 so the scanners associate cleanly and stay clear of the neighbor.',
+    assets: { reference: { kind: 'network',
+      given: { site: 'Harbor & Finch — warehouse' },
+      devices: [
+        { id: 'ap2', label: 'AP-2', type: 'ap', zone: 'warehouse', ip: 'ch ?', x: 1, y: 1 },
+        { id: 'nbr', label: 'Neighbor AP', type: 'ap', zone: 'external', ip: '2.4 GHz · ch 6', channel: 6, x: 3, y: 1, state: 'compromised' },
+        { id: 'scan', label: 'Scanners', type: 'pc', zone: 'warehouse', ip: '2.4 GHz only', x: 0, y: 2 }
+      ],
+      links: [ { from: 'ap2', to: 'scan' }, { from: 'nbr', to: 'ap2', kind: 'attack' } ]
+    } },
+    steps: [
+      { id: 's1', type: 'analyze', points: 1,
+        prompt: 'The scanners never appear on 5 GHz. Which facts drive the AP-2 plan? Select all that apply.',
+        explanation: 'The scanners are 2.4 GHz-only, so AP-2 must broadcast on 2.4 GHz. In 2.4 GHz only channels 1, 6, and 11 are non-overlapping, and the neighbor already occupies 6 — so AP-2 must use 1 or 11.',
+        payload: { lines: [
+          { id: 'l1', text: 'Scanners are 2.4 GHz-only, so AP-2 must run 2.4 GHz.' },
+          { id: 'l2', text: 'Neighbor occupies 2.4 GHz channel 6.' },
+          { id: 'l3', text: 'Only channels 1, 6, 11 are non-overlapping on 2.4 GHz.' },
+          { id: 'l4', text: 'WPA3 encryption removes the need for channel planning.' }
+        ] },
+        answer: { selected: ['l1', 'l2', 'l3'] } },
+      { id: 's2', type: 'configure', points: 1, apId: 'ap2',
+        require: { band: '2.4', channel: 11, security: 'WPA3-Personal', ssid: 'HF-Ops' },
+        prompt: 'Configure AP-2 for the warehouse scanners, clear of the neighbor.',
+        explanation: 'Band 2.4 GHz reaches the 2.4-only scanners; channel 11 is non-overlapping and not the neighbor’s 6; WPA3-Personal matches site policy; SSID HF-Ops is the warehouse network.',
+        payload: { slots: [
+          { id: 'band', label: 'Band', options: [
+            { id: 'a', text: '2.4' }, { id: 'b', text: '5' } ] },
+          { id: 'channel', label: 'Channel', options: [
+            { id: 'a', text: '6' }, { id: 'b', text: '11' }, { id: 'c', text: '3' } ] },
+          { id: 'security', label: 'Security', options: [
+            { id: 'a', text: 'WPA2-Personal' }, { id: 'b', text: 'WPA3-Personal' }, { id: 'c', text: 'WEP' } ] },
+          { id: 'ssid', label: 'SSID', options: [
+            { id: 'a', text: 'HF-Ops' }, { id: 'b', text: 'HF-Cafe' } ] }
+        ] },
+        answer: { slots: { band: 'a', channel: 'b', security: 'b', ssid: 'a' } } }
+    ]
+  },
+
+  // 02 — band steering: 5-capable clients, move café AP to 5 GHz off crowded 2.4
+  {
+    id: 'np-wifi-02',
+    cert: 'netplus', objective: '2.3', topic: 'Band steering',
+    title: 'Steer the café laptops to the fast band',
+    estMinutes: 4, archetype: 'wireless',
+    scenario: 'The café upstairs streams video on 5 GHz-capable laptops, but AP-1 was left on the congested 2.4 GHz band shared with a neighbor. Diagnose why throughput is poor, then move AP-1 to the band that fits the clients.',
+    assets: { reference: { kind: 'network',
+      given: { site: 'Harbor & Finch — café' },
+      devices: [
+        { id: 'ap1', label: 'AP-1', type: 'ap', zone: 'cafe', ip: 'ch ?', x: 1, y: 1 },
+        { id: 'nbr', label: 'Neighbor AP', type: 'ap', zone: 'external', ip: '2.4 GHz · ch 6', channel: 6, x: 3, y: 1, state: 'compromised' },
+        { id: 'lap', label: 'Laptops', type: 'pc', zone: 'cafe', ip: '5 GHz capable', x: 0, y: 2 }
+      ],
+      links: [ { from: 'ap1', to: 'lap' }, { from: 'nbr', to: 'ap1', kind: 'attack' } ]
+    } },
+    steps: [
+      { id: 's1', type: 'analyze', points: 1,
+        prompt: 'Why is café throughput poor even though signal is strong? Select all that apply.',
+        explanation: 'The laptops support 5 GHz, which has far more non-overlapping channels and no neighbor contention here. Staying on crowded 2.4 GHz shares airtime with the neighbor. Move AP-1 to 5 GHz.',
+        payload: { lines: [
+          { id: 'l1', text: 'Laptops are 5 GHz-capable but AP-1 is on 2.4 GHz.' },
+          { id: 'l2', text: '2.4 GHz is congested and shared with the neighbor.' },
+          { id: 'l3', text: '5 GHz offers more non-overlapping channels.' },
+          { id: 'l4', text: 'The laptops cannot use 5 GHz at all.' }
+        ] },
+        answer: { selected: ['l1', 'l2', 'l3'] } },
+      { id: 's2', type: 'configure', points: 1, apId: 'ap1',
+        require: { band: '5', channel: 44, security: 'WPA3-Personal', ssid: 'HF-Cafe' },
+        prompt: 'Configure AP-1 for the streaming laptops.',
+        explanation: 'Band 5 GHz matches the laptops and clears crowded 2.4 GHz; channel 44 is a valid non-DFS 5 GHz channel; WPA3-Personal per policy; SSID HF-Cafe.',
+        payload: { slots: [
+          { id: 'band', label: 'Band', options: [
+            { id: 'a', text: '2.4' }, { id: 'b', text: '5' } ] },
+          { id: 'channel', label: 'Channel', options: [
+            { id: 'a', text: '44' }, { id: 'b', text: '6' }, { id: 'c', text: '12' } ] },
+          { id: 'security', label: 'Security', options: [
+            { id: 'a', text: 'WPA3-Personal' }, { id: 'b', text: 'WPA2-Personal' }, { id: 'c', text: 'Open' } ] },
+          { id: 'ssid', label: 'SSID', options: [
+            { id: 'a', text: 'HF-Cafe' }, { id: 'b', text: 'HF-Ops' } ] }
+        ] },
+        answer: { slots: { band: 'b', channel: 'a', security: 'a', ssid: 'a' } } }
+    ]
+  },
+
+  // 03 — 2.4 GHz channel planning around TWO neighbors (6 and 11) -> forced to 1
+  {
+    id: 'np-wifi-03',
+    cert: 'netplus', objective: '2.3', topic: 'Channel planning',
+    title: 'Squeezed between two 2.4 GHz neighbors',
+    estMinutes: 4, archetype: 'wireless',
+    scenario: 'A clinic’s 2.4 GHz IoT sensors need AP-3, but two adjacent tenants already broadcast — one on channel 6, one on channel 11. Diagnose the only clean non-overlapping channel left, then configure AP-3.',
+    assets: { reference: { kind: 'network',
+      given: { site: 'Bayside Clinic — sensor floor' },
+      devices: [
+        { id: 'ap3', label: 'AP-3', type: 'ap', zone: 'clinic', ip: 'ch ?', x: 1, y: 1 },
+        { id: 'nbrA', label: 'Tenant A AP', type: 'ap', zone: 'external', ip: '2.4 GHz · ch 6', channel: 6, x: 3, y: 0, state: 'compromised' },
+        { id: 'nbrB', label: 'Tenant B AP', type: 'ap', zone: 'external', ip: '2.4 GHz · ch 11', channel: 11, x: 3, y: 2, state: 'compromised' },
+        { id: 'iot', label: 'IoT sensors', type: 'pc', zone: 'clinic', ip: '2.4 GHz only', x: 0, y: 2 }
+      ],
+      links: [ { from: 'ap3', to: 'iot' }, { from: 'nbrA', to: 'ap3', kind: 'attack' }, { from: 'nbrB', to: 'ap3', kind: 'attack' } ]
+    } },
+    steps: [
+      { id: 's1', type: 'analyze', points: 1,
+        prompt: 'Two neighbors hold 6 and 11. Which channel is left for AP-3? Select all true statements.',
+        explanation: 'The non-overlapping 2.4 GHz set is {1, 6, 11}. Neighbors own 6 and 11, so channel 1 is the only clean choice.',
+        payload: { lines: [
+          { id: 'l1', text: 'Non-overlapping 2.4 GHz channels are 1, 6, 11.' },
+          { id: 'l2', text: 'Neighbors occupy channels 6 and 11.' },
+          { id: 'l3', text: 'Channel 1 is the only remaining clean channel.' },
+          { id: 'l4', text: 'Channel 9 would avoid both neighbors.' }
+        ] },
+        answer: { selected: ['l1', 'l2', 'l3'] } },
+      { id: 's2', type: 'configure', points: 1, apId: 'ap3',
+        require: { band: '2.4', channel: 1, security: 'WPA3-Personal', ssid: 'BC-Sensors' },
+        prompt: 'Configure AP-3 for the 2.4 GHz sensors, clear of both neighbors.',
+        explanation: 'Channel 1 is the only non-overlapping 2.4 GHz channel not taken by a neighbor; 2.4 GHz reaches the sensors; WPA3-Personal per policy.',
+        payload: { slots: [
+          { id: 'band', label: 'Band', options: [
+            { id: 'a', text: '2.4' }, { id: 'b', text: '5' } ] },
+          { id: 'channel', label: 'Channel', options: [
+            { id: 'a', text: '1' }, { id: 'b', text: '6' }, { id: 'c', text: '11' }, { id: 'd', text: '9' } ] },
+          { id: 'security', label: 'Security', options: [
+            { id: 'a', text: 'WPA3-Personal' }, { id: 'b', text: 'WEP' } ] },
+          { id: 'ssid', label: 'SSID', options: [
+            { id: 'a', text: 'BC-Sensors' }, { id: 'b', text: 'BC-Guest' } ] }
+        ] },
+        answer: { slots: { band: 'a', channel: 'a', security: 'a', ssid: 'a' } } }
+    ]
+  },
+
+  // 04 — DFS awareness: near weather radar, avoid a DFS channel; key a non-DFS one clear of neighbor
+  {
+    id: 'np-wifi-04',
+    cert: 'netplus', objective: '2.3', topic: 'DFS channels',
+    title: 'Steer clear of DFS near the radar',
+    estMinutes: 5, archetype: 'wireless',
+    scenario: 'A clinic sits under the approach path of an airport weather radar, where DFS channels regularly take radar hits and drop clients while the AP runs its channel-availability check. AP-5 serves 5 GHz laptops. A neighbor tenant already holds 5 GHz channel 149. Decide which channel keeps the clinic online, then set AP-5.',
+    assets: { reference: { kind: 'network',
+      given: { site: 'Beacon Clinic — near airport radar' },
+      devices: [
+        { id: 'ap5', label: 'AP-5', type: 'ap', zone: 'clinic', ip: 'ch ?', x: 1, y: 1 },
+        { id: 'nbr', label: 'Neighbor AP', type: 'ap', zone: 'external', ip: '5 GHz · ch 149', channel: 149, x: 3, y: 1, state: 'compromised' },
+        { id: 'lap', label: 'Laptops', type: 'pc', zone: 'clinic', ip: '5 GHz capable', x: 0, y: 2 }
+      ],
+      links: [ { from: 'ap5', to: 'lap' }, { from: 'nbr', to: 'ap5', kind: 'attack' } ]
+    } },
+    steps: [
+      { id: 's1', type: 'analyze', points: 1,
+        prompt: 'Channel 100 looks empty. Why is it still the wrong pick near this radar? Select all that apply.',
+        explanation: 'Channel 100 is a DFS channel: it is legal, but near a radar source the AP must vacate and re-run a channel-availability check on every radar detection, dropping clients. The neighbor holds 149, so it collides. A non-DFS UNII-1/UNII-3 channel such as 153 avoids both the radar interruptions and the neighbor.',
+        payload: { lines: [
+          { id: 'l1', text: 'Channel 100 is a DFS channel that must yield to radar and re-run CAC, dropping clients.' },
+          { id: 'l2', text: 'The neighbor already occupies 5 GHz channel 149.' },
+          { id: 'l3', text: 'A non-DFS UNII-1/UNII-3 channel like 153 avoids both radar hits and the neighbor.' },
+          { id: 'l4', text: 'An empty DFS channel is always the safest pick because no one else is on it.' }
+        ] },
+        answer: { selected: ['l1', 'l2', 'l3'] } },
+      { id: 's2', type: 'configure', points: 1, apId: 'ap5',
+        require: { band: '5', channel: 153, security: 'WPA3-Personal', ssid: 'Beacon-Staff' },
+        prompt: 'Configure AP-5 on a channel that survives the radar and clears the neighbor.',
+        explanation: 'Channel 153 is a non-DFS UNII-3 channel — no radar-detection/CAC interruptions — and is not the neighbor’s 149; the empty DFS channel 100 is the trap; 5 GHz matches the laptops; WPA3-Personal per policy.',
+        payload: { slots: [
+          { id: 'band', label: 'Band', options: [
+            { id: 'a', text: '5' }, { id: 'b', text: '2.4' } ] },
+          { id: 'channel', label: 'Channel', options: [
+            { id: 'a', text: '153' }, { id: 'b', text: '100' }, { id: 'c', text: '149' } ] },
+          { id: 'security', label: 'Security', options: [
+            { id: 'a', text: 'WPA3-Personal' }, { id: 'b', text: 'WPA2-Personal' } ] },
+          { id: 'ssid', label: 'SSID', options: [
+            { id: 'a', text: 'Beacon-Staff' }, { id: 'b', text: 'Beacon-Guest' } ] }
+        ] },
+        answer: { slots: { band: 'a', channel: 'a', security: 'a', ssid: 'a' } } }
+    ]
+  },
+
+  // 05 — security mode: WPA3 required; WPA2 distractor is the legacy-client trap
+  {
+    id: 'np-wifi-05',
+    cert: 'netplus', objective: '4.3', topic: 'Wireless security',
+    title: 'Lock the exec SSID to WPA3',
+    estMinutes: 4, archetype: 'wireless',
+    scenario: 'A finance floor’s executive SSID must use the strongest personal-mode encryption available. A junior admin left it on WPA2 “because everything connects.” Diagnose the risk, then set the required security while keeping a clean 5 GHz channel.',
+    assets: { reference: { kind: 'network',
+      given: { site: 'Meridian Finance — exec floor' },
+      devices: [
+        { id: 'apx', label: 'AP-X', type: 'ap', zone: 'exec', ip: '5 GHz · ch 40', x: 1, y: 1 },
+        { id: 'nbr', label: 'Neighbor AP', type: 'ap', zone: 'external', ip: '5 GHz · ch 157', channel: 157, x: 3, y: 1, state: 'compromised' },
+        { id: 'lap', label: 'Exec laptops', type: 'pc', zone: 'exec', ip: '5 GHz · WPA3', x: 0, y: 2 }
+      ],
+      links: [ { from: 'apx', to: 'lap' }, { from: 'nbr', to: 'apx', kind: 'attack' } ]
+    } },
+    steps: [
+      { id: 's1', type: 'analyze', points: 1,
+        prompt: 'What is wrong with leaving the exec SSID on WPA2? Select all that apply.',
+        explanation: 'WPA3-Personal (SAE) resists offline dictionary attacks that WPA2-PSK is vulnerable to. All exec laptops support WPA3, so there is no legacy-client reason to stay on WPA2.',
+        payload: { lines: [
+          { id: 'l1', text: 'WPA3-Personal (SAE) resists offline PSK cracking.' },
+          { id: 'l2', text: 'All exec laptops already support WPA3.' },
+          { id: 'l3', text: 'Policy requires the strongest personal-mode encryption.' },
+          { id: 'l4', text: 'WPA2 is the strongest option still available.' }
+        ] },
+        answer: { selected: ['l1', 'l2', 'l3'] } },
+      { id: 's2', type: 'configure', points: 1, apId: 'apx',
+        require: { band: '5', channel: 40, security: 'WPA3-Personal', ssid: 'MF-Exec' },
+        prompt: 'Set the exec SSID to the required security and a clean channel.',
+        explanation: 'WPA3-Personal is the required, strongest personal mode; channel 40 is a valid 5 GHz channel clear of the neighbor’s 157; band 5 GHz matches the clients.',
+        payload: { slots: [
+          { id: 'band', label: 'Band', options: [
+            { id: 'a', text: '5' }, { id: 'b', text: '2.4' } ] },
+          { id: 'channel', label: 'Channel', options: [
+            { id: 'a', text: '40' }, { id: 'b', text: '157' }, { id: 'c', text: '5' } ] },
+          { id: 'security', label: 'Security', options: [
+            { id: 'a', text: 'WPA2-Personal' }, { id: 'b', text: 'WPA3-Personal' }, { id: 'c', text: 'Open' } ] },
+          { id: 'ssid', label: 'SSID', options: [
+            { id: 'a', text: 'MF-Exec' }, { id: 'b', text: 'MF-Guest' } ] }
+        ] },
+        answer: { slots: { band: 'a', channel: 'a', security: 'b', ssid: 'a' } } }
+    ]
+  },
+
+  // 06 — SSID / guest separation: guest network on its own SSID, WPA3, clear channel
+  {
+    id: 'np-wifi-06',
+    cert: 'netplus', objective: '2.3', topic: 'Guest network',
+    title: 'Stand up a separated guest SSID',
+    estMinutes: 4, archetype: 'wireless',
+    scenario: 'A hotel lobby needs guest Wi-Fi on its own SSID, separate from the staff network. AP-G will carry only guests. A café across the street runs 2.4 GHz channel 1. Decide what a separate guest SSID does (and does not) provide, then configure AP-G on a clean 2.4 GHz channel with its own guest SSID and security.',
+    assets: { reference: { kind: 'network',
+      given: { site: 'Cove Hotel — lobby' },
+      devices: [
+        { id: 'apg', label: 'AP-G', type: 'ap', zone: 'lobby', ip: 'ch ?', x: 1, y: 1 },
+        { id: 'nbr', label: 'Café AP', type: 'ap', zone: 'external', ip: '2.4 GHz · ch 1', channel: 1, x: 3, y: 1, state: 'compromised' },
+        { id: 'phone', label: 'Guest phones', type: 'pc', zone: 'lobby', ip: '2.4 GHz', x: 0, y: 2 }
+      ],
+      links: [ { from: 'apg', to: 'phone' }, { from: 'nbr', to: 'apg', kind: 'attack' } ]
+    } },
+    steps: [
+      { id: 's1', type: 'analyze', points: 1,
+        prompt: 'What does putting guests on a separate SSID actually accomplish here? Select all that apply.',
+        explanation: 'Guests belong on their own SSID with its own security, not sharing the staff SSID/PSK. The café holds 2.4 GHz channel 1, so AP-G must use a different non-overlapping channel (6 or 11). Note the limit: a distinct SSID name alone does not isolate guest traffic from staff — true isolation requires VLAN/segmentation or client isolation, which naming does not perform.',
+        payload: { lines: [
+          { id: 'l1', text: 'Guests should be on a separate SSID with its own security, not the staff SSID/PSK.' },
+          { id: 'l2', text: 'The café AP occupies 2.4 GHz channel 1.' },
+          { id: 'l3', text: 'AP-G should pick 6 or 11 to avoid channel 1.' },
+          { id: 'l4', text: 'A separate SSID name by itself fully isolates guest traffic from staff.' }
+        ] },
+        answer: { selected: ['l1', 'l2', 'l3'] } },
+      { id: 's2', type: 'configure', points: 1, apId: 'apg',
+        require: { band: '2.4', channel: 6, security: 'WPA3-Personal', ssid: 'Cove-Guest' },
+        prompt: 'Configure AP-G with its own guest SSID and security, clear of the café.',
+        explanation: 'SSID Cove-Guest puts guests on their own SSID with its own WPA3-Personal security rather than the staff network; channel 6 is non-overlapping and not the café’s 1; 2.4 GHz for broad phone reach. (Full traffic isolation from staff would still require VLAN/segmentation beyond this SSID split.)',
+        payload: { slots: [
+          { id: 'band', label: 'Band', options: [
+            { id: 'a', text: '2.4' }, { id: 'b', text: '5' } ] },
+          { id: 'channel', label: 'Channel', options: [
+            { id: 'a', text: '6' }, { id: 'b', text: '1' }, { id: 'c', text: '4' } ] },
+          { id: 'security', label: 'Security', options: [
+            { id: 'a', text: 'WPA3-Personal' }, { id: 'b', text: 'Open' } ] },
+          { id: 'ssid', label: 'SSID', options: [
+            { id: 'a', text: 'Cove-Guest' }, { id: 'b', text: 'Cove-Staff' } ] }
+        ] },
+        answer: { slots: { band: 'a', channel: 'a', security: 'a', ssid: 'a' } } }
+    ]
+  },
+
+  // 07 — channel-width choice in congested 2.4 GHz (20 vs 40 MHz)
+  {
+    id: 'np-wifi-07',
+    cert: 'netplus', objective: '2.3', topic: 'Channel width',
+    title: 'Narrow the channel in crowded 2.4 GHz',
+    estMinutes: 5, archetype: 'wireless',
+    scenario: 'A dense apartment block has many 2.4 GHz APs packed together. AP-2 is currently set to 40 MHz width and throughput is inconsistent. Decide the best-practice channel width for congested 2.4 GHz, then configure AP-2 with that width and a clean channel.',
+    assets: { reference: { kind: 'network',
+      given: { site: 'Alder Flats — unit 4B' },
+      devices: [
+        { id: 'ap2', label: 'AP-2', type: 'ap', zone: 'unit', ip: 'ch ?', x: 1, y: 1 },
+        { id: 'nbr', label: 'Neighbor AP', type: 'ap', zone: 'external', ip: '2.4 GHz · ch 6', channel: 6, x: 3, y: 1, state: 'compromised' },
+        { id: 'dev', label: 'Tablets', type: 'pc', zone: 'unit', ip: '2.4 GHz', x: 0, y: 2 }
+      ],
+      links: [ { from: 'ap2', to: 'dev' }, { from: 'nbr', to: 'ap2', kind: 'attack' } ]
+    } },
+    steps: [
+      { id: 's1', type: 'analyze', points: 1,
+        prompt: 'Why is 20 MHz the best-practice width in dense 2.4 GHz? Select all that apply.',
+        explanation: 'A 40 MHz channel consumes two of the three non-overlapping 2.4 GHz channels, leaving little room to coexist with many neighbors; in a congested band the practical gain rarely offsets the added contention. 20 MHz width on a single non-overlapping channel (1/6/11) is the recommended practice here.',
+        payload: { lines: [
+          { id: 'l1', text: '40 MHz consumes two of the three non-overlapping 2.4 GHz channels.' },
+          { id: 'l2', text: '20 MHz width fits a single non-overlapping channel.' },
+          { id: 'l3', text: 'Best practice in dense 2.4 GHz is 20 MHz on 1/6/11.' },
+          { id: 'l4', text: 'Because the band is crowded, 40 MHz is the better width — its wider channel raises throughput per client.' }
+        ] },
+        answer: { selected: ['l1', 'l2', 'l3'] } },
+      { id: 's2', type: 'configure', points: 1, apId: 'ap2',
+        require: { band: '2.4', channel: 11, security: 'WPA3-Personal', ssid: 'Alder-4B' },
+        prompt: 'Configure AP-2 with the right width and a clean channel.',
+        explanation: 'Width 20 MHz is the best-practice choice in dense 2.4 GHz — it fits one non-overlapping channel instead of consuming two; channel 11 is non-overlapping and not the neighbor’s 6; band 2.4 GHz per the client mix; WPA3-Personal per policy.',
+        payload: { slots: [
+          { id: 'band', label: 'Band', options: [
+            { id: 'a', text: '2.4' }, { id: 'b', text: '5' } ] },
+          { id: 'width', label: 'Channel width', options: [
+            { id: 'a', text: '20 MHz' }, { id: 'b', text: '40 MHz' } ] },
+          { id: 'channel', label: 'Channel', options: [
+            { id: 'a', text: '11' }, { id: 'b', text: '6' }, { id: 'c', text: '8' } ] },
+          { id: 'security', label: 'Security', options: [
+            { id: 'a', text: 'WPA3-Personal' }, { id: 'b', text: 'WPA2-Personal' } ] },
+          { id: 'ssid', label: 'SSID', options: [
+            { id: 'a', text: 'Alder-4B' }, { id: 'b', text: 'Alder-Guest' } ] }
+        ] },
+        answer: { slots: { band: 'a', width: 'a', channel: 'a', security: 'a', ssid: 'a' } } }
+    ]
+  },
+
+  // 08 — mixed clients but priority is 2.4-only legacy printer; WPA3 transition vs legacy
+  {
+    id: 'np-wifi-08',
+    cert: 'netplus', objective: '2.3', topic: 'Wireless deployment',
+    title: 'Keep the 2.4 GHz label printer online',
+    estMinutes: 4, archetype: 'wireless',
+    scenario: 'A shipping desk added AP-4 for a 2.4 GHz-only label printer plus staff phones. A tenant AP holds 2.4 GHz channel 11. Diagnose the band requirement, then configure AP-4 clear of the tenant.',
+    assets: { reference: { kind: 'network',
+      given: { site: 'Portway Logistics — shipping' },
+      devices: [
+        { id: 'ap4', label: 'AP-4', type: 'ap', zone: 'shipping', ip: 'ch ?', x: 1, y: 1 },
+        { id: 'nbr', label: 'Tenant AP', type: 'ap', zone: 'external', ip: '2.4 GHz · ch 11', channel: 11, x: 3, y: 1, state: 'compromised' },
+        { id: 'prn', label: 'Label printer', type: 'pc', zone: 'shipping', ip: '2.4 GHz only', x: 0, y: 2 }
+      ],
+      links: [ { from: 'ap4', to: 'prn' }, { from: 'nbr', to: 'ap4', kind: 'attack' } ]
+    } },
+    steps: [
+      { id: 's1', type: 'analyze', points: 1,
+        prompt: 'The label printer disappears whenever AP-4 is on 5 GHz. Which facts apply? Select all.',
+        explanation: 'A 2.4 GHz-only printer cannot see a 5 GHz SSID, so AP-4 must be 2.4 GHz. The tenant holds channel 11, so AP-4 needs 1 or 6.',
+        payload: { lines: [
+          { id: 'l1', text: 'A 2.4 GHz-only printer cannot associate on 5 GHz.' },
+          { id: 'l2', text: 'The tenant AP occupies 2.4 GHz channel 11.' },
+          { id: 'l3', text: 'AP-4 should use channel 1 or 6 to avoid the tenant.' },
+          { id: 'l4', text: 'Dual-band AP-4 will bridge the printer to 5 GHz automatically.' }
+        ] },
+        answer: { selected: ['l1', 'l2', 'l3'] } },
+      { id: 's2', type: 'configure', points: 1, apId: 'ap4',
+        require: { band: '2.4', channel: 6, security: 'WPA3-Personal', ssid: 'PW-Ship' },
+        prompt: 'Configure AP-4 to keep the label printer online, clear of the tenant.',
+        explanation: 'Band 2.4 GHz reaches the printer; channel 6 is non-overlapping and not the tenant’s 11; WPA3-Personal per policy; SSID PW-Ship.',
+        payload: { slots: [
+          { id: 'band', label: 'Band', options: [
+            { id: 'a', text: '2.4' }, { id: 'b', text: '5' } ] },
+          { id: 'channel', label: 'Channel', options: [
+            { id: 'a', text: '6' }, { id: 'b', text: '11' }, { id: 'c', text: '2' } ] },
+          { id: 'security', label: 'Security', options: [
+            { id: 'a', text: 'WPA3-Personal' }, { id: 'b', text: 'WEP' } ] },
+          { id: 'ssid', label: 'SSID', options: [
+            { id: 'a', text: 'PW-Ship' }, { id: 'b', text: 'PW-Guest' } ] }
+        ] },
+        answer: { slots: { band: 'a', channel: 'a', security: 'a', ssid: 'a' } } }
+    ]
+  },
+
+  // 09 — channel-reuse planning: sibling AP on 44, neighbor on 36 -> pick non-overlapping 161
+  {
+    id: 'np-wifi-09',
+    cert: 'netplus', objective: '2.3', topic: 'Channel reuse',
+    title: 'Plan non-overlapping channels for two co-located APs',
+    estMinutes: 5, archetype: 'wireless',
+    scenario: 'A design studio covers one floor with two of its own 5 GHz APs. AP-6a is already assigned channel 44. You are now assigning AP-6b, which shares coverage with AP-6a. A neighbor studio next door broadcasts 5 GHz channel 36. Pick a channel for AP-6b that reuses the band without colliding with the sibling AP or the neighbor.',
+    assets: { reference: { kind: 'network',
+      given: { site: 'Kiln Studio — mezzanine' },
+      devices: [
+        { id: 'ap6', label: 'AP-6b', type: 'ap', zone: 'studio', ip: 'ch ?', x: 1, y: 1 },
+        { id: 'sib', label: 'AP-6a (sibling)', type: 'ap', zone: 'studio', ip: '5 GHz · ch 44', channel: 44, x: 1, y: 3 },
+        { id: 'nbr', label: 'Neighbor AP', type: 'ap', zone: 'external', ip: '5 GHz · ch 36', channel: 36, x: 3, y: 1, state: 'compromised' },
+        { id: 'ws', label: 'Workstations', type: 'pc', zone: 'studio', ip: '5 GHz capable', x: 0, y: 2 }
+      ],
+      links: [ { from: 'ap6', to: 'ws' }, { from: 'sib', to: 'ws' }, { from: 'nbr', to: 'ap6', kind: 'attack' } ]
+    } },
+    steps: [
+      { id: 's1', type: 'analyze', points: 1,
+        prompt: 'AP-6a is on 44 and the neighbor is on 36. Which channel should AP-6b take? Select all that apply.',
+        explanation: 'Co-located APs must reuse the band on non-overlapping 5 GHz channels. AP-6a already holds 44 and the neighbor holds 36, so AP-6b needs a third clean channel — 161 is a non-DFS 5 GHz channel that collides with neither.',
+        payload: { lines: [
+          { id: 'l1', text: 'Co-located AP-6a already occupies 5 GHz channel 44.' },
+          { id: 'l2', text: 'The neighbor occupies 5 GHz channel 36.' },
+          { id: 'l3', text: 'AP-6b should take a third non-overlapping 5 GHz channel such as 161.' },
+          { id: 'l4', text: 'AP-6b can reuse channel 44 since AP-6a is the studio’s own AP.' }
+        ] },
+        answer: { selected: ['l1', 'l2', 'l3'] } },
+      { id: 's2', type: 'configure', points: 1, apId: 'ap6',
+        require: { band: '5', channel: 161, security: 'WPA3-Personal', ssid: 'Kiln-Net' },
+        prompt: 'Configure AP-6b on a 5 GHz channel that clears both the sibling AP and the neighbor.',
+        explanation: 'Channel 161 is a non-DFS 5 GHz channel used by neither the sibling AP-6a (44) nor the neighbor (36); 5 GHz matches the workstations; WPA3-Personal per policy.',
+        payload: { slots: [
+          { id: 'band', label: 'Band', options: [
+            { id: 'a', text: '5' }, { id: 'b', text: '2.4' } ] },
+          { id: 'channel', label: 'Channel', options: [
+            { id: 'a', text: '161' }, { id: 'b', text: '44' }, { id: 'c', text: '36' } ] },
+          { id: 'security', label: 'Security', options: [
+            { id: 'a', text: 'WPA3-Personal' }, { id: 'b', text: 'WPA2-Personal' } ] },
+          { id: 'ssid', label: 'SSID', options: [
+            { id: 'a', text: 'Kiln-Net' }, { id: 'b', text: 'Kiln-Guest' } ] }
+        ] },
+        answer: { slots: { band: 'a', channel: 'a', security: 'a', ssid: 'a' } } }
+    ]
+  },
+
+  // 10 — WEP legacy device trap; correct answer WPA3, channel clear of ch1 neighbor
+  {
+    id: 'np-wifi-10',
+    cert: 'netplus', objective: '4.3', topic: 'Wireless security',
+    title: 'Retire WEP on the warehouse SSID',
+    estMinutes: 4, archetype: 'wireless',
+    scenario: 'An old handheld vendor manual suggested WEP “for compatibility.” The warehouse SSID on AP-7 must instead use the site’s WPA3-Personal standard. A neighbor holds 2.4 GHz channel 1. Diagnose the security gap, then reconfigure AP-7.',
+    assets: { reference: { kind: 'network',
+      given: { site: 'Granary Depot — floor 1' },
+      devices: [
+        { id: 'ap7', label: 'AP-7', type: 'ap', zone: 'depot', ip: '2.4 GHz · ch ?', x: 1, y: 1 },
+        { id: 'nbr', label: 'Neighbor AP', type: 'ap', zone: 'external', ip: '2.4 GHz · ch 1', channel: 1, x: 3, y: 1, state: 'compromised' },
+        { id: 'hh', label: 'Handhelds', type: 'pc', zone: 'depot', ip: '2.4 GHz · WPA3', x: 0, y: 2 }
+      ],
+      links: [ { from: 'ap7', to: 'hh' }, { from: 'nbr', to: 'ap7', kind: 'attack' } ]
+    } },
+    steps: [
+      { id: 's1', type: 'analyze', points: 1,
+        prompt: 'Why must WEP be removed here? Select all that apply.',
+        explanation: 'WEP is trivially cracked and non-compliant. The handhelds support WPA3, and site policy mandates WPA3-Personal, so there is no compatibility reason to keep WEP.',
+        payload: { lines: [
+          { id: 'l1', text: 'WEP encryption is trivially broken and deprecated.' },
+          { id: 'l2', text: 'The handhelds already support WPA3-Personal.' },
+          { id: 'l3', text: 'Site policy mandates WPA3-Personal.' },
+          { id: 'l4', text: 'WEP is acceptable as long as MAC filtering is enabled.' }
+        ] },
+        answer: { selected: ['l1', 'l2', 'l3'] } },
+      { id: 's2', type: 'configure', points: 1, apId: 'ap7',
+        require: { band: '2.4', channel: 11, security: 'WPA3-Personal', ssid: 'GD-Depot' },
+        prompt: 'Reconfigure AP-7 to the required security and a clean channel.',
+        explanation: 'WPA3-Personal replaces WEP per policy; channel 11 is non-overlapping and not the neighbor’s 1; band 2.4 GHz for the handhelds.',
+        payload: { slots: [
+          { id: 'band', label: 'Band', options: [
+            { id: 'a', text: '2.4' }, { id: 'b', text: '5' } ] },
+          { id: 'channel', label: 'Channel', options: [
+            { id: 'a', text: '11' }, { id: 'b', text: '1' }, { id: 'c', text: '7' } ] },
+          { id: 'security', label: 'Security', options: [
+            { id: 'a', text: 'WEP' }, { id: 'b', text: 'WPA3-Personal' }, { id: 'c', text: 'WPA2-Personal' } ] },
+          { id: 'ssid', label: 'SSID', options: [
+            { id: 'a', text: 'GD-Depot' }, { id: 'b', text: 'GD-Guest' } ] }
+        ] },
+        answer: { slots: { band: 'a', channel: 'a', security: 'b', ssid: 'a' } } }
+    ]
+  },
+
+  // 11 — canonical dual-band split: this AP is the 5 GHz radio, neighbor 5 GHz on 153 -> pick non-DFS 48
+  {
+    id: 'np-wifi-11',
+    cert: 'netplus', objective: '2.3', topic: 'Band steering',
+    title: 'Split the dual-band deployment',
+    estMinutes: 5, archetype: 'wireless',
+    scenario: 'A gym deliberately splits its coverage across two radios: a 2.4 GHz AP handles low-rate wearables while a separate 5 GHz AP-8 carries member video streaming. This item is about the 5 GHz half of that split. A neighbor gym broadcasts 5 GHz channel 153. Confirm AP-8 stays on its assigned 5 GHz band, then set it to a clean non-DFS channel clear of the neighbor.',
+    assets: { reference: { kind: 'network',
+      given: { site: 'Ironside Gym — main floor' },
+      devices: [
+        { id: 'ap8', label: 'AP-8', type: 'ap', zone: 'gym', ip: '5 GHz · ch ?', x: 1, y: 1 },
+        { id: 'nbr', label: 'Neighbor gym AP', type: 'ap', zone: 'external', ip: '5 GHz · ch 153', channel: 153, x: 3, y: 1, state: 'compromised' },
+        { id: 'phone', label: 'Member phones', type: 'pc', zone: 'gym', ip: '5 GHz streaming', x: 0, y: 2 }
+      ],
+      links: [ { from: 'ap8', to: 'phone' }, { from: 'nbr', to: 'ap8', kind: 'attack' } ]
+    } },
+    steps: [
+      { id: 's1', type: 'analyze', points: 1,
+        prompt: 'In this dual-band split, AP-8 owns 5 GHz and the other AP owns 2.4 GHz. Which facts apply? Select all.',
+        explanation: 'The split assigns AP-8 the 5 GHz streaming band while the wearable AP keeps 2.4 GHz — AP-8 must stay on 5 GHz, not chase the neighbor onto the other band. The neighbor holds 5 GHz channel 153, so AP-8 picks a different clean non-DFS 5 GHz channel like 48.',
+        payload: { lines: [
+          { id: 'l1', text: 'AP-8 is the 5 GHz radio in the split; the other AP owns 2.4 GHz for wearables.' },
+          { id: 'l2', text: 'The neighbor gym occupies 5 GHz channel 153.' },
+          { id: 'l3', text: 'AP-8 should stay on 5 GHz and pick a clean channel such as 48.' },
+          { id: 'l4', text: 'AP-8 should move to 2.4 GHz to escape the neighbor.' }
+        ] },
+        answer: { selected: ['l1', 'l2', 'l3'] } },
+      { id: 's2', type: 'configure', points: 1, apId: 'ap8',
+        require: { band: '5', channel: 48, security: 'WPA3-Personal', ssid: 'Ironside-5G' },
+        prompt: 'Configure AP-8 to hold its 5 GHz half of the split on a clean channel.',
+        explanation: 'Band 5 GHz keeps AP-8 on its assigned half of the dual-band split; channel 48 is a valid non-DFS 5 GHz channel not used by the neighbor (153); WPA3-Personal per policy.',
+        payload: { slots: [
+          { id: 'band', label: 'Band', options: [
+            { id: 'a', text: '5' }, { id: 'b', text: '2.4' } ] },
+          { id: 'channel', label: 'Channel', options: [
+            { id: 'a', text: '48' }, { id: 'b', text: '153' }, { id: 'c', text: '11' } ] },
+          { id: 'security', label: 'Security', options: [
+            { id: 'a', text: 'WPA3-Personal' }, { id: 'b', text: 'WPA2-Personal' } ] },
+          { id: 'ssid', label: 'SSID', options: [
+            { id: 'a', text: 'Ironside-5G' }, { id: 'b', text: 'Ironside-Guest' } ] }
+        ] },
+        answer: { slots: { band: 'a', channel: 'a', security: 'a', ssid: 'a' } } }
+    ]
+  },
+
+  // 12 — overlapping-channel trap in 2.4: distractors 3 and 9 overlap; correct 6, neighbor on 1
+  {
+    id: 'np-wifi-12',
+    cert: 'netplus', objective: '2.3', topic: 'Channel planning',
+    title: 'Reject the overlapping 2.4 GHz channels',
+    estMinutes: 4, archetype: 'wireless',
+    scenario: 'A tenant admin keeps “spreading out” by choosing channels like 3 and 9. AP-9 serves 2.4 GHz tablets and a neighbor holds channel 1. Diagnose why 3 and 9 are wrong, then set AP-9 to a truly non-overlapping channel.',
+    assets: { reference: { kind: 'network',
+      given: { site: 'Maple Court — suite 200' },
+      devices: [
+        { id: 'ap9', label: 'AP-9', type: 'ap', zone: 'suite', ip: '2.4 GHz · ch ?', x: 1, y: 1 },
+        { id: 'nbr', label: 'Neighbor AP', type: 'ap', zone: 'external', ip: '2.4 GHz · ch 1', channel: 1, x: 3, y: 1, state: 'compromised' },
+        { id: 'tab', label: 'Tablets', type: 'pc', zone: 'suite', ip: '2.4 GHz', x: 0, y: 2 }
+      ],
+      links: [ { from: 'ap9', to: 'tab' }, { from: 'nbr', to: 'ap9', kind: 'attack' } ]
+    } },
+    steps: [
+      { id: 's1', type: 'analyze', points: 1,
+        prompt: 'Why are channels 3 and 9 poor choices? Select all that apply.',
+        explanation: 'Channels 3 and 9 overlap adjacent channels because only 1, 6, and 11 are non-overlapping in 2.4 GHz. With the neighbor on 1, channel 6 is the clean choice.',
+        payload: { lines: [
+          { id: 'l1', text: 'Only 1, 6, 11 are non-overlapping in 2.4 GHz.' },
+          { id: 'l2', text: 'Channels 3 and 9 overlap neighboring channels.' },
+          { id: 'l3', text: 'With the neighbor on 1, channel 6 is the clean choice.' },
+          { id: 'l4', text: 'Any channel works because APs auto-negotiate to avoid overlap.' }
+        ] },
+        answer: { selected: ['l1', 'l2', 'l3'] } },
+      { id: 's2', type: 'configure', points: 1, apId: 'ap9',
+        require: { band: '2.4', channel: 6, security: 'WPA3-Personal', ssid: 'Maple-200' },
+        prompt: 'Configure AP-9 on a truly non-overlapping channel, clear of the neighbor.',
+        explanation: 'Channel 6 is non-overlapping and not the neighbor’s 1; the overlapping 3 and 9 are rejected; band 2.4 GHz for the tablets; WPA3-Personal per policy.',
+        payload: { slots: [
+          { id: 'band', label: 'Band', options: [
+            { id: 'a', text: '2.4' }, { id: 'b', text: '5' } ] },
+          { id: 'channel', label: 'Channel', options: [
+            { id: 'a', text: '6' }, { id: 'b', text: '3' }, { id: 'c', text: '9' }, { id: 'd', text: '1' } ] },
+          { id: 'security', label: 'Security', options: [
+            { id: 'a', text: 'WPA3-Personal' }, { id: 'b', text: 'WPA2-Personal' } ] },
+          { id: 'ssid', label: 'SSID', options: [
+            { id: 'a', text: 'Maple-200' }, { id: 'b', text: 'Maple-Guest' } ] }
+        ] },
+        answer: { slots: { band: 'a', channel: 'a', security: 'a', ssid: 'a' } } }
+    ]
   }
 
 ];
