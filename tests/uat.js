@@ -21229,6 +21229,71 @@ console.log('\n\x1b[1m── T7: DRILLS ANALYTICS GROUP + FINAL COPY + BRONZE TO
   }
 })();
 
+// ── Wireless fidelity validator (Wave 1 Task 2) ──
+// Pure-logic check: given a `network` reference model + a wireless `configure`
+// step, confirm the KEYED answer is RF-sound (legal 2.4/5 GHz channel, clear
+// of any other device carrying a numeric `channel`, band/security satisfy
+// `require`). No DOM — extract via vm same as the Task 9 fidelity tests.
+(function () {
+  console.log('\n\x1b[1m── Sim Lab: wireless fidelity validator (Wave 1 Task 2) ──\x1b[0m');
+  try {
+    var vm = require('vm');
+    function assert(cond, msg) { test(msg, !!cond); }
+
+    var grab = function (name) {
+      var re = new RegExp('function ' + name + '\\([^)]*\\) \\{[\\s\\S]*?\\n\\}');
+      return (js.match(re) || [''])[0];
+    };
+    var grabVar = function (name) {
+      var re = new RegExp('var ' + name + ' = [^;]*;');
+      return (js.match(re) || [''])[0];
+    };
+
+    var resolveSlotBody = grab('_slFidelityResolveSlot');
+    var wifi24Var = grabVar('_WIFI_24_CLEAR');
+    var wifi5Var = grabVar('_WIFI_5_CHANNELS');
+    var wifiFidelityBody = grab('simLabValidateWirelessFidelity');
+
+    if (!resolveSlotBody || !wifiFidelityBody || !wifi24Var || !wifi5Var) {
+      test('wifi fidelity: vm extraction succeeded', false);
+      results.errors.push('could not extract wireless fidelity validator helpers; check names/indenting');
+      return;
+    }
+
+    var wCtx = { _isNonEmptyStr: function (v) { return typeof v === 'string' && v.trim().length > 0; } };
+    vm.createContext(wCtx);
+    vm.runInContext(resolveSlotBody, wCtx);
+    vm.runInContext(wifi24Var, wCtx);
+    vm.runInContext(wifi5Var, wCtx);
+    vm.runInContext(wifiFidelityBody, wCtx);
+    vm.runInContext('globalThis.__wifiFidelity = simLabValidateWirelessFidelity;', wCtx);
+    var simLabValidateWirelessFidelity = wCtx.__wifiFidelity;
+
+    var _wref = { kind:'network', devices:[
+      { id:'ap2', label:'AP-2', type:'ap', zone:'wh', x:0, y:0 },
+      { id:'nbr', label:'Neighbor AP', type:'ap', zone:'out', x:1, y:0, state:'compromised', channel: 6 } ], links:[] };
+    var _wstep = { id:'w1', type:'configure', points:1, apId:'ap2',
+      require:{ band:'2.4', security:'WPA3-Personal' },
+      prompt:'p', explanation:'e',
+      payload:{ slots:[
+        { id:'band', label:'Band', options:[{id:'a',text:'2.4 GHz'},{id:'b',text:'5 GHz'}] },
+        { id:'channel', label:'Channel', options:[{id:'a',text:'11'},{id:'b',text:'6'},{id:'c',text:'8'}] },
+        { id:'security', label:'Security', options:[{id:'a',text:'WPA3-Personal'},{id:'b',text:'WEP'}] } ] },
+      answer:{ slots:{ band:'a', channel:'a', security:'a' } } };
+    assert(simLabValidateWirelessFidelity(_wref, _wstep).ok === true, 'wifi: sound keyed config passes');
+    var _bad1 = JSON.parse(JSON.stringify(_wstep)); _bad1.answer.slots.channel = 'b';   // keyed onto neighbor's 6
+    assert(simLabValidateWirelessFidelity(_wref, _bad1).ok === false, 'wifi: keyed channel colliding with neighbor rejected');
+    var _bad2 = JSON.parse(JSON.stringify(_wstep)); _bad2.answer.slots.channel = 'c';   // 8 = overlapping channel
+    assert(simLabValidateWirelessFidelity(_wref, _bad2).ok === false, 'wifi: keyed non-1/6/11 2.4GHz channel rejected');
+    var _bad3 = JSON.parse(JSON.stringify(_wstep)); _bad3.answer.slots.security = 'b';
+    assert(simLabValidateWirelessFidelity(_wref, _bad3).ok === false, 'wifi: keyed security below requirement rejected');
+
+  } catch (err) {
+    test('wireless fidelity validator: vm smoke test (threw)', false);
+    results.errors.push('wireless fidelity validator smoke test threw: ' + err.message);
+  }
+})();
+
 // ── Sim Lab: network reference renderer (Task 6) ──
 // The renderer builds SVG as a STRING mounted via _el('div','sl-net', svg), so
 // assertions run against that string (read from the .sl-net child's innerHTML),

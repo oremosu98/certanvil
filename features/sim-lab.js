@@ -174,6 +174,52 @@
     return { ok: errs.length === 0, errors: errs };
   }
 
+  // --- wireless fidelity validator (Wave 1 Task 2) ---
+  // Verifies a wireless configure step's KEYED answer is RF-sound: channel legal
+  // for the keyed band, clear of any other device carrying a numeric `channel`
+  // field, and band/security/ssid matching the step's machine-readable `require`.
+  var _WIFI_24_CLEAR = [1, 6, 11];
+  var _WIFI_5_CHANNELS = [36, 40, 44, 48, 149, 153, 157, 161];
+
+  function simLabValidateWirelessFidelity(ref, step) {
+    var errs = [];
+    if (!ref || ref.kind !== 'network' || !Array.isArray(ref.devices)) {
+      return { ok: false, errors: ['wifi fidelity: valid network reference required'] };
+    }
+    if (!step || step.type !== 'configure' || !_isNonEmptyStr(step.apId)) {
+      return { ok: false, errors: ['wifi fidelity: configure step with apId required'] };
+    }
+    var req = step.require || {};
+    var band = _slFidelityResolveSlot(step, 'band');
+    var channel = _slFidelityResolveSlot(step, 'channel');
+    var security = _slFidelityResolveSlot(step, 'security');
+    var ssid = _slFidelityResolveSlot(step, 'ssid');
+
+    if (req.band && band && band.indexOf(req.band) === -1) {
+      errs.push('band: keyed "' + band + '" does not satisfy required ' + req.band);
+    }
+    if (req.security && security && security !== req.security) {
+      errs.push('security: keyed "' + security + '" != required ' + req.security);
+    }
+    if (req.ssid && ssid && ssid !== req.ssid) {
+      errs.push('ssid: keyed "' + ssid + '" != required ' + req.ssid);
+    }
+    if (channel !== undefined) {
+      var ch = parseInt(channel, 10);
+      var on24 = band ? band.indexOf('2.4') !== -1 : ch <= 14;
+      var legal = on24 ? _WIFI_24_CLEAR : _WIFI_5_CHANNELS;
+      if (legal.indexOf(ch) === -1) {
+        errs.push('channel: ' + ch + ' is not a clear ' + (on24 ? '2.4 GHz (1/6/11)' : '5 GHz') + ' channel');
+      }
+      ref.devices.forEach(function (dev) {
+        if (dev.id !== step.apId && typeof dev.channel === 'number' && dev.channel === ch) {
+          errs.push('channel: ' + ch + ' collides with ' + (dev.label || dev.id));
+        }
+      });
+    }
+    return { ok: errs.length === 0, errors: errs };
+  }
+
   // --- scoring (Task 2) ---
 
   function _norm(v) {
