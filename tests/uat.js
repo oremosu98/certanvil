@@ -183,6 +183,30 @@ test('v6.5.18 tombstone: sw.js does not precache the removed MP4 files', (functi
   return !sw.includes('logo-animation/logo-dark.mp4') &&
          !sw.includes('logo-animation/logo-light.mp4');
 })());
+
+(function () {
+  var dg = read('dg-system.css'), base = read('styles.css');
+  var defined = {};
+  (dg.match(/--[a-z0-9-]+\s*:/gi) || []).concat(base.match(/--[a-z0-9-]+\s*:/gi) || [])
+    .forEach(function (d) { defined[d.replace(/\s*:$/, '').trim()] = true; });
+  // RATCHET guard (Wave 1 Task 5). Every bare var(--x) in dg-system.css must be defined
+  // in dg-system.css or styles.css. Goes green today by baselining the pre-existing gaps
+  // below, but FAILS on any NEW undefined bare var(). To silence a NEW token, DEFINE it —
+  // do NOT add it here. Baselined gaps tracked for separate cleanup:
+  //   --base/--r0/--len  : runtime-set SVG animation params (set via JS, not :root tokens)
+  //   --border-soft/--ease/--lnum : token gaps with safe alias/literal targets (deferred)
+  //   --muted/--on-accent : gaps needing a design-color decision (4-stage visual pass)
+  var KNOWN_GAPS = {
+    '--base': 1, '--r0': 1, '--len': 1,
+    '--border-soft': 1, '--ease': 1, '--lnum': 1,
+    '--muted': 1, '--on-accent': 1
+  };
+  var missing = {};
+  var re = /var\(\s*(--[a-z0-9-]+)\s*\)/gi, m;           // no-fallback references only
+  while ((m = re.exec(dg))) { if (!defined[m[1]] && !KNOWN_GAPS[m[1]]) missing[m[1]] = true; }
+  var names = Object.keys(missing);
+  test('dg-system.css var() tokens all defined except baselined gaps (new undefined: ' + (names.join(', ') || 'none') + ')', names.length === 0);
+})();
 test('Export/Import buttons', html.includes('exportData()') && html.includes('importData('));
 
 // ── JS Functions ──
