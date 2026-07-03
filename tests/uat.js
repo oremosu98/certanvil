@@ -21358,6 +21358,75 @@ console.log('\n\x1b[1m── T7: DRILLS ANALYTICS GROUP + FINAL COPY + BRONZE TO
   }
 })();
 
+// ── Sim Lab: SOHO fidelity validator (Wave 1 Task 4) ──
+// Pure arithmetic proof that the KEYED router config satisfies the scenario's
+// machine-readable facts: DHCP pool inside the subnet, sized for the client
+// count, excluding router + statics; forward target on the LAN; ssid/security
+// matching scenario.soho.require. Pure-logic, no DOM — extract via vm same as
+// Task 2/3.
+(function () {
+  console.log('\n\x1b[1m── Sim Lab: SOHO fidelity validator (Wave 1 Task 4) ──\x1b[0m');
+  try {
+    var vm = require('vm');
+    function assert(cond, msg) { test(msg, !!cond); }
+
+    var grab = function (name) {
+      var re = new RegExp('function ' + name + '\\([^)]*\\) \\{[\\s\\S]*?\\n\\}');
+      return (js.match(re) || [''])[0];
+    };
+
+    var ipToIntBody = grab('_ipToInt');
+    var maskToIntBody = grab('_maskToInt');
+    var inSubnetBody = grab('_inSubnet');
+    var resolveSlotBody = grab('_slFidelityResolveSlot');
+    var sohoSlotTextBody = grab('_sohoSlotText');
+    var sohoFidelityBody = grab('simLabValidateSohoFidelity');
+
+    if (!ipToIntBody || !maskToIntBody || !inSubnetBody || !resolveSlotBody || !sohoSlotTextBody || !sohoFidelityBody) {
+      test('soho fidelity: vm extraction succeeded', false);
+      results.errors.push('could not extract soho fidelity validator helpers; check names/indenting');
+      return;
+    }
+
+    var soCtx = {};
+    vm.createContext(soCtx);
+    vm.runInContext(ipToIntBody, soCtx);
+    vm.runInContext(maskToIntBody, soCtx);
+    vm.runInContext(inSubnetBody, soCtx);
+    vm.runInContext(resolveSlotBody, soCtx);
+    vm.runInContext(sohoSlotTextBody, soCtx);
+    vm.runInContext(sohoFidelityBody, soCtx);
+    vm.runInContext('globalThis.__sohoFidelity = simLabValidateSohoFidelity;', soCtx);
+    var simLabValidateSohoFidelity = soCtx.__sohoFidelity;
+
+    var _soScn = { soho: { subnet:{ networkId:'192.168.1.0', mask:'255.255.255.0' }, routerIp:'192.168.1.1',
+        statics:[{ ip:'192.168.1.200' }], clientCount: 18, require:{ ssid:'BluebirdOffice', security:'WPA3-Personal' } },
+      steps: [
+        { id:'w', type:'configure', points:1, prompt:'p', explanation:'e',
+          payload:{ slots:[
+            { id:'ssid', label:'SSID', options:[{id:'a',text:'BluebirdOffice'},{id:'b',text:'Bluebird-Guest'}] },
+            { id:'security', label:'Security', options:[{id:'a',text:'WPA3-Personal'},{id:'b',text:'WEP'}] } ] },
+          answer:{ slots:{ ssid:'a', security:'a' } } },
+        { id:'l', type:'configure', points:1, prompt:'p', explanation:'e',
+          payload:{ slots:[
+            { id:'dhcpStart', label:'Start', options:[{id:'a',text:'192.168.1.100'},{id:'b',text:'192.168.1.1'}] },
+            { id:'dhcpEnd', label:'End', options:[{id:'a',text:'192.168.1.199'},{id:'b',text:'192.168.1.254'}] },
+            { id:'fwdTo', label:'Forward', options:[{id:'a',text:'192.168.1.200 : 443'},{id:'b',text:'10.0.0.9 : 443'}] } ] },
+          answer:{ slots:{ dhcpStart:'a', dhcpEnd:'a', fwdTo:'a' } } } ] };
+    assert(simLabValidateSohoFidelity(_soScn).ok === true, 'soho: sound keyed config passes');
+    var _soBad = JSON.parse(JSON.stringify(_soScn)); _soBad.steps[1].answer.slots.dhcpEnd = 'b';   // .254 swallows the NVR .200
+    assert(simLabValidateSohoFidelity(_soBad).ok === false, 'soho: pool covering a static reservation rejected');
+    var _soBad2 = JSON.parse(JSON.stringify(_soScn)); _soBad2.steps[1].answer.slots.fwdTo = 'b';   // off-subnet target
+    assert(simLabValidateSohoFidelity(_soBad2).ok === false, 'soho: forward target outside the LAN rejected');
+    var _soBad3 = JSON.parse(JSON.stringify(_soScn)); _soBad3.steps[0].answer.slots.ssid = 'b';
+    assert(simLabValidateSohoFidelity(_soBad3).ok === false, 'soho: keyed ssid mismatching requirement rejected');
+
+  } catch (err) {
+    test('soho fidelity validator: vm smoke test (threw)', false);
+    results.errors.push('soho fidelity validator smoke test threw: ' + err.message);
+  }
+})();
+
 // ── Sim Lab: network reference renderer (Task 6) ──
 // The renderer builds SVG as a STRING mounted via _el('div','sl-net', svg), so
 // assertions run against that string (read from the .sl-net child's innerHTML),

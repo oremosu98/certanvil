@@ -277,6 +277,54 @@
     return { ok: errs.length === 0, errors: errs };
   }
 
+  // --- SOHO router fidelity validator (Wave 1 Task 4) ---
+  // Pure arithmetic proof that the KEYED router config satisfies the scenario's
+  // machine-readable facts: DHCP pool inside the subnet, sized for the client
+  // count, excluding router + statics; forward target on the LAN; ssid/security
+  // matching scenario.soho.require.
+  function _sohoSlotText(scn, slotId) {
+    for (var i = 0; i < scn.steps.length; i++) {
+      var st = scn.steps[i];
+      if (st.type !== 'configure') continue;
+      var t = _slFidelityResolveSlot(st, slotId);
+      if (t !== undefined) return t;
+    }
+    return undefined;
+  }
+  function simLabValidateSohoFidelity(scn) {
+    var errs = [];
+    var s = scn && scn.soho;
+    if (!s || !s.subnet || !s.subnet.networkId || !s.subnet.mask || !Array.isArray(scn.steps)) {
+      return { ok: false, errors: ['soho fidelity: scenario.soho.subnet{networkId,mask} + steps required'] };
+    }
+    var startTxt = _sohoSlotText(scn, 'dhcpStart'), endTxt = _sohoSlotText(scn, 'dhcpEnd');
+    if (startTxt !== undefined && endTxt !== undefined) {
+      if (!_inSubnet(startTxt, s.subnet.networkId, s.subnet.mask)) errs.push('dhcp: start ' + startTxt + ' out of subnet');
+      if (!_inSubnet(endTxt, s.subnet.networkId, s.subnet.mask)) errs.push('dhcp: end ' + endTxt + ' out of subnet');
+      var start = _ipToInt(startTxt), end = _ipToInt(endTxt);
+      if (end < start) errs.push('dhcp: end before start');
+      if (typeof s.clientCount === 'number' && (end - start + 1) < s.clientCount) {
+        errs.push('dhcp: pool of ' + (end - start + 1) + ' addresses < ' + s.clientCount + ' clients');
+      }
+      [s.routerIp].concat((s.statics || []).map(function (d) { return d.ip; })).forEach(function (ip) {
+        if (!ip) return;
+        var n = _ipToInt(ip);
+        if (n >= start && n <= end) errs.push('dhcp: pool hands out reserved ' + ip);
+      });
+    }
+    var req = s.require || {};
+    ['ssid', 'security'].forEach(function (k) {
+      var got = _sohoSlotText(scn, k);
+      if (req[k] && got !== undefined && got !== req[k]) errs.push(k + ': keyed "' + got + '" != required ' + req[k]);
+    });
+    var fwdTo = _sohoSlotText(scn, 'fwdTo');
+    if (fwdTo !== undefined) {
+      var host = String(fwdTo).replace(/\s+/g, '').split(':')[0];
+      if (!_inSubnet(host, s.subnet.networkId, s.subnet.mask)) errs.push('forward: target ' + host + ' outside the LAN');
+    }
+    return { ok: errs.length === 0, errors: errs };
+  }
+
   // --- scoring (Task 2) ---
 
   function _norm(v) {
