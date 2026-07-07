@@ -71,7 +71,7 @@
         errs.push('reference layered: bad layout');
       }
     }
-    if (s.archetype !== undefined && ['diagram', 'incident', 'defense'].indexOf(s.archetype) === -1) {
+    if (s.archetype !== undefined && ['diagram', 'incident', 'defense', 'wireless', 'firewall', 'soho'].indexOf(s.archetype) === -1) {
       errs.push('bad archetype');
     }
     return { ok: errs.length === 0, errors: errs };
@@ -171,6 +171,157 @@
       }
     }
 
+    return { ok: errs.length === 0, errors: errs };
+  }
+
+  // --- wireless fidelity validator (Wave 1 Task 2) ---
+  // Verifies a wireless configure step's KEYED answer is RF-sound: channel legal
+  // for the keyed band, clear of any other device carrying a numeric `channel`
+  // field, and band/security/ssid matching the step's machine-readable `require`.
+  var _WIFI_24_CLEAR = [1, 6, 11];
+  var _WIFI_5_CHANNELS = [36, 40, 44, 48, 149, 153, 157, 161];
+
+  function simLabValidateWirelessFidelity(ref, step) {
+    var errs = [];
+    if (!ref || ref.kind !== 'network' || !Array.isArray(ref.devices)) {
+      return { ok: false, errors: ['wifi fidelity: valid network reference required'] };
+    }
+    if (!step || step.type !== 'configure' || !_isNonEmptyStr(step.apId)) {
+      return { ok: false, errors: ['wifi fidelity: configure step with apId required'] };
+    }
+    var req = step.require || {};
+    var band = _slFidelityResolveSlot(step, 'band');
+    var channel = _slFidelityResolveSlot(step, 'channel');
+    var security = _slFidelityResolveSlot(step, 'security');
+    var ssid = _slFidelityResolveSlot(step, 'ssid');
+
+    if (req.band && band && band.indexOf(req.band) === -1) {
+      errs.push('band: keyed "' + band + '" does not satisfy required ' + req.band);
+    }
+    if (req.security && security && security !== req.security) {
+      errs.push('security: keyed "' + security + '" != required ' + req.security);
+    }
+    if (req.ssid && ssid && ssid !== req.ssid) {
+      errs.push('ssid: keyed "' + ssid + '" != required ' + req.ssid);
+    }
+    if (channel !== undefined) {
+      var ch = parseInt(channel, 10);
+      var on24 = band ? band.indexOf('2.4') !== -1 : ch <= 14;
+      var legal = on24 ? _WIFI_24_CLEAR : _WIFI_5_CHANNELS;
+      if (legal.indexOf(ch) === -1) {
+        errs.push('channel: ' + ch + ' is not a clear ' + (on24 ? '2.4 GHz (1/6/11)' : '5 GHz') + ' channel');
+      }
+      ref.devices.forEach(function (dev) {
+        if (dev.id !== step.apId && typeof dev.channel === 'number' && dev.channel === ch) {
+          errs.push('channel: ' + ch + ' collides with ' + (dev.label || dev.id));
+        }
+      });
+    }
+    return { ok: errs.length === 0, errors: errs };
+  }
+
+  // --- firewall fidelity validator (Wave 1 Task 3) ---
+  // Executes the scenario's acceptance flows through the KEYED rule table with
+  // first-match-wins + implicit deny, and proves the phase-3 shadow exhibit is
+  // genuinely shadowed. This is the archetype's differentiator: the seed's
+  // correctness is demonstrated by running traffic, not asserted by hand.
+  function _fwMatchAddr(spec, ip) {
+    if (!spec || spec === 'any') return true;
+    var parts = String(spec).split('/');
+    if (parts.length === 2) {
+      var bits = parseInt(parts[1], 10);
+      var mask = bits === 0 ? 0 : (0xFFFFFFFF << (32 - bits)) >>> 0;
+      return (_ipToInt(ip) & mask) === (_ipToInt(parts[0]) & mask);
+    }
+    return spec === ip;
+  }
+  function _fwRuleMatches(rule, flow) {
+    return (rule.proto === 'any' || rule.proto === flow.proto) &&
+           (rule.port === 'any' || String(rule.port) === String(flow.port)) &&
+           _fwMatchAddr(rule.src, flow.src) && _fwMatchAddr(rule.dst, flow.dst);
+  }
+  function simLabValidateFirewallFidelity(scn) {
+    var errs = [];
+    var spec = scn && scn.fwSpec;
+    if (!spec || !Array.isArray(spec.rules) || !Array.isArray(spec.flows) || !spec.flows.length) {
+      return { ok: false, errors: ['fw fidelity: scenario.fwSpec{rules[],flows[]} required'] };
+    }
+    spec.flows.forEach(function (flow) {
+      var hit = null;
+      for (var i = 0; i < spec.rules.length; i++) {
+        if (_fwRuleMatches(spec.rules[i], flow)) { hit = spec.rules[i]; break; }
+      }
+      var outcome = hit ? hit.action : 'deny';
+      if (outcome !== flow.expect) {
+        errs.push('flow ' + (flow.name || flow.src + '->' + flow.dst + ':' + flow.port) + ': got ' + outcome + ', expected ' + flow.expect);
+      }
+    });
+    var st = spec.shadowTable;
+    if (st && Array.isArray(st.rules) && st.shadowedRuleId) {
+      var shadow = st.rules.filter(function (r) { return r.id === st.shadowedRuleId; })[0];
+      if (!shadow) {
+        errs.push('shadowTable: shadowedRuleId "' + st.shadowedRuleId + '" not found');
+      } else {
+        var exercised = false, fired = false;
+        spec.flows.forEach(function (flow) {
+          if (!_fwRuleMatches(shadow, flow)) return;
+          exercised = true;
+          for (var i = 0; i < st.rules.length; i++) {
+            if (_fwRuleMatches(st.rules[i], flow)) { if (st.rules[i].id === st.shadowedRuleId) fired = true; break; }
+          }
+        });
+        if (!exercised) errs.push('shadowTable: no acceptance flow exercises the shadowed rule');
+        if (fired) errs.push('shadowTable: declared-shadowed rule actually fires');
+      }
+    }
+    return { ok: errs.length === 0, errors: errs };
+  }
+
+  // --- SOHO router fidelity validator (Wave 1 Task 4) ---
+  // Pure arithmetic proof that the KEYED router config satisfies the scenario's
+  // machine-readable facts: DHCP pool inside the subnet, sized for the client
+  // count, excluding router + statics; forward target on the LAN; ssid/security
+  // matching scenario.soho.require.
+  function _sohoSlotText(scn, slotId) {
+    for (var i = 0; i < scn.steps.length; i++) {
+      var st = scn.steps[i];
+      if (st.type !== 'configure') continue;
+      var t = _slFidelityResolveSlot(st, slotId);
+      if (t !== undefined) return t;
+    }
+    return undefined;
+  }
+  function simLabValidateSohoFidelity(scn) {
+    var errs = [];
+    var s = scn && scn.soho;
+    if (!s || !s.subnet || !s.subnet.networkId || !s.subnet.mask || !Array.isArray(scn.steps)) {
+      return { ok: false, errors: ['soho fidelity: scenario.soho.subnet{networkId,mask} + steps required'] };
+    }
+    var startTxt = _sohoSlotText(scn, 'dhcpStart'), endTxt = _sohoSlotText(scn, 'dhcpEnd');
+    if (startTxt !== undefined && endTxt !== undefined) {
+      if (!_inSubnet(startTxt, s.subnet.networkId, s.subnet.mask)) errs.push('dhcp: start ' + startTxt + ' out of subnet');
+      if (!_inSubnet(endTxt, s.subnet.networkId, s.subnet.mask)) errs.push('dhcp: end ' + endTxt + ' out of subnet');
+      var start = _ipToInt(startTxt), end = _ipToInt(endTxt);
+      if (end < start) errs.push('dhcp: end before start');
+      if (typeof s.clientCount === 'number' && (end - start + 1) < s.clientCount) {
+        errs.push('dhcp: pool of ' + (end - start + 1) + ' addresses < ' + s.clientCount + ' clients');
+      }
+      [s.routerIp].concat((s.statics || []).map(function (d) { return d.ip; })).forEach(function (ip) {
+        if (!ip) return;
+        var n = _ipToInt(ip);
+        if (n >= start && n <= end) errs.push('dhcp: pool hands out reserved ' + ip);
+      });
+    }
+    var req = s.require || {};
+    ['ssid', 'security'].forEach(function (k) {
+      var got = _sohoSlotText(scn, k);
+      if (req[k] && got !== undefined && got !== req[k]) errs.push(k + ': keyed "' + got + '" != required ' + req[k]);
+    });
+    var fwdTo = _sohoSlotText(scn, 'fwdTo');
+    if (fwdTo !== undefined) {
+      var host = String(fwdTo).replace(/\s+/g, '').split(':')[0];
+      if (!_inSubnet(host, s.subnet.networkId, s.subnet.mask)) errs.push('forward: target ' + host + ' outside the LAN');
+    }
     return { ok: errs.length === 0, errors: errs };
   }
 
@@ -450,7 +601,16 @@
 
   // --- analyze renderer ---
   function _slRenderAnalyze(step, onChange, initial) {
-    var multi = !!step.payload.multi;
+    // Default to multi-select unless a step opts OUT explicitly (`multi:
+    // false`). Every pre-Wave-1 analyze step across every bank already
+    // declares `multi: false` when it wants single-select, so this default
+    // only ever activates for content that omits the field — which, as of
+    // Wave 1, is the wireless/firewall "select all that apply" steps whose
+    // answer.selected has 2-3 ids. Under the old `!!step.payload.multi`
+    // default those steps rendered as single-select (radio-style, one line
+    // selectable at a time), making their keyed answer unreachable through
+    // the real Practice UI. Task 9 vertical-slice testing surfaced this.
+    var multi = step.payload.multi !== false;
     var selected = [];
     var root = _el('div', 'sl-analyze');
     root.appendChild(_el('p', 'sl-prompt', _esc(step.prompt)));
@@ -1076,7 +1236,13 @@
     root.appendChild(_el('div', 'sl-fb-score', score.correct + ' of ' + score.total + ' steps · ' + pct + '%'));
 
     scn.steps.forEach(function (st, i) {
-      var ok = score.perStep[st.id];
+      var raw = score.perStep[st.id];
+      // configure steps store a { total, correct } breakdown (partial credit);
+      // every other step type stores a plain boolean. Any non-null object is
+      // truthy, so normalize both shapes to a real boolean before using it —
+      // otherwise a configure step with SOME-but-not-all slots correct always
+      // renders as fully correct (v7.61.1 live-verify fix).
+      var ok = (raw && typeof raw === 'object') ? (raw.correct === raw.total) : !!raw;
       var row = _el('div', 'sl-fb-row ' + (ok ? 'sl-ok' : 'sl-bad'));
       row.appendChild(_el('span', 'sl-fb-ic', ok ? '✓' : '✗'));
       row.appendChild(_el('span', 'sl-fb-t', 'Step ' + (i + 1) + ' · ' + _esc(st.prompt)));

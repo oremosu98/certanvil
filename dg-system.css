@@ -27,6 +27,7 @@ html:root{
   --green:oklch(0.74 0.150 152);--green-bg:color-mix(in oklab,oklch(0.74 0.150 152) 9%,transparent);--green-border:color-mix(in oklab,oklch(0.74 0.150 152) 38%,transparent);--green-rgb:90,205,150;
   --red:oklch(0.66 0.17 25);--red-bg:color-mix(in oklab,oklch(0.66 0.17 25) 9%,transparent);--red-border:color-mix(in oklab,oklch(0.66 0.17 25) 38%,transparent);--red-rgb:225,110,105;
   --yellow:oklch(0.80 0.14 70);--yellow-rgb:235,185,90;
+  --pass: var(--green); --fail: var(--red); --warn: var(--yellow);
   --blue:oklch(0.74 0.150 152);--orange:oklch(0.80 0.155 64);
   --radius:12px;--radius-sm:9px;
   --correct-text:oklch(0.86 0.13 152);--correct-text2:oklch(0.90 0.10 152);--correct-text3:oklch(0.80 0.13 152);
@@ -43,6 +44,7 @@ html:root{
   --green:oklch(0.50 0.15 150);--green-bg:color-mix(in oklab,oklch(0.50 0.15 150) 8%,transparent);--green-border:color-mix(in oklab,oklch(0.50 0.15 150) 32%,transparent);--green-rgb:25,140,75;
   --red:oklch(0.52 0.19 25);--red-bg:color-mix(in oklab,oklch(0.52 0.19 25) 8%,transparent);--red-border:color-mix(in oklab,oklch(0.52 0.19 25) 32%,transparent);--red-rgb:200,55,55;
   --yellow:oklch(0.58 0.14 65);--yellow-rgb:150,95,30;
+  --pass: var(--green); --fail: var(--red); --warn: var(--yellow);
   --blue:oklch(0.50 0.15 150);--orange:oklch(0.50 0.155 55);
   --correct-text:oklch(0.40 0.13 150);--correct-text2:oklch(0.45 0.12 150);--correct-text3:oklch(0.40 0.13 150);
   --wrong-text:oklch(0.45 0.17 25);--wrong-text2:oklch(0.50 0.16 25);
@@ -58,6 +60,7 @@ html[data-theme="dark"]{
   --green:oklch(0.74 0.150 152);--green-bg:color-mix(in oklab,oklch(0.74 0.150 152) 9%,transparent);--green-border:color-mix(in oklab,oklch(0.74 0.150 152) 38%,transparent);--green-rgb:90,205,150;
   --red:oklch(0.66 0.17 25);--red-bg:color-mix(in oklab,oklch(0.66 0.17 25) 9%,transparent);--red-border:color-mix(in oklab,oklch(0.66 0.17 25) 38%,transparent);--red-rgb:225,110,105;
   --yellow:oklch(0.80 0.14 70);--yellow-rgb:235,185,90;
+  --pass: var(--green); --fail: var(--red); --warn: var(--yellow);
   --blue:oklch(0.74 0.150 152);--orange:oklch(0.80 0.155 64);
   --radius:12px;--radius-sm:9px;
   --correct-text:oklch(0.86 0.13 152);--correct-text2:oklch(0.90 0.10 152);--correct-text3:oklch(0.80 0.13 152);
@@ -74,6 +77,7 @@ html[data-theme="light"]{
   --green:oklch(0.50 0.15 150);--green-bg:color-mix(in oklab,oklch(0.50 0.15 150) 8%,transparent);--green-border:color-mix(in oklab,oklch(0.50 0.15 150) 32%,transparent);--green-rgb:25,140,75;
   --red:oklch(0.52 0.19 25);--red-bg:color-mix(in oklab,oklch(0.52 0.19 25) 8%,transparent);--red-border:color-mix(in oklab,oklch(0.52 0.19 25) 32%,transparent);--red-rgb:200,55,55;
   --yellow:oklch(0.58 0.14 65);--yellow-rgb:150,95,30;
+  --pass: var(--green); --fail: var(--red); --warn: var(--yellow);
   --blue:oklch(0.50 0.15 150);--orange:oklch(0.50 0.155 55);
   --correct-text:oklch(0.40 0.13 150);--correct-text2:oklch(0.45 0.12 150);--correct-text3:oklch(0.40 0.13 150);
   --wrong-text:oklch(0.45 0.17 25);--wrong-text2:oklch(0.50 0.16 25);
@@ -2777,7 +2781,7 @@ html[data-theme] body #page-setup .continue-card .cc-action:active{transform:sca
 .br-foot{
   padding:16px 22px; border-top:1px solid var(--border-soft);
   display:flex; align-items:center; justify-content:flex-end; gap:10px;
-  background:var(--surface-2); flex:none;
+  background:var(--surface2); flex:none;
 }
 .br-cancel{
   background:none; border:0; color:var(--text-dim);

@@ -183,6 +183,30 @@ test('v6.5.18 tombstone: sw.js does not precache the removed MP4 files', (functi
   return !sw.includes('logo-animation/logo-dark.mp4') &&
          !sw.includes('logo-animation/logo-light.mp4');
 })());
+
+(function () {
+  var dg = read('dg-system.css'), base = read('styles.css');
+  var defined = {};
+  (dg.match(/--[a-z0-9-]+\s*:/gi) || []).concat(base.match(/--[a-z0-9-]+\s*:/gi) || [])
+    .forEach(function (d) { defined[d.replace(/\s*:$/, '').trim()] = true; });
+  // RATCHET guard (Wave 1 Task 5). Every bare var(--x) in dg-system.css must be defined
+  // in dg-system.css or styles.css. Goes green today by baselining the pre-existing gaps
+  // below, but FAILS on any NEW undefined bare var(). To silence a NEW token, DEFINE it —
+  // do NOT add it here. Baselined gaps tracked for separate cleanup:
+  //   --base/--r0/--len  : runtime-set SVG animation params (set via JS, not :root tokens)
+  //   --border-soft/--ease/--lnum : token gaps with safe alias/literal targets (deferred)
+  //   --muted/--on-accent : gaps needing a design-color decision (4-stage visual pass)
+  var KNOWN_GAPS = {
+    '--base': 1, '--r0': 1, '--len': 1,
+    '--border-soft': 1, '--ease': 1, '--lnum': 1,
+    '--muted': 1, '--on-accent': 1
+  };
+  var missing = {};
+  var re = /var\(\s*(--[a-z0-9-]+)\s*\)/gi, m;           // no-fallback references only
+  while ((m = re.exec(dg))) { if (!defined[m[1]] && !KNOWN_GAPS[m[1]]) missing[m[1]] = true; }
+  var names = Object.keys(missing);
+  test('dg-system.css var() tokens all defined except baselined gaps (new undefined: ' + (names.join(', ') || 'none') + ')', names.length === 0);
+})();
 test('Export/Import buttons', html.includes('exportData()') && html.includes('importData('));
 
 // ── JS Functions ──
@@ -20962,6 +20986,16 @@ console.log('\n\x1b[1m── T7: DRILLS ANALYTICS GROUP + FINAL COPY + BRONZE TO
     test('archetype validation: unknown archetype rejected',
       _badArchResult.ok === false && _badArchResult.errors.some(function (e) { return /archetype/i.test(e); }));
 
+    // 10. New archetype tags ('wireless'/'firewall'/'soho') accepted; unknown still rejected.
+    ['wireless', 'firewall', 'soho'].forEach(function (tag) {
+      var _s = _baseScn(); _s.archetype = tag;
+      test('archetype validation: archetype ' + tag + ' accepted',
+        simLabValidateScenario(_s).ok === true);
+    });
+    var _sx = _baseScn(); _sx.archetype = 'printer';
+    test('archetype validation: unknown archetype "printer" still rejected',
+      simLabValidateScenario(_sx).ok === false);
+
     // ── Mount test — vm-sandbox + DOM shim ──
     var elBody            = grab('_el');
     var escBody           = grabLine('_esc');
@@ -21216,6 +21250,204 @@ console.log('\n\x1b[1m── T7: DRILLS ANALYTICS GROUP + FINAL COPY + BRONZE TO
   } catch (err) {
     test('fidelity validator: vm smoke test (threw)', false);
     results.errors.push('fidelity validator smoke test threw: ' + err.message);
+  }
+})();
+
+// ── Wireless fidelity validator (Wave 1 Task 2) ──
+// Pure-logic check: given a `network` reference model + a wireless `configure`
+// step, confirm the KEYED answer is RF-sound (legal 2.4/5 GHz channel, clear
+// of any other device carrying a numeric `channel`, band/security satisfy
+// `require`). No DOM — extract via vm same as the Task 9 fidelity tests.
+(function () {
+  console.log('\n\x1b[1m── Sim Lab: wireless fidelity validator (Wave 1 Task 2) ──\x1b[0m');
+  try {
+    var vm = require('vm');
+    function assert(cond, msg) { test(msg, !!cond); }
+
+    var grab = function (name) {
+      var re = new RegExp('function ' + name + '\\([^)]*\\) \\{[\\s\\S]*?\\n\\}');
+      return (js.match(re) || [''])[0];
+    };
+    var grabVar = function (name) {
+      var re = new RegExp('var ' + name + ' = [^;]*;');
+      return (js.match(re) || [''])[0];
+    };
+
+    var resolveSlotBody = grab('_slFidelityResolveSlot');
+    var wifi24Var = grabVar('_WIFI_24_CLEAR');
+    var wifi5Var = grabVar('_WIFI_5_CHANNELS');
+    var wifiFidelityBody = grab('simLabValidateWirelessFidelity');
+
+    if (!resolveSlotBody || !wifiFidelityBody || !wifi24Var || !wifi5Var) {
+      test('wifi fidelity: vm extraction succeeded', false);
+      results.errors.push('could not extract wireless fidelity validator helpers; check names/indenting');
+      return;
+    }
+
+    var wCtx = { _isNonEmptyStr: function (v) { return typeof v === 'string' && v.trim().length > 0; } };
+    vm.createContext(wCtx);
+    vm.runInContext(resolveSlotBody, wCtx);
+    vm.runInContext(wifi24Var, wCtx);
+    vm.runInContext(wifi5Var, wCtx);
+    vm.runInContext(wifiFidelityBody, wCtx);
+    vm.runInContext('globalThis.__wifiFidelity = simLabValidateWirelessFidelity;', wCtx);
+    var simLabValidateWirelessFidelity = wCtx.__wifiFidelity;
+
+    var _wref = { kind:'network', devices:[
+      { id:'ap2', label:'AP-2', type:'ap', zone:'wh', x:0, y:0 },
+      { id:'nbr', label:'Neighbor AP', type:'ap', zone:'out', x:1, y:0, state:'compromised', channel: 6 } ], links:[] };
+    var _wstep = { id:'w1', type:'configure', points:1, apId:'ap2',
+      require:{ band:'2.4', security:'WPA3-Personal' },
+      prompt:'p', explanation:'e',
+      payload:{ slots:[
+        { id:'band', label:'Band', options:[{id:'a',text:'2.4 GHz'},{id:'b',text:'5 GHz'}] },
+        { id:'channel', label:'Channel', options:[{id:'a',text:'11'},{id:'b',text:'6'},{id:'c',text:'8'}] },
+        { id:'security', label:'Security', options:[{id:'a',text:'WPA3-Personal'},{id:'b',text:'WEP'}] } ] },
+      answer:{ slots:{ band:'a', channel:'a', security:'a' } } };
+    assert(simLabValidateWirelessFidelity(_wref, _wstep).ok === true, 'wifi: sound keyed config passes');
+    var _bad1 = JSON.parse(JSON.stringify(_wstep)); _bad1.answer.slots.channel = 'b';   // keyed onto neighbor's 6
+    assert(simLabValidateWirelessFidelity(_wref, _bad1).ok === false, 'wifi: keyed channel colliding with neighbor rejected');
+    var _bad2 = JSON.parse(JSON.stringify(_wstep)); _bad2.answer.slots.channel = 'c';   // 8 = overlapping channel
+    assert(simLabValidateWirelessFidelity(_wref, _bad2).ok === false, 'wifi: keyed non-1/6/11 2.4GHz channel rejected');
+    var _bad3 = JSON.parse(JSON.stringify(_wstep)); _bad3.answer.slots.security = 'b';
+    assert(simLabValidateWirelessFidelity(_wref, _bad3).ok === false, 'wifi: keyed security below requirement rejected');
+
+  } catch (err) {
+    test('wireless fidelity validator: vm smoke test (threw)', false);
+    results.errors.push('wireless fidelity validator smoke test threw: ' + err.message);
+  }
+})();
+
+// ── Sim Lab: firewall fidelity validator (Wave 1 Task 3) ──
+// Runs the scenario's acceptance flows through the KEYED rule table with
+// first-match-wins + implicit deny, and proves the phase-3 shadow exhibit is
+// genuinely shadowed. Pure-logic, no DOM — extract via vm same as Task 2.
+(function () {
+  console.log('\n\x1b[1m── Sim Lab: firewall fidelity validator (Wave 1 Task 3) ──\x1b[0m');
+  try {
+    var vm = require('vm');
+    function assert(cond, msg) { test(msg, !!cond); }
+
+    var grab = function (name) {
+      var re = new RegExp('function ' + name + '\\([^)]*\\) \\{[\\s\\S]*?\\n\\}');
+      return (js.match(re) || [''])[0];
+    };
+
+    var ipToIntBody = grab('_ipToInt');
+    var fwMatchAddrBody = grab('_fwMatchAddr');
+    var fwRuleMatchesBody = grab('_fwRuleMatches');
+    var fwFidelityBody = grab('simLabValidateFirewallFidelity');
+
+    if (!ipToIntBody || !fwMatchAddrBody || !fwRuleMatchesBody || !fwFidelityBody) {
+      test('fw fidelity: vm extraction succeeded', false);
+      results.errors.push('could not extract firewall fidelity validator helpers; check names/indenting');
+      return;
+    }
+
+    var fwCtx = {};
+    vm.createContext(fwCtx);
+    vm.runInContext(ipToIntBody, fwCtx);
+    vm.runInContext(fwMatchAddrBody, fwCtx);
+    vm.runInContext(fwRuleMatchesBody, fwCtx);
+    vm.runInContext(fwFidelityBody, fwCtx);
+    vm.runInContext('globalThis.__fwFidelity = simLabValidateFirewallFidelity;', fwCtx);
+    var simLabValidateFirewallFidelity = fwCtx.__fwFidelity;
+
+    var _fwScn = { fwSpec: {
+      rules: [
+        { id:'ssh',  action:'allow', proto:'tcp', src:'10.10.10.5/32', dst:'10.10.30.20/32', port:22 },
+        { id:'web',  action:'allow', proto:'tcp', src:'10.10.10.0/24', dst:'10.10.30.10/32', port:443 },
+        { id:'deny', action:'deny',  proto:'any', src:'any', dst:'any', port:'any' } ],
+      flows: [
+        { name:'admin ssh',   proto:'tcp', src:'10.10.10.5',  dst:'10.10.30.20', port:22,  expect:'allow' },
+        { name:'staff https', proto:'tcp', src:'10.10.10.77', dst:'10.10.30.10', port:443, expect:'allow' },
+        { name:'staff ssh',   proto:'tcp', src:'10.10.10.77', dst:'10.10.30.20', port:22,  expect:'deny' } ],
+      shadowTable: {
+        rules: [
+          { id:'ssh',  action:'allow', proto:'tcp', src:'10.10.10.5/32', dst:'10.10.30.20/32', port:22 },
+          { id:'blk',  action:'deny',  proto:'any', src:'10.10.10.0/24', dst:'any', port:'any' },
+          { id:'web',  action:'allow', proto:'tcp', src:'10.10.10.0/24', dst:'10.10.30.10/32', port:443 } ],
+        shadowedRuleId: 'web' } } };
+    assert(simLabValidateFirewallFidelity(_fwScn).ok === true, 'fw: sound spec passes');
+    var _fwBad = JSON.parse(JSON.stringify(_fwScn));
+    _fwBad.fwSpec.rules[2] = _fwBad.fwSpec.rules[0]; _fwBad.fwSpec.rules[0] = { id:'deny', action:'deny', proto:'any', src:'any', dst:'any', port:'any' };
+    assert(simLabValidateFirewallFidelity(_fwBad).ok === false, 'fw: deny-first table fails its own flows');
+    var _fwBad2 = JSON.parse(JSON.stringify(_fwScn));
+    _fwBad2.fwSpec.shadowTable.rules[1].src = '10.10.99.0/24';   // no longer shadows web
+    assert(simLabValidateFirewallFidelity(_fwBad2).ok === false, 'fw: declared-shadowed rule that actually fires is rejected');
+
+  } catch (err) {
+    test('firewall fidelity validator: vm smoke test (threw)', false);
+    results.errors.push('firewall fidelity validator smoke test threw: ' + err.message);
+  }
+})();
+
+// ── Sim Lab: SOHO fidelity validator (Wave 1 Task 4) ──
+// Pure arithmetic proof that the KEYED router config satisfies the scenario's
+// machine-readable facts: DHCP pool inside the subnet, sized for the client
+// count, excluding router + statics; forward target on the LAN; ssid/security
+// matching scenario.soho.require. Pure-logic, no DOM — extract via vm same as
+// Task 2/3.
+(function () {
+  console.log('\n\x1b[1m── Sim Lab: SOHO fidelity validator (Wave 1 Task 4) ──\x1b[0m');
+  try {
+    var vm = require('vm');
+    function assert(cond, msg) { test(msg, !!cond); }
+
+    var grab = function (name) {
+      var re = new RegExp('function ' + name + '\\([^)]*\\) \\{[\\s\\S]*?\\n\\}');
+      return (js.match(re) || [''])[0];
+    };
+
+    var ipToIntBody = grab('_ipToInt');
+    var maskToIntBody = grab('_maskToInt');
+    var inSubnetBody = grab('_inSubnet');
+    var resolveSlotBody = grab('_slFidelityResolveSlot');
+    var sohoSlotTextBody = grab('_sohoSlotText');
+    var sohoFidelityBody = grab('simLabValidateSohoFidelity');
+
+    if (!ipToIntBody || !maskToIntBody || !inSubnetBody || !resolveSlotBody || !sohoSlotTextBody || !sohoFidelityBody) {
+      test('soho fidelity: vm extraction succeeded', false);
+      results.errors.push('could not extract soho fidelity validator helpers; check names/indenting');
+      return;
+    }
+
+    var soCtx = {};
+    vm.createContext(soCtx);
+    vm.runInContext(ipToIntBody, soCtx);
+    vm.runInContext(maskToIntBody, soCtx);
+    vm.runInContext(inSubnetBody, soCtx);
+    vm.runInContext(resolveSlotBody, soCtx);
+    vm.runInContext(sohoSlotTextBody, soCtx);
+    vm.runInContext(sohoFidelityBody, soCtx);
+    vm.runInContext('globalThis.__sohoFidelity = simLabValidateSohoFidelity;', soCtx);
+    var simLabValidateSohoFidelity = soCtx.__sohoFidelity;
+
+    var _soScn = { soho: { subnet:{ networkId:'192.168.1.0', mask:'255.255.255.0' }, routerIp:'192.168.1.1',
+        statics:[{ ip:'192.168.1.200' }], clientCount: 18, require:{ ssid:'BluebirdOffice', security:'WPA3-Personal' } },
+      steps: [
+        { id:'w', type:'configure', points:1, prompt:'p', explanation:'e',
+          payload:{ slots:[
+            { id:'ssid', label:'SSID', options:[{id:'a',text:'BluebirdOffice'},{id:'b',text:'Bluebird-Guest'}] },
+            { id:'security', label:'Security', options:[{id:'a',text:'WPA3-Personal'},{id:'b',text:'WEP'}] } ] },
+          answer:{ slots:{ ssid:'a', security:'a' } } },
+        { id:'l', type:'configure', points:1, prompt:'p', explanation:'e',
+          payload:{ slots:[
+            { id:'dhcpStart', label:'Start', options:[{id:'a',text:'192.168.1.100'},{id:'b',text:'192.168.1.1'}] },
+            { id:'dhcpEnd', label:'End', options:[{id:'a',text:'192.168.1.199'},{id:'b',text:'192.168.1.254'}] },
+            { id:'fwdTo', label:'Forward', options:[{id:'a',text:'192.168.1.200 : 443'},{id:'b',text:'10.0.0.9 : 443'}] } ] },
+          answer:{ slots:{ dhcpStart:'a', dhcpEnd:'a', fwdTo:'a' } } } ] };
+    assert(simLabValidateSohoFidelity(_soScn).ok === true, 'soho: sound keyed config passes');
+    var _soBad = JSON.parse(JSON.stringify(_soScn)); _soBad.steps[1].answer.slots.dhcpEnd = 'b';   // .254 swallows the NVR .200
+    assert(simLabValidateSohoFidelity(_soBad).ok === false, 'soho: pool covering a static reservation rejected');
+    var _soBad2 = JSON.parse(JSON.stringify(_soScn)); _soBad2.steps[1].answer.slots.fwdTo = 'b';   // off-subnet target
+    assert(simLabValidateSohoFidelity(_soBad2).ok === false, 'soho: forward target outside the LAN rejected');
+    var _soBad3 = JSON.parse(JSON.stringify(_soScn)); _soBad3.steps[0].answer.slots.ssid = 'b';
+    assert(simLabValidateSohoFidelity(_soBad3).ok === false, 'soho: keyed ssid mismatching requirement rejected');
+
+  } catch (err) {
+    test('soho fidelity validator: vm smoke test (threw)', false);
+    results.errors.push('soho fidelity validator smoke test threw: ' + err.message);
   }
 })();
 
@@ -22392,6 +22624,338 @@ console.log('\n\x1b[1m── T7: DRILLS ANALYTICS GROUP + FINAL COPY + BRONZE TO
   }
 })();
 
+// ── Wave 1 Task 6: Net+ Wireless Deployment seed-bank validation ──
+// The 12 consensus-approved Net+ Wireless scenarios now live for real in
+// features/sim-lab-seed-netplus.js (window.SIM_LAB_SEED_NETPLUS). This proves
+// every one of them is real, production-ready content: each passes the same
+// pure validators that gate the dev fixtures above (simLabValidateScenario +
+// simLabValidateWirelessFidelity), extracted from features/sim-lab.js by the
+// same brace-matching approach as .superpowers/sdd/validate-drafts.js (no
+// reimplementation of validator logic). Not a fixture — this is the real
+// bank. Mirrors the Task 12 diagram-bank block's structure, swapping the
+// network fidelity oracle for the wireless one (Wave 1 Task 2's vm wiring).
+(function () {
+  console.log('\n\x1b[1m── Sim Lab: Net+ Wireless Deployment seed-bank validation (Wave 1 Task 6) ──\x1b[0m');
+  try {
+    var vm = require('vm');
+    function assert(cond, msg) { test(msg, !!cond); }
+
+    var grab = function (name) {
+      var re = new RegExp('function ' + name + '\\([^)]*\\) \\{[\\s\\S]*?\\n\\}');
+      return (js.match(re) || [''])[0];
+    };
+    var grabVar = function (name) {
+      var re = new RegExp('var ' + name + ' = [^;]*;');
+      return (js.match(re) || [''])[0];
+    };
+
+    // ── Extract the REAL pure validators from features/sim-lab.js, exactly
+    // as .superpowers/sdd/validate-drafts.js does ──
+    var isNonEmptyStrBody    = grab('_isNonEmptyStr');
+    var validatePayloadBody  = grab('_validateStepPayload');
+    var validateScenarioBody = grab('simLabValidateScenario');
+    var stepTypesMatch = js.match(/var STEP_TYPES\s*=\s*\[[^\]]+\]/);
+    var stepTypesDecl = stepTypesMatch ? stepTypesMatch[0] + ';' : "var STEP_TYPES = ['order','categorize','match','analyze','fillin','configure'];";
+
+    var resolveSlotBody   = grab('_slFidelityResolveSlot');
+    var wifi24Var          = grabVar('_WIFI_24_CLEAR');
+    var wifi5Var            = grabVar('_WIFI_5_CHANNELS');
+    var wifiFidelityBody  = grab('simLabValidateWirelessFidelity');
+
+    if (!isNonEmptyStrBody || !validatePayloadBody || !validateScenarioBody ||
+        !resolveSlotBody || !wifi24Var || !wifi5Var || !wifiFidelityBody) {
+      test('Net+ Wireless bank: validator helper extraction succeeded', false);
+      results.errors.push('could not extract validator helpers for Wave 1 Task 6 bank test; check names/indenting');
+      return;
+    }
+
+    var vCtx = {};
+    vm.createContext(vCtx);
+    vm.runInContext(stepTypesDecl, vCtx);
+    vm.runInContext(isNonEmptyStrBody, vCtx);
+    vm.runInContext(validatePayloadBody, vCtx);
+    vm.runInContext(validateScenarioBody, vCtx);
+    vm.runInContext(resolveSlotBody, vCtx);
+    vm.runInContext(wifi24Var, vCtx);
+    vm.runInContext(wifi5Var, vCtx);
+    vm.runInContext(wifiFidelityBody, vCtx);
+    vm.runInContext('globalThis.__validate = simLabValidateScenario; globalThis.__wifiFidelity = simLabValidateWirelessFidelity;', vCtx);
+    var simLabValidateScenario = vCtx.__validate;
+    var simLabValidateWirelessFidelity = vCtx.__wifiFidelity;
+
+    // ── Load the real seed bank: eval features/sim-lab-seed-netplus.js in a
+    // sandbox with `var window = {}` so window.SIM_LAB_SEED_NETPLUS populates ──
+    var seedSrc = read('features/sim-lab-seed-netplus.js');
+    var seedCtx = {};
+    vm.createContext(seedCtx);
+    vm.runInContext('var window = {};\n' + seedSrc + '\nglobalThis.__seed = window.SIM_LAB_SEED_NETPLUS;', seedCtx);
+    var seedBank = seedCtx.__seed;
+
+    test('Net+ Wireless bank: window.SIM_LAB_SEED_NETPLUS loaded as an array',
+      Array.isArray(seedBank));
+    if (!Array.isArray(seedBank)) {
+      results.errors.push('could not load window.SIM_LAB_SEED_NETPLUS from features/sim-lab-seed-netplus.js');
+      return;
+    }
+
+    var wirelessScenarios = seedBank.filter(function (s) { return s && s.archetype === 'wireless'; });
+    test('Net+ Wireless bank: at least 10 wireless-archetype scenarios present',
+      wirelessScenarios.length >= 10);
+
+    var allValidateOk = true, allFidelityOk = true;
+    wirelessScenarios.forEach(function (s) {
+      var vr = simLabValidateScenario(s);
+      if (!vr || vr.ok !== true) {
+        allValidateOk = false;
+        results.errors.push('Net+ Wireless bank: ' + (s && s.id) + ' failed simLabValidateScenario: ' + JSON.stringify(vr && vr.errors));
+      }
+      if (s && s.assets && s.assets.reference) {
+        var cfgSteps = (s.steps || []).filter(function (st) { return st.type === 'configure' && st.apId; });
+        cfgSteps.forEach(function (cfgStep) {
+          var fr = simLabValidateWirelessFidelity(s.assets.reference, cfgStep);
+          if (!fr || fr.ok !== true) {
+            allFidelityOk = false;
+            results.errors.push('Net+ Wireless bank: ' + (s && s.id) + ' failed simLabValidateWirelessFidelity: ' + JSON.stringify(fr && fr.errors));
+          }
+        });
+      }
+    });
+
+    test('Net+ Wireless bank: every wireless scenario passes simLabValidateScenario',
+      allValidateOk);
+    test('Net+ Wireless bank: every wireless scenario\'s configure(apId) step passes simLabValidateWirelessFidelity',
+      allFidelityOk);
+
+  } catch (err) {
+    test('Net+ Wireless bank: vm smoke test (threw)', false);
+    results.errors.push('Net+ Wireless bank smoke test threw: ' + err.message);
+  }
+})();
+
+// ── Wave 1 Task 7: Net+ Firewall Rule Table seed-bank validation ──
+// The 12 consensus-approved Net+ Firewall scenarios now live for real in
+// features/sim-lab-seed-netplus.js (window.SIM_LAB_SEED_NETPLUS). This proves
+// every one of them is real, production-ready content: each passes the same
+// pure validators that gate the dev fixtures above (simLabValidateScenario +
+// simLabValidateFirewallFidelity), extracted from features/sim-lab.js by the
+// same brace-matching approach as .superpowers/sdd/wave1/validate-drafts.js
+// (no reimplementation of validator logic). Not a fixture — this is the real
+// bank. Mirrors the Task 6 wireless-bank block's structure, swapping the
+// wireless fidelity oracle for the firewall one, and adds an order-consistency
+// assertion tying each scenario's `order` step to its fwSpec.rules ordering.
+(function () {
+  console.log('\n\x1b[1m── Sim Lab: Net+ Firewall Rule Table seed-bank validation (Wave 1 Task 7) ──\x1b[0m');
+  try {
+    var vm = require('vm');
+    function assert(cond, msg) { test(msg, !!cond); }
+
+    var grab = function (name) {
+      var re = new RegExp('function ' + name + '\\([^)]*\\) \\{[\\s\\S]*?\\n\\}');
+      return (js.match(re) || [''])[0];
+    };
+    var grabVar = function (name) {
+      var re = new RegExp('var ' + name + ' = [^;]*;');
+      return (js.match(re) || [''])[0];
+    };
+
+    // ── Extract the REAL pure validators from features/sim-lab.js, exactly
+    // as .superpowers/sdd/wave1/validate-drafts.js does ──
+    var isNonEmptyStrBody    = grab('_isNonEmptyStr');
+    var validatePayloadBody  = grab('_validateStepPayload');
+    var validateScenarioBody = grab('simLabValidateScenario');
+    var stepTypesMatch = js.match(/var STEP_TYPES\s*=\s*\[[^\]]+\]/);
+    var stepTypesDecl = stepTypesMatch ? stepTypesMatch[0] + ';' : "var STEP_TYPES = ['order','categorize','match','analyze','fillin','configure'];";
+
+    var ipToIntBody       = grab('_ipToInt');
+    var fwMatchAddrBody    = grab('_fwMatchAddr');
+    var fwRuleMatchesBody  = grab('_fwRuleMatches');
+    var fwFidelityBody     = grab('simLabValidateFirewallFidelity');
+
+    if (!isNonEmptyStrBody || !validatePayloadBody || !validateScenarioBody ||
+        !ipToIntBody || !fwMatchAddrBody || !fwRuleMatchesBody || !fwFidelityBody) {
+      test('Net+ Firewall bank: validator helper extraction succeeded', false);
+      results.errors.push('could not extract validator helpers for Wave 1 Task 7 bank test; check names/indenting');
+      return;
+    }
+
+    var vCtx = {};
+    vm.createContext(vCtx);
+    vm.runInContext(stepTypesDecl, vCtx);
+    vm.runInContext(isNonEmptyStrBody, vCtx);
+    vm.runInContext(validatePayloadBody, vCtx);
+    vm.runInContext(validateScenarioBody, vCtx);
+    vm.runInContext(ipToIntBody, vCtx);
+    vm.runInContext(fwMatchAddrBody, vCtx);
+    vm.runInContext(fwRuleMatchesBody, vCtx);
+    vm.runInContext(fwFidelityBody, vCtx);
+    vm.runInContext('globalThis.__validate = simLabValidateScenario; globalThis.__fwFidelity = simLabValidateFirewallFidelity;', vCtx);
+    var simLabValidateScenario = vCtx.__validate;
+    var simLabValidateFirewallFidelity = vCtx.__fwFidelity;
+
+    // ── Load the real seed bank: eval features/sim-lab-seed-netplus.js in a
+    // sandbox with `var window = {}` so window.SIM_LAB_SEED_NETPLUS populates ──
+    var seedSrc = read('features/sim-lab-seed-netplus.js');
+    var seedCtx = {};
+    vm.createContext(seedCtx);
+    vm.runInContext('var window = {};\n' + seedSrc + '\nglobalThis.__seed = window.SIM_LAB_SEED_NETPLUS;', seedCtx);
+    var seedBank = seedCtx.__seed;
+
+    test('Net+ Firewall bank: window.SIM_LAB_SEED_NETPLUS loaded as an array',
+      Array.isArray(seedBank));
+    if (!Array.isArray(seedBank)) {
+      results.errors.push('could not load window.SIM_LAB_SEED_NETPLUS from features/sim-lab-seed-netplus.js');
+      return;
+    }
+
+    var bankFw = seedBank.filter(function (s) { return s && s.archetype === 'firewall'; });
+    test('Net+ Firewall bank: at least 10 firewall-archetype scenarios present',
+      bankFw.length >= 10);
+
+    var allValidateOk = true, allFidelityOk = true;
+    bankFw.forEach(function (s) {
+      var vr = simLabValidateScenario(s);
+      if (!vr || vr.ok !== true) {
+        allValidateOk = false;
+        results.errors.push('Net+ Firewall bank: ' + (s && s.id) + ' failed simLabValidateScenario: ' + JSON.stringify(vr && vr.errors));
+      }
+      var fr = simLabValidateFirewallFidelity(s);
+      if (!fr || fr.ok !== true) {
+        allFidelityOk = false;
+        results.errors.push('Net+ Firewall bank: ' + (s && s.id) + ' failed simLabValidateFirewallFidelity: ' + JSON.stringify(fr && fr.errors));
+      }
+    });
+
+    test('Net+ Firewall bank: every firewall scenario passes simLabValidateScenario',
+      allValidateOk);
+    test('Net+ Firewall bank: every firewall scenario passes simLabValidateFirewallFidelity',
+      allFidelityOk);
+
+    bankFw.forEach(function (s) {
+      var ord = (s.steps || []).filter(function (st) { return st.type === 'order'; })[0];
+      if (ord) {
+        var want = s.fwSpec.rules.map(function (r) { return r.id; }).join(',');
+        test('fw ' + s.id + ': order key matches fwSpec order',
+          ord.answer.correctOrder.join(',') === want);
+      }
+    });
+
+  } catch (err) {
+    test('Net+ Firewall bank: vm smoke test (threw)', false);
+    results.errors.push('Net+ Firewall bank smoke test threw: ' + err.message);
+  }
+})();
+
+// ── Wave 1 Task 8: A+ Core 1 SOHO Router seed-bank validation ──
+// The 12 consensus-approved A+ Core 1 SOHO Router scenarios now live for real
+// in features/sim-lab-seed-aplus-core1.js (window.SIM_LAB_SEED_APLUS_CORE1).
+// This proves every one of them is real, production-ready content: each
+// passes the same pure validators that gate the dev fixtures above
+// (simLabValidateScenario + simLabValidateSohoFidelity), extracted from
+// features/sim-lab.js by the same brace-matching approach as
+// .superpowers/sdd/wave1/validate-drafts.js (no reimplementation of
+// validator logic). Not a fixture — this is the real bank. Mirrors the
+// Task 6/7 bank-test structure, swapping the SOHO fidelity oracle in.
+(function () {
+  console.log('\n\x1b[1m── Sim Lab: A+ Core 1 SOHO Router seed-bank validation (Wave 1 Task 8) ──\x1b[0m');
+  try {
+    var vm = require('vm');
+    function assert(cond, msg) { test(msg, !!cond); }
+
+    var grab = function (name) {
+      var re = new RegExp('function ' + name + '\\([^)]*\\) \\{[\\s\\S]*?\\n\\}');
+      return (js.match(re) || [''])[0];
+    };
+
+    // ── Extract the REAL pure validators from features/sim-lab.js, exactly
+    // as .superpowers/sdd/wave1/validate-drafts.js does ──
+    var isNonEmptyStrBody    = grab('_isNonEmptyStr');
+    var validatePayloadBody  = grab('_validateStepPayload');
+    var validateScenarioBody = grab('simLabValidateScenario');
+    var stepTypesMatch = js.match(/var STEP_TYPES\s*=\s*\[[^\]]+\]/);
+    var stepTypesDecl = stepTypesMatch ? stepTypesMatch[0] + ';' : "var STEP_TYPES = ['order','categorize','match','analyze','fillin','configure'];";
+
+    var ipToIntBody      = grab('_ipToInt');
+    var maskToIntBody    = grab('_maskToInt');
+    var inSubnetBody     = grab('_inSubnet');
+    var resolveSlotBody  = grab('_slFidelityResolveSlot');
+    var sohoSlotTextBody = grab('_sohoSlotText');
+    var sohoFidelityBody = grab('simLabValidateSohoFidelity');
+
+    if (!isNonEmptyStrBody || !validatePayloadBody || !validateScenarioBody ||
+        !ipToIntBody || !maskToIntBody || !inSubnetBody || !resolveSlotBody ||
+        !sohoSlotTextBody || !sohoFidelityBody) {
+      test('A+ Core 1 SOHO bank: validator helper extraction succeeded', false);
+      results.errors.push('could not extract validator helpers for Wave 1 Task 8 bank test; check names/indenting');
+      return;
+    }
+
+    var vCtx = {};
+    vm.createContext(vCtx);
+    vm.runInContext(stepTypesDecl, vCtx);
+    vm.runInContext(isNonEmptyStrBody, vCtx);
+    vm.runInContext(validatePayloadBody, vCtx);
+    vm.runInContext(validateScenarioBody, vCtx);
+    vm.runInContext(ipToIntBody, vCtx);
+    vm.runInContext(maskToIntBody, vCtx);
+    vm.runInContext(inSubnetBody, vCtx);
+    vm.runInContext(resolveSlotBody, vCtx);
+    vm.runInContext(sohoSlotTextBody, vCtx);
+    vm.runInContext(sohoFidelityBody, vCtx);
+    vm.runInContext('globalThis.__validate = simLabValidateScenario; globalThis.__sohoFidelity = simLabValidateSohoFidelity;', vCtx);
+    var simLabValidateScenario = vCtx.__validate;
+    var simLabValidateSohoFidelity = vCtx.__sohoFidelity;
+
+    // ── Load the real seed bank: eval features/sim-lab-seed-aplus-core1.js in
+    // a sandbox with `var window = {}` so window.SIM_LAB_SEED_APLUS_CORE1
+    // populates ──
+    var seedSrc = read('features/sim-lab-seed-aplus-core1.js');
+    var seedCtx = {};
+    vm.createContext(seedCtx);
+    vm.runInContext('var window = {};\n' + seedSrc + '\nglobalThis.__seed = window.SIM_LAB_SEED_APLUS_CORE1;', seedCtx);
+    var seedBank = seedCtx.__seed;
+
+    test('A+ Core 1 SOHO bank: window.SIM_LAB_SEED_APLUS_CORE1 loaded as an array',
+      Array.isArray(seedBank));
+    if (!Array.isArray(seedBank)) {
+      results.errors.push('could not load window.SIM_LAB_SEED_APLUS_CORE1 from features/sim-lab-seed-aplus-core1.js');
+      return;
+    }
+
+    var bankSoho = seedBank.filter(function (s) { return s && s.archetype === 'soho'; });
+    test('A+ Core 1 SOHO bank: at least 10 soho-archetype scenarios present',
+      bankSoho.length >= 10);
+
+    var allValidateOk = true, allFidelityOk = true, allCertOk = true;
+    bankSoho.forEach(function (s) {
+      var vr = simLabValidateScenario(s);
+      if (!vr || vr.ok !== true) {
+        allValidateOk = false;
+        results.errors.push('A+ Core 1 SOHO bank: ' + (s && s.id) + ' failed simLabValidateScenario: ' + JSON.stringify(vr && vr.errors));
+      }
+      var fr = simLabValidateSohoFidelity(s);
+      if (!fr || fr.ok !== true) {
+        allFidelityOk = false;
+        results.errors.push('A+ Core 1 SOHO bank: ' + (s && s.id) + ' failed simLabValidateSohoFidelity: ' + JSON.stringify(fr && fr.errors));
+      }
+      if (s.cert !== 'aplus-core1') {
+        allCertOk = false;
+        results.errors.push('A+ Core 1 SOHO bank: ' + (s && s.id) + ' has cert ' + s.cert + ', expected aplus-core1');
+      }
+    });
+
+    test('A+ Core 1 SOHO bank: every soho scenario passes simLabValidateScenario',
+      allValidateOk);
+    test('A+ Core 1 SOHO bank: every soho scenario passes simLabValidateSohoFidelity',
+      allFidelityOk);
+    test('A+ Core 1 SOHO bank: every soho scenario has cert === "aplus-core1"',
+      allCertOk);
+
+  } catch (err) {
+    test('A+ Core 1 SOHO bank: vm smoke test (threw)', false);
+    results.errors.push('A+ Core 1 SOHO bank smoke test threw: ' + err.message);
+  }
+})();
+
 // The 20 consensus-approved Sec+ Incident Response scenarios now live for real
 // in features/sim-lab-seed-secplus.js (window.SIM_LAB_SEED_SECPLUS). This
 // proves every one of them is real, production-ready content: each passes the
@@ -22753,10 +23317,13 @@ console.log('\n\x1b[1m── T7: DRILLS ANALYTICS GROUP + FINAL COPY + BRONZE TO
 //      (`SIM_LAB_SEED_<CERT>`) actually contains `archetype`-tagged entries:
 //      netplus/secplus banks are non-empty for archetypes; a true non-PBQ
 //      cert has no Sim Lab seed bank global at all (`_slBank` returns []
-//      by construction, per `_SL_SEED_GLOBALS`); A+ has a Sim Lab bank but
-//      zero archetype-tagged scenarios in it (Phase 5 only authored netplus/
-//      secplus archetype content) — so even where Sim Lab entry is visible
-//      (A+), no archetype scenario can ever surface.
+//      by construction, per `_SL_SEED_GLOBALS`). A+ Core 1 now ALSO has
+//      archetype-tagged content (the 12 SOHO Router scenarios landed in
+//      Wave 1 Task 8) and genuinely surfaces it, since `_SL_PBQ_CERTS_HOME`
+//      already included aplus-core1. A+ Core 2 still has a Sim Lab bank but
+//      zero archetype-tagged scenarios in it (no archetype content authored
+//      for it yet) — so even though its Sim Lab entry is visible, no
+//      archetype scenario can surface there yet.
 (function () {
   console.log('\n\x1b[1m── Sim Lab: cert-aware PBQ archetype entry (Task 16) ──\x1b[0m');
   try {
@@ -22790,8 +23357,8 @@ console.log('\n\x1b[1m── T7: DRILLS ANALYTICS GROUP + FINAL COPY + BRONZE TO
       !!netplusBankMatch && /archetype\s*:/.test(netplusBankMatch[0]));
     test('Task 16: Sec+ Sim Lab seed bank has archetype-tagged scenarios (offered for secplus)',
       !!secplusBankMatch && /archetype\s*:/.test(secplusBankMatch[0]));
-    test('Task 16: A+ Core1 Sim Lab seed bank exists but has NO archetype-tagged scenarios (not surfaced)',
-      !!aplus1BankMatch && !/archetype\s*:/.test(aplus1BankMatch[0]));
+    test('Task 16: A+ Core1 Sim Lab seed bank has archetype-tagged scenarios (SOHO Router, Wave 1 Task 8 — surfaced for aplus-core1)',
+      !!aplus1BankMatch && /archetype\s*:/.test(aplus1BankMatch[0]));
     test('Task 16: A+ Core2 Sim Lab seed bank exists but has NO archetype-tagged scenarios (not surfaced)',
       !!aplus2BankMatch && !/archetype\s*:/.test(aplus2BankMatch[0]));
 
@@ -22997,6 +23564,498 @@ console.log('\n\x1b[1m── T7: DRILLS ANALYTICS GROUP + FINAL COPY + BRONZE TO
   } catch (err) {
     test('Task 17: exam-mode archetype smoke test (threw)', false);
     results.errors.push('Task 17 exam-mode archetype smoke test threw: ' + err.message);
+  }
+})();
+
+// ── Task 9 (Sim Lab PBQ Wave 1 plan): archetype vertical-slice mount+score ──
+// Proves the three NEW archetypes (wireless, firewall, soho) actually render
+// and score through the REAL Practice mount path with ZERO new renderers —
+// same _slMountScenario / simLabScoreScenario vm-sandbox + DOM-shim pattern
+// as the Task 11 diagram vertical slice above (grab() extraction + guard
+// clauses), but driven against the REAL shipped bank scenarios (np-wifi-01,
+// np-fw-01, a1-soho-01) resolved from the actual vm-eval'd banks — not a
+// hand-authored fixture. This exercises the real gated content end to end.
+(function () {
+  console.log('\n\x1b[1m── Sim Lab: Wave 1 archetype vertical slices (Task 9) ──\x1b[0m');
+  try {
+    var vm = require('vm');
+
+    var grab = function (name) {
+      var re = new RegExp('function ' + name + '\\([^)]*\\) \\{[\\s\\S]*?\\n\\}');
+      return (js.match(re) || [''])[0];
+    };
+    var grabLine = function (name) {
+      var re = new RegExp('function ' + name + '\\([^\\n]*\\)\\s*\\{[^\\n]*\\}');
+      return (js.match(re) || [''])[0];
+    };
+
+    // ── Extract the SAME render + score helpers as the Task 11 e2e block,
+    // PLUS _slRenderAnalyze / _slRenderOrder — wireless/firewall use 'analyze'
+    // and 'order' steps that the Task 11 diagram fixture didn't exercise.
+    // No new renderer: these are the same functions simLabRenderStep already
+    // dispatches to for every archetype. ──
+    var elBody         = grab('_el');
+    var escBody        = grabLine('_esc');
+    var slAttrBody     = grabLine('_slAttr');
+    var renderCfgBody     = grab('_slRenderConfigure');
+    var renderOrderBody   = grab('_slRenderOrder');
+    var renderAnalyzeBody = grab('_slRenderAnalyze');
+    var renderStepBody = grab('simLabRenderStep');
+    var refNetBody     = grab('_slRenderRefNetwork');
+    var refTimeBody    = grab('_slRenderRefTimeline');
+    var refLayBody     = grab('_slRenderRefLayered');
+    var refDispBody    = grab('_slRenderReference');
+    var mountBody      = grab('_slMountScenario');
+    var scoreSlotsBody    = grab('_scoreConfigureSlots');
+    var scoreStepBody     = grab('_scoreStep');
+    var scoreScenarioBody = grab('simLabScoreScenario');
+    var normBody           = grab('_norm');
+    var normalizeMatchBody = grab('_simLabNormalizeMatch');
+    var arrEqBody          = grab('_arrEq');
+    var setEqBody          = grab('_setEq');
+
+    if (!elBody || !escBody || !mountBody || !refDispBody || !refNetBody ||
+        !renderCfgBody || !renderOrderBody || !renderAnalyzeBody || !renderStepBody ||
+        !scoreScenarioBody || !scoreSlotsBody || !scoreStepBody) {
+      test('Task 9: mount/score vm extraction succeeded', false);
+      results.errors.push('could not extract _slMountScenario/render/score helpers for Task 9 archetype vertical slices; check names/indenting');
+      return;
+    }
+
+    // ── Load the REAL seed banks (same vm-eval approach as the Task 12 bank
+    // test) — resolve the target scenarios from the ACTUAL shipped content,
+    // never a hand-typed literal. ──
+    var netplusSrc = read('features/sim-lab-seed-netplus.js');
+    var netplusCtx = {};
+    vm.createContext(netplusCtx);
+    vm.runInContext('var window = {};\n' + netplusSrc + '\nglobalThis.__seed = window.SIM_LAB_SEED_NETPLUS;', netplusCtx);
+    var netplusBank = netplusCtx.__seed;
+
+    var aplusCore1Src = read('features/sim-lab-seed-aplus-core1.js');
+    var aplusCore1Ctx = {};
+    vm.createContext(aplusCore1Ctx);
+    vm.runInContext('var window = {};\n' + aplusCore1Src + '\nglobalThis.__seed = window.SIM_LAB_SEED_APLUS_CORE1;', aplusCore1Ctx);
+    var aplusCore1Bank = aplusCore1Ctx.__seed;
+
+    test('Task 9: both real seed banks loaded as arrays',
+      Array.isArray(netplusBank) && Array.isArray(aplusCore1Bank));
+    if (!Array.isArray(netplusBank) || !Array.isArray(aplusCore1Bank)) {
+      results.errors.push('Task 9: could not load real seed banks (SIM_LAB_SEED_NETPLUS / SIM_LAB_SEED_APLUS_CORE1)');
+      return;
+    }
+
+    var wirelessScn = netplusBank.filter(function (s) { return s && s.archetype === 'wireless'; })[0];
+    var firewallScn = netplusBank.filter(function (s) { return s && s.archetype === 'firewall'; })[0];
+    var sohoScn      = aplusCore1Bank.filter(function (s) { return s && s.archetype === 'soho'; })[0];
+
+    test('Task 9: first wireless-archetype scenario resolved from the real bank (np-wifi-01)',
+      wirelessScn && wirelessScn.id === 'np-wifi-01');
+    test('Task 9: first firewall-archetype scenario resolved from the real bank (np-fw-01)',
+      firewallScn && firewallScn.id === 'np-fw-01');
+    test('Task 9: first soho-archetype scenario resolved from the real bank (a1-soho-01)',
+      sohoScn && sohoScn.id === 'a1-soho-01');
+
+    if (!wirelessScn || !firewallScn || !sohoScn) {
+      results.errors.push('Task 9: could not resolve one or more archetype scenarios from the real banks; check archetype tagging');
+      return;
+    }
+
+    // ── Same DOM shim as Task 11, PLUS: a `children` getter (the analyze
+    // renderer's click handler walks `block.children` — real DOM property
+    // name — to repaint `.sl-sel`; Task 11's fixture never drove an analyze
+    // step so this was never needed) and a no-op `classList` (the same
+    // handler calls `.classList.toggle('sl-sel', …)` purely for visual
+    // state; scoring only reads the onChange-captured `selected` array,
+    // asserted independently below, so a no-op is sufficient and doesn't
+    // change what's being proven). ──
+    var makeEl = function (tag) {
+      var attrs = {}, listeners = {}, children = [], cls = '', inner = '', val = '';
+      var el = {
+        tagName: tag.toUpperCase(),
+        get className() { return cls; },
+        set className(v) { cls = v; },
+        get innerHTML() { return inner; },
+        set innerHTML(v) { inner = v; children = []; },
+        get value() { return val; },
+        set value(v) { val = v; },
+        selected: false,
+        textContent: '',
+        style: {},
+        classList: { add: function () {}, remove: function () {}, toggle: function () {}, contains: function () { return false; } },
+        get _children() { return children; },
+        get children() { return children; },
+        setAttribute: function (k, v) { attrs[k] = v; },
+        getAttribute: function (k) { return attrs[k] || null; },
+        appendChild: function (c) { children.push(c); return c; },
+        querySelector: function (sel) {
+          for (var i = 0; i < children.length; i++) {
+            var c = children[i];
+            if (!c || !c.tagName) continue;
+            if (sel.toLowerCase() === c.tagName.toLowerCase()) return c;
+            if (c._children) {
+              for (var j = 0; j < c._children.length; j++) {
+                var gc = c._children[j];
+                if (gc && gc.tagName && sel.toLowerCase() === gc.tagName.toLowerCase()) return gc;
+              }
+            }
+          }
+          return null;
+        },
+        querySelectorAll: function (sel) {
+          var hits = [];
+          var search = function (node) {
+            if (!node || !node._children) return;
+            node._children.forEach(function (c) {
+              if (!c || !c.tagName) return;
+              var tag = sel.replace(/^\..*/, '').toUpperCase();
+              if (c.tagName === (tag || c.tagName)) hits.push(c);
+              search(c);
+            });
+          };
+          search(el);
+          return hits;
+        },
+        addEventListener: function (ev, fn) { listeners[ev] = (listeners[ev] || []); listeners[ev].push(fn); },
+        dispatchEvent: function (evObj) { var fns = listeners[evObj.type] || []; fns.forEach(function (fn) { fn(evObj); }); },
+        closest: function () { return null; },
+        remove: function () {}
+      };
+      return el;
+    };
+
+    var docShim = {
+      createElement: function (tag) { return makeEl(tag); },
+      createTextNode: function (t) { return { textContent: t, tagName: '#text' }; }
+    };
+    var windowShim = { CSS: null };
+
+    var mCtx = { document: docShim, window: windowShim, Object: Object, Array: Array, String: String, JSON: JSON };
+    vm.createContext(mCtx);
+    vm.runInContext(elBody, mCtx);
+    vm.runInContext(escBody, mCtx);
+    vm.runInContext(slAttrBody, mCtx);
+    vm.runInContext(renderCfgBody, mCtx);
+    vm.runInContext(renderOrderBody, mCtx);
+    vm.runInContext(renderAnalyzeBody, mCtx);
+    vm.runInContext(renderStepBody, mCtx);
+    vm.runInContext(refNetBody, mCtx);
+    if (refTimeBody) vm.runInContext(refTimeBody, mCtx);
+    if (refLayBody) vm.runInContext(refLayBody, mCtx);
+    vm.runInContext(refDispBody, mCtx);
+    vm.runInContext(mountBody, mCtx);
+    vm.runInContext(normBody, mCtx);
+    vm.runInContext(normalizeMatchBody, mCtx);
+    vm.runInContext(arrEqBody, mCtx);
+    vm.runInContext(setEqBody, mCtx);
+    vm.runInContext(scoreSlotsBody, mCtx);
+    vm.runInContext(scoreStepBody, mCtx);
+    vm.runInContext(scoreScenarioBody, mCtx);
+
+    // ── Shared drive helpers (generalise the Task 11 select-driving pattern
+    // across step types, scoped PER STEP so same-named slots in different
+    // configure steps — e.g. firewall's two rule-builder steps both using
+    // {action,src,svc} — don't collide). ──
+    function stepWraps(wrap) {
+      return (wrap ? wrap._children : []).filter(function (c) { return c && c.className === 'sl-step'; });
+    }
+    // Drive every configure step to its keyed-correct slots, except
+    // wrongSlot { stepIndex, slotId } (optional) which is driven to any
+    // OTHER option — the negative control.
+    function driveConfigureCorrectly(wrap, scn, wrongSlot) {
+      var wraps = stepWraps(wrap);
+      scn.steps.forEach(function (st, i) {
+        if (st.type !== 'configure') return;
+        var selects = wraps[i].querySelectorAll('select');
+        selects.forEach(function (sel) {
+          var slotId = sel.getAttribute('data-slot');
+          var correctVal = st.answer.slots[slotId];
+          var val = correctVal;
+          if (wrongSlot && wrongSlot.stepIndex === i && wrongSlot.slotId === slotId) {
+            var slotDef = st.payload.slots.filter(function (s) { return s.id === slotId; })[0];
+            var wrongOpt = slotDef.options.filter(function (o) { return o.id !== correctVal; })[0];
+            val = wrongOpt.id;
+          }
+          sel.value = val;
+          sel.dispatchEvent({ type: 'change' });
+        });
+      });
+    }
+    // Drive every analyze step to its keyed-correct "select all that apply" set.
+    function driveAnalyzeCorrectly(wrap, scn) {
+      var wraps = stepWraps(wrap);
+      scn.steps.forEach(function (st, i) {
+        if (st.type !== 'analyze') return;
+        var analyzeRoot = wraps[i]._children[1];
+        var block = analyzeRoot && analyzeRoot._children[1];
+        if (!block) return;
+        block._children.forEach(function (row) {
+          if (st.answer.selected.indexOf(row.getAttribute('data-line')) !== -1) {
+            row.dispatchEvent({ type: 'click' });
+          }
+        });
+      });
+    }
+    // Drive every order step to its keyed-correct order via the renderer's
+    // documented test hook (`root.__moveTo`) — the only programmatic handle
+    // exposed for the row-nudge reorder UI a real user drives by clicking.
+    function driveOrderCorrectly(wrap, scn) {
+      var wraps = stepWraps(wrap);
+      scn.steps.forEach(function (st, i) {
+        if (st.type !== 'order') return;
+        var orderRoot = wraps[i]._children[1];
+        if (!orderRoot || typeof orderRoot.__moveTo !== 'function') return;
+        st.answer.correctOrder.forEach(function (itemId, idx) { orderRoot.__moveTo(itemId, idx); });
+      });
+    }
+    function driveAllCorrectly(wrap, scn, wrongSlot) {
+      driveConfigureCorrectly(wrap, scn, wrongSlot);
+      driveAnalyzeCorrectly(wrap, scn);
+      driveOrderCorrectly(wrap, scn);
+    }
+    function firstConfigureStepIndex(scn) {
+      for (var i = 0; i < scn.steps.length; i++) { if (scn.steps[i].type === 'configure') return i; }
+      return -1;
+    }
+    function mountOnly(scn) {
+      var host = makeEl('div');
+      mCtx.__host = host;
+      mCtx.__scn = scn;
+      var result = null;
+      mCtx.__onSubmit = function (r) { result = r; };
+      vm.runInContext('globalThis.__opts = { onSubmit: __onSubmit }; _slMountScenario(__host, __scn, __opts);', mCtx);
+      return { wrap: host._children[0], getResult: function () { return result; } };
+    }
+    function submitActive() { vm.runInContext('window.__slActiveSubmit();', mCtx); }
+    function expectedSelectCount(scn) {
+      return scn.steps.filter(function (s) { return s.type === 'configure'; })
+        .reduce(function (sum, s) { return sum + s.payload.slots.length; }, 0);
+    }
+
+    // ── Wireless (np-wifi-01): 'analyze' select-all step + 'configure' step
+    // (apId-scoped band/channel/security/ssid slots). ──
+    var wMount = mountOnly(wirelessScn);
+    test('Task 9 wireless: mounted DOM contains the configure <select> elements for every configure-step slot',
+      (wMount.wrap.querySelectorAll('select') || []).length === expectedSelectCount(wirelessScn));
+    driveAllCorrectly(wMount.wrap, wirelessScn);
+    submitActive();
+    var wResult = wMount.getResult();
+    test('Task 9 wireless: simLabScoreScenario reports correct === total after every keyed-correct answer',
+      wResult && wResult.total > 0 && wResult.correct === wResult.total);
+
+    var wirelessClone = JSON.parse(JSON.stringify(wirelessScn));
+    var wCfgIdx = firstConfigureStepIndex(wirelessClone);
+    var wMount2 = mountOnly(wirelessClone);
+    driveAllCorrectly(wMount2.wrap, wirelessClone,
+      { stepIndex: wCfgIdx, slotId: wirelessClone.steps[wCfgIdx].payload.slots[0].id });
+    submitActive();
+    var wResult2 = wMount2.getResult();
+    test('Task 9 wireless negative control: one wrong configure slot (runtime clone+mutation of the real scenario) scores correct < total',
+      wResult2 && wResult2.correct < wResult2.total);
+
+    // ── Firewall (np-fw-01): configure×2 (rule builders) + 'order' step
+    // (first-match-wins table) + 'analyze' select-all step. ──
+    var fMount = mountOnly(firewallScn);
+    test('Task 9 firewall: mounted DOM contains the configure <select> elements for every configure-step slot',
+      (fMount.wrap.querySelectorAll('select') || []).length === expectedSelectCount(firewallScn));
+
+    var fOrderStepIdx = -1;
+    firewallScn.steps.forEach(function (st, i) { if (st.type === 'order') fOrderStepIdx = i; });
+    var fOrderWraps = stepWraps(fMount.wrap);
+    var fOrderRoot = fOrderStepIdx !== -1 ? fOrderWraps[fOrderStepIdx]._children[1] : null;
+    var fOrderList = fOrderRoot && fOrderRoot._children[1];
+    var fRenderedItemIds = (fOrderList ? fOrderList._children : []).map(function (row) { return row.getAttribute('data-item'); });
+    var fExpectedItemIds = fOrderStepIdx !== -1 ? firewallScn.steps[fOrderStepIdx].payload.items.map(function (it) { return it.id; }) : [];
+    test('Task 9 firewall: mounted DOM contains the order step\'s rendered items (one row per payload item, matching ids)',
+      fOrderStepIdx !== -1 && fRenderedItemIds.length === fExpectedItemIds.length &&
+      fExpectedItemIds.every(function (id) { return fRenderedItemIds.indexOf(id) !== -1; }));
+
+    driveAllCorrectly(fMount.wrap, firewallScn);
+    submitActive();
+    var fResult = fMount.getResult();
+    test('Task 9 firewall: simLabScoreScenario reports correct === total after every keyed-correct answer (configure×2 + order + analyze)',
+      fResult && fResult.total > 0 && fResult.correct === fResult.total);
+
+    var firewallClone = JSON.parse(JSON.stringify(firewallScn));
+    var fCfgIdx = firstConfigureStepIndex(firewallClone);
+    var fMount2 = mountOnly(firewallClone);
+    driveAllCorrectly(fMount2.wrap, firewallClone,
+      { stepIndex: fCfgIdx, slotId: firewallClone.steps[fCfgIdx].payload.slots[0].id });
+    submitActive();
+    var fResult2 = fMount2.getResult();
+    test('Task 9 firewall negative control: one wrong rule-tuple slot (runtime clone+mutation of the real scenario) scores correct < total',
+      fResult2 && fResult2.correct < fResult2.total);
+
+    // ── SOHO (a1-soho-01): configure×2 (wireless/guest section + DHCP pool +
+    // port-forward). No order/analyze steps — pure configure archetype. ──
+    var sMount = mountOnly(sohoScn);
+    test('Task 9 soho: mounted DOM contains the configure <select> elements for every configure-step slot',
+      (sMount.wrap.querySelectorAll('select') || []).length === expectedSelectCount(sohoScn));
+    driveAllCorrectly(sMount.wrap, sohoScn);
+    submitActive();
+    var sResult = sMount.getResult();
+    test('Task 9 soho: simLabScoreScenario reports correct === total after every keyed-correct answer',
+      sResult && sResult.total > 0 && sResult.correct === sResult.total);
+
+    var sohoClone = JSON.parse(JSON.stringify(sohoScn));
+    var sCfgIdx = firstConfigureStepIndex(sohoClone);
+    var sMount2 = mountOnly(sohoClone);
+    driveAllCorrectly(sMount2.wrap, sohoClone,
+      { stepIndex: sCfgIdx, slotId: sohoClone.steps[sCfgIdx].payload.slots[0].id });
+    submitActive();
+    var sResult2 = sMount2.getResult();
+    test('Task 9 soho negative control: one wrong DHCP/SSID slot (runtime clone+mutation of the real scenario) scores correct < total',
+      sResult2 && sResult2.correct < sResult2.total);
+
+  } catch (err) {
+    test('Task 9: archetype vertical-slice smoke test (threw)', false);
+    results.errors.push('Task 9 archetype vertical-slice smoke test threw: ' + err.message);
+  }
+})();
+
+// ── v7.61.1: Sim Lab — _slRenderFeedback configure-step partial-credit fix ──
+// Live-browser verification (Task 10, Wave 1 build) caught a real defect:
+// simLabScoreScenario stores perStep[st.id] as an OBJECT {total,correct} for
+// 'configure' steps (a partial-credit breakdown) but as a plain BOOLEAN for
+// every other step type. _slRenderFeedback's `var ok = score.perStep[st.id]`
+// then does `ok ? 'sl-ok' : 'sl-bad'` — any non-null object is truthy, so a
+// configure step with SOME-but-not-all slots correct (correct < total) still
+// rendered the green ✓ / 'sl-ok' row and hid the explanation behind the
+// "You nailed this one" lock, even though the student got part of it wrong.
+// This proves both directions: a partial configure step must render sl-bad
+// + the explanation, and a fully-correct configure step must still render
+// sl-ok (positive control, so the fix doesn't just flip the class always).
+(function () {
+  console.log('\n\x1b[1m── Sim Lab: _slRenderFeedback configure-step partial-credit (v7.61.1) ──\x1b[0m');
+  try {
+    var vm = require('vm');
+
+    // _esc collides with a same-named (but DOM-independent) helper in
+    // features/reports.js, which sorts before sim-lab.js in the concatenated
+    // `js` blob — a plain _fnBody(js, '_esc') would grab the WRONG one. The
+    // real sim-lab _esc is single-line, so grabLine (same trick Task 11 uses)
+    // uniquely picks it out; reports.js's version is multi-line and won't match.
+    var grabLine = function (name) {
+      var re = new RegExp('function ' + name + '\\([^\\n]*\\)\\s*\\{[^\\n]*\\}');
+      return (js.match(re) || [''])[0];
+    };
+
+    var elBody             = _fnBody(js, '_el');
+    var escBody             = grabLine('_esc');
+    var scoreSlotsBody      = _fnBody(js, '_scoreConfigureSlots');
+    var scoreScenarioBody   = _fnBody(js, 'simLabScoreScenario');
+    var renderFeedbackBody  = _fnBody(js, '_slRenderFeedback');
+
+    if (!elBody || !escBody || !scoreSlotsBody || !scoreScenarioBody || !renderFeedbackBody) {
+      test('feedback partial-credit: vm extraction succeeded', false);
+      results.errors.push('could not extract _el/_esc/_scoreConfigureSlots/simLabScoreScenario/_slRenderFeedback; check names/indenting');
+      return;
+    }
+
+    // Minimal DOM shim — same pattern as the Task 6 net-renderer test: _esc()
+    // does `d.textContent = s; return d.innerHTML;`, so textContent must
+    // populate innerHTML for escaping (and _el's third arg, the icon glyph)
+    // to round-trip correctly.
+    var htmlEsc = function (s) {
+      return String(s == null ? '' : s)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    };
+    var makeEl = function (tag) {
+      var attrs = {}, children = [], cls = '', inner = '';
+      var el = {
+        tagName: tag.toUpperCase(),
+        get className() { return cls; },
+        set className(v) { cls = v; },
+        get innerHTML() { return inner; },
+        set innerHTML(v) { inner = v; children = []; },
+        get textContent() { return ''; },
+        set textContent(v) { inner = htmlEsc(v); },
+        style: {},
+        get _children() { return children; },
+        setAttribute: function (k, v) { attrs[k] = v; },
+        getAttribute: function (k) { return attrs[k] || null; },
+        appendChild: function (c) { children.push(c); return c; }
+      };
+      return el;
+    };
+    var docShim = { createElement: function (tag) { return makeEl(tag); } };
+
+    var fCtx = { document: docShim, window: { CSS: null }, Object: Object, Array: Array, String: String, Math: Math };
+    vm.createContext(fCtx);
+    vm.runInContext(elBody, fCtx);
+    vm.runInContext(escBody, fCtx);
+    vm.runInContext(scoreSlotsBody, fCtx);
+    vm.runInContext(scoreScenarioBody, fCtx);
+    vm.runInContext(renderFeedbackBody, fCtx);
+    vm.runInContext('globalThis.__score = simLabScoreScenario; globalThis.__render = _slRenderFeedback;', fCtx);
+    var fScoreScenario = fCtx.__score;
+    var fRenderFeedback = fCtx.__render;
+
+    // Fixture: two configure steps — one partial (1 of 2 slots correct), one
+    // fully correct. No other step types needed; _scoreStep is never reached
+    // since every step here is 'configure'.
+    var fScn = {
+      id: 'fb-partial-fixture',
+      steps: [
+        {
+          id: 'cfgPartial', type: 'configure', prompt: 'Configure the partial step',
+          explanation: 'Slot B needed the other value.',
+          answer: { slots: { a: 'a_good', b: 'b_good' } }
+        },
+        {
+          id: 'cfgFull', type: 'configure', prompt: 'Configure the fully-correct step',
+          explanation: 'Both slots were right.',
+          answer: { slots: { c: 'c_good', d: 'd_good' } }
+        }
+      ]
+    };
+    var fResponses = {
+      cfgPartial: { slots: { a: 'a_good', b: 'b_bad' } },  // 1 of 2 correct
+      cfgFull:    { slots: { c: 'c_good', d: 'd_good' } }  // 2 of 2 correct
+    };
+
+    var fScore = fScoreScenario(fScn, fResponses);
+
+    // Sanity: the NUMERIC scoring (untouched by this fix) is correct —
+    // confirms the bug is purely in the feedback renderer's truthiness check.
+    test('feedback partial-credit fixture: numeric scoring reports correct < total for the partial configure step',
+      fScore.perStep.cfgPartial && fScore.perStep.cfgPartial.correct === 1 && fScore.perStep.cfgPartial.total === 2);
+    test('feedback partial-credit fixture: numeric scoring reports correct === total for the fully-correct configure step',
+      fScore.perStep.cfgFull && fScore.perStep.cfgFull.correct === 2 && fScore.perStep.cfgFull.total === 2);
+
+    var fHost = makeEl('div');
+    fRenderFeedback(fHost, fScn, fScore, { mode: 'free' });
+
+    var fRoot = fHost._children[0];
+    var fRows = fRoot ? fRoot._children.filter(function (c) { return /sl-fb-row/.test(c.className); }) : [];
+    test('feedback partial-credit: renderer produced one row per step (2)', fRows.length === 2);
+
+    var rowPartial = fRows[0];
+    var rowFull = fRows[1];
+
+    // ── The bug, made concrete: partial configure step must be sl-bad ──
+    test('feedback partial-credit: partial configure-step row is sl-bad (NOT sl-ok) when correct < total',
+      !!rowPartial && rowPartial.className === 'sl-fb-row sl-bad');
+
+    var partialIcon = rowPartial && rowPartial._children[0];
+    test('feedback partial-credit: partial configure-step row shows the ✗ icon (NOT ✓)',
+      !!partialIcon && partialIcon.innerHTML === '✗');
+
+    var partialWhy = rowPartial && rowPartial._children.filter(function (c) { return c.className === 'sl-fb-why'; })[0];
+    var partialLocked = rowPartial && rowPartial._children.filter(function (c) { return c.className === 'sl-fb-locked'; })[0];
+    test('feedback partial-credit: partial configure-step row reveals the explanation (NOT the locked message)',
+      !!partialWhy && !partialLocked);
+
+    // ── Positive control: a fully-correct configure step must still be sl-ok ──
+    test('feedback partial-credit: fully-correct configure-step row is sl-ok (positive control)',
+      !!rowFull && rowFull.className === 'sl-fb-row sl-ok');
+
+    var fullIcon = rowFull && rowFull._children[0];
+    test('feedback partial-credit: fully-correct configure-step row shows the ✓ icon',
+      !!fullIcon && fullIcon.innerHTML === '✓');
+
+  } catch (err) {
+    test('feedback partial-credit: vm smoke test (threw)', false);
+    results.errors.push('feedback partial-credit smoke test threw: ' + err.message);
   }
 })();
 
