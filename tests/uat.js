@@ -22732,6 +22732,119 @@ console.log('\n\x1b[1m── T7: DRILLS ANALYTICS GROUP + FINAL COPY + BRONZE TO
   }
 })();
 
+// ── Wave 1 Task 7: Net+ Firewall Rule Table seed-bank validation ──
+// The 12 consensus-approved Net+ Firewall scenarios now live for real in
+// features/sim-lab-seed-netplus.js (window.SIM_LAB_SEED_NETPLUS). This proves
+// every one of them is real, production-ready content: each passes the same
+// pure validators that gate the dev fixtures above (simLabValidateScenario +
+// simLabValidateFirewallFidelity), extracted from features/sim-lab.js by the
+// same brace-matching approach as .superpowers/sdd/wave1/validate-drafts.js
+// (no reimplementation of validator logic). Not a fixture — this is the real
+// bank. Mirrors the Task 6 wireless-bank block's structure, swapping the
+// wireless fidelity oracle for the firewall one, and adds an order-consistency
+// assertion tying each scenario's `order` step to its fwSpec.rules ordering.
+(function () {
+  console.log('\n\x1b[1m── Sim Lab: Net+ Firewall Rule Table seed-bank validation (Wave 1 Task 7) ──\x1b[0m');
+  try {
+    var vm = require('vm');
+    function assert(cond, msg) { test(msg, !!cond); }
+
+    var grab = function (name) {
+      var re = new RegExp('function ' + name + '\\([^)]*\\) \\{[\\s\\S]*?\\n\\}');
+      return (js.match(re) || [''])[0];
+    };
+    var grabVar = function (name) {
+      var re = new RegExp('var ' + name + ' = [^;]*;');
+      return (js.match(re) || [''])[0];
+    };
+
+    // ── Extract the REAL pure validators from features/sim-lab.js, exactly
+    // as .superpowers/sdd/wave1/validate-drafts.js does ──
+    var isNonEmptyStrBody    = grab('_isNonEmptyStr');
+    var validatePayloadBody  = grab('_validateStepPayload');
+    var validateScenarioBody = grab('simLabValidateScenario');
+    var stepTypesMatch = js.match(/var STEP_TYPES\s*=\s*\[[^\]]+\]/);
+    var stepTypesDecl = stepTypesMatch ? stepTypesMatch[0] + ';' : "var STEP_TYPES = ['order','categorize','match','analyze','fillin','configure'];";
+
+    var ipToIntBody       = grab('_ipToInt');
+    var fwMatchAddrBody    = grab('_fwMatchAddr');
+    var fwRuleMatchesBody  = grab('_fwRuleMatches');
+    var fwFidelityBody     = grab('simLabValidateFirewallFidelity');
+
+    if (!isNonEmptyStrBody || !validatePayloadBody || !validateScenarioBody ||
+        !ipToIntBody || !fwMatchAddrBody || !fwRuleMatchesBody || !fwFidelityBody) {
+      test('Net+ Firewall bank: validator helper extraction succeeded', false);
+      results.errors.push('could not extract validator helpers for Wave 1 Task 7 bank test; check names/indenting');
+      return;
+    }
+
+    var vCtx = {};
+    vm.createContext(vCtx);
+    vm.runInContext(stepTypesDecl, vCtx);
+    vm.runInContext(isNonEmptyStrBody, vCtx);
+    vm.runInContext(validatePayloadBody, vCtx);
+    vm.runInContext(validateScenarioBody, vCtx);
+    vm.runInContext(ipToIntBody, vCtx);
+    vm.runInContext(fwMatchAddrBody, vCtx);
+    vm.runInContext(fwRuleMatchesBody, vCtx);
+    vm.runInContext(fwFidelityBody, vCtx);
+    vm.runInContext('globalThis.__validate = simLabValidateScenario; globalThis.__fwFidelity = simLabValidateFirewallFidelity;', vCtx);
+    var simLabValidateScenario = vCtx.__validate;
+    var simLabValidateFirewallFidelity = vCtx.__fwFidelity;
+
+    // ── Load the real seed bank: eval features/sim-lab-seed-netplus.js in a
+    // sandbox with `var window = {}` so window.SIM_LAB_SEED_NETPLUS populates ──
+    var seedSrc = read('features/sim-lab-seed-netplus.js');
+    var seedCtx = {};
+    vm.createContext(seedCtx);
+    vm.runInContext('var window = {};\n' + seedSrc + '\nglobalThis.__seed = window.SIM_LAB_SEED_NETPLUS;', seedCtx);
+    var seedBank = seedCtx.__seed;
+
+    test('Net+ Firewall bank: window.SIM_LAB_SEED_NETPLUS loaded as an array',
+      Array.isArray(seedBank));
+    if (!Array.isArray(seedBank)) {
+      results.errors.push('could not load window.SIM_LAB_SEED_NETPLUS from features/sim-lab-seed-netplus.js');
+      return;
+    }
+
+    var bankFw = seedBank.filter(function (s) { return s && s.archetype === 'firewall'; });
+    test('Net+ Firewall bank: at least 10 firewall-archetype scenarios present',
+      bankFw.length >= 10);
+
+    var allValidateOk = true, allFidelityOk = true;
+    bankFw.forEach(function (s) {
+      var vr = simLabValidateScenario(s);
+      if (!vr || vr.ok !== true) {
+        allValidateOk = false;
+        results.errors.push('Net+ Firewall bank: ' + (s && s.id) + ' failed simLabValidateScenario: ' + JSON.stringify(vr && vr.errors));
+      }
+      var fr = simLabValidateFirewallFidelity(s);
+      if (!fr || fr.ok !== true) {
+        allFidelityOk = false;
+        results.errors.push('Net+ Firewall bank: ' + (s && s.id) + ' failed simLabValidateFirewallFidelity: ' + JSON.stringify(fr && fr.errors));
+      }
+    });
+
+    test('Net+ Firewall bank: every firewall scenario passes simLabValidateScenario',
+      allValidateOk);
+    test('Net+ Firewall bank: every firewall scenario passes simLabValidateFirewallFidelity',
+      allFidelityOk);
+
+    bankFw.forEach(function (s) {
+      var ord = (s.steps || []).filter(function (st) { return st.type === 'order'; })[0];
+      if (ord) {
+        var want = s.fwSpec.rules.map(function (r) { return r.id; }).join(',');
+        test('fw ' + s.id + ': order key matches fwSpec order',
+          ord.answer.correctOrder.join(',') === want);
+      }
+    });
+
+  } catch (err) {
+    test('Net+ Firewall bank: vm smoke test (threw)', false);
+    results.errors.push('Net+ Firewall bank smoke test threw: ' + err.message);
+  }
+})();
+
 // The 20 consensus-approved Sec+ Incident Response scenarios now live for real
 // in features/sim-lab-seed-secplus.js (window.SIM_LAB_SEED_SECPLUS). This
 // proves every one of them is real, production-ready content: each passes the
