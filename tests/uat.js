@@ -23912,6 +23912,153 @@ console.log('\n\x1b[1m── T7: DRILLS ANALYTICS GROUP + FINAL COPY + BRONZE TO
   }
 })();
 
+// ── v7.61.1: Sim Lab — _slRenderFeedback configure-step partial-credit fix ──
+// Live-browser verification (Task 10, Wave 1 build) caught a real defect:
+// simLabScoreScenario stores perStep[st.id] as an OBJECT {total,correct} for
+// 'configure' steps (a partial-credit breakdown) but as a plain BOOLEAN for
+// every other step type. _slRenderFeedback's `var ok = score.perStep[st.id]`
+// then does `ok ? 'sl-ok' : 'sl-bad'` — any non-null object is truthy, so a
+// configure step with SOME-but-not-all slots correct (correct < total) still
+// rendered the green ✓ / 'sl-ok' row and hid the explanation behind the
+// "You nailed this one" lock, even though the student got part of it wrong.
+// This proves both directions: a partial configure step must render sl-bad
+// + the explanation, and a fully-correct configure step must still render
+// sl-ok (positive control, so the fix doesn't just flip the class always).
+(function () {
+  console.log('\n\x1b[1m── Sim Lab: _slRenderFeedback configure-step partial-credit (v7.61.1) ──\x1b[0m');
+  try {
+    var vm = require('vm');
+
+    // _esc collides with a same-named (but DOM-independent) helper in
+    // features/reports.js, which sorts before sim-lab.js in the concatenated
+    // `js` blob — a plain _fnBody(js, '_esc') would grab the WRONG one. The
+    // real sim-lab _esc is single-line, so grabLine (same trick Task 11 uses)
+    // uniquely picks it out; reports.js's version is multi-line and won't match.
+    var grabLine = function (name) {
+      var re = new RegExp('function ' + name + '\\([^\\n]*\\)\\s*\\{[^\\n]*\\}');
+      return (js.match(re) || [''])[0];
+    };
+
+    var elBody             = _fnBody(js, '_el');
+    var escBody             = grabLine('_esc');
+    var scoreSlotsBody      = _fnBody(js, '_scoreConfigureSlots');
+    var scoreScenarioBody   = _fnBody(js, 'simLabScoreScenario');
+    var renderFeedbackBody  = _fnBody(js, '_slRenderFeedback');
+
+    if (!elBody || !escBody || !scoreSlotsBody || !scoreScenarioBody || !renderFeedbackBody) {
+      test('feedback partial-credit: vm extraction succeeded', false);
+      results.errors.push('could not extract _el/_esc/_scoreConfigureSlots/simLabScoreScenario/_slRenderFeedback; check names/indenting');
+      return;
+    }
+
+    // Minimal DOM shim — same pattern as the Task 6 net-renderer test: _esc()
+    // does `d.textContent = s; return d.innerHTML;`, so textContent must
+    // populate innerHTML for escaping (and _el's third arg, the icon glyph)
+    // to round-trip correctly.
+    var htmlEsc = function (s) {
+      return String(s == null ? '' : s)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    };
+    var makeEl = function (tag) {
+      var attrs = {}, children = [], cls = '', inner = '';
+      var el = {
+        tagName: tag.toUpperCase(),
+        get className() { return cls; },
+        set className(v) { cls = v; },
+        get innerHTML() { return inner; },
+        set innerHTML(v) { inner = v; children = []; },
+        get textContent() { return ''; },
+        set textContent(v) { inner = htmlEsc(v); },
+        style: {},
+        get _children() { return children; },
+        setAttribute: function (k, v) { attrs[k] = v; },
+        getAttribute: function (k) { return attrs[k] || null; },
+        appendChild: function (c) { children.push(c); return c; }
+      };
+      return el;
+    };
+    var docShim = { createElement: function (tag) { return makeEl(tag); } };
+
+    var fCtx = { document: docShim, window: { CSS: null }, Object: Object, Array: Array, String: String, Math: Math };
+    vm.createContext(fCtx);
+    vm.runInContext(elBody, fCtx);
+    vm.runInContext(escBody, fCtx);
+    vm.runInContext(scoreSlotsBody, fCtx);
+    vm.runInContext(scoreScenarioBody, fCtx);
+    vm.runInContext(renderFeedbackBody, fCtx);
+    vm.runInContext('globalThis.__score = simLabScoreScenario; globalThis.__render = _slRenderFeedback;', fCtx);
+    var fScoreScenario = fCtx.__score;
+    var fRenderFeedback = fCtx.__render;
+
+    // Fixture: two configure steps — one partial (1 of 2 slots correct), one
+    // fully correct. No other step types needed; _scoreStep is never reached
+    // since every step here is 'configure'.
+    var fScn = {
+      id: 'fb-partial-fixture',
+      steps: [
+        {
+          id: 'cfgPartial', type: 'configure', prompt: 'Configure the partial step',
+          explanation: 'Slot B needed the other value.',
+          answer: { slots: { a: 'a_good', b: 'b_good' } }
+        },
+        {
+          id: 'cfgFull', type: 'configure', prompt: 'Configure the fully-correct step',
+          explanation: 'Both slots were right.',
+          answer: { slots: { c: 'c_good', d: 'd_good' } }
+        }
+      ]
+    };
+    var fResponses = {
+      cfgPartial: { slots: { a: 'a_good', b: 'b_bad' } },  // 1 of 2 correct
+      cfgFull:    { slots: { c: 'c_good', d: 'd_good' } }  // 2 of 2 correct
+    };
+
+    var fScore = fScoreScenario(fScn, fResponses);
+
+    // Sanity: the NUMERIC scoring (untouched by this fix) is correct —
+    // confirms the bug is purely in the feedback renderer's truthiness check.
+    test('feedback partial-credit fixture: numeric scoring reports correct < total for the partial configure step',
+      fScore.perStep.cfgPartial && fScore.perStep.cfgPartial.correct === 1 && fScore.perStep.cfgPartial.total === 2);
+    test('feedback partial-credit fixture: numeric scoring reports correct === total for the fully-correct configure step',
+      fScore.perStep.cfgFull && fScore.perStep.cfgFull.correct === 2 && fScore.perStep.cfgFull.total === 2);
+
+    var fHost = makeEl('div');
+    fRenderFeedback(fHost, fScn, fScore, { mode: 'free' });
+
+    var fRoot = fHost._children[0];
+    var fRows = fRoot ? fRoot._children.filter(function (c) { return /sl-fb-row/.test(c.className); }) : [];
+    test('feedback partial-credit: renderer produced one row per step (2)', fRows.length === 2);
+
+    var rowPartial = fRows[0];
+    var rowFull = fRows[1];
+
+    // ── The bug, made concrete: partial configure step must be sl-bad ──
+    test('feedback partial-credit: partial configure-step row is sl-bad (NOT sl-ok) when correct < total',
+      !!rowPartial && rowPartial.className === 'sl-fb-row sl-bad');
+
+    var partialIcon = rowPartial && rowPartial._children[0];
+    test('feedback partial-credit: partial configure-step row shows the ✗ icon (NOT ✓)',
+      !!partialIcon && partialIcon.innerHTML === '✗');
+
+    var partialWhy = rowPartial && rowPartial._children.filter(function (c) { return c.className === 'sl-fb-why'; })[0];
+    var partialLocked = rowPartial && rowPartial._children.filter(function (c) { return c.className === 'sl-fb-locked'; })[0];
+    test('feedback partial-credit: partial configure-step row reveals the explanation (NOT the locked message)',
+      !!partialWhy && !partialLocked);
+
+    // ── Positive control: a fully-correct configure step must still be sl-ok ──
+    test('feedback partial-credit: fully-correct configure-step row is sl-ok (positive control)',
+      !!rowFull && rowFull.className === 'sl-fb-row sl-ok');
+
+    var fullIcon = rowFull && rowFull._children[0];
+    test('feedback partial-credit: fully-correct configure-step row shows the ✓ icon',
+      !!fullIcon && fullIcon.innerHTML === '✓');
+
+  } catch (err) {
+    test('feedback partial-credit: vm smoke test (threw)', false);
+    results.errors.push('feedback partial-credit smoke test threw: ' + err.message);
+  }
+})();
+
 // ── Summary ──
 console.log('\n' + '═'.repeat(50));
 const total = results.pass + results.fail;

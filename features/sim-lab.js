@@ -1236,7 +1236,13 @@
     root.appendChild(_el('div', 'sl-fb-score', score.correct + ' of ' + score.total + ' steps · ' + pct + '%'));
 
     scn.steps.forEach(function (st, i) {
-      var ok = score.perStep[st.id];
+      var raw = score.perStep[st.id];
+      // configure steps store a { total, correct } breakdown (partial credit);
+      // every other step type stores a plain boolean. Any non-null object is
+      // truthy, so normalize both shapes to a real boolean before using it —
+      // otherwise a configure step with SOME-but-not-all slots correct always
+      // renders as fully correct (v7.61.1 live-verify fix).
+      var ok = (raw && typeof raw === 'object') ? (raw.correct === raw.total) : !!raw;
       var row = _el('div', 'sl-fb-row ' + (ok ? 'sl-ok' : 'sl-bad'));
       row.appendChild(_el('span', 'sl-fb-ic', ok ? '✓' : '✗'));
       row.appendChild(_el('span', 'sl-fb-t', 'Step ' + (i + 1) + ' · ' + _esc(st.prompt)));
