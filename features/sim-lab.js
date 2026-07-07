@@ -601,7 +601,16 @@
 
   // --- analyze renderer ---
   function _slRenderAnalyze(step, onChange, initial) {
-    var multi = !!step.payload.multi;
+    // Default to multi-select unless a step opts OUT explicitly (`multi:
+    // false`). Every pre-Wave-1 analyze step across every bank already
+    // declares `multi: false` when it wants single-select, so this default
+    // only ever activates for content that omits the field — which, as of
+    // Wave 1, is the wireless/firewall "select all that apply" steps whose
+    // answer.selected has 2-3 ids. Under the old `!!step.payload.multi`
+    // default those steps rendered as single-select (radio-style, one line
+    // selectable at a time), making their keyed answer unreachable through
+    // the real Practice UI. Task 9 vertical-slice testing surfaced this.
+    var multi = step.payload.multi !== false;
     var selected = [];
     var root = _el('div', 'sl-analyze');
     root.appendChild(_el('p', 'sl-prompt', _esc(step.prompt)));
