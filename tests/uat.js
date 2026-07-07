@@ -22845,6 +22845,117 @@ console.log('\n\x1b[1m── T7: DRILLS ANALYTICS GROUP + FINAL COPY + BRONZE TO
   }
 })();
 
+// ── Wave 1 Task 8: A+ Core 1 SOHO Router seed-bank validation ──
+// The 12 consensus-approved A+ Core 1 SOHO Router scenarios now live for real
+// in features/sim-lab-seed-aplus-core1.js (window.SIM_LAB_SEED_APLUS_CORE1).
+// This proves every one of them is real, production-ready content: each
+// passes the same pure validators that gate the dev fixtures above
+// (simLabValidateScenario + simLabValidateSohoFidelity), extracted from
+// features/sim-lab.js by the same brace-matching approach as
+// .superpowers/sdd/wave1/validate-drafts.js (no reimplementation of
+// validator logic). Not a fixture — this is the real bank. Mirrors the
+// Task 6/7 bank-test structure, swapping the SOHO fidelity oracle in.
+(function () {
+  console.log('\n\x1b[1m── Sim Lab: A+ Core 1 SOHO Router seed-bank validation (Wave 1 Task 8) ──\x1b[0m');
+  try {
+    var vm = require('vm');
+    function assert(cond, msg) { test(msg, !!cond); }
+
+    var grab = function (name) {
+      var re = new RegExp('function ' + name + '\\([^)]*\\) \\{[\\s\\S]*?\\n\\}');
+      return (js.match(re) || [''])[0];
+    };
+
+    // ── Extract the REAL pure validators from features/sim-lab.js, exactly
+    // as .superpowers/sdd/wave1/validate-drafts.js does ──
+    var isNonEmptyStrBody    = grab('_isNonEmptyStr');
+    var validatePayloadBody  = grab('_validateStepPayload');
+    var validateScenarioBody = grab('simLabValidateScenario');
+    var stepTypesMatch = js.match(/var STEP_TYPES\s*=\s*\[[^\]]+\]/);
+    var stepTypesDecl = stepTypesMatch ? stepTypesMatch[0] + ';' : "var STEP_TYPES = ['order','categorize','match','analyze','fillin','configure'];";
+
+    var ipToIntBody      = grab('_ipToInt');
+    var maskToIntBody    = grab('_maskToInt');
+    var inSubnetBody     = grab('_inSubnet');
+    var resolveSlotBody  = grab('_slFidelityResolveSlot');
+    var sohoSlotTextBody = grab('_sohoSlotText');
+    var sohoFidelityBody = grab('simLabValidateSohoFidelity');
+
+    if (!isNonEmptyStrBody || !validatePayloadBody || !validateScenarioBody ||
+        !ipToIntBody || !maskToIntBody || !inSubnetBody || !resolveSlotBody ||
+        !sohoSlotTextBody || !sohoFidelityBody) {
+      test('A+ Core 1 SOHO bank: validator helper extraction succeeded', false);
+      results.errors.push('could not extract validator helpers for Wave 1 Task 8 bank test; check names/indenting');
+      return;
+    }
+
+    var vCtx = {};
+    vm.createContext(vCtx);
+    vm.runInContext(stepTypesDecl, vCtx);
+    vm.runInContext(isNonEmptyStrBody, vCtx);
+    vm.runInContext(validatePayloadBody, vCtx);
+    vm.runInContext(validateScenarioBody, vCtx);
+    vm.runInContext(ipToIntBody, vCtx);
+    vm.runInContext(maskToIntBody, vCtx);
+    vm.runInContext(inSubnetBody, vCtx);
+    vm.runInContext(resolveSlotBody, vCtx);
+    vm.runInContext(sohoSlotTextBody, vCtx);
+    vm.runInContext(sohoFidelityBody, vCtx);
+    vm.runInContext('globalThis.__validate = simLabValidateScenario; globalThis.__sohoFidelity = simLabValidateSohoFidelity;', vCtx);
+    var simLabValidateScenario = vCtx.__validate;
+    var simLabValidateSohoFidelity = vCtx.__sohoFidelity;
+
+    // ── Load the real seed bank: eval features/sim-lab-seed-aplus-core1.js in
+    // a sandbox with `var window = {}` so window.SIM_LAB_SEED_APLUS_CORE1
+    // populates ──
+    var seedSrc = read('features/sim-lab-seed-aplus-core1.js');
+    var seedCtx = {};
+    vm.createContext(seedCtx);
+    vm.runInContext('var window = {};\n' + seedSrc + '\nglobalThis.__seed = window.SIM_LAB_SEED_APLUS_CORE1;', seedCtx);
+    var seedBank = seedCtx.__seed;
+
+    test('A+ Core 1 SOHO bank: window.SIM_LAB_SEED_APLUS_CORE1 loaded as an array',
+      Array.isArray(seedBank));
+    if (!Array.isArray(seedBank)) {
+      results.errors.push('could not load window.SIM_LAB_SEED_APLUS_CORE1 from features/sim-lab-seed-aplus-core1.js');
+      return;
+    }
+
+    var bankSoho = seedBank.filter(function (s) { return s && s.archetype === 'soho'; });
+    test('A+ Core 1 SOHO bank: at least 10 soho-archetype scenarios present',
+      bankSoho.length >= 10);
+
+    var allValidateOk = true, allFidelityOk = true, allCertOk = true;
+    bankSoho.forEach(function (s) {
+      var vr = simLabValidateScenario(s);
+      if (!vr || vr.ok !== true) {
+        allValidateOk = false;
+        results.errors.push('A+ Core 1 SOHO bank: ' + (s && s.id) + ' failed simLabValidateScenario: ' + JSON.stringify(vr && vr.errors));
+      }
+      var fr = simLabValidateSohoFidelity(s);
+      if (!fr || fr.ok !== true) {
+        allFidelityOk = false;
+        results.errors.push('A+ Core 1 SOHO bank: ' + (s && s.id) + ' failed simLabValidateSohoFidelity: ' + JSON.stringify(fr && fr.errors));
+      }
+      if (s.cert !== 'aplus-core1') {
+        allCertOk = false;
+        results.errors.push('A+ Core 1 SOHO bank: ' + (s && s.id) + ' has cert ' + s.cert + ', expected aplus-core1');
+      }
+    });
+
+    test('A+ Core 1 SOHO bank: every soho scenario passes simLabValidateScenario',
+      allValidateOk);
+    test('A+ Core 1 SOHO bank: every soho scenario passes simLabValidateSohoFidelity',
+      allFidelityOk);
+    test('A+ Core 1 SOHO bank: every soho scenario has cert === "aplus-core1"',
+      allCertOk);
+
+  } catch (err) {
+    test('A+ Core 1 SOHO bank: vm smoke test (threw)', false);
+    results.errors.push('A+ Core 1 SOHO bank smoke test threw: ' + err.message);
+  }
+})();
+
 // The 20 consensus-approved Sec+ Incident Response scenarios now live for real
 // in features/sim-lab-seed-secplus.js (window.SIM_LAB_SEED_SECPLUS). This
 // proves every one of them is real, production-ready content: each passes the
@@ -23206,10 +23317,13 @@ console.log('\n\x1b[1m── T7: DRILLS ANALYTICS GROUP + FINAL COPY + BRONZE TO
 //      (`SIM_LAB_SEED_<CERT>`) actually contains `archetype`-tagged entries:
 //      netplus/secplus banks are non-empty for archetypes; a true non-PBQ
 //      cert has no Sim Lab seed bank global at all (`_slBank` returns []
-//      by construction, per `_SL_SEED_GLOBALS`); A+ has a Sim Lab bank but
-//      zero archetype-tagged scenarios in it (Phase 5 only authored netplus/
-//      secplus archetype content) — so even where Sim Lab entry is visible
-//      (A+), no archetype scenario can ever surface.
+//      by construction, per `_SL_SEED_GLOBALS`). A+ Core 1 now ALSO has
+//      archetype-tagged content (the 12 SOHO Router scenarios landed in
+//      Wave 1 Task 8) and genuinely surfaces it, since `_SL_PBQ_CERTS_HOME`
+//      already included aplus-core1. A+ Core 2 still has a Sim Lab bank but
+//      zero archetype-tagged scenarios in it (no archetype content authored
+//      for it yet) — so even though its Sim Lab entry is visible, no
+//      archetype scenario can surface there yet.
 (function () {
   console.log('\n\x1b[1m── Sim Lab: cert-aware PBQ archetype entry (Task 16) ──\x1b[0m');
   try {
@@ -23243,8 +23357,8 @@ console.log('\n\x1b[1m── T7: DRILLS ANALYTICS GROUP + FINAL COPY + BRONZE TO
       !!netplusBankMatch && /archetype\s*:/.test(netplusBankMatch[0]));
     test('Task 16: Sec+ Sim Lab seed bank has archetype-tagged scenarios (offered for secplus)',
       !!secplusBankMatch && /archetype\s*:/.test(secplusBankMatch[0]));
-    test('Task 16: A+ Core1 Sim Lab seed bank exists but has NO archetype-tagged scenarios (not surfaced)',
-      !!aplus1BankMatch && !/archetype\s*:/.test(aplus1BankMatch[0]));
+    test('Task 16: A+ Core1 Sim Lab seed bank has archetype-tagged scenarios (SOHO Router, Wave 1 Task 8 — surfaced for aplus-core1)',
+      !!aplus1BankMatch && /archetype\s*:/.test(aplus1BankMatch[0]));
     test('Task 16: A+ Core2 Sim Lab seed bank exists but has NO archetype-tagged scenarios (not surfaced)',
       !!aplus2BankMatch && !/archetype\s*:/.test(aplus2BankMatch[0]));
 

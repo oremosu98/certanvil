@@ -1247,5 +1247,633 @@ window.SIM_LAB_SEED_APLUS_CORE1 = [
         },
         answer: { map: { nolink: 'physical', cabledamage: 'physical', apipa: 'ipaddr', dupip: 'ipaddr', ipnotname: 'dns' } } }
     ]
+  },
+
+  // ========================================================================
+  // ===== SOHO Router PBQs (Wave 1 · Task 8, 2-agent gated) ================
+  // ========================================================================
+  {
+    id: 'a1-soho-01',
+    cert: 'aplus-core1', objective: '2.5', topic: 'SOHO wireless + DHCP vs static reservation',
+    title: 'Bluebird Dental gets a real network',
+    estMinutes: 5, archetype: 'soho',
+    scenario: 'A new router replaced the ISP loaner at this three-chair dental office. Ticket: staff Wi-Fi named BluebirdOffice on the strongest security, an isolated guest network for the waiting room, a DHCP pool that covers 18 staff devices without ever handing out the camera NVR at 192.168.1.200, and outside port 8443 forwarded to the NVR web interface.',
+    assets: { reference: { kind: 'network',
+      given: { site: 'Bluebird Dental — RTR-Bluebird', subnet: '192.168.1.0/24 · router 192.168.1.1' },
+      devices: [
+        { id: 'rtr', label: 'RTR-Bluebird', type: 'router', ip: '192.168.1.1' },
+        { id: 'staff', label: 'Front desk + ops', type: 'pc', ip: '18 DHCP clients' },
+        { id: 'nvr', label: 'Camera NVR', type: 'server', ip: '192.168.1.200 · 443' }
+      ],
+      links: []
+    } },
+    soho: {
+      subnet: { networkId: '192.168.1.0', mask: '255.255.255.0' },
+      routerIp: '192.168.1.1',
+      statics: [{ ip: '192.168.1.200', label: 'Camera NVR' }],
+      clientCount: 18,
+      require: { ssid: 'BluebirdOffice', security: 'WPA3-Personal' }
+    },
+    steps: [
+      { id: 's1', type: 'configure', points: 1,
+        prompt: 'Set up the wireless section to match the ticket: staff SSID, strongest security, and guest isolation.',
+        explanation: 'Name the staff network exactly as the ticket spells it (BluebirdOffice), pick WPA3-Personal (the strongest personal mode this router offers — stronger than WPA2, far stronger than WEP or Open), and turn the guest network on but isolated so guests get internet without touching the staff LAN.',
+        payload: { slots: [
+          { id: 'ssid', label: 'Network name (SSID)', options: [
+            { id: 'good', text: 'BluebirdOffice' }, { id: 'd0', text: 'Bluebird-Guest' }, { id: 'd1', text: 'TP-Link_4F22' } ] },
+          { id: 'security', label: 'Security mode', options: [
+            { id: 'open', text: 'Open' }, { id: 'wep', text: 'WEP' }, { id: 'wpa2', text: 'WPA2-Personal' }, { id: 'wpa3', text: 'WPA3-Personal' } ] },
+          { id: 'guest', label: 'Guest network', options: [
+            { id: 'iso', text: 'On, isolated from LAN' }, { id: 'bridge', text: 'On, bridged to LAN' }, { id: 'off', text: 'Off' } ] }
+        ] },
+        answer: { slots: { ssid: 'good', security: 'wpa3', guest: 'iso' } } },
+      { id: 's2', type: 'configure', points: 1,
+        prompt: 'Set the DHCP pool and the port-forward so the pool covers every device, never hands out a reserved static, and the outside port reaches the right host.',
+        explanation: 'Start the pool above the router and any static reservations, and end it before the reserved statics so DHCP never leases an address a fixed device already owns. The pool must be wide enough for every client. Then forward the outside port to the static host inside the LAN — never to the router itself or an address outside the subnet.',
+        payload: { slots: [
+          { id: 'dhcpStart', label: 'DHCP pool — start', options: [
+            { id: 'sg', text: '192.168.1.100' }, { id: 'st', text: '192.168.1.1' }, { id: 'shi', text: '192.168.1.200' } ] },
+          { id: 'dhcpEnd', label: 'DHCP pool — end', options: [
+            { id: 'eg', text: '192.168.1.199' }, { id: 'ew', text: '192.168.1.254' }, { id: 'et', text: '192.168.1.110' } ] },
+          { id: 'extPort', label: 'Port forward — external port', options: [
+            { id: 'ext', text: '8443' }, { id: 'p443', text: '443' }, { id: 'p80', text: '80' } ] },
+          { id: 'fwdTo', label: 'Port forward — forward to (host : port)', options: [
+            { id: 'fg', text: '192.168.1.200 : 443' }, { id: 'foff', text: '203.0.113.200 : 443' }, { id: 'fw', text: '192.168.1.1 : 443' } ] }
+        ] },
+        answer: { slots: { dhcpStart: 'sg', dhcpEnd: 'eg', extPort: 'ext', fwdTo: 'fg' } } }
+    ]
+  },
+
+  {
+    id: 'a1-soho-02',
+    cert: 'aplus-core1', objective: '2.6', topic: 'DHCP pool sizing around statics',
+    title: 'Riverside Law brings up its office router',
+    estMinutes: 5, archetype: 'soho',
+    scenario: 'A two-partner law office needs its router configured. Ticket: staff Wi-Fi RiverLaw on the strongest security, isolated guest Wi-Fi for clients, a DHCP pool for about a dozen laptops and phones that avoids the network printer at 192.168.0.10 and the door webcam at 192.168.0.220, and outside port 8080 forwarded to that webcam.',
+    assets: { reference: { kind: 'network',
+      given: { site: 'Riverside Law — office router', subnet: '192.168.0.0/24 · router 192.168.0.1' },
+      devices: [
+        { id: 'rtr', label: 'Office router', type: 'router', ip: '192.168.0.1' },
+        { id: 'staff', label: 'Staff laptops', type: 'pc', ip: '12 DHCP clients' },
+        { id: 'prn', label: 'Printer', type: 'server', ip: '192.168.0.10' },
+        { id: 'cam', label: 'Door webcam', type: 'server', ip: '192.168.0.220 · 80' }
+      ],
+      links: []
+    } },
+    soho: {
+      subnet: { networkId: '192.168.0.0', mask: '255.255.255.0' },
+      routerIp: '192.168.0.1',
+      statics: [{ ip: '192.168.0.10', label: 'Printer' }, { ip: '192.168.0.220', label: 'Door webcam' }],
+      clientCount: 12,
+      require: { ssid: 'RiverLaw', security: 'WPA3-Personal' }
+    },
+    steps: [
+      { id: 's1', type: 'configure', points: 1,
+        prompt: 'Set up the wireless section to match the ticket: staff SSID, strongest security, and guest isolation.',
+        explanation: 'Name the staff network exactly as the ticket spells it (RiverLaw), pick WPA3-Personal (the strongest personal mode this router offers — stronger than WPA2, far stronger than WEP or Open), and turn the guest network on but isolated so guests get internet without touching the staff LAN.',
+        payload: { slots: [
+          { id: 'ssid', label: 'Network name (SSID)', options: [
+            { id: 'good', text: 'RiverLaw' }, { id: 'd0', text: 'RiverLaw-Guest' }, { id: 'd1', text: 'NETGEAR-8821' } ] },
+          { id: 'security', label: 'Security mode', options: [
+            { id: 'open', text: 'Open' }, { id: 'wep', text: 'WEP' }, { id: 'wpa2', text: 'WPA2-Personal' }, { id: 'wpa3', text: 'WPA3-Personal' } ] },
+          { id: 'guest', label: 'Guest network', options: [
+            { id: 'iso', text: 'On, isolated from LAN' }, { id: 'bridge', text: 'On, bridged to LAN' }, { id: 'off', text: 'Off' } ] }
+        ] },
+        answer: { slots: { ssid: 'good', security: 'wpa3', guest: 'iso' } } },
+      { id: 's2', type: 'configure', points: 1,
+        prompt: 'Set the DHCP pool and the port-forward so the pool covers every device, never hands out a reserved static, and the outside port reaches the right host.',
+        explanation: 'Start the pool above the router and any static reservations, and end it before the reserved statics so DHCP never leases an address a fixed device already owns. The pool must be wide enough for every client. Then forward the outside port to the static host inside the LAN — never to the router itself or an address outside the subnet.',
+        payload: { slots: [
+          { id: 'dhcpStart', label: 'DHCP pool — start', options: [
+            { id: 'sg', text: '192.168.0.100' }, { id: 'st', text: '192.168.0.1' }, { id: 'shi', text: '192.168.0.220' } ] },
+          { id: 'dhcpEnd', label: 'DHCP pool — end', options: [
+            { id: 'eg', text: '192.168.0.150' }, { id: 'ew', text: '192.168.0.254' }, { id: 'et', text: '192.168.0.105' } ] },
+          { id: 'extPort', label: 'Port forward — external port', options: [
+            { id: 'ext', text: '8080' }, { id: 'p443', text: '443' }, { id: 'p80', text: '80' } ] },
+          { id: 'fwdTo', label: 'Port forward — forward to (host : port)', options: [
+            { id: 'fg', text: '192.168.0.220 : 80' }, { id: 'foff', text: '198.51.100.220 : 80' }, { id: 'fw', text: '192.168.0.1 : 80' } ] }
+        ] },
+        answer: { slots: { dhcpStart: 'sg', dhcpEnd: 'eg', extPort: 'ext', fwdTo: 'fg' } } }
+    ]
+  },
+
+  {
+    id: 'a1-soho-03',
+    cert: 'aplus-core1', objective: '2.5', topic: 'Guest network isolation + DHCP',
+    title: 'BeanScene café splits staff and guest Wi-Fi',
+    estMinutes: 5, archetype: 'soho',
+    scenario: 'A busy café wants customers online without touching the till. Ticket: staff Wi-Fi BeanScene on the strongest security, a guest network the customers use that stays off the staff LAN, a DHCP pool big enough for roughly 25 guest and staff devices that skips the POS terminal at 192.168.5.220, and outside port 8443 to the POS management page.',
+    assets: { reference: { kind: 'network',
+      given: { site: 'BeanScene Café — counter router', subnet: '192.168.5.0/24 · router 192.168.5.1' },
+      devices: [
+        { id: 'rtr', label: 'Counter router', type: 'router', ip: '192.168.5.1' },
+        { id: 'pos', label: 'POS terminal', type: 'server', ip: '192.168.5.220 · 443' },
+        { id: 'guest', label: 'Customer devices', type: 'pc', ip: 'guest network' }
+      ],
+      links: []
+    } },
+    soho: {
+      subnet: { networkId: '192.168.5.0', mask: '255.255.255.0' },
+      routerIp: '192.168.5.1',
+      statics: [{ ip: '192.168.5.220', label: 'POS terminal' }],
+      clientCount: 25,
+      require: { ssid: 'BeanScene', security: 'WPA3-Personal' }
+    },
+    steps: [
+      { id: 's1', type: 'configure', points: 1,
+        prompt: 'Set up the wireless section to match the ticket: staff SSID, strongest security, and guest isolation.',
+        explanation: 'Name the staff network exactly as the ticket spells it (BeanScene), pick WPA3-Personal (the strongest personal mode this router offers — stronger than WPA2, far stronger than WEP or Open), and turn the guest network on but isolated so guests get internet without touching the staff LAN.',
+        payload: { slots: [
+          { id: 'ssid', label: 'Network name (SSID)', options: [
+            { id: 'good', text: 'BeanScene' }, { id: 'd0', text: 'BeanScene-Guest' }, { id: 'd1', text: 'Linksys00420' } ] },
+          { id: 'security', label: 'Security mode', options: [
+            { id: 'open', text: 'Open' }, { id: 'wep', text: 'WEP' }, { id: 'wpa2', text: 'WPA2-Personal' }, { id: 'wpa3', text: 'WPA3-Personal' } ] },
+          { id: 'guest', label: 'Guest network', options: [
+            { id: 'iso', text: 'On, isolated from LAN' }, { id: 'bridge', text: 'On, bridged to LAN' }, { id: 'off', text: 'Off' } ] }
+        ] },
+        answer: { slots: { ssid: 'good', security: 'wpa3', guest: 'iso' } } },
+      { id: 's2', type: 'configure', points: 1,
+        prompt: 'Set the DHCP pool and the port-forward so the pool covers every device, never hands out a reserved static, and the outside port reaches the right host.',
+        explanation: 'Start the pool above the router and any static reservations, and end it before the reserved statics so DHCP never leases an address a fixed device already owns. The pool must be wide enough for every client. Then forward the outside port to the static host inside the LAN — never to the router itself or an address outside the subnet.',
+        payload: { slots: [
+          { id: 'dhcpStart', label: 'DHCP pool — start', options: [
+            { id: 'sg', text: '192.168.5.100' }, { id: 'st', text: '192.168.5.1' }, { id: 'shi', text: '192.168.5.220' } ] },
+          { id: 'dhcpEnd', label: 'DHCP pool — end', options: [
+            { id: 'eg', text: '192.168.5.199' }, { id: 'ew', text: '192.168.5.254' }, { id: 'et', text: '192.168.5.115' } ] },
+          { id: 'extPort', label: 'Port forward — external port', options: [
+            { id: 'ext', text: '8443' }, { id: 'p443', text: '443' }, { id: 'p80', text: '80' } ] },
+          { id: 'fwdTo', label: 'Port forward — forward to (host : port)', options: [
+            { id: 'fg', text: '192.168.5.220 : 443' }, { id: 'foff', text: '203.0.113.220 : 443' }, { id: 'fw', text: '192.168.5.1 : 443' } ] }
+        ] },
+        answer: { slots: { dhcpStart: 'sg', dhcpEnd: 'eg', extPort: 'ext', fwdTo: 'fg' } } }
+    ]
+  },
+
+  {
+    id: 'a1-soho-04',
+    cert: 'aplus-core1', objective: '2.6', topic: 'Private (10.x) addressing + DHCP scope vs static reservation',
+    title: 'StudioLoft photographers share a NAS',
+    estMinutes: 5, archetype: 'soho',
+    scenario: 'A photography studio runs its LAN on 10.0.0.0/24. Ticket: staff Wi-Fi StudioLoft on the strongest security, isolated guest Wi-Fi for visiting clients, a DHCP pool covering about 30 devices that never hands out the NAS at 10.0.0.240, and outside port 8443 forwarded to the NAS web console for remote proofing.',
+    assets: { reference: { kind: 'network',
+      given: { site: 'StudioLoft — loft router', subnet: '10.0.0.0/24 · router 10.0.0.1' },
+      devices: [
+        { id: 'rtr', label: 'Loft router', type: 'router', ip: '10.0.0.1' },
+        { id: 'nas', label: 'NAS', type: 'server', ip: '10.0.0.240 · 443' },
+        { id: 'staff', label: 'Editing workstations', type: 'pc', ip: '30 DHCP clients' }
+      ],
+      links: []
+    } },
+    soho: {
+      subnet: { networkId: '10.0.0.0', mask: '255.255.255.0' },
+      routerIp: '10.0.0.1',
+      statics: [{ ip: '10.0.0.240', label: 'NAS' }],
+      clientCount: 30,
+      require: { ssid: 'StudioLoft', security: 'WPA3-Personal' }
+    },
+    steps: [
+      { id: 's1', type: 'configure', points: 1,
+        prompt: 'Set up the wireless section to match the ticket: staff SSID, strongest security, and guest isolation.',
+        explanation: 'Name the staff network exactly as the ticket spells it (StudioLoft), pick WPA3-Personal (the strongest personal mode this router offers — stronger than WPA2, far stronger than WEP or Open), and turn the guest network on but isolated so guests get internet without touching the staff LAN.',
+        payload: { slots: [
+          { id: 'ssid', label: 'Network name (SSID)', options: [
+            { id: 'good', text: 'StudioLoft' }, { id: 'd0', text: 'StudioLoft-Guest' }, { id: 'd1', text: 'ASUS_5G_2A' } ] },
+          { id: 'security', label: 'Security mode', options: [
+            { id: 'open', text: 'Open' }, { id: 'wep', text: 'WEP' }, { id: 'wpa2', text: 'WPA2-Personal' }, { id: 'wpa3', text: 'WPA3-Personal' } ] },
+          { id: 'guest', label: 'Guest network', options: [
+            { id: 'iso', text: 'On, isolated from LAN' }, { id: 'bridge', text: 'On, bridged to LAN' }, { id: 'off', text: 'Off' } ] }
+        ] },
+        answer: { slots: { ssid: 'good', security: 'wpa3', guest: 'iso' } } },
+      { id: 's2', type: 'configure', points: 1,
+        prompt: 'Set the DHCP pool and the port-forward so the pool covers every device, never hands out a reserved static, and the outside port reaches the right host.',
+        explanation: 'Start the pool above the router and any static reservations, and end it before the reserved statics so DHCP never leases an address a fixed device already owns. The pool must be wide enough for every client. Then forward the outside port to the static host inside the LAN — never to the router itself or an address outside the subnet.',
+        payload: { slots: [
+          { id: 'dhcpStart', label: 'DHCP pool — start', options: [
+            { id: 'sg', text: '10.0.0.100' }, { id: 'st', text: '10.0.0.1' }, { id: 'shi', text: '10.0.0.240' } ] },
+          { id: 'dhcpEnd', label: 'DHCP pool — end', options: [
+            { id: 'eg', text: '10.0.0.199' }, { id: 'ew', text: '10.0.0.254' }, { id: 'et', text: '10.0.0.120' } ] },
+          { id: 'extPort', label: 'Port forward — external port', options: [
+            { id: 'ext', text: '8443' }, { id: 'p443', text: '443' }, { id: 'p80', text: '80' } ] },
+          { id: 'fwdTo', label: 'Port forward — forward to (host : port)', options: [
+            { id: 'fg', text: '10.0.0.240 : 443' }, { id: 'foff', text: '198.51.100.240 : 443' }, { id: 'fw', text: '10.0.0.1 : 443' } ] }
+        ] },
+        answer: { slots: { dhcpStart: 'sg', dhcpEnd: 'eg', extPort: 'ext', fwdTo: 'fg' } } }
+    ]
+  },
+
+  {
+    id: 'a1-soho-05',
+    cert: 'aplus-core1', objective: '2.6', topic: 'Multiple static reservations',
+    title: 'HomeHQ keeps printer and cameras on fixed IPs',
+    estMinutes: 5, archetype: 'soho',
+    scenario: 'A work-from-home setup has grown to 40-odd devices. Ticket: staff Wi-Fi HomeHQ on the strongest security, an isolated guest network for visitors, a DHCP pool that leaves the network printer at 192.168.1.200 and the camera NVR at 192.168.1.201 on their fixed addresses, and outside port 8443 forwarded to the NVR.',
+    assets: { reference: { kind: 'network',
+      given: { site: 'HomeHQ — home office router', subnet: '192.168.1.0/24 · router 192.168.1.1' },
+      devices: [
+        { id: 'rtr', label: 'Home office router', type: 'router', ip: '192.168.1.1' },
+        { id: 'prn', label: 'Printer', type: 'server', ip: '192.168.1.200' },
+        { id: 'nvr', label: 'Camera NVR', type: 'server', ip: '192.168.1.201 · 443' }
+      ],
+      links: []
+    } },
+    soho: {
+      subnet: { networkId: '192.168.1.0', mask: '255.255.255.0' },
+      routerIp: '192.168.1.1',
+      statics: [{ ip: '192.168.1.200', label: 'Printer' }, { ip: '192.168.1.201', label: 'NVR' }],
+      clientCount: 40,
+      require: { ssid: 'HomeHQ', security: 'WPA3-Personal' }
+    },
+    steps: [
+      { id: 's1', type: 'configure', points: 1,
+        prompt: 'Set up the wireless section to match the ticket: staff SSID, strongest security, and guest isolation.',
+        explanation: 'Name the staff network exactly as the ticket spells it (HomeHQ), pick WPA3-Personal (the strongest personal mode this router offers — stronger than WPA2, far stronger than WEP or Open), and turn the guest network on but isolated so guests get internet without touching the staff LAN.',
+        payload: { slots: [
+          { id: 'ssid', label: 'Network name (SSID)', options: [
+            { id: 'good', text: 'HomeHQ' }, { id: 'd0', text: 'HomeHQ-Guest' }, { id: 'd1', text: 'ARRIS-9F10' } ] },
+          { id: 'security', label: 'Security mode', options: [
+            { id: 'open', text: 'Open' }, { id: 'wep', text: 'WEP' }, { id: 'wpa2', text: 'WPA2-Personal' }, { id: 'wpa3', text: 'WPA3-Personal' } ] },
+          { id: 'guest', label: 'Guest network', options: [
+            { id: 'iso', text: 'On, isolated from LAN' }, { id: 'bridge', text: 'On, bridged to LAN' }, { id: 'off', text: 'Off' } ] }
+        ] },
+        answer: { slots: { ssid: 'good', security: 'wpa3', guest: 'iso' } } },
+      { id: 's2', type: 'configure', points: 1,
+        prompt: 'Set the DHCP pool and the port-forward so the pool covers every device, never hands out a reserved static, and the outside port reaches the right host.',
+        explanation: 'Start the pool above the router and any static reservations, and end it before the reserved statics so DHCP never leases an address a fixed device already owns. The pool must be wide enough for every client. Then forward the outside port to the static host inside the LAN — never to the router itself or an address outside the subnet.',
+        payload: { slots: [
+          { id: 'dhcpStart', label: 'DHCP pool — start', options: [
+            { id: 'sg', text: '192.168.1.10' }, { id: 'st', text: '192.168.1.1' }, { id: 'shi', text: '192.168.1.200' } ] },
+          { id: 'dhcpEnd', label: 'DHCP pool — end', options: [
+            { id: 'eg', text: '192.168.1.150' }, { id: 'ew', text: '192.168.1.254' }, { id: 'et', text: '192.168.1.30' } ] },
+          { id: 'extPort', label: 'Port forward — external port', options: [
+            { id: 'ext', text: '8443' }, { id: 'p443', text: '443' }, { id: 'p80', text: '80' } ] },
+          { id: 'fwdTo', label: 'Port forward — forward to (host : port)', options: [
+            { id: 'fg', text: '192.168.1.201 : 443' }, { id: 'foff', text: '203.0.113.201 : 443' }, { id: 'fw', text: '192.168.1.1 : 443' } ] }
+        ] },
+        answer: { slots: { dhcpStart: 'sg', dhcpEnd: 'eg', extPort: 'ext', fwdTo: 'fg' } } }
+    ]
+  },
+
+  {
+    id: 'a1-soho-06',
+    cert: 'aplus-core1', objective: '2.5', topic: 'Port forwarding to a fixed camera host',
+    title: 'ShopFloor keeps the till off the DHCP pool',
+    estMinutes: 5, archetype: 'soho',
+    scenario: 'A small retail shop is wiring its back office. Ticket: staff Wi-Fi ShopFloor on the strongest security, an isolated guest network for the sales floor, a DHCP pool for about 20 devices that avoids the POS at 192.168.2.5 and the camera NVR at 192.168.2.210, and outside port 8443 forwarded to the NVR so the owner can watch from home.',
+    assets: { reference: { kind: 'network',
+      given: { site: 'ShopFloor Retail — back-office router', subnet: '192.168.2.0/24 · router 192.168.2.1' },
+      devices: [
+        { id: 'rtr', label: 'Back-office router', type: 'router', ip: '192.168.2.1' },
+        { id: 'pos', label: 'POS', type: 'server', ip: '192.168.2.5' },
+        { id: 'nvr', label: 'Camera NVR', type: 'server', ip: '192.168.2.210 · 443' }
+      ],
+      links: []
+    } },
+    soho: {
+      subnet: { networkId: '192.168.2.0', mask: '255.255.255.0' },
+      routerIp: '192.168.2.1',
+      statics: [{ ip: '192.168.2.5', label: 'POS' }, { ip: '192.168.2.210', label: 'Camera NVR' }],
+      clientCount: 20,
+      require: { ssid: 'ShopFloor', security: 'WPA3-Personal' }
+    },
+    steps: [
+      { id: 's1', type: 'configure', points: 1,
+        prompt: 'Set up the wireless section to match the ticket: staff SSID, strongest security, and guest isolation.',
+        explanation: 'Name the staff network exactly as the ticket spells it (ShopFloor), pick WPA3-Personal (the strongest personal mode this router offers — stronger than WPA2, far stronger than WEP or Open), and turn the guest network on but isolated so guests get internet without touching the staff LAN.',
+        payload: { slots: [
+          { id: 'ssid', label: 'Network name (SSID)', options: [
+            { id: 'good', text: 'ShopFloor' }, { id: 'd0', text: 'ShopFloor-Guest' }, { id: 'd1', text: 'TP-Link_2C90' } ] },
+          { id: 'security', label: 'Security mode', options: [
+            { id: 'open', text: 'Open' }, { id: 'wep', text: 'WEP' }, { id: 'wpa2', text: 'WPA2-Personal' }, { id: 'wpa3', text: 'WPA3-Personal' } ] },
+          { id: 'guest', label: 'Guest network', options: [
+            { id: 'iso', text: 'On, isolated from LAN' }, { id: 'bridge', text: 'On, bridged to LAN' }, { id: 'off', text: 'Off' } ] }
+        ] },
+        answer: { slots: { ssid: 'good', security: 'wpa3', guest: 'iso' } } },
+      { id: 's2', type: 'configure', points: 1,
+        prompt: 'Set the DHCP pool and the port-forward so the pool covers every device, never hands out a reserved static, and the outside port reaches the right host.',
+        explanation: 'Start the pool above the router and any static reservations, and end it before the reserved statics so DHCP never leases an address a fixed device already owns. The pool must be wide enough for every client. Then forward the outside port to the static host inside the LAN — never to the router itself or an address outside the subnet.',
+        payload: { slots: [
+          { id: 'dhcpStart', label: 'DHCP pool — start', options: [
+            { id: 'sg', text: '192.168.2.100' }, { id: 'st', text: '192.168.2.1' }, { id: 'shi', text: '192.168.2.210' } ] },
+          { id: 'dhcpEnd', label: 'DHCP pool — end', options: [
+            { id: 'eg', text: '192.168.2.199' }, { id: 'ew', text: '192.168.2.254' }, { id: 'et', text: '192.168.2.112' } ] },
+          { id: 'extPort', label: 'Port forward — external port', options: [
+            { id: 'ext', text: '8443' }, { id: 'p443', text: '443' }, { id: 'p80', text: '80' } ] },
+          { id: 'fwdTo', label: 'Port forward — forward to (host : port)', options: [
+            { id: 'fg', text: '192.168.2.210 : 443' }, { id: 'foff', text: '198.51.100.210 : 443' }, { id: 'fw', text: '192.168.2.1 : 443' } ] }
+        ] },
+        answer: { slots: { dhcpStart: 'sg', dhcpEnd: 'eg', extPort: 'ext', fwdTo: 'fg' } } }
+    ]
+  },
+
+  {
+    id: 'a1-soho-07',
+    cert: 'aplus-core1', objective: '2.6', topic: 'Sizing a pool for 50 devices',
+    title: 'ClinicNet branch office router setup',
+    estMinutes: 5, archetype: 'soho',
+    scenario: 'A growing dental branch has around 50 networked devices. Ticket: staff Wi-Fi ClinicNet on the strongest security, isolated guest Wi-Fi for the lobby, a DHCP pool wide enough for 50 devices that never leases the camera NVR at 192.168.20.200, and outside port 8443 forwarded to the NVR web interface.',
+    assets: { reference: { kind: 'network',
+      given: { site: 'Meadow Dental (branch) — ClinicNet router', subnet: '192.168.20.0/24 · router 192.168.20.1' },
+      devices: [
+        { id: 'rtr', label: 'ClinicNet router', type: 'router', ip: '192.168.20.1' },
+        { id: 'nvr', label: 'Camera NVR', type: 'server', ip: '192.168.20.200 · 443' },
+        { id: 'staff', label: 'Clinic devices', type: 'pc', ip: '50 DHCP clients' }
+      ],
+      links: []
+    } },
+    soho: {
+      subnet: { networkId: '192.168.20.0', mask: '255.255.255.0' },
+      routerIp: '192.168.20.1',
+      statics: [{ ip: '192.168.20.200', label: 'Camera NVR' }],
+      clientCount: 50,
+      require: { ssid: 'ClinicNet', security: 'WPA3-Personal' }
+    },
+    steps: [
+      { id: 's1', type: 'configure', points: 1,
+        prompt: 'Set up the wireless section to match the ticket: staff SSID, strongest security, and guest isolation.',
+        explanation: 'Name the staff network exactly as the ticket spells it (ClinicNet), pick WPA3-Personal (the strongest personal mode this router offers — stronger than WPA2, far stronger than WEP or Open), and turn the guest network on but isolated so guests get internet without touching the staff LAN.',
+        payload: { slots: [
+          { id: 'ssid', label: 'Network name (SSID)', options: [
+            { id: 'good', text: 'ClinicNet' }, { id: 'd0', text: 'ClinicNet-Guest' }, { id: 'd1', text: 'Netgear_R70' } ] },
+          { id: 'security', label: 'Security mode', options: [
+            { id: 'open', text: 'Open' }, { id: 'wep', text: 'WEP' }, { id: 'wpa2', text: 'WPA2-Personal' }, { id: 'wpa3', text: 'WPA3-Personal' } ] },
+          { id: 'guest', label: 'Guest network', options: [
+            { id: 'iso', text: 'On, isolated from LAN' }, { id: 'bridge', text: 'On, bridged to LAN' }, { id: 'off', text: 'Off' } ] }
+        ] },
+        answer: { slots: { ssid: 'good', security: 'wpa3', guest: 'iso' } } },
+      { id: 's2', type: 'configure', points: 1,
+        prompt: 'Set the DHCP pool and the port-forward so the pool covers every device, never hands out a reserved static, and the outside port reaches the right host.',
+        explanation: 'Start the pool above the router and any static reservations, and end it before the reserved statics so DHCP never leases an address a fixed device already owns. The pool must be wide enough for every client. Then forward the outside port to the static host inside the LAN — never to the router itself or an address outside the subnet.',
+        payload: { slots: [
+          { id: 'dhcpStart', label: 'DHCP pool — start', options: [
+            { id: 'sg', text: '192.168.20.100' }, { id: 'st', text: '192.168.20.1' }, { id: 'shi', text: '192.168.20.200' } ] },
+          { id: 'dhcpEnd', label: 'DHCP pool — end', options: [
+            { id: 'eg', text: '192.168.20.199' }, { id: 'ew', text: '192.168.20.254' }, { id: 'et', text: '192.168.20.140' } ] },
+          { id: 'extPort', label: 'Port forward — external port', options: [
+            { id: 'ext', text: '8443' }, { id: 'p443', text: '443' }, { id: 'p80', text: '80' } ] },
+          { id: 'fwdTo', label: 'Port forward — forward to (host : port)', options: [
+            { id: 'fg', text: '192.168.20.200 : 443' }, { id: 'foff', text: '203.0.113.20 : 443' }, { id: 'fw', text: '192.168.20.1 : 443' } ] }
+        ] },
+        answer: { slots: { dhcpStart: 'sg', dhcpEnd: 'eg', extPort: 'ext', fwdTo: 'fg' } } }
+    ]
+  },
+
+  {
+    id: 'a1-soho-08',
+    cert: 'aplus-core1', objective: '2.5', topic: 'Guest isolation for a rental',
+    title: 'CedarCabin rental separates guests from the smart hub',
+    estMinutes: 5, archetype: 'soho',
+    scenario: 'A short-term rental cabin needs guest Wi-Fi that cannot reach the owner’s smart-home gear. Ticket: staff Wi-Fi CedarCabin on the strongest security for the owner, an isolated guest network for renters, a DHCP pool for about 15 devices that avoids the smart-lock hub at 192.168.4.230, and outside port 8443 forwarded to that hub for remote management.',
+    assets: { reference: { kind: 'network',
+      given: { site: 'CedarCabin Rental — cabin router', subnet: '192.168.4.0/24 · router 192.168.4.1' },
+      devices: [
+        { id: 'rtr', label: 'Cabin router', type: 'router', ip: '192.168.4.1' },
+        { id: 'hub', label: 'Smart-lock hub', type: 'server', ip: '192.168.4.230 · 443' },
+        { id: 'guest', label: 'Renter devices', type: 'pc', ip: 'guest network' }
+      ],
+      links: []
+    } },
+    soho: {
+      subnet: { networkId: '192.168.4.0', mask: '255.255.255.0' },
+      routerIp: '192.168.4.1',
+      statics: [{ ip: '192.168.4.230', label: 'Smart-lock hub' }],
+      clientCount: 15,
+      require: { ssid: 'CedarCabin', security: 'WPA3-Personal' }
+    },
+    steps: [
+      { id: 's1', type: 'configure', points: 1,
+        prompt: 'Set up the wireless section to match the ticket: staff SSID, strongest security, and guest isolation.',
+        explanation: 'Name the staff network exactly as the ticket spells it (CedarCabin), pick WPA3-Personal (the strongest personal mode this router offers — stronger than WPA2, far stronger than WEP or Open), and turn the guest network on but isolated so guests get internet without touching the staff LAN.',
+        payload: { slots: [
+          { id: 'ssid', label: 'Network name (SSID)', options: [
+            { id: 'good', text: 'CedarCabin' }, { id: 'd0', text: 'CedarCabin-Guest' }, { id: 'd1', text: 'eero-4C1' } ] },
+          { id: 'security', label: 'Security mode', options: [
+            { id: 'open', text: 'Open' }, { id: 'wep', text: 'WEP' }, { id: 'wpa2', text: 'WPA2-Personal' }, { id: 'wpa3', text: 'WPA3-Personal' } ] },
+          { id: 'guest', label: 'Guest network', options: [
+            { id: 'iso', text: 'On, isolated from LAN' }, { id: 'bridge', text: 'On, bridged to LAN' }, { id: 'off', text: 'Off' } ] }
+        ] },
+        answer: { slots: { ssid: 'good', security: 'wpa3', guest: 'iso' } } },
+      { id: 's2', type: 'configure', points: 1,
+        prompt: 'Set the DHCP pool and the port-forward so the pool covers every device, never hands out a reserved static, and the outside port reaches the right host.',
+        explanation: 'Start the pool above the router and any static reservations, and end it before the reserved statics so DHCP never leases an address a fixed device already owns. The pool must be wide enough for every client. Then forward the outside port to the static host inside the LAN — never to the router itself or an address outside the subnet.',
+        payload: { slots: [
+          { id: 'dhcpStart', label: 'DHCP pool — start', options: [
+            { id: 'sg', text: '192.168.4.100' }, { id: 'st', text: '192.168.4.1' }, { id: 'shi', text: '192.168.4.230' } ] },
+          { id: 'dhcpEnd', label: 'DHCP pool — end', options: [
+            { id: 'eg', text: '192.168.4.199' }, { id: 'ew', text: '192.168.4.254' }, { id: 'et', text: '192.168.4.108' } ] },
+          { id: 'extPort', label: 'Port forward — external port', options: [
+            { id: 'ext', text: '8443' }, { id: 'p443', text: '443' }, { id: 'p80', text: '80' } ] },
+          { id: 'fwdTo', label: 'Port forward — forward to (host : port)', options: [
+            { id: 'fg', text: '192.168.4.230 : 443' }, { id: 'foff', text: '198.51.100.230 : 443' }, { id: 'fw', text: '192.168.4.1 : 443' } ] }
+        ] },
+        answer: { slots: { dhcpStart: 'sg', dhcpEnd: 'eg', extPort: 'ext', fwdTo: 'fg' } } }
+    ]
+  },
+
+  {
+    id: 'a1-soho-09',
+    cert: 'aplus-core1', objective: '2.6', topic: 'Reserve a server, forward its port',
+    title: 'PawsVet keeps the imaging server on a fixed IP',
+    estMinutes: 5, archetype: 'soho',
+    scenario: 'A veterinary clinic is setting up its router. Ticket: staff Wi-Fi PawsVet on the strongest security, an isolated guest network for the waiting room, a DHCP pool for roughly 22 devices that leaves the X-ray imaging server at 192.168.8.230 on its fixed address, and outside port 8443 forwarded to that server for the remote radiologist.',
+    assets: { reference: { kind: 'network',
+      given: { site: 'PawsVet Clinic — clinic router', subnet: '192.168.8.0/24 · router 192.168.8.1' },
+      devices: [
+        { id: 'rtr', label: 'Clinic router', type: 'router', ip: '192.168.8.1' },
+        { id: 'img', label: 'Imaging server', type: 'server', ip: '192.168.8.230 · 443' },
+        { id: 'staff', label: 'Clinic devices', type: 'pc', ip: '22 DHCP clients' }
+      ],
+      links: []
+    } },
+    soho: {
+      subnet: { networkId: '192.168.8.0', mask: '255.255.255.0' },
+      routerIp: '192.168.8.1',
+      statics: [{ ip: '192.168.8.230', label: 'Imaging server' }],
+      clientCount: 22,
+      require: { ssid: 'PawsVet', security: 'WPA3-Personal' }
+    },
+    steps: [
+      { id: 's1', type: 'configure', points: 1,
+        prompt: 'Set up the wireless section to match the ticket: staff SSID, strongest security, and guest isolation.',
+        explanation: 'Name the staff network exactly as the ticket spells it (PawsVet), pick WPA3-Personal (the strongest personal mode this router offers — stronger than WPA2, far stronger than WEP or Open), and turn the guest network on but isolated so guests get internet without touching the staff LAN.',
+        payload: { slots: [
+          { id: 'ssid', label: 'Network name (SSID)', options: [
+            { id: 'good', text: 'PawsVet' }, { id: 'd0', text: 'PawsVet-Guest' }, { id: 'd1', text: 'TP-Link_88AF' } ] },
+          { id: 'security', label: 'Security mode', options: [
+            { id: 'open', text: 'Open' }, { id: 'wep', text: 'WEP' }, { id: 'wpa2', text: 'WPA2-Personal' }, { id: 'wpa3', text: 'WPA3-Personal' } ] },
+          { id: 'guest', label: 'Guest network', options: [
+            { id: 'iso', text: 'On, isolated from LAN' }, { id: 'bridge', text: 'On, bridged to LAN' }, { id: 'off', text: 'Off' } ] }
+        ] },
+        answer: { slots: { ssid: 'good', security: 'wpa3', guest: 'iso' } } },
+      { id: 's2', type: 'configure', points: 1,
+        prompt: 'Set the DHCP pool and the port-forward so the pool covers every device, never hands out a reserved static, and the outside port reaches the right host.',
+        explanation: 'Start the pool above the router and any static reservations, and end it before the reserved statics so DHCP never leases an address a fixed device already owns. The pool must be wide enough for every client. Then forward the outside port to the static host inside the LAN — never to the router itself or an address outside the subnet.',
+        payload: { slots: [
+          { id: 'dhcpStart', label: 'DHCP pool — start', options: [
+            { id: 'sg', text: '192.168.8.100' }, { id: 'st', text: '192.168.8.1' }, { id: 'shi', text: '192.168.8.230' } ] },
+          { id: 'dhcpEnd', label: 'DHCP pool — end', options: [
+            { id: 'eg', text: '192.168.8.199' }, { id: 'ew', text: '192.168.8.254' }, { id: 'et', text: '192.168.8.116' } ] },
+          { id: 'extPort', label: 'Port forward — external port', options: [
+            { id: 'ext', text: '8443' }, { id: 'p443', text: '443' }, { id: 'p80', text: '80' } ] },
+          { id: 'fwdTo', label: 'Port forward — forward to (host : port)', options: [
+            { id: 'fg', text: '192.168.8.230 : 443' }, { id: 'foff', text: '203.0.113.230 : 443' }, { id: 'fw', text: '192.168.8.1 : 443' } ] }
+        ] },
+        answer: { slots: { dhcpStart: 'sg', dhcpEnd: 'eg', extPort: 'ext', fwdTo: 'fg' } } }
+    ]
+  },
+
+  {
+    id: 'a1-soho-10',
+    cert: 'aplus-core1', objective: '2.6', topic: 'Private (172.16) addressing + DHCP scope vs static reservation',
+    title: 'LedgerNet accounting firm router build',
+    estMinutes: 5, archetype: 'soho',
+    scenario: 'An accounting firm runs its LAN on 172.16.1.0/24. Ticket: staff Wi-Fi LedgerNet on the strongest security, isolated guest Wi-Fi for clients dropping off documents, a DHCP pool covering about 35 devices that keeps the file-server NAS at 172.16.1.250 on its fixed IP, and outside port 8443 forwarded to the NAS portal.',
+    assets: { reference: { kind: 'network',
+      given: { site: 'LedgerNet Accounting — firm router', subnet: '172.16.1.0/24 · router 172.16.1.1' },
+      devices: [
+        { id: 'rtr', label: 'Firm router', type: 'router', ip: '172.16.1.1' },
+        { id: 'nas', label: 'File-server NAS', type: 'server', ip: '172.16.1.250 · 443' },
+        { id: 'staff', label: 'Accountant PCs', type: 'pc', ip: '35 DHCP clients' }
+      ],
+      links: []
+    } },
+    soho: {
+      subnet: { networkId: '172.16.1.0', mask: '255.255.255.0' },
+      routerIp: '172.16.1.1',
+      statics: [{ ip: '172.16.1.250', label: 'File-server NAS' }],
+      clientCount: 35,
+      require: { ssid: 'LedgerNet', security: 'WPA3-Personal' }
+    },
+    steps: [
+      { id: 's1', type: 'configure', points: 1,
+        prompt: 'Set up the wireless section to match the ticket: staff SSID, strongest security, and guest isolation.',
+        explanation: 'Name the staff network exactly as the ticket spells it (LedgerNet), pick WPA3-Personal (the strongest personal mode this router offers — stronger than WPA2, far stronger than WEP or Open), and turn the guest network on but isolated so guests get internet without touching the staff LAN.',
+        payload: { slots: [
+          { id: 'ssid', label: 'Network name (SSID)', options: [
+            { id: 'good', text: 'LedgerNet' }, { id: 'd0', text: 'LedgerNet-Guest' }, { id: 'd1', text: 'Ubiquiti-7F2' } ] },
+          { id: 'security', label: 'Security mode', options: [
+            { id: 'open', text: 'Open' }, { id: 'wep', text: 'WEP' }, { id: 'wpa2', text: 'WPA2-Personal' }, { id: 'wpa3', text: 'WPA3-Personal' } ] },
+          { id: 'guest', label: 'Guest network', options: [
+            { id: 'iso', text: 'On, isolated from LAN' }, { id: 'bridge', text: 'On, bridged to LAN' }, { id: 'off', text: 'Off' } ] }
+        ] },
+        answer: { slots: { ssid: 'good', security: 'wpa3', guest: 'iso' } } },
+      { id: 's2', type: 'configure', points: 1,
+        prompt: 'Set the DHCP pool and the port-forward so the pool covers every device, never hands out a reserved static, and the outside port reaches the right host.',
+        explanation: 'Start the pool above the router and any static reservations, and end it before the reserved statics so DHCP never leases an address a fixed device already owns. The pool must be wide enough for every client. Then forward the outside port to the static host inside the LAN — never to the router itself or an address outside the subnet.',
+        payload: { slots: [
+          { id: 'dhcpStart', label: 'DHCP pool — start', options: [
+            { id: 'sg', text: '172.16.1.20' }, { id: 'st', text: '172.16.1.1' }, { id: 'shi', text: '172.16.1.250' } ] },
+          { id: 'dhcpEnd', label: 'DHCP pool — end', options: [
+            { id: 'eg', text: '172.16.1.170' }, { id: 'ew', text: '172.16.1.254' }, { id: 'et', text: '172.16.1.40' } ] },
+          { id: 'extPort', label: 'Port forward — external port', options: [
+            { id: 'ext', text: '8443' }, { id: 'p443', text: '443' }, { id: 'p80', text: '80' } ] },
+          { id: 'fwdTo', label: 'Port forward — forward to (host : port)', options: [
+            { id: 'fg', text: '172.16.1.250 : 443' }, { id: 'foff', text: '198.51.100.250 : 443' }, { id: 'fw', text: '172.16.1.1 : 443' } ] }
+        ] },
+        answer: { slots: { dhcpStart: 'sg', dhcpEnd: 'eg', extPort: 'ext', fwdTo: 'fg' } } }
+    ]
+  },
+
+  {
+    id: 'a1-soho-11',
+    cert: 'aplus-core1', objective: '2.6', topic: 'Tight-pool trap — pool must cover every client',
+    title: 'MakerSpace almost starves its DHCP pool',
+    estMinutes: 5, archetype: 'soho',
+    scenario: 'A community makerspace has about 40 members’ devices online at once. Ticket: staff Wi-Fi MakerSpace on the strongest security, an isolated guest network for drop-in visitors, a DHCP pool that actually fits all 40 devices while leaving the camera NVR at 192.168.1.200 reserved, and outside port 8443 forwarded to the NVR. Watch the pool end — one option looks tidy but is far too small for 40 clients.',
+    assets: { reference: { kind: 'network',
+      given: { site: 'MakerSpace — workshop router', subnet: '192.168.1.0/24 · router 192.168.1.1' },
+      devices: [
+        { id: 'rtr', label: 'Workshop router', type: 'router', ip: '192.168.1.1' },
+        { id: 'nvr', label: 'Camera NVR', type: 'server', ip: '192.168.1.200 · 443' },
+        { id: 'members', label: 'Member devices', type: 'pc', ip: '40 DHCP clients' }
+      ],
+      links: []
+    } },
+    soho: {
+      subnet: { networkId: '192.168.1.0', mask: '255.255.255.0' },
+      routerIp: '192.168.1.1',
+      statics: [{ ip: '192.168.1.200', label: 'Camera NVR' }],
+      clientCount: 40,
+      require: { ssid: 'MakerSpace', security: 'WPA3-Personal' }
+    },
+    steps: [
+      { id: 's1', type: 'configure', points: 1,
+        prompt: 'Set up the wireless section to match the ticket: staff SSID, strongest security, and guest isolation.',
+        explanation: 'Name the staff network exactly as the ticket spells it (MakerSpace), pick WPA3-Personal (the strongest personal mode this router offers — stronger than WPA2, far stronger than WEP or Open), and turn the guest network on but isolated so guests get internet without touching the staff LAN.',
+        payload: { slots: [
+          { id: 'ssid', label: 'Network name (SSID)', options: [
+            { id: 'good', text: 'MakerSpace' }, { id: 'd0', text: 'MakerSpace-Guest' }, { id: 'd1', text: 'TP-Link_MK01' } ] },
+          { id: 'security', label: 'Security mode', options: [
+            { id: 'open', text: 'Open' }, { id: 'wep', text: 'WEP' }, { id: 'wpa2', text: 'WPA2-Personal' }, { id: 'wpa3', text: 'WPA3-Personal' } ] },
+          { id: 'guest', label: 'Guest network', options: [
+            { id: 'iso', text: 'On, isolated from LAN' }, { id: 'bridge', text: 'On, bridged to LAN' }, { id: 'off', text: 'Off' } ] }
+        ] },
+        answer: { slots: { ssid: 'good', security: 'wpa3', guest: 'iso' } } },
+      { id: 's2', type: 'configure', points: 1,
+        prompt: 'Set the DHCP pool and the port-forward so the pool covers every device, never hands out a reserved static, and the outside port reaches the right host.',
+        explanation: 'Start the pool above the router and any static reservations, and end it before the reserved statics so DHCP never leases an address a fixed device already owns. The pool must be wide enough for every client. Then forward the outside port to the static host inside the LAN — never to the router itself or an address outside the subnet.',
+        payload: { slots: [
+          { id: 'dhcpStart', label: 'DHCP pool — start', options: [
+            { id: 'sg', text: '192.168.1.100' }, { id: 'st', text: '192.168.1.1' }, { id: 'shi', text: '192.168.1.200' } ] },
+          { id: 'dhcpEnd', label: 'DHCP pool — end', options: [
+            { id: 'eg', text: '192.168.1.199' }, { id: 'ew', text: '192.168.1.254' }, { id: 'et', text: '192.168.1.130' } ] },
+          { id: 'extPort', label: 'Port forward — external port', options: [
+            { id: 'ext', text: '8443' }, { id: 'p443', text: '443' }, { id: 'p80', text: '80' } ] },
+          { id: 'fwdTo', label: 'Port forward — forward to (host : port)', options: [
+            { id: 'fg', text: '192.168.1.200 : 443' }, { id: 'foff', text: '203.0.113.200 : 443' }, { id: 'fw', text: '192.168.1.1 : 443' } ] }
+        ] },
+        answer: { slots: { dhcpStart: 'sg', dhcpEnd: 'eg', extPort: 'ext', fwdTo: 'fg' } } }
+    ]
+  },
+
+  {
+    id: 'a1-soho-12',
+    cert: 'aplus-core1', objective: '2.6', topic: 'Router-IP-in-pool trap — start above the gateway',
+    title: 'GreenGrocer nearly leases out the router IP',
+    estMinutes: 5, archetype: 'soho',
+    scenario: 'A neighbourhood grocer is configuring its router. Ticket: staff Wi-Fi GreenGrocer on the strongest security, an isolated guest network for shoppers, a DHCP pool for about 18 devices that keeps the camera NVR at 192.168.1.200 reserved, and outside port 8443 forwarded to the NVR. Mind the pool start — one option begins at the router’s own address 192.168.1.1, which would let DHCP lease out the gateway.',
+    assets: { reference: { kind: 'network',
+      given: { site: 'GreenGrocer Market — store router', subnet: '192.168.1.0/24 · router 192.168.1.1' },
+      devices: [
+        { id: 'rtr', label: 'Store router', type: 'router', ip: '192.168.1.1' },
+        { id: 'nvr', label: 'Camera NVR', type: 'server', ip: '192.168.1.200 · 443' },
+        { id: 'staff', label: 'Store devices', type: 'pc', ip: '18 DHCP clients' }
+      ],
+      links: []
+    } },
+    soho: {
+      subnet: { networkId: '192.168.1.0', mask: '255.255.255.0' },
+      routerIp: '192.168.1.1',
+      statics: [{ ip: '192.168.1.200', label: 'Camera NVR' }],
+      clientCount: 18,
+      require: { ssid: 'GreenGrocer', security: 'WPA3-Personal' }
+    },
+    steps: [
+      { id: 's1', type: 'configure', points: 1,
+        prompt: 'Set up the wireless section to match the ticket: staff SSID, strongest security, and guest isolation.',
+        explanation: 'Name the staff network exactly as the ticket spells it (GreenGrocer), pick WPA3-Personal (the strongest personal mode this router offers — stronger than WPA2, far stronger than WEP or Open), and turn the guest network on but isolated so guests get internet without touching the staff LAN.',
+        payload: { slots: [
+          { id: 'ssid', label: 'Network name (SSID)', options: [
+            { id: 'good', text: 'GreenGrocer' }, { id: 'd0', text: 'GreenGrocer-Guest' }, { id: 'd1', text: 'Netgear_GG7' } ] },
+          { id: 'security', label: 'Security mode', options: [
+            { id: 'open', text: 'Open' }, { id: 'wep', text: 'WEP' }, { id: 'wpa2', text: 'WPA2-Personal' }, { id: 'wpa3', text: 'WPA3-Personal' } ] },
+          { id: 'guest', label: 'Guest network', options: [
+            { id: 'iso', text: 'On, isolated from LAN' }, { id: 'bridge', text: 'On, bridged to LAN' }, { id: 'off', text: 'Off' } ] }
+        ] },
+        answer: { slots: { ssid: 'good', security: 'wpa3', guest: 'iso' } } },
+      { id: 's2', type: 'configure', points: 1,
+        prompt: 'Set the DHCP pool and the port-forward so the pool covers every device, never hands out a reserved static, and the outside port reaches the right host.',
+        explanation: 'Start the pool above the router and any static reservations, and end it before the reserved statics so DHCP never leases an address a fixed device already owns. The pool must be wide enough for every client. Then forward the outside port to the static host inside the LAN — never to the router itself or an address outside the subnet.',
+        payload: { slots: [
+          { id: 'dhcpStart', label: 'DHCP pool — start', options: [
+            { id: 'sg', text: '192.168.1.100' }, { id: 'st', text: '192.168.1.1' }, { id: 'shi', text: '192.168.1.200' } ] },
+          { id: 'dhcpEnd', label: 'DHCP pool — end', options: [
+            { id: 'eg', text: '192.168.1.199' }, { id: 'ew', text: '192.168.1.254' }, { id: 'et', text: '192.168.1.112' } ] },
+          { id: 'extPort', label: 'Port forward — external port', options: [
+            { id: 'ext', text: '8443' }, { id: 'p443', text: '443' }, { id: 'p80', text: '80' } ] },
+          { id: 'fwdTo', label: 'Port forward — forward to (host : port)', options: [
+            { id: 'fg', text: '192.168.1.200 : 443' }, { id: 'foff', text: '198.51.100.200 : 443' }, { id: 'fw', text: '192.168.1.1 : 443' } ] }
+        ] },
+        answer: { slots: { dhcpStart: 'sg', dhcpEnd: 'eg', extPort: 'ext', fwdTo: 'fg' } } }
+    ]
   }
 ];
