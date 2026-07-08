@@ -22,6 +22,9 @@
         return Array.isArray(p.left) && Array.isArray(p.right) &&
                p.left.length >= 2 && p.left.length === p.right.length && a.pairs && typeof a.pairs === 'object';
       case 'analyze':
+        if (p.mode === 'reveal' || p.mode === 'excerptLines') {
+          return Array.isArray(a.selected) && a.selected.length >= 1;
+        }
         return Array.isArray(p.lines) && p.lines.length >= 2 &&
                Array.isArray(a.selected) && a.selected.length >= 1;
       case 'fillin':
@@ -365,6 +368,14 @@
     return { total: total, correct: correct };
   }
 
+  function _scoreAnalyzeLenient(step, resp) {
+    var want = (step.answer && step.answer.selected) || [];
+    var got = (resp && resp.selected) || [];
+    var total = want.length, correct = 0;
+    want.forEach(function (id) { if (got.indexOf(id) !== -1) correct++; });   // false picks never subtract
+    return { total: total, correct: correct };
+  }
+
   function _scoreStep(step, resp) {
     if (!resp) return false;
     switch (step.type) {
@@ -379,6 +390,10 @@
           return resp.pairs && resp.pairs[l] === step.answer.pairs[l];
         }) && resp.pairs && Object.keys(resp.pairs).length === Object.keys(step.answer.pairs).length;
       case 'analyze':
+        if (step.payload && step.payload.scoring === 'lenient') {
+          var _al = _scoreAnalyzeLenient(step, resp);
+          return _al.total > 0 && _al.correct === _al.total;
+        }
         return _setEq(resp.selected, step.answer.selected);
       case 'fillin':
         return step.payload.fields.every(function (f) {
@@ -401,6 +416,10 @@
         var sc = _scoreConfigureSlots(st, resp);
         perStep[st.id] = sc;            // { total, correct } breakdown for configure
         correct += sc.correct; total += sc.total;
+      } else if (st.type === 'analyze' && st.payload && st.payload.scoring === 'lenient') {
+        var la = _scoreAnalyzeLenient(st, resp);
+        perStep[st.id] = la;            // { total, correct } breakdown for lenient analyze
+        correct += la.correct; total += la.total;
       } else {
         var ok = _scoreStep(st, resp);
         perStep[st.id] = ok;            // boolean for existing types
@@ -604,6 +623,12 @@
 
   // --- analyze renderer ---
   function _slRenderAnalyze(step, onChange, initial) {
+    // Wave 2: mode steps bind targets from the terminal reference (single source of
+    // truth) instead of building their own .sl-analyze-block. Default (no mode) below is UNCHANGED.
+    var mode = step.payload.mode;
+    if (mode === 'reveal' || mode === 'excerptLines') {
+      return _slRenderAnalyzeMode(step, onChange, initial, mode);
+    }
     // Default to multi-select unless a step opts OUT explicitly (`multi:
     // false`). Every pre-Wave-1 analyze step across every bank already
     // declares `multi: false` when it wants single-select, so this default
@@ -653,6 +678,54 @@
       });
     }
     onChange({ selected: selected.slice() });
+    return root;
+  }
+
+  function _slRenderAnalyzeMode(step, onChange, initial, mode) {
+    var multi = step.payload.multi !== false;
+    var selected = (initial && Array.isArray(initial.selected)) ? initial.selected.slice() : [];
+    var root = _el('div', 'sl-analyze sl-analyze-mode');
+    root.appendChild(_el('p', 'sl-prompt', _esc(step.prompt)));
+
+    function emit() { onChange({ selected: selected.slice() }); }
+    function toggle(id) {
+      var idx = selected.indexOf(id);
+      if (multi) { if (idx === -1) selected.push(id); else selected.splice(idx, 1); }
+      else { selected = (idx === -1) ? [id] : []; }
+      emit();
+    }
+
+    if (mode === 'reveal') {
+      // command menu: one button per reveal-keyed excerpt; running reveals + marks it ran (advisory)
+      var ref = (window.__slTerminalRef) || null;
+      var menu = _el('div', 'sl-cmd-menu');
+      var excerpts = (ref && Array.isArray(ref.excerpts)) ? ref.excerpts : [];
+      excerpts.filter(function (ex) { return ex.reveal; }).forEach(function (ex) {
+        var b = _el('button', 'sl-cmd', _esc(ex.promptLine || ex.id));
+        b.setAttribute('type', 'button'); b.setAttribute('data-cmd', ex.id);
+        b.addEventListener('click', function () {
+          if (b.classList) b.classList.add('used');
+          if (window.__slRevealExcerpt) window.__slRevealExcerpt(ex.reveal);
+          if (selected.indexOf(ex.id) === -1) { selected.push(ex.id); emit(); }
+        });
+        menu.appendChild(b);
+      });
+      root.appendChild(menu);
+    } else {
+      // excerptLines: bind the terminal's already-rendered select:true line buttons
+      var host = (window.__slTerminalPanel) || null;
+      var btns = host ? host.querySelectorAll('button') : [];
+      btns.forEach(function (btn) {
+        if (!btn.className || btn.className.split(' ').indexOf('term-line') === -1) return;
+        var id = btn.getAttribute('data-line');
+        btn.addEventListener('click', function () {
+          toggle(id);
+          if (btn.classList) btn.classList.toggle('sl-sel', selected.indexOf(id) !== -1);
+        });
+        if (selected.indexOf(id) !== -1 && btn.classList) btn.classList.add('sl-sel');
+      });
+    }
+    emit();
     return root;
   }
 
@@ -1294,6 +1367,10 @@
     }
     if (scn.assets && scn.assets.reference) {
       var refPanel = _slRenderReference(scn.assets.reference);
+      if (scn.assets && scn.assets.reference && scn.assets.reference.kind === 'terminal') {
+        window.__slTerminalRef = scn.assets.reference;
+        window.__slTerminalPanel = refPanel;
+      } else { window.__slTerminalRef = null; window.__slTerminalPanel = null; }
       if (refPanel) wrap.appendChild(refPanel);
     }
     scn.steps.forEach(function (st, i) {

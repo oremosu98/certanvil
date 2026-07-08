@@ -21006,6 +21006,15 @@ console.log('\n\x1b[1m── T7: DRILLS ANALYTICS GROUP + FINAL COPY + BRONZE TO
     test('archetype validation: unknown archetype "logscan" still rejected',
       simLabValidateScenario(_sx2).ok === false);
 
+    // ── Wave 2 Task 3: analyze mode step validates without payload.lines ──
+    var _modeStep = { id: 'm', type: 'analyze', prompt: 'p', explanation: 'e', points: 1,
+      payload: { multi: true, mode: 'excerptLines', scoring: 'lenient' }, answer: { selected: ['l1'] } };
+    var _modeScn = _baseScn(); _modeScn.steps = [_modeStep];
+    _modeScn.assets = { reference: { kind: 'terminal', host: 'h', session: 's',
+      excerpts: [{ id: 'e', promptLine: 'p', lines: [{ id: 'l1', text: 't', select: true, evidence: true }, { id: 'l2', text: 'u', select: false }] }] } };
+    test('analyze mode step validates without payload.lines',
+      simLabValidateScenario(_modeScn).ok === true);
+
     // ── Mount test — vm-sandbox + DOM shim ──
     var elBody            = grab('_el');
     var escBody           = grabLine('_esc');
@@ -21252,6 +21261,35 @@ console.log('\n\x1b[1m── T7: DRILLS ANALYTICS GROUP + FINAL COPY + BRONZE TO
     blocks[0].getAttribute('hidden') === null && blocks[1].getAttribute('hidden') !== null);
   test('terminal: revealExcerpt is also published on window.__slRevealExcerpt',
     typeof mCtx.window.__slRevealExcerpt === 'function');
+})();
+
+// ── Wave 2 Task 3: guarded analyze extension — mode branch + lenient scoring ──
+(function () {
+  var vm = require('vm');
+  var grab = function (n) { return _fnBody(js, n); };
+  var pieces = [grab('_arrEq'), grab('_setEq'), grab('_scoreConfigureSlots'), grab('_scoreAnalyzeLenient'), grab('_scoreStep'), grab('_simLabNormalizeMatch') || '', grab('simLabScoreScenario')].join('\n');
+  var sCtx = {}; vm.createContext(sCtx); vm.runInContext(pieces, sCtx);
+  vm.runInContext('globalThis.__score = simLabScoreScenario;', sCtx);
+  var score = sCtx.__score;
+
+  // lenient analyze: partial credit, false picks never subtract
+  var lenientScn = { steps: [ { id: 'ev', type: 'analyze', points: 1,
+    payload: { multi: true, mode: 'excerptLines', scoring: 'lenient' },
+    answer: { selected: ['l1', 'l2', 'l3'] } } ] };
+  test('analyze lenient: all-correct scores total===correct',
+    score(lenientScn, { ev: { selected: ['l1', 'l2', 'l3'] } }).correct === 3);
+  test('analyze lenient: partial scores correct<total, no negative',
+    (function () { var r = score(lenientScn, { ev: { selected: ['l1'] } }); return r.correct === 1 && r.total === 3; })());
+  test('analyze lenient: a FALSE pick does not subtract earned credit',
+    (function () { var r = score(lenientScn, { ev: { selected: ['l1', 'l2', 'l3', 'lX'] } }); return r.correct === 3 && r.total === 3; })());
+
+  // regression: an analyze step WITHOUT scoring flag stays exact-set boolean
+  var exactScn = { steps: [ { id: 'a', type: 'analyze', points: 1,
+    payload: { multi: false, lines: [{ id: 'x' }, { id: 'y' }] }, answer: { selected: ['x'] } } ] };
+  test('analyze default: exact-set match still scores 1/1',
+    score(exactScn, { a: { selected: ['x'] } }).correct === 1);
+  test('analyze default: wrong exact-set still scores 0/1',
+    score(exactScn, { a: { selected: ['y'] } }).correct === 0);
 })();
 
 // ── Task 9: subnetting/CIDR fidelity validator ──
