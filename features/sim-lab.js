@@ -62,11 +62,14 @@
       });
     }
     if (s.assets && s.assets.reference) {
-      var ref = s.assets.reference, kinds = ['network', 'timeline', 'layered'];
+      var ref = s.assets.reference, kinds = ['network', 'timeline', 'layered', 'terminal'];
       if (kinds.indexOf(ref.kind) === -1) errs.push('reference: bad kind');
       else if (ref.kind === 'network' && !Array.isArray(ref.devices)) errs.push('reference network: devices[] required');
       else if (ref.kind === 'timeline' && !Array.isArray(ref.stages)) errs.push('reference timeline: stages[] required');
       else if (ref.kind === 'layered' && !Array.isArray(ref.layers)) errs.push('reference layered: layers[] required');
+      else if (ref.kind === 'terminal' && (!Array.isArray(ref.excerpts) || !ref.excerpts.every(function (ex) {
+        return ex && _isNonEmptyStr(ex.id) && Array.isArray(ex.lines);
+      }))) errs.push('reference terminal: excerpts[] with id+lines[] required');
       if (ref.kind === 'layered' && ref.layout !== undefined && ['nested', 'stacked'].indexOf(ref.layout) === -1) {
         errs.push('reference layered: bad layout');
       }
@@ -1167,6 +1170,95 @@
     return _el('div', 'sl-stacked', svgStr);
   }
 
+  // --- terminal / output-excerpt reference renderer (Wave 2 Task 2) ---
+  // The ONE new Wave 2 renderer. Three data-driven expressions off ref.reveal:
+  //   'tabs'     -> internal source-tab bar, one excerpt visible at a time (discovery)
+  //   'external' -> keyed excerpts start hidden; an external step calls revealExcerpt (cli)
+  //   undefined  -> all excerpts visible (triage)
+  // Escape-THEN-highlight per line/prompt (excerpt text is untrusted scenario data).
+  // Selectable lines are real <button>s so an analyze step can bind them (single
+  // source of truth for line text, so the fidelity validators' cross-checks are exact).
+  function _termLineHtml(line) {
+    var esc = _esc(line.text);                       // escape FIRST
+    var cls = (line.highlight === 'hot' || line.highlight === 'good' || line.highlight === 'k') ? line.highlight : '';
+    return cls ? '<span class="' + cls + '">' + esc + '</span>' : esc;
+  }
+  function _termPromptHtml(promptLine) {
+    var esc = _esc(promptLine || '');                // escape FIRST, then span the leading token
+    var sp = esc.indexOf(' ');
+    return sp > 0 ? '<span class="pmt">' + esc.slice(0, sp) + '</span>' + esc.slice(sp) : esc;
+  }
+  function _slRenderRefTerminal(ref) {
+    var root = _el('div', 'term');
+    var head = _el('div', 'term-head');
+    var hostBox = _el('div', 'term-host', '<span class="lamp"><i></i><i></i><i></i></span>');
+    hostBox.appendChild(_el('span', 'term-host-name', _esc(ref.host || '')));
+    head.appendChild(hostBox);
+    head.appendChild(_el('div', 'term-sess', _esc(ref.session || '')));
+    root.appendChild(head);
+
+    var excerpts = (ref && Array.isArray(ref.excerpts)) ? ref.excerpts : [];
+    var mode = ref ? ref.reveal : undefined;         // 'tabs' | 'external' | undefined
+    var reduce = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+    var body = _el('div', 'term-body');
+    var blockById = {};
+
+    excerpts.forEach(function (ex, i) {
+      var block = _el('div', 'term-block');
+      block.setAttribute('data-excerpt', ex.id);
+      var scroll = _el('div', 'term-scroll');
+      scroll.appendChild(_el('div', 'term-cmd', _termPromptHtml(ex.promptLine)));
+      var out = _el('div', 'term-out');
+      (ex.lines || []).forEach(function (ln) {
+        if (ln.select) {
+          var btn = _el('button', 'term-line' + (ln.evidence ? ' is-ev' : ''), _termLineHtml(ln));
+          btn.setAttribute('type', 'button');
+          btn.setAttribute('data-line', ln.id);
+          out.appendChild(btn);
+        } else {
+          out.appendChild(_el('div', 'term-ln' + (ln.ctx ? ' term-ctx' : ''), _termLineHtml(ln)));
+        }
+      });
+      scroll.appendChild(out);
+      block.appendChild(scroll);
+      var hide = (mode === 'tabs') ? (i !== 0) : (mode === 'external') ? !!ex.reveal : false;
+      if (hide) block.setAttribute('hidden', '');
+      body.appendChild(block);
+      blockById[ex.id] = block;
+    });
+
+    function revealExcerpt(key) {
+      var target = null;
+      excerpts.forEach(function (ex) { if (ex.reveal === key || ex.id === key) target = ex; });
+      if (!target || !blockById[target.id]) return;
+      var block = blockById[target.id];
+      block.removeAttribute('hidden');
+      if (!reduce && block.classList) block.classList.add('term-anim');
+    }
+
+    if (mode === 'tabs') {
+      var tabs = _el('div', 'term-tabs');
+      excerpts.forEach(function (ex, i) {
+        var tab = _el('button', 'term-tab' + (i === 0 ? ' on' : ''), _esc(ex.tab || ex.id));
+        tab.setAttribute('type', 'button');
+        tab.setAttribute('data-tab', ex.id);
+        tab.addEventListener('click', function () {
+          revealExcerpt(ex.id);
+          (tabs._children || []).forEach(function (t) {
+            if (t.classList) { t.classList.toggle('on', t.getAttribute('data-tab') === ex.id); t.classList.add('seen'); }
+          });
+        });
+        tabs.appendChild(tab);
+      });
+      root.appendChild(tabs);
+    }
+    root.appendChild(body);
+
+    root.revealExcerpt = revealExcerpt;
+    window.__slRevealExcerpt = revealExcerpt;
+    return root;
+  }
+
   function _slRenderReference(ref) {
     if (!ref || !ref.kind) return null;
     var panel = _el('div', 'sl-ref');
@@ -1174,6 +1266,11 @@
     else if (ref.kind === 'timeline') panel.appendChild(_slRenderRefTimeline(ref));
     else if (ref.kind === 'layered') {
       panel.appendChild(ref.layout === 'stacked' ? _slRenderRefLayeredStacked(ref) : _slRenderRefLayered(ref));
+    }
+    else if (ref.kind === 'terminal') {
+      var termNode = _slRenderRefTerminal(ref);
+      panel.appendChild(termNode);
+      panel.revealExcerpt = termNode.revealExcerpt;
     }
     return panel;
   }

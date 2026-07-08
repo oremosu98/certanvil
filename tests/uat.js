@@ -21159,6 +21159,101 @@ console.log('\n\x1b[1m── T7: DRILLS ANALYTICS GROUP + FINAL COPY + BRONZE TO
   }
 })();
 
+(function () {
+  var grab = function (name) { return _fnBody(js, name); };
+  var grabLine = function (name) {
+    var re = new RegExp('function ' + name + '\\([^\\n]*\\)\\s*\\{[^\\n]*\\}');
+    return (js.match(re) || [''])[0];
+  };
+  var elBody       = grab('_el');
+  var escBody      = grabLine('_esc');
+  var termLineBody = grab('_termLineHtml');
+  var termPmtBody  = grab('_termPromptHtml');
+  var termBody     = grab('_slRenderRefTerminal');
+  var dispBody     = grab('_slRenderReference');
+  if (!termBody || !dispBody) { results.errors.push('could not extract _slRenderRefTerminal/_slRenderReference'); return; }
+
+  var htmlEsc = function (s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  };
+  var makeEl = function (tag) {
+    var attrs = {}, listeners = {}, children = [], cls = '', inner = '';
+    var clsSet = {};
+    var el = {
+      tagName: tag.toUpperCase(),
+      get className() { return cls; }, set className(v) { cls = v; },
+      get innerHTML() { return inner; }, set innerHTML(v) { inner = v; children = []; },
+      get textContent() { return ''; }, set textContent(v) { inner = htmlEsc(v); },
+      style: {},
+      get _children() { return children; },
+      classList: {
+        add: function (c) { clsSet[c] = true; cls = (cls ? cls + ' ' : '') + c; },
+        remove: function (c) { delete clsSet[c]; },
+        toggle: function (c, on) { if (on) clsSet[c] = true; else delete clsSet[c]; },
+        contains: function (c) { return !!clsSet[c]; }
+      },
+      setAttribute: function (k, v) { attrs[k] = v; },
+      getAttribute: function (k) { return (k in attrs) ? attrs[k] : null; },
+      removeAttribute: function (k) { delete attrs[k]; },
+      appendChild: function (c) { children.push(c); return c; },
+      insertBefore: function (c) { children.unshift(c); return c; },
+      querySelectorAll: function (sel) {
+        var hits = [], want = sel.replace(/^\./, '');
+        var walk = function (n) { (n._children || []).forEach(function (c) {
+          if (!c || !c.tagName) return;
+          if (want.toUpperCase() === c.tagName || (c.className && c.className.split(' ').indexOf(want) !== -1)) hits.push(c);
+          walk(c);
+        }); };
+        walk(el); return hits;
+      },
+      addEventListener: function (ev, fn) { (listeners[ev] = listeners[ev] || []).push(fn); },
+      _fire: function (ev) { (listeners[ev] || []).forEach(function (fn) { fn({}); }); }
+    };
+    return el;
+  };
+  var mCtx = { document: { createElement: makeEl },
+    window: { matchMedia: function () { return { matches: false }; } },
+    Object: Object, Array: Array, String: String };
+  vm.createContext(mCtx);
+  vm.runInContext(elBody + '\n' + escBody + '\n' + termLineBody + '\n' + termPmtBody + '\n' + termBody + '\n' + dispBody, mCtx);
+
+  var ref = { kind: 'terminal', host: 'WS-14 · admin', session: 'read-only', reveal: 'external',
+    excerpts: [
+      { id: 'a', promptLine: 'C:\\> ipconfig', reveal: 'a', necessary: true,
+        lines: [ { id: 'l1', text: '169.254.1.1 <script>x</script>', highlight: 'hot', select: true, evidence: true },
+                 { id: 'l2', text: 'Media connected', select: false, ctx: true } ] },
+      { id: 'b', promptLine: 'C:\\> ping 1.1.1.1', reveal: 'b',
+        lines: [ { id: 'l3', text: 'timeout', select: true, evidence: false } ] }
+    ] };
+  mCtx.ref = ref;
+  vm.runInContext('globalThis.__panel = _slRenderReference(ref);', mCtx);
+  var panel = mCtx.__panel;
+
+  test('terminal: _slRenderReference returns a .sl-ref panel for kind terminal',
+    !!panel && panel.className === 'sl-ref');
+  var termNode = panel._children.filter(function (c) { return c.className && c.className.split(' ').indexOf('term') !== -1; })[0];
+  test('terminal: panel contains a .term component', !!termNode);
+  var lineBtns = panel.querySelectorAll('button');
+  var termLines = lineBtns.filter(function (b) { return b.className && b.className.split(' ').indexOf('term-line') !== -1; });
+  test('terminal: select:true lines render as focusable BUTTONs with data-line',
+    termLines.length === 2 && termLines[0].getAttribute('data-line') === 'l1');
+  var l1html = termLines[0].innerHTML;
+  test('terminal: line text is ESCAPED (no raw <script>)', l1html.indexOf('<script>') === -1 && l1html.indexOf('&lt;script&gt;') !== -1);
+  test('terminal: highlight wraps the ESCAPED text in a .hot span', l1html.indexOf('class="hot"') !== -1);
+  var scrolls = panel.querySelectorAll('.term-scroll');
+  test('terminal: each excerpt body is inside a .term-scroll container', scrolls.length === 2);
+  // external reveal: keyed excerpts start hidden; revealExcerpt unhides
+  var blocks = panel.querySelectorAll('.term-block');
+  test('terminal: external-mode keyed excerpts start [hidden]',
+    blocks.length === 2 && blocks[0].getAttribute('hidden') !== null && blocks[1].getAttribute('hidden') !== null);
+  panel.revealExcerpt('a');
+  test('terminal: revealExcerpt(key) unhides its excerpt block',
+    blocks[0].getAttribute('hidden') === null && blocks[1].getAttribute('hidden') !== null);
+  test('terminal: revealExcerpt is also published on window.__slRevealExcerpt',
+    typeof mCtx.window.__slRevealExcerpt === 'function');
+})();
+
 // ── Task 9: subnetting/CIDR fidelity validator ──
 // Pure-logic check: given a `network` reference model + a `configure` step,
 // confirm the flagged device is out-of-subnet and the step's correct answer
