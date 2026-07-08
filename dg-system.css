@@ -4435,3 +4435,40 @@ html[data-theme] body .celebration-toast-sub{color:var(--text-dim,rgba(255,255,2
 #page-sim-lab .sl-fw-box,#page-decision-lab .sl-fw-box{fill:var(--surface);stroke:var(--border);stroke-width:1.2}
 #page-sim-lab .sl-fw-nm,#page-decision-lab .sl-fw-nm{font:700 11px Inter,sans-serif;fill:var(--text);text-anchor:middle}
 #page-sim-lab .sl-fw-glyph,#page-decision-lab .sl-fw-glyph{stroke:var(--accent);stroke-width:1.7;fill:none}
+
+/* ════════════════════════════════════════════════════════════════════════
+   SIM LAB · terminal / output-excerpt reference (Wave 2 — Task 7)
+   ────────────────────────────────────────────────────────────────────────
+   Faithful STYLE lift of the approved mockups' .term* terminal renderer.
+   Mockup tokens mapped to this file's already-DEFINED tokens (same
+   precedent as the Task 6 block above): --ink→--text, --ink-soft→--text-mid,
+   --muted→--text-mid, --border-soft→--border, --ease→literal `ease` timing
+   function. Tokens only, 0 hardcoded hex; color-mix() is allowed. */
+.term { margin: 8px 0; background: color-mix(in oklab, var(--text) 7%, var(--surface)); border: 1px solid var(--border); border-radius: 13px; overflow: hidden; }
+.term-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 9px 13px; border-bottom: 1px solid var(--border); background: color-mix(in oklab, var(--text) 5%, transparent); }
+.term-host { display: flex; align-items: center; gap: 8px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 11px; font-weight: 700; color: var(--text-mid); }
+.term-host .lamp { display: grid; grid-template-columns: repeat(3, 5px); gap: 3px; }
+.term-host .lamp i { width: 5px; height: 5px; border-radius: 50%; background: color-mix(in oklab, var(--text-mid) 45%, transparent); }
+.term-sess { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 10.5px; font-weight: 600; color: var(--text-mid); }
+.term-body { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; line-height: 1.5; color: var(--text-mid); padding: 4px 0 6px; max-height: 430px; overflow-y: auto; }
+.term-empty { padding: 30px 16px; color: var(--text-mid); font-size: 12px; text-align: center; font-style: italic; }
+.term-block { padding: 7px 6px 9px; }
+.term-block + .term-block { border-top: 1px dashed var(--border); }
+.term-scroll { overflow-x: auto; padding: 0 11px; }
+.term-cmd { white-space: pre; color: var(--text); font-weight: 700; }
+.term-cmd .pmt { color: var(--accent); }
+.term-out { white-space: pre; margin-top: 3px; }
+.term-out .k, .term-ctx { color: var(--text-mid); }
+.term-out .hot, .term-line .hot { color: var(--fail); font-weight: 700; }
+.term-out .good, .term-line .good { color: var(--text); font-weight: 700; }
+.term-ln { white-space: pre; }
+.term-line { display: block; width: 100%; text-align: left; white-space: pre; font: inherit; color: var(--text-mid); background: transparent; border: 1px solid transparent; border-radius: 6px; padding: 1px 5px; cursor: pointer; }
+.term-line:focus-visible { outline: none; border-color: color-mix(in oklab, var(--accent) 55%, var(--border)); box-shadow: 0 0 0 3px color-mix(in oklab, var(--accent) 16%, transparent); }
+.term-line.sl-sel { border-color: color-mix(in oklab, var(--accent) 40%, var(--border)); background: color-mix(in oklab, var(--accent) 10%, transparent); }
+.term-tabs { display: flex; flex-wrap: wrap; gap: 6px; padding: 9px 11px 3px; }
+.term-tab { font-family: ui-monospace, Menlo, monospace; font-size: 11px; font-weight: 700; color: var(--text-mid); background: transparent; border: 1px solid var(--border); border-radius: 7px; padding: 4px 9px; cursor: pointer; }
+.term-tab.on { color: var(--accent); border-color: color-mix(in oklab, var(--accent) 34%, var(--border)); background: color-mix(in oklab, var(--accent) 9%, transparent); }
+.term-tab.seen::after { content: " ✓"; color: var(--pass); }
+.term-anim { animation: termIn .34s ease; }
+@keyframes termIn { from { opacity: 0; transform: translateY(7px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .term-anim { animation: none !important; } }
