@@ -1367,12 +1367,12 @@
     }
     if (scn.assets && scn.assets.reference) {
       var refPanel = _slRenderReference(scn.assets.reference);
-      if (scn.assets && scn.assets.reference && scn.assets.reference.kind === 'terminal') {
-        window.__slTerminalRef = scn.assets.reference;
-        window.__slTerminalPanel = refPanel;
-      } else { window.__slTerminalRef = null; window.__slTerminalPanel = null; }
       if (refPanel) wrap.appendChild(refPanel);
     }
+    if (scn.assets && scn.assets.reference && scn.assets.reference.kind === 'terminal') {
+      window.__slTerminalRef = scn.assets.reference;
+      window.__slTerminalPanel = refPanel;
+    } else { window.__slTerminalRef = null; window.__slTerminalPanel = null; }
     scn.steps.forEach(function (st, i) {
       var stepWrap = _el('div', 'sl-step');
       stepWrap.appendChild(_el('div', 'sl-step-k', 'Step ' + (i + 1) + ' of ' + scn.steps.length));
