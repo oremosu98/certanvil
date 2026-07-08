@@ -1875,5 +1875,609 @@ window.SIM_LAB_SEED_APLUS_CORE1 = [
         ] },
         answer: { slots: { dhcpStart: 'sg', dhcpEnd: 'eg', extPort: 'ext', fwdTo: 'fg' } } }
     ]
-  }
+  },
+  // ---------- APIPA (4) — objective 2.5 (Compare common network configuration concepts) ----------
+  {
+    id: 'a1-cot-01', cert: 'aplus-core1', archetype: 'triage', objective: '2.5',
+    topic: 'Command-output evidence triage — client IP addressing',
+    title: 'Home user: "the internet just stopped working" on a wired desktop', estMinutes: 6,
+    scenario: 'A home user calls in saying their wired desktop PC "can\'t get on the internet" this morning, though it worked fine yesterday. Nothing else changed in the house. You have them run ipconfig /all and a ping to a known-good site over the phone. Review the output, flag the lines that are actual evidence of the fault, then diagnose it.',
+    triage: { fault: 'apipa' },
+    assets: { reference: { kind: 'terminal', host: 'DESKTOP-HOME1', session: 'cmd', excerpts: [
+      { id: 'ipcfg', promptLine: 'ipconfig /all', lines: [
+        { id: 'l1', select: false, ctx: true, text: 'Windows IP Configuration' },
+        { id: 'l2', select: false, ctx: true, text: '   Host Name . . . . . . . . . . . : DESKTOP-HOME1' },
+        { id: 'l3', select: false, ctx: true, text: 'Ethernet adapter Ethernet:' },
+        { id: 'l4', select: true, evidence: false, text: '   Media State . . . . . . . . . . : Media connected' },
+        { id: 'l5', select: false, ctx: true, text: '   Description . . . . . . . . . . : Realtek PCIe GbE Family Controller' },
+        { id: 'l6', select: true, evidence: true, text: '   Autoconfiguration Enabled . . . : Yes' },
+        { id: 'l7', select: true, evidence: true, text: '   IPv4 Address. . . . . . . . . . : 169.254.83.12(Preferred)' },
+        { id: 'l8', select: false, ctx: true, text: '   Subnet Mask . . . . . . . . . . : 255.255.0.0' },
+        { id: 'l9', select: true, evidence: true, text: '   Default Gateway                  :' },
+        { id: 'l10', select: false, ctx: true, text: '   DHCP Enabled. . . . . . . . . . : Yes' }
+      ] },
+      { id: 'ping', promptLine: 'ping 8.8.8.8', lines: [
+        { id: 'l11', select: false, ctx: true, text: 'Pinging 8.8.8.8 with 32 bytes of data:' },
+        { id: 'l12', select: false, ctx: true, text: 'PING: transmit failed. General failure.' },
+        { id: 'l13', select: false, ctx: true, text: 'PING: transmit failed. General failure.' }
+      ] }
+    ] } },
+    steps: [
+      { id: 'flag', type: 'analyze', points: 1,
+        prompt: 'Tap the specific output lines that are evidence of why this PC has no internet.',
+        explanation: 'A 169.254.x.x address with no default gateway and autoconfiguration enabled is the classic self-assigned APIPA address the OS falls back to when it cannot reach a DHCP server. "Media connected" only proves the cable/link is up — it does not explain the missing internet, so it is not evidence of this fault.',
+        payload: { multi: true, mode: 'excerptLines', scoring: 'lenient' },
+        answer: { selected: ['l6', 'l7', 'l9'] } },
+      { id: 'dx', type: 'configure', points: 1,
+        prompt: 'Name the root cause and your first troubleshooting move.',
+        explanation: 'The 169.254.x.x address confirms the NIC gave up waiting on DHCP and self-assigned an APIPA address — no usable default gateway exists at that address. Releasing and renewing the lease (or power-cycling the router if renew keeps failing) is the correct first move, not replacing hardware.',
+        payload: { slots: [
+          { id: 'diagnosis', label: 'Root cause', options: [
+            { id: 'a', text: 'No DHCP response received; NIC self-assigned an APIPA (169.254.x.x) address' },
+            { id: 'b', text: 'The Ethernet cable is physically damaged' },
+            { id: 'c', text: 'A firewall rule is blocking all outbound traffic' }
+          ] },
+          { id: 'firstMove', label: 'First troubleshooting step', options: [
+            { id: 'a', text: 'Run ipconfig /release then ipconfig /renew to request a fresh DHCP lease' },
+            { id: 'b', text: 'Replace the Ethernet cable' },
+            { id: 'c', text: 'Reinstall the operating system' }
+          ] }
+        ] },
+        answer: { slots: { diagnosis: 'a', firstMove: 'a' } } }
+    ]
+  },
+
+  {
+    id: 'a1-cot-02', cert: 'aplus-core1', archetype: 'triage', objective: '2.5',
+    topic: 'Command-output evidence triage — client IP addressing',
+    title: 'Small office: one laptop can\'t reach the shared printer or internet over Wi-Fi', estMinutes: 6,
+    scenario: 'In a 6-person office, one employee\'s laptop suddenly can\'t print to the network printer or browse the web, while every other coworker on the same Wi-Fi is fine. You remote in and pull ipconfig /all and a ping to the router. Flag the evidence, then diagnose and pick the fix.',
+    triage: { fault: 'apipa' },
+    assets: { reference: { kind: 'terminal', host: 'LAPTOP-EMP07', session: 'cmd', excerpts: [
+      { id: 'ipcfg', promptLine: 'ipconfig /all', lines: [
+        { id: 'l1', select: false, ctx: true, text: 'Wireless LAN adapter Wi-Fi:' },
+        { id: 'l2', select: true, evidence: false, text: '   Connection-specific DNS Suffix  . :' },
+        { id: 'l3', select: false, ctx: true, text: '   Description . . . . . . . . . . : Intel(R) Wi-Fi 6 AX201' },
+        { id: 'l4', select: true, evidence: true, text: '   Autoconfiguration Enabled . . . : Yes' },
+        { id: 'l5', select: true, evidence: true, text: '   IPv4 Address. . . . . . . . . . : 169.254.211.4(Preferred)' },
+        { id: 'l6', select: false, ctx: true, text: '   Subnet Mask . . . . . . . . . . : 255.255.0.0' },
+        { id: 'l7', select: true, evidence: true, text: '   Default Gateway                  :' },
+        { id: 'l8', select: false, ctx: true, text: '   DHCP Server . . . . . . . . . . :' },
+        { id: 'l9', select: false, ctx: true, text: '   Physical Address. . . . . . . . : 3C-58-C2-11-A9-77' }
+      ] },
+      { id: 'ping', promptLine: 'ping 192.168.1.1', lines: [
+        { id: 'l10', select: false, ctx: true, text: 'Pinging 192.168.1.1 with 32 bytes of data:' },
+        { id: 'l11', select: false, ctx: true, text: 'Reply from 169.254.211.4: Destination host unreachable.' },
+        { id: 'l12', select: false, ctx: true, text: 'Reply from 169.254.211.4: Destination host unreachable.' }
+      ] }
+    ] } },
+    steps: [
+      { id: 'flag', type: 'analyze', points: 1,
+        prompt: 'Tap the specific output lines that are evidence of why this one laptop lost network access.',
+        explanation: 'The IPv4 address in the 169.254.x.x range, autoconfiguration enabled, and a blank default gateway together confirm the laptop never got a real lease from the office router and fell back to APIPA. A blank DNS suffix is normal/cosmetic on plenty of healthy machines and proves nothing about this fault on its own.',
+        payload: { multi: true, mode: 'excerptLines', scoring: 'lenient' },
+        answer: { selected: ['l4', 'l5', 'l7'] } },
+      { id: 'dx', type: 'configure', points: 1,
+        prompt: 'Name the root cause and your first troubleshooting move.',
+        explanation: 'A single machine failing to get a lease while peers succeed points to that host\'s DHCP negotiation failing, not a router-wide outage — the fix is to force a fresh release/renew on the affected laptop first.',
+        payload: { slots: [
+          { id: 'diagnosis', label: 'Root cause', options: [
+            { id: 'a', text: 'Laptop failed to receive a DHCP lease and self-assigned an APIPA address' },
+            { id: 'b', text: 'The office router\'s firmware crashed' },
+            { id: 'c', text: 'The printer\'s IP address changed' }
+          ] },
+          { id: 'firstMove', label: 'First troubleshooting step', options: [
+            { id: 'a', text: 'ipconfig /release and ipconfig /renew on the affected laptop' },
+            { id: 'b', text: 'Reboot the network printer' },
+            { id: 'c', text: 'Change the laptop\'s DNS suffix' }
+          ] }
+        ] },
+        answer: { slots: { diagnosis: 'a', firstMove: 'a' } } }
+    ]
+  },
+
+  {
+    id: 'a1-cot-03', cert: 'aplus-core1', archetype: 'triage', objective: '2.5',
+    topic: 'Command-output evidence triage — client IP addressing',
+    title: 'Freelancer\'s desktop loses connectivity after an overnight power blip', estMinutes: 6,
+    scenario: 'A freelance designer says their desktop was fine last night, but after a brief power flicker overnight nothing loads this morning. The router\'s lights look normal. You ask them to run ipconfig /all and ping the router\'s address. Flag the evidence, then diagnose.',
+    triage: { fault: 'apipa' },
+    assets: { reference: { kind: 'terminal', host: 'DESKTOP-FREELANCE', session: 'cmd', excerpts: [
+      { id: 'ipcfg', promptLine: 'ipconfig /all', lines: [
+        { id: 'l1', select: false, ctx: true, text: 'Ethernet adapter Ethernet:' },
+        { id: 'l2', select: true, evidence: false, text: '   Media State . . . . . . . . . . : Media connected' },
+        { id: 'l3', select: false, ctx: true, text: '   Description . . . . . . . . . . : Killer E3000 Gigabit Ethernet Controller' },
+        { id: 'l4', select: true, evidence: true, text: '   Autoconfiguration Enabled . . . : Yes' },
+        { id: 'l5', select: true, evidence: true, text: '   IPv4 Address. . . . . . . . . . : 169.254.19.201(Preferred)' },
+        { id: 'l6', select: false, ctx: true, text: '   Subnet Mask . . . . . . . . . . : 255.255.0.0' },
+        { id: 'l7', select: true, evidence: true, text: '   Default Gateway                  :' },
+        { id: 'l8', select: false, ctx: true, text: '   Lease Obtained. . . . . . . . . : N/A' }
+      ] },
+      { id: 'ping', promptLine: 'ping 192.168.0.1', lines: [
+        { id: 'l9', select: false, ctx: true, text: 'Pinging 192.168.0.1 with 32 bytes of data:' },
+        { id: 'l10', select: false, ctx: true, text: 'PING: transmit failed. General failure.' }
+      ] }
+    ] } },
+    steps: [
+      { id: 'flag', type: 'analyze', points: 1,
+        prompt: 'Tap the specific output lines that prove why the desktop has no connectivity this morning.',
+        explanation: 'The 169.254.x.x address, autoconfiguration enabled, and empty default gateway together prove the router\'s DHCP service was not reachable when the PC last tried to renew — likely because the router itself was still rebooting after the power blip. "Media connected" only shows the cable link is physically up, which is true here and irrelevant to the address problem.',
+        payload: { multi: true, mode: 'excerptLines', scoring: 'lenient' },
+        answer: { selected: ['l4', 'l5', 'l7'] } },
+      { id: 'dx', type: 'configure', points: 1,
+        prompt: 'Name the root cause and your first troubleshooting move.',
+        explanation: 'A self-assigned APIPA address after a power event most often means the DHCP server (the router) was down or still booting at lease-renewal time. Renewing the lease now that the router should be back up is the correct first move.',
+        payload: { slots: [
+          { id: 'diagnosis', label: 'Root cause', options: [
+            { id: 'a', text: 'DHCP request failed and the PC self-assigned an APIPA address' },
+            { id: 'b', text: 'The Ethernet NIC driver is corrupted' },
+            { id: 'c', text: 'A duplicate IP address exists on the network' }
+          ] },
+          { id: 'firstMove', label: 'First troubleshooting step', options: [
+            { id: 'a', text: 'Run ipconfig /release then ipconfig /renew to re-request a DHCP lease' },
+            { id: 'b', text: 'Update the NIC driver' },
+            { id: 'c', text: 'Assign a static IP address permanently' }
+          ] }
+        ] },
+        answer: { slots: { diagnosis: 'a', firstMove: 'a' } } }
+    ]
+  },
+
+  {
+    id: 'a1-cot-04', cert: 'aplus-core1', archetype: 'triage', objective: '2.5',
+    topic: 'Command-output evidence triage — client IP addressing',
+    title: 'Laptop on guest Wi-Fi shows connected but nothing loads', estMinutes: 6,
+    scenario: 'A guest at a small clinic says their Windows laptop shows "connected" to the guest Wi-Fi but no web pages load. Front desk asks you to check it over a remote session. You capture ipconfig /all plus a ping. Flag the evidence, then diagnose.',
+    triage: { fault: 'apipa' },
+    assets: { reference: { kind: 'terminal', host: 'GUEST-LAPTOP', session: 'cmd', excerpts: [
+      { id: 'ipcfg', promptLine: 'ipconfig /all', lines: [
+        { id: 'l1', select: false, ctx: true, text: 'Wireless LAN adapter Wi-Fi:' },
+        { id: 'l2', select: false, ctx: true, text: '   Description . . . . . . . . . . : Qualcomm QCA9377 Wireless Network Adapter' },
+        { id: 'l3', select: true, evidence: false, text: '   Physical Address. . . . . . . . : A4-C3-F0-88-12-6E' },
+        { id: 'l4', select: true, evidence: true, text: '   Autoconfiguration Enabled . . . : Yes' },
+        { id: 'l5', select: true, evidence: true, text: '   IPv4 Address. . . . . . . . . . : 169.254.44.90(Preferred)' },
+        { id: 'l6', select: false, ctx: true, text: '   Subnet Mask . . . . . . . . . . : 255.255.0.0' },
+        { id: 'l7', select: true, evidence: true, text: '   Default Gateway                  :' }
+      ] },
+      { id: 'ping', promptLine: 'ping guestgateway.local', lines: [
+        { id: 'l8', select: false, ctx: true, text: 'Ping request could not find host guestgateway.local. Please check the name and try again.' }
+      ] }
+    ] } },
+    steps: [
+      { id: 'flag', type: 'analyze', points: 1,
+        prompt: 'Tap the specific output lines that are evidence of why the laptop appears connected but nothing loads.',
+        explanation: 'A 169.254.x.x address with autoconfiguration on and no default gateway proves the guest device never obtained a real lease from the guest SSID\'s DHCP scope, even though the radio link ("connected") is up. The physical (MAC) address is device identity, not evidence of an addressing fault.',
+        payload: { multi: true, mode: 'excerptLines', scoring: 'lenient' },
+        answer: { selected: ['l4', 'l5', 'l7'] } },
+      { id: 'dx', type: 'configure', points: 1,
+        prompt: 'Name the root cause and your first troubleshooting move.',
+        explanation: 'This is textbook APIPA: link/association succeeded but DHCP never handed out a lease, possibly because the guest scope is exhausted or the AP\'s DHCP relay is misconfigured. The first move on the affected client is still to force a fresh DHCP request before escalating to the network side.',
+        payload: { slots: [
+          { id: 'diagnosis', label: 'Root cause', options: [
+            { id: 'a', text: 'Device associated to Wi-Fi but never received a DHCP lease; it self-assigned an APIPA address' },
+            { id: 'b', text: 'The guest SSID uses the wrong Wi-Fi security protocol' },
+            { id: 'c', text: 'The laptop\'s Wi-Fi radio is defective' }
+          ] },
+          { id: 'firstMove', label: 'First troubleshooting step', options: [
+            { id: 'a', text: 'Forget the network and reconnect, or release/renew the IP, to request a fresh DHCP lease' },
+            { id: 'b', text: 'Reinstall the laptop\'s operating system' },
+            { id: 'c', text: 'Change the guest SSID password' }
+          ] }
+        ] },
+        answer: { slots: { diagnosis: 'a', firstMove: 'a' } } }
+    ]
+  },
+
+  // ---------- DEAD DNS (4) — objective 2.5 (Compare common network configuration concepts) ----------
+  {
+    id: 'a1-cot-05', cert: 'aplus-core1', archetype: 'triage', objective: '2.5',
+    topic: 'Command-output evidence triage — DNS resolution',
+    title: 'Home user: websites won\'t load by name but streaming apps still work', estMinutes: 6,
+    scenario: 'A home user reports that typing web addresses into the browser gives "can\'t find this page" errors, but their smart TV streaming apps (which use their own internal servers, not the browser) still work fine. You have them run ipconfig /all, ping a site by name, and an nslookup. Flag the evidence, then diagnose.',
+    triage: { fault: 'deadDns' },
+    assets: { reference: { kind: 'terminal', host: 'DESKTOP-HOME2', session: 'cmd', excerpts: [
+      { id: 'ipcfg', promptLine: 'ipconfig /all', lines: [
+        { id: 'l1', select: false, ctx: true, text: 'Ethernet adapter Ethernet:' },
+        { id: 'l2', select: true, evidence: false, text: '   Media State . . . . . . . . . . : Media connected' },
+        { id: 'l3', select: false, ctx: true, text: '   IPv4 Address. . . . . . . . . . : 192.168.1.55(Preferred)' },
+        { id: 'l4', select: false, ctx: true, text: '   Default Gateway . . . . . . . . : 192.168.1.1' },
+        { id: 'l5', select: false, ctx: true, text: '   DHCP Server . . . . . . . . . . : 192.168.1.1' },
+        { id: 'l6', select: false, ctx: true, text: '   DNS Servers . . . . . . . . . . : 192.168.1.1' }
+      ] },
+      { id: 'ping', promptLine: 'ping www.example.com', lines: [
+        { id: 'l7', select: true, evidence: true, text: 'Ping request could not find host www.example.com. Please check the name and try again.' }
+      ] },
+      { id: 'pingip', promptLine: 'ping 93.184.216.34', lines: [
+        { id: 'l8', select: false, ctx: true, text: 'Pinging 93.184.216.34 with 32 bytes of data:' },
+        { id: 'l9', select: false, ctx: true, text: 'Reply from 93.184.216.34: bytes=32 time=21ms TTL=54' },
+        { id: 'l10', select: false, ctx: true, text: 'Reply from 93.184.216.34: bytes=32 time=19ms TTL=54' }
+      ] },
+      { id: 'nslookup', promptLine: 'nslookup www.example.com', lines: [
+        { id: 'l11', select: false, ctx: true, text: 'Server:  UnKnown' },
+        { id: 'l12', select: false, ctx: true, text: 'Address:  192.168.1.1' },
+        { id: 'l13', select: true, evidence: true, text: 'DNS request timed out.' },
+        { id: 'l14', select: true, evidence: true, text: '*** Request to UnKnown timed-out' }
+      ] }
+    ] } },
+    steps: [
+      { id: 'flag', type: 'analyze', points: 1,
+        prompt: 'Tap the specific output lines that prove why web addresses won\'t resolve while raw IPs still work.',
+        explanation: 'Pinging the site by name fails to resolve, and nslookup against the configured DNS server times out entirely — while a ping straight to the site\'s IP address succeeds, proving the network path itself is fine and only name resolution is broken. "Media connected" only confirms the link is up, which is not in question here.',
+        payload: { multi: true, mode: 'excerptLines', scoring: 'lenient' },
+        answer: { selected: ['l7', 'l13', 'l14'] } },
+      { id: 'dx', type: 'configure', points: 1,
+        prompt: 'Name the root cause and your first troubleshooting move.',
+        explanation: 'IP connectivity works but name lookups time out against the configured DNS server, so the DNS server itself is unreachable or down — not a routing or cabling problem. Flushing the resolver cache and testing an alternate DNS server (e.g., 8.8.8.8) is the appropriate first move.',
+        payload: { slots: [
+          { id: 'diagnosis', label: 'Root cause', options: [
+            { id: 'a', text: 'The configured DNS server is unreachable, so name resolution is failing' },
+            { id: 'b', text: 'The default gateway is down' },
+            { id: 'c', text: 'The Ethernet cable is unplugged' }
+          ] },
+          { id: 'firstMove', label: 'First troubleshooting step', options: [
+            { id: 'a', text: 'Run ipconfig /flushdns and try an alternate DNS server such as 8.8.8.8' },
+            { id: 'b', text: 'Replace the network cable' },
+            { id: 'c', text: 'Restart the smart TV' }
+          ] }
+        ] },
+        answer: { slots: { diagnosis: 'a', firstMove: 'a' } } }
+    ]
+  },
+
+  {
+    id: 'a1-cot-06', cert: 'aplus-core1', archetype: 'triage', objective: '2.5',
+    topic: 'Command-output evidence triage — DNS resolution',
+    title: 'Small office: everyone can email internally but nobody can browse out', estMinutes: 6,
+    scenario: 'Office staff report that internal email (which uses a hostname on the local mail server, cached in DNS earlier this morning) still works, but every external website fails to load for all 6 users at once. You remote into one workstation and pull ipconfig /all, ping by name, and nslookup. Flag the evidence, then diagnose.',
+    triage: { fault: 'deadDns' },
+    assets: { reference: { kind: 'terminal', host: 'LAPTOP-EMP03', session: 'cmd', excerpts: [
+      { id: 'ipcfg', promptLine: 'ipconfig /all', lines: [
+        { id: 'l1', select: false, ctx: true, text: 'Ethernet adapter Ethernet:' },
+        { id: 'l2', select: false, ctx: true, text: '   IPv4 Address. . . . . . . . . . : 10.10.0.42(Preferred)' },
+        { id: 'l3', select: false, ctx: true, text: '   Default Gateway . . . . . . . . : 10.10.0.1' },
+        { id: 'l4', select: true, evidence: false, text: '   Physical Address. . . . . . . . : 00-1B-44-11-3A-B7' },
+        { id: 'l5', select: false, ctx: true, text: '   DNS Servers . . . . . . . . . . : 10.10.0.5' }
+      ] },
+      { id: 'pinggw', promptLine: 'ping 10.10.0.1', lines: [
+        { id: 'l6', select: false, ctx: true, text: 'Pinging 10.10.0.1 with 32 bytes of data:' },
+        { id: 'l7', select: false, ctx: true, text: 'Reply from 10.10.0.1: bytes=32 time<1ms TTL=64' }
+      ] },
+      { id: 'ping', promptLine: 'ping www.vendorportal.com', lines: [
+        { id: 'l8', select: true, evidence: true, text: 'Ping request could not find host www.vendorportal.com. Please check the name and try again.' }
+      ] },
+      { id: 'nslookup', promptLine: 'nslookup www.vendorportal.com 10.10.0.5', lines: [
+        { id: 'l9', select: false, ctx: true, text: 'Server:  UnKnown' },
+        { id: 'l10', select: false, ctx: true, text: 'Address:  10.10.0.5' },
+        { id: 'l11', select: true, evidence: true, text: 'DNS request timed out.' },
+        { id: 'l12', select: true, evidence: true, text: 'timeout was 2 seconds.' }
+      ] }
+    ] } },
+    steps: [
+      { id: 'flag', type: 'analyze', points: 1,
+        prompt: 'Tap the specific output lines that prove why external browsing failed office-wide while internal traffic to a cached name still works.',
+        explanation: 'The failed name ping and the timed-out nslookup against the office\'s internal DNS server (10.10.0.5) point straight at that server as the failure point, while the successful gateway ping confirms the LAN and routing are healthy. The workstation\'s own MAC address is identity information, not evidence of a DNS fault.',
+        payload: { multi: true, mode: 'excerptLines', scoring: 'lenient' },
+        answer: { selected: ['l8', 'l11', 'l12'] } },
+      { id: 'dx', type: 'configure', points: 1,
+        prompt: 'Name the root cause and your first troubleshooting move.',
+        explanation: 'The gateway is reachable but the office\'s internal DNS server times out on every fresh lookup — that server (or the DNS service on it) is down. The first move is to point the affected client at a known-good external DNS server to restore browsing while the internal DNS server is investigated.',
+        payload: { slots: [
+          { id: 'diagnosis', label: 'Root cause', options: [
+            { id: 'a', text: 'The office\'s internal DNS server is down or unreachable' },
+            { id: 'b', text: 'The office router lost its internet uplink' },
+            { id: 'c', text: 'A duplicate IP address is on the network' }
+          ] },
+          { id: 'firstMove', label: 'First troubleshooting step', options: [
+            { id: 'a', text: 'Temporarily point clients to a public DNS server (e.g., 8.8.8.8) and check the internal DNS server' },
+            { id: 'b', text: 'Reboot the office router' },
+            { id: 'c', text: 'Reassign static IP addresses to every workstation' }
+          ] }
+        ] },
+        answer: { slots: { diagnosis: 'a', firstMove: 'a' } } }
+    ]
+  },
+
+  {
+    id: 'a1-cot-07', cert: 'aplus-core1', archetype: 'triage', objective: '2.5',
+    topic: 'Command-output evidence triage — DNS resolution',
+    title: 'Traveler on hotel Wi-Fi: laptop connects but no site will open', estMinutes: 6,
+    scenario: 'A traveling employee connects their laptop to hotel guest Wi-Fi and can see the connection is active, but no website opens, including ones they know are up. They call IT and you walk them through ipconfig /all, a ping by name, and nslookup. Flag the evidence, then diagnose.',
+    triage: { fault: 'deadDns' },
+    assets: { reference: { kind: 'terminal', host: 'LAPTOP-TRAVELER', session: 'cmd', excerpts: [
+      { id: 'ipcfg', promptLine: 'ipconfig /all', lines: [
+        { id: 'l1', select: false, ctx: true, text: 'Wireless LAN adapter Wi-Fi:' },
+        { id: 'l2', select: false, ctx: true, text: '   IPv4 Address. . . . . . . . . . : 172.16.4.203(Preferred)' },
+        { id: 'l3', select: false, ctx: true, text: '   Default Gateway . . . . . . . . : 172.16.4.1' },
+        { id: 'l4', select: true, evidence: false, text: '   Lease Obtained. . . . . . . . . : Tuesday, July 7, 2026 8:02:11 PM' },
+        { id: 'l5', select: false, ctx: true, text: '   DNS Servers . . . . . . . . . . : 172.16.4.1' }
+      ] },
+      { id: 'pinggw', promptLine: 'ping 172.16.4.1', lines: [
+        { id: 'l6', select: false, ctx: true, text: 'Pinging 172.16.4.1 with 32 bytes of data:' },
+        { id: 'l7', select: false, ctx: true, text: 'Reply from 172.16.4.1: bytes=32 time=2ms TTL=64' }
+      ] },
+      { id: 'ping', promptLine: 'ping www.companyportal.com', lines: [
+        { id: 'l8', select: true, evidence: true, text: 'Ping request could not find host www.companyportal.com. Please check the name and try again.' }
+      ] },
+      { id: 'nslookup', promptLine: 'nslookup www.companyportal.com', lines: [
+        { id: 'l9', select: false, ctx: true, text: 'Server:  UnKnown' },
+        { id: 'l10', select: false, ctx: true, text: 'Address:  172.16.4.1' },
+        { id: 'l11', select: true, evidence: true, text: 'DNS request timed out.' },
+        { id: 'l12', select: true, evidence: true, text: '*** Request to UnKnown timed-out' }
+      ] }
+    ] } },
+    steps: [
+      { id: 'flag', type: 'analyze', points: 1,
+        prompt: 'Tap the specific output lines that prove why no site opens even though the laptop is on the hotel Wi-Fi.',
+        explanation: 'The failed name-based ping and the DNS timeouts against the hotel gateway (which is also serving as DNS here) confirm name resolution is broken, while the successful gateway ping shows the wireless link and local routing are fine. The DHCP lease timestamp is routine informational output, not fault evidence.',
+        payload: { multi: true, mode: 'excerptLines', scoring: 'lenient' },
+        answer: { selected: ['l8', 'l11', 'l12'] } },
+      { id: 'dx', type: 'configure', points: 1,
+        prompt: 'Name the root cause and your first troubleshooting move.',
+        explanation: 'The hotel\'s gateway is also acting as the DNS server here, and it isn\'t forwarding DNS queries out — so lookups time out even though the link and the gateway itself still respond to pings. Manually setting a public DNS server on the laptop is the fastest first move to restore browsing.',
+        payload: { slots: [
+          { id: 'diagnosis', label: 'Root cause', options: [
+            { id: 'a', text: 'The hotel\'s DNS service is not resolving queries even though the gateway itself is reachable' },
+            { id: 'b', text: 'The laptop\'s Wi-Fi adapter is defective' },
+            { id: 'c', text: 'The laptop has an IP address conflict with another guest' }
+          ] },
+          { id: 'firstMove', label: 'First troubleshooting step', options: [
+            { id: 'a', text: 'Manually set a public DNS server (e.g., 1.1.1.1) on the laptop\'s network adapter' },
+            { id: 'b', text: 'Forget and rejoin the same hotel Wi-Fi network' },
+            { id: 'c', text: 'Replace the laptop\'s Wi-Fi card' }
+          ] }
+        ] },
+        answer: { slots: { diagnosis: 'a', firstMove: 'a' } } }
+    ]
+  },
+
+  {
+    id: 'a1-cot-08', cert: 'aplus-core1', archetype: 'triage', objective: '2.5',
+    topic: 'Command-output evidence triage — DNS resolution',
+    title: 'Retail kiosk PC can reach the card processor by IP but not the vendor update site', estMinutes: 7,
+    scenario: 'A retail store\'s kiosk PC processes payments fine (it\'s hardcoded to the processor\'s IP address) but fails to check for software updates, which point to a hostname. The manager asks you to check it. You capture ipconfig /all, a ping by name, and nslookup. Flag the evidence, then diagnose.',
+    triage: { fault: 'deadDns' },
+    assets: { reference: { kind: 'terminal', host: 'KIOSK-PC-04', session: 'cmd', excerpts: [
+      { id: 'ipcfg', promptLine: 'ipconfig /all', lines: [
+        { id: 'l1', select: false, ctx: true, text: 'Ethernet adapter Ethernet:' },
+        { id: 'l2', select: false, ctx: true, text: '   IPv4 Address. . . . . . . . . . : 192.168.50.12(Preferred)' },
+        { id: 'l3', select: false, ctx: true, text: '   Default Gateway . . . . . . . . : 192.168.50.1' },
+        { id: 'l4', select: true, evidence: false, text: '   Subnet Mask . . . . . . . . . . : 255.255.255.0' },
+        { id: 'l5', select: false, ctx: true, text: '   DNS Servers . . . . . . . . . . : 192.168.50.2' }
+      ] },
+      { id: 'pingproc', promptLine: 'ping 54.219.10.7', lines: [
+        { id: 'l6', select: false, ctx: true, text: 'Pinging 54.219.10.7 with 32 bytes of data:' },
+        { id: 'l7', select: false, ctx: true, text: 'Reply from 54.219.10.7: bytes=32 time=44ms TTL=51' }
+      ] },
+      { id: 'ping', promptLine: 'ping updates.posvendor.com', lines: [
+        { id: 'l8', select: true, evidence: true, text: 'Ping request could not find host updates.posvendor.com. Please check the name and try again.' }
+      ] },
+      { id: 'nslookup', promptLine: 'nslookup updates.posvendor.com', lines: [
+        { id: 'l9', select: false, ctx: true, text: 'Server:  UnKnown' },
+        { id: 'l10', select: false, ctx: true, text: 'Address:  192.168.50.2' },
+        { id: 'l11', select: true, evidence: true, text: 'DNS request timed out.' },
+        { id: 'l12', select: true, evidence: true, text: 'timeout was 2 seconds.' }
+      ] }
+    ] } },
+    steps: [
+      { id: 'flag', type: 'analyze', points: 1,
+        prompt: 'Tap the specific output lines that prove why the kiosk can process payments but can\'t check for updates.',
+        explanation: 'Payments work because the processor is hardcoded by IP, but the update check needs a hostname lookup — the failed name ping and the DNS timeout against 192.168.50.2 prove that server isn\'t answering. The subnet mask line is routine addressing detail, not evidence of a DNS problem.',
+        payload: { multi: true, mode: 'excerptLines', scoring: 'lenient' },
+        answer: { selected: ['l8', 'l11', 'l12'] } },
+      { id: 'dx', type: 'configure', points: 1,
+        prompt: 'Name the root cause and your first troubleshooting move.',
+        explanation: 'The store\'s DNS server at 192.168.50.2 is not responding to queries, which explains why IP-based traffic works but hostname-based traffic doesn\'t. Flushing the DNS cache and testing against an alternate DNS server confirms the diagnosis and restores functionality.',
+        payload: { slots: [
+          { id: 'diagnosis', label: 'Root cause', options: [
+            { id: 'a', text: 'The store\'s DNS server (192.168.50.2) is not responding to lookup requests' },
+            { id: 'b', text: 'The kiosk\'s network cable is faulty' },
+            { id: 'c', text: 'The card processor\'s service is down' }
+          ] },
+          { id: 'firstMove', label: 'First troubleshooting step', options: [
+            { id: 'a', text: 'Run ipconfig /flushdns and test resolution against an alternate DNS server' },
+            { id: 'b', text: 'Swap the network cable on the kiosk' },
+            { id: 'c', text: 'Call the card processor\'s support line' }
+          ] }
+        ] },
+        answer: { slots: { diagnosis: 'a', firstMove: 'a' } } }
+    ]
+  },
+
+  // ---------- BAD GATEWAY (4) — objective 2.5 (Compare common network configuration concepts) ----------
+  {
+    id: 'a1-cot-09', cert: 'aplus-core1', archetype: 'triage', objective: '2.5',
+    topic: 'Command-output evidence triage — gateway/routing',
+    title: 'Home office: local file share works but nothing external loads', estMinutes: 6,
+    scenario: 'A remote worker says they can still print to their local network printer and reach a NAS on the home LAN, but no websites or cloud apps load. You have them run ipconfig /all, ping the printer\'s local IP, and ping the router. Flag the evidence, then diagnose.',
+    triage: { fault: 'badGw' },
+    assets: { reference: { kind: 'terminal', host: 'DESKTOP-HOMEOFFICE', session: 'cmd', excerpts: [
+      { id: 'ipcfg', promptLine: 'ipconfig /all', lines: [
+        { id: 'l1', select: false, ctx: true, text: 'Ethernet adapter Ethernet:' },
+        { id: 'l2', select: true, evidence: false, text: '   Media State . . . . . . . . . . : Media connected' },
+        { id: 'l3', select: false, ctx: true, text: '   IPv4 Address. . . . . . . . . . : 192.168.1.88(Preferred)' },
+        { id: 'l4', select: true, evidence: true, text: '   Default Gateway . . . . . . . . : 192.168.1.254' },
+        { id: 'l5', select: false, ctx: true, text: '   DNS Servers . . . . . . . . . . : 192.168.1.1' }
+      ] },
+      { id: 'pinglocal', promptLine: 'ping 192.168.1.30', lines: [
+        { id: 'l6', select: false, ctx: true, text: 'Pinging 192.168.1.30 with 32 bytes of data:' },
+        { id: 'l7', select: false, ctx: true, text: 'Reply from 192.168.1.30: bytes=32 time=1ms TTL=64' }
+      ] },
+      { id: 'pinggw', promptLine: 'ping 192.168.1.254', lines: [
+        { id: 'l8', select: true, evidence: true, text: 'Request timed out.' },
+        { id: 'l9', select: true, evidence: true, text: 'Request timed out.' },
+        { id: 'l10', select: false, ctx: true, text: 'Ping statistics for 192.168.1.254:' },
+        { id: 'l11', select: false, ctx: true, text: '    Packets: Sent = 4, Received = 0, Lost = 4 (100% loss)' }
+      ] }
+    ] } },
+    steps: [
+      { id: 'flag', type: 'analyze', points: 1,
+        prompt: 'Tap the specific output lines that prove why the local printer/NAS still work but the internet doesn\'t.',
+        explanation: 'The configured default gateway address, together with that same gateway address failing to answer pings at all, proves the router is unreachable — which explains why LAN traffic (to the printer at .30) still works while anything that must leave the LAN cannot. "Media connected" only confirms the physical link, which is not the problem here.',
+        payload: { multi: true, mode: 'excerptLines', scoring: 'lenient' },
+        answer: { selected: ['l4', 'l8', 'l9'] } },
+      { id: 'dx', type: 'configure', points: 1,
+        prompt: 'Name the root cause and your first troubleshooting move.',
+        explanation: 'Local (same-subnet) traffic succeeds but the configured default gateway itself does not respond to ping, so the router is down, overloaded, or has lost its LAN interface — not a DNS or cabling issue on this PC. Power-cycling the router is the standard first move for an unresponsive SOHO gateway.',
+        payload: { slots: [
+          { id: 'diagnosis', label: 'Root cause', options: [
+            { id: 'a', text: 'The default gateway (router) is unreachable or down' },
+            { id: 'b', text: 'The PC\'s DNS server setting is wrong' },
+            { id: 'c', text: 'The NAS has a duplicate IP address' }
+          ] },
+          { id: 'firstMove', label: 'First troubleshooting step', options: [
+            { id: 'a', text: 'Power-cycle the router and retest connectivity' },
+            { id: 'b', text: 'Change the DNS server on the PC' },
+            { id: 'c', text: 'Reboot the NAS' }
+          ] }
+        ] },
+        answer: { slots: { diagnosis: 'a', firstMove: 'a' } } }
+    ]
+  },
+
+  {
+    id: 'a1-cot-10', cert: 'aplus-core1', archetype: 'triage', objective: '2.5',
+    topic: 'Command-output evidence triage — gateway/routing',
+    title: 'Small office: every workstation lost internet at the same time', estMinutes: 6,
+    scenario: 'All 6 workstations in a small office lose internet access simultaneously, though they can still reach each other and the internal file server. You remote into one machine and capture ipconfig /all plus pings to the file server and the router. Flag the evidence, then diagnose.',
+    triage: { fault: 'badGw' },
+    assets: { reference: { kind: 'terminal', host: 'LAPTOP-EMP01', session: 'cmd', excerpts: [
+      { id: 'ipcfg', promptLine: 'ipconfig /all', lines: [
+        { id: 'l1', select: false, ctx: true, text: 'Ethernet adapter Ethernet:' },
+        { id: 'l2', select: false, ctx: true, text: '   IPv4 Address. . . . . . . . . . : 10.10.0.15(Preferred)' },
+        { id: 'l3', select: true, evidence: true, text: '   Default Gateway . . . . . . . . : 10.10.0.1' },
+        { id: 'l4', select: true, evidence: false, text: '   DHCP Enabled. . . . . . . . . . : Yes' }
+      ] },
+      { id: 'pingfs', promptLine: 'ping 10.10.0.5', lines: [
+        { id: 'l5', select: false, ctx: true, text: 'Pinging 10.10.0.5 with 32 bytes of data:' },
+        { id: 'l6', select: false, ctx: true, text: 'Reply from 10.10.0.5: bytes=32 time<1ms TTL=64' }
+      ] },
+      { id: 'pinggw', promptLine: 'ping 10.10.0.1', lines: [
+        { id: 'l7', select: true, evidence: true, text: 'Request timed out.' },
+        { id: 'l8', select: true, evidence: true, text: 'Request timed out.' },
+        { id: 'l9', select: true, evidence: true, text: 'Request timed out.' }
+      ] }
+    ] } },
+    steps: [
+      { id: 'flag', type: 'analyze', points: 1,
+        prompt: 'Tap the specific output lines that prove why the whole office lost internet at once while internal traffic still works.',
+        explanation: 'The configured default gateway address plus three straight timeouts pinging that exact gateway prove the router is unreachable from the LAN, matching an office-wide outage while internal server traffic keeps working. DHCP being enabled is routine configuration detail, not evidence the gateway itself is down.',
+        payload: { multi: true, mode: 'excerptLines', scoring: 'lenient' },
+        answer: { selected: ['l3', 'l7', 'l8', 'l9'] } },
+      { id: 'dx', type: 'configure', points: 1,
+        prompt: 'Name the root cause and your first troubleshooting move.',
+        explanation: 'Every user losing internet at the same moment while internal LAN traffic is unaffected, combined with the gateway itself not answering pings, points squarely at the router/gateway device having failed or lost its uplink. The first move is to check and, if needed, power-cycle the router.',
+        payload: { slots: [
+          { id: 'diagnosis', label: 'Root cause', options: [
+            { id: 'a', text: 'The office router (default gateway) has failed or lost its uplink' },
+            { id: 'b', text: 'The internal file server crashed' },
+            { id: 'c', text: 'Every workstation\'s NIC failed simultaneously' }
+          ] },
+          { id: 'firstMove', label: 'First troubleshooting step', options: [
+            { id: 'a', text: 'Check the router\'s status lights and power-cycle it if unresponsive' },
+            { id: 'b', text: 'Restart the internal file server' },
+            { id: 'c', text: 'Replace the network cable on each workstation' }
+          ] }
+        ] },
+        answer: { slots: { diagnosis: 'a', firstMove: 'a' } } }
+    ]
+  },
+
+  {
+    id: 'a1-cot-11', cert: 'aplus-core1', archetype: 'triage', objective: '2.5',
+    topic: 'Command-output evidence triage — gateway/routing',
+    title: 'Home user: static IP set manually after a "how-to" video, now nothing works', estMinutes: 7,
+    scenario: 'A home user followed an online video to set a "faster" static IP on their gaming PC and now nothing loads, though the PC still shows as connected and can reach other devices on the LAN like their console. You capture ipconfig /all and pings to the console and to the address they typed as the gateway. Flag the evidence, then diagnose.',
+    triage: { fault: 'badGw' },
+    assets: { reference: { kind: 'terminal', host: 'DESKTOP-GAMING', session: 'cmd', excerpts: [
+      { id: 'ipcfg', promptLine: 'ipconfig /all', lines: [
+        { id: 'l1', select: false, ctx: true, text: 'Ethernet adapter Ethernet:' },
+        { id: 'l2', select: false, ctx: true, text: '   IPv4 Address. . . . . . . . . . : 192.168.1.150(Preferred)' },
+        { id: 'l3', select: true, evidence: true, text: '   Default Gateway . . . . . . . . : 192.168.1.100' },
+        { id: 'l4', select: true, evidence: false, text: '   Autoconfiguration Enabled . . . : Yes' }
+      ] },
+      { id: 'pingconsole', promptLine: 'ping 192.168.1.60', lines: [
+        { id: 'l5', select: false, ctx: true, text: 'Pinging 192.168.1.60 with 32 bytes of data:' },
+        { id: 'l6', select: false, ctx: true, text: 'Reply from 192.168.1.60: bytes=32 time=2ms TTL=64' }
+      ] },
+      { id: 'pinggw', promptLine: 'ping 192.168.1.100', lines: [
+        { id: 'l7', select: true, evidence: true, text: 'Request timed out.' },
+        { id: 'l8', select: true, evidence: true, text: 'Request timed out.' },
+        { id: 'l9', select: false, ctx: true, text: 'Ping statistics for 192.168.1.100:' },
+        { id: 'l10', select: false, ctx: true, text: '    Packets: Sent = 4, Received = 0, Lost = 4 (100% loss)' }
+      ] }
+    ] } },
+    steps: [
+      { id: 'flag', type: 'analyze', points: 1,
+        prompt: 'Tap the specific output lines that prove why the gaming PC lost internet after the manual IP change.',
+        explanation: 'The gateway address the user typed in (192.168.1.100) is not the router\'s real address, and pinging it returns nothing, proving traffic destined off the LAN has no working next hop — even though local traffic to the console still succeeds. Autoconfiguration Enabled is a leftover default flag, not evidence this specific gateway is wrong.',
+        payload: { multi: true, mode: 'excerptLines', scoring: 'lenient' },
+        answer: { selected: ['l3', 'l7', 'l8'] } },
+      { id: 'dx', type: 'configure', points: 1,
+        prompt: 'Name the root cause and your first troubleshooting move.',
+        explanation: 'The user manually typed an incorrect default gateway address that doesn\'t match the actual router, so nothing that needs to leave the LAN can route out, while same-subnet traffic is unaffected. The fix is to correct the gateway to the router\'s real address, or simplest, revert to DHCP.',
+        payload: { slots: [
+          { id: 'diagnosis', label: 'Root cause', options: [
+            { id: 'a', text: 'The manually entered default gateway address is wrong / does not match the router' },
+            { id: 'b', text: 'The gaming console is causing an IP conflict' },
+            { id: 'c', text: 'The router\'s DNS server is down' }
+          ] },
+          { id: 'firstMove', label: 'First troubleshooting step', options: [
+            { id: 'a', text: 'Correct the default gateway to the router\'s actual address, or switch the adapter back to DHCP' },
+            { id: 'b', text: 'Power-cycle the gaming console' },
+            { id: 'c', text: 'Reinstall the network adapter driver' }
+          ] }
+        ] },
+        answer: { slots: { diagnosis: 'a', firstMove: 'a' } } }
+    ]
+  },
+
+  {
+    id: 'a1-cot-12', cert: 'aplus-core1', archetype: 'triage', objective: '2.5',
+    topic: 'Command-output evidence triage — gateway/routing',
+    title: 'Nonprofit branch office: router went unresponsive overnight', estMinutes: 7,
+    scenario: 'A small nonprofit\'s branch office reports that, as of this morning, staff can still reach the internal file share but no browsing or email works. Nothing was changed on purpose — the router has been running for months without a reboot. You remote into a workstation and capture ipconfig /all plus pings to the file server and the gateway. Flag the evidence, then diagnose.',
+    triage: { fault: 'badGw' },
+    assets: { reference: { kind: 'terminal', host: 'DESKTOP-BRANCH02', session: 'cmd', excerpts: [
+      { id: 'ipcfg', promptLine: 'ipconfig /all', lines: [
+        { id: 'l1', select: false, ctx: true, text: 'Ethernet adapter Ethernet:' },
+        { id: 'l2', select: false, ctx: true, text: '   IPv4 Address. . . . . . . . . . : 172.20.5.44(Preferred)' },
+        { id: 'l3', select: true, evidence: true, text: '   Default Gateway . . . . . . . . : 172.20.5.1' },
+        { id: 'l4', select: true, evidence: false, text: '   Description . . . . . . . . . . : Intel(R) Ethernet Connection I219-V' }
+      ] },
+      { id: 'pingfs', promptLine: 'ping 172.20.5.10', lines: [
+        { id: 'l5', select: false, ctx: true, text: 'Pinging 172.20.5.10 with 32 bytes of data:' },
+        { id: 'l6', select: false, ctx: true, text: 'Reply from 172.20.5.10: bytes=32 time<1ms TTL=64' }
+      ] },
+      { id: 'pinggw', promptLine: 'ping 172.20.5.1', lines: [
+        { id: 'l7', select: true, evidence: true, text: 'Request timed out.' },
+        { id: 'l8', select: true, evidence: true, text: 'Request timed out.' },
+        { id: 'l9', select: true, evidence: true, text: 'Request timed out.' },
+        { id: 'l10', select: false, ctx: true, text: 'Ping statistics for 172.20.5.1:' },
+        { id: 'l11', select: false, ctx: true, text: '    Packets: Sent = 4, Received = 0, Lost = 4 (100% loss)' }
+      ] }
+    ] } },
+    steps: [
+      { id: 'flag', type: 'analyze', points: 1,
+        prompt: 'Tap the specific output lines that prove why the branch office lost outbound access overnight.',
+        explanation: 'The workstation\'s default gateway address, combined with that exact address timing out on every ping attempt, proves the router is unreachable — while the file server on the same subnet still answers fine. The NIC description line is hardware identity, not evidence of a routing fault.',
+        payload: { multi: true, mode: 'excerptLines', scoring: 'lenient' },
+        answer: { selected: ['l3', 'l7', 'l8', 'l9'] } },
+      { id: 'dx', type: 'configure', points: 1,
+        prompt: 'Name the root cause and your first troubleshooting move.',
+        explanation: 'Same-subnet traffic works but the configured default gateway does not respond at all, with no recent config changes and months of uptime — a strong sign the router itself has simply locked up and needs to be power-cycled, a common failure mode for consumer/SOHO-grade routers left running for long stretches.',
+        payload: { slots: [
+          { id: 'diagnosis', label: 'Root cause', options: [
+            { id: 'a', text: 'The router (default gateway) has locked up after extended uptime and stopped responding' },
+            { id: 'b', text: 'The file server\'s network card failed' },
+            { id: 'c', text: 'The workstation has a stale ARP cache entry' }
+          ] },
+          { id: 'firstMove', label: 'First troubleshooting step', options: [
+            { id: 'a', text: 'Power-cycle the router and verify its LAN cabling once it comes back up' },
+            { id: 'b', text: 'Replace the file server\'s network card' },
+            { id: 'c', text: 'Clear the ARP cache on the workstation' }
+          ] }
+        ] },
+        answer: { slots: { diagnosis: 'a', firstMove: 'a' } } }
+    ]
+  },
 ];

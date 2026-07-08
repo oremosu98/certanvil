@@ -23439,6 +23439,121 @@ console.log('\n\x1b[1m── T7: DRILLS ANALYTICS GROUP + FINAL COPY + BRONZE TO
   }
 })();
 
+// ── Wave 2 Task 10: A+ Core 1 Command-Output Evidence Triage seed-bank
+// validation ──
+// The 12 consensus-approved (two-agent gated) A+ Core 1 Command-Output
+// Evidence Triage scenarios now live for real in
+// features/sim-lab-seed-aplus-core1.js (window.SIM_LAB_SEED_APLUS_CORE1,
+// archetype 'triage'). This proves every one of them is real,
+// production-ready content: each passes the same pure validators that gate
+// the dev fixtures above (simLabValidateScenario +
+// simLabValidateEvidenceTriageFidelity), extracted from features/sim-lab.js
+// the same way the Task 6/7 dev-fixture block above does.
+(function () {
+  console.log('\n\x1b[1m── Sim Lab: A+ Core 1 Command-Output Evidence Triage seed-bank validation (Wave 2 Task 10) ──\x1b[0m');
+  try {
+    var vm = require('vm');
+    function assert(cond, msg) { test(msg, !!cond); }
+
+    var grab = function (name) { return _fnBody(js, name); };
+
+    // ── Extract the REAL pure validators from features/sim-lab.js, exactly
+    // as the Task 6/7 dev-fixture triage block above does ──
+    var isNonEmptyStrBody    = grab('_isNonEmptyStr');
+    var validatePayloadBody  = grab('_validateStepPayload');
+    var validateScenarioBody = grab('simLabValidateScenario');
+    var stepTypesMatch = js.match(/var STEP_TYPES\s*=\s*\[[^\]]+\]/);
+    var stepTypesDecl = stepTypesMatch ? stepTypesMatch[0] + ';' : "var STEP_TYPES = ['order','categorize','match','analyze','fillin','configure'];";
+
+    var resolveSlotBody = grab('_slFidelityResolveSlot');
+    var arrEqBody        = grab('_arrEq');
+    var setEqBody        = grab('_setEq');
+    var sigVar           = (js.match(/var _TRIAGE_FAULT_SIG = \{[\s\S]*?\n\s*\};/) || [''])[0];
+    var evidenceLinesBody = grab('_triageEvidenceLines');
+    var triageFidelityBody = grab('simLabValidateEvidenceTriageFidelity');
+
+    if (!isNonEmptyStrBody || !validatePayloadBody || !validateScenarioBody ||
+        !resolveSlotBody || !sigVar || !evidenceLinesBody || !triageFidelityBody) {
+      test('A+ Core 1 Triage bank: validator helper extraction succeeded', false);
+      results.errors.push('could not extract validator helpers for Wave 2 Task 10 bank test; check names/indenting');
+      return;
+    }
+
+    var vCtx = {};
+    vm.createContext(vCtx);
+    vm.runInContext(stepTypesDecl, vCtx);
+    vm.runInContext(isNonEmptyStrBody, vCtx);
+    vm.runInContext(validatePayloadBody, vCtx);
+    vm.runInContext(validateScenarioBody, vCtx);
+    vm.runInContext(resolveSlotBody, vCtx);
+    if (arrEqBody) vm.runInContext(arrEqBody, vCtx);
+    if (setEqBody) vm.runInContext(setEqBody, vCtx);
+    vm.runInContext(sigVar, vCtx);
+    vm.runInContext(evidenceLinesBody, vCtx);
+    vm.runInContext(triageFidelityBody, vCtx);
+    vm.runInContext('globalThis.__validate = simLabValidateScenario; globalThis.__triFidelity = simLabValidateEvidenceTriageFidelity;', vCtx);
+    var simLabValidateScenario = vCtx.__validate;
+    var simLabValidateEvidenceTriageFidelity = vCtx.__triFidelity;
+
+    // ── Load the real seed bank: eval features/sim-lab-seed-aplus-core1.js
+    // in a sandbox with `var window = {}` so window.SIM_LAB_SEED_APLUS_CORE1
+    // populates ──
+    var seedSrc = read('features/sim-lab-seed-aplus-core1.js');
+    var seedCtx = {};
+    vm.createContext(seedCtx);
+    vm.runInContext('var window = {};\n' + seedSrc + '\nglobalThis.__seed = window.SIM_LAB_SEED_APLUS_CORE1;', seedCtx);
+    var seedBank = seedCtx.__seed;
+
+    test('A+ Core 1 Triage bank: window.SIM_LAB_SEED_APLUS_CORE1 loaded as an array',
+      Array.isArray(seedBank));
+    if (!Array.isArray(seedBank)) {
+      results.errors.push('could not load window.SIM_LAB_SEED_APLUS_CORE1 from features/sim-lab-seed-aplus-core1.js');
+      return;
+    }
+
+    var bankTriage = seedBank.filter(function (s) { return s && s.archetype === 'triage'; });
+    test('A+ Core 1 Triage bank: at least 10 triage-archetype scenarios present',
+      bankTriage.length >= 10);
+
+    var allValidateOk = true, allFidelityOk = true, allCertOk = true;
+    bankTriage.forEach(function (s) {
+      var vr = simLabValidateScenario(s);
+      if (!vr || vr.ok !== true) {
+        allValidateOk = false;
+        results.errors.push('A+ Core 1 Triage bank: ' + (s && s.id) + ' failed simLabValidateScenario: ' + JSON.stringify(vr && vr.errors));
+      }
+      var fr = simLabValidateEvidenceTriageFidelity(s);
+      if (!fr || fr.ok !== true) {
+        allFidelityOk = false;
+        results.errors.push('A+ Core 1 Triage bank: ' + (s && s.id) + ' failed simLabValidateEvidenceTriageFidelity: ' + JSON.stringify(fr && fr.errors));
+      }
+      if (s.cert !== 'aplus-core1') {
+        allCertOk = false;
+        results.errors.push('A+ Core 1 Triage bank: ' + (s && s.id) + ' has cert ' + s.cert + ', expected aplus-core1');
+      }
+    });
+
+    test('A+ Core 1 Triage bank: every triage scenario passes simLabValidateScenario',
+      allValidateOk);
+    test('A+ Core 1 Triage bank: every triage scenario passes simLabValidateEvidenceTriageFidelity',
+      allFidelityOk);
+    test('A+ Core 1 Triage bank: every triage scenario has cert === "aplus-core1"',
+      allCertOk);
+
+    // ── Extra cross-check: every triage scenario keeps a scored
+    // evidence:false distractor line among its selectable reference lines ──
+    bankTriage.forEach(function (s) {
+      var lines = []; s.assets.reference.excerpts.forEach(function (ex) { (ex.lines || []).forEach(function (l) { lines.push(l); }); });
+      var hasFalse = lines.some(function (l) { return l.select && l.evidence === false; });
+      test('triage ' + s.id + ': keeps a scored evidence:false distractor', hasFalse);
+    });
+
+  } catch (err) {
+    test('A+ Core 1 Triage bank: vm smoke test (threw)', false);
+    results.errors.push('A+ Core 1 Triage bank smoke test threw: ' + err.message);
+  }
+})();
+
 // The 20 consensus-approved Sec+ Incident Response scenarios now live for real
 // in features/sim-lab-seed-secplus.js (window.SIM_LAB_SEED_SECPLUS). This
 // proves every one of them is real, production-ready content: each passes the
