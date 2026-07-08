@@ -8,6 +8,7 @@ Initial archive during the v4.42.3 reorg (2026-04-16). Re-trimmed in the v4.52.0
 |---|---|
 | v7.61.0 | Sim Lab PBQ archetypes — Diagram (Net+), Incident Response (Sec+), Defense in Depth (Net+ nested-frames / Sec+ stacked-bands): configure step type + per-slot partial credit, network/timeline/layered SVG reference renderers, deterministic subnetting fidelity validator, 46 two-agent-gated seed scenarios, reuse of free/Pro gating + cert-aware entry + Exam mode |
 | v7.60.0 | Per-cert milestones + 12 drill milestones (Sim Lab/Decision Lab/Why-Not/Gauntlet) + orphan cleanup + bronze celebration toast |
+| v7.60.0 | Per-cert milestones + 12 drill milestones (Sim Lab/Decision Lab/Why-Not/Gauntlet) + orphan cleanup + bronze celebration toast |
 | v7.59.0 | Decision Lab: cloud-cert scenario decision drill (engine + 4 seed banks) |
 | v7.58.0 | Sim Lab: A+ Core 1 (220-1201) + Core 2 (220-1202) PBQ seed banks live (cert rollout) |
 | v7.57.2 | Sim Lab entry target: derive cert label from pack name+code (Sec+ shows Security+ SY0-701, not bare Mixed) |

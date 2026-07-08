@@ -115,11 +115,11 @@ npx playwright test              # E2E (tests/e2e/app.spec.js)
 
 | Version | Features Added |
 |---|---|
+| v7.63.0 | Sim Lab Wave 2 PBQs: CLI Fault Isolation, Network Discovery Audit, Command-Output Evidence Triage |
 | v7.62.0 | Sim Lab Wave 1 PBQs: Wireless Deployment, Firewall Rule Table, SOHO Router |
 | v7.61.0 | Sim Lab PBQ archetypes: Diagram, Incident Response, Defense in Depth |
-| v7.60.0 | Per-cert milestones + 12 drill milestones (Sim Lab/Decision Lab/Why-Not/Gauntlet) + orphan cleanup + bronze celebration toast |
 
-_Older releases (v7.59.0 and back) live in [CHANGELOG.md](./CHANGELOG.md). The v7.60.1–v7.60.5 CSS `?v=` cache-bump stubs from the PBQ-archetypes build were collapsed into this single v7.61.0 ship at consolidation._
+_Older releases (v7.60.0 and back) live in [CHANGELOG.md](./CHANGELOG.md)._
 
 ## CSS Theme System
 Dark theme in `:root`, light theme in `[data-theme="light"]`. Key variables: `--bg`, `--surface`, `--accent`, `--text`, `--green`, `--red`, `--yellow`. Toggle via `toggleTheme()`. Semantic status aliases `--pass`/`--fail`/`--warn` (→ `--green`/`--red`/`--yellow`) are defined in every `dg-system.css` token block; a UAT ratchet guard fails any NEW undefined `var(--x)` referenced in `dg-system.css`.
