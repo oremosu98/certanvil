@@ -71,7 +71,7 @@
         errs.push('reference layered: bad layout');
       }
     }
-    if (s.archetype !== undefined && ['diagram', 'incident', 'defense', 'wireless', 'firewall', 'soho'].indexOf(s.archetype) === -1) {
+    if (s.archetype !== undefined && ['diagram', 'incident', 'defense', 'wireless', 'firewall', 'soho', 'cli', 'discovery', 'triage'].indexOf(s.archetype) === -1) {
       errs.push('bad archetype');
     }
     return { ok: errs.length === 0, errors: errs };
