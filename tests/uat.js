@@ -23212,6 +23212,122 @@ console.log('\n\x1b[1m── T7: DRILLS ANALYTICS GROUP + FINAL COPY + BRONZE TO
   }
 })();
 
+// ── Wave 2 Task 9: Net+ Network Discovery Audit seed-bank validation ──
+// The 11 consensus-approved (two-agent gated) Net+ Network Discovery Audit
+// scenarios now live for real in features/sim-lab-seed-netplus.js
+// (window.SIM_LAB_SEED_NETPLUS). This proves every one of them is real,
+// production-ready content: each passes the same pure validators that gate
+// the dev fixtures above (simLabValidateScenario +
+// simLabValidateDiscoveryAuditFidelity), extracted from features/sim-lab.js
+// the same way the Wave 2 Task 8 CLI bank block does.
+(function () {
+  console.log('\n\x1b[1m── Sim Lab: Net+ Network Discovery Audit seed-bank validation (Wave 2 Task 9) ──\x1b[0m');
+  try {
+    var vm = require('vm');
+    function assert(cond, msg) { test(msg, !!cond); }
+
+    var grab = function (name) {
+      var re = new RegExp('function ' + name + '\\([^)]*\\) \\{[\\s\\S]*?\\n\\}');
+      return (js.match(re) || [''])[0];
+    };
+
+    // ── Extract the REAL pure validators from features/sim-lab.js, exactly
+    // as the Wave 2 Task 8 CLI bank block does ──
+    var isNonEmptyStrBody    = grab('_isNonEmptyStr');
+    var validatePayloadBody  = grab('_validateStepPayload');
+    var validateScenarioBody = grab('simLabValidateScenario');
+    var stepTypesMatch = js.match(/var STEP_TYPES\s*=\s*\[[^\]]+\]/);
+    var stepTypesDecl = stepTypesMatch ? stepTypesMatch[0] + ';' : "var STEP_TYPES = ['order','categorize','match','analyze','fillin','configure'];";
+
+    var resolveSlotBody     = grab('_slFidelityResolveSlot');
+    var discoLineFactsBody  = grab('_discoLineFacts');
+    var discoDerivePortBody = grab('_discoDerivePort');
+    var discoFidelityBody   = grab('simLabValidateDiscoveryAuditFidelity');
+
+    if (!isNonEmptyStrBody || !validatePayloadBody || !validateScenarioBody ||
+        !resolveSlotBody || !discoLineFactsBody || !discoDerivePortBody || !discoFidelityBody) {
+      test('Net+ Discovery bank: validator helper extraction succeeded', false);
+      results.errors.push('could not extract validator helpers for Wave 2 Task 9 bank test; check names/indenting');
+      return;
+    }
+
+    var vCtx = {};
+    vm.createContext(vCtx);
+    vm.runInContext(stepTypesDecl, vCtx);
+    vm.runInContext(isNonEmptyStrBody, vCtx);
+    vm.runInContext(validatePayloadBody, vCtx);
+    vm.runInContext(validateScenarioBody, vCtx);
+    vm.runInContext(resolveSlotBody, vCtx);
+    vm.runInContext(discoLineFactsBody, vCtx);
+    vm.runInContext(discoDerivePortBody, vCtx);
+    vm.runInContext(discoFidelityBody, vCtx);
+    vm.runInContext('globalThis.__validate = simLabValidateScenario; globalThis.__discoFidelity = simLabValidateDiscoveryAuditFidelity;', vCtx);
+    var simLabValidateScenario = vCtx.__validate;
+    var simLabValidateDiscoveryAuditFidelity = vCtx.__discoFidelity;
+
+    // ── Load the real seed bank: eval features/sim-lab-seed-netplus.js in a
+    // sandbox with `var window = {}` so window.SIM_LAB_SEED_NETPLUS populates ──
+    var seedSrc = read('features/sim-lab-seed-netplus.js');
+    var seedCtx = {};
+    vm.createContext(seedCtx);
+    vm.runInContext('var window = {};\n' + seedSrc + '\nglobalThis.__seed = window.SIM_LAB_SEED_NETPLUS;', seedCtx);
+    var seedBank = seedCtx.__seed;
+
+    test('Net+ Discovery bank: window.SIM_LAB_SEED_NETPLUS loaded as an array',
+      Array.isArray(seedBank));
+    if (!Array.isArray(seedBank)) {
+      results.errors.push('could not load window.SIM_LAB_SEED_NETPLUS from features/sim-lab-seed-netplus.js');
+      return;
+    }
+
+    var discoScenarios = seedBank.filter(function (s) { return s && s.archetype === 'discovery'; });
+    test('Net+ Discovery bank: at least 10 discovery-archetype scenarios present',
+      discoScenarios.length >= 10);
+
+    var allValidateOk = true, allFidelityOk = true, allCertOk = true;
+    discoScenarios.forEach(function (s) {
+      var vr = simLabValidateScenario(s);
+      if (!vr || vr.ok !== true) {
+        allValidateOk = false;
+        results.errors.push('Net+ Discovery bank: ' + (s && s.id) + ' failed simLabValidateScenario: ' + JSON.stringify(vr && vr.errors));
+      }
+      var fr = simLabValidateDiscoveryAuditFidelity(s);
+      if (!fr || fr.ok !== true) {
+        allFidelityOk = false;
+        results.errors.push('Net+ Discovery bank: ' + (s && s.id) + ' failed simLabValidateDiscoveryAuditFidelity: ' + JSON.stringify(fr && fr.errors));
+      }
+      if (!s || s.cert !== 'netplus') {
+        allCertOk = false;
+        results.errors.push('Net+ Discovery bank: ' + (s && s.id) + ' has cert !== netplus: ' + JSON.stringify(s && s.cert));
+      }
+    });
+
+    test('Net+ Discovery bank: every discovery scenario passes simLabValidateScenario',
+      allValidateOk);
+    test('Net+ Discovery bank: every discovery scenario passes simLabValidateDiscoveryAuditFidelity',
+      allFidelityOk);
+    test('Net+ Discovery bank: every discovery scenario has cert === netplus',
+      allCertOk);
+
+    // ── Extra cross-check: every records-audit answer.selected has length 1,
+    // and the reconcile configure step defines a <port>__ip slot for every
+    // scn.disco.ports[*].port ──
+    discoScenarios.forEach(function (s) {
+      var cfg = s.steps.filter(function (st) { return st.type === 'configure'; })[0];
+      var aud = s.steps.filter(function (st) { return st.type === 'analyze'; })[0];
+      var haveIpSlots = s.disco.ports.every(function (p) {
+        return cfg.payload.slots.some(function (sl) { return sl.id === p.port + '__ip'; });
+      });
+      test('disco ' + s.id + ': every port has an __ip reconcile slot + single audit pick',
+        haveIpSlots && aud && aud.answer.selected.length === 1);
+    });
+
+  } catch (err) {
+    test('Net+ Discovery bank: vm smoke test (threw)', false);
+    results.errors.push('Net+ Discovery bank smoke test threw: ' + err.message);
+  }
+})();
+
 // ── Wave 1 Task 8: A+ Core 1 SOHO Router seed-bank validation ──
 // The 12 consensus-approved A+ Core 1 SOHO Router scenarios now live for real
 // in features/sim-lab-seed-aplus-core1.js (window.SIM_LAB_SEED_APLUS_CORE1).
