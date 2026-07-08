@@ -22,6 +22,9 @@
         return Array.isArray(p.left) && Array.isArray(p.right) &&
                p.left.length >= 2 && p.left.length === p.right.length && a.pairs && typeof a.pairs === 'object';
       case 'analyze':
+        if (p.mode === 'reveal' || p.mode === 'excerptLines') {
+          return Array.isArray(a.selected) && a.selected.length >= 1;
+        }
         return Array.isArray(p.lines) && p.lines.length >= 2 &&
                Array.isArray(a.selected) && a.selected.length >= 1;
       case 'fillin':
@@ -62,16 +65,19 @@
       });
     }
     if (s.assets && s.assets.reference) {
-      var ref = s.assets.reference, kinds = ['network', 'timeline', 'layered'];
+      var ref = s.assets.reference, kinds = ['network', 'timeline', 'layered', 'terminal'];
       if (kinds.indexOf(ref.kind) === -1) errs.push('reference: bad kind');
       else if (ref.kind === 'network' && !Array.isArray(ref.devices)) errs.push('reference network: devices[] required');
       else if (ref.kind === 'timeline' && !Array.isArray(ref.stages)) errs.push('reference timeline: stages[] required');
       else if (ref.kind === 'layered' && !Array.isArray(ref.layers)) errs.push('reference layered: layers[] required');
+      else if (ref.kind === 'terminal' && (!Array.isArray(ref.excerpts) || !ref.excerpts.every(function (ex) {
+        return ex && _isNonEmptyStr(ex.id) && Array.isArray(ex.lines);
+      }))) errs.push('reference terminal: excerpts[] with id+lines[] required');
       if (ref.kind === 'layered' && ref.layout !== undefined && ['nested', 'stacked'].indexOf(ref.layout) === -1) {
         errs.push('reference layered: bad layout');
       }
     }
-    if (s.archetype !== undefined && ['diagram', 'incident', 'defense', 'wireless', 'firewall', 'soho'].indexOf(s.archetype) === -1) {
+    if (s.archetype !== undefined && ['diagram', 'incident', 'defense', 'wireless', 'firewall', 'soho', 'cli', 'discovery', 'triage'].indexOf(s.archetype) === -1) {
       errs.push('bad archetype');
     }
     return { ok: errs.length === 0, errors: errs };
@@ -325,6 +331,200 @@
     return { ok: errs.length === 0, errors: errs };
   }
 
+  // --- CLI fault-isolation fidelity validator (Wave 2 Task 4) ---
+  // Proves, machine-checkable: (a) the necessary excerpts carry every line-fact the
+  // keyed fault requires; (b) the keyed rootCause/fix configure answers match the
+  // fault; (c) the necessary set is a genuine minimal isolation cover (mutation-checked:
+  // dropping any necessary excerpt must make a required fact unreachable).
+  var _CLI_FAULT_SIG = {
+    duplex:  { needles: [/half-?duplex/i, /late collision/i, /full[ -]?duplex/i], root: /duplex/i, fix: /auto-?negoti|duplex/i },
+    gateway: { needles: [/gateway/i, /request timed out|unreachable/i], root: /gateway/i, fix: /gateway|route/i },
+    dns:     { needles: [/dns/i, /could not|non-existent|can'?t resolve/i], root: /dns/i, fix: /dns|resolver|flushdns/i },
+    vlan:    { needles: [/vlan/i, /native vlan|access vlan/i], root: /vlan/i, fix: /vlan/i }
+  };
+  function _cliExcerptText(ex) {
+    return (ex.lines || []).map(function (l) { return String(l.text || ''); }).join('\n');
+  }
+  function _cliNeedlesMet(excerpts, sig) {
+    var blob = excerpts.map(_cliExcerptText).join('\n');
+    return sig.needles.every(function (rx) { return rx.test(blob); });
+  }
+  function simLabValidateCliFaultFidelity(scn) {
+    var errs = [];
+    var ref = scn && scn.assets && scn.assets.reference;
+    var fault = scn && scn.cliFault && scn.cliFault.fault;
+    if (!ref || ref.kind !== 'terminal' || !Array.isArray(ref.excerpts)) {
+      return { ok: false, errors: ['cli fidelity: terminal reference with excerpts[] required'] };
+    }
+    var sig = _CLI_FAULT_SIG[fault];
+    if (!sig) return { ok: false, errors: ['cli fidelity: unknown cliFault.fault "' + fault + '"'] };
+
+    var necessary = ref.excerpts.filter(function (ex) { return ex.necessary; });
+    if (!necessary.length) errs.push('cli fidelity: no necessary excerpts declared');
+    // (a) the necessary set proves the fault
+    if (!_cliNeedlesMet(necessary, sig)) {
+      errs.push('cli fidelity: necessary excerpts do not carry all "' + fault + '" fault facts');
+    }
+    // (c) minimal cover — every necessary excerpt is load-bearing
+    necessary.forEach(function (drop) {
+      var without = necessary.filter(function (ex) { return ex !== drop; });
+      if (_cliNeedlesMet(without, sig)) {
+        errs.push('cli fidelity: necessary excerpt "' + drop.id + '" is redundant (fault still derivable without it)');
+      }
+    });
+    // (b) keyed diagnosis matches the fault
+    var cfg = (scn.steps || []).filter(function (st) {
+      return st.type === 'configure' && st.answer && st.answer.slots &&
+        (st.answer.slots.rootCause !== undefined || st.answer.slots.fix !== undefined);
+    })[0];
+    if (!cfg) { errs.push('cli fidelity: no configure step with rootCause/fix slots'); }
+    else {
+      var root = _slFidelityResolveSlot(cfg, 'rootCause');
+      var fix = _slFidelityResolveSlot(cfg, 'fix');
+      if (root === undefined || !sig.root.test(root)) errs.push('cli fidelity: keyed rootCause "' + root + '" does not match ' + fault);
+      if (fix === undefined || !sig.fix.test(fix)) errs.push('cli fidelity: keyed fix "' + fix + '" does not match ' + fault);
+    }
+    return { ok: errs.length === 0, errors: errs };
+  }
+
+  // --- discovery-audit fidelity validator (Wave 2 Task 5) ---
+  // Proves, machine-checkable: (a) every keyed port-mapping answer is DERIVABLE from the
+  // terminal excerpts' structured line facts — infra ports from LLDP, the silent
+  // host from a MAC-table<->ARP join; (b) exactly ONE legacy-CSV select:true row
+  // contradicts the reconciled truth and it is the keyed audit line (mutation-safe).
+  function _discoLineFacts(ref) {
+    var by = { lldp: [], mac: [], arp: [], legacy: [] };
+    (ref.excerpts || []).forEach(function (ex) {
+      (ex.lines || []).forEach(function (ln) {
+        if (!ln.fact) return;
+        if (ex.id === 'lldp') by.lldp.push(ln.fact);
+        else if (ex.id === 'mac') by.mac.push(ln.fact);
+        else if (ex.id === 'arp') by.arp.push(ln.fact);
+      });
+    });
+    return by;
+  }
+  function _discoDerivePort(facts, port) {
+    var l = facts.lldp.filter(function (f) { return f.port === port; })[0];
+    if (l) return { device: l.device, mgmt: l.mgmt };
+    var m = facts.mac.filter(function (f) { return f.port === port; })[0];
+    if (m) {
+      var a = facts.arp.filter(function (f) { return f.mac === m.mac; })[0];
+      if (a) return { device: null, mgmt: a.ip };   // silent host: device unknown, IP via join
+    }
+    return null;
+  }
+  function simLabValidateDiscoveryAuditFidelity(scn) {
+    var errs = [];
+    var ref = scn && scn.assets && scn.assets.reference;
+    var disco = scn && scn.disco;
+    if (!ref || ref.kind !== 'terminal' || !Array.isArray(ref.excerpts) || !disco || !Array.isArray(disco.ports)) {
+      return { ok: false, errors: ['disco fidelity: terminal reference + scn.disco.ports[] required'] };
+    }
+    var facts = _discoLineFacts(ref);
+    var cfg = (scn.steps || []).filter(function (st) { return st.type === 'configure'; })[0];
+
+    // (a) every keyed port answer derivable
+    disco.ports.forEach(function (p) {
+      var derived = _discoDerivePort(facts, p.port);
+      if (!derived) { errs.push('disco: port ' + p.port + ' not derivable from excerpts'); return; }
+      if (derived.mgmt !== p.mgmt) errs.push('disco: port ' + p.port + ' mgmt "' + p.mgmt + '" != derived ' + derived.mgmt);
+      if (cfg) {
+        var keyedIp = _slFidelityResolveSlot(cfg, p.port + '__ip');
+        if (keyedIp !== undefined && keyedIp !== derived.mgmt) {
+          errs.push('disco: keyed ' + p.port + '__ip "' + keyedIp + '" != derived ' + derived.mgmt);
+        }
+        var keyedDev = _slFidelityResolveSlot(cfg, p.port + '__dev');
+        if (keyedDev !== undefined && p.device && derived.device && keyedDev !== derived.device) {
+          errs.push('disco: keyed ' + p.port + '__dev "' + keyedDev + '" != derived ' + derived.device);
+        }
+      }
+    });
+
+    // (b) exactly one legacy row contradicts, and it is the keyed audit line
+    var truthByPort = {};
+    disco.ports.forEach(function (p) { truthByPort[p.port] = p; });
+    var legacy = (ref.excerpts.filter(function (ex) { return ex.id === disco.legacyExcerptId; })[0] || { lines: [] }).lines
+      .filter(function (ln) { return ln.select && ln.fact; });
+    var contradicting = legacy.filter(function (ln) {
+      var truth = truthByPort[ln.fact.port];
+      return truth && (ln.fact.mgmt !== truth.mgmt || (ln.fact.device && truth.device && ln.fact.device !== truth.device));
+    });
+    if (contradicting.length !== 1) {
+      errs.push('disco: expected exactly 1 contradicting legacy row, found ' + contradicting.length);
+    } else {
+      var aud = (scn.steps || []).filter(function (st) { return st.type === 'analyze'; })[0];
+      var keyed = aud && aud.answer && aud.answer.selected;
+      if (!keyed || keyed.length !== 1 || keyed[0] !== contradicting[0].id) {
+        errs.push('disco: keyed audit line is not the single contradicting row (' + contradicting[0].id + ')');
+      }
+    }
+    return { ok: errs.length === 0, errors: errs };
+  }
+
+  // --- evidence-triage fidelity validator (Wave 2 Task 6) ---
+  // Proves, machine-checkable: (a) the keyed evidence lines (evidence:true) exist,
+  // are exactly the analyze step's answer.selected, and are diagnostic of the fault;
+  // at least one selectable evidence:false distractor remains (the "Media connected"
+  // trap) so the set can't be trivially all-true; (b) the diagnosis/firstMove keyed
+  // answers follow from the fault signature.
+  var _TRIAGE_FAULT_SIG = {
+    apipa:    { evNeedles: [/169\.254\./, /gateway\s*:?\s*$/i], diag: /apipa|169\.254|no dhcp/i, fix: /renew|dhcp/i },
+    deadDns:  { evNeedles: [/can'?t resolve|dns request timed out|non-existent/i], diag: /dns/i, fix: /dns|renew|flushdns/i },
+    badGw:    { evNeedles: [/unreachable|request timed out/i, /gateway/i], diag: /gateway|route/i, fix: /gateway|route/i }
+  };
+  function _triageEvidenceLines(ref) {
+    var all = [];
+    (ref.excerpts || []).forEach(function (ex) {
+      (ex.lines || []).forEach(function (ln) { all.push(ln); });
+    });
+    return all;
+  }
+  function simLabValidateEvidenceTriageFidelity(scn) {
+    var errs = [];
+    var ref = scn && scn.assets && scn.assets.reference;
+    var fault = scn && scn.triage && scn.triage.fault;
+    if (!ref || ref.kind !== 'terminal' || !Array.isArray(ref.excerpts)) {
+      return { ok: false, errors: ['triage fidelity: terminal reference with excerpts[] required'] };
+    }
+    var sig = _TRIAGE_FAULT_SIG[fault];
+    if (!sig) return { ok: false, errors: ['triage fidelity: unknown triage.fault "' + fault + '"'] };
+
+    var lines = _triageEvidenceLines(ref);
+    var selectable = lines.filter(function (l) { return l.select; });
+    var trueLines = selectable.filter(function (l) { return l.evidence === true; });
+    var falseLines = selectable.filter(function (l) { return l.evidence === false; });
+
+    if (!trueLines.length) errs.push('triage: no evidence:true selectable lines');
+    if (!falseLines.length) errs.push('triage: no evidence:false selectable distractor (set is trivially all-true)');
+
+    // (a) keyed selected == the evidence:true line ids
+    var flag = (scn.steps || []).filter(function (st) { return st.type === 'analyze'; })[0];
+    var keyed = (flag && flag.answer && flag.answer.selected) ? flag.answer.selected : [];
+    var trueIds = trueLines.map(function (l) { return l.id; });
+    if (!_setEq(keyed, trueIds)) {
+      errs.push('triage: keyed selected [' + keyed.join(',') + '] != evidence:true ids [' + trueIds.join(',') + ']');
+    }
+    // diagnostic signature present in the true lines
+    var trueBlob = trueLines.map(function (l) { return String(l.text || ''); }).join('\n');
+    sig.evNeedles.forEach(function (rx) {
+      if (!rx.test(trueBlob)) errs.push('triage: fault "' + fault + '" needle ' + rx + ' not found in flagged evidence');
+    });
+    // (b) keyed diagnosis/firstMove follow from the fault
+    var cfg = (scn.steps || []).filter(function (st) {
+      return st.type === 'configure' && st.answer && st.answer.slots &&
+        (st.answer.slots.diagnosis !== undefined || st.answer.slots.firstMove !== undefined);
+    })[0];
+    if (!cfg) errs.push('triage: no configure step with diagnosis/firstMove slots');
+    else {
+      var diag = _slFidelityResolveSlot(cfg, 'diagnosis');
+      var fix = _slFidelityResolveSlot(cfg, 'firstMove');
+      if (diag === undefined || !sig.diag.test(diag)) errs.push('triage: keyed diagnosis "' + diag + '" does not match ' + fault);
+      if (fix === undefined || !sig.fix.test(fix)) errs.push('triage: keyed firstMove "' + fix + '" does not match ' + fault);
+    }
+    return { ok: errs.length === 0, errors: errs };
+  }
+
   // --- scoring (Task 2) ---
 
   function _norm(v) {
@@ -362,6 +562,14 @@
     return { total: total, correct: correct };
   }
 
+  function _scoreAnalyzeLenient(step, resp) {
+    var want = (step.answer && step.answer.selected) || [];
+    var got = (resp && resp.selected) || [];
+    var total = want.length, correct = 0;
+    want.forEach(function (id) { if (got.indexOf(id) !== -1) correct++; });   // false picks never subtract
+    return { total: total, correct: correct };
+  }
+
   function _scoreStep(step, resp) {
     if (!resp) return false;
     switch (step.type) {
@@ -376,6 +584,10 @@
           return resp.pairs && resp.pairs[l] === step.answer.pairs[l];
         }) && resp.pairs && Object.keys(resp.pairs).length === Object.keys(step.answer.pairs).length;
       case 'analyze':
+        if (step.payload && step.payload.scoring === 'lenient') {
+          var _al = _scoreAnalyzeLenient(step, resp);
+          return _al.total > 0 && _al.correct === _al.total;
+        }
         return _setEq(resp.selected, step.answer.selected);
       case 'fillin':
         return step.payload.fields.every(function (f) {
@@ -398,6 +610,10 @@
         var sc = _scoreConfigureSlots(st, resp);
         perStep[st.id] = sc;            // { total, correct } breakdown for configure
         correct += sc.correct; total += sc.total;
+      } else if (st.type === 'analyze' && st.payload && st.payload.scoring === 'lenient') {
+        var la = _scoreAnalyzeLenient(st, resp);
+        perStep[st.id] = la;            // { total, correct } breakdown for lenient analyze
+        correct += la.correct; total += la.total;
       } else {
         var ok = _scoreStep(st, resp);
         perStep[st.id] = ok;            // boolean for existing types
@@ -601,6 +817,12 @@
 
   // --- analyze renderer ---
   function _slRenderAnalyze(step, onChange, initial) {
+    // Wave 2: mode steps bind targets from the terminal reference (single source of
+    // truth) instead of building their own .sl-analyze-block. Default (no mode) below is UNCHANGED.
+    var mode = step.payload.mode;
+    if (mode === 'reveal' || mode === 'excerptLines') {
+      return _slRenderAnalyzeMode(step, onChange, initial, mode);
+    }
     // Default to multi-select unless a step opts OUT explicitly (`multi:
     // false`). Every pre-Wave-1 analyze step across every bank already
     // declares `multi: false` when it wants single-select, so this default
@@ -650,6 +872,54 @@
       });
     }
     onChange({ selected: selected.slice() });
+    return root;
+  }
+
+  function _slRenderAnalyzeMode(step, onChange, initial, mode) {
+    var multi = step.payload.multi !== false;
+    var selected = (initial && Array.isArray(initial.selected)) ? initial.selected.slice() : [];
+    var root = _el('div', 'sl-analyze sl-analyze-mode');
+    root.appendChild(_el('p', 'sl-prompt', _esc(step.prompt)));
+
+    function emit() { onChange({ selected: selected.slice() }); }
+    function toggle(id) {
+      var idx = selected.indexOf(id);
+      if (multi) { if (idx === -1) selected.push(id); else selected.splice(idx, 1); }
+      else { selected = (idx === -1) ? [id] : []; }
+      emit();
+    }
+
+    if (mode === 'reveal') {
+      // command menu: one button per reveal-keyed excerpt; running reveals + marks it ran (advisory)
+      var ref = (window.__slTerminalRef) || null;
+      var menu = _el('div', 'sl-cmd-menu');
+      var excerpts = (ref && Array.isArray(ref.excerpts)) ? ref.excerpts : [];
+      excerpts.filter(function (ex) { return ex.reveal; }).forEach(function (ex) {
+        var b = _el('button', 'sl-cmd', _esc(ex.promptLine || ex.id));
+        b.setAttribute('type', 'button'); b.setAttribute('data-cmd', ex.id);
+        b.addEventListener('click', function () {
+          if (b.classList) b.classList.add('used');
+          if (window.__slRevealExcerpt) window.__slRevealExcerpt(ex.reveal);
+          if (selected.indexOf(ex.id) === -1) { selected.push(ex.id); emit(); }
+        });
+        menu.appendChild(b);
+      });
+      root.appendChild(menu);
+    } else {
+      // excerptLines: bind the terminal's already-rendered select:true line buttons
+      var host = (window.__slTerminalPanel) || null;
+      var btns = host ? host.querySelectorAll('button') : [];
+      btns.forEach(function (btn) {
+        if (!btn.className || btn.className.split(' ').indexOf('term-line') === -1) return;
+        var id = btn.getAttribute('data-line');
+        btn.addEventListener('click', function () {
+          toggle(id);
+          if (btn.classList) btn.classList.toggle('sl-sel', selected.indexOf(id) !== -1);
+        });
+        if (selected.indexOf(id) !== -1 && btn.classList) btn.classList.add('sl-sel');
+      });
+    }
+    emit();
     return root;
   }
 
@@ -1167,6 +1437,95 @@
     return _el('div', 'sl-stacked', svgStr);
   }
 
+  // --- terminal / output-excerpt reference renderer (Wave 2 Task 2) ---
+  // The ONE new Wave 2 renderer. Three data-driven expressions off ref.reveal:
+  //   'tabs'     -> internal source-tab bar, one excerpt visible at a time (discovery)
+  //   'external' -> keyed excerpts start hidden; an external step calls revealExcerpt (cli)
+  //   undefined  -> all excerpts visible (triage)
+  // Escape-THEN-highlight per line/prompt (excerpt text is untrusted scenario data).
+  // Selectable lines are real <button>s so an analyze step can bind them (single
+  // source of truth for line text, so the fidelity validators' cross-checks are exact).
+  function _termLineHtml(line) {
+    var esc = _esc(line.text);                       // escape FIRST
+    var cls = (line.highlight === 'hot' || line.highlight === 'good' || line.highlight === 'k') ? line.highlight : '';
+    return cls ? '<span class="' + cls + '">' + esc + '</span>' : esc;
+  }
+  function _termPromptHtml(promptLine) {
+    var esc = _esc(promptLine || '');                // escape FIRST, then span the leading token
+    var sp = esc.indexOf(' ');
+    return sp > 0 ? '<span class="pmt">' + esc.slice(0, sp) + '</span>' + esc.slice(sp) : esc;
+  }
+  function _slRenderRefTerminal(ref) {
+    var root = _el('div', 'term');
+    var head = _el('div', 'term-head');
+    var hostBox = _el('div', 'term-host', '<span class="lamp"><i></i><i></i><i></i></span>');
+    hostBox.appendChild(_el('span', 'term-host-name', _esc(ref.host || '')));
+    head.appendChild(hostBox);
+    head.appendChild(_el('div', 'term-sess', _esc(ref.session || '')));
+    root.appendChild(head);
+
+    var excerpts = (ref && Array.isArray(ref.excerpts)) ? ref.excerpts : [];
+    var mode = ref ? ref.reveal : undefined;         // 'tabs' | 'external' | undefined
+    var reduce = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+    var body = _el('div', 'term-body');
+    var blockById = {};
+
+    excerpts.forEach(function (ex, i) {
+      var block = _el('div', 'term-block');
+      block.setAttribute('data-excerpt', ex.id);
+      var scroll = _el('div', 'term-scroll');
+      scroll.appendChild(_el('div', 'term-cmd', _termPromptHtml(ex.promptLine)));
+      var out = _el('div', 'term-out');
+      (ex.lines || []).forEach(function (ln) {
+        if (ln.select) {
+          var btn = _el('button', 'term-line' + (ln.evidence ? ' is-ev' : ''), _termLineHtml(ln));
+          btn.setAttribute('type', 'button');
+          btn.setAttribute('data-line', ln.id);
+          out.appendChild(btn);
+        } else {
+          out.appendChild(_el('div', 'term-ln' + (ln.ctx ? ' term-ctx' : ''), _termLineHtml(ln)));
+        }
+      });
+      scroll.appendChild(out);
+      block.appendChild(scroll);
+      var hide = (mode === 'tabs') ? (i !== 0) : (mode === 'external') ? !!ex.reveal : false;
+      if (hide) block.setAttribute('hidden', '');
+      body.appendChild(block);
+      blockById[ex.id] = block;
+    });
+
+    function revealExcerpt(key) {
+      var target = null;
+      excerpts.forEach(function (ex) { if (ex.reveal === key || ex.id === key) target = ex; });
+      if (!target || !blockById[target.id]) return;
+      var block = blockById[target.id];
+      block.removeAttribute('hidden');
+      if (!reduce && block.classList) block.classList.add('term-anim');
+    }
+
+    if (mode === 'tabs') {
+      var tabs = _el('div', 'term-tabs');
+      excerpts.forEach(function (ex, i) {
+        var tab = _el('button', 'term-tab' + (i === 0 ? ' on' : ''), _esc(ex.tab || ex.id));
+        tab.setAttribute('type', 'button');
+        tab.setAttribute('data-tab', ex.id);
+        tab.addEventListener('click', function () {
+          revealExcerpt(ex.id);
+          (tabs._children || []).forEach(function (t) {
+            if (t.classList) { t.classList.toggle('on', t.getAttribute('data-tab') === ex.id); t.classList.add('seen'); }
+          });
+        });
+        tabs.appendChild(tab);
+      });
+      root.appendChild(tabs);
+    }
+    root.appendChild(body);
+
+    root.revealExcerpt = revealExcerpt;
+    window.__slRevealExcerpt = revealExcerpt;
+    return root;
+  }
+
   function _slRenderReference(ref) {
     if (!ref || !ref.kind) return null;
     var panel = _el('div', 'sl-ref');
@@ -1174,6 +1533,11 @@
     else if (ref.kind === 'timeline') panel.appendChild(_slRenderRefTimeline(ref));
     else if (ref.kind === 'layered') {
       panel.appendChild(ref.layout === 'stacked' ? _slRenderRefLayeredStacked(ref) : _slRenderRefLayered(ref));
+    }
+    else if (ref.kind === 'terminal') {
+      var termNode = _slRenderRefTerminal(ref);
+      panel.appendChild(termNode);
+      panel.revealExcerpt = termNode.revealExcerpt;
     }
     return panel;
   }
@@ -1199,6 +1563,10 @@
       var refPanel = _slRenderReference(scn.assets.reference);
       if (refPanel) wrap.appendChild(refPanel);
     }
+    if (scn.assets && scn.assets.reference && scn.assets.reference.kind === 'terminal') {
+      window.__slTerminalRef = scn.assets.reference;
+      window.__slTerminalPanel = refPanel;
+    } else { window.__slTerminalRef = null; window.__slTerminalPanel = null; }
     scn.steps.forEach(function (st, i) {
       var stepWrap = _el('div', 'sl-step');
       stepWrap.appendChild(_el('div', 'sl-step-k', 'Step ' + (i + 1) + ' of ' + scn.steps.length));

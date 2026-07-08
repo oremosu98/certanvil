@@ -20996,6 +20996,25 @@ console.log('\n\x1b[1m── T7: DRILLS ANALYTICS GROUP + FINAL COPY + BRONZE TO
     test('archetype validation: unknown archetype "printer" still rejected',
       simLabValidateScenario(_sx).ok === false);
 
+    // 11. New archetype tags ('cli'/'discovery'/'triage') accepted; unknown still rejected.
+    ['cli', 'discovery', 'triage'].forEach(function (tag) {
+      var _s2 = _baseScn(); _s2.archetype = tag;
+      test('archetype validation: archetype ' + tag + ' accepted',
+        simLabValidateScenario(_s2).ok === true);
+    });
+    var _sx2 = _baseScn(); _sx2.archetype = 'logscan';
+    test('archetype validation: unknown archetype "logscan" still rejected',
+      simLabValidateScenario(_sx2).ok === false);
+
+    // ── Wave 2 Task 3: analyze mode step validates without payload.lines ──
+    var _modeStep = { id: 'm', type: 'analyze', prompt: 'p', explanation: 'e', points: 1,
+      payload: { multi: true, mode: 'excerptLines', scoring: 'lenient' }, answer: { selected: ['l1'] } };
+    var _modeScn = _baseScn(); _modeScn.steps = [_modeStep];
+    _modeScn.assets = { reference: { kind: 'terminal', host: 'h', session: 's',
+      excerpts: [{ id: 'e', promptLine: 'p', lines: [{ id: 'l1', text: 't', select: true, evidence: true }, { id: 'l2', text: 'u', select: false }] }] } };
+    test('analyze mode step validates without payload.lines',
+      simLabValidateScenario(_modeScn).ok === true);
+
     // ── Mount test — vm-sandbox + DOM shim ──
     var elBody            = grab('_el');
     var escBody           = grabLine('_esc');
@@ -21147,6 +21166,130 @@ console.log('\n\x1b[1m── T7: DRILLS ANALYTICS GROUP + FINAL COPY + BRONZE TO
     test('reference asset model: vm smoke test (threw)', false);
     results.errors.push('reference asset model smoke test threw: ' + err.message);
   }
+})();
+
+(function () {
+  var grab = function (name) { return _fnBody(js, name); };
+  var grabLine = function (name) {
+    var re = new RegExp('function ' + name + '\\([^\\n]*\\)\\s*\\{[^\\n]*\\}');
+    return (js.match(re) || [''])[0];
+  };
+  var elBody       = grab('_el');
+  var escBody      = grabLine('_esc');
+  var termLineBody = grab('_termLineHtml');
+  var termPmtBody  = grab('_termPromptHtml');
+  var termBody     = grab('_slRenderRefTerminal');
+  var dispBody     = grab('_slRenderReference');
+  if (!termBody || !dispBody) { results.errors.push('could not extract _slRenderRefTerminal/_slRenderReference'); return; }
+
+  var htmlEsc = function (s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  };
+  var makeEl = function (tag) {
+    var attrs = {}, listeners = {}, children = [], cls = '', inner = '';
+    var clsSet = {};
+    var el = {
+      tagName: tag.toUpperCase(),
+      get className() { return cls; }, set className(v) { cls = v; },
+      get innerHTML() { return inner; }, set innerHTML(v) { inner = v; children = []; },
+      get textContent() { return ''; }, set textContent(v) { inner = htmlEsc(v); },
+      style: {},
+      get _children() { return children; },
+      classList: {
+        add: function (c) { clsSet[c] = true; cls = (cls ? cls + ' ' : '') + c; },
+        remove: function (c) { delete clsSet[c]; },
+        toggle: function (c, on) { if (on) clsSet[c] = true; else delete clsSet[c]; },
+        contains: function (c) { return !!clsSet[c]; }
+      },
+      setAttribute: function (k, v) { attrs[k] = v; },
+      getAttribute: function (k) { return (k in attrs) ? attrs[k] : null; },
+      removeAttribute: function (k) { delete attrs[k]; },
+      appendChild: function (c) { children.push(c); return c; },
+      insertBefore: function (c) { children.unshift(c); return c; },
+      querySelectorAll: function (sel) {
+        var hits = [], want = sel.replace(/^\./, '');
+        var walk = function (n) { (n._children || []).forEach(function (c) {
+          if (!c || !c.tagName) return;
+          if (want.toUpperCase() === c.tagName || (c.className && c.className.split(' ').indexOf(want) !== -1)) hits.push(c);
+          walk(c);
+        }); };
+        walk(el); return hits;
+      },
+      addEventListener: function (ev, fn) { (listeners[ev] = listeners[ev] || []).push(fn); },
+      _fire: function (ev) { (listeners[ev] || []).forEach(function (fn) { fn({}); }); }
+    };
+    return el;
+  };
+  var mCtx = { document: { createElement: makeEl },
+    window: { matchMedia: function () { return { matches: false }; } },
+    Object: Object, Array: Array, String: String };
+  vm.createContext(mCtx);
+  vm.runInContext(elBody + '\n' + escBody + '\n' + termLineBody + '\n' + termPmtBody + '\n' + termBody + '\n' + dispBody, mCtx);
+
+  var ref = { kind: 'terminal', host: 'WS-14 · admin', session: 'read-only', reveal: 'external',
+    excerpts: [
+      { id: 'a', promptLine: 'C:\\> ipconfig', reveal: 'a', necessary: true,
+        lines: [ { id: 'l1', text: '169.254.1.1 <script>x</script>', highlight: 'hot', select: true, evidence: true },
+                 { id: 'l2', text: 'Media connected', select: false, ctx: true } ] },
+      { id: 'b', promptLine: 'C:\\> ping 1.1.1.1', reveal: 'b',
+        lines: [ { id: 'l3', text: 'timeout', select: true, evidence: false } ] }
+    ] };
+  mCtx.ref = ref;
+  vm.runInContext('globalThis.__panel = _slRenderReference(ref);', mCtx);
+  var panel = mCtx.__panel;
+
+  test('terminal: _slRenderReference returns a .sl-ref panel for kind terminal',
+    !!panel && panel.className === 'sl-ref');
+  var termNode = panel._children.filter(function (c) { return c.className && c.className.split(' ').indexOf('term') !== -1; })[0];
+  test('terminal: panel contains a .term component', !!termNode);
+  var lineBtns = panel.querySelectorAll('button');
+  var termLines = lineBtns.filter(function (b) { return b.className && b.className.split(' ').indexOf('term-line') !== -1; });
+  test('terminal: select:true lines render as focusable BUTTONs with data-line',
+    termLines.length === 2 && termLines[0].getAttribute('data-line') === 'l1');
+  var l1html = termLines[0].innerHTML;
+  test('terminal: line text is ESCAPED (no raw <script>)', l1html.indexOf('<script>') === -1 && l1html.indexOf('&lt;script&gt;') !== -1);
+  test('terminal: highlight wraps the ESCAPED text in a .hot span', l1html.indexOf('class="hot"') !== -1);
+  var scrolls = panel.querySelectorAll('.term-scroll');
+  test('terminal: each excerpt body is inside a .term-scroll container', scrolls.length === 2);
+  // external reveal: keyed excerpts start hidden; revealExcerpt unhides
+  var blocks = panel.querySelectorAll('.term-block');
+  test('terminal: external-mode keyed excerpts start [hidden]',
+    blocks.length === 2 && blocks[0].getAttribute('hidden') !== null && blocks[1].getAttribute('hidden') !== null);
+  panel.revealExcerpt('a');
+  test('terminal: revealExcerpt(key) unhides its excerpt block',
+    blocks[0].getAttribute('hidden') === null && blocks[1].getAttribute('hidden') !== null);
+  test('terminal: revealExcerpt is also published on window.__slRevealExcerpt',
+    typeof mCtx.window.__slRevealExcerpt === 'function');
+})();
+
+// ── Wave 2 Task 3: guarded analyze extension — mode branch + lenient scoring ──
+(function () {
+  var vm = require('vm');
+  var grab = function (n) { return _fnBody(js, n); };
+  var pieces = [grab('_arrEq'), grab('_setEq'), grab('_scoreConfigureSlots'), grab('_scoreAnalyzeLenient'), grab('_scoreStep'), grab('_simLabNormalizeMatch') || '', grab('simLabScoreScenario')].join('\n');
+  var sCtx = {}; vm.createContext(sCtx); vm.runInContext(pieces, sCtx);
+  vm.runInContext('globalThis.__score = simLabScoreScenario;', sCtx);
+  var score = sCtx.__score;
+
+  // lenient analyze: partial credit, false picks never subtract
+  var lenientScn = { steps: [ { id: 'ev', type: 'analyze', points: 1,
+    payload: { multi: true, mode: 'excerptLines', scoring: 'lenient' },
+    answer: { selected: ['l1', 'l2', 'l3'] } } ] };
+  test('analyze lenient: all-correct scores total===correct',
+    score(lenientScn, { ev: { selected: ['l1', 'l2', 'l3'] } }).correct === 3);
+  test('analyze lenient: partial scores correct<total, no negative',
+    (function () { var r = score(lenientScn, { ev: { selected: ['l1'] } }); return r.correct === 1 && r.total === 3; })());
+  test('analyze lenient: a FALSE pick does not subtract earned credit',
+    (function () { var r = score(lenientScn, { ev: { selected: ['l1', 'l2', 'l3', 'lX'] } }); return r.correct === 3 && r.total === 3; })());
+
+  // regression: an analyze step WITHOUT scoring flag stays exact-set boolean
+  var exactScn = { steps: [ { id: 'a', type: 'analyze', points: 1,
+    payload: { multi: false, lines: [{ id: 'x' }, { id: 'y' }] }, answer: { selected: ['x'] } } ] };
+  test('analyze default: exact-set match still scores 1/1',
+    score(exactScn, { a: { selected: ['x'] } }).correct === 1);
+  test('analyze default: wrong exact-set still scores 0/1',
+    score(exactScn, { a: { selected: ['y'] } }).correct === 0);
 })();
 
 // ── Task 9: subnetting/CIDR fidelity validator ──
@@ -21449,6 +21592,125 @@ console.log('\n\x1b[1m── T7: DRILLS ANALYTICS GROUP + FINAL COPY + BRONZE TO
     test('soho fidelity validator: vm smoke test (threw)', false);
     results.errors.push('soho fidelity validator smoke test threw: ' + err.message);
   }
+})();
+
+(function () {
+  var grab = function (n) { return _fnBody(js, n); };
+  var cliBody = grab('simLabValidateCliFaultFidelity');
+  var sigVar = (js.match(/var _CLI_FAULT_SIG = \{[\s\S]*?\n\s*\};/) || [''])[0];
+  if (!cliBody || !sigVar) { results.errors.push('could not extract simLabValidateCliFaultFidelity/_CLI_FAULT_SIG'); return; }
+  var vm = require('vm');
+  var cCtx = {}; vm.createContext(cCtx);
+  vm.runInContext(grab('_isNonEmptyStr') + '\n' + grab('_slFidelityResolveSlot') + '\n' + sigVar + '\n' + grab('_cliExcerptText') + '\n' + grab('_cliNeedlesMet') + '\n' + cliBody, cCtx);
+  vm.runInContext('globalThis.__cli = simLabValidateCliFaultFidelity;', cCtx);
+  var cli = cCtx.__cli;
+  var assert = function (cond, msg) { test(msg, !!cond); };
+
+  var scn = { cliFault: { fault: 'duplex' },
+    assets: { reference: { kind: 'terminal', host: 'h', session: 's', reveal: 'external',
+      excerpts: [
+        { id: 'ipconfig', promptLine: 'C:\\> ipconfig', reveal: 'ipconfig', necessary: true,
+          lines: [ { id: 'i1', text: 'Link Speed: 1.0 Gbps / Full Duplex', highlight: 'good', select: false } ] },
+        { id: 'showint', promptLine: 'SW-2# show interfaces Gi0/14', reveal: 'showint', necessary: true,
+          lines: [ { id: 's1', text: 'Half-duplex, 100Mb/s', highlight: 'hot', select: false },
+                   { id: 's2', text: '2471 late collisions', highlight: 'hot', select: false } ] },
+        { id: 'tracert', promptLine: 'C:\\> tracert 8.8.8.8', reveal: 'tracert', necessary: false,
+          lines: [ { id: 't1', text: 'path intact', select: false } ] }
+      ] } },
+    steps: [ { id: 'dx', type: 'configure', points: 1,
+      payload: { slots: [
+        { id: 'rootCause', label: 'Root cause', options: [{ id: 'a', text: 'Duplex mismatch' }, { id: 'b', text: 'DNS failure' }] },
+        { id: 'fix', label: 'Fix', options: [{ id: 'a', text: 'Set both ends to auto-negotiate duplex' }, { id: 'b', text: 'Flush DNS cache' }] } ] },
+      answer: { slots: { rootCause: 'a', fix: 'a' } } } ] };
+  assert(cli(scn).ok === true, 'cli: sound duplex scenario passes');
+  var bad1 = JSON.parse(JSON.stringify(scn)); bad1.steps[0].answer.slots.rootCause = 'b';
+  assert(cli(bad1).ok === false, 'cli: rootCause not matching fault signature rejected');
+  var bad2 = JSON.parse(JSON.stringify(scn));
+  bad2.assets.reference.excerpts[1].lines = [{ id: 's1', text: 'Full-duplex, 1000Mb/s', select: false }];
+  assert(cli(bad2).ok === false, 'cli: necessary excerpt missing the fault signature fact rejected');
+  var bad3 = JSON.parse(JSON.stringify(scn)); bad3.assets.reference.excerpts[0].necessary = true;
+  bad3.assets.reference.excerpts[2].necessary = true;   // tracert (redundant) marked necessary
+  assert(cli(bad3).ok === false, 'cli: a redundant excerpt marked necessary breaks minimal-cover');
+})();
+
+(function () {
+  var grab = function (n) { return _fnBody(js, n); };
+  var body = [grab('_isNonEmptyStr'), grab('_slFidelityResolveSlot'),
+    grab('_discoLineFacts'), grab('_discoDerivePort'), grab('simLabValidateDiscoveryAuditFidelity')].join('\n');
+  if (body.indexOf('simLabValidateDiscoveryAuditFidelity') === -1) { results.errors.push('could not extract discovery validator'); return; }
+  var vm = require('vm');
+  var dCtx = {}; vm.createContext(dCtx); vm.runInContext(body, dCtx);
+  vm.runInContext('globalThis.__disco = simLabValidateDiscoveryAuditFidelity;', dCtx);
+  var disco = dCtx.__disco;
+  var assert = function (cond, msg) { test(msg, !!cond); };
+
+  var scn = {
+    disco: { legacyExcerptId: 'csv',
+      ports: [ { port: 'Gi0/1', device: 'AP-2', mgmt: '10.0.0.12', source: 'lldp' },
+               { port: 'Gi0/5', device: 'silent-host', mgmt: '10.0.0.30', source: 'macarp' } ] },
+    assets: { reference: { kind: 'terminal', host: 'SW', session: 's', reveal: 'tabs',
+      excerpts: [
+        { id: 'lldp', promptLine: 'SW# show lldp', tab: 'lldp', lines: [
+          { id: 'll1', text: 'Gi0/1  AP-2  10.0.0.12', select: false, fact: { port: 'Gi0/1', device: 'AP-2', mgmt: '10.0.0.12' } } ] },
+        { id: 'mac', promptLine: 'SW# show mac', tab: 'mac', lines: [
+          { id: 'm1', text: 'e8ff.1e44.2b90  Gi0/5', select: false, fact: { mac: 'e8ff.1e44.2b90', port: 'Gi0/5' } } ] },
+        { id: 'arp', promptLine: 'SW# show arp', tab: 'arp', lines: [
+          { id: 'a1', text: '10.0.0.30  e8ff.1e44.2b90', select: false, fact: { ip: '10.0.0.30', mac: 'e8ff.1e44.2b90' } } ] },
+        { id: 'csv', promptLine: 'legacy asset CSV', tab: 'csv', lines: [
+          { id: 'c1', text: 'Gi0/1,AP-2,10.0.0.12', select: true, fact: { port: 'Gi0/1', device: 'AP-2', mgmt: '10.0.0.12' } },
+          { id: 'c2', text: 'Gi0/5,PrintSrv,10.0.0.99', select: true, fact: { port: 'Gi0/5', device: 'PrintSrv', mgmt: '10.0.0.99' } } ] }
+      ] } },
+    steps: [
+      { id: 'rec', type: 'configure', points: 1, payload: { slots: [
+        { id: 'Gi0/1__dev', label: 'Gi0/1 dev', options: [{ id: 'a', text: 'AP-2' }, { id: 'b', text: 'PC-9' }] },
+        { id: 'Gi0/1__ip', label: 'Gi0/1 ip', options: [{ id: 'a', text: '10.0.0.12' }, { id: 'b', text: '10.0.0.99' }] },
+        { id: 'Gi0/5__ip', label: 'Gi0/5 ip', options: [{ id: 'a', text: '10.0.0.30' }, { id: 'b', text: '10.0.0.99' }] } ] },
+        answer: { slots: { 'Gi0/1__dev': 'a', 'Gi0/1__ip': 'a', 'Gi0/5__ip': 'a' } } },
+      { id: 'aud', type: 'analyze', points: 1, payload: { multi: false, mode: 'excerptLines' },
+        answer: { selected: ['c2'] } } ] };
+  assert(disco(scn).ok === true, 'disco: sound cross-referenced scenario passes');
+  var bad1 = JSON.parse(JSON.stringify(scn)); bad1.steps[0].answer.slots['Gi0/5__ip'] = 'b';   // 10.0.0.99, not the ARP join
+  assert(disco(bad1).ok === false, 'disco: keyed silent-host IP not derivable from MAC×ARP rejected');
+  var bad2 = JSON.parse(JSON.stringify(scn)); bad2.steps[1].answer.slots = undefined; bad2.steps[1].answer.selected = ['c1'];  // wrong contradicting row
+  assert(disco(bad2).ok === false, 'disco: keyed audit line is not the contradicting row rejected');
+  var bad3 = JSON.parse(JSON.stringify(scn)); bad3.assets.reference.excerpts[3].lines[1].fact = { port: 'Gi0/5', device: 'silent-host', mgmt: '10.0.0.30' };  // now consistent → zero contradictions
+  assert(disco(bad3).ok === false, 'disco: exactly-one-contradiction invariant enforced (zero contradictions rejected)');
+})();
+
+(function () {
+  var grab = function (n) { return _fnBody(js, n); };
+  var sigVar = (js.match(/var _TRIAGE_FAULT_SIG = \{[\s\S]*?\n\s*\};/) || [''])[0];
+  var body = [grab('_slFidelityResolveSlot'), grab('_arrEq'), grab('_setEq'), sigVar, grab('_triageEvidenceLines'), grab('simLabValidateEvidenceTriageFidelity')].join('\n');
+  if (!sigVar || body.indexOf('simLabValidateEvidenceTriageFidelity') === -1) { results.errors.push('could not extract triage validator'); return; }
+  var vm = require('vm');
+  var tCtx = {}; vm.createContext(tCtx); vm.runInContext(body, tCtx);
+  vm.runInContext('globalThis.__tri = simLabValidateEvidenceTriageFidelity;', tCtx);
+  var tri = tCtx.__tri;
+  var assert = function (cond, msg) { test(msg, !!cond); };
+
+  var scn = { triage: { fault: 'apipa' },
+    assets: { reference: { kind: 'terminal', host: 'LAPTOP', session: 's',
+      excerpts: [ { id: 'ipcfg', promptLine: 'C:\\> ipconfig /all', lines: [
+        { id: 'e1', text: 'Media State: Media connected', select: true, evidence: false },
+        { id: 'e2', text: 'IPv4 Address: 169.254.83.12(Preferred)', select: true, evidence: true },
+        { id: 'e3', text: 'Default Gateway:', select: true, evidence: true },
+        { id: 'e4', text: 'Description: Intel Wi-Fi 6', select: false, ctx: true } ] } ] } },
+    steps: [
+      { id: 'flag', type: 'analyze', points: 1, payload: { multi: true, mode: 'excerptLines', scoring: 'lenient' },
+        answer: { selected: ['e2', 'e3'] } },
+      { id: 'dx', type: 'configure', points: 1, payload: { slots: [
+        { id: 'diagnosis', label: 'Diagnosis', options: [{ id: 'a', text: 'APIPA — no DHCP lease' }, { id: 'b', text: 'Bad DNS server' }] },
+        { id: 'firstMove', label: 'First move', options: [{ id: 'a', text: 'Run ipconfig /renew' }, { id: 'b', text: 'Replace the NIC' }] } ] },
+        answer: { slots: { diagnosis: 'a', firstMove: 'a' } } } ] };
+  assert(tri(scn).ok === true, 'triage: sound APIPA scenario passes');
+  var bad1 = JSON.parse(JSON.stringify(scn)); bad1.steps[0].answer.selected = ['e1', 'e2', 'e3'];  // includes the false trap
+  assert(tri(bad1).ok === false, 'triage: keyed selected including an evidence:false trap rejected');
+  var bad2 = JSON.parse(JSON.stringify(scn));
+  bad2.assets.reference.excerpts[0].lines[0].evidence = true;   // no false distractor left among selectable lines
+  bad2.steps[0].answer.selected = ['e1', 'e2', 'e3'];
+  assert(tri(bad2).ok === false, 'triage: all-true selectable set (no scored distractor) rejected');
+  var bad3 = JSON.parse(JSON.stringify(scn)); bad3.steps[1].answer.slots.firstMove = 'b';
+  assert(tri(bad3).ok === false, 'triage: firstMove not following from evidence rejected');
 })();
 
 // ── Sim Lab: network reference renderer (Task 6) ──
@@ -22845,6 +23107,227 @@ console.log('\n\x1b[1m── T7: DRILLS ANALYTICS GROUP + FINAL COPY + BRONZE TO
   }
 })();
 
+// ── Wave 2 Task 8: Net+ CLI Fault Isolation seed-bank validation ──
+// The 12 consensus-approved (two-agent gated) Net+ CLI scenarios now live for
+// real in features/sim-lab-seed-netplus.js (window.SIM_LAB_SEED_NETPLUS).
+// This proves every one of them is real, production-ready content: each
+// passes the same pure validators that gate the dev fixtures above
+// (simLabValidateScenario + simLabValidateCliFaultFidelity), extracted from
+// features/sim-lab.js the same way the Wave 1 bank blocks do. Mirrors the
+// Wave 1 Task 6/7 bank-block structure, swapping in the CLI fault oracle.
+(function () {
+  console.log('\n\x1b[1m── Sim Lab: Net+ CLI Fault Isolation seed-bank validation (Wave 2 Task 8) ──\x1b[0m');
+  try {
+    var vm = require('vm');
+    function assert(cond, msg) { test(msg, !!cond); }
+
+    var grab = function (name) {
+      var re = new RegExp('function ' + name + '\\([^)]*\\) \\{[\\s\\S]*?\\n\\}');
+      return (js.match(re) || [''])[0];
+    };
+
+    // ── Extract the REAL pure validators from features/sim-lab.js, exactly
+    // as the Wave 1 bank blocks do ──
+    var isNonEmptyStrBody    = grab('_isNonEmptyStr');
+    var validatePayloadBody  = grab('_validateStepPayload');
+    var validateScenarioBody = grab('simLabValidateScenario');
+    var stepTypesMatch = js.match(/var STEP_TYPES\s*=\s*\[[^\]]+\]/);
+    var stepTypesDecl = stepTypesMatch ? stepTypesMatch[0] + ';' : "var STEP_TYPES = ['order','categorize','match','analyze','fillin','configure'];";
+
+    var resolveSlotBody = grab('_slFidelityResolveSlot');
+    var sigVar = (js.match(/var _CLI_FAULT_SIG = \{[\s\S]*?\n\s*\};/) || [''])[0];
+    var cliExcerptTextBody = grab('_cliExcerptText');
+    var cliNeedlesMetBody  = grab('_cliNeedlesMet');
+    var cliFidelityBody    = grab('simLabValidateCliFaultFidelity');
+
+    if (!isNonEmptyStrBody || !validatePayloadBody || !validateScenarioBody ||
+        !resolveSlotBody || !sigVar || !cliExcerptTextBody || !cliNeedlesMetBody || !cliFidelityBody) {
+      test('Net+ CLI bank: validator helper extraction succeeded', false);
+      results.errors.push('could not extract validator helpers for Wave 2 Task 8 bank test; check names/indenting');
+      return;
+    }
+
+    var vCtx = {};
+    vm.createContext(vCtx);
+    vm.runInContext(stepTypesDecl, vCtx);
+    vm.runInContext(isNonEmptyStrBody, vCtx);
+    vm.runInContext(validatePayloadBody, vCtx);
+    vm.runInContext(validateScenarioBody, vCtx);
+    vm.runInContext(resolveSlotBody, vCtx);
+    vm.runInContext(sigVar, vCtx);
+    vm.runInContext(cliExcerptTextBody, vCtx);
+    vm.runInContext(cliNeedlesMetBody, vCtx);
+    vm.runInContext(cliFidelityBody, vCtx);
+    vm.runInContext('globalThis.__validate = simLabValidateScenario; globalThis.__cliFidelity = simLabValidateCliFaultFidelity;', vCtx);
+    var simLabValidateScenario = vCtx.__validate;
+    var simLabValidateCliFaultFidelity = vCtx.__cliFidelity;
+
+    // ── Load the real seed bank: eval features/sim-lab-seed-netplus.js in a
+    // sandbox with `var window = {}` so window.SIM_LAB_SEED_NETPLUS populates ──
+    var seedSrc = read('features/sim-lab-seed-netplus.js');
+    var seedCtx = {};
+    vm.createContext(seedCtx);
+    vm.runInContext('var window = {};\n' + seedSrc + '\nglobalThis.__seed = window.SIM_LAB_SEED_NETPLUS;', seedCtx);
+    var seedBank = seedCtx.__seed;
+
+    test('Net+ CLI bank: window.SIM_LAB_SEED_NETPLUS loaded as an array',
+      Array.isArray(seedBank));
+    if (!Array.isArray(seedBank)) {
+      results.errors.push('could not load window.SIM_LAB_SEED_NETPLUS from features/sim-lab-seed-netplus.js');
+      return;
+    }
+
+    var cliScenarios = seedBank.filter(function (s) { return s && s.archetype === 'cli'; });
+    test('Net+ CLI bank: at least 10 cli-archetype scenarios present',
+      cliScenarios.length >= 10);
+
+    var allValidateOk = true, allFidelityOk = true, allCertOk = true;
+    cliScenarios.forEach(function (s) {
+      var vr = simLabValidateScenario(s);
+      if (!vr || vr.ok !== true) {
+        allValidateOk = false;
+        results.errors.push('Net+ CLI bank: ' + (s && s.id) + ' failed simLabValidateScenario: ' + JSON.stringify(vr && vr.errors));
+      }
+      var fr = simLabValidateCliFaultFidelity(s);
+      if (!fr || fr.ok !== true) {
+        allFidelityOk = false;
+        results.errors.push('Net+ CLI bank: ' + (s && s.id) + ' failed simLabValidateCliFaultFidelity: ' + JSON.stringify(fr && fr.errors));
+      }
+      if (!s || s.cert !== 'netplus') {
+        allCertOk = false;
+        results.errors.push('Net+ CLI bank: ' + (s && s.id) + ' has cert !== netplus: ' + JSON.stringify(s && s.cert));
+      }
+    });
+
+    test('Net+ CLI bank: every cli scenario passes simLabValidateScenario',
+      allValidateOk);
+    test('Net+ CLI bank: every cli scenario passes simLabValidateCliFaultFidelity',
+      allFidelityOk);
+    test('Net+ CLI bank: every cli scenario has cert === netplus',
+      allCertOk);
+
+  } catch (err) {
+    test('Net+ CLI bank: vm smoke test (threw)', false);
+    results.errors.push('Net+ CLI bank smoke test threw: ' + err.message);
+  }
+})();
+
+// ── Wave 2 Task 9: Net+ Network Discovery Audit seed-bank validation ──
+// The 11 consensus-approved (two-agent gated) Net+ Network Discovery Audit
+// scenarios now live for real in features/sim-lab-seed-netplus.js
+// (window.SIM_LAB_SEED_NETPLUS). This proves every one of them is real,
+// production-ready content: each passes the same pure validators that gate
+// the dev fixtures above (simLabValidateScenario +
+// simLabValidateDiscoveryAuditFidelity), extracted from features/sim-lab.js
+// the same way the Wave 2 Task 8 CLI bank block does.
+(function () {
+  console.log('\n\x1b[1m── Sim Lab: Net+ Network Discovery Audit seed-bank validation (Wave 2 Task 9) ──\x1b[0m');
+  try {
+    var vm = require('vm');
+    function assert(cond, msg) { test(msg, !!cond); }
+
+    var grab = function (name) {
+      var re = new RegExp('function ' + name + '\\([^)]*\\) \\{[\\s\\S]*?\\n\\}');
+      return (js.match(re) || [''])[0];
+    };
+
+    // ── Extract the REAL pure validators from features/sim-lab.js, exactly
+    // as the Wave 2 Task 8 CLI bank block does ──
+    var isNonEmptyStrBody    = grab('_isNonEmptyStr');
+    var validatePayloadBody  = grab('_validateStepPayload');
+    var validateScenarioBody = grab('simLabValidateScenario');
+    var stepTypesMatch = js.match(/var STEP_TYPES\s*=\s*\[[^\]]+\]/);
+    var stepTypesDecl = stepTypesMatch ? stepTypesMatch[0] + ';' : "var STEP_TYPES = ['order','categorize','match','analyze','fillin','configure'];";
+
+    var resolveSlotBody     = grab('_slFidelityResolveSlot');
+    var discoLineFactsBody  = grab('_discoLineFacts');
+    var discoDerivePortBody = grab('_discoDerivePort');
+    var discoFidelityBody   = grab('simLabValidateDiscoveryAuditFidelity');
+
+    if (!isNonEmptyStrBody || !validatePayloadBody || !validateScenarioBody ||
+        !resolveSlotBody || !discoLineFactsBody || !discoDerivePortBody || !discoFidelityBody) {
+      test('Net+ Discovery bank: validator helper extraction succeeded', false);
+      results.errors.push('could not extract validator helpers for Wave 2 Task 9 bank test; check names/indenting');
+      return;
+    }
+
+    var vCtx = {};
+    vm.createContext(vCtx);
+    vm.runInContext(stepTypesDecl, vCtx);
+    vm.runInContext(isNonEmptyStrBody, vCtx);
+    vm.runInContext(validatePayloadBody, vCtx);
+    vm.runInContext(validateScenarioBody, vCtx);
+    vm.runInContext(resolveSlotBody, vCtx);
+    vm.runInContext(discoLineFactsBody, vCtx);
+    vm.runInContext(discoDerivePortBody, vCtx);
+    vm.runInContext(discoFidelityBody, vCtx);
+    vm.runInContext('globalThis.__validate = simLabValidateScenario; globalThis.__discoFidelity = simLabValidateDiscoveryAuditFidelity;', vCtx);
+    var simLabValidateScenario = vCtx.__validate;
+    var simLabValidateDiscoveryAuditFidelity = vCtx.__discoFidelity;
+
+    // ── Load the real seed bank: eval features/sim-lab-seed-netplus.js in a
+    // sandbox with `var window = {}` so window.SIM_LAB_SEED_NETPLUS populates ──
+    var seedSrc = read('features/sim-lab-seed-netplus.js');
+    var seedCtx = {};
+    vm.createContext(seedCtx);
+    vm.runInContext('var window = {};\n' + seedSrc + '\nglobalThis.__seed = window.SIM_LAB_SEED_NETPLUS;', seedCtx);
+    var seedBank = seedCtx.__seed;
+
+    test('Net+ Discovery bank: window.SIM_LAB_SEED_NETPLUS loaded as an array',
+      Array.isArray(seedBank));
+    if (!Array.isArray(seedBank)) {
+      results.errors.push('could not load window.SIM_LAB_SEED_NETPLUS from features/sim-lab-seed-netplus.js');
+      return;
+    }
+
+    var discoScenarios = seedBank.filter(function (s) { return s && s.archetype === 'discovery'; });
+    test('Net+ Discovery bank: at least 10 discovery-archetype scenarios present',
+      discoScenarios.length >= 10);
+
+    var allValidateOk = true, allFidelityOk = true, allCertOk = true;
+    discoScenarios.forEach(function (s) {
+      var vr = simLabValidateScenario(s);
+      if (!vr || vr.ok !== true) {
+        allValidateOk = false;
+        results.errors.push('Net+ Discovery bank: ' + (s && s.id) + ' failed simLabValidateScenario: ' + JSON.stringify(vr && vr.errors));
+      }
+      var fr = simLabValidateDiscoveryAuditFidelity(s);
+      if (!fr || fr.ok !== true) {
+        allFidelityOk = false;
+        results.errors.push('Net+ Discovery bank: ' + (s && s.id) + ' failed simLabValidateDiscoveryAuditFidelity: ' + JSON.stringify(fr && fr.errors));
+      }
+      if (!s || s.cert !== 'netplus') {
+        allCertOk = false;
+        results.errors.push('Net+ Discovery bank: ' + (s && s.id) + ' has cert !== netplus: ' + JSON.stringify(s && s.cert));
+      }
+    });
+
+    test('Net+ Discovery bank: every discovery scenario passes simLabValidateScenario',
+      allValidateOk);
+    test('Net+ Discovery bank: every discovery scenario passes simLabValidateDiscoveryAuditFidelity',
+      allFidelityOk);
+    test('Net+ Discovery bank: every discovery scenario has cert === netplus',
+      allCertOk);
+
+    // ── Extra cross-check: every records-audit answer.selected has length 1,
+    // and the reconcile configure step defines a <port>__ip slot for every
+    // scn.disco.ports[*].port ──
+    discoScenarios.forEach(function (s) {
+      var cfg = s.steps.filter(function (st) { return st.type === 'configure'; })[0];
+      var aud = s.steps.filter(function (st) { return st.type === 'analyze'; })[0];
+      var haveIpSlots = s.disco.ports.every(function (p) {
+        return cfg.payload.slots.some(function (sl) { return sl.id === p.port + '__ip'; });
+      });
+      test('disco ' + s.id + ': every port has an __ip reconcile slot + single audit pick',
+        haveIpSlots && aud && aud.answer.selected.length === 1);
+    });
+
+  } catch (err) {
+    test('Net+ Discovery bank: vm smoke test (threw)', false);
+    results.errors.push('Net+ Discovery bank smoke test threw: ' + err.message);
+  }
+})();
+
 // ── Wave 1 Task 8: A+ Core 1 SOHO Router seed-bank validation ──
 // The 12 consensus-approved A+ Core 1 SOHO Router scenarios now live for real
 // in features/sim-lab-seed-aplus-core1.js (window.SIM_LAB_SEED_APLUS_CORE1).
@@ -22953,6 +23436,121 @@ console.log('\n\x1b[1m── T7: DRILLS ANALYTICS GROUP + FINAL COPY + BRONZE TO
   } catch (err) {
     test('A+ Core 1 SOHO bank: vm smoke test (threw)', false);
     results.errors.push('A+ Core 1 SOHO bank smoke test threw: ' + err.message);
+  }
+})();
+
+// ── Wave 2 Task 10: A+ Core 1 Command-Output Evidence Triage seed-bank
+// validation ──
+// The 12 consensus-approved (two-agent gated) A+ Core 1 Command-Output
+// Evidence Triage scenarios now live for real in
+// features/sim-lab-seed-aplus-core1.js (window.SIM_LAB_SEED_APLUS_CORE1,
+// archetype 'triage'). This proves every one of them is real,
+// production-ready content: each passes the same pure validators that gate
+// the dev fixtures above (simLabValidateScenario +
+// simLabValidateEvidenceTriageFidelity), extracted from features/sim-lab.js
+// the same way the Task 6/7 dev-fixture block above does.
+(function () {
+  console.log('\n\x1b[1m── Sim Lab: A+ Core 1 Command-Output Evidence Triage seed-bank validation (Wave 2 Task 10) ──\x1b[0m');
+  try {
+    var vm = require('vm');
+    function assert(cond, msg) { test(msg, !!cond); }
+
+    var grab = function (name) { return _fnBody(js, name); };
+
+    // ── Extract the REAL pure validators from features/sim-lab.js, exactly
+    // as the Task 6/7 dev-fixture triage block above does ──
+    var isNonEmptyStrBody    = grab('_isNonEmptyStr');
+    var validatePayloadBody  = grab('_validateStepPayload');
+    var validateScenarioBody = grab('simLabValidateScenario');
+    var stepTypesMatch = js.match(/var STEP_TYPES\s*=\s*\[[^\]]+\]/);
+    var stepTypesDecl = stepTypesMatch ? stepTypesMatch[0] + ';' : "var STEP_TYPES = ['order','categorize','match','analyze','fillin','configure'];";
+
+    var resolveSlotBody = grab('_slFidelityResolveSlot');
+    var arrEqBody        = grab('_arrEq');
+    var setEqBody        = grab('_setEq');
+    var sigVar           = (js.match(/var _TRIAGE_FAULT_SIG = \{[\s\S]*?\n\s*\};/) || [''])[0];
+    var evidenceLinesBody = grab('_triageEvidenceLines');
+    var triageFidelityBody = grab('simLabValidateEvidenceTriageFidelity');
+
+    if (!isNonEmptyStrBody || !validatePayloadBody || !validateScenarioBody ||
+        !resolveSlotBody || !sigVar || !evidenceLinesBody || !triageFidelityBody) {
+      test('A+ Core 1 Triage bank: validator helper extraction succeeded', false);
+      results.errors.push('could not extract validator helpers for Wave 2 Task 10 bank test; check names/indenting');
+      return;
+    }
+
+    var vCtx = {};
+    vm.createContext(vCtx);
+    vm.runInContext(stepTypesDecl, vCtx);
+    vm.runInContext(isNonEmptyStrBody, vCtx);
+    vm.runInContext(validatePayloadBody, vCtx);
+    vm.runInContext(validateScenarioBody, vCtx);
+    vm.runInContext(resolveSlotBody, vCtx);
+    if (arrEqBody) vm.runInContext(arrEqBody, vCtx);
+    if (setEqBody) vm.runInContext(setEqBody, vCtx);
+    vm.runInContext(sigVar, vCtx);
+    vm.runInContext(evidenceLinesBody, vCtx);
+    vm.runInContext(triageFidelityBody, vCtx);
+    vm.runInContext('globalThis.__validate = simLabValidateScenario; globalThis.__triFidelity = simLabValidateEvidenceTriageFidelity;', vCtx);
+    var simLabValidateScenario = vCtx.__validate;
+    var simLabValidateEvidenceTriageFidelity = vCtx.__triFidelity;
+
+    // ── Load the real seed bank: eval features/sim-lab-seed-aplus-core1.js
+    // in a sandbox with `var window = {}` so window.SIM_LAB_SEED_APLUS_CORE1
+    // populates ──
+    var seedSrc = read('features/sim-lab-seed-aplus-core1.js');
+    var seedCtx = {};
+    vm.createContext(seedCtx);
+    vm.runInContext('var window = {};\n' + seedSrc + '\nglobalThis.__seed = window.SIM_LAB_SEED_APLUS_CORE1;', seedCtx);
+    var seedBank = seedCtx.__seed;
+
+    test('A+ Core 1 Triage bank: window.SIM_LAB_SEED_APLUS_CORE1 loaded as an array',
+      Array.isArray(seedBank));
+    if (!Array.isArray(seedBank)) {
+      results.errors.push('could not load window.SIM_LAB_SEED_APLUS_CORE1 from features/sim-lab-seed-aplus-core1.js');
+      return;
+    }
+
+    var bankTriage = seedBank.filter(function (s) { return s && s.archetype === 'triage'; });
+    test('A+ Core 1 Triage bank: at least 10 triage-archetype scenarios present',
+      bankTriage.length >= 10);
+
+    var allValidateOk = true, allFidelityOk = true, allCertOk = true;
+    bankTriage.forEach(function (s) {
+      var vr = simLabValidateScenario(s);
+      if (!vr || vr.ok !== true) {
+        allValidateOk = false;
+        results.errors.push('A+ Core 1 Triage bank: ' + (s && s.id) + ' failed simLabValidateScenario: ' + JSON.stringify(vr && vr.errors));
+      }
+      var fr = simLabValidateEvidenceTriageFidelity(s);
+      if (!fr || fr.ok !== true) {
+        allFidelityOk = false;
+        results.errors.push('A+ Core 1 Triage bank: ' + (s && s.id) + ' failed simLabValidateEvidenceTriageFidelity: ' + JSON.stringify(fr && fr.errors));
+      }
+      if (s.cert !== 'aplus-core1') {
+        allCertOk = false;
+        results.errors.push('A+ Core 1 Triage bank: ' + (s && s.id) + ' has cert ' + s.cert + ', expected aplus-core1');
+      }
+    });
+
+    test('A+ Core 1 Triage bank: every triage scenario passes simLabValidateScenario',
+      allValidateOk);
+    test('A+ Core 1 Triage bank: every triage scenario passes simLabValidateEvidenceTriageFidelity',
+      allFidelityOk);
+    test('A+ Core 1 Triage bank: every triage scenario has cert === "aplus-core1"',
+      allCertOk);
+
+    // ── Extra cross-check: every triage scenario keeps a scored
+    // evidence:false distractor line among its selectable reference lines ──
+    bankTriage.forEach(function (s) {
+      var lines = []; s.assets.reference.excerpts.forEach(function (ex) { (ex.lines || []).forEach(function (l) { lines.push(l); }); });
+      var hasFalse = lines.some(function (l) { return l.select && l.evidence === false; });
+      test('triage ' + s.id + ': keeps a scored evidence:false distractor', hasFalse);
+    });
+
+  } catch (err) {
+    test('A+ Core 1 Triage bank: vm smoke test (threw)', false);
+    results.errors.push('A+ Core 1 Triage bank smoke test threw: ' + err.message);
   }
 })();
 
@@ -23909,6 +24507,398 @@ console.log('\n\x1b[1m── T7: DRILLS ANALYTICS GROUP + FINAL COPY + BRONZE TO
   } catch (err) {
     test('Task 9: archetype vertical-slice smoke test (threw)', false);
     results.errors.push('Task 9 archetype vertical-slice smoke test threw: ' + err.message);
+  }
+})();
+
+// ── Wave 2 Task 11: archetype vertical-slice mount + score, through the REAL
+// terminal-reference + guarded-analyze-mode Practice path ──
+// Proves the three NEW Wave 2 archetypes (cli, discovery, triage) actually
+// mount and score through _slMountScenario end to end — including the
+// terminal reference renderer (Wave 2 Task 2), the reveal-mode command menu
+// and excerptLines mode (Wave 2 Task 3's guarded analyze extension), and
+// lenient evidence scoring — against the REAL shipped bank scenarios, not a
+// hand-authored fixture. Mirrors the Task 9 (Wave 1) vertical-slice pattern
+// (grab() extraction + guard clauses), but the DOM shim additionally needs
+// the Task 2 terminal-renderer shim's stateful classList/removeAttribute/
+// _fire (Task 9's shim never exercised a terminal ref so it lacked both —
+// revealExcerpt calls block.removeAttribute('hidden')).
+(function () {
+  console.log('\n\x1b[1m── Sim Lab: Wave 2 archetype vertical slices — cli/discovery/triage (Task 11) ──\x1b[0m');
+  try {
+    var vm = require('vm');
+
+    var grab = function (name) {
+      var re = new RegExp('function ' + name + '\\([^)]*\\) \\{[\\s\\S]*?\\n\\}');
+      return (js.match(re) || [''])[0];
+    };
+    var grabLine = function (name) {
+      var re = new RegExp('function ' + name + '\\([^\\n]*\\)\\s*\\{[^\\n]*\\}');
+      return (js.match(re) || [''])[0];
+    };
+
+    var elBody               = grab('_el');
+    var escBody               = grabLine('_esc');
+    var slAttrBody            = grabLine('_slAttr');
+    var renderCfgBody         = grab('_slRenderConfigure');
+    var renderAnalyzeModeBody = grab('_slRenderAnalyzeMode');
+    var renderAnalyzeBody     = grab('_slRenderAnalyze');
+    var renderStepBody        = grab('simLabRenderStep');
+    var refNetBody            = grab('_slRenderRefNetwork');
+    var refTimeBody           = grab('_slRenderRefTimeline');
+    var refLayBody            = grab('_slRenderRefLayered');
+    var termLineBody          = grab('_termLineHtml');
+    var termPmtBody           = grab('_termPromptHtml');
+    var refTermBody           = grab('_slRenderRefTerminal');
+    var refDispBody           = grab('_slRenderReference');
+    var mountBody             = grab('_slMountScenario');
+    var scoreSlotsBody          = grab('_scoreConfigureSlots');
+    var scoreAnalyzeLenientBody = grab('_scoreAnalyzeLenient');
+    var scoreStepBody           = grab('_scoreStep');
+    var scoreScenarioBody       = grab('simLabScoreScenario');
+    var normBody           = grab('_norm');
+    var normalizeMatchBody = grab('_simLabNormalizeMatch');
+    var arrEqBody          = grab('_arrEq');
+    var setEqBody          = grab('_setEq');
+
+    if (!elBody || !escBody || !mountBody || !refDispBody || !refTermBody ||
+        !renderCfgBody || !renderAnalyzeBody || !renderAnalyzeModeBody || !renderStepBody ||
+        !scoreScenarioBody || !scoreSlotsBody || !scoreStepBody || !scoreAnalyzeLenientBody ||
+        !termLineBody || !termPmtBody) {
+      test('Task 11 (Wave 2): mount/score vm extraction succeeded', false);
+      results.errors.push('could not extract _slMountScenario/render/score/terminal helpers for Wave 2 Task 11 archetype vertical slices; check names/indenting');
+      return;
+    }
+
+    // ── Load the REAL seed banks (same vm-eval approach as the Task 9/10
+    // Wave 2 bank tests) — resolve the target scenarios from the ACTUAL
+    // shipped content, never a hand-typed literal. ──
+    var netplusSrc = read('features/sim-lab-seed-netplus.js');
+    var netplusCtx = {};
+    vm.createContext(netplusCtx);
+    vm.runInContext('var window = {};\n' + netplusSrc + '\nglobalThis.__seed = window.SIM_LAB_SEED_NETPLUS;', netplusCtx);
+    var netplusBank = netplusCtx.__seed;
+
+    var aplusCore1Src = read('features/sim-lab-seed-aplus-core1.js');
+    var aplusCore1Ctx = {};
+    vm.createContext(aplusCore1Ctx);
+    vm.runInContext('var window = {};\n' + aplusCore1Src + '\nglobalThis.__seed = window.SIM_LAB_SEED_APLUS_CORE1;', aplusCore1Ctx);
+    var aplusCore1Bank = aplusCore1Ctx.__seed;
+
+    test('Task 11 (Wave 2): both real seed banks loaded as arrays',
+      Array.isArray(netplusBank) && Array.isArray(aplusCore1Bank));
+    if (!Array.isArray(netplusBank) || !Array.isArray(aplusCore1Bank)) {
+      results.errors.push('Task 11 (Wave 2): could not load real seed banks (SIM_LAB_SEED_NETPLUS / SIM_LAB_SEED_APLUS_CORE1)');
+      return;
+    }
+
+    var cliScn       = netplusBank.filter(function (s) { return s && s.archetype === 'cli'; })[0];
+    var discoveryScn = netplusBank.filter(function (s) { return s && s.archetype === 'discovery'; })[0];
+    var triageScn    = aplusCore1Bank.filter(function (s) { return s && s.archetype === 'triage'; })[0];
+
+    test('Task 11 (Wave 2): first cli-archetype scenario resolved from the real bank (np-cli-01)',
+      cliScn && cliScn.id === 'np-cli-01');
+    test('Task 11 (Wave 2): first discovery-archetype scenario resolved from the real bank (np-disc-01)',
+      discoveryScn && discoveryScn.id === 'np-disc-01');
+    test('Task 11 (Wave 2): first triage-archetype scenario resolved from the real bank (a1-cot-01)',
+      triageScn && triageScn.id === 'a1-cot-01');
+
+    if (!cliScn || !discoveryScn || !triageScn) {
+      results.errors.push('Task 11 (Wave 2): could not resolve one or more archetype scenarios from the real banks; check archetype tagging');
+      return;
+    }
+
+    // ── DOM shim: the Task 9 select/change-driving surface merged with the
+    // Task 2 terminal-renderer shim's stateful classList + removeAttribute +
+    // _fire. ──
+    var htmlEsc = function (s) {
+      return String(s == null ? '' : s)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    };
+    var makeEl = function (tag) {
+      var attrs = {}, listeners = {}, children = [], cls = '', inner = '', val = '';
+      var clsSet = {};
+      var el = {
+        tagName: tag.toUpperCase(),
+        get className() { return cls; }, set className(v) { cls = v; },
+        get innerHTML() { return inner; }, set innerHTML(v) { inner = v; children = []; },
+        get textContent() { return ''; }, set textContent(v) { inner = htmlEsc(v); },
+        get value() { return val; }, set value(v) { val = v; },
+        selected: false,
+        style: {},
+        get _children() { return children; },
+        classList: {
+          add: function (c) { clsSet[c] = true; },
+          remove: function (c) { delete clsSet[c]; },
+          toggle: function (c, on) { if (on) clsSet[c] = true; else delete clsSet[c]; },
+          contains: function (c) { return !!clsSet[c]; }
+        },
+        setAttribute: function (k, v) { attrs[k] = v; },
+        getAttribute: function (k) { return (k in attrs) ? attrs[k] : null; },
+        removeAttribute: function (k) { delete attrs[k]; },
+        appendChild: function (c) { children.push(c); return c; },
+        insertBefore: function (c) { children.unshift(c); return c; },
+        querySelector: function (sel) {
+          var want = sel.replace(/^\./, '');
+          var hit = null;
+          var walk = function (n) {
+            if (hit || !n || !n._children) return;
+            n._children.forEach(function (c) {
+              if (hit || !c || !c.tagName) return;
+              if (want.toUpperCase() === c.tagName || (c.className && c.className.split(' ').indexOf(want) !== -1)) { hit = c; return; }
+              walk(c);
+            });
+          };
+          walk(el);
+          return hit;
+        },
+        querySelectorAll: function (sel) {
+          var hits = [], want = sel.replace(/^\./, '');
+          var walk = function (n) { (n._children || []).forEach(function (c) {
+            if (!c || !c.tagName) return;
+            if (want.toUpperCase() === c.tagName || (c.className && c.className.split(' ').indexOf(want) !== -1)) hits.push(c);
+            walk(c);
+          }); };
+          walk(el); return hits;
+        },
+        addEventListener: function (ev, fn) { (listeners[ev] = listeners[ev] || []).push(fn); },
+        dispatchEvent: function (evObj) { (listeners[evObj.type] || []).forEach(function (fn) { fn(evObj); }); },
+        _fire: function (ev) { (listeners[ev] || []).forEach(function (fn) { fn({}); }); },
+        closest: function () { return null; },
+        remove: function () {}
+      };
+      return el;
+    };
+
+    var docShim = {
+      createElement: function (tag) { return makeEl(tag); },
+      createTextNode: function (t) { return { textContent: t, tagName: '#text' }; }
+    };
+    var windowShim = { CSS: null, matchMedia: function () { return { matches: false }; } };
+
+    var mCtx = { document: docShim, window: windowShim, Object: Object, Array: Array, String: String, JSON: JSON };
+    vm.createContext(mCtx);
+    vm.runInContext(elBody, mCtx);
+    vm.runInContext(escBody, mCtx);
+    vm.runInContext(slAttrBody, mCtx);
+    vm.runInContext(renderCfgBody, mCtx);
+    vm.runInContext(renderAnalyzeModeBody, mCtx);
+    vm.runInContext(renderAnalyzeBody, mCtx);
+    vm.runInContext(renderStepBody, mCtx);
+    vm.runInContext(refNetBody, mCtx);
+    if (refTimeBody) vm.runInContext(refTimeBody, mCtx);
+    if (refLayBody) vm.runInContext(refLayBody, mCtx);
+    vm.runInContext(termLineBody, mCtx);
+    vm.runInContext(termPmtBody, mCtx);
+    vm.runInContext(refTermBody, mCtx);
+    vm.runInContext(refDispBody, mCtx);
+    vm.runInContext(mountBody, mCtx);
+    vm.runInContext(normBody, mCtx);
+    vm.runInContext(normalizeMatchBody, mCtx);
+    vm.runInContext(arrEqBody, mCtx);
+    vm.runInContext(setEqBody, mCtx);
+    vm.runInContext(scoreSlotsBody, mCtx);
+    vm.runInContext(scoreAnalyzeLenientBody, mCtx);
+    vm.runInContext(scoreStepBody, mCtx);
+    vm.runInContext(scoreScenarioBody, mCtx);
+
+    function stepWraps(wrap) {
+      return (wrap ? wrap._children : []).filter(function (c) { return c && c.className === 'sl-step'; });
+    }
+    function firstConfigureStepIndex(scn) {
+      for (var i = 0; i < scn.steps.length; i++) { if (scn.steps[i].type === 'configure') return i; }
+      return -1;
+    }
+    function expectedSelectCount(scn) {
+      return scn.steps.filter(function (s) { return s.type === 'configure'; })
+        .reduce(function (sum, s) { return sum + s.payload.slots.length; }, 0);
+    }
+    function mountOnly(scn) {
+      var host = makeEl('div');
+      mCtx.__host = host;
+      mCtx.__scn = scn;
+      var result = null;
+      mCtx.__onSubmit = function (r) { result = r; };
+      vm.runInContext('globalThis.__opts = { onSubmit: __onSubmit }; _slMountScenario(__host, __scn, __opts);', mCtx);
+      return { wrap: host._children[0], getResult: function () { return result; } };
+    }
+    function submitActive() { vm.runInContext('window.__slActiveSubmit();', mCtx); }
+
+    // Drive every configure step to its keyed-correct slots, except
+    // wrongSlot { stepIndex, slotId } (optional) which is driven to any
+    // OTHER option — the negative control.
+    function driveConfigureCorrectly(wrap, scn, wrongSlot) {
+      var wraps = stepWraps(wrap);
+      scn.steps.forEach(function (st, i) {
+        if (st.type !== 'configure') return;
+        var selects = wraps[i].querySelectorAll('select');
+        selects.forEach(function (sel) {
+          var slotId = sel.getAttribute('data-slot');
+          var correctVal = st.answer.slots[slotId];
+          var v = correctVal;
+          if (wrongSlot && wrongSlot.stepIndex === i && wrongSlot.slotId === slotId) {
+            var slotDef = st.payload.slots.filter(function (s) { return s.id === slotId; })[0];
+            var wrongOpt = slotDef.options.filter(function (o) { return o.id !== correctVal; })[0];
+            v = wrongOpt.id;
+          }
+          sel.value = v;
+          sel.dispatchEvent({ type: 'change' });
+        });
+      });
+    }
+
+    // Drive every guarded analyze-mode step ('reveal' or 'excerptLines') to
+    // its keyed-correct picks, through the REAL DOM interaction each mode
+    // exposes: 'reveal' clicks the .sl-cmd command-menu buttons (which is
+    // what actually invokes window.__slRevealExcerpt + unhides the target
+    // excerpt block); 'excerptLines' clicks the terminal's own rendered
+    // .term-line buttons. extraFalsePickByStepId (optional, per stepId)
+    // adds one extra line click on top of the keyed-correct set — the
+    // lenient-scoring leniency contract under test.
+    function driveAnalyzeModeCorrectly(wrap, scn, extraFalsePickByStepId) {
+      scn.steps.forEach(function (st) {
+        if (st.type !== 'analyze') return;
+        var mode = st.payload && st.payload.mode;
+        if (mode !== 'reveal' && mode !== 'excerptLines') return;
+        var selector = (mode === 'reveal') ? '.sl-cmd' : '.term-line';
+        var attr = (mode === 'reveal') ? 'data-cmd' : 'data-line';
+        var btns = wrap.querySelectorAll(selector);
+        var toClick = st.answer.selected.slice();
+        if (extraFalsePickByStepId && extraFalsePickByStepId[st.id]) {
+          toClick = toClick.concat([extraFalsePickByStepId[st.id]]);
+        }
+        toClick.forEach(function (id) {
+          var btn = btns.filter(function (b) { return b.getAttribute(attr) === id; })[0];
+          if (btn) btn._fire('click');
+        });
+      });
+    }
+
+    // Find a real FALSE-evidence line id for an excerptLines analyze step
+    // (a select:true line NOT in answer.selected, i.e. keyed `evidence:
+    // false`) so the leniency negative pick exercises a genuine keyed line,
+    // not a synthetic id.
+    function findFalseEvidenceLine(scn, stepId) {
+      var st = scn.steps.filter(function (s) { return s.id === stepId; })[0];
+      var ref = scn.assets && scn.assets.reference;
+      if (!st || !ref || !Array.isArray(ref.excerpts)) return null;
+      var falseLine = null;
+      ref.excerpts.forEach(function (ex) {
+        (ex.lines || []).forEach(function (ln) {
+          if (falseLine) return;
+          if (ln.select && st.answer.selected.indexOf(ln.id) === -1) falseLine = ln.id;
+        });
+      });
+      return falseLine;
+    }
+
+    // ── CLI (np-cli-01): terminal ref (external reveal) + mode:'reveal'
+    // LENIENT analyze step + configure step. ──
+    var cMount = mountOnly(cliScn);
+    var cWrap = cMount.wrap;
+    test('Task 11 (Wave 2) cli: mounted DOM contains a .term terminal component and every configure <select>',
+      !!cWrap.querySelector('.term') && cWrap.querySelectorAll('select').length === expectedSelectCount(cliScn));
+
+    // (b) CLI reveal path — fire ONE real .sl-cmd button click and prove the
+    // reveal wiring actually ran end to end: window.__slRevealExcerpt was
+    // invoked AND the target excerpt block transitioned from hidden to
+    // unhidden. A spy wraps the REAL published handle so this proves the
+    // click handler calls the actual function, not merely that scoring ends
+    // up correct some other way.
+    var cCmdBtns = cWrap.querySelectorAll('.sl-cmd');
+    var cFirstCmdId = cliScn.steps[0].answer.selected[0];
+    var cFirstCmdBtn = cCmdBtns.filter(function (b) { return b.getAttribute('data-cmd') === cFirstCmdId; })[0];
+    var cExcerpt = cliScn.assets.reference.excerpts.filter(function (ex) { return ex.id === cFirstCmdId; })[0];
+    var cBlock = cWrap.querySelectorAll('.term-block').filter(function (b) { return b.getAttribute('data-excerpt') === cFirstCmdId; })[0];
+    var cWasHidden = !!cBlock && cBlock.getAttribute('hidden') !== null;
+    var cRevealCalledSpy = false;
+    var cRealReveal = mCtx.window.__slRevealExcerpt;
+    mCtx.window.__slRevealExcerpt = function (key) { cRevealCalledSpy = true; return cRealReveal(key); };
+    if (cFirstCmdBtn) cFirstCmdBtn._fire('click');
+    test('Task 11 (Wave 2) cli: firing a real .sl-cmd command-button click invokes window.__slRevealExcerpt AND unhides its target excerpt block',
+      !!cFirstCmdBtn && !!cExcerpt && cExcerpt.reveal === cFirstCmdId && cWasHidden && cRevealCalledSpy &&
+      !!cBlock && cBlock.getAttribute('hidden') === null);
+    mCtx.window.__slRevealExcerpt = cRealReveal;
+
+    driveAnalyzeModeCorrectly(cWrap, cliScn);
+    driveConfigureCorrectly(cWrap, cliScn);
+    submitActive();
+    var cResult = cMount.getResult();
+    test('Task 11 (Wave 2) cli: simLabScoreScenario reports correct === total after every keyed-correct reveal pick + configure answer',
+      cResult && cResult.total > 0 && cResult.correct === cResult.total);
+
+    var cliClone = JSON.parse(JSON.stringify(cliScn));
+    var cCfgIdx = firstConfigureStepIndex(cliClone);
+    var cMount2 = mountOnly(cliClone);
+    driveAnalyzeModeCorrectly(cMount2.wrap, cliClone);
+    driveConfigureCorrectly(cMount2.wrap, cliClone,
+      { stepIndex: cCfgIdx, slotId: cliClone.steps[cCfgIdx].payload.slots[0].id });
+    submitActive();
+    var cResult2 = cMount2.getResult();
+    test('Task 11 (Wave 2) cli negative control: one wrong root-cause/fix slot scores correct < total',
+      cResult2 && cResult2.correct < cResult2.total);
+
+    // ── Discovery (np-disc-01): terminal ref (tabs reveal) + configure step
+    // + EXACT-SET excerptLines analyze step. ──
+    var dMount = mountOnly(discoveryScn);
+    var dWrap = dMount.wrap;
+    test('Task 11 (Wave 2) discovery: mounted DOM contains a .term terminal component and every configure <select>',
+      !!dWrap.querySelector('.term') && dWrap.querySelectorAll('select').length === expectedSelectCount(discoveryScn));
+    driveAnalyzeModeCorrectly(dWrap, discoveryScn);
+    driveConfigureCorrectly(dWrap, discoveryScn);
+    submitActive();
+    var dResult = dMount.getResult();
+    test('Task 11 (Wave 2) discovery: simLabScoreScenario reports correct === total after every keyed-correct answer',
+      dResult && dResult.total > 0 && dResult.correct === dResult.total);
+
+    var discoveryClone = JSON.parse(JSON.stringify(discoveryScn));
+    var dCfgIdx = firstConfigureStepIndex(discoveryClone);
+    var dMount2 = mountOnly(discoveryClone);
+    driveAnalyzeModeCorrectly(dMount2.wrap, discoveryClone);
+    driveConfigureCorrectly(dMount2.wrap, discoveryClone,
+      { stepIndex: dCfgIdx, slotId: discoveryClone.steps[dCfgIdx].payload.slots[0].id });
+    submitActive();
+    var dResult2 = dMount2.getResult();
+    test('Task 11 (Wave 2) discovery negative control: one wrong reconciled-IP slot scores correct < total',
+      dResult2 && dResult2.correct < dResult2.total);
+
+    // ── Triage (a1-cot-01): terminal ref (no reveal gating) + configure
+    // step + LENIENT excerptLines analyze step. ──
+    var tMount = mountOnly(triageScn);
+    var tWrap = tMount.wrap;
+    test('Task 11 (Wave 2) triage: mounted DOM contains a .term terminal component and every configure <select>',
+      !!tWrap.querySelector('.term') && tWrap.querySelectorAll('select').length === expectedSelectCount(triageScn));
+
+    var tFlagStep = triageScn.steps.filter(function (s) { return s.type === 'analyze'; })[0];
+    var tFalseLine = findFalseEvidenceLine(triageScn, tFlagStep.id);
+    test('Task 11 (Wave 2) triage: fixture sanity — a real keyed evidence:false line exists to drive the leniency negative pick',
+      !!tFalseLine);
+
+    // (c) Lenient-evidence path: flag every keyed-correct evidence line PLUS
+    // one extra REAL evidence:false line — the false pick must NOT subtract
+    // credit (the Wave 2 Task 3 leniency contract), so the overall score
+    // must still come out full.
+    var tExtra = {}; tExtra[tFlagStep.id] = tFalseLine;
+    driveAnalyzeModeCorrectly(tWrap, triageScn, tExtra);
+    driveConfigureCorrectly(tWrap, triageScn);
+    submitActive();
+    var tResult = tMount.getResult();
+    test('Task 11 (Wave 2) triage: LENIENT scoring still reports correct === total when an extra keyed evidence:false line is flagged alongside every keyed-correct line',
+      tResult && tResult.total > 0 && tResult.correct === tResult.total);
+
+    var triageClone = JSON.parse(JSON.stringify(triageScn));
+    var tCfgIdx = firstConfigureStepIndex(triageClone);
+    var tMount2 = mountOnly(triageClone);
+    driveAnalyzeModeCorrectly(tMount2.wrap, triageClone);
+    driveConfigureCorrectly(tMount2.wrap, triageClone,
+      { stepIndex: tCfgIdx, slotId: triageClone.steps[tCfgIdx].payload.slots[0].id });
+    submitActive();
+    var tResult2 = tMount2.getResult();
+    test('Task 11 (Wave 2) triage negative control: one wrong diagnosis/first-move slot scores correct < total',
+      tResult2 && tResult2.correct < tResult2.total);
+
+  } catch (err) {
+    test('Task 11 (Wave 2): archetype vertical-slice smoke test (threw)', false);
+    results.errors.push('Task 11 (Wave 2) archetype vertical-slice smoke test threw: ' + err.message);
   }
 })();
 

@@ -3335,6 +3335,3096 @@ window.SIM_LAB_SEED_NETPLUS = [
         ] },
         answer: { selected: ['l1', 'l2', 'l3'] } }
     ]
-  }
+  },
 
+// ---------- DUPLEX (3) ----------
+  {
+    id: 'np-cli-01', cert: 'netplus', archetype: 'cli', objective: '5.2', topic: 'CLI fault isolation — physical/data link',
+    title: 'Slow file transfers on a warehouse access switch', estMinutes: 6,
+    scenario: 'Users on GigabitEthernet0/3 of a warehouse access switch report file transfers that used to take seconds now take minutes. The port link light is solid green and the host has an IP address. You have console access to the switch. Pick the commands that isolate the fault, then diagnose and fix it.',
+    cliFault: { fault: 'duplex' },
+    assets: { reference: { kind: 'terminal', host: 'SW-WH1', session: 'console', reveal: 'external', excerpts: [
+      { id: 'ping', necessary: false, promptLine: 'ping 10.20.4.15', reveal: 'ping', lines: [
+        { text: 'Sending 5, 100-byte ICMP Echos to 10.20.4.15, timeout is 2 seconds:' },
+        { text: '!!!!!' },
+        { text: 'Success rate is 100 percent (5/5), round-trip min/avg/max = 1/3/8 ms' }
+      ] },
+      { id: 'status', necessary: true, promptLine: 'show interface gi0/3 status', reveal: 'status', lines: [
+        { text: 'Port      Name    Status       Vlan  Duplex  Speed Type' },
+        { text: 'Gi0/3             connected    20    half-duplex   100  10/100/1000BaseTX' }
+      ] },
+      { id: 'counters', necessary: true, promptLine: 'show interface gi0/3 counters errors', reveal: 'counters', lines: [
+        { text: 'Port      Align-Err  FCS-Err  Xmit-Err  Rcv-Err  UnderSize  Late collision' },
+        { text: 'Gi0/3     0          0        0         0        0          1188' }
+      ] },
+      { id: 'log', necessary: true, promptLine: 'show logging | include DUPLEX', reveal: 'log', lines: [
+        { text: '%CDP-4-DUPLEX_MISMATCH: duplex mismatch discovered on GigabitEthernet0/3 (not full-duplex), with WH-SCANNER-04 (full-duplex)' }
+      ] },
+      { id: 'mac', necessary: false, promptLine: 'show mac address-table interface gi0/3', reveal: 'mac', lines: [
+        { text: '  20    001a.2b3c.4d5e    DYNAMIC     Gi0/3' }
+      ] },
+      { id: 'ver', necessary: false, promptLine: 'show version', reveal: 'ver', lines: [
+        { text: 'Cisco IOS Software, C2960X Software, Version 15.2(7)E3' },
+        { text: 'Uptime: 214 days' }
+      ] }
+    ] } },
+    steps: [
+      { id: 'cmds', type: 'analyze', points: 1,
+        prompt: 'The link is up and the host can reach the network, so basic connectivity is not the issue. Select the commands that actually isolate why transfers are slow.',
+        explanation: '`show interface status` exposes the negotiated duplex/speed per port, `show interface counters errors` exposes late collisions, and the syslog line shows IOS itself detected the mismatch and named the host as full-duplex — together the facts prove a duplex mismatch. Ping and MAC-table output confirm reachability/location but say nothing about performance.',
+        payload: { multi: true, mode: 'reveal', scoring: 'lenient' },
+        answer: { selected: ['status', 'counters', 'log'] } },
+      { id: 'dx', type: 'configure', points: 1,
+        prompt: 'Name the root cause and the correct fix.',
+        explanation: 'Half-duplex on the switch port against a full-duplex host produces late collisions under load, which manifests as slow, degraded throughput rather than an outage. Forcing (or restoring) auto-negotiation on both ends resolves the mismatch.',
+        payload: { slots: [
+          { id: 'rootCause', label: 'Root cause', options: [
+            { id: 'a', text: 'Duplex mismatch between the switch port and the host NIC' },
+            { id: 'b', text: 'Bad Ethernet cable causing intermittent link loss' },
+            { id: 'c', text: 'VLAN 20 is not permitted on the uplink trunk' }
+          ] },
+          { id: 'fix', label: 'Fix', options: [
+            { id: 'a', text: 'Set both the switch port and NIC to auto-negotiate duplex/speed' },
+            { id: 'b', text: 'Replace the patch cable' },
+            { id: 'c', text: 'Add VLAN 20 to the trunk allowed list' }
+          ] }
+        ] },
+        answer: { slots: { rootCause: 'a', fix: 'a' } } }
+    ]
+  },
+
+  {
+    id: 'np-cli-02', cert: 'netplus', archetype: 'cli', objective: '5.2', topic: 'CLI fault isolation — physical/data link',
+    title: 'Server team reports intermittent packet loss to a NAS', estMinutes: 7,
+    scenario: 'A storage admin says backups to a NAS appliance are failing partway through with checksum errors, though the NAS is pingable and mounted. It connects via a hardened 1000Mb copper run to GigabitEthernet1/0/12 on a core switch that was recently re-patched during a rack cleanup.',
+    cliFault: { fault: 'duplex' },
+    assets: { reference: { kind: 'terminal', host: 'CORE-SW2', session: 'ssh', reveal: 'external', excerpts: [
+      { id: 'arp', necessary: false, promptLine: 'show arp | include 10.30.1.40', reveal: 'arp', lines: [
+        { text: 'Internet  10.30.1.40   -   00e0.4c68.a112  ARPA   Vlan30' }
+      ] },
+      { id: 'status', necessary: true, promptLine: 'show interfaces gi1/0/12 status', reveal: 'status', lines: [
+        { text: 'Port        Name  Status       Vlan  Duplex  Speed  Type' },
+        { text: 'Gi1/0/12          connected    30    full-duplex   1000   10/100/1000BaseTX' }
+      ] },
+      { id: 'counters', necessary: true, promptLine: 'show interfaces gi1/0/12', reveal: 'counters', lines: [
+        { text: 'GigabitEthernet1/0/12 is up, line protocol is up' },
+        { text: '  5 minute input rate 812000 bits/sec, 5 minute output rate 940000 bits/sec' },
+        { text: '  1523 late collision events, 0 giants, 0 runts' }
+      ] },
+      { id: 'log', necessary: true, promptLine: 'show logging | include DUPLEX', reveal: 'log', lines: [
+        { text: '%CDP-4-DUPLEX_MISMATCH: duplex mismatch discovered on GigabitEthernet1/0/12 (not half-duplex), with NAS-PROD-01 (half-duplex)' }
+      ] },
+      { id: 'cdp', necessary: false, promptLine: 'show cdp neighbors gi1/0/12 detail', reveal: 'cdp', lines: [
+        { text: 'Device ID: NAS-PROD-01' },
+        { text: 'Platform: Synology RS3621, Capabilities: Host' }
+      ] }
+    ] } },
+    steps: [
+      { id: 'cmds', type: 'analyze', points: 1,
+        prompt: 'Choose the commands needed to prove why backups are corrupting mid-transfer.',
+        explanation: 'The interface status line shows the switch side negotiated full-duplex, the counters view shows late collisions climbing with sustained throughput, and the syslog line shows IOS itself detected a duplex mismatch and named the NAS as running half-duplex — together the fingerprint of a duplex mismatch under load. ARP and CDP only establish reachability and identity, not the fault.',
+        payload: { multi: true, mode: 'reveal', scoring: 'lenient' },
+        answer: { selected: ['status', 'counters', 'log'] } },
+      { id: 'dx', type: 'configure', points: 1,
+        prompt: 'Diagnose the fault and select the fix.',
+        explanation: 'One side auto-negotiated to full-duplex while the other side was hard-set to half-duplex — a classic duplex mismatch that shows up as collisions and corrupted transfers under sustained load, not as a hard link failure. Matching both sides to auto-negotiate (or forcing both to the same explicit duplex) clears it.',
+        payload: { slots: [
+          { id: 'rootCause', label: 'Root cause', options: [
+            { id: 'a', text: 'Duplex mismatch: switch full-duplex vs. NAS NIC hard-set half-duplex' },
+            { id: 'b', text: 'Faulty SFP transceiver on the core switch' },
+            { id: 'c', text: 'MTU mismatch causing fragmentation' }
+          ] },
+          { id: 'fix', label: 'Fix', options: [
+            { id: 'a', text: 'Reconfigure the NAS NIC to auto-negotiate duplex/speed to match the switch' },
+            { id: 'b', text: 'Swap the SFP transceiver' },
+            { id: 'c', text: 'Lower the MTU on the switch port' }
+          ] }
+        ] },
+        answer: { slots: { rootCause: 'a', fix: 'a' } } }
+    ]
+  },
+
+  {
+    id: 'np-cli-03', cert: 'netplus', archetype: 'cli', objective: '5.2', topic: 'CLI fault isolation — tools: interface diagnostics',
+    title: 'Conference room AV cart drops during screen sharing', estMinutes: 6,
+    scenario: 'A conference room AV cart, wired to FastEthernet0/8 on a small edge switch, disconnects and reconnects mid-meeting whenever screen sharing starts (high sustained throughput). Facilities swapped the cable last week during a different, unrelated ticket.',
+    cliFault: { fault: 'duplex' },
+    assets: { reference: { kind: 'terminal', host: 'EDGE-SW5', session: 'console', reveal: 'external', excerpts: [
+      { id: 'status', necessary: true, promptLine: 'show interface fa0/8 status', reveal: 'status', lines: [
+        { text: 'Port  Name  Status       Vlan  Duplex  Speed  Type' },
+        { text: 'Fa0/8       connected    10    full-duplex   100    10/100BaseTX' }
+      ] },
+      { id: 'errcount', necessary: true, promptLine: 'show interface fa0/8', reveal: 'errcount', lines: [
+        { text: 'FastEthernet0/8 is up, line protocol is up (connected)' },
+        { text: '  0 input errors, 0 CRC, 0 frame' },
+        { text: '  2114 late collision events, 0 collisions' }
+      ] },
+      { id: 'log', necessary: true, promptLine: 'show logging | include DUPLEX', reveal: 'log', lines: [
+        { text: '%CDP-4-DUPLEX_MISMATCH: duplex mismatch discovered on FastEthernet0/8 (not half-duplex), with AV-CART-05 (half-duplex)' }
+      ] },
+      { id: 'dhcp', necessary: false, promptLine: 'show ip dhcp binding', reveal: 'dhcp', lines: [
+        { text: '10.40.2.55   001b.44aa.9c02   Automatic   Vlan10' }
+      ] },
+      { id: 'trunk', necessary: false, promptLine: 'show interfaces trunk', reveal: 'trunk', lines: [
+        { text: 'Port      Mode   Encapsulation  Status     Native vlan' },
+        { text: 'Gi0/1     on     802.1q         trunking   1' }
+      ] }
+    ] } },
+    steps: [
+      { id: 'cmds', type: 'analyze', points: 1,
+        prompt: 'The problem only appears under heavy traffic. Select the commands that would surface the actual cause.',
+        explanation: 'Duplex mismatches are load-dependent: they look fine on a quiet link and fail only once traffic climbs. `show interface status` exposes the negotiated Full/Half state per side, the interface counters expose late collisions rising with load, and the syslog line shows IOS detected the mismatch and named the AV cart as half-duplex. DHCP binding and trunk state are unrelated to this symptom.',
+        payload: { multi: true, mode: 'reveal', scoring: 'lenient' },
+        answer: { selected: ['status', 'errcount', 'log'] } },
+      { id: 'dx', type: 'configure', points: 1,
+        prompt: 'What is the root cause, and how do you fix it?',
+        explanation: 'The switch negotiated full-duplex while the AV cart adapter is fixed at half-duplex; under the sustained load of screen sharing this produces late collisions, which upstream devices interpret as a dropped link. Forcing both ends to consistent auto-negotiation (or matching explicit settings) resolves it.',
+        payload: { slots: [
+          { id: 'rootCause', label: 'Root cause', options: [
+            { id: 'a', text: 'Duplex mismatch between the switch port and the AV cart adapter' },
+            { id: 'b', text: 'Spanning-tree port flapping into blocking state' },
+            { id: 'c', text: 'DHCP lease exhaustion on VLAN 10' }
+          ] },
+          { id: 'fix', label: 'Fix', options: [
+            { id: 'a', text: 'Match duplex/speed (auto-negotiate both ends) on switch port and AV adapter' },
+            { id: 'b', text: 'Enable PortFast on the switch port' },
+            { id: 'c', text: 'Expand the DHCP scope on VLAN 10' }
+          ] }
+        ] },
+        answer: { slots: { rootCause: 'a', fix: 'a' } } }
+    ]
+  },
+
+  // ---------- GATEWAY (3) ----------
+  {
+    id: 'np-cli-04', cert: 'netplus', archetype: 'cli', objective: '5.2', topic: 'CLI fault isolation — network layer/routing',
+    title: 'New subnet cannot reach anything off-site', estMinutes: 6,
+    scenario: 'A newly provisioned VLAN 50 (10.50.0.0/24) for a satellite office can reach hosts within the subnet but nothing else — not the internet, not other internal VLANs. A junior tech just finished configuring the new SVI on the L3 switch this morning.',
+    cliFault: { fault: 'gateway' },
+    assets: { reference: { kind: 'terminal', host: 'HOST-50-12', session: 'cmd', reveal: 'external', excerpts: [
+      { id: 'ipconfig', necessary: false, promptLine: 'ipconfig /all', reveal: 'ipconfig', lines: [
+        { text: 'IPv4 Address. . . . . . . . . . . : 10.50.0.12' },
+        { text: 'Subnet Mask . . . . . . . . . . . : 255.255.255.0' },
+        { text: 'Default Gateway . . . . . . . . . : 10.50.0.1' }
+      ] },
+      { id: 'pinglocal', necessary: false, promptLine: 'ping 10.50.0.20', reveal: 'pinglocal', lines: [
+        { text: 'Reply from 10.50.0.20: bytes=32 time=1ms TTL=128' },
+        { text: 'Reply from 10.50.0.20: bytes=32 time=1ms TTL=128' }
+      ] },
+      { id: 'pinggw', necessary: true, promptLine: 'ping 10.50.0.1', reveal: 'pinggw', lines: [
+        { text: 'Pinging 10.50.0.1 with 32 bytes of data:' },
+        { text: 'Request timed out.' },
+        { text: 'Request timed out.' },
+        { text: 'Ping statistics for 10.50.0.1: Sent = 4, Received = 0, Lost = 4 (100% loss)' }
+      ] },
+      { id: 'svi', necessary: true, promptLine: 'show running-config interface vlan50', reveal: 'svi', lines: [
+        { text: 'interface Vlan50' },
+        { text: ' description Gateway - VLAN50 satellite office' },
+        { text: ' ip address 10.50.0.1 255.255.255.0' },
+        { text: ' shutdown' }
+      ] }
+    ] } },
+    steps: [
+      { id: 'cmds', type: 'analyze', points: 1,
+        prompt: 'Local hosts can reach each other but nothing else. Choose the commands that isolate the fault.',
+        explanation: 'Pinging the default gateway reveals it is unreachable, and the VLAN 50 SVI running-config on the L3 switch shows a `shutdown` line — the gateway interface itself never came up. ipconfig and a same-subnet ping only confirm local addressing, which was never in question.',
+        payload: { multi: true, mode: 'reveal', scoring: 'lenient' },
+        answer: { selected: ['pinggw', 'svi'] } },
+      { id: 'dx', type: 'configure', points: 1,
+        prompt: 'Diagnose the fault and pick the fix.',
+        explanation: 'The junior tech configured the SVI but left it administratively shut, so the gateway address never comes online — hosts can talk to each other switched within VLAN 50 but have no router to leave the subnet. `no shutdown` on the SVI brings the gateway up.',
+        payload: { slots: [
+          { id: 'rootCause', label: 'Root cause', options: [
+            { id: 'a', text: 'The VLAN 50 gateway SVI is administratively shut down' },
+            { id: 'b', text: 'The host has a duplicate IP address' },
+            { id: 'c', text: 'DNS server is unreachable from VLAN 50' }
+          ] },
+          { id: 'fix', label: 'Fix', options: [
+            { id: 'a', text: 'Bring the gateway SVI up with "no shutdown" so the gateway route is live' },
+            { id: 'b', text: 'Release and renew the host DHCP lease' },
+            { id: 'c', text: 'Point the host at a different DNS server' }
+          ] }
+        ] },
+        answer: { slots: { rootCause: 'a', fix: 'a' } } }
+    ]
+  },
+
+  {
+    id: 'np-cli-05', cert: 'netplus', archetype: 'cli', objective: '5.2', topic: 'CLI fault isolation — network layer/routing',
+    title: 'SOHO router replacement breaks internet for the whole office', estMinutes: 7,
+    scenario: 'After a weekend hardware swap, a small office\'s router was replaced with a spare unit. Monday morning, every workstation can reach the file server (10.10.10.5) but nobody can browse the internet. IT staged the spare with what they believed were matching settings.',
+    cliFault: { fault: 'gateway' },
+    assets: { reference: { kind: 'terminal', host: 'WKS-07', session: 'cmd', reveal: 'external', excerpts: [
+      { id: 'ipfile', necessary: false, promptLine: 'ping 10.10.10.5', reveal: 'ipfile', lines: [
+        { text: 'Reply from 10.10.10.5: bytes=32 time=2ms TTL=64' },
+        { text: 'Reply from 10.10.10.5: bytes=32 time=1ms TTL=64' }
+      ] },
+      { id: 'ipwan', necessary: false, promptLine: 'ping 8.8.8.8', reveal: 'ipwan', lines: [
+        { text: 'Pinging 8.8.8.8 with 32 bytes of data:' },
+        { text: 'Destination host unreachable.' },
+        { text: 'Destination host unreachable.' }
+      ] },
+      { id: 'ipconfig', necessary: true, promptLine: 'ipconfig /all', reveal: 'ipconfig', lines: [
+        { text: 'IPv4 Address. . . . . . . . . . . : 10.10.10.44' },
+        { text: 'Subnet Mask . . . . . . . . . . . : 255.255.255.0' },
+        { text: 'Default Gateway . . . . . . . . . : 10.10.10.1' },
+        { text: 'DHCP Server . . . . . . . . . . . : 10.10.10.1' },
+        { text: 'Lease Obtained. . . . . . . . . . : Thursday, July 2, 2026 8:14:03 AM' },
+        { text: 'Lease Expires . . . . . . . . . . : Thursday, July 9, 2026 8:14:03 AM' }
+      ] },
+      { id: 'pinggw', necessary: true, promptLine: 'ping 10.10.10.1', reveal: 'pinggw', lines: [
+        { text: 'Pinging 10.10.10.1 with 32 bytes of data:' },
+        { text: 'Request timed out.' },
+        { text: 'Request timed out.' },
+        { text: 'Ping statistics for 10.10.10.1: Sent = 4, Received = 0, Lost = 4 (100% loss)' }
+      ] }
+    ] } },
+    steps: [
+      { id: 'cmds', type: 'analyze', points: 1,
+        prompt: 'File-server access is fine but internet is dead office-wide. Select the commands that pin down the cause.',
+        explanation: '`ipconfig /all` shows the lease was obtained the Thursday before the weekend router swap, meaning this host is still holding a pre-swap gateway address, and pinging that exact gateway address directly (10.10.10.1) times out — proving the old gateway no longer answers because the new router replaced it. Together they prove the host is stranded on a stale lease pointing at a dead gateway. The internet ping and local-server ping only confirm reachability symptoms already known from the ticket, not the underlying cause.',
+        payload: { multi: true, mode: 'reveal', scoring: 'lenient' },
+        answer: { selected: ['ipconfig', 'pinggw'] } },
+      { id: 'dx', type: 'configure', points: 1,
+        prompt: 'What broke, and what fixes it?',
+        explanation: 'The spare router was staged over the weekend, but this workstation\'s DHCP lease (obtained the prior Thursday) had not yet expired, so it never re-requested an address and is still holding the old gateway — which the new router no longer answers on. Releasing and renewing the lease (or rebooting the host) pulls a current lease with the live gateway and restores internet access.',
+        payload: { slots: [
+          { id: 'rootCause', label: 'Root cause', options: [
+            { id: 'a', text: 'The host is still holding a stale pre-swap DHCP lease with a dead gateway address' },
+            { id: 'b', text: 'The file server NIC is set to half-duplex' },
+            { id: 'c', text: 'A duplicate VLAN ID was assigned to the LAN port' }
+          ] },
+          { id: 'fix', label: 'Fix', options: [
+            { id: 'a', text: 'Release and renew the DHCP lease so the host picks up the current gateway' },
+            { id: 'b', text: 'Force the file server NIC to full-duplex' },
+            { id: 'c', text: 'Reassign the LAN port to a unique VLAN ID' }
+          ] }
+        ] },
+        answer: { slots: { rootCause: 'a', fix: 'a' } } }
+    ]
+  },
+
+  {
+    id: 'np-cli-06', cert: 'netplus', archetype: 'cli', objective: '5.2', topic: 'CLI fault isolation — network layer/routing',
+    title: 'One VLAN loses inter-VLAN routing after a switch reload', estMinutes: 7,
+    scenario: 'A core L3 switch was reloaded overnight after a firmware update. This morning, VLAN 40 (finance, 10.40.0.0/24) hosts cannot reach any other VLAN or the internet, though VLAN 10 and VLAN 20 are unaffected.',
+    cliFault: { fault: 'gateway' },
+    assets: { reference: { kind: 'terminal', host: 'FIN-WKS-12', session: 'cmd', reveal: 'external', excerpts: [
+      { id: 'vlanbrief', necessary: false, promptLine: 'show vlan brief', reveal: 'vlanbrief', lines: [
+        { text: '40    FINANCE    active    Gi1/0/20, Gi1/0/21' }
+      ] },
+      { id: 'pinggw40', necessary: true, promptLine: 'ping 10.40.0.1', reveal: 'pinggw40', lines: [
+        { text: 'Pinging 10.40.0.1 with 32 bytes of data:' },
+        { text: 'Destination host unreachable.' },
+        { text: 'Destination host unreachable.' },
+        { text: 'Ping statistics for 10.40.0.1: Sent = 4, Received = 0, Lost = 4 (100% loss)' }
+      ] },
+      { id: 'sviup', necessary: true, promptLine: 'show running-config interface vlan40', reveal: 'sviup', lines: [
+        { text: 'interface Vlan40' },
+        { text: ' description Gateway - Finance VLAN40' },
+        { text: 'end' }
+      ] },
+      { id: 'cdpnbr', necessary: false, promptLine: 'show cdp neighbors', reveal: 'cdpnbr', lines: [
+        { text: 'Device ID   Local Intrfce   Capability   Platform' },
+        { text: 'ACCESS-SW1  Gig 1/0/20      S            C2960X' }
+      ] }
+    ] } },
+    steps: [
+      { id: 'cmds', type: 'analyze', points: 1,
+        prompt: 'Only VLAN 40 lost inter-VLAN routing after the reload. Choose the commands that isolate why.',
+        explanation: 'Pinging the VLAN 40 gateway comes back unreachable, and the SVI\'s running-config shows only a description line — no `ip address` line at all, meaning the address was never written to the startup config before the firmware reload wiped the running config. VLAN brief and CDP neighbors describe topology, not the fault.',
+        payload: { multi: true, mode: 'reveal', scoring: 'lenient' },
+        answer: { selected: ['pinggw40', 'sviup'] } },
+      { id: 'dx', type: 'configure', points: 1,
+        prompt: 'Identify the root cause and the fix.',
+        explanation: 'The VLAN 40 SVI\'s IP address configuration was never written to NVRAM before the firmware reload wiped the running config, so the interface came back up with no gateway address at all — every other VLAN\'s config had been saved. Re-adding the gateway address and saving the config restores routing.',
+        payload: { slots: [
+          { id: 'rootCause', label: 'Root cause', options: [
+            { id: 'a', text: 'The VLAN 40 SVI lost its gateway IP address on reload (unsaved config)' },
+            { id: 'b', text: 'A native VLAN mismatch on the access-switch trunk' },
+            { id: 'c', text: 'DNS resolution is broken for finance hosts only' }
+          ] },
+          { id: 'fix', label: 'Fix', options: [
+            { id: 'a', text: 'Re-apply the Vlan40 gateway address to the SVI and save the running config' },
+            { id: 'b', text: 'Set the native VLAN to match on both ends of the trunk' },
+            { id: 'c', text: 'Point finance hosts at a working DNS server' }
+          ] }
+        ] },
+        answer: { slots: { rootCause: 'a', fix: 'a' } } }
+    ]
+  },
+
+  // ---------- DNS (3) ----------
+  {
+    id: 'np-cli-07', cert: 'netplus', archetype: 'cli', objective: '5.3', topic: 'CLI fault isolation — name resolution',
+    title: 'Intranet portal unreachable by name, fine by IP', estMinutes: 6,
+    scenario: 'Employees say the intranet portal (portal.corp.local) is "down," but a helpdesk tech confirms the server itself responds fine to a direct IP. Users can browse public internet sites normally.',
+    cliFault: { fault: 'dns' },
+    assets: { reference: { kind: 'terminal', host: 'WKS-22', session: 'cmd', reveal: 'external', excerpts: [
+      { id: 'pingip', necessary: false, promptLine: 'ping 10.5.10.30', reveal: 'pingip', lines: [
+        { text: 'Reply from 10.5.10.30: bytes=32 time=1ms TTL=128' },
+        { text: 'Reply from 10.5.10.30: bytes=32 time=1ms TTL=128' }
+      ] },
+      { id: 'nslookup', necessary: true, promptLine: 'nslookup portal.corp.local', reveal: 'nslookup', lines: [
+        { text: 'Server:  ns1.corp.local' },
+        { text: 'Address:  10.5.1.10' },
+        { text: '*** ns1.corp.local can\'t find portal.corp.local: Non-existent domain' }
+      ] },
+      { id: 'ipconfig', necessary: true, promptLine: 'ipconfig /all', reveal: 'ipconfig', lines: [
+        { text: 'DNS Servers . . . . . . . . . . . : 10.5.1.10' }
+      ] },
+      { id: 'pingpublic', necessary: false, promptLine: 'ping google.com', reveal: 'pingpublic', lines: [
+        { text: 'Pinging google.com [142.250.72.14] with 32 bytes of data:' },
+        { text: 'Reply from 142.250.72.14: bytes=32 time=9ms TTL=115' }
+      ] }
+    ] } },
+    steps: [
+      { id: 'cmds', type: 'analyze', points: 1,
+        prompt: 'The server answers by IP but not by name, and public sites resolve fine. Select the commands that isolate the cause.',
+        explanation: '`nslookup` against the internal name shows a Non-existent domain error from the internal DNS server itself, and `ipconfig /all` confirms which DNS server the host is actually querying — together they prove the internal DNS record/zone is the problem, not host connectivity. The IP ping and public-site ping only confirm reachability, which was never in doubt.',
+        payload: { multi: true, mode: 'reveal', scoring: 'lenient' },
+        answer: { selected: ['nslookup', 'ipconfig'] } },
+      { id: 'dx', type: 'configure', points: 1,
+        prompt: 'Diagnose the fault and choose the fix.',
+        explanation: 'The internal DNS server has no record for portal.corp.local (or the zone/record was deleted), so the name never resolves even though the host, its DNS server address, and public resolution all work correctly. The fix is on the DNS server: recreate the missing A record and confirm the zone is intact.',
+        payload: { slots: [
+          { id: 'rootCause', label: 'Root cause', options: [
+            { id: 'a', text: 'Missing/deleted DNS A record for portal.corp.local on the internal DNS server' },
+            { id: 'b', text: 'The workstation has an incorrect default gateway' },
+            { id: 'c', text: 'A duplex mismatch on the server NIC' }
+          ] },
+          { id: 'fix', label: 'Fix', options: [
+            { id: 'a', text: 'Recreate the A record for portal.corp.local on the internal DNS server' },
+            { id: 'b', text: 'Correct the workstation default gateway' },
+            { id: 'c', text: 'Force the server NIC to full-duplex' }
+          ] }
+        ] },
+        answer: { slots: { rootCause: 'a', fix: 'a' } } }
+    ]
+  },
+
+  {
+    id: 'np-cli-08', cert: 'netplus', archetype: 'cli', objective: '5.3', topic: 'CLI fault isolation — tools: dns diagnostics',
+    title: 'Newly joined laptop cannot resolve any internal hostname', estMinutes: 6,
+    scenario: 'A laptop freshly imaged and joined to the domain this morning can reach internal servers by IP address and browses the internet fine, but every internal hostname lookup fails, while a coworker\'s laptop on the same VLAN resolves everything normally.',
+    cliFault: { fault: 'dns' },
+    assets: { reference: { kind: 'terminal', host: 'LAPTOP-NEW14', session: 'cmd', reveal: 'external', excerpts: [
+      { id: 'ipconfig', necessary: true, promptLine: 'ipconfig /all', reveal: 'ipconfig', lines: [
+        { text: 'DNS Servers . . . . . . . . . . . : 8.8.8.8' }
+      ] },
+      { id: 'nslookup', necessary: true, promptLine: 'nslookup fileserver01.corp.local', reveal: 'nslookup', lines: [
+        { text: 'Server:  resolver-public-1' },
+        { text: 'Address:  8.8.8.8' },
+        { text: '*** resolver-public-1 can\'t find fileserver01.corp.local: Non-existent domain' }
+      ] },
+      { id: 'pingip', necessary: false, promptLine: 'ping 10.15.2.10', reveal: 'pingip', lines: [
+        { text: 'Reply from 10.15.2.10: bytes=32 time=1ms TTL=64' }
+      ] },
+      { id: 'internetok', necessary: false, promptLine: 'ping 1.1.1.1', reveal: 'internetok', lines: [
+        { text: 'Reply from 1.1.1.1: bytes=32 time=6ms TTL=59' }
+      ] }
+    ] } },
+    steps: [
+      { id: 'cmds', type: 'analyze', points: 1,
+        prompt: 'A coworker on the same VLAN has no issue, so this looks device-specific. Choose the commands that confirm and isolate the cause.',
+        explanation: '`ipconfig /all` reveals this laptop is pointed at a public DNS server (8.8.8.8) instead of internal AD DNS, and `nslookup` against an internal hostname confirms that public server correctly reports the internal-only name as non-existent. Pinging by IP and pinging a public host only confirm connectivity, which is not the issue.',
+        payload: { multi: true, mode: 'reveal', scoring: 'lenient' },
+        answer: { selected: ['ipconfig', 'nslookup'] } },
+      { id: 'dx', type: 'configure', points: 1,
+        prompt: 'What is the root cause and the fix?',
+        explanation: 'The imaging template hardcoded a public DNS server instead of pulling the internal AD-integrated DNS server via DHCP, so this one laptop can never resolve internal-only names — a public resolver has no knowledge of the corp.local zone. Fixing the DNS server assignment (or the imaging template) resolves it.',
+        payload: { slots: [
+          { id: 'rootCause', label: 'Root cause', options: [
+            { id: 'a', text: 'The laptop is configured to use a public DNS server instead of internal AD DNS' },
+            { id: 'b', text: 'The laptop has a duplicate IP address on the VLAN' },
+            { id: 'c', text: 'The default gateway is unreachable from this laptop' }
+          ] },
+          { id: 'fix', label: 'Fix', options: [
+            { id: 'a', text: 'Set the laptop to use the internal AD DNS server (fix DHCP/imaging template)' },
+            { id: 'b', text: 'Release and renew to obtain a non-conflicting IP' },
+            { id: 'c', text: 'Correct the default gateway address' }
+          ] }
+        ] },
+        answer: { slots: { rootCause: 'a', fix: 'a' } } }
+    ]
+  },
+
+  {
+    id: 'np-cli-09', cert: 'netplus', archetype: 'cli', objective: '5.3', topic: 'CLI fault isolation — tools: dns diagnostics',
+    title: 'Email client repeatedly fails to find the mail server', estMinutes: 6,
+    scenario: 'A user\'s email client throws "server not found" errors for mail.corp.local, though the mail server has been up all week and other users are unaffected. IT recalls the DNS team retired the old mail server (mailsrv-old.corp.local) this week and was supposed to repoint the mail.corp.local record.',
+    cliFault: { fault: 'dns' },
+    assets: { reference: { kind: 'terminal', host: 'WKS-33', session: 'cmd', reveal: 'external', excerpts: [
+      { id: 'nslookup1', necessary: true, promptLine: 'nslookup mail.corp.local', reveal: 'nslookup1', lines: [
+        { text: 'Server:  dns1.corp.local' },
+        { text: 'Address:  10.5.1.10' },
+        { text: 'Name:    mail.corp.local' },
+        { text: 'Address:  10.5.1.55' }
+      ] },
+      { id: 'nslookup2', necessary: true, promptLine: 'nslookup mailsrv-old.corp.local', reveal: 'nslookup2', lines: [
+        { text: 'Server:  UnKnown' },
+        { text: 'Address:  10.5.1.10' },
+        { text: '*** UnKnown can\'t find mailsrv-old.corp.local: Non-existent domain' }
+      ] },
+      { id: 'ping55', necessary: false, promptLine: 'ping 10.5.1.55', reveal: 'ping55', lines: [
+        { text: 'Pinging 10.5.1.55 with 32 bytes of data:' },
+        { text: 'Request timed out.' },
+        { text: 'Request timed out.' },
+        { text: 'Ping statistics for 10.5.1.55: Sent = 4, Received = 0, Lost = 4 (100% loss)' }
+      ] },
+      { id: 'ping72', necessary: false, promptLine: 'ping 10.5.1.72', reveal: 'ping72', lines: [
+        { text: 'Reply from 10.5.1.72: bytes=32 time=2ms TTL=64' }
+      ] },
+      { id: 'ipconfig', necessary: false, promptLine: 'ipconfig /displaydns | findstr mail', reveal: 'ipconfig', lines: [
+        { text: 'mail.corp.local' },
+        { text: '    Record Name . . . . . : mail.corp.local' }
+      ] }
+    ] } },
+    steps: [
+      { id: 'cmds', type: 'analyze', points: 1,
+        prompt: 'The mail server is confirmed up, yet this client can\'t reach it by name. Select the commands that reveal why.',
+        explanation: '`nslookup` on mail.corp.local shows it still resolves to 10.5.1.55, and a lookup on the retired server\'s own hostname (mailsrv-old.corp.local) comes back Non-existent domain — proving that host\'s DNS entry was properly cleaned up during decommissioning, but mail.corp.local still points at its old address. Pinging either IP and the local DNS cache dump don\'t establish the fault by themselves.',
+        payload: { multi: true, mode: 'reveal', scoring: 'lenient' },
+        answer: { selected: ['nslookup1', 'nslookup2'] } },
+      { id: 'dx', type: 'configure', points: 1,
+        prompt: 'Name the root cause and the fix.',
+        explanation: 'The DNS A record for mail.corp.local still points at the decommissioned mail server\'s IP instead of the new one; the record was never updated (or the change hasn\'t propagated) when the server was retired. Updating the DNS record to the current mail server IP fixes it for all clients.',
+        payload: { slots: [
+          { id: 'rootCause', label: 'Root cause', options: [
+            { id: 'a', text: 'Stale DNS A record still pointing at the retired mail server IP' },
+            { id: 'b', text: 'The client\'s default gateway is misconfigured' },
+            { id: 'c', text: 'A VLAN mismatch is isolating this workstation' }
+          ] },
+          { id: 'fix', label: 'Fix', options: [
+            { id: 'a', text: 'Update the DNS A record for mail.corp.local to the current server IP' },
+            { id: 'b', text: 'Correct the client default gateway' },
+            { id: 'c', text: 'Move the workstation to the correct VLAN' }
+          ] }
+        ] },
+        answer: { slots: { rootCause: 'a', fix: 'a' } } }
+    ]
+  },
+
+  // ---------- VLAN (3) ----------
+  {
+    id: 'np-cli-10', cert: 'netplus', archetype: 'cli', objective: '5.4', topic: 'CLI fault isolation — VLAN/trunking',
+    title: 'New desk drop places a workstation on the wrong network', estMinutes: 6,
+    scenario: 'A workstation freshly cabled into a new desk drop pulls an IP address but it\'s from the guest Wi-Fi subnet (10.90.0.0/24) instead of the corporate LAN (10.15.0.0/24). Facilities patched the drop into what they thought was a standard access port.',
+    cliFault: { fault: 'vlan' },
+    assets: { reference: { kind: 'terminal', host: 'ACCESS-SW9', session: 'console', reveal: 'external', excerpts: [
+      { id: 'ipconfig', necessary: false, promptLine: 'ipconfig', reveal: 'ipconfig', lines: [
+        { text: 'IPv4 Address. . . . . . . . . . . : 10.90.0.87' },
+        { text: 'Default Gateway . . . . . . . . . : 10.90.0.1' }
+      ] },
+      { id: 'macfind', necessary: false, promptLine: 'show mac address-table address 001a.99cc.4401', reveal: 'macfind', lines: [
+        { text: 'Vlan  Mac Address     Type    Ports' },
+        { text: '90    001a.99cc.4401  DYNAMIC  Gi0/14' }
+      ] },
+      { id: 'swport', necessary: true, promptLine: 'show running-config interface gi0/14', reveal: 'swport', lines: [
+        { text: 'interface GigabitEthernet0/14' },
+        { text: ' switchport access vlan 90' },
+        { text: ' switchport mode access' },
+        { text: 'end' }
+      ] },
+      { id: 'vlandb', necessary: false, promptLine: 'show vlan brief | include 15|90', reveal: 'vlandb', lines: [
+        { text: 'VLAN Name                             Status    Ports' },
+        { text: '15    CORP-LAN   active    Gi0/1, Gi0/2, Gi0/3' },
+        { text: '90    GUEST      active    Gi0/13, Gi0/14, Gi0/15' }
+      ] }
+    ] } },
+    steps: [
+      { id: 'cmds', type: 'analyze', points: 1,
+        prompt: 'The host is getting an IP, just from the wrong subnet. Select the commands that isolate why.',
+        explanation: 'The running-config for Gi0/14 shows `switchport access vlan 90`, which on its own proves the port is bound to the wrong VLAN — `show vlan brief` is useful follow-up context (confirming VLAN 90 is the guest network vs. the intended VLAN 15) but isn\'t required to prove the fault. The host ipconfig and MAC-table lookup only confirm symptoms already known from the ticket.',
+        payload: { multi: true, mode: 'reveal', scoring: 'lenient' },
+        answer: { selected: ['swport'] } },
+      { id: 'dx', type: 'configure', points: 1,
+        prompt: 'Diagnose the fault and pick the fix.',
+        explanation: 'The desk-drop\'s switch port was statically assigned to the guest access VLAN (90) instead of the corporate LAN VLAN (15), so DHCP correctly hands out a guest-subnet address for that port\'s broadcast domain. Reassigning the port\'s access VLAN to 15 puts the host on the correct network.',
+        payload: { slots: [
+          { id: 'rootCause', label: 'Root cause', options: [
+            { id: 'a', text: 'The access port is assigned to the guest VLAN (90) instead of corp LAN (15)' },
+            { id: 'b', text: 'The DHCP scope for VLAN 15 has been exhausted' },
+            { id: 'c', text: 'A duplex mismatch on the access port' }
+          ] },
+          { id: 'fix', label: 'Fix', options: [
+            { id: 'a', text: 'Change the port\'s access VLAN from 90 to 15' },
+            { id: 'b', text: 'Expand the DHCP scope for VLAN 15' },
+            { id: 'c', text: 'Force the port to full-duplex' }
+          ] }
+        ] },
+        answer: { slots: { rootCause: 'a', fix: 'a' } } }
+    ]
+  },
+
+  {
+    id: 'np-cli-11', cert: 'netplus', archetype: 'cli', objective: '5.4', topic: 'CLI fault isolation — VLAN/trunking',
+    title: 'Two switches, one trunk, and a phantom native VLAN', estMinutes: 7,
+    scenario: 'Since a new access switch was added to an existing trunk uplink, users on the far switch report seeing occasional traffic and CDP warnings that don\'t belong to their VLAN, and voice VLAN tagging looks inconsistent. Both switches were configured by different techs.',
+    cliFault: { fault: 'vlan' },
+    assets: { reference: { kind: 'terminal', host: 'DIST-SW1', session: 'ssh', reveal: 'external', excerpts: [
+      { id: 'cdplog', necessary: false, promptLine: 'show logging | include CDP', reveal: 'cdplog', lines: [
+        { text: '%CDP-4-NATIVE_VLAN_MISMATCH: Native VLAN mismatch discovered on GigabitEthernet0/24' }
+      ] },
+      { id: 'trunklocal', necessary: false, promptLine: 'show interface gi0/24 trunk', reveal: 'trunklocal', lines: [
+        { text: 'Port       Mode   Encapsulation  Status     Native vlan' },
+        { text: 'Gi0/24     on     802.1q         trunking   1' }
+      ] },
+      { id: 'trunkremote', necessary: true, promptLine: 'show interface gi0/1 trunk', reveal: 'trunkremote', lines: [
+        { text: 'Port       Mode   Encapsulation  Status     Native vlan' },
+        { text: 'Gi0/1      on     802.1q         trunking   99' }
+      ] },
+      { id: 'sviremote', necessary: false, promptLine: 'show ip interface brief', reveal: 'sviremote', lines: [
+        { text: 'Vlan1     10.15.0.1    YES NVRAM  up    up' }
+      ] }
+    ] } },
+    steps: [
+      { id: 'cmds', type: 'analyze', points: 1,
+        prompt: 'Traffic is leaking across VLANs on this trunk. Select the commands that isolate the cause.',
+        explanation: 'A native VLAN mismatch only shows up by comparing both ends of the trunk, so a technician should run `show interface trunk` on the local switch as well as the remote one — but the remote side\'s output (native VLAN 99, versus this switch\'s own default of native VLAN 1) is what actually confirms the mismatch and drives the fix, since a mismatch is defined relative to the far end\'s configuration. The CDP log line hints something is wrong but doesn\'t itself prove the fault, and the SVI listing is unrelated.',
+        payload: { multi: true, mode: 'reveal', scoring: 'lenient' },
+        answer: { selected: ['trunkremote'] } },
+      { id: 'dx', type: 'configure', points: 1,
+        prompt: 'What is the root cause, and how do you fix it?',
+        explanation: 'The two ends of the 802.1q trunk were configured with different native VLANs (1 vs. 99); untagged frames on one end get interpreted as belonging to the other end\'s native VLAN, leaking traffic across VLAN boundaries. Setting both ends to the same native VLAN eliminates the leak.',
+        payload: { slots: [
+          { id: 'rootCause', label: 'Root cause', options: [
+            { id: 'a', text: 'Native VLAN mismatch across the trunk (VLAN 1 vs. VLAN 99)' },
+            { id: 'b', text: 'A duplex mismatch on the trunk uplink' },
+            { id: 'c', text: 'The trunk is missing an IP gateway' }
+          ] },
+          { id: 'fix', label: 'Fix', options: [
+            { id: 'a', text: 'Configure the same native VLAN on both ends of the trunk' },
+            { id: 'b', text: 'Force both trunk ends to full-duplex' },
+            { id: 'c', text: 'Assign an SVI IP address to the trunk port' }
+          ] }
+        ] },
+        answer: { slots: { rootCause: 'a', fix: 'a' } } }
+    ]
+  },
+
+  {
+    id: 'np-cli-12', cert: 'netplus', archetype: 'cli', objective: '5.4', topic: 'CLI fault isolation — VLAN/trunking',
+    title: 'VoIP phones register but calls have no audio path', estMinutes: 7,
+    scenario: 'After a phone-system firmware push, desk phones on VLAN 60 (voice) register with the call manager, but calls connect with no audio. Data traffic from the same desks (PCs daisy-chained through the phones on VLAN 15) is unaffected.',
+    cliFault: { fault: 'vlan' },
+    assets: { reference: { kind: 'terminal', host: 'ACCESS-SW3', session: 'console', reveal: 'external', excerpts: [
+      { id: 'voipreg', necessary: false, promptLine: 'show ip phone registration', reveal: 'voipreg', lines: [
+        { text: 'Phone 10.60.0.44 registered with call manager 10.60.0.5' }
+      ] },
+      { id: 'swportvoice', necessary: true, promptLine: 'show running-config interface gi0/9', reveal: 'swportvoice', lines: [
+        { text: 'interface GigabitEthernet0/9' },
+        { text: ' switchport access vlan 15' },
+        { text: ' switchport mode access' },
+        { text: 'end' }
+      ] },
+      { id: 'vlanaudio', necessary: false, promptLine: 'show vlan brief | include 60', reveal: 'vlanaudio', lines: [
+        { text: 'VLAN Name                             Status    Ports' },
+        { text: '60    VOICE      active    Gi0/1, Gi0/2' }
+      ] },
+      { id: 'cdpphone', necessary: false, promptLine: 'show cdp neighbors gi0/9 detail', reveal: 'cdpphone', lines: [
+        { text: 'Device ID: SEP001A2233' },
+        { text: 'Platform: Cisco IP Phone 8845' }
+      ] }
+    ] } },
+    steps: [
+      { id: 'cmds', type: 'analyze', points: 1,
+        prompt: 'Phones register (control-plane works) but audio never flows. Select the commands that isolate why.',
+        explanation: 'The running-config for Gi0/9 shows only `switchport access vlan 15` — no `switchport voice vlan` line at all — which on its own proves the audio VLAN was never bound to this port even though signaling (which rides the data VLAN\'s reachability to the call manager) succeeds. `show vlan brief` is useful corroborating context (confirming VLAN 60 exists elsewhere but not on this port) but isn\'t required to prove the fault. Registration status and CDP detail confirm the phone is present but not why audio fails.',
+        payload: { multi: true, mode: 'reveal', scoring: 'lenient' },
+        answer: { selected: ['swportvoice'] } },
+      { id: 'dx', type: 'configure', points: 1,
+        prompt: 'Diagnose the root cause and select the fix.',
+        explanation: 'The firmware push apparently reset (or never had) the voice VLAN assignment on the access port, so the phone registers over the data VLAN\'s reachability to the call manager but the actual RTP audio VLAN (60) was never trunked to this port — audio has no VLAN to ride on. Configuring the voice VLAN on the access port restores the audio path.',
+        payload: { slots: [
+          { id: 'rootCause', label: 'Root cause', options: [
+            { id: 'a', text: 'The access port has no voice VLAN configured, so VLAN 60 never reaches the phone' },
+            { id: 'b', text: 'The phone NIC is set to half-duplex' },
+            { id: 'c', text: 'The call manager\'s DNS record is stale' }
+          ] },
+          { id: 'fix', label: 'Fix', options: [
+            { id: 'a', text: 'Configure "switchport voice vlan 60" on the access port' },
+            { id: 'b', text: 'Force the phone port to full-duplex' },
+            { id: 'c', text: 'Update the call manager DNS record' }
+          ] }
+        ] },
+        answer: { slots: { rootCause: 'a', fix: 'a' } } }
+    ]
+  },
+
+// ---------- NETWORK DISCOVERY AUDIT (11) ----------
+  {
+    id: 'np-disc-01',
+    cert: 'netplus',
+    archetype: 'discovery',
+    objective: '3.5',
+    topic: 'Network discovery audit — port-mapping reconciliation',
+    title: 'Marketing floor port map reconciliation',
+    estMinutes: 8,
+    scenario: 'Facilities is renumbering the 3rd-floor marketing suite and asked you to confirm the current port map before they touch anything. You have console access to SW-MKT3. The existing documentation (a CSV exported from the old ticketing system) is the only record anyone has — reconcile it against live discovery output and flag anything it got wrong.',
+    disco: {
+      legacyExcerptId: 'legacy',
+      ports: [
+        {
+          port: 'Gi1/0/5',
+          device: 'PRT-MKT-M608',
+          mgmt: '10.30.10.15'
+        },
+        {
+          port: 'Gi1/0/12',
+          device: 'PHN-MKT-214',
+          mgmt: '10.30.10.44'
+        },
+        {
+          port: 'Gi1/0/18',
+          device: 'CAM-MKT-N4',
+          mgmt: '10.30.10.61'
+        }
+      ]
+    },
+    assets: {
+      reference: {
+        kind: 'terminal',
+        host: 'SW-MKT3',
+        session: 'ssh',
+        reveal: 'tabs',
+        excerpts: [
+          {
+            id: 'lldp',
+            promptLine: 'show lldp neighbors detail',
+            lines: [
+              {
+                id: 'lldp1',
+                text: 'Local Intf: Gi1/0/5    Port ID: eth0    System Name: PRT-MKT-M608    Mgmt Address: 10.30.10.15    Capability: S',
+                fact: {
+                  port: 'Gi1/0/5',
+                  device: 'PRT-MKT-M608',
+                  mgmt: '10.30.10.15'
+                }
+              },
+              {
+                id: 'lldp2',
+                text: 'Local Intf: Gi1/0/12    Port ID: port1    System Name: PHN-MKT-214    Mgmt Address: 10.30.10.44    Capability: T',
+                fact: {
+                  port: 'Gi1/0/12',
+                  device: 'PHN-MKT-214',
+                  mgmt: '10.30.10.44'
+                }
+              }
+            ]
+          },
+          {
+            id: 'mac',
+            promptLine: 'show mac address-table',
+            lines: [
+              {
+                id: 'mac1',
+                text: '  30    0c8b.d3a1.7f02    DYNAMIC     Gi1/0/18',
+                fact: {
+                  mac: '0c8b.d3a1.7f02',
+                  port: 'Gi1/0/18'
+                }
+              }
+            ]
+          },
+          {
+            id: 'arp',
+            promptLine: 'show arp',
+            lines: [
+              {
+                id: 'arp1',
+                text: 'Internet  10.30.10.61   42   0c8b.d3a1.7f02  ARPA   Vlan30',
+                fact: {
+                  ip: '10.30.10.61',
+                  mac: '0c8b.d3a1.7f02'
+                }
+              },
+              {
+                id: 'arp2',
+                text: 'Internet  10.30.10.44   6   aab1.22cd.9911  ARPA   Vlan30',
+                fact: {
+                  ip: '10.30.10.44',
+                  mac: 'aab1.22cd.9911'
+                }
+              }
+            ]
+          },
+          {
+            id: 'legacy',
+            promptLine: 'cat port-map-legacy.csv',
+            lines: [
+              {
+                id: 'leg1',
+                text: 'Gi1/0/5,PRT-MKT-M608,10.30.10.16,IDF-3A',
+                select: true,
+                fact: {
+                  port: 'Gi1/0/5',
+                  device: 'PRT-MKT-M608',
+                  mgmt: '10.30.10.16'
+                }
+              },
+              {
+                id: 'leg2',
+                text: 'Gi1/0/12,PHN-MKT-214,10.30.10.44,IDF-3A',
+                select: true,
+                fact: {
+                  port: 'Gi1/0/12',
+                  device: 'PHN-MKT-214',
+                  mgmt: '10.30.10.44'
+                }
+              },
+              {
+                id: 'leg3',
+                text: 'Gi1/0/18,CAM-MKT-N4,10.30.10.61,IDF-3A',
+                select: true,
+                fact: {
+                  port: 'Gi1/0/18',
+                  device: 'CAM-MKT-N4',
+                  mgmt: '10.30.10.61'
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    steps: [
+      {
+        id: 'rec',
+        type: 'configure',
+        points: 1,
+        prompt: 'Reconcile the true management IP for each of the three ports above using the LLDP, MAC-table, and ARP output.',
+        explanation: 'Gi1/0/5 and Gi1/0/12 answer LLDP directly. Gi1/0/18 is silent on LLDP; its MAC-table entry names the port, and joining that MAC through the ARP table resolves the camera’s IP without any LLDP frame from the camera itself.',
+        payload: {
+          slots: [
+            {
+              id: 'Gi1/0/5__ip',
+              label: 'Reconciled management IP — Gi1/0/5',
+              options: [
+                {
+                  id: 'a',
+                  text: '10.30.10.15'
+                },
+                {
+                  id: 'b',
+                  text: '10.30.10.16'
+                },
+                {
+                  id: 'c',
+                  text: '10.30.10.115'
+                }
+              ]
+            },
+            {
+              id: 'Gi1/0/12__ip',
+              label: 'Reconciled management IP — Gi1/0/12',
+              options: [
+                {
+                  id: 'a',
+                  text: '10.30.10.44'
+                },
+                {
+                  id: 'b',
+                  text: '10.30.10.45'
+                },
+                {
+                  id: 'c',
+                  text: '10.30.10.144'
+                }
+              ]
+            },
+            {
+              id: 'Gi1/0/18__ip',
+              label: 'Reconciled management IP — Gi1/0/18',
+              options: [
+                {
+                  id: 'a',
+                  text: '10.30.10.61'
+                },
+                {
+                  id: 'b',
+                  text: '10.30.10.60'
+                },
+                {
+                  id: 'c',
+                  text: '10.30.10.161'
+                }
+              ]
+            }
+          ]
+        },
+        answer: {
+          slots: {
+            'Gi1/0/5__ip': 'a',
+            'Gi1/0/12__ip': 'a',
+            'Gi1/0/18__ip': 'a'
+          }
+        }
+      },
+      {
+        id: 'aud',
+        type: 'analyze',
+        points: 1,
+        prompt: 'Select the single row in the legacy CSV that no longer matches reconciled reality.',
+        explanation: 'The legacy sheet lists the marketing printer at .16, but live LLDP reports its management address as .15 — the CSV is stale for that one row; the phone and camera rows match the reconciled truth exactly.',
+        payload: {
+          multi: false,
+          mode: 'excerptLines'
+        },
+        answer: {
+          selected: ['leg1']
+        }
+      }
+    ]
+  },
+
+  {
+    id: 'np-disc-02',
+    cert: 'netplus',
+    archetype: 'discovery',
+    objective: '3.5',
+    topic: 'Network discovery audit — port-mapping reconciliation',
+    title: 'Warehouse mezzanine AP and label printer audit',
+    estMinutes: 8,
+    scenario: 'A vendor is about to swap out label printers on the warehouse mezzanine and wants a confirmed port map first. The site’s only documentation is a spreadsheet export from three years ago. Pull live discovery from SW-WH-MEZ and reconcile it before the vendor arrives.',
+    disco: {
+      legacyExcerptId: 'legacy',
+      ports: [
+        {
+          port: 'Gi0/3',
+          device: 'AP-WH-MEZ-02',
+          mgmt: '10.40.5.12'
+        },
+        {
+          port: 'Gi0/9',
+          device: 'WKS-WH-07',
+          mgmt: '10.40.5.33'
+        },
+        {
+          port: 'Gi0/14',
+          device: 'ZEBRA-LBL-04',
+          mgmt: '10.40.5.51'
+        }
+      ]
+    },
+    assets: {
+      reference: {
+        kind: 'terminal',
+        host: 'SW-WH-MEZ',
+        session: 'ssh',
+        reveal: 'tabs',
+        excerpts: [
+          {
+            id: 'lldp',
+            promptLine: 'show lldp neighbors detail',
+            lines: [
+              {
+                id: 'lldp1',
+                text: 'Local Intf: Gi0/3    Port ID: GE0    System Name: AP-WH-MEZ-02    Mgmt Address: 10.40.5.12    Capability: W',
+                fact: {
+                  port: 'Gi0/3',
+                  device: 'AP-WH-MEZ-02',
+                  mgmt: '10.40.5.12'
+                }
+              },
+              {
+                id: 'lldp2',
+                text: 'Local Intf: Gi0/9    Port ID: eth0    System Name: WKS-WH-07    Mgmt Address: 10.40.5.33    Capability: S',
+                fact: {
+                  port: 'Gi0/9',
+                  device: 'WKS-WH-07',
+                  mgmt: '10.40.5.33'
+                }
+              }
+            ]
+          },
+          {
+            id: 'mac',
+            promptLine: 'show mac address-table',
+            lines: [
+              {
+                id: 'mac1',
+                text: '  40    3c5a.b4e1.20f7    DYNAMIC     Gi0/14',
+                fact: {
+                  mac: '3c5a.b4e1.20f7',
+                  port: 'Gi0/14'
+                }
+              }
+            ]
+          },
+          {
+            id: 'arp',
+            promptLine: 'show arp',
+            lines: [
+              {
+                id: 'arp1',
+                text: 'Internet  10.40.5.51   17   3c5a.b4e1.20f7  ARPA   Vlan40',
+                fact: {
+                  ip: '10.40.5.51',
+                  mac: '3c5a.b4e1.20f7'
+                }
+              },
+              {
+                id: 'arp2',
+                text: 'Internet  10.40.5.12   88   9911.aabb.1122  ARPA   Vlan40',
+                fact: {
+                  ip: '10.40.5.12',
+                  mac: '9911.aabb.1122'
+                }
+              }
+            ]
+          },
+          {
+            id: 'legacy',
+            promptLine: 'cat port-map-legacy.csv',
+            lines: [
+              {
+                id: 'leg1',
+                text: 'Gi0/3,AP-WH-MEZ-01,10.40.5.12,MEZ-IDF',
+                select: true,
+                fact: {
+                  port: 'Gi0/3',
+                  device: 'AP-WH-MEZ-01',
+                  mgmt: '10.40.5.12'
+                }
+              },
+              {
+                id: 'leg2',
+                text: 'Gi0/9,WKS-WH-07,10.40.5.33,MEZ-IDF',
+                select: true,
+                fact: {
+                  port: 'Gi0/9',
+                  device: 'WKS-WH-07',
+                  mgmt: '10.40.5.33'
+                }
+              },
+              {
+                id: 'leg3',
+                text: 'Gi0/14,ZEBRA-LBL-04,10.40.5.51,MEZ-IDF',
+                select: true,
+                fact: {
+                  port: 'Gi0/14',
+                  device: 'ZEBRA-LBL-04',
+                  mgmt: '10.40.5.51'
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    steps: [
+      {
+        id: 'rec',
+        type: 'configure',
+        points: 1,
+        prompt: 'Reconcile the true management IP for each port using the discovery output.',
+        explanation: 'The AP and workstation both answer LLDP directly. The label printer never sends LLDP; its MAC-table entry on Gi0/14 joined against the ARP table is the only way to resolve its address.',
+        payload: {
+          slots: [
+            {
+              id: 'Gi0/3__ip',
+              label: 'Reconciled management IP — Gi0/3',
+              options: [
+                {
+                  id: 'a',
+                  text: '10.40.5.12'
+                },
+                {
+                  id: 'b',
+                  text: '10.40.5.13'
+                },
+                {
+                  id: 'c',
+                  text: '10.40.5.112'
+                }
+              ]
+            },
+            {
+              id: 'Gi0/9__ip',
+              label: 'Reconciled management IP — Gi0/9',
+              options: [
+                {
+                  id: 'a',
+                  text: '10.40.5.33'
+                },
+                {
+                  id: 'b',
+                  text: '10.40.5.34'
+                },
+                {
+                  id: 'c',
+                  text: '10.40.5.133'
+                }
+              ]
+            },
+            {
+              id: 'Gi0/14__ip',
+              label: 'Reconciled management IP — Gi0/14',
+              options: [
+                {
+                  id: 'a',
+                  text: '10.40.5.51'
+                },
+                {
+                  id: 'b',
+                  text: '10.40.5.50'
+                },
+                {
+                  id: 'c',
+                  text: '10.40.5.151'
+                }
+              ]
+            }
+          ]
+        },
+        answer: {
+          slots: {
+            'Gi0/3__ip': 'a',
+            'Gi0/9__ip': 'a',
+            'Gi0/14__ip': 'a'
+          }
+        }
+      },
+      {
+        id: 'aud',
+        type: 'analyze',
+        points: 1,
+        prompt: 'Select the single legacy row that contradicts reconciled reality.',
+        explanation: 'The spreadsheet names the mezzanine AP "AP-WH-MEZ-01", but live LLDP reports its system name as "AP-WH-MEZ-02" — the AP was swapped and the old name never got updated. IP and closet for that row are otherwise correct, and the other two rows match exactly.',
+        payload: {
+          multi: false,
+          mode: 'excerptLines'
+        },
+        answer: {
+          selected: ['leg1']
+        }
+      }
+    ]
+  },
+
+  {
+    id: 'np-disc-03',
+    cert: 'netplus',
+    archetype: 'discovery',
+    objective: '3.5',
+    topic: 'Network discovery audit — port-mapping reconciliation',
+    title: 'Clinic nurse station port map audit',
+    estMinutes: 8,
+    scenario: 'A clinic’s 2nd-floor nurse station is being re-cabled for a new badge-reader rollout, and the facilities team’s only record is a legacy access-control CSV. Confirm the current port map from SW-CLN-2F before anyone pulls a cable.',
+    disco: {
+      legacyExcerptId: 'legacy',
+      ports: [
+        {
+          port: 'Gi0/2',
+          device: 'WKS-CLN-11',
+          mgmt: '10.22.4.20'
+        },
+        {
+          port: 'Gi0/7',
+          device: 'PRT-CLN-2F',
+          mgmt: '10.22.4.40'
+        },
+        {
+          port: 'Gi0/11',
+          device: 'BADGE-CLN-2F-3',
+          mgmt: '10.22.4.71'
+        }
+      ]
+    },
+    assets: {
+      reference: {
+        kind: 'terminal',
+        host: 'SW-CLN-2F',
+        session: 'ssh',
+        reveal: 'tabs',
+        excerpts: [
+          {
+            id: 'lldp',
+            promptLine: 'show lldp neighbors detail',
+            lines: [
+              {
+                id: 'lldp1',
+                text: 'Local Intf: Gi0/2    Port ID: eth0    System Name: WKS-CLN-11    Mgmt Address: 10.22.4.20    Capability: S',
+                fact: {
+                  port: 'Gi0/2',
+                  device: 'WKS-CLN-11',
+                  mgmt: '10.22.4.20'
+                }
+              },
+              {
+                id: 'lldp2',
+                text: 'Local Intf: Gi0/7    Port ID: eth0    System Name: PRT-CLN-2F    Mgmt Address: 10.22.4.40    Capability: S',
+                fact: {
+                  port: 'Gi0/7',
+                  device: 'PRT-CLN-2F',
+                  mgmt: '10.22.4.40'
+                }
+              }
+            ]
+          },
+          {
+            id: 'mac',
+            promptLine: 'show mac address-table',
+            lines: [
+              {
+                id: 'mac1',
+                text: '  22    5566.7788.99aa    DYNAMIC     Gi0/11',
+                fact: {
+                  mac: '5566.7788.99aa',
+                  port: 'Gi0/11'
+                }
+              }
+            ]
+          },
+          {
+            id: 'arp',
+            promptLine: 'show arp',
+            lines: [
+              {
+                id: 'arp1',
+                text: 'Internet  10.22.4.71   121   5566.7788.99aa  ARPA   Vlan22',
+                fact: {
+                  ip: '10.22.4.71',
+                  mac: '5566.7788.99aa'
+                }
+              },
+              {
+                id: 'arp2',
+                text: 'Internet  10.22.4.20   3   1122.3344.5566  ARPA   Vlan22',
+                fact: {
+                  ip: '10.22.4.20',
+                  mac: '1122.3344.5566'
+                }
+              }
+            ]
+          },
+          {
+            id: 'legacy',
+            promptLine: 'cat port-map-legacy.csv',
+            lines: [
+              {
+                id: 'leg1',
+                text: 'Gi0/2,WKS-CLN-11,10.22.4.20,IDF-2F',
+                select: true,
+                fact: {
+                  port: 'Gi0/2',
+                  device: 'WKS-CLN-11',
+                  mgmt: '10.22.4.20'
+                }
+              },
+              {
+                id: 'leg2',
+                text: 'Gi0/7,PRT-CLN-2F,10.22.4.140,IDF-2F',
+                select: true,
+                fact: {
+                  port: 'Gi0/7',
+                  device: 'PRT-CLN-2F',
+                  mgmt: '10.22.4.140'
+                }
+              },
+              {
+                id: 'leg3',
+                text: 'Gi0/11,BADGE-CLN-2F-3,10.22.4.71,IDF-2F',
+                select: true,
+                fact: {
+                  port: 'Gi0/11',
+                  device: 'BADGE-CLN-2F-3',
+                  mgmt: '10.22.4.71'
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    steps: [
+      {
+        id: 'rec',
+        type: 'configure',
+        points: 1,
+        prompt: 'Reconcile the true management IP for each port from the discovery output.',
+        explanation: 'The workstation and printer both resolve directly via LLDP. The badge reader is silent on LLDP; its MAC-table entry on Gi0/11 joined against the ARP table gives the only way to resolve it.',
+        payload: {
+          slots: [
+            {
+              id: 'Gi0/2__ip',
+              label: 'Reconciled management IP — Gi0/2',
+              options: [
+                {
+                  id: 'a',
+                  text: '10.22.4.20'
+                },
+                {
+                  id: 'b',
+                  text: '10.22.4.21'
+                },
+                {
+                  id: 'c',
+                  text: '10.22.4.120'
+                }
+              ]
+            },
+            {
+              id: 'Gi0/7__ip',
+              label: 'Reconciled management IP — Gi0/7',
+              options: [
+                {
+                  id: 'a',
+                  text: '10.22.4.40'
+                },
+                {
+                  id: 'b',
+                  text: '10.22.4.41'
+                },
+                {
+                  id: 'c',
+                  text: '10.22.4.140'
+                }
+              ]
+            },
+            {
+              id: 'Gi0/11__ip',
+              label: 'Reconciled management IP — Gi0/11',
+              options: [
+                {
+                  id: 'a',
+                  text: '10.22.4.71'
+                },
+                {
+                  id: 'b',
+                  text: '10.22.4.70'
+                },
+                {
+                  id: 'c',
+                  text: '10.22.4.171'
+                }
+              ]
+            }
+          ]
+        },
+        answer: {
+          slots: {
+            'Gi0/2__ip': 'a',
+            'Gi0/7__ip': 'a',
+            'Gi0/11__ip': 'a'
+          }
+        }
+      },
+      {
+        id: 'aud',
+        type: 'analyze',
+        points: 1,
+        prompt: 'Select the single legacy row that contradicts reconciled reality.',
+        explanation: 'The access-control CSV records the nurse-station printer at 10.22.4.140, but live LLDP reports its true management address as 10.22.4.40 — the legacy record overstates the last octet by 100. The other two rows match reconciled truth.',
+        payload: {
+          multi: false,
+          mode: 'excerptLines'
+        },
+        answer: {
+          selected: ['leg2']
+        }
+      }
+    ]
+  },
+
+  {
+    id: 'np-disc-04',
+    cert: 'netplus',
+    archetype: 'discovery',
+    objective: '3.5',
+    topic: 'Network discovery audit — port-mapping reconciliation',
+    title: 'Data center rack port map audit',
+    estMinutes: 8,
+    scenario: 'A change window is coming up for rack R14 and the run book still points at a port map nobody has verified since the last hardware refresh. Reconcile the port map from SW-DC-R14 before the change window opens.',
+    disco: {
+      legacyExcerptId: 'legacy',
+      ports: [
+        {
+          port: 'Te1/0/1',
+          device: 'ESX-DC-14A',
+          mgmt: '10.12.1.10'
+        },
+        {
+          port: 'Te1/0/2',
+          device: 'KVM-DC-R14',
+          mgmt: '10.12.1.18'
+        },
+        {
+          port: 'Te1/0/6',
+          device: 'IDRAC-DC-R14-5',
+          mgmt: '10.12.1.44'
+        }
+      ]
+    },
+    assets: {
+      reference: {
+        kind: 'terminal',
+        host: 'SW-DC-R14',
+        session: 'ssh',
+        reveal: 'tabs',
+        excerpts: [
+          {
+            id: 'lldp',
+            promptLine: 'show lldp neighbors detail',
+            lines: [
+              {
+                id: 'lldp1',
+                text: 'Local Intf: Te1/0/1    Port ID: vmnic0    System Name: ESX-DC-14A    Mgmt Address: 10.12.1.10    Capability: S',
+                fact: {
+                  port: 'Te1/0/1',
+                  device: 'ESX-DC-14A',
+                  mgmt: '10.12.1.10'
+                }
+              },
+              {
+                id: 'lldp2',
+                text: 'Local Intf: Te1/0/2    Port ID: eth0    System Name: KVM-DC-R14    Mgmt Address: 10.12.1.18    Capability: S',
+                fact: {
+                  port: 'Te1/0/2',
+                  device: 'KVM-DC-R14',
+                  mgmt: '10.12.1.18'
+                }
+              }
+            ]
+          },
+          {
+            id: 'mac',
+            promptLine: 'show mac address-table',
+            lines: [
+              {
+                id: 'mac1',
+                text: '  12    e0d5.5e11.a201    DYNAMIC     Te1/0/6',
+                fact: {
+                  mac: 'e0d5.5e11.a201',
+                  port: 'Te1/0/6'
+                }
+              }
+            ]
+          },
+          {
+            id: 'arp',
+            promptLine: 'show arp',
+            lines: [
+              {
+                id: 'arp1',
+                text: 'Internet  10.12.1.44   55   e0d5.5e11.a201  ARPA   Vlan12',
+                fact: {
+                  ip: '10.12.1.44',
+                  mac: 'e0d5.5e11.a201'
+                }
+              },
+              {
+                id: 'arp2',
+                text: 'Internet  10.12.1.10   9   f0a3.11bb.2c00  ARPA   Vlan12',
+                fact: {
+                  ip: '10.12.1.10',
+                  mac: 'f0a3.11bb.2c00'
+                }
+              }
+            ]
+          },
+          {
+            id: 'legacy',
+            promptLine: 'cat port-map-legacy.csv',
+            lines: [
+              {
+                id: 'leg1',
+                text: 'Te1/0/1,ESX-DC-14A,10.12.1.10,R14',
+                select: true,
+                fact: {
+                  port: 'Te1/0/1',
+                  device: 'ESX-DC-14A',
+                  mgmt: '10.12.1.10'
+                }
+              },
+              {
+                id: 'leg2',
+                text: 'Te1/0/2,KVM-DC-R14,10.12.1.18,R14',
+                select: true,
+                fact: {
+                  port: 'Te1/0/2',
+                  device: 'KVM-DC-R14',
+                  mgmt: '10.12.1.18'
+                }
+              },
+              {
+                id: 'leg3',
+                text: 'Te1/0/6,IDRAC-DC-R14-5,10.12.1.144,R14',
+                select: true,
+                fact: {
+                  port: 'Te1/0/6',
+                  device: 'IDRAC-DC-R14-5',
+                  mgmt: '10.12.1.144'
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    steps: [
+      {
+        id: 'rec',
+        type: 'configure',
+        points: 1,
+        prompt: 'Reconcile the true management IP for each port from the discovery output.',
+        explanation: 'The hypervisor host and KVM appliance both resolve directly via LLDP. The out-of-band management NIC never speaks LLDP; joining its MAC-table entry on Te1/0/6 against the ARP table is the only way to resolve it.',
+        payload: {
+          slots: [
+            {
+              id: 'Te1/0/1__ip',
+              label: 'Reconciled management IP — Te1/0/1',
+              options: [
+                {
+                  id: 'a',
+                  text: '10.12.1.10'
+                },
+                {
+                  id: 'b',
+                  text: '10.12.1.11'
+                },
+                {
+                  id: 'c',
+                  text: '10.12.1.110'
+                }
+              ]
+            },
+            {
+              id: 'Te1/0/2__ip',
+              label: 'Reconciled management IP — Te1/0/2',
+              options: [
+                {
+                  id: 'a',
+                  text: '10.12.1.18'
+                },
+                {
+                  id: 'b',
+                  text: '10.12.1.19'
+                },
+                {
+                  id: 'c',
+                  text: '10.12.1.118'
+                }
+              ]
+            },
+            {
+              id: 'Te1/0/6__ip',
+              label: 'Reconciled management IP — Te1/0/6',
+              options: [
+                {
+                  id: 'a',
+                  text: '10.12.1.44'
+                },
+                {
+                  id: 'b',
+                  text: '10.12.1.45'
+                },
+                {
+                  id: 'c',
+                  text: '10.12.1.144'
+                }
+              ]
+            }
+          ]
+        },
+        answer: {
+          slots: {
+            'Te1/0/1__ip': 'a',
+            'Te1/0/2__ip': 'a',
+            'Te1/0/6__ip': 'a'
+          }
+        }
+      },
+      {
+        id: 'aud',
+        type: 'analyze',
+        points: 1,
+        prompt: 'Select the single legacy row that contradicts reconciled reality.',
+        explanation: 'The run book lists the out-of-band management NIC (IDRAC-DC-R14-5) at 10.12.1.144, but the MAC/ARP join resolves its live address as 10.12.1.44 — the run book carried over a stale address from before the last hardware refresh and was never corrected. The other two rows match.',
+        payload: {
+          multi: false,
+          mode: 'excerptLines'
+        },
+        answer: {
+          selected: ['leg3']
+        }
+      }
+    ]
+  },
+
+  {
+    id: 'np-disc-05',
+    cert: 'netplus',
+    archetype: 'discovery',
+    objective: '3.5',
+    topic: 'Network discovery audit — port-mapping reconciliation',
+    title: 'Retail store point-of-sale port map audit',
+    estMinutes: 8,
+    scenario: 'Loss prevention wants confirmation of every port feeding the register lane before a PCI walk-through. The store’s documentation is a CSV last touched during store opening. Reconcile it against live discovery from SW-RTL-118.',
+    disco: {
+      legacyExcerptId: 'legacy',
+      ports: [
+        {
+          port: 'Gi0/4',
+          device: 'POS-RTL-03',
+          mgmt: '10.55.2.13'
+        },
+        {
+          port: 'Gi0/8',
+          device: 'CAM-RTL-LANE1',
+          mgmt: '10.55.2.28'
+        },
+        {
+          port: 'Gi0/15',
+          device: 'PHN-RTL-LANE1',
+          mgmt: '10.55.2.49'
+        }
+      ]
+    },
+    assets: {
+      reference: {
+        kind: 'terminal',
+        host: 'SW-RTL-118',
+        session: 'ssh',
+        reveal: 'tabs',
+        excerpts: [
+          {
+            id: 'lldp',
+            promptLine: 'show lldp neighbors detail',
+            lines: [
+              {
+                id: 'lldp1',
+                text: 'Local Intf: Gi0/4    Port ID: eth0    System Name: POS-RTL-03    Mgmt Address: 10.55.2.13    Capability: S',
+                fact: {
+                  port: 'Gi0/4',
+                  device: 'POS-RTL-03',
+                  mgmt: '10.55.2.13'
+                }
+              },
+              {
+                id: 'lldp2',
+                text: 'Local Intf: Gi0/8    Port ID: eth0    System Name: CAM-RTL-LANE1    Mgmt Address: 10.55.2.28    Capability: S',
+                fact: {
+                  port: 'Gi0/8',
+                  device: 'CAM-RTL-LANE1',
+                  mgmt: '10.55.2.28'
+                }
+              }
+            ]
+          },
+          {
+            id: 'mac',
+            promptLine: 'show mac address-table',
+            lines: [
+              {
+                id: 'mac1',
+                text: '  55    a4c1.3e02.7788    DYNAMIC     Gi0/15',
+                fact: {
+                  mac: 'a4c1.3e02.7788',
+                  port: 'Gi0/15'
+                }
+              }
+            ]
+          },
+          {
+            id: 'arp',
+            promptLine: 'show arp',
+            lines: [
+              {
+                id: 'arp1',
+                text: 'Internet  10.55.2.49   63   a4c1.3e02.7788  ARPA   Vlan55',
+                fact: {
+                  ip: '10.55.2.49',
+                  mac: 'a4c1.3e02.7788'
+                }
+              },
+              {
+                id: 'arp2',
+                text: 'Internet  10.55.2.13   14   00de.ad11.beef  ARPA   Vlan55',
+                fact: {
+                  ip: '10.55.2.13',
+                  mac: '00de.ad11.beef'
+                }
+              }
+            ]
+          },
+          {
+            id: 'legacy',
+            promptLine: 'cat port-map-legacy.csv',
+            lines: [
+              {
+                id: 'leg1',
+                text: 'Gi0/4,POS-RTL-03,10.55.2.31,BACK-OFFICE',
+                select: true,
+                fact: {
+                  port: 'Gi0/4',
+                  device: 'POS-RTL-03',
+                  mgmt: '10.55.2.31'
+                }
+              },
+              {
+                id: 'leg2',
+                text: 'Gi0/8,CAM-RTL-LANE1,10.55.2.28,BACK-OFFICE',
+                select: true,
+                fact: {
+                  port: 'Gi0/8',
+                  device: 'CAM-RTL-LANE1',
+                  mgmt: '10.55.2.28'
+                }
+              },
+              {
+                id: 'leg3',
+                text: 'Gi0/15,PHN-RTL-LANE1,10.55.2.49,BACK-OFFICE',
+                select: true,
+                fact: {
+                  port: 'Gi0/15',
+                  device: 'PHN-RTL-LANE1',
+                  mgmt: '10.55.2.49'
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    steps: [
+      {
+        id: 'rec',
+        type: 'configure',
+        points: 1,
+        prompt: 'Reconcile the true management IP for each port from the discovery output.',
+        explanation: 'The POS terminal and camera both resolve directly via LLDP. The lane phone is silent on LLDP; joining its MAC-table entry on Gi0/15 against the ARP table resolves its address.',
+        payload: {
+          slots: [
+            {
+              id: 'Gi0/4__ip',
+              label: 'Reconciled management IP — Gi0/4',
+              options: [
+                {
+                  id: 'a',
+                  text: '10.55.2.13'
+                },
+                {
+                  id: 'b',
+                  text: '10.55.2.14'
+                },
+                {
+                  id: 'c',
+                  text: '10.55.2.113'
+                }
+              ]
+            },
+            {
+              id: 'Gi0/8__ip',
+              label: 'Reconciled management IP — Gi0/8',
+              options: [
+                {
+                  id: 'a',
+                  text: '10.55.2.28'
+                },
+                {
+                  id: 'b',
+                  text: '10.55.2.29'
+                },
+                {
+                  id: 'c',
+                  text: '10.55.2.128'
+                }
+              ]
+            },
+            {
+              id: 'Gi0/15__ip',
+              label: 'Reconciled management IP — Gi0/15',
+              options: [
+                {
+                  id: 'a',
+                  text: '10.55.2.49'
+                },
+                {
+                  id: 'b',
+                  text: '10.55.2.48'
+                },
+                {
+                  id: 'c',
+                  text: '10.55.2.149'
+                }
+              ]
+            }
+          ]
+        },
+        answer: {
+          slots: {
+            'Gi0/4__ip': 'a',
+            'Gi0/8__ip': 'a',
+            'Gi0/15__ip': 'a'
+          }
+        }
+      },
+      {
+        id: 'aud',
+        type: 'analyze',
+        points: 1,
+        prompt: 'Select the single legacy row that contradicts reconciled reality.',
+        explanation: 'The opening-day CSV lists the register-lane POS terminal at 10.55.2.31, but live LLDP reports its management address as 10.55.2.13 — the terminal was re-addressed after opening and the record was never updated. The camera and phone rows match reconciled truth.',
+        payload: {
+          multi: false,
+          mode: 'excerptLines'
+        },
+        answer: {
+          selected: ['leg1']
+        }
+      }
+    ]
+  },
+
+  {
+    id: 'np-disc-06',
+    cert: 'netplus',
+    archetype: 'discovery',
+    objective: '3.5',
+    topic: 'Network discovery audit — port-mapping reconciliation',
+    title: 'Classroom AV closet port map audit',
+    estMinutes: 8,
+    scenario: 'IT is prepping classroom B12 for a projector replacement and wants the port map confirmed against live discovery before the installer shows up. The only existing record is a CSV from the AV integrator’s original install.',
+    disco: {
+      legacyExcerptId: 'legacy',
+      ports: [
+        {
+          port: 'Gi0/6',
+          device: 'WKS-CLS-B12',
+          mgmt: '10.60.3.16'
+        },
+        {
+          port: 'Gi0/10',
+          device: 'PROJ-CLS-B12',
+          mgmt: '10.60.3.22'
+        },
+        {
+          port: 'Gi0/13',
+          device: 'SIGN-CLS-HALLB',
+          mgmt: '10.60.3.58'
+        }
+      ]
+    },
+    assets: {
+      reference: {
+        kind: 'terminal',
+        host: 'SW-CLS-B12',
+        session: 'ssh',
+        reveal: 'tabs',
+        excerpts: [
+          {
+            id: 'lldp',
+            promptLine: 'show lldp neighbors detail',
+            lines: [
+              {
+                id: 'lldp1',
+                text: 'Local Intf: Gi0/6    Port ID: eth0    System Name: WKS-CLS-B12    Mgmt Address: 10.60.3.16    Capability: S',
+                fact: {
+                  port: 'Gi0/6',
+                  device: 'WKS-CLS-B12',
+                  mgmt: '10.60.3.16'
+                }
+              },
+              {
+                id: 'lldp2',
+                text: 'Local Intf: Gi0/10    Port ID: eth0    System Name: PROJ-CLS-B12    Mgmt Address: 10.60.3.22    Capability: S',
+                fact: {
+                  port: 'Gi0/10',
+                  device: 'PROJ-CLS-B12',
+                  mgmt: '10.60.3.22'
+                }
+              }
+            ]
+          },
+          {
+            id: 'mac',
+            promptLine: 'show mac address-table',
+            lines: [
+              {
+                id: 'mac1',
+                text: '  60    88aa.2211.ffdd    DYNAMIC     Gi0/13',
+                fact: {
+                  mac: '88aa.2211.ffdd',
+                  port: 'Gi0/13'
+                }
+              }
+            ]
+          },
+          {
+            id: 'arp',
+            promptLine: 'show arp',
+            lines: [
+              {
+                id: 'arp1',
+                text: 'Internet  10.60.3.58   29   88aa.2211.ffdd  ARPA   Vlan60',
+                fact: {
+                  ip: '10.60.3.58',
+                  mac: '88aa.2211.ffdd'
+                }
+              },
+              {
+                id: 'arp2',
+                text: 'Internet  10.60.3.16   4   77bb.4455.2200  ARPA   Vlan60',
+                fact: {
+                  ip: '10.60.3.16',
+                  mac: '77bb.4455.2200'
+                }
+              }
+            ]
+          },
+          {
+            id: 'legacy',
+            promptLine: 'cat port-map-legacy.csv',
+            lines: [
+              {
+                id: 'leg1',
+                text: 'Gi0/6,WKS-CLS-B12,10.60.3.16,IDF-B',
+                select: true,
+                fact: {
+                  port: 'Gi0/6',
+                  device: 'WKS-CLS-B12',
+                  mgmt: '10.60.3.16'
+                }
+              },
+              {
+                id: 'leg2',
+                text: 'Gi0/10,PROJ-CLS-B12,10.60.3.22,IDF-B',
+                select: true,
+                fact: {
+                  port: 'Gi0/10',
+                  device: 'PROJ-CLS-B12',
+                  mgmt: '10.60.3.22'
+                }
+              },
+              {
+                id: 'leg3',
+                text: 'Gi0/13,SIGN-CLS-HALLB,10.60.3.158,IDF-B',
+                select: true,
+                fact: {
+                  port: 'Gi0/13',
+                  device: 'SIGN-CLS-HALLB',
+                  mgmt: '10.60.3.158'
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    steps: [
+      {
+        id: 'rec',
+        type: 'configure',
+        points: 1,
+        prompt: 'Reconcile the true management IP for each port from the discovery output.',
+        explanation: 'The classroom PC and projector both resolve directly via LLDP. The hallway digital-signage player never speaks LLDP; joining its MAC-table entry on Gi0/13 against the ARP table resolves it.',
+        payload: {
+          slots: [
+            {
+              id: 'Gi0/6__ip',
+              label: 'Reconciled management IP — Gi0/6',
+              options: [
+                {
+                  id: 'a',
+                  text: '10.60.3.16'
+                },
+                {
+                  id: 'b',
+                  text: '10.60.3.17'
+                },
+                {
+                  id: 'c',
+                  text: '10.60.3.116'
+                }
+              ]
+            },
+            {
+              id: 'Gi0/10__ip',
+              label: 'Reconciled management IP — Gi0/10',
+              options: [
+                {
+                  id: 'a',
+                  text: '10.60.3.22'
+                },
+                {
+                  id: 'b',
+                  text: '10.60.3.23'
+                },
+                {
+                  id: 'c',
+                  text: '10.60.3.122'
+                }
+              ]
+            },
+            {
+              id: 'Gi0/13__ip',
+              label: 'Reconciled management IP — Gi0/13',
+              options: [
+                {
+                  id: 'a',
+                  text: '10.60.3.58'
+                },
+                {
+                  id: 'b',
+                  text: '10.60.3.57'
+                },
+                {
+                  id: 'c',
+                  text: '10.60.3.158'
+                }
+              ]
+            }
+          ]
+        },
+        answer: {
+          slots: {
+            'Gi0/6__ip': 'a',
+            'Gi0/10__ip': 'a',
+            'Gi0/13__ip': 'a'
+          }
+        }
+      },
+      {
+        id: 'aud',
+        type: 'analyze',
+        points: 1,
+        prompt: 'Select the single legacy row that contradicts reconciled reality.',
+        explanation: 'The AV integrator’s CSV lists the hallway signage player at 10.60.3.158, but the MAC/ARP join resolves its live address as 10.60.3.58 — the integrator’s original paperwork carried an address from staging that was never corrected. The PC and projector rows match.',
+        payload: {
+          multi: false,
+          mode: 'excerptLines'
+        },
+        answer: {
+          selected: ['leg3']
+        }
+      }
+    ]
+  },
+
+  {
+    id: 'np-disc-07',
+    cert: 'netplus',
+    archetype: 'discovery',
+    objective: '3.5',
+    topic: 'Network discovery audit — port-mapping reconciliation',
+    title: 'Hospital floor telemetry port map audit',
+    estMinutes: 8,
+    scenario: 'Biomed is auditing every network-connected device on the 2E telemetry wing ahead of a compliance review. The wing’s only documentation is a CSV last updated by a contractor two device refreshes ago. Reconcile it against live discovery from SW-HOSP-2E.',
+    disco: {
+      legacyExcerptId: 'legacy',
+      ports: [
+        {
+          port: 'Gi0/5',
+          device: 'NURSECALL-2E',
+          mgmt: '10.18.6.12'
+        },
+        {
+          port: 'Gi0/9',
+          device: 'PRT-HOSP-2E',
+          mgmt: '10.18.6.30'
+        },
+        {
+          port: 'Gi0/16',
+          device: 'PUMP-HOSP-2E-9',
+          mgmt: '10.18.6.67'
+        }
+      ]
+    },
+    assets: {
+      reference: {
+        kind: 'terminal',
+        host: 'SW-HOSP-2E',
+        session: 'ssh',
+        reveal: 'tabs',
+        excerpts: [
+          {
+            id: 'lldp',
+            promptLine: 'show lldp neighbors detail',
+            lines: [
+              {
+                id: 'lldp1',
+                text: 'Local Intf: Gi0/5    Port ID: eth0    System Name: NURSECALL-2E    Mgmt Address: 10.18.6.12    Capability: S',
+                fact: {
+                  port: 'Gi0/5',
+                  device: 'NURSECALL-2E',
+                  mgmt: '10.18.6.12'
+                }
+              },
+              {
+                id: 'lldp2',
+                text: 'Local Intf: Gi0/9    Port ID: eth0    System Name: PRT-HOSP-2E    Mgmt Address: 10.18.6.30    Capability: S',
+                fact: {
+                  port: 'Gi0/9',
+                  device: 'PRT-HOSP-2E',
+                  mgmt: '10.18.6.30'
+                }
+              }
+            ]
+          },
+          {
+            id: 'mac',
+            promptLine: 'show mac address-table',
+            lines: [
+              {
+                id: 'mac1',
+                text: '  18    2244.6688.aacc    DYNAMIC     Gi0/16',
+                fact: {
+                  mac: '2244.6688.aacc',
+                  port: 'Gi0/16'
+                }
+              }
+            ]
+          },
+          {
+            id: 'arp',
+            promptLine: 'show arp',
+            lines: [
+              {
+                id: 'arp1',
+                text: 'Internet  10.18.6.67   97   2244.6688.aacc  ARPA   Vlan18',
+                fact: {
+                  ip: '10.18.6.67',
+                  mac: '2244.6688.aacc'
+                }
+              },
+              {
+                id: 'arp2',
+                text: 'Internet  10.18.6.12   11   99ee.3311.5577  ARPA   Vlan18',
+                fact: {
+                  ip: '10.18.6.12',
+                  mac: '99ee.3311.5577'
+                }
+              }
+            ]
+          },
+          {
+            id: 'legacy',
+            promptLine: 'cat port-map-legacy.csv',
+            lines: [
+              {
+                id: 'leg1',
+                text: 'Gi0/5,NURSECALL-2E,10.18.6.12,IDF-2E',
+                select: true,
+                fact: {
+                  port: 'Gi0/5',
+                  device: 'NURSECALL-2E',
+                  mgmt: '10.18.6.12'
+                }
+              },
+              {
+                id: 'leg2',
+                text: 'Gi0/9,PRT-HOSP-2E,10.18.6.30,IDF-2E',
+                select: true,
+                fact: {
+                  port: 'Gi0/9',
+                  device: 'PRT-HOSP-2E',
+                  mgmt: '10.18.6.30'
+                }
+              },
+              {
+                id: 'leg3',
+                text: 'Gi0/16,PUMP-HOSP-2E-9,10.18.6.68,IDF-2E',
+                select: true,
+                fact: {
+                  port: 'Gi0/16',
+                  device: 'PUMP-HOSP-2E-9',
+                  mgmt: '10.18.6.68'
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    steps: [
+      {
+        id: 'rec',
+        type: 'configure',
+        points: 1,
+        prompt: 'Reconcile the true management IP for each port from the discovery output.',
+        explanation: 'The nurse-call panel and printer both resolve directly via LLDP. The infusion pump is silent on LLDP; joining its MAC-table entry on Gi0/16 against the ARP table resolves its address.',
+        payload: {
+          slots: [
+            {
+              id: 'Gi0/5__ip',
+              label: 'Reconciled management IP — Gi0/5',
+              options: [
+                {
+                  id: 'a',
+                  text: '10.18.6.12'
+                },
+                {
+                  id: 'b',
+                  text: '10.18.6.13'
+                },
+                {
+                  id: 'c',
+                  text: '10.18.6.112'
+                }
+              ]
+            },
+            {
+              id: 'Gi0/9__ip',
+              label: 'Reconciled management IP — Gi0/9',
+              options: [
+                {
+                  id: 'a',
+                  text: '10.18.6.30'
+                },
+                {
+                  id: 'b',
+                  text: '10.18.6.31'
+                },
+                {
+                  id: 'c',
+                  text: '10.18.6.130'
+                }
+              ]
+            },
+            {
+              id: 'Gi0/16__ip',
+              label: 'Reconciled management IP — Gi0/16',
+              options: [
+                {
+                  id: 'a',
+                  text: '10.18.6.67'
+                },
+                {
+                  id: 'b',
+                  text: '10.18.6.66'
+                },
+                {
+                  id: 'c',
+                  text: '10.18.6.167'
+                }
+              ]
+            }
+          ]
+        },
+        answer: {
+          slots: {
+            'Gi0/5__ip': 'a',
+            'Gi0/9__ip': 'a',
+            'Gi0/16__ip': 'a'
+          }
+        }
+      },
+      {
+        id: 'aud',
+        type: 'analyze',
+        points: 1,
+        prompt: 'Select the single legacy row that contradicts reconciled reality.',
+        explanation: 'The contractor’s CSV lists the infusion pump at 10.18.6.68, but the MAC/ARP join resolves its actual address as 10.18.6.67 — the pump was reassigned during a DHCP reservation cleanup and the sheet was never updated. The other two rows match reconciled truth.',
+        payload: {
+          multi: false,
+          mode: 'excerptLines'
+        },
+        answer: {
+          selected: ['leg3']
+        }
+      }
+    ]
+  },
+
+  {
+    id: 'np-disc-08',
+    cert: 'netplus',
+    archetype: 'discovery',
+    objective: '3.5',
+    topic: 'Network discovery audit — port-mapping reconciliation',
+    title: 'Bank branch teller line port map audit',
+    estMinutes: 8,
+    scenario: 'Branch operations is replacing the lobby digital menu board and wants the port map confirmed first — the branch’s only record is a CSV from the original branch build-out. Reconcile it against live discovery from SW-BNK-118.',
+    disco: {
+      legacyExcerptId: 'legacy',
+      ports: [
+        {
+          port: 'Gi0/3',
+          device: 'TELLER-BNK-04',
+          mgmt: '10.8.2.11'
+        },
+        {
+          port: 'Gi0/7',
+          device: 'ATMCTRL-BNK-1',
+          mgmt: '10.8.2.20'
+        },
+        {
+          port: 'Gi0/12',
+          device: 'MENU-BNK-LOBBY',
+          mgmt: '10.8.2.55'
+        }
+      ]
+    },
+    assets: {
+      reference: {
+        kind: 'terminal',
+        host: 'SW-BNK-118',
+        session: 'ssh',
+        reveal: 'tabs',
+        excerpts: [
+          {
+            id: 'lldp',
+            promptLine: 'show lldp neighbors detail',
+            lines: [
+              {
+                id: 'lldp1',
+                text: 'Local Intf: Gi0/3    Port ID: eth0    System Name: TELLER-BNK-04    Mgmt Address: 10.8.2.11    Capability: S',
+                fact: {
+                  port: 'Gi0/3',
+                  device: 'TELLER-BNK-04',
+                  mgmt: '10.8.2.11'
+                }
+              },
+              {
+                id: 'lldp2',
+                text: 'Local Intf: Gi0/7    Port ID: eth0    System Name: ATMCTRL-BNK-1    Mgmt Address: 10.8.2.20    Capability: S',
+                fact: {
+                  port: 'Gi0/7',
+                  device: 'ATMCTRL-BNK-1',
+                  mgmt: '10.8.2.20'
+                }
+              }
+            ]
+          },
+          {
+            id: 'mac',
+            promptLine: 'show mac address-table',
+            lines: [
+              {
+                id: 'mac1',
+                text: '  8    6699.aabb.ccdd    DYNAMIC     Gi0/12',
+                fact: {
+                  mac: '6699.aabb.ccdd',
+                  port: 'Gi0/12'
+                }
+              }
+            ]
+          },
+          {
+            id: 'arp',
+            promptLine: 'show arp',
+            lines: [
+              {
+                id: 'arp1',
+                text: 'Internet  10.8.2.55   38   6699.aabb.ccdd  ARPA   Vlan8',
+                fact: {
+                  ip: '10.8.2.55',
+                  mac: '6699.aabb.ccdd'
+                }
+              },
+              {
+                id: 'arp2',
+                text: 'Internet  10.8.2.11   5   4411.8822.cc33  ARPA   Vlan8',
+                fact: {
+                  ip: '10.8.2.11',
+                  mac: '4411.8822.cc33'
+                }
+              }
+            ]
+          },
+          {
+            id: 'legacy',
+            promptLine: 'cat port-map-legacy.csv',
+            lines: [
+              {
+                id: 'leg1',
+                text: 'Gi0/3,TELLER-BNK-04,10.8.2.11,BR-IDF',
+                select: true,
+                fact: {
+                  port: 'Gi0/3',
+                  device: 'TELLER-BNK-04',
+                  mgmt: '10.8.2.11'
+                }
+              },
+              {
+                id: 'leg2',
+                text: 'Gi0/7,ATMCTRL-BNK-1,10.8.2.20,BR-IDF',
+                select: true,
+                fact: {
+                  port: 'Gi0/7',
+                  device: 'ATMCTRL-BNK-1',
+                  mgmt: '10.8.2.20'
+                }
+              },
+              {
+                id: 'leg3',
+                text: 'Gi0/12,MENU-BNK-LOBBY,10.8.2.155,BR-IDF',
+                select: true,
+                fact: {
+                  port: 'Gi0/12',
+                  device: 'MENU-BNK-LOBBY',
+                  mgmt: '10.8.2.155'
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    steps: [
+      {
+        id: 'rec',
+        type: 'configure',
+        points: 1,
+        prompt: 'Reconcile the true management IP for each port from the discovery output.',
+        explanation: 'The teller workstation and ATM controller both resolve directly via LLDP. The lobby menu board is silent on LLDP; joining its MAC-table entry on Gi0/12 against the ARP table resolves its address.',
+        payload: {
+          slots: [
+            {
+              id: 'Gi0/3__ip',
+              label: 'Reconciled management IP — Gi0/3',
+              options: [
+                {
+                  id: 'a',
+                  text: '10.8.2.11'
+                },
+                {
+                  id: 'b',
+                  text: '10.8.2.12'
+                },
+                {
+                  id: 'c',
+                  text: '10.8.2.111'
+                }
+              ]
+            },
+            {
+              id: 'Gi0/7__ip',
+              label: 'Reconciled management IP — Gi0/7',
+              options: [
+                {
+                  id: 'a',
+                  text: '10.8.2.20'
+                },
+                {
+                  id: 'b',
+                  text: '10.8.2.21'
+                },
+                {
+                  id: 'c',
+                  text: '10.8.2.120'
+                }
+              ]
+            },
+            {
+              id: 'Gi0/12__ip',
+              label: 'Reconciled management IP — Gi0/12',
+              options: [
+                {
+                  id: 'a',
+                  text: '10.8.2.55'
+                },
+                {
+                  id: 'b',
+                  text: '10.8.2.54'
+                },
+                {
+                  id: 'c',
+                  text: '10.8.2.155'
+                }
+              ]
+            }
+          ]
+        },
+        answer: {
+          slots: {
+            'Gi0/3__ip': 'a',
+            'Gi0/7__ip': 'a',
+            'Gi0/12__ip': 'a'
+          }
+        }
+      },
+      {
+        id: 'aud',
+        type: 'analyze',
+        points: 1,
+        prompt: 'Select the single legacy row that contradicts reconciled reality.',
+        explanation: 'The build-out CSV lists the lobby menu board at 10.8.2.155, but the MAC/ARP join resolves its live address as 10.8.2.55 — the equipment was swapped from an interactive kiosk to a menu board during the same visit its address was reassigned, and the sheet was never updated. The teller and ATM controller rows match.',
+        payload: {
+          multi: false,
+          mode: 'excerptLines'
+        },
+        answer: {
+          selected: ['leg3']
+        }
+      }
+    ]
+  },
+
+  {
+    id: 'np-disc-09',
+    cert: 'netplus',
+    archetype: 'discovery',
+    objective: '3.5',
+    topic: 'Network discovery audit — port-mapping reconciliation',
+    title: 'Hotel guest-floor port map audit',
+    estMinutes: 8,
+    scenario: 'Engineering is troubleshooting complaints about a guest-floor travel router someone plugged into the wall, and wants the whole 4th-floor port map confirmed before they go pull a cable. The only documentation is a CSV from the hotel’s IT contractor.',
+    disco: {
+      legacyExcerptId: 'legacy',
+      ports: [
+        {
+          port: 'Gi0/4',
+          device: 'FDPC-HTL-4F',
+          mgmt: '10.44.1.10'
+        },
+        {
+          port: 'Gi0/9',
+          device: 'PHN-HTL-4F-12',
+          mgmt: '10.44.1.26'
+        },
+        {
+          port: 'Gi0/22',
+          device: 'UNK-TRAVELRTR-4F',
+          mgmt: '10.44.1.73'
+        }
+      ]
+    },
+    assets: {
+      reference: {
+        kind: 'terminal',
+        host: 'SW-HTL-4F',
+        session: 'ssh',
+        reveal: 'tabs',
+        excerpts: [
+          {
+            id: 'lldp',
+            promptLine: 'show lldp neighbors detail',
+            lines: [
+              {
+                id: 'lldp1',
+                text: 'Local Intf: Gi0/4    Port ID: eth0    System Name: FDPC-HTL-4F    Mgmt Address: 10.44.1.10    Capability: S',
+                fact: {
+                  port: 'Gi0/4',
+                  device: 'FDPC-HTL-4F',
+                  mgmt: '10.44.1.10'
+                }
+              },
+              {
+                id: 'lldp2',
+                text: 'Local Intf: Gi0/9    Port ID: port1    System Name: PHN-HTL-4F-12    Mgmt Address: 10.44.1.26    Capability: T',
+                fact: {
+                  port: 'Gi0/9',
+                  device: 'PHN-HTL-4F-12',
+                  mgmt: '10.44.1.26'
+                }
+              }
+            ]
+          },
+          {
+            id: 'mac',
+            promptLine: 'show mac address-table',
+            lines: [
+              {
+                id: 'mac1',
+                text: '  44    ccdd.eeff.0011    DYNAMIC     Gi0/22',
+                fact: {
+                  mac: 'ccdd.eeff.0011',
+                  port: 'Gi0/22'
+                }
+              }
+            ]
+          },
+          {
+            id: 'arp',
+            promptLine: 'show arp',
+            lines: [
+              {
+                id: 'arp1',
+                text: 'Internet  10.44.1.73   71   ccdd.eeff.0011  ARPA   Vlan44',
+                fact: {
+                  ip: '10.44.1.73',
+                  mac: 'ccdd.eeff.0011'
+                }
+              },
+              {
+                id: 'arp2',
+                text: 'Internet  10.44.1.10   19   1234.5678.9abc  ARPA   Vlan44',
+                fact: {
+                  ip: '10.44.1.10',
+                  mac: '1234.5678.9abc'
+                }
+              }
+            ]
+          },
+          {
+            id: 'legacy',
+            promptLine: 'cat port-map-legacy.csv',
+            lines: [
+              {
+                id: 'leg1',
+                text: 'Gi0/4,FDPC-HTL-4F,10.44.1.10,IDF-4F',
+                select: true,
+                fact: {
+                  port: 'Gi0/4',
+                  device: 'FDPC-HTL-4F',
+                  mgmt: '10.44.1.10'
+                }
+              },
+              {
+                id: 'leg2',
+                text: 'Gi0/9,PHN-HTL-4F-12,10.44.1.26,IDF-4F',
+                select: true,
+                fact: {
+                  port: 'Gi0/9',
+                  device: 'PHN-HTL-4F-12',
+                  mgmt: '10.44.1.26'
+                }
+              },
+              {
+                id: 'leg3',
+                text: 'Gi0/22,VACANT-4F-22,10.44.1.75,IDF-4F',
+                select: true,
+                fact: {
+                  port: 'Gi0/22',
+                  device: 'VACANT-4F-22',
+                  mgmt: '10.44.1.75'
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    steps: [
+      {
+        id: 'rec',
+        type: 'configure',
+        points: 1,
+        prompt: 'Reconcile the true management IP for each port from the discovery output.',
+        explanation: 'The front-desk PC and room phone both resolve directly via LLDP. The unauthorized travel router does not speak LLDP; joining its MAC-table entry on Gi0/22 against the ARP table is the only way to see it exists and where it landed.',
+        payload: {
+          slots: [
+            {
+              id: 'Gi0/4__ip',
+              label: 'Reconciled management IP — Gi0/4',
+              options: [
+                {
+                  id: 'a',
+                  text: '10.44.1.10'
+                },
+                {
+                  id: 'b',
+                  text: '10.44.1.11'
+                },
+                {
+                  id: 'c',
+                  text: '10.44.1.110'
+                }
+              ]
+            },
+            {
+              id: 'Gi0/9__ip',
+              label: 'Reconciled management IP — Gi0/9',
+              options: [
+                {
+                  id: 'a',
+                  text: '10.44.1.26'
+                },
+                {
+                  id: 'b',
+                  text: '10.44.1.27'
+                },
+                {
+                  id: 'c',
+                  text: '10.44.1.126'
+                }
+              ]
+            },
+            {
+              id: 'Gi0/22__ip',
+              label: 'Reconciled management IP — Gi0/22',
+              options: [
+                {
+                  id: 'a',
+                  text: '10.44.1.73'
+                },
+                {
+                  id: 'b',
+                  text: '10.44.1.72'
+                },
+                {
+                  id: 'c',
+                  text: '10.44.1.173'
+                }
+              ]
+            }
+          ]
+        },
+        answer: {
+          slots: {
+            'Gi0/4__ip': 'a',
+            'Gi0/9__ip': 'a',
+            'Gi0/22__ip': 'a'
+          }
+        }
+      },
+      {
+        id: 'aud',
+        type: 'analyze',
+        points: 1,
+        prompt: 'Select the single legacy row that contradicts reconciled reality.',
+        explanation: 'The contractor’s sheet lists Gi0/22 as vacant at .75, but live discovery shows an active host answering at .73 on that same port — the port isn’t vacant at all, it has an unauthorized device plugged in. The other two rows match reconciled truth.',
+        payload: {
+          multi: false,
+          mode: 'excerptLines'
+        },
+        answer: {
+          selected: ['leg3']
+        }
+      }
+    ]
+  },
+
+  {
+    id: 'np-disc-10',
+    cert: 'netplus',
+    archetype: 'discovery',
+    objective: '3.5',
+    topic: 'Network discovery audit — port-mapping reconciliation',
+    title: 'Manufacturing floor HMI port map audit',
+    estMinutes: 8,
+    scenario: 'Controls engineering wants the line-2 network map confirmed before a PLC firmware push this weekend. The floor’s only documentation is a CSV that predates the last panel rebuild. Reconcile it against live discovery from SW-MFG-L2.',
+    disco: {
+      legacyExcerptId: 'legacy',
+      ports: [
+        {
+          port: 'Gi0/2',
+          device: 'HMI-MFG-L2',
+          mgmt: '10.70.9.14'
+        },
+        {
+          port: 'Gi0/6',
+          device: 'PRT-MFG-L2',
+          mgmt: '10.70.9.28'
+        },
+        {
+          port: 'Gi0/19',
+          device: 'PLC-MFG-L2-3',
+          mgmt: '10.70.9.60'
+        }
+      ]
+    },
+    assets: {
+      reference: {
+        kind: 'terminal',
+        host: 'SW-MFG-L2',
+        session: 'ssh',
+        reveal: 'tabs',
+        excerpts: [
+          {
+            id: 'lldp',
+            promptLine: 'show lldp neighbors detail',
+            lines: [
+              {
+                id: 'lldp1',
+                text: 'Local Intf: Gi0/2    Port ID: eth0    System Name: HMI-MFG-L2    Mgmt Address: 10.70.9.14    Capability: S',
+                fact: {
+                  port: 'Gi0/2',
+                  device: 'HMI-MFG-L2',
+                  mgmt: '10.70.9.14'
+                }
+              },
+              {
+                id: 'lldp2',
+                text: 'Local Intf: Gi0/6    Port ID: eth0    System Name: PRT-MFG-L2    Mgmt Address: 10.70.9.28    Capability: S',
+                fact: {
+                  port: 'Gi0/6',
+                  device: 'PRT-MFG-L2',
+                  mgmt: '10.70.9.28'
+                }
+              }
+            ]
+          },
+          {
+            id: 'mac',
+            promptLine: 'show mac address-table',
+            lines: [
+              {
+                id: 'mac1',
+                text: '  70    de11.ad22.be33    DYNAMIC     Gi0/19',
+                fact: {
+                  mac: 'de11.ad22.be33',
+                  port: 'Gi0/19'
+                }
+              }
+            ]
+          },
+          {
+            id: 'arp',
+            promptLine: 'show arp',
+            lines: [
+              {
+                id: 'arp1',
+                text: 'Internet  10.70.9.60   150   de11.ad22.be33  ARPA   Vlan70',
+                fact: {
+                  ip: '10.70.9.60',
+                  mac: 'de11.ad22.be33'
+                }
+              },
+              {
+                id: 'arp2',
+                text: 'Internet  10.70.9.14   8   55aa.66bb.77cc  ARPA   Vlan70',
+                fact: {
+                  ip: '10.70.9.14',
+                  mac: '55aa.66bb.77cc'
+                }
+              }
+            ]
+          },
+          {
+            id: 'legacy',
+            promptLine: 'cat port-map-legacy.csv',
+            lines: [
+              {
+                id: 'leg1',
+                text: 'Gi0/2,HMI-MFG-L2,10.70.9.14,MFG-IDF',
+                select: true,
+                fact: {
+                  port: 'Gi0/2',
+                  device: 'HMI-MFG-L2',
+                  mgmt: '10.70.9.14'
+                }
+              },
+              {
+                id: 'leg2',
+                text: 'Gi0/6,PRT-MFG-L2,10.70.9.28,MFG-IDF',
+                select: true,
+                fact: {
+                  port: 'Gi0/6',
+                  device: 'PRT-MFG-L2',
+                  mgmt: '10.70.9.28'
+                }
+              },
+              {
+                id: 'leg3',
+                text: 'Gi0/19,PLC-MFG-L2-3,10.70.9.160,MFG-IDF',
+                select: true,
+                fact: {
+                  port: 'Gi0/19',
+                  device: 'PLC-MFG-L2-3',
+                  mgmt: '10.70.9.160'
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    steps: [
+      {
+        id: 'rec',
+        type: 'configure',
+        points: 1,
+        prompt: 'Reconcile the true management IP for each port from the discovery output.',
+        explanation: 'The HMI panel and line printer both resolve directly via LLDP. The PLC never speaks LLDP; joining its MAC-table entry on Gi0/19 against the ARP table resolves it.',
+        payload: {
+          slots: [
+            {
+              id: 'Gi0/2__ip',
+              label: 'Reconciled management IP — Gi0/2',
+              options: [
+                {
+                  id: 'a',
+                  text: '10.70.9.14'
+                },
+                {
+                  id: 'b',
+                  text: '10.70.9.15'
+                },
+                {
+                  id: 'c',
+                  text: '10.70.9.114'
+                }
+              ]
+            },
+            {
+              id: 'Gi0/6__ip',
+              label: 'Reconciled management IP — Gi0/6',
+              options: [
+                {
+                  id: 'a',
+                  text: '10.70.9.28'
+                },
+                {
+                  id: 'b',
+                  text: '10.70.9.29'
+                },
+                {
+                  id: 'c',
+                  text: '10.70.9.128'
+                }
+              ]
+            },
+            {
+              id: 'Gi0/19__ip',
+              label: 'Reconciled management IP — Gi0/19',
+              options: [
+                {
+                  id: 'a',
+                  text: '10.70.9.60'
+                },
+                {
+                  id: 'b',
+                  text: '10.70.9.61'
+                },
+                {
+                  id: 'c',
+                  text: '10.70.9.160'
+                }
+              ]
+            }
+          ]
+        },
+        answer: {
+          slots: {
+            'Gi0/2__ip': 'a',
+            'Gi0/6__ip': 'a',
+            'Gi0/19__ip': 'a'
+          }
+        }
+      },
+      {
+        id: 'aud',
+        type: 'analyze',
+        points: 1,
+        prompt: 'Select the single legacy row that contradicts reconciled reality.',
+        explanation: 'The pre-rebuild CSV lists the PLC at 10.70.9.160, but the MAC/ARP join resolves its live address as 10.70.9.60 — the panel rebuild swapped in a different PLC unit on a new address and the documentation was never updated. The HMI and printer rows match.',
+        payload: {
+          multi: false,
+          mode: 'excerptLines'
+        },
+        answer: {
+          selected: ['leg3']
+        }
+      }
+    ]
+  },
+
+  {
+    id: 'np-disc-11',
+    cert: 'netplus',
+    archetype: 'discovery',
+    objective: '3.5',
+    topic: 'Network discovery audit — port-mapping reconciliation',
+    title: 'Dorm floor port map audit',
+    estMinutes: 8,
+    scenario: 'Res-life IT is investigating a bandwidth complaint on dorm floor 5 and wants the port map confirmed against live discovery before they start capping ports. The floor’s only documentation is a CSV from the last move-in cycle.',
+    disco: {
+      legacyExcerptId: 'legacy',
+      ports: [
+        {
+          port: 'Gi0/2',
+          device: 'RA-WKS-DORM5',
+          mgmt: '10.90.3.10'
+        },
+        {
+          port: 'Gi0/6',
+          device: 'PRT-DORM5-COMMON',
+          mgmt: '10.90.3.25'
+        },
+        {
+          port: 'Gi0/31',
+          device: 'CONSOLE-DORM5-512',
+          mgmt: '10.90.3.88'
+        }
+      ]
+    },
+    assets: {
+      reference: {
+        kind: 'terminal',
+        host: 'SW-DORM-5',
+        session: 'ssh',
+        reveal: 'tabs',
+        excerpts: [
+          {
+            id: 'lldp',
+            promptLine: 'show lldp neighbors detail',
+            lines: [
+              {
+                id: 'lldp1',
+                text: 'Local Intf: Gi0/2    Port ID: eth0    System Name: RA-WKS-DORM5    Mgmt Address: 10.90.3.10    Capability: S',
+                fact: {
+                  port: 'Gi0/2',
+                  device: 'RA-WKS-DORM5',
+                  mgmt: '10.90.3.10'
+                }
+              },
+              {
+                id: 'lldp2',
+                text: 'Local Intf: Gi0/6    Port ID: eth0    System Name: PRT-DORM5-COMMON    Mgmt Address: 10.90.3.25    Capability: S',
+                fact: {
+                  port: 'Gi0/6',
+                  device: 'PRT-DORM5-COMMON',
+                  mgmt: '10.90.3.25'
+                }
+              }
+            ]
+          },
+          {
+            id: 'mac',
+            promptLine: 'show mac address-table',
+            lines: [
+              {
+                id: 'mac1',
+                text: '  90    f001.ba22.7c9d    DYNAMIC     Gi0/31',
+                fact: {
+                  mac: 'f001.ba22.7c9d',
+                  port: 'Gi0/31'
+                }
+              }
+            ]
+          },
+          {
+            id: 'arp',
+            promptLine: 'show arp',
+            lines: [
+              {
+                id: 'arp1',
+                text: 'Internet  10.90.3.88   26   f001.ba22.7c9d  ARPA   Vlan90',
+                fact: {
+                  ip: '10.90.3.88',
+                  mac: 'f001.ba22.7c9d'
+                }
+              },
+              {
+                id: 'arp2',
+                text: 'Internet  10.90.3.10   7   3300.aabb.ccdd  ARPA   Vlan90',
+                fact: {
+                  ip: '10.90.3.10',
+                  mac: '3300.aabb.ccdd'
+                }
+              }
+            ]
+          },
+          {
+            id: 'legacy',
+            promptLine: 'cat port-map-legacy.csv',
+            lines: [
+              {
+                id: 'leg1',
+                text: 'Gi0/2,RA-WKS-DORM5,10.90.3.10,IDF-5',
+                select: true,
+                fact: {
+                  port: 'Gi0/2',
+                  device: 'RA-WKS-DORM5',
+                  mgmt: '10.90.3.10'
+                }
+              },
+              {
+                id: 'leg2',
+                text: 'Gi0/6,PRT-DORM5-COMMON,10.90.3.25,IDF-5',
+                select: true,
+                fact: {
+                  port: 'Gi0/6',
+                  device: 'PRT-DORM5-COMMON',
+                  mgmt: '10.90.3.25'
+                }
+              },
+              {
+                id: 'leg3',
+                text: 'Gi0/31,CONSOLE-DORM5-512,10.90.3.89,IDF-5',
+                select: true,
+                fact: {
+                  port: 'Gi0/31',
+                  device: 'CONSOLE-DORM5-512',
+                  mgmt: '10.90.3.89'
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    steps: [
+      {
+        id: 'rec',
+        type: 'configure',
+        points: 1,
+        prompt: 'Reconcile the true management IP for each port from the discovery output.',
+        explanation: 'The RA workstation and common-area printer both resolve directly via LLDP. The gaming console is silent on LLDP; joining its MAC-table entry on Gi0/31 against the ARP table resolves its address.',
+        payload: {
+          slots: [
+            {
+              id: 'Gi0/2__ip',
+              label: 'Reconciled management IP — Gi0/2',
+              options: [
+                {
+                  id: 'a',
+                  text: '10.90.3.10'
+                },
+                {
+                  id: 'b',
+                  text: '10.90.3.11'
+                },
+                {
+                  id: 'c',
+                  text: '10.90.3.110'
+                }
+              ]
+            },
+            {
+              id: 'Gi0/6__ip',
+              label: 'Reconciled management IP — Gi0/6',
+              options: [
+                {
+                  id: 'a',
+                  text: '10.90.3.25'
+                },
+                {
+                  id: 'b',
+                  text: '10.90.3.26'
+                },
+                {
+                  id: 'c',
+                  text: '10.90.3.125'
+                }
+              ]
+            },
+            {
+              id: 'Gi0/31__ip',
+              label: 'Reconciled management IP — Gi0/31',
+              options: [
+                {
+                  id: 'a',
+                  text: '10.90.3.88'
+                },
+                {
+                  id: 'b',
+                  text: '10.90.3.87'
+                },
+                {
+                  id: 'c',
+                  text: '10.90.3.188'
+                }
+              ]
+            }
+          ]
+        },
+        answer: {
+          slots: {
+            'Gi0/2__ip': 'a',
+            'Gi0/6__ip': 'a',
+            'Gi0/31__ip': 'a'
+          }
+        }
+      },
+      {
+        id: 'aud',
+        type: 'analyze',
+        points: 1,
+        prompt: 'Select the single legacy row that contradicts reconciled reality.',
+        explanation: 'The move-in CSV lists the room-512 console at 10.90.3.89, but the MAC/ARP join resolves its live address as 10.90.3.88 — a lease renewal shifted the last octet and the sheet was never refreshed. The RA workstation and printer rows match reconciled truth.',
+        payload: {
+          multi: false,
+          mode: 'excerptLines'
+        },
+        answer: {
+          selected: ['leg3']
+        }
+      }
+    ]
+  }
 ];
