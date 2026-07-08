@@ -21594,6 +21594,45 @@ console.log('\n\x1b[1m── T7: DRILLS ANALYTICS GROUP + FINAL COPY + BRONZE TO
   }
 })();
 
+(function () {
+  var grab = function (n) { return _fnBody(js, n); };
+  var cliBody = grab('simLabValidateCliFaultFidelity');
+  var sigVar = (js.match(/var _CLI_FAULT_SIG = \{[\s\S]*?\n\s*\};/) || [''])[0];
+  if (!cliBody || !sigVar) { results.errors.push('could not extract simLabValidateCliFaultFidelity/_CLI_FAULT_SIG'); return; }
+  var vm = require('vm');
+  var cCtx = {}; vm.createContext(cCtx);
+  vm.runInContext(grab('_isNonEmptyStr') + '\n' + grab('_slFidelityResolveSlot') + '\n' + sigVar + '\n' + grab('_cliExcerptText') + '\n' + grab('_cliNeedlesMet') + '\n' + cliBody, cCtx);
+  vm.runInContext('globalThis.__cli = simLabValidateCliFaultFidelity;', cCtx);
+  var cli = cCtx.__cli;
+  var assert = function (cond, msg) { test(msg, !!cond); };
+
+  var scn = { cliFault: { fault: 'duplex' },
+    assets: { reference: { kind: 'terminal', host: 'h', session: 's', reveal: 'external',
+      excerpts: [
+        { id: 'ipconfig', promptLine: 'C:\\> ipconfig', reveal: 'ipconfig', necessary: true,
+          lines: [ { id: 'i1', text: 'Link Speed: 1.0 Gbps / Full Duplex', highlight: 'good', select: false } ] },
+        { id: 'showint', promptLine: 'SW-2# show interfaces Gi0/14', reveal: 'showint', necessary: true,
+          lines: [ { id: 's1', text: 'Half-duplex, 100Mb/s', highlight: 'hot', select: false },
+                   { id: 's2', text: '2471 late collisions', highlight: 'hot', select: false } ] },
+        { id: 'tracert', promptLine: 'C:\\> tracert 8.8.8.8', reveal: 'tracert', necessary: false,
+          lines: [ { id: 't1', text: 'path intact', select: false } ] }
+      ] } },
+    steps: [ { id: 'dx', type: 'configure', points: 1,
+      payload: { slots: [
+        { id: 'rootCause', label: 'Root cause', options: [{ id: 'a', text: 'Duplex mismatch' }, { id: 'b', text: 'DNS failure' }] },
+        { id: 'fix', label: 'Fix', options: [{ id: 'a', text: 'Set both ends to auto-negotiate duplex' }, { id: 'b', text: 'Flush DNS cache' }] } ] },
+      answer: { slots: { rootCause: 'a', fix: 'a' } } } ] };
+  assert(cli(scn).ok === true, 'cli: sound duplex scenario passes');
+  var bad1 = JSON.parse(JSON.stringify(scn)); bad1.steps[0].answer.slots.rootCause = 'b';
+  assert(cli(bad1).ok === false, 'cli: rootCause not matching fault signature rejected');
+  var bad2 = JSON.parse(JSON.stringify(scn));
+  bad2.assets.reference.excerpts[1].lines = [{ id: 's1', text: 'Full-duplex, 1000Mb/s', select: false }];
+  assert(cli(bad2).ok === false, 'cli: necessary excerpt missing the fault signature fact rejected');
+  var bad3 = JSON.parse(JSON.stringify(scn)); bad3.assets.reference.excerpts[0].necessary = true;
+  bad3.assets.reference.excerpts[2].necessary = true;   // tracert (redundant) marked necessary
+  assert(cli(bad3).ok === false, 'cli: a redundant excerpt marked necessary breaks minimal-cover');
+})();
+
 // ── Sim Lab: network reference renderer (Task 6) ──
 // The renderer builds SVG as a STRING mounted via _el('div','sl-net', svg), so
 // assertions run against that string (read from the .sl-net child's innerHTML),

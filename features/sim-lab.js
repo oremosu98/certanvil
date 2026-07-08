@@ -331,6 +331,62 @@
     return { ok: errs.length === 0, errors: errs };
   }
 
+  // --- CLI fault-isolation fidelity validator (Wave 2 Task 4) ---
+  // Proves, machine-checkable: (a) the necessary excerpts carry every line-fact the
+  // keyed fault requires; (b) the keyed rootCause/fix configure answers match the
+  // fault; (c) the necessary set is a genuine minimal isolation cover (mutation-checked:
+  // dropping any necessary excerpt must make a required fact unreachable).
+  var _CLI_FAULT_SIG = {
+    duplex:  { needles: [/half-?duplex/i, /late collision/i, /full[ -]?duplex/i], root: /duplex/i, fix: /auto-?negoti|duplex/i },
+    gateway: { needles: [/gateway/i, /request timed out|unreachable/i], root: /gateway/i, fix: /gateway|route/i },
+    dns:     { needles: [/dns/i, /could not|non-existent|can'?t resolve/i], root: /dns/i, fix: /dns|resolver|flushdns/i },
+    vlan:    { needles: [/vlan/i, /native vlan|access vlan/i], root: /vlan/i, fix: /vlan/i }
+  };
+  function _cliExcerptText(ex) {
+    return (ex.lines || []).map(function (l) { return String(l.text || ''); }).join('\n');
+  }
+  function _cliNeedlesMet(excerpts, sig) {
+    var blob = excerpts.map(_cliExcerptText).join('\n');
+    return sig.needles.every(function (rx) { return rx.test(blob); });
+  }
+  function simLabValidateCliFaultFidelity(scn) {
+    var errs = [];
+    var ref = scn && scn.assets && scn.assets.reference;
+    var fault = scn && scn.cliFault && scn.cliFault.fault;
+    if (!ref || ref.kind !== 'terminal' || !Array.isArray(ref.excerpts)) {
+      return { ok: false, errors: ['cli fidelity: terminal reference with excerpts[] required'] };
+    }
+    var sig = _CLI_FAULT_SIG[fault];
+    if (!sig) return { ok: false, errors: ['cli fidelity: unknown cliFault.fault "' + fault + '"'] };
+
+    var necessary = ref.excerpts.filter(function (ex) { return ex.necessary; });
+    if (!necessary.length) errs.push('cli fidelity: no necessary excerpts declared');
+    // (a) the necessary set proves the fault
+    if (!_cliNeedlesMet(necessary, sig)) {
+      errs.push('cli fidelity: necessary excerpts do not carry all "' + fault + '" fault facts');
+    }
+    // (c) minimal cover — every necessary excerpt is load-bearing
+    necessary.forEach(function (drop) {
+      var without = necessary.filter(function (ex) { return ex !== drop; });
+      if (_cliNeedlesMet(without, sig)) {
+        errs.push('cli fidelity: necessary excerpt "' + drop.id + '" is redundant (fault still derivable without it)');
+      }
+    });
+    // (b) keyed diagnosis matches the fault
+    var cfg = (scn.steps || []).filter(function (st) {
+      return st.type === 'configure' && st.answer && st.answer.slots &&
+        (st.answer.slots.rootCause !== undefined || st.answer.slots.fix !== undefined);
+    })[0];
+    if (!cfg) { errs.push('cli fidelity: no configure step with rootCause/fix slots'); }
+    else {
+      var root = _slFidelityResolveSlot(cfg, 'rootCause');
+      var fix = _slFidelityResolveSlot(cfg, 'fix');
+      if (root === undefined || !sig.root.test(root)) errs.push('cli fidelity: keyed rootCause "' + root + '" does not match ' + fault);
+      if (fix === undefined || !sig.fix.test(fix)) errs.push('cli fidelity: keyed fix "' + fix + '" does not match ' + fault);
+    }
+    return { ok: errs.length === 0, errors: errs };
+  }
+
   // --- scoring (Task 2) ---
 
   function _norm(v) {
