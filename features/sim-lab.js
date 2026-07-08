@@ -472,7 +472,7 @@
     apipa:    { evNeedles: [/169\.254\./, /gateway\s*:?\s*$/i], diag: /apipa|169\.254|no dhcp/i, fix: /renew|dhcp/i },
     deadDns:  { evNeedles: [/can'?t resolve|dns request timed out|non-existent/i], diag: /dns/i, fix: /dns|renew|flushdns/i },
     badGw:    { evNeedles: [/unreachable|request timed out/i, /gateway/i], diag: /gateway|route/i, fix: /gateway|route/i }
-    };
+  };
   function _triageEvidenceLines(ref) {
     var all = [];
     (ref.excerpts || []).forEach(function (ex) {
@@ -500,9 +500,9 @@
 
     // (a) keyed selected == the evidence:true line ids
     var flag = (scn.steps || []).filter(function (st) { return st.type === 'analyze'; })[0];
-    var keyed = (flag && flag.answer && flag.answer.selected) ? flag.answer.selected.slice().sort() : [];
-    var trueIds = trueLines.map(function (l) { return l.id; }).sort();
-    if (keyed.join(',') !== trueIds.join(',')) {
+    var keyed = (flag && flag.answer && flag.answer.selected) ? flag.answer.selected : [];
+    var trueIds = trueLines.map(function (l) { return l.id; });
+    if (!_setEq(keyed, trueIds)) {
       errs.push('triage: keyed selected [' + keyed.join(',') + '] != evidence:true ids [' + trueIds.join(',') + ']');
     }
     // diagnostic signature present in the true lines

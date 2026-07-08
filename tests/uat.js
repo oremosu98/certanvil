@@ -21679,8 +21679,8 @@ console.log('\n\x1b[1m── T7: DRILLS ANALYTICS GROUP + FINAL COPY + BRONZE TO
 
 (function () {
   var grab = function (n) { return _fnBody(js, n); };
-  var sigVar = (js.match(/var _TRIAGE_FAULT_SIG = \{[\s\S]*?\n  \};/) || [''])[0];
-  var body = [grab('_slFidelityResolveSlot'), sigVar, grab('_triageEvidenceLines'), grab('simLabValidateEvidenceTriageFidelity')].join('\n');
+  var sigVar = (js.match(/var _TRIAGE_FAULT_SIG = \{[\s\S]*?\n\s*\};/) || [''])[0];
+  var body = [grab('_slFidelityResolveSlot'), grab('_arrEq'), grab('_setEq'), sigVar, grab('_triageEvidenceLines'), grab('simLabValidateEvidenceTriageFidelity')].join('\n');
   if (!sigVar || body.indexOf('simLabValidateEvidenceTriageFidelity') === -1) { results.errors.push('could not extract triage validator'); return; }
   var vm = require('vm');
   var tCtx = {}; vm.createContext(tCtx); vm.runInContext(body, tCtx);
