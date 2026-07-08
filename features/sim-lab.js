@@ -387,6 +387,81 @@
     return { ok: errs.length === 0, errors: errs };
   }
 
+  // --- discovery-audit fidelity validator (Wave 2 Task 5) ---
+  // Proves, machine-checkable: (a) every keyed port-mapping answer is DERIVABLE from the
+  // terminal excerpts' structured line facts — infra ports from LLDP, the silent
+  // host from a MAC-table<->ARP join; (b) exactly ONE legacy-CSV select:true row
+  // contradicts the reconciled truth and it is the keyed audit line (mutation-safe).
+  function _discoLineFacts(ref) {
+    var by = { lldp: [], mac: [], arp: [], legacy: [] };
+    (ref.excerpts || []).forEach(function (ex) {
+      (ex.lines || []).forEach(function (ln) {
+        if (!ln.fact) return;
+        if (ex.id === 'lldp') by.lldp.push(ln.fact);
+        else if (ex.id === 'mac') by.mac.push(ln.fact);
+        else if (ex.id === 'arp') by.arp.push(ln.fact);
+      });
+    });
+    return by;
+  }
+  function _discoDerivePort(facts, port) {
+    var l = facts.lldp.filter(function (f) { return f.port === port; })[0];
+    if (l) return { device: l.device, mgmt: l.mgmt };
+    var m = facts.mac.filter(function (f) { return f.port === port; })[0];
+    if (m) {
+      var a = facts.arp.filter(function (f) { return f.mac === m.mac; })[0];
+      if (a) return { device: null, mgmt: a.ip };   // silent host: device unknown, IP via join
+    }
+    return null;
+  }
+  function simLabValidateDiscoveryAuditFidelity(scn) {
+    var errs = [];
+    var ref = scn && scn.assets && scn.assets.reference;
+    var disco = scn && scn.disco;
+    if (!ref || ref.kind !== 'terminal' || !Array.isArray(ref.excerpts) || !disco || !Array.isArray(disco.ports)) {
+      return { ok: false, errors: ['disco fidelity: terminal reference + scn.disco.ports[] required'] };
+    }
+    var facts = _discoLineFacts(ref);
+    var cfg = (scn.steps || []).filter(function (st) { return st.type === 'configure'; })[0];
+
+    // (a) every keyed port answer derivable
+    disco.ports.forEach(function (p) {
+      var derived = _discoDerivePort(facts, p.port);
+      if (!derived) { errs.push('disco: port ' + p.port + ' not derivable from excerpts'); return; }
+      if (derived.mgmt !== p.mgmt) errs.push('disco: port ' + p.port + ' mgmt "' + p.mgmt + '" != derived ' + derived.mgmt);
+      if (cfg) {
+        var keyedIp = _slFidelityResolveSlot(cfg, p.port + '__ip');
+        if (keyedIp !== undefined && keyedIp !== derived.mgmt) {
+          errs.push('disco: keyed ' + p.port + '__ip "' + keyedIp + '" != derived ' + derived.mgmt);
+        }
+        var keyedDev = _slFidelityResolveSlot(cfg, p.port + '__dev');
+        if (keyedDev !== undefined && p.device && derived.device && keyedDev !== derived.device) {
+          errs.push('disco: keyed ' + p.port + '__dev "' + keyedDev + '" != derived ' + derived.device);
+        }
+      }
+    });
+
+    // (b) exactly one legacy row contradicts, and it is the keyed audit line
+    var truthByPort = {};
+    disco.ports.forEach(function (p) { truthByPort[p.port] = p; });
+    var legacy = (ref.excerpts.filter(function (ex) { return ex.id === disco.legacyExcerptId; })[0] || { lines: [] }).lines
+      .filter(function (ln) { return ln.select && ln.fact; });
+    var contradicting = legacy.filter(function (ln) {
+      var truth = truthByPort[ln.fact.port];
+      return truth && (ln.fact.mgmt !== truth.mgmt || (ln.fact.device && truth.device && ln.fact.device !== truth.device));
+    });
+    if (contradicting.length !== 1) {
+      errs.push('disco: expected exactly 1 contradicting legacy row, found ' + contradicting.length);
+    } else {
+      var aud = (scn.steps || []).filter(function (st) { return st.type === 'analyze'; })[0];
+      var keyed = aud && aud.answer && aud.answer.selected;
+      if (!keyed || keyed.length !== 1 || keyed[0] !== contradicting[0].id) {
+        errs.push('disco: keyed audit line is not the single contradicting row (' + contradicting[0].id + ')');
+      }
+    }
+    return { ok: errs.length === 0, errors: errs };
+  }
+
   // --- scoring (Task 2) ---
 
   function _norm(v) {

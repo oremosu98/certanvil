@@ -21633,6 +21633,50 @@ console.log('\n\x1b[1m── T7: DRILLS ANALYTICS GROUP + FINAL COPY + BRONZE TO
   assert(cli(bad3).ok === false, 'cli: a redundant excerpt marked necessary breaks minimal-cover');
 })();
 
+(function () {
+  var grab = function (n) { return _fnBody(js, n); };
+  var body = [grab('_isNonEmptyStr'), grab('_slFidelityResolveSlot'),
+    grab('_discoLineFacts'), grab('_discoDerivePort'), grab('simLabValidateDiscoveryAuditFidelity')].join('\n');
+  if (body.indexOf('simLabValidateDiscoveryAuditFidelity') === -1) { results.errors.push('could not extract discovery validator'); return; }
+  var vm = require('vm');
+  var dCtx = {}; vm.createContext(dCtx); vm.runInContext(body, dCtx);
+  vm.runInContext('globalThis.__disco = simLabValidateDiscoveryAuditFidelity;', dCtx);
+  var disco = dCtx.__disco;
+  var assert = function (cond, msg) { test(msg, !!cond); };
+
+  var scn = {
+    disco: { legacyExcerptId: 'csv',
+      ports: [ { port: 'Gi0/1', device: 'AP-2', mgmt: '10.0.0.12', source: 'lldp' },
+               { port: 'Gi0/5', device: 'silent-host', mgmt: '10.0.0.30', source: 'macarp' } ] },
+    assets: { reference: { kind: 'terminal', host: 'SW', session: 's', reveal: 'tabs',
+      excerpts: [
+        { id: 'lldp', promptLine: 'SW# show lldp', tab: 'lldp', lines: [
+          { id: 'll1', text: 'Gi0/1  AP-2  10.0.0.12', select: false, fact: { port: 'Gi0/1', device: 'AP-2', mgmt: '10.0.0.12' } } ] },
+        { id: 'mac', promptLine: 'SW# show mac', tab: 'mac', lines: [
+          { id: 'm1', text: 'e8ff.1e44.2b90  Gi0/5', select: false, fact: { mac: 'e8ff.1e44.2b90', port: 'Gi0/5' } } ] },
+        { id: 'arp', promptLine: 'SW# show arp', tab: 'arp', lines: [
+          { id: 'a1', text: '10.0.0.30  e8ff.1e44.2b90', select: false, fact: { ip: '10.0.0.30', mac: 'e8ff.1e44.2b90' } } ] },
+        { id: 'csv', promptLine: 'legacy asset CSV', tab: 'csv', lines: [
+          { id: 'c1', text: 'Gi0/1,AP-2,10.0.0.12', select: true, fact: { port: 'Gi0/1', device: 'AP-2', mgmt: '10.0.0.12' } },
+          { id: 'c2', text: 'Gi0/5,PrintSrv,10.0.0.99', select: true, fact: { port: 'Gi0/5', device: 'PrintSrv', mgmt: '10.0.0.99' } } ] }
+      ] } },
+    steps: [
+      { id: 'rec', type: 'configure', points: 1, payload: { slots: [
+        { id: 'Gi0/1__dev', label: 'Gi0/1 dev', options: [{ id: 'a', text: 'AP-2' }, { id: 'b', text: 'PC-9' }] },
+        { id: 'Gi0/1__ip', label: 'Gi0/1 ip', options: [{ id: 'a', text: '10.0.0.12' }, { id: 'b', text: '10.0.0.99' }] },
+        { id: 'Gi0/5__ip', label: 'Gi0/5 ip', options: [{ id: 'a', text: '10.0.0.30' }, { id: 'b', text: '10.0.0.99' }] } ] },
+        answer: { slots: { 'Gi0/1__dev': 'a', 'Gi0/1__ip': 'a', 'Gi0/5__ip': 'a' } } },
+      { id: 'aud', type: 'analyze', points: 1, payload: { multi: false, mode: 'excerptLines' },
+        answer: { selected: ['c2'] } } ] };
+  assert(disco(scn).ok === true, 'disco: sound cross-referenced scenario passes');
+  var bad1 = JSON.parse(JSON.stringify(scn)); bad1.steps[0].answer.slots['Gi0/5__ip'] = 'b';   // 10.0.0.99, not the ARP join
+  assert(disco(bad1).ok === false, 'disco: keyed silent-host IP not derivable from MAC×ARP rejected');
+  var bad2 = JSON.parse(JSON.stringify(scn)); bad2.steps[1].answer.slots = undefined; bad2.steps[1].answer.selected = ['c1'];  // wrong contradicting row
+  assert(disco(bad2).ok === false, 'disco: keyed audit line is not the contradicting row rejected');
+  var bad3 = JSON.parse(JSON.stringify(scn)); bad3.assets.reference.excerpts[3].lines[1].fact = { port: 'Gi0/5', device: 'silent-host', mgmt: '10.0.0.30' };  // now consistent → zero contradictions
+  assert(disco(bad3).ok === false, 'disco: exactly-one-contradiction invariant enforced (zero contradictions rejected)');
+})();
+
 // ── Sim Lab: network reference renderer (Task 6) ──
 // The renderer builds SVG as a STRING mounted via _el('div','sl-net', svg), so
 // assertions run against that string (read from the .sl-net child's innerHTML),
