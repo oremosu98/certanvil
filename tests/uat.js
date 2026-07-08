@@ -21677,6 +21677,42 @@ console.log('\n\x1b[1m── T7: DRILLS ANALYTICS GROUP + FINAL COPY + BRONZE TO
   assert(disco(bad3).ok === false, 'disco: exactly-one-contradiction invariant enforced (zero contradictions rejected)');
 })();
 
+(function () {
+  var grab = function (n) { return _fnBody(js, n); };
+  var sigVar = (js.match(/var _TRIAGE_FAULT_SIG = \{[\s\S]*?\n  \};/) || [''])[0];
+  var body = [grab('_slFidelityResolveSlot'), sigVar, grab('_triageEvidenceLines'), grab('simLabValidateEvidenceTriageFidelity')].join('\n');
+  if (!sigVar || body.indexOf('simLabValidateEvidenceTriageFidelity') === -1) { results.errors.push('could not extract triage validator'); return; }
+  var vm = require('vm');
+  var tCtx = {}; vm.createContext(tCtx); vm.runInContext(body, tCtx);
+  vm.runInContext('globalThis.__tri = simLabValidateEvidenceTriageFidelity;', tCtx);
+  var tri = tCtx.__tri;
+  var assert = function (cond, msg) { test(msg, !!cond); };
+
+  var scn = { triage: { fault: 'apipa' },
+    assets: { reference: { kind: 'terminal', host: 'LAPTOP', session: 's',
+      excerpts: [ { id: 'ipcfg', promptLine: 'C:\\> ipconfig /all', lines: [
+        { id: 'e1', text: 'Media State: Media connected', select: true, evidence: false },
+        { id: 'e2', text: 'IPv4 Address: 169.254.83.12(Preferred)', select: true, evidence: true },
+        { id: 'e3', text: 'Default Gateway:', select: true, evidence: true },
+        { id: 'e4', text: 'Description: Intel Wi-Fi 6', select: false, ctx: true } ] } ] } },
+    steps: [
+      { id: 'flag', type: 'analyze', points: 1, payload: { multi: true, mode: 'excerptLines', scoring: 'lenient' },
+        answer: { selected: ['e2', 'e3'] } },
+      { id: 'dx', type: 'configure', points: 1, payload: { slots: [
+        { id: 'diagnosis', label: 'Diagnosis', options: [{ id: 'a', text: 'APIPA — no DHCP lease' }, { id: 'b', text: 'Bad DNS server' }] },
+        { id: 'firstMove', label: 'First move', options: [{ id: 'a', text: 'Run ipconfig /renew' }, { id: 'b', text: 'Replace the NIC' }] } ] },
+        answer: { slots: { diagnosis: 'a', firstMove: 'a' } } } ] };
+  assert(tri(scn).ok === true, 'triage: sound APIPA scenario passes');
+  var bad1 = JSON.parse(JSON.stringify(scn)); bad1.steps[0].answer.selected = ['e1', 'e2', 'e3'];  // includes the false trap
+  assert(tri(bad1).ok === false, 'triage: keyed selected including an evidence:false trap rejected');
+  var bad2 = JSON.parse(JSON.stringify(scn));
+  bad2.assets.reference.excerpts[0].lines[0].evidence = true;   // no false distractor left among selectable lines
+  bad2.steps[0].answer.selected = ['e1', 'e2', 'e3'];
+  assert(tri(bad2).ok === false, 'triage: all-true selectable set (no scored distractor) rejected');
+  var bad3 = JSON.parse(JSON.stringify(scn)); bad3.steps[1].answer.slots.firstMove = 'b';
+  assert(tri(bad3).ok === false, 'triage: firstMove not following from evidence rejected');
+})();
+
 // ── Sim Lab: network reference renderer (Task 6) ──
 // The renderer builds SVG as a STRING mounted via _el('div','sl-net', svg), so
 // assertions run against that string (read from the .sl-net child's innerHTML),

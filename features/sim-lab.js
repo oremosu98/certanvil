@@ -462,6 +462,69 @@
     return { ok: errs.length === 0, errors: errs };
   }
 
+  // --- evidence-triage fidelity validator (Wave 2 Task 6) ---
+  // Proves, machine-checkable: (a) the keyed evidence lines (evidence:true) exist,
+  // are exactly the analyze step's answer.selected, and are diagnostic of the fault;
+  // at least one selectable evidence:false distractor remains (the "Media connected"
+  // trap) so the set can't be trivially all-true; (b) the diagnosis/firstMove keyed
+  // answers follow from the fault signature.
+  var _TRIAGE_FAULT_SIG = {
+    apipa:    { evNeedles: [/169\.254\./, /gateway\s*:?\s*$/i], diag: /apipa|169\.254|no dhcp/i, fix: /renew|dhcp/i },
+    deadDns:  { evNeedles: [/can'?t resolve|dns request timed out|non-existent/i], diag: /dns/i, fix: /dns|renew|flushdns/i },
+    badGw:    { evNeedles: [/unreachable|request timed out/i, /gateway/i], diag: /gateway|route/i, fix: /gateway|route/i }
+    };
+  function _triageEvidenceLines(ref) {
+    var all = [];
+    (ref.excerpts || []).forEach(function (ex) {
+      (ex.lines || []).forEach(function (ln) { all.push(ln); });
+    });
+    return all;
+  }
+  function simLabValidateEvidenceTriageFidelity(scn) {
+    var errs = [];
+    var ref = scn && scn.assets && scn.assets.reference;
+    var fault = scn && scn.triage && scn.triage.fault;
+    if (!ref || ref.kind !== 'terminal' || !Array.isArray(ref.excerpts)) {
+      return { ok: false, errors: ['triage fidelity: terminal reference with excerpts[] required'] };
+    }
+    var sig = _TRIAGE_FAULT_SIG[fault];
+    if (!sig) return { ok: false, errors: ['triage fidelity: unknown triage.fault "' + fault + '"'] };
+
+    var lines = _triageEvidenceLines(ref);
+    var selectable = lines.filter(function (l) { return l.select; });
+    var trueLines = selectable.filter(function (l) { return l.evidence === true; });
+    var falseLines = selectable.filter(function (l) { return l.evidence === false; });
+
+    if (!trueLines.length) errs.push('triage: no evidence:true selectable lines');
+    if (!falseLines.length) errs.push('triage: no evidence:false selectable distractor (set is trivially all-true)');
+
+    // (a) keyed selected == the evidence:true line ids
+    var flag = (scn.steps || []).filter(function (st) { return st.type === 'analyze'; })[0];
+    var keyed = (flag && flag.answer && flag.answer.selected) ? flag.answer.selected.slice().sort() : [];
+    var trueIds = trueLines.map(function (l) { return l.id; }).sort();
+    if (keyed.join(',') !== trueIds.join(',')) {
+      errs.push('triage: keyed selected [' + keyed.join(',') + '] != evidence:true ids [' + trueIds.join(',') + ']');
+    }
+    // diagnostic signature present in the true lines
+    var trueBlob = trueLines.map(function (l) { return String(l.text || ''); }).join('\n');
+    sig.evNeedles.forEach(function (rx) {
+      if (!rx.test(trueBlob)) errs.push('triage: fault "' + fault + '" needle ' + rx + ' not found in flagged evidence');
+    });
+    // (b) keyed diagnosis/firstMove follow from the fault
+    var cfg = (scn.steps || []).filter(function (st) {
+      return st.type === 'configure' && st.answer && st.answer.slots &&
+        (st.answer.slots.diagnosis !== undefined || st.answer.slots.firstMove !== undefined);
+    })[0];
+    if (!cfg) errs.push('triage: no configure step with diagnosis/firstMove slots');
+    else {
+      var diag = _slFidelityResolveSlot(cfg, 'diagnosis');
+      var fix = _slFidelityResolveSlot(cfg, 'firstMove');
+      if (diag === undefined || !sig.diag.test(diag)) errs.push('triage: keyed diagnosis "' + diag + '" does not match ' + fault);
+      if (fix === undefined || !sig.fix.test(fix)) errs.push('triage: keyed firstMove "' + fix + '" does not match ' + fault);
+    }
+    return { ok: errs.length === 0, errors: errs };
+  }
+
   // --- scoring (Task 2) ---
 
   function _norm(v) {
