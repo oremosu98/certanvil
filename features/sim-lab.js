@@ -79,6 +79,7 @@
       else if (ref.kind === 'wiremap' && (!Array.isArray(ref.pins) || ref.pins.length !== 8 || !ref.pins.every(function (p) {
         return p && typeof p.pin === 'number' && typeof p.pairId === 'number';
       }))) errs.push('reference wiremap: pins[] must have exactly 8 entries with pin+pairId');
+      else if (ref.kind === 'slots' && !Array.isArray(ref.bays)) errs.push('reference slots: bays[] required');
       if (ref.kind === 'layered' && ref.layout !== undefined && ['nested', 'stacked'].indexOf(ref.layout) === -1) {
         errs.push('reference layered: bad layout');
       }
@@ -1617,6 +1618,28 @@
     return root;
   }
 
+  // --- slots reference renderer (Wave 3 Task 4) ---
+  // DELIBERATELY static/illustrative — zero <button>, zero click handler, zero
+  // exposed interaction handle. Shared verbatim by 'pcbuild' (component bays) and
+  // 'raid' (drive bays). If a future task wants this bound to live configure
+  // selections, that is a SECOND new binding direction and out of Wave 3 scope —
+  // STOP and escalate rather than add interaction here.
+  function _slRenderRefSlots(ref) {
+    var root = _el('div', 'slots-diagram');
+    var bays = (ref && Array.isArray(ref.bays)) ? ref.bays : [];
+    bays.forEach(function (b) {
+      var bay = _el('div', 'slot-bay');
+      bay.appendChild(_el('div', 'slot-bay-label', _esc(b.label || b.id)));
+      root.appendChild(bay);
+    });
+    if (ref && Array.isArray(ref.notes) && ref.notes.length) {
+      var notes = _el('div', 'slot-notes');
+      ref.notes.forEach(function (n) { notes.appendChild(_el('span', 'slot-note', _esc(n))); });
+      root.appendChild(notes);
+    }
+    return root;
+  }
+
   function _slRenderReference(ref) {
     if (!ref || !ref.kind) return null;
     var panel = _el('div', 'sl-ref');
@@ -1632,6 +1655,7 @@
     }
     else if (ref.kind === 'faceplate') panel.appendChild(_slRenderRefFaceplate(ref));
     else if (ref.kind === 'wiremap') panel.appendChild(_slRenderRefWiremap(ref));
+    else if (ref.kind === 'slots') panel.appendChild(_slRenderRefSlots(ref));
     return panel;
   }
 

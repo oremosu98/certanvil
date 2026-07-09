@@ -21424,6 +21424,77 @@ console.log('\n\x1b[1m── T7: DRILLS ANALYTICS GROUP + FINAL COPY + BRONZE TO
     panel.querySelectorAll('.wm-endb')[6].innerHTML.toLowerCase().indexOf('open') !== -1);
 })();
 
+// ── Wave 3 Task 4: slots reference renderer (static/illustrative, zero interaction) ──
+(function () {
+  var vm = require('vm');
+  var grab = function (name) { return _fnBody(js, name); };
+  var grabLine = function (name) {
+    var re = new RegExp('function ' + name + '\\([^\\n]*\\)\\s*\\{[^\\n]*\\}');
+    return (js.match(re) || [''])[0];
+  };
+  var elBody = grab('_el'), escBody = grabLine('_esc');
+  var slBody = grab('_slRenderRefSlots'), dispBody = grab('_slRenderReference');
+  if (!slBody || !dispBody) { results.errors.push('could not extract _slRenderRefSlots/_slRenderReference'); return; }
+
+  var htmlEsc = function (s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  };
+  var makeEl = function (tag) {
+    var attrs = {}, listeners = {}, children = [], cls = '', inner = '';
+    var clsSet = {};
+    var el = {
+      tagName: tag.toUpperCase(),
+      get className() { return cls; }, set className(v) { cls = v; },
+      get innerHTML() { return inner; }, set innerHTML(v) { inner = v; children = []; },
+      get textContent() { return ''; }, set textContent(v) { inner = htmlEsc(v); },
+      style: {},
+      get _children() { return children; },
+      classList: {
+        add: function (c) { clsSet[c] = true; cls = (cls ? cls + ' ' : '') + c; },
+        remove: function (c) { delete clsSet[c]; },
+        toggle: function (c, on) { if (on) clsSet[c] = true; else delete clsSet[c]; },
+        contains: function (c) { return !!clsSet[c]; }
+      },
+      setAttribute: function (k, v) { attrs[k] = v; },
+      getAttribute: function (k) { return (k in attrs) ? attrs[k] : null; },
+      removeAttribute: function (k) { delete attrs[k]; },
+      appendChild: function (c) { children.push(c); return c; },
+      querySelectorAll: function (sel) {
+        var hits = [], want = sel.replace(/^\./, '');
+        var walk = function (n) { (n._children || []).forEach(function (c) {
+          if (!c || !c.tagName) return;
+          if (want.toUpperCase() === c.tagName || (c.className && c.className.split(' ').indexOf(want) !== -1)) hits.push(c);
+          walk(c);
+        }); };
+        walk(el); return hits;
+      },
+      addEventListener: function (ev, fn) { (listeners[ev] = listeners[ev] || []).push(fn); },
+      _fire: function (ev) { (listeners[ev] || []).forEach(function (fn) { fn({}); }); }
+    };
+    return el;
+  };
+  var mCtx = { document: { createElement: makeEl }, Object: Object, Array: Array, String: String };
+  vm.createContext(mCtx);
+  vm.runInContext(elBody + '\n' + escBody + '\n' + slBody + '\n' + dispBody, mCtx);
+
+  var ref = { kind: 'slots',
+    bays: [ { id: 'cpu', label: 'CPU socket' }, { id: 'gpu', label: 'GPU bay <script>x</script>' } ],
+    notes: [ 'Budget: $700' ] };
+  mCtx.ref = ref;
+  vm.runInContext('globalThis.__panel = _slRenderReference(ref);', mCtx);
+  var panel = mCtx.__panel;
+
+  test('slots: _slRenderReference returns a .sl-ref panel for kind slots', !!panel && panel.className === 'sl-ref');
+  test('slots: panel contains ZERO buttons (deliberately non-interactive)', panel.querySelectorAll('button').length === 0);
+  var bayLabels = panel.querySelectorAll('.slot-bay-label');
+  test('slots: renders one label per bay', bayLabels.length === 2);
+  test('slots: bay label text is ESCAPED (no raw <script>)',
+    bayLabels[1].innerHTML.indexOf('<script>') === -1 && bayLabels[1].innerHTML.indexOf('&lt;script&gt;') !== -1);
+  var notes = panel.querySelectorAll('.slot-note');
+  test('slots: renders constraint-note chips', notes.length === 1 && notes[0].innerHTML.indexOf('$700') !== -1);
+})();
+
 // ── Wave 2 Task 3: guarded analyze extension — mode branch + lenient scoring ──
 (function () {
   var vm = require('vm');
