@@ -25281,6 +25281,48 @@ console.log('\n\x1b[1m── T7: DRILLS ANALYTICS GROUP + FINAL COPY + BRONZE TO
   }
 })();
 
+// ── Wave 3 Task 5: port-map fidelity validator ──
+(function () {
+  var vm = require('vm');
+  var grab = function (n) { return _fnBody(js, n); };
+  var sigVar = (js.match(/var _PORTMAP_FAULT_SIG = \{[\s\S]*?\n\s*\};/) || [''])[0];
+  var body = [grab('_isNonEmptyStr'), grab('_slFidelityResolveSlot'), sigVar, grab('simLabValidatePortMapFidelity')].join('\n');
+  if (!sigVar || body.indexOf('simLabValidatePortMapFidelity') === -1) { results.errors.push('could not extract portmap validator'); return; }
+  var pCtx = {}; vm.createContext(pCtx); vm.runInContext(body, pCtx);
+  vm.runInContext('globalThis.__pm = simLabValidatePortMapFidelity;', pCtx);
+  var pm = pCtx.__pm;
+
+  var scn = {
+    portmap: { faultPort: 'gi0-8' },
+    assets: { reference: { kind: 'faceplate', host: 'h', ports: [
+      { id: 'gi0-1', label: 'Gi0/1', led: 'up', select: true },
+      { id: 'gi0-8', label: 'Gi0/8', led: 'poe-fault', select: true },
+      { id: 'gi0-18', label: 'Gi0/18', led: 'up', select: true }
+    ] } },
+    steps: [
+      { id: 'prov', type: 'configure', points: 1, payload: { slots: [
+        { id: 'gi0-1__vlan', label: 'v', options: [{ id: 'a', text: 'VLAN 10' }, { id: 'b', text: 'VLAN 20' }] },
+        { id: 'gi0-1__poe', label: 'p', options: [{ id: 'a', text: 'Off' }, { id: 'b', text: 'On' }] },
+        { id: 'gi0-8__vlan', label: 'v', options: [{ id: 'a', text: 'VLAN 40' }, { id: 'b', text: 'VLAN 10' }] },
+        { id: 'gi0-8__poe', label: 'p', options: [{ id: 'a', text: 'On' }, { id: 'b', text: 'Off' }] }
+      ] }, answer: { slots: { 'gi0-1__vlan': 'a', 'gi0-1__poe': 'a', 'gi0-8__vlan': 'a', 'gi0-8__poe': 'a' } } },
+      { id: 'diag', type: 'analyze', points: 1, payload: { multi: false, mode: 'facePorts' }, answer: { selected: ['gi0-8'] } },
+      { id: 'fix', type: 'configure', points: 1, payload: { slots: [
+        { id: 'rootCause', label: 'r', options: [{ id: 'a', text: 'PoE overcurrent: the camera draw exceeds the port class' }, { id: 'b', text: 'Wrong VLAN' }] },
+        { id: 'fix', label: 'f', options: [{ id: 'a', text: 'Move to a port with a higher PoE power budget' }, { id: 'b', text: 'Change VLAN' }] }
+      ] }, answer: { slots: { rootCause: 'a', fix: 'a' } } }
+    ],
+    portmapTickets: [ { port: 'gi0-1', vlan: '10', poe: false }, { port: 'gi0-8', vlan: '40', poe: true } ]
+  };
+  test('portmap: sound PoE-overcurrent scenario passes', pm(scn).ok === true);
+  var bad1 = JSON.parse(JSON.stringify(scn)); bad1.steps[0].answer.slots['gi0-1__vlan'] = 'b';
+  test('portmap: keyed VLAN not matching the ticket rejected', pm(bad1).ok === false);
+  var bad2 = JSON.parse(JSON.stringify(scn)); bad2.assets.reference.ports[2].led = 'poe-fault';
+  test('portmap: a second port sharing the fault LED breaks fault-port uniqueness', pm(bad2).ok === false);
+  var bad3 = JSON.parse(JSON.stringify(scn)); bad3.steps[2].answer.slots.rootCause = 'b';
+  test('portmap: keyed rootCause not matching the LED-signaled fault rejected', pm(bad3).ok === false);
+})();
+
 // ── Summary ──
 console.log('\n' + '═'.repeat(50));
 const total = results.pass + results.fail;

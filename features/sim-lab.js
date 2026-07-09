@@ -532,6 +532,66 @@
     return { ok: errs.length === 0, errors: errs };
   }
 
+  // --- port-map fidelity validator (Wave 3 Task 5) ---
+  // Proves, machine-checkable: (a) every keyed provision slot (VLAN + PoE) matches
+  // that port's ticket requirement; (b) the keyed faulty port's LED state genuinely
+  // and UNIQUELY signals the keyed rootCause/fix (mutation-checked: no other port's
+  // LED may also match the fault signature).
+  var _PORTMAP_FAULT_SIG = {
+    poeOvercurrent: { led: 'poe-fault', root: /poe overcurrent|power.*exceeds|draw.*exceeds/i, fix: /higher poe power budget|802\.3at|power budget/i },
+    errDisabled:    { led: 'err-disabled', root: /duplex|speed mismatch|err-disabled/i, fix: /reset the port|match speed.*duplex|re-negotiate/i }
+  };
+  function simLabValidatePortMapFidelity(scn) {
+    var errs = [];
+    var ref = scn && scn.assets && scn.assets.reference;
+    var tickets = scn && scn.portmapTickets;
+    var faultPort = scn && scn.portmap && scn.portmap.faultPort;
+    if (!ref || ref.kind !== 'faceplate' || !Array.isArray(ref.ports) || !Array.isArray(tickets)) {
+      return { ok: false, errors: ['portmap fidelity: faceplate reference + scn.portmapTickets[] required'] };
+    }
+    var cfg = (scn.steps || []).filter(function (st) { return st.type === 'configure' && st.answer && st.answer.slots; })[0];
+    // (a) every ticket's VLAN/PoE keyed answer matches
+    tickets.forEach(function (t) {
+      if (!cfg) return;
+      var keyedVlan = _slFidelityResolveSlot(cfg, t.port + '__vlan');
+      var keyedPoe = _slFidelityResolveSlot(cfg, t.port + '__poe');
+      if (keyedVlan !== undefined && keyedVlan.indexOf(t.vlan) === -1) errs.push('portmap: keyed ' + t.port + '__vlan "' + keyedVlan + '" != ticket VLAN ' + t.vlan);
+      if (keyedPoe !== undefined) {
+        var wantOn = !!t.poe;
+        var gotOn = /^on$/i.test(keyedPoe);
+        if (wantOn !== gotOn) errs.push('portmap: keyed ' + t.port + '__poe "' + keyedPoe + '" != ticket PoE ' + t.poe);
+      }
+    });
+    // (b) exactly one port carries the fault LED, and it is the keyed faultPort
+    var faultLedPorts = ref.ports.filter(function (p) {
+      return p.led === 'poe-fault' || p.led === 'err-disabled';
+    });
+    if (faultLedPorts.length !== 1) {
+      errs.push('portmap: expected exactly 1 fault-LED port, found ' + faultLedPorts.length);
+    } else if (faultLedPorts[0].id !== faultPort) {
+      errs.push('portmap: fault-LED port "' + faultLedPorts[0].id + '" != keyed faultPort "' + faultPort + '"');
+    }
+    // keyed diagnose analyze step targets the same port
+    var diag = (scn.steps || []).filter(function (st) { return st.type === 'analyze' && st.payload && st.payload.mode === 'facePorts'; })[0];
+    if (!diag || !diag.answer || diag.answer.selected[0] !== faultPort) {
+      errs.push('portmap: diagnose analyze step does not key the fault port');
+    }
+    // keyed rootCause/fix matches the fault-signature table for the actual LED type
+    var fixCfg = (scn.steps || []).filter(function (st) {
+      return st.type === 'configure' && st.answer && st.answer.slots &&
+        (st.answer.slots.rootCause !== undefined || st.answer.slots.fix !== undefined);
+    })[0];
+    var ledType = faultLedPorts[0] && faultLedPorts[0].led === 'poe-fault' ? 'poeOvercurrent' : 'errDisabled';
+    var sig = _PORTMAP_FAULT_SIG[ledType];
+    if (fixCfg && sig) {
+      var root = _slFidelityResolveSlot(fixCfg, 'rootCause');
+      var fix = _slFidelityResolveSlot(fixCfg, 'fix');
+      if (root === undefined || !sig.root.test(root)) errs.push('portmap: keyed rootCause "' + root + '" does not match ' + ledType);
+      if (fix === undefined || !sig.fix.test(fix)) errs.push('portmap: keyed fix "' + fix + '" does not match ' + ledType);
+    }
+    return { ok: errs.length === 0, errors: errs };
+  }
+
   // --- scoring (Task 2) ---
 
   function _norm(v) {
