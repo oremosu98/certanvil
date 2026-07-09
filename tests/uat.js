@@ -25436,6 +25436,48 @@ console.log('\n\x1b[1m── T7: DRILLS ANALYTICS GROUP + FINAL COPY + BRONZE TO
   test('wiremap: clean pin with pairId not matching textbook mapping rejected', wm(badPairId).ok === false);
 })();
 
+// ── Wave 3 Task 7: PC-build fidelity validator ──
+(function () {
+  var vm = require('vm');
+  var grab = function (n) { return _fnBody(js, n); };
+  var catVar = (js.match(/var _PARTS_CATALOG = \{[\s\S]*?\n\s*\};/) || [''])[0];
+  var body = [grab('_isNonEmptyStr'), grab('_slFidelityResolveSlot'), grab('_slFidelityResolveSlotId'), catVar, grab('simLabValidatePcBuildFidelity')].join('\n');
+  if (!catVar || body.indexOf('simLabValidatePcBuildFidelity') === -1) { results.errors.push('could not extract pcbuild validator/_PARTS_CATALOG'); return; }
+  var cCtx = {}; vm.createContext(cCtx); vm.runInContext(body, cCtx);
+  vm.runInContext('globalThis.__pcb = simLabValidatePcBuildFidelity;', cCtx);
+  var pcb = cCtx.__pcb;
+
+  // Option ids ARE the catalog keys directly (e.g. option.id === 'cpu-creator') — the
+  // shared catalog is looked up by id, never by the option's human-readable `text` label.
+  // This is a deliberate content-authoring convention for THIS archetype only (every
+  // other archetype in the program uses arbitrary 'a'/'b' option ids with a keyed
+  // answer.slots pointer, since their validators regex against the resolved TEXT —
+  // pcbuild is the one place a validator needs an exact machine key, so its ids carry
+  // that key directly instead of introducing a second resolve-by-id code path everywhere).
+  function slots(v) { return { id: 'clientA', type: 'configure', points: 1, payload: { slots: Object.keys(v).map(function (k) {
+    return { id: k, label: k, options: [{ id: v[k], text: 'Option ' + v[k] }, { id: 'placeholder-' + k, text: 'placeholder' }] };
+  }) }, answer: { slots: Object.keys(v).reduce(function (acc, k) { acc[k] = v[k]; return acc; }, {}) } }; }
+
+  // NOTE: budgetUsd/caseMaxGpuLengthMm/part picks below are chosen (not lifted verbatim
+  // from the plan's illustrative fixture) so each assertion actually crosses its threshold
+  // against the locked _PARTS_CATALOG values (e.g. the plan's original $1500 budget and
+  // gpu-4060's 220W draw never exceed any real catalog swap) — the catalog itself is
+  // byte-identical to the plan's locked table.
+  var scn = { pcbuild: { clientA: { budgetUsd: 1200, caseMaxGpuLengthMm: 320, minCpuTier: 2, minGpuTier: 2 } },
+    steps: [ slots({ cpu: 'cpu-creator', gpu: 'gpu-4070', ram: 'ram-32', psu: 'psu-450', storage: 'storage-1tb-nvme', cooling: 'cool-120-air' }) ] };
+  test('pcbuild: sound clientA build passes', pcb(scn).ok === true);
+  var bad1 = JSON.parse(JSON.stringify(scn));
+  bad1.steps[0].payload.slots.find(function (s) { return s.id === 'cpu'; }).options[0].id = 'cpu-flagship';
+  bad1.steps[0].answer.slots.cpu = 'cpu-flagship';
+  test('pcbuild: over-budget CPU swap rejected', pcb(bad1).ok === false);
+  var bad2 = JSON.parse(JSON.stringify(scn)); bad2.pcbuild.clientA.caseMaxGpuLengthMm = 200;
+  test('pcbuild: GPU longer than the case limit rejected', pcb(bad2).ok === false);
+  var bad3 = JSON.parse(JSON.stringify(scn));
+  bad3.steps[0].payload.slots.find(function (s) { return s.id === 'psu'; }).options[0].id = 'psu-250';
+  bad3.steps[0].answer.slots.psu = 'psu-250';
+  test('pcbuild: PSU wattage below CPU+GPU draw rejected', pcb(bad3).ok === false);
+})();
+
 // ── Summary ──
 console.log('\n' + '═'.repeat(50));
 const total = results.pass + results.fail;

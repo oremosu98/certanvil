@@ -130,6 +130,20 @@
     return opt ? opt.text : undefined;
   }
 
+  // Sibling to _slFidelityResolveSlot (which resolves to option.text) — pcbuild is the
+  // one archetype whose validator needs the option's `id` directly (the catalog key),
+  // not its human-readable text.
+  function _slFidelityResolveSlotId(step, slotId) {
+    if (!step || !step.payload || !Array.isArray(step.payload.slots)) return undefined;
+    if (!step.answer || !step.answer.slots) return undefined;
+    var correctOptId = step.answer.slots[slotId];
+    if (!correctOptId) return undefined;
+    var slot = step.payload.slots.filter(function (sl) { return sl.id === slotId; })[0];
+    if (!slot || !Array.isArray(slot.options)) return undefined;
+    var opt = slot.options.filter(function (o) { return o.id === correctOptId; })[0];
+    return opt ? opt.id : undefined;
+  }
+
   function simLabValidateNetworkFidelity(networkModel, configureStep) {
     var errs = [];
     if (!networkModel || networkModel.kind !== 'network' || !Array.isArray(networkModel.devices)) {
@@ -682,6 +696,46 @@
       if (root === undefined || !sig.root.test(root)) errs.push('wiremap: keyed faultType "' + root + '" does not match ' + fault);
       if (fix === undefined || !sig.fix.test(fix)) errs.push('wiremap: keyed fix "' + fix + '" does not match ' + fault);
     }
+    return { ok: errs.length === 0, errors: errs };
+  }
+
+  // --- PC-build fidelity validator (Wave 3 Task 7) ---
+  // Shared catalog: price/watts/lengthMm/tier per part id. Single source of truth for
+  // both content authoring (Task 12) and this validator's budget/compatibility/tier math.
+  var _PARTS_CATALOG = {
+    'cpu-budget': { price: 130, watts: 65, tier: 1 }, 'cpu-office': { price: 175, watts: 65, tier: 1 },
+    'cpu-igpu-mid': { price: 210, watts: 65, tier: 2 }, 'cpu-creator': { price: 310, watts: 105, tier: 3 },
+    'cpu-flagship': { price: 560, watts: 125, tier: 4 },
+    'gpu-none': { price: 0, watts: 0, lengthMm: 0, tier: 0 }, 'gpu-1650': { price: 150, watts: 75, lengthMm: 170, tier: 1 },
+    'gpu-4060': { price: 300, watts: 115, lengthMm: 244, tier: 2 }, 'gpu-4070': { price: 550, watts: 200, lengthMm: 310, tier: 3 },
+    'ram-8': { price: 25, tier: 1 }, 'ram-16': { price: 45, tier: 1 }, 'ram-32': { price: 85, tier: 2 }, 'ram-64': { price: 165, tier: 3 },
+    'psu-250': { price: 22, watts: 250 }, 'psu-450': { price: 45, watts: 450 }, 'psu-650': { price: 65, watts: 650 }, 'psu-850': { price: 95, watts: 850 },
+    'storage-256-sata': { price: 30, tier: 1 }, 'storage-1tb-nvme': { price: 75, tier: 2 }, 'storage-2tb-nvme': { price: 130, tier: 3 },
+    'cool-stock': { price: 0, tier: 1 }, 'cool-120-air': { price: 35, tier: 2 }, 'cool-240-aio': { price: 90, tier: 3 }
+  };
+  function simLabValidatePcBuildFidelity(scn) {
+    var errs = [];
+    ['clientA', 'clientB'].forEach(function (clientKey) {
+      var fact = scn.pcbuild && scn.pcbuild[clientKey];
+      if (!fact) return; // this fixture may only define clientA; real content defines both
+      var cfg = (scn.steps || []).filter(function (st) { return st.id === clientKey; })[0];
+      if (!cfg) { errs.push('pcbuild: no configure step with id "' + clientKey + '"'); return; }
+      var slotIds = ['cpu', 'gpu', 'ram', 'psu', 'storage', 'cooling'];
+      var parts = {};
+      slotIds.forEach(function (sid) {
+        var partId = _slFidelityResolveSlotId(cfg, sid);
+        parts[sid] = _PARTS_CATALOG[partId];
+        if (!parts[sid]) errs.push('pcbuild: ' + clientKey + '.' + sid + ' keyed to unknown part id "' + partId + '"');
+      });
+      if (errs.length) return;
+      var total = slotIds.reduce(function (sum, sid) { return sum + (parts[sid].price || 0); }, 0);
+      if (total > fact.budgetUsd) errs.push('pcbuild: ' + clientKey + ' total $' + total + ' exceeds budget $' + fact.budgetUsd);
+      var draw = (parts.cpu.watts || 0) + (parts.gpu.watts || 0);
+      if ((parts.psu.watts || 0) < draw) errs.push('pcbuild: ' + clientKey + ' PSU ' + parts.psu.watts + 'W below draw ' + draw + 'W');
+      if ((parts.gpu.lengthMm || 0) > fact.caseMaxGpuLengthMm) errs.push('pcbuild: ' + clientKey + ' GPU ' + parts.gpu.lengthMm + 'mm exceeds case max ' + fact.caseMaxGpuLengthMm + 'mm');
+      if ((parts.cpu.tier || 0) < fact.minCpuTier) errs.push('pcbuild: ' + clientKey + ' CPU tier ' + parts.cpu.tier + ' below required ' + fact.minCpuTier);
+      if ((parts.gpu.tier || 0) < fact.minGpuTier) errs.push('pcbuild: ' + clientKey + ' GPU tier ' + parts.gpu.tier + ' below required ' + fact.minGpuTier);
+    });
     return { ok: errs.length === 0, errors: errs };
   }
 
