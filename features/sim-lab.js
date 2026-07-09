@@ -592,6 +592,74 @@
     return { ok: errs.length === 0, errors: errs };
   }
 
+  // --- wiremap fidelity validator (Wave 3 Task 6) ---
+  // Proves, machine-checkable: the keyed fault type + keyed pin selection are BOTH
+  // mechanically derivable from the raw pin data, and every OTHER pin is a clean
+  // straight-through (exactly one fault exists, mutation-checked).
+  var _WIREMAP_FAULT_SIG = {
+    open:         { root: /open/i, fix: /re-terminate|reseat|reconnect/i },
+    short:        { root: /short/i, fix: /re-terminate|replace the cable/i },
+    splitPair:    { root: /split pair/i, fix: /re-terminate/i },
+    reversedPair: { root: /reversed pair/i, fix: /re-terminate/i }
+  };
+  // EIA/TIA-568B expected pair-by-pin position (independent of what a given fixture's
+  // pins[] actually carries — this is the textbook mapping used to detect deviation).
+  var _WM_EXPECTED_PAIR = {
+    1: 2, 2: 2, 3: 3, 4: 1, 5: 1, 6: 3, 7: 4, 8: 4
+  };
+  function simLabValidateWiremapFidelity(scn) {
+    var errs = [];
+    var ref = scn && scn.assets && scn.assets.reference;
+    var fault = scn && scn.wiremap && scn.wiremap.fault;
+    if (!ref || ref.kind !== 'wiremap' || !Array.isArray(ref.pins) || ref.pins.length !== 8) {
+      return { ok: false, errors: ['wiremap fidelity: wiremap reference with 8 pins required'] };
+    }
+    var sig = _WIREMAP_FAULT_SIG[fault];
+    if (!sig) return { ok: false, errors: ['wiremap fidelity: unknown wiremap.fault "' + fault + '"'] };
+    var byPin = {};
+    ref.pins.forEach(function (p) { byPin[p.pin] = p; });
+
+    var faulty = [];
+    ref.pins.forEach(function (p) {
+      var expected = _WM_EXPECTED_PAIR[p.pin];
+      if (p.endBPin == null) { faulty.push({ pin: p.pin, kind: 'open' }); return; }
+      if (p.endBPin !== p.pin) {
+        var other = byPin[p.endBPin];
+        if (other && other.pairId === p.pairId) faulty.push({ pin: p.pin, kind: 'reversedPair' });
+        else faulty.push({ pin: p.pin, kind: 'splitPair' });
+        return;
+      }
+      // straight-through position; a short shows up as ANOTHER pin also landing on this pin
+      var landers = ref.pins.filter(function (q) { return q.endBPin === p.pin && q.pin !== p.pin; });
+      if (landers.length) faulty.push({ pin: p.pin, kind: 'short' });
+    });
+    // exactly-one-fault-class invariant: every faulty pin must agree on kind
+    var kinds = {}; faulty.forEach(function (f) { kinds[f.kind] = true; });
+    if (Object.keys(kinds).length > 1) errs.push('wiremap: mixed fault kinds detected (' + Object.keys(kinds).join(', ') + '), fixture must contain exactly one fault class');
+    if (!faulty.length) errs.push('wiremap: no fault detected in pin data');
+
+    var faultyIds = faulty.map(function (f) { return String(f.pin); }).sort();
+    var flagStep = (scn.steps || []).filter(function (st) { return st.type === 'analyze' && st.payload && st.payload.mode === 'wiremapPins'; })[0];
+    var keyed = (flagStep && flagStep.answer && flagStep.answer.selected) ? flagStep.answer.selected.slice().sort() : [];
+    if (keyed.join(',') !== faultyIds.join(',')) errs.push('wiremap: keyed selected [' + keyed.join(',') + '] != derived faulty pins [' + faultyIds.join(',') + ']');
+
+    var actualKind = faulty[0] && faulty[0].kind;
+    if (actualKind && actualKind !== fault) errs.push('wiremap: scn.wiremap.fault "' + fault + '" != pin-data-derived fault "' + actualKind + '"');
+
+    var dx = (scn.steps || []).filter(function (st) {
+      return st.type === 'configure' && st.answer && st.answer.slots &&
+        (st.answer.slots.faultType !== undefined || st.answer.slots.fix !== undefined);
+    })[0];
+    if (!dx) errs.push('wiremap: no configure step with faultType/fix slots');
+    else {
+      var root = _slFidelityResolveSlot(dx, 'faultType');
+      var fix = _slFidelityResolveSlot(dx, 'fix');
+      if (root === undefined || !sig.root.test(root)) errs.push('wiremap: keyed faultType "' + root + '" does not match ' + fault);
+      if (fix === undefined || !sig.fix.test(fix)) errs.push('wiremap: keyed fix "' + fix + '" does not match ' + fault);
+    }
+    return { ok: errs.length === 0, errors: errs };
+  }
+
   // --- scoring (Task 2) ---
 
   function _norm(v) {

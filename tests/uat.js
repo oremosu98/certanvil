@@ -25323,6 +25323,46 @@ console.log('\n\x1b[1m── T7: DRILLS ANALYTICS GROUP + FINAL COPY + BRONZE TO
   test('portmap: keyed rootCause not matching the LED-signaled fault rejected', pm(bad3).ok === false);
 })();
 
+// ── Wave 3 Task 6: wiremap fidelity validator ──
+(function () {
+  var vm = require('vm');
+  var grab = function (n) { return _fnBody(js, n); };
+  var sigVar = (js.match(/var _WIREMAP_FAULT_SIG = \{[\s\S]*?\n\s*\};/) || [''])[0];
+  var pairVar = (js.match(/var _WM_EXPECTED_PAIR = \{[\s\S]*?\n\s*\};/) || [''])[0];
+  var body = [grab('_isNonEmptyStr'), grab('_slFidelityResolveSlot'), pairVar, sigVar, grab('simLabValidateWiremapFidelity')].join('\n');
+  if (!sigVar || !pairVar || body.indexOf('simLabValidateWiremapFidelity') === -1) { results.errors.push('could not extract wiremap validator/_WIREMAP_FAULT_SIG/_WM_EXPECTED_PAIR'); return; }
+  var wCtx = {}; vm.createContext(wCtx); vm.runInContext(body, wCtx);
+  vm.runInContext('globalThis.__wm = simLabValidateWiremapFidelity;', wCtx);
+  var wm = wCtx.__wm;
+
+  // TIA/EIA-568B: Pair1=4,5 Pair2=1,2 Pair3=3,6 Pair4=7,8. Split pair: pins 2&3 cross.
+  var scn = { wiremap: { fault: 'splitPair' },
+    assets: { reference: { kind: 'wiremap', pins: [
+      { pin: 1, pairId: 2, endBPin: 1, select: true },
+      { pin: 2, pairId: 2, endBPin: 3, select: true },
+      { pin: 3, pairId: 3, endBPin: 2, select: true },
+      { pin: 4, pairId: 1, endBPin: 4, select: true },
+      { pin: 5, pairId: 1, endBPin: 5, select: true },
+      { pin: 6, pairId: 3, endBPin: 6, select: true },
+      { pin: 7, pairId: 4, endBPin: 7, select: true },
+      { pin: 8, pairId: 4, endBPin: 8, select: true }
+    ] } },
+    steps: [
+      { id: 'flag', type: 'analyze', points: 1, payload: { multi: true, mode: 'wiremapPins' }, answer: { selected: ['2', '3'] } },
+      { id: 'dx', type: 'configure', points: 1, payload: { slots: [
+        { id: 'faultType', label: 'f', options: [{ id: 'a', text: 'Split pair' }, { id: 'b', text: 'Open circuit' }] },
+        { id: 'fix', label: 'x', options: [{ id: 'a', text: 'Re-terminate so the real pairs land on their correct pins' }, { id: 'b', text: 'Replace the cable' }] }
+      ] }, answer: { slots: { faultType: 'a', fix: 'a' } } }
+    ] };
+  test('wiremap: sound split-pair scenario passes', wm(scn).ok === true);
+  var bad1 = JSON.parse(JSON.stringify(scn)); bad1.steps[0].answer.selected = ['3'];
+  test('wiremap: keyed selection missing one of the two crossed pins rejected', wm(bad1).ok === false);
+  var bad2 = JSON.parse(JSON.stringify(scn)); bad2.assets.reference.pins[1].endBPin = 2; bad2.assets.reference.pins[2].endBPin = 3;
+  test('wiremap: a second, accidental fault (pin data no longer matches keyed splitPair) rejected', wm(bad2).ok === false);
+  var bad3 = JSON.parse(JSON.stringify(scn)); bad3.steps[1].answer.slots.faultType = 'b';
+  test('wiremap: keyed faultType not matching the actual pin-data fault rejected', wm(bad3).ok === false);
+})();
+
 // ── Summary ──
 console.log('\n' + '═'.repeat(50));
 const total = results.pass + results.fail;
