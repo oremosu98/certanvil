@@ -124,6 +124,7 @@ _Older releases (v7.60.0 and back) live in [CHANGELOG.md](./CHANGELOG.md)._
 ## CSS Theme System
 Dark theme in `:root`, light theme in `[data-theme="light"]`. Key variables: `--bg`, `--surface`, `--accent`, `--text`, `--green`, `--red`, `--yellow`. Toggle via `toggleTheme()`. Semantic status aliases `--pass`/`--fail`/`--warn` (→ `--green`/`--red`/`--yellow`) are defined in every `dg-system.css` token block; a UAT ratchet guard fails any NEW undefined `var(--x)` referenced in `dg-system.css`.
 The Sim Lab terminal reference (`.term*`) tokens live in `dg-system.css` (Wave 2), mapped onto `--text`/`--text-mid`/`--border` per the file's existing mockup-token precedent.
+The Sim Lab faceplate/wiremap/slots (`.faceplate*`/`.wm*`/`.slots*`) tokens live in `dg-system.css` (Wave 3).
 
 ## Common Gotchas
 
