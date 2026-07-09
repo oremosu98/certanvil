@@ -25525,6 +25525,37 @@ console.log('\n\x1b[1m── T7: DRILLS ANALYTICS GROUP + FINAL COPY + BRONZE TO
   assert(raid(bad2).ok === false, 'raid: 2 failed drives against RAID5 tolerance-1 must NOT stay keyed degraded/rebuild');
   var bad3 = JSON.parse(JSON.stringify(scn)); bad3.steps[0].answer.slots.level = 'b'; bad3.steps[0].payload.slots[2].options[0].text = '4';
   assert(raid(bad3).ok === false, 'raid: a non-minimal-drive-count valid build (RAID10 needs 4 drives for the same result) rejected');
+
+  // Per-level build-slot coverage: raid0/raid1/raid6's capacity formulas are otherwise
+  // unverified (only raid5's pass case and raid10's minDrives-fail case exercised above).
+  // failedDriveCount is kept at 0 in each fixture so neither the "Failed" nor "Degraded"
+  // degrade-status branch is entered — these fixtures isolate the capacity/tolerance math,
+  // not the degrade-phase keying (already covered by the RAID5 fixture above).
+  function raidBuildScn(levelText, driveCountText, driveSizeText, targetUsableTb, targetTolerance) {
+    return { raid: { targetUsableTb: targetUsableTb, targetTolerance: targetTolerance, failedDriveCount: 0 },
+      steps: [
+        { id: 'build', type: 'configure', points: 1, payload: { slots: [
+          { id: 'level', label: 'l', options: [{ id: 'a', text: levelText }] },
+          { id: 'driveCount', label: 'c', options: [{ id: 'a', text: driveCountText }] },
+          { id: 'driveSize', label: 's', options: [{ id: 'a', text: driveSizeText }] }
+        ] }, answer: { slots: { level: 'a', driveCount: 'a', driveSize: 'a' } } },
+        { id: 'degrade', type: 'configure', points: 1, payload: { slots: [
+          { id: 'arrayStatus', label: 'a', options: [{ id: 'a', text: 'Healthy' }] },
+          { id: 'recoveryAction', label: 'r', options: [{ id: 'a', text: 'None' }] }
+        ] }, answer: { slots: { arrayStatus: 'a', recoveryAction: 'a' } } }
+      ] };
+  }
+  // raid0 (striping, no tolerance): capacity = driveCount*driveSize = 2*2 = 4TB, meets a
+  // 4TB/tolerance-0 target with the minimum 2 drives (no fewer-drive combo of any level
+  // can also clear it, since every level's minDrives is >= 2).
+  assert(raid(raidBuildScn('RAID 0', '2', '2', 4, 0)).ok === true, 'raid: sound RAID0 2x2TB scenario passes');
+  // raid1 (mirroring): capacity = driveSize = 4TB regardless of driveCount, meets a
+  // 4TB/tolerance-1 target with the minimum 2 drives.
+  assert(raid(raidBuildScn('RAID 1', '2', '4', 4, 1)).ok === true, 'raid: sound RAID1 2x4TB scenario passes');
+  // raid6 (dual parity): capacity = (driveCount-2)*driveSize = (4-2)*2 = 4TB, meets a
+  // 4TB/tolerance-2 target with the minimum 4 drives (no other level reaches tolerance
+  // 2 at all, so no fewer-drive combo can satisfy the minimal-cost check).
+  assert(raid(raidBuildScn('RAID 6', '4', '2', 4, 2)).ok === true, 'raid: sound RAID6 4x2TB scenario passes');
 })();
 
 // ── Summary ──

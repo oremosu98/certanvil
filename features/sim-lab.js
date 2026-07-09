@@ -776,7 +776,7 @@
     var usable = meta.capacity(drives, size);
     if (usable < fact.targetUsableTb) errs.push('raid fidelity: keyed build usable ' + usable + 'TB below target ' + fact.targetUsableTb + 'TB');
     if (meta.tolerance < fact.targetTolerance) errs.push('raid fidelity: keyed level tolerance ' + meta.tolerance + ' below target ' + fact.targetTolerance);
-    // minimal-cost check: no OTHER level/drive-count combo at or below this drive count also clears both targets
+    // minimal-cost check: no OTHER level/drive-count combo with fewer drives also clears both targets
     var levelKeys = Object.keys(_RAID_LEVEL_META);
     var cheaperExists = false;
     levelKeys.forEach(function (lk) {
