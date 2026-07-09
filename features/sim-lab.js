@@ -602,11 +602,6 @@
     splitPair:    { root: /split pair/i, fix: /re-terminate/i },
     reversedPair: { root: /reversed pair/i, fix: /re-terminate/i }
   };
-  // EIA/TIA-568B expected pair-by-pin position (independent of what a given fixture's
-  // pins[] actually carries — this is the textbook mapping used to detect deviation).
-  var _WM_EXPECTED_PAIR = {
-    1: 2, 2: 2, 3: 3, 4: 1, 5: 1, 6: 3, 7: 4, 8: 4
-  };
   function simLabValidateWiremapFidelity(scn) {
     var errs = [];
     var ref = scn && scn.assets && scn.assets.reference;
@@ -619,19 +614,30 @@
     var byPin = {};
     ref.pins.forEach(function (p) { byPin[p.pin] = p; });
 
+    // A short's real signature: two or more distinct source pins land on the SAME
+    // destination End-B pin — regardless of whether one of them happens to sit at
+    // its own straight-through position. Detect that FIRST, by grouping on endBPin.
+    var groupsByEndB = {};
+    ref.pins.forEach(function (p) {
+      if (p.endBPin == null) return;
+      (groupsByEndB[p.endBPin] = groupsByEndB[p.endBPin] || []).push(p);
+    });
+    var shortedPins = {};
+    Object.keys(groupsByEndB).forEach(function (endB) {
+      if (groupsByEndB[endB].length > 1) {
+        groupsByEndB[endB].forEach(function (p) { shortedPins[p.pin] = true; });
+      }
+    });
+
     var faulty = [];
     ref.pins.forEach(function (p) {
-      var expected = _WM_EXPECTED_PAIR[p.pin];
+      if (shortedPins[p.pin]) { faulty.push({ pin: p.pin, kind: 'short' }); return; }
       if (p.endBPin == null) { faulty.push({ pin: p.pin, kind: 'open' }); return; }
       if (p.endBPin !== p.pin) {
         var other = byPin[p.endBPin];
         if (other && other.pairId === p.pairId) faulty.push({ pin: p.pin, kind: 'reversedPair' });
         else faulty.push({ pin: p.pin, kind: 'splitPair' });
-        return;
       }
-      // straight-through position; a short shows up as ANOTHER pin also landing on this pin
-      var landers = ref.pins.filter(function (q) { return q.endBPin === p.pin && q.pin !== p.pin; });
-      if (landers.length) faulty.push({ pin: p.pin, kind: 'short' });
     });
     // exactly-one-fault-class invariant: every faulty pin must agree on kind
     var kinds = {}; faulty.forEach(function (f) { kinds[f.kind] = true; });

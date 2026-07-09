@@ -25328,9 +25328,8 @@ console.log('\n\x1b[1m── T7: DRILLS ANALYTICS GROUP + FINAL COPY + BRONZE TO
   var vm = require('vm');
   var grab = function (n) { return _fnBody(js, n); };
   var sigVar = (js.match(/var _WIREMAP_FAULT_SIG = \{[\s\S]*?\n\s*\};/) || [''])[0];
-  var pairVar = (js.match(/var _WM_EXPECTED_PAIR = \{[\s\S]*?\n\s*\};/) || [''])[0];
-  var body = [grab('_isNonEmptyStr'), grab('_slFidelityResolveSlot'), pairVar, sigVar, grab('simLabValidateWiremapFidelity')].join('\n');
-  if (!sigVar || !pairVar || body.indexOf('simLabValidateWiremapFidelity') === -1) { results.errors.push('could not extract wiremap validator/_WIREMAP_FAULT_SIG/_WM_EXPECTED_PAIR'); return; }
+  var body = [grab('_isNonEmptyStr'), grab('_slFidelityResolveSlot'), sigVar, grab('simLabValidateWiremapFidelity')].join('\n');
+  if (!sigVar || body.indexOf('simLabValidateWiremapFidelity') === -1) { results.errors.push('could not extract wiremap validator/_WIREMAP_FAULT_SIG'); return; }
   var wCtx = {}; vm.createContext(wCtx); vm.runInContext(body, wCtx);
   vm.runInContext('globalThis.__wm = simLabValidateWiremapFidelity;', wCtx);
   var wm = wCtx.__wm;
@@ -25361,6 +25360,73 @@ console.log('\n\x1b[1m── T7: DRILLS ANALYTICS GROUP + FINAL COPY + BRONZE TO
   test('wiremap: a second, accidental fault (pin data no longer matches keyed splitPair) rejected', wm(bad2).ok === false);
   var bad3 = JSON.parse(JSON.stringify(scn)); bad3.steps[1].answer.slots.faultType = 'b';
   test('wiremap: keyed faultType not matching the actual pin-data fault rejected', wm(bad3).ok === false);
+
+  // Open: pin 6 has no End-B connection at all (all others straight-through).
+  var openScn = { wiremap: { fault: 'open' },
+    assets: { reference: { kind: 'wiremap', pins: [
+      { pin: 1, pairId: 2, endBPin: 1, select: true },
+      { pin: 2, pairId: 2, endBPin: 2, select: true },
+      { pin: 3, pairId: 3, endBPin: 3, select: true },
+      { pin: 4, pairId: 1, endBPin: 4, select: true },
+      { pin: 5, pairId: 1, endBPin: 5, select: true },
+      { pin: 6, pairId: 3, endBPin: null, select: true },
+      { pin: 7, pairId: 4, endBPin: 7, select: true },
+      { pin: 8, pairId: 4, endBPin: 8, select: true }
+    ] } },
+    steps: [
+      { id: 'flag', type: 'analyze', points: 1, payload: { multi: true, mode: 'wiremapPins' }, answer: { selected: ['6'] } },
+      { id: 'dx', type: 'configure', points: 1, payload: { slots: [
+        { id: 'faultType', label: 'f', options: [{ id: 'a', text: 'Open circuit' }, { id: 'b', text: 'Split pair' }] },
+        { id: 'fix', label: 'x', options: [{ id: 'a', text: 'Reseat and re-terminate the connector' }, { id: 'b', text: 'Replace the cable' }] }
+      ] }, answer: { slots: { faultType: 'a', fix: 'a' } } }
+    ] };
+  test('wiremap: sound open-circuit scenario passes', wm(openScn).ok === true);
+
+  // Short: pins 1 and 2 both land on End-B pin 1 (pin 2's own slot goes unclaimed).
+  var shortScn = { wiremap: { fault: 'short' },
+    assets: { reference: { kind: 'wiremap', pins: [
+      { pin: 1, pairId: 2, endBPin: 1, select: true },
+      { pin: 2, pairId: 2, endBPin: 1, select: true },
+      { pin: 3, pairId: 3, endBPin: 3, select: true },
+      { pin: 4, pairId: 1, endBPin: 4, select: true },
+      { pin: 5, pairId: 1, endBPin: 5, select: true },
+      { pin: 6, pairId: 3, endBPin: 6, select: true },
+      { pin: 7, pairId: 4, endBPin: 7, select: true },
+      { pin: 8, pairId: 4, endBPin: 8, select: true }
+    ] } },
+    steps: [
+      { id: 'flag', type: 'analyze', points: 1, payload: { multi: true, mode: 'wiremapPins' }, answer: { selected: ['1', '2'] } },
+      { id: 'dx', type: 'configure', points: 1, payload: { slots: [
+        { id: 'faultType', label: 'f', options: [{ id: 'a', text: 'Short' }, { id: 'b', text: 'Open circuit' }] },
+        { id: 'fix', label: 'x', options: [{ id: 'a', text: 'Re-terminate the cable' }, { id: 'b', text: 'Reseat the connector' }] }
+      ] }, answer: { slots: { faultType: 'a', fix: 'a' } } }
+    ] };
+  test('wiremap: sound short scenario passes', wm(shortScn).ok === true);
+  var shortBad = JSON.parse(JSON.stringify(shortScn)); shortBad.steps[1].answer.slots.faultType = 'b';
+  test('wiremap: keyed faultType not matching the actual short rejected', wm(shortBad).ok === false);
+
+  // Reversed pair: pins 1 & 2 (same pairId) swap End-B destinations.
+  var reversedScn = { wiremap: { fault: 'reversedPair' },
+    assets: { reference: { kind: 'wiremap', pins: [
+      { pin: 1, pairId: 2, endBPin: 2, select: true },
+      { pin: 2, pairId: 2, endBPin: 1, select: true },
+      { pin: 3, pairId: 3, endBPin: 3, select: true },
+      { pin: 4, pairId: 1, endBPin: 4, select: true },
+      { pin: 5, pairId: 1, endBPin: 5, select: true },
+      { pin: 6, pairId: 3, endBPin: 6, select: true },
+      { pin: 7, pairId: 4, endBPin: 7, select: true },
+      { pin: 8, pairId: 4, endBPin: 8, select: true }
+    ] } },
+    steps: [
+      { id: 'flag', type: 'analyze', points: 1, payload: { multi: true, mode: 'wiremapPins' }, answer: { selected: ['1', '2'] } },
+      { id: 'dx', type: 'configure', points: 1, payload: { slots: [
+        { id: 'faultType', label: 'f', options: [{ id: 'a', text: 'Reversed pair' }, { id: 'b', text: 'Split pair' }] },
+        { id: 'fix', label: 'x', options: [{ id: 'a', text: 'Re-terminate the pair in the correct orientation' }, { id: 'b', text: 'Replace the cable' }] }
+      ] }, answer: { slots: { faultType: 'a', fix: 'a' } } }
+    ] };
+  test('wiremap: sound reversed-pair scenario passes', wm(reversedScn).ok === true);
+  var reversedBad = JSON.parse(JSON.stringify(reversedScn)); reversedBad.steps[0].answer.selected = ['1'];
+  test('wiremap: keyed selection missing one of the two reversed pins rejected', wm(reversedBad).ok === false);
 })();
 
 // ── Summary ──
