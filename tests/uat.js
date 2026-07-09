@@ -21006,6 +21006,16 @@ console.log('\n\x1b[1m── T7: DRILLS ANALYTICS GROUP + FINAL COPY + BRONZE TO
     test('archetype validation: unknown archetype "logscan" still rejected',
       simLabValidateScenario(_sx2).ok === false);
 
+    // ── Wave 3 Task 1: New archetype tags ('portmap'/'wiremap'/'pcbuild'/'raid') accepted; unknown still rejected. ──
+    ['portmap', 'wiremap', 'pcbuild', 'raid'].forEach(function (tag) {
+      var _s3 = _baseScn(); _s3.archetype = tag;
+      test('archetype validation: archetype ' + tag + ' accepted',
+        simLabValidateScenario(_s3).ok === true);
+    });
+    var _sx3 = _baseScn(); _sx3.archetype = 'diskclinic';
+    test('archetype validation: unknown archetype "diskclinic" still rejected',
+      simLabValidateScenario(_sx3).ok === false);
+
     // ── Wave 2 Task 3: analyze mode step validates without payload.lines ──
     var _modeStep = { id: 'm', type: 'analyze', prompt: 'p', explanation: 'e', points: 1,
       payload: { multi: true, mode: 'excerptLines', scoring: 'lenient' }, answer: { selected: ['l1'] } };
