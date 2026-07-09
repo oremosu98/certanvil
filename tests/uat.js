@@ -25476,6 +25476,24 @@ console.log('\n\x1b[1m── T7: DRILLS ANALYTICS GROUP + FINAL COPY + BRONZE TO
   bad3.steps[0].payload.slots.find(function (s) { return s.id === 'psu'; }).options[0].id = 'psu-250';
   bad3.steps[0].answer.slots.psu = 'psu-250';
   test('pcbuild: PSU wattage below CPU+GPU draw rejected', pcb(bad3).ok === false);
+  // cpu-office is tier 1 (< minCpuTier: 2). Swap keeps every other check clean: total
+  // $175(cpu)+$550(gpu-4070)+$85(ram-32)+$45(psu-450)+$75(storage-1tb-nvme)+$35(cool-120-air)
+  // = $965, under the $1200 budget; draw 65W(cpu)+200W(gpu)=265W stays under psu-450's
+  // 450W; gpu-4070's 310mm stays under the 320mm case max — so this isolates the CPU-tier
+  // branch specifically.
+  var bad4 = JSON.parse(JSON.stringify(scn));
+  bad4.steps[0].payload.slots.find(function (s) { return s.id === 'cpu'; }).options[0].id = 'cpu-office';
+  bad4.steps[0].answer.slots.cpu = 'cpu-office';
+  test('pcbuild: CPU tier below minCpuTier rejected', pcb(bad4).ok === false);
+  // gpu-1650 is tier 1 (< minGpuTier: 2). Swap keeps every other check clean: total
+  // $310(cpu-creator)+$150(gpu)+$85(ram-32)+$45(psu-450)+$75(storage-1tb-nvme)+$35(cool-120-air)
+  // = $700, under the $1200 budget; draw 105W(cpu)+75W(gpu)=180W stays under psu-450's
+  // 450W; gpu-1650's 170mm stays under the 320mm case max — so this isolates the GPU-tier
+  // branch specifically.
+  var bad5 = JSON.parse(JSON.stringify(scn));
+  bad5.steps[0].payload.slots.find(function (s) { return s.id === 'gpu'; }).options[0].id = 'gpu-1650';
+  bad5.steps[0].answer.slots.gpu = 'gpu-1650';
+  test('pcbuild: GPU tier below minGpuTier rejected', pcb(bad5).ok === false);
 })();
 
 // ── Summary ──
