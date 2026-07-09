@@ -21273,6 +21273,80 @@ console.log('\n\x1b[1m── T7: DRILLS ANALYTICS GROUP + FINAL COPY + BRONZE TO
     typeof mCtx.window.__slRevealExcerpt === 'function');
 })();
 
+// ── Wave 3 Task 2: faceplate reference renderer + facePorts analyze mode ──
+(function () {
+  var grab = function (name) { return _fnBody(js, name); };
+  var grabLine = function (name) {
+    var re = new RegExp('function ' + name + '\\([^\\n]*\\)\\s*\\{[^\\n]*\\}');
+    return (js.match(re) || [''])[0];
+  };
+  var elBody = grab('_el'), escBody = grabLine('_esc');
+  var fpBody = grab('_slRenderRefFaceplate'), dispBody = grab('_slRenderReference');
+  if (!fpBody || !dispBody) { results.errors.push('could not extract _slRenderRefFaceplate/_slRenderReference'); return; }
+
+  var htmlEsc = function (s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  };
+  var makeEl = function (tag) {
+    var attrs = {}, listeners = {}, children = [], cls = '', inner = '';
+    var clsSet = {};
+    var el = {
+      tagName: tag.toUpperCase(),
+      get className() { return cls; }, set className(v) { cls = v; },
+      get innerHTML() { return inner; }, set innerHTML(v) { inner = v; children = []; },
+      get textContent() { return ''; }, set textContent(v) { inner = htmlEsc(v); },
+      style: {},
+      get _children() { return children; },
+      classList: {
+        add: function (c) { clsSet[c] = true; cls = (cls ? cls + ' ' : '') + c; },
+        remove: function (c) { delete clsSet[c]; },
+        toggle: function (c, on) { if (on) clsSet[c] = true; else delete clsSet[c]; },
+        contains: function (c) { return !!clsSet[c]; }
+      },
+      setAttribute: function (k, v) { attrs[k] = v; },
+      getAttribute: function (k) { return (k in attrs) ? attrs[k] : null; },
+      removeAttribute: function (k) { delete attrs[k]; },
+      appendChild: function (c) { children.push(c); return c; },
+      querySelectorAll: function (sel) {
+        var hits = [], want = sel.replace(/^\./, '');
+        var walk = function (n) { (n._children || []).forEach(function (c) {
+          if (!c || !c.tagName) return;
+          if (want.toUpperCase() === c.tagName || (c.className && c.className.split(' ').indexOf(want) !== -1)) hits.push(c);
+          walk(c);
+        }); };
+        walk(el); return hits;
+      },
+      addEventListener: function (ev, fn) { (listeners[ev] = listeners[ev] || []).push(fn); },
+      _fire: function (ev) { (listeners[ev] || []).forEach(function (fn) { fn({}); }); }
+    };
+    return el;
+  };
+  var mCtx = { document: { createElement: makeEl }, Object: Object, Array: Array, String: String };
+  vm.createContext(mCtx);
+  vm.runInContext(elBody + '\n' + escBody + '\n' + fpBody + '\n' + dispBody, mCtx);
+
+  var ref = { kind: 'faceplate', host: 'SW-1 · 8-port', ports: [
+    { id: 'gi0-1', label: 'Gi0/1', led: 'up', select: true },
+    { id: 'gi0-2', label: 'Gi0/2 <script>x</script>', led: 'poe-fault', select: true },
+    { id: 'gi0-3', label: 'Gi0/3', led: 'down', select: false }
+  ] };
+  mCtx.ref = ref;
+  vm.runInContext('globalThis.__panel = _slRenderReference(ref);', mCtx);
+  var panel = mCtx.__panel;
+
+  test('faceplate: _slRenderReference returns a .sl-ref panel for kind faceplate', !!panel && panel.className === 'sl-ref');
+  var btns = panel.querySelectorAll('button');
+  var portBtns = btns.filter(function (b) { return b.className && b.className.indexOf('port') !== -1; });
+  test('faceplate: select:true ports render as focusable BUTTONs with data-port',
+    portBtns.length === 2 && portBtns[0].getAttribute('data-port') === 'gi0-1');
+  test('faceplate: fault-LED port carries a fault class', portBtns[1].className.indexOf('poe-fault') !== -1);
+  test('faceplate: port label is ESCAPED (no raw <script>)',
+    portBtns[1].innerHTML.indexOf('<script>') === -1 && portBtns[1].innerHTML.indexOf('&lt;script&gt;') !== -1);
+  var inertEls = panel.querySelectorAll('div').filter(function (d) { return d.getAttribute('aria-hidden') === 'true'; });
+  test('faceplate: select:false ports render as inert aria-hidden divs, not buttons', inertEls.length === 1);
+})();
+
 // ── Wave 2 Task 3: guarded analyze extension — mode branch + lenient scoring ──
 (function () {
   var vm = require('vm');

@@ -22,7 +22,7 @@
         return Array.isArray(p.left) && Array.isArray(p.right) &&
                p.left.length >= 2 && p.left.length === p.right.length && a.pairs && typeof a.pairs === 'object';
       case 'analyze':
-        if (p.mode === 'reveal' || p.mode === 'excerptLines') {
+        if (p.mode === 'reveal' || p.mode === 'excerptLines' || p.mode === 'facePorts' || p.mode === 'wiremapPins') {
           return Array.isArray(a.selected) && a.selected.length >= 1;
         }
         return Array.isArray(p.lines) && p.lines.length >= 2 &&
@@ -65,7 +65,7 @@
       });
     }
     if (s.assets && s.assets.reference) {
-      var ref = s.assets.reference, kinds = ['network', 'timeline', 'layered', 'terminal'];
+      var ref = s.assets.reference, kinds = ['network', 'timeline', 'layered', 'terminal', 'faceplate', 'wiremap', 'slots'];
       if (kinds.indexOf(ref.kind) === -1) errs.push('reference: bad kind');
       else if (ref.kind === 'network' && !Array.isArray(ref.devices)) errs.push('reference network: devices[] required');
       else if (ref.kind === 'timeline' && !Array.isArray(ref.stages)) errs.push('reference timeline: stages[] required');
@@ -73,6 +73,9 @@
       else if (ref.kind === 'terminal' && (!Array.isArray(ref.excerpts) || !ref.excerpts.every(function (ex) {
         return ex && _isNonEmptyStr(ex.id) && Array.isArray(ex.lines);
       }))) errs.push('reference terminal: excerpts[] with id+lines[] required');
+      else if (ref.kind === 'faceplate' && (!Array.isArray(ref.ports) || !ref.ports.every(function (p) {
+        return p && _isNonEmptyStr(p.id) && _isNonEmptyStr(p.label);
+      }))) errs.push('reference faceplate: ports[] with id+label required');
       if (ref.kind === 'layered' && ref.layout !== undefined && ['nested', 'stacked'].indexOf(ref.layout) === -1) {
         errs.push('reference layered: bad layout');
       }
@@ -820,7 +823,7 @@
     // Wave 2: mode steps bind targets from the terminal reference (single source of
     // truth) instead of building their own .sl-analyze-block. Default (no mode) below is UNCHANGED.
     var mode = step.payload.mode;
-    if (mode === 'reveal' || mode === 'excerptLines') {
+    if (mode === 'reveal' || mode === 'excerptLines' || mode === 'facePorts' || mode === 'wiremapPins') {
       return _slRenderAnalyzeMode(step, onChange, initial, mode);
     }
     // Default to multi-select unless a step opts OUT explicitly (`multi:
@@ -905,6 +908,19 @@
         menu.appendChild(b);
       });
       root.appendChild(menu);
+    } else if (mode === 'facePorts') {
+      // facePorts: bind the faceplate's already-rendered select:true port buttons
+      var fpHost = (window.__slFaceplatePanel) || null;
+      var fpBtns = fpHost ? fpHost.querySelectorAll('button') : [];
+      fpBtns.forEach(function (btn) {
+        if (!btn.className || btn.className.split(' ').indexOf('port') === -1) return;
+        var id = btn.getAttribute('data-port');
+        btn.addEventListener('click', function () {
+          toggle(id);
+          if (btn.classList) btn.classList.toggle('sl-sel', selected.indexOf(id) !== -1);
+        });
+        if (selected.indexOf(id) !== -1 && btn.classList) btn.classList.add('sl-sel');
+      });
     } else {
       // excerptLines: bind the terminal's already-rendered select:true line buttons
       var host = (window.__slTerminalPanel) || null;
@@ -1526,6 +1542,38 @@
     return root;
   }
 
+  // --- faceplate reference renderer (Wave 3 Task 2) ---
+  // Selectable ports (select:true) are real <button>s so a mode:'facePorts' analyze
+  // step can bind them (single source of truth, same discipline as .term-line).
+  // Non-selectable ports render as inert aria-hidden divs — faceplate realism only,
+  // never a scoring target. LED state alone must fully signal any fault.
+  function _slRenderRefFaceplate(ref) {
+    var root = _el('div', 'faceplate');
+    var head = _el('div', 'faceplate-head');
+    head.appendChild(_el('span', 'faceplate-host', _esc(ref.host || '')));
+    root.appendChild(head);
+    var grid = _el('div', 'faceplate-grid');
+    var ports = (ref && Array.isArray(ref.ports)) ? ref.ports : [];
+    ports.forEach(function (p) {
+      var ledCls = 'port-' + (p.led || 'down');
+      if (p.select) {
+        var btn = _el('button', 'port ' + ledCls);
+        btn.setAttribute('type', 'button');
+        btn.setAttribute('data-port', p.id);
+        var fault = (p.led === 'poe-fault' || p.led === 'err-disabled');
+        btn.setAttribute('aria-label', 'Port ' + (p.label || p.id) + (fault ? ', fault detected. Click to diagnose.' : ', click to configure.'));
+        btn.innerHTML = _esc(p.label || p.id);
+        grid.appendChild(btn);
+      } else {
+        var inert = _el('div', 'port ' + ledCls + ' port-inert', _esc(p.label || p.id));
+        inert.setAttribute('aria-hidden', 'true');
+        grid.appendChild(inert);
+      }
+    });
+    root.appendChild(grid);
+    return root;
+  }
+
   function _slRenderReference(ref) {
     if (!ref || !ref.kind) return null;
     var panel = _el('div', 'sl-ref');
@@ -1539,6 +1587,7 @@
       panel.appendChild(termNode);
       panel.revealExcerpt = termNode.revealExcerpt;
     }
+    else if (ref.kind === 'faceplate') panel.appendChild(_slRenderRefFaceplate(ref));
     return panel;
   }
 
@@ -1567,6 +1616,10 @@
       window.__slTerminalRef = scn.assets.reference;
       window.__slTerminalPanel = refPanel;
     } else { window.__slTerminalRef = null; window.__slTerminalPanel = null; }
+    if (scn.assets && scn.assets.reference && scn.assets.reference.kind === 'faceplate') {
+      window.__slFaceplateRef = scn.assets.reference;
+      window.__slFaceplatePanel = refPanel;
+    } else { window.__slFaceplateRef = null; window.__slFaceplatePanel = null; }
     scn.steps.forEach(function (st, i) {
       var stepWrap = _el('div', 'sl-step');
       stepWrap.appendChild(_el('div', 'sl-step-k', 'Step ' + (i + 1) + ' of ' + scn.steps.length));
