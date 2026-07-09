@@ -25496,6 +25496,37 @@ console.log('\n\x1b[1m── T7: DRILLS ANALYTICS GROUP + FINAL COPY + BRONZE TO
   test('pcbuild: GPU tier below minGpuTier rejected', pcb(bad5).ok === false);
 })();
 
+(function () {
+  var assert = function (cond, msg) { test(msg, !!cond); };
+  var grab = function (n) { return _fnBody(js, n); };
+  var metaVar = (js.match(/var _RAID_LEVEL_META = \{[\s\S]*?\n\s*\};/) || [''])[0];
+  var body = [grab('_isNonEmptyStr'), grab('_slFidelityResolveSlot'), metaVar, grab('_raidLevelKey'), grab('simLabValidateRaidFidelity')].join('\n');
+  if (!metaVar || body.indexOf('simLabValidateRaidFidelity') === -1) { results.errors.push('could not extract raid validator/_RAID_LEVEL_META/_raidLevelKey'); return; }
+  var rCtx = {}; vm.createContext(rCtx); vm.runInContext(body, rCtx);
+  vm.runInContext('globalThis.__raid = simLabValidateRaidFidelity;', rCtx);
+  var raid = rCtx.__raid;
+
+  var scn = { raid: { targetUsableTb: 4, targetTolerance: 1, failedDriveCount: 1 },
+    steps: [
+      { id: 'build', type: 'configure', points: 1, payload: { slots: [
+        { id: 'level', label: 'l', options: [{ id: 'a', text: 'RAID 5' }, { id: 'b', text: 'RAID 10' }] },
+        { id: 'driveCount', label: 'c', options: [{ id: 'a', text: '3' }, { id: 'b', text: '4' }] },
+        { id: 'driveSize', label: 's', options: [{ id: 'a', text: '2' }, { id: 'b', text: '1' }] }
+      ] }, answer: { slots: { level: 'a', driveCount: 'a', driveSize: 'a' } } },
+      { id: 'degrade', type: 'configure', points: 1, payload: { slots: [
+        { id: 'arrayStatus', label: 'a', options: [{ id: 'a', text: 'Degraded' }, { id: 'b', text: 'Failed' }] },
+        { id: 'recoveryAction', label: 'r', options: [{ id: 'a', text: 'Hot-swap and rebuild' }, { id: 'b', text: 'Restore from backup' }] }
+      ] }, answer: { slots: { arrayStatus: 'a', recoveryAction: 'a' } } }
+    ] };
+  assert(raid(scn).ok === true, 'raid: sound RAID5 3x2TB scenario passes');
+  var bad1 = JSON.parse(JSON.stringify(scn)); bad1.steps[0].answer.slots.driveCount = 'b'; bad1.steps[0].payload.slots[1].options[0].text = '2';
+  assert(raid(bad1).ok === false, 'raid: keyed build that misses the capacity target rejected');
+  var bad2 = JSON.parse(JSON.stringify(scn)); bad2.raid.failedDriveCount = 2;
+  assert(raid(bad2).ok === false, 'raid: 2 failed drives against RAID5 tolerance-1 must NOT stay keyed degraded/rebuild');
+  var bad3 = JSON.parse(JSON.stringify(scn)); bad3.steps[0].answer.slots.level = 'b'; bad3.steps[0].payload.slots[2].options[0].text = '4';
+  assert(raid(bad3).ok === false, 'raid: a non-minimal-drive-count valid build (RAID10 needs 4 drives for the same result) rejected');
+})();
+
 // ── Summary ──
 console.log('\n' + '═'.repeat(50));
 const total = results.pass + results.fail;

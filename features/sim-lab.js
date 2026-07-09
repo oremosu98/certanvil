@@ -739,6 +739,69 @@
     return { ok: errs.length === 0, errors: errs };
   }
 
+  // --- RAID fidelity validator (Wave 3 Task 8) ---
+  // Proves: real capacity/tolerance math for the keyed build clears both targets AND
+  // is the minimal-drive-count fit (guards against a "works but isn't intended" key);
+  // the degrade-phase keyed status/action follows correctly from failedDriveCount vs.
+  // the built level's real tolerance (mutation-checked: flipping failedDriveCount past
+  // tolerance must flip the expected keys).
+  var _RAID_LEVEL_META = {
+    raid0:  { tolerance: 0, capacity: function (c, s) { return c * s; }, minDrives: 2 },
+    raid1:  { tolerance: 1, capacity: function (c, s) { return s; }, minDrives: 2 },
+    raid5:  { tolerance: 1, capacity: function (c, s) { return (c - 1) * s; }, minDrives: 3 },
+    raid6:  { tolerance: 2, capacity: function (c, s) { return (c - 2) * s; }, minDrives: 4 },
+    raid10: { tolerance: 1, capacity: function (c, s) { return Math.floor(c / 2) * s; }, minDrives: 4 }
+  };
+  function _raidLevelKey(text) {
+    var m = /raid\s*(\d+)/i.exec(text || '');
+    if (!m) return null;
+    var n = m[1];
+    return n === '0' ? 'raid0' : n === '1' ? 'raid1' : n === '5' ? 'raid5' : n === '6' ? 'raid6' : n === '10' ? 'raid10' : null;
+  }
+  function simLabValidateRaidFidelity(scn) {
+    var errs = [];
+    var fact = scn && scn.raid;
+    if (!fact || typeof fact.targetUsableTb !== 'number' || typeof fact.targetTolerance !== 'number') {
+      return { ok: false, errors: ['raid fidelity: scn.raid.{targetUsableTb,targetTolerance,failedDriveCount} required'] };
+    }
+    var build = (scn.steps || []).filter(function (st) { return st.id === 'build'; })[0];
+    if (!build) return { ok: false, errors: ['raid fidelity: no configure step with id "build"'] };
+    var levelText = _slFidelityResolveSlot(build, 'level');
+    var levelKey = _raidLevelKey(levelText);
+    var drives = parseInt(_slFidelityResolveSlot(build, 'driveCount'), 10);
+    var size = parseInt(_slFidelityResolveSlot(build, 'driveSize'), 10);
+    var meta = levelKey && _RAID_LEVEL_META[levelKey];
+    if (!meta) { errs.push('raid fidelity: keyed level "' + levelText + '" not recognized'); return { ok: false, errors: errs }; }
+    if (drives < meta.minDrives) errs.push('raid fidelity: ' + levelKey + ' needs at least ' + meta.minDrives + ' drives, keyed ' + drives);
+    var usable = meta.capacity(drives, size);
+    if (usable < fact.targetUsableTb) errs.push('raid fidelity: keyed build usable ' + usable + 'TB below target ' + fact.targetUsableTb + 'TB');
+    if (meta.tolerance < fact.targetTolerance) errs.push('raid fidelity: keyed level tolerance ' + meta.tolerance + ' below target ' + fact.targetTolerance);
+    // minimal-cost check: no OTHER level/drive-count combo at or below this drive count also clears both targets
+    var levelKeys = Object.keys(_RAID_LEVEL_META);
+    var cheaperExists = false;
+    levelKeys.forEach(function (lk) {
+      var m2 = _RAID_LEVEL_META[lk];
+      for (var c = m2.minDrives; c < drives; c++) {
+        if (m2.capacity(c, size) >= fact.targetUsableTb && m2.tolerance >= fact.targetTolerance) cheaperExists = true;
+      }
+    });
+    if (cheaperExists) errs.push('raid fidelity: a combination with fewer drives also clears both targets, keyed build is not minimal');
+
+    var degrade = (scn.steps || []).filter(function (st) { return st.id === 'degrade'; })[0];
+    if (!degrade) { errs.push('raid fidelity: no configure step with id "degrade"'); return { ok: errs.length === 0, errors: errs }; }
+    var status = _slFidelityResolveSlot(degrade, 'arrayStatus');
+    var action = _slFidelityResolveSlot(degrade, 'recoveryAction');
+    var failed = fact.failedDriveCount;
+    if (failed > meta.tolerance) {
+      if (!/failed/i.test(status || '')) errs.push('raid fidelity: ' + failed + ' failed drives exceeds tolerance ' + meta.tolerance + ', keyed status "' + status + '" should be Failed');
+      if (!/restore/i.test(action || '')) errs.push('raid fidelity: keyed recoveryAction "' + action + '" should be restore-from-backup when the array has failed');
+    } else if (failed > 0) {
+      if (!/degraded/i.test(status || '')) errs.push('raid fidelity: ' + failed + ' failed drives within tolerance ' + meta.tolerance + ', keyed status "' + status + '" should be Degraded');
+      if (!/hot-swap|rebuild/i.test(action || '')) errs.push('raid fidelity: keyed recoveryAction "' + action + '" should be hot-swap/rebuild when degraded');
+    }
+    return { ok: errs.length === 0, errors: errs };
+  }
+
   // --- scoring (Task 2) ---
 
   function _norm(v) {
