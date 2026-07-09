@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Switch Port-Map Provisioning Grid PBQ · concept</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* ── CertAnvil MOCKUP STARTER TOKEN BLOCK (verbatim from brand/mockup-starter-tokens.css) ── */
+:root, [data-theme="dark"] {
+  --bg: oklch(0.17 0.008 275); --surface: oklch(0.205 0.009 275); --surface-2: oklch(0.23 0.009 275);
+  --ink: oklch(0.96 0.006 275); --ink-soft: oklch(0.80 0.012 275); --muted: oklch(0.725 0.013 275);
+  --border: oklch(0.32 0.011 275); --border-soft: oklch(0.255 0.010 275);
+  --accent: oklch(0.80 0.155 64); --accent-deep: oklch(0.86 0.135 64); --on-accent: oklch(0.18 0.020 275);
+  --pass: oklch(0.74 0.150 152); --fail: oklch(0.66 0.17 25);
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+}
+[data-theme="light"] {
+  --bg: oklch(0.975 0.007 85); --surface: oklch(0.992 0.004 85); --surface-2: oklch(0.965 0.010 84);
+  --ink: oklch(0.22 0.015 280); --ink-soft: oklch(0.36 0.014 280); --muted: oklch(0.50 0.013 280);
+  --border: oklch(0.86 0.008 85); --border-soft: oklch(0.91 0.006 85);
+  --accent: oklch(0.50 0.155 55); --accent-deep: oklch(0.42 0.150 52); --on-accent: oklch(0.985 0.010 85);
+  --pass: oklch(0.50 0.15 150); --fail: oklch(0.52 0.19 25);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { background: var(--bg); color: var(--ink); font-family: Inter, system-ui, sans-serif; }
+body { min-height: 100dvh; padding: clamp(14px, 3vw, 32px); -webkit-font-smoothing: antialiased; }
+.wrap { max-width: 1180px; margin: 0 auto; }
+
+.topbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 22px; }
+.brand { display: flex; align-items: center; gap: 11px; }
+.brand svg { width: 30px; height: 30px; }
+.brand b { font-weight: 700; font-size: 15px; letter-spacing: -0.01em; }
+.brand .sub { color: var(--muted); font-size: 12px; font-weight: 600; }
+.theme-btn { font: inherit; font-size: 12px; font-weight: 600; color: var(--ink-soft); background: var(--surface);
+  border: 1px solid var(--border); border-radius: 9px; padding: 8px 13px; cursor: pointer;
+  transition: transform .15s var(--ease), border-color .18s var(--ease), color .18s var(--ease); }
+.theme-btn:active { transform: scale(0.97); }
+@media (hover: hover) and (pointer: fine) { .theme-btn:hover { border-color: color-mix(in oklab, var(--accent) 30%, var(--border)); color: var(--ink); } }
+
+.eyebrow { font-size: 10.5px; font-weight: 800; letter-spacing: 0.13em; text-transform: uppercase; color: var(--accent); }
+.scn-head { margin-bottom: 18px; }
+.scn-title { font-family: Fraunces, Georgia, serif; font-weight: 600; font-size: clamp(24px, 3.4vw, 33px);
+  letter-spacing: -0.02em; line-height: 1.05; margin: 7px 0 9px; }
+.scn-prose { color: var(--ink-soft); font-size: 14.5px; line-height: 1.55; max-width: 70ch; }
+.metstrip { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+.met { display: inline-flex; align-items: center; gap: 7px; font-size: 12px; font-weight: 600; color: var(--ink-soft);
+  background: var(--surface); border: 1px solid var(--border); border-radius: 999px; padding: 6px 12px; }
+.met svg { width: 13px; height: 13px; stroke: var(--accent); }
+.met .timer { font-variant-numeric: tabular-nums; }
+.fixtag { display: inline-flex; align-items: center; gap: 6px; font-size: 10.5px; font-weight: 800; letter-spacing: 0.05em;
+  text-transform: uppercase; color: var(--muted); background: color-mix(in oklab, var(--muted) 12%, transparent);
+  border: 1px dashed color-mix(in oklab, var(--muted) 45%, var(--border)); border-radius: 999px; padding: 5px 11px; }
+
+.split { display: grid; grid-template-columns: 1.25fr 1fr; gap: 18px; align-items: start; }
+.split > * { min-width: 0; }
+@media (max-width: 860px) { .split { grid-template-columns: 1fr; } }
+
+.panel { background: var(--surface); border: 1px solid var(--border); border-radius: 18px; overflow: hidden;
+  box-shadow: 0 1px 0 color-mix(in oklab, var(--ink) 4%, transparent), 0 18px 40px -22px color-mix(in oklab, var(--ink) 20%, transparent); }
+.panel-head { display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  padding: 13px 16px; border-bottom: 1px solid var(--border-soft); }
+.panel-head .lbl { font-size: 10.5px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+.zoomhint { font-size: 11px; color: var(--muted); font-weight: 600; }
+
+.given { margin: 2px 8px 12px; border-top: 1px solid var(--border-soft); padding-top: 11px; display: grid; gap: 9px; }
+.given .row { display: flex; align-items: baseline; gap: 10px; font-size: 12.5px; }
+.given .k { color: var(--muted); font-weight: 700; min-width: 88px; }
+.given .v { color: var(--ink); font-weight: 600; font-size: 12.5px; line-height: 1.45; }
+.given .v code { font-family: ui-monospace, Menlo, monospace; font-size: 11.5px; background: color-mix(in oklab, var(--ink) 6%, transparent); border-radius: 5px; padding: 1px 5px; }
+
+/* answer rail */
+.rail { display: grid; gap: 14px; }
+.phase-tabs { display: flex; gap: 7px; }
+.ptab { flex: 1; min-width: 0; text-align: center; font-size: 11.5px; font-weight: 700; padding: 9px; border-radius: 9px;
+  border: 1px solid var(--border); background: var(--surface); color: var(--muted);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  transition: color .2s var(--ease), border-color .2s var(--ease), background-color .2s var(--ease); }
+.ptab.on { color: var(--accent); border-color: color-mix(in oklab, var(--accent) 34%, var(--border)); background: color-mix(in oklab, var(--accent) 9%, transparent); }
+.ptab.done { color: var(--pass); border-color: color-mix(in oklab, var(--pass) 30%, var(--border)); }
+.ptab .n { font-variant-numeric: tabular-nums; opacity: .65; margin-right: 5px; }
+
+.qcard { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 16px;
+  transition: opacity .22s var(--ease), transform .22s var(--ease), filter .22s var(--ease); }
+.qcard.entering { opacity: 0; transform: translateY(8px); filter: blur(2px); }
+.qcard.leaving { opacity: 0; transform: translateY(-6px); filter: blur(2px); }
+.qcard .q { font-size: 14px; font-weight: 650; line-height: 1.4; margin-bottom: 5px; }
+.qcard .step-kick { font-size: 10px; font-weight: 800; letter-spacing: 0.11em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+.qcard .qhint { font-size: 12px; color: var(--ink-soft); font-weight: 600; line-height: 1.45; margin-bottom: 13px; }
+
+/* selects (dropdowns) */
+.slot { display: grid; gap: 6px; margin-bottom: 14px; }
+.slot:last-of-type { margin-bottom: 0; }
+.slot label { font-size: 12px; font-weight: 700; color: var(--ink-soft); }
+.sel { position: relative; }
+.sel select { width: 100%; appearance: none; -webkit-appearance: none; font: inherit; font-size: 13.5px; font-weight: 600;
+  color: var(--ink); background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px;
+  padding: 11px 38px 11px 13px; cursor: pointer; transition: border-color .18s var(--ease), box-shadow .18s var(--ease); }
+.sel select:focus { outline: none; border-color: color-mix(in oklab, var(--accent) 55%, var(--border)); box-shadow: 0 0 0 3px color-mix(in oklab, var(--accent) 18%, transparent); }
+.sel select:disabled { opacity: 1; cursor: not-allowed; -webkit-text-fill-color: currentColor; }
+.sel::after { content: ""; position: absolute; right: 14px; top: 50%; width: 8px; height: 8px; pointer-events: none;
+  border-right: 2px solid var(--muted); border-bottom: 2px solid var(--muted); transform: translateY(-65%) rotate(45deg); }
+.sel.correct select { border-color: color-mix(in oklab, var(--pass) 60%, var(--border)); box-shadow: 0 0 0 3px color-mix(in oklab, var(--pass) 15%, transparent); }
+.sel.wrong select { border-color: color-mix(in oklab, var(--fail) 60%, var(--border)); box-shadow: 0 0 0 3px color-mix(in oklab, var(--fail) 14%, transparent); }
+.verdict { font-size: 11.5px; font-weight: 600; line-height: 1.45; margin-top: 4px; display: none;
+  opacity: 0; transform: translateY(-3px); transition: opacity .25s var(--ease), transform .25s var(--ease); }
+.slot.graded.ok .verdict.ok { display: block; color: var(--pass); }
+.slot.graded.no .verdict.no { display: block; color: var(--fail); }
+.verdict.in { opacity: 1; transform: none; }
+.verdict b { font-family: ui-monospace, Menlo, monospace; font-weight: 700; }
+
+.actions { display: flex; gap: 10px; }
+.btn { font: inherit; font-size: 13.5px; font-weight: 700; border-radius: 11px; padding: 12px 18px; cursor: pointer;
+  transition: transform .15s var(--ease), filter .15s var(--ease), background-color .18s var(--ease); border: 1px solid transparent; }
+.btn:active { transform: scale(0.97); }
+.btn-primary { background: var(--accent); color: var(--on-accent); border-color: var(--accent-deep); flex: 1; }
+.btn-ghost { background: transparent; color: var(--accent); border-color: color-mix(in oklab, var(--accent) 30%, var(--border)); }
+@media (hover: hover) and (pointer: fine) {
+  .btn-primary:hover { filter: brightness(1.05); }
+  .btn-ghost:hover { background: color-mix(in oklab, var(--accent) 8%, transparent); }
+  .btn-white:hover { filter: brightness(0.96); }
+}
+
+.result { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 18px; text-align: center;
+  display: none; opacity: 0; transform: translateY(10px) scale(0.99); transition: opacity .38s var(--ease), transform .38s var(--ease); }
+.result.show { display: block; }
+.result.in { opacity: 1; transform: none; }
+.score-fig { font-family: Fraunces, Georgia, serif; font-weight: 600; font-size: 62px; line-height: 1; letter-spacing: -0.03em;
+  font-variant-numeric: lining-nums tabular-nums; font-feature-settings: "lnum","tnum"; color: var(--ink);
+  opacity: 0; transform: scale(0.96); transition: opacity .5s var(--ease) .08s, transform .5s var(--ease) .08s; }
+.result.in .score-fig { opacity: 1; transform: none; }
+.score-cap { margin-top: 9px; font-size: 11.5px; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase; color: var(--muted); }
+.score-sub { margin-top: 12px; font-size: 13px; color: var(--ink-soft); line-height: 1.5; }
+.effnote { margin-top: 13px; text-align: left; font-size: 12px; line-height: 1.5; color: var(--ink-soft);
+  background: var(--surface-2); border: 1px solid var(--border-soft); border-radius: 12px; padding: 12px 13px; }
+.effnote .h { font-size: 10px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+.effnote code { font-family: ui-monospace, Menlo, monospace; font-size: 11px; background: color-mix(in oklab, var(--ink) 6%, transparent); border-radius: 5px; padding: 1px 5px; }
+.portresult { font-size: 12px; line-height: 1.55; padding: 2px 0; opacity: 0; transform: translateY(4px); animation: portRowIn .32s var(--ease) forwards; }
+.portresult.ok { color: var(--pass); }
+.portresult.no { color: var(--fail); }
+.portresult b { font-family: ui-monospace, Menlo, monospace; font-weight: 700; }
+.portresult:nth-child(1) { animation-delay: .05s; }
+.portresult:nth-child(2) { animation-delay: .09s; }
+.portresult:nth-child(3) { animation-delay: .13s; }
+.portresult:nth-child(4) { animation-delay: .17s; }
+.portresult:nth-child(5) { animation-delay: .21s; }
+.portresult:nth-child(6) { animation-delay: .25s; }
+.portresult:nth-child(7) { animation-delay: .29s; }
+.portresult:nth-child(8) { animation-delay: .33s; }
+@keyframes portRowIn { to { opacity: 1; transform: none; } }
+
+.pro { margin-top: 18px; text-align: left; background: var(--accent); color: var(--on-accent); border-radius: 16px; padding: 18px 18px 16px; }
+.pro .pe { font-size: 10px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; opacity: .82; }
+.pro h3 { font-family: Fraunces, Georgia, serif; font-weight: 600; font-size: 21px; letter-spacing: -0.02em; line-height: 1.12; margin: 7px 0 8px; }
+.pro p { font-size: 12.5px; line-height: 1.5; opacity: .92; margin-bottom: 14px; }
+.btn-white { background: var(--on-accent); color: var(--accent); border: none; width: 100%; }
+.freestate { margin-top: 13px; font-size: 12px; color: var(--muted); font-weight: 600; }
+
+.reveal { opacity: 0; transform: translateY(14px); transition: opacity .5s var(--ease), transform .5s var(--ease); }
+.reveal.vis { opacity: 1; transform: none; }
+
+/* ── NEW: switch faceplate / port-grid (Wave 3, Switch Port-Map archetype) ── */
+.faceplate-body { padding: 14px 16px 6px; }
+.portgrid { display: flex; flex-wrap: wrap; gap: 8px; transition: opacity .26s var(--ease), filter .26s var(--ease); }
+.portgrid.grid-refresh { opacity: .5; filter: blur(2px); }
+.portcol { display: flex; flex-direction: column; gap: 6px; }
+
+.port { box-sizing: border-box; width: 40px; height: 52px; display: flex; flex-direction: column; align-items: center;
+  justify-content: flex-end; gap: 5px; padding: 6px 4px 5px; border-radius: 9px; border: 1px solid var(--border);
+  background: var(--surface-2); position: relative; font: inherit; }
+button.port { cursor: pointer; transition: transform .15s var(--ease), border-color .18s var(--ease), background-color .18s var(--ease), box-shadow .18s var(--ease); }
+button.port:active { transform: scale(.95); }
+button.port.selectable { border-color: color-mix(in oklab, var(--accent) 38%, var(--border)); }
+button.port:focus-visible { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in oklab, var(--accent) 24%, transparent); }
+@media (hover: hover) and (pointer: fine) {
+  button.port.selectable:not(.active):hover { background: color-mix(in oklab, var(--accent) 8%, var(--surface-2)); }
+}
+.port.active { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in oklab, var(--accent) 18%, transparent); }
+.port.just-saved { box-shadow: 0 0 0 5px color-mix(in oklab, var(--pass) 32%, transparent); }
+/* the grid rebuilds from scratch on selection, so newly-active ports have no prior frame to transition
+   from — @starting-style gives the freshly-inserted button a from-state to animate out of, instead of
+   the selection ring just appearing instantly */
+@starting-style {
+  .port.active { box-shadow: 0 0 0 0 transparent; transform: scale(.92); }
+}
+.port .pled { width: 16px; height: 5px; border-radius: 3px; background: color-mix(in oklab, var(--muted) 40%, transparent); }
+.port .pnum { font-family: ui-monospace, Menlo, monospace; font-size: 10px; font-weight: 700; color: var(--muted); }
+.port.led-up .pled { background: var(--pass); }
+.port.led-up .pnum { color: var(--ink-soft); }
+.port.led-fault .pled { background: var(--fail); animation: ledPulse 1.15s var(--ease) infinite; }
+.port.led-fault .pnum { color: var(--fail); font-weight: 800; }
+.port .badge { position: absolute; top: -4px; right: -4px; width: 9px; height: 9px; border-radius: 50%;
+  background: var(--accent); border: 2px solid var(--surface); }
+.port.configured .badge { display: none; }
+@keyframes ledPulse { 0%, 100% { opacity: 1; } 50% { opacity: .35; } }
+@media (max-width: 480px) {
+  .port { width: 34px; height: 46px; }
+  .portgrid { gap: 6px; }
+  .portcol { gap: 4px; }
+}
+
+.legend { display: flex; flex-wrap: wrap; gap: 14px; padding: 10px 16px 14px; font-size: 11px; font-weight: 600; color: var(--muted); }
+.legend .li { display: flex; align-items: center; gap: 6px; }
+.legend .dot { width: 9px; height: 9px; border-radius: 50%; flex: none; }
+.legend .dot.up { background: var(--pass); }
+.legend .dot.down { background: color-mix(in oklab, var(--muted) 45%, transparent); }
+.legend .dot.fault { background: var(--fail); }
+
+.pcard-empty, .term-empty { padding: 26px 16px; color: var(--muted); font-size: 12px; text-align: center; font-style: italic; line-height: 1.5;
+  border: 1px dashed var(--border); border-radius: 12px; }
+.pcard-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
+.pcard-head .pname { font-family: ui-monospace, Menlo, monospace; font-weight: 800; font-size: 14px; color: var(--ink); }
+.pcard-head .pdev { font-size: 11.5px; color: var(--muted); font-weight: 600; text-align: right; }
+.toggle2 { display: flex; gap: 8px; }
+.toggle2 button { flex: 1; font: inherit; font-size: 12.5px; font-weight: 700; padding: 10px; border-radius: 10px;
+  border: 1px solid var(--border); background: var(--surface-2); color: var(--ink-soft); cursor: pointer;
+  transition: border-color .18s var(--ease), background-color .18s var(--ease), color .18s var(--ease), transform .15s var(--ease); }
+.toggle2 button:active { transform: scale(.96); }
+.toggle2 button[aria-pressed="true"] { border-color: color-mix(in oklab, var(--accent) 55%, var(--border));
+  background: color-mix(in oklab, var(--accent) 12%, var(--surface-2)); color: var(--accent-deep); }
+.toggle2 button:focus-visible { outline: none; box-shadow: 0 0 0 3px color-mix(in oklab, var(--accent) 22%, transparent); }
+@media (hover: hover) and (pointer: fine) {
+  .toggle2 button:not([aria-pressed="true"]):hover { border-color: color-mix(in oklab, var(--accent) 30%, var(--border)); background: color-mix(in oklab, var(--accent) 6%, var(--surface-2)); }
+}
+.pcard-warn { font-size: 11.5px; color: var(--fail); font-weight: 600; margin-top: 9px; min-height: 14px;
+  opacity: 0; transform: translateY(-2px); transition: opacity .2s var(--ease), transform .2s var(--ease); }
+.pcard-warn.shown { opacity: 1; transform: none; }
+.pcard-actions { display: flex; gap: 8px; margin-top: 13px; }
+.progress-line { font-size: 11.5px; color: var(--muted); font-weight: 600; margin-top: 13px; line-height: 1.45; }
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal, .qcard, .verdict, .result, .score-fig, .pcard-warn, .portgrid { transition-property: opacity !important; transform: none !important; filter: none !important; }
+  .reveal { opacity: 1 !important; }
+  .btn:active, .theme-btn:active, button.port:active, .toggle2 button:active { transform: none; }
+  .port.led-fault .pled { animation: none; }
+  .portresult { animation: none !important; opacity: 1 !important; transform: none !important; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="topbar">
+    <div class="brand">
+      <svg viewBox="0 0 40 40" fill="none" aria-hidden="true">
+        <path d="M27 11.5a11 11 0 1 0 0 17" stroke="var(--accent)" stroke-width="7" stroke-linecap="round"/>
+        <path d="M13 28 27 12" stroke="var(--accent)" stroke-width="5" stroke-linecap="round" opacity="0.55"/>
+        <path d="M14 28.5a11 11 0 0 1 0-17" stroke="var(--accent)" stroke-width="7" stroke-linecap="round"/>
+      </svg>
+      <div><b>CertAnvil</b> &nbsp;<span class="sub">Sim Lab · Switch Port-Map Grid</span></div>
+    </div>
+    <button class="theme-btn" id="themeBtn">Dark</button>
+  </div>
+
+  <div class="scn-head reveal" style="transition-delay:.04s">
+    <div class="eyebrow">Network+ N10-009 · Objective 2.4 · Configure switching features (VLANs, PoE)</div>
+    <h1 class="scn-title">Six ports, one ticket, and a camera that trips the moment it goes live</h1>
+    <p class="scn-prose">Meridian Dental is standing up floor 2 before Monday's opening. Six ports need real assignments: two workstations, a desk phone, a guest kiosk, and two security cameras. Click each highlighted port to open its assignment card, get the VLAN and power right, then find and call the fault on the one port that won't hold.</p>
+    <div class="metstrip">
+      <span class="met"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/><path d="M12 7v5l3 2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span class="timer" id="timer">00:00</span></span>
+      <span class="met"><svg viewBox="0 0 24 24" fill="none"><path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>Net+ N10-009 · 14 pts</span>
+      <span class="met"><svg viewBox="0 0 24 24" fill="none"><path d="M12 3l8 4v5c0 4.5-3.5 7.5-8 9-4.5-1.5-8-4.5-8-9V7l8-4z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>Practice mode</span>
+      <span class="fixtag">Dev fixture · not gated content</span>
+    </div>
+  </div>
+
+  <div class="split">
+
+    <!-- LEFT: faceplate is the star + ticket -->
+    <div class="panel reveal" style="transition-delay:.08s">
+      <div class="panel-head">
+        <span class="lbl">Switch faceplate · SW-CORE1 · 24 ports</span>
+        <span class="zoomhint">click a highlighted port</span>
+      </div>
+
+      <div class="faceplate-body">
+        <div class="portgrid" id="portgrid" role="group" aria-label="SW-CORE1 24-port faceplate"></div>
+      </div>
+
+      <div class="legend">
+        <span class="li"><span class="dot up"></span>Link up</span>
+        <span class="li"><span class="dot down"></span>Down / unused</span>
+        <span class="li"><span class="dot fault"></span>PoE fault</span>
+      </div>
+
+      <div class="given">
+        <div class="row"><span class="k">Gi0/1</span><span class="v">Front desk workstation (data only)</span></div>
+        <div class="row"><span class="k">Gi0/2</span><span class="v">Ops manager workstation (data only)</span></div>
+        <div class="row"><span class="k">Gi0/5</span><span class="v">Reception desk phone (needs inline power)</span></div>
+        <div class="row"><span class="k">Gi0/8</span><span class="v">Lobby PTZ camera (needs inline power)</span></div>
+        <div class="row"><span class="k">Gi0/12</span><span class="v">Guest kiosk tablet dock (locally powered)</span></div>
+        <div class="row"><span class="k">Gi0/18</span><span class="v">Hallway dome camera (needs inline power)</span></div>
+        <div class="row"><span class="k">VLAN plan</span><span class="v"><code>VLAN 10</code> Data · <code>VLAN 20</code> Voice · <code>VLAN 30</code> Guest · <code>VLAN 40</code> Security</span></div>
+        <div class="row"><span class="k">PoE rule</span><span class="v">Power only devices that need inline power: phones and cameras. Workstations and the kiosk are locally powered.</span></div>
+      </div>
+    </div>
+
+    <!-- RIGHT: provision → diagnose -->
+    <div class="rail reveal" style="transition-delay:.12s">
+      <div class="phase-tabs">
+        <div class="ptab on" id="tab1"><span class="n">1</span>Provision</div>
+        <div class="ptab" id="tab2"><span class="n">2</span>Diagnose &amp; fix</div>
+      </div>
+
+      <!-- PHASE 1: port-by-port assignment card -->
+      <div class="qcard" id="phase1">
+        <div class="step-kick">Step 1 of 2 · Provision</div>
+        <div class="q">Work the ticket. Click each highlighted port and set it up.</div>
+        <div class="qhint">Every highlighted port on the faceplate needs a VLAN and a power setting. Open a port, pick both, then save. Order doesn't matter, and you can reopen a saved port to change it.</div>
+        <div id="pcardHost"></div>
+        <p class="progress-line" id="provProgress" aria-live="polite">0 of 6 ports configured.</p>
+      </div>
+
+      <!-- PHASE 2: single-select the fault, then diagnose -->
+      <div class="qcard" id="phase2" style="display:none">
+        <div class="step-kick">Step 2 of 2 · Diagnose the fault</div>
+        <div class="q">One of the ports you just provisioned has faulted. Click it.</div>
+        <div class="qhint">The LED tells you everything you need. Find the port showing the fault, click it, then name the cause and the fix.</div>
+        <div class="pcard-empty" id="diagLocked">No port selected yet. Find the port with the fault LED and click it to open the diagnosis form.</div>
+        <div id="diagForm" style="display:none">
+          <div class="pcard-head"><span class="pname" id="diagPortName"></span><span class="pdev" id="diagPortDev"></span></div>
+          <div class="slot" data-answer="poe_budget">
+            <label for="rcSel">Root cause</label>
+            <div class="sel"><select id="rcSel">
+              <option value="">Select the root cause…</option>
+              <option value="vlan_wrong">The camera landed in the wrong VLAN</option>
+              <option value="duplex">Duplex mismatch between the camera and the switch port</option>
+              <option value="poe_budget">PoE overcurrent: the camera's power draw exceeds the port's negotiated power class</option>
+              <option value="cable">A miswired patch cable is dropping the link</option>
+            </select></div>
+            <p class="verdict ok">Correct. The port negotiated a PoE class the camera's actual draw exceeds, so the switch shut the port down to protect itself. VLAN, duplex, and cabling all check out clean.</p>
+            <p class="verdict no">Look again. VLAN 40 and the cable both check out, and duplex is fine too. The fault only shows up as a <b>PoE overcurrent</b>: the camera is pulling more power than the port's class allows.</p>
+          </div>
+          <div class="slot" data-answer="realloc_poe">
+            <label for="fxSel">Best fix</label>
+            <div class="sel"><select id="fxSel">
+              <option value="">Select the fix…</option>
+              <option value="swap_cable">Swap the patch cable and retest</option>
+              <option value="realloc_poe">Move the camera to a port with a higher PoE power budget (802.3at or better)</option>
+              <option value="change_vlan">Change the port's VLAN assignment</option>
+              <option value="force_half">Force the port to half duplex</option>
+            </select></div>
+            <p class="verdict ok">Right. Reallocating the port to a higher PoE class, or moving the camera to a port that can deliver it, raises the power budget so the camera gets what it actually needs.</p>
+            <p class="verdict no">Correct answer: <b>move the camera to a higher PoE power budget</b>. The cable and VLAN were never the problem, so touching either wastes a truck roll.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="actions" id="actions">
+        <button class="btn btn-primary" id="primary">Lock in provisioning</button>
+      </div>
+
+      <!-- RESULT -->
+      <div class="result" id="result">
+        <div class="score-fig" id="scoreFig">0/14</div>
+        <div class="score-cap" id="scoreCap">fields correct · 0%</div>
+        <p class="score-sub" id="scoreSub"></p>
+        <div class="effnote" id="effnote">
+          <div class="h">Port-by-port breakdown</div>
+          <div id="effbody"></div>
+        </div>
+
+        <div class="pro">
+          <div class="pe">CertAnvil Pro</div>
+          <h3>Provision the floor, then catch what breaks it.</h3>
+          <p>You just worked a live ticket: six ports to provision and a PoE fault to run down on a real 24-port faceplate. Pro opens unlimited port-map, wiremap, and cable-fault labs across Network+ and A+, timed Exam mode, and weak-spot tracking pinned to the exact fields you keep missing.</p>
+          <button class="btn btn-white" id="goPro">Go Pro</button>
+        </div>
+
+        <div class="freestate" id="freestate">That was today's free PBQ. The next one unlocks in 22h.</div>
+        <div class="actions" style="margin-top:12px;justify-content:center">
+          <button class="btn btn-ghost" id="again">Review this scenario</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!--
+  DEV FIXTURE ONLY: not gated content.
+  Single embedded scenario: Meridian Dental floor-2 build-out on SW-CORE1 (24-port).
+  Six ports to provision: Gi0/1 workstation (VLAN10/no PoE), Gi0/2 workstation (VLAN10/no PoE),
+  Gi0/5 desk phone (VLAN20/PoE), Gi0/8 PTZ camera (VLAN40/PoE), Gi0/12 guest kiosk (VLAN30/no PoE),
+  Gi0/18 dome camera (VLAN40/PoE). Fault = PoE overcurrent on Gi0/8 (a correctly-VLANed, correctly-PoE-enabled
+  port whose camera simply draws more than the port's negotiated class); fix = reallocate to a higher PoE
+  power budget. Gi0/18 shares VLAN 40 and PoE on but stays healthy, so the fault reads as power, not VLAN.
+-->
+
+<script>
+const root = document.documentElement, tb = document.getElementById('themeBtn');
+tb.onclick = () => { const d = root.getAttribute('data-theme') === 'dark'; root.setAttribute('data-theme', d ? 'light' : 'dark'); tb.textContent = d ? 'Dark' : 'Light'; };
+
+requestAnimationFrame(() => document.querySelectorAll('.reveal').forEach(e => e.classList.add('vis')));
+
+let t = 0; const tEl = document.getElementById('timer');
+setInterval(() => { t++; tEl.textContent = String(Math.floor(t/60)).padStart(2,'0') + ':' + String(t%60).padStart(2,'0'); }, 1000);
+
+function escHtml(s){ return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+/* ── reference contract fixture: kind:'faceplate' ──
+   assets.reference = { kind:'faceplate', host:'SW-CORE1 · 24-port', ports:[{id,label,led,select}] } */
+const TICKET = {
+  'gi0-1':  { label: 'Gi0/1',  device: 'Front desk workstation',       vlan: '10', poe: false },
+  'gi0-2':  { label: 'Gi0/2',  device: 'Ops manager workstation',      vlan: '10', poe: false },
+  'gi0-5':  { label: 'Gi0/5',  device: 'Reception desk phone',         vlan: '20', poe: true  },
+  'gi0-8':  { label: 'Gi0/8',  device: 'Lobby PTZ camera',             vlan: '40', poe: true  },
+  'gi0-12': { label: 'Gi0/12', device: 'Guest kiosk tablet dock',      vlan: '30', poe: false },
+  'gi0-18': { label: 'Gi0/18', device: 'Hallway dome camera',          vlan: '40', poe: true  }
+};
+const TICKET_ORDER = ['gi0-1', 'gi0-2', 'gi0-5', 'gi0-8', 'gi0-12', 'gi0-18'];
+const VLANS = [
+  { v: '10', label: 'VLAN 10 · Data' },
+  { v: '20', label: 'VLAN 20 · Voice' },
+  { v: '30', label: 'VLAN 30 · Guest' },
+  { v: '40', label: 'VLAN 40 · Security' }
+];
+const FAULT_PORT = 'gi0-8';
+// baseline LEDs for the 18 non-ticket ports on an otherwise-live 24-port switch
+const FIXED_LED = { 3:'up', 4:'down', 6:'up', 7:'up', 9:'down', 10:'up', 11:'up', 13:'down', 14:'up', 15:'up', 16:'down', 17:'up', 19:'up', 20:'down', 21:'up', 22:'up', 23:'down', 24:'up' };
+
+function buildReference(){
+  const ports = [];
+  for (let n = 1; n <= 24; n++) {
+    const id = 'gi0-' + n;
+    if (TICKET[id]) ports.push({ id, label: 'Gi0/' + n, led: 'down', select: true });
+    else ports.push({ id, label: 'Gi0/' + n, led: FIXED_LED[n] || 'down', select: false });
+  }
+  return { kind: 'faceplate', host: 'SW-CORE1 · 24-port', ports };
+}
+const REF = buildReference();
+const PORT_STATE = {};
+REF.ports.forEach(p => { PORT_STATE[p.id] = { led: p.led, select: p.select }; });
+
+const PORT_ANSWERS = {};
+let activePort = null;
+let draft = { vlan: '', poe: null };
+let stage = 'provision'; // provision -> diagnose -> done
+let diagSelected = null;
+
+function ariaLabelFor(id){
+  const t = TICKET[id];
+  if (stage === 'provision') {
+    return 'Port ' + t.label + ', ' + (PORT_ANSWERS[id] ? 'configured. Click to edit.' : 'needs configuration. Click to configure.');
+  }
+  if (stage === 'diagnose' && id === FAULT_PORT) {
+    return 'Port ' + t.label + ', fault detected. Click to diagnose.';
+  }
+  return 'Port ' + t.label;
+}
+
+function makePortEl(id){
+  const st = PORT_STATE[id];
+  const num = id.split('-')[1];
+  let el;
+  if (st.select) {
+    el = document.createElement('button');
+    el.type = 'button';
+    el.className = 'port selectable';
+    el.dataset.port = id;
+    el.setAttribute('aria-label', ariaLabelFor(id));
+  } else {
+    el = document.createElement('div');
+    el.className = 'port';
+    el.setAttribute('aria-hidden', 'true');
+  }
+  if (st.led === 'up') el.classList.add('led-up');
+  if (st.led === 'poe-fault') el.classList.add('led-fault');
+  if (PORT_ANSWERS[id]) el.classList.add('configured');
+  if (activePort === id || diagSelected === id) el.classList.add('active');
+
+  const led = document.createElement('span'); led.className = 'pled';
+  const pnum = document.createElement('span'); pnum.className = 'pnum'; pnum.textContent = num;
+  el.appendChild(led); el.appendChild(pnum);
+  if (st.select && stage === 'provision' && !PORT_ANSWERS[id]) {
+    const badge = document.createElement('span'); badge.className = 'badge'; el.appendChild(badge);
+  }
+  return el;
+}
+
+function renderGrid(){
+  const grid = document.getElementById('portgrid');
+  grid.innerHTML = '';
+  for (let col = 1; col <= 12; col++) {
+    const colDiv = document.createElement('div');
+    colDiv.className = 'portcol';
+    colDiv.appendChild(makePortEl('gi0-' + (2 * col - 1)));
+    colDiv.appendChild(makePortEl('gi0-' + (2 * col)));
+    grid.appendChild(colDiv);
+  }
+}
+
+function renderPcard(){
+  const host = document.getElementById('pcardHost');
+  if (!activePort) {
+    host.innerHTML = '<div class="pcard-empty">No port selected yet. Click a highlighted port on the faceplate to open its assignment card.</div>';
+    return;
+  }
+  const id = activePort, t = TICKET[id], saved = PORT_ANSWERS[id];
+  const vlanVal = draft.vlan || (saved ? saved.vlan : '');
+  const poeVal = draft.poe !== null ? draft.poe : (saved ? saved.poe : null);
+  host.innerHTML =
+    '<div class="pcard-head"><span class="pname">' + escHtml(t.label) + '</span><span class="pdev">' + escHtml(t.device) + '</span></div>' +
+    '<div class="slot" style="margin-bottom:12px">' +
+      '<label for="pcVlan">VLAN</label>' +
+      '<div class="sel"><select id="pcVlan"><option value="">Select VLAN…</option>' +
+      VLANS.map(v => '<option value="' + v.v + '"' + (vlanVal === v.v ? ' selected' : '') + '>' + escHtml(v.label) + '</option>').join('') +
+      '</select></div>' +
+    '</div>' +
+    '<div class="slot" style="margin-bottom:0">' +
+      '<label id="pcPoeLbl">Power (PoE)</label>' +
+      '<div class="toggle2" role="group" aria-labelledby="pcPoeLbl">' +
+        '<button type="button" data-poe="off" aria-pressed="' + (poeVal === false) + '">PoE off</button>' +
+        '<button type="button" data-poe="on" aria-pressed="' + (poeVal === true) + '">PoE on</button>' +
+      '</div>' +
+    '</div>' +
+    '<p class="pcard-warn" id="pcWarn" aria-live="polite"></p>' +
+    '<div class="pcard-actions">' +
+      '<button class="btn btn-primary" id="pcSave" type="button">Save port</button>' +
+      '<button class="btn btn-ghost" id="pcCancel" type="button">Close</button>' +
+    '</div>';
+}
+
+function updateProgress(){
+  const n = Object.keys(PORT_ANSWERS).length;
+  document.getElementById('provProgress').textContent = n + ' of 6 ports configured.' + (n < 6 ? '' : ' All set, lock in when ready.');
+}
+
+function openPortCard(id){
+  activePort = id; draft = { vlan: '', poe: null };
+  renderPcard(); renderGrid();
+  const sel = document.getElementById('pcVlan');
+  if (sel) sel.focus();
+}
+
+function savePort(){
+  const vlan = document.getElementById('pcVlan').value;
+  const poe = draft.poe;
+  if (!vlan || poe === null) {
+    const warn = document.getElementById('pcWarn');
+    warn.textContent = 'Pick both a VLAN and a power setting before saving.';
+    // retrigger the fade-in even if the warning is already showing (repeated invalid save clicks)
+    warn.classList.remove('shown');
+    void warn.offsetWidth;
+    warn.classList.add('shown');
+    return;
+  }
+  const id = activePort;
+  PORT_ANSWERS[id] = { vlan, poe };
+  PORT_STATE[id].led = 'up';
+  activePort = null; draft = { vlan: '', poe: null };
+  renderPcard(); renderGrid(); updateProgress();
+  requestAnimationFrame(() => {
+    const el = document.querySelector('[data-port="' + id + '"]');
+    if (!el) return;
+    el.focus();
+    el.classList.add('just-saved');
+    setTimeout(() => el.classList.remove('just-saved'), 550);
+  });
+}
+
+document.getElementById('pcardHost').addEventListener('click', e => {
+  const tbtn = e.target.closest('.toggle2 button');
+  if (tbtn) { draft.poe = tbtn.dataset.poe === 'on'; renderPcard(); return; }
+  if (e.target.id === 'pcSave') { savePort(); return; }
+  if (e.target.id === 'pcCancel') { activePort = null; draft = { vlan: '', poe: null }; renderPcard(); renderGrid(); return; }
+});
+document.getElementById('pcardHost').addEventListener('change', e => {
+  if (e.target.id === 'pcVlan') draft.vlan = e.target.value;
+});
+
+function selectFaultPort(id){
+  diagSelected = id;
+  document.getElementById('diagLocked').style.display = 'none';
+  document.getElementById('diagForm').style.display = 'block';
+  document.getElementById('diagPortName').textContent = TICKET[id].label;
+  document.getElementById('diagPortDev').textContent = TICKET[id].device;
+  renderGrid();
+}
+
+document.getElementById('portgrid').addEventListener('click', e => {
+  const btn = e.target.closest('.port.selectable'); if (!btn) return;
+  const id = btn.dataset.port;
+  if (stage === 'provision') openPortCard(id);
+  else if (stage === 'diagnose' && id === FAULT_PORT && !diagSelected) selectFaultPort(id);
+});
+
+renderGrid(); renderPcard();
+
+const primary = document.getElementById('primary');
+const p1 = document.getElementById('phase1'), p2 = document.getElementById('phase2');
+const tab1 = document.getElementById('tab1'), tab2 = document.getElementById('tab2');
+let tally = { total: 0, correct: 0 };
+
+function gradeSlots(scope){
+  let total = 0, correct = 0;
+  scope.querySelectorAll('.slot').forEach(slot => {
+    total++;
+    const sel = slot.querySelector('select'), got = sel.value, want = slot.dataset.answer;
+    const wrap = slot.querySelector('.sel');
+    const ok = got === want;
+    if (ok) correct++;
+    slot.classList.add('graded', ok ? 'ok' : 'no');
+    wrap.classList.add(ok ? 'correct' : 'wrong');
+    sel.disabled = true;
+    const v = slot.querySelector(ok ? '.verdict.ok' : '.verdict.no');
+    requestAnimationFrame(() => requestAnimationFrame(() => v.classList.add('in')));
+  });
+  return { total, correct };
+}
+
+function swapPhase(outEl, inEl, after){
+  outEl.classList.add('leaving');
+  setTimeout(() => {
+    outEl.style.display = 'none'; outEl.classList.remove('leaving');
+    inEl.style.display = 'block'; inEl.classList.add('entering');
+    requestAnimationFrame(() => requestAnimationFrame(() => { inEl.classList.remove('entering'); after && after(); }));
+  }, 220);
+}
+
+function buildEffnote(){
+  const rows = TICKET_ORDER.map(id => {
+    const want = TICKET[id], got = PORT_ANSWERS[id];
+    const vlanOk = !!got && got.vlan === want.vlan;
+    const poeOk = !!got && got.poe === want.poe;
+    let cls, note;
+    if (!got) { cls = 'no'; note = 'not configured'; }
+    else if (vlanOk && poeOk) { cls = 'ok'; note = 'VLAN and power both correct'; }
+    else if (vlanOk) { cls = 'no'; note = 'VLAN correct, power wrong'; }
+    else if (poeOk) { cls = 'no'; note = 'power correct, VLAN wrong'; }
+    else { cls = 'no'; note = 'VLAN and power both wrong'; }
+    return '<div class="portresult ' + cls + '"><b>' + escHtml(want.label) + '</b> · ' + escHtml(want.device) + ': ' + note + '</div>';
+  });
+  const rc = document.getElementById('rcSel'), fx = document.getElementById('fxSel');
+  const rcOk = !!rc && rc.value === 'poe_budget';
+  const fxOk = !!fx && fx.value === 'realloc_poe';
+  rows.push('<div class="portresult ' + (rcOk ? 'ok' : 'no') + '"><b>Root cause</b> · ' + (rcOk ? 'called correctly' : 'missed, it was PoE overcurrent') + '</div>');
+  rows.push('<div class="portresult ' + (fxOk ? 'ok' : 'no') + '"><b>Fix</b> · ' + (fxOk ? 'called correctly' : 'missed, the fix was to reallocate PoE budget') + '</div>');
+  return rows.join('');
+}
+
+primary.onclick = () => {
+  if (stage === 'provision') {
+    TICKET_ORDER.forEach(id => {
+      const want = TICKET[id], got = PORT_ANSWERS[id];
+      tally.total += 2;
+      if (got) {
+        if (got.vlan === want.vlan) tally.correct++;
+        if (got.poe === want.poe) tally.correct++;
+      }
+    });
+    stage = 'diagnose';
+    tab1.classList.add('done'); tab1.classList.remove('on'); tab2.classList.add('on');
+    TICKET_ORDER.forEach(id => {
+      PORT_STATE[id].led = (id === FAULT_PORT) ? 'poe-fault' : 'up';
+      PORT_STATE[id].select = (id === FAULT_PORT);
+    });
+    // brief cross-fade masks the six-port LED swap so it reads as one deliberate update, not a jump-cut
+    const grid = document.getElementById('portgrid');
+    grid.classList.add('grid-refresh');
+    renderGrid();
+    requestAnimationFrame(() => setTimeout(() => grid.classList.remove('grid-refresh'), 140));
+    primary.textContent = 'Check my work';
+    swapPhase(p1, p2);
+  } else if (stage === 'diagnose') {
+    const r = gradeSlots(p2); tally.total += r.total; tally.correct += r.correct;
+    stage = 'done'; tab2.classList.add('done');
+    primary.textContent = 'See result';
+  } else {
+    document.getElementById('actions').style.display = 'none';
+    p2.classList.add('leaving');
+    const pct = Math.round(tally.correct / tally.total * 100);
+    document.getElementById('scoreFig').textContent = tally.correct + '/' + tally.total;
+    document.getElementById('scoreCap').textContent = 'fields correct · ' + pct + '%';
+    document.getElementById('scoreSub').textContent = pct === 100
+      ? 'Every port matches the ticket and you called the fault clean on the first read.'
+      : 'Check the breakdown below for exactly which VLAN, power, or diagnosis call to revisit. Provisioning and diagnosis are scored separately, so credit from one holds even if the other slipped.';
+    document.getElementById('effbody').innerHTML = buildEffnote();
+    const res = document.getElementById('result');
+    res.classList.add('show');
+    requestAnimationFrame(() => requestAnimationFrame(() => res.classList.add('in')));
+  }
+};
+
+document.getElementById('again')?.addEventListener('click', () => location.reload());
+</script>
+
+<!--
+  ── ENGINE-MAPPING CONSCIOUSNESS (Wave 3 build plan is written against this) ──
+  This mockup exercises the FIRST of Wave 3's two new interactive reference kinds
+  (kind:'faceplate') plus existing step types. It does NOT touch 'wiremap' or 'slots'
+  (those are the sibling Wave 3 archetypes, built as their own mockups).
+
+  NEW renderer (_slRenderRefFaceplate):
+    assets.reference = {
+      kind: 'faceplate',
+      host: 'SW-CORE1 · 24-port',
+      ports: [
+        { id:'gi0-1', label:'Gi0/1', led:'up'|'down'|'err-disabled'|'poe-fault', select: true|false }
+        ... one entry per physical port, 24 here (12-24 typical)
+      ]
+    }
+    Selectable ports (select:true) render as real <button>s in a column-paired grid
+    (odd port on top, even below, matching physical faceplate layout) so they can be
+    keyboard-focused and bound by mode:'facePorts' exactly like mode:'excerptLines'
+    binds '.term-line' buttons in the Wave 2 terminal renderer. Non-selectable ports
+    render as inert, aria-hidden divs (they exist only for faceplate realism, never
+    a scoring target). LED state alone must fully signal the fault (no hidden data);
+    this mockup's legend documents what each LED color means for that reason.
+
+  Ride EXISTING + Wave-2-established step types (no new binding mechanism):
+    - Provision (Step 1) = a 'configure' step, one slot pair per ticket port
+      (<portId>__vlan, <portId>__poe), keyed options, per-slot partial credit via the
+      existing _scoreConfigureSlots. The mockup's inline assignment card is the visual
+      lift of that configure step, opened per-port instead of shown as one long form.
+    - Diagnose (Step 2) = an 'analyze' step in mode:'facePorts', multi:false (single-select) -
+      the candidate must click the faulted port before the rootCause/fix 'configure' step
+      unlocks, same two-step diagnose shape as Wave 2's CLI archetype (click evidence,
+      then answer), just via a clicked port instead of a clicked terminal line.
+
+  Validator sketch: simLabValidatePortMapFidelity(scn)
+    - assert every keyed provision slot (VLAN + PoE) matches that port's ticket requirement
+      (the TICKET table above is that per-port requirement shape, mirroring scn.disco.ports);
+    - assert the keyed faulty port's led state genuinely and uniquely signals the keyed
+      rootCause/fix via a fault-signature table (mirrors _CLI_FAULT_SIG), mutation-checked
+      so no other port's led/VLAN/PoE combination could also match the keyed diagnosis
+      (Gi0/18 in this fixture shares VLAN 40 and PoE-on with the faulted Gi0/8 specifically
+      to prove the fault reads as power, not VLAN, and must stay a clean 'up' LED).
+-->
+</body>
+</html>
