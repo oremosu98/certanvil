@@ -21347,6 +21347,83 @@ console.log('\n\x1b[1m── T7: DRILLS ANALYTICS GROUP + FINAL COPY + BRONZE TO
   test('faceplate: select:false ports render as inert aria-hidden divs, not buttons', inertEls.length === 1);
 })();
 
+// ── Wave 3 Task 3: wiremap reference renderer + wiremapPins analyze mode ──
+(function () {
+  var grab = function (name) { return _fnBody(js, name); };
+  var grabLine = function (name) {
+    var re = new RegExp('function ' + name + '\\([^\\n]*\\)\\s*\\{[^\\n]*\\}');
+    return (js.match(re) || [''])[0];
+  };
+  var elBody = grab('_el'), escBody = grabLine('_esc');
+  var wmBody = grab('_slRenderRefWiremap'), dispBody = grab('_slRenderReference');
+  if (!wmBody || !dispBody) { results.errors.push('could not extract _slRenderRefWiremap/_slRenderReference'); return; }
+
+  var htmlEsc = function (s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  };
+  var makeEl = function (tag) {
+    var attrs = {}, listeners = {}, children = [], cls = '', inner = '';
+    var clsSet = {};
+    var el = {
+      tagName: tag.toUpperCase(),
+      get className() { return cls; }, set className(v) { cls = v; },
+      get innerHTML() { return inner; }, set innerHTML(v) { inner = v; children = []; },
+      get textContent() { return ''; }, set textContent(v) { inner = htmlEsc(v); },
+      style: {},
+      get _children() { return children; },
+      classList: {
+        add: function (c) { clsSet[c] = true; cls = (cls ? cls + ' ' : '') + c; },
+        remove: function (c) { delete clsSet[c]; },
+        toggle: function (c, on) { if (on) clsSet[c] = true; else delete clsSet[c]; },
+        contains: function (c) { return !!clsSet[c]; }
+      },
+      setAttribute: function (k, v) { attrs[k] = v; },
+      getAttribute: function (k) { return (k in attrs) ? attrs[k] : null; },
+      removeAttribute: function (k) { delete attrs[k]; },
+      appendChild: function (c) { children.push(c); return c; },
+      querySelectorAll: function (sel) {
+        var hits = [], want = sel.replace(/^\./, '');
+        var walk = function (n) { (n._children || []).forEach(function (c) {
+          if (!c || !c.tagName) return;
+          if (want.toUpperCase() === c.tagName || (c.className && c.className.split(' ').indexOf(want) !== -1)) hits.push(c);
+          walk(c);
+        }); };
+        walk(el); return hits;
+      },
+      addEventListener: function (ev, fn) { (listeners[ev] = listeners[ev] || []).push(fn); },
+      _fire: function (ev) { (listeners[ev] || []).forEach(function (fn) { fn({}); }); }
+    };
+    return el;
+  };
+  var mCtx = { document: { createElement: makeEl }, Object: Object, Array: Array, String: String };
+  vm.createContext(mCtx);
+  vm.runInContext(elBody + '\n' + escBody + '\n' + wmBody + '\n' + dispBody, mCtx);
+
+  var ref = { kind: 'wiremap', pins: [
+    { pin: 1, pairId: 2, endBPin: 1, select: true },
+    { pin: 2, pairId: 2, endBPin: 3, select: true },
+    { pin: 3, pairId: 3, endBPin: 2, select: true },
+    { pin: 4, pairId: 1, endBPin: 4, select: true },
+    { pin: 5, pairId: 1, endBPin: 5, select: true },
+    { pin: 6, pairId: 3, endBPin: 6, select: true },
+    { pin: 7, pairId: 4, endBPin: null, select: true },
+    { pin: 8, pairId: 4, endBPin: 8, select: true }
+  ] };
+  mCtx.ref = ref;
+  vm.runInContext('globalThis.__panel = _slRenderReference(ref);', mCtx);
+  var panel = mCtx.__panel;
+
+  test('wiremap: _slRenderReference returns a .sl-ref panel for kind wiremap', !!panel && panel.className === 'sl-ref');
+  var pinBtns = panel.querySelectorAll('button').filter(function (b) { return b.className && b.className.indexOf('wm-pin') !== -1; });
+  test('wiremap: all 8 End-A pins render as focusable BUTTONs with data-pin',
+    pinBtns.length === 8 && pinBtns[0].getAttribute('data-pin') === '1');
+  test('wiremap: each selectable pin carries its real pairId as a class',
+    pinBtns[1].className.indexOf('wm-pair-2') !== -1);
+  test('wiremap: the open pin (pin 7) is distinguishable in its End-B rendering',
+    panel.querySelectorAll('.wm-endb')[6].innerHTML.toLowerCase().indexOf('open') !== -1);
+})();
+
 // ── Wave 2 Task 3: guarded analyze extension — mode branch + lenient scoring ──
 (function () {
   var vm = require('vm');

@@ -76,6 +76,9 @@
       else if (ref.kind === 'faceplate' && (!Array.isArray(ref.ports) || !ref.ports.every(function (p) {
         return p && _isNonEmptyStr(p.id) && _isNonEmptyStr(p.label);
       }))) errs.push('reference faceplate: ports[] with id+label required');
+      else if (ref.kind === 'wiremap' && (!Array.isArray(ref.pins) || ref.pins.length !== 8 || !ref.pins.every(function (p) {
+        return p && typeof p.pin === 'number' && typeof p.pairId === 'number';
+      }))) errs.push('reference wiremap: pins[] must have exactly 8 entries with pin+pairId');
       if (ref.kind === 'layered' && ref.layout !== undefined && ['nested', 'stacked'].indexOf(ref.layout) === -1) {
         errs.push('reference layered: bad layout');
       }
@@ -921,6 +924,20 @@
         });
         if (selected.indexOf(id) !== -1 && btn.classList) btn.classList.add('sl-sel');
       });
+    } else if (mode === 'wiremapPins') {
+      // wiremapPins: bind the wiremap's already-rendered End-A pin buttons
+      var wmHost = (window.__slWiremapPanel) || null;
+      var wmBtns = wmHost ? wmHost.querySelectorAll('button') : [];
+      wmBtns.forEach(function (btn) {
+        if (!btn.className || btn.className.split(' ').indexOf('wm-pin') === -1) return;
+        var id = btn.getAttribute('data-pin');
+        btn.addEventListener('click', function () {
+          toggle(id);
+          btn.setAttribute('aria-pressed', String(selected.indexOf(id) !== -1));
+          if (btn.classList) btn.classList.toggle('sl-sel', selected.indexOf(id) !== -1);
+        });
+        if (selected.indexOf(id) !== -1 && btn.classList) btn.classList.add('sl-sel');
+      });
     } else {
       // excerptLines: bind the terminal's already-rendered select:true line buttons
       var host = (window.__slTerminalPanel) || null;
@@ -1574,6 +1591,32 @@
     return root;
   }
 
+  // --- wiremap reference renderer (Wave 3 Task 3) ---
+  // All 8 End-A pins render as real <button>s (select:true always, per spec — no
+  // progressive reveal, the whole map is the evidence). Each pin's fill/border class
+  // reflects its REAL pairId (not its textbook expected pair for that position) —
+  // the mismatch is what makes a split pair legible without hiding data. End-B
+  // renders read-only: the pin it actually landed on, or "open" if endBPin is null.
+  function _slRenderRefWiremap(ref) {
+    var root = _el('div', 'wiremap');
+    var grid = _el('div', 'wiremap-grid');
+    var pins = (ref && Array.isArray(ref.pins)) ? ref.pins : [];
+    pins.forEach(function (p) {
+      var pairCls = 'wm-pair-' + p.pairId;
+      var btn = _el('button', 'wm-pin ' + pairCls);
+      btn.setAttribute('type', 'button');
+      btn.setAttribute('data-pin', String(p.pin));
+      btn.setAttribute('aria-pressed', 'false');
+      btn.setAttribute('aria-label', 'End A pin ' + p.pin);
+      btn.innerHTML = _esc(String(p.pin));
+      grid.appendChild(btn);
+      var endBText = (p.endBPin != null) ? _esc(String(p.endBPin)) : 'open';
+      grid.appendChild(_el('div', 'wm-endb ' + pairCls, endBText));
+    });
+    root.appendChild(grid);
+    return root;
+  }
+
   function _slRenderReference(ref) {
     if (!ref || !ref.kind) return null;
     var panel = _el('div', 'sl-ref');
@@ -1588,6 +1631,7 @@
       panel.revealExcerpt = termNode.revealExcerpt;
     }
     else if (ref.kind === 'faceplate') panel.appendChild(_slRenderRefFaceplate(ref));
+    else if (ref.kind === 'wiremap') panel.appendChild(_slRenderRefWiremap(ref));
     return panel;
   }
 
@@ -1620,6 +1664,10 @@
       window.__slFaceplateRef = scn.assets.reference;
       window.__slFaceplatePanel = refPanel;
     } else { window.__slFaceplateRef = null; window.__slFaceplatePanel = null; }
+    if (scn.assets && scn.assets.reference && scn.assets.reference.kind === 'wiremap') {
+      window.__slWiremapRef = scn.assets.reference;
+      window.__slWiremapPanel = refPanel;
+    } else { window.__slWiremapRef = null; window.__slWiremapPanel = null; }
     scn.steps.forEach(function (st, i) {
       var stepWrap = _el('div', 'sl-step');
       stepWrap.appendChild(_el('div', 'sl-step-k', 'Step ' + (i + 1) + ' of ' + scn.steps.length));
