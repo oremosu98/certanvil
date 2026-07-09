@@ -25328,8 +25328,9 @@ console.log('\n\x1b[1m── T7: DRILLS ANALYTICS GROUP + FINAL COPY + BRONZE TO
   var vm = require('vm');
   var grab = function (n) { return _fnBody(js, n); };
   var sigVar = (js.match(/var _WIREMAP_FAULT_SIG = \{[\s\S]*?\n\s*\};/) || [''])[0];
-  var body = [grab('_isNonEmptyStr'), grab('_slFidelityResolveSlot'), sigVar, grab('simLabValidateWiremapFidelity')].join('\n');
-  if (!sigVar || body.indexOf('simLabValidateWiremapFidelity') === -1) { results.errors.push('could not extract wiremap validator/_WIREMAP_FAULT_SIG'); return; }
+  var pairVar = (js.match(/var _WM_EXPECTED_PAIR = \{[\s\S]*?\n\s*\};/) || [''])[0];
+  var body = [grab('_isNonEmptyStr'), grab('_slFidelityResolveSlot'), sigVar, pairVar, grab('simLabValidateWiremapFidelity')].join('\n');
+  if (!sigVar || !pairVar || body.indexOf('simLabValidateWiremapFidelity') === -1) { results.errors.push('could not extract wiremap validator/_WIREMAP_FAULT_SIG/_WM_EXPECTED_PAIR'); return; }
   var wCtx = {}; vm.createContext(wCtx); vm.runInContext(body, wCtx);
   vm.runInContext('globalThis.__wm = simLabValidateWiremapFidelity;', wCtx);
   var wm = wCtx.__wm;
@@ -25427,6 +25428,12 @@ console.log('\n\x1b[1m── T7: DRILLS ANALYTICS GROUP + FINAL COPY + BRONZE TO
   test('wiremap: sound reversed-pair scenario passes', wm(reversedScn).ok === true);
   var reversedBad = JSON.parse(JSON.stringify(reversedScn)); reversedBad.steps[0].answer.selected = ['1'];
   test('wiremap: keyed selection missing one of the two reversed pins rejected', wm(reversedBad).ok === false);
+
+  // Textbook cross-check: a "clean" (non-faulty) pin mislabeled with the wrong
+  // pairId must be rejected — pin 7 is straight-through in openScn but here its
+  // pairId is corrupted from 4 (textbook) to 3.
+  var badPairId = JSON.parse(JSON.stringify(openScn)); badPairId.assets.reference.pins[6].pairId = 3;
+  test('wiremap: clean pin with pairId not matching textbook mapping rejected', wm(badPairId).ok === false);
 })();
 
 // ── Summary ──

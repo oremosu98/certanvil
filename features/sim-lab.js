@@ -602,6 +602,12 @@
     splitPair:    { root: /split pair/i, fix: /re-terminate/i },
     reversedPair: { root: /reversed pair/i, fix: /re-terminate/i }
   };
+  // EIA/TIA-568B textbook pin->pair mapping (Pair1=4,5 Pair2=1,2 Pair3=3,6 Pair4=7,8).
+  // Used to cross-check that every pin NOT already flagged as faulty is labeled
+  // with its real textbook pairId — catches mislabeled fixture pin data.
+  var _WM_EXPECTED_PAIR = {
+    1: 2, 2: 2, 3: 3, 4: 1, 5: 1, 6: 3, 7: 4, 8: 4
+  };
   function simLabValidateWiremapFidelity(scn) {
     var errs = [];
     var ref = scn && scn.assets && scn.assets.reference;
@@ -639,6 +645,19 @@
         else faulty.push({ pin: p.pin, kind: 'splitPair' });
       }
     });
+    // clean-pin textbook cross-check: any pin NOT flagged as faulty must carry
+    // its real EIA/TIA-568B pairId — deliberately-faulted pins are exempt since
+    // deviating from the textbook pairing is what makes them a fault.
+    var faultyPinSet = {};
+    faulty.forEach(function (f) { faultyPinSet[f.pin] = true; });
+    ref.pins.forEach(function (p) {
+      if (faultyPinSet[p.pin]) return;
+      var expected = _WM_EXPECTED_PAIR[p.pin];
+      if (expected !== undefined && p.pairId !== expected) {
+        errs.push('wiremap: clean pin ' + p.pin + ' has pairId ' + p.pairId + ' but textbook mapping expects pairId ' + expected);
+      }
+    });
+
     // exactly-one-fault-class invariant: every faulty pin must agree on kind
     var kinds = {}; faulty.forEach(function (f) { kinds[f.kind] = true; });
     if (Object.keys(kinds).length > 1) errs.push('wiremap: mixed fault kinds detected (' + Object.keys(kinds).join(', ') + '), fixture must contain exactly one fault class');
