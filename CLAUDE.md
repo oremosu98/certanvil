@@ -115,9 +115,9 @@ npx playwright test              # E2E (tests/e2e/app.spec.js)
 
 | Version | Features Added |
 |---|---|
+| v7.65.0 | Sec+ Technical Change Management topic + exemplar-prompt formatter fix + Domain 5 rebalance |
 | v7.64.0 | Sim Lab Wave 3 PBQs: Switch Port-Map Grid, Cable-Test Wiremap, PC Build Spec-Off, RAID Workbench |
 | v7.63.0 | Sim Lab Wave 2 PBQs: CLI Fault Isolation, Network Discovery Audit, Command-Output Evidence Triage |
-| v7.62.0 | Sim Lab Wave 1 PBQs: Wireless Deployment, Firewall Rule Table, SOHO Router |
 
 _Older releases (v7.60.0 and back) live in [CHANGELOG.md](./CHANGELOG.md)._
 
@@ -135,6 +135,7 @@ The Sim Lab faceplate/wiremap/slots (`.faceplate*`/`.wm*`/`.slots*`) tokens live
 - `hasAnswer` checks must include `Object.keys(a.topoState || {}).length > 0`
 - `setQuestionText(el, raw)` order is **escape-THEN-highlight** (`escHtml` → `highlightExamKeywords` → `innerHTML`). Reversing it is an XSS hole since question text is AI-generated.
 - The `_fnBody(src, name)` helper used by UAT extracts function bodies via brace-depth walking. **Prefix-match trap**: `tbShowCoach` will match `tbShowCoachModalLoading`. When writing UAT for a function, pick a name that's either unique or specify the exact suffix.
+- Curated exemplars (`CERT_PACK.questionExemplars`) are few-shot **style references** injected into the generation prompt — never served as quiz questions. MCQs key `answer: 'B'`; multi-selects key `answers: ['A','B']` (plural, the shape the runtime scorer reads) and may carry options past D. `_formatExemplarsForPrompt` must read BOTH keys and emit only the option letters present — it must also stay self-contained (no external helpers, `typeof CERT_PACK` guarded) because UAT extracts and runs its body in a bare vm sandbox.
 - Sim Lab `layered` references support an optional `layout: 'nested' | 'stacked'` field (default `'nested'`); `_slRenderReference` dispatches on it — Sec+ Defense in Depth uses `'stacked'` (perimeter + interior bands + exposed core), Net+ keeps `'nested'` (concentric frames).
 - The stacked layout's perimeter layer (`layers[0]`) supports an optional `device: { label }` field (e.g. `'FW-1'`, `'WAF-1'`) rendered as a decorative device box (`.sl-fw`) top-right inside the perimeter frame; absent = no extra markup, fully backward-compatible.
 
