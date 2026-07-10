@@ -4469,7 +4469,7 @@ test('v4.54.8 HTML: #results-review-list container + eyebrow + italic-accent tit
 test('v4.54.8 HTML: Drill my mistakes CTA button exists',
   /id="btn-drill-mistakes"[\s\S]{0,200}drillMistakesFromResults\(\)/.test(html));
 test('v4.54.8 JS: _sessionStartTs tracked on startQuiz + drillMistakesFromResults',
-  /function startQuiz\([\s\S]{0,6800}_sessionStartTs\s*=\s*Date\.now\(\)/.test(js) &&  // window 6000→6800: v7.46.0 free-tier hard gates grew the startQuiz preamble
+  /function startQuiz\([\s\S]{0,7600}_sessionStartTs\s*=\s*Date\.now\(\)/.test(js) &&  // window 6000→6800 (v7.46.0 free-tier gates) →7600 (v7.65.1 picker-dismiss block); scopes the match to startQuiz's body, not a size budget
   js.includes('let _sessionStartTs') &&
   js.includes('function drillMistakesFromResults(') &&
   js.includes('function _formatElapsed('));

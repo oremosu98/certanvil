@@ -260,6 +260,33 @@ test.describe('API Key Validation', () => {
   });
 });
 
+test.describe('Custom Quiz — Generate dismisses the picker', () => {
+  test.beforeEach(openCustomQuizModal);
+  // Regression guard (2026-07-10): startQuiz() navigated the underlying page to
+  // 'loading' but never closed the #custom-quiz-section picker — a <details>
+  // overlay portaled to <body> at z-index 140. The picker stayed on top of the
+  // loading/quiz page, so generation ran behind it: the user saw "nothing
+  // happens" (the picker never yielded) or "a lag then it navigates" (the picker
+  // only cleared when incidentally dismissed via Escape/backdrop). The fix closes
+  // the picker at the commit point, right before showPage('loading').
+  test('clicking Generate closes the picker and reveals the loading page', async ({ page }) => {
+    await page.goto('/');
+    // Hang generation so the loading page persists and we can assert the
+    // transition without a live backend. startQuiz() calls the global
+    // fetchQuestions / fetchTopicBrief.
+    await page.evaluate(() => {
+      window.fetchQuestions = () => new Promise(() => {}); // never resolves
+      window.fetchTopicBrief = () => {};
+    });
+    const modal = page.locator('#custom-quiz-section');
+    await expect(modal).toHaveJSProperty('open', true); // opened by beforeEach
+    await page.locator('#custom-quiz-section button:has-text("Generate Quiz")').click();
+    // The picker must close so the loading page underneath becomes visible.
+    await expect(modal).toHaveJSProperty('open', false);
+    await expect(page.locator('#page-loading')).toHaveClass(/active/);
+  });
+});
+
 test.describe('Wrong Bank', () => {
   test('clear button exists in DOM', async ({ page }) => {
     await page.goto('/');
