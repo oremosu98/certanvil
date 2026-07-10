@@ -776,15 +776,15 @@
     var usable = meta.capacity(drives, size);
     if (usable < fact.targetUsableTb) errs.push('raid fidelity: keyed build usable ' + usable + 'TB below target ' + fact.targetUsableTb + 'TB');
     if (meta.tolerance < fact.targetTolerance) errs.push('raid fidelity: keyed level tolerance ' + meta.tolerance + ' below target ' + fact.targetTolerance);
-    // minimal-cost check: no OTHER level/drive-count combo with fewer drives also clears both targets
-    var levelKeys = Object.keys(_RAID_LEVEL_META);
+    // minimal-cost check: no fewer-drive combo AT THE SAME LEVEL also clears both targets
+    // (changed from cross-level to same-level in a Task 13 follow-up fix — cross-level
+    // comparison unrealistically assumed level choice is purely a drive-count optimization,
+    // which mathematically forecloses RAID 10 from ever being a valid answer since RAID 5
+    // always has equal-or-greater capacity per drive at the same tolerance)
     var cheaperExists = false;
-    levelKeys.forEach(function (lk) {
-      var m2 = _RAID_LEVEL_META[lk];
-      for (var c = m2.minDrives; c < drives; c++) {
-        if (m2.capacity(c, size) >= fact.targetUsableTb && m2.tolerance >= fact.targetTolerance) cheaperExists = true;
-      }
-    });
+    for (var c = meta.minDrives; c < drives; c++) {
+      if (meta.capacity(c, size) >= fact.targetUsableTb && meta.tolerance >= fact.targetTolerance) cheaperExists = true;
+    }
     if (cheaperExists) errs.push('raid fidelity: a combination with fewer drives also clears both targets, keyed build is not minimal');
 
     var degrade = (scn.steps || []).filter(function (st) { return st.id === 'degrade'; })[0];
