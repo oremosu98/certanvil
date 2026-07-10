@@ -25996,6 +25996,369 @@ console.log('\n\x1b[1m── T7: DRILLS ANALYTICS GROUP + FINAL COPY + BRONZE TO
   }
 })();
 
+// ── Wave 3 Task 14: archetype vertical-slice mount + score, through the REAL
+// faceplate/wiremap/slots-reference + guarded-analyze-mode Practice path ──
+// Proves the four NEW Wave 3 archetypes (portmap, wiremap, pcbuild, raid)
+// actually mount and score through _slMountScenario end to end — including
+// the three new reference renderers (Task 2/3/4), the facePorts/wiremapPins
+// guarded analyze-mode extensions (Task 3), and per-slot configure scoring —
+// against the REAL shipped bank scenarios, not a hand-authored fixture.
+// Mirrors the Wave 2 Task 11 pattern (grab() extraction + guard clauses +
+// stateful classList/removeAttribute/_fire DOM shim), but drives .port and
+// .wm-pin buttons instead of .sl-cmd/.term-line.
+(function () {
+  console.log('\n\x1b[1m── Sim Lab: Wave 3 archetype vertical slices — portmap/wiremap/pcbuild/raid (Task 14) ──\x1b[0m');
+  try {
+    var vm = require('vm');
+
+    var grab = function (name) {
+      var re = new RegExp('function ' + name + '\\([^)]*\\) \\{[\\s\\S]*?\\n\\}');
+      return (js.match(re) || [''])[0];
+    };
+    var grabLine = function (name) {
+      var re = new RegExp('function ' + name + '\\([^\\n]*\\)\\s*\\{[^\\n]*\\}');
+      return (js.match(re) || [''])[0];
+    };
+
+    var elBody               = grab('_el');
+    var escBody               = grabLine('_esc');
+    var slAttrBody            = grabLine('_slAttr');
+    var renderCfgBody         = grab('_slRenderConfigure');
+    var renderAnalyzeModeBody = grab('_slRenderAnalyzeMode');
+    var renderAnalyzeBody     = grab('_slRenderAnalyze');
+    var renderStepBody        = grab('simLabRenderStep');
+    var refNetBody            = grab('_slRenderRefNetwork');
+    var refTimeBody           = grab('_slRenderRefTimeline');
+    var refLayBody            = grab('_slRenderRefLayered');
+    var refLayStackBody       = grab('_slRenderRefLayeredStacked');
+    var termLineBody          = grab('_termLineHtml');
+    var termPmtBody           = grab('_termPromptHtml');
+    var refTermBody           = grab('_slRenderRefTerminal');
+    var refFaceplateBody      = grab('_slRenderRefFaceplate');
+    var refWiremapBody        = grab('_slRenderRefWiremap');
+    var refSlotsBody          = grab('_slRenderRefSlots');
+    var refDispBody           = grab('_slRenderReference');
+    var mountBody             = grab('_slMountScenario');
+    var scoreSlotsBody          = grab('_scoreConfigureSlots');
+    var scoreAnalyzeLenientBody = grab('_scoreAnalyzeLenient');
+    var scoreStepBody           = grab('_scoreStep');
+    var scoreScenarioBody       = grab('simLabScoreScenario');
+    var normBody           = grab('_norm');
+    var normalizeMatchBody = grab('_simLabNormalizeMatch');
+    var arrEqBody          = grab('_arrEq');
+    var setEqBody          = grab('_setEq');
+
+    if (!elBody || !escBody || !mountBody || !refDispBody ||
+        !refFaceplateBody || !refWiremapBody || !refSlotsBody ||
+        !renderCfgBody || !renderAnalyzeBody || !renderAnalyzeModeBody || !renderStepBody ||
+        !scoreScenarioBody || !scoreSlotsBody || !scoreStepBody || !scoreAnalyzeLenientBody) {
+      test('Task 14 (Wave 3): mount/score vm extraction succeeded', false);
+      results.errors.push('could not extract _slMountScenario/render/score/faceplate/wiremap/slots helpers for Wave 3 Task 14 archetype vertical slices; check names/indenting');
+      return;
+    }
+
+    // ── Load the REAL seed banks. ──
+    var netplusSrc = read('features/sim-lab-seed-netplus.js');
+    var netplusCtx = {};
+    vm.createContext(netplusCtx);
+    vm.runInContext('var window = {};\n' + netplusSrc + '\nglobalThis.__seed = window.SIM_LAB_SEED_NETPLUS;', netplusCtx);
+    var netplusBank = netplusCtx.__seed;
+
+    var aplusCore1Src = read('features/sim-lab-seed-aplus-core1.js');
+    var aplusCore1Ctx = {};
+    vm.createContext(aplusCore1Ctx);
+    vm.runInContext('var window = {};\n' + aplusCore1Src + '\nglobalThis.__seed = window.SIM_LAB_SEED_APLUS_CORE1;', aplusCore1Ctx);
+    var aplusCore1Bank = aplusCore1Ctx.__seed;
+
+    test('Task 14 (Wave 3): both real seed banks loaded as arrays',
+      Array.isArray(netplusBank) && Array.isArray(aplusCore1Bank));
+    if (!Array.isArray(netplusBank) || !Array.isArray(aplusCore1Bank)) {
+      results.errors.push('Task 14 (Wave 3): could not load real seed banks (SIM_LAB_SEED_NETPLUS / SIM_LAB_SEED_APLUS_CORE1)');
+      return;
+    }
+
+    var portmapScn = netplusBank.filter(function (s) { return s && s.archetype === 'portmap'; })[0];
+    var wiremapScn = netplusBank.filter(function (s) { return s && s.archetype === 'wiremap'; })[0];
+    var pcbuildScn = aplusCore1Bank.filter(function (s) { return s && s.archetype === 'pcbuild'; })[0];
+    var raidScn    = aplusCore1Bank.filter(function (s) { return s && s.archetype === 'raid'; })[0];
+
+    test('Task 14 (Wave 3): first portmap-archetype scenario resolved from the real bank',
+      !!portmapScn);
+    test('Task 14 (Wave 3): first wiremap-archetype scenario resolved from the real bank',
+      !!wiremapScn);
+    test('Task 14 (Wave 3): first pcbuild-archetype scenario resolved from the real bank',
+      !!pcbuildScn);
+    test('Task 14 (Wave 3): first raid-archetype scenario resolved from the real bank',
+      !!raidScn);
+
+    if (!portmapScn || !wiremapScn || !pcbuildScn || !raidScn) {
+      results.errors.push('Task 14 (Wave 3): could not resolve one or more archetype scenarios from the real banks; check archetype tagging');
+      return;
+    }
+
+    // ── DOM shim: same stateful classList/removeAttribute/_fire shim as
+    // Wave 2 Task 11 / Wave 3 Tasks 2-4's renderer tests. ──
+    var htmlEsc = function (s) {
+      return String(s == null ? '' : s)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    };
+    var makeEl = function (tag) {
+      var attrs = {}, listeners = {}, children = [], cls = '', inner = '', val = '';
+      var clsSet = {};
+      var el = {
+        tagName: tag.toUpperCase(),
+        get className() { return cls; }, set className(v) { cls = v; },
+        get innerHTML() { return inner; }, set innerHTML(v) { inner = v; children = []; },
+        get textContent() { return ''; }, set textContent(v) { inner = htmlEsc(v); },
+        get value() { return val; }, set value(v) { val = v; },
+        selected: false,
+        style: {},
+        get _children() { return children; },
+        classList: {
+          add: function (c) { clsSet[c] = true; },
+          remove: function (c) { delete clsSet[c]; },
+          toggle: function (c, on) { if (on) clsSet[c] = true; else delete clsSet[c]; },
+          contains: function (c) { return !!clsSet[c]; }
+        },
+        setAttribute: function (k, v) { attrs[k] = v; },
+        getAttribute: function (k) { return (k in attrs) ? attrs[k] : null; },
+        removeAttribute: function (k) { delete attrs[k]; },
+        appendChild: function (c) { children.push(c); return c; },
+        insertBefore: function (c) { children.unshift(c); return c; },
+        querySelector: function (sel) {
+          var want = sel.replace(/^\./, '');
+          var hit = null;
+          var walk = function (n) {
+            if (hit || !n || !n._children) return;
+            n._children.forEach(function (c) {
+              if (hit || !c || !c.tagName) return;
+              if (want.toUpperCase() === c.tagName || (c.className && c.className.split(' ').indexOf(want) !== -1)) { hit = c; return; }
+              walk(c);
+            });
+          };
+          walk(el);
+          return hit;
+        },
+        querySelectorAll: function (sel) {
+          var hits = [], want = sel.replace(/^\./, '');
+          var walk = function (n) { (n._children || []).forEach(function (c) {
+            if (!c || !c.tagName) return;
+            if (want.toUpperCase() === c.tagName || (c.className && c.className.split(' ').indexOf(want) !== -1)) hits.push(c);
+            walk(c);
+          }); };
+          walk(el); return hits;
+        },
+        addEventListener: function (ev, fn) { (listeners[ev] = listeners[ev] || []).push(fn); },
+        dispatchEvent: function (evObj) { (listeners[evObj.type] || []).forEach(function (fn) { fn(evObj); }); },
+        _fire: function (ev) { (listeners[ev] || []).forEach(function (fn) { fn({}); }); },
+        closest: function () { return null; },
+        remove: function () {}
+      };
+      return el;
+    };
+
+    var docShim = {
+      createElement: function (tag) { return makeEl(tag); },
+      createTextNode: function (t) { return { textContent: t, tagName: '#text' }; }
+    };
+    var windowShim = { CSS: null, matchMedia: function () { return { matches: false }; } };
+
+    var mCtx = { document: docShim, window: windowShim, Object: Object, Array: Array, String: String, JSON: JSON };
+    vm.createContext(mCtx);
+    vm.runInContext(elBody, mCtx);
+    vm.runInContext(escBody, mCtx);
+    vm.runInContext(slAttrBody, mCtx);
+    vm.runInContext(renderCfgBody, mCtx);
+    vm.runInContext(renderAnalyzeModeBody, mCtx);
+    vm.runInContext(renderAnalyzeBody, mCtx);
+    vm.runInContext(renderStepBody, mCtx);
+    vm.runInContext(refNetBody, mCtx);
+    if (refTimeBody) vm.runInContext(refTimeBody, mCtx);
+    if (refLayBody) vm.runInContext(refLayBody, mCtx);
+    if (refLayStackBody) vm.runInContext(refLayStackBody, mCtx);
+    if (termLineBody) vm.runInContext(termLineBody, mCtx);
+    if (termPmtBody) vm.runInContext(termPmtBody, mCtx);
+    if (refTermBody) vm.runInContext(refTermBody, mCtx);
+    vm.runInContext(refFaceplateBody, mCtx);
+    vm.runInContext(refWiremapBody, mCtx);
+    vm.runInContext(refSlotsBody, mCtx);
+    vm.runInContext(refDispBody, mCtx);
+    vm.runInContext(mountBody, mCtx);
+    vm.runInContext(normBody, mCtx);
+    vm.runInContext(normalizeMatchBody, mCtx);
+    vm.runInContext(arrEqBody, mCtx);
+    vm.runInContext(setEqBody, mCtx);
+    vm.runInContext(scoreSlotsBody, mCtx);
+    vm.runInContext(scoreAnalyzeLenientBody, mCtx);
+    vm.runInContext(scoreStepBody, mCtx);
+    vm.runInContext(scoreScenarioBody, mCtx);
+
+    function expectedSelectCount(scn) {
+      return scn.steps.filter(function (s) { return s.type === 'configure'; })
+        .reduce(function (sum, s) { return sum + s.payload.slots.length; }, 0);
+    }
+    function mountOnly(scn) {
+      var host = makeEl('div');
+      mCtx.__host = host;
+      mCtx.__scn = scn;
+      var result = null;
+      mCtx.__onSubmit = function (r) { result = r; };
+      vm.runInContext('globalThis.__opts = { onSubmit: __onSubmit }; _slMountScenario(__host, __scn, __opts);', mCtx);
+      return { wrap: host._children[0], getResult: function () { return result; } };
+    }
+    function submitActive() { vm.runInContext('window.__slActiveSubmit();', mCtx); }
+
+    // Drive every configure step to its keyed-correct slots, except
+    // wrongSlot { stepId, slotId } (optional) which is driven to any OTHER
+    // option — the negative control.
+    function driveConfigureCorrectly(wrap, scn, wrongSlot) {
+      var stepWraps = wrap._children.filter(function (c) { return c && c.className === 'sl-step'; });
+      scn.steps.forEach(function (st, i) {
+        if (st.type !== 'configure') return;
+        var selects = stepWraps[i].querySelectorAll('select');
+        selects.forEach(function (sel) {
+          var slotId = sel.getAttribute('data-slot');
+          var correctVal = st.answer.slots[slotId];
+          var v = correctVal;
+          if (wrongSlot && wrongSlot.stepId === st.id && wrongSlot.slotId === slotId) {
+            var slotDef = st.payload.slots.filter(function (s) { return s.id === slotId; })[0];
+            var wrongOpt = slotDef.options.filter(function (o) { return o.id !== correctVal; })[0];
+            v = wrongOpt.id;
+          }
+          sel.value = v;
+          sel.dispatchEvent({ type: 'change' });
+        });
+      });
+    }
+
+    // Fire real .port / .wm-pin button clicks (as rendered by the actual
+    // faceplate/wiremap renderers and bound by _slRenderAnalyzeMode's
+    // facePorts/wiremapPins branches) for the given ids, on top of any
+    // already-flagged picks — NOT a stubbed handler, the real bound click
+    // listener each renderer + mode wires together.
+    function clickSelectorIds(wrap, selector, attr, ids) {
+      var btns = wrap.querySelectorAll(selector);
+      ids.forEach(function (id) {
+        var btn = btns.filter(function (b) { return b.getAttribute(attr) === id; })[0];
+        if (btn) btn._fire('click');
+      });
+    }
+
+    // ── (1) Port-Map: faceplate reference + facePorts diagnose step + two
+    // configure steps (provision, fix). ──
+    var pmMount = mountOnly(portmapScn);
+    var pmWrap = pmMount.wrap;
+    test('Task 14 portmap: mounted DOM contains a .faceplate component and every configure <select>',
+      !!pmWrap.querySelector('.faceplate') && pmWrap.querySelectorAll('select').length === expectedSelectCount(portmapScn));
+
+    // (b) fire a REAL .port button click for the keyed fault port, exercising
+    // the actual bound click listener wired by _slRenderAnalyzeMode's
+    // facePorts branch (through window.__slFaceplatePanel), not a stub.
+    var pmDiagStep = portmapScn.steps.filter(function (s) { return s.type === 'analyze' && s.payload && s.payload.mode === 'facePorts'; })[0];
+    clickSelectorIds(pmWrap, '.port', 'data-port', pmDiagStep.answer.selected);
+    driveConfigureCorrectly(pmWrap, portmapScn);
+    submitActive();
+    var pmResult = pmMount.getResult();
+    test('Task 14 portmap: real .port click + fully-correct configure answers scores correct === total',
+      pmResult && pmResult.total > 0 && pmResult.correct === pmResult.total);
+
+    var portmapClone = JSON.parse(JSON.stringify(portmapScn));
+    var pmCfgStep = portmapClone.steps.filter(function (s) { return s.type === 'configure'; })[0];
+    var pmMount2 = mountOnly(portmapClone);
+    clickSelectorIds(pmMount2.wrap, '.port', 'data-port', pmDiagStep.answer.selected);
+    driveConfigureCorrectly(pmMount2.wrap, portmapClone,
+      { stepId: pmCfgStep.id, slotId: pmCfgStep.payload.slots[0].id });
+    submitActive();
+    var pmResult2 = pmMount2.getResult();
+    test('Task 14 portmap negative control: one wrong provision/fix slot scores correct < total',
+      pmResult2 && pmResult2.correct < pmResult2.total);
+
+    // ── (2) Wiremap: wiremap reference + wiremapPins flag step (EXACT-SET
+    // scoring — the odd one out vs CLI/triage's lenient scoring) + one
+    // configure step. ──
+    var wmMount = mountOnly(wiremapScn);
+    var wmWrap = wmMount.wrap;
+    test('Task 14 wiremap: mounted DOM contains a .wiremap component and every configure <select>',
+      !!wmWrap.querySelector('.wiremap') && wmWrap.querySelectorAll('select').length === expectedSelectCount(wiremapScn));
+
+    var wmFlagStep = wiremapScn.steps.filter(function (s) { return s.type === 'analyze' && s.payload && s.payload.mode === 'wiremapPins'; })[0];
+
+    // (c) exact-set path: flag EXACTLY the keyed fault pin(s) via real
+    // .wm-pin clicks — must score full credit.
+    clickSelectorIds(wmWrap, '.wm-pin', 'data-pin', wmFlagStep.answer.selected);
+    driveConfigureCorrectly(wmWrap, wiremapScn);
+    submitActive();
+    var wmResult = wmMount.getResult();
+    test('Task 14 wiremap: flagging exactly the keyed fault pin(s) + correct configure scores correct === total',
+      wmResult && wmResult.total > 0 && wmResult.correct === wmResult.total);
+
+    // Dedicated over-selection assertion: the keyed pin(s) PLUS one wrong
+    // extra pin must score correct < total. Wiremap uses default (non-
+    // lenient) analyze scoring, so its exact-set contract genuinely
+    // penalizes a false extra pick — unlike CLI/triage's lenient scoring,
+    // making wiremap the one archetype in the whole program where
+    // over-selecting costs credit.
+    var wiremapPins = (wiremapScn.assets.reference.pins || []).map(function (p) { return String(p.pin); });
+    var wrongExtraPin = wiremapPins.filter(function (p) { return wmFlagStep.answer.selected.indexOf(p) === -1; })[0];
+    test('Task 14 wiremap: fixture sanity — a real non-keyed pin exists to drive the over-selection negative pick',
+      !!wrongExtraPin);
+    var wiremapClone = JSON.parse(JSON.stringify(wiremapScn));
+    var wmMount2 = mountOnly(wiremapClone);
+    clickSelectorIds(wmMount2.wrap, '.wm-pin', 'data-pin', wmFlagStep.answer.selected.concat([wrongExtraPin]));
+    driveConfigureCorrectly(wmMount2.wrap, wiremapClone);
+    submitActive();
+    var wmResult2 = wmMount2.getResult();
+    test('Task 14 wiremap over-selection negative control: keyed pin(s) PLUS one wrong extra pin scores correct < total (exact-set penalizes, unlike lenient CLI/triage)',
+      wmResult2 && wmResult2.correct < wmResult2.total);
+
+    // ── (3) PC-Build: slots reference (rendered once, both clients share
+    // the panel) + two independent configure steps (clientA, clientB). ──
+    var pcMount = mountOnly(pcbuildScn);
+    var pcWrap = pcMount.wrap;
+    test('Task 14 pcbuild: mounted DOM contains a .slots-diagram component and every configure <select>',
+      !!pcWrap.querySelector('.slots-diagram') && pcWrap.querySelectorAll('select').length === expectedSelectCount(pcbuildScn));
+
+    var pcClientAStep = pcbuildScn.steps.filter(function (s) { return s.id === 'clientA'; })[0];
+    var pcClientBStep = pcbuildScn.steps.filter(function (s) { return s.id === 'clientB'; })[0];
+    driveConfigureCorrectly(pcWrap, pcbuildScn,
+      { stepId: pcClientBStep.id, slotId: pcClientBStep.payload.slots[0].id });
+    submitActive();
+    var pcResult = pcMount.getResult();
+    test('Task 14 pcbuild: Client A fully correct + Client B one deliberate wrong pick scores COMBINED correct < total',
+      pcResult && pcResult.correct < pcResult.total);
+    var pcClientATally = pcResult && pcResult.perStep && pcResult.perStep[pcClientAStep.id];
+    test('Task 14 pcbuild: Client A\'s own per-client tally is still full credit (neither client\'s build rescues/penalizes the other)',
+      pcClientATally && pcClientATally.total > 0 && pcClientATally.correct === pcClientATally.total);
+
+    // ── (4) RAID: slots reference (static illustrative bay panel) + build
+    // then degrade configure steps. ──
+    var raidMount = mountOnly(raidScn);
+    var raidWrap = raidMount.wrap;
+    test('Task 14 raid: mounted DOM contains a .slots-diagram component and every configure <select>',
+      !!raidWrap.querySelector('.slots-diagram') && raidWrap.querySelectorAll('select').length === expectedSelectCount(raidScn));
+
+    driveConfigureCorrectly(raidWrap, raidScn);
+    submitActive();
+    var raidResult = raidMount.getResult();
+    test('Task 14 raid: fully-correct build + degrade configure answers scores correct === total',
+      raidResult && raidResult.total > 0 && raidResult.correct === raidResult.total);
+
+    var raidClone = JSON.parse(JSON.stringify(raidScn));
+    var raidDegradeStep = raidClone.steps.filter(function (s) { return s.id === 'degrade'; })[0];
+    var raidMount2 = mountOnly(raidClone);
+    driveConfigureCorrectly(raidMount2.wrap, raidClone,
+      { stepId: raidDegradeStep.id, slotId: 'recoveryAction' });
+    submitActive();
+    var raidResult2 = raidMount2.getResult();
+    test('Task 14 raid negative control: wrong recoveryAction pick scores correct < total',
+      raidResult2 && raidResult2.correct < raidResult2.total);
+
+  } catch (err) {
+    test('Task 14 (Wave 3): archetype vertical-slice smoke test (threw)', false);
+    results.errors.push('Task 14 (Wave 3) archetype vertical-slice smoke test threw: ' + err.message);
+  }
+})();
+
 // ── Summary ──
 console.log('\n' + '═'.repeat(50));
 const total = results.pass + results.fail;
