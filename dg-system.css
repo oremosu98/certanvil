@@ -4509,12 +4509,13 @@ html[data-theme] body .celebration-toast-sub{color:var(--text-dim,rgba(255,255,2
    remapped onto the ACTUAL DOM `_slRenderRefWiremap` emits: `wm-pair-N`
    is applied DIRECTLY to the `.wm-pin` button / `.wm-endb` div itself —
    there is no child `i`/`.wm-dot` swatch element, so the pair colors are
-   painted on the pin/end-b element's own background, not a child. The map
-   is purely illustrative evidence (all pins render, nothing binds a click
-   handler to add hit/miss/false/selection state), so those aspirational
-   result classes were dropped rather than styled — see wiremap renderer
-   comment in features/sim-lab.js. Same token-substitution precedent as
-   the faceplate block above. */
+   painted on the pin/end-b element's own background, not a child. The
+   `.hit`/`.miss`/`.false` result classes were dead/unreachable and were
+   dropped as aspirational styling — see wiremap renderer comment in
+   features/sim-lab.js. `.sl-sel` IS real: `_slRenderAnalyzeMode`'s click
+   binding toggles it on `.wm-pin` at runtime for fault-pin selection, so
+   it keeps its styling below. Same token-substitution precedent as the
+   faceplate block above. */
 .wiremap { margin: 8px 0; background: var(--surface-2, color-mix(in oklab, var(--text) 4%, var(--surface))); border: 1px solid var(--border); border-radius: 13px; overflow: hidden; padding: 12px 8px 14px; }
 .wiremap-grid { position: relative; display: grid; grid-template-columns: 43% 14% 43%; row-gap: 3px; }
 .wm-pin { position: relative; display: flex; align-items: center; gap: 8px; grid-column: 1; width: 100%; font: inherit; text-align: left; cursor: pointer; border: 1px solid var(--border); border-radius: 7px; padding: 3px 6px; background: var(--surface); color: var(--text-mid); transition: transform .15s ease, border-color .18s ease, background-color .18s ease; }
@@ -4527,6 +4528,7 @@ html[data-theme] body .celebration-toast-sub{color:var(--text-dim,rgba(255,255,2
 .wm-endb { grid-column: 3; border-right: 4px solid var(--accent-deep, var(--accent)); flex-direction: row-reverse; text-align: right; }
 .wm-endb.open { border-style: dashed; opacity: .72; }
 .wm-endb.short { color: var(--fail); font-weight: 800; }
+.wm-pin.sl-sel { border-color: color-mix(in oklab, var(--accent) 40%, var(--border)); background: color-mix(in oklab, var(--accent) 10%, transparent); }
 
 /* ── Sim Lab slots reference (Wave 3) ──────────────────────────────────────
    STYLE lift of the approved raid-workbench / pc-build-spec-off mockups'
