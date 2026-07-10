@@ -1844,17 +1844,28 @@
     var ports = (ref && Array.isArray(ref.ports)) ? ref.ports : [];
     ports.forEach(function (p) {
       var ledCls = 'port-' + (p.led || 'down');
+      // Visible text is the SHORT port number only (e.g. 'gi0-8' -> '8') — the
+      // .port box is a fixed 40x52 faceplate cell, sized for a short label, not
+      // the full descriptive text authored in the seed bank (e.g. 'Gi0/1 ·
+      // Checkout PC'). That full text still reaches sighted/AT users via
+      // aria-label (screen readers) and title (mouse hover tooltip); it must
+      // never be the visible innerHTML again — see mockups/switch-port-map-grid-concept.html
+      // makePortEl's pnum/aria-label split, which this mirrors.
+      var pid = String(p.id || '');
+      var shortLabel = pid.indexOf('-') !== -1 ? pid.split('-')[1] : pid;
       if (p.select) {
         var btn = _el('button', 'port ' + ledCls);
         btn.setAttribute('type', 'button');
         btn.setAttribute('data-port', p.id);
         var fault = (p.led === 'poe-fault' || p.led === 'err-disabled');
         btn.setAttribute('aria-label', 'Port ' + (p.label || p.id) + (fault ? ', fault detected. Click to diagnose.' : ', click to configure.'));
-        btn.innerHTML = _esc(p.label || p.id);
+        btn.setAttribute('title', p.label || p.id);
+        btn.innerHTML = _esc(shortLabel);
         grid.appendChild(btn);
       } else {
-        var inert = _el('div', 'port ' + ledCls + ' port-inert', _esc(p.label || p.id));
+        var inert = _el('div', 'port ' + ledCls + ' port-inert', _esc(shortLabel));
         inert.setAttribute('aria-hidden', 'true');
+        inert.setAttribute('title', p.label || p.id);
         grid.appendChild(inert);
       }
     });

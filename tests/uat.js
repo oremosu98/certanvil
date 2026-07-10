@@ -21341,10 +21341,22 @@ console.log('\n\x1b[1m── T7: DRILLS ANALYTICS GROUP + FINAL COPY + BRONZE TO
   test('faceplate: select:true ports render as focusable BUTTONs with data-port',
     portBtns.length === 2 && portBtns[0].getAttribute('data-port') === 'gi0-1');
   test('faceplate: fault-LED port carries a fault class', portBtns[1].className.indexOf('poe-fault') !== -1);
-  test('faceplate: port label is ESCAPED (no raw <script>)',
-    portBtns[1].innerHTML.indexOf('<script>') === -1 && portBtns[1].innerHTML.indexOf('&lt;script&gt;') !== -1);
+  // VISIBLE content is the short port NUMBER only (extracted from id, e.g. 'gi0-2' -> '2') —
+  // the full descriptive label never reaches innerHTML, so it can't overflow the fixed
+  // 40x52 .port box. The full label instead lives in aria-label (screen readers) and
+  // title (mouse hover tooltip).
+  test('faceplate: visible port innerHTML is the SHORT number extracted from id, not the full label',
+    portBtns[0].innerHTML === '1' && portBtns[1].innerHTML === '2');
+  test('faceplate: port label is ESCAPED (no raw <script> reaches visible innerHTML, even via a malicious label)',
+    portBtns[1].innerHTML.indexOf('<script>') === -1 && portBtns[1].innerHTML.indexOf('script') === -1);
+  test('faceplate: full descriptive label lives in aria-label for screen-reader users',
+    portBtns[1].getAttribute('aria-label').indexOf('Gi0/2 <script>x</script>') !== -1);
+  test('faceplate: full descriptive label ALSO lives in title for mouse-hover tooltip',
+    portBtns[0].getAttribute('title') === 'Gi0/1' && portBtns[1].getAttribute('title') === 'Gi0/2 <script>x</script>');
   var inertEls = panel.querySelectorAll('div').filter(function (d) { return d.getAttribute('aria-hidden') === 'true'; });
   test('faceplate: select:false ports render as inert aria-hidden divs, not buttons', inertEls.length === 1);
+  test('faceplate: inert (select:false) ports also show the short number, not the full label',
+    inertEls.length === 1 && inertEls[0].innerHTML === '3');
 })();
 
 // ── Wave 3 Task 3: wiremap reference renderer + wiremapPins analyze mode ──
