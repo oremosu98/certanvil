@@ -25843,7 +25843,19 @@ console.log('\n\x1b[1m── T7: DRILLS ANALYTICS GROUP + FINAL COPY + BRONZE TO
   var bad2 = JSON.parse(JSON.stringify(scn)); bad2.raid.failedDriveCount = 2;
   assert(raid(bad2).ok === false, 'raid: 2 failed drives against RAID5 tolerance-1 must NOT stay keyed degraded/rebuild');
   var bad3 = JSON.parse(JSON.stringify(scn)); bad3.steps[0].answer.slots.level = 'b'; bad3.steps[0].payload.slots[2].options[0].text = '4';
-  assert(raid(bad3).ok === false, 'raid: a non-minimal-drive-count valid build (RAID10 needs 4 drives for the same result) rejected');
+  // NOTE: this fixture keys RAID10 with only 3 drives, which is below raid10's own
+  // minDrives (4) — it short-circuits on the minDrives guard and never reaches the
+  // cheaperExists same-level loop. It genuinely exercises the minDrives-below-level-min
+  // rejection path, not "non-minimal drive count" (a valid-but-wasteful over-provisioned
+  // build) — see the dedicated cheaperExists coverage below.
+  assert(raid(bad3).ok === false, 'raid: keyed build below the level\'s own minDrives rejected');
+  // Genuinely exercises the same-level cheaperExists loop (not the minDrives guard):
+  // RAID10 keyed with 8x2TB (usable = floor(8/2)*2 = 8TB) against a 4TB/tolerance-1
+  // target. 8 drives clears minDrives (4) and both targets, but a same-level 4-drive
+  // build (floor(4/2)*2 = 4TB, tolerance 1) already clears the same targets — so the
+  // keyed 8-drive build is valid-but-not-minimal and must be rejected by cheaperExists.
+  var bad3b = raidBuildScn('RAID 10', '8', '2', 4, 1);
+  assert(raid(bad3b).ok === false, 'raid: same-level RAID10 over-provisioned build (8 drives when 4 would clear the target) rejected via cheaperExists');
 
   // Per-level build-slot coverage: raid0/raid1/raid6's capacity formulas are otherwise
   // unverified (only raid5's pass case and raid10's minDrives-fail case exercised above).
