@@ -6426,5 +6426,4056 @@ window.SIM_LAB_SEED_NETPLUS = [
         }
       }
     ]
+  },
+
+  {
+    id: 'np-pm-01',
+    cert: 'netplus',
+    archetype: 'portmap',
+    objective: '2.4',
+    topic: 'Switch port-map provisioning — PoE overcurrent',
+    title: 'Camera drops on a retail store access switch',
+    estMinutes: 6,
+    scenario: 'A retail store’s access switch feeds a checkout PC, a receipt printer, and three PoE security cameras. One camera keeps rebooting on its own. You have the port-map grid for the switch. Provision each active port to its ticketed VLAN and PoE setting, identify the faulted port, then diagnose and fix it.',
+    portmap: {
+      faultPort: 'gi0-4'
+    },
+    portmapTickets: [
+      {
+        port: 'gi0-1',
+        vlan: '10',
+        poe: false
+      },
+      {
+        port: 'gi0-2',
+        vlan: '10',
+        poe: false
+      },
+      {
+        port: 'gi0-4',
+        vlan: '30',
+        poe: true
+      }
+    ],
+    assets: {
+      reference: {
+        kind: 'faceplate',
+        host: 'SW-RETAIL1 · 24-port',
+        ports: [
+          {
+            id: 'gi0-1',
+            label: 'Gi0/1 · Checkout PC',
+            led: 'up',
+            select: true
+          },
+          {
+            id: 'gi0-2',
+            label: 'Gi0/2 · Receipt printer',
+            led: 'up',
+            select: true
+          },
+          {
+            id: 'gi0-3',
+            label: 'Gi0/3 · Camera – stockroom',
+            led: 'up',
+            select: true
+          },
+          {
+            id: 'gi0-4',
+            label: 'Gi0/4 · Camera – entrance',
+            led: 'poe-fault',
+            select: true
+          },
+          {
+            id: 'gi0-5',
+            label: 'Gi0/5 · Camera – register 2',
+            led: 'up',
+            select: true
+          },
+          {
+            id: 'gi0-6',
+            label: 'Gi0/6',
+            led: 'down',
+            select: true
+          },
+          {
+            id: 'gi0-7',
+            label: 'Gi0/7',
+            led: 'down',
+            select: true
+          },
+          {
+            id: 'gi0-8',
+            label: 'Gi0/8 · Uplink',
+            led: 'up',
+            select: true
+          }
+        ]
+      }
+    },
+    steps: [
+      {
+        id: 'provision',
+        type: 'configure',
+        points: 1,
+        prompt: 'Provision the ticketed ports to their required VLAN and PoE setting.',
+        explanation: 'Gi0/1 and Gi0/2 are wired data devices on VLAN 10 with PoE off; Gi0/4 is a PoE camera on the isolated camera VLAN 30 with PoE on.',
+        payload: {
+          slots: [
+            {
+              id: 'gi0-1__vlan',
+              label: 'Gi0/1 VLAN',
+              options: [
+                {
+                  id: 'a',
+                  text: 'VLAN 10'
+                },
+                {
+                  id: 'b',
+                  text: 'VLAN 30'
+                }
+              ]
+            },
+            {
+              id: 'gi0-1__poe',
+              label: 'Gi0/1 PoE',
+              options: [
+                {
+                  id: 'a',
+                  text: 'Off'
+                },
+                {
+                  id: 'b',
+                  text: 'On'
+                }
+              ]
+            },
+            {
+              id: 'gi0-2__vlan',
+              label: 'Gi0/2 VLAN',
+              options: [
+                {
+                  id: 'a',
+                  text: 'VLAN 10'
+                },
+                {
+                  id: 'b',
+                  text: 'VLAN 30'
+                }
+              ]
+            },
+            {
+              id: 'gi0-2__poe',
+              label: 'Gi0/2 PoE',
+              options: [
+                {
+                  id: 'a',
+                  text: 'Off'
+                },
+                {
+                  id: 'b',
+                  text: 'On'
+                }
+              ]
+            },
+            {
+              id: 'gi0-4__vlan',
+              label: 'Gi0/4 VLAN',
+              options: [
+                {
+                  id: 'a',
+                  text: 'VLAN 30'
+                },
+                {
+                  id: 'b',
+                  text: 'VLAN 10'
+                }
+              ]
+            },
+            {
+              id: 'gi0-4__poe',
+              label: 'Gi0/4 PoE',
+              options: [
+                {
+                  id: 'a',
+                  text: 'On'
+                },
+                {
+                  id: 'b',
+                  text: 'Off'
+                }
+              ]
+            }
+          ]
+        },
+        answer: {
+          slots: {
+            'gi0-1__vlan': 'a',
+            'gi0-1__poe': 'a',
+            'gi0-2__vlan': 'a',
+            'gi0-2__poe': 'a',
+            'gi0-4__vlan': 'a',
+            'gi0-4__poe': 'a'
+          }
+        }
+      },
+      {
+        id: 'diagnose',
+        type: 'analyze',
+        points: 1,
+        prompt: 'Select the port that is faulting.',
+        explanation: 'The entrance camera’s port shows the PoE-fault LED state, indicating the switch cut power because the connected load exceeded the port’s negotiated class.',
+        payload: {
+          multi: false,
+          mode: 'facePorts'
+        },
+        answer: {
+          selected: [
+            'gi0-4'
+          ]
+        }
+      },
+      {
+        id: 'fix',
+        type: 'configure',
+        points: 1,
+        prompt: 'Name the root cause and the correct fix.',
+        explanation: 'A PoE overcurrent condition means the camera’s power draw exceeds what the port’s current PoE class allows; raising the port to a higher 802.3at power budget resolves it.',
+        payload: {
+          slots: [
+            {
+              id: 'rootCause',
+              label: 'Root cause',
+              options: [
+                {
+                  id: 'a',
+                  text: 'PoE overcurrent: the camera draw exceeds the port class'
+                },
+                {
+                  id: 'b',
+                  text: 'Duplex mismatch on the uplink'
+                }
+              ]
+            },
+            {
+              id: 'fix',
+              label: 'Fix',
+              options: [
+                {
+                  id: 'a',
+                  text: 'Raise the port to a higher PoE power budget (802.3at)'
+                },
+                {
+                  id: 'b',
+                  text: 'Force full-duplex on both ends'
+                }
+              ]
+            }
+          ]
+        },
+        answer: {
+          slots: {
+            rootCause: 'a',
+            fix: 'a'
+          }
+        }
+      }
+    ]
+  },
+  {
+    id: 'np-pm-02',
+    cert: 'netplus',
+    archetype: 'portmap',
+    objective: '2.4',
+    topic: 'Switch port-map provisioning — err-disabled state',
+    title: 'Workstation offline on an office floor switch',
+    estMinutes: 6,
+    scenario: 'An office-floor access switch serves five cubicle workstations and a shared network printer. One cubicle just went completely dark — no link light behavior a user would expect. Provision the ticketed ports, find the faulted port, then diagnose and fix it.',
+    portmap: {
+      faultPort: 'gi0-6'
+    },
+    portmapTickets: [
+      {
+        port: 'gi0-5',
+        vlan: '20',
+        poe: false
+      },
+      {
+        port: 'gi0-6',
+        vlan: '20',
+        poe: false
+      },
+      {
+        port: 'gi0-7',
+        vlan: '20',
+        poe: false
+      }
+    ],
+    assets: {
+      reference: {
+        kind: 'faceplate',
+        host: 'SW-FLOOR3 · 24-port',
+        ports: [
+          {
+            id: 'gi0-1',
+            label: 'Gi0/1 · Workstation A',
+            led: 'up',
+            select: true
+          },
+          {
+            id: 'gi0-2',
+            label: 'Gi0/2 · Workstation B',
+            led: 'up',
+            select: true
+          },
+          {
+            id: 'gi0-5',
+            label: 'Gi0/5 · Workstation C',
+            led: 'up',
+            select: true
+          },
+          {
+            id: 'gi0-6',
+            label: 'Gi0/6 · Workstation D',
+            led: 'err-disabled',
+            select: true
+          },
+          {
+            id: 'gi0-7',
+            label: 'Gi0/7 · Shared printer',
+            led: 'up',
+            select: true
+          },
+          {
+            id: 'gi0-9',
+            label: 'Gi0/9',
+            led: 'down',
+            select: true
+          },
+          {
+            id: 'gi0-10',
+            label: 'Gi0/10 · Uplink',
+            led: 'up',
+            select: true
+          }
+        ]
+      }
+    },
+    steps: [
+      {
+        id: 'provision',
+        type: 'configure',
+        points: 1,
+        prompt: 'Provision the ticketed ports to VLAN 20.',
+        explanation: 'All three cubicle/printer ports on this ticket share the office data VLAN with PoE off (none are PoE devices).',
+        payload: {
+          slots: [
+            {
+              id: 'gi0-5__vlan',
+              label: 'Gi0/5 VLAN',
+              options: [
+                {
+                  id: 'a',
+                  text: 'VLAN 20'
+                },
+                {
+                  id: 'b',
+                  text: 'VLAN 99'
+                }
+              ]
+            },
+            {
+              id: 'gi0-6__vlan',
+              label: 'Gi0/6 VLAN',
+              options: [
+                {
+                  id: 'a',
+                  text: 'VLAN 20'
+                },
+                {
+                  id: 'b',
+                  text: 'VLAN 99'
+                }
+              ]
+            },
+            {
+              id: 'gi0-7__vlan',
+              label: 'Gi0/7 VLAN',
+              options: [
+                {
+                  id: 'a',
+                  text: 'VLAN 20'
+                },
+                {
+                  id: 'b',
+                  text: 'VLAN 99'
+                }
+              ]
+            }
+          ]
+        },
+        answer: {
+          slots: {
+            'gi0-5__vlan': 'a',
+            'gi0-6__vlan': 'a',
+            'gi0-7__vlan': 'a'
+          }
+        }
+      },
+      {
+        id: 'diagnose',
+        type: 'analyze',
+        points: 1,
+        prompt: 'Select the port that is faulting.',
+        explanation: 'Workstation D’s port is showing the err-disabled LED state, meaning the switch has administratively shut the port down after detecting a violation.',
+        payload: {
+          multi: false,
+          mode: 'facePorts'
+        },
+        answer: {
+          selected: [
+            'gi0-6'
+          ]
+        }
+      },
+      {
+        id: 'fix',
+        type: 'configure',
+        points: 1,
+        prompt: 'Name the root cause and the correct fix.',
+        explanation: 'Someone plugged a different, unauthorized laptop into Workstation D’s jack; the port’s port-security MAC violation action shut it down into err-disabled to block the unrecognized MAC. Clearing the violation and resetting the port with shutdown / no shutdown restores it.',
+        payload: {
+          slots: [
+            {
+              id: 'rootCause',
+              label: 'Root cause',
+              options: [
+                {
+                  id: 'a',
+                  text: 'Port-security MAC violation drove the port err-disabled'
+                },
+                {
+                  id: 'b',
+                  text: 'PoE overcurrent on the port'
+                }
+              ]
+            },
+            {
+              id: 'fix',
+              label: 'Fix',
+              options: [
+                {
+                  id: 'a',
+                  text: 'Clear the port-security violation and reset the port with shutdown / no shutdown'
+                },
+                {
+                  id: 'b',
+                  text: 'Increase the PoE power budget'
+                }
+              ]
+            }
+          ]
+        },
+        answer: {
+          slots: {
+            rootCause: 'a',
+            fix: 'a'
+          }
+        }
+      }
+    ]
+  },
+  {
+    id: 'np-pm-03',
+    cert: 'netplus',
+    archetype: 'portmap',
+    objective: '2.4',
+    topic: 'Switch port-map provisioning — PoE overcurrent',
+    title: 'VoIP phone rebooting in a warehouse office',
+    estMinutes: 6,
+    scenario: 'A warehouse site office switch feeds two VoIP phones, a barcode scanner base, and a wireless access point. One VoIP phone keeps rebooting mid-call. Provision the ticketed ports, find the faulted port, then diagnose and fix it.',
+    portmap: {
+      faultPort: 'gi0-11'
+    },
+    portmapTickets: [
+      {
+        port: 'gi0-10',
+        vlan: '50',
+        poe: true
+      },
+      {
+        port: 'gi0-11',
+        vlan: '50',
+        poe: true
+      },
+      {
+        port: 'gi0-12',
+        vlan: '15',
+        poe: false
+      }
+    ],
+    assets: {
+      reference: {
+        kind: 'faceplate',
+        host: 'SW-WH-OFC · 24-port',
+        ports: [
+          {
+            id: 'gi0-10',
+            label: 'Gi0/10 · VoIP phone – dock office',
+            led: 'up',
+            select: true
+          },
+          {
+            id: 'gi0-11',
+            label: 'Gi0/11 · VoIP phone – supervisor desk',
+            led: 'poe-fault',
+            select: true
+          },
+          {
+            id: 'gi0-12',
+            label: 'Gi0/12 · Barcode scanner base',
+            led: 'up',
+            select: true
+          },
+          {
+            id: 'gi0-14',
+            label: 'Gi0/14 · Wireless AP',
+            led: 'up',
+            select: true
+          },
+          {
+            id: 'gi0-16',
+            label: 'Gi0/16',
+            led: 'down',
+            select: true
+          }
+        ]
+      }
+    },
+    steps: [
+      {
+        id: 'provision',
+        type: 'configure',
+        points: 1,
+        prompt: 'Provision the ticketed ports to their VLAN and PoE setting.',
+        explanation: 'Both VoIP phones sit on the voice VLAN with PoE on; the scanner base is a wired data device on VLAN 15 with PoE off.',
+        payload: {
+          slots: [
+            {
+              id: 'gi0-10__vlan',
+              label: 'Gi0/10 VLAN',
+              options: [
+                {
+                  id: 'a',
+                  text: 'VLAN 50'
+                },
+                {
+                  id: 'b',
+                  text: 'VLAN 15'
+                }
+              ]
+            },
+            {
+              id: 'gi0-10__poe',
+              label: 'Gi0/10 PoE',
+              options: [
+                {
+                  id: 'a',
+                  text: 'On'
+                },
+                {
+                  id: 'b',
+                  text: 'Off'
+                }
+              ]
+            },
+            {
+              id: 'gi0-11__vlan',
+              label: 'Gi0/11 VLAN',
+              options: [
+                {
+                  id: 'a',
+                  text: 'VLAN 50'
+                },
+                {
+                  id: 'b',
+                  text: 'VLAN 15'
+                }
+              ]
+            },
+            {
+              id: 'gi0-11__poe',
+              label: 'Gi0/11 PoE',
+              options: [
+                {
+                  id: 'a',
+                  text: 'On'
+                },
+                {
+                  id: 'b',
+                  text: 'Off'
+                }
+              ]
+            },
+            {
+              id: 'gi0-12__vlan',
+              label: 'Gi0/12 VLAN',
+              options: [
+                {
+                  id: 'a',
+                  text: 'VLAN 15'
+                },
+                {
+                  id: 'b',
+                  text: 'VLAN 50'
+                }
+              ]
+            },
+            {
+              id: 'gi0-12__poe',
+              label: 'Gi0/12 PoE',
+              options: [
+                {
+                  id: 'a',
+                  text: 'Off'
+                },
+                {
+                  id: 'b',
+                  text: 'On'
+                }
+              ]
+            }
+          ]
+        },
+        answer: {
+          slots: {
+            'gi0-10__vlan': 'a',
+            'gi0-10__poe': 'a',
+            'gi0-11__vlan': 'a',
+            'gi0-11__poe': 'a',
+            'gi0-12__vlan': 'a',
+            'gi0-12__poe': 'a'
+          }
+        }
+      },
+      {
+        id: 'diagnose',
+        type: 'analyze',
+        points: 1,
+        prompt: 'Select the port that is faulting.',
+        explanation: 'The supervisor desk phone’s port shows the PoE-fault LED, meaning the switch cut power after the connected load exceeded the port’s negotiated class.',
+        payload: {
+          multi: false,
+          mode: 'facePorts'
+        },
+        answer: {
+          selected: [
+            'gi0-11'
+          ]
+        }
+      },
+      {
+        id: 'fix',
+        type: 'configure',
+        points: 1,
+        prompt: 'Name the root cause and the correct fix.',
+        explanation: 'The phone likely has an attached laptop drawing power through its pass-through port, pushing total draw past the port class; raising the port’s PoE power budget resolves it.',
+        payload: {
+          slots: [
+            {
+              id: 'rootCause',
+              label: 'Root cause',
+              options: [
+                {
+                  id: 'a',
+                  text: 'PoE overcurrent: combined phone + pass-through draw exceeds the port class'
+                },
+                {
+                  id: 'b',
+                  text: 'Wrong VLAN assigned to the phone'
+                }
+              ]
+            },
+            {
+              id: 'fix',
+              label: 'Fix',
+              options: [
+                {
+                  id: 'a',
+                  text: 'Raise the port to a higher PoE power budget (802.3at)'
+                },
+                {
+                  id: 'b',
+                  text: 'Move the phone to the data VLAN'
+                }
+              ]
+            }
+          ]
+        },
+        answer: {
+          slots: {
+            rootCause: 'a',
+            fix: 'a'
+          }
+        }
+      }
+    ]
+  },
+  {
+    id: 'np-pm-04',
+    cert: 'netplus',
+    archetype: 'portmap',
+    objective: '2.4',
+    topic: 'Switch port-map provisioning — err-disabled state',
+    title: 'Kiosk PC dark in a school computer lab',
+    estMinutes: 6,
+    scenario: 'A school computer-lab switch feeds four student workstations and a teacher kiosk PC. The kiosk PC just dropped off the network entirely. Provision the ticketed ports, find the faulted port, then diagnose and fix it.',
+    portmap: {
+      faultPort: 'gi0-20'
+    },
+    portmapTickets: [
+      {
+        port: 'gi0-18',
+        vlan: '25',
+        poe: false
+      },
+      {
+        port: 'gi0-20',
+        vlan: '25',
+        poe: false
+      }
+    ],
+    assets: {
+      reference: {
+        kind: 'faceplate',
+        host: 'SW-LAB-B · 24-port',
+        ports: [
+          {
+            id: 'gi0-17',
+            label: 'Gi0/17 · Student PC 1',
+            led: 'up',
+            select: true
+          },
+          {
+            id: 'gi0-18',
+            label: 'Gi0/18 · Student PC 2',
+            led: 'up',
+            select: true
+          },
+          {
+            id: 'gi0-19',
+            label: 'Gi0/19 · Student PC 3',
+            led: 'up',
+            select: true
+          },
+          {
+            id: 'gi0-20',
+            label: 'Gi0/20 · Teacher kiosk PC',
+            led: 'err-disabled',
+            select: true
+          },
+          {
+            id: 'gi0-22',
+            label: 'Gi0/22',
+            led: 'down',
+            select: true
+          },
+          {
+            id: 'gi0-24',
+            label: 'Gi0/24 · Uplink',
+            led: 'up',
+            select: true
+          }
+        ]
+      }
+    },
+    steps: [
+      {
+        id: 'provision',
+        type: 'configure',
+        points: 1,
+        prompt: 'Provision the ticketed ports to VLAN 25.',
+        explanation: 'Both lab PCs on this ticket belong to the student-lab data VLAN with PoE off (wired desktop PCs).',
+        payload: {
+          slots: [
+            {
+              id: 'gi0-18__vlan',
+              label: 'Gi0/18 VLAN',
+              options: [
+                {
+                  id: 'a',
+                  text: 'VLAN 25'
+                },
+                {
+                  id: 'b',
+                  text: 'VLAN 60'
+                }
+              ]
+            },
+            {
+              id: 'gi0-20__vlan',
+              label: 'Gi0/20 VLAN',
+              options: [
+                {
+                  id: 'a',
+                  text: 'VLAN 25'
+                },
+                {
+                  id: 'b',
+                  text: 'VLAN 60'
+                }
+              ]
+            }
+          ]
+        },
+        answer: {
+          slots: {
+            'gi0-18__vlan': 'a',
+            'gi0-20__vlan': 'a'
+          }
+        }
+      },
+      {
+        id: 'diagnose',
+        type: 'analyze',
+        points: 1,
+        prompt: 'Select the port that is faulting.',
+        explanation: 'The kiosk PC’s port shows the err-disabled LED state, meaning the switch administratively shut the port down after a detected violation.',
+        payload: {
+          multi: false,
+          mode: 'facePorts'
+        },
+        answer: {
+          selected: [
+            'gi0-20'
+          ]
+        }
+      },
+      {
+        id: 'fix',
+        type: 'configure',
+        points: 1,
+        prompt: 'Name the root cause and the correct fix.',
+        explanation: 'A student swapped a personal laptop into the kiosk PC’s jack; the unrecognized MAC tripped the port’s port-security violation action into err-disabled. Clearing the violation and resetting the port with shutdown / no shutdown restores the kiosk.',
+        payload: {
+          slots: [
+            {
+              id: 'rootCause',
+              label: 'Root cause',
+              options: [
+                {
+                  id: 'a',
+                  text: 'Port-security MAC violation drove the port err-disabled'
+                },
+                {
+                  id: 'b',
+                  text: 'PoE overcurrent on the port'
+                }
+              ]
+            },
+            {
+              id: 'fix',
+              label: 'Fix',
+              options: [
+                {
+                  id: 'a',
+                  text: 'Clear the port-security violation and reset the port with shutdown / no shutdown'
+                },
+                {
+                  id: 'b',
+                  text: 'Raise the PoE power budget'
+                }
+              ]
+            }
+          ]
+        },
+        answer: {
+          slots: {
+            rootCause: 'a',
+            fix: 'a'
+          }
+        }
+      }
+    ]
+  },
+  {
+    id: 'np-pm-05',
+    cert: 'netplus',
+    archetype: 'portmap',
+    objective: '2.4',
+    topic: 'Switch port-map provisioning — PoE overcurrent',
+    title: 'Ceiling AP rebooting in a hotel corridor',
+    estMinutes: 6,
+    scenario: 'A hotel corridor closet switch feeds three ceiling wireless APs and a door-access controller. One AP keeps dropping guest connections and rebooting. Provision the ticketed ports, find the faulted port, then diagnose and fix it.',
+    portmap: {
+      faultPort: 'gi0-2'
+    },
+    portmapTickets: [
+      {
+        port: 'gi0-1',
+        vlan: '70',
+        poe: true
+      },
+      {
+        port: 'gi0-2',
+        vlan: '70',
+        poe: true
+      },
+      {
+        port: 'gi0-3',
+        vlan: '80',
+        poe: true
+      }
+    ],
+    assets: {
+      reference: {
+        kind: 'faceplate',
+        host: 'SW-HTL-C2 · 24-port',
+        ports: [
+          {
+            id: 'gi0-1',
+            label: 'Gi0/1 · Ceiling AP – corridor north',
+            led: 'up',
+            select: true
+          },
+          {
+            id: 'gi0-2',
+            label: 'Gi0/2 · Ceiling AP – corridor south',
+            led: 'poe-fault',
+            select: true
+          },
+          {
+            id: 'gi0-3',
+            label: 'Gi0/3 · Door-access controller',
+            led: 'up',
+            select: true
+          },
+          {
+            id: 'gi0-4',
+            label: 'Gi0/4 · Ceiling AP – lobby link',
+            led: 'up',
+            select: true
+          },
+          {
+            id: 'gi0-6',
+            label: 'Gi0/6',
+            led: 'down',
+            select: true
+          }
+        ]
+      }
+    },
+    steps: [
+      {
+        id: 'provision',
+        type: 'configure',
+        points: 1,
+        prompt: 'Provision the ticketed ports to their VLAN and PoE setting.',
+        explanation: 'The two corridor APs share the guest-wireless VLAN with PoE on; the door controller sits on the security VLAN, also PoE-powered.',
+        payload: {
+          slots: [
+            {
+              id: 'gi0-1__vlan',
+              label: 'Gi0/1 VLAN',
+              options: [
+                {
+                  id: 'a',
+                  text: 'VLAN 70'
+                },
+                {
+                  id: 'b',
+                  text: 'VLAN 80'
+                }
+              ]
+            },
+            {
+              id: 'gi0-1__poe',
+              label: 'Gi0/1 PoE',
+              options: [
+                {
+                  id: 'a',
+                  text: 'On'
+                },
+                {
+                  id: 'b',
+                  text: 'Off'
+                }
+              ]
+            },
+            {
+              id: 'gi0-2__vlan',
+              label: 'Gi0/2 VLAN',
+              options: [
+                {
+                  id: 'a',
+                  text: 'VLAN 70'
+                },
+                {
+                  id: 'b',
+                  text: 'VLAN 80'
+                }
+              ]
+            },
+            {
+              id: 'gi0-2__poe',
+              label: 'Gi0/2 PoE',
+              options: [
+                {
+                  id: 'a',
+                  text: 'On'
+                },
+                {
+                  id: 'b',
+                  text: 'Off'
+                }
+              ]
+            },
+            {
+              id: 'gi0-3__vlan',
+              label: 'Gi0/3 VLAN',
+              options: [
+                {
+                  id: 'a',
+                  text: 'VLAN 80'
+                },
+                {
+                  id: 'b',
+                  text: 'VLAN 70'
+                }
+              ]
+            },
+            {
+              id: 'gi0-3__poe',
+              label: 'Gi0/3 PoE',
+              options: [
+                {
+                  id: 'a',
+                  text: 'On'
+                },
+                {
+                  id: 'b',
+                  text: 'Off'
+                }
+              ]
+            }
+          ]
+        },
+        answer: {
+          slots: {
+            'gi0-1__vlan': 'a',
+            'gi0-1__poe': 'a',
+            'gi0-2__vlan': 'a',
+            'gi0-2__poe': 'a',
+            'gi0-3__vlan': 'a',
+            'gi0-3__poe': 'a'
+          }
+        }
+      },
+      {
+        id: 'diagnose',
+        type: 'analyze',
+        points: 1,
+        prompt: 'Select the port that is faulting.',
+        explanation: 'The corridor south AP’s port shows the PoE-fault LED, meaning the switch cut power after the connected load exceeded the port’s negotiated class.',
+        payload: {
+          multi: false,
+          mode: 'facePorts'
+        },
+        answer: {
+          selected: [
+            'gi0-2'
+          ]
+        }
+      },
+      {
+        id: 'fix',
+        type: 'configure',
+        points: 1,
+        prompt: 'Name the root cause and the correct fix.',
+        explanation: 'A newer high-power AP model draws more than the port’s current class supports; raising the port to a higher PoE power budget resolves the overcurrent shutdown.',
+        payload: {
+          slots: [
+            {
+              id: 'rootCause',
+              label: 'Root cause',
+              options: [
+                {
+                  id: 'a',
+                  text: 'PoE overcurrent: the AP draw exceeds the port class'
+                },
+                {
+                  id: 'b',
+                  text: 'Duplex mismatch to the AP'
+                }
+              ]
+            },
+            {
+              id: 'fix',
+              label: 'Fix',
+              options: [
+                {
+                  id: 'a',
+                  text: 'Raise the port to a higher PoE power budget (802.3at)'
+                },
+                {
+                  id: 'b',
+                  text: 'Force full-duplex on both ends'
+                }
+              ]
+            }
+          ]
+        },
+        answer: {
+          slots: {
+            rootCause: 'a',
+            fix: 'a'
+          }
+        }
+      }
+    ]
+  },
+  {
+    id: 'np-pm-06',
+    cert: 'netplus',
+    archetype: 'portmap',
+    objective: '2.4',
+    topic: 'Switch port-map provisioning — err-disabled state',
+    title: 'Print server offline in a small law-firm office',
+    estMinutes: 6,
+    scenario: 'A small law-firm office switch feeds three paralegal workstations and a networked print/scan server. The print server just went unreachable. Provision the ticketed ports, find the faulted port, then diagnose and fix it.',
+    portmap: {
+      faultPort: 'gi0-14'
+    },
+    portmapTickets: [
+      {
+        port: 'gi0-13',
+        vlan: '12',
+        poe: false
+      },
+      {
+        port: 'gi0-14',
+        vlan: '12',
+        poe: false
+      }
+    ],
+    assets: {
+      reference: {
+        kind: 'faceplate',
+        host: 'SW-LAW-OFC · 16-port',
+        ports: [
+          {
+            id: 'gi0-11',
+            label: 'Gi0/11 · Paralegal PC 1',
+            led: 'up',
+            select: true
+          },
+          {
+            id: 'gi0-12',
+            label: 'Gi0/12 · Paralegal PC 2',
+            led: 'up',
+            select: true
+          },
+          {
+            id: 'gi0-13',
+            label: 'Gi0/13 · Paralegal PC 3',
+            led: 'up',
+            select: true
+          },
+          {
+            id: 'gi0-14',
+            label: 'Gi0/14 · Print/scan server',
+            led: 'err-disabled',
+            select: true
+          },
+          {
+            id: 'gi0-16',
+            label: 'Gi0/16 · Uplink',
+            led: 'up',
+            select: true
+          }
+        ]
+      }
+    },
+    steps: [
+      {
+        id: 'provision',
+        type: 'configure',
+        points: 1,
+        prompt: 'Provision the ticketed ports to VLAN 12.',
+        explanation: 'Both ticketed ports carry wired office devices on the shared office data VLAN with PoE off.',
+        payload: {
+          slots: [
+            {
+              id: 'gi0-13__vlan',
+              label: 'Gi0/13 VLAN',
+              options: [
+                {
+                  id: 'a',
+                  text: 'VLAN 12'
+                },
+                {
+                  id: 'b',
+                  text: 'VLAN 45'
+                }
+              ]
+            },
+            {
+              id: 'gi0-14__vlan',
+              label: 'Gi0/14 VLAN',
+              options: [
+                {
+                  id: 'a',
+                  text: 'VLAN 12'
+                },
+                {
+                  id: 'b',
+                  text: 'VLAN 45'
+                }
+              ]
+            }
+          ]
+        },
+        answer: {
+          slots: {
+            'gi0-13__vlan': 'a',
+            'gi0-14__vlan': 'a'
+          }
+        }
+      },
+      {
+        id: 'diagnose',
+        type: 'analyze',
+        points: 1,
+        prompt: 'Select the port that is faulting.',
+        explanation: 'The print/scan server’s port shows the err-disabled LED state, meaning the switch administratively shut the port down after a detected violation.',
+        payload: {
+          multi: false,
+          mode: 'facePorts'
+        },
+        answer: {
+          selected: [
+            'gi0-14'
+          ]
+        }
+      },
+      {
+        id: 'fix',
+        type: 'configure',
+        points: 1,
+        prompt: 'Name the root cause and the correct fix.',
+        explanation: 'Someone plugged an unmanaged switch behind the print server’s jack to add ports for other devices; the port has BPDU guard enabled, and receiving a BPDU from the rogue switch tripped it into err-disabled to prevent a loop. Removing the rogue switch and resetting the port with shutdown / no shutdown restores it.',
+        payload: {
+          slots: [
+            {
+              id: 'rootCause',
+              label: 'Root cause',
+              options: [
+                {
+                  id: 'a',
+                  text: 'BPDU guard trip drove the port err-disabled'
+                },
+                {
+                  id: 'b',
+                  text: 'PoE overcurrent on the port'
+                }
+              ]
+            },
+            {
+              id: 'fix',
+              label: 'Fix',
+              options: [
+                {
+                  id: 'a',
+                  text: 'Remove the rogue switch and reset the port with shutdown / no shutdown'
+                },
+                {
+                  id: 'b',
+                  text: 'Increase the PoE power budget'
+                }
+              ]
+            }
+          ]
+        },
+        answer: {
+          slots: {
+            rootCause: 'a',
+            fix: 'a'
+          }
+        }
+      }
+    ]
+  },
+  {
+    id: 'np-pm-07',
+    cert: 'netplus',
+    archetype: 'portmap',
+    objective: '2.4',
+    topic: 'Switch port-map provisioning — PoE overcurrent',
+    title: 'Badge reader faulting at a warehouse loading dock',
+    estMinutes: 6,
+    scenario: 'A warehouse loading-dock switch feeds two PoE badge readers and a wired dock-office PC. One badge reader keeps power-cycling and locking out staff. Provision the ticketed ports, find the faulted port, then diagnose and fix it.',
+    portmap: {
+      faultPort: 'gi0-9'
+    },
+    portmapTickets: [
+      {
+        port: 'gi0-8',
+        vlan: '90',
+        poe: true
+      },
+      {
+        port: 'gi0-9',
+        vlan: '90',
+        poe: true
+      },
+      {
+        port: 'gi0-10',
+        vlan: '15',
+        poe: false
+      }
+    ],
+    assets: {
+      reference: {
+        kind: 'faceplate',
+        host: 'SW-WH-DOCK · 24-port',
+        ports: [
+          {
+            id: 'gi0-8',
+            label: 'Gi0/8 · Badge reader – dock door 1',
+            led: 'up',
+            select: true
+          },
+          {
+            id: 'gi0-9',
+            label: 'Gi0/9 · Badge reader – dock door 2',
+            led: 'poe-fault',
+            select: true
+          },
+          {
+            id: 'gi0-10',
+            label: 'Gi0/10 · Dock office PC',
+            led: 'up',
+            select: true
+          },
+          {
+            id: 'gi0-12',
+            label: 'Gi0/12',
+            led: 'down',
+            select: true
+          }
+        ]
+      }
+    },
+    steps: [
+      {
+        id: 'provision',
+        type: 'configure',
+        points: 1,
+        prompt: 'Provision the ticketed ports to their VLAN and PoE setting.',
+        explanation: 'Both badge readers sit on the security-devices VLAN with PoE on; the dock office PC is a wired data device on VLAN 15 with PoE off.',
+        payload: {
+          slots: [
+            {
+              id: 'gi0-8__vlan',
+              label: 'Gi0/8 VLAN',
+              options: [
+                {
+                  id: 'a',
+                  text: 'VLAN 90'
+                },
+                {
+                  id: 'b',
+                  text: 'VLAN 15'
+                }
+              ]
+            },
+            {
+              id: 'gi0-8__poe',
+              label: 'Gi0/8 PoE',
+              options: [
+                {
+                  id: 'a',
+                  text: 'On'
+                },
+                {
+                  id: 'b',
+                  text: 'Off'
+                }
+              ]
+            },
+            {
+              id: 'gi0-9__vlan',
+              label: 'Gi0/9 VLAN',
+              options: [
+                {
+                  id: 'a',
+                  text: 'VLAN 90'
+                },
+                {
+                  id: 'b',
+                  text: 'VLAN 15'
+                }
+              ]
+            },
+            {
+              id: 'gi0-9__poe',
+              label: 'Gi0/9 PoE',
+              options: [
+                {
+                  id: 'a',
+                  text: 'On'
+                },
+                {
+                  id: 'b',
+                  text: 'Off'
+                }
+              ]
+            },
+            {
+              id: 'gi0-10__vlan',
+              label: 'Gi0/10 VLAN',
+              options: [
+                {
+                  id: 'a',
+                  text: 'VLAN 15'
+                },
+                {
+                  id: 'b',
+                  text: 'VLAN 90'
+                }
+              ]
+            },
+            {
+              id: 'gi0-10__poe',
+              label: 'Gi0/10 PoE',
+              options: [
+                {
+                  id: 'a',
+                  text: 'Off'
+                },
+                {
+                  id: 'b',
+                  text: 'On'
+                }
+              ]
+            }
+          ]
+        },
+        answer: {
+          slots: {
+            'gi0-8__vlan': 'a',
+            'gi0-8__poe': 'a',
+            'gi0-9__vlan': 'a',
+            'gi0-9__poe': 'a',
+            'gi0-10__vlan': 'a',
+            'gi0-10__poe': 'a'
+          }
+        }
+      },
+      {
+        id: 'diagnose',
+        type: 'analyze',
+        points: 1,
+        prompt: 'Select the port that is faulting.',
+        explanation: 'Dock door 2’s badge reader port shows the PoE-fault LED, meaning the switch cut power after the connected load exceeded the port’s negotiated class.',
+        payload: {
+          multi: false,
+          mode: 'facePorts'
+        },
+        answer: {
+          selected: [
+            'gi0-9'
+          ]
+        }
+      },
+      {
+        id: 'fix',
+        type: 'configure',
+        points: 1,
+        prompt: 'Name the root cause and the correct fix.',
+        explanation: 'A recently installed heated badge-reader enclosure draws more current than the port’s current class provides; raising the port’s PoE power budget resolves the overcurrent condition.',
+        payload: {
+          slots: [
+            {
+              id: 'rootCause',
+              label: 'Root cause',
+              options: [
+                {
+                  id: 'a',
+                  text: 'PoE overcurrent: the heated enclosure draw exceeds the port class'
+                },
+                {
+                  id: 'b',
+                  text: 'Wrong VLAN assigned to the reader'
+                }
+              ]
+            },
+            {
+              id: 'fix',
+              label: 'Fix',
+              options: [
+                {
+                  id: 'a',
+                  text: 'Raise the port to a higher PoE power budget (802.3at)'
+                },
+                {
+                  id: 'b',
+                  text: 'Move the reader to the office VLAN'
+                }
+              ]
+            }
+          ]
+        },
+        answer: {
+          slots: {
+            rootCause: 'a',
+            fix: 'a'
+          }
+        }
+      }
+    ]
+  },
+  {
+    id: 'np-pm-08',
+    cert: 'netplus',
+    archetype: 'portmap',
+    objective: '2.4',
+    topic: 'Switch port-map provisioning — err-disabled state',
+    title: 'Front-desk PC dark at a boutique hotel',
+    estMinutes: 6,
+    scenario: 'A boutique hotel back-office switch feeds a front-desk PC, a reservations PC, and a lobby signage player. The front-desk PC just went completely dark. Provision the ticketed ports, find the faulted port, then diagnose and fix it.',
+    portmap: {
+      faultPort: 'gi0-3'
+    },
+    portmapTickets: [
+      {
+        port: 'gi0-3',
+        vlan: '5',
+        poe: false
+      },
+      {
+        port: 'gi0-4',
+        vlan: '5',
+        poe: false
+      }
+    ],
+    assets: {
+      reference: {
+        kind: 'faceplate',
+        host: 'SW-HTL-BOH · 16-port',
+        ports: [
+          {
+            id: 'gi0-1',
+            label: 'Gi0/1 · Lobby signage player',
+            led: 'up',
+            select: true
+          },
+          {
+            id: 'gi0-3',
+            label: 'Gi0/3 · Front-desk PC',
+            led: 'err-disabled',
+            select: true
+          },
+          {
+            id: 'gi0-4',
+            label: 'Gi0/4 · Reservations PC',
+            led: 'up',
+            select: true
+          },
+          {
+            id: 'gi0-6',
+            label: 'Gi0/6',
+            led: 'down',
+            select: true
+          },
+          {
+            id: 'gi0-8',
+            label: 'Gi0/8 · Uplink',
+            led: 'up',
+            select: true
+          }
+        ]
+      }
+    },
+    steps: [
+      {
+        id: 'provision',
+        type: 'configure',
+        points: 1,
+        prompt: 'Provision the ticketed ports to VLAN 5.',
+        explanation: 'The front-desk and reservations PCs are wired data devices sharing the office VLAN with PoE off.',
+        payload: {
+          slots: [
+            {
+              id: 'gi0-3__vlan',
+              label: 'Gi0/3 VLAN',
+              options: [
+                {
+                  id: 'a',
+                  text: 'VLAN 5'
+                },
+                {
+                  id: 'b',
+                  text: 'VLAN 35'
+                }
+              ]
+            },
+            {
+              id: 'gi0-4__vlan',
+              label: 'Gi0/4 VLAN',
+              options: [
+                {
+                  id: 'a',
+                  text: 'VLAN 5'
+                },
+                {
+                  id: 'b',
+                  text: 'VLAN 35'
+                }
+              ]
+            }
+          ]
+        },
+        answer: {
+          slots: {
+            'gi0-3__vlan': 'a',
+            'gi0-4__vlan': 'a'
+          }
+        }
+      },
+      {
+        id: 'diagnose',
+        type: 'analyze',
+        points: 1,
+        prompt: 'Select the port that is faulting.',
+        explanation: 'The front-desk PC’s port shows the err-disabled LED state, meaning the switch administratively shut the port down after a detected violation.',
+        payload: {
+          multi: false,
+          mode: 'facePorts'
+        },
+        answer: {
+          selected: [
+            'gi0-3'
+          ]
+        }
+      },
+      {
+        id: 'fix',
+        type: 'configure',
+        points: 1,
+        prompt: 'Name the root cause and the correct fix.',
+        explanation: 'An IT tech temporarily swapped in a spare PC for testing without updating the port’s secured MAC list; the unrecognized MAC tripped the port-security violation action into err-disabled. Clearing the violation and resetting the port with shutdown / no shutdown restores the front desk.',
+        payload: {
+          slots: [
+            {
+              id: 'rootCause',
+              label: 'Root cause',
+              options: [
+                {
+                  id: 'a',
+                  text: 'Port-security MAC violation drove the port err-disabled'
+                },
+                {
+                  id: 'b',
+                  text: 'PoE overcurrent on the port'
+                }
+              ]
+            },
+            {
+              id: 'fix',
+              label: 'Fix',
+              options: [
+                {
+                  id: 'a',
+                  text: 'Clear the port-security violation and reset the port with shutdown / no shutdown'
+                },
+                {
+                  id: 'b',
+                  text: 'Raise the PoE power budget'
+                }
+              ]
+            }
+          ]
+        },
+        answer: {
+          slots: {
+            rootCause: 'a',
+            fix: 'a'
+          }
+        }
+      }
+    ]
+  },
+  {
+    id: 'np-pm-09',
+    cert: 'netplus',
+    archetype: 'portmap',
+    objective: '2.4',
+    topic: 'Switch port-map provisioning — PoE overcurrent',
+    title: 'Conference-room phone rebooting at a corporate HQ',
+    estMinutes: 6,
+    scenario: 'A corporate HQ floor switch feeds a conference-room VoIP phone, a wall-mounted display controller, and two nearby desk phones. The conference-room phone keeps rebooting during calls. Provision the ticketed ports, find the faulted port, then diagnose and fix it.',
+    portmap: {
+      faultPort: 'gi0-15'
+    },
+    portmapTickets: [
+      {
+        port: 'gi0-15',
+        vlan: '55',
+        poe: true
+      },
+      {
+        port: 'gi0-16',
+        vlan: '55',
+        poe: true
+      }
+    ],
+    assets: {
+      reference: {
+        kind: 'faceplate',
+        host: 'SW-HQ-F4 · 48-port',
+        ports: [
+          {
+            id: 'gi0-14',
+            label: 'Gi0/14 · Display controller',
+            led: 'up',
+            select: true
+          },
+          {
+            id: 'gi0-15',
+            label: 'Gi0/15 · Conference-room VoIP phone',
+            led: 'poe-fault',
+            select: true
+          },
+          {
+            id: 'gi0-16',
+            label: 'Gi0/16 · Desk phone – north cube',
+            led: 'up',
+            select: true
+          },
+          {
+            id: 'gi0-18',
+            label: 'Gi0/18',
+            led: 'down',
+            select: true
+          },
+          {
+            id: 'gi0-20',
+            label: 'Gi0/20 · Uplink',
+            led: 'up',
+            select: true
+          }
+        ]
+      }
+    },
+    steps: [
+      {
+        id: 'provision',
+        type: 'configure',
+        points: 1,
+        prompt: 'Provision the ticketed ports to VLAN 55 with PoE on.',
+        explanation: 'Both ticketed phones share the voice VLAN and require PoE on to power the handset.',
+        payload: {
+          slots: [
+            {
+              id: 'gi0-15__vlan',
+              label: 'Gi0/15 VLAN',
+              options: [
+                {
+                  id: 'a',
+                  text: 'VLAN 55'
+                },
+                {
+                  id: 'b',
+                  text: 'VLAN 22'
+                }
+              ]
+            },
+            {
+              id: 'gi0-15__poe',
+              label: 'Gi0/15 PoE',
+              options: [
+                {
+                  id: 'a',
+                  text: 'On'
+                },
+                {
+                  id: 'b',
+                  text: 'Off'
+                }
+              ]
+            },
+            {
+              id: 'gi0-16__vlan',
+              label: 'Gi0/16 VLAN',
+              options: [
+                {
+                  id: 'a',
+                  text: 'VLAN 55'
+                },
+                {
+                  id: 'b',
+                  text: 'VLAN 22'
+                }
+              ]
+            },
+            {
+              id: 'gi0-16__poe',
+              label: 'Gi0/16 PoE',
+              options: [
+                {
+                  id: 'a',
+                  text: 'On'
+                },
+                {
+                  id: 'b',
+                  text: 'Off'
+                }
+              ]
+            }
+          ]
+        },
+        answer: {
+          slots: {
+            'gi0-15__vlan': 'a',
+            'gi0-15__poe': 'a',
+            'gi0-16__vlan': 'a',
+            'gi0-16__poe': 'a'
+          }
+        }
+      },
+      {
+        id: 'diagnose',
+        type: 'analyze',
+        points: 1,
+        prompt: 'Select the port that is faulting.',
+        explanation: 'The conference-room phone’s port shows the PoE-fault LED, meaning the switch cut power after the connected load exceeded the port’s negotiated class.',
+        payload: {
+          multi: false,
+          mode: 'facePorts'
+        },
+        answer: {
+          selected: [
+            'gi0-15'
+          ]
+        }
+      },
+      {
+        id: 'fix',
+        type: 'configure',
+        points: 1,
+        prompt: 'Name the root cause and the correct fix.',
+        explanation: 'A USB video bar was recently daisy-chained through the phone’s pass-through port, pushing combined draw past the port’s class; raising the port’s PoE power budget resolves it.',
+        payload: {
+          slots: [
+            {
+              id: 'rootCause',
+              label: 'Root cause',
+              options: [
+                {
+                  id: 'a',
+                  text: 'PoE overcurrent: the daisy-chained video bar draw exceeds the port class'
+                },
+                {
+                  id: 'b',
+                  text: 'Duplex mismatch on the phone port'
+                }
+              ]
+            },
+            {
+              id: 'fix',
+              label: 'Fix',
+              options: [
+                {
+                  id: 'a',
+                  text: 'Raise the port to a higher PoE power budget (802.3at)'
+                },
+                {
+                  id: 'b',
+                  text: 'Force full-duplex on both ends'
+                }
+              ]
+            }
+          ]
+        },
+        answer: {
+          slots: {
+            rootCause: 'a',
+            fix: 'a'
+          }
+        }
+      }
+    ]
+  },
+  {
+    id: 'np-pm-10',
+    cert: 'netplus',
+    archetype: 'portmap',
+    objective: '2.4',
+    topic: 'Switch port-map provisioning — err-disabled state',
+    title: 'Kitchen POS terminal dark at a restaurant',
+    estMinutes: 6,
+    scenario: 'A restaurant back-of-house switch feeds a kitchen POS terminal, a bar POS terminal, and a wired ticket printer. The kitchen POS terminal just dropped offline. Provision the ticketed ports, find the faulted port, then diagnose and fix it.',
+    portmap: {
+      faultPort: 'gi0-7'
+    },
+    portmapTickets: [
+      {
+        port: 'gi0-6',
+        vlan: '33',
+        poe: false
+      },
+      {
+        port: 'gi0-7',
+        vlan: '33',
+        poe: false
+      }
+    ],
+    assets: {
+      reference: {
+        kind: 'faceplate',
+        host: 'SW-RST-BOH · 16-port',
+        ports: [
+          {
+            id: 'gi0-5',
+            label: 'Gi0/5 · Bar POS terminal',
+            led: 'up',
+            select: true
+          },
+          {
+            id: 'gi0-6',
+            label: 'Gi0/6 · Ticket printer',
+            led: 'up',
+            select: true
+          },
+          {
+            id: 'gi0-7',
+            label: 'Gi0/7 · Kitchen POS terminal',
+            led: 'err-disabled',
+            select: true
+          },
+          {
+            id: 'gi0-9',
+            label: 'Gi0/9',
+            led: 'down',
+            select: true
+          }
+        ]
+      }
+    },
+    steps: [
+      {
+        id: 'provision',
+        type: 'configure',
+        points: 1,
+        prompt: 'Provision the ticketed ports to VLAN 33.',
+        explanation: 'The ticket printer and kitchen POS terminal share the payments-segment VLAN with PoE off (both wired, self-powered).',
+        payload: {
+          slots: [
+            {
+              id: 'gi0-6__vlan',
+              label: 'Gi0/6 VLAN',
+              options: [
+                {
+                  id: 'a',
+                  text: 'VLAN 33'
+                },
+                {
+                  id: 'b',
+                  text: 'VLAN 8'
+                }
+              ]
+            },
+            {
+              id: 'gi0-7__vlan',
+              label: 'Gi0/7 VLAN',
+              options: [
+                {
+                  id: 'a',
+                  text: 'VLAN 33'
+                },
+                {
+                  id: 'b',
+                  text: 'VLAN 8'
+                }
+              ]
+            }
+          ]
+        },
+        answer: {
+          slots: {
+            'gi0-6__vlan': 'a',
+            'gi0-7__vlan': 'a'
+          }
+        }
+      },
+      {
+        id: 'diagnose',
+        type: 'analyze',
+        points: 1,
+        prompt: 'Select the port that is faulting.',
+        explanation: 'The kitchen POS terminal’s port shows the err-disabled LED state, meaning the switch administratively shut the port down after a detected violation.',
+        payload: {
+          multi: false,
+          mode: 'facePorts'
+        },
+        answer: {
+          selected: [
+            'gi0-7'
+          ]
+        }
+      },
+      {
+        id: 'fix',
+        type: 'configure',
+        points: 1,
+        prompt: 'Name the root cause and the correct fix.',
+        explanation: 'Kitchen staff plugged a small unmanaged switch into the POS terminal’s jack to add a spare port; the port has BPDU guard enabled, and the BPDU forwarded by the rogue switch tripped it into err-disabled to prevent a loop. Removing the rogue switch and resetting the port with shutdown / no shutdown restores it.',
+        payload: {
+          slots: [
+            {
+              id: 'rootCause',
+              label: 'Root cause',
+              options: [
+                {
+                  id: 'a',
+                  text: 'BPDU guard trip drove the port err-disabled'
+                },
+                {
+                  id: 'b',
+                  text: 'PoE overcurrent on the port'
+                }
+              ]
+            },
+            {
+              id: 'fix',
+              label: 'Fix',
+              options: [
+                {
+                  id: 'a',
+                  text: 'Remove the rogue switch and reset the port with shutdown / no shutdown'
+                },
+                {
+                  id: 'b',
+                  text: 'Increase the PoE power budget'
+                }
+              ]
+            }
+          ]
+        },
+        answer: {
+          slots: {
+            rootCause: 'a',
+            fix: 'a'
+          }
+        }
+      }
+    ]
+  },
+  {
+    id: 'np-pm-11',
+    cert: 'netplus',
+    archetype: 'portmap',
+    objective: '2.4',
+    topic: 'Switch port-map provisioning — PoE overcurrent',
+    title: 'Time-clock reader faulting at a manufacturing plant',
+    estMinutes: 6,
+    scenario: 'A manufacturing plant floor switch feeds two PoE employee time-clock readers and a wired shift-supervisor terminal. One time-clock reader keeps power-cycling near shift change. Provision the ticketed ports, find the faulted port, then diagnose and fix it.',
+    portmap: {
+      faultPort: 'gi0-21'
+    },
+    portmapTickets: [
+      {
+        port: 'gi0-19',
+        vlan: '44',
+        poe: true
+      },
+      {
+        port: 'gi0-21',
+        vlan: '44',
+        poe: true
+      },
+      {
+        port: 'gi0-23',
+        vlan: '11',
+        poe: false
+      }
+    ],
+    assets: {
+      reference: {
+        kind: 'faceplate',
+        host: 'SW-PLANT-A · 24-port',
+        ports: [
+          {
+            id: 'gi0-19',
+            label: 'Gi0/19 · Time-clock reader – gate A',
+            led: 'up',
+            select: true
+          },
+          {
+            id: 'gi0-21',
+            label: 'Gi0/21 · Time-clock reader – gate B',
+            led: 'poe-fault',
+            select: true
+          },
+          {
+            id: 'gi0-23',
+            label: 'Gi0/23 · Shift-supervisor terminal',
+            led: 'up',
+            select: true
+          },
+          {
+            id: 'gi0-24',
+            label: 'Gi0/24 · Uplink',
+            led: 'up',
+            select: true
+          }
+        ]
+      }
+    },
+    steps: [
+      {
+        id: 'provision',
+        type: 'configure',
+        points: 1,
+        prompt: 'Provision the ticketed ports to their VLAN and PoE setting.',
+        explanation: 'Both time-clock readers sit on the plant-devices VLAN with PoE on; the supervisor terminal is a wired data device on VLAN 11 with PoE off.',
+        payload: {
+          slots: [
+            {
+              id: 'gi0-19__vlan',
+              label: 'Gi0/19 VLAN',
+              options: [
+                {
+                  id: 'a',
+                  text: 'VLAN 44'
+                },
+                {
+                  id: 'b',
+                  text: 'VLAN 11'
+                }
+              ]
+            },
+            {
+              id: 'gi0-19__poe',
+              label: 'Gi0/19 PoE',
+              options: [
+                {
+                  id: 'a',
+                  text: 'On'
+                },
+                {
+                  id: 'b',
+                  text: 'Off'
+                }
+              ]
+            },
+            {
+              id: 'gi0-21__vlan',
+              label: 'Gi0/21 VLAN',
+              options: [
+                {
+                  id: 'a',
+                  text: 'VLAN 44'
+                },
+                {
+                  id: 'b',
+                  text: 'VLAN 11'
+                }
+              ]
+            },
+            {
+              id: 'gi0-21__poe',
+              label: 'Gi0/21 PoE',
+              options: [
+                {
+                  id: 'a',
+                  text: 'On'
+                },
+                {
+                  id: 'b',
+                  text: 'Off'
+                }
+              ]
+            },
+            {
+              id: 'gi0-23__vlan',
+              label: 'Gi0/23 VLAN',
+              options: [
+                {
+                  id: 'a',
+                  text: 'VLAN 11'
+                },
+                {
+                  id: 'b',
+                  text: 'VLAN 44'
+                }
+              ]
+            },
+            {
+              id: 'gi0-23__poe',
+              label: 'Gi0/23 PoE',
+              options: [
+                {
+                  id: 'a',
+                  text: 'Off'
+                },
+                {
+                  id: 'b',
+                  text: 'On'
+                }
+              ]
+            }
+          ]
+        },
+        answer: {
+          slots: {
+            'gi0-19__vlan': 'a',
+            'gi0-19__poe': 'a',
+            'gi0-21__vlan': 'a',
+            'gi0-21__poe': 'a',
+            'gi0-23__vlan': 'a',
+            'gi0-23__poe': 'a'
+          }
+        }
+      },
+      {
+        id: 'diagnose',
+        type: 'analyze',
+        points: 1,
+        prompt: 'Select the port that is faulting.',
+        explanation: 'Gate B’s time-clock reader port shows the PoE-fault LED, meaning the switch cut power after the connected load exceeded the port’s negotiated class.',
+        payload: {
+          multi: false,
+          mode: 'facePorts'
+        },
+        answer: {
+          selected: [
+            'gi0-21'
+          ]
+        }
+      },
+      {
+        id: 'fix',
+        type: 'configure',
+        points: 1,
+        prompt: 'Name the root cause and the correct fix.',
+        explanation: 'The gate B reader was replaced with a higher PoE-class model, but the port is still capped at the old class; the negotiated draw for the new reader exceeds that class and trips the overcurrent shutdown. Raising the port’s PoE power budget to match the reader’s actual class resolves it.',
+        payload: {
+          slots: [
+            {
+              id: 'rootCause',
+              label: 'Root cause',
+              options: [
+                {
+                  id: 'a',
+                  text: 'PoE overcurrent: the replacement reader’s higher PoE class exceeds the port’s configured class'
+                },
+                {
+                  id: 'b',
+                  text: 'Wrong VLAN assigned to the reader'
+                }
+              ]
+            },
+            {
+              id: 'fix',
+              label: 'Fix',
+              options: [
+                {
+                  id: 'a',
+                  text: 'Raise the port to a higher PoE power budget (802.3at)'
+                },
+                {
+                  id: 'b',
+                  text: 'Move the reader to the terminal VLAN'
+                }
+              ]
+            }
+          ]
+        },
+        answer: {
+          slots: {
+            rootCause: 'a',
+            fix: 'a'
+          }
+        }
+      }
+    ]
+  },
+  {
+    id: 'np-pm-12',
+    cert: 'netplus',
+    archetype: 'portmap',
+    objective: '2.4',
+    topic: 'Switch port-map provisioning — err-disabled state',
+    title: 'Circulation-desk scanner dark at a public library',
+    estMinutes: 6,
+    scenario: 'A public library circulation-desk switch feeds a checkout scanner PC, a self-checkout kiosk, and a catalog lookup terminal. The checkout scanner PC just went completely dark mid-shift. Provision the ticketed ports, find the faulted port, then diagnose and fix it.',
+    portmap: {
+      faultPort: 'gi0-2'
+    },
+    portmapTickets: [
+      {
+        port: 'gi0-2',
+        vlan: '18',
+        poe: false
+      },
+      {
+        port: 'gi0-3',
+        vlan: '18',
+        poe: false
+      }
+    ],
+    assets: {
+      reference: {
+        kind: 'faceplate',
+        host: 'SW-LIB-DESK · 16-port',
+        ports: [
+          {
+            id: 'gi0-1',
+            label: 'Gi0/1 · Self-checkout kiosk',
+            led: 'up',
+            select: true
+          },
+          {
+            id: 'gi0-2',
+            label: 'Gi0/2 · Checkout scanner PC',
+            led: 'err-disabled',
+            select: true
+          },
+          {
+            id: 'gi0-3',
+            label: 'Gi0/3 · Catalog lookup terminal',
+            led: 'up',
+            select: true
+          },
+          {
+            id: 'gi0-5',
+            label: 'Gi0/5',
+            led: 'down',
+            select: true
+          },
+          {
+            id: 'gi0-8',
+            label: 'Gi0/8 · Uplink',
+            led: 'up',
+            select: true
+          }
+        ]
+      }
+    },
+    steps: [
+      {
+        id: 'provision',
+        type: 'configure',
+        points: 1,
+        prompt: 'Provision the ticketed ports to VLAN 18.',
+        explanation: 'The checkout scanner PC and catalog terminal share the patron-services data VLAN with PoE off.',
+        payload: {
+          slots: [
+            {
+              id: 'gi0-2__vlan',
+              label: 'Gi0/2 VLAN',
+              options: [
+                {
+                  id: 'a',
+                  text: 'VLAN 18'
+                },
+                {
+                  id: 'b',
+                  text: 'VLAN 27'
+                }
+              ]
+            },
+            {
+              id: 'gi0-3__vlan',
+              label: 'Gi0/3 VLAN',
+              options: [
+                {
+                  id: 'a',
+                  text: 'VLAN 18'
+                },
+                {
+                  id: 'b',
+                  text: 'VLAN 27'
+                }
+              ]
+            }
+          ]
+        },
+        answer: {
+          slots: {
+            'gi0-2__vlan': 'a',
+            'gi0-3__vlan': 'a'
+          }
+        }
+      },
+      {
+        id: 'diagnose',
+        type: 'analyze',
+        points: 1,
+        prompt: 'Select the port that is faulting.',
+        explanation: 'The checkout scanner PC’s port shows the err-disabled LED state, meaning the switch administratively shut the port down after a detected violation.',
+        payload: {
+          multi: false,
+          mode: 'facePorts'
+        },
+        answer: {
+          selected: [
+            'gi0-2'
+          ]
+        }
+      },
+      {
+        id: 'fix',
+        type: 'configure',
+        points: 1,
+        prompt: 'Name the root cause and the correct fix.',
+        explanation: 'A patron helping at the desk accidentally looped a spare patch cable from the scanner PC’s wall jack back into a second nearby jack on the same switch; loop guard detected the resulting inconsistency and shut the port down into err-disabled to prevent a bridging loop. Removing the looped cable and resetting the port with shutdown / no shutdown restores it.',
+        payload: {
+          slots: [
+            {
+              id: 'rootCause',
+              label: 'Root cause',
+              options: [
+                {
+                  id: 'a',
+                  text: 'Loop guard trip drove the port err-disabled'
+                },
+                {
+                  id: 'b',
+                  text: 'PoE overcurrent on the port'
+                }
+              ]
+            },
+            {
+              id: 'fix',
+              label: 'Fix',
+              options: [
+                {
+                  id: 'a',
+                  text: 'Remove the looped cable and reset the port with shutdown / no shutdown'
+                },
+                {
+                  id: 'b',
+                  text: 'Raise the PoE power budget'
+                }
+              ]
+            }
+          ]
+        },
+        answer: {
+          slots: {
+            rootCause: 'a',
+            fix: 'a'
+          }
+        }
+      }
+    ]
+  },
+
+  {
+    id: 'np-cbl-01',
+    cert: 'netplus',
+    archetype: 'wiremap',
+    objective: '5.2',
+    topic: 'Cable-test wiremap — open circuit',
+    title: 'New office run fails link light after termination',
+    estMinutes: 6,
+    scenario: 'A technician just terminated a fresh Cat6 run from the IDF-2 patch panel to office 214, but the wall jack never links up. A wiremap tester on the run shows one pin with no continuity at all. Flag the faulted pin, then diagnose and fix it.',
+    wiremap: {
+      fault: 'open'
+    },
+    assets: {
+      reference: {
+        kind: 'wiremap',
+        host: 'Run 1 · IDF-2 patch panel → office 214',
+        pins: [
+          {
+            pin: 1,
+            pairId: 2,
+            endBPin: 1,
+            select: true
+          },
+          {
+            pin: 2,
+            pairId: 2,
+            endBPin: 2,
+            select: true
+          },
+          {
+            pin: 3,
+            pairId: 3,
+            endBPin: 3,
+            select: true
+          },
+          {
+            pin: 4,
+            pairId: 1,
+            endBPin: 4,
+            select: true
+          },
+          {
+            pin: 5,
+            pairId: 1,
+            endBPin: 5,
+            select: true
+          },
+          {
+            pin: 6,
+            pairId: 3,
+            endBPin: 6,
+            select: true
+          },
+          {
+            pin: 7,
+            pairId: 4,
+            endBPin: null,
+            select: true
+          },
+          {
+            pin: 8,
+            pairId: 4,
+            endBPin: 8,
+            select: true
+          }
+        ]
+      }
+    },
+    steps: [
+      {
+        id: 'flag',
+        type: 'analyze',
+        points: 1,
+        prompt: 'Flag the End-A pin(s) responsible for the fault shown in the wiremap.',
+        explanation: 'Pin 7 shows no signal at the far end at all — every other pin lands cleanly on its own numbered pin, so pin 7 is an open circuit, not a miswire.',
+        payload: {
+          multi: true,
+          mode: 'wiremapPins'
+        },
+        answer: {
+          selected: [
+            '7'
+          ]
+        }
+      },
+      {
+        id: 'dx',
+        type: 'configure',
+        points: 1,
+        prompt: 'Classify the fault and select the correct fix.',
+        explanation: 'No continuity on a single pin with every other pin intact is the signature of an open circuit — usually a wire that never seated in the connector. Re-terminate so that conductor makes contact.',
+        payload: {
+          slots: [
+            {
+              id: 'faultType',
+              label: 'Fault type',
+              options: [
+                {
+                  id: 'a',
+                  text: 'Open circuit — one pin has no continuity to the far end'
+                },
+                {
+                  id: 'b',
+                  text: 'Short — two pins are electrically shorted together'
+                }
+              ]
+            },
+            {
+              id: 'fix',
+              label: 'Fix',
+              options: [
+                {
+                  id: 'a',
+                  text: 'Re-terminate the connector so the broken conductor makes contact'
+                },
+                {
+                  id: 'b',
+                  text: 'Swap the patch cable for a longer run of the same category'
+                }
+              ]
+            }
+          ]
+        },
+        answer: {
+          slots: {
+            faultType: 'a',
+            fix: 'a'
+          }
+        }
+      }
+    ]
+  },
+
+  {
+    id: 'np-cbl-02',
+    cert: 'netplus',
+    archetype: 'wiremap',
+    objective: '5.2',
+    topic: 'Cable-test wiremap — open circuit',
+    title: 'Riser drop tests dead on one conductor',
+    estMinutes: 6,
+    scenario: 'A riser cable feeding the 3rd-floor jack 3B tests dead for one PC even though the rest of the run’s pairs are fine. The building tech pulls a wiremap trace before re-punching the jack. Flag the open pin, then diagnose and fix it.',
+    wiremap: {
+      fault: 'open'
+    },
+    assets: {
+      reference: {
+        kind: 'wiremap',
+        host: 'Run 4 · riser closet → 3rd floor jack 3B',
+        pins: [
+          {
+            pin: 1,
+            pairId: 2,
+            endBPin: 1,
+            select: true
+          },
+          {
+            pin: 2,
+            pairId: 2,
+            endBPin: 2,
+            select: true
+          },
+          {
+            pin: 3,
+            pairId: 3,
+            endBPin: null,
+            select: true
+          },
+          {
+            pin: 4,
+            pairId: 1,
+            endBPin: 4,
+            select: true
+          },
+          {
+            pin: 5,
+            pairId: 1,
+            endBPin: 5,
+            select: true
+          },
+          {
+            pin: 6,
+            pairId: 3,
+            endBPin: 6,
+            select: true
+          },
+          {
+            pin: 7,
+            pairId: 4,
+            endBPin: 7,
+            select: true
+          },
+          {
+            pin: 8,
+            pairId: 4,
+            endBPin: 8,
+            select: true
+          }
+        ]
+      }
+    },
+    steps: [
+      {
+        id: 'flag',
+        type: 'analyze',
+        points: 1,
+        prompt: 'Flag the End-A pin(s) responsible for the fault shown in the wiremap.',
+        explanation: 'Pin 3 has no landing at all on End-B while the remaining seven pins map straight through — that is a single open conductor.',
+        payload: {
+          multi: true,
+          mode: 'wiremapPins'
+        },
+        answer: {
+          selected: [
+            '3'
+          ]
+        }
+      },
+      {
+        id: 'dx',
+        type: 'configure',
+        points: 1,
+        prompt: 'Classify the fault and select the correct fix.',
+        explanation: 'An isolated pin with zero continuity, and every other pin behaving normally, is an open circuit — the wire likely backed out of the punch-down. Re-terminate to restore contact.',
+        payload: {
+          slots: [
+            {
+              id: 'faultType',
+              label: 'Fault type',
+              options: [
+                {
+                  id: 'a',
+                  text: 'Open circuit — one pin has no continuity to the far end'
+                },
+                {
+                  id: 'b',
+                  text: 'Short — two pins are electrically shorted together'
+                }
+              ]
+            },
+            {
+              id: 'fix',
+              label: 'Fix',
+              options: [
+                {
+                  id: 'a',
+                  text: 'Re-terminate the connector so the broken conductor makes contact'
+                },
+                {
+                  id: 'b',
+                  text: 'Swap the patch cable for a longer run of the same category'
+                }
+              ]
+            }
+          ]
+        },
+        answer: {
+          slots: {
+            faultType: 'a',
+            fix: 'a'
+          }
+        }
+      }
+    ]
+  },
+
+  {
+    id: 'np-cbl-03',
+    cert: 'netplus',
+    archetype: 'wiremap',
+    objective: '5.2',
+    topic: 'Cable-test wiremap — open circuit',
+    title: 'Homeowner’s living-room jack has no link after a DIY re-punch',
+    estMinutes: 6,
+    scenario: 'A homeowner re-punched their own living-room jack after moving furniture and now the run won’t link. You run a wiremap tester off the structured-wiring panel and find one pin reading dead. Flag the faulted pin, then diagnose and fix it.',
+    wiremap: {
+      fault: 'open'
+    },
+    assets: {
+      reference: {
+        kind: 'wiremap',
+        host: 'Run 9 · residential structured-wiring panel → living room',
+        pins: [
+          {
+            pin: 1,
+            pairId: 2,
+            endBPin: null,
+            select: true
+          },
+          {
+            pin: 2,
+            pairId: 2,
+            endBPin: 2,
+            select: true
+          },
+          {
+            pin: 3,
+            pairId: 3,
+            endBPin: 3,
+            select: true
+          },
+          {
+            pin: 4,
+            pairId: 1,
+            endBPin: 4,
+            select: true
+          },
+          {
+            pin: 5,
+            pairId: 1,
+            endBPin: 5,
+            select: true
+          },
+          {
+            pin: 6,
+            pairId: 3,
+            endBPin: 6,
+            select: true
+          },
+          {
+            pin: 7,
+            pairId: 4,
+            endBPin: 7,
+            select: true
+          },
+          {
+            pin: 8,
+            pairId: 4,
+            endBPin: 8,
+            select: true
+          }
+        ]
+      }
+    },
+    steps: [
+      {
+        id: 'flag',
+        type: 'analyze',
+        points: 1,
+        prompt: 'Flag the End-A pin(s) responsible for the fault shown in the wiremap.',
+        explanation: 'Pin 1 never lands on the End-B side — the rest of the pins are straight-through and correctly paired, isolating the fault to that single open conductor.',
+        payload: {
+          multi: true,
+          mode: 'wiremapPins'
+        },
+        answer: {
+          selected: [
+            '1'
+          ]
+        }
+      },
+      {
+        id: 'dx',
+        type: 'configure',
+        points: 1,
+        prompt: 'Classify the fault and select the correct fix.',
+        explanation: 'A single pin with no continuity while the rest of the map is clean points to an open circuit from a conductor that never seated during the DIY re-punch. Re-terminate that pin.',
+        payload: {
+          slots: [
+            {
+              id: 'faultType',
+              label: 'Fault type',
+              options: [
+                {
+                  id: 'a',
+                  text: 'Open circuit — one pin has no continuity to the far end'
+                },
+                {
+                  id: 'b',
+                  text: 'Short — two pins are electrically shorted together'
+                }
+              ]
+            },
+            {
+              id: 'fix',
+              label: 'Fix',
+              options: [
+                {
+                  id: 'a',
+                  text: 'Re-terminate the connector so the broken conductor makes contact'
+                },
+                {
+                  id: 'b',
+                  text: 'Swap the patch cable for a longer run of the same category'
+                }
+              ]
+            }
+          ]
+        },
+        answer: {
+          slots: {
+            faultType: 'a',
+            fix: 'a'
+          }
+        }
+      }
+    ]
+  },
+
+  {
+    id: 'np-cbl-04',
+    cert: 'netplus',
+    archetype: 'wiremap',
+    objective: '5.2',
+    topic: 'Cable-test wiremap — short',
+    title: 'Reception desk run shows two pins landing on one conductor',
+    estMinutes: 6,
+    scenario: 'The reception desk PC keeps losing link intermittently. A wiremap trace off the IDF-1 patch panel shows two End-A pins both landing on the same End-B position — a classic short between two conductors. Flag the shorted pins, then diagnose and fix it.',
+    wiremap: {
+      fault: 'short'
+    },
+    assets: {
+      reference: {
+        kind: 'wiremap',
+        host: 'Run 2 · IDF-1 patch panel → reception desk',
+        pins: [
+          {
+            pin: 1,
+            pairId: 2,
+            endBPin: 1,
+            select: true
+          },
+          {
+            pin: 2,
+            pairId: 2,
+            endBPin: 1,
+            select: true
+          },
+          {
+            pin: 3,
+            pairId: 3,
+            endBPin: 3,
+            select: true
+          },
+          {
+            pin: 4,
+            pairId: 1,
+            endBPin: 4,
+            select: true
+          },
+          {
+            pin: 5,
+            pairId: 1,
+            endBPin: 5,
+            select: true
+          },
+          {
+            pin: 6,
+            pairId: 3,
+            endBPin: 6,
+            select: true
+          },
+          {
+            pin: 7,
+            pairId: 4,
+            endBPin: 7,
+            select: true
+          },
+          {
+            pin: 8,
+            pairId: 4,
+            endBPin: 8,
+            select: true
+          }
+        ]
+      }
+    },
+    steps: [
+      {
+        id: 'flag',
+        type: 'analyze',
+        points: 1,
+        prompt: 'Flag the End-A pin(s) responsible for the fault shown in the wiremap.',
+        explanation: 'Pins 1 and 2 (Pair 2’s own two conductors) both land on the same End-B position — that shared landing is the signature of a short, not a normal crossed pair.',
+        payload: {
+          multi: true,
+          mode: 'wiremapPins'
+        },
+        answer: {
+          selected: [
+            '1',
+            '2'
+          ]
+        }
+      },
+      {
+        id: 'dx',
+        type: 'configure',
+        points: 1,
+        prompt: 'Classify the fault and select the correct fix.',
+        explanation: 'Two source pins converging on one destination pin means the conductors are electrically shorted together, most likely insulation damage letting them touch inside the connector. Re-terminate so they no longer touch.',
+        payload: {
+          slots: [
+            {
+              id: 'faultType',
+              label: 'Fault type',
+              options: [
+                {
+                  id: 'a',
+                  text: 'Short — two pins are electrically shorted together'
+                },
+                {
+                  id: 'b',
+                  text: 'Open circuit — one pin has no continuity to the far end'
+                }
+              ]
+            },
+            {
+              id: 'fix',
+              label: 'Fix',
+              options: [
+                {
+                  id: 'a',
+                  text: 'Re-terminate the connector so the shorted conductors no longer touch'
+                },
+                {
+                  id: 'b',
+                  text: 'Swap the patch cable for a longer run of the same category'
+                }
+              ]
+            }
+          ]
+        },
+        answer: {
+          slots: {
+            faultType: 'a',
+            fix: 'a'
+          }
+        }
+      }
+    ]
+  },
+
+  {
+    id: 'np-cbl-05',
+    cert: 'netplus',
+    archetype: 'wiremap',
+    objective: '5.2',
+    topic: 'Cable-test wiremap — short',
+    title: 'Conference-room floor box run fails a cable certifier',
+    estMinutes: 6,
+    scenario: 'A newly installed conference-room floor box fails a cable certifier with a short-circuit warning. You pull a wiremap trace and find two End-A pins both mapping to the same End-B pin. Flag the shorted pins, then diagnose and fix it.',
+    wiremap: {
+      fault: 'short'
+    },
+    assets: {
+      reference: {
+        kind: 'wiremap',
+        host: 'Run 6 · conference room floor box',
+        pins: [
+          {
+            pin: 1,
+            pairId: 2,
+            endBPin: 1,
+            select: true
+          },
+          {
+            pin: 2,
+            pairId: 2,
+            endBPin: 2,
+            select: true
+          },
+          {
+            pin: 3,
+            pairId: 3,
+            endBPin: 3,
+            select: true
+          },
+          {
+            pin: 4,
+            pairId: 1,
+            endBPin: 4,
+            select: true
+          },
+          {
+            pin: 5,
+            pairId: 1,
+            endBPin: 4,
+            select: true
+          },
+          {
+            pin: 6,
+            pairId: 3,
+            endBPin: 6,
+            select: true
+          },
+          {
+            pin: 7,
+            pairId: 4,
+            endBPin: 7,
+            select: true
+          },
+          {
+            pin: 8,
+            pairId: 4,
+            endBPin: 8,
+            select: true
+          }
+        ]
+      }
+    },
+    steps: [
+      {
+        id: 'flag',
+        type: 'analyze',
+        points: 1,
+        prompt: 'Flag the End-A pin(s) responsible for the fault shown in the wiremap.',
+        explanation: 'Pins 4 and 5 (Pair 1’s two conductors) both land on the same End-B pin instead of their own — a shared destination pin is exactly what a short looks like on a wiremap.',
+        payload: {
+          multi: true,
+          mode: 'wiremapPins'
+        },
+        answer: {
+          selected: [
+            '4',
+            '5'
+          ]
+        }
+      },
+      {
+        id: 'dx',
+        type: 'configure',
+        points: 1,
+        prompt: 'Classify the fault and select the correct fix.',
+        explanation: 'When two source pins share one destination pin, the conductors are touching somewhere along the run or inside the jack — a short. Re-terminate so the conductors are separated and no longer touch.',
+        payload: {
+          slots: [
+            {
+              id: 'faultType',
+              label: 'Fault type',
+              options: [
+                {
+                  id: 'a',
+                  text: 'Short — two pins are electrically shorted together'
+                },
+                {
+                  id: 'b',
+                  text: 'Open circuit — one pin has no continuity to the far end'
+                }
+              ]
+            },
+            {
+              id: 'fix',
+              label: 'Fix',
+              options: [
+                {
+                  id: 'a',
+                  text: 'Re-terminate the connector so the shorted conductors no longer touch'
+                },
+                {
+                  id: 'b',
+                  text: 'Swap the patch cable for a longer run of the same category'
+                }
+              ]
+            }
+          ]
+        },
+        answer: {
+          slots: {
+            faultType: 'a',
+            fix: 'a'
+          }
+        }
+      }
+    ]
+  },
+
+  {
+    id: 'np-cbl-06',
+    cert: 'netplus',
+    archetype: 'wiremap',
+    objective: '5.2',
+    topic: 'Cable-test wiremap — short',
+    title: 'Home office jack certifies with a short after a crimp job',
+    estMinutes: 6,
+    scenario: 'A homeowner crimped their own RJ45 end onto a home-office drop, and the run now fails a wiremap certifier with two conductors reading the same destination pin. Flag the shorted pins, then diagnose and fix it.',
+    wiremap: {
+      fault: 'short'
+    },
+    assets: {
+      reference: {
+        kind: 'wiremap',
+        host: 'Run 11 · residential structured-wiring panel → home office',
+        pins: [
+          {
+            pin: 1,
+            pairId: 2,
+            endBPin: 1,
+            select: true
+          },
+          {
+            pin: 2,
+            pairId: 2,
+            endBPin: 2,
+            select: true
+          },
+          {
+            pin: 3,
+            pairId: 3,
+            endBPin: 3,
+            select: true
+          },
+          {
+            pin: 4,
+            pairId: 1,
+            endBPin: 4,
+            select: true
+          },
+          {
+            pin: 5,
+            pairId: 1,
+            endBPin: 5,
+            select: true
+          },
+          {
+            pin: 6,
+            pairId: 3,
+            endBPin: 6,
+            select: true
+          },
+          {
+            pin: 7,
+            pairId: 4,
+            endBPin: 7,
+            select: true
+          },
+          {
+            pin: 8,
+            pairId: 4,
+            endBPin: 7,
+            select: true
+          }
+        ]
+      }
+    },
+    steps: [
+      {
+        id: 'flag',
+        type: 'analyze',
+        points: 1,
+        prompt: 'Flag the End-A pin(s) responsible for the fault shown in the wiremap.',
+        explanation: 'Pins 7 and 8 (Pair 4’s conductors) both land on the same End-B pin — that duplicate landing means the two conductors are shorted, likely from an over-stripped jacket during the crimp.',
+        payload: {
+          multi: true,
+          mode: 'wiremapPins'
+        },
+        answer: {
+          selected: [
+            '7',
+            '8'
+          ]
+        }
+      },
+      {
+        id: 'dx',
+        type: 'configure',
+        points: 1,
+        prompt: 'Classify the fault and select the correct fix.',
+        explanation: 'A shared End-B landing across two source pins is a short circuit, not a miswire — the conductors are touching. Re-terminate the connector so they are properly separated.',
+        payload: {
+          slots: [
+            {
+              id: 'faultType',
+              label: 'Fault type',
+              options: [
+                {
+                  id: 'a',
+                  text: 'Short — two pins are electrically shorted together'
+                },
+                {
+                  id: 'b',
+                  text: 'Open circuit — one pin has no continuity to the far end'
+                }
+              ]
+            },
+            {
+              id: 'fix',
+              label: 'Fix',
+              options: [
+                {
+                  id: 'a',
+                  text: 'Re-terminate the connector so the shorted conductors no longer touch'
+                },
+                {
+                  id: 'b',
+                  text: 'Swap the patch cable for a longer run of the same category'
+                }
+              ]
+            }
+          ]
+        },
+        answer: {
+          slots: {
+            faultType: 'a',
+            fix: 'a'
+          }
+        }
+      }
+    ]
+  },
+
+  {
+    id: 'np-cbl-07',
+    cert: 'netplus',
+    archetype: 'wiremap',
+    objective: '5.2',
+    topic: 'Cable-test wiremap — split pair',
+    title: 'Open-plan desk cluster run passes continuity but fails NEXT',
+    estMinutes: 6,
+    scenario: 'A run to an open-plan desk cluster passes a basic continuity check but keeps failing crosstalk on a certifier. A wiremap trace shows a wire from Pair 2 crossed with a wire from Pair 3. Flag the crossed pins, then diagnose and fix it.',
+    wiremap: {
+      fault: 'splitPair'
+    },
+    assets: {
+      reference: {
+        kind: 'wiremap',
+        host: 'Run 3 · IDF-2 patch panel → open-plan desk cluster',
+        pins: [
+          {
+            pin: 1,
+            pairId: 2,
+            endBPin: 1,
+            select: true
+          },
+          {
+            pin: 2,
+            pairId: 2,
+            endBPin: 3,
+            select: true
+          },
+          {
+            pin: 3,
+            pairId: 3,
+            endBPin: 2,
+            select: true
+          },
+          {
+            pin: 4,
+            pairId: 1,
+            endBPin: 4,
+            select: true
+          },
+          {
+            pin: 5,
+            pairId: 1,
+            endBPin: 5,
+            select: true
+          },
+          {
+            pin: 6,
+            pairId: 3,
+            endBPin: 6,
+            select: true
+          },
+          {
+            pin: 7,
+            pairId: 4,
+            endBPin: 7,
+            select: true
+          },
+          {
+            pin: 8,
+            pairId: 4,
+            endBPin: 8,
+            select: true
+          }
+        ]
+      }
+    },
+    steps: [
+      {
+        id: 'flag',
+        type: 'analyze',
+        points: 1,
+        prompt: 'Flag the End-A pin(s) responsible for the fault shown in the wiremap.',
+        explanation: 'Pins 2 and 3 land on each other’s End-B positions, and they belong to two DIFFERENT pairs (2 and 3) — that cross-pair swap is a split pair, which still passes continuity but destroys the twist.',
+        payload: {
+          multi: true,
+          mode: 'wiremapPins'
+        },
+        answer: {
+          selected: [
+            '2',
+            '3'
+          ]
+        }
+      },
+      {
+        id: 'dx',
+        type: 'configure',
+        points: 1,
+        prompt: 'Classify the fault and select the correct fix.',
+        explanation: 'Continuity looks fine because both ends still connect, but pulling wires from two different pairs together breaks the twisted-pair cancellation and causes crosstalk — a split pair. Re-terminate so each pair’s wires land on their own correct pins.',
+        payload: {
+          slots: [
+            {
+              id: 'faultType',
+              label: 'Fault type',
+              options: [
+                {
+                  id: 'a',
+                  text: 'Split pair — two wires from different pairs were crossed'
+                },
+                {
+                  id: 'b',
+                  text: 'Reversed pair — both wires of one pair are swapped'
+                }
+              ]
+            },
+            {
+              id: 'fix',
+              label: 'Fix',
+              options: [
+                {
+                  id: 'a',
+                  text: 'Re-terminate so each pair’s two wires land on their correct pins'
+                },
+                {
+                  id: 'b',
+                  text: 'Swap the patch cable for a longer run of the same category'
+                }
+              ]
+            }
+          ]
+        },
+        answer: {
+          slots: {
+            faultType: 'a',
+            fix: 'a'
+          }
+        }
+      }
+    ]
+  },
+
+  {
+    id: 'np-cbl-08',
+    cert: 'netplus',
+    archetype: 'wiremap',
+    objective: '5.2',
+    topic: 'Cable-test wiremap — split pair',
+    title: 'Jack 2C intermittently drops a video call under load',
+    estMinutes: 6,
+    scenario: 'A user at jack 2C reports their video calls stutter under heavy network load, even though the link stays up. A wiremap trace on the run shows a wire from Pair 1 crossed with a wire from Pair 3. Flag the crossed pins, then diagnose and fix it.',
+    wiremap: {
+      fault: 'splitPair'
+    },
+    assets: {
+      reference: {
+        kind: 'wiremap',
+        host: 'Run 7 · riser closet → 2nd floor jack 2C',
+        pins: [
+          {
+            pin: 1,
+            pairId: 2,
+            endBPin: 1,
+            select: true
+          },
+          {
+            pin: 2,
+            pairId: 2,
+            endBPin: 2,
+            select: true
+          },
+          {
+            pin: 3,
+            pairId: 3,
+            endBPin: 4,
+            select: true
+          },
+          {
+            pin: 4,
+            pairId: 1,
+            endBPin: 3,
+            select: true
+          },
+          {
+            pin: 5,
+            pairId: 1,
+            endBPin: 5,
+            select: true
+          },
+          {
+            pin: 6,
+            pairId: 3,
+            endBPin: 6,
+            select: true
+          },
+          {
+            pin: 7,
+            pairId: 4,
+            endBPin: 7,
+            select: true
+          },
+          {
+            pin: 8,
+            pairId: 4,
+            endBPin: 8,
+            select: true
+          }
+        ]
+      }
+    },
+    steps: [
+      {
+        id: 'flag',
+        type: 'analyze',
+        points: 1,
+        prompt: 'Flag the End-A pin(s) responsible for the fault shown in the wiremap.',
+        explanation: 'Pins 4 and 3 swap End-B positions, and they belong to different pairs (1 and 3) — that is a split pair; the link still comes up but the mismatched twist bleeds crosstalk under load.',
+        payload: {
+          multi: true,
+          mode: 'wiremapPins'
+        },
+        answer: {
+          selected: [
+            '3',
+            '4'
+          ]
+        }
+      },
+      {
+        id: 'dx',
+        type: 'configure',
+        points: 1,
+        prompt: 'Classify the fault and select the correct fix.',
+        explanation: 'A split pair still passes a simple link test but loses the pair’s twist-based noise cancellation, causing exactly this kind of load-dependent instability. Re-terminate so each pair’s two wires land on their correct pins.',
+        payload: {
+          slots: [
+            {
+              id: 'faultType',
+              label: 'Fault type',
+              options: [
+                {
+                  id: 'a',
+                  text: 'Split pair — two wires from different pairs were crossed'
+                },
+                {
+                  id: 'b',
+                  text: 'Reversed pair — both wires of one pair are swapped'
+                }
+              ]
+            },
+            {
+              id: 'fix',
+              label: 'Fix',
+              options: [
+                {
+                  id: 'a',
+                  text: 'Re-terminate so each pair’s two wires land on their correct pins'
+                },
+                {
+                  id: 'b',
+                  text: 'Swap the patch cable for a longer run of the same category'
+                }
+              ]
+            }
+          ]
+        },
+        answer: {
+          slots: {
+            faultType: 'a',
+            fix: 'a'
+          }
+        }
+      }
+    ]
+  },
+
+  {
+    id: 'np-cbl-09',
+    cert: 'netplus',
+    archetype: 'wiremap',
+    objective: '5.2',
+    topic: 'Cable-test wiremap — split pair',
+    title: 'Home theater streaming box buffers despite a lit link light',
+    estMinutes: 6,
+    scenario: 'A homeowner’s streaming box constantly buffers even though the link light stays solid green. A wiremap trace on the run to the structured-wiring panel shows a wire from Pair 3 crossed with a wire from Pair 4. Flag the crossed pins, then diagnose and fix it.',
+    wiremap: {
+      fault: 'splitPair'
+    },
+    assets: {
+      reference: {
+        kind: 'wiremap',
+        host: 'Run 12 · residential structured-wiring panel → home theater',
+        pins: [
+          {
+            pin: 1,
+            pairId: 2,
+            endBPin: 1,
+            select: true
+          },
+          {
+            pin: 2,
+            pairId: 2,
+            endBPin: 2,
+            select: true
+          },
+          {
+            pin: 3,
+            pairId: 3,
+            endBPin: 3,
+            select: true
+          },
+          {
+            pin: 4,
+            pairId: 1,
+            endBPin: 4,
+            select: true
+          },
+          {
+            pin: 5,
+            pairId: 1,
+            endBPin: 5,
+            select: true
+          },
+          {
+            pin: 6,
+            pairId: 3,
+            endBPin: 7,
+            select: true
+          },
+          {
+            pin: 7,
+            pairId: 4,
+            endBPin: 6,
+            select: true
+          },
+          {
+            pin: 8,
+            pairId: 4,
+            endBPin: 8,
+            select: true
+          }
+        ]
+      }
+    },
+    steps: [
+      {
+        id: 'flag',
+        type: 'analyze',
+        points: 1,
+        prompt: 'Flag the End-A pin(s) responsible for the fault shown in the wiremap.',
+        explanation: 'Pins 6 and 7 swap End-B positions and belong to two different pairs (3 and 4) — a split pair, which still links up but degrades throughput under sustained traffic like streaming.',
+        payload: {
+          multi: true,
+          mode: 'wiremapPins'
+        },
+        answer: {
+          selected: [
+            '6',
+            '7'
+          ]
+        }
+      },
+      {
+        id: 'dx',
+        type: 'configure',
+        points: 1,
+        prompt: 'Classify the fault and select the correct fix.',
+        explanation: 'The link light lies here — continuity is fine, but mixing wires from two different pairs breaks the twist that cancels crosstalk, throttling real throughput. Re-terminate so each pair’s two wires land on their correct pins.',
+        payload: {
+          slots: [
+            {
+              id: 'faultType',
+              label: 'Fault type',
+              options: [
+                {
+                  id: 'a',
+                  text: 'Split pair — two wires from different pairs were crossed'
+                },
+                {
+                  id: 'b',
+                  text: 'Reversed pair — both wires of one pair are swapped'
+                }
+              ]
+            },
+            {
+              id: 'fix',
+              label: 'Fix',
+              options: [
+                {
+                  id: 'a',
+                  text: 'Re-terminate so each pair’s two wires land on their correct pins'
+                },
+                {
+                  id: 'b',
+                  text: 'Swap the patch cable for a longer run of the same category'
+                }
+              ]
+            }
+          ]
+        },
+        answer: {
+          slots: {
+            faultType: 'a',
+            fix: 'a'
+          }
+        }
+      }
+    ]
+  },
+
+  {
+    id: 'np-cbl-10',
+    cert: 'netplus',
+    archetype: 'wiremap',
+    objective: '5.2',
+    topic: 'Cable-test wiremap — reversed pair',
+    title: 'Print room jack links but the printer randomly disconnects',
+    estMinutes: 6,
+    scenario: 'A networked printer in the print room links at the switch but drops offline every few minutes. A wiremap trace shows Pair 1’s two wires swapped with each other on the End-B side. Flag the reversed pins, then diagnose and fix it.',
+    wiremap: {
+      fault: 'reversedPair'
+    },
+    assets: {
+      reference: {
+        kind: 'wiremap',
+        host: 'Run 5 · IDF-1 patch panel → print room',
+        pins: [
+          {
+            pin: 1,
+            pairId: 2,
+            endBPin: 1,
+            select: true
+          },
+          {
+            pin: 2,
+            pairId: 2,
+            endBPin: 2,
+            select: true
+          },
+          {
+            pin: 3,
+            pairId: 3,
+            endBPin: 3,
+            select: true
+          },
+          {
+            pin: 4,
+            pairId: 1,
+            endBPin: 5,
+            select: true
+          },
+          {
+            pin: 5,
+            pairId: 1,
+            endBPin: 4,
+            select: true
+          },
+          {
+            pin: 6,
+            pairId: 3,
+            endBPin: 6,
+            select: true
+          },
+          {
+            pin: 7,
+            pairId: 4,
+            endBPin: 7,
+            select: true
+          },
+          {
+            pin: 8,
+            pairId: 4,
+            endBPin: 8,
+            select: true
+          }
+        ]
+      }
+    },
+    steps: [
+      {
+        id: 'flag',
+        type: 'analyze',
+        points: 1,
+        prompt: 'Flag the End-A pin(s) responsible for the fault shown in the wiremap.',
+        explanation: 'Pins 4 and 5 swap End-B positions, and both belong to the SAME pair (Pair 1) — that is a reversed pair, which still links but degrades signal integrity, especially on longer runs.',
+        payload: {
+          multi: true,
+          mode: 'wiremapPins'
+        },
+        answer: {
+          selected: [
+            '4',
+            '5'
+          ]
+        }
+      },
+      {
+        id: 'dx',
+        type: 'configure',
+        points: 1,
+        prompt: 'Classify the fault and select the correct fix.',
+        explanation: 'When both wires of one pair swap places with each other (not with a different pair), it is a reversed pair — link usually still comes up but signal quality suffers. Re-terminate so the pair’s two wires land in their correct order.',
+        payload: {
+          slots: [
+            {
+              id: 'faultType',
+              label: 'Fault type',
+              options: [
+                {
+                  id: 'a',
+                  text: 'Reversed pair — both wires of one pair are swapped'
+                },
+                {
+                  id: 'b',
+                  text: 'Split pair — two wires from different pairs were crossed'
+                }
+              ]
+            },
+            {
+              id: 'fix',
+              label: 'Fix',
+              options: [
+                {
+                  id: 'a',
+                  text: 'Re-terminate so the pair’s two wires land in their correct order'
+                },
+                {
+                  id: 'b',
+                  text: 'Swap the patch cable for a longer run of the same category'
+                }
+              ]
+            }
+          ]
+        },
+        answer: {
+          slots: {
+            faultType: 'a',
+            fix: 'a'
+          }
+        }
+      }
+    ]
+  },
+
+  {
+    id: 'np-cbl-11',
+    cert: 'netplus',
+    archetype: 'wiremap',
+    objective: '5.2',
+    topic: 'Cable-test wiremap — reversed pair',
+    title: 'Jack 4A negotiates a lower link speed than the rest of the floor',
+    estMinutes: 6,
+    scenario: 'A PC at jack 4A always negotiates a slower link speed than identical PCs elsewhere on the floor. A wiremap trace shows Pair 2’s two wires swapped with each other on the End-B side. Flag the reversed pins, then diagnose and fix it.',
+    wiremap: {
+      fault: 'reversedPair'
+    },
+    assets: {
+      reference: {
+        kind: 'wiremap',
+        host: 'Run 8 · riser closet → 4th floor jack 4A',
+        pins: [
+          {
+            pin: 1,
+            pairId: 2,
+            endBPin: 2,
+            select: true
+          },
+          {
+            pin: 2,
+            pairId: 2,
+            endBPin: 1,
+            select: true
+          },
+          {
+            pin: 3,
+            pairId: 3,
+            endBPin: 3,
+            select: true
+          },
+          {
+            pin: 4,
+            pairId: 1,
+            endBPin: 4,
+            select: true
+          },
+          {
+            pin: 5,
+            pairId: 1,
+            endBPin: 5,
+            select: true
+          },
+          {
+            pin: 6,
+            pairId: 3,
+            endBPin: 6,
+            select: true
+          },
+          {
+            pin: 7,
+            pairId: 4,
+            endBPin: 7,
+            select: true
+          },
+          {
+            pin: 8,
+            pairId: 4,
+            endBPin: 8,
+            select: true
+          }
+        ]
+      }
+    },
+    steps: [
+      {
+        id: 'flag',
+        type: 'analyze',
+        points: 1,
+        prompt: 'Flag the End-A pin(s) responsible for the fault shown in the wiremap.',
+        explanation: 'Pins 1 and 2 swap End-B positions, and both belong to the SAME pair (Pair 2) — a reversed pair, which can still link but frequently forces a lower negotiated speed.',
+        payload: {
+          multi: true,
+          mode: 'wiremapPins'
+        },
+        answer: {
+          selected: [
+            '1',
+            '2'
+          ]
+        }
+      },
+      {
+        id: 'dx',
+        type: 'configure',
+        points: 1,
+        prompt: 'Classify the fault and select the correct fix.',
+        explanation: 'A reversed pair — both conductors of one pair swapped with each other — often still auto-negotiates a link but at reduced speed or with more errors. Re-terminate so the pair’s two wires land in their correct order.',
+        payload: {
+          slots: [
+            {
+              id: 'faultType',
+              label: 'Fault type',
+              options: [
+                {
+                  id: 'a',
+                  text: 'Reversed pair — both wires of one pair are swapped'
+                },
+                {
+                  id: 'b',
+                  text: 'Split pair — two wires from different pairs were crossed'
+                }
+              ]
+            },
+            {
+              id: 'fix',
+              label: 'Fix',
+              options: [
+                {
+                  id: 'a',
+                  text: 'Re-terminate so the pair’s two wires land in their correct order'
+                },
+                {
+                  id: 'b',
+                  text: 'Swap the patch cable for a longer run of the same category'
+                }
+              ]
+            }
+          ]
+        },
+        answer: {
+          slots: {
+            faultType: 'a',
+            fix: 'a'
+          }
+        }
+      }
+    ]
+  },
+
+  {
+    id: 'np-cbl-12',
+    cert: 'netplus',
+    archetype: 'wiremap',
+    objective: '5.2',
+    topic: 'Cable-test wiremap — reversed pair',
+    title: 'Bedroom jack links at gigabit speeds only rarely',
+    estMinutes: 6,
+    scenario: 'A homeowner’s kid’s bedroom jack links most of the time but rarely holds a gigabit negotiation, often falling back to 100 Mbps. A wiremap trace shows Pair 4’s two wires swapped with each other on the End-B side. Flag the reversed pins, then diagnose and fix it.',
+    wiremap: {
+      fault: 'reversedPair'
+    },
+    assets: {
+      reference: {
+        kind: 'wiremap',
+        host: 'Run 10 · residential structured-wiring panel → kids’ bedroom',
+        pins: [
+          {
+            pin: 1,
+            pairId: 2,
+            endBPin: 1,
+            select: true
+          },
+          {
+            pin: 2,
+            pairId: 2,
+            endBPin: 2,
+            select: true
+          },
+          {
+            pin: 3,
+            pairId: 3,
+            endBPin: 3,
+            select: true
+          },
+          {
+            pin: 4,
+            pairId: 1,
+            endBPin: 4,
+            select: true
+          },
+          {
+            pin: 5,
+            pairId: 1,
+            endBPin: 5,
+            select: true
+          },
+          {
+            pin: 6,
+            pairId: 3,
+            endBPin: 6,
+            select: true
+          },
+          {
+            pin: 7,
+            pairId: 4,
+            endBPin: 8,
+            select: true
+          },
+          {
+            pin: 8,
+            pairId: 4,
+            endBPin: 7,
+            select: true
+          }
+        ]
+      }
+    },
+    steps: [
+      {
+        id: 'flag',
+        type: 'analyze',
+        points: 1,
+        prompt: 'Flag the End-A pin(s) responsible for the fault shown in the wiremap.',
+        explanation: 'Pins 7 and 8 swap End-B positions, and both belong to the SAME pair (Pair 4) — a reversed pair, which is exactly the kind of fault that can prevent a stable gigabit negotiation on some hardware.',
+        payload: {
+          multi: true,
+          mode: 'wiremapPins'
+        },
+        answer: {
+          selected: [
+            '7',
+            '8'
+          ]
+        }
+      },
+      {
+        id: 'dx',
+        type: 'configure',
+        points: 1,
+        prompt: 'Classify the fault and select the correct fix.',
+        explanation: 'Reversing the two wires within a single pair rarely breaks the link outright but can prevent higher-speed negotiation or cause intermittent renegotiation. Re-terminate so the pair’s two wires land in their correct order.',
+        payload: {
+          slots: [
+            {
+              id: 'faultType',
+              label: 'Fault type',
+              options: [
+                {
+                  id: 'a',
+                  text: 'Reversed pair — both wires of one pair are swapped'
+                },
+                {
+                  id: 'b',
+                  text: 'Split pair — two wires from different pairs were crossed'
+                }
+              ]
+            },
+            {
+              id: 'fix',
+              label: 'Fix',
+              options: [
+                {
+                  id: 'a',
+                  text: 'Re-terminate so the pair’s two wires land in their correct order'
+                },
+                {
+                  id: 'b',
+                  text: 'Swap the patch cable for a longer run of the same category'
+                }
+              ]
+            }
+          ]
+        },
+        answer: {
+          slots: {
+            faultType: 'a',
+            fix: 'a'
+          }
+        }
+      }
+    ]
   }
 ];

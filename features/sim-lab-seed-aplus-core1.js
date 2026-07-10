@@ -2480,4 +2480,5240 @@ window.SIM_LAB_SEED_APLUS_CORE1 = [
         answer: { slots: { diagnosis: 'a', firstMove: 'a' } } }
     ]
   },
+  {
+    id: 'a1-pcb-01',
+    cert: 'aplus-core1',
+    archetype: 'pcbuild',
+    objective: '3.4',
+    topic: 'Two-client PC build spec-off — competitive FPS rig vs. online-course laptop-replacement',
+    title: 'Two tickets on the bench: Priya\'s FPS rig and Dara\'s course PC',
+    estMinutes: 8,
+    scenario: 'Two build tickets landed the same day. Priya wants a compact ATX rig for competitive FPS titles at high frame rates. Dara just needs a reliable desktop for online coursework — browser, video calls, word processing, nothing graphics-intensive. Same parts catalog, two very different builds. Spec each to its own ticket.',
+    pcbuild: {
+      clientA: {
+        budgetUsd: 1300,
+        caseMaxGpuLengthMm: 320,
+        minCpuTier: 2,
+        minGpuTier: 3
+      },
+      clientB: {
+        budgetUsd: 350,
+        caseMaxGpuLengthMm: 180,
+        minCpuTier: 1,
+        minGpuTier: 0
+      }
+    },
+    assets: {
+      reference: {
+        kind: 'slots',
+        bays: [
+          {
+            id: 'a-cpu',
+            label: 'Client A · CPU socket'
+          },
+          {
+            id: 'a-gpu',
+            label: 'Client A · GPU bay · max 320mm'
+          },
+          {
+            id: 'a-ram',
+            label: 'Client A · RAM slots'
+          },
+          {
+            id: 'a-psu',
+            label: 'Client A · PSU bay · ATX'
+          },
+          {
+            id: 'a-storage',
+            label: 'Client A · Storage bay · 2.5in/3.5in'
+          },
+          {
+            id: 'a-cooling',
+            label: 'Client A · Cooling mount · 120/240mm'
+          },
+          {
+            id: 'b-cpu',
+            label: 'Client B · CPU socket'
+          },
+          {
+            id: 'b-gpu',
+            label: 'Client B · GPU bay · max 180mm'
+          },
+          {
+            id: 'b-ram',
+            label: 'Client B · RAM slots'
+          },
+          {
+            id: 'b-psu',
+            label: 'Client B · PSU bay · SFX/ATX'
+          },
+          {
+            id: 'b-storage',
+            label: 'Client B · Storage bay · 2.5in only'
+          },
+          {
+            id: 'b-cooling',
+            label: 'Client B · Cooling mount · stock/92mm'
+          }
+        ],
+        notes: ['Client A · $1300 budget · ATX mid-tower · Competitive FPS gaming', 'Client B · $350 budget · Micro-ATX · Coursework · browser · video calls']
+      }
+    },
+    steps: [
+      {
+        id: 'clientA',
+        type: 'configure',
+        points: 1,
+        prompt: 'Spec Priya\'s FPS rig: strong single-core CPU, a GPU that clears the frame-rate bar and fits the case, and enough PSU headroom for both.',
+        explanation: 'A mid-tier iGPU CPU already clears the tier-2 floor at a fair price, and the high-end GPU is required to clear this ticket\'s tier-3 GPU floor and still fits the 320mm case limit. 450W covers the combined draw with room to spare.',
+        payload: {
+          slots: [
+            {
+              id: 'cpu',
+              label: 'CPU',
+              options: [
+                {
+                  id: 'cpu-igpu-mid',
+                  text: 'Mid-range CPU w/ iGPU'
+                },
+                {
+                  id: 'cpu-budget',
+                  text: 'Budget quad-core CPU'
+                }
+              ]
+            },
+            {
+              id: 'gpu',
+              label: 'GPU',
+              options: [
+                {
+                  id: 'gpu-4070',
+                  text: 'High-end discrete GPU'
+                },
+                {
+                  id: 'gpu-4060',
+                  text: 'Mid-range discrete GPU'
+                }
+              ]
+            },
+            {
+              id: 'ram',
+              label: 'RAM',
+              options: [
+                {
+                  id: 'ram-32',
+                  text: '32GB RAM kit'
+                },
+                {
+                  id: 'ram-16',
+                  text: '16GB RAM kit'
+                }
+              ]
+            },
+            {
+              id: 'psu',
+              label: 'Power supply',
+              options: [
+                {
+                  id: 'psu-450',
+                  text: '450W PSU'
+                },
+                {
+                  id: 'psu-250',
+                  text: '250W PSU'
+                }
+              ]
+            },
+            {
+              id: 'storage',
+              label: 'Storage',
+              options: [
+                {
+                  id: 'storage-1tb-nvme',
+                  text: '1TB NVMe SSD'
+                },
+                {
+                  id: 'storage-256-sata',
+                  text: '256GB SATA SSD'
+                }
+              ]
+            },
+            {
+              id: 'cooling',
+              label: 'Cooling',
+              options: [
+                {
+                  id: 'cool-240-aio',
+                  text: '240mm AIO liquid cooler'
+                },
+                {
+                  id: 'cool-stock',
+                  text: 'Stock cooler'
+                }
+              ]
+            }
+          ]
+        },
+        answer: {
+          slots: {
+            cpu: 'cpu-igpu-mid',
+            gpu: 'gpu-4070',
+            ram: 'ram-32',
+            psu: 'psu-450',
+            storage: 'storage-1tb-nvme',
+            cooling: 'cool-240-aio'
+          }
+        }
+      },
+      {
+        id: 'clientB',
+        type: 'configure',
+        points: 1,
+        prompt: 'Spec Dara\'s coursework PC: it never needs a discrete GPU, so keep the build lean and inside budget.',
+        explanation: 'An office-tier CPU handles browser tabs and video calls fine with its integrated graphics — no discrete GPU needed. Adding one is the single biggest way to blow this tight budget for zero benefit here.',
+        payload: {
+          slots: [
+            {
+              id: 'cpu',
+              label: 'CPU',
+              options: [
+                {
+                  id: 'cpu-office',
+                  text: 'Office six-core CPU'
+                },
+                {
+                  id: 'cpu-igpu-mid',
+                  text: 'Mid-range CPU w/ iGPU'
+                }
+              ]
+            },
+            {
+              id: 'gpu',
+              label: 'GPU',
+              options: [
+                {
+                  id: 'gpu-none',
+                  text: 'No discrete GPU (iGPU only)'
+                },
+                {
+                  id: 'gpu-1650',
+                  text: 'Entry discrete GPU'
+                }
+              ]
+            },
+            {
+              id: 'ram',
+              label: 'RAM',
+              options: [
+                {
+                  id: 'ram-16',
+                  text: '16GB RAM kit'
+                },
+                {
+                  id: 'ram-8',
+                  text: '8GB RAM kit'
+                }
+              ]
+            },
+            {
+              id: 'psu',
+              label: 'Power supply',
+              options: [
+                {
+                  id: 'psu-250',
+                  text: '250W PSU'
+                },
+                {
+                  id: 'psu-450',
+                  text: '450W PSU'
+                }
+              ]
+            },
+            {
+              id: 'storage',
+              label: 'Storage',
+              options: [
+                {
+                  id: 'storage-256-sata',
+                  text: '256GB SATA SSD'
+                },
+                {
+                  id: 'storage-1tb-nvme',
+                  text: '1TB NVMe SSD'
+                }
+              ]
+            },
+            {
+              id: 'cooling',
+              label: 'Cooling',
+              options: [
+                {
+                  id: 'cool-stock',
+                  text: 'Stock cooler'
+                },
+                {
+                  id: 'cool-120-air',
+                  text: '120mm air cooler'
+                }
+              ]
+            }
+          ]
+        },
+        answer: {
+          slots: {
+            cpu: 'cpu-office',
+            gpu: 'gpu-none',
+            ram: 'ram-16',
+            psu: 'psu-250',
+            storage: 'storage-256-sata',
+            cooling: 'cool-stock'
+          }
+        }
+      }
+    ]
+  },
+
+  {
+    id: 'a1-pcb-02',
+    cert: 'aplus-core1',
+    archetype: 'pcbuild',
+    objective: '3.4',
+    topic: 'Two-client PC build spec-off — live streamer vs. small-business accountant',
+    title: 'Jonah\'s streaming rig and Noreen\'s accounting desktop',
+    estMinutes: 8,
+    scenario: 'Jonah streams while he games and needs enough CPU headroom to encode video without tanking frame rates. Noreen runs a small accounting practice and just needs a dependable desktop for spreadsheets and client files. Spec both from the shop\'s shared parts catalog.',
+    pcbuild: {
+      clientA: {
+        budgetUsd: 1600,
+        caseMaxGpuLengthMm: 320,
+        minCpuTier: 3,
+        minGpuTier: 2
+      },
+      clientB: {
+        budgetUsd: 450,
+        caseMaxGpuLengthMm: 200,
+        minCpuTier: 1,
+        minGpuTier: 0
+      }
+    },
+    assets: {
+      reference: {
+        kind: 'slots',
+        bays: [
+          {
+            id: 'a-cpu',
+            label: 'Client A · CPU socket'
+          },
+          {
+            id: 'a-gpu',
+            label: 'Client A · GPU bay · max 320mm'
+          },
+          {
+            id: 'a-ram',
+            label: 'Client A · RAM slots'
+          },
+          {
+            id: 'a-psu',
+            label: 'Client A · PSU bay · ATX'
+          },
+          {
+            id: 'a-storage',
+            label: 'Client A · Storage bay · 2.5in/3.5in'
+          },
+          {
+            id: 'a-cooling',
+            label: 'Client A · Cooling mount · 120/240mm'
+          },
+          {
+            id: 'b-cpu',
+            label: 'Client B · CPU socket'
+          },
+          {
+            id: 'b-gpu',
+            label: 'Client B · GPU bay · max 200mm'
+          },
+          {
+            id: 'b-ram',
+            label: 'Client B · RAM slots'
+          },
+          {
+            id: 'b-psu',
+            label: 'Client B · PSU bay · ATX'
+          },
+          {
+            id: 'b-storage',
+            label: 'Client B · Storage bay · 2.5in/3.5in'
+          },
+          {
+            id: 'b-cooling',
+            label: 'Client B · Cooling mount · stock/92mm'
+          }
+        ],
+        notes: ['Client A · $1600 budget · ATX full-tower · Live streaming + gaming', 'Client B · $450 budget · Micro-tower · Spreadsheets + client files']
+      }
+    },
+    steps: [
+      {
+        id: 'clientA',
+        type: 'configure',
+        points: 1,
+        prompt: 'Spec Jonah\'s streaming rig: the CPU needs headroom for simultaneous encode-and-game, and the GPU needs to clear the tier floor for the game itself — no need to pay for more GPU than that.',
+        explanation: 'Encoding while gaming needs a creator-tier CPU to clear the tier-3 floor; the mid-range GPU clears the tier-2 floor these games need without paying for the top-tier card\'s extra horsepower this ticket doesn\'t require. 650W gives comfortable headroom for the capture card and extra USB peripherals a streaming desk adds later.',
+        payload: {
+          slots: [
+            {
+              id: 'cpu',
+              label: 'CPU',
+              options: [
+                {
+                  id: 'cpu-creator',
+                  text: 'Creator-tier CPU'
+                },
+                {
+                  id: 'cpu-igpu-mid',
+                  text: 'Mid-range CPU w/ iGPU'
+                }
+              ]
+            },
+            {
+              id: 'gpu',
+              label: 'GPU',
+              options: [
+                {
+                  id: 'gpu-4060',
+                  text: 'Mid-range discrete GPU'
+                },
+                {
+                  id: 'gpu-4070',
+                  text: 'High-end discrete GPU'
+                }
+              ]
+            },
+            {
+              id: 'ram',
+              label: 'RAM',
+              options: [
+                {
+                  id: 'ram-32',
+                  text: '32GB RAM kit'
+                },
+                {
+                  id: 'ram-16',
+                  text: '16GB RAM kit'
+                }
+              ]
+            },
+            {
+              id: 'psu',
+              label: 'Power supply',
+              options: [
+                {
+                  id: 'psu-650',
+                  text: '650W PSU'
+                },
+                {
+                  id: 'psu-450',
+                  text: '450W PSU'
+                }
+              ]
+            },
+            {
+              id: 'storage',
+              label: 'Storage',
+              options: [
+                {
+                  id: 'storage-2tb-nvme',
+                  text: '2TB NVMe SSD'
+                },
+                {
+                  id: 'storage-1tb-nvme',
+                  text: '1TB NVMe SSD'
+                }
+              ]
+            },
+            {
+              id: 'cooling',
+              label: 'Cooling',
+              options: [
+                {
+                  id: 'cool-240-aio',
+                  text: '240mm AIO liquid cooler'
+                },
+                {
+                  id: 'cool-120-air',
+                  text: '120mm air cooler'
+                }
+              ]
+            }
+          ]
+        },
+        answer: {
+          slots: {
+            cpu: 'cpu-creator',
+            gpu: 'gpu-4060',
+            ram: 'ram-32',
+            psu: 'psu-650',
+            storage: 'storage-2tb-nvme',
+            cooling: 'cool-240-aio'
+          }
+        }
+      },
+      {
+        id: 'clientB',
+        type: 'configure',
+        points: 1,
+        prompt: 'Spec Noreen\'s accounting desktop: reliable, no discrete GPU, storage sized for years of client records.',
+        explanation: 'Office-tier CPU with its integrated graphics is plenty for spreadsheets and bookkeeping software. A discrete GPU adds cost with zero payoff for this ticket and would blow the budget once added.',
+        payload: {
+          slots: [
+            {
+              id: 'cpu',
+              label: 'CPU',
+              options: [
+                {
+                  id: 'cpu-office',
+                  text: 'Office six-core CPU'
+                },
+                {
+                  id: 'cpu-budget',
+                  text: 'Budget quad-core CPU'
+                }
+              ]
+            },
+            {
+              id: 'gpu',
+              label: 'GPU',
+              options: [
+                {
+                  id: 'gpu-none',
+                  text: 'No discrete GPU (iGPU only)'
+                },
+                {
+                  id: 'gpu-1650',
+                  text: 'Entry discrete GPU'
+                }
+              ]
+            },
+            {
+              id: 'ram',
+              label: 'RAM',
+              options: [
+                {
+                  id: 'ram-16',
+                  text: '16GB RAM kit'
+                },
+                {
+                  id: 'ram-8',
+                  text: '8GB RAM kit'
+                }
+              ]
+            },
+            {
+              id: 'psu',
+              label: 'Power supply',
+              options: [
+                {
+                  id: 'psu-250',
+                  text: '250W PSU'
+                },
+                {
+                  id: 'psu-450',
+                  text: '450W PSU'
+                }
+              ]
+            },
+            {
+              id: 'storage',
+              label: 'Storage',
+              options: [
+                {
+                  id: 'storage-1tb-nvme',
+                  text: '1TB NVMe SSD'
+                },
+                {
+                  id: 'storage-256-sata',
+                  text: '256GB SATA SSD'
+                }
+              ]
+            },
+            {
+              id: 'cooling',
+              label: 'Cooling',
+              options: [
+                {
+                  id: 'cool-stock',
+                  text: 'Stock cooler'
+                },
+                {
+                  id: 'cool-120-air',
+                  text: '120mm air cooler'
+                }
+              ]
+            }
+          ]
+        },
+        answer: {
+          slots: {
+            cpu: 'cpu-office',
+            gpu: 'gpu-none',
+            ram: 'ram-16',
+            psu: 'psu-250',
+            storage: 'storage-1tb-nvme',
+            cooling: 'cool-stock'
+          }
+        }
+      }
+    ]
+  },
+
+  {
+    id: 'a1-pcb-03',
+    cert: 'aplus-core1',
+    archetype: 'pcbuild',
+    objective: '3.4',
+    topic: 'Two-client PC build spec-off — freelance video editor vs. casual home browser',
+    title: 'Renata\'s editing tower and Ollie\'s browsing box',
+    estMinutes: 8,
+    scenario: 'Renata edits 4K footage for clients and needs real CPU and GPU horsepower. Ollie just wants a small, cheap machine for browsing and email in the den. Same catalog, wildly different tickets — and Renata\'s case has a hard GPU-length limit that trips up the obvious "best" GPU pick.',
+    pcbuild: {
+      clientA: {
+        budgetUsd: 1300,
+        caseMaxGpuLengthMm: 300,
+        minCpuTier: 3,
+        minGpuTier: 2
+      },
+      clientB: {
+        budgetUsd: 380,
+        caseMaxGpuLengthMm: 160,
+        minCpuTier: 1,
+        minGpuTier: 0
+      }
+    },
+    assets: {
+      reference: {
+        kind: 'slots',
+        bays: [
+          {
+            id: 'a-cpu',
+            label: 'Client A · CPU socket'
+          },
+          {
+            id: 'a-gpu',
+            label: 'Client A · GPU bay · max 300mm'
+          },
+          {
+            id: 'a-ram',
+            label: 'Client A · RAM slots'
+          },
+          {
+            id: 'a-psu',
+            label: 'Client A · PSU bay · ATX'
+          },
+          {
+            id: 'a-storage',
+            label: 'Client A · Storage bay · 2.5in/3.5in'
+          },
+          {
+            id: 'a-cooling',
+            label: 'Client A · Cooling mount · 120/240mm'
+          },
+          {
+            id: 'b-cpu',
+            label: 'Client B · CPU socket'
+          },
+          {
+            id: 'b-gpu',
+            label: 'Client B · GPU bay · max 160mm'
+          },
+          {
+            id: 'b-ram',
+            label: 'Client B · RAM slots'
+          },
+          {
+            id: 'b-psu',
+            label: 'Client B · PSU bay · SFX'
+          },
+          {
+            id: 'b-storage',
+            label: 'Client B · Storage bay · 2.5in only'
+          },
+          {
+            id: 'b-cooling',
+            label: 'Client B · Cooling mount · stock only'
+          }
+        ],
+        notes: ['Client A · $1300 budget · ATX mid-tower · Video editing · multi-stream', 'Client B · $380 budget · Mini-ITX shoebox · Browsing + email']
+      }
+    },
+    steps: [
+      {
+        id: 'clientA',
+        type: 'configure',
+        points: 1,
+        prompt: 'Spec Renata\'s editing tower: creator-tier CPU, and a GPU that both clears the tier floor AND fits the case\'s 300mm limit.',
+        explanation: 'The creator-tier CPU clears the tier-3 floor for timeline scrubbing and exports. The mid-range GPU clears the tier-2 floor and fits at 244mm — the higher-tier GPU is 310mm and physically will not fit this case, even though it looks like the "better" pick on paper.',
+        payload: {
+          slots: [
+            {
+              id: 'cpu',
+              label: 'CPU',
+              options: [
+                {
+                  id: 'cpu-creator',
+                  text: 'Creator-tier CPU'
+                },
+                {
+                  id: 'cpu-igpu-mid',
+                  text: 'Mid-range CPU w/ iGPU'
+                }
+              ]
+            },
+            {
+              id: 'gpu',
+              label: 'GPU',
+              options: [
+                {
+                  id: 'gpu-4060',
+                  text: 'Mid-range discrete GPU'
+                },
+                {
+                  id: 'gpu-4070',
+                  text: 'High-end discrete GPU'
+                }
+              ]
+            },
+            {
+              id: 'ram',
+              label: 'RAM',
+              options: [
+                {
+                  id: 'ram-64',
+                  text: '64GB RAM kit'
+                },
+                {
+                  id: 'ram-16',
+                  text: '16GB RAM kit'
+                }
+              ]
+            },
+            {
+              id: 'psu',
+              label: 'Power supply',
+              options: [
+                {
+                  id: 'psu-650',
+                  text: '650W PSU'
+                },
+                {
+                  id: 'psu-450',
+                  text: '450W PSU'
+                }
+              ]
+            },
+            {
+              id: 'storage',
+              label: 'Storage',
+              options: [
+                {
+                  id: 'storage-2tb-nvme',
+                  text: '2TB NVMe SSD'
+                },
+                {
+                  id: 'storage-1tb-nvme',
+                  text: '1TB NVMe SSD'
+                }
+              ]
+            },
+            {
+              id: 'cooling',
+              label: 'Cooling',
+              options: [
+                {
+                  id: 'cool-240-aio',
+                  text: '240mm AIO liquid cooler'
+                },
+                {
+                  id: 'cool-120-air',
+                  text: '120mm air cooler'
+                }
+              ]
+            }
+          ]
+        },
+        answer: {
+          slots: {
+            cpu: 'cpu-creator',
+            gpu: 'gpu-4060',
+            ram: 'ram-64',
+            psu: 'psu-650',
+            storage: 'storage-2tb-nvme',
+            cooling: 'cool-240-aio'
+          }
+        }
+      },
+      {
+        id: 'clientB',
+        type: 'configure',
+        points: 1,
+        prompt: 'Spec Ollie\'s browsing box: keep it small and cheap, and mind the case\'s tight 160mm GPU clearance if a discrete card is ever considered.',
+        explanation: 'A budget CPU with integrated graphics is all a browsing-only machine needs — no discrete GPU required. The entry discrete GPU is also 170mm, which is longer than this shoebox case\'s 160mm clearance, so it would not physically fit even if someone wanted it.',
+        payload: {
+          slots: [
+            {
+              id: 'cpu',
+              label: 'CPU',
+              options: [
+                {
+                  id: 'cpu-budget',
+                  text: 'Budget quad-core CPU'
+                },
+                {
+                  id: 'cpu-igpu-mid',
+                  text: 'Mid-range CPU w/ iGPU'
+                }
+              ]
+            },
+            {
+              id: 'gpu',
+              label: 'GPU',
+              options: [
+                {
+                  id: 'gpu-none',
+                  text: 'No discrete GPU (iGPU only)'
+                },
+                {
+                  id: 'gpu-1650',
+                  text: 'Entry discrete GPU'
+                }
+              ]
+            },
+            {
+              id: 'ram',
+              label: 'RAM',
+              options: [
+                {
+                  id: 'ram-8',
+                  text: '8GB RAM kit'
+                },
+                {
+                  id: 'ram-32',
+                  text: '32GB RAM kit'
+                }
+              ]
+            },
+            {
+              id: 'psu',
+              label: 'Power supply',
+              options: [
+                {
+                  id: 'psu-250',
+                  text: '250W PSU'
+                },
+                {
+                  id: 'psu-450',
+                  text: '450W PSU'
+                }
+              ]
+            },
+            {
+              id: 'storage',
+              label: 'Storage',
+              options: [
+                {
+                  id: 'storage-256-sata',
+                  text: '256GB SATA SSD'
+                },
+                {
+                  id: 'storage-1tb-nvme',
+                  text: '1TB NVMe SSD'
+                }
+              ]
+            },
+            {
+              id: 'cooling',
+              label: 'Cooling',
+              options: [
+                {
+                  id: 'cool-stock',
+                  text: 'Stock cooler'
+                },
+                {
+                  id: 'cool-120-air',
+                  text: '120mm air cooler'
+                }
+              ]
+            }
+          ]
+        },
+        answer: {
+          slots: {
+            cpu: 'cpu-budget',
+            gpu: 'gpu-none',
+            ram: 'ram-8',
+            psu: 'psu-250',
+            storage: 'storage-256-sata',
+            cooling: 'cool-stock'
+          }
+        }
+      }
+    ]
+  },
+
+  {
+    id: 'a1-pcb-04',
+    cert: 'aplus-core1',
+    archetype: 'pcbuild',
+    objective: '3.4',
+    topic: 'Two-client PC build spec-off — boutique shop owner vs. teen\'s first gaming PC',
+    title: 'Halima\'s shop POS box and Devon\'s first gaming build',
+    estMinutes: 8,
+    scenario: 'Halima runs a small boutique and needs a reliable machine for point-of-sale and inventory software. Devon is 15 and saved up for a first gaming PC on a tight budget for entry-level esports titles. Spec both tickets from the same catalog.',
+    pcbuild: {
+      clientA: {
+        budgetUsd: 420,
+        caseMaxGpuLengthMm: 220,
+        minCpuTier: 1,
+        minGpuTier: 0
+      },
+      clientB: {
+        budgetUsd: 650,
+        caseMaxGpuLengthMm: 260,
+        minCpuTier: 2,
+        minGpuTier: 1
+      }
+    },
+    assets: {
+      reference: {
+        kind: 'slots',
+        bays: [
+          {
+            id: 'a-cpu',
+            label: 'Client A · CPU socket'
+          },
+          {
+            id: 'a-gpu',
+            label: 'Client A · GPU bay · max 220mm'
+          },
+          {
+            id: 'a-ram',
+            label: 'Client A · RAM slots'
+          },
+          {
+            id: 'a-psu',
+            label: 'Client A · PSU bay · ATX'
+          },
+          {
+            id: 'a-storage',
+            label: 'Client A · Storage bay · 2.5in/3.5in'
+          },
+          {
+            id: 'a-cooling',
+            label: 'Client A · Cooling mount · stock/92mm'
+          },
+          {
+            id: 'b-cpu',
+            label: 'Client B · CPU socket'
+          },
+          {
+            id: 'b-gpu',
+            label: 'Client B · GPU bay · max 260mm'
+          },
+          {
+            id: 'b-ram',
+            label: 'Client B · RAM slots'
+          },
+          {
+            id: 'b-psu',
+            label: 'Client B · PSU bay · ATX'
+          },
+          {
+            id: 'b-storage',
+            label: 'Client B · Storage bay · 2.5in/3.5in'
+          },
+          {
+            id: 'b-cooling',
+            label: 'Client B · Cooling mount · 120/240mm'
+          }
+        ],
+        notes: ['Client A · $420 budget · ATX micro-tower · POS + inventory software', 'Client B · $650 budget · ATX mid-tower · Entry-level esports gaming']
+      }
+    },
+    steps: [
+      {
+        id: 'clientA',
+        type: 'configure',
+        points: 1,
+        prompt: 'Spec Halima\'s POS box: no discrete GPU needed, and mind the tight budget.',
+        explanation: 'Office-tier CPU with integrated graphics runs POS and inventory software fine. A discrete GPU adds nothing here for touchscreen POS graphics and pushes this tight budget over the line once added.',
+        payload: {
+          slots: [
+            {
+              id: 'cpu',
+              label: 'CPU',
+              options: [
+                {
+                  id: 'cpu-office',
+                  text: 'Office six-core CPU'
+                },
+                {
+                  id: 'cpu-budget',
+                  text: 'Budget quad-core CPU'
+                }
+              ]
+            },
+            {
+              id: 'gpu',
+              label: 'GPU',
+              options: [
+                {
+                  id: 'gpu-none',
+                  text: 'No discrete GPU (iGPU only)'
+                },
+                {
+                  id: 'gpu-1650',
+                  text: 'Entry discrete GPU'
+                }
+              ]
+            },
+            {
+              id: 'ram',
+              label: 'RAM',
+              options: [
+                {
+                  id: 'ram-16',
+                  text: '16GB RAM kit'
+                },
+                {
+                  id: 'ram-8',
+                  text: '8GB RAM kit'
+                }
+              ]
+            },
+            {
+              id: 'psu',
+              label: 'Power supply',
+              options: [
+                {
+                  id: 'psu-250',
+                  text: '250W PSU'
+                },
+                {
+                  id: 'psu-450',
+                  text: '450W PSU'
+                }
+              ]
+            },
+            {
+              id: 'storage',
+              label: 'Storage',
+              options: [
+                {
+                  id: 'storage-1tb-nvme',
+                  text: '1TB NVMe SSD'
+                },
+                {
+                  id: 'storage-256-sata',
+                  text: '256GB SATA SSD'
+                }
+              ]
+            },
+            {
+              id: 'cooling',
+              label: 'Cooling',
+              options: [
+                {
+                  id: 'cool-stock',
+                  text: 'Stock cooler'
+                },
+                {
+                  id: 'cool-120-air',
+                  text: '120mm air cooler'
+                }
+              ]
+            }
+          ]
+        },
+        answer: {
+          slots: {
+            cpu: 'cpu-office',
+            gpu: 'gpu-none',
+            ram: 'ram-16',
+            psu: 'psu-250',
+            storage: 'storage-1tb-nvme',
+            cooling: 'cool-stock'
+          }
+        }
+      },
+      {
+        id: 'clientB',
+        type: 'configure',
+        points: 1,
+        prompt: 'Spec Devon\'s first gaming PC: entry-level esports titles need a real discrete GPU, not just integrated graphics.',
+        explanation: 'A mid-tier CPU with iGPU clears the tier-2 CPU floor, and the entry discrete GPU clears the tier-1 GPU floor these esports titles need — integrated graphics alone would not meet that floor.',
+        payload: {
+          slots: [
+            {
+              id: 'cpu',
+              label: 'CPU',
+              options: [
+                {
+                  id: 'cpu-igpu-mid',
+                  text: 'Mid-range CPU w/ iGPU'
+                },
+                {
+                  id: 'cpu-budget',
+                  text: 'Budget quad-core CPU'
+                }
+              ]
+            },
+            {
+              id: 'gpu',
+              label: 'GPU',
+              options: [
+                {
+                  id: 'gpu-1650',
+                  text: 'Entry discrete GPU'
+                },
+                {
+                  id: 'gpu-none',
+                  text: 'No discrete GPU (iGPU only)'
+                }
+              ]
+            },
+            {
+              id: 'ram',
+              label: 'RAM',
+              options: [
+                {
+                  id: 'ram-16',
+                  text: '16GB RAM kit'
+                },
+                {
+                  id: 'ram-8',
+                  text: '8GB RAM kit'
+                }
+              ]
+            },
+            {
+              id: 'psu',
+              label: 'Power supply',
+              options: [
+                {
+                  id: 'psu-450',
+                  text: '450W PSU'
+                },
+                {
+                  id: 'psu-250',
+                  text: '250W PSU'
+                }
+              ]
+            },
+            {
+              id: 'storage',
+              label: 'Storage',
+              options: [
+                {
+                  id: 'storage-1tb-nvme',
+                  text: '1TB NVMe SSD'
+                },
+                {
+                  id: 'storage-256-sata',
+                  text: '256GB SATA SSD'
+                }
+              ]
+            },
+            {
+              id: 'cooling',
+              label: 'Cooling',
+              options: [
+                {
+                  id: 'cool-120-air',
+                  text: '120mm air cooler'
+                },
+                {
+                  id: 'cool-stock',
+                  text: 'Stock cooler'
+                }
+              ]
+            }
+          ]
+        },
+        answer: {
+          slots: {
+            cpu: 'cpu-igpu-mid',
+            gpu: 'gpu-1650',
+            ram: 'ram-16',
+            psu: 'psu-450',
+            storage: 'storage-1tb-nvme',
+            cooling: 'cool-120-air'
+          }
+        }
+      }
+    ]
+  },
+
+  {
+    id: 'a1-pcb-05',
+    cert: 'aplus-core1',
+    archetype: 'pcbuild',
+    objective: '3.4',
+    topic: 'Two-client PC build spec-off — freelance 3D animator vs. grandparent\'s email PC',
+    title: 'Tobias\'s render workstation and Grandma Iris\'s email machine',
+    estMinutes: 8,
+    scenario: 'Tobias renders 3D animation for clients and needs top-tier CPU and GPU horsepower. Grandma Iris just wants a small, simple machine for email and family photos. Iris\'s case is especially tight on GPU clearance.',
+    pcbuild: {
+      clientA: {
+        budgetUsd: 1750,
+        caseMaxGpuLengthMm: 320,
+        minCpuTier: 4,
+        minGpuTier: 3
+      },
+      clientB: {
+        budgetUsd: 320,
+        caseMaxGpuLengthMm: 150,
+        minCpuTier: 1,
+        minGpuTier: 0
+      }
+    },
+    assets: {
+      reference: {
+        kind: 'slots',
+        bays: [
+          {
+            id: 'a-cpu',
+            label: 'Client A · CPU socket'
+          },
+          {
+            id: 'a-gpu',
+            label: 'Client A · GPU bay · max 320mm'
+          },
+          {
+            id: 'a-ram',
+            label: 'Client A · RAM slots'
+          },
+          {
+            id: 'a-psu',
+            label: 'Client A · PSU bay · ATX'
+          },
+          {
+            id: 'a-storage',
+            label: 'Client A · Storage bay · 2.5in/3.5in'
+          },
+          {
+            id: 'a-cooling',
+            label: 'Client A · Cooling mount · 120/240mm'
+          },
+          {
+            id: 'b-cpu',
+            label: 'Client B · CPU socket'
+          },
+          {
+            id: 'b-gpu',
+            label: 'Client B · GPU bay · max 150mm'
+          },
+          {
+            id: 'b-ram',
+            label: 'Client B · RAM slots'
+          },
+          {
+            id: 'b-psu',
+            label: 'Client B · PSU bay · SFX'
+          },
+          {
+            id: 'b-storage',
+            label: 'Client B · Storage bay · 2.5in only'
+          },
+          {
+            id: 'b-cooling',
+            label: 'Client B · Cooling mount · stock only'
+          }
+        ],
+        notes: ['Client A · $1750 budget · ATX full-tower · 3D animation rendering', 'Client B · $320 budget · Mini-ITX shoebox · Email + family photos']
+      }
+    },
+    steps: [
+      {
+        id: 'clientA',
+        type: 'configure',
+        points: 1,
+        prompt: 'Spec Tobias\'s render workstation: this ticket needs the flagship CPU and the top GPU to clear both tier floors.',
+        explanation: 'Rendering needs the flagship CPU to clear the tier-4 floor and the top-tier GPU to clear the tier-3 floor; the creator-tier CPU and the mid-range GPU each fall one tier short of this specific ticket\'s requirements.',
+        payload: {
+          slots: [
+            {
+              id: 'cpu',
+              label: 'CPU',
+              options: [
+                {
+                  id: 'cpu-flagship',
+                  text: 'Flagship high-core CPU'
+                },
+                {
+                  id: 'cpu-creator',
+                  text: 'Creator-tier CPU'
+                }
+              ]
+            },
+            {
+              id: 'gpu',
+              label: 'GPU',
+              options: [
+                {
+                  id: 'gpu-4070',
+                  text: 'High-end discrete GPU'
+                },
+                {
+                  id: 'gpu-4060',
+                  text: 'Mid-range discrete GPU'
+                }
+              ]
+            },
+            {
+              id: 'ram',
+              label: 'RAM',
+              options: [
+                {
+                  id: 'ram-64',
+                  text: '64GB RAM kit'
+                },
+                {
+                  id: 'ram-32',
+                  text: '32GB RAM kit'
+                }
+              ]
+            },
+            {
+              id: 'psu',
+              label: 'Power supply',
+              options: [
+                {
+                  id: 'psu-850',
+                  text: '850W PSU'
+                },
+                {
+                  id: 'psu-650',
+                  text: '650W PSU'
+                }
+              ]
+            },
+            {
+              id: 'storage',
+              label: 'Storage',
+              options: [
+                {
+                  id: 'storage-2tb-nvme',
+                  text: '2TB NVMe SSD'
+                },
+                {
+                  id: 'storage-1tb-nvme',
+                  text: '1TB NVMe SSD'
+                }
+              ]
+            },
+            {
+              id: 'cooling',
+              label: 'Cooling',
+              options: [
+                {
+                  id: 'cool-240-aio',
+                  text: '240mm AIO liquid cooler'
+                },
+                {
+                  id: 'cool-120-air',
+                  text: '120mm air cooler'
+                }
+              ]
+            }
+          ]
+        },
+        answer: {
+          slots: {
+            cpu: 'cpu-flagship',
+            gpu: 'gpu-4070',
+            ram: 'ram-64',
+            psu: 'psu-850',
+            storage: 'storage-2tb-nvme',
+            cooling: 'cool-240-aio'
+          }
+        }
+      },
+      {
+        id: 'clientB',
+        type: 'configure',
+        points: 1,
+        prompt: 'Spec Grandma Iris\'s email machine: keep it small, cheap, and mind the shoebox case\'s 150mm GPU clearance.',
+        explanation: 'A budget CPU with integrated graphics is all this ticket needs. The entry discrete GPU is 170mm — longer than this case\'s 150mm clearance — so it would not fit even for a "just in case" upgrade.',
+        payload: {
+          slots: [
+            {
+              id: 'cpu',
+              label: 'CPU',
+              options: [
+                {
+                  id: 'cpu-budget',
+                  text: 'Budget quad-core CPU'
+                },
+                {
+                  id: 'cpu-office',
+                  text: 'Office six-core CPU'
+                }
+              ]
+            },
+            {
+              id: 'gpu',
+              label: 'GPU',
+              options: [
+                {
+                  id: 'gpu-none',
+                  text: 'No discrete GPU (iGPU only)'
+                },
+                {
+                  id: 'gpu-1650',
+                  text: 'Entry discrete GPU'
+                }
+              ]
+            },
+            {
+              id: 'ram',
+              label: 'RAM',
+              options: [
+                {
+                  id: 'ram-8',
+                  text: '8GB RAM kit'
+                },
+                {
+                  id: 'ram-16',
+                  text: '16GB RAM kit'
+                }
+              ]
+            },
+            {
+              id: 'psu',
+              label: 'Power supply',
+              options: [
+                {
+                  id: 'psu-250',
+                  text: '250W PSU'
+                },
+                {
+                  id: 'psu-450',
+                  text: '450W PSU'
+                }
+              ]
+            },
+            {
+              id: 'storage',
+              label: 'Storage',
+              options: [
+                {
+                  id: 'storage-256-sata',
+                  text: '256GB SATA SSD'
+                },
+                {
+                  id: 'storage-1tb-nvme',
+                  text: '1TB NVMe SSD'
+                }
+              ]
+            },
+            {
+              id: 'cooling',
+              label: 'Cooling',
+              options: [
+                {
+                  id: 'cool-stock',
+                  text: 'Stock cooler'
+                },
+                {
+                  id: 'cool-120-air',
+                  text: '120mm air cooler'
+                }
+              ]
+            }
+          ]
+        },
+        answer: {
+          slots: {
+            cpu: 'cpu-budget',
+            gpu: 'gpu-none',
+            ram: 'ram-8',
+            psu: 'psu-250',
+            storage: 'storage-256-sata',
+            cooling: 'cool-stock'
+          }
+        }
+      }
+    ]
+  },
+
+  {
+    id: 'a1-pcb-06',
+    cert: 'aplus-core1',
+    archetype: 'pcbuild',
+    objective: '3.4',
+    topic: 'Two-client PC build spec-off — ML hobbyist vs. home musician',
+    title: 'Priyanka\'s model-training rig and Sam\'s recording desktop',
+    estMinutes: 8,
+    scenario: 'Priyanka trains small ML models locally and needs a strong CPU and GPU. Sam records vocals and guitar at home and just needs plenty of RAM for plugin-heavy sessions — no GPU required, but the build should stay reasonably quiet.',
+    pcbuild: {
+      clientA: {
+        budgetUsd: 1550,
+        caseMaxGpuLengthMm: 320,
+        minCpuTier: 3,
+        minGpuTier: 3
+      },
+      clientB: {
+        budgetUsd: 620,
+        caseMaxGpuLengthMm: 220,
+        minCpuTier: 2,
+        minGpuTier: 0
+      }
+    },
+    assets: {
+      reference: {
+        kind: 'slots',
+        bays: [
+          {
+            id: 'a-cpu',
+            label: 'Client A · CPU socket'
+          },
+          {
+            id: 'a-gpu',
+            label: 'Client A · GPU bay · max 320mm'
+          },
+          {
+            id: 'a-ram',
+            label: 'Client A · RAM slots'
+          },
+          {
+            id: 'a-psu',
+            label: 'Client A · PSU bay · ATX'
+          },
+          {
+            id: 'a-storage',
+            label: 'Client A · Storage bay · 2.5in/3.5in'
+          },
+          {
+            id: 'a-cooling',
+            label: 'Client A · Cooling mount · 120/240mm'
+          },
+          {
+            id: 'b-cpu',
+            label: 'Client B · CPU socket'
+          },
+          {
+            id: 'b-gpu',
+            label: 'Client B · GPU bay · max 220mm'
+          },
+          {
+            id: 'b-ram',
+            label: 'Client B · RAM slots'
+          },
+          {
+            id: 'b-psu',
+            label: 'Client B · PSU bay · ATX'
+          },
+          {
+            id: 'b-storage',
+            label: 'Client B · Storage bay · 2.5in/3.5in'
+          },
+          {
+            id: 'b-cooling',
+            label: 'Client B · Cooling mount · 120/240mm'
+          }
+        ],
+        notes: ['Client A · $1550 budget · ATX full-tower · Local ML model training', 'Client B · $620 budget · ATX micro-tower · Home vocal/guitar recording']
+      }
+    },
+    steps: [
+      {
+        id: 'clientA',
+        type: 'configure',
+        points: 1,
+        prompt: 'Spec Priyanka\'s training rig: both the CPU and GPU tiers need to clear tier 3 for local model training.',
+        explanation: 'The creator-tier CPU clears the tier-3 CPU floor and the top-tier GPU clears the tier-3 GPU floor this ticket requires; the mid-tier CPU and mid-range GPU each fall one tier short for training workloads.',
+        payload: {
+          slots: [
+            {
+              id: 'cpu',
+              label: 'CPU',
+              options: [
+                {
+                  id: 'cpu-creator',
+                  text: 'Creator-tier CPU'
+                },
+                {
+                  id: 'cpu-igpu-mid',
+                  text: 'Mid-range CPU w/ iGPU'
+                }
+              ]
+            },
+            {
+              id: 'gpu',
+              label: 'GPU',
+              options: [
+                {
+                  id: 'gpu-4070',
+                  text: 'High-end discrete GPU'
+                },
+                {
+                  id: 'gpu-4060',
+                  text: 'Mid-range discrete GPU'
+                }
+              ]
+            },
+            {
+              id: 'ram',
+              label: 'RAM',
+              options: [
+                {
+                  id: 'ram-64',
+                  text: '64GB RAM kit'
+                },
+                {
+                  id: 'ram-32',
+                  text: '32GB RAM kit'
+                }
+              ]
+            },
+            {
+              id: 'psu',
+              label: 'Power supply',
+              options: [
+                {
+                  id: 'psu-850',
+                  text: '850W PSU'
+                },
+                {
+                  id: 'psu-650',
+                  text: '650W PSU'
+                }
+              ]
+            },
+            {
+              id: 'storage',
+              label: 'Storage',
+              options: [
+                {
+                  id: 'storage-2tb-nvme',
+                  text: '2TB NVMe SSD'
+                },
+                {
+                  id: 'storage-1tb-nvme',
+                  text: '1TB NVMe SSD'
+                }
+              ]
+            },
+            {
+              id: 'cooling',
+              label: 'Cooling',
+              options: [
+                {
+                  id: 'cool-240-aio',
+                  text: '240mm AIO liquid cooler'
+                },
+                {
+                  id: 'cool-120-air',
+                  text: '120mm air cooler'
+                }
+              ]
+            }
+          ]
+        },
+        answer: {
+          slots: {
+            cpu: 'cpu-creator',
+            gpu: 'gpu-4070',
+            ram: 'ram-64',
+            psu: 'psu-850',
+            storage: 'storage-2tb-nvme',
+            cooling: 'cool-240-aio'
+          }
+        }
+      },
+      {
+        id: 'clientB',
+        type: 'configure',
+        points: 1,
+        prompt: 'Spec Sam\'s recording desktop: enough CPU for plugin-heavy sessions, plenty of RAM, and no discrete GPU needed.',
+        explanation: 'A mid-tier CPU with iGPU clears the tier-2 floor plugin processing needs; no discrete GPU is required for pure audio work, and skipping it keeps the build quieter for vocal takes.',
+        payload: {
+          slots: [
+            {
+              id: 'cpu',
+              label: 'CPU',
+              options: [
+                {
+                  id: 'cpu-igpu-mid',
+                  text: 'Mid-range CPU w/ iGPU'
+                },
+                {
+                  id: 'cpu-budget',
+                  text: 'Budget quad-core CPU'
+                }
+              ]
+            },
+            {
+              id: 'gpu',
+              label: 'GPU',
+              options: [
+                {
+                  id: 'gpu-none',
+                  text: 'No discrete GPU (iGPU only)'
+                },
+                {
+                  id: 'gpu-1650',
+                  text: 'Entry discrete GPU'
+                }
+              ]
+            },
+            {
+              id: 'ram',
+              label: 'RAM',
+              options: [
+                {
+                  id: 'ram-32',
+                  text: '32GB RAM kit'
+                },
+                {
+                  id: 'ram-16',
+                  text: '16GB RAM kit'
+                }
+              ]
+            },
+            {
+              id: 'psu',
+              label: 'Power supply',
+              options: [
+                {
+                  id: 'psu-450',
+                  text: '450W PSU'
+                },
+                {
+                  id: 'psu-650',
+                  text: '650W PSU'
+                }
+              ]
+            },
+            {
+              id: 'storage',
+              label: 'Storage',
+              options: [
+                {
+                  id: 'storage-1tb-nvme',
+                  text: '1TB NVMe SSD'
+                },
+                {
+                  id: 'storage-256-sata',
+                  text: '256GB SATA SSD'
+                }
+              ]
+            },
+            {
+              id: 'cooling',
+              label: 'Cooling',
+              options: [
+                {
+                  id: 'cool-120-air',
+                  text: '120mm air cooler'
+                },
+                {
+                  id: 'cool-stock',
+                  text: 'Stock cooler'
+                }
+              ]
+            }
+          ]
+        },
+        answer: {
+          slots: {
+            cpu: 'cpu-igpu-mid',
+            gpu: 'gpu-none',
+            ram: 'ram-32',
+            psu: 'psu-450',
+            storage: 'storage-1tb-nvme',
+            cooling: 'cool-120-air'
+          }
+        }
+      }
+    ]
+  },
+
+  {
+    id: 'a1-pcb-07',
+    cert: 'aplus-core1',
+    archetype: 'pcbuild',
+    objective: '3.4',
+    topic: 'Two-client PC build spec-off — portrait photographer vs. retail kiosk terminal',
+    title: 'Yusuf\'s photo-editing tower and the shop\'s kiosk terminal',
+    estMinutes: 8,
+    scenario: 'Yusuf edits and batch-processes RAW photos for clients and needs GPU-accelerated editing horsepower. A retail shop separately needs a bare-bones kiosk PC to run its point-of-sale app — nothing more. Yusuf\'s case also has a tighter GPU clearance than the top-tier card allows.',
+    pcbuild: {
+      clientA: {
+        budgetUsd: 1050,
+        caseMaxGpuLengthMm: 260,
+        minCpuTier: 3,
+        minGpuTier: 2
+      },
+      clientB: {
+        budgetUsd: 300,
+        caseMaxGpuLengthMm: 140,
+        minCpuTier: 1,
+        minGpuTier: 0
+      }
+    },
+    assets: {
+      reference: {
+        kind: 'slots',
+        bays: [
+          {
+            id: 'a-cpu',
+            label: 'Client A · CPU socket'
+          },
+          {
+            id: 'a-gpu',
+            label: 'Client A · GPU bay · max 260mm'
+          },
+          {
+            id: 'a-ram',
+            label: 'Client A · RAM slots'
+          },
+          {
+            id: 'a-psu',
+            label: 'Client A · PSU bay · ATX'
+          },
+          {
+            id: 'a-storage',
+            label: 'Client A · Storage bay · 2.5in/3.5in'
+          },
+          {
+            id: 'a-cooling',
+            label: 'Client A · Cooling mount · 120/240mm'
+          },
+          {
+            id: 'b-cpu',
+            label: 'Client B · CPU socket'
+          },
+          {
+            id: 'b-gpu',
+            label: 'Client B · GPU bay · max 140mm'
+          },
+          {
+            id: 'b-ram',
+            label: 'Client B · RAM slots'
+          },
+          {
+            id: 'b-psu',
+            label: 'Client B · PSU bay · SFX'
+          },
+          {
+            id: 'b-storage',
+            label: 'Client B · Storage bay · 2.5in only'
+          },
+          {
+            id: 'b-cooling',
+            label: 'Client B · Cooling mount · stock only'
+          }
+        ],
+        notes: ['Client A · $1050 budget · ATX mid-tower · RAW photo batch editing', 'Client B · $300 budget · Mini-ITX kiosk enclosure · POS terminal, no other apps']
+      }
+    },
+    steps: [
+      {
+        id: 'clientA',
+        type: 'configure',
+        points: 1,
+        prompt: 'Spec Yusuf\'s photo-editing tower: creator-tier CPU, and a GPU that clears the tier floor while fitting the case\'s 260mm limit.',
+        explanation: 'The creator-tier CPU clears the tier-3 floor for batch RAW processing, and the mid-range GPU clears the tier-2 floor at 244mm. The top-tier GPU is 310mm — it would clear the tier requirement too, but it physically will not fit this case\'s 260mm clearance.',
+        payload: {
+          slots: [
+            {
+              id: 'cpu',
+              label: 'CPU',
+              options: [
+                {
+                  id: 'cpu-creator',
+                  text: 'Creator-tier CPU'
+                },
+                {
+                  id: 'cpu-igpu-mid',
+                  text: 'Mid-range CPU w/ iGPU'
+                }
+              ]
+            },
+            {
+              id: 'gpu',
+              label: 'GPU',
+              options: [
+                {
+                  id: 'gpu-4060',
+                  text: 'Mid-range discrete GPU'
+                },
+                {
+                  id: 'gpu-4070',
+                  text: 'High-end discrete GPU'
+                }
+              ]
+            },
+            {
+              id: 'ram',
+              label: 'RAM',
+              options: [
+                {
+                  id: 'ram-32',
+                  text: '32GB RAM kit'
+                },
+                {
+                  id: 'ram-16',
+                  text: '16GB RAM kit'
+                }
+              ]
+            },
+            {
+              id: 'psu',
+              label: 'Power supply',
+              options: [
+                {
+                  id: 'psu-450',
+                  text: '450W PSU'
+                },
+                {
+                  id: 'psu-250',
+                  text: '250W PSU'
+                }
+              ]
+            },
+            {
+              id: 'storage',
+              label: 'Storage',
+              options: [
+                {
+                  id: 'storage-2tb-nvme',
+                  text: '2TB NVMe SSD'
+                },
+                {
+                  id: 'storage-1tb-nvme',
+                  text: '1TB NVMe SSD'
+                }
+              ]
+            },
+            {
+              id: 'cooling',
+              label: 'Cooling',
+              options: [
+                {
+                  id: 'cool-120-air',
+                  text: '120mm air cooler'
+                },
+                {
+                  id: 'cool-stock',
+                  text: 'Stock cooler'
+                }
+              ]
+            }
+          ]
+        },
+        answer: {
+          slots: {
+            cpu: 'cpu-creator',
+            gpu: 'gpu-4060',
+            ram: 'ram-32',
+            psu: 'psu-450',
+            storage: 'storage-2tb-nvme',
+            cooling: 'cool-120-air'
+          }
+        }
+      },
+      {
+        id: 'clientB',
+        type: 'configure',
+        points: 1,
+        prompt: 'Spec the kiosk terminal: it only ever runs one POS app, so keep it minimal and mind the enclosure\'s 140mm GPU clearance.',
+        explanation: 'A budget CPU with integrated graphics is all a single-app kiosk terminal needs. The entry discrete GPU is 170mm, longer than this enclosure\'s 140mm clearance, so it is not an option here regardless of need.',
+        payload: {
+          slots: [
+            {
+              id: 'cpu',
+              label: 'CPU',
+              options: [
+                {
+                  id: 'cpu-budget',
+                  text: 'Budget quad-core CPU'
+                },
+                {
+                  id: 'cpu-office',
+                  text: 'Office six-core CPU'
+                }
+              ]
+            },
+            {
+              id: 'gpu',
+              label: 'GPU',
+              options: [
+                {
+                  id: 'gpu-none',
+                  text: 'No discrete GPU (iGPU only)'
+                },
+                {
+                  id: 'gpu-1650',
+                  text: 'Entry discrete GPU'
+                }
+              ]
+            },
+            {
+              id: 'ram',
+              label: 'RAM',
+              options: [
+                {
+                  id: 'ram-8',
+                  text: '8GB RAM kit'
+                },
+                {
+                  id: 'ram-16',
+                  text: '16GB RAM kit'
+                }
+              ]
+            },
+            {
+              id: 'psu',
+              label: 'Power supply',
+              options: [
+                {
+                  id: 'psu-250',
+                  text: '250W PSU'
+                },
+                {
+                  id: 'psu-450',
+                  text: '450W PSU'
+                }
+              ]
+            },
+            {
+              id: 'storage',
+              label: 'Storage',
+              options: [
+                {
+                  id: 'storage-256-sata',
+                  text: '256GB SATA SSD'
+                },
+                {
+                  id: 'storage-1tb-nvme',
+                  text: '1TB NVMe SSD'
+                }
+              ]
+            },
+            {
+              id: 'cooling',
+              label: 'Cooling',
+              options: [
+                {
+                  id: 'cool-stock',
+                  text: 'Stock cooler'
+                },
+                {
+                  id: 'cool-120-air',
+                  text: '120mm air cooler'
+                }
+              ]
+            }
+          ]
+        },
+        answer: {
+          slots: {
+            cpu: 'cpu-budget',
+            gpu: 'gpu-none',
+            ram: 'ram-8',
+            psu: 'psu-250',
+            storage: 'storage-256-sata',
+            cooling: 'cool-stock'
+          }
+        }
+      }
+    ]
+  },
+
+  {
+    id: 'a1-pcb-08',
+    cert: 'aplus-core1',
+    archetype: 'pcbuild',
+    objective: '3.4',
+    topic: 'Two-client PC build spec-off — home-lab NAS admin vs. budget esports gamer',
+    title: 'Marcus\'s home-lab server and Leilani\'s budget esports build',
+    estMinutes: 8,
+    scenario: 'Marcus runs a home-lab NAS and Plex server that needs hardware transcode headroom but no discrete GPU. Leilani wants a budget esports gaming PC and needs an actual discrete GPU to clear the frame-rate floor for her titles.',
+    pcbuild: {
+      clientA: {
+        budgetUsd: 650,
+        caseMaxGpuLengthMm: 220,
+        minCpuTier: 2,
+        minGpuTier: 0
+      },
+      clientB: {
+        budgetUsd: 620,
+        caseMaxGpuLengthMm: 250,
+        minCpuTier: 2,
+        minGpuTier: 1
+      }
+    },
+    assets: {
+      reference: {
+        kind: 'slots',
+        bays: [
+          {
+            id: 'a-cpu',
+            label: 'Client A · CPU socket'
+          },
+          {
+            id: 'a-gpu',
+            label: 'Client A · GPU bay · max 220mm'
+          },
+          {
+            id: 'a-ram',
+            label: 'Client A · RAM slots'
+          },
+          {
+            id: 'a-psu',
+            label: 'Client A · PSU bay · ATX'
+          },
+          {
+            id: 'a-storage',
+            label: 'Client A · Storage bay · 2.5in/3.5in'
+          },
+          {
+            id: 'a-cooling',
+            label: 'Client A · Cooling mount · 120/240mm'
+          },
+          {
+            id: 'b-cpu',
+            label: 'Client B · CPU socket'
+          },
+          {
+            id: 'b-gpu',
+            label: 'Client B · GPU bay · max 250mm'
+          },
+          {
+            id: 'b-ram',
+            label: 'Client B · RAM slots'
+          },
+          {
+            id: 'b-psu',
+            label: 'Client B · PSU bay · ATX'
+          },
+          {
+            id: 'b-storage',
+            label: 'Client B · Storage bay · 2.5in/3.5in'
+          },
+          {
+            id: 'b-cooling',
+            label: 'Client B · Cooling mount · stock/92mm'
+          }
+        ],
+        notes: ['Client A · $650 budget · ATX micro-tower · NAS + Plex transcode server', 'Client B · $620 budget · ATX mid-tower · Budget esports gaming']
+      }
+    },
+    steps: [
+      {
+        id: 'clientA',
+        type: 'configure',
+        points: 1,
+        prompt: 'Spec Marcus\'s NAS/Plex server: no discrete GPU needed, but the CPU tier matters for transcode headroom.',
+        explanation: 'A mid-tier CPU with iGPU clears the tier-2 floor and its integrated graphics handle hardware transcode fine. A discrete GPU adds cost with no payoff for a headless server and would push this build over budget once added.',
+        payload: {
+          slots: [
+            {
+              id: 'cpu',
+              label: 'CPU',
+              options: [
+                {
+                  id: 'cpu-igpu-mid',
+                  text: 'Mid-range CPU w/ iGPU'
+                },
+                {
+                  id: 'cpu-budget',
+                  text: 'Budget quad-core CPU'
+                }
+              ]
+            },
+            {
+              id: 'gpu',
+              label: 'GPU',
+              options: [
+                {
+                  id: 'gpu-none',
+                  text: 'No discrete GPU (iGPU only)'
+                },
+                {
+                  id: 'gpu-1650',
+                  text: 'Entry discrete GPU'
+                }
+              ]
+            },
+            {
+              id: 'ram',
+              label: 'RAM',
+              options: [
+                {
+                  id: 'ram-32',
+                  text: '32GB RAM kit'
+                },
+                {
+                  id: 'ram-16',
+                  text: '16GB RAM kit'
+                }
+              ]
+            },
+            {
+              id: 'psu',
+              label: 'Power supply',
+              options: [
+                {
+                  id: 'psu-450',
+                  text: '450W PSU'
+                },
+                {
+                  id: 'psu-650',
+                  text: '650W PSU'
+                }
+              ]
+            },
+            {
+              id: 'storage',
+              label: 'Storage',
+              options: [
+                {
+                  id: 'storage-2tb-nvme',
+                  text: '2TB NVMe SSD'
+                },
+                {
+                  id: 'storage-1tb-nvme',
+                  text: '1TB NVMe SSD'
+                }
+              ]
+            },
+            {
+              id: 'cooling',
+              label: 'Cooling',
+              options: [
+                {
+                  id: 'cool-120-air',
+                  text: '120mm air cooler'
+                },
+                {
+                  id: 'cool-stock',
+                  text: 'Stock cooler'
+                }
+              ]
+            }
+          ]
+        },
+        answer: {
+          slots: {
+            cpu: 'cpu-igpu-mid',
+            gpu: 'gpu-none',
+            ram: 'ram-32',
+            psu: 'psu-450',
+            storage: 'storage-2tb-nvme',
+            cooling: 'cool-120-air'
+          }
+        }
+      },
+      {
+        id: 'clientB',
+        type: 'configure',
+        points: 1,
+        prompt: 'Spec Leilani\'s esports build: a real discrete GPU is required to clear the tier-1 floor for her titles, not just integrated graphics.',
+        explanation: 'A mid-tier CPU clears the tier-2 floor, and the entry discrete GPU clears the tier-1 floor these esports titles need. Relying on integrated graphics alone would not meet that floor, even though it is the cheaper path.',
+        payload: {
+          slots: [
+            {
+              id: 'cpu',
+              label: 'CPU',
+              options: [
+                {
+                  id: 'cpu-igpu-mid',
+                  text: 'Mid-range CPU w/ iGPU'
+                },
+                {
+                  id: 'cpu-budget',
+                  text: 'Budget quad-core CPU'
+                }
+              ]
+            },
+            {
+              id: 'gpu',
+              label: 'GPU',
+              options: [
+                {
+                  id: 'gpu-1650',
+                  text: 'Entry discrete GPU'
+                },
+                {
+                  id: 'gpu-none',
+                  text: 'No discrete GPU (iGPU only)'
+                }
+              ]
+            },
+            {
+              id: 'ram',
+              label: 'RAM',
+              options: [
+                {
+                  id: 'ram-16',
+                  text: '16GB RAM kit'
+                },
+                {
+                  id: 'ram-8',
+                  text: '8GB RAM kit'
+                }
+              ]
+            },
+            {
+              id: 'psu',
+              label: 'Power supply',
+              options: [
+                {
+                  id: 'psu-450',
+                  text: '450W PSU'
+                },
+                {
+                  id: 'psu-250',
+                  text: '250W PSU'
+                }
+              ]
+            },
+            {
+              id: 'storage',
+              label: 'Storage',
+              options: [
+                {
+                  id: 'storage-1tb-nvme',
+                  text: '1TB NVMe SSD'
+                },
+                {
+                  id: 'storage-256-sata',
+                  text: '256GB SATA SSD'
+                }
+              ]
+            },
+            {
+              id: 'cooling',
+              label: 'Cooling',
+              options: [
+                {
+                  id: 'cool-stock',
+                  text: 'Stock cooler'
+                },
+                {
+                  id: 'cool-120-air',
+                  text: '120mm air cooler'
+                }
+              ]
+            }
+          ]
+        },
+        answer: {
+          slots: {
+            cpu: 'cpu-igpu-mid',
+            gpu: 'gpu-1650',
+            ram: 'ram-16',
+            psu: 'psu-450',
+            storage: 'storage-1tb-nvme',
+            cooling: 'cool-stock'
+          }
+        }
+      }
+    ]
+  },
+
+  {
+    id: 'a1-pcb-09',
+    cert: 'aplus-core1',
+    archetype: 'pcbuild',
+    objective: '3.4',
+    topic: 'Two-client PC build spec-off — architecture CAD workstation vs. family homework PC',
+    title: 'Farrukh\'s CAD workstation and the Wanjiru family\'s homework PC',
+    estMinutes: 8,
+    scenario: 'Farrukh\'s architecture firm needs a workstation for BIM modeling and rendering — top of the catalog. Wanjiru just needs a simple, budget family PC for homework and video calls. Spec both.',
+    pcbuild: {
+      clientA: {
+        budgetUsd: 1550,
+        caseMaxGpuLengthMm: 320,
+        minCpuTier: 4,
+        minGpuTier: 3
+      },
+      clientB: {
+        budgetUsd: 400,
+        caseMaxGpuLengthMm: 190,
+        minCpuTier: 1,
+        minGpuTier: 0
+      }
+    },
+    assets: {
+      reference: {
+        kind: 'slots',
+        bays: [
+          {
+            id: 'a-cpu',
+            label: 'Client A · CPU socket'
+          },
+          {
+            id: 'a-gpu',
+            label: 'Client A · GPU bay · max 320mm'
+          },
+          {
+            id: 'a-ram',
+            label: 'Client A · RAM slots'
+          },
+          {
+            id: 'a-psu',
+            label: 'Client A · PSU bay · ATX'
+          },
+          {
+            id: 'a-storage',
+            label: 'Client A · Storage bay · 2.5in/3.5in'
+          },
+          {
+            id: 'a-cooling',
+            label: 'Client A · Cooling mount · 120/240mm'
+          },
+          {
+            id: 'b-cpu',
+            label: 'Client B · CPU socket'
+          },
+          {
+            id: 'b-gpu',
+            label: 'Client B · GPU bay · max 190mm'
+          },
+          {
+            id: 'b-ram',
+            label: 'Client B · RAM slots'
+          },
+          {
+            id: 'b-psu',
+            label: 'Client B · PSU bay · ATX'
+          },
+          {
+            id: 'b-storage',
+            label: 'Client B · Storage bay · 2.5in/3.5in'
+          },
+          {
+            id: 'b-cooling',
+            label: 'Client B · Cooling mount · stock/92mm'
+          }
+        ],
+        notes: ['Client A · $1550 budget · ATX full-tower · BIM modeling + rendering', 'Client B · $400 budget · Micro-tower · Homework + video calls']
+      }
+    },
+    steps: [
+      {
+        id: 'clientA',
+        type: 'configure',
+        points: 1,
+        prompt: 'Spec Farrukh\'s CAD workstation: this ticket needs the flagship CPU and top-tier GPU to clear both tier floors, and the firm kept this ticket\'s budget tighter than usual.',
+        explanation: 'BIM rendering needs the flagship CPU to clear the tier-4 floor and the top-tier GPU to clear the tier-3 floor; the creator-tier CPU and mid-range GPU each fall one tier short of this ticket\'s specific requirements. This firm\'s budget is tighter than a typical workstation build — after the flagship CPU, top-tier GPU, PSU, storage, and cooling, only the 32GB RAM kit fits; stepping up to 64GB overshoots the budget.',
+        payload: {
+          slots: [
+            {
+              id: 'cpu',
+              label: 'CPU',
+              options: [
+                {
+                  id: 'cpu-flagship',
+                  text: 'Flagship high-core CPU'
+                },
+                {
+                  id: 'cpu-creator',
+                  text: 'Creator-tier CPU'
+                }
+              ]
+            },
+            {
+              id: 'gpu',
+              label: 'GPU',
+              options: [
+                {
+                  id: 'gpu-4070',
+                  text: 'High-end discrete GPU'
+                },
+                {
+                  id: 'gpu-4060',
+                  text: 'Mid-range discrete GPU'
+                }
+              ]
+            },
+            {
+              id: 'ram',
+              label: 'RAM',
+              options: [
+                {
+                  id: 'ram-32',
+                  text: '32GB RAM kit'
+                },
+                {
+                  id: 'ram-64',
+                  text: '64GB RAM kit'
+                }
+              ]
+            },
+            {
+              id: 'psu',
+              label: 'Power supply',
+              options: [
+                {
+                  id: 'psu-850',
+                  text: '850W PSU'
+                },
+                {
+                  id: 'psu-650',
+                  text: '650W PSU'
+                }
+              ]
+            },
+            {
+              id: 'storage',
+              label: 'Storage',
+              options: [
+                {
+                  id: 'storage-2tb-nvme',
+                  text: '2TB NVMe SSD'
+                },
+                {
+                  id: 'storage-1tb-nvme',
+                  text: '1TB NVMe SSD'
+                }
+              ]
+            },
+            {
+              id: 'cooling',
+              label: 'Cooling',
+              options: [
+                {
+                  id: 'cool-240-aio',
+                  text: '240mm AIO liquid cooler'
+                },
+                {
+                  id: 'cool-120-air',
+                  text: '120mm air cooler'
+                }
+              ]
+            }
+          ]
+        },
+        answer: {
+          slots: {
+            cpu: 'cpu-flagship',
+            gpu: 'gpu-4070',
+            ram: 'ram-32',
+            psu: 'psu-850',
+            storage: 'storage-2tb-nvme',
+            cooling: 'cool-240-aio'
+          }
+        }
+      },
+      {
+        id: 'clientB',
+        type: 'configure',
+        points: 1,
+        prompt: 'Spec the family homework PC: no discrete GPU needed, and mind the tight budget.',
+        explanation: 'Office-tier CPU with integrated graphics handles homework apps and video calls fine. A discrete GPU adds nothing for this ticket and would push this tight family budget over the line once added.',
+        payload: {
+          slots: [
+            {
+              id: 'cpu',
+              label: 'CPU',
+              options: [
+                {
+                  id: 'cpu-office',
+                  text: 'Office six-core CPU'
+                },
+                {
+                  id: 'cpu-budget',
+                  text: 'Budget quad-core CPU'
+                }
+              ]
+            },
+            {
+              id: 'gpu',
+              label: 'GPU',
+              options: [
+                {
+                  id: 'gpu-none',
+                  text: 'No discrete GPU (iGPU only)'
+                },
+                {
+                  id: 'gpu-1650',
+                  text: 'Entry discrete GPU'
+                }
+              ]
+            },
+            {
+              id: 'ram',
+              label: 'RAM',
+              options: [
+                {
+                  id: 'ram-16',
+                  text: '16GB RAM kit'
+                },
+                {
+                  id: 'ram-8',
+                  text: '8GB RAM kit'
+                }
+              ]
+            },
+            {
+              id: 'psu',
+              label: 'Power supply',
+              options: [
+                {
+                  id: 'psu-250',
+                  text: '250W PSU'
+                },
+                {
+                  id: 'psu-450',
+                  text: '450W PSU'
+                }
+              ]
+            },
+            {
+              id: 'storage',
+              label: 'Storage',
+              options: [
+                {
+                  id: 'storage-1tb-nvme',
+                  text: '1TB NVMe SSD'
+                },
+                {
+                  id: 'storage-256-sata',
+                  text: '256GB SATA SSD'
+                }
+              ]
+            },
+            {
+              id: 'cooling',
+              label: 'Cooling',
+              options: [
+                {
+                  id: 'cool-stock',
+                  text: 'Stock cooler'
+                },
+                {
+                  id: 'cool-120-air',
+                  text: '120mm air cooler'
+                }
+              ]
+            }
+          ]
+        },
+        answer: {
+          slots: {
+            cpu: 'cpu-office',
+            gpu: 'gpu-none',
+            ram: 'ram-16',
+            psu: 'psu-250',
+            storage: 'storage-1tb-nvme',
+            cooling: 'cool-stock'
+          }
+        }
+      }
+    ]
+  },
+
+  {
+    id: 'a1-pcb-10',
+    cert: 'aplus-core1',
+    archetype: 'pcbuild',
+    objective: '3.4',
+    topic: 'Two-client PC build spec-off — backend developer vs. retiree\'s email PC',
+    title: 'Chidi\'s dev workstation and Harold\'s email machine',
+    estMinutes: 8,
+    scenario: 'Chidi runs local containers and builds all day and needs real CPU headroom plus a light GPU for occasional tooling. Harold just wants a small, cheap machine for email, news, and solitaire.',
+    pcbuild: {
+      clientA: {
+        budgetUsd: 1000,
+        caseMaxGpuLengthMm: 260,
+        minCpuTier: 3,
+        minGpuTier: 1
+      },
+      clientB: {
+        budgetUsd: 280,
+        caseMaxGpuLengthMm: 140,
+        minCpuTier: 1,
+        minGpuTier: 0
+      }
+    },
+    assets: {
+      reference: {
+        kind: 'slots',
+        bays: [
+          {
+            id: 'a-cpu',
+            label: 'Client A · CPU socket'
+          },
+          {
+            id: 'a-gpu',
+            label: 'Client A · GPU bay · max 260mm'
+          },
+          {
+            id: 'a-ram',
+            label: 'Client A · RAM slots'
+          },
+          {
+            id: 'a-psu',
+            label: 'Client A · PSU bay · ATX'
+          },
+          {
+            id: 'a-storage',
+            label: 'Client A · Storage bay · 2.5in/3.5in'
+          },
+          {
+            id: 'a-cooling',
+            label: 'Client A · Cooling mount · 120/240mm'
+          },
+          {
+            id: 'b-cpu',
+            label: 'Client B · CPU socket'
+          },
+          {
+            id: 'b-gpu',
+            label: 'Client B · GPU bay · max 140mm'
+          },
+          {
+            id: 'b-ram',
+            label: 'Client B · RAM slots'
+          },
+          {
+            id: 'b-psu',
+            label: 'Client B · PSU bay · SFX'
+          },
+          {
+            id: 'b-storage',
+            label: 'Client B · Storage bay · 2.5in only'
+          },
+          {
+            id: 'b-cooling',
+            label: 'Client B · Cooling mount · stock only'
+          }
+        ],
+        notes: ['Client A · $1000 budget · ATX mid-tower · Local container builds', 'Client B · $280 budget · Mini-ITX shoebox · Email + news + solitaire']
+      }
+    },
+    steps: [
+      {
+        id: 'clientA',
+        type: 'configure',
+        points: 1,
+        prompt: 'Spec Chidi\'s dev workstation: a strong CPU for parallel builds, and a light discrete GPU to clear the tier-1 floor for occasional GUI tooling.',
+        explanation: 'The creator-tier CPU clears the tier-3 floor needed for parallel compiles and containers; the entry discrete GPU clears the tier-1 floor his occasional tooling needs — integrated graphics alone would fall short of that floor.',
+        payload: {
+          slots: [
+            {
+              id: 'cpu',
+              label: 'CPU',
+              options: [
+                {
+                  id: 'cpu-creator',
+                  text: 'Creator-tier CPU'
+                },
+                {
+                  id: 'cpu-igpu-mid',
+                  text: 'Mid-range CPU w/ iGPU'
+                }
+              ]
+            },
+            {
+              id: 'gpu',
+              label: 'GPU',
+              options: [
+                {
+                  id: 'gpu-1650',
+                  text: 'Entry discrete GPU'
+                },
+                {
+                  id: 'gpu-none',
+                  text: 'No discrete GPU (iGPU only)'
+                }
+              ]
+            },
+            {
+              id: 'ram',
+              label: 'RAM',
+              options: [
+                {
+                  id: 'ram-64',
+                  text: '64GB RAM kit'
+                },
+                {
+                  id: 'ram-32',
+                  text: '32GB RAM kit'
+                }
+              ]
+            },
+            {
+              id: 'psu',
+              label: 'Power supply',
+              options: [
+                {
+                  id: 'psu-450',
+                  text: '450W PSU'
+                },
+                {
+                  id: 'psu-250',
+                  text: '250W PSU'
+                }
+              ]
+            },
+            {
+              id: 'storage',
+              label: 'Storage',
+              options: [
+                {
+                  id: 'storage-2tb-nvme',
+                  text: '2TB NVMe SSD'
+                },
+                {
+                  id: 'storage-1tb-nvme',
+                  text: '1TB NVMe SSD'
+                }
+              ]
+            },
+            {
+              id: 'cooling',
+              label: 'Cooling',
+              options: [
+                {
+                  id: 'cool-120-air',
+                  text: '120mm air cooler'
+                },
+                {
+                  id: 'cool-stock',
+                  text: 'Stock cooler'
+                }
+              ]
+            }
+          ]
+        },
+        answer: {
+          slots: {
+            cpu: 'cpu-creator',
+            gpu: 'gpu-1650',
+            ram: 'ram-64',
+            psu: 'psu-450',
+            storage: 'storage-2tb-nvme',
+            cooling: 'cool-120-air'
+          }
+        }
+      },
+      {
+        id: 'clientB',
+        type: 'configure',
+        points: 1,
+        prompt: 'Spec Harold\'s email machine: keep it small and cheap, and mind the shoebox case\'s 140mm GPU clearance.',
+        explanation: 'A budget CPU with integrated graphics is all this light-use ticket needs. The entry discrete GPU is 170mm, longer than this case\'s 140mm clearance, so it would not fit even as a "why not" add-on.',
+        payload: {
+          slots: [
+            {
+              id: 'cpu',
+              label: 'CPU',
+              options: [
+                {
+                  id: 'cpu-budget',
+                  text: 'Budget quad-core CPU'
+                },
+                {
+                  id: 'cpu-office',
+                  text: 'Office six-core CPU'
+                }
+              ]
+            },
+            {
+              id: 'gpu',
+              label: 'GPU',
+              options: [
+                {
+                  id: 'gpu-none',
+                  text: 'No discrete GPU (iGPU only)'
+                },
+                {
+                  id: 'gpu-1650',
+                  text: 'Entry discrete GPU'
+                }
+              ]
+            },
+            {
+              id: 'ram',
+              label: 'RAM',
+              options: [
+                {
+                  id: 'ram-8',
+                  text: '8GB RAM kit'
+                },
+                {
+                  id: 'ram-16',
+                  text: '16GB RAM kit'
+                }
+              ]
+            },
+            {
+              id: 'psu',
+              label: 'Power supply',
+              options: [
+                {
+                  id: 'psu-250',
+                  text: '250W PSU'
+                },
+                {
+                  id: 'psu-450',
+                  text: '450W PSU'
+                }
+              ]
+            },
+            {
+              id: 'storage',
+              label: 'Storage',
+              options: [
+                {
+                  id: 'storage-256-sata',
+                  text: '256GB SATA SSD'
+                },
+                {
+                  id: 'storage-1tb-nvme',
+                  text: '1TB NVMe SSD'
+                }
+              ]
+            },
+            {
+              id: 'cooling',
+              label: 'Cooling',
+              options: [
+                {
+                  id: 'cool-stock',
+                  text: 'Stock cooler'
+                },
+                {
+                  id: 'cool-120-air',
+                  text: '120mm air cooler'
+                }
+              ]
+            }
+          ]
+        },
+        answer: {
+          slots: {
+            cpu: 'cpu-budget',
+            gpu: 'gpu-none',
+            ram: 'ram-8',
+            psu: 'psu-250',
+            storage: 'storage-256-sata',
+            cooling: 'cool-stock'
+          }
+        }
+      }
+    ]
+  },
+
+  {
+    id: 'a1-pcb-11',
+    cert: 'aplus-core1',
+    archetype: 'pcbuild',
+    objective: '3.4',
+    topic: 'Two-client PC build spec-off — competitive esports player vs. freelance writer',
+    title: 'Ester\'s competitive rig and Palmer\'s writing desktop',
+    estMinutes: 8,
+    scenario: 'Ester plays competitive titles that lean on single-core frame rate more than graphics fidelity, so the top-tier GPU is overkill AND too long for her case. Palmer writes manuscripts and researches online — a light, no-GPU build that fits a tight budget.',
+    pcbuild: {
+      clientA: {
+        budgetUsd: 950,
+        caseMaxGpuLengthMm: 260,
+        minCpuTier: 3,
+        minGpuTier: 2
+      },
+      clientB: {
+        budgetUsd: 380,
+        caseMaxGpuLengthMm: 160,
+        minCpuTier: 1,
+        minGpuTier: 0
+      }
+    },
+    assets: {
+      reference: {
+        kind: 'slots',
+        bays: [
+          {
+            id: 'a-cpu',
+            label: 'Client A · CPU socket'
+          },
+          {
+            id: 'a-gpu',
+            label: 'Client A · GPU bay · max 260mm'
+          },
+          {
+            id: 'a-ram',
+            label: 'Client A · RAM slots'
+          },
+          {
+            id: 'a-psu',
+            label: 'Client A · PSU bay · ATX'
+          },
+          {
+            id: 'a-storage',
+            label: 'Client A · Storage bay · 2.5in/3.5in'
+          },
+          {
+            id: 'a-cooling',
+            label: 'Client A · Cooling mount · 120/240mm'
+          },
+          {
+            id: 'b-cpu',
+            label: 'Client B · CPU socket'
+          },
+          {
+            id: 'b-gpu',
+            label: 'Client B · GPU bay · max 160mm'
+          },
+          {
+            id: 'b-ram',
+            label: 'Client B · RAM slots'
+          },
+          {
+            id: 'b-psu',
+            label: 'Client B · PSU bay · SFX'
+          },
+          {
+            id: 'b-storage',
+            label: 'Client B · Storage bay · 2.5in only'
+          },
+          {
+            id: 'b-cooling',
+            label: 'Client B · Cooling mount · stock only'
+          }
+        ],
+        notes: ['Client A · $950 budget · ATX mid-tower · Competitive esports gaming', 'Client B · $380 budget · Micro-tower · Manuscript writing + research']
+      }
+    },
+    steps: [
+      {
+        id: 'clientA',
+        type: 'configure',
+        points: 1,
+        prompt: 'Spec Ester\'s competitive rig: strong single-core CPU for frame rate, and a GPU that clears the tier floor without overspending on one that will not even fit.',
+        explanation: 'The creator-tier CPU clears the tier-3 floor for high, stable frame rates; the mid-range GPU clears the tier-2 floor these lighter-graphics titles need. The top-tier GPU is both unnecessary here and 310mm — too long for this 260mm case.',
+        payload: {
+          slots: [
+            {
+              id: 'cpu',
+              label: 'CPU',
+              options: [
+                {
+                  id: 'cpu-creator',
+                  text: 'Creator-tier CPU'
+                },
+                {
+                  id: 'cpu-igpu-mid',
+                  text: 'Mid-range CPU w/ iGPU'
+                }
+              ]
+            },
+            {
+              id: 'gpu',
+              label: 'GPU',
+              options: [
+                {
+                  id: 'gpu-4060',
+                  text: 'Mid-range discrete GPU'
+                },
+                {
+                  id: 'gpu-4070',
+                  text: 'High-end discrete GPU'
+                }
+              ]
+            },
+            {
+              id: 'ram',
+              label: 'RAM',
+              options: [
+                {
+                  id: 'ram-32',
+                  text: '32GB RAM kit'
+                },
+                {
+                  id: 'ram-16',
+                  text: '16GB RAM kit'
+                }
+              ]
+            },
+            {
+              id: 'psu',
+              label: 'Power supply',
+              options: [
+                {
+                  id: 'psu-450',
+                  text: '450W PSU'
+                },
+                {
+                  id: 'psu-250',
+                  text: '250W PSU'
+                }
+              ]
+            },
+            {
+              id: 'storage',
+              label: 'Storage',
+              options: [
+                {
+                  id: 'storage-1tb-nvme',
+                  text: '1TB NVMe SSD'
+                },
+                {
+                  id: 'storage-256-sata',
+                  text: '256GB SATA SSD'
+                }
+              ]
+            },
+            {
+              id: 'cooling',
+              label: 'Cooling',
+              options: [
+                {
+                  id: 'cool-120-air',
+                  text: '120mm air cooler'
+                },
+                {
+                  id: 'cool-stock',
+                  text: 'Stock cooler'
+                }
+              ]
+            }
+          ]
+        },
+        answer: {
+          slots: {
+            cpu: 'cpu-creator',
+            gpu: 'gpu-4060',
+            ram: 'ram-32',
+            psu: 'psu-450',
+            storage: 'storage-1tb-nvme',
+            cooling: 'cool-120-air'
+          }
+        }
+      },
+      {
+        id: 'clientB',
+        type: 'configure',
+        points: 1,
+        prompt: 'Spec Palmer\'s writing desktop: no discrete GPU needed, and mind the case\'s 160mm GPU clearance either way.',
+        explanation: 'Office-tier CPU with integrated graphics is plenty for word processing, research tabs, and video calls. The entry discrete GPU is 170mm — longer than this case\'s 160mm clearance — so it is not an option here regardless of need.',
+        payload: {
+          slots: [
+            {
+              id: 'cpu',
+              label: 'CPU',
+              options: [
+                {
+                  id: 'cpu-office',
+                  text: 'Office six-core CPU'
+                },
+                {
+                  id: 'cpu-budget',
+                  text: 'Budget quad-core CPU'
+                }
+              ]
+            },
+            {
+              id: 'gpu',
+              label: 'GPU',
+              options: [
+                {
+                  id: 'gpu-none',
+                  text: 'No discrete GPU (iGPU only)'
+                },
+                {
+                  id: 'gpu-1650',
+                  text: 'Entry discrete GPU'
+                }
+              ]
+            },
+            {
+              id: 'ram',
+              label: 'RAM',
+              options: [
+                {
+                  id: 'ram-16',
+                  text: '16GB RAM kit'
+                },
+                {
+                  id: 'ram-8',
+                  text: '8GB RAM kit'
+                }
+              ]
+            },
+            {
+              id: 'psu',
+              label: 'Power supply',
+              options: [
+                {
+                  id: 'psu-250',
+                  text: '250W PSU'
+                },
+                {
+                  id: 'psu-450',
+                  text: '450W PSU'
+                }
+              ]
+            },
+            {
+              id: 'storage',
+              label: 'Storage',
+              options: [
+                {
+                  id: 'storage-1tb-nvme',
+                  text: '1TB NVMe SSD'
+                },
+                {
+                  id: 'storage-256-sata',
+                  text: '256GB SATA SSD'
+                }
+              ]
+            },
+            {
+              id: 'cooling',
+              label: 'Cooling',
+              options: [
+                {
+                  id: 'cool-stock',
+                  text: 'Stock cooler'
+                },
+                {
+                  id: 'cool-120-air',
+                  text: '120mm air cooler'
+                }
+              ]
+            }
+          ]
+        },
+        answer: {
+          slots: {
+            cpu: 'cpu-office',
+            gpu: 'gpu-none',
+            ram: 'ram-16',
+            psu: 'psu-250',
+            storage: 'storage-1tb-nvme',
+            cooling: 'cool-stock'
+          }
+        }
+      }
+    ]
+  },
+  {
+    id: 'a1-raid-01',
+    cert: 'aplus-core1',
+    archetype: 'raid',
+    objective: '3.4',
+    topic: 'RAID 0 build — home NAS media scratch volume, no redundancy required',
+    title: 'Media scratch volume: raw speed, no redundancy',
+    estMinutes: 6,
+    scenario: 'A home NAS needs a fast scratch volume for transcoding video — nothing on it is irreplaceable, source files live elsewhere. The client wants maximum usable capacity from three 2TB drives and doesn\'t care about drive failure protection for this volume. Build the array, then one drive drops out of the pool overnight.',
+    raid: {
+      targetUsableTb: 6,
+      targetTolerance: 0,
+      failedDriveCount: 1
+    },
+    assets: {
+      reference: {
+        kind: 'slots',
+        bays: [
+          {
+            id: 'bay1',
+            label: 'Drive bay 1'
+          },
+          {
+            id: 'bay2',
+            label: 'Drive bay 2'
+          },
+          {
+            id: 'bay3',
+            label: 'Drive bay 3'
+          }
+        ],
+        notes: ['Client: home NAS media scratch', 'Available: three 2TB drives', 'No redundancy required']
+      }
+    },
+    steps: [
+      {
+        id: 'build',
+        type: 'configure',
+        points: 1,
+        prompt: 'Configure the array to hit 6TB usable from three 2TB drives with no redundancy requirement.',
+        explanation: 'Striping across all three 2TB drives with RAID 0 yields the full 6TB usable — RAID 1 or 5 would waste capacity on parity/mirroring the client explicitly doesn\'t need here.',
+        payload: {
+          slots: [
+            {
+              id: 'level',
+              label: 'RAID level',
+              options: [
+                {
+                  id: 'raid0',
+                  text: 'RAID 0 (striping)'
+                },
+                {
+                  id: 'raid1',
+                  text: 'RAID 1 (mirroring)'
+                },
+                {
+                  id: 'raid5',
+                  text: 'RAID 5 (single parity)'
+                }
+              ]
+            },
+            {
+              id: 'driveCount',
+              label: 'Drive count',
+              options: [
+                {
+                  id: 'c2',
+                  text: '2 drives'
+                },
+                {
+                  id: 'c3',
+                  text: '3 drives'
+                },
+                {
+                  id: 'c4',
+                  text: '4 drives'
+                }
+              ]
+            },
+            {
+              id: 'driveSize',
+              label: 'Drive size',
+              options: [
+                {
+                  id: 's1',
+                  text: '1TB per drive'
+                },
+                {
+                  id: 's2',
+                  text: '2TB per drive'
+                },
+                {
+                  id: 's4',
+                  text: '4TB per drive'
+                }
+              ]
+            }
+          ]
+        },
+        answer: {
+          slots: {
+            level: 'raid0',
+            driveCount: 'c3',
+            driveSize: 's2'
+          }
+        }
+      },
+      {
+        id: 'degrade',
+        type: 'configure',
+        points: 1,
+        prompt: 'One of the three drives just dropped offline. What is the array status and next step?',
+        explanation: 'RAID 0 has zero fault tolerance — losing any single drive destroys the whole stripe set. The array is unrecoverable in place; whatever was on it must come from a source copy, not a rebuild.',
+        payload: {
+          slots: [
+            {
+              id: 'arrayStatus',
+              label: 'Array status',
+              options: [
+                {
+                  id: 'st-healthy',
+                  text: 'Healthy / Optimal'
+                },
+                {
+                  id: 'st-degraded',
+                  text: 'Degraded'
+                },
+                {
+                  id: 'st-failed',
+                  text: 'Failed'
+                }
+              ]
+            },
+            {
+              id: 'recoveryAction',
+              label: 'Recovery action',
+              options: [
+                {
+                  id: 'ac-none',
+                  text: 'No action needed — monitor'
+                },
+                {
+                  id: 'ac-rebuild',
+                  text: 'Hot-swap the failed drive(s) and rebuild the array'
+                },
+                {
+                  id: 'ac-restore',
+                  text: 'Array is unrecoverable — restore from backup'
+                }
+              ]
+            }
+          ]
+        },
+        answer: {
+          slots: {
+            arrayStatus: 'st-failed',
+            recoveryAction: 'ac-restore'
+          }
+        }
+      }
+    ]
+  },
+  {
+    id: 'a1-raid-02',
+    cert: 'aplus-core1',
+    archetype: 'raid',
+    objective: '3.4',
+    topic: 'RAID 0 build — video-editing scratch array, fully healthy check-in',
+    title: 'Scratch array health check before a big edit session',
+    estMinutes: 6,
+    scenario: 'A video editor\'s scratch array — two 4TB drives striped for throughput — is being checked before a deadline edit session. The client wants confirmation the array is healthy before committing hours of render work to it.',
+    raid: {
+      targetUsableTb: 8,
+      targetTolerance: 0,
+      failedDriveCount: 0
+    },
+    assets: {
+      reference: {
+        kind: 'slots',
+        bays: [
+          {
+            id: 'bay1',
+            label: 'Drive bay 1'
+          },
+          {
+            id: 'bay2',
+            label: 'Drive bay 2'
+          }
+        ],
+        notes: ['Client: video-editing scratch array', 'Available: two 4TB drives', 'No redundancy required']
+      }
+    },
+    steps: [
+      {
+        id: 'build',
+        type: 'configure',
+        points: 1,
+        prompt: 'Build the scratch array for maximum throughput and usable capacity from two 4TB drives.',
+        explanation: 'Two drives is the minimum RAID 0 supports, and striping both 4TB drives gives the full 8TB usable — no fewer-drive combination at this size reaches 8TB.',
+        payload: {
+          slots: [
+            {
+              id: 'level',
+              label: 'RAID level',
+              options: [
+                {
+                  id: 'raid0',
+                  text: 'RAID 0 (striping)'
+                },
+                {
+                  id: 'raid1',
+                  text: 'RAID 1 (mirroring)'
+                }
+              ]
+            },
+            {
+              id: 'driveCount',
+              label: 'Drive count',
+              options: [
+                {
+                  id: 'c2',
+                  text: '2 drives'
+                },
+                {
+                  id: 'c3',
+                  text: '3 drives'
+                }
+              ]
+            },
+            {
+              id: 'driveSize',
+              label: 'Drive size',
+              options: [
+                {
+                  id: 's2',
+                  text: '2TB per drive'
+                },
+                {
+                  id: 's4',
+                  text: '4TB per drive'
+                },
+                {
+                  id: 's8',
+                  text: '8TB per drive'
+                }
+              ]
+            }
+          ]
+        },
+        answer: {
+          slots: {
+            level: 'raid0',
+            driveCount: 'c2',
+            driveSize: 's4'
+          }
+        }
+      },
+      {
+        id: 'degrade',
+        type: 'configure',
+        points: 1,
+        prompt: 'Pre-session check: both drives report clean SMART status, no drops. What\'s the array status and next step?',
+        explanation: 'With zero failed drives the array is healthy and fully usable — no recovery action needed, just proceed with the edit session.',
+        payload: {
+          slots: [
+            {
+              id: 'arrayStatus',
+              label: 'Array status',
+              options: [
+                {
+                  id: 'st-healthy',
+                  text: 'Healthy / Optimal'
+                },
+                {
+                  id: 'st-degraded',
+                  text: 'Degraded'
+                },
+                {
+                  id: 'st-failed',
+                  text: 'Failed'
+                }
+              ]
+            },
+            {
+              id: 'recoveryAction',
+              label: 'Recovery action',
+              options: [
+                {
+                  id: 'ac-none',
+                  text: 'No action needed — monitor'
+                },
+                {
+                  id: 'ac-rebuild',
+                  text: 'Hot-swap the failed drive(s) and rebuild the array'
+                },
+                {
+                  id: 'ac-restore',
+                  text: 'Array is unrecoverable — restore from backup'
+                }
+              ]
+            }
+          ]
+        },
+        answer: {
+          slots: {
+            arrayStatus: 'st-healthy',
+            recoveryAction: 'ac-none'
+          }
+        }
+      }
+    ]
+  },
+  {
+    id: 'a1-raid-11',
+    cert: 'aplus-core1',
+    archetype: 'raid',
+    objective: '3.4',
+    topic: 'RAID 0 build — budget gaming rig fast temp/scratch disk',
+    title: 'Budget gaming rig: fast temp disk from spare SSDs',
+    estMinutes: 6,
+    scenario: 'A budget gaming build has four spare 1TB SSDs and needs a fast temp/shader-cache disk — the OS and game library live elsewhere, this volume is fully disposable. The client wants every bit of capacity and speed out of the four drives.',
+    raid: {
+      targetUsableTb: 4,
+      targetTolerance: 0,
+      failedDriveCount: 1
+    },
+    assets: {
+      reference: {
+        kind: 'slots',
+        bays: [
+          {
+            id: 'bay1',
+            label: 'Drive bay 1'
+          },
+          {
+            id: 'bay2',
+            label: 'Drive bay 2'
+          },
+          {
+            id: 'bay3',
+            label: 'Drive bay 3'
+          },
+          {
+            id: 'bay4',
+            label: 'Drive bay 4'
+          }
+        ],
+        notes: ['Client: budget gaming rig temp/scratch disk', 'Available: four 1TB SSDs', 'Fully disposable data — no redundancy required']
+      }
+    },
+    steps: [
+      {
+        id: 'build',
+        type: 'configure',
+        points: 1,
+        prompt: 'Build the temp disk for maximum capacity and speed from all four 1TB SSDs.',
+        explanation: 'Striping all four 1TB drives with RAID 0 gives the full 4TB usable — three drives alone (3TB) falls short of the 4TB target, so all four are required.',
+        payload: {
+          slots: [
+            {
+              id: 'level',
+              label: 'RAID level',
+              options: [
+                {
+                  id: 'raid0',
+                  text: 'RAID 0 (striping)'
+                },
+                {
+                  id: 'raid5',
+                  text: 'RAID 5 (single parity)'
+                },
+                {
+                  id: 'raid10',
+                  text: 'RAID 10 (mirrored stripe)'
+                }
+              ]
+            },
+            {
+              id: 'driveCount',
+              label: 'Drive count',
+              options: [
+                {
+                  id: 'c3',
+                  text: '3 drives'
+                },
+                {
+                  id: 'c4',
+                  text: '4 drives'
+                }
+              ]
+            },
+            {
+              id: 'driveSize',
+              label: 'Drive size',
+              options: [
+                {
+                  id: 's1',
+                  text: '1TB per drive'
+                },
+                {
+                  id: 's2',
+                  text: '2TB per drive'
+                }
+              ]
+            }
+          ]
+        },
+        answer: {
+          slots: {
+            level: 'raid0',
+            driveCount: 'c4',
+            driveSize: 's1'
+          }
+        }
+      },
+      {
+        id: 'degrade',
+        type: 'configure',
+        points: 1,
+        prompt: 'One of the four SSDs failed. What is the array status and next step?',
+        explanation: 'RAID 0 tolerates zero drive failures — one dead drive takes the whole stripe with it, and there is no parity or mirror to reconstruct from. The array is Failed and unrecoverable in place; the only path forward is recreating the volume from a source copy (or accepting data loss, since this was disposable scratch data).',
+        payload: {
+          slots: [
+            {
+              id: 'arrayStatus',
+              label: 'Array status',
+              options: [
+                {
+                  id: 'st-healthy',
+                  text: 'Healthy / Optimal'
+                },
+                {
+                  id: 'st-degraded',
+                  text: 'Degraded'
+                },
+                {
+                  id: 'st-failed',
+                  text: 'Failed'
+                }
+              ]
+            },
+            {
+              id: 'recoveryAction',
+              label: 'Recovery action',
+              options: [
+                {
+                  id: 'ac-none',
+                  text: 'No action needed — monitor'
+                },
+                {
+                  id: 'ac-rebuild',
+                  text: 'Hot-swap the failed drive(s) and rebuild the array'
+                },
+                {
+                  id: 'ac-restore',
+                  text: 'Array is unrecoverable — restore from backup'
+                }
+              ]
+            }
+          ]
+        },
+        answer: {
+          slots: {
+            arrayStatus: 'st-failed',
+            recoveryAction: 'ac-restore'
+          }
+        }
+      }
+    ]
+  },
+  {
+    id: 'a1-raid-03',
+    cert: 'aplus-core1',
+    archetype: 'raid',
+    objective: '3.4',
+    topic: 'RAID 1 build — small business file server, single mirrored pair',
+    title: 'Small business file server: mirrored pair for one failure',
+    estMinutes: 6,
+    scenario: 'A five-person office file server needs 2TB of protected storage that survives a single drive failure. Two 2TB drives are on hand. Build the array, then one drive throws SMART errors and drops out.',
+    raid: {
+      targetUsableTb: 2,
+      targetTolerance: 1,
+      failedDriveCount: 1
+    },
+    assets: {
+      reference: {
+        kind: 'slots',
+        bays: [
+          {
+            id: 'bay1',
+            label: 'Drive bay 1'
+          },
+          {
+            id: 'bay2',
+            label: 'Drive bay 2'
+          }
+        ],
+        notes: ['Client: small business file server', 'Available: two 2TB drives', 'Must survive one drive failure']
+      }
+    },
+    steps: [
+      {
+        id: 'build',
+        type: 'configure',
+        points: 1,
+        prompt: 'Build the array to give 2TB usable, protected storage from two 2TB drives.',
+        explanation: 'Mirroring the two 2TB drives with RAID 1 gives 2TB usable and survives one drive failure — RAID 0 would double capacity but offers zero protection, which fails this client\'s requirement.',
+        payload: {
+          slots: [
+            {
+              id: 'level',
+              label: 'RAID level',
+              options: [
+                {
+                  id: 'raid0',
+                  text: 'RAID 0 (striping)'
+                },
+                {
+                  id: 'raid1',
+                  text: 'RAID 1 (mirroring)'
+                }
+              ]
+            },
+            {
+              id: 'driveCount',
+              label: 'Drive count',
+              options: [
+                {
+                  id: 'c2',
+                  text: '2 drives'
+                },
+                {
+                  id: 'c3',
+                  text: '3 drives'
+                }
+              ]
+            },
+            {
+              id: 'driveSize',
+              label: 'Drive size',
+              options: [
+                {
+                  id: 's2',
+                  text: '2TB per drive'
+                },
+                {
+                  id: 's4',
+                  text: '4TB per drive'
+                }
+              ]
+            }
+          ]
+        },
+        answer: {
+          slots: {
+            level: 'raid1',
+            driveCount: 'c2',
+            driveSize: 's2'
+          }
+        }
+      },
+      {
+        id: 'degrade',
+        type: 'configure',
+        points: 1,
+        prompt: 'One of the mirrored drives just dropped offline. What is the array status and next step?',
+        explanation: 'RAID 1 tolerates exactly one failed drive — the mirror is still serving data from the surviving copy. Status is Degraded, and the fix is to hot-swap the bad drive and let it rebuild from the mirror.',
+        payload: {
+          slots: [
+            {
+              id: 'arrayStatus',
+              label: 'Array status',
+              options: [
+                {
+                  id: 'st-healthy',
+                  text: 'Healthy / Optimal'
+                },
+                {
+                  id: 'st-degraded',
+                  text: 'Degraded'
+                },
+                {
+                  id: 'st-failed',
+                  text: 'Failed'
+                }
+              ]
+            },
+            {
+              id: 'recoveryAction',
+              label: 'Recovery action',
+              options: [
+                {
+                  id: 'ac-none',
+                  text: 'No action needed — monitor'
+                },
+                {
+                  id: 'ac-rebuild',
+                  text: 'Hot-swap the failed drive(s) and rebuild the array'
+                },
+                {
+                  id: 'ac-restore',
+                  text: 'Array is unrecoverable — restore from backup'
+                }
+              ]
+            }
+          ]
+        },
+        answer: {
+          slots: {
+            arrayStatus: 'st-degraded',
+            recoveryAction: 'ac-rebuild'
+          }
+        }
+      }
+    ]
+  },
+  {
+    id: 'a1-raid-04',
+    cert: 'aplus-core1',
+    archetype: 'raid',
+    objective: '3.4',
+    topic: 'RAID 1 build — home NAS, both mirrored drives fail together',
+    title: 'Home NAS mirror: a power surge takes out both drives',
+    estMinutes: 6,
+    scenario: 'A home NAS mirrors two 4TB drives for photo/document backup. After a power surge, the technician needs to build the mirror, and separately assess a worst-case scenario where both drives in the pair report failure simultaneously.',
+    raid: {
+      targetUsableTb: 4,
+      targetTolerance: 1,
+      failedDriveCount: 2
+    },
+    assets: {
+      reference: {
+        kind: 'slots',
+        bays: [
+          {
+            id: 'bay1',
+            label: 'Drive bay 1'
+          },
+          {
+            id: 'bay2',
+            label: 'Drive bay 2'
+          }
+        ],
+        notes: ['Client: home NAS photo/document backup', 'Available: two 4TB drives', 'Must survive one drive failure']
+      }
+    },
+    steps: [
+      {
+        id: 'build',
+        type: 'configure',
+        points: 1,
+        prompt: 'Build the mirror for 4TB usable, protected storage from two 4TB drives.',
+        explanation: 'RAID 1 across two 4TB drives gives 4TB usable and tolerates one drive loss — the minimum two-drive configuration already meets both the capacity and tolerance targets.',
+        payload: {
+          slots: [
+            {
+              id: 'level',
+              label: 'RAID level',
+              options: [
+                {
+                  id: 'raid0',
+                  text: 'RAID 0 (striping)'
+                },
+                {
+                  id: 'raid1',
+                  text: 'RAID 1 (mirroring)'
+                }
+              ]
+            },
+            {
+              id: 'driveCount',
+              label: 'Drive count',
+              options: [
+                {
+                  id: 'c2',
+                  text: '2 drives'
+                },
+                {
+                  id: 'c3',
+                  text: '3 drives'
+                }
+              ]
+            },
+            {
+              id: 'driveSize',
+              label: 'Drive size',
+              options: [
+                {
+                  id: 's2',
+                  text: '2TB per drive'
+                },
+                {
+                  id: 's4',
+                  text: '4TB per drive'
+                }
+              ]
+            }
+          ]
+        },
+        answer: {
+          slots: {
+            level: 'raid1',
+            driveCount: 'c2',
+            driveSize: 's4'
+          }
+        }
+      },
+      {
+        id: 'degrade',
+        type: 'configure',
+        points: 1,
+        prompt: 'A power surge knocked out both drives in the mirrored pair at once. What is the array status and next step?',
+        explanation: 'RAID 1 only tolerates one failed drive — losing both members of the pair simultaneously exceeds that tolerance and takes down the array entirely. It must be rebuilt from backup, not recovered in place.',
+        payload: {
+          slots: [
+            {
+              id: 'arrayStatus',
+              label: 'Array status',
+              options: [
+                {
+                  id: 'st-healthy',
+                  text: 'Healthy / Optimal'
+                },
+                {
+                  id: 'st-degraded',
+                  text: 'Degraded'
+                },
+                {
+                  id: 'st-failed',
+                  text: 'Failed'
+                }
+              ]
+            },
+            {
+              id: 'recoveryAction',
+              label: 'Recovery action',
+              options: [
+                {
+                  id: 'ac-none',
+                  text: 'No action needed — monitor'
+                },
+                {
+                  id: 'ac-rebuild',
+                  text: 'Hot-swap the failed drive(s) and rebuild the array'
+                },
+                {
+                  id: 'ac-restore',
+                  text: 'Array is unrecoverable — restore from backup'
+                }
+              ]
+            }
+          ]
+        },
+        answer: {
+          slots: {
+            arrayStatus: 'st-failed',
+            recoveryAction: 'ac-restore'
+          }
+        }
+      }
+    ]
+  },
+  {
+    id: 'a1-raid-10',
+    cert: 'aplus-core1',
+    archetype: 'raid',
+    objective: '3.4',
+    topic: 'RAID 1 build — architecture firm large-file redundant server',
+    title: 'Architecture firm: redundant server for large CAD files',
+    estMinutes: 6,
+    scenario: 'An architecture firm keeps large CAD/BIM project files on a server that must survive one drive failure without data loss. Two 8TB drives are budgeted. Build the mirror, then one drive fails during a project crunch.',
+    raid: {
+      targetUsableTb: 8,
+      targetTolerance: 1,
+      failedDriveCount: 1
+    },
+    assets: {
+      reference: {
+        kind: 'slots',
+        bays: [
+          {
+            id: 'bay1',
+            label: 'Drive bay 1'
+          },
+          {
+            id: 'bay2',
+            label: 'Drive bay 2'
+          }
+        ],
+        notes: ['Client: architecture firm CAD/BIM file server', 'Available: two 8TB drives', 'Must survive one drive failure']
+      }
+    },
+    steps: [
+      {
+        id: 'build',
+        type: 'configure',
+        points: 1,
+        prompt: 'Build the redundant server volume for 8TB usable from two 8TB drives.',
+        explanation: 'Mirroring the two 8TB drives gives 8TB usable and tolerates a single drive failure — the minimum two-drive RAID 1 pair already clears both targets.',
+        payload: {
+          slots: [
+            {
+              id: 'level',
+              label: 'RAID level',
+              options: [
+                {
+                  id: 'raid0',
+                  text: 'RAID 0 (striping)'
+                },
+                {
+                  id: 'raid1',
+                  text: 'RAID 1 (mirroring)'
+                }
+              ]
+            },
+            {
+              id: 'driveCount',
+              label: 'Drive count',
+              options: [
+                {
+                  id: 'c2',
+                  text: '2 drives'
+                },
+                {
+                  id: 'c4',
+                  text: '4 drives'
+                }
+              ]
+            },
+            {
+              id: 'driveSize',
+              label: 'Drive size',
+              options: [
+                {
+                  id: 's4',
+                  text: '4TB per drive'
+                },
+                {
+                  id: 's8',
+                  text: '8TB per drive'
+                }
+              ]
+            }
+          ]
+        },
+        answer: {
+          slots: {
+            level: 'raid1',
+            driveCount: 'c2',
+            driveSize: 's8'
+          }
+        }
+      },
+      {
+        id: 'degrade',
+        type: 'configure',
+        points: 1,
+        prompt: 'One of the two mirrored drives failed mid-project. What is the array status and next step?',
+        explanation: 'One failed drive is exactly within RAID 1\'s tolerance — the array keeps serving from the surviving mirror. Status is Degraded; hot-swap the failed drive and rebuild the mirror.',
+        payload: {
+          slots: [
+            {
+              id: 'arrayStatus',
+              label: 'Array status',
+              options: [
+                {
+                  id: 'st-healthy',
+                  text: 'Healthy / Optimal'
+                },
+                {
+                  id: 'st-degraded',
+                  text: 'Degraded'
+                },
+                {
+                  id: 'st-failed',
+                  text: 'Failed'
+                }
+              ]
+            },
+            {
+              id: 'recoveryAction',
+              label: 'Recovery action',
+              options: [
+                {
+                  id: 'ac-none',
+                  text: 'No action needed — monitor'
+                },
+                {
+                  id: 'ac-rebuild',
+                  text: 'Hot-swap the failed drive(s) and rebuild the array'
+                },
+                {
+                  id: 'ac-restore',
+                  text: 'Array is unrecoverable — restore from backup'
+                }
+              ]
+            }
+          ]
+        },
+        answer: {
+          slots: {
+            arrayStatus: 'st-degraded',
+            recoveryAction: 'ac-rebuild'
+          }
+        }
+      }
+    ]
+  },
+  {
+    id: 'a1-raid-05',
+    cert: 'aplus-core1',
+    archetype: 'raid',
+    objective: '3.4',
+    topic: 'RAID 5 build — department storage share, single-parity protection',
+    title: 'Department share: single-parity protection on a budget',
+    estMinutes: 6,
+    scenario: 'A department storage share needs 8TB of usable, protected space and can tolerate one drive failure. Three 4TB drives are available. Build the array, then one drive fails.',
+    raid: {
+      targetUsableTb: 8,
+      targetTolerance: 1,
+      failedDriveCount: 1
+    },
+    assets: {
+      reference: {
+        kind: 'slots',
+        bays: [
+          {
+            id: 'bay1',
+            label: 'Drive bay 1'
+          },
+          {
+            id: 'bay2',
+            label: 'Drive bay 2'
+          },
+          {
+            id: 'bay3',
+            label: 'Drive bay 3'
+          }
+        ],
+        notes: ['Client: department storage share', 'Available: three 4TB drives', 'Must survive one drive failure']
+      }
+    },
+    steps: [
+      {
+        id: 'build',
+        type: 'configure',
+        points: 1,
+        prompt: 'Build the array for 8TB usable, one-drive-failure-tolerant storage from three 4TB drives.',
+        explanation: 'RAID 5 across three 4TB drives dedicates one drive\'s worth of capacity to parity, leaving 8TB usable with single-drive fault tolerance — the minimum drive count (3) that clears both targets.',
+        payload: {
+          slots: [
+            {
+              id: 'level',
+              label: 'RAID level',
+              options: [
+                {
+                  id: 'raid0',
+                  text: 'RAID 0 (striping)'
+                },
+                {
+                  id: 'raid1',
+                  text: 'RAID 1 (mirroring)'
+                },
+                {
+                  id: 'raid5',
+                  text: 'RAID 5 (single parity)'
+                }
+              ]
+            },
+            {
+              id: 'driveCount',
+              label: 'Drive count',
+              options: [
+                {
+                  id: 'c3',
+                  text: '3 drives'
+                },
+                {
+                  id: 'c4',
+                  text: '4 drives'
+                }
+              ]
+            },
+            {
+              id: 'driveSize',
+              label: 'Drive size',
+              options: [
+                {
+                  id: 's2',
+                  text: '2TB per drive'
+                },
+                {
+                  id: 's4',
+                  text: '4TB per drive'
+                }
+              ]
+            }
+          ]
+        },
+        answer: {
+          slots: {
+            level: 'raid5',
+            driveCount: 'c3',
+            driveSize: 's4'
+          }
+        }
+      },
+      {
+        id: 'degrade',
+        type: 'configure',
+        points: 1,
+        prompt: 'One of the three drives in the array failed. What is the array status and next step?',
+        explanation: 'One failed drive is within RAID 5\'s single-parity tolerance — the array reconstructs missing data from parity on the fly. Status is Degraded; hot-swap the drive and rebuild.',
+        payload: {
+          slots: [
+            {
+              id: 'arrayStatus',
+              label: 'Array status',
+              options: [
+                {
+                  id: 'st-healthy',
+                  text: 'Healthy / Optimal'
+                },
+                {
+                  id: 'st-degraded',
+                  text: 'Degraded'
+                },
+                {
+                  id: 'st-failed',
+                  text: 'Failed'
+                }
+              ]
+            },
+            {
+              id: 'recoveryAction',
+              label: 'Recovery action',
+              options: [
+                {
+                  id: 'ac-none',
+                  text: 'No action needed — monitor'
+                },
+                {
+                  id: 'ac-rebuild',
+                  text: 'Hot-swap the failed drive(s) and rebuild the array'
+                },
+                {
+                  id: 'ac-restore',
+                  text: 'Array is unrecoverable — restore from backup'
+                }
+              ]
+            }
+          ]
+        },
+        answer: {
+          slots: {
+            arrayStatus: 'st-degraded',
+            recoveryAction: 'ac-rebuild'
+          }
+        }
+      }
+    ]
+  },
+  {
+    id: 'a1-raid-06',
+    cert: 'aplus-core1',
+    archetype: 'raid',
+    objective: '3.4',
+    topic: 'RAID 5 build — growing SMB storage array, two simultaneous failures',
+    title: 'SMB storage array: two drives fail in the same week',
+    estMinutes: 6,
+    scenario: 'A growing small business needs 16TB of usable, single-parity-protected storage. Five 4TB drives are budgeted. Build the array, then a bad batch causes two drives to fail within days of each other.',
+    raid: {
+      targetUsableTb: 16,
+      targetTolerance: 1,
+      failedDriveCount: 2
+    },
+    assets: {
+      reference: {
+        kind: 'slots',
+        bays: [
+          {
+            id: 'bay1',
+            label: 'Drive bay 1'
+          },
+          {
+            id: 'bay2',
+            label: 'Drive bay 2'
+          },
+          {
+            id: 'bay3',
+            label: 'Drive bay 3'
+          },
+          {
+            id: 'bay4',
+            label: 'Drive bay 4'
+          },
+          {
+            id: 'bay5',
+            label: 'Drive bay 5'
+          }
+        ],
+        notes: ['Client: growing SMB storage array', 'Available: five 4TB drives', 'Must survive one drive failure']
+      }
+    },
+    steps: [
+      {
+        id: 'build',
+        type: 'configure',
+        points: 1,
+        prompt: 'Build the array for 16TB usable, single-drive-failure-tolerant storage from five 4TB drives.',
+        explanation: 'RAID 5 across five 4TB drives gives (5-1)×4TB = 16TB usable with single-parity protection — four drives alone would only reach 12TB, so five is the minimal fit.',
+        payload: {
+          slots: [
+            {
+              id: 'level',
+              label: 'RAID level',
+              options: [
+                {
+                  id: 'raid0',
+                  text: 'RAID 0 (striping)'
+                },
+                {
+                  id: 'raid5',
+                  text: 'RAID 5 (single parity)'
+                },
+                {
+                  id: 'raid6',
+                  text: 'RAID 6 (dual parity)'
+                }
+              ]
+            },
+            {
+              id: 'driveCount',
+              label: 'Drive count',
+              options: [
+                {
+                  id: 'c4',
+                  text: '4 drives'
+                },
+                {
+                  id: 'c5',
+                  text: '5 drives'
+                }
+              ]
+            },
+            {
+              id: 'driveSize',
+              label: 'Drive size',
+              options: [
+                {
+                  id: 's2',
+                  text: '2TB per drive'
+                },
+                {
+                  id: 's4',
+                  text: '4TB per drive'
+                }
+              ]
+            }
+          ]
+        },
+        answer: {
+          slots: {
+            level: 'raid5',
+            driveCount: 'c5',
+            driveSize: 's4'
+          }
+        }
+      },
+      {
+        id: 'degrade',
+        type: 'configure',
+        points: 1,
+        prompt: 'Two drives failed within the same week. What is the array status and next step?',
+        explanation: 'RAID 5\'s single parity only tolerates one failed drive — a second failure before the rebuild completes exceeds tolerance and the array is lost. Restore from backup rather than attempting an in-place rebuild.',
+        payload: {
+          slots: [
+            {
+              id: 'arrayStatus',
+              label: 'Array status',
+              options: [
+                {
+                  id: 'st-healthy',
+                  text: 'Healthy / Optimal'
+                },
+                {
+                  id: 'st-degraded',
+                  text: 'Degraded'
+                },
+                {
+                  id: 'st-failed',
+                  text: 'Failed'
+                }
+              ]
+            },
+            {
+              id: 'recoveryAction',
+              label: 'Recovery action',
+              options: [
+                {
+                  id: 'ac-none',
+                  text: 'No action needed — monitor'
+                },
+                {
+                  id: 'ac-rebuild',
+                  text: 'Hot-swap the failed drive(s) and rebuild the array'
+                },
+                {
+                  id: 'ac-restore',
+                  text: 'Array is unrecoverable — restore from backup'
+                }
+              ]
+            }
+          ]
+        },
+        answer: {
+          slots: {
+            arrayStatus: 'st-failed',
+            recoveryAction: 'ac-restore'
+          }
+        }
+      }
+    ]
+  },
+  {
+    id: 'a1-raid-09',
+    cert: 'aplus-core1',
+    archetype: 'raid',
+    objective: '3.4',
+    topic: 'RAID 5 build — home lab file server, healthy status check',
+    title: 'Home lab file server: routine health check, all drives green',
+    estMinutes: 6,
+    scenario: 'A home lab file server runs RAID 5 across three 2TB drives for 4TB of protected usable storage. A routine monthly check confirms all three drives are healthy with no errors logged.',
+    raid: {
+      targetUsableTb: 4,
+      targetTolerance: 1,
+      failedDriveCount: 0
+    },
+    assets: {
+      reference: {
+        kind: 'slots',
+        bays: [
+          {
+            id: 'bay1',
+            label: 'Drive bay 1'
+          },
+          {
+            id: 'bay2',
+            label: 'Drive bay 2'
+          },
+          {
+            id: 'bay3',
+            label: 'Drive bay 3'
+          }
+        ],
+        notes: ['Client: home lab file server', 'Available: three 2TB drives', 'Must survive one drive failure']
+      }
+    },
+    steps: [
+      {
+        id: 'build',
+        type: 'configure',
+        points: 1,
+        prompt: 'Build the array for 4TB usable, single-drive-failure-tolerant storage from three 2TB drives.',
+        explanation: 'RAID 5 across three 2TB drives gives (3-1)×2TB = 4TB usable with single-parity protection — the minimum three-drive RAID 5 configuration already clears both targets.',
+        payload: {
+          slots: [
+            {
+              id: 'level',
+              label: 'RAID level',
+              options: [
+                {
+                  id: 'raid1',
+                  text: 'RAID 1 (mirroring)'
+                },
+                {
+                  id: 'raid5',
+                  text: 'RAID 5 (single parity)'
+                }
+              ]
+            },
+            {
+              id: 'driveCount',
+              label: 'Drive count',
+              options: [
+                {
+                  id: 'c3',
+                  text: '3 drives'
+                },
+                {
+                  id: 'c4',
+                  text: '4 drives'
+                }
+              ]
+            },
+            {
+              id: 'driveSize',
+              label: 'Drive size',
+              options: [
+                {
+                  id: 's2',
+                  text: '2TB per drive'
+                },
+                {
+                  id: 's4',
+                  text: '4TB per drive'
+                }
+              ]
+            }
+          ]
+        },
+        answer: {
+          slots: {
+            level: 'raid5',
+            driveCount: 'c3',
+            driveSize: 's2'
+          }
+        }
+      },
+      {
+        id: 'degrade',
+        type: 'configure',
+        points: 1,
+        prompt: 'Monthly check: all three drives report healthy, zero errors. What\'s the array status and next step?',
+        explanation: 'With zero failed drives the array is healthy and fully redundant — no recovery action is needed, just continue routine monitoring.',
+        payload: {
+          slots: [
+            {
+              id: 'arrayStatus',
+              label: 'Array status',
+              options: [
+                {
+                  id: 'st-healthy',
+                  text: 'Healthy / Optimal'
+                },
+                {
+                  id: 'st-degraded',
+                  text: 'Degraded'
+                },
+                {
+                  id: 'st-failed',
+                  text: 'Failed'
+                }
+              ]
+            },
+            {
+              id: 'recoveryAction',
+              label: 'Recovery action',
+              options: [
+                {
+                  id: 'ac-none',
+                  text: 'No action needed — monitor'
+                },
+                {
+                  id: 'ac-rebuild',
+                  text: 'Hot-swap the failed drive(s) and rebuild the array'
+                },
+                {
+                  id: 'ac-restore',
+                  text: 'Array is unrecoverable — restore from backup'
+                }
+              ]
+            }
+          ]
+        },
+        answer: {
+          slots: {
+            arrayStatus: 'st-healthy',
+            recoveryAction: 'ac-none'
+          }
+        }
+      }
+    ]
+  },
+  {
+    id: 'a1-raid-07',
+    cert: 'aplus-core1',
+    archetype: 'raid',
+    objective: '3.4',
+    topic: 'RAID 6 build — critical database server, dual-parity requirement',
+    title: 'Critical DB server: dual-parity protection mandated',
+    estMinutes: 6,
+    scenario: 'A critical database server\'s storage policy mandates surviving two simultaneous drive failures. Four 2TB drives are provisioned for 4TB of usable, dual-parity-protected storage. Build the array, then two drives fail during a rebuild window.',
+    raid: {
+      targetUsableTb: 4,
+      targetTolerance: 2,
+      failedDriveCount: 2
+    },
+    assets: {
+      reference: {
+        kind: 'slots',
+        bays: [
+          {
+            id: 'bay1',
+            label: 'Drive bay 1'
+          },
+          {
+            id: 'bay2',
+            label: 'Drive bay 2'
+          },
+          {
+            id: 'bay3',
+            label: 'Drive bay 3'
+          },
+          {
+            id: 'bay4',
+            label: 'Drive bay 4'
+          }
+        ],
+        notes: ['Client: critical database server', 'Available: four 2TB drives', 'Must survive two simultaneous drive failures']
+      }
+    },
+    steps: [
+      {
+        id: 'build',
+        type: 'configure',
+        points: 1,
+        prompt: 'Build the array for 4TB usable storage that survives two simultaneous drive failures, from four 2TB drives.',
+        explanation: 'Only RAID 6 offers two-drive fault tolerance among these levels, and its minimum four-drive configuration at 2TB each gives (4-2)×2TB = 4TB usable — no other level clears the two-drive tolerance requirement at all, so this is the minimal fit by definition.',
+        payload: {
+          slots: [
+            {
+              id: 'level',
+              label: 'RAID level',
+              options: [
+                {
+                  id: 'raid5',
+                  text: 'RAID 5 (single parity)'
+                },
+                {
+                  id: 'raid6',
+                  text: 'RAID 6 (dual parity)'
+                },
+                {
+                  id: 'raid10',
+                  text: 'RAID 10 (mirrored stripe)'
+                }
+              ]
+            },
+            {
+              id: 'driveCount',
+              label: 'Drive count',
+              options: [
+                {
+                  id: 'c3',
+                  text: '3 drives'
+                },
+                {
+                  id: 'c4',
+                  text: '4 drives'
+                }
+              ]
+            },
+            {
+              id: 'driveSize',
+              label: 'Drive size',
+              options: [
+                {
+                  id: 's2',
+                  text: '2TB per drive'
+                },
+                {
+                  id: 's4',
+                  text: '4TB per drive'
+                }
+              ]
+            }
+          ]
+        },
+        answer: {
+          slots: {
+            level: 'raid6',
+            driveCount: 'c4',
+            driveSize: 's2'
+          }
+        }
+      },
+      {
+        id: 'degrade',
+        type: 'configure',
+        points: 1,
+        prompt: 'Two drives failed during the rebuild window. What is the array status and next step?',
+        explanation: 'Two failed drives sit exactly at RAID 6\'s dual-parity tolerance — the array keeps serving data reconstructed from both parity sets. Status is Degraded; hot-swap the failed drives and rebuild.',
+        payload: {
+          slots: [
+            {
+              id: 'arrayStatus',
+              label: 'Array status',
+              options: [
+                {
+                  id: 'st-healthy',
+                  text: 'Healthy / Optimal'
+                },
+                {
+                  id: 'st-degraded',
+                  text: 'Degraded'
+                },
+                {
+                  id: 'st-failed',
+                  text: 'Failed'
+                }
+              ]
+            },
+            {
+              id: 'recoveryAction',
+              label: 'Recovery action',
+              options: [
+                {
+                  id: 'ac-none',
+                  text: 'No action needed — monitor'
+                },
+                {
+                  id: 'ac-rebuild',
+                  text: 'Hot-swap the failed drive(s) and rebuild the array'
+                },
+                {
+                  id: 'ac-restore',
+                  text: 'Array is unrecoverable — restore from backup'
+                }
+              ]
+            }
+          ]
+        },
+        answer: {
+          slots: {
+            arrayStatus: 'st-degraded',
+            recoveryAction: 'ac-rebuild'
+          }
+        }
+      }
+    ]
+  },
+  {
+    id: 'a1-raid-08',
+    cert: 'aplus-core1',
+    archetype: 'raid',
+    objective: '3.4',
+    topic: 'RAID 6 build — video surveillance NVR array, triple failure exceeds tolerance',
+    title: 'Surveillance NVR array: three drives fail, tolerance exceeded',
+    estMinutes: 6,
+    scenario: 'A video surveillance NVR needs 8TB of usable, dual-parity-protected storage recording continuously. Four 4TB drives are installed. Build the array, then a firmware bug takes three drives offline at once.',
+    raid: {
+      targetUsableTb: 8,
+      targetTolerance: 2,
+      failedDriveCount: 3
+    },
+    assets: {
+      reference: {
+        kind: 'slots',
+        bays: [
+          {
+            id: 'bay1',
+            label: 'Drive bay 1'
+          },
+          {
+            id: 'bay2',
+            label: 'Drive bay 2'
+          },
+          {
+            id: 'bay3',
+            label: 'Drive bay 3'
+          },
+          {
+            id: 'bay4',
+            label: 'Drive bay 4'
+          }
+        ],
+        notes: ['Client: video surveillance NVR array', 'Available: four 4TB drives', 'Must survive two simultaneous drive failures']
+      }
+    },
+    steps: [
+      {
+        id: 'build',
+        type: 'configure',
+        points: 1,
+        prompt: 'Build the array for 8TB usable storage that survives two simultaneous drive failures, from four 4TB drives.',
+        explanation: 'RAID 6 at its minimum four-drive count gives (4-2)×4TB = 8TB usable with dual-parity protection — RAID 6 is the only level here that meets the two-drive tolerance requirement, so four drives is the minimal fit.',
+        payload: {
+          slots: [
+            {
+              id: 'level',
+              label: 'RAID level',
+              options: [
+                {
+                  id: 'raid5',
+                  text: 'RAID 5 (single parity)'
+                },
+                {
+                  id: 'raid6',
+                  text: 'RAID 6 (dual parity)'
+                },
+                {
+                  id: 'raid10',
+                  text: 'RAID 10 (mirrored stripe)'
+                }
+              ]
+            },
+            {
+              id: 'driveCount',
+              label: 'Drive count',
+              options: [
+                {
+                  id: 'c4',
+                  text: '4 drives'
+                },
+                {
+                  id: 'c5',
+                  text: '5 drives'
+                }
+              ]
+            },
+            {
+              id: 'driveSize',
+              label: 'Drive size',
+              options: [
+                {
+                  id: 's2',
+                  text: '2TB per drive'
+                },
+                {
+                  id: 's4',
+                  text: '4TB per drive'
+                }
+              ]
+            }
+          ]
+        },
+        answer: {
+          slots: {
+            level: 'raid6',
+            driveCount: 'c4',
+            driveSize: 's4'
+          }
+        }
+      },
+      {
+        id: 'degrade',
+        type: 'configure',
+        points: 1,
+        prompt: 'A firmware bug knocked three drives offline simultaneously. What is the array status and next step?',
+        explanation: 'RAID 6 tolerates at most two simultaneous failures — a third failure exceeds that and the array cannot reconstruct the missing data. Restore the recorded footage from backup rather than attempting a rebuild.',
+        payload: {
+          slots: [
+            {
+              id: 'arrayStatus',
+              label: 'Array status',
+              options: [
+                {
+                  id: 'st-healthy',
+                  text: 'Healthy / Optimal'
+                },
+                {
+                  id: 'st-degraded',
+                  text: 'Degraded'
+                },
+                {
+                  id: 'st-failed',
+                  text: 'Failed'
+                }
+              ]
+            },
+            {
+              id: 'recoveryAction',
+              label: 'Recovery action',
+              options: [
+                {
+                  id: 'ac-none',
+                  text: 'No action needed — monitor'
+                },
+                {
+                  id: 'ac-rebuild',
+                  text: 'Hot-swap the failed drive(s) and rebuild the array'
+                },
+                {
+                  id: 'ac-restore',
+                  text: 'Array is unrecoverable — restore from backup'
+                }
+              ]
+            }
+          ]
+        },
+        answer: {
+          slots: {
+            arrayStatus: 'st-failed',
+            recoveryAction: 'ac-restore'
+          }
+        }
+      }
+    ]
+  },
+  {
+    id: 'a1-raid-12',
+    cert: 'aplus-core1',
+    archetype: 'raid',
+    objective: '3.4',
+    topic: 'RAID 10 build — database server, mirrored-stripe performance requirement',
+    title: 'Database server: mirrored stripes for random-I/O performance',
+    estMinutes: 6,
+    scenario: 'A transactional database server needs 8TB of usable, redundant storage with the fast random read/write performance only a mirrored-stripe layout delivers — a straight parity array would bottleneck under the write load. Four 4TB drives are provisioned. Build the array, then one drive fails during peak business hours.',
+    raid: {
+      targetUsableTb: 8,
+      targetTolerance: 1,
+      failedDriveCount: 1
+    },
+    assets: {
+      reference: {
+        kind: 'slots',
+        bays: [
+          {
+            id: 'bay1',
+            label: 'Drive bay 1'
+          },
+          {
+            id: 'bay2',
+            label: 'Drive bay 2'
+          },
+          {
+            id: 'bay3',
+            label: 'Drive bay 3'
+          },
+          {
+            id: 'bay4',
+            label: 'Drive bay 4'
+          }
+        ],
+        notes: ['Client: transactional database server', 'Available: four 4TB drives', 'Needs high random I/O performance and one-drive fault tolerance']
+      }
+    },
+    steps: [
+      {
+        id: 'build',
+        type: 'configure',
+        points: 1,
+        prompt: 'Build the array for 8TB usable storage with mirrored-stripe performance and single-drive fault tolerance, from four 4TB drives.',
+        explanation: 'RAID 10 mirrors pairs of drives then stripes across the pairs: four 4TB drives give floor(4/2)×4TB = 8TB usable while tolerating one drive failure — the minimum four-drive RAID 10 configuration (its floor) already clears both targets, so no larger count is minimal.',
+        payload: {
+          slots: [
+            {
+              id: 'level',
+              label: 'RAID level',
+              options: [
+                {
+                  id: 'raid1',
+                  text: 'RAID 1 (mirroring)'
+                },
+                {
+                  id: 'raid5',
+                  text: 'RAID 5 (single parity)'
+                },
+                {
+                  id: 'raid10',
+                  text: 'RAID 10 (mirrored stripe)'
+                }
+              ]
+            },
+            {
+              id: 'driveCount',
+              label: 'Drive count',
+              options: [
+                {
+                  id: 'c4',
+                  text: '4 drives'
+                },
+                {
+                  id: 'c6',
+                  text: '6 drives'
+                }
+              ]
+            },
+            {
+              id: 'driveSize',
+              label: 'Drive size',
+              options: [
+                {
+                  id: 's2',
+                  text: '2TB per drive'
+                },
+                {
+                  id: 's4',
+                  text: '4TB per drive'
+                }
+              ]
+            }
+          ]
+        },
+        answer: {
+          slots: {
+            level: 'raid10',
+            driveCount: 'c4',
+            driveSize: 's4'
+          }
+        }
+      },
+      {
+        id: 'degrade',
+        type: 'configure',
+        points: 1,
+        prompt: 'One of the four drives failed during peak business hours. What is the array status and next step?',
+        explanation: 'RAID 10 tolerates one failed drive as long as its mirror partner is intact — the array keeps serving reads and writes from the surviving half of that pair. Status is Degraded; hot-swap the failed drive and let the mirror rebuild.',
+        payload: {
+          slots: [
+            {
+              id: 'arrayStatus',
+              label: 'Array status',
+              options: [
+                {
+                  id: 'st-healthy',
+                  text: 'Healthy / Optimal'
+                },
+                {
+                  id: 'st-degraded',
+                  text: 'Degraded'
+                },
+                {
+                  id: 'st-failed',
+                  text: 'Failed'
+                }
+              ]
+            },
+            {
+              id: 'recoveryAction',
+              label: 'Recovery action',
+              options: [
+                {
+                  id: 'ac-none',
+                  text: 'No action needed — monitor'
+                },
+                {
+                  id: 'ac-rebuild',
+                  text: 'Hot-swap the failed drive(s) and rebuild the array'
+                },
+                {
+                  id: 'ac-restore',
+                  text: 'Array is unrecoverable — restore from backup'
+                }
+              ]
+            }
+          ]
+        },
+        answer: {
+          slots: {
+            arrayStatus: 'st-degraded',
+            recoveryAction: 'ac-rebuild'
+          }
+        }
+      }
+    ]
+  },
+  {
+    id: 'a1-raid-13',
+    cert: 'aplus-core1',
+    archetype: 'raid',
+    objective: '3.4',
+    topic: 'RAID 10 build — virtualization host, both members of a mirrored pair fail',
+    title: 'Virtualization host: a mirrored pair fails together, tolerance exceeded',
+    estMinutes: 6,
+    scenario: 'A virtualization host runs a dozen VMs off a mirrored-stripe datastore needing 12TB of usable, high-performance storage. Six 4TB drives are provisioned. Build the array, then a backplane fault takes out both drives in the same mirrored pair simultaneously.',
+    raid: {
+      targetUsableTb: 12,
+      targetTolerance: 1,
+      failedDriveCount: 2
+    },
+    assets: {
+      reference: {
+        kind: 'slots',
+        bays: [
+          {
+            id: 'bay1',
+            label: 'Drive bay 1'
+          },
+          {
+            id: 'bay2',
+            label: 'Drive bay 2'
+          },
+          {
+            id: 'bay3',
+            label: 'Drive bay 3'
+          },
+          {
+            id: 'bay4',
+            label: 'Drive bay 4'
+          },
+          {
+            id: 'bay5',
+            label: 'Drive bay 5'
+          },
+          {
+            id: 'bay6',
+            label: 'Drive bay 6'
+          }
+        ],
+        notes: ['Client: virtualization host datastore', 'Available: six 4TB drives', 'Needs high random I/O performance and one-drive fault tolerance']
+      }
+    },
+    steps: [
+      {
+        id: 'build',
+        type: 'configure',
+        points: 1,
+        prompt: 'Build the array for 12TB usable storage with mirrored-stripe performance from six 4TB drives.',
+        explanation: 'RAID 10 across six 4TB drives gives floor(6/2)×4TB = 12TB usable — four drives alone would only reach floor(4/2)×4TB = 8TB, short of the 12TB target, so six is the minimal fit.',
+        payload: {
+          slots: [
+            {
+              id: 'level',
+              label: 'RAID level',
+              options: [
+                {
+                  id: 'raid5',
+                  text: 'RAID 5 (single parity)'
+                },
+                {
+                  id: 'raid6',
+                  text: 'RAID 6 (dual parity)'
+                },
+                {
+                  id: 'raid10',
+                  text: 'RAID 10 (mirrored stripe)'
+                }
+              ]
+            },
+            {
+              id: 'driveCount',
+              label: 'Drive count',
+              options: [
+                {
+                  id: 'c4',
+                  text: '4 drives'
+                },
+                {
+                  id: 'c6',
+                  text: '6 drives'
+                }
+              ]
+            },
+            {
+              id: 'driveSize',
+              label: 'Drive size',
+              options: [
+                {
+                  id: 's2',
+                  text: '2TB per drive'
+                },
+                {
+                  id: 's4',
+                  text: '4TB per drive'
+                }
+              ]
+            }
+          ]
+        },
+        answer: {
+          slots: {
+            level: 'raid10',
+            driveCount: 'c6',
+            driveSize: 's4'
+          }
+        }
+      },
+      {
+        id: 'degrade',
+        type: 'configure',
+        points: 1,
+        prompt: 'A backplane fault knocked out both drives in the same mirrored pair at once. What is the array status and next step?',
+        explanation: 'RAID 10 only tolerates losing a drive if its mirror partner survives — losing both members of one pair simultaneously destroys that stripe segment and takes the whole array down. Restore the datastore from backup rather than attempting an in-place rebuild.',
+        payload: {
+          slots: [
+            {
+              id: 'arrayStatus',
+              label: 'Array status',
+              options: [
+                {
+                  id: 'st-healthy',
+                  text: 'Healthy / Optimal'
+                },
+                {
+                  id: 'st-degraded',
+                  text: 'Degraded'
+                },
+                {
+                  id: 'st-failed',
+                  text: 'Failed'
+                }
+              ]
+            },
+            {
+              id: 'recoveryAction',
+              label: 'Recovery action',
+              options: [
+                {
+                  id: 'ac-none',
+                  text: 'No action needed — monitor'
+                },
+                {
+                  id: 'ac-rebuild',
+                  text: 'Hot-swap the failed drive(s) and rebuild the array'
+                },
+                {
+                  id: 'ac-restore',
+                  text: 'Array is unrecoverable — restore from backup'
+                }
+              ]
+            }
+          ]
+        },
+        answer: {
+          slots: {
+            arrayStatus: 'st-failed',
+            recoveryAction: 'ac-restore'
+          }
+        }
+      }
+    ]
+  },
 ];

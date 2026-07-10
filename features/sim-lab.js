@@ -22,7 +22,7 @@
         return Array.isArray(p.left) && Array.isArray(p.right) &&
                p.left.length >= 2 && p.left.length === p.right.length && a.pairs && typeof a.pairs === 'object';
       case 'analyze':
-        if (p.mode === 'reveal' || p.mode === 'excerptLines') {
+        if (p.mode === 'reveal' || p.mode === 'excerptLines' || p.mode === 'facePorts' || p.mode === 'wiremapPins') {
           return Array.isArray(a.selected) && a.selected.length >= 1;
         }
         return Array.isArray(p.lines) && p.lines.length >= 2 &&
@@ -65,7 +65,7 @@
       });
     }
     if (s.assets && s.assets.reference) {
-      var ref = s.assets.reference, kinds = ['network', 'timeline', 'layered', 'terminal'];
+      var ref = s.assets.reference, kinds = ['network', 'timeline', 'layered', 'terminal', 'faceplate', 'wiremap', 'slots'];
       if (kinds.indexOf(ref.kind) === -1) errs.push('reference: bad kind');
       else if (ref.kind === 'network' && !Array.isArray(ref.devices)) errs.push('reference network: devices[] required');
       else if (ref.kind === 'timeline' && !Array.isArray(ref.stages)) errs.push('reference timeline: stages[] required');
@@ -73,11 +73,18 @@
       else if (ref.kind === 'terminal' && (!Array.isArray(ref.excerpts) || !ref.excerpts.every(function (ex) {
         return ex && _isNonEmptyStr(ex.id) && Array.isArray(ex.lines);
       }))) errs.push('reference terminal: excerpts[] with id+lines[] required');
+      else if (ref.kind === 'faceplate' && (!Array.isArray(ref.ports) || !ref.ports.every(function (p) {
+        return p && _isNonEmptyStr(p.id) && _isNonEmptyStr(p.label);
+      }))) errs.push('reference faceplate: ports[] with id+label required');
+      else if (ref.kind === 'wiremap' && (!Array.isArray(ref.pins) || ref.pins.length !== 8 || !ref.pins.every(function (p) {
+        return p && typeof p.pin === 'number' && typeof p.pairId === 'number';
+      }))) errs.push('reference wiremap: pins[] must have exactly 8 entries with pin+pairId');
+      else if (ref.kind === 'slots' && !Array.isArray(ref.bays)) errs.push('reference slots: bays[] required');
       if (ref.kind === 'layered' && ref.layout !== undefined && ['nested', 'stacked'].indexOf(ref.layout) === -1) {
         errs.push('reference layered: bad layout');
       }
     }
-    if (s.archetype !== undefined && ['diagram', 'incident', 'defense', 'wireless', 'firewall', 'soho', 'cli', 'discovery', 'triage'].indexOf(s.archetype) === -1) {
+    if (s.archetype !== undefined && ['diagram', 'incident', 'defense', 'wireless', 'firewall', 'soho', 'cli', 'discovery', 'triage', 'portmap', 'wiremap', 'pcbuild', 'raid'].indexOf(s.archetype) === -1) {
       errs.push('bad archetype');
     }
     return { ok: errs.length === 0, errors: errs };
@@ -121,6 +128,20 @@
     if (!slot || !Array.isArray(slot.options)) return undefined;
     var opt = slot.options.filter(function (o) { return o.id === correctOptId; })[0];
     return opt ? opt.text : undefined;
+  }
+
+  // Sibling to _slFidelityResolveSlot (which resolves to option.text) — pcbuild is the
+  // one archetype whose validator needs the option's `id` directly (the catalog key),
+  // not its human-readable text.
+  function _slFidelityResolveSlotId(step, slotId) {
+    if (!step || !step.payload || !Array.isArray(step.payload.slots)) return undefined;
+    if (!step.answer || !step.answer.slots) return undefined;
+    var correctOptId = step.answer.slots[slotId];
+    if (!correctOptId) return undefined;
+    var slot = step.payload.slots.filter(function (sl) { return sl.id === slotId; })[0];
+    if (!slot || !Array.isArray(slot.options)) return undefined;
+    var opt = slot.options.filter(function (o) { return o.id === correctOptId; })[0];
+    return opt ? opt.id : undefined;
   }
 
   function simLabValidateNetworkFidelity(networkModel, configureStep) {
@@ -525,6 +546,262 @@
     return { ok: errs.length === 0, errors: errs };
   }
 
+  // --- port-map fidelity validator (Wave 3 Task 5) ---
+  // Proves, machine-checkable: (a) every keyed provision slot (VLAN + PoE) matches
+  // that port's ticket requirement; (b) the keyed faulty port's LED state genuinely
+  // and UNIQUELY signals the keyed rootCause/fix (mutation-checked: no other port's
+  // LED may also match the fault signature).
+  var _PORTMAP_FAULT_SIG = {
+    poeOvercurrent: { led: 'poe-fault', root: /poe overcurrent|power.*exceeds|draw.*exceeds/i, fix: /higher poe power budget|802\.3at|power budget/i },
+    errDisabled:    { led: 'err-disabled', root: /duplex|speed mismatch|err-disabled/i, fix: /reset the port|match speed.*duplex|re-negotiate/i }
+  };
+  function simLabValidatePortMapFidelity(scn) {
+    var errs = [];
+    var ref = scn && scn.assets && scn.assets.reference;
+    var tickets = scn && scn.portmapTickets;
+    var faultPort = scn && scn.portmap && scn.portmap.faultPort;
+    if (!ref || ref.kind !== 'faceplate' || !Array.isArray(ref.ports) || !Array.isArray(tickets)) {
+      return { ok: false, errors: ['portmap fidelity: faceplate reference + scn.portmapTickets[] required'] };
+    }
+    var cfg = (scn.steps || []).filter(function (st) { return st.type === 'configure' && st.answer && st.answer.slots; })[0];
+    // (a) every ticket's VLAN/PoE keyed answer matches
+    tickets.forEach(function (t) {
+      if (!cfg) return;
+      var keyedVlan = _slFidelityResolveSlot(cfg, t.port + '__vlan');
+      var keyedPoe = _slFidelityResolveSlot(cfg, t.port + '__poe');
+      if (keyedVlan !== undefined && keyedVlan.indexOf(t.vlan) === -1) errs.push('portmap: keyed ' + t.port + '__vlan "' + keyedVlan + '" != ticket VLAN ' + t.vlan);
+      if (keyedPoe !== undefined) {
+        var wantOn = !!t.poe;
+        var gotOn = /^on$/i.test(keyedPoe);
+        if (wantOn !== gotOn) errs.push('portmap: keyed ' + t.port + '__poe "' + keyedPoe + '" != ticket PoE ' + t.poe);
+      }
+    });
+    // (b) exactly one port carries the fault LED, and it is the keyed faultPort
+    var faultLedPorts = ref.ports.filter(function (p) {
+      return p.led === 'poe-fault' || p.led === 'err-disabled';
+    });
+    if (faultLedPorts.length !== 1) {
+      errs.push('portmap: expected exactly 1 fault-LED port, found ' + faultLedPorts.length);
+    } else if (faultLedPorts[0].id !== faultPort) {
+      errs.push('portmap: fault-LED port "' + faultLedPorts[0].id + '" != keyed faultPort "' + faultPort + '"');
+    }
+    // keyed diagnose analyze step targets the same port
+    var diag = (scn.steps || []).filter(function (st) { return st.type === 'analyze' && st.payload && st.payload.mode === 'facePorts'; })[0];
+    if (!diag || !diag.answer || diag.answer.selected[0] !== faultPort) {
+      errs.push('portmap: diagnose analyze step does not key the fault port');
+    }
+    // keyed rootCause/fix matches the fault-signature table for the actual LED type
+    var fixCfg = (scn.steps || []).filter(function (st) {
+      return st.type === 'configure' && st.answer && st.answer.slots &&
+        (st.answer.slots.rootCause !== undefined || st.answer.slots.fix !== undefined);
+    })[0];
+    var ledType = faultLedPorts[0] && faultLedPorts[0].led === 'poe-fault' ? 'poeOvercurrent' : 'errDisabled';
+    var sig = _PORTMAP_FAULT_SIG[ledType];
+    if (fixCfg && sig) {
+      var root = _slFidelityResolveSlot(fixCfg, 'rootCause');
+      var fix = _slFidelityResolveSlot(fixCfg, 'fix');
+      if (root === undefined || !sig.root.test(root)) errs.push('portmap: keyed rootCause "' + root + '" does not match ' + ledType);
+      if (fix === undefined || !sig.fix.test(fix)) errs.push('portmap: keyed fix "' + fix + '" does not match ' + ledType);
+    }
+    return { ok: errs.length === 0, errors: errs };
+  }
+
+  // --- wiremap fidelity validator (Wave 3 Task 6) ---
+  // Proves, machine-checkable: the keyed fault type + keyed pin selection are BOTH
+  // mechanically derivable from the raw pin data, and every OTHER pin is a clean
+  // straight-through (exactly one fault exists, mutation-checked).
+  var _WIREMAP_FAULT_SIG = {
+    open:         { root: /open/i, fix: /re-terminate|reseat|reconnect/i },
+    short:        { root: /short/i, fix: /re-terminate|replace the cable/i },
+    splitPair:    { root: /split pair/i, fix: /re-terminate/i },
+    reversedPair: { root: /reversed pair/i, fix: /re-terminate/i }
+  };
+  // EIA/TIA-568B textbook pin->pair mapping (Pair1=4,5 Pair2=1,2 Pair3=3,6 Pair4=7,8).
+  // Used to cross-check that every pin NOT already flagged as faulty is labeled
+  // with its real textbook pairId — catches mislabeled fixture pin data.
+  var _WM_EXPECTED_PAIR = {
+    1: 2, 2: 2, 3: 3, 4: 1, 5: 1, 6: 3, 7: 4, 8: 4
+  };
+  function simLabValidateWiremapFidelity(scn) {
+    var errs = [];
+    var ref = scn && scn.assets && scn.assets.reference;
+    var fault = scn && scn.wiremap && scn.wiremap.fault;
+    if (!ref || ref.kind !== 'wiremap' || !Array.isArray(ref.pins) || ref.pins.length !== 8) {
+      return { ok: false, errors: ['wiremap fidelity: wiremap reference with 8 pins required'] };
+    }
+    var sig = _WIREMAP_FAULT_SIG[fault];
+    if (!sig) return { ok: false, errors: ['wiremap fidelity: unknown wiremap.fault "' + fault + '"'] };
+    var byPin = {};
+    ref.pins.forEach(function (p) { byPin[p.pin] = p; });
+
+    // A short's real signature: two or more distinct source pins land on the SAME
+    // destination End-B pin — regardless of whether one of them happens to sit at
+    // its own straight-through position. Detect that FIRST, by grouping on endBPin.
+    var groupsByEndB = {};
+    ref.pins.forEach(function (p) {
+      if (p.endBPin == null) return;
+      (groupsByEndB[p.endBPin] = groupsByEndB[p.endBPin] || []).push(p);
+    });
+    var shortedPins = {};
+    Object.keys(groupsByEndB).forEach(function (endB) {
+      if (groupsByEndB[endB].length > 1) {
+        groupsByEndB[endB].forEach(function (p) { shortedPins[p.pin] = true; });
+      }
+    });
+
+    var faulty = [];
+    ref.pins.forEach(function (p) {
+      if (shortedPins[p.pin]) { faulty.push({ pin: p.pin, kind: 'short' }); return; }
+      if (p.endBPin == null) { faulty.push({ pin: p.pin, kind: 'open' }); return; }
+      if (p.endBPin !== p.pin) {
+        var other = byPin[p.endBPin];
+        if (other && other.pairId === p.pairId) faulty.push({ pin: p.pin, kind: 'reversedPair' });
+        else faulty.push({ pin: p.pin, kind: 'splitPair' });
+      }
+    });
+    // clean-pin textbook cross-check: any pin NOT flagged as faulty must carry
+    // its real EIA/TIA-568B pairId — deliberately-faulted pins are exempt since
+    // deviating from the textbook pairing is what makes them a fault.
+    var faultyPinSet = {};
+    faulty.forEach(function (f) { faultyPinSet[f.pin] = true; });
+    ref.pins.forEach(function (p) {
+      if (faultyPinSet[p.pin]) return;
+      var expected = _WM_EXPECTED_PAIR[p.pin];
+      if (expected !== undefined && p.pairId !== expected) {
+        errs.push('wiremap: clean pin ' + p.pin + ' has pairId ' + p.pairId + ' but textbook mapping expects pairId ' + expected);
+      }
+    });
+
+    // exactly-one-fault-class invariant: every faulty pin must agree on kind
+    var kinds = {}; faulty.forEach(function (f) { kinds[f.kind] = true; });
+    if (Object.keys(kinds).length > 1) errs.push('wiremap: mixed fault kinds detected (' + Object.keys(kinds).join(', ') + '), fixture must contain exactly one fault class');
+    if (!faulty.length) errs.push('wiremap: no fault detected in pin data');
+
+    var faultyIds = faulty.map(function (f) { return String(f.pin); }).sort();
+    var flagStep = (scn.steps || []).filter(function (st) { return st.type === 'analyze' && st.payload && st.payload.mode === 'wiremapPins'; })[0];
+    var keyed = (flagStep && flagStep.answer && flagStep.answer.selected) ? flagStep.answer.selected.slice().sort() : [];
+    if (keyed.join(',') !== faultyIds.join(',')) errs.push('wiremap: keyed selected [' + keyed.join(',') + '] != derived faulty pins [' + faultyIds.join(',') + ']');
+
+    var actualKind = faulty[0] && faulty[0].kind;
+    if (actualKind && actualKind !== fault) errs.push('wiremap: scn.wiremap.fault "' + fault + '" != pin-data-derived fault "' + actualKind + '"');
+
+    var dx = (scn.steps || []).filter(function (st) {
+      return st.type === 'configure' && st.answer && st.answer.slots &&
+        (st.answer.slots.faultType !== undefined || st.answer.slots.fix !== undefined);
+    })[0];
+    if (!dx) errs.push('wiremap: no configure step with faultType/fix slots');
+    else {
+      var root = _slFidelityResolveSlot(dx, 'faultType');
+      var fix = _slFidelityResolveSlot(dx, 'fix');
+      if (root === undefined || !sig.root.test(root)) errs.push('wiremap: keyed faultType "' + root + '" does not match ' + fault);
+      if (fix === undefined || !sig.fix.test(fix)) errs.push('wiremap: keyed fix "' + fix + '" does not match ' + fault);
+    }
+    return { ok: errs.length === 0, errors: errs };
+  }
+
+  // --- PC-build fidelity validator (Wave 3 Task 7) ---
+  // Shared catalog: price/watts/lengthMm/tier per part id. Single source of truth for
+  // both content authoring (Task 12) and this validator's budget/compatibility/tier math.
+  var _PARTS_CATALOG = {
+    'cpu-budget': { price: 130, watts: 65, tier: 1 }, 'cpu-office': { price: 175, watts: 65, tier: 1 },
+    'cpu-igpu-mid': { price: 210, watts: 65, tier: 2 }, 'cpu-creator': { price: 310, watts: 105, tier: 3 },
+    'cpu-flagship': { price: 560, watts: 125, tier: 4 },
+    'gpu-none': { price: 0, watts: 0, lengthMm: 0, tier: 0 }, 'gpu-1650': { price: 150, watts: 75, lengthMm: 170, tier: 1 },
+    'gpu-4060': { price: 300, watts: 115, lengthMm: 244, tier: 2 }, 'gpu-4070': { price: 550, watts: 200, lengthMm: 310, tier: 3 },
+    'ram-8': { price: 25, tier: 1 }, 'ram-16': { price: 45, tier: 1 }, 'ram-32': { price: 85, tier: 2 }, 'ram-64': { price: 165, tier: 3 },
+    'psu-250': { price: 22, watts: 250 }, 'psu-450': { price: 45, watts: 450 }, 'psu-650': { price: 65, watts: 650 }, 'psu-850': { price: 95, watts: 850 },
+    'storage-256-sata': { price: 30, tier: 1 }, 'storage-1tb-nvme': { price: 75, tier: 2 }, 'storage-2tb-nvme': { price: 130, tier: 3 },
+    'cool-stock': { price: 0, tier: 1 }, 'cool-120-air': { price: 35, tier: 2 }, 'cool-240-aio': { price: 90, tier: 3 }
+  };
+  function simLabValidatePcBuildFidelity(scn) {
+    var errs = [];
+    ['clientA', 'clientB'].forEach(function (clientKey) {
+      var fact = scn.pcbuild && scn.pcbuild[clientKey];
+      if (!fact) return; // this fixture may only define clientA; real content defines both
+      var cfg = (scn.steps || []).filter(function (st) { return st.id === clientKey; })[0];
+      if (!cfg) { errs.push('pcbuild: no configure step with id "' + clientKey + '"'); return; }
+      var slotIds = ['cpu', 'gpu', 'ram', 'psu', 'storage', 'cooling'];
+      var parts = {};
+      slotIds.forEach(function (sid) {
+        var partId = _slFidelityResolveSlotId(cfg, sid);
+        parts[sid] = _PARTS_CATALOG[partId];
+        if (!parts[sid]) errs.push('pcbuild: ' + clientKey + '.' + sid + ' keyed to unknown part id "' + partId + '"');
+      });
+      if (errs.length) return;
+      var total = slotIds.reduce(function (sum, sid) { return sum + (parts[sid].price || 0); }, 0);
+      if (total > fact.budgetUsd) errs.push('pcbuild: ' + clientKey + ' total $' + total + ' exceeds budget $' + fact.budgetUsd);
+      var draw = (parts.cpu.watts || 0) + (parts.gpu.watts || 0);
+      if ((parts.psu.watts || 0) < draw) errs.push('pcbuild: ' + clientKey + ' PSU ' + parts.psu.watts + 'W below draw ' + draw + 'W');
+      if ((parts.gpu.lengthMm || 0) > fact.caseMaxGpuLengthMm) errs.push('pcbuild: ' + clientKey + ' GPU ' + parts.gpu.lengthMm + 'mm exceeds case max ' + fact.caseMaxGpuLengthMm + 'mm');
+      if ((parts.cpu.tier || 0) < fact.minCpuTier) errs.push('pcbuild: ' + clientKey + ' CPU tier ' + parts.cpu.tier + ' below required ' + fact.minCpuTier);
+      if ((parts.gpu.tier || 0) < fact.minGpuTier) errs.push('pcbuild: ' + clientKey + ' GPU tier ' + parts.gpu.tier + ' below required ' + fact.minGpuTier);
+    });
+    return { ok: errs.length === 0, errors: errs };
+  }
+
+  // --- RAID fidelity validator (Wave 3 Task 8) ---
+  // Proves: real capacity/tolerance math for the keyed build clears both targets AND
+  // is the minimal-drive-count fit (guards against a "works but isn't intended" key);
+  // the degrade-phase keyed status/action follows correctly from failedDriveCount vs.
+  // the built level's real tolerance (mutation-checked: flipping failedDriveCount past
+  // tolerance must flip the expected keys).
+  var _RAID_LEVEL_META = {
+    raid0:  { tolerance: 0, capacity: function (c, s) { return c * s; }, minDrives: 2 },
+    raid1:  { tolerance: 1, capacity: function (c, s) { return s; }, minDrives: 2 },
+    raid5:  { tolerance: 1, capacity: function (c, s) { return (c - 1) * s; }, minDrives: 3 },
+    raid6:  { tolerance: 2, capacity: function (c, s) { return (c - 2) * s; }, minDrives: 4 },
+    raid10: { tolerance: 1, capacity: function (c, s) { return Math.floor(c / 2) * s; }, minDrives: 4 }
+  };
+  function _raidLevelKey(text) {
+    var m = /raid\s*(\d+)/i.exec(text || '');
+    if (!m) return null;
+    var n = m[1];
+    return n === '0' ? 'raid0' : n === '1' ? 'raid1' : n === '5' ? 'raid5' : n === '6' ? 'raid6' : n === '10' ? 'raid10' : null;
+  }
+  function simLabValidateRaidFidelity(scn) {
+    var errs = [];
+    var fact = scn && scn.raid;
+    if (!fact || typeof fact.targetUsableTb !== 'number' || typeof fact.targetTolerance !== 'number') {
+      return { ok: false, errors: ['raid fidelity: scn.raid.{targetUsableTb,targetTolerance,failedDriveCount} required'] };
+    }
+    var build = (scn.steps || []).filter(function (st) { return st.id === 'build'; })[0];
+    if (!build) return { ok: false, errors: ['raid fidelity: no configure step with id "build"'] };
+    var levelText = _slFidelityResolveSlot(build, 'level');
+    var levelKey = _raidLevelKey(levelText);
+    var drives = parseInt(_slFidelityResolveSlot(build, 'driveCount'), 10);
+    var size = parseInt(_slFidelityResolveSlot(build, 'driveSize'), 10);
+    var meta = levelKey && _RAID_LEVEL_META[levelKey];
+    if (!meta) { errs.push('raid fidelity: keyed level "' + levelText + '" not recognized'); return { ok: false, errors: errs }; }
+    if (drives < meta.minDrives) errs.push('raid fidelity: ' + levelKey + ' needs at least ' + meta.minDrives + ' drives, keyed ' + drives);
+    var usable = meta.capacity(drives, size);
+    if (usable < fact.targetUsableTb) errs.push('raid fidelity: keyed build usable ' + usable + 'TB below target ' + fact.targetUsableTb + 'TB');
+    if (meta.tolerance < fact.targetTolerance) errs.push('raid fidelity: keyed level tolerance ' + meta.tolerance + ' below target ' + fact.targetTolerance);
+    // minimal-cost check: no fewer-drive combo AT THE SAME LEVEL also clears both targets
+    // (changed from cross-level to same-level in a Task 13 follow-up fix — cross-level
+    // comparison unrealistically assumed level choice is purely a drive-count optimization,
+    // which mathematically forecloses RAID 10 from ever being a valid answer since RAID 5
+    // always has equal-or-greater capacity per drive at the same tolerance)
+    var cheaperExists = false;
+    for (var c = meta.minDrives; c < drives; c++) {
+      if (meta.capacity(c, size) >= fact.targetUsableTb && meta.tolerance >= fact.targetTolerance) cheaperExists = true;
+    }
+    if (cheaperExists) errs.push('raid fidelity: a combination with fewer drives also clears both targets, keyed build is not minimal');
+
+    var degrade = (scn.steps || []).filter(function (st) { return st.id === 'degrade'; })[0];
+    if (!degrade) { errs.push('raid fidelity: no configure step with id "degrade"'); return { ok: errs.length === 0, errors: errs }; }
+    var status = _slFidelityResolveSlot(degrade, 'arrayStatus');
+    var action = _slFidelityResolveSlot(degrade, 'recoveryAction');
+    var failed = fact.failedDriveCount;
+    if (failed > meta.tolerance) {
+      if (!/failed/i.test(status || '')) errs.push('raid fidelity: ' + failed + ' failed drives exceeds tolerance ' + meta.tolerance + ', keyed status "' + status + '" should be Failed');
+      if (!/restore/i.test(action || '')) errs.push('raid fidelity: keyed recoveryAction "' + action + '" should be restore-from-backup when the array has failed');
+    } else if (failed > 0) {
+      if (!/degraded/i.test(status || '')) errs.push('raid fidelity: ' + failed + ' failed drives within tolerance ' + meta.tolerance + ', keyed status "' + status + '" should be Degraded');
+      if (!/hot-swap|rebuild/i.test(action || '')) errs.push('raid fidelity: keyed recoveryAction "' + action + '" should be hot-swap/rebuild when degraded');
+    }
+    return { ok: errs.length === 0, errors: errs };
+  }
+
   // --- scoring (Task 2) ---
 
   function _norm(v) {
@@ -820,7 +1097,7 @@
     // Wave 2: mode steps bind targets from the terminal reference (single source of
     // truth) instead of building their own .sl-analyze-block. Default (no mode) below is UNCHANGED.
     var mode = step.payload.mode;
-    if (mode === 'reveal' || mode === 'excerptLines') {
+    if (mode === 'reveal' || mode === 'excerptLines' || mode === 'facePorts' || mode === 'wiremapPins') {
       return _slRenderAnalyzeMode(step, onChange, initial, mode);
     }
     // Default to multi-select unless a step opts OUT explicitly (`multi:
@@ -905,6 +1182,33 @@
         menu.appendChild(b);
       });
       root.appendChild(menu);
+    } else if (mode === 'facePorts') {
+      // facePorts: bind the faceplate's already-rendered select:true port buttons
+      var fpHost = (window.__slFaceplatePanel) || null;
+      var fpBtns = fpHost ? fpHost.querySelectorAll('button') : [];
+      fpBtns.forEach(function (btn) {
+        if (!btn.className || btn.className.split(' ').indexOf('port') === -1) return;
+        var id = btn.getAttribute('data-port');
+        btn.addEventListener('click', function () {
+          toggle(id);
+          if (btn.classList) btn.classList.toggle('sl-sel', selected.indexOf(id) !== -1);
+        });
+        if (selected.indexOf(id) !== -1 && btn.classList) btn.classList.add('sl-sel');
+      });
+    } else if (mode === 'wiremapPins') {
+      // wiremapPins: bind the wiremap's already-rendered End-A pin buttons
+      var wmHost = (window.__slWiremapPanel) || null;
+      var wmBtns = wmHost ? wmHost.querySelectorAll('button') : [];
+      wmBtns.forEach(function (btn) {
+        if (!btn.className || btn.className.split(' ').indexOf('wm-pin') === -1) return;
+        var id = btn.getAttribute('data-pin');
+        btn.addEventListener('click', function () {
+          toggle(id);
+          btn.setAttribute('aria-pressed', String(selected.indexOf(id) !== -1));
+          if (btn.classList) btn.classList.toggle('sl-sel', selected.indexOf(id) !== -1);
+        });
+        if (selected.indexOf(id) !== -1 && btn.classList) btn.classList.add('sl-sel');
+      });
     } else {
       // excerptLines: bind the terminal's already-rendered select:true line buttons
       var host = (window.__slTerminalPanel) || null;
@@ -1526,6 +1830,97 @@
     return root;
   }
 
+  // --- faceplate reference renderer (Wave 3 Task 2) ---
+  // Selectable ports (select:true) are real <button>s so a mode:'facePorts' analyze
+  // step can bind them (single source of truth, same discipline as .term-line).
+  // Non-selectable ports render as inert aria-hidden divs — faceplate realism only,
+  // never a scoring target. LED state alone must fully signal any fault.
+  function _slRenderRefFaceplate(ref) {
+    var root = _el('div', 'faceplate');
+    var head = _el('div', 'faceplate-head');
+    head.appendChild(_el('span', 'faceplate-host', _esc(ref.host || '')));
+    root.appendChild(head);
+    var grid = _el('div', 'faceplate-grid');
+    var ports = (ref && Array.isArray(ref.ports)) ? ref.ports : [];
+    ports.forEach(function (p) {
+      var ledCls = 'port-' + (p.led || 'down');
+      // Visible text is the SHORT port number only (e.g. 'gi0-8' -> '8') — the
+      // .port box is a fixed 40x52 faceplate cell, sized for a short label, not
+      // the full descriptive text authored in the seed bank (e.g. 'Gi0/1 ·
+      // Checkout PC'). That full text still reaches sighted/AT users via
+      // aria-label (screen readers) and title (mouse hover tooltip); it must
+      // never be the visible innerHTML again — see mockups/switch-port-map-grid-concept.html
+      // makePortEl's pnum/aria-label split, which this mirrors.
+      var pid = String(p.id || '');
+      var shortLabel = pid.indexOf('-') !== -1 ? pid.split('-')[1] : pid;
+      if (p.select) {
+        var btn = _el('button', 'port ' + ledCls);
+        btn.setAttribute('type', 'button');
+        btn.setAttribute('data-port', p.id);
+        var fault = (p.led === 'poe-fault' || p.led === 'err-disabled');
+        btn.setAttribute('aria-label', 'Port ' + (p.label || p.id) + (fault ? ', fault detected. Click to diagnose.' : ', click to configure.'));
+        btn.setAttribute('title', p.label || p.id);
+        btn.innerHTML = _esc(shortLabel);
+        grid.appendChild(btn);
+      } else {
+        var inert = _el('div', 'port ' + ledCls + ' port-inert', _esc(shortLabel));
+        inert.setAttribute('aria-hidden', 'true');
+        inert.setAttribute('title', p.label || p.id);
+        grid.appendChild(inert);
+      }
+    });
+    root.appendChild(grid);
+    return root;
+  }
+
+  // --- wiremap reference renderer (Wave 3 Task 3) ---
+  // All 8 End-A pins render as real <button>s (select:true always, per spec — no
+  // progressive reveal, the whole map is the evidence). Each pin's fill/border class
+  // reflects its REAL pairId (not its textbook expected pair for that position) —
+  // the mismatch is what makes a split pair legible without hiding data. End-B
+  // renders read-only: the pin it actually landed on, or "open" if endBPin is null.
+  function _slRenderRefWiremap(ref) {
+    var root = _el('div', 'wiremap');
+    var grid = _el('div', 'wiremap-grid');
+    var pins = (ref && Array.isArray(ref.pins)) ? ref.pins : [];
+    pins.forEach(function (p) {
+      var pairCls = 'wm-pair-' + p.pairId;
+      var btn = _el('button', 'wm-pin ' + pairCls);
+      btn.setAttribute('type', 'button');
+      btn.setAttribute('data-pin', String(p.pin));
+      btn.setAttribute('aria-pressed', 'false');
+      btn.setAttribute('aria-label', 'End A pin ' + p.pin);
+      btn.innerHTML = _esc(String(p.pin));
+      grid.appendChild(btn);
+      var endBText = (p.endBPin != null) ? _esc(String(p.endBPin)) : 'open';
+      grid.appendChild(_el('div', 'wm-endb ' + pairCls, endBText));
+    });
+    root.appendChild(grid);
+    return root;
+  }
+
+  // --- slots reference renderer (Wave 3 Task 4) ---
+  // DELIBERATELY static/illustrative — zero <button>, zero click handler, zero
+  // exposed interaction handle. Shared verbatim by 'pcbuild' (component bays) and
+  // 'raid' (drive bays). If a future task wants this bound to live configure
+  // selections, that is a SECOND new binding direction and out of Wave 3 scope —
+  // STOP and escalate rather than add interaction here.
+  function _slRenderRefSlots(ref) {
+    var root = _el('div', 'slots-diagram');
+    var bays = (ref && Array.isArray(ref.bays)) ? ref.bays : [];
+    bays.forEach(function (b) {
+      var bay = _el('div', 'slot-bay');
+      bay.appendChild(_el('div', 'slot-bay-label', _esc(b.label || b.id)));
+      root.appendChild(bay);
+    });
+    if (ref && Array.isArray(ref.notes) && ref.notes.length) {
+      var notes = _el('div', 'slot-notes');
+      ref.notes.forEach(function (n) { notes.appendChild(_el('span', 'slot-note', _esc(n))); });
+      root.appendChild(notes);
+    }
+    return root;
+  }
+
   function _slRenderReference(ref) {
     if (!ref || !ref.kind) return null;
     var panel = _el('div', 'sl-ref');
@@ -1539,6 +1934,9 @@
       panel.appendChild(termNode);
       panel.revealExcerpt = termNode.revealExcerpt;
     }
+    else if (ref.kind === 'faceplate') panel.appendChild(_slRenderRefFaceplate(ref));
+    else if (ref.kind === 'wiremap') panel.appendChild(_slRenderRefWiremap(ref));
+    else if (ref.kind === 'slots') panel.appendChild(_slRenderRefSlots(ref));
     return panel;
   }
 
@@ -1567,6 +1965,14 @@
       window.__slTerminalRef = scn.assets.reference;
       window.__slTerminalPanel = refPanel;
     } else { window.__slTerminalRef = null; window.__slTerminalPanel = null; }
+    if (scn.assets && scn.assets.reference && scn.assets.reference.kind === 'faceplate') {
+      window.__slFaceplateRef = scn.assets.reference;
+      window.__slFaceplatePanel = refPanel;
+    } else { window.__slFaceplateRef = null; window.__slFaceplatePanel = null; }
+    if (scn.assets && scn.assets.reference && scn.assets.reference.kind === 'wiremap') {
+      window.__slWiremapRef = scn.assets.reference;
+      window.__slWiremapPanel = refPanel;
+    } else { window.__slWiremapRef = null; window.__slWiremapPanel = null; }
     scn.steps.forEach(function (st, i) {
       var stepWrap = _el('div', 'sl-step');
       stepWrap.appendChild(_el('div', 'sl-step-k', 'Step ' + (i + 1) + ' of ' + scn.steps.length));
