@@ -25423,6 +25423,113 @@ console.log('\n\x1b[1m── T7: DRILLS ANALYTICS GROUP + FINAL COPY + BRONZE TO
   }
 })();
 
+// ── Wave 3 Task 11: Net+ Cable-Test Wiremap seed-bank validation ──
+// The 12 consensus-approved (two-agent gated) Net+ Wiremap scenarios now
+// live for real in features/sim-lab-seed-netplus.js
+// (window.SIM_LAB_SEED_NETPLUS). This proves every one of them is real,
+// production-ready content: each passes the same pure validators that gate
+// the dev fixtures above (simLabValidateScenario +
+// simLabValidateWiremapFidelity), extracted from features/sim-lab.js the
+// same way the Wave 3 Task 10 bank block does.
+(function () {
+  console.log('\n\x1b[1m── Sim Lab: Net+ Cable-Test Wiremap seed-bank validation (Wave 3 Task 11) ──\x1b[0m');
+  try {
+    var vm = require('vm');
+
+    var grab = function (name) {
+      var re = new RegExp('function ' + name + '\\([^)]*\\) \\{[\\s\\S]*?\\n\\}');
+      return (js.match(re) || [''])[0];
+    };
+
+    // ── Extract the REAL pure validators from features/sim-lab.js, exactly
+    // as the Wave 3 Task 10 bank block does ──
+    var isNonEmptyStrBody    = grab('_isNonEmptyStr');
+    var validatePayloadBody  = grab('_validateStepPayload');
+    var validateScenarioBody = grab('simLabValidateScenario');
+    var stepTypesMatch = js.match(/var STEP_TYPES\s*=\s*\[[^\]]+\]/);
+    var stepTypesDecl = stepTypesMatch ? stepTypesMatch[0] + ';' : "var STEP_TYPES = ['order','categorize','match','analyze','fillin','configure'];";
+
+    var resolveSlotBody   = grab('_slFidelityResolveSlot');
+    var faultSigVar = (js.match(/var _WIREMAP_FAULT_SIG = \{[\s\S]*?\n\s*\};/) || [''])[0];
+    var expectedPairVar = (js.match(/var _WM_EXPECTED_PAIR = \{[\s\S]*?\n\s*\};/) || [''])[0];
+    var wiremapFidelityBody = grab('simLabValidateWiremapFidelity');
+
+    if (!isNonEmptyStrBody || !validatePayloadBody || !validateScenarioBody ||
+        !resolveSlotBody || !faultSigVar || !expectedPairVar || !wiremapFidelityBody) {
+      test('Net+ Wiremap bank: validator helper extraction succeeded', false);
+      results.errors.push('could not extract validator helpers for Wave 3 Task 11 bank test; check names/indenting');
+      return;
+    }
+
+    var vCtx = {};
+    vm.createContext(vCtx);
+    vm.runInContext(stepTypesDecl, vCtx);
+    vm.runInContext(isNonEmptyStrBody, vCtx);
+    vm.runInContext(validatePayloadBody, vCtx);
+    vm.runInContext(validateScenarioBody, vCtx);
+    vm.runInContext(resolveSlotBody, vCtx);
+    vm.runInContext(faultSigVar, vCtx);
+    vm.runInContext(expectedPairVar, vCtx);
+    vm.runInContext(wiremapFidelityBody, vCtx);
+    vm.runInContext('globalThis.__validate = simLabValidateScenario; globalThis.__wmFidelity = simLabValidateWiremapFidelity;', vCtx);
+    var simLabValidateScenario = vCtx.__validate;
+    var simLabValidateWiremapFidelity = vCtx.__wmFidelity;
+
+    // ── Load the real seed bank: eval features/sim-lab-seed-netplus.js in a
+    // sandbox with `var window = {}` so window.SIM_LAB_SEED_NETPLUS populates ──
+    var seedSrc = read('features/sim-lab-seed-netplus.js');
+    var seedCtx = {};
+    vm.createContext(seedCtx);
+    vm.runInContext('var window = {};\n' + seedSrc + '\nglobalThis.__seed = window.SIM_LAB_SEED_NETPLUS;', seedCtx);
+    var seedBank = seedCtx.__seed;
+
+    test('Net+ Wiremap bank: window.SIM_LAB_SEED_NETPLUS loaded as an array',
+      Array.isArray(seedBank));
+    if (!Array.isArray(seedBank)) {
+      results.errors.push('could not load window.SIM_LAB_SEED_NETPLUS from features/sim-lab-seed-netplus.js');
+      return;
+    }
+
+    var wmScenarios = seedBank.filter(function (s) { return s && s.archetype === 'wiremap'; });
+    test('Net+ Wiremap bank: at least 10 wiremap-archetype scenarios present',
+      wmScenarios.length >= 10);
+
+    var allValidateOk = true, allFidelityOk = true, allCertOk = true;
+    wmScenarios.forEach(function (s) {
+      var vr = simLabValidateScenario(s);
+      if (!vr || vr.ok !== true) {
+        allValidateOk = false;
+        results.errors.push('Net+ Wiremap bank: ' + (s && s.id) + ' failed simLabValidateScenario: ' + JSON.stringify(vr && vr.errors));
+      }
+      var fr = simLabValidateWiremapFidelity(s);
+      if (!fr || fr.ok !== true) {
+        allFidelityOk = false;
+        results.errors.push('Net+ Wiremap bank: ' + (s && s.id) + ' failed simLabValidateWiremapFidelity: ' + JSON.stringify(fr && fr.errors));
+      }
+      if (!s || s.cert !== 'netplus') {
+        allCertOk = false;
+        results.errors.push('Net+ Wiremap bank: ' + (s && s.id) + ' has cert !== netplus: ' + JSON.stringify(s && s.cert));
+      }
+    });
+
+    test('Net+ Wiremap bank: every wiremap scenario passes simLabValidateScenario',
+      allValidateOk);
+    test('Net+ Wiremap bank: every wiremap scenario passes simLabValidateWiremapFidelity',
+      allFidelityOk);
+    test('Net+ Wiremap bank: every wiremap scenario has cert === netplus',
+      allCertOk);
+
+    ['open', 'short', 'splitPair', 'reversedPair'].forEach(function (ft) {
+      test('Net+ Wiremap bank: covers fault type ' + ft,
+        wmScenarios.some(function (s) { return s.wiremap && s.wiremap.fault === ft; }));
+    });
+
+  } catch (err) {
+    test('Net+ Wiremap bank: vm smoke test (threw)', false);
+    results.errors.push('Net+ Wiremap bank smoke test threw: ' + err.message);
+  }
+})();
+
 // ── Wave 3 Task 6: wiremap fidelity validator ──
 (function () {
   var vm = require('vm');

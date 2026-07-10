@@ -8872,5 +8872,1610 @@ window.SIM_LAB_SEED_NETPLUS = [
         }
       }
     ]
+  },
+
+  {
+    id: 'np-cbl-01',
+    cert: 'netplus',
+    archetype: 'wiremap',
+    objective: '5.2',
+    topic: 'Cable-test wiremap — open circuit',
+    title: 'New office run fails link light after termination',
+    estMinutes: 6,
+    scenario: 'A technician just terminated a fresh Cat6 run from the IDF-2 patch panel to office 214, but the wall jack never links up. A wiremap tester on the run shows one pin with no continuity at all. Flag the faulted pin, then diagnose and fix it.',
+    wiremap: {
+      fault: 'open'
+    },
+    assets: {
+      reference: {
+        kind: 'wiremap',
+        host: 'Run 1 · IDF-2 patch panel → office 214',
+        pins: [
+          {
+            pin: 1,
+            pairId: 2,
+            endBPin: 1,
+            select: true
+          },
+          {
+            pin: 2,
+            pairId: 2,
+            endBPin: 2,
+            select: true
+          },
+          {
+            pin: 3,
+            pairId: 3,
+            endBPin: 3,
+            select: true
+          },
+          {
+            pin: 4,
+            pairId: 1,
+            endBPin: 4,
+            select: true
+          },
+          {
+            pin: 5,
+            pairId: 1,
+            endBPin: 5,
+            select: true
+          },
+          {
+            pin: 6,
+            pairId: 3,
+            endBPin: 6,
+            select: true
+          },
+          {
+            pin: 7,
+            pairId: 4,
+            endBPin: null,
+            select: true
+          },
+          {
+            pin: 8,
+            pairId: 4,
+            endBPin: 8,
+            select: true
+          }
+        ]
+      }
+    },
+    steps: [
+      {
+        id: 'flag',
+        type: 'analyze',
+        points: 1,
+        prompt: 'Flag the End-A pin(s) responsible for the fault shown in the wiremap.',
+        explanation: 'Pin 7 shows no signal at the far end at all — every other pin lands cleanly on its own numbered pin, so pin 7 is an open circuit, not a miswire.',
+        payload: {
+          multi: true,
+          mode: 'wiremapPins'
+        },
+        answer: {
+          selected: [
+            '7'
+          ]
+        }
+      },
+      {
+        id: 'dx',
+        type: 'configure',
+        points: 1,
+        prompt: 'Classify the fault and select the correct fix.',
+        explanation: 'No continuity on a single pin with every other pin intact is the signature of an open circuit — usually a wire that never seated in the connector. Re-terminate so that conductor makes contact.',
+        payload: {
+          slots: [
+            {
+              id: 'faultType',
+              label: 'Fault type',
+              options: [
+                {
+                  id: 'a',
+                  text: 'Open circuit — one pin has no continuity to the far end'
+                },
+                {
+                  id: 'b',
+                  text: 'Short — two pins are electrically shorted together'
+                }
+              ]
+            },
+            {
+              id: 'fix',
+              label: 'Fix',
+              options: [
+                {
+                  id: 'a',
+                  text: 'Re-terminate the connector so the broken conductor makes contact'
+                },
+                {
+                  id: 'b',
+                  text: 'Swap the patch cable for a longer run of the same category'
+                }
+              ]
+            }
+          ]
+        },
+        answer: {
+          slots: {
+            faultType: 'a',
+            fix: 'a'
+          }
+        }
+      }
+    ]
+  },
+
+  {
+    id: 'np-cbl-02',
+    cert: 'netplus',
+    archetype: 'wiremap',
+    objective: '5.2',
+    topic: 'Cable-test wiremap — open circuit',
+    title: 'Riser drop tests dead on one conductor',
+    estMinutes: 6,
+    scenario: 'A riser cable feeding the 3rd-floor jack 3B tests dead for one PC even though the rest of the run’s pairs are fine. The building tech pulls a wiremap trace before re-punching the jack. Flag the open pin, then diagnose and fix it.',
+    wiremap: {
+      fault: 'open'
+    },
+    assets: {
+      reference: {
+        kind: 'wiremap',
+        host: 'Run 4 · riser closet → 3rd floor jack 3B',
+        pins: [
+          {
+            pin: 1,
+            pairId: 2,
+            endBPin: 1,
+            select: true
+          },
+          {
+            pin: 2,
+            pairId: 2,
+            endBPin: 2,
+            select: true
+          },
+          {
+            pin: 3,
+            pairId: 3,
+            endBPin: null,
+            select: true
+          },
+          {
+            pin: 4,
+            pairId: 1,
+            endBPin: 4,
+            select: true
+          },
+          {
+            pin: 5,
+            pairId: 1,
+            endBPin: 5,
+            select: true
+          },
+          {
+            pin: 6,
+            pairId: 3,
+            endBPin: 6,
+            select: true
+          },
+          {
+            pin: 7,
+            pairId: 4,
+            endBPin: 7,
+            select: true
+          },
+          {
+            pin: 8,
+            pairId: 4,
+            endBPin: 8,
+            select: true
+          }
+        ]
+      }
+    },
+    steps: [
+      {
+        id: 'flag',
+        type: 'analyze',
+        points: 1,
+        prompt: 'Flag the End-A pin(s) responsible for the fault shown in the wiremap.',
+        explanation: 'Pin 3 has no landing at all on End-B while the remaining seven pins map straight through — that is a single open conductor.',
+        payload: {
+          multi: true,
+          mode: 'wiremapPins'
+        },
+        answer: {
+          selected: [
+            '3'
+          ]
+        }
+      },
+      {
+        id: 'dx',
+        type: 'configure',
+        points: 1,
+        prompt: 'Classify the fault and select the correct fix.',
+        explanation: 'An isolated pin with zero continuity, and every other pin behaving normally, is an open circuit — the wire likely backed out of the punch-down. Re-terminate to restore contact.',
+        payload: {
+          slots: [
+            {
+              id: 'faultType',
+              label: 'Fault type',
+              options: [
+                {
+                  id: 'a',
+                  text: 'Open circuit — one pin has no continuity to the far end'
+                },
+                {
+                  id: 'b',
+                  text: 'Short — two pins are electrically shorted together'
+                }
+              ]
+            },
+            {
+              id: 'fix',
+              label: 'Fix',
+              options: [
+                {
+                  id: 'a',
+                  text: 'Re-terminate the connector so the broken conductor makes contact'
+                },
+                {
+                  id: 'b',
+                  text: 'Swap the patch cable for a longer run of the same category'
+                }
+              ]
+            }
+          ]
+        },
+        answer: {
+          slots: {
+            faultType: 'a',
+            fix: 'a'
+          }
+        }
+      }
+    ]
+  },
+
+  {
+    id: 'np-cbl-03',
+    cert: 'netplus',
+    archetype: 'wiremap',
+    objective: '5.2',
+    topic: 'Cable-test wiremap — open circuit',
+    title: 'Homeowner’s living-room jack has no link after a DIY re-punch',
+    estMinutes: 6,
+    scenario: 'A homeowner re-punched their own living-room jack after moving furniture and now the run won’t link. You run a wiremap tester off the structured-wiring panel and find one pin reading dead. Flag the faulted pin, then diagnose and fix it.',
+    wiremap: {
+      fault: 'open'
+    },
+    assets: {
+      reference: {
+        kind: 'wiremap',
+        host: 'Run 9 · residential structured-wiring panel → living room',
+        pins: [
+          {
+            pin: 1,
+            pairId: 2,
+            endBPin: null,
+            select: true
+          },
+          {
+            pin: 2,
+            pairId: 2,
+            endBPin: 2,
+            select: true
+          },
+          {
+            pin: 3,
+            pairId: 3,
+            endBPin: 3,
+            select: true
+          },
+          {
+            pin: 4,
+            pairId: 1,
+            endBPin: 4,
+            select: true
+          },
+          {
+            pin: 5,
+            pairId: 1,
+            endBPin: 5,
+            select: true
+          },
+          {
+            pin: 6,
+            pairId: 3,
+            endBPin: 6,
+            select: true
+          },
+          {
+            pin: 7,
+            pairId: 4,
+            endBPin: 7,
+            select: true
+          },
+          {
+            pin: 8,
+            pairId: 4,
+            endBPin: 8,
+            select: true
+          }
+        ]
+      }
+    },
+    steps: [
+      {
+        id: 'flag',
+        type: 'analyze',
+        points: 1,
+        prompt: 'Flag the End-A pin(s) responsible for the fault shown in the wiremap.',
+        explanation: 'Pin 1 never lands on the End-B side — the rest of the pins are straight-through and correctly paired, isolating the fault to that single open conductor.',
+        payload: {
+          multi: true,
+          mode: 'wiremapPins'
+        },
+        answer: {
+          selected: [
+            '1'
+          ]
+        }
+      },
+      {
+        id: 'dx',
+        type: 'configure',
+        points: 1,
+        prompt: 'Classify the fault and select the correct fix.',
+        explanation: 'A single pin with no continuity while the rest of the map is clean points to an open circuit from a conductor that never seated during the DIY re-punch. Re-terminate that pin.',
+        payload: {
+          slots: [
+            {
+              id: 'faultType',
+              label: 'Fault type',
+              options: [
+                {
+                  id: 'a',
+                  text: 'Open circuit — one pin has no continuity to the far end'
+                },
+                {
+                  id: 'b',
+                  text: 'Short — two pins are electrically shorted together'
+                }
+              ]
+            },
+            {
+              id: 'fix',
+              label: 'Fix',
+              options: [
+                {
+                  id: 'a',
+                  text: 'Re-terminate the connector so the broken conductor makes contact'
+                },
+                {
+                  id: 'b',
+                  text: 'Swap the patch cable for a longer run of the same category'
+                }
+              ]
+            }
+          ]
+        },
+        answer: {
+          slots: {
+            faultType: 'a',
+            fix: 'a'
+          }
+        }
+      }
+    ]
+  },
+
+  {
+    id: 'np-cbl-04',
+    cert: 'netplus',
+    archetype: 'wiremap',
+    objective: '5.2',
+    topic: 'Cable-test wiremap — short',
+    title: 'Reception desk run shows two pins landing on one conductor',
+    estMinutes: 6,
+    scenario: 'The reception desk PC keeps losing link intermittently. A wiremap trace off the IDF-1 patch panel shows two End-A pins both landing on the same End-B position — a classic short between two conductors. Flag the shorted pins, then diagnose and fix it.',
+    wiremap: {
+      fault: 'short'
+    },
+    assets: {
+      reference: {
+        kind: 'wiremap',
+        host: 'Run 2 · IDF-1 patch panel → reception desk',
+        pins: [
+          {
+            pin: 1,
+            pairId: 2,
+            endBPin: 1,
+            select: true
+          },
+          {
+            pin: 2,
+            pairId: 2,
+            endBPin: 1,
+            select: true
+          },
+          {
+            pin: 3,
+            pairId: 3,
+            endBPin: 3,
+            select: true
+          },
+          {
+            pin: 4,
+            pairId: 1,
+            endBPin: 4,
+            select: true
+          },
+          {
+            pin: 5,
+            pairId: 1,
+            endBPin: 5,
+            select: true
+          },
+          {
+            pin: 6,
+            pairId: 3,
+            endBPin: 6,
+            select: true
+          },
+          {
+            pin: 7,
+            pairId: 4,
+            endBPin: 7,
+            select: true
+          },
+          {
+            pin: 8,
+            pairId: 4,
+            endBPin: 8,
+            select: true
+          }
+        ]
+      }
+    },
+    steps: [
+      {
+        id: 'flag',
+        type: 'analyze',
+        points: 1,
+        prompt: 'Flag the End-A pin(s) responsible for the fault shown in the wiremap.',
+        explanation: 'Pins 1 and 2 (Pair 2’s own two conductors) both land on the same End-B position — that shared landing is the signature of a short, not a normal crossed pair.',
+        payload: {
+          multi: true,
+          mode: 'wiremapPins'
+        },
+        answer: {
+          selected: [
+            '1',
+            '2'
+          ]
+        }
+      },
+      {
+        id: 'dx',
+        type: 'configure',
+        points: 1,
+        prompt: 'Classify the fault and select the correct fix.',
+        explanation: 'Two source pins converging on one destination pin means the conductors are electrically shorted together, most likely insulation damage letting them touch inside the connector. Re-terminate so they no longer touch.',
+        payload: {
+          slots: [
+            {
+              id: 'faultType',
+              label: 'Fault type',
+              options: [
+                {
+                  id: 'a',
+                  text: 'Short — two pins are electrically shorted together'
+                },
+                {
+                  id: 'b',
+                  text: 'Open circuit — one pin has no continuity to the far end'
+                }
+              ]
+            },
+            {
+              id: 'fix',
+              label: 'Fix',
+              options: [
+                {
+                  id: 'a',
+                  text: 'Re-terminate the connector so the shorted conductors no longer touch'
+                },
+                {
+                  id: 'b',
+                  text: 'Swap the patch cable for a longer run of the same category'
+                }
+              ]
+            }
+          ]
+        },
+        answer: {
+          slots: {
+            faultType: 'a',
+            fix: 'a'
+          }
+        }
+      }
+    ]
+  },
+
+  {
+    id: 'np-cbl-05',
+    cert: 'netplus',
+    archetype: 'wiremap',
+    objective: '5.2',
+    topic: 'Cable-test wiremap — short',
+    title: 'Conference-room floor box run fails a cable certifier',
+    estMinutes: 6,
+    scenario: 'A newly installed conference-room floor box fails a cable certifier with a short-circuit warning. You pull a wiremap trace and find two End-A pins both mapping to the same End-B pin. Flag the shorted pins, then diagnose and fix it.',
+    wiremap: {
+      fault: 'short'
+    },
+    assets: {
+      reference: {
+        kind: 'wiremap',
+        host: 'Run 6 · conference room floor box',
+        pins: [
+          {
+            pin: 1,
+            pairId: 2,
+            endBPin: 1,
+            select: true
+          },
+          {
+            pin: 2,
+            pairId: 2,
+            endBPin: 2,
+            select: true
+          },
+          {
+            pin: 3,
+            pairId: 3,
+            endBPin: 3,
+            select: true
+          },
+          {
+            pin: 4,
+            pairId: 1,
+            endBPin: 4,
+            select: true
+          },
+          {
+            pin: 5,
+            pairId: 1,
+            endBPin: 4,
+            select: true
+          },
+          {
+            pin: 6,
+            pairId: 3,
+            endBPin: 6,
+            select: true
+          },
+          {
+            pin: 7,
+            pairId: 4,
+            endBPin: 7,
+            select: true
+          },
+          {
+            pin: 8,
+            pairId: 4,
+            endBPin: 8,
+            select: true
+          }
+        ]
+      }
+    },
+    steps: [
+      {
+        id: 'flag',
+        type: 'analyze',
+        points: 1,
+        prompt: 'Flag the End-A pin(s) responsible for the fault shown in the wiremap.',
+        explanation: 'Pins 4 and 5 (Pair 1’s two conductors) both land on the same End-B pin instead of their own — a shared destination pin is exactly what a short looks like on a wiremap.',
+        payload: {
+          multi: true,
+          mode: 'wiremapPins'
+        },
+        answer: {
+          selected: [
+            '4',
+            '5'
+          ]
+        }
+      },
+      {
+        id: 'dx',
+        type: 'configure',
+        points: 1,
+        prompt: 'Classify the fault and select the correct fix.',
+        explanation: 'When two source pins share one destination pin, the conductors are touching somewhere along the run or inside the jack — a short. Re-terminate so the conductors are separated and no longer touch.',
+        payload: {
+          slots: [
+            {
+              id: 'faultType',
+              label: 'Fault type',
+              options: [
+                {
+                  id: 'a',
+                  text: 'Short — two pins are electrically shorted together'
+                },
+                {
+                  id: 'b',
+                  text: 'Open circuit — one pin has no continuity to the far end'
+                }
+              ]
+            },
+            {
+              id: 'fix',
+              label: 'Fix',
+              options: [
+                {
+                  id: 'a',
+                  text: 'Re-terminate the connector so the shorted conductors no longer touch'
+                },
+                {
+                  id: 'b',
+                  text: 'Swap the patch cable for a longer run of the same category'
+                }
+              ]
+            }
+          ]
+        },
+        answer: {
+          slots: {
+            faultType: 'a',
+            fix: 'a'
+          }
+        }
+      }
+    ]
+  },
+
+  {
+    id: 'np-cbl-06',
+    cert: 'netplus',
+    archetype: 'wiremap',
+    objective: '5.2',
+    topic: 'Cable-test wiremap — short',
+    title: 'Home office jack certifies with a short after a crimp job',
+    estMinutes: 6,
+    scenario: 'A homeowner crimped their own RJ45 end onto a home-office drop, and the run now fails a wiremap certifier with two conductors reading the same destination pin. Flag the shorted pins, then diagnose and fix it.',
+    wiremap: {
+      fault: 'short'
+    },
+    assets: {
+      reference: {
+        kind: 'wiremap',
+        host: 'Run 11 · residential structured-wiring panel → home office',
+        pins: [
+          {
+            pin: 1,
+            pairId: 2,
+            endBPin: 1,
+            select: true
+          },
+          {
+            pin: 2,
+            pairId: 2,
+            endBPin: 2,
+            select: true
+          },
+          {
+            pin: 3,
+            pairId: 3,
+            endBPin: 3,
+            select: true
+          },
+          {
+            pin: 4,
+            pairId: 1,
+            endBPin: 4,
+            select: true
+          },
+          {
+            pin: 5,
+            pairId: 1,
+            endBPin: 5,
+            select: true
+          },
+          {
+            pin: 6,
+            pairId: 3,
+            endBPin: 6,
+            select: true
+          },
+          {
+            pin: 7,
+            pairId: 4,
+            endBPin: 7,
+            select: true
+          },
+          {
+            pin: 8,
+            pairId: 4,
+            endBPin: 7,
+            select: true
+          }
+        ]
+      }
+    },
+    steps: [
+      {
+        id: 'flag',
+        type: 'analyze',
+        points: 1,
+        prompt: 'Flag the End-A pin(s) responsible for the fault shown in the wiremap.',
+        explanation: 'Pins 7 and 8 (Pair 4’s conductors) both land on the same End-B pin — that duplicate landing means the two conductors are shorted, likely from an over-stripped jacket during the crimp.',
+        payload: {
+          multi: true,
+          mode: 'wiremapPins'
+        },
+        answer: {
+          selected: [
+            '7',
+            '8'
+          ]
+        }
+      },
+      {
+        id: 'dx',
+        type: 'configure',
+        points: 1,
+        prompt: 'Classify the fault and select the correct fix.',
+        explanation: 'A shared End-B landing across two source pins is a short circuit, not a miswire — the conductors are touching. Re-terminate the connector so they are properly separated.',
+        payload: {
+          slots: [
+            {
+              id: 'faultType',
+              label: 'Fault type',
+              options: [
+                {
+                  id: 'a',
+                  text: 'Short — two pins are electrically shorted together'
+                },
+                {
+                  id: 'b',
+                  text: 'Open circuit — one pin has no continuity to the far end'
+                }
+              ]
+            },
+            {
+              id: 'fix',
+              label: 'Fix',
+              options: [
+                {
+                  id: 'a',
+                  text: 'Re-terminate the connector so the shorted conductors no longer touch'
+                },
+                {
+                  id: 'b',
+                  text: 'Swap the patch cable for a longer run of the same category'
+                }
+              ]
+            }
+          ]
+        },
+        answer: {
+          slots: {
+            faultType: 'a',
+            fix: 'a'
+          }
+        }
+      }
+    ]
+  },
+
+  {
+    id: 'np-cbl-07',
+    cert: 'netplus',
+    archetype: 'wiremap',
+    objective: '5.2',
+    topic: 'Cable-test wiremap — split pair',
+    title: 'Open-plan desk cluster run passes continuity but fails NEXT',
+    estMinutes: 6,
+    scenario: 'A run to an open-plan desk cluster passes a basic continuity check but keeps failing crosstalk on a certifier. A wiremap trace shows a wire from Pair 2 crossed with a wire from Pair 3. Flag the crossed pins, then diagnose and fix it.',
+    wiremap: {
+      fault: 'splitPair'
+    },
+    assets: {
+      reference: {
+        kind: 'wiremap',
+        host: 'Run 3 · IDF-2 patch panel → open-plan desk cluster',
+        pins: [
+          {
+            pin: 1,
+            pairId: 2,
+            endBPin: 1,
+            select: true
+          },
+          {
+            pin: 2,
+            pairId: 2,
+            endBPin: 3,
+            select: true
+          },
+          {
+            pin: 3,
+            pairId: 3,
+            endBPin: 2,
+            select: true
+          },
+          {
+            pin: 4,
+            pairId: 1,
+            endBPin: 4,
+            select: true
+          },
+          {
+            pin: 5,
+            pairId: 1,
+            endBPin: 5,
+            select: true
+          },
+          {
+            pin: 6,
+            pairId: 3,
+            endBPin: 6,
+            select: true
+          },
+          {
+            pin: 7,
+            pairId: 4,
+            endBPin: 7,
+            select: true
+          },
+          {
+            pin: 8,
+            pairId: 4,
+            endBPin: 8,
+            select: true
+          }
+        ]
+      }
+    },
+    steps: [
+      {
+        id: 'flag',
+        type: 'analyze',
+        points: 1,
+        prompt: 'Flag the End-A pin(s) responsible for the fault shown in the wiremap.',
+        explanation: 'Pins 2 and 3 land on each other’s End-B positions, and they belong to two DIFFERENT pairs (2 and 3) — that cross-pair swap is a split pair, which still passes continuity but destroys the twist.',
+        payload: {
+          multi: true,
+          mode: 'wiremapPins'
+        },
+        answer: {
+          selected: [
+            '2',
+            '3'
+          ]
+        }
+      },
+      {
+        id: 'dx',
+        type: 'configure',
+        points: 1,
+        prompt: 'Classify the fault and select the correct fix.',
+        explanation: 'Continuity looks fine because both ends still connect, but pulling wires from two different pairs together breaks the twisted-pair cancellation and causes crosstalk — a split pair. Re-terminate so each pair’s wires land on their own correct pins.',
+        payload: {
+          slots: [
+            {
+              id: 'faultType',
+              label: 'Fault type',
+              options: [
+                {
+                  id: 'a',
+                  text: 'Split pair — two wires from different pairs were crossed'
+                },
+                {
+                  id: 'b',
+                  text: 'Reversed pair — both wires of one pair are swapped'
+                }
+              ]
+            },
+            {
+              id: 'fix',
+              label: 'Fix',
+              options: [
+                {
+                  id: 'a',
+                  text: 'Re-terminate so each pair’s two wires land on their correct pins'
+                },
+                {
+                  id: 'b',
+                  text: 'Swap the patch cable for a longer run of the same category'
+                }
+              ]
+            }
+          ]
+        },
+        answer: {
+          slots: {
+            faultType: 'a',
+            fix: 'a'
+          }
+        }
+      }
+    ]
+  },
+
+  {
+    id: 'np-cbl-08',
+    cert: 'netplus',
+    archetype: 'wiremap',
+    objective: '5.2',
+    topic: 'Cable-test wiremap — split pair',
+    title: 'Jack 2C intermittently drops a video call under load',
+    estMinutes: 6,
+    scenario: 'A user at jack 2C reports their video calls stutter under heavy network load, even though the link stays up. A wiremap trace on the run shows a wire from Pair 1 crossed with a wire from Pair 3. Flag the crossed pins, then diagnose and fix it.',
+    wiremap: {
+      fault: 'splitPair'
+    },
+    assets: {
+      reference: {
+        kind: 'wiremap',
+        host: 'Run 7 · riser closet → 2nd floor jack 2C',
+        pins: [
+          {
+            pin: 1,
+            pairId: 2,
+            endBPin: 1,
+            select: true
+          },
+          {
+            pin: 2,
+            pairId: 2,
+            endBPin: 2,
+            select: true
+          },
+          {
+            pin: 3,
+            pairId: 3,
+            endBPin: 4,
+            select: true
+          },
+          {
+            pin: 4,
+            pairId: 1,
+            endBPin: 3,
+            select: true
+          },
+          {
+            pin: 5,
+            pairId: 1,
+            endBPin: 5,
+            select: true
+          },
+          {
+            pin: 6,
+            pairId: 3,
+            endBPin: 6,
+            select: true
+          },
+          {
+            pin: 7,
+            pairId: 4,
+            endBPin: 7,
+            select: true
+          },
+          {
+            pin: 8,
+            pairId: 4,
+            endBPin: 8,
+            select: true
+          }
+        ]
+      }
+    },
+    steps: [
+      {
+        id: 'flag',
+        type: 'analyze',
+        points: 1,
+        prompt: 'Flag the End-A pin(s) responsible for the fault shown in the wiremap.',
+        explanation: 'Pins 4 and 3 swap End-B positions, and they belong to different pairs (1 and 3) — that is a split pair; the link still comes up but the mismatched twist bleeds crosstalk under load.',
+        payload: {
+          multi: true,
+          mode: 'wiremapPins'
+        },
+        answer: {
+          selected: [
+            '3',
+            '4'
+          ]
+        }
+      },
+      {
+        id: 'dx',
+        type: 'configure',
+        points: 1,
+        prompt: 'Classify the fault and select the correct fix.',
+        explanation: 'A split pair still passes a simple link test but loses the pair’s twist-based noise cancellation, causing exactly this kind of load-dependent instability. Re-terminate so each pair’s two wires land on their correct pins.',
+        payload: {
+          slots: [
+            {
+              id: 'faultType',
+              label: 'Fault type',
+              options: [
+                {
+                  id: 'a',
+                  text: 'Split pair — two wires from different pairs were crossed'
+                },
+                {
+                  id: 'b',
+                  text: 'Reversed pair — both wires of one pair are swapped'
+                }
+              ]
+            },
+            {
+              id: 'fix',
+              label: 'Fix',
+              options: [
+                {
+                  id: 'a',
+                  text: 'Re-terminate so each pair’s two wires land on their correct pins'
+                },
+                {
+                  id: 'b',
+                  text: 'Swap the patch cable for a longer run of the same category'
+                }
+              ]
+            }
+          ]
+        },
+        answer: {
+          slots: {
+            faultType: 'a',
+            fix: 'a'
+          }
+        }
+      }
+    ]
+  },
+
+  {
+    id: 'np-cbl-09',
+    cert: 'netplus',
+    archetype: 'wiremap',
+    objective: '5.2',
+    topic: 'Cable-test wiremap — split pair',
+    title: 'Home theater streaming box buffers despite a lit link light',
+    estMinutes: 6,
+    scenario: 'A homeowner’s streaming box constantly buffers even though the link light stays solid green. A wiremap trace on the run to the structured-wiring panel shows a wire from Pair 3 crossed with a wire from Pair 4. Flag the crossed pins, then diagnose and fix it.',
+    wiremap: {
+      fault: 'splitPair'
+    },
+    assets: {
+      reference: {
+        kind: 'wiremap',
+        host: 'Run 12 · residential structured-wiring panel → home theater',
+        pins: [
+          {
+            pin: 1,
+            pairId: 2,
+            endBPin: 1,
+            select: true
+          },
+          {
+            pin: 2,
+            pairId: 2,
+            endBPin: 2,
+            select: true
+          },
+          {
+            pin: 3,
+            pairId: 3,
+            endBPin: 3,
+            select: true
+          },
+          {
+            pin: 4,
+            pairId: 1,
+            endBPin: 4,
+            select: true
+          },
+          {
+            pin: 5,
+            pairId: 1,
+            endBPin: 5,
+            select: true
+          },
+          {
+            pin: 6,
+            pairId: 3,
+            endBPin: 7,
+            select: true
+          },
+          {
+            pin: 7,
+            pairId: 4,
+            endBPin: 6,
+            select: true
+          },
+          {
+            pin: 8,
+            pairId: 4,
+            endBPin: 8,
+            select: true
+          }
+        ]
+      }
+    },
+    steps: [
+      {
+        id: 'flag',
+        type: 'analyze',
+        points: 1,
+        prompt: 'Flag the End-A pin(s) responsible for the fault shown in the wiremap.',
+        explanation: 'Pins 6 and 7 swap End-B positions and belong to two different pairs (3 and 4) — a split pair, which still links up but degrades throughput under sustained traffic like streaming.',
+        payload: {
+          multi: true,
+          mode: 'wiremapPins'
+        },
+        answer: {
+          selected: [
+            '6',
+            '7'
+          ]
+        }
+      },
+      {
+        id: 'dx',
+        type: 'configure',
+        points: 1,
+        prompt: 'Classify the fault and select the correct fix.',
+        explanation: 'The link light lies here — continuity is fine, but mixing wires from two different pairs breaks the twist that cancels crosstalk, throttling real throughput. Re-terminate so each pair’s two wires land on their correct pins.',
+        payload: {
+          slots: [
+            {
+              id: 'faultType',
+              label: 'Fault type',
+              options: [
+                {
+                  id: 'a',
+                  text: 'Split pair — two wires from different pairs were crossed'
+                },
+                {
+                  id: 'b',
+                  text: 'Reversed pair — both wires of one pair are swapped'
+                }
+              ]
+            },
+            {
+              id: 'fix',
+              label: 'Fix',
+              options: [
+                {
+                  id: 'a',
+                  text: 'Re-terminate so each pair’s two wires land on their correct pins'
+                },
+                {
+                  id: 'b',
+                  text: 'Swap the patch cable for a longer run of the same category'
+                }
+              ]
+            }
+          ]
+        },
+        answer: {
+          slots: {
+            faultType: 'a',
+            fix: 'a'
+          }
+        }
+      }
+    ]
+  },
+
+  {
+    id: 'np-cbl-10',
+    cert: 'netplus',
+    archetype: 'wiremap',
+    objective: '5.2',
+    topic: 'Cable-test wiremap — reversed pair',
+    title: 'Print room jack links but the printer randomly disconnects',
+    estMinutes: 6,
+    scenario: 'A networked printer in the print room links at the switch but drops offline every few minutes. A wiremap trace shows Pair 1’s two wires swapped with each other on the End-B side. Flag the reversed pins, then diagnose and fix it.',
+    wiremap: {
+      fault: 'reversedPair'
+    },
+    assets: {
+      reference: {
+        kind: 'wiremap',
+        host: 'Run 5 · IDF-1 patch panel → print room',
+        pins: [
+          {
+            pin: 1,
+            pairId: 2,
+            endBPin: 1,
+            select: true
+          },
+          {
+            pin: 2,
+            pairId: 2,
+            endBPin: 2,
+            select: true
+          },
+          {
+            pin: 3,
+            pairId: 3,
+            endBPin: 3,
+            select: true
+          },
+          {
+            pin: 4,
+            pairId: 1,
+            endBPin: 5,
+            select: true
+          },
+          {
+            pin: 5,
+            pairId: 1,
+            endBPin: 4,
+            select: true
+          },
+          {
+            pin: 6,
+            pairId: 3,
+            endBPin: 6,
+            select: true
+          },
+          {
+            pin: 7,
+            pairId: 4,
+            endBPin: 7,
+            select: true
+          },
+          {
+            pin: 8,
+            pairId: 4,
+            endBPin: 8,
+            select: true
+          }
+        ]
+      }
+    },
+    steps: [
+      {
+        id: 'flag',
+        type: 'analyze',
+        points: 1,
+        prompt: 'Flag the End-A pin(s) responsible for the fault shown in the wiremap.',
+        explanation: 'Pins 4 and 5 swap End-B positions, and both belong to the SAME pair (Pair 1) — that is a reversed pair, which still links but degrades signal integrity, especially on longer runs.',
+        payload: {
+          multi: true,
+          mode: 'wiremapPins'
+        },
+        answer: {
+          selected: [
+            '4',
+            '5'
+          ]
+        }
+      },
+      {
+        id: 'dx',
+        type: 'configure',
+        points: 1,
+        prompt: 'Classify the fault and select the correct fix.',
+        explanation: 'When both wires of one pair swap places with each other (not with a different pair), it is a reversed pair — link usually still comes up but signal quality suffers. Re-terminate so the pair’s two wires land in their correct order.',
+        payload: {
+          slots: [
+            {
+              id: 'faultType',
+              label: 'Fault type',
+              options: [
+                {
+                  id: 'a',
+                  text: 'Reversed pair — both wires of one pair are swapped'
+                },
+                {
+                  id: 'b',
+                  text: 'Split pair — two wires from different pairs were crossed'
+                }
+              ]
+            },
+            {
+              id: 'fix',
+              label: 'Fix',
+              options: [
+                {
+                  id: 'a',
+                  text: 'Re-terminate so the pair’s two wires land in their correct order'
+                },
+                {
+                  id: 'b',
+                  text: 'Swap the patch cable for a longer run of the same category'
+                }
+              ]
+            }
+          ]
+        },
+        answer: {
+          slots: {
+            faultType: 'a',
+            fix: 'a'
+          }
+        }
+      }
+    ]
+  },
+
+  {
+    id: 'np-cbl-11',
+    cert: 'netplus',
+    archetype: 'wiremap',
+    objective: '5.2',
+    topic: 'Cable-test wiremap — reversed pair',
+    title: 'Jack 4A negotiates a lower link speed than the rest of the floor',
+    estMinutes: 6,
+    scenario: 'A PC at jack 4A always negotiates a slower link speed than identical PCs elsewhere on the floor. A wiremap trace shows Pair 2’s two wires swapped with each other on the End-B side. Flag the reversed pins, then diagnose and fix it.',
+    wiremap: {
+      fault: 'reversedPair'
+    },
+    assets: {
+      reference: {
+        kind: 'wiremap',
+        host: 'Run 8 · riser closet → 4th floor jack 4A',
+        pins: [
+          {
+            pin: 1,
+            pairId: 2,
+            endBPin: 2,
+            select: true
+          },
+          {
+            pin: 2,
+            pairId: 2,
+            endBPin: 1,
+            select: true
+          },
+          {
+            pin: 3,
+            pairId: 3,
+            endBPin: 3,
+            select: true
+          },
+          {
+            pin: 4,
+            pairId: 1,
+            endBPin: 4,
+            select: true
+          },
+          {
+            pin: 5,
+            pairId: 1,
+            endBPin: 5,
+            select: true
+          },
+          {
+            pin: 6,
+            pairId: 3,
+            endBPin: 6,
+            select: true
+          },
+          {
+            pin: 7,
+            pairId: 4,
+            endBPin: 7,
+            select: true
+          },
+          {
+            pin: 8,
+            pairId: 4,
+            endBPin: 8,
+            select: true
+          }
+        ]
+      }
+    },
+    steps: [
+      {
+        id: 'flag',
+        type: 'analyze',
+        points: 1,
+        prompt: 'Flag the End-A pin(s) responsible for the fault shown in the wiremap.',
+        explanation: 'Pins 1 and 2 swap End-B positions, and both belong to the SAME pair (Pair 2) — a reversed pair, which can still link but frequently forces a lower negotiated speed.',
+        payload: {
+          multi: true,
+          mode: 'wiremapPins'
+        },
+        answer: {
+          selected: [
+            '1',
+            '2'
+          ]
+        }
+      },
+      {
+        id: 'dx',
+        type: 'configure',
+        points: 1,
+        prompt: 'Classify the fault and select the correct fix.',
+        explanation: 'A reversed pair — both conductors of one pair swapped with each other — often still auto-negotiates a link but at reduced speed or with more errors. Re-terminate so the pair’s two wires land in their correct order.',
+        payload: {
+          slots: [
+            {
+              id: 'faultType',
+              label: 'Fault type',
+              options: [
+                {
+                  id: 'a',
+                  text: 'Reversed pair — both wires of one pair are swapped'
+                },
+                {
+                  id: 'b',
+                  text: 'Split pair — two wires from different pairs were crossed'
+                }
+              ]
+            },
+            {
+              id: 'fix',
+              label: 'Fix',
+              options: [
+                {
+                  id: 'a',
+                  text: 'Re-terminate so the pair’s two wires land in their correct order'
+                },
+                {
+                  id: 'b',
+                  text: 'Swap the patch cable for a longer run of the same category'
+                }
+              ]
+            }
+          ]
+        },
+        answer: {
+          slots: {
+            faultType: 'a',
+            fix: 'a'
+          }
+        }
+      }
+    ]
+  },
+
+  {
+    id: 'np-cbl-12',
+    cert: 'netplus',
+    archetype: 'wiremap',
+    objective: '5.2',
+    topic: 'Cable-test wiremap — reversed pair',
+    title: 'Bedroom jack links at gigabit speeds only rarely',
+    estMinutes: 6,
+    scenario: 'A homeowner’s kid’s bedroom jack links most of the time but rarely holds a gigabit negotiation, often falling back to 100 Mbps. A wiremap trace shows Pair 4’s two wires swapped with each other on the End-B side. Flag the reversed pins, then diagnose and fix it.',
+    wiremap: {
+      fault: 'reversedPair'
+    },
+    assets: {
+      reference: {
+        kind: 'wiremap',
+        host: 'Run 10 · residential structured-wiring panel → kids’ bedroom',
+        pins: [
+          {
+            pin: 1,
+            pairId: 2,
+            endBPin: 1,
+            select: true
+          },
+          {
+            pin: 2,
+            pairId: 2,
+            endBPin: 2,
+            select: true
+          },
+          {
+            pin: 3,
+            pairId: 3,
+            endBPin: 3,
+            select: true
+          },
+          {
+            pin: 4,
+            pairId: 1,
+            endBPin: 4,
+            select: true
+          },
+          {
+            pin: 5,
+            pairId: 1,
+            endBPin: 5,
+            select: true
+          },
+          {
+            pin: 6,
+            pairId: 3,
+            endBPin: 6,
+            select: true
+          },
+          {
+            pin: 7,
+            pairId: 4,
+            endBPin: 8,
+            select: true
+          },
+          {
+            pin: 8,
+            pairId: 4,
+            endBPin: 7,
+            select: true
+          }
+        ]
+      }
+    },
+    steps: [
+      {
+        id: 'flag',
+        type: 'analyze',
+        points: 1,
+        prompt: 'Flag the End-A pin(s) responsible for the fault shown in the wiremap.',
+        explanation: 'Pins 7 and 8 swap End-B positions, and both belong to the SAME pair (Pair 4) — a reversed pair, which is exactly the kind of fault that can prevent a stable gigabit negotiation on some hardware.',
+        payload: {
+          multi: true,
+          mode: 'wiremapPins'
+        },
+        answer: {
+          selected: [
+            '7',
+            '8'
+          ]
+        }
+      },
+      {
+        id: 'dx',
+        type: 'configure',
+        points: 1,
+        prompt: 'Classify the fault and select the correct fix.',
+        explanation: 'Reversing the two wires within a single pair rarely breaks the link outright but can prevent higher-speed negotiation or cause intermittent renegotiation. Re-terminate so the pair’s two wires land in their correct order.',
+        payload: {
+          slots: [
+            {
+              id: 'faultType',
+              label: 'Fault type',
+              options: [
+                {
+                  id: 'a',
+                  text: 'Reversed pair — both wires of one pair are swapped'
+                },
+                {
+                  id: 'b',
+                  text: 'Split pair — two wires from different pairs were crossed'
+                }
+              ]
+            },
+            {
+              id: 'fix',
+              label: 'Fix',
+              options: [
+                {
+                  id: 'a',
+                  text: 'Re-terminate so the pair’s two wires land in their correct order'
+                },
+                {
+                  id: 'b',
+                  text: 'Swap the patch cable for a longer run of the same category'
+                }
+              ]
+            }
+          ]
+        },
+        answer: {
+          slots: {
+            faultType: 'a',
+            fix: 'a'
+          }
+        }
+      }
+    ]
   }
 ];
