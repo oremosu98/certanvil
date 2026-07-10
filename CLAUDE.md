@@ -115,9 +115,9 @@ npx playwright test              # E2E (tests/e2e/app.spec.js)
 
 | Version | Features Added |
 |---|---|
+| v7.64.0 | Sim Lab Wave 3 PBQs: Switch Port-Map Grid, Cable-Test Wiremap, PC Build Spec-Off, RAID Workbench |
 | v7.63.0 | Sim Lab Wave 2 PBQs: CLI Fault Isolation, Network Discovery Audit, Command-Output Evidence Triage |
 | v7.62.0 | Sim Lab Wave 1 PBQs: Wireless Deployment, Firewall Rule Table, SOHO Router |
-| v7.61.0 | Sim Lab PBQ archetypes: Diagram, Incident Response, Defense in Depth |
 
 _Older releases (v7.60.0 and back) live in [CHANGELOG.md](./CHANGELOG.md)._
 
