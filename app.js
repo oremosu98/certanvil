@@ -1,9 +1,9 @@
 // ══════════════════════════════════════════
-// Network+ AI Quiz — app.js  v7.65.0
+// Network+ AI Quiz — app.js  v7.65.1
 // ══════════════════════════════════════════
 
 // ── CONSTANTS ──
-const APP_VERSION = '7.65.0';
+const APP_VERSION = '7.65.1';
 // v4.99.45 (Phase 6b): expose APP_VERSION on window so the web-vitals
 // collector (lib/web-vitals-collector.js, loaded BEFORE app.js so its
 // PerformanceObservers attach earlier) can stamp this version onto every
@@ -8204,6 +8204,18 @@ async function startQuiz() {
   activeQuizTopic = topic.includes('Smart')
     ? getSpacedRepTopic()
     : topic;
+
+  // v7.65.1: dismiss the Custom Quiz picker before navigating. It's a <details>
+  // overlay portaled to <body> (z-index 140) that only closes on Escape /
+  // backdrop / summary — nothing here closed it, so showPage('loading') below
+  // swapped the underlying page WHILE the picker stayed on top. Generation then
+  // ran behind the picker: the user saw "nothing happens", or a lag until the
+  // picker was incidentally dismissed. Setting .open = false reuses the modal's
+  // own teardown (un-portal + restore <html> overflow). Placed AFTER the gates
+  // and key check so early-returns (quota / sign-in prompt anchored in the
+  // modal) still leave it open; harmless no-op if already closed.
+  var _cqPicker = document.getElementById('custom-quiz-section');
+  if (_cqPicker && _cqPicker.open) _cqPicker.open = false;
 
   document.getElementById('load-progress').classList.add('is-hidden');
   showPage('loading');

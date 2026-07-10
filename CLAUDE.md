@@ -115,9 +115,9 @@ npx playwright test              # E2E (tests/e2e/app.spec.js)
 
 | Version | Features Added |
 |---|---|
+| v7.65.1 | Fix: Custom Quiz Generate now dismisses the picker so the loading screen shows immediately |
 | v7.65.0 | Sec+ Technical Change Management topic + exemplar-prompt formatter fix + Domain 5 rebalance |
 | v7.64.0 | Sim Lab Wave 3 PBQs: Switch Port-Map Grid, Cable-Test Wiremap, PC Build Spec-Off, RAID Workbench |
-| v7.63.0 | Sim Lab Wave 2 PBQs: CLI Fault Isolation, Network Discovery Audit, Command-Output Evidence Triage |
 
 _Older releases (v7.60.0 and back) live in [CHANGELOG.md](./CHANGELOG.md)._
 
