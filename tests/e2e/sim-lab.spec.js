@@ -368,12 +368,16 @@ test('feedback reveals explanation for wrong steps, withholds for right ones (fr
 
 test('generateScenario validates model output and falls back to seed on failure', async ({ page }) => {
   await gotoApp(page);
-  const id = await page.evaluate(async () => {
+  const result = await page.evaluate(async () => {
     window._simLab.__setFetcher(async () => ({ nonsense: true })); // bad model output
     const scn = await window._simLab.generateScenario('netplus');
-    return scn.id;
+    const bank = window._simLab.slBank('netplus');
+    return { id: scn.id, isRealSeed: bank.some(function (s) { return s.id === scn.id; }) };
   });
-  expect(id).toMatch(/^np-seed-/); // fell back to a seed scenario
+  // Fell back to a real netplus seed scenario (id prefix varies — np-seed-/np-diag-/np-pm-/np-cbl-/etc.
+  // are all legitimate seed-bank naming conventions across waves; the fallback contract is "picked a
+  // real scenario from the bank", not any one specific prefix).
+  expect(result.isRealSeed).toBe(true);
 });
 
 test('practice timer counts up and fires the pacing nudge past estMinutes', async ({ page }) => {
