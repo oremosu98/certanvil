@@ -6661,6 +6661,34 @@ test('v4.58.0 JS: exemplar block inserted into prompt after Difficulty line',
     // Scenario field omitted when absent (no empty "Scenario: " line)
     test('v4.58.0 sandbox: exemplar without scenario omits the line entirely',
       !formatted.includes('Scenario:'));
+
+    // ── v7.65.0: multi-select exemplars were injected with a BLANK Answer line
+    // (formatter read `ex.answer`, but multi-selects store `ex.answers`) and
+    // their option E was silently dropped (formatter hardcoded A-D). ──
+    const multiSelectEx = [{
+      type: 'multi-select', topic: 'OSI Model', question: 'QMS',
+      options: { A: 'a', B: 'b', C: 'c', D: 'd', E: 'e' },
+      answers: ['A', 'D'], explanation: 'ems', source: 'curated'
+    }];
+    const formattedMulti = formatFn(multiSelectEx);
+    test('v7.65.0 sandbox: multi-select exemplar renders its answers[] set (was blank)',
+      formattedMulti.includes('Answer: A, D'));
+    test('v7.65.0 sandbox: multi-select exemplar renders option E (was dropped)',
+      formattedMulti.includes('E) e'));
+    test('v7.65.0 sandbox: multi-select exemplar is labelled as multi-select for the model',
+      formattedMulti.includes('Type: multi-select'));
+    test('v7.65.0 sandbox: single-answer MCQ still renders its scalar answer',
+      formatted.includes('Answer: A') && !formatted.includes('Type: multi-select'));
+    test('v7.65.0 sandbox: MCQ without option E omits the E line entirely',
+      !formatted.includes('E)'));
+    // Legacy shape: a handful of exemplars store the array under `answer`.
+    const legacyArrayAnswer = formatFn([{ ...multiSelectEx[0], answers: undefined, answer: ['B', 'C'] }]);
+    test('v7.65.0 sandbox: legacy array-under-answer shape also renders (defensive)',
+      legacyArrayAnswer.includes('Answer: B, C'));
+    // Cert-agnostic framing: CERT_PACK is absent in this sandbox, so the guard
+    // must fall back rather than throw (the function is used by Sec+ too).
+    test('v7.65.0 sandbox: framing line falls back to a cert code without CERT_PACK defined',
+      /explanation depth, and [A-Z0-9-]+ framing/.test(formatted));
   } catch (e) {
     test('v4.58.0 sandbox: helpers execute without error', false);
   }
@@ -14029,19 +14057,19 @@ test('v4.87.0 SecplusBanner: orange-amber gradient (rgba(245,158,11))',
   /\.secplus-private-banner[\s\S]{0,400}rgba\(245,158,11/.test(css));
 
 // ── Security+ cert pack content ──
-test('v4.87.0 SecplusContent: topicDomains has 37 SY0-701 topics',
+test('v4.87.0 SecplusContent: topicDomains has 38 SY0-701 topics',
   (() => {
     const m = certSecplus.match(/topicDomains:\s*\{([\s\S]*?)\n\s*\},/);
     if (!m) return false;
     const keyLines = m[1].split('\n').filter(l => /^\s*'[^']+':\s*'(concepts|threats|architecture|operations|governance)'/.test(l));
-    return keyLines.length === 37;
+    return keyLines.length === 38;
   })());
-test('v4.87.0 SecplusContent: topicResources populated (37 entries)',
+test('v4.87.0 SecplusContent: topicResources populated (38 entries)',
   (() => {
     const m = certSecplus.match(/topicResources:\s*\{([\s\S]*?)\n\s*\},/);
     if (!m) return false;
     const keyLines = m[1].split('\n').filter(l => /^\s*'[^']+':\s*\{\s*obj:/.test(l));
-    return keyLines.length === 37;
+    return keyLines.length === 38;
   })());
 test('v4.87.0 SecplusContent: domainWeights sum to 1.00',
   (() => {

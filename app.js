@@ -306,27 +306,39 @@ function _pickExemplarsForTopic(qTopic, max) {
 // the model reads these as STYLE references ("use this quality bar"), NOT as
 // content to duplicate. Empty input → empty string (zero prompt-length cost
 // when the bank is empty).
+// Multi-select exemplars key their correct set as `answers: ['A','B']` (the same
+// shape the runtime scorer reads) and may carry options beyond D; single-answer
+// MCQs use `answer: 'B'`. Read both keys, and emit only the option letters that
+// actually exist — hardcoding A-D silently dropped option E from every
+// multi-select exemplar, and reading `answer` alone rendered their Answer line
+// blank. Kept self-contained (no external helpers, CERT_PACK typeof-guarded) so
+// UAT can extract and run this body in a bare vm sandbox.
 function _formatExemplarsForPrompt(exemplars) {
   if (!Array.isArray(exemplars) || exemplars.length === 0) return '';
   const blocks = exemplars.map((ex, i) => {
     const opts = (ex && ex.options) || {};
+    const answerText = Array.isArray(ex.answers) ? ex.answers.join(', ')
+      : Array.isArray(ex.answer) ? ex.answer.join(', ')
+      : (ex.answer || '');
+    const optLines = ['A', 'B', 'C', 'D', 'E', 'F']
+      .filter(function (k) { return opts[k]; })
+      .map(function (k) { return `${k}) ${opts[k]}`; });
     const lines = [
       `EXEMPLAR ${i + 1}:`,
       `Question: ${ex.question || ''}`,
       ex.scenario ? `Scenario: ${ex.scenario}` : null,
-      `A) ${opts.A || ''}`,
-      `B) ${opts.B || ''}`,
-      `C) ${opts.C || ''}`,
-      `D) ${opts.D || ''}`,
-      `Answer: ${ex.answer || ''}`,
+      ex.type === 'multi-select' ? 'Type: multi-select (more than one correct answer)' : null
+    ].concat(optLines).concat([
+      `Answer: ${answerText}`,
       `Explanation: ${ex.explanation || ''}`
-    ].filter(Boolean);
+    ]).filter(Boolean);
     return lines.join('\n');
   }).join('\n\n');
+  const certCode = (typeof CERT_PACK !== 'undefined' && CERT_PACK && CERT_PACK.meta && CERT_PACK.meta.code) || 'N10-009';
   return `
 QUALITY REFERENCE — use these curated exemplars as the bar for stem clarity,
-distractor plausibility (all 4 options must be tempting, not 3 throwaways),
-explanation depth, and N10-009 framing. DO NOT copy these exemplars into your
+distractor plausibility (every option must be tempting, not throwaways),
+explanation depth, and ${certCode} framing. DO NOT copy these exemplars into your
 output — they are style references only. Write NEW questions of equal quality:
 
 ${blocks}
@@ -21542,6 +21554,7 @@ function renderSetupDomainGrid() {
       { label: 'Security Controls', key: 'Security Controls' },
       { label: 'CIA Triad & AAA',   key: 'CIA Triad & AAA' },
       { label: 'Change Mgmt',       key: 'Change Management' },
+      { label: 'Technical Change Mgmt', key: 'Technical Change Management' },
       { label: 'Cryptography',      key: 'Cryptography Fundamentals' },
       { label: 'PKI',               key: 'PKI & Certificate Management' },
     ],
