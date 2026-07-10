@@ -25889,6 +25889,113 @@ console.log('\n\x1b[1m── T7: DRILLS ANALYTICS GROUP + FINAL COPY + BRONZE TO
   assert(raid(raidBuildScn('RAID 6', '4', '2', 4, 2)).ok === true, 'raid: sound RAID6 4x2TB scenario passes');
 })();
 
+// ── Wave 3 Task 13: A+ Core 1 RAID Workbench seed-bank validation ──
+// The 13 consensus-approved (two-agent gated) raid scenarios now live for real
+// in features/sim-lab-seed-aplus-core1.js (window.SIM_LAB_SEED_APLUS_CORE1).
+// This proves every one of them is real, production-ready content: each
+// passes the same pure validators that gate the dev fixture above
+// (simLabValidateScenario + simLabValidateRaidFidelity), extracted from
+// features/sim-lab.js the same way the Task 12 block does, plus a RAID-level
+// coverage cross-check that all 5 RAID levels appear at least once in the
+// keyed 'build' answer.
+(function () {
+  console.log('\n\x1b[1m── Sim Lab: A+ Core 1 RAID Workbench seed-bank validation (Wave 3 Task 13) ──\x1b[0m');
+  try {
+    var vm = require('vm');
+    var grab = function (n) { return _fnBody(js, n); };
+
+    var isNonEmptyStrBody    = grab('_isNonEmptyStr');
+    var validatePayloadBody  = grab('_validateStepPayload');
+    var validateScenarioBody = grab('simLabValidateScenario');
+    var stepTypesMatch = js.match(/var STEP_TYPES\s*=\s*\[[^\]]+\]/);
+    var stepTypesDecl = stepTypesMatch ? stepTypesMatch[0] + ';' : "var STEP_TYPES = ['order','categorize','match','analyze','fillin','configure'];";
+    var resolveSlotBody = grab('_slFidelityResolveSlot');
+    var metaVar = (js.match(/var _RAID_LEVEL_META = \{[\s\S]*?\n\s*\};/) || [''])[0];
+    var raidLevelKeyBody = grab('_raidLevelKey');
+    var raidFidelityBody = grab('simLabValidateRaidFidelity');
+
+    if (!isNonEmptyStrBody || !validatePayloadBody || !validateScenarioBody ||
+        !resolveSlotBody || !metaVar || !raidLevelKeyBody || !raidFidelityBody) {
+      test('A+ Core 1 RAID bank: validator helper extraction succeeded', false);
+      results.errors.push('could not extract validator helpers for Wave 3 Task 13 bank test; check names/indenting');
+      return;
+    }
+
+    var vCtx = {};
+    vm.createContext(vCtx);
+    vm.runInContext(stepTypesDecl, vCtx);
+    vm.runInContext(isNonEmptyStrBody, vCtx);
+    vm.runInContext(validatePayloadBody, vCtx);
+    vm.runInContext(validateScenarioBody, vCtx);
+    vm.runInContext(resolveSlotBody, vCtx);
+    vm.runInContext(metaVar, vCtx);
+    vm.runInContext(raidLevelKeyBody, vCtx);
+    vm.runInContext(raidFidelityBody, vCtx);
+    vm.runInContext('globalThis.__validate = simLabValidateScenario; globalThis.__raidFidelity = simLabValidateRaidFidelity;', vCtx);
+    var simLabValidateScenario = vCtx.__validate;
+    var simLabValidateRaidFidelity = vCtx.__raidFidelity;
+
+    // ── Load the real seed bank: eval features/sim-lab-seed-aplus-core1.js in
+    // a sandbox with `var window = {}` so window.SIM_LAB_SEED_APLUS_CORE1 populates ──
+    var seedSrc = read('features/sim-lab-seed-aplus-core1.js');
+    var seedCtx = {};
+    vm.createContext(seedCtx);
+    vm.runInContext('var window = {};\n' + seedSrc + '\nglobalThis.__seed = window.SIM_LAB_SEED_APLUS_CORE1;', seedCtx);
+    var bank = seedCtx.__seed;
+
+    test('A+ Core 1 RAID bank: window.SIM_LAB_SEED_APLUS_CORE1 loaded as an array',
+      Array.isArray(bank));
+    if (!Array.isArray(bank)) {
+      results.errors.push('could not load window.SIM_LAB_SEED_APLUS_CORE1 from features/sim-lab-seed-aplus-core1.js');
+      return;
+    }
+
+    var raidScenarios = bank.filter(function (s) { return s && s.archetype === 'raid'; });
+    test('A+ Core 1 RAID bank: at least 10 raid-archetype scenarios present',
+      raidScenarios.length >= 10);
+
+    var allValidateOk = true, allFidelityOk = true, allCertOk = true;
+    raidScenarios.forEach(function (s) {
+      var vr = simLabValidateScenario(s);
+      if (!vr || vr.ok !== true) {
+        allValidateOk = false;
+        results.errors.push('A+ Core 1 RAID bank: ' + (s && s.id) + ' failed simLabValidateScenario: ' + JSON.stringify(vr && vr.errors));
+      }
+      var fr = simLabValidateRaidFidelity(s);
+      if (!fr || fr.ok !== true) {
+        allFidelityOk = false;
+        results.errors.push('A+ Core 1 RAID bank: ' + (s && s.id) + ' failed simLabValidateRaidFidelity: ' + JSON.stringify(fr && fr.errors));
+      }
+      if (!s || s.cert !== 'aplus-core1') {
+        allCertOk = false;
+        results.errors.push('A+ Core 1 RAID bank: ' + (s && s.id) + ' has cert !== aplus-core1: ' + JSON.stringify(s && s.cert));
+      }
+    });
+
+    test('A+ Core 1 RAID bank: every raid scenario passes simLabValidateScenario',
+      allValidateOk);
+    test('A+ Core 1 RAID bank: every raid scenario passes simLabValidateRaidFidelity',
+      allFidelityOk);
+    test('A+ Core 1 RAID bank: every raid scenario has cert === aplus-core1',
+      allCertOk);
+
+    // Coverage cross-check: every RAID level (0/1/5/6/10) appears at least
+    // once as the keyed 'build' answer somewhere in the bank.
+    ['RAID 0', 'RAID 1', 'RAID 5', 'RAID 6', 'RAID 10'].forEach(function (lvl) {
+      test('raid bank covers ' + lvl, raidScenarios.some(function (s) {
+        var cfg = s.steps.filter(function (st) { return st.id === 'build'; })[0];
+        var keyedText = cfg.payload.slots.filter(function (sl) { return sl.id === 'level'; })[0].options
+          .filter(function (o) { return o.id === cfg.answer.slots.level; })[0].text;
+        return keyedText.indexOf(lvl) !== -1;
+      }));
+    });
+
+  } catch (err) {
+    test('A+ Core 1 RAID bank: vm smoke test (threw)', false);
+    results.errors.push('A+ Core 1 RAID bank smoke test threw: ' + err.message);
+  }
+})();
+
 // ── Summary ──
 console.log('\n' + '═'.repeat(50));
 const total = results.pass + results.fail;
