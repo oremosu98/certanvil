@@ -25530,6 +25530,118 @@ console.log('\n\x1b[1m── T7: DRILLS ANALYTICS GROUP + FINAL COPY + BRONZE TO
   }
 })();
 
+// ── Wave 3 Task 12: A+ Core 1 Two-Client PC Build Spec-Off seed-bank validation ──
+// The 11 consensus-approved (two-agent gated) pcbuild scenarios now live for
+// real in features/sim-lab-seed-aplus-core1.js (window.SIM_LAB_SEED_APLUS_CORE1).
+// This proves every one of them is real, production-ready content: each passes
+// the same pure validators that gate the dev fixtures above
+// (simLabValidateScenario + simLabValidatePcBuildFidelity), extracted from
+// features/sim-lab.js the same way the Wave 3 Task 7/11 blocks do, plus a
+// catalog-key cross-check that also covers every DISTRACTOR option id, not
+// just the keyed-correct one the fidelity validator alone would exercise.
+(function () {
+  console.log('\n\x1b[1m── Sim Lab: A+ Core 1 Two-Client PC Build Spec-Off seed-bank validation (Wave 3 Task 12) ──\x1b[0m');
+  try {
+    var vm = require('vm');
+    var grab = function (n) { return _fnBody(js, n); };
+
+    var catVar = (js.match(/var _PARTS_CATALOG = \{[\s\S]*?\n\s*\};/) || [''])[0];
+    var isNonEmptyStrBody    = grab('_isNonEmptyStr');
+    var validatePayloadBody  = grab('_validateStepPayload');
+    var validateScenarioBody = grab('simLabValidateScenario');
+    var stepTypesMatch = js.match(/var STEP_TYPES\s*=\s*\[[^\]]+\]/);
+    var stepTypesDecl = stepTypesMatch ? stepTypesMatch[0] + ';' : "var STEP_TYPES = ['order','categorize','match','analyze','fillin','configure'];";
+    var resolveSlotBody   = grab('_slFidelityResolveSlot');
+    var resolveSlotIdBody = grab('_slFidelityResolveSlotId');
+    var pcbFidelityBody   = grab('simLabValidatePcBuildFidelity');
+
+    if (!catVar || !isNonEmptyStrBody || !validatePayloadBody || !validateScenarioBody ||
+        !resolveSlotBody || !resolveSlotIdBody || !pcbFidelityBody) {
+      test('A+ Core 1 PC Build bank: validator helper extraction succeeded', false);
+      results.errors.push('could not extract validator helpers for Wave 3 Task 12 bank test; check names/indenting');
+      return;
+    }
+
+    var vCtx = {};
+    vm.createContext(vCtx);
+    vm.runInContext(stepTypesDecl, vCtx);
+    vm.runInContext(isNonEmptyStrBody, vCtx);
+    vm.runInContext(validatePayloadBody, vCtx);
+    vm.runInContext(validateScenarioBody, vCtx);
+    vm.runInContext(resolveSlotBody, vCtx);
+    vm.runInContext(resolveSlotIdBody, vCtx);
+    vm.runInContext(catVar, vCtx);
+    vm.runInContext(pcbFidelityBody, vCtx);
+    vm.runInContext('globalThis.__validate = simLabValidateScenario; globalThis.__pcbFidelity = simLabValidatePcBuildFidelity; globalThis.__catalog = _PARTS_CATALOG;', vCtx);
+    var simLabValidateScenario = vCtx.__validate;
+    var simLabValidatePcBuildFidelity = vCtx.__pcbFidelity;
+    var PARTS_CATALOG = vCtx.__catalog;
+    var PARTS_CATALOG_KEYS = Object.keys(PARTS_CATALOG);
+
+    // ── Load the real seed bank: eval features/sim-lab-seed-aplus-core1.js in
+    // a sandbox with `var window = {}` so window.SIM_LAB_SEED_APLUS_CORE1 populates ──
+    var seedSrc = read('features/sim-lab-seed-aplus-core1.js');
+    var seedCtx = {};
+    vm.createContext(seedCtx);
+    vm.runInContext('var window = {};\n' + seedSrc + '\nglobalThis.__seed = window.SIM_LAB_SEED_APLUS_CORE1;', seedCtx);
+    var seedBank = seedCtx.__seed;
+
+    test('A+ Core 1 PC Build bank: window.SIM_LAB_SEED_APLUS_CORE1 loaded as an array',
+      Array.isArray(seedBank));
+    if (!Array.isArray(seedBank)) {
+      results.errors.push('could not load window.SIM_LAB_SEED_APLUS_CORE1 from features/sim-lab-seed-aplus-core1.js');
+      return;
+    }
+
+    var pcbScenarios = seedBank.filter(function (s) { return s && s.archetype === 'pcbuild'; });
+    test('A+ Core 1 PC Build bank: at least 10 pcbuild-archetype scenarios present',
+      pcbScenarios.length >= 10);
+
+    var allValidateOk = true, allFidelityOk = true, allCertOk = true;
+    pcbScenarios.forEach(function (s) {
+      var vr = simLabValidateScenario(s);
+      if (!vr || vr.ok !== true) {
+        allValidateOk = false;
+        results.errors.push('A+ Core 1 PC Build bank: ' + (s && s.id) + ' failed simLabValidateScenario: ' + JSON.stringify(vr && vr.errors));
+      }
+      var fr = simLabValidatePcBuildFidelity(s);
+      if (!fr || fr.ok !== true) {
+        allFidelityOk = false;
+        results.errors.push('A+ Core 1 PC Build bank: ' + (s && s.id) + ' failed simLabValidatePcBuildFidelity: ' + JSON.stringify(fr && fr.errors));
+      }
+      if (!s || s.cert !== 'aplus-core1') {
+        allCertOk = false;
+        results.errors.push('A+ Core 1 PC Build bank: ' + (s && s.id) + ' has cert !== aplus-core1: ' + JSON.stringify(s && s.cert));
+      }
+    });
+
+    test('A+ Core 1 PC Build bank: every pcbuild scenario passes simLabValidateScenario',
+      allValidateOk);
+    test('A+ Core 1 PC Build bank: every pcbuild scenario passes simLabValidatePcBuildFidelity',
+      allFidelityOk);
+    test('A+ Core 1 PC Build bank: every pcbuild scenario has cert === aplus-core1',
+      allCertOk);
+
+    // Catalog-key cross-check: every slot option id across BOTH clients
+    // (including distractors, not just the keyed-correct option) must resolve
+    // in the shared _PARTS_CATALOG — catches a typo'd distractor part id that
+    // the fidelity validator alone would never exercise.
+    pcbScenarios.forEach(function (s) {
+      ['clientA', 'clientB'].forEach(function (ck) {
+        var cfg = s.steps.filter(function (st) { return st.id === ck; })[0];
+        var allKnown = !!cfg && cfg.payload.slots.every(function (sl) {
+          return sl.options.every(function (o) { return PARTS_CATALOG_KEYS.indexOf(o.id) !== -1; });
+        });
+        test('pcbuild ' + s.id + ' ' + ck + ': every slot option id (incl. distractors) resolves in the shared catalog', allKnown);
+      });
+    });
+
+  } catch (err) {
+    test('A+ Core 1 PC Build bank: vm smoke test (threw)', false);
+    results.errors.push('A+ Core 1 PC Build bank smoke test threw: ' + err.message);
+  }
+})();
+
 // ── Wave 3 Task 6: wiremap fidelity validator ──
 (function () {
   var vm = require('vm');
