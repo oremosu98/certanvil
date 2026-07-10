@@ -4501,9 +4501,9 @@ html[data-theme] body .celebration-toast-sub{color:var(--text-dim,rgba(255,255,2
 .port-poe-fault { border-color: color-mix(in oklab, var(--fail) 55%, var(--border)); color: var(--fail); font-weight: 800; }
 .port-poe-fault::after { background: var(--fail); animation: faceplateLedPulse 1.15s ease infinite; }
 .port-inert { cursor: default; opacity: .5; }
-.port.sl-sel { border-color: color-mix(in oklab, var(--accent) 40%, var(--border)); background: color-mix(in oklab, var(--accent) 10%, transparent); }
-.port-poe-fault.sl-sel { border-color: color-mix(in oklab, var(--fail) 55%, var(--accent) 30%); box-shadow: 0 0 0 2px color-mix(in oklab, var(--accent) 45%, transparent); }
-.port-err-disabled.sl-sel { border-color: color-mix(in oklab, var(--fail) 40%, var(--accent) 35%); }
+.port.sl-sel { border-width: 2px; border-color: color-mix(in oklab, var(--accent) 40%, var(--border)); background: color-mix(in oklab, var(--accent) 10%, transparent); transform: scale(1.04); }
+.port-poe-fault.sl-sel { border-width: 2px; border-color: color-mix(in oklab, var(--fail) 55%, var(--accent) 30%); box-shadow: 0 0 0 2px color-mix(in oklab, var(--accent) 45%, transparent); transform: scale(1.04); }
+.port-err-disabled.sl-sel { border-width: 2px; border-color: color-mix(in oklab, var(--fail) 40%, var(--accent) 35%); }
 @keyframes faceplateLedPulse { 0%, 100% { opacity: 1; } 50% { opacity: .35; } }
 @media (prefers-reduced-motion: reduce) { .port-poe-fault::after { animation: none !important; } }
 
