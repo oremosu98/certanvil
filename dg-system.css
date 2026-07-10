@@ -4474,9 +4474,13 @@ html[data-theme] body .celebration-toast-sub{color:var(--text-dim,rgba(255,255,2
 @media (prefers-reduced-motion: reduce) { .term-anim { animation: none !important; } }
 
 /* ── Sim Lab faceplate/port-grid reference (Wave 3) ──────────────────────
-   Faithful STYLE lift of the approved switch-port-map mockup's .portgrid/
-   .port/.led-* renderer, remapped onto the engine's `faceplate` interface
-   class names. Mockup tokens mapped per this file's existing precedent
+   STYLE lift of the approved switch-port-map mockup's .portgrid/.port/
+   .led-* renderer, remapped onto the ACTUAL DOM `_slRenderRefFaceplate`
+   emits: a flat `.port`/`.port-inert` button/div carrying its label as a
+   bare text node plus a `port-<led>` state class directly on itself — no
+   `.pnum`/`.pled` child spans ever render, so the LED indicator is done
+   via a `::after` pseudo-element dot on `.port` itself, driven by the
+   state class. Mockup tokens mapped per this file's existing precedent
    (Task 7 term* block, Task 6/2797-2798 button block): --ink→--text,
    --ink-soft→--text-mid, --muted→--text-mid, --border-soft→--border,
    --ease→literal `ease`, --surface-2 uses the file's existing fallback
@@ -4484,58 +4488,56 @@ html[data-theme] body .celebration-toast-sub{color:var(--text-dim,rgba(255,255,2
 .faceplate { margin: 8px 0; background: var(--surface-2, color-mix(in oklab, var(--text) 4%, var(--surface))); border: 1px solid var(--border); border-radius: 13px; overflow: hidden; }
 .faceplate-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 9px 13px; border-bottom: 1px solid var(--border); background: color-mix(in oklab, var(--text) 5%, transparent); font-size: 10.5px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-mid); }
 .faceplate-grid { display: flex; flex-wrap: wrap; gap: 8px; padding: 14px 16px; transition: opacity .26s ease, filter .26s ease; }
-.port { box-sizing: border-box; width: 40px; height: 52px; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 5px; padding: 6px 0 8px; position: relative; border: 1px solid var(--border); border-radius: 9px; background: var(--surface); font: inherit; cursor: pointer; transition: transform .15s ease, border-color .18s ease, background-color .18s ease, box-shadow .18s ease; }
+.port { box-sizing: border-box; width: 40px; height: 52px; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 5px; padding: 6px 0 8px; position: relative; border: 1px solid var(--border); border-radius: 9px; background: var(--surface); font: inherit; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 10px; font-weight: 700; color: var(--text-mid); cursor: pointer; transition: transform .15s ease, border-color .18s ease, background-color .18s ease, box-shadow .18s ease, color .18s ease; }
 .port:active { transform: scale(.95); }
 .port:focus-visible { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in oklab, var(--accent) 24%, transparent); }
-.port .pnum { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 10px; font-weight: 700; color: var(--text-mid); }
-.port .pled { width: 16px; height: 5px; border-radius: 3px; background: color-mix(in oklab, var(--text-mid) 40%, transparent); }
-.port-up { border-color: color-mix(in oklab, var(--pass) 40%, var(--border)); }
-.port-up .pled { background: var(--pass); }
-.port-up .pnum { color: var(--text); }
-.port-down .pled { background: color-mix(in oklab, var(--text-mid) 40%, transparent); }
-.port-down .pnum { color: var(--text-mid); }
+.port::after { content: ""; width: 16px; height: 5px; border-radius: 3px; background: color-mix(in oklab, var(--text-mid) 40%, transparent); }
+.port-up { border-color: color-mix(in oklab, var(--pass) 40%, var(--border)); color: var(--text); }
+.port-up::after { background: var(--pass); }
+.port-down { color: var(--text-mid); }
+.port-down::after { background: color-mix(in oklab, var(--text-mid) 40%, transparent); }
 .port-err-disabled { opacity: .6; }
-.port-err-disabled .pled { background: color-mix(in oklab, var(--fail) 55%, transparent); }
-.port-poe-fault { border-color: color-mix(in oklab, var(--fail) 55%, var(--border)); }
-.port-poe-fault .pled { background: var(--fail); animation: faceplateLedPulse 1.15s ease infinite; }
-.port-poe-fault .pnum { color: var(--fail); font-weight: 800; }
+.port-err-disabled::after { background: color-mix(in oklab, var(--fail) 55%, transparent); }
+.port-poe-fault { border-color: color-mix(in oklab, var(--fail) 55%, var(--border)); color: var(--fail); font-weight: 800; }
+.port-poe-fault::after { background: var(--fail); animation: faceplateLedPulse 1.15s ease infinite; }
 .port-inert { cursor: default; opacity: .5; }
 @keyframes faceplateLedPulse { 0%, 100% { opacity: 1; } 50% { opacity: .35; } }
-@media (prefers-reduced-motion: reduce) { .port-poe-fault .pled { animation: none !important; } }
+@media (prefers-reduced-motion: reduce) { .port-poe-fault::after { animation: none !important; } }
 
 /* ── Sim Lab wiremap reference (Wave 3) ───────────────────────────────────
-   Faithful STYLE lift of the approved cable-test-wiremap mockup's .wm-*
-   renderer, remapped onto the engine's `wiremap` interface class names.
-   Same token-substitution precedent as the faceplate block above; pair
-   swatches (.wm-pair-1..4) are static per-pair color classes rather than
-   the mockup's runtime `--c`/`--exp`/`--wire` JS-set custom props, so no
-   new runtime-param gap is introduced (mirrors the existing --base/--r0/
-   --len baseline explaining runtime SVG-only custom props). */
+   STYLE lift of the approved cable-test-wiremap mockup's .wm-* renderer,
+   remapped onto the ACTUAL DOM `_slRenderRefWiremap` emits: `wm-pair-N`
+   is applied DIRECTLY to the `.wm-pin` button / `.wm-endb` div itself —
+   there is no child `i`/`.wm-dot` swatch element, so the pair colors are
+   painted on the pin/end-b element's own background, not a child. The map
+   is purely illustrative evidence (all pins render, nothing binds a click
+   handler to add hit/miss/false/selection state), so those aspirational
+   result classes were dropped rather than styled — see wiremap renderer
+   comment in features/sim-lab.js. Same token-substitution precedent as
+   the faceplate block above. */
 .wiremap { margin: 8px 0; background: var(--surface-2, color-mix(in oklab, var(--text) 4%, var(--surface))); border: 1px solid var(--border); border-radius: 13px; overflow: hidden; padding: 12px 8px 14px; }
 .wiremap-grid { position: relative; display: grid; grid-template-columns: 43% 14% 43%; row-gap: 3px; }
-.wm-pin { position: relative; display: flex; align-items: center; gap: 8px; grid-column: 1; width: 100%; font: inherit; text-align: left; cursor: pointer; border: 1px solid transparent; border-radius: 7px; padding: 3px 6px; background: transparent; color: var(--text-mid); transition: transform .15s ease, border-color .18s ease, background-color .18s ease; }
+.wm-pin { position: relative; display: flex; align-items: center; gap: 8px; grid-column: 1; width: 100%; font: inherit; text-align: left; cursor: pointer; border: 1px solid var(--border); border-radius: 7px; padding: 3px 6px; background: var(--surface); color: var(--text-mid); transition: transform .15s ease, border-color .18s ease, background-color .18s ease; }
 .wm-pin:active { transform: scale(.97); }
 .wm-pin:focus-visible { outline: none; border-color: color-mix(in oklab, var(--accent) 55%, var(--border)); box-shadow: 0 0 0 3px color-mix(in oklab, var(--accent) 16%, transparent); }
-.wm-pin.sl-sel { border-color: color-mix(in oklab, var(--accent) 40%, var(--border)); background: color-mix(in oklab, var(--accent) 10%, transparent); }
-.wm-pin.hit { border-color: color-mix(in oklab, var(--pass) 55%, var(--border)); background: color-mix(in oklab, var(--pass) 11%, transparent); }
-.wm-pin.miss { border-style: dashed; border-color: color-mix(in oklab, var(--fail) 55%, var(--border)); background: transparent; }
-.wm-pin.false { border-color: color-mix(in oklab, var(--fail) 58%, var(--border)); background: color-mix(in oklab, var(--fail) 11%, transparent); }
-.wm-pair-1 i, .wm-pair-1 .wm-dot { background: var(--pass); }
-.wm-pair-2 i, .wm-pair-2 .wm-dot { background: var(--accent); }
-.wm-pair-3 i, .wm-pair-3 .wm-dot { background: var(--fail); }
-.wm-pair-4 i, .wm-pair-4 .wm-dot { background: color-mix(in oklab, var(--text-mid) 55%, transparent); }
+.wm-pair-1 { border-color: color-mix(in oklab, var(--pass) 45%, var(--border)); background: color-mix(in oklab, var(--pass) 12%, var(--surface)); }
+.wm-pair-2 { border-color: color-mix(in oklab, var(--accent) 45%, var(--border)); background: color-mix(in oklab, var(--accent) 12%, var(--surface)); }
+.wm-pair-3 { border-color: color-mix(in oklab, var(--fail) 45%, var(--border)); background: color-mix(in oklab, var(--fail) 12%, var(--surface)); }
+.wm-pair-4 { border-color: var(--border); background: color-mix(in oklab, var(--text-mid) 16%, var(--surface)); }
 .wm-endb { grid-column: 3; border-right: 4px solid var(--accent-deep, var(--accent)); flex-direction: row-reverse; text-align: right; }
 .wm-endb.open { border-style: dashed; opacity: .72; }
 .wm-endb.short { color: var(--fail); font-weight: 800; }
 
 /* ── Sim Lab slots reference (Wave 3) ──────────────────────────────────────
-   Faithful STYLE lift of the approved raid-workbench / pc-build-spec-off
-   mockups' static `.slots-diagram`/`.bay` schematic — deliberately
-   illustrative, zero interaction, zero live binding. Same token
-   substitution precedent as the two blocks above. */
-.slots-diagram { background: var(--surface-2, color-mix(in oklab, var(--text) 4%, var(--surface))); border: 1px dashed var(--border); border-radius: 16px; padding: 14px 16px; }
-.slots-diagram svg { width: 100%; height: auto; display: block; pointer-events: none; }
-.slot-bay rect { fill: var(--surface-2, color-mix(in oklab, var(--text) 4%, var(--surface))); stroke: var(--border); stroke-width: 1.2; }
-.slot-bay-label { font: 700 12px Inter, -apple-system, sans-serif; fill: var(--text); }
+   STYLE lift of the approved raid-workbench / pc-build-spec-off mockups'
+   static bay schematic — remapped onto the ACTUAL DOM `_slRenderRefSlots`
+   emits: plain `<div class="slot-bay">` wrapping a `<div class="slot-bay-
+   label">`, no `<svg>`/`<rect>` anywhere, so this is styled as ordinary
+   boxes (border/background/padding/typography) rather than SVG geometry.
+   Deliberately illustrative, zero interaction, zero live binding. Same
+   token substitution precedent as the two blocks above. */
+.slots-diagram { display: flex; flex-direction: column; gap: 8px; background: var(--surface-2, color-mix(in oklab, var(--text) 4%, var(--surface))); border: 1px dashed var(--border); border-radius: 16px; padding: 14px 16px; }
+.slot-bay { border: 1px solid var(--border); border-radius: 10px; background: var(--surface); padding: 10px 12px; }
+.slot-bay-label { font: 700 12px Inter, -apple-system, sans-serif; color: var(--text); }
 .slot-notes { display: flex; flex-wrap: wrap; gap: 6px; padding-top: 10px; }
 .slot-note { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 700; color: var(--text-mid); background: color-mix(in oklab, var(--text) 5%, transparent); border: 1px solid var(--border); border-radius: 999px; padding: 4px 9px; }
