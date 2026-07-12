@@ -1,5 +1,5 @@
 /* ══════════════════════════════════════════
-   Network+ AI Quiz — styles.css  v7.65.1
+   Network+ AI Quiz — styles.css  v7.65.2
    ══════════════════════════════════════════ */
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -10093,11 +10093,13 @@ html { zoom: 1.10; }
   font-style: italic;
   color: var(--accent-light);
 }
-[data-theme="light"] .ed-modalhead-eyebrow,
-[data-theme="light"] .ed-modalhead-eyebrow::before,
-[data-theme="light"] .ed-modalhead-title em {
-  color: #6355e0;
-}
+/* v7.65.2: removed light-theme override that hardcoded the old purple
+   (#6355e0) here with higher specificity than the base var(--accent-light)
+   rules above, so every .ed-modalhead-driven modal except #exam-modal
+   (which has its own !important override in dg-system.css) painted its
+   eyebrow/em purple in light theme after the rebrand retokenized
+   --accent-light to bronze. See also the daily-recap-card-scoped instance
+   of this same bug further below. */
 
 /* ════════════════════════════════════════════════════════════════════
    v4.54.17 — Topbar countdown + end-of-day recap + follow-up button
@@ -10262,11 +10264,11 @@ html { zoom: 1.10; }
   justify-content: flex-end;
   gap: 10px;
 }
-[data-theme="light"] .daily-recap-card .ed-modalhead-eyebrow,
-[data-theme="light"] .daily-recap-card .ed-modalhead-eyebrow::before,
-[data-theme="light"] .daily-recap-card .ed-modalhead-title em {
-  color: #a78bfa;
-}
+/* v7.65.2: removed light-theme override that hardcoded the old purple
+   (#a78bfa) here with higher specificity than the base var(--accent-light)
+   rule above, so it always won and repainted the eyebrow/em purple even
+   after the rebrand retokenized --accent-light to bronze. The card is
+   dark-glass in both themes, so the base token rule alone is correct. */
 @media (prefers-reduced-motion: reduce) {
   .daily-recap-card { animation: none !important; }
 }

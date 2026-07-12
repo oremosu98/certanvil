@@ -115,6 +115,7 @@ npx playwright test              # E2E (tests/e2e/app.spec.js)
 
 | Version | Features Added |
 |---|---|
+| v7.65.2 | Fix: light-theme purple residuals in end-of-day recap modal eyebrow/em text (rebrand gap) |
 | v7.65.1 | Fix: Custom Quiz Generate now dismisses the picker so the loading screen shows immediately |
 | v7.65.0 | Sec+ Technical Change Management topic + exemplar-prompt formatter fix + Domain 5 rebalance |
 | v7.64.0 | Sim Lab Wave 3 PBQs: Switch Port-Map Grid, Cable-Test Wiremap, PC Build Spec-Off, RAID Workbench |
