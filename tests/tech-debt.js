@@ -145,7 +145,22 @@ function _loadOrEmpty(p) {
 }
 const htmlSrc = _loadOrEmpty('index.html');
 const swSrc = _loadOrEmpty('sw.js');
-const uatSrc = _loadOrEmpty('tests/uat.js');
+// tests/uat.js was split (see tests/uat/) into a slim entry point + a
+// tests/uat/_context.js shared-loader + numbered domain modules. Dead-code
+// detection needs to see every assertion, wherever it now lives, so this
+// concatenates the entry point with every file under tests/uat/ (context +
+// all domain modules) — same coverage as reading the old monolith.
+function _loadUatConcat() {
+  let combined = _loadOrEmpty('tests/uat.js');
+  const uatDir = require('path').join(__dirname, 'uat');
+  try {
+    fs.readdirSync(uatDir)
+      .filter(f => f.endsWith('.js'))
+      .forEach(f => { combined += '\n' + _loadOrEmpty(require('path').join('tests/uat', f)); });
+  } catch (_) { /* tests/uat/ missing — fall back to just tests/uat.js */ }
+  return combined;
+}
+const uatSrc = _loadUatConcat();
 const e2eSrc = _loadOrEmpty('tests/e2e/app.spec.js');
 
 // Extract all top-level function defs

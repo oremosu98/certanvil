@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "test:uat": "node tests/uat.js",
+    "test:impact": "node scripts/test-impact.js",
     "test:e2e": "npx playwright test --project=chromium",
     "test:e2e:all": "npx playwright test",
     "test:webkit": "npx playwright test --project=webkit",
