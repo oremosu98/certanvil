@@ -166,7 +166,12 @@ DATA_SAFETY_ISSUES=""
 # (Chrome MCP), not the app's own sync module. Exempt to avoid blocking every
 # commit that touches the sync layer; review cloud-store.js writes on their own
 # merits.
-META_FILES_REGEX='^(\.githooks/pre-commit|CLAUDE\.md|cloud-store\.js|tests/uat\.js|tests/e2e/app\.spec\.js|tests/e2e/sim-lab\.spec\.js|memory/.*\.md)$'
+#
+# (visual-regression setup): tests/e2e/visual.spec.js added to the same
+# exemption — same category as app.spec.js/sim-lab.spec.js above (Playwright
+# E2E, isolated browser context per test); it seeds nplus_* localStorage
+# fixtures on localhost to get deterministic screenshot states.
+META_FILES_REGEX='^(\.githooks/pre-commit|CLAUDE\.md|cloud-store\.js|tests/uat\.js|tests/e2e/app\.spec\.js|tests/e2e/sim-lab\.spec\.js|tests/e2e/visual\.spec\.js|memory/.*\.md)$'
 
 # Helper: filter staged file list down to non-meta files
 filter_meta() {
