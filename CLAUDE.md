@@ -15,15 +15,28 @@
 - **Storage** (Phase C′): cloud-canonical, localStorage as ephemeral session cache. Source of truth = Supabase (`profiles.metadata` jsonb + `quiz_history`). Write path: localStorage → `_cloudFlush(STORAGE.X)` → 1500ms debounced cloud write. Hydrate: SIGNED_IN → `cloudStore.hydrate()`. Anonymous users get the full app via localStorage only. Cross-subdomain session via cookie-backed Supabase adapter on `Domain=.certanvil.com`.
 - **Hosting**: Vercel — `networkplus.certanvil.com` (+ per-cert subdomains, "Pattern A") + `certanvil.com` (separate landing project).
 - **Offline/PWA**: service worker (stale-while-revalidate + Supabase API pass-through + auto-reload-on-update). **Cache name MUST bump every deploy — use `bump-version.js`, never hand-edit.** Installable via `manifest.json`.
-- **Code map (graphify) — for HOW the code works; CONSULT BEFORE grepping/reading `app.js`**: `graphify-out/` holds a local *who-calls-what* graph of all JS/SQL/CSS (gitignored; **auto-rebuilt every commit** via `.githooks/post-commit`, no API key). To trace logic or "what depends on X", **query it first** — far cheaper on tokens than reading the ~19K-line `app.js`. **Primary interface — `node scripts/graphq.js <cmd>`** (`find`/`inspect`/`callers`/`callees`/`impact`/`community`/`file`/`path`/`stale`; add `--json`/`--depth N`). e.g. `graphq.js impact getMilestones` = what breaks if you edit it. Other artifacts (`scripts/graphify-enhance.js` regenerates these each commit): `graph-plus.html` (interactive impact-explorer — search, impact mode, URL deep-links `#node=`/`#community=`/`#impact=`), `CHANGE_IMPACT.md` (what changed + affected hubs + tests), `FRESHNESS.md`, `obsidian/` (per-community notes), plus raw `graph.json`/`GRAPH_REPORT.md`. **Names are durable:** structure auto-rebuilds every commit; community *names* are cached per node-id and **auto-restored** by `graphify-enhance.js` after each rebuild (no API call) — re-clustering can't wipe them. A keyed re-label is only needed for genuinely NEW code (a community with no cached members; `graphq.js stale` flags it). Re-label via the **claude backend** (Gemini path fails on `AQ` keys) — **`ANTHROPIC_API_KEY` MUST be exported in the same shell** or it silently falls back to "Community N": `export ANTHROPIC_API_KEY=…; graphify label . --backend claude --model claude-sonnet-4-6` (needs `uv tool install ~/graphify --with openai --with anthropic --force`). Bridge a decision to code: add `<!-- graphify:touches fnName … -->` to any doc → surfaces in graph-plus' Why tab. Missing `graphify-out/`? `graphify .`.
+- **Code map (graphify) — for HOW the code works; CONSULT BEFORE grepping/reading `app.js`**: `graphify-out/` holds a local *who-calls-what* graph of all JS/SQL/CSS (gitignored; **auto-rebuilt every commit** via `.githooks/post-commit`, no API key). To trace logic or "what depends on X", **query it first** — far cheaper on tokens than reading the huge `app.js` — see FACTS block. **Primary interface — `node scripts/graphq.js <cmd>`** (`find`/`inspect`/`callers`/`callees`/`impact`/`community`/`file`/`path`/`stale`; add `--json`/`--depth N`). e.g. `graphq.js impact getMilestones` = what breaks if you edit it. Other artifacts (`scripts/graphify-enhance.js` regenerates these each commit): `graph-plus.html` (interactive impact-explorer — search, impact mode, URL deep-links `#node=`/`#community=`/`#impact=`), `CHANGE_IMPACT.md` (what changed + affected hubs + tests), `FRESHNESS.md`, `obsidian/` (per-community notes), plus raw `graph.json`/`GRAPH_REPORT.md`. **Names are durable:** structure auto-rebuilds every commit; community *names* are cached per node-id and **auto-restored** by `graphify-enhance.js` after each rebuild (no API call) — re-clustering can't wipe them. A keyed re-label is only needed for genuinely NEW code (a community with no cached members; `graphq.js stale` flags it). Re-label via the **claude backend** (Gemini path fails on `AQ` keys) — **`ANTHROPIC_API_KEY` MUST be exported in the same shell** or it silently falls back to "Community N": `export ANTHROPIC_API_KEY=…; graphify label . --backend claude --model claude-sonnet-4-6` (needs `uv tool install ~/graphify --with openai --with anthropic --force`). Bridge a decision to code: add `<!-- graphify:touches fnName … -->` to any doc → surfaces in graph-plus' Why tab. Missing `graphify-out/`? `graphify .`.
 - **Decision map (Obsidian vault) — for WHY/what-was-decided**: the repo root is an Obsidian vault; for constraints, conventions, prior specs, ADRs, or rejected approaches, start at [[Home]] or a topic MOC ([[Drills MOC]], [[Mobile MOC]], [[Design MOC]], [[Decisions MOC]]) and follow each doc's `## Related` `[[wikilink]]` footer — faster than blind-grepping `docs/` (120 files), and surfaces connected decisions. Pairs with graphify: graphify = how the code runs, vault = why it's built this way.
 
 ## Files
+
+<!-- FACTS:AUTO:BEGIN -->
+<!-- machine-owned — run `node scripts/stamp-facts.js` to refresh; do not hand-edit -->
+| Metric | Lines | Size |
+|---|---|---|
+| app.js | 22060 | 1116 KB |
+| styles.css | 14903 | 551 KB |
+| index.html | 1994 | 128 KB |
+| dg-system.css | 4549 | 442 KB |
+| tests/uat.js + tests/uat/ (25 modules) | 26669 | — |
+UAT checks: 4729 · E2E `test(` count: 159 · APP_VERSION: 7.65.2 · stamped-at: worktree
+<!-- FACTS:AUTO:END -->
+
 | File | Purpose | Size |
 |---|---|---|
 | `index.html` | All page structures (30+ pages: setup, quiz, exam, results, review, subnet, ports, drills launcher, topology, topology-builder-v3, analytics, progress, guided labs, …) + global chrome (sidebar + topbar incl. `#topbar-bug-report` iconbtn that lazy-loads `features/reports.js`) | ~115 KB |
-| `app.js` | All app logic — state, AI calls, rendering, game loops, analytics, 5 activity sub-systems, cloud-flush hooks. Exposes `window.CURRENT_CERT` + `window.CERT_PACK` for lazy-loaded feature modules. | **~964 KB / ~19K lines** |
-| `styles.css` | Full dark/light theme styling + account pill + cert switcher + `@media (prefers-reduced-motion)` gate | ~540 KB / ~14.5K lines |
+| `app.js` | All app logic — state, AI calls, rendering, game loops, analytics, 5 activity sub-systems, cloud-flush hooks. Exposes `window.CURRENT_CERT` + `window.CERT_PACK` for lazy-loaded feature modules. | **see FACTS block above** |
+| `styles.css` | Full dark/light theme styling + account pill + cert switcher + `@media (prefers-reduced-motion)` gate | see FACTS block above |
 | `dg-system.css` | Editorial design-system overrides — forged-bronze tokens, scoped page reskins, `.br-*` bug-report drawer block (incl. scoped `[hidden]{display:none!important}` since component `display:flex` rules otherwise override the attribute) | growing |
 | `sw.js` | Service worker — stale-while-revalidate, shell-asset precache, 60-entry LRU cap, Supabase API pass-through, auto-update broadcast | ~120 lines |
 | **`lib/supabase.js`** | **Phase C′** — Supabase client init with cookie-backed storage adapter (cross-subdomain session sharing) | ~150 lines |
@@ -36,11 +49,11 @@
 | **`supabase/migrations/`** | Schema migrations — `20260506_phase_c_prime.sql` adds `profiles.role` + `is_admin()` + RLS updates | — |
 | `manifest.json` | PWA manifest | 646 B |
 | `vercel.json` | Vercel config (minimal) | 806 B |
-| `tests/uat.js` | UAT suite — **~4,005 checks** as of v7.19.4, embeds validation-audit gate | ~19.7K lines |
+| `tests/uat.js` + `tests/uat/*.js` | UAT suite — slim entry + `tests/uat/` numbered domain modules (`010-*.js`…`240-*.js`), embeds validation-audit gate; check/line counts in FACTS block above | see FACTS block above |
 | `tests/tech-debt.js` | CI thresholds: long-function count, LOC, global count, etc. | 131 lines |
 | `tests/validation-audit.js` | 23-Q broken-corpus regression fixture (60% catch floor, 0 FP ceiling) | 589 lines |
 | `tests/deploy-verify.js` | Post-deploy smoke against prod (comment-strip fix v4.89.9 / dc844a2) | 335 lines |
-| `tests/e2e/app.spec.js` | Playwright E2E (99 tests as of v4.89.x) | — |
+| `tests/e2e/*.spec.js` | Playwright E2E (app, sim-lab, decision-lab, landing, visual) — test count in FACTS block | — |
 
 **Reality check:** `app.js` size is the driver for [#138](https://github.com/oremosu98/certanvil/issues/138) (module split) — `saas-gated`, don't start without pivot trigger. `styles.css` growth drove [#55](https://github.com/oremosu98/certanvil/issues/55) — same gate.
 

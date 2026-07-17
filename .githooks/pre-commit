@@ -30,6 +30,27 @@ if echo "$STAGED" | grep -q "^scripts/"; then
   CODE_CHANGED=true
 fi
 
+# ── 0. Stamp CLAUDE.md facts (scripts/stamp-facts.js) ──
+# Refreshes the machine-owned FACTS block (file sizes, line counts, UAT/E2E
+# check totals, APP_VERSION) before UAT runs, so the committed CLAUDE.md
+# never carries stale numbers. Fail-safe: never blocks the commit — if node
+# or the script itself is unavailable/broken, warn and continue.
+if [ "$CODE_CHANGED" = true ]; then
+  if ! command -v node >/dev/null 2>&1; then
+    export PATH="$HOME/.nvm/versions/node/v20.20.2/bin:$PATH"
+  fi
+  if command -v node >/dev/null 2>&1; then
+    if node scripts/stamp-facts.js >/tmp/stamp-facts-out.$$ 2>&1; then
+      git add CLAUDE.md
+      echo "✓ CLAUDE.md FACTS block refreshed"
+    else
+      echo "  ⚠ scripts/stamp-facts.js failed — continuing without refreshing CLAUDE.md facts."
+      tail -10 /tmp/stamp-facts-out.$$
+    fi
+    rm -f /tmp/stamp-facts-out.$$
+  fi
+fi
+
 # ── 1. UAT run (v4.62.4 / issue #194) ──
 if [ "$CODE_CHANGED" = true ]; then
   echo "⏳ Running UAT (tests/uat.js)…"
