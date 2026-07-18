@@ -1,6 +1,6 @@
 {
-  "lines": 11921,
+  "lines": 9713,
   "allowance": 150,
   "updated": "2026-07-18",
-  "note": "After wave 8: quiz engine extracted to features/quiz-engine.js (#138)"
+  "note": "After wave 9: home/setup UI extracted to features/home.js (#138)"
 }
