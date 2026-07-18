@@ -7716,4 +7716,184 @@ window.SIM_LAB_SEED_APLUS_CORE1 = [
       }
     ]
   },
+
+  // ========================================================================
+  // ===== Wave 4 — Laser Print Defect Clinic (swatch archetype) ============
+  // ===== Objective 5.6 (troubleshoot printer issues; 220-1201 V2.0 —  =====
+  // ===== NOT 3.7, which is printer maintenance). Remedy options are   =====
+  // ===== informed by 3.7's laser maintenance list (replace toner,     =====
+  // ===== maintenance kit, calibrate, clean).                          =====
+  // ========================================================================
+  {
+    id: 'a1-swatch-01',
+    cert: 'aplus-core1',
+    archetype: 'swatch',
+    objective: '5.6',
+    topic: 'Repeating marks — drum-circumference interval diagnosis',
+    title: 'The front-desk LaserJet is stamping marks on every page',
+    estMinutes: 5,
+    scenario: 'Reception\'s shared printer started putting dark marks on everything this morning. A fresh ream of paper changed nothing. You pull the last page printed and put it under the light. Read the page, name what failed, and close the ticket the right way.',
+    swatch: { damageKind: 'permanent' },
+    assets: {
+      reference: {
+        kind: 'swatch',
+        title: 'Sample output · front-desk LaserJet',
+        defect: 'spots',
+        caption: 'Last page printed · marks land at the same spot across pages',
+        notes: ['Model: mono laser, ~40k pages', 'Fresh paper: no change', 'Every page affected']
+      }
+    },
+    steps: [
+      { id: 'diagnose', type: 'configure', points: 1,
+        prompt: 'Name the defect pattern, then the component that produces it.',
+        explanation: 'Distinct dark marks at a fixed interval and the same horizontal position are a repeating defect. ~76 mm is a common drum circumference: a nick or stuck debris on the drum stamps the page once per rotation.',
+        payload: { slots: [
+          { id: 'defectPattern', label: 'Defect pattern', options: [
+            { id: 'p-ghost', text: 'Ghosting · a faint copy of an earlier image repeats' },
+            { id: 'p-spots', text: 'Repeating marks · same spot at a fixed interval' },
+            { id: 'p-streak', text: 'Vertical white streak · a clean band missing toner' },
+            { id: 'p-smear', text: 'Loose toner · print smears at a touch' } ] },
+          { id: 'failedComponent', label: 'Failed component', options: [
+            { id: 'c-fuser', text: 'Fuser assembly · toner is not bonding to the page' },
+            { id: 'c-drum', text: 'Imaging drum · damage or debris on its surface prints every rotation' },
+            { id: 'c-pickup', text: 'Pickup roller feeding pages crooked' },
+            { id: 'c-toner', text: 'Toner cartridge empty or clogged · faded or missing print' } ] } ] },
+        answer: { slots: { defectPattern: 'p-spots', failedComponent: 'c-drum' } } },
+      { id: 'fix', type: 'configure', points: 1,
+        prompt: 'You pull the drum unit and find a deep scratch across its surface. Close out the ticket.',
+        explanation: 'Cleaning handles debris, but a scratch is permanent: the coating is gone, and it stamps every rotation until the drum unit is replaced. Verify with a test page before closing.',
+        payload: { slots: [
+          { id: 'remedy', label: 'Remedy', options: [
+            { id: 'r-clean', text: 'Clean the drum surface and reinstall it' },
+            { id: 'r-replace', text: 'Replace the drum unit · a scratched drum cannot be repaired' },
+            { id: 'r-fuser', text: 'Install a fuser maintenance kit' } ] },
+          { id: 'verify', label: 'Before closing the ticket', options: [
+            { id: 'v-none', text: 'Nothing further · the new drum resolves it by definition' },
+            { id: 'v-test', text: 'Print a test page and check the marks are gone' },
+            { id: 'v-cal', text: 'Recalibrate the printer\'s colour tables' } ] } ] },
+        answer: { slots: { remedy: 'r-replace', verify: 'v-test' } } }
+    ]
+  },
+  {
+    id: 'a1-swatch-02',
+    cert: 'aplus-core1',
+    archetype: 'swatch',
+    objective: '5.6',
+    topic: 'Repeating marks — new drum, marks persist (fuser roller interval)',
+    title: 'New drum, same marks — the accounts printer will not come clean',
+    estMinutes: 4,
+    scenario: 'The accounts-office laser printer had repeating marks last week, so the on-site tech swapped the drum unit. Today the same glossy mark is back, once per rotation, in the same lane down the page. The drum is brand new and its packaging seal was intact. Read the page and name what is really stamping it.',
+    swatch: { damageKind: 'none' },
+    assets: {
+      reference: {
+        kind: 'swatch',
+        title: 'Sample output · accounts LaserJet',
+        defect: 'spots',
+        caption: 'Repeating glossy mark · same interval and lane on every page',
+        notes: ['Drum unit replaced yesterday · seal intact', 'Marks unchanged after the swap', 'Mark looks pressed-in and shiny']
+      }
+    },
+    steps: [
+      { id: 'diagnose', type: 'configure', points: 1,
+        prompt: 'The drum is new and the marks are unchanged. Name the defect pattern, then the component that matches the evidence.',
+        explanation: 'A repeating mark at a fixed interval is a rotating-part defect, but the interval alone does not name the part: several rollers share circumferences near ~76 mm. A brand-new drum with unchanged marks rules the drum out, and a pressed-in, glossy mark points to the heat-and-pressure stage — a flaw on the fuser roller stamps the page once per rotation.',
+        payload: { slots: [
+          { id: 'defectPattern', label: 'Defect pattern', options: [
+            { id: 'p-streak', text: 'Vertical white streak · a clean band missing toner' },
+            { id: 'p-spots', text: 'Repeating marks · same spot at a fixed interval' },
+            { id: 'p-skew', text: 'Crooked print · the whole page is rotated off square' } ] },
+          { id: 'failedComponent', label: 'Failed component', options: [
+            { id: 'c-drum', text: 'Imaging drum · damage or debris on its surface prints every rotation' },
+            { id: 'c-fuserroller', text: 'Fuser roller · a surface flaw stamps a glossy mark once per rotation' },
+            { id: 'c-blade', text: 'Cleaning blade worn · residual toner echoes an earlier image' },
+            { id: 'c-seppad', text: 'Separation pad worn · pages feed crooked or two at a time' } ] } ] },
+        answer: { slots: { defectPattern: 'p-spots', failedComponent: 'c-fuserroller' } } }
+    ]
+  },
+  {
+    id: 'a1-swatch-03',
+    cert: 'aplus-core1',
+    archetype: 'swatch',
+    objective: '5.6',
+    topic: 'Vertical white streak — blocked toner path, clean-class remedy',
+    title: 'A white stripe is running down every page in the mailroom',
+    estMinutes: 5,
+    scenario: 'The mailroom\'s mono laser started leaving a clean vertical band down every page this afternoon — same width, same place, top to bottom. The rest of the print is dense and sharp. The toner gauge reads over half full. Read the page, name what failed, and close the ticket the right way.',
+    swatch: { damageKind: 'debris' },
+    assets: {
+      reference: {
+        kind: 'swatch',
+        title: 'Sample output · mailroom LaserJet',
+        defect: 'streak',
+        caption: 'Full-height white band · identical position on every page',
+        notes: ['Toner gauge: ~60% remaining', 'Rest of the page prints dense and sharp', 'Started mid-shift, no supplies changed']
+      }
+    },
+    steps: [
+      { id: 'diagnose', type: 'configure', points: 1,
+        prompt: 'Name the defect pattern, then the component that produces it.',
+        explanation: 'A clean, full-height white band means no toner is reaching the page along that lane — the toner is not faded there, it is absent. With plenty of toner in the cartridge, the classic cause is a blocked toner path: clumped or foreign debris obstructing the developer opening so no toner flows in that lane.',
+        payload: { slots: [
+          { id: 'defectPattern', label: 'Defect pattern', options: [
+            { id: 'p-spots', text: 'Repeating marks · same spot at a fixed interval' },
+            { id: 'p-streak', text: 'Vertical white streak · a clean band missing toner' },
+            { id: 'p-smear', text: 'Loose toner · print smears at a touch' },
+            { id: 'p-ghost', text: 'Ghosting · a faint copy of an earlier image repeats' } ] },
+          { id: 'failedComponent', label: 'Failed component', options: [
+            { id: 'c-tonerpath', text: 'Blocked toner path · debris blocks the developer opening in one lane' },
+            { id: 'c-fuser', text: 'Fuser assembly · toner is not bonding to the page' },
+            { id: 'c-tonerempty', text: 'Toner cartridge empty · the whole page prints faded' },
+            { id: 'c-pickup', text: 'Pickup roller worn · pages feed crooked or not at all' } ] } ] },
+        answer: { slots: { defectPattern: 'p-streak', failedComponent: 'c-tonerpath' } } },
+      { id: 'fix', type: 'configure', points: 1,
+        prompt: 'You pull the cartridge and find clumped toner packed against the developer opening. Close out the ticket.',
+        explanation: 'Debris is not permanent damage: clearing and cleaning the blocked toner path restores flow across the full page width, and the cartridge still has most of its life left. Replacing it would work but wastes a half-full consumable. Verify with a test page before closing.',
+        payload: { slots: [
+          { id: 'remedy', label: 'Remedy', options: [
+            { id: 'r-clean', text: 'Clean the toner path · clear the clumped toner from the developer opening' },
+            { id: 'r-replace', text: 'Replace the toner cartridge with a new one' },
+            { id: 'r-drum', text: 'Replace the drum unit' } ] },
+          { id: 'verify', label: 'Before closing the ticket', options: [
+            { id: 'v-none', text: 'Nothing further · clearing the blockage resolves it by definition' },
+            { id: 'v-test', text: 'Print a test page and check the band is gone' },
+            { id: 'v-reboot', text: 'Power-cycle the printer twice' } ] } ] },
+        answer: { slots: { remedy: 'r-clean', verify: 'v-test' } } }
+    ]
+  },
+  {
+    id: 'a1-swatch-04',
+    cert: 'aplus-core1',
+    archetype: 'swatch',
+    objective: '5.6',
+    topic: 'Vertical white streak — scratched drum coating diagnosis',
+    title: 'The legal team\'s printer draws a blank line through every contract',
+    estMinutes: 4,
+    scenario: 'Legal\'s mono laser is leaving a narrow white line down every page. A tech already reseated the toner cartridge and ran the printer\'s cleaning cycle — no change. The line is dead straight, always in the same lane, and has been slowly getting wider over two weeks. Read the page and name what failed.',
+    swatch: { damageKind: 'none' },
+    assets: {
+      reference: {
+        kind: 'swatch',
+        title: 'Sample output · legal-team LaserJet',
+        defect: 'streak',
+        caption: 'Narrow white line · same lane every page, widening over weeks',
+        notes: ['Cartridge reseated: no change', 'Cleaning cycle run: no change', 'Line has widened gradually over 2 weeks']
+      }
+    },
+    steps: [
+      { id: 'diagnose', type: 'configure', points: 1,
+        prompt: 'Cleaning and reseating changed nothing. Name the defect pattern, then the component the evidence points to.',
+        explanation: 'A white streak that survives a cleaning cycle and a cartridge reseat is not loose debris — something in the image path can no longer hold toner along that lane. A scratched drum fits every clue: a groove worn through the drum\'s coating stops toner transferring along that exact band, it stays perfectly straight because the drum spins in place, and it widens slowly as the coating wears further.',
+        payload: { slots: [
+          { id: 'defectPattern', label: 'Defect pattern', options: [
+            { id: 'p-streak', text: 'Vertical white streak · a clean band missing toner' },
+            { id: 'p-ghost', text: 'Ghosting · a faint copy of an earlier image repeats' },
+            { id: 'p-spots', text: 'Repeating marks · same spot at a fixed interval' } ] },
+          { id: 'failedComponent', label: 'Failed component', options: [
+            { id: 'c-scratcheddrum', text: 'Scratched drum · a groove in the coating stops toner along that band' },
+            { id: 'c-eraselamp', text: 'Erase lamp failing · earlier images faintly reappear' },
+            { id: 'c-paperpath', text: 'Paper path misaligned · pages travel crooked' },
+            { id: 'c-tonerlow', text: 'Toner cartridge nearly empty · the whole page fades evenly' } ] } ] },
+        answer: { slots: { defectPattern: 'p-streak', failedComponent: 'c-scratcheddrum' } } }
+    ]
+  },
 ];
