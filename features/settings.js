@@ -24,12 +24,14 @@
   }
 
   function _renderPassPlanFreeHtml() {
-    return '<div class="sub-label">Your Pass Plan</div>' +
-      _passPlanCurrentCertCardHtml() + _passPlanLockedCertsHtml();
+    var planCard = (typeof _passPlanCurrentCertCardHtml === 'function') ? _passPlanCurrentCertCardHtml() : '';
+    var lockedCerts = (typeof _passPlanLockedCertsHtml === 'function') ? _passPlanLockedCertsHtml() : '';
+    return '<div class="sub-label">Your Pass Plan</div>' + planCard + lockedCerts;
   }
 
   function _renderPassPlanBrowserProHtml() {
-    return '<div class="sub-label">Your Pass Plan</div>' + _passPlanCurrentCertCardHtml();
+    var planCard = (typeof _passPlanCurrentCertCardHtml === 'function') ? _passPlanCurrentCertCardHtml() : '';
+    return '<div class="sub-label">Your Pass Plan</div>' + planCard;
   }
 
   function _renderPassPlanProHtml() {
@@ -76,11 +78,11 @@
       var act = el.getAttribute('data-act');
       var run = function (e) {
         if (e) e.preventDefault();
-        if (act === 'pp-view') { viewPassPlan(); }
-        else if (act === 'pp-retake') { retakeDiagnostic(); }
-        else if (act === 'pp-empty') { startDiagnostic(); }
-        else if (act === 'pp-pro') { _showProWaitlist(); }
-        else if (act === 'pp-add') { _showPassPlanCertPicker(); }
+        if (act === 'pp-view') { if (typeof viewPassPlan === 'function') viewPassPlan(); }
+        else if (act === 'pp-retake') { if (typeof retakeDiagnostic === 'function') retakeDiagnostic(); }
+        else if (act === 'pp-empty') { if (typeof startDiagnostic === 'function') startDiagnostic(); }
+        else if (act === 'pp-pro') { if (typeof _showProWaitlist === 'function') _showProWaitlist(); }
+        else if (act === 'pp-add') { if (typeof _showPassPlanCertPicker === 'function') _showPassPlanCertPicker(); }
         else if (act === 'pp-open-cert') {
           var id = el.getAttribute('data-cert');
           if (id && typeof tadSwitchCert === 'function') tadSwitchCert(id);

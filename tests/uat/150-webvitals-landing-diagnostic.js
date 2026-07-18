@@ -5,6 +5,8 @@
 const {
   ROOT, _fnBody, _fnBodyShell, appJs, authStateJs, certAi900, certAplusCore1, certAplusCore2, certAz900, certClfc02, certNetplus, certSc900, certSecplus, cloudStoreJs, css, dgCss, finishBody, fs, html, js, mockMatchMedia, pages, path, read, results, sandbox, sw, tb3d, test, vm
 } = require('./_context');
+// #138 wave 5: startDiagnostic moved to features/diagnostic.js.
+const _diagnosticJs = (() => { try { return fs.readFileSync(require('path').join(ROOT, 'features/diagnostic.js'), 'utf8'); } catch(_) { return ''; } })();
 
 // ── v4.99.45 — Phase 6b: Web Vitals collector ──
 // Measurement infra ship. Adds Supabase migration + record_web_vitals RPC +
@@ -117,10 +119,9 @@ test('v4.99.45 Phase6b: app.js exposes APP_VERSION on window for collector consu
 console.log('\n\x1b[1m── v4.99.46 — DIAGNOSTIC SIGNED-IN BYOK BYPASS HOTFIX ──\x1b[0m');
 
 test('v4.99.46 hotfix: startDiagnostic uses validateApiKey (handles signed-in proxy users)',
-  // _fnBody extracts the function body. We assert validateApiKey is called
-  // before the confirm() prompt so signed-in users see the dialog they need.
+  // #138 wave 5: startDiagnostic lives in features/diagnostic.js; search there.
   (() => {
-    const body = _fnBody(js, 'startDiagnostic');
+    const body = _fnBody(_diagnosticJs, 'startDiagnostic');
     if (!body) return false;
     // validateApiKey must be called BEFORE the confirm() prompt
     const vIdx = body.indexOf('validateApiKey(');

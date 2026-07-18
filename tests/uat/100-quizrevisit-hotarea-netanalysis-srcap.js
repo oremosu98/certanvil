@@ -5,6 +5,8 @@
 const {
   ROOT, _fnBody, _fnBodyShell, appJs, authStateJs, certAi900, certAplusCore1, certAplusCore2, certAz900, certClfc02, certNetplus, certSc900, certSecplus, cloudStoreJs, css, dgCss, finishBody, fs, html, js, mockMatchMedia, pages, path, read, results, sandbox, sw, tb3d, test, vm
 } = require('./_context');
+// #138 wave 5: startDiagnostic moved to features/diagnostic.js.
+const _diagnosticJs = (() => { try { return fs.readFileSync(require('path').join(ROOT, 'features/diagnostic.js'), 'utf8'); } catch(_) { return ''; } })();
 
 // v4.81.31: SR queue scrub for legacy non-reviewable cards + Playwright E2E
 // coverage for SR review flow. User dogfood after v4.81.30 deploy: an
@@ -574,7 +576,7 @@ test('v4.82.1 Loader: startQuiz calls _loadingProgressBegin',
   })());
 test('v4.82.1 Loader: startDiagnostic calls _loadingProgressBegin',
   (() => {
-    const body = _fnBody(js, 'startDiagnostic');
+    const body = _fnBody(_diagnosticJs, 'startDiagnostic');
     if (!body) return false;
     return /_loadingProgressBegin\(/.test(body)
       && /_loadingProgressFinish\(\)/.test(body);

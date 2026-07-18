@@ -935,9 +935,14 @@ test('v4.99.43 Phase11b: regression tombstone — `const ACL_SCENARIOS` NOT in a
   !/^const\s+ACL_SCENARIOS\s*=/m.test(_appJsRawV43));
 test('v4.99.43 Phase11b: regression tombstone — `let aclState` NOT in app.js shell',
   !/^let\s+aclState\s*=/m.test(_appJsRawV43));
-test('v4.99.43 Phase11b: ACL Pass-Plan PBQ (different feature, same prefix) STAYS in shell',
-  /const\s+ACL_PBQ_BANK\s*=\s*\[/.test(_appJsRawV43)
-  && /function\s+aclOpenFromPassPlan\s*\(/.test(_appJsRawV43));
+test('v4.99.43 Phase11b: ACL Pass-Plan PBQ extracted to features/diagnostic.js (#138 wave 5)',
+  // #138 wave 5: ACL PBQ moved from app.js shell to features/diagnostic.js (diagnostic module co-locates it).
+  (() => {
+    let diagJs = ''; try { diagJs = fs.readFileSync(require('path').join(ROOT, 'features/diagnostic.js'), 'utf8'); } catch(_) {}
+    return /const\s+ACL_PBQ_BANK\s*=\s*\[/.test(diagJs)
+      && /function\s+aclOpenFromPassPlan\s*\(/.test(diagJs)
+      && !/const\s+ACL_PBQ_BANK\s*=\s*\[/.test(_appJsRawV43);
+  })());
 
 let _featureAclRaw = ""; try { _featureAclRaw = fs.readFileSync(path.join(ROOT, 'features/acl-builder.js'), "utf8"); } catch (_) { /* MVP-quiz-only: deleted */ }
 

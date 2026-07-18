@@ -5,6 +5,9 @@
 const {
   ROOT, _fnBody, _fnBodyShell, appJs, authStateJs, certAi900, certAplusCore1, certAplusCore2, certAz900, certClfc02, certNetplus, certSc900, certSecplus, cloudStoreJs, css, dgCss, finishBody, fs, html, js, mockMatchMedia, pages, path, read, results, sandbox, sw, tb3d, test, vm
 } = require('./_context');
+// #138 wave 5: startDiagnostic moved to features/diagnostic.js; search that directly
+// to avoid the loader-stub in app.js masking _fnBody results.
+const _diagnosticJs = (() => { try { return fs.readFileSync(require('path').join(ROOT, 'features/diagnostic.js'), 'utf8'); } catch(_) { return ''; } })();
 
 // ══════════════════════════════════════════
 // v4.75.1 — Pass-Rate Prediction surfaced in HeroV2 (visible homepage layout)
@@ -815,12 +818,12 @@ test('v4.81.5 Diagnostic: regression guard — no .pickedIdx in diagnostic flow 
   })());
 test('v4.81.5 Diagnostic: startDiagnostic filters to MCQ-only questions',
   (() => {
-    const body = _fnBody(js, 'startDiagnostic');
+    const body = _fnBody(_diagnosticJs, 'startDiagnostic');
     return body && /_isMcq\b/.test(body);
   })());
 test('v4.81.5 Diagnostic: MCQ-filter requires 4 letter-keyed options + single-letter answer',
   (() => {
-    const body = _fnBody(js, 'startDiagnostic');
+    const body = _fnBody(_diagnosticJs, 'startDiagnostic');
     return body && /Object\.keys\(q\.options\)\.length\s*===\s*4/.test(body)
       && /'ABCD'\.includes\(q\.answer\)/.test(body);
   })());

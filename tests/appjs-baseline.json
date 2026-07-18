@@ -1,6 +1,6 @@
 {
-  "lines": 16853,
+  "lines": 15447,
   "allowance": 150,
   "updated": "2026-07-18",
-  "note": "After wave 4: flagship drills (Reword Gauntlet + Why-Not) extracted to features/flagship-drills.js"
+  "note": "After wave 5: baseline diagnostic + pass plan + ACL PBQ extracted to features/diagnostic.js"
 }
