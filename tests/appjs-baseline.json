@@ -1,6 +1,6 @@
 {
-  "lines": 22059,
+  "lines": 21509,
   "allowance": 150,
   "updated": "2026-07-18",
-  "note": "Ratchet start (#138 unfreeze). Raise 'lines' ONLY deliberately, in its own commit, with a note. Waves LOWER it (protocol P6)."
+  "note": "After wave 1: progress page extracted to features/progress.js"
 }

@@ -24,12 +24,12 @@
 <!-- machine-owned — run `node scripts/stamp-facts.js` to refresh; do not hand-edit -->
 | Metric | Lines | Size |
 |---|---|---|
-| app.js | 22060 | 1116 KB |
+| app.js | 21509 | 1084 KB |
 | styles.css | 14903 | 551 KB |
-| index.html | 1994 | 128 KB |
+| index.html | 1995 | 128 KB |
 | dg-system.css | 4597 | 447 KB |
 | tests/uat.js + tests/uat/ (25 modules) | 27317 | — |
-UAT checks: 4824 · E2E `test(` count: 159 · APP_VERSION: 7.66.0 · stamped-at: worktree
+UAT checks: 4824 · E2E `test(` count: 159 · APP_VERSION: 7.67.0 · stamped-at: worktree
 <!-- FACTS:AUTO:END -->
 
 | File | Purpose | Size |
@@ -131,6 +131,7 @@ npx playwright test              # E2E (tests/e2e/app.spec.js)
 
 | Version | Features Added |
 |---|---|
+| v7.67.0 | chore(#138): extract progress page to features/progress.js (wave 1) |
 | v7.66.0 | Sim Lab Wave 4: Laser Print Defect Clinic PBQ (swatch reference kind) |
 | v7.65.2 | Fix: light-theme purple residuals in end-of-day recap modal eyebrow/em text (rebrand gap) |
 | v7.65.1 | Fix: Custom Quiz Generate now dismisses the picker so the loading screen shows immediately |
