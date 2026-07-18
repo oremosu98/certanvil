@@ -59,6 +59,15 @@
 - `tests/tech-debt.js` gate behavior unchanged; `--json` never exits non-zero.
 - Scanner exits 0 in all cases, including with `gh` logged out and no network.
 
+## Fable review findings (2026-07-18, post-ca1d523) — correction for Sonnet
+
+**Finding (medium, non-blocking, fail-safe direction):** the guard-retirement section is silently dormant — it will report 0 candidates until 2027 regardless of guard age. Two causes: (1) plain `git blame` dates every `tests/uat/*` line to the 2026-07-17 monolith split (`f057f7b`), not original authorship — verified: plain blame on `040-…js:178` → 2026-07-17, `blame -C -C` → 2026-04-14; (2) the 365-day threshold (planning error, Fable's) can never fire in a repo born 2026-03-28. Sonnet's "0 candidates (was 36)" was dormancy, not noise reduction.
+
+**Exact patch (scripts/groundskeeper-scan.js):**
+- [x] `GUARD_AGE_DAYS_THRESHOLD = 365` → `90`; update the comment block above it ("> 1 year" → "> 90 days — repo born 2026-03, ships daily; 365d could never fire before 2027").
+- [x] `blameLineAuthorTime`: `git blame -L …` → `git blame -C -C -L …`; add a comment that `-C -C` follows content across the 2026-07-17 uat split (plain blame resets all lines to that commit).
+- [x] Re-run `node scripts/groundskeeper-scan.js`: expect a small non-zero candidate list (April-era dead-token guards), ≤5 shown with the cap line. Commit fast-lane: `chore(groundskeeper): guard-age fix — blame -C -C + 90d threshold (review finding)`.
+
 ## Rejected approaches
 - **Version-age heuristic for guards** — broken by the v4→v7 version jumps; produced 36 candidates (unreviewable). Replaced by dead-token + blame-age.
 - **Thursday tech-debt queue as the digest's endpoint** — founder confirmed 2026-07-18 the Thursday lane has been lapsed for months; a queue feeding it would rot identically. Replaced by rolling-memory surfacing (SKILL.md side).
