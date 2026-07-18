@@ -29,7 +29,7 @@
 | index.html | 1994 | 128 KB |
 | dg-system.css | 4597 | 447 KB |
 | tests/uat.js + tests/uat/ (25 modules) | 27317 | — |
-UAT checks: 4824 · E2E `test(` count: 159 · APP_VERSION: 7.65.2 · stamped-at: worktree
+UAT checks: 4824 · E2E `test(` count: 159 · APP_VERSION: 7.66.0 · stamped-at: worktree
 <!-- FACTS:AUTO:END -->
 
 | File | Purpose | Size |
@@ -131,6 +131,7 @@ npx playwright test              # E2E (tests/e2e/app.spec.js)
 
 | Version | Features Added |
 |---|---|
+| v7.66.0 | Sim Lab Wave 4: Laser Print Defect Clinic PBQ (swatch reference kind) |
 | v7.65.2 | Fix: light-theme purple residuals in end-of-day recap modal eyebrow/em text (rebrand gap) |
 | v7.65.1 | Fix: Custom Quiz Generate now dismisses the picker so the loading screen shows immediately |
 | v7.65.0 | Sec+ Technical Change Management topic + exemplar-prompt formatter fix + Domain 5 rebalance |
