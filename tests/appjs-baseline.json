@@ -1,6 +1,6 @@
 {
-  "lines": 15447,
+  "lines": 14727,
   "allowance": 150,
   "updated": "2026-07-18",
-  "note": "After wave 5: baseline diagnostic + pass plan + ACL PBQ extracted to features/diagnostic.js"
+  "note": "After wave 6: exam mode extracted to features/exam.js (#138)"
 }

@@ -24,12 +24,12 @@
 <!-- machine-owned — run `node scripts/stamp-facts.js` to refresh; do not hand-edit -->
 | Metric | Lines | Size |
 |---|---|---|
-| app.js | 15448 | 782 KB |
+| app.js | 14727 | 749 KB |
 | styles.css | 14903 | 551 KB |
 | index.html | 1997 | 128 KB |
 | dg-system.css | 4597 | 447 KB |
-| tests/uat.js + tests/uat/ (25 modules) | 27384 | — |
-UAT checks: 4824 · E2E `test(` count: 159 · APP_VERSION: 7.71.0 · stamped-at: worktree
+| tests/uat.js + tests/uat/ (25 modules) | 27388 | — |
+UAT checks: 4824 · E2E `test(` count: 159 · APP_VERSION: 7.72.0 · stamped-at: worktree
 <!-- FACTS:AUTO:END -->
 
 | File | Purpose | Size |
@@ -131,6 +131,7 @@ npx playwright test              # E2E (tests/e2e/app.spec.js)
 
 | Version | Features Added |
 |---|---|
+| v7.72.0 | extract exam mode to features/exam.js (#138 wave 6) |
 | v7.71.0 | extract baseline diagnostic + pass plan + ACL PBQ to features/diagnostic.js (#138 wave 5) |
 | v7.70.0 | chore(#138): extract flagship drills to features/flagship-drills.js (wave 4) |
 | v7.69.0 | chore(#138): extract settings page to features/settings.js (wave 3) |

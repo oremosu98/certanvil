@@ -7,6 +7,8 @@ const {
 } = require('./_context');
 // #138 wave 5: startDiagnostic moved to features/diagnostic.js.
 const _diagnosticJs = (() => { try { return fs.readFileSync(require('path').join(ROOT, 'features/diagnostic.js'), 'utf8'); } catch(_) { return ''; } })();
+// #138 wave 6: startExam moved to features/exam.js.
+const _examJs = (() => { try { return fs.readFileSync(require('path').join(ROOT, 'features/exam.js'), 'utf8'); } catch(_) { return ''; } })();
 
 // v4.81.31: SR queue scrub for legacy non-reviewable cards + Playwright E2E
 // coverage for SR review flow. User dogfood after v4.81.30 deploy: an
@@ -583,7 +585,7 @@ test('v4.82.1 Loader: startDiagnostic calls _loadingProgressBegin',
   })());
 test('v4.82.1 Loader: startExam uses unified loading-progress module',
   (() => {
-    const body = _fnBody(js, 'startExam');
+    const body = _fnBody(_examJs, 'startExam');
     if (!body) return false;
     return /_loadingProgressBegin\(/.test(body)
       && /_loadingProgressUpdate\(/.test(body)
@@ -602,7 +604,7 @@ test('v4.82.1 Loader: startBulkQuiz (marathon) uses unified loading-progress mod
 // from startExam (replaced by _loadingProgressBegin which handles transition reset).
 test('v4.82.1 Loader: tombstone — startExam no longer does manual fill.style.width = "0%" un-hide pattern',
   (() => {
-    const body = _fnBody(js, 'startExam');
+    const body = _fnBody(_examJs, 'startExam');
     if (!body) return false;
     // The pattern "fill.style.width = '0%';\n  prog.classList.remove('is-hidden')"
     // was the legacy un-hide. After v4.82.1 the helper handles both.

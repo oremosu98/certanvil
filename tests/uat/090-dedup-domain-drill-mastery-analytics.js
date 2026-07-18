@@ -5,6 +5,8 @@
 const {
   ROOT, _fnBody, _fnBodyShell, appJs, authStateJs, certAi900, certAplusCore1, certAplusCore2, certAz900, certClfc02, certNetplus, certSc900, certSecplus, cloudStoreJs, css, dgCss, finishBody, fs, html, js, mockMatchMedia, pages, path, read, results, sandbox, sw, tb3d, test, vm
 } = require('./_context');
+// #138 wave 6: startExam moved to features/exam.js.
+const _examJs = (() => { try { return fs.readFileSync(require('path').join(ROOT, 'features/exam.js'), 'utf8'); } catch(_) { return ''; } })();
 
 // ──────────────────────────────────────────────────────────
 // v4.81.14: Cross-batch question dedup (user report)
@@ -50,7 +52,7 @@ test('v4.81.14 Dedup: merge step logs deduped count when > 0 (v4.85.7: extracted
   })());
 test('v4.81.14 Dedup: startExam dedupes new batch against accumulated examQuestions',
   (() => {
-    const body = _fnBody(js, 'startExam');
+    const body = _fnBody(_examJs, 'startExam');
     return body
       && /examQuestions\.length\s*>\s*0/.test(body)
       && /seenStems/.test(body)
@@ -58,7 +60,7 @@ test('v4.81.14 Dedup: startExam dedupes new batch against accumulated examQuesti
   })());
 test('v4.81.14 Dedup: startExam retry-to-fill payload also deduped (no undoing prior dedup)',
   (() => {
-    const body = _fnBody(js, 'startExam');
+    const body = _fnBody(_examJs, 'startExam');
     return body && /seenStemsRetry/.test(body);
   })());
 
