@@ -7,6 +7,11 @@
 
 const fs = require('fs');
 
+const JSON_MODE = process.argv.includes('--json');
+function log(...args) {
+  if (!JSON_MODE) console.log(...args);
+}
+
 const js = fs.readFileSync('app.js', 'utf8');
 const css = fs.readFileSync('styles.css', 'utf8');
 const jsLines = js.split('\n');
@@ -14,28 +19,31 @@ const cssLines = css.split('\n');
 
 let warnings = [];
 let pass = 0;
+const metrics = [];
 
 function check(name, actual, threshold, direction = 'max') {
   const breached = direction === 'max' ? actual > threshold : actual < threshold;
   const status = breached ? '✗' : '✓';
   const label = breached ? 'BREACH' : 'OK';
-  console.log(`  ${status} ${name}: ${actual} (${direction === 'max' ? 'max' : 'min'}: ${threshold}) [${label}]`);
+  log(`  ${status} ${name}: ${actual} (${direction === 'max' ? 'max' : 'min'}: ${threshold}) [${label}]`);
   if (breached) {
     warnings.push({ name, actual, threshold, direction });
   } else {
     pass++;
   }
+  const headroom = direction === 'max' ? threshold - actual : actual - threshold;
+  metrics.push({ name, value: actual, limit: threshold, headroom });
 }
 
-console.log('\n🔍 Tech Debt Monitor\n');
+log('\n🔍 Tech Debt Monitor\n');
 
 // --- File size checks ---
-console.log('📏 File Size');
+log('📏 File Size');
 check('app.js line count', jsLines.length, 22500); // re-baselined v7.53.2 (2026-06-14) from a stale 19000 — actual was 21509 and permanently breaching; real fix is the module-split (#138), post-launch. Headroom ~1K to catch NEW regressions, not sit red forever.
 check('styles.css line count', cssLines.length, 15600); // re-baselined v7.53.2 (2026-06-14) from a 4x-stale 3700 (file is ~14840) — the old limit had been permanently red and ignored. Real fix is the per-feature split (#55), post-launch.
 
 // --- Code quality checks ---
-console.log('\n🧹 Code Quality');
+log('\n🧹 Code Quality');
 
 // Debug console.log statements (excluding error-path console.warn which is
 // legitimate production error logging). v4.62.4: tightened from the old
@@ -202,8 +210,8 @@ for (const name of funcNames) {
 }
 check('Dead functions (defined but never called)', deadFunctions.length, 0);
 if (deadFunctions.length > 0) {
-  console.log('\n  Dead functions detected:');
-  deadFunctions.forEach(n => console.log(`    → ${n}()`));
+  log('\n  Dead functions detected:');
+  deadFunctions.forEach(n => log(`    → ${n}()`));
 }
 
 // Duplicated render functions
@@ -223,11 +231,18 @@ const inlineStyles = jsLines.filter(line => /\.style\.\w+\s*=/.test(line));
 check('Inline .style.* assignments', inlineStyles.length, 80); // baseline: ~70 as of v4.33 — target: 20
 
 // --- CSS checks ---
-console.log('\n🎨 CSS');
+log('\n🎨 CSS');
 
 // Empty rules
 const emptyRules = css.match(/\{[\s]*\}/g);
 check('Empty CSS rules', emptyRules ? emptyRules.length : 0, 0);
+
+// Report mode: print metrics as JSON only, always exit 0. Must short-circuit
+// before any process.exit(1) path below — this is a report, not a gate.
+if (JSON_MODE) {
+  console.log(JSON.stringify({ metrics }, null, 2));
+  process.exit(0);
+}
 
 // --- Summary ---
 console.log(`\n${'─'.repeat(50)}`);

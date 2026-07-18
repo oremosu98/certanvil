@@ -132,26 +132,20 @@ function checkGraphify() {
 // 3. Regression-guard retirement candidates
 // ══════════════════════════════════════════
 
-// version tag like v4.42.3 or v7.65 (minor required, patch optional)
+// version tag like v4.42.3 or v7.65 (minor required, patch optional) — used
+// only to IDENTIFY a line as a versioned regression guard, never for age.
 const VERSION_TAG_RE = /\bv(\d{1,2})\.(\d{1,3})(?:\.(\d{1,3}))?\b/;
 const NEGATIVE_ASSERTION_RE = /!\s*(?:js|html|css)\.includes\(/;
 const INCLUDES_LITERAL_RE = /\.includes\(\s*(['"`])((?:\\.|(?!\1).)*)\1/;
 
-function versionScore(major, minor) {
-  // Comparable-version implementation: major dominates (a major bump is a
-  // much bigger jump than any run of minors), minor breaks ties within a
-  // major. Patch is ignored for "age" — the task's own example (v7.50.x vs
-  // v7.65.x) only compares major.minor.
-  return major * 1000 + minor;
-}
-
-function parseAppVersion() {
-  const js = safeRead('app.js') || '';
-  const m = js.match(/const APP_VERSION = '([^']*)'/);
-  if (!m) return null;
-  const parts = m[1].split('.').map((n) => parseInt(n, 10));
-  return { raw: m[1], major: parts[0] || 0, minor: parts[1] || 0, patch: parts[2] || 0 };
-}
+// Guard age is no longer judged by version-number distance — the v4→v7
+// jumps make "N minor versions behind" meaningless (everything looks
+// ancient, producing 36 unreviewable candidates in practice). A candidate
+// must now be BOTH provably dead (its asserted literal has zero
+// occurrences anywhere in live code) AND old by real time (git-blame
+// author-date on the guard line > 1 year).
+const GUARD_AGE_DAYS_THRESHOLD = 365;
+const GUARD_DISPLAY_CAP = 5;
 
 function loadTombstones() {
   return safeRead('docs/conventions/regression-tombstones.md') || '';
@@ -167,14 +161,43 @@ function isTombstoned(literal, tombstoneText) {
   return idents.some((id) => tombstoneText.includes(id));
 }
 
-function scanRegressionGuards(currentVersion, tombstoneText) {
+// Concatenates every LIVE code surface a retired pattern could still be
+// referenced from — if the literal shows up here, the guard isn't
+// guarding a ghost yet.
+function loadLiveSurfaces() {
+  let combined = '';
+  ['app.js', 'index.html', 'styles.css', 'dg-system.css'].forEach((f) => {
+    combined += '\n' + (safeRead(f) || '');
+  });
+  ['features', 'certs'].forEach((dir) => {
+    const dirPath = path.join(ROOT, dir);
+    try {
+      fs.readdirSync(dirPath)
+        .filter((f) => f.endsWith('.js'))
+        .forEach((f) => { combined += '\n' + (safeRead(path.join(dir, f)) || ''); });
+    } catch (_) { /* dir may not exist */ }
+  });
+  return combined;
+}
+
+// git-blame author-time (unix seconds) for a single line, or null if it
+// can't be determined (uncommitted line, git failure, etc).
+function blameLineAuthorTime(relFilePath, lineNum) {
+  const res = run(`git blame -L ${lineNum},${lineNum} --porcelain -- "${relFilePath}"`);
+  if (!res.ok) return null;
+  const m = res.stdout.match(/^author-time (\d+)$/m);
+  return m ? parseInt(m[1], 10) : null;
+}
+
+function scanRegressionGuards(tombstoneText, liveSurfaceText) {
   const uatDir = path.join(ROOT, 'tests', 'uat');
   const files = fs.readdirSync(uatDir).filter((f) => /^\d+-.*\.js$/.test(f)).sort();
   const candidates = [];
-  const currentScore = versionScore(currentVersion.major, currentVersion.minor);
+  const nowSeconds = Date.now() / 1000;
 
   files.forEach((file) => {
     const filePath = path.join(uatDir, file);
+    const relPath = path.join('tests', 'uat', file);
     const lines = fs.readFileSync(filePath, 'utf8').split('\n');
 
     for (let i = 0; i < lines.length; i++) {
@@ -209,17 +232,19 @@ function scanRegressionGuards(currentVersion, tombstoneText) {
       if (!isNegative) { i = j; continue; }
 
       const verMatch = searchText.match(VERSION_TAG_RE);
-      if (!verMatch) { i = j; continue; }
-
-      const major = parseInt(verMatch[1], 10);
-      const minor = parseInt(verMatch[2], 10);
-      const score = versionScore(major, minor);
-      const ageMinorVersions = currentScore - score;
-      if (ageMinorVersions <= 10) { i = j; continue; }
+      if (!verMatch) { i = j; continue; } // not a versioned regression guard
 
       const litMatch = chunk.match(INCLUDES_LITERAL_RE);
       const literal = litMatch ? litMatch[2] : null;
+      if (!literal) { i = j; continue; } // can't confirm dead-token without a literal — skip, don't guess
+
       if (isTombstoned(literal, tombstoneText)) { i = j; continue; }
+      if (liveSurfaceText.includes(literal)) { i = j; continue; } // still referenced live — not dead
+
+      const authorTime = blameLineAuthorTime(relPath, i + 1);
+      if (authorTime === null) { i = j; continue; } // uncommitted / unblameable — can't confirm age
+      const ageDays = Math.floor((nowSeconds - authorTime) / 86400);
+      if (ageDays <= GUARD_AGE_DAYS_THRESHOLD) { i = j; continue; }
 
       const nameMatch = chunk.match(/test\(\s*(['"`])((?:\\.|(?!\1).)*)\1/);
       const testName = nameMatch ? nameMatch[2] : chunk.trim().slice(0, 60);
@@ -227,7 +252,7 @@ function scanRegressionGuards(currentVersion, tombstoneText) {
       candidates.push({
         file, line: i + 1, testName,
         versionTag: `v${verMatch[1]}.${verMatch[2]}${verMatch[3] ? '.' + verMatch[3] : ''}`,
-        ageMinorVersions,
+        ageDays,
       });
 
       i = j;
@@ -237,22 +262,16 @@ function scanRegressionGuards(currentVersion, tombstoneText) {
   return candidates;
 }
 
-function checkRegressionGuards(currentVersion) {
+function checkRegressionGuards() {
   section('3. Regression-guard retirement candidates');
-  console.log(c.dim('  Rule: guards keep 3-4 versions after the deletion they guard, then retire (tests/uat/_context.js philosophy header).'));
+  console.log(c.dim(`  Rule: a candidate must be BOTH dead (asserted literal has zero live references) AND`));
+  console.log(c.dim(`  old (git-blame age > ${GUARD_AGE_DAYS_THRESHOLD} days) — version-number distance is no longer used (v4→v7 jumps made it meaningless).`));
   console.log(c.dim('  Tombstoned guards (docs/conventions/regression-tombstones.md) are PERMANENT — never retire those, listed or not.'));
   console.log(c.dim('  REPORT ONLY — this script never deletes a guard. Human decision required for every line below.'));
 
-  if (!currentVersion) {
-    console.log(c.yellow('⚠ could not parse APP_VERSION from app.js — skipping'));
-    summary('warn', 'Regression-guard scan skipped — APP_VERSION unreadable');
-    return;
-  }
-
   const tombstoneText = loadTombstones();
-  const candidates = scanRegressionGuards(currentVersion, tombstoneText);
-
-  console.log(`  current APP_VERSION: v${currentVersion.raw} — flagging guards tagged ≤10 minor versions behind current minor`);
+  const liveSurfaceText = loadLiveSurfaces();
+  const candidates = scanRegressionGuards(tombstoneText, liveSurfaceText);
 
   if (candidates.length === 0) {
     console.log(c.green('✓ no retirement-eligible guards found'));
@@ -260,14 +279,14 @@ function checkRegressionGuards(currentVersion) {
     return;
   }
 
-  const shown = candidates.slice(0, 30);
+  const shown = candidates.slice(0, GUARD_DISPLAY_CAP);
   shown.forEach((cand) => {
-    console.log(`  tests/uat/${cand.file}:${cand.line}  [${cand.versionTag}, ${cand.ageMinorVersions} minor-versions behind]  ${cand.testName}`);
+    console.log(`  tests/uat/${cand.file}:${cand.line}  [${cand.versionTag}, ${cand.ageDays}d old, dead-token]  ${cand.testName}`);
   });
-  if (candidates.length > 30) {
-    console.log(c.dim(`  +${candidates.length - 30} more`));
+  if (candidates.length > GUARD_DISPLAY_CAP) {
+    console.log(c.dim(`  +${candidates.length - GUARD_DISPLAY_CAP} more suppressed (cap ${GUARD_DISPLAY_CAP}/week)`));
   }
-  summary('warn', `${candidates.length} regression-guard retirement candidate(s) — human review needed`);
+  summary('warn', `${shown.length} (of ${candidates.length}) regression-guard retirement candidate(s) — human review needed`);
 }
 
 // ══════════════════════════════════════════
@@ -392,6 +411,149 @@ function checkClutter() {
 }
 
 // ══════════════════════════════════════════
+// 6. Unpushed work (main ahead of origin/main)
+// ══════════════════════════════════════════
+function checkUnpushed() {
+  section('6. Unpushed work');
+  console.log(c.dim('  Compares against the LOCAL origin/main ref only — no network fetch.'));
+
+  const countRes = run('git rev-list --count origin/main..main');
+  if (!countRes.ok) {
+    console.log(c.yellow('⚠ could not determine — no local origin/main ref (try `git fetch` first)'));
+    summary('warn', 'Unpushed-work check skipped — no local origin/main ref');
+    return;
+  }
+
+  const count = parseInt(countRes.stdout.trim(), 10) || 0;
+  if (count === 0) {
+    console.log(c.green('✓ main is even with origin/main'));
+    summary('ok', 'Nothing unpushed');
+    return;
+  }
+
+  console.log(c.yellow(`⚠ ${count} commit(s) on main not pushed to origin`));
+  const logRes = run('git log --oneline origin/main..main -5');
+  if (logRes.ok) {
+    logRes.stdout.trim().split('\n').filter(Boolean).forEach((l) => console.log(`    ${l}`));
+    if (count > 5) console.log(c.dim(`    +${count - 5} more`));
+  }
+  console.log(c.dim('  Reminder: git↔prod drift once cost 6 versions (v4.39→v4.43.1) — push before it stacks up.'));
+  summary('warn', `${count} commit(s) on main not pushed to origin`);
+}
+
+// ══════════════════════════════════════════
+// 7. Debt headroom & trend
+// ══════════════════════════════════════════
+function parseAppJsLinesFromClaudeMd(md) {
+  if (!md) return null;
+  const m = md.match(/\|\s*app\.js\s*\|\s*(\d+)\s*\|/);
+  return m ? parseInt(m[1], 10) : null;
+}
+
+function checkDebtHeadroom() {
+  section('7. Debt headroom & trend');
+
+  const res = run('node tests/tech-debt.js --json');
+  let parsed = null;
+  if (res.stdout) {
+    try { parsed = JSON.parse(res.stdout); } catch (_) { parsed = null; }
+  }
+
+  if (!parsed || !Array.isArray(parsed.metrics)) {
+    console.log(c.yellow('⚠ could not run/parse `node tests/tech-debt.js --json`'));
+    summary('warn', 'Debt headroom check failed — see script output');
+    return;
+  }
+
+  parsed.metrics.forEach((m) => {
+    const tight = m.limit > 0 && m.headroom / m.limit < 0.10;
+    const line = `  ${m.name}: ${m.value} / ${m.limit} (headroom ${m.headroom})`;
+    console.log(tight ? c.yellow(line) : line);
+  });
+
+  // app.js week-over-week trend, sourced from CLAUDE.md's FACTS block history
+  // (no separate metrics-log file needed — git already has the time series).
+  const currentMd = safeRead('CLAUDE.md');
+  const currentLines = parseAppJsLinesFromClaudeMd(currentMd);
+  let trendLine = null;
+  if (currentLines !== null) {
+    const shaRes = run('git rev-list -1 --before="7 days ago" main');
+    if (shaRes.ok && shaRes.stdout.trim()) {
+      const sha = shaRes.stdout.trim();
+      const oldMdRes = run(`git show ${sha}:CLAUDE.md`);
+      const oldLines = oldMdRes.ok ? parseAppJsLinesFromClaudeMd(oldMdRes.stdout) : null;
+      if (oldLines !== null) {
+        const delta = currentLines - oldLines;
+        trendLine = `  app.js: ${currentLines} lines (Δ ${delta >= 0 ? '+' : ''}${delta} this week)`;
+      }
+    }
+  }
+  console.log(trendLine || c.dim('  app.js weekly trend: unavailable (no FACTS block 7 days ago, or history unreadable)'));
+
+  // Extraction ratchet (#138 Phase 0+) — silent skip until the baseline file lands.
+  const baselineRaw = safeRead('tests/appjs-baseline.json');
+  if (baselineRaw) {
+    try {
+      const baseline = JSON.parse(baselineRaw);
+      if (currentLines !== null && typeof baseline.lines === 'number') {
+        const remaining = (baseline.lines + (baseline.allowance || 0)) - currentLines;
+        console.log(`  extraction ratchet: baseline ${baseline.lines} + allowance ${baseline.allowance || 0} → ${remaining} lines remaining`);
+      }
+    } catch (_) { /* malformed baseline file — not this script's job to fix */ }
+  }
+
+  const rankable = parsed.metrics.filter((m) => m.limit > 0);
+  if (rankable.length === 0) {
+    summary('ok', 'Debt headroom OK (no rankable metrics)');
+    return;
+  }
+  const tightest = rankable.reduce((a, b) => (a.headroom / a.limit <= b.headroom / b.limit ? a : b));
+  if (tightest.headroom / tightest.limit < 0.10) {
+    summary('warn', `${tightest.name} within 10% of limit (${tightest.headroom} left of ${tightest.limit})`);
+  } else {
+    summary('ok', `Debt headroom OK (tightest: ${tightest.name}, ${tightest.headroom} left)`);
+  }
+}
+
+// ══════════════════════════════════════════
+// 8. GitHub debt (the board nobody looks at)
+// ══════════════════════════════════════════
+function checkGithubDebt() {
+  section('8. GitHub tech-debt board');
+
+  const res = run('gh issue list --label tech-debt --state open --json number,title,updatedAt --limit 100');
+  if (!res.ok) {
+    console.log(c.yellow('⚠ gh unavailable — GitHub debt not scanned (offline or not authenticated)'));
+    summary('warn', 'gh unavailable — GitHub debt not scanned');
+    return;
+  }
+
+  let issues = [];
+  try { issues = JSON.parse(res.stdout); } catch (_) {
+    console.log(c.yellow('⚠ could not parse `gh issue list` output'));
+    summary('warn', 'GitHub debt scan failed — unparseable gh output');
+    return;
+  }
+
+  if (issues.length === 0) {
+    console.log(c.green('✓ no open tech-debt issues'));
+    summary('ok', 'tech-debt board empty');
+    return;
+  }
+
+  const now = Date.now();
+  const sorted = issues
+    .map((iss) => ({ ...iss, untouchedDays: Math.floor((now - new Date(iss.updatedAt).getTime()) / 86400000) }))
+    .sort((a, b) => b.untouchedDays - a.untouchedDays);
+
+  console.log(`  ${issues.length} open issue(s) — 3 least-recently-updated:`);
+  sorted.slice(0, 3).forEach((iss) => {
+    console.log(`    #${iss.number} ${iss.title} (untouched ${iss.untouchedDays}d)`);
+  });
+  summary('warn', `${issues.length} open tech-debt issue(s) (oldest untouched ${sorted[0].untouchedDays}d)`);
+}
+
+// ══════════════════════════════════════════
 // main
 // ══════════════════════════════════════════
 function main() {
@@ -399,12 +561,14 @@ function main() {
 
   checkFactsFreshness();
   checkGraphify();
-  const currentVersion = parseAppVersion();
-  checkRegressionGuards(currentVersion);
+  checkRegressionGuards();
   checkVersionHistory();
   checkClutter();
+  checkUnpushed();
+  checkDebtHeadroom();
+  checkGithubDebt();
 
-  console.log('\n' + c.bold(c.cyan('── 6. Summary ──')));
+  console.log('\n' + c.bold(c.cyan('── 9. Summary ──')));
   summaryLines.forEach((l) => console.log(l));
   console.log('');
 
