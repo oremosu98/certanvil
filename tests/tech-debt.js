@@ -39,7 +39,12 @@ log('\n🔍 Tech Debt Monitor\n');
 
 // --- File size checks ---
 log('📏 File Size');
-check('app.js line count', jsLines.length, 22500); // re-baselined v7.53.2 (2026-06-14) from a stale 19000 — actual was 21509 and permanently breaching; real fix is the module-split (#138), post-launch. Headroom ~1K to catch NEW regressions, not sit red forever.
+// #138 ratchet (2026-07-17): app.js may not grow past baseline+allowance.
+// Baseline is LOWERED by each extraction wave (see the #138 plan, protocol
+// P6). Raising it is allowed but must be a deliberate, commented, own-commit
+// edit of tests/appjs-baseline.json — that friction is the entire point.
+const appBaseline = JSON.parse(fs.readFileSync(require('path').join(__dirname, 'appjs-baseline.json'), 'utf8'));
+check('app.js line count (ratchet)', jsLines.length, appBaseline.lines + appBaseline.allowance);
 check('styles.css line count', cssLines.length, 15600); // re-baselined v7.53.2 (2026-06-14) from a 4x-stale 3700 (file is ~14840) — the old limit had been permanently red and ignored. Real fix is the per-feature split (#55), post-launch.
 
 // --- Code quality checks ---
