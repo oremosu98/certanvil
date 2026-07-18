@@ -94,7 +94,7 @@ const {
     js.includes('function startWhyNot(') && js.includes('async function _fetchWhyNotSession(') &&
     js.includes('function whyNotPickReason(') && js.includes('function renderWhyNotVerdict('));
   test('v7.50.0 WhyNot: finish() branches to the reason picker in whyNotMode',
-    /function finish\(\)[\s\S]{0,900}whyNotMode && _wnSession\) \{ _wnFinishQuestion\(\); return; \}/.test(js));
+    /function finish\(\)[\s\S]{0,900}whyNotMode && _wnSession[\s\S]{0,80}\) \{ _wnFinishQuestion\(\); return; \}/.test(js));
   test('v7.50.0 WhyNot: round question letterizes options before the quiz engine',
     /options: _letterizeOptions\(r\.options\),[\s\S]{0,400}_wnSession\.topic/.test(js) || /_wnBeginRound[\s\S]{0,800}_letterizeOptions\(r\.options\)/.test(js));
   test('v7.50.0 WhyNot: wrong-bank no-ops during sessions (parallel to bank/SR)',

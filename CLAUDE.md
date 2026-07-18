@@ -24,12 +24,12 @@
 <!-- machine-owned — run `node scripts/stamp-facts.js` to refresh; do not hand-edit -->
 | Metric | Lines | Size |
 |---|---|---|
-| app.js | 17634 | 888 KB |
+| app.js | 16854 | 848 KB |
 | styles.css | 14903 | 551 KB |
 | index.html | 1997 | 128 KB |
 | dg-system.css | 4597 | 447 KB |
 | tests/uat.js + tests/uat/ (25 modules) | 27373 | — |
-UAT checks: 4824 · E2E `test(` count: 159 · APP_VERSION: 7.69.0 · stamped-at: worktree
+UAT checks: 4824 · E2E `test(` count: 159 · APP_VERSION: 7.70.0 · stamped-at: worktree
 <!-- FACTS:AUTO:END -->
 
 | File | Purpose | Size |
@@ -131,6 +131,7 @@ npx playwright test              # E2E (tests/e2e/app.spec.js)
 
 | Version | Features Added |
 |---|---|
+| v7.70.0 | chore(#138): extract flagship drills to features/flagship-drills.js (wave 4) |
 | v7.69.0 | chore(#138): extract settings page to features/settings.js (wave 3) |
 | v7.68.0 | chore(#138): extract analytics page to features/analytics.js (wave 2) |
 | v7.67.0 | chore(#138): extract progress page to features/progress.js (wave 1) |
