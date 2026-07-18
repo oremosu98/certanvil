@@ -4,6 +4,8 @@
 
   var STEP_TYPES = ['order', 'categorize', 'match', 'analyze', 'fillin', 'configure'];
 
+  var _SWATCH_DEFECTS = ['spots', 'streak', 'smear', 'ghost', 'skew'];
+
   var _SL_PBQ_CERTS = ['netplus', 'secplus', 'aplus-core1', 'aplus-core2'];
 
   function _isNonEmptyStr(v) { return typeof v === 'string' && v.trim().length > 0; }
@@ -65,7 +67,7 @@
       });
     }
     if (s.assets && s.assets.reference) {
-      var ref = s.assets.reference, kinds = ['network', 'timeline', 'layered', 'terminal', 'faceplate', 'wiremap', 'slots'];
+      var ref = s.assets.reference, kinds = ['network', 'timeline', 'layered', 'terminal', 'faceplate', 'wiremap', 'slots', 'swatch'];
       if (kinds.indexOf(ref.kind) === -1) errs.push('reference: bad kind');
       else if (ref.kind === 'network' && !Array.isArray(ref.devices)) errs.push('reference network: devices[] required');
       else if (ref.kind === 'timeline' && !Array.isArray(ref.stages)) errs.push('reference timeline: stages[] required');
@@ -80,11 +82,17 @@
         return p && typeof p.pin === 'number' && typeof p.pairId === 'number';
       }))) errs.push('reference wiremap: pins[] must have exactly 8 entries with pin+pairId');
       else if (ref.kind === 'slots' && !Array.isArray(ref.bays)) errs.push('reference slots: bays[] required');
+      else if (ref.kind === 'swatch') {
+        if (_SWATCH_DEFECTS.indexOf(ref.defect) === -1) errs.push('reference swatch: defect must be one of ' + _SWATCH_DEFECTS.join('/'));
+        if (!_isNonEmptyStr(ref.title)) errs.push('reference swatch: title required');
+        if (ref.caption !== undefined && !_isNonEmptyStr(ref.caption)) errs.push('reference swatch: caption must be non-empty when present');
+        if (ref.notes !== undefined && !Array.isArray(ref.notes)) errs.push('reference swatch: notes must be an array when present');
+      }
       if (ref.kind === 'layered' && ref.layout !== undefined && ['nested', 'stacked'].indexOf(ref.layout) === -1) {
         errs.push('reference layered: bad layout');
       }
     }
-    if (s.archetype !== undefined && ['diagram', 'incident', 'defense', 'wireless', 'firewall', 'soho', 'cli', 'discovery', 'triage', 'portmap', 'wiremap', 'pcbuild', 'raid'].indexOf(s.archetype) === -1) {
+    if (s.archetype !== undefined && ['diagram', 'incident', 'defense', 'wireless', 'firewall', 'soho', 'cli', 'discovery', 'triage', 'portmap', 'wiremap', 'pcbuild', 'raid', 'swatch'].indexOf(s.archetype) === -1) {
       errs.push('bad archetype');
     }
     return { ok: errs.length === 0, errors: errs };

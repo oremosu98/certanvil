@@ -337,6 +337,10 @@ const {
     var stepTypesMatch = js.match(/var STEP_TYPES\s*=\s*\[[^\]]+\]/);
     var stepTypesDecl = stepTypesMatch ? stepTypesMatch[0] + ';' : "var STEP_TYPES = ['order','categorize','match','analyze','fillin','configure'];";
 
+    // _SWATCH_DEFECTS array (Wave 4 Task 1) — grab from source
+    var swatchDefectsMatch = js.match(/var _SWATCH_DEFECTS\s*=\s*\[[^\]]+\]/);
+    var swatchDefectsDecl = swatchDefectsMatch ? swatchDefectsMatch[0] + ';' : "var _SWATCH_DEFECTS = ['spots','streak','smear','ghost','skew'];";
+
     if (!isNonEmptyStrBody || !validatePayloadBody || !validateScenarioBody) {
       test('reference validation: helper extraction succeeded', false);
       results.errors.push('could not extract simLabValidateScenario helpers; check names/indenting');
@@ -346,6 +350,7 @@ const {
     var vCtx = {};
     vm.createContext(vCtx);
     vm.runInContext(stepTypesDecl, vCtx);
+    vm.runInContext(swatchDefectsDecl, vCtx);
     vm.runInContext(isNonEmptyStrBody, vCtx);
     vm.runInContext(validatePayloadBody, vCtx);
     vm.runInContext(validateScenarioBody, vCtx);
@@ -468,6 +473,39 @@ const {
     var _sx3 = _baseScn(); _sx3.archetype = 'diskclinic';
     test('archetype validation: unknown archetype "diskclinic" still rejected',
       simLabValidateScenario(_sx3).ok === false);
+
+    // ── Wave 4 Task 1: 'swatch' reference kind + archetype tag ──
+    // 12. Valid swatch reference passes.
+    var _scnSwatch = _baseScn();
+    _scnSwatch.assets = { reference: { kind: 'swatch', title: 'Sample output', defect: 'spots' } };
+    test('reference validation: valid swatch reference passes',
+      simLabValidateScenario(_scnSwatch).ok === true);
+
+    // 13. swatch reference with bad defect rejected.
+    var _scnSwatchBadDefect = _baseScn();
+    _scnSwatchBadDefect.assets = { reference: { kind: 'swatch', title: 'Sample output', defect: 'banding' } };
+    var _swBadDefectResult = simLabValidateScenario(_scnSwatchBadDefect);
+    test('reference validation: swatch bad defect rejected',
+      _swBadDefectResult.ok === false && _swBadDefectResult.errors.some(function (e) { return /swatch.*defect/i.test(e); }));
+
+    // 14. swatch reference missing title rejected.
+    var _scnSwatchNoTitle = _baseScn();
+    _scnSwatchNoTitle.assets = { reference: { kind: 'swatch', defect: 'spots' } };
+    var _swNoTitleResult = simLabValidateScenario(_scnSwatchNoTitle);
+    test('reference validation: swatch missing title rejected',
+      _swNoTitleResult.ok === false && _swNoTitleResult.errors.some(function (e) { return /swatch.*title/i.test(e); }));
+
+    // 15. swatch reference with empty caption rejected.
+    var _scnSwatchEmptyCaption = _baseScn();
+    _scnSwatchEmptyCaption.assets = { reference: { kind: 'swatch', title: 'Sample output', defect: 'spots', caption: '' } };
+    var _swEmptyCaptionResult = simLabValidateScenario(_scnSwatchEmptyCaption);
+    test('reference validation: swatch empty caption rejected',
+      _swEmptyCaptionResult.ok === false && _swEmptyCaptionResult.errors.some(function (e) { return /swatch.*caption/i.test(e); }));
+
+    // 16. New archetype tag 'swatch' accepted.
+    var _scnSwatchArch = _baseScn(); _scnSwatchArch.archetype = 'swatch';
+    test('archetype validation: archetype swatch accepted',
+      simLabValidateScenario(_scnSwatchArch).ok === true);
 
     // ── Wave 2 Task 3: analyze mode step validates without payload.lines ──
     var _modeStep = { id: 'm', type: 'analyze', prompt: 'p', explanation: 'e', points: 1,
