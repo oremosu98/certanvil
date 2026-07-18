@@ -337,6 +337,10 @@ const {
     var stepTypesMatch = js.match(/var STEP_TYPES\s*=\s*\[[^\]]+\]/);
     var stepTypesDecl = stepTypesMatch ? stepTypesMatch[0] + ';' : "var STEP_TYPES = ['order','categorize','match','analyze','fillin','configure'];";
 
+    // _SWATCH_DEFECTS array (Wave 4 Task 1) — grab from source
+    var swatchDefectsMatch = js.match(/var _SWATCH_DEFECTS\s*=\s*\[[^\]]+\]/);
+    var swatchDefectsDecl = swatchDefectsMatch ? swatchDefectsMatch[0] + ';' : "var _SWATCH_DEFECTS = ['spots','streak','smear','ghost','skew'];";
+
     if (!isNonEmptyStrBody || !validatePayloadBody || !validateScenarioBody) {
       test('reference validation: helper extraction succeeded', false);
       results.errors.push('could not extract simLabValidateScenario helpers; check names/indenting');
@@ -346,6 +350,7 @@ const {
     var vCtx = {};
     vm.createContext(vCtx);
     vm.runInContext(stepTypesDecl, vCtx);
+    vm.runInContext(swatchDefectsDecl, vCtx);
     vm.runInContext(isNonEmptyStrBody, vCtx);
     vm.runInContext(validatePayloadBody, vCtx);
     vm.runInContext(validateScenarioBody, vCtx);
@@ -468,6 +473,39 @@ const {
     var _sx3 = _baseScn(); _sx3.archetype = 'diskclinic';
     test('archetype validation: unknown archetype "diskclinic" still rejected',
       simLabValidateScenario(_sx3).ok === false);
+
+    // ── Wave 4 Task 1: 'swatch' reference kind + archetype tag ──
+    // 12. Valid swatch reference passes.
+    var _scnSwatch = _baseScn();
+    _scnSwatch.assets = { reference: { kind: 'swatch', title: 'Sample output', defect: 'spots' } };
+    test('reference validation: valid swatch reference passes',
+      simLabValidateScenario(_scnSwatch).ok === true);
+
+    // 13. swatch reference with bad defect rejected.
+    var _scnSwatchBadDefect = _baseScn();
+    _scnSwatchBadDefect.assets = { reference: { kind: 'swatch', title: 'Sample output', defect: 'banding' } };
+    var _swBadDefectResult = simLabValidateScenario(_scnSwatchBadDefect);
+    test('reference validation: swatch bad defect rejected',
+      _swBadDefectResult.ok === false && _swBadDefectResult.errors.some(function (e) { return /swatch.*defect/i.test(e); }));
+
+    // 14. swatch reference missing title rejected.
+    var _scnSwatchNoTitle = _baseScn();
+    _scnSwatchNoTitle.assets = { reference: { kind: 'swatch', defect: 'spots' } };
+    var _swNoTitleResult = simLabValidateScenario(_scnSwatchNoTitle);
+    test('reference validation: swatch missing title rejected',
+      _swNoTitleResult.ok === false && _swNoTitleResult.errors.some(function (e) { return /swatch.*title/i.test(e); }));
+
+    // 15. swatch reference with empty caption rejected.
+    var _scnSwatchEmptyCaption = _baseScn();
+    _scnSwatchEmptyCaption.assets = { reference: { kind: 'swatch', title: 'Sample output', defect: 'spots', caption: '' } };
+    var _swEmptyCaptionResult = simLabValidateScenario(_scnSwatchEmptyCaption);
+    test('reference validation: swatch empty caption rejected',
+      _swEmptyCaptionResult.ok === false && _swEmptyCaptionResult.errors.some(function (e) { return /swatch.*caption/i.test(e); }));
+
+    // 16. New archetype tag 'swatch' accepted.
+    var _scnSwatchArch = _baseScn(); _scnSwatchArch.archetype = 'swatch';
+    test('archetype validation: archetype swatch accepted',
+      simLabValidateScenario(_scnSwatchArch).ok === true);
 
     // ── Wave 2 Task 3: analyze mode step validates without payload.lines ──
     var _modeStep = { id: 'm', type: 'analyze', prompt: 'p', explanation: 'e', points: 1,
@@ -958,5 +996,213 @@ const {
     bayLabels[1].innerHTML.indexOf('<script>') === -1 && bayLabels[1].innerHTML.indexOf('&lt;script&gt;') !== -1);
   var notes = panel.querySelectorAll('.slot-note');
   test('slots: renders constraint-note chips', notes.length === 1 && notes[0].innerHTML.indexOf('$700') !== -1);
+})();
+
+// ── Wave 4 Task 2: swatch reference renderer (static/illustrative, zero
+// interaction) — Laser Print Defect Clinic. Mirrors the Wave 3 Task 4 slots
+// block immediately above: same _el/_esc extraction, same makeEl DOM shim
+// (querySelectorAll only supports a single class token, so compound
+// selectors like '.swatch-sheet.swatch-spots' are resolved by a LOCAL
+// helper here, not by extending the shared shim). ──
+(function () {
+  var vm = require('vm');
+  var grab = function (name) { return _fnBody(js, name); };
+  var grabLine = function (name) {
+    var re = new RegExp('function ' + name + '\\([^\\n]*\\)\\s*\\{[^\\n]*\\}');
+    return (js.match(re) || [''])[0];
+  };
+  var elBody = grab('_el'), escBody = grabLine('_esc');
+  var isNonEmptyStrBody = grabLine('_isNonEmptyStr');
+  // _SWATCH_ARIA table (Wave 4 Task 2) — grab from source; flexible whitespace
+  // per the house extraction convention (mirrors swatchDefectsDecl, Task 1).
+  var swatchAriaMatch = js.match(/var _SWATCH_ARIA\s*=\s*\{[\s\S]*?\n\s*\};/);
+  var swatchAriaDecl = swatchAriaMatch ? swatchAriaMatch[0] : "var _SWATCH_ARIA = {};";
+  var swatchBody = grab('_slRenderRefSwatch'), dispBody = grab('_slRenderReference');
+  test('Wave 4: _slRenderRefSwatch extracted', !!swatchBody);
+  test('Wave 4: _SWATCH_ARIA table extracted', !!swatchAriaMatch);
+  test('Wave 4: _slRenderReference dispatches kind === swatch',
+    !!dispBody && /ref\.kind === 'swatch'/.test(dispBody));
+  if (!swatchBody || !dispBody) { results.errors.push('could not extract _slRenderRefSwatch/_slRenderReference'); return; }
+
+  var htmlEsc = function (s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  };
+  var makeEl = function (tag) {
+    var attrs = {}, listeners = {}, children = [], cls = '', inner = '';
+    var clsSet = {};
+    var el = {
+      tagName: tag.toUpperCase(),
+      get className() { return cls; }, set className(v) { cls = v; },
+      get innerHTML() { return inner; }, set innerHTML(v) { inner = v; children = []; },
+      get textContent() { return ''; }, set textContent(v) { inner = htmlEsc(v); },
+      style: {},
+      get _children() { return children; },
+      classList: {
+        add: function (c) { clsSet[c] = true; cls = (cls ? cls + ' ' : '') + c; },
+        remove: function (c) { delete clsSet[c]; },
+        toggle: function (c, on) { if (on) clsSet[c] = true; else delete clsSet[c]; },
+        contains: function (c) { return !!clsSet[c]; }
+      },
+      setAttribute: function (k, v) { attrs[k] = v; },
+      getAttribute: function (k) { return (k in attrs) ? attrs[k] : null; },
+      removeAttribute: function (k) { delete attrs[k]; },
+      appendChild: function (c) { children.push(c); return c; },
+      querySelectorAll: function (sel) {
+        var hits = [], want = sel.replace(/^\./, '');
+        var walk = function (n) { (n._children || []).forEach(function (c) {
+          if (!c || !c.tagName) return;
+          if (want.toUpperCase() === c.tagName || (c.className && c.className.split(' ').indexOf(want) !== -1)) hits.push(c);
+          walk(c);
+        }); };
+        walk(el); return hits;
+      },
+      addEventListener: function (ev, fn) { (listeners[ev] = listeners[ev] || []).push(fn); },
+      _fire: function (ev) { (listeners[ev] || []).forEach(function (fn) { fn({}); }); }
+    };
+    return el;
+  };
+  var mCtx = { document: { createElement: makeEl }, Object: Object, Array: Array, String: String };
+  vm.createContext(mCtx);
+  vm.runInContext(elBody + '\n' + escBody + '\n' + isNonEmptyStrBody + '\n' + swatchAriaDecl + '\n' + swatchBody + '\n' + dispBody, mCtx);
+
+  // LOCAL compound-class query helper (walks the real DOM-shim node objects
+  // directly from Node — no vm involved — so it can support multi-class
+  // selectors the shared shim's querySelectorAll deliberately doesn't).
+  var localQueryAll = function (root, selector) {
+    var classes = selector.split('.').filter(Boolean);
+    var hits = [];
+    var walk = function (n) {
+      (n._children || []).forEach(function (c) {
+        if (!c || !c.tagName) return;
+        var cls = (c.className || '').split(' ');
+        if (classes.every(function (want) { return cls.indexOf(want) !== -1; })) hits.push(c);
+        walk(c);
+      });
+    };
+    walk(root);
+    return hits;
+  };
+  var localQuery = function (root, selector) { return localQueryAll(root, selector)[0] || null; };
+  var hasOnclickAnywhere = function (root) {
+    var found = false;
+    var walk = function (n) {
+      (n._children || []).forEach(function (c) {
+        if (!c) return;
+        if (typeof c.getAttribute === 'function' && c.getAttribute('onclick') != null) found = true;
+        walk(c);
+      });
+    };
+    walk(root);
+    return found;
+  };
+
+  var sandboxRender = function (ref) {
+    mCtx.ref = ref;
+    vm.runInContext('globalThis.__panel = _slRenderReference(ref);', mCtx);
+    return mCtx.__panel;
+  };
+
+  ['spots', 'streak', 'smear', 'ghost', 'skew'].forEach(function (d) {
+    var panel = sandboxRender({ kind: 'swatch', title: 'Sample output', defect: d, caption: 'cap', notes: ['n1'] });
+    var sheet = localQuery(panel, '.swatch-sheet.swatch-' + d);
+    test('Wave 4: swatch ' + d + ' renders sheet', !!sheet);
+    test('Wave 4: swatch ' + d + ' sheet has role=img', !!sheet && sheet.getAttribute('role') === 'img');
+    test('Wave 4: swatch ' + d + ' has a non-empty aria-label',
+      !!sheet && _isNonEmptyStrLocal(sheet.getAttribute('aria-label')));
+    test('Wave 4: swatch ' + d + ' zero interactive elements',
+      panel.querySelectorAll('button').length === 0 && panel.querySelectorAll('select').length === 0 && !hasOnclickAnywhere(panel));
+    var lines = localQueryAll(panel, '.swatch-line');
+    var dimLines = lines.filter(function (l) { return l.className.split(' ').indexOf('dim') !== -1; });
+    test('Wave 4: swatch ' + d + ' renders 14 lines, 7 dim (odd rows)', lines.length === 14 && dimLines.length === 7);
+    test('Wave 4: swatch ' + d + ' has a header', localQueryAll(panel, '.swatch-hdr').length === 1);
+    var wrap = localQuery(panel, '.swatch-wrap');
+    test('Wave 4: swatch ' + d + ' wrapped in .swatch-wrap', !!wrap);
+    var cap = localQuery(panel, '.swatch-cap');
+    test('Wave 4: swatch ' + d + ' caption renders and is ESCAPED',
+      !!cap && cap.innerHTML.indexOf('cap') !== -1);
+    var notes = localQueryAll(panel, '.swatch-note');
+    test('Wave 4: swatch ' + d + ' renders note chips', notes.length === 1 && notes[0].innerHTML.indexOf('n1') !== -1);
+  });
+  function _isNonEmptyStrLocal(v) { return typeof v === 'string' && v.trim().length > 0; }
+
+  // spots: 3 spots + a gauge (2 ticks, 1 rail, 1 label), no other overlay kind
+  (function () {
+    var panel = sandboxRender({ kind: 'swatch', title: 't', defect: 'spots' });
+    test('Wave 4: spots swatch has exactly 3 .swatch-spot', localQueryAll(panel, '.swatch-spot').length === 3);
+    var gauges = localQueryAll(panel, '.swatch-gauge');
+    test('Wave 4: spots swatch has exactly 1 .swatch-gauge', gauges.length === 1);
+    test('Wave 4: spots gauge is aria-hidden', !!gauges[0] && gauges[0].getAttribute('aria-hidden') === 'true');
+    test('Wave 4: spots gauge has 2 .swatch-tick', localQueryAll(panel, '.swatch-tick').length === 2);
+    test('Wave 4: spots gauge has 1 .swatch-rail', localQueryAll(panel, '.swatch-rail').length === 1);
+    var label = localQuery(panel, '.swatch-gauge-label');
+    test('Wave 4: spots gauge has a .swatch-gauge-label', !!label && label.innerHTML.indexOf('76') !== -1);
+    test('Wave 4: spots swatch has no streak/smear/ghost overlays',
+      localQueryAll(panel, '.swatch-streak-band').length === 0 && localQueryAll(panel, '.swatch-smear-wash').length === 0 &&
+      localQueryAll(panel, '.swatch-ghost-src').length === 0 && localQueryAll(panel, '.swatch-ghost-echo').length === 0);
+  })();
+
+  // streak: exactly 1 .swatch-streak-band (named to avoid colliding with the
+  // sheet's own 'swatch-streak' defect-modifier class), no gauge
+  (function () {
+    var panel = sandboxRender({ kind: 'swatch', title: 't', defect: 'streak' });
+    test('Wave 4: streak swatch has exactly 1 .swatch-streak-band', localQueryAll(panel, '.swatch-streak-band').length === 1);
+    test('Wave 4: streak swatch sheet still carries the swatch-streak class', !!localQuery(panel, '.swatch-sheet.swatch-streak'));
+    test('Wave 4: streak swatch has no gauge/spot overlays',
+      localQueryAll(panel, '.swatch-gauge').length === 0 && localQueryAll(panel, '.swatch-spot').length === 0);
+  })();
+
+  // smear: exactly 1 .swatch-smear-wash (named to avoid colliding with the
+  // sheet's own 'swatch-smear' defect-modifier class), no gauge
+  (function () {
+    var panel = sandboxRender({ kind: 'swatch', title: 't', defect: 'smear' });
+    test('Wave 4: smear swatch has exactly 1 .swatch-smear-wash', localQueryAll(panel, '.swatch-smear-wash').length === 1);
+    test('Wave 4: smear swatch sheet still carries the swatch-smear class', !!localQuery(panel, '.swatch-sheet.swatch-smear'));
+    test('Wave 4: smear swatch has no gauge/spot overlays',
+      localQueryAll(panel, '.swatch-gauge').length === 0 && localQueryAll(panel, '.swatch-spot').length === 0);
+  })();
+
+  // ghost: exactly 1 .swatch-ghost-src + 1 .swatch-ghost-echo, no gauge
+  (function () {
+    var panel = sandboxRender({ kind: 'swatch', title: 't', defect: 'ghost' });
+    test('Wave 4: ghost swatch has exactly 1 .swatch-ghost-src + 1 .swatch-ghost-echo',
+      localQueryAll(panel, '.swatch-ghost-src').length === 1 && localQueryAll(panel, '.swatch-ghost-echo').length === 1);
+    test('Wave 4: ghost swatch has no gauge/spot overlays',
+      localQueryAll(panel, '.swatch-gauge').length === 0 && localQueryAll(panel, '.swatch-spot').length === 0);
+  })();
+
+  // skew: NO extra overlay nodes at all — the CSS transform does the work
+  (function () {
+    var panel = sandboxRender({ kind: 'swatch', title: 't', defect: 'skew' });
+    test('Wave 4: skew swatch adds zero overlay nodes (spot/streak/smear/ghost/gauge)',
+      localQueryAll(panel, '.swatch-spot').length === 0 && localQueryAll(panel, '.swatch-streak-band').length === 0 &&
+      localQueryAll(panel, '.swatch-smear-wash').length === 0 && localQueryAll(panel, '.swatch-ghost-src').length === 0 &&
+      localQueryAll(panel, '.swatch-ghost-echo').length === 0 && localQueryAll(panel, '.swatch-gauge').length === 0);
+    test('Wave 4: skew swatch sheet still carries the swatch-skew class',
+      !!localQuery(panel, '.swatch-sheet.swatch-skew'));
+  })();
+
+  // caption is XSS-escaped
+  (function () {
+    var panel = sandboxRender({ kind: 'swatch', title: 't', defect: 'smear', caption: '<img src=x onerror=1>' });
+    var cap = localQuery(panel, '.swatch-cap');
+    test('Wave 4: swatch caption is escaped (no raw <img>, no live onerror handler)',
+      !!cap && cap.innerHTML.indexOf('<img') === -1 && !hasOnclickAnywhere(panel));
+  })();
+
+  // notes are XSS-escaped
+  (function () {
+    var panel = sandboxRender({ kind: 'swatch', title: 't', defect: 'smear', notes: ['<script>x</script>'] });
+    var note = localQuery(panel, '.swatch-note');
+    test('Wave 4: swatch note text is escaped (no raw <script>)',
+      !!note && note.innerHTML.indexOf('<script>') === -1);
+  })();
+
+  // caption/notes both optional — absent when not provided
+  (function () {
+    var panel = sandboxRender({ kind: 'swatch', title: 't', defect: 'smear' });
+    test('Wave 4: swatch with no caption/notes renders neither .swatch-cap nor .swatch-notes',
+      localQueryAll(panel, '.swatch-cap').length === 0 && localQueryAll(panel, '.swatch-notes').length === 0);
+  })();
 })();
 

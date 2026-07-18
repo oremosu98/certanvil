@@ -1231,3 +1231,309 @@ const {
   }
 })();
 
+// ── Sim Lab: Wave 4 swatch vertical slice ──
+// Proves the swatch archetype works end to end through the REAL Practice
+// path against the REAL a1-swatch-01 bank scenario (not a hand fixture):
+// structural + fidelity validators green, _slRenderReference dispatch,
+// _slMountScenario mount with a static (zero-interaction) swatch panel,
+// per-slot configure scoring incl. the partial-credit path, and the XSS
+// caption round-trip through the real mount path. Scaffolding copied
+// wholesale from the Wave 3 Task 14 block above (same grab() extraction,
+// same stateful DOM shim). NOTE: asserts the REAL committed overlay class
+// names (swatch-streak-band / swatch-smear-wash — renamed in Task 2 to
+// avoid colliding with the sheet's own swatch-<defect> modifier class).
+(function () {
+  console.log('\n\x1b[1m── Sim Lab: Wave 4 swatch vertical slice ──\x1b[0m');
+  try {
+    var vm = require('vm');
+
+    var grab = function (name) {
+      var re = new RegExp('function ' + name + '\\([^)]*\\) \\{[\\s\\S]*?\\n\\}');
+      return (js.match(re) || [''])[0];
+    };
+    var grabLine = function (name) {
+      var re = new RegExp('function ' + name + '\\([^\\n]*\\)\\s*\\{[^\\n]*\\}');
+      return (js.match(re) || [''])[0];
+    };
+
+    // ── (a) validator sandbox: structural + fidelity ──
+    var isNonEmptyStrBody    = _fnBody(js, '_isNonEmptyStr');
+    var validatePayloadBody  = _fnBody(js, '_validateStepPayload');
+    var validateScenarioBody = _fnBody(js, 'simLabValidateScenario');
+    var stepTypesMatch = js.match(/var STEP_TYPES\s*=\s*\[[^\]]+\]/);
+    var stepTypesDecl = stepTypesMatch ? stepTypesMatch[0] + ';' : '';
+    var swatchDefectsMatch = js.match(/var _SWATCH_DEFECTS\s*=\s*\[[^\]]+\]/);
+    var swatchDefectsDecl = swatchDefectsMatch ? swatchDefectsMatch[0] + ';' : '';
+    var resolveSlotBody = _fnBody(js, '_slFidelityResolveSlot');
+    var causesVar = (js.match(/var _SWATCH_CAUSES = \{[\s\S]*?\n\s*\};/) || [''])[0];
+    var swatchFidelityBody = _fnBody(js, 'simLabValidateSwatchFidelity');
+
+    if (!isNonEmptyStrBody || !validatePayloadBody || !validateScenarioBody || !stepTypesDecl ||
+        !swatchDefectsDecl || !resolveSlotBody || !causesVar || !swatchFidelityBody) {
+      test('Wave 4 slice: validator vm extraction succeeded', false);
+      results.errors.push('Wave 4 slice: could not extract validator helpers; check names/indenting');
+      return;
+    }
+    var vCtx = {};
+    vm.createContext(vCtx);
+    vm.runInContext(stepTypesDecl + '\n' + swatchDefectsDecl + '\n' + isNonEmptyStrBody + '\n' +
+      validatePayloadBody + '\n' + validateScenarioBody + '\n' + resolveSlotBody + '\n' +
+      causesVar + '\n' + swatchFidelityBody, vCtx);
+    vm.runInContext('globalThis.__validate = simLabValidateScenario; globalThis.__fidelity = simLabValidateSwatchFidelity;', vCtx);
+    var validateScenario = vCtx.__validate;
+    var swatchFidelity = vCtx.__fidelity;
+
+    // ── (b) the REAL bank scenario ──
+    var seedSrc = read('features/sim-lab-seed-aplus-core1.js');
+    var seedCtx = {};
+    vm.createContext(seedCtx);
+    vm.runInContext('var window = {};\n' + seedSrc + '\nglobalThis.__seed = window.SIM_LAB_SEED_APLUS_CORE1;', seedCtx);
+    var bank = seedCtx.__seed;
+    var swatchScn = (Array.isArray(bank) ? bank : []).filter(function (s) { return s && s.id === 'a1-swatch-01'; })[0];
+    test('Wave 4 slice: a1-swatch-01 resolved from the real bank', !!swatchScn);
+    if (!swatchScn) { results.errors.push('Wave 4 slice: a1-swatch-01 missing from SIM_LAB_SEED_APLUS_CORE1'); return; }
+
+    // (1) belt and suspenders vs. the authoring harness
+    var vr = validateScenario(swatchScn);
+    test('Wave 4 slice: a1-swatch-01 passes simLabValidateScenario', vr && vr.ok === true);
+    var fr = swatchFidelity(swatchScn);
+    test('Wave 4 slice: a1-swatch-01 passes simLabValidateSwatchFidelity', fr && fr.ok === true);
+
+    // ── (c) renderer + mount + score sandbox (Wave 3 Task 14 shim, verbatim) ──
+    var elBody               = grab('_el');
+    var escBody               = grabLine('_esc');
+    var slAttrBody            = grabLine('_slAttr');
+    var renderCfgBody         = grab('_slRenderConfigure');
+    var renderAnalyzeModeBody = grab('_slRenderAnalyzeMode');
+    var renderAnalyzeBody     = grab('_slRenderAnalyze');
+    var renderStepBody        = grab('simLabRenderStep');
+    var refNetBody            = grab('_slRenderRefNetwork');
+    var refTimeBody           = grab('_slRenderRefTimeline');
+    var refLayBody            = grab('_slRenderRefLayered');
+    var refLayStackBody       = grab('_slRenderRefLayeredStacked');
+    var termLineBody          = grab('_termLineHtml');
+    var termPmtBody           = grab('_termPromptHtml');
+    var refTermBody           = grab('_slRenderRefTerminal');
+    var refFaceplateBody      = grab('_slRenderRefFaceplate');
+    var refWiremapBody        = grab('_slRenderRefWiremap');
+    var refSlotsBody          = grab('_slRenderRefSlots');
+    var swatchAriaVar         = (js.match(/var _SWATCH_ARIA = \{[\s\S]*?\n\s*\};/) || [''])[0];
+    var refSwatchBody         = grab('_slRenderRefSwatch');
+    var refDispBody           = grab('_slRenderReference');
+    var mountBody             = grab('_slMountScenario');
+    var scoreSlotsBody          = grab('_scoreConfigureSlots');
+    var scoreAnalyzeLenientBody = grab('_scoreAnalyzeLenient');
+    var scoreStepBody           = grab('_scoreStep');
+    var scoreScenarioBody       = grab('simLabScoreScenario');
+    var normBody           = grab('_norm');
+    var normalizeMatchBody = grab('_simLabNormalizeMatch');
+    var arrEqBody          = grab('_arrEq');
+    var setEqBody          = grab('_setEq');
+
+    if (!elBody || !escBody || !mountBody || !refDispBody || !refSwatchBody || !swatchAriaVar ||
+        !renderCfgBody || !renderStepBody ||
+        !scoreScenarioBody || !scoreSlotsBody || !scoreStepBody) {
+      test('Wave 4 slice: mount/score vm extraction succeeded', false);
+      results.errors.push('Wave 4 slice: could not extract _slMountScenario/_slRenderRefSwatch/_SWATCH_ARIA/score helpers; check names/indenting');
+      return;
+    }
+
+    var htmlEsc = function (s) {
+      return String(s == null ? '' : s)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    };
+    var makeEl = function (tag) {
+      var attrs = {}, listeners = {}, children = [], cls = '', inner = '', val = '';
+      var clsSet = {};
+      var el = {
+        tagName: tag.toUpperCase(),
+        get className() { return cls; }, set className(v) { cls = v; },
+        get innerHTML() { return inner; }, set innerHTML(v) { inner = v; children = []; },
+        get textContent() { return ''; }, set textContent(v) { inner = htmlEsc(v); },
+        get value() { return val; }, set value(v) { val = v; },
+        selected: false,
+        style: {},
+        get _children() { return children; },
+        classList: {
+          add: function (c) { clsSet[c] = true; },
+          remove: function (c) { delete clsSet[c]; },
+          toggle: function (c, on) { if (on) clsSet[c] = true; else delete clsSet[c]; },
+          contains: function (c) { return !!clsSet[c]; }
+        },
+        setAttribute: function (k, v) { attrs[k] = v; },
+        getAttribute: function (k) { return (k in attrs) ? attrs[k] : null; },
+        removeAttribute: function (k) { delete attrs[k]; },
+        appendChild: function (c) { children.push(c); return c; },
+        insertBefore: function (c) { children.unshift(c); return c; },
+        querySelector: function (sel) {
+          var want = sel.replace(/^\./, '');
+          var hit = null;
+          var walk = function (n) {
+            if (hit || !n || !n._children) return;
+            n._children.forEach(function (c) {
+              if (hit || !c || !c.tagName) return;
+              if (want.toUpperCase() === c.tagName || (c.className && c.className.split(' ').indexOf(want) !== -1)) { hit = c; return; }
+              walk(c);
+            });
+          };
+          walk(el);
+          return hit;
+        },
+        querySelectorAll: function (sel) {
+          var hits = [], want = sel.replace(/^\./, '');
+          var walk = function (n) { (n._children || []).forEach(function (c) {
+            if (!c || !c.tagName) return;
+            if (want.toUpperCase() === c.tagName || (c.className && c.className.split(' ').indexOf(want) !== -1)) hits.push(c);
+            walk(c);
+          }); };
+          walk(el); return hits;
+        },
+        addEventListener: function (ev, fn) { (listeners[ev] = listeners[ev] || []).push(fn); },
+        dispatchEvent: function (evObj) { (listeners[evObj.type] || []).forEach(function (fn) { fn(evObj); }); },
+        _fire: function (ev) { (listeners[ev] || []).forEach(function (fn) { fn({}); }); },
+        closest: function () { return null; },
+        remove: function () {}
+      };
+      return el;
+    };
+    var docShim = {
+      createElement: function (tag) { return makeEl(tag); },
+      createTextNode: function (t) { return { textContent: t, tagName: '#text' }; }
+    };
+    var windowShim = { CSS: null, matchMedia: function () { return { matches: false }; } };
+    var mCtx = { document: docShim, window: windowShim, Object: Object, Array: Array, String: String, JSON: JSON };
+    vm.createContext(mCtx);
+    vm.runInContext(elBody, mCtx);
+    vm.runInContext(escBody, mCtx);
+    vm.runInContext(slAttrBody, mCtx);
+    vm.runInContext(isNonEmptyStrBody, mCtx);
+    vm.runInContext(renderCfgBody, mCtx);
+    if (renderAnalyzeModeBody) vm.runInContext(renderAnalyzeModeBody, mCtx);
+    if (renderAnalyzeBody) vm.runInContext(renderAnalyzeBody, mCtx);
+    vm.runInContext(renderStepBody, mCtx);
+    if (refNetBody) vm.runInContext(refNetBody, mCtx);
+    if (refTimeBody) vm.runInContext(refTimeBody, mCtx);
+    if (refLayBody) vm.runInContext(refLayBody, mCtx);
+    if (refLayStackBody) vm.runInContext(refLayStackBody, mCtx);
+    if (termLineBody) vm.runInContext(termLineBody, mCtx);
+    if (termPmtBody) vm.runInContext(termPmtBody, mCtx);
+    if (refTermBody) vm.runInContext(refTermBody, mCtx);
+    if (refFaceplateBody) vm.runInContext(refFaceplateBody, mCtx);
+    if (refWiremapBody) vm.runInContext(refWiremapBody, mCtx);
+    if (refSlotsBody) vm.runInContext(refSlotsBody, mCtx);
+    vm.runInContext(swatchAriaVar, mCtx);
+    vm.runInContext(refSwatchBody, mCtx);
+    vm.runInContext(refDispBody, mCtx);
+    vm.runInContext(mountBody, mCtx);
+    if (normBody) vm.runInContext(normBody, mCtx);
+    if (normalizeMatchBody) vm.runInContext(normalizeMatchBody, mCtx);
+    if (arrEqBody) vm.runInContext(arrEqBody, mCtx);
+    if (setEqBody) vm.runInContext(setEqBody, mCtx);
+    vm.runInContext(scoreSlotsBody, mCtx);
+    if (scoreAnalyzeLenientBody) vm.runInContext(scoreAnalyzeLenientBody, mCtx);
+    vm.runInContext(scoreStepBody, mCtx);
+    vm.runInContext(scoreScenarioBody, mCtx);
+
+    // local compound-class query (the shim's querySelector is single-token)
+    var queryCompound = function (root, selector) {
+      var classes = selector.split('.').filter(Boolean);
+      var hit = null;
+      var walk = function (n) {
+        if (hit) return;
+        (n._children || []).forEach(function (c) {
+          if (hit || !c || !c.tagName) return;
+          var cls = (c.className || '').split(' ');
+          if (classes.every(function (w) { return cls.indexOf(w) !== -1; })) { hit = c; return; }
+          walk(c);
+        });
+      };
+      walk(root);
+      return hit;
+    };
+
+    function expectedSelectCount(scn) {
+      return scn.steps.filter(function (s) { return s.type === 'configure'; })
+        .reduce(function (sum, s) { return sum + s.payload.slots.length; }, 0);
+    }
+    function mountOnly(scn) {
+      var host = makeEl('div');
+      mCtx.__host = host;
+      mCtx.__scn = scn;
+      var result = null;
+      mCtx.__onSubmit = function (r) { result = r; };
+      vm.runInContext('globalThis.__opts = { onSubmit: __onSubmit }; _slMountScenario(__host, __scn, __opts);', mCtx);
+      return { wrap: host._children[0], getResult: function () { return result; } };
+    }
+    function submitActive() { vm.runInContext('window.__slActiveSubmit();', mCtx); }
+    function driveConfigureCorrectly(wrap, scn, wrongSlot) {
+      var stepWraps = wrap._children.filter(function (c) { return c && c.className === 'sl-step'; });
+      scn.steps.forEach(function (st, i) {
+        if (st.type !== 'configure') return;
+        var selects = stepWraps[i].querySelectorAll('select');
+        selects.forEach(function (sel) {
+          var slotId = sel.getAttribute('data-slot');
+          var correctVal = st.answer.slots[slotId];
+          var v = correctVal;
+          if (wrongSlot && wrongSlot.stepId === st.id && wrongSlot.slotId === slotId) {
+            var slotDef = st.payload.slots.filter(function (s) { return s.id === slotId; })[0];
+            var wrongOpt = slotDef.options.filter(function (o) { return o.id !== correctVal; })[0];
+            v = wrongOpt.id;
+          }
+          sel.value = v;
+          sel.dispatchEvent({ type: 'change' });
+        });
+      });
+    }
+
+    // (2) dispatch: _slRenderReference routes kind 'swatch' to the swatch renderer
+    mCtx.__swRef = swatchScn.assets.reference;
+    var dispPanel = vm.runInContext('_slRenderReference(__swRef);', mCtx);
+    test('Wave 4 slice: _slRenderReference returns a .sl-ref panel for kind swatch',
+      dispPanel && dispPanel.className === 'sl-ref');
+    test('Wave 4 slice: dispatched panel contains .swatch-sheet.swatch-spots (a1-swatch-01 primary defect)',
+      !!queryCompound(dispPanel, '.swatch-sheet.swatch-spots'));
+
+    // (3) full mount through _slMountScenario: reference panel + steps render;
+    // the swatch sheet itself carries ZERO interactive elements (static by spec)
+    var swMount = mountOnly(swatchScn);
+    var swWrap = swMount.wrap;
+    var mountedSheet = swWrap.querySelector('.swatch-sheet');
+    test('Wave 4 slice: mounted DOM contains the swatch sheet and every configure <select>',
+      !!mountedSheet && swWrap.querySelectorAll('select').length === expectedSelectCount(swatchScn));
+    test('Wave 4 slice: zero interactive elements inside the swatch sheet (static reference)',
+      !!mountedSheet && mountedSheet.querySelectorAll('button').length === 0 &&
+      mountedSheet.querySelectorAll('select').length === 0);
+
+    // (4) fully-correct submission scores full points through the real path
+    driveConfigureCorrectly(swWrap, swatchScn);
+    submitActive();
+    var swResult = swMount.getResult();
+    test('Wave 4 slice: fully-correct diagnose+fix answers score correct === total',
+      swResult && swResult.total > 0 && swResult.correct === swResult.total);
+
+    // (5) wrong failedComponent → partial credit; the defectPattern point is retained
+    var swatchClone = JSON.parse(JSON.stringify(swatchScn));
+    var swMount2 = mountOnly(swatchClone);
+    driveConfigureCorrectly(swMount2.wrap, swatchClone, { stepId: 'diagnose', slotId: 'failedComponent' });
+    submitActive();
+    var swResult2 = swMount2.getResult();
+    test('Wave 4 slice: wrong failedComponent scores partial credit (correct < total, correct > 0)',
+      swResult2 && swResult2.correct < swResult2.total && swResult2.correct > 0);
+    var swDiagTally = swResult2 && swResult2.perStep && swResult2.perStep.diagnose;
+    test('Wave 4 slice: per-step diagnose tally retains the defectPattern point (correct === total - 1)',
+      swDiagTally && swDiagTally.total > 1 && swDiagTally.correct === swDiagTally.total - 1);
+
+    // (6) XSS caption round-trips ESCAPED through the real mount path
+    var xssClone = JSON.parse(JSON.stringify(swatchScn));
+    xssClone.assets.reference.caption = '<img src=x onerror=1>';
+    var xssMount = mountOnly(xssClone);
+    var xssCap = xssMount.wrap.querySelector('.swatch-cap');
+    test('Wave 4 slice: XSS caption round-trips escaped through the real mount path (no raw <img>)',
+      !!xssCap && xssCap.innerHTML.indexOf('<img') === -1 && xssCap.innerHTML.indexOf('&lt;img') !== -1);
+
+  } catch (err) {
+    test('Wave 4 slice: vertical-slice smoke test (threw)', false);
+    results.errors.push('Wave 4 slice vertical-slice smoke test threw: ' + err.message);
+  }
+})();
+

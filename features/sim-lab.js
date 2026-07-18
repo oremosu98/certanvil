@@ -4,6 +4,8 @@
 
   var STEP_TYPES = ['order', 'categorize', 'match', 'analyze', 'fillin', 'configure'];
 
+  var _SWATCH_DEFECTS = ['spots', 'streak', 'smear', 'ghost', 'skew'];
+
   var _SL_PBQ_CERTS = ['netplus', 'secplus', 'aplus-core1', 'aplus-core2'];
 
   function _isNonEmptyStr(v) { return typeof v === 'string' && v.trim().length > 0; }
@@ -65,7 +67,7 @@
       });
     }
     if (s.assets && s.assets.reference) {
-      var ref = s.assets.reference, kinds = ['network', 'timeline', 'layered', 'terminal', 'faceplate', 'wiremap', 'slots'];
+      var ref = s.assets.reference, kinds = ['network', 'timeline', 'layered', 'terminal', 'faceplate', 'wiremap', 'slots', 'swatch'];
       if (kinds.indexOf(ref.kind) === -1) errs.push('reference: bad kind');
       else if (ref.kind === 'network' && !Array.isArray(ref.devices)) errs.push('reference network: devices[] required');
       else if (ref.kind === 'timeline' && !Array.isArray(ref.stages)) errs.push('reference timeline: stages[] required');
@@ -80,11 +82,17 @@
         return p && typeof p.pin === 'number' && typeof p.pairId === 'number';
       }))) errs.push('reference wiremap: pins[] must have exactly 8 entries with pin+pairId');
       else if (ref.kind === 'slots' && !Array.isArray(ref.bays)) errs.push('reference slots: bays[] required');
+      else if (ref.kind === 'swatch') {
+        if (_SWATCH_DEFECTS.indexOf(ref.defect) === -1) errs.push('reference swatch: defect must be one of ' + _SWATCH_DEFECTS.join('/'));
+        if (!_isNonEmptyStr(ref.title)) errs.push('reference swatch: title required');
+        if (ref.caption !== undefined && !_isNonEmptyStr(ref.caption)) errs.push('reference swatch: caption must be non-empty when present');
+        if (ref.notes !== undefined && !Array.isArray(ref.notes)) errs.push('reference swatch: notes must be an array when present');
+      }
       if (ref.kind === 'layered' && ref.layout !== undefined && ['nested', 'stacked'].indexOf(ref.layout) === -1) {
         errs.push('reference layered: bad layout');
       }
     }
-    if (s.archetype !== undefined && ['diagram', 'incident', 'defense', 'wireless', 'firewall', 'soho', 'cli', 'discovery', 'triage', 'portmap', 'wiremap', 'pcbuild', 'raid'].indexOf(s.archetype) === -1) {
+    if (s.archetype !== undefined && ['diagram', 'incident', 'defense', 'wireless', 'firewall', 'soho', 'cli', 'discovery', 'triage', 'portmap', 'wiremap', 'pcbuild', 'raid', 'swatch'].indexOf(s.archetype) === -1) {
       errs.push('bad archetype');
     }
     return { ok: errs.length === 0, errors: errs };
@@ -798,6 +806,47 @@
     } else if (failed > 0) {
       if (!/degraded/i.test(status || '')) errs.push('raid fidelity: ' + failed + ' failed drives within tolerance ' + meta.tolerance + ', keyed status "' + status + '" should be Degraded');
       if (!/hot-swap|rebuild/i.test(action || '')) errs.push('raid fidelity: keyed recoveryAction "' + action + '" should be hot-swap/rebuild when degraded');
+    }
+    return { ok: errs.length === 0, errors: errs };
+  }
+
+  // --- swatch (laser print defect) fidelity validator (Wave 4) ---
+  // Truth table maps each rendered defect to the SET of acceptable failed
+  // components (spec 2026-07-11 §4, pinned set-based). Matching is
+  // case-insensitive substring against the RESOLVED keyed option text.
+  var _SWATCH_CAUSES = {
+    spots:  ['drum', 'roller'],
+    streak: ['toner path', 'blocked toner', 'scratched drum'],
+    smear:  ['fuser'],
+    ghost:  ['cleaning blade', 'erase lamp', 'drum clean'],
+    skew:   ['pickup roller', 'paper path', 'separation pad']
+  };
+
+  function simLabValidateSwatchFidelity(scn) {
+    var errs = [];
+    var ref = scn && scn.assets && scn.assets.reference;
+    if (!ref || ref.kind !== 'swatch') return { ok: false, errors: ['swatch fidelity: assets.reference.kind must be "swatch"'] };
+    var accepts = _SWATCH_CAUSES[ref.defect];
+    if (!accepts) return { ok: false, errors: ['swatch fidelity: unknown defect "' + ref.defect + '"'] };
+    var dx = (scn.steps || []).filter(function (st) { return st.id === 'diagnose'; })[0];
+    if (!dx) return { ok: false, errors: ['swatch fidelity: no configure step with id "diagnose"'] };
+    var comp = _slFidelityResolveSlot(dx, 'failedComponent');
+    if (!comp) {
+      errs.push('swatch fidelity: diagnose step has no keyed failedComponent slot');
+    } else {
+      var compLc = String(comp).toLowerCase();
+      var hit = accepts.some(function (a) { return compLc.indexOf(a) !== -1; });
+      if (!hit) errs.push('swatch fidelity: keyed component "' + comp + '" not in the ' + ref.defect + ' cause set {' + accepts.join(', ') + '}');
+    }
+    var fact = scn.swatch || {};
+    var fix = (scn.steps || []).filter(function (st) { return st.id === 'fix'; })[0];
+    if (fact.damageKind === 'permanent' || fact.damageKind === 'debris') {
+      if (!fix) { errs.push('swatch fidelity: damageKind "' + fact.damageKind + '" declared but no fix step'); }
+      else {
+        var remedy = _slFidelityResolveSlot(fix, 'remedy') || '';
+        if (fact.damageKind === 'permanent' && !/replace/i.test(remedy)) errs.push('swatch fidelity: permanent damage must key a replace-class remedy, got "' + remedy + '"');
+        if (fact.damageKind === 'debris' && !/clean/i.test(remedy)) errs.push('swatch fidelity: debris must key a clean-class remedy, got "' + remedy + '"');
+      }
     }
     return { ok: errs.length === 0, errors: errs };
   }
@@ -1921,6 +1970,61 @@
     return root;
   }
 
+  // --- swatch reference renderer (Wave 4 Task 2) ---
+  // Laser Print Defect Clinic. DELIBERATELY static/illustrative — like
+  // _slRenderRefSlots above, zero <button>, zero click handler, zero exposed
+  // interaction handle. Task 3's CSS is written against exactly this DOM
+  // shape; do not rename classes without updating that CSS in lockstep.
+  var _SWATCH_ARIA = {
+    spots:  'Printed page with dark toner spots recurring at a fixed vertical interval of roughly 76 millimetres, all at the same horizontal position. The printed text itself is crisp and fully fused.',
+    streak: 'Printed page with a clean vertical white band running the full page height where toner is missing. The remaining print is otherwise normal.',
+    smear:  'Printed page where the toner smudges and streaks downward, as if wiped before it bonded to the paper.',
+    ghost:  'Printed page where a faint copy of an image from higher up the page reappears further down.',
+    skew:   'Printed page whose entire content is rotated several degrees off square, as if the paper fed crooked.'
+  };
+
+  // NOTE: the streak/smear overlay nodes below are named 'swatch-streak-band'
+  // / 'swatch-smear-wash' rather than the bare defect name 'swatch-streak' /
+  // 'swatch-smear' — the sheet itself already carries that exact class as its
+  // defect modifier ('swatch-sheet swatch-' + defect), so a bare-name overlay
+  // class would collide with the sheet's own class list and a CSS rule meant
+  // only for the overlay would also repaint the sheet. spots/ghost/skew don't
+  // collide (their overlay class names differ from the bare defect string).
+  function _slRenderRefSwatch(ref) {
+    var root = _el('div', 'swatch-wrap');
+    var defect = ref.defect;
+    var sheet = _el('div', 'swatch-sheet swatch-' + defect);
+    sheet.setAttribute('role', 'img');
+    sheet.setAttribute('aria-label', _SWATCH_ARIA[defect] || '');
+    sheet.appendChild(_el('div', 'swatch-hdr'));
+    for (var i = 0; i < 14; i++) sheet.appendChild(_el('div', 'swatch-line' + (i % 2 ? ' dim' : '')));
+    if (defect === 'spots') {
+      for (var s = 0; s < 3; s++) sheet.appendChild(_el('div', 'swatch-spot swatch-spot-' + (s + 1)));
+      var gauge = _el('div', 'swatch-gauge');
+      gauge.setAttribute('aria-hidden', 'true');
+      gauge.appendChild(_el('div', 'swatch-tick swatch-tick-1'));
+      gauge.appendChild(_el('div', 'swatch-tick swatch-tick-2'));
+      gauge.appendChild(_el('div', 'swatch-rail'));
+      gauge.appendChild(_el('div', 'swatch-gauge-label', '~76 mm'));
+      sheet.appendChild(gauge);
+    } else if (defect === 'streak') {
+      sheet.appendChild(_el('div', 'swatch-streak-band'));
+    } else if (defect === 'smear') {
+      sheet.appendChild(_el('div', 'swatch-smear-wash'));
+    } else if (defect === 'ghost') {
+      sheet.appendChild(_el('div', 'swatch-ghost-src'));
+      sheet.appendChild(_el('div', 'swatch-ghost-echo'));
+    } // skew: no extra nodes — .swatch-skew on the sheet drives a CSS transform on the lines
+    root.appendChild(sheet);
+    if (_isNonEmptyStr(ref.caption)) root.appendChild(_el('div', 'swatch-cap', _esc(ref.caption)));
+    if (Array.isArray(ref.notes) && ref.notes.length) {
+      var notes = _el('div', 'swatch-notes');
+      ref.notes.forEach(function (n) { notes.appendChild(_el('span', 'swatch-note', _esc(n))); });
+      root.appendChild(notes);
+    }
+    return root;
+  }
+
   function _slRenderReference(ref) {
     if (!ref || !ref.kind) return null;
     var panel = _el('div', 'sl-ref');
@@ -1937,6 +2041,7 @@
     else if (ref.kind === 'faceplate') panel.appendChild(_slRenderRefFaceplate(ref));
     else if (ref.kind === 'wiremap') panel.appendChild(_slRenderRefWiremap(ref));
     else if (ref.kind === 'slots') panel.appendChild(_slRenderRefSlots(ref));
+    else if (ref.kind === 'swatch') panel.appendChild(_slRenderRefSwatch(ref));
     return panel;
   }
 
@@ -3485,6 +3590,7 @@
   // --- exports (more added in later tasks) ---
   window.simLabValidateScenario = simLabValidateScenario;
   window.simLabValidateNetworkFidelity = simLabValidateNetworkFidelity;
+  window.simLabValidateSwatchFidelity = simLabValidateSwatchFidelity;
   window.simLabScoreScenario = simLabScoreScenario;
   window.simLabSubmitScenario = simLabSubmitScenario;
   window._simLab = window._simLab || {};
@@ -3501,6 +3607,7 @@
   window._simLab.pickSeedFresh = _slPickSeedFresh;
   window._simLab.aggregateSession = _slAggregateSession;
   window._simLab.sessionBumpOnce = function () { _slSessionBumpOnce(); };
+  window._simLab.renderRefSwatch = _slRenderRefSwatch;
   window.simLabOpenEntry = simLabOpenEntry;
   window.simLabEntryBack = simLabEntryBack;
   window.simLabSessionStart = _slSessionStartDispatch;
