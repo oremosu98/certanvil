@@ -1,6 +1,6 @@
 {
-  "lines": 13582,
+  "lines": 11921,
   "allowance": 150,
   "updated": "2026-07-18",
-  "note": "After wave 7: readiness system extracted to features/readiness.js (#138)"
+  "note": "After wave 8: quiz engine extracted to features/quiz-engine.js (#138)"
 }

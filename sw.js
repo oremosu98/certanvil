@@ -1,5 +1,5 @@
-// Service Worker v7.73.0 — Network+ Quiz App (Phase C′ cloud-first)
-const CACHE_NAME = 'netplus-v7.73.0';
+// Service Worker v7.74.0 — Network+ Quiz App (Phase C′ cloud-first)
+const CACHE_NAME = 'netplus-v7.74.0';
 const SHELL_ASSETS = [
   './',
   './index.html',
@@ -38,7 +38,9 @@ const SHELL_ASSETS = [
   './diagnostic-claim.js',
   // #138 wave 7: eager feature modules are boot-critical — precached so an
   // offline reload can't hit a FIFO-evicted runtime entry and break boot.
-  './features/readiness.js'
+  './features/readiness.js',
+  // #138 wave 8: quiz engine extracted to features/quiz-engine.js (eager).
+  './features/quiz-engine.js'
 ];
 // Hard cap on cached entries to prevent unbounded cache growth (#20).
 // The shell counts toward this; everything beyond it (icons, fonts, runtime
