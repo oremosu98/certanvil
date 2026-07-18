@@ -826,7 +826,7 @@ console.log('\n\x1b[1m── Security Phase 3 — NOTIFY RATE LIMIT + CORS ─�
 console.log('\n\x1b[1m── Security Phase 4 — XSS DEFENCE-IN-DEPTH (DOMPurify) ──\x1b[0m');
 (function () {
   const rd = (p) => { const f = path.join(ROOT, p); return fs.existsSync(f) ? fs.readFileSync(f, 'utf8') : ''; };
-  const appjs   = rd('app.js');
+  const appjs   = rd('app.js') + '\n' + rd('features/topic-dive.js');
   const indexer = rd('index.html');
   const swjs    = rd('sw.js');
   const adminjs = rd('landing/lib/admin.js');

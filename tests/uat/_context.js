@@ -153,18 +153,28 @@ const vm = require('vm');
 const sandbox = {};
 
 function _fnBody(src, name) {
-  const idx = src.indexOf('function ' + name);
-  if (idx === -1) return '';
-  // Walk forward to matching close brace
-  let braceStart = src.indexOf('{', idx);
-  if (braceStart === -1) return '';
-  let depth = 1, i = braceStart + 1;
-  while (i < src.length && depth > 0) {
-    if (src[i] === '{') depth++;
-    else if (src[i] === '}') depth--;
-    i++;
+  // When a function appears as a loader stub in app.js AND as the real
+  // implementation in a features/*.js IIFE (appended after), prefer the
+  // last (and longest) occurrence so assertions test the actual body.
+  const needle = 'function ' + name;
+  let bestBody = '';
+  let searchFrom = 0;
+  while (true) {
+    const idx = src.indexOf(needle, searchFrom);
+    if (idx === -1) break;
+    let braceStart = src.indexOf('{', idx);
+    if (braceStart === -1) break;
+    let depth = 1, i = braceStart + 1;
+    while (i < src.length && depth > 0) {
+      if (src[i] === '{') depth++;
+      else if (src[i] === '}') depth--;
+      i++;
+    }
+    const body = src.slice(idx, i);
+    if (body.length > bestBody.length) bestBody = body;
+    searchFrom = idx + needle.length;
   }
-  return src.slice(idx, i);
+  return bestBody;
 }
 
 function _fnBodyShell(src, name) {
