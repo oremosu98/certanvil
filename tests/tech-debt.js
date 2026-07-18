@@ -184,22 +184,9 @@ while ((m = funcDefRe.exec(js)) !== null) {
   funcNames.add(m[1]);
 }
 
-// Carve-out (v7.53.2, 2026-06-14): the analytics render/play stack is dispatched
-// via the dynamic analytics render path — it has NO static call site in app.js,
-// and UAT covers these by asserting on their OUTPUT STRINGS, not their names. So
-// the name-grep below reports them "dead" when they are very much alive (removing
-// them breaks 13 UAT checks — verified). This uses the carve-out mechanism the
-// comment above documents. The real cleanup is the analytics/module refactor (#138).
-const KEPT_DYNAMIC_DISPATCH = new Set([
-  '_anaHeatmapPlayFlame', '_renderAnaTrend', '_renderAnaDifficulty',
-  '_renderAnaActivity', '_renderAnaStreak', '_anaDomainMasteryPlay',
-  '_anaConstWireDrift', '_anaMilestonesPlay', '_renderAnaMilestones',
-]);
-
 const deadFunctions = [];
 for (const name of funcNames) {
   if (name.length < 3) continue; // skip 1-2 char names — too collision-prone
-  if (KEPT_DYNAMIC_DISPATCH.has(name)) continue; // dynamically dispatched, UAT-covered by content — see carve-out note above
   // Count occurrences across all project files. Pattern: \bname\b
   const pattern = new RegExp('\\b' + name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b', 'g');
   const appCount = (js.match(pattern) || []).length;
