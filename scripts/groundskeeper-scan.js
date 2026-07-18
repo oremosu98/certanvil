@@ -143,8 +143,9 @@ const INCLUDES_LITERAL_RE = /\.includes\(\s*(['"`])((?:\\.|(?!\1).)*)\1/;
 // ancient, producing 36 unreviewable candidates in practice). A candidate
 // must now be BOTH provably dead (its asserted literal has zero
 // occurrences anywhere in live code) AND old by real time (git-blame
-// author-date on the guard line > 1 year).
-const GUARD_AGE_DAYS_THRESHOLD = 365;
+// author-date on the guard line > 90 days — repo born 2026-03, ships
+// daily; a 365-day bar could never fire before 2027).
+const GUARD_AGE_DAYS_THRESHOLD = 90;
 const GUARD_DISPLAY_CAP = 5;
 
 function loadTombstones() {
@@ -181,9 +182,12 @@ function loadLiveSurfaces() {
 }
 
 // git-blame author-time (unix seconds) for a single line, or null if it
-// can't be determined (uncommitted line, git failure, etc).
+// can't be determined (uncommitted line, git failure, etc). Uses -C -C so
+// moved/copied lines follow their ORIGINAL authorship across file splits —
+// plain blame resets every line in tests/uat/* to the 2026-07-17 monolith
+// split (f057f7b), which would make every guard look 1 day old.
 function blameLineAuthorTime(relFilePath, lineNum) {
-  const res = run(`git blame -L ${lineNum},${lineNum} --porcelain -- "${relFilePath}"`);
+  const res = run(`git blame -C -C -L ${lineNum},${lineNum} --porcelain -- "${relFilePath}"`);
   if (!res.ok) return null;
   const m = res.stdout.match(/^author-time (\d+)$/m);
   return m ? parseInt(m[1], 10) : null;
