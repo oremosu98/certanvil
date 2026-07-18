@@ -1929,6 +1929,61 @@
     return root;
   }
 
+  // --- swatch reference renderer (Wave 4 Task 2) ---
+  // Laser Print Defect Clinic. DELIBERATELY static/illustrative — like
+  // _slRenderRefSlots above, zero <button>, zero click handler, zero exposed
+  // interaction handle. Task 3's CSS is written against exactly this DOM
+  // shape; do not rename classes without updating that CSS in lockstep.
+  var _SWATCH_ARIA = {
+    spots:  'Printed page with dark toner spots recurring at a fixed vertical interval of roughly 76 millimetres, all at the same horizontal position. The printed text itself is crisp and fully fused.',
+    streak: 'Printed page with a clean vertical white band running the full page height where toner is missing. The remaining print is otherwise normal.',
+    smear:  'Printed page where the toner smudges and streaks downward, as if wiped before it bonded to the paper.',
+    ghost:  'Printed page where a faint copy of an image from higher up the page reappears further down.',
+    skew:   'Printed page whose entire content is rotated several degrees off square, as if the paper fed crooked.'
+  };
+
+  // NOTE: the streak/smear overlay nodes below are named 'swatch-streak-band'
+  // / 'swatch-smear-wash' rather than the bare defect name 'swatch-streak' /
+  // 'swatch-smear' — the sheet itself already carries that exact class as its
+  // defect modifier ('swatch-sheet swatch-' + defect), so a bare-name overlay
+  // class would collide with the sheet's own class list and a CSS rule meant
+  // only for the overlay would also repaint the sheet. spots/ghost/skew don't
+  // collide (their overlay class names differ from the bare defect string).
+  function _slRenderRefSwatch(ref) {
+    var root = _el('div', 'swatch-wrap');
+    var defect = ref.defect;
+    var sheet = _el('div', 'swatch-sheet swatch-' + defect);
+    sheet.setAttribute('role', 'img');
+    sheet.setAttribute('aria-label', _SWATCH_ARIA[defect] || '');
+    sheet.appendChild(_el('div', 'swatch-hdr'));
+    for (var i = 0; i < 14; i++) sheet.appendChild(_el('div', 'swatch-line' + (i % 2 ? ' dim' : '')));
+    if (defect === 'spots') {
+      for (var s = 0; s < 3; s++) sheet.appendChild(_el('div', 'swatch-spot swatch-spot-' + (s + 1)));
+      var gauge = _el('div', 'swatch-gauge');
+      gauge.setAttribute('aria-hidden', 'true');
+      gauge.appendChild(_el('div', 'swatch-tick swatch-tick-1'));
+      gauge.appendChild(_el('div', 'swatch-tick swatch-tick-2'));
+      gauge.appendChild(_el('div', 'swatch-rail'));
+      gauge.appendChild(_el('div', 'swatch-gauge-label', '~76 mm'));
+      sheet.appendChild(gauge);
+    } else if (defect === 'streak') {
+      sheet.appendChild(_el('div', 'swatch-streak-band'));
+    } else if (defect === 'smear') {
+      sheet.appendChild(_el('div', 'swatch-smear-wash'));
+    } else if (defect === 'ghost') {
+      sheet.appendChild(_el('div', 'swatch-ghost-src'));
+      sheet.appendChild(_el('div', 'swatch-ghost-echo'));
+    } // skew: no extra nodes — .swatch-skew on the sheet drives a CSS transform on the lines
+    root.appendChild(sheet);
+    if (_isNonEmptyStr(ref.caption)) root.appendChild(_el('div', 'swatch-cap', _esc(ref.caption)));
+    if (Array.isArray(ref.notes) && ref.notes.length) {
+      var notes = _el('div', 'swatch-notes');
+      ref.notes.forEach(function (n) { notes.appendChild(_el('span', 'swatch-note', _esc(n))); });
+      root.appendChild(notes);
+    }
+    return root;
+  }
+
   function _slRenderReference(ref) {
     if (!ref || !ref.kind) return null;
     var panel = _el('div', 'sl-ref');
@@ -1945,6 +2000,7 @@
     else if (ref.kind === 'faceplate') panel.appendChild(_slRenderRefFaceplate(ref));
     else if (ref.kind === 'wiremap') panel.appendChild(_slRenderRefWiremap(ref));
     else if (ref.kind === 'slots') panel.appendChild(_slRenderRefSlots(ref));
+    else if (ref.kind === 'swatch') panel.appendChild(_slRenderRefSwatch(ref));
     return panel;
   }
 
@@ -3509,6 +3565,7 @@
   window._simLab.pickSeedFresh = _slPickSeedFresh;
   window._simLab.aggregateSession = _slAggregateSession;
   window._simLab.sessionBumpOnce = function () { _slSessionBumpOnce(); };
+  window._simLab.renderRefSwatch = _slRenderRefSwatch;
   window.simLabOpenEntry = simLabOpenEntry;
   window.simLabEntryBack = simLabEntryBack;
   window.simLabSessionStart = _slSessionStartDispatch;
