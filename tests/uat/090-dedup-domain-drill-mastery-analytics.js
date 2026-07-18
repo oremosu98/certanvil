@@ -2014,36 +2014,61 @@ test('v4.81.13 Exam: vm fixture — domain breakdown buckets correct/total per d
 test('v4.99.6 Settings: vm fixture — health card surfaces Cloud sync status via _quotaState',
   (() => {
     try {
-      const body = _fnBodyShell(js, 'renderSettingsHealthCard');
-      if (!body) return false;
+      // #138 wave 3: renderSettingsHealthCard moved to features/settings.js.
+      // Unwrap the IIFE so all module functions are in the vm global scope.
+      const featMark = '\n// === FEATURE: settings.js ===\n';
+      const featStart = js.indexOf(featMark);
+      if (featStart === -1) return false;
+      const nextFeat = js.indexOf('\n// === FEATURE: ', featStart + featMark.length);
+      const settingsSrc = nextFeat === -1 ? js.slice(featStart) : js.slice(featStart, nextFeat);
+      const iifeOpen = settingsSrc.indexOf('(function () {');
+      const iifeClose = settingsSrc.lastIndexOf('})();');
+      if (iifeOpen === -1 || iifeClose === -1) return false;
+      const innerStart = settingsSrc.indexOf('\n', iifeOpen + '(function () {'.length) + 1;
+      const innerContent = settingsSrc.slice(innerStart, iifeClose);
       const vm = require('vm');
       let storage = {};
       const fakeHost = { _innerHTML: '', set innerHTML(v) { this._innerHTML = v; }, get innerHTML() { return this._innerHTML; } };
       const ctx = {
-        // v4.99.36: _fnBody's brace-walker overshoots into features/*.js post
-        // Phase 11b extraction (concat'd into js for structural tests). The
-        // features modules reference `window`, so the vm context needs a stub
-        // to avoid ReferenceError. The actual logic under test
-        // (renderSettingsHealthCard) doesn't use window.
-        window: {},
-        STORAGE: { KEY: 'k', DAILY_GOAL: 'dg' },
+        STORAGE: { KEY: 'k', DAILY_GOAL: 'dg', WRONG_BANK: 'wb', HISTORY: 'h', STREAK: 'st',
+          AUTOBACKUP_PREFIX: 'nplus_ab_', LAST_AUTOBACKUP_AT: 'nplus_lab' },
         localStorage: {
           getItem: (k) => storage[k] === undefined ? null : storage[k],
           setItem: (k, v) => { storage[k] = String(v); },
-          removeItem: (k) => { delete storage[k]; }
+          removeItem: (k) => { delete storage[k]; },
+          get length() { return Object.keys(storage).length; },
+          key: (i) => Object.keys(storage)[i]
         },
-        document: { getElementById: () => fakeHost },
-        getExamDate: () => null,
-        getDaysToExam: () => null,
-        getDailyGoal: () => 20,
-        getTodayQuestionCount: () => 0,
-        escHtml: (s) => String(s),
-        Number, parseInt,
-        Math, Date, JSON, Object,
-        _quotaState: null  // simulate signed-out
+        document: {
+          getElementById: (id) => id === 'settings-health-grid' ? fakeHost
+            : { innerHTML: '', classList: { add:()=>{}, remove:()=>{}, toggle:()=>{} }, setAttribute:()=>{}, removeAttribute:()=>{}, addEventListener:()=>{}, querySelectorAll:()=>[], querySelector:()=>null, appendChild:()=>null, textContent:'', className:'' },
+          querySelector: () => null, querySelectorAll: () => [],
+          createElement: () => ({ appendChild:()=>{}, click:()=>{}, remove:()=>{}, addEventListener:()=>{}, setAttribute:()=>{}, removeAttribute:()=>{}, classList:{add:()=>{},remove:()=>{},toggle:()=>{}}, innerHTML:'', id:'', className:'' }),
+          body: { appendChild:()=>{}, removeChild:()=>{} }
+        },
+        getExamDate: () => null, getDaysToExam: () => null, getDailyGoal: () => 20,
+        getTodayQuestionCount: () => 0, escHtml: (s) => String(s),
+        Number, parseInt, Math, Date, JSON, Object,
+        _quotaState: null,
+        showPage:()=>{}, renderWrongBankBtn:()=>{}, syncSettingsExamDate:()=>{},
+        loadSrPrefs:()=>({}), saveSrPrefs:()=>{}, _loadFeature:()=>Promise.resolve({}),
+        _autoBackupTodayKey:()=>'k', AUTOBACKUP_KEEP_DAYS:7, API_KEY_AUTOSAVE_DEBOUNCE_MS:300,
+        apiKey:'', _clearStaleErrBoxes:()=>{}, _readReadinessSnapshots:()=>({}),
+        _passPlanCurrentCertCardHtml:()=>'', _passPlanLockedCertsHtml:()=>'',
+        showToast:()=>{}, confirm:()=>false, alert:()=>{},
+        viewPassPlan:()=>{}, retakeDiagnostic:()=>{}, startDiagnostic:()=>{},
+        _showProWaitlist:()=>{}, _showPassPlanCertPicker:()=>{}, tadSwitchCert:()=>{},
+        loadWrongBank:()=>[], saveWrongBank:()=>{}, loadHistory:()=>[], getStreak:()=>({}),
+        APP_VERSION:'0', HISTORY_CAP:1000, _confirmDeleteAccount:()=>{},
+        URL:{createObjectURL:()=>'',revokeObjectURL:()=>{}}, Blob:class{constructor(){}},
+        FileReader:class{readAsText(){}set onload(v){}},
+        setDailyGoal:()=>{}, renderReadinessCard:()=>{}, renderHeroV2MiniCards:()=>{},
+        renderHistoryPanel:()=>{}, renderStatsCard:()=>{}, renderStreakBadge:()=>{},
+        showSuccessToast:()=>{}, showErrorToast:()=>{}, _srIsFreeTier:()=>false,
+        window: {}
       };
       vm.createContext(ctx);
-      vm.runInContext(body, ctx);
+      vm.runInContext(innerContent, ctx);
       // No session → "Sign in to sync"
       vm.runInContext('renderSettingsHealthCard()', ctx);
       const noSessionHtml = fakeHost._innerHTML;
@@ -2067,36 +2092,65 @@ test('v4.99.6 Settings: vm fixture — health card surfaces Cloud sync status vi
 test('v4.81.26 Settings: vm fixture — health card reads daily goal correctly when set',
   (() => {
     try {
-      const body = _fnBodyShell(js, 'renderSettingsHealthCard');
-      if (!body) return false;
+      // #138 wave 3: renderSettingsHealthCard moved to features/settings.js.
+      // Unwrap IIFE so all module functions are in vm global scope (same as v4.99.6 test).
+      const featMark = '\n// === FEATURE: settings.js ===\n';
+      const featStart = js.indexOf(featMark);
+      if (featStart === -1) return false;
+      const nextFeat = js.indexOf('\n// === FEATURE: ', featStart + featMark.length);
+      const settingsSrc = nextFeat === -1 ? js.slice(featStart) : js.slice(featStart, nextFeat);
+      const iifeOpen = settingsSrc.indexOf('(function () {');
+      const iifeClose = settingsSrc.lastIndexOf('})();');
+      if (iifeOpen === -1 || iifeClose === -1) return false;
+      const innerStart = settingsSrc.indexOf('\n', iifeOpen + '(function () {'.length) + 1;
+      const innerContent = settingsSrc.slice(innerStart, iifeClose);
       const vm = require('vm');
       let storage = {};
       const fakeHost = { _innerHTML: '', set innerHTML(v) { this._innerHTML = v; }, get innerHTML() { return this._innerHTML; } };
       const ctx = {
-        // v4.99.36: window stub for the same reason as v4.99.6 above —
-        // _fnBody overshoots into features/*.js after Phase 11b extraction.
-        window: {},
-        STORAGE: { KEY: 'k', DAILY_GOAL: 'dg' },
+        STORAGE: { KEY: 'k', DAILY_GOAL: 'dg', WRONG_BANK: 'wb', HISTORY: 'h', STREAK: 'st',
+          AUTOBACKUP_PREFIX: 'nplus_ab_', LAST_AUTOBACKUP_AT: 'nplus_lab' },
         localStorage: {
           getItem: (k) => storage[k] === undefined ? null : storage[k],
           setItem: (k, v) => { storage[k] = String(v); },
-          removeItem: (k) => { delete storage[k]; }
+          removeItem: (k) => { delete storage[k]; },
+          get length() { return Object.keys(storage).length; },
+          key: (i) => Object.keys(storage)[i]
         },
-        document: { getElementById: () => fakeHost },
-        getExamDate: () => null,
-        getDaysToExam: () => null,
-        listAutoBackups: () => [],
+        document: {
+          getElementById: (id) => id === 'settings-health-grid' ? fakeHost
+            : { innerHTML: '', classList: { add:()=>{}, remove:()=>{}, toggle:()=>{} }, setAttribute:()=>{}, removeAttribute:()=>{}, addEventListener:()=>{}, querySelectorAll:()=>[], querySelector:()=>null, appendChild:()=>null, textContent:'', className:'' },
+          querySelector: () => null, querySelectorAll: () => [],
+          createElement: () => ({ appendChild:()=>{}, click:()=>{}, remove:()=>{}, addEventListener:()=>{}, setAttribute:()=>{}, removeAttribute:()=>{}, classList:{add:()=>{},remove:()=>{},toggle:()=>{}}, innerHTML:'', id:'', className:'' }),
+          body: { appendChild:()=>{}, removeChild:()=>{} }
+        },
+        getExamDate: () => null, getDaysToExam: () => null,
         getDailyGoal: () => {
           const raw = parseInt(storage['dg'], 10);
           return (Number.isFinite(raw) && raw > 0) ? raw : 20;
         },
-        getTodayQuestionCount: () => 0,
-        escHtml: (s) => String(s),
-        Number, parseInt,
-        Math, Date, JSON, Object
+        getTodayQuestionCount: () => 0, escHtml: (s) => String(s),
+        Number, parseInt, Math, Date, JSON, Object,
+        _quotaState: null,
+        showPage:()=>{}, renderWrongBankBtn:()=>{}, syncSettingsExamDate:()=>{},
+        loadSrPrefs:()=>({}), saveSrPrefs:()=>{}, _loadFeature:()=>Promise.resolve({}),
+        _autoBackupTodayKey:()=>'k', AUTOBACKUP_KEEP_DAYS:7, API_KEY_AUTOSAVE_DEBOUNCE_MS:300,
+        apiKey:'', _clearStaleErrBoxes:()=>{}, _readReadinessSnapshots:()=>({}),
+        _passPlanCurrentCertCardHtml:()=>'', _passPlanLockedCertsHtml:()=>'',
+        showToast:()=>{}, confirm:()=>false, alert:()=>{},
+        viewPassPlan:()=>{}, retakeDiagnostic:()=>{}, startDiagnostic:()=>{},
+        _showProWaitlist:()=>{}, _showPassPlanCertPicker:()=>{}, tadSwitchCert:()=>{},
+        loadWrongBank:()=>[], saveWrongBank:()=>{}, loadHistory:()=>[], getStreak:()=>({}),
+        APP_VERSION:'0', HISTORY_CAP:1000, _confirmDeleteAccount:()=>{},
+        URL:{createObjectURL:()=>'',revokeObjectURL:()=>{}}, Blob:class{constructor(){}},
+        FileReader:class{readAsText(){}set onload(v){}},
+        setDailyGoal:()=>{}, renderReadinessCard:()=>{}, renderHeroV2MiniCards:()=>{},
+        renderHistoryPanel:()=>{}, renderStatsCard:()=>{}, renderStreakBadge:()=>{},
+        showSuccessToast:()=>{}, showErrorToast:()=>{}, _srIsFreeTier:()=>false,
+        window: {}
       };
       vm.createContext(ctx);
-      vm.runInContext(body, ctx);
+      vm.runInContext(innerContent, ctx);
 
       // Case 1: no goal set → "Not set"
       vm.runInContext('renderSettingsHealthCard()', ctx);

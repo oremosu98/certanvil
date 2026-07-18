@@ -175,6 +175,20 @@ function _loadUatConcat() {
 }
 const uatSrc = _loadUatConcat();
 const e2eSrc = _loadOrEmpty('tests/e2e/app.spec.js');
+// #138 wave 3: lazy-loaded feature modules call helpers still defined in
+// app.js (e.g. _passPlanLockedCertsHtml, _confirmDeleteAccount). Include
+// features/*.js so those callers count against the dead-function check.
+function _loadFeaturesConcat() {
+  let combined = '';
+  const featDir = require('path').join(__dirname, '..', 'features');
+  try {
+    fs.readdirSync(featDir)
+      .filter(f => f.endsWith('.js'))
+      .forEach(f => { combined += '\n' + _loadOrEmpty(require('path').join('features', f)); });
+  } catch (_) {}
+  return combined;
+}
+const featuresSrc = _loadFeaturesConcat();
 
 // Extract all top-level function defs
 const funcDefRe = /^(?:async\s+)?function\s+(\w+)\s*\(/gm;
@@ -194,9 +208,10 @@ for (const name of funcNames) {
   const swCount = (swSrc.match(pattern) || []).length;
   const uatCount = (uatSrc.match(pattern) || []).length;
   const e2eCount = (e2eSrc.match(pattern) || []).length;
+  const featCount = (featuresSrc.match(pattern) || []).length;
   // appCount === 1 means ONLY the definition matched (no internal calls)
-  // External refs = html/sw/uat/e2e — any of them means "alive"
-  if (appCount <= 1 && htmlCount === 0 && swCount === 0 && uatCount === 0 && e2eCount === 0) {
+  // External refs = html/sw/uat/e2e/features — any of them means "alive"
+  if (appCount <= 1 && htmlCount === 0 && swCount === 0 && uatCount === 0 && e2eCount === 0 && featCount === 0) {
     deadFunctions.push(name);
   }
 }

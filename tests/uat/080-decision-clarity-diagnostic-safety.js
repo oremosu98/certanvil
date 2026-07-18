@@ -567,7 +567,9 @@ test('v4.81.2 Backup: renderAutoBackupList function defined',
 
 // Wiring checks
 test('v4.81.2 Backup: DOMContentLoaded calls _takeAutoBackup',
-  /DOMContentLoaded[\s\S]{0,2500}_takeAutoBackup\b/.test(js));
+  // #138 wave 3: DOMContentLoaded handler at line ~2271; _takeAutoBackup call at ~2341
+  // is ~3600 chars away (long handler). Widened from 2500 → 5000 to cover actual distance.
+  /DOMContentLoaded[\s\S]{0,5000}_takeAutoBackup\b/.test(js));
 test('v4.81.2 Backup: renderSettingsPage calls renderAutoBackupList',
   (() => {
     const body = _fnBody(js, 'renderSettingsPage');

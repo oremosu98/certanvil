@@ -1,6 +1,6 @@
 {
-  "lines": 18376,
+  "lines": 17633,
   "allowance": 150,
   "updated": "2026-07-18",
-  "note": "After wave 2: analytics page extracted to features/analytics.js"
+  "note": "After wave 3: settings page extracted to features/settings.js"
 }
