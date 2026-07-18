@@ -69,6 +69,9 @@ UAT checks: 4729 · E2E `test(` count: 159 · APP_VERSION: 7.65.2 · stamped-at:
 
 ## Decision rules
 
+### Model routing — Fable plans, Sonnet executes (adopted 2026-07-18)
+**Fable (Mythos-tier) never touches implementation surfaces** (app.js, features/, index.html, CSS, sw.js, lib/, supabase/, tests/, scripts/, certs/, landing/) — it plans, designs (incl. mockups), and reviews; **Sonnet sessions execute**. Gated-lane work = always Fable-planned + Fable-reviewed. Full rule incl. A/B/C routing, founder override + revert-first hotfix → [docs/conventions/model-routing.md](docs/conventions/model-routing.md).
+
 ### `saas-gated` label
 Items tagged `saas-gated` on either board are **frozen until the paid-SaaS pivot triggers — do NOT pull one without explicit pivot direction.** Currently gated: [#21](https://github.com/oremosu98/certanvil/issues/21) (wrap globals into state objects), [#55](https://github.com/oremosu98/certanvil/issues/55) (split `styles.css`), [#123](https://github.com/oremosu98/certanvil/issues/123) (social-proof counter), [#135](https://github.com/oremosu98/certanvil/issues/135) (per-user API cost telemetry), [#136](https://github.com/oremosu98/certanvil/issues/136) (entitlements + tier quotas), [#137](https://github.com/oremosu98/certanvil/issues/137) (cost-floor model), [#138](https://github.com/oremosu98/certanvil/issues/138) (module-split `app.js`, v5.0 trigger), [#139](https://github.com/oremosu98/certanvil/issues/139) (readiness-algorithm tuning).
 

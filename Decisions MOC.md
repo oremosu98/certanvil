@@ -19,6 +19,7 @@ TABLE status, cert, updated FROM #decision SORT updated DESC
 
 ## Conventions & Guards
 - [[conventions]] — Testing philosophy, lessons learned, magic-number constants
+- [[model-routing]] — Fable plans/reviews, Sonnet executes; surface table + A/B/C routing
 - [[regression-tombstones]] — Deleted code that must stay deleted
 
 ## Related
