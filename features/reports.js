@@ -173,10 +173,6 @@
           '<button type="button" class="br-steps-link" id="br-steps-toggle">' +
             '<span class="br-plus"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></span><span>Add steps to reproduce</span>' +
           '</button>' +
-          '<div class="br-no-token" id="br-no-token" hidden>' +
-            '<span class="br-note-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/></svg></span>' +
-            '<span class="br-note-tx"><b>Setup needed</b>Add a GitHub personal access token in <a href="#" id="br-open-settings">Settings &rsaquo; Integrations</a> to file reports.</span>' +
-          '</div>' +
         '</div>' +
         '<div class="br-foot">' +
           '<button type="button" class="br-cancel" id="br-cancel">Cancel</button>' +
@@ -229,10 +225,6 @@
     };
   }
 
-  function _hasToken() {
-    try { return !!localStorage.getItem(STORAGE.GH_TOKEN); } catch (e) { return false; }
-  }
-
   function openDrawer() {
     if (_drawerHost) return; // idempotent
     _prevFocus = document.activeElement;
@@ -245,24 +237,12 @@
     _drawerHost = host;
     _drawerOpenedAt = Date.now();
 
-    // Disable token banner if token exists
-    if (!_hasToken()) {
-      host.querySelector('#br-no-token').hidden = false;
-    }
-
     // Wire ESC + backdrop click + close × + cancel
     _escListener = function (e) { if (e.key === 'Escape') closeDrawer(); };
     document.addEventListener('keydown', _escListener);
     host.querySelector('#br-backdrop').addEventListener('click', closeDrawer);
     host.querySelector('#br-close').addEventListener('click', closeDrawer);
     host.querySelector('#br-cancel').addEventListener('click', closeDrawer);
-
-    // Settings deep-link
-    var settingsLink = host.querySelector('#br-open-settings');
-    if (settingsLink) settingsLink.addEventListener('click', function(e){
-      e.preventDefault(); closeDrawer();
-      if (typeof showPage === 'function') showPage('settings');
-    });
 
     // Reveal with motion next frame (so transform transitions instead of snapping)
     requestAnimationFrame(function(){
@@ -351,7 +331,7 @@
     function updateSend() {
       var t = titleEl.value.trim();
       var d = descEl.value.trim();
-      var ok = t.length > 0 && d.length > 0 && _hasToken();
+      var ok = t.length > 0 && d.length > 0;
       sendEl.disabled = !ok;
     }
 

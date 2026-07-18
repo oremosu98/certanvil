@@ -1170,6 +1170,13 @@
   window.updateTypeStat            = updateTypeStat;
   window.getMilestones             = getMilestones;
   window.unlockMilestone           = unlockMilestone;
+  // v7.79.2: missed in the original wave-7 extraction — MILESTONE_DEFS is a
+  // const inside this IIFE and doesn't leak to the shared classic-script
+  // scope the way top-level `let`/`function` declarations in separate
+  // <script> tags do. analytics.js (lazy-loaded) reads it as a bare
+  // identifier via a typeof guard, which silently returned '' (no thrown
+  // error) instead of rendering the Drills milestones group.
+  window.MILESTONE_DEFS            = MILESTONE_DEFS;
   window.getDrillStats             = getDrillStats;
   window.bumpDrillStat             = bumpDrillStat;
   window._buildMilestoneCtx        = _buildMilestoneCtx;

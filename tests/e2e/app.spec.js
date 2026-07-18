@@ -1595,45 +1595,75 @@ test.describe('bug-report drawer', () => {
         }]));
       } catch (e) {}
     });
-    // Intercept the GitHub API call and return 401 (since fake token) — confirms a request was attempted
-    await page.route('https://api.github.com/**', route => route.fulfill({ status: 401, body: '{}' }));
+    // v7.79.2: submitReport() now upserts to Supabase (PostgREST) instead
+    // of calling the GitHub REST API. Intercept the real endpoint so
+    // drainQueue()'s retry actually "lands" and clears the seeded entry.
+    await page.route('**/rest/v1/user_bug_reports*', route =>
+      route.fulfill({ status: 201, contentType: 'application/json', body: '[]' }));
     await page.goto('/');
     await page.waitForTimeout(3500); // 2s delay + buffer
-    // After drain, queue should have updated attempts (the 401 marks it terminal)
+    // After a successful drain, the queue should be empty.
+    const q = await page.evaluate(() => localStorage.getItem('nplus_bug_reports'));
+    const parsed = q ? JSON.parse(q) : [];
+    expect(parsed.length).toBe(0);
+  });
+
+  test('06b: queue drain retries (not terminal) on Supabase failure', async ({ page }) => {
+    await page.addInitScript(() => {
+      try {
+        localStorage.setItem('nplus_bug_reports', JSON.stringify([{
+          id: 'rpt_test2', attempts: 1, terminal: false,
+          payload: {
+            id: 'rpt_test2', title: 'queued', description: 'q',
+            steps: null, attempt_count: 1, submitted_at: '2026-05-20T14:32:07Z',
+            context: { version: 'v5.5.12', page: '#page-setup', cert: 'netplus-N10-009',
+                       theme: 'light', viewport: '1440x900', last_quiz: null, wrong_bank_size: 0 }
+          }
+        }]));
+      } catch (e) {}
+    });
+    await page.route('**/rest/v1/user_bug_reports*', route =>
+      route.fulfill({ status: 500, contentType: 'application/json', body: '{"message":"simulated failure"}' }));
+    await page.goto('/');
+    await page.waitForTimeout(3500);
+    // A Supabase-side failure is retryable, not terminal — the entry stays
+    // queued with an incremented attempt count for the next drain.
     const q = await page.evaluate(() => localStorage.getItem('nplus_bug_reports'));
     expect(q).toBeTruthy();
     const parsed = JSON.parse(q);
     expect(parsed.length).toBe(1);
-    expect(parsed[0].terminal).toBe(true);
+    expect(parsed[0].terminal).toBe(false);
+    expect(parsed[0].attempts).toBeGreaterThan(1);
   });
 
-  test('07: token banner shows when GH_TOKEN missing', async ({ page }) => {
-    await page.addInitScript(() => {
-      try { localStorage.removeItem('nplus_gh_monitor_token'); } catch (e) {}
-    });
+  test('07: Send enables on valid input with no setup step required', async ({ page }) => {
+    // v7.79.2: the drawer used to gate Send on a founder-configured GitHub
+    // token (the "Setup needed" banner) — a token no real user's browser
+    // ever had. submitReport() now posts to Supabase directly; there is no
+    // per-user setup step, so Send should enable purely on valid input.
     await page.goto('/');
     await page.click('#topbar-bug-report');
-    await expect(page.locator('#br-no-token')).toBeVisible();
-    await expect(page.locator('#br-send')).toBeDisabled();
+    await expect(page.locator('#br-no-token')).toHaveCount(0);
+    await page.fill('#br-input-title', 'a');
+    await page.fill('#br-input-desc', 'b');
+    await expect(page.locator('#br-send')).toBeEnabled();
   });
 
   test('08: cross-cert leak filter — Sec+ active files secplus context, not netplus', async ({ page }) => {
     // v7.13.3: the visible "Auto-attached" panel was removed from the drawer
     // (end-users don't need it). The diagnostic context still travels in the
-    // filed GitHub issue body + cert label, so the cross-cert leak guard now
-    // asserts against the captured POST payload — a stronger check than the
-    // old display-panel read.
+    // Supabase row's context jsonb + rendered body, so the cross-cert leak
+    // guard asserts against the captured upsert payload.
+    // v7.79.2: submitReport() now upserts to Supabase (PostgREST) instead
+    // of calling the GitHub REST API — intercept the real endpoint and
+    // capture the POST body instead of intercepting the GitHub issues call.
     await page.addInitScript(() => {
-      try {
-        localStorage.setItem('nplus_dev_cert', 'secplus');
-        localStorage.setItem('nplus_gh_monitor_token', 'ghp_faketoken_for_e2e');
-      } catch (e) {}
+      try { localStorage.setItem('nplus_dev_cert', 'secplus'); } catch (e) {}
     });
     let postData = null;
-    await page.route('https://api.github.com/**', route => {
+    await page.route('**/rest/v1/user_bug_reports*', route => {
       if (route.request().method() === 'POST') postData = route.request().postData();
-      route.fulfill({ status: 201, contentType: 'application/json',
-        body: JSON.stringify({ number: 1, html_url: 'https://github.com/x/y/issues/1' }) });
+      route.fulfill({ status: 201, contentType: 'application/json', body: '[]' });
     });
     await page.goto('/');
     await page.click('#topbar-bug-report');

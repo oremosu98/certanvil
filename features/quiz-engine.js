@@ -1691,6 +1691,17 @@
   window._loadingProgressBegin = _loadingProgressBegin;
   window._loadingProgressUpdate = _loadingProgressUpdate;
   window._loadingProgressFinish = _loadingProgressFinish;
+  // v7.79.2: these four were missed in the original wave-8 extraction —
+  // still called as bare identifiers from app.js's hot-area/topology
+  // revisit + submit paths (submitHotArea, _restoreAnsweredHotAreaState,
+  // submitTopology), which were never extracted themselves. Without window
+  // exposure those calls threw ReferenceError, silently breaking hot-area
+  // PBQ scoring end-to-end (caught by window.onerror, no visible symptom
+  // beyond the UI staying stuck at "is-picked").
+  window._findLogEntryFor = _findLogEntryFor;
+  window._renderQuizProgressDots = _renderQuizProgressDots;
+  window._renderQuizNavArrows = _renderQuizNavArrows;
+  window._recomputeQuizCounters = _recomputeQuizCounters;
 
   window._certanvilFeatures['quiz-engine'] = { render: render, startQuiz: startQuiz };
 })();
