@@ -34,8 +34,8 @@ test('v4.99.2 wrapper: _claudeFetch function defined',
   /async function _claudeFetch\(init\)/.test(js));
 test('v4.99.2 wrapper: routes through /api/ai/generate when signed in',
   /_claudeFetch[\s\S]{0,1500}fetch\('\/api\/ai\/generate'/.test(js));
-test('v4.99.2 wrapper: BYOK fallback exists for anonymous users',
-  /Route 2: BYOK fallback[\s\S]{0,2000}fetch\(CLAUDE_API_URL/.test(js));
+test('v7.79.0 wrapper: BYOK fallback removed (Phase E.4 — server proxy only)',
+  !/Route 2: BYOK fallback/.test(js) && !/CLAUDE_API_URL\s*=/.test(js));
 test('v4.99.2 wrapper: 429 quota_exceeded triggers _showQuotaExceededUI',
   /r\.status === 429[\s\S]{0,200}_showQuotaExceededUI/.test(js));
 test('v4.99.2 wrapper: signs requests with Bearer Supabase JWT',
@@ -150,11 +150,8 @@ test('v4.99.3 admin bypass: SQL migration file exists',
 test('v4.99.3 admin bypass: SQL extends is_pro to admin role',
   fs.readFileSync(path.join(require('path').join(__dirname, '..'), '../supabase/migrations/20260509_phase_e_admin_bypass.sql'), 'utf8')
     .includes("role = 'admin'"));
-test('v4.99.2 refactor: only BYOK fallback (+ doc comment) remain referencing fetch(CLAUDE_API_URL,)',
-  // Expected: 2 occurrences total — (1) the BYOK fallback inside _claudeFetch,
-  // (2) the doc comment "// rename: fetch(CLAUDE_API_URL, → _claudeFetch(.".
-  // All 13 prior call sites have been refactored to _claudeFetch(.
-  (js.match(/fetch\(CLAUDE_API_URL,/g) || []).length === 2);
+test('v7.79.0 refactor: zero live references to fetch(CLAUDE_API_URL,) — only the doc comment survives',
+  (js.match(/fetch\(CLAUDE_API_URL,/g) || []).length === 0);
 test('v4.99.0 helper: snapshot triggers _cloudFlush for cross-device sync',
   /function _writeReadinessSnapshot\(\)[\s\S]{0,1500}_cloudFlush\(STORAGE\.READINESS_SNAPSHOTS\)/.test(js));
 test('v4.99.0 hook: finish() calls _writeReadinessSnapshot',

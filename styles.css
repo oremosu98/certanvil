@@ -1,5 +1,5 @@
 /* ══════════════════════════════════════════
-   Network+ AI Quiz — styles.css  v7.78.0
+   Network+ AI Quiz — styles.css  v7.79.0
    ══════════════════════════════════════════ */
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -58,15 +58,6 @@ button:focus-visible, .chip:focus-visible, .btn:focus-visible { outline: 2px sol
 .mon-stack-details summary { font-size: 11px; color: var(--accent-light); cursor: pointer; font-weight: 600; }
 .mon-stack { font-size: 11px; line-height: 1.5; color: var(--text-dim); background: rgba(0,0,0,.2); padding: 10px; border-radius: 6px; margin-top: 6px; overflow-x: auto; white-space: pre-wrap; word-break: break-all; }
 [data-theme="light"] .mon-stack { background: rgba(0,0,0,.04); }
-.mon-github { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 14px; margin-bottom: 12px; }
-.mon-github-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
-.mon-github-header h4 { font-size: 12px; color: var(--text-dim); text-transform: uppercase; letter-spacing: .06em; }
-.mon-github-status { font-size: 12px; font-weight: 600; }
-.mon-github-desc { font-size: 12px; color: var(--text-mid); margin-bottom: 10px; line-height: 1.5; }
-.mon-github-input-row { display: flex; gap: 8px; margin-bottom: 8px; }
-.mon-github-input { flex: 1; background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; padding: 8px 12px; color: var(--text); font-size: 12px; font-family: monospace; outline: none; transition: border-color .2s; }
-.mon-github-input:focus { border-color: var(--accent); }
-.mon-github-hint { font-size: 11px; color: var(--text-dim); }
 @media (max-width: 600px) { .mon-stats-grid { grid-template-columns: repeat(2, 1fr); } }
 
 /* ── THEME VARIABLES ── */

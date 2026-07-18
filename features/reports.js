@@ -300,9 +300,6 @@
   // SUBMIT HELPERS (TASK 4.1)
   // ───────────────────────────────────────────────────────────
 
-  var GH_OWNER = 'oremosu98';
-  var GH_REPO = 'networkplus-quiz';
-
   function _showToast(opts) {
     var existing = document.querySelector('.br-toast');
     if (existing) existing.parentNode.removeChild(existing);
@@ -332,10 +329,6 @@
   }
   function _saveQueue(q) {
     try { localStorage.setItem(STORAGE.BUG_REPORTS, JSON.stringify(q)); } catch (e) {}
-  }
-
-  function _certBadgeClass() {
-    try { return 'cert:' + (window.CURRENT_CERT || 'unknown'); } catch (e) { return 'cert:unknown'; }
   }
 
   function _updateTopbarDot() {
@@ -413,8 +406,7 @@
 
       if (result.type === 'success') {
         _showToast({ tone: 'ok', title: 'Report filed',
-          sub: 'Issue <b>#' + result.issue_number + '</b> · tap to open',
-          url: result.issue_url });
+          sub: 'Thanks — we’ll take a look.' });
         // Clear from queue if this was a retry
         var q = _loadQueue();
         _saveQueue(q.filter(function(r){ return r.id !== payload.id; }));
@@ -444,51 +436,37 @@
   // SUBMIT + RETRY (TASK 5.x, 6.x)
   // ───────────────────────────────────────────────────────────
 
+  // v7.79.0: routes to Supabase (user_bug_reports table) instead of the
+  // GitHub Issues REST API. The prior design read a personal access token
+  // from localStorage — a token no real user's browser ever had (the only
+  // UI that could set it was a founder-only monitor panel, since removed
+  // as a security fix). upsert on report_id makes offline-queue retries
+  // idempotent instead of creating duplicate rows.
   async function submitReport(payload) {
-    var token;
-    try { token = localStorage.getItem(STORAGE.GH_TOKEN); } catch (e) { token = null; }
-    if (!token) {
-      return classifyError({ status: 401 });
-    }
+    var sb = window.certanvilSupabase;
+    if (!sb) return classifyError({ status: 0, network: true });
 
     var body = renderIssueBody(payload);
-    var labels = ['bug-report', _certBadgeClass(), 'version:' + (payload.context && payload.context.version) ];
+    var uid = null;
+    try {
+      if (sb.auth && sb.auth.getUser) {
+        var u = await sb.auth.getUser();
+        uid = (u && u.data && u.data.user && u.data.user.id) || null;
+      }
+    } catch (e) {}
 
     try {
-      var resp = await fetch('https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/issues', {
-        method: 'POST',
-        headers: {
-          'Accept': 'application/vnd.github+json',
-          'Authorization': 'Bearer ' + token,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          title: '[user-report] ' + payload.title,
-          body: body,
-          labels: labels,
-        }),
-      });
-
-      var rlRem = parseInt(resp.headers.get('x-ratelimit-remaining') || '-1', 10);
-      var rlReset = parseInt(resp.headers.get('x-ratelimit-reset') || '0', 10);
-      if (resp.ok) {
-        var json = await resp.json();
-        return Object.assign(classifyError({ status: resp.status }), {
-          issue_number: json.number, issue_url: json.html_url,
-        });
-      }
-      var respBody = null;
-      try { respBody = await resp.json(); } catch (e) {}
-      var cls = classifyError({
-        status: resp.status,
-        ratelimit_remaining: rlRem >= 0 ? rlRem : undefined,
-        ratelimit_reset: rlReset || undefined,
-        body: respBody,
-      });
-      if (cls.type === 'payload') {
-        try { console.error('[bug-report] 422 payload rejected:', respBody); } catch (e) {}
-      }
-      return cls;
+      var res = await sb.from('user_bug_reports').upsert({
+        report_id: payload.id,
+        title: payload.title,
+        description: payload.description,
+        steps: payload.steps,
+        body: body,
+        context: payload.context,
+        user_id: uid,
+      }, { onConflict: 'report_id' });
+      if (!res.error) return classifyError({ status: 201 });
+      return classifyError({ status: 500 });
     } catch (e) {
       return classifyError({ status: 0, network: true });
     }

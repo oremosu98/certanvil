@@ -1,9 +1,9 @@
 // ══════════════════════════════════════════
-// Network+ AI Quiz — app.js  v7.78.0
+// Network+ AI Quiz — app.js  v7.79.0
 // ══════════════════════════════════════════
 
 // ── CONSTANTS ──
-const APP_VERSION = '7.78.0';
+const APP_VERSION = '7.79.0';
 // v4.99.45 (Phase 6b): expose APP_VERSION on window so the web-vitals
 // collector (lib/web-vitals-collector.js, loaded BEFORE app.js so its
 // PerformanceObservers attach earlier) can stamp this version onto every
@@ -344,32 +344,30 @@ output — they are style references only. Write NEW questions of equal quality:
 ${blocks}
 `;
 }
-const CLAUDE_API_URL = 'https://api.anthropic.com/v1/messages';
 const CLAUDE_MODEL = 'claude-haiku-4-5-20251001';
 
 // ══════════════════════════════════════════════════════════════════════════
 // v4.99.2 Phase E.3 — _claudeFetch wrapper
+// v7.79.0 — Phase E.4: BYOK fallback removed. The server proxy (with
+// server-held ANTHROPIC_API_KEY, JWT auth, and daily-quota enforcement) is
+// the only path now — that was the stated removal condition for the BYOK
+// route since the day it was added. Anonymous users always get needsAuth.
 // ══════════════════════════════════════════════════════════════════════════
 // Single chokepoint for every Claude API call in the app. Auto-routes:
 //   • Signed-in user → POST /api/ai/generate (server proxy, JWT-authed,
 //     server-held ANTHROPIC_API_KEY, server-side quota enforcement).
-//   • Anonymous user with a stored API key → direct Anthropic call (BYOK
-//     fallback). Phase E.4 removes this fallback once the server proxy
-//     ships with the daily-quota guarantee.
-//   • Anonymous user with no stored key → throws err.needsAuth, caller
-//     surfaces a "sign in for free 15 questions/day" UI.
+//   • Anonymous user → throws err.needsAuth, caller surfaces a "sign in
+//     for free 15 questions/day" UI.
 //
 // The wrapper preserves the same call shape as fetch(url, init) so all 13
 // existing Anthropic call sites in this file collapsed to a single global
-// rename: fetch(CLAUDE_API_URL, → _claudeFetch(.
+// rename to _claudeFetch(.
 //
 // To mark a call as "metered" (counts against the user's daily 20-Q quota),
 // the body's parsed JSON should include _metered: true. Only the canonical
 // question-generation site (_fetchQuestionsBatch) sets this flag; all
 // other AI calls (validation, teacher, coach, scenario gen) are infrastructure.
-// The proxy strips _metered from the body before forwarding to Anthropic;
-// the BYOK fallback below also strips it so Anthropic doesn't reject as
-// an unknown field.
+// The proxy strips _metered from the body before forwarding to Anthropic.
 //
 // On HTTP 429 quota_exceeded, the wrapper triggers _showQuotaExceededUI()
 // (modal hero) so callers don't each need to handle it. Wrapper also
@@ -425,36 +423,7 @@ async function _claudeFetch(init) {
     return r;
   }
 
-  // Route 2: BYOK fallback (anonymous users with a stored API key)
-  // This path goes away in Phase E.4 once everyone is on the proxy.
-  var key = null;
-  try { key = localStorage.getItem(STORAGE.KEY); } catch (_) {}
-  if (key) {
-    // Strip _metered from the body — Anthropic rejects unknown fields
-    var cleanBody = init.body;
-    try {
-      if (init.body) {
-        var p = JSON.parse(init.body);
-        if (p && '_metered' in p) {
-          delete p._metered;
-          cleanBody = JSON.stringify(p);
-        }
-      }
-    } catch (_) {}
-    // Direct fetch to Anthropic — NOT _claudeFetch (would recurse).
-    return fetch(CLAUDE_API_URL, {
-      method: 'POST',
-      headers: {
-        'x-api-key': key,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true',
-        'content-type': 'application/json'
-      },
-      body: cleanBody
-    });
-  }
-
-  // No session, no key — surface a sign-in nag
+  // No session — surface a sign-in nag
   var err = new Error('Sign in to study · 15 free questions/day at certanvil.com.');
   err.needsAuth = true;
   throw err;
@@ -1056,8 +1025,6 @@ const STORAGE = {
   GAUNTLET_FREE_COUNT: 'nplus_gauntlet_free_count', // v7.54.0 free-tier daily Gauntlet runs ({date, count}) — separate from the 15-question quota
   DEEP_DIVE_USES: 'nplus_deep_dive_uses',
   ERROR_LOG: 'nplus_error_log',
-  GH_TOKEN: 'nplus_gh_monitor_token',
-  GH_REPORTED: 'nplus_gh_reported',
   SB_REPORTED: 'nplus_sb_reported',  // fingerprints already sent to client_errors table
   TOPOLOGIES: 'nplus_topologies',
   TOPOLOGY_DRAFT: 'nplus_topology_draft',
@@ -1246,11 +1213,9 @@ function toggleTheme() {
 }
 
 // ══════════════════════════════════════════
-// PRODUCTION MONITORING + AUTO GITHUB ISSUES
+// PRODUCTION MONITORING
 // ══════════════════════════════════════════
 const ERROR_LOG_CAP = 50;
-const GH_REPO = 'oremosu98/networkplus-quiz';
-const GH_PROJECT_ID = 'PVT_kwHOB0H7gM4BT-VD';
 
 function logError(type, msg, extra = {}) {
   try {
@@ -1267,8 +1232,6 @@ function logError(type, msg, extra = {}) {
     log.unshift(entry);
     if (log.length > ERROR_LOG_CAP) log.length = ERROR_LOG_CAP;
     localStorage.setItem(STORAGE.ERROR_LOG, JSON.stringify(log));
-    // Auto-report to GitHub if configured
-    autoReportToGitHub(entry);
     // Auto-report to Supabase client_errors (always-on for prod users)
     autoReportToSupabase(entry);
   } catch (_) { /* storage full or unavailable */ }
@@ -1411,77 +1374,14 @@ if (typeof window !== 'undefined') {
   window._copyDesktopOnlyLink = _copyDesktopOnlyLink;
 }
 
-// ── GitHub Issues Auto-Reporter ──
-function getReportedErrors() {
-  try { return JSON.parse(localStorage.getItem(STORAGE.GH_REPORTED) || '[]'); } catch { return []; }
-}
-
 function errorFingerprint(entry) {
   // Deduplicate by message + source + line (ignore timestamp)
   return (entry.message || '').slice(0, 100) + '|' + (entry.source || '') + '|' + (entry.line || '');
 }
 
-async function autoReportToGitHub(entry) {
-  const token = localStorage.getItem(STORAGE.GH_TOKEN);
-  if (!token) return;
-  // Skip localhost errors
-  if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') return;
-  // Deduplicate — don't report the same error twice
-  const fp = errorFingerprint(entry);
-  const reported = getReportedErrors();
-  if (reported.includes(fp)) return;
-
-  const title = `[Auto] ${entry.type}: ${entry.message.slice(0, 80)}`;
-  const body = `## Auto-Reported Bug
-
-| Field | Value |
-|---|---|
-| **Type** | \`${entry.type}\` |
-| **Page** | \`${entry.page}\` |
-| **Version** | \`v${entry.version}\` |
-| **Time** | ${entry.timestamp} |
-| **Browser** | ${entry.userAgent || 'Unknown'} |
-${entry.source ? `| **Source** | \`${entry.source}:${entry.line}:${entry.col}\` |` : ''}
-
-### Error Message
-\`\`\`
-${entry.message}
-\`\`\`
-
-${entry.stack ? `### Stack Trace\n\`\`\`\n${entry.stack}\n\`\`\`` : ''}
-
----
-_Auto-reported by Production Monitor v${entry.version}_`;
-
-  try {
-    const res = await fetch(`https://api.github.com/repos/${GH_REPO}/issues`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `token ${token}`,
-        'Accept': 'application/vnd.github.v3+json',
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        title,
-        body,
-        labels: ['bug', 'monitoring', 'priority: high']
-      })
-    });
-    if (res.ok) {
-      const issue = await res.json();
-      // Add issue to Kanban board
-      addIssueToProject(token, issue.node_id);
-      // Mark as reported so we don't create duplicates
-      reported.push(fp);
-      if (reported.length > 200) reported.splice(0, reported.length - 200);
-      localStorage.setItem(STORAGE.GH_REPORTED, JSON.stringify(reported));
-    }
-  } catch (_) { /* silent — don't error on error reporting */ }
-}
-
 // v7.77.0: fire-and-forget Supabase insert into client_errors.
 // Requires window.certanvilSupabase to be available (loaded after auth).
-// Skips localhost. Dedupes via nplus_sb_reported (same pattern as GH_REPORTED).
+// Skips localhost. Dedupes via nplus_sb_reported.
 async function autoReportToSupabase(entry) {
   try {
     const sb = window.certanvilSupabase;
@@ -1508,24 +1408,6 @@ async function autoReportToSupabase(entry) {
       localStorage.setItem(STORAGE.SB_REPORTED, JSON.stringify(reported));
     }
   } catch (_) { /* silent — don't error on error reporting */ }
-}
-
-async function addIssueToProject(token, issueNodeId, priority = 'high') {
-  const PRIORITY_IDS = { high: 'c32bf0c4', medium: 'f0fdf4e6', low: '0ce27c83' };
-  const PRIORITY_FIELD = 'PVTSSF_lAHOB0H7gM4BT-VDzhBQYqI';
-  const STATUS_FIELD = 'PVTSSF_lAHOB0H7gM4BT-VDzhBJlx0';
-  const BACKLOG_ID = '630cbc97';
-  try {
-    const gql = (query) => fetch('https://api.github.com/graphql', {
-      method: 'POST',
-      headers: { 'Authorization': `bearer ${token}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query })
-    }).then(r => r.json());
-    const res = await gql(`mutation { addProjectV2ItemById(input: { projectId: "${GH_PROJECT_ID}", contentId: "${issueNodeId}" }) { item { id } } }`);
-    const itemId = res.data.addProjectV2ItemById.item.id;
-    await gql(`mutation { updateProjectV2ItemFieldValue(input: { projectId: "${GH_PROJECT_ID}", itemId: "${itemId}", fieldId: "${PRIORITY_FIELD}", value: { singleSelectOptionId: "${PRIORITY_IDS[priority]}" } }) { projectV2Item { id } } }`);
-    await gql(`mutation { updateProjectV2ItemFieldValue(input: { projectId: "${GH_PROJECT_ID}", itemId: "${itemId}", fieldId: "${STATUS_FIELD}", value: { singleSelectOptionId: "${BACKLOG_ID}" } }) { projectV2Item { id } } }`);
-  } catch (_) {}
 }
 
 window.onerror = function(msg, src, line, col, err) {
@@ -1584,29 +1466,12 @@ function renderMonitor() {
   log.forEach(e => { const k = e.message.slice(0, 80); freq[k] = (freq[k] || 0) + 1; });
   const topErrors = Object.entries(freq).sort((a, b) => b[1] - a[1]).slice(0, 5);
 
-  const ghToken = localStorage.getItem(STORAGE.GH_TOKEN) || '';
-  const ghStatus = ghToken ? 'Connected' : 'Not configured';
-  const reportedCount = getReportedErrors().length;
-
   statsEl.innerHTML = `
     <div class="mon-stats-grid">
       <div class="mon-stat"><div class="mon-stat-val">${total}</div><div class="mon-stat-lbl">Total Errors</div></div>
       <div class="mon-stat"><div class="mon-stat-val" style="color:var(--red)">${runtime}</div><div class="mon-stat-lbl">Runtime</div></div>
       <div class="mon-stat"><div class="mon-stat-val" style="color:var(--yellow)">${promise}</div><div class="mon-stat-lbl">Promise</div></div>
       <div class="mon-stat"><div class="mon-stat-val" style="color:var(--accent-light)">${last24h}</div><div class="mon-stat-lbl">Last 24h</div></div>
-    </div>
-    <div class="mon-github">
-      <div class="mon-github-header">
-        <h4>GitHub Auto-Reporter</h4>
-        <span class="mon-github-status">${ghStatus}</span>
-      </div>
-      <p class="mon-github-desc">Errors auto-create issues on <a href="https://github.com/${GH_REPO}/issues" target="_blank" rel="noopener" style="color:var(--accent-light)">${GH_REPO}</a> with bug + monitoring labels. Duplicates are skipped.</p>
-      <div class="mon-github-input-row">
-        <input type="password" id="gh-monitor-token" class="mon-github-input" placeholder="ghp_xxxxxxxxxxxx" value="${ghToken ? '••••••••••••••••' : ''}" />
-        <button class="btn btn-primary" style="padding:8px 14px;font-size:12px" onclick="saveGhToken()">Save</button>
-        ${ghToken ? '<button class="btn btn-ghost" style="padding:8px 14px;font-size:12px" onclick="revealGhToken()">Reveal</button><button class="btn btn-ghost" style="padding:8px 14px;font-size:12px" onclick="copyGhToken()">Copy</button>' : ''}
-      </div>
-      <p class="mon-github-hint">${reportedCount} unique errors reported so far. Token stored locally, never sent anywhere except GitHub API.</p>
     </div>
     ${topErrors.length > 0 ? `
     <div class="mon-freq">
@@ -1858,44 +1723,6 @@ async function renderWebVitals() {
       </tr>`;
     }).join('') +
     '</tbody></table></div>';
-}
-
-function saveGhToken() {
-  const input = document.getElementById('gh-monitor-token');
-  const token = (input?.value || '').trim();
-  // Don't save the masked placeholder
-  if (token === '••••••••••••••••') return;
-  if (token && !token.startsWith('ghp_') && !token.startsWith('github_pat_')) {
-    showErrorToast('Invalid token · must start with ghp_ or github_pat_');
-    return;
-  }
-  if (token) {
-    localStorage.setItem(STORAGE.GH_TOKEN, token);
-    showErrorToast('GitHub connected! Errors will auto-create issues.');
-  } else {
-    localStorage.removeItem(STORAGE.GH_TOKEN);
-    showErrorToast('GitHub auto-reporter disconnected.');
-  }
-  renderMonitor();
-}
-
-function revealGhToken() {
-  const input = document.getElementById('gh-monitor-token');
-  const token = localStorage.getItem(STORAGE.GH_TOKEN) || '';
-  if (!input || !token) return;
-  if (input.type === 'password') {
-    input.type = 'text';
-    input.value = token;
-  } else {
-    input.type = 'password';
-    input.value = '••••••••••••••••';
-  }
-}
-
-function copyGhToken() {
-  const token = localStorage.getItem(STORAGE.GH_TOKEN) || '';
-  if (!token) return;
-  navigator.clipboard.writeText(token).then(() => showErrorToast('Token copied to clipboard'));
 }
 
 // Triple-tap version badge to open monitor.
