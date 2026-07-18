@@ -20,6 +20,17 @@ Governs **dev sessions** (Claude Code / agent sessions working on this repo). It
 
 "Fable" = any Mythos-class model; "Sonnet" = the standard executor tier. Other models (Opus, Haiku) are not executors — routing anything to them requires explicit founder direction, recorded in the plan header.
 
+## Activation — this is not always-on
+
+The founder will not always be running Fable — a session might be plain Sonnet (any version, e.g. 4.6) working solo, or another model entirely. This discipline is not a blanket requirement that every session simulate a two-model handoff regardless of what's actually running it. It activates on either of two conditions:
+
+1. **The current session is actually running a Fable-tier model.** Then the surface ban + A/B/C routing apply automatically — no invocation needed, this doc's core rule is just in force.
+2. **The founder explicitly invokes it by name** ("let's use the Fable/Sonnet workflow," "route this through model-routing," "get a Fable review on this"). Then it applies regardless of which models are literally present, because the founder is choosing to hand-run the split for that task.
+
+**Absent both** — a session running solo on Sonnet or any other model, with no Fable session in the loop and no explicit invocation — that session owns planning, execution, and validation itself. It classifies the task with its own judgment (still worth doing well) and just does the work. It must NOT pretend to "hand off to Fable for planning" or "pause for a Fable review" when no such counterpart actually exists in the conversation — simulating the workflow with an imaginary second model is theater, not the rule's intent, and wastes a step for nothing.
+
+**Self-check for any session:** *am I actually Fable right now, or did the founder just explicitly ask for this workflow?* If neither, proceed as a normal single-model session with full ownership.
+
 ## The surface table
 
 The execution ban is defined by **file surfaces**, not by "any file edit":
