@@ -8067,4 +8067,185 @@ window.SIM_LAB_SEED_APLUS_CORE1 = [
         answer: { slots: { defectPattern: 'p-ghost', failedComponent: 'c-eraselamp' } } }
     ]
   },
+  {
+    id: 'a1-swatch-09',
+    cert: 'aplus-core1',
+    archetype: 'swatch',
+    objective: '5.6',
+    topic: 'Crooked print — glazed pickup roller, clean-class remedy',
+    title: 'The loading-dock printer is feeding every page crooked',
+    estMinutes: 5,
+    scenario: 'The loading dock\'s laser printer sits in the dustiest corner of the building, and this week every page comes out printed at an angle — the text is sharp, but the whole block is rotated a few degrees. Jams are becoming more frequent too. Read the page, name what failed, and close the ticket the right way.',
+    swatch: { damageKind: 'debris' },
+    assets: {
+      reference: {
+        kind: 'swatch',
+        title: 'Sample output · loading-dock LaserJet',
+        defect: 'skew',
+        caption: 'Whole print block rotated off square · text itself is sharp',
+        notes: ['Dusty environment · high page volume', 'Occasional feed jams alongside the skew', 'Print quality otherwise normal']
+      }
+    },
+    steps: [
+      { id: 'diagnose', type: 'configure', points: 1,
+        prompt: 'Name the defect pattern, then the component that produces it.',
+        explanation: 'Sharp print rotated off square is not an imaging problem — the image was drawn correctly onto a page that was travelling crooked. The pickup roller sets the page\'s entry angle: when paper dust glazes its surface, one side grips while the other slips, and every page feeds in at a slight rotation.',
+        payload: { slots: [
+          { id: 'defectPattern', label: 'Defect pattern', options: [
+            { id: 'p-skew', text: 'Crooked print · the whole page is rotated off square' },
+            { id: 'p-streak', text: 'Vertical white streak · a clean band missing toner' },
+            { id: 'p-spots', text: 'Repeating marks · same spot at a fixed interval' },
+            { id: 'p-ghost', text: 'Ghosting · a faint copy of an earlier image repeats' } ] },
+          { id: 'failedComponent', label: 'Failed component', options: [
+            { id: 'c-pickup', text: 'Pickup roller glazed with paper dust · grips unevenly and feeds crooked' },
+            { id: 'c-drum', text: 'Imaging drum · damage on its surface prints every rotation' },
+            { id: 'c-fuser', text: 'Fuser assembly · toner is not bonding to the page' },
+            { id: 'c-toner', text: 'Toner cartridge low · the whole page prints faded' } ] } ] },
+        answer: { slots: { defectPattern: 'p-skew', failedComponent: 'c-pickup' } } },
+      { id: 'fix', type: 'configure', points: 1,
+        prompt: 'You pull the pickup roller: its surface is glazed with packed paper dust, but the rubber is intact with no flat spots. Close out the ticket.',
+        explanation: 'Glaze is debris, not wear: the rubber underneath is sound, so wiping the roller clean with a lint-free cloth restores even grip. Replacement is the answer only when the rubber itself is worn smooth or cracked. Verify by printing and checking the page squares up.',
+        payload: { slots: [
+          { id: 'remedy', label: 'Remedy', options: [
+            { id: 'r-wipe', text: 'Clean the pickup roller with a lint-free cloth to cut the glaze' },
+            { id: 'r-replace', text: 'Replace the pickup roller with a new one' },
+            { id: 'r-tray', text: 'Swap the paper tray for one from another printer' } ] },
+          { id: 'verify', label: 'Before closing the ticket', options: [
+            { id: 'v-none', text: 'Nothing further · a cleaned roller resolves it by definition' },
+            { id: 'v-test', text: 'Print a test page and check the print sits square on the page' },
+            { id: 'v-cal', text: 'Run a full colour calibration' } ] } ] },
+        answer: { slots: { remedy: 'r-wipe', verify: 'v-test' } } }
+    ]
+  },
+  {
+    id: 'a1-swatch-10',
+    cert: 'aplus-core1',
+    archetype: 'swatch',
+    objective: '5.6',
+    topic: 'Crooked print — worn separation pad diagnosis',
+    title: 'HR\'s printer pulls two pages and prints them both crooked',
+    estMinutes: 4,
+    scenario: 'HR\'s desktop laser has developed a double habit: it often pulls two sheets at once, and whatever it prints lands rotated a few degrees on the page. A tech already cleaned the pickup roller last week — the feed improved for a day, then both symptoms came straight back. Read the page and name what failed.',
+    swatch: { damageKind: 'none' },
+    assets: {
+      reference: {
+        kind: 'swatch',
+        title: 'Sample output · HR LaserJet',
+        defect: 'skew',
+        caption: 'Print rotated off square · often two sheets pulled together',
+        notes: ['Pickup roller cleaned last week: brief improvement only', 'Multipage misfeeds alongside the skew', 'Paper is fresh and fanned before loading']
+      }
+    },
+    steps: [
+      { id: 'diagnose', type: 'configure', points: 1,
+        prompt: 'The pickup roller was cleaned and the symptoms returned. Name the defect pattern, then the component the evidence points to.',
+        explanation: 'Skew plus multipage misfeeds is a feed-separation signature. The separation pad presses against the pickup roller to hold back every sheet but the top one; worn smooth, it lets extra sheets slip through and lets the fed sheet twist as it goes. A cleaned roller helping only briefly says the roller was not the root cause.',
+        payload: { slots: [
+          { id: 'defectPattern', label: 'Defect pattern', options: [
+            { id: 'p-skew', text: 'Crooked print · the whole page is rotated off square' },
+            { id: 'p-smear', text: 'Loose toner · print smears at a touch' },
+            { id: 'p-ghost', text: 'Ghosting · a faint copy of an earlier image repeats' } ] },
+          { id: 'failedComponent', label: 'Failed component', options: [
+            { id: 'c-seppad', text: 'Separation pad worn smooth · extra sheets slip through and feed crooked' },
+            { id: 'c-scratcheddrum', text: 'Scratched drum · a groove in the coating stops toner along one band' },
+            { id: 'c-blade', text: 'Cleaning blade worn · residual toner echoes an earlier image' },
+            { id: 'c-fuser', text: 'Fuser assembly · toner is not bonding to the page' } ] } ] },
+        answer: { slots: { defectPattern: 'p-skew', failedComponent: 'c-seppad' } } }
+    ]
+  },
+  {
+    id: 'a1-swatch-11',
+    cert: 'aplus-core1',
+    archetype: 'swatch',
+    objective: '5.6',
+    topic: 'Multi-symptom — repeating marks with fading print, triage order',
+    title: 'The print room\'s LaserJet is stamping marks AND slowly fading',
+    estMinutes: 6,
+    scenario: 'The print room reports two problems on the same machine: dark marks that repeat down every page at a fixed interval, and print that has been getting gradually fainter for a fortnight. Two symptoms, one ticket. Diagnose the defect the sample page pins down, then sequence the visit so each fix is verified before the next is judged.',
+    swatch: { damageKind: 'none' },
+    assets: {
+      reference: {
+        kind: 'swatch',
+        title: 'Sample output · print-room LaserJet',
+        defect: 'spots',
+        caption: 'Repeating marks at a fixed interval · overall density also low',
+        notes: ['Marks: same lane, fixed interval', 'Density fading gradually over 2 weeks', 'Toner gauge: low']
+      }
+    },
+    steps: [
+      { id: 'diagnose', type: 'configure', points: 1,
+        prompt: 'Start with the symptom the sample page can prove. Name the defect pattern, then the component that produces it.',
+        explanation: 'Fading is ambiguous from one page — but repeating marks at a fixed interval are not. The interval fingerprints a rotating part: damage on the imaging drum stamps the page once per rotation. The fading is most simply the low toner gauge, and it gets judged AFTER the drum problem is fixed, not alongside it.',
+        payload: { slots: [
+          { id: 'defectPattern', label: 'Defect pattern', options: [
+            { id: 'p-spots', text: 'Repeating marks · same spot at a fixed interval' },
+            { id: 'p-ghost', text: 'Ghosting · a faint copy of an earlier image repeats' },
+            { id: 'p-smear', text: 'Loose toner · print smears at a touch' } ] },
+          { id: 'failedComponent', label: 'Failed component', options: [
+            { id: 'c-drum', text: 'Imaging drum · damage on its surface prints every rotation' },
+            { id: 'c-fuser', text: 'Fuser assembly · toner is not bonding to the page' },
+            { id: 'c-seppad', text: 'Separation pad worn · pages feed crooked or two at a time' },
+            { id: 'c-toner', text: 'Toner cartridge low · the whole page prints faded' } ] } ] },
+        answer: { slots: { defectPattern: 'p-spots', failedComponent: 'c-drum' } } },
+      { id: 'triage', type: 'order', points: 1,
+        prompt: 'Sequence the visit: fix what is proven, verify, then judge the second symptom.',
+        explanation: 'Measure first — the interval is the evidence that names the part. Replace the drum on that evidence, then test: the test page both confirms the marks are gone and shows the true remaining density. Only then can the fade be judged on its own, and the toner cartridge assessed as a separate, cheap consumable decision.',
+        payload: { items: [
+          { id: 'o-measure', label: 'Measure the mark-to-mark interval on the sample page' },
+          { id: 'o-drum', label: 'Replace the drum unit' },
+          { id: 'o-test', label: 'Print a test page and confirm the marks are gone' },
+          { id: 'o-toner', label: 'Assess the remaining fade and replace the toner cartridge if needed' } ] },
+        answer: { correctOrder: ['o-measure', 'o-drum', 'o-test', 'o-toner'] } }
+    ]
+  },
+  {
+    id: 'a1-swatch-12',
+    cert: 'aplus-core1',
+    archetype: 'swatch',
+    objective: '5.6',
+    topic: 'Multi-symptom — smearing print with grinding noise, symptom mapping',
+    title: 'The finance printer smears its pages and grinds while doing it',
+    estMinutes: 6,
+    scenario: 'Finance\'s workhorse laser now announces every job with a grinding noise from the output end, and the pages it delivers smudge at a touch. Accordion-style jams are starting at the exit rollers too. Three complaints on one ticket. Read the page, name the failed assembly, then map each symptom to what it tells you.',
+    swatch: { damageKind: 'none' },
+    assets: {
+      reference: {
+        kind: 'swatch',
+        title: 'Sample output · finance LaserJet',
+        defect: 'smear',
+        caption: 'Toner smudges at a touch · grinding noise during every job',
+        notes: ['Grinding from the output end of the printer', 'Accordion jams beginning at the exit', 'Toner level: fine']
+      }
+    },
+    steps: [
+      { id: 'diagnose', type: 'configure', points: 1,
+        prompt: 'Name the defect pattern the sample page shows, then the assembly all three symptoms share.',
+        explanation: 'Unfused toner puts the fault at the fuser. The grinding and the exit-end accordion jams agree: a fuser whose drive gear is wearing out turns roughly, mangles the page as it passes, and no longer holds fusing temperature and pressure. One failing assembly explains all three complaints — that convergence is the diagnosis.',
+        payload: { slots: [
+          { id: 'defectPattern', label: 'Defect pattern', options: [
+            { id: 'p-smear', text: 'Loose toner · print smears at a touch' },
+            { id: 'p-spots', text: 'Repeating marks · same spot at a fixed interval' },
+            { id: 'p-streak', text: 'Vertical white streak · a clean band missing toner' } ] },
+          { id: 'failedComponent', label: 'Failed component', options: [
+            { id: 'c-fuser', text: 'Fuser assembly · failing drive and heat, no longer bonding toner' },
+            { id: 'c-pickup', text: 'Pickup roller worn · pages feed crooked or not at all' },
+            { id: 'c-blade', text: 'Cleaning blade worn · residual toner echoes an earlier image' },
+            { id: 'c-tonerpath', text: 'Blocked toner path · no toner reaches one lane of the page' } ] } ] },
+        answer: { slots: { defectPattern: 'p-smear', failedComponent: 'c-fuser' } } },
+      { id: 'sympmap', type: 'match', points: 1,
+        prompt: 'Map each reported symptom to what it tells you about the failing fuser.',
+        explanation: 'Each complaint is a different window on the same assembly, through a different mechanism: smudging print means the hot roller is not reaching fusing temperature; grinding is the worn drive gear turning roughly; and accordion jams at the exit mean the pressure roller has lost its nip — without that pinch the page is no longer pulled taut through the exit and buckles. Three distinct mechanisms, one assembly: that convergence is what points to the fuser maintenance kit rather than three separate repairs.',
+        payload: {
+          left: [
+            { id: 'm-smear', label: 'Toner smudges at a touch' },
+            { id: 'm-grind', label: 'Grinding noise during printing' },
+            { id: 'm-jam', label: 'Accordion jams at the exit' } ],
+          right: [
+            { id: 'd-heat', label: 'Hot roller not reaching fusing temperature' },
+            { id: 'd-gear', label: 'Fuser drive gear worn and turning roughly' },
+            { id: 'd-nip', label: 'Pressure roller worn · lost nip lets the page buckle at the exit' } ]
+        },
+        answer: { pairs: { 'm-smear': 'd-heat', 'm-grind': 'd-gear', 'm-jam': 'd-nip' } } }
+    ]
+  },
 ];
