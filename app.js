@@ -1,9 +1,9 @@
 // ══════════════════════════════════════════
-// Network+ AI Quiz — app.js  v7.77.0
+// Network+ AI Quiz — app.js  v7.78.0
 // ══════════════════════════════════════════
 
 // ── CONSTANTS ──
-const APP_VERSION = '7.77.0';
+const APP_VERSION = '7.78.0';
 // v4.99.45 (Phase 6b): expose APP_VERSION on window so the web-vitals
 // collector (lib/web-vitals-collector.js, loaded BEFORE app.js so its
 // PerformanceObservers attach earlier) can stamp this version onto every
@@ -1058,6 +1058,7 @@ const STORAGE = {
   ERROR_LOG: 'nplus_error_log',
   GH_TOKEN: 'nplus_gh_monitor_token',
   GH_REPORTED: 'nplus_gh_reported',
+  SB_REPORTED: 'nplus_sb_reported',  // fingerprints already sent to client_errors table
   TOPOLOGIES: 'nplus_topologies',
   TOPOLOGY_DRAFT: 'nplus_topology_draft',
   TB_COACH_CACHE: 'nplus_tb_coach_cache',
@@ -1268,6 +1269,8 @@ function logError(type, msg, extra = {}) {
     localStorage.setItem(STORAGE.ERROR_LOG, JSON.stringify(log));
     // Auto-report to GitHub if configured
     autoReportToGitHub(entry);
+    // Auto-report to Supabase client_errors (always-on for prod users)
+    autoReportToSupabase(entry);
   } catch (_) { /* storage full or unavailable */ }
 }
 
@@ -1472,6 +1475,37 @@ _Auto-reported by Production Monitor v${entry.version}_`;
       reported.push(fp);
       if (reported.length > 200) reported.splice(0, reported.length - 200);
       localStorage.setItem(STORAGE.GH_REPORTED, JSON.stringify(reported));
+    }
+  } catch (_) { /* silent — don't error on error reporting */ }
+}
+
+// v7.77.0: fire-and-forget Supabase insert into client_errors.
+// Requires window.certanvilSupabase to be available (loaded after auth).
+// Skips localhost. Dedupes via nplus_sb_reported (same pattern as GH_REPORTED).
+async function autoReportToSupabase(entry) {
+  try {
+    const sb = window.certanvilSupabase;
+    if (!sb) return;
+    if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') return;
+    const fp = errorFingerprint(entry);
+    let reported;
+    try { reported = JSON.parse(localStorage.getItem(STORAGE.SB_REPORTED) || '[]'); }
+    catch (_) { reported = []; }
+    if (reported.includes(fp)) return;
+    const { error } = await sb.from('client_errors').insert({
+      fingerprint: fp.slice(0, 300),
+      type:        String(entry.type || 'unknown').slice(0, 50),
+      message:     String(entry.message || '').slice(0, 500),
+      page:        String(entry.page || '').slice(0, 100),
+      version:     String(entry.version || '').slice(0, 20),
+      user_agent:  String(entry.userAgent || '').slice(0, 200),
+      user_id:     (sb.auth && sb.auth.getUser ? (await sb.auth.getUser()).data?.user?.id : null) || null,
+      extra:       { source: entry.source, line: entry.line, col: entry.col },
+    });
+    if (!error) {
+      reported.push(fp);
+      if (reported.length > 200) reported.splice(0, reported.length - 200);
+      localStorage.setItem(STORAGE.SB_REPORTED, JSON.stringify(reported));
     }
   } catch (_) { /* silent — don't error on error reporting */ }
 }

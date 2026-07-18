@@ -24,12 +24,12 @@
 <!-- machine-owned — run `node scripts/stamp-facts.js` to refresh; do not hand-edit -->
 | Metric | Lines | Size |
 |---|---|---|
-| app.js | 8116 | 417 KB |
+| app.js | 8150 | 419 KB |
 | styles.css | 14903 | 551 KB |
 | index.html | 2001 | 128 KB |
 | dg-system.css | 4597 | 447 KB |
 | tests/uat.js + tests/uat/ (25 modules) | 27398 | — |
-UAT checks: 4824 · E2E `test(` count: 159 · APP_VERSION: 7.77.0 · stamped-at: worktree
+UAT checks: 4824 · E2E `test(` count: 159 · APP_VERSION: 7.78.0 · stamped-at: worktree
 <!-- FACTS:AUTO:END -->
 
 | File | Purpose | Size |
@@ -131,6 +131,7 @@ npx playwright test              # E2E (tests/e2e/app.spec.js)
 
 | Version | Features Added |
 |---|---|
+| v7.78.0 | Prod error reporting: logError now inserts to Supabase client_errors table |
 | v7.77.0 | Wave 11: Topic Deep Dive + Guided Lab extracted to features/topic-dive.js (#138) |
 | v7.76.0 | Wave 10: SR Queue extracted to features/sr-review.js (#138) |
 | v7.75.0 | chore(#138): extract home/setup UI to features/home.js (wave 9, eager) |

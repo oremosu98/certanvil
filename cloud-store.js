@@ -36,7 +36,7 @@
 //              port_pairs_best, port_stats, subnet_stats
 //              (UI prefs + perf caches — no cloud sync; per-device)
 //
-//   DEV_ONLY:  error_log, gh_token, gh_reported, ai_parse_fails, reports,
+//   DEV_ONLY:  error_log, gh_token, gh_reported, sb_reported, ai_parse_fails, reports,
 //              autobackup_*, last_autobackup_at, last_export_reminder_at,
 //              key, tb_coach_cache, acl_coach_cache
 //              (debug / dev tooling / API key — never to cloud)
