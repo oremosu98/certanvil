@@ -1,6 +1,6 @@
 {
-  "lines": 14727,
+  "lines": 13582,
   "allowance": 150,
   "updated": "2026-07-18",
-  "note": "After wave 6: exam mode extracted to features/exam.js (#138)"
+  "note": "After wave 7: readiness system extracted to features/readiness.js (#138)"
 }
