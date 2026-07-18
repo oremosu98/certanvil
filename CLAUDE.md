@@ -29,7 +29,7 @@
 | index.html | 2001 | 128 KB |
 | dg-system.css | 4597 | 447 KB |
 | tests/uat.js + tests/uat/ (25 modules) | 27395 | — |
-UAT checks: 4824 · E2E `test(` count: 159 · APP_VERSION: 7.79.0 · stamped-at: worktree
+UAT checks: 4824 · E2E `test(` count: 159 · APP_VERSION: 7.79.1 · stamped-at: worktree
 <!-- FACTS:AUTO:END -->
 
 | File | Purpose | Size |
@@ -131,6 +131,7 @@ npx playwright test              # E2E (tests/e2e/app.spec.js)
 
 | Version | Features Added |
 |---|---|
+| v7.79.1 | Fix: SR Queue home tile (Recommended cell) didn't reflect due reviews on initial paint — wave 10 Pattern E gap |
 | v7.79.0 | Stop-doing hardening: mockups excluded from build, GH PAT removed from client, BYOK fallback retired, bug-report drawer now server-side via Supabase |
 | v7.78.0 | Prod error reporting: logError now inserts to Supabase client_errors table |
 | v7.77.0 | Wave 11: Topic Deep Dive + Guided Lab extracted to features/topic-dive.js (#138) |

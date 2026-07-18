@@ -1127,4 +1127,27 @@
     renderSrReviewCard: renderSrReviewCard,
     startSrReview: startSrReview,
   };
+
+  // ── SR eager init ────────────────────────────────────────────────────────
+  // Pattern E hazard (#138 wave 10): home.js loads BEFORE this module (script
+  // order in index.html) and its own self-trigger (_homeInit) calls
+  // renderHeroV2() -> renderBentoRecommended() synchronously at parse time,
+  // which reads getSrStats() to decide whether the home "Recommended" tile
+  // should show due SR reviews. At that moment this module hasn't executed
+  // yet, so getSrStats is undefined and the tile falls through to its
+  // no-reviews-due branch even when cards ARE due. Re-render the tile here,
+  // now that getSrStats is available, so it corrects itself immediately
+  // after this script's own execution (still before DOMContentLoaded).
+  function _srReviewInit() {
+    try {
+      if (typeof renderBentoRecommended === 'function') renderBentoRecommended();
+    } catch (e) {
+      console.warn('[sr-review.js init]', e && e.message);
+    }
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', _srReviewInit);
+  } else {
+    _srReviewInit();
+  }
 })();
