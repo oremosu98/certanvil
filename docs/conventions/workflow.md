@@ -81,7 +81,7 @@ Also worth knowing — user maintains cross-project memory at `~/.claude/project
 | **Mon** | Feature ship (Board #2). Fresh-week energy → fits bigger scopes |
 | **Tue** | Bug fixes (Board #1, `bug`) |
 | **Wed** | Feature ship (Board #2) |
-| **Thu** | Tech debt (Board #1, `tech-debt`; auto-sweep scheduled) |
+| **Thu** | Tech debt (Board #1, `tech-debt`) — **lapsed in practice (founder, 2026-07-18): this slot and the GitHub board were not being looked at.** Debt now surfaces via the groundskeeper Monday digest → rolling MAINTENANCE DEBT memory, which future sessions raise in-chat. Thursday remains the *suggested* day to act on what the memory surfaces, not a tracked commitment. |
 | **Fri** | Feature ship (Board #2). Traditionally the signature ship |
 
 Each feature-day is end-to-end: code → UAT → Chrome MCP verify → bump → CLAUDE.md row → push → CI green. Don't start anything that can't ship the same day. Weekend stays off — rest + N10-009 study.

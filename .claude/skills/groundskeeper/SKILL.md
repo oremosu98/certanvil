@@ -9,6 +9,8 @@ A deterministic scanner (`scripts/groundskeeper-scan.js`) plus this runbook. The
 
 **Scope discipline**: the groundskeeper does exactly one mechanical auto-fix (CLAUDE.md Version History trim, with the CHANGELOG.md backfill it requires). Everything else is report-only. It never touches app code (`app.js`, `index.html`, `styles.css`, `dg-system.css`), never deletes tests or memories, and never pushes.
 
+**Model routing** (per `docs/conventions/model-routing.md`): run sweep sessions on **Sonnet** — this is mechanical work. The sweep's only writes (CLAUDE.md, CHANGELOG.md, memory) are planning surfaces, so any model is *compliant*, but Sonnet is the right tier. If a sweep finding needs an implementation-surface fix, it goes in "Needs you" / the rolling memory — never fixed in the sweep session.
+
 ## Runbook
 
 ### 1. Orient
@@ -53,29 +55,37 @@ gh run list --branch main --limit 5
 Flag any run that isn't a clean success.
 
 ### 6. Digest
-The session's final message is the entire delivery — no file, no email, nothing else written anywhere. Format:
+Format (scanner `GK-SUMMARY:` lines lift straight into the checklist area):
 
 ```
 🧹 Groundskeeper — <date>
 ✅/⚠️ FACTS freshness — <one line>
 ✅/⚠️ Graphify — <one line>
-✅/⚠️ Regression guards — <one line>
+✅/⚠️ Regression guards — <one line, capped-5 candidates>
 ✅/⚠️ Version History — <one line>
 ✅/⚠️ Repo clutter — <one line>
+✅/⚠️ Unpushed work — <one line>
+✅/⚠️ Debt headroom — <tightest metric + app.js Δ this week (+ ratchet headroom once #138 Phase 0 lands)>
+✅/⚠️ GitHub debt — <open tech-debt issue count + oldest-untouched>
 ✅/⚠️ Memory hygiene — <one line, or "skipped (no memory tools)">
 ✅/⚠️ CI health — <one line>
 
 Committed: <sha + one-line message, or "nothing to fix">
-Needs you:
-- <guard-retirement candidates, if any — pointer to the scan output, not the full list>
-- <stale graphify communities, if any>
-- <CI failures, if any>
-- <contradicting/flagged memories, if any>
+Needs you (max 3, ranked):
+- <the 3 highest-value items across ALL sections — not one per section>
 (or just "nothing")
 
 <if committed: reminder that `git push origin main` ships it — the groundskeeper never pushes>
 ```
 Keep it short — this is a scan digest, not a report.
+
+### 7. Surface it (don't let it rot)
+The founder has confirmed (2026-07-18) that boards and fixed weekdays don't get looked at — findings must arrive **inside future chat sessions** on their own. Two channels, in order:
+
+1. **Rolling memory (primary).** If `mcp__memory__remember` is available: write ONE memory titled `MAINTENANCE DEBT — groundskeeper digest <date> (supersedes all prior groundskeeper digests)`, category `context`, high importance. Content = the "Needs you" list + GitHub debt count + app.js trend line, and this instruction to future sessions: *"If the founder asks 'what's next', wraps up a feature, or a session touches an area named below — mention the relevant item. One line, not a lecture."* ShieldCortex injects it into future sessions automatically — that's the delivery mechanism. One rolling memory, always superseding; never accumulate weekly copies.
+2. **Push notification (secondary).** If a `PushNotification`-type tool is available AND the digest has any ⚠️: send one line — `🧹 Groundskeeper: <top Needs-you item> (+N more)`. Skip silently if the tool is absent.
+
+If neither channel is available, say so at the top of the digest so the founder knows this run's findings won't resurface on their own.
 
 ## Hard rules
 
