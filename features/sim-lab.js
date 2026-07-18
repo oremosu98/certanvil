@@ -810,6 +810,47 @@
     return { ok: errs.length === 0, errors: errs };
   }
 
+  // --- swatch (laser print defect) fidelity validator (Wave 4) ---
+  // Truth table maps each rendered defect to the SET of acceptable failed
+  // components (spec 2026-07-11 §4, pinned set-based). Matching is
+  // case-insensitive substring against the RESOLVED keyed option text.
+  var _SWATCH_CAUSES = {
+    spots:  ['drum', 'roller'],
+    streak: ['toner path', 'blocked toner', 'scratched drum'],
+    smear:  ['fuser'],
+    ghost:  ['cleaning blade', 'erase lamp', 'drum clean'],
+    skew:   ['pickup roller', 'paper path', 'separation pad']
+  };
+
+  function simLabValidateSwatchFidelity(scn) {
+    var errs = [];
+    var ref = scn && scn.assets && scn.assets.reference;
+    if (!ref || ref.kind !== 'swatch') return { ok: false, errors: ['swatch fidelity: assets.reference.kind must be "swatch"'] };
+    var accepts = _SWATCH_CAUSES[ref.defect];
+    if (!accepts) return { ok: false, errors: ['swatch fidelity: unknown defect "' + ref.defect + '"'] };
+    var dx = (scn.steps || []).filter(function (st) { return st.id === 'diagnose'; })[0];
+    if (!dx) return { ok: false, errors: ['swatch fidelity: no configure step with id "diagnose"'] };
+    var comp = _slFidelityResolveSlot(dx, 'failedComponent');
+    if (!comp) {
+      errs.push('swatch fidelity: diagnose step has no keyed failedComponent slot');
+    } else {
+      var compLc = String(comp).toLowerCase();
+      var hit = accepts.some(function (a) { return compLc.indexOf(a) !== -1; });
+      if (!hit) errs.push('swatch fidelity: keyed component "' + comp + '" not in the ' + ref.defect + ' cause set {' + accepts.join(', ') + '}');
+    }
+    var fact = scn.swatch || {};
+    var fix = (scn.steps || []).filter(function (st) { return st.id === 'fix'; })[0];
+    if (fact.damageKind === 'permanent' || fact.damageKind === 'debris') {
+      if (!fix) { errs.push('swatch fidelity: damageKind "' + fact.damageKind + '" declared but no fix step'); }
+      else {
+        var remedy = _slFidelityResolveSlot(fix, 'remedy') || '';
+        if (fact.damageKind === 'permanent' && !/replace/i.test(remedy)) errs.push('swatch fidelity: permanent damage must key a replace-class remedy, got "' + remedy + '"');
+        if (fact.damageKind === 'debris' && !/clean/i.test(remedy)) errs.push('swatch fidelity: debris must key a clean-class remedy, got "' + remedy + '"');
+      }
+    }
+    return { ok: errs.length === 0, errors: errs };
+  }
+
   // --- scoring (Task 2) ---
 
   function _norm(v) {
@@ -3549,6 +3590,7 @@
   // --- exports (more added in later tasks) ---
   window.simLabValidateScenario = simLabValidateScenario;
   window.simLabValidateNetworkFidelity = simLabValidateNetworkFidelity;
+  window.simLabValidateSwatchFidelity = simLabValidateSwatchFidelity;
   window.simLabScoreScenario = simLabScoreScenario;
   window.simLabSubmitScenario = simLabSubmitScenario;
   window._simLab = window._simLab || {};

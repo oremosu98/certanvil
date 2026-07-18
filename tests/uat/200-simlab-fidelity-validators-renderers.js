@@ -1221,3 +1221,99 @@ const {
   }
 })();
 
+// ── Wave 4 Task 4: swatch (laser print defect) fidelity validator ──
+// Hand-derived fixture rows (plan Step 1, BEFORE trusting a green run — both
+// Wave 3 fidelity-validator bugs were plausible-looking literal code):
+//   1. spots + drum + permanent + replace remedy -> ok
+//   2. spots + fuser (not in {drum,roller})      -> FAIL
+//   3. spots + roller (set-based, distinct comp)  -> ok
+//   4a. streak + "blocked toner path"            -> ok
+//   4b. streak + bare "toner cartridge" (TRAP: must NOT match 'toner path'/'blocked toner') -> FAIL
+//   5. permanent damage + clean-class remedy      -> FAIL (coherence)
+//   6. debris damage + replace-class remedy        -> FAIL (coherence)
+//   7. damageKind 'none' + no fix step (diagnosis-only) -> ok
+//   8. missing diagnose step                       -> FAIL
+// plus 2 mutation checks proving the validator is load-bearing, not decorative.
+(function () {
+  try {
+    var vm = require('vm');
+    function assert(cond, msg) { test(msg, !!cond); }
+    var grab = function (n) { return _fnBody(js, n); };
+    var causesVar = (js.match(/var _SWATCH_CAUSES = \{[\s\S]*?\n\s*\};/) || [''])[0];
+    var resolveSlotBody = grab('_slFidelityResolveSlot');
+    var swFidelityBody = grab('simLabValidateSwatchFidelity');
+    if (!causesVar || !resolveSlotBody || !swFidelityBody) {
+      test('swatch fidelity: vm extraction succeeded', false);
+      results.errors.push('could not extract simLabValidateSwatchFidelity/_SWATCH_CAUSES');
+      return;
+    }
+    var swCtx = {}; vm.createContext(swCtx);
+    vm.runInContext(resolveSlotBody + '\n' + causesVar + '\n' + swFidelityBody, swCtx);
+    vm.runInContext('globalThis.__swFidelity = simLabValidateSwatchFidelity;', swCtx);
+    var swatchFidelity = swCtx.__swFidelity;
+
+    // minimal scenario fixture builder — mirrors the step-id convention
+    // ('diagnose'/'failedComponent', 'fix'/'remedy') from the Reference contracts.
+    function mkScn(defect, componentText, opts) {
+      opts = opts || {};
+      var scn = {
+        assets: { reference: { kind: 'swatch', title: 't', defect: defect } },
+        swatch: { damageKind: opts.damageKind || 'none' },
+        steps: []
+      };
+      if (!opts.omitDiagnose) {
+        scn.steps.push({ id: 'diagnose', type: 'configure', points: 1,
+          payload: { slots: [{ id: 'failedComponent', label: 'c', options: [
+            { id: 'a', text: componentText }, { id: 'b', text: 'Other component text' } ] }] },
+          answer: { slots: { failedComponent: 'a' } } });
+      }
+      if (opts.remedy !== undefined) {
+        scn.steps.push({ id: 'fix', type: 'configure', points: 1,
+          payload: { slots: [{ id: 'remedy', label: 'r', options: [
+            { id: 'a', text: opts.remedy }, { id: 'b', text: 'Something else' } ] }] },
+          answer: { slots: { remedy: 'a' } } });
+      }
+      return scn;
+    }
+
+    var fixOkSpots = mkScn('spots', 'Imaging drum · damage or debris on its surface prints every rotation',
+      { damageKind: 'permanent', remedy: 'Replace the drum unit · a scratched drum cannot be repaired' });
+    assert(swatchFidelity(fixOkSpots).ok === true, 'Wave 4 fidelity row 1: spots+drum+permanent+replace remedy passes');
+
+    var fix2 = mkScn('spots', 'Fuser assembly · toner is not bonding to the page', { damageKind: 'none' });
+    assert(swatchFidelity(fix2).ok === false, 'Wave 4 fidelity row 2: spots keyed to fuser (out of set) rejected');
+
+    var fix3 = mkScn('spots', 'Pickup roller feeding pages crooked', { damageKind: 'none' });
+    assert(swatchFidelity(fix3).ok === true, 'Wave 4 fidelity row 3: spots keyed to roller (set-based) passes');
+
+    var fix4a = mkScn('streak', 'Blocked toner path · debris jams the transfer', { damageKind: 'none' });
+    assert(swatchFidelity(fix4a).ok === true, 'Wave 4 fidelity row 4a: streak keyed to "blocked toner path" passes');
+    var fix4b = mkScn('streak', 'Toner cartridge empty or clogged · faded or missing print', { damageKind: 'none' });
+    assert(swatchFidelity(fix4b).ok === false, 'Wave 4 fidelity row 4b: streak keyed to bare "toner cartridge" rejected (streak trap)');
+
+    var fix5 = mkScn('spots', 'Imaging drum · damage or debris on its surface prints every rotation',
+      { damageKind: 'permanent', remedy: 'Clean the drum surface and reinstall it' });
+    assert(swatchFidelity(fix5).ok === false, 'Wave 4 fidelity row 5: permanent damage with clean-class remedy rejected');
+
+    var fix6 = mkScn('spots', 'Imaging drum · damage or debris on its surface prints every rotation',
+      { damageKind: 'debris', remedy: 'Replace the drum unit · a scratched drum cannot be repaired' });
+    assert(swatchFidelity(fix6).ok === false, 'Wave 4 fidelity row 6: debris damage with replace-class remedy rejected');
+
+    var fix7 = mkScn('ghost', 'Cleaning blade worn or damaged, streaking a faint echo image', { damageKind: 'none' });
+    assert(swatchFidelity(fix7).ok === true, 'Wave 4 fidelity row 7: diagnosis-only (damageKind none, no fix step) passes');
+
+    var fix8 = mkScn('spots', 'Imaging drum', { damageKind: 'none', omitDiagnose: true });
+    assert(swatchFidelity(fix8).ok === false, 'Wave 4 fidelity row 8: missing diagnose step rejected');
+
+    // mutation checks: prove the validator is load-bearing, not decorative
+    var mutA = JSON.parse(JSON.stringify(fixOkSpots)); mutA.assets.reference.defect = 'smear';
+    assert(swatchFidelity(mutA).ok === false, 'Wave 4 fidelity mutation: flipping defect spots→smear flips verdict');
+    var mutB = JSON.parse(JSON.stringify(fixOkSpots)); mutB.swatch.damageKind = 'debris';
+    assert(swatchFidelity(mutB).ok === false, 'Wave 4 fidelity mutation: flipping damageKind permanent→debris flips verdict');
+
+  } catch (err) {
+    test('swatch fidelity validator: vm smoke test (threw)', false);
+    results.errors.push('swatch fidelity validator smoke test threw: ' + err.message);
+  }
+})();
+
