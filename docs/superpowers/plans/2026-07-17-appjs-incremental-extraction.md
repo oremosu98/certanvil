@@ -3,6 +3,8 @@
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task — **inline execution is the founder's stated preference (2026-07-17)**: the session itself walks the tasks with checkpoints, rather than dispatching per-task subagents. Steps use checkbox (`- [ ]`) syntax for tracking.
 >
 > **Model split (founder decision 2026-07-17):** This plan was authored with **Fable** (planning). **Execution is by Sonnet** — run the executing session on Sonnet. Do not escalate execution to a larger model without the founder asking.
+>
+> **Sequencing (founder decision 2026-07-17):** This plan is queued BEHIND Sim Lab PBQ Wave 4 (Laser Print Defect Clinic, ships as v7.66.0). Do not start Phase 0 until PBQ Wave 4 has shipped and been live-verified; the session that ships Wave 4 should remind the founder that this plan is up next. Note the naming collision: "PBQ Waves" = Sim Lab product features; this plan's "waves" = extraction cuts. Independent tracks — never mix them in one session.
 
 **Goal:** Drain app.js (22,060 lines / 1.1 MB as of v7.65.2) into lazy-loaded `features/*.js` modules via strangler-fig extraction — one page-level wave at a time, each wave a normal shippable change through the full gate stack — until app.js is a slim core (state, router, shared helpers, constants).
 
