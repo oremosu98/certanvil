@@ -61,14 +61,14 @@ One new PBQ archetype riding the live Sim Lab engine (`features/sim-lab.js`):
 
 **Field roster (fixed):** Phase 1 = auth, encryption, DH group, lifetime → 8 slots (4 × 2 gateways). Phase 2 = local subnet, remote subnet, protocol, encryption → 8 slots. Slot ids are `<panelLower>-<field>`; the validator enforces the pairing.
 
-**Distractor mechanism:** the seed pre-populates one slot through the existing `initial` re-hydration path (`_slMountScenario` `opts.initial`) — no new engine surface — and adds the step-4 analyze.
+**Distractor mechanism (exhibit-channel, NOT response-channel):** distractor seeds do NOT pre-fill any select — the engine's `opts.initial` is exam-free-nav restore state supplied by the mount caller, not a seed surface, and it stays that way. Instead, the distractor analyze step's `lines` array carries a rendered snapshot of the partner/proposed configuration ("Gateway B — current Phase 1: Auth: Pre-shared key · Encryption: 3DES · …"), and the learner selects the parameter(s) that violate the policy floor / block negotiation. Plain analyze `lines` machinery; zero engine surface.
 
 ## Runtime scoring (`payload.scoring: 'tunnel'`)
 
-Three predicate families, each unit = 1 point, summed into the `{total, correct}` breakdown shape `simLabScoreScenario` already handles for configure (zero changes to the exam layer, feedback rendering, or per-step breakdown):
+Three predicate families, each unit = 1 point, summed into the `{total, correct}` breakdown shape `simLabScoreScenario` already handles for configure (zero changes to the exam layer, feedback rendering, or per-step breakdown). **Branch points:** both `simLabScoreScenario`'s configure branch and `_scoreStep`'s configure case hard-route into `_scoreConfigureSlots`; the `payload.scoring === 'tunnel'` check must branch at BOTH call sites (or inside `_scoreConfigureSlots`), mirroring how lenient analyze branches in both — classic configure stays byte-for-byte. **Runtime robustness:** the tunnel scorer must treat a dangling pair reference (slot id not in the step) as a skipped unit (0 total contribution), never a throw — pair-SHAPE validation is owned by the authoring-time fidelity validator, but the runtime scorer must be total over malformed input:
 
 1. **Set-membership** — per slot: response id ∈ `answer.slots[slotId]` array. 8 units per dualpanel step.
-2. **Symmetry** — per `symmetryPairs` entry: both sides answered AND equal. 4 units on Phase 1, 2 on Phase 2 (protocol + encryption).
+2. **Symmetry** — per `symmetryPairs` entry: both sides answered AND equal. 4 units on Phase 1, 2 on Phase 2 (protocol + encryption). **A matching pair of policy-violating values still earns the symmetry unit** (predicates are independent by design — the membership units carry the policy penalty); test fixtures must assert this.
 3. **Mirror-inversion** — per `mirrorPairs` entry: value of A-side slot equals value of B-side counterpart slot's *mirrored* field (A local = B remote and vice versa). 2 units on Phase 2.
 
 An unanswered slot scores 0 on its membership unit and fails any pair it participates in. False picks never subtract (house rule). The three families are independent: a learner can pick two individually-valid-but-different ciphers and lose only the symmetry unit — that separation is the archetype's teaching point and the reason per-slot sets alone were rejected (see Rejected Approaches).
@@ -87,14 +87,14 @@ When `payload.layout === 'dualpanel'`:
 
 Authoring-time, pure logic, lives beside the Wave 1–4 validators. Checks per scenario:
 
-1. Archetype is `vpntunnel`; has ≥ 2 configure steps with `layout:'dualpanel'` + `scoring:'tunnel'`; step count within 2–3 (+1 if a distractor analyze step present).
+1. Archetype is `vpntunnel`; **exactly 2** dualpanel configure steps (`layout:'dualpanel'` + `scoring:'tunnel'`), plus **at most 1** distractor analyze step — total steps 2–3 (engine cap is 4).
 2. Exactly 2 panels per dualpanel step; every slot's `panel` references one; slot ids follow `<panel>-<field>`; both panels carry the same field set.
 3. Every `symmetryPairs` / `mirrorPairs` entry references two existing slots on **opposite** panels.
 4. `answer.slots` values are non-empty arrays; every member id exists in that slot's options.
 5. **Symmetric pairs have identical acceptable sets** (set equality) — else the seed is unanswerable symmetrically.
 6. **Mirror pairs cross-reference:** the acceptable set of A-local equals the acceptable set of B-remote (and vice versa).
-7. Phase-2 subnet options are real CIDR strings and the mirrored sets are consistent with the `network` reference's declared site subnets (reuses `_ipToInt`/`_inSubnet`).
-8. If a slot is pre-populated via the seed's declared distractor, a step-4 analyze exists and its answer references the mismatched parameter.
+7. Phase-2 subnet options are real CIDR strings and the mirrored sets are consistent with the site subnets declared on the `network` reference — carried on each site device's `subnet` field (the seed contract for this archetype; the engine's network schema requires only `devices[]`, so the validator enforces the field's presence). Reuses `_ipToInt`/`_inSubnet`. Confirm the Wave-1 CIDR fidelity validator (`_slFidelityResolveSlot`, string-answer assumption) is archetype-gated away from `vpntunnel` seeds.
+8. If the seed declares a distractor, the analyze step exists, its `lines` render a config snapshot, and its answer references the policy-violating parameter(s).
 9. Scenario carries a machine-readable `policyFloor` tag (e.g. `['no-psk','pfs']`) — the two-agent gate checks the acceptable sets against it; the validator checks the tag's vocabulary against a fixed enum.
 
 **Wave 3/4 lesson (binding):** hand-derive the validator against fixtures — including a deliberately-broken asymmetric seed and a mirrored-set mismatch — before trusting a green run. The plan must carry these fixtures as an explicit task.
@@ -119,6 +119,8 @@ Authoring-time, pure logic, lives beside the Wave 1–4 validators. Checks per s
 ## Mobile contract (375px)
 
 This is a form and forms are the phone's best case (research's honest verdict: good fidelity). The dualpanel branch IS the mobile design — segmented toggle + one panel visible + mirror chips + native selects — and desktop gets the same layout. 4 fields per visible phase panel. No table, no horizontal scroll, no drag.
+
+**Known cosmetic carry-over:** the score header renders "N of M steps" for unit-based breakdowns (pre-existing configure behavior) — a vpntunnel scenario will read e.g. "22 of 24 steps". The mockup must not promise different copy; a copy fix is out of Wave 5 scope.
 
 ## Testing
 
