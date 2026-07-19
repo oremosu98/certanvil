@@ -77,7 +77,7 @@ body { min-height: 100dvh; padding: clamp(14px, 3vw, 32px); -webkit-font-smoothi
 .sitemap .site-name { font: 700 12px Inter, sans-serif; fill: var(--ink); }
 .sitemap .site-sub { font: 600 10.5px ui-monospace, Menlo, monospace; fill: var(--muted); }
 .sitemap .gw { fill: color-mix(in oklab, var(--accent) 12%, var(--surface)); stroke: color-mix(in oklab, var(--accent) 45%, var(--border)); }
-.sitemap .gw-lbl { font: 800 10px Inter, sans-serif; fill: var(--accent); letter-spacing: 0.06em; }
+.sitemap .gw-lbl { font: 800 9.5px Inter, sans-serif; fill: var(--accent); letter-spacing: 0.03em; }
 .sitemap .wan { stroke: color-mix(in oklab, var(--accent) 55%, var(--border)); stroke-width: 2; stroke-dasharray: 6 5; }
 .sitemap .wan-lbl { font: 700 10px Inter, sans-serif; fill: var(--muted); }
 .sitemap .pub { font: 600 10px ui-monospace, Menlo, monospace; fill: var(--ink-soft); }
@@ -109,9 +109,11 @@ body { min-height: 100dvh; padding: clamp(14px, 3vw, 32px); -webkit-font-smoothi
 
 /* ── gateway A/B segmented toggle (payload.panels) ── */
 .gwtoggle { display: flex; gap: 6px; margin-bottom: 10px; }
-.gwbtn { flex: 1; font: inherit; font-size: 12px; font-weight: 700; padding: 10px 8px; border-radius: 10px; cursor: pointer;
+.gwbtn { flex: 1; min-height: 44px; font: inherit; font-size: 12px; font-weight: 700; padding: 10px 8px; border-radius: 10px; cursor: pointer;
   border: 1px solid var(--border); background: var(--surface-2); color: var(--muted);
-  transition: color .18s var(--ease), border-color .18s var(--ease), background-color .18s var(--ease); }
+  transition: color .18s var(--ease), border-color .18s var(--ease), background-color .18s var(--ease), transform .15s var(--ease); }
+.gwbtn:active { transform: scale(0.97); }
+.gwbtn:disabled { cursor: default; }
 .gwbtn[aria-pressed="true"] { color: var(--accent); border-color: color-mix(in oklab, var(--accent) 40%, var(--border));
   background: color-mix(in oklab, var(--accent) 10%, transparent); }
 .gwbtn .dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 6px; vertical-align: 1px;
@@ -119,11 +121,11 @@ body { min-height: 100dvh; padding: clamp(14px, 3vw, 32px); -webkit-font-smoothi
 .gwbtn.filled .dot { background: var(--pass); }
 
 /* ── mirror chip strip: the other gateway's live values, read-only ── */
-.mirror { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 13px; padding: 9px 10px;
+.mirror { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 13px; padding: 10px 11px 11px;
   background: var(--surface-2); border: 1px dashed var(--border); border-radius: 11px; }
-.mirror .mh { flex-basis: 100%; font-size: 9.5px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-bottom: 2px; }
+.mirror .mh { flex-basis: 100%; font-size: 9.5px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-bottom: 1px; }
 .mchip { font-size: 10.5px; font-weight: 700; color: var(--ink-soft); background: var(--surface);
-  border: 1px solid var(--border-soft); border-radius: 999px; padding: 3px 9px; }
+  border: 1px solid var(--border-soft); border-radius: 999px; padding: 4px 10px; }
 .mchip .mk { color: var(--muted); font-weight: 600; }
 .mchip.unset { color: var(--muted); font-style: italic; }
 
@@ -144,6 +146,7 @@ body { min-height: 100dvh; padding: clamp(14px, 3vw, 32px); -webkit-font-smoothi
 .sel.correct select { border-color: color-mix(in oklab, var(--pass) 60%, var(--border)); box-shadow: 0 0 0 3px color-mix(in oklab, var(--pass) 15%, transparent); }
 .sel.wrong select { border-color: color-mix(in oklab, var(--fail) 60%, var(--border)); box-shadow: 0 0 0 3px color-mix(in oklab, var(--fail) 14%, transparent); }
 .sel select:disabled { opacity: .55; cursor: not-allowed; }
+.sel:has(select:disabled)::after { opacity: .55; }
 .verdict { font-size: 11.5px; font-weight: 600; line-height: 1.45; margin-top: 4px; display: none;
   opacity: 0; transform: translateY(-3px); transition: opacity .25s var(--ease), transform .25s var(--ease); }
 .slot.graded.ok .verdict.ok { display: block; color: var(--pass); }
@@ -186,6 +189,7 @@ body { min-height: 100dvh; padding: clamp(14px, 3vw, 32px); -webkit-font-smoothi
 .result { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 18px; text-align: center;
   display: none; opacity: 0; transform: translateY(10px) scale(0.99); transition: opacity .38s var(--ease), transform .38s var(--ease); }
 .result.show { display: block; }
+.result:focus { outline: none; }
 .result.in { opacity: 1; transform: none; }
 .score-fig { font-family: Fraunces, Georgia, serif; font-weight: 600; font-size: 62px; line-height: 1; letter-spacing: -0.03em;
   font-variant-numeric: lining-nums tabular-nums; font-feature-settings: "lnum","tnum"; color: var(--ink);
@@ -217,7 +221,7 @@ body { min-height: 100dvh; padding: clamp(14px, 3vw, 32px); -webkit-font-smoothi
   .reveal, .qcard, .verdict, .pairrow, .result, .score-fig, .btn-primary .lbl { transition-property: opacity !important; transform: none !important; filter: none !important; }
   .reveal { opacity: 1 !important; }
   .unit .fill { transition: none !important; }
-  .btn:active, .theme-btn:active { transform: none; }
+  .btn:active, .theme-btn:active, .gwbtn:active { transform: none; }
 }
 </style>
 </head>
@@ -269,19 +273,19 @@ body { min-height: 100dvh; padding: clamp(14px, 3vw, 32px); -webkit-font-smoothi
           <text class="site-name" x="24" y="48">London HQ</text>
           <text class="site-sub" x="24" y="66">10.10.0.0/16</text>
           <rect class="gw" x="104" y="80" width="44" height="34" rx="8"/>
-          <text class="gw-lbl" x="110" y="100">GW-LON</text>
+          <text class="gw-lbl" x="126" y="100" text-anchor="middle">GW-LON</text>
           <text class="pub" x="24" y="132">203.0.113.10</text>
 
           <line class="wan" x1="158" y1="97" x2="302" y2="97"/>
-          <text class="wan-lbl" x="196" y="86">IPSec tunnel · planned</text>
-          <text class="wan-lbl" x="216" y="115">internet</text>
+          <text class="wan-lbl" x="230" y="86" text-anchor="middle">IPSec tunnel · planned</text>
+          <text class="wan-lbl" x="230" y="115" text-anchor="middle">internet</text>
 
           <rect class="site-box" x="302" y="24" width="150" height="120" rx="10"/>
-          <text class="site-name" x="366" y="48">Frankfurt</text>
-          <text class="site-sub" x="366" y="66">10.20.0.0/16</text>
+          <text class="site-name" x="436" y="48" text-anchor="end">Frankfurt</text>
+          <text class="site-sub" x="436" y="66" text-anchor="end">10.20.0.0/16</text>
           <rect class="gw" x="312" y="80" width="44" height="34" rx="8"/>
-          <text class="gw-lbl" x="317" y="100">GW-FRA</text>
-          <text class="pub" x="366" y="132">198.51.100.22</text>
+          <text class="gw-lbl" x="334" y="100" text-anchor="middle">GW-FRA</text>
+          <text class="pub" x="436" y="132" text-anchor="end">198.51.100.22</text>
         </svg>
       </div>
 
@@ -309,10 +313,10 @@ body { min-height: 100dvh; padding: clamp(14px, 3vw, 32px); -webkit-font-smoothi
           <button class="gwbtn" data-panel="A" aria-pressed="true"><span class="dot"></span>GW-LON · London</button>
           <button class="gwbtn" data-panel="B" aria-pressed="false"><span class="dot"></span>GW-FRA · Frankfurt</button>
         </div>
-        <div class="mirror" aria-live="polite"></div>
+        <div class="mirror" role="group" aria-label="Far gateway's current values"></div>
         <div class="slots"></div>
 
-        <div class="pairstrip" id="pairs1">
+        <div class="pairstrip" id="pairs1" aria-live="polite">
           <div class="ph">Peer agreement · symmetry</div>
         </div>
       </div>
@@ -327,10 +331,10 @@ body { min-height: 100dvh; padding: clamp(14px, 3vw, 32px); -webkit-font-smoothi
           <button class="gwbtn" data-panel="A" aria-pressed="true"><span class="dot"></span>GW-LON · London</button>
           <button class="gwbtn" data-panel="B" aria-pressed="false"><span class="dot"></span>GW-FRA · Frankfurt</button>
         </div>
-        <div class="mirror" aria-live="polite"></div>
+        <div class="mirror" role="group" aria-label="Far gateway's current values"></div>
         <div class="slots"></div>
 
-        <div class="pairstrip" id="pairs2">
+        <div class="pairstrip" id="pairs2" aria-live="polite">
           <div class="ph">Peer agreement · symmetry &amp; mirror</div>
         </div>
       </div>
@@ -340,7 +344,7 @@ body { min-height: 100dvh; padding: clamp(14px, 3vw, 32px); -webkit-font-smoothi
       </div>
 
       <!-- RESULT -->
-      <div class="result" id="result">
+      <div class="result" id="result" tabindex="-1">
         <div class="score-fig" id="scoreFig">24/24</div>
         <div class="score-cap" id="scoreCap">tunnel units · 100%</div>
         <p class="score-sub" id="scoreSub"></p>
@@ -356,7 +360,7 @@ body { min-height: 100dvh; padding: clamp(14px, 3vw, 32px); -webkit-font-smoothi
 
         <div class="pro">
           <div class="pe">CertAnvil Pro</div>
-          <h3 id="proTitle">One tunnel up. Eleven more configs waiting.</h3>
+          <h3 id="proTitle">One tunnel up. Site-to-site is only one shape.</h3>
           <p id="proBody">The exam's VPN form drops you into remote-access and split-tunnel shapes too, each with its own policy floor. Pro opens unlimited Tunnel Negotiation runs plus every other Security+ PBQ archetype, timed Exam mode, and weak-spot tracking.</p>
           <button class="btn btn-white" id="goPro">Go Pro</button>
         </div>
@@ -414,13 +418,13 @@ const STEPS = {
     panels: { A: 'GW-LON', B: 'GW-FRA' },
     fields: [
       { f:'auth', label:'Authentication method', opts:OPTS.auth, accept:['cert'],
-        why:{ ok:'Certificates satisfy the no-PSK floor for partner tunnels.', no:'The policy floor bans pre-shared keys on partner tunnels — certificates are the acceptable method here.' } },
+        why:{ ok:'Certificates satisfy the no-PSK floor for partner tunnels.', no:'The policy floor bans pre-shared keys on partner tunnels — use certificates.' } },
       { f:'enc', label:'Encryption algorithm', opts:OPTS.enc, accept:['aes192','aes256'],
-        why:{ ok:'Clears the AES-192 floor — either AES-192 or AES-256 is acceptable.', no:'The floor is AES-192 minimum: AES-192 or AES-256 pass, 3DES and AES-128 don’t.' } },
+        why:{ ok:'Clears the AES-192 floor — AES-192 and AES-256 both pass.', no:'The floor is AES-192 minimum: AES-192 or AES-256 pass, 3DES and AES-128 don’t.' } },
       { f:'dh', label:'Diffie-Hellman group', opts:OPTS.dh, accept:['dh14','dh19'],
         why:{ ok:'PFS with a modern group — 14 and 19 both satisfy the floor.', no:'PFS is required and the floor names DH group 14+: group 5 is under it, and skipping DH abandons PFS entirely.' } },
       { f:'life', label:'SA lifetime', opts:OPTS.life, accept:['l8h','l24h'],
-        why:{ ok:'A sane rekey window — 8 or 24 hours both pass.', no:'30 days effectively never rekeys; 8 or 24 hours are the acceptable windows.' } },
+        why:{ ok:'A sane rekey window — 8 or 24 hours both pass.', no:'A 30-day lifetime is rotate-never in practice. Pick 8 or 24 hours.' } },
     ],
     symmetry: ['auth','enc','dh','life'], mirror: [],
   },
@@ -466,10 +470,12 @@ function buildStep(stepId) {
     def.fields.forEach(fd => {
       const key = visible + '-' + fd.f;
       const slot = document.createElement('div');
+      const selId = stepId + '-' + key;
       slot.className = 'slot'; slot.dataset.key = key;
-      slot.innerHTML = '<label>' + fd.label + '</label>';
+      slot.innerHTML = '<label for="' + selId + '">' + fd.label + '</label>';
       const wrap = document.createElement('div'); wrap.className = 'sel';
       const sel = document.createElement('select');
+      sel.id = selId;
       sel.setAttribute('aria-label', def.panels[visible] + ' — ' + fd.label);
       const ph = document.createElement('option'); ph.value=''; ph.textContent='Choose…'; sel.appendChild(ph);
       fd.opts.forEach(([id, txt]) => {
@@ -529,7 +535,7 @@ function buildStep(stepId) {
         const v = slot.querySelector(ok ? '.verdict.ok' : '.verdict.no');
         requestAnimationFrame(() => requestAnimationFrame(() => v.classList.add('in')));
       });
-      card.querySelectorAll('.gwbtn').forEach(b => { b.style.pointerEvents = 'none'; });
+      card.querySelectorAll('.gwbtn').forEach(b => { b.disabled = true; });
       // pair units
       const strip = card.querySelector('.pairstrip');
       const addRow = (ok, text) => {
@@ -595,6 +601,7 @@ primary.onclick = () => {
   } else {
     document.getElementById('actions').style.display = 'none';
     p2.classList.add('leaving');
+    setTimeout(() => { p2.style.display = 'none'; }, 220);
     const total = tally.member.t + tally.sym.t + tally.mir.t;
     const correct = tally.member.c + tally.sym.c + tally.mir.c;
     const pct = Math.round(correct / total * 100);
@@ -611,13 +618,16 @@ primary.onclick = () => {
     if (pct === 100) {
       document.getElementById('scoreSub').textContent = 'Clean negotiation. Every parameter cleared the policy floor, both gateways agree, and the Phase 2 mirror holds — this tunnel comes up first try.';
     } else {
-      document.getElementById('scoreSub').textContent = 'The three bars tell you how it failed: policy-floor misses are weak parameters, symmetry misses mean the gateways disagree, and mirror misses mean the traffic definition points the wrong way. Each scores independently — what you got right kept full credit.';
+      document.getElementById('scoreSub').textContent = 'The bars name the failure. A policy-floor miss is a weak parameter; a symmetry miss means the gateways disagree; a mirror miss points the traffic definition the wrong way. Each scores on its own, so what you got right kept full credit.';
       document.getElementById('proTitle').textContent = 'The tunnel told you where it broke.';
       document.getElementById('proBody').textContent = 'Real negotiation failures come labelled exactly like those bars — mismatched proposals, weak transforms, unmatched selectors. Pro opens unlimited Tunnel Negotiation runs to drill each failure mode, plus every other Security+ PBQ archetype, timed Exam mode, and weak-spot tracking.';
     }
     const res = document.getElementById('result');
     res.classList.add('show');
-    requestAnimationFrame(() => requestAnimationFrame(() => res.classList.add('in')));
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      res.classList.add('in');
+      res.focus({ preventScroll: false });
+    }));
   }
 };
 
