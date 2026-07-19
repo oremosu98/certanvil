@@ -2,7 +2,10 @@
 
 **Date:** 2026-07-19
 **Status:** Approved design, pending founder spec review
-**Lane:** Fast lane (no schema change, no auth/money/service-worker surface)
+**Lane:** Fast lane for the main slice (no schema change, no auth/money/SW surface).
+**Exception:** wiring `logServerError` into `landing/api/diagnostic/*` (magic-link +
+claim flow) touches an auth-adjacent gated-lane trigger — that wiring ships as a
+separate gated follow-up slice (feature branch → PR → preview), not on `main`.
 
 ## Problem
 
@@ -16,7 +19,8 @@ codebase survey on 2026-07-19:
    clean error.
 2. **Inconsistent user-facing failure UI.** `unhandledrejection` is deliberately quiet
    (`app.js:1441`), so a dropped AI request shows nothing unless the call site opted in —
-   coverage varies across the 16 upstream callers of `_claudeFetch`.
+   coverage varies across `_claudeFetch`'s call sites (11 direct sites; 16 upstream
+   functions counting indirect callers through shared drivers).
 3. **Telemetry blind spots.** The v7.78.0 `client_errors` reporting only sees *uncaught*
    errors. Silent `catch (_) {}` blocks, handled non-2xx responses, resource-load
    failures, and all server-side errors are invisible — so the error dashboard
@@ -65,8 +69,10 @@ Budgets (tune during build if measurement disagrees):
 Wiring: `_claudeFetch`, the server proxy upstream call, cloud-store flush, the
 bug-report queue, and the notify/magic-link endpoints. Supabase SDK calls are wrapped
 only where a hang blocks the user (quota RPCs); background SDK traffic keeps the SDK's
-own behavior. A timeout is a first-class logged event (`logError('timeout:<label>')`),
-not just a thrown error.
+own behavior. "Blocks the user" Supabase call sites to wrap: `get_daily_quota_usage`
+(`app.js:444`), `consume_daily_quota`, `ai_rl_check_and_increment` (server side), and
+the claim-flow lookups — background table sync stays on SDK behavior. A timeout is a
+first-class logged event (`logError('timeout:<label>')`), not just a thrown error.
 
 ### 2. End-user error surfaces — the three-tier taxonomy
 
@@ -119,9 +125,13 @@ Shared helper for `api/` + `landing/api/`: fire-and-forget insert into `client_e
 via the service-role key with `type='server'`, `page=<endpoint>`, message including
 HTTP status and the existing random `error_id` (so Vercel logs and table rows
 cross-reference), stack when available. Never awaited on the response path; failures to
-report are swallowed (reporting must never break serving). Wired into every error
-branch of `api/ai/generate.js`, `landing/api/notify.js`,
-`landing/api/diagnostic/signup-magic-link.js`, and the claim flow.
+report are swallowed (reporting must never break serving).
+
+Wiring, in two slices per the lane note above:
+- **Fast-lane slice:** every error branch of `api/ai/generate.js` and
+  `landing/api/notify.js`.
+- **Gated follow-up slice:** `landing/api/diagnostic/signup-magic-link.js` (magic-link
+  + claim flow live here) — auth-adjacent, so branch → PR → preview before merge.
 
 ### 5. Founder review loop — RCA pipeline
 
