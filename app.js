@@ -346,6 +346,57 @@ ${blocks}
 }
 const CLAUDE_MODEL = 'claude-haiku-4-5-20251001';
 
+// ── Unplanned-failure hardening (spec 2026-07-19) ───────────────────────
+// Every network call gets a timeout budget. A timeout that overlapped a
+// hidden page (WKWebView suspend on iOS Capacitor / mobile Safari) is NOT
+// a server fault — callers check err.hiddenDuring and retry quietly.
+function _timeoutError(label, timeoutMs, hiddenDuring) {
+  const err = new Error('Timed out after ' + timeoutMs + 'ms: ' + label);
+  err.name = 'TimeoutError';
+  err.label = label;
+  err.timeoutMs = timeoutMs;
+  err.hiddenDuring = !!hiddenDuring;
+  return err;
+}
+
+async function fetchWithTimeout(url, init, opts) {
+  opts = opts || {};
+  const timeoutMs = opts.timeoutMs || 30000;
+  const label = opts.label || url;
+  const ctrl = new AbortController();
+  let hiddenDuring = document.visibilityState === 'hidden';
+  const onVis = () => { if (document.visibilityState === 'hidden') hiddenDuring = true; };
+  document.addEventListener('visibilitychange', onVis);
+  const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+  try {
+    return await fetch(url, Object.assign({}, init, { signal: ctrl.signal }));
+  } catch (e) {
+    if (e && e.name === 'AbortError') throw _timeoutError(label, timeoutMs, hiddenDuring);
+    throw e;
+  } finally {
+    clearTimeout(timer);
+    document.removeEventListener('visibilitychange', onVis);
+  }
+}
+
+// For Supabase SDK promises (rpc/insert) that don't take a signal.
+function withTimeout(promise, ms, label) {
+  let hiddenDuring = document.visibilityState === 'hidden';
+  const onVis = () => { if (document.visibilityState === 'hidden') hiddenDuring = true; };
+  document.addEventListener('visibilitychange', onVis);
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(_timeoutError(label, ms, hiddenDuring)), ms);
+    promise.then(
+      v => { clearTimeout(timer); document.removeEventListener('visibilitychange', onVis); resolve(v); },
+      e => { clearTimeout(timer); document.removeEventListener('visibilitychange', onVis); reject(e); }
+    );
+  });
+}
+if (typeof window !== 'undefined') {
+  window.fetchWithTimeout = fetchWithTimeout;
+  window.withTimeout = withTimeout;
+}
+
 // ══════════════════════════════════════════════════════════════════════════
 // v4.99.2 Phase E.3 — _claudeFetch wrapper
 // v7.79.0 — Phase E.4: BYOK fallback removed. The server proxy (with
