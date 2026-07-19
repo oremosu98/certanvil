@@ -423,6 +423,32 @@ if (typeof window !== 'undefined') {
 // On HTTP 429 quota_exceeded, the wrapper triggers _showQuotaExceededUI()
 // (modal hero) so callers don't each need to handle it. Wrapper also
 // triggers a quota-chip refresh after every successful metered call.
+
+function _classifyFetchError(e, response) {
+  if (e && e.name === 'TimeoutError') return 'timeout';
+  if (e) return 'network';                   // TypeError: failed to fetch etc.
+  if (response && response.status >= 500) return 'server';
+  return null;
+}
+
+function _claudeFail(e, response, init) {
+  const kind = _classifyFetchError(e, response) || 'server';
+  const refId = Math.random().toString(16).slice(2, 8);
+  logError('api:' + kind, (e && e.message) || ('HTTP ' + (response && response.status)), { ref: refId, label: e && e.label });
+  const surface = init && init._errorSurface;
+  if (surface && surface.container) {
+    showAiErrorCard({ container: surface.container, kind, refId,
+      onRetry: surface.onRetry, onBack: surface.onBack });
+    const surfaced = new Error('ai_failed_surfaced');
+    surfaced.surfaced = true;
+    throw surfaced;
+  }
+  const err = e || new Error('The AI service returned an error. Try again.');
+  err.userFacing = true;
+  err.refId = refId;
+  throw err;
+}
+
 async function _claudeFetch(init) {
   init = init || {};
 
@@ -433,7 +459,7 @@ async function _claudeFetch(init) {
       var s = await window.certanvilSupabase.auth.getSession();
       session = (s && s.data && s.data.session) || null;
     }
-  } catch (_) {}
+  } catch (e) { logError('swallowed:claudefetch-session', e && e.message, { severity: 'info' }); }
 
   // Detect _metered flag in the body so we can refresh the chip after success
   var wasMetered = false;
@@ -442,18 +468,33 @@ async function _claudeFetch(init) {
       var parsed = JSON.parse(init.body);
       wasMetered = parsed && parsed._metered === true;
     }
-  } catch (_) {}
+  } catch (_) { /* intentionally silent: cosmetic */ }
 
   if (session && session.access_token) {
-    // Route 1: server proxy
-    var r = await fetch('/api/ai/generate', {
+    // Route 1: server proxy — timeout-wrapped
+    var _proxyInit = {
       method: 'POST',
       headers: {
         'Authorization': 'Bearer ' + session.access_token,
         'Content-Type': 'application/json'
       },
       body: init.body
-    });
+    };
+    var r;
+    try {
+      r = await fetchWithTimeout('/api/ai/generate', _proxyInit, { timeoutMs: 90000, label: 'ai-generate' });
+    } catch (e) {
+      if (e && e.name === 'TimeoutError' && e.hiddenDuring) {
+        // Suspend-aware auto-retry: timeout overlapped a WKWebView background suspend
+        try {
+          r = await fetchWithTimeout('/api/ai/generate', _proxyInit, { timeoutMs: 90000, label: 'ai-generate-resume' });
+        } catch (e2) { return _claudeFail(e2, null, init); }
+      } else {
+        return _claudeFail(e, null, init);
+      }
+    }
+
+    if (r.status >= 500) return _claudeFail(null, r, init);
 
     // Quota exceeded — surface the upgrade UI
     if (r.status === 429) {
@@ -462,12 +503,12 @@ async function _claudeFetch(init) {
         if (typeof _showQuotaExceededUI === 'function') {
           _showQuotaExceededUI(detail);
         }
-      } catch (_) {}
+      } catch (_) { /* intentionally silent: cosmetic */ }
     } else if (wasMetered && r.ok) {
       // Successful metered call — refresh the chip in the background
       setTimeout(function () {
         try { if (typeof _refreshQuotaChip === 'function') _refreshQuotaChip(); }
-        catch (_) {}
+        catch (_) { /* intentionally silent: cosmetic */ }
       }, 50);
     }
 
