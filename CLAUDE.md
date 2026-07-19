@@ -29,7 +29,7 @@
 | index.html | 2001 | 128 KB |
 | dg-system.css | 4636 | 450 KB |
 | tests/uat.js + tests/uat/ (26 modules) | 27551 | — |
-UAT checks: 4849 · E2E `test(` count: 160 · APP_VERSION: 7.79.2 · stamped-at: worktree
+UAT checks: 4849 · E2E `test(` count: 160 · APP_VERSION: 7.80.0 · stamped-at: worktree
 <!-- FACTS:AUTO:END -->
 
 | File | Purpose | Size |
@@ -131,6 +131,7 @@ npx playwright test              # E2E (tests/e2e/app.spec.js)
 
 | Version | Features Added |
 |---|---|
+| v7.80.0 | Error hardening: timeouts, tier-2/3 error UI, server telemetry, flood control, error-triage skill |
 | v7.79.2 | Fix Hot-Area PBQ scoring + Analytics Drills milestones — missing window exposures from waves 7/8 extraction; also fixes bug-report drawer left permanently disabled by dead GH_TOKEN gate |
 | v7.79.1 | Fix: SR Queue home tile (Recommended cell) didn't reflect due reviews on initial paint — wave 10 Pattern E gap |
 | v7.79.0 | Stop-doing hardening: mockups excluded from build, GH PAT removed from client, BYOK fallback retired, bug-report drawer now server-side via Supabase |
