@@ -48,13 +48,17 @@ If `mcp__memory__*` tools are present in this session's tool surface: run `detec
 
 If the memory tools are not present, skip this step silently (don't nag about it — per the user's global ShieldCortex instructions, absent tools just mean the automatic hook-based capture is already covering things).
 
-### 5. CI health
+### 5. Error triage
+
+Invoke the `error-triage` skill and include its brief in the Monday report under a "Error triage" section. Muted fingerprints in the skill's `## Muted fingerprints` list are pre-filtered — only signal-worthy groups appear in the digest. If the Supabase MCP is unavailable, note "skipped (no Supabase MCP)" in the digest rather than attempting the SQL editor manually.
+
+### 6. CI health
 ```bash
 gh run list --branch main --limit 5
 ```
 Flag any run that isn't a clean success.
 
-### 6. Digest
+### 7. Digest
 Format (scanner `GK-SUMMARY:` lines lift straight into the checklist area):
 
 ```
@@ -68,6 +72,7 @@ Format (scanner `GK-SUMMARY:` lines lift straight into the checklist area):
 ✅/⚠️ Debt headroom — <tightest metric + app.js Δ this week (+ ratchet headroom once #138 Phase 0 lands)>
 ✅/⚠️ GitHub debt — <open tech-debt issue count + oldest-untouched>
 ✅/⚠️ Memory hygiene — <one line, or "skipped (no memory tools)">
+✅/⚠️ Error triage — <top fingerprint + count, or "0 new groups", or "skipped (no Supabase MCP)">
 ✅/⚠️ CI health — <one line>
 
 Committed: <sha + one-line message, or "nothing to fix">
@@ -79,7 +84,7 @@ Needs you (max 3, ranked):
 ```
 Keep it short — this is a scan digest, not a report.
 
-### 7. Surface it (don't let it rot)
+### 8. Surface it (don't let it rot)
 The founder has confirmed (2026-07-18) that boards and fixed weekdays don't get looked at — findings must arrive **inside future chat sessions** on their own. Two channels, in order:
 
 1. **Rolling memory (primary).** If `mcp__memory__remember` is available: write ONE memory titled `MAINTENANCE DEBT — groundskeeper digest <date> (supersedes all prior groundskeeper digests)`, category `context`, high importance. Content = the "Needs you" list + GitHub debt count + app.js trend line, and this instruction to future sessions: *"If the founder asks 'what's next', wraps up a feature, or a session touches an area named below — mention the relevant item. One line, not a lecture."* ShieldCortex injects it into future sessions automatically — that's the delivery mechanism. One rolling memory, always superseding; never accumulate weekly copies.
