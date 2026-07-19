@@ -538,7 +538,7 @@ async function _refreshQuotaChip() {
       _quotaState = resp.data[0];
       _renderQuotaChip();
     }
-  } catch (_) {}
+  } catch (_) { /* intentionally silent: cosmetic — chip stays at last-known state */ }
 }
 
 function _renderQuotaChip() {
@@ -1551,6 +1551,9 @@ function errorFingerprint(entry) {
 // Skips localhost. Dedupes via nplus_sb_reported.
 async function autoReportToSupabase(entry) {
   try {
+    window.__sbReportCount = (window.__sbReportCount || 0);
+    if (window.__sbReportCount >= 20) return;   // flood control (spec §3)
+    window.__sbReportCount++;
     const sb = window.certanvilSupabase;
     if (!sb) return;
     if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') return;
@@ -1609,6 +1612,18 @@ window.addEventListener('unhandledrejection', e => {
     showErrorToast(e.reason.message || 'An unexpected error occurred.');
   }
 });
+
+// Capture-phase: script/CSS/img load failures never reach window.onerror.
+function _onResourceLoadError(e) {
+  if (!e || !e.target || e.target === window) return;   // runtime errors handled above
+  const t = e.target;
+  const src = t.src || t.href || '';
+  if (!src) return;
+  const critical = /app\.js|dg-system\.css|styles\.css|supabase|cert.*\.js|features\//.test(src);
+  logError('resource', 'Failed to load: ' + src.split('/').pop(), { source: src.slice(0, 200), critical });
+  if (critical && typeof showBootFallback === 'function') showBootFallback({});
+}
+window.addEventListener('error', _onResourceLoadError, true);
 
 // ── Monitor Panel ──
 function getErrorLog() {

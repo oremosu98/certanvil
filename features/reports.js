@@ -463,8 +463,15 @@
       if (entry.next_try && Date.now() < entry.next_try * 1000) {
         keep.push(entry); continue;
       }
-      // One attempt
-      var result = await submitReport(entry.payload);
+      // One attempt — 10s timeout so a hung Supabase call doesn't block the drain loop.
+      var result;
+      try {
+        result = await (typeof withTimeout === 'function'
+          ? withTimeout(submitReport(entry.payload), 10000, 'report-drain')
+          : submitReport(entry.payload));
+      } catch (te) {
+        result = classifyError({ status: 0, network: true });
+      }
       if (result.type === 'success') {
         landed++;
         continue; // don't keep
