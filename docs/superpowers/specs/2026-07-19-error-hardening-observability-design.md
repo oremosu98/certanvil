@@ -149,6 +149,30 @@ Wiring, in two slices per the lane note above:
 - Retention/pruning of old rows: out of scope for v1; the brief reports table row count
   so growth is visible.
 
+## Cross-platform (HARD RULE — Desktop, Safari/WebKit, mobile web, iOS Capacitor)
+
+Every surface and behavior in this feature ships for all four targets, not just
+desktop Chrome:
+
+- **iOS Capacitor / WKWebView suspend:** the OS suspends the webview when
+  backgrounded, so an in-flight request resumes as an apparent timeout. The
+  timeout path checks `document.visibilityState` history (was the page hidden
+  during the wait?) and treats suspend-aborts as silent auto-retry candidates,
+  never as "our side" server errors.
+- **`navigator.onLine` is unreliable on iOS/Safari:** the offline banner stays a
+  hint; it never gates the Retry button. Retry always attempts the real request.
+- **Aggressive tab/webview eviction (mobile Safari):** telemetry that races
+  page unload is not trusted to a late fetch — the localStorage ring buffer is
+  the durable record, and queued reports drain on next boot (existing pattern).
+- **Touch ergonomics:** error-card and fallback buttons ≥44px touch targets;
+  toasts respect safe-area insets (`viewport-fit=cover`); hover states stay
+  gated behind `(hover:hover) and (pointer:fine)`.
+- **Timeout budgets verified on throttled cellular profiles**, not just desktop
+  broadband — the 10–15s Supabase budgets are the ones most likely to need
+  loosening on 3G-class links; measure before tightening.
+- **Live-verify runs on all of:** desktop Chrome, desktop Safari (WebKit), a
+  mobile-width viewport, and the iOS Capacitor build per IOS_TESTING.md.
+
 ## Testing
 
 - **UAT additions (`tests/uat.js` / Playwright):** mocked hanging fetch → inline error
