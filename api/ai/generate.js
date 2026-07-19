@@ -26,6 +26,8 @@ const SUPABASE_URL = process.env.SUPABASE_URL || '';
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || '';
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY || '';
 
+const { logServerError } = require('../_lib/log-server-error');
+
 const ANTHROPIC_VERSION = '2023-06-01';
 const FREE_DAILY_LIMIT = 15;  // mirrors consume_daily_quota's hardcoded limit
                               // (15/day since 20260611_free_tier_15_questions.sql)
@@ -157,6 +159,7 @@ module.exports = async function handler(req, res) {
   } catch (e) {
     const errId = crypto.randomBytes(6).toString('hex');
     console.error(`[ai-proxy] auth check failed err_id=${errId}:`, e && e.message);
+    logServerError({ endpoint: 'api/ai/generate', error: e, errorId: errId, status: 502, message: 'auth_check_failed' });
     return badJson(res, 502, {
       error: 'auth_check_failed',
       message: 'Could not verify your session. Please try again.',
@@ -205,6 +208,7 @@ module.exports = async function handler(req, res) {
     } catch (e) {
       const errId = crypto.randomBytes(6).toString('hex');
       console.error(`[ai-proxy] quota check failed err_id=${errId}:`, e && e.message);
+      logServerError({ endpoint: 'api/ai/generate', error: e, errorId: errId, status: 500, message: 'quota_check_failed' });
       return badJson(res, 500, {
         error: 'quota_check_failed',
         message: 'Could not check your daily quota. Please try again.',
@@ -248,6 +252,8 @@ module.exports = async function handler(req, res) {
   }
 
   let upstreamRes;
+  const upstreamCtrl = new AbortController();
+  const upstreamTimer = setTimeout(() => upstreamCtrl.abort(), 75000);
   try {
     upstreamRes = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -256,16 +262,23 @@ module.exports = async function handler(req, res) {
         'x-api-key': ANTHROPIC_API_KEY,
         'anthropic-version': ANTHROPIC_VERSION
       },
-      body: JSON.stringify(upstream)
+      body: JSON.stringify(upstream),
+      signal: upstreamCtrl.signal
     });
   } catch (e) {
     const errId = crypto.randomBytes(6).toString('hex');
-    console.error(`[ai-proxy] upstream fetch failed err_id=${errId}:`, e && e.message);
-    return badJson(res, 502, {
-      error: 'upstream_failure',
-      message: 'The AI service is unreachable. Please try again.',
+    const isAbort = e && e.name === 'AbortError';
+    console.error(`[ai-proxy] upstream ${isAbort ? 'timeout' : 'fetch failed'} err_id=${errId}:`, e && e.message);
+    logServerError({ endpoint: 'api/ai/generate', error: e, errorId: errId,
+      status: isAbort ? 504 : 502, message: isAbort ? 'upstream_timeout' : (e && e.message) });
+    return badJson(res, isAbort ? 504 : 502, {
+      error: isAbort ? 'upstream_timeout' : 'upstream_failure',
+      message: isAbort ? 'The AI service took too long. Please try again.'
+                       : 'The AI service is unreachable. Please try again.',
       error_id: errId
     });
+  } finally {
+    clearTimeout(upstreamTimer);
   }
 
   // Success path: pass Anthropic's body through as-is (the cert-app parses the
@@ -275,6 +288,7 @@ module.exports = async function handler(req, res) {
   if (!upstreamRes.ok) {
     const errId = crypto.randomBytes(6).toString('hex');
     console.error(`[ai-proxy] upstream ${upstreamRes.status} err_id=${errId}:`, String(text).slice(0, 500));
+    logServerError({ endpoint: 'api/ai/generate', errorId: errId, status: upstreamRes.status, message: 'upstream_error ' + upstreamRes.status });
     return badJson(res, 502, {
       error: 'upstream_error',
       message: 'The AI service returned an error. Please try again.',

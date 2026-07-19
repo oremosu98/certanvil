@@ -52,6 +52,8 @@
 //     select email, cert, created_at from notify_signups
 //     where cert = 'Security+' order by created_at desc;
 
+import { logServerError } from './_lib/log-server-error.js';
+
 export const config = { runtime: 'edge' };
 
 export default async function handler(req) {
@@ -159,9 +161,11 @@ export default async function handler(req) {
       } else {
         const errText = await sbResp.text();
         console.error('[certanvil-notify] Supabase insert failed:', sbResp.status, errText);
+        logServerError({ endpoint: 'landing/api/notify', message: 'supabase_insert_failed ' + sbResp.status, status: sbResp.status });
       }
     } catch (e) {
       console.error('[certanvil-notify] Supabase call threw:', e.message || String(e));
+      logServerError({ endpoint: 'landing/api/notify', error: e, message: 'supabase_call_threw', status: 500 });
     }
   }
   console.log('[certanvil-notify] persisted_to_supabase:', persistedToSupabase);
@@ -213,6 +217,7 @@ export default async function handler(req) {
       }
     } catch (e) {
       console.error('[certanvil-notify] Resend call threw:', e.message || String(e));
+      logServerError({ endpoint: 'landing/api/notify', error: e, message: 'resend_call_threw', status: 502 });
       // Don't fail the request — the signup is logged.
     }
   }
