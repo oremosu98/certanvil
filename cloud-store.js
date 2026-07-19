@@ -497,7 +497,11 @@
       }
     }
 
-    inflightFlush = Promise.all(ops).then(function (results) {
+    var flushPromise = (typeof withTimeout === 'function')
+      ? withTimeout(Promise.all(ops), 20000, 'cloud-flush')
+      : Promise.all(ops);
+
+    inflightFlush = flushPromise.then(function (results) {
       inflightFlush = null;
       var hadError = results.some(function (r) { return r && r.error; });
       lastSyncAt = Date.now();
@@ -510,7 +514,7 @@
       return results;
     }).catch(function (err) {
       inflightFlush = null;
-      // Network error or other — re-queue + report
+      // Network error, timeout, or other — re-queue + report
       keysSnapshot.forEach(function (k) { pendingFlush.add(k); });
       setStatus(navigator.onLine === false ? 'offline' : 'error');
       console.error('[cloud-store] flush threw', err);
