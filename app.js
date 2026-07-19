@@ -1320,6 +1320,81 @@ function showToast(msg, type) {
 }
 if (typeof window !== 'undefined') window.showToast = showToast;
 
+// ── Tier-2/3 error surfaces (2026-07-19 spec; lift of error-states-concept) ──
+const _ERRC_COPY = {
+  timeout: { eyebrow: 'Timed out', title: "The AI didn't respond.",
+    body: "We waited 90 seconds and stopped. It's on our side, not yours, and your progress is safe." },
+  network: { eyebrow: 'Connection dropped', title: 'Your connection cut out.',
+    body: "The request didn't make it through. Check your network, then pick up right where you were." },
+  server:  { eyebrow: 'Server issue', title: 'Something broke on our end.',
+    body: "The server hit an error handling this one. Your answers are safe and we've already logged it · trying again usually clears it." }
+};
+
+// Monoline icons from mockup — clock, wifi-off, server-rack
+const _ERRC_ICONS = {
+  timeout: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
+  network: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5a10 10 0 0 1 14 0"/><path d="M8.5 15.5a5 5 0 0 1 7 0"/><circle cx="12" cy="19" r="1"/><path d="M3 3l18 18"/></svg>',
+  server:  '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="7" rx="2"/><rect x="3" y="13" width="18" height="7" rx="2"/><path d="M7 7.5h.01M7 16.5h.01"/></svg>'
+};
+
+const _ERRC_COPY_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a1 1 0 0 1 1-1h10"/></svg>';
+
+function showAiErrorCard(opts) {
+  const { container, kind, refId, onRetry, onBack } = opts || {};
+  if (!container) return;
+  const c = _ERRC_COPY[kind] || _ERRC_COPY.server;
+  const icon = _ERRC_ICONS[kind] || _ERRC_ICONS.server;
+  const neutralClass = (kind === 'network') ? ' neutral' : '';
+  container.innerHTML = '' +
+    '<div class="errc-card" role="alert">' +
+      '<span class="errc-eyebrow' + neutralClass + '">' + icon + _escNudge(c.eyebrow) + '</span>' +
+      '<div class="errc-title">' + _escNudge(c.title) + '</div>' +
+      '<p class="errc-body">' + _escNudge(c.body) + '</p>' +
+      '<div class="errc-actions">' +
+        '<button type="button" class="errc-btn-primary">Try again</button>' +
+        '<button type="button" class="errc-btn-ghost">Back to Home</button>' +
+        (refId ? '<button type="button" class="errc-ref" title="Click to copy">' + _ERRC_COPY_SVG + 'ref ' + _escNudge(refId) + '</button>' : '') +
+      '</div>' +
+    '</div>';
+  const btns = container.querySelectorAll('button');
+  btns[0].onclick = () => { if (typeof onRetry === 'function') onRetry(); };
+  btns[1].onclick = () => { if (typeof onBack === 'function') onBack(); else if (typeof showPage === 'function') showPage('page-setup'); };
+  const ref = container.querySelector('.errc-ref');
+  if (ref) ref.onclick = () => { try { navigator.clipboard.writeText(refId); showSuccessToast('Error ref copied.'); } catch (_) { /* intentionally silent: cosmetic */ } };
+}
+
+function showBootFallback(opts) {
+  const { refId } = opts || {};
+  const existing = document.getElementById('errc-boot-fallback');
+  if (existing) return;
+  const brandSvg = '<svg viewBox="0 0 64 64" fill="none" aria-hidden="true" class="errc-mark">' +
+    '<path d="M38 12 A22 22 0 1 0 38 52" stroke="currentColor" stroke-width="7" stroke-linecap="round"/>' +
+    '<path d="M44 10 24 54" stroke="currentColor" stroke-width="5" stroke-linecap="round" opacity=".55"/>' +
+    '<path d="M40 52 50 28 60 52 M44.5 43 h11" stroke="currentColor" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>' +
+    '</svg>';
+  const overlay = document.createElement('div');
+  overlay.id = 'errc-boot-fallback';
+  overlay.className = 'errc-boot-overlay';
+  overlay.setAttribute('role', 'alert');
+  overlay.innerHTML = '' +
+    '<div class="errc-fallback">' +
+      brandSvg +
+      '<h3>CertAnvil didn\'t load properly.</h3>' +
+      '<p>Part of the app didn\'t download, usually a shaky connection or an update landing at the wrong moment. A reload almost always fixes it, and your progress is safe.</p>' +
+      '<button type="button" class="errc-btn-primary">Reload the app</button>' +
+      (refId ? '<button type="button" class="errc-ref" title="Click to copy">' + _ERRC_COPY_SVG + 'ref ' + _escNudge(refId) + '</button>' : '') +
+    '</div>';
+  overlay.querySelector('.errc-btn-primary').onclick = () => location.reload();
+  const ref = overlay.querySelector('.errc-ref');
+  if (ref) ref.onclick = () => { try { navigator.clipboard.writeText(refId); showSuccessToast('Error ref copied.'); } catch (_) { /* intentionally silent: cosmetic */ } };
+  document.body.appendChild(overlay);
+}
+
+if (typeof window !== 'undefined') {
+  window.showAiErrorCard = showAiErrorCard;
+  window.showBootFallback = showBootFallback;
+}
+
 // ══════════════════════════════════════════
 // v4.99.48 (Phase 8) — Desktop-only nudge
 // ══════════════════════════════════════════
