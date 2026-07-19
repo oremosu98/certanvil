@@ -30,6 +30,8 @@
 //   503 service_unconfigured (any env var missing → graceful pre-config)
 // ══════════════════════════════════════════════════════════════════════════
 
+import { logServerError } from '../_lib/log-server-error.js';
+
 export const config = { runtime: 'edge' };
 
 const SUPABASE_URL = process.env.SUPABASE_URL || '';
@@ -105,6 +107,8 @@ function generateToken() {
 
 async function verifyTurnstile(token, ip) {
   if (!TURNSTILE_SECRET_KEY) return true;  // not configured = skip check
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 10000);
   try {
     const body = new URLSearchParams();
     body.set('secret', TURNSTILE_SECRET_KEY);
@@ -114,12 +118,20 @@ async function verifyTurnstile(token, ip) {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body,
+      signal: ctrl.signal,
     });
-    if (!res.ok) return false;
+    if (!res.ok) {
+      logServerError({ endpoint: 'landing/api/diagnostic/signup-magic-link', message: 'turnstile_http_failed ' + res.status, status: res.status });
+      return false;
+    }
     const data = await res.json().catch(() => null);
     return Boolean(data && data.success);
-  } catch (_) {
+  } catch (e) {
+    const isTimeout = e && e.name === 'AbortError';
+    logServerError({ endpoint: 'landing/api/diagnostic/signup-magic-link', error: e, message: isTimeout ? 'turnstile_timeout' : 'turnstile_threw', status: isTimeout ? 504 : 502 });
     return false;
+  } finally {
+    clearTimeout(timer);
   }
 }
 
@@ -138,6 +150,7 @@ async function checkRateLimit(ipHash) {
   if (!res.ok) {
     // Supabase RPC failure — fail closed (block the request) rather than
     // letting unlimited magic-link sends through.
+    logServerError({ endpoint: 'landing/api/diagnostic/signup-magic-link', message: 'rate_limit_rpc_failed ' + res.status, status: res.status });
     return { allowed: false, error: 'rate_limit_rpc_failed', currentCount: null, hourlyLimit: 5, resetsAt: null };
   }
   const data = await res.json().catch(() => null);
@@ -217,6 +230,7 @@ export default async function handler(req) {
     const ip = getClientIp(req);
     const tsOk = await verifyTurnstile(turnstileToken, ip);
     if (!tsOk) {
+      logServerError({ endpoint: 'landing/api/diagnostic/signup-magic-link', message: 'turnstile_failed', status: 403 });
       return json({ ok: false, error: 'turnstile_failed' }, 403);
     }
   }
@@ -239,6 +253,7 @@ export default async function handler(req) {
   const token = generateToken();
   const writeOk = await writePendingRow({ token, email, cert, results: diagnosticResults });
   if (!writeOk) {
+    logServerError({ endpoint: 'landing/api/diagnostic/signup-magic-link', message: 'write_failed diagnostic_pending', status: 500 });
     return json({ ok: false, error: 'write_failed' }, 500);
   }
 
