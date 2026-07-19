@@ -92,7 +92,12 @@
           'anthropic-version': '2023-06-01',
           'anthropic-dangerous-direct-browser-access': 'true'
         },
-        body: JSON.stringify({ model: CLAUDE_TEACHER_MODEL, max_tokens: MAX_TOKENS_TEACHER_LONG, messages: [{ role: 'user', content: prompt }] })
+        body: JSON.stringify({ model: CLAUDE_TEACHER_MODEL, max_tokens: MAX_TOKENS_TEACHER_LONG, messages: [{ role: 'user', content: prompt }] }),
+        _errorSurface: {
+          container: contentEl,
+          onRetry: () => showTopicDeepDive(topicName),
+          onBack: () => showPage(topicDiveReturnPage.replace(/^page-/, ''))
+        }
       });
 
       if (!apiRes.ok) throw new Error('API error');
@@ -110,6 +115,7 @@
       _aiCacheSet('topicDeepDive', topicName, guide);
       renderTopicDive(guide, topicName);
     } catch (e) {
+      if (e && e.surfaced) return;  // error card already rendered in contentEl
       // Fallback: try to render what we can, or show error
       contentEl.innerHTML = '<div class="topic-dive-error">Could not generate topic guide. Please try again.<br><button class="btn btn-primary" style="margin-top:12px" onclick="showTopicDeepDive(\'' + escHtml(topicName).replace(/'/g, "\\'") + '\')">Retry</button></div>';
     }
@@ -515,7 +521,8 @@
           'anthropic-version': '2023-06-01',
           'anthropic-dangerous-direct-browser-access': 'true'
         },
-        body: JSON.stringify({ model: CLAUDE_TEACHER_MODEL, max_tokens: MAX_TOKENS_TEACHER_BRIEF, messages: [{ role: 'user', content: prompt }] })
+        body: JSON.stringify({ model: CLAUDE_TEACHER_MODEL, max_tokens: MAX_TOKENS_TEACHER_BRIEF, messages: [{ role: 'user', content: prompt }] }),
+        _errorSurface: { container: tb, onRetry: () => fetchTopicBrief(key, topicName) }
       });
       if (!res.ok) return;
       const data = await res.json();
@@ -525,7 +532,7 @@
         tbt.innerHTML = escHtml(text).replace(/\n/g, '<br>');
         tb.classList.remove('is-hidden');
       }
-    } catch(e) { /* silent fail — brief is a nice-to-have */ }
+    } catch(e) { /* silent fail — brief is a nice-to-have; surfaced errors already shown in container */ }
   }
 
   // ── Public API (window exposure) ─────────────────────────────────────────

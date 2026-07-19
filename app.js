@@ -4590,7 +4590,8 @@ Respond ONLY with a raw JSON array - no markdown, no extra text:
   // Sonnet when Haiku fails twice in a row on the same batch. Throws on
   // API-level errors with `.apiError = true`, or on parse failures with
   // `.raw` attached so the caller can log the raw response for diagnosis.
-  const attempt = async (prompt, label, model) => {
+  // Optional 4th arg `errorSurface` wires the tier-2 card on the last attempt.
+  const attempt = async (prompt, label, model, errorSurface) => {
     const res = await _claudeFetch( {
       method: 'POST',
       headers: {
@@ -4601,7 +4602,8 @@ Respond ONLY with a raw JSON array - no markdown, no extra text:
       },
       // _metered: true → counts against the user's daily 20-Q quota.
       // The proxy strips this before forwarding to Anthropic.
-      body: JSON.stringify({ model: model || CLAUDE_MODEL, max_tokens: MAX_TOKENS_GENERATION, messages: [{ role: 'user', content: prompt }], _metered: true })
+      body: JSON.stringify({ model: model || CLAUDE_MODEL, max_tokens: MAX_TOKENS_GENERATION, messages: [{ role: 'user', content: prompt }], _metered: true }),
+      _errorSurface: errorSurface || undefined
     });
     if (!res.ok) {
       const b = await res.json().catch(() => ({}));
@@ -4626,18 +4628,22 @@ Respond ONLY with a raw JSON array - no markdown, no extra text:
     }
   };
 
+  // _errorSurface for the Sonnet (last) escalation — the loading screen container.
+  // Only wired on the last attempt so the retry ladder runs silently first.
+  const _batchErrSurface = { container: (typeof document !== 'undefined' ? document.getElementById('page-loading') : null), onRetry: null };
+
   let parsed;
   try {
     parsed = (await attempt(buildPrompt(true), 'haiku-full', CLAUDE_MODEL)).parsed;
   } catch (primaryErr) {
-    if (primaryErr.apiError) throw primaryErr;           // API errors don't retry
+    if (primaryErr.apiError || primaryErr.surfaced) throw primaryErr;  // surfaced = card shown; API errors don't retry
     _logAiParseFail({ attempt: 'haiku-full', qTopic, difficulty, n, error: primaryErr.message, rawPrefix: (primaryErr.raw || '').slice(0, 600) });
     // v4.56.1: retry once with the scenario block stripped — recovers from the
     // prompt-length-induced malformed-JSON failures we saw on 20-Q Mixed runs.
     try {
       parsed = (await attempt(buildPrompt(false), 'haiku-retry', CLAUDE_MODEL)).parsed;
     } catch (retryErr) {
-      if (retryErr.apiError) throw retryErr;
+      if (retryErr.apiError || retryErr.surfaced) throw retryErr;
       _logAiParseFail({ attempt: 'haiku-retry', qTopic, difficulty, n, error: retryErr.message, rawPrefix: (retryErr.raw || '').slice(0, 600) });
       // v4.56.2: Sonnet escalation tier. Both Haiku attempts failed — this is
       // the rare hard case where the prompt is just too much for Haiku. Spend
@@ -4650,9 +4656,10 @@ Respond ONLY with a raw JSON array - no markdown, no extra text:
         if (typeof console !== 'undefined' && console.info) {
           console.info(`[fetchQuestions] escalating batch (${qTopic} / ${difficulty} / n=${n}) to ${CLAUDE_VALIDATOR_MODEL} after both Haiku attempts failed`);
         }
-        parsed = (await attempt(buildPrompt(false), 'sonnet-escalation', CLAUDE_VALIDATOR_MODEL)).parsed;
+        // _batchErrSurface wired here — ladder exhausted, surface the error card
+        parsed = (await attempt(buildPrompt(false), 'sonnet-escalation', CLAUDE_VALIDATOR_MODEL, _batchErrSurface)).parsed;
       } catch (sonnetErr) {
-        if (sonnetErr.apiError) throw sonnetErr;
+        if (sonnetErr.apiError || sonnetErr.surfaced) throw sonnetErr;
         _logAiParseFail({ attempt: 'sonnet-escalation', qTopic, difficulty, n, error: sonnetErr.message, rawPrefix: (sonnetErr.raw || '').slice(0, 600) });
         throw new Error('AI returned malformed data. Please try again.');
       }
@@ -7652,6 +7659,7 @@ Use plain text, no markdown. Label each section clearly. Aim for 250-350 words t
   let text = _aiCacheGet('explainFurther', cacheKey);
   if (!text) {
     try {
+      const _expBox = document.getElementById('exp-box');
       const res = await _claudeFetch( {
         method: 'POST',
         headers: {
@@ -7660,13 +7668,15 @@ Use plain text, no markdown. Label each section clearly. Aim for 250-350 words t
           'anthropic-version': '2023-06-01',
           'anthropic-dangerous-direct-browser-access': 'true'
         },
-        body: JSON.stringify({ model: CLAUDE_TEACHER_MODEL, max_tokens: MAX_TOKENS_TEACHER_DEFAULT, messages: [{ role: 'user', content: prompt }] })
+        body: JSON.stringify({ model: CLAUDE_TEACHER_MODEL, max_tokens: MAX_TOKENS_TEACHER_DEFAULT, messages: [{ role: 'user', content: prompt }] }),
+        _errorSurface: { container: _expBox, onRetry: () => explainFurther() }
       });
       if (!res.ok) throw new Error('API error');
       const data = await res.json();
       text = data.content?.[0]?.text || 'Could not generate explanation.';
       _aiCacheSet('explainFurther', cacheKey, text);
     } catch (e) {
+      if (e && e.surfaced) { if (btn) { btn.textContent = 'Explain further'; btn.disabled = false; } return; }
       if (btn) { btn.textContent = 'Failed \u2014 try again'; btn.disabled = false; }
       return;
     }

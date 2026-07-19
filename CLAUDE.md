@@ -24,7 +24,7 @@
 <!-- machine-owned — run `node scripts/stamp-facts.js` to refresh; do not hand-edit -->
 | Metric | Lines | Size |
 |---|---|---|
-| app.js | 8144 | 420 KB |
+| app.js | 8154 | 421 KB |
 | styles.css | 14894 | 550 KB |
 | index.html | 2001 | 128 KB |
 | dg-system.css | 4636 | 450 KB |

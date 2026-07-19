@@ -122,7 +122,7 @@
     renderGauntletEntry();
   }
 
-  async function _fetchGauntletRun(topicName, forcedConcept) {
+  async function _fetchGauntletRun(topicName, forcedConcept, errorSurface) {
     const exemplars = (typeof _pickExemplarsForTopic === 'function') ? _pickExemplarsForTopic(topicName, 3) : [];
     const exemplarBlock = (exemplars && exemplars.length && typeof _formatExemplarsForPrompt === 'function')
       ? _formatExemplarsForPrompt(exemplars) : '';
@@ -153,7 +153,8 @@
       // v7.54.0: the free-tier daily Gauntlet is a BONUS, separate from the
       // 15-question quota, so it is sent NON-metered for free users. Pro
       // (unlimited) and anonymous (BYOK) keep _metered: true exactly as before.
-      body: JSON.stringify({ model: CLAUDE_MODEL, max_tokens: MAX_TOKENS_GENERATION, messages: [{ role: 'user', content: prompt }], _metered: !(_quotaState && _quotaState.tier === 'free') })
+      body: JSON.stringify({ model: CLAUDE_MODEL, max_tokens: MAX_TOKENS_GENERATION, messages: [{ role: 'user', content: prompt }], _metered: !(_quotaState && _quotaState.tier === 'free') }),
+      _errorSurface: errorSurface || undefined
     });
     if (!res.ok) throw new Error('gauntlet API error ' + res.status);
     const data = await res.json();
@@ -209,10 +210,15 @@
     if (lm) lm.textContent = 'Forging five disguises…';
     if (typeof _loadingProgressBegin === 'function') _loadingProgressBegin('Forging five disguises…');
 
+    const _gauntletErrSurface = {
+      container: (typeof document !== 'undefined' ? document.getElementById('page-loading') : null),
+      onRetry: () => { _gauntletBusy = false; gauntletStart(opts); }
+    };
     let run;
     try {
-      run = await _fetchGauntletRun(topicName, opts.concept || null);
+      run = await _fetchGauntletRun(topicName, opts.concept || null, _gauntletErrSurface);
     } catch (e) {
+      if (e && e.surfaced) { _gauntletBusy = false; return; }
       // Friendly error + retry — no crack, no attempt, nothing recorded.
       _gauntletBusy = false;
       if (typeof _loadingProgressFinish === 'function') { try { _loadingProgressFinish(); } catch (_) {} }
@@ -471,7 +477,7 @@
     renderWhyNotEntry();
   }
 
-  async function _fetchWhyNotSession(topicName) {
+  async function _fetchWhyNotSession(topicName, errorSurface) {
     const exemplars = (typeof _pickExemplarsForTopic === 'function') ? _pickExemplarsForTopic(topicName, 3) : [];
     const exemplarBlock = (exemplars && exemplars.length && typeof _formatExemplarsForPrompt === 'function')
       ? _formatExemplarsForPrompt(exemplars) : '';
@@ -497,7 +503,8 @@
         'anthropic-dangerous-direct-browser-access': 'true'
       },
       // _metered: true — counts toward quota + the global kill-switch.
-      body: JSON.stringify({ model: CLAUDE_MODEL, max_tokens: MAX_TOKENS_GENERATION, messages: [{ role: 'user', content: prompt }], _metered: true })
+      body: JSON.stringify({ model: CLAUDE_MODEL, max_tokens: MAX_TOKENS_GENERATION, messages: [{ role: 'user', content: prompt }], _metered: true }),
+      _errorSurface: errorSurface || undefined
     });
     if (!res.ok) throw new Error('whynot API error ' + res.status);
     const data = await res.json();
@@ -556,10 +563,15 @@
     if (lm) lm.textContent = 'Building the case files…';
     if (typeof _loadingProgressBegin === 'function') _loadingProgressBegin('Building the case files…');
 
+    const _wnErrSurface = {
+      container: (typeof document !== 'undefined' ? document.getElementById('page-loading') : null),
+      onRetry: () => { _wnBusy = false; whyNotStart(opts); }
+    };
     let rounds;
     try {
-      rounds = await _fetchWhyNotSession(topicName);
+      rounds = await _fetchWhyNotSession(topicName, _wnErrSurface);
     } catch (e) {
+      if (e && e.surfaced) { _wnBusy = false; return; }
       _wnBusy = false;
       if (typeof _loadingProgressFinish === 'function') { try { _loadingProgressFinish(); } catch (_) {} }
       renderWhyNotEntry();
