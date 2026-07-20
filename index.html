@@ -35,6 +35,44 @@
      @font-face unicode-range rules. Kills the 794ms Google Fonts render-
      blocking chain + two external origins from the critical path. -->
 <link rel="preload" as="font" type="font/woff2" href="fonts/fraunces-v38-latin.woff2" crossorigin>
+<script>
+// v7.93.0 (Lighthouse-90 TASK — mobile LCP render-delay root cause): every
+// themed rule in dg-critical.css/dg-system.css is scoped under the selector
+// prefix `html[data-theme] body ...` (attribute-exists check, not just the
+// `[data-theme="light"]` override below). Historically that attribute was
+// ONLY ever set inside app.js's `window.addEventListener('DOMContentLoaded',
+// () => { ...; setTheme(getTheme()); })` handler (app.js ~L2374) — i.e. after
+// the ENTIRE synchronous script chain (cert-pack + app.js, ~1MB combined)
+// finishes parsing/executing. Until that fires, `<html>` carries no
+// data-theme attribute at all, so EVERY `html[data-theme] ...`-scoped rule
+// fails to match — including `.tile{display:flex}` / `.tile-recommend{flex-
+// direction:row}` — even though dg-critical.css is itself render-blocking.
+// #primaryLaunch (button.tile.tile-recommend) therefore first paints as an
+// unstyled inline-block button with `.rc-body` as plain inline text (wide,
+// short — real DevTools-throttled trace: SPAN.rc-body candidate #1 @1.6s,
+// size 17420). Once DOMContentLoaded's setTheme() call finally lands, the
+// attribute appears, the real flex layout applies, and `.rc-body` reflows
+// into its narrow/tall final shape — a genuine second, larger LCP candidate
+// (size 19320) that Lantern's simulated-throttling model reports as ~3.3s of
+// pure "render delay" (confirmed via `largestContentfulPaint::Candidate`
+// trace events + a local Playwright CPU-throttled repro: computed `display`
+// flips inline-block→flex / inline→block at the exact moment body gains
+// `hero-v2-active` — i.e. DOMContentLoaded — with .bento/.board container
+// widths unchanged throughout, ruling out a viewport/media-query cause).
+// Fix: read the theme synchronously here (mirrors the data-cert IIFE just
+// below — same "CSS needs an attribute set before it can key off it"
+// problem) so `html[data-theme]` is truthy before any stylesheet gets a
+// chance to paint against it. app.js's setTheme(getTheme()) call on
+// DOMContentLoaded still runs unchanged (same-value → no-op reflow) — it
+// also owns localStorage bookkeeping, the toggle icon, and the theme-color
+// meta tag, none of which are safe/necessary to duplicate this early.
+(function () {
+  try {
+    var t = localStorage.getItem('nplus_theme') || 'dark';
+    document.documentElement.setAttribute('data-theme', t);
+  } catch (e) {}
+})();
+</script>
 <style>
   /* Critical inline CSS — FOUC prevention + dg token seed so colors are
      correct from first paint even before dg-system.css loads. Keep ≤ 4 KB. */
@@ -905,7 +943,7 @@
     <span class="hero-icon">&#9889;</span>
     <h1>Network+ AI Quiz</h1>
     <p>AI-generated MCQs every session. Never the same quiz twice.</p>
-    <span id="version-badge" style="display:inline-block;margin-top:10px;font-size:11px;font-weight:700;letter-spacing:.08em;color:var(--accent-light);background:color-mix(in oklab,var(--accent) 12%,transparent);border:1px solid color-mix(in oklab,var(--accent) 30%,transparent);padding:3px 10px;border-radius:99px;cursor:default;user-select:none">v7.92.0</span>
+    <span id="version-badge" style="display:inline-block;margin-top:10px;font-size:11px;font-weight:700;letter-spacing:.08em;color:var(--accent-light);background:color-mix(in oklab,var(--accent) 12%,transparent);border:1px solid color-mix(in oklab,var(--accent) 30%,transparent);padding:3px 10px;border-radius:99px;cursor:default;user-select:none">v7.93.0</span>
     <div id="streak-badge" class="streak-badge"></div>
     <div id="stats-card" class="hero-stats-strip is-hidden">
       <div class="stats-grid" id="stats-grid"></div>
