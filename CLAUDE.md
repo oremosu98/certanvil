@@ -24,12 +24,12 @@
 <!-- machine-owned — run `node scripts/stamp-facts.js` to refresh; do not hand-edit -->
 | Metric | Lines | Size |
 |---|---|---|
-| app.js | 8175 | 422 KB |
+| app.js | 8190 | 423 KB |
 | styles.css | 14894 | 550 KB |
-| index.html | 2043 | 132 KB |
-| dg-system.css | 4636 | 450 KB |
+| index.html | 2060 | 134 KB |
+| dg-system.css | 4633 | 450 KB |
 | tests/uat.js + tests/uat/ (27 modules) | 27696 | — |
-UAT checks: 4853 · E2E `test(` count: 160 · APP_VERSION: 7.84.1 · stamped-at: worktree
+UAT checks: 4853 · E2E `test(` count: 160 · APP_VERSION: 7.85.0 · stamped-at: worktree
 <!-- FACTS:AUTO:END -->
 
 | File | Purpose | Size |
@@ -131,6 +131,7 @@ npx playwright test              # E2E (tests/e2e/app.spec.js)
 
 | Version | Features Added |
 |---|---|
+| v7.85.0 | perf(Lighthouse-90 M1/D1): remove reveal-animation LCP delay on above-fold bento cells + fix mobile home-collapse CLS snap |
 | v7.84.1 | fix(CLS): inline critical pill geometry — prevent reflow when non-blocking CSS loads |
 | v7.84.0 | perf(M1): static LCP signin pill — moves LCP from 5.5s to FCP time |
 | v7.83.0 | perf: styles-critical.css extraction — 535KB styles.css off render-blocking path |

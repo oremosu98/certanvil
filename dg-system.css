@@ -3700,6 +3700,10 @@ html.cl-locked,html.cl-locked body{overflow:hidden;}
    .home-collapsed classes are never added by JS, so these rules have zero
    effect there — sections render exactly as today (fully expanded, no
    collapse chrome visible). Quick Start (.cell-quick) is never targeted.
+   v7.85.0: the layout-affecting rules (display:none on .opts/.ld-grid,
+   padding-bottom:0) moved to dg-critical.css (render-blocking) so the
+   collapsed geometry is correct from first paint — see that file for why.
+   Only cosmetic/interaction rules (no layout impact) remain here.
    ────────────────────────────────────────────────────────────────────────── */
 @media (max-width:620px){
   /* Make the tile-head a visible tap target ≥44px */
@@ -3716,13 +3720,6 @@ html.cl-locked,html.cl-locked body{overflow:hidden;}
   #page-setup .home-collapsible:not(.home-collapsed) .home-collapse-chev{
     transform:rotate(180deg);
   }
-  /* Collapsed: hide everything after .tile-head */
-  #page-setup .home-collapsed .opts,
-  #page-setup .home-collapsed .ld-grid{
-    display:none;
-  }
-  /* Remove bottom padding when collapsed so tile is compact */
-  #page-setup .home-collapsed{padding-bottom:0}
 }
 
 

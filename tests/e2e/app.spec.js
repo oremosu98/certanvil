@@ -81,9 +81,19 @@ const openCustomQuizModal = async ({ page }) => {
 
 // v7.35.0: Practice / Exam / Drill sections collapse by default on phones
 // (≤620px). Expand before interacting so button clicks reach visible elements.
-// No-op on desktop (section never gets .home-collapsed). Safe if
-// _initHomeCollapse() hasn't run yet (count() returns 0 → skip).
+// v7.85.0 (Lighthouse-90 D1/CLS): .home-collapsed is now baked into the
+// static HTML for these 3 cells on EVERY viewport (so phones render
+// pre-collapsed at first paint, no post-load snap) — the collapse/expand
+// display:none rule stays media-gated to ≤620px in dg-critical.css, so the
+// class is inert at desktop widths. Gate on actual viewport width, not on
+// `.home-collapsed` class presence, since the class no longer implies
+// "phone + collapsed" on its own. _initHomeCollapse() only wires the click
+// handler at ≤620px, so the click below is a genuine no-op at desktop
+// widths (nothing to wire, nothing to expand).
 async function expandHomeSection(page, cellClass) {
+  const viewport = page.viewportSize();
+  const isPhoneWidth = viewport && viewport.width <= 620;
+  if (!isPhoneWidth) return;
   if (await page.locator(`.${cellClass}.home-collapsed`).count()) {
     await page.locator(`.${cellClass} .tile-head`).first().click();
     await page.locator(`.${cellClass}.home-collapsed`)

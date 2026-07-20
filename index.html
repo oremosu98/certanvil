@@ -342,12 +342,29 @@
        .cell-hero; renderReadinessCardV2() still runs unchanged. The in-bento
        theme toggle is intentionally DROPPED — the page lives inside the app
        chrome whose topbar already owns #topbar-theme → toggleTheme(). -->
+  <!-- v7.85.0 (Lighthouse-90 TASK 1): the topmost 3 cells (cmd-bar --d:0,
+       cell-hero --d:1, cell-recommend --d:2) DROP the .reveal entrance
+       class. Root-cause: mobile LCP element was a.topbar-signin-pill with a
+       ~3.4s render delay despite being static HTML since v7.84.0 — local
+       Lighthouse traces (CPU-throttle-only vs. network-throttled) showed
+       Chrome's LCP algorithm excludes elements still mid-opacity-animation
+       from candidacy, so these already-static, much-larger bento cells
+       (e.g. .cell-recommend .rc-body ≈4x the pill's pixel area) couldn't
+       become the LCP candidate until their staggered fade-in
+       (certHomeBentoRise, dg-critical.css) finished settling — leaving the
+       tiny pill as the only "stable" (non-animating) candidate for most of
+       the load, painting late because ITS paint still waits on the same
+       render-blocking mobile CSS chain. Removing the fade for the
+       above-the-fold cells makes them opaque immediately at first paint, so
+       the largest static content — not the pill — becomes the LCP
+       candidate near FCP. Cells below the fold (momentum --d:3 onward)
+       KEEP .reveal for the polish; they don't compete for LCP. -->
   <main class="board">
 
     <!-- TOP BAR · cert id + days-to-exam/streak chips. Theme toggle omitted
          (existing topbar #topbar-theme handles it). #cb-* filled by
          renderBentoTopbar(). -->
-    <header class="cmd-bar reveal" style="--d:0">
+    <header class="cmd-bar" style="--d:0">
       <div class="cmd-id">
         <span class="cmd-sys">CertAnvil console</span>
         <span class="cmd-cert" id="cb-cert">&mdash;</span>
@@ -361,7 +378,7 @@
     <div class="bento">
 
       <!-- CELL 1 · FEATURED · readiness hero (KEEPER · markup verbatim) -->
-      <div class="cell-hero reveal" style="--d:1">
+      <div class="cell-hero" style="--d:1">
         <div class="card readiness-card" id="readiness-card-v2">
           <div class="readiness-eyebrow">Exam readiness &middot; scaled 100-900</div>
           <div class="readiness-strip-line" aria-hidden="false"><span id="rc-strip-text">Readiness</span><span class="readiness-strip-go" aria-hidden="true">›</span></div>
@@ -379,7 +396,7 @@
       <!-- CELL 2 · recommended next → applyPreset('focused'). #pl-* filled by
            renderBentoRecommended(). Wrapper stacks the launch tile + the #6
            home forecast strip (shown only when SR cards are due) in one cell. -->
-      <div class="cell-recommend reveal" style="--d:2">
+      <div class="cell-recommend" style="--d:2">
         <button type="button" class="tile lift tile-recommend" id="primaryLaunch" onclick="applyPreset('focused')">
           <span class="rc-min"><b id="pl-min">15</b><span>min</span></span>
           <span class="rc-body">
@@ -428,7 +445,7 @@
       </section>
 
       <!-- CELL 5 · practice. Deep Scan / 30Q / 45Q. -->
-      <section class="tile lift cell-practice reveal" style="--d:4">
+      <section class="tile lift cell-practice reveal home-collapsible home-collapsed" style="--d:4">
         <div class="tile-head">
           <div><h3 class="tile-title">Practice <span class="pro-lock-pill tier-free-only"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path></svg>Pro</span></h3><p class="tile-sub" id="prac-note">Focused study on your weak spots</p></div>
           <span class="meta" id="prac-range">10-30 min</span>
@@ -450,7 +467,7 @@
       </section>
 
       <!-- CELL 6 · exam simulation. 60-Q SIM / Full Exam. -->
-      <section class="tile lift tile-exam cell-exam reveal" style="--d:4">
+      <section class="tile lift tile-exam cell-exam reveal home-collapsible home-collapsed" style="--d:4">
         <div class="tile-head">
           <div><h3 class="tile-title">Exam <i>simulation</i> <span class="pro-lock-pill tier-free-only"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path></svg>Pro</span></h3><p class="tile-sub" id="exam-note">Pressure-test your readiness, scored 100-900</p></div>
           <span class="meta" id="exam-range">60-90 min</span>
@@ -476,7 +493,7 @@
       <!-- CELL 8 · domain quick-pick (N10-009 weights + mastery, → applyDomainPreset).
            #domainGrid built by renderBentoDomains() (weights from DOMAIN_WEIGHTS,
            mastery aggregated as renderSetupDomainGrid does). -->
-      <section class="tile lift cell-domains reveal" style="--d:6">
+      <section class="tile lift cell-domains reveal home-collapsible home-collapsed" style="--d:6">
         <div class="tile-head">
           <div><h3 class="tile-title">Drill by <i>domain</i></h3><p class="tile-sub">Exam weighting, 10 questions each</p></div>
         </div>
@@ -806,7 +823,7 @@
     <span class="hero-icon">&#9889;</span>
     <h1>Network+ AI Quiz</h1>
     <p>AI-generated MCQs every session. Never the same quiz twice.</p>
-    <span id="version-badge" style="display:inline-block;margin-top:10px;font-size:11px;font-weight:700;letter-spacing:.08em;color:var(--accent-light);background:color-mix(in oklab,var(--accent) 12%,transparent);border:1px solid color-mix(in oklab,var(--accent) 30%,transparent);padding:3px 10px;border-radius:99px;cursor:default;user-select:none">v7.84.1</span>
+    <span id="version-badge" style="display:inline-block;margin-top:10px;font-size:11px;font-weight:700;letter-spacing:.08em;color:var(--accent-light);background:color-mix(in oklab,var(--accent) 12%,transparent);border:1px solid color-mix(in oklab,var(--accent) 30%,transparent);padding:3px 10px;border-radius:99px;cursor:default;user-select:none">v7.85.0</span>
     <div id="streak-badge" class="streak-badge"></div>
     <div id="stats-card" class="hero-stats-strip is-hidden">
       <div class="stats-grid" id="stats-grid"></div>

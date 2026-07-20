@@ -602,6 +602,30 @@ html[data-theme] body #page-setup .ld{display:flex;flex-direction:column;gap:8px
 #page-setup .ld-m{font-size:10.5px;color:var(--text-dim);display:flex;justify-content:space-between}
 #page-setup .ld-m b{color:var(--text-mid);font-weight:600;font-family:'Roboto Mono',monospace}
 
+/* v7.85.0 (Lighthouse-90 D1/CLS): audit-9's phone-only collapse (Practice /
+   Exam / Drill by domain) used to be JS-applied post-paint — .cell-practice/
+   .cell-exam/.cell-domains rendered FULLY EXPANDED at first paint, then
+   _initHomeCollapse() (app.js, called from goSetup(), itself gated behind the
+   whole defer chain) added .home-collapsed once JS caught up, snapping the
+   section shut and shifting everything below it. That snap was the #1
+   contributor to `body.has-sidebar > div#page-setup`'s CLS on mobile
+   (confirmed via a local getBoundingClientRect probe: #page-setup measured
+   exactly ~2003px tall, matching the live prod CLS report's "2003px-tall
+   region"). Fix: index.html now ships these 3 cells pre-marked
+   `home-collapsible home-collapsed` in the STATIC HTML, and the display:none
+   + padding-bottom:0 rules below are promoted from dg-system.css (non-
+   blocking) into this render-blocking file, so the collapsed geometry is
+   correct from the very first paint — no snap, because there's nothing to
+   snap. app.js's _initHomeCollapse() only wires the click/keyboard
+   affordance now; it no longer toggles the collapsed class on init (see
+   app.js comment). Desktop/tablet (≥621px) is untouched — media-gated,
+   same as before. */
+@media (max-width:620px){
+  #page-setup .home-collapsed .opts,
+  #page-setup .home-collapsed .ld-grid{display:none;}
+  #page-setup .home-collapsed{padding-bottom:0;}
+}
+
 /* custom-quiz launcher tile (accent-soft) */
 html[data-theme] body #page-setup .tile-custom{cursor:pointer;text-align:left;align-items:flex-start;justify-content:space-between;
   background:linear-gradient(135deg,var(--accent-soft),var(--surface))!important;border-color:var(--accent-line)!important}

@@ -1,9 +1,9 @@
 // ══════════════════════════════════════════
-// Network+ AI Quiz — app.js  v7.84.1
+// Network+ AI Quiz — app.js  v7.85.0
 // ══════════════════════════════════════════
 
 // ── CONSTANTS ──
-const APP_VERSION = '7.84.1';
+const APP_VERSION = '7.85.0';
 // v4.99.45 (Phase 6b): expose APP_VERSION on window so the web-vitals
 // collector (lib/web-vitals-collector.js, loaded BEFORE app.js so its
 // PerformanceObservers attach earlier) can stamp this version onto every
@@ -2667,6 +2667,17 @@ function goSetup() {
 // collapsed. Tapping the .tile-head toggles .home-collapsed on the section.
 // Quick Start (.cell-quick) is never touched. On tablet/desktop (≥621px)
 // this function exits immediately — zero DOM or style changes.
+//
+// v7.85.0 (Lighthouse-90 D1/CLS): the COLLAPSED visual state (home-collapsed
+// class + the display:none/padding-bottom CSS it drives) now ships directly
+// in index.html's static markup for these 3 cells, so phones render
+// pre-collapsed from first paint instead of flashing expanded-then-snapping-
+// shut once this function got around to running (that snap was measured as
+// the #1 contributor to #page-setup's mobile CLS). This function's job is
+// now ONLY to wire the click/keyboard toggle affordance — it must NOT
+// (re)toggle the collapsed class on init, since the class is already
+// correct from the HTML. Guarded by a data-attribute (not classList,
+// since the visual classes are pre-set) so it still wires exactly once.
 function _initHomeCollapse() {
   if (!window.matchMedia('(max-width:620px)').matches) return;
   var cells = [
@@ -2677,13 +2688,17 @@ function _initHomeCollapse() {
   cells.forEach(function(cell) {
     if (!cell) return;
     // Avoid double-initialising on rapid goSetup() calls
-    if (cell.classList.contains('home-collapsible')) return;
-    cell.classList.add('home-collapsible', 'home-collapsed');
+    if (cell.dataset.collapseWired) return;
+    cell.dataset.collapseWired = '1';
+    // home-collapsible/home-collapsed already present in the static markup
+    // (see index.html) — do not re-add here, it's just belt-and-suspenders
+    // for any future code path that clones/rebuilds these cells without it.
+    cell.classList.add('home-collapsible');
     var head = cell.querySelector('.tile-head');
     if (!head) return;
     head.setAttribute('role', 'button');
     head.setAttribute('tabindex', '0');
-    head.setAttribute('aria-expanded', 'false');
+    head.setAttribute('aria-expanded', String(!cell.classList.contains('home-collapsed')));
     // Inject chevron affordance
     var chev = document.createElement('span');
     chev.className = 'home-collapse-chev';
