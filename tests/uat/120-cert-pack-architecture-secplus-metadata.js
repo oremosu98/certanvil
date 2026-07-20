@@ -748,10 +748,12 @@ test('v4.99.30 CertPack lazy-load: data-cert attribute already set on <html> bef
 // ── SW precaches cert packs ──
 // v4.87.4: window widened from 400 to 700 chars to accommodate the favicon
 // comment block now sitting between manifest.json and the cert paths.
+// v7.83.0: widened to 800 — styles-critical.css + dg-critical.css added to
+// SHELL_ASSETS pushed the cert paths ~50 chars further.
 test('v4.86.0 CertPack: sw.js SHELL_ASSETS includes certs/netplus.js',
-  /SHELL_ASSETS\s*=\s*\[[\s\S]{0,700}certs\/netplus\.js/.test(sw));
+  /SHELL_ASSETS\s*=\s*\[[\s\S]{0,800}certs\/netplus\.js/.test(sw));
 test('v4.86.0 CertPack: sw.js SHELL_ASSETS includes certs/secplus.js',
-  /SHELL_ASSETS\s*=\s*\[[\s\S]{0,700}certs\/secplus\.js/.test(sw));
+  /SHELL_ASSETS\s*=\s*\[[\s\S]{0,800}certs\/secplus\.js/.test(sw));
 
 // ═══════════════════════════════════════════════════════════════════════
 // v4.87.0 — Security+ pack content + cert-aware prompt + private banner.

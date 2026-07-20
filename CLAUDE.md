@@ -26,10 +26,10 @@
 |---|---|---|
 | app.js | 8175 | 422 KB |
 | styles.css | 14894 | 550 KB |
-| index.html | 2022 | 131 KB |
+| index.html | 2036 | 132 KB |
 | dg-system.css | 4636 | 450 KB |
-| tests/uat.js + tests/uat/ (27 modules) | 27694 | — |
-UAT checks: 4853 · E2E `test(` count: 160 · APP_VERSION: 7.82.0 · stamped-at: worktree
+| tests/uat.js + tests/uat/ (27 modules) | 27696 | — |
+UAT checks: 4853 · E2E `test(` count: 160 · APP_VERSION: 7.83.0 · stamped-at: worktree
 <!-- FACTS:AUTO:END -->
 
 | File | Purpose | Size |
@@ -131,6 +131,7 @@ npx playwright test              # E2E (tests/e2e/app.spec.js)
 
 | Version | Features Added |
 |---|---|
+| v7.83.0 | perf: styles-critical.css extraction — 535KB styles.css off render-blocking path |
 | v7.82.0 | perf: extract dg-critical.css — moves 388KB of dg-system.css off render-blocking path |
 | v7.80.1 | Fix infinite quiz spinner — _sessionStartTs/_srIsFreeTier strict-mode ReferenceErrors from wave extraction + UAT guard for the class |
 | v7.80.0 | Error hardening: timeouts, tier-2/3 error UI, server telemetry, flood control, error-triage skill |

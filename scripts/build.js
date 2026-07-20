@@ -87,10 +87,11 @@ async function minifyJs() {
   console.log(`  \x1b[32m✓\x1b[0m minified ${count} JS files (${pct}% smaller raw)`);
 }
 
-// Minify the two root stylesheets in place. Only root *.css (no nested CSS
+// Minify all root stylesheets in place. Only root *.css (no nested CSS
 // in this repo's served surface). esbuild CSS minify is whitespace/syntax
 // level — no class renaming — so selectors used by JS stay intact.
-const CSS_TARGETS = ['styles.css', 'dg-system.css'];
+// dg-critical.css added v7.82.0; dg-depurple.css added v7.82.0.
+const CSS_TARGETS = ['styles-critical.css', 'styles.css', 'dg-system.css', 'dg-critical.css', 'dg-depurple.css'];
 async function minifyCss() {
   let count = 0, before = 0, after = 0;
   for (const name of CSS_TARGETS) {
