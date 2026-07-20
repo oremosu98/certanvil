@@ -1,9 +1,9 @@
 // ══════════════════════════════════════════
-// Network+ AI Quiz — app.js  v7.87.0
+// Network+ AI Quiz — app.js  v7.88.0
 // ══════════════════════════════════════════
 
 // ── CONSTANTS ──
-const APP_VERSION = '7.87.0';
+const APP_VERSION = '7.88.0';
 // v4.99.45 (Phase 6b): expose APP_VERSION on window so the web-vitals
 // collector (lib/web-vitals-collector.js, loaded BEFORE app.js so its
 // PerformanceObservers attach earlier) can stamp this version onto every
@@ -8070,6 +8070,15 @@ function _v453Init() {
     // entire desktop CLS score). Keeping this call (idempotent, harmless)
     // for defense-in-depth in case the static class is ever stripped.
     document.body.classList.add('has-sidebar');
+    // v7.88.0 (Lighthouse-90 mobile CLS fix): the padding-left transition on
+    // body.has-sidebar is no longer unconditional (was the root cause of a
+    // flaky mobile CLS regression — see styles-critical.css comment). It's
+    // now gated behind this class, added only after first paint has fully
+    // settled, so no layout-affecting property change during initial render
+    // can ever be animated.
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      document.body.classList.add('sidebar-anim');
+    }));
     if (typeof renderAppSidebar === 'function') renderAppSidebar();
     // v4.81.23: focus banner retired in v4.81.20; consolidated #today-plan
     // is rendered via renderTodayPlan() from goSetup() / DOMContentLoaded.

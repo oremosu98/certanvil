@@ -1,5 +1,5 @@
 /* ══════════════════════════════════════════
-   Network+ AI Quiz — styles.css  v7.87.0
+   Network+ AI Quiz — styles.css  v7.88.0
    ══════════════════════════════════════════ */
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -4014,7 +4014,19 @@ input::placeholder { color: var(--text-dim); }
    ═══════════════════════════════════════════════════════════════════ */
 
 /* ── APP SHELL with persistent sidebar ── */
-body.has-sidebar { padding-left: 240px; transition: padding-left .25s cubic-bezier(0.2, 0.8, 0.2, 1); }
+/* v7.88.0: unconditional `transition: padding-left` removed — it's what
+   turned the late mobile-override swap (below, ≤767px) into an animated
+   CLS-causing shift when this file (non-blocking) applied after
+   styles-critical.css (render-blocking, which now mirrors all width-tiers
+   directly — see that file's comment). Motion, if ever needed for a
+   padding-changing sidebar interaction, should be gated behind a JS-added
+   `body.sidebar-anim` class instead of living unconditionally on this
+   selector. */
+body.has-sidebar { padding-left: 240px; }
+/* v7.88.0: transition lives only behind this JS-added post-load class
+   (see app.js `_v453Init` — added via requestAnimationFrame after first
+   paint settles) so it can never fire during initial layout. */
+body.has-sidebar.sidebar-anim { transition: padding-left .25s cubic-bezier(0.2, 0.8, 0.2, 1); }
 
 .app-sidebar {
   position: fixed;

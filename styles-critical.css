@@ -46,7 +46,32 @@ h3 { font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacin
 
 #page-guided-lab { max-width: 820px; margin: 0 auto; padding-bottom: 60px; }
 
-body.has-sidebar { padding-left: 240px; transition: padding-left .25s cubic-bezier(0.2, 0.8, 0.2, 1); }
+/* v7.88.0 (Lighthouse-90 mobile CLS fix): geometry must be correct-from-
+   first-paint at ALL widths in this render-blocking file — this selector
+   used to be unconditional 240px with a `transition: padding-left`, and the
+   ≤767px override lived ONLY in the non-blocking styles.css (swapped in via
+   media="print" onload after first paint). On mobile that meant first paint
+   locked in 240px, then the late-arriving override animated it back to 0px
+   via the transition already active on the selector — a real, network-
+   race-flaky CLS source (confirmed via local `npx lighthouse --save-assets`:
+   layout-shifts audit isolates the shift to `body.has-sidebar > div#page-
+   setup`, same signature as the desktop bug fixed in v7.87.0). Fix: mirror
+   ALL width-tiers here (240 desktop / 0 phone ≤767 / 200 tablet 768-1023,
+   matching styles.css's tablet override at ~line 14820) so there is nothing
+   left for the async styles.css swap to change, and drop the unconditional
+   transition entirely — nothing on this selector legitimately animates
+   post-load (the mobile drawer open/close animates `.app-sidebar`'s
+   `transform`, not body padding). If a future padding-changing sidebar
+   interaction needs motion, gate it behind a JS-added `body.sidebar-anim`
+   class (see app.js `_v453Init`) rather than reintroducing an unconditional
+   transition here. */
+body.has-sidebar { padding-left: 240px; }
+@media (max-width: 767px) {
+  body.has-sidebar { padding-left: 0; }
+}
+@media (min-width: 768px) and (max-width: 1023px) {
+  body.has-sidebar { padding-left: 200px; }
+}
 
 .app-sidebar {
   position: fixed;

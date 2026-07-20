@@ -24,12 +24,12 @@
 <!-- machine-owned — run `node scripts/stamp-facts.js` to refresh; do not hand-edit -->
 | Metric | Lines | Size |
 |---|---|---|
-| app.js | 8199 | 424 KB |
-| styles.css | 14894 | 550 KB |
+| app.js | 8208 | 424 KB |
+| styles.css | 14906 | 551 KB |
 | index.html | 2095 | 136 KB |
 | dg-system.css | 4642 | 451 KB |
 | tests/uat.js + tests/uat/ (27 modules) | 27700 | — |
-UAT checks: 4853 · E2E `test(` count: 160 · APP_VERSION: 7.87.0 · stamped-at: worktree
+UAT checks: 4853 · E2E `test(` count: 160 · APP_VERSION: 7.88.0 · stamped-at: worktree
 <!-- FACTS:AUTO:END -->
 
 | File | Purpose | Size |
@@ -131,6 +131,7 @@ npx playwright test              # E2E (tests/e2e/app.spec.js)
 
 | Version | Features Added |
 |---|---|
+| v7.88.0 | Lighthouse-90 mobile CLS fix: has-sidebar geometry correct-from-first-paint at all widths in critical CSS, kill unconditional padding-left transition |
 | v7.87.0 | Lighthouse-90 desktop CLS root-cause fix: static has-sidebar class eliminates late transition-driven layout shift |
 | v7.86.0 | Lighthouse-90 M1-cleanup/M2/M3: readiness-card + domainGrid CLS reservation, mobile lift-screens.css split, Supabase preconnect + dead Google Fonts CSP removal |
 | v7.85.0 | perf(Lighthouse-90 M1/D1): remove reveal-animation LCP delay on above-fold bento cells + fix mobile home-collapse CLS snap |
