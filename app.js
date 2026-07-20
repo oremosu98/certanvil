@@ -1,9 +1,9 @@
 // ══════════════════════════════════════════
-// Network+ AI Quiz — app.js  v7.89.0
+// Network+ AI Quiz — app.js  v7.90.0
 // ══════════════════════════════════════════
 
 // ── CONSTANTS ──
-const APP_VERSION = '7.89.0';
+const APP_VERSION = '7.90.0';
 // v4.99.45 (Phase 6b): expose APP_VERSION on window so the web-vitals
 // collector (lib/web-vitals-collector.js, loaded BEFORE app.js so its
 // PerformanceObservers attach earlier) can stamp this version onto every
@@ -2004,13 +2004,31 @@ if ('serviceWorker' in navigator) {
       });
     } catch (_) {}
   }
+  // v7.90.0 — Lighthouse-90: cold-first-visit false positive. `clients.claim()`
+  // in sw.js fires `controllerchange` (and the redundant postMessage below)
+  // the FIRST time this page is ever claimed by a service worker too, not
+  // just on a real update — there's nothing "new" to refresh on a brand-new
+  // visitor's first load, there's just no previous controller yet. Prod
+  // Lighthouse traces (2 of 3 mobile runs) showed the banner's
+  // `insertBefore(banner, document.body.firstChild)` shoving the whole page
+  // — including the tall `.bento` grid — down by the banner's height right
+  // as this fired mid-load, producing a real 0.058 CLS shift. Never
+  // reproduced across 7 local runs because a returning localhost tab already
+  // has a controller from a prior run, so the race never re-triggers there.
+  // Fix: snapshot whether a controller already existed BEFORE this
+  // registration. Only a controller *swap* (old controller -> new one) is a
+  // real update worth prompting for; uncontrolled -> controlled is just the
+  // ordinary first-ever install and must stay silent.
+  const _hadSwControllerAtBoot = !!navigator.serviceWorker.controller;
   navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (!_hadSwControllerAtBoot) return; // first-ever activation, not an update
     _showSwUpdateBanner('controllerchange');
   });
   // Belt-and-suspenders: sw.js posts a message to all clients on activate.
   // Either signal (this OR controllerchange above) triggers the same
-  // single banner via the _swBannerShown guard.
+  // single banner via the _swBannerShown guard. Same first-install guard.
   navigator.serviceWorker.addEventListener('message', (e) => {
+    if (!_hadSwControllerAtBoot) return;
     if (e && e.data && e.data.type === 'sw-updated') {
       _showSwUpdateBanner('postMessage');
     }
