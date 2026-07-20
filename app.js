@@ -1,9 +1,9 @@
 // ══════════════════════════════════════════
-// Network+ AI Quiz — app.js  v7.80.0
+// Network+ AI Quiz — app.js  v7.80.1
 // ══════════════════════════════════════════
 
 // ── CONSTANTS ──
-const APP_VERSION = '7.80.0';
+const APP_VERSION = '7.80.1';
 // v4.99.45 (Phase 6b): expose APP_VERSION on window so the web-vitals
 // collector (lib/web-vitals-collector.js, loaded BEFORE app.js so its
 // PerformanceObservers attach earlier) can stamp this version onto every
@@ -1271,6 +1271,12 @@ let sessionMode    = false;
 let sessionPlan    = [];
 let sessionStep    = 0;
 let sessionResults = [];
+// v7.80.1: session-start timestamp for the Results elapsed-time row. MUST be
+// declared at top level (global lexical binding) — wave 6 moved the only
+// declaration into exam.js's closure, so the bare assignments in
+// quiz-engine.js/flagship-drills.js/app.js threw strict-mode ReferenceErrors
+// that left the loading screen up forever (the "infinite quiz spinner" bug).
+let _sessionStartTs = 0;
 
 // Exam state
 let examMode      = false;
@@ -3456,7 +3462,7 @@ function _setWarmupTopic(topic) {
 function _renderBuilderQuotaLine() {
   const el = document.getElementById('cq-quota-line');
   if (!el) return;
-  if (_srIsFreeTier()) {
+  if (typeof _srIsFreeTier === 'function' && _srIsFreeTier()) {
     el.textContent = 'Free plan · ' + _quotaRemainingToday() + ' of ' + _quotaState.daily_limit + ' questions left today';
     el.hidden = false;
   } else {

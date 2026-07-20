@@ -24,12 +24,12 @@
 <!-- machine-owned — run `node scripts/stamp-facts.js` to refresh; do not hand-edit -->
 | Metric | Lines | Size |
 |---|---|---|
-| app.js | 8169 | 422 KB |
+| app.js | 8175 | 422 KB |
 | styles.css | 14894 | 550 KB |
 | index.html | 2001 | 128 KB |
 | dg-system.css | 4636 | 450 KB |
-| tests/uat.js + tests/uat/ (26 modules) | 27555 | — |
-UAT checks: 4849 · E2E `test(` count: 160 · APP_VERSION: 7.80.0 · stamped-at: worktree
+| tests/uat.js + tests/uat/ (27 modules) | 27678 | — |
+UAT checks: 4853 · E2E `test(` count: 160 · APP_VERSION: 7.80.1 · stamped-at: worktree
 <!-- FACTS:AUTO:END -->
 
 | File | Purpose | Size |
@@ -131,6 +131,7 @@ npx playwright test              # E2E (tests/e2e/app.spec.js)
 
 | Version | Features Added |
 |---|---|
+| v7.80.1 | Fix infinite quiz spinner — _sessionStartTs/_srIsFreeTier strict-mode ReferenceErrors from wave extraction + UAT guard for the class |
 | v7.80.0 | Error hardening: timeouts, tier-2/3 error UI, server telemetry, flood control, error-triage skill |
 | v7.79.2 | Fix Hot-Area PBQ scoring + Analytics Drills milestones — missing window exposures from waves 7/8 extraction; also fixes bug-report drawer left permanently disabled by dead GH_TOKEN gate |
 | v7.79.1 | Fix: SR Queue home tile (Recommended cell) didn't reflect due reviews on initial paint — wave 10 Pattern E gap |

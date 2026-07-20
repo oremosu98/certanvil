@@ -1113,6 +1113,11 @@
   // SR top-up (AI)
   window.startSrGenTopUp          = startSrGenTopUp;
   window.startSrTopUp             = startSrTopUp;
+  // v7.80.1: free-tier check used by app.js (builder quota line, weak-warmup
+  // gate) + quiz-engine (15-Q set cap). Was closure-private, so every
+  // `typeof _srIsFreeTier === 'function'` guard silently failed (free-tier
+  // gates disabled) and the unguarded call in _renderBuilderQuotaLine threw.
+  window._srIsFreeTier            = _srIsFreeTier;
 
   window._certanvilFeatures['sr-review'] = {
     loadSrPrefs: loadSrPrefs,
