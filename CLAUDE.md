@@ -24,12 +24,12 @@
 <!-- machine-owned — run `node scripts/stamp-facts.js` to refresh; do not hand-edit -->
 | Metric | Lines | Size |
 |---|---|---|
-| app.js | 8226 | 426 KB |
+| app.js | 8260 | 428 KB |
 | styles.css | 14906 | 551 KB |
-| index.html | 2142 | 139 KB |
+| index.html | 2149 | 140 KB |
 | dg-system.css | 4642 | 451 KB |
 | tests/uat.js + tests/uat/ (27 modules) | 27700 | — |
-UAT checks: 4853 · E2E `test(` count: 160 · APP_VERSION: 7.90.1 · stamped-at: worktree
+UAT checks: 4853 · E2E `test(` count: 160 · APP_VERSION: 7.91.0 · stamped-at: worktree
 <!-- FACTS:AUTO:END -->
 
 | File | Purpose | Size |
@@ -131,6 +131,7 @@ npx playwright test              # E2E (tests/e2e/app.spec.js)
 
 | Version | Features Added |
 |---|---|
+| v7.91.0 | Lighthouse-90 mobile: defer-chain restructure — progress/analytics/settings moved off eager load path |
 | v7.90.1 | Lighthouse-90 mobile: real bento CLS fix — critical-path P1 touch-target CSS for topbar chrome |
 | v7.90.0 | Lighthouse-90 mobile: prod-only bento CLS fix — suppress false-positive SW-update banner on first-ever activation |
 | v7.89.0 | Lighthouse-90 mobile: cert-name CLS fix (synchronous cert-aware static text) + LCP content-swap fix (rc-body default matches anonymous-visitor copy) |

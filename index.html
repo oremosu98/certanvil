@@ -905,7 +905,7 @@
     <span class="hero-icon">&#9889;</span>
     <h1>Network+ AI Quiz</h1>
     <p>AI-generated MCQs every session. Never the same quiz twice.</p>
-    <span id="version-badge" style="display:inline-block;margin-top:10px;font-size:11px;font-weight:700;letter-spacing:.08em;color:var(--accent-light);background:color-mix(in oklab,var(--accent) 12%,transparent);border:1px solid color-mix(in oklab,var(--accent) 30%,transparent);padding:3px 10px;border-radius:99px;cursor:default;user-select:none">v7.90.1</span>
+    <span id="version-badge" style="display:inline-block;margin-top:10px;font-size:11px;font-weight:700;letter-spacing:.08em;color:var(--accent-light);background:color-mix(in oklab,var(--accent) 12%,transparent);border:1px solid color-mix(in oklab,var(--accent) 30%,transparent);padding:3px 10px;border-radius:99px;cursor:default;user-select:none">v7.91.0</span>
     <div id="streak-badge" class="streak-badge"></div>
     <div id="stats-card" class="hero-stats-strip is-hidden">
       <div class="stats-grid" id="stats-grid"></div>
@@ -2083,9 +2083,16 @@
 <script defer src="lib/onboarding-chrome.js"></script>
 <script defer src="lib/onboarding-home.js"></script>
 <script defer src="app.js"></script>
-<script defer src="features/progress.js"></script>
-<script defer src="features/analytics.js"></script>
-    <script defer src="features/settings.js"></script>
+<!-- v7.91.0 (Lighthouse-90 defer-chain restructure): progress.js, analytics.js
+     and settings.js moved OFF the eager defer chain. None of the three are
+     needed for first paint or the home-page DOMContentLoaded render (their
+     render functions are reached only via showPage() navigation, which
+     already lazy-loads them on demand — see app.js #138 waves 1-3). They
+     now load via an idle-time prefetch (app.js, right after _loadFeature)
+     instead, cutting ~250KB of parse/exec off the pre-paint main-thread
+     chain on throttled mobile CPU. Do NOT add them back here without also
+     removing the showPage() lazy-gate + idle-prefetch, or they'll double-
+     load. -->
 <script defer src="features/readiness.js"></script>
 <script defer src="features/quiz-engine.js"></script>
 <script defer src="features/home.js"></script>

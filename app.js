@@ -1,9 +1,9 @@
 // ══════════════════════════════════════════
-// Network+ AI Quiz — app.js  v7.90.1
+// Network+ AI Quiz — app.js  v7.91.0
 // ══════════════════════════════════════════
 
 // ── CONSTANTS ──
-const APP_VERSION = '7.90.1';
+const APP_VERSION = '7.91.0';
 // v4.99.45 (Phase 6b): expose APP_VERSION on window so the web-vitals
 // collector (lib/web-vitals-collector.js, loaded BEFORE app.js so its
 // PerformanceObservers attach earlier) can stamp this version onto every
@@ -2090,6 +2090,28 @@ async function _loadFeature(name) {
   });
 }
 
+// v7.91.0 (Lighthouse-90 defer-chain restructure): idle prefetch for
+// progress/analytics/settings — moved off the eager <script defer> chain
+// in index.html (not needed for first paint or DOMContentLoaded render,
+// only reached via showPage() nav). showPage()'s existing #138 _loadFeature
+// gate is the on-demand correctness backstop for early clicks; this is
+// just a perf warm-up. Sequenced, not parallel, order doesn't matter.
+(function () {
+  function _prefetchShellFeatures() {
+    _loadFeature('progress')
+      .catch(function () {})
+      .then(function () { return _loadFeature('analytics').catch(function () {}); })
+      .then(function () { return _loadFeature('settings').catch(function () {}); });
+  }
+  function _idle(cb) {
+    if ('requestIdleCallback' in window) window.requestIdleCallback(cb, { timeout: 4000 });
+    else setTimeout(cb, 1500);
+  }
+  function _armPrefetch() { _idle(_prefetchShellFeatures); }
+  if (document.readyState === 'complete') _armPrefetch();
+  else window.addEventListener('load', _armPrefetch, { once: true });
+})();
+
 // ════════════════════════════════════════════════════════════════════
 // Task 17 — Sim Lab lazy-loader
 //
@@ -2562,18 +2584,30 @@ function showPage(name) {
   // Task 17: lazy-load Sim Lab on first drills visit; card renders post-load.
   if (name === 'drills') _ensureSimLabLoaded(function () { if (typeof window.renderSimLabDrillsCard === 'function') window.renderSimLabDrillsCard(); });
   // #138 wave 1: lazy-load progress page feature if not yet available.
+  // v7.91.0 fix: this branch used to only call m.enter() (paint content)
+  // and return WITHOUT ever reaching the activate() logic below that adds
+  // .active / closes the mobile drawer / clears err-boxes — so a cold
+  // (not-yet-loaded) navigation never actually switched the visible page.
+  // Was latent/unreachable in practice pre-v7.91.0 because progress.js was
+  // always eager-loaded (window.renderProgressPage was truthy by the time
+  // any click could happen); now that it's idle-prefetched instead, this
+  // path is live for real early clicks. Fix: re-invoke showPage(name) once
+  // the module is loaded — window.renderProgressPage is now truthy so it
+  // falls through to the normal activate() path — THEN paint content.
   if (name === 'progress' && !window.renderProgressPage) {
-    _loadFeature('progress').then(function (m) { m.enter(); });
+    _loadFeature('progress').then(function (m) { showPage(name); m.enter(); });
     return;
   }
   // #138 wave 2: lazy-load analytics page feature if not yet available.
+  // See v7.91.0 fix note on the 'progress' branch above — same bug, same fix.
   if (name === 'analytics' && !window.renderAnalytics) {
-    _loadFeature('analytics').then(function (m) { m.enter(); });
+    _loadFeature('analytics').then(function (m) { showPage(name); m.enter(); });
     return;
   }
   // #138 wave 3: lazy-load settings page feature if not yet available.
+  // See v7.91.0 fix note on the 'progress' branch above — same bug, same fix.
   if (name === 'settings' && !window.renderSettingsPage) {
-    _loadFeature('settings').then(function (m) { m.enter(); });
+    _loadFeature('settings').then(function (m) { showPage(name); m.enter(); });
     return;
   }
   // v7.55.2: surface the Sim Lab entry in the Home → Practice section. Renders
