@@ -797,6 +797,12 @@
   window.exportData = exportData;
   window.importData = importData;
   window.clearWrongBank = clearWrongBank;
+  // v7.97.0: index.html's "Snapshot now" button is typeof-guarded
+  // (`typeof _takeAutoBackup==='function'`) so the missing exposure silently
+  // no-op'd instead of throwing — dead since wave 3. Same closure-captive
+  // class as the other v7.97.0 fixes, just masked by the guard.
+  window._takeAutoBackup = _takeAutoBackup;
+  window.renderAutoBackupList = renderAutoBackupList;
 
   // ── feature registry ──
   window._certanvilFeatures = window._certanvilFeatures || {};

@@ -1,6 +1,6 @@
 {
   "name": "certanvil",
-  "version": "7.96.0",
+  "version": "7.97.0",
   "private": true,
   "scripts": {
     "test:uat": "node tests/uat.js",

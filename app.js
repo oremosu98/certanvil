@@ -1,9 +1,9 @@
 // ══════════════════════════════════════════
-// Network+ AI Quiz — app.js  v7.96.0
+// Network+ AI Quiz — app.js  v7.97.0
 // ══════════════════════════════════════════
 
 // ── CONSTANTS ──
-const APP_VERSION = '7.96.0';
+const APP_VERSION = '7.97.0';
 // v4.99.45 (Phase 6b): expose APP_VERSION on window so the web-vitals
 // collector (lib/web-vitals-collector.js, loaded BEFORE app.js so its
 // PerformanceObservers attach earlier) can stamp this version onto every
@@ -1290,6 +1290,14 @@ function _formatElapsed(ms) {
   const rs = s % 60;
   return m > 0 ? `${m}m ${String(rs).padStart(2,'0')}s` : `${rs}s`;
 }
+
+// v7.97.0: session-scoped dismissal flag for the brand-new-user Baseline
+// Diagnostic CTA. MUST be a top-level global binding for the same reason as
+// _sessionStartTs/_formatElapsed above — the only declaration previously
+// lived captive in features/diagnostic.js's closure (a lazy-loaded module),
+// so _computeNextBestMove()'s bare read threw a ReferenceError that its
+// surrounding try/catch silently swallowed, meaning the CTA never rendered.
+let _diagnosticCtaSessionDismissed = false;
 
 // v7.96.0: canonical init for the feature-module registry. app.js executes
 // before all eager feature modules in the defer chain, so this guard must

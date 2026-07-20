@@ -1,13 +1,19 @@
 /* Baseline Diagnostic + Pass Plan + ACL Ordering PBQ — extracted from app.js (#138 wave 5).
  * Lazy-loaded feature. Mechanical move: function bodies identical to app.js @ 596ec9d.
- * State vars (_diagnosticSession, _diagnosticTimer, _diagnosticCtaSessionDismissed,
- * _aclPbqState) and ACL_PBQ_BANK data moved here from app.js. */
+ * State vars (_diagnosticSession, _diagnosticTimer, _aclPbqState) and
+ * ACL_PBQ_BANK data moved here from app.js. _diagnosticCtaSessionDismissed
+ * moved back OUT to app.js top level in v7.97.0 (see comment there). */
 (function () {
   'use strict';
 
   let _diagnosticSession = null;
   let _diagnosticTimer = null;
-  let _diagnosticCtaSessionDismissed = false;
+  // v7.97.0: _diagnosticCtaSessionDismissed moved to app.js top level (see
+  // comment there) — app.js's _computeNextBestMove() read it as a bare
+  // identifier, but this was the only declaration and it was captive in
+  // this lazy-loaded module's closure, so the read threw a ReferenceError
+  // that a surrounding try/catch silently swallowed, meaning the
+  // brand-new-user Baseline Diagnostic CTA never rendered.
   let _aclPbqState = null;
   const ACL_PBQ_BANK = [
     {

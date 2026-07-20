@@ -21,24 +21,56 @@
 // waiting to fire. Sweep-verified 2026-07-20: zero legitimate hits exist, so
 // this asserts an empty list — a new hit means a new landmine.
 
-const { fs, path, ROOT, appJs, test } = require('./_context');
+const { fs, path, ROOT, appJs, html, test } = require('./_context');
 
 const featureDir = path.join(ROOT, 'features');
 const featureFiles = fs.readdirSync(featureDir)
   .filter(f => f.endsWith('.js'))
   .map(f => path.join('features', f));
 
-// Strips // line comments, /* */ block comments, and '…'/"…"/`…` string
-// contents down to spaces (preserving newlines + overall length/offsets, so
-// line numbers computed via src.slice(0, idx).split('\n').length still line
-// up). Used only by the v7.96.0 closure-captive-CALL sweep below — comment
-// prose ("...calls getWeakTopic()...") and quiz-content string literals
+// Strips // line comments, /* */ block comments, '…'/"…"/`…` string
+// contents, and /…/flags regex literals down to spaces (preserving newlines +
+// overall length/offsets, so line numbers computed via
+// src.slice(0, idx).split('\n').length still line up). Used by the v7.96.0
+// closure-captive-CALL sweep and the v7.97.0 checks below — comment prose
+// ("...calls getWeakTopic()...") and quiz-content string literals
 // ("...during the move (for example...") both contain bare `name(` text that
 // isn't a real call and would otherwise flood the sweep with false positives.
+//
+// v7.97.0: regex-literal handling added after a real corruption bug — a
+// regex containing a quote char, e.g. `.replace(/'/g, "\\'")` in
+// features/progress.js, was mistaken for the START of a `'`-quoted string by
+// the naive version of this function. It then consumed everything up to the
+// next stray `'` (deep inside an unrelated later string) as "string
+// content", blanking out the real `window.setProgressFilter = ...` /
+// `window.filterProgressPage = ...` exposure lines further down the file —
+// which made the v7.97.0 stripped-source exposure check (windowExposedStripped)
+// wrongly flag those as missing. Regex-vs-division is disambiguated with the
+// standard heuristic: a `/` starts a regex literal when the last significant
+// token before it is one that can't end an expression (an operator, opening
+// bracket, `,`/`;`/`:`, or a keyword like `return`/`typeof`/`case`/`in`) —
+// otherwise it's division and left untouched.
 function stripCommentsAndStrings(src) {
   let out = '';
   let i = 0;
   const n = src.length;
+  // Last significant (non-whitespace) char/word emitted in code position —
+  // used only to decide regex-literal vs. division at each `/`.
+  let lastSig = '';
+  let lastWord = '';
+  const REGEX_PRECEDERS = new Set(['(', ',', '=', ':', ';', '!', '&', '|',
+    '?', '{', '}', '[', '+', '-', '*', '%', '^', '~', '<', '>', '\n', '']);
+  const REGEX_KEYWORDS = new Set(['return', 'typeof', 'instanceof', 'in',
+    'of', 'new', 'delete', 'void', 'throw', 'case', 'yield', 'do', 'else']);
+
+  function emitCode(ch) {
+    out += ch;
+    if (ch !== ' ' && ch !== '\n' && ch !== '\t' && ch !== '\r') {
+      lastSig = ch;
+      lastWord = /[A-Za-z0-9_$]/.test(ch) ? (lastWord + ch) : '';
+    }
+  }
+
   while (i < n) {
     const c = src[i], c2 = src[i + 1];
     if (c === '/' && c2 === '/') {
@@ -61,9 +93,37 @@ function stripCommentsAndStrings(src) {
         out += (src[i] === '\n' ? '\n' : ' '); i++;
       }
       if (i < n) { out += ' '; i++; }
+      lastSig = quote; lastWord = '';
       continue;
     }
-    out += c; i++;
+    if (c === '/') {
+      const regexAllowed = REGEX_PRECEDERS.has(lastSig) || REGEX_KEYWORDS.has(lastWord);
+      if (regexAllowed) {
+        let j = i + 1;
+        let inClass = false;
+        let closed = false;
+        while (j < n) {
+          if (src[j] === '\\' && j + 1 < n) { j += 2; continue; }
+          if (src[j] === '\n') break; // regex literals can't span lines
+          if (src[j] === '[') { inClass = true; j++; continue; }
+          if (src[j] === ']') { inClass = false; j++; continue; }
+          if (src[j] === '/' && !inClass) { closed = true; break; }
+          j++;
+        }
+        if (closed) {
+          let k = j + 1;
+          while (k < n && /[a-zA-Z]/.test(src[k])) k++; // trailing flags
+          for (let p = i; p < k; p++) out += (src[p] === '\n' ? '\n' : ' ');
+          i = k;
+          lastSig = '/'; lastWord = ''; // a regex literal is a value
+          continue;
+        }
+        // no closing `/` on this line — not actually a regex literal; fall
+        // through and treat the `/` as an ordinary character.
+      }
+    }
+    emitCode(c);
+    i++;
   }
   return out;
 }
@@ -101,7 +161,7 @@ for (const [, src] of files) {
 const globalDecls = new Set([...appTopLevelDecls, ...windowExposed]);
 
 const KEYWORDS = new Set(['if', 'else', 'for', 'while', 'return', 'typeof',
-  'new', 'in', 'of', 'this', 'window', 'document', 'module', 'exports']);
+  'new', 'in', 'of', 'this', 'window', 'document', 'module', 'exports', 'async']);
 
 const landmines = [];
 const declsByFile = {}; // rel -> Set(all declared identifiers in this file) — reused below
@@ -253,4 +313,135 @@ test('v7.96.0 fix: _formatElapsed declared at top level of app.js (global bindin
 
   test('v7.96.0 fix: quiz-engine.js guards window._certanvilFeatures before registering',
     hasGuardBeforeRegistration(quizEngineSrc, "window._certanvilFeatures['quiz-engine']"));
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// v7.97.0 — two more checks for the same failure family, found in the
+// post-#138-extraction sweep.
+// ══════════════════════════════════════════════════════════════════════════
+
+// window.* exposures, but computed against comment/string-STRIPPED source
+// (codeOnlyByFile) rather than raw source. The v7.96.0 `windowExposed` set
+// above runs on raw text, so a COMMENTED-OUT exposure line
+// (`// window.toggleFlag = toggleFlag;`) still counts as a real exposure —
+// a gap Fable caught while revert-testing the v7.97.0 checks. Used only by
+// the v7.97.0 checks below (inline-handler, captive-state-read, and the
+// v7.97.0 pinned regression tests), which are exactly the checks whose job
+// is to prove a live `window.X = ...` line exists.
+const windowExposedStripped = new Set();
+for (const [, codeOnly] of Object.entries(codeOnlyByFile)) {
+  let m;
+  const wRe = /window\.([A-Za-z_$][\w$]*)\s*=/g;
+  while ((m = wRe.exec(codeOnly))) windowExposedStripped.add(m[1]);
+}
+
+// (a) INLINE-HANDLER CHECK: index.html's onclick/onchange/oninput/onsubmit/
+// onkeydown attributes call functions as bare identifiers, exactly like a
+// bare call inside a features/*.js file — if the target isn't window-exposed
+// (or an app.js top-level function), the click silently no-ops (if
+// typeof-guarded, e.g. the v7.97.0 "Snapshot now" bug) or throws inside the
+// inline handler (uncaught, no visible symptom beyond "nothing happened").
+// Caught 4 landmines in v7.97.0: toggleFlag (quiz Flag button, dead since
+// wave 8), runSessionStep ("Continue Session →", dead since wave 9),
+// toggleNav (exam navigator toggle, dead since wave 6), _takeAutoBackup +
+// renderAutoBackupList ("Snapshot now", silently no-op since wave 3).
+const INLINE_BUILTINS = new Set(['event', 'this', 'window', 'document', 'confirm', 'alert']);
+const inlineHandlerLandmines = [];
+{
+  const handlerAttrRe = /\son(?:click|change|input|submit|keydown)\s*=\s*"([^"]*)"/g;
+  let hm;
+  while ((hm = handlerAttrRe.exec(html))) {
+    const value = hm[1];
+    const valueOffset = hm.index + hm[0].length - value.length - 1; // index of the opening " + 1
+    const idRe = /(?<![\w$.])([A-Za-z_$][\w$]*)\s*\(/g;
+    let im;
+    while ((im = idRe.exec(value))) {
+      const name = im[1];
+      if (KEYWORDS.has(name) || INLINE_BUILTINS.has(name)) continue;
+      if (appTopLevelDecls.has(name) || windowExposedStripped.has(name)) continue;
+      const idx = valueOffset + im.index;
+      const line = html.slice(0, idx).split('\n').length;
+      inlineHandlerLandmines.push(`index.html:${line} → inline handler calls undeclared/unexposed '${name}()'`);
+    }
+  }
+}
+
+test('v7.97.0 guard: zero index.html inline-handler calls to undeclared/unexposed identifiers' +
+  (inlineHandlerLandmines.length ? ` — FOUND: ${inlineHandlerLandmines.join(' | ')}` : ''),
+  inlineHandlerLandmines.length === 0);
+
+// (b) CAPTIVE-STATE-READ CHECK: extends the v7.80.1 bare-assignment guard to
+// bare READS too (not just writes). The v7.97.0 _diagnosticCtaSessionDismissed
+// bug: app.js's _computeNextBestMove() read the flag as a bare identifier,
+// but the only declaration was captive in features/diagnostic.js's closure
+// (a lazy-loaded module) — the read threw a ReferenceError that a
+// surrounding try/catch silently swallowed, so the brand-new-user Baseline
+// Diagnostic CTA never rendered. A name is "captive state" if it's a
+// `let`/`var` declared at IIFE top level (2-space indent — the file's outer
+// wrapper, not a nested function) in some features/*.js file, starts with
+// `_` (this project's private-state convention), and is neither
+// window-exposed nor declared at app.js top level.
+const captiveState = new Map(); // name -> defining file
+for (const [rel] of files) {
+  if (rel === 'app.js') continue;
+  const codeOnly = codeOnlyByFile[rel];
+  const stateRe = /^  (?:let|var)\s+(_[A-Za-z_$][\w$]*)\b/gm;
+  let m;
+  while ((m = stateRe.exec(codeOnly))) {
+    const name = m[1];
+    if (windowExposedStripped.has(name) || appTopLevelDecls.has(name)) continue;
+    captiveState.set(name, rel);
+  }
+}
+
+const stateReadLandmines = [];
+for (const [rel, rawSrc] of files) {
+  const codeOnly = codeOnlyByFile[rel];
+  for (const [name, definingFile] of captiveState) {
+    if (rel === definingFile) continue; // same-file reads/writes are fine
+    if (declsByFile[rel] && declsByFile[rel].has(name)) continue; // locally declared/shadowed here
+    const occRe = new RegExp('(?<![\\w$.])' + name + '(?![\\w$])', 'g');
+    let m;
+    while ((m = occRe.exec(codeOnly))) {
+      const windowStart = Math.max(0, m.index - 200);
+      const preceding = rawSrc.slice(windowStart, m.index);
+      const guardRe = new RegExp(
+        "typeof\\s+" + name + "\\s*===\\s*'function'|typeof\\s+" + name + "\\s*!==\\s*'undefined'");
+      if (guardRe.test(preceding)) continue;
+      const line = codeOnly.slice(0, m.index).split('\n').length;
+      stateReadLandmines.push(`${rel}:${line} → bare read/write of captive-state '${name}' (declared only in ${definingFile})`);
+    }
+  }
+}
+
+test('v7.97.0 guard: zero bare reads/writes of closure-captive state across app.js + features/*.js' +
+  (stateReadLandmines.length ? ` — FOUND: ${stateReadLandmines.join(' | ')}` : ''),
+  stateReadLandmines.length === 0);
+
+// Pin the v7.97.0 root-cause fixes specifically. Run against codeOnlyByFile
+// (comment/string-stripped), not raw source — a commented-out exposure line
+// must NOT satisfy these.
+{
+  const homeCodeOnly = codeOnlyByFile['features/home.js'];
+  const examCodeOnly = codeOnlyByFile['features/exam.js'];
+  const settingsCodeOnly = codeOnlyByFile['features/settings.js'];
+  const quizEngineCodeOnly = codeOnlyByFile['features/quiz-engine.js'];
+
+  test('v7.97.0 fix: quiz-engine.js exposes window.toggleFlag',
+    /window\.toggleFlag\s*=\s*toggleFlag/.test(quizEngineCodeOnly));
+
+  test('v7.97.0 fix: home.js exposes window.runSessionStep',
+    /window\.runSessionStep\s*=\s*runSessionStep/.test(homeCodeOnly));
+
+  test('v7.97.0 fix: exam.js exposes window.toggleNav',
+    /window\.toggleNav\s*=\s*toggleNav/.test(examCodeOnly));
+
+  test('v7.97.0 fix: settings.js exposes window._takeAutoBackup',
+    /window\._takeAutoBackup\s*=\s*_takeAutoBackup/.test(settingsCodeOnly));
+
+  test('v7.97.0 fix: settings.js exposes window.renderAutoBackupList',
+    /window\.renderAutoBackupList\s*=\s*renderAutoBackupList/.test(settingsCodeOnly));
+
+  test('v7.97.0 fix: _diagnosticCtaSessionDismissed declared at top level of app.js (global binding)',
+    /^let _diagnosticCtaSessionDismissed\b/m.test(appJs));
 }

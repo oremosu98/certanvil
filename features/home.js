@@ -2285,6 +2285,10 @@
   // Setup page
   window.renderSetupDomainGrid       = renderSetupDomainGrid;
   window.updateCqSummaryBar          = updateCqSummaryBar;
+  // v7.97.0: index.html's "Continue Session →" onclick="runSessionStep()" —
+  // closure-captive-call landmine, same class as v7.96.0 renderExam. Dead
+  // since wave 9.
+  window.runSessionStep              = runSessionStep;
 
   window._certanvilFeatures['home'] = { renderHeroV2: renderHeroV2, renderAppSidebar: renderAppSidebar };
 

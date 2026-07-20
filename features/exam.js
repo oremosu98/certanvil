@@ -746,6 +746,10 @@
   // landmine caught by the extended tests/uat/270 sweep (same class as the
   // _formatElapsed bug this version also fixes).
   window.renderExam        = renderExam;
+  // v7.97.0: index.html's #qnav-toggle onclick="toggleNav()" — closure-
+  // captive-call landmine, same class as the renderExam fix above. Exam
+  // navigator toggle dead since wave 6.
+  window.toggleNav         = toggleNav;
 
   window._certanvilFeatures['exam'] = {
     enter: startExam,

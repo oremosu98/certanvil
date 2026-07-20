@@ -1702,6 +1702,10 @@
   window._renderQuizProgressDots = _renderQuizProgressDots;
   window._renderQuizNavArrows = _renderQuizNavArrows;
   window._recomputeQuizCounters = _recomputeQuizCounters;
+  // v7.97.0: index.html's #quiz-flag-btn onclick="toggleFlag()" — missed in
+  // the original wave-8 extraction, same closure-captive-call class as the
+  // v7.96.0 renderExam fix. Quiz Flag button has been dead since wave 8.
+  window.toggleFlag = toggleFlag;
 
   window._certanvilFeatures = window._certanvilFeatures || {};
   window._certanvilFeatures['quiz-engine'] = { render: render, startQuiz: startQuiz };
