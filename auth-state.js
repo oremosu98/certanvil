@@ -62,8 +62,15 @@
     var mount = ensureMountPoint();
     if (!mount) return;
     var url = buildSignInUrl();
-    mount.innerHTML = ''
-      + '<a class="topbar-signin-pill" href="' + escapeHtml(url) + '">Sign in</a>';
+    // v7.84.0 M1: mutate the existing pill's href if index.html pre-painted it
+    // (avoids DOM removal+creation → zero CLS). Falls back to innerHTML for any
+    // path where the static pill isn't already there.
+    var existing = mount.querySelector('a.topbar-signin-pill');
+    if (existing) {
+      existing.href = url;
+      return;
+    }
+    mount.innerHTML = '<a class="topbar-signin-pill" href="' + escapeHtml(url) + '">Sign in</a>';
   }
 
   // ── Cert switcher (Phase C′ post-launch) ───────────────────────────────
