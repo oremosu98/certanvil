@@ -94,16 +94,18 @@ test('v4.99.45 Phase6b: collector strips auth tokens from page_path (anti-PII)',
   && /replace\(/.test(_collectorRaw));
 
 // — Wiring —
-test('v4.99.45 Phase6b: index.html loads collector after Supabase but before app.js',
+// v7.95.0 (Lighthouse-90 TASK): collector moved off the eager defer chain
+// into the window.load CHAIN loader (see 140-*.js CHAIN-order test), running
+// AFTER app.js now instead of before it — app.js no longer needs it present
+// at DOMContentLoaded (window.APP_VERSION is a static assignment, unrelated
+// to load timing). Verify it's still last in the CHAIN array, after Supabase.
+test('v4.99.45/v7.95.0 Phase6b: web-vitals-collector.js is last in the CHAIN loader, after Supabase',
   (() => {
-    // Verify the script tag order: supabase modules → web-vitals-collector → app.js
-    // v4.99.50: anchor on `<script ... src="lib/web-vitals-collector.js">` not just the
-    // literal string, since the v4.99.50 admin-dashboard description mentions the
-    // path in body copy too.
-    const wvIdx = html.indexOf('<script defer src="lib/web-vitals-collector.js"');
-    const appIdx = html.indexOf('src="app.js"');
-    const supaIdx = html.indexOf('<script defer src="lib/supabase.js"');
-    return wvIdx > 0 && wvIdx > supaIdx && wvIdx < appIdx;
+    const m = html.match(/var CHAIN = \[([\s\S]{0,600}?)\];/);
+    if (!m) return false;
+    const wvIdx = m[1].indexOf("'lib/web-vitals-collector.js'");
+    const supaIdx = m[1].indexOf("'lib/supabase.js'");
+    return wvIdx > 0 && wvIdx > supaIdx;
   })());
 test('v4.99.45 Phase6b: app.js exposes APP_VERSION on window for collector consumption',
   /window\.APP_VERSION\s*=\s*APP_VERSION/.test(js));
@@ -961,8 +963,16 @@ test('v4.99.56 D.5: claim hook handles all 4 RPC outcomes (claimed/already_claim
   /expired/.test(_claimRaw) && /not_found/.test(_claimRaw));
 
 // ── Wiring on cert app ──
-test('v4.99.56 D.5: index.html loads diagnostic-claim.js after auth-state.js',
-  /<script defer src="auth-state\.js"[\s\S]{0,500}<script defer src="diagnostic-claim\.js"/.test(html));
+// v7.95.0: diagnostic-claim.js moved into the window.load CHAIN loader,
+// still after auth-state.js (order preserved within the array).
+test('v4.99.56/v7.95.0 D.5: diagnostic-claim.js runs after auth-state.js in the CHAIN loader',
+  (() => {
+    const m = html.match(/var CHAIN = \[([\s\S]{0,600}?)\];/);
+    if (!m) return false;
+    const authIdx = m[1].indexOf("'auth-state.js'");
+    const claimIdx = m[1].indexOf("'diagnostic-claim.js'");
+    return authIdx > 0 && claimIdx > authIdx;
+  })());
 test('v4.99.56 D.5: sw.js precaches diagnostic-claim.js in SHELL_ASSETS',
   /SHELL_ASSETS[\s\S]{0,2000}'\.\/diagnostic-claim\.js'/.test(sw));
 

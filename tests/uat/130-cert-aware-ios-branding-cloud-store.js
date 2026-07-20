@@ -359,18 +359,30 @@ test('v4.88.2 Security+: exam-domain-breakdown render uses cert-aware order',
 //   4. SHELL_ASSETS in sw.js missing one of the 4 new modules (broken offline).
 // ══════════════════════════════════════════════════════════════════════════
 
-// 1. Script-tag order — index.html must load Supabase UMD → lib/supabase.js
-//    → cloud-store.js → auth-state.js → migration.js → app.js, in that order.
+// 1. Script order — the chain (Supabase UMD → lib/supabase.js → cloud-store.js
+//    → auth-state.js → migration.js) must stay internally ordered.
 //    v4.89.1: switched from cdn.jsdelivr.net to vendored lib/supabase-umd.min.js
 //    after the CDN 503'd intermittently for some users and broke the auth flow
 //    (auth.js bails out when window.supabase is missing → Sign-in button does
 //    nothing → migration banner never appears).
-test('v4.89.0 Phase C′: index.html loads Supabase UMD before cloud modules',
-  html.indexOf('src="lib/supabase-umd.min.js"') < html.indexOf('src="lib/supabase.js"') &&
-  html.indexOf('src="lib/supabase.js"') < html.indexOf('src="cloud-store.js"') &&
-  html.indexOf('src="cloud-store.js"') < html.indexOf('src="auth-state.js"') &&
-  html.indexOf('src="auth-state.js"') < html.indexOf('src="migration.js"') &&
-  html.indexOf('src="migration.js"') < html.indexOf('src="app.js"'));
+//    v7.95.0 (Lighthouse-90 TASK): the chain no longer runs before app.js —
+//    it moved into the window.load CHAIN loader (see 140-*.js for the full
+//    7-module order test), which by definition runs after every defer
+//    script including app.js. This test now only asserts the chain's
+//    internal order + that it's no longer a static pre-app.js defer tag.
+test('v4.89.0/v7.95.0 Phase C′: Supabase chain internally ordered in the CHAIN loader',
+  (() => {
+    const m = html.match(/var CHAIN = \[([\s\S]{0,600}?)\];/);
+    if (!m) return false;
+    const idx = (f) => m[1].indexOf("'" + f + "'");
+    return idx('lib/supabase-umd.min.js') >= 0 &&
+      idx('lib/supabase-umd.min.js') < idx('lib/supabase.js') &&
+      idx('lib/supabase.js') < idx('cloud-store.js') &&
+      idx('cloud-store.js') < idx('auth-state.js') &&
+      idx('auth-state.js') < idx('migration.js');
+  })());
+test('v7.95.0 Phase C′: Supabase chain is no longer a static pre-app.js defer tag',
+  html.indexOf('<script defer src="lib/supabase-umd.min.js"') === -1);
 
 // v4.89.1: zero-tolerance regression guard — no third-party CDN script tags
 // for Supabase. Vendored locally because cdn.jsdelivr.net 503'd for users.

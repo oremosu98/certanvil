@@ -26,10 +26,10 @@
 |---|---|---|
 | app.js | 8260 | 428 KB |
 | styles.css | 14906 | 551 KB |
-| index.html | 2187 | 142 KB |
+| index.html | 2216 | 143 KB |
 | dg-system.css | 4642 | 451 KB |
-| tests/uat.js + tests/uat/ (27 modules) | 27700 | — |
-UAT checks: 4853 · E2E `test(` count: 160 · APP_VERSION: 7.94.0 · stamped-at: worktree
+| tests/uat.js + tests/uat/ (27 modules) | 27746 | — |
+UAT checks: 4856 · E2E `test(` count: 160 · APP_VERSION: 7.95.0 · stamped-at: worktree
 <!-- FACTS:AUTO:END -->
 
 | File | Purpose | Size |
@@ -131,6 +131,7 @@ npx playwright test              # E2E (tests/e2e/app.spec.js)
 
 | Version | Features Added |
 |---|---|
+| v7.95.0 | Lighthouse-90 mobile: Supabase chain (+ diagnostic-claim/web-vitals-collector) deferred past window.load — real bytes+CPU off the eager render-delay chain Lantern penalizes |
 | v7.94.0 | Lighthouse-90 mobile: Fraunces font-display swap to optional — Lantern-simulated LCP no longer waits on webfont fetch |
 | v7.93.0 | Lighthouse-90 mobile LCP render-delay root-cause fix: synchronous data-theme set eliminates late CSS re-application |
 | v7.92.0 | Lighthouse-90 mobile: real second CLS root-cause fix — topbar-time/version-pill hide rules to critical path |

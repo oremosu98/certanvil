@@ -771,16 +771,40 @@ test('v4.99.34 SignedInFlag behavioral: handleSignedOut() flips the flag from tr
 
 // ── v4.99.35 — Phase 11a: defer all 6 scripts (FCP/LCP unblock) ──
 console.log('\n\x1b[1m── v4.99.35 — PHASE 11a SCRIPT DEFER ──\x1b[0m');
-test('v4.99.35 Phase11a: lib/supabase-umd.min.js has defer attribute',
-  /<script\s+defer\s+src=["']lib\/supabase-umd\.min\.js["']/.test(html));
-test('v4.99.35 Phase11a: lib/supabase.js has defer attribute',
-  /<script\s+defer\s+src=["']lib\/supabase\.js["']/.test(html));
-test('v4.99.35 Phase11a: cloud-store.js has defer attribute',
-  /<script\s+defer\s+src=["']cloud-store\.js["']/.test(html));
-test('v4.99.35 Phase11a: auth-state.js has defer attribute',
-  /<script\s+defer\s+src=["']auth-state\.js["']/.test(html));
-test('v4.99.35 Phase11a: migration.js has defer attribute',
-  /<script\s+defer\s+src=["']migration\.js["']/.test(html));
+// v7.95.0 (Lighthouse-90 TASK): the Supabase chain moved OFF eager `defer`
+// tags entirely — it now loads via the window.load CHAIN loader (see the
+// v7.95.0 tests below). These 5 defer-attribute checks are superseded by
+// "must NOT be a static defer/eager script tag" guards so the chain can
+// never silently regress back onto the eager path.
+test('v7.95.0 Lighthouse-90: lib/supabase-umd.min.js is NOT a static eager script tag',
+  !/<script[^>]*\ssrc=["']lib\/supabase-umd\.min\.js["']/.test(html));
+test('v7.95.0 Lighthouse-90: lib/supabase.js is NOT a static eager script tag',
+  !/<script[^>]*\ssrc=["']lib\/supabase\.js["']/.test(html));
+test('v7.95.0 Lighthouse-90: cloud-store.js is NOT a static eager script tag',
+  !/<script[^>]*\ssrc=["']cloud-store\.js["']/.test(html));
+test('v7.95.0 Lighthouse-90: auth-state.js is NOT a static eager script tag',
+  !/<script[^>]*\ssrc=["']auth-state\.js["']/.test(html));
+test('v7.95.0 Lighthouse-90: migration.js is NOT a static eager script tag',
+  !/<script[^>]*\ssrc=["']migration\.js["']/.test(html));
+// v7.95.0: window.load CHAIN loader — order preserved WITHIN the chain via
+// the CHAIN array + sequential onload chaining (loadNext), just moved off
+// the eager pre-paint path.
+test('v7.95.0 Lighthouse-90: window.load CHAIN loader present with all 7 modules in order',
+  (() => {
+    const m = html.match(/var CHAIN = \[([\s\S]{0,600}?)\];/);
+    if (!m) return false;
+    const order = ['lib/supabase-umd.min.js', 'lib/supabase.js', 'cloud-store.js',
+      'auth-state.js', 'migration.js', 'diagnostic-claim.js', 'lib/web-vitals-collector.js'];
+    let last = -1;
+    for (const f of order) {
+      const idx = m[1].indexOf("'" + f + "'");
+      if (idx === -1 || idx < last) return false;
+      last = idx;
+    }
+    return true;
+  })());
+test('v7.95.0 Lighthouse-90: CHAIN loader waits for window.load (or already-complete readyState)',
+  /document\.readyState === ['"]complete['"][\s\S]{0,50}start\(\)[\s\S]{0,80}addEventListener\(['"]load['"],\s*start\)/.test(html));
 test('v4.99.35 Phase11a: app.js has defer attribute',
   /<script\s+defer\s+src=["']app\.js["']/.test(html));
 test('v4.99.35 Phase11a: app.js has preload hint (largest payload, highest priority)',
