@@ -943,7 +943,7 @@
     <span class="hero-icon">&#9889;</span>
     <h1>Network+ AI Quiz</h1>
     <p>AI-generated MCQs every session. Never the same quiz twice.</p>
-    <span id="version-badge" style="display:inline-block;margin-top:10px;font-size:11px;font-weight:700;letter-spacing:.08em;color:var(--accent-light);background:color-mix(in oklab,var(--accent) 12%,transparent);border:1px solid color-mix(in oklab,var(--accent) 30%,transparent);padding:3px 10px;border-radius:99px;cursor:default;user-select:none">v7.94.0</span>
+    <span id="version-badge" style="display:inline-block;margin-top:10px;font-size:11px;font-weight:700;letter-spacing:.08em;color:var(--accent-light);background:color-mix(in oklab,var(--accent) 12%,transparent);border:1px solid color-mix(in oklab,var(--accent) 30%,transparent);padding:3px 10px;border-radius:99px;cursor:default;user-select:none">v7.95.0</span>
     <div id="streak-badge" class="streak-badge"></div>
     <div id="stats-card" class="hero-stats-strip is-hidden">
       <div class="stats-grid" id="stats-grid"></div>
@@ -2065,45 +2065,74 @@
      pack <script> tags back here. -->
 
 <!-- Phase C′ (cloud-first): Supabase UMD bundle + cert-app cloud modules.
-     Order matters:
-       1. supabase-js (window.supabase factory)
-       2. lib/supabase.js (creates window.certanvilSupabase)
-       3. cloud-store.js (reads window.certanvilSupabase)
-       4. auth-state.js (reads cloud-store + Supabase)
-       5. migration.js (called from auth-state.js on SIGNED_IN)
-     app.js loads last so its DOMContentLoaded handlers see the account pill
-     mount + cloud-store API already in place. -->
-<!-- v4.89.1: vendored locally instead of cdn.jsdelivr.net (CDN 503'd
-     intermittently for users — broke auth.js bailing out → Sign-in button
-     did nothing). Local copy is identical to v2.105.3 UMD bundle. -->
-<!-- v4.99.35 (MOBILE_OPTIMIZATION_PLAN.md Phase 11a): all 6 scripts now
-     `defer`-attributed. Browser downloads them in parallel during HTML
+     v7.95.0: moved off this eager position — see the window.load loader
+     below (after app.js/features). Order is preserved WITHIN the loader
+     (umd -> lib/supabase.js -> cloud-store.js -> auth-state.js ->
+     migration.js), it just no longer runs before app.js. app.js's
+     DOMContentLoaded handlers no longer assume the account-pill mount /
+     cloud-store API are in place synchronously — every consumer null-guards
+     and either polls or listens for the auth event (confirmed by audit). -->
+<!-- v4.99.35 (MOBILE_OPTIMIZATION_PLAN.md Phase 11a): remaining eager scripts
+     stay `defer`-attributed. Browser downloads them in parallel during HTML
      parsing instead of blocking each one serially. Execution order is
      PRESERVED (defer scripts run in document order before DOMContentLoaded
      fires). Lighthouse mobile baseline showed app.js alone causes 3,150ms
      of render-blocking time; defer cuts that to near-zero on the FCP
      critical path. The bigger feature-extraction work lands in Phase 11b. -->
 <!-- Preload hint for app.js — biggest payload (~614 KB), highest priority.
-     Other 5 scripts are small enough that the browser's preload scanner
+     Other eager scripts are small enough that the browser's preload scanner
      picks them up via the <script defer> tag itself. -->
 <link rel="preload" as="script" href="app.js">
-<script defer src="lib/supabase-umd.min.js"></script>
-<script defer src="lib/supabase.js"></script>
-<script defer src="cloud-store.js"></script>
-<script defer src="auth-state.js"></script>
-<script defer src="migration.js"></script>
-<!-- v4.99.56 (D.5): Diagnostic claim hook. Reads ?action=claim-diagnostic&token=…
-     from the URL (set by the landing magic-link emailRedirectTo), waits for
-     SIGNED_IN, calls claim_diagnostic_results(token) RPC to merge the anon
-     diagnostic into profiles.metadata, then toasts + strips URL params.
-     Self-contained · no app.js mutation. Fires no-op unless URL has the
-     action+token combo. -->
-<script defer src="diagnostic-claim.js"></script>
-<!-- v4.99.45 (Phase 6b): Web Vitals collector. Sets up PerformanceObservers
-     immediately on load (buffered:true picks up pre-script events too),
-     then POSTs LCP/FCP/CLS/TTFB once per session on tab hide. Prod-host
-     gated + signed-in only — localhost and preview deploys never fire. -->
-<script defer src="lib/web-vitals-collector.js"></script>
+<!-- v7.95.0 (Lighthouse-90 TASK — mobile LCP render-delay root cause #2):
+     the Supabase chain (umd -> lib/supabase.js -> cloud-store.js ->
+     auth-state.js -> migration.js) plus the closely-related
+     diagnostic-claim.js + lib/web-vitals-collector.js are NOT paint-critical
+     — the signin pill is already static HTML (auth-state.js only mutates its
+     href/signed-in state once it runs), cloud sync is background work, and
+     the other two are event-driven / analytics. But Lantern's mobile
+     simulation chains modeled LCP behind every eager defer-chain script
+     regardless of what it actually paints, so removing real bytes+CPU from
+     the eager chain is the fix. Injected as classic <script> tags AFTER
+     window.load instead of `defer` in the head, preserving execution order
+     via sequential onload chaining (defer's document-order guarantee doesn't
+     apply to dynamically-injected scripts, so this loader re-implements it).
+     Every consumer (app.js, features/*.js) already null-guards
+     window.certanvilSupabase / window.cloudStore / window._certanvilSignedIn
+     and either polls, listens for the SIGNED_IN/onAuthStateChange event, or
+     optimistic-allows — confirmed by audit, no consumer assumes these
+     globals exist at DOMContentLoaded. auth-state.js / migration.js /
+     diagnostic-claim.js each already guard their own init with
+     `document.readyState === 'loading' ? addEventListener(DOMContentLoaded) :
+     init()`, so running after window.load (readyState already 'complete')
+     calls init() immediately — no change needed there. Do NOT move these
+     back to eager `defer` tags without re-adding the preload-scanner
+     rationale that justified them being eager in the first place (none —
+     they were never paint-critical, just historically eager). Keep in sw.js
+     SHELL_ASSETS for offline precache (unrelated to load timing). -->
+<script>
+(function () {
+  'use strict';
+  var CHAIN = [
+    'lib/supabase-umd.min.js',
+    'lib/supabase.js',
+    'cloud-store.js',
+    'auth-state.js',
+    'migration.js',
+    'diagnostic-claim.js',
+    'lib/web-vitals-collector.js'
+  ];
+  function loadNext(i) {
+    if (i >= CHAIN.length) return;
+    var s = document.createElement('script');
+    s.src = CHAIN[i];
+    s.onload = s.onerror = function () { loadNext(i + 1); };
+    document.body.appendChild(s);
+  }
+  function start() { loadNext(0); }
+  if (document.readyState === 'complete') start();
+  else window.addEventListener('load', start);
+})();
+</script>
 <!-- Sec-P4/M6: vendored DOMPurify (no build step). Must load before app.js,
      which calls window.DOMPurify in sanitizeHTML() for XSS defence-in-depth. -->
 <script defer src="lib/dompurify.min.js"></script>
