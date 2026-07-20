@@ -1,9 +1,9 @@
 // ══════════════════════════════════════════
-// Network+ AI Quiz — app.js  v7.86.0
+// Network+ AI Quiz — app.js  v7.87.0
 // ══════════════════════════════════════════
 
 // ── CONSTANTS ──
-const APP_VERSION = '7.86.0';
+const APP_VERSION = '7.87.0';
 // v4.99.45 (Phase 6b): expose APP_VERSION on window so the web-vitals
 // collector (lib/web-vitals-collector.js, loaded BEFORE app.js so its
 // PerformanceObservers attach earlier) can stamp this version onto every
@@ -8060,6 +8060,15 @@ if (document.readyState === 'loading') {
 // DOMContentLoaded so existing DOM is ready.
 function _v453Init() {
   try {
+    // v7.87.0 (Lighthouse-90 TASK 1): body now ships `has-sidebar` STATIC in
+    // index.html. Root-cause (found via local Lighthouse trace, not a DOM
+    // probe): `body.has-sidebar{padding-left:240px;transition:padding-left
+    // .25s}` — adding the class here, post-DOMContentLoaded, animated
+    // padding-left 0→240px, producing ~13 compounding LayoutShift events
+    // (desktop trace: node #page-setup + #app-topbar>.topbar-right,
+    // ts 557809289395-557809413606, summing to ~0.174 CLS — effectively the
+    // entire desktop CLS score). Keeping this call (idempotent, harmless)
+    // for defense-in-depth in case the static class is ever stripped.
     document.body.classList.add('has-sidebar');
     if (typeof renderAppSidebar === 'function') renderAppSidebar();
     // v4.81.23: focus banner retired in v4.81.20; consolidated #today-plan
