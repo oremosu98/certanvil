@@ -91,7 +91,7 @@ async function minifyJs() {
 // in this repo's served surface). esbuild CSS minify is whitespace/syntax
 // level — no class renaming — so selectors used by JS stay intact.
 // dg-critical.css added v7.82.0; dg-depurple.css added v7.82.0.
-const CSS_TARGETS = ['styles-critical.css', 'styles.css', 'dg-system.css', 'dg-critical.css', 'dg-depurple.css'];
+const CSS_TARGETS = ['styles-critical.css', 'styles.css', 'dg-system.css', 'dg-critical.css', 'dg-depurple.css', 'lift-critical.css'];
 async function minifyCss() {
   let count = 0, before = 0, after = 0;
   for (const name of CSS_TARGETS) {

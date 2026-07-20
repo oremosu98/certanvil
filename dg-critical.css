@@ -253,8 +253,27 @@ html[data-theme] body #page-setup .readiness-card{position:relative;overflow:hid
 html[data-theme] body #page-setup .readiness-score #rc-v2-num{display:block;font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:clamp(94px,11.5vw,140px);line-height:1;letter-spacing:-0.03em;color:var(--text);font-variant-numeric:lining-nums tabular-nums;font-feature-settings:"lnum","tnum";}
 html[data-theme] body #page-setup .readiness-score span:not(#rc-v2-num){display:block;margin-top:14px;font-family:Inter,-apple-system,sans-serif;font-weight:600;font-size:13.5px;line-height:1;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-dim);}
 #page-setup .readiness-tier{position:relative;display:inline-flex;align-items:center;gap:7px;font-size:10.5px;font-weight:800;letter-spacing:0.07em;text-transform:uppercase;color:var(--accent);background:color-mix(in oklab,var(--accent) 12%,transparent);border:1px solid color-mix(in oklab,var(--accent) 26%,transparent);padding:5px 11px;border-radius:7px;margin:12px 0 0;}
-#page-setup .readiness-prob{position:relative;font-size:13px;color:var(--text-mid);margin:12px 0 0;line-height:1.5;font-variant-numeric:tabular-nums;}
+#page-setup .readiness-prob{position:relative;font-size:13px;color:var(--text-mid);margin:12px 0 0;line-height:1.5;font-variant-numeric:tabular-nums;min-height:22px;}
 #page-setup .readiness-prob b,#page-setup .readiness-prob strong{color:var(--text);font-weight:700;}
+/* v7.86.0 (Lighthouse-90 TASK 1/CLS): reserve #rc-v2-trajectory's filled
+   geometry so renderReadinessCardV2() (features/readiness.js) filling it in
+   post-load doesn't grow the card. Two heights: the "readiness-traj" class
+   is what index.html ships (element starts empty, no longer `hidden`); JS
+   later swaps className to "rc-v2-trajectory <state>" when it writes real
+   content, so both selectors need the floor. Local getBoundingClientRect
+   probe (localhost:3131, seeded history): 56px at 412px viewport (cell-hero
+   spans full width ≤980px, text rarely wraps), 76px at 1280px viewport
+   (cell-hero is 1-of-3 columns there, text wraps to 2 lines) — both rounded
+   up with a small buffer for longer day/point counts.
+   #domainGrid: reserves renderBentoDomains()'s (features/home.js) 5-button
+   row so filling the empty static #domainGrid doesn't grow div.bento —
+   measured 118px at 1280px viewport; ≤620px the whole cell is
+   home-collapsed (display:none), so min-height is inert there. */
+#page-setup .readiness-traj,#page-setup .rc-v2-trajectory{min-height:60px;}
+@media (min-width:981px){
+  #page-setup .readiness-traj,#page-setup .rc-v2-trajectory{min-height:80px;}
+}
+#page-setup #domainGrid{min-height:120px;}
 #page-setup .readiness-bar-track{position:relative;height:12px;border-radius:99px;background:color-mix(in oklab,var(--text) 12%,transparent);overflow:visible;margin-top:34px;}
 #page-setup .readiness-bar-fill{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,var(--accent),color-mix(in oklab,var(--accent) 64%,var(--yellow)));width:0;transition:width 1.1s var(--dgh-ease);}
 #page-setup .readiness-bar-mark{position:absolute;top:-7px;bottom:-7px;height:auto;width:2px;background:var(--text-mid);border-radius:1px;}

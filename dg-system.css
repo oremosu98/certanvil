@@ -244,8 +244,17 @@ html[data-theme] body #page-setup .readiness-card{position:relative;overflow:hid
 html[data-theme] body #page-setup .readiness-score #rc-v2-num{display:block;font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:clamp(94px,11.5vw,140px);line-height:1;letter-spacing:-0.03em;color:var(--text);font-variant-numeric:lining-nums tabular-nums;font-feature-settings:"lnum","tnum";}
 html[data-theme] body #page-setup .readiness-score span:not(#rc-v2-num){display:block;margin-top:14px;font-family:Inter,-apple-system,sans-serif;font-weight:600;font-size:13.5px;line-height:1;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-dim);}
 #page-setup .readiness-tier{position:relative;display:inline-flex;align-items:center;gap:7px;font-size:10.5px;font-weight:800;letter-spacing:0.07em;text-transform:uppercase;color:var(--accent);background:color-mix(in oklab,var(--accent) 12%,transparent);border:1px solid color-mix(in oklab,var(--accent) 26%,transparent);padding:5px 11px;border-radius:7px;margin:12px 0 0;}
-#page-setup .readiness-prob{position:relative;font-size:13px;color:var(--text-mid);margin:12px 0 0;line-height:1.5;font-variant-numeric:tabular-nums;}
+#page-setup .readiness-prob{position:relative;font-size:13px;color:var(--text-mid);margin:12px 0 0;line-height:1.5;font-variant-numeric:tabular-nums;min-height:22px;}
 #page-setup .readiness-prob b,#page-setup .readiness-prob strong{color:var(--text);font-weight:700;}
+/* v7.86.0 (Lighthouse-90 TASK 1/CLS): mirrors dg-critical.css — keep both in
+   sync so dg-system.css loading after dg-critical.css can't cascade the
+   reservation away before JS fills content. See dg-critical.css for the
+   measurement writeup. */
+#page-setup .readiness-traj,#page-setup .rc-v2-trajectory{min-height:60px;}
+@media (min-width:981px){
+  #page-setup .readiness-traj,#page-setup .rc-v2-trajectory{min-height:80px;}
+}
+#page-setup #domainGrid{min-height:120px;}
 #page-setup .readiness-bar-track{position:relative;height:12px;border-radius:99px;background:color-mix(in oklab,var(--text) 12%,transparent);overflow:visible;margin-top:34px;}
 #page-setup .readiness-bar-fill{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,var(--accent),color-mix(in oklab,var(--accent) 64%,var(--yellow)));width:0;transition:width 1.1s var(--dgh-ease);}
 #page-setup .readiness-bar-mark{position:absolute;top:-7px;bottom:-7px;height:auto;width:2px;background:var(--text-mid);border-radius:1px;}

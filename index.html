@@ -13,12 +13,18 @@
 <link rel="manifest" href="manifest.json">
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <link rel="apple-touch-icon" href="favicon.svg">
+<!-- v7.86.0 (Lighthouse-90 M3): preconnect to the Supabase origin (auth +
+     cloud-store fetches, lib/supabase.js SUPABASE_URL) — saves the DNS+TLS
+     round trip (~320ms est.) since the connection is otherwise only opened
+     once auth-state.js/cloud-store.js reach it at the end of the defer
+     chain. -->
+<link rel="preconnect" href="https://appmuaqwuethndvalarl.supabase.co" crossorigin>
 <!-- v7.81.0 P0c: head order — critical preloads first, then render-blocking
      CSS, then non-blocking assets. Cert pack preload emitted by the inline
      cert-detect script further below; pack injection itself is at end-of-body
      (P0a). Google Fonts removed; Fraunces self-hosted in fonts/ (P0b). -->
 <link rel="preload" as="style" href="styles-critical.css?v=7.83.0">
-<link rel="preload" as="style" href="dg-critical.css?v=7.82.0">
+<link rel="preload" as="style" href="dg-critical.css?v=7.86.0">
 <!-- v7.83.0: preload styles.css so the browser fetches it in parallel with
      the render-blocking critical files; it swaps to all-media on load (below).
      Hint without blocking: preload tells the browser to start early, the
@@ -57,13 +63,13 @@
      covered by dg-critical.css's 4-block cascade (higher specificity). -->
 <link rel="stylesheet" href="styles.css" media="print" onload="this.media='all'">
 <noscript><link rel="stylesheet" href="styles.css"></noscript>
-<link rel="stylesheet" href="dg-critical.css?v=7.82.0">
+<link rel="stylesheet" href="dg-critical.css?v=7.86.0">
 <!-- v7.82.0 P1a: dg-system.css demoted to non-blocking. Critical CSS (token
      cascade + de-card primitives + bento home layout) extracted to
      dg-critical.css (~63KB vs 450KB). dg-system.css loads after first paint
      for analytics/progress/quiz/sim-lab reskins. -->
-<link rel="stylesheet" href="dg-system.css?v=7.82.0" media="print" onload="this.media='all'">
-<noscript><link rel="stylesheet" href="dg-system.css?v=7.82.0"></noscript>
+<link rel="stylesheet" href="dg-system.css?v=7.86.0" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="dg-system.css?v=7.86.0"></noscript>
 <!-- v7.81.0 P1a: dg-depurple.css demoted to non-blocking. It is supplemental
      purple-reduction theming layered on top of dg-system.css tokens; zero
      layout rules. The media=print swap pattern defers it off the critical
@@ -77,7 +83,24 @@
      via matchMedia(LIFT_MQ). The Capacitor iOS wrap is always narrow, so
      the native app always gets the lift. -->
 <link rel="stylesheet" href="lift-shell.css?v=7.36.1" media="(max-width: 899px)">
-<link rel="stylesheet" href="lift-screens.css?v=7.36.1" media="(max-width: 899px)">
+<!-- v7.86.0 (Lighthouse-90 M2): lift-screens.css is 111KB raw/17.5KB wire and
+     was the last render-blocking resource gating mobile LCP (media matches
+     ≤899px, so it blocks every mobile/tablet-portrait first paint). Split:
+     lift-critical.css is the above-the-fold mobile-home subset (extracted via
+     `node scripts/css-extract-critical.js <url> lift-screens.css
+     lift-critical.css 412 915` — Playwright CSS Coverage on the home page at
+     a 412px viewport, since lift-screens.css's own media query only matches
+     narrow viewports). It stays render-blocking (small, ~5.5KB) and is
+     itself media-gated so desktop never pays for it. lift-screens.css is
+     demoted below via the same media="print" onload swap already used for
+     styles.css/dg-system.css, except the onload target is the ORIGINAL
+     `(max-width: 899px)` condition (not "all") so it stays viewport-gated
+     after the non-blocking swap — it must not start applying to desktop.
+     REGENERATE lift-critical.css after significant mobile-home markup
+     changes (same rule as styles-critical.css). -->
+<link rel="stylesheet" href="lift-critical.css?v=7.86.0" media="(max-width: 899px)">
+<link rel="stylesheet" href="lift-screens.css?v=7.36.1" media="print" onload="this.media='(max-width: 899px)'">
+<noscript><link rel="stylesheet" href="lift-screens.css?v=7.36.1" media="(max-width: 899px)"></noscript>
 <script>
 // v4.87.0: Inline cert detection — runs synchronously before <body>
 // renders so the right banner shows on first paint (no Network+ → Security+
@@ -384,10 +407,22 @@
           <div class="readiness-strip-line" aria-hidden="false"><span id="rc-strip-text">Readiness</span><span class="readiness-strip-go" aria-hidden="true">›</span></div>
           <div class="readiness-score"><span class="rc-v2-numwrap"><span class="rc-v2-glow" aria-hidden="true"></span><svg class="rc-v2-ring" viewBox="0 0 600 320" preserveAspectRatio="none" aria-hidden="true"><path d="M306,26 C470,16 590,86 582,164 C574,250 432,300 292,296 C150,292 20,232 24,156 C28,78 152,30 318,32" fill="none" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"></path></svg><span id="rc-v2-num">&mdash;</span></span><span>out of 900</span></div>
           <div class="readiness-tier" id="rc-v2-tier" hidden></div>
-          <div class="readiness-prob" id="rc-v2-prediction" hidden></div>
+          <!-- v7.86.0 (Lighthouse-90 TASK 1/CLS): rc-v2-prediction + rc-v2-trajectory
+               used to ship `hidden` (display:none) and get unhidden post-load by
+               renderReadinessCardV2() (features/readiness.js) once quiz history/
+               getReadinessScore() resolves — that hidden→visible flip was the
+               #readiness-card-v2 CLS contributor (measured via local
+               getBoundingClientRect probe: cell-hero grew ~119px, 438.8px→557.6px,
+               on unhide). Fix: ship them IN FLOW (no `hidden`) with dg-critical.css
+               min-height reservations sized to their filled state, so JS only
+               replaces text/class in place — box never resizes. The "no history
+               yet" branch still explicitly sets .hidden=true (unchanged), which is
+               fine — that's the is-pending card variant, a separately-handled
+               compact layout, not this shift. -->
+          <div class="readiness-prob" id="rc-v2-prediction"></div>
           <div class="readiness-bar-track"><span class="readiness-bar-fill" id="rc-v2-bar-fill" style="width:0%"></span><span class="rc-v2-bar-fill-green" id="rc-v2-bar-fill-green" style="width:0%"></span><div class="readiness-bar-mark" aria-hidden="true" style="left:62.5%"></div></div>
           <div class="readiness-range"><span id="rc-v2-delta">&mdash;</span><span>pass mark <b id="rc-v2-passmark">720</b></span></div>
-          <div class="readiness-traj" id="rc-v2-trajectory" hidden></div>
+          <div class="readiness-traj" id="rc-v2-trajectory"></div>
           <div class="rc-v2-stamp" aria-hidden="true"><span class="txt">Exam ready</span><svg width="120" height="12" viewBox="0 0 120 12" preserveAspectRatio="none"><path d="M3,7 Q18,2 33,7 Q48,12 63,6 Q78,1 93,7 Q108,12 117,6" fill="none" stroke-width="3" stroke-linecap="round"></path></svg></div>
           <div class="rc-v2-confetti" aria-hidden="true"></div>
         </div>
@@ -823,7 +858,7 @@
     <span class="hero-icon">&#9889;</span>
     <h1>Network+ AI Quiz</h1>
     <p>AI-generated MCQs every session. Never the same quiz twice.</p>
-    <span id="version-badge" style="display:inline-block;margin-top:10px;font-size:11px;font-weight:700;letter-spacing:.08em;color:var(--accent-light);background:color-mix(in oklab,var(--accent) 12%,transparent);border:1px solid color-mix(in oklab,var(--accent) 30%,transparent);padding:3px 10px;border-radius:99px;cursor:default;user-select:none">v7.85.0</span>
+    <span id="version-badge" style="display:inline-block;margin-top:10px;font-size:11px;font-weight:700;letter-spacing:.08em;color:var(--accent-light);background:color-mix(in oklab,var(--accent) 12%,transparent);border:1px solid color-mix(in oklab,var(--accent) 30%,transparent);padding:3px 10px;border-radius:99px;cursor:default;user-select:none">v7.86.0</span>
     <div id="streak-badge" class="streak-badge"></div>
     <div id="stats-card" class="hero-stats-strip is-hidden">
       <div class="stats-grid" id="stats-grid"></div>

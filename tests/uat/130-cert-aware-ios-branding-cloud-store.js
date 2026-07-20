@@ -245,8 +245,10 @@ test('v4.87.4 Favicon: index.html links favicon.svg',
   /<link\s+rel="icon"\s+type="image\/svg\+xml"\s+href="favicon\.svg"/.test(html));
 test('v4.87.4 Favicon: index.html links apple-touch-icon',
   /<link\s+rel="apple-touch-icon"\s+href="favicon\.svg"/.test(html));
+// v7.86.0: widened 500 -> 750 — lift-critical.css (+ its explanatory comment)
+// added to SHELL_ASSETS ahead of favicon.svg pushed the distance to ~648.
 test('v4.87.4 Favicon: sw.js precaches favicon.svg in SHELL_ASSETS',
-  /SHELL_ASSETS\s*=\s*\[[\s\S]{0,500}favicon\.svg/.test(sw));
+  /SHELL_ASSETS\s*=\s*\[[\s\S]{0,750}favicon\.svg/.test(sw));
 
 test('v4.87.4 Manifest: name updated to CertAnvil',
   (() => {

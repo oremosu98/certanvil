@@ -1,5 +1,5 @@
-// Service Worker v7.85.0 — Network+ Quiz App (Phase C′ cloud-first)
-const CACHE_NAME = 'netplus-v7.85.0';
+// Service Worker v7.86.0 — Network+ Quiz App (Phase C′ cloud-first)
+const CACHE_NAME = 'netplus-v7.86.0';
 const SHELL_ASSETS = [
   './',
   './index.html',
@@ -8,6 +8,9 @@ const SHELL_ASSETS = [
   './dg-critical.css',
   './dg-system.css',
   './dg-depurple.css',
+  // v7.86.0 (Lighthouse-90 M2): mobile-home critical subset split out of
+  // lift-screens.css (render-blocking, small — see index.html comment).
+  './lift-critical.css',
   './app.js',
   // M7: CSP-clean event-delegation core (loads before app.js). Precached so
   // delegated handlers keep working offline.
