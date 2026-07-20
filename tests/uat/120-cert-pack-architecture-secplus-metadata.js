@@ -75,9 +75,10 @@ test('v7.2.2 CertPack: index.html inline IIFE hostname check runs BEFORE localSt
   // Assert: in the inline IIFE before </head>, location.hostname is read BEFORE
   // localStorage.getItem('nplus_dev_cert') so a stale dev override can't
   // out-vote a real Pattern A subdomain match.
+  // v7.81.0 P0a: IIFE finder updated — the head IIFE no longer document.writes
+  // a <script> tag (moved to end-of-body); find it by window._certPackSrc instead.
   (function () {
-    // Find the inline cert-detection IIFE — the one that document.writes the cert pack.
-    var m = /\(function\s*\(\)\s*\{[\s\S]*?document\.write\(['"]<scr['"][\s\S]*?certs\/['"][\s\S]*?\}\)\(\);/.exec(html);
+    var m = /\(function\s*\(\)\s*\{[\s\S]*?window\._certPackSrc\s*=[\s\S]*?\}\)\(\);/.exec(html);
     if (!m) return false;
     var body = m[0];
     var hostIdx = body.indexOf('location.hostname');
@@ -714,16 +715,28 @@ test('v4.86.0 secplus retention array (retargeted v4.88.3): populated by Phase 3
 //     dynamically, AND assert static dual-load tags do NOT reappear
 //     (regression-guard tombstone — see CLAUDE.md regression-guard pattern).
 test('v4.99.30 CertPack lazy-load: inline <head> script document.writes the active cert pack tag',
-  /document\.write\(\s*['"]<scr['"][\s\S]{0,80}certs\/['"]\s*\+\s*cert\s*\+\s*['"]\.js/.test(html));
+  // v7.81.0 P0a: head IIFE now sets window._certPackSrc + emits preload hint;
+  // actual <script> injection moved to end-of-body (sync, before defer scripts).
+  // Assert the end-of-body injection uses document.write + _certPackSrc.
+  /document\.write\(\s*['"]<scr['"][\s\S]{0,200}window\._certPackSrc/.test(html));
 test('v4.99.30 CertPack lazy-load: static <script src="certs/netplus.js"> tag REMOVED (regression tombstone)',
   !/<script\s+src=["']certs\/netplus\.js["']/.test(html));
 test('v4.99.30 CertPack lazy-load: static <script src="certs/secplus.js"> tag REMOVED (regression tombstone)',
   !/<script\s+src=["']certs\/secplus\.js["']/.test(html));
-test('v4.99.30 CertPack lazy-load: document.write site sits inside inline detection block (before app.js)',
+test('v7.81.0 P0a CertPack: head IIFE sets window._certPackSrc before app.js; end-of-body script injects after',
+  // P0a contract: head IIFE saves cert URL to window._certPackSrc so the end-of-body
+  // script can use it without re-running detection. The end-of-body injection (sync,
+  // non-defer) executes before all defer scripts including app.js, preserving
+  // the CERT_PACK-before-app.js invariant while unblocking first paint.
   (() => {
-    const docWriteIdx = html.indexOf("document.write('<scr'");
-    const appIdx = html.indexOf('"app.js"');
-    return docWriteIdx > 0 && appIdx > 0 && docWriteIdx < appIdx;
+    const certPackSrcIdx = html.indexOf('window._certPackSrc =');
+    const appDeferIdx = html.indexOf('<script defer src="app.js"');
+    const bodyInjectIdx = html.indexOf("document.write('<scr'");
+    // head IIFE sets _certPackSrc before app.js defer tag
+    // end-of-body injection comes after the app.js defer tag
+    return certPackSrcIdx > 0 && appDeferIdx > 0 && bodyInjectIdx > 0
+      && certPackSrcIdx < appDeferIdx
+      && bodyInjectIdx > appDeferIdx;
   })());
 test('v4.99.30 CertPack lazy-load: data-cert attribute already set on <html> before document.write fires (correct ordering)',
   (() => {

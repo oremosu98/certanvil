@@ -791,11 +791,14 @@ test('v4.99.35 Phase11a: preload hint precedes the deferred app.js script tag',
     const scriptIdx = html.indexOf('<script defer src="app.js"');
     return preloadIdx > 0 && scriptIdx > 0 && preloadIdx < scriptIdx;
   })());
-test('v4.99.35 Phase11a: cert pack document.write site PRESERVED (loads sync, NOT deferred)',
-  /document\.write\(\s*['"]<scr['"][\s\S]{0,200}certs\/['"]\s*\+\s*cert\s*\+\s*['"]\.js/.test(html)
-  // Cert pack must remain synchronous because it document-writes during HTML parse
-  // for the inline detection contract (v4.99.30). Defer would break that.
-  && !/<script\s+defer\s+src=["']certs\//.test(html));
+test('v7.81.0 P0a: cert pack injected via end-of-body sync script (not deferred, not static)',
+  // v7.81.0 P0a: cert pack injection moved from <head> to end-of-body while
+  // preserving the synchronous-before-defer invariant. The end-of-body inline
+  // script uses window._certPackSrc (set by the head cert-detect IIFE) so
+  // CERT_PACK is still populated before all defer scripts execute.
+  /document\.write\(\s*['"]<scr['"][\s\S]{0,200}window\._certPackSrc/.test(html)
+  && !/<script\s+defer\s+src=["']certs\//.test(html)
+  && !/<script\s+src=["']certs\/netplus\.js["']/.test(html));
 
 // ── v4.99.36 — Phase 11b: Network Analysis Drill extracted to features/network-analysis.js ──
 console.log('\n\x1b[1m── v4.99.36 — PHASE 11b NA EXTRACTION ──\x1b[0m');
