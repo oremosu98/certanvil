@@ -274,6 +274,40 @@ body.has-sidebar { padding-left: 240px; }
   user-select: none;
   cursor: pointer;  /* triple-tap opens prod monitor (initMonitorGesture) */
 }
+/* v7.92.0 — Lighthouse-90: duplicate styles.css's mobile hide rules for
+   #topbar-time / #topbar-version-pill onto the critical path. Root-cause
+   (prod devtools-throttled Lighthouse trace, --save-assets): the raw
+   LayoutShift event driving the persistent ~0.057-0.058 CLS score (which
+   Lighthouse's layout-shifts audit keeps mislabeling div.bento — it picks
+   the largest-AREA co-shifted node in the frame, not the node that actually
+   moved) has impacted_nodes = [div.bento's readiness-card region, moving
+   ~4px — coincidental, not causal] + [.topbar-right's content box, moving
+   110px — this is overall_max_distance in the trace and the real driver].
+   .topbar-right settles at ~210px (matches this rule's steady state below);
+   the bad frame briefly measures ~310px. Cause: these two spans are empty
+   at first paint but NOT display:none in critical CSS — only styles.css
+   (deliberately non-render-blocking since v7.83.0) hides them below these
+   breakpoints. features/home.js's DOMContentLoaded handler
+   (_topbarTick()/_renderTopbarVersionPill(), both eager per v7.91.0) writes
+   real text into them; timestamped against the trace, this write lands
+   within 9ms of Page.domContentEventFired — if styles.css hasn't finished
+   applying its hide rule by that moment (throttled-CPU race, hence the
+   run-to-run flakiness), the now-visible, now-populated spans widen
+   .topbar-right until styles.css catches up and hides them again. Ruled
+   out: fraunces-v38-latin.woff2 finishes loading 1.2s before this shift and
+   0.7s before the LCP candidate in every captured trace — no timing
+   correlation, so the font-swap hypothesis was not the cause here. Fix:
+   hide these two elements from first paint so there's no visible-empty
+   window for JS to (transiently) fill. dg-critical.css:594's topbar
+   comment documents the OTHER (already-fixed, v7.90.1) source of a
+   near-identical-magnitude shift on this same container — this is the
+   second, independent source referenced there as still open. */
+@media (max-width: 540px) {
+  .topbar-time { display: none; }
+}
+@media (max-width: 720px) {
+  .topbar-version-pill { display: none; }
+}
 
 .topbar-iconbtn {
   width: 30px; height: 30px;
