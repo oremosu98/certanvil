@@ -1478,7 +1478,12 @@
         const name = (typeof CERT_PACK === 'object' && CERT_PACK && CERT_PACK.meta && CERT_PACK.meta.name) ? CERT_PACK.meta.name : 'CompTIA Network+';
         const code = (typeof CERT_CODE !== 'undefined' && CERT_CODE) ? CERT_CODE : 'N10-009';
         // Drop vendor prefix for a tighter eyebrow; keep the code in <b>.
-        certEl.innerHTML = `${escHtml(String(name).replace(/^(CompTIA|Microsoft|Amazon|AWS)\s+/, ''))} <b>${escHtml(code)}</b>`;
+        // v7.89.0 (Lighthouse-90 TASK 1): the inline synchronous script beside
+        // #cb-cert in index.html now already paints this exact markup from
+        // data-cert at parse time — guard so a matching value is a no-op
+        // (avoids a redundant late DOM write on top of the correct static text).
+        const html = `${escHtml(String(name).replace(/^(CompTIA|Microsoft|Amazon|AWS)\s+/, ''))} <b>${escHtml(code)}</b>`;
+        if (certEl.innerHTML !== html) certEl.innerHTML = html;
       }
       const daysEl = document.getElementById('cb-days');
       if (daysEl) {
@@ -1551,11 +1556,19 @@
     _renderHomeForecast(false);    // #6 — no reviews due, hide the strip
 
     // v7.x: new user has no weak-spot data — show a friendly first-quiz CTA instead.
+    // v7.89.0 (Lighthouse-90 TASK 2): index.html's static #pl-* defaults now
+    // ALREADY carry this exact copy (the anonymous/fresh-visitor default —
+    // matches what Lighthouse's clean profile and most real first-time users
+    // see), so guard each write with a same-value check. Assigning identical
+    // textContent still replaces the text node and was re-flagging span.rc-body
+    // as a fresh LCP paint candidate at whatever point in the ~15-script defer
+    // chain features/home.js happened to run — measured locally as ~100% of
+    // LCP being pure render-delay on already-visible, unchanged text.
     const _isNewUser = (typeof loadHistory === 'function') && loadHistory().length === 0;
     if (_isNewUser) {
-      if (minEl) minEl.textContent = '10';
-      if (titleEl) titleEl.textContent = 'Start your first quiz';
-      if (metaEl) metaEl.textContent = '10 questions · easy mix · ~10 min';
+      if (minEl && minEl.textContent !== '10') minEl.textContent = '10';
+      if (titleEl && titleEl.textContent !== 'Start your first quiz') titleEl.textContent = 'Start your first quiz';
+      if (metaEl && metaEl.textContent !== '10 questions · easy mix · ~10 min') metaEl.textContent = '10 questions · easy mix · ~10 min';
       if (launchEl) launchEl.onclick = function () {
         if (typeof applyPreset === 'function') {
           // v7.x: first-ever quiz is a gentle 10-Q mixed Foundational warm-up (no

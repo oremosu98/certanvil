@@ -185,6 +185,34 @@
   }
   if (!cert) cert = 'netplus';
   document.documentElement.setAttribute('data-cert', cert);
+  // v7.89.0 (Lighthouse-90 TASK 1): #cb-cert (the bento command-bar cert
+  // eyebrow) was a static "&mdash;" placeholder replaced post-paint by
+  // renderBentoTopbar() (features/home.js) once the deferred JS chain (cert
+  // pack fetch -> app.js -> features/home.js) finished. Under mobile 4x CPU
+  // throttle that swap (e.g. "—" -> "Network+ N10-009") widened .cmd-cert
+  // late enough to reflow .cmd-bar's flex-wrap siblings — the dominant
+  // mobile CLS source (0.057-0.059). Since this is Pattern A (one index.html
+  // serves all 7 cert subdomains), a single hardcoded string in the markup
+  // would be wrong on 6 of 7 domains, so compute the correct markup HERE
+  // (cert is already resolved above) and let the tiny inline <script> next
+  // to #cb-cert assign it synchronously at parse time — no network/deferred
+  // JS wait, no reflow. Table mirrors each certs/*.js meta.name (vendor
+  // prefix stripped, see renderBentoTopbar) + meta.code; keep in sync if a
+  // cert is added.
+  try {
+    var CB_CERT_META = {
+      netplus:       ['Network+', 'N10-009'],
+      secplus:       ['Security+', 'SY0-701'],
+      az900:         ['Azure Fundamentals', 'AZ-900'],
+      ai900:         ['Azure AI Fundamentals', 'AI-900'],
+      sc900:         ['SC-900', 'SC-900'],
+      clfc02:        ['Cloud Practitioner', 'CLF-C02'],
+      'aplus-core1': ['A+ Core 1', '220-1201'],
+      'aplus-core2': ['A+ Core 2', '220-1202']
+    };
+    var cbv = CB_CERT_META[cert] || CB_CERT_META.netplus;
+    window._cbCertHtml = cbv[0] + ' <b>' + cbv[1] + '</b>';
+  } catch (e) {}
   // v4.87.3: CertAnvil-prefixed cert-aware page title. Bookmarked tabs
   // show "CertAnvil — Network+" / "CertAnvil — Security+" so the parent
   // brand is visible alongside the active cert pack.
@@ -390,7 +418,9 @@
     <header class="cmd-bar" style="--d:0">
       <div class="cmd-id">
         <span class="cmd-sys">CertAnvil console</span>
+        <!-- v7.89.0 T1: see window._cbCertHtml note in head cert-detect IIFE -->
         <span class="cmd-cert" id="cb-cert">&mdash;</span>
+        <script>try{document.getElementById('cb-cert').innerHTML=window._cbCertHtml||'Network+ <b>N10-009</b>';}catch(e){}</script>
       </div>
       <div class="cmd-meta">
         <div class="cmd-chip"><span class="cmd-chip-n" id="cb-days">0</span><span>days to exam</span></div>
@@ -430,14 +460,31 @@
 
       <!-- CELL 2 · recommended next → applyPreset('focused'). #pl-* filled by
            renderBentoRecommended(). Wrapper stacks the launch tile + the #6
-           home forecast strip (shown only when SR cards are due) in one cell. -->
+           home forecast strip (shown only when SR cards are due) in one cell.
+           v7.89.0 (Lighthouse-90 TASK 2): static copy below mirrors
+           renderBentoRecommended()'s `_isNewUser` branch (features/home.js) —
+           loadHistory().length===0 — NOT the returning-user "15-min Weak
+           Spots" copy. A fresh/anonymous visitor (what Lighthouse's clean
+           profile always is, and most real first-time users) always hits
+           that branch, so the old placeholder was rewritten via
+           .textContent on every load, and — unlike TASK 1's identical-width
+           swap — this was a genuine CONTENT change (different words), which
+           Chrome's LCP algorithm treats as a fresh paint. Under 4x CPU
+           throttle that write happens only after ~15 deferred scripts ahead
+           of features/home.js finish executing, which measured locally as
+           the entire LCP render-delay on span.rc-body (render delay ≈100% of
+           LCP, TTFB/load-time ≈0 — a pure "waiting for JS to repaint
+           already-visible text" case). Returning users with quiz history
+           still get the reflow-free swap to "15-min Weak Spots" (or the SR
+           review branch) — those visits aren't what Lighthouse measures and
+           the swap there was never the regressing majority path. -->
       <div class="cell-recommend" style="--d:2">
         <button type="button" class="tile lift tile-recommend" id="primaryLaunch" onclick="applyPreset('focused')">
-          <span class="rc-min"><b id="pl-min">15</b><span>min</span></span>
+          <span class="rc-min"><b id="pl-min">10</b><span>min</span></span>
           <span class="rc-body">
             <span class="rc-tag">Recommended next</span>
-            <span class="rc-title" id="pl-title">15-min Weak Spots</span>
-            <span class="rc-meta" id="pl-meta">10 questions, exam level, your weakest topic</span>
+            <span class="rc-title" id="pl-title">Start your first quiz</span>
+            <span class="rc-meta" id="pl-meta">10 questions &middot; easy mix &middot; ~10 min</span>
           </span>
           <span class="rc-go" aria-hidden="true">&rarr;</span>
         </button>
@@ -858,7 +905,7 @@
     <span class="hero-icon">&#9889;</span>
     <h1>Network+ AI Quiz</h1>
     <p>AI-generated MCQs every session. Never the same quiz twice.</p>
-    <span id="version-badge" style="display:inline-block;margin-top:10px;font-size:11px;font-weight:700;letter-spacing:.08em;color:var(--accent-light);background:color-mix(in oklab,var(--accent) 12%,transparent);border:1px solid color-mix(in oklab,var(--accent) 30%,transparent);padding:3px 10px;border-radius:99px;cursor:default;user-select:none">v7.88.0</span>
+    <span id="version-badge" style="display:inline-block;margin-top:10px;font-size:11px;font-weight:700;letter-spacing:.08em;color:var(--accent-light);background:color-mix(in oklab,var(--accent) 12%,transparent);border:1px solid color-mix(in oklab,var(--accent) 30%,transparent);padding:3px 10px;border-radius:99px;cursor:default;user-select:none">v7.89.0</span>
     <div id="streak-badge" class="streak-badge"></div>
     <div id="stats-card" class="hero-stats-strip is-hidden">
       <div class="stats-grid" id="stats-grid"></div>
