@@ -1,6 +1,6 @@
 {
   "lines": 8116,
-  "allowance": 150,
-  "updated": "2026-07-18",
-  "note": "After wave 11: topic-dive extracted to features/topic-dive.js (#138)"
+  "allowance": 170,
+  "updated": "2026-07-20",
+  "note": "v7.96.0: +20 lines — _formatElapsed + window._certanvilFeatures guard moved to app.js top level (must be global bindings, same rationale as _sessionStartTs in v7.80.1) to fix the finish()/_formatElapsed ReferenceError and the readiness.js/quiz-engine.js registration crash. Deliberate, justified allowance bump per the #138 ratchet's own friction rule."
 }

@@ -1,9 +1,9 @@
 // ══════════════════════════════════════════
-// Network+ AI Quiz — app.js  v7.95.0
+// Network+ AI Quiz — app.js  v7.96.0
 // ══════════════════════════════════════════
 
 // ── CONSTANTS ──
-const APP_VERSION = '7.95.0';
+const APP_VERSION = '7.96.0';
 // v4.99.45 (Phase 6b): expose APP_VERSION on window so the web-vitals
 // collector (lib/web-vitals-collector.js, loaded BEFORE app.js so its
 // PerformanceObservers attach earlier) can stamp this version onto every
@@ -1277,6 +1277,26 @@ let sessionResults = [];
 // quiz-engine.js/flagship-drills.js/app.js threw strict-mode ReferenceErrors
 // that left the loading screen up forever (the "infinite quiz spinner" bug).
 let _sessionStartTs = 0;
+
+// v7.96.0: elapsed-time formatter for the Results row. Moved here (from
+// exam.js's closure) for the same reason as _sessionStartTs above — it MUST
+// be a top-level global binding, because quiz-engine.js's finish() calls it
+// as a bare identifier and exam.js is a lazy-loaded module that may not have
+// executed by the time a regular (non-exam) quiz finishes.
+function _formatElapsed(ms) {
+  if (!ms || ms < 0) return '—';
+  const s = Math.round(ms / 1000);
+  const m = Math.floor(s / 60);
+  const rs = s % 60;
+  return m > 0 ? `${m}m ${String(rs).padStart(2,'0')}s` : `${rs}s`;
+}
+
+// v7.96.0: canonical init for the feature-module registry. app.js executes
+// before all eager feature modules in the defer chain, so this guard must
+// live here — see docs/conventions/regression-tombstones.md for the bug this
+// fixes (readiness.js/quiz-engine.js registration crashing when progress.js/
+// analytics.js/settings.js were removed from the eager load path in v7.91.0).
+window._certanvilFeatures = window._certanvilFeatures || {};
 
 // Exam state
 let examMode      = false;

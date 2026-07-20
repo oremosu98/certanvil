@@ -35,15 +35,10 @@
     el.innerHTML = cells.join('');
   }
 
-  // v4.54.8: track quiz session start time for elapsed-time row in Results.
-  let _sessionStartTs = 0;
-  function _formatElapsed(ms) {
-    if (!ms || ms < 0) return '\u2014';
-    const s = Math.round(ms / 1000);
-    const m = Math.floor(s / 60);
-    const rs = s % 60;
-    return m > 0 ? `${m}m ${String(rs).padStart(2,'0')}s` : `${rs}s`;
-  }
+  // v7.96.0: _sessionStartTs (app.js top level) and _formatElapsed (app.js
+  // top level, see comment there) moved out of this closure — this file is
+  // lazy-loaded, so a helper declared only here is unusable by eager modules
+  // that call it as a bare identifier (e.g. quiz-engine.js's finish()).
 
   // ══════════════════════════════════════════
   // START EXAM SIMULATION
@@ -745,6 +740,12 @@
   window.goToFirstFlagged  = goToFirstFlagged;
   window.submitExam        = submitExam;
   window.abandonExam       = abandonExam;
+  // v7.96.0: quiz-engine.js's per-question-type render paths (MCQ/multi-select/
+  // ordering/topology option clicks) call renderExam() as a bare identifier to
+  // redraw the exam UI after recording an answer — a closure-captive-call
+  // landmine caught by the extended tests/uat/270 sweep (same class as the
+  // _formatElapsed bug this version also fixes).
+  window.renderExam        = renderExam;
 
   window._certanvilFeatures['exam'] = {
     enter: startExam,

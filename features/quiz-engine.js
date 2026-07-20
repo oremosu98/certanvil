@@ -1703,5 +1703,6 @@
   window._renderQuizNavArrows = _renderQuizNavArrows;
   window._recomputeQuizCounters = _recomputeQuizCounters;
 
+  window._certanvilFeatures = window._certanvilFeatures || {};
   window._certanvilFeatures['quiz-engine'] = { render: render, startQuiz: startQuiz };
 })();

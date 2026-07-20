@@ -1189,6 +1189,7 @@
   window.renderTodayPlan           = renderTodayPlan;
   window.renderReadinessCardV2     = renderReadinessCardV2;
 
+  window._certanvilFeatures = window._certanvilFeatures || {};
   window._certanvilFeatures['readiness'] = { getReadinessScore: getReadinessScore };
 
   // Boot gap: _v454Init ran before this module loaded (defer order).
