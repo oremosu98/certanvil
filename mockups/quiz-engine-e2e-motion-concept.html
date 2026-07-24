@@ -78,12 +78,18 @@
      the ~600ms ceiling — bar fills carry information, so 900ms is legal
      and reads instrument-like rather than sluggish. */
   --bar-fill: 900ms; --bar-step: 60ms;
+
+  /* streak pill. The BREAK is the emotional beat, so it reuses the
+     error-shake idiom already established for wrong answers rather than
+     inventing a second negative-feedback vocabulary. */
+  --streak-break: 220ms;
 }
 [data-theme="light"] {
   --shimmer-base: oklch(0.50 0.013 280); --shimmer-highlight: oklch(0.22 0.015 280);
 }
 
 * { box-sizing: border-box; }
+.is-hidden { display: none !important; }
 body {
   margin: 0; padding: 28px 20px 60px; background: var(--bg); color: var(--ink);
   font-family: Inter, system-ui, sans-serif;
@@ -116,6 +122,52 @@ body {
 .dot.is-wrong { background: var(--fail); }
 .dot.is-current { background: var(--accent); }
 .counter { font: 600 11.5px Inter, sans-serif; color: var(--muted); white-space: nowrap; }
+
+/* ════════════════════════════════════════════════════════════════════════
+   STREAK PILL — the break is the moment worth animating
+   Increment uses number-pop-in (a REPLACEMENT: 3 becomes 4). The break
+   reuses the error-shake already established for wrong answers — a second
+   negative-feedback vocabulary would just be noise.
+   ════════════════════════════════════════════════════════════════════════ */
+.streak {
+  display: inline-flex; align-items: center; gap: 5px;
+  background: var(--surface-2); border: 1px solid var(--border-soft);
+  border-radius: 20px; padding: 4px 10px 4px 8px;
+  font: 600 11.5px Inter, sans-serif; color: var(--muted);
+  transition: color var(--streak-break) var(--ease), border-color var(--streak-break) var(--ease);
+  will-change: transform;
+}
+.streak.is-hot { color: var(--accent-deep); border-color: color-mix(in oklab, var(--accent) 45%, transparent); }
+.streak.is-broken { color: var(--fail); border-color: color-mix(in oklab, var(--fail) 50%, transparent); }
+.streak.is-breaking { animation: t-shake calc(var(--shake-a) * 2 + var(--shake-b) * 2) linear; }
+.streak-n { font-variant-numeric: tabular-nums; }
+.streak-n .t-digit { display: inline-block; will-change: transform, opacity, filter; }
+.streak-n.is-animating .t-digit { animation: t-digit var(--digit-dur) var(--ease) both; }
+/* The flame dims rather than vanishing — a disappearing icon reads as a
+   render bug, a dimmed one reads as a state. */
+.streak-icon { display: inline-flex; opacity: 0.45; transition: opacity var(--streak-break) var(--ease); }
+.streak.is-hot .streak-icon { opacity: 1; }
+
+/* ════════════════════════════════════════════════════════════════════════
+   SCENARIO BLOCK (q-scenario, v4.56.0) — environment framing between the
+   stem and the answer grid. Real engine feature the earlier pass dropped.
+   ════════════════════════════════════════════════════════════════════════ */
+.q-scenario { display: flex; gap: 10px; margin: 0 0 18px; }
+.q-scenario-rule {
+  flex: none; width: 2px; border-radius: 2px;
+  background: color-mix(in oklab, var(--accent) 55%, transparent);
+}
+.q-scenario-body { font: 400 13px/1.6 Inter, sans-serif; color: var(--muted); }
+
+/* Wrong-answer explanation — a SEPARATE element from the main explanation
+   in the real engine (#exp-wrong-explain), shown only when you missed it. */
+.exp-wrong {
+  margin-top: 12px; padding: 10px 12px; border-radius: 8px;
+  background: color-mix(in oklab, var(--fail) 9%, transparent);
+  border-left: 2px solid color-mix(in oklab, var(--fail) 60%, transparent);
+  font: 400 12.5px/1.6 Inter, sans-serif; color: var(--ink-soft);
+}
+.exp-wrong b { color: var(--ink); font-weight: 600; }
 
 /* ════════════════════════════════════════════════════════════════════════
    LOADING — antalik-effects (micro-orb + shimmer label)
@@ -269,7 +321,15 @@ body {
 .expl strong { color: var(--ink); font-weight: 600; }
 
 /* ── next button ───────────────────────────────────────────────────────── */
-.actions { margin-top: 20px; display: flex; justify-content: flex-end; }
+.actions { margin-top: 20px; display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.prev {
+  background: none; border: 1px solid var(--border); color: var(--muted);
+  border-radius: 9px; padding: 10px 16px; font: 600 12.5px Inter, sans-serif; cursor: pointer;
+  transition: color 150ms var(--ease), border-color 150ms var(--ease), transform 150ms var(--ease), opacity 150ms var(--ease);
+}
+.prev:disabled { opacity: 0.35; pointer-events: none; }
+@media (hover: hover) and (pointer: fine) { .prev:hover { color: var(--ink); border-color: var(--ink-soft); } }
+.prev:active { transform: scale(0.97); }
 .next {
   background: var(--accent); color: var(--on-accent); border: 0; border-radius: 9px;
   padding: 11px 22px; font: 600 13px Inter, sans-serif; cursor: pointer;
@@ -283,16 +343,21 @@ body {
 /* ════════════════════════════════════════════════════════════════════════
    QUESTION ADVANCE — page-side-by-side (transitions-dev 08)
    ════════════════════════════════════════════════════════════════════════ */
-.t-slide { position: relative; }
+/* Direction is data-driven: --dir is +1 going forward, -1 going back. The
+   engine supports prevQuestion() as well as nextQuestion(), so a
+   forward-only slide animates backwards navigation the wrong way — the
+   incoming page would fly in from the side it should be leaving toward. */
+.t-slide { position: relative; --dir: 1; }
 .t-slide .t-page {
   opacity: 0; pointer-events: none;
-  transform: translateX(var(--page-distance)); filter: blur(var(--page-blur));
+  transform: translateX(calc(var(--page-distance) * var(--dir)));
+  filter: blur(var(--page-blur));
   transition: opacity var(--page-dur) var(--ease), transform var(--page-dur) var(--ease), filter var(--page-dur) var(--ease);
   will-change: opacity, transform, filter;
 }
 .t-slide .t-page:not(.is-active) { position: absolute; inset: 0; }
 .t-slide .t-page.is-active { opacity: 1; pointer-events: auto; transform: translateX(0); filter: blur(0); position: relative; }
-.t-slide .t-page.is-exiting { transform: translateX(calc(var(--page-distance) * -1)); }
+.t-slide .t-page.is-exiting { transform: translateX(calc(var(--page-distance) * var(--dir) * -1)); }
 
 /* ════════════════════════════════════════════════════════════════════════
    RESULTS — number pop-in (transitions-dev 02) + success check
@@ -422,6 +487,14 @@ body {
    DIFFICULTY BREAKDOWN — data motion. BRAND exempts bar fills from the
    ~600ms ceiling because the duration carries information.
    ════════════════════════════════════════════════════════════════════════ */
+.tally { display: flex; justify-content: center; gap: 30px; margin-top: 20px; }
+.tally-cell { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.tally-v {
+  font: 600 22px Fraunces, Georgia, serif; color: var(--ink);
+  font-variant-numeric: lining-nums tabular-nums; font-feature-settings: "lnum","tnum";
+}
+.tally-k { font: 800 8.5px Inter, sans-serif; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+
 .bd { margin-top: 26px; text-align: left; }
 .bd-row { display: grid; grid-template-columns: 82px 1fr 38px; align-items: center; gap: 10px; margin-bottom: 9px; }
 .bd-label { font: 600 11px Inter, sans-serif; color: var(--muted); }
@@ -452,7 +525,9 @@ body {
 
 @media (prefers-reduced-motion: reduce) {
   .orb, .t-shimmer::before, .option.is-shaking, .t-check, .t-check svg path,
-  .t-digits .t-digit, .t-flag[data-flagged="true"] .t-flag-icon { animation: none !important; }
+  .t-digits .t-digit, .t-flag[data-flagged="true"] .t-flag-icon,
+  .streak.is-breaking, .streak-n .t-digit { animation: none !important; }
+  .streak, .streak-icon { transition: none !important; }
   .t-check { opacity: 1; } .t-check svg path { stroke-dashoffset: 0 !important; }
   .t-stagger-line, .t-slide .t-page, .t-acc-panel, .t-acc-panel-inner, .t-acc-chevron,
   .t-skel-a, .t-skel-b, .next, .verdict-txt, body,
@@ -502,7 +577,15 @@ body {
 
         <div class="rail">
           <div class="dots" id="dots"></div>
-          <div class="counter" id="counter">1 / 3</div>
+          <div class="counter" id="counter">1 / 4</div>
+          <span class="streak" id="streak" role="status" aria-live="polite">
+            <span class="streak-icon" aria-hidden="true">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 2c1.5 4 5 5.5 5 9.5a5 5 0 0 1-10 0C7 8 9 6 12 2z"/>
+              </svg>
+            </span>
+            <span>Streak</span><span class="streak-n" id="streak-n">0</span>
+          </span>
         </div>
 
         <div class="t-slide" id="slide"></div>
@@ -531,8 +614,18 @@ body {
         <tr><td>Flag for review</td><td><span class="tag td">transitions</span></td><td><code>23-like-button</code></td><td>particle burst <strong>removed</strong> — a burst is celebratory, flagging is not</td></tr>
         <tr><td>Difficulty bars</td><td><span class="tag td">transitions</span></td><td>data motion</td><td><strong>900ms</strong> — BRAND exempts bar fills from the 600ms ceiling</td></tr>
         <tr><td>Orb state per stage</td><td><span class="tag ae">antalik</span></td><td>semantic orb presets</td><td>spin rate varies by pipeline stage so the orb carries state, not decoration</td></tr>
+        <tr><td><strong>Streak break</strong></td><td><span class="tag td">transitions</span></td><td><code>12-error-state-shake</code> reused</td><td>the run ending is the beat users feel — no second negative vocabulary invented</td></tr>
+        <tr><td><strong>Back navigation</strong></td><td><span class="tag td">transitions</span></td><td><code>08-page-side-by-side</code>, <code>--dir</code></td><td>direction now data-driven; forward-only slid the wrong way going back</td></tr>
+        <tr><td><strong>Result tallies</strong></td><td>—</td><td>count-up, <em>not</em> pop-in</td><td>counting = accumulation, popping = replacement. Different jobs, both kept</td></tr>
       </tbody>
     </table>
+    <p style="font-size:12px;color:var(--muted);line-height:1.6;margin:14px 0 0">
+      <strong style="color:var(--ink)">Why tallies count instead of popping:</strong> the app already ships
+      <code>animateCount()</code>, and <code>02-number-pop-in</code> would have been a second idiom for the same job —
+      the shimmer-text problem again. They are not actually the same job: counting climbs through intermediate values and
+      reads as <em>accumulation</em>; pop-in swaps digits and reads as <em>replacement</em>. So tallies count, and pop-in
+      is reserved for values that change to a new value (the live streak, readiness).
+    </p>
     <p style="font-size:12px;color:var(--muted);line-height:1.6;margin:14px 0 0">
       <strong style="color:var(--ink)">Why antalik for loading, not the skeleton:</strong> CertAnvil's loader already emits
       semantic state names — <code>Generating questions…</code>, <code>Verifying quality…</code>, <code>Finalizing…</code> —
@@ -548,6 +641,11 @@ body {
 /* ── question data ─────────────────────────────────────────────────────── */
 const QS = [
   { eyebrow: 'Objective 1.4 · Exam Level',
+    /* Scenario describes the ENVIRONMENT and never restates the subject of
+       the question — the authoring rule the real _renderScenarioBlock
+       enforces (avoids the "L2 switch → which layer?" tautology trap). */
+    scenario: 'A financial services firm retains full packet captures of its public-facing web tier for compliance. The retention window is three years.',
+    wrongExpl: '<b>Why the stolen key doesn’t help here:</b> it authenticated the handshake, but it never encrypted session data. The session keys came from ephemeral values that no longer exist anywhere.',
     stem: 'An attacker records TLS traffic for 18 months, then compromises the server and obtains its long-term private key. The server used ECDHE throughout. What happens to the recorded sessions?',
     opts: ['The attacker decrypts all 18 months using the stolen key',
            'The attacker decrypts only the final month before the theft',
@@ -556,6 +654,8 @@ const QS = [
     answer: 2,
     expl: 'ECDHE generates fresh temporary private values per session and discards them. The long-term key authenticated the handshake but never encrypted session data, so stealing it later yields nothing for past traffic. This is <strong>perfect forward secrecy</strong>.' },
   { eyebrow: 'Objective 1.4 · Exam Level',
+    scenario: 'A legacy payment gateway still negotiates TLS 1.2 with a cipher suite the vendor has not updated since deployment.',
+    wrongExpl: '<b>The tell is who generates the key.</b> If one side creates it and sends it, that is transport. If both sides derive it and it never crosses the wire, that is agreement.',
     stem: 'A client generates a random symmetric key, encrypts it with the server’s public key, and transmits it. The server decrypts it with its private key. Which key establishment method is this?',
     opts: ['Key agreement — both parties independently calculate the same secret',
            'Key transport — one party creates the key and delivers it',
@@ -626,9 +726,43 @@ const LOAD_STEPS = [
   { label: 'Ready',                 pct: 100, sub: '4 questions',              state: 'idle',      spin: '2.6s' }
 ];
 
-let idx = 0, correctCount = 0, marks = [];
+let idx = 0, correctCount = 0, marks = [], streak = 0, bestStreak = 0;
 
 const $ = id => document.getElementById(id);
+
+/* ── streak: increment pops, break shakes ──────────────────────────────
+   The break is the beat worth animating. Getting one right is expected;
+   losing a run of six is the moment the user actually feels, and today
+   the real engine resets that number with no motion at all. */
+function setStreak(n, broke) {
+  const pill = $('streak');
+  const el = $('streak-n');
+  streak = n;
+  if (n > bestStreak) bestStreak = n;
+
+  el.classList.remove('is-animating');
+  el.replaceChildren();
+  String(n).split('').forEach(c => {
+    const s = document.createElement('span');
+    s.className = 't-digit'; s.textContent = c;
+    el.appendChild(s);
+  });
+  void el.offsetWidth;
+  el.classList.add('is-animating');
+
+  pill.classList.toggle('is-hot', n >= 2);
+  if (broke) {
+    /* .is-broken and .is-breaking stay orthogonal so the shake can replay
+       without flickering the colour treatment — same reason the wrong-answer
+       option keeps .is-wrong separate from .is-shaking. */
+    pill.classList.remove('is-breaking');
+    void pill.offsetWidth;
+    pill.classList.add('is-broken', 'is-breaking');
+    setTimeout(() => pill.classList.remove('is-broken'), 1400);
+  } else {
+    pill.classList.remove('is-broken', 'is-breaking');
+  }
+}
 
 /* ── loading sequence: antalik orb + shimmer, real milestone labels ───── */
 function runLoading() {
@@ -678,6 +812,8 @@ function renderDots() {
 
 /* ── question render + texts-reveal stagger ────────────────────────────── */
 function renderQuestion(i, first) {
+  /* Set slide direction BEFORE idx moves, so going back animates back. */
+  $('slide').style.setProperty('--dir', i < idx ? -1 : 1);
   idx = i;
   renderDots();
   const q = QS[i];
@@ -698,6 +834,10 @@ function renderQuestion(i, first) {
       </div>
       <p class="stem">${glossify(q.stem)}</p>
     </div>
+    ${q.scenario ? `<div class="q-scenario t-stagger-line" data-i="1">
+      <span class="q-scenario-rule" aria-hidden="true"></span>
+      <span class="q-scenario-body">${q.scenario}</span>
+    </div>` : ''}
     ${isMulti ? '<p class="ms-hint t-stagger-line" data-i="1">Select two answers.</p>' : ''}
     <div class="options">
       ${q.opts.map((o, n) => `
@@ -728,9 +868,15 @@ function renderQuestion(i, first) {
           </svg>
         </span>
       </button>
-      <div class="t-acc-panel"><div class="t-acc-panel-inner"><p class="expl">${q.expl}</p></div></div>
+      <div class="t-acc-panel"><div class="t-acc-panel-inner">
+        <p class="expl">${q.expl}</p>
+        ${q.wrongExpl ? `<div class="exp-wrong is-hidden">${q.wrongExpl}</div>` : ''}
+      </div></div>
     </div>
-    <div class="actions"><button class="next">${i === QS.length - 1 ? 'See results' : 'Next question'}</button></div>`;
+    <div class="actions">
+      <button class="prev" ${i === 0 ? 'disabled' : ''}>&larr; Back</button>
+      <button class="next">${i === QS.length - 1 ? 'See results' : 'Next question'}</button>
+    </div>`;
 
   const slide = $('slide');
   const prev = slide.querySelector('.t-page.is-active');
@@ -792,6 +938,8 @@ function renderQuestion(i, first) {
     if (idx === QS.length - 1) showResults();
     else renderQuestion(idx + 1);
   });
+  const prevBtn = page.querySelector('.prev');
+  prevBtn.addEventListener('click', () => { if (idx > 0) renderQuestion(idx - 1); });
 }
 
 /* ── answer: success-check on right, error-shake on wrong ─────────────── */
@@ -822,6 +970,15 @@ function answer(page, n) {
 /* Shared verdict tail — one path for both MCQ and multi-select so the two
    scorers can never drift apart on feedback treatment. */
 function finishAnswer(page, right) {
+  /* Streak mirrors the real engine: ++ on correct, hard reset to 0 on wrong. */
+  setStreak(right ? streak + 1 : 0, !right && streak > 0);
+
+  /* The wrong-answer explanation is a separate element in the real engine
+     (#exp-wrong-explain) and only appears when you actually missed it —
+     showing it on a correct answer would be explaining a mistake nobody made. */
+  const wrong = page.querySelector('.exp-wrong');
+  if (wrong) wrong.classList.toggle('is-hidden', right);
+
   const verdict = page.querySelector('.verdict');
   const check = page.querySelector('.t-check');
   const txt = page.querySelector('.verdict-txt');
@@ -893,6 +1050,14 @@ function showResults() {
       <div class="label">Session score</div>
       <p class="sum">${correctCount} of ${QS.length} correct · Cryptography Fundamentals</p>
 
+      <!-- Tallies COUNT (animateCount), they don't pop. The number climbing
+           through intermediate values is what communicates accumulation. -->
+      <div class="tally">
+        <span class="tally-cell"><span class="tally-v" id="t-correct">0</span><span class="tally-k">Correct</span></span>
+        <span class="tally-cell"><span class="tally-v" id="t-wrong">0</span><span class="tally-k">Wrong</span></span>
+        <span class="tally-cell"><span class="tally-v" id="t-streak">0</span><span class="tally-k">Best streak</span></span>
+      </div>
+
       <div style="display:flex;justify-content:center;margin-top:22px">
         <div class="t-tabs" role="tablist">
           <span class="t-tabs-pill"></span>
@@ -931,6 +1096,27 @@ function showResults() {
   });
   void el.offsetWidth;
   el.classList.add('is-animating');
+
+  /* Tallies use a count-up, NOT number-pop-in. They are different jobs:
+     counting climbs through intermediate values and communicates
+     accumulation; pop-in swaps digits and communicates replacement. The
+     real app already ships animateCount() for exactly this, so reaching
+     for pop-in here would be a second idiom for one job.
+     Time-based, not frame-count-based, so a backgrounded tab just
+     fast-forwards to the final value on return instead of stalling. */
+  const countUp = (el, to, dur) => {
+    if (!el) return;
+    const start = performance.now();
+    const step = now => {
+      const t = Math.min((now - start) / dur, 1);
+      el.textContent = Math.round(to * (1 - Math.pow(1 - t, 3)));
+      if (t < 1) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  };
+  countUp(page.querySelector('#t-correct'), correctCount, 800);
+  countUp(page.querySelector('#t-wrong'), QS.length - correctCount, 800);
+  countUp(page.querySelector('#t-streak'), bestStreak, 600);
 
   /* Sliding pill: the first position MUST be written with transition
      suppressed, or the pill animates in from translateX(0)/width:0 on
@@ -976,7 +1162,8 @@ function showResults() {
 }
 
 function restart() {
-  idx = 0; correctCount = 0; marks = [];
+  idx = 0; correctCount = 0; marks = []; streak = 0; bestStreak = 0;
+  setStreak(0, false);
   $('slide').replaceChildren();
   runLoading();
 }
