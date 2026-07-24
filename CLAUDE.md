@@ -27,9 +27,9 @@
 | app.js | 8288 | 429 KB |
 | styles.css | 14906 | 551 KB |
 | index.html | 2216 | 143 KB |
-| dg-system.css | 4642 | 451 KB |
+| dg-system.css | 4988 | 473 KB |
 | tests/uat.js + tests/uat/ (27 modules) | 28073 | — |
-UAT checks: 4868 · E2E `test(` count: 160 · APP_VERSION: 7.98.0 · stamped-at: worktree
+UAT checks: 4868 · E2E `test(` count: 160 · APP_VERSION: 7.99.0 · stamped-at: worktree
 <!-- FACTS:AUTO:END -->
 
 | File | Purpose | Size |
@@ -131,6 +131,7 @@ npx playwright test              # E2E (tests/e2e/app.spec.js)
 
 | Version | Features Added |
 |---|---|
+| v7.99.0 | Motion primitives: shared t-* vocabulary in dg-system.css (wave 1 of mockup lift) |
 | v7.98.0 | feat(sec+): add 11 key-exchange exemplars — DH, ECDHE, PFS, key transport vs agreement, hybrid encryption, KDF (obj 1.4) |
 | v7.97.0 | Fix 5 more extraction landmines (Flag btn, Continue Session, exam nav, Snapshot now, new-user diagnostic CTA) + inline-handler/captive-state UAT guards |
 | v7.96.0 | Fix See Results crash + _certanvilFeatures init race + closure-captive-call UAT guard |

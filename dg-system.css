@@ -4639,3 +4639,349 @@ html[data-theme] body .celebration-toast-sub{color:var(--text-dim,rgba(255,255,2
   .errc-btn-primary, .errc-btn-ghost, .errc-ref { transition: none; }
 }
 @keyframes errc-fade-in { from { opacity: 0; } to { opacity: 1; } }
+
+/* ════════════════════════════════════════════════════════════════════════
+   MOTION PRIMITIVES  ·  v7.99.0  ·  wave 1 of the mockup lift
+   ────────────────────────────────────────────────────────────────────────
+   The shared `t-*` motion vocabulary, lifted from the six concept mockups
+   (mockups/quiz-engine-e2e-motion-concept.html + the four pbq-*-motion-*).
+   Choreography is transitions.dev's; every duration and easing value here
+   is CertAnvil's, per BRAND.md §6 — see .claude/skills/feature-lane §Stage 3.
+
+   RULES THIS BLOCK ENCODES, so later waves inherit them for free:
+   · ONE easing curve. transitions.dev ships six; all collapse to --dgm-ease.
+   · transitions.dev's _root.css is NOT imported. Never paste it.
+   · Entrances never start below scale(0.96) — scale(0) is forbidden (§6).
+   · Every animated surface has a prefers-reduced-motion collapse.
+   · Durations map onto §6's table, not upstream's scale:
+       button/press 150-160 · card-lift 200-220 · toast 340-380
+       card-reveal 520-560 · data motion 800-1100 (exempt from the 600 cap)
+
+   Token translation applied during the lift (mockup name -> live name):
+     --ink -> --text · --ink-soft -> --text-mid · --muted -> --text-dim
+     --surface-2 -> --surface3 · --border-soft -> --dg-rule-soft
+     --accent-deep -> --accent-light · --on-accent -> --bg
+   ════════════════════════════════════════════════════════════════════════ */
+html[data-theme] body {
+  /* THE curve. Deliberately named --dgm-* so it cannot collide with the
+     #page-setup --dgh-ease override, which is a documented, intentional
+     deviation for that page's bento subtree and is out of scope here. */
+  --dgm-ease: cubic-bezier(0.16, 1, 0.3, 1);
+
+  --dgm-press: 150ms;      /* button hover / press          */
+  --dgm-lift: 220ms;       /* card lift, nudge, value swap  */
+  --dgm-toast: 380ms;      /* announce, content arriving    */
+  --dgm-reveal: 520ms;     /* card reveal, emphasis         */
+  --dgm-step: 60ms;        /* the reveal stagger unit       */
+  --dgm-data: 900ms;       /* bar fills — §6 exempts these  */
+
+  --dgm-distance: 12px;    /* reveal travel   */
+  --dgm-blur: 3px;         /* reveal blur     */
+  --dgm-swap-y: 4px;
+  --dgm-swap-blur: 2px;
+}
+
+/* ── texts-reveal (transitions-dev 18) ───────────────────────────────────
+   Stacked lines rise blurred, staggered on the 60ms unit. Exit decouples:
+   one quiet fade for every line, no Y return, so leaving does not read as
+   a reverse reveal. */
+html[data-theme] body .t-reveal {
+  opacity: 0; transform: translateY(var(--dgm-distance)); filter: blur(var(--dgm-blur));
+  transition: opacity var(--dgm-reveal) var(--dgm-ease),
+              transform var(--dgm-reveal) var(--dgm-ease),
+              filter var(--dgm-reveal) var(--dgm-ease);
+  will-change: transform, opacity, filter;
+}
+html[data-theme] body .is-shown .t-reveal { opacity: 1; transform: translateY(0); filter: blur(0); }
+html[data-theme] body .is-shown .t-reveal[data-i="1"] { transition-delay: calc(var(--dgm-step) * 1); }
+html[data-theme] body .is-shown .t-reveal[data-i="2"] { transition-delay: calc(var(--dgm-step) * 2); }
+html[data-theme] body .is-shown .t-reveal[data-i="3"] { transition-delay: calc(var(--dgm-step) * 3); }
+html[data-theme] body .is-shown .t-reveal[data-i="4"] { transition-delay: calc(var(--dgm-step) * 4); }
+html[data-theme] body .is-shown .t-reveal[data-i="5"] { transition-delay: calc(var(--dgm-step) * 5); }
+html[data-theme] body .is-shown .t-reveal[data-i="6"] { transition-delay: calc(var(--dgm-step) * 6); }
+html[data-theme] body .is-hiding .t-reveal {
+  opacity: 0; transform: translateY(0); filter: blur(0);
+  transition: opacity 200ms ease, transform 0s linear, filter 0s linear; transition-delay: 0s;
+}
+
+/* ── success-check (transitions-dev 10) ──────────────────────────────────
+   Five layers on one element: fade, rotate in, blur out, Y-bob, and an SVG
+   stroke-draw. Upstream's bouncy bob ease collapses to the system curve.
+   ALWAYS set stroke-dasharray from path.getTotalLength() in JS — the
+   hardcoded placeholder is the skill's #1 flagged SVG mistake. */
+html[data-theme] body .t-check { display: inline-block; transform-origin: center; opacity: 0; will-change: transform, opacity, filter; }
+html[data-theme] body .t-check svg { display: block; overflow: visible; }
+html[data-theme] body .t-check[data-state="in"] {
+  animation: dgm-check-fade var(--dgm-reveal) var(--dgm-ease) forwards,
+             dgm-check-rot  var(--dgm-reveal) var(--dgm-ease) forwards,
+             dgm-check-blur var(--dgm-reveal) var(--dgm-ease) forwards,
+             dgm-check-bob  var(--dgm-reveal) var(--dgm-ease) forwards;
+}
+html[data-theme] body .t-check[data-state="in"] svg path {
+  animation: dgm-check-draw var(--dgm-reveal) var(--dgm-ease) 80ms forwards;
+}
+@keyframes dgm-check-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes dgm-check-rot  { from { transform: rotate(80deg); } to { transform: rotate(0); } }
+@keyframes dgm-check-blur { from { filter: blur(10px); } to { filter: blur(0); } }
+@keyframes dgm-check-bob  { from { translate: 0 40px; } to { translate: 0 0; } }
+@keyframes dgm-check-draw { to { stroke-dashoffset: 0; } }
+
+/* ── error-state-shake (transitions-dev 12) ──────────────────────────────
+   Four segments at 80/60/80/60ms. These sit BELOW §6's smallest band on
+   purpose: they are functional, not decorative — a shake needs segments
+   that short to read as a shake at all. Keep .is-error and .is-shaking
+   ORTHOGONAL so the shake can replay without flickering the colour. */
+html[data-theme] body .t-shake { animation: dgm-shake 280ms linear; }
+@keyframes dgm-shake {
+  0%     { transform: translateX(0);     animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1); }
+  28.57% { transform: translateX(6px);   animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1); }
+  57.14% { transform: translateX(-6px);  animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1); }
+  78.57% { transform: translateX(4px);   animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1); }
+  100%   { transform: translateX(0); }
+}
+
+/* ── accordion (transitions-dev 21) ──────────────────────────────────────
+   grid-rows 0fr -> 1fr, no JS height measurement. Two hard-won details:
+   · grid-template-columns:minmax(0,1fr) is LOAD-BEARING. Without an
+     explicit column the implicit one is `auto` and resolves from content;
+     nest two of these and the inner collapses to ~0 width.
+   · padding goes on -inner, NEVER on -panel — padding on a 0fr track
+     leaves a residual strip so the panel never fully closes.
+   · The chevron flips with scaleY(-1), not a `d:` path morph — CSS path
+     interpolation is Chromium-only and mobile Safari is a first-class target. */
+html[data-theme] body .t-acc-panel {
+  display: grid; grid-template-rows: 0fr; grid-template-columns: minmax(0, 1fr);
+  transition: grid-template-rows var(--dgm-lift) var(--dgm-ease);
+}
+html[data-theme] body .t-acc[data-open="true"] .t-acc-panel { grid-template-rows: 1fr; }
+html[data-theme] body .t-acc-panel-inner {
+  overflow: hidden; opacity: 0; filter: blur(2px);
+  transition: opacity var(--dgm-lift) var(--dgm-ease), filter var(--dgm-lift) var(--dgm-ease);
+}
+html[data-theme] body .t-acc[data-open="true"] .t-acc-panel-inner { opacity: 1; filter: blur(0); }
+html[data-theme] body .t-acc-chevron {
+  display: inline-flex; transform: scaleY(1); transform-origin: center;
+  transition: transform var(--dgm-lift) var(--dgm-ease);
+}
+html[data-theme] body .t-acc[data-open="true"] .t-acc-chevron { transform: scaleY(-1); }
+
+/* ── text-states-swap (transitions-dev 04) ───────────────────────────────
+   The THIRD numeric idiom, distinct from the other two:
+     counting  = accumulation (animateCount)  — a tally climbing
+     popping   = replacement  (.t-digit)      — a new value arriving
+     swapping  = same slot, new content       — this
+   JS: add .is-exit, wait, swap text + add .is-enter-start, reflow, release. */
+html[data-theme] body .t-swap {
+  display: inline-block; transform: translateY(0); filter: blur(0); opacity: 1;
+  transition: transform var(--dgm-press) var(--dgm-ease),
+              filter var(--dgm-press) var(--dgm-ease),
+              opacity var(--dgm-press) var(--dgm-ease);
+  will-change: transform, filter, opacity;
+}
+html[data-theme] body .t-swap.is-exit { transform: translateY(calc(var(--dgm-swap-y) * -1)); filter: blur(var(--dgm-swap-blur)); opacity: 0; }
+html[data-theme] body .t-swap.is-enter-start { transform: translateY(var(--dgm-swap-y)); filter: blur(var(--dgm-swap-blur)); opacity: 0; transition: none; }
+
+/* ── number pop-in (transitions-dev 02) ──────────────────────────────────
+   For a value REPLACED by a new value (live streak, readiness). Tallies use
+   animateCount() instead — see the swap note above. */
+html[data-theme] body .t-digit { display: inline-block; will-change: transform, opacity, filter; }
+html[data-theme] body .t-digits.is-animating .t-digit { animation: dgm-digit var(--dgm-lift) var(--dgm-ease) both; }
+html[data-theme] body .t-digits.is-animating .t-digit[data-s="1"] { animation-delay: var(--dgm-step); }
+html[data-theme] body .t-digits.is-animating .t-digit[data-s="2"] { animation-delay: calc(var(--dgm-step) * 2); }
+@keyframes dgm-digit {
+  0%   { transform: translateY(8px); opacity: 0; filter: blur(2px); }
+  100% { transform: translateY(0);   opacity: 1; filter: blur(0); }
+}
+
+/* ── checkbox-check (transitions-dev 25) ─────────────────────────────────
+   NOTE the namespace: upstream ships this as `.t-check`, which collides
+   with the success-check above. Renamed .t-cb — a silent collision is far
+   worse than a rename. Set --cb-len from path.getTotalLength() in JS. */
+html[data-theme] body .t-cb { display: grid; place-items: center; transition: background var(--dgm-press) var(--dgm-ease), border-color var(--dgm-press) var(--dgm-ease); }
+html[data-theme] body .t-cb svg { display: block; }
+html[data-theme] body .t-cb svg path {
+  stroke-dasharray: var(--cb-len, 15); stroke-dashoffset: var(--cb-len, 15);
+  transition: stroke-dashoffset var(--dgm-press) var(--dgm-ease);
+}
+html[data-theme] body [aria-checked="true"] .t-cb svg path,
+html[data-theme] body .is-checked .t-cb svg path {
+  stroke-dashoffset: 0; transition: stroke-dashoffset var(--dgm-lift) var(--dgm-ease) 60ms;
+}
+
+/* ── tooltip (transitions-dev 17) ────────────────────────────────────────
+   Delayed in, instant out. The trigger MUST be focusable — a hover-only
+   tooltip is dead weight on mobile web and iOS Capacitor, both first-class
+   targets. Use a <button>, not a <span> with a title. */
+html[data-theme] body .t-tt-wrap { position: relative; display: inline-block; }
+html[data-theme] body .t-tt {
+  position: absolute; bottom: calc(100% + 8px); left: 50%;
+  transform: translate(-50%, 0) scale(0.98); transform-origin: 50% 100%;
+  padding: 8px 12px; border-radius: var(--radius-sm); width: max-content; max-width: 260px;
+  background: var(--surface3); color: var(--text-mid); border: 1px solid var(--border);
+  font-size: 12px; line-height: 1.5; text-align: left; white-space: normal;
+  opacity: 0; pointer-events: none; z-index: 6;
+  transition: opacity 60ms var(--dgm-ease), transform 60ms var(--dgm-ease);
+}
+html[data-theme] body .t-tt-wrap:hover .t-tt,
+html[data-theme] body .t-tt-trigger:focus-visible + .t-tt {
+  opacity: 1; transform: translate(-50%, 0) scale(1);
+  transition-duration: var(--dgm-press); transition-delay: 80ms;
+}
+
+/* ── notification-badge (transitions-dev 03) ─────────────────────────────
+   Slide in diagonally, then pop. BRAND DEVIATION, deliberate: upstream
+   closes with scale(0), which §6 forbids outright. The closed state uses
+   scale(0.96) + blur so the "not here yet" read survives without the
+   disallowed scale-from-zero. */
+html[data-theme] body .t-badge { position: absolute; pointer-events: none; z-index: 4; }
+html[data-theme] body .t-badge[data-open="true"] { animation: dgm-badge-slide 260ms var(--dgm-ease); }
+@keyframes dgm-badge-slide { from { transform: translate(-8px, 10px); } to { transform: translate(0, 0); } }
+html[data-theme] body .t-badge-dot {
+  display: block; transform-origin: center; transform: scale(1); opacity: 1; filter: blur(0);
+  transition: transform var(--dgm-toast) var(--dgm-ease),
+              opacity var(--dgm-toast) var(--dgm-ease),
+              filter var(--dgm-toast) var(--dgm-ease);
+}
+html[data-theme] body .t-badge[data-open="false"] .t-badge-dot { transform: scale(0.96); opacity: 0; filter: blur(2px); }
+
+/* ── page-side-by-side (transitions-dev 08) ──────────────────────────────
+   Direction is data-driven via --dgm-dir (+1 forward, -1 back). The engine
+   has prevQuestion() as well as nextQuestion(), so a forward-only slide
+   animates back-navigation the wrong way. Set --dgm-dir BEFORE the index
+   moves. Also: the incoming page must join the flow BEFORE the outgoing
+   one leaves it, or the container collapses for a frame and the document
+   jumps. */
+html[data-theme] body .t-slide { position: relative; --dgm-dir: 1; }
+html[data-theme] body .t-slide .t-page {
+  opacity: 0; pointer-events: none;
+  transform: translateX(calc(8px * var(--dgm-dir))); filter: blur(3px);
+  transition: opacity var(--dgm-lift) var(--dgm-ease),
+              transform var(--dgm-lift) var(--dgm-ease),
+              filter var(--dgm-lift) var(--dgm-ease);
+  will-change: opacity, transform, filter;
+}
+html[data-theme] body .t-slide .t-page:not(.is-active) { position: absolute; inset: 0; }
+html[data-theme] body .t-slide .t-page.is-active { opacity: 1; pointer-events: auto; transform: translateX(0); filter: blur(0); position: relative; }
+html[data-theme] body .t-slide .t-page.is-exiting { transform: translateX(calc(8px * var(--dgm-dir) * -1)); }
+
+/* ── card-resize (transitions-dev 01) ────────────────────────────────────
+   Same grid-rows mechanism as the accordion; the minmax(0,1fr) column is
+   equally load-bearing here. */
+html[data-theme] body .t-grow { display: grid; grid-template-rows: 1fr; grid-template-columns: minmax(0, 1fr); transition: grid-template-rows var(--dgm-lift) var(--dgm-ease); }
+html[data-theme] body .t-grow-inner { overflow: hidden; }
+
+/* ── avatar-group-hover (transitions-dev 11) ─────────────────────────────
+   Distance-falloff lift across a horizontal item stack. JS writes --shift
+   and --sc per item. translateY BEFORE scale so the scale does not amplify
+   the lift offset. Upstream's bouncy return ease is dropped — one curve. */
+html[data-theme] body .t-lift {
+  transform-origin: center;
+  transform: translateY(var(--shift, 0px)) scale(var(--sc, 1));
+  transition: transform var(--dgm-lift) var(--dgm-ease);
+  will-change: transform;
+}
+
+/* ── FLIP helper ─────────────────────────────────────────────────────────
+   FLIP is JS-driven; all the CSS owes it is a transitionable transform.
+   Used for the order-type correct-sequence reveal and the topology drop.
+   Pattern: measure first box -> mutate DOM -> measure last box -> apply the
+   inverted delta with transitions OFF -> reflow -> release. */
+html[data-theme] body .t-flip { transition: transform var(--dgm-toast) var(--dgm-ease); will-change: transform; }
+
+/* ── antalik shimmer ─────────────────────────────────────────────────────
+   For a pending state whose LABEL IS THE STATE ("Verifying quality…",
+   "Consulting the teacher…") — never the word "Loading". Duplicate the
+   visible string into data-text; the ::before paints only the highlight
+   band through background-clip:text, so nothing moves or reflows. The 2s
+   sweep is the effect's own clock, not UI motion, so it keeps its cadence.
+   Source: github.com/Jakubantalik (MIT). Prefer this over transitions.dev's
+   15-shimmer-text — same implementation, but this one ships the light-theme
+   block and the a11y/lifecycle discipline. */
+html[data-theme] body .t-shimmer { position: relative; display: inline-block; color: var(--text-dim); }
+html[data-theme] body .t-shimmer::before {
+  content: attr(data-text); position: absolute; inset: 0; pointer-events: none;
+  background-image: linear-gradient(90deg, transparent 0 40%, var(--text) 50%, transparent 60% 100%);
+  background-size: 400% 100%; background-repeat: no-repeat;
+  background-clip: text; color: transparent; -webkit-text-fill-color: transparent;
+  animation: dgm-shimmer 2s linear infinite;
+}
+@keyframes dgm-shimmer { 0% { background-position: 100% 0; } 100% { background-position: 0% 0; } }
+
+/* ── antalik border-beam ─────────────────────────────────────────────────
+   A light travelling the border, used ONLY for a genuine pending state:
+   incomplete sequence, uncommitted pick, armed device. It must STOP when
+   the state resolves — static-when-idle is what separates an indicator
+   from decoration. Set data-beam="on"/"off" from real state, never leave
+   it on. 1.96s is the effect's native revolution period.
+   Source: github.com/Jakubantalik/border-beam (MIT). */
+@property --dgm-beam-angle   { syntax: "<angle>";  initial-value: 0deg; inherits: true; }
+@property --dgm-beam-opacity { syntax: "<number>"; initial-value: 0;    inherits: true; }
+html[data-theme] body .t-beam { position: relative; }
+html[data-theme] body .t-beam[data-beam="on"] { animation: dgm-beam-spin 1.96s linear infinite, dgm-beam-in 500ms ease forwards; }
+html[data-theme] body .t-beam[data-beam="on"]::after {
+  content: ""; position: absolute; inset: 0; border-radius: inherit;
+  padding: 1.5px; clip-path: inset(0 round var(--radius-sm));
+  background: conic-gradient(from var(--dgm-beam-angle),
+    transparent 0 54%,
+    color-mix(in oklab, var(--accent) 10%, transparent) 57%,
+    color-mix(in oklab, var(--accent) 30%, transparent) 60%,
+    color-mix(in oklab, var(--accent) 60%, transparent) 63%,
+    var(--accent) 66%,
+    color-mix(in oklab, var(--accent) 60%, transparent) 69%,
+    color-mix(in oklab, var(--accent) 30%, transparent) 72%,
+    color-mix(in oklab, var(--accent) 10%, transparent) 75%,
+    transparent 78% 100%);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  pointer-events: none; z-index: 3;
+  opacity: calc(var(--dgm-beam-opacity) * 0.95);
+}
+@keyframes dgm-beam-spin { to { --dgm-beam-angle: 360deg; } }
+@keyframes dgm-beam-in   { to { --dgm-beam-opacity: 1; } }
+
+/* ── data motion ─────────────────────────────────────────────────────────
+   Bar fills run 900ms, ABOVE §6's ~600ms UI ceiling. That is legal, not a
+   violation: §6 exempts bar/chart sweeps because the duration itself
+   carries information. NOTE the display:block — a <span> bar silently
+   ignores width/height, and computed width reporting "%" instead of "px"
+   is the tell. NEVER drive these from rAF: it does not fire in a
+   backgrounded tab, so a user who switches away returns to empty bars.
+   Forced reflow + synchronous write instead. */
+html[data-theme] body .t-bar-track { display: block; overflow: hidden; }
+html[data-theme] body .t-bar-fill { display: block; height: 100%; width: 0; transition: width var(--dgm-data) var(--dgm-ease); }
+html[data-theme] body .t-bar-row[data-i="1"] .t-bar-fill { transition-delay: var(--dgm-step); }
+html[data-theme] body .t-bar-row[data-i="2"] .t-bar-fill { transition-delay: calc(var(--dgm-step) * 2); }
+
+/* ── reduced motion ──────────────────────────────────────────────────────
+   Every animated surface above collapses. §6: fade-only, no transform. */
+@media (prefers-reduced-motion: reduce) {
+  html[data-theme] body .t-check,
+  html[data-theme] body .t-check svg path,
+  html[data-theme] body .t-shake,
+  html[data-theme] body .t-digits.is-animating .t-digit,
+  html[data-theme] body .t-badge[data-open="true"],
+  html[data-theme] body .t-beam[data-beam="on"],
+  html[data-theme] body .t-beam[data-beam="on"]::after,
+  html[data-theme] body .t-shimmer::before { animation: none !important; }
+  html[data-theme] body .t-check { opacity: 1; }
+  html[data-theme] body .t-check svg path { stroke-dashoffset: 0 !important; }
+  html[data-theme] body .t-reveal,
+  html[data-theme] body .t-swap,
+  html[data-theme] body .t-acc-panel,
+  html[data-theme] body .t-acc-panel-inner,
+  html[data-theme] body .t-acc-chevron,
+  html[data-theme] body .t-cb,
+  html[data-theme] body .t-cb svg path,
+  html[data-theme] body .t-tt,
+  html[data-theme] body .t-badge-dot,
+  html[data-theme] body .t-slide .t-page,
+  html[data-theme] body .t-grow,
+  html[data-theme] body .t-lift,
+  html[data-theme] body .t-flip,
+  html[data-theme] body .t-bar-fill { transition: none !important; }
+  html[data-theme] body .t-reveal { opacity: 1; transform: none; filter: none; }
+  html[data-theme] body .t-lift { transform: none !important; }
+  html[data-theme] body .t-badge[data-open="false"] .t-badge-dot { opacity: 1; transform: none; filter: none; }
+}
