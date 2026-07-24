@@ -28,8 +28,8 @@
 | styles.css | 14906 | 551 KB |
 | index.html | 2216 | 143 KB |
 | dg-system.css | 4642 | 451 KB |
-| tests/uat.js + tests/uat/ (27 modules) | 28071 | — |
-UAT checks: 4868 · E2E `test(` count: 160 · APP_VERSION: 7.97.0 · stamped-at: worktree
+| tests/uat.js + tests/uat/ (27 modules) | 28073 | — |
+UAT checks: 4868 · E2E `test(` count: 160 · APP_VERSION: 7.98.0 · stamped-at: worktree
 <!-- FACTS:AUTO:END -->
 
 | File | Purpose | Size |
@@ -131,6 +131,7 @@ npx playwright test              # E2E (tests/e2e/app.spec.js)
 
 | Version | Features Added |
 |---|---|
+| v7.98.0 | feat(sec+): add 11 key-exchange exemplars — DH, ECDHE, PFS, key transport vs agreement, hybrid encryption, KDF (obj 1.4) |
 | v7.97.0 | Fix 5 more extraction landmines (Flag btn, Continue Session, exam nav, Snapshot now, new-user diagnostic CTA) + inline-handler/captive-state UAT guards |
 | v7.96.0 | Fix See Results crash + _certanvilFeatures init race + closure-captive-call UAT guard |
 | v7.95.0 | Lighthouse-90 mobile: Supabase chain (+ diagnostic-claim/web-vitals-collector) deferred past window.load — real bytes+CPU off the eager render-delay chain Lantern penalizes |
