@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CertAnvil · PBQ Hot-Area Motion</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600;800&display=swap" rel="stylesheet">
+<style>
+/* ════════════════════════════════════════════════════════════════════════
+   CertAnvil · MOCKUP STARTER TOKEN BLOCK — verbatim from
+   design/brand/mockup-starter-tokens.css. Never freehand this block.
+   ════════════════════════════════════════════════════════════════════════ */
+:root, [data-theme="dark"] {
+  --bg: oklch(0.17 0.008 275); --surface: oklch(0.205 0.009 275); --surface-2: oklch(0.23 0.009 275);
+  --ink: oklch(0.96 0.006 275); --ink-soft: oklch(0.80 0.012 275); --muted: oklch(0.725 0.013 275);
+  --border: oklch(0.32 0.011 275); --border-soft: oklch(0.255 0.010 275);
+  --accent: oklch(0.80 0.155 64); --accent-deep: oklch(0.86 0.135 64); --on-accent: oklch(0.18 0.020 275);
+  --pass: oklch(0.74 0.150 152); --fail: oklch(0.66 0.17 25);
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+}
+[data-theme="light"] {
+  --bg: oklch(0.975 0.007 85); --surface: oklch(0.992 0.004 85); --surface-2: oklch(0.965 0.010 84);
+  --ink: oklch(0.22 0.015 280); --ink-soft: oklch(0.36 0.014 280); --muted: oklch(0.50 0.013 280);
+  --border: oklch(0.86 0.008 85); --border-soft: oklch(0.91 0.006 85);
+  --accent: oklch(0.50 0.155 55); --accent-deep: oklch(0.42 0.150 52); --on-accent: oklch(0.985 0.010 85);
+  --pass: oklch(0.50 0.15 150); --fail: oklch(0.52 0.19 25);
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+   MOTION TOKENS — BRAND.md §6. transitions.dev _root.css NOT imported.
+   ════════════════════════════════════════════════════════════════════════ */
+:root {
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --stagger-dur: 520ms; --stagger-distance: 12px; --stagger-step: 60ms; --stagger-blur: 3px;
+  --swap-dur: 150ms; --swap-y: 4px; --swap-blur: 2px;
+  --tt-in: 150ms; --tt-out: 60ms; --tt-scale: 0.98; --tt-delay: 80ms;
+  --badge-slide: 260ms; --badge-pop: 380ms; --badge-blur: 2px;
+  --check-dur: 520ms; --check-rotate-from: 80deg; --check-y: 40px; --check-blur-from: 10px;
+  --shake-a: 80ms; --shake-b: 60ms; --shake-distance: 6px; --shake-overshoot: 4px;
+  --reveal-dur: 380ms;
+  /* antalik border-beam — native 1.96s revolution kept (effect's own clock). */
+  --beam-spin: 1.96s; --beam-strength: 1;
+}
+
+* { box-sizing: border-box; }
+.is-hidden { display: none !important; }
+body {
+  margin: 0; padding: 30px 20px 60px; background: var(--bg); color: var(--ink);
+  font-family: Inter, system-ui, sans-serif;
+  transition: background 220ms var(--ease), color 220ms var(--ease);
+}
+.wrap { max-width: 800px; margin: 0 auto; }
+.eyebrow { font: 800 10px/1 Inter, sans-serif; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent-deep); }
+.topbar { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; gap: 12px; flex-wrap: wrap; }
+.btn-sm {
+  background: var(--surface-2); color: var(--ink); border: 1px solid var(--border);
+  border-radius: 8px; padding: 7px 12px; font: 600 11.5px Inter, sans-serif; cursor: pointer;
+  transition: transform 150ms var(--ease), border-color 150ms var(--ease);
+}
+.btn-sm:active { transform: scale(0.97); }
+
+/* sub-shape switcher */
+.shapes { display: inline-flex; gap: 3px; padding: 3px; border-radius: 40px; background: var(--surface-2); border: 1px solid var(--border-soft); }
+.shape-tab {
+  border: 0; background: transparent; color: var(--muted); cursor: pointer;
+  border-radius: 40px; padding: 5px 13px; font: 600 11px Inter, sans-serif;
+  transition: color 220ms var(--ease), background 220ms var(--ease);
+}
+.shape-tab[aria-selected="true"] { background: var(--accent); color: var(--on-accent); }
+
+.shell { background: var(--surface); border: 1px solid var(--border-soft); border-radius: 16px; padding: 26px; }
+.qeyebrow { font: 800 9.5px Inter, sans-serif; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+.pbq-badge {
+  display: inline-block; margin-left: 8px; border-radius: 5px; padding: 2px 7px;
+  background: color-mix(in oklab, var(--accent) 18%, transparent); color: var(--accent-deep);
+  font: 800 8.5px Inter, sans-serif; letter-spacing: 0.08em; text-transform: uppercase;
+}
+.stem { font: 600 18px/1.45 Fraunces, Georgia, serif; margin: 10px 0 18px; letter-spacing: -0.005em; }
+
+/* ════════════════════════════════════════════════════════════════════════
+   STAGE — shared by all three sub-shapes
+   ════════════════════════════════════════════════════════════════════════ */
+.stage { background: var(--surface-2); border: 1px solid var(--border-soft); border-radius: 13px; padding: 18px; }
+
+/* Every clickable region is a real <button>. The engine already sets
+   tabindex+role+Enter/Space by hand; a button gets all of that for free AND
+   makes the tooltip reachable on touch, which a hover-only affordance is not.
+   Mobile web + iOS Capacitor are first-class targets for this app. */
+.region {
+  position: relative; appearance: none; font: inherit; cursor: pointer;
+  background: var(--surface); border: 1.5px solid var(--border-soft); color: var(--ink);
+  /* 44px floor — BRAND's touch-target rule. Diagram regions are the easiest
+     place in the app to accidentally ship a 20px tap target. */
+  min-height: 44px;
+  opacity: 0; transform: translateY(var(--stagger-distance)); filter: blur(var(--stagger-blur));
+  transition: opacity var(--stagger-dur) var(--ease),
+              transform var(--stagger-dur) var(--ease),
+              filter var(--stagger-dur) var(--ease),
+              border-color var(--reveal-dur) var(--ease),
+              background var(--reveal-dur) var(--ease);
+  will-change: transform, opacity, filter;
+}
+.stage.is-shown .region { opacity: 1; transform: translateY(0); filter: blur(0); }
+.stage.is-shown .region[data-i="1"] { transition-delay: calc(var(--stagger-step) * 1); }
+.stage.is-shown .region[data-i="2"] { transition-delay: calc(var(--stagger-step) * 2); }
+.stage.is-shown .region[data-i="3"] { transition-delay: calc(var(--stagger-step) * 3); }
+.stage.is-shown .region[data-i="4"] { transition-delay: calc(var(--stagger-step) * 4); }
+.stage.is-shown .region[data-i="5"] { transition-delay: calc(var(--stagger-step) * 5); }
+.stage.is-shown .region[data-i="6"] { transition-delay: calc(var(--stagger-step) * 6); }
+@media (hover: hover) and (pointer: fine) {
+  .region:not(.is-locked):hover { border-color: var(--accent); }
+}
+.region:not(.is-locked):active { transform: scale(0.985); }
+.region.is-dimmed { opacity: 0.4; }
+.region.is-correct { border-color: var(--pass); background: color-mix(in oklab, var(--pass) 12%, transparent); }
+.region.is-wrong { border-color: var(--fail); background: color-mix(in oklab, var(--fail) 12%, transparent); }
+/* Dual-correct case: a region that WAS correct but wasn't the one picked. */
+.region.is-reveal { border-color: var(--pass); border-style: dashed; }
+.region.is-shaking { animation: t-shake calc(var(--shake-a) * 2 + var(--shake-b) * 2) linear; }
+@keyframes t-shake {
+  0%     { transform: translateX(0);                              animation-timing-function: var(--ease); }
+  28.57% { transform: translateX(var(--shake-distance));          animation-timing-function: var(--ease); }
+  57.14% { transform: translateX(calc(var(--shake-distance)*-1)); animation-timing-function: var(--ease); }
+  78.57% { transform: translateX(var(--shake-overshoot));         animation-timing-function: var(--ease); }
+  100%   { transform: translateX(0); }
+}
+
+/* ── antalik border-beam on the PICKED-but-unsubmitted region ───────────
+   The beam is the "armed, not yet committed" state. It starts on pick and
+   stops the instant Submit resolves it — the same static-when-idle rule the
+   thinking-orb follows, and the same one the order tray uses. ── */
+@property --beam-angle   { syntax: "<angle>";  initial-value: 0deg; inherits: true; }
+@property --beam-opacity { syntax: "<number>"; initial-value: 0;    inherits: true; }
+.region[data-beam="on"] { animation: beam-spin var(--beam-spin) linear infinite, beam-in 500ms ease forwards; }
+.region[data-beam="on"]::after {
+  content: ""; position: absolute; inset: 0;
+  border-radius: inherit; padding: 1.5px; clip-path: inset(0 round 10px);
+  background: conic-gradient(from var(--beam-angle),
+    transparent 0 54%,
+    color-mix(in oklab, var(--accent) 10%, transparent) 57%,
+    color-mix(in oklab, var(--accent) 30%, transparent) 60%,
+    color-mix(in oklab, var(--accent) 60%, transparent) 63%,
+    var(--accent) 66%,
+    color-mix(in oklab, var(--accent) 60%, transparent) 69%,
+    color-mix(in oklab, var(--accent) 30%, transparent) 72%,
+    color-mix(in oklab, var(--accent) 10%, transparent) 75%,
+    transparent 78% 100%);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  pointer-events: none; z-index: 3;
+  opacity: calc(var(--beam-opacity) * 0.95 * var(--beam-strength));
+}
+@keyframes beam-spin { to { --beam-angle: 360deg; } }
+@keyframes beam-in   { to { --beam-opacity: 1; } }
+
+/* ── notification-badge (transitions-dev 03) — the pick marker ──────────
+   A dot slides in diagonally then pops onto the chosen region. BRAND forbids
+   scale(0) entrances, so the closed state is scale(0.96) + blur instead of
+   upstream's scale collapse. ── */
+.pick-badge { position: absolute; top: -7px; right: -7px; pointer-events: none; z-index: 4; }
+.region[data-picked="true"] .pick-badge { animation: t-badge-slide var(--badge-slide) var(--ease); }
+@keyframes t-badge-slide { from { transform: translate(-8px, 10px); } to { transform: translate(0, 0); } }
+.pick-dot {
+  display: block; width: 15px; height: 15px; border-radius: 50%;
+  background: var(--accent); border: 2px solid var(--surface-2);
+  transform-origin: center; transform: scale(1); opacity: 1; filter: blur(0);
+  transition: transform var(--badge-pop) var(--ease),
+              opacity var(--badge-pop) var(--ease),
+              filter var(--badge-pop) var(--ease);
+}
+.region[data-picked="false"] .pick-dot { transform: scale(0.96); opacity: 0; filter: blur(var(--badge-blur)); }
+.region.is-correct .pick-dot { background: var(--pass); }
+.region.is-wrong .pick-dot { background: var(--fail); }
+
+/* ── tooltip (transitions-dev 17) — region hint on hover AND focus ────── */
+.tt {
+  position: absolute; bottom: calc(100% + 8px); left: 50%;
+  transform: translate(-50%, 0) scale(var(--tt-scale)); transform-origin: 50% 100%;
+  padding: 7px 11px; border-radius: 8px; width: max-content; max-width: 230px;
+  background: var(--surface); color: var(--ink-soft); border: 1px solid var(--border);
+  font: 400 11.5px/1.5 Inter, sans-serif; text-align: left; white-space: normal;
+  box-shadow: 0 6px 22px color-mix(in oklab, var(--ink) 16%, transparent);
+  opacity: 0; pointer-events: none; z-index: 6;
+  transition: opacity var(--tt-out) var(--ease), transform var(--tt-out) var(--ease);
+}
+.region:hover .tt, .region:focus-visible .tt {
+  opacity: 1; transform: translate(-50%, 0) scale(1);
+  transition-duration: var(--tt-in); transition-delay: var(--tt-delay);
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+   SUB-SHAPE A · OSI stack
+   ════════════════════════════════════════════════════════════════════════ */
+.osi-stack { display: flex; flex-direction: column; gap: 5px; }
+.osi-layer {
+  display: flex; align-items: center; gap: 10px; width: 100%;
+  border-radius: 9px; padding: 11px 14px; text-align: left;
+  font: 500 13px Inter, sans-serif;
+}
+.osi-num {
+  flex: none; font: 700 10px ui-monospace, Menlo, monospace; color: var(--accent-deep);
+  background: color-mix(in oklab, var(--accent) 14%, transparent);
+  border-radius: 4px; padding: 2px 6px;
+}
+.osi-name { color: var(--ink); }
+
+/* ════════════════════════════════════════════════════════════════════════
+   SUB-SHAPE B · Cable connector grid
+   ════════════════════════════════════════════════════════════════════════ */
+.cable-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(112px, 1fr)); gap: 10px; }
+.cable-card {
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  border-radius: 11px; padding: 14px 10px; min-height: 96px; justify-content: center;
+}
+.cable-icon { color: var(--ink-soft); display: grid; place-items: center; }
+.cable-name { font: 600 11px Inter, sans-serif; color: var(--ink); text-align: center; }
+
+/* ════════════════════════════════════════════════════════════════════════
+   SUB-SHAPE C · Topology diagram
+   Regions are absolutely positioned buttons over a wireframe, NOT SVG
+   <g> elements — a real button keeps focus, tap targets and the tooltip
+   working, which bare SVG shapes do not get for free.
+   ════════════════════════════════════════════════════════════════════════ */
+.topo { position: relative; width: 100%; aspect-ratio: 16 / 9; min-height: 240px; }
+.topo-wire { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.topo-wire line { stroke: var(--border); stroke-width: 2; stroke-dasharray: 4 4; }
+/* Positions come from custom properties so the mobile media query can
+   re-place every region without touching JS. --rx/--ry are the desktop
+   coordinates; --mx/--my the mobile ones. */
+.topo .region {
+  position: absolute; left: var(--rx); top: var(--ry);
+  border-radius: 10px; padding: 8px 6px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px;
+  font: 600 10px Inter, sans-serif; min-width: 74px;
+}
+.topo-icon { color: var(--ink-soft); }
+
+/* ── hint + submit ─────────────────────────────────────────────────────── */
+.submit-row { display: flex; align-items: center; gap: 12px; margin-top: 18px; flex-wrap: wrap; }
+.hint { font: 400 12px Inter, sans-serif; color: var(--muted); }
+/* text-states-swap (transitions-dev 04) — the hint is REPLACED in place as
+   the state changes, so it swaps rather than counts or pops. */
+.t-swap {
+  display: inline-block; transform: translateY(0); filter: blur(0); opacity: 1;
+  transition: transform var(--swap-dur) var(--ease), filter var(--swap-dur) var(--ease), opacity var(--swap-dur) var(--ease);
+}
+.t-swap.is-exit { transform: translateY(calc(var(--swap-y) * -1)); filter: blur(var(--swap-blur)); opacity: 0; }
+.t-swap.is-enter-start { transform: translateY(var(--swap-y)); filter: blur(var(--swap-blur)); opacity: 0; transition: none; }
+.btn-primary {
+  margin-left: auto; background: var(--accent); color: var(--on-accent); border: 0;
+  border-radius: 9px; padding: 11px 22px; font: 600 13px Inter, sans-serif; cursor: pointer;
+  min-height: 44px; opacity: 0.4; pointer-events: none;
+  transition: opacity var(--reveal-dur) var(--ease), transform 150ms var(--ease), filter 150ms var(--ease);
+}
+.btn-primary.is-ready { opacity: 1; pointer-events: auto; }
+@media (hover: hover) and (pointer: fine) { .btn-primary:hover { filter: brightness(1.07); } }
+.btn-primary:active { transform: scale(0.97); }
+
+/* ── verdict ───────────────────────────────────────────────────────────── */
+.verdict { display: flex; align-items: center; gap: 10px; margin-top: 16px; min-height: 34px; }
+.t-check { display: inline-block; transform-origin: center; opacity: 0; will-change: transform, opacity, filter; }
+.t-check svg { display: block; overflow: visible; }
+.t-check[data-state="in"] {
+  animation: c-fade var(--check-dur) var(--ease) forwards, c-rot var(--check-dur) var(--ease) forwards,
+             c-blur var(--check-dur) var(--ease) forwards, c-bob var(--check-dur) var(--ease) forwards;
+}
+.t-check[data-state="in"] svg path { animation: c-draw var(--check-dur) var(--ease) 80ms forwards; }
+@keyframes c-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes c-rot  { from { transform: rotate(var(--check-rotate-from)); } to { transform: rotate(0); } }
+@keyframes c-blur { from { filter: blur(var(--check-blur-from)); } to { filter: blur(0); } }
+@keyframes c-bob  { from { translate: 0 var(--check-y); } to { translate: 0 0; } }
+@keyframes c-draw { to { stroke-dashoffset: 0; } }
+.verdict-txt { font: 600 14px Fraunces, Georgia, serif; opacity: 0; transition: opacity var(--check-dur) var(--ease); }
+.verdict.is-on .verdict-txt { opacity: 1; }
+.verdict.ok .verdict-txt { color: var(--pass); }
+.verdict.no .verdict-txt { color: var(--fail); }
+
+/* ── legend ────────────────────────────────────────────────────────────── */
+.legend { margin-top: 24px; background: var(--surface); border: 1px solid var(--border-soft); border-radius: 13px; padding: 22px; }
+.legend h2 { font: 600 16px Fraunces, Georgia, serif; margin: 8px 0 12px; }
+.legend table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.legend th, .legend td { text-align: left; padding: 8px; border-bottom: 1px solid var(--border-soft); vertical-align: top; }
+.legend th { font: 800 9px Inter, sans-serif; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+.legend code { font: 500 11px ui-monospace, Menlo, monospace; background: var(--surface-2); padding: 2px 5px; border-radius: 4px; }
+.tag { font: 700 9px Inter, sans-serif; letter-spacing: .06em; padding: 2px 6px; border-radius: 4px; text-transform: uppercase; }
+.tag.td { background: color-mix(in oklab, var(--accent) 20%, transparent); color: var(--accent-deep); }
+.tag.ae { background: color-mix(in oklab, var(--pass) 20%, transparent); color: var(--pass); }
+
+/* ── mobile: re-place the topology ─────────────────────────────────────
+   The desktop layout runs Internet → Firewall → Switch across one row. At
+   375px that row collapses until the three targets touch, which is a
+   mis-tap generator on exactly the surface where mis-taps cost a mark.
+   Mobile gets a 2-column, 3-row arrangement so every region keeps real
+   space around it, and the wireframe is dropped — connector lines drawn
+   for the wide layout are wrong for this one, and a wrong line is worse
+   than no line. Reading order still carries the topology: untrusted at the
+   top, boundary in the middle, internal hosts at the bottom. */
+@media (max-width: 560px) {
+  .topo { aspect-ratio: auto; min-height: 330px; }
+  .topo-wire { display: none; }
+  .topo .region { left: var(--mx); top: var(--my); min-width: 96px; }
+  .cable-grid { grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); }
+  .submit-row { flex-direction: column; align-items: stretch; }
+  .btn-primary { margin-left: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .region[data-beam="on"], .region[data-beam="on"]::after, .region.is-shaking,
+  .region[data-picked="true"] .pick-badge, .t-check, .t-check svg path { animation: none !important; }
+  .t-check { opacity: 1; } .t-check svg path { stroke-dashoffset: 0 !important; }
+  .region, .pick-dot, .tt, .t-swap, .btn-primary, .verdict-txt, .shape-tab, body { transition: none !important; }
+  .stage .region { opacity: 1; transform: none; filter: none; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="topbar">
+    <div>
+      <div class="eyebrow">PBQ · hot-area</div>
+      <div style="font:600 15px Fraunces,Georgia,serif;margin-top:4px">Click the correct region</div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <div class="shapes" role="tablist">
+        <button class="shape-tab" role="tab" aria-selected="true"  data-shape="osi">OSI</button>
+        <button class="shape-tab" role="tab" aria-selected="false" data-shape="cable">Cable</button>
+        <button class="shape-tab" role="tab" aria-selected="false" data-shape="topo">Topology</button>
+      </div>
+      <button class="btn-sm" onclick="reset()">Reset</button>
+      <button class="btn-sm" onclick="document.documentElement.dataset.theme=document.documentElement.dataset.theme==='dark'?'light':'dark'">Theme</button>
+    </div>
+  </div>
+
+  <div class="shell">
+    <div class="qeyebrow">Objective 1.4 · Exam Level<span class="pbq-badge" id="badge">Hot Area · OSI</span></div>
+    <p class="stem" id="stem"></p>
+    <div class="stage" id="stage"></div>
+
+    <div class="submit-row">
+      <span class="hint"><span class="t-swap" id="hint">Click a region to select your answer</span></span>
+      <button class="btn-primary" id="submit">Submit</button>
+    </div>
+
+    <div class="verdict" id="verdict">
+      <span class="t-check" id="check" data-state="out">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+          <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.5" opacity="0.28"/>
+          <path d="M7.5 12.4l3.1 3.1 6-6.4" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </span>
+      <span class="verdict-txt"></span>
+    </div>
+  </div>
+
+  <div class="legend">
+    <div class="eyebrow">Motion inventory</div>
+    <h2>Hot-area — three sub-shapes, one vocabulary</h2>
+    <table>
+      <thead><tr><th>Moment</th><th>Source</th><th>Transition</th><th>Why this one</th></tr></thead>
+      <tbody>
+        <tr><td>Regions enter</td><td><span class="tag td">transitions</span></td><td><code>18-texts-reveal</code></td><td>same 60ms stagger as MCQ options and the order pool</td></tr>
+        <tr><td>Region hint</td><td><span class="tag td">transitions</span></td><td><code>17-tooltip</code></td><td>hover <em>and</em> focus — regions are real buttons, so it works on touch</td></tr>
+        <tr><td>Pick marker</td><td><span class="tag td">transitions</span></td><td><code>03-notification-badge</code></td><td>a dot arriving on a target is literally the badge case</td></tr>
+        <tr><td><strong>Armed, uncommitted</strong></td><td><span class="tag ae">antalik</span></td><td><code>border-beam</code></td><td>runs only between pick and submit — a pending state, stops when resolved</td></tr>
+        <tr><td>Hint text changes</td><td><span class="tag td">transitions</span></td><td><code>04-text-states-swap</code></td><td>same slot, new content</td></tr>
+        <tr><td>Wrong region</td><td><span class="tag td">transitions</span></td><td><code>12-error-state-shake</code></td><td>established negative vocabulary</td></tr>
+        <tr><td>Right region</td><td><span class="tag td">transitions</span></td><td><code>10-success-check</code></td><td>same verdict badge as everywhere else</td></tr>
+      </tbody>
+    </table>
+    <p style="font-size:12px;color:var(--muted);line-height:1.65;margin:14px 0 0">
+      <strong style="color:var(--ink)">Every region is a real <code>&lt;button&gt;</code>, and that is the load-bearing decision here.</strong>
+      The engine currently hand-rolls <code>tabindex</code>, <code>role="button"</code> and Enter/Space handlers onto
+      <code>&lt;div&gt;</code>s and SVG <code>&lt;g&gt;</code>s. A button gets all of that for free, gives the tooltip a
+      <code>:focus-visible</code> path so it is reachable on touch, and takes a <code>min-height: 44px</code> without a fight.
+      Hot-area is the easiest surface in the app to ship a 20px tap target on — the topology sub-shape in particular renders
+      regions over a diagram, where it is tempting to size them to the artwork rather than the finger.
+    </p>
+  </div>
+</div>
+
+<script>
+/* ── the three sub-shapes ──────────────────────────────────────────────── */
+const SHAPES = {
+  osi: {
+    badge: 'Hot Area · OSI',
+    stem: 'A switch makes forwarding decisions using MAC addresses. Click the OSI layer it operates at.',
+    correct: ['L2'],
+    regions: [
+      { id: 'L7', label: 'Application',  tip: 'Where user-facing protocols live — HTTP, DNS, SMTP.' },
+      { id: 'L6', label: 'Presentation', tip: 'Encoding, encryption and compression of the payload.' },
+      { id: 'L5', label: 'Session',      tip: 'Establishes, manages and tears down sessions between hosts.' },
+      { id: 'L4', label: 'Transport',    tip: 'TCP and UDP — ports, segmentation, reliability.' },
+      { id: 'L3', label: 'Network',      tip: 'IP addressing and routing between networks.' },
+      { id: 'L2', label: 'Data Link',    tip: 'MAC addressing and framing on the local segment.' },
+      { id: 'L1', label: 'Physical',     tip: 'Cabling, connectors, voltage — the actual signal.' }
+    ]
+  },
+  cable: {
+    badge: 'Hot Area · Cable',
+    stem: 'A technician needs to terminate single-mode fibre for a 10 Gb uplink. Click the correct connector.',
+    correct: ['lc'],
+    regions: [
+      { id: 'rj45', label: 'RJ45',  tip: '8P8C connector for twisted-pair copper Ethernet.' },
+      { id: 'lc',   label: 'LC',    tip: 'Small-form-factor fibre connector — the common SFP+ choice.' },
+      { id: 'sc',   label: 'SC',    tip: 'Square push-pull fibre connector, larger than LC.' },
+      { id: 'bnc',  label: 'BNC',   tip: 'Bayonet coax connector — legacy Ethernet and video.' },
+      { id: 'st',   label: 'ST',    tip: 'Bayonet fibre connector, mostly legacy multimode.' },
+      { id: 'rj11', label: 'RJ11',  tip: '6P4C connector for analogue telephone lines.' }
+    ]
+  },
+  topo: {
+    badge: 'Hot Area · Topology',
+    stem: 'Traffic from the internet must be inspected before reaching the internal LAN. Click the device that performs that inspection.',
+    correct: ['fw'],
+    /* x/y = wide layout (one left-to-right chain). mx/my = mobile, a
+       2-col × 3-row arrangement that keeps gaps between tap targets. */
+    regions: [
+      { id: 'net',  label: 'Internet',    tip: 'The untrusted side of the boundary.',                     x: 6,  y: 40, mx: 6,  my: 4  },
+      { id: 'fw',   label: 'Firewall',    tip: 'Enforces the policy between untrusted and trusted zones.', x: 30, y: 40, mx: 52, my: 4  },
+      { id: 'sw',   label: 'Switch',      tip: 'Forwards frames inside the LAN using MAC addresses.',      x: 54, y: 40, mx: 29, my: 38 },
+      { id: 'srv',  label: 'Server',      tip: 'An internal host behind the boundary.',                    x: 78, y: 14, mx: 6,  my: 72 },
+      { id: 'pc',   label: 'Workstation', tip: 'An internal client behind the boundary.',                  x: 78, y: 64, mx: 52, my: 72 }
+    ]
+  }
+};
+
+let shape = 'osi';
+let pick = null;
+let submitted = false;
+
+const $ = id => document.getElementById(id);
+
+/* text-states-swap: exit up, snap to enter-start with transitions off,
+   reflow, release. The reflow is what makes the enter animate. */
+function swapText(el, next) {
+  if (!el || el.textContent === next) return;
+  el.classList.add('is-exit');
+  setTimeout(() => {
+    el.classList.remove('is-exit');
+    el.classList.add('is-enter-start');
+    el.textContent = next;
+    void el.offsetWidth;
+    el.classList.remove('is-enter-start');
+  }, 150);
+}
+
+function regionInner(r, kind) {
+  const badge = '<span class="pick-badge"><span class="pick-dot"></span></span>';
+  const tip = `<span class="tt" role="tooltip">${r.tip}</span>`;
+  if (kind === 'osi') {
+    return `<span class="osi-num">${r.id.toUpperCase()}</span><span class="osi-name">${r.label}</span>${badge}${tip}`;
+  }
+  if (kind === 'cable') {
+    return `<span class="cable-icon">${connectorSvg(r.id)}</span><span class="cable-name">${r.label}</span>${badge}${tip}`;
+  }
+  return `<span class="topo-icon">${deviceSvg(r.id)}</span><span>${r.label}</span>${badge}${tip}`;
+}
+
+/* Simple monoline glyphs — stands in for CABLE_CONNECTORS / the device set.
+   Real build lifts from design/svg-icons/ per BRAND §7. */
+function connectorSvg(id) {
+  const s = 'width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"';
+  const paths = {
+    rj45: '<rect x="6" y="4" width="12" height="14" rx="1.5"/><path d="M9 18v2M15 18v2M9 7h6"/>',
+    lc:   '<rect x="4" y="8" width="7" height="8" rx="1"/><rect x="13" y="8" width="7" height="8" rx="1"/><path d="M7.5 16v4M16.5 16v4"/>',
+    sc:   '<rect x="6" y="6" width="12" height="12" rx="1"/><path d="M12 18v3"/>',
+    bnc:  '<circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/><path d="M6 8l-3-2M18 8l3-2"/>',
+    st:   '<circle cx="12" cy="10" r="5"/><path d="M12 15v6M9 21h6"/>',
+    rj11: '<rect x="7" y="5" width="10" height="12" rx="1.5"/><path d="M10 17v3M14 17v3"/>'
+  };
+  return `<svg ${s}>${paths[id] || ''}</svg>`;
+}
+function deviceSvg(id) {
+  const s = 'width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"';
+  const paths = {
+    net: '<circle cx="12" cy="12" r="8"/><path d="M4 12h16M12 4a13 13 0 0 1 0 16a13 13 0 0 1 0-16z"/>',
+    fw:  '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18M3 15h18M9 5v5M15 10v5M9 15v4"/>',
+    sw:  '<rect x="3" y="8" width="18" height="9" rx="2"/><path d="M7 12v2M11 12v2M15 12v2"/>',
+    srv: '<rect x="5" y="3" width="14" height="7" rx="1.5"/><rect x="5" y="13" width="14" height="7" rx="1.5"/><path d="M8 6.5h.01M8 16.5h.01"/>',
+    pc:  '<rect x="3" y="5" width="18" height="11" rx="1.5"/><path d="M9 20h6M12 16v4"/>'
+  };
+  return `<svg ${s}>${paths[id] || ''}</svg>`;
+}
+
+/* ── render ────────────────────────────────────────────────────────────── */
+function render() {
+  const cfg = SHAPES[shape];
+  $('badge').textContent = cfg.badge;
+  $('stem').textContent = cfg.stem;
+  const stage = $('stage');
+  stage.classList.remove('is-shown');
+  stage.replaceChildren();
+
+  if (shape === 'topo') {
+    const topo = document.createElement('div');
+    topo.className = 'topo';
+    topo.innerHTML = `<svg class="topo-wire" viewBox="0 0 100 100" preserveAspectRatio="none">
+      <line x1="14" y1="46" x2="34" y2="46"/><line x1="40" y1="46" x2="58" y2="46"/>
+      <line x1="62" y1="46" x2="80" y2="22"/><line x1="62" y1="46" x2="80" y2="70"/></svg>`;
+    cfg.regions.forEach((r, n) => {
+      const b = document.createElement('button');
+      b.className = 'region'; b.dataset.region = r.id; b.dataset.i = Math.min(n, 6);
+      b.dataset.picked = 'false'; b.dataset.beam = 'off';
+      b.style.setProperty('--rx', r.x + '%'); b.style.setProperty('--ry', r.y + '%');
+      b.style.setProperty('--mx', r.mx + '%'); b.style.setProperty('--my', r.my + '%');
+      b.setAttribute('aria-label', r.label);
+      b.innerHTML = regionInner(r, 'topo');
+      b.addEventListener('click', () => choose(r.id));
+      topo.appendChild(b);
+    });
+    stage.appendChild(topo);
+  } else {
+    const host = document.createElement('div');
+    host.className = shape === 'osi' ? 'osi-stack' : 'cable-grid';
+    cfg.regions.forEach((r, n) => {
+      const b = document.createElement('button');
+      b.className = 'region ' + (shape === 'osi' ? 'osi-layer' : 'cable-card');
+      b.dataset.region = r.id; b.dataset.i = Math.min(n, 6);
+      b.dataset.picked = 'false'; b.dataset.beam = 'off';
+      b.setAttribute('aria-label', r.label);
+      b.innerHTML = regionInner(r, shape);
+      b.addEventListener('click', () => choose(r.id));
+      host.appendChild(b);
+    });
+    stage.appendChild(host);
+  }
+
+  /* Reflow then reveal synchronously — rAF never fires in a backgrounded
+     tab and the whole stage would stay invisible. */
+  void stage.offsetWidth;
+  stage.classList.add('is-shown');
+}
+
+/* ── pick ──────────────────────────────────────────────────────────────── */
+function choose(id) {
+  if (submitted) return;
+  pick = id;
+  const cfg = SHAPES[shape];
+  document.querySelectorAll('.region').forEach(el => {
+    const on = el.dataset.region === id;
+    el.dataset.picked = String(on);
+    /* Beam marks "armed but uncommitted" — it runs only between pick and
+       submit, then stops. Static-when-idle, same as the thinking-orb. */
+    el.dataset.beam = on ? 'on' : 'off';
+  });
+  const label = cfg.regions.find(r => r.id === id).label;
+  swapText($('hint'), `Selected: ${label}`);
+  $('submit').classList.add('is-ready');
+}
+
+/* ── submit ────────────────────────────────────────────────────────────── */
+function submit() {
+  if (submitted || !pick) return;
+  submitted = true;
+  const cfg = SHAPES[shape];
+  const right = cfg.correct.includes(pick);
+
+  document.querySelectorAll('.region').forEach(el => {
+    const id = el.dataset.region;
+    el.classList.add('is-locked');
+    el.dataset.beam = 'off';           // resolved — the pending state ends
+    if (id === pick) el.classList.add(right ? 'is-correct' : 'is-wrong');
+    else if (cfg.correct.includes(id)) el.classList.add('is-reveal');  // dual-correct reveal
+    else el.classList.add('is-dimmed');
+  });
+
+  if (!right) {
+    const el = document.querySelector(`.region[data-region="${pick}"]`);
+    el.classList.remove('is-shaking');
+    void el.offsetWidth;
+    el.classList.add('is-shaking');
+  }
+
+  const correctLabel = cfg.regions.find(r => r.id === cfg.correct[0]).label;
+  swapText($('hint'), right ? `Correct — ${correctLabel}` : `Correct answer: ${correctLabel}`);
+  $('submit').classList.remove('is-ready');
+
+  const verdict = $('verdict'), check = $('check'), txt = verdict.querySelector('.verdict-txt');
+  verdict.classList.add('is-on', right ? 'ok' : 'no');
+  txt.textContent = right ? 'Correct' : 'Not quite';
+  check.style.color = right ? 'var(--pass)' : 'var(--fail)';
+  const path = check.querySelector('path');
+  path.setAttribute('d', right ? 'M7.5 12.4l3.1 3.1 6-6.4' : 'M9 9l6 6M15 9l-6 6');
+  const len = Math.ceil(path.getTotalLength()) + 1;
+  path.style.strokeDasharray = len; path.style.strokeDashoffset = len;
+  void check.offsetWidth;
+  check.dataset.state = 'in';
+}
+
+/* ── controls ──────────────────────────────────────────────────────────── */
+function reset() {
+  pick = null; submitted = false;
+  $('verdict').className = 'verdict';
+  $('check').dataset.state = 'out';
+  $('submit').classList.remove('is-ready');
+  $('hint').textContent = 'Click a region to select your answer';
+  render();
+}
+
+document.querySelectorAll('.shape-tab').forEach(tab => tab.addEventListener('click', () => {
+  document.querySelectorAll('.shape-tab').forEach(t => t.setAttribute('aria-selected', String(t === tab)));
+  shape = tab.dataset.shape;
+  reset();
+}));
+$('submit').addEventListener('click', submit);
+
+reset();
+</script>
+</body>
+</html>
