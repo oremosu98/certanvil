@@ -25,16 +25,29 @@ Do both. A change grounded in only one map has repeatedly missed either a caller
 - **Mockups ARE the build.** Author `mockups/<feature>-concept.html` first; implementation is a faithful lift of the approved mockup. Copy `design/brand/mockup-starter-tokens.css` into every new mockup's `<style>` — never freehand a hex token block (the 2026-06-12 gold-drift lesson).
 - Never edit `styles.css` for reskins — scoped overrides go in `dg-system.css`.
 
-## Stage 2 · The 4-stage visual pass
+## Stage 2 · The 5-stage visual pass
 
-For ANY end-user-visible surface (UI, components, pop-ups, animations, on-screen copy), run these four skills **in order**:
+For ANY end-user-visible surface (UI, components, pop-ups, animations, on-screen copy), run these five skills **in order**:
 
 1. **design-taste-frontend** — the visual treatment (anti-slop)
 2. **emil-design-eng** — polish, animation, micro-interactions (use the certanvil-scoped variant)
-3. **humanizer** — on-screen copy reads human, no AI-writing tells
-4. **marketing-psychology** — behavioral framing of copy and motivation surfaces
+3. **transitions-dev** — concrete transition choreography (**read the precedence rule below before applying anything**)
+4. **humanizer** — on-screen copy reads human, no AI-writing tells
+5. **marketing-psychology** — behavioral framing of copy and motivation surfaces
 
 Applies only to user-visible surfaces — not storage, migration, engine, or backend logic.
+
+### Stage 3 precedence — BRAND.md owns motion values, transitions.dev owns choreography
+
+`transitions-dev` (and its add-on `transitions-polish`) are third-party skills installed via `npx skills add Jakubantalik/transitions.dev`. They ship their **own** motion-token scale and their own easing per transition. CertAnvil's motion tokens are **locked** in `design/brand/BRAND.md` §6. When they disagree, **BRAND.md wins, always.**
+
+- **Order is the point.** Stage 2 (`emil-design-eng`) decides **whether it moves at all** — restraint first, "when in doubt take it out". Stage 3 decides **how it moves** once stage 2 has said yes. Never run stage 3 to justify motion stage 2 didn't ask for.
+- **Take the choreography, not the numbers.** What moves, in what order, what blurs, what the enter/exit asymmetry is — that's the value. The durations, the easing curves, and the `:root` block are not.
+- **Never paste `_root.css`.** Re-time every snippet onto BRAND.md's `cubic-bezier(0.16, 1, 0.3, 1)` and duration table before it touches `dg-system.css`. Pasting the upstream token block is the motion-axis version of the 2026-06-12 gold-drift lesson.
+- **`transitions-polish` is opt-in only — never auto-run it.** Its whole job is realigning existing durations to the transitions.dev scale, which is precisely the drift this rule prevents. Use it only when the founder explicitly asks to audit motion, and treat its output as suggestions to re-map onto BRAND.md, not to apply.
+- **Overlap note:** `15-shimmer-text` duplicates the `antalik-effects` skill (same author, different repo). Pick one; don't ship both.
+
+Everything ported from stage 3 still owes the standard CertAnvil debts: `transform`+`opacity` only, entrances never below `scale(0.96)`, hover gated behind `@media (hover:hover) and (pointer:fine)`, and a `prefers-reduced-motion` collapse to fade-only.
 
 **HARD RULE — cross-platform coverage (founder, 2026-07-19):** EVERY feature — visual AND runtime behavior (network handling, timeouts, lifecycle, storage) — must be designed for and verified on all four targets: Desktop, Safari/WebKit, mobile web, and iOS Capacitor. Specs and plans must carry an explicit cross-platform section; live-verify covers all four (Capacitor per IOS_TESTING.md). Platform gotchas that recur: WKWebView suspend aborts in-flight requests; `navigator.onLine` lies on iOS; mobile Safari evicts tabs aggressively; hover must stay pointer-gated; touch targets ≥44px; safe-area insets.
 

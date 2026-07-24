@@ -11,6 +11,8 @@ tags: [audit, design]
 Evaluated against Emil Kowalski's design engineering principles (`.agents/skills/emil-design-eng/SKILL.md`).
 Three scopes: existing animation violations, missing motion in the cert app, missing motion on the landing site.
 
+> **Second lens added 2026-07-24:** the `transitions-dev` skill is now stage 3 of the visual pass (see `feature-lane`). Use it when re-running this audit to source **choreography** for the "missing motion" scopes — but score everything against BRAND.md §6's locked curve and duration table, never against the transitions.dev token scale. `transitions-polish` must not be run unsupervised here; it realigns durations upstream, which is the drift BRAND.md §6 guards against.
+
 **Stats:** 67 total findings across 3 categories, 7 ship releases.
 
 ---

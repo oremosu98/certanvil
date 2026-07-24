@@ -234,7 +234,14 @@ Never use `rgba(0,0,0, .35)` style hex/rgba shadows on chrome (they don't adapt 
 
 ---
 
-## 6 · Motion · emil-design-eng
+## 6 · Motion · emil-design-eng + transitions-dev
+
+Two skills own motion, in this order. **`emil-design-eng` decides whether a thing moves at all** (restraint with purpose — when in doubt, take it out). **`transitions-dev` decides how it moves** once that's settled. They are stages 2 and 3 of the 5-stage visual pass in the `feature-lane` skill.
+
+> **⚠ Precedence — this section outranks the transitions.dev skill.**
+> `transitions-dev` / `transitions-polish` are third-party skills (`npx skills add Jakubantalik/transitions.dev`) that ship their **own** token scale and their own easing per transition. Everything below is **locked**. When they disagree, this file wins.
+>
+> Take from that skill the **choreography** — what moves, in what order, what blurs, how enter differs from exit. Never take its **numbers**. Re-time every snippet onto the curve and duration table below before it enters `dg-system.css`, and **never paste its `_root.css`** — that's the motion-axis rerun of the 2026-06-12 gold-drift lesson. `transitions-polish` is opt-in only; its entire purpose is realigning durations to the upstream scale, so never let it run unsupervised.
 
 The locked motion principles:
 
@@ -392,4 +399,4 @@ When fixing a class-of-bug, grep the **pattern** (shape), not the specific funct
 
 ---
 
-**Last updated**: 2026-06-12 (mockup starter token block) · prior v5.5.12 · 2026-05-19
+**Last updated**: 2026-07-24 (§6 motion — transitions-dev added as stage 3, precedence rule locked) · prior 2026-06-12 (mockup starter token block) · v5.5.12 · 2026-05-19
