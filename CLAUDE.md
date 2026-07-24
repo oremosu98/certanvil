@@ -92,6 +92,7 @@ Items tagged `saas-gated` on either board are **frozen until the paid-SaaS pivot
 
 ### Version bumps
 `node scripts/bump-version.js <new> "<desc>"` updates `APP_VERSION` (app.js) + `CACHE_NAME` (sw.js) + version badge (index.html) + `package.json` + **prepends a 1-line stub row to the Version History table below**. Do NOT hand-edit partial — UAT asserts consistency across all 4 code surfaces. **The stub STAYS a one-line stub here — never expand it inline; full ship detail goes in the commit message + CHANGELOG.md (expanding rows inline is exactly what bloated this file).** The script writes CLAUDE.md, so re-read it before any follow-up edit (any prior snapshot is stale).
+**The one thing it does NOT touch: `dg-system.css?v=` in index.html.** Hand-bump that yourself, in the same commit, on any `dg-system.css` change (`grep -o 'dg-system\.css?v=[0-9.]*' index.html` first). Nothing fails if you forget — UAT, CI and Deploy Verification all stay green while the service worker keeps serving the old stylesheet, so the change is simply invisible in prod. Full rule: [BRAND.md](design/brand/BRAND.md) §Versioning.
 
 ## Branching Strategy — Risk-Tiered (adopted 2026-05-12)
 

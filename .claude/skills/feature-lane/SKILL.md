@@ -64,7 +64,9 @@ Everything ported from stage 3 still owes the standard CertAnvil debts: `transfo
 
 ## Stage 4 · Ship
 
-Hand off to the **ship** skill (`/ship`) — lane decision, UAT/Playwright, `bump-version.js` (never hand-edit; it also must bump the `dg-system.css?v=` query on dg-system changes), push, and the post-deploy live-browser verification. "Shipped" is only claimable after driving the real prod URL per CLAUDE.md's post-deploy section.
+Hand off to the **ship** skill (`/ship`) — lane decision, UAT/Playwright, `bump-version.js` (never hand-edit its 5 surfaces), push, and the post-deploy live-browser verification. "Shipped" is only claimable after driving the real prod URL per CLAUDE.md's post-deploy section.
+
+**If the change touched `dg-system.css`, hand-bump `dg-system.css?v=` in `index.html` yourself — `bump-version.js` does NOT touch that query.** Same commit as the CSS change. Miss it and the service worker serves the old stylesheet, so the change is invisible in prod while every check still reports green. Verify the current value first: `grep -o 'dg-system\.css?v=[0-9.]*' index.html`.
 
 ## Quick reference — where things live
 
