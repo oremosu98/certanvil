@@ -83,6 +83,11 @@
      error-shake idiom already established for wrong answers rather than
      inventing a second negative-feedback vocabulary. */
   --streak-break: 220ms;
+
+  /* Deep Dive (explainFurther). Panel growth uses the accordion band so a
+     350-word block does not shove the page; the six sections stagger in on
+     BRAND's 60ms reveal unit so the answer lands as structure, not a wall. */
+  --dd-grow: 220ms; --dd-section-step: 60ms;
 }
 [data-theme="light"] {
   --shimmer-base: oklch(0.50 0.013 280); --shimmer-highlight: oklch(0.22 0.015 280);
@@ -308,7 +313,14 @@ body {
   background: none; border: 0; padding: 0; cursor: pointer; color: var(--accent-deep);
   font: 800 10px Inter, sans-serif; letter-spacing: 0.1em; text-transform: uppercase;
 }
-.t-acc-panel { display: grid; grid-template-rows: 0fr; transition: grid-template-rows var(--acc-dur) var(--ease); }
+/* grid-template-columns: minmax(0, 1fr) is load-bearing, not decoration.
+   Without an explicit column the implicit one is `auto`, which resolves
+   from CONTENT — and the Deep Dive nests a second grid-rows accordion
+   inside this one, so the inner grid gets measured against an indefinite
+   width. Result: the column collapses to ~0, text wraps one character per
+   line, and the panel resolves to thousands of pixels tall. Pinning the
+   column to the container width kills the whole class of bug. */
+.t-acc-panel { display: grid; grid-template-rows: 0fr; grid-template-columns: minmax(0, 1fr); transition: grid-template-rows var(--acc-dur) var(--ease); }
 .t-acc[data-open="true"] .t-acc-panel { grid-template-rows: 1fr; }
 .t-acc-panel-inner {
   overflow: hidden; opacity: 0; filter: blur(2px);
@@ -512,6 +524,81 @@ body {
 .bd-fill.ok { background: var(--pass); }
 .bd-val { font: 600 11.5px Inter, sans-serif; color: var(--ink-soft); text-align: right; font-variant-numeric: tabular-nums; }
 
+/* ════════════════════════════════════════════════════════════════════════
+   DEEP DIVE (explainFurther) — the async teacher call
+   Today this is a hard display:none → block pop on a 350-word block, with
+   a text-swap "Loading…" on the button and a panel hardcoded to white/black
+   plus the pre-rebrand purple. All three are logged as separate bugs.
+   Motion here: antalik orb + shimmer for the wait, accordion for the growth
+   so the page never jumps, texts-reveal to land the six sections in order.
+   ════════════════════════════════════════════════════════════════════════ */
+.dd-btn {
+  display: inline-flex; align-items: center; gap: 7px; margin-top: 12px;
+  background: color-mix(in oklab, var(--accent) 10%, transparent);
+  border: 1px solid color-mix(in oklab, var(--accent) 32%, transparent);
+  color: var(--accent-deep); border-radius: 8px; padding: 8px 14px;
+  font: 600 12px Inter, sans-serif; cursor: pointer;
+  transition: background 150ms var(--ease), border-color 150ms var(--ease),
+              opacity 150ms var(--ease), transform 150ms var(--ease);
+}
+@media (hover: hover) and (pointer: fine) {
+  .dd-btn:not(:disabled):hover { background: color-mix(in oklab, var(--accent) 18%, transparent); }
+}
+.dd-btn:not(:disabled):active { transform: scale(0.97); }
+.dd-btn:disabled { cursor: default; }
+.dd-btn.is-done { opacity: 0.5; }
+.dd-btn.is-failed { color: var(--fail); border-color: color-mix(in oklab, var(--fail) 45%, transparent); }
+/* Error reuses the shake already established for wrong answers rather than
+   inventing a second failure vocabulary. */
+.dd-btn.is-shaking { animation: t-shake calc(var(--shake-a) * 2 + var(--shake-b) * 2) linear; }
+.dd-btn .orb { width: 13px; height: 13px; color: currentColor; }
+
+/* Panel growth via grid-rows, same mechanism as the explanation accordion —
+   the page reflows smoothly instead of being shoved by 350 words landing. */
+/* Same explicit column as the outer accordion — this is the inner grid of
+   the nested pair, so it needs the pin even more than the outer one. */
+.dd-panel { display: grid; grid-template-rows: 0fr; grid-template-columns: minmax(0, 1fr); transition: grid-template-rows var(--dd-grow) var(--ease); }
+.dd.is-open .dd-panel { grid-template-rows: 1fr; }
+.dd-panel-inner { overflow: hidden; }
+.dd-body {
+  margin-top: 12px; padding: 14px 16px; border-radius: 10px;
+  /* Tokens, not hardcoded white/black — see the logged brand bug. */
+  background: var(--surface-2);
+  border: 1px solid var(--border-soft);
+  border-left: 3px solid var(--accent);
+}
+.dd-eyebrow {
+  font: 800 9.5px Inter, sans-serif; letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--accent-deep); display: flex; align-items: center; gap: 7px; margin-bottom: 10px;
+}
+.dd-cached {
+  font: 600 8.5px Inter, sans-serif; letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--muted); border: 1px solid var(--border); border-radius: 20px; padding: 1px 6px;
+}
+/* Each section is a texts-reveal line. Six of them at 60ms = 300ms of
+   stagger — enough to read as sequence, short enough not to feel slow. */
+.dd-sec {
+  display: block; opacity: 0;
+  transform: translateY(var(--stagger-distance)); filter: blur(var(--stagger-blur));
+  transition: opacity var(--stagger-dur) var(--ease),
+              transform var(--stagger-dur) var(--ease),
+              filter var(--stagger-dur) var(--ease);
+  will-change: transform, opacity, filter;
+}
+.dd.is-shown .dd-sec { opacity: 1; transform: translateY(0); filter: blur(0); }
+.dd.is-shown .dd-sec[data-s="1"] { transition-delay: calc(var(--dd-section-step) * 1); }
+.dd.is-shown .dd-sec[data-s="2"] { transition-delay: calc(var(--dd-section-step) * 2); }
+.dd.is-shown .dd-sec[data-s="3"] { transition-delay: calc(var(--dd-section-step) * 3); }
+.dd.is-shown .dd-sec[data-s="4"] { transition-delay: calc(var(--dd-section-step) * 4); }
+.dd.is-shown .dd-sec[data-s="5"] { transition-delay: calc(var(--dd-section-step) * 5); }
+.dd-sec + .dd-sec { margin-top: 12px; }
+.dd-sec-h {
+  display: block; font: 800 9px Inter, sans-serif; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--muted); margin-bottom: 3px;
+}
+.dd-sec-b { font: 400 12.5px/1.65 Inter, sans-serif; color: var(--ink-soft); }
+.dd-sec-b b { color: var(--ink); font-weight: 600; }
+
 /* ── legend ────────────────────────────────────────────────────────────── */
 .legend { margin-top: 22px; background: var(--surface); border: 1px solid var(--border-soft); border-radius: 13px; padding: 20px; }
 .legend h2 { font: 600 15px Fraunces, Georgia, serif; margin: 8px 0 12px; }
@@ -526,8 +613,9 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .orb, .t-shimmer::before, .option.is-shaking, .t-check, .t-check svg path,
   .t-digits .t-digit, .t-flag[data-flagged="true"] .t-flag-icon,
-  .streak.is-breaking, .streak-n .t-digit { animation: none !important; }
-  .streak, .streak-icon { transition: none !important; }
+  .streak.is-breaking, .streak-n .t-digit, .dd-btn.is-shaking { animation: none !important; }
+  .streak, .streak-icon, .dd-btn, .dd-panel, .dd-sec { transition: none !important; }
+  .dd.is-open .dd-sec { opacity: 1; transform: none; filter: none; }
   .t-check { opacity: 1; } .t-check svg path { stroke-dashoffset: 0 !important; }
   .t-stagger-line, .t-slide .t-page, .t-acc-panel, .t-acc-panel-inner, .t-acc-chevron,
   .t-skel-a, .t-skel-b, .next, .verdict-txt, body,
@@ -546,6 +634,7 @@ body {
       <div style="font:600 15px Fraunces,Georgia,serif;margin-top:4px">Security+ · Cryptography Fundamentals</div>
     </div>
     <div style="display:flex;gap:8px">
+      <button class="restart" onclick="_ddFailNext = true; this.textContent = 'Fail armed';">Fail next</button>
       <button class="restart" onclick="restart()">Restart</button>
       <button class="themebtn" onclick="document.documentElement.dataset.theme=document.documentElement.dataset.theme==='dark'?'light':'dark'">Theme</button>
     </div>
@@ -677,6 +766,17 @@ const QS = [
            'Key agreement requires a CA to broker the secret between the two parties'],
     answers: [0, 2],
     expl: 'Key transport sends a protected key; key agreement has both sides compute it independently, and in Diffie-Hellman only the public values cross the wire. Rotation does not buy forward secrecy — a stolen static key still opens any captured session. And agreement is peer-to-peer; no CA touches the computation.' }
+];
+
+/* Deep Dive payload — the six sections explainFurther() actually asks Sonnet
+   for. Shortened here; the real call returns 250-350 words. */
+const DEEP = [
+  ['Concept breakdown', 'Key exchange solves one problem: two systems need a shared secret, but everything between them is untrusted. Ephemeral Diffie-Hellman sidesteps it by never sending the secret at all — each side computes it locally from its own private value and the other side’s public one.'],
+  ['Real-world analogy', 'Two people mixing paint. Each keeps a private colour, publicly swaps a mixed sample, then adds their private colour again. Both end up with the same final shade. An observer sees only the intermediate mixes and cannot separate them back out.'],
+  ['Why each wrong answer is wrong', '<b>A</b> assumes the long-term key encrypted the session — it only authenticated the handshake. <b>B</b> invents a time window that has no mechanism behind it. <b>D</b> confuses factoring RSA with the elliptic-curve discrete log problem.'],
+  ['How this appears on the exam', 'Watch for “records traffic now, obtains the key later”. That phrasing is always testing forward secrecy. If the cipher suite names ECDHE or DHE, past sessions are safe; if it names plain RSA key transport, they are not.'],
+  ['Memory trick', '<b>The E is the escape.</b> ECDH leaves you exposed, ECDH<b>E</b> lets past sessions escape a future key theft.'],
+  ['Related concepts', 'Hybrid encryption · Key derivation functions (HKDF) · TLS 1.3 handshake changes']
 ];
 
 /* Exam-keyword glossary. CertAnvil already runs highlightExamKeywords over
@@ -871,6 +971,19 @@ function renderQuestion(i, first) {
       <div class="t-acc-panel"><div class="t-acc-panel-inner">
         <p class="expl">${q.expl}</p>
         ${q.wrongExpl ? `<div class="exp-wrong is-hidden">${q.wrongExpl}</div>` : ''}
+        <div class="dd">
+          <button class="dd-btn">
+            <span class="dd-btn-label">Explain further</span>
+          </button>
+          <div class="dd-panel"><div class="dd-panel-inner">
+            <div class="dd-body">
+              <div class="dd-eyebrow"><span>Deep dive</span><span class="dd-cached is-hidden">Cached</span></div>
+              ${DEEP.map(([h, b], n) => `<span class="dd-sec" data-s="${n}">
+                <span class="dd-sec-h">${h}</span><span class="dd-sec-b">${b}</span>
+              </span>`).join('')}
+            </div>
+          </div></div>
+        </div>
       </div></div>
     </div>
     <div class="actions">
@@ -940,6 +1053,8 @@ function renderQuestion(i, first) {
   });
   const prevBtn = page.querySelector('.prev');
   prevBtn.addEventListener('click', () => { if (idx > 0) renderQuestion(idx - 1); });
+
+  wireDeepDive(page, i);
 }
 
 /* ── answer: success-check on right, error-shake on wrong ─────────────── */
@@ -1003,6 +1118,65 @@ function finishAnswer(page, right) {
   acc.dataset.open = 'true';
   page.querySelector('.next').classList.add('is-on');
   renderDots();
+}
+
+/* ── Deep Dive (explainFurther) ─────────────────────────────────────────
+   Mirrors the real call's states: idle → loading → open, plus the cache
+   hit and the failure path. The real one is a Sonnet 4.6 call returning
+   six labeled sections, wrapped in _aiCacheGet/_aiCacheSet. */
+const _ddCache = new Set();   // stands in for _aiCacheGet
+let _ddFailNext = false;      // toggled by the Fail switch, to exercise the error path
+
+function wireDeepDive(page, qIndex) {
+  const dd = page.querySelector('.dd');
+  const btn = page.querySelector('.dd-btn');
+  const label = page.querySelector('.dd-btn-label');
+  const cachedTag = page.querySelector('.dd-cached');
+  const orbSvg = `<svg class="orb" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1.3" stroke-dasharray="1.6 2.6" stroke-linecap="round"
+      role="img" aria-label="Consulting the teacher">
+      <circle cx="12" cy="12" r="9"/><ellipse cx="12" cy="12" rx="9" ry="3.6"/>
+      <ellipse cx="12" cy="12" rx="3.6" ry="9"/></svg>`;
+
+  const open = cached => {
+    dd.classList.add('is-open');
+    cachedTag.classList.toggle('is-hidden', !cached);
+    /* Reflow so the pre-reveal state is flushed, then flip synchronously —
+       rAF would not fire if the user tabbed away mid-call, which is exactly
+       when a slow API response is most likely to finish. */
+    void dd.offsetWidth;
+    dd.classList.add('is-shown');
+    btn.disabled = true;
+    btn.classList.add('is-done');
+    btn.innerHTML = '<span class="dd-btn-label">Explained</span>';
+  };
+
+  btn.addEventListener('click', () => {
+    if (dd.classList.contains('is-open')) return;
+
+    /* Cache hit: no spinner at all. Today a cached response and a 4-second
+       live call look identical, which trains the wrong expectation. */
+    if (_ddCache.has(qIndex)) { open(true); return; }
+
+    btn.disabled = true;
+    /* antalik: the label is the STATE, never "Loading". */
+    btn.innerHTML = orbSvg + '<span class="t-shimmer dd-btn-label" data-text="Consulting the teacher…">Consulting the teacher…</span>';
+
+    setTimeout(() => {
+      if (_ddFailNext) {
+        _ddFailNext = false;
+        btn.disabled = false;
+        btn.classList.add('is-failed');
+        btn.innerHTML = '<span class="dd-btn-label">Failed — try again</span>';
+        void btn.offsetWidth;
+        btn.classList.add('is-shaking');
+        setTimeout(() => btn.classList.remove('is-shaking', 'is-failed'), 1400);
+        return;
+      }
+      _ddCache.add(qIndex);
+      open(false);
+    }, 1600);
+  });
 }
 
 /* Multi-select scoring: all-or-nothing, matching the runtime scorer's
