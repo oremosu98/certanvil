@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CertAnvil · PBQ CLI-Sim Motion</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600;800&display=swap" rel="stylesheet">
+<style>
+/* ════════════════════════════════════════════════════════════════════════
+   CertAnvil · MOCKUP STARTER TOKEN BLOCK — verbatim from
+   design/brand/mockup-starter-tokens.css. Never freehand.
+   ════════════════════════════════════════════════════════════════════════ */
+:root, [data-theme="dark"] {
+  --bg: oklch(0.17 0.008 275); --surface: oklch(0.205 0.009 275); --surface-2: oklch(0.23 0.009 275);
+  --ink: oklch(0.96 0.006 275); --ink-soft: oklch(0.80 0.012 275); --muted: oklch(0.725 0.013 275);
+  --border: oklch(0.32 0.011 275); --border-soft: oklch(0.255 0.010 275);
+  --accent: oklch(0.80 0.155 64); --accent-deep: oklch(0.86 0.135 64); --on-accent: oklch(0.18 0.020 275);
+  --pass: oklch(0.74 0.150 152); --fail: oklch(0.66 0.17 25);
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+}
+[data-theme="light"] {
+  --bg: oklch(0.975 0.007 85); --surface: oklch(0.992 0.004 85); --surface-2: oklch(0.965 0.010 84);
+  --ink: oklch(0.22 0.015 280); --ink-soft: oklch(0.36 0.014 280); --muted: oklch(0.50 0.013 280);
+  --border: oklch(0.86 0.008 85); --border-soft: oklch(0.91 0.006 85);
+  --accent: oklch(0.50 0.155 55); --accent-deep: oklch(0.42 0.150 52); --on-accent: oklch(0.985 0.010 85);
+  --pass: oklch(0.50 0.15 150); --fail: oklch(0.52 0.19 25);
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+   MOTION TOKENS — BRAND.md §6. transitions.dev _root.css NOT imported.
+   ════════════════════════════════════════════════════════════════════════ */
+:root {
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --stagger-dur: 380ms; --stagger-distance: 6px; --stagger-blur: 2px;
+  /* Terminal line stagger is 34ms, NOT BRAND's 60ms reveal unit. Output can
+     run 20+ lines; at 60ms that is 1.2s of drip before the last line lands,
+     which reads as a slow app rather than a fast machine. See the cap note. */
+  --line-step: 34ms;
+  --line-cap: 6;
+  --swap-dur: 150ms; --swap-y: 4px; --swap-blur: 2px;
+  --acc-dur: 220ms;                       /* accordion → diagnosis reveal */
+  --resize-dur: 220ms;                    /* card-resize → terminal growth */
+  --cb-box: 150ms; --cb-draw: 220ms;      /* checkbox-check → command used */
+  --check-dur: 520ms; --check-rotate-from: 80deg; --check-y: 40px; --check-blur-from: 10px;
+  --shake-a: 80ms; --shake-b: 60ms; --shake-distance: 6px; --shake-overshoot: 4px;
+  /* antalik shimmer — the executing command. 2s is the effect's own clock. */
+  --shimmer-dur: 2s; --shimmer-band: 400%;
+  --shimmer-base: oklch(0.725 0.013 275); --shimmer-highlight: oklch(0.96 0.006 275);
+  --cursor-blink: 1.05s;
+}
+[data-theme="light"] { --shimmer-base: oklch(0.50 0.013 280); --shimmer-highlight: oklch(0.22 0.015 280); }
+
+* { box-sizing: border-box; }
+.is-hidden { display: none !important; }
+body {
+  margin: 0; padding: 30px 20px 60px; background: var(--bg); color: var(--ink);
+  font-family: Inter, system-ui, sans-serif;
+  transition: background 220ms var(--ease), color 220ms var(--ease);
+}
+.wrap { max-width: 800px; margin: 0 auto; }
+.eyebrow { font: 800 10px/1 Inter, sans-serif; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent-deep); }
+.topbar { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; gap: 12px; flex-wrap: wrap; }
+.btn-sm {
+  background: var(--surface-2); color: var(--ink); border: 1px solid var(--border);
+  border-radius: 8px; padding: 7px 12px; font: 600 11.5px Inter, sans-serif; cursor: pointer;
+  min-height: 36px; transition: transform 150ms var(--ease), border-color 150ms var(--ease);
+}
+.btn-sm:active { transform: scale(0.97); }
+
+.shell { background: var(--surface); border: 1px solid var(--border-soft); border-radius: 16px; padding: 26px; }
+.qeyebrow { font: 800 9.5px Inter, sans-serif; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+.pbq-badge {
+  display: inline-block; margin-left: 8px; border-radius: 5px; padding: 2px 7px;
+  background: color-mix(in oklab, var(--accent) 18%, transparent); color: var(--accent-deep);
+  font: 800 8.5px Inter, sans-serif; letter-spacing: 0.08em; text-transform: uppercase;
+}
+.stem { font: 600 18px/1.45 Fraunces, Georgia, serif; margin: 10px 0 16px; letter-spacing: -0.005em; }
+.cli-scenario { display: flex; gap: 10px; margin: 0 0 18px; }
+.cli-scenario-rule { flex: none; width: 2px; border-radius: 2px; background: color-mix(in oklab, var(--accent) 55%, transparent); }
+.cli-scenario-body { font: 400 13px/1.6 Inter, sans-serif; color: var(--muted); }
+
+/* ════════════════════════════════════════════════════════════════════════
+   TERMINAL
+   The engine appends output with textContent, so 20 lines land in one
+   frame. A real machine streams. Lines here ride a capped stagger so the
+   output reads as arriving rather than being pasted.
+   ════════════════════════════════════════════════════════════════════════ */
+.terminal {
+  background: oklch(0.13 0.008 275); border: 1px solid var(--border);
+  border-radius: 12px; padding: 14px 16px;
+  font: 400 12.5px/1.62 ui-monospace, "SF Mono", Menlo, monospace;
+  color: oklch(0.88 0.01 275);
+  max-height: 300px; overflow-y: auto;
+  /* card-resize: the box tweens as output appends instead of jumping. */
+  transition: max-height var(--resize-dur) var(--ease), border-color var(--resize-dur) var(--ease);
+}
+[data-theme="light"] .terminal { background: oklch(0.18 0.012 275); color: oklch(0.90 0.008 275); }
+.terminal.is-running { border-color: color-mix(in oklab, var(--accent) 45%, transparent); }
+.term-line { white-space: pre-wrap; word-break: break-word; }
+.term-prompt-text { color: var(--accent-deep); }
+.term-out {
+  margin: 2px 0 10px; white-space: pre-wrap; word-break: break-word;
+  color: oklch(0.78 0.012 275); font: inherit;
+}
+/* texts-reveal, terminal-tuned: short distance, no blur on the tail lines. */
+.term-row {
+  display: block; opacity: 0; transform: translateY(var(--stagger-distance));
+  transition: opacity var(--stagger-dur) var(--ease), transform var(--stagger-dur) var(--ease);
+  will-change: transform, opacity;
+}
+.term-row.is-in { opacity: 1; transform: translateY(0); }
+
+/* Cursor blinks ONLY while awaiting input. antalik's static-when-idle rule,
+   inverted: the idle state is the animated one here, because a blinking
+   cursor means "ready for you", and a cursor blinking while a command runs
+   would claim the machine is idle when it is not. */
+.cursor { display: inline-block; width: 7px; color: var(--accent); }
+.term-prompt[data-idle="true"] .cursor { animation: blink var(--cursor-blink) steps(1) infinite; }
+@keyframes blink { 0%, 49% { opacity: 1; } 50%, 100% { opacity: 0; } }
+
+/* ── antalik shimmer on the executing command ──────────────────────────
+   The label IS the state: "ipconfig /all" shimmering means that command is
+   running right now. Not a spinner, not the word "Loading". ── */
+.t-shimmer { position: relative; display: inline-block; color: var(--shimmer-base); }
+.t-shimmer::before {
+  content: attr(data-text); position: absolute; inset: 0; pointer-events: none;
+  background-image: linear-gradient(90deg, transparent 0 40%, var(--shimmer-highlight) 50%, transparent 60% 100%);
+  background-size: var(--shimmer-band) 100%; background-repeat: no-repeat;
+  background-clip: text; color: transparent; -webkit-text-fill-color: transparent;
+  animation: t-shimmer var(--shimmer-dur) linear infinite;
+}
+@keyframes t-shimmer { 0% { background-position: 100% 0; } 100% { background-position: 0% 0; } }
+
+/* ── command buttons ───────────────────────────────────────────────────── */
+.cmd-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 14px; }
+.cmd-label { font: 800 9px Inter, sans-serif; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-right: 2px; }
+.cmd-btn {
+  display: inline-flex; align-items: center; gap: 7px;
+  background: var(--surface-2); border: 1px solid var(--border); color: var(--ink);
+  border-radius: 8px; padding: 8px 12px; min-height: 44px;
+  font: 500 12px ui-monospace, Menlo, monospace; cursor: pointer;
+  transition: border-color 150ms var(--ease), background 150ms var(--ease),
+              transform 150ms var(--ease), opacity var(--resize-dur) var(--ease);
+}
+@media (hover: hover) and (pointer: fine) {
+  .cmd-btn:not(.is-used):not(:disabled):hover { border-color: var(--accent); background: var(--surface); }
+}
+.cmd-btn:not(:disabled):active { transform: scale(0.97); }
+.cmd-btn:disabled { cursor: default; }
+/* A used command dims but stays readable and re-runnable — the engine keeps
+   them clickable, and hiding what you already tried loses the audit trail. */
+.cmd-btn.is-used { opacity: 0.55; border-style: dashed; }
+
+/* checkbox-check (transitions-dev 25) — the "already run" marker */
+.cmd-mark {
+  flex: none; width: 16px; height: 16px; border-radius: 4px;
+  border: 1.5px solid var(--border); display: grid; place-items: center; color: var(--on-accent);
+  transition: background var(--cb-box) var(--ease), border-color var(--cb-box) var(--ease);
+}
+.cmd-mark svg { display: block; }
+.cmd-mark svg path {
+  stroke-dasharray: var(--cb-len, 15); stroke-dashoffset: var(--cb-len, 15);
+  transition: stroke-dashoffset var(--cb-box) var(--ease);
+}
+.cmd-btn.is-used .cmd-mark { background: var(--accent); border-color: var(--accent); }
+.cmd-btn.is-used .cmd-mark svg path { stroke-dashoffset: 0; transition: stroke-dashoffset var(--cb-draw) var(--ease) 60ms; }
+
+/* ════════════════════════════════════════════════════════════════════════
+   DIAGNOSIS — accordion (transitions-dev 21)
+   The engine reveals this with classList.remove('is-hidden'), a hard pop
+   that shoves the page. grid-rows 0fr→1fr grows it instead.
+   ════════════════════════════════════════════════════════════════════════ */
+.diag { display: grid; grid-template-rows: 0fr; grid-template-columns: minmax(0, 1fr); transition: grid-template-rows var(--acc-dur) var(--ease); margin-top: 18px; }
+.diag.is-open { grid-template-rows: 1fr; }
+.diag-inner { overflow: hidden; }
+.diag-label {
+  font: 800 9px Inter, sans-serif; letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--accent-deep); margin-bottom: 10px; padding-top: 4px;
+}
+.options { display: flex; flex-direction: column; gap: 8px; }
+.option {
+  display: flex; align-items: flex-start; gap: 11px; width: 100%; text-align: left;
+  background: var(--surface-2); border: 1.5px solid var(--border-soft);
+  border-radius: 10px; padding: 12px 14px; color: var(--ink); min-height: 44px;
+  font: 500 13.5px/1.45 Inter, sans-serif; cursor: pointer;
+  transition: border-color 150ms var(--ease), background 150ms var(--ease), transform 150ms var(--ease), opacity var(--resize-dur) var(--ease);
+}
+@media (hover: hover) and (pointer: fine) { .option:not(.is-locked):hover { border-color: var(--accent); } }
+.option:not(.is-locked):active { transform: scale(0.985); }
+.opt-letter {
+  flex: none; width: 21px; height: 21px; border-radius: 6px;
+  background: var(--border); color: var(--ink-soft);
+  font: 700 11px/21px Inter, sans-serif; text-align: center;
+  transition: background 220ms var(--ease), color 220ms var(--ease);
+}
+.option.is-correct { border-color: var(--pass); background: color-mix(in oklab, var(--pass) 12%, transparent); }
+.option.is-correct .opt-letter { background: var(--pass); color: var(--on-accent); }
+.option.is-wrong { border-color: var(--fail); background: color-mix(in oklab, var(--fail) 12%, transparent); }
+.option.is-wrong .opt-letter { background: var(--fail); color: var(--on-accent); }
+.option.is-dimmed { opacity: 0.45; }
+.option.is-shaking { animation: t-shake calc(var(--shake-a) * 2 + var(--shake-b) * 2) linear; }
+@keyframes t-shake {
+  0%     { transform: translateX(0);                              animation-timing-function: var(--ease); }
+  28.57% { transform: translateX(var(--shake-distance));          animation-timing-function: var(--ease); }
+  57.14% { transform: translateX(calc(var(--shake-distance)*-1)); animation-timing-function: var(--ease); }
+  78.57% { transform: translateX(var(--shake-overshoot));         animation-timing-function: var(--ease); }
+  100%   { transform: translateX(0); }
+}
+
+/* ── verdict ───────────────────────────────────────────────────────────── */
+.verdict { display: flex; align-items: center; gap: 10px; margin-top: 16px; min-height: 34px; }
+.t-check { display: inline-block; transform-origin: center; opacity: 0; will-change: transform, opacity, filter; }
+.t-check svg { display: block; overflow: visible; }
+.t-check[data-state="in"] {
+  animation: c-fade var(--check-dur) var(--ease) forwards, c-rot var(--check-dur) var(--ease) forwards,
+             c-blur var(--check-dur) var(--ease) forwards, c-bob var(--check-dur) var(--ease) forwards;
+}
+.t-check[data-state="in"] svg path { animation: c-draw var(--check-dur) var(--ease) 80ms forwards; }
+@keyframes c-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes c-rot  { from { transform: rotate(var(--check-rotate-from)); } to { transform: rotate(0); } }
+@keyframes c-blur { from { filter: blur(var(--check-blur-from)); } to { filter: blur(0); } }
+@keyframes c-bob  { from { translate: 0 var(--check-y); } to { translate: 0 0; } }
+@keyframes c-draw { to { stroke-dashoffset: 0; } }
+.verdict-txt { font: 600 14px Fraunces, Georgia, serif; opacity: 0; transition: opacity var(--check-dur) var(--ease); }
+.verdict.is-on .verdict-txt { opacity: 1; }
+.verdict.ok .verdict-txt { color: var(--pass); }
+.verdict.no .verdict-txt { color: var(--fail); }
+
+/* ── legend ────────────────────────────────────────────────────────────── */
+.legend { margin-top: 24px; background: var(--surface); border: 1px solid var(--border-soft); border-radius: 13px; padding: 22px; }
+.legend h2 { font: 600 16px Fraunces, Georgia, serif; margin: 8px 0 12px; }
+.legend table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.legend th, .legend td { text-align: left; padding: 8px; border-bottom: 1px solid var(--border-soft); vertical-align: top; }
+.legend th { font: 800 9px Inter, sans-serif; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+.legend code { font: 500 11px ui-monospace, Menlo, monospace; background: var(--surface-2); padding: 2px 5px; border-radius: 4px; }
+.tag { font: 700 9px Inter, sans-serif; letter-spacing: .06em; padding: 2px 6px; border-radius: 4px; text-transform: uppercase; }
+.tag.td { background: color-mix(in oklab, var(--accent) 20%, transparent); color: var(--accent-deep); }
+.tag.ae { background: color-mix(in oklab, var(--pass) 20%, transparent); color: var(--pass); }
+
+@media (max-width: 560px) {
+  .terminal { font-size: 11px; max-height: 240px; }
+  .cmd-btn { flex: 1 1 auto; justify-content: center; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .term-prompt[data-idle="true"] .cursor, .t-shimmer::before, .option.is-shaking,
+  .t-check, .t-check svg path { animation: none !important; }
+  .t-check { opacity: 1; } .t-check svg path { stroke-dashoffset: 0 !important; }
+  .term-row, .terminal, .diag, .cmd-btn, .cmd-mark, .cmd-mark svg path,
+  .option, .opt-letter, .verdict-txt, body { transition: none !important; }
+  .term-row { opacity: 1; transform: none; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="topbar">
+    <div>
+      <div class="eyebrow">PBQ · cli-sim</div>
+      <div style="font:600 15px Fraunces,Georgia,serif;margin-top:4px">Run commands, then diagnose</div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn-sm" onclick="runAll()">Run all</button>
+      <button class="btn-sm" onclick="reset()">Reset</button>
+      <button class="btn-sm" onclick="document.documentElement.dataset.theme=document.documentElement.dataset.theme==='dark'?'light':'dark'">Theme</button>
+    </div>
+  </div>
+
+  <div class="shell">
+    <div class="qeyebrow">Objective 5.3 · Exam Level<span class="pbq-badge">CLI Sim</span></div>
+    <p class="stem">A workstation cannot reach the internet, but other machines on the same switch can. Run diagnostics, then identify the fault.</p>
+
+    <div class="cli-scenario">
+      <span class="cli-scenario-rule" aria-hidden="true"></span>
+      <span class="cli-scenario-body">The user reports the problem started this morning. The machine was not moved and no configuration was changed by the user. It holds an address and the link light is on.</span>
+    </div>
+
+    <div class="terminal" id="term" role="log" aria-label="Terminal output" aria-live="polite"></div>
+
+    <div class="cmd-row" id="cmds"><span class="cmd-label">Run</span></div>
+
+    <div class="diag" id="diag">
+      <div class="diag-inner">
+        <div class="diag-label">Diagnosis</div>
+        <div class="options" id="opts"></div>
+        <div class="verdict" id="verdict">
+          <span class="t-check" id="check" data-state="out">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+              <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.5" opacity="0.28"/>
+              <path d="M7.5 12.4l3.1 3.1 6-6.4" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </span>
+          <span class="verdict-txt"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="legend">
+    <div class="eyebrow">Motion inventory</div>
+    <h2>CLI-sim — what drives each beat</h2>
+    <table>
+      <thead><tr><th>Moment</th><th>Source</th><th>Transition</th><th>Why this one</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Command executing</strong></td><td><span class="tag ae">antalik</span></td><td><code>shimmer</code></td><td>the command text itself shimmers — the label IS the state, never the word "Loading"</td></tr>
+        <tr><td><strong>Cursor</strong></td><td><span class="tag ae">antalik</span></td><td>static-when-idle</td><td>blinks only while awaiting input; a cursor blinking mid-command claims the machine is idle</td></tr>
+        <tr><td>Output arrives</td><td><span class="tag td">transitions</span></td><td><code>18-texts-reveal</code></td><td>lines stream rather than paste — but capped, see below</td></tr>
+        <tr><td>Terminal grows</td><td><span class="tag td">transitions</span></td><td><code>01-card-resize</code></td><td>the box tweens as output appends instead of jumping</td></tr>
+        <tr><td>Command marked run</td><td><span class="tag td">transitions</span></td><td><code>25-checkbox-check</code></td><td>tick stroke-draws; the button dims but stays re-runnable</td></tr>
+        <tr><td>Diagnosis appears</td><td><span class="tag td">transitions</span></td><td><code>21-accordion</code></td><td>engine pops it with <code>is-hidden</code>; grid-rows grows it instead</td></tr>
+        <tr><td>Wrong / right</td><td><span class="tag td">transitions</span></td><td><code>12-error-state-shake</code> · <code>10-success-check</code></td><td>the vocabulary used everywhere else</td></tr>
+      </tbody>
+    </table>
+    <p style="font-size:12px;color:var(--muted);line-height:1.65;margin:14px 0 0">
+      <strong style="color:var(--ink)">The stagger is deliberately capped, and deliberately off-grid.</strong>
+      Terminal output runs long — <code>ipconfig /all</code> here is 14 lines. At BRAND's 60ms reveal unit that is 840ms of
+      drip before the last line lands, which reads as a <em>slow app</em> rather than a fast machine. So terminal lines use
+      <strong>34ms</strong> and only the first <strong>six</strong> stagger; everything after lands together. This is the one
+      place in the app where the 60ms unit is the wrong answer, because the thing being simulated has its own physics — a real
+      terminal dumps a buffer, it does not reveal prose.
+    </p>
+  </div>
+</div>
+
+<script>
+const HOST = 'WS-4021';
+const COMMANDS = {
+  'ipconfig /all': [
+    'Windows IP Configuration',
+    '',
+    '   Host Name . . . . . . . . . . . . : WS-4021',
+    '',
+    'Ethernet adapter Ethernet:',
+    '',
+    '   Connection-specific DNS Suffix  . : corp.local',
+    '   Description . . . . . . . . . . . : Intel(R) I219-LM',
+    '   Physical Address. . . . . . . . . : 00-1C-42-A1-9F-3E',
+    '   DHCP Enabled. . . . . . . . . . . : Yes',
+    '   IPv4 Address. . . . . . . . . . . : 10.20.4.87(Preferred)',
+    '   Subnet Mask . . . . . . . . . . . : 255.255.255.0',
+    '   Default Gateway . . . . . . . . . : 10.20.4.1',
+    '   DNS Servers . . . . . . . . . . . : 10.20.9.53'
+  ],
+  'ping 10.20.4.1': [
+    'Pinging 10.20.4.1 with 32 bytes of data:',
+    'Reply from 10.20.4.1: bytes=32 time<1ms TTL=255',
+    'Reply from 10.20.4.1: bytes=32 time<1ms TTL=255',
+    '',
+    'Ping statistics for 10.20.4.1:',
+    '    Packets: Sent = 2, Received = 2, Lost = 0 (0% loss)'
+  ],
+  'ping 8.8.8.8': [
+    'Pinging 8.8.8.8 with 32 bytes of data:',
+    'Reply from 8.8.8.8: bytes=32 time=14ms TTL=115',
+    'Reply from 8.8.8.8: bytes=32 time=13ms TTL=115',
+    '',
+    'Ping statistics for 8.8.8.8:',
+    '    Packets: Sent = 2, Received = 2, Lost = 0 (0% loss)'
+  ],
+  'nslookup certanvil.com': [
+    'Server:  UnKnown',
+    'Address:  10.20.9.53',
+    '',
+    '*** UnKnown can\'t find certanvil.com: No response from server',
+    '*** Request to UnKnown timed-out'
+  ]
+};
+const OPTIONS = {
+  A: 'The workstation has no IP address — DHCP failed',
+  B: 'The default gateway is unreachable',
+  C: 'The configured DNS server is not responding',
+  D: 'The NIC is disabled at the adapter level'
+};
+const CORRECT = 'C';
+
+let ran = [];
+let answered = false;
+let busy = false;
+
+const $ = id => document.getElementById(id);
+const cssNum = n => parseFloat(getComputedStyle(document.documentElement).getPropertyValue(n));
+
+/* ── terminal ──────────────────────────────────────────────────────────── */
+function promptHtml(idle) {
+  return `<div class="term-prompt" data-idle="${idle}"><span class="term-prompt-text">${HOST}&gt;</span> <span class="cursor">_</span></div>`;
+}
+
+function resetTerm() {
+  $('term').innerHTML = promptHtml(true);
+}
+
+function runCommand(cmd) {
+  if (busy || ran.includes(cmd)) return;
+  busy = true;
+  const term = $('term');
+  term.classList.add('is-running');
+
+  /* Drop the idle prompt — the machine is no longer waiting on you. */
+  const oldPrompt = term.querySelector('.term-prompt');
+  if (oldPrompt) oldPrompt.remove();
+
+  /* The executing command line: the text shimmers while it runs. The label
+     IS the state — this is "ipconfig /all is running", not "Loading…". */
+  const line = document.createElement('div');
+  line.className = 'term-line';
+  line.innerHTML = `<span class="term-prompt-text">${HOST}&gt;</span> <span class="t-shimmer" data-text="${cmd}">${cmd}</span>`;
+  term.appendChild(line);
+  term.scrollTop = term.scrollHeight;
+
+  /* Brief execution beat, then the output streams. */
+  setTimeout(() => {
+    /* Command has finished — stop the shimmer, settle to plain text. */
+    line.innerHTML = `<span class="term-prompt-text">${HOST}&gt;</span> ${cmd}`;
+
+    const pre = document.createElement('pre');
+    pre.className = 'term-out';
+    term.appendChild(pre);
+
+    const lines = COMMANDS[cmd];
+    const cap = cssNum('--line-cap');
+    const step = cssNum('--line-step');
+    lines.forEach((text, n) => {
+      const row = document.createElement('span');
+      row.className = 'term-row';
+      row.textContent = text || ' ';
+      pre.appendChild(row);
+      /* Only the first N lines stagger. Everything past the cap lands with
+         line N, so a 40-line dump never becomes a 2.4s drip. */
+      const delay = n < cap ? n * step : cap * step;
+      setTimeout(() => { row.classList.add('is-in'); term.scrollTop = term.scrollHeight; }, delay);
+    });
+
+    const tail = (Math.min(lines.length, cap) * step) + 120;
+    setTimeout(() => {
+      term.insertAdjacentHTML('beforeend', promptHtml(true));
+      term.classList.remove('is-running');
+      term.scrollTop = term.scrollHeight;
+      busy = false;
+      ran.push(cmd);
+      syncCmds();
+      /* Diagnosis grows in once there is evidence to reason from. */
+      if (ran.length === 1) $('diag').classList.add('is-open');
+    }, tail);
+  }, 520);
+}
+
+/* ── command buttons ───────────────────────────────────────────────────── */
+function renderCmds() {
+  const row = $('cmds');
+  row.replaceChildren();
+  row.insertAdjacentHTML('beforeend', '<span class="cmd-label">Run</span>');
+  Object.keys(COMMANDS).forEach(cmd => {
+    const b = document.createElement('button');
+    b.className = 'cmd-btn';
+    b.dataset.cmd = cmd;
+    b.setAttribute('aria-label', 'Run command: ' + cmd);
+    b.innerHTML = `<span class="cmd-mark"><svg width="10" height="10" viewBox="0 0 16 16" fill="none"
+      stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M3.5 8.5l3 3 6-6.5"/></svg></span><span>${cmd}</span>`;
+    b.addEventListener('click', () => runCommand(cmd));
+    row.appendChild(b);
+  });
+  /* Measure the tick path rather than trusting the CSS placeholder — the
+     skill flags a hardcoded stroke-dasharray as its #1 SVG mistake. */
+  row.querySelectorAll('.cmd-mark path').forEach(p =>
+    p.closest('.cmd-mark').style.setProperty('--cb-len', Math.ceil(p.getTotalLength()) + 1));
+}
+
+function syncCmds() {
+  $('cmds').querySelectorAll('.cmd-btn').forEach(b =>
+    b.classList.toggle('is-used', ran.includes(b.dataset.cmd)));
+}
+
+/* ── diagnosis ─────────────────────────────────────────────────────────── */
+function renderOpts() {
+  const host = $('opts');
+  host.replaceChildren();
+  Object.entries(OPTIONS).forEach(([letter, text]) => {
+    const b = document.createElement('button');
+    b.className = 'option';
+    b.dataset.letter = letter;
+    b.innerHTML = `<span class="opt-letter">${letter}</span><span>${text}</span>`;
+    b.addEventListener('click', () => answer(letter));
+    host.appendChild(b);
+  });
+}
+
+function answer(letter) {
+  if (answered) return;
+  answered = true;
+  const right = letter === CORRECT;
+  const opts = [...$('opts').querySelectorAll('.option')];
+  opts.forEach(o => {
+    o.classList.add('is-locked');
+    const l = o.dataset.letter;
+    if (l === CORRECT) o.classList.add('is-correct');
+    else if (l === letter) o.classList.add('is-wrong');
+    else o.classList.add('is-dimmed');
+  });
+  if (!right) {
+    const el = opts.find(o => o.dataset.letter === letter);
+    el.classList.remove('is-shaking');
+    void el.offsetWidth;
+    el.classList.add('is-shaking');
+  }
+  const verdict = $('verdict'), check = $('check'), txt = verdict.querySelector('.verdict-txt');
+  verdict.classList.add('is-on', right ? 'ok' : 'no');
+  txt.textContent = right ? 'Correct' : 'Not quite';
+  check.style.color = right ? 'var(--pass)' : 'var(--fail)';
+  const path = check.querySelector('path');
+  path.setAttribute('d', right ? 'M7.5 12.4l3.1 3.1 6-6.4' : 'M9 9l6 6M15 9l-6 6');
+  const len = Math.ceil(path.getTotalLength()) + 1;
+  path.style.strokeDasharray = len; path.style.strokeDashoffset = len;
+  void check.offsetWidth;
+  check.dataset.state = 'in';
+}
+
+/* ── controls ──────────────────────────────────────────────────────────── */
+function reset() {
+  ran = []; answered = false; busy = false;
+  resetTerm();
+  renderCmds();
+  renderOpts();
+  $('diag').classList.remove('is-open');
+  $('verdict').className = 'verdict';
+  $('check').dataset.state = 'out';
+}
+
+/* Debug: chain every command so the streaming + cap behaviour is
+   exercisable without four separate clicks. */
+function runAll() {
+  const cmds = Object.keys(COMMANDS).filter(c => !ran.includes(c));
+  let i = 0;
+  const next = () => {
+    if (i >= cmds.length) return;
+    runCommand(cmds[i++]);
+    setTimeout(next, 1400);
+  };
+  next();
+}
+
+reset();
+</script>
+</body>
+</html>
