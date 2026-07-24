@@ -88,6 +88,16 @@
      350-word block does not shove the page; the six sections stagger in on
      BRAND's 60ms reveal unit so the answer lands as structure, not a wall. */
   --dd-grow: 220ms; --dd-section-step: 60ms;
+
+  /* text-states-swap → the topbar values that CHANGE IN PLACE (percent,
+     score pill). Upstream 150ms is already inside BRAND's button band. */
+  --swap-dur: 150ms; --swap-y: 4px; --swap-blur: 2px;
+  /* notification-badge → the pass-mark verdict appearing on results.
+     Upstream's bouncy pop ease collapses to the system curve. */
+  --badge-slide: 260ms; --badge-pop: 380ms; --badge-blur: 2px;
+  /* learn-more-hover → the Study link. Chevron slides and its arms spread
+     into an arrow, which is exactly "go somewhere and learn". */
+  --learn-in: 150ms; --learn-out: 220ms; --learn-shift: 3px; --learn-spread: 42deg;
 }
 [data-theme="light"] {
   --shimmer-base: oklch(0.50 0.013 280); --shimmer-highlight: oklch(0.22 0.015 280);
@@ -126,7 +136,115 @@ body {
 .dot.is-done { background: var(--pass); }
 .dot.is-wrong { background: var(--fail); }
 .dot.is-current { background: var(--accent); }
+/* v4.82.0 semantics kept: a cell can be BOTH current AND already-answered —
+   "you're here, and here's the past outcome". The outcome owns the fill and
+   the current position adds a ring, so neither state hides the other. */
+.dot.is-current.is-done { background: var(--pass); }
+.dot.is-current.is-wrong { background: var(--fail); }
+.dot.is-current::after {
+  content: ''; position: absolute; inset: -3px; border-radius: 4px;
+  border: 1.5px solid var(--accent);
+}
+.dot { position: relative; }
 .counter { font: 600 11.5px Inter, sans-serif; color: var(--muted); white-space: nowrap; }
+
+/* ── quiz topbar ───────────────────────────────────────────────────────── */
+.qtop { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; }
+.qtop-menu, .qtop-arrow {
+  display: inline-flex; align-items: center; gap: 5px;
+  background: none; border: 1px solid var(--border); color: var(--muted);
+  border-radius: 8px; padding: 5px 9px; font: 600 11px Inter, sans-serif; cursor: pointer;
+  transition: color 150ms var(--ease), border-color 150ms var(--ease), transform 150ms var(--ease), opacity 150ms var(--ease);
+}
+.qtop-arrow { padding: 5px 8px; }
+.qtop-arrow:disabled { opacity: 0.3; pointer-events: none; }
+@media (hover: hover) and (pointer: fine) {
+  .qtop-menu:hover, .qtop-arrow:not(:disabled):hover { color: var(--ink); border-color: var(--ink-soft); }
+}
+.qtop-menu:active, .qtop-arrow:active { transform: scale(0.95); }
+.qtop-label { font: 600 12px Inter, sans-serif; color: var(--ink-soft); white-space: nowrap; }
+.qtop-pct { font: 600 11.5px Inter, sans-serif; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+/* ── text-states-swap (transitions-dev 04) — values that change IN PLACE.
+   The percent and the score pill both replace one value with another, which
+   is a swap, not a count. Using number-pop-in here would collide with the
+   tally rule (counting = accumulation, popping = replacement) — a swap is
+   the third case: same slot, new value, no accumulation implied. ── */
+.t-swap {
+  display: inline-block; transform: translateY(0); filter: blur(0); opacity: 1;
+  transition: transform var(--swap-dur) var(--ease),
+              filter var(--swap-dur) var(--ease),
+              opacity var(--swap-dur) var(--ease);
+  will-change: transform, filter, opacity;
+}
+.t-swap.is-exit { transform: translateY(calc(var(--swap-y) * -1)); filter: blur(var(--swap-blur)); opacity: 0; }
+.t-swap.is-enter-start { transform: translateY(var(--swap-y)); filter: blur(var(--swap-blur)); opacity: 0; transition: none; }
+.qtop-spacer { flex: 1; }
+.pill {
+  display: inline-flex; align-items: center; gap: 5px;
+  background: var(--surface-2); border: 1px solid var(--border-soft);
+  border-radius: 20px; padding: 4px 10px;
+  font: 600 11px Inter, sans-serif; color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.pill.is-cached { border-style: dashed; }
+/* Thin progress bar under the topbar — mirrors #prog-fill in the real app. */
+.qbar { height: 3px; background: var(--border); border-radius: 2px; overflow: hidden; margin-bottom: 16px; }
+.qbar-fill { display: block; height: 100%; width: 0; background: var(--accent); border-radius: 2px; transition: width var(--page-dur) var(--ease); }
+
+/* ── keyboard hints ────────────────────────────────────────────────────── */
+.kbd-hints {
+  display: flex; gap: 18px; flex-wrap: wrap; justify-content: center;
+  margin-top: 20px; padding-top: 14px; border-top: 1px solid var(--border-soft);
+  font: 500 10.5px Inter, sans-serif; color: var(--muted);
+}
+.kbd-hints span { display: inline-flex; align-items: center; gap: 5px; }
+kbd {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 17px; height: 17px; padding: 0 4px;
+  background: var(--surface-2); border: 1px solid var(--border);
+  border-bottom-width: 2px; border-radius: 4px;
+  font: 600 9.5px ui-monospace, Menlo, monospace; color: var(--ink-soft);
+}
+
+/* ── resource + report actions under the explanation ───────────────────── */
+.q-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 12px; }
+/* learn-more-hover (transitions-dev 24) on the Study link: the chevron
+   slides right and its two arms spread into a full arrow. Semantically
+   right for "leave this question and go learn the topic" — it points away. */
+.resource-btn {
+  display: inline-flex; align-items: center; gap: 7px;
+  background: color-mix(in oklab, var(--accent) 10%, transparent);
+  border: 1px solid color-mix(in oklab, var(--accent) 32%, transparent);
+  color: var(--accent-deep); border-radius: 8px; padding: 8px 13px;
+  font: 600 11.5px Inter, sans-serif; cursor: pointer;
+  transition: background 150ms var(--ease), transform 150ms var(--ease);
+}
+@media (hover: hover) and (pointer: fine) {
+  .resource-btn:hover { background: color-mix(in oklab, var(--accent) 18%, transparent); }
+}
+.resource-btn:active { transform: scale(0.97); }
+.t-learn-chevron { display: inline-flex; transform: translateX(0); transition: transform var(--learn-out) var(--ease); }
+.t-learn-arm {
+  transform-box: view-box; transform-origin: 10px 8px;
+  vector-effect: non-scaling-stroke;
+  transition: transform var(--learn-out) var(--ease);
+}
+@media (hover: hover) and (pointer: fine) {
+  .resource-btn:hover .t-learn-chevron { transform: translateX(var(--learn-shift)); transition-duration: var(--learn-in); }
+  .resource-btn:hover .t-learn-arm { transition-duration: var(--learn-in); }
+  .resource-btn:hover .t-learn-arm-top { transform: rotate(var(--learn-spread)); }
+  .resource-btn:hover .t-learn-arm-bot { transform: rotate(calc(var(--learn-spread) * -1)); }
+}
+.report-btn {
+  background: none; border: 1px solid var(--border); color: var(--muted);
+  border-radius: 8px; padding: 8px 13px; font: 600 11.5px Inter, sans-serif; cursor: pointer;
+  transition: color 150ms var(--ease), border-color 150ms var(--ease), transform 150ms var(--ease);
+}
+@media (hover: hover) and (pointer: fine) {
+  .report-btn:hover { color: var(--ink); border-color: var(--ink-soft); }
+}
+.report-btn:active { transform: scale(0.97); }
 
 /* ════════════════════════════════════════════════════════════════════════
    STREAK PILL — the break is the moment worth animating
@@ -499,6 +617,58 @@ body {
    DIFFICULTY BREAKDOWN — data motion. BRAND exempts bar fills from the
    ~600ms ceiling because the duration carries information.
    ════════════════════════════════════════════════════════════════════════ */
+/* ── scaled score + pass verdict ───────────────────────────────────────── */
+.scaled { display: flex; align-items: baseline; justify-content: center; gap: 6px; }
+.scaled-v {
+  font: 700 58px/1 Fraunces, Georgia, serif; color: var(--accent-deep);
+  font-variant-numeric: lining-nums tabular-nums; font-feature-settings: "lnum","tnum";
+}
+.scaled-max { font: 600 17px Fraunces, Georgia, serif; color: var(--muted); }
+/* notification-badge (transitions-dev 03) on the pass verdict: it slides in
+   diagonally then pops. A verdict ARRIVING is exactly the badge case — the
+   upstream bouncy pop ease collapses to the system curve per BRAND. */
+@keyframes t-badge-slide { from { transform: translate(-8px, 10px); } to { transform: translate(0, 0); } }
+.pass-pill-wrap { display: inline-block; margin-top: 12px; }
+.pass-pill-wrap[data-open="true"] { animation: t-badge-slide var(--badge-slide) var(--ease); }
+.pass-pill {
+  display: inline-flex; align-items: center; gap: 5px;
+  border-radius: 20px; padding: 5px 12px; font: 600 11px Inter, sans-serif;
+  background: color-mix(in oklab, var(--pass) 14%, transparent);
+  border: 1px solid color-mix(in oklab, var(--pass) 40%, transparent);
+  color: var(--pass);
+  transform-origin: center; transform: scale(1); opacity: 1; filter: blur(0);
+  transition: transform var(--badge-pop) var(--ease),
+              opacity var(--badge-pop) var(--ease),
+              filter var(--badge-pop) var(--ease);
+  will-change: transform, opacity, filter;
+}
+/* BRAND: entrances never start below scale(0.96) — upstream's scale(0) is
+   explicitly disallowed, so the closed state uses 0.96 plus blur to carry
+   the "not here yet" read that the scale collapse would have provided. */
+.pass-pill-wrap[data-open="false"] .pass-pill { transform: scale(0.96); opacity: 0; filter: blur(var(--badge-blur)); }
+.pass-pill.is-fail {
+  background: color-mix(in oklab, var(--fail) 14%, transparent);
+  border-color: color-mix(in oklab, var(--fail) 40%, transparent); color: var(--fail);
+}
+
+/* ── inline session review list ────────────────────────────────────────── */
+.rev { margin-top: 30px; text-align: left; }
+.rev-head { font: 600 22px Fraunces, Georgia, serif; margin: 6px 0 14px; letter-spacing: -0.01em; }
+.rev-head em { font-style: normal; color: var(--accent-deep); }
+.rev-row {
+  display: grid; grid-template-columns: 34px 1fr auto; gap: 12px; align-items: start;
+  padding: 12px 0; border-bottom: 1px solid var(--border-soft);
+}
+.rev-n { font: 500 10px ui-monospace, Menlo, monospace; color: var(--muted); padding-top: 2px; }
+.rev-q { font: 500 12.5px/1.5 Inter, sans-serif; color: var(--ink); }
+.rev-meta { font: 500 9.5px Inter, sans-serif; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); margin-top: 4px; }
+.rev-verdict { font: 700 9.5px Inter, sans-serif; letter-spacing: 0.08em; text-transform: uppercase; padding-top: 2px; }
+.rev-verdict.ok { color: var(--pass); }
+.rev-verdict.no { color: var(--fail); }
+
+.res-actions { display: flex; flex-wrap: wrap; gap: 10px; justify-content: space-between; margin-top: 24px; }
+.res-actions .right { display: flex; gap: 10px; flex-wrap: wrap; }
+
 .tally { display: flex; justify-content: center; gap: 30px; margin-top: 20px; }
 .tally-cell { display: flex; flex-direction: column; align-items: center; gap: 2px; }
 .tally-v {
@@ -616,6 +786,10 @@ body {
   .streak.is-breaking, .streak-n .t-digit, .dd-btn.is-shaking { animation: none !important; }
   .streak, .streak-icon, .dd-btn, .dd-panel, .dd-sec { transition: none !important; }
   .dd.is-open .dd-sec { opacity: 1; transform: none; filter: none; }
+  .pass-pill-wrap[data-open="true"] { animation: none !important; }
+  .t-swap, .pass-pill, .qbar-fill, .t-learn-chevron, .t-learn-arm,
+  .qtop-menu, .qtop-arrow, .resource-btn, .report-btn { transition: none !important; }
+  .pass-pill-wrap[data-open="false"] .pass-pill { opacity: 1; transform: none; filter: none; }
   .t-check { opacity: 1; } .t-check svg path { stroke-dashoffset: 0 !important; }
   .t-stagger-line, .t-slide .t-page, .t-acc-panel, .t-acc-panel-inner, .t-acc-chevron,
   .t-skel-a, .t-skel-b, .next, .verdict-txt, body,
@@ -664,6 +838,18 @@ body {
       <!-- ═══ B · QUIZ ═══ -->
       <div class="t-skel-b" id="quizview">
 
+        <div class="qtop">
+          <button class="qtop-menu" id="q-menu">✕ Menu</button>
+          <button class="qtop-arrow" id="q-prev" aria-label="Previous question">‹</button>
+          <span class="qtop-label" id="q-label">Question 1 of 4</span>
+          <button class="qtop-arrow" id="q-next" aria-label="Next question">›</button>
+          <span class="qtop-pct" id="q-pct">0%</span>
+          <span class="qtop-spacer"></span>
+          <span class="pill" id="q-score">0 / 0</span>
+          <span class="pill is-cached">Cached</span>
+        </div>
+        <div class="qbar"><span class="qbar-fill" id="q-bar"></span></div>
+
         <div class="rail">
           <div class="dots" id="dots"></div>
           <div class="counter" id="counter">1 / 4</div>
@@ -678,6 +864,13 @@ body {
         </div>
 
         <div class="t-slide" id="slide"></div>
+
+        <div class="kbd-hints" aria-label="Keyboard shortcuts">
+          <span><kbd>A</kbd><kbd>B</kbd><kbd>C</kbd><kbd>D</kbd> pick</span>
+          <span><kbd>↵</kbd> submit / next</span>
+          <span><kbd>←</kbd><kbd>→</kbd> navigate</span>
+          <span><kbd>F</kbd> flag</span>
+        </div>
 
       </div>
     </div>
@@ -729,7 +922,7 @@ body {
 <script>
 /* ── question data ─────────────────────────────────────────────────────── */
 const QS = [
-  { eyebrow: 'Objective 1.4 · Exam Level',
+  { eyebrow: 'Objective 1.4 · Exam Level', topic: 'Cryptography Fundamentals', obj: '1.4',
     /* Scenario describes the ENVIRONMENT and never restates the subject of
        the question — the authoring rule the real _renderScenarioBlock
        enforces (avoids the "L2 switch → which layer?" tautology trap). */
@@ -742,7 +935,7 @@ const QS = [
            'The attacker decrypts them after factoring the RSA public key'],
     answer: 2,
     expl: 'ECDHE generates fresh temporary private values per session and discards them. The long-term key authenticated the handshake but never encrypted session data, so stealing it later yields nothing for past traffic. This is <strong>perfect forward secrecy</strong>.' },
-  { eyebrow: 'Objective 1.4 · Exam Level',
+  { eyebrow: 'Objective 1.4 · Exam Level', topic: 'Cryptography Fundamentals', obj: '1.4',
     scenario: 'A legacy payment gateway still negotiates TLS 1.2 with a cipher suite the vendor has not updated since deployment.',
     wrongExpl: '<b>The tell is who generates the key.</b> If one side creates it and sends it, that is transport. If both sides derive it and it never crosses the wire, that is agreement.',
     stem: 'A client generates a random symmetric key, encrypts it with the server’s public key, and transmits it. The server decrypts it with its private key. Which key establishment method is this?',
@@ -752,12 +945,12 @@ const QS = [
            'Key derivation — a KDF expands a master secret'],
     answer: 1,
     expl: 'In <strong>key transport</strong> one side generates the key and sends it protected. In key agreement (Diffie-Hellman) both sides contribute and the final secret never crosses the network. TLS 1.3 removed RSA key transport precisely because agreement supports forward secrecy.' },
-  { eyebrow: 'Objective 1.4 · Hard',
+  { eyebrow: 'Objective 1.4 · Hard', topic: 'Cryptography Fundamentals', obj: '1.4',
     stem: 'A VPN must provide forward secrecy so a future compromise of the server’s private key cannot expose past traffic. Which selection meets this?',
     opts: ['RSA-2048 key transport', 'ECDH', 'ECDHE', 'AES-256-GCM'],
     answer: 2,
     expl: 'The <strong>E</strong> is the whole point — <em>Ephemeral</em>. ECDH without it can reuse static key material and gives no forward-secrecy guarantee. AES-256-GCM is the symmetric cipher that encrypts data after key establishment, not a key-exchange mechanism.' },
-  { eyebrow: 'Objective 1.4 · Hard · Choose TWO',
+  { eyebrow: 'Objective 1.4 · Hard · Choose TWO', topic: 'Cryptography Fundamentals', obj: '1.4',
     type: 'multi',
     stem: 'Which statements correctly distinguish key transport from key agreement?',
     opts: ['One party creates the key and delivers it; in agreement both contribute and compute the same secret',
@@ -827,6 +1020,7 @@ const LOAD_STEPS = [
 ];
 
 let idx = 0, correctCount = 0, marks = [], streak = 0, bestStreak = 0;
+let _sessionStart = performance.now();
 
 const $ = id => document.getElementById(id);
 
@@ -899,15 +1093,50 @@ function revealQuiz() {
   renderQuestion(0, true);
 }
 
+/* ── text-states-swap (transitions-dev 04) ─────────────────────────────
+   Three phases: exit up + blur, snap to the enter-start position with
+   transitions OFF, then release. The reflow between phase 2 and 3 is what
+   makes the enter animate instead of being collapsed away by the browser. */
+function swapText(el, next) {
+  if (!el || el.textContent === next) return;
+  el.classList.add('is-exit');
+  setTimeout(() => {
+    el.classList.remove('is-exit');
+    el.classList.add('is-enter-start');
+    el.textContent = next;
+    void el.offsetWidth;
+    el.classList.remove('is-enter-start');
+  }, 150);
+}
+
+/* ── topbar ────────────────────────────────────────────────────────────── */
+function renderTopbar() {
+  const answered = marks.filter(m => m !== undefined).length;
+  const pct = Math.round((idx / QS.length) * 100);
+  swapText($('q-label'), `Question ${idx + 1} of ${QS.length}`);
+  swapText($('q-pct'), pct + '%');
+  swapText($('q-score'), `${correctCount} / ${answered}`);
+  $('q-bar').style.width = pct + '%';
+  $('q-prev').disabled = idx === 0;
+  $('q-next').disabled = idx >= QS.length - 1;
+}
+
 /* ── progress rail ─────────────────────────────────────────────────────── */
 function renderDots() {
   $('dots').replaceChildren();
   QS.forEach((_, i) => {
+    /* Classes are NOT mutually exclusive — v4.82.0 semantics. A revisited
+       question is both "you're here" and "here's how it went last time". */
+    let cls = 'dot';
+    if (marks[i] === true) cls += ' is-done';
+    else if (marks[i] === false) cls += ' is-wrong';
+    if (i === idx) cls += ' is-current';
     const d = document.createElement('div');
-    d.className = 'dot' + (marks[i] === true ? ' is-done' : marks[i] === false ? ' is-wrong' : i === idx ? ' is-current' : '');
+    d.className = cls;
     $('dots').appendChild(d);
   });
   $('counter').textContent = (idx + 1) + ' / ' + QS.length;
+  renderTopbar();
 }
 
 /* ── question render + texts-reveal stagger ────────────────────────────── */
@@ -971,6 +1200,19 @@ function renderQuestion(i, first) {
       <div class="t-acc-panel"><div class="t-acc-panel-inner">
         <p class="expl">${q.expl}</p>
         ${q.wrongExpl ? `<div class="exp-wrong is-hidden">${q.wrongExpl}</div>` : ''}
+        <div class="q-actions">
+          <button class="resource-btn">
+            <span>Study: ${q.topic} (Obj ${q.obj})</span>
+            <span class="t-learn-chevron">
+              <svg width="15" height="15" viewBox="0 0 20 16" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round">
+                <path d="M3 8h11"/>
+                <path class="t-learn-arm t-learn-arm-top" d="M10 8h4"/>
+                <path class="t-learn-arm t-learn-arm-bot" d="M10 8h4"/>
+              </svg>
+            </span>
+          </button>
+          <button class="report-btn">Report issue</button>
+        </div>
         <div class="dd">
           <button class="dd-btn">
             <span class="dd-btn-label">Explain further</span>
@@ -1220,8 +1462,16 @@ function showResults() {
           <path d="M7.5 12.4l3.1 3.1 6-6.4" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
       </span>
-      <div style="margin-top:14px"><span class="t-digits" id="res"></span></div>
-      <div class="label">Session score</div>
+      <div class="label" style="margin-top:14px">Scaled score · CompTIA SY0-701</div>
+      <div class="scaled">
+        <span class="scaled-v" id="scaled">100</span><span class="scaled-max">/ 900</span>
+      </div>
+      <div class="pass-pill-wrap" id="passwrap" data-open="false">
+        <span class="pass-pill" id="passpill">↑ Pass mark cleared · 750</span>
+      </div>
+
+      <div style="margin-top:20px"><span class="t-digits" id="res"></span></div>
+      <div class="label">Raw score</div>
       <p class="sum">${correctCount} of ${QS.length} correct · Cryptography Fundamentals</p>
 
       <!-- Tallies COUNT (animateCount), they don't pop. The number climbing
@@ -1230,6 +1480,7 @@ function showResults() {
         <span class="tally-cell"><span class="tally-v" id="t-correct">0</span><span class="tally-k">Correct</span></span>
         <span class="tally-cell"><span class="tally-v" id="t-wrong">0</span><span class="tally-k">Wrong</span></span>
         <span class="tally-cell"><span class="tally-v" id="t-streak">0</span><span class="tally-k">Best streak</span></span>
+        <span class="tally-cell"><span class="tally-v" id="t-time">0s</span><span class="tally-k">Time</span></span>
       </div>
 
       <div style="display:flex;justify-content:center;margin-top:22px">
@@ -1245,6 +1496,28 @@ function showResults() {
         <div class="bd-row" data-i="0"><span class="bd-label">Foundational</span><span class="bd-track"><span class="bd-fill ok" data-pct="100"></span></span><span class="bd-val">100%</span></div>
         <div class="bd-row" data-i="1"><span class="bd-label">Exam Level</span><span class="bd-track"><span class="bd-fill" data-pct="75"></span></span><span class="bd-val">75%</span></div>
         <div class="bd-row" data-i="2"><span class="bd-label">Hard</span><span class="bd-track"><span class="bd-fill" data-pct="50"></span></span><span class="bd-val">50%</span></div>
+      </div>
+
+      <div class="rev">
+        <div class="eyebrow">Review · this session</div>
+        <div class="rev-head">Every <em>answer.</em></div>
+        ${QS.map((q, n) => `
+          <div class="rev-row t-stagger-line" data-i="${Math.min(n + 1, 5)}">
+            <span class="rev-n">N° ${String(n + 1).padStart(2, '0')}</span>
+            <span>
+              <span class="rev-q">${q.stem.length > 96 ? q.stem.slice(0, 96) + '…' : q.stem}</span>
+              <span class="rev-meta">${q.topic} · Obj ${q.obj}</span>
+            </span>
+            <span class="rev-verdict ${marks[n] ? 'ok' : 'no'}">${marks[n] ? 'Correct' : 'Missed'}</span>
+          </div>`).join('')}
+      </div>
+
+      <div class="res-actions">
+        <button class="prev">← Back to menu</button>
+        <div class="right">
+          <button class="report-btn">Review answers</button>
+          <button class="next is-on" onclick="restart()">New session →</button>
+        </div>
       </div>
     </div>`;
   slide.appendChild(page);
@@ -1292,23 +1565,48 @@ function showResults() {
   countUp(page.querySelector('#t-wrong'), QS.length - correctCount, 800);
   countUp(page.querySelector('#t-streak'), bestStreak, 600);
 
+  /* Scaled score uses CompTIA's convention: 100 + (raw/100) * 800. It is a
+     first-time reveal of an accumulated result, so it counts rather than pops. */
+  const scaled = Math.max(100, Math.min(900, Math.round(100 + (pct / 100) * 800)));
+  countUp(page.querySelector('#scaled'), scaled, 900);
+
+  const secs = Math.max(1, Math.round((performance.now() - _sessionStart) / 1000));
+  const tEl = page.querySelector('#t-time');
+  tEl.textContent = secs >= 60 ? Math.floor(secs / 60) + 'm ' + (secs % 60) + 's' : secs + 's';
+
+  /* Pass verdict arrives as a badge — slide then pop — once the score has
+     had a beat to land. Anchored to EXAM_PASS_SCORE (750 for SY0-701). */
+  const passed = scaled >= 750;
+  const pill = page.querySelector('#passpill');
+  pill.classList.toggle('is-fail', !passed);
+  pill.textContent = passed ? '↑ Pass mark cleared · 750' : '↓ Below pass mark · 750';
+  setTimeout(() => { page.querySelector('#passwrap').dataset.open = 'true'; }, 420);
+
+  /* Review rows ride the same texts-reveal stagger as the question options. */
+  const rev = page.querySelector('.rev');
+  void rev.offsetWidth;
+  rev.classList.add('t-stagger', 'is-shown');
+
   /* Sliding pill: the first position MUST be written with transition
      suppressed, or the pill animates in from translateX(0)/width:0 on
      first paint. The skill flags this as a named mistake. */
   const bar = page.querySelector('.t-tabs');
-  const pill = bar.querySelector('.t-tabs-pill');
+  /* Named tabsPill, not pill — `pill` is already taken by the pass-verdict
+     badge above in this same scope, and the duplicate const was a fatal
+     SyntaxError that silently killed the entire script. */
+  const tabsPill = bar.querySelector('.t-tabs-pill');
   const tabs = [...bar.querySelectorAll('.t-tab')];
   const moveTo = (tab, animate) => {
     if (!animate) {
-      const prev = pill.style.transition;
-      pill.style.transition = 'none';
-      pill.style.transform = `translateX(${tab.offsetLeft}px)`;
-      pill.style.width = `${tab.offsetWidth}px`;
-      void pill.offsetWidth;
-      pill.style.transition = prev;
+      const prev = tabsPill.style.transition;
+      tabsPill.style.transition = 'none';
+      tabsPill.style.transform = `translateX(${tab.offsetLeft}px)`;
+      tabsPill.style.width = `${tab.offsetWidth}px`;
+      void tabsPill.offsetWidth;
+      tabsPill.style.transition = prev;
     } else {
-      pill.style.transform = `translateX(${tab.offsetLeft}px)`;
-      pill.style.width = `${tab.offsetWidth}px`;
+      tabsPill.style.transform = `translateX(${tab.offsetLeft}px)`;
+      tabsPill.style.width = `${tab.offsetWidth}px`;
     }
   };
   tabs.forEach(tab => tab.addEventListener('click', () => {
@@ -1337,10 +1635,35 @@ function showResults() {
 
 function restart() {
   idx = 0; correctCount = 0; marks = []; streak = 0; bestStreak = 0;
+  _sessionStart = performance.now();
   setStreak(0, false);
   $('slide').replaceChildren();
   runLoading();
 }
+
+/* Topbar arrows drive the same direction-aware slide as the inline buttons,
+   so back-navigation animates backwards from either control. */
+$('q-prev').addEventListener('click', () => { if (idx > 0) renderQuestion(idx - 1); });
+$('q-next').addEventListener('click', () => { if (idx < QS.length - 1) renderQuestion(idx + 1); });
+$('q-menu').addEventListener('click', () => restart());
+
+/* Keyboard shortcuts, matching the real engine's bindings:
+   A-D pick · Enter submit/next · F flag · arrows navigate. */
+addEventListener('keydown', e => {
+  const page = document.querySelector('.t-page.is-active');
+  if (!page) return;
+  const k = (e.key || '').toUpperCase();
+  if ('ABCD'.includes(k) && k.length === 1) {
+    const opt = page.querySelectorAll('.option')['ABCD'.indexOf(k)];
+    if (opt && !opt.classList.contains('is-locked')) opt.click();
+  } else if (e.key === 'Enter') {
+    const nx = page.querySelector('.ms-submit.is-ready') || page.querySelector('.next.is-on');
+    if (nx) nx.click();
+  } else if (k === 'F') {
+    const f = page.querySelector('.t-flag'); if (f) f.click();
+  } else if (e.key === 'ArrowLeft' && idx > 0) renderQuestion(idx - 1);
+  else if (e.key === 'ArrowRight' && idx < QS.length - 1) renderQuestion(idx + 1);
+});
 
 runLoading();
 </script>
