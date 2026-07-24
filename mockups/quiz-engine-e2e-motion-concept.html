@@ -55,6 +55,29 @@
   --shimmer-dur: 2s; --shimmer-band: 400%;
   --shimmer-base: oklch(0.725 0.013 275); --shimmer-highlight: oklch(0.96 0.006 275);
   --orb-spin: 2.6s;
+
+  /* checkbox-check → multi-select options. NOTE: upstream namespaces this
+     `.t-check`, which collides with the success-check already in this file.
+     Renamed to `.t-cb` — silent collisions are worse than a rename. */
+  --cb-box: 150ms; --cb-draw: 220ms; --cb-delay: 60ms; --cb-uncheck: 150ms;
+
+  /* tooltip → exam-keyword definitions. Upstream 150/50ms already sits in
+     BRAND's button band, so only the easing collapses. */
+  --tt-in: 150ms; --tt-out: 60ms; --tt-scale: 0.98; --tt-delay: 80ms;
+
+  /* tabs-sliding → review filters. 250ms → card-lift band. */
+  --tabs-dur: 220ms;
+
+  /* like-button → flag for review. Particle burst DELIBERATELY OMITTED:
+     a burst is celebratory, and flagging a question you got wrong is not
+     a celebration. Fill + pop only. Pop ease is upstream's overshoot
+     collapsed to the system curve. */
+  --flag-fill: 150ms; --flag-pop: 220ms;
+
+  /* difficulty breakdown bars. BRAND explicitly exempts data motion from
+     the ~600ms ceiling — bar fills carry information, so 900ms is legal
+     and reads instrument-like rather than sluggish. */
+  --bar-fill: 900ms; --bar-step: 60ms;
 }
 [data-theme="light"] {
   --shimmer-base: oklch(0.50 0.013 280); --shimmer-highlight: oklch(0.22 0.015 280);
@@ -157,7 +180,8 @@ body {
 .t-stagger.is-shown .t-stagger-line[data-i="4"] { transition-delay: calc(var(--stagger-step) * 4); }
 .t-stagger.is-shown .t-stagger-line[data-i="5"] { transition-delay: calc(var(--stagger-step) * 5); }
 
-.qeyebrow { font: 800 9.5px Inter, sans-serif; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+.qhead { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; gap: 12px; }
+.qeyebrow { font: 800 9.5px Inter, sans-serif; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
 .stem { font: 600 19px/1.45 Fraunces, Georgia, serif; margin: 0 0 20px; letter-spacing: -0.005em; }
 
 /* ── options ───────────────────────────────────────────────────────────── */
@@ -290,6 +314,131 @@ body {
 .results .label { font: 800 10px Inter, sans-serif; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin-top: 6px; }
 .results .sum { font-size: 13px; color: var(--ink-soft); margin-top: 16px; }
 
+/* ════════════════════════════════════════════════════════════════════════
+   MULTI-SELECT — checkbox-check (transitions-dev 25)
+   Box fills, then the tick stroke-draws behind it. Namespaced .t-cb, not
+   upstream's .t-check, which this file already uses for the verdict badge.
+   ════════════════════════════════════════════════════════════════════════ */
+.t-cb {
+  flex: none; width: 22px; height: 22px; border-radius: 6px;
+  border: 1.5px solid var(--border); background: transparent;
+  display: grid; place-items: center; color: var(--on-accent);
+  transition: background var(--cb-box) var(--ease), border-color var(--cb-box) var(--ease);
+}
+.t-cb svg { display: block; }
+.t-cb svg path {
+  stroke-dasharray: var(--cb-len, 15); stroke-dashoffset: var(--cb-len, 15);
+  transition: stroke-dashoffset var(--cb-uncheck) var(--ease);
+}
+.option[aria-checked="true"] .t-cb { background: var(--accent); border-color: var(--accent); }
+.option[aria-checked="true"] .t-cb svg path {
+  stroke-dashoffset: 0;
+  transition: stroke-dashoffset var(--cb-draw) var(--ease) var(--cb-delay);
+}
+.option[aria-checked="true"] { border-color: var(--accent); }
+.ms-submit {
+  margin-top: 12px; width: 100%; background: var(--surface-2); color: var(--ink);
+  border: 1.5px solid var(--border); border-radius: 9px; padding: 11px;
+  font: 600 13px Inter, sans-serif; cursor: pointer;
+  transition: opacity var(--page-dur) var(--ease), border-color 150ms var(--ease), transform 150ms var(--ease);
+  opacity: 0.45; pointer-events: none;
+}
+.ms-submit.is-ready { opacity: 1; pointer-events: auto; border-color: var(--accent); color: var(--accent-deep); }
+.ms-submit:active { transform: scale(0.985); }
+.ms-hint { font-size: 11.5px; color: var(--muted); margin: 0 0 10px; }
+
+/* ════════════════════════════════════════════════════════════════════════
+   KEYWORD TOOLTIP — tooltip (transitions-dev 17)
+   Delayed fade+scale in, instant out. The trigger is a <button> so a tap
+   gives it focus — a hover-only tooltip is dead weight on mobile, and
+   mobile web + iOS Capacitor are first-class CertAnvil targets.
+   ════════════════════════════════════════════════════════════════════════ */
+.t-tt-wrap { position: relative; display: inline-block; }
+.t-tt-trigger {
+  appearance: none; background: none; border: 0; padding: 0; cursor: help;
+  font: inherit; color: var(--accent-deep);
+  border-bottom: 1px dashed color-mix(in oklab, var(--accent) 55%, transparent);
+}
+.t-tt {
+  position: absolute; bottom: calc(100% + 8px); left: 50%;
+  transform: translate(-50%, 0) scale(var(--tt-scale)); transform-origin: 50% 100%;
+  padding: 9px 12px; border-radius: 9px; width: max-content; max-width: 260px;
+  background: var(--surface-2); color: var(--ink-soft);
+  border: 1px solid var(--border);
+  font: 400 12px/1.5 Inter, sans-serif; white-space: normal; text-align: left;
+  box-shadow: 0 6px 24px color-mix(in oklab, var(--ink) 14%, transparent);
+  opacity: 0; pointer-events: none; z-index: 5;
+  /* Default rule owns the LEAVE state — no delay, so it snaps away. */
+  transition: opacity var(--tt-out) var(--ease), transform var(--tt-out) var(--ease);
+}
+.t-tt-wrap:hover .t-tt, .t-tt-trigger:focus-visible + .t-tt {
+  opacity: 1; transform: translate(-50%, 0) scale(1);
+  transition-duration: var(--tt-in); transition-delay: var(--tt-delay);
+}
+.t-tt b { color: var(--ink); font-weight: 600; }
+
+/* ════════════════════════════════════════════════════════════════════════
+   REVIEW FILTERS — tabs-sliding (transitions-dev 16)
+   Upstream ships light-mode hex for the bar/pill; remapped onto tokens.
+   ════════════════════════════════════════════════════════════════════════ */
+.t-tabs {
+  position: relative; display: inline-flex; align-items: center; gap: 3px;
+  padding: 3px; border-radius: 48px; background: var(--surface-2);
+  border: 1px solid var(--border-soft);
+}
+.t-tab {
+  position: relative; appearance: none; border: 0; background: transparent;
+  height: 28px; padding: 4px 14px; color: var(--muted); cursor: pointer;
+  border-radius: 48px; z-index: 1; font: 600 11.5px Inter, sans-serif;
+  transition: color var(--tabs-dur) var(--ease);
+}
+.t-tab[aria-selected="true"] { color: var(--on-accent); }
+@media (hover: hover) and (pointer: fine) { .t-tab:not([aria-selected="true"]):hover { color: var(--ink); } }
+.t-tabs-pill {
+  position: absolute; top: 3px; left: 0; height: 28px; width: 0;
+  background: var(--accent); border-radius: 48px; transform: translateX(0); z-index: 0;
+  transition: transform var(--tabs-dur) var(--ease), width var(--tabs-dur) var(--ease);
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+   FLAG FOR REVIEW — like-button (transitions-dev 23), particles removed
+   ════════════════════════════════════════════════════════════════════════ */
+.t-flag {
+  appearance: none; background: none; border: 0; padding: 4px; cursor: pointer;
+  color: var(--muted); display: inline-flex; align-items: center; gap: 6px;
+  font: 600 11px Inter, sans-serif;
+  transition: color var(--flag-fill) var(--ease);
+}
+.t-flag-icon { display: inline-flex; }
+.t-flag svg path { fill: transparent; stroke: currentColor; transition: fill var(--flag-fill) var(--ease); }
+.t-flag[data-flagged="true"] { color: var(--accent-deep); }
+.t-flag[data-flagged="true"] svg path { fill: currentColor; }
+/* Pop lives on the HTML wrapper, never the <svg> — transforming an inline
+   SVG makes Chromium rasterise it at 1x and it goes pixelated on hi-DPI. */
+.t-flag[data-flagged="true"] .t-flag-icon { animation: t-flag-pop var(--flag-pop) var(--ease); }
+@keyframes t-flag-pop { 0% { transform: scale(1); } 30% { transform: scale(0.82); } 100% { transform: scale(1); } }
+
+/* ════════════════════════════════════════════════════════════════════════
+   DIFFICULTY BREAKDOWN — data motion. BRAND exempts bar fills from the
+   ~600ms ceiling because the duration carries information.
+   ════════════════════════════════════════════════════════════════════════ */
+.bd { margin-top: 26px; text-align: left; }
+.bd-row { display: grid; grid-template-columns: 82px 1fr 38px; align-items: center; gap: 10px; margin-bottom: 9px; }
+.bd-label { font: 600 11px Inter, sans-serif; color: var(--muted); }
+/* Both are <span>s. The track is a grid item so it gets blockified for
+   free, but the fill inside it stays display:inline — where width and
+   height are silently ignored. Explicit display:block or the bar never
+   renders, and computed width reports "100%" instead of px. */
+.bd-track { display: block; height: 7px; background: var(--border); border-radius: 4px; overflow: hidden; }
+.bd-fill {
+  display: block; height: 100%; width: 0; border-radius: 4px; background: var(--accent);
+  transition: width var(--bar-fill) var(--ease);
+}
+.bd-row[data-i="1"] .bd-fill { transition-delay: var(--bar-step); }
+.bd-row[data-i="2"] .bd-fill { transition-delay: calc(var(--bar-step) * 2); }
+.bd-fill.ok { background: var(--pass); }
+.bd-val { font: 600 11.5px Inter, sans-serif; color: var(--ink-soft); text-align: right; font-variant-numeric: tabular-nums; }
+
 /* ── legend ────────────────────────────────────────────────────────────── */
 .legend { margin-top: 22px; background: var(--surface); border: 1px solid var(--border-soft); border-radius: 13px; padding: 20px; }
 .legend h2 { font: 600 15px Fraunces, Georgia, serif; margin: 8px 0 12px; }
@@ -302,10 +451,13 @@ body {
 .tag.ae { background: color-mix(in oklab, var(--pass) 20%, transparent); color: var(--pass); }
 
 @media (prefers-reduced-motion: reduce) {
-  .orb, .t-shimmer::before, .option.is-shaking, .t-check, .t-check svg path, .t-digits .t-digit { animation: none !important; }
+  .orb, .t-shimmer::before, .option.is-shaking, .t-check, .t-check svg path,
+  .t-digits .t-digit, .t-flag[data-flagged="true"] .t-flag-icon { animation: none !important; }
   .t-check { opacity: 1; } .t-check svg path { stroke-dashoffset: 0 !important; }
   .t-stagger-line, .t-slide .t-page, .t-acc-panel, .t-acc-panel-inner, .t-acc-chevron,
-  .t-skel-a, .t-skel-b, .next, .verdict-txt, body { transition: none !important; }
+  .t-skel-a, .t-skel-b, .next, .verdict-txt, body,
+  .t-cb, .t-cb svg path, .t-tt, .t-tab, .t-tabs-pill, .t-flag, .t-flag svg path,
+  .bd-fill, .ms-submit { transition: none !important; }
   .t-stagger-line { opacity: 1; transform: none; filter: none; }
 }
 </style>
@@ -373,6 +525,12 @@ body {
         <tr><td>Explanation</td><td><span class="tag td">transitions</span></td><td><code>21-accordion</code></td><td>250 → <strong>220ms</strong></td></tr>
         <tr><td>Next question</td><td><span class="tag td">transitions</span></td><td><code>08-page-side-by-side</code></td><td>250 → <strong>220ms</strong></td></tr>
         <tr><td>Final score</td><td><span class="tag td">transitions</span></td><td><code>02-number-pop-in</code></td><td>500 → <strong>220ms</strong>; overshoot ease → system curve</td></tr>
+        <tr><td>Multi-select ticks</td><td><span class="tag td">transitions</span></td><td><code>25-checkbox-check</code></td><td>renamed <code>.t-check</code> → <code>.t-cb</code> (collided with the verdict badge)</td></tr>
+        <tr><td>Keyword definitions</td><td><span class="tag td">transitions</span></td><td><code>17-tooltip</code></td><td>150/50ms already in band; trigger is a <code>&lt;button&gt;</code> so it works on touch</td></tr>
+        <tr><td>Review filters</td><td><span class="tag td">transitions</span></td><td><code>16-tabs-sliding</code></td><td>250 → <strong>220ms</strong>; light-mode hex → tokens</td></tr>
+        <tr><td>Flag for review</td><td><span class="tag td">transitions</span></td><td><code>23-like-button</code></td><td>particle burst <strong>removed</strong> — a burst is celebratory, flagging is not</td></tr>
+        <tr><td>Difficulty bars</td><td><span class="tag td">transitions</span></td><td>data motion</td><td><strong>900ms</strong> — BRAND exempts bar fills from the 600ms ceiling</td></tr>
+        <tr><td>Orb state per stage</td><td><span class="tag ae">antalik</span></td><td>semantic orb presets</td><td>spin rate varies by pipeline stage so the orb carries state, not decoration</td></tr>
       </tbody>
     </table>
     <p style="font-size:12px;color:var(--muted);line-height:1.6;margin:14px 0 0">
@@ -409,14 +567,63 @@ const QS = [
     stem: 'A VPN must provide forward secrecy so a future compromise of the server’s private key cannot expose past traffic. Which selection meets this?',
     opts: ['RSA-2048 key transport', 'ECDH', 'ECDHE', 'AES-256-GCM'],
     answer: 2,
-    expl: 'The <strong>E</strong> is the whole point — <em>Ephemeral</em>. ECDH without it can reuse static key material and gives no forward-secrecy guarantee. AES-256-GCM is the symmetric cipher that encrypts data after key establishment, not a key-exchange mechanism.' }
+    expl: 'The <strong>E</strong> is the whole point — <em>Ephemeral</em>. ECDH without it can reuse static key material and gives no forward-secrecy guarantee. AES-256-GCM is the symmetric cipher that encrypts data after key establishment, not a key-exchange mechanism.' },
+  { eyebrow: 'Objective 1.4 · Hard · Choose TWO',
+    type: 'multi',
+    stem: 'Which statements correctly distinguish key transport from key agreement?',
+    opts: ['One party creates the key and delivers it; in agreement both contribute and compute the same secret',
+           'RSA key transport gains forward secrecy if the key is rotated annually',
+           'In key agreement the final shared secret is never itself transmitted',
+           'Key agreement requires a CA to broker the secret between the two parties'],
+    answers: [0, 2],
+    expl: 'Key transport sends a protected key; key agreement has both sides compute it independently, and in Diffie-Hellman only the public values cross the wire. Rotation does not buy forward secrecy — a stolen static key still opens any captured session. And agreement is peer-to-peer; no CA touches the computation.' }
 ];
 
+/* Exam-keyword glossary. CertAnvil already runs highlightExamKeywords over
+   question text, so definitions behind those highlights are pedagogy, not
+   decoration — this is the one addition here that teaches. */
+const GLOSS = {
+  'ECDHE': '<b>Elliptic Curve Diffie-Hellman Ephemeral.</b> Key agreement that generates fresh temporary values per session, then discards them — the mechanism behind forward secrecy.',
+  'forward secrecy': '<b>Forward secrecy.</b> Traffic recorded today stays unreadable even if the server’s long-term private key is stolen later.',
+  'key transport': '<b>Key transport.</b> One party generates the symmetric key and delivers it encrypted under the other’s public key.',
+  'key agreement': '<b>Key agreement.</b> Both parties contribute values and independently compute the same shared secret, which never crosses the network.',
+  'ECDH': '<b>ECDH.</b> Elliptic-curve Diffie-Hellman <em>without</em> the ephemeral step — key material can be reused, so it carries no forward-secrecy guarantee.'
+};
+
+/* Longest-first so "key agreement" wins before a bare "key" could match,
+   and so ECDHE is never clipped into ECDH + a stray E. */
+const GLOSS_KEYS = Object.keys(GLOSS).sort((a, b) => b.length - a.length);
+
+function glossify(text) {
+  const taken = [];
+  GLOSS_KEYS.forEach(k => {
+    const re = new RegExp('\\b' + k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b', 'i');
+    const m = re.exec(text);
+    if (!m) return;
+    /* one tooltip per term per stem — repeats add noise, not teaching */
+    if (taken.some(([s, e]) => m.index < e && m.index + m[0].length > s)) return;
+    taken.push([m.index, m.index + m[0].length]);
+  });
+  taken.sort((a, b) => b[0] - a[0]);
+  taken.forEach(([s, e]) => {
+    const word = text.slice(s, e);
+    const key = GLOSS_KEYS.find(k => k.toLowerCase() === word.toLowerCase());
+    text = text.slice(0, s) +
+      `<span class="t-tt-wrap"><button class="t-tt-trigger" aria-describedby="tt">${word}</button>` +
+      `<span class="t-tt" role="tooltip">${GLOSS[key]}</span></span>` + text.slice(e);
+  });
+  return text;
+}
+
+/* antalik's orbs map SEMANTIC STATES to modes + speeds (working, searching,
+   solving, composing…). Reusing that idea here: each pipeline stage gets its
+   own spin rate, so the orb carries state instead of spinning at one speed
+   as decoration. `state` mirrors the upstream preset names. */
 const LOAD_STEPS = [
-  { label: 'Generating questions…', pct: 30, sub: 'Batch 1 of 3' },
-  { label: 'Verifying quality…',    pct: 62, sub: 'Semantic validation pass' },
-  { label: 'Finalizing…',           pct: 88, sub: 'Assembling session' },
-  { label: 'Ready',                 pct: 100, sub: '3 questions' }
+  { label: 'Generating questions…', pct: 30,  sub: 'Batch 1 of 3',             state: 'composing', spin: '2.6s' },
+  { label: 'Verifying quality…',    pct: 62,  sub: 'Semantic validation pass', state: 'solving',   spin: '1.5s' },
+  { label: 'Finalizing…',           pct: 88,  sub: 'Assembling session',       state: 'working',   spin: '2.0s' },
+  { label: 'Ready',                 pct: 100, sub: '4 questions',              state: 'idle',      spin: '2.6s' }
 ];
 
 let idx = 0, correctCount = 0, marks = [];
@@ -434,7 +641,10 @@ function runLoading() {
        paints the highlight band onto the same glyphs. */
     $('shim').dataset.text = step.label;
     $('shim').textContent = step.label;
+    /* aria-label is the STATE NAME, never "loading" — antalik's rule. */
     $('orb').setAttribute('aria-label', step.label);
+    $('orb').dataset.state = step.state;
+    $('orb').style.setProperty('--orb-spin', step.spin);
     $('bar').style.width = step.pct + '%';
     $('loadsub').textContent = step.sub;
     s++;
@@ -471,19 +681,35 @@ function renderQuestion(i, first) {
   idx = i;
   renderDots();
   const q = QS[i];
+  const isMulti = q.type === 'multi';
   const page = document.createElement('div');
   page.className = 't-page t-stagger';
   page.innerHTML = `
     <div class="t-stagger-line" data-i="0">
-      <div class="qeyebrow">${q.eyebrow}</div>
-      <p class="stem">${q.stem}</p>
+      <div class="qhead">
+        <div class="qeyebrow">${q.eyebrow}</div>
+        <button class="t-flag" data-flagged="false" aria-pressed="false" title="Flag for review">
+          <span class="t-flag-icon">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M5 21V4.5h13l-2.4 4L18 12.5H5"/>
+            </svg>
+          </span><span class="t-flag-txt">Flag</span>
+        </button>
+      </div>
+      <p class="stem">${glossify(q.stem)}</p>
     </div>
+    ${isMulti ? '<p class="ms-hint t-stagger-line" data-i="1">Select two answers.</p>' : ''}
     <div class="options">
       ${q.opts.map((o, n) => `
-        <button class="option t-stagger-line" data-i="${n + 1}" data-n="${n}">
-          <span class="key">${'ABCD'[n]}</span><span>${o}</span>
+        <button class="option t-stagger-line" data-i="${n + 1}" data-n="${n}"
+                ${isMulti ? 'aria-checked="false" role="checkbox"' : ''}>
+          ${isMulti
+            ? `<span class="t-cb"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 8.5l3 3 6-6.5"/></svg></span>`
+            : `<span class="key">${'ABCD'[n]}</span>`}
+          <span>${o}</span>
         </button>`).join('')}
     </div>
+    ${isMulti ? '<button class="ms-submit">Submit both answers</button>' : ''}
     <div class="verdict">
       <span class="t-check" data-state="out">
         <svg width="30" height="30" viewBox="0 0 24 24" fill="none">
@@ -522,10 +748,42 @@ function renderQuestion(i, first) {
     prev.classList.remove('is-active');
     setTimeout(() => prev.remove(), 260);
   }
-  requestAnimationFrame(() => page.classList.add('is-shown'));
+  /* Same reason as the bar fills: rAF is dead in a backgrounded tab, and
+     if `is-shown` never lands the whole question stays at opacity 0. The
+     reflow above already flushed the pre-reveal style, so flipping the
+     class synchronously still animates when visible and still ends up
+     correct when hidden. */
+  page.classList.add('is-shown');
 
-  page.querySelectorAll('.option').forEach(btn =>
-    btn.addEventListener('click', () => answer(page, +btn.dataset.n)));
+  /* Measure each tick path rather than trusting the CSS placeholder —
+     the skill flags a hardcoded stroke-dasharray as its #1 SVG mistake. */
+  page.querySelectorAll('.t-cb path').forEach(p =>
+    p.parentElement.parentElement.style.setProperty('--cb-len', Math.ceil(p.getTotalLength()) + 1));
+
+  const flag = page.querySelector('.t-flag');
+  flag.addEventListener('click', () => {
+    const on = flag.dataset.flagged === 'true';
+    flag.dataset.flagged = on ? 'false' : 'true';
+    flag.setAttribute('aria-pressed', String(!on));
+    flag.querySelector('.t-flag-txt').textContent = on ? 'Flag' : 'Flagged';
+  });
+
+  if (isMulti) {
+    const submit = page.querySelector('.ms-submit');
+    const picks = new Set();
+    page.querySelectorAll('.option').forEach(btn => btn.addEventListener('click', () => {
+      if (btn.classList.contains('is-locked')) return;
+      const n = +btn.dataset.n;
+      const on = btn.getAttribute('aria-checked') === 'true';
+      if (on) { picks.delete(n); } else { if (picks.size >= 2) return; picks.add(n); }
+      btn.setAttribute('aria-checked', String(!on));
+      submit.classList.toggle('is-ready', picks.size === 2);
+    }));
+    submit.addEventListener('click', () => answerMulti(page, [...picks]));
+  } else {
+    page.querySelectorAll('.option').forEach(btn =>
+      btn.addEventListener('click', () => answer(page, +btn.dataset.n)));
+  }
   page.querySelector('.t-acc-head').addEventListener('click', () => {
     const acc = page.querySelector('.t-acc');
     acc.dataset.open = acc.dataset.open === 'true' ? 'false' : 'true';
@@ -558,6 +816,12 @@ function answer(page, n) {
   }
   opts.forEach((o, i) => { if (i !== q.answer && i !== n) o.classList.add('is-dimmed'); });
 
+  finishAnswer(page, right);
+}
+
+/* Shared verdict tail — one path for both MCQ and multi-select so the two
+   scorers can never drift apart on feedback treatment. */
+function finishAnswer(page, right) {
   const verdict = page.querySelector('.verdict');
   const check = page.querySelector('.t-check');
   const txt = page.querySelector('.verdict-txt');
@@ -571,9 +835,6 @@ function answer(page, n) {
      ✓ / ✗ marks, so the wrong case earns a real glyph. */
   const path = check.querySelector('path');
   path.setAttribute('d', right ? 'M7.5 12.4l3.1 3.1 6-6.4' : 'M9 9l6 6M15 9l-6 6');
-  /* The skill flags hardcoded stroke-dasharray as its #1 SVG mistake —
-     measure the real path instead so neither glyph pre-reveals or
-     over-draws. */
   const len = Math.ceil(path.getTotalLength()) + 1;
   path.style.strokeDasharray = len;
   path.style.strokeDashoffset = len;
@@ -585,6 +846,31 @@ function answer(page, n) {
   acc.dataset.open = 'true';
   page.querySelector('.next').classList.add('is-on');
   renderDots();
+}
+
+/* Multi-select scoring: all-or-nothing, matching the runtime scorer's
+   `answers` array shape. Correct picks stay marked, wrong picks shake. */
+function answerMulti(page, picks) {
+  const q = QS[idx];
+  const opts = [...page.querySelectorAll('.option')];
+  if (opts[0].classList.contains('is-locked')) return;
+  opts.forEach(o => o.classList.add('is-locked'));
+  page.querySelector('.ms-submit').classList.remove('is-ready');
+
+  const right = picks.length === q.answers.length && picks.every(p => q.answers.includes(p));
+  marks[idx] = right;
+  if (right) correctCount++;
+
+  q.answers.forEach(a => opts[a].classList.add('is-correct'));
+  picks.filter(p => !q.answers.includes(p)).forEach(p => {
+    const w = opts[p];
+    w.classList.add('is-wrong');
+    void w.offsetWidth;
+    w.classList.add('is-shaking');
+  });
+  opts.forEach((o, i) => { if (!q.answers.includes(i) && !picks.includes(i)) o.classList.add('is-dimmed'); });
+
+  finishAnswer(page, right);
 }
 
 /* ── results: number pop-in + success check ───────────────────────────── */
@@ -606,6 +892,21 @@ function showResults() {
       <div style="margin-top:14px"><span class="t-digits" id="res"></span></div>
       <div class="label">Session score</div>
       <p class="sum">${correctCount} of ${QS.length} correct · Cryptography Fundamentals</p>
+
+      <div style="display:flex;justify-content:center;margin-top:22px">
+        <div class="t-tabs" role="tablist">
+          <span class="t-tabs-pill"></span>
+          <button class="t-tab" role="tab" aria-selected="true"  data-f="all">All</button>
+          <button class="t-tab" role="tab" aria-selected="false" data-f="wrong">Missed</button>
+          <button class="t-tab" role="tab" aria-selected="false" data-f="flagged">Flagged</button>
+        </div>
+      </div>
+
+      <div class="bd" id="bd">
+        <div class="bd-row" data-i="0"><span class="bd-label">Foundational</span><span class="bd-track"><span class="bd-fill ok" data-pct="100"></span></span><span class="bd-val">100%</span></div>
+        <div class="bd-row" data-i="1"><span class="bd-label">Exam Level</span><span class="bd-track"><span class="bd-fill" data-pct="75"></span></span><span class="bd-val">75%</span></div>
+        <div class="bd-row" data-i="2"><span class="bd-label">Hard</span><span class="bd-track"><span class="bd-fill" data-pct="50"></span></span><span class="bd-val">50%</span></div>
+      </div>
     </div>`;
   slide.appendChild(page);
   void page.offsetWidth;
@@ -630,6 +931,43 @@ function showResults() {
   });
   void el.offsetWidth;
   el.classList.add('is-animating');
+
+  /* Sliding pill: the first position MUST be written with transition
+     suppressed, or the pill animates in from translateX(0)/width:0 on
+     first paint. The skill flags this as a named mistake. */
+  const bar = page.querySelector('.t-tabs');
+  const pill = bar.querySelector('.t-tabs-pill');
+  const tabs = [...bar.querySelectorAll('.t-tab')];
+  const moveTo = (tab, animate) => {
+    if (!animate) {
+      const prev = pill.style.transition;
+      pill.style.transition = 'none';
+      pill.style.transform = `translateX(${tab.offsetLeft}px)`;
+      pill.style.width = `${tab.offsetWidth}px`;
+      void pill.offsetWidth;
+      pill.style.transition = prev;
+    } else {
+      pill.style.transform = `translateX(${tab.offsetLeft}px)`;
+      pill.style.width = `${tab.offsetWidth}px`;
+    }
+  };
+  tabs.forEach(tab => tab.addEventListener('click', () => {
+    tabs.forEach(t => t.setAttribute('aria-selected', String(t === tab)));
+    moveTo(tab, true);
+  }));
+  moveTo(tabs[0], false);
+  /* Re-measure on resize — offsetLeft changes with the container. */
+  addEventListener('resize', () => moveTo(tabs.find(t => t.getAttribute('aria-selected') === 'true'), false));
+
+  /* Bar fills last: data motion, deliberately the slowest thing on screen
+     so the eye lands on the score first and the breakdown resolves after.
+     Deliberately NOT rAF-driven — rAF does not fire in a backgrounded tab,
+     so a user who switches away mid-result would come back to permanently
+     empty bars. A forced reflow flushes the width:0 starting style, after
+     which a synchronous write still animates when visible and still lands
+     on the right value when hidden. */
+  void page.offsetWidth;
+  page.querySelectorAll('.bd-fill').forEach(f => { f.style.width = f.dataset.pct + '%'; });
 
   /* renderDots() writes the counter, so it has to run BEFORE the final
      label or it stomps it back to "3 / 3". */
