@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CertAnvil · Quiz Engine E2E Motion</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600;800&display=swap" rel="stylesheet">
+<style>
+/* ════════════════════════════════════════════════════════════════════════
+   CertAnvil · MOCKUP STARTER TOKEN BLOCK
+   Copied verbatim from design/brand/mockup-starter-tokens.css.
+   ════════════════════════════════════════════════════════════════════════ */
+:root, [data-theme="dark"] {
+  --bg: oklch(0.17 0.008 275); --surface: oklch(0.205 0.009 275); --surface-2: oklch(0.23 0.009 275);
+  --ink: oklch(0.96 0.006 275); --ink-soft: oklch(0.80 0.012 275); --muted: oklch(0.725 0.013 275);
+  --border: oklch(0.32 0.011 275); --border-soft: oklch(0.255 0.010 275);
+  --accent: oklch(0.80 0.155 64); --accent-deep: oklch(0.86 0.135 64); --on-accent: oklch(0.18 0.020 275);
+  --pass: oklch(0.74 0.150 152); --fail: oklch(0.66 0.17 25);
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+}
+[data-theme="light"] {
+  --bg: oklch(0.975 0.007 85); --surface: oklch(0.992 0.004 85); --surface-2: oklch(0.965 0.010 84);
+  --ink: oklch(0.22 0.015 280); --ink-soft: oklch(0.36 0.014 280); --muted: oklch(0.50 0.013 280);
+  --border: oklch(0.86 0.008 85); --border-soft: oklch(0.91 0.006 85);
+  --accent: oklch(0.50 0.155 55); --accent-deep: oklch(0.42 0.150 52); --on-accent: oklch(0.985 0.010 85);
+  --pass: oklch(0.50 0.15 150); --fail: oklch(0.52 0.19 25);
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+   MOTION TOKENS — BRAND.md §6. transitions.dev's _root.css is NOT imported;
+   every duration is re-timed onto CertAnvil's table and all easing curves
+   collapse to the single system curve. Choreography is transitions.dev's.
+   ════════════════════════════════════════════════════════════════════════ */
+:root {
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* texts-reveal → question stem + options. 500ms → card-reveal band. */
+  --stagger-dur: 520ms; --stagger-distance: 12px; --stagger-step: 60ms; --stagger-blur: 3px;
+  /* page-side-by-side → question advance. 250ms → card-lift band. */
+  --page-dur: 220ms; --page-distance: 8px; --page-blur: 3px;
+  /* success-check → correct answer + results. */
+  --check-dur: 520ms; --check-rotate-from: 80deg; --check-y: 40px; --check-blur-from: 10px; --check-delay: 80ms;
+  /* error-shake → wrong answer. 80/60 segments kept (functional). */
+  --shake-a: 80ms; --shake-b: 60ms; --shake-distance: 6px; --shake-overshoot: 4px; --revert-dur: 220ms;
+  /* accordion → explanation reveal. 250ms → card-lift band. */
+  --acc-dur: 220ms;
+  /* number pop-in → score. 500ms → card-lift band; stagger → BRAND's 60ms. */
+  --digit-dur: 220ms; --digit-distance: 8px; --digit-stagger: 60ms; --digit-blur: 2px;
+  /* skeleton-reveal → loading→question arrival. 400ms → toast-entrance band. */
+  --reveal-dur: 380ms; --reveal-blur: 2px;
+  /* antalik shimmer + orb (loading). Shimmer sweep is a loop, not a UI
+     transition, so the 2s cadence is the effect's own clock. */
+  --shimmer-dur: 2s; --shimmer-band: 400%;
+  --shimmer-base: oklch(0.725 0.013 275); --shimmer-highlight: oklch(0.96 0.006 275);
+  --orb-spin: 2.6s;
+}
+[data-theme="light"] {
+  --shimmer-base: oklch(0.50 0.013 280); --shimmer-highlight: oklch(0.22 0.015 280);
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0; padding: 28px 20px 60px; background: var(--bg); color: var(--ink);
+  font-family: Inter, system-ui, sans-serif;
+  transition: background 220ms var(--ease), color 220ms var(--ease);
+}
+.wrap { max-width: 760px; margin: 0 auto; }
+.eyebrow { font: 800 10px/1 Inter, sans-serif; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent-deep); }
+.topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+.themebtn, .restart {
+  background: var(--surface-2); color: var(--ink); border: 1px solid var(--border);
+  border-radius: 8px; padding: 7px 12px; font: 600 11.5px Inter, sans-serif; cursor: pointer;
+  transition: transform 150ms var(--ease);
+}
+.themebtn:active, .restart:active { transform: scale(0.97); }
+
+.shell {
+  background: var(--surface); border: 1px solid var(--border-soft);
+  border-radius: 16px; padding: 26px; min-height: 470px;
+  position: relative; overflow: hidden;
+}
+
+/* ── progress rail ─────────────────────────────────────────────────────── */
+.rail { display: flex; align-items: center; gap: 12px; margin-bottom: 22px; }
+.dots { display: flex; gap: 6px; flex: 1; }
+.dot {
+  height: 4px; flex: 1; border-radius: 2px; background: var(--border);
+  transition: background var(--page-dur) var(--ease);
+}
+.dot.is-done { background: var(--pass); }
+.dot.is-wrong { background: var(--fail); }
+.dot.is-current { background: var(--accent); }
+.counter { font: 600 11.5px Inter, sans-serif; color: var(--muted); white-space: nowrap; }
+
+/* ════════════════════════════════════════════════════════════════════════
+   LOADING — antalik-effects (micro-orb + shimmer label)
+   Chosen over transitions-dev's skeleton bars because CertAnvil's loader
+   already emits SEMANTIC STATE NAMES ("Verifying quality…"), which is
+   antalik's core doctrine — the label is the state, never "loading".
+   A pulsing skeleton would imply unknown shape + imminent arrival; this
+   pipeline is multi-second and determinate, so it gets an orb + named state.
+   ════════════════════════════════════════════════════════════════════════ */
+.orb { animation: orb-spin var(--orb-spin) linear infinite; transform-origin: center; color: var(--accent); }
+.orb[data-idle] { animation: none; opacity: 0.45; }
+@keyframes orb-spin { to { transform: rotate(360deg); } }
+
+.t-shimmer { position: relative; display: inline-block; color: var(--shimmer-base); }
+.t-shimmer::before {
+  content: attr(data-text); position: absolute; inset: 0; pointer-events: none;
+  background-image: linear-gradient(90deg, transparent 0 40%, var(--shimmer-highlight) 50%, transparent 60% 100%);
+  background-size: var(--shimmer-band) 100%; background-repeat: no-repeat;
+  background-clip: text; color: transparent; -webkit-text-fill-color: transparent;
+  animation: t-shimmer var(--shimmer-dur) linear infinite;
+}
+@keyframes t-shimmer { 0% { background-position: 100% 0; } 100% { background-position: 0% 0; } }
+
+.loadwrap { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; padding: 76px 0; }
+.loadrow { display: flex; align-items: center; gap: 10px; font: 500 15px Inter, sans-serif; }
+.load-bar { width: 240px; height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; }
+.load-bar-fill {
+  height: 100%; width: 0%; background: var(--accent); border-radius: 2px;
+  transition: width 380ms var(--ease);
+}
+.loadsub { font-size: 11.5px; color: var(--muted); }
+
+/* ── skeleton-reveal: the ARRIVAL. transitions-dev 14 — cross-fade +
+   cross-blur on one clock so loader→question reads as a single motion. ── */
+/* Exactly one layer holds the flow at any moment, or the collapsed layer
+   keeps reserving height and shoves the other down the page. Pre-reveal:
+   A is in flow, B overlays absolutely. Post-reveal: they swap. Both stay
+   painted through the cross-fade because the absolute layer pins to
+   inset:0 of the shared relative parent. */
+.t-skel { position: relative; }
+.t-skel-a, .t-skel-b { transition: opacity var(--reveal-dur) var(--ease), filter var(--reveal-dur) var(--ease); }
+.t-skel-b { position: absolute; inset: 0; opacity: 0; filter: blur(var(--reveal-blur)); pointer-events: none; }
+.t-skel.is-revealed .t-skel-a { position: absolute; inset: 0; opacity: 0; filter: blur(var(--reveal-blur)); pointer-events: none; }
+.t-skel.is-revealed .t-skel-b { position: relative; opacity: 1; filter: blur(0); pointer-events: auto; }
+
+/* ════════════════════════════════════════════════════════════════════════
+   QUESTION — texts-reveal (transitions-dev 18) for stem + each option,
+   stepped by BRAND's 60ms reveal unit instead of upstream's 40ms.
+   ════════════════════════════════════════════════════════════════════════ */
+.t-stagger-line {
+  display: block; opacity: 0;
+  transform: translateY(var(--stagger-distance)); filter: blur(var(--stagger-blur));
+  transition: opacity var(--stagger-dur) var(--ease),
+              transform var(--stagger-dur) var(--ease),
+              filter var(--stagger-dur) var(--ease);
+  will-change: transform, opacity, filter;
+}
+.t-stagger.is-shown .t-stagger-line { opacity: 1; transform: translateY(0); filter: blur(0); }
+.t-stagger.is-shown .t-stagger-line[data-i="1"] { transition-delay: calc(var(--stagger-step) * 1); }
+.t-stagger.is-shown .t-stagger-line[data-i="2"] { transition-delay: calc(var(--stagger-step) * 2); }
+.t-stagger.is-shown .t-stagger-line[data-i="3"] { transition-delay: calc(var(--stagger-step) * 3); }
+.t-stagger.is-shown .t-stagger-line[data-i="4"] { transition-delay: calc(var(--stagger-step) * 4); }
+.t-stagger.is-shown .t-stagger-line[data-i="5"] { transition-delay: calc(var(--stagger-step) * 5); }
+
+.qeyebrow { font: 800 9.5px Inter, sans-serif; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+.stem { font: 600 19px/1.45 Fraunces, Georgia, serif; margin: 0 0 20px; letter-spacing: -0.005em; }
+
+/* ── options ───────────────────────────────────────────────────────────── */
+.options { display: flex; flex-direction: column; gap: 9px; }
+.option {
+  display: flex; align-items: flex-start; gap: 12px; width: 100%; text-align: left;
+  background: var(--surface-2); border: 1.5px solid var(--border-soft);
+  border-radius: 11px; padding: 14px 16px; color: var(--ink);
+  font: 500 14px/1.45 Inter, sans-serif; cursor: pointer;
+  transition: border-color 150ms var(--ease), background 150ms var(--ease), transform 150ms var(--ease);
+  will-change: transform;
+}
+@media (hover: hover) and (pointer: fine) {
+  .option:not(.is-locked):hover { border-color: var(--accent); background: var(--surface); }
+}
+.option:not(.is-locked):active { transform: scale(0.985); }
+.option .key {
+  flex: none; width: 22px; height: 22px; border-radius: 6px;
+  background: var(--border); color: var(--ink-soft);
+  font: 700 11px/22px Inter, sans-serif; text-align: center;
+  transition: background var(--revert-dur) var(--ease), color var(--revert-dur) var(--ease);
+}
+.option.is-correct { border-color: var(--pass); background: color-mix(in oklab, var(--pass) 12%, transparent); }
+.option.is-correct .key { background: var(--pass); color: var(--on-accent); }
+.option.is-wrong { border-color: var(--fail); background: color-mix(in oklab, var(--fail) 12%, transparent); }
+.option.is-wrong .key { background: var(--fail); color: var(--on-accent); }
+.option.is-locked { cursor: default; }
+.option.is-dimmed { opacity: 0.5; }
+
+/* ── error shake (transitions-dev 12) on the wrong option ──────────────── */
+.option.is-shaking { animation: t-shake calc(var(--shake-a) * 2 + var(--shake-b) * 2) linear; }
+@keyframes t-shake {
+  0%     { transform: translateX(0);                              animation-timing-function: var(--ease); }
+  28.57% { transform: translateX(var(--shake-distance));          animation-timing-function: var(--ease); }
+  57.14% { transform: translateX(calc(var(--shake-distance)*-1)); animation-timing-function: var(--ease); }
+  78.57% { transform: translateX(var(--shake-overshoot));         animation-timing-function: var(--ease); }
+  100%   { transform: translateX(0); }
+}
+
+/* ── success check (transitions-dev 10) — verdict badge ────────────────── */
+.t-check { display: inline-block; transform-origin: center; opacity: 0; will-change: transform, opacity, filter; }
+.t-check svg { display: block; overflow: visible; }
+.t-check svg path { stroke-dasharray: 26; stroke-dashoffset: 26; }
+.t-check[data-state="in"] {
+  animation: c-fade var(--check-dur) var(--ease) forwards,
+             c-rot  var(--check-dur) var(--ease) forwards,
+             c-blur var(--check-dur) var(--ease) forwards,
+             c-bob  var(--check-dur) var(--ease) forwards;
+}
+.t-check[data-state="in"] svg path { animation: c-draw var(--check-dur) var(--ease) var(--check-delay) forwards; }
+@keyframes c-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes c-rot  { from { transform: rotate(var(--check-rotate-from)); } to { transform: rotate(0); } }
+@keyframes c-blur { from { filter: blur(var(--check-blur-from)); } to { filter: blur(0); } }
+@keyframes c-bob  { from { translate: 0 var(--check-y); } to { translate: 0 0; } }
+@keyframes c-draw { to { stroke-dashoffset: 0; } }
+
+/* ── verdict row ───────────────────────────────────────────────────────── */
+.verdict { display: flex; align-items: center; gap: 10px; margin-top: 18px; min-height: 34px; }
+.verdict-txt { font: 600 14px Fraunces, Georgia, serif; opacity: 0; transition: opacity var(--check-dur) var(--ease); }
+.verdict.is-on .verdict-txt { opacity: 1; }
+.verdict.ok .verdict-txt { color: var(--pass); }
+.verdict.no .verdict-txt { color: var(--fail); }
+
+/* ════════════════════════════════════════════════════════════════════════
+   EXPLANATION — accordion (transitions-dev 21). grid-rows 0fr→1fr, chevron
+   flipped with scaleY(-1) not a `d:` morph (Chromium-only, mobile-Safari
+   is a first-class CertAnvil target).
+   ════════════════════════════════════════════════════════════════════════ */
+.t-acc { margin-top: 14px; border-top: 1px solid var(--border-soft); padding-top: 14px; }
+.t-acc-head {
+  display: flex; align-items: center; justify-content: space-between; width: 100%;
+  background: none; border: 0; padding: 0; cursor: pointer; color: var(--accent-deep);
+  font: 800 10px Inter, sans-serif; letter-spacing: 0.1em; text-transform: uppercase;
+}
+.t-acc-panel { display: grid; grid-template-rows: 0fr; transition: grid-template-rows var(--acc-dur) var(--ease); }
+.t-acc[data-open="true"] .t-acc-panel { grid-template-rows: 1fr; }
+.t-acc-panel-inner {
+  overflow: hidden; opacity: 0; filter: blur(2px);
+  transition: opacity var(--acc-dur) var(--ease), filter var(--acc-dur) var(--ease);
+}
+.t-acc[data-open="true"] .t-acc-panel-inner { opacity: 1; filter: blur(0); }
+.t-acc-chevron { display: inline-flex; transform: scaleY(1); transform-origin: center; transition: transform var(--acc-dur) var(--ease); }
+.t-acc[data-open="true"] .t-acc-chevron { transform: scaleY(-1); }
+.expl { font-size: 13px; line-height: 1.65; color: var(--ink-soft); padding-top: 10px; margin: 0; }
+.expl strong { color: var(--ink); font-weight: 600; }
+
+/* ── next button ───────────────────────────────────────────────────────── */
+.actions { margin-top: 20px; display: flex; justify-content: flex-end; }
+.next {
+  background: var(--accent); color: var(--on-accent); border: 0; border-radius: 9px;
+  padding: 11px 22px; font: 600 13px Inter, sans-serif; cursor: pointer;
+  opacity: 0; pointer-events: none;
+  transition: opacity var(--page-dur) var(--ease), transform 150ms var(--ease), filter 150ms var(--ease);
+}
+.next.is-on { opacity: 1; pointer-events: auto; }
+@media (hover: hover) and (pointer: fine) { .next:hover { filter: brightness(1.07); } }
+.next:active { transform: scale(0.97); }
+
+/* ════════════════════════════════════════════════════════════════════════
+   QUESTION ADVANCE — page-side-by-side (transitions-dev 08)
+   ════════════════════════════════════════════════════════════════════════ */
+.t-slide { position: relative; }
+.t-slide .t-page {
+  opacity: 0; pointer-events: none;
+  transform: translateX(var(--page-distance)); filter: blur(var(--page-blur));
+  transition: opacity var(--page-dur) var(--ease), transform var(--page-dur) var(--ease), filter var(--page-dur) var(--ease);
+  will-change: opacity, transform, filter;
+}
+.t-slide .t-page:not(.is-active) { position: absolute; inset: 0; }
+.t-slide .t-page.is-active { opacity: 1; pointer-events: auto; transform: translateX(0); filter: blur(0); position: relative; }
+.t-slide .t-page.is-exiting { transform: translateX(calc(var(--page-distance) * -1)); }
+
+/* ════════════════════════════════════════════════════════════════════════
+   RESULTS — number pop-in (transitions-dev 02) + success check
+   ════════════════════════════════════════════════════════════════════════ */
+@keyframes t-digit {
+  0%   { transform: translateY(var(--digit-distance)); opacity: 0; filter: blur(var(--digit-blur)); }
+  100% { transform: translateY(0); opacity: 1; filter: blur(0); }
+}
+.t-digits {
+  display: inline-flex; align-items: baseline;
+  font: 700 58px/1 Fraunces, Georgia, serif; color: var(--accent-deep);
+  font-variant-numeric: lining-nums tabular-nums; font-feature-settings: "lnum","tnum";
+}
+.t-digit { display: inline-block; will-change: transform, opacity, filter; }
+.t-digits.is-animating .t-digit { animation: t-digit var(--digit-dur) var(--ease) both; }
+.t-digits.is-animating .t-digit[data-s="1"] { animation-delay: var(--digit-stagger); }
+.t-digits.is-animating .t-digit[data-s="2"] { animation-delay: calc(var(--digit-stagger) * 2); }
+.results { text-align: center; padding: 46px 0; }
+.results .label { font: 800 10px Inter, sans-serif; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin-top: 6px; }
+.results .sum { font-size: 13px; color: var(--ink-soft); margin-top: 16px; }
+
+/* ── legend ────────────────────────────────────────────────────────────── */
+.legend { margin-top: 22px; background: var(--surface); border: 1px solid var(--border-soft); border-radius: 13px; padding: 20px; }
+.legend h2 { font: 600 15px Fraunces, Georgia, serif; margin: 8px 0 12px; }
+.legend table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.legend th, .legend td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--border-soft); vertical-align: top; }
+.legend th { font: 800 9px Inter, sans-serif; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+.legend code { font: 500 11px ui-monospace, Menlo, monospace; background: var(--surface-2); padding: 2px 5px; border-radius: 4px; }
+.tag { font: 700 9px Inter, sans-serif; letter-spacing: .06em; padding: 2px 6px; border-radius: 4px; text-transform: uppercase; }
+.tag.td { background: color-mix(in oklab, var(--accent) 20%, transparent); color: var(--accent-deep); }
+.tag.ae { background: color-mix(in oklab, var(--pass) 20%, transparent); color: var(--pass); }
+
+@media (prefers-reduced-motion: reduce) {
+  .orb, .t-shimmer::before, .option.is-shaking, .t-check, .t-check svg path, .t-digits .t-digit { animation: none !important; }
+  .t-check { opacity: 1; } .t-check svg path { stroke-dashoffset: 0 !important; }
+  .t-stagger-line, .t-slide .t-page, .t-acc-panel, .t-acc-panel-inner, .t-acc-chevron,
+  .t-skel-a, .t-skel-b, .next, .verdict-txt, body { transition: none !important; }
+  .t-stagger-line { opacity: 1; transform: none; filter: none; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="topbar">
+    <div>
+      <div class="eyebrow">Quiz engine · end-to-end motion</div>
+      <div style="font:600 15px Fraunces,Georgia,serif;margin-top:4px">Security+ · Cryptography Fundamentals</div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="restart" onclick="restart()">Restart</button>
+      <button class="themebtn" onclick="document.documentElement.dataset.theme=document.documentElement.dataset.theme==='dark'?'light':'dark'">Theme</button>
+    </div>
+  </div>
+
+  <div class="shell">
+    <div class="t-skel" id="skel">
+
+      <!-- ═══ A · LOADING (antalik micro-orb + shimmer state label) ═══ -->
+      <div class="t-skel-a" id="loadview">
+        <div class="loadwrap">
+          <svg class="orb" width="34" height="34" viewBox="0 0 24 24" fill="none"
+               stroke="currentColor" stroke-width="1.3" stroke-dasharray="1.6 2.6"
+               stroke-linecap="round" role="img" aria-label="Generating questions" id="orb">
+            <circle cx="12" cy="12" r="9"/>
+            <ellipse cx="12" cy="12" rx="9" ry="3.6"/>
+            <ellipse cx="12" cy="12" rx="3.6" ry="9"/>
+          </svg>
+          <div class="loadrow">
+            <span class="t-shimmer" id="shim" data-text="Generating questions…">Generating questions…</span>
+          </div>
+          <div class="load-bar"><div class="load-bar-fill" id="bar"></div></div>
+          <div class="loadsub" id="loadsub">Batch 1 of 3</div>
+        </div>
+      </div>
+
+      <!-- ═══ B · QUIZ ═══ -->
+      <div class="t-skel-b" id="quizview">
+
+        <div class="rail">
+          <div class="dots" id="dots"></div>
+          <div class="counter" id="counter">1 / 3</div>
+        </div>
+
+        <div class="t-slide" id="slide"></div>
+
+      </div>
+    </div>
+  </div>
+
+  <div class="legend">
+    <div class="eyebrow">Motion inventory</div>
+    <h2>Which skill drives each moment, and why</h2>
+    <table>
+      <thead><tr><th>Moment</th><th>Source</th><th>Transition</th><th>Re-timed</th></tr></thead>
+      <tbody>
+        <tr><td>Waiting on AI</td><td><span class="tag ae">antalik</span></td><td>micro-orb + shimmer label</td><td>loop cadence kept (2s / 2.6s) — it's the effect's own clock, not UI motion</td></tr>
+        <tr><td>Questions arrive</td><td><span class="tag td">transitions</span></td><td><code>14-skeleton-reveal</code></td><td>400 → <strong>380ms</strong></td></tr>
+        <tr><td>Stem + options in</td><td><span class="tag td">transitions</span></td><td><code>18-texts-reveal</code></td><td>500 → <strong>520ms</strong>; step 40 → <strong>60ms</strong></td></tr>
+        <tr><td>Correct answer</td><td><span class="tag td">transitions</span></td><td><code>10-success-check</code></td><td>500 → <strong>520ms</strong>; bounce ease → system curve</td></tr>
+        <tr><td>Wrong answer</td><td><span class="tag td">transitions</span></td><td><code>12-error-state-shake</code></td><td>segments kept 80/60ms; revert 280 → <strong>220ms</strong></td></tr>
+        <tr><td>Explanation</td><td><span class="tag td">transitions</span></td><td><code>21-accordion</code></td><td>250 → <strong>220ms</strong></td></tr>
+        <tr><td>Next question</td><td><span class="tag td">transitions</span></td><td><code>08-page-side-by-side</code></td><td>250 → <strong>220ms</strong></td></tr>
+        <tr><td>Final score</td><td><span class="tag td">transitions</span></td><td><code>02-number-pop-in</code></td><td>500 → <strong>220ms</strong>; overshoot ease → system curve</td></tr>
+      </tbody>
+    </table>
+    <p style="font-size:12px;color:var(--muted);line-height:1.6;margin:14px 0 0">
+      <strong style="color:var(--ink)">Why antalik for loading, not the skeleton:</strong> CertAnvil's loader already emits
+      semantic state names — <code>Generating questions…</code>, <code>Verifying quality…</code>, <code>Finalizing…</code> —
+      which is antalik's core doctrine (the label is the state, never "loading"). A pulsing skeleton implies unknown shape and
+      imminent arrival; this pipeline is multi-second and determinate. The skeleton's <em>cross-fade</em> is still the right tool
+      for the arrival, so both are used — each for the half it wins.
+      <code>_root.css</code> is not imported; only one <code>cubic-bezier</code> exists in this file.
+    </p>
+  </div>
+</div>
+
+<script>
+/* ── question data ─────────────────────────────────────────────────────── */
+const QS = [
+  { eyebrow: 'Objective 1.4 · Exam Level',
+    stem: 'An attacker records TLS traffic for 18 months, then compromises the server and obtains its long-term private key. The server used ECDHE throughout. What happens to the recorded sessions?',
+    opts: ['The attacker decrypts all 18 months using the stolen key',
+           'The attacker decrypts only the final month before the theft',
+           'The sessions stay protected — each used ephemeral key material that was discarded',
+           'The attacker decrypts them after factoring the RSA public key'],
+    answer: 2,
+    expl: 'ECDHE generates fresh temporary private values per session and discards them. The long-term key authenticated the handshake but never encrypted session data, so stealing it later yields nothing for past traffic. This is <strong>perfect forward secrecy</strong>.' },
+  { eyebrow: 'Objective 1.4 · Exam Level',
+    stem: 'A client generates a random symmetric key, encrypts it with the server’s public key, and transmits it. The server decrypts it with its private key. Which key establishment method is this?',
+    opts: ['Key agreement — both parties independently calculate the same secret',
+           'Key transport — one party creates the key and delivers it',
+           'Out-of-band exchange — the key travels a separate channel',
+           'Key derivation — a KDF expands a master secret'],
+    answer: 1,
+    expl: 'In <strong>key transport</strong> one side generates the key and sends it protected. In key agreement (Diffie-Hellman) both sides contribute and the final secret never crosses the network. TLS 1.3 removed RSA key transport precisely because agreement supports forward secrecy.' },
+  { eyebrow: 'Objective 1.4 · Hard',
+    stem: 'A VPN must provide forward secrecy so a future compromise of the server’s private key cannot expose past traffic. Which selection meets this?',
+    opts: ['RSA-2048 key transport', 'ECDH', 'ECDHE', 'AES-256-GCM'],
+    answer: 2,
+    expl: 'The <strong>E</strong> is the whole point — <em>Ephemeral</em>. ECDH without it can reuse static key material and gives no forward-secrecy guarantee. AES-256-GCM is the symmetric cipher that encrypts data after key establishment, not a key-exchange mechanism.' }
+];
+
+const LOAD_STEPS = [
+  { label: 'Generating questions…', pct: 30, sub: 'Batch 1 of 3' },
+  { label: 'Verifying quality…',    pct: 62, sub: 'Semantic validation pass' },
+  { label: 'Finalizing…',           pct: 88, sub: 'Assembling session' },
+  { label: 'Ready',                 pct: 100, sub: '3 questions' }
+];
+
+let idx = 0, correctCount = 0, marks = [];
+
+const $ = id => document.getElementById(id);
+
+/* ── loading sequence: antalik orb + shimmer, real milestone labels ───── */
+function runLoading() {
+  let s = 0;
+  $('skel').classList.remove('is-revealed');
+  $('orb').removeAttribute('data-idle');
+  const tick = () => {
+    const step = LOAD_STEPS[s];
+    /* data-text and the visible string must stay in sync — the ::before
+       paints the highlight band onto the same glyphs. */
+    $('shim').dataset.text = step.label;
+    $('shim').textContent = step.label;
+    $('orb').setAttribute('aria-label', step.label);
+    $('bar').style.width = step.pct + '%';
+    $('loadsub').textContent = step.sub;
+    s++;
+    if (s < LOAD_STEPS.length) {
+      setTimeout(tick, 900);
+    } else {
+      /* state is no longer active — stop the orb rather than leave it
+         spinning decoratively (antalik: static-when-idle). */
+      $('orb').setAttribute('data-idle', '');
+      setTimeout(revealQuiz, 520);
+    }
+  };
+  tick();
+}
+
+function revealQuiz() {
+  $('skel').classList.add('is-revealed');
+  renderQuestion(0, true);
+}
+
+/* ── progress rail ─────────────────────────────────────────────────────── */
+function renderDots() {
+  $('dots').replaceChildren();
+  QS.forEach((_, i) => {
+    const d = document.createElement('div');
+    d.className = 'dot' + (marks[i] === true ? ' is-done' : marks[i] === false ? ' is-wrong' : i === idx ? ' is-current' : '');
+    $('dots').appendChild(d);
+  });
+  $('counter').textContent = (idx + 1) + ' / ' + QS.length;
+}
+
+/* ── question render + texts-reveal stagger ────────────────────────────── */
+function renderQuestion(i, first) {
+  idx = i;
+  renderDots();
+  const q = QS[i];
+  const page = document.createElement('div');
+  page.className = 't-page t-stagger';
+  page.innerHTML = `
+    <div class="t-stagger-line" data-i="0">
+      <div class="qeyebrow">${q.eyebrow}</div>
+      <p class="stem">${q.stem}</p>
+    </div>
+    <div class="options">
+      ${q.opts.map((o, n) => `
+        <button class="option t-stagger-line" data-i="${n + 1}" data-n="${n}">
+          <span class="key">${'ABCD'[n]}</span><span>${o}</span>
+        </button>`).join('')}
+    </div>
+    <div class="verdict">
+      <span class="t-check" data-state="out">
+        <svg width="30" height="30" viewBox="0 0 24 24" fill="none">
+          <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.5" opacity="0.28"/>
+          <path d="M7.5 12.4l3.1 3.1 6-6.4" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </span>
+      <span class="verdict-txt"></span>
+    </div>
+    <div class="t-acc" data-open="false" hidden>
+      <button class="t-acc-head">
+        <span>Why</span>
+        <span class="t-acc-chevron">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 6.5l4 3 4-3" vector-effect="non-scaling-stroke"/>
+          </svg>
+        </span>
+      </button>
+      <div class="t-acc-panel"><div class="t-acc-panel-inner"><p class="expl">${q.expl}</p></div></div>
+    </div>
+    <div class="actions"><button class="next">${i === QS.length - 1 ? 'See results' : 'Next question'}</button></div>`;
+
+  const slide = $('slide');
+  const prev = slide.querySelector('.t-page.is-active');
+  slide.appendChild(page);
+
+  /* reflow before flipping the entrance classes, or the page paints
+     already-in-position and the slide + stagger never animate */
+  void page.offsetWidth;
+  /* Order matters: the incoming page must join the flow BEFORE the
+     outgoing one leaves it. Detaching first empties the container for a
+     frame, it collapses to zero height, and the whole document jumps. */
+  page.classList.add('is-active');
+  if (prev) {
+    prev.classList.add('is-exiting');
+    prev.classList.remove('is-active');
+    setTimeout(() => prev.remove(), 260);
+  }
+  requestAnimationFrame(() => page.classList.add('is-shown'));
+
+  page.querySelectorAll('.option').forEach(btn =>
+    btn.addEventListener('click', () => answer(page, +btn.dataset.n)));
+  page.querySelector('.t-acc-head').addEventListener('click', () => {
+    const acc = page.querySelector('.t-acc');
+    acc.dataset.open = acc.dataset.open === 'true' ? 'false' : 'true';
+  });
+  page.querySelector('.next').addEventListener('click', () => {
+    if (idx === QS.length - 1) showResults();
+    else renderQuestion(idx + 1);
+  });
+}
+
+/* ── answer: success-check on right, error-shake on wrong ─────────────── */
+function answer(page, n) {
+  const q = QS[idx];
+  const opts = [...page.querySelectorAll('.option')];
+  if (opts[0].classList.contains('is-locked')) return;
+  opts.forEach(o => o.classList.add('is-locked'));
+
+  const right = n === q.answer;
+  marks[idx] = right;
+  if (right) correctCount++;
+
+  opts[q.answer].classList.add('is-correct');
+  if (!right) {
+    const wrong = opts[n];
+    wrong.classList.add('is-wrong');
+    /* .is-wrong and .is-shaking stay orthogonal so the shake can replay
+       without flickering the error treatment */
+    void wrong.offsetWidth;
+    wrong.classList.add('is-shaking');
+  }
+  opts.forEach((o, i) => { if (i !== q.answer && i !== n) o.classList.add('is-dimmed'); });
+
+  const verdict = page.querySelector('.verdict');
+  const check = page.querySelector('.t-check');
+  const txt = page.querySelector('.verdict-txt');
+  verdict.classList.add('is-on', right ? 'ok' : 'no');
+  txt.textContent = right ? 'Correct' : 'Not quite';
+  check.style.color = right ? 'var(--pass)' : 'var(--fail)';
+
+  /* Both outcomes get the same stroke-draw choreography — a tick for
+     right, a cross for wrong. An outlined circle with nothing drawn in
+     it reads as a broken icon, not as a state. BRAND allows semantic
+     ✓ / ✗ marks, so the wrong case earns a real glyph. */
+  const path = check.querySelector('path');
+  path.setAttribute('d', right ? 'M7.5 12.4l3.1 3.1 6-6.4' : 'M9 9l6 6M15 9l-6 6');
+  /* The skill flags hardcoded stroke-dasharray as its #1 SVG mistake —
+     measure the real path instead so neither glyph pre-reveals or
+     over-draws. */
+  const len = Math.ceil(path.getTotalLength()) + 1;
+  path.style.strokeDasharray = len;
+  path.style.strokeDashoffset = len;
+  void check.offsetWidth;
+  check.dataset.state = 'in';
+
+  const acc = page.querySelector('.t-acc');
+  acc.hidden = false;
+  acc.dataset.open = 'true';
+  page.querySelector('.next').classList.add('is-on');
+  renderDots();
+}
+
+/* ── results: number pop-in + success check ───────────────────────────── */
+function showResults() {
+  const pct = Math.round((correctCount / QS.length) * 100);
+  const slide = $('slide');
+  const prev = slide.querySelector('.t-page.is-active');
+
+  const page = document.createElement('div');
+  page.className = 't-page';
+  page.innerHTML = `
+    <div class="results">
+      <span class="t-check" data-state="out" style="color:var(--pass)">
+        <svg width="42" height="42" viewBox="0 0 24 24" fill="none">
+          <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.5" opacity="0.28"/>
+          <path d="M7.5 12.4l3.1 3.1 6-6.4" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </span>
+      <div style="margin-top:14px"><span class="t-digits" id="res"></span></div>
+      <div class="label">Session score</div>
+      <p class="sum">${correctCount} of ${QS.length} correct · Cryptography Fundamentals</p>
+    </div>`;
+  slide.appendChild(page);
+  void page.offsetWidth;
+  page.classList.add('is-active');
+  if (prev) { prev.classList.add('is-exiting'); prev.classList.remove('is-active'); setTimeout(() => prev.remove(), 260); }
+
+  const check = page.querySelector('.t-check');
+  const rp = check.querySelector('path');
+  const rlen = Math.ceil(rp.getTotalLength()) + 1;
+  rp.style.strokeDasharray = rlen;
+  rp.style.strokeDashoffset = rlen;
+  void check.offsetWidth; check.dataset.state = 'in';
+
+  const el = page.querySelector('#res');
+  const chars = (pct + '%').split('');
+  chars.forEach((c, i) => {
+    const s = document.createElement('span');
+    s.className = 't-digit'; s.textContent = c;
+    if (i === chars.length - 2) s.dataset.s = '1';
+    else if (i === chars.length - 1) s.dataset.s = '2';
+    el.appendChild(s);
+  });
+  void el.offsetWidth;
+  el.classList.add('is-animating');
+
+  /* renderDots() writes the counter, so it has to run BEFORE the final
+     label or it stomps it back to "3 / 3". */
+  renderDots();
+  $('counter').textContent = 'Done';
+}
+
+function restart() {
+  idx = 0; correctCount = 0; marks = [];
+  $('slide').replaceChildren();
+  runLoading();
+}
+
+runLoading();
+</script>
+</body>
+</html>
