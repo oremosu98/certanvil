@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CertAnvil · PBQ Order Type Motion</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600;800&display=swap" rel="stylesheet">
+<style>
+/* ════════════════════════════════════════════════════════════════════════
+   CertAnvil · MOCKUP STARTER TOKEN BLOCK
+   Copied verbatim from design/brand/mockup-starter-tokens.css.
+   ════════════════════════════════════════════════════════════════════════ */
+:root, [data-theme="dark"] {
+  --bg: oklch(0.17 0.008 275); --surface: oklch(0.205 0.009 275); --surface-2: oklch(0.23 0.009 275);
+  --ink: oklch(0.96 0.006 275); --ink-soft: oklch(0.80 0.012 275); --muted: oklch(0.725 0.013 275);
+  --border: oklch(0.32 0.011 275); --border-soft: oklch(0.255 0.010 275);
+  --accent: oklch(0.80 0.155 64); --accent-deep: oklch(0.86 0.135 64); --on-accent: oklch(0.18 0.020 275);
+  --pass: oklch(0.74 0.150 152); --fail: oklch(0.66 0.17 25);
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+}
+[data-theme="light"] {
+  --bg: oklch(0.975 0.007 85); --surface: oklch(0.992 0.004 85); --surface-2: oklch(0.965 0.010 84);
+  --ink: oklch(0.22 0.015 280); --ink-soft: oklch(0.36 0.014 280); --muted: oklch(0.50 0.013 280);
+  --border: oklch(0.86 0.008 85); --border-soft: oklch(0.91 0.006 85);
+  --accent: oklch(0.50 0.155 55); --accent-deep: oklch(0.42 0.150 52); --on-accent: oklch(0.985 0.010 85);
+  --pass: oklch(0.50 0.15 150); --fail: oklch(0.52 0.19 25);
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+   MOTION TOKENS — BRAND.md §6. transitions.dev's _root.css is NOT imported.
+   ════════════════════════════════════════════════════════════════════════ */
+:root {
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --stagger-dur: 520ms; --stagger-distance: 12px; --stagger-step: 60ms; --stagger-blur: 3px;
+  --swap-dur: 150ms; --swap-y: 4px; --swap-blur: 2px;
+  --resize-dur: 220ms;                       /* card-resize → tray growth */
+  --cb-draw: 220ms; --cb-box: 150ms;         /* checkbox-check → placed tick */
+  --shake-a: 80ms; --shake-b: 60ms; --shake-distance: 6px; --shake-overshoot: 4px;
+  --check-dur: 520ms; --check-rotate-from: 80deg; --check-y: 40px; --check-blur-from: 10px;
+  --flip-dur: 380ms;                         /* FLIP reorder — see note below */
+  --flip-step: 60ms;
+  /* antalik border-beam. 1.96s is the effect's own revolution period, not a
+     UI transition, so it keeps its native cadence like the shimmer sweep. */
+  --beam-spin: 1.96s; --beam-strength: 1;
+}
+
+* { box-sizing: border-box; }
+.is-hidden { display: none !important; }
+body {
+  margin: 0; padding: 30px 20px 60px; background: var(--bg); color: var(--ink);
+  font-family: Inter, system-ui, sans-serif;
+  transition: background 220ms var(--ease), color 220ms var(--ease);
+}
+.wrap { max-width: 780px; margin: 0 auto; }
+.eyebrow { font: 800 10px/1 Inter, sans-serif; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent-deep); }
+.topbar { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 22px; gap: 12px; }
+.btn-sm {
+  background: var(--surface-2); color: var(--ink); border: 1px solid var(--border);
+  border-radius: 8px; padding: 7px 12px; font: 600 11.5px Inter, sans-serif; cursor: pointer;
+  transition: transform 150ms var(--ease), border-color 150ms var(--ease);
+}
+.btn-sm:active { transform: scale(0.97); }
+
+.shell { background: var(--surface); border: 1px solid var(--border-soft); border-radius: 16px; padding: 26px; }
+.qeyebrow { font: 800 9.5px Inter, sans-serif; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+.pbq-badge {
+  display: inline-block; margin-left: 8px; border-radius: 5px; padding: 2px 7px;
+  background: color-mix(in oklab, var(--accent) 18%, transparent); color: var(--accent-deep);
+  font: 800 8.5px Inter, sans-serif; letter-spacing: 0.08em; text-transform: uppercase;
+}
+.stem { font: 600 19px/1.45 Fraunces, Georgia, serif; margin: 10px 0 16px; letter-spacing: -0.005em; }
+.q-scenario { display: flex; gap: 10px; margin: 0 0 20px; }
+.q-scenario-rule { flex: none; width: 2px; border-radius: 2px; background: color-mix(in oklab, var(--accent) 55%, transparent); }
+.q-scenario-body { font: 400 13px/1.6 Inter, sans-serif; color: var(--muted); }
+
+/* ════════════════════════════════════════════════════════════════════════
+   1 · ITEM POOL — texts-reveal (transitions-dev 18)
+   Items stagger in on BRAND's 60ms unit, same vocabulary as MCQ options.
+   ════════════════════════════════════════════════════════════════════════ */
+.pool-label, .tray-label {
+  font: 800 9px Inter, sans-serif; letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--muted); margin-bottom: 9px;
+}
+.pool { display: flex; flex-direction: column; gap: 8px; }
+.item {
+  display: flex; align-items: center; gap: 11px; width: 100%; text-align: left;
+  background: var(--surface-2); border: 1.5px solid var(--border-soft);
+  border-radius: 11px; padding: 12px 14px; color: var(--ink);
+  font: 500 13.5px/1.45 Inter, sans-serif; cursor: pointer;
+  opacity: 0; transform: translateY(var(--stagger-distance)); filter: blur(var(--stagger-blur));
+  transition: opacity var(--stagger-dur) var(--ease),
+              transform var(--stagger-dur) var(--ease),
+              filter var(--stagger-dur) var(--ease),
+              border-color 150ms var(--ease), background 150ms var(--ease);
+  will-change: transform, opacity, filter;
+}
+.pool.is-shown .item { opacity: 1; transform: translateY(0); filter: blur(0); }
+.pool.is-shown .item[data-i="1"] { transition-delay: calc(var(--stagger-step) * 1); }
+.pool.is-shown .item[data-i="2"] { transition-delay: calc(var(--stagger-step) * 2); }
+.pool.is-shown .item[data-i="3"] { transition-delay: calc(var(--stagger-step) * 3); }
+.pool.is-shown .item[data-i="4"] { transition-delay: calc(var(--stagger-step) * 4); }
+@media (hover: hover) and (pointer: fine) {
+  .item:not(.is-placed):hover { border-color: var(--accent); background: var(--surface); }
+}
+.item:not(.is-placed):active { transform: scale(0.985); }
+/* A placed item dims rather than disappearing — vanishing reads as a bug,
+   and the user still needs to see what they've already committed. */
+.item.is-placed { opacity: 0.4; cursor: default; border-style: dashed; }
+
+/* ── checkbox-check (transitions-dev 25) — the placement marker ────────── */
+.item-mark {
+  flex: none; width: 22px; height: 22px; border-radius: 6px;
+  border: 1.5px solid var(--border); background: transparent;
+  display: grid; place-items: center; color: var(--on-accent);
+  transition: background var(--cb-box) var(--ease), border-color var(--cb-box) var(--ease);
+}
+.item-mark svg { display: block; }
+.item-mark svg path {
+  stroke-dasharray: var(--cb-len, 15); stroke-dashoffset: var(--cb-len, 15);
+  transition: stroke-dashoffset var(--cb-box) var(--ease);
+}
+.item.is-placed .item-mark { background: var(--accent); border-color: var(--accent); }
+.item.is-placed .item-mark svg path {
+  stroke-dashoffset: 0; transition: stroke-dashoffset var(--cb-draw) var(--ease) 60ms;
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+   2 · SEQUENCE TRAY
+   Growth: card-resize (transitions-dev 01) via grid-rows, so appending an
+   item tweens the tray height instead of snapping the page.
+   State: antalik border-beam travels the edge ONLY while the sequence is
+   incomplete. That is a state signal, not decoration — it stops the moment
+   the last item lands, exactly like the orb going idle when work finishes.
+   ════════════════════════════════════════════════════════════════════════ */
+@property --beam-angle   { syntax: "<angle>";  initial-value: 0deg; inherits: true; }
+@property --beam-opacity { syntax: "<number>"; initial-value: 0;    inherits: true; }
+
+.tray-wrap { margin-top: 22px; }
+.tray {
+  position: relative; border-radius: 13px;
+  background: var(--surface-2); border: 1px solid var(--border-soft);
+  padding: 16px;
+  transition: border-color var(--resize-dur) var(--ease);
+}
+.tray.is-complete { border-color: color-mix(in oklab, var(--accent) 45%, transparent); }
+
+/* Beam ring — only painted while incomplete. */
+.tray[data-beam="on"] { animation: beam-spin var(--beam-spin) linear infinite, beam-in 600ms ease forwards; }
+.tray[data-beam="on"]::after {
+  content: ""; position: absolute; inset: 0;
+  border-radius: 13px; padding: 1px; clip-path: inset(0 round 13px);
+  background:
+    conic-gradient(from var(--beam-angle),
+      transparent 0 54%,
+      color-mix(in oklab, var(--accent) 10%, transparent) 57%,
+      color-mix(in oklab, var(--accent) 30%, transparent) 60%,
+      color-mix(in oklab, var(--accent) 60%, transparent) 63%,
+      var(--accent) 66%,
+      color-mix(in oklab, var(--accent) 60%, transparent) 69%,
+      color-mix(in oklab, var(--accent) 30%, transparent) 72%,
+      color-mix(in oklab, var(--accent) 10%, transparent) 75%,
+      transparent 78% 100%);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  pointer-events: none; z-index: 2;
+  opacity: calc(var(--beam-opacity) * 0.9 * var(--beam-strength));
+}
+@keyframes beam-spin { to { --beam-angle: 360deg; } }
+@keyframes beam-in   { to { --beam-opacity: 1; } }
+
+/* card-resize: grid-rows tween on the list so appends grow smoothly. */
+.tray-grid { display: grid; grid-template-rows: 1fr; grid-template-columns: minmax(0, 1fr); transition: grid-template-rows var(--resize-dur) var(--ease); }
+.tray-inner { overflow: hidden; }
+.placed-list { display: flex; flex-direction: column; gap: 7px; }
+
+.placeholder { font: 400 12.5px Inter, sans-serif; color: var(--muted); }
+/* text-states-swap (transitions-dev 04) — the placeholder is REPLACED by
+   the first placed row, same slot, so it swaps rather than counts or pops. */
+.t-swap {
+  display: block; transform: translateY(0); filter: blur(0); opacity: 1;
+  transition: transform var(--swap-dur) var(--ease), filter var(--swap-dur) var(--ease), opacity var(--swap-dur) var(--ease);
+}
+.t-swap.is-exit { transform: translateY(calc(var(--swap-y) * -1)); filter: blur(var(--swap-blur)); opacity: 0; }
+
+.placed {
+  display: flex; align-items: center; gap: 11px;
+  background: var(--surface); border: 1.5px solid var(--border-soft);
+  border-radius: 10px; padding: 10px 13px; font: 500 13px/1.4 Inter, sans-serif;
+  /* FLIP transform is applied inline; keep transform transitionable. */
+  transition: transform var(--flip-dur) var(--ease),
+              border-color var(--resize-dur) var(--ease),
+              background var(--resize-dur) var(--ease),
+              opacity var(--resize-dur) var(--ease);
+  will-change: transform;
+}
+.placed.is-entering { opacity: 0; transform: translateY(8px); }
+.placed-num {
+  flex: none; width: 21px; height: 21px; border-radius: 6px;
+  background: var(--border); color: var(--ink-soft);
+  font: 700 11px/21px Inter, sans-serif; text-align: center;
+  font-variant-numeric: tabular-nums;
+  transition: background var(--resize-dur) var(--ease), color var(--resize-dur) var(--ease);
+}
+.placed-mark { margin-left: auto; font: 700 13px Inter, sans-serif; opacity: 0; transition: opacity var(--resize-dur) var(--ease); }
+
+.placed.is-correct { border-color: var(--pass); background: color-mix(in oklab, var(--pass) 11%, transparent); }
+.placed.is-correct .placed-num { background: var(--pass); color: var(--on-accent); }
+.placed.is-correct .placed-mark { opacity: 1; color: var(--pass); }
+.placed.is-wrong { border-color: var(--fail); background: color-mix(in oklab, var(--fail) 11%, transparent); }
+.placed.is-wrong .placed-num { background: var(--fail); color: var(--on-accent); }
+.placed.is-wrong .placed-mark { opacity: 1; color: var(--fail); }
+/* Rows that MOVED during the reveal — the ones the user got out of order.
+   Highlighting only the movers is the teaching signal. */
+.placed.is-moved { border-color: var(--accent); background: color-mix(in oklab, var(--accent) 12%, transparent); }
+.placed.is-moved .placed-num { background: var(--accent); color: var(--on-accent); }
+
+/* error-state-shake (transitions-dev 12) on the whole tray for a wrong order */
+.tray.is-shaking { animation: t-shake calc(var(--shake-a) * 2 + var(--shake-b) * 2) linear; }
+@keyframes t-shake {
+  0%     { transform: translateX(0);                              animation-timing-function: var(--ease); }
+  28.57% { transform: translateX(var(--shake-distance));          animation-timing-function: var(--ease); }
+  57.14% { transform: translateX(calc(var(--shake-distance)*-1)); animation-timing-function: var(--ease); }
+  78.57% { transform: translateX(var(--shake-overshoot));         animation-timing-function: var(--ease); }
+  100%   { transform: translateX(0); }
+}
+
+/* ── controls ──────────────────────────────────────────────────────────── */
+.controls { display: flex; gap: 10px; margin-top: 16px; }
+.btn-ghost {
+  background: none; border: 1px solid var(--border); color: var(--muted);
+  border-radius: 9px; padding: 10px 16px; font: 600 12.5px Inter, sans-serif; cursor: pointer;
+  transition: color 150ms var(--ease), border-color 150ms var(--ease), transform 150ms var(--ease);
+}
+@media (hover: hover) and (pointer: fine) { .btn-ghost:hover { color: var(--ink); border-color: var(--ink-soft); } }
+.btn-ghost:active { transform: scale(0.97); }
+.btn-primary {
+  margin-left: auto; background: var(--accent); color: var(--on-accent); border: 0;
+  border-radius: 9px; padding: 11px 22px; font: 600 13px Inter, sans-serif; cursor: pointer;
+  opacity: 0.4; pointer-events: none;
+  transition: opacity var(--resize-dur) var(--ease), transform 150ms var(--ease), filter 150ms var(--ease);
+}
+.btn-primary.is-ready { opacity: 1; pointer-events: auto; }
+@media (hover: hover) and (pointer: fine) { .btn-primary:hover { filter: brightness(1.07); } }
+.btn-primary:active { transform: scale(0.97); }
+
+/* ── verdict + reveal label ────────────────────────────────────────────── */
+.verdict { display: flex; align-items: center; gap: 10px; margin-top: 18px; min-height: 34px; }
+.t-check { display: inline-block; transform-origin: center; opacity: 0; will-change: transform, opacity, filter; }
+.t-check svg { display: block; overflow: visible; }
+.t-check[data-state="in"] {
+  animation: c-fade var(--check-dur) var(--ease) forwards, c-rot var(--check-dur) var(--ease) forwards,
+             c-blur var(--check-dur) var(--ease) forwards, c-bob var(--check-dur) var(--ease) forwards;
+}
+.t-check[data-state="in"] svg path { animation: c-draw var(--check-dur) var(--ease) 80ms forwards; }
+@keyframes c-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes c-rot  { from { transform: rotate(var(--check-rotate-from)); } to { transform: rotate(0); } }
+@keyframes c-blur { from { filter: blur(var(--check-blur-from)); } to { filter: blur(0); } }
+@keyframes c-bob  { from { translate: 0 var(--check-y); } to { translate: 0 0; } }
+@keyframes c-draw { to { stroke-dashoffset: 0; } }
+.verdict-txt { font: 600 14px Fraunces, Georgia, serif; opacity: 0; transition: opacity var(--check-dur) var(--ease); }
+.verdict.is-on .verdict-txt { opacity: 1; }
+.verdict.ok .verdict-txt { color: var(--pass); }
+.verdict.no .verdict-txt { color: var(--fail); }
+
+.reveal-label {
+  font: 800 9px Inter, sans-serif; letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--accent-deep); margin-bottom: 9px;
+  opacity: 0; transform: translateY(6px);
+  transition: opacity var(--resize-dur) var(--ease), transform var(--resize-dur) var(--ease);
+}
+.reveal-label.is-on { opacity: 1; transform: translateY(0); }
+
+/* ── legend ────────────────────────────────────────────────────────────── */
+.legend { margin-top: 24px; background: var(--surface); border: 1px solid var(--border-soft); border-radius: 13px; padding: 22px; }
+.legend h2 { font: 600 16px Fraunces, Georgia, serif; margin: 8px 0 12px; }
+.legend table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.legend th, .legend td { text-align: left; padding: 8px; border-bottom: 1px solid var(--border-soft); vertical-align: top; }
+.legend th { font: 800 9px Inter, sans-serif; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+.legend code { font: 500 11px ui-monospace, Menlo, monospace; background: var(--surface-2); padding: 2px 5px; border-radius: 4px; }
+.tag { font: 700 9px Inter, sans-serif; letter-spacing: .06em; padding: 2px 6px; border-radius: 4px; text-transform: uppercase; }
+.tag.td { background: color-mix(in oklab, var(--accent) 20%, transparent); color: var(--accent-deep); }
+.tag.ae { background: color-mix(in oklab, var(--pass) 20%, transparent); color: var(--pass); }
+
+@media (prefers-reduced-motion: reduce) {
+  .tray[data-beam="on"], .tray[data-beam="on"]::after, .tray.is-shaking,
+  .t-check, .t-check svg path { animation: none !important; }
+  .t-check { opacity: 1; } .t-check svg path { stroke-dashoffset: 0 !important; }
+  .item, .placed, .tray-grid, .t-swap, .placed-num, .placed-mark,
+  .item-mark, .item-mark svg path, .btn-primary, .btn-ghost,
+  .reveal-label, .verdict-txt, .tray, body { transition: none !important; }
+  .pool .item { opacity: 1; transform: none; filter: none; }
+  .reveal-label { opacity: 1; transform: none; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="topbar">
+    <div>
+      <div class="eyebrow">PBQ · order type</div>
+      <div style="font:600 15px Fraunces,Georgia,serif;margin-top:4px">Sequence the incident-response phases</div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn-sm" onclick="fillWrong()">Fill wrong</button>
+      <button class="btn-sm" onclick="reset()">Reset</button>
+      <button class="btn-sm" onclick="document.documentElement.dataset.theme=document.documentElement.dataset.theme==='dark'?'light':'dark'">Theme</button>
+    </div>
+  </div>
+
+  <div class="shell">
+    <div class="qeyebrow">Objective 4.8 · Hard<span class="pbq-badge">Ordering</span></div>
+    <p class="stem">Place the incident-response phases in the order NIST SP 800-61 defines them.</p>
+
+    <div class="q-scenario">
+      <span class="q-scenario-rule" aria-hidden="true"></span>
+      <span class="q-scenario-body">A SOC analyst is writing the runbook index. The team keeps arguing about whether eradication comes before or after containment, so the runbook needs the canonical order on page one.</span>
+    </div>
+
+    <div class="pool-label">Available steps</div>
+    <div class="pool" id="pool"></div>
+
+    <div class="tray-wrap">
+      <div class="tray-label">Your order</div>
+      <div class="tray" id="tray" data-beam="off">
+        <div class="reveal-label" id="reveal-label">Correct order</div>
+        <div class="tray-grid"><div class="tray-inner">
+          <div class="placed-list" id="placed"></div>
+        </div></div>
+      </div>
+
+      <div class="verdict" id="verdict">
+        <span class="t-check" id="check" data-state="out">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+            <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.5" opacity="0.28"/>
+            <path d="M7.5 12.4l3.1 3.1 6-6.4" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </span>
+        <span class="verdict-txt"></span>
+      </div>
+
+      <div class="controls">
+        <button class="btn-ghost" id="btn-reset">Reset</button>
+        <button class="btn-primary" id="btn-submit">Submit order</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="legend">
+    <div class="eyebrow">Motion inventory</div>
+    <h2>Order type — what drives each beat</h2>
+    <table>
+      <thead><tr><th>Moment</th><th>Source</th><th>Transition</th><th>Why this one</th></tr></thead>
+      <tbody>
+        <tr><td>Steps enter</td><td><span class="tag td">transitions</span></td><td><code>18-texts-reveal</code></td><td>same stagger vocabulary as MCQ options — 60ms BRAND unit</td></tr>
+        <tr><td>Step placed</td><td><span class="tag td">transitions</span></td><td><code>25-checkbox-check</code></td><td>the tick stroke-draws to confirm the commit</td></tr>
+        <tr><td>Tray grows</td><td><span class="tag td">transitions</span></td><td><code>01-card-resize</code></td><td>grid-rows tween — appending never snaps the page</td></tr>
+        <tr><td>Placeholder → first row</td><td><span class="tag td">transitions</span></td><td><code>04-text-states-swap</code></td><td>same slot, new content: a swap, not a count or a pop</td></tr>
+        <tr><td><strong>Sequence incomplete</strong></td><td><span class="tag ae">antalik</span></td><td><code>border-beam</code></td><td>travels only while unfinished, stops the instant it's full — a state, not decoration</td></tr>
+        <tr><td>Wrong order</td><td><span class="tag td">transitions</span></td><td><code>12-error-state-shake</code></td><td>established negative vocabulary, applied to the tray</td></tr>
+        <tr><td>Right order</td><td><span class="tag td">transitions</span></td><td><code>10-success-check</code></td><td>same verdict badge as the quiz engine</td></tr>
+        <tr><td><strong>Reveal correct order</strong></td><td>—</td><td>FLIP</td><td>rows physically travel to their right positions — see below</td></tr>
+      </tbody>
+    </table>
+    <p style="font-size:12px;color:var(--muted);line-height:1.65;margin:14px 0 0">
+      <strong style="color:var(--ink)">The FLIP is the whole point of this type.</strong> The real engine currently swaps
+      <code>innerHTML</code> after 1500ms, so the corrected sequence just appears — the user sees a <em>different list</em>, not
+      <em>their list being fixed</em>. Measuring each row's position before and after, then animating the delta, means the steps
+      visibly travel to where they belonged. Only the rows that actually moved get highlighted, so the teaching signal is
+      "these two were swapped", not "here is the answer again". That is the difference between showing a correction and
+      showing a <em>correction happening</em>.
+    </p>
+  </div>
+</div>
+
+<script>
+const STEPS = [
+  'Preparation',
+  'Detection & Analysis',
+  'Containment',
+  'Eradication',
+  'Recovery',
+  'Post-Incident Activity'
+];
+/* NIST SP 800-61 order is simply 0..5; the pool is presented shuffled. */
+const CORRECT = [0, 1, 2, 3, 4, 5];
+const POOL_ORDER = [2, 0, 4, 1, 5, 3];
+
+let seq = [];
+let submitted = false;
+
+const $ = id => document.getElementById(id);
+
+/* ── pool ──────────────────────────────────────────────────────────────── */
+function renderPool() {
+  const pool = $('pool');
+  pool.replaceChildren();
+  pool.classList.remove('is-shown');
+  POOL_ORDER.forEach((stepIdx, n) => {
+    const btn = document.createElement('button');
+    btn.className = 'item' + (seq.includes(stepIdx) ? ' is-placed' : '');
+    btn.dataset.i = Math.min(n, 4);
+    btn.dataset.step = stepIdx;
+    btn.innerHTML = `
+      <span class="item-mark"><svg width="12" height="12" viewBox="0 0 16 16" fill="none"
+        stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3.5 8.5l3 3 6-6.5"/></svg></span>
+      <span>${STEPS[stepIdx]}</span>`;
+    btn.addEventListener('click', () => place(stepIdx));
+    pool.appendChild(btn);
+  });
+  /* Measure each tick path rather than trusting the CSS placeholder — the
+     skill flags a hardcoded stroke-dasharray as its #1 SVG mistake. */
+  pool.querySelectorAll('.item-mark path').forEach(p =>
+    p.closest('.item-mark').style.setProperty('--cb-len', Math.ceil(p.getTotalLength()) + 1));
+  /* Reflow, then reveal synchronously — rAF is dead in a backgrounded tab
+     and the pool would stay invisible. */
+  void pool.offsetWidth;
+  pool.classList.add('is-shown');
+}
+
+/* ── placing ───────────────────────────────────────────────────────────── */
+function place(stepIdx) {
+  if (submitted || seq.includes(stepIdx)) return;
+  seq.push(stepIdx);
+  syncPool();
+  renderPlaced(true);
+  syncControls();
+}
+
+function syncPool() {
+  $('pool').querySelectorAll('.item').forEach(btn =>
+    btn.classList.toggle('is-placed', seq.includes(+btn.dataset.step)));
+}
+
+function rowHtml(stepIdx, pos) {
+  return `<span class="placed-num">${pos + 1}</span><span>${STEPS[stepIdx]}</span><span class="placed-mark"></span>`;
+}
+
+function renderPlaced(animateLast) {
+  const list = $('placed');
+  if (seq.length === 0) {
+    list.innerHTML = '<span class="placeholder t-swap">Click the steps above in order</span>';
+    return;
+  }
+  /* First real row REPLACES the placeholder in the same slot — swap it out
+     rather than letting it vanish under the new content. */
+  const ph = list.querySelector('.placeholder');
+  if (ph) { ph.classList.add('is-exit'); }
+
+  const existing = [...list.querySelectorAll('.placed')];
+  if (existing.length === seq.length) return;
+
+  const row = document.createElement('div');
+  row.className = 'placed' + (animateLast ? ' is-entering' : '');
+  row.dataset.step = seq[seq.length - 1];
+  row.innerHTML = rowHtml(seq[seq.length - 1], seq.length - 1);
+
+  if (ph) setTimeout(() => ph.remove(), 150);
+  list.appendChild(row);
+  if (animateLast) { void row.offsetWidth; row.classList.remove('is-entering'); }
+}
+
+function syncControls() {
+  const complete = seq.length === STEPS.length;
+  $('btn-submit').classList.toggle('is-ready', complete && !submitted);
+  $('tray').classList.toggle('is-complete', complete);
+  /* Beam runs ONLY while the sequence is unfinished. Static-when-idle is
+     what separates an indicator from decoration. */
+  $('tray').dataset.beam = (complete || submitted || seq.length === 0) ? 'off' : 'on';
+}
+
+/* ── FLIP reveal ────────────────────────────────────────────────────────
+   Measure every row's box, reorder the DOM, measure again, then apply the
+   inverted delta as a transform and release it. The rows physically travel
+   from where the user put them to where they belonged. */
+function flipTo(newOrder, markMoved) {
+  const list = $('placed');
+  const rows = [...list.querySelectorAll('.placed')];
+  const first = new Map(rows.map(r => [r.dataset.step, r.getBoundingClientRect().top]));
+
+  /* Reorder the DOM to the target sequence. */
+  newOrder.forEach(stepIdx => {
+    const row = rows.find(r => +r.dataset.step === stepIdx);
+    list.appendChild(row);
+  });
+  /* Renumber + re-label in the new positions. */
+  newOrder.forEach((stepIdx, pos) => {
+    const row = rows.find(r => +r.dataset.step === stepIdx);
+    row.querySelector('.placed-num').textContent = pos + 1;
+    row.classList.remove('is-correct', 'is-wrong');
+    if (markMoved) row.classList.toggle('is-moved', seq[pos] !== stepIdx);
+  });
+
+  /* Invert: jump each row back to where it was, with transitions off. */
+  rows.forEach(r => {
+    const delta = first.get(r.dataset.step) - r.getBoundingClientRect().top;
+    if (!delta) return;
+    r.style.transition = 'none';
+    r.style.transform = `translateY(${delta}px)`;
+  });
+  void list.offsetWidth;
+  /* Play: release, staggered so the eye can follow which row went where. */
+  rows.forEach((r, n) => {
+    r.style.transition = '';
+    r.style.transitionDelay = (n * parseInt(getComputedStyle(document.documentElement).getPropertyValue('--flip-step'))) + 'ms';
+    r.style.transform = '';
+  });
+  setTimeout(() => rows.forEach(r => { r.style.transitionDelay = ''; }), 1200);
+}
+
+/* ── submit ────────────────────────────────────────────────────────────── */
+function submit() {
+  if (submitted || seq.length !== STEPS.length) return;
+  submitted = true;
+  syncControls();
+  $('btn-submit').classList.remove('is-ready');
+
+  const right = seq.every((s, i) => s === CORRECT[i]);
+  const rows = [...$('placed').querySelectorAll('.placed')];
+
+  rows.forEach((row, pos) => {
+    const ok = seq[pos] === CORRECT[pos];
+    row.classList.add(ok ? 'is-correct' : 'is-wrong');
+    row.querySelector('.placed-mark').textContent = ok ? '✓' : '✗';
+  });
+
+  const verdict = $('verdict'), check = $('check'), txt = verdict.querySelector('.verdict-txt');
+  verdict.classList.add('is-on', right ? 'ok' : 'no');
+  txt.textContent = right ? 'Correct order' : 'Not the right order';
+  check.style.color = right ? 'var(--pass)' : 'var(--fail)';
+  const path = check.querySelector('path');
+  path.setAttribute('d', right ? 'M7.5 12.4l3.1 3.1 6-6.4' : 'M9 9l6 6M15 9l-6 6');
+  const len = Math.ceil(path.getTotalLength()) + 1;
+  path.style.strokeDasharray = len; path.style.strokeDashoffset = len;
+  void check.offsetWidth;
+  check.dataset.state = 'in';
+
+  if (!right) {
+    const tray = $('tray');
+    tray.classList.remove('is-shaking');
+    void tray.offsetWidth;
+    tray.classList.add('is-shaking');
+    /* Hold the user's own order long enough to read their mistakes, THEN
+       travel the rows to the right places. 1500ms matches the real engine. */
+    setTimeout(() => {
+      $('reveal-label').classList.add('is-on');
+      flipTo(CORRECT, true);
+    }, 1500);
+  }
+}
+
+/* ── controls ──────────────────────────────────────────────────────────── */
+function reset() {
+  seq = []; submitted = false;
+  $('verdict').className = 'verdict';
+  $('check').dataset.state = 'out';
+  $('reveal-label').classList.remove('is-on');
+  $('placed').replaceChildren();
+  renderPool();
+  renderPlaced(false);
+  syncControls();
+}
+
+/* Debug switch: fill a deliberately wrong order so the FLIP is exercisable
+   without clicking through six steps every time. */
+function fillWrong() {
+  reset();
+  [2, 0, 4, 1, 5, 3].forEach(s => { seq.push(s); });
+  syncPool();
+  $('placed').replaceChildren();
+  seq.forEach((s, pos) => {
+    const row = document.createElement('div');
+    row.className = 'placed';
+    row.dataset.step = s;
+    row.innerHTML = rowHtml(s, pos);
+    $('placed').appendChild(row);
+  });
+  syncControls();
+}
+
+$('btn-reset').addEventListener('click', reset);
+$('btn-submit').addEventListener('click', submit);
+
+reset();
+</script>
+</body>
+</html>
