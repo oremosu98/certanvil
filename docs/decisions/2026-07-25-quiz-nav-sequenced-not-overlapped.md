@@ -1,7 +1,7 @@
 ---
 up: "[[Decisions MOC]]"
 type: decision
-status: active
+status: settled
 cert: all
 updated: 2026-07-25
 tags: [decision, design, shipped]
@@ -77,9 +77,36 @@ and the enter/exit asymmetry all survive.
 - **Cross-fade with no travel.** Rejected for the same reason — it discards the
   directional information that is the entire point of the slide.
 
-## Status
-The deviation is **pending founder ratification**. Wave 3 is the natural place
-to revisit it. Recorded here as taken, not as ratified.
+## Status — SETTLED 2026-07-25. Not revisiting.
+
+**The founder explicitly delegated this call rather than ratifying it**, so it is
+closed on the reasoning below, not on a sign-off.
+
+The recommendation given, and taken: **do not build the two-page overlap.**
+
+- **What it would cost.** ~40 fixed-id call sites (`#q-text`, `#options`,
+  `#exp-box`, …) rescoped to "the active page", on the app's most-used surface —
+  the one with the worst regression history in the repo (wave 7/8 extraction
+  breakages, the v7.80.1 infinite spinner, the silent Hot-Area scoring bug).
+- **What it would buy.** ~220ms where two questions are on screen together. It
+  had to be sampled mid-flight to confirm it was even happening; it is not
+  reliably perceptible at full speed.
+- **The sequencing argument, which mattered more than the aesthetics.** The clean
+  way to build it is on top of #21 (globals wrapped in state objects), where
+  "which page owns this state" becomes a natural question. #21 is `saas-gated`
+  and frozen. So the overlap is genuinely **blocked on prior work**, not merely
+  expensive — building it standalone means doing that work badly and redoing it.
+
+**What was done instead** (v8.5.0): the real defect was not the missing overlap,
+it was the *duration*. Every advance spent 200ms before the new question began
+arriving, on a surface hit dozens of times per session. `_NAV_EXIT_MS` went
+200 → 130, so the exit is cut off mid-slide and the transition reads as
+handed-over rather than sequenced. The directional cue is untouched.
+
+Founder response after living with it: *"im happy with where its at currently."*
+
+**Reopen only if** #21 is ever unfrozen — at that point the page-scoping falls
+out of that work rather than being invented for this.
 
 ## Related
 [[BRAND]] · [[feature-lane]] · [[CLAUDE]]
