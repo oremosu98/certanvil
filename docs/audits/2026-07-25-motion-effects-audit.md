@@ -86,7 +86,8 @@ pattern (Home uses opt-out). **This page is the model the others should follow.*
 four.** Its tiles/fills are gated behind an **IntersectionObserver** with a
 reduced-motion fallback that shows content immediately — the pattern antalik's
 own performance contract asks for, and stronger than both Home (opt-out CSS) and
-Progress (rAF). 40 of its hover rules are correctly gated. The constellation
+Progress (rAF). ~~40 of its hover rules are correctly gated.~~ **CORRECTED — see
+S2: only 1 of 6 is gated.** The constellation
 drift loop is genuinely well built: cancels the previous loop on re-render so
 detached nodes cannot leak, skipped entirely under `prefers-reduced-motion`,
 transform/opacity/filter only, with its tuning values documented in-code.
@@ -113,3 +114,62 @@ treating the severity as settled.**
 - **Shimmer anywhere on this page.** No pending states — everything shown is settled historical data. Shimmer means work-in-progress. Rejected.
 - **More entrance motion.** Already IntersectionObserver-gated and staggered, with the correct reduced-motion fallback. Nothing to add.
 - **Animating the heatmap cells in.** 26 weeks × 7 days is ~180 cells; any per-cell stagger is either imperceptible or slow. Rejected.
+
+---
+
+## Settings (`#page-settings`) — awaiting founder approval
+
+**Headline: the page where decoration would be actively wrong, and it correctly
+has almost none.** No entrance motion at all (no rAF, no IntersectionObserver —
+so none of the P1/A1 bug class), a toggle that travels rather than teleports, and
+a save action that already gives a success toast. The interactive feedback that
+matters here is largely present.
+
+Its one real problem is shared with the rest of the app, and it lands hardest
+here — see S2.
+
+### Do
+
+| # | Finding | Type | Evidence |
+|---|---|---|---|
+| **S1** | **The toggle thumb animates `left`, not `transform`.** Trivial to convert to `translateX`. Layout-triggering property on every frame, against this codebase's own transform/opacity-only rule. Tiny surface, so the cost is negligible — but it is the rule, and the fix is one line. | polish | `.sr-topup-toggle::after` transitions `left 0.2s`; `.is-on::after` moves `left: 2px → 20px` |
+| **S2** | **See the systemic finding below — Settings is the worst-affected page, and includes the danger-zone button.** | defect | 0 of 7 hover rules gated; `#wrong-bank-clear:hover` (Clear Wrong Answers Bank) is UNGATED |
+
+### Considered and rejected
+
+- **An entrance stagger for the settings sections.** Settings is a page you arrive at to *do one specific thing* — change a goal, restore a backup. Motion between you and that control is a tax, paid every visit. Its absence here is correct, not an oversight. Rejected.
+- **Any accent on the Danger Zone.** Beam, shimmer or glow on "Clear Wrong Answers Bank" / "Delete my account" would draw the eye toward destruction. The correct visual treatment for a destructive action is *sober*. Rejected on principle, not cost.
+- **Success animation on Save.** Already covered by `showSuccessToast('Daily goal saved — N questions/day')`. Adding a second signal would double-report one event.
+- **Motion on the backup Restore/Download rows.** These are infrequent, deliberate actions with their own confirmation paths. Nothing to communicate that the confirmation does not already say.
+
+---
+
+## SYSTEMIC FINDING — ungated hover across all four pages
+
+The single highest-value fix in this audit, and it spans every page rather than
+belonging to one.
+
+An ungated `:hover` has no hover-*out* on touch, so tapping a card or button
+leaves it visibly stuck in its hover state until you tap elsewhere.
+
+| Page | `:hover` rules | gated | **ungated** |
+|---|---|---|---|
+| `#page-setup` (Home) | 45 | 21 | **24** |
+| `#page-progress` | 10 | 9 | **1** |
+| `#page-analytics` | 6 | 1 | **5** |
+| `#page-settings` | 7 | 0 | **7** |
+| | | | **37 total** |
+
+**`#page-progress` already does this correctly** under an explicit
+`/* ── HOVER (gated) ── */` block — so this is not a new pattern to invent, it is
+an existing one to apply consistently. That block is the reference.
+
+**Sharpest single instance:** `#wrong-bank-clear:hover` — the *Clear Wrong
+Answers Bank* button — is ungated. A destructive control that stays lit after a
+touch is the worst place in the app for this.
+
+⚠️ **Correction:** an earlier pass of this audit claimed Analytics had "40 hover
+rules correctly gated". That was wrong — the measurement counted lines near a
+hover media query rather than actual `#page-analytics :hover` rules. The true
+figure is **1 of 6**. The Analytics section above has been struck through and
+corrected. Progress remains the genuinely well-gated page.
