@@ -782,6 +782,32 @@ test('v8.4.0 wave 4: the topology drag itself carries no transition',
 test('v8.4.0 wave 4: a used CLI command dims but stays legible',
   /\.cli-cmd-btn\.used \{ opacity: \.6; \}/.test(dgCss));
 
+// ── v8.6.1 · CSS cache-bust guard ──
+// SEVEN stylesheets carry hand-maintained ?v= queries and bump-version.js
+// touches NONE of them — CLAUDE.md documents only dg-system.css. Twice a
+// render-blocking file's CONTENT changed while its ?v= stayed put, so returning
+// users kept the old file, and every other check stayed green both times:
+//   dg-critical.css     stuck at 7.90.1 through the v8.6.0 motion audit
+//   styles-critical.css stuck at 7.83.0 across v7.88.0 + v7.92.0 — BOTH of
+//                       which were Lighthouse mobile CLS root-cause fixes
+// This turns that silent class into a build failure.
+test('v8.6.1: every versioned stylesheet has an unchanged ?v= only if its content is unchanged', (() => {
+  try {
+    const cp = require('child_process');
+    cp.execSync('node scripts/stamp-css-versions.js --check', { cwd: ROOT, stdio: 'pipe' });
+    return true;
+  } catch (e) {
+    console.log('    ' + String((e.stdout || e.stderr || '')).trim().split('\n').join('\n    '));
+    return false;
+  }
+})());
+test('v8.6.1: the cache-bust manifest exists and covers every versioned stylesheet',
+  (() => {
+    const m = JSON.parse(fs.readFileSync(path.join(ROOT, 'tests/css-cache-bust.json'), 'utf8'));
+    const linked = [...html.matchAll(/([a-z0-9-]+\.css)\?v=/gi)].map(x => x[1]);
+    return linked.length > 0 && linked.every(f => m[f]);
+  })());
+
 // dg-system.css changes are invisible in prod unless this query is bumped —
 // the SW keeps serving the old stylesheet while every check stays green.
 test('v8.0.0 wave 2: dg-system.css cache-bust query bumped past 7.99.0',

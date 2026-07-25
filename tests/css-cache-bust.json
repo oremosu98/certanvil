@@ -1,0 +1,30 @@
+{
+  "styles-critical.css": {
+    "version": "8.6.1",
+    "sha256": "1e8db10d14b53737"
+  },
+  "dg-critical.css": {
+    "version": "8.6.1",
+    "sha256": "c071aee1e6a6582b"
+  },
+  "dg-system.css": {
+    "version": "8.6.0",
+    "sha256": "39d5d36c582f1d2c"
+  },
+  "dg-depurple.css": {
+    "version": "7.81.0",
+    "sha256": "6676d31c71631e1c"
+  },
+  "lift-shell.css": {
+    "version": "7.36.1",
+    "sha256": "e2c9aea5797da005"
+  },
+  "lift-critical.css": {
+    "version": "7.86.0",
+    "sha256": "ba09b3442d244791"
+  },
+  "lift-screens.css": {
+    "version": "7.36.1",
+    "sha256": "5f179a86e8782722"
+  }
+}
