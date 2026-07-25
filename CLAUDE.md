@@ -135,51 +135,6 @@ npx playwright test              # E2E (tests/e2e/app.spec.js)
 | v8.4.0 | Wave 4 parts 2-4: Hot-Area pick beam + hint swap, Topology armed beam, CLI Sim used-command dim |
 | v8.3.0 | Wave 4 part 1: Order PBQ motion — staged placement, pending beam, wrong-order shake |
 | v8.2.1 | Fix: outgoing question card accepted clicks during the 200ms navigation exit |
-| v8.2.0 | Extract 5 stateless PBQ render helpers from app.js to features/pbq.js (#138-aligned; makes room for wave-4 motion) |
-| v8.1.0 | Deep Dive: token-mapped panel verified (#493 already fixed), emoji dropped (#494), grow-in + orb/shimmer pending state + staggered sections + cached chip (#495) |
-| v8.0.0 | Motion lift wave 2: quiz-engine adopts the t-* primitives (reveal, verdict, accordion, streak, nav, topbar swap, results bars) |
-| v7.99.0 | Motion primitives: shared t-* vocabulary in dg-system.css (wave 1 of mockup lift) |
-| v7.98.0 | feat(sec+): add 11 key-exchange exemplars — DH, ECDHE, PFS, key transport vs agreement, hybrid encryption, KDF (obj 1.4) |
-| v7.97.0 | Fix 5 more extraction landmines (Flag btn, Continue Session, exam nav, Snapshot now, new-user diagnostic CTA) + inline-handler/captive-state UAT guards |
-| v7.96.0 | Fix See Results crash + _certanvilFeatures init race + closure-captive-call UAT guard |
-| v7.95.0 | Lighthouse-90 mobile: Supabase chain (+ diagnostic-claim/web-vitals-collector) deferred past window.load — real bytes+CPU off the eager render-delay chain Lantern penalizes |
-| v7.94.0 | Lighthouse-90 mobile: Fraunces font-display swap to optional — Lantern-simulated LCP no longer waits on webfont fetch |
-| v7.93.0 | Lighthouse-90 mobile LCP render-delay root-cause fix: synchronous data-theme set eliminates late CSS re-application |
-| v7.92.0 | Lighthouse-90 mobile: real second CLS root-cause fix — topbar-time/version-pill hide rules to critical path |
-| v7.91.0 | Lighthouse-90 mobile: defer-chain restructure — progress/analytics/settings moved off eager load path |
-| v7.90.1 | Lighthouse-90 mobile: real bento CLS fix — critical-path P1 touch-target CSS for topbar chrome |
-| v7.90.0 | Lighthouse-90 mobile: prod-only bento CLS fix — suppress false-positive SW-update banner on first-ever activation |
-| v7.89.0 | Lighthouse-90 mobile: cert-name CLS fix (synchronous cert-aware static text) + LCP content-swap fix (rc-body default matches anonymous-visitor copy) |
-| v7.88.0 | Lighthouse-90 mobile CLS fix: has-sidebar geometry correct-from-first-paint at all widths in critical CSS, kill unconditional padding-left transition |
-| v7.87.0 | Lighthouse-90 desktop CLS root-cause fix: static has-sidebar class eliminates late transition-driven layout shift |
-| v7.86.0 | Lighthouse-90 M1-cleanup/M2/M3: readiness-card + domainGrid CLS reservation, mobile lift-screens.css split, Supabase preconnect + dead Google Fonts CSP removal |
-| v7.85.0 | perf(Lighthouse-90 M1/D1): remove reveal-animation LCP delay on above-fold bento cells + fix mobile home-collapse CLS snap |
-| v7.84.1 | fix(CLS): inline critical pill geometry — prevent reflow when non-blocking CSS loads |
-| v7.84.0 | perf(M1): static LCP signin pill — moves LCP from 5.5s to FCP time |
-| v7.83.0 | perf: styles-critical.css extraction — 535KB styles.css off render-blocking path |
-| v7.82.0 | perf: extract dg-critical.css — moves 388KB of dg-system.css off render-blocking path |
-| v7.80.1 | Fix infinite quiz spinner — _sessionStartTs/_srIsFreeTier strict-mode ReferenceErrors from wave extraction + UAT guard for the class |
-| v7.80.0 | Error hardening: timeouts, tier-2/3 error UI, server telemetry, flood control, error-triage skill |
-| v7.79.2 | Fix Hot-Area PBQ scoring + Analytics Drills milestones — missing window exposures from waves 7/8 extraction; also fixes bug-report drawer left permanently disabled by dead GH_TOKEN gate |
-| v7.79.1 | Fix: SR Queue home tile (Recommended cell) didn't reflect due reviews on initial paint — wave 10 Pattern E gap |
-| v7.79.0 | Stop-doing hardening: mockups excluded from build, GH PAT removed from client, BYOK fallback retired, bug-report drawer now server-side via Supabase |
-| v7.78.0 | Prod error reporting: logError now inserts to Supabase client_errors table |
-| v7.77.0 | Wave 11: Topic Deep Dive + Guided Lab extracted to features/topic-dive.js (#138) |
-| v7.76.0 | Wave 10: SR Queue extracted to features/sr-review.js (#138) |
-| v7.75.0 | chore(#138): extract home/setup UI to features/home.js (wave 9, eager) |
-| v7.74.0 | chore(#138): extract quiz engine to features/quiz-engine.js (wave 8, eager) |
-| v7.73.0 | extract readiness system to features/readiness.js (#138 wave 7, eager) |
-| v7.72.0 | extract exam mode to features/exam.js (#138 wave 6) |
-| v7.71.0 | extract baseline diagnostic + pass plan + ACL PBQ to features/diagnostic.js (#138 wave 5) |
-| v7.70.0 | chore(#138): extract flagship drills to features/flagship-drills.js (wave 4) |
-| v7.69.0 | chore(#138): extract settings page to features/settings.js (wave 3) |
-| v7.68.0 | chore(#138): extract analytics page to features/analytics.js (wave 2) |
-| v7.67.0 | chore(#138): extract progress page to features/progress.js (wave 1) |
-| v7.66.0 | Sim Lab Wave 4: Laser Print Defect Clinic PBQ (swatch reference kind) |
-| v7.65.2 | Fix: light-theme purple residuals in end-of-day recap modal eyebrow/em text (rebrand gap) |
-| v7.65.1 | Fix: Custom Quiz Generate now dismisses the picker so the loading screen shows immediately |
-| v7.65.0 | Sec+ Technical Change Management topic + exemplar-prompt formatter fix + Domain 5 rebalance |
-| v7.64.0 | Sim Lab Wave 3 PBQs: Switch Port-Map Grid, Cable-Test Wiremap, PC Build Spec-Off, RAID Workbench |
 
 _Older releases (v7.60.0 and back) live in [CHANGELOG.md](./CHANGELOG.md)._
 
