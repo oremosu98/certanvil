@@ -702,6 +702,40 @@ test('v8.0.0 wave 2: directional exit is scoped to the quiz card, not the shared
 test('v8.0.0 wave 2: the directional exit collapses under prefers-reduced-motion',
   /@media \(prefers-reduced-motion: reduce\)\s*\{\s*\/\*[^*]*\*\/\s*html\[data-theme\] body #page-quiz \.q-card\.is-hiding \.t-reveal/.test(dgCss));
 
+// ── v8.1.0 wave 3 · Deep Dive (#494 emoji, #495 motion) ──
+// BRAND §9 permits semantic marks only (✓ ✗ →). The 💡 was decoration on a
+// surface users hit often, which quietly re-legitimises emoji elsewhere.
+test('v8.1.0 #494: no decorative emoji in the Deep Dive eyebrow or button',
+  !/\\ud83d\\udca1/.test(js) && !/💡/.test(js));
+// antalik's rule: the label NAMES THE STATE. "Loading" says nothing about
+// what is happening during a multi-second teacher call.
+test('v8.1.0 #495: the pending label names the state, never "Loading"',
+  /data-text="Consulting the teacher/.test(js) && !/textContent = 'Loading/.test(js));
+test('v8.1.0 #495: the orb carries an accessible state name',
+  /role="img" ' \+\s*\n?\s*'aria-label="Consulting the teacher"/.test(js) ||
+  /aria-label="Consulting the teacher"/.test(js));
+// A cache hit and a 4-second live call used to render identically, which
+// trains the wrong expectation about when the feature is cheap.
+test('v8.1.0 #495: a cache hit skips the pending state and is labelled',
+  /const wasCached = !!text;/.test(js) &&
+  /wasCached \? '<span class="dd-cached">Cached<\/span>' : ''/.test(js));
+// Growth, not a display:none -> block pop.
+test('v8.1.0 #495: the panel grows from closed after a forced reflow',
+  /el\.dataset\.open = 'false'/.test(js) &&
+  /void deepDiv\.offsetHeight[\s\S]{0,120}deepDiv\.dataset\.open = 'true'/.test(js));
+test('v8.1.0 #495: the six returned sections are wrapped for a staggered arrival',
+  /class="dd-sec" data-s="' \+ Math\.min\(i, 5\)/.test(js));
+// .dd-sec must NOT reuse .t-reveal: .t-reveal is driven by an ancestor
+// .is-shown and the quiz card already has one, so the sections would match on
+// insertion, render final, and never animate.
+test('v8.1.0 #495: .dd-sec has its own scope, not .t-reveal under the card\'s .is-shown',
+  /#deep-explain\.is-dd-shown \.dd-sec/.test(dgCss) &&
+  !/class="dd-sec t-reveal"/.test(js));
+test('v8.1.0 #495: failure reuses the error shake, re-armed with a reflow',
+  /void btn\.offsetWidth[\s\S]{0,60}btn\.classList\.add\('t-shake'\)/.test(js));
+test('v8.1.0 #495: the orb collapses under prefers-reduced-motion',
+  /@media \(prefers-reduced-motion: reduce\)[\s\S]{0,200}\.explain-btn \.orb \{ animation: none !important/.test(dgCss));
+
 // dg-system.css changes are invisible in prod unless this query is bumped —
 // the SW keeps serving the old stylesheet while every check stays green.
 test('v8.0.0 wave 2: dg-system.css cache-bust query bumped past 7.99.0',

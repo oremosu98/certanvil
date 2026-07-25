@@ -1152,6 +1152,84 @@
     _swapText(slot, `${scoreVal} / ${answeredVal}`);
   }
 
+  // v8.1.0 (#495) — render the Deep Dive panel into the explanation accordion.
+  //
+  // Lives here, not in app.js's explainFurther(), for two reasons: this module
+  // already owns the explanation surface the panel renders into, and app.js is
+  // under the #138 extraction ratchet — building this markup there pushed the
+  // file past its line cap, which is the ratchet doing exactly its job.
+  //
+  // `formatted` arrives already escHtml'd and section-tagged by app.js; it is
+  // re-sanitised there via sanitizeHTML before it reaches the DOM.
+  function _prepareDeepDive(el, formatted, wasCached) {
+    // Split on the section headers so the six returned sections can stagger
+    // in individually. Lookahead keeps each header attached to its body.
+    const sectioned = String(formatted)
+      .split(/(?=<span class="deep-section-header">)/)
+      .filter(part => part.trim())
+      .map((part, i) => '<span class="dd-sec" data-s="' + Math.min(i, 5) + '">' + part + '</span>')
+      .join('');
+
+    // .t-acc gives the panel grid-rows growth so the page reflows around it
+    // instead of 250-350 words landing in a single frame. It starts CLOSED —
+    // _openDeepDive grows it once it has a laid-out "from" state.
+    const html = '<div class="t-acc-panel"><div class="t-acc-panel-inner">' +
+                   '<strong>Deep Dive</strong>' +
+                   (wasCached ? '<span class="dd-cached">Cached</span>' : '') +
+                   '<div class="deep-explain-text">' + sectioned + '</div>' +
+                 '</div></div>';
+    el.className = 'deep-explain show t-acc';
+    el.dataset.open = 'false';
+    // Sec-P4/M6: DOMPurify backstop over the already-escHtml'd AI text.
+    // Called UNCONDITIONALLY on purpose — no `typeof` fallback to raw html.
+    // A missing sanitizer must fail loudly, never silently degrade into
+    // injecting unsanitised model output into the page.
+    el.innerHTML = sanitizeHTML(html);
+  }
+
+  // The three Deep Dive button states, in one place so they cannot drift.
+  //   pending — orb + shimmer, and the label NAMES THE STATE (antalik's rule).
+  //             "Loading" says nothing about what is happening during a
+  //             multi-second teacher call. Only ever shown on a cache MISS.
+  //   failed  — reuses the wrong-answer shake vocabulary. .t-shake is dropped
+  //             and re-added around a reflow so a repeat failure replays it.
+  //   done    — plain label; the panel below carries the payload.
+  function _deepDiveBtnState(btn, state) {
+    if (!btn) return;
+    btn.classList.remove('t-shake');
+    if (state === 'pending') {
+      btn.disabled = true;
+      btn.innerHTML =
+        '<svg class="orb" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
+        'stroke-width="1.3" stroke-dasharray="1.6 2.6" stroke-linecap="round" role="img" ' +
+        'aria-label="Consulting the teacher"><circle cx="12" cy="12" r="9"/>' +
+        '<ellipse cx="12" cy="12" rx="9" ry="3.6"/><ellipse cx="12" cy="12" rx="3.6" ry="9"/></svg>' +
+        '<span class="t-shimmer" data-text="Consulting the teacher…">Consulting the teacher…</span>';
+    } else if (state === 'failed') {
+      btn.textContent = 'Failed — try again';
+      btn.disabled = false;
+      void btn.offsetWidth;
+      btn.classList.add('t-shake');
+    } else {
+      btn.textContent = 'Explained';
+      btn.disabled = true;
+      btn.classList.add('explained');
+    }
+  }
+
+  // Open it from closed. The reflow is load-bearing: without a laid-out "from"
+  // state the 0fr->1fr growth settles at 0px and the panel opens to nothing —
+  // the trap the verdict badge and the explanation accordion both hit. Never
+  // rAF-gate it; rAF is dead in a backgrounded tab, which is exactly where a
+  // slow teacher call finishes.
+  function _openDeepDive(deepDiv, btn) {
+    if (!deepDiv) return;
+    void deepDiv.offsetHeight;
+    deepDiv.dataset.open = 'true';
+    deepDiv.classList.add('is-dd-shown');
+    _deepDiveBtnState(btn, 'done');
+  }
+
   // v8.0.0 (motion lift wave 2) — the explanation accordion.
   //
   // Wired lazily rather than at module load: quiz-engine.js is eager but the
@@ -2008,6 +2086,10 @@
   // and the streak pill silently stops updating on those two PBQ types.
   window._setLiveStreak = _setLiveStreak;
   window._setLiveScore  = _setLiveScore;
+  // #495: app.js's explainFurther() calls these across the extraction boundary
+  window._prepareDeepDive = _prepareDeepDive;
+  window._openDeepDive   = _openDeepDive;
+  window._deepDiveBtnState = _deepDiveBtnState;
 
   window._certanvilFeatures = window._certanvilFeatures || {};
   window._certanvilFeatures['quiz-engine'] = { render: render, startQuiz: startQuiz };

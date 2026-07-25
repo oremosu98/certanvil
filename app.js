@@ -1,9 +1,9 @@
 // ══════════════════════════════════════════
-// Network+ AI Quiz — app.js  v8.0.0
+// Network+ AI Quiz — app.js  v8.1.0
 // ══════════════════════════════════════════
 
 // ── CONSTANTS ──
-const APP_VERSION = '8.0.0';
+const APP_VERSION = '8.1.0';
 // v4.99.45 (Phase 6b): expose APP_VERSION on window so the web-vitals
 // collector (lib/web-vitals-collector.js, loaded BEFORE app.js so its
 // PerformanceObservers attach earlier) can stamp this version onto every
@@ -7722,8 +7722,9 @@ async function explainFurther() {
     _cloudFlush(STORAGE.DEEP_DIVE_USES);
   } catch {}
 
+  // #495: hold the pending state until after the cache check below.
   const btn = document.querySelector('.explain-btn');
-  if (btn) { btn.textContent = 'Loading\u2026'; btn.disabled = true; }
+  if (btn) btn.disabled = true;
 
   const key = apiKey || localStorage.getItem(STORAGE.KEY) || '';
   // v4.99.46 fix: validateApiKey bypasses for signed-in Pro users.
@@ -7781,7 +7782,9 @@ Use plain text, no markdown. Label each section clearly. Aim for 250-350 words t
   // v4.38.5 — cache hit avoids a live Sonnet call on repeat views (same Q + same prompt)
   const cacheKey = (q.question || '') + '|' + (q.answer || JSON.stringify(q.answers || q.correctOrder || q.correctPlacements || ''));
   let text = _aiCacheGet('explainFurther', cacheKey);
+  const wasCached = !!text;
   if (!text) {
+    window._deepDiveBtnState(btn, 'pending');   // #495: cache MISS only
     try {
       const _expBox = document.getElementById('exp-box');
       const res = await _claudeFetch( {
@@ -7801,7 +7804,7 @@ Use plain text, no markdown. Label each section clearly. Aim for 250-350 words t
       _aiCacheSet('explainFurther', cacheKey, text);
     } catch (e) {
       if (e && e.surfaced) { if (btn) { btn.textContent = 'Explain further'; btn.disabled = false; } return; }
-      if (btn) { btn.textContent = 'Failed \u2014 try again'; btn.disabled = false; }
+      window._deepDiveBtnState(btn, 'failed');   // #495: same shake as a wrong answer
       return;
     }
   }
@@ -7812,13 +7815,10 @@ Use plain text, no markdown. Label each section clearly. Aim for 250-350 words t
   formatted = formatted.replace(/((?:^|<br>)\d+\.\s*(?:CONCEPT BREAKDOWN|REAL-WORLD ANALOGY|WHY EACH WRONG ANSWER IS WRONG|HOW THIS APPEARS ON THE EXAM|MEMORY TRICK|RELATED CONCEPTS))/gi,
     '<span class="deep-section-header">$1</span>');
 
-  // Show in a new div below the explanation
+  // #495: markup + growth live in features/quiz-engine.js (it owns this surface).
   const deepDiv = document.getElementById('deep-explain') || document.createElement('div');
   deepDiv.id = 'deep-explain';
-  deepDiv.className = 'deep-explain show';
-  // Sec-P4/M6: AI ("Explain further") output \u2014 DOMPurify backstop over the
-  // already-escHtml'd `formatted` text. No trusted inline handlers here.
-  deepDiv.innerHTML = sanitizeHTML('<strong>\ud83d\udca1 Deep Dive</strong><div class="deep-explain-text">' + formatted + '</div>');
+  window._prepareDeepDive(deepDiv, formatted, wasCached);
 
   // v8.0.0 wave 2: the explanation body now lives inside a .t-acc accordion,
   // so the Deep Dive belongs in the panel too — appended to #exp-box it would
@@ -7830,7 +7830,7 @@ Use plain text, no markdown. Label each section clearly. Aim for 250-350 words t
     expPanel.appendChild(deepDiv);
   }
 
-  if (btn) { btn.textContent = '\ud83d\udca1 Explained'; btn.disabled = true; btn.classList.add('explained'); }
+  window._openDeepDive(deepDiv, btn);   // reflow, grow from closed, settle the button
 }
 
 // #138 wave 11: loader stubs — features/topic-dive.js overwrites these on lazy load.

@@ -5078,6 +5078,60 @@ html[data-theme] body #page-quiz .q-card.is-hiding .t-reveal {
   }
 }
 
+/* ── wave 3 · Deep Dive (#495) ───────────────────────────────────────────
+   Was a display:none -> block pop: 250-350 words of AI output appeared in one
+   frame and shoved the page down. Now it GROWS on the same grid-rows
+   mechanism as the explanation accordion, and its six returned sections
+   stagger in so the answer reads as structure rather than a wall.
+
+   .dd-sec deliberately does NOT reuse .t-reveal. .t-reveal is driven by an
+   ancestor .is-shown, and the quiz card already carries .is-shown — so the
+   sections would match on insertion, render in their final state, and never
+   animate. A separate scope keyed to .is-dd-shown is what the mockup used,
+   for exactly this reason. */
+html[data-theme] body #deep-explain .t-acc-panel-inner { overflow: hidden; }
+html[data-theme] body #deep-explain .dd-sec {
+  display: block; opacity: 0;
+  transform: translateY(var(--dgm-distance)); filter: blur(var(--dgm-blur));
+  transition: opacity var(--dgm-reveal) var(--dgm-ease),
+              transform var(--dgm-reveal) var(--dgm-ease),
+              filter var(--dgm-reveal) var(--dgm-ease);
+}
+html[data-theme] body #deep-explain.is-dd-shown .dd-sec { opacity: 1; transform: translateY(0); filter: blur(0); }
+html[data-theme] body #deep-explain.is-dd-shown .dd-sec[data-s="1"] { transition-delay: calc(var(--dgm-step) * 1); }
+html[data-theme] body #deep-explain.is-dd-shown .dd-sec[data-s="2"] { transition-delay: calc(var(--dgm-step) * 2); }
+html[data-theme] body #deep-explain.is-dd-shown .dd-sec[data-s="3"] { transition-delay: calc(var(--dgm-step) * 3); }
+html[data-theme] body #deep-explain.is-dd-shown .dd-sec[data-s="4"] { transition-delay: calc(var(--dgm-step) * 4); }
+html[data-theme] body #deep-explain.is-dd-shown .dd-sec[data-s="5"] { transition-delay: calc(var(--dgm-step) * 5); }
+/* "Cached" chip — a cache hit and a 4-second live call used to look
+   identical, which trains the wrong expectation about when this is cheap. */
+html[data-theme] body #deep-explain .dd-cached {
+  display: inline-block; margin-left: 8px; padding: 2px 7px; border-radius: 99px;
+  font-size: 10px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
+  color: var(--text-dim); background: color-mix(in oklab, var(--text-dim) 12%, transparent);
+  border: 1px solid var(--dg-rule-soft);
+}
+
+/* ── wave 3 · thinking orb (antalik, tier-1 SVG) ─────────────────────────
+   Inspired by github.com/Jakubantalik/thinking-orbs (MIT, Jakub Antalik).
+   Tier 1 on purpose: a dashed wireframe sphere spun by one CSS animation.
+   No canvas and no rAF loop, so the IntersectionObserver / visibilitychange
+   machinery the canvas tier needs does not apply — a compositor-level CSS
+   animation already stops on a hidden tab. Tier 2 is for a hero moment; an
+   inline button label is not one.
+   Static-when-idle is the whole point: the orb only exists in the DOM while
+   the teacher call is genuinely in flight. */
+html[data-theme] body .explain-btn .orb {
+  width: 13px; height: 13px; vertical-align: -2px; margin-right: 6px;
+  color: currentColor; transform-origin: center;
+  animation: dgm-orb-spin 2.6s linear infinite;
+}
+@keyframes dgm-orb-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) {
+  html[data-theme] body .explain-btn .orb { animation: none !important; }
+  html[data-theme] body #deep-explain .dd-sec { transition: none !important; opacity: 1; transform: none; filter: none; }
+}
+
 /* ── reduced motion ──────────────────────────────────────────────────────
    Every animated surface above collapses. §6: fade-only, no transform. */
 @media (prefers-reduced-motion: reduce) {

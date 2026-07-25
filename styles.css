@@ -1,5 +1,5 @@
 /* ══════════════════════════════════════════
-   Network+ AI Quiz — styles.css  v8.0.0
+   Network+ AI Quiz — styles.css  v8.1.0
    ══════════════════════════════════════════ */
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -1358,7 +1358,14 @@ input::placeholder { color: var(--text-dim); }
 .deep-explain-text a { color: #6d28d9; }
 .deep-section-header { display: block; font-weight: 800; color: var(--accent-light); font-size: 12px; text-transform: uppercase; letter-spacing: .06em; margin-top: 12px; margin-bottom: 2px; }
 .deep-section-header:first-child { margin-top: 0; }
-/* Both panels are already white/black, so light-theme overrides are no-ops */
+/* NOTE (v8.1.0): the hardcoded white/black/purple above is DEAD in practice —
+   dg-system.css §"P7: Inline purple overrides" token-maps .deep-explain with
+   !important (since v5.0.2), which is the documented reskin mechanism. It is
+   left here because feature-lane forbids reskinning styles.css directly.
+   The previous comment claimed light-theme overrides were no-ops "because
+   both panels are already white/black"; that reading is what caused #493 to
+   be filed against an already-fixed surface. Check dg-system.css before
+   concluding anything about how this panel actually renders. */
 [data-theme="light"] .deep-section-header { color: var(--accent); }
 
 /* ── DRAG & DROP (TOPOLOGY) ── */

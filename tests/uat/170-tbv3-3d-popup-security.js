@@ -866,8 +866,15 @@ console.log('\n\x1b[1m── Security Phase 4 — XSS DEFENCE-IN-DEPTH (DOMPurif
     /contentEl\.innerHTML\s*=\s*sanitizeHTML\(aiGuideHtml\)/.test(appjs));
   test('Sec-P4 L2: guide.diagram still escHtml-escaped inside <pre> (primary layer intact)',
     /<pre class="td-diagram">\$\{escHtml\(guide\.diagram\)\}/.test(appjs));
+  // v8.1.0 (#495): the sink moved from app.js's explainFurther() into
+  // features/quiz-engine.js `_prepareDeepDive` (app.js is under the #138 line
+  // ratchet). Assert against `js`, which spans app.js + features/*.js, so the
+  // guard follows the sink instead of silently passing on an empty file.
+  // Second clause is the important one: a `typeof sanitizeHTML` fallback would
+  // assign raw model output whenever the sanitizer is absent. Fail loudly.
   test('Sec-P4 M6: AI "Explain further" deep-dive sink wrapped in sanitizeHTML',
-    /deepDiv\.innerHTML\s*=\s*sanitizeHTML\(/.test(appjs));
+    /\.innerHTML\s*=\s*sanitizeHTML\(html\);/.test(js) &&
+    !/innerHTML\s*=\s*\(typeof sanitizeHTML/.test(js));
   test('Sec-P4 M6: trusted onclick terminal/lab sections kept OUTSIDE sanitizeHTML',
     /sanitizeHTML\(aiGuideHtml\)\s*\+\s*_renderTopicTerminalSection/.test(appjs));
 
