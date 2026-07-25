@@ -201,7 +201,7 @@ html[data-theme] body #page-setup .stat-card+.stat-card{border-left:1px solid va
 #page-setup .drill-header{font-size:10px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-dim);margin-bottom:9px;}
 #page-setup .drill-chips,#page-setup #rc-v2-whatif-row{display:flex;flex-wrap:wrap;gap:8px;}
 html[data-theme] body #page-setup #rc-v2-whatif-row .rc-v2-whatif-chip,html[data-theme] body #page-setup #rc-v2-whatif-row button{display:inline-flex;align-items:center;gap:7px;background:none;border:1px solid color-mix(in oklab,var(--accent) 36%,transparent);color:var(--accent);border-radius:999px;padding:7px 14px;font-size:11px;font-weight:600;cursor:pointer;box-shadow:none;}
-html[data-theme] body #page-setup #rc-v2-whatif-row button:hover{background:color-mix(in oklab,var(--accent) 9%,transparent);}
+@media (hover:hover) and (pointer:fine){html[data-theme] body #page-setup #rc-v2-whatif-row button:hover{background:color-mix(in oklab,var(--accent) 9%,transparent);}}
 
 /* diagnostic card */
 html[data-theme] body #page-setup .diag-card{border:1px dashed color-mix(in oklab,var(--accent) 34%,var(--border));background:color-mix(in oklab,var(--accent) 4%,transparent);}
@@ -213,11 +213,11 @@ html[data-theme] body #page-setup .diag-card{border:1px dashed color-mix(in okla
 
 /* buttons: primary / white-on-accent / ghost */
 html[data-theme] body #page-setup .btn-primary{display:inline-flex;align-items:center;gap:8px;margin-top:14px;background:var(--accent);color:var(--bg);border:0;border-radius:11px;font:800 var(--t0)/1 Inter,-apple-system,sans-serif;padding:13px 22px;cursor:pointer;text-decoration:none;box-shadow:none;}
-html[data-theme] body #page-setup .btn-primary:hover{filter:brightness(1.06);box-shadow:none;}
+@media (hover:hover) and (pointer:fine){html[data-theme] body #page-setup .btn-primary:hover{filter:brightness(1.06);box-shadow:none;}}
 html[data-theme] body #page-setup .btn-white{display:inline-flex;align-items:center;gap:7px;background:var(--bg);color:var(--accent);border:0;border-radius:11px;font:800 var(--t-1)/1 Inter,-apple-system,sans-serif;padding:12px 20px;cursor:pointer;white-space:nowrap;box-shadow:none;}
-html[data-theme] body #page-setup .btn-white:hover{filter:brightness(1.04);}
+@media (hover:hover) and (pointer:fine){html[data-theme] body #page-setup .btn-white:hover{filter:brightness(1.04);}}
 html[data-theme] body #page-setup .btn-ghost{display:inline-flex;align-items:center;gap:7px;background:none;color:var(--accent);border:1px solid color-mix(in oklab,var(--accent) 30%,var(--border));border-radius:10px;font:650 var(--t-1)/1 Inter,-apple-system,sans-serif;padding:10px 16px;cursor:pointer;white-space:nowrap;box-shadow:none;}
-html[data-theme] body #page-setup .btn-ghost:hover{border-color:var(--accent);background:color-mix(in oklab,var(--accent) 8%,transparent);color:var(--accent);}
+@media (hover:hover) and (pointer:fine){html[data-theme] body #page-setup .btn-ghost:hover{border-color:var(--accent);background:color-mix(in oklab,var(--accent) 8%,transparent);color:var(--accent);}}
 /* emil-design-eng — buttons must feel responsive (press feedback). The
    transition for transform is already declared in the micro-interactions
    block; reduced-motion there neutralises it. */
@@ -300,7 +300,7 @@ html[data-theme] body #page-setup .col-side .dgh-sec-t{font-size:var(--t1);font-
 #page-setup .col-side .dgh-grp{margin-top:18px;}
 #page-setup .col-side .dgh-opts{grid-template-columns:1fr;}
 html[data-theme] body #page-setup .col-side .dgh-opt{border-right:0;padding:13px 0;}
-html[data-theme] body #page-setup .col-side .dgh-opt:hover{padding-left:8px;}
+@media (hover:hover) and (pointer:fine){html[data-theme] body #page-setup .col-side .dgh-opt:hover{padding-left:8px;}}
 #page-setup .col-side .dgh-dbd{grid-template-columns:1fr 1fr;}
 html[data-theme] body #page-setup .col-side .dgh-db{border-right:0;}
 html[data-theme] body #page-setup .col-side .dgh-opt[aria-hidden="true"]{display:none;}
@@ -327,22 +327,22 @@ html[data-theme] body #page-setup #setup-domain-grid .dg-name{white-space:normal
    — clickable surfaces lift, the domain column you scan highlights, buttons
    give press feedback. No glow, no decorative motion without a data role). */
 #page-setup .card,#page-setup .stat-card,#page-setup .custom-row{transition:transform .22s var(--dgh-ease),box-shadow .22s var(--dgh-ease),border-color .22s var(--dgh-ease);}
-html[data-theme] body #page-setup .card:hover,html[data-theme] body #page-setup .stat-card:hover,html[data-theme] body #page-setup .custom-row:hover{transform:translateY(-2px);border-color:color-mix(in oklab,var(--accent) 34%,var(--border));box-shadow:0 6px 20px color-mix(in oklab,var(--text) 8%,transparent);}
-html[data-theme] body #page-setup .nbm-card:hover{border-color:var(--accent);box-shadow:0 8px 24px color-mix(in oklab,var(--accent) 30%,transparent);}
+@media (hover:hover) and (pointer:fine){html[data-theme] body #page-setup .card:hover,html[data-theme] body #page-setup .stat-card:hover,html[data-theme] body #page-setup .custom-row:hover{transform:translateY(-2px);border-color:color-mix(in oklab,var(--accent) 34%,var(--border));box-shadow:0 6px 20px color-mix(in oklab,var(--text) 8%,transparent);}}
+@media (hover:hover) and (pointer:fine){html[data-theme] body #page-setup .nbm-card:hover{border-color:var(--accent);box-shadow:0 8px 24px color-mix(in oklab,var(--accent) 30%,transparent);}}
 #page-setup .btn-primary,#page-setup .btn-white,#page-setup .btn-ghost,#page-setup .custom-config,#page-setup .diag-skip{transition:transform .16s var(--dgh-ease),filter .16s var(--dgh-ease),box-shadow .2s var(--dgh-ease),background .16s var(--dgh-ease),color .16s var(--dgh-ease),border-color .16s var(--dgh-ease);}
-html[data-theme] body #page-setup .btn-primary:hover{transform:translateY(-1px);box-shadow:0 5px 16px color-mix(in oklab,var(--accent) 38%,transparent);}
+@media (hover:hover) and (pointer:fine){html[data-theme] body #page-setup .btn-primary:hover{transform:translateY(-1px);box-shadow:0 5px 16px color-mix(in oklab,var(--accent) 38%,transparent);}}
 html[data-theme] body #page-setup .btn-primary:active,html[data-theme] body #page-setup .btn-white:active,html[data-theme] body #page-setup .btn-ghost:active{transform:translateY(0) scale(.985);}
 #page-setup .custom-config{display:inline-block;transform-origin:right center;}
-html[data-theme] body #page-setup .custom-config:hover{transform:translateX(3px);}
-html[data-theme] body #page-setup .diag-skip:hover{color:var(--text-mid);}
+@media (hover:hover) and (pointer:fine){html[data-theme] body #page-setup .custom-config:hover{transform:translateX(3px);}}
+@media (hover:hover) and (pointer:fine){html[data-theme] body #page-setup .diag-skip:hover{color:var(--text-mid);}}
 #page-setup #setup-domain-grid .domain-cell{transition:background .2s var(--dgh-ease);}
-html[data-theme] body #page-setup #setup-domain-grid .domain-cell:hover{background:color-mix(in oklab,var(--accent) 6%,transparent);}
+@media (hover:hover) and (pointer:fine){html[data-theme] body #page-setup #setup-domain-grid .domain-cell:hover{background:color-mix(in oklab,var(--accent) 6%,transparent);}}
 #page-setup #rc-v2-whatif-row button{transition:background .18s var(--dgh-ease),border-color .18s var(--dgh-ease),transform .18s var(--dgh-ease);}
-html[data-theme] body #page-setup #rc-v2-whatif-row button:hover{transform:translateY(-1px);border-color:var(--accent);}
+@media (hover:hover) and (pointer:fine){html[data-theme] body #page-setup #rc-v2-whatif-row button:hover{transform:translateY(-1px);border-color:var(--accent);}}
 #page-setup .col-side .dgh-opt .on,#page-setup .col-side .dgh-opt .od{transition:color .16s var(--dgh-ease);}
-html[data-theme] body #page-setup .col-side .dgh-opt:hover .on{color:var(--accent);}
+@media (hover:hover) and (pointer:fine){html[data-theme] body #page-setup .col-side .dgh-opt:hover .on{color:var(--accent);}}
 html[data-theme] body #page-setup .col-side .dgh-db{transition:background .18s var(--dgh-ease),padding-left .14s var(--dgh-ease);}
-html[data-theme] body #page-setup .col-side .dgh-db:hover{background:color-mix(in oklab,var(--accent) 6%,transparent);}
+@media (hover:hover) and (pointer:fine){html[data-theme] body #page-setup .col-side .dgh-db:hover{background:color-mix(in oklab,var(--accent) 6%,transparent);}}
 
 /* responsive: collapse to one column, side rail flows under main */
 @media (max-width:1040px){#page-setup .home-grid{grid-template-columns:minmax(0,1fr);}#page-setup .col-side{order:2;}}
@@ -367,14 +367,14 @@ html[data-theme] body #page-setup .dgh-sec-t{font-size:var(--t2);font-weight:800
 #page-setup .dgh-grp-h .d{font-size:11px;color:var(--text-dim);}
 #page-setup .dgh-opts{display:grid;grid-template-columns:repeat(3,1fr);gap:0;}
 html[data-theme] body #page-setup .dgh-opt{text-align:left;background:none;border:0;border-right:1px solid var(--dg-rule-soft);border-bottom:1px solid var(--dg-rule-soft);border-radius:0;padding:18px 20px 18px 0;cursor:pointer;transition:padding-left 0.14s var(--dgh-ease);box-shadow:none;}
-#page-setup .dgh-opt:hover{padding-left:10px;}
+@media (hover:hover) and (pointer:fine){#page-setup .dgh-opt:hover{padding-left:10px;}}
 #page-setup .dgh-opt:nth-child(3n){border-right:0;}
 #page-setup .dgh-opt .on{display:block;font-size:var(--t0);font-weight:800;letter-spacing:-0.01em;color:var(--text);}
 #page-setup .dgh-opt.exam .on{color:var(--text);}
 #page-setup .dgh-opt .od{display:block;font-size:11px;color:var(--text-dim);margin-top:5px;line-height:1.5;}
 #page-setup .dgh-dbd{display:grid;grid-template-columns:repeat(5,1fr);gap:0;margin-top:2px;}
 html[data-theme] body #page-setup .dgh-db{text-align:left;background:none;border:0;border-right:1px solid var(--dg-rule-soft);border-radius:0;padding:16px 16px 16px 0;cursor:pointer;transition:padding-left 0.14s var(--dgh-ease);box-shadow:none;}
-#page-setup .dgh-db:hover{padding-left:8px;}
+@media (hover:hover) and (pointer:fine){#page-setup .dgh-db:hover{padding-left:8px;}}
 #page-setup .dgh-db:last-child{border-right:0;}
 #page-setup .dgh-db .dbk{font-size:11px;font-weight:800;color:var(--accent);font-variant-numeric:tabular-nums;}
 #page-setup .dgh-db .dbn{display:block;font-size:var(--t-1);font-weight:700;margin-top:5px;letter-spacing:-0.01em;color:var(--text);}
@@ -452,7 +452,7 @@ html[data-theme] body #page-setup #modes-ladder .dgh-foot .custom-row{display:in
 #page-setup .dgh-plan-h{display:flex;align-items:baseline;gap:13px;flex-wrap:wrap;margin-bottom:5px;}
 #page-setup .dgh-chips{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0 14px;}
 html[data-theme] body #page-setup .dgh-chips .chip{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--border);border-radius:999px;padding:9px 15px;font-size:var(--t-1);font-weight:600;color:var(--text-mid);cursor:pointer;background:none;box-shadow:none;}
-html[data-theme] body #page-setup .dgh-chips .chip:hover{border-color:var(--accent);color:var(--accent);}
+@media (hover:hover) and (pointer:fine){html[data-theme] body #page-setup .dgh-chips .chip:hover{border-color:var(--accent);color:var(--accent);}}
 
 /* ── Today's Plan · Daily Challenge · Streak Defender ──────────────────
    These 3 are painted by innerHTML render fns (renderTodayPlan /
@@ -482,7 +482,7 @@ html[data-theme] body #page-setup #streak-defender{
 #page-setup #today-plan .tplan-sub{margin:0 0 16px;color:var(--text-dim);font-size:var(--t-1);line-height:1.6;max-width:620px;}
 #page-setup #today-plan .tplan-chips,#page-setup #today-plan .tplan-bridges{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 14px;}
 html[data-theme] body #page-setup #today-plan .tplan-chip,html[data-theme] body #page-setup #today-plan .tplan-bridge-btn{display:inline-flex;align-items:center;gap:8px;background:none;border:1px solid var(--border);border-left-width:1px;border-radius:999px;color:var(--text-mid);font-weight:600;font-size:var(--t-1);padding:9px 15px;box-shadow:none;cursor:pointer;}
-html[data-theme] body #page-setup #today-plan .tplan-chip:hover,html[data-theme] body #page-setup #today-plan .tplan-bridge-btn:hover{border-color:var(--accent);color:var(--accent);background:none;transform:none;}
+@media (hover:hover) and (pointer:fine){html[data-theme] body #page-setup #today-plan .tplan-chip:hover,html[data-theme] body #page-setup #today-plan .tplan-bridge-btn:hover{border-color:var(--accent);color:var(--accent);background:none;transform:none;}}
 #page-setup #today-plan .tplan-chip[data-signal]{border-left-color:var(--border);}
 #page-setup #today-plan .tplan-chip::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--text-dim);flex:none;}
 #page-setup #today-plan .tplan-chip[data-signal="weak"]::before{background:var(--accent);}
@@ -496,7 +496,7 @@ html[data-theme] body #page-setup #daily-challenge-card .dc-btn,
 html[data-theme] body #page-setup #streak-defender .sd-btn{background:var(--accent);color:var(--bg);border:0;border-radius:9px;padding:13px 20px;font:800 var(--t0)/1 Inter,-apple-system,sans-serif;cursor:pointer;white-space:nowrap;box-shadow:none;flex:none;}
 html[data-theme] body #page-setup #today-plan .tplan-cta:hover,
 html[data-theme] body #page-setup #daily-challenge-card .dc-btn:hover,
-html[data-theme] body #page-setup #streak-defender .sd-btn:hover{filter:brightness(1.05);transform:none;box-shadow:none;}
+@media (hover:hover) and (pointer:fine){html[data-theme] body #page-setup #streak-defender .sd-btn:hover{filter:brightness(1.05);transform:none;box-shadow:none;}}
 
 /* Daily Challenge + Streak Defender share the band layout */
 #page-setup #daily-challenge-card,#page-setup #streak-defender{display:flex;align-items:flex-start;justify-content:space-between;gap:24px;flex-wrap:wrap;}
@@ -697,7 +697,7 @@ html[data-theme] body #page-progress .page,#page-progress{max-width:none;}
 /* head — keep the editorial .ed-pagehead chrome */
 html[data-theme] body #page-progress .ed-pagehead{display:block;background:none;border:0;box-shadow:none;padding:0;margin:0 0 24px;}
 #page-progress .ed-pagehead-back{background:none!important;border:0!important;box-shadow:none!important;color:var(--text-dim)!important;font-size:var(--t-1);font-weight:600;padding:0 0 14px!important;}
-#page-progress .ed-pagehead-back:hover{color:var(--accent)!important;}
+@media (hover:hover) and (pointer:fine){#page-progress .ed-pagehead-back:hover{color:var(--accent)!important;}}
 #page-progress .ed-pagehead-eyebrow{font-size:10px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:var(--text-dim);}
 #page-progress .ed-pagehead-eyebrow::before{content:none!important;display:none!important;}
 html[data-theme] body #page-progress h1.ed-pagehead-display{font-size:var(--t4);font-weight:800;letter-spacing:-0.03em;margin:8px 0 0;color:var(--text);}
@@ -1040,7 +1040,7 @@ html[data-theme] body #page-analytics{background:var(--bg);color:var(--text);}
 /* head -> .top (same recipe as Progress) */
 html[data-theme] body #page-analytics .ed-pagehead{display:block;background:none;border:0;box-shadow:none;padding:0;margin:0 0 24px;}
 #page-analytics .ed-pagehead-back{background:none!important;border:0!important;box-shadow:none!important;color:var(--text-dim)!important;font-size:var(--t-1);font-weight:600;padding:0 0 14px!important;}
-#page-analytics .ed-pagehead-back:hover{color:var(--accent)!important;}
+@media (hover:hover) and (pointer:fine){#page-analytics .ed-pagehead-back:hover{color:var(--accent)!important;}}
 #page-analytics .ed-pagehead-eyebrow{font-size:10px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:var(--text-dim);}
 #page-analytics .ed-pagehead-eyebrow::before{content:none!important;display:none!important;}
 html[data-theme] body #page-analytics h1.ed-pagehead-display{font-size:var(--t4);font-weight:800;letter-spacing:-0.03em;margin:12px 0 0;color:var(--text);}
@@ -1295,7 +1295,7 @@ html[data-theme] body #page-analytics .ana-bento .tile.s-why{background:linear-g
 #page-analytics .dom-list{display:flex;flex-direction:column;gap:4px;flex:1;justify-content:center}
 #page-analytics .dom-row{display:grid;grid-template-columns:1fr auto;gap:5px 12px;align-items:center;
   padding:10px 8px;border-radius:11px;transition:background .15s}
-#page-analytics .dom-row:hover{background:var(--accent-soft)}
+@media (hover:hover) and (pointer:fine){#page-analytics .dom-row:hover{background:var(--accent-soft)}}
 #page-analytics .dom-row .dl{display:flex;align-items:center;gap:9px;min-width:0;font-size:13.5px;font-weight:500;color:var(--text)}
 #page-analytics .dom-row .obj{font-family:'JetBrains Mono',ui-monospace,monospace;font-size:10px;color:var(--text-faint);
   background:var(--surface2);border:1px solid var(--hairline);border-radius:5px;padding:1px 5px;flex:0 0 auto}
@@ -1360,7 +1360,7 @@ html[data-theme] body #page-analytics .ana-bento .tile.s-evq{background:linear-g
 #page-analytics .wrong-list{display:flex;flex-direction:column;gap:3px;flex:1;justify-content:center}
 #page-analytics .wrong-row{display:grid;grid-template-columns:auto 1fr auto;gap:13px;align-items:center;
   padding:11px 8px;border-radius:11px;transition:background .15s}
-#page-analytics .wrong-row:hover{background:var(--accent-soft)}
+@media (hover:hover) and (pointer:fine){#page-analytics .wrong-row:hover{background:var(--accent-soft)}}
 #page-analytics .wrong-rank{font-family:'JetBrains Mono',ui-monospace,monospace;font-size:18px;font-weight:500;color:var(--red);
   background:color-mix(in oklab,var(--red) 14%,transparent);border-radius:8px;width:34px;height:34px;
   display:flex;align-items:center;justify-content:center;flex:0 0 auto}
@@ -1390,7 +1390,7 @@ html[data-theme] body #page-analytics .ana-bento .tile.s-evq{background:linear-g
 #page-analytics .exam-list{display:flex;flex-direction:column;gap:2px;flex:1;justify-content:center}
 #page-analytics .exam-row{display:grid;grid-template-columns:1fr auto;gap:4px 10px;align-items:center;
   padding:8px;border-radius:10px;transition:background .15s}
-#page-analytics .exam-row:hover{background:var(--accent-soft)}
+@media (hover:hover) and (pointer:fine){#page-analytics .exam-row:hover{background:var(--accent-soft)}}
 #page-analytics .exam-row .el{font-size:12.5px;font-weight:500;color:var(--text)}
 #page-analytics .exam-row .ed{font-family:'JetBrains Mono',ui-monospace,monospace;font-size:10px;color:var(--text-faint)}
 #page-analytics .exam-row .es{font-family:'JetBrains Mono',ui-monospace,monospace;font-size:14px;font-weight:500;color:var(--text);text-align:right}
@@ -1792,7 +1792,7 @@ html[data-theme] body #page-settings .ed-pagehead-eyebrow{color:var(--accent)!im
 html[data-theme] body #page-settings .ed-pagehead-display{font-size:var(--t3)!important;font-weight:800!important;letter-spacing:-0.025em!important;color:var(--text)!important;margin-top:10px!important;outline:none!important;border:0!important;border-radius:0!important;box-shadow:none!important;padding:0!important;background:none!important;}
 html[data-theme] body #page-settings .ed-pagehead-display em{color:var(--accent)!important;font-style:normal!important;background:none!important;-webkit-text-fill-color:var(--accent)!important;}
 html[data-theme] body #page-settings .ed-pagehead-back{background:none!important;border:1px solid var(--border)!important;border-radius:8px!important;color:var(--text-dim)!important;font:600 var(--t-1)/1 Inter,sans-serif!important;padding:8px 12px!important;box-shadow:none!important;}
-html[data-theme] body #page-settings .ed-pagehead-back:hover{border-color:var(--accent)!important;color:var(--accent)!important;}
+@media (hover:hover) and (pointer:fine){html[data-theme] body #page-settings .ed-pagehead-back:hover{border-color:var(--accent)!important;color:var(--accent)!important;}}
 
 /* v7.18 bento (v2 control-center): asymmetric 12-col grid with differentiated
    tile treatments, not a flat 2-col of identical cards. §01 leads with a
@@ -1870,7 +1870,7 @@ html[data-theme] body #page-settings .settings-health-warn .settings-health-valu
    keep their own; the icon is a <span> → CSS-hide = zero render change) */
 #page-settings .ana-ready-datechip-icon{display:none!important;}
 html[data-theme] body #page-settings .ana-ready-datechip,html[data-theme] body #page-settings .ana-exam-date-btn{background:none!important;border:1px solid var(--border)!important;border-radius:8px!important;box-shadow:none!important;color:var(--text-dim)!important;}
-html[data-theme] body #page-settings .ana-ready-datechip:hover,html[data-theme] body #page-settings .ana-exam-date-btn:hover{border-color:var(--accent)!important;color:var(--accent)!important;}
+@media (hover:hover) and (pointer:fine){html[data-theme] body #page-settings .ana-ready-datechip:hover,html[data-theme] body #page-settings .ana-exam-date-btn:hover{border-color:var(--accent)!important;color:var(--accent)!important;}}
 #page-settings .ana-ready-datechip-days,#page-settings .ana-ready-datechip-date{color:var(--text-mid)!important;}
 html[data-theme] body #page-settings .settings-daily-row{display:flex!important;align-items:center!important;gap:12px!important;flex-wrap:wrap!important;margin:14px 0 0!important;}
 /* v7.42.0 GAP-3: tier locks must beat the display:flex!important rules above —
@@ -1882,15 +1882,15 @@ html[data-theme] body #page-settings .settings-daily-input{background:color-mix(
 html[data-theme] body #page-settings .settings-daily-input:focus{border-color:var(--accent)!important;outline:none!important;}
 html[data-theme] body #page-settings .settings-daily-unit{font-size:var(--t-1)!important;color:var(--text-dim)!important;}
 html[data-theme] body #page-settings .settings-daily-save{background:var(--accent)!important;color:var(--bg)!important;border:0!important;border-radius:9px!important;font:700 var(--t-1)/1 Inter,sans-serif!important;padding:12px 18px!important;box-shadow:none!important;}
-html[data-theme] body #page-settings .settings-daily-save:hover{filter:brightness(1.06)!important;}
+@media (hover:hover) and (pointer:fine){html[data-theme] body #page-settings .settings-daily-save:hover{filter:brightness(1.06)!important;}}
 #page-settings .settings-daily-presets{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0 0;}
 html[data-theme] body #page-settings .settings-daily-chip{background:none!important;border:1px solid var(--dg-rule-soft)!important;border-radius:7px!important;color:var(--text-dim)!important;font:600 var(--t-1)/1 Inter,sans-serif!important;padding:8px 13px!important;box-shadow:none!important;}
-html[data-theme] body #page-settings .settings-daily-chip:hover{border-color:var(--border)!important;color:var(--text)!important;}
+@media (hover:hover) and (pointer:fine){html[data-theme] body #page-settings .settings-daily-chip:hover{border-color:var(--border)!important;color:var(--text)!important;}}
 html[data-theme] body #page-settings .settings-daily-chip.is-active{background:color-mix(in oklab,var(--accent) 14%,transparent)!important;border-color:var(--accent)!important;color:var(--accent)!important;}
 
 /* §02 data & backups — editorial ghost buttons + de-carded backup rows */
 html[data-theme] body #page-settings .settings-section .btn.btn-ghost{background:none!important;border:1px solid var(--border)!important;border-radius:9px!important;color:var(--text-mid)!important;font-weight:600!important;box-shadow:none!important;}
-html[data-theme] body #page-settings .settings-section .btn.btn-ghost:hover{border-color:var(--accent)!important;color:var(--accent)!important;}
+@media (hover:hover) and (pointer:fine){html[data-theme] body #page-settings .settings-section .btn.btn-ghost:hover{border-color:var(--accent)!important;color:var(--accent)!important;}}
 /* v7.18 emil polish: smooth state transitions, press feedback, keyboard focus.
    Settings controls are occasional (not 100+/day), so a subtle 180ms ease-out on
    hover + a scale(0.97) press confirms the tap without feeling sluggish. */
@@ -1923,7 +1923,7 @@ html[data-theme] body #page-settings .ab-row-date{font-size:var(--t0)!important;
 html[data-theme] body #page-settings .ab-row-meta{margin-top:4px!important;font-size:11px!important;color:var(--text-dim)!important;font-family:var(--mono,ui-monospace,"SF Mono",Menlo,Consolas,monospace);}
 #page-settings .ab-row-actions{display:flex;gap:8px;flex:none;}
 html[data-theme] body #page-settings .ab-row-actions .btn{background:none!important;border:1px solid var(--border)!important;border-radius:8px!important;color:var(--text-mid)!important;font:600 11px/1 Inter,sans-serif!important;padding:9px 13px!important;box-shadow:none!important;}
-html[data-theme] body #page-settings .ab-row-actions .btn:hover{border-color:var(--accent)!important;color:var(--accent)!important;}
+@media (hover:hover) and (pointer:fine){html[data-theme] body #page-settings .ab-row-actions .btn:hover{border-color:var(--accent)!important;color:var(--accent)!important;}}
 
 /* §03 danger zone → mockup .danger-zone (the ONLY --dg-danger surface) */
 html[data-theme] body #page-settings .settings-group-danger{margin-top:52px!important;border:1px solid color-mix(in oklab,var(--dg-danger) 40%,transparent)!important;border-radius:12px!important;padding:22px 24px!important;background:none!important;}
@@ -1933,7 +1933,7 @@ html[data-theme] body #page-settings .settings-group-danger .settings-group-h{fo
 html[data-theme] body #page-settings .settings-group-danger .settings-group-h em{color:var(--dg-danger)!important;-webkit-text-fill-color:var(--dg-danger)!important;}
 html[data-theme] body #page-settings .settings-section-danger{padding-top:14px!important;}
 html[data-theme] body #page-settings #wrong-bank-clear{background:none!important;border:1px solid var(--dg-danger)!important;border-radius:10px!important;color:var(--dg-danger)!important;font-weight:700!important;box-shadow:none!important;}
-html[data-theme] body #page-settings #wrong-bank-clear:hover{background:color-mix(in oklab,var(--dg-danger) 12%,transparent)!important;border-color:var(--dg-danger)!important;color:var(--dg-danger)!important;}
+@media (hover:hover) and (pointer:fine){html[data-theme] body #page-settings #wrong-bank-clear:hover{background:color-mix(in oklab,var(--dg-danger) 12%,transparent)!important;border-color:var(--dg-danger)!important;color:var(--dg-danger)!important;}}
 html[data-theme] body #page-settings .wrong-count-badge{background:color-mix(in oklab,var(--dg-danger) 16%,transparent)!important;color:var(--dg-danger)!important;border:0!important;font-weight:700;}
 
 /* ══════════════════════════════════════════════════════════════════════════
@@ -2312,9 +2312,9 @@ html[data-theme] body #page-settings .sr-topup-row{display:flex;align-items:flex
 html[data-theme] body #page-settings .sr-topup-label{font-size:13px;font-weight:650;color:var(--text);line-height:1.35;}
 html[data-theme] body #page-settings .sr-topup-sub{display:block;font-size:11.5px;font-weight:500;color:var(--text-dim);margin-top:3px;max-width:46ch;}
 html[data-theme] body #page-settings .sr-topup-toggle{margin-left:auto;flex:none;width:42px;height:24px;border-radius:999px;border:1px solid var(--border);background:var(--surface2,var(--surface));position:relative;cursor:pointer;transition:background .2s var(--ease-out,ease);}
-html[data-theme] body #page-settings .sr-topup-toggle::after{content:'';position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:999px;background:var(--text-dim);transition:left .2s var(--ease-out,ease),background .2s var(--ease-out,ease);}
+html[data-theme] body #page-settings .sr-topup-toggle::after{content:'';position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:999px;background:var(--text-dim);transition:transform .2s var(--ease-out,ease),background .2s var(--ease-out,ease);}
 html[data-theme] body #page-settings .sr-topup-toggle.is-on{background:var(--accent);border-color:var(--accent);}
-html[data-theme] body #page-settings .sr-topup-toggle.is-on::after{left:20px;background:var(--bg);}
+html[data-theme] body #page-settings .sr-topup-toggle.is-on::after{transform:translateX(18px);background:var(--bg);}
 html[data-theme] body #page-sr-review .ed-pagehead::before{content:none!important;}
 html[data-theme] body #page-sr-review .ed-pagehead-back{color:var(--text-dim)!important;border:1px solid var(--border)!important;border-radius:6px!important;background:none!important;box-shadow:none!important;}
 html[data-theme] body #page-sr-review .ed-pagehead-back:hover{color:var(--accent)!important;border-color:var(--accent)!important;}
@@ -3003,9 +3003,14 @@ html[data-theme="light"] body .ed-section-head::after{background:var(--accent);}
    Note: #page-setup already sets --dgh-ease (line ~118); this higher-specificity
    selector intentionally overrides it for the bento subtree to the mockup value. */
 html[data-theme] body #page-setup{
-  --dgh-ease:cubic-bezier(.2,.8,.2,1);
+  /* v8.6.0 (motion audit H3): was cubic-bezier(.2,.8,.2,1) — a verbatim match to
+     the old bento mockup, flagged in motion-lift wave 1 and left alone because
+     changing the busiest page mid-wave was scope creep. Now aligned to BRAND §6.
+     The two curves are visually very close; this is consistency, not a rescue.
+     --ease-out is deliberately NOT touched here: it is used 23x file-wide and is
+     a separate, wider question. */
+  --dgh-ease:cubic-bezier(0.16,1,0.3,1);
   --ease-out:cubic-bezier(0.23,1,0.32,1);
-  --ease-in-out:cubic-bezier(0.77,0,0.175,1);
   --accent-soft:color-mix(in oklab,var(--accent) 12%,transparent);
   --accent-line:color-mix(in oklab,var(--accent) 30%,transparent);
   --hairline:color-mix(in oklab,var(--border) 72%,transparent);
@@ -5243,6 +5248,27 @@ html[data-theme] body #page-loading .orb[data-idle] ~ .t-shimmer::before {
 }
 @media (prefers-reduced-motion: reduce) {
   html[data-theme] body #page-loading .load-progress-line .orb { animation: none !important; }
+}
+
+/* ── v8.6.0 motion audit · H4 + A2 ───────────────────────────────────────
+   H4 — the recommended-next card is Home's ONE motivated accent. The beam
+   means "this is the thing that matters most right now", which is exactly the
+   attention case the effect exists for. Radius matches the card so the ring
+   traces its edge rather than cutting a corner. Nothing else on Home gets an
+   accent: two glowing borders equal zero. */
+html[data-theme] body #page-setup .cell-recommend.t-beam { border-radius: 14px; }
+
+/* A2 — the WEEK/MONTH/ALL control swapped its active pill with no motion at
+   all. The active state IS the signal (which slice of time you are reading),
+   so it earns a transition. transitions.dev's sliding-tabs choreography,
+   re-timed onto BRAND §6 — the movement is theirs, the numbers are ours. */
+html[data-theme] body #page-analytics .ana-accchart-tab {
+  transition: background var(--dgm-press) var(--dgm-ease),
+              color var(--dgm-press) var(--dgm-ease);
+}
+html[data-theme] body #page-analytics .ana-accchart-tab:active { transform: scale(0.97); }
+@media (prefers-reduced-motion: reduce) {
+  html[data-theme] body #page-analytics .ana-accchart-tab { transition: none !important; transform: none !important; }
 }
 
 /* ── reduced motion ──────────────────────────────────────────────────────

@@ -8,6 +8,7 @@
   let _anaAccPulse = null;
   let _anaDMState = null;
   let _anaDriftRaf = null;
+  let _anaDriftIO = null;   // v8.6.0 (motion audit A1): pauses the drift when the map is offscreen
   let _anaMsState = null;
 
   // ── moved functions, 2-space indent ──
@@ -1624,6 +1625,7 @@
   // (GPU-friendly); the whole loop is skipped under prefers-reduced-motion.
   function _anaConstWireDrift() {
     if (_anaDriftRaf) { cancelAnimationFrame(_anaDriftRaf); _anaDriftRaf = null; }
+    if (_anaDriftIO) { _anaDriftIO.disconnect(); _anaDriftIO = null; }
     if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     const map = document.querySelector('#ana-s-constellation .ana-const-map');
     if (!map) return;
@@ -1695,7 +1697,28 @@
 
       _anaDriftRaf = requestAnimationFrame(frame);
     }
-    _anaDriftRaf = requestAnimationFrame(frame);
+
+    // v8.6.0 (motion audit A1): only run while the map is actually on screen.
+    // Previously the loop started here unconditionally and the ONLY cancel was
+    // on the next Analytics re-render — so navigating to Home left this rAF
+    // running forever against a display:none page. Browsers stop rAF for a
+    // BACKGROUNDED TAB, but not for a hidden element in a visible tab, so it
+    // burned CPU on a surface nobody was looking at.
+    //
+    // IntersectionObserver reports not-intersecting for a display:none ancestor,
+    // so this covers both cases in one: navigated away, and scrolled offscreen.
+    // This is the pause-offscreen rule from antalik's performance contract.
+    const startDrift = () => { if (!_anaDriftRaf) _anaDriftRaf = requestAnimationFrame(frame); };
+    const stopDrift  = () => { if (_anaDriftRaf) { cancelAnimationFrame(_anaDriftRaf); _anaDriftRaf = null; } };
+    if ('IntersectionObserver' in window) {
+      _anaDriftIO = new IntersectionObserver(
+        (entries) => { entries.forEach(en => en.isIntersecting ? startDrift() : stopDrift()); },
+        { rootMargin: '64px' }   // resume slightly early, per the same contract
+      );
+      _anaDriftIO.observe(map);
+    } else {
+      startDrift();   // no IO support: previous behaviour, still cancelled on re-render
+    }
   }
 
   function _anaConstWireTooltip() {

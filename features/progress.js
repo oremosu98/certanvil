@@ -425,10 +425,20 @@
       const topicId = row && row.getAttribute('data-topic');
       if (topicId) { try { if (typeof drillTopic === 'function') drillTopic(topicId); } catch (_) {} }
     };
-    // Entrance: toggle .in next frame so the staggered CSS transition (gated
-    // behind prefers-reduced-motion: no-preference, driven by --i) plays. Under
-    // reduce the CSS keeps tiles static, so this is a harmless no-op.
-    requestAnimationFrame(() => requestAnimationFrame(() => grid.classList.add('in')));
+    // Entrance: flush layout, then flip .in synchronously so the staggered CSS
+    // transition (gated behind prefers-reduced-motion: no-preference, driven by
+    // --i) plays. Under reduce the CSS keeps tiles static, so this is a no-op.
+    //
+    // v8.6.0 (motion audit P1): was a double requestAnimationFrame. rAF does NOT
+    // fire in a backgrounded tab, and .tile starts at opacity:0 — so opening
+    // Progress and switching tab before the frames landed meant .in never
+    // arrived and you came back to a BLANK PAGE. Reading offsetWidth forces the
+    // reflow that the rAF was there to wait for, and works whether or not the
+    // tab is visible. Same fix, and same reasoning, as the wave-2 question
+    // reveal; motion-lift wave 1 wrote this lesson down and this page still
+    // shipped the bug.
+    void grid.offsetWidth;
+    grid.classList.add('in');
     // Scroll-into-view on initial load when URL carries #domain-<slug>.
     try {
       const hash = (typeof window !== 'undefined' && window.location && window.location.hash) || '';
