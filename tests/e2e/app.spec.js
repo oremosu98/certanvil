@@ -1262,6 +1262,12 @@ test.describe('Quiz Revisit — editable navigation', () => {
 
     // Click dot for Q1 → revisit.
     await page.locator('#quiz-prog-dots .qpd-cell').nth(0).click();
+    // v8.0.0: navigation is asynchronous (the outgoing card animates out before
+    // the index moves), so assert the revisit has actually landed before
+    // interacting. Without this the next click could hit Q2's options while
+    // they are still on their way out. The app also blocks that now
+    // (.q-card.is-hiding is pointer-events:none) — this states the precondition.
+    await expect(page.locator('#q-label')).toContainText('Question 1 of 3 · revisiting');
     // Re-pick A (wrong) — score should drop, but streak should stay at 1.
     await page.locator('#options .option').nth(0).click();
     await expect(page.locator('#live-score')).toContainText('0 / 1');
