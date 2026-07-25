@@ -210,7 +210,7 @@ html[data-theme] body #page-setup .stat-card+.stat-card{border-left:1px solid va
 #page-setup .drill-header{font-size:10px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-dim);margin-bottom:9px;}
 #page-setup .drill-chips,#page-setup #rc-v2-whatif-row{display:flex;flex-wrap:wrap;gap:8px;}
 html[data-theme] body #page-setup #rc-v2-whatif-row .rc-v2-whatif-chip,html[data-theme] body #page-setup #rc-v2-whatif-row button{display:inline-flex;align-items:center;gap:7px;background:none;border:1px solid color-mix(in oklab,var(--accent) 36%,transparent);color:var(--accent);border-radius:999px;padding:7px 14px;font-size:11px;font-weight:600;cursor:pointer;box-shadow:none;}
-html[data-theme] body #page-setup #rc-v2-whatif-row button:hover{background:color-mix(in oklab,var(--accent) 9%,transparent);}
+@media (hover:hover) and (pointer:fine){html[data-theme] body #page-setup #rc-v2-whatif-row button:hover{background:color-mix(in oklab,var(--accent) 9%,transparent);}}
 
 /* diagnostic card */
 html[data-theme] body #page-setup .diag-card{border:1px dashed color-mix(in oklab,var(--accent) 34%,var(--border));background:color-mix(in oklab,var(--accent) 4%,transparent);}
@@ -222,11 +222,11 @@ html[data-theme] body #page-setup .diag-card{border:1px dashed color-mix(in okla
 
 /* buttons: primary / white-on-accent / ghost */
 html[data-theme] body #page-setup .btn-primary{display:inline-flex;align-items:center;gap:8px;margin-top:14px;background:var(--accent);color:var(--bg);border:0;border-radius:11px;font:800 var(--t0)/1 Inter,-apple-system,sans-serif;padding:13px 22px;cursor:pointer;text-decoration:none;box-shadow:none;}
-html[data-theme] body #page-setup .btn-primary:hover{filter:brightness(1.06);box-shadow:none;}
+@media (hover:hover) and (pointer:fine){html[data-theme] body #page-setup .btn-primary:hover{filter:brightness(1.06);box-shadow:none;}}
 html[data-theme] body #page-setup .btn-white{display:inline-flex;align-items:center;gap:7px;background:var(--bg);color:var(--accent);border:0;border-radius:11px;font:800 var(--t-1)/1 Inter,-apple-system,sans-serif;padding:12px 20px;cursor:pointer;white-space:nowrap;box-shadow:none;}
-html[data-theme] body #page-setup .btn-white:hover{filter:brightness(1.04);}
+@media (hover:hover) and (pointer:fine){html[data-theme] body #page-setup .btn-white:hover{filter:brightness(1.04);}}
 html[data-theme] body #page-setup .btn-ghost{display:inline-flex;align-items:center;gap:7px;background:none;color:var(--accent);border:1px solid color-mix(in oklab,var(--accent) 30%,var(--border));border-radius:10px;font:650 var(--t-1)/1 Inter,-apple-system,sans-serif;padding:10px 16px;cursor:pointer;white-space:nowrap;box-shadow:none;}
-html[data-theme] body #page-setup .btn-ghost:hover{border-color:var(--accent);background:color-mix(in oklab,var(--accent) 8%,transparent);color:var(--accent);}
+@media (hover:hover) and (pointer:fine){html[data-theme] body #page-setup .btn-ghost:hover{border-color:var(--accent);background:color-mix(in oklab,var(--accent) 8%,transparent);color:var(--accent);}}
 /* emil-design-eng — buttons must feel responsive (press feedback). The
    transition for transform is already declared in the micro-interactions
    block; reduced-motion there neutralises it. */
@@ -319,7 +319,7 @@ html[data-theme] body #page-setup .col-side .dgh-sec-t{font-size:var(--t1);font-
 #page-setup .col-side .dgh-grp{margin-top:18px;}
 #page-setup .col-side .dgh-opts{grid-template-columns:1fr;}
 html[data-theme] body #page-setup .col-side .dgh-opt{border-right:0;padding:13px 0;}
-html[data-theme] body #page-setup .col-side .dgh-opt:hover{padding-left:8px;}
+@media (hover:hover) and (pointer:fine){html[data-theme] body #page-setup .col-side .dgh-opt:hover{padding-left:8px;}}
 #page-setup .col-side .dgh-dbd{grid-template-columns:1fr 1fr;}
 html[data-theme] body #page-setup .col-side .dgh-db{border-right:0;}
 html[data-theme] body #page-setup .col-side .dgh-opt[aria-hidden="true"]{display:none;}
@@ -346,22 +346,22 @@ html[data-theme] body #page-setup #setup-domain-grid .dg-name{white-space:normal
    — clickable surfaces lift, the domain column you scan highlights, buttons
    give press feedback. No glow, no decorative motion without a data role). */
 #page-setup .card,#page-setup .stat-card,#page-setup .custom-row{transition:transform .22s var(--dgh-ease),box-shadow .22s var(--dgh-ease),border-color .22s var(--dgh-ease);}
-html[data-theme] body #page-setup .card:hover,html[data-theme] body #page-setup .stat-card:hover,html[data-theme] body #page-setup .custom-row:hover{transform:translateY(-2px);border-color:color-mix(in oklab,var(--accent) 34%,var(--border));box-shadow:0 6px 20px color-mix(in oklab,var(--text) 8%,transparent);}
-html[data-theme] body #page-setup .nbm-card:hover{border-color:var(--accent);box-shadow:0 8px 24px color-mix(in oklab,var(--accent) 30%,transparent);}
+@media (hover:hover) and (pointer:fine){html[data-theme] body #page-setup .card:hover,html[data-theme] body #page-setup .stat-card:hover,html[data-theme] body #page-setup .custom-row:hover{transform:translateY(-2px);border-color:color-mix(in oklab,var(--accent) 34%,var(--border));box-shadow:0 6px 20px color-mix(in oklab,var(--text) 8%,transparent);}}
+@media (hover:hover) and (pointer:fine){html[data-theme] body #page-setup .nbm-card:hover{border-color:var(--accent);box-shadow:0 8px 24px color-mix(in oklab,var(--accent) 30%,transparent);}}
 #page-setup .btn-primary,#page-setup .btn-white,#page-setup .btn-ghost,#page-setup .custom-config,#page-setup .diag-skip{transition:transform .16s var(--dgh-ease),filter .16s var(--dgh-ease),box-shadow .2s var(--dgh-ease),background .16s var(--dgh-ease),color .16s var(--dgh-ease),border-color .16s var(--dgh-ease);}
-html[data-theme] body #page-setup .btn-primary:hover{transform:translateY(-1px);box-shadow:0 5px 16px color-mix(in oklab,var(--accent) 38%,transparent);}
+@media (hover:hover) and (pointer:fine){html[data-theme] body #page-setup .btn-primary:hover{transform:translateY(-1px);box-shadow:0 5px 16px color-mix(in oklab,var(--accent) 38%,transparent);}}
 html[data-theme] body #page-setup .btn-primary:active,html[data-theme] body #page-setup .btn-white:active,html[data-theme] body #page-setup .btn-ghost:active{transform:translateY(0) scale(.985);}
 #page-setup .custom-config{display:inline-block;transform-origin:right center;}
-html[data-theme] body #page-setup .custom-config:hover{transform:translateX(3px);}
-html[data-theme] body #page-setup .diag-skip:hover{color:var(--text-mid);}
+@media (hover:hover) and (pointer:fine){html[data-theme] body #page-setup .custom-config:hover{transform:translateX(3px);}}
+@media (hover:hover) and (pointer:fine){html[data-theme] body #page-setup .diag-skip:hover{color:var(--text-mid);}}
 #page-setup #setup-domain-grid .domain-cell{transition:background .2s var(--dgh-ease);}
-html[data-theme] body #page-setup #setup-domain-grid .domain-cell:hover{background:color-mix(in oklab,var(--accent) 6%,transparent);}
+@media (hover:hover) and (pointer:fine){html[data-theme] body #page-setup #setup-domain-grid .domain-cell:hover{background:color-mix(in oklab,var(--accent) 6%,transparent);}}
 #page-setup #rc-v2-whatif-row button{transition:background .18s var(--dgh-ease),border-color .18s var(--dgh-ease),transform .18s var(--dgh-ease);}
-html[data-theme] body #page-setup #rc-v2-whatif-row button:hover{transform:translateY(-1px);border-color:var(--accent);}
+@media (hover:hover) and (pointer:fine){html[data-theme] body #page-setup #rc-v2-whatif-row button:hover{transform:translateY(-1px);border-color:var(--accent);}}
 #page-setup .col-side .dgh-opt .on,#page-setup .col-side .dgh-opt .od{transition:color .16s var(--dgh-ease);}
-html[data-theme] body #page-setup .col-side .dgh-opt:hover .on{color:var(--accent);}
+@media (hover:hover) and (pointer:fine){html[data-theme] body #page-setup .col-side .dgh-opt:hover .on{color:var(--accent);}}
 html[data-theme] body #page-setup .col-side .dgh-db{transition:background .18s var(--dgh-ease),padding-left .14s var(--dgh-ease);}
-html[data-theme] body #page-setup .col-side .dgh-db:hover{background:color-mix(in oklab,var(--accent) 6%,transparent);}
+@media (hover:hover) and (pointer:fine){html[data-theme] body #page-setup .col-side .dgh-db:hover{background:color-mix(in oklab,var(--accent) 6%,transparent);}}
 
 /* responsive: collapse to one column, side rail flows under main */
 @media (max-width:1040px){#page-setup .home-grid{grid-template-columns:minmax(0,1fr);}#page-setup .col-side{order:2;}}
@@ -386,14 +386,14 @@ html[data-theme] body #page-setup .dgh-sec-t{font-size:var(--t2);font-weight:800
 #page-setup .dgh-grp-h .d{font-size:11px;color:var(--text-dim);}
 #page-setup .dgh-opts{display:grid;grid-template-columns:repeat(3,1fr);gap:0;}
 html[data-theme] body #page-setup .dgh-opt{text-align:left;background:none;border:0;border-right:1px solid var(--dg-rule-soft);border-bottom:1px solid var(--dg-rule-soft);border-radius:0;padding:18px 20px 18px 0;cursor:pointer;transition:padding-left 0.14s var(--dgh-ease);box-shadow:none;}
-#page-setup .dgh-opt:hover{padding-left:10px;}
+@media (hover:hover) and (pointer:fine){#page-setup .dgh-opt:hover{padding-left:10px;}}
 #page-setup .dgh-opt:nth-child(3n){border-right:0;}
 #page-setup .dgh-opt .on{display:block;font-size:var(--t0);font-weight:800;letter-spacing:-0.01em;color:var(--text);}
 #page-setup .dgh-opt.exam .on{color:var(--text);}
 #page-setup .dgh-opt .od{display:block;font-size:11px;color:var(--text-dim);margin-top:5px;line-height:1.5;}
 #page-setup .dgh-dbd{display:grid;grid-template-columns:repeat(5,1fr);gap:0;margin-top:2px;}
 html[data-theme] body #page-setup .dgh-db{text-align:left;background:none;border:0;border-right:1px solid var(--dg-rule-soft);border-radius:0;padding:16px 16px 16px 0;cursor:pointer;transition:padding-left 0.14s var(--dgh-ease);box-shadow:none;}
-#page-setup .dgh-db:hover{padding-left:8px;}
+@media (hover:hover) and (pointer:fine){#page-setup .dgh-db:hover{padding-left:8px;}}
 #page-setup .dgh-db:last-child{border-right:0;}
 #page-setup .dgh-db .dbk{font-size:11px;font-weight:800;color:var(--accent);font-variant-numeric:tabular-nums;}
 #page-setup .dgh-db .dbn{display:block;font-size:var(--t-1);font-weight:700;margin-top:5px;letter-spacing:-0.01em;color:var(--text);}
@@ -410,9 +410,9 @@ html[data-theme] body #page-setup .dgh-db{text-align:left;background:none;border
    Note: #page-setup already sets --dgh-ease (line ~118); this higher-specificity
    selector intentionally overrides it for the bento subtree to the mockup value. */
 html[data-theme] body #page-setup{
-  --dgh-ease:cubic-bezier(.2,.8,.2,1);
+  /* v8.6.1: kept in lockstep with dg-system.css (motion audit H3) */
+  --dgh-ease:cubic-bezier(0.16,1,0.3,1);
   --ease-out:cubic-bezier(0.23,1,0.32,1);
-  --ease-in-out:cubic-bezier(0.77,0,0.175,1);
   --accent-soft:color-mix(in oklab,var(--accent) 12%,transparent);
   --accent-line:color-mix(in oklab,var(--accent) 30%,transparent);
   --hairline:color-mix(in oklab,var(--border) 72%,transparent);

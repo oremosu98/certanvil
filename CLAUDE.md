@@ -29,7 +29,7 @@
 | index.html | 2287 | 148 KB |
 | dg-system.css | 5305 | 493 KB |
 | tests/uat.js + tests/uat/ (27 modules) | 28431 | — |
-UAT checks: 4928 · E2E `test(` count: 160 · APP_VERSION: 8.6.0 · stamped-at: worktree
+UAT checks: 4928 · E2E `test(` count: 160 · APP_VERSION: 8.6.1 · stamped-at: worktree
 <!-- FACTS:AUTO:END -->
 
 | File | Purpose | Size |
@@ -132,6 +132,7 @@ npx playwright test              # E2E (tests/e2e/app.spec.js)
 
 | Version | Features Added |
 |---|---|
+| v8.6.1 | Motion audit completion: dg-critical.css brought in lockstep with dg-system.css |
 | v8.6.0 | Motion audit fixes: hover gating across 4 pages, Progress blank-page fix, Analytics drift pause, brand curve alignment, 2 accents |
 | v8.5.0 | Faster question handover (200ms->130ms) + loading orb/shimmer lifted from the mockup |
 | v8.4.0 | Wave 4 parts 2-4: Hot-Area pick beam + hint swap, Topology armed beam, CLI Sim used-command dim |
