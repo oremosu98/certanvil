@@ -1,9 +1,9 @@
 // ══════════════════════════════════════════
-// Network+ AI Quiz — app.js  v8.3.0
+// Network+ AI Quiz — app.js  v8.4.0
 // ══════════════════════════════════════════
 
 // ── CONSTANTS ──
-const APP_VERSION = '8.3.0';
+const APP_VERSION = '8.4.0';
 // v4.99.45 (Phase 6b): expose APP_VERSION on window so the web-vitals
 // collector (lib/web-vitals-collector.js, loaded BEFORE app.js so its
 // PerformanceObservers attach earlier) can stamp this version onto every
@@ -6122,7 +6122,7 @@ function renderHotArea(q, box) {
   const row = document.createElement('div');
   row.className = 'ha-submit-row';
   row.id = 'ha-submit-row';
-  row.innerHTML = '<span class="ha-hint" id="ha-hint">Click a region to select your answer</span>';
+  row.innerHTML = '<span class="ha-hint t-swap" id="ha-hint">Click a region to select your answer</span>';
   const submitBtn = document.createElement('button');
   submitBtn.className = 'btn btn-primary';
   submitBtn.id = 'ha-submit-btn';
@@ -6150,17 +6150,18 @@ function _haPickRegion(regionId) {
   // Clear all previous selection markers
   document.querySelectorAll('#options [data-region]').forEach(el => {
     el.classList.remove('is-picked');
+    el.dataset.beam = 'off';   // wave 4: beam marks the UNCOMMITTED pick only
   });
   // Mark the clicked one
   const clicked = document.querySelector('#options [data-region="' + regionId + '"]');
-  if (clicked) clicked.classList.add('is-picked');
+  if (clicked) { clicked.classList.add('is-picked', 't-beam'); clicked.dataset.beam = 'on'; }
   // Enable submit
   if (submitBtn) {
     submitBtn.disabled = false;
     submitBtn.classList.remove('is-dimmed');
   }
   const hint = document.getElementById('ha-hint');
-  if (hint) hint.textContent = 'Selected: ' + regionId + '. Click Submit to grade.';
+  if (hint) window._swapText(hint, 'Selected: ' + regionId + '. Click Submit to grade.');
 }
 
 function submitHotArea(q) {
@@ -6198,6 +6199,7 @@ function submitHotArea(q) {
   document.querySelectorAll('#options [data-region]').forEach(el => {
     const id = el.getAttribute('data-region');
     el.classList.remove('is-picked');
+    el.dataset.beam = 'off';   // wave 4: pick is committed, nothing pending
     if (id === _hotAreaPick && isCorrect) el.classList.add('is-correct');
     else if (id === _hotAreaPick && !isCorrect) el.classList.add('is-wrong');
     else if (correctIds.includes(id)) el.classList.add('is-reveal-correct');
@@ -7160,7 +7162,8 @@ function renderTopology(q, box, ans) {
     const btn = document.createElement('button');
     const placedNow = ans ? allPlaced().includes(dev) : false;
     const selectedNow = selectedTopoDevice === dev;
-    btn.className = 'topo-device' + (placedNow ? ' placed' : '') + (selectedNow ? ' selected' : '');
+    btn.className = 'topo-device t-beam' + (placedNow ? ' placed' : '') + (selectedNow ? ' selected' : '');
+    btn.dataset.beam = selectedNow ? 'on' : 'off';   // wave 4: armed = uncommitted
     btn.textContent = dev;
     btn.draggable = true;
     btn.setAttribute('aria-label', `Device: ${dev}${placedNow ? ' (placed)' : ''}`);
@@ -7175,12 +7178,12 @@ function renderTopology(q, box, ans) {
       e.preventDefault();
       selectedTopoDevice = dev;
       if (ans) renderExam();
-      else document.querySelectorAll('.topo-device').forEach(b => b.classList.toggle('selected', b.textContent === dev));
+      else document.querySelectorAll('.topo-device').forEach(b => { const on = b.textContent === dev; b.classList.toggle('selected', on); b.classList.add('t-beam'); b.dataset.beam = on ? 'on' : 'off'; });
     }, { passive: false });
     btn.onclick = () => {
       selectedTopoDevice = dev;
       if (ans) renderExam();
-      else document.querySelectorAll('.topo-device').forEach(b => b.classList.toggle('selected', b.textContent === dev));
+      else document.querySelectorAll('.topo-device').forEach(b => { const on = b.textContent === dev; b.classList.toggle('selected', on); b.classList.add('t-beam'); b.dataset.beam = on ? 'on' : 'off'; });
     };
     palette.appendChild(btn);
   });

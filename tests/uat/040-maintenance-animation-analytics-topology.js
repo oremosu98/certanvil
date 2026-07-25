@@ -757,6 +757,31 @@ test('v8.3.0 wave 4: a wrong order shakes the tray, re-armed with a reflow',
 test('v8.3.0 wave 4: order rows use their own keyframe, not .t-reveal',
   /dgm-ord-in/.test(dgCss) && !/order-placed-item t-reveal/.test(js));
 
+// ── v8.4.0 wave 4 · Hot-Area, Topology, CLI Sim ──
+// The beam may ONLY mean "uncommitted". Every site clears it on re-pick and on
+// commit, so it can never linger as decoration (antalik: static-when-idle).
+test('v8.4.0 wave 4: hot-area beams the live pick and clears every other region',
+  /el\.dataset\.beam = 'off';   \/\/ wave 4: beam marks the UNCOMMITTED pick only/.test(js) &&
+  /clicked\.classList\.add\('is-picked', 't-beam'\); clicked\.dataset\.beam = 'on'/.test(js));
+test('v8.4.0 wave 4: submitting a hot-area pick stops the beam',
+  /el\.dataset\.beam = 'off';   \/\/ wave 4: pick is committed, nothing pending/.test(js));
+test('v8.4.0 wave 4: the hot-area hint swaps in place rather than snapping',
+  /class="ha-hint t-swap"/.test(js) &&
+  /window\._swapText\(hint, 'Selected: '/.test(js));
+test('v8.4.0 wave 4: _swapText is exposed for app.js PBQ hints',
+  /window\._swapText      = _swapText/.test(js));
+test('v8.4.0 wave 4: topology beams only the armed device',
+  /b\.dataset\.beam = on \? 'on' : 'off'/.test(js) &&
+  /btn\.dataset\.beam = selectedNow \? 'on' : 'off'/.test(js));
+// A dragged element already follows the pointer; transitioning transform would
+// make it visibly lag the cursor.
+test('v8.4.0 wave 4: the topology drag itself carries no transition',
+  /\.topo-device\.dragging \{ transition: none !important; \}/.test(dgCss));
+// A used command stays readable AND re-runnable — the engine re-runs on click,
+// so hiding it would misrepresent state.
+test('v8.4.0 wave 4: a used CLI command dims but stays legible',
+  /\.cli-cmd-btn\.used \{ opacity: \.6; \}/.test(dgCss));
+
 // dg-system.css changes are invisible in prod unless this query is bumped —
 // the SW keeps serving the old stylesheet while every check stays green.
 test('v8.0.0 wave 2: dg-system.css cache-bust query bumped past 7.99.0',

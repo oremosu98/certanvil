@@ -2109,6 +2109,7 @@
   // and the streak pill silently stops updating on those two PBQ types.
   window._setLiveStreak = _setLiveStreak;
   window._setLiveScore  = _setLiveScore;
+  window._swapText      = _swapText;   // #495/wave 4: app.js PBQ hints swap in place
   // #495: app.js's explainFurther() calls these across the extraction boundary
   window._prepareDeepDive = _prepareDeepDive;
   window._openDeepDive   = _openDeepDive;

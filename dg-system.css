@@ -5175,6 +5175,44 @@ html[data-theme] body #order-items .order-item:active { transform: scale(0.97); 
   html[data-theme] body #order-items .order-item { transition: none !important; transform: none !important; }
 }
 
+/* ── wave 4 · Hot-Area PBQ ───────────────────────────────────────────────
+   The beam rides the PICKED-BUT-UNSUBMITTED region — a genuine uncommitted
+   state, which is the only thing the beam is allowed to mean. It is cleared
+   on every re-pick and on submit, so it can never linger as decoration.
+   radius matches the region shapes so the ring traces their edge. */
+html[data-theme] body #options [data-region].t-beam { border-radius: var(--radius-sm); }
+html[data-theme] body #options [data-region][data-beam="on"] { z-index: 2; }
+/* The hint is REPLACED in place as the pick changes — same slot, new content,
+   which is the swap idiom rather than a pop or a count. */
+html[data-theme] body #page-quiz .ha-hint { display: inline-block; }
+
+/* ── wave 4 · Topology + CLI Sim ─────────────────────────────────────────
+   Topology: the beam marks the ARMED device — selected, awaiting a zone.
+   That is a real uncommitted state and it clears the moment another device is
+   armed or the device is placed, so it never becomes decoration.
+   The DRAG ITSELF carries no transition: a dragged element is already following
+   the pointer, and transitioning transform would make it lag behind the cursor. */
+html[data-theme] body .topo-device.t-beam { border-radius: var(--radius-sm); }
+html[data-theme] body .topo-device.dragging { transition: none !important; }
+html[data-theme] body .topo-device {
+  transition: opacity var(--dgm-lift) var(--dgm-ease), transform var(--dgm-lift) var(--dgm-ease);
+}
+html[data-theme] body .topo-device.placed { opacity: .55; }
+html[data-theme] body .topo-device:active { transform: scale(0.97); }
+
+/* CLI Sim: a used command DIMS but stays readable and re-runnable — the engine
+   re-runs it on click, so hiding or greying it out would misrepresent state. */
+html[data-theme] body .cli-cmd-btn {
+  transition: opacity var(--dgm-lift) var(--dgm-ease), transform var(--dgm-press) var(--dgm-ease);
+}
+html[data-theme] body .cli-cmd-btn.used { opacity: .6; }
+html[data-theme] body .cli-cmd-btn:active { transform: scale(0.97); }
+
+@media (prefers-reduced-motion: reduce) {
+  html[data-theme] body .topo-device,
+  html[data-theme] body .cli-cmd-btn { transition: none !important; transform: none !important; }
+}
+
 /* ── reduced motion ──────────────────────────────────────────────────────
    Every animated surface above collapses. §6: fade-only, no transform. */
 @media (prefers-reduced-motion: reduce) {
