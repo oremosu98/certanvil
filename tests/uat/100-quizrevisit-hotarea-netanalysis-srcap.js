@@ -69,6 +69,11 @@ test('v4.81.31 SRScrub: vm fixture — order/cli-sim cards filtered out, mcq ret
       const gtBody = _fnBody(js, '_multiSelectGroundTruthOk');
       const getQTypeBody = _fnBody(js, 'getQType');
       const ctx = {
+        _setLiveScore: () => {},
+        window: { _setLiveStreak: () => {}, _setLiveScore: () => {} },
+        // v8.0.0 wave 2: the streak pill writes moved into the shared
+        // _setLiveStreak helper, so these sandboxed bodies now call it.
+        _setLiveStreak: () => {},
         getSrDueEntries: () => fakeQueue.slice(),
         loadSrQueue: () => fakeQueue.slice(),
         saveSrQueue: (q) => { savedPayload = q; },
@@ -136,6 +141,11 @@ test('v4.81.31 SRScrub: vm fixture — clean queue triggers no scrub write',
         { id: 'multi-1', type: 'multi-select', question: '(Choose TWO) Pick two.', options: { A: 'a', B: 'b', C: 'c' }, answers: ['A', 'B'], nextReview: 0, graduated: false }
       ];
       const ctx = {
+        _setLiveScore: () => {},
+        window: { _setLiveStreak: () => {}, _setLiveScore: () => {} },
+        // v8.0.0 wave 2: the streak pill writes moved into the shared
+        // _setLiveStreak helper, so these sandboxed bodies now call it.
+        _setLiveStreak: () => {},
         getSrDueEntries: () => fakeQueue.map(c => Object.assign({}, c)),
         loadSrQueue: () => fakeQueue.map(c => Object.assign({}, c)),
         saveSrQueue: () => { saveCallCount++; },
@@ -366,6 +376,14 @@ test('v4.82.0 Revisit: vm fixture — _recomputeQuizCounters recomputes from log
       const fakeScore = { textContent: '' };
       const fakeStreak = { textContent: '' };
       const ctx = {
+        // v8.0.0 wave 2: score writes moved into _setLiveScore. Keep the
+        // stub writing to fakeScore so the fixture still asserts the
+        // recomputed "3 / 4" value, not just that the call happened.
+        _setLiveScore: (s, a) => { fakeScore.textContent = s + ' / ' + a; },
+        window: { _setLiveStreak: () => {}, _setLiveScore: (s, a) => { fakeScore.textContent = s + ' / ' + a; } },
+        // v8.0.0 wave 2: the streak pill writes moved into the shared
+        // _setLiveStreak helper, so these sandboxed bodies now call it.
+        _setLiveStreak: () => {},
         log: [
           { q: { question: 'a' }, isRight: true },
           { q: { question: 'b' }, isRight: false },
@@ -397,6 +415,14 @@ test('v4.82.0 Revisit: vm fixture — _findLogEntryFor matches by question objec
       const qB = { question: 'B?' };
       const qC = { question: 'C?' };
       const ctx = {
+        // v8.0.0 wave 2: score writes moved into _setLiveScore. Keep the
+        // stub writing to fakeScore so the fixture still asserts the
+        // recomputed "3 / 4" value, not just that the call happened.
+        _setLiveScore: (s, a) => { fakeScore.textContent = s + ' / ' + a; },
+        window: { _setLiveStreak: () => {}, _setLiveScore: (s, a) => { fakeScore.textContent = s + ' / ' + a; } },
+        // v8.0.0 wave 2: the streak pill writes moved into the shared
+        // _setLiveStreak helper, so these sandboxed bodies now call it.
+        _setLiveStreak: () => {},
         log: [
           { q: qA, chosen: 'A', isRight: false },
           { q: qB, chosen: 'C', isRight: true }
@@ -430,6 +456,14 @@ test('v4.82.0 Revisit: vm fixture — pick re-pick wrong→right updates entry +
       const fakeScore = { textContent: '' };
       const fakeStreak = { textContent: '', classList: { remove: () => {}, add: () => {} }, offsetWidth: 0 };
       const ctx = {
+        // v8.0.0 wave 2: score writes moved into _setLiveScore. Keep the
+        // stub writing to fakeScore so the fixture still asserts the
+        // recomputed "3 / 4" value, not just that the call happened.
+        _setLiveScore: (s, a) => { fakeScore.textContent = s + ' / ' + a; },
+        window: { _setLiveStreak: () => {}, _setLiveScore: (s, a) => { fakeScore.textContent = s + ' / ' + a; } },
+        // v8.0.0 wave 2: the streak pill writes moved into the shared
+        // _setLiveStreak helper, so these sandboxed bodies now call it.
+        _setLiveStreak: () => {},
         log: [{ q, chosen: 'B', correct: 'C', isRight: false, flagged: false }],
         score: 0, answered: 1, streak: 0, bestStreak: 0,
         quizFlags: [false],
@@ -478,6 +512,14 @@ test('v4.82.0 Revisit: vm fixture — pick re-pick right→wrong downscores + ad
       const fakeScore = { textContent: '' };
       const fakeStreak = { textContent: '', classList: { remove: () => {}, add: () => {} }, offsetWidth: 0 };
       const ctx = {
+        // v8.0.0 wave 2: score writes moved into _setLiveScore. Keep the
+        // stub writing to fakeScore so the fixture still asserts the
+        // recomputed "3 / 4" value, not just that the call happened.
+        _setLiveScore: (s, a) => { fakeScore.textContent = s + ' / ' + a; },
+        window: { _setLiveStreak: () => {}, _setLiveScore: (s, a) => { fakeScore.textContent = s + ' / ' + a; } },
+        // v8.0.0 wave 2: the streak pill writes moved into the shared
+        // _setLiveStreak helper, so these sandboxed bodies now call it.
+        _setLiveStreak: () => {},
         log: [{ q, chosen: 'C', correct: 'C', isRight: true, flagged: false }],
         score: 1, answered: 1, streak: 1, bestStreak: 1,
         quizFlags: [false],
@@ -633,6 +675,11 @@ test('v4.82.1 Loader: vm fixture — _loadingProgressBegin resets bar then nudge
       const fakeLabel = { textContent: '' };
       const fakeProg = { classList: { remove: () => {} } };
       const ctx = {
+        _setLiveScore: () => {},
+        window: { _setLiveStreak: () => {}, _setLiveScore: () => {} },
+        // v8.0.0 wave 2: the streak pill writes moved into the shared
+        // _setLiveStreak helper, so these sandboxed bodies now call it.
+        _setLiveStreak: () => {},
         document: {
           getElementById: (id) => {
             if (id === 'load-progress') return fakeProg;
@@ -669,6 +716,11 @@ test('v4.82.1 Loader: vm fixture — _loadingProgressFinish snaps to 100% + hide
       const fakeLabel = { textContent: '' };
       const fakeProg = { classList: { add: (c) => { if (c === 'is-hidden') progHidden = true; } } };
       const ctx = {
+        _setLiveScore: () => {},
+        window: { _setLiveStreak: () => {}, _setLiveScore: () => {} },
+        // v8.0.0 wave 2: the streak pill writes moved into the shared
+        // _setLiveStreak helper, so these sandboxed bodies now call it.
+        _setLiveStreak: () => {},
         document: {
           getElementById: (id) => {
             if (id === 'load-progress') return fakeProg;
@@ -872,6 +924,14 @@ test('v4.83.0 HotArea: vm fixture — submitHotArea logs entry on first submit, 
       const fakeScore = { textContent: '' };
       const fakeStreak = { textContent: '' };
       const ctx = {
+        // v8.0.0 wave 2: score writes moved into _setLiveScore. Keep the
+        // stub writing to fakeScore so the fixture still asserts the
+        // recomputed "3 / 4" value, not just that the call happened.
+        _setLiveScore: (s, a) => { fakeScore.textContent = s + ' / ' + a; },
+        window: { _setLiveStreak: () => {}, _setLiveScore: (s, a) => { fakeScore.textContent = s + ' / ' + a; } },
+        // v8.0.0 wave 2: the streak pill writes moved into the shared
+        // _setLiveStreak helper, so these sandboxed bodies now call it.
+        _setLiveStreak: () => {},
         log: [], score: 0, answered: 0, streak: 0, bestStreak: 0,
         quizFlags: [false], current: 0, wrongDrillMode: false,
         addToWrongBank: (q, ch) => addToBankCalls.push({ q, ch }),
@@ -1074,6 +1134,11 @@ test('v7.22.0 SRSessionCap: vm fixture — session capped at SR_SESSION_CAP with
         fakeQueue.push({ id: 'card-' + i, type: 'mcq', question: 'Q' + i + '?', options: { A: 'a', B: 'b', C: 'c', D: 'd' }, answer: 'A', nextReview: 0, graduated: false });
       }
       const ctx = {
+        _setLiveScore: () => {},
+        window: { _setLiveStreak: () => {}, _setLiveScore: () => {} },
+        // v8.0.0 wave 2: the streak pill writes moved into the shared
+        // _setLiveStreak helper, so these sandboxed bodies now call it.
+        _setLiveStreak: () => {},
         getSrDueEntries: () => fakeQueue.map(c => Object.assign({}, c)),
         loadSrQueue: () => fakeQueue.map(c => Object.assign({}, c)),
         saveSrQueue: () => {},
@@ -1131,6 +1196,11 @@ test('v4.85.1 SRSessionCap: vm fixture — small queue not capped, totalDueCount
         fakeQueue.push({ id: 'card-' + i, type: 'mcq', question: 'Q' + i + '?', options: { A: 'a', B: 'b', C: 'c', D: 'd' }, answer: 'A', nextReview: 0, graduated: false });
       }
       const ctx = {
+        _setLiveScore: () => {},
+        window: { _setLiveStreak: () => {}, _setLiveScore: () => {} },
+        // v8.0.0 wave 2: the streak pill writes moved into the shared
+        // _setLiveStreak helper, so these sandboxed bodies now call it.
+        _setLiveStreak: () => {},
         getSrDueEntries: () => fakeQueue.map(c => Object.assign({}, c)),
         loadSrQueue: () => fakeQueue.map(c => Object.assign({}, c)),
         saveSrQueue: () => {},
@@ -1232,6 +1302,11 @@ test('v4.85.2 SRQualityScrub: vm fixture — stem-vs-answer-count mismatch scrub
       };
       const fakeQueue = [badCard, goodCard];
       const ctx = {
+        _setLiveScore: () => {},
+        window: { _setLiveStreak: () => {}, _setLiveScore: () => {} },
+        // v8.0.0 wave 2: the streak pill writes moved into the shared
+        // _setLiveStreak helper, so these sandboxed bodies now call it.
+        _setLiveStreak: () => {},
         getSrDueEntries: () => fakeQueue.map(c => Object.assign({}, c)),
         loadSrQueue: () => fakeQueue.map(c => Object.assign({}, c)),
         saveSrQueue: (q) => { savedQueue = q; },
@@ -1290,6 +1365,11 @@ test('v4.85.2 SRQualityScrub: vm fixture — clean queue triggers no quality-scr
         { id: 'mcq-2', type: 'mcq', question: 'What is DHCP?', options: { A: 'a', B: 'b', C: 'c', D: 'd' }, answer: 'B', nextReview: 0, graduated: false }
       ];
       const ctx = {
+        _setLiveScore: () => {},
+        window: { _setLiveStreak: () => {}, _setLiveScore: () => {} },
+        // v8.0.0 wave 2: the streak pill writes moved into the shared
+        // _setLiveStreak helper, so these sandboxed bodies now call it.
+        _setLiveStreak: () => {},
         getSrDueEntries: () => goodCards.map(c => Object.assign({}, c)),
         loadSrQueue: () => goodCards.map(c => Object.assign({}, c)),
         saveSrQueue: () => { saveCallCount++; },
@@ -1409,6 +1489,11 @@ test('v4.81.28 SR: vm fixture — re-enrollment heals legacy null-answer entry',
       const vm = require('vm');
       let storage = {};
       const ctx = {
+        _setLiveScore: () => {},
+        window: { _setLiveStreak: () => {}, _setLiveScore: () => {} },
+        // v8.0.0 wave 2: the streak pill writes moved into the shared
+        // _setLiveStreak helper, so these sandboxed bodies now call it.
+        _setLiveStreak: () => {},
         STORAGE: { WRONG_BANK: 'wb', SR_QUEUE: 'srq' },
         localStorage: {
           getItem: (k) => storage[k] === undefined ? null : storage[k],
@@ -1460,6 +1545,11 @@ test('v4.81.28 SR: vm fixture — order/cli-sim/topology types not enrolled',
       const vm = require('vm');
       let storage = {};
       const ctx = {
+        _setLiveScore: () => {},
+        window: { _setLiveStreak: () => {}, _setLiveScore: () => {} },
+        // v8.0.0 wave 2: the streak pill writes moved into the shared
+        // _setLiveStreak helper, so these sandboxed bodies now call it.
+        _setLiveStreak: () => {},
         STORAGE: { SR_QUEUE: 'srq' },
         localStorage: {
           getItem: (k) => storage[k] === undefined ? null : storage[k],
@@ -1557,6 +1647,11 @@ test('v4.81.27 SR: vm fixture — MCQ with letter-keyed options renders 4 button
       const vm = require('vm');
       const fakeHost = { _innerHTML: '', set innerHTML(v) { this._innerHTML = v; }, get innerHTML() { return this._innerHTML; } };
       const ctx = {
+        _setLiveScore: () => {},
+        window: { _setLiveStreak: () => {}, _setLiveScore: () => {} },
+        // v8.0.0 wave 2: the streak pill writes moved into the shared
+        // _setLiveStreak helper, so these sandboxed bodies now call it.
+        _setLiveStreak: () => {},
         document: { getElementById: (id) => id === 'sr-card-host' ? fakeHost : { textContent: '', style: {} } },
         _srSession: {
           cards: [{
@@ -1660,6 +1755,11 @@ test('v4.81.5 Diagnostic: render produces 4 option buttons (vm fixture with lett
       };
       ['diag-quiz-progress-fill', 'diag-quiz-progress-lbl', 'diag-quiz-meta', 'diag-quiz-question', 'diag-quiz-options', 'diag-quiz-next-btn', 'diag-quiz-hint'].forEach(id => { elements[id] = make(id); });
       const ctx = {
+        _setLiveScore: () => {},
+        window: { _setLiveStreak: () => {}, _setLiveScore: () => {} },
+        // v8.0.0 wave 2: the streak pill writes moved into the shared
+        // _setLiveStreak helper, so these sandboxed bodies now call it.
+        _setLiveStreak: () => {},
         document: {
           getElementById: (id) => elements[id] || null,
           querySelectorAll: () => [],

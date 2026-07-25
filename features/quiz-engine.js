@@ -222,10 +222,9 @@
     if (!Array.isArray(log)) return;
     answered = log.length;
     score = log.filter(e => e && e.isRight === true).length;
-    const scoreEl = document.getElementById('live-score');
-    const streakEl = document.getElementById('live-streak');
-    if (scoreEl) scoreEl.textContent = `${score} / ${answered}`;
-    if (streakEl) streakEl.textContent = `Streak ${streak}`;
+    _setLiveScore(score, answered);
+    // recompute is a truth-up after a re-pick, not a new value arriving — no break shake
+    _setLiveStreak(streak, false);
   }
   
   // v4.82.0: enable/disable prev/next arrows based on current position.
@@ -258,13 +257,52 @@
     nextBtn.disabled = !canForward;
   }
   
+  // v8.0.0 (motion lift wave 2) — directional question navigation.
+  //
+  // DEVIATION FROM THE MOCKUP, deliberate. The mockup builds a fresh .t-page
+  // per question and appends it into a .t-slide container, so the incoming and
+  // outgoing pages briefly coexist. The live engine cannot do that as-is: the
+  // whole card is addressed by fixed ids (#q-text, #options, #exp-box, …) that
+  // ~40 call sites write to, and cloning it would duplicate every one of them.
+  // A full two-page rewrite of the app's most-used surface is a bigger change
+  // than wave 2 should carry — see the wave 7/8 extraction regressions.
+  //
+  // So the card stays a single element and we sequence instead of overlap:
+  // the outgoing content slides out along --dgm-dir, then the new question
+  // renders and rides slice 1's staggered reveal back in. Because the card
+  // never leaves the flow, the container cannot collapse mid-transition —
+  // which is the failure the mockup's "join before leaving" rule exists to
+  // prevent, avoided here by construction rather than by ordering.
+  const _NAV_EXIT_MS = 200;   // matches .is-hiding's fade in dg-system.css
+  let _navInFlight = false;
+
+  function _navigateTo(idx, after) {
+    const card = document.querySelector('#page-quiz .q-card');
+    const commit = () => {
+      current = idx;
+      render();
+      if (typeof after === 'function') after();
+      window.scrollTo(0, 0);
+    };
+    if (!card) { commit(); return; }
+    // Direction MUST be resolved BEFORE `current` moves — comparing against an
+    // already-updated index animates back-navigation forwards.
+    card.style.setProperty('--dgm-dir', idx < current ? '-1' : '1');
+    if (_navInFlight) { commit(); return; }   // double-tap: land immediately, don't queue
+    _navInFlight = true;
+    card.classList.add('is-hiding');
+    setTimeout(() => {
+      card.classList.remove('is-hiding');
+      _navInFlight = false;
+      commit();
+    }, _NAV_EXIT_MS);
+  }
+
   function jumpToQuestion(idx) {
     if (!Array.isArray(questions)) return;
     if (typeof idx !== 'number' || idx < 0 || idx >= questions.length) return;
     if (idx === current) return;
-    current = idx;
-    render();
-    window.scrollTo(0, 0);
+    _navigateTo(idx);
   }
   
   // v4.82.0: TEST-ONLY hook so Playwright can drop us into a quiz session
@@ -435,10 +473,10 @@
     const pct   = Math.round((current / total) * 100);
     const qType = getQType(q);
   
-    document.getElementById('live-score').textContent  = `${score} / ${answered}`;
-    document.getElementById('live-streak').textContent = `Streak ${streak}`;
+    _setLiveScore(score, answered);
+    _setLiveStreak(streak, false);
     document.getElementById('q-label').textContent     = `Question ${current + 1} of ${total}`;
-    document.getElementById('q-pct').textContent       = pct + '%';
+    _swapText(document.getElementById('q-pct'), pct + '%');
     document.getElementById('prog-fill').style.width   = pct + '%';
     document.getElementById('q-num').textContent       = `Q${current + 1}`;
     // v4.54.8: segmented per-question progress dots. State derived from `log` entries.
@@ -499,31 +537,53 @@
     const expBox = document.getElementById('exp-box');
     expBox.className = 'explanation-box';
     expBox.classList.add('is-hidden');
+    // Collapse before the box is hidden so the next answer opens from closed
+    // rather than flashing the previous question's reasoning already expanded.
+    _setExplanationAccordion(false);
   
     const btnNext = document.getElementById('btn-next');
     btnNext.className = 'btn-next';
     btnNext.textContent = current === total - 1 ? 'See Results' : 'Next \u2192';
     btnNext.onclick = current === total - 1 ? finish : advance;
   
-    // v4.44.0 — question reveal: re-trigger the .q-text-reveal + .option-stagger-in
-    // animations on every new question by removing the class, forcing reflow, then
-    // re-adding. Without the reflow the browser coalesces the class toggle and the
-    // animation doesn't re-fire. Options get a per-index animation-delay so they
-    // stagger in one after the other rather than all-at-once.
+    // v8.0.0 (motion lift wave 2) — question reveal now rides the shared
+    // .t-reveal primitive (dg-system.css, wave 1) instead of the v4.44.0
+    // .q-text-reveal + .option-stagger-in pair. One vocabulary, one curve,
+    // one reduced-motion collapse — see BRAND.md §6.
+    //
+    // Stagger is CSS-driven off data-i (the 60ms --dgm-step unit), so the
+    // per-element inline animationDelay writes are gone. data-i mirrors the
+    // mockup: stem 0, scenario 1, options 1..n. Scenario and option A sharing
+    // step 1 is the mockup's own choice — they read as one band.
+    //
+    // The legacy .q-text-reveal / .option-stagger-in rules stay in styles.css
+    // deliberately: tests/uat/040 pins them inside that file's reduced-motion
+    // block. Nothing carries the classes any more, so they are inert.
+    const qCard   = document.querySelector('#page-quiz .q-card');
     const qTextEl = document.getElementById('q-text');
-    if (qTextEl) {
-      qTextEl.classList.remove('q-text-reveal');
-      void qTextEl.offsetWidth;
-      qTextEl.classList.add('q-text-reveal');
-    }
+    const scenEl  = document.getElementById('q-scenario');
+
+    if (qTextEl) { qTextEl.classList.add('t-reveal'); qTextEl.setAttribute('data-i', '0'); }
+    if (scenEl && !scenEl.hidden) { scenEl.classList.add('t-reveal'); scenEl.setAttribute('data-i', '1'); }
+    else if (scenEl) scenEl.classList.remove('t-reveal');
+
     const allOptionEls = box.querySelectorAll('.option, .ms-option, .order-item');
     allOptionEls.forEach((el, i) => {
-      el.classList.remove('option-stagger-in');
-      el.style.animationDelay = '';
-      void el.offsetWidth;
-      el.style.animationDelay = (i * 80) + 'ms';
-      el.classList.add('option-stagger-in');
+      el.classList.add('t-reveal');
+      // dg-system.css defines delay steps 1..6; past that they land together
+      // rather than trailing off, which is the right read for a long list.
+      el.setAttribute('data-i', String(Math.min(i + 1, 6)));
     });
+
+    // Re-arm: drop .is-shown, force a reflow so the pre-reveal style is
+    // actually flushed, then flip it back synchronously. NEVER rAF-gate this
+    // — rAF does not fire in a backgrounded tab, so a user who switches away
+    // mid-render would come back to a question stuck at opacity 0.
+    if (qCard) {
+      qCard.classList.remove('is-shown');
+      void qCard.offsetWidth;
+      qCard.classList.add('is-shown');
+    }
   
     // v4.82.0: refresh score/streak header (in case re-pick recomputed them)
     // and refresh prev/next arrow enabled-state.
@@ -771,9 +831,8 @@
       log.push({ q, chosen: chosen.join(','), correct: correctAnswers.join(','), isRight, flagged: quizFlags[current] });
       if (!isRight) addToWrongBank(q._bankOrig || q, chosen.join(','));  // v7.47.0: a missed variant re-triggers SR for its ORIGINAL (bank dedup no-ops)
       else if (wrongDrillMode) graduateFromBank(q._bankKey || q.question);  // v7.47.0: variant graduates its original
-      document.getElementById('live-score').textContent = `${score} / ${answered}`;
-      const streakEl = document.getElementById('live-streak');
-      streakEl.textContent = `Streak ${streak}`;
+      _setLiveScore(score, answered);
+      _setLiveStreak(streak, !isRight);
     }
   
     // Highlight options. v4.82.0: don't disable — re-picks via toggle remain possible.
@@ -934,9 +993,8 @@
       log.push({ q, chosen: orderSequence.join(','), correct: correctOrder.join(','), isRight, flagged: quizFlags[current] });
       if (!isRight) addToWrongBank(q._bankOrig || q, orderSequence.join(','));  // v7.47.0: original identity preserved
       else if (wrongDrillMode) graduateFromBank(q._bankKey || q.question);  // v7.47.0: variant graduates its original
-      document.getElementById('live-score').textContent = `${score} / ${answered}`;
-      const streakEl = document.getElementById('live-streak');
-      streakEl.textContent = `Streak ${streak}`;
+      _setLiveScore(score, answered);
+      _setLiveStreak(streak, !isRight);
     }
   
     // v4.82.0: keep items + submit button clickable so user can re-arrange + re-submit.
@@ -1010,22 +1068,28 @@
       log.push({ q, chosen, correct: q.answer, isRight, flagged: quizFlags[current] });
       if (!isRight) addToWrongBank(q._bankOrig || q, chosen);  // v7.47.0: original identity preserved
       else if (wrongDrillMode) graduateFromBank(q._bankKey || q.question);  // v7.47.0: variant graduates its original
-      document.getElementById('live-score').textContent = `${score} / ${answered}`;
-      const streakEl = document.getElementById('live-streak');
-      streakEl.textContent = `Streak ${streak}`;
-      streakEl.classList.remove('streak-pop');
-      void streakEl.offsetWidth;
-      if (isRight && streak > 1) streakEl.classList.add('streak-pop');
+      _setLiveScore(score, answered);
+      _setLiveStreak(streak, !isRight);
     }
   
     // Walk option buttons: apply markers WITHOUT disabling so re-picks remain possible.
     document.querySelectorAll('#options .option').forEach((btn, i) => {
       const l = ['A','B','C','D'][i];
       btn.classList.remove('correct', 'wrong', 'reveal-correct', 'dimmed');
+      // v8.0.0 (wave 2): .t-shake is kept ORTHOGONAL to .wrong on purpose —
+      // dropping both together would restart the colour treatment every time
+      // the shake replays on a re-pick, so the option would flicker.
+      btn.classList.remove('t-shake');
       if (l === q.answer && l === chosen)      btn.classList.add('correct');
       else if (l === chosen && !isRight)       btn.classList.add('wrong');
       else if (l === q.answer)                 btn.classList.add('reveal-correct');
       else                                     btn.classList.add('dimmed');
+      if (l === chosen && !isRight) {
+        // reflow between remove and add, or the browser coalesces the toggle
+        // and the animation never re-fires on a repeat wrong pick
+        void btn.offsetWidth;
+        btn.classList.add('t-shake');
+      }
     });
   
     // v4.82.0: keep the options container tagged for the revisit affordance
@@ -1044,6 +1108,179 @@
     showExplanation(q, isRight, currentEntry ? currentEntry.entry : null);
   }
   
+  // v8.0.0 (motion lift wave 2) — text-states-swap.
+  //
+  // The THIRD numeric idiom, and the reason all three coexist:
+  //   counting = accumulation      -> animateCount(), results tallies
+  //   popping  = a new value       -> .t-digit, the live streak
+  //   swapping = same slot, new    -> this, the topbar percent + score
+  //
+  // Contract from dg-system.css: add .is-exit, wait, swap the text and add
+  // .is-enter-start, reflow, release. The timeout matches --dgm-press (150ms);
+  // it is the exit half of the transition, not an arbitrary delay.
+  const _SWAP_MS = 150;
+  function _swapText(el, next) {
+    if (!el) return;
+    next = String(next);
+    // No swap when nothing changed — render() runs on every question and
+    // navigation, and swapping an identical value is motion for its own sake.
+    if (el.textContent === next) return;
+    el.classList.add('is-exit');
+    setTimeout(() => {
+      el.textContent = next;
+      el.classList.remove('is-exit');
+      el.classList.add('is-enter-start');   // pre-enter pose, transitions off
+      void el.offsetWidth;                  // flush it, then release
+      el.classList.remove('is-enter-start');
+    }, _SWAP_MS);
+  }
+
+  // Score pill. Seven call sites wrote this as raw textContent (five here, two
+  // in app.js) — exactly the spread that would have flattened the inner span,
+  // the same trap _setLiveStreak closes.
+  function _setLiveScore(scoreVal, answeredVal) {
+    const host = document.getElementById('live-score');
+    if (!host) return;
+    let slot = document.getElementById('live-score-val');
+    if (!slot) {                       // stale cached index.html — rebuild it
+      host.textContent = '';
+      slot = document.createElement('span');
+      slot.className = 't-swap';
+      slot.id = 'live-score-val';
+      host.appendChild(slot);
+    }
+    _swapText(slot, `${scoreVal} / ${answeredVal}`);
+  }
+
+  // v8.0.0 (motion lift wave 2) — the explanation accordion.
+  //
+  // Wired lazily rather than at module load: quiz-engine.js is eager but the
+  // listener only matters once an explanation has been shown, and a lazy wire
+  // cannot lose the race against index.html parse order. Inline onclick is
+  // deliberately not used — v7.79.0 removed those and v7.97.0 guards against
+  // reintroducing them.
+  let _expAccWired = false;
+  function _wireExplanationAccordion() {
+    if (_expAccWired) return;
+    const acc  = document.getElementById('exp-acc');
+    const head = document.getElementById('exp-acc-head');
+    if (!acc || !head) return;
+    head.addEventListener('click', () => {
+      _setExplanationAccordion(acc.dataset.open !== 'true');
+    });
+    _expAccWired = true;
+  }
+
+  function _setExplanationAccordion(open) {
+    const acc  = document.getElementById('exp-acc');
+    const head = document.getElementById('exp-acc-head');
+    if (!acc) return;
+    if (open) {
+      // #exp-box goes display:none -> block on the same turn as this open.
+      // Without flushing layout first, the panel has no laid-out "from" state:
+      // the 0fr->1fr transition starts from an unresolved track and settles at
+      // 0px, so the panel opens to nothing and the explanation is invisible.
+      // Reading offsetHeight forces the reflow. Same class of bug as the
+      // verdict badge above — both were caught live, not by UAT.
+      const panel = document.getElementById('exp-acc-panel');
+      if (panel) void panel.offsetHeight;
+    }
+    acc.dataset.open = open ? 'true' : 'false';
+    if (head) head.setAttribute('aria-expanded', open ? 'true' : 'false');
+  }
+
+  // v8.0.0 (motion lift wave 2) — the live streak pill.
+  //
+  // Six call sites used to write `Streak N` as raw textContent (four here,
+  // two in app.js's hot-area + topology submit paths). Any one of them would
+  // have flattened the digit spans this needs, so they all route through here
+  // now — the duplication was the bug waiting to happen.
+  //
+  // Two idioms, deliberately distinct (locked founder decision):
+  //   popping  = a NEW VALUE ARRIVING  -> .t-digit, which is this
+  //   counting = accumulation          -> animateCount(), results tallies
+  // The pill also shakes when a streak BREAKS. .t-shake is kept orthogonal to
+  // the value update so the shake can replay without disturbing the digits.
+  // `isWrong` is the raw answer outcome, NOT "did a streak break". The helper
+  // derives the break itself from the value it last rendered: a wrong answer
+  // when the streak was already 0 breaks nothing, and shaking there would be
+  // punishing the user for standing still. Deriving it here also means no
+  // call site has to capture the pre-update streak.
+  function _setLiveStreak(n, isWrong) {
+    const pill = document.getElementById('live-streak');
+    if (!pill) return;
+    const prev  = parseInt(pill.dataset.v, 10);
+    const broke = isWrong === true && Number.isFinite(prev) && prev > 0 && n === 0;
+
+    // First call replaces the static "Streak 0" text with a stable structure:
+    // a literal "Streak " text node plus a .t-digits host. Rebuilt only once,
+    // so the text node is not re-created on every answer.
+    let digits = pill.querySelector('.t-digits');
+    if (!digits) {
+      pill.textContent = '';
+      pill.appendChild(document.createTextNode('Streak '));
+      digits = document.createElement('span');
+      digits.className = 't-digits';
+      pill.appendChild(digits);
+    }
+
+    // Only pop when the value actually CHANGED. render() and the nav paths
+    // call this on every question, and popping an unchanged streak on each
+    // paint turns a signal into wallpaper.
+    const changed = pill.dataset.v !== String(n);
+    pill.dataset.v = String(n);
+
+    digits.classList.remove('is-animating');
+    digits.replaceChildren();
+    String(n).split('').forEach((c, i) => {
+      const s = document.createElement('span');
+      s.className = 't-digit';
+      // dg-system.css stages delays for data-s 1 and 2; a 3-digit streak is
+      // already implausible, so clamping is safe and keeps the cascade small.
+      s.setAttribute('data-s', String(Math.min(i, 2)));
+      s.textContent = c;
+      digits.appendChild(s);
+    });
+    if (changed) {
+      void digits.offsetWidth;   // flush, then animate — never rAF (dead in a background tab)
+      digits.classList.add('is-animating');
+    }
+
+    pill.classList.remove('t-shake');
+    if (broke) { void pill.offsetWidth; pill.classList.add('t-shake'); }
+  }
+
+  // v8.0.0 (motion lift wave 2) — the verdict badge's stroke-draw.
+  // Both outcomes get a real glyph: a tick for right, a cross for wrong. An
+  // outlined circle with nothing drawn inside it reads as a broken icon, not
+  // as a state, and BRAND allows semantic marks.
+  //
+  // stroke-dasharray is measured with getTotalLength() every time rather than
+  // hardcoded — the two paths differ in length, and a stale dasharray leaves
+  // the stroke either pre-drawn or permanently short. This is the transitions
+  // skill's #1 flagged SVG mistake.
+  function _drawVerdictCheck(isRight) {
+    const check = document.getElementById('exp-verdict-check');
+    if (!check) return;
+    const path = check.querySelector('path');
+    if (!path || typeof path.getTotalLength !== 'function') return;
+
+    check.style.color = isRight ? 'var(--pass)' : 'var(--fail)';
+    path.setAttribute('d', isRight ? 'M7.5 12.4l3.1 3.1 6-6.4' : 'M9 9l6 6M15 9l-6 6');
+
+    let len = 26;
+    try { len = Math.ceil(path.getTotalLength()) + 1; } catch (_) { /* detached/hidden — keep the fallback */ }
+    path.style.strokeDasharray  = len;
+    path.style.strokeDashoffset = len;
+
+    // Re-arm so a re-pick replays the draw: clear state, flush it with a
+    // reflow, then set it back synchronously (not via rAF — dead in a
+    // backgrounded tab, which is exactly when a slow answer lands).
+    check.dataset.state = 'out';
+    void check.offsetWidth;
+    check.dataset.state = 'in';
+  }
+
   function showExplanation(q, isRight, entryOverride) {
     const expBox = document.getElementById('exp-box');
     const qType = getQType(q);
@@ -1118,22 +1355,56 @@
       extraHtml += '<button class="report-btn" onclick="reportIssue()">Report Issue</button>';
     }
   
-    // Clean up previous extra HTML (resource links, buttons) before inserting new
+    // Clean up previous extra HTML (resource links, buttons) before inserting new.
+    //
+    // v8.0.0 fix: this used to walk `expTextEl.nextSibling` and remove every
+    // following sibling. #exp-wrong-explain sits after #exp-text in index.html,
+    // so the loop deleted it on the first answer — permanently. The per-choice
+    // wrongExplain pullquote shipped in v4.54.8 was populated a few lines above
+    // and then destroyed before it could ever paint. Scoping the teardown to a
+    // dedicated container fixes it and stops the next element added to this box
+    // from being silently eaten the same way.
     const expTextEl = document.getElementById('exp-text');
-    while (expTextEl.nextSibling) expTextEl.parentNode.removeChild(expTextEl.nextSibling);
+    const extrasEl  = document.getElementById('exp-extras');
+    if (extrasEl) {
+      extrasEl.innerHTML = extraHtml;
+    } else {
+      // Defensive: older cached index.html without #exp-extras. Rebuild the
+      // container rather than falling back to the sibling-nuking loop.
+      const host = document.createElement('div');
+      host.className = 'exp-extras';
+      host.id = 'exp-extras';
+      host.innerHTML = extraHtml;
+      expTextEl.parentNode.appendChild(host);
+    }
+    // #deep-explain is appended to #exp-box itself (app.js explainFurther), not
+    // into the extras container, so it still needs clearing by hand.
     const deepEl = document.getElementById('deep-explain');
     if (deepEl) deepEl.remove();
-    expTextEl.insertAdjacentHTML('afterend', extraHtml);
   
     expBox.className   = 'explanation-box show ' + (isRight ? 'correct' : 'wrong');
     expBox.classList.remove('is-hidden');
+    // MUST come after the box is visible. .explanation-box is display:none
+    // until now, and a CSS animation does not start on a display:none
+    // element — flipping data-state any earlier left the badge stuck at
+    // opacity 0 with its stroke undrawn. (Caught in live-verify, not UAT:
+    // every source-level assertion still passed.)
+    _drawVerdictCheck(isRight);
+    // Open the reasoning automatically — you just answered, so the "why" is
+    // what you want next. Collapsing it again is the user's call.
+    _wireExplanationAccordion();
+    _setExplanationAccordion(true);
     const nextBtn = document.getElementById('btn-next');
     nextBtn.classList.add('show');
     // Focus the Next button for keyboard users
     setTimeout(() => nextBtn.focus(), 100);
   }
   
-  function advance() { current++; render(); if (gauntletMode && typeof _renderGauntletLadder === 'function') _renderGauntletLadder(); window.scrollTo(0,0); }
+  function advance() {
+    _navigateTo(current + 1, () => {
+      if (gauntletMode && typeof _renderGauntletLadder === 'function') _renderGauntletLadder();
+    });
+  }
   
   function toggleFlag() {
     quizFlags[current] = !quizFlags[current];
@@ -1160,12 +1431,37 @@
     const diffColors = { 'Foundational': 'var(--blue)', 'Exam Level': 'var(--yellow)', 'Hard / Tricky': 'var(--red)', 'Hard': 'var(--red)', 'Mixed': 'var(--accent-light)' };
     const diffEl = document.getElementById('diff-breakdown');
     const diffKeys = diffOrder.filter(d => byDiff[d]);
-    diffEl.innerHTML = diffKeys.length > 1 ? diffKeys.map(d => {
+    // v8.0.0 (motion lift wave 2) — bars replace the `1/1` fraction tiles.
+    // Founder call, made against screenshots: the mockup's breakdown bars won
+    // over the app's fraction tiles. This is a redesign target, not drift —
+    // do not "correct" it back. The raw fraction survives as the row's
+    // accessible name, so nothing is actually lost, it just stops being the
+    // primary read: a bar answers "how did I do" faster than "3/4" does.
+    if (diffKeys.length <= 1) { diffEl.innerHTML = ''; return; }
+    diffEl.innerHTML = diffKeys.map((d, i) => {
       const { right, total: t } = byDiff[d];
       const col = diffColors[d] || 'var(--text)';
+      const pctD = t > 0 ? Math.round((right / t) * 100) : 0;
       const shortLabel = d.replace(' / Tricky', '').replace('Foundational', 'Basic');
-      return `<div class="dstat"><div class="dv" style="color:${col}">${right}/${t}</div><div class="dl">${shortLabel}</div></div>`;
-    }).join('') : '';
+      // dg-system.css stages delays for data-i 1 and 2 only; beyond that rows
+      // land together rather than trailing off down a long list.
+      return `<div class="dstat-row t-bar-row" data-i="${Math.min(i, 2)}" role="group" aria-label="${shortLabel}: ${right} of ${t} correct">` +
+               `<span class="dstat-label">${shortLabel}</span>` +
+               `<span class="dstat-track t-bar-track">` +
+                 `<span class="dstat-fill t-bar-fill" style="background:${col}" data-pct="${pctD}"></span>` +
+               `</span>` +
+               `<span class="dstat-val">${pctD}%</span>` +
+             `</div>`;
+    }).join('');
+
+    // Fill from 0 -> pct. NEVER rAF-gate this: rAF does not fire in a
+    // backgrounded tab, so a user who switches away while the results render
+    // comes back to permanently empty bars. Forced reflow to flush the 0-width
+    // start state, then a synchronous write — correct whether visible or not.
+    void diffEl.offsetWidth;
+    diffEl.querySelectorAll('.t-bar-fill').forEach(fill => {
+      fill.style.width = (fill.dataset.pct || 0) + '%';
+    });
   }
   
   function finish() {
@@ -1706,6 +2002,12 @@
   // the original wave-8 extraction, same closure-captive-call class as the
   // v7.96.0 renderExam fix. Quiz Flag button has been dead since wave 8.
   window.toggleFlag = toggleFlag;
+  // v8.0.0 wave 2: app.js's hot-area + topology submit paths call this, and
+  // they were never extracted — same closure-captive-call class as the
+  // v7.79.2 and v7.97.0 fixes. Without the exposure both throw ReferenceError
+  // and the streak pill silently stops updating on those two PBQ types.
+  window._setLiveStreak = _setLiveStreak;
+  window._setLiveScore  = _setLiveScore;
 
   window._certanvilFeatures = window._certanvilFeatures || {};
   window._certanvilFeatures['quiz-engine'] = { render: render, startQuiz: startQuiz };

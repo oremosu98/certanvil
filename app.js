@@ -1,9 +1,9 @@
 // ══════════════════════════════════════════
-// Network+ AI Quiz — app.js  v7.99.0
+// Network+ AI Quiz — app.js  v8.0.0
 // ══════════════════════════════════════════
 
 // ── CONSTANTS ──
-const APP_VERSION = '7.99.0';
+const APP_VERSION = '8.0.0';
 // v4.99.45 (Phase 6b): expose APP_VERSION on window so the web-vitals
 // collector (lib/web-vitals-collector.js, loaded BEFORE app.js so its
 // PerformanceObservers attach earlier) can stamp this version onto every
@@ -6289,8 +6289,12 @@ function submitHotArea(q) {
     log.push({ q, chosen: _hotAreaPick, correct: correctIds.join(','), isRight: isCorrect, flagged: quizFlags[current] });
     if (!isCorrect) addToWrongBank(q, _hotAreaPick);
     else if (wrongDrillMode) graduateFromBank(q._bankKey || q.question);  // v7.47.0: variant graduates its original
-    document.getElementById('live-score').textContent = score + ' / ' + answered;
-    document.getElementById('live-streak').textContent = 'Streak ' + streak;
+    // v8.0.0 wave 2: shared helper — a raw textContent write here would
+    // flatten the #live-score-val swap slot back to plain text
+    window._setLiveScore(score, answered);
+    // v8.0.0 wave 2: routed through the shared helper so this submit path
+    // keeps the .t-digit structure instead of flattening it to raw text
+    window._setLiveStreak(streak, !isCorrect);
   }
 
   // Apply reveal classes — mark the picked region correct/wrong, mark all
@@ -7465,8 +7469,12 @@ function submitTopology(q) {
     log.push({ q, chosen: JSON.stringify(topoDevices), correct: JSON.stringify(correct), isRight: allCorrect, flagged: quizFlags[current] });
     if (!allCorrect) addToWrongBank(q, JSON.stringify(topoDevices));
     else if (wrongDrillMode) graduateFromBank(q._bankKey || q.question);  // v7.47.0: variant graduates its original
-    document.getElementById('live-score').textContent = score + ' / ' + answered;
-    document.getElementById('live-streak').textContent = 'Streak ' + streak;
+    // v8.0.0 wave 2: shared helper — a raw textContent write here would
+    // flatten the #live-score-val swap slot back to plain text
+    window._setLiveScore(score, answered);
+    // v8.0.0 wave 2: routed through the shared helper so this submit path
+    // keeps the .t-digit structure instead of flattening it to raw text
+    window._setLiveStreak(streak, !allCorrect);
   }
 
   // v4.82.0: keep devices + zones + submit + reset clickable so user can re-place + re-submit.
@@ -7812,9 +7820,14 @@ Use plain text, no markdown. Label each section clearly. Aim for 250-350 words t
   // already-escHtml'd `formatted` text. No trusted inline handlers here.
   deepDiv.innerHTML = sanitizeHTML('<strong>\ud83d\udca1 Deep Dive</strong><div class="deep-explain-text">' + formatted + '</div>');
 
+  // v8.0.0 wave 2: the explanation body now lives inside a .t-acc accordion,
+  // so the Deep Dive belongs in the panel too — appended to #exp-box it would
+  // sit outside the collapsible region and stay visible after the user closed
+  // the reasoning. Falls back to #exp-box for a stale cached index.html.
   const expBox = document.getElementById('exp-box');
-  if (expBox && !document.getElementById('deep-explain')) {
-    expBox.appendChild(deepDiv);
+  const expPanel = document.querySelector('#exp-acc .t-acc-panel-inner') || expBox;
+  if (expPanel && !document.getElementById('deep-explain')) {
+    expPanel.appendChild(deepDiv);
   }
 
   if (btn) { btn.textContent = '\ud83d\udca1 Explained'; btn.disabled = true; btn.classList.add('explained'); }

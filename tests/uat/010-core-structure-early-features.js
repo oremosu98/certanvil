@@ -220,7 +220,11 @@ test('Reports capped', js.includes('REPORTS_CAP'));
 test('History cap uses constant', js.includes('HISTORY_CAP) h.length'));
 test('Export version uses constant', js.includes('version: APP_VERSION'));
 test('ExamTimeLeft uses constant', !js.includes('examTimeLeft   = 5400'));
-test('Explanation cleanup before insert', js.includes('while (expTextEl.nextSibling)'));
+// v8.0.0: the intent here is "previously-injected extras are cleared before the
+// new set goes in". That used to be spelled `while (expTextEl.nextSibling)`,
+// which over-reached and permanently deleted #exp-wrong-explain (a sibling it
+// was never meant to touch). Same intent, now scoped to the extras container.
+test('Explanation cleanup before insert', js.includes("extrasEl.innerHTML = extraHtml"));
 test('Touch event support for topology', js.includes('touchstart') && js.includes('touchend'));
 test('E key for multi-select', js.includes("'A','B','C','D','E'"));
 test('Shared scoring helper', js.includes('function _scoreTopicNeed('));

@@ -1610,7 +1610,13 @@ html[data-theme] body #page-results .results-v2-row .v#r-wrong{color:var(--red)!
 
 /* difficulty split — hairline pair (override legacy flex + kill .dstat card + rainbow inline color) */
 #page-results #diff-breakdown:empty{display:none!important;}
-html[data-theme] body #page-results #diff-breakdown.diff-breakdown{display:grid;grid-template-columns:1fr 1fr;gap:0!important;margin:0!important;border-bottom:1px solid var(--border)!important;flex-wrap:nowrap;}
+/* v8.0.0 wave 2: was a 2-column grid holding the `1/1` .dstat fraction tiles.
+   Those are gone — the breakdown is now full-width bars, which must stack in
+   ONE column: a bar's whole job is comparing lengths against a shared scale,
+   and two columns of differing widths breaks that comparison outright.
+   The .dstat rules below are kept as dead-but-harmless (no element carries
+   the class any more) rather than deleted in the same diff as the redesign. */
+html[data-theme] body #page-results #diff-breakdown.diff-breakdown{display:flex;flex-direction:column;gap:10px!important;margin:0!important;padding:18px 24px!important;border-bottom:1px solid var(--border)!important;flex-wrap:nowrap;}
 html[data-theme] body #page-results #diff-breakdown .dstat{flex:none;min-width:0;padding:20px 24px!important;background:none!important;border:0!important;border-right:1px solid var(--dg-rule-soft)!important;border-radius:0!important;text-align:center;}
 html[data-theme] body #page-results #diff-breakdown .dstat:last-child{border-right:0!important;}
 html[data-theme] body #page-results #diff-breakdown .dstat .dv{font-size:var(--t2)!important;font-weight:800;font-variant-numeric:tabular-nums;color:var(--text-dim)!important;}
@@ -1648,7 +1654,7 @@ html[data-theme] body #page-results .results-v2-cta-row .btn.btn-primary:hover{f
 html[data-theme] body #page-results .results-v2-cta-back{font-size:var(--t-1);}
 
 @media (prefers-reduced-motion: reduce){#page-results .results-v2-review-row,#page-results .results-v2-cta-row .btn{transition:none;}}
-@media (max-width:720px){#page-results .results-v2{padding-left:18px;padding-right:18px;}#page-results .results-v2-hero,#page-results #diff-breakdown.diff-breakdown{grid-template-columns:1fr;}#page-results .results-v2-big{border-right:0!important;border-bottom:1px solid var(--dg-rule-soft)!important;padding:24px 0!important;}#page-results .results-v2-side{padding:14px 0!important;}#page-results #diff-breakdown .dstat{border-right:0!important;border-bottom:1px solid var(--dg-rule-soft)!important;}#page-results #diff-breakdown .dstat:last-child{border-bottom:0!important;}#page-results .results-v2-review-row{grid-template-columns:30px 1fr 70px;gap:12px;}html[data-theme] body #page-results h1.results-v2-display{font-size:var(--t4);}#page-results .results-v2-cta-right{margin-left:0;width:100%;}}
+@media (max-width:720px){#page-results .results-v2{padding-left:18px;padding-right:18px;}#page-results .results-v2-hero{grid-template-columns:1fr;}#page-results .results-v2-big{border-right:0!important;border-bottom:1px solid var(--dg-rule-soft)!important;padding:24px 0!important;}#page-results .results-v2-side{padding:14px 0!important;}#page-results #diff-breakdown .dstat{border-right:0!important;border-bottom:1px solid var(--dg-rule-soft)!important;}#page-results #diff-breakdown .dstat:last-child{border-bottom:0!important;}#page-results .results-v2-review-row{grid-template-columns:30px 1fr 70px;gap:12px;}html[data-theme] body #page-results h1.results-v2-display{font-size:var(--t4);}#page-results .results-v2-cta-right{margin-left:0;width:100%;}}
 
 /* ────────────────────────────────────────────────────────────────────────
    PER-SURFACE STRUCTURAL RESKIN · Batch 4f · QUIZ LOADING (#page-loading)
@@ -4953,6 +4959,124 @@ html[data-theme] body .t-bar-track { display: block; overflow: hidden; }
 html[data-theme] body .t-bar-fill { display: block; height: 100%; width: 0; transition: width var(--dgm-data) var(--dgm-ease); }
 html[data-theme] body .t-bar-row[data-i="1"] .t-bar-fill { transition-delay: var(--dgm-step); }
 html[data-theme] body .t-bar-row[data-i="2"] .t-bar-fill { transition-delay: calc(var(--dgm-step) * 2); }
+
+/* ── wave 2 adoption · quiz verdict badge ────────────────────────────────
+   The .t-check badge sits on a flex row with #exp-label. styles.css sets
+   `.explanation-box strong { display:block }`, so without this row the badge
+   would land on its own line above the label. The row owns the bottom margin
+   the <strong> used to carry, so the gap to #exp-text is unchanged.
+   align-items:center rather than baseline — the badge is a drawn glyph with
+   no text baseline of its own, and baseline alignment hangs it low. */
+html[data-theme] body #page-quiz .explanation-box .exp-head {
+  display: flex; align-items: center; gap: 9px; margin-bottom: 5px;
+}
+html[data-theme] body #page-quiz .explanation-box .exp-head strong { margin-bottom: 0; }
+/* flex-shrink:0 keeps the badge from being squeezed by a long verdict label
+   ("Wrong — correct answers: A, C") at narrow mobile widths. */
+html[data-theme] body #page-quiz .q-verdict-check { flex: 0 0 auto; line-height: 0; }
+
+/* ── wave 2 adoption · explanation accordion ─────────────────────────────
+   The .t-acc mechanics live in the primitives block above; this is only the
+   quiz-side chrome. The header is a real <button> — the trigger has to be
+   focusable and keyboard-operable, and mobile web + iOS Capacitor are
+   first-class targets where a hover-only affordance is dead weight. */
+html[data-theme] body #page-quiz #exp-acc .t-acc-head {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  width: 100%; margin: 0; padding: 10px 0 0; border: 0; background: none;
+  color: var(--text-mid); cursor: pointer; text-align: left;
+  font: inherit; font-size: var(--t-1); font-weight: 700;
+  letter-spacing: .08em; text-transform: uppercase;
+  transition: color var(--dgm-press) var(--dgm-ease);
+}
+html[data-theme] body #page-quiz #exp-acc .t-acc-head:active { transform: scale(0.97); }
+/* hover gated — a touch tap must not stick the hover colour */
+@media (hover: hover) and (pointer: fine) {
+  html[data-theme] body #page-quiz #exp-acc .t-acc-head:hover { color: var(--text); }
+}
+html[data-theme] body #page-quiz #exp-acc .t-acc-head:focus-visible {
+  outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 4px;
+}
+/* Spacing goes on a CHILD of -inner, not on -inner itself.
+   Wave 1's note warns against padding on -panel; this is the same trap one
+   level down. -inner IS the grid item, so its own padding is part of its
+   border box and survives a 0fr track — an 8px padding-top here left the
+   panel 9px tall when closed instead of 0. A child's padding sits inside
+   -inner's (zero-height, overflow:hidden) content box and clips away
+   cleanly. Measured closed: 9px before, 0px after.
+   display:block because #exp-text is a <span> — an inline span silently
+   ignores vertical padding. */
+html[data-theme] body #page-quiz #exp-acc .t-acc-panel-inner > #exp-text {
+  display: block; padding-top: 8px;
+}
+
+/* ── wave 2 adoption · results difficulty bars ───────────────────────────
+   Replaces the `1/1` fraction tiles per the founder's mockup call. The
+   .t-bar-* motion (900ms fill, staged by data-i) lives in the primitives
+   block; this is layout only.
+   minmax(0, 1fr) on the track column — an implicit `auto` column resolves
+   from content and would let a long label squeeze the bar to nothing. */
+html[data-theme] body #diff-breakdown {
+  display: flex; flex-direction: column; gap: 10px; width: 100%;
+}
+html[data-theme] body #diff-breakdown .dstat-row {
+  display: grid; grid-template-columns: 88px minmax(0, 1fr) 42px;
+  align-items: center; gap: 12px;
+}
+html[data-theme] body #diff-breakdown .dstat-label,
+html[data-theme] body #diff-breakdown .dstat-val {
+  font-size: 12px; letter-spacing: .04em; color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+}
+html[data-theme] body #diff-breakdown .dstat-val { text-align: right; color: var(--text-mid); font-weight: 700; }
+/* display:block is load-bearing on both — a <span> silently ignores height,
+   and the tell is a computed width reported in % instead of px. */
+html[data-theme] body #diff-breakdown .dstat-track {
+  display: block; height: 6px; border-radius: 99px;
+  background: color-mix(in oklab, var(--text-dim) 18%, transparent);
+}
+html[data-theme] body #diff-breakdown .dstat-fill { display: block; height: 100%; border-radius: 99px; }
+@media (max-width: 560px) {
+  html[data-theme] body #diff-breakdown .dstat-row { grid-template-columns: 72px minmax(0, 1fr) 38px; gap: 9px; }
+}
+
+/* ── wave 2 adoption · topbar swap slots ─────────────────────────────────
+   nowrap is load-bearing: the score reads "3 / 10" with spaces around the
+   slash, and inside the narrow stat-pill at mobile widths it wrapped onto
+   two lines (caught at 375px, not at 1280px). tabular-nums stops the pill
+   from resizing every time a digit changes, which would otherwise jiggle
+   the whole topbar mid-swap. */
+html[data-theme] body #page-quiz #live-score-val,
+html[data-theme] body #page-quiz #q-pct {
+  white-space: nowrap; font-variant-numeric: tabular-nums;
+}
+
+/* ── wave 2 adoption · directional question navigation ───────────────────
+   Wave 1's generic .is-hiding exit is a quiet fade with transform zeroed on
+   purpose, so leaving does not read as a reverse reveal. That is right for a
+   one-shot reveal, but question navigation has a DIRECTION worth showing:
+   forward and back should not look identical, or the back button stops
+   feeling like going back.
+   Scoped to the quiz card so the generic primitive keeps its behaviour
+   everywhere else. Outgoing content travels AGAINST the direction of travel
+   (forward -> exits left), matching the mockup's page slide; the incoming
+   question keeps slice 1's vertical staggered rise.
+   8px and the curve come from BRAND §6 / --dgm-*, not transitions.dev's
+   own scale — choreography from the skill, numbers from the brand. */
+html[data-theme] body #page-quiz .q-card.is-hiding .t-reveal {
+  opacity: 0;
+  transform: translateX(calc(-8px * var(--dgm-dir, 1)));
+  filter: blur(var(--dgm-blur));
+  transition: opacity 200ms ease,
+              transform 200ms var(--dgm-ease),
+              filter 200ms var(--dgm-ease);
+  transition-delay: 0s;
+}
+@media (prefers-reduced-motion: reduce) {
+  /* §6: fade only, no travel */
+  html[data-theme] body #page-quiz .q-card.is-hiding .t-reveal {
+    transform: none !important; filter: none !important; transition: opacity 200ms ease !important;
+  }
+}
 
 /* ── reduced motion ──────────────────────────────────────────────────────
    Every animated surface above collapses. §6: fade-only, no transform. */

@@ -533,10 +533,22 @@ test('v4.44.0 #2: .option.correct animation chains optBounce + optGlowPulse',
 // Question reveal + option stagger
 test('v4.44.0 #3: qTextReveal + optionStaggerIn keyframes defined',
   /@keyframes\s+qTextReveal/.test(css) && /@keyframes\s+optionStaggerIn/.test(css));
-test('v4.44.0 #3: render() uses void el.offsetWidth for reflow-trigger',
-  /void qTextEl\.offsetWidth/.test(js) && /void el\.offsetWidth/.test(js));
-test('v4.44.0 #3: render() sets per-index animationDelay (i * 80)',
-  /animationDelay\s*=\s*\(i\s*\*\s*80\)\s*\+\s*'ms'/.test(js));
+// v8.0.0 (motion lift wave 2): the question reveal moved off the v4.44.0
+// .q-text-reveal + .option-stagger-in pair onto the shared .t-reveal
+// primitive in dg-system.css. The two assertions that used to live here
+// pinned the old mechanism by source-regex — `void qTextEl.offsetWidth` and
+// the inline `animationDelay = (i * 80) + 'ms'` write — so they described an
+// implementation that no longer exists rather than a behaviour that broke.
+// Replaced with the wave-2 contract. The v4.44.0 keyframes + reduced-motion
+// assertions above and below still stand: those rules remain in styles.css.
+test('v8.0.0 wave 2: render() tags stem + options with .t-reveal and data-i',
+  /qTextEl\.classList\.add\('t-reveal'\)/.test(js) &&
+  /el\.classList\.add\('t-reveal'\)/.test(js) &&
+  /setAttribute\('data-i'/.test(js));
+test('v8.0.0 wave 2: render() re-arms the reveal with a forced reflow, not rAF',
+  /qCard\.classList\.remove\('is-shown'\)[\s\S]{0,120}void qCard\.offsetWidth[\s\S]{0,120}qCard\.classList\.add\('is-shown'\)/.test(js));
+test('v8.0.0 wave 2: the stagger is CSS-driven — no inline animationDelay left in render()',
+  !/animationDelay\s*=\s*\(i\s*\*\s*80\)\s*\+\s*'ms'/.test(js));
 // Progress bar smoothing
 test('v4.44.0 #4: .progress-fill uses cubic-bezier transition (not the old .4s ease)',
   /\.progress-fill\s*\{[^}]*transition:\s*width\s+\.6s\s+cubic-bezier/.test(css));
@@ -551,6 +563,149 @@ test('v4.44.0 #5: .st-block-match-active triggers the pop animation',
 // Reduced-motion coverage
 test('v4.44.0: prefers-reduced-motion block covers all 4 new animation classes',
   /@media \(prefers-reduced-motion: reduce\)[\s\S]*?#q-text\.q-text-reveal[\s\S]*?\.option\.option-stagger-in[\s\S]*?\.st-block-match\.st-block-match-active[\s\S]*?\.option\.correct[\s\S]*?animation:\s*none/.test(css));
+
+// ── v8.0.0 MOTION LIFT WAVE 2 (quiz-engine adoption of the t-* primitives) ──
+console.log('\n\x1b[1m── v8.0.0 MOTION LIFT WAVE 2 ──\x1b[0m');
+// The verdict badge's dasharray MUST be measured, never hardcoded: the tick
+// and the cross are different lengths, so a stale value leaves the stroke
+// either pre-drawn or permanently short.
+test('v8.0.0 wave 2: verdict badge measures stroke-dasharray with getTotalLength()',
+  /_drawVerdictCheck/.test(js) && /path\.getTotalLength\(\)/.test(js));
+test('v8.0.0 wave 2: verdict badge draws a real glyph for BOTH outcomes',
+  /M7\.5 12\.4l3\.1 3\.1 6-6\.4[\s\S]{0,40}M9 9l6 6M15 9l-6 6/.test(js));
+// .t-shake must stay orthogonal to .wrong — dropping both together restarts
+// the colour treatment on every replay, so the option flickers on a re-pick.
+test('v8.0.0 wave 2: .t-shake is removed independently of the .wrong marker',
+  /btn\.classList\.remove\('t-shake'\)/.test(js) &&
+  !/classList\.remove\([^)]*'wrong'[^)]*'t-shake'/.test(js));
+test('v8.0.0 wave 2: the shake re-arms with a reflow so a repeat wrong pick replays it',
+  /void btn\.offsetWidth[\s\S]{0,120}btn\.classList\.add\('t-shake'\)/.test(js));
+// The badge is decorative — #exp-label already announces the verdict and the
+// whole box is role="alert", so announcing it twice would double-speak.
+test('v8.0.0 wave 2: verdict badge is aria-hidden',
+  /id="exp-verdict-check"[^>]*aria-hidden="true"|aria-hidden="true"[^>]*id="exp-verdict-check"/.test(html));
+// Streak pill: one helper, six call sites. A raw textContent write anywhere
+// would flatten the .t-digit spans and silently kill the pop.
+test('v8.0.0 wave 2: no raw `Streak N` textContent writes remain',
+  !/live-streak'\)\.textContent\s*=/.test(js) && !/streakEl\.textContent\s*=/.test(js));
+test('v8.0.0 wave 2: _setLiveStreak derives the break from the previously-rendered value',
+  /const prev\s*=\s*parseInt\(pill\.dataset\.v/.test(js) &&
+  /prev > 0 && n === 0/.test(js));
+test('v8.0.0 wave 2: streak digits only re-pop when the value actually changed',
+  /const changed = pill\.dataset\.v !== String\(n\)/.test(js) &&
+  /if \(changed\)[\s\S]{0,220}is-animating/.test(js));
+// app.js calls this across the extraction boundary — the v7.79.2 / v7.97.0
+// closure-captive class. Without the exposure the streak silently stops
+// updating on hot-area and topology submits.
+test('v8.0.0 wave 2: _setLiveStreak is exposed on window for app.js call sites',
+  /window\._setLiveStreak\s*=\s*_setLiveStreak/.test(js));
+test('v8.0.0 wave 2: app.js reaches the helper through window, not a bare call',
+  /window\._setLiveStreak\(streak, !isCorrect\)/.test(js) &&
+  /window\._setLiveStreak\(streak, !allCorrect\)/.test(js));
+// ── v8.0.0 FIX: #exp-wrong-explain survives the extras teardown ──
+// The v4.54.8 per-choice wrongExplain pullquote was populated by
+// showExplanation() and then immediately deleted, because the extras cleanup
+// removed EVERY sibling after #exp-text and #exp-wrong-explain is one of them.
+// It had never rendered. These four guards pin the fix from both ends.
+test('v8.0.0 fix: the sibling-nuking extras cleanup is gone (tombstone)',
+  !/while \(expTextEl\.nextSibling\)/.test(js));
+test('v8.0.0 fix: injected extras are scoped to their own #exp-extras container',
+  /const extrasEl\s*=\s*document\.getElementById\('exp-extras'\)/.test(js) &&
+  /extrasEl\.innerHTML\s*=\s*extraHtml/.test(js));
+test('v8.0.0 fix: #exp-extras exists in the markup, after #exp-wrong-explain',
+  /id="exp-wrong-explain"[\s\S]*?id="exp-extras"/.test(html));
+// #deep-explain is appended to #exp-box, not into #exp-extras, so replacing
+// the container's contents does not clear it — the explicit remove must stay.
+test('v8.0.0 fix: #deep-explain is still cleared explicitly',
+  /getElementById\('deep-explain'\)[\s\S]{0,60}deepEl\.remove\(\)/.test(js));
+
+// ── v8.0.0 wave 2 · explanation accordion (.t-acc) ──
+test('v8.0.0 wave 2: #exp-acc is a .t-acc with a real <button> head and the panel/inner pair',
+  /id="exp-acc"[^>]*class="t-acc"|class="t-acc"[^>]*id="exp-acc"/.test(html) &&
+  /<button[^>]*class="t-acc-head"[^>]*id="exp-acc-head"/.test(html) &&
+  /class="t-acc-panel"[^>]*id="exp-acc-panel"/.test(html) &&
+  /class="t-acc-panel-inner"/.test(html));
+test('v8.0.0 wave 2: accordion head carries aria-expanded + aria-controls',
+  /id="exp-acc-head"[\s\S]{0,120}aria-expanded="false"[\s\S]{0,60}aria-controls="exp-acc-panel"/.test(html));
+test('v8.0.0 wave 2: opening the accordion flushes layout first (display:none has no "from" state)',
+  /if \(open\)[\s\S]{0,800}void panel\.offsetHeight/.test(js));
+test('v8.0.0 wave 2: aria-expanded is kept in sync with data-open',
+  /acc\.dataset\.open = open \? 'true' : 'false'[\s\S]{0,140}aria-expanded'/.test(js));
+// -inner is the grid item: its OWN padding survives a 0fr track and leaves a
+// residual strip, so the panel never fully closes. Spacing must sit on a child.
+test('v8.0.0 wave 2: no padding on #exp-acc .t-acc-panel-inner (0fr residual trap)',
+  !/#exp-acc \.t-acc-panel-inner\s*\{[^}]*padding/.test(dgCss));
+test('v8.0.0 wave 2: accordion head hover is pointer-gated and has a focus-visible ring',
+  /@media \(hover: hover\) and \(pointer: fine\)[\s\S]{0,220}#exp-acc \.t-acc-head:hover/.test(dgCss) &&
+  /#exp-acc \.t-acc-head:focus-visible/.test(dgCss));
+test('v8.0.0 wave 2: Deep Dive is appended inside the accordion panel, not #exp-box',
+  /querySelector\('#exp-acc \.t-acc-panel-inner'\) \|\| expBox/.test(js));
+
+// ── v8.0.0 wave 2 · topbar text-states-swap (.t-swap) ──
+test('v8.0.0 wave 2: score text lives in a .t-swap slot, percent carries .t-swap',
+  /<span class="t-swap" id="live-score-val">/.test(html) &&
+  /id="q-pct" class="t-swap"/.test(html));
+// Scoped to the LIVE topbar pill only. #r-v2-score on the results page is a
+// different element and legitimately still uses animateCount() — counting is
+// the right idiom for a tally, and swapping it would be the wrong one.
+test('v8.0.0 wave 2: no raw live-score textContent writes remain',
+  !/getElementById\('live-score'\)\.textContent\s*=/.test(js));
+test('v8.0.0 wave 2: results tallies still COUNT (animateCount), not swap or pop',
+  /animateCount\('r-v2-score'/.test(js));
+// The contract from dg-system.css: exit, swap the text, arm the enter pose
+// with transitions off, flush it, then release.
+test('v8.0.0 wave 2: _swapText follows the exit -> swap -> enter-start -> reflow -> release contract',
+  /is-exit'\)[\s\S]{0,200}textContent = next[\s\S]{0,120}is-enter-start'\)[\s\S]{0,120}void el\.offsetWidth[\s\S]{0,120}remove\('is-enter-start'\)/.test(js));
+test('v8.0.0 wave 2: _swapText no-ops when the value is unchanged',
+  /if \(el\.textContent === next\) return;/.test(js));
+test('v8.0.0 wave 2: the swap delay is the --dgm-press token, not an ad-hoc number',
+  /const _SWAP_MS = 150;/.test(js) && /\}, _SWAP_MS\);/.test(js));
+test('v8.0.0 wave 2: _setLiveScore is exposed and app.js reaches it through window',
+  /window\._setLiveScore\s*=\s*_setLiveScore/.test(js) &&
+  /window\._setLiveScore\(score, answered\)/.test(js));
+
+// ── v8.0.0 wave 2 · results difficulty bars (.t-bar-*) ──
+test('v8.0.0 wave 2: difficulty breakdown renders .t-bar-* rows, not `right/total` tiles',
+  /t-bar-row/.test(js) && /t-bar-track/.test(js) && /t-bar-fill/.test(js) &&
+  !/class="dstat"><div class="dv"/.test(js));
+// rAF does not fire in a backgrounded tab: a user who switches away while the
+// results render would come back to permanently empty bars.
+test('v8.0.0 wave 2: bar fills are written synchronously after a forced reflow, never via rAF',
+  /void diffEl\.offsetWidth[\s\S]{0,320}fill\.style\.width = \(fill\.dataset\.pct \|\| 0\) \+ '%'/.test(js));
+// The bar replaced the fraction as the primary read; the fraction has to
+// survive somewhere or the screen-reader user loses information sighted
+// users can still estimate from the bar.
+test('v8.0.0 wave 2: the raw fraction survives as the row accessible name',
+  /aria-label="\$\{shortLabel\}: \$\{right\} of \$\{t\} correct"/.test(js));
+// Bars compare lengths against a shared scale — two columns of differing
+// widths breaks the comparison, which is the whole point of a bar.
+test('v8.0.0 wave 2: the breakdown stacks in one column (old 2-col tile grid retired)',
+  /#page-results #diff-breakdown\.diff-breakdown\{display:flex;flex-direction:column/.test(dgCss) &&
+  !/#page-results #diff-breakdown\.diff-breakdown\{display:grid/.test(dgCss));
+
+// ── v8.0.0 wave 2 · directional question navigation ──
+// --dgm-dir MUST be resolved BEFORE `current` moves. Comparing against an
+// already-updated index animates back-navigation forwards — the single
+// easiest thing to get backwards in this slice.
+test('v8.0.0 wave 2: --dgm-dir is set from idx vs current BEFORE the index moves',
+  /setProperty\('--dgm-dir', idx < current \? '-1' : '1'\)/.test(js) &&
+  /_navigateTo[\s\S]{0,900}current = idx;/.test(js));
+test('v8.0.0 wave 2: jumpToQuestion and advance both route through _navigateTo',
+  /function jumpToQuestion[\s\S]{0,260}_navigateTo\(idx\)/.test(js) &&
+  /function advance\(\)[\s\S]{0,120}_navigateTo\(current \+ 1/.test(js));
+test('v8.0.0 wave 2: a nav already in flight lands immediately instead of queueing',
+  /if \(_navInFlight\) \{ commit\(\); return; \}/.test(js));
+// The generic .is-hiding exit deliberately zeroes transform; the directional
+// override is quiz-scoped so the primitive keeps its behaviour elsewhere.
+test('v8.0.0 wave 2: directional exit is scoped to the quiz card, not the shared primitive',
+  /#page-quiz \.q-card\.is-hiding \.t-reveal\s*\{[^}]*translateX\(calc\(-8px \* var\(--dgm-dir/.test(dgCss));
+test('v8.0.0 wave 2: the directional exit collapses under prefers-reduced-motion',
+  /@media \(prefers-reduced-motion: reduce\)\s*\{\s*\/\*[^*]*\*\/\s*html\[data-theme\] body #page-quiz \.q-card\.is-hiding \.t-reveal/.test(dgCss));
+
+// dg-system.css changes are invisible in prod unless this query is bumped —
+// the SW keeps serving the old stylesheet while every check stays green.
+test('v8.0.0 wave 2: dg-system.css cache-bust query bumped past 7.99.0',
+  !/dg-system\.css\?v=7\.99\.0/.test(html));
 
 // ── v4.45.0 ANALYTICS REVAMP (Domain Mastery + Wrong-Answer Patterns) ──
 console.log('\n\x1b[1m── v4.45.0 ANALYTICS REVAMP ──\x1b[0m');

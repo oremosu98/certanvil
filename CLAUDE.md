@@ -24,12 +24,12 @@
 <!-- machine-owned — run `node scripts/stamp-facts.js` to refresh; do not hand-edit -->
 | Metric | Lines | Size |
 |---|---|---|
-| app.js | 8288 | 429 KB |
+| app.js | 8301 | 430 KB |
 | styles.css | 14906 | 551 KB |
-| index.html | 2216 | 143 KB |
-| dg-system.css | 4988 | 473 KB |
-| tests/uat.js + tests/uat/ (27 modules) | 28073 | — |
-UAT checks: 4868 · E2E `test(` count: 160 · APP_VERSION: 7.99.0 · stamped-at: worktree
+| index.html | 2267 | 147 KB |
+| dg-system.css | 5112 | 480 KB |
+| tests/uat.js + tests/uat/ (27 modules) | 28332 | — |
+UAT checks: 4907 · E2E `test(` count: 160 · APP_VERSION: 8.0.0 · stamped-at: worktree
 <!-- FACTS:AUTO:END -->
 
 | File | Purpose | Size |
@@ -132,6 +132,7 @@ npx playwright test              # E2E (tests/e2e/app.spec.js)
 
 | Version | Features Added |
 |---|---|
+| v8.0.0 | Motion lift wave 2: quiz-engine adopts the t-* primitives (reveal, verdict, accordion, streak, nav, topbar swap, results bars) |
 | v7.99.0 | Motion primitives: shared t-* vocabulary in dg-system.css (wave 1 of mockup lift) |
 | v7.98.0 | feat(sec+): add 11 key-exchange exemplars — DH, ECDHE, PFS, key transport vs agreement, hybrid encryption, KDF (obj 1.4) |
 | v7.97.0 | Fix 5 more extraction landmines (Flag btn, Continue Session, exam nav, Snapshot now, new-user diagnostic CTA) + inline-handler/captive-state UAT guards |
