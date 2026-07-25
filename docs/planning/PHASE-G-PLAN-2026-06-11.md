@@ -96,15 +96,14 @@ Both are captured in **`docs/superpowers/plans/2026-06-26-g1-hardening-webhook-a
 > - **G-3** — App Store Connect is reachable, so the Pro subscription products ($9.99/mo, $89/yr) can be created and linked to RevenueCat.
 > - **Stage 2 Capacitor wrapper** — signing/provisioning now possible. Repo state checked 2026-07-25: **no `ios/` directory, no Capacitor config, no Capacitor deps** — the wrap has not been started. Plan: `docs/superpowers/plans/2026-06-27-capacitor-ios-prewrap-and-wrapper.md`.
 >
-> **⚠️ DO THIS NEXT AND DO NOT SKIP IT — Apple Small Business Program enrolment (blocker 4).**
-> It is free, takes minutes, and was *impossible* until now because it requires an active $99
-> membership. It drops Apple's cut **30% → 15%**. Decision 7's price-parity maths ($9.99 everywhere,
-> ~$8.50 net/mo on iOS, absorbing Apple's cut) assumes the **15%** rate. Without this enrolment the
-> iOS margin is roughly **halved** and decision 7 stops being sound. It is the highest-value
-> minutes available in Phase G right now.
+> **✅ Apple Small Business Program — ALSO ENROLLED (confirmed 2026-07-25).**
+> The 15% rate is secured, so **decision 7's price-parity maths now holds as written**
+> ($9.99 everywhere, ~$8.50 net/mo on iOS, absorbing Apple's cut at 15% rather than 30%).
+> This was the one thing that could have quietly halved the iOS margin. It is done.
 >
-> **NOT unblocked by this** (still open founder actions): Stripe setup (1), the AI-cost
-> measurement (3), and the Google OAuth client for G-2.
+> **Still open founder actions:** Stripe setup (1), the AI-cost measurement (3), and the
+> Google OAuth client for G-2. **Both Apple blockers are now cleared** — of the four original
+> founder-only blockers, two are done.
 >
 > **Still gated OFF regardless:** `app_config.onboarding_enabled` is still `false` in prod and
 > **must stay false until actual launch** — enrolment is not launch. See G-4 / APP_STORE_DISTRIBUTION.md §GO-LIVE.
@@ -113,7 +112,7 @@ Both are captured in **`docs/superpowers/plans/2026-06-26-g1-hardening-webhook-a
 1. **Stripe setup** — account + 2 products ($9.99/mo, $89/yr) + webhook keys → unblocks the 2 P0 fixes + web payments (G-1). **DECIDED 2026-06-27: reuse the EXISTING Stripe account** (left over from the old web-design business), do NOT create a new one — identity/bank verification is already done, and old products that "can't be deleted" are just **archived** (harmless; they don't interfere with new products, and old customers are inert records). Action items on the existing account: (a) rebrand Settings → CertAnvil (business/public name, **statement descriptor** e.g. `CERTANVIL` so customers recognise the charge and don't dispute, support email, Checkout/receipt logo); (b) the active product is **Anvil Pro** with two prices ($9.99/mo, $89/yr) — optionally rename to "CertAnvil Pro" (safe: the code keys off **price IDs**, not the name). For G-1 the only things that matter are the **two price IDs**, the **API keys**, and the **webhook signing secret** — all archived legacy catalog/customers are irrelevant to the integration.
 2. **RevenueCat + App Store Connect** — RevenueCat account, App Store Connect subscription products, link the two, copy RC API keys → unblocks iPhone payments (G-3).
 3. **20 June AI-cost measurement** — know the real per-user margin before locking price.
-4. **Apple Small Business Program enrolment** — secures the 15% rate (else 30%, ≈ halves iOS margin). **UNBLOCKED 2026-07-25** by the Developer Program enrolment (it requires an active membership) — free, minutes, and decision 7's price-parity maths depends on it. Highest-value outstanding action in Phase G.
+4. ~~**Apple Small Business Program enrolment**~~ — **✅ DONE 2026-07-25.** 15% rate secured; decision 7's price-parity maths holds as written.
 
 **💷 What the four blockers cost to set up (captured 2026-06-27):** ~**$99/year (Apple) + a few $ of API testing ≈ $100–120 total** to get fully unblocked. Almost everything is free to set up; the providers take a cut only when revenue is actually flowing.
 
@@ -123,7 +122,7 @@ Both are captured in **`docs/superpowers/plans/2026-06-26-g1-hardening-webhook-a
 | RevenueCat | **$0** | free under **$2,500/mo** tracked revenue, then ~1% (the exact basis of the G-3 RevenueCat decision) |
 | App Store Connect (Apple Developer Program) | ~~**$99/yr**~~ **✅ ENROLLED 2026-07-25** — was the only real money and the gatekeeper for ALL iOS work (Stage 2 + Stage 3) | annual recurring |
 | 20 June AI-cost measurement | **~$1–5** (Anthropic API usage; already capped at $20/mo) | usage during the test session |
-| Apple Small Business Program | **$0** (enrolment free; needs the $99 membership above) — **⚠️ NOW ACTIONABLE and NOT yet done; do it before pricing is locked** | n/a — it *lowers* Apple's cut 30%→15% |
+| Apple Small Business Program | ~~**$0**~~ **✅ ENROLLED 2026-07-25** — 15% rate secured | n/a — it *lowers* Apple's cut 30%→15% |
 
 **Key consequence (as written 2026-06-27; the Apple fee is now PAID as of 2026-07-25):** Stage 1 (web payments via Stripe) needs **$0 upfront** — the $99 Apple fee is only required for the iOS app (Stages 2–3). A paid web product can launch before spending anything on Apple. ⚠️ Fee *structure* is stable/long-standing; confirm exact numbers at signup (regional pricing + provider changes).
 
