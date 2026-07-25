@@ -1,6 +1,6 @@
 {
-  "lines": 8116,
-  "allowance": 185,
-  "updated": "2026-07-20",
-  "note": "v7.97.0: +8 more lines — _diagnosticCtaSessionDismissed (+ its explanatory comment) moved to app.js top level, same rationale as v7.96.0's _formatElapsed move, to fix the silently-swallowed ReferenceError that kept the Baseline Diagnostic CTA from ever rendering for brand-new users. Deliberate, justified allowance bump per the #138 ratchet's own friction rule. (Prior: v7.96.0 +20 lines — _formatElapsed + window._certanvilFeatures guard moved to app.js top level to fix the finish()/_formatElapsed ReferenceError and the readiness.js/quiz-engine.js registration crash.)"
+  "lines": 8159,
+  "allowance": 142,
+  "updated": "2026-07-25",
+  "note": "v8.2.0: app.js 8300 -> 8159 (-141). Five stateless PBQ render helpers (_renderHotAreaTopology, _renderHotAreaOsi, _renderHotAreaCableGrid, _haCorrectRegionIds, runCliCommand) moved byte-identical to features/pbq.js. ALLOWANCE DELIBERATELY CUT 185 -> 142 so the effective cap stays at 8301, exactly where it was before this extraction. Following the protocol's 'allowance stays' rule would have RAISED the ceiling to 8344 \u2014 the file got smaller but the guard would have got weaker, which is backwards. The 142 lines of headroom are for the wave-4 PBQ motion this extraction exists to make room for; tighten again once that lands. The rest of the PBQ surface stayed put: every other function there reads or writes app.js's let-scoped quiz state (score/streak/log/answered/questions/topoDevices/_hotAreaPick), which never attaches to window, so moving them is the v7.79.2 closure-captive bug; routing them via an accessor is saas-gated #21."
 }

@@ -1,9 +1,9 @@
 // ══════════════════════════════════════════
-// Network+ AI Quiz — app.js  v8.1.0
+// Network+ AI Quiz — app.js  v8.2.0
 // ══════════════════════════════════════════
 
 // ── CONSTANTS ──
-const APP_VERSION = '8.1.0';
+const APP_VERSION = '8.2.0';
 // v4.99.45 (Phase 6b): expose APP_VERSION on window so the web-vitals
 // collector (lib/web-vitals-collector.js, loaded BEFORE app.js so its
 // PerformanceObservers attach earlier) can stamp this version onto every
@@ -6134,113 +6134,8 @@ function renderHotArea(q, box) {
   box.appendChild(row);
 }
 
-function _renderHotAreaTopology(q, box) {
-  const stage = document.createElement('div');
-  stage.className = 'hot-area-stage';
-  const svgNS = 'http://www.w3.org/2000/svg';
-  const svg = document.createElementNS(svgNS, 'svg');
-  svg.setAttribute('class', 'hot-area-svg');
-  svg.setAttribute('viewBox', q.svgViewBox || '0 0 600 200');
 
-  // Background connectors (non-clickable lines)
-  (q.svgConnectors || []).forEach(c => {
-    const line = document.createElementNS(svgNS, 'line');
-    line.setAttribute('x1', c.x1); line.setAttribute('y1', c.y1);
-    line.setAttribute('x2', c.x2); line.setAttribute('y2', c.y2);
-    line.setAttribute('class', 'hot-area-connector');
-    svg.appendChild(line);
-  });
 
-  // Regions (clickable groups)
-  (q.regions || []).forEach(r => {
-    const g = document.createElementNS(svgNS, 'g');
-    g.setAttribute('class', 'hot-region');
-    g.setAttribute('data-region', r.id);
-    g.setAttribute('tabindex', '0');
-    g.setAttribute('role', 'button');
-    g.setAttribute('aria-label', r.label);
-    g.onclick = () => _haPickRegion(r.id);
-    g.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); _haPickRegion(r.id); } };
-
-    if (r.shape === 'circle') {
-      const circle = document.createElementNS(svgNS, 'circle');
-      circle.setAttribute('cx', r.cx); circle.setAttribute('cy', r.cy); circle.setAttribute('r', r.r);
-      g.appendChild(circle);
-      const text = document.createElementNS(svgNS, 'text');
-      text.setAttribute('x', r.cx); text.setAttribute('y', r.cy + 4);
-      text.textContent = r.label;
-      g.appendChild(text);
-    } else {
-      // default: rect
-      const rect = document.createElementNS(svgNS, 'rect');
-      rect.setAttribute('x', r.x); rect.setAttribute('y', r.y);
-      rect.setAttribute('width', r.w); rect.setAttribute('height', r.h);
-      rect.setAttribute('rx', '6');
-      g.appendChild(rect);
-      const text = document.createElementNS(svgNS, 'text');
-      text.setAttribute('x', r.x + r.w / 2); text.setAttribute('y', r.y + r.h / 2 + 4);
-      text.textContent = r.label;
-      g.appendChild(text);
-    }
-    svg.appendChild(g);
-  });
-
-  stage.appendChild(svg);
-  box.appendChild(stage);
-}
-
-function _renderHotAreaOsi(q, box) {
-  const stage = document.createElement('div');
-  stage.className = 'hot-area-stage';
-  const stack = document.createElement('div');
-  stack.className = 'osi-stack';
-  const layers = [
-    { id: 'L7', name: 'Application' },
-    { id: 'L6', name: 'Presentation' },
-    { id: 'L5', name: 'Session' },
-    { id: 'L4', name: 'Transport' },
-    { id: 'L3', name: 'Network' },
-    { id: 'L2', name: 'Data Link' },
-    { id: 'L1', name: 'Physical' }
-  ];
-  layers.forEach(l => {
-    const div = document.createElement('div');
-    div.className = 'osi-layer';
-    div.setAttribute('data-region', l.id);
-    div.setAttribute('tabindex', '0');
-    div.setAttribute('role', 'button');
-    div.setAttribute('aria-label', l.id + ' ' + l.name);
-    div.innerHTML = '<span><span class="osi-layer-num">' + l.id + '</span> · <span class="osi-layer-name">' + l.name + '</span></span>';
-    div.onclick = () => _haPickRegion(l.id);
-    div.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); _haPickRegion(l.id); } };
-    stack.appendChild(div);
-  });
-  stage.appendChild(stack);
-  box.appendChild(stage);
-}
-
-function _renderHotAreaCableGrid(q, box) {
-  const stage = document.createElement('div');
-  stage.className = 'hot-area-stage';
-  const grid = document.createElement('div');
-  grid.className = 'cable-grid';
-  (q.cables || []).forEach(c => {
-    const conn = CABLE_CONNECTORS[c.id];
-    if (!conn) return;
-    const card = document.createElement('div');
-    card.className = 'cable-card';
-    card.setAttribute('data-region', c.id);
-    card.setAttribute('tabindex', '0');
-    card.setAttribute('role', 'button');
-    card.setAttribute('aria-label', conn.label);
-    card.innerHTML = '<div class="cable-icon">' + conn.svg + '</div><div class="cable-name">' + escHtml(conn.label) + '</div>';
-    card.onclick = () => _haPickRegion(c.id);
-    card.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); _haPickRegion(c.id); } };
-    grid.appendChild(card);
-  });
-  stage.appendChild(grid);
-  box.appendChild(stage);
-}
 
 // Click handler — toggles the picked class on the just-clicked region (and
 // removes it from any previously-picked region). Enables Submit when a pick
@@ -6323,16 +6218,6 @@ function submitHotArea(q) {
   showExplanation(q, isCorrect, haEntry ? haEntry.entry : null);
 }
 
-function _haCorrectRegionIds(q) {
-  if (q.subShape === 'topology') {
-    return (q.regions || []).filter(r => r.isCorrect).map(r => r.id);
-  } else if (q.subShape === 'osi') {
-    return q.correctLayers || [];
-  } else if (q.subShape === 'cable-grid') {
-    return (q.cables || []).filter(c => c.isCorrect).map(c => c.id);
-  }
-  return [];
-}
 
 function _haRegionIsCorrect(q, regionId) {
   return _haCorrectRegionIds(q).includes(regionId);
@@ -7248,32 +7133,6 @@ function renderCliSim(q, box, ans) {
   }
 }
 
-function runCliCommand(cmd, q) {
-  const terminal = document.getElementById('cli-terminal');
-  if (!terminal) return;
-  const output = (q.commands || {})[cmd] || 'Command not recognized.';
-  const hn = escHtml(q.hostname || 'PC');
-  terminal.querySelectorAll('.cli-cursor').forEach(c => c.remove());
-
-  const cmdLine = document.createElement('div');
-  cmdLine.className = 'cli-line';
-  cmdLine.innerHTML = '<span class="cli-prompt-text">' + hn + '&gt; </span>' + escHtml(cmd);
-  terminal.appendChild(cmdLine);
-
-  const outputEl = document.createElement('pre');
-  outputEl.className = 'cli-output';
-  outputEl.textContent = output;
-  terminal.appendChild(outputEl);
-
-  const newPrompt = document.createElement('div');
-  newPrompt.className = 'cli-prompt';
-  newPrompt.innerHTML = hn + '&gt; <span class="cli-cursor">_</span>';
-  terminal.appendChild(newPrompt);
-  terminal.scrollTop = terminal.scrollHeight;
-
-  const diag = document.getElementById('cli-diagnosis');
-  if (diag) diag.classList.remove('is-hidden');
-}
 
 // ══════════════════════════════════════════
 // TOPOLOGY BUILDER RENDER
