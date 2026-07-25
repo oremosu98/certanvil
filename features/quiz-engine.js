@@ -273,7 +273,14 @@
   // never leaves the flow, the container cannot collapse mid-transition —
   // which is the failure the mockup's "join before leaving" rule exists to
   // prevent, avoided here by construction rather than by ordering.
-  const _NAV_EXIT_MS = 200;   // matches .is-hiding's fade in dg-system.css
+  // v8.5.0: 200ms -> 130ms. The exit no longer waits to fully settle before the
+  // next question starts arriving. On a surface you hit dozens of times a
+  // session, dead time before feedback is the cost you actually feel — the
+  // mockup runs its WHOLE transition in ~220ms, while 200ms here was spent
+  // before the new question even began. The directional cue survives; only the
+  // pause is gone. The CSS exit stays 200ms and simply gets cut off mid-flight,
+  // which is what makes it feel handed-over rather than sequenced.
+  const _NAV_EXIT_MS = 130;
   let _navInFlight = false;
 
   function _navigateTo(idx, after) {
@@ -404,7 +411,27 @@
     setTimeout(() => {
       if (_loadingProgressBar) _loadingProgressBar.style.width = '8%';
     }, 30);
-    if (_loadingProgressLabel && initialLabel) _loadingProgressLabel.textContent = initialLabel;
+    // v8.5.0: the label shimmers and the orb spins only while generation is
+    // genuinely in flight. Both are driven from the same milestone string, so
+    // the visible text, the shimmer's data-text and the orb's accessible name
+    // can never drift apart.
+    _loadingSetMilestone(initialLabel);
+    const _orb = document.getElementById('load-orb');
+    if (_orb) _orb.removeAttribute('data-idle');   // active: start spinning
+  }
+
+  // Keep the three copies of the milestone string in lockstep. data-text feeds
+  // the shimmer's ::before, which paints the highlight band onto the SAME
+  // glyphs — if it drifts from the visible text the band lands on the wrong
+  // word. aria-label names the state, per antalik's rule; never "Loading".
+  function _loadingSetMilestone(label) {
+    if (!label) return;
+    if (_loadingProgressLabel) {
+      _loadingProgressLabel.textContent = label;
+      _loadingProgressLabel.dataset.text = label;
+    }
+    const orb = document.getElementById('load-orb');
+    if (orb) orb.setAttribute('aria-label', String(label).replace(/[.…]+$/, ''));
   }
   
   function _loadingProgressUpdate(label, pct) {
@@ -413,7 +440,7 @@
       const clamped = Math.max(0, Math.min(100, pct));
       _loadingProgressBar.style.width = clamped + '%';
     }
-    if (_loadingProgressLabel && label) _loadingProgressLabel.textContent = label;
+    _loadingSetMilestone(label);
   }
   
   function _loadingProgressFinish() {
@@ -421,7 +448,13 @@
     // Snap to 100% then schedule hide. The 100% bump uses the same eased
     // transition so it doesn't feel jarring relative to the prior milestones.
     _loadingProgressBar.style.width = '100%';
-    if (_loadingProgressLabel) _loadingProgressLabel.textContent = 'Ready!';
+    // 'Ready!' not the mockup's 'Ready' — keeping the app's existing copy.
+    // The orb's aria-label strips trailing punctuation either way.
+    _loadingSetMilestone('Ready!');
+    // Generation is done — park the orb rather than leave it spinning
+    // decoratively behind a finished bar (antalik: static-when-idle).
+    const _orbDone = document.getElementById('load-orb');
+    if (_orbDone) _orbDone.setAttribute('data-idle', '');
     setTimeout(() => {
       const prog = document.getElementById('load-progress');
       if (prog) prog.classList.add('is-hidden');

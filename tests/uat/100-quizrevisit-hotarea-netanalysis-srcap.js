@@ -672,7 +672,7 @@ test('v4.82.1 Loader: vm fixture — _loadingProgressBegin resets bar then nudge
         },
         offsetWidth: 0
       };
-      const fakeLabel = { textContent: '' };
+      const fakeLabel = { textContent: '', dataset: {} };
       const fakeProg = { classList: { remove: () => {} } };
       const ctx = {
         _setLiveScore: () => {},
@@ -680,8 +680,14 @@ test('v4.82.1 Loader: vm fixture — _loadingProgressBegin resets bar then nudge
         // v8.0.0 wave 2: the streak pill writes moved into the shared
         // _setLiveStreak helper, so these sandboxed bodies now call it.
         _setLiveStreak: () => {},
+        // v8.5.0: the milestone string now flows through _loadingSetMilestone
+        // (visible text + shimmer data-text + orb aria-label in lockstep).
+        // These fixtures assert the BAR, so the stub just keeps the label
+        // write they already check.
+        _loadingSetMilestone: (l) => { if (l) fakeLabel.textContent = l; },
         document: {
           getElementById: (id) => {
+            if (id === 'load-orb') return null;   // no orb in the bar fixtures
             if (id === 'load-progress') return fakeProg;
             if (id === 'load-bar-fill') return fakeBar;
             if (id === 'load-progress-label') return fakeLabel;
@@ -713,7 +719,7 @@ test('v4.82.1 Loader: vm fixture — _loadingProgressFinish snaps to 100% + hide
       const vm = require('vm');
       let progHidden = false;
       const fakeBar = { style: {} };
-      const fakeLabel = { textContent: '' };
+      const fakeLabel = { textContent: '', dataset: {} };
       const fakeProg = { classList: { add: (c) => { if (c === 'is-hidden') progHidden = true; } } };
       const ctx = {
         _setLiveScore: () => {},
@@ -721,8 +727,14 @@ test('v4.82.1 Loader: vm fixture — _loadingProgressFinish snaps to 100% + hide
         // v8.0.0 wave 2: the streak pill writes moved into the shared
         // _setLiveStreak helper, so these sandboxed bodies now call it.
         _setLiveStreak: () => {},
+        // v8.5.0: the milestone string now flows through _loadingSetMilestone
+        // (visible text + shimmer data-text + orb aria-label in lockstep).
+        // These fixtures assert the BAR, so the stub just keeps the label
+        // write they already check.
+        _loadingSetMilestone: (l) => { if (l) fakeLabel.textContent = l; },
         document: {
           getElementById: (id) => {
+            if (id === 'load-orb') return null;   // no orb in the bar fixtures
             if (id === 'load-progress') return fakeProg;
             return null;
           }

@@ -5213,6 +5213,38 @@ html[data-theme] body .cli-cmd-btn:active { transform: scale(0.97); }
   html[data-theme] body .cli-cmd-btn { transition: none !important; transform: none !important; }
 }
 
+/* ── v8.5.0 · loading milestone line (orb + shimmer) ─────────────────────
+   The app already showed real milestone labels and a progress bar; what was
+   missing from the mockup lift was the orb + shimmer pair that makes a
+   multi-second AI generation read as WORK IN PROGRESS rather than a frozen
+   screen.
+   [data-idle] is the off switch: the orb only spins while generation is
+   genuinely in flight, and is parked the moment the bar hits 100%. An
+   always-spinning orb behind a finished bar is decoration. */
+html[data-theme] body #page-loading .load-progress-line {
+  display: flex; align-items: center; justify-content: center; gap: 7px;
+  font-size: 11px; text-align: center; margin-top: 8px; color: var(--text-dim);
+}
+html[data-theme] body #page-loading .load-progress-line .orb {
+  flex: 0 0 auto; color: var(--accent); transform-origin: center;
+  animation: dgm-orb-spin 2.6s linear infinite;
+}
+/* state over decoration — parked and dimmed once the work is done */
+html[data-theme] body #page-loading .load-progress-line .orb[data-idle] {
+  animation: none; opacity: .45;
+}
+/* The SHIMMER obeys the same switch as the orb. Leaving the label sweeping
+   on an idle or finished screen is the identical decoration failure —
+   static-when-idle has to apply to both halves of the pair or the rule is
+   only half-kept. Sibling selector off the orb's own state, so there is no
+   second flag to keep in sync (the orb precedes the label in the markup). */
+html[data-theme] body #page-loading .orb[data-idle] ~ .t-shimmer::before {
+  animation: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  html[data-theme] body #page-loading .load-progress-line .orb { animation: none !important; }
+}
+
 /* ── reduced motion ──────────────────────────────────────────────────────
    Every animated surface above collapses. §6: fade-only, no transform. */
 @media (prefers-reduced-motion: reduce) {
