@@ -736,6 +736,27 @@ test('v8.1.0 #495: failure reuses the error shake, re-armed with a reflow',
 test('v8.1.0 #495: the orb collapses under prefers-reduced-motion',
   /@media \(prefers-reduced-motion: reduce\)[\s\S]{0,200}\.explain-btn \.orb \{ animation: none !important/.test(dgCss));
 
+// ── v8.3.0 wave 4 · Order PBQ ──
+// Only the row that just arrived animates; re-animating the whole list on
+// every placement turns a placement into a flicker.
+test('v8.3.0 wave 4: only the newly placed order row is marked .is-new',
+  /const prevCount = parseInt\(list\.dataset\.count \|\| '0', 10\)/.test(js) &&
+  /pos >= prevCount \? ' is-new' : ''/.test(js));
+// The beam marks a genuine pending state and must STOP when it resolves —
+// a permanently beaming control is decoration, not an indicator.
+test('v8.3.0 wave 4: the order beam is off at zero placements and off once complete',
+  /const pending = orderSequence\.length > 0 && !ready;/.test(js) &&
+  /btn\.dataset\.beam = pending \? 'on' : 'off'/.test(js));
+test('v8.3.0 wave 4: submitting stops the beam regardless of outcome',
+  /_obtn\.dataset\.beam = 'off'/.test(js));
+test('v8.3.0 wave 4: a wrong order shakes the tray, re-armed with a reflow',
+  /orderTray\.classList\.remove\('t-shake'\)[\s\S]{0,120}void orderTray\.offsetWidth[\s\S]{0,60}add\('t-shake'\)/.test(js));
+// One-shot animation, NOT .t-reveal: .t-reveal is driven by an ancestor
+// .is-shown and the quiz card already carries one, so these rows would render
+// final and never move — the same collision .dd-sec avoids.
+test('v8.3.0 wave 4: order rows use their own keyframe, not .t-reveal',
+  /dgm-ord-in/.test(dgCss) && !/order-placed-item t-reveal/.test(js));
+
 // dg-system.css changes are invisible in prod unless this query is bumped —
 // the SW keeps serving the old stylesheet while every check stays green.
 test('v8.0.0 wave 2: dg-system.css cache-bust query bumped past 7.99.0',

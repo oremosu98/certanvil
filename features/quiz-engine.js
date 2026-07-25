@@ -956,20 +956,33 @@
   
     // Update placed list
     const list = document.getElementById('order-placed-list');
+    // v8.3.0 (wave 4): how many rows were already on screen, so only the row
+    // that just arrived animates. Re-animating the whole list on every click
+    // would turn a placement into a flicker.
+    const prevCount = parseInt(list.dataset.count || '0', 10);
     if (orderSequence.length === 0) {
       list.innerHTML = '<span style="color:var(--text-dim);font-size:13px">Click items above in the correct order</span>';
+      list.dataset.count = '0';
     } else {
       list.innerHTML = orderSequence.map((idx, pos) =>
-        `<div class="order-placed-item"><span class="order-placed-num">${pos + 1}</span>${escHtml(items[idx])}</div>`
+        `<div class="order-placed-item${pos >= prevCount ? ' is-new' : ''}"><span class="order-placed-num">${pos + 1}</span>${escHtml(items[idx])}</div>`
       ).join('');
+      list.dataset.count = String(orderSequence.length);
     }
-  
+
     // Update submit button
     const btn = document.getElementById('order-submit-btn');
     if (btn) {
       const ready = orderSequence.length === items.length;
       btn.disabled = !ready;
       btn.classList.toggle('is-dimmed', !ready);
+      // The beam marks a GENUINE pending state — a sequence the user has begun
+      // but not committed. It must stop the moment it resolves; a permanently
+      // beaming control is decoration, not an indicator (antalik's rule).
+      // Off entirely at zero placements: nothing is pending yet.
+      const pending = orderSequence.length > 0 && !ready;
+      btn.classList.add('t-beam');
+      btn.dataset.beam = pending ? 'on' : 'off';
     }
   }
   
@@ -1001,6 +1014,16 @@
     // (Previous behavior was to disable everything after first submit.)
     document.querySelectorAll('#order-items .order-item').forEach(btn => { btn.style.pointerEvents = ''; });
     const orderSubmitBtn = document.getElementById('order-submit-btn');
+    // v8.3.0 (wave 4): a wrong sequence shakes the tray, reusing the same
+    // error vocabulary as a wrong MCQ. The beam stops either way — the
+    // sequence is committed now, so nothing is pending.
+    const orderTray = document.getElementById('order-placed-list');
+    if (orderTray) {
+      orderTray.classList.remove('t-shake');
+      if (!isRight) { void orderTray.offsetWidth; orderTray.classList.add('t-shake'); }
+    }
+    const _obtn = document.getElementById('order-submit-btn');
+    if (_obtn) _obtn.dataset.beam = 'off';
     if (orderSubmitBtn) orderSubmitBtn.classList.remove('is-hidden');
     const orderResetBtn = document.querySelector('.order-controls .btn-ghost');
     if (orderResetBtn) orderResetBtn.classList.remove('is-hidden');

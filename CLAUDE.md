@@ -27,9 +27,9 @@
 | app.js | 8160 | 424 KB |
 | styles.css | 14913 | 551 KB |
 | index.html | 2268 | 147 KB |
-| dg-system.css | 5173 | 484 KB |
-| tests/uat.js + tests/uat/ (27 modules) | 28373 | — |
-UAT checks: 4916 · E2E `test(` count: 160 · APP_VERSION: 8.2.1 · stamped-at: worktree
+| dg-system.css | 5209 | 486 KB |
+| tests/uat.js + tests/uat/ (27 modules) | 28394 | — |
+UAT checks: 4921 · E2E `test(` count: 160 · APP_VERSION: 8.3.0 · stamped-at: worktree
 <!-- FACTS:AUTO:END -->
 
 | File | Purpose | Size |
@@ -132,6 +132,7 @@ npx playwright test              # E2E (tests/e2e/app.spec.js)
 
 | Version | Features Added |
 |---|---|
+| v8.3.0 | Wave 4 part 1: Order PBQ motion — staged placement, pending beam, wrong-order shake |
 | v8.2.1 | Fix: outgoing question card accepted clicks during the 200ms navigation exit |
 | v8.2.0 | Extract 5 stateless PBQ render helpers from app.js to features/pbq.js (#138-aligned; makes room for wave-4 motion) |
 | v8.1.0 | Deep Dive: token-mapped panel verified (#493 already fixed), emoji dropped (#494), grow-in + orb/shimmer pending state + staggered sections + cached chip (#495) |
