@@ -655,7 +655,13 @@ test('v7.4.0 Sec+ type distribution sensible (mcq + multi-select both present)',
 // lessons are authored — it self-corrects as D2-5 banks fill in. D2-5 stay at ±10pp.
 // Widened 13pp→16pp at v7.98.0 after 11 key-exchange exemplars (all obj 1.4) pushed
 // D1 to 27.4%; the bank is still growing and will rebalance as other domains fill in.
-test('v7.4.0 Sec+ domain distribution within blueprint +/- 10pp (D2-5) / +/- 16pp (D1) (12/22/18/28/20)',
+// Widened 16pp→19pp at v8.7.0 after 11 Obfuscation exemplars (also obj 1.4) pushed
+// D1 to 30.1%. THIS IS THE SECOND WIDENING AND BOTH WERE DRIVEN BY OBJECTIVE 1.4 —
+// the guard is now effectively saturated for D1, so it no longer catches D1 drift.
+// The real fix is GROWING D2–D5 (all currently 3–7pp UNDER target), not loosening
+// this a third time. Founder decision 2026-07-27: widen now, rebalance later.
+// DO NOT widen again — author D2–D5 exemplars instead.
+test('v7.4.0 Sec+ domain distribution within blueprint +/- 10pp (D2-5) / +/- 19pp (D1) (12/22/18/28/20)',
   (function() {
     var objMatches = certSecplus.match(/"objective":"(\d+)\.\d+"/g) || [];
     if (objMatches.length === 0) return false;
@@ -668,7 +674,7 @@ test('v7.4.0 Sec+ domain distribution within blueprint +/- 10pp (D2-5) / +/- 16p
     }
     var total = objMatches.length;
     var target = { '1': 12, '2': 22, '3': 18, '4': 28, '5': 20 };
-    var tolerance = { '1': 16, '2': 10, '3': 10, '4': 10, '5': 10 };
+    var tolerance = { '1': 19, '2': 10, '3': 10, '4': 10, '5': 10 };
     for (var k in target) {
       var actualPct = (domainCount[k] / total) * 100;
       if (Math.abs(actualPct - target[k]) > tolerance[k]) return false;
@@ -797,19 +803,19 @@ test('v4.87.0 SecplusBanner: orange-amber gradient (rgba(245,158,11))',
   /\.secplus-private-banner[\s\S]{0,400}rgba\(245,158,11/.test(css));
 
 // ── Security+ cert pack content ──
-test('v4.87.0 SecplusContent: topicDomains has 38 SY0-701 topics',
+test('v4.87.0 SecplusContent: topicDomains has 39 SY0-701 topics',
   (() => {
     const m = certSecplus.match(/topicDomains:\s*\{([\s\S]*?)\n\s*\},/);
     if (!m) return false;
     const keyLines = m[1].split('\n').filter(l => /^\s*'[^']+':\s*'(concepts|threats|architecture|operations|governance)'/.test(l));
-    return keyLines.length === 38;
+    return keyLines.length === 39;
   })());
-test('v4.87.0 SecplusContent: topicResources populated (38 entries)',
+test('v4.87.0 SecplusContent: topicResources populated (39 entries)',
   (() => {
     const m = certSecplus.match(/topicResources:\s*\{([\s\S]*?)\n\s*\},/);
     if (!m) return false;
     const keyLines = m[1].split('\n').filter(l => /^\s*'[^']+':\s*\{\s*obj:/.test(l));
-    return keyLines.length === 38;
+    return keyLines.length === 39;
   })());
 test('v4.87.0 SecplusContent: domainWeights sum to 1.00',
   (() => {

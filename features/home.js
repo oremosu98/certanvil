@@ -1873,6 +1873,7 @@
         { label: 'Technical Change Mgmt', key: 'Technical Change Management' },
         { label: 'Cryptography',      key: 'Cryptography Fundamentals' },
         { label: 'PKI',               key: 'PKI & Certificate Management' },
+        { label: 'Obfuscation',  key: 'Obfuscation' },
       ],
       threats: [
         { label: 'Threat Actors',     key: 'Threat Actors & Motivations' },
