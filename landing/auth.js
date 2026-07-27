@@ -67,6 +67,30 @@
   var authForm = document.getElementById('auth-form');
   var authEmailInput = document.getElementById('auth-email');
   var authSubmit = document.getElementById('auth-submit');
+
+  /* L9 · pending-submit shimmer. The label is the state, so the sweep ends
+     when the state does — every caller that clears `busy` also replaces the
+     span, which removes the animation with it. aria-label carries the state
+     NAME ("Sending your link"), never "Loading". */
+  function setSubmitBusy(btn, label, aria) {
+    if (!btn) return;
+    btn.disabled = true;
+    btn.setAttribute('aria-busy', 'true');
+    btn.setAttribute('aria-label', aria);
+    btn.innerHTML = '';
+    var sp = document.createElement('span');
+    sp.className = 't-shimmer';
+    sp.textContent = label;
+    btn.appendChild(sp);
+  }
+  function clearSubmitBusy(btn, label) {
+    if (!btn) return;
+    btn.disabled = false;
+    btn.removeAttribute('aria-busy');
+    btn.removeAttribute('aria-label');
+    btn.textContent = label;
+  }
+
   var authError = document.getElementById('auth-error');
   var authMain = document.getElementById('auth-main');
   var authSent = document.getElementById('auth-sent');
@@ -753,14 +777,12 @@
           return;
         }
         if (authSubmit) {
-          authSubmit.disabled = true;
-          authSubmit.textContent = 'Signing in…';
+          setSubmitBusy(authSubmit, 'Signing in…', 'Signing you in');
         }
         signInWithPlaytestPassword(email, password)
           .then(function (result) {
             if (authSubmit) {
-              authSubmit.disabled = false;
-              authSubmit.textContent = 'Sign in →';
+              clearSubmitBusy(authSubmit, 'Sign in →');
             }
             if (result && result.error) {
               showAuthError('Wrong email or password. Check the credentials Simi sent you.');
@@ -777,8 +799,7 @@
           })
           .catch(function (err) {
             if (authSubmit) {
-              authSubmit.disabled = false;
-              authSubmit.textContent = 'Sign in →';
+              clearSubmitBusy(authSubmit, 'Sign in →');
             }
             console.error('[certanvil-auth] signInWithPassword threw:', err);
             showAuthError('Network error. Check your connection and try again.');
@@ -788,15 +809,13 @@
 
       // ── Default magic-link flow ──
       if (authSubmit) {
-        authSubmit.disabled = true;
-        authSubmit.textContent = 'Sending…';
+        setSubmitBusy(authSubmit, 'Sending…', 'Sending your link');
       }
 
       sendMagicLink(email)
         .then(function (result) {
           if (authSubmit) {
-            authSubmit.disabled = false;
-            authSubmit.textContent = 'Continue with email →';
+            clearSubmitBusy(authSubmit, 'Continue with email →');
           }
           if (result && result.error) {
             var msg = result.error.message || 'Could not send magic link. Try again in a moment.';
@@ -807,8 +826,7 @@
         })
         .catch(function (err) {
           if (authSubmit) {
-            authSubmit.disabled = false;
-            authSubmit.textContent = 'Continue with email →';
+            clearSubmitBusy(authSubmit, 'Continue with email →');
           }
           console.error('[certanvil-auth] sendMagicLink threw:', err);
           showAuthError('Network error. Check your connection and try again.');

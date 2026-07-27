@@ -131,7 +131,7 @@
     --on-accent:oklch(0.985 0.010 85);
     --topbar-bg:oklch(0.975 0.007 85 / .82);
     --shadow-card:0 2px 4px oklch(0.22 0.015 280 / .05),0 30px 60px -24px oklch(0.22 0.015 280 / .28);
-    --eo:cubic-bezier(0.23,1,0.32,1);
+    --eo:cubic-bezier(0.16,1,0.3,1);
     position:sticky;top:0;z-index:50;
     background:var(--topbar-bg);
     backdrop-filter:blur(20px) saturate(1.4);-webkit-backdrop-filter:blur(20px) saturate(1.4);
@@ -367,7 +367,7 @@
     --tile-top:#FFFDF8; --tile-bot:#FFF7EC;          /* cream icon plate, both themes — left as hardcoded hex: shared by brand-illustrative SVG <stop> fills (per BRAND §3 hex is allowed for brand-illustrative SVG) */
     --shadow-soft:0 1px 0 rgba(255,255,255,.55),0 18px 38px -18px oklch(0.22 0.015 280 / .20);
     --shadow-tile:0 2px 4px oklch(0.22 0.015 280 / .05),0 22px 44px -20px oklch(0.22 0.015 280 / .24);
-    --hv2-eo:cubic-bezier(0.23,1,0.32,1);
+    --hv2-eo:cubic-bezier(0.16,1,0.3,1);
     --hv2-eio:cubic-bezier(0.77,0,0.175,1);
 
     position:relative;
@@ -741,7 +741,13 @@
     (function(){
       var h=document.getElementById('hero-v2');
       if(!h)return;
-      requestAnimationFrame(function(){requestAnimationFrame(function(){h.classList.add('hv2-ready');});});
+      /* L2 · never rAF-gate a one-shot reveal — rAF does not fire in a
+         backgrounded tab, and unlike the app this page has no safety-net
+         un-hide behind it. Forced reflow, then a synchronous flip: the
+         transition still plays, but the hero can never be stranded at
+         opacity:0 with both CTAs inside it. */
+      void h.offsetWidth;
+      h.classList.add('hv2-ready');
     })();
 
     /* Readiness Meridian · ported from hero-meridian.html (scoped IIFE).
@@ -1090,8 +1096,7 @@
     --tile-top:#FFFDF8;--tile-bot:#FFF7EC;
     --shadow-soft:0 1px 0 rgba(255,255,255,.55),0 18px 38px -18px oklch(0.22 0.015 280 / .20);
     --shadow-card:0 2px 4px oklch(0.22 0.015 280 / .05),0 28px 56px -22px oklch(0.22 0.015 280 / .26);
-    --eo:cubic-bezier(0.23,1,0.32,1);
-    --eio:cubic-bezier(0.77,0,0.175,1);
+    --eo:cubic-bezier(0.16,1,0.3,1);
     position:relative;display:block;background:var(--bg);color:var(--ink);
     font-family:'Inter',system-ui,-apple-system,sans-serif;-webkit-font-smoothing:antialiased;
     padding:clamp(56px,9vh,108px) clamp(20px,4vw,56px);
@@ -1152,10 +1157,18 @@
   #sq2 .sq2-hint{margin-top:16px;font-size:13px;color:var(--muted);font-weight:500;display:flex;align-items:center;gap:8px}
   #sq2 .sq2-hint::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--accent);opacity:.6}
   #sq2 .sq2-card.is-answered .sq2-hint{display:none}
-  #sq2 .sq2-reveal{overflow:hidden;max-height:0;opacity:0;transition:max-height 420ms var(--eio),opacity 320ms ease,margin-top 420ms var(--eio);margin-top:0}
-  #sq2 .sq2-card.is-answered .sq2-reveal{max-height:520px;opacity:1;margin-top:18px}
-  #sq2 .sq2-reveal-inner{border-top:1px solid var(--border);padding-top:18px;transform:translateY(8px);transition:transform 420ms var(--eo)}
-  #sq2 .sq2-card.is-answered .sq2-reveal-inner{transform:none}
+  /* L5 · grid-template-rows, not max-height. The old 520px was a magic
+     number that silently clips the moment the explanation grows, and it
+     animated a layout property every frame. THREE levels are required:
+     the grid track (.sq2-reveal), a clipper that owns overflow and NO
+     padding of its own (.sq2-reveal-inner), and the padded body
+     (.sq2-reveal-body) — padding on the 0fr grid item leaves a residual
+     strip the height of that padding and the panel never fully closes. */
+  #sq2 .sq2-reveal{display:grid;grid-template-rows:0fr;opacity:0;margin-top:0;transition:grid-template-rows 380ms var(--eo),opacity 380ms var(--eo),margin-top 380ms var(--eo)}
+  #sq2 .sq2-card.is-answered .sq2-reveal{grid-template-rows:1fr;opacity:1;margin-top:18px}
+  #sq2 .sq2-reveal-inner{overflow:hidden;padding:0;border:0}
+  #sq2 .sq2-reveal-body{border-top:1px solid var(--border);padding-top:18px;transform:translateY(8px);transition:transform 380ms var(--eo)}
+  #sq2 .sq2-card.is-answered .sq2-reveal-body{transform:none}
   #sq2 .sq2-reveal-h{font-size:13px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--accent);margin-bottom:9px}
   #sq2 .sq2-reveal-tx{font-size:14.5px;line-height:1.62;color:var(--ink-soft)}
   #sq2 .sq2-reveal-tx b{color:var(--ink);font-weight:650;font-variant-numeric:tabular-nums}
@@ -1167,6 +1180,27 @@
   #sq2 .sq2-verdict-ic svg{width:12px;height:12px;display:block}
   #sq2 .sq2-card.is-correct-pick .sq2-verdict{color:var(--accent)}
   #sq2 .sq2-card.is-correct-pick .sq2-vc{display:grid;background:color-mix(in oklab,var(--accent) 16%,transparent);color:var(--accent)}
+  /* L8 · the one celebration moment on this page — a stranger gets the /26
+     right before signing up. Choreography from transitions-dev
+     10-success-check (fade + rotate + blur + Y-bob on the host, stroke-draw
+     on the path); every number re-timed onto BRAND §6. Fires ONLY on a
+     correct pick — .sq2-vw, the wrong-answer mark, deliberately gets none
+     of this. You do not animate someone's mistake.
+     dasharray 23 = this path's real getTotalLength() (21.21) rounded up by
+     one, measured in a browser. The snippet's placeholder pre-reveals it. */
+  #sq2 .sq2-vc{transform-origin:center}
+  #sq2 .sq2-vc svg path{stroke-dasharray:23;stroke-dashoffset:23}
+  #sq2 .sq2-card.is-correct-pick .sq2-vc{
+    will-change:transform,opacity,filter;
+    animation:sq2ckFade 520ms var(--eo) forwards,sq2ckRot 520ms var(--eo) forwards,
+              sq2ckBlur 520ms var(--eo) forwards,sq2ckBob 520ms var(--eo) forwards;
+  }
+  #sq2 .sq2-card.is-correct-pick .sq2-vc svg path{animation:sq2ckDraw 520ms var(--eo) 80ms forwards}
+  @keyframes sq2ckFade{from{opacity:0}to{opacity:1}}
+  @keyframes sq2ckRot{from{transform:rotate(80deg)}to{transform:rotate(0)}}
+  @keyframes sq2ckBlur{from{filter:blur(10px)}to{filter:blur(0)}}
+  @keyframes sq2ckBob{from{translate:0 40px}to{translate:0 0}}
+  @keyframes sq2ckDraw{to{stroke-dashoffset:0}}
   #sq2 .sq2-card.is-wrong-pick .sq2-verdict{color:var(--ink)}
   #sq2 .sq2-card.is-wrong-pick .sq2-vw{display:grid;background:color-mix(in oklab,var(--muted) 22%,transparent);color:var(--muted)}
   #sq2 .sq2-miss{display:none;font-size:14px;line-height:1.62;color:var(--ink-soft);margin-bottom:16px;padding-left:14px;border-left:2px solid color-mix(in oklab,var(--muted) 45%,transparent)}
@@ -1178,7 +1212,7 @@
   #sq2.sq2-in .sq2-r[data-d="2"]{transition-delay:120ms}
   #sq2.sq2-in .sq2-r[data-d="3"]{transition-delay:190ms}
   #sq2.sq2-in .sq2-r[data-d="4"]{transition-delay:260ms}
-  #sq2 .sq2-card{opacity:0;transform:translateY(20px) scale(0.975);filter:blur(4px);transition:opacity 700ms var(--eo) 180ms,transform 700ms var(--eo) 180ms,filter 700ms var(--eo) 180ms}
+  #sq2 .sq2-card{opacity:0;transform:translateY(20px) scale(0.975);filter:blur(4px);transition:opacity 560ms var(--eo) 180ms,transform 560ms var(--eo) 180ms,filter 560ms var(--eo) 180ms}
   #sq2.sq2-in .sq2-card{opacity:1;transform:none;filter:none}
   @media (max-width:980px){
     #sq2 .sq2-wrap{grid-template-columns:1fr;gap:40px}
@@ -1195,6 +1229,10 @@
     #sq2 .sq2-opt,#sq2 .sq2-opt-mark{transition:opacity 160ms ease,background 160ms ease,border-color 160ms ease !important;transform:none !important}
     #sq2 .sq2-reveal{transition:opacity 220ms ease !important}
     #sq2 .sq2-reveal-inner{transform:none !important;transition:none !important}
+    #sq2 .sq2-reveal-body{transform:none !important;transition:none !important}
+    #sq2 .sq2-card.is-correct-pick .sq2-vc,
+    #sq2 .sq2-card.is-correct-pick .sq2-vc svg path{animation:none !important}
+    #sq2 .sq2-vc svg path{stroke-dashoffset:0 !important}
   }
 </style>
 
@@ -1300,7 +1338,7 @@
       <div class="sq2-hint">Pick an answer. The explanation is instant.</div>
 
       <div class="sq2-reveal" id="sq2-reveal">
-        <div class="sq2-reveal-inner">
+        <div class="sq2-reveal-inner"><div class="sq2-reveal-body">
           <div class="sq2-verdict">
             <span class="sq2-verdict-ic sq2-vc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg></span>
             <span class="sq2-verdict-ic sq2-vw"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6L6 18"/></svg></span>
@@ -1316,7 +1354,7 @@
             <svg class="sq2-chip-ic" viewBox="0 0 256 256"><use href="#sq2-ic-ai"/></svg>
             Checked by the 7-layer engine · <b>N10-009 obj 1.4</b>
           </span>
-        </div>
+        </div></div>
       </div>
     </div>
   </div>
@@ -1395,8 +1433,7 @@
     --shadow-card:0 2px 4px oklch(0.22 0.015 280 / .05),0 30px 60px -24px oklch(0.22 0.015 280 / .28);
     --shadow-plate:0 1px 0 rgba(255,255,255,.5),0 20px 44px -26px oklch(0.22 0.015 280 / .26);
     --pass:oklch(0.52 0.13 150);
-    --eo:cubic-bezier(0.23,1,0.32,1);
-    --eio:cubic-bezier(0.77,0,0.175,1);
+    --eo:cubic-bezier(0.16,1,0.3,1);
     position:relative;display:block;background:var(--bg);color:var(--ink);
     font-family:'Inter',system-ui,-apple-system,sans-serif;-webkit-font-smoothing:antialiased;
     padding:clamp(56px,9vh,108px) clamp(20px,4vw,56px);
@@ -1523,7 +1560,7 @@
   #certs .pl-watermark{fill:var(--muted);font:700 17px Inter,sans-serif;letter-spacing:.22em;opacity:.05}
 
   /* ── Emil draw-on (transform/opacity/dashoffset only) ── */
-  #certs .draw{stroke-dasharray:1;stroke-dashoffset:1;transition:stroke-dashoffset 640ms var(--eo)}
+  #certs .draw{stroke-dasharray:1;stroke-dashoffset:1;transition:stroke-dashoffset 560ms var(--eo)}
   #certs .plate.drawn .draw{stroke-dashoffset:0;transition-delay:calc(var(--d,0)*1ms)}
   #certs .pop{opacity:0;transform:scale(.9);transform-box:fill-box;transform-origin:center;transition:opacity 320ms var(--eo),transform 320ms var(--eo)}
   #certs .plate.drawn .pop{opacity:1;transform:none;transition-delay:calc(var(--d,0)*1ms)}
@@ -1883,8 +1920,7 @@
     --on-accent:oklch(0.985 0.010 85);
     --shadow-soft:0 1px 0 rgba(255,255,255,.55),0 18px 38px -18px oklch(0.22 0.015 280 / .20);
     --shadow-card:0 2px 4px oklch(0.22 0.015 280 / .05),0 30px 60px -24px oklch(0.22 0.015 280 / .28);
-    --eo:cubic-bezier(0.23,1,0.32,1);
-    --eio:cubic-bezier(0.77,0,0.175,1);
+    --eo:cubic-bezier(0.16,1,0.3,1);
     position:relative;display:block;background:var(--bg);color:var(--ink);
     font-family:'Inter',system-ui,-apple-system,sans-serif;-webkit-font-smoothing:antialiased;
     padding:clamp(56px,9vh,108px) clamp(20px,4vw,56px);
@@ -1942,7 +1978,7 @@
     #proof-of-product .pp-eng-spark{offset-path:path('M42 84c10-15 27-15 38 0');offset-rotate:0deg;animation:ppEngTravel 4s cubic-bezier(0.77,0,0.175,1) infinite}
     #proof-of-product .pp-eng-dot1{animation:ppEngD1 4s ease infinite}
     #proof-of-product .pp-eng-dot2{animation:ppEngD2 4s ease infinite}
-    #proof-of-product .pp-eng-arrow{animation:ppEngAr 4s cubic-bezier(0.23,1,0.32,1) infinite}
+    #proof-of-product .pp-eng-arrow{animation:ppEngAr 4s cubic-bezier(0.16,1,0.3,1) infinite}
     @keyframes ppEngTravel{0%,14%{offset-distance:0%;opacity:0}20%{opacity:1}52%{offset-distance:100%;opacity:1}60%{offset-distance:100%;opacity:0}100%{offset-distance:100%;opacity:0}}
     @keyframes ppEngD1{0%,12%{filter:none;transform:scale(1)}18%{filter:drop-shadow(0 0 5px oklch(0.66 0.16 60 / .85));transform:scale(1.3)}28%,100%{filter:none;transform:scale(1)}}
     @keyframes ppEngD2{0%,48%{filter:none;transform:scale(1)}56%{filter:drop-shadow(0 0 6px oklch(0.66 0.16 60 / .85));transform:scale(1.36)}66%,100%{filter:none;transform:scale(1)}}
@@ -1988,7 +2024,7 @@
   #proof-of-product.pp-in .pp-r{opacity:1;transform:none}
   #proof-of-product.pp-in .pp-r[data-d="1"]{transition-delay:40ms}
   #proof-of-product.pp-in .pp-r[data-d="2"]{transition-delay:110ms}
-  #proof-of-product .pp-feature,#proof-of-product .pp-roster{opacity:0;transform:translateY(20px) scale(0.99);transition:opacity 680ms var(--eo) 200ms,transform 680ms var(--eo) 200ms}
+  #proof-of-product .pp-feature,#proof-of-product .pp-roster{opacity:0;transform:translateY(20px) scale(0.99);transition:opacity 560ms var(--eo) 200ms,transform 560ms var(--eo) 200ms}
   #proof-of-product.pp-in .pp-content.is-active .pp-feature,#proof-of-product.pp-in .pp-content.is-active .pp-roster{opacity:1;transform:none}
 
   @media (max-width:920px){
@@ -2474,7 +2510,7 @@
     --on-accent:oklch(0.985 0.010 85);
     --shadow-soft:0 1px 0 rgba(255,255,255,.55),0 18px 38px -18px oklch(0.22 0.015 280 / .20);
     --shadow-card:0 2px 4px oklch(0.22 0.015 280 / .05),0 30px 60px -24px oklch(0.22 0.015 280 / .28);
-    --eo:cubic-bezier(0.23,1,0.32,1);
+    --eo:cubic-bezier(0.16,1,0.3,1);
     position:relative;display:block;background:var(--bg);color:var(--ink);
     font-family:'Inter',system-ui,-apple-system,sans-serif;-webkit-font-smoothing:antialiased;
     padding:clamp(56px,9vh,108px) clamp(20px,4vw,56px);
@@ -2528,7 +2564,7 @@
   #why-ready.pgx-in .pgx-r[data-d="1"]{transition-delay:40ms}
   #why-ready.pgx-in .pgx-r[data-d="2"]{transition-delay:110ms}
   #why-ready.pgx-in .pgx-r[data-d="3"]{transition-delay:180ms}
-  #why-ready .pgx-steps{opacity:0;transform:translateY(20px) scale(0.99);transition:opacity 700ms var(--eo) 160ms,transform 700ms var(--eo) 160ms}
+  #why-ready .pgx-steps{opacity:0;transform:translateY(20px) scale(0.99);transition:opacity 560ms var(--eo) 160ms,transform 560ms var(--eo) 160ms}
   #why-ready.pgx-in .pgx-steps{opacity:1;transform:none}
   #why-ready .pgx-step{opacity:0;transform:translateX(10px);transition:opacity 460ms var(--eo),transform 460ms var(--eo)}
   #why-ready.pgx-in .pgx-step{opacity:1;transform:none}
@@ -2675,7 +2711,7 @@
     --on-accent:oklch(0.985 0.010 85);
     --shadow-soft:0 1px 0 rgba(255,255,255,.55),0 18px 38px -18px oklch(0.22 0.015 280 / .20);
     --shadow-card:0 2px 4px oklch(0.22 0.015 280 / .05),0 30px 60px -24px oklch(0.22 0.015 280 / .28);
-    --eo:cubic-bezier(0.23,1,0.32,1);
+    --eo:cubic-bezier(0.16,1,0.3,1);
     position:relative;display:block;background:var(--bg);color:var(--ink);
     font-family:'Inter',system-ui,-apple-system,sans-serif;-webkit-font-smoothing:antialiased;
     padding:clamp(56px,9vh,108px) clamp(20px,4vw,56px);
@@ -2760,7 +2796,7 @@
   #why.wyx-in .wyx-r[data-d="1"]{transition-delay:40ms}
   #why.wyx-in .wyx-r[data-d="2"]{transition-delay:120ms}
   #why.wyx-in .wyx-r[data-d="3"]{transition-delay:200ms}
-  #why .wyx-grid{opacity:0;transform:translateY(20px) scale(0.992);transition:opacity 700ms var(--eo) 200ms,transform 700ms var(--eo) 200ms}
+  #why .wyx-grid{opacity:0;transform:translateY(20px) scale(0.992);transition:opacity 560ms var(--eo) 200ms,transform 560ms var(--eo) 200ms}
   #why.wyx-in .wyx-grid{opacity:1;transform:none}
   #why .wyx-cell{opacity:0;transform:translateY(12px);transition:opacity 480ms var(--eo),transform 480ms var(--eo)}
   #why.wyx-in .wyx-cell{opacity:1;transform:none}
@@ -2768,7 +2804,7 @@
   #why.wyx-in .wyx-cell:nth-child(2){transition-delay:400ms}
   #why.wyx-in .wyx-cell:nth-child(3){transition-delay:460ms}
   #why.wyx-in .wyx-cell:nth-child(4){transition-delay:520ms}
-  #why .wyx-certs{opacity:0;transform:translateY(14px);transition:opacity 620ms var(--eo) 560ms,transform 620ms var(--eo) 560ms}
+  #why .wyx-certs{opacity:0;transform:translateY(14px);transition:opacity 560ms var(--eo) 560ms,transform 560ms var(--eo) 560ms}
   #why.wyx-in .wyx-certs{opacity:1;transform:none}
 
   @media (max-width:820px){
@@ -2895,7 +2931,7 @@
     --on-accent:oklch(0.985 0.010 85);
     --shadow-soft:0 1px 0 rgba(255,255,255,.55),0 18px 38px -18px oklch(0.22 0.015 280 / .20);
     --shadow-card:0 2px 4px oklch(0.22 0.015 280 / .05),0 30px 60px -24px oklch(0.22 0.015 280 / .28);
-    --eo:cubic-bezier(0.23,1,0.32,1);
+    --eo:cubic-bezier(0.16,1,0.3,1);
     position:relative;display:block;background:var(--bg);color:var(--ink);
     font-family:'Inter',system-ui,-apple-system,sans-serif;-webkit-font-smoothing:antialiased;
     padding:clamp(56px,9vh,108px) clamp(20px,4vw,56px);
@@ -2952,7 +2988,7 @@
   }
   #faq .fqx-q::-webkit-details-marker{display:none}
   @media (hover:hover){#faq .fqx-q:hover{background:color-mix(in oklab,var(--accent) 4%,transparent)}}
-  #faq details[open] > .fqx-q{background:color-mix(in oklab,var(--accent) 5%,transparent)}
+  #faq details.is-open > .fqx-q{background:color-mix(in oklab,var(--accent) 5%,transparent)}
   #faq .fqx-q-ic{width:44px;height:44px;flex:none;border-radius:13px;background-color:#FFFBF3;border:1px solid var(--border);box-shadow:var(--shadow-soft);display:grid;place-items:center}
   [data-theme="dark"] #faq .fqx-q-ic{background-color:#FFFBF3}
   #faq .fqx-q-ic img{width:30px;height:30px;display:block}
@@ -2961,8 +2997,8 @@
   #faq .fqx-q-tog::before,#faq .fqx-q-tog::after{content:"";position:absolute;left:50%;top:50%;background:var(--accent);border-radius:2px;transition:transform 300ms var(--eo),opacity 300ms var(--eo)}
   #faq .fqx-q-tog::before{width:14px;height:2px;transform:translate(-50%,-50%)}
   #faq .fqx-q-tog::after{width:2px;height:14px;transform:translate(-50%,-50%)}
-  #faq details[open] > .fqx-q .fqx-q-tog::after{transform:translate(-50%,-50%) scaleY(0);opacity:0}
-  #faq details[open] > .fqx-q .fqx-q-tog::before{transform:translate(-50%,-50%) rotate(180deg)}
+  #faq details.is-open > .fqx-q .fqx-q-tog::after{transform:translate(-50%,-50%) scaleY(0);opacity:0}
+  #faq details.is-open > .fqx-q .fqx-q-tog::before{transform:translate(-50%,-50%) rotate(180deg)}
 
   #faq .fqx-a{
     padding:0 clamp(20px,2.4vw,28px) 24px calc(44px + 16px + clamp(20px,2.4vw,28px));
@@ -2972,8 +3008,23 @@
   #faq .fqx-a p:last-child{margin-bottom:0}
   #faq .fqx-a strong{color:var(--ink);font-weight:650}
   #faq .fqx-a-foot{font-size:13px;color:var(--muted);padding-top:14px;margin-top:14px;border-top:1px solid var(--border-soft)}
-  #faq details[open] > .fqx-a{animation:fqxReveal 440ms var(--eo)}
-  @keyframes fqxReveal{from{opacity:0;transform:translateY(-7px)}to{opacity:1;transform:none}}
+  /* L5 · the panel used to SNAP its height open (only the content faded)
+     and had no close transition at all — it vanished. Now grid-rows, with
+     close deliberately faster than open: enter and exit are not the same
+     gesture. The two wrappers are injected by the script below rather than
+     added to nine <details> by hand; with JS off, none of this applies and
+     native <details> still works. Padding stays on .fqx-a — the clipper
+     between it and the track carries none, because padding on a 0fr grid
+     item leaves a residual strip and the panel never fully closes. */
+  /* visibility matters here, and not for looks. Giving the shell its own
+     `display` overrides the UA rule that hides a closed <details>'s content,
+     so without this the collapsed answers stay in the accessibility tree and
+     (the moment anyone puts a link in one) in the tab order. visibility is
+     inherited and removes both; it is held until the collapse finishes on
+     close, and applied immediately on open. */
+  #faq .fqx-a-shell{display:grid;grid-template-rows:0fr;opacity:0;visibility:hidden;transition:grid-template-rows 300ms var(--eo),opacity 300ms var(--eo),visibility 0s linear 300ms}
+  #faq details.is-open > .fqx-a-shell{grid-template-rows:1fr;opacity:1;visibility:visible;transition:grid-template-rows 380ms var(--eo),opacity 380ms var(--eo),visibility 0s linear 0s}
+  #faq .fqx-a-clip{overflow:hidden;padding:0;border:0;min-height:0}
 
   #faq .fqx-cmp{margin:14px 0 4px;border:1px solid var(--border);border-radius:14px;overflow:hidden;background:var(--bg)}
   #faq .fqx-cmp-row{display:grid;grid-template-columns:1.3fr 1fr 1fr;border-bottom:1px solid var(--border-soft)}
@@ -2990,7 +3041,7 @@
   #faq.fqx-in .fqx-r[data-d="1"]{transition-delay:40ms}
   #faq.fqx-in .fqx-r[data-d="2"]{transition-delay:110ms}
   #faq.fqx-in .fqx-r[data-d="3"]{transition-delay:180ms}
-  #faq .fqx-acc{opacity:0;transform:translateY(20px) scale(0.992);transition:opacity 700ms var(--eo) 200ms,transform 700ms var(--eo) 200ms}
+  #faq .fqx-acc{opacity:0;transform:translateY(20px) scale(0.992);transition:opacity 560ms var(--eo) 200ms,transform 560ms var(--eo) 200ms}
   #faq.fqx-in .fqx-acc{opacity:1;transform:none}
   #faq .fqx-item{opacity:0;transform:translateY(10px);transition:opacity 440ms var(--eo),transform 440ms var(--eo)}
   #faq.fqx-in .fqx-item{opacity:1;transform:none}
@@ -3021,7 +3072,8 @@
   @media (prefers-reduced-motion:reduce){
     #faq .fqx-r,#faq .fqx-acc,#faq .fqx-item{transition:opacity 220ms ease !important;transform:none !important}
     #faq.fqx-in .fqx-r,#faq.fqx-in .fqx-item{transform:none !important}
-    #faq details[open] > .fqx-a{animation:none !important}
+    #faq .fqx-a-shell{transition:opacity 200ms linear,visibility 0s linear 200ms !important}
+    #faq details.is-open > .fqx-a-shell{transition:opacity 200ms linear,visibility 0s linear 0s !important}
     #faq .fqx-q-tog::before,#faq .fqx-q-tog::after{transition:none !important}
   }
 </style>
@@ -3231,6 +3283,39 @@
         var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){s.classList.add('fqx-in');io.disconnect();}});},{threshold:0.08});
         io.observe(s);
       } else { s.classList.add('fqx-in'); }
+
+      /* L5 · accordion open/close. Native <details> hides its content the
+         instant `open` is removed, so a close can never animate on its own —
+         we hold `open` until the transition finishes, then drop it.
+         The two wrappers go in here rather than into nine <details> by hand;
+         if this script never runs, the markup is untouched and the FAQ still
+         opens and closes natively. */
+      var OPEN_MS=380, CLOSE_MS=300;
+      s.querySelectorAll('details.fqx-item').forEach(function(d){
+        var panel=d.querySelector('.fqx-a'), sum=d.querySelector('summary');
+        if(!panel||!sum)return;
+        var shell=document.createElement('div'); shell.className='fqx-a-shell';
+        var clip=document.createElement('div');  clip.className='fqx-a-clip';
+        panel.parentNode.insertBefore(shell,panel);
+        shell.appendChild(clip); clip.appendChild(panel);
+        if(d.open) d.classList.add('is-open');
+
+        var busy=false;
+        sum.addEventListener('click',function(e){
+          e.preventDefault();
+          if(busy)return;
+          busy=true;
+          if(d.classList.contains('is-open')){
+            d.classList.remove('is-open');
+            setTimeout(function(){ d.open=false; busy=false; },CLOSE_MS);
+          } else {
+            d.open=true;
+            void d.offsetWidth;          /* reflow, never rAF */
+            d.classList.add('is-open');
+            setTimeout(function(){ busy=false; },OPEN_MS);
+          }
+        });
+      });
     })();
   </script>
 </section>
@@ -3261,7 +3346,7 @@
     --accent-bright:oklch(0.80 0.155 64);
     --accent-deep:oklch(0.42 0.150 52);
     --on-accent:oklch(0.985 0.010 85);
-    --eo:cubic-bezier(0.23,1,0.32,1);
+    --eo:cubic-bezier(0.16,1,0.3,1);
     position:relative;display:block;background:var(--bg);color:var(--ink);
     font-family:'Inter',system-ui,-apple-system,sans-serif;-webkit-font-smoothing:antialiased;
     padding:clamp(48px,7vh,84px) clamp(20px,4vw,56px) clamp(34px,5vh,54px);
@@ -3323,7 +3408,7 @@
   [data-theme="dark"] #site-footer .fzx-ver{color:var(--accent-bright)}
   #site-footer .fzx-ver::before{content:"";width:5px;height:5px;border-radius:50%;background:var(--accent);flex:none}
 
-  #site-footer .fzx-r{opacity:0;transform:translateY(14px);transition:opacity 620ms var(--eo),transform 620ms var(--eo)}
+  #site-footer .fzx-r{opacity:0;transform:translateY(14px);transition:opacity 560ms var(--eo),transform 560ms var(--eo)}
   #site-footer.fzx-in .fzx-r{opacity:1;transform:none}
   #site-footer.fzx-in .fzx-r[data-d="2"]{transition-delay:90ms}
   #site-footer.fzx-in .fzx-r[data-d="3"]{transition-delay:170ms}
@@ -3416,7 +3501,7 @@
     --border:oklch(0.86 0.008 85);--border-soft:oklch(0.91 0.006 85);
     --accent:oklch(0.50 0.155 55);--accent-bright:oklch(0.80 0.155 64);--accent-deep:oklch(0.42 0.150 52);--on-accent:oklch(0.985 0.010 85);
     --pass:oklch(0.52 0.13 150);
-    --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;--eo:cubic-bezier(0.23,1,0.32,1);
+    --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;--eo:cubic-bezier(0.16,1,0.3,1);
     position:fixed;inset:0;z-index:100;display:grid;place-items:center;padding:24px;
     background:oklch(0.22 0.015 280 / .42);
     -webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px);

@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CertAnvil · Landing Motion Audit — L1–L9 before/after</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600;800&display=swap" rel="stylesheet">
+<style>
+/* ════════════════════════════════════════════════════════════════════════
+   CertAnvil · MOCKUP STARTER TOKEN BLOCK  (copied verbatim from
+   design/brand/mockup-starter-tokens.css — never freehand this, per the
+   2026-06-12 gold-drift lesson)
+   ════════════════════════════════════════════════════════════════════════ */
+:root, [data-theme="dark"] {
+  --bg: oklch(0.17 0.008 275); --surface: oklch(0.205 0.009 275); --surface-2: oklch(0.23 0.009 275);
+  --ink: oklch(0.96 0.006 275); --ink-soft: oklch(0.80 0.012 275); --muted: oklch(0.725 0.013 275);
+  --border: oklch(0.32 0.011 275); --border-soft: oklch(0.255 0.010 275);
+  --accent: oklch(0.80 0.155 64); --accent-deep: oklch(0.86 0.135 64); --on-accent: oklch(0.18 0.020 275);
+  --pass: oklch(0.74 0.150 152); --fail: oklch(0.66 0.17 25);
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+}
+[data-theme="light"] {
+  --bg: oklch(0.975 0.007 85); --surface: oklch(0.992 0.004 85); --surface-2: oklch(0.965 0.010 84);
+  --ink: oklch(0.22 0.015 280); --ink-soft: oklch(0.36 0.014 280); --muted: oklch(0.50 0.013 280);
+  --border: oklch(0.86 0.008 85); --border-soft: oklch(0.91 0.006 85);
+  --accent: oklch(0.50 0.155 55); --accent-deep: oklch(0.42 0.150 52); --on-accent: oklch(0.985 0.010 85);
+  --pass: oklch(0.50 0.15 150); --fail: oklch(0.52 0.19 25);
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+   MOTION TOKENS — BRAND.md §6 values ONLY.
+   transitions.dev's _root.css is deliberately NOT pasted. Every duration
+   below sits in a BRAND duration-table band; every easing collapses to the
+   one system curve. The choreography is the skills'; the numbers are ours.
+   ════════════════════════════════════════════════════════════════════════ */
+:root {
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);          /* THE curve */
+
+  /* L5 · accordion — panel open/close. Open lands in the toast band
+     (340-380ms: a panel arriving should announce itself); close is
+     deliberately faster — enter ≠ exit. */
+  --acc-open: 380ms;
+  --acc-close: 300ms;
+
+  /* L8 · success check — emphasis moment. Values lifted verbatim from the
+     already-shipped app lab so the two surfaces cannot drift apart. */
+  --check-dur: 520ms;
+  --check-rotate-from: 80deg;
+  --check-y-amount: 40px;
+  --check-blur-from: 10px;
+  --check-path-delay: 80ms;
+
+  /* L9 · shimmer — ambient loop, exempt from the ~600ms UI cap the same
+     way the Readiness Meridian and the engine spark are. antalik's 2s. */
+  --shimmer-dur: 2s;
+  --shimmer-base: var(--muted);
+  --shimmer-hi: var(--ink);
+
+  /* L2/L3/L7 · entrance — BRAND card-reveal band (520-560ms) + the 60ms
+     per-index stagger unit. Replaces 700ms @ cubic-bezier(0.23,1,0.32,1). */
+  --reveal-dur: 560ms;
+  --reveal-step: 60ms;
+  --reveal-y: 14px;
+
+  /* the two values being replaced, kept live so BEFORE is real, not a
+     description of itself */
+  --old-ease: cubic-bezier(0.23, 1, 0.32, 1);
+  --old-dur: 700ms;
+}
+
+/* ── page chrome ───────────────────────────────────────────────────────── */
+* { box-sizing: border-box; }
+body {
+  margin: 0; padding: 40px 24px 90px;
+  background: var(--bg); color: var(--ink);
+  font-family: Inter, system-ui, sans-serif;
+  transition: background 220ms var(--ease), color 220ms var(--ease);
+}
+.wrap { max-width: 1120px; margin: 0 auto; }
+.eyebrow {
+  font: 800 10px/1 Inter, sans-serif; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--accent-deep);
+}
+h1 { font: 600 34px/1.15 Fraunces, Georgia, serif; margin: 10px 0 6px; letter-spacing: -0.01em; }
+.sub { color: var(--muted); font-size: 14px; margin: 0 0 14px; max-width: 68ch; line-height: 1.6; }
+.rule { height: 1px; background: var(--border-soft); margin: 30px 0 26px; }
+h2.sec { font: 600 20px/1.3 Fraunces, Georgia, serif; margin: 0 0 4px; }
+p.secsub { color: var(--muted); font-size: 13px; margin: 0 0 20px; max-width: 70ch; line-height: 1.6; }
+
+.card {
+  background: var(--surface); border: 1px solid var(--border-soft);
+  border-radius: 14px; padding: 22px; margin-bottom: 18px;
+}
+.card > h3 { font: 600 16px/1.3 Fraunces, Georgia, serif; margin: 8px 0 4px; }
+.card .why { color: var(--muted); font-size: 12.5px; line-height: 1.6; margin: 0 0 18px; max-width: 78ch; }
+.card .why b { color: var(--ink-soft); font-weight: 600; }
+.tag {
+  display: inline-block; font: 800 9.5px/1 Inter, sans-serif; letter-spacing: .1em;
+  text-transform: uppercase; padding: 5px 8px; border-radius: 5px;
+  background: color-mix(in oklab, var(--accent) 14%, transparent); color: var(--accent-deep);
+}
+.tag.defect { background: color-mix(in oklab, var(--fail) 15%, transparent); color: var(--fail); }
+.tag.dead { background: color-mix(in oklab, var(--muted) 18%, transparent); color: var(--muted); }
+
+.ab { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+@media (max-width: 780px) { .ab { grid-template-columns: 1fr; } }
+.pane { border: 1px solid var(--border-soft); border-radius: 11px; overflow: hidden; }
+.pane > .h {
+  font: 800 9.5px/1 Inter, sans-serif; letter-spacing: .11em; text-transform: uppercase;
+  padding: 9px 12px; background: var(--surface-2); color: var(--muted);
+  border-bottom: 1px solid var(--border-soft);
+}
+.pane.after > .h { color: var(--accent-deep); }
+.stage { padding: 20px; min-height: 150px; display: flex; flex-direction: column;
+         align-items: center; justify-content: center; gap: 12px; background: var(--bg); }
+.stage.tight { min-height: 0; }
+
+button.run {
+  margin-top: 14px; background: var(--accent); color: var(--on-accent);
+  border: 0; border-radius: 9px; padding: 10px 16px;
+  font: 600 13px Inter, sans-serif; cursor: pointer;
+  transition: transform 150ms var(--ease), filter 150ms var(--ease);
+}
+@media (hover: hover) and (pointer: fine) { button.run:hover { filter: brightness(1.07); } }
+button.run:active { transform: scale(0.97); }
+.themebtn {
+  position: fixed; top: 16px; right: 16px; z-index: 20;
+  background: var(--surface-2); color: var(--ink);
+  border: 1px solid var(--border); border-radius: 8px;
+  padding: 8px 13px; font: 600 12px Inter, sans-serif; cursor: pointer;
+}
+code { font: 500 11.5px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace;
+       background: var(--surface-2); padding: 2px 5px; border-radius: 4px; color: var(--ink-soft); }
+
+/* ════════════════════════════════════════════════════════════════════════
+   L5 · ACCORDION  (FAQ)
+   Choreography: transitions.dev 21-accordion — grid-template-rows 0fr→1fr
+   with a chevron flipped by scaleY(-1), never a `d:` path morph.
+   Padding lives on the INNER element; padding on a 0fr track leaves a
+   residual strip so the panel never fully closes.
+   ════════════════════════════════════════════════════════════════════════ */
+.faq { width: 100%; border: 1px solid var(--border-soft); border-radius: 11px; background: var(--surface); overflow: hidden; }
+.faq + .faq { margin-top: 8px; }
+.faq-q {
+  display: grid; grid-template-columns: 1fr 18px; align-items: center; gap: 12px;
+  width: 100%; text-align: left; background: none; border: 0; cursor: pointer;
+  padding: 15px 16px; color: var(--ink); font: 600 13.5px Inter, sans-serif;
+}
+.faq-chev { width: 14px; height: 14px; justify-self: end; color: var(--accent); }
+.faq-chev svg { display: block; width: 14px; height: 14px; }
+.faq-chev svg path { vector-effect: non-scaling-stroke; }
+
+/* — BEFORE: native <details>. Height snaps. Close has no transition at all. */
+.faq.is-before .faq-panel { display: none; }
+.faq.is-before.is-open .faq-panel { display: block; animation: fqxReveal 440ms var(--old-ease); }
+@keyframes fqxReveal { from { opacity: 0; transform: translateY(-7px); } to { opacity: 1; transform: none; } }
+
+/* — AFTER: grid-rows, symmetric, faster out than in. */
+.faq.is-after .faq-panel {
+  display: grid; grid-template-rows: 0fr; opacity: 0;
+  transition: grid-template-rows var(--acc-close) var(--ease), opacity var(--acc-close) var(--ease);
+}
+.faq.is-after.is-open .faq-panel {
+  grid-template-rows: 1fr; opacity: 1;
+  transition: grid-template-rows var(--acc-open) var(--ease), opacity var(--acc-open) var(--ease);
+}
+/* THREE levels, not two. The grid item must carry overflow:hidden and NO
+   padding of its own — padding on the item still contributes to its box, so
+   a two-level structure leaves a residual strip exactly the height of the
+   padding and the panel never fully closes. Measured: 16px residual before
+   this was split out. The padding lives one level further in. */
+.faq.is-after .faq-panel > .faq-panel-inner { overflow: hidden; padding: 0; }
+.faq.is-after .faq-chev { transition: transform var(--acc-open) var(--ease); }
+.faq.is-after.is-open .faq-chev { transform: scaleY(-1); }
+.faq-panel-inner { font-size: 12.5px; line-height: 1.65; color: var(--muted); }
+.faq-copy { padding: 0 16px 16px; }
+
+/* ════════════════════════════════════════════════════════════════════════
+   L8 · SUCCESS CHECK  (#sq2 correct answer)
+   Choreography: transitions.dev 10-success-check — fade + rotate + blur +
+   Y-bob on the host, stroke-draw on the path, five layers on one element.
+   stroke-dasharray is this path's real getTotalLength()+1, never the
+   snippet's placeholder 20.
+   ════════════════════════════════════════════════════════════════════════ */
+.sq { width: 100%; max-width: 330px; display: grid; gap: 7px; }
+.sq-opt {
+  display: grid; grid-template-columns: 24px 1fr; align-items: center; gap: 10px;
+  padding: 10px 12px; border: 1px solid var(--border); border-radius: 9px;
+  background: var(--surface); font: 500 12.5px Inter, sans-serif; color: var(--ink-soft);
+  transition: border-color 200ms var(--ease), background 200ms var(--ease);
+}
+.sq-k { display: grid; place-items: center; width: 24px; height: 24px; border-radius: 6px;
+        border: 1px solid var(--border); font: 700 11px Inter, sans-serif; color: var(--muted); }
+.sq-opt.is-correct { border-color: var(--accent); background: color-mix(in oklab, var(--accent) 11%, var(--bg)); }
+.sq-opt.is-correct .sq-k { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+.sq-verdict { display: flex; align-items: center; gap: 9px; margin-top: 4px;
+              font: 700 14px Fraunces, Georgia, serif; color: var(--accent); }
+.sq-vc { flex: none; width: 23px; height: 23px; border-radius: 50%; display: none; place-items: center;
+         background: color-mix(in oklab, var(--accent) 16%, transparent); color: var(--accent); }
+.sq-vc svg { width: 12px; height: 12px; display: block; }
+.sq.is-answered .sq-vc { display: grid; }              /* BEFORE: this is the whole animation */
+.sq .sq-verdict-tx { opacity: 0; transition: opacity 220ms var(--ease); }
+.sq.is-answered .sq-verdict-tx { opacity: 1; }
+
+/* AFTER — the same display flip, plus the five-layer draw. */
+.sq.is-after .sq-vc { transform-origin: center; will-change: transform, opacity, filter; }
+.sq.is-after.is-answered .sq-vc {
+  animation: ck-fade var(--check-dur) var(--ease) forwards,
+             ck-rot  var(--check-dur) var(--ease) forwards,
+             ck-blur var(--check-dur) var(--ease) forwards,
+             ck-bob  var(--check-dur) var(--ease) forwards;
+}
+/* 23 = this path's real getTotalLength() (21.2) rounded up by 1. Measured in
+   a browser, not guessed — the snippet's placeholder pre-reveals the stroke.
+   NOTE: the shipped app lab uses 26 for this identical path, which over-draws
+   (harmless, but wrong); flag it if the two are ever unified. */
+.sq.is-after .sq-vc svg path { stroke-dasharray: 23; stroke-dashoffset: 23; }
+.sq.is-after.is-answered .sq-vc svg path {
+  animation: ck-draw var(--check-dur) var(--ease) var(--check-path-delay) forwards;
+}
+@keyframes ck-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes ck-rot  { from { transform: rotate(var(--check-rotate-from)); } to { transform: rotate(0deg); } }
+@keyframes ck-blur { from { filter: blur(var(--check-blur-from)); } to { filter: blur(0); } }
+@keyframes ck-bob  { from { translate: 0 var(--check-y-amount); } to { translate: 0 0; } }
+@keyframes ck-draw { to { stroke-dashoffset: 0; } }
+
+/* ════════════════════════════════════════════════════════════════════════
+   L9 · SHIMMER  (pending submit)
+   Sourced from antalik-effects primitives §10 — NOT transitions.dev's
+   15-shimmer-text (same implementation, but antalik ships the light-theme
+   override and the a11y + lifecycle discipline). aria-label carries the
+   state name; the sweep stops the instant the response lands.
+   ════════════════════════════════════════════════════════════════════════ */
+.authbtn {
+  width: 100%; max-width: 300px; padding: 12px 16px; border-radius: 10px; border: 0;
+  background: var(--accent); color: var(--on-accent);
+  font: 600 13.5px Inter, sans-serif; cursor: pointer;
+  transition: transform 150ms var(--ease), filter 150ms var(--ease);
+}
+.authbtn:disabled { cursor: default; background: var(--surface-2); color: var(--muted); }
+.authbtn:active:not(:disabled) { transform: scale(0.97); }
+.t-shimmer {
+  position: relative; color: transparent;
+  background: linear-gradient(90deg,
+    var(--shimmer-base) 0%, var(--shimmer-base) 40%,
+    var(--shimmer-hi) 50%,
+    var(--shimmer-base) 60%, var(--shimmer-base) 100%);
+  background-size: 400% 100%;
+  -webkit-background-clip: text; background-clip: text;
+  animation: t-shimmer var(--shimmer-dur) linear infinite;
+}
+@keyframes t-shimmer { from { background-position: 150% 0; } to { background-position: -50% 0; } }
+
+/* ════════════════════════════════════════════════════════════════════════
+   L2 / L3 / L7 · HERO REVEAL — gating, curve and duration in one demo
+   BEFORE: 700ms @ cubic-bezier(0.23,1,0.32,1), cleared only by rAF(rAF()).
+   AFTER:  560ms @ the system curve, cleared by a forced reflow + a
+           synchronous class flip — the wave-2 fix.
+   ════════════════════════════════════════════════════════════════════════ */
+.hero { width: 100%; max-width: 330px; display: grid; gap: 9px; }
+.hero .hv { opacity: 0; transform: translateY(var(--reveal-y)); }
+.hero.is-before .hv { transition: opacity var(--old-dur) var(--old-ease), transform var(--old-dur) var(--old-ease); }
+.hero.is-after  .hv { transition: opacity var(--reveal-dur) var(--ease), transform var(--reveal-dur) var(--ease); }
+.hero.is-ready .hv { opacity: 1; transform: none; }
+.hero.is-ready .hv[data-d="2"] { transition-delay: calc(var(--reveal-step) * 1); }
+.hero.is-ready .hv[data-d="3"] { transition-delay: calc(var(--reveal-step) * 2); }
+.hero.is-ready .hv[data-d="4"] { transition-delay: calc(var(--reveal-step) * 3); }
+.h-eyebrow { font: 800 9.5px/1 Inter, sans-serif; letter-spacing: .12em; text-transform: uppercase; color: var(--accent-deep); }
+.h-title { font: 600 21px/1.2 Fraunces, Georgia, serif; }
+.h-sub { font-size: 12.5px; color: var(--muted); line-height: 1.55; }
+.h-cta { justify-self: start; background: var(--accent); color: var(--on-accent);
+         padding: 10px 16px; border-radius: 10px; font: 600 12.5px Inter, sans-serif; }
+
+/* ════════════════════════════════════════════════════════════════════════
+   L1 · HOVER GATING
+   The "tap" button below applies .sim-touch, which mirrors exactly what an
+   ungated :hover leaves behind on a touch device: the hover styles land and
+   never come off, because there is no hover-out. The gated tile is wired to
+   the identical rule inside @media (hover:hover) and (pointer:fine), so on
+   touch it simply never matches.
+   ════════════════════════════════════════════════════════════════════════ */
+.tile {
+  width: 100%; max-width: 250px; padding: 14px; border-radius: 11px;
+  border: 1px solid var(--border); background: var(--surface);
+  transition: transform 200ms var(--ease), border-color 200ms var(--ease);
+}
+.tile .n { font: 700 13px Inter, sans-serif; }
+.tile .c { font-size: 11.5px; color: var(--muted); margin-top: 3px; }
+/* ungated — the bug, exactly as it ships today */
+.tile.ungated:hover,
+.tile.ungated.sim-touch { transform: translateY(-3px); border-color: var(--accent); }
+/* gated — the fix */
+@media (hover: hover) and (pointer: fine) {
+  .tile.gated:hover { transform: translateY(-3px); border-color: var(--accent); }
+}
+.stuckmsg { font-size: 11.5px; color: var(--fail); min-height: 16px; }
+.okmsg { font-size: 11.5px; color: var(--pass); min-height: 16px; }
+
+/* ── L4 / L6 · no visual delta, so they get evidence rather than a stage ── */
+.eviden { display: grid; gap: 8px; }
+.ev {
+  display: grid; grid-template-columns: 170px 1fr; gap: 12px; align-items: baseline;
+  padding: 10px 12px; border: 1px solid var(--border-soft); border-radius: 9px; background: var(--bg);
+  font-size: 12px; color: var(--muted); line-height: 1.5;
+}
+.ev .k { color: var(--ink-soft); font-weight: 600; }
+.strike { text-decoration: line-through; opacity: .55; }
+
+/* ════════════════════════════════════════════════════════════════════════
+   REDUCED MOTION — every layer named. Missing one leaves it spinning.
+   ════════════════════════════════════════════════════════════════════════ */
+@media (prefers-reduced-motion: reduce) {
+  .faq.is-after .faq-panel,
+  .faq.is-after.is-open .faq-panel,
+  .faq.is-after .faq-chev { transition: opacity 200ms linear !important; }
+  .faq.is-before.is-open .faq-panel { animation: none !important; }
+  .sq.is-after.is-answered .sq-vc,
+  .sq.is-after.is-answered .sq-vc svg path { animation: none !important; }
+  .sq.is-after .sq-vc svg path { stroke-dashoffset: 0; }
+  .t-shimmer { animation: none !important; background: none; color: var(--muted); }
+  .hero .hv { transition: opacity 220ms linear !important; transform: none !important; }
+  .hero.is-ready .hv { transform: none !important; }
+  .tile { transition: none !important; }
+}
+</style>
+</head>
+<body>
+<button class="themebtn" onclick="document.documentElement.dataset.theme = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'">Theme</button>
+
+<div class="wrap">
+  <div class="eyebrow">Landing page · motion &amp; effects audit</div>
+  <h1>L1–L9, before and after</h1>
+  <p class="sub">
+    Every AFTER pane is timed on the <b>BRAND §6</b> table and uses the one system curve
+    <code>cubic-bezier(0.16, 1, 0.3, 1)</code>. transitions.dev's <code>_root.css</code> is not
+    imported — the choreography is the skills', the numbers are ours. Every BEFORE pane is the
+    real current behaviour, not a description of it.
+  </p>
+
+  <div class="rule"></div>
+  <h2 class="sec">Things you can see</h2>
+  <p class="secsub">Five findings with a visible delta. Play each one.</p>
+
+  <!-- ── L5 ─────────────────────────────────────────────────────────── -->
+  <div class="card">
+    <span class="tag defect">L5 · defect</span>
+    <h3>The FAQ snaps</h3>
+    <p class="why">
+      Today the panel's height jumps instantly on open — only its <i>content</i> fades — and on close
+      there is no transition at all, so it vanishes. Open and close the left one, then the right.
+      The fix is <b>grid-template-rows 0fr→1fr</b>, which already exists in <code>styles.css:4597</code>
+      wired to pricing.html's markup. Close is deliberately faster than open.
+    </p>
+    <div class="ab">
+      <div class="pane">
+        <div class="h">Before — snap open, vanish on close</div>
+        <div class="stage tight">
+          <div class="faq is-before" id="faq-b">
+            <button class="faq-q" onclick="this.parentNode.classList.toggle('is-open')">
+              Do I need my own API key?
+              <span class="faq-chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 9l7 6 7-6"/></svg></span>
+            </button>
+            <div class="faq-panel"><div class="faq-panel-inner"><div class="faq-copy">
+              No. The baseline diagnostic runs on ours. You only supply a key if you want to generate
+              unlimited practice questions on the free tier.
+            </div></div></div>
+          </div>
+        </div>
+      </div>
+      <div class="pane after">
+        <div class="h">After — 380ms open / 300ms close</div>
+        <div class="stage tight">
+          <div class="faq is-after" id="faq-a">
+            <button class="faq-q" onclick="this.parentNode.classList.toggle('is-open')">
+              Do I need my own API key?
+              <span class="faq-chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 9l7 6 7-6"/></svg></span>
+            </button>
+            <div class="faq-panel"><div class="faq-panel-inner"><div class="faq-copy">
+              No. The baseline diagnostic runs on ours. You only supply a key if you want to generate
+              unlimited practice questions on the free tier.
+            </div></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── L8 ─────────────────────────────────────────────────────────── -->
+  <div class="card">
+    <span class="tag">L8 · addition · celebration</span>
+    <h3>The sample-question tick teleports</h3>
+    <p class="why">
+      The one celebration moment on the site — a stranger gets the <code>/26</code> question right
+      before signing up. The check SVG already exists; its only motion is <code>display: none → grid</code>.
+      The AFTER draws it. <b>Wrong answers get nothing</b> — you don't animate someone's mistake.
+    </p>
+    <div class="ab">
+      <div class="pane">
+        <div class="h">Before — appears instantly</div>
+        <div class="stage">
+          <div class="sq" id="sq-b">
+            <div class="sq-opt"><span class="sq-k">A</span>30 usable hosts</div>
+            <div class="sq-opt" data-right><span class="sq-k">B</span>62 usable hosts</div>
+            <div class="sq-verdict">
+              <span class="sq-vc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg></span>
+              <span class="sq-verdict-tx">Correct.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="pane after">
+        <div class="h">After — 520ms five-layer draw</div>
+        <div class="stage">
+          <div class="sq is-after" id="sq-a">
+            <div class="sq-opt"><span class="sq-k">A</span>30 usable hosts</div>
+            <div class="sq-opt" data-right><span class="sq-k">B</span>62 usable hosts</div>
+            <div class="sq-verdict">
+              <span class="sq-vc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg></span>
+              <span class="sq-verdict-tx">Correct.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <button class="run" onclick="playSq()">Answer B (correct)</button>
+  </div>
+
+  <!-- ── L9 ─────────────────────────────────────────────────────────── -->
+  <div class="card">
+    <span class="tag">L9 · addition · state</span>
+    <h3>“Sending…” doesn't move</h3>
+    <p class="why">
+      Both async submits swap plain text and stop. An email round-trip is invisible work with a wait
+      the visitor can't predict. Shimmer sourced from <b>antalik-effects</b>, not transitions.dev —
+      it carries the <code>aria-label</code> discipline (the state name, <i>“Sending your link”</i>,
+      never “Loading”) and stops the instant the response lands. Watch it hand off to the check.
+    </p>
+    <div class="ab">
+      <div class="pane">
+        <div class="h">Before — static disabled label</div>
+        <div class="stage"><button class="authbtn" id="auth-b" disabled>Continue with email →</button></div>
+      </div>
+      <div class="pane after">
+        <div class="h">After — 2s sweep, stops on response</div>
+        <div class="stage"><button class="authbtn" id="auth-a" disabled>Continue with email →</button></div>
+      </div>
+    </div>
+    <button class="run" onclick="playAuth()">Submit the form</button>
+  </div>
+
+  <!-- ── L2 / L3 / L7 ───────────────────────────────────────────────── -->
+  <div class="card">
+    <span class="tag defect">L2 · defect</span> <span class="tag dead">L3 · L7 · drift</span>
+    <h3>The hero reveal — gating, curve and duration</h3>
+    <p class="why">
+      Three findings on one element. <b>L2:</b> the reveal is cleared only by <code>rAF(rAF())</code>
+      with no safety net — the app carries a 1.6s unconditional un-hide behind the same pattern, the
+      landing doesn't. The AFTER uses the wave-2 fix: forced reflow, synchronous flip.
+      <b>L3:</b> <code>cubic-bezier(0.23,1,0.32,1)</code> → the system curve.
+      <b>L7:</b> 700ms → 560ms, back inside the BRAND card-reveal band. Play them together; the
+      AFTER lands noticeably sooner without feeling rushed.
+    </p>
+    <div class="ab">
+      <div class="pane">
+        <div class="h">Before — 700ms · off-brand curve</div>
+        <div class="stage">
+          <div class="hero is-before" id="hero-b">
+            <div class="hv h-eyebrow" data-d="1">Free baseline diagnostic</div>
+            <div class="hv h-title" data-d="2">Find out what you don't know yet.</div>
+            <div class="hv h-sub" data-d="3">About 20 minutes. No account needed.</div>
+            <div class="hv h-cta" data-d="4">Take the diagnostic →</div>
+          </div>
+        </div>
+      </div>
+      <div class="pane after">
+        <div class="h">After — 560ms · system curve</div>
+        <div class="stage">
+          <div class="hero is-after" id="hero-a">
+            <div class="hv h-eyebrow" data-d="1">Free baseline diagnostic</div>
+            <div class="hv h-title" data-d="2">Find out what you don't know yet.</div>
+            <div class="hv h-sub" data-d="3">About 20 minutes. No account needed.</div>
+            <div class="hv h-cta" data-d="4">Take the diagnostic →</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <button class="run" onclick="playHero()">Replay both</button>
+  </div>
+
+  <!-- ── L1 ─────────────────────────────────────────────────────────── -->
+  <div class="card">
+    <span class="tag defect">L1 · defect · high</span>
+    <h3>Hover that never comes off</h3>
+    <p class="why">
+      23 rules from <code>styles.css</code> still land on this page ungated — including
+      <code>.auth-cta:hover</code>, the one conversion action on the site, and every
+      <code>.cert-tile</code>. On touch there is no hover-<i>out</i>, so a tap leaves them lit until
+      you tap something else. The button below applies the state a tap leaves behind on both tiles;
+      only the ungated one keeps it.
+    </p>
+    <div class="ab">
+      <div class="pane">
+        <div class="h">Before — ungated</div>
+        <div class="stage">
+          <div class="tile ungated" id="tile-b"><div class="n">Network+</div><div class="c">N10-009 · live</div></div>
+          <div class="stuckmsg" id="tile-b-msg"></div>
+        </div>
+      </div>
+      <div class="pane after">
+        <div class="h">After — @media (hover:hover) and (pointer:fine)</div>
+        <div class="stage">
+          <div class="tile gated" id="tile-a"><div class="n">Network+</div><div class="c">N10-009 · live</div></div>
+          <div class="okmsg" id="tile-a-msg"></div>
+        </div>
+      </div>
+    </div>
+    <button class="run" onclick="playTap()">Tap both tiles (simulated touch)</button>
+  </div>
+
+  <div class="rule"></div>
+  <h2 class="sec">Things you can't see</h2>
+  <p class="secsub">
+    Two findings with no visual delta at all. They're here so the shortlist is complete, not because
+    there's anything to look at — the payoff is bytes on the page where first paint is the conversion.
+  </p>
+
+  <div class="card">
+    <span class="tag dead">L4 · dead code</span>
+    <h3><code>--eio</code> is three-quarters dead</h3>
+    <div class="eviden">
+      <div class="ev"><span class="k">Declared 4×</span><span><code class="strike">index.html:371</code> · <code class="strike">:1094</code> · <code class="strike">:1399</code> · <code>:1887</code></span></div>
+      <div class="ev"><span class="k">Actually used 1×</span><span><code>.pp-eng-spark</code> at <code>:1942</code> — a legitimate 4s travel loop. Keep the declaration nearest it; delete the other three.</span></div>
+      <div class="ev"><span class="k">Precedent</span><span>Same curve was deleted as fully inert on Home (finding <b>H2</b>). Here one real use survives, so this is a 3-line deletion, not 4.</span></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <span class="tag dead">L6 · dead code</span>
+    <h3>The orphaned M-3 / M-6 motion block</h3>
+    <div class="eviden">
+      <div class="ev"><span class="k">Delete</span><span><code class="strike">.sq-option</code> <code class="strike">.hero-stagger</code> <code class="strike">.reveal</code> <code class="strike">.pp-tile</code> <code class="strike">.btn-secondary</code> — 0 occurrences in <code>index.html</code></span></div>
+      <div class="ev"><span class="k">Keep</span><span><code>.faq-a</code> / <code>.faq-item</code> (live on pricing.html) · <code>.btn-primary</code> (live on account.html)</span></div>
+      <div class="ev"><span class="k">Where</span><span><code>styles.css:4586-4640</code>, inside a 123 KB render-blocking stylesheet</span></div>
+    </div>
+  </div>
+
+  <div class="rule"></div>
+  <p class="sub" style="margin:0">
+    Nothing here is wired into the live landing page. This is the mockup; the lift comes after sign-off.
+  </p>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  /* L8 — replay needs remove → forced reflow → re-add, or the animation
+     simply doesn't run the second time. */
+  window.playSq = function(){
+    [document.getElementById('sq-b'), document.getElementById('sq-a')].forEach(function(sq){
+      sq.classList.remove('is-answered');
+      sq.querySelectorAll('.sq-opt').forEach(function(o){ o.classList.remove('is-correct'); });
+      void sq.offsetWidth;
+      sq.querySelector('[data-right]').classList.add('is-correct');
+      sq.classList.add('is-answered');
+    });
+  };
+
+  /* L9 — the shimmer is a STATE, so it ends when the state does. Both panes
+     run the same fake 1.8s round-trip; only the AFTER pane shimmers. */
+  var authBusy = false;
+  window.playAuth = function(){
+    if (authBusy) return;
+    authBusy = true;
+    var b = document.getElementById('auth-b');
+    var a = document.getElementById('auth-a');
+
+    b.disabled = true;
+    b.textContent = 'Sending…';
+
+    a.disabled = true;
+    a.innerHTML = '<span class="t-shimmer">Sending your link…</span>';
+    a.setAttribute('aria-label', 'Sending your link');
+    a.setAttribute('aria-busy', 'true');
+
+    setTimeout(function(){
+      b.textContent = '✓ Check your inbox';
+      /* the sweep stops here — not on a timer of its own */
+      a.removeAttribute('aria-busy');
+      a.setAttribute('aria-label', 'Link sent. Check your inbox.');
+      a.innerHTML = '<span style="display:inline-flex;align-items:center;gap:8px">' +
+        '<span class="sq-vc" style="display:grid;width:19px;height:19px">' +
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" ' +
+        'stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg></span>' +
+        'Check your inbox</span>';
+      setTimeout(function(){
+        b.disabled = false; b.textContent = 'Continue with email →'; b.disabled = true;
+        a.disabled = true; a.textContent = 'Continue with email →';
+        a.removeAttribute('aria-label');
+        authBusy = false;
+      }, 2200);
+    }, 1800);
+  };
+
+  /* L2 — the AFTER path is the fix itself: forced reflow, then a synchronous
+     class flip. No rAF anywhere, so a backgrounded tab can't strand it. */
+  window.playHero = function(){
+    var before = document.getElementById('hero-b');
+    var after  = document.getElementById('hero-a');
+    before.classList.remove('is-ready');
+    after.classList.remove('is-ready');
+    void before.offsetWidth; void after.offsetWidth;
+    before.classList.add('is-ready');
+    after.classList.add('is-ready');
+  };
+  playHero();
+
+  /* L1 — .sim-touch reproduces what an ungated :hover leaves behind after a
+     tap. The gated tile gets the identical class and is unaffected, because
+     its rule lives inside the pointer query. */
+  window.playTap = function(){
+    var b = document.getElementById('tile-b');
+    var a = document.getElementById('tile-a');
+    b.classList.add('sim-touch');
+    a.classList.add('sim-touch');
+    document.getElementById('tile-b-msg').textContent = 'Still lifted. Nothing will clear it but another tap elsewhere.';
+    document.getElementById('tile-a-msg').textContent = 'Unchanged — the rule never matched on touch.';
+    setTimeout(function(){
+      b.classList.remove('sim-touch');
+      a.classList.remove('sim-touch');
+      document.getElementById('tile-b-msg').textContent = '';
+      document.getElementById('tile-a-msg').textContent = '';
+    }, 3200);
+  };
+})();
+</script>
+</body>
+</html>

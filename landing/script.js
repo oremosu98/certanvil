@@ -140,8 +140,16 @@
 
       // Disable submit during request
       if (submitBtn) {
+        /* L9 · same shimmer as the auth modal. Was 'Sending...' with three
+           ASCII dots; the rest of the codebase uses the ellipsis character. */
         submitBtn.disabled = true;
-        submitBtn.textContent = 'Sending...';
+        submitBtn.setAttribute('aria-busy', 'true');
+        submitBtn.setAttribute('aria-label', 'Sending your request');
+        submitBtn.innerHTML = '';
+        var busySpan = document.createElement('span');
+        busySpan.className = 't-shimmer';
+        busySpan.textContent = 'Sending…';
+        submitBtn.appendChild(busySpan);
       }
 
       let success = false;
@@ -179,6 +187,8 @@
       // Confirmation UX (works whether or not the API succeeded)
       if (submitBtn) {
         submitBtn.disabled = false;
+        submitBtn.removeAttribute('aria-busy');
+        submitBtn.removeAttribute('aria-label');
         submitBtn.textContent = 'Notify me';
       }
       if (notifyFoot) {

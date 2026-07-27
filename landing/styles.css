@@ -169,9 +169,11 @@ button { font: inherit; border: 0; background: transparent; cursor: pointer; col
   border-radius: 8px;
   transition: color .15s ease, background-color .15s ease;
 }
-.nav-link:hover {
-  color: var(--text);
-  background: var(--surface-2);
+@media (hover: hover) and (pointer: fine) {
+  .nav-link:hover {
+    color: var(--text);
+    background: var(--surface-2);
+  }
 }
 @media (max-width: 540px) {
   .topbar-nav .nav-link { display: none; }
@@ -188,9 +190,11 @@ button { font: inherit; border: 0; background: transparent; cursor: pointer; col
   transition: color .15s ease, background-color .15s ease;
   position: relative;
 }
-.theme-toggle:hover {
-  color: var(--text);
-  background: var(--surface-2);
+@media (hover: hover) and (pointer: fine) {
+  .theme-toggle:hover {
+    color: var(--text);
+    background: var(--surface-2);
+  }
 }
 .theme-toggle:focus-visible {
   outline: 2px solid var(--accent);
@@ -342,10 +346,12 @@ button { font: inherit; border: 0; background: transparent; cursor: pointer; col
   overflow: hidden;
   box-shadow: var(--shadow-card);
 }
-.cert-tile:hover {
-  transform: translateY(-3px);
-  border-color: var(--accent);
-  box-shadow: var(--shadow-card-hover);
+@media (hover: hover) and (pointer: fine) {
+  .cert-tile:hover {
+    transform: translateY(-3px);
+    border-color: var(--accent);
+    box-shadow: var(--shadow-card-hover);
+  }
 }
 .cert-tile:focus-visible {
   outline: 2px solid var(--accent);
@@ -372,10 +378,12 @@ button { font: inherit; border: 0; background: transparent; cursor: pointer; col
   opacity: .76;
   cursor: default;
 }
-.cert-tile.is-soon:hover {
-  transform: none;
-  border-color: var(--border);
-  box-shadow: var(--shadow-card);
+@media (hover: hover) and (pointer: fine) {
+  .cert-tile.is-soon:hover {
+    transform: none;
+    border-color: var(--border);
+    box-shadow: var(--shadow-card);
+  }
 }
 
 .cert-tile-top {
@@ -634,9 +642,11 @@ button { font: inherit; border: 0; background: transparent; cursor: pointer; col
   border-radius: 6px;
   transition: color .15s ease, background-color .15s ease;
 }
-.foot-link:hover {
-  color: var(--text-mid);
-  background: var(--surface-2);
+@media (hover: hover) and (pointer: fine) {
+  .foot-link:hover {
+    color: var(--text-mid);
+    background: var(--surface-2);
+  }
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
@@ -684,9 +694,11 @@ button { font: inherit; border: 0; background: transparent; cursor: pointer; col
   justify-content: center;
   transition: color .15s, background .15s;
 }
-.modal-close:hover {
-  color: var(--text);
-  background: var(--surface-2);
+@media (hover: hover) and (pointer: fine) {
+  .modal-close:hover {
+    color: var(--text);
+    background: var(--surface-2);
+  }
 }
 .modal-title {
   font-size: 20px;
@@ -734,10 +746,12 @@ button { font: inherit; border: 0; background: transparent; cursor: pointer; col
   font-size: 14px;
   transition: background .15s, transform .15s, box-shadow .15s;
 }
-.modal-cta:hover {
-  background: var(--accent-hover);
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-cta);
+@media (hover: hover) and (pointer: fine) {
+  .modal-cta:hover {
+    background: var(--accent-hover);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-cta);
+  }
 }
 .modal-foot {
   font-size: 11px;
@@ -763,10 +777,12 @@ button { font: inherit; border: 0; background: transparent; cursor: pointer; col
   margin-left: 4px;
   transition: background-color .15s ease, transform .15s ease, box-shadow .15s ease;
 }
-.sign-in-btn:hover {
-  background: var(--accent-hover);
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-cta);
+@media (hover: hover) and (pointer: fine) {
+  .sign-in-btn:hover {
+    background: var(--accent-hover);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-cta);
+  }
 }
 .sign-in-btn:focus-visible {
   outline: 2px solid var(--accent);
@@ -875,9 +891,11 @@ button { font: inherit; border: 0; background: transparent; cursor: pointer; col
   text-decoration: none;
   transition: background-color .15s ease, color .15s ease;
 }
-.dropdown-link:hover {
-  background: var(--surface-2);
-  color: var(--text);
+@media (hover: hover) and (pointer: fine) {
+  .dropdown-link:hover {
+    background: var(--surface-2);
+    color: var(--text);
+  }
 }
 .dropdown-link:focus-visible {
   outline: 2px solid var(--accent);
@@ -890,14 +908,18 @@ button { font: inherit; border: 0; background: transparent; cursor: pointer; col
   margin: 4px 0;
 }
 .dropdown-link-danger { color: #dc2626; }
-.dropdown-link-danger:hover {
-  background: rgba(220,38,38,.06);
-  color: #dc2626;
+@media (hover: hover) and (pointer: fine) {
+  .dropdown-link-danger:hover {
+    background: rgba(220,38,38,.06);
+    color: #dc2626;
+  }
 }
 :root[data-theme="dark"] .dropdown-link-danger { color: #f87171; }
-:root[data-theme="dark"] .dropdown-link-danger:hover {
-  background: rgba(248,113,113,.08);
-  color: #f87171;
+@media (hover: hover) and (pointer: fine) {
+  :root[data-theme="dark"] .dropdown-link-danger:hover {
+    background: rgba(248,113,113,.08);
+    color: #f87171;
+  }
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
@@ -935,7 +957,7 @@ button { font: inherit; border: 0; background: transparent; cursor: pointer; col
   max-height: calc(100vh - 32px);
   overflow-y: auto;
   transform: scale(0.95) translateY(8px);
-  transition: transform .25s cubic-bezier(0.23, 1, 0.32, 1);
+  transition: transform .25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .auth-modal-overlay:not([hidden]) .auth-modal-card {
   transform: scale(1) translateY(0);
@@ -959,9 +981,11 @@ button { font: inherit; border: 0; background: transparent; cursor: pointer; col
   cursor: pointer;
   transition: color .15s, background-color .15s;
 }
-.auth-modal-close:hover {
-  background: var(--surface-2);
-  color: var(--text);
+@media (hover: hover) and (pointer: fine) {
+  .auth-modal-close:hover {
+    background: var(--surface-2);
+    color: var(--text);
+  }
 }
 
 .auth-state[hidden] { display: none; }
@@ -1027,10 +1051,12 @@ button { font: inherit; border: 0; background: transparent; cursor: pointer; col
   transition: background 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
   letter-spacing: 0.01em;
 }
-.auth-cta-secondary:hover {
-  background: linear-gradient(135deg, rgba(245, 158, 11, 0.14), rgba(245, 158, 11, 0.06));
-  border-color: rgba(245, 158, 11, 0.6);
-  transform: translateY(-1px);
+@media (hover: hover) and (pointer: fine) {
+  .auth-cta-secondary:hover {
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.14), rgba(245, 158, 11, 0.06));
+    border-color: rgba(245, 158, 11, 0.6);
+    transform: translateY(-1px);
+  }
 }
 .auth-cta-secondary strong {
   font-weight: 700;
@@ -1045,9 +1071,11 @@ button { font: inherit; border: 0; background: transparent; cursor: pointer; col
   color: #fbbf24;
   border-color: rgba(245, 158, 11, 0.45);
 }
-[data-theme="dark"] .auth-cta-secondary:hover {
-  background: linear-gradient(135deg, rgba(245, 158, 11, 0.25), rgba(245, 158, 11, 0.1));
-  border-color: rgba(245, 158, 11, 0.65);
+@media (hover: hover) and (pointer: fine) {
+  [data-theme="dark"] .auth-cta-secondary:hover {
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.25), rgba(245, 158, 11, 0.1));
+    border-color: rgba(245, 158, 11, 0.65);
+  }
 }
 [data-theme="dark"] .auth-cta-secondary strong { color: #fde68a; }
 
@@ -1158,14 +1186,54 @@ button { font: inherit; border: 0; background: transparent; cursor: pointer; col
   font-family: inherit;
   transition: background-color .15s, transform .15s, box-shadow .15s;
 }
-.auth-cta:hover:not(:disabled) {
-  background: var(--accent-hover);
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-cta);
+@media (hover: hover) and (pointer: fine) {
+  .auth-cta:hover:not(:disabled) {
+    background: var(--accent-hover);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-cta);
+  }
 }
 .auth-cta:disabled {
   opacity: .65;
   cursor: not-allowed;
+}
+
+/* ══ L9 · pending-submit shimmer ═══════════════════════════════════════
+   Sourced from antalik-effects primitives §10, NOT transitions-dev's
+   15-shimmer-text — same implementation upstream, but antalik carries the
+   a11y + lifecycle discipline (aria-label = the state name, never
+   "Loading"). Used by BOTH the auth modal and the notify modal.
+
+   The 2s sweep is an ambient loop and is exempt from the ~600ms UI cap the
+   same way the Readiness Meridian and the engine spark are.
+
+   Two deliberate departures from the skill, both because of where this
+   sits rather than laziness:
+   · No light/dark override. antalik ships one because their label sits on
+     the page background; this one sits on a fixed --accent fill with
+     color:#fff in both themes, so one band is correct.
+   · No IntersectionObserver / visibilitychange pause. Those exist to stop
+     effects that outlive attention. This span is created when a request
+     starts and destroyed when it resolves, inside an open modal that is by
+     definition on screen — there is no offscreen state to observe. */
+.t-shimmer {
+  color: transparent;
+  background: linear-gradient(90deg,
+    rgba(255,255,255,.58) 0%,   rgba(255,255,255,.58) 40%,
+    #fff 50%,
+    rgba(255,255,255,.58) 60%,  rgba(255,255,255,.58) 100%);
+  background-size: 400% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  animation: t-shimmer 2s linear infinite;
+}
+@keyframes t-shimmer {
+  from { background-position: 150% 0; }
+  to   { background-position: -50% 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  /* one static frame, not a frozen gradient */
+  .t-shimmer { animation: none; background: none; color: #fff; opacity: .8; }
 }
 
 .auth-divider {
@@ -1237,7 +1305,9 @@ button { font: inherit; border: 0; background: transparent; cursor: pointer; col
   font-weight: 500;
   text-decoration: none;
 }
-.auth-foot a:hover { text-decoration: underline; }
+@media (hover: hover) and (pointer: fine) {
+  .auth-foot a:hover { text-decoration: underline; }
+}
 
 /* ── State B: magic link sent confirmation ── */
 .auth-state-sent {
@@ -1296,7 +1366,9 @@ button { font: inherit; border: 0; background: transparent; cursor: pointer; col
   font-weight: 500;
   text-decoration: none;
 }
-.auth-sent-resend a:hover { text-decoration: underline; }
+@media (hover: hover) and (pointer: fine) {
+  .auth-sent-resend a:hover { text-decoration: underline; }
+}
 
 /* ══════════════════════════════════════════════════════════════════════════
    HERO CTAs (Ship B-2) — primary diagnostic + secondary "pick a cert"
@@ -1326,10 +1398,12 @@ button { font: inherit; border: 0; background: transparent; cursor: pointer; col
   font-family: inherit;
   transition: transform .15s ease, box-shadow .15s ease, background-color .15s ease;
 }
-.cta-primary:hover {
-  background: var(--accent-hover);
-  transform: translateY(-2px);
-  box-shadow: 0 10px 24px rgba(91,79,219,.42);
+@media (hover: hover) and (pointer: fine) {
+  .cta-primary:hover {
+    background: var(--accent-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 10px 24px rgba(91,79,219,.42);
+  }
 }
 .cta-primary:focus-visible {
   outline: 2px solid var(--accent);
@@ -1360,7 +1434,9 @@ button { font: inherit; border: 0; background: transparent; cursor: pointer; col
   font-family: inherit;
   transition: color .15s ease;
 }
-.cta-secondary:hover { color: var(--text); }
+@media (hover: hover) and (pointer: fine) {
+  .cta-secondary:hover { color: var(--text); }
+}
 .cta-secondary:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 3px;
@@ -2277,10 +2353,12 @@ button { font: inherit; border: 0; background: transparent; cursor: pointer; col
   background: var(--surface);
   transition: border-color .15s ease, transform .15s ease, box-shadow .15s ease;
 }
-.my-cert-row:hover {
-  border-color: var(--accent);
-  transform: translateY(-1px);
-  box-shadow: 0 6px 18px -8px rgba(124, 111, 247, .35);
+@media (hover: hover) and (pointer: fine) {
+  .my-cert-row:hover {
+    border-color: var(--accent);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 18px -8px rgba(124, 111, 247, .35);
+  }
 }
 .my-cert-glyph {
   width: 40px; height: 40px;
@@ -2341,7 +2419,9 @@ button { font: inherit; border: 0; background: transparent; cursor: pointer; col
   text-decoration: none;
   transition: color .15s ease;
 }
-.my-certs-foot-link:hover { color: var(--accent); }
+@media (hover: hover) and (pointer: fine) {
+  .my-certs-foot-link:hover { color: var(--accent); }
+}
 
 /* Cross-cert analytics modal removed in Phase D — modal-only styles
    (.cca-modal-card / .cca-icon / .cca-sub / .cca-roadmap* / .cca-preview* /
@@ -3395,7 +3475,9 @@ button { font: inherit; border: 0; background: transparent; cursor: pointer; col
   box-shadow: var(--shadow-cta);
   transition: transform .15s ease, box-shadow .2s ease;
 }
-.pp-cta-btn:hover { transform: translateY(-1px); }
+@media (hover: hover) and (pointer: fine) {
+  .pp-cta-btn:hover { transform: translateY(-1px); }
+}
 .pp-cta-btn-ghost {
   background: transparent;
   color: var(--accent);
@@ -3665,7 +3747,7 @@ button { font: inherit; border: 0; background: transparent; cursor: pointer; col
   z-index: 2;
   text-align: center;
   border: 1px solid var(--border);
-  animation: ermModalIn .35s cubic-bezier(0.2, 0.8, 0.2, 1);
+  animation: ermModalIn .35s cubic-bezier(0.16, 1, 0.3, 1);
 }
 @keyframes ermModalIn {
   from { opacity: 0; transform: scale(.92) translateY(8px); }
@@ -3675,7 +3757,7 @@ button { font: inherit; border: 0; background: transparent; cursor: pointer; col
 .confetti-burst {
   font-size: 56px;
   margin-bottom: 12px;
-  animation: confettiBurstPop .6s cubic-bezier(0.2, 0.8, 0.2, 1);
+  animation: confettiBurstPop .6s cubic-bezier(0.16, 1, 0.3, 1);
 }
 @keyframes confettiBurstPop {
   0% { transform: scale(0.85) rotate(-10deg); opacity: 0; }
@@ -3789,7 +3871,7 @@ button { font: inherit; border: 0; background: transparent; cursor: pointer; col
   position: absolute;
   pointer-events: none;
   z-index: 1;
-  animation: sprinkleFall 1.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+  animation: sprinkleFall 1.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 @keyframes sprinkleFall {
   0% { transform: translateY(-40px) rotate(0); opacity: 0; }
@@ -4564,30 +4646,11 @@ button { font: inherit; border: 0; background: transparent; cursor: pointer; col
   }
 }
 
-/* ── M-3: Scroll-triggered section reveals ── */
-.reveal {
-  opacity: 0;
-  transform: translateY(24px);
-  transition: opacity 500ms cubic-bezier(0.23, 1, 0.32, 1),
-              transform 500ms cubic-bezier(0.23, 1, 0.32, 1);
-}
-.reveal.is-visible {
-  opacity: 1;
-  transform: translateY(0);
-}
-
-/* ── M-3: Hero staggered entrance ── */
-.hero-stagger { opacity: 0; transform: translateY(20px); animation: heroReveal .5s cubic-bezier(0.23, 1, 0.32, 1) forwards; }
-.hero-stagger:nth-child(1) { animation-delay: 0ms; }
-.hero-stagger:nth-child(2) { animation-delay: 80ms; }
-.hero-stagger:nth-child(3) { animation-delay: 160ms; }
-.hero-stagger:nth-child(4) { animation-delay: 240ms; }
-.hero-stagger:nth-child(5) { animation-delay: 320ms; }
-@keyframes heroReveal { to { opacity: 1; transform: translateY(0); } }
-
-/* ── M-3: CTA button :active press ── */
+/* ── M-3: CTA button :active press ──
+   .btn-secondary dropped 2026-07-27 (L6): the only remaining match was the
+   substring inside .er-btn-secondary / .confetti-btn-secondary in
+   lib/account.js, which are different classes. The other three are live. */
 .btn-primary:active,
-.btn-secondary:active,
 .btn-ghost:active,
 .cert-tile:active {
   transform: translateY(0) scale(0.98);
@@ -4608,33 +4671,8 @@ button { font: inherit; border: 0; background: transparent; cursor: pointer; col
   overflow: hidden;
 }
 
-/* ── M-6: Proof-of-product tile hover ── */
-.pp-tile {
-  transition: border-color .2s ease, transform .2s ease;
-}
-@media (hover: hover) {
-  .pp-tile:hover {
-    border-color: var(--accent-soft-border);
-    transform: translateY(-2px);
-  }
-}
-
-/* ── M-6: Sample question feedback glow ── */
-.sq-option.is-correct {
-  transition: box-shadow .3s ease-out, border-color .15s;
-  box-shadow: 0 0 0 3px rgba(34, 197, 94, .25);
-}
-.sq-option.is-wrong {
-  transition: box-shadow .3s ease-out, border-color .15s;
-  box-shadow: 0 0 0 3px rgba(220, 38, 38, .25);
-}
-
 /* ── Reduced-motion gate for M-3 + M-6 ── */
 @media (prefers-reduced-motion: reduce) {
-  .reveal { opacity: 1; transform: none; transition: none; }
-  .hero-stagger { opacity: 1; transform: none; animation: none; }
   .auth-modal-card { transform: none; transition: none; }
   .faq-a { transition: none; grid-template-rows: 1fr; }
-  .sq-option.is-correct,
-  .sq-option.is-wrong { transition: none; }
 }
