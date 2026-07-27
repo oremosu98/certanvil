@@ -103,18 +103,12 @@
     }
   });
 
-  // Wire up Notify buttons on coming-soon tiles
-  document.querySelectorAll('.cert-cta-notify').forEach(function(btn) {
-    btn.addEventListener('click', function(e) {
-      e.preventDefault();
-      e.stopPropagation();
-      const tile = btn.closest('.cert-tile');
-      if (!tile) return;
-      const nameEl = tile.querySelector('.cert-name');
-      const certLabel = nameEl ? nameEl.textContent : 'this cert';
-      openNotifyModal(certLabel);
-    });
-  });
+  // NOTE (2026-07-27): the .cert-cta-notify wiring that used to live here was
+  // removed as dead code. The #certs section was rebuilt as JS-built "plates",
+  // and each coming-soon plate is itself a <button> that opens #notify-modal
+  // directly (see buildPlate() in index.html). The conversion path is intact —
+  // there were simply zero .cert-cta-notify elements left for this to bind to.
+  // The pricing-page entry point below is still live.
 
   // Wire the pricing-page "Start Pro" CTA into the same notify flow. Stripe
   // checkout lands in a later phase; until then capture launch intent instead

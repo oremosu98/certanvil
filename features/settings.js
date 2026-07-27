@@ -7,9 +7,29 @@
   let _apiKeyDebounceTimer = null;
 
   // ── moved functions, 2-space indent ──
+  // v8.7.1 fix: the plan card and the locked-cert upsell are both built by the
+  // LAZY-LOADED diagnostic module. Settings can render before that module has
+  // loaded, in which case the two `typeof … === 'function'` guards in
+  // _renderPassPlanFreeHtml() / _renderPassPlanBrowserProHtml() both fall
+  // through to '' and this section paints as a bare "Your Pass Plan" header —
+  // silently dropping the "Take the baseline diagnostic" CTA and the
+  // "Get Pro at launch" upsell chips. Caught by the visual-regression suite
+  // (settings snapshot lost 450px of height); same window-exposure class as the
+  // wave 7/8 regressions, same fix shape as the _loadFeature('reports') call
+  // further down this file. One-shot flag so a module that loads WITHOUT
+  // defining the helper cannot loop.
+  var _passPlanDiagLoadTried = false;
+
   function renderPassPlanSection() {
     var host = document.getElementById('passplan-section');
     if (!host) return;
+    if (typeof _passPlanCurrentCertCardHtml !== 'function' &&
+        !_passPlanDiagLoadTried && typeof _loadFeature === 'function') {
+      _passPlanDiagLoadTried = true;
+      _loadFeature('diagnostic')
+        .then(function () { renderPassPlanSection(); })
+        .catch(function () { /* offline — the guards below still degrade safely */ });
+    }
     var isPro = !!_quotaState && (_quotaState.tier === 'pro' ||
       (typeof _quotaState.daily_limit === 'number' && _quotaState.daily_limit < 0));
     // Installed app (iOS PWA) shows all certs' plans; a plain browser tab is one

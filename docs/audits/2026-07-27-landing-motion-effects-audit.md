@@ -115,13 +115,17 @@ was changed. Flagged for a decision.
   parsed on the page where first paint is the conversion, doing nothing. This is
   also *why* `.sq-option` read as dead in L6 — the CSS outlived its host, and the
   script outlived it too.
-- **The "on the anvil" plates no longer carry `.cert-cta-notify`.** The rebuilt
-  `#certs` section's header comment claims the class contract is preserved, and
-  `script.js:107` still wires that selector, but there are **zero** matches on
-  `index.html`. The notify modal is still reachable — from `pricing.html`, via
-  `[data-action="pro-signup"]` — but from the cert library on the landing page
-  there is now no way to register interest in a coming-soon cert. That reads as
-  a lost conversion path rather than a cleanup.
+- ~~**The "on the anvil" plates no longer carry `.cert-cta-notify`**, so the cert
+  library has no notify path — a lost conversion path rather than a cleanup.~~
+  ❌ **WRONG — corrected 2026-07-27.** The conversion path is fully intact. The
+  rebuilt `#certs` section builds each coming-soon plate as a `<button>` that
+  opens `#notify-modal` directly from an inline handler in `buildPlate()`, so it
+  never needed the old class. Verified on live `certanvil.com`: three plates,
+  clicking one opens the modal with the correct cert label pre-filled. The only
+  dead thing was the `.cert-cta-notify` binding in `script.js`, which had zero
+  elements to bind to — now removed. **The lesson: "the selector is gone" is not
+  the same as "the feature is gone."** I inferred a missing user-facing path from
+  a dead selector without ever clicking the control.
 
 ## Corrections logged during the lift
 
