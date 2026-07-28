@@ -1984,7 +1984,6 @@ html[data-theme] body .sb-item-lock{font-size:9px!important;font-weight:800!impo
    sidebar language. Beats styles.css via html[data-theme] body + later
    source + !important (the established sidebar override pattern). */
 html[data-theme] body .sb-streak{display:flex!important;align-items:center!important;gap:13px!important;width:100%!important;text-align:left!important;background:none!important;border:0!important;border-top:1px solid var(--border)!important;border-radius:0!important;box-shadow:none!important;padding:16px 14px 14px!important;margin:0!important;color:var(--text)!important;cursor:pointer;}
-html[data-theme] body .sb-streak.sb-streak-empty{cursor:default;}
 html[data-theme] body .sb-streak .sb-streak-flame{display:none!important;}
 html[data-theme] body .sb-streak-ico{flex:none!important;width:30px!important;height:30px!important;display:grid!important;place-items:center!important;color:var(--accent)!important;filter:none!important;}
 html[data-theme] body .sb-streak-ico svg{width:26px!important;height:26px!important;}
@@ -1999,9 +1998,17 @@ html[data-theme] body .sb-streak-empty .sb-streak-ico{color:var(--text-dim)!impo
 html[data-theme] body .sb-streak-empty .sb-streak-core{fill:none!important;stroke:currentColor!important;opacity:0.6!important;}
 html[data-theme] body .sb-streak-empty-t{font-size:12.5px!important;font-weight:700!important;color:var(--text-mid)!important;}
 html[data-theme] body .sb-streak-empty-s{font-size:11px!important;color:var(--text-dim)!important;margin-top:2px!important;}
-html[data-theme] body .sb-streak.sb-streak-active{transition:background 0.16s ease,transform 0.14s ease!important;}
-@media (hover:hover) and (pointer:fine){html[data-theme] body .sb-streak.sb-streak-active:hover{background:color-mix(in oklab,var(--accent) 7%,transparent)!important;transform:none!important;box-shadow:none!important;}}
-html[data-theme] body .sb-streak.sb-streak-active:active{transform:scale(0.99)!important;box-shadow:none!important;}
+/* v8.7.2 (#497): both states are <button> now, so hover/press apply to
+   .sb-streak rather than .sb-streak-active alone. Durations unchanged —
+   BRAND.md §6 press/lift values, not re-derived. */
+html[data-theme] body .sb-streak{transition:background 0.16s ease,transform 0.14s ease!important;}
+@media (hover:hover) and (pointer:fine){html[data-theme] body .sb-streak:hover{background:color-mix(in oklab,var(--accent) 7%,transparent)!important;transform:none!important;box-shadow:none!important;}}
+html[data-theme] body .sb-streak:active{transform:scale(0.99)!important;box-shadow:none!important;}
+/* The global button:focus-visible glow (styles.css) is a box-shadow, which the
+   .sb-streak base rule kills with box-shadow:none!important — and the block is
+   full-bleed, so a positive outline-offset would clip on the sidebar edge.
+   Inset ring instead. */
+html[data-theme] body .sb-streak:focus-visible{outline:2px solid var(--accent)!important;outline-offset:-2px!important;}
 @media (prefers-reduced-motion:reduce){html[data-theme] body .sb-streak,html[data-theme] body .sb-streak.sb-streak-active{transition:none!important;transform:none!important;}}
 
 /* ── SW update toast · v5.5.9 redesign ──

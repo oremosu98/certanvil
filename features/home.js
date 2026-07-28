@@ -972,13 +972,19 @@
           </span>
         </button>`;
       } else {
-        streakHtml = `<div class="sb-streak sb-streak-empty">
+        // v8.7.2: a <button>, not a <div> (#497). The copy is a call to
+        // action — "Start a streak · Take your first quiz today" — and every
+        // new user lands here, so the state doing the asking has to be the
+        // one you can act on. Same goSetup() as the active state; no title=
+        // (the active state's "View full streak history" is a lie at zero,
+        // and the visible text is already the accessible name).
+        streakHtml = `<button type="button" class="sb-streak sb-streak-empty" onclick="goSetup()">
           <span class="sb-streak-ico" aria-hidden="true">${streakFlameSvg}</span>
           <span class="sb-streak-text">
             <span class="sb-streak-empty-t">Start a streak</span>
             <span class="sb-streak-empty-s">Take your first quiz today</span>
           </span>
-        </div>`;
+        </button>`;
       }
     } catch (_) { streakHtml = ''; }
 

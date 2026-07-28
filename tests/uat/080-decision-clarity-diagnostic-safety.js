@@ -134,6 +134,18 @@ test('v5.5.8 StreakRedesign: sidebar streak render = brand flame + Longest sub, 
   /const\s+streakFlameSvg\s*=\s*'<svg viewBox="0 0 128 128"[\s\S]{0,260}sbStreakFlame[\s\S]{0,400}sb-streak-core/.test(js)
   && /class="sb-streak sb-streak-active" onclick="goSetup\(\)"[\s\S]{0,220}sb-streak-ico[\s\S]{0,220}sb-streak-num[\s\S]{0,140}sb-streak-label[\s\S]{0,140}sb-streak-sub/.test(js)
   && /class="sb-streak sb-streak-empty"[\s\S]{0,220}sb-streak-ico[\s\S]{0,200}sb-streak-empty-t/.test(js));
+// v8.7.2 (#497) — the empty state used to be an inert <div>: it read as a call
+// to action ("Start a streak · Take your first quiz today"), every new user
+// lands on it, and it was neither clickable nor tabbable. Both states are now
+// buttons wired to goSetup(). Tombstones a revert to <div>.
+test('v8.7.2 StreakEmptyState: sidebar streak empty state is a <button> wired to goSetup() (#497)',
+  /<button type="button" class="sb-streak sb-streak-empty" onclick="goSetup\(\)">/.test(js));
+// The CSS half of the same fix: the empty state was explicitly opted OUT of
+// interactivity (cursor:default) and hover/press were scoped to -active only.
+test('v8.7.2 StreakEmptyState CSS: no cursor:default opt-out, hover/press/focus apply to .sb-streak (#497)',
+  !/\.sb-streak\.sb-streak-empty\{cursor:default/.test(dgCss)
+  && /\.sb-streak:hover\{background:color-mix/.test(dgCss)
+  && /\.sb-streak:focus-visible\{outline:2px solid var\(--accent\)/.test(dgCss));
 // bento: the v7.16-era `.dgh-grp` 3-tier session picker was replaced by three bento
 // tiles — Quick start (#grp-quick), Practice (#grp-practice), Exam simulation
 // (#grp-exam) — each in its own `.cell-*` tile with a `.tile-title` head.

@@ -27,9 +27,9 @@
 | app.js | 8163 | 425 KB |
 | styles.css | 14913 | 551 KB |
 | index.html | 2287 | 148 KB |
-| dg-system.css | 5305 | 493 KB |
-| tests/uat.js + tests/uat/ (27 modules) | 28463 | — |
-UAT checks: 4930 · E2E `test(` count: 160 · APP_VERSION: 8.7.1 · stamped-at: worktree
+| dg-system.css | 5312 | 494 KB |
+| tests/uat.js + tests/uat/ (27 modules) | 28475 | — |
+UAT checks: 4932 · E2E `test(` count: 160 · APP_VERSION: 8.7.2 · stamped-at: worktree
 <!-- FACTS:AUTO:END -->
 
 | File | Purpose | Size |
@@ -132,6 +132,7 @@ npx playwright test              # E2E (tests/e2e/app.spec.js)
 
 | Version | Features Added |
 |---|---|
+| v8.7.2 | Sidebar streak empty state is a button, not an inert div (#497) |
 | v8.7.1 | Fix: Settings Pass Plan rendered empty when diagnostic module not yet loaded |
 | v8.7.0 | Sec+ Obfuscation topic (1.4) + 11 curated exemplars |
 | v8.6.1 | Motion audit completion: dg-critical.css brought in lockstep with dg-system.css |
