@@ -1074,9 +1074,9 @@
      FULLY SCOPED under #sq2 + .sq2-* (prior failure mode avoided).
      Tokens on #sq2, not :root. [data-theme="dark"] variant matches the
      prod theme system (same as #hero-v2). Self-contained: the legacy
-     #sample-question-host is dropped · sample-questions.js null-guards
-     (`if (!host) return;`) so it cleanly no-ops. Fonts already loaded
-     by the hero-v2 head links. Hero above + certs below untouched.
+     #sample-question-host and its sample-questions.js were removed on
+     27 Jul 2026 — nothing loads them. Fonts already loaded by the
+     hero-v2 head links. Hero above + certs below untouched.
 ══════════════════════════════════════════ -->
 <style id="sq2-styles">
   #sq2{
@@ -2686,7 +2686,7 @@
      WHY CERTANVIL v2 · editorial header + the four reasons as ONE
      framed 2x2 ledger (not a 4-equal-card grid). FULLY SCOPED under
      #why (the id is kept as the "#why" nav anchor + scoping root; no
-     script.js / sample-questions.js / UAT contract on this section).
+     script.js / UAT contract on this section).
      Fresh .wyx-* classes → zero production .why-grid/.why-item/
      .why-glyph bleed. Blue accent removed → the locked forged-bronze
      system. [data-theme="dark"] matches the prod theme system; fonts
@@ -2908,9 +2908,8 @@
      FAQ v2 · editorial 2-col (left rail + ONE framed accordion),
      not a flat 9-row stack. FULLY SCOPED under #faq (the id is kept
      as the "#faq" anchor + scoping root; native <details>, zero JS,
-     no script.js / sample-questions.js / UAT contract on this
-     section). Fresh .fqx-* classes → zero production .faq-*/.compare-*
-     bleed. Blue accent removed → the locked forged-bronze system.
+     no script.js / UAT contract on this section). Fresh .fqx-*
+     classes → zero production .faq-*/.compare-* bleed. Blue accent removed → the locked forged-bronze system.
      [data-theme="dark"] matches the prod theme system; fonts from the
      hero-v2 head. FAQ icons live in assets/faq/*. #why above +
      <footer> below + topbar/auth untouched.
