@@ -34,6 +34,27 @@
                a && typeof a === 'object' &&
                p.fields.every(function (f) { return typeof f.id === 'string' && f.id && Array.isArray(a[f.id]) && a[f.id].length >= 1; });
       case 'configure':
+        // Wave 5 (vpntunnel): guarded dual-panel extension. Absent flags =
+        // classic behavior byte-for-byte; only this branch understands
+        // array-valued acceptable sets.
+        if (p.scoring === 'tunnel') {
+          if (p.layout !== 'dualpanel') return false;
+          if (!Array.isArray(p.panels) || p.panels.length !== 2 ||
+              !p.panels.every(function (pn) { return pn && _isNonEmptyStr(pn.id) && _isNonEmptyStr(pn.label); })) return false;
+          if (p.symmetryPairs !== undefined && !Array.isArray(p.symmetryPairs)) return false;
+          if (p.mirrorPairs !== undefined && !Array.isArray(p.mirrorPairs)) return false;
+          return Array.isArray(p.slots) && p.slots.length >= 2 &&
+                 a.slots && typeof a.slots === 'object' && !Array.isArray(a.slots) &&
+                 p.slots.every(function (sl) {
+                   return _isNonEmptyStr(sl.id) && _isNonEmptyStr(sl.label) && _isNonEmptyStr(sl.panel) &&
+                          Array.isArray(sl.options) && sl.options.length >= 2 &&
+                          sl.options.every(function (o) { return _isNonEmptyStr(o.id) && _isNonEmptyStr(o.text); }) &&
+                          Array.isArray(a.slots[sl.id]) && a.slots[sl.id].length >= 1 &&
+                          a.slots[sl.id].every(function (accId) {
+                            return sl.options.some(function (o) { return o.id === accId; });
+                          });
+                 });
+        }
         return Array.isArray(p.slots) && p.slots.length >= 1 &&
                a.slots && typeof a.slots === 'object' && !Array.isArray(a.slots) &&
                p.slots.every(function (sl) {
@@ -92,7 +113,7 @@
         errs.push('reference layered: bad layout');
       }
     }
-    if (s.archetype !== undefined && ['diagram', 'incident', 'defense', 'wireless', 'firewall', 'soho', 'cli', 'discovery', 'triage', 'portmap', 'wiremap', 'pcbuild', 'raid', 'swatch'].indexOf(s.archetype) === -1) {
+    if (s.archetype !== undefined && ['diagram', 'incident', 'defense', 'wireless', 'firewall', 'soho', 'cli', 'discovery', 'triage', 'portmap', 'wiremap', 'pcbuild', 'raid', 'swatch', 'vpntunnel'].indexOf(s.archetype) === -1) {
       errs.push('bad archetype');
     }
     return { ok: errs.length === 0, errors: errs };
@@ -888,6 +909,36 @@
     return { total: total, correct: correct };
   }
 
+  // Wave 5 (vpntunnel): three-predicate tunnel scoring — per-slot set-membership
+  // + cross-panel symmetry + Phase-2 mirror-inversion, each unit 1 point.
+  // Total over malformed input: a dangling pair reference is a SKIPPED unit,
+  // never a throw (pair-shape validation is simLabValidateTunnelFidelity's job).
+  function _scoreTunnelStep(step, resp) {
+    var p = (step && step.payload) || {};
+    var ans = (step && step.answer && step.answer.slots) || {};
+    var got = (resp && resp.slots) || {};
+    var known = {};
+    (p.slots || []).forEach(function (sl) { if (sl && sl.id) known[sl.id] = true; });
+    var total = 0, correct = 0;
+    Object.keys(ans).forEach(function (slotId) {
+      if (!Array.isArray(ans[slotId])) return;
+      total++;
+      if (got[slotId] && ans[slotId].indexOf(got[slotId]) !== -1) correct++;
+    });
+    function scorePairs(pairs) {
+      (pairs || []).forEach(function (pair) {
+        if (!Array.isArray(pair) || pair.length !== 2) return;
+        if (!known[pair[0]] || !known[pair[1]]) return;   // dangling: skipped
+        total++;
+        var a = got[pair[0]], b = got[pair[1]];
+        if (a && b && a === b) correct++;
+      });
+    }
+    scorePairs(p.symmetryPairs);
+    scorePairs(p.mirrorPairs);
+    return { total: total, correct: correct };
+  }
+
   function _scoreAnalyzeLenient(step, resp) {
     var want = (step.answer && step.answer.selected) || [];
     var got = (resp && resp.selected) || [];
@@ -922,6 +973,10 @@
           return _simLabNormalizeMatch(given, accept); // see _simLabNormalizeMatch above
         });
       case 'configure':
+        if (step.payload && step.payload.scoring === 'tunnel') {
+          var _tt = _scoreTunnelStep(step, resp);
+          return _tt.total > 0 && _tt.correct === _tt.total;
+        }
         var _sc = _scoreConfigureSlots(step, resp);
         return _sc.total > 0 && _sc.correct === _sc.total;
       default: return false;
@@ -932,7 +987,11 @@
     var perStep = {}, correct = 0, total = 0;
     scn.steps.forEach(function (st) {
       var resp = responses ? responses[st.id] : null;
-      if (st.type === 'configure') {
+      if (st.type === 'configure' && st.payload && st.payload.scoring === 'tunnel') {
+        var ts = _scoreTunnelStep(st, resp);
+        perStep[st.id] = ts;            // { total, correct } breakdown, same shape as configure
+        correct += ts.correct; total += ts.total;
+      } else if (st.type === 'configure') {
         var sc = _scoreConfigureSlots(st, resp);
         perStep[st.id] = sc;            // { total, correct } breakdown for configure
         correct += sc.correct; total += sc.total;

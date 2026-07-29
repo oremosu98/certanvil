@@ -28,8 +28,8 @@
 | styles.css | 14913 | 551 KB |
 | index.html | 2287 | 148 KB |
 | dg-system.css | 5312 | 494 KB |
-| tests/uat.js + tests/uat/ (27 modules) | 28475 | — |
-UAT checks: 4932 · E2E `test(` count: 160 · APP_VERSION: 8.8.0 · stamped-at: worktree
+| tests/uat.js + tests/uat/ (28 modules) | 28558 | — |
+UAT checks: 4944 · E2E `test(` count: 160 · APP_VERSION: 8.8.0 · stamped-at: worktree
 <!-- FACTS:AUTO:END -->
 
 | File | Purpose | Size |
