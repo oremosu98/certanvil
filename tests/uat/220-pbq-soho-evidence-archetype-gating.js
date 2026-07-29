@@ -440,6 +440,10 @@ const {
     var slBankBody       = grab('_slBank');
     var pickSeedBody     = grab('_slPickSeed');
     var pickSeedFreshBody = grab('_slPickSeedFresh');
+    // Both pickers index through the shared rotation helper (added when the
+    // index-bounded selection was fixed — see 290-simlab-seed-reachability.js).
+    var nowMinutesBody   = grab('_slNowMinutes');
+    var rotationBody     = grab('_slRotationOffset');
     var slGlobalsMatch   = js.match(/var _SL_SEED_GLOBALS\s*=\s*\{[\s\S]*?\};/);
     // simLabValidateScenario is called inside the pick functions — extract the
     // real validator chain too (same approach as the Task 11/12/13/14 blocks).
@@ -450,6 +454,7 @@ const {
     var stepTypesDecl = stepTypesMatch ? stepTypesMatch[0] + ';' : "var STEP_TYPES = ['order','categorize','match','analyze','fillin','configure'];";
 
     if (!seedBankBody || !slBankBody || !pickSeedBody || !pickSeedFreshBody || !slGlobalsMatch ||
+        !nowMinutesBody || !rotationBody ||
         !isNonEmptyStrBody || !validatePayloadBody || !validateScenarioBody) {
       test('Task 15: bank/pick helper extraction succeeded', false);
       results.errors.push('could not extract _seedBank/_slBank/_slPickSeed/_slPickSeedFresh for Task 15 test; check names/indenting');
@@ -464,6 +469,8 @@ const {
       vm.runInContext(seedBankBody, bankCtx);
       vm.runInContext(slGlobalsMatch[0], bankCtx);
       vm.runInContext(slBankBody, bankCtx);
+      vm.runInContext(nowMinutesBody, bankCtx);
+      vm.runInContext(rotationBody, bankCtx);
       vm.runInContext(pickSeedBody, bankCtx);
       vm.runInContext(pickSeedFreshBody, bankCtx);
 
@@ -495,6 +502,10 @@ const {
       function _fakeMinuteDate(min) {
         return function () {
           var d = new _origDate();
+          // getHours is faked too: selection now reads minutes-of-day
+          // (hours*60 + minutes) so banks longer than 60 are reachable. Leaving
+          // the real hour here would make this assertion depend on wall-clock.
+          d.getHours = function () { return 0; };
           d.getMinutes = function () { return min; };
           return d;
         };

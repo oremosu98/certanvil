@@ -2463,11 +2463,26 @@
   };
   function _dlBank(cert) { return _seedBank(_DL_SEED_GLOBALS, cert); }
 
+  // Minutes-of-day (0..1439). Deliberately NOT just getMinutes(): that caps at
+  // 59, so any bank longer than 60 had a permanently unreachable tail. Reads the
+  // clock rather than Math.random so the pickers stay deterministic per minute.
+  function _slNowMinutes() {
+    var d = new Date();
+    return d.getHours() * 60 + d.getMinutes();
+  }
+
+  // Rotating start position over a pool of length n. Rotates every minute and
+  // covers pools up to 1440 entries — see tests/uat/290-simlab-seed-reachability.js.
+  function _slRotationOffset(n) {
+    if (!n || n < 1) return 0;
+    return _slNowMinutes() % n;
+  }
+
   function _slPickSeed(cert) {
     var bank = _slBank(cert);
     if (!bank.length) return null;
     // vary by minute so repeated taster runs rotate without Math.random
-    var idx = (new Date().getMinutes()) % bank.length;
+    var idx = _slRotationOffset(bank.length);
     var seed = bank[idx];
     if (!simLabValidateScenario(seed).ok) return null;
     return seed;
@@ -2480,9 +2495,12 @@
     var fresh = bank.filter(function (s) { return !usedIds.has(s.id) && simLabValidateScenario(s).ok; });
     var pool = fresh.length ? fresh : bank.filter(function (s) { return simLabValidateScenario(s).ok; });
     if (!pool.length) return null;
-    // Index by how many we've already shown — pure, clock-independent, and within
-    // the `fresh` pool every pick is a distinct unused seed by construction.
-    var idx = usedIds.size % pool.length;
+    // Walk forward from a rotating start rather than from 0. Indexing by
+    // usedIds.size alone only ever reached the first `maxRounds` entries, so
+    // everything past ~index 10 was dead. No-repeat does NOT depend on the
+    // index — the `fresh` filter above already guarantees it — so rotating the
+    // start is safe and is what makes the whole bank reachable.
+    var idx = (_slRotationOffset(pool.length) + usedIds.size) % pool.length;
     return pool[idx];
   }
 
