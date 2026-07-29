@@ -115,3 +115,84 @@ const {
     results.errors.push('W5 vpntunnel renderer block threw: ' + err.message);
   }
 })();
+
+// ── Wave 5: simLabValidateTunnelFidelity (authoring-time seed sanity) ──
+(function () {
+  console.log('\n\x1b[1m── Sim Lab Wave 5: tunnel fidelity validator ──\x1b[0m');
+  try {
+    var src = _fnBody(js, 'simLabValidateTunnelFidelity');
+    test('W5: simLabValidateTunnelFidelity exists', !!src);
+    var validate = null;
+    if (src) {
+      // Inject the two outer-scope deps the body closes over.
+      var FLOORS = ['no-psk', 'pfs', 'aes192-min', 'aes256-min', 'legacy-migration'];
+      validate = new Function('_isNonEmptyStr', '_TUNNEL_POLICY_FLOORS', 'return (' + src + ')')(
+        function (v) { return typeof v === 'string' && v.trim().length > 0; }, FLOORS);
+    }
+    test('W5: fidelity validator is exposed on window', /window\.simLabValidateTunnelFidelity = simLabValidateTunnelFidelity/.test(js));
+
+    function mkSlot(id, panel, label, opts) {
+      return { id: id, panel: panel, label: label, options: opts.map(function (t) { return { id: t[0], text: t[1] }; }) };
+    }
+    var ENC = [['aes128', 'AES-128'], ['aes192', 'AES-192'], ['aes256', 'AES-256']];
+    var NET = [['lon', '10.10.0.0/16 · London'], ['fra', '10.20.0.0/16 · Frankfurt']];
+    function mkScn() {
+      return {
+        id: 'sp-vpn-99', cert: 'secplus', archetype: 'vpntunnel', objective: '3.2',
+        title: 't', estMinutes: 5, scenario: 's', policyFloor: ['no-psk', 'pfs', 'aes192-min'],
+        assets: { reference: { kind: 'network', devices: [
+          { id: 'siteA', label: 'London', subnet: '10.10.0.0/16' },
+          { id: 'siteB', label: 'Frankfurt', subnet: '10.20.0.0/16' }
+        ] } },
+        steps: [
+          { id: 'p1', type: 'configure', points: 1, prompt: 'x', explanation: 'x',
+            payload: { layout: 'dualpanel', scoring: 'tunnel',
+              panels: [{ id: 'A', label: 'GW-A' }, { id: 'B', label: 'GW-B' }],
+              slots: [mkSlot('a-enc', 'A', 'Encryption', ENC), mkSlot('b-enc', 'B', 'Encryption', ENC)],
+              symmetryPairs: [['a-enc', 'b-enc']], mirrorPairs: [] },
+            answer: { slots: { 'a-enc': ['aes192', 'aes256'], 'b-enc': ['aes192', 'aes256'] } } },
+          { id: 'p2', type: 'configure', points: 1, prompt: 'x', explanation: 'x',
+            payload: { layout: 'dualpanel', scoring: 'tunnel',
+              panels: [{ id: 'A', label: 'GW-A' }, { id: 'B', label: 'GW-B' }],
+              slots: [mkSlot('a-local', 'A', 'Local subnet', NET), mkSlot('a-remote', 'A', 'Remote subnet', NET),
+                mkSlot('b-local', 'B', 'Local subnet', NET), mkSlot('b-remote', 'B', 'Remote subnet', NET)],
+              symmetryPairs: [], mirrorPairs: [['a-local', 'b-remote'], ['a-remote', 'b-local']] },
+            answer: { slots: { 'a-local': ['lon'], 'a-remote': ['fra'], 'b-local': ['fra'], 'b-remote': ['lon'] } } }
+        ]
+      };
+    }
+    test('W5: fidelity — well-formed scenario accepted', !!validate && validate(mkScn()).ok);
+
+    var bad1 = mkScn(); bad1.steps[0].payload.symmetryPairs = [['a-enc', 'a-enc']];
+    test('W5: fidelity — same-panel pair rejected', !!validate && !validate(bad1).ok);
+
+    var bad2 = mkScn(); bad2.steps[0].answer.slots['b-enc'] = ['aes256'];
+    test('W5: fidelity — asymmetric acceptable sets rejected', !!validate && !validate(bad2).ok);
+
+    var bad3 = mkScn(); bad3.steps[1].answer.slots['b-remote'] = ['fra'];
+    test('W5: fidelity — mirror sets that do not cross-reference rejected', !!validate && !validate(bad3).ok);
+
+    var bad4 = mkScn(); bad4.policyFloor = ['no-psk', 'quantum-safe'];
+    test('W5: fidelity — unknown policyFloor tag rejected', !!validate && !validate(bad4).ok);
+
+    var bad5 = mkScn(); bad5.steps = [bad5.steps[0]];
+    test('W5: fidelity — fewer than 2 dualpanel steps rejected', !!validate && !validate(bad5).ok);
+
+    var bad6 = mkScn(); bad6.assets.reference.devices[0].subnet = '10.99.0.0/16';
+    test('W5: fidelity — Phase-2 subnets inconsistent with site subnets rejected', !!validate && !validate(bad6).ok);
+
+    var bad7 = mkScn(); bad7.archetype = 'diagram';
+    test('W5: fidelity — non-vpntunnel scenario rejected outright', !!validate && !validate(bad7).ok);
+
+    var bad8 = mkScn(); bad8.steps[0].payload.slots[1].id = 'x-enc'; bad8.steps[0].payload.slots[1].panel = 'B';
+    bad8.steps[0].answer.slots['x-enc'] = bad8.steps[0].answer.slots['b-enc'];
+    test('W5: fidelity — slot id not prefixed by its panel rejected', !!validate && !validate(bad8).ok);
+
+    var nul = null, threw = false;
+    try { nul = validate && validate(null); } catch (e) { threw = true; }
+    test('W5: fidelity — null scenario returns not-ok without throwing', !threw && !!nul && nul.ok === false);
+  } catch (err) {
+    test('W5: vpntunnel fidelity block (threw)', false);
+    results.errors.push('W5 vpntunnel fidelity block threw: ' + err.message);
+  }
+})();

@@ -872,6 +872,108 @@
     return { ok: errs.length === 0, errors: errs };
   }
 
+  // --- Wave 5: vpntunnel fidelity validator ---
+  // Authoring-time seed sanity per spec docs/superpowers/specs/2026-07-19-pbq-wave5-vpntunnel-design.md.
+  // Pure logic, total over malformed input; returns { ok, errors }. This is the
+  // AUTHORING gate — it rejects the pair shapes that _scoreTunnelStep silently
+  // skips at runtime, so a broken seed can never reach a learner.
+  var _TUNNEL_POLICY_FLOORS = ['no-psk', 'pfs', 'aes192-min', 'aes256-min', 'legacy-migration'];
+  function simLabValidateTunnelFidelity(scn) {
+    var errs = [];
+    if (!scn || scn.archetype !== 'vpntunnel') return { ok: false, errors: ['not a vpntunnel scenario'] };
+    var steps = Array.isArray(scn.steps) ? scn.steps : [];
+    var dual = steps.filter(function (st) {
+      return st && st.type === 'configure' && st.payload &&
+             st.payload.layout === 'dualpanel' && st.payload.scoring === 'tunnel';
+    });
+    var analyzeSteps = steps.filter(function (st) { return st && st.type === 'analyze'; });
+    if (dual.length !== 2) errs.push('needs exactly 2 dualpanel configure steps, found ' + dual.length);
+    if (analyzeSteps.length > 1) errs.push('at most 1 distractor analyze step');
+    if (steps.length !== dual.length + analyzeSteps.length) errs.push('unexpected extra step types');
+
+    if (!Array.isArray(scn.policyFloor) || scn.policyFloor.length < 1) {
+      errs.push('policyFloor tag array required');
+    } else {
+      scn.policyFloor.forEach(function (tag) {
+        if (_TUNNEL_POLICY_FLOORS.indexOf(tag) === -1) errs.push('unknown policyFloor tag: ' + tag);
+      });
+    }
+
+    // Site subnets from the network reference (Wave 5 seed contract: device.subnet).
+    var siteSubnets = [];
+    if (scn.assets && scn.assets.reference && scn.assets.reference.kind === 'network' &&
+        Array.isArray(scn.assets.reference.devices)) {
+      scn.assets.reference.devices.forEach(function (d) {
+        if (d && _isNonEmptyStr(d.subnet)) siteSubnets.push(d.subnet);
+      });
+    }
+    if (siteSubnets.length < 2) errs.push('network reference must declare >=2 device subnet fields');
+
+    dual.forEach(function (st, di) {
+      var p = st.payload, tag = 'step ' + (st.id || di) + ': ';
+      var slotById = {}, panelIds = {};
+      (p.panels || []).forEach(function (pn) { panelIds[pn.id] = true; });
+      (p.slots || []).forEach(function (sl) { slotById[sl.id] = sl; });
+      // panel pairing: both panels carry the same field set, ids follow <panelLower>-<field>
+      var fieldsByPanel = {};
+      (p.slots || []).forEach(function (sl) {
+        if (!panelIds[sl.panel]) { errs.push(tag + 'slot ' + sl.id + ' references unknown panel'); return; }
+        var expectPrefix = String(sl.panel).toLowerCase() + '-';
+        if (sl.id.indexOf(expectPrefix) !== 0) errs.push(tag + 'slot id ' + sl.id + ' must start with ' + expectPrefix);
+        var field = sl.id.slice(expectPrefix.length);
+        fieldsByPanel[sl.panel] = fieldsByPanel[sl.panel] || {};
+        fieldsByPanel[sl.panel][field] = true;
+      });
+      var pids = Object.keys(fieldsByPanel);
+      if (pids.length === 2) {
+        var fa = Object.keys(fieldsByPanel[pids[0]]).sort().join(','),
+            fb = Object.keys(fieldsByPanel[pids[1]]).sort().join(',');
+        if (fa !== fb) errs.push(tag + 'panels carry different field sets');
+      }
+      function setOf(slotId) {
+        var arr = st.answer && st.answer.slots && st.answer.slots[slotId];
+        return Array.isArray(arr) ? arr.slice().sort().join(',') : null;
+      }
+      function checkPair(pair, kind) {
+        if (!Array.isArray(pair) || pair.length !== 2) { errs.push(tag + 'malformed ' + kind + ' pair'); return; }
+        var a = slotById[pair[0]], b = slotById[pair[1]];
+        if (!a || !b) { errs.push(tag + kind + ' pair references missing slot'); return; }
+        if (a.panel === b.panel) { errs.push(tag + kind + ' pair ' + pair.join('/') + ' must span opposite panels'); return; }
+        var sa = setOf(pair[0]), sb = setOf(pair[1]);
+        if (sa === null || sb === null) { errs.push(tag + kind + ' pair slot missing answer set'); return; }
+        if (sa !== sb) errs.push(tag + kind + ' pair ' + pair.join('/') + ' acceptable sets must be identical');
+      }
+      (p.symmetryPairs || []).forEach(function (pr) { checkPair(pr, 'symmetry'); });
+      (p.mirrorPairs || []).forEach(function (pr) { checkPair(pr, 'mirror'); });
+      // Phase-2 subnet realism: any slot whose field is local/remote must have every
+      // acceptable option's text contain a CIDR that appears in the site subnets.
+      (p.slots || []).forEach(function (sl) {
+        var field = sl.id.split('-').slice(1).join('-');
+        if (field !== 'local' && field !== 'remote') return;
+        var acc = (st.answer && st.answer.slots && st.answer.slots[sl.id]) || [];
+        acc.forEach(function (accId) {
+          var opt = null;
+          (sl.options || []).forEach(function (o) { if (o.id === accId) opt = o; });
+          if (!opt) return; // payload validation already rejects this
+          var cidr = (opt.text.match(/\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\/\d{1,2}/) || [])[0];
+          if (!cidr || siteSubnets.indexOf(cidr) === -1) {
+            errs.push(tag + 'slot ' + sl.id + ' acceptable option "' + opt.text + '" does not match a declared site subnet');
+          }
+        });
+      });
+    });
+
+    // Distractor coherence: if an analyze step exists, its lines render a config
+    // snapshot and its answer references at least one line.
+    analyzeSteps.forEach(function (st) {
+      var p = st.payload || {}, a = st.answer || {};
+      if (!Array.isArray(p.lines) || p.lines.length < 2) errs.push('distractor analyze: lines[] snapshot required');
+      if (!Array.isArray(a.selected) || a.selected.length < 1) errs.push('distractor analyze: answer.selected required');
+    });
+
+    return { ok: errs.length === 0, errors: errs };
+  }
+
   // --- scoring (Task 2) ---
 
   function _norm(v) {
@@ -3757,6 +3859,7 @@
   window.simLabValidateScenario = simLabValidateScenario;
   window.simLabValidateNetworkFidelity = simLabValidateNetworkFidelity;
   window.simLabValidateSwatchFidelity = simLabValidateSwatchFidelity;
+  window.simLabValidateTunnelFidelity = simLabValidateTunnelFidelity;
   window.simLabScoreScenario = simLabScoreScenario;
   window.simLabSubmitScenario = simLabSubmitScenario;
   window._simLab = window._simLab || {};
