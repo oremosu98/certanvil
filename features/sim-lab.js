@@ -1426,6 +1426,7 @@
   // they use the platform wheel picker on iOS and are universally accessible
   // without custom ARIA. CSS comes in Task 4; class names are locked here.
   function _slRenderConfigure(step, onChange, initial) {
+    if (step.payload && step.payload.layout === 'dualpanel') return _slRenderConfigureDualPanel(step, onChange, initial);
     var resp = (initial && initial.slots && typeof initial.slots === 'object')
       ? Object.assign({}, initial.slots)
       : {};
@@ -1453,6 +1454,112 @@
       root.appendChild(wrap);
     });
     onChange({ slots: Object.assign({}, resp) }); // report initial state
+    return root;
+  }
+
+  // Wave 5 (vpntunnel): dual-endpoint configure — A/B segmented toggle, one
+  // panel visible at a time (ALL viewports — one code path, no breakpoint fork),
+  // passive mirror chip strip showing the hidden panel's current selections.
+  // Faithful lift of mockups/vpn-tunnel-negotiation-concept.html.
+  // Both panels write into ONE `resp` object, so toggling never loses a pick.
+  function _slRenderConfigureDualPanel(step, onChange, initial) {
+    var resp = (initial && initial.slots && typeof initial.slots === 'object')
+      ? Object.assign({}, initial.slots)
+      : {};
+    var p = step.payload;
+    var visible = p.panels[0].id;
+    var root = _el('div', 'sl-cfg sl-dualpanel');
+    root.appendChild(_el('p', 'sl-prompt', _esc(step.prompt)));
+
+    var toggle = _el('div', 'sl-dp-toggle');
+    toggle.setAttribute('role', 'group');
+    toggle.setAttribute('aria-label', 'Select gateway to configure');
+    var mirror = _el('div', 'sl-dp-mirror');
+    mirror.setAttribute('role', 'group');
+    var slotsHost = _el('div', 'sl-dp-slots');
+
+    function panelSlots(panelId) {
+      return p.slots.filter(function (sl) { return sl.panel === panelId; });
+    }
+    function optionText(sl, optId) {
+      var hit = null;
+      sl.options.forEach(function (o) { if (o.id === optId) hit = o.text; });
+      return hit;
+    }
+    function renderMirror() {
+      var other = p.panels.filter(function (pn) { return pn.id !== visible; })[0];
+      mirror.innerHTML = '';
+      mirror.setAttribute('aria-label', other.label + ' current values');
+      var mh = _el('div', 'sl-dp-mh');
+      mh.textContent = other.label + ' currently says';
+      mirror.appendChild(mh);
+      panelSlots(other.id).forEach(function (sl) {
+        var v = resp[sl.id];
+        var chip = _el('span', 'sl-dp-chip' + (v ? '' : ' unset'));
+        chip.textContent = sl.label + ': ' + (v ? optionText(sl, v) : '—');
+        mirror.appendChild(chip);
+      });
+    }
+    function renderSlots() {
+      slotsHost.innerHTML = '';
+      panelSlots(visible).forEach(function (sl) {
+        var wrap = _el('div', 'sl-cfg-slot');
+        var lab = _el('label', 'sl-cfg-label', _esc(sl.label));
+        var selId = 'sl-dp-' + step.id + '-' + sl.id;
+        lab.setAttribute('for', selId);
+        wrap.appendChild(lab);
+        var sel = document.createElement('select');
+        sel.className = 'sl-cfg-select';
+        sel.id = selId;
+        sel.setAttribute('data-slot', sl.id);
+        var ph = document.createElement('option');
+        ph.value = ''; ph.textContent = 'Choose…'; sel.appendChild(ph);
+        sl.options.forEach(function (o) {
+          var op = document.createElement('option');
+          op.value = o.id; op.textContent = o.text;
+          if (resp[sl.id] === o.id) { op.selected = true; }
+          sel.appendChild(op);
+        });
+        sel.addEventListener('change', function () {
+          if (sel.value) { resp[sl.id] = sel.value; } else { delete resp[sl.id]; }
+          updateDots();
+          onChange({ slots: Object.assign({}, resp) });
+        });
+        wrap.appendChild(sel);
+        slotsHost.appendChild(wrap);
+      });
+    }
+    function updateDots() {
+      Array.prototype.forEach.call(toggle.children, function (btn) {
+        var pid = btn.getAttribute('data-panel');
+        var filled = panelSlots(pid).every(function (sl) { return resp[sl.id]; });
+        btn.classList.toggle('filled', filled);
+      });
+    }
+    p.panels.forEach(function (pn, i) {
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'sl-dp-btn';
+      btn.setAttribute('data-panel', pn.id);
+      btn.setAttribute('aria-pressed', String(i === 0));
+      var dot = _el('span', 'sl-dp-dot');
+      btn.appendChild(dot);
+      btn.appendChild(document.createTextNode(pn.label));
+      btn.addEventListener('click', function () {
+        visible = pn.id;
+        Array.prototype.forEach.call(toggle.children, function (b) {
+          b.setAttribute('aria-pressed', String(b === btn));
+        });
+        renderMirror(); renderSlots();
+      });
+      toggle.appendChild(btn);
+    });
+
+    root.appendChild(toggle);
+    root.appendChild(mirror);
+    root.appendChild(slotsHost);
+    renderMirror(); renderSlots(); updateDots();
+    onChange({ slots: Object.assign({}, resp) }); // report initial state (classic parity)
     return root;
   }
 

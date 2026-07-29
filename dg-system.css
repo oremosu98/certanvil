@@ -4116,6 +4116,27 @@ mark.gnt-hinge{background:color-mix(in oklab,var(--red) 26%,transparent);color:i
 #page-sim-lab .sl-cfg-select.is-wrong{border-color:color-mix(in oklab,var(--red) 60%,var(--border));box-shadow:0 0 0 3px color-mix(in oklab,var(--red) 14%,transparent)}
 @media (hover:hover) and (pointer:fine){#page-sim-lab .sl-cfg-select:hover{border-color:color-mix(in oklab,var(--accent) 30%,var(--border))}}
 @media (prefers-reduced-motion:reduce){#page-sim-lab .sl-cfg-select{transition:none}}
+
+/* Sim Lab Wave 5: vpntunnel dualpanel configure — A/B toggle + mirror chip strip
+   (mockups/vpn-tunnel-negotiation-concept.html). Tokens only, zero hex.
+   Curve is the literal BRAND.md §6 value: --ease is referenced elsewhere in this
+   file but never DEFINED, so var(--ease) would silently resolve to nothing. */
+#page-sim-lab .sl-dualpanel{display:grid;gap:0}
+#page-sim-lab .sl-dp-toggle{display:flex;gap:6px;margin:10px 0}
+#page-sim-lab .sl-dp-btn{flex:1;min-height:44px;font:700 12px/1.2 Inter,sans-serif;padding:10px 8px;border-radius:10px;cursor:pointer;border:1px solid var(--border);background:var(--surface2);color:var(--text-dim);transition:color .18s cubic-bezier(0.16,1,0.3,1),border-color .18s cubic-bezier(0.16,1,0.3,1),background-color .18s cubic-bezier(0.16,1,0.3,1),transform .15s cubic-bezier(0.16,1,0.3,1)}
+#page-sim-lab .sl-dp-btn:active{transform:scale(0.97)}
+#page-sim-lab .sl-dp-btn:disabled{cursor:default;opacity:.7}
+#page-sim-lab .sl-dp-btn:focus-visible{outline:none;border-color:color-mix(in oklab,var(--accent) 55%,var(--border));box-shadow:0 0 0 3px color-mix(in oklab,var(--accent) 18%,transparent)}
+#page-sim-lab .sl-dp-btn[aria-pressed="true"]{color:var(--accent);border-color:color-mix(in oklab,var(--accent) 40%,var(--border));background:color-mix(in oklab,var(--accent) 10%,transparent)}
+#page-sim-lab .sl-dp-dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:6px;vertical-align:1px;background:var(--border);transition:background-color .18s cubic-bezier(0.16,1,0.3,1)}
+#page-sim-lab .sl-dp-btn.filled .sl-dp-dot{background:var(--pass)}
+#page-sim-lab .sl-dp-mirror{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:13px;padding:10px;background:var(--surface2);border:1px dashed var(--border);border-radius:11px}
+#page-sim-lab .sl-dp-mh{flex-basis:100%;font:800 9.5px/1 Inter,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:var(--text-dim);margin-bottom:2px}
+#page-sim-lab .sl-dp-chip{font:700 10.5px/1.5 Inter,sans-serif;color:var(--text-mid);background:var(--surface);border:1px solid var(--border);border-radius:999px;padding:4px 10px}
+#page-sim-lab .sl-dp-chip.unset{color:var(--text-dim);font-style:italic}
+#page-sim-lab .sl-dp-slots{display:grid;gap:13px}
+@media (hover:hover) and (pointer:fine){#page-sim-lab .sl-dp-btn:hover{border-color:color-mix(in oklab,var(--accent) 30%,var(--border));color:var(--text-mid)}}
+@media (prefers-reduced-motion:reduce){#page-sim-lab .sl-dp-btn{transition-property:color,border-color,background-color}#page-sim-lab .sl-dp-btn:active{transform:none}}
 /* Decision Lab: per-option why reveal + teach block (Task 2) — v7.59.0 */
 #page-decision-lab .dl-opt .dl-why{font:500 12.5px/1.45 Inter,sans-serif;color:var(--text-dim);margin-top:4px;display:grid;grid-template-rows:0fr;opacity:0;overflow:hidden;transition:grid-template-rows .16s var(--ease,cubic-bezier(.16,1,.3,1)),opacity .16s,transform .16s;transform:translateY(2px)}
 #page-decision-lab .dl-graded .dl-opt .dl-why{grid-template-rows:1fr;opacity:1;transform:none}

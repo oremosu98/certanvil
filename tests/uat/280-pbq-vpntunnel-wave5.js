@@ -80,3 +80,38 @@ const {
     results.errors.push('W5 vpntunnel scorer block threw: ' + err.message);
   }
 })();
+
+// ── Wave 5: dualpanel renderer + .sl-dp CSS block ──
+// NOTE the _fnBody prefix trap: '_slRenderConfigure' is a prefix of
+// '_slRenderConfigureDualPanel' and _fnBody returns the LONGEST match, so the
+// bare name would hand back the dualpanel body. Only the full name is asked for.
+(function () {
+  console.log('\n\x1b[1m── Sim Lab Wave 5: dualpanel renderer + CSS ──\x1b[0m');
+  try {
+    test('W5: _slRenderConfigure dispatches dualpanel layout',
+      /_slRenderConfigure\(step, onChange, initial\) \{[\s\S]{0,400}layout === 'dualpanel'[\s\S]{0,120}_slRenderConfigureDualPanel/.test(js));
+
+    var body = _fnBody(js, '_slRenderConfigureDualPanel');
+    test('W5: _slRenderConfigureDualPanel exists', !!body);
+    test('W5: dualpanel renderer escapes labels (_esc on label/prompt)', !!body && /_esc\(/.test(body));
+    test('W5: dualpanel toggle buttons carry aria-pressed', !!body && /aria-pressed/.test(body));
+    test('W5: mirror strip renders chips from the shared resp object',
+      !!body && /sl-dp-mirror/.test(body) && /sl-dp-chip/.test(body));
+    test('W5: dualpanel reports responses as a copied slots object (classic parity)',
+      !!body && /onChange\(\{ slots: Object\.assign\(\{\}, resp\) \}\)/.test(body));
+    test('W5: dualpanel chip text is set via textContent, never innerHTML',
+      !!body && /chip\.textContent =/.test(body) && !/chip\.innerHTML/.test(body));
+
+    test('W5: dg-system defines .sl-dp-btn with 44px touch floor',
+      /\.sl-dp-btn\{[^}]*min-height:44px/.test(dgCss));
+    test('W5: dg-system .sl-dp block uses tokens only (no hex)',
+      !/\.sl-dp[^}]*#[0-9a-fA-F]{3,6}/.test(dgCss));
+    test('W5: .sl-dp-btn aria-pressed state styled',
+      /\.sl-dp-btn\[aria-pressed="true"\]/.test(dgCss));
+    test('W5: .sl-dp block collapses transform under reduced motion',
+      /prefers-reduced-motion[\s\S]{0,400}\.sl-dp-btn:active\{transform:none\}/.test(dgCss));
+  } catch (err) {
+    test('W5: vpntunnel renderer block (threw)', false);
+    results.errors.push('W5 vpntunnel renderer block threw: ' + err.message);
+  }
+})();
