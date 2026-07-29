@@ -2358,5 +2358,643 @@ window.SIM_LAB_SEED_SECPLUS = [
         ] } ] },
         answer: { slots: { type: 't1' } } }
     ]
+  },
+  // ===== Wave 5 — VPN Tunnel Parameter Negotiation (vpntunnel, obj 3.2/1.4) =====
+  // Guarded dualpanel configure: payload.layout 'dualpanel' + payload.scoring 'tunnel'.
+  // P1 = auth / enc / integrity / DH group -- all four are genuine must-match IKE
+  // Phase 1 proposal parameters (4 symmetry pairs). SA lifetime is deliberately NOT
+  // a symmetry slot: IKEv1 settles on the lesser value and IKEv2 does not negotiate
+  // it at all, so pairing it would teach a false rule.
+  // P2 = local / remote / PFS / transform. PFS sits in Phase 2, where the choice
+  // actually exists -- Phase 1 always performs a DH exchange. AH is folded into the
+  // transform list so the protocol choice is a real distractor, not a free point.
+  // Units: P1 8 membership + 4 symmetry = 12; P2 8 + 2 symmetry + 2 mirror = 12; 24 total.
+  // Every constraint an answer depends on is stated in the scenario prose, not only
+  // in the policyFloor tags. Vendor-neutral open-standard vocabulary throughout.
+  {
+    id: 'sp-vpn-01', cert: 'secplus', archetype: 'vpntunnel', objective: '3.2',
+    topic: 'Secure enterprise infrastructure', title: 'Stand up the site-to-site tunnel to Frankfurt',
+    estMinutes: 5, policyFloor: ['no-psk','pfs','aes192-min'],
+    scenario: 'Your company just signed a logistics partner in Frankfurt, and their ERP needs a permanent encrypted path into your London network. You own both IPSec gateways. Security standard for this link, and it is not negotiable: certificate authentication only (no pre-shared keys), Phase 1 integrity SHA-256 or better, a 2048-bit-equivalent key-agreement group or better, and perfect forward secrecy on every child-SA rekey. Symmetric encryption is AES-192 minimum at both phases. Configure Phase 1 and Phase 2 on both ends so the tunnel actually negotiates.',
+    assets: { reference: { kind: 'network', devices: [
+      { id: 'siteA', label: 'London HQ', type: 'network', subnet: '10.10.0.0/16', note: 'GW-LON · 203.0.113.10' },
+      { id: 'siteB', label: 'Frankfurt', type: 'network', subnet: '10.20.0.0/16', note: 'GW-FRA · 198.51.100.22' }
+    ] } },
+    steps: [
+      { id: 'p1', type: 'configure', points: 1,
+        prompt: 'Configure the IKE Phase 1 proposal on both gateways to the stated standard.',
+        explanation: 'Encryption, integrity, key-agreement group and authentication method must MATCH on both peers or Phase 1 never completes — the responder walks the initiator’s proposal list and, finding nothing it also has configured, returns no proposal chosen. (SA lifetime is the exception and is deliberately not asked here: IKEv1 settles on the shorter of the two values and IKEv2 treats it as purely local.) SHA-256 and SHA-384 both clear the integrity floor; MD5 and SHA-1 sit below it and are being retired. Group 14 gives roughly 112-bit security and group 19 roughly 128-bit, so either clears the floor — groups 2 and 5 do not. Certificates satisfy the no-pre-shared-key rule. AES-192 and AES-256 both clear the encryption floor — a genuine set, not a single answer — but both ends must land on the SAME one or there is no common proposal.',
+        payload: { layout: 'dualpanel', scoring: 'tunnel',
+          panels: [ { id: 'A', label: 'GW-LON — London' }, { id: 'B', label: 'GW-FRA — Frankfurt' } ],
+          slots: [
+            { id: 'a-auth', panel: 'A', label: 'Authentication method', options: [ { id: 'psk', text: 'Pre-shared key' }, { id: 'cert', text: 'Digital certificates' }, { id: 'noauth', text: 'No peer authentication' } ] },
+            { id: 'a-enc', panel: 'A', label: 'Phase 1 encryption', options: [ { id: 'des3', text: '3DES' }, { id: 'aes128', text: 'AES-128' }, { id: 'aes192', text: 'AES-192' }, { id: 'aes256', text: 'AES-256' } ] },
+            { id: 'a-int', panel: 'A', label: 'Phase 1 integrity', options: [ { id: 'md5', text: 'MD5' }, { id: 'sha1', text: 'SHA-1' }, { id: 'sha256', text: 'SHA-256' }, { id: 'sha384', text: 'SHA-384' } ] },
+            { id: 'a-dh', panel: 'A', label: 'Key-agreement group', options: [ { id: 'dh2', text: 'DH group 2 (1024-bit MODP)' }, { id: 'dh5', text: 'DH group 5 (1536-bit MODP)' }, { id: 'dh14', text: 'DH group 14 (2048-bit MODP)' }, { id: 'dh19', text: 'DH group 19 (256-bit ECP)' } ] },
+            { id: 'b-auth', panel: 'B', label: 'Authentication method', options: [ { id: 'psk', text: 'Pre-shared key' }, { id: 'cert', text: 'Digital certificates' }, { id: 'noauth', text: 'No peer authentication' } ] },
+            { id: 'b-enc', panel: 'B', label: 'Phase 1 encryption', options: [ { id: 'des3', text: '3DES' }, { id: 'aes128', text: 'AES-128' }, { id: 'aes192', text: 'AES-192' }, { id: 'aes256', text: 'AES-256' } ] },
+            { id: 'b-int', panel: 'B', label: 'Phase 1 integrity', options: [ { id: 'md5', text: 'MD5' }, { id: 'sha1', text: 'SHA-1' }, { id: 'sha256', text: 'SHA-256' }, { id: 'sha384', text: 'SHA-384' } ] },
+            { id: 'b-dh', panel: 'B', label: 'Key-agreement group', options: [ { id: 'dh2', text: 'DH group 2 (1024-bit MODP)' }, { id: 'dh5', text: 'DH group 5 (1536-bit MODP)' }, { id: 'dh14', text: 'DH group 14 (2048-bit MODP)' }, { id: 'dh19', text: 'DH group 19 (256-bit ECP)' } ] }
+          ],
+          symmetryPairs: [ ['a-auth','b-auth'], ['a-enc','b-enc'], ['a-int','b-int'], ['a-dh','b-dh'] ],
+          mirrorPairs: [  ] },
+        answer: { slots: { 'a-auth': ['cert'], 'a-enc': ['aes192','aes256'], 'a-int': ['sha256','sha384'], 'a-dh': ['dh14','dh19'], 'b-auth': ['cert'], 'b-enc': ['aes192','aes256'], 'b-int': ['sha256','sha384'], 'b-dh': ['dh14','dh19'] } } },
+      { id: 'p2', type: 'configure', points: 1,
+        prompt: 'Define the protected traffic and the Phase 2 transform on both gateways.',
+        explanation: 'Perfect forward secrecy is a PHASE 2 decision: it means running a FRESH Diffie-Hellman exchange when the child SA is established and rekeyed, instead of deriving its keys from the Phase 1 secret. Without it, recovering the Phase 1 keying material later unlocks every child SA derived from it. Phase 1 always performs a DH exchange — there is no configuration that skips it — so PFS is the only place this choice genuinely exists. The selectors MIRROR: each end’s local network is the other end’s remote. Get that backwards and Phase 1 completes happily, then the child SA is refused for an unacceptable traffic selector. AH is a real trap in the transform list — it authenticates and integrity-protects but does not encrypt anything. Both AES-192-CBC with HMAC-SHA-256 and AES-256-GCM clear the AES-192 floor here.',
+        payload: { layout: 'dualpanel', scoring: 'tunnel',
+          panels: [ { id: 'A', label: 'GW-LON — London' }, { id: 'B', label: 'GW-FRA — Frankfurt' } ],
+          slots: [
+            { id: 'a-local', panel: 'A', label: 'Local selector — the network THIS end protects', options: [ { id: 'lon', text: '10.10.0.0/16 · London HQ' }, { id: 'fra', text: '10.20.0.0/16 · Frankfurt' }, { id: 'pub', text: '203.0.113.0/24 · public range' } ] },
+            { id: 'a-remote', panel: 'A', label: 'Remote selector — the network the PEER protects', options: [ { id: 'lon', text: '10.10.0.0/16 · London HQ' }, { id: 'fra', text: '10.20.0.0/16 · Frankfurt' }, { id: 'pub', text: '203.0.113.0/24 · public range' } ] },
+            { id: 'a-pfs', panel: 'A', label: 'Phase 2 perfect forward secrecy', options: [ { id: 'nopfs', text: 'No PFS · rekey the child SA from Phase 1 keying material' }, { id: 'pfs14', text: 'PFS · fresh DH group 14 exchange at each rekey' }, { id: 'pfs19', text: 'PFS · fresh DH group 19 exchange at each rekey' } ] },
+            { id: 'a-xform', panel: 'A', label: 'Phase 2 transform', options: [ { id: 'ah', text: 'AH · integrity only, no encryption' }, { id: 'esp3des', text: 'ESP · 3DES-CBC + HMAC-SHA-1' }, { id: 'espaes128', text: 'ESP · AES-128-CBC + HMAC-SHA-256' }, { id: 'espaes192', text: 'ESP · AES-192-CBC + HMAC-SHA-256' }, { id: 'espgcm', text: 'ESP · AES-256-GCM (AEAD)' } ] },
+            { id: 'b-local', panel: 'B', label: 'Local selector — the network THIS end protects', options: [ { id: 'lon', text: '10.10.0.0/16 · London HQ' }, { id: 'fra', text: '10.20.0.0/16 · Frankfurt' }, { id: 'pub', text: '203.0.113.0/24 · public range' } ] },
+            { id: 'b-remote', panel: 'B', label: 'Remote selector — the network the PEER protects', options: [ { id: 'lon', text: '10.10.0.0/16 · London HQ' }, { id: 'fra', text: '10.20.0.0/16 · Frankfurt' }, { id: 'pub', text: '203.0.113.0/24 · public range' } ] },
+            { id: 'b-pfs', panel: 'B', label: 'Phase 2 perfect forward secrecy', options: [ { id: 'nopfs', text: 'No PFS · rekey the child SA from Phase 1 keying material' }, { id: 'pfs14', text: 'PFS · fresh DH group 14 exchange at each rekey' }, { id: 'pfs19', text: 'PFS · fresh DH group 19 exchange at each rekey' } ] },
+            { id: 'b-xform', panel: 'B', label: 'Phase 2 transform', options: [ { id: 'ah', text: 'AH · integrity only, no encryption' }, { id: 'esp3des', text: 'ESP · 3DES-CBC + HMAC-SHA-1' }, { id: 'espaes128', text: 'ESP · AES-128-CBC + HMAC-SHA-256' }, { id: 'espaes192', text: 'ESP · AES-192-CBC + HMAC-SHA-256' }, { id: 'espgcm', text: 'ESP · AES-256-GCM (AEAD)' } ] }
+          ],
+          symmetryPairs: [ ['a-pfs','b-pfs'], ['a-xform','b-xform'] ],
+          mirrorPairs: [ ['a-local','b-remote'], ['a-remote','b-local'] ] },
+        answer: { slots: { 'a-local': ['lon'], 'a-remote': ['fra'], 'a-pfs': ['pfs14','pfs19'], 'a-xform': ['espaes192','espgcm'], 'b-local': ['fra'], 'b-remote': ['lon'], 'b-pfs': ['pfs14','pfs19'], 'b-xform': ['espaes192','espgcm'] } } }
+    ]
+  },
+
+  {
+    id: 'sp-vpn-02', cert: 'secplus', archetype: 'vpntunnel', objective: '3.2',
+    topic: 'Secure enterprise infrastructure', title: 'Replicate to Dublin under an AES-256 standard',
+    estMinutes: 5, policyFloor: ['pfs','aes256-min'],
+    scenario: 'Nightly database replication between your Manchester datacentre and the Dublin standby site currently rides a leased line that finance has cancelled, so it has to move onto a site-to-site IPSec tunnel across the internet. Because the replica carries full customer records, the crypto standard for this link is AES-256 and nothing weaker, at both phases, with Phase 1 integrity of SHA-256 or better, a 2048-bit-equivalent key-agreement group or better, and perfect forward secrecy on rekey. Both gateways are yours, and the shared secret is a 32-character random string held only in the two configs, so either authentication method is acceptable on this link. Only the two named datacentre subnets are in scope for this tunnel — nothing else belongs in the selectors.',
+    assets: { reference: { kind: 'network', devices: [
+      { id: 'siteA', label: 'Manchester DC', type: 'network', subnet: '172.16.0.0/16', note: 'GW-MAN · 203.0.113.40' },
+      { id: 'siteB', label: 'Dublin standby', type: 'network', subnet: '172.20.0.0/16', note: 'GW-DUB · 198.51.100.71' }
+    ] } },
+    steps: [
+      { id: 'p1', type: 'configure', points: 1,
+        prompt: 'Configure the IKE Phase 1 proposal on both gateways to the stated standard.',
+        explanation: 'Encryption, integrity, key-agreement group and authentication method must MATCH on both peers or Phase 1 never completes — the responder walks the initiator’s proposal list and, finding nothing it also has configured, returns no proposal chosen. (SA lifetime is the exception and is deliberately not asked here: IKEv1 settles on the shorter of the two values and IKEv2 treats it as purely local.) SHA-256 and SHA-384 both clear the integrity floor; MD5 and SHA-1 sit below it and are being retired. Group 14 gives roughly 112-bit security and group 19 roughly 128-bit, so either clears the floor — groups 2 and 5 do not. An AES-256 standard collapses the encryption slot to one legal pick. Authentication stays a genuine set: a 32-character random pre-shared key carries enough entropy to resist offline guessing, and both endpoints are under your control, so PSK and certificates are both sound here — certificates simply scale better once there are more than two peers.',
+        payload: { layout: 'dualpanel', scoring: 'tunnel',
+          panels: [ { id: 'A', label: 'GW-MAN — Manchester' }, { id: 'B', label: 'GW-DUB — Dublin' } ],
+          slots: [
+            { id: 'a-auth', panel: 'A', label: 'Authentication method', options: [ { id: 'psk', text: 'Pre-shared key (32-char random)' }, { id: 'cert', text: 'Digital certificates' }, { id: 'noauth', text: 'No peer authentication' } ] },
+            { id: 'a-enc', panel: 'A', label: 'Phase 1 encryption', options: [ { id: 'des3', text: '3DES' }, { id: 'aes128', text: 'AES-128' }, { id: 'aes192', text: 'AES-192' }, { id: 'aes256', text: 'AES-256' } ] },
+            { id: 'a-int', panel: 'A', label: 'Phase 1 integrity', options: [ { id: 'md5', text: 'MD5' }, { id: 'sha1', text: 'SHA-1' }, { id: 'sha256', text: 'SHA-256' }, { id: 'sha384', text: 'SHA-384' } ] },
+            { id: 'a-dh', panel: 'A', label: 'Key-agreement group', options: [ { id: 'dh2', text: 'DH group 2 (1024-bit MODP)' }, { id: 'dh5', text: 'DH group 5 (1536-bit MODP)' }, { id: 'dh14', text: 'DH group 14 (2048-bit MODP)' }, { id: 'dh19', text: 'DH group 19 (256-bit ECP)' } ] },
+            { id: 'b-auth', panel: 'B', label: 'Authentication method', options: [ { id: 'psk', text: 'Pre-shared key (32-char random)' }, { id: 'cert', text: 'Digital certificates' }, { id: 'noauth', text: 'No peer authentication' } ] },
+            { id: 'b-enc', panel: 'B', label: 'Phase 1 encryption', options: [ { id: 'des3', text: '3DES' }, { id: 'aes128', text: 'AES-128' }, { id: 'aes192', text: 'AES-192' }, { id: 'aes256', text: 'AES-256' } ] },
+            { id: 'b-int', panel: 'B', label: 'Phase 1 integrity', options: [ { id: 'md5', text: 'MD5' }, { id: 'sha1', text: 'SHA-1' }, { id: 'sha256', text: 'SHA-256' }, { id: 'sha384', text: 'SHA-384' } ] },
+            { id: 'b-dh', panel: 'B', label: 'Key-agreement group', options: [ { id: 'dh2', text: 'DH group 2 (1024-bit MODP)' }, { id: 'dh5', text: 'DH group 5 (1536-bit MODP)' }, { id: 'dh14', text: 'DH group 14 (2048-bit MODP)' }, { id: 'dh19', text: 'DH group 19 (256-bit ECP)' } ] }
+          ],
+          symmetryPairs: [ ['a-auth','b-auth'], ['a-enc','b-enc'], ['a-int','b-int'], ['a-dh','b-dh'] ],
+          mirrorPairs: [  ] },
+        answer: { slots: { 'a-auth': ['psk','cert'], 'a-enc': ['aes256'], 'a-int': ['sha256','sha384'], 'a-dh': ['dh14','dh19'], 'b-auth': ['psk','cert'], 'b-enc': ['aes256'], 'b-int': ['sha256','sha384'], 'b-dh': ['dh14','dh19'] } } },
+      { id: 'p2', type: 'configure', points: 1,
+        prompt: 'Define the replication traffic selectors and Phase 2 transform on both gateways.',
+        explanation: 'Perfect forward secrecy is a PHASE 2 decision: it means running a FRESH Diffie-Hellman exchange when the child SA is established and rekeyed, instead of deriving its keys from the Phase 1 secret. Without it, recovering the Phase 1 keying material later unlocks every child SA derived from it. Phase 1 always performs a DH exchange — there is no configuration that skips it — so PFS is the only place this choice genuinely exists. The selectors MIRROR: each end’s local network is the other end’s remote. Get that backwards and Phase 1 completes happily, then the child SA is refused for an unacceptable traffic selector. AH is a real trap in the transform list — it authenticates and integrity-protects but does not encrypt anything. AES-256-GCM is the only transform meeting the AES-256 standard, and as an AEAD mode it carries its own integrity rather than bolting on a separate HMAC; every CBC option here sits below the floor. A 0.0.0.0/0 pair does mirror and would negotiate, which is exactly what makes it a trap — it drags every packet either site sends into the tunnel instead of the replication traffic you scoped.',
+        payload: { layout: 'dualpanel', scoring: 'tunnel',
+          panels: [ { id: 'A', label: 'GW-MAN — Manchester' }, { id: 'B', label: 'GW-DUB — Dublin' } ],
+          slots: [
+            { id: 'a-local', panel: 'A', label: 'Local selector — the network THIS end protects', options: [ { id: 'man', text: '172.16.0.0/16 · Manchester DC' }, { id: 'dub', text: '172.20.0.0/16 · Dublin standby' }, { id: 'any', text: '0.0.0.0/0 · any' } ] },
+            { id: 'a-remote', panel: 'A', label: 'Remote selector — the network the PEER protects', options: [ { id: 'man', text: '172.16.0.0/16 · Manchester DC' }, { id: 'dub', text: '172.20.0.0/16 · Dublin standby' }, { id: 'any', text: '0.0.0.0/0 · any' } ] },
+            { id: 'a-pfs', panel: 'A', label: 'Phase 2 perfect forward secrecy', options: [ { id: 'nopfs', text: 'No PFS · rekey the child SA from Phase 1 keying material' }, { id: 'pfs14', text: 'PFS · fresh DH group 14 exchange at each rekey' }, { id: 'pfs19', text: 'PFS · fresh DH group 19 exchange at each rekey' } ] },
+            { id: 'a-xform', panel: 'A', label: 'Phase 2 transform', options: [ { id: 'ah', text: 'AH · integrity only, no encryption' }, { id: 'esp3des', text: 'ESP · 3DES-CBC + HMAC-SHA-1' }, { id: 'espaes128', text: 'ESP · AES-128-CBC + HMAC-SHA-256' }, { id: 'espaes192', text: 'ESP · AES-192-CBC + HMAC-SHA-256' }, { id: 'espgcm', text: 'ESP · AES-256-GCM (AEAD)' } ] },
+            { id: 'b-local', panel: 'B', label: 'Local selector — the network THIS end protects', options: [ { id: 'man', text: '172.16.0.0/16 · Manchester DC' }, { id: 'dub', text: '172.20.0.0/16 · Dublin standby' }, { id: 'any', text: '0.0.0.0/0 · any' } ] },
+            { id: 'b-remote', panel: 'B', label: 'Remote selector — the network the PEER protects', options: [ { id: 'man', text: '172.16.0.0/16 · Manchester DC' }, { id: 'dub', text: '172.20.0.0/16 · Dublin standby' }, { id: 'any', text: '0.0.0.0/0 · any' } ] },
+            { id: 'b-pfs', panel: 'B', label: 'Phase 2 perfect forward secrecy', options: [ { id: 'nopfs', text: 'No PFS · rekey the child SA from Phase 1 keying material' }, { id: 'pfs14', text: 'PFS · fresh DH group 14 exchange at each rekey' }, { id: 'pfs19', text: 'PFS · fresh DH group 19 exchange at each rekey' } ] },
+            { id: 'b-xform', panel: 'B', label: 'Phase 2 transform', options: [ { id: 'ah', text: 'AH · integrity only, no encryption' }, { id: 'esp3des', text: 'ESP · 3DES-CBC + HMAC-SHA-1' }, { id: 'espaes128', text: 'ESP · AES-128-CBC + HMAC-SHA-256' }, { id: 'espaes192', text: 'ESP · AES-192-CBC + HMAC-SHA-256' }, { id: 'espgcm', text: 'ESP · AES-256-GCM (AEAD)' } ] }
+          ],
+          symmetryPairs: [ ['a-pfs','b-pfs'], ['a-xform','b-xform'] ],
+          mirrorPairs: [ ['a-local','b-remote'], ['a-remote','b-local'] ] },
+        answer: { slots: { 'a-local': ['man'], 'a-remote': ['dub'], 'a-pfs': ['pfs14','pfs19'], 'a-xform': ['espgcm'], 'b-local': ['dub'], 'b-remote': ['man'], 'b-pfs': ['pfs14','pfs19'], 'b-xform': ['espgcm'] } } }
+    ]
+  },
+
+  {
+    id: 'sp-vpn-03', cert: 'secplus', archetype: 'vpntunnel', objective: '3.2',
+    topic: 'Secure enterprise infrastructure', title: 'Cut the branch tunnel off 3DES mid-migration',
+    estMinutes: 6, policyFloor: ['legacy-migration','no-psk','pfs','aes192-min'],
+    scenario: 'An audit flagged the tunnel between the Slough branch and your core datacentre: it still negotiates 3DES with SHA-1 and DH group 2, settings inherited from gateways retired years ago. Those old gateways were disposed of without their configs being wiped, so the existing pre-shared key must be treated as exposed and the credential is in scope tonight alongside the algorithms. The branch circuit is run by a partner who operates GW-SLO; you have agreed the settings they will apply and you own GW-CORE. Security standard for this link, and it is not negotiable: certificate authentication only (no pre-shared keys), Phase 1 integrity SHA-256 or better, a 2048-bit-equivalent key-agreement group or better, and perfect forward secrecy on every child-SA rekey. Encryption is AES-192 minimum at both phases, and the tunnel must protect only the branch’s own 192.168.10.0/24 — not the wider branch supernet. They have also emailed a proposed Phase 1 for review.',
+    assets: { reference: { kind: 'network', devices: [
+      { id: 'siteA', label: 'Slough branch', type: 'network', subnet: '192.168.10.0/24', note: 'GW-SLO · partner-operated · 203.0.113.88' },
+      { id: 'siteB', label: 'Core datacentre', type: 'network', subnet: '10.30.0.0/16', note: 'GW-CORE · 198.51.100.5' }
+    ] } },
+    steps: [
+      { id: 'p1', type: 'configure', points: 1,
+        prompt: 'Configure the IKE Phase 1 proposal on both gateways to the stated standard.',
+        explanation: 'Encryption, integrity, key-agreement group and authentication method must MATCH on both peers or Phase 1 never completes — the responder walks the initiator’s proposal list and, finding nothing it also has configured, returns no proposal chosen. (SA lifetime is the exception and is deliberately not asked here: IKEv1 settles on the shorter of the two values and IKEv2 treats it as purely local.) SHA-256 and SHA-384 both clear the integrity floor; MD5 and SHA-1 sit below it and are being retired. Group 14 gives roughly 112-bit security and group 19 roughly 128-bit, so either clears the floor — groups 2 and 5 do not. A migration is finished only when both ends move, and not because IKE quietly downgrades — it does not. Leave the legacy algorithms configured ALONGSIDE the new ones on both peers and they can still settle on the old suite, so the legacy proposal has to be removed rather than merely supplemented. And it has to come out of both ends together: cut one peer over while the other still offers nothing BUT the legacy suite and there is no proposal either side accepts, so the tunnel stops coming up at all. That is why this is one coordinated change. 3DES is retired for its 64-bit block size (collisions become practical after enough data under one key) and its ~112-bit effective strength; SHA-1 and the exposed key both go with it.',
+        payload: { layout: 'dualpanel', scoring: 'tunnel',
+          panels: [ { id: 'A', label: 'GW-SLO — Slough branch' }, { id: 'B', label: 'GW-CORE — datacentre' } ],
+          slots: [
+            { id: 'a-auth', panel: 'A', label: 'Authentication method', options: [ { id: 'pskold', text: 'Existing pre-shared key (unrotated)' }, { id: 'cert', text: 'Digital certificates' }, { id: 'psk', text: 'Pre-shared key' } ] },
+            { id: 'a-enc', panel: 'A', label: 'Phase 1 encryption', options: [ { id: 'des3', text: '3DES' }, { id: 'aes128', text: 'AES-128' }, { id: 'aes192', text: 'AES-192' }, { id: 'aes256', text: 'AES-256' } ] },
+            { id: 'a-int', panel: 'A', label: 'Phase 1 integrity', options: [ { id: 'md5', text: 'MD5' }, { id: 'sha1', text: 'SHA-1' }, { id: 'sha256', text: 'SHA-256' }, { id: 'sha384', text: 'SHA-384' } ] },
+            { id: 'a-dh', panel: 'A', label: 'Key-agreement group', options: [ { id: 'dh2', text: 'DH group 2 (1024-bit MODP)' }, { id: 'dh5', text: 'DH group 5 (1536-bit MODP)' }, { id: 'dh14', text: 'DH group 14 (2048-bit MODP)' }, { id: 'dh19', text: 'DH group 19 (256-bit ECP)' } ] },
+            { id: 'b-auth', panel: 'B', label: 'Authentication method', options: [ { id: 'pskold', text: 'Existing pre-shared key (unrotated)' }, { id: 'cert', text: 'Digital certificates' }, { id: 'psk', text: 'Pre-shared key' } ] },
+            { id: 'b-enc', panel: 'B', label: 'Phase 1 encryption', options: [ { id: 'des3', text: '3DES' }, { id: 'aes128', text: 'AES-128' }, { id: 'aes192', text: 'AES-192' }, { id: 'aes256', text: 'AES-256' } ] },
+            { id: 'b-int', panel: 'B', label: 'Phase 1 integrity', options: [ { id: 'md5', text: 'MD5' }, { id: 'sha1', text: 'SHA-1' }, { id: 'sha256', text: 'SHA-256' }, { id: 'sha384', text: 'SHA-384' } ] },
+            { id: 'b-dh', panel: 'B', label: 'Key-agreement group', options: [ { id: 'dh2', text: 'DH group 2 (1024-bit MODP)' }, { id: 'dh5', text: 'DH group 5 (1536-bit MODP)' }, { id: 'dh14', text: 'DH group 14 (2048-bit MODP)' }, { id: 'dh19', text: 'DH group 19 (256-bit ECP)' } ] }
+          ],
+          symmetryPairs: [ ['a-auth','b-auth'], ['a-enc','b-enc'], ['a-int','b-int'], ['a-dh','b-dh'] ],
+          mirrorPairs: [  ] },
+        answer: { slots: { 'a-auth': ['cert'], 'a-enc': ['aes192','aes256'], 'a-int': ['sha256','sha384'], 'a-dh': ['dh14','dh19'], 'b-auth': ['cert'], 'b-enc': ['aes192','aes256'], 'b-int': ['sha256','sha384'], 'b-dh': ['dh14','dh19'] } } },
+      { id: 'p2', type: 'configure', points: 1,
+        prompt: 'Rebuild Phase 2 for the branch-to-core traffic on both gateways.',
+        explanation: 'Perfect forward secrecy is a PHASE 2 decision: it means running a FRESH Diffie-Hellman exchange when the child SA is established and rekeyed, instead of deriving its keys from the Phase 1 secret. Without it, recovering the Phase 1 keying material later unlocks every child SA derived from it. Phase 1 always performs a DH exchange — there is no configuration that skips it — so PFS is the only place this choice genuinely exists. The selectors MIRROR: each end’s local network is the other end’s remote. Get that backwards and Phase 1 completes happily, then the child SA is refused for an unacceptable traffic selector. AH is a real trap in the transform list — it authenticates and integrity-protects but does not encrypt anything. The two sites use different prefix lengths (a /24 and a /16) and that is perfectly normal. Two things go wrong here. A selector that does not mirror — the core listing 192.168.0.0/16 as its remote while the branch proposes 192.168.10.0/24 — is refused by an exact-match implementation; IKEv2 may narrow a wider configured range to the one proposed, but leaning on that is how selector mismatches become intermittent faults nobody can reproduce. And the branch supernet mirrors perfectly well on both ends while still being wrong: it claims every 192.168.x.x range for this tunnel when only the branch’s own /24 was ever in scope.',
+        payload: { layout: 'dualpanel', scoring: 'tunnel',
+          panels: [ { id: 'A', label: 'GW-SLO — Slough branch' }, { id: 'B', label: 'GW-CORE — datacentre' } ],
+          slots: [
+            { id: 'a-local', panel: 'A', label: 'Local selector — the network THIS end protects', options: [ { id: 'slo', text: '192.168.10.0/24 · Slough branch' }, { id: 'core', text: '10.30.0.0/16 · Core datacentre' }, { id: 'slowide', text: '192.168.0.0/16 · all branch ranges' } ] },
+            { id: 'a-remote', panel: 'A', label: 'Remote selector — the network the PEER protects', options: [ { id: 'slo', text: '192.168.10.0/24 · Slough branch' }, { id: 'core', text: '10.30.0.0/16 · Core datacentre' }, { id: 'slowide', text: '192.168.0.0/16 · all branch ranges' } ] },
+            { id: 'a-pfs', panel: 'A', label: 'Phase 2 perfect forward secrecy', options: [ { id: 'nopfs', text: 'No PFS · rekey the child SA from Phase 1 keying material' }, { id: 'pfs14', text: 'PFS · fresh DH group 14 exchange at each rekey' }, { id: 'pfs19', text: 'PFS · fresh DH group 19 exchange at each rekey' } ] },
+            { id: 'a-xform', panel: 'A', label: 'Phase 2 transform', options: [ { id: 'ah', text: 'AH · integrity only, no encryption' }, { id: 'esp3des', text: 'ESP · 3DES-CBC + HMAC-SHA-1' }, { id: 'espaes128', text: 'ESP · AES-128-CBC + HMAC-SHA-256' }, { id: 'espaes192', text: 'ESP · AES-192-CBC + HMAC-SHA-256' }, { id: 'espgcm', text: 'ESP · AES-256-GCM (AEAD)' } ] },
+            { id: 'b-local', panel: 'B', label: 'Local selector — the network THIS end protects', options: [ { id: 'slo', text: '192.168.10.0/24 · Slough branch' }, { id: 'core', text: '10.30.0.0/16 · Core datacentre' }, { id: 'slowide', text: '192.168.0.0/16 · all branch ranges' } ] },
+            { id: 'b-remote', panel: 'B', label: 'Remote selector — the network the PEER protects', options: [ { id: 'slo', text: '192.168.10.0/24 · Slough branch' }, { id: 'core', text: '10.30.0.0/16 · Core datacentre' }, { id: 'slowide', text: '192.168.0.0/16 · all branch ranges' } ] },
+            { id: 'b-pfs', panel: 'B', label: 'Phase 2 perfect forward secrecy', options: [ { id: 'nopfs', text: 'No PFS · rekey the child SA from Phase 1 keying material' }, { id: 'pfs14', text: 'PFS · fresh DH group 14 exchange at each rekey' }, { id: 'pfs19', text: 'PFS · fresh DH group 19 exchange at each rekey' } ] },
+            { id: 'b-xform', panel: 'B', label: 'Phase 2 transform', options: [ { id: 'ah', text: 'AH · integrity only, no encryption' }, { id: 'esp3des', text: 'ESP · 3DES-CBC + HMAC-SHA-1' }, { id: 'espaes128', text: 'ESP · AES-128-CBC + HMAC-SHA-256' }, { id: 'espaes192', text: 'ESP · AES-192-CBC + HMAC-SHA-256' }, { id: 'espgcm', text: 'ESP · AES-256-GCM (AEAD)' } ] }
+          ],
+          symmetryPairs: [ ['a-pfs','b-pfs'], ['a-xform','b-xform'] ],
+          mirrorPairs: [ ['a-local','b-remote'], ['a-remote','b-local'] ] },
+        answer: { slots: { 'a-local': ['slo'], 'a-remote': ['core'], 'a-pfs': ['pfs14','pfs19'], 'a-xform': ['espaes192','espgcm'], 'b-local': ['core'], 'b-remote': ['slo'], 'b-pfs': ['pfs14','pfs19'], 'b-xform': ['espaes192','espgcm'] } } },
+      { id: 'p3', type: 'analyze', points: 1,
+        prompt: 'The partner emailed the Phase 1 they intend to apply to GW-SLO. Which single line would leave the audit finding open?',
+        explanation: 'Their encryption line is still 3DES — the exact setting the audit raised — so applying this leaves a legacy proposal configured on one peer and the finding stands. Everything else in their proposal is a valid replacement: certificates address the exposed key, SHA-256 replaces SHA-1, and group 14 replaces group 2.',
+        payload: { multi: false, lines: [
+          { id: 'ln-auth', text: 'Authentication: Digital certificates' },
+          { id: 'ln-enc', text: 'Phase 1 encryption: 3DES' },
+          { id: 'ln-int', text: 'Phase 1 integrity: SHA-256' },
+          { id: 'ln-dh', text: 'Key-agreement group: 14 (2048-bit MODP)' }
+        ] },
+        answer: { selected: ['ln-enc'] } }
+    ]
+  },
+
+  {
+    id: 'sp-vpn-04', cert: 'secplus', archetype: 'vpntunnel', objective: '1.4',
+    topic: 'Cryptographic solutions', title: 'Choose crypto that survives a recorded session',
+    estMinutes: 5, policyFloor: ['pfs','aes192-min'],
+    scenario: 'Your threat model for the research-network tunnel assumes a well-resourced observer is recording the ciphertext today and hoping to recover a gateway private key years from now. That assumption drives the build: a future key compromise must not decrypt traffic captured today. The research-data classification additionally sets the floor at AES-192 minimum, Phase 1 integrity SHA-256 or better, and a 2048-bit-equivalent key-agreement group or better, and only the two named lab subnets enter the tunnel. Both sites are yours; both hold certificates, and a 32-character random pre-shared key is also provisioned in the two configs. Configure the crypto on both ends.',
+    assets: { reference: { kind: 'network', devices: [
+      { id: 'siteA', label: 'Cambridge lab', type: 'network', subnet: '10.40.0.0/16', note: 'GW-CAM · 203.0.113.60' },
+      { id: 'siteB', label: 'Edinburgh lab', type: 'network', subnet: '10.45.0.0/16', note: 'GW-EDI · 198.51.100.90' }
+    ] } },
+    steps: [
+      { id: 'p1', type: 'configure', points: 1,
+        prompt: 'Configure the IKE Phase 1 proposal on both gateways to the stated standard.',
+        explanation: 'Encryption, integrity, key-agreement group and authentication method must MATCH on both peers or Phase 1 never completes — the responder walks the initiator’s proposal list and, finding nothing it also has configured, returns no proposal chosen. (SA lifetime is the exception and is deliberately not asked here: IKEv1 settles on the shorter of the two values and IKEv2 treats it as purely local.) SHA-256 and SHA-384 both clear the integrity floor; MD5 and SHA-1 sit below it and are being retired. Group 14 gives roughly 112-bit security and group 19 roughly 128-bit, so either clears the floor — groups 2 and 5 do not. Note what authentication does NOT decide here. Whether the peers prove identity with a certificate or a pre-shared key, the session key still comes from the Diffie-Hellman exchange — so neither choice is what protects a past capture, and rejecting PSK on forward-secrecy grounds would be the actual error. What the DH exchange gives you is that each side derives the shared secret from a private exponent that never leaves the gateway and is discarded when the SA expires; the public values do cross the wire, and that is fine.',
+        payload: { layout: 'dualpanel', scoring: 'tunnel',
+          panels: [ { id: 'A', label: 'GW-CAM — Cambridge' }, { id: 'B', label: 'GW-EDI — Edinburgh' } ],
+          slots: [
+            { id: 'a-auth', panel: 'A', label: 'Authentication method', options: [ { id: 'psk', text: 'Pre-shared key' }, { id: 'cert', text: 'Digital certificates' }, { id: 'noauth', text: 'No peer authentication' } ] },
+            { id: 'a-enc', panel: 'A', label: 'Phase 1 encryption', options: [ { id: 'des3', text: '3DES' }, { id: 'aes128', text: 'AES-128' }, { id: 'aes192', text: 'AES-192' }, { id: 'aes256', text: 'AES-256' } ] },
+            { id: 'a-int', panel: 'A', label: 'Phase 1 integrity', options: [ { id: 'md5', text: 'MD5' }, { id: 'sha1', text: 'SHA-1' }, { id: 'sha256', text: 'SHA-256' }, { id: 'sha384', text: 'SHA-384' } ] },
+            { id: 'a-dh', panel: 'A', label: 'Key-agreement group', options: [ { id: 'dh2', text: 'DH group 2 (1024-bit MODP)' }, { id: 'dh5', text: 'DH group 5 (1536-bit MODP)' }, { id: 'dh14', text: 'DH group 14 (2048-bit MODP)' }, { id: 'dh19', text: 'DH group 19 (256-bit ECP)' } ] },
+            { id: 'b-auth', panel: 'B', label: 'Authentication method', options: [ { id: 'psk', text: 'Pre-shared key' }, { id: 'cert', text: 'Digital certificates' }, { id: 'noauth', text: 'No peer authentication' } ] },
+            { id: 'b-enc', panel: 'B', label: 'Phase 1 encryption', options: [ { id: 'des3', text: '3DES' }, { id: 'aes128', text: 'AES-128' }, { id: 'aes192', text: 'AES-192' }, { id: 'aes256', text: 'AES-256' } ] },
+            { id: 'b-int', panel: 'B', label: 'Phase 1 integrity', options: [ { id: 'md5', text: 'MD5' }, { id: 'sha1', text: 'SHA-1' }, { id: 'sha256', text: 'SHA-256' }, { id: 'sha384', text: 'SHA-384' } ] },
+            { id: 'b-dh', panel: 'B', label: 'Key-agreement group', options: [ { id: 'dh2', text: 'DH group 2 (1024-bit MODP)' }, { id: 'dh5', text: 'DH group 5 (1536-bit MODP)' }, { id: 'dh14', text: 'DH group 14 (2048-bit MODP)' }, { id: 'dh19', text: 'DH group 19 (256-bit ECP)' } ] }
+          ],
+          symmetryPairs: [ ['a-auth','b-auth'], ['a-enc','b-enc'], ['a-int','b-int'], ['a-dh','b-dh'] ],
+          mirrorPairs: [  ] },
+        answer: { slots: { 'a-auth': ['psk','cert'], 'a-enc': ['aes192','aes256'], 'a-int': ['sha256','sha384'], 'a-dh': ['dh14','dh19'], 'b-auth': ['psk','cert'], 'b-enc': ['aes192','aes256'], 'b-int': ['sha256','sha384'], 'b-dh': ['dh14','dh19'] } } },
+      { id: 'p2', type: 'configure', points: 1,
+        prompt: 'Configure Phase 2 so the data SAs keep forward secrecy too.',
+        explanation: 'Perfect forward secrecy is a PHASE 2 decision: it means running a FRESH Diffie-Hellman exchange when the child SA is established and rekeyed, instead of deriving its keys from the Phase 1 secret. Without it, recovering the Phase 1 keying material later unlocks every child SA derived from it. Phase 1 always performs a DH exchange — there is no configuration that skips it — so PFS is the only place this choice genuinely exists. The selectors MIRROR: each end’s local network is the other end’s remote. Get that backwards and Phase 1 completes happily, then the child SA is refused for an unacceptable traffic selector. AH is a real trap in the transform list — it authenticates and integrity-protects but does not encrypt anything. This is the step that answers the threat model. Phase 1 forward secrecy protects the IKE SA only; disable PFS and every child SA is rekeyed from that same Phase 1 material, so one compromise unwinds the lot. Be honest about the limit: PFS defends against later KEY theft, not against the mathematics being broken — a future quantum capability would attack the recorded DH exchange itself, and neither group 14 nor 19 survives that. On the selectors: a 0.0.0.0/0 pair would mirror and negotiate, and is still wrong — it pulls all site traffic into the tunnel rather than the research link you scoped.',
+        payload: { layout: 'dualpanel', scoring: 'tunnel',
+          panels: [ { id: 'A', label: 'GW-CAM — Cambridge' }, { id: 'B', label: 'GW-EDI — Edinburgh' } ],
+          slots: [
+            { id: 'a-local', panel: 'A', label: 'Local selector — the network THIS end protects', options: [ { id: 'cam', text: '10.40.0.0/16 · Cambridge lab' }, { id: 'edi', text: '10.45.0.0/16 · Edinburgh lab' }, { id: 'any', text: '0.0.0.0/0 · any' } ] },
+            { id: 'a-remote', panel: 'A', label: 'Remote selector — the network the PEER protects', options: [ { id: 'cam', text: '10.40.0.0/16 · Cambridge lab' }, { id: 'edi', text: '10.45.0.0/16 · Edinburgh lab' }, { id: 'any', text: '0.0.0.0/0 · any' } ] },
+            { id: 'a-pfs', panel: 'A', label: 'Phase 2 perfect forward secrecy', options: [ { id: 'nopfs', text: 'No PFS · rekey the child SA from Phase 1 keying material' }, { id: 'pfs14', text: 'PFS · fresh DH group 14 exchange at each rekey' }, { id: 'pfs19', text: 'PFS · fresh DH group 19 exchange at each rekey' } ] },
+            { id: 'a-xform', panel: 'A', label: 'Phase 2 transform', options: [ { id: 'ah', text: 'AH · integrity only, no encryption' }, { id: 'esp3des', text: 'ESP · 3DES-CBC + HMAC-SHA-1' }, { id: 'espaes128', text: 'ESP · AES-128-CBC + HMAC-SHA-256' }, { id: 'espaes192', text: 'ESP · AES-192-CBC + HMAC-SHA-256' }, { id: 'espgcm', text: 'ESP · AES-256-GCM (AEAD)' } ] },
+            { id: 'b-local', panel: 'B', label: 'Local selector — the network THIS end protects', options: [ { id: 'cam', text: '10.40.0.0/16 · Cambridge lab' }, { id: 'edi', text: '10.45.0.0/16 · Edinburgh lab' }, { id: 'any', text: '0.0.0.0/0 · any' } ] },
+            { id: 'b-remote', panel: 'B', label: 'Remote selector — the network the PEER protects', options: [ { id: 'cam', text: '10.40.0.0/16 · Cambridge lab' }, { id: 'edi', text: '10.45.0.0/16 · Edinburgh lab' }, { id: 'any', text: '0.0.0.0/0 · any' } ] },
+            { id: 'b-pfs', panel: 'B', label: 'Phase 2 perfect forward secrecy', options: [ { id: 'nopfs', text: 'No PFS · rekey the child SA from Phase 1 keying material' }, { id: 'pfs14', text: 'PFS · fresh DH group 14 exchange at each rekey' }, { id: 'pfs19', text: 'PFS · fresh DH group 19 exchange at each rekey' } ] },
+            { id: 'b-xform', panel: 'B', label: 'Phase 2 transform', options: [ { id: 'ah', text: 'AH · integrity only, no encryption' }, { id: 'esp3des', text: 'ESP · 3DES-CBC + HMAC-SHA-1' }, { id: 'espaes128', text: 'ESP · AES-128-CBC + HMAC-SHA-256' }, { id: 'espaes192', text: 'ESP · AES-192-CBC + HMAC-SHA-256' }, { id: 'espgcm', text: 'ESP · AES-256-GCM (AEAD)' } ] }
+          ],
+          symmetryPairs: [ ['a-pfs','b-pfs'], ['a-xform','b-xform'] ],
+          mirrorPairs: [ ['a-local','b-remote'], ['a-remote','b-local'] ] },
+        answer: { slots: { 'a-local': ['cam'], 'a-remote': ['edi'], 'a-pfs': ['pfs14','pfs19'], 'a-xform': ['espaes192','espgcm'], 'b-local': ['edi'], 'b-remote': ['cam'], 'b-pfs': ['pfs14','pfs19'], 'b-xform': ['espaes192','espgcm'] } } }
+    ]
+  },
+
+  {
+    id: 'sp-vpn-05', cert: 'secplus', archetype: 'vpntunnel', objective: '3.2',
+    topic: 'Secure enterprise infrastructure', title: 'Both sites numbered 10.10.0.0/16 — tunnel the acquisition anyway',
+    estMinutes: 6, policyFloor: ['no-psk','pfs','aes256-min'],
+    scenario: 'The company you acquired numbered its head office 10.10.0.0/16 — the same range as yours. Re-addressing either site would take months you do not have, so each side is presented to the other under a translated range: your HQ appears to them as 10.98.0.0/16, and their site appears to you as 10.99.0.0/16. Each gateway translates back to real addresses on arrival, and the crypto selectors are written against the TRANSLATED ranges on both ends. Security standard for this link, and it is not negotiable: certificate authentication only (no pre-shared keys), Phase 1 integrity SHA-256 or better, a 2048-bit-equivalent key-agreement group or better, and perfect forward secrecy on every child-SA rekey. Encryption is AES-256 minimum. Configure both gateways.',
+    assets: { reference: { kind: 'network', devices: [
+      { id: 'siteA', label: 'HQ as seen by the peer', type: 'network', subnet: '10.98.0.0/16', note: 'GW-HQ · real range 10.10.0.0/16' },
+      { id: 'siteB', label: 'Acquired site as seen by you', type: 'network', subnet: '10.99.0.0/16', note: 'GW-ACQ · real range 10.10.0.0/16' },
+      { id: 'siteC', label: 'Conflicting real range', type: 'network', subnet: '10.10.0.0/16', note: 'in use at BOTH sites — never a selector' }
+    ] } },
+    steps: [
+      { id: 'p1', type: 'configure', points: 1,
+        prompt: 'Configure the IKE Phase 1 proposal on both gateways to the stated standard.',
+        explanation: 'Encryption, integrity, key-agreement group and authentication method must MATCH on both peers or Phase 1 never completes — the responder walks the initiator’s proposal list and, finding nothing it also has configured, returns no proposal chosen. (SA lifetime is the exception and is deliberately not asked here: IKEv1 settles on the shorter of the two values and IKEv2 treats it as purely local.) SHA-256 and SHA-384 both clear the integrity floor; MD5 and SHA-1 sit below it and are being retired. Group 14 gives roughly 112-bit security and group 19 roughly 128-bit, so either clears the floor — groups 2 and 5 do not. Note that the address translation here is INTERNAL to the two sites — it rewrites the protected ranges so they stop colliding. It is not NAT traversal, which is a separate problem about surviving a NAT device in the path between the gateways, and nothing in this build depends on it.',
+        payload: { layout: 'dualpanel', scoring: 'tunnel',
+          panels: [ { id: 'A', label: 'GW-HQ — your network' }, { id: 'B', label: 'GW-ACQ — acquired site' } ],
+          slots: [
+            { id: 'a-auth', panel: 'A', label: 'Authentication method', options: [ { id: 'psk', text: 'Pre-shared key' }, { id: 'cert', text: 'Digital certificates' }, { id: 'noauth', text: 'No peer authentication' } ] },
+            { id: 'a-enc', panel: 'A', label: 'Phase 1 encryption', options: [ { id: 'des3', text: '3DES' }, { id: 'aes128', text: 'AES-128' }, { id: 'aes192', text: 'AES-192' }, { id: 'aes256', text: 'AES-256' } ] },
+            { id: 'a-int', panel: 'A', label: 'Phase 1 integrity', options: [ { id: 'md5', text: 'MD5' }, { id: 'sha1', text: 'SHA-1' }, { id: 'sha256', text: 'SHA-256' }, { id: 'sha384', text: 'SHA-384' } ] },
+            { id: 'a-dh', panel: 'A', label: 'Key-agreement group', options: [ { id: 'dh2', text: 'DH group 2 (1024-bit MODP)' }, { id: 'dh5', text: 'DH group 5 (1536-bit MODP)' }, { id: 'dh14', text: 'DH group 14 (2048-bit MODP)' }, { id: 'dh19', text: 'DH group 19 (256-bit ECP)' } ] },
+            { id: 'b-auth', panel: 'B', label: 'Authentication method', options: [ { id: 'psk', text: 'Pre-shared key' }, { id: 'cert', text: 'Digital certificates' }, { id: 'noauth', text: 'No peer authentication' } ] },
+            { id: 'b-enc', panel: 'B', label: 'Phase 1 encryption', options: [ { id: 'des3', text: '3DES' }, { id: 'aes128', text: 'AES-128' }, { id: 'aes192', text: 'AES-192' }, { id: 'aes256', text: 'AES-256' } ] },
+            { id: 'b-int', panel: 'B', label: 'Phase 1 integrity', options: [ { id: 'md5', text: 'MD5' }, { id: 'sha1', text: 'SHA-1' }, { id: 'sha256', text: 'SHA-256' }, { id: 'sha384', text: 'SHA-384' } ] },
+            { id: 'b-dh', panel: 'B', label: 'Key-agreement group', options: [ { id: 'dh2', text: 'DH group 2 (1024-bit MODP)' }, { id: 'dh5', text: 'DH group 5 (1536-bit MODP)' }, { id: 'dh14', text: 'DH group 14 (2048-bit MODP)' }, { id: 'dh19', text: 'DH group 19 (256-bit ECP)' } ] }
+          ],
+          symmetryPairs: [ ['a-auth','b-auth'], ['a-enc','b-enc'], ['a-int','b-int'], ['a-dh','b-dh'] ],
+          mirrorPairs: [  ] },
+        answer: { slots: { 'a-auth': ['cert'], 'a-enc': ['aes256'], 'a-int': ['sha256','sha384'], 'a-dh': ['dh14','dh19'], 'b-auth': ['cert'], 'b-enc': ['aes256'], 'b-int': ['sha256','sha384'], 'b-dh': ['dh14','dh19'] } } },
+      { id: 'p2', type: 'configure', points: 1,
+        prompt: 'Set the Phase 2 selectors using the translated ranges on BOTH ends.',
+        explanation: 'Perfect forward secrecy is a PHASE 2 decision: it means running a FRESH Diffie-Hellman exchange when the child SA is established and rekeyed, instead of deriving its keys from the Phase 1 secret. Without it, recovering the Phase 1 keying material later unlocks every child SA derived from it. Phase 1 always performs a DH exchange — there is no configuration that skips it — so PFS is the only place this choice genuinely exists. The selectors MIRROR: each end’s local network is the other end’s remote. Get that backwards and Phase 1 completes happily, then the child SA is refused for an unacceptable traffic selector. AH is a real trap in the transform list — it authenticates and integrity-protects but does not encrypt anything. The overlap is resolved by never letting the duplicated range appear in a selector at all. Translating only one side does not work: the acquired gateway would then hold 10.10.0.0/16 as its remote, which is its OWN directly-connected LAN, so it routes that traffic locally and never puts it in the tunnel. Both sides must be presented under a non-conflicting range, and the mirror then holds on the translated addresses — which is the entire trick. On the transform, only AES-256-GCM clears the AES-256 floor; every CBC option here sits below it.',
+        payload: { layout: 'dualpanel', scoring: 'tunnel',
+          panels: [ { id: 'A', label: 'GW-HQ — your network' }, { id: 'B', label: 'GW-ACQ — acquired site' } ],
+          slots: [
+            { id: 'a-local', panel: 'A', label: 'Local selector — this end AS PRESENTED to the peer', options: [ { id: 'hqx', text: '10.98.0.0/16 · HQ, translated' }, { id: 'acqx', text: '10.99.0.0/16 · acquired site, translated' }, { id: 'real', text: '10.10.0.0/16 · real range, in use at BOTH sites' } ] },
+            { id: 'a-remote', panel: 'A', label: 'Remote selector — the peer AS PRESENTED to you', options: [ { id: 'hqx', text: '10.98.0.0/16 · HQ, translated' }, { id: 'acqx', text: '10.99.0.0/16 · acquired site, translated' }, { id: 'real', text: '10.10.0.0/16 · real range, in use at BOTH sites' } ] },
+            { id: 'a-pfs', panel: 'A', label: 'Phase 2 perfect forward secrecy', options: [ { id: 'nopfs', text: 'No PFS · rekey the child SA from Phase 1 keying material' }, { id: 'pfs14', text: 'PFS · fresh DH group 14 exchange at each rekey' }, { id: 'pfs19', text: 'PFS · fresh DH group 19 exchange at each rekey' } ] },
+            { id: 'a-xform', panel: 'A', label: 'Phase 2 transform', options: [ { id: 'ah', text: 'AH · integrity only, no encryption' }, { id: 'esp3des', text: 'ESP · 3DES-CBC + HMAC-SHA-1' }, { id: 'espaes128', text: 'ESP · AES-128-CBC + HMAC-SHA-256' }, { id: 'espaes192', text: 'ESP · AES-192-CBC + HMAC-SHA-256' }, { id: 'espgcm', text: 'ESP · AES-256-GCM (AEAD)' } ] },
+            { id: 'b-local', panel: 'B', label: 'Local selector — this end AS PRESENTED to the peer', options: [ { id: 'hqx', text: '10.98.0.0/16 · HQ, translated' }, { id: 'acqx', text: '10.99.0.0/16 · acquired site, translated' }, { id: 'real', text: '10.10.0.0/16 · real range, in use at BOTH sites' } ] },
+            { id: 'b-remote', panel: 'B', label: 'Remote selector — the peer AS PRESENTED to you', options: [ { id: 'hqx', text: '10.98.0.0/16 · HQ, translated' }, { id: 'acqx', text: '10.99.0.0/16 · acquired site, translated' }, { id: 'real', text: '10.10.0.0/16 · real range, in use at BOTH sites' } ] },
+            { id: 'b-pfs', panel: 'B', label: 'Phase 2 perfect forward secrecy', options: [ { id: 'nopfs', text: 'No PFS · rekey the child SA from Phase 1 keying material' }, { id: 'pfs14', text: 'PFS · fresh DH group 14 exchange at each rekey' }, { id: 'pfs19', text: 'PFS · fresh DH group 19 exchange at each rekey' } ] },
+            { id: 'b-xform', panel: 'B', label: 'Phase 2 transform', options: [ { id: 'ah', text: 'AH · integrity only, no encryption' }, { id: 'esp3des', text: 'ESP · 3DES-CBC + HMAC-SHA-1' }, { id: 'espaes128', text: 'ESP · AES-128-CBC + HMAC-SHA-256' }, { id: 'espaes192', text: 'ESP · AES-192-CBC + HMAC-SHA-256' }, { id: 'espgcm', text: 'ESP · AES-256-GCM (AEAD)' } ] }
+          ],
+          symmetryPairs: [ ['a-pfs','b-pfs'], ['a-xform','b-xform'] ],
+          mirrorPairs: [ ['a-local','b-remote'], ['a-remote','b-local'] ] },
+        answer: { slots: { 'a-local': ['hqx'], 'a-remote': ['acqx'], 'a-pfs': ['pfs14','pfs19'], 'a-xform': ['espgcm'], 'b-local': ['acqx'], 'b-remote': ['hqx'], 'b-pfs': ['pfs14','pfs19'], 'b-xform': ['espgcm'] } } }
+    ]
+  },
+
+  {
+    id: 'sp-vpn-06', cert: 'secplus', archetype: 'vpntunnel', objective: '3.2',
+    topic: 'Secure enterprise infrastructure', title: 'Full-tunnel remote access for the support desk',
+    estMinutes: 5, policyFloor: ['no-psk','pfs','aes192-min'],
+    scenario: 'The support desk went permanently remote and handles customer records from home broadband. Legal’s position is that every packet those laptops send must traverse the corporate egress so it is filtered and logged — no exceptions, including general web browsing. You are configuring the concentrator and the client profile pushed to the laptops. Security standard for this link, and it is not negotiable: certificate authentication only (no pre-shared keys), Phase 1 integrity SHA-256 or better, a 2048-bit-equivalent key-agreement group or better, and perfect forward secrecy on every child-SA rekey. Encryption is AES-192 minimum, and shared secrets are not acceptable on user devices.',
+    assets: { reference: { kind: 'network', devices: [
+      { id: 'siteA', label: 'Corporate network', type: 'network', subnet: '10.50.0.0/16', note: 'concentrator · 203.0.113.100' },
+      { id: 'siteB', label: 'Client address pool', type: 'network', subnet: '10.51.0.0/24', note: 'assigned to connected laptops' },
+      { id: 'siteC', label: 'All destinations', type: 'network', subnet: '0.0.0.0/0', note: 'full-tunnel egress via corporate' }
+    ] } },
+    steps: [
+      { id: 'p1', type: 'configure', points: 1,
+        prompt: 'Configure the IKE Phase 1 proposal on the concentrator and in the pushed client profile, to the stated standard.',
+        explanation: 'Encryption, integrity, key-agreement group and authentication method must MATCH on both peers or Phase 1 never completes — the responder walks the initiator’s proposal list and, finding nothing it also has configured, returns no proposal chosen. (SA lifetime is the exception and is deliberately not asked here: IKEv1 settles on the shorter of the two values and IKEv2 treats it as purely local.) SHA-256 and SHA-384 both clear the integrity floor; MD5 and SHA-1 sit below it and are being retired. Group 14 gives roughly 112-bit security and group 19 roughly 128-bit, so either clears the floor — groups 2 and 5 do not. A remote-access profile is still an IKE negotiation, so a mismatch fails exactly as it would between two site gateways: the client reports no acceptable proposal and never receives an address. A group pre-shared key is one secret copied onto every laptop — it cannot tell you WHICH device connected, and one lost laptop means rotating it everywhere. Machine certificates are per-device and individually revocable.',
+        payload: { layout: 'dualpanel', scoring: 'tunnel',
+          panels: [ { id: 'A', label: 'Concentrator' }, { id: 'B', label: 'Client profile' } ],
+          slots: [
+            { id: 'a-auth', panel: 'A', label: 'Authentication method', options: [ { id: 'psk', text: 'Group pre-shared key' }, { id: 'cert', text: 'Machine certificates' }, { id: 'noauth', text: 'No peer authentication' } ] },
+            { id: 'a-enc', panel: 'A', label: 'Phase 1 encryption', options: [ { id: 'des3', text: '3DES' }, { id: 'aes128', text: 'AES-128' }, { id: 'aes192', text: 'AES-192' }, { id: 'aes256', text: 'AES-256' } ] },
+            { id: 'a-int', panel: 'A', label: 'Phase 1 integrity', options: [ { id: 'md5', text: 'MD5' }, { id: 'sha1', text: 'SHA-1' }, { id: 'sha256', text: 'SHA-256' }, { id: 'sha384', text: 'SHA-384' } ] },
+            { id: 'a-dh', panel: 'A', label: 'Key-agreement group', options: [ { id: 'dh2', text: 'DH group 2 (1024-bit MODP)' }, { id: 'dh5', text: 'DH group 5 (1536-bit MODP)' }, { id: 'dh14', text: 'DH group 14 (2048-bit MODP)' }, { id: 'dh19', text: 'DH group 19 (256-bit ECP)' } ] },
+            { id: 'b-auth', panel: 'B', label: 'Authentication method', options: [ { id: 'psk', text: 'Group pre-shared key' }, { id: 'cert', text: 'Machine certificates' }, { id: 'noauth', text: 'No peer authentication' } ] },
+            { id: 'b-enc', panel: 'B', label: 'Phase 1 encryption', options: [ { id: 'des3', text: '3DES' }, { id: 'aes128', text: 'AES-128' }, { id: 'aes192', text: 'AES-192' }, { id: 'aes256', text: 'AES-256' } ] },
+            { id: 'b-int', panel: 'B', label: 'Phase 1 integrity', options: [ { id: 'md5', text: 'MD5' }, { id: 'sha1', text: 'SHA-1' }, { id: 'sha256', text: 'SHA-256' }, { id: 'sha384', text: 'SHA-384' } ] },
+            { id: 'b-dh', panel: 'B', label: 'Key-agreement group', options: [ { id: 'dh2', text: 'DH group 2 (1024-bit MODP)' }, { id: 'dh5', text: 'DH group 5 (1536-bit MODP)' }, { id: 'dh14', text: 'DH group 14 (2048-bit MODP)' }, { id: 'dh19', text: 'DH group 19 (256-bit ECP)' } ] }
+          ],
+          symmetryPairs: [ ['a-auth','b-auth'], ['a-enc','b-enc'], ['a-int','b-int'], ['a-dh','b-dh'] ],
+          mirrorPairs: [  ] },
+        answer: { slots: { 'a-auth': ['cert'], 'a-enc': ['aes192','aes256'], 'a-int': ['sha256','sha384'], 'a-dh': ['dh14','dh19'], 'b-auth': ['cert'], 'b-enc': ['aes192','aes256'], 'b-int': ['sha256','sha384'], 'b-dh': ['dh14','dh19'] } } },
+      { id: 'p2', type: 'configure', points: 1,
+        prompt: 'Set the Phase 2 selectors so ALL client traffic rides the tunnel.',
+        explanation: 'Perfect forward secrecy is a PHASE 2 decision: it means running a FRESH Diffie-Hellman exchange when the child SA is established and rekeyed, instead of deriving its keys from the Phase 1 secret. Without it, recovering the Phase 1 keying material later unlocks every child SA derived from it. Phase 1 always performs a DH exchange — there is no configuration that skips it — so PFS is the only place this choice genuinely exists. The selectors MIRROR: each end’s local network is the other end’s remote. Get that backwards and Phase 1 completes happily, then the child SA is refused for an unacceptable traffic selector. AH is a real trap in the transform list — it authenticates and integrity-protects but does not encrypt anything. Full tunnel means the client sends 0.0.0.0/0 into the tunnel — everything, including browsing with no business destination. The mirror still governs: the concentrator offers 0.0.0.0/0 as the network it protects and the client requests 0.0.0.0/0 as its remote, while the assigned pool address is the client-side selector at both ends. Offering only 10.50.0.0/16 would be a SPLIT tunnel, which is what legal ruled out. On the transform, AES-128-CBC and 3DES fall below the AES-192 floor, leaving AES-192-CBC with HMAC-SHA-256 or AES-256-GCM.',
+        payload: { layout: 'dualpanel', scoring: 'tunnel',
+          panels: [ { id: 'A', label: 'Concentrator' }, { id: 'B', label: 'Client profile' } ],
+          slots: [
+            { id: 'a-local', panel: 'A', label: 'Local selector — the network THIS end protects', options: [ { id: 'corp', text: '10.50.0.0/16 · corporate only' }, { id: 'all', text: '0.0.0.0/0 · all destinations' }, { id: 'pool', text: '10.51.0.0/24 · client pool' } ] },
+            { id: 'a-remote', panel: 'A', label: 'Remote selector — the network the PEER protects', options: [ { id: 'corp', text: '10.50.0.0/16 · corporate only' }, { id: 'all', text: '0.0.0.0/0 · all destinations' }, { id: 'pool', text: '10.51.0.0/24 · client pool' } ] },
+            { id: 'a-pfs', panel: 'A', label: 'Phase 2 perfect forward secrecy', options: [ { id: 'nopfs', text: 'No PFS · rekey the child SA from Phase 1 keying material' }, { id: 'pfs14', text: 'PFS · fresh DH group 14 exchange at each rekey' }, { id: 'pfs19', text: 'PFS · fresh DH group 19 exchange at each rekey' } ] },
+            { id: 'a-xform', panel: 'A', label: 'Phase 2 transform', options: [ { id: 'ah', text: 'AH · integrity only, no encryption' }, { id: 'esp3des', text: 'ESP · 3DES-CBC + HMAC-SHA-1' }, { id: 'espaes128', text: 'ESP · AES-128-CBC + HMAC-SHA-256' }, { id: 'espaes192', text: 'ESP · AES-192-CBC + HMAC-SHA-256' }, { id: 'espgcm', text: 'ESP · AES-256-GCM (AEAD)' } ] },
+            { id: 'b-local', panel: 'B', label: 'Local selector — the network THIS end protects', options: [ { id: 'corp', text: '10.50.0.0/16 · corporate only' }, { id: 'all', text: '0.0.0.0/0 · all destinations' }, { id: 'pool', text: '10.51.0.0/24 · client pool' } ] },
+            { id: 'b-remote', panel: 'B', label: 'Remote selector — the network the PEER protects', options: [ { id: 'corp', text: '10.50.0.0/16 · corporate only' }, { id: 'all', text: '0.0.0.0/0 · all destinations' }, { id: 'pool', text: '10.51.0.0/24 · client pool' } ] },
+            { id: 'b-pfs', panel: 'B', label: 'Phase 2 perfect forward secrecy', options: [ { id: 'nopfs', text: 'No PFS · rekey the child SA from Phase 1 keying material' }, { id: 'pfs14', text: 'PFS · fresh DH group 14 exchange at each rekey' }, { id: 'pfs19', text: 'PFS · fresh DH group 19 exchange at each rekey' } ] },
+            { id: 'b-xform', panel: 'B', label: 'Phase 2 transform', options: [ { id: 'ah', text: 'AH · integrity only, no encryption' }, { id: 'esp3des', text: 'ESP · 3DES-CBC + HMAC-SHA-1' }, { id: 'espaes128', text: 'ESP · AES-128-CBC + HMAC-SHA-256' }, { id: 'espaes192', text: 'ESP · AES-192-CBC + HMAC-SHA-256' }, { id: 'espgcm', text: 'ESP · AES-256-GCM (AEAD)' } ] }
+          ],
+          symmetryPairs: [ ['a-pfs','b-pfs'], ['a-xform','b-xform'] ],
+          mirrorPairs: [ ['a-local','b-remote'], ['a-remote','b-local'] ] },
+        answer: { slots: { 'a-local': ['all'], 'a-remote': ['pool'], 'a-pfs': ['pfs14','pfs19'], 'a-xform': ['espaes192','espgcm'], 'b-local': ['pool'], 'b-remote': ['all'], 'b-pfs': ['pfs14','pfs19'], 'b-xform': ['espaes192','espgcm'] } } }
+    ]
+  },
+
+  {
+    id: 'sp-vpn-07', cert: 'secplus', archetype: 'vpntunnel', objective: '3.2',
+    topic: 'Secure enterprise infrastructure', title: 'Full-tunnel access for the clinical records team',
+    estMinutes: 6, policyFloor: ['no-psk','pfs','aes256-min'],
+    scenario: 'Clinical coders working from home reach a records system whose data classification mandates AES-256 end to end. Everything those laptops send goes through the corporate egress. Security standard for this link, and it is not negotiable: certificate authentication only (no pre-shared keys), Phase 1 integrity SHA-256 or better, a 2048-bit-equivalent key-agreement group or better, and perfect forward secrecy on every child-SA rekey. Device certificates are mandated and group secrets are not permitted. A contractor has proposed a client profile for the rollout and you must sign it off before it is pushed to 300 devices.',
+    assets: { reference: { kind: 'network', devices: [
+      { id: 'siteA', label: 'Records network', type: 'network', subnet: '10.60.0.0/16', note: 'concentrator · 203.0.113.140' },
+      { id: 'siteB', label: 'Client address pool', type: 'network', subnet: '10.61.0.0/24', note: 'assigned to coder laptops' },
+      { id: 'siteC', label: 'All destinations', type: 'network', subnet: '0.0.0.0/0', note: 'full-tunnel egress' }
+    ] } },
+    steps: [
+      { id: 'p1', type: 'configure', points: 1,
+        prompt: 'Configure the IKE Phase 1 proposal on the concentrator and in the pushed client profile, to the stated standard.',
+        explanation: 'Encryption, integrity, key-agreement group and authentication method must MATCH on both peers or Phase 1 never completes — the responder walks the initiator’s proposal list and, finding nothing it also has configured, returns no proposal chosen. (SA lifetime is the exception and is deliberately not asked here: IKEv1 settles on the shorter of the two values and IKEv2 treats it as purely local.) SHA-256 and SHA-384 both clear the integrity floor; MD5 and SHA-1 sit below it and are being retired. Group 14 gives roughly 112-bit security and group 19 roughly 128-bit, so either clears the floor — groups 2 and 5 do not. When a classification names an algorithm the encryption slot stops being a set — only AES-256 is compliant, and both the concentrator and the pushed profile must carry it. Authentication keeps a genuine set: a machine certificate alone satisfies the mandate, and the same certificate with user MFA layered on exceeds it. MFA alone would not — the certificate is what authenticates the device to IKE.',
+        payload: { layout: 'dualpanel', scoring: 'tunnel',
+          panels: [ { id: 'A', label: 'Concentrator' }, { id: 'B', label: 'Client profile' } ],
+          slots: [
+            { id: 'a-auth', panel: 'A', label: 'Authentication method', options: [ { id: 'psk', text: 'Group pre-shared key' }, { id: 'cert', text: 'Machine certificates' }, { id: 'certmfa', text: 'Machine certificate + user MFA' } ] },
+            { id: 'a-enc', panel: 'A', label: 'Phase 1 encryption', options: [ { id: 'des3', text: '3DES' }, { id: 'aes128', text: 'AES-128' }, { id: 'aes192', text: 'AES-192' }, { id: 'aes256', text: 'AES-256' } ] },
+            { id: 'a-int', panel: 'A', label: 'Phase 1 integrity', options: [ { id: 'md5', text: 'MD5' }, { id: 'sha1', text: 'SHA-1' }, { id: 'sha256', text: 'SHA-256' }, { id: 'sha384', text: 'SHA-384' } ] },
+            { id: 'a-dh', panel: 'A', label: 'Key-agreement group', options: [ { id: 'dh2', text: 'DH group 2 (1024-bit MODP)' }, { id: 'dh5', text: 'DH group 5 (1536-bit MODP)' }, { id: 'dh14', text: 'DH group 14 (2048-bit MODP)' }, { id: 'dh19', text: 'DH group 19 (256-bit ECP)' } ] },
+            { id: 'b-auth', panel: 'B', label: 'Authentication method', options: [ { id: 'psk', text: 'Group pre-shared key' }, { id: 'cert', text: 'Machine certificates' }, { id: 'certmfa', text: 'Machine certificate + user MFA' } ] },
+            { id: 'b-enc', panel: 'B', label: 'Phase 1 encryption', options: [ { id: 'des3', text: '3DES' }, { id: 'aes128', text: 'AES-128' }, { id: 'aes192', text: 'AES-192' }, { id: 'aes256', text: 'AES-256' } ] },
+            { id: 'b-int', panel: 'B', label: 'Phase 1 integrity', options: [ { id: 'md5', text: 'MD5' }, { id: 'sha1', text: 'SHA-1' }, { id: 'sha256', text: 'SHA-256' }, { id: 'sha384', text: 'SHA-384' } ] },
+            { id: 'b-dh', panel: 'B', label: 'Key-agreement group', options: [ { id: 'dh2', text: 'DH group 2 (1024-bit MODP)' }, { id: 'dh5', text: 'DH group 5 (1536-bit MODP)' }, { id: 'dh14', text: 'DH group 14 (2048-bit MODP)' }, { id: 'dh19', text: 'DH group 19 (256-bit ECP)' } ] }
+          ],
+          symmetryPairs: [ ['a-auth','b-auth'], ['a-enc','b-enc'], ['a-int','b-int'], ['a-dh','b-dh'] ],
+          mirrorPairs: [  ] },
+        answer: { slots: { 'a-auth': ['cert','certmfa'], 'a-enc': ['aes256'], 'a-int': ['sha256','sha384'], 'a-dh': ['dh14','dh19'], 'b-auth': ['cert','certmfa'], 'b-enc': ['aes256'], 'b-int': ['sha256','sha384'], 'b-dh': ['dh14','dh19'] } } },
+      { id: 'p2', type: 'configure', points: 1,
+        prompt: 'Set the Phase 2 selectors and transform for full-tunnel operation.',
+        explanation: 'Perfect forward secrecy is a PHASE 2 decision: it means running a FRESH Diffie-Hellman exchange when the child SA is established and rekeyed, instead of deriving its keys from the Phase 1 secret. Without it, recovering the Phase 1 keying material later unlocks every child SA derived from it. Phase 1 always performs a DH exchange — there is no configuration that skips it — so PFS is the only place this choice genuinely exists. The selectors MIRROR: each end’s local network is the other end’s remote. Get that backwards and Phase 1 completes happily, then the child SA is refused for an unacceptable traffic selector. AH is a real trap in the transform list — it authenticates and integrity-protects but does not encrypt anything. AES-256-GCM is the only transform meeting the classification, and as an AEAD mode it binds confidentiality and integrity in one pass under one key.',
+        payload: { layout: 'dualpanel', scoring: 'tunnel',
+          panels: [ { id: 'A', label: 'Concentrator' }, { id: 'B', label: 'Client profile' } ],
+          slots: [
+            { id: 'a-local', panel: 'A', label: 'Local selector — the network THIS end protects', options: [ { id: 'rec', text: '10.60.0.0/16 · records network' }, { id: 'all', text: '0.0.0.0/0 · all destinations' }, { id: 'pool', text: '10.61.0.0/24 · client pool' } ] },
+            { id: 'a-remote', panel: 'A', label: 'Remote selector — the network the PEER protects', options: [ { id: 'rec', text: '10.60.0.0/16 · records network' }, { id: 'all', text: '0.0.0.0/0 · all destinations' }, { id: 'pool', text: '10.61.0.0/24 · client pool' } ] },
+            { id: 'a-pfs', panel: 'A', label: 'Phase 2 perfect forward secrecy', options: [ { id: 'nopfs', text: 'No PFS · rekey the child SA from Phase 1 keying material' }, { id: 'pfs14', text: 'PFS · fresh DH group 14 exchange at each rekey' }, { id: 'pfs19', text: 'PFS · fresh DH group 19 exchange at each rekey' } ] },
+            { id: 'a-xform', panel: 'A', label: 'Phase 2 transform', options: [ { id: 'ah', text: 'AH · integrity only, no encryption' }, { id: 'esp3des', text: 'ESP · 3DES-CBC + HMAC-SHA-1' }, { id: 'espaes128', text: 'ESP · AES-128-CBC + HMAC-SHA-256' }, { id: 'espaes192', text: 'ESP · AES-192-CBC + HMAC-SHA-256' }, { id: 'espgcm', text: 'ESP · AES-256-GCM (AEAD)' } ] },
+            { id: 'b-local', panel: 'B', label: 'Local selector — the network THIS end protects', options: [ { id: 'rec', text: '10.60.0.0/16 · records network' }, { id: 'all', text: '0.0.0.0/0 · all destinations' }, { id: 'pool', text: '10.61.0.0/24 · client pool' } ] },
+            { id: 'b-remote', panel: 'B', label: 'Remote selector — the network the PEER protects', options: [ { id: 'rec', text: '10.60.0.0/16 · records network' }, { id: 'all', text: '0.0.0.0/0 · all destinations' }, { id: 'pool', text: '10.61.0.0/24 · client pool' } ] },
+            { id: 'b-pfs', panel: 'B', label: 'Phase 2 perfect forward secrecy', options: [ { id: 'nopfs', text: 'No PFS · rekey the child SA from Phase 1 keying material' }, { id: 'pfs14', text: 'PFS · fresh DH group 14 exchange at each rekey' }, { id: 'pfs19', text: 'PFS · fresh DH group 19 exchange at each rekey' } ] },
+            { id: 'b-xform', panel: 'B', label: 'Phase 2 transform', options: [ { id: 'ah', text: 'AH · integrity only, no encryption' }, { id: 'esp3des', text: 'ESP · 3DES-CBC + HMAC-SHA-1' }, { id: 'espaes128', text: 'ESP · AES-128-CBC + HMAC-SHA-256' }, { id: 'espaes192', text: 'ESP · AES-192-CBC + HMAC-SHA-256' }, { id: 'espgcm', text: 'ESP · AES-256-GCM (AEAD)' } ] }
+          ],
+          symmetryPairs: [ ['a-pfs','b-pfs'], ['a-xform','b-xform'] ],
+          mirrorPairs: [ ['a-local','b-remote'], ['a-remote','b-local'] ] },
+        answer: { slots: { 'a-local': ['all'], 'a-remote': ['pool'], 'a-pfs': ['pfs14','pfs19'], 'a-xform': ['espgcm'], 'b-local': ['pool'], 'b-remote': ['all'], 'b-pfs': ['pfs14','pfs19'], 'b-xform': ['espgcm'] } } },
+      { id: 'p3', type: 'analyze', points: 1,
+        prompt: 'The contractor’s proposed client profile is below. Which single line fails the data classification?',
+        explanation: 'The Phase 2 transform is AES-128-CBC, below the mandated AES-256 — and Phase 2 is where the clinical records are actually encrypted, so a compliant Phase 1 does not rescue it. The rest is sound: certificates authenticate the device, SHA-256 and group 14 both clear the floor, PFS is enabled, and 0.0.0.0/0 on the remote selector is exactly what full-tunnel operation requires.',
+        payload: { multi: false, lines: [
+          { id: 'ln-auth', text: 'Authentication: Machine certificates' },
+          { id: 'ln-p1', text: 'Phase 1 encryption: AES-256' },
+          { id: 'ln-int', text: 'Phase 1 integrity: SHA-256' },
+          { id: 'ln-pfs', text: 'Phase 2 PFS: enabled, group 14' },
+          { id: 'ln-p2', text: 'Phase 2 transform: ESP / AES-128-CBC + HMAC-SHA-256' },
+          { id: 'ln-sel', text: 'Remote selector: 0.0.0.0/0' }
+        ] },
+        answer: { selected: ['ln-p2'] } }
+    ]
+  },
+
+  {
+    id: 'sp-vpn-08', cert: 'secplus', archetype: 'vpntunnel', objective: '3.2',
+    topic: 'Secure enterprise infrastructure', title: 'Field engineers on hotel Wi-Fi',
+    estMinutes: 5, policyFloor: ['no-psk','pfs','aes192-min'],
+    scenario: 'Field engineers connect from hotel and airport Wi-Fi, so the path between laptop and concentrator is openly hostile and capture is entirely plausible. Company policy routes all their traffic through corporate egress. Security standard for this link, and it is not negotiable: certificate authentication only (no pre-shared keys), Phase 1 integrity SHA-256 or better, a 2048-bit-equivalent key-agreement group or better, and perfect forward secrecy on every child-SA rekey. Encryption is AES-192 minimum and shared secrets are not permitted on user devices. Configure the concentrator and the client profile.',
+    assets: { reference: { kind: 'network', devices: [
+      { id: 'siteA', label: 'Corporate network', type: 'network', subnet: '10.70.0.0/16', note: 'concentrator · 203.0.113.170' },
+      { id: 'siteB', label: 'Client address pool', type: 'network', subnet: '10.71.0.0/24', note: 'assigned to field laptops' },
+      { id: 'siteC', label: 'All destinations', type: 'network', subnet: '0.0.0.0/0', note: 'full-tunnel egress' }
+    ] } },
+    steps: [
+      { id: 'p1', type: 'configure', points: 1,
+        prompt: 'Configure the IKE Phase 1 proposal on the concentrator and in the pushed client profile, to the stated standard.',
+        explanation: 'Encryption, integrity, key-agreement group and authentication method must MATCH on both peers or Phase 1 never completes — the responder walks the initiator’s proposal list and, finding nothing it also has configured, returns no proposal chosen. (SA lifetime is the exception and is deliberately not asked here: IKEv1 settles on the shorter of the two values and IKEv2 treats it as purely local.) SHA-256 and SHA-384 both clear the integrity floor; MD5 and SHA-1 sit below it and are being retired. Group 14 gives roughly 112-bit security and group 19 roughly 128-bit, so either clears the floor — groups 2 and 5 do not. On a network where capture is plausible, forward secrecy is the control that matters most — it is what stops a later key compromise unlocking a session recorded in a hotel lobby today. AES-192 and AES-256 both clear the floor, but both ends must land on the same one. A machine certificate alone satisfies the no-shared-secrets rule, and the same certificate with user MFA layered on exceeds it — MFA alone would not, because the certificate is what authenticates the device to IKE.',
+        payload: { layout: 'dualpanel', scoring: 'tunnel',
+          panels: [ { id: 'A', label: 'Concentrator' }, { id: 'B', label: 'Client profile' } ],
+          slots: [
+            { id: 'a-auth', panel: 'A', label: 'Authentication method', options: [ { id: 'psk', text: 'Group pre-shared key' }, { id: 'cert', text: 'Machine certificates' }, { id: 'certmfa', text: 'Machine certificate + user MFA' } ] },
+            { id: 'a-enc', panel: 'A', label: 'Phase 1 encryption', options: [ { id: 'des3', text: '3DES' }, { id: 'aes128', text: 'AES-128' }, { id: 'aes192', text: 'AES-192' }, { id: 'aes256', text: 'AES-256' } ] },
+            { id: 'a-int', panel: 'A', label: 'Phase 1 integrity', options: [ { id: 'md5', text: 'MD5' }, { id: 'sha1', text: 'SHA-1' }, { id: 'sha256', text: 'SHA-256' }, { id: 'sha384', text: 'SHA-384' } ] },
+            { id: 'a-dh', panel: 'A', label: 'Key-agreement group', options: [ { id: 'dh2', text: 'DH group 2 (1024-bit MODP)' }, { id: 'dh5', text: 'DH group 5 (1536-bit MODP)' }, { id: 'dh14', text: 'DH group 14 (2048-bit MODP)' }, { id: 'dh19', text: 'DH group 19 (256-bit ECP)' } ] },
+            { id: 'b-auth', panel: 'B', label: 'Authentication method', options: [ { id: 'psk', text: 'Group pre-shared key' }, { id: 'cert', text: 'Machine certificates' }, { id: 'certmfa', text: 'Machine certificate + user MFA' } ] },
+            { id: 'b-enc', panel: 'B', label: 'Phase 1 encryption', options: [ { id: 'des3', text: '3DES' }, { id: 'aes128', text: 'AES-128' }, { id: 'aes192', text: 'AES-192' }, { id: 'aes256', text: 'AES-256' } ] },
+            { id: 'b-int', panel: 'B', label: 'Phase 1 integrity', options: [ { id: 'md5', text: 'MD5' }, { id: 'sha1', text: 'SHA-1' }, { id: 'sha256', text: 'SHA-256' }, { id: 'sha384', text: 'SHA-384' } ] },
+            { id: 'b-dh', panel: 'B', label: 'Key-agreement group', options: [ { id: 'dh2', text: 'DH group 2 (1024-bit MODP)' }, { id: 'dh5', text: 'DH group 5 (1536-bit MODP)' }, { id: 'dh14', text: 'DH group 14 (2048-bit MODP)' }, { id: 'dh19', text: 'DH group 19 (256-bit ECP)' } ] }
+          ],
+          symmetryPairs: [ ['a-auth','b-auth'], ['a-enc','b-enc'], ['a-int','b-int'], ['a-dh','b-dh'] ],
+          mirrorPairs: [  ] },
+        answer: { slots: { 'a-auth': ['cert','certmfa'], 'a-enc': ['aes192','aes256'], 'a-int': ['sha256','sha384'], 'a-dh': ['dh14','dh19'], 'b-auth': ['cert','certmfa'], 'b-enc': ['aes192','aes256'], 'b-int': ['sha256','sha384'], 'b-dh': ['dh14','dh19'] } } },
+      { id: 'p2', type: 'configure', points: 1,
+        prompt: 'Configure Phase 2 for full-tunnel operation from an untrusted network.',
+        explanation: 'Perfect forward secrecy is a PHASE 2 decision: it means running a FRESH Diffie-Hellman exchange when the child SA is established and rekeyed, instead of deriving its keys from the Phase 1 secret. Without it, recovering the Phase 1 keying material later unlocks every child SA derived from it. Phase 1 always performs a DH exchange — there is no configuration that skips it — so PFS is the only place this choice genuinely exists. The selectors MIRROR: each end’s local network is the other end’s remote. Get that backwards and Phase 1 completes happily, then the child SA is refused for an unacceptable traffic selector. AH is a real trap in the transform list — it authenticates and integrity-protects but does not encrypt anything. Here the full-tunnel selector is a security control, not just a policy preference. The concentrator offers 0.0.0.0/0 as the network it protects and the client requests 0.0.0.0/0 as its remote, while the assigned pool address is the client-side selector at both ends — so even DNS lookups and general browsing leave the laptop encrypted, and the hotel network sees a single IPSec flow instead of a readable picture of what the engineer is doing. AES-128-CBC and 3DES fall below the AES-192 floor, leaving AES-192-CBC with HMAC-SHA-256 or AES-256-GCM.',
+        payload: { layout: 'dualpanel', scoring: 'tunnel',
+          panels: [ { id: 'A', label: 'Concentrator' }, { id: 'B', label: 'Client profile' } ],
+          slots: [
+            { id: 'a-local', panel: 'A', label: 'Local selector — the network THIS end protects', options: [ { id: 'corp', text: '10.70.0.0/16 · corporate only' }, { id: 'all', text: '0.0.0.0/0 · all destinations' }, { id: 'pool', text: '10.71.0.0/24 · client pool' } ] },
+            { id: 'a-remote', panel: 'A', label: 'Remote selector — the network the PEER protects', options: [ { id: 'corp', text: '10.70.0.0/16 · corporate only' }, { id: 'all', text: '0.0.0.0/0 · all destinations' }, { id: 'pool', text: '10.71.0.0/24 · client pool' } ] },
+            { id: 'a-pfs', panel: 'A', label: 'Phase 2 perfect forward secrecy', options: [ { id: 'nopfs', text: 'No PFS · rekey the child SA from Phase 1 keying material' }, { id: 'pfs14', text: 'PFS · fresh DH group 14 exchange at each rekey' }, { id: 'pfs19', text: 'PFS · fresh DH group 19 exchange at each rekey' } ] },
+            { id: 'a-xform', panel: 'A', label: 'Phase 2 transform', options: [ { id: 'ah', text: 'AH · integrity only, no encryption' }, { id: 'esp3des', text: 'ESP · 3DES-CBC + HMAC-SHA-1' }, { id: 'espaes128', text: 'ESP · AES-128-CBC + HMAC-SHA-256' }, { id: 'espaes192', text: 'ESP · AES-192-CBC + HMAC-SHA-256' }, { id: 'espgcm', text: 'ESP · AES-256-GCM (AEAD)' } ] },
+            { id: 'b-local', panel: 'B', label: 'Local selector — the network THIS end protects', options: [ { id: 'corp', text: '10.70.0.0/16 · corporate only' }, { id: 'all', text: '0.0.0.0/0 · all destinations' }, { id: 'pool', text: '10.71.0.0/24 · client pool' } ] },
+            { id: 'b-remote', panel: 'B', label: 'Remote selector — the network the PEER protects', options: [ { id: 'corp', text: '10.70.0.0/16 · corporate only' }, { id: 'all', text: '0.0.0.0/0 · all destinations' }, { id: 'pool', text: '10.71.0.0/24 · client pool' } ] },
+            { id: 'b-pfs', panel: 'B', label: 'Phase 2 perfect forward secrecy', options: [ { id: 'nopfs', text: 'No PFS · rekey the child SA from Phase 1 keying material' }, { id: 'pfs14', text: 'PFS · fresh DH group 14 exchange at each rekey' }, { id: 'pfs19', text: 'PFS · fresh DH group 19 exchange at each rekey' } ] },
+            { id: 'b-xform', panel: 'B', label: 'Phase 2 transform', options: [ { id: 'ah', text: 'AH · integrity only, no encryption' }, { id: 'esp3des', text: 'ESP · 3DES-CBC + HMAC-SHA-1' }, { id: 'espaes128', text: 'ESP · AES-128-CBC + HMAC-SHA-256' }, { id: 'espaes192', text: 'ESP · AES-192-CBC + HMAC-SHA-256' }, { id: 'espgcm', text: 'ESP · AES-256-GCM (AEAD)' } ] }
+          ],
+          symmetryPairs: [ ['a-pfs','b-pfs'], ['a-xform','b-xform'] ],
+          mirrorPairs: [ ['a-local','b-remote'], ['a-remote','b-local'] ] },
+        answer: { slots: { 'a-local': ['all'], 'a-remote': ['pool'], 'a-pfs': ['pfs14','pfs19'], 'a-xform': ['espaes192','espgcm'], 'b-local': ['pool'], 'b-remote': ['all'], 'b-pfs': ['pfs14','pfs19'], 'b-xform': ['espaes192','espgcm'] } } }
+    ]
+  },
+
+  {
+    id: 'sp-vpn-09', cert: 'secplus', archetype: 'vpntunnel', objective: '1.4',
+    topic: 'Cryptographic solutions', title: 'Pick an AEAD transform for the payments team',
+    estMinutes: 5, policyFloor: ['no-psk','pfs','aes256-min'],
+    scenario: 'The payments team’s remote-access profile is being rebuilt after a review found the tunnel was encrypting card data but authenticating it with a separate, older integrity algorithm. The reviewer asked for two changes: move to a single authenticated-encryption transform rather than an encrypt-then-MAC composition, and drop shared secrets in favour of per-device certificates. Card-data policy also requires AES-256 minimum, SHA-256 or better in Phase 1, a 2048-bit-equivalent group or better, perfect forward secrecy, and that all laptop traffic keeps traversing corporate egress for monitoring — the profile stays full-tunnel, only the crypto is changing.',
+    assets: { reference: { kind: 'network', devices: [
+      { id: 'siteA', label: 'Payments network', type: 'network', subnet: '10.80.0.0/16', note: 'concentrator · 203.0.113.200' },
+      { id: 'siteB', label: 'Client address pool', type: 'network', subnet: '10.81.0.0/24', note: 'assigned to payments laptops' },
+      { id: 'siteC', label: 'All destinations', type: 'network', subnet: '0.0.0.0/0', note: 'full-tunnel egress, retained' }
+    ] } },
+    steps: [
+      { id: 'p1', type: 'configure', points: 1,
+        prompt: 'Configure the IKE Phase 1 proposal on the concentrator and in the pushed client profile, to the stated standard.',
+        explanation: 'Encryption, integrity, key-agreement group and authentication method must MATCH on both peers or Phase 1 never completes — the responder walks the initiator’s proposal list and, finding nothing it also has configured, returns no proposal chosen. (SA lifetime is the exception and is deliberately not asked here: IKEv1 settles on the shorter of the two values and IKEv2 treats it as purely local.) SHA-256 and SHA-384 both clear the integrity floor; MD5 and SHA-1 sit below it and are being retired. Group 14 gives roughly 112-bit security and group 19 roughly 128-bit, so either clears the floor — groups 2 and 5 do not. A pre-shared key is a symmetric secret every device holds a copy of: it cannot identify which laptop connected, and losing one means rotating it everywhere. Certificates are asymmetric — each device holds its own private key and can be revoked individually. On integrity, note the reason SHA-1 goes: it is withdrawn by policy because the underlying hash is collision-weak, even though HMAC-SHA-1 itself is not directly broken by those attacks.',
+        payload: { layout: 'dualpanel', scoring: 'tunnel',
+          panels: [ { id: 'A', label: 'Concentrator' }, { id: 'B', label: 'Client profile' } ],
+          slots: [
+            { id: 'a-auth', panel: 'A', label: 'Authentication method', options: [ { id: 'psk', text: 'Group pre-shared key' }, { id: 'cert', text: 'Per-device certificates' }, { id: 'certmfa', text: 'Per-device certificate + user MFA' } ] },
+            { id: 'a-enc', panel: 'A', label: 'Phase 1 encryption', options: [ { id: 'des3', text: '3DES' }, { id: 'aes128', text: 'AES-128' }, { id: 'aes192', text: 'AES-192' }, { id: 'aes256', text: 'AES-256' } ] },
+            { id: 'a-int', panel: 'A', label: 'Phase 1 integrity', options: [ { id: 'md5', text: 'MD5' }, { id: 'sha1', text: 'SHA-1' }, { id: 'sha256', text: 'SHA-256' }, { id: 'sha384', text: 'SHA-384' } ] },
+            { id: 'a-dh', panel: 'A', label: 'Key-agreement group', options: [ { id: 'dh2', text: 'DH group 2 (1024-bit MODP)' }, { id: 'dh5', text: 'DH group 5 (1536-bit MODP)' }, { id: 'dh14', text: 'DH group 14 (2048-bit MODP)' }, { id: 'dh19', text: 'DH group 19 (256-bit ECP)' } ] },
+            { id: 'b-auth', panel: 'B', label: 'Authentication method', options: [ { id: 'psk', text: 'Group pre-shared key' }, { id: 'cert', text: 'Per-device certificates' }, { id: 'certmfa', text: 'Per-device certificate + user MFA' } ] },
+            { id: 'b-enc', panel: 'B', label: 'Phase 1 encryption', options: [ { id: 'des3', text: '3DES' }, { id: 'aes128', text: 'AES-128' }, { id: 'aes192', text: 'AES-192' }, { id: 'aes256', text: 'AES-256' } ] },
+            { id: 'b-int', panel: 'B', label: 'Phase 1 integrity', options: [ { id: 'md5', text: 'MD5' }, { id: 'sha1', text: 'SHA-1' }, { id: 'sha256', text: 'SHA-256' }, { id: 'sha384', text: 'SHA-384' } ] },
+            { id: 'b-dh', panel: 'B', label: 'Key-agreement group', options: [ { id: 'dh2', text: 'DH group 2 (1024-bit MODP)' }, { id: 'dh5', text: 'DH group 5 (1536-bit MODP)' }, { id: 'dh14', text: 'DH group 14 (2048-bit MODP)' }, { id: 'dh19', text: 'DH group 19 (256-bit ECP)' } ] }
+          ],
+          symmetryPairs: [ ['a-auth','b-auth'], ['a-enc','b-enc'], ['a-int','b-int'], ['a-dh','b-dh'] ],
+          mirrorPairs: [  ] },
+        answer: { slots: { 'a-auth': ['cert','certmfa'], 'a-enc': ['aes256'], 'a-int': ['sha256','sha384'], 'a-dh': ['dh14','dh19'], 'b-auth': ['cert','certmfa'], 'b-enc': ['aes256'], 'b-int': ['sha256','sha384'], 'b-dh': ['dh14','dh19'] } } },
+      { id: 'p2', type: 'configure', points: 1,
+        prompt: 'Build the Phase 2 SA: selectors, forward secrecy and the transform the reviewer asked for.',
+        explanation: 'Perfect forward secrecy is a PHASE 2 decision: it means running a FRESH Diffie-Hellman exchange when the child SA is established and rekeyed, instead of deriving its keys from the Phase 1 secret. Without it, recovering the Phase 1 keying material later unlocks every child SA derived from it. Phase 1 always performs a DH exchange — there is no configuration that skips it — so PFS is the only place this choice genuinely exists. The selectors MIRROR: each end’s local network is the other end’s remote. Get that backwards and Phase 1 completes happily, then the child SA is refused for an unacceptable traffic selector. AH is a real trap in the transform list — it authenticates and integrity-protects but does not encrypt anything. AES-256-GCM is an AEAD mode — one pass, one key, ciphertext plus an authentication tag, so confidentiality and integrity are bound together rather than bolted on. That is exactly the finding: encrypt-then-separately-MAC arrangements are where implementation mistakes live. Read the transform list against BOTH stated constraints. AES-192-CBC with HMAC-SHA-256 is the closest miss and fails on each count independently — under the AES-256 floor, and the encrypt-then-MAC composition the reviewer named. AES-128-CBC and 3DES fail the same two harder, and AH does not encrypt at all. Only AES-256-GCM satisfies the key length and the single-transform AEAD finding together. The selectors stay full-tunnel because policy says so, not because the crypto rebuild touched them.',
+        payload: { layout: 'dualpanel', scoring: 'tunnel',
+          panels: [ { id: 'A', label: 'Concentrator' }, { id: 'B', label: 'Client profile' } ],
+          slots: [
+            { id: 'a-local', panel: 'A', label: 'Local selector — the network THIS end protects', options: [ { id: 'pay', text: '10.80.0.0/16 · payments network' }, { id: 'all', text: '0.0.0.0/0 · all destinations' }, { id: 'pool', text: '10.81.0.0/24 · client pool' } ] },
+            { id: 'a-remote', panel: 'A', label: 'Remote selector — the network the PEER protects', options: [ { id: 'pay', text: '10.80.0.0/16 · payments network' }, { id: 'all', text: '0.0.0.0/0 · all destinations' }, { id: 'pool', text: '10.81.0.0/24 · client pool' } ] },
+            { id: 'a-pfs', panel: 'A', label: 'Phase 2 perfect forward secrecy', options: [ { id: 'nopfs', text: 'No PFS · rekey the child SA from Phase 1 keying material' }, { id: 'pfs14', text: 'PFS · fresh DH group 14 exchange at each rekey' }, { id: 'pfs19', text: 'PFS · fresh DH group 19 exchange at each rekey' } ] },
+            { id: 'a-xform', panel: 'A', label: 'Phase 2 transform', options: [ { id: 'ah', text: 'AH · integrity only, no encryption' }, { id: 'esp3des', text: 'ESP · 3DES-CBC + HMAC-SHA-1' }, { id: 'espaes128', text: 'ESP · AES-128-CBC + HMAC-SHA-256' }, { id: 'espaes192', text: 'ESP · AES-192-CBC + HMAC-SHA-256' }, { id: 'espgcm', text: 'ESP · AES-256-GCM (AEAD)' } ] },
+            { id: 'b-local', panel: 'B', label: 'Local selector — the network THIS end protects', options: [ { id: 'pay', text: '10.80.0.0/16 · payments network' }, { id: 'all', text: '0.0.0.0/0 · all destinations' }, { id: 'pool', text: '10.81.0.0/24 · client pool' } ] },
+            { id: 'b-remote', panel: 'B', label: 'Remote selector — the network the PEER protects', options: [ { id: 'pay', text: '10.80.0.0/16 · payments network' }, { id: 'all', text: '0.0.0.0/0 · all destinations' }, { id: 'pool', text: '10.81.0.0/24 · client pool' } ] },
+            { id: 'b-pfs', panel: 'B', label: 'Phase 2 perfect forward secrecy', options: [ { id: 'nopfs', text: 'No PFS · rekey the child SA from Phase 1 keying material' }, { id: 'pfs14', text: 'PFS · fresh DH group 14 exchange at each rekey' }, { id: 'pfs19', text: 'PFS · fresh DH group 19 exchange at each rekey' } ] },
+            { id: 'b-xform', panel: 'B', label: 'Phase 2 transform', options: [ { id: 'ah', text: 'AH · integrity only, no encryption' }, { id: 'esp3des', text: 'ESP · 3DES-CBC + HMAC-SHA-1' }, { id: 'espaes128', text: 'ESP · AES-128-CBC + HMAC-SHA-256' }, { id: 'espaes192', text: 'ESP · AES-192-CBC + HMAC-SHA-256' }, { id: 'espgcm', text: 'ESP · AES-256-GCM (AEAD)' } ] }
+          ],
+          symmetryPairs: [ ['a-pfs','b-pfs'], ['a-xform','b-xform'] ],
+          mirrorPairs: [ ['a-local','b-remote'], ['a-remote','b-local'] ] },
+        answer: { slots: { 'a-local': ['all'], 'a-remote': ['pool'], 'a-pfs': ['pfs14','pfs19'], 'a-xform': ['espgcm'], 'b-local': ['pool'], 'b-remote': ['all'], 'b-pfs': ['pfs14','pfs19'], 'b-xform': ['espgcm'] } } }
+    ]
+  },
+
+  {
+    id: 'sp-vpn-10', cert: 'secplus', archetype: 'vpntunnel', objective: '3.2',
+    topic: 'Secure enterprise infrastructure', title: 'Split-tunnel the video-heavy design team',
+    estMinutes: 5, policyFloor: ['pfs','aes192-min'],
+    scenario: 'The design team’s full-tunnel profile is saturating the corporate internet link — their video calls and asset downloads are hauled to the office and straight back out again. The security review agreed to split-tunnel them: corporate traffic goes down the tunnel, everything else exits the local connection. The standing crypto floor is unchanged and applies here: AES-192 minimum at both phases, Phase 1 integrity SHA-256 or better, a 2048-bit-equivalent group or better, and perfect forward secrecy. Authentication is out of scope tonight and either method already in use remains acceptable. Reconfigure the concentrator and the client profile.',
+    assets: { reference: { kind: 'network', devices: [
+      { id: 'siteA', label: 'Corporate network', type: 'network', subnet: '10.90.0.0/16', note: 'concentrator · 203.0.113.230' },
+      { id: 'siteB', label: 'Client address pool', type: 'network', subnet: '10.91.0.0/24', note: 'assigned to design laptops' }
+    ] } },
+    steps: [
+      { id: 'p1', type: 'configure', points: 1,
+        prompt: 'Configure the IKE Phase 1 proposal on the concentrator and in the pushed client profile, to the stated standard.',
+        explanation: 'Encryption, integrity, key-agreement group and authentication method must MATCH on both peers or Phase 1 never completes — the responder walks the initiator’s proposal list and, finding nothing it also has configured, returns no proposal chosen. (SA lifetime is the exception and is deliberately not asked here: IKEv1 settles on the shorter of the two values and IKEv2 treats it as purely local.) SHA-256 and SHA-384 both clear the integrity floor; MD5 and SHA-1 sit below it and are being retired. Group 14 gives roughly 112-bit security and group 19 roughly 128-bit, so either clears the floor — groups 2 and 5 do not. Splitting the tunnel changes WHICH traffic is protected, not HOW WELL the protected traffic is protected — Phase 1 is untouched by that decision and must still clear the same floor. Worth stating plainly, because a split-tunnel change is often mistaken for a crypto relaxation. Authentication is genuinely open here: no peer authentication at all is still wrong, but PSK and certificates are both in use and both acceptable.',
+        payload: { layout: 'dualpanel', scoring: 'tunnel',
+          panels: [ { id: 'A', label: 'Concentrator' }, { id: 'B', label: 'Client profile' } ],
+          slots: [
+            { id: 'a-auth', panel: 'A', label: 'Authentication method', options: [ { id: 'psk', text: 'Pre-shared key' }, { id: 'cert', text: 'Machine certificates' }, { id: 'noauth', text: 'No peer authentication' } ] },
+            { id: 'a-enc', panel: 'A', label: 'Phase 1 encryption', options: [ { id: 'des3', text: '3DES' }, { id: 'aes128', text: 'AES-128' }, { id: 'aes192', text: 'AES-192' }, { id: 'aes256', text: 'AES-256' } ] },
+            { id: 'a-int', panel: 'A', label: 'Phase 1 integrity', options: [ { id: 'md5', text: 'MD5' }, { id: 'sha1', text: 'SHA-1' }, { id: 'sha256', text: 'SHA-256' }, { id: 'sha384', text: 'SHA-384' } ] },
+            { id: 'a-dh', panel: 'A', label: 'Key-agreement group', options: [ { id: 'dh2', text: 'DH group 2 (1024-bit MODP)' }, { id: 'dh5', text: 'DH group 5 (1536-bit MODP)' }, { id: 'dh14', text: 'DH group 14 (2048-bit MODP)' }, { id: 'dh19', text: 'DH group 19 (256-bit ECP)' } ] },
+            { id: 'b-auth', panel: 'B', label: 'Authentication method', options: [ { id: 'psk', text: 'Pre-shared key' }, { id: 'cert', text: 'Machine certificates' }, { id: 'noauth', text: 'No peer authentication' } ] },
+            { id: 'b-enc', panel: 'B', label: 'Phase 1 encryption', options: [ { id: 'des3', text: '3DES' }, { id: 'aes128', text: 'AES-128' }, { id: 'aes192', text: 'AES-192' }, { id: 'aes256', text: 'AES-256' } ] },
+            { id: 'b-int', panel: 'B', label: 'Phase 1 integrity', options: [ { id: 'md5', text: 'MD5' }, { id: 'sha1', text: 'SHA-1' }, { id: 'sha256', text: 'SHA-256' }, { id: 'sha384', text: 'SHA-384' } ] },
+            { id: 'b-dh', panel: 'B', label: 'Key-agreement group', options: [ { id: 'dh2', text: 'DH group 2 (1024-bit MODP)' }, { id: 'dh5', text: 'DH group 5 (1536-bit MODP)' }, { id: 'dh14', text: 'DH group 14 (2048-bit MODP)' }, { id: 'dh19', text: 'DH group 19 (256-bit ECP)' } ] }
+          ],
+          symmetryPairs: [ ['a-auth','b-auth'], ['a-enc','b-enc'], ['a-int','b-int'], ['a-dh','b-dh'] ],
+          mirrorPairs: [  ] },
+        answer: { slots: { 'a-auth': ['psk','cert'], 'a-enc': ['aes192','aes256'], 'a-int': ['sha256','sha384'], 'a-dh': ['dh14','dh19'], 'b-auth': ['psk','cert'], 'b-enc': ['aes192','aes256'], 'b-int': ['sha256','sha384'], 'b-dh': ['dh14','dh19'] } } },
+      { id: 'p2', type: 'configure', points: 1,
+        prompt: 'Narrow the Phase 2 selectors so ONLY corporate traffic is tunnelled.',
+        explanation: 'Perfect forward secrecy is a PHASE 2 decision: it means running a FRESH Diffie-Hellman exchange when the child SA is established and rekeyed, instead of deriving its keys from the Phase 1 secret. Without it, recovering the Phase 1 keying material later unlocks every child SA derived from it. Phase 1 always performs a DH exchange — there is no configuration that skips it — so PFS is the only place this choice genuinely exists. The selectors MIRROR: each end’s local network is the other end’s remote. Get that backwards and Phase 1 completes happily, then the child SA is refused for an unacceptable traffic selector. AH is a real trap in the transform list — it authenticates and integrity-protects but does not encrypt anything. Split tunnel is a selector change and nothing else: the concentrator now offers only 10.90.0.0/16 rather than 0.0.0.0/0, so the client encrypts corporate-bound traffic and sends the rest straight out locally. Take the trade honestly — the laptop’s general traffic is no longer filtered or logged by corporate egress, which is exactly why this needed a security review rather than a config change. On the transform, AES-128-CBC and 3DES fall below the AES-192 floor, so the choice narrows to AES-192-CBC with HMAC-SHA-256 or AES-256-GCM.',
+        payload: { layout: 'dualpanel', scoring: 'tunnel',
+          panels: [ { id: 'A', label: 'Concentrator' }, { id: 'B', label: 'Client profile' } ],
+          slots: [
+            { id: 'a-local', panel: 'A', label: 'Local selector — the network THIS end protects', options: [ { id: 'corp', text: '10.90.0.0/16 · corporate only' }, { id: 'all', text: '0.0.0.0/0 · all destinations' }, { id: 'pool', text: '10.91.0.0/24 · client pool' } ] },
+            { id: 'a-remote', panel: 'A', label: 'Remote selector — the network the PEER protects', options: [ { id: 'corp', text: '10.90.0.0/16 · corporate only' }, { id: 'all', text: '0.0.0.0/0 · all destinations' }, { id: 'pool', text: '10.91.0.0/24 · client pool' } ] },
+            { id: 'a-pfs', panel: 'A', label: 'Phase 2 perfect forward secrecy', options: [ { id: 'nopfs', text: 'No PFS · rekey the child SA from Phase 1 keying material' }, { id: 'pfs14', text: 'PFS · fresh DH group 14 exchange at each rekey' }, { id: 'pfs19', text: 'PFS · fresh DH group 19 exchange at each rekey' } ] },
+            { id: 'a-xform', panel: 'A', label: 'Phase 2 transform', options: [ { id: 'ah', text: 'AH · integrity only, no encryption' }, { id: 'esp3des', text: 'ESP · 3DES-CBC + HMAC-SHA-1' }, { id: 'espaes128', text: 'ESP · AES-128-CBC + HMAC-SHA-256' }, { id: 'espaes192', text: 'ESP · AES-192-CBC + HMAC-SHA-256' }, { id: 'espgcm', text: 'ESP · AES-256-GCM (AEAD)' } ] },
+            { id: 'b-local', panel: 'B', label: 'Local selector — the network THIS end protects', options: [ { id: 'corp', text: '10.90.0.0/16 · corporate only' }, { id: 'all', text: '0.0.0.0/0 · all destinations' }, { id: 'pool', text: '10.91.0.0/24 · client pool' } ] },
+            { id: 'b-remote', panel: 'B', label: 'Remote selector — the network the PEER protects', options: [ { id: 'corp', text: '10.90.0.0/16 · corporate only' }, { id: 'all', text: '0.0.0.0/0 · all destinations' }, { id: 'pool', text: '10.91.0.0/24 · client pool' } ] },
+            { id: 'b-pfs', panel: 'B', label: 'Phase 2 perfect forward secrecy', options: [ { id: 'nopfs', text: 'No PFS · rekey the child SA from Phase 1 keying material' }, { id: 'pfs14', text: 'PFS · fresh DH group 14 exchange at each rekey' }, { id: 'pfs19', text: 'PFS · fresh DH group 19 exchange at each rekey' } ] },
+            { id: 'b-xform', panel: 'B', label: 'Phase 2 transform', options: [ { id: 'ah', text: 'AH · integrity only, no encryption' }, { id: 'esp3des', text: 'ESP · 3DES-CBC + HMAC-SHA-1' }, { id: 'espaes128', text: 'ESP · AES-128-CBC + HMAC-SHA-256' }, { id: 'espaes192', text: 'ESP · AES-192-CBC + HMAC-SHA-256' }, { id: 'espgcm', text: 'ESP · AES-256-GCM (AEAD)' } ] }
+          ],
+          symmetryPairs: [ ['a-pfs','b-pfs'], ['a-xform','b-xform'] ],
+          mirrorPairs: [ ['a-local','b-remote'], ['a-remote','b-local'] ] },
+        answer: { slots: { 'a-local': ['corp'], 'a-remote': ['pool'], 'a-pfs': ['pfs14','pfs19'], 'a-xform': ['espaes192','espgcm'], 'b-local': ['pool'], 'b-remote': ['corp'], 'b-pfs': ['pfs14','pfs19'], 'b-xform': ['espaes192','espgcm'] } } }
+    ]
+  },
+
+  {
+    id: 'sp-vpn-11', cert: 'secplus', archetype: 'vpntunnel', objective: '3.2',
+    topic: 'Secure enterprise infrastructure', title: 'Split-tunnel profile still running an inherited legacy suite',
+    estMinutes: 6, policyFloor: ['legacy-migration','no-psk','pfs','aes192-min'],
+    scenario: 'The contractor-access profile was cloned years ago from a template nobody owns any more and still negotiates 3DES with SHA-1. Contractors reach only one internal application subnet, and that scope is settled — it does not change tonight. Tonight’s change covers the Phase 1 proposal AND the authentication method: the same finding flagged the shared group secret, because it cannot be revoked per contractor when an engagement ends. Security standard for this link, and it is not negotiable: certificate authentication only (no pre-shared keys), Phase 1 integrity SHA-256 or better, a 2048-bit-equivalent key-agreement group or better, and perfect forward secrecy on every child-SA rekey. Encryption is AES-192 minimum AT BOTH PHASES. A colleague has drafted the replacement and asked you to check it.',
+    assets: { reference: { kind: 'network', devices: [
+      { id: 'siteA', label: 'Contractor app subnet', type: 'network', subnet: '10.95.0.0/16', note: 'concentrator · 203.0.113.250' },
+      { id: 'siteB', label: 'Client address pool', type: 'network', subnet: '10.96.0.0/24', note: 'assigned to contractor laptops' }
+    ] } },
+    steps: [
+      { id: 'p1', type: 'configure', points: 1,
+        prompt: 'Configure the IKE Phase 1 proposal on the concentrator and in the pushed client profile, to the stated standard.',
+        explanation: 'Encryption, integrity, key-agreement group and authentication method must MATCH on both peers or Phase 1 never completes — the responder walks the initiator’s proposal list and, finding nothing it also has configured, returns no proposal chosen. (SA lifetime is the exception and is deliberately not asked here: IKEv1 settles on the shorter of the two values and IKEv2 treats it as purely local.) SHA-256 and SHA-384 both clear the integrity floor; MD5 and SHA-1 sit below it and are being retired. Group 14 gives roughly 112-bit security and group 19 roughly 128-bit, so either clears the floor — groups 2 and 5 do not. A migration is finished only when both ends move, and not because IKE quietly downgrades — it does not. Leave the legacy algorithms configured ALONGSIDE the new ones on both peers and they can still settle on the old suite, so the legacy proposal has to be removed rather than merely supplemented. And it has to come out of both ends together: cut one peer over while the other still offers nothing BUT the legacy suite and there is no proposal either side accepts, so the tunnel stops coming up at all. That is why this is one coordinated change. SHA-1 is withdrawn by policy for its collision-weak hash, and 3DES for its 64-bit block size. The group secret goes for a different reason: it is one symmetric key every contractor holds a copy of, so it cannot tell you which contractor connected and cannot be withdrawn when one engagement ends without rotating it for everybody. Per-device certificates revoke individually.',
+        payload: { layout: 'dualpanel', scoring: 'tunnel',
+          panels: [ { id: 'A', label: 'Concentrator' }, { id: 'B', label: 'Contractor profile' } ],
+          slots: [
+            { id: 'a-auth', panel: 'A', label: 'Authentication method', options: [ { id: 'psk', text: 'Group pre-shared key (inherited)' }, { id: 'cert', text: 'Per-device certificates' }, { id: 'certmfa', text: 'Per-device certificate + user MFA' } ] },
+            { id: 'a-enc', panel: 'A', label: 'Phase 1 encryption', options: [ { id: 'des3', text: '3DES' }, { id: 'aes128', text: 'AES-128' }, { id: 'aes192', text: 'AES-192' }, { id: 'aes256', text: 'AES-256' } ] },
+            { id: 'a-int', panel: 'A', label: 'Phase 1 integrity', options: [ { id: 'md5', text: 'MD5' }, { id: 'sha1', text: 'SHA-1' }, { id: 'sha256', text: 'SHA-256' }, { id: 'sha384', text: 'SHA-384' } ] },
+            { id: 'a-dh', panel: 'A', label: 'Key-agreement group', options: [ { id: 'dh2', text: 'DH group 2 (1024-bit MODP)' }, { id: 'dh5', text: 'DH group 5 (1536-bit MODP)' }, { id: 'dh14', text: 'DH group 14 (2048-bit MODP)' }, { id: 'dh19', text: 'DH group 19 (256-bit ECP)' } ] },
+            { id: 'b-auth', panel: 'B', label: 'Authentication method', options: [ { id: 'psk', text: 'Group pre-shared key (inherited)' }, { id: 'cert', text: 'Per-device certificates' }, { id: 'certmfa', text: 'Per-device certificate + user MFA' } ] },
+            { id: 'b-enc', panel: 'B', label: 'Phase 1 encryption', options: [ { id: 'des3', text: '3DES' }, { id: 'aes128', text: 'AES-128' }, { id: 'aes192', text: 'AES-192' }, { id: 'aes256', text: 'AES-256' } ] },
+            { id: 'b-int', panel: 'B', label: 'Phase 1 integrity', options: [ { id: 'md5', text: 'MD5' }, { id: 'sha1', text: 'SHA-1' }, { id: 'sha256', text: 'SHA-256' }, { id: 'sha384', text: 'SHA-384' } ] },
+            { id: 'b-dh', panel: 'B', label: 'Key-agreement group', options: [ { id: 'dh2', text: 'DH group 2 (1024-bit MODP)' }, { id: 'dh5', text: 'DH group 5 (1536-bit MODP)' }, { id: 'dh14', text: 'DH group 14 (2048-bit MODP)' }, { id: 'dh19', text: 'DH group 19 (256-bit ECP)' } ] }
+          ],
+          symmetryPairs: [ ['a-auth','b-auth'], ['a-enc','b-enc'], ['a-int','b-int'], ['a-dh','b-dh'] ],
+          mirrorPairs: [  ] },
+        answer: { slots: { 'a-auth': ['cert','certmfa'], 'a-enc': ['aes192','aes256'], 'a-int': ['sha256','sha384'], 'a-dh': ['dh14','dh19'], 'b-auth': ['cert','certmfa'], 'b-enc': ['aes192','aes256'], 'b-int': ['sha256','sha384'], 'b-dh': ['dh14','dh19'] } } },
+      { id: 'p2', type: 'configure', points: 1,
+        prompt: 'Rebuild Phase 2, keeping the split-tunnel scope contractors already have.',
+        explanation: 'Perfect forward secrecy is a PHASE 2 decision: it means running a FRESH Diffie-Hellman exchange when the child SA is established and rekeyed, instead of deriving its keys from the Phase 1 secret. Without it, recovering the Phase 1 keying material later unlocks every child SA derived from it. Phase 1 always performs a DH exchange — there is no configuration that skips it — so PFS is the only place this choice genuinely exists. The selectors MIRROR: each end’s local network is the other end’s remote. Get that backwards and Phase 1 completes happily, then the child SA is refused for an unacceptable traffic selector. AH is a real trap in the transform list — it authenticates and integrity-protects but does not encrypt anything. The scope is not being revisited: contractors keep reaching only the application subnet, so the concentrator continues offering 10.95.0.0/16 rather than 0.0.0.0/0. Widening the selector during a crypto migration would quietly hand third parties a full-tunnel path through your egress — a change nobody approved. On the transform, AES-128-CBC and 3DES sit below the AES-192 floor, leaving AES-192-CBC with HMAC-SHA-256 or AES-256-GCM.',
+        payload: { layout: 'dualpanel', scoring: 'tunnel',
+          panels: [ { id: 'A', label: 'Concentrator' }, { id: 'B', label: 'Contractor profile' } ],
+          slots: [
+            { id: 'a-local', panel: 'A', label: 'Local selector — the network THIS end protects', options: [ { id: 'app', text: '10.95.0.0/16 · contractor app subnet' }, { id: 'all', text: '0.0.0.0/0 · all destinations' }, { id: 'pool', text: '10.96.0.0/24 · client pool' } ] },
+            { id: 'a-remote', panel: 'A', label: 'Remote selector — the network the PEER protects', options: [ { id: 'app', text: '10.95.0.0/16 · contractor app subnet' }, { id: 'all', text: '0.0.0.0/0 · all destinations' }, { id: 'pool', text: '10.96.0.0/24 · client pool' } ] },
+            { id: 'a-pfs', panel: 'A', label: 'Phase 2 perfect forward secrecy', options: [ { id: 'nopfs', text: 'No PFS · rekey the child SA from Phase 1 keying material' }, { id: 'pfs14', text: 'PFS · fresh DH group 14 exchange at each rekey' }, { id: 'pfs19', text: 'PFS · fresh DH group 19 exchange at each rekey' } ] },
+            { id: 'a-xform', panel: 'A', label: 'Phase 2 transform', options: [ { id: 'ah', text: 'AH · integrity only, no encryption' }, { id: 'esp3des', text: 'ESP · 3DES-CBC + HMAC-SHA-1' }, { id: 'espaes128', text: 'ESP · AES-128-CBC + HMAC-SHA-256' }, { id: 'espaes192', text: 'ESP · AES-192-CBC + HMAC-SHA-256' }, { id: 'espgcm', text: 'ESP · AES-256-GCM (AEAD)' } ] },
+            { id: 'b-local', panel: 'B', label: 'Local selector — the network THIS end protects', options: [ { id: 'app', text: '10.95.0.0/16 · contractor app subnet' }, { id: 'all', text: '0.0.0.0/0 · all destinations' }, { id: 'pool', text: '10.96.0.0/24 · client pool' } ] },
+            { id: 'b-remote', panel: 'B', label: 'Remote selector — the network the PEER protects', options: [ { id: 'app', text: '10.95.0.0/16 · contractor app subnet' }, { id: 'all', text: '0.0.0.0/0 · all destinations' }, { id: 'pool', text: '10.96.0.0/24 · client pool' } ] },
+            { id: 'b-pfs', panel: 'B', label: 'Phase 2 perfect forward secrecy', options: [ { id: 'nopfs', text: 'No PFS · rekey the child SA from Phase 1 keying material' }, { id: 'pfs14', text: 'PFS · fresh DH group 14 exchange at each rekey' }, { id: 'pfs19', text: 'PFS · fresh DH group 19 exchange at each rekey' } ] },
+            { id: 'b-xform', panel: 'B', label: 'Phase 2 transform', options: [ { id: 'ah', text: 'AH · integrity only, no encryption' }, { id: 'esp3des', text: 'ESP · 3DES-CBC + HMAC-SHA-1' }, { id: 'espaes128', text: 'ESP · AES-128-CBC + HMAC-SHA-256' }, { id: 'espaes192', text: 'ESP · AES-192-CBC + HMAC-SHA-256' }, { id: 'espgcm', text: 'ESP · AES-256-GCM (AEAD)' } ] }
+          ],
+          symmetryPairs: [ ['a-pfs','b-pfs'], ['a-xform','b-xform'] ],
+          mirrorPairs: [ ['a-local','b-remote'], ['a-remote','b-local'] ] },
+        answer: { slots: { 'a-local': ['app'], 'a-remote': ['pool'], 'a-pfs': ['pfs14','pfs19'], 'a-xform': ['espaes192','espgcm'], 'b-local': ['pool'], 'b-remote': ['app'], 'b-pfs': ['pfs14','pfs19'], 'b-xform': ['espaes192','espgcm'] } } },
+      { id: 'p3', type: 'analyze', points: 1,
+        prompt: 'Your colleague’s draft replacement profile is below. Which single line should NOT ship tonight?',
+        explanation: 'The protected-network line was widened from the contractor application subnet to 0.0.0.0/0, turning a split-tunnel contractor profile into a full-tunnel one. That is a scope change smuggled into a crypto migration: third-party laptops would route all their traffic through your egress and reach far more of your network than the engagement allows. Check the others before settling on it — per-device certificates, AES-256, SHA-256 and ESP/AES-256-GCM are all valid replacements for the legacy suite, and the 24-hour lifetime is a sane rekey window.',
+        payload: { multi: false, lines: [
+          { id: 'ln-auth', text: 'Authentication: Per-device certificates' },
+          { id: 'ln-enc', text: 'Phase 1 encryption: AES-256' },
+          { id: 'ln-int', text: 'Phase 1 integrity: SHA-256' },
+          { id: 'ln-life', text: 'Phase 1 SA lifetime: 24 hours' },
+          { id: 'ln-sel', text: 'Protected network offered: 0.0.0.0/0' },
+          { id: 'ln-p2', text: 'Phase 2 transform: ESP / AES-256-GCM' }
+        ] },
+        answer: { selected: ['ln-sel'] } }
+    ]
+  },
+
+  {
+    id: 'sp-vpn-12', cert: 'secplus', archetype: 'vpntunnel', objective: '3.2',
+    topic: 'Secure enterprise infrastructure', title: 'Split-tunnel the auditors onto one read-only subnet',
+    estMinutes: 5, policyFloor: ['no-psk','pfs','aes256-min'],
+    scenario: 'External auditors need access to one read-only evidence subnet for six weeks. They must not reach anything else on your network, and their own corporate traffic must not be dragged through your egress — you do not want to be responsible for logging another firm’s browsing. Their laptops are enrolled with certificates issued specifically for this engagement. The evidence is commercially sensitive, so the standard is AES-256 minimum at both phases, Phase 1 integrity SHA-256 or better, a 2048-bit-equivalent group or better, perfect forward secrecy, and no shared secrets.',
+    assets: { reference: { kind: 'network', devices: [
+      { id: 'siteA', label: 'Evidence subnet (read-only)', type: 'network', subnet: '10.120.0.0/24', note: 'concentrator · 203.0.113.44' },
+      { id: 'siteB', label: 'Auditor address pool', type: 'network', subnet: '10.121.0.0/28', note: 'assigned to auditor laptops' }
+    ] } },
+    steps: [
+      { id: 'p1', type: 'configure', points: 1,
+        prompt: 'Configure the IKE Phase 1 proposal on the concentrator and in the pushed client profile, to the stated standard.',
+        explanation: 'Encryption, integrity, key-agreement group and authentication method must MATCH on both peers or Phase 1 never completes — the responder walks the initiator’s proposal list and, finding nothing it also has configured, returns no proposal chosen. (SA lifetime is the exception and is deliberately not asked here: IKEv1 settles on the shorter of the two values and IKEv2 treats it as purely local.) SHA-256 and SHA-384 both clear the integrity floor; MD5 and SHA-1 sit below it and are being retired. Group 14 gives roughly 112-bit security and group 19 roughly 128-bit, so either clears the floor — groups 2 and 5 do not. Engagement-specific certificates are the only compliant pick. Standard staff certificates would authenticate perfectly well and are still wrong: a 2-year credential outlives a six-week engagement by nearly two years, so removal depends on a manual offboarding step someone has to remember. Revocation is the control when an engagement ends early; the short validity is the backstop for when nobody remembers at all.',
+        payload: { layout: 'dualpanel', scoring: 'tunnel',
+          panels: [ { id: 'A', label: 'Concentrator' }, { id: 'B', label: 'Auditor profile' } ],
+          slots: [
+            { id: 'a-auth', panel: 'A', label: 'Authentication method', options: [ { id: 'psk', text: 'Group pre-shared key' }, { id: 'cert', text: 'Engagement certificates (6-week validity)' }, { id: 'certperm', text: 'Standard staff certificates (2-year validity)' } ] },
+            { id: 'a-enc', panel: 'A', label: 'Phase 1 encryption', options: [ { id: 'des3', text: '3DES' }, { id: 'aes128', text: 'AES-128' }, { id: 'aes192', text: 'AES-192' }, { id: 'aes256', text: 'AES-256' } ] },
+            { id: 'a-int', panel: 'A', label: 'Phase 1 integrity', options: [ { id: 'md5', text: 'MD5' }, { id: 'sha1', text: 'SHA-1' }, { id: 'sha256', text: 'SHA-256' }, { id: 'sha384', text: 'SHA-384' } ] },
+            { id: 'a-dh', panel: 'A', label: 'Key-agreement group', options: [ { id: 'dh2', text: 'DH group 2 (1024-bit MODP)' }, { id: 'dh5', text: 'DH group 5 (1536-bit MODP)' }, { id: 'dh14', text: 'DH group 14 (2048-bit MODP)' }, { id: 'dh19', text: 'DH group 19 (256-bit ECP)' } ] },
+            { id: 'b-auth', panel: 'B', label: 'Authentication method', options: [ { id: 'psk', text: 'Group pre-shared key' }, { id: 'cert', text: 'Engagement certificates (6-week validity)' }, { id: 'certperm', text: 'Standard staff certificates (2-year validity)' } ] },
+            { id: 'b-enc', panel: 'B', label: 'Phase 1 encryption', options: [ { id: 'des3', text: '3DES' }, { id: 'aes128', text: 'AES-128' }, { id: 'aes192', text: 'AES-192' }, { id: 'aes256', text: 'AES-256' } ] },
+            { id: 'b-int', panel: 'B', label: 'Phase 1 integrity', options: [ { id: 'md5', text: 'MD5' }, { id: 'sha1', text: 'SHA-1' }, { id: 'sha256', text: 'SHA-256' }, { id: 'sha384', text: 'SHA-384' } ] },
+            { id: 'b-dh', panel: 'B', label: 'Key-agreement group', options: [ { id: 'dh2', text: 'DH group 2 (1024-bit MODP)' }, { id: 'dh5', text: 'DH group 5 (1536-bit MODP)' }, { id: 'dh14', text: 'DH group 14 (2048-bit MODP)' }, { id: 'dh19', text: 'DH group 19 (256-bit ECP)' } ] }
+          ],
+          symmetryPairs: [ ['a-auth','b-auth'], ['a-enc','b-enc'], ['a-int','b-int'], ['a-dh','b-dh'] ],
+          mirrorPairs: [  ] },
+        answer: { slots: { 'a-auth': ['cert'], 'a-enc': ['aes256'], 'a-int': ['sha256','sha384'], 'a-dh': ['dh14','dh19'], 'b-auth': ['cert'], 'b-enc': ['aes256'], 'b-int': ['sha256','sha384'], 'b-dh': ['dh14','dh19'] } } },
+      { id: 'p2', type: 'configure', points: 1,
+        prompt: 'Scope Phase 2 to the evidence subnet only.',
+        explanation: 'Perfect forward secrecy is a PHASE 2 decision: it means running a FRESH Diffie-Hellman exchange when the child SA is established and rekeyed, instead of deriving its keys from the Phase 1 secret. Without it, recovering the Phase 1 keying material later unlocks every child SA derived from it. Phase 1 always performs a DH exchange — there is no configuration that skips it — so PFS is the only place this choice genuinely exists. The selectors MIRROR: each end’s local network is the other end’s remote. Get that backwards and Phase 1 completes happily, then the child SA is refused for an unacceptable traffic selector. AH is a real trap in the transform list — it authenticates and integrity-protects but does not encrypt anything. The narrow selector IS the access control here. Offering only 10.120.0.0/24 means the auditors’ laptops have no tunnel route to anything else you run — the rest of your network is not merely firewalled off, it is unreachable through this SA. Leaving 0.0.0.0/0 in place would both widen their reach and pull an external firm’s general traffic through your egress. Only AES-256-GCM clears the AES-256 floor here — the AES-192 and AES-128 options are below it whatever HMAC they carry.',
+        payload: { layout: 'dualpanel', scoring: 'tunnel',
+          panels: [ { id: 'A', label: 'Concentrator' }, { id: 'B', label: 'Auditor profile' } ],
+          slots: [
+            { id: 'a-local', panel: 'A', label: 'Local selector — the network THIS end protects', options: [ { id: 'ev', text: '10.120.0.0/24 · evidence subnet' }, { id: 'all', text: '0.0.0.0/0 · all destinations' }, { id: 'pool', text: '10.121.0.0/28 · auditor pool' } ] },
+            { id: 'a-remote', panel: 'A', label: 'Remote selector — the network the PEER protects', options: [ { id: 'ev', text: '10.120.0.0/24 · evidence subnet' }, { id: 'all', text: '0.0.0.0/0 · all destinations' }, { id: 'pool', text: '10.121.0.0/28 · auditor pool' } ] },
+            { id: 'a-pfs', panel: 'A', label: 'Phase 2 perfect forward secrecy', options: [ { id: 'nopfs', text: 'No PFS · rekey the child SA from Phase 1 keying material' }, { id: 'pfs14', text: 'PFS · fresh DH group 14 exchange at each rekey' }, { id: 'pfs19', text: 'PFS · fresh DH group 19 exchange at each rekey' } ] },
+            { id: 'a-xform', panel: 'A', label: 'Phase 2 transform', options: [ { id: 'ah', text: 'AH · integrity only, no encryption' }, { id: 'esp3des', text: 'ESP · 3DES-CBC + HMAC-SHA-1' }, { id: 'espaes128', text: 'ESP · AES-128-CBC + HMAC-SHA-256' }, { id: 'espaes192', text: 'ESP · AES-192-CBC + HMAC-SHA-256' }, { id: 'espgcm', text: 'ESP · AES-256-GCM (AEAD)' } ] },
+            { id: 'b-local', panel: 'B', label: 'Local selector — the network THIS end protects', options: [ { id: 'ev', text: '10.120.0.0/24 · evidence subnet' }, { id: 'all', text: '0.0.0.0/0 · all destinations' }, { id: 'pool', text: '10.121.0.0/28 · auditor pool' } ] },
+            { id: 'b-remote', panel: 'B', label: 'Remote selector — the network the PEER protects', options: [ { id: 'ev', text: '10.120.0.0/24 · evidence subnet' }, { id: 'all', text: '0.0.0.0/0 · all destinations' }, { id: 'pool', text: '10.121.0.0/28 · auditor pool' } ] },
+            { id: 'b-pfs', panel: 'B', label: 'Phase 2 perfect forward secrecy', options: [ { id: 'nopfs', text: 'No PFS · rekey the child SA from Phase 1 keying material' }, { id: 'pfs14', text: 'PFS · fresh DH group 14 exchange at each rekey' }, { id: 'pfs19', text: 'PFS · fresh DH group 19 exchange at each rekey' } ] },
+            { id: 'b-xform', panel: 'B', label: 'Phase 2 transform', options: [ { id: 'ah', text: 'AH · integrity only, no encryption' }, { id: 'esp3des', text: 'ESP · 3DES-CBC + HMAC-SHA-1' }, { id: 'espaes128', text: 'ESP · AES-128-CBC + HMAC-SHA-256' }, { id: 'espaes192', text: 'ESP · AES-192-CBC + HMAC-SHA-256' }, { id: 'espgcm', text: 'ESP · AES-256-GCM (AEAD)' } ] }
+          ],
+          symmetryPairs: [ ['a-pfs','b-pfs'], ['a-xform','b-xform'] ],
+          mirrorPairs: [ ['a-local','b-remote'], ['a-remote','b-local'] ] },
+        answer: { slots: { 'a-local': ['ev'], 'a-remote': ['pool'], 'a-pfs': ['pfs14','pfs19'], 'a-xform': ['espgcm'], 'b-local': ['pool'], 'b-remote': ['ev'], 'b-pfs': ['pfs14','pfs19'], 'b-xform': ['espgcm'] } } }
+    ]
   }
 ];

@@ -4,7 +4,7 @@
 // Plan: docs/superpowers/plans/2026-07-19-sim-lab-pbq-wave5.md
 
 const {
-  _fnBody, dgCss, js, results, test
+  _fnBody, dgCss, js, read, results, test, vm
 } = require('./_context');
 
 // ── Wave 5: vpntunnel — payload validation, tunnel scorer, allowlist ──
@@ -194,5 +194,103 @@ const {
   } catch (err) {
     test('W5: vpntunnel fidelity block (threw)', false);
     results.errors.push('W5 vpntunnel fidelity block threw: ' + err.message);
+  }
+})();
+
+// ── Wave 5: the 12-seed vpntunnel bank ──
+// Source-level axis coverage, then the FUNCTIONAL sweep — every seed is run
+// through the real simLabValidateScenario AND simLabValidateTunnelFidelity,
+// extracted from features/sim-lab.js into a vm context (the 210-*.js harness).
+(function () {
+  console.log('\n\x1b[1m── Sim Lab Wave 5: vpntunnel seed bank ──\x1b[0m');
+  try {
+    var seedSrcRaw = read('features/sim-lab-seed-secplus.js');
+    var ids = [];
+    var re = /id: 'sp-vpn-(\d\d)'/g, hit;
+    while ((hit = re.exec(seedSrcRaw))) ids.push(hit[1]);
+    test('W5: seed bank has exactly 12 sp-vpn scenarios', ids.length === 12);
+    test('W5: sp-vpn ids are 01..12 with no gaps',
+      ids.slice().sort().join(',') === '01,02,03,04,05,06,07,08,09,10,11,12');
+
+    // Axis coverage is measured over the vpntunnel REGION of the file only, so
+    // unrelated Sec+ seeds elsewhere in the bank can't satisfy a check for us.
+    var regionStart = seedSrcRaw.indexOf("id: 'sp-vpn-01'");
+    var vpnSrc = regionStart === -1 ? '' : seedSrcRaw.slice(regionStart);
+    test('W5: >=1 seed uses each policyFloor family',
+      /'no-psk'/.test(vpnSrc) && /'pfs'/.test(vpnSrc) &&
+      /'aes192-min'/.test(vpnSrc) && /'aes256-min'/.test(vpnSrc) && /'legacy-migration'/.test(vpnSrc));
+    test('W5: exactly 3 distractor seeds carry an analyze step',
+      (vpnSrc.match(/type: 'analyze'/g) || []).length === 3);
+
+    // ── Functional sweep ──
+    var vCtx = {};
+    vm.createContext(vCtx);
+    var stepTypesMatch = js.match(/var STEP_TYPES\s*=\s*\[[^\]]+\]/);
+    vm.runInContext((stepTypesMatch ? stepTypesMatch[0] : "var STEP_TYPES=['order','categorize','match','analyze','fillin','configure']") + ';', vCtx);
+    var swatchMatch = js.match(/var _SWATCH_DEFECTS\s*=\s*\[[^\]]+\]/);
+    vm.runInContext((swatchMatch ? swatchMatch[0] : 'var _SWATCH_DEFECTS=[]') + ';', vCtx);
+    var floorsMatch = js.match(/var _TUNNEL_POLICY_FLOORS\s*=\s*\[[^\]]+\]/);
+    test('W5: _TUNNEL_POLICY_FLOORS enum declared in sim-lab.js', !!floorsMatch);
+    vm.runInContext((floorsMatch ? floorsMatch[0] : 'var _TUNNEL_POLICY_FLOORS=[]') + ';', vCtx);
+
+    ['_isNonEmptyStr', '_validateStepPayload', 'simLabValidateScenario', 'simLabValidateTunnelFidelity']
+      .forEach(function (n) { vm.runInContext(_fnBody(js, n), vCtx); });
+    vm.runInContext('globalThis.__v = simLabValidateScenario; globalThis.__t = simLabValidateTunnelFidelity;', vCtx);
+    var validateScenario = vCtx.__v, validateTunnel = vCtx.__t;
+
+    var seedCtx = {};
+    vm.createContext(seedCtx);
+    vm.runInContext('var window = {};\n' + seedSrcRaw + '\nglobalThis.__seed = window.SIM_LAB_SEED_SECPLUS;', seedCtx);
+    var bank = seedCtx.__seed;
+    test('W5: window.SIM_LAB_SEED_SECPLUS still loads as an array', Array.isArray(bank));
+
+    var vpn = (bank || []).filter(function (s) { return s && s.archetype === 'vpntunnel'; });
+    test('W5 sweep: 12 vpntunnel-archetype scenarios resolve from the real bank', vpn.length === 12);
+
+    var allScn = true, allFid = true, allCert = true, allObj = true;
+    vpn.forEach(function (s) {
+      var vr = validateScenario(s);
+      if (!vr || vr.ok !== true) {
+        allScn = false;
+        results.errors.push('W5 sweep: ' + (s && s.id) + ' failed simLabValidateScenario: ' + JSON.stringify(vr && vr.errors));
+      }
+      var fr = validateTunnel(s);
+      if (!fr || fr.ok !== true) {
+        allFid = false;
+        results.errors.push('W5 sweep: ' + (s && s.id) + ' failed simLabValidateTunnelFidelity: ' + JSON.stringify(fr && fr.errors));
+      }
+      if (s.cert !== 'secplus') allCert = false;
+      if (['3.2', '1.4'].indexOf(s.objective) === -1) allObj = false;
+    });
+    test('W5 sweep: every vpntunnel seed passes simLabValidateScenario', allScn);
+    test('W5 sweep: every vpntunnel seed passes simLabValidateTunnelFidelity', allFid);
+    test('W5 sweep: every vpntunnel seed is cert secplus', allCert);
+    test('W5 sweep: every vpntunnel seed targets objective 3.2 or 1.4', allObj);
+
+    // Vendor neutrality — open-standard vocabulary only. The named-vendor list is
+    // the easy half; the terms below it are the ones the two-agent gate actually
+    // caught (proxy ID = Juniper/PAN, XAUTH = a Cisco IKEv1 draft that never
+    // standardised, crypto map / transform set = Cisco config vocabulary).
+    test('W5: seeds carry no vendor console vocabulary',
+      !/\b(Cisco|Fortinet|FortiGate|Palo Alto|PAN-OS|Juniper|SonicWall|Meraki|ASA|pfSense|WatchGuard)\b/i.test(vpnSrc));
+    test('W5: seeds carry no vendor-specific IPSec jargon',
+      !/\b(proxy[- ]?id|XAUTH|crypto map|transform set|encryption domain|interesting traffic|tunnel-group)\b/i.test(vpnSrc));
+
+    // Post-gate structural guards — each pins a defect the two-agent gate found.
+    test('W5: no seed pairs SA lifetime in symmetryPairs (IKEv2 does not negotiate it)',
+      !/\['a-life','b-life'\]/.test(vpnSrc));
+    test('W5: PFS is a Phase 2 slot, never a Phase 1 "no DH group" fiction',
+      /'a-pfs'/.test(vpnSrc) && !/skip PFS/.test(vpnSrc));
+    test('W5: every seed states a floor in prose, not only in policyFloor tags',
+      vpn.length === 12 && vpn.every(function (s) { return /minimum|not negotiable|and nothing weaker/.test(s.scenario); }));
+    test('W5: no seed claims IKE renegotiates down to a weaker common suite',
+      !/renegotiates? (back )?down/i.test(vpnSrc));
+    test('W5: every seed declares estMinutes in the 4-6 band',
+      vpn.length === 12 && vpn.every(function (s) { return s.estMinutes >= 4 && s.estMinutes <= 6; }));
+    test('W5: every seed declares a policyFloor array',
+      vpn.length === 12 && vpn.every(function (s) { return Array.isArray(s.policyFloor) && s.policyFloor.length >= 1; }));
+  } catch (err) {
+    test('W5: vpntunnel seed bank block (threw)', false);
+    results.errors.push('W5 vpntunnel seed bank block threw: ' + err.message);
   }
 })();
