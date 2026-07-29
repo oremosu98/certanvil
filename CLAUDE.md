@@ -29,7 +29,7 @@
 | index.html | 2287 | 148 KB |
 | dg-system.css | 5333 | 496 KB |
 | tests/uat.js + tests/uat/ (28 modules) | 28772 | — |
-UAT checks: 4986 · E2E `test(` count: 163 · APP_VERSION: 8.8.0 · stamped-at: worktree
+UAT checks: 4986 · E2E `test(` count: 163 · APP_VERSION: 8.9.0 · stamped-at: worktree
 <!-- FACTS:AUTO:END -->
 
 | File | Purpose | Size |
@@ -132,6 +132,7 @@ npx playwright test              # E2E (tests/e2e/app.spec.js)
 
 | Version | Features Added |
 |---|---|
+| v8.9.0 | Sim Lab Wave 5: VPN Tunnel Negotiation PBQ (vpntunnel) — dualpanel configure, tunnel scoring, 12 gated Sec+ seeds |
 | v8.8.0 | Sec+ Hashing & Digital Signatures — 12 curated exemplars across obj 1.4/2.4/4.1/4.5/4.6/4.9 |
 | v8.7.2 | Sidebar streak empty state is a button, not an inert div (#497) |
 | v8.7.1 | Fix: Settings Pass Plan rendered empty when diagnostic module not yet loaded |
