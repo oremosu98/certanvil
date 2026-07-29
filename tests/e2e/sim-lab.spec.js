@@ -1298,3 +1298,125 @@ test('exam never bumps the free daily counter', async ({ page }) => {
   expect(r.before).toBe(0);
   expect(r.after).toBe(0);   // exam is Pro/unlimited — no bump (§3.7)
 });
+
+// ── Wave 5: vpntunnel dualpanel round-trip ──
+// Drives the REAL shipped seed sp-vpn-01 through the REAL renderer and the REAL
+// scorer: toggle panels, fill both, confirm the mirror strip reflects the hidden
+// panel, then score. Uses the file's established _simLab.renderStep pattern.
+async function loadSecplusSeeds(page) {
+  await page.evaluate(async () => {
+    if (Array.isArray(window.SIM_LAB_SEED_SECPLUS)) return;
+    await new Promise((res, rej) => {
+      const s = document.createElement('script');
+      s.src = '/features/sim-lab-seed-secplus.js?_cb=test';
+      s.onload = res; s.onerror = rej;
+      document.head.appendChild(s);
+    });
+  });
+  await page.waitForFunction(() => Array.isArray(window.SIM_LAB_SEED_SECPLUS));
+}
+
+test('Wave 5: vpntunnel dualpanel — toggle panels, fill both, mirror strip tracks the hidden end', async ({ page }) => {
+  await gotoApp(page);
+  await loadSecplusSeeds(page);
+
+  const r = await page.evaluate(() => {
+    const scn = window.SIM_LAB_SEED_SECPLUS.find(s => s.id === 'sp-vpn-01');
+    const step = scn.steps[0];                       // Phase 1: 4 slots per panel
+    let last = null;
+    const el = window._simLab.renderStep(step, (resp) => { last = resp; });
+    document.body.appendChild(el);
+
+    const btns = [...el.querySelectorAll('.sl-dp-btn')];
+    const initial = {
+      btnCount: btns.length,
+      firstPressed: btns[0].getAttribute('aria-pressed'),
+      secondPressed: btns[1].getAttribute('aria-pressed'),
+      visibleSelects: el.querySelectorAll('.sl-cfg-select').length,
+      // Nothing picked yet, so every mirror chip reads as unset.
+      mirrorAllUnset: [...el.querySelectorAll('.sl-dp-chip')].every(c => /—/.test(c.textContent)),
+      dotsFilled: el.querySelectorAll('.sl-dp-btn.filled').length
+    };
+
+    const fill = (vals) => {
+      const sels = [...el.querySelectorAll('.sl-cfg-select')];
+      sels.forEach((s, i) => {
+        s.value = vals[i];
+        s.dispatchEvent(new Event('change', { bubbles: true }));
+      });
+    };
+    // Panel A (GW-LON): cert / AES-256 / SHA-256 / DH group 14
+    fill(['cert', 'aes256', 'sha256', 'dh14']);
+    const afterA = {
+      dotsFilled: el.querySelectorAll('.sl-dp-btn.filled').length,
+      reported: Object.keys(last.slots).length
+    };
+
+    btns[1].click();                                  // switch to panel B
+    const onB = {
+      firstPressed: btns[0].getAttribute('aria-pressed'),
+      secondPressed: btns[1].getAttribute('aria-pressed'),
+      // The mirror strip now shows panel A's picks, so no chip is unset.
+      mirrorAnyUnset: [...el.querySelectorAll('.sl-dp-chip')].some(c => /—/.test(c.textContent)),
+      mirrorText: [...el.querySelectorAll('.sl-dp-chip')].map(c => c.textContent).join(' | '),
+      // Panel A's values survived the toggle — they are still in the response.
+      keptA: last.slots['a-enc']
+    };
+
+    fill(['cert', 'aes256', 'sha256', 'dh14']);       // panel B, matching
+    const afterB = {
+      dotsFilled: el.querySelectorAll('.sl-dp-btn.filled').length,
+      reported: Object.keys(last.slots).length
+    };
+
+    // Score the whole scenario through the real engine.
+    const p2 = scn.steps[1];
+    const perfect = window.simLabScoreScenario(scn, {
+      p1: { slots: { 'a-auth': 'cert', 'a-enc': 'aes256', 'a-int': 'sha256', 'a-dh': 'dh14',
+                     'b-auth': 'cert', 'b-enc': 'aes256', 'b-int': 'sha256', 'b-dh': 'dh14' } },
+      p2: { slots: { 'a-local': 'lon', 'a-remote': 'fra', 'a-pfs': 'pfs14', 'a-xform': 'espgcm',
+                     'b-local': 'fra', 'b-remote': 'lon', 'b-pfs': 'pfs14', 'b-xform': 'espgcm' } }
+    });
+    // Asymmetric-but-individually-valid: AES-256 one end, AES-192 the other.
+    const asym = window.simLabScoreScenario(scn, {
+      p1: { slots: { 'a-auth': 'cert', 'a-enc': 'aes256', 'a-int': 'sha256', 'a-dh': 'dh14',
+                     'b-auth': 'cert', 'b-enc': 'aes192', 'b-int': 'sha256', 'b-dh': 'dh14' } },
+      p2: { slots: { 'a-local': 'lon', 'a-remote': 'fra', 'a-pfs': 'pfs14', 'a-xform': 'espgcm',
+                     'b-local': 'fra', 'b-remote': 'lon', 'b-pfs': 'pfs14', 'b-xform': 'espgcm' } }
+    });
+    return { initial, afterA, onB, afterB, p2id: p2.id,
+             perfect: { c: perfect.correct, t: perfect.total },
+             asym: { c: asym.correct, t: asym.total } };
+  });
+
+  // Toggle chrome
+  expect(r.initial.btnCount).toBe(2);
+  expect(r.initial.firstPressed).toBe('true');
+  expect(r.initial.secondPressed).toBe('false');
+  expect(r.initial.visibleSelects).toBe(4);      // one panel at a time
+  expect(r.initial.mirrorAllUnset).toBe(true);
+  expect(r.initial.dotsFilled).toBe(0);
+
+  // Filling panel A fills exactly one dot
+  expect(r.afterA.dotsFilled).toBe(1);
+  expect(r.afterA.reported).toBe(4);
+
+  // Toggling swaps aria-pressed, refreshes the mirror, and keeps panel A's answers
+  expect(r.onB.firstPressed).toBe('false');
+  expect(r.onB.secondPressed).toBe('true');
+  expect(r.onB.mirrorAnyUnset).toBe(false);
+  expect(r.onB.mirrorText).toContain('AES-256');
+  expect(r.onB.keptA).toBe('aes256');
+
+  // Both panels complete
+  expect(r.afterB.dotsFilled).toBe(2);
+  expect(r.afterB.reported).toBe(8);
+
+  // Real scoring: 24 units, all correct
+  expect(r.perfect.t).toBe(24);
+  expect(r.perfect.c).toBe(24);
+  // The teaching point: both picks individually valid but different -> only the
+  // symmetry unit is lost, memberships are kept.
+  expect(r.asym.t).toBe(24);
+  expect(r.asym.c).toBe(23);
+});
