@@ -32,8 +32,12 @@ test('v4.99.1 helper: snapshot includes total_qs for confidence weighting',
 console.log('\n\x1b[1m── v4.99.2 — PHASE E.3 PROXY WRAPPER + QUOTA CHIP ──\x1b[0m');
 test('v4.99.2 wrapper: _claudeFetch function defined',
   /async function _claudeFetch\(init\)/.test(js));
+// What matters is that the wrapper routes to the proxy endpoint, not which
+// fetch helper does it. The call moved from bare fetch() to fetchWithTimeout()
+// so the old `fetch\(` anchor could never match again — `fetch\w*\(` accepts
+// either, and any future timeout/retry wrapper on the same stem.
 test('v4.99.2 wrapper: routes through /api/ai/generate when signed in',
-  /_claudeFetch[\s\S]{0,1500}fetch\('\/api\/ai\/generate'/.test(js));
+  /_claudeFetch[\s\S]{0,1500}fetch\w*\('\/api\/ai\/generate'/.test(js));
 test('v7.79.0 wrapper: BYOK fallback removed (Phase E.4 — server proxy only)',
   !/Route 2: BYOK fallback/.test(js) && !/CLAUDE_API_URL\s*=/.test(js));
 test('v4.99.2 wrapper: 429 quota_exceeded triggers _showQuotaExceededUI',

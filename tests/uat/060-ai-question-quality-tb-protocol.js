@@ -186,16 +186,23 @@ test('v4.56.1 JS: haiku-retry path calls buildPrompt(false) to strip scenario bl
 // Silent success on recovery; user-facing error only if Sonnet also fails.
 // ══════════════════════════════════════════════════════════════════════
 
+// `model` must stay the THIRD parameter — that is what lets the escalation pass
+// a different model. Trailing params are allowed on purpose: v7.80.0's error
+// hardening added a 4th (`errorSurface`), and pinning the closing paren here
+// silently failed for weeks behind the UAT baseline tolerance.
 test('v4.56.2 JS: attempt() helper parameterized with model arg (3rd param)',
-  /const attempt = async \(prompt,\s*label,\s*model\)/.test(js));
+  /const attempt = async \(prompt,\s*label,\s*model\s*[,)]/.test(js));
 test('v4.56.2 JS: attempt() uses `model || CLAUDE_MODEL` fallback in fetch body',
   /body:\s*JSON\.stringify\(\{\s*model:\s*model\s*\|\|\s*CLAUDE_MODEL,\s*max_tokens:\s*MAX_TOKENS_GENERATION/.test(js));
 test('v4.56.2 JS: primary Haiku attempt now labelled haiku-full + passes CLAUDE_MODEL',
   /attempt\(buildPrompt\(true\),\s*['"]haiku-full['"],\s*CLAUDE_MODEL\)/.test(js));
 test('v4.56.2 JS: retry Haiku attempt labelled haiku-retry + passes CLAUDE_MODEL',
   /attempt\(buildPrompt\(false\),\s*['"]haiku-retry['"],\s*CLAUDE_MODEL\)/.test(js));
+// Same reason as the signature check above: the escalation call gained a 4th
+// argument (`_batchErrSurface`) in v7.80.0, so the model arg is matched on a
+// word boundary rather than on the closing paren.
 test('v4.56.2 JS: Sonnet escalation uses CLAUDE_VALIDATOR_MODEL (Sonnet 4.6)',
-  /attempt\(buildPrompt\(false\),\s*['"]sonnet-escalation['"],\s*CLAUDE_VALIDATOR_MODEL\)/.test(js));
+  /attempt\(buildPrompt\(false\),\s*['"]sonnet-escalation['"],\s*CLAUDE_VALIDATOR_MODEL\s*[,)]/.test(js));
 test('v4.56.2 JS: Sonnet escalation only fires after both Haiku attempts fail',
   /haiku-retry[\s\S]{0,2000}sonnet-escalation/.test(js));
 test('v4.56.2 JS: Sonnet failure still logs + throws user-facing malformed-data',

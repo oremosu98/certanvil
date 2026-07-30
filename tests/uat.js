@@ -57,17 +57,25 @@ if (results.fail === 0) {
 }
 console.log('═'.repeat(50) + '\n');
 
-// MVP-QUIZ-ONLY TRANSITION (v7.0.0): UAT exit-code gate temporarily widened
-// from strict (fail > 0) to baseline (fail > MVP_BASELINE_FAILS) because the
-// Ships 1-5 deletion sweep left ~2,647 stale assertions referencing deleted
-// features (drills + flagships) that test "page-X exists" / "feature module
-// has fn Y" against now-deleted code. None are real regressions; the
-// comprehensive UAT sweep is a separate follow-up ship. Until then, the
-// baseline guards against NET-NEW regressions (any new failure beyond
-// baseline trips CI).
-const MVP_BASELINE_FAILS = 2700; // 2647 expected + 53 slack
-if (results.fail > MVP_BASELINE_FAILS) {
-  console.log(`\x1b[31m\x1b[1m  REGRESSION: ${results.fail} failures exceeds MVP baseline ${MVP_BASELINE_FAILS}\x1b[0m`);
+// STRICT GATE — any failure fails the build. Restored 2026-07-29 (v8.9.3).
+//
+// History: the v7.0.0 MVP-quiz-only transition widened this from strict to a
+// 2,700-failure baseline, because the Ships 1-5 deletion sweep left ~2,647 stale
+// assertions pointing at deleted drills/flagship code. Those are long gone — the
+// suite now runs 5,001/5,001 — but the tolerance outlived them, and a gate that
+// green-lights 2,700 failures is not a gate.
+//
+// It cost something real: three assertions (two in 060, one in 140) went stale
+// when v7.80.0 added a 4th param to attempt() and the AI proxy moved from
+// fetch() to fetchWithTimeout(). All three sat red on main for weeks while CI
+// reported success, because 3 < 2700. They were only noticed by reading the
+// output by eye.
+//
+// If a legitimate transition ever needs slack again, prefer quarantining the
+// specific known-bad assertions over re-raising a global ceiling — a numeric
+// tolerance hides the next regression as effectively as it hides the last one.
+if (results.fail > 0) {
+  console.log(`\x1b[31m\x1b[1m  REGRESSION: ${results.fail} failing assertion(s) — the UAT gate is strict.\x1b[0m`);
   process.exit(1);
 }
 process.exit(0);

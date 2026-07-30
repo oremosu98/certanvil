@@ -28,8 +28,8 @@
 | styles.css | 14913 | 551 KB |
 | index.html | 2287 | 148 KB |
 | dg-system.css | 5373 | 499 KB |
-| tests/uat.js + tests/uat/ (29 modules) | 28925 | — |
-UAT checks: 5001 · E2E `test(` count: 163 · APP_VERSION: 8.9.2 · stamped-at: worktree
+| tests/uat.js + tests/uat/ (29 modules) | 28944 | — |
+UAT checks: 5001 · E2E `test(` count: 163 · APP_VERSION: 8.9.3 · stamped-at: worktree
 <!-- FACTS:AUTO:END -->
 
 | File | Purpose | Size |
@@ -132,6 +132,7 @@ npx playwright test              # E2E (tests/e2e/app.spec.js)
 
 | Version | Features Added |
 |---|---|
+| v8.9.3 | UAT gate restored to strict (was tolerating 2700 failures) + 3 stale AI-wrapper assertions fixed |
 | v8.9.2 | Fix: Sim Lab round pill wrapped mid-phrase when the scenario topic was long |
 | v8.9.1 | Fix: Sim Lab seed picker reached only the first 60 (taster) / 10 (session) seeds, hiding the whole tail of every bank |
 | v8.9.0 | Sim Lab Wave 5: VPN Tunnel Negotiation PBQ (vpntunnel) — dualpanel configure, tunnel scoring, 12 gated Sec+ seeds |
