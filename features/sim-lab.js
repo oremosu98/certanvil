@@ -1588,12 +1588,17 @@
       sl.options.forEach(function (o) { if (o.id === optId) hit = o.text; });
       return hit;
     }
+    // "GW-FRA · Frankfurt" -> "GW-FRA" for the mirror heading, matching the
+    // mockup. A panel label with no ' · ' separator (e.g. "Concentrator") is
+    // already short and is used whole. The full label still goes to aria-label.
+    function _panelShort(pn) { return String(pn.label).split(' · ')[0]; }
+
     function renderMirror() {
       var other = p.panels.filter(function (pn) { return pn.id !== visible; })[0];
       mirror.innerHTML = '';
       mirror.setAttribute('aria-label', other.label + ' current values');
       var mh = _el('div', 'sl-dp-mh');
-      mh.textContent = other.label + ' currently says';
+      mh.textContent = _panelShort(other) + ' currently says';
       mirror.appendChild(mh);
       panelSlots(other.id).forEach(function (sl) {
         var v = resp[sl.id];

@@ -4163,12 +4163,12 @@ mark.gnt-hinge{background:color-mix(in oklab,var(--red) 26%,transparent);color:i
    file but never DEFINED, so var(--ease) would silently resolve to nothing. */
 #page-sim-lab .sl-dualpanel{display:grid;gap:0}
 #page-sim-lab .sl-dp-toggle{display:flex;gap:6px;margin:10px 0}
-#page-sim-lab .sl-dp-btn{flex:1;min-height:44px;font:700 12px/1.2 Inter,sans-serif;padding:10px 8px;border-radius:10px;cursor:pointer;border:1px solid var(--border);background:var(--surface2);color:var(--text-dim);transition:color .18s cubic-bezier(0.16,1,0.3,1),border-color .18s cubic-bezier(0.16,1,0.3,1),background-color .18s cubic-bezier(0.16,1,0.3,1),transform .15s cubic-bezier(0.16,1,0.3,1)}
+#page-sim-lab .sl-dp-btn{flex:1;min-height:44px;font:700 11px/1.2 Inter,sans-serif;padding:10px 6px;border-radius:10px;cursor:pointer;border:1px solid var(--border);background:var(--surface2);color:var(--text-dim);transition:color .18s cubic-bezier(0.16,1,0.3,1),border-color .18s cubic-bezier(0.16,1,0.3,1),background-color .18s cubic-bezier(0.16,1,0.3,1),transform .15s cubic-bezier(0.16,1,0.3,1)}
 #page-sim-lab .sl-dp-btn:active{transform:scale(0.97)}
 #page-sim-lab .sl-dp-btn:disabled{cursor:default;opacity:.7}
 #page-sim-lab .sl-dp-btn:focus-visible{outline:none;border-color:color-mix(in oklab,var(--accent) 55%,var(--border));box-shadow:0 0 0 3px color-mix(in oklab,var(--accent) 18%,transparent)}
 #page-sim-lab .sl-dp-btn[aria-pressed="true"]{color:var(--accent);border-color:color-mix(in oklab,var(--accent) 40%,var(--border));background:color-mix(in oklab,var(--accent) 10%,transparent)}
-#page-sim-lab .sl-dp-dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:6px;vertical-align:1px;background:var(--border);transition:background-color .18s cubic-bezier(0.16,1,0.3,1)}
+#page-sim-lab .sl-dp-dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:5px;vertical-align:1px;background:var(--border);transition:background-color .18s cubic-bezier(0.16,1,0.3,1)}
 #page-sim-lab .sl-dp-btn.filled .sl-dp-dot{background:var(--pass)}
 #page-sim-lab .sl-dp-mirror{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:13px;padding:10px;background:var(--surface2);border:1px dashed var(--border);border-radius:11px}
 #page-sim-lab .sl-dp-mh{flex-basis:100%;font:800 9.5px/1 Inter,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:var(--text-dim);margin-bottom:2px}

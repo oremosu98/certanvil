@@ -101,6 +101,14 @@ const {
       !!body && /onChange\(\{ slots: Object\.assign\(\{\}, resp\) \}\)/.test(body));
     test('W5: dualpanel chip text is set via textContent, never innerHTML',
       !!body && /chip\.textContent =/.test(body) && !/chip\.innerHTML/.test(body));
+    // Mockup parity: the mirror heading reads "GW-FRA currently says", not the
+    // whole panel label. The full label still goes to aria-label.
+    test('W5: mirror heading uses the SHORT panel name (mockup parity)',
+      !!body && /_panelShort\(other\) \+ ' currently says'/.test(body));
+    test('W5: _panelShort splits the panel label on the middle-dot separator',
+      /function _panelShort\(pn\) \{ return String\(pn\.label\)\.split\(' · '\)\[0\]; \}/.test(js));
+    test('W5: mirror aria-label keeps the FULL panel label for screen readers',
+      !!body && /aria-label', other\.label \+ ' current values'/.test(body));
 
     test('W5: dg-system defines .sl-dp-btn with 44px touch floor',
       /\.sl-dp-btn\{[^}]*min-height:44px/.test(dgCss));
@@ -273,6 +281,8 @@ const {
     // standardised, crypto map / transform set = Cisco config vocabulary).
     test('W5: seeds carry no vendor console vocabulary',
       !/\b(Cisco|Fortinet|FortiGate|Palo Alto|PAN-OS|Juniper|SonicWall|Meraki|ASA|pfSense|WatchGuard)\b/i.test(vpnSrc));
+    test('W5: panel labels use the middle dot, never an em dash',
+      !/label: 'GW-[A-Z]+ —/.test(vpnSrc));
     test('W5: seeds carry no vendor-specific IPSec jargon',
       !/\b(proxy[- ]?id|XAUTH|crypto map|transform set|encryption domain|interesting traffic|tunnel-group)\b/i.test(vpnSrc));
 
