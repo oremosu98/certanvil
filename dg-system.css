@@ -4012,6 +4012,46 @@ mark.gnt-hinge{background:color-mix(in oklab,var(--red) 26%,transparent);color:i
 
 /* Sim Lab session: in-round chrome + loader (Task 5, lifted from mockup panels 2-3) */
 #page-sim-lab .slr-round-pill{font:800 11px/1 Inter,sans-serif;letter-spacing:.06em;color:var(--accent);border:1px solid color-mix(in oklab,var(--accent) 30%,var(--border));background:color-mix(in oklab,var(--accent) 8%,transparent);padding:3px 9px;border-radius:999px;margin-left:8px}
+
+/* Header strip: the round pill and the Exam badge must never break mid-phrase.
+   `.sl-strip` is a flex ITEM of .sl-topbar (base rules in styles.css). Its own
+   children are laid out as flex so the "Sim Lab · <topic>" label is the only
+   thing that gives up space: the round counter appears nowhere else in the
+   header, while the topic is restated in the scenario prose directly below.
+   Gaps replace the children's margins because flex collapses the whitespace
+   around the literal "·" separator text node.
+
+   The shrink target is the LABEL, not the strip. Both are needed: without
+   min-width:0 the strip's automatic minimum is its min-content — and a nowrap
+   label contributes its full text width to that — so the strip refuses to
+   shrink and overflows the topbar. The label carries the min-width:0 +
+   overflow:hidden that lets it ellipsize, and the pill/badge are flex:0 0 auto
+   so they keep their size while the label gives up every pixel.
+
+   The Leave button needs width:auto here as well as flex:0 0 auto. `.gnt-ghost`
+   carries width:100%, so in a flex row its base size is the whole bar; it only
+   looked sane before because flex-shrink was clawing it back, which meant every
+   pixel the strip released went straight to the button. Pinning shrink without
+   also dropping the 100% freezes it at full width and collapses the strip.
+
+   Below 480px the label is dropped entirely rather than truncated to a stub —
+   at that width the clock and Leave button leave ~100px, which the pill alone
+   fills. Nothing is lost: you are already on the Sim Lab page, the topic opens
+   the scenario text, and .slr-dots carries round progress visually. */
+#page-sim-lab .sl-strip{display:flex;align-items:center;gap:6px;min-width:0}
+#page-sim-lab .sl-strip-label{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#page-sim-lab .slr-round-pill,
+#page-sim-lab .sl-exam-badge{flex:0 0 auto;white-space:nowrap;margin-left:0}
+#page-sim-lab .sl-topbar > .btn{flex:0 0 auto;width:auto}
+/* Phones. The label goes first. In EXAM mode the countdown clock also joins the
+   row, and pill + badge + clock + Leave cannot all fit 375px — the badge goes
+   too, because the countdown itself already distinguishes exam from practice
+   (practice counts UP and has no clock chip) and the question palette replaces
+   the round dots. */
+@media (max-width:480px){
+  #page-sim-lab .sl-strip-label{display:none}
+  #page-sim-lab .sl-exam-badge{display:none}
+}
 #page-sim-lab .slr-dots{display:flex;gap:5px;margin:0 0 16px}
 #page-sim-lab .slr-dot{width:22px;height:4px;border-radius:999px;background:var(--border)}
 #page-sim-lab .slr-dot.done{background:var(--green,var(--pass))}

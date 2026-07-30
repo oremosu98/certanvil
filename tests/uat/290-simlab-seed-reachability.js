@@ -10,7 +10,7 @@
 // New waves are always APPENDED, so the dead tail grows with every wave. These
 // tests are the ratchet that stops it coming back.
 
-const { _fnBody, js, results, test, vm } = require('./_context');
+const { _fnBody, dgCss, html, js, results, test, vm } = require('./_context');
 
 (function () {
   console.log('\n\x1b[1m── Sim Lab: every seed in the bank is reachable ──\x1b[0m');
@@ -102,5 +102,40 @@ const { _fnBody, js, results, test, vm } = require('./_context');
   } catch (err) {
     test('Reachability: Sim Lab seed-reachability block (threw)', false);
     results.errors.push('Sim Lab seed-reachability block threw: ' + err.message);
+  }
+})();
+
+// ── Sim Lab header strip: the round pill must never wrap ──
+// A long scenario topic used to squeeze "Round 1 of 3" until it broke across two
+// lines (the Wave 5 topic "Secure enterprise infrastructure" is 32 chars, the
+// longest in the Sec+ bank). The label is the shrink target; the pill is not.
+(function () {
+  console.log('\n\x1b[1m── Sim Lab: header strip does not wrap the round pill ──\x1b[0m');
+  try {
+    test('Header: the topic label is wrapped in its own .sl-strip-label element',
+      /class="sl-strip-label"/.test(html));
+    test('Header: .sl-strip-label sits inside .sl-strip and contains #sl-topic',
+      /class="sl-strip"><span class="sl-strip-label">[\s\S]{0,120}id="sl-topic"[\s\S]{0,20}<\/span>/.test(html));
+
+    var strip = (dgCss.match(/#page-sim-lab \.sl-strip\{[^}]*\}/) || [])[0] || '';
+    var label = (dgCss.match(/#page-sim-lab \.sl-strip-label\{[^}]*\}/) || [])[0] || '';
+    var pill = (dgCss.match(/#page-sim-lab \.slr-round-pill,\s*\n?#page-sim-lab \.sl-exam-badge\{[^}]*\}/) || [])[0] || '';
+    var btn = (dgCss.match(/#page-sim-lab \.sl-topbar > \.btn\{[^}]*\}/) || [])[0] || '';
+
+    test('Header: .sl-strip is a flex row that may shrink (min-width:0)',
+      /display:flex/.test(strip) && /min-width:0/.test(strip));
+    test('Header: the LABEL is the shrink target — min-width:0 + ellipsis',
+      /min-width:0/.test(label) && /text-overflow:ellipsis/.test(label) && /overflow:hidden/.test(label));
+    test('Header: the pill and exam badge never shrink and never wrap',
+      /flex:0 0 auto/.test(pill) && /white-space:nowrap/.test(pill));
+    // .gnt-ghost carries width:100%; without width:auto here the Leave button's
+    // flex base is the whole bar and it starves the strip.
+    test('Header: the Leave button is pinned to content width (width:auto + flex:0 0 auto)',
+      /flex:0 0 auto/.test(btn) && /width:auto/.test(btn));
+    test('Header: below 480px the label and exam badge are dropped',
+      /@media \(max-width:480px\)\{[\s\S]{0,240}\.sl-strip-label\{display:none\}[\s\S]{0,240}\.sl-exam-badge\{display:none\}/.test(dgCss));
+  } catch (err) {
+    test('Header: sim-lab header strip block (threw)', false);
+    results.errors.push('Sim Lab header strip block threw: ' + err.message);
   }
 })();
