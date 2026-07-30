@@ -1018,7 +1018,7 @@
     if (!pp) {
       return '<div class="plan-card pp-empty">' +
           '<p class="pp-empty-h">Take the baseline diagnostic</p>' +
-          '<p class="pp-empty-sub">20 questions across every domain build your Pass Plan, your readiness and the topics to drill first.</p>' +
+          '<p class="pp-empty-sub">20 questions across every domain, about 30 minutes. They build your Pass Plan, your readiness and the topics to drill first.</p>' +
           '<button type="button" class="btn btn-primary btn-sm" data-act="pp-empty">Start the diagnostic</button>' +
         '</div>';
     }

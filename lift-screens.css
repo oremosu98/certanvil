@@ -1478,3 +1478,114 @@ html[data-theme] body .quota-exceeded-dismiss {
   background: none !important; border: 0 !important; cursor: pointer;
   font: 600 12.5px/1 Inter, sans-serif !important; color: var(--text-mid) !important; padding: 9px !important;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   SETTINGS · "CONSOLE" (Batch 5a, 2026-07-29)
+   ───────────────────────────────────────────────────────────────────────
+   Founder choice from a `prototype` run (variants Ledger / Console / Spread).
+   Extends the Phase-2 cert-ios-settings lift above rather than replacing it:
+   the single scrollable column, the card radius scale and the .seg chip
+   mechanics all stay. What changes is WHERE HIERARCHY COMES FROM.
+
+   The Phase-2 lift is calm by design — every card identical, every group
+   kicker a 10px grey uppercase label. That reads as bland because nothing
+   differentiates a section you act on from one you only read. Console gives
+   each card a mono header BAR, turns the at-a-glance block into an LED
+   readout, and restores the § numbering the lift hid, so the page reads as
+   an instrument rack.
+
+   This block MUST live here, not in dg-system.css: lift-screens.css loads
+   LAST and mirrors dg-system's `html[data-theme] body #page-X` selectors, so
+   an identical-specificity rule in dg-system is silently overridden. A first
+   pass of this work was written into dg-system.css and rendered as dead CSS.
+
+   WHY CONSOLE: the page carries telemetry (backup snapshots with key counts,
+   sizes, versions, timestamps; sync state; a 0/10 counter). Mono with tabular
+   numerals lets dates and sizes align into comparable columns, and the page
+   header was ALREADY mono, so this completes a language rather than importing
+   one.
+
+   FRAUNCES ADJUSTMENT (founder): Console alone used zero Fraunces, which made
+   Settings the one page that did not look like CertAnvil. Group headings are
+   Fraunces 600 (self-hosted variable 500-700, so 600 is real, not synthesised).
+   Mono is kept for values, eyebrows, § numbers and readouts, where it carries
+   information rather than voice.
+
+   SHAPE RULE (one documented system): cards keep the lift's 16px; header bars
+   inherit it via the card's overflow clip; controls stay at the lift's 10-12px.
+   No third radius is invented.
+
+   MOTION (emil, stage 2 of the visual pass): no entrance animation. Settings is
+   a low-frequency surface entered to do one thing, and a staggered reveal would
+   delay the control the user came for — the prototype's stagger is deliberately
+   NOT promoted, and stage 3 (transitions-dev) was skipped because stage 2 asked
+   for no motion. Only feedback animates, and the lift's :active scales already
+   provide it. Tokens only, zero hex.
+   ═══════════════════════════════════════════════════════════════════════ */
+#page-settings{--con-mono:ui-monospace,'SF Mono','JetBrains Mono',Menlo,Consolas,monospace;--lift-ease:cubic-bezier(0.16,1,0.3,1);}
+
+/* group head: restore the § number as a mono accent tick, heading to Fraunces */
+html[data-theme] body #page-settings .settings-group-head{display:flex!important;align-items:baseline!important;gap:9px!important;margin-bottom:9px!important;}
+html[data-theme] body #page-settings .settings-group-num{display:block!important;font:400 10px/1 var(--con-mono)!important;letter-spacing:0.1em!important;text-transform:uppercase!important;color:var(--accent)!important;flex:none;}
+html[data-theme] body #page-settings .settings-group-titles{min-width:0;}
+html[data-theme] body #page-settings .settings-group-h{font:600 16px/1.25 'Fraunces',Georgia,serif!important;letter-spacing:-0.012em!important;text-transform:none!important;color:var(--text)!important;margin:0 0 3px!important;}
+html[data-theme] body #page-settings .settings-group-h em{color:var(--accent)!important;font-style:normal!important;}
+
+/* card → rack unit: the title becomes a mono header bar */
+html[data-theme] body #page-settings .settings-section{padding:0!important;overflow:hidden;}
+html[data-theme] body #page-settings .settings-section-title{display:flex!important;align-items:center!important;gap:8px!important;font:600 10.5px/1 var(--con-mono)!important;letter-spacing:0.13em!important;text-transform:uppercase!important;color:var(--text-mid)!important;margin:0!important;padding:11px 15px!important;background:var(--surface3)!important;border-bottom:1px solid var(--border)!important;}
+html[data-theme] body #page-settings .settings-health-eyebrow{font:400 10px/1 var(--con-mono)!important;letter-spacing:0.06em!important;text-transform:none!important;color:var(--text-dim)!important;margin-left:auto;}
+#page-settings .settings-section > *:not(.settings-section-title):not(.settings-health-grid){margin-left:15px;margin-right:15px;max-width:calc(100% - 30px);}
+#page-settings .settings-section > .settings-health-grid{margin-left:0;margin-right:0;}
+#page-settings .settings-section > *:not(.settings-section-title):first-of-type{margin-top:13px;}
+#page-settings .settings-section > *:last-child{margin-bottom:14px;}
+
+/* at-a-glance → LED readout. The ● / ○ glyphs are the pre-existing semantic
+   tier markers from renderSettingsHealthCard(), not decoration. */
+html[data-theme] body #page-settings .settings-health-grid{margin:0!important;}
+html[data-theme] body #page-settings .settings-health-row{display:flex!important;flex-direction:row!important;align-items:flex-start!important;gap:9px!important;padding:11px 15px!important;margin:0!important;border:0!important;border-bottom:1px solid var(--border)!important;background:none!important;}
+html[data-theme] body #page-settings .settings-health-row:last-child{border-bottom:0!important;}
+/* Batch 4l hid this glyph (dg-system.css: .settings-health-icon{display:none}).
+   Console needs it back: it is the LED that makes the readout scannable, and it
+   is semantic (ok / warn from renderSettingsHealthCard), not decoration. */
+/* styles.css renders this glyph as a ~40px circular badge; Batch 4l hid it
+   rather than restyle it. Console wants a bare LED dot, so the badge chrome
+   (size, background, radius, centring) is stripped back to a glyph. */
+html[data-theme] body #page-settings .settings-health-icon{display:inline-block!important;width:auto!important;height:auto!important;min-width:0!important;min-height:0!important;padding:0!important;margin:0!important;background:none!important;border:0!important;border-radius:0!important;box-shadow:none!important;font-size:10px!important;line-height:1.6!important;flex:none!important;}
+html[data-theme] body #page-settings .settings-health-ok .settings-health-icon{color:var(--green)!important;}
+html[data-theme] body #page-settings .settings-health-warn .settings-health-icon{color:var(--text-dim)!important;}
+html[data-theme] body #page-settings .settings-health-label{font:400 9.5px/1 var(--con-mono)!important;letter-spacing:0.13em!important;text-transform:uppercase!important;color:var(--text-dim)!important;}
+html[data-theme] body #page-settings .settings-health-value{font:600 12.5px/1.35 var(--con-mono)!important;color:var(--text)!important;margin-top:5px!important;font-variant-numeric:lining-nums tabular-nums!important;font-feature-settings:'lnum','tnum'!important;}
+
+/* values read as instrument data */
+html[data-theme] body #page-settings .settings-daily-input{font:600 18px/1 var(--con-mono)!important;font-variant-numeric:lining-nums tabular-nums!important;font-feature-settings:'lnum','tnum'!important;min-height:44px;}
+html[data-theme] body #page-settings .settings-daily-unit{font:400 11.5px/1 var(--con-mono)!important;color:var(--text-dim)!important;}
+html[data-theme] body #page-settings .settings-daily-chip{font:600 12.5px/1 var(--con-mono)!important;font-variant-numeric:lining-nums tabular-nums!important;font-feature-settings:'lnum','tnum'!important;min-width:44px;min-height:44px;}
+/* emil: a colour-mix tint on a 1px border "routinely reads as invisible", and
+   unlike :active there is no finger on the element to confirm the state. The
+   inset ring doubles the border weight WITHOUT the 1px layout shift a
+   border-width change would push onto every neighbouring chip in the row. */
+html[data-theme] body #page-settings .settings-daily-chip.is-active{box-shadow:inset 0 0 0 1px color-mix(in oklab,var(--accent) 55%,transparent)!important;}
+html[data-theme] body #page-settings .settings-section .btn{font-family:var(--con-mono)!important;font-size:12px!important;letter-spacing:0.03em!important;min-height:44px;}
+
+/* danger: a red header bar, not a red wash over the whole card */
+html[data-theme] body #page-settings .settings-section-danger{border-color:color-mix(in oklab,var(--red) 40%,var(--border))!important;background:var(--surface)!important;}
+html[data-theme] body #page-settings .settings-section-danger .settings-section-title{background:color-mix(in oklab,var(--red) 11%,var(--surface3))!important;border-bottom-color:color-mix(in oklab,var(--red) 32%,var(--border))!important;color:var(--red)!important;}
+html[data-theme] body #page-settings .settings-group-danger .settings-group-h{font-family:'Fraunces',Georgia,serif!important;color:var(--red)!important;}
+html[data-theme] body #page-settings .settings-group-danger .settings-group-num{color:var(--red)!important;}
+
+@media (hover:hover) and (pointer:fine){
+  html[data-theme] body #page-settings .settings-daily-chip:hover{border-color:color-mix(in oklab,var(--accent) 32%,var(--border))!important;}
+}
+@media (prefers-reduced-motion:reduce){
+  html[data-theme] body #page-settings .settings-daily-chip:active,
+  html[data-theme] body #page-settings .settings-section .btn:active{transform:none;}
+}
+
+/* Two Batch-4l leftovers outrank the class rules above and must be beaten on
+   their own terms: #settings-health-card is an ID (bronze radial hero wash)
+   and .settings-health-grid carries its own accent border + 13px radius. In
+   Console the readout is flush inside the panel, so both are cleared. */
+html[data-theme] body #page-settings #settings-health-card{background:var(--surface)!important;background-image:none!important;border:1px solid var(--border)!important;box-shadow:none!important;padding:0!important;}
+html[data-theme] body #page-settings #settings-health-grid,
+html[data-theme] body #page-settings .settings-health-grid{border:0!important;border-radius:0!important;background:none!important;padding:0!important;box-shadow:none!important;}

@@ -5370,3 +5370,77 @@ html[data-theme] body #page-analytics .ana-accchart-tab:active { transform: scal
   html[data-theme] body .t-lift { transform: none !important; }
   html[data-theme] body .t-badge[data-open="false"] .t-badge-dot { opacity: 1; transform: none; filter: none; }
 }
+
+/* ════════════════════════════════════════════════════════════════════════
+   PER-SURFACE RESKIN · Batch 5a · SETTINGS "CONSOLE" — DESKTOP (≥900px)
+   ────────────────────────────────────────────────────────────────────────
+   Founder choice from a `prototype` run (Ledger / Console / Spread).
+
+   ⚠ TWO STYLESHEETS OWN THIS PAGE, SPLIT BY VIEWPORT. lift-screens.css is
+   loaded `media="(max-width: 899px)"` and carries the cert-ios mobile lift;
+   this file owns everything from 900px up (the v7.18 12-col bento). A change
+   made in only one of them silently applies to only one half of the product.
+   The mobile twin of this block lives at the end of lift-screens.css and must
+   be kept in step with it.
+
+   This extends Batch 4l rather than replacing it: the 12-col bento, the tile
+   spans and the danger scoping all stay. What changes is where hierarchy comes
+   from — each tile gets a mono header BAR, the at-a-glance block becomes an LED
+   readout, and the accent washes are dropped, because at 7-15% accent mix they
+   sat below perceptual threshold in light theme and every tile read the same
+   weight anyway. That flatness is what read as bland.
+
+   FRAUNCES ADJUSTMENT (founder): Console alone used zero Fraunces, which made
+   Settings the one page that did not look like CertAnvil. Group headings are
+   Fraunces 600 (self-hosted variable 500-700, so 600 is real). Mono is kept for
+   values, eyebrows, § numbers and readouts, where it carries information.
+
+   MOTION (emil, stage 2): none added. Settings is low-frequency and entered to
+   do one thing; the prototype's entrance stagger is deliberately not promoted,
+   and stage 3 was skipped because stage 2 asked for no motion. Tokens only,
+   zero hex.
+   ════════════════════════════════════════════════════════════════════════ */
+#page-settings{--con-mono:ui-monospace,'SF Mono','JetBrains Mono',Menlo,Consolas,monospace;}
+
+/* group head: mono § tick + Fraunces heading */
+html[data-theme] body #page-settings .settings-group-num{font-family:var(--con-mono)!important;font-size:11px!important;font-weight:400!important;letter-spacing:0.1em!important;color:var(--accent)!important;}
+html[data-theme] body #page-settings .settings-group-h{font-family:'Fraunces',Georgia,serif!important;font-size:22px!important;font-weight:600!important;letter-spacing:-0.015em!important;}
+
+/* tiles → rack units with a mono header bar; washes dropped */
+html[data-theme] body #page-settings .settings-section,
+html[data-theme] body #page-settings .card.settings-section{background:var(--surface)!important;border:1px solid var(--hairline)!important;border-radius:14px!important;box-shadow:none!important;padding:0!important;overflow:hidden;}
+html[data-theme] body #page-settings #settings-health-card,
+html[data-theme] body #page-settings [data-group="study-setup"] section.settings-section:nth-of-type(3),
+html[data-theme] body #page-settings [data-group="data-backups"] section.settings-section:nth-of-type(2){background:var(--surface)!important;background-image:none!important;border:1px solid var(--hairline)!important;box-shadow:none!important;padding:0!important;}
+html[data-theme] body #page-settings .settings-section-title{display:flex!important;align-items:center!important;gap:9px!important;font-family:var(--con-mono)!important;font-size:10.5px!important;font-weight:600!important;letter-spacing:0.13em!important;text-transform:uppercase!important;color:var(--text-mid)!important;margin:0!important;padding:11px 16px!important;background:var(--surface2)!important;border-bottom:1px solid var(--border)!important;}
+html[data-theme] body #page-settings .settings-health-eyebrow{font-family:var(--con-mono)!important;font-size:10px!important;letter-spacing:0.06em!important;text-transform:none!important;color:var(--text-dim)!important;font-weight:400!important;margin-left:auto;}
+#page-settings .settings-section > *:not(.settings-section-title):not(.settings-health-grid){margin-left:16px;margin-right:16px;max-width:calc(100% - 32px);}
+#page-settings .settings-section > *:not(.settings-section-title):first-of-type{margin-top:14px;}
+#page-settings .settings-section > *:last-child{margin-bottom:15px;}
+#page-settings .settings-section > .settings-health-grid{margin:0;}
+
+/* at-a-glance → LED readout. ● / ○ are the semantic tier markers already
+   emitted by renderSettingsHealthCard(); Batch 4l hid them, Console needs them. */
+html[data-theme] body #page-settings .settings-health-grid{display:grid!important;grid-template-columns:repeat(auto-fit,minmax(200px,1fr))!important;gap:1px!important;background:var(--border)!important;border:0!important;border-radius:0!important;padding:0!important;margin:0!important;}
+html[data-theme] body #page-settings .settings-health-row{display:flex!important;flex-direction:row!important;align-items:flex-start!important;gap:9px!important;padding:13px 16px!important;background:var(--surface)!important;border:0!important;border-radius:0!important;}
+html[data-theme] body #page-settings .settings-health-icon{display:inline-block!important;width:auto!important;height:auto!important;min-width:0!important;min-height:0!important;padding:0!important;margin:0!important;background:none!important;border:0!important;border-radius:0!important;box-shadow:none!important;font-size:10px!important;line-height:1.6!important;flex:none!important;}
+html[data-theme] body #page-settings .settings-health-ok .settings-health-icon{color:var(--green)!important;}
+html[data-theme] body #page-settings .settings-health-warn .settings-health-icon{color:var(--text-dim)!important;}
+html[data-theme] body #page-settings .settings-health-label{font-family:var(--con-mono)!important;font-size:9.5px!important;letter-spacing:0.13em!important;text-transform:uppercase!important;color:var(--text-dim)!important;}
+html[data-theme] body #page-settings .settings-health-value{font-family:var(--con-mono)!important;font-size:13px!important;font-weight:600!important;color:var(--text)!important;margin-top:5px!important;font-variant-numeric:lining-nums tabular-nums!important;font-feature-settings:'lnum','tnum'!important;}
+
+/* values + controls read as instrument data; 44px floor holds on touch laptops */
+html[data-theme] body #page-settings .settings-daily-input{font-family:var(--con-mono)!important;font-variant-numeric:lining-nums tabular-nums!important;font-feature-settings:'lnum','tnum'!important;font-size:19px!important;font-weight:600!important;min-height:44px!important;}
+html[data-theme] body #page-settings .settings-daily-unit{font-family:var(--con-mono)!important;font-size:11.5px!important;color:var(--text-dim)!important;}
+html[data-theme] body #page-settings .settings-daily-chip{font-family:var(--con-mono)!important;font-variant-numeric:lining-nums tabular-nums!important;font-feature-settings:'lnum','tnum'!important;font-size:12.5px!important;min-width:44px!important;min-height:44px!important;border-radius:8px!important;}
+/* emil: a colour-mix border tint alone "routinely reads as invisible", and a
+   persistent state has no finger on it to confirm the change. The inset ring is
+   a second channel that costs no layout shift. */
+html[data-theme] body #page-settings .settings-daily-chip.is-active{box-shadow:inset 0 0 0 1px color-mix(in oklab,var(--accent) 55%,transparent)!important;background:color-mix(in oklab,var(--accent) 12%,transparent)!important;}
+html[data-theme] body #page-settings .settings-daily-save{min-height:44px!important;font-family:var(--con-mono)!important;font-size:12px!important;}
+
+/* danger: red header bar, not a red wash across the tile */
+html[data-theme] body #page-settings .settings-section-danger{background:var(--surface)!important;background-image:none!important;border:1px solid color-mix(in oklab,var(--dg-danger) 42%,var(--hairline))!important;}
+html[data-theme] body #page-settings .settings-section-danger .settings-section-title{background:color-mix(in oklab,var(--dg-danger) 12%,var(--surface2))!important;border-bottom-color:color-mix(in oklab,var(--dg-danger) 32%,var(--border))!important;color:var(--dg-danger)!important;}
+html[data-theme] body #page-settings .settings-group-danger .settings-group-h{font-family:'Fraunces',Georgia,serif!important;font-weight:600!important;}
+html[data-theme] body #page-settings .settings-group-danger .settings-group-num{color:var(--dg-danger)!important;}

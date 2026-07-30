@@ -396,7 +396,7 @@
     if (!host) return;
     const all = listAutoBackups();
     if (all.length === 0) {
-      host.innerHTML = '<div class="ab-empty">No automatic backups yet — one will be created on your next page load.</div>';
+      host.innerHTML = '<div class="ab-empty">No automatic backups yet. The next page load creates one.</div>';
       return;
     }
     host.innerHTML = all.map(b => {
@@ -685,7 +685,7 @@
     try { if (typeof renderHeroV2MiniCards === 'function') renderHeroV2MiniCards(); } catch (_) {}
     // Re-sync preset highlight
     syncSettingsDailyGoal();
-    if (typeof showSuccessToast === 'function') showSuccessToast(`Daily goal saved — ${v} questions/day`);
+    if (typeof showSuccessToast === 'function') showSuccessToast(`Daily goal saved · ${v} questions/day`);
   }
 
   function pickSrSessionSize(n) {
