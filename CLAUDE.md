@@ -29,7 +29,7 @@
 | index.html | 2287 | 148 KB |
 | dg-system.css | 5447 | 507 KB |
 | tests/uat.js + tests/uat/ (29 modules) | 28954 | — |
-UAT checks: 5005 · E2E `test(` count: 163 · APP_VERSION: 8.10.0 · stamped-at: worktree
+UAT checks: 5005 · E2E `test(` count: 163 · APP_VERSION: 8.11.0 · stamped-at: worktree
 <!-- FACTS:AUTO:END -->
 
 | File | Purpose | Size |
@@ -132,6 +132,7 @@ npx playwright test              # E2E (tests/e2e/app.spec.js)
 
 | Version | Features Added |
 |---|---|
+| v8.11.0 | Sec+ Blockchain & Open Public Ledger (obj 1.4) — 4 curated exemplars + retention concept |
 | v8.10.0 | Settings Console reskin — mono header bars, LED health readout, Fraunces section headings (desktop + mobile) |
 | v8.9.4 | Mockup parity for the VPN dualpanel: middle-dot panel labels, short mirror heading, one-line toggle |
 | v8.9.3 | UAT gate restored to strict (was tolerating 2700 failures) + 3 stale AI-wrapper assertions fixed |
