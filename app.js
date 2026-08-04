@@ -1,9 +1,9 @@
 // ══════════════════════════════════════════
-// Network+ AI Quiz — app.js  v8.12.0
+// Network+ AI Quiz — app.js  v8.13.0
 // ══════════════════════════════════════════
 
 // ── CONSTANTS ──
-const APP_VERSION = '8.12.0';
+const APP_VERSION = '8.13.0';
 // v4.99.45 (Phase 6b): expose APP_VERSION on window so the web-vitals
 // collector (lib/web-vitals-collector.js, loaded BEFORE app.js so its
 // PerformanceObservers attach earlier) can stamp this version onto every
@@ -298,7 +298,29 @@ function _pickExemplarsForTopic(qTopic, max) {
   // Ordered pool: exact match first, then same domain, then fall back to any
   // other exemplars so a never-covered topic still gets style references.
   const others = QUESTION_EXEMPLARS.filter(ex => ex && ex.topic !== primary && (!domain || TOPIC_DOMAINS[ex.topic] !== domain));
-  const pool = exact.concat(sameDomain).concat(others);
+
+  // v8.13.0: shuffle WITHIN each tier before slicing. The tier ranking (exact
+  // topic → same domain → anything) is the whole point of this helper and is
+  // preserved exactly; what changes is WHICH members of a tier get picked.
+  // Before this, `pool.slice(0, max)` always took the first `max` matches in
+  // FILE ORDER with no shuffle anywhere, so a topic kept re-sending the same 3
+  // exemplars forever and every exemplar authored after the third was dead
+  // weight — ~280 of ~308 Sec+ exemplars never reached a prompt (Cryptography
+  // Fundamentals held 27 and used 3; Obfuscation held 11 and used 3). Same
+  // disease as the v8.9.1 Sim Lab seed picker, which only ever reached the
+  // first 60 seeds of each bank. Sampling also varies the few-shot references
+  // between batches, so repeated runs on one topic generate less repetitive
+  // questions. Kept inline with no external helper because UAT extracts this
+  // function body and runs it in a bare vm sandbox.
+  const _shuffled = arr => {
+    const a = arr.slice();
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      const swap = a[i]; a[i] = a[j]; a[j] = swap;
+    }
+    return a;
+  };
+  const pool = _shuffled(exact).concat(_shuffled(sameDomain)).concat(_shuffled(others));
   return pool.slice(0, max);
 }
 

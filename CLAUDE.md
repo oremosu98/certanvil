@@ -24,12 +24,12 @@
 <!-- machine-owned — run `node scripts/stamp-facts.js` to refresh; do not hand-edit -->
 | Metric | Lines | Size |
 |---|---|---|
-| app.js | 8163 | 425 KB |
+| app.js | 8185 | 426 KB |
 | styles.css | 14913 | 551 KB |
 | index.html | 2287 | 148 KB |
 | dg-system.css | 5447 | 507 KB |
-| tests/uat.js + tests/uat/ (29 modules) | 28954 | — |
-UAT checks: 5005 · E2E `test(` count: 163 · APP_VERSION: 8.12.0 · stamped-at: worktree
+| tests/uat.js + tests/uat/ (29 modules) | 28991 | — |
+UAT checks: 5008 · E2E `test(` count: 163 · APP_VERSION: 8.13.0 · stamped-at: worktree
 <!-- FACTS:AUTO:END -->
 
 | File | Purpose | Size |
@@ -132,6 +132,7 @@ npx playwright test              # E2E (tests/e2e/app.spec.js)
 
 | Version | Features Added |
 |---|---|
+| v8.13.0 | Exemplar picker samples within each tier — ~280 stranded exemplars now reachable (was first-3-by-file-order) |
 | v8.12.0 | Sec+ Certificates (obj 1.4) — 4 retention concepts: CSR, SAN vs wildcard, CRL/OCSP/stapling, public vs private CA |
 | v8.11.0 | Sec+ Blockchain & Open Public Ledger (obj 1.4) — 4 curated exemplars + retention concept |
 | v8.10.0 | Settings Console reskin — mono header bars, LED health readout, Fraunces section headings (desktop + mobile) |

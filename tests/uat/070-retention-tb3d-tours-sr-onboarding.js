@@ -216,8 +216,14 @@ test('v4.58.0 JS: helper strips "Multi: " sentinel before matching',
   // wraps the legacy slice(7).split(',') in a ternary fallback, pushing
   // the literal further from the startsWith check.
   /qTopic\.startsWith\(['"]Multi: ['"]\)[\s\S]{0,250}\.slice\(7\)\.split\(['"],['"]\)/.test(js));
+// v8.13.0: the pool line now shuffles within each tier. Tier ORDER is still
+// the contract (exact topic \u2192 same domain \u2192 others); only member selection
+// inside a tier became random. Guard updated to match, not relaxed.
 test('v4.58.0 JS: helper uses tiered pool (exact topic \u2192 same domain \u2192 others)',
-  /const exact = QUESTION_EXEMPLARS\.filter[\s\S]{0,200}const sameDomain[\s\S]{0,400}const others[\s\S]{0,200}const pool = exact\.concat\(sameDomain\)\.concat\(others\)/.test(js));
+  /const exact = QUESTION_EXEMPLARS\.filter[\s\S]{0,200}const sameDomain[\s\S]{0,400}const others/.test(js) &&
+  /const pool = _shuffled\(exact\)\.concat\(_shuffled\(sameDomain\)\)\.concat\(_shuffled\(others\)\)/.test(js));
+test('v8.13.0 JS: pick helper carries an inline Fisher-Yates shuffle (vm-sandbox safe, no external helper)',
+  /const _shuffled = arr => \{[\s\S]{0,400}Math\.floor\(Math\.random\(\) \* \(i \+ 1\)\)/.test(_fnBody(js, '_pickExemplarsForTopic') || ''));
 
 test('v4.58.0 JS: format helper wraps exemplars in explicit "style references only" framing',
   /DO NOT copy these exemplars into your[\s\S]{0,200}style references only/.test(js));
@@ -275,10 +281,41 @@ test('v4.58.0 JS: exemplar block inserted into prompt after Difficulty line',
       { topic: 'OSI Model', question: 'Q5', options: {A:'a',B:'b',C:'c',D:'d'}, answer: 'A', explanation: 'e5', source: 'curated' }
     ];
 
-    // Exact-topic priority
+    // Exact-topic priority. v8.13.0: within-tier order is now randomised, so
+    // this asserts the TIER contract (both OSI exemplars occupy the first two
+    // slots) rather than their file-order positions.
     const osi = pickFn('OSI Model', 3);
     test('v4.58.0 sandbox: exact-topic exemplars come first (OSI gets Q1 + Q5 before others)',
-      osi.length === 3 && osi[0].question === 'Q1' && osi[1].question === 'Q5');
+      osi.length === 3 &&
+      osi[0].topic === 'OSI Model' && osi[1].topic === 'OSI Model' &&
+      new Set([osi[0].question, osi[1].question]).size === 2 &&
+      ['Q1', 'Q5'].indexOf(osi[0].question) !== -1 &&
+      ['Q1', 'Q5'].indexOf(osi[1].question) !== -1);
+
+    // v8.13.0 regression guard — the whole point of the change. Before the
+    // within-tier shuffle, a topic with more exemplars than `max` re-sent the
+    // same first `max` in file order forever, so everything authored after the
+    // third was unreachable (~280 of ~308 Sec+ exemplars). Sample repeatedly:
+    // every exact-topic exemplar must be reachable. Same failure class as the
+    // v8.9.1 Sim Lab seed picker, which only ever reached the first 60 seeds.
+    ctx.QUESTION_EXEMPLARS = ['E1', 'E2', 'E3', 'E4', 'E5', 'E6', 'E7'].map(q => (
+      { topic: 'OSI Model', question: q, options: {A:'a',B:'b',C:'c',D:'d'}, answer: 'A', explanation: 'e', source: 'curated' }
+    ));
+    const seen = new Set();
+    for (let i = 0; i < 400; i++) pickFn('OSI Model', 3).forEach(ex => seen.add(ex.question));
+    test('v8.13.0 sandbox: every exact-topic exemplar is reachable, not just the first max (tail not stranded)',
+      seen.size === 7);
+    test('v8.13.0 sandbox: shuffling did not break the max cap',
+      pickFn('OSI Model', 3).length === 3);
+
+    // restore the tier-matching bank for the assertions that follow
+    ctx.QUESTION_EXEMPLARS = [
+      { topic: 'OSI Model', question: 'Q1', options: {A:'a',B:'b',C:'c',D:'d'}, answer: 'A', explanation: 'e1', source: 'curated' },
+      { topic: 'Subnetting & IP Addressing', question: 'Q2', options: {A:'a',B:'b',C:'c',D:'d'}, answer: 'B', explanation: 'e2', source: 'curated' },
+      { topic: 'OSPF', question: 'Q3', options: {A:'a',B:'b',C:'c',D:'d'}, answer: 'C', explanation: 'e3', source: 'curated' },
+      { topic: 'BGP', question: 'Q4', options: {A:'a',B:'b',C:'c',D:'d'}, answer: 'D', explanation: 'e4', source: 'curated' },
+      { topic: 'OSI Model', question: 'Q5', options: {A:'a',B:'b',C:'c',D:'d'}, answer: 'A', explanation: 'e5', source: 'curated' }
+    ];
 
     // Same-domain fallback
     const ipv6 = pickFn('IPv6', 3);  // not in bank, but concepts domain → OSI + Subnetting
