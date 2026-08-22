@@ -30,7 +30,9 @@ Since v8.13.0 `_pickExemplarsForTopic` shuffles **within each match tier** (exac
 Two consequences:
 
 - **All 18 exemplars on this topic become reachable.** Before v8.13.0 the picker took the first three by file position forever, so anything authored after the third was dead weight — which is why the v8.12.0 Certificates lesson deliberately added *no* exemplars. That constraint is gone, and it is what makes authoring 14 more worth doing at all.
-- **Difficulty spread matters for quality, not reachability.** Each generation run draws a random 3 from the 18. That sample should be able to represent the range, so a spread roughly matching the bank-wide ratio is the right target — but nothing is stranded if it drifts.
+- **Difficulty spread does NOT affect generation at all.** Corrected 2026-08-22 after the whole-branch review: `_formatExemplarsForPrompt` emits the stem, the options, the type, the answer letter and the explanation — it never emits `difficulty` — and `_pickExemplarsForTopic` does not filter or tier on it either. So the 5/9/4 target is metadata hygiene and nothing more. Aim for it because the field should be honest, not because it changes what the generator sees.
+
+  **What the generator DOES see, and what therefore does propagate: the answer letter.** Across the whole Sec+ pack the correct answer is D in only 6 of 285 MCQs (2.1%), and in objective 2.1 it is D in none of 16. Any letter skew in the exemplar bank is a skew the generator learns from. This is a pre-existing pack-wide defect, not something this lesson introduced, but it is the axis worth balancing — not difficulty.
 
 ---
 
