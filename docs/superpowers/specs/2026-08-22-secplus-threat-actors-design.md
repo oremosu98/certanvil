@@ -25,7 +25,12 @@ This also sits correctly against the standing D1-saturation decision (2026-07-27
 
 Per `CLAUDE.md`, curated exemplars in `CERT_PACK.questionExemplars` are **few-shot style references injected into the generation prompt — never served as quiz questions**. The goal is therefore *coverage of distinct question shapes and distinct actors*, not raw count. Twelve near-identical identification items would teach the generator less than six well-differentiated ones.
 
-Since v8.13.0 the exemplar picker samples **within each difficulty tier** rather than taking the first three by file order, so the difficulty spread of what we add is now load-bearing for reachability.
+Since v8.13.0 `_pickExemplarsForTopic` shuffles **within each match tier** (exact topic → same domain → anything else) before slicing to `max`, rather than taking the first three in file order. The tiers are match tiers, not difficulty tiers.
+
+Two consequences:
+
+- **All 18 exemplars on this topic become reachable.** Before v8.13.0 the picker took the first three by file position forever, so anything authored after the third was dead weight — which is why the v8.12.0 Certificates lesson deliberately added *no* exemplars. That constraint is gone, and it is what makes authoring 14 more worth doing at all.
+- **Difficulty spread matters for quality, not reachability.** Each generation run draws a random 3 from the 18. That sample should be able to represent the range, so a spread roughly matching the bank-wide ratio is the right target — but nothing is stranded if it drifts.
 
 ---
 
@@ -172,7 +177,21 @@ The 2 retention concepts append to `retentionGapConcepts` under a matching banne
 ## Verification
 
 1. **Suite** — `tests/uat/` must stay green, with particular attention to `110-validation-audit-gate.js` and any exemplar-shape assertions.
-2. **Balance guard** — must pass without modification. If this pass trips it, the fix is to trim 2.1, not to widen the guard. The D1 precedent is explicit that widening a saturated guard twice was already one time too many.
+2. **Balance guard** — must pass without modification, at `tests/uat/120-cert-pack-architecture-secplus-metadata.js:664`. It counts every `"objective":"N.M"` match in `certs/secplus.js`, so new exemplars **must** use the compact JSON-string form with no space after the colon or they will not be counted. `retentionGapConcepts` use the JS form (`objective: '2.1'`) and are correctly excluded.
+
+   Measured headroom before writing this plan:
+
+   | Domain | Now | After +14 on D2 | Target | Tolerance |
+   |---|---|---|---|---|
+   | D1 | 95 (30.8%, **+18.8pp**) | 95 (29.5%, +17.5pp) | 12% | 19pp |
+   | D2 | 59 (19.2%, −2.8pp) | 73 (22.7%, **+0.7pp**) | 22% | 10pp |
+   | D3 | 43 (14.0%, −4.0pp) | 43 (13.4%, −4.6pp) | 18% | 10pp |
+   | D4 | 67 (21.8%, −6.2pp) | 67 (20.8%, −7.2pp) | 28% | 10pp |
+   | D5 | 44 (14.3%, −5.7pp) | 44 (13.7%, −6.3pp) | 20% | 10pp |
+
+   The change does not merely fit — it **improves** the guard's worst number. D1 currently sits at +18.8pp against a 19pp tolerance, roughly **0.2pp from failing**, and adding D2 content is what pulls it back. D2 lands almost exactly on blueprint.
+
+   If a future pass ever does trip this guard, the fix is to trim, not to widen. The D1 precedent is explicit that widening a saturated guard twice was already one time too many.
 3. **Answer-key audit** — every new item hand-checked: exactly one correct answer for mcq, exactly two for the `Choose TWO` items, and no distractor that is arguably also correct.
 4. **Distractor sanity** — no fabricated-sounding distractor that a knowledgeable candidate would eliminate on style alone. Distractors should be real terms from the objective.
 5. **Generation smoke test** — after the change, generate a batch of 2.1 questions and confirm the output actually reaches unskilled attacker and Shadow IT. These exemplars exist to shift generator behaviour; if generated questions still cluster on the same four actors, the change has not done its job. **This is the real acceptance test, not a green suite.**
