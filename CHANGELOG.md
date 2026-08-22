@@ -6,6 +6,7 @@ Initial archive during the v4.42.3 reorg (2026-04-16). Re-trimmed in the v4.52.0
 
 | Version | Features Added |
 |---|---|
+| v8.14.0 | Sec+ Threat Actors (obj 2.1): 14 new exemplars covering unskilled attacker + Shadow IT + actor-pair discrimination, 4 existing rewritten to house format, 2 retention concepts. D2 59→73, guard D1 +18.8pp→+17.5pp |
 | v8.2.0 | Extract 5 stateless PBQ render helpers from app.js to features/pbq.js (#138-aligned; makes room for wave-4 motion) |
 | v8.1.0 | Deep Dive: token-mapped panel verified (#493 already fixed), emoji dropped (#494), grow-in + orb/shimmer pending state + staggered sections + cached chip (#495) |
 | v8.0.0 | Motion lift wave 2: quiz-engine adopts the t-* primitives (reveal, verdict, accordion, streak, nav, topbar swap, results bars) |

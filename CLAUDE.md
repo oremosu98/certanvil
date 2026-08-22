@@ -29,7 +29,7 @@
 | index.html | 2287 | 148 KB |
 | dg-system.css | 5447 | 507 KB |
 | tests/uat.js + tests/uat/ (29 modules) | 28991 | — |
-UAT checks: 5008 · E2E `test(` count: 163 · APP_VERSION: 8.13.0 · stamped-at: worktree
+UAT checks: 5008 · E2E `test(` count: 163 · APP_VERSION: 8.14.0 · stamped-at: worktree
 <!-- FACTS:AUTO:END -->
 
 | File | Purpose | Size |
@@ -132,6 +132,7 @@ npx playwright test              # E2E (tests/e2e/app.spec.js)
 
 | Version | Features Added |
 |---|---|
+| v8.14.0 | Sec+ Threat Actors lesson (obj 2.1) — 14 new exemplars + 4 rewritten + 2 retention concepts |
 | v8.13.0 | Exemplar picker samples within each tier — ~280 stranded exemplars now reachable (was first-3-by-file-order) |
 | v8.12.0 | Sec+ Certificates (obj 1.4) — 4 retention concepts: CSR, SAN vs wildcard, CRL/OCSP/stapling, public vs private CA |
 | v8.11.0 | Sec+ Blockchain & Open Public Ledger (obj 1.4) — 4 curated exemplars + retention concept |
