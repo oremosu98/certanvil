@@ -10,7 +10,7 @@
 - **External reviewer**: user periodically pastes OpenAI Codex feedback as a product-review signal.
 
 ## Architecture
-- **Type**: Static HTML/JS/CSS single-page app — no framework, no build step.
+- **Type**: Static HTML/JS/CSS single-page app, no framework. Served as-is locally, but **prod is a build** — `vercel.json` runs `npm run build` (`scripts/build.js`, esbuild) → `dist/`, **minifying JS+CSS**; source is never mutated. So anything grepping a *prod* asset must match minified output (`APP_VERSION="8.13.0"`), not source formatting (`APP_VERSION = '8.13.0'`) — that exact mismatch silently redeployed prod every cron tick for 16 days (`vercel-incident-recovery.yml`, fixed 2026-08-05).
 - **AI**: three-way Claude split, direct browser fetch (`anthropic-dangerous-direct-browser-access: true`); user supplies their own API key (`STORAGE.KEY`). Haiku 4.5 `CLAUDE_MODEL` = bulk generation (`fetchQuestions`, `tbGenerateAiTopology`); Sonnet 4.6 `CLAUDE_VALIDATOR_MODEL` = semantic second-pass (`aiValidateQuestions`); Sonnet 4.6 `CLAUDE_TEACHER_MODEL` = authoritative teacher content (Tier A/B/C — see key-patterns doc).
 - **Storage** (Phase C′): cloud-canonical, localStorage as ephemeral session cache. Source of truth = Supabase (`profiles.metadata` jsonb + `quiz_history`). Write path: localStorage → `_cloudFlush(STORAGE.X)` → 1500ms debounced cloud write. Hydrate: SIGNED_IN → `cloudStore.hydrate()`. Anonymous users get the full app via localStorage only. Cross-subdomain session via cookie-backed Supabase adapter on `Domain=.certanvil.com`.
 - **Hosting**: Vercel — `networkplus.certanvil.com` (+ per-cert subdomains, "Pattern A") + `certanvil.com` (separate landing project).
