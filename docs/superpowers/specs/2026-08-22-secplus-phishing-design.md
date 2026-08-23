@@ -60,7 +60,7 @@ No paid-bank content anywhere. §10 discipline unchanged.
 | 3 | Impersonation vs pretexting — one IT-support call split into WHO is claimed ("I'm David from IT") and the STORY told ("we're migrating MFA today") | Exam Level |
 | 4 | Vector vs technique vs payload — one malicious-attachment email; the correct answer changes with what the stem asks (message-based vector / phishing technique / file-based delivery / malware payload) | Hard |
 | 5 | Multi-technique decomposition — payroll employee, named personally, "CFO" requests urgent transfer to a new account: spear phishing, impersonation, pretexting and BEC are all present; keyed on MOST SPECIFIC for the transaction-fraud framing (BEC) | Hard |
-| 6 | BEC invoice-swap — attacker compromises a *real* supplier mailbox, waits, and alters only the bank account number on a genuine invoice. Every classic phishing tell (spoofed sender, bad domain, urgency) is absent; the lesson is why out-of-band verification of changed payment details is the only control that catches it | Hard |
+| 6 | BEC invoice-swap — attacker compromises a *real* supplier mailbox, waits, and alters only the bank account number on a genuine invoice. Every classic phishing tell (spoofed sender, bad domain, urgency) is absent; the lesson is why the dependable controls against it live in the payment process, out-of-band, rather than in the mailbox | Hard |
 
 **Gaps (4)**
 
@@ -88,7 +88,7 @@ Spread: **2 Foundational / 6 Exam Level / 3 Hard**. All mcq — the topic alread
 Appended to `retentionGapConcepts` after the Threat Actors pair (after line 109, before the `],` at 110), JS object form, `parentTopic: 'Social Engineering'`, `objective: '2.2'`.
 
 1. **`P-S-W-S-V-B + WHO/STORY — the phishing family in one pass`** — Phishing = public/mass, Spear = specific, Whaling = wealthy/executive target, Smishing = SMS, Vishing = voice, BEC = business money; then impersonation = WHO you claim to be, pretexting = the STORY you tell, and the note that one attack routinely stacks several (vishing + impersonation + pretexting in a single call). Closes with the layered-scenario reading rule: answer what the stem asks — the exam offers several technically-present techniques and wants the most specific.
-2. **`The seven emotional levers and the out-of-band check`** — urgency, fear, greed/reward, authority, trust, curiosity, sympathy: the attacker's goal is an emotional reaction instead of careful checking. The defence that defeats the whole family: verify through a different channel the attacker doesn't control, using contact details you already hold — never ones supplied in the message. Includes the invoice-swap case as the example where out-of-band is the *only* effective check.
+2. **`The emotional levers and the out-of-band check`** — urgency, fear, greed/reward, authority, trust, curiosity, sympathy: the attacker's goal is an emotional reaction instead of careful checking. The defence that defeats the whole family: verify through a different channel the attacker doesn't control, using contact details you already hold — never ones supplied in the message. Includes the invoice-swap case as the example where the dependable checks live in the payment process rather than the mailbox.
 
 ### Threat Actors fixes riding along (from the v8.14.0 whole-branch review)
 
