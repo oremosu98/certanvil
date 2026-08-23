@@ -86,3 +86,13 @@ If the A/B shows the model skews on its own, a **post-generation option shuffle*
 
 `docs/superpowers/specs/2026-08-22-secplus-threat-actors-design.md` — where this was first recorded, Sec+ only.
 `.superpowers/sdd/progress.md` — the v8.14.0 whole-branch review that surfaced it.
+
+---
+
+## Addendum (2026-08-22, post-v8.15.0): a second generator-visible cue — correct-is-longest
+
+The v8.15.0 whole-branch review measured a second cue on the same exposure path. Across the 25 MCQs newly authored in the v8.14.0 + v8.15.0 lessons, the correct option is the **longest** in 16 (64%, vs 25% chance, p≈0.001) — despite a per-item authoring rule against it and three review fix rounds. The cue only exists as a distribution, which is why per-item review kept missing it.
+
+Consequence for this audit: when the A/B test runs, letter position is not the only axis worth reading off the generated output — record option lengths too. And if a rebalance pass ever happens, it should fix both axes in one sweep: letters by swapping option positions, length by **padding distractors** (never trimming keys — their length is usually the discriminating rationale).
+
+The hedged-correct/absolute-distractor axis was measured clean pool-wide (absolutes: 4/39 correct options vs 11/107 distractors — statistically identical).
