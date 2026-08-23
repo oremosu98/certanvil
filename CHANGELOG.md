@@ -6,6 +6,7 @@ Initial archive during the v4.42.3 reorg (2026-04-16). Re-trimmed in the v4.52.0
 
 | Version | Features Added |
 |---|---|
+| v8.16.0 | Sec+ Threat Vectors (obj 2.2): 10 vector exemplars (image-based, open ports, client-vs-agentless, MSP, wired/Bluetooth, vector-vs-surface) + keyed impersonation + ethical motivation + 4 rewritten + 2 retention concepts + review-debt fixes. AV topic 4→14 |
 | v8.15.0 | Sec+ Phishing (obj 2.2): 11 new exemplars (discriminators, MFA fatigue, typosquatting, misinformation), 7 rewritten to house format, 2 retention concepts, 4 queued 2.1 wording fixes. D2 73→84 |
 | v8.14.0 | Sec+ Threat Actors (obj 2.1): 14 new exemplars covering unskilled attacker + Shadow IT + actor-pair discrimination, 4 existing rewritten to house format, 2 retention concepts. D2 59→73, guard D1 +18.8pp→+17.5pp |
 | v8.2.0 | Extract 5 stateless PBQ render helpers from app.js to features/pbq.js (#138-aligned; makes room for wave-4 motion) |

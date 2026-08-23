@@ -29,7 +29,7 @@
 | index.html | 2287 | 148 KB |
 | dg-system.css | 5447 | 507 KB |
 | tests/uat.js + tests/uat/ (29 modules) | 28991 | — |
-UAT checks: 5008 · E2E `test(` count: 163 · APP_VERSION: 8.15.0 · stamped-at: worktree
+UAT checks: 5008 · E2E `test(` count: 163 · APP_VERSION: 8.16.0 · stamped-at: worktree
 <!-- FACTS:AUTO:END -->
 
 | File | Purpose | Size |
@@ -132,6 +132,7 @@ npx playwright test              # E2E (tests/e2e/app.spec.js)
 
 | Version | Features Added |
 |---|---|
+| v8.16.0 | Sec+ Threat Vectors lesson (obj 2.2) — 12 new exemplars (10 vectors + 2 review-debt) + 4 rewritten + 2 retention concepts + queued debt fixes |
 | v8.15.0 | Sec+ Phishing lesson (obj 2.2) — 11 new exemplars + 7 rewritten + 2 retention concepts + four 2.1 wording fixes |
 | v8.14.0 | Sec+ Threat Actors lesson (obj 2.1) — 14 new exemplars + 4 rewritten + 2 retention concepts |
 | v8.13.0 | Exemplar picker samples within each tier — ~280 stranded exemplars now reachable (was first-3-by-file-order) |
