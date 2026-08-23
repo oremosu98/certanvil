@@ -60,7 +60,7 @@ Ten exemplars + both retention concepts from the founder's own threat-vectors no
 | 6 | Unsecure wired network — live Ethernet jack in a public conference room grants LAN access; the control that closes it is 802.1X port-based NAC. "Wired ≠ automatically secure" | Exam Level | A |
 | 7 | Unsecure Bluetooth — nearby attacker exploits an insecure implementation; third leg of wireless/wired/Bluetooth | Foundational | C |
 | 8 | MSP supply chain — attacker compromises a managed service provider's remote-admin tooling and reaches many customers through the trusted connection; why supply-chain vectors scale (1 → MSP → hundreds) and why the victim's own hardening didn't matter | Hard | B |
-| 9 | Vulnerable vs unsupported — two servers: one missing an AVAILABLE patch, one past vendor EOL with a new vulnerability and NO patch coming; which pairing is right and why the remediation paths differ | Exam Level | D |
+| 9 | Vulnerable vs unsupported — two servers: one missing an AVAILABLE patch, one past vendor EOL with a new vulnerability and NO patch coming; which pairing is right and why the remediation paths differ | Hard | D |
 | 10 | Message-based via IM — malicious link in a Teams DM from a compromised colleague account; message-based covers email, SMS AND instant messaging, and the compromised-real-account angle explains why sender trust fails | Exam Level | B |
 
 ### The 2 micro-items
