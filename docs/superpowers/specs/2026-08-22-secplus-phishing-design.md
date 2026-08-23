@@ -16,7 +16,7 @@ Unlike Threat Actors (4 thin exemplars, two actors uncovered), Social Engineerin
 What the audit found:
 
 - All 7 existing items are pre-v8.7.0 prose style — zero per-distractor rebuttals. Same rewrite case as the Threat Actors four.
-- **MFA fatigue / push bombing: zero mentions in the entire pack.** The largest single gap.
+- **MFA fatigue / push bombing: no exemplar coverage.** (An IR drill `mfa-bombing` and an `mfa-fatigue` smishing pattern exist elsewhere in the pack — the original "zero mentions" claim came from a grep that missed hyphenated forms.) Still the largest exemplar gap.
 - **Misinformation/disinformation:** named in objective 2.2, effectively absent (one incidental mention).
 - Typosquatting and brand impersonation: touched only inside the QR-phishing drill bank and two passing mentions — no exemplar owns them.
 - No discriminator items at all: nothing tests spear-vs-phishing, whaling-vs-BEC, or impersonation-vs-pretexting against each other, which is where the exam actually differentiates candidates.
