@@ -96,3 +96,33 @@ The v8.15.0 whole-branch review measured a second cue on the same exposure path.
 Consequence for this audit: when the A/B test runs, letter position is not the only axis worth reading off the generated output — record option lengths too. And if a rebalance pass ever happens, it should fix both axes in one sweep: letters by swapping option positions, length by **padding distractors** (never trimming keys — their length is usually the discriminating rationale).
 
 The hedged-correct/absolute-distractor axis was measured clean pool-wide (absolutes: 4/39 correct options vs 11/107 distractors — statistically identical).
+
+---
+
+## Addendum 2 (2026-08-22, post-v8.17.0): per-topic D=0 breakdown — the actionable data
+
+The v8.17.0 whole-branch review recomputed the skew against **four-option MCQs only** (322 of them), which is the population the generator actually imitates:
+
+**A 101 / B 135 / C 71 / D 15 — D at 4.7%.**
+
+The decisive finding is not the aggregate but the **per-topic** distribution. Seven of the twelve largest topics have **D = 0 outright**:
+
+| Topic | n | D |
+|---|---|---|
+| Security Monitoring & SIEM | 25 | 0 |
+| Cryptography Fundamentals | 22 | 0 |
+| Security Controls | 21 | 0 |
+| Threat Actors & Motivations | 17 | 0 |
+| Network Security Architecture | 16 | 0 |
+| Network Attacks | 16 | 0 |
+| Risk Management | 9 | 0 (also C = 0) |
+
+This matters because `_pickExemplarsForTopic` draws its three few-shot references from the **exact-topic tier first**. So a generation run on any of those topics shows Haiku three worked examples in which D is never correct — a far stronger signal than the pooled 4.7% suggests.
+
+**Counter-evidence from the same day:** the four topics touched by the v8.14.0–v8.17.0 lessons are the only ones with sane D representation — Social Engineering A4/B7/C8/D3, Attack Vectors A5/B5/C3/D4, Audits & Assessments A2/B3/C5/D2, IAM A3/B2/C5/D1. **Nine of the pack's fifteen D-keys were authored today.** Deliberate letter targets work; the problem is everything authored before them.
+
+### Consequence for the remedy
+
+If the A/B test shows the exemplars are driving generated-answer position, the fix is a **letter-rotation pass over existing items in the seven D=0 topics** — swapping option order on order-neutral items and updating the letter references inside their explanations. That is materially cheaper and lower-risk than the pack-wide rebalance this audit originally contemplated, and it targets exactly the topics where the few-shot signal is most degenerate.
+
+Run the A/B first. This addendum tells you where to aim if it comes back positive.
