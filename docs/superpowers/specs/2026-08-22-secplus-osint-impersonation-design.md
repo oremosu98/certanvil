@@ -56,7 +56,7 @@ Nine items + both retention concepts from the founder's Impersonation + OSINT no
 | 13 | Spoofing reach (debt) — caller-ID spoofing on a vishing call; which technical element is the spoofing vs which is the vishing, reinforcing item 1 in a different channel | Social Engineering / 2.2 | Exam | B | debt |
 | 14 | OSINT vs active recon boundary (debt) — a mixed action list (LinkedIn review THEN a port scan); which single step crossed into active recon. Adds the boundary angle the two live passive-recon items don't test | Audits & Assessments / 5.5 | Foundational | C | debt |
 
-Letters: **A3 / B4 / C4 / D3** (≥3 D — item 12's true-"Both" key is deliberately D, and it is the first D-keyed "Both" in the pack). Spread: **4F / 8E / 2H.** All mcq.
+Letters: **A3 / B4 / C4 / D3** (≥3 D — item 12's true-"Both" key is deliberately D, and it is the first D-keyed "Both" in the pack). Spread: **3F / 9E / 2H.** All mcq.
 
 ### Domain distribution of the 14
 2.2 ×7 (items 1, 2, 9, 10, 11, 12, 13), 5.5 ×5 (3, 4, 5, 6, 14), 4.6 ×2 (7, 8). The plan asserts these objective counts by script.
