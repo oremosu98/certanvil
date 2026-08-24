@@ -6,6 +6,7 @@ Initial archive during the v4.42.3 reorg (2026-04-16). Re-trimmed in the v4.52.0
 
 | Version | Features Added |
 |---|---|
+| v8.18.0 | Sec+ Watering Hole & Endpoint Controls (obj 2.2/2.5/4.5): 7 exemplars — watering hole vs drive-by/malvertising, awareness-is-the-weak-control, voice-call vector (**completes objective 2.2**), EDR + web filtering keyed for the first time. First ship through the new exemplar lane; D4 eased −8.8pp → −8.3pp |
 | v8.17.0 | Sec+ OSINT & Impersonation (obj 2.2/5.5/4.6): 14 exemplars — spoofing, OSINT-as-term + defender/technical OSINT, phishing-resistant MFA/FIDO2, + 3 review-debt items incl. the first true-"Both" key — + 2 retention concepts. First pass growing D4/D5 |
 | v8.16.0 | Sec+ Threat Vectors (obj 2.2): 10 vector exemplars (image-based, open ports, client-vs-agentless, MSP, wired/Bluetooth, vector-vs-surface) + keyed impersonation + ethical motivation + 4 rewritten + 2 retention concepts + review-debt fixes. AV topic 4→14 |
 | v8.15.0 | Sec+ Phishing (obj 2.2): 11 new exemplars (discriminators, MFA fatigue, typosquatting, misinformation), 7 rewritten to house format, 2 retention concepts, 4 queued 2.1 wording fixes. D2 73→84 |
