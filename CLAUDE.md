@@ -29,7 +29,7 @@
 | index.html | 2287 | 148 KB |
 | dg-system.css | 5447 | 507 KB |
 | tests/uat.js + tests/uat/ (29 modules) | 28991 | — |
-UAT checks: 5008 · E2E `test(` count: 163 · APP_VERSION: 8.18.0 · stamped-at: worktree
+UAT checks: 5008 · E2E `test(` count: 163 · APP_VERSION: 8.19.0 · stamped-at: worktree
 <!-- FACTS:AUTO:END -->
 
 | File | Purpose | Size |
@@ -135,6 +135,7 @@ npx playwright test              # E2E (tests/e2e/app.spec.js)
 
 | Version | Features Added |
 |---|---|
+| v8.19.0 | Sec+ Memory Injection & Memory Forensics (obj 2.3/4.9/4.5) — 8 exemplars; first coverage of memory injection, DLL injection, fileless and memory forensics |
 | v8.18.0 | Sec+ Watering Hole & Endpoint Controls (obj 2.2/2.5/4.5) — 7 exemplars; completes objective 2.2; first ship through the exemplar lane |
 | v8.17.0 | Sec+ OSINT & Impersonation mixed-domain lesson (obj 2.2/5.5/4.6) — 14 exemplars + 2 retention concepts + v8.16.0 debt items |
 | v8.16.0 | Sec+ Threat Vectors lesson (obj 2.2) — 12 new exemplars (10 vectors + 2 review-debt) + 4 rewritten + 2 retention concepts + queued debt fixes |
