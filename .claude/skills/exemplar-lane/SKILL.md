@@ -1,6 +1,6 @@
 ---
 name: exemplar-lane
-description: The lightweight path for exemplar and retention-concept changes to a cert pack. Use whenever the work is ONLY adding, rewriting or fixing curated exemplars (`questionExemplars`) or retention concepts (`retentionGapConcepts`) — a founder-notes lesson, a coverage gap, a wording fix, a letter/length rebalance. Deliberately replaces the brainstorming → spec → writing-plans → subagent-driven-development sequence for this class of change. Do NOT use for engine/logic changes, PBQ archetypes, schema, or anything on the gated lane.
+description: The lightweight path for exemplar and retention-concept changes to a cert pack. Use whenever the work is ONLY adding, rewriting or fixing curated exemplars (`questionExemplars`) or retention concepts (`retentionGapConcepts`). TRIGGERS — the founder pasting study notes of any kind ("here are my notes on X", "potential exemplars off these notes", "more exemplars here", "we can author exemplars from this"), or asking for question coverage on a topic/objective, a wording fix to existing questions, a letter/length rebalance, or a coverage-gap check. Fires on pasted revision notes even when the word "exemplar" is absent. This skill REPLACES brainstorming → writing-plans → subagent-driven-development for this class of change; do not run those as well. Do NOT use for engine/logic changes, PBQ archetypes, Sim Lab seeds, schema, or anything on the gated lane.
 ---
 
 # Exemplar Lane
@@ -17,6 +17,14 @@ Adding questions to a cert pack is a **Fast-lane data change**. It does not need
 | The coverage-delta measurement | The implementer subagents |
 
 The specs and plans were transcription vehicles — the items were authored in them, then subagents were paid to copy them into the file. **This lane keeps the checks and drops the paperwork.**
+
+## This lane wins over the global process skills
+
+`superpowers:using-superpowers` instructs that brainstorming must run before any creative work, and `feature-lane` claims all CertAnvil work. **For exemplar-only changes, this skill supersedes both** — that is the whole point of it existing, it is recorded in `CLAUDE.md` → Decision rules, and project instructions outrank default skill behaviour.
+
+Concretely: do not write a spec document, do not write a plan document, and do not decompose the work into SDD tasks. If you catch yourself about to author items into a plan file so that a subagent can copy them into `certs/*.js`, stop — write them into the pack directly. That round trip was the single largest waste in the six ships that produced this lane.
+
+The design conversation still happens; it just happens in chat. Ask the scoping questions, state the delta you measured, get a yes, then build.
 
 ## When this lane applies
 

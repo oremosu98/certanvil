@@ -69,6 +69,9 @@ UAT checks: 5008 · E2E `test(` count: 163 · APP_VERSION: 8.18.0 · stamped-at:
 
 ## Decision rules
 
+### Exemplar work uses the exemplar lane — NOT brainstorming/spec/plan/SDD
+Adding, rewriting or fixing curated exemplars or retention concepts in `certs/*.js` is a **Fast-lane data change**. Use the **`exemplar-lane` skill**: measure the coverage delta (is the concept *keyed*, not just mentioned?), pick the domain split deliberately, author directly into the pack, run `node scripts/exemplar-gate.js --cert <cert> --version <v>`, get ONE adversarial content review, ship. **Do NOT** run brainstorming → writing-plans → subagent-driven-development for this — six exemplar ships on 2026-08-22 showed the spec/plan/SDD layers caught zero defects while the gate and the review caught every one. The heavy sequence still governs engine/logic, PBQ archetypes, schema, and anything gated-lane; if exemplar work turns out to need a code edit, STOP and switch lanes.
+
 ### Model routing — Fable plans, Sonnet executes (adopted 2026-07-18)
 **Only in force when a Fable session is actually running, or the founder explicitly invokes it** — a solo Sonnet (or other-model) session with neither should just use its own judgment, not simulate a phantom hand-off. When active: **Fable (Mythos-tier) never touches implementation surfaces** (app.js, features/, index.html, CSS, sw.js, lib/, supabase/, tests/, scripts/, certs/, landing/) — it plans, designs (incl. mockups), and reviews; **Sonnet sessions execute**. Gated-lane work = always Fable-planned + Fable-reviewed. Full rule incl. activation conditions, A/B/C routing, founder override + revert-first hotfix → [docs/conventions/model-routing.md](docs/conventions/model-routing.md).
 
