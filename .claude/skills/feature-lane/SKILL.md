@@ -1,6 +1,6 @@
 ---
 name: feature-lane
-description: "The full CertAnvil workflow lane — orient via both code/decision maps, design mockup-first against BRAND.md, run the 5-stage visual pass, build on the right lane, ship verified. You MUST use this at the START of any CertAnvil work: new features, bugfixes, drills, PBQs, UI/component changes, redesigns, copy changes, or anything touching app.js/index.html/dg-system.css — even if the user just says 'fix X' or 'add Y' without mentioning workflow. Not needed for pure questions, doc reads, or git housekeeping."
+description: "The full CertAnvil workflow lane — orient via both code/decision maps, design mockup-first against BRAND.md, run the 5-stage visual pass, build on the right lane, ship verified. You MUST use this at the START of any CertAnvil work: new features, bugfixes, drills, PBQs, UI/component changes, redesigns, copy changes, or anything touching app.js/index.html/dg-system.css — even if the user just says 'fix X' or 'add Y' without mentioning workflow. Not needed for pure questions, doc reads, or git housekeeping — and NOT for exemplar/retention-concept-only changes to certs/*.js, which use the lighter `exemplar-lane` skill instead."
 ---
 
 # CertAnvil Feature Lane
