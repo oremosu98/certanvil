@@ -3,7 +3,7 @@
   "updated": "2026-09-18",
   "note": "Seeded on first run. status: pending|queued|shipped|redundant|overflow",
   "sections": {
-    "1|Security Controls — Categories & Types": {
+    "1|Security Controls \u2014 Categories & Types": {
       "hash": "d84bf6572044",
       "domain": "1",
       "objective": null,
@@ -17,7 +17,7 @@
       "status": "pending",
       "lastSeen": "2026-09-18"
     },
-    "1|AAA — Authentication, Authorization, and Accounting": {
+    "1|AAA \u2014 Authentication, Authorization, and Accounting": {
       "hash": "afe7a766db6b",
       "domain": "1",
       "objective": null,
@@ -38,14 +38,14 @@
       "status": "pending",
       "lastSeen": "2026-09-18"
     },
-    "1|Encryption Technologies — TPM, HSM, KMS, Secure Enclave": {
+    "1|Encryption Technologies \u2014 TPM, HSM, KMS, Secure Enclave": {
       "hash": "d3f666560e05",
       "domain": "1",
       "objective": null,
       "status": "pending",
       "lastSeen": "2026-09-18"
     },
-    "1|Obfuscation — Steganography, Tokenization, Data Masking": {
+    "1|Obfuscation \u2014 Steganography, Tokenization, Data Masking": {
       "hash": "871cd132c6bd",
       "domain": "1",
       "objective": null,
@@ -66,7 +66,7 @@
       "status": "pending",
       "lastSeen": "2026-09-18"
     },
-    "1|HMAC — Hash-based Message Authentication Code": {
+    "1|HMAC \u2014 Hash-based Message Authentication Code": {
       "hash": "7cd57a87b865",
       "domain": "1",
       "objective": null,
@@ -101,7 +101,7 @@
       "status": "pending",
       "lastSeen": "2026-09-18"
     },
-    "1|DNS Sinkhole — Deep Dive": {
+    "1|DNS Sinkhole \u2014 Deep Dive": {
       "hash": "9e365741295b",
       "domain": "1",
       "objective": null,
@@ -136,7 +136,7 @@
       "status": "pending",
       "lastSeen": "2026-09-18"
     },
-    "2|Phishing — All Variants": {
+    "2|Phishing \u2014 All Variants": {
       "hash": "37f17be43307",
       "domain": "2",
       "objective": null,
@@ -157,7 +157,7 @@
       "status": "pending",
       "lastSeen": "2026-09-18"
     },
-    "2|OSINT — Open-Source Intelligence": {
+    "2|OSINT \u2014 Open-Source Intelligence": {
       "hash": "99dd3c405e50",
       "domain": "2",
       "objective": null,
@@ -171,7 +171,7 @@
       "status": "pending",
       "lastSeen": "2026-09-18"
     },
-    "2|Memory Injection — Process Injection & DLL Injection": {
+    "2|Memory Injection \u2014 Process Injection & DLL Injection": {
       "hash": "f8ad6e5fba29",
       "domain": "2",
       "objective": null,
@@ -199,7 +199,7 @@
       "status": "pending",
       "lastSeen": "2026-09-18"
     },
-    "2|SBOM — Software Bill of Materials": {
+    "2|SBOM \u2014 Software Bill of Materials": {
       "hash": "8309d757a4c1",
       "domain": "2",
       "objective": null,
@@ -220,7 +220,7 @@
       "status": "pending",
       "lastSeen": "2026-09-18"
     },
-    "2|Least Privilege — and the SQL Injection Connection": {
+    "2|Least Privilege \u2014 and the SQL Injection Connection": {
       "hash": "9a895e1f869a",
       "domain": "2",
       "objective": null,
@@ -567,8 +567,9 @@
       "hash": "a7afd04faec5",
       "domain": "4",
       "objective": null,
-      "status": "pending",
-      "lastSeen": "2026-09-18"
+      "status": "shipped",
+      "lastSeen": "2026-09-18",
+      "shippedVersion": "8.23.0"
     }
   }
 }
