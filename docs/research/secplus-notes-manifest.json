@@ -1,0 +1,574 @@
+{
+  "cert": "secplus",
+  "updated": "2026-09-18",
+  "note": "Seeded on first run. status: pending|queued|shipped|redundant|overflow",
+  "sections": {
+    "1|Security Controls — Categories & Types": {
+      "hash": "d84bf6572044",
+      "domain": "1",
+      "objective": null,
+      "status": "pending",
+      "lastSeen": "2026-09-18"
+    },
+    "1|CIA Triad": {
+      "hash": "f1b445bd0441",
+      "domain": "1",
+      "objective": null,
+      "status": "pending",
+      "lastSeen": "2026-09-18"
+    },
+    "1|AAA — Authentication, Authorization, and Accounting": {
+      "hash": "afe7a766db6b",
+      "domain": "1",
+      "objective": null,
+      "status": "pending",
+      "lastSeen": "2026-09-18"
+    },
+    "1|Public Key Infrastructure (PKI)": {
+      "hash": "938375cfddd8",
+      "domain": "1",
+      "objective": null,
+      "status": "pending",
+      "lastSeen": "2026-09-18"
+    },
+    "1|Key Exchange": {
+      "hash": "b3404a87d5cf",
+      "domain": "1",
+      "objective": null,
+      "status": "pending",
+      "lastSeen": "2026-09-18"
+    },
+    "1|Encryption Technologies — TPM, HSM, KMS, Secure Enclave": {
+      "hash": "d3f666560e05",
+      "domain": "1",
+      "objective": null,
+      "status": "pending",
+      "lastSeen": "2026-09-18"
+    },
+    "1|Obfuscation — Steganography, Tokenization, Data Masking": {
+      "hash": "871cd132c6bd",
+      "domain": "1",
+      "objective": null,
+      "status": "pending",
+      "lastSeen": "2026-09-18"
+    },
+    "1|Gap Analysis": {
+      "hash": "0da44b190e6e",
+      "domain": "1",
+      "objective": null,
+      "status": "pending",
+      "lastSeen": "2026-09-18"
+    },
+    "1|Hashing & Digital Signatures": {
+      "hash": "3121e1583540",
+      "domain": "1",
+      "objective": null,
+      "status": "pending",
+      "lastSeen": "2026-09-18"
+    },
+    "1|HMAC — Hash-based Message Authentication Code": {
+      "hash": "7cd57a87b865",
+      "domain": "1",
+      "objective": null,
+      "status": "pending",
+      "lastSeen": "2026-09-18"
+    },
+    "1|Blockchain": {
+      "hash": "0bb77e8f218f",
+      "domain": "1",
+      "objective": null,
+      "status": "pending",
+      "lastSeen": "2026-09-18"
+    },
+    "1|Digital Certificates": {
+      "hash": "f11ab9a7a944",
+      "domain": "1",
+      "objective": null,
+      "status": "pending",
+      "lastSeen": "2026-09-18"
+    },
+    "1|Zero Trust": {
+      "hash": "b2e0fa5e49e6",
+      "domain": "1",
+      "objective": null,
+      "status": "pending",
+      "lastSeen": "2026-09-18"
+    },
+    "1|Disruption & Deception": {
+      "hash": "3012ad75ca10",
+      "domain": "1",
+      "objective": null,
+      "status": "pending",
+      "lastSeen": "2026-09-18"
+    },
+    "1|DNS Sinkhole — Deep Dive": {
+      "hash": "9e365741295b",
+      "domain": "1",
+      "objective": null,
+      "status": "pending",
+      "lastSeen": "2026-09-18"
+    },
+    "5|Change Management": {
+      "hash": "4c40b7d15a7e",
+      "domain": "5",
+      "objective": null,
+      "status": "pending",
+      "lastSeen": "2026-09-18"
+    },
+    "5|Technical Change Management": {
+      "hash": "3d11ac1a1c5f",
+      "domain": "5",
+      "objective": null,
+      "status": "pending",
+      "lastSeen": "2026-09-18"
+    },
+    "2|Threat Actors": {
+      "hash": "8875e2423d86",
+      "domain": "2",
+      "objective": null,
+      "status": "pending",
+      "lastSeen": "2026-09-18"
+    },
+    "2|Threat Vectors & Attack Surface": {
+      "hash": "bd52075e5af8",
+      "domain": "2",
+      "objective": null,
+      "status": "pending",
+      "lastSeen": "2026-09-18"
+    },
+    "2|Phishing — All Variants": {
+      "hash": "37f17be43307",
+      "domain": "2",
+      "objective": null,
+      "status": "pending",
+      "lastSeen": "2026-09-18"
+    },
+    "2|Impersonation Attacks": {
+      "hash": "681ef2bc7063",
+      "domain": "2",
+      "objective": null,
+      "status": "pending",
+      "lastSeen": "2026-09-18"
+    },
+    "2|Watering Hole Attack": {
+      "hash": "5e9bff510870",
+      "domain": "2",
+      "objective": null,
+      "status": "pending",
+      "lastSeen": "2026-09-18"
+    },
+    "2|OSINT — Open-Source Intelligence": {
+      "hash": "99dd3c405e50",
+      "domain": "2",
+      "objective": null,
+      "status": "pending",
+      "lastSeen": "2026-09-18"
+    },
+    "2|Misinformation, Disinformation & Brand Impersonation": {
+      "hash": "c078d6f4a5cf",
+      "domain": "2",
+      "objective": null,
+      "status": "pending",
+      "lastSeen": "2026-09-18"
+    },
+    "2|Memory Injection — Process Injection & DLL Injection": {
+      "hash": "f8ad6e5fba29",
+      "domain": "2",
+      "objective": null,
+      "status": "pending",
+      "lastSeen": "2026-09-18"
+    },
+    "2|Buffer Overflows": {
+      "hash": "5d9c69d63fd2",
+      "domain": "2",
+      "objective": null,
+      "status": "pending",
+      "lastSeen": "2026-09-18"
+    },
+    "2|Race Conditions & TOCTOU": {
+      "hash": "422e0f060ac7",
+      "domain": "2",
+      "objective": null,
+      "status": "pending",
+      "lastSeen": "2026-09-18"
+    },
+    "2|Malicious Updates": {
+      "hash": "7b0d1d6f1648",
+      "domain": "2",
+      "objective": null,
+      "status": "pending",
+      "lastSeen": "2026-09-18"
+    },
+    "2|SBOM — Software Bill of Materials": {
+      "hash": "8309d757a4c1",
+      "domain": "2",
+      "objective": null,
+      "status": "pending",
+      "lastSeen": "2026-09-18"
+    },
+    "2|Operating System Vulnerabilities": {
+      "hash": "692cd61a466f",
+      "domain": "2",
+      "objective": null,
+      "status": "pending",
+      "lastSeen": "2026-09-18"
+    },
+    "2|SQL Injection": {
+      "hash": "7aeb9cb371d1",
+      "domain": "2",
+      "objective": null,
+      "status": "pending",
+      "lastSeen": "2026-09-18"
+    },
+    "2|Least Privilege — and the SQL Injection Connection": {
+      "hash": "9a895e1f869a",
+      "domain": "2",
+      "objective": null,
+      "status": "pending",
+      "lastSeen": "2026-09-18"
+    },
+    "2|Cross-Site Scripting (XSS)": {
+      "hash": "cea4eb4176ca",
+      "domain": "2",
+      "objective": null,
+      "status": "pending",
+      "lastSeen": "2026-09-18"
+    },
+    "2|Hardware Vulnerabilities": {
+      "hash": "dc23cef3f9b5",
+      "domain": "2",
+      "objective": null,
+      "status": "pending",
+      "lastSeen": "2026-09-18"
+    },
+    "2|Virtualization Vulnerabilities": {
+      "hash": "d45ce52aae48",
+      "domain": "2",
+      "objective": null,
+      "status": "pending",
+      "lastSeen": "2026-09-18"
+    },
+    "2|Cloud-Specific Vulnerabilities": {
+      "hash": "da8306ea15bd",
+      "domain": "2",
+      "objective": null,
+      "status": "pending",
+      "lastSeen": "2026-09-18"
+    },
+    "2|Supply Chain Vulnerabilities": {
+      "hash": "87ea2fae7499",
+      "domain": "2",
+      "objective": null,
+      "status": "pending",
+      "lastSeen": "2026-09-18"
+    },
+    "2|Misconfiguration Vulnerabilities": {
+      "hash": "674194483ccf",
+      "domain": "2",
+      "objective": null,
+      "status": "pending",
+      "lastSeen": "2026-09-18"
+    },
+    "2|Mobile Device Vulnerabilities": {
+      "hash": "79f982015a91",
+      "domain": "2",
+      "objective": null,
+      "status": "pending",
+      "lastSeen": "2026-09-18"
+    },
+    "2|Zero-Day Vulnerabilities": {
+      "hash": "02997e4f6dca",
+      "domain": "2",
+      "objective": null,
+      "status": "pending",
+      "lastSeen": "2026-09-18"
+    },
+    "2|Malware": {
+      "hash": "f9c2a40224be",
+      "domain": "2",
+      "objective": null,
+      "status": "pending",
+      "lastSeen": "2026-09-18"
+    },
+    "2|Viruses and Worms": {
+      "hash": "bceb2be78dcf",
+      "domain": "2",
+      "objective": null,
+      "status": "pending",
+      "lastSeen": "2026-09-18"
+    },
+    "2|Spyware & Bloatware": {
+      "hash": "bd9e55cdbe51",
+      "domain": "2",
+      "objective": null,
+      "status": "pending",
+      "lastSeen": "2026-09-18"
+    },
+    "2|Keyloggers, Logic Bombs & Rootkits": {
+      "hash": "fd6e2f984988",
+      "domain": "2",
+      "objective": null,
+      "status": "pending",
+      "lastSeen": "2026-09-18"
+    },
+    "2|Physical Attacks": {
+      "hash": "f425f086e564",
+      "domain": "2",
+      "objective": null,
+      "status": "pending",
+      "lastSeen": "2026-09-18"
+    },
+    "2|Denial of Service (DoS)": {
+      "hash": "eddc8b9623b4",
+      "domain": "2",
+      "objective": null,
+      "status": "pending",
+      "lastSeen": "2026-09-18"
+    },
+    "2|DNS Attacks": {
+      "hash": "fcceddd2fcc7",
+      "domain": "2",
+      "objective": null,
+      "status": "pending",
+      "lastSeen": "2026-09-18"
+    },
+    "2|Wireless Attacks": {
+      "hash": "da10e6011ebe",
+      "domain": "2",
+      "objective": null,
+      "status": "pending",
+      "lastSeen": "2026-09-18"
+    },
+    "2|On-Path Attacks": {
+      "hash": "f5d14b4d20b2",
+      "domain": "2",
+      "objective": null,
+      "status": "pending",
+      "lastSeen": "2026-09-18"
+    },
+    "2|Replay Attacks": {
+      "hash": "8ddda4a788f8",
+      "domain": "2",
+      "objective": null,
+      "status": "pending",
+      "lastSeen": "2026-09-18"
+    },
+    "2|Cross-Site Request Forgery (CSRF)": {
+      "hash": "89962c66a027",
+      "domain": "2",
+      "objective": null,
+      "status": "pending",
+      "lastSeen": "2026-09-18"
+    },
+    "2|Cryptographic Attacks": {
+      "hash": "84c637e8c328",
+      "domain": "2",
+      "objective": null,
+      "status": "pending",
+      "lastSeen": "2026-09-18"
+    },
+    "2|Password Attacks": {
+      "hash": "eb2d2c92e2a3",
+      "domain": "2",
+      "objective": null,
+      "status": "pending",
+      "lastSeen": "2026-09-18"
+    },
+    "2|Indicators of Compromise (IoCs)": {
+      "hash": "679da142f8f6",
+      "domain": "2",
+      "objective": null,
+      "status": "pending",
+      "lastSeen": "2026-09-18"
+    },
+    "2|Segmentation & Access Control": {
+      "hash": "c394b9f0ac75",
+      "domain": "2",
+      "objective": null,
+      "status": "pending",
+      "lastSeen": "2026-09-18"
+    },
+    "2|Mitigation Techniques": {
+      "hash": "6672ce823f53",
+      "domain": "2",
+      "objective": null,
+      "status": "pending",
+      "lastSeen": "2026-09-18"
+    },
+    "2|System Hardening Techniques": {
+      "hash": "44e6dd1abd3a",
+      "domain": "2",
+      "objective": null,
+      "status": "pending",
+      "lastSeen": "2026-09-18"
+    },
+    "3|Cloud Infrastructure": {
+      "hash": "779de0f9f0e8",
+      "domain": "3",
+      "objective": null,
+      "status": "pending",
+      "lastSeen": "2026-09-18"
+    },
+    "3|Network Infrastructure Concepts": {
+      "hash": "5c9264c91af4",
+      "domain": "3",
+      "objective": null,
+      "status": "pending",
+      "lastSeen": "2026-09-18"
+    },
+    "3|Other Infrastructure Concepts": {
+      "hash": "d88b2581ff6b",
+      "domain": "3",
+      "objective": null,
+      "status": "pending",
+      "lastSeen": "2026-09-18"
+    },
+    "3|Infrastructure Considerations": {
+      "hash": "0fe8287845ed",
+      "domain": "3",
+      "objective": null,
+      "status": "pending",
+      "lastSeen": "2026-09-18"
+    },
+    "3|Secure Infrastructure": {
+      "hash": "f2a388a4da40",
+      "domain": "3",
+      "objective": null,
+      "status": "pending",
+      "lastSeen": "2026-09-18"
+    },
+    "3|Intrusion Prevention (IDS / IPS)": {
+      "hash": "4578437ce45e",
+      "domain": "3",
+      "objective": null,
+      "status": "pending",
+      "lastSeen": "2026-09-18"
+    },
+    "3|Network Appliances": {
+      "hash": "b4d148d92134",
+      "domain": "3",
+      "objective": null,
+      "status": "pending",
+      "lastSeen": "2026-09-18"
+    },
+    "3|Port Security, 802.1X & EAP": {
+      "hash": "ebd0e88772ec",
+      "domain": "3",
+      "objective": null,
+      "status": "pending",
+      "lastSeen": "2026-09-18"
+    },
+    "3|Firewall Types": {
+      "hash": "8d03310b270b",
+      "domain": "3",
+      "objective": null,
+      "status": "pending",
+      "lastSeen": "2026-09-18"
+    },
+    "3|Secure Communication (VPN, IPsec, SD-WAN, SASE)": {
+      "hash": "2f7653f7b432",
+      "domain": "3",
+      "objective": null,
+      "status": "pending",
+      "lastSeen": "2026-09-18"
+    },
+    "3|Data Types & Data Classification": {
+      "hash": "fd845448952e",
+      "domain": "3",
+      "objective": null,
+      "status": "pending",
+      "lastSeen": "2026-09-18"
+    },
+    "3|States of Data": {
+      "hash": "c1045e3f3ec4",
+      "domain": "3",
+      "objective": null,
+      "status": "pending",
+      "lastSeen": "2026-09-18"
+    },
+    "3|Protecting Data": {
+      "hash": "ff97de572650",
+      "domain": "3",
+      "objective": null,
+      "status": "pending",
+      "lastSeen": "2026-09-18"
+    },
+    "3|Resiliency": {
+      "hash": "458b66645ed5",
+      "domain": "3",
+      "objective": null,
+      "status": "pending",
+      "lastSeen": "2026-09-18"
+    },
+    "3|Capacity Planning": {
+      "hash": "c233915b0a50",
+      "domain": "3",
+      "objective": null,
+      "status": "pending",
+      "lastSeen": "2026-09-18"
+    },
+    "3|Recovery Testing": {
+      "hash": "fb225407a094",
+      "domain": "3",
+      "objective": null,
+      "status": "pending",
+      "lastSeen": "2026-09-18"
+    },
+    "3|Backups": {
+      "hash": "4b1ea9ec5957",
+      "domain": "3",
+      "objective": null,
+      "status": "pending",
+      "lastSeen": "2026-09-18"
+    },
+    "3|Power Resiliency": {
+      "hash": "edac99d8a52c",
+      "domain": "3",
+      "objective": null,
+      "status": "pending",
+      "lastSeen": "2026-09-18"
+    },
+    "4|Security Baselines": {
+      "hash": "d0ac9babbd72",
+      "domain": "4",
+      "objective": null,
+      "status": "pending",
+      "lastSeen": "2026-09-18"
+    },
+    "4|Hardening Targets": {
+      "hash": "e03074bc97d2",
+      "domain": "4",
+      "objective": null,
+      "status": "pending",
+      "lastSeen": "2026-09-18"
+    },
+    "4|Securing Wireless & Mobile": {
+      "hash": "6b3962a58506",
+      "domain": "4",
+      "objective": null,
+      "status": "pending",
+      "lastSeen": "2026-09-18"
+    },
+    "4|Wireless Security Settings": {
+      "hash": "76c438bfecf3",
+      "domain": "4",
+      "objective": null,
+      "status": "pending",
+      "lastSeen": "2026-09-18"
+    },
+    "4|Application Security": {
+      "hash": "bded163aac6d",
+      "domain": "4",
+      "objective": null,
+      "status": "pending",
+      "lastSeen": "2026-09-18"
+    },
+    "4|Asset Management": {
+      "hash": "a7afd04faec5",
+      "domain": "4",
+      "objective": null,
+      "status": "pending",
+      "lastSeen": "2026-09-18"
+    }
+  }
+}
