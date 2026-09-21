@@ -1,0 +1,99 @@
+name: Supabase Keepalive
+
+# Supabase pauses free-tier projects after ~7 days with NO API REQUESTS.
+#
+# The catch that caught us (2026-09-21): shipping does not count. Exemplar
+# batches, version bumps and deploys are static files served by Vercel — they
+# never speak to the database. Neither do the other scheduled workflows here,
+# which fetch pages over HTTP without executing their JavaScript. The only
+# thing generating real Supabase traffic today is a human loading the app in a
+# browser, and pre-launch (onboarding_enabled = false) that is close to nobody.
+#
+# So this makes two genuine requests a day. It doubles as a health check: if
+# the project is paused, unreachable or the publishable key is rotated without
+# the client being updated, this goes red and opens an issue — which is worth
+# knowing regardless of the pausing behaviour.
+#
+# NO SECRETS NEEDED. It uses the publishable (anon) key that already ships
+# inside lib/supabase.js and is readable by anyone who views source. Never put
+# the service-role key in a workflow.
+#
+# This is a workaround for an inactivity policy, and worth naming as such. The
+# real fix is traffic, which arrives at launch — retire this then if you like.
+
+on:
+  schedule:
+    - cron: '17 7 * * *'   # daily, 07:17 UTC — off the hour to dodge cron pile-ups
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Supabase (auth health + a public table read)
+        id: ping
+        run: |
+          set -uo pipefail
+          URL="https://appmuaqwuethndvalarl.supabase.co"
+          KEY="sb_publishable_ZjmrS-j7ci6oSlsqu5gRJg_GDm4f4u0"
+
+          health=$(curl -s -o /dev/null -w '%{http_code}' --max-time 20 \
+            -H "apikey: $KEY" "$URL/auth/v1/health" || echo "000")
+          rest=$(curl -s -o /dev/null -w '%{http_code}' --max-time 20 \
+            -H "apikey: $KEY" "$URL/rest/v1/app_config?select=key&limit=1" || echo "000")
+
+          echo "auth/v1/health              -> $health"
+          echo "rest/v1/app_config          -> $rest"
+          echo "health=$health" >> "$GITHUB_OUTPUT"
+          echo "rest=$rest"     >> "$GITHUB_OUTPUT"
+
+          {
+            echo "### Supabase keepalive"
+            echo ""
+            echo "| Endpoint | Status |"
+            echo "|---|---|"
+            echo "| \`auth/v1/health\` | $health |"
+            echo "| \`rest/v1/app_config\` | $rest |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          if [ "$health" != "200" ] || [ "$rest" != "200" ]; then
+            echo "::error::Supabase did not answer 200 on both endpoints (health=$health rest=$rest)"
+            exit 1
+          fi
+          echo "Project is awake."
+
+      - name: Open an issue if the project did not answer
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const h = '${{ steps.ping.outputs.health }}' || 'no response';
+            const r = '${{ steps.ping.outputs.rest }}' || 'no response';
+            const title = `Supabase keepalive failed — health ${h} / rest ${r}`;
+            const existing = await github.rest.issues.listForRepo({
+              owner: context.repo.owner, repo: context.repo.repo,
+              state: 'open', labels: 'supabase'
+            });
+            if (existing.data.some(i => i.title.startsWith('Supabase keepalive failed'))) return;
+            await github.rest.issues.create({
+              owner: context.repo.owner, repo: context.repo.repo,
+              title,
+              labels: ['bug', 'priority: high', 'supabase'],
+              body: [
+                `The daily keepalive could not reach the Supabase project.`,
+                ``,
+                `- \`auth/v1/health\` → **${h}**`,
+                `- \`rest/v1/app_config\` → **${r}**`,
+                ``,
+                `Likely causes, most common first:`,
+                `1. **The project is paused.** Restore it from the Supabase dashboard — no data is lost.`,
+                `2. The publishable key was rotated without \`lib/supabase.js\` being updated.`,
+                `3. A Supabase outage, in which case this clears on its own.`,
+                ``,
+                `Run: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+              ].join('\n')
+            });
