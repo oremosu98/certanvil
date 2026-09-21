@@ -29,7 +29,7 @@
 | index.html | 2287 | 148 KB |
 | dg-system.css | 5447 | 507 KB |
 | tests/uat.js + tests/uat/ (29 modules) | 28991 | — |
-UAT checks: 5008 · E2E `test(` count: 163 · APP_VERSION: 8.24.0 · stamped-at: worktree
+UAT checks: 5008 · E2E `test(` count: 163 · APP_VERSION: 8.25.0 · stamped-at: worktree
 <!-- FACTS:AUTO:END -->
 
 | File | Purpose | Size |
@@ -135,6 +135,7 @@ npx playwright test              # E2E (tests/e2e/app.spec.js)
 
 | Version | Features Added |
 |---|---|
+| v8.25.0 | Sec+ Secure Communication (VPN, IPsec, SD-WAN, SASE) — 13 exemplars |
 | v8.24.0 | Sec+ Wireless Security Settings (obj 4.1/4.6) — 12 exemplars |
 | v8.23.0 | Sec+ Asset Management (obj 4.2) — 12 exemplars from zero coverage |
 | v8.22.0 | Sec+ SBOM delta pass (obj 4.3) — 4 exemplars: transitive dependency, SBOM vs vulnerability scanner, SBOM staleness, scope-before-remediate |
