@@ -476,8 +476,9 @@
       "hash": "fd845448952e",
       "domain": "3",
       "objective": null,
-      "status": "pending",
-      "lastSeen": "2026-09-30"
+      "status": "shipped",
+      "lastSeen": "2026-09-30",
+      "shippedVersion": "8.29.0"
     },
     "3|States of Data": {
       "hash": "c1045e3f3ec4",
@@ -750,11 +751,17 @@
       "domain": "5",
       "objective": null,
       "status": "shipped",
-      "lastSeen": "2026-09-30",
-      "shippedVersion": "8.28.0"
+      "lastSeen": "2026-09-30"
     },
     "5|Security Considerations": {
-      "hash": "3979d3d1118f",
+      "hash": "bea524b24251",
+      "domain": "5",
+      "objective": null,
+      "status": "pending",
+      "lastSeen": "2026-09-30"
+    },
+    "5|Data Roles and Responsibilities": {
+      "hash": "03cf6491cd44",
       "domain": "5",
       "objective": null,
       "status": "pending",
