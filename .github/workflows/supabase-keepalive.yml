@@ -9,7 +9,16 @@ name: Supabase Keepalive
 # thing generating real Supabase traffic today is a human loading the app in a
 # browser, and pre-launch (onboarding_enabled = false) that is close to nobody.
 #
-# So this makes two genuine requests a day. It doubles as a health check: if
+# ROOT CAUSE OF THE FIRST VERSION FAILING (2026-09-30): it ran green every day
+# and Supabase still sent a second pause warning. Supabase judges activity on
+# "user queries" to the DATABASE, and its docs say "a few user requests to the
+# database each day" keeps a project awake. The first version made ONE query a
+# day — /auth/v1/health is the auth service's own heartbeat and never touches
+# Postgres, so it counted for nothing. One tiny read a day sat below the bar.
+#
+# So this now runs four times a day with several real Postgres reads per run —
+# a dozen database queries daily, comfortably "a few". It doubles as a health
+# check: if
 # the project is paused, unreachable or the publishable key is rotated without
 # the client being updated, this goes red and opens an issue — which is worth
 # knowing regardless of the pausing behaviour.
@@ -23,7 +32,7 @@ name: Supabase Keepalive
 
 on:
   schedule:
-    - cron: '17 7 * * *'   # daily, 07:17 UTC — off the hour to dodge cron pile-ups
+    - cron: '17 */6 * * *'  # every 6 hours, off the hour — GitHub delays scheduled runs, so spread them
   workflow_dispatch:
 
 permissions:
@@ -43,11 +52,19 @@ jobs:
 
           health=$(curl -s -o /dev/null -w '%{http_code}' --max-time 20 \
             -H "apikey: $KEY" "$URL/auth/v1/health" || echo "000")
-          rest=$(curl -s -o /dev/null -w '%{http_code}' --max-time 20 \
-            -H "apikey: $KEY" "$URL/rest/v1/app_config?select=key&limit=1" || echo "000")
+          # These are what Supabase counts: real queries that reach Postgres.
+          # Three distinct reads per run × four runs a day. auth/v1/health above
+          # stays only as a liveness signal — it does NOT count as activity.
+          rest="200"
+          for q in "select=key&limit=1" "select=key,enabled" "select=enabled&key=eq.onboarding_enabled"; do
+            code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 20 \
+              -H "apikey: $KEY" "$URL/rest/v1/app_config?$q" || echo "000")
+            echo "  db read ($q) -> $code"
+            [ "$code" = "200" ] || rest="$code"
+          done
 
           echo "auth/v1/health              -> $health"
-          echo "rest/v1/app_config          -> $rest"
+          echo "rest/v1/app_config (3 reads) -> $rest"
           echo "health=$health" >> "$GITHUB_OUTPUT"
           echo "rest=$rest"     >> "$GITHUB_OUTPUT"
 
@@ -57,7 +74,7 @@ jobs:
             echo "| Endpoint | Status |"
             echo "|---|---|"
             echo "| \`auth/v1/health\` | $health |"
-            echo "| \`rest/v1/app_config\` | $rest |"
+            echo "| \`rest/v1/app_config\` ×3 (counted by Supabase) | $rest |"
           } >> "$GITHUB_STEP_SUMMARY"
 
           if [ "$health" != "200" ] || [ "$rest" != "200" ]; then
