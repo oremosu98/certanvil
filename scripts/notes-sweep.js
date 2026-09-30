@@ -254,8 +254,12 @@ if (COMMIT) {
 }
 
 if (AS_JSON) {
-  console.log(JSON.stringify({ total, domains: state, queue: report }, null, 2));
-  process.exit(0);
+  // Never process.exit() straight after a large write: when stdout is a pipe,
+  // exiting before it drains truncates the output at the 64 KB pipe buffer and
+  // hands the consumer invalid JSON. This bit once the notes outgrew 64 KB of
+  // report (2026-09-30). Top-level return is legal in a CommonJS module.
+  process.stdout.write(JSON.stringify({ total, domains: state, queue: report }, null, 2) + '\n');
+  return;
 }
 
 const C = { g: '\x1b[32m', y: '\x1b[33m', r: '\x1b[31m', d: '\x1b[2m', b: '\x1b[1m', x: '\x1b[0m' };
@@ -280,7 +284,7 @@ const redundant = report.filter(r => r.route === 'redundant').length;
 const overflow = report.filter(r => r.route === 'overflow' && r.score > 0);
 
 console.log(`\n${C.b}New or changed since last sweep${C.x}: ${fresh.length}   ` +
-  `${C.d}(already-covered: ${redundant} · settled: ${report.filter(r => r.score === 0).length})${C.x}`);
+  `${C.d}(already-covered: ${redundant} · settled: ${report.filter(r => r.score === 0 && !r.unmapped).length})${C.x}`);
 
 if (!fresh.length) {
   console.log(`\n${C.g}Nothing new worth authoring.${C.x}`);

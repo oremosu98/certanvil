@@ -1,6 +1,12 @@
 {
   "_why": "Study-notes headings do not reliably say which exam domain a topic belongs to — the Part 2 page carries a single '## Domain 2' heading at the top and 60+ sections below it that are actually Domain 3 and 4 content. Inheriting that heading files architecture material under threats, which corrupts weak-topic targeting and is the dishonest tagging docs/decisions/2026-07-31 rejects. So the mapping is explicit and human-owned. Anything absent here is reported UNMAPPED and never guessed.",
-  "_domains": { "1": "General Security Concepts", "2": "Threats, Vulnerabilities & Mitigations", "3": "Security Architecture", "4": "Security Operations", "5": "Program Management & Oversight" },
+  "_domains": {
+    "1": "General Security Concepts",
+    "2": "Threats, Vulnerabilities & Mitigations",
+    "3": "Security Architecture",
+    "4": "Security Operations",
+    "5": "Program Management & Oversight"
+  },
   "_note": "Domain only. The precise objective (N.M) is an authoring decision made with the notes and the pack in view, not something to freeze here.",
   "map": {
     "Security Controls — Categories & Types": 1,
@@ -18,7 +24,6 @@
     "Zero Trust": 1,
     "Disruption & Deception": 1,
     "DNS Sinkhole — Deep Dive": 1,
-
     "Threat Actors": 2,
     "Threat Vectors & Attack Surface": 2,
     "Phishing — All Variants": 2,
@@ -59,7 +64,6 @@
     "Segmentation & Access Control": 2,
     "Mitigation Techniques": 2,
     "System Hardening Techniques": 2,
-
     "Cloud Infrastructure": 3,
     "Network Infrastructure Concepts": 3,
     "Other Infrastructure Concepts": 3,
@@ -78,7 +82,6 @@
     "Recovery Testing": 3,
     "Backups": 3,
     "Power Resiliency": 3,
-
     "Security Baselines": 4,
     "Hardening Targets": 4,
     "Securing Wireless & Mobile": 4,
@@ -87,8 +90,32 @@
     "Asset Management": 4,
     "Vulnerability Scanning": 4,
     "Threat Intelligence": 4,
-
     "Change Management": 5,
-    "Technical Change Management": 5
+    "Technical Change Management": 5,
+    "Penetration Testing": 5,
+    "Analysing Vulnerabilities": 4,
+    "Vulnerability Remediation": 4,
+    "Security Monitoring": 4,
+    "Security Tools (SCAP, Agents, DLP, SNMP, NetFlow)": 4,
+    "Firewall Rules & Zones": 4,
+    "Web Filtering": 4,
+    "Secure Protocols": 4,
+    "Email Security (SPF, DKIM, DMARC)": 4,
+    "Monitoring Data (FIM & DLP)": 4,
+    "Endpoint Security (NAC, EDR, XDR, UEBA)": 4,
+    "Identity and Access Management (IAM)": 4,
+    "Access Control Models": 4,
+    "Multifactor Authentication (MFA)": 4,
+    "Password Security & Privileged Access": 4,
+    "Scripting and Automation": 4,
+    "Incident Response": 4,
+    "Incident Planning": 4,
+    "Digital Forensics": 4,
+    "Log Data": 4,
+    "Security Policies & Governance": 5,
+    "Security Standards (ISO & NIST)": 5,
+    "Security Standards: Password, Access, Physical & Encryption": 5,
+    "Security Procedures": 5,
+    "Security Considerations": 5
   }
 }
