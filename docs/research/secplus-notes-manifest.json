@@ -680,8 +680,7 @@
       "domain": "4",
       "objective": null,
       "status": "shipped",
-      "lastSeen": "2026-09-30",
-      "shippedVersion": "8.30.0"
+      "lastSeen": "2026-09-30"
     },
     "4|Password Security & Privileged Access": {
       "hash": "6a515a2622ca",
@@ -743,8 +742,9 @@
       "hash": "4ac8968ec960",
       "domain": "5",
       "objective": null,
-      "status": "pending",
-      "lastSeen": "2026-09-30"
+      "status": "shipped",
+      "lastSeen": "2026-09-30",
+      "shippedVersion": "8.31.0"
     },
     "5|Security Procedures": {
       "hash": "07120401d5ef",
@@ -761,7 +761,14 @@
       "lastSeen": "2026-09-30"
     },
     "5|Data Roles and Responsibilities": {
-      "hash": "03cf6491cd44",
+      "hash": "16813c5e83cb",
+      "domain": "5",
+      "objective": null,
+      "status": "pending",
+      "lastSeen": "2026-09-30"
+    },
+    "5|Risk Assessment": {
+      "hash": "2a00bc263b9a",
       "domain": "5",
       "objective": null,
       "status": "pending",
