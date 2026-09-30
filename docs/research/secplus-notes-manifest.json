@@ -686,8 +686,9 @@
       "hash": "6a515a2622ca",
       "domain": "4",
       "objective": null,
-      "status": "pending",
-      "lastSeen": "2026-09-30"
+      "status": "shipped",
+      "lastSeen": "2026-09-30",
+      "shippedVersion": "8.32.0"
     },
     "4|Scripting and Automation": {
       "hash": "a55e3cbfce28",
@@ -743,8 +744,7 @@
       "domain": "5",
       "objective": null,
       "status": "shipped",
-      "lastSeen": "2026-09-30",
-      "shippedVersion": "8.31.0"
+      "lastSeen": "2026-09-30"
     },
     "5|Security Procedures": {
       "hash": "07120401d5ef",
