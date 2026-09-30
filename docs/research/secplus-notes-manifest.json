@@ -665,8 +665,9 @@
       "hash": "c5d27311197a",
       "domain": "4",
       "objective": null,
-      "status": "pending",
-      "lastSeen": "2026-09-30"
+      "status": "shipped",
+      "lastSeen": "2026-09-30",
+      "shippedVersion": "8.27.0"
     },
     "4|Access Control Models": {
       "hash": "8079aedf5c76",
@@ -729,8 +730,7 @@
       "domain": "5",
       "objective": null,
       "status": "shipped",
-      "lastSeen": "2026-09-30",
-      "shippedVersion": "8.26.0"
+      "lastSeen": "2026-09-30"
     },
     "5|Security Standards (ISO & NIST)": {
       "hash": "e3210a173e6c",
