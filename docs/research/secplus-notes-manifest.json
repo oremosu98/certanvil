@@ -666,8 +666,7 @@
       "domain": "4",
       "objective": null,
       "status": "shipped",
-      "lastSeen": "2026-09-30",
-      "shippedVersion": "8.27.0"
+      "lastSeen": "2026-09-30"
     },
     "4|Access Control Models": {
       "hash": "8079aedf5c76",
@@ -750,8 +749,9 @@
       "hash": "07120401d5ef",
       "domain": "5",
       "objective": null,
-      "status": "pending",
-      "lastSeen": "2026-09-30"
+      "status": "shipped",
+      "lastSeen": "2026-09-30",
+      "shippedVersion": "8.28.0"
     },
     "5|Security Considerations": {
       "hash": "3979d3d1118f",
