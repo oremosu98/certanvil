@@ -375,8 +375,9 @@
       "hash": "84c637e8c328",
       "domain": "2",
       "objective": null,
-      "status": "pending",
-      "lastSeen": "2026-10-01"
+      "status": "shipped",
+      "lastSeen": "2026-10-01",
+      "shippedVersion": "8.43.0"
     },
     "2|Password Attacks": {
       "hash": "eb2d2c92e2a3",
@@ -563,8 +564,8 @@
       "domain": "4",
       "objective": null,
       "status": "shipped",
-      "lastSeen": "2026-10-01",
-      "shippedVersion": "8.42.0"
+      "shippedVersion": "8.42.0",
+      "lastSeen": "2026-10-01"
     },
     "4|Wireless Security Settings": {
       "hash": "76c438bfecf3",
@@ -811,7 +812,21 @@
       "lastSeen": "2026-10-01"
     },
     "5|Risk Management Strategies": {
-      "hash": "b5d12e140967",
+      "hash": "810ccfe088c0",
+      "domain": "5",
+      "objective": null,
+      "status": "pending",
+      "lastSeen": "2026-10-01"
+    },
+    "5|Business Impact Analysis (BIA)": {
+      "hash": "387f7e00b42b",
+      "domain": "5",
+      "objective": null,
+      "status": "pending",
+      "lastSeen": "2026-10-01"
+    },
+    "5|Third-Party Risk Assessment": {
+      "hash": "c4356809765c",
       "domain": "5",
       "objective": null,
       "status": "pending",
