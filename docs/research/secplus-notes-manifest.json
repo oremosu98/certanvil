@@ -470,8 +470,9 @@
       "hash": "ebd0e88772ec",
       "domain": "3",
       "objective": null,
-      "status": "pending",
-      "lastSeen": "2026-10-01"
+      "status": "shipped",
+      "lastSeen": "2026-10-01",
+      "shippedVersion": "8.50.0"
     },
     "3|Firewall Types": {
       "hash": "8d03310b270b",
@@ -827,8 +828,8 @@
       "domain": "5",
       "objective": null,
       "status": "shipped",
-      "lastSeen": "2026-10-01",
-      "shippedVersion": "8.49.0"
+      "shippedVersion": "8.49.0",
+      "lastSeen": "2026-10-01"
     },
     "5|Third-Party Risk Assessment": {
       "hash": "c4356809765c",
