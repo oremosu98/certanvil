@@ -682,8 +682,8 @@
       "domain": "4",
       "objective": null,
       "status": "shipped",
-      "lastSeen": "2026-10-01",
-      "shippedVersion": "8.48.0"
+      "shippedVersion": "8.48.0",
+      "lastSeen": "2026-10-01"
     },
     "4|Identity and Access Management (IAM)": {
       "hash": "c5d27311197a",
@@ -826,8 +826,9 @@
       "hash": "387f7e00b42b",
       "domain": "5",
       "objective": null,
-      "status": "pending",
-      "lastSeen": "2026-10-01"
+      "status": "shipped",
+      "lastSeen": "2026-10-01",
+      "shippedVersion": "8.49.0"
     },
     "5|Third-Party Risk Assessment": {
       "hash": "c4356809765c",
