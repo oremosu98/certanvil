@@ -376,15 +376,16 @@
       "domain": "2",
       "objective": null,
       "status": "shipped",
-      "lastSeen": "2026-10-01",
-      "shippedVersion": "8.43.0"
+      "shippedVersion": "8.43.0",
+      "lastSeen": "2026-10-01"
     },
     "2|Password Attacks": {
       "hash": "eb2d2c92e2a3",
       "domain": "2",
       "objective": null,
-      "status": "pending",
-      "lastSeen": "2026-10-01"
+      "status": "shipped",
+      "lastSeen": "2026-10-01",
+      "shippedVersion": "8.44.0"
     },
     "2|Indicators of Compromise (IoCs)": {
       "hash": "679da142f8f6",
