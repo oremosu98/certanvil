@@ -441,8 +441,9 @@
       "hash": "0fe8287845ed",
       "domain": "3",
       "objective": null,
-      "status": "pending",
-      "lastSeen": "2026-10-01"
+      "status": "shipped",
+      "lastSeen": "2026-10-01",
+      "shippedVersion": "8.47.0"
     },
     "3|Secure Infrastructure": {
       "hash": "f2a388a4da40",
@@ -581,8 +582,8 @@
       "domain": "4",
       "objective": null,
       "status": "shipped",
-      "lastSeen": "2026-10-01",
-      "shippedVersion": "8.46.0"
+      "shippedVersion": "8.46.0",
+      "lastSeen": "2026-10-01"
     },
     "4|Asset Management": {
       "hash": "a9b9fd11765d",
