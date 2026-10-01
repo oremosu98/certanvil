@@ -29,7 +29,7 @@
 | index.html | 2287 | 148 KB |
 | dg-system.css | 5447 | 507 KB |
 | tests/uat.js + tests/uat/ (29 modules) | 28991 | — |
-UAT checks: 5008 · E2E `test(` count: 163 · APP_VERSION: 8.46.0 · stamped-at: worktree
+UAT checks: 5008 · E2E `test(` count: 163 · APP_VERSION: 8.47.0 · stamped-at: worktree
 <!-- FACTS:AUTO:END -->
 
 | File | Purpose | Size |
@@ -135,9 +135,9 @@ npx playwright test              # E2E (tests/e2e/app.spec.js)
 
 | Version | Features Added |
 |---|---|
+| v8.47.0 | Sec+ Infrastructure Considerations (obj 3.1) — 12 exemplars |
 | v8.46.0 | Sec+ Application Security (obj 4.1) — 12 exemplars |
 | v8.45.0 | Sec+ Third-Party Risk Assessment (obj 5.3) — 12 exemplars |
-| v8.44.0 | Sec+ Password Attacks (obj 2.4) — 12 exemplars |
 
 _Older releases (v7.60.0 and back) live in [CHANGELOG.md](./CHANGELOG.md)._
 
