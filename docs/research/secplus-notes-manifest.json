@@ -417,8 +417,9 @@
       "hash": "779de0f9f0e8",
       "domain": "3",
       "objective": null,
-      "status": "pending",
-      "lastSeen": "2026-10-01"
+      "status": "shipped",
+      "lastSeen": "2026-10-01",
+      "shippedVersion": "8.41.0"
     },
     "3|Network Infrastructure Concepts": {
       "hash": "5c9264c91af4",
@@ -782,8 +783,8 @@
       "domain": "5",
       "objective": null,
       "status": "shipped",
-      "lastSeen": "2026-10-01",
-      "shippedVersion": "8.40.0"
+      "shippedVersion": "8.40.0",
+      "lastSeen": "2026-10-01"
     },
     "5|Data Roles and Responsibilities": {
       "hash": "16813c5e83cb",
