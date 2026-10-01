@@ -580,8 +580,9 @@
       "hash": "bded163aac6d",
       "domain": "4",
       "objective": null,
-      "status": "pending",
-      "lastSeen": "2026-10-01"
+      "status": "shipped",
+      "lastSeen": "2026-10-01",
+      "shippedVersion": "8.46.0"
     },
     "4|Asset Management": {
       "hash": "a9b9fd11765d",
@@ -831,8 +832,8 @@
       "domain": "5",
       "objective": null,
       "status": "shipped",
-      "lastSeen": "2026-10-01",
-      "shippedVersion": "8.45.0"
+      "shippedVersion": "8.45.0",
+      "lastSeen": "2026-10-01"
     }
   }
 }
