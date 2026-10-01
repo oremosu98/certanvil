@@ -74,7 +74,7 @@ No domain tables, no study advice, no explanation of routing decisions. If somet
 
 ### 5. On "go"
 
-Ship per `exemplar-lane` step 6 — bump, CHANGELOG row by hand, commit with the reasoning in the body (there is no spec, so the commit message *is* the record), push, wait for both CI workflows green, then verify live in prod. Remember prod is minified: `"objective":"4.2"` becomes `objective:"4.2"`.
+Ship per `exemplar-lane` step 6 — bump, CHANGELOG row by hand, then **`node scripts/trim-version-history.js`** (every bump adds a row to CLAUDE.md, and past 30KB the pre-commit UAT refuses the commit — this trims back to 3 without losing any row CHANGELOG lacks), commit with the reasoning in the body (there is no spec, so the commit message *is* the record), push, wait for both CI workflows green, then verify live in prod. Remember prod is minified: `"objective":"4.2"` becomes `objective:"4.2"`.
 
 Then close the loop:
 
