@@ -6,6 +6,7 @@ Initial archive during the v4.42.3 reorg (2026-04-16). Re-trimmed in the v4.52.0
 
 | Version | Features Added |
 |---|---|
+| v8.43.0 | Sec+ **Cryptographic Attacks** (obj 2.4): 12 exemplars. Birthday attacks, SSL stripping and HSTS had **never been mentioned**; downgrade attacks, MD5 and SHA-1 had never been the correct answer. Now: the birthday attack, collision resistance as half the bit length, why collisions break signatures and downloads, SHA-256 over MD5/SHA-1, MD5 still computing while its collision resistance is broken, the downgrade attack and its prevention, SSL stripping, why the server never sees anything wrong, HSTS as the fix and that HSTS encrypts nothing, and key length not rescuing a flawed algorithm. **D2 −1.3pp → +0.2pp** |
 | v8.42.0 | Sec+ **Securing Wireless & Mobile** (obj 4.1): 12 exemplars. Chosen over a tied Endpoint Security section because 11 of its 13 core concepts had **never been the correct answer** — site surveys, heat maps, MDM, MAM, containerisation, selective wipe, BYOD, COPE, CYOD, jailbreaking and sideloading. Now: a site survey being more than signal strength, the heat map, MDM vs MAM, selective wipe of a work container, BYOD and its weakness, COPE, CYOD, geofencing, bluesnarfing vs bluejacking, cellular not being automatically secure, and Bluetooth's short range not making it safe. WPA3, WEP, Personal vs Enterprise, rogue AP, evil twin, deauth, jamming and public-Wi-Fi/HTTPS excluded as already keyed. **D4 −1.1pp → +0.3pp** |
 | v8.41.0 | Sec+ **Cloud Infrastructure** (obj 3.1): 12 exemplars. Shared responsibility, responsibility matrices, IaaS/PaaS, Infrastructure as Code, microservices and API gateways had **never been the correct answer**. Now: the unpatched IaaS guest OS, a SaaS sharing setting as customer configuration, the row that never moves (data, identity, configuration), PaaS recognition, the responsibility matrix closing the "we assumed you patched it" gap, hybrid inconsistency, IaC's audit trail and its at-scale misconfiguration risk, a serverless function's excessive IAM permissions, serverless still having servers, the microservices trade-off, and the API gateway. **D3 −2.7pp → −1.1pp** |
 | v8.40.0 | Sec+ **Security Considerations** (obj 5.1/5.4): 12 exemplars. Due care had **never been mentioned**; jurisdiction, breach notification, OT patching and compliance-vs-security had never been the correct answer. Now: SOX by its control objectives, all three CIA pillars in medical settings, breach notification as a legal event, jurisdiction under cross-border replication, cloud not removing obligations, OT testing patches because availability and safety lead, integrity as the financial-sector priority, compliance as a minimum, due care vs due diligence, data minimisation, contractual vs regulatory vs governance obligations, and multiple geographic levels at once. Split 9 × 5.1 and 3 × 5.4 so compliance concepts are tagged where the objectives place them. **D5 −1.0pp → +0.2pp** |
@@ -35,6 +36,25 @@ Initial archive during the v4.42.3 reorg (2026-04-16). Re-trimmed in the v4.52.0
 | v8.16.0 | Sec+ Threat Vectors (obj 2.2): 10 vector exemplars (image-based, open ports, client-vs-agentless, MSP, wired/Bluetooth, vector-vs-surface) + keyed impersonation + ethical motivation + 4 rewritten + 2 retention concepts + review-debt fixes. AV topic 4→14 |
 | v8.15.0 | Sec+ Phishing (obj 2.2): 11 new exemplars (discriminators, MFA fatigue, typosquatting, misinformation), 7 rewritten to house format, 2 retention concepts, 4 queued 2.1 wording fixes. D2 73→84 |
 | v8.14.0 | Sec+ Threat Actors (obj 2.1): 14 new exemplars covering unskilled attacker + Shadow IT + actor-pair discrimination, 4 existing rewritten to house format, 2 retention concepts. D2 59→73, guard D1 +18.8pp→+17.5pp |
+| v8.13.0 | Exemplar picker samples within each tier — ~280 stranded exemplars now reachable (was first-3-by-file-order) |
+| v8.12.0 | Sec+ Certificates (obj 1.4) — 4 retention concepts: CSR, SAN vs wildcard, CRL/OCSP/stapling, public vs private CA |
+| v8.11.0 | Sec+ Blockchain & Open Public Ledger (obj 1.4) — 4 curated exemplars + retention concept |
+| v8.10.0 | Settings Console reskin — mono header bars, LED health readout, Fraunces section headings (desktop + mobile) |
+| v8.9.4 | Mockup parity for the VPN dualpanel: middle-dot panel labels, short mirror heading, one-line toggle |
+| v8.9.3 | UAT gate restored to strict (was tolerating 2700 failures) + 3 stale AI-wrapper assertions fixed |
+| v8.9.2 | Fix: Sim Lab round pill wrapped mid-phrase when the scenario topic was long |
+| v8.9.1 | Fix: Sim Lab seed picker reached only the first 60 (taster) / 10 (session) seeds, hiding the whole tail of every bank |
+| v8.9.0 | Sim Lab Wave 5: VPN Tunnel Negotiation PBQ (vpntunnel) — dualpanel configure, tunnel scoring, 12 gated Sec+ seeds |
+| v8.8.0 | Sec+ Hashing & Digital Signatures — 12 curated exemplars across obj 1.4/2.4/4.1/4.5/4.6/4.9 |
+| v8.7.2 | Sidebar streak empty state is a button, not an inert div (#497) |
+| v8.7.1 | Fix: Settings Pass Plan rendered empty when diagnostic module not yet loaded |
+| v8.7.0 | Sec+ Obfuscation topic (1.4) + 11 curated exemplars |
+| v8.6.1 | Motion audit completion: dg-critical.css brought in lockstep with dg-system.css |
+| v8.6.0 | Motion audit fixes: hover gating across 4 pages, Progress blank-page fix, Analytics drift pause, brand curve alignment, 2 accents |
+| v8.5.0 | Faster question handover (200ms->130ms) + loading orb/shimmer lifted from the mockup |
+| v8.4.0 | Wave 4 parts 2-4: Hot-Area pick beam + hint swap, Topology armed beam, CLI Sim used-command dim |
+| v8.3.0 | Wave 4 part 1: Order PBQ motion — staged placement, pending beam, wrong-order shake |
+| v8.2.1 | Fix: outgoing question card accepted clicks during the 200ms navigation exit |
 | v8.2.0 | Extract 5 stateless PBQ render helpers from app.js to features/pbq.js (#138-aligned; makes room for wave-4 motion) |
 | v8.1.0 | Deep Dive: token-mapped panel verified (#493 already fixed), emoji dropped (#494), grow-in + orb/shimmer pending state + staggered sections + cached chip (#495) |
 | v8.0.0 | Motion lift wave 2: quiz-engine adopts the t-* primitives (reveal, verdict, accordion, streak, nav, topbar swap, results bars) |

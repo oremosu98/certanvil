@@ -29,7 +29,7 @@
 | index.html | 2287 | 148 KB |
 | dg-system.css | 5447 | 507 KB |
 | tests/uat.js + tests/uat/ (29 modules) | 28991 | — |
-UAT checks: 5008 · E2E `test(` count: 163 · APP_VERSION: 8.42.0 · stamped-at: worktree
+UAT checks: 5008 · E2E `test(` count: 163 · APP_VERSION: 8.43.0 · stamped-at: worktree
 <!-- FACTS:AUTO:END -->
 
 | File | Purpose | Size |
@@ -135,54 +135,9 @@ npx playwright test              # E2E (tests/e2e/app.spec.js)
 
 | Version | Features Added |
 |---|---|
+| v8.43.0 | Sec+ Cryptographic Attacks (obj 2.4) — 12 exemplars |
 | v8.42.0 | Sec+ Securing Wireless & Mobile (obj 4.1) — 12 exemplars |
 | v8.41.0 | Sec+ Cloud Infrastructure (obj 3.1) — 12 exemplars |
-| v8.40.0 | Sec+ Security Considerations (obj 5.1/5.4) — 12 exemplars |
-| v8.39.0 | Sec+ Digital Forensics (obj 4.8) — 12 exemplars |
-| v8.38.0 | Sec+ Wireless Attacks (obj 2.4) — 12 exemplars |
-| v8.37.0 | Sec+ Resiliency (obj 3.4) — 12 exemplars |
-| v8.36.0 | Sec+ Risk Analysis (obj 5.2) — 12 exemplars |
-| v8.35.0 | Sec+ Log Data (obj 4.9) — 12 exemplars |
-| v8.34.0 | Sec+ Firewall Types (obj 3.2) — 12 exemplars |
-| v8.33.0 | Sec+ Risk Assessment (obj 5.2) — 12 exemplars |
-| v8.32.0 | Sec+ Password Security & Privileged Access (obj 4.6) — 12 exemplars |
-| v8.31.0 | Sec+ Security Standards — password, access, physical, encryption (obj 5.1) — 12 exemplars |
-| v8.30.0 | Sec+ Multifactor Authentication (obj 4.6) — 12 exemplars |
-| v8.29.0 | Sec+ Data Types & Data Classification (obj 3.3) — 12 exemplars |
-| v8.28.0 | Sec+ Security Procedures & governance structures (obj 5.1) — 12 exemplars |
-| v8.27.0 | Sec+ Identity & Access Management (obj 4.6) — 12 exemplars |
-| v8.26.0 | Sec+ Security Policies & Governance (obj 5.1/5.2) — 12 exemplars |
-| v8.25.0 | Sec+ Secure Communication (VPN, IPsec, SD-WAN, SASE) — 13 exemplars |
-| v8.24.0 | Sec+ Wireless Security Settings (obj 4.1/4.6) — 12 exemplars |
-| v8.23.0 | Sec+ Asset Management (obj 4.2) — 12 exemplars from zero coverage |
-| v8.22.0 | Sec+ SBOM delta pass (obj 4.3) — 4 exemplars: transitive dependency, SBOM vs vulnerability scanner, SBOM staleness, scope-before-remediate |
-| v8.21.0 | Sec+ Malicious Updates, code signing & SBOM (obj 4.1/5.3/4.3/2.2/3.4) — 8 exemplars; SBOM, code signing and allow-listing keyed for the first time |
-| v8.20.0 | Sec+ Race Conditions & TOCTOU (obj 2.3) — 6 exemplars; TOCTOU vs race condition, vs buffer overflow, the clock misconception, locks/mutex/atomic mitigations |
-| v8.19.0 | Sec+ Memory Injection & Memory Forensics (obj 2.3/4.9/4.5) — 8 exemplars; first coverage of memory injection, DLL injection, fileless and memory forensics |
-| v8.18.0 | Sec+ Watering Hole & Endpoint Controls (obj 2.2/2.5/4.5) — 7 exemplars; completes objective 2.2; first ship through the exemplar lane |
-| v8.17.0 | Sec+ OSINT & Impersonation mixed-domain lesson (obj 2.2/5.5/4.6) — 14 exemplars + 2 retention concepts + v8.16.0 debt items |
-| v8.16.0 | Sec+ Threat Vectors lesson (obj 2.2) — 12 new exemplars (10 vectors + 2 review-debt) + 4 rewritten + 2 retention concepts + queued debt fixes |
-| v8.15.0 | Sec+ Phishing lesson (obj 2.2) — 11 new exemplars + 7 rewritten + 2 retention concepts + four 2.1 wording fixes |
-| v8.14.0 | Sec+ Threat Actors lesson (obj 2.1) — 14 new exemplars + 4 rewritten + 2 retention concepts |
-| v8.13.0 | Exemplar picker samples within each tier — ~280 stranded exemplars now reachable (was first-3-by-file-order) |
-| v8.12.0 | Sec+ Certificates (obj 1.4) — 4 retention concepts: CSR, SAN vs wildcard, CRL/OCSP/stapling, public vs private CA |
-| v8.11.0 | Sec+ Blockchain & Open Public Ledger (obj 1.4) — 4 curated exemplars + retention concept |
-| v8.10.0 | Settings Console reskin — mono header bars, LED health readout, Fraunces section headings (desktop + mobile) |
-| v8.9.4 | Mockup parity for the VPN dualpanel: middle-dot panel labels, short mirror heading, one-line toggle |
-| v8.9.3 | UAT gate restored to strict (was tolerating 2700 failures) + 3 stale AI-wrapper assertions fixed |
-| v8.9.2 | Fix: Sim Lab round pill wrapped mid-phrase when the scenario topic was long |
-| v8.9.1 | Fix: Sim Lab seed picker reached only the first 60 (taster) / 10 (session) seeds, hiding the whole tail of every bank |
-| v8.9.0 | Sim Lab Wave 5: VPN Tunnel Negotiation PBQ (vpntunnel) — dualpanel configure, tunnel scoring, 12 gated Sec+ seeds |
-| v8.8.0 | Sec+ Hashing & Digital Signatures — 12 curated exemplars across obj 1.4/2.4/4.1/4.5/4.6/4.9 |
-| v8.7.2 | Sidebar streak empty state is a button, not an inert div (#497) |
-| v8.7.1 | Fix: Settings Pass Plan rendered empty when diagnostic module not yet loaded |
-| v8.7.0 | Sec+ Obfuscation topic (1.4) + 11 curated exemplars |
-| v8.6.1 | Motion audit completion: dg-critical.css brought in lockstep with dg-system.css |
-| v8.6.0 | Motion audit fixes: hover gating across 4 pages, Progress blank-page fix, Analytics drift pause, brand curve alignment, 2 accents |
-| v8.5.0 | Faster question handover (200ms->130ms) + loading orb/shimmer lifted from the mockup |
-| v8.4.0 | Wave 4 parts 2-4: Hot-Area pick beam + hint swap, Topology armed beam, CLI Sim used-command dim |
-| v8.3.0 | Wave 4 part 1: Order PBQ motion — staged placement, pending beam, wrong-order shake |
-| v8.2.1 | Fix: outgoing question card accepted clicks during the 200ms navigation exit |
 
 _Older releases (v7.60.0 and back) live in [CHANGELOG.md](./CHANGELOG.md)._
 
