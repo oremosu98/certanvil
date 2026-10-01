@@ -337,8 +337,7 @@
       "domain": "2",
       "objective": null,
       "status": "shipped",
-      "lastSeen": "2026-10-01",
-      "shippedVersion": "8.38.0"
+      "lastSeen": "2026-10-01"
     },
     "2|On-Path Attacks": {
       "hash": "f5d14b4d20b2",
@@ -715,8 +714,9 @@
       "hash": "7d1b02b0be53",
       "domain": "4",
       "objective": null,
-      "status": "pending",
-      "lastSeen": "2026-10-01"
+      "status": "shipped",
+      "lastSeen": "2026-10-01",
+      "shippedVersion": "8.39.0"
     },
     "4|Log Data": {
       "hash": "1dd7b56a2758",
