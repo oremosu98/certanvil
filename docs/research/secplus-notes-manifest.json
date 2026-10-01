@@ -127,48 +127,48 @@
       "domain": "2",
       "objective": null,
       "status": "shipped",
-      "lastSeen": "2026-10-01",
-      "shippedVersion": "8.14.0"
+      "shippedVersion": "8.14.0",
+      "lastSeen": "2026-10-01"
     },
     "2|Threat Vectors & Attack Surface": {
       "hash": "bd52075e5af8",
       "domain": "2",
       "objective": null,
       "status": "shipped",
-      "lastSeen": "2026-10-01",
-      "shippedVersion": "8.16.0"
+      "shippedVersion": "8.16.0",
+      "lastSeen": "2026-10-01"
     },
     "2|Phishing \u2014 All Variants": {
       "hash": "37f17be43307",
       "domain": "2",
       "objective": null,
       "status": "shipped",
-      "lastSeen": "2026-10-01",
-      "shippedVersion": "8.15.0"
+      "shippedVersion": "8.15.0",
+      "lastSeen": "2026-10-01"
     },
     "2|Impersonation Attacks": {
       "hash": "681ef2bc7063",
       "domain": "2",
       "objective": null,
       "status": "shipped",
-      "lastSeen": "2026-10-01",
-      "shippedVersion": "8.17.0"
+      "shippedVersion": "8.17.0",
+      "lastSeen": "2026-10-01"
     },
     "2|Watering Hole Attack": {
       "hash": "5e9bff510870",
       "domain": "2",
       "objective": null,
       "status": "shipped",
-      "lastSeen": "2026-10-01",
-      "shippedVersion": "8.18.0"
+      "shippedVersion": "8.18.0",
+      "lastSeen": "2026-10-01"
     },
     "2|OSINT \u2014 Open-Source Intelligence": {
       "hash": "99dd3c405e50",
       "domain": "2",
       "objective": null,
       "status": "shipped",
-      "lastSeen": "2026-10-01",
-      "shippedVersion": "8.17.0"
+      "shippedVersion": "8.17.0",
+      "lastSeen": "2026-10-01"
     },
     "2|Misinformation, Disinformation & Brand Impersonation": {
       "hash": "c078d6f4a5cf",
@@ -182,8 +182,8 @@
       "domain": "2",
       "objective": null,
       "status": "shipped",
-      "lastSeen": "2026-10-01",
-      "shippedVersion": "8.19.0"
+      "shippedVersion": "8.19.0",
+      "lastSeen": "2026-10-01"
     },
     "2|Buffer Overflows": {
       "hash": "5d9c69d63fd2",
@@ -197,24 +197,24 @@
       "domain": "2",
       "objective": null,
       "status": "shipped",
-      "lastSeen": "2026-10-01",
-      "shippedVersion": "8.20.0"
+      "shippedVersion": "8.20.0",
+      "lastSeen": "2026-10-01"
     },
     "2|Malicious Updates": {
       "hash": "7b0d1d6f1648",
       "domain": "2",
       "objective": null,
       "status": "shipped",
-      "lastSeen": "2026-10-01",
-      "shippedVersion": "8.21.0"
+      "shippedVersion": "8.21.0",
+      "lastSeen": "2026-10-01"
     },
     "2|SBOM \u2014 Software Bill of Materials": {
       "hash": "8309d757a4c1",
       "domain": "2",
       "objective": null,
       "status": "shipped",
-      "lastSeen": "2026-10-01",
-      "shippedVersion": "8.22.0"
+      "shippedVersion": "8.22.0",
+      "lastSeen": "2026-10-01"
     },
     "2|Operating System Vulnerabilities": {
       "hash": "692cd61a466f",
@@ -347,8 +347,8 @@
       "domain": "2",
       "objective": null,
       "status": "shipped",
-      "lastSeen": "2026-10-01",
-      "shippedVersion": "8.38.0"
+      "shippedVersion": "8.38.0",
+      "lastSeen": "2026-10-01"
     },
     "2|On-Path Attacks": {
       "hash": "f5d14b4d20b2",
@@ -474,24 +474,24 @@
       "domain": "3",
       "objective": null,
       "status": "shipped",
-      "lastSeen": "2026-10-01",
-      "shippedVersion": "8.34.0"
+      "shippedVersion": "8.34.0",
+      "lastSeen": "2026-10-01"
     },
     "3|Secure Communication (VPN, IPsec, SD-WAN, SASE)": {
       "hash": "2f7653f7b432",
       "domain": "3",
       "objective": null,
       "status": "shipped",
-      "lastSeen": "2026-10-01",
-      "shippedVersion": "8.25.0"
+      "shippedVersion": "8.25.0",
+      "lastSeen": "2026-10-01"
     },
     "3|Data Types & Data Classification": {
       "hash": "fd845448952e",
       "domain": "3",
       "objective": null,
       "status": "shipped",
-      "lastSeen": "2026-10-01",
-      "shippedVersion": "8.29.0"
+      "shippedVersion": "8.29.0",
+      "lastSeen": "2026-10-01"
     },
     "3|States of Data": {
       "hash": "c1045e3f3ec4",
@@ -512,8 +512,8 @@
       "domain": "3",
       "objective": null,
       "status": "shipped",
-      "lastSeen": "2026-10-01",
-      "shippedVersion": "8.37.0"
+      "shippedVersion": "8.37.0",
+      "lastSeen": "2026-10-01"
     },
     "3|Capacity Planning": {
       "hash": "c233915b0a50",
@@ -569,8 +569,8 @@
       "domain": "4",
       "objective": null,
       "status": "shipped",
-      "lastSeen": "2026-10-01",
-      "shippedVersion": "8.24.0"
+      "shippedVersion": "8.24.0",
+      "lastSeen": "2026-10-01"
     },
     "4|Application Security": {
       "hash": "bded163aac6d",
@@ -584,8 +584,8 @@
       "domain": "4",
       "objective": null,
       "status": "shipped",
-      "lastSeen": "2026-10-01",
-      "shippedVersion": "8.23.0"
+      "shippedVersion": "8.23.0",
+      "lastSeen": "2026-10-01"
     },
     "4|Vulnerability Scanning": {
       "hash": "515d5769fc7c",
@@ -683,8 +683,8 @@
       "domain": "4",
       "objective": null,
       "status": "shipped",
-      "lastSeen": "2026-10-01",
-      "shippedVersion": "8.27.0"
+      "shippedVersion": "8.27.0",
+      "lastSeen": "2026-10-01"
     },
     "4|Access Control Models": {
       "hash": "8079aedf5c76",
@@ -698,16 +698,16 @@
       "domain": "4",
       "objective": null,
       "status": "shipped",
-      "lastSeen": "2026-10-01",
-      "shippedVersion": "8.30.0"
+      "shippedVersion": "8.30.0",
+      "lastSeen": "2026-10-01"
     },
     "4|Password Security & Privileged Access": {
       "hash": "6a515a2622ca",
       "domain": "4",
       "objective": null,
       "status": "shipped",
-      "lastSeen": "2026-10-01",
-      "shippedVersion": "8.32.0"
+      "shippedVersion": "8.32.0",
+      "lastSeen": "2026-10-01"
     },
     "4|Scripting and Automation": {
       "hash": "a55e3cbfce28",
@@ -735,24 +735,24 @@
       "domain": "4",
       "objective": null,
       "status": "shipped",
-      "lastSeen": "2026-10-01",
-      "shippedVersion": "8.39.0"
+      "shippedVersion": "8.39.0",
+      "lastSeen": "2026-10-01"
     },
     "4|Log Data": {
       "hash": "1dd7b56a2758",
       "domain": "4",
       "objective": null,
       "status": "shipped",
-      "lastSeen": "2026-10-01",
-      "shippedVersion": "8.35.0"
+      "shippedVersion": "8.35.0",
+      "lastSeen": "2026-10-01"
     },
     "5|Security Policies & Governance": {
       "hash": "f3b231a5e604",
       "domain": "5",
       "objective": null,
       "status": "shipped",
-      "lastSeen": "2026-10-01",
-      "shippedVersion": "8.26.0"
+      "shippedVersion": "8.26.0",
+      "lastSeen": "2026-10-01"
     },
     "5|Security Standards (ISO & NIST)": {
       "hash": "e3210a173e6c",
@@ -766,23 +766,24 @@
       "domain": "5",
       "objective": null,
       "status": "shipped",
-      "lastSeen": "2026-10-01",
-      "shippedVersion": "8.31.0"
+      "shippedVersion": "8.31.0",
+      "lastSeen": "2026-10-01"
     },
     "5|Security Procedures": {
       "hash": "07120401d5ef",
       "domain": "5",
       "objective": null,
       "status": "shipped",
-      "lastSeen": "2026-10-01",
-      "shippedVersion": "8.28.0"
+      "shippedVersion": "8.28.0",
+      "lastSeen": "2026-10-01"
     },
     "5|Security Considerations": {
       "hash": "bea524b24251",
       "domain": "5",
       "objective": null,
-      "status": "pending",
-      "lastSeen": "2026-10-01"
+      "status": "shipped",
+      "lastSeen": "2026-10-01",
+      "shippedVersion": "8.40.0"
     },
     "5|Data Roles and Responsibilities": {
       "hash": "16813c5e83cb",
@@ -796,16 +797,16 @@
       "domain": "5",
       "objective": null,
       "status": "shipped",
-      "lastSeen": "2026-10-01",
-      "shippedVersion": "8.33.0"
+      "shippedVersion": "8.33.0",
+      "lastSeen": "2026-10-01"
     },
     "5|Risk Analysis": {
       "hash": "e77374d627fd",
       "domain": "5",
       "objective": null,
       "status": "shipped",
-      "lastSeen": "2026-10-01",
-      "shippedVersion": "8.36.0"
+      "shippedVersion": "8.36.0",
+      "lastSeen": "2026-10-01"
     },
     "5|Risk Management Strategies": {
       "hash": "b5d12e140967",
