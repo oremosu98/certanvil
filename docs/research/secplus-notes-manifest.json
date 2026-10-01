@@ -336,8 +336,9 @@
       "hash": "da10e6011ebe",
       "domain": "2",
       "objective": null,
-      "status": "pending",
-      "lastSeen": "2026-10-01"
+      "status": "shipped",
+      "lastSeen": "2026-10-01",
+      "shippedVersion": "8.38.0"
     },
     "2|On-Path Attacks": {
       "hash": "f5d14b4d20b2",
@@ -498,8 +499,7 @@
       "domain": "3",
       "objective": null,
       "status": "shipped",
-      "lastSeen": "2026-10-01",
-      "shippedVersion": "8.37.0"
+      "lastSeen": "2026-10-01"
     },
     "3|Capacity Planning": {
       "hash": "c233915b0a50",
@@ -775,10 +775,17 @@
       "lastSeen": "2026-10-01"
     },
     "5|Risk Analysis": {
-      "hash": "8622c465c0eb",
+      "hash": "e77374d627fd",
       "domain": "5",
       "objective": null,
-      "status": "shipped",
+      "status": "pending",
+      "lastSeen": "2026-10-01"
+    },
+    "5|Risk Management Strategies": {
+      "hash": "b5d12e140967",
+      "domain": "5",
+      "objective": null,
+      "status": "pending",
       "lastSeen": "2026-10-01"
     }
   }
