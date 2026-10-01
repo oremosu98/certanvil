@@ -497,8 +497,9 @@
       "hash": "458b66645ed5",
       "domain": "3",
       "objective": null,
-      "status": "pending",
-      "lastSeen": "2026-10-01"
+      "status": "shipped",
+      "lastSeen": "2026-10-01",
+      "shippedVersion": "8.37.0"
     },
     "3|Capacity Planning": {
       "hash": "c233915b0a50",
@@ -778,8 +779,7 @@
       "domain": "5",
       "objective": null,
       "status": "shipped",
-      "lastSeen": "2026-10-01",
-      "shippedVersion": "8.36.0"
+      "lastSeen": "2026-10-01"
     }
   }
 }
