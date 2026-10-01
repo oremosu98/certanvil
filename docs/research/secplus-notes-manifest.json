@@ -339,8 +339,9 @@
       "hash": "fcceddd2fcc7",
       "domain": "2",
       "objective": null,
-      "status": "pending",
-      "lastSeen": "2026-10-01"
+      "status": "shipped",
+      "lastSeen": "2026-10-01",
+      "shippedVersion": "8.51.0"
     },
     "2|Wireless Attacks": {
       "hash": "da10e6011ebe",
@@ -471,8 +472,8 @@
       "domain": "3",
       "objective": null,
       "status": "shipped",
-      "lastSeen": "2026-10-01",
-      "shippedVersion": "8.50.0"
+      "shippedVersion": "8.50.0",
+      "lastSeen": "2026-10-01"
     },
     "3|Firewall Types": {
       "hash": "8d03310b270b",
