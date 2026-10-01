@@ -8,119 +8,119 @@
       "domain": "1",
       "objective": null,
       "status": "pending",
-      "lastSeen": "2026-09-21"
+      "lastSeen": "2026-10-01"
     },
     "1|CIA Triad": {
       "hash": "f1b445bd0441",
       "domain": "1",
       "objective": null,
       "status": "pending",
-      "lastSeen": "2026-09-21"
+      "lastSeen": "2026-10-01"
     },
     "1|AAA \u2014 Authentication, Authorization, and Accounting": {
       "hash": "afe7a766db6b",
       "domain": "1",
       "objective": null,
       "status": "pending",
-      "lastSeen": "2026-09-21"
+      "lastSeen": "2026-10-01"
     },
     "1|Public Key Infrastructure (PKI)": {
       "hash": "938375cfddd8",
       "domain": "1",
       "objective": null,
       "status": "pending",
-      "lastSeen": "2026-09-21"
+      "lastSeen": "2026-10-01"
     },
     "1|Key Exchange": {
       "hash": "b3404a87d5cf",
       "domain": "1",
       "objective": null,
       "status": "pending",
-      "lastSeen": "2026-09-21"
+      "lastSeen": "2026-10-01"
     },
     "1|Encryption Technologies \u2014 TPM, HSM, KMS, Secure Enclave": {
       "hash": "d3f666560e05",
       "domain": "1",
       "objective": null,
       "status": "pending",
-      "lastSeen": "2026-09-21"
+      "lastSeen": "2026-10-01"
     },
     "1|Obfuscation \u2014 Steganography, Tokenization, Data Masking": {
       "hash": "871cd132c6bd",
       "domain": "1",
       "objective": null,
       "status": "pending",
-      "lastSeen": "2026-09-21"
+      "lastSeen": "2026-10-01"
     },
     "1|Gap Analysis": {
       "hash": "0da44b190e6e",
       "domain": "1",
       "objective": null,
       "status": "pending",
-      "lastSeen": "2026-09-21"
+      "lastSeen": "2026-10-01"
     },
     "1|Hashing & Digital Signatures": {
       "hash": "3121e1583540",
       "domain": "1",
       "objective": null,
       "status": "pending",
-      "lastSeen": "2026-09-21"
+      "lastSeen": "2026-10-01"
     },
     "1|HMAC \u2014 Hash-based Message Authentication Code": {
       "hash": "7cd57a87b865",
       "domain": "1",
       "objective": null,
       "status": "pending",
-      "lastSeen": "2026-09-21"
+      "lastSeen": "2026-10-01"
     },
     "1|Blockchain": {
       "hash": "0bb77e8f218f",
       "domain": "1",
       "objective": null,
       "status": "pending",
-      "lastSeen": "2026-09-21"
+      "lastSeen": "2026-10-01"
     },
     "1|Digital Certificates": {
       "hash": "f11ab9a7a944",
       "domain": "1",
       "objective": null,
       "status": "pending",
-      "lastSeen": "2026-09-21"
+      "lastSeen": "2026-10-01"
     },
     "1|Zero Trust": {
       "hash": "b2e0fa5e49e6",
       "domain": "1",
       "objective": null,
       "status": "pending",
-      "lastSeen": "2026-09-21"
+      "lastSeen": "2026-10-01"
     },
     "1|Disruption & Deception": {
       "hash": "3012ad75ca10",
       "domain": "1",
       "objective": null,
       "status": "pending",
-      "lastSeen": "2026-09-21"
+      "lastSeen": "2026-10-01"
     },
     "1|DNS Sinkhole \u2014 Deep Dive": {
       "hash": "9e365741295b",
       "domain": "1",
       "objective": null,
       "status": "pending",
-      "lastSeen": "2026-09-21"
+      "lastSeen": "2026-10-01"
     },
     "5|Change Management": {
       "hash": "4c40b7d15a7e",
       "domain": "5",
       "objective": null,
       "status": "pending",
-      "lastSeen": "2026-09-21"
+      "lastSeen": "2026-10-01"
     },
     "5|Technical Change Management": {
       "hash": "3d11ac1a1c5f",
       "domain": "5",
       "objective": null,
       "status": "pending",
-      "lastSeen": "2026-09-21"
+      "lastSeen": "2026-10-01"
     },
     "2|Threat Actors": {
       "hash": "8875e2423d86",
@@ -442,8 +442,8 @@
       "domain": "3",
       "objective": null,
       "status": "shipped",
-      "lastSeen": "2026-10-01",
-      "shippedVersion": "8.47.0"
+      "shippedVersion": "8.47.0",
+      "lastSeen": "2026-10-01"
     },
     "3|Secure Infrastructure": {
       "hash": "f2a388a4da40",
@@ -681,8 +681,9 @@
       "hash": "5a9f835afd13",
       "domain": "4",
       "objective": null,
-      "status": "pending",
-      "lastSeen": "2026-10-01"
+      "status": "shipped",
+      "lastSeen": "2026-10-01",
+      "shippedVersion": "8.48.0"
     },
     "4|Identity and Access Management (IAM)": {
       "hash": "c5d27311197a",
