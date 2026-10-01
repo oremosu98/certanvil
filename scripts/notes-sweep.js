@@ -207,6 +207,15 @@ for (const s of sections) {
   const prev = manifest.sections[key];
   const changed = !prev || prev.hash !== s.hash;
   const settled = prev && ['shipped', 'redundant'].includes(prev.status) && !changed;
+  // A section that has shipped stays shipped when Simi later edits its notes.
+  // Before 2026-10-01 an edit reset it to 'pending' and erased the record, so
+  // the queue re-offered whole lessons that were already live — Risk Analysis
+  // came back to the top two hours after shipping. An unattended run takes the
+  // top of the queue, so that would have meant duplicate questions. Edited
+  // shipped sections are now a low-priority 'revisit': worth a look for
+  // genuinely new material, never a fresh lesson.
+  const wasShipped = !!(prev && (prev.status === 'shipped' || prev.shippedVersion));
+  const revisit = wasShipped && changed;
 
   // Measure the gap only for things still in play — settled sections are skipped
   // so a sweep stays cheap as the notes grow.
@@ -226,21 +235,26 @@ for (const s of sections) {
   // Deliberately NOT weighted by recency — study order must not drive the queue.
   const deficit = d ? Math.max(0, -d.delta) : 0;
   const score = settled || unmapped ? 0
-    : Math.round(unkeyed.length * (1 + deficit) * (d ? TARGET[s.domain] / 10 : 1) * (canExemplar ? 1 : 0.35));
+    : Math.round(unkeyed.length * (1 + deficit) * (d ? TARGET[s.domain] / 10 : 1) * (canExemplar ? 1 : 0.35) * (revisit ? 0.25 : 1));
 
   report.push({
     key, title: s.title, source: s.source, domain: s.domain, objective: s.objective,
     chars: s.chars, hash: s.hash,
-    status: unmapped ? 'unmapped' : (settled ? prev.status : (prev && !changed ? prev.status : (prev ? 'changed' : 'new'))),
+    status: unmapped ? 'unmapped' : (revisit ? 'revisit' : (settled ? prev.status : (prev && !changed ? prev.status : (prev ? 'changed' : 'new')))),
+    shippedVersion: prev && prev.shippedVersion || null,
     unmapped, domainSource: s.domainSource, noteDomain: s.noteDomain,
     unkeyed: unkeyed.length, unkeyedSample: unkeyed.slice(0, 10), keyedAlready,
-    route: unmapped ? 'unmapped' : (settled ? prev.status : (unkeyed.length === 0 ? 'redundant' : (canExemplar ? 'exemplar' : 'overflow'))),
+    route: unmapped ? 'unmapped' : (revisit ? 'revisit' : (settled ? prev.status : (unkeyed.length === 0 ? 'redundant' : (canExemplar ? 'exemplar' : 'overflow')))),
     score,
   });
 
   manifest.sections[key] = {
     hash: s.hash, domain: s.domain, objective: s.objective,
-    status: prev && settled ? prev.status : (unkeyed.length === 0 ? 'redundant' : (prev && prev.status === 'shipped' && !changed ? 'shipped' : 'pending')),
+    // Never demote a shipped section, and never drop its shipped version: this
+    // object is rebuilt on every --commit, which is how the record was lost.
+    status: wasShipped ? 'shipped' : (prev && settled ? prev.status : (unkeyed.length === 0 ? 'redundant' : 'pending')),
+    ...(prev && prev.shippedVersion ? { shippedVersion: prev.shippedVersion } : {}),
+    ...(revisit ? { changedSinceShip: new Date().toISOString().slice(0, 10) } : {}),
     lastSeen: new Date().toISOString().slice(0, 10),
   };
 }
@@ -280,6 +294,7 @@ if (tightest) console.log(`  ${C.d}tightest floor: D${tightest[0]} — ${tightes
 // 'pending' matters as much as 'new': a section seen by an earlier sweep but never
 // authored is still outstanding work. Only 'shipped' and 'redundant' leave the queue.
 const fresh = report.filter(r => ['new', 'changed', 'pending'].includes(r.status) && r.score > 0);
+const revisits = report.filter(r => r.status === 'revisit');
 const redundant = report.filter(r => r.route === 'redundant').length;
 const overflow = report.filter(r => r.route === 'overflow' && r.score > 0);
 
@@ -296,6 +311,10 @@ if (!fresh.length) {
     console.log(`        ${C.d}${r.unkeyed} unkeyed · ${r.keyedAlready} already covered · ${r.unkeyedSample.slice(0, 6).join(', ')}${C.x}`);
   }
   if (fresh.length > 12) console.log(`  ${C.d}… and ${fresh.length - 12} more${C.x}`);
+}
+if (revisits.length) {
+  console.log(`\n${C.d}${revisits.length} shipped section(s) edited since shipping — revisit only for genuinely new material:${C.x}`);
+  for (const r of revisits.slice(0, 8)) console.log(`  ${C.d}↻  ${r.title}  (shipped ${r.shippedVersion || '?'})${C.x}`);
 }
 const unmappedRows = report.filter(r => r.unmapped);
 if (unmappedRows.length) {
