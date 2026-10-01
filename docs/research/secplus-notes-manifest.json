@@ -463,8 +463,7 @@
       "domain": "3",
       "objective": null,
       "status": "shipped",
-      "lastSeen": "2026-10-01",
-      "shippedVersion": "8.34.0"
+      "lastSeen": "2026-10-01"
     },
     "3|Secure Communication (VPN, IPsec, SD-WAN, SASE)": {
       "hash": "2f7653f7b432",
@@ -722,8 +721,9 @@
       "hash": "1dd7b56a2758",
       "domain": "4",
       "objective": null,
-      "status": "pending",
-      "lastSeen": "2026-10-01"
+      "status": "shipped",
+      "lastSeen": "2026-10-01",
+      "shippedVersion": "8.35.0"
     },
     "5|Security Policies & Governance": {
       "hash": "f3b231a5e604",
