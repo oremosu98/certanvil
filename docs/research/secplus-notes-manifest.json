@@ -541,8 +541,9 @@
       "hash": "4b1ea9ec5957",
       "domain": "3",
       "objective": null,
-      "status": "pending",
-      "lastSeen": "2026-10-02"
+      "status": "shipped",
+      "lastSeen": "2026-10-02",
+      "shippedVersion": "8.57.0"
     },
     "3|Power Resiliency": {
       "hash": "edac99d8a52c",
@@ -609,8 +610,8 @@
       "domain": "4",
       "objective": null,
       "status": "shipped",
-      "lastSeen": "2026-10-02",
-      "shippedVersion": "8.56.0"
+      "shippedVersion": "8.56.0",
+      "lastSeen": "2026-10-02"
     },
     "5|Penetration Testing": {
       "hash": "2783148cab00",
