@@ -511,8 +511,8 @@
       "domain": "3",
       "objective": null,
       "status": "shipped",
-      "lastSeen": "2026-10-02",
-      "shippedVersion": "8.53.0"
+      "shippedVersion": "8.53.0",
+      "lastSeen": "2026-10-02"
     },
     "3|Resiliency": {
       "hash": "458b66645ed5",
@@ -769,8 +769,9 @@
       "hash": "e3210a173e6c",
       "domain": "5",
       "objective": null,
-      "status": "pending",
-      "lastSeen": "2026-10-02"
+      "status": "shipped",
+      "lastSeen": "2026-10-02",
+      "shippedVersion": "8.54.0"
     },
     "5|Security Standards: Password, Access, Physical & Encryption": {
       "hash": "4ac8968ec960",
@@ -840,7 +841,6 @@
       "objective": null,
       "status": "shipped",
       "shippedVersion": "8.45.0",
-      "changedSinceShip": "2026-10-02",
       "lastSeen": "2026-10-02"
     },
     "?|Agreement Types": {
