@@ -241,8 +241,9 @@
       "hash": "cea4eb4176ca",
       "domain": "2",
       "objective": null,
-      "status": "pending",
-      "lastSeen": "2026-10-02"
+      "status": "shipped",
+      "lastSeen": "2026-10-02",
+      "shippedVersion": "8.55.0"
     },
     "2|Hardware Vulnerabilities": {
       "hash": "dc23cef3f9b5",
@@ -770,8 +771,8 @@
       "domain": "5",
       "objective": null,
       "status": "shipped",
-      "lastSeen": "2026-10-02",
-      "shippedVersion": "8.54.0"
+      "shippedVersion": "8.54.0",
+      "lastSeen": "2026-10-02"
     },
     "5|Security Standards: Password, Access, Physical & Encryption": {
       "hash": "4ac8968ec960",
