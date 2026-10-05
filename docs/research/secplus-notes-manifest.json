@@ -30,16 +30,16 @@
       "domain": "1",
       "objective": null,
       "status": "shipped",
-      "lastSeen": "2026-10-05",
-      "shippedVersion": "8.90.0"
+      "shippedVersion": "8.90.0",
+      "lastSeen": "2026-10-05"
     },
     "1|Key Exchange": {
       "hash": "b3404a87d5cf",
       "domain": "1",
       "objective": null,
       "status": "shipped",
-      "lastSeen": "2026-10-05",
-      "shippedVersion": "8.90.0"
+      "shippedVersion": "8.90.0",
+      "lastSeen": "2026-10-05"
     },
     "1|Encryption Technologies \u2014 TPM, HSM, KMS, Secure Enclave": {
       "hash": "d3f666560e05",
@@ -54,8 +54,8 @@
       "domain": "1",
       "objective": null,
       "status": "shipped",
-      "lastSeen": "2026-10-05",
-      "shippedVersion": "8.90.0"
+      "shippedVersion": "8.90.0",
+      "lastSeen": "2026-10-05"
     },
     "1|Gap Analysis": {
       "hash": "0da44b190e6e",
@@ -70,16 +70,16 @@
       "domain": "1",
       "objective": null,
       "status": "shipped",
-      "lastSeen": "2026-10-05",
-      "shippedVersion": "8.90.0"
+      "shippedVersion": "8.90.0",
+      "lastSeen": "2026-10-05"
     },
     "1|HMAC \u2014 Hash-based Message Authentication Code": {
       "hash": "7cd57a87b865",
       "domain": "1",
       "objective": null,
       "status": "shipped",
-      "lastSeen": "2026-10-05",
-      "shippedVersion": "8.90.0"
+      "shippedVersion": "8.90.0",
+      "lastSeen": "2026-10-05"
     },
     "1|Blockchain": {
       "hash": "0bb77e8f218f",
@@ -94,8 +94,8 @@
       "domain": "1",
       "objective": null,
       "status": "shipped",
-      "lastSeen": "2026-10-05",
-      "shippedVersion": "8.90.0"
+      "shippedVersion": "8.90.0",
+      "lastSeen": "2026-10-05"
     },
     "1|Zero Trust": {
       "hash": "b2e0fa5e49e6",
@@ -628,8 +628,9 @@
       "hash": "515d5769fc7c",
       "domain": "4",
       "objective": null,
-      "status": "pending",
-      "lastSeen": "2026-10-05"
+      "status": "shipped",
+      "lastSeen": "2026-10-05",
+      "shippedVersion": "8.91.0"
     },
     "4|Threat Intelligence": {
       "hash": "35212546e35b",
