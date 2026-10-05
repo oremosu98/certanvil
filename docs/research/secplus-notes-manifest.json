@@ -366,8 +366,8 @@
       "domain": "2",
       "objective": null,
       "status": "shipped",
-      "lastSeen": "2026-10-05",
-      "shippedVersion": "8.63.0"
+      "shippedVersion": "8.63.0",
+      "lastSeen": "2026-10-05"
     },
     "2|Cross-Site Request Forgery (CSRF)": {
       "hash": "89962c66a027",
@@ -833,8 +833,9 @@
       "hash": "810ccfe088c0",
       "domain": "5",
       "objective": null,
-      "status": "pending",
-      "lastSeen": "2026-10-05"
+      "status": "shipped",
+      "lastSeen": "2026-10-05",
+      "shippedVersion": "8.64.0"
     },
     "5|Business Impact Analysis (BIA)": {
       "hash": "387f7e00b42b",
