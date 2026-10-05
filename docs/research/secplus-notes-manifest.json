@@ -750,8 +750,9 @@
       "hash": "065be7bfbe04",
       "domain": "4",
       "objective": null,
-      "status": "pending",
-      "lastSeen": "2026-10-05"
+      "status": "shipped",
+      "lastSeen": "2026-10-05",
+      "shippedVersion": "8.80.0"
     },
     "4|Incident Planning": {
       "hash": "422ceee78f1a",
@@ -905,8 +906,8 @@
       "domain": "5",
       "objective": null,
       "status": "shipped",
-      "lastSeen": "2026-10-05",
-      "shippedVersion": "8.79.0"
+      "shippedVersion": "8.79.0",
+      "lastSeen": "2026-10-05"
     },
     "5|Privacy": {
       "hash": "0a7f0f3bcaa6",
