@@ -333,8 +333,9 @@
       "hash": "eddc8b9623b4",
       "domain": "2",
       "objective": null,
-      "status": "pending",
-      "lastSeen": "2026-10-05"
+      "status": "shipped",
+      "lastSeen": "2026-10-05",
+      "shippedVersion": "8.60.0"
     },
     "2|DNS Attacks": {
       "hash": "fcceddd2fcc7",
@@ -667,8 +668,8 @@
       "domain": "4",
       "objective": null,
       "status": "shipped",
-      "lastSeen": "2026-10-05",
-      "shippedVersion": "8.59.0"
+      "shippedVersion": "8.59.0",
+      "lastSeen": "2026-10-05"
     },
     "4|Email Security (SPF, DKIM, DMARC)": {
       "hash": "f9718f33352f",
