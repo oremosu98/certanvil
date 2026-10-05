@@ -566,8 +566,9 @@
       "hash": "d0ac9babbd72",
       "domain": "4",
       "objective": null,
-      "status": "pending",
-      "lastSeen": "2026-10-05"
+      "status": "shipped",
+      "lastSeen": "2026-10-05",
+      "shippedVersion": "8.78.0"
     },
     "4|Hardening Targets": {
       "hash": "e03074bc97d2",
@@ -915,12 +916,20 @@
       "lastSeen": "2026-10-05"
     },
     "5|Audits and Assessments": {
-      "hash": "8391037679bb",
+      "hash": "ae28f0d3a0d5",
       "domain": "5",
       "objective": null,
       "status": "shipped",
-      "lastSeen": "2026-10-05",
-      "shippedVersion": "8.77.0"
+      "shippedVersion": "8.77.0",
+      "changedSinceShip": "2026-10-05",
+      "lastSeen": "2026-10-05"
+    },
+    "5|Penetration Testing: Domain 5 Additions": {
+      "hash": "d0fc0abb2503",
+      "domain": "5",
+      "objective": null,
+      "status": "pending",
+      "lastSeen": "2026-10-05"
     }
   }
 }
