@@ -742,8 +742,9 @@
       "hash": "8079aedf5c76",
       "domain": "4",
       "objective": null,
-      "status": "pending",
-      "lastSeen": "2026-10-05"
+      "status": "shipped",
+      "lastSeen": "2026-10-05",
+      "shippedVersion": "8.95.0"
     },
     "4|Multifactor Authentication (MFA)": {
       "hash": "82546601c6fa",
@@ -766,8 +767,8 @@
       "domain": "4",
       "objective": null,
       "status": "shipped",
-      "lastSeen": "2026-10-05",
-      "shippedVersion": "8.94.0"
+      "shippedVersion": "8.94.0",
+      "lastSeen": "2026-10-05"
     },
     "4|Incident Response": {
       "hash": "065be7bfbe04",
