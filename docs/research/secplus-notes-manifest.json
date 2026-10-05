@@ -15,8 +15,9 @@
       "hash": "f1b445bd0441",
       "domain": "1",
       "objective": null,
-      "status": "pending",
-      "lastSeen": "2026-10-05"
+      "status": "shipped",
+      "lastSeen": "2026-10-05",
+      "shippedVersion": "8.97.0"
     },
     "1|AAA \u2014 Authentication, Authorization, and Accounting": {
       "hash": "afe7a766db6b",
@@ -126,15 +127,17 @@
       "hash": "4c40b7d15a7e",
       "domain": "5",
       "objective": null,
-      "status": "pending",
-      "lastSeen": "2026-10-05"
+      "status": "shipped",
+      "lastSeen": "2026-10-05",
+      "shippedVersion": "8.97.0"
     },
     "5|Technical Change Management": {
       "hash": "3d11ac1a1c5f",
       "domain": "5",
       "objective": null,
-      "status": "pending",
-      "lastSeen": "2026-10-05"
+      "status": "shipped",
+      "lastSeen": "2026-10-05",
+      "shippedVersion": "8.97.0"
     },
     "2|Threat Actors": {
       "hash": "8875e2423d86",
