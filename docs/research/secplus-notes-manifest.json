@@ -324,8 +324,9 @@
       "hash": "f9c2a40224be",
       "domain": "2",
       "objective": null,
-      "status": "pending",
-      "lastSeen": "2026-10-05"
+      "status": "shipped",
+      "lastSeen": "2026-10-05",
+      "shippedVersion": "8.103.0"
     },
     "2|Viruses and Worms": {
       "hash": "bceb2be78dcf",
@@ -339,8 +340,9 @@
       "hash": "bd9e55cdbe51",
       "domain": "2",
       "objective": null,
-      "status": "pending",
-      "lastSeen": "2026-10-05"
+      "status": "shipped",
+      "lastSeen": "2026-10-05",
+      "shippedVersion": "8.103.0"
     },
     "2|Keyloggers, Logic Bombs & Rootkits": {
       "hash": "fd6e2f984988",
@@ -425,8 +427,9 @@
       "hash": "679da142f8f6",
       "domain": "2",
       "objective": null,
-      "status": "pending",
-      "lastSeen": "2026-10-05"
+      "status": "shipped",
+      "lastSeen": "2026-10-05",
+      "shippedVersion": "8.103.0"
     },
     "2|Segmentation & Access Control": {
       "hash": "c394b9f0ac75",
