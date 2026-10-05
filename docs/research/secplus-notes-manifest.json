@@ -263,8 +263,9 @@
       "hash": "dc23cef3f9b5",
       "domain": "2",
       "objective": null,
-      "status": "pending",
-      "lastSeen": "2026-10-05"
+      "status": "shipped",
+      "lastSeen": "2026-10-05",
+      "shippedVersion": "8.96.0"
     },
     "2|Virtualization Vulnerabilities": {
       "hash": "d45ce52aae48",
@@ -285,8 +286,9 @@
       "hash": "87ea2fae7499",
       "domain": "2",
       "objective": null,
-      "status": "pending",
-      "lastSeen": "2026-10-05"
+      "status": "redundant",
+      "lastSeen": "2026-10-05",
+      "retiredReason": "Fully keyed by v8.45.0 (third party), v8.17-era SBOM/malicious-update items and v8.96.0 (counterfeit hardware); remaining notes duplicate those concepts"
     },
     "2|Misconfiguration Vulnerabilities": {
       "hash": "674194483ccf",
