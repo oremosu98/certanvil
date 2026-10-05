@@ -191,8 +191,9 @@
       "hash": "c078d6f4a5cf",
       "domain": "2",
       "objective": null,
-      "status": "pending",
-      "lastSeen": "2026-10-05"
+      "status": "redundant",
+      "lastSeen": "2026-10-05",
+      "retiredReason": "Remaining ideas already keyed: misinformation vs disinformation, brand impersonation, typosquatting vs impersonation (v8.20-era social engineering + v8.51.0 DNS batch); only 'urgency is a trigger, not an attack' left \u2014 too thin for a batch"
     },
     "2|Memory Injection \u2014 Process Injection & DLL Injection": {
       "hash": "f8ad6e5fba29",
@@ -286,8 +287,9 @@
       "hash": "da8306ea15bd",
       "domain": "2",
       "objective": null,
-      "status": "pending",
-      "lastSeen": "2026-10-05"
+      "status": "shipped",
+      "lastSeen": "2026-10-05",
+      "shippedVersion": "8.104.0"
     },
     "2|Supply Chain Vulnerabilities": {
       "hash": "87ea2fae7499",
@@ -436,15 +438,17 @@
       "hash": "c394b9f0ac75",
       "domain": "2",
       "objective": null,
-      "status": "pending",
-      "lastSeen": "2026-10-05"
+      "status": "shipped",
+      "lastSeen": "2026-10-05",
+      "shippedVersion": "8.104.0"
     },
     "2|Mitigation Techniques": {
       "hash": "6672ce823f53",
       "domain": "2",
       "objective": null,
-      "status": "pending",
-      "lastSeen": "2026-10-05"
+      "status": "shipped",
+      "lastSeen": "2026-10-05",
+      "shippedVersion": "8.104.0"
     },
     "2|System Hardening Techniques": {
       "hash": "44e6dd1abd3a",
