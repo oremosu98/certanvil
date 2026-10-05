@@ -468,8 +468,9 @@
       "hash": "b4d148d92134",
       "domain": "3",
       "objective": null,
-      "status": "pending",
-      "lastSeen": "2026-10-05"
+      "status": "shipped",
+      "lastSeen": "2026-10-05",
+      "shippedVersion": "8.65.0"
     },
     "3|Port Security, 802.1X & EAP": {
       "hash": "ebd0e88772ec",
@@ -834,8 +835,8 @@
       "domain": "5",
       "objective": null,
       "status": "shipped",
-      "lastSeen": "2026-10-05",
-      "shippedVersion": "8.64.0"
+      "shippedVersion": "8.64.0",
+      "lastSeen": "2026-10-05"
     },
     "5|Business Impact Analysis (BIA)": {
       "hash": "387f7e00b42b",
