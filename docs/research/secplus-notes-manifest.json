@@ -700,8 +700,8 @@
       "domain": "4",
       "objective": null,
       "status": "shipped",
-      "lastSeen": "2026-10-05",
-      "shippedVersion": "8.83.0"
+      "shippedVersion": "8.83.0",
+      "lastSeen": "2026-10-05"
     },
     "4|Endpoint Security (NAC, EDR, XDR, UEBA)": {
       "hash": "5a9f835afd13",
@@ -901,8 +901,9 @@
       "hash": "b01377cc158d",
       "domain": "5",
       "objective": null,
-      "status": "pending",
-      "lastSeen": "2026-10-05"
+      "status": "shipped",
+      "lastSeen": "2026-10-05",
+      "shippedVersion": "8.84.0"
     },
     "5|Compliance": {
       "hash": "5b21ea8e2ca6",
