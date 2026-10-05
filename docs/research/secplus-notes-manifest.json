@@ -291,8 +291,9 @@
       "hash": "674194483ccf",
       "domain": "2",
       "objective": null,
-      "status": "pending",
-      "lastSeen": "2026-10-05"
+      "status": "shipped",
+      "lastSeen": "2026-10-05",
+      "shippedVersion": "8.92.0"
     },
     "2|Mobile Device Vulnerabilities": {
       "hash": "79f982015a91",
@@ -629,8 +630,8 @@
       "domain": "4",
       "objective": null,
       "status": "shipped",
-      "lastSeen": "2026-10-05",
-      "shippedVersion": "8.91.0"
+      "shippedVersion": "8.91.0",
+      "lastSeen": "2026-10-05"
     },
     "4|Threat Intelligence": {
       "hash": "35212546e35b",
@@ -661,8 +662,8 @@
       "domain": "4",
       "objective": null,
       "status": "shipped",
-      "lastSeen": "2026-10-05",
-      "shippedVersion": "8.91.0"
+      "shippedVersion": "8.91.0",
+      "lastSeen": "2026-10-05"
     },
     "4|Security Monitoring": {
       "hash": "21e28b4e311d",
