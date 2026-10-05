@@ -437,8 +437,8 @@
       "domain": "3",
       "objective": null,
       "status": "shipped",
-      "lastSeen": "2026-10-05",
-      "shippedVersion": "8.75.0"
+      "shippedVersion": "8.75.0",
+      "lastSeen": "2026-10-05"
     },
     "3|Other Infrastructure Concepts": {
       "hash": "d88b2581ff6b",
@@ -888,6 +888,35 @@
     "?|Audits and Assessments": {
       "hash": "8391037679bb",
       "domain": null,
+      "objective": null,
+      "status": "pending",
+      "lastSeen": "2026-10-05"
+    },
+    "5|Agreement Types": {
+      "hash": "b01377cc158d",
+      "domain": "5",
+      "objective": null,
+      "status": "pending",
+      "lastSeen": "2026-10-05"
+    },
+    "5|Compliance": {
+      "hash": "5b21ea8e2ca6",
+      "domain": "5",
+      "objective": null,
+      "status": "pending",
+      "lastSeen": "2026-10-05"
+    },
+    "5|Privacy": {
+      "hash": "0a7f0f3bcaa6",
+      "domain": "5",
+      "objective": null,
+      "status": "shipped",
+      "lastSeen": "2026-10-05",
+      "shippedVersion": "8.76.0"
+    },
+    "5|Audits and Assessments": {
+      "hash": "8391037679bb",
+      "domain": "5",
       "objective": null,
       "status": "pending",
       "lastSeen": "2026-10-05"
