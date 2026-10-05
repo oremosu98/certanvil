@@ -43,8 +43,8 @@
       "domain": "1",
       "objective": null,
       "status": "shipped",
-      "lastSeen": "2026-10-05",
-      "shippedVersion": "8.70.0"
+      "shippedVersion": "8.70.0",
+      "lastSeen": "2026-10-05"
     },
     "1|Obfuscation \u2014 Steganography, Tokenization, Data Masking": {
       "hash": "871cd132c6bd",
@@ -632,8 +632,9 @@
       "hash": "edc8f3c2117d",
       "domain": "4",
       "objective": null,
-      "status": "pending",
-      "lastSeen": "2026-10-05"
+      "status": "shipped",
+      "lastSeen": "2026-10-05",
+      "shippedVersion": "8.71.0"
     },
     "4|Vulnerability Remediation": {
       "hash": "6356557f823b",
