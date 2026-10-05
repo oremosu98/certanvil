@@ -474,8 +474,9 @@
       "hash": "f2a388a4da40",
       "domain": "3",
       "objective": null,
-      "status": "pending",
-      "lastSeen": "2026-10-05"
+      "status": "shipped",
+      "lastSeen": "2026-10-05",
+      "shippedVersion": "8.93.0"
     },
     "3|Intrusion Prevention (IDS / IPS)": {
       "hash": "4578437ce45e",
