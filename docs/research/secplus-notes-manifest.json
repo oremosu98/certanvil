@@ -567,8 +567,9 @@
       "hash": "fb225407a094",
       "domain": "3",
       "objective": null,
-      "status": "pending",
-      "lastSeen": "2026-10-05"
+      "status": "shipped",
+      "lastSeen": "2026-10-05",
+      "shippedVersion": "8.99.0"
     },
     "3|Backups": {
       "hash": "4b1ea9ec5957",
@@ -968,8 +969,8 @@
       "domain": "5",
       "objective": null,
       "status": "shipped",
-      "lastSeen": "2026-10-05",
-      "shippedVersion": "8.98.0"
+      "shippedVersion": "8.98.0",
+      "lastSeen": "2026-10-05"
     },
     "5|User Training": {
       "hash": "2501fb8c2c9e",
