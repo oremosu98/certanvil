@@ -361,8 +361,9 @@
       "hash": "f5d14b4d20b2",
       "domain": "2",
       "objective": null,
-      "status": "pending",
-      "lastSeen": "2026-10-05"
+      "status": "shipped",
+      "lastSeen": "2026-10-05",
+      "shippedVersion": "8.74.0"
     },
     "2|Replay Attacks": {
       "hash": "8ddda4a788f8",
@@ -649,8 +650,8 @@
       "domain": "4",
       "objective": null,
       "status": "shipped",
-      "lastSeen": "2026-10-05",
-      "shippedVersion": "8.73.0"
+      "shippedVersion": "8.73.0",
+      "lastSeen": "2026-10-05"
     },
     "4|Security Tools (SCAP, Agents, DLP, SNMP, NetFlow)": {
       "hash": "2757d4e7d151",
