@@ -605,8 +605,9 @@
       "hash": "e03074bc97d2",
       "domain": "4",
       "objective": null,
-      "status": "pending",
-      "lastSeen": "2026-10-05"
+      "status": "shipped",
+      "lastSeen": "2026-10-05",
+      "shippedVersion": "8.101.0"
     },
     "4|Securing Wireless & Mobile": {
       "hash": "6b3962a58506",
