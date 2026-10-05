@@ -325,24 +325,24 @@
       "domain": "2",
       "objective": null,
       "status": "shipped",
-      "lastSeen": "2026-10-05",
-      "shippedVersion": "8.103.0"
+      "shippedVersion": "8.103.0",
+      "lastSeen": "2026-10-05"
     },
     "2|Viruses and Worms": {
       "hash": "bceb2be78dcf",
       "domain": "2",
       "objective": null,
       "status": "shipped",
-      "lastSeen": "2026-10-05",
-      "shippedVersion": "8.103.0"
+      "shippedVersion": "8.103.0",
+      "lastSeen": "2026-10-05"
     },
     "2|Spyware & Bloatware": {
       "hash": "bd9e55cdbe51",
       "domain": "2",
       "objective": null,
       "status": "shipped",
-      "lastSeen": "2026-10-05",
-      "shippedVersion": "8.103.0"
+      "shippedVersion": "8.103.0",
+      "lastSeen": "2026-10-05"
     },
     "2|Keyloggers, Logic Bombs & Rootkits": {
       "hash": "fd6e2f984988",
@@ -356,8 +356,9 @@
       "hash": "f425f086e564",
       "domain": "2",
       "objective": null,
-      "status": "pending",
-      "lastSeen": "2026-10-05"
+      "status": "shipped",
+      "lastSeen": "2026-10-05",
+      "shippedVersion": "8.104.0"
     },
     "2|Denial of Service (DoS)": {
       "hash": "eddc8b9623b4",
@@ -428,8 +429,8 @@
       "domain": "2",
       "objective": null,
       "status": "shipped",
-      "lastSeen": "2026-10-05",
-      "shippedVersion": "8.103.0"
+      "shippedVersion": "8.103.0",
+      "lastSeen": "2026-10-05"
     },
     "2|Segmentation & Access Control": {
       "hash": "c394b9f0ac75",
