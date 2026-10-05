@@ -461,8 +461,9 @@
       "hash": "4578437ce45e",
       "domain": "3",
       "objective": null,
-      "status": "pending",
-      "lastSeen": "2026-10-05"
+      "status": "shipped",
+      "lastSeen": "2026-10-05",
+      "shippedVersion": "8.67.0"
     },
     "3|Network Appliances": {
       "hash": "b4d148d92134",
@@ -650,8 +651,8 @@
       "domain": "4",
       "objective": null,
       "status": "shipped",
-      "lastSeen": "2026-10-05",
-      "shippedVersion": "8.66.0"
+      "shippedVersion": "8.66.0",
+      "lastSeen": "2026-10-05"
     },
     "4|Firewall Rules & Zones": {
       "hash": "7ab3cfc87365",
