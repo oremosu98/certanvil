@@ -459,8 +459,8 @@
       "domain": "3",
       "objective": null,
       "status": "shipped",
-      "lastSeen": "2026-10-05",
-      "shippedVersion": "8.93.0"
+      "shippedVersion": "8.93.0",
+      "lastSeen": "2026-10-05"
     },
     "3|Infrastructure Considerations": {
       "hash": "0fe8287845ed",
@@ -475,8 +475,8 @@
       "domain": "3",
       "objective": null,
       "status": "shipped",
-      "lastSeen": "2026-10-05",
-      "shippedVersion": "8.93.0"
+      "shippedVersion": "8.93.0",
+      "lastSeen": "2026-10-05"
     },
     "3|Intrusion Prevention (IDS / IPS)": {
       "hash": "4578437ce45e",
@@ -765,8 +765,9 @@
       "hash": "a55e3cbfce28",
       "domain": "4",
       "objective": null,
-      "status": "pending",
-      "lastSeen": "2026-10-05"
+      "status": "shipped",
+      "lastSeen": "2026-10-05",
+      "shippedVersion": "8.94.0"
     },
     "4|Incident Response": {
       "hash": "065be7bfbe04",
