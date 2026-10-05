@@ -29,7 +29,7 @@
 | index.html | 2287 | 148 KB |
 | dg-system.css | 5447 | 507 KB |
 | tests/uat.js + tests/uat/ (29 modules) | 28991 | — |
-UAT checks: 5008 · E2E `test(` count: 163 · APP_VERSION: 8.61.0 · stamped-at: worktree
+UAT checks: 5008 · E2E `test(` count: 163 · APP_VERSION: 8.62.0 · stamped-at: worktree
 <!-- FACTS:AUTO:END -->
 
 | File | Purpose | Size |
@@ -135,9 +135,9 @@ npx playwright test              # E2E (tests/e2e/app.spec.js)
 
 | Version | Features Added |
 |---|---|
+| v8.62.0 | Sec+ Email Security exemplars (obj 4.5) |
 | v8.61.0 | Sec+ Blockchain exemplars (obj 1.4) |
 | v8.60.0 | Sec+ Denial of Service exemplars (obj 2.4) |
-| v8.59.0 | Sec+ Secure Protocols exemplars (obj 4.5) |
 
 _Older releases (v7.60.0 and back) live in [CHANGELOG.md](./CHANGELOG.md)._
 
