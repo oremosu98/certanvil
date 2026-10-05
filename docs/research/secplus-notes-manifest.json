@@ -207,8 +207,8 @@
       "domain": "2",
       "objective": null,
       "status": "shipped",
-      "lastSeen": "2026-10-05",
-      "shippedVersion": "8.100.0"
+      "shippedVersion": "8.100.0",
+      "lastSeen": "2026-10-05"
     },
     "2|Race Conditions & TOCTOU": {
       "hash": "422e0f060ac7",
@@ -247,16 +247,16 @@
       "domain": "2",
       "objective": null,
       "status": "shipped",
-      "lastSeen": "2026-10-05",
-      "shippedVersion": "8.100.0"
+      "shippedVersion": "8.100.0",
+      "lastSeen": "2026-10-05"
     },
     "2|Least Privilege \u2014 and the SQL Injection Connection": {
       "hash": "9a895e1f869a",
       "domain": "2",
       "objective": null,
       "status": "shipped",
-      "lastSeen": "2026-10-05",
-      "shippedVersion": "8.100.0"
+      "shippedVersion": "8.100.0",
+      "lastSeen": "2026-10-05"
     },
     "2|Cross-Site Scripting (XSS)": {
       "hash": "cea4eb4176ca",
@@ -317,8 +317,8 @@
       "domain": "2",
       "objective": null,
       "status": "shipped",
-      "lastSeen": "2026-10-05",
-      "shippedVersion": "8.100.0"
+      "shippedVersion": "8.100.0",
+      "lastSeen": "2026-10-05"
     },
     "2|Malware": {
       "hash": "f9c2a40224be",
@@ -401,8 +401,8 @@
       "domain": "2",
       "objective": null,
       "status": "shipped",
-      "lastSeen": "2026-10-05",
-      "shippedVersion": "8.100.0"
+      "shippedVersion": "8.100.0",
+      "lastSeen": "2026-10-05"
     },
     "2|Cryptographic Attacks": {
       "hash": "84c637e8c328",
@@ -700,8 +700,9 @@
       "hash": "7ab3cfc87365",
       "domain": "4",
       "objective": null,
-      "status": "pending",
-      "lastSeen": "2026-10-05"
+      "status": "shipped",
+      "lastSeen": "2026-10-05",
+      "shippedVersion": "8.101.0"
     },
     "4|Web Filtering": {
       "hash": "e6c14b05791c",
