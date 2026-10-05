@@ -206,8 +206,9 @@
       "hash": "5d9c69d63fd2",
       "domain": "2",
       "objective": null,
-      "status": "pending",
-      "lastSeen": "2026-10-05"
+      "status": "shipped",
+      "lastSeen": "2026-10-05",
+      "shippedVersion": "8.100.0"
     },
     "2|Race Conditions & TOCTOU": {
       "hash": "422e0f060ac7",
@@ -245,15 +246,17 @@
       "hash": "7aeb9cb371d1",
       "domain": "2",
       "objective": null,
-      "status": "pending",
-      "lastSeen": "2026-10-05"
+      "status": "shipped",
+      "lastSeen": "2026-10-05",
+      "shippedVersion": "8.100.0"
     },
     "2|Least Privilege \u2014 and the SQL Injection Connection": {
       "hash": "9a895e1f869a",
       "domain": "2",
       "objective": null,
-      "status": "pending",
-      "lastSeen": "2026-10-05"
+      "status": "shipped",
+      "lastSeen": "2026-10-05",
+      "shippedVersion": "8.100.0"
     },
     "2|Cross-Site Scripting (XSS)": {
       "hash": "cea4eb4176ca",
@@ -397,8 +400,9 @@
       "hash": "89962c66a027",
       "domain": "2",
       "objective": null,
-      "status": "pending",
-      "lastSeen": "2026-10-05"
+      "status": "shipped",
+      "lastSeen": "2026-10-05",
+      "shippedVersion": "8.100.0"
     },
     "2|Cryptographic Attacks": {
       "hash": "84c637e8c328",
