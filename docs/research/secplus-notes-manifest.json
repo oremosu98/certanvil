@@ -288,8 +288,8 @@
       "domain": "2",
       "objective": null,
       "status": "shipped",
-      "lastSeen": "2026-10-05",
-      "shippedVersion": "8.85.0"
+      "shippedVersion": "8.85.0",
+      "lastSeen": "2026-10-05"
     },
     "2|Zero-Day Vulnerabilities": {
       "hash": "02997e4f6dca",
@@ -539,8 +539,9 @@
       "hash": "c233915b0a50",
       "domain": "3",
       "objective": null,
-      "status": "pending",
-      "lastSeen": "2026-10-05"
+      "status": "shipped",
+      "lastSeen": "2026-10-05",
+      "shippedVersion": "8.86.0"
     },
     "3|Recovery Testing": {
       "hash": "fb225407a094",
