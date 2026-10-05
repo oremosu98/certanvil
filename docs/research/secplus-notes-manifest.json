@@ -365,8 +365,9 @@
       "hash": "8ddda4a788f8",
       "domain": "2",
       "objective": null,
-      "status": "pending",
-      "lastSeen": "2026-10-05"
+      "status": "shipped",
+      "lastSeen": "2026-10-05",
+      "shippedVersion": "8.63.0"
     },
     "2|Cross-Site Request Forgery (CSRF)": {
       "hash": "89962c66a027",
@@ -677,8 +678,8 @@
       "domain": "4",
       "objective": null,
       "status": "shipped",
-      "lastSeen": "2026-10-05",
-      "shippedVersion": "8.62.0"
+      "shippedVersion": "8.62.0",
+      "lastSeen": "2026-10-05"
     },
     "4|Monitoring Data (FIM & DLP)": {
       "hash": "9a30426998e3",
@@ -859,7 +860,14 @@
       "lastSeen": "2026-10-05"
     },
     "?|Compliance": {
-      "hash": "f4a5513b9571",
+      "hash": "5b21ea8e2ca6",
+      "domain": null,
+      "objective": null,
+      "status": "pending",
+      "lastSeen": "2026-10-05"
+    },
+    "?|Privacy": {
+      "hash": "ffc685e88e09",
       "domain": null,
       "objective": null,
       "status": "pending",
