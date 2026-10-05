@@ -73,7 +73,12 @@ const pass = (name, ok, detail) => results.push({ name, ok, detail });
     const delta = c[k] / m.length * 100 - target[k];
     if (delta < 0 && (!tightest || delta < tightest.delta)) tightest = { k, delta, count: c[k] };
   }
-  if (tightest) {
+  if (tightest && target[tightest.k] - tol[tightest.k] <= 0) {
+    // D1's tolerance (±19pp around 12%) puts its floor below 0%, so no amount
+    // of other content can breach it — counting towards it never terminates.
+    pass('floor headroom', true,
+      `D${tightest.k} is tightest at ${tightest.delta.toFixed(1)}pp — its floor is below 0%, so other content cannot breach it`);
+  } else if (tightest) {
     let n = 0;
     while (tightest.count / (m.length + n + 1) * 100 - target[tightest.k] >= -tol[tightest.k]) n++;
     pass('floor headroom', true,
