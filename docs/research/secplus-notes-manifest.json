@@ -660,8 +660,9 @@
       "hash": "6356557f823b",
       "domain": "4",
       "objective": null,
-      "status": "pending",
-      "lastSeen": "2026-10-05"
+      "status": "shipped",
+      "lastSeen": "2026-10-05",
+      "shippedVersion": "8.91.0"
     },
     "4|Security Monitoring": {
       "hash": "21e28b4e311d",
