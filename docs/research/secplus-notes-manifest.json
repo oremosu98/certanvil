@@ -606,8 +606,8 @@
       "domain": "4",
       "objective": null,
       "status": "shipped",
-      "lastSeen": "2026-10-05",
-      "shippedVersion": "8.101.0"
+      "shippedVersion": "8.101.0",
+      "lastSeen": "2026-10-05"
     },
     "4|Securing Wireless & Mobile": {
       "hash": "6b3962a58506",
@@ -702,8 +702,8 @@
       "domain": "4",
       "objective": null,
       "status": "shipped",
-      "lastSeen": "2026-10-05",
-      "shippedVersion": "8.101.0"
+      "shippedVersion": "8.101.0",
+      "lastSeen": "2026-10-05"
     },
     "4|Web Filtering": {
       "hash": "e6c14b05791c",
@@ -969,8 +969,9 @@
       "hash": "06e16f290476",
       "domain": "5",
       "objective": null,
-      "status": "pending",
-      "lastSeen": "2026-10-05"
+      "status": "shipped",
+      "lastSeen": "2026-10-05",
+      "shippedVersion": "8.102.0"
     },
     "5|Security Awareness": {
       "hash": "289e467223b0",
