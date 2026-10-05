@@ -540,8 +540,8 @@
       "domain": "3",
       "objective": null,
       "status": "shipped",
-      "lastSeen": "2026-10-05",
-      "shippedVersion": "8.86.0"
+      "shippedVersion": "8.86.0",
+      "lastSeen": "2026-10-05"
     },
     "3|Recovery Testing": {
       "hash": "fb225407a094",
@@ -678,8 +678,9 @@
       "hash": "e6c14b05791c",
       "domain": "4",
       "objective": null,
-      "status": "pending",
-      "lastSeen": "2026-10-05"
+      "status": "shipped",
+      "lastSeen": "2026-10-05",
+      "shippedVersion": "8.87.0"
     },
     "4|Secure Protocols": {
       "hash": "b184da2be86e",
