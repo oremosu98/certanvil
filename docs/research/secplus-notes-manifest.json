@@ -422,8 +422,8 @@
       "domain": "2",
       "objective": null,
       "status": "shipped",
-      "lastSeen": "2026-10-05",
-      "shippedVersion": "8.81.0"
+      "shippedVersion": "8.81.0",
+      "lastSeen": "2026-10-05"
     },
     "3|Cloud Infrastructure": {
       "hash": "779de0f9f0e8",
@@ -560,8 +560,9 @@
       "hash": "edac99d8a52c",
       "domain": "3",
       "objective": null,
-      "status": "pending",
-      "lastSeen": "2026-10-05"
+      "status": "shipped",
+      "lastSeen": "2026-10-05",
+      "shippedVersion": "8.82.0"
     },
     "4|Security Baselines": {
       "hash": "d0ac9babbd72",
