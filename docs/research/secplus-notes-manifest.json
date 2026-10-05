@@ -536,8 +536,9 @@
       "hash": "c1045e3f3ec4",
       "domain": "3",
       "objective": null,
-      "status": "pending",
-      "lastSeen": "2026-10-05"
+      "status": "shipped",
+      "lastSeen": "2026-10-05",
+      "shippedVersion": "8.99.0"
     },
     "3|Protecting Data": {
       "hash": "ff97de572650",
