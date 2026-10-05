@@ -666,8 +666,9 @@
       "hash": "b184da2be86e",
       "domain": "4",
       "objective": null,
-      "status": "pending",
-      "lastSeen": "2026-10-05"
+      "status": "shipped",
+      "lastSeen": "2026-10-05",
+      "shippedVersion": "8.59.0"
     },
     "4|Email Security (SPF, DKIM, DMARC)": {
       "hash": "f9718f33352f",
@@ -805,8 +806,8 @@
       "domain": "5",
       "objective": null,
       "status": "shipped",
-      "lastSeen": "2026-10-05",
-      "shippedVersion": "8.58.0"
+      "shippedVersion": "8.58.0",
+      "lastSeen": "2026-10-05"
     },
     "5|Risk Assessment": {
       "hash": "97a142890e21",
