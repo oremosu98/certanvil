@@ -93,8 +93,9 @@
       "hash": "b2e0fa5e49e6",
       "domain": "1",
       "objective": null,
-      "status": "pending",
-      "lastSeen": "2026-10-05"
+      "status": "shipped",
+      "lastSeen": "2026-10-05",
+      "shippedVersion": "8.89.0"
     },
     "1|Disruption & Deception": {
       "hash": "3012ad75ca10",
@@ -951,8 +952,8 @@
       "domain": "5",
       "objective": null,
       "status": "shipped",
-      "lastSeen": "2026-10-05",
-      "shippedVersion": "8.88.0"
+      "shippedVersion": "8.88.0",
+      "lastSeen": "2026-10-05"
     }
   }
 }
