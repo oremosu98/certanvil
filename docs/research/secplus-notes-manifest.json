@@ -331,8 +331,9 @@
       "hash": "bceb2be78dcf",
       "domain": "2",
       "objective": null,
-      "status": "pending",
-      "lastSeen": "2026-10-05"
+      "status": "shipped",
+      "lastSeen": "2026-10-05",
+      "shippedVersion": "8.103.0"
     },
     "2|Spyware & Bloatware": {
       "hash": "bd9e55cdbe51",
@@ -970,8 +971,8 @@
       "domain": "5",
       "objective": null,
       "status": "shipped",
-      "lastSeen": "2026-10-05",
-      "shippedVersion": "8.102.0"
+      "shippedVersion": "8.102.0",
+      "lastSeen": "2026-10-05"
     },
     "5|Security Awareness": {
       "hash": "289e467223b0",
