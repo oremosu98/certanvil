@@ -469,8 +469,8 @@
       "domain": "3",
       "objective": null,
       "status": "shipped",
-      "lastSeen": "2026-10-05",
-      "shippedVersion": "8.65.0"
+      "shippedVersion": "8.65.0",
+      "lastSeen": "2026-10-05"
     },
     "3|Port Security, 802.1X & EAP": {
       "hash": "ebd0e88772ec",
@@ -649,8 +649,9 @@
       "hash": "2757d4e7d151",
       "domain": "4",
       "objective": null,
-      "status": "pending",
-      "lastSeen": "2026-10-05"
+      "status": "shipped",
+      "lastSeen": "2026-10-05",
+      "shippedVersion": "8.66.0"
     },
     "4|Firewall Rules & Zones": {
       "hash": "7ab3cfc87365",
