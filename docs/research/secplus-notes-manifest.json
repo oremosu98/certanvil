@@ -313,8 +313,9 @@
       "hash": "02997e4f6dca",
       "domain": "2",
       "objective": null,
-      "status": "pending",
-      "lastSeen": "2026-10-05"
+      "status": "shipped",
+      "lastSeen": "2026-10-05",
+      "shippedVersion": "8.100.0"
     },
     "2|Malware": {
       "hash": "f9c2a40224be",
@@ -537,8 +538,8 @@
       "domain": "3",
       "objective": null,
       "status": "shipped",
-      "lastSeen": "2026-10-05",
-      "shippedVersion": "8.99.0"
+      "shippedVersion": "8.99.0",
+      "lastSeen": "2026-10-05"
     },
     "3|Protecting Data": {
       "hash": "ff97de572650",
@@ -569,8 +570,8 @@
       "domain": "3",
       "objective": null,
       "status": "shipped",
-      "lastSeen": "2026-10-05",
-      "shippedVersion": "8.99.0"
+      "shippedVersion": "8.99.0",
+      "lastSeen": "2026-10-05"
     },
     "3|Backups": {
       "hash": "4b1ea9ec5957",
