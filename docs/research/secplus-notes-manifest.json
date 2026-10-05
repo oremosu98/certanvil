@@ -257,8 +257,9 @@
       "hash": "d45ce52aae48",
       "domain": "2",
       "objective": null,
-      "status": "pending",
-      "lastSeen": "2026-10-05"
+      "status": "shipped",
+      "lastSeen": "2026-10-05",
+      "shippedVersion": "8.68.0"
     },
     "2|Cloud-Specific Vulnerabilities": {
       "hash": "da8306ea15bd",
@@ -462,8 +463,8 @@
       "domain": "3",
       "objective": null,
       "status": "shipped",
-      "lastSeen": "2026-10-05",
-      "shippedVersion": "8.67.0"
+      "shippedVersion": "8.67.0",
+      "lastSeen": "2026-10-05"
     },
     "3|Network Appliances": {
       "hash": "b4d148d92134",
@@ -871,7 +872,14 @@
       "lastSeen": "2026-10-05"
     },
     "?|Privacy": {
-      "hash": "ffc685e88e09",
+      "hash": "0a7f0f3bcaa6",
+      "domain": null,
+      "objective": null,
+      "status": "pending",
+      "lastSeen": "2026-10-05"
+    },
+    "?|Audits and Assessments": {
+      "hash": "8391037679bb",
       "domain": null,
       "objective": null,
       "status": "pending",
