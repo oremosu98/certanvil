@@ -911,15 +911,16 @@
       "domain": "5",
       "objective": null,
       "status": "shipped",
-      "lastSeen": "2026-10-05",
-      "shippedVersion": "8.76.0"
+      "shippedVersion": "8.76.0",
+      "lastSeen": "2026-10-05"
     },
     "5|Audits and Assessments": {
       "hash": "8391037679bb",
       "domain": "5",
       "objective": null,
-      "status": "pending",
-      "lastSeen": "2026-10-05"
+      "status": "shipped",
+      "lastSeen": "2026-10-05",
+      "shippedVersion": "8.77.0"
     }
   }
 }
