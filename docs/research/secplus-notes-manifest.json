@@ -77,8 +77,9 @@
       "hash": "0bb77e8f218f",
       "domain": "1",
       "objective": null,
-      "status": "pending",
-      "lastSeen": "2026-10-05"
+      "status": "shipped",
+      "lastSeen": "2026-10-05",
+      "shippedVersion": "8.61.0"
     },
     "1|Digital Certificates": {
       "hash": "f11ab9a7a944",
@@ -334,8 +335,8 @@
       "domain": "2",
       "objective": null,
       "status": "shipped",
-      "lastSeen": "2026-10-05",
-      "shippedVersion": "8.60.0"
+      "shippedVersion": "8.60.0",
+      "lastSeen": "2026-10-05"
     },
     "2|DNS Attacks": {
       "hash": "fcceddd2fcc7",
