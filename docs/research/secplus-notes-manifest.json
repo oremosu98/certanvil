@@ -362,8 +362,8 @@
       "domain": "2",
       "objective": null,
       "status": "shipped",
-      "lastSeen": "2026-10-05",
-      "shippedVersion": "8.74.0"
+      "shippedVersion": "8.74.0",
+      "lastSeen": "2026-10-05"
     },
     "2|Replay Attacks": {
       "hash": "8ddda4a788f8",
@@ -436,8 +436,9 @@
       "hash": "5c9264c91af4",
       "domain": "3",
       "objective": null,
-      "status": "pending",
-      "lastSeen": "2026-10-05"
+      "status": "shipped",
+      "lastSeen": "2026-10-05",
+      "shippedVersion": "8.75.0"
     },
     "3|Other Infrastructure Concepts": {
       "hash": "d88b2581ff6b",
