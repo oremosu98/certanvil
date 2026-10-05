@@ -233,8 +233,9 @@
       "hash": "692cd61a466f",
       "domain": "2",
       "objective": null,
-      "status": "pending",
-      "lastSeen": "2026-10-05"
+      "status": "shipped",
+      "lastSeen": "2026-10-05",
+      "shippedVersion": "8.96.0"
     },
     "2|SQL Injection": {
       "hash": "7aeb9cb371d1",
@@ -743,8 +744,8 @@
       "domain": "4",
       "objective": null,
       "status": "shipped",
-      "lastSeen": "2026-10-05",
-      "shippedVersion": "8.95.0"
+      "shippedVersion": "8.95.0",
+      "lastSeen": "2026-10-05"
     },
     "4|Multifactor Authentication (MFA)": {
       "hash": "82546601c6fa",
