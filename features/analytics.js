@@ -2529,7 +2529,7 @@
           <div class="read-bar-wrap">
             <div class="read-bar">
               <i data-w="${r.barPct.toFixed(1)}" style="width:0"></i>
-              <span class="read-tick" style="left:${r.passTickPct.toFixed(1)}%"></span>
+              <span class="read-tick" data-pass="${EXAM_PASS_SCORE}" style="left:${r.passTickPct.toFixed(1)}%"></span>
             </div>
           </div>
           <div class="read-fore">

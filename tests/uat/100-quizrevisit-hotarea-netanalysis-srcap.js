@@ -2001,3 +2001,17 @@ test('v4.81.25 OrderGuard: vm fixture — non-troubleshooting order question pas
     } catch (e) { return false; }
   })());
 
+
+// v8.114.1: pass-tick labels must follow EXAM_PASS_SCORE, never a CSS literal
+// (Sec+ pass mark is 750; the readiness bar said "PASS 720" on every cert).
+test('v8.114.1 pass tick: no hard-coded "PASS 720" in CSS; labels read attr(data-pass)',
+  (() => {
+    const fs = require('fs'), path = require('path');
+    const root = path.join(__dirname, '..', '..');
+    const css = ['dg-system.css', 'dg-critical.css', 'styles.css']
+      .map(f => fs.readFileSync(path.join(root, f), 'utf8')).join('\n');
+    const rd = fs.readFileSync(path.join(root, 'features', 'readiness.js'), 'utf8');
+    return !/PASS 720/.test(css)
+      && /readiness-bar-mark::after\{content:"PASS " attr\(data-pass\)/.test(css)
+      && /_markEl\.dataset\.pass = EXAM_PASS_SCORE/.test(rd);
+  })());

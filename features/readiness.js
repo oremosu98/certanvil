@@ -1045,6 +1045,13 @@
     const trajEl = document.getElementById('rc-v2-trajectory');
 
     if (!numEl || !barEl || !deltaEl || !card) return;
+    // v8.114.1: pass tick label + position follow the cert's pass mark (was a
+    // CSS literal "PASS 720" at a fixed 62.5%, wrong on Sec+ where it's 750).
+    const _markEl = document.getElementById('rc-v2-bar-mark');
+    if (_markEl) {
+      _markEl.dataset.pass = EXAM_PASS_SCORE;
+      _markEl.style.left = Math.max(0, Math.min(100, ((EXAM_PASS_SCORE - 420) / 450) * 100)).toFixed(1) + '%';
+    }
     // v7.34.0: styling-only hook for the no-score state (compresses the desktop
     // hero so the empty card isn't a 2-row dead box - see dg-system.css). Cleared
     // by default; re-added below only when there's no quiz history yet.

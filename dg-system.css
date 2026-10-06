@@ -258,7 +258,7 @@ html[data-theme] body #page-setup .readiness-score span:not(#rc-v2-num){display:
 #page-setup .readiness-bar-track{position:relative;height:12px;border-radius:99px;background:color-mix(in oklab,var(--text) 12%,transparent);overflow:visible;margin-top:34px;}
 #page-setup .readiness-bar-fill{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,var(--accent),color-mix(in oklab,var(--accent) 64%,var(--yellow)));width:0;transition:width 1.1s var(--dgh-ease);}
 #page-setup .readiness-bar-mark{position:absolute;top:-7px;bottom:-7px;height:auto;width:2px;background:var(--text-mid);border-radius:1px;}
-#page-setup .readiness-bar-mark::after{content:"PASS 720";position:absolute;top:-17px;left:50%;transform:translateX(-50%);font:800 8px/1 Inter,-apple-system,sans-serif;letter-spacing:0.09em;color:var(--text-mid);white-space:nowrap;}
+#page-setup .readiness-bar-mark::after{content:"PASS " attr(data-pass);position:absolute;top:-17px;left:50%;transform:translateX(-50%);font:800 8px/1 Inter,-apple-system,sans-serif;letter-spacing:0.09em;color:var(--text-mid);white-space:nowrap;}
 #page-setup .readiness-range{display:flex;justify-content:space-between;align-items:baseline;margin-top:24px;padding-top:14px;border-top:1px solid var(--border);font-size:12px;color:var(--text-dim);font-variant-numeric:tabular-nums;}
 #page-setup .readiness-range #rc-v2-delta{font-weight:650;color:var(--text-mid);}
 #page-setup .readiness-range b{color:var(--text);font-weight:700;}
@@ -1198,7 +1198,7 @@ html[data-theme] body #page-analytics .ana-bento .tile.s-read{
   background:linear-gradient(90deg,var(--accent-2),var(--accent));
   transition:width .95s var(--ana-ease-out)}
 #page-analytics .read-tick{position:absolute;top:-6px;bottom:-6px;width:2px;background:var(--green);border-radius:2px}
-#page-analytics .read-tick::after{content:'PASS 720';position:absolute;top:-17px;left:50%;transform:translateX(-50%);
+#page-analytics .read-tick::after{content:'PASS ' attr(data-pass);position:absolute;top:-17px;left:50%;transform:translateX(-50%);
   font-family:'JetBrains Mono',ui-monospace,monospace;font-size:9px;letter-spacing:0.08em;color:var(--green);white-space:nowrap}
 #page-analytics .read-fore{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-top:22px;font-size:13px;color:var(--text-dim)}
 #page-analytics .read-fore .fv{font-family:'JetBrains Mono',ui-monospace,monospace;color:var(--text);font-weight:500}
