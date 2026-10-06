@@ -29,7 +29,7 @@
 | index.html | 2287 | 148 KB |
 | dg-system.css | 5447 | 507 KB |
 | tests/uat.js + tests/uat/ (29 modules) | 29015 | — |
-UAT checks: 5012 · E2E `test(` count: 163 · APP_VERSION: 8.113.0 · stamped-at: worktree
+UAT checks: 5012 · E2E `test(` count: 163 · APP_VERSION: 8.114.0 · stamped-at: worktree
 <!-- FACTS:AUTO:END -->
 
 | File | Purpose | Size |
@@ -135,9 +135,9 @@ npx playwright test              # E2E (tests/e2e/app.spec.js)
 
 | Version | Features Added |
 |---|---|
+| v8.114.0 | Sec+ mock-exam misses batch |
 | v8.113.0 | Fix: Net+ PBQs leaking into other certs |
 | v8.112.0 | Generator: no unstated scenarios + cert-aware verifier |
-| v8.111.0 | Sec+ final set 7/7: ports & protocols |
 
 _Older releases (v7.60.0 and back) live in [CHANGELOG.md](./CHANGELOG.md)._
 
