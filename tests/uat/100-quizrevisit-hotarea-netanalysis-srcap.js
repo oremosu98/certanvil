@@ -835,6 +835,24 @@ test('v4.83.0 HotArea: getMatchingScenarios returns hotArea pool',
     return /HOT_AREA_BANK\.filter/.test(body)
       && /hotArea/.test(body);
   })());
+// v8.113.0: the CLI/topo/hot-area banks are Net+ content — other certs get none
+test('v8.113.0 PBQ banks: getMatchingScenarios returns empty pools on non-netplus certs, full pools on netplus',
+  (() => {
+    const body = _fnBody(js, 'getMatchingScenarios');
+    if (!body) return false;
+    const vm = require('vm');
+    const run = (cert, topic) => {
+      const ctx = vm.createContext({
+        CURRENT_CERT: cert, MIXED_TOPIC: 'Mixed',
+        cliScenarios: [{ topic: 'Network Troubleshooting & Tools' }],
+        topoScenarios: [{ topic: 'Cabling & Topology' }],
+        HOT_AREA_BANK: [{ topic: 'Routing Fundamentals' }],
+      });
+      vm.runInContext(body + '; this.__r = getMatchingScenarios(' + JSON.stringify(topic) + ');', ctx);
+      const r = ctx.__r; return r.cli.length + r.topo.length + r.hotArea.length;
+    };
+    return run('secplus', 'Mixed') === 0 && run('aplus-core1', 'Mixed') === 0 && run('netplus', 'Mixed') === 3;
+  })());
 test('v4.83.0 HotArea: injectPBQs pool includes hotArea',
   (() => {
     const body = _fnBody(js, 'injectPBQs');

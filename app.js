@@ -1,9 +1,9 @@
 // ══════════════════════════════════════════
-// Network+ AI Quiz — app.js  v8.112.0
+// Network+ AI Quiz — app.js  v8.113.0
 // ══════════════════════════════════════════
 
 // ── CONSTANTS ──
-const APP_VERSION = '8.112.0';
+const APP_VERSION = '8.113.0';
 // v4.99.45 (Phase 6b): expose APP_VERSION on window so the web-vitals
 // collector (lib/web-vitals-collector.js, loaded BEFORE app.js so its
 // PerformanceObservers attach earlier) can stamp this version onto every
@@ -7397,7 +7397,11 @@ function submitTopology(q) {
 // INJECT PBQs FROM PREDEFINED BANKS
 // ══════════════════════════════════════════
 function getMatchingScenarios(qTopic) {
-  const cli = cliScenarios.filter(s => qTopic === MIXED_TOPIC || s.topic === qTopic || qTopic.includes('Troubleshoot'));
+  // v8.113.0: all three banks are Network+ content (every entry carries a Net+
+  // topic). Mixed mode used to pull them on every cert, so Sec+ quizzes got
+  // Net+ CLI sims (e.g. the 169.254 APIPA scenario). Other certs get none.
+  if (CURRENT_CERT !== 'netplus') return { cli: [], topo: [], hotArea: [] };
+  const cli =cliScenarios.filter(s => qTopic === MIXED_TOPIC || s.topic === qTopic || qTopic.includes('Troubleshoot'));
   const topo = topoScenarios.filter(s => qTopic === MIXED_TOPIC || s.topic === qTopic);
   // v4.83.0 — hot-area bank joins the mixable PBQ pool. Same topic-matching
   // discipline as cli/topo: Mixed mode pulls everything; topic-locked quizzes
