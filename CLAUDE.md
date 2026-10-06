@@ -24,12 +24,12 @@
 <!-- machine-owned — run `node scripts/stamp-facts.js` to refresh; do not hand-edit -->
 | Metric | Lines | Size |
 |---|---|---|
-| app.js | 8185 | 426 KB |
+| app.js | 8188 | 427 KB |
 | styles.css | 14913 | 551 KB |
 | index.html | 2287 | 148 KB |
 | dg-system.css | 5447 | 507 KB |
-| tests/uat.js + tests/uat/ (29 modules) | 28991 | — |
-UAT checks: 5008 · E2E `test(` count: 163 · APP_VERSION: 8.111.0 · stamped-at: worktree
+| tests/uat.js + tests/uat/ (29 modules) | 28997 | — |
+UAT checks: 5011 · E2E `test(` count: 163 · APP_VERSION: 8.112.0 · stamped-at: worktree
 <!-- FACTS:AUTO:END -->
 
 | File | Purpose | Size |
@@ -135,9 +135,9 @@ npx playwright test              # E2E (tests/e2e/app.spec.js)
 
 | Version | Features Added |
 |---|---|
+| v8.112.0 | Generator: no unstated scenarios + cert-aware verifier |
 | v8.111.0 | Sec+ final set 7/7: ports & protocols |
 | v8.110.0 | Sec+ final set 6/7: read the evidence |
-| v8.109.0 | Sec+ final set 5/7: multi-select |
 
 _Older releases (v7.60.0 and back) live in [CHANGELOG.md](./CHANGELOG.md)._
 

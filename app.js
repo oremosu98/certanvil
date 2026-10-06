@@ -1,9 +1,9 @@
 // ══════════════════════════════════════════
-// Network+ AI Quiz — app.js  v8.111.0
+// Network+ AI Quiz — app.js  v8.112.0
 // ══════════════════════════════════════════
 
 // ── CONSTANTS ──
-const APP_VERSION = '8.111.0';
+const APP_VERSION = '8.112.0';
 // v4.99.45 (Phase 6b): expose APP_VERSION on window so the web-vitals
 // collector (lib/web-vitals-collector.js, loaded BEFORE app.js so its
 // PerformanceObservers attach earlier) can stamp this version onto every
@@ -4615,6 +4615,7 @@ CRITICAL — MULTI-SELECT QUALITY CRITERIA (CompTIA exam style):
   • WHY each correct answer is correct (1-2 sentences each)
   • WHY each distractor is wrong — naming a specific factual error, not just "less applicable" or "not the best fit"
 - Multi-select stems should ask about what IS true / IS valid / DOES apply — not about ranking, fit, or "best."
+- Every correct answer must apply to the stem AS WRITTEN — never one that needs a scenario the stem doesn't mention (e.g. a BEC-only control as a correct answer to a generic "phishing" stem). If you want to test it, put the scenario in the stem.
 - NEVER create a question where MORE options are factually correct than the stem asks for. Example: 6to4, Teredo, AND NAT64 are ALL valid IPv6 transition methods — a "Which TWO" stem forces the student to guess which 2 of 3 correct answers the grader prefers, which is NOT how CompTIA writes exams. If a topic has N valid answers, either ask for all N or reframe the stem to narrow which subset is being tested (e.g., "Which TWO are tunneling methods?" excludes NAT64 since it's translation, not tunneling).
 - SELF-TEST before finalizing: for each correct answer, ask "could a student who studied this topic for 2 weeks identify this as correct?" If the answer is no for ANY correct option, the question fails the balance test. Replace the obscure correct answer with a more recognizable one.
 - CONCRETE EXAMPLES of good vs bad multi-select:
@@ -4684,7 +4685,7 @@ Generate exactly ${n} multiple choice questions. Requirements:
 - No repeated questions
 ${includeScenario ? scenarioInstructions : ''}
 MANDATORY N10-009 OBJECTIVE TAGGING:
-- Every question MUST include an "objective" field with the CompTIA N10-009 exam objective number (format "X.Y" — e.g., "1.4", "2.1", "4.3", "5.1")
+- Every question MUST include an "objective" field with the CompTIA ${CERT_CODE} exam objective number (format "X.Y" — e.g., "1.4", "2.1", "4.3", "5.1")
 - Valid objectives are 1.1–1.8 (Concepts), 2.1–2.4 (Implementation), 3.1–3.5 (Operations), 4.1–4.5 (Security), 5.1–5.5 (Troubleshooting)
 - If you cannot map the question to a specific N10-009 objective, do NOT write the question — write a different one that does map${expectedObj ? `\n- For this topic, use objective "${expectedObj}" (or an adjacent sub-objective in the same domain if more appropriate)` : ''}
 ${pbqInstructions}
@@ -4708,6 +4709,7 @@ CONCEPTUAL COHERENCE RULES (v4.57.0 — enforce rigorously):
 - Do NOT conflate deprecated classful addressing (Class A/B/C) with modern TCP/IP or CIDR/subnet principles. Classful addressing was obsoleted by CIDR in 1993 (RFC 1519). If you reference classful terminology, it must be explicitly about legacy concepts or historical context — never framed as a "fundamental TCP/IP principle."
 - Do NOT conflate distinct concepts under one label. If the stem asks about "a TCP/IP principle," the answer must be about the TCP/IP protocol stack (layers, encapsulation, ports, the four-layer model), not about IP address classes. If the stem asks about "an OSI Layer 3 function," the answer must actually be a Layer 3 function, not a Layer 2 one.
 - MATCH THE ABSTRACTION LEVEL: If the stem asks for a "principle," "fundamental concept," or "root cause," the answer must be at that level of abstraction — NOT a specific configuration step or tool. ("Default gateway not configured" is a configuration detail, not a principle.) If the stem asks for a specific fix or symptom, don't give an abstract principle.
+- NO UNSTATED SCENARIOS: A correct answer must be correct for the stem AS WRITTEN. If an option is only right under a specific scenario or attack variant the stem never mentions (e.g. stem asks about "phishing" but the answer is "out-of-band verification of payment changes", which only fits business email compromise / invoice fraud), either name that scenario in the stem or don't use the option as a correct answer. The student must never have to invent context to reach the key.
 - STEM MUST MATCH WHAT THE QUESTION ACTUALLY TESTS: If the stem says "which protocol operates at Layer 3?", the question must test Layer 3 protocol knowledge — not addressing theory, not encapsulation. Read your own stem and make sure the answer directly addresses what you asked.
 
 DISTRACTOR QUALITY RULES:
@@ -7444,7 +7446,7 @@ async function aiValidateQuestions(key, qs) {
     return `Q${i+1}: "${q.question}"\nA) ${q.options.A}\nB) ${q.options.B}\nC) ${q.options.C}\nD) ${q.options.D}\nMarked answer: ${q.answer}\nExplanation: ${q.explanation}`;
   }).join('\n\n');
 
-  const prompt = `You are a CompTIA Network+ N10-009 expert verifier. Review each question below and check SEVEN things:
+  const prompt = `You are a ${CERT_NAME_FULL} expert verifier. Review each question below and check EIGHT things:
 1. Is the marked answer FACTUALLY CORRECT?
 2. Does the correct answer CONTRADICT any fact stated in the question stem?
 3. Does the EXPLANATION actually support the MARKED answer letter, or does it champion a different option?
@@ -7452,11 +7454,12 @@ async function aiValidateQuestions(key, qs) {
 5. FRAMING MATCH: Is the question's abstraction level aligned with the answer? (e.g. stem asks for a "principle" or "root cause," but the answer is a specific configuration detail; or stem asks what is "most likely" but only one option is even plausible.)
 6. DISTRACTOR QUALITY: Are the wrong options plausible alternatives a student might pick, or are 3/4 obviously wrong? A good MCQ has at least two tempting-looking distractors.
 7. MULTI-SELECT ANSWER BALANCE (for [MULTI-SELECT] questions only): Are ALL marked correct answers at a SIMILAR level of prominence and familiarity? A well-formed multi-select tests BREADTH (knowing that multiple core facts apply), NOT obscurity. If one correct answer is an obvious well-known fact and the other is an obscure edge-case detail that only specialists would know, the question is UNBALANCED — mark AMBIGUOUS. Also check: are any of the DISTRACTORS actually factually correct answers to the stem? If so, mark AMBIGUOUS.
+8. UNSTATED SCENARIO: Is every marked correct answer correct for the stem AS WRITTEN? If a correct answer only applies under a specific scenario, attack variant or context the stem never states (e.g. stem asks generically about "phishing" but a marked answer is a control that only fits business email compromise / payment fraud), the student has to invent context to reach the key — mark AMBIGUOUS.
 
 For each question, respond with ONLY:
-- "Q1:OK" if the marked answer is correct AND consistent with the stem AND supported by the explanation AND conceptually coherent AND well-framed AND has plausible distractors (AND balanced, for multi-select)
+- "Q1:OK" if the marked answer is correct AND consistent with the stem AND supported by the explanation AND conceptually coherent AND well-framed AND has plausible distractors AND needs no unstated scenario (AND balanced, for multi-select)
 - "Q1:WRONG:X" if the correct answer should be letter X instead (use this when the explanation itself says X is correct but the answer field says something else)
-- "Q1:AMBIGUOUS" if the question is unclear, has multiple valid answers, the correct answer contradicts the question's own stated premises, OR fails any of checks 4/5/6/7 above
+- "Q1:AMBIGUOUS" if the question is unclear, has multiple valid answers, the correct answer contradicts the question's own stated premises, OR fails any of checks 4/5/6/7/8 above
 
 Be strict. Check actual networking facts. Common errors to catch:
 - Port numbers matched to wrong protocols

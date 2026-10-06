@@ -314,8 +314,14 @@ test('v4.56.2 JS: Sonnet API error still bubbles up immediately (not masked)',
 // ══════════════════════════════════════════════════════════════════════
 
 // Validator prompt expansion
-test('v4.57.0 validator: expanded from THREE checks to SEVEN checks (v4.85.4: +multi-select balance)',
-  /Review each question below and check SEVEN things/.test(js));
+test('v4.57.0 validator: expanded from THREE checks to EIGHT checks (v4.85.4: +multi-select balance; v8.112.0: +unstated scenario)',
+  /Review each question below and check EIGHT things/.test(js));
+test('v8.112.0 validator: check 8 = UNSTATED SCENARIO, triggers AMBIGUOUS',
+  /8\.\s*UNSTATED SCENARIO[\s\S]{0,500}mark AMBIGUOUS/.test(js));
+test('v8.112.0 validator: verifier persona is cert-aware, not hard-coded Network+',
+  /You are a \$\{CERT_NAME_FULL\} expert verifier/.test(js) && !/You are a CompTIA Network\+ N10-009 expert verifier/.test(js));
+test('v8.112.0 generator: NO UNSTATED SCENARIOS rule present',
+  /NO UNSTATED SCENARIOS:/.test(js));
 test('v4.57.0 validator: check 4 = CONCEPTUAL COHERENCE',
   /4\.\s*CONCEPTUAL COHERENCE[\s\S]{0,300}different concept/i.test(js));
 test('v4.57.0 validator: check 5 = FRAMING MATCH',
@@ -331,7 +337,7 @@ test('v4.57.0 validator: classful-addressing conflation explicitly called out as
 test('v4.57.0 validator: OK requires passing all 7 checks (v4.85.4: +balanced for multi-select)',
   /Q1:OK[\s\S]{0,400}conceptually coherent[\s\S]{0,100}well-framed[\s\S]{0,100}plausible distractors/.test(js));
 test('v4.57.0 validator: AMBIGUOUS trigger expanded to cover checks 4/5/6/7',
-  /AMBIGUOUS[\s\S]{0,400}fails any of checks 4\/5\/6\/7/.test(js));
+  /AMBIGUOUS[\s\S]{0,400}fails any of checks 4\/5\/6\/7\/8/.test(js));
 
 // Generation prompt hardening
 test('v4.57.0 gen: CONCEPTUAL COHERENCE RULES section added',
