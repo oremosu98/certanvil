@@ -997,7 +997,7 @@ test('v4.54.8 HTML: #results-review-list container + eyebrow + italic-accent tit
 test('v4.54.8 HTML: Drill my mistakes CTA button exists',
   /id="btn-drill-mistakes"[\s\S]{0,200}drillMistakesFromResults\(\)/.test(html));
 test('v4.54.8 JS: _sessionStartTs tracked on startQuiz + drillMistakesFromResults',
-  /function startQuiz\([\s\S]{0,7600}_sessionStartTs\s*=\s*Date\.now\(\)/.test(js) &&  // window 6000→6800 (v7.46.0 free-tier gates) →7600 (v7.65.1 picker-dismiss block); scopes the match to startQuiz's body, not a size budget
+  /function startQuiz\([\s\S]{0,8400}_sessionStartTs\s*=\s*Date\.now\(\)/.test(js) &&  // window 6000→6800 (v7.46.0 free-tier gates) →7600 (v7.65.1 picker-dismiss block) →8400 (v8.115/v8.117 session reset + Smart topic label); scopes the match to startQuiz's body, not a size budget
   js.includes('let _sessionStartTs') &&
   js.includes('function drillMistakesFromResults(') &&
   js.includes('function _formatElapsed('));

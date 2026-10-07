@@ -1,9 +1,9 @@
 // ══════════════════════════════════════════
-// Network+ AI Quiz — app.js  v8.116.0
+// Network+ AI Quiz — app.js  v8.117.0
 // ══════════════════════════════════════════
 
 // ── CONSTANTS ──
-const APP_VERSION = '8.116.0';
+const APP_VERSION = '8.117.0';
 // v4.99.45 (Phase 6b): expose APP_VERSION on window so the web-vitals
 // collector (lib/web-vitals-collector.js, loaded BEFORE app.js so its
 // PerformanceObservers attach earlier) can stamp this version onto every
@@ -3320,6 +3320,44 @@ function getSpacedRepTopic() {
     if (r <= 0) return t.topic;
   }
   return top[0].topic;
+}
+
+// v8.117.0: a Smart quiz targets SEVERAL weak spots, not one (founder request).
+// Topics are ranked by _scoreTopicNeed — a relative ranking — so when every
+// topic is strong it still picks the comparatively weakest. Draws 3 topics
+// (4 for 15+ questions) by need-weighted sampling from the top few, so repeat
+// runs vary slightly instead of always serving the identical trio. Returns a
+// "Multi: A, B, C" sentinel, which the generator already splits evenly.
+// getSpacedRepTopic stays single-topic for its other callers.
+function getSmartQuizTopics(count) {
+  const allTopics = _getAllStudyTopics();
+  if (allTopics.length === 0) return MIXED_TOPIC;
+  const h = loadHistory().filter(e => e.topic !== MIXED_TOPIC && e.topic !== EXAM_TOPIC);
+  const now = Date.now();
+  // Shuffle first so equal-need topics (e.g. a new user's untouched catalog)
+  // break ties randomly instead of always favouring catalog order.
+  const shuffled = allTopics.slice();
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    const tmp = shuffled[i]; shuffled[i] = shuffled[j]; shuffled[j] = tmp;
+  }
+  const scored = shuffled.map(t => ({ topic: t, score: _scoreTopicNeed(t, h, now).score }))
+    .sort((a, b) => b.score - a.score);
+  const want = Math.max(1, Math.min(count >= 15 ? 4 : 3, scored.length, count || 3));
+  const pool = scored.slice(0, Math.min(want + 2, scored.length));
+  const picked = [];
+  while (picked.length < want && pool.length) {
+    const total = pool.reduce((a, t) => a + Math.max(t.score, 0.01), 0);
+    let r = Math.random() * total;
+    let idx = pool.length - 1;
+    for (let i = 0; i < pool.length; i++) {
+      r -= Math.max(pool[i].score, 0.01);
+      if (r <= 0) { idx = i; break; }
+    }
+    picked.push(pool[idx].topic);
+    pool.splice(idx, 1);
+  }
+  return picked.length === 1 ? picked[0] : 'Multi: ' + picked.join(', ');
 }
 
 // ══════════════════════════════════════════

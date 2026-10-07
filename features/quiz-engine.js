@@ -47,8 +47,12 @@
   
     // v4.54.15: Smart + Multi: handled alongside single-topic + Mixed.
     activeQuizTopic = topic.includes('Smart')
-      ? getSpacedRepTopic()
+      ? getSmartQuizTopics(qCount)
       : topic;
+    // Human label for loading copy — never show the raw "Multi: …" sentinel.
+    const _topicLabel = activeQuizTopic.startsWith('Multi: ') && typeof _parseMultiTopicSentinel === 'function'
+      ? _parseMultiTopicSentinel(activeQuizTopic).join(' \u00b7 ')
+      : activeQuizTopic;
   
     // v7.65.1: dismiss the Custom Quiz picker before navigating. It's a <details>
     // overlay portaled to <body> (z-index 140) that only closes on Escape /
@@ -72,10 +76,10 @@
           : topic.slice(7).split(',').length)
       : 0;
     document.getElementById('loading-msg').textContent = topic.includes('Smart')
-      ? '\ud83e\udde0 Smart pick: ' + activeQuizTopic + '\u2026'
+      ? '\ud83e\udde0 Smart pick: ' + _topicLabel + '\u2026'
       : _multiCount >= 2
         ? `Generating ${qCount} ${diff} questions across ${_multiCount} topics\u2026`
-        : 'Generating ' + qCount + ' ' + diff + ' questions on ' + activeQuizTopic + '\u2026';
+        : 'Generating ' + qCount + ' ' + diff + ' questions on ' + _topicLabel + '\u2026';
   
     // v4.82.1: surface the smooth loading progress bar with stage milestones.
     _loadingProgressBegin('Generating questions\u2026');
@@ -100,7 +104,7 @@
       // do ONE retry for the exact deficit + buffer, then slice to qCount.
       const DROPOUT_BUFFER = Math.max(3, Math.ceil(qCount * 0.3));
       document.getElementById('loading-msg').textContent =
-        'Generating ' + qCount + ' ' + diff + ' questions on ' + activeQuizTopic + '\u2026';
+        'Generating ' + qCount + ' ' + diff + ' questions on ' + _topicLabel + '\u2026';
       let raw = await fetchQuestions(key, activeQuizTopic, diff, qCount + DROPOUT_BUFFER);
       _loadingProgressUpdate('Verifying quality\u2026', 45);
       // Enhancement 1: AI second-pass validation

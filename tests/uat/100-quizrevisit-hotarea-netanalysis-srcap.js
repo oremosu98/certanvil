@@ -2023,3 +2023,41 @@ test('v8.115.0 Session: startQuiz and startBulkQuiz never inherit sessionMode',
   })());
 test('v8.115.0 Lock: revisit banner copy says answers are locked',
   /Answers lock once you submit\./.test(html));
+
+// v8.117.0: Smart quizzes target several weak topics, ranked relatively.
+test('v8.117.0 Smart: getSmartQuizTopics returns 3 (or 4 for 15+) of the neediest topics as a Multi sentinel',
+  (() => {
+    try {
+      const body = _fnBody(js, 'getSmartQuizTopics');
+      if (!body) return false;
+      const need = { A: 0.9, B: 0.8, C: 0.7, D: 0.2, E: 0.15, F: 0.1, G: 0.05 };
+      const ctx = vm.createContext({
+        MIXED_TOPIC: 'Mixed', EXAM_TOPIC: 'Exam', Date, Math,
+        _getAllStudyTopics: () => Object.keys(need),
+        loadHistory: () => [],
+        _scoreTopicNeed: (t) => ({ score: need[t] }),
+      });
+      vm.runInContext(body, ctx);
+      const ok10 = [], ok15 = [];
+      for (let i = 0; i < 40; i++) {
+        const r10 = vm.runInContext('getSmartQuizTopics(10)', ctx);
+        const r15 = vm.runInContext('getSmartQuizTopics(15)', ctx);
+        const p10 = r10.slice(7).split(', '), p15 = r15.slice(7).split(', ');
+        // Only the top want+2 by need may be picked; never the weakest-need tail.
+        ok10.push(r10.startsWith('Multi: ') && p10.length === 3 && new Set(p10).size === 3 && p10.every(t => ['A','B','C','D','E'].includes(t)));
+        ok15.push(p15.length === 4 && p15.every(t => ['A','B','C','D','E','F'].includes(t)));
+      }
+      // All-strong case: ranking is relative, so it still returns topics.
+      const strong = vm.createContext({ MIXED_TOPIC: 'Mixed', EXAM_TOPIC: 'Exam', Date, Math,
+        _getAllStudyTopics: () => ['X', 'Y', 'Z', 'W'], loadHistory: () => [], _scoreTopicNeed: (t) => ({ score: { X: 0.05, Y: 0.04, Z: 0.03, W: 0.01 }[t] }) });
+      vm.runInContext(body, strong);
+      const s = vm.runInContext('getSmartQuizTopics(10)', strong).slice(7).split(', ');
+      return ok10.every(Boolean) && ok15.every(Boolean) && s.length === 3;
+    } catch (e) { return false; }
+  })());
+test('v8.117.0 Smart: startQuiz uses getSmartQuizTopics and never shows the raw Multi sentinel while loading',
+  (() => {
+    const qe = fs.readFileSync(path.join(__dirname, '..', '..', 'features', 'quiz-engine.js'), 'utf8');
+    return /topic\.includes\('Smart'\)\s*\?\s*getSmartQuizTopics\(qCount\)/.test(qe)
+      && /questions on ' \+ _topicLabel/.test(qe) && !/questions on ' \+ activeQuizTopic/.test(qe);
+  })());
