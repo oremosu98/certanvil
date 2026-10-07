@@ -107,7 +107,7 @@ html[data-theme] body .btn-danger:hover{background:color-mix(in oklab,var(--red)
 html[data-theme] body .btn-exam{background:none;border:1px solid var(--border);color:var(--text);}
 html[data-theme] body .btn-exam:hover{border-color:var(--accent);color:var(--accent);box-shadow:none;}
 html[data-theme] body .option{background:none;border:1px solid var(--dg-rule-soft);box-shadow:none;}
-html[data-theme] body .option:hover{border-color:var(--accent);}
+html[data-theme] body .option:hover:not(:disabled){border-color:var(--accent);}
 html[data-theme] body .chip{box-shadow:none;}
 html[data-theme] body h3{color:var(--text-dim);}
 
@@ -1513,7 +1513,7 @@ html[data-theme] body #page-quiz .q-scenario{background:color-mix(in oklab,var(-
 /* options — hairline rows; correct = pass-tint + pass rule (not a big card) */
 #page-quiz .options{display:block;}
 html[data-theme] body #page-quiz .option{display:flex;align-items:center;gap:16px;width:100%;text-align:left;background:none!important;border:1px solid var(--dg-rule-soft)!important;border-radius:11px!important;padding:16px 18px!important;margin-bottom:11px!important;cursor:pointer;color:var(--text-mid)!important;font:600 var(--t0)/1.45 Inter,sans-serif!important;box-shadow:none!important;transform:none!important;}
-html[data-theme] body #page-quiz .option:hover:not(.correct):not(.wrong):not(.reveal-correct){border-color:var(--accent)!important;color:var(--text)!important;background:none!important;}
+html[data-theme] body #page-quiz .option:hover:not(:disabled):not(.correct):not(.wrong):not(.reveal-correct){border-color:var(--accent)!important;color:var(--text)!important;background:none!important;}
 html[data-theme] body #page-quiz .option .opt-letter,html[data-theme] body #page-quiz .option .ms-checkbox{flex:none;width:28px;height:28px;border-radius:7px;background:var(--surface)!important;display:grid;place-items:center;font-weight:800;font-size:var(--t-1);color:var(--text-dim)!important;border:0!important;}
 #page-quiz .option .opt-text{flex:1;min-width:0;}
 html[data-theme] body #page-quiz .option.correct,html[data-theme] body #page-quiz .option.reveal-correct{border-color:var(--green)!important;background:color-mix(in oklab,var(--green) 9%,transparent)!important;color:var(--text)!important;}

@@ -287,44 +287,40 @@ const _pickBody = (() => {
   const m = js.match(/function pick\(chosen, q\)\s*\{[\s\S]*?\n\}\n/);
   return m ? m[0] : '';
 })();
-test('v4.82.0 Revisit: pick() has re-pick branch via _findLogEntryFor',
-  /_findLogEntryFor\(q\)/.test(_pickBody)
-    && /log\[existing\.idx\] = \{ q, chosen,/.test(_pickBody)
-    && /_recomputeQuizCounters\(\)/.test(_pickBody));
+// v8.115.0: answers lock once submitted (supersedes v4.82.0 editable revisit).
+test('v8.115.0 Lock: pick() ignores a second pick on an answered question',
+  /if \(_findLogEntryFor\(q\)\) return;/.test(_pickBody) && !/log\[existing\.idx\]/.test(_pickBody));
+test('v8.115.0 Lock: pick() locks the options after the first pick',
+  /_lockAnsweredOptions\(\)/.test(_pickBody));
 
-// pick() — wrong-bank truth-up logic (wrong→right graduates, right→wrong adds)
-test('v4.82.0 Revisit: pick() truth-ups wrong-bank on re-pick',
-  /if \(!isRight && wasRight\) addToWrongBank/.test(_pickBody)
-    && /else if \(isRight && !wasRight\) graduateFromBank/.test(_pickBody));
-
-// submitMultiSelect — re-submit branch
-test('v4.82.0 Revisit: submitMultiSelect has re-submit branch',
+// submitMultiSelect — v8.115.0: no re-submit; locks after first submit
+test('v8.115.0 Lock: submitMultiSelect ignores re-submits and locks inputs',
   (() => {
     const body = _fnBody(js, 'submitMultiSelect');
     if (!body) return false;
-    return /_findLogEntryFor\(q\)/.test(body)
-      && /log\[existing\.idx\]/.test(body)
-      && /_recomputeQuizCounters\(\)/.test(body);
+    return /if \(_findLogEntryFor\(q\)\) return;/.test(body)
+      && !/log\[existing\.idx\]/.test(body)
+      && /_lockAnsweredOptions\(\)/.test(body);
   })());
 
-// submitOrder — re-submit branch
-test('v4.82.0 Revisit: submitOrder has re-submit branch',
+// submitOrder — v8.115.0: no re-submit; locks after first submit
+test('v8.115.0 Lock: submitOrder ignores re-submits and locks inputs',
   (() => {
     const body = _fnBody(js, 'submitOrder');
     if (!body) return false;
-    return /_findLogEntryFor\(q\)/.test(body)
-      && /log\[existing\.idx\]/.test(body)
-      && /_recomputeQuizCounters\(\)/.test(body);
+    return /if \(_findLogEntryFor\(q\)\) return;/.test(body)
+      && !/log\[existing\.idx\]/.test(body)
+      && /_lockAnsweredOptions\(\)/.test(body);
   })());
 
-// submitTopology — re-submit branch
-test('v4.82.0 Revisit: submitTopology has re-submit branch',
+// submitTopology — v8.115.0: no re-submit; locks after first submit
+test('v8.115.0 Lock: submitTopology ignores re-submits and locks inputs',
   (() => {
     const body = _fnBody(js, 'submitTopology');
     if (!body) return false;
-    return /_findLogEntryFor\(q\)/.test(body)
-      && /log\[existing\.idx\]/.test(body)
-      && /_recomputeQuizCounters\(\)/.test(body);
+    return /if \(_findLogEntryFor\(q\)\) return;/.test(body)
+      && !/log\[existing\.idx\]/.test(body)
+      && /_lockAnsweredOptions\(\)/.test(body);
   })());
 
 // pick() — guard removed (used to be `if (querySelector('.option.correct, .option.wrong')) return;`)
@@ -443,7 +439,7 @@ test('v4.82.0 Revisit: vm fixture — _findLogEntryFor matches by question objec
 
 // vm fixture #3 + #4 — pick() re-pick paths: wrong→right and right→wrong both truth-up.
 // Use _pickBody (regex-extracted via specific signature) to avoid prefix-collision.
-test('v4.82.0 Revisit: vm fixture — pick re-pick wrong→right updates entry + graduates wrong-bank',
+test('v8.115.0 Lock: vm fixture — re-pick wrong→right is ignored (no score change, no wrong-bank graduation)',
   (() => {
     try {
       const findBody = _fnBody(js, '_findLogEntryFor');
@@ -489,17 +485,17 @@ test('v4.82.0 Revisit: vm fixture — pick re-pick wrong→right updates entry +
       vm.runInContext(_pickBody, ctx);
       vm.runInContext("pick('C', q)", ctx);
       const entry = ctx.log[0];
-      return entry.chosen === 'C'
-        && entry.isRight === true
-        && ctx.score === 1
+      return ctx.log.length === 1
+        && entry.chosen === 'B'
+        && entry.isRight === false
+        && ctx.score === 0
         && ctx.answered === 1
-        && ctx.streak === 0
-        && graduateCalls.length === 1
+        && graduateCalls.length === 0
         && addToBankCalls.length === 0;
     } catch (e) { return false; }
   })());
 
-test('v4.82.0 Revisit: vm fixture — pick re-pick right→wrong downscores + adds to wrong-bank',
+test('v8.115.0 Lock: vm fixture — re-pick right→wrong is ignored (score kept, nothing added to wrong-bank)',
   (() => {
     try {
       const findBody = _fnBody(js, '_findLogEntryFor');
@@ -545,14 +541,13 @@ test('v4.82.0 Revisit: vm fixture — pick re-pick right→wrong downscores + ad
       vm.runInContext(_pickBody, ctx);
       vm.runInContext("pick('A', q)", ctx);
       const entry = ctx.log[0];
-      return entry.chosen === 'A'
-        && entry.isRight === false
-        && ctx.score === 0
+      return ctx.log.length === 1
+        && entry.chosen === 'C'
+        && entry.isRight === true
+        && ctx.score === 1
         && ctx.answered === 1
-        && ctx.streak === 1
         && graduateCalls.length === 0
-        && addToBankCalls.length === 1
-        && addToBankCalls[0].ch === 'A';
+        && addToBankCalls.length === 0;
     } catch (e) { return false; }
   })());
 
@@ -861,21 +856,19 @@ test('v4.83.0 HotArea: injectPBQs pool includes hotArea',
       || /\.\.\.hotArea/.test(body);
   })());
 
-// submitHotArea uses v4.82.0 update-or-push pattern
-test('v4.83.0 HotArea: submitHotArea has revisit re-submit branch',
+// submitHotArea — v8.115.0: no re-submit; locks after first submit
+test('v8.115.0 Lock: submitHotArea ignores re-submits and locks inputs',
   (() => {
     const body = _fnBody(js, 'submitHotArea');
     if (!body) return false;
-    return /_findLogEntryFor\(q\)/.test(body)
-      && /log\[existing\.idx\]/.test(body)
-      && /_recomputeQuizCounters\(\)/.test(body);
+    return /if \(_findLogEntryFor\(q\)\) return;/.test(body)
+      && !/log\[existing\.idx\]/.test(body)
+      && /_lockAnsweredOptions\(\)/.test(body);
   })());
-test('v4.83.0 HotArea: submitHotArea truth-ups wrong-bank on re-submit',
+test('v8.115.0 Lock: _haPickRegion refuses picks once the options are locked',
   (() => {
-    const body = _fnBody(js, 'submitHotArea');
-    if (!body) return false;
-    return /if \(!isCorrect && wasRight\) addToWrongBank/.test(body)
-      && /else if \(isCorrect && !wasRight\) graduateFromBank/.test(body);
+    const body = _fnBody(js, '_haPickRegion');
+    return !!body && /classList\.contains\('is-locked'\)\) return;/.test(body);
   })());
 
 // CSS structural
@@ -938,7 +931,7 @@ test('v4.83.0 HotArea: vm fixture — _haRegionIsCorrect dispatches by sub-shape
   })());
 
 // vm fixture #2 — submitHotArea logs an entry on first-submit + recomputes on re-submit
-test('v4.83.0 HotArea: vm fixture — submitHotArea logs entry on first submit, updates on re-submit',
+test('v8.115.0 Lock: vm fixture — submitHotArea logs the first submit, ignores a re-submit',
   (() => {
     try {
       const submitBody = _fnBody(js, 'submitHotArea');
@@ -958,7 +951,7 @@ test('v4.83.0 HotArea: vm fixture — submitHotArea logs entry on first submit, 
         // stub writing to fakeScore so the fixture still asserts the
         // recomputed "3 / 4" value, not just that the call happened.
         _setLiveScore: (s, a) => { fakeScore.textContent = s + ' / ' + a; },
-        window: { _setLiveStreak: () => {}, _setLiveScore: (s, a) => { fakeScore.textContent = s + ' / ' + a; } },
+        window: { _setLiveStreak: () => {}, _setLiveScore: (s, a) => { fakeScore.textContent = s + ' / ' + a; }, _lockAnsweredOptions: () => {} },
         // v8.0.0 wave 2: the streak pill writes moved into the shared
         // _setLiveStreak helper, so these sandboxed bodies now call it.
         _setLiveStreak: () => {},
@@ -994,15 +987,15 @@ test('v4.83.0 HotArea: vm fixture — submitHotArea logs entry on first submit, 
         && ctx.answered === 1
         && addToBankCalls.length === 1;
 
-      // Re-submit: change pick to L2 (correct via dual-correct)
+      // Re-submit with a different (correct) pick: v8.115.0 ignores it
       ctx._hotAreaPick = 'L2';
       vm.runInContext('submitHotArea(q)', ctx);
-      const afterResubmit = ctx.log.length === 1  // updated, not pushed
-        && ctx.log[0].chosen === 'L2'
-        && ctx.log[0].isRight === true
-        && ctx.score === 1
+      const afterResubmit = ctx.log.length === 1
+        && ctx.log[0].chosen === 'L4'
+        && ctx.log[0].isRight === false
+        && ctx.score === 0
         && ctx.answered === 1
-        && graduateCalls.length === 1;
+        && graduateCalls.length === 0;
 
       return afterFirst && afterResubmit;
     } catch (e) { return false; }
@@ -2015,3 +2008,18 @@ test('v8.114.1 pass tick: no hard-coded "PASS 720" in CSS; labels read attr(data
       && /readiness-bar-mark::after\{content:"PASS " attr\(data-pass\)/.test(css)
       && /_markEl\.dataset\.pass = EXAM_PASS_SCORE/.test(rd);
   })());
+
+
+// v8.115.0: an abandoned "Begin plan" session must not hijack later quizzes.
+test('v8.115.0 Session: goSetup abandons a guided session (sessionMode/plan/step/results reset)',
+  /function goSetup\([\s\S]{0,2600}sessionMode = false;\s*sessionPlan = \[\];\s*sessionStep = 0;\s*sessionResults = \[\];/.test(js));
+test('v8.115.0 Session: startQuiz and startBulkQuiz never inherit sessionMode',
+  (() => {
+    const fs = require('fs'), path = require('path');
+    const qe = fs.readFileSync(path.join(__dirname, '..', '..', 'features', 'quiz-engine.js'), 'utf8');
+    const home = fs.readFileSync(path.join(__dirname, '..', '..', 'features', 'home.js'), 'utf8');
+    return /async function startQuiz\(\)[\s\S]{0,2600}sessionMode = false;/.test(qe)
+      && /async function startBulkQuiz\([\s\S]{0,1200}sessionMode = false;/.test(home);
+  })());
+test('v8.115.0 Lock: revisit banner copy says answers are locked',
+  /Answers lock once you submit\./.test(html));

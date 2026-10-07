@@ -40,6 +40,10 @@
     localStorage.setItem(STORAGE.KEY, key);
     examMode = false;
     wrongDrillMode = false;
+    // v8.115.0: a standalone quiz is never part of a guided session. An abandoned
+    // "Begin plan" session used to stay armed, so this quiz's finish() rendered
+    // the session "Topic N done" page instead of results — up to 4 times.
+    sessionMode = false;
   
     // v4.54.15: Smart + Multi: handled alongside single-topic + Mixed.
     activeQuizTopic = topic.includes('Smart')
@@ -650,6 +654,29 @@
   // showExplanation so the user sees their previous outcome + the correct
   // answer + the explanation. Submit buttons for PBQ types are kept visible
   // so the user can re-submit after re-arranging.
+  // v8.115.0: answers lock once submitted (founder: changing a wrong answer
+  // "doesn't help keep you honest"). Supersedes v4.82.0's editable revisit —
+  // revisit is now read-only: markers + explanation, no re-pick, no re-submit.
+  // CLI command buttons are not .option, so a locked CLI sim can still be run.
+  function _lockAnsweredOptions() {
+    const box = document.getElementById('options');
+    if (!box) return;
+    box.classList.remove('is-revisiting');
+    box.classList.add('is-locked');
+    box.querySelectorAll('.option, .order-item').forEach(el => { el.disabled = true; });
+    ['ms-submit-btn', 'order-submit-btn', 'topo-submit-btn', 'ha-submit-btn'].forEach(id => {
+      const b = document.getElementById(id);
+      if (b) { b.disabled = true; b.classList.add('is-hidden'); }
+    });
+    box.querySelectorAll('.order-controls .btn-ghost, .topo-controls .btn-ghost').forEach(b => b.classList.add('is-hidden'));
+    // Topology devices/zones and hot-area regions aren't <button>s, so take them
+    // out of pointer + tab order instead.
+    box.querySelectorAll('.topo-device, .topo-zone, [data-region]').forEach(el => {
+      el.style.pointerEvents = 'none';
+      if (el.hasAttribute('tabindex')) el.setAttribute('tabindex', '-1');
+    });
+  }
+
   function _restoreAnsweredQuizState(q, entry) {
     if (!q || !entry) return;
     const qType = getQType(q);
@@ -742,6 +769,9 @@
       _restoreAnsweredHotAreaState(q, entry);
     }
   
+    // v8.115.0: read-only revisit — lock after the markers are re-applied.
+    _lockAnsweredOptions();
+  
     // Show explanation populated from THIS log entry (not log[log.length-1] which
     // is the most-recently-pushed entry — could be a different question now).
     showExplanation(q, entry.isRight, entry);
@@ -790,9 +820,7 @@
           else ans.msChosen.push(l);
           renderExam();
         } else {
-          // v4.82.0: removed the post-submit click-guard so re-picks are
-          // possible during revisit. submitMultiSelect's update-branch
-          // handles truth-up.
+          if (_findLogEntryFor(q)) return;  // v8.115.0: locked once submitted
           const idx = msSelections.indexOf(l);
           if (idx >= 0) {
             msSelections.splice(idx, 1);
@@ -847,28 +875,18 @@
     const correctAnswers = (q.answers || []).sort();
     const chosen = [...msSelections].sort();
     const isRight = JSON.stringify(chosen) === JSON.stringify(correctAnswers);
-    const existing = _findLogEntryFor(q);
+    if (_findLogEntryFor(q)) return;  // v8.115.0: answers lock once submitted
+    answered++;
+    updateTypeStat('multi-select', isRight);
+    if (isRight) { score++; streak++; if (streak > bestStreak) bestStreak = streak; }
+    else { streak = 0; }
+    log.push({ q, chosen: chosen.join(','), correct: correctAnswers.join(','), isRight, flagged: quizFlags[current] });
+    if (!isRight) addToWrongBank(q._bankOrig || q, chosen.join(','));  // v7.47.0: a missed variant re-triggers SR for its ORIGINAL (bank dedup no-ops)
+    else if (wrongDrillMode) graduateFromBank(q._bankKey || q.question);  // v7.47.0: variant graduates its original
+    _setLiveScore(score, answered);
+    _setLiveStreak(streak, !isRight);
   
-    if (existing) {
-      // v4.82.0: re-submit path — update existing entry, recompute counters, truth-up wrong-bank
-      const wasRight = existing.entry.isRight === true;
-      log[existing.idx] = { q, chosen: chosen.join(','), correct: correctAnswers.join(','), isRight, flagged: quizFlags[current] };
-      if (!isRight && wasRight) addToWrongBank(q, chosen.join(','));
-      else if (isRight && !wasRight) graduateFromBank(q.question);
-      _recomputeQuizCounters();
-    } else {
-      answered++;
-      updateTypeStat('multi-select', isRight);
-      if (isRight) { score++; streak++; if (streak > bestStreak) bestStreak = streak; }
-      else { streak = 0; }
-      log.push({ q, chosen: chosen.join(','), correct: correctAnswers.join(','), isRight, flagged: quizFlags[current] });
-      if (!isRight) addToWrongBank(q._bankOrig || q, chosen.join(','));  // v7.47.0: a missed variant re-triggers SR for its ORIGINAL (bank dedup no-ops)
-      else if (wrongDrillMode) graduateFromBank(q._bankKey || q.question);  // v7.47.0: variant graduates its original
-      _setLiveScore(score, answered);
-      _setLiveStreak(streak, !isRight);
-    }
-  
-    // Highlight options. v4.82.0: don't disable — re-picks via toggle remain possible.
+    // Highlight options.
     const optBtns = document.querySelectorAll('#options .option');
     optBtns.forEach(btn => {
       const l = btn.dataset.letter;
@@ -880,14 +898,7 @@
       else btn.classList.add('dimmed');
     });
   
-    // v4.82.0: keep the options container tagged for revisit affordance.
-    const optionsBox = document.getElementById('options');
-    if (optionsBox) optionsBox.classList.add('is-revisiting');
-  
-    // v4.82.0: keep submit button visible (re-submittable). It re-disables based
-    // on whether selection still matches reqCount when user toggles.
-    const submitBtn = document.getElementById('ms-submit-btn');
-    if (submitBtn) submitBtn.classList.remove('is-hidden');
+    _lockAnsweredOptions();
   
     _renderQuizProgressDots();
     _renderQuizNavArrows();
@@ -1022,30 +1033,17 @@
   function submitOrder(q) {
     const correctOrder = q.correctOrder || [];
     const isRight = JSON.stringify(orderSequence) === JSON.stringify(correctOrder);
-    const existing = _findLogEntryFor(q);
+    if (_findLogEntryFor(q)) return;  // v8.115.0: answers lock once submitted
+    answered++;
+    updateTypeStat('order', isRight);
+    if (isRight) { score++; streak++; if (streak > bestStreak) bestStreak = streak; }
+    else { streak = 0; }
+    log.push({ q, chosen: orderSequence.join(','), correct: correctOrder.join(','), isRight, flagged: quizFlags[current] });
+    if (!isRight) addToWrongBank(q._bankOrig || q, orderSequence.join(','));  // v7.47.0: original identity preserved
+    else if (wrongDrillMode) graduateFromBank(q._bankKey || q.question);  // v7.47.0: variant graduates its original
+    _setLiveScore(score, answered);
+    _setLiveStreak(streak, !isRight);
   
-    if (existing) {
-      // v4.82.0: re-submit path
-      const wasRight = existing.entry.isRight === true;
-      log[existing.idx] = { q, chosen: orderSequence.join(','), correct: correctOrder.join(','), isRight, flagged: quizFlags[current] };
-      if (!isRight && wasRight) addToWrongBank(q, orderSequence.join(','));
-      else if (isRight && !wasRight) graduateFromBank(q.question);
-      _recomputeQuizCounters();
-    } else {
-      answered++;
-      updateTypeStat('order', isRight);
-      if (isRight) { score++; streak++; if (streak > bestStreak) bestStreak = streak; }
-      else { streak = 0; }
-      log.push({ q, chosen: orderSequence.join(','), correct: correctOrder.join(','), isRight, flagged: quizFlags[current] });
-      if (!isRight) addToWrongBank(q._bankOrig || q, orderSequence.join(','));  // v7.47.0: original identity preserved
-      else if (wrongDrillMode) graduateFromBank(q._bankKey || q.question);  // v7.47.0: variant graduates its original
-      _setLiveScore(score, answered);
-      _setLiveStreak(streak, !isRight);
-    }
-  
-    // v4.82.0: keep items + submit button clickable so user can re-arrange + re-submit.
-    // (Previous behavior was to disable everything after first submit.)
-    document.querySelectorAll('#order-items .order-item').forEach(btn => { btn.style.pointerEvents = ''; });
     const orderSubmitBtn = document.getElementById('order-submit-btn');
     // v8.3.0 (wave 4): a wrong sequence shakes the tray, reusing the same
     // error vocabulary as a wrong MCQ. The beam stops either way — the
@@ -1057,11 +1055,8 @@
     }
     const _obtn = document.getElementById('order-submit-btn');
     if (_obtn) _obtn.dataset.beam = 'off';
-    if (orderSubmitBtn) orderSubmitBtn.classList.remove('is-hidden');
-    const orderResetBtn = document.querySelector('.order-controls .btn-ghost');
-    if (orderResetBtn) orderResetBtn.classList.remove('is-hidden');
-    const optionsBox = document.getElementById('options');
-    if (optionsBox) optionsBox.classList.add('is-revisiting');
+    if (orderSubmitBtn) orderSubmitBtn.dataset.beam = 'off';
+    _lockAnsweredOptions();
     _renderQuizProgressDots();
     _renderQuizNavArrows();
   
@@ -1098,37 +1093,21 @@
   // ANSWER SELECTION (MCQ)
   // ══════════════════════════════════════════
   function pick(chosen, q) {
-    // v4.82.0: previously this guarded against re-picks via DOM state
-    // (`document.querySelector('#options .option.correct, .option.wrong')`),
-    // which made re-picks silently noop. Replaced with a proper revisit path:
-    // if a log entry already exists for this question, UPDATE it instead of
-    // pushing a new entry, then truth-up score/answered/wrong-bank.
+    // v8.115.0: one answer per question. A second pick (click or keyboard) on an
+    // answered question is ignored — see _lockAnsweredOptions.
+    if (_findLogEntryFor(q)) return;
     const isRight = chosen === q.answer;
-    const existing = _findLogEntryFor(q);
+    answered++;
+    updateTypeStat(q.type || 'mcq', isRight);
+    if (isRight) { score++; streak++; if (streak > bestStreak) bestStreak = streak; }
+    else { streak = 0; }
+    log.push({ q, chosen, correct: q.answer, isRight, flagged: quizFlags[current] });
+    if (!isRight) addToWrongBank(q._bankOrig || q, chosen);  // v7.47.0: original identity preserved
+    else if (wrongDrillMode) graduateFromBank(q._bankKey || q.question);  // v7.47.0: variant graduates its original
+    _setLiveScore(score, answered);
+    _setLiveStreak(streak, !isRight);
   
-    if (existing) {
-      // ── Re-pick path: update existing log entry, recompute counters, truth-up wrong-bank ──
-      const wasRight = existing.entry.isRight === true;
-      log[existing.idx] = { q, chosen, correct: q.answer, isRight, flagged: quizFlags[current] };
-      // Wrong-bank truth-up: reflect current answer truth, not first-attempt
-      if (!isRight && wasRight) addToWrongBank(q, chosen);
-      else if (isRight && !wasRight) graduateFromBank(q.question);
-      // Recompute score + answered from log; streak intentionally untouched
-      _recomputeQuizCounters();
-    } else {
-      // ── First-pick path (existing behavior) ──
-      answered++;
-      updateTypeStat(q.type || 'mcq', isRight);
-      if (isRight) { score++; streak++; if (streak > bestStreak) bestStreak = streak; }
-      else { streak = 0; }
-      log.push({ q, chosen, correct: q.answer, isRight, flagged: quizFlags[current] });
-      if (!isRight) addToWrongBank(q._bankOrig || q, chosen);  // v7.47.0: original identity preserved
-      else if (wrongDrillMode) graduateFromBank(q._bankKey || q.question);  // v7.47.0: variant graduates its original
-      _setLiveScore(score, answered);
-      _setLiveStreak(streak, !isRight);
-    }
-  
-    // Walk option buttons: apply markers WITHOUT disabling so re-picks remain possible.
+    // Walk option buttons and apply the answered markers.
     document.querySelectorAll('#options .option').forEach((btn, i) => {
       const l = ['A','B','C','D'][i];
       btn.classList.remove('correct', 'wrong', 'reveal-correct', 'dimmed');
@@ -1148,10 +1127,7 @@
       }
     });
   
-    // v4.82.0: keep the options container tagged for the revisit affordance
-    // so future re-picks render with the right cursor/hover styling.
-    const optionsBox = document.getElementById('options');
-    if (optionsBox) optionsBox.classList.add('is-revisiting');
+    _lockAnsweredOptions();
   
     // Refresh dot strip + nav arrow state since the log changed.
     _renderQuizProgressDots();
@@ -2129,6 +2105,7 @@
   // PBQ scoring end-to-end (caught by window.onerror, no visible symptom
   // beyond the UI staying stuck at "is-picked").
   window._findLogEntryFor = _findLogEntryFor;
+  window._lockAnsweredOptions = _lockAnsweredOptions;
   window._renderQuizProgressDots = _renderQuizProgressDots;
   window._renderQuizNavArrows = _renderQuizNavArrows;
   window._recomputeQuizCounters = _recomputeQuizCounters;

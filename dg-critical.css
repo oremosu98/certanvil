@@ -116,7 +116,7 @@ html[data-theme] body .btn-danger:hover{background:color-mix(in oklab,var(--red)
 html[data-theme] body .btn-exam{background:none;border:1px solid var(--border);color:var(--text);}
 html[data-theme] body .btn-exam:hover{border-color:var(--accent);color:var(--accent);box-shadow:none;}
 html[data-theme] body .option{background:none;border:1px solid var(--dg-rule-soft);box-shadow:none;}
-html[data-theme] body .option:hover{border-color:var(--accent);}
+html[data-theme] body .option:hover:not(:disabled){border-color:var(--accent);}
 html[data-theme] body .chip{box-shadow:none;}
 html[data-theme] body h3{color:var(--text-dim);}
 

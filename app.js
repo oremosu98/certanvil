@@ -1,9 +1,9 @@
 // ══════════════════════════════════════════
-// Network+ AI Quiz — app.js  v8.114.1
+// Network+ AI Quiz — app.js  v8.115.0
 // ══════════════════════════════════════════
 
 // ── CONSTANTS ──
-const APP_VERSION = '8.114.1';
+const APP_VERSION = '8.115.0';
 // v4.99.45 (Phase 6b): expose APP_VERSION on window so the web-vitals
 // collector (lib/web-vitals-collector.js, loaded BEFORE app.js so its
 // PerformanceObservers attach earlier) can stamp this version onto every
@@ -2733,6 +2733,12 @@ function goSetup() {
   whyNotMode = false;
   _wnSession = null;
   _wnRound = null;
+  // v8.115.0: leaving to the menu abandons a guided session (same as End Session
+  // Early). Before, sessionMode stayed true and hijacked the next quizzes' results.
+  sessionMode = false;
+  sessionPlan = [];
+  sessionStep = 0;
+  sessionResults = [];
   if (typeof _renderGauntletLadder === 'function') { try { _renderGauntletLadder(); } catch (_) {} }
   navOpen = false;
   // v4.54.1: renderHistoryPanel moved to renderAnalytics (Recent Performance now lives on Analytics page)
@@ -6165,6 +6171,9 @@ function renderHotArea(q, box) {
 // removes it from any previously-picked region). Enables Submit when a pick
 // exists.
 function _haPickRegion(regionId) {
+  // v8.115.0: answers lock once submitted (keyboard Enter/Space lands here too)
+  const _haBox = document.getElementById('options');
+  if (_haBox && _haBox.classList.contains('is-locked')) return;
   const submitBtn = document.getElementById('ha-submit-btn');
   if (submitBtn && submitBtn.disabled === false && document.querySelector('.hot-region.is-correct, .osi-layer.is-correct, .cable-card.is-correct')) {
     // Already revealed — _restoreAnsweredHotAreaState handles re-pick affordance separately
@@ -6192,30 +6201,20 @@ function submitHotArea(q) {
   if (!_hotAreaPick) return; // shouldn't happen since Submit is disabled, but defensive
   const isCorrect = _haRegionIsCorrect(q, _hotAreaPick);
   const correctIds = _haCorrectRegionIds(q);
-  const existing = _findLogEntryFor(q);
-
-  if (existing) {
-    // v4.82.0 revisit pattern: update existing log entry, recompute counters, truth-up wrong-bank
-    const wasRight = existing.entry.isRight === true;
-    log[existing.idx] = { q, chosen: _hotAreaPick, correct: correctIds.join(','), isRight: isCorrect, flagged: quizFlags[current] };
-    if (!isCorrect && wasRight) addToWrongBank(q, _hotAreaPick);
-    else if (isCorrect && !wasRight) graduateFromBank(q.question);
-    _recomputeQuizCounters();
-  } else {
-    answered++;
-    updateTypeStat('hot-area', isCorrect);
-    if (isCorrect) { score++; streak++; if (streak > bestStreak) bestStreak = streak; }
-    else { streak = 0; }
-    log.push({ q, chosen: _hotAreaPick, correct: correctIds.join(','), isRight: isCorrect, flagged: quizFlags[current] });
-    if (!isCorrect) addToWrongBank(q, _hotAreaPick);
-    else if (wrongDrillMode) graduateFromBank(q._bankKey || q.question);  // v7.47.0: variant graduates its original
-    // v8.0.0 wave 2: shared helper — a raw textContent write here would
-    // flatten the #live-score-val swap slot back to plain text
-    window._setLiveScore(score, answered);
-    // v8.0.0 wave 2: routed through the shared helper so this submit path
-    // keeps the .t-digit structure instead of flattening it to raw text
-    window._setLiveStreak(streak, !isCorrect);
-  }
+  if (_findLogEntryFor(q)) return;  // v8.115.0: answers lock once submitted
+  answered++;
+  updateTypeStat('hot-area', isCorrect);
+  if (isCorrect) { score++; streak++; if (streak > bestStreak) bestStreak = streak; }
+  else { streak = 0; }
+  log.push({ q, chosen: _hotAreaPick, correct: correctIds.join(','), isRight: isCorrect, flagged: quizFlags[current] });
+  if (!isCorrect) addToWrongBank(q, _hotAreaPick);
+  else if (wrongDrillMode) graduateFromBank(q._bankKey || q.question);  // v7.47.0: variant graduates its original
+  // v8.0.0 wave 2: shared helper — a raw textContent write here would
+  // flatten the #live-score-val swap slot back to plain text
+  window._setLiveScore(score, answered);
+  // v8.0.0 wave 2: routed through the shared helper so this submit path
+  // keeps the .t-digit structure instead of flattening it to raw text
+  window._setLiveStreak(streak, !isCorrect);
 
   // Apply reveal classes — mark the picked region correct/wrong, mark all
   // genuinely-correct regions reveal-correct (for dual-correct cases), dim
@@ -6234,8 +6233,7 @@ function submitHotArea(q) {
   const row = document.getElementById('ha-submit-row');
   if (row) row.classList.add('is-hidden');
 
-  const optionsBox = document.getElementById('options');
-  if (optionsBox) optionsBox.classList.add('is-revisiting');
+  window._lockAnsweredOptions();
 
   _renderQuizProgressDots();
   _renderQuizNavArrows();
@@ -7338,40 +7336,22 @@ function submitTopology(q) {
     results[device] = { userZone, correctZone, isRight };
   });
 
-  const existing = _findLogEntryFor(q);
+  if (_findLogEntryFor(q)) return;  // v8.115.0: answers lock once submitted
+  answered++;
+  updateTypeStat('topology', allCorrect);
+  if (allCorrect) { score++; streak++; if (streak > bestStreak) bestStreak = streak; }
+  else { streak = 0; }
+  log.push({ q, chosen: JSON.stringify(topoDevices), correct: JSON.stringify(correct), isRight: allCorrect, flagged: quizFlags[current] });
+  if (!allCorrect) addToWrongBank(q, JSON.stringify(topoDevices));
+  else if (wrongDrillMode) graduateFromBank(q._bankKey || q.question);  // v7.47.0: variant graduates its original
+  // v8.0.0 wave 2: shared helper — a raw textContent write here would
+  // flatten the #live-score-val swap slot back to plain text
+  window._setLiveScore(score, answered);
+  // v8.0.0 wave 2: routed through the shared helper so this submit path
+  // keeps the .t-digit structure instead of flattening it to raw text
+  window._setLiveStreak(streak, !allCorrect);
 
-  if (existing) {
-    // v4.82.0: re-submit path
-    const wasRight = existing.entry.isRight === true;
-    log[existing.idx] = { q, chosen: JSON.stringify(topoDevices), correct: JSON.stringify(correct), isRight: allCorrect, flagged: quizFlags[current] };
-    if (!allCorrect && wasRight) addToWrongBank(q, JSON.stringify(topoDevices));
-    else if (allCorrect && !wasRight) graduateFromBank(q.question);
-    _recomputeQuizCounters();
-  } else {
-    answered++;
-    updateTypeStat('topology', allCorrect);
-    if (allCorrect) { score++; streak++; if (streak > bestStreak) bestStreak = streak; }
-    else { streak = 0; }
-    log.push({ q, chosen: JSON.stringify(topoDevices), correct: JSON.stringify(correct), isRight: allCorrect, flagged: quizFlags[current] });
-    if (!allCorrect) addToWrongBank(q, JSON.stringify(topoDevices));
-    else if (wrongDrillMode) graduateFromBank(q._bankKey || q.question);  // v7.47.0: variant graduates its original
-    // v8.0.0 wave 2: shared helper — a raw textContent write here would
-    // flatten the #live-score-val swap slot back to plain text
-    window._setLiveScore(score, answered);
-    // v8.0.0 wave 2: routed through the shared helper so this submit path
-    // keeps the .t-digit structure instead of flattening it to raw text
-    window._setLiveStreak(streak, !allCorrect);
-  }
-
-  // v4.82.0: keep devices + zones + submit + reset clickable so user can re-place + re-submit.
-  document.querySelectorAll('.topo-device').forEach(b => { b.style.pointerEvents = ''; });
-  document.querySelectorAll('.topo-zone').forEach(z => { z.style.cursor = ''; });
-  const topoSubmit = document.getElementById('topo-submit-btn');
-  if (topoSubmit) topoSubmit.classList.remove('is-hidden');
-  const topoReset = document.querySelector('.topo-controls .btn-ghost');
-  if (topoReset) topoReset.classList.remove('is-hidden');
-  const optionsBox2 = document.getElementById('options');
-  if (optionsBox2) optionsBox2.classList.add('is-revisiting');
+  window._lockAnsweredOptions();
   _renderQuizProgressDots();
   _renderQuizNavArrows();
 

@@ -1157,12 +1157,13 @@ test.describe('SR Review — Multi-select happy path', () => {
   });
 });
 
-// v4.82.0 — Quiz Revisit E2E coverage. Tests the full editable-revisit flow:
-// answer Q1 → advance → click dot back to Q1 → re-pick a different option →
-// verify score/answered truth-up + streak preserved + revisit banner shows.
+// v4.82.0 — Quiz Revisit E2E coverage. v8.115.0: revisit is READ-ONLY —
+// answers lock once submitted (founder: re-picking "doesn't keep you honest").
+// answer Q1 → advance → click dot back to Q1 → markers + explanation show,
+// options are disabled, and the score cannot change.
 // Uses the v4.82.0 _testInjectQuiz hook to seed quiz state without making
 // real Haiku API calls.
-test.describe('Quiz Revisit — editable navigation', () => {
+test.describe('Quiz Revisit — read-only navigation', () => {
   // Seed a 3-question quiz with one MCQ + one multi-select + one order.
   // Each test below starts with this fixture freshly injected.
   const QUIZ_FIXTURE = [
@@ -1233,45 +1234,30 @@ test.describe('Quiz Revisit — editable navigation', () => {
     // Option A should be marked wrong, C marked reveal-correct (correct answer).
     await expect(page.locator('#options .option').nth(0)).toHaveClass(/wrong/);
     await expect(page.locator('#options .option').nth(2)).toHaveClass(/reveal-correct/);
-    // Options should NOT be disabled — re-pick allowed.
-    await expect(page.locator('#options .option').nth(2)).not.toBeDisabled();
+    // v8.115.0: answers are locked — every option is disabled on revisit.
+    await expect(page.locator('#options .option').nth(2)).toBeDisabled();
+    await expect(page.locator('#options')).toHaveClass(/is-locked/);
+    await expect(page.locator('#quiz-revisit-banner')).toContainText('Answers lock once you submit');
 
-    // Re-pick C (correct) — score should update from 0/1 to 1/1.
-    await page.locator('#options .option').nth(2).click();
-    await expect(page.locator('#live-score')).toContainText('1 / 1');
-    // Option C should now be 'correct' class (was reveal-correct).
-    await expect(page.locator('#options .option').nth(2)).toHaveClass(/correct/);
-    // Option A should still be present but no longer 'wrong' (now 'dimmed' since user picked C).
-    await expect(page.locator('#options .option').nth(0)).not.toHaveClass(/wrong/);
-
-    // Dot for Q1 should now reflect green (qpd-done) since updated answer is correct.
-    await expect(page.locator('#quiz-prog-dots .qpd-cell').nth(0)).toHaveClass(/qpd-done/);
+    // Score and markers stay exactly as first answered.
+    await expect(page.locator('#live-score')).toContainText('0 / 1');
+    await expect(page.locator('#options .option').nth(0)).toHaveClass(/wrong/);
+    await expect(page.locator('#quiz-prog-dots .qpd-cell').nth(0)).not.toHaveClass(/qpd-done/);
   });
 
-  test('streak does not move on re-pick after revisit', async ({ page }) => {
+  test('answers lock immediately after the first pick (no change before navigating)', async ({ page }) => {
     await page.goto('/');
     await page.evaluate((qs) => window._testInjectQuiz(qs), QUIZ_FIXTURE);
 
-    // Pick correct answer C on Q1 — streak goes to 1.
-    await page.locator('#options .option').nth(2).click();
-    await expect(page.locator('#live-streak')).toContainText('Streak 1');
-
-    // Advance to Q2 via next-arrow.
-    await page.locator('#quiz-next-arrow-btn').click();
-    await expect(page.locator('#q-label')).toContainText('Question 2 of 3');
-
-    // Click dot for Q1 → revisit.
-    await page.locator('#quiz-prog-dots .qpd-cell').nth(0).click();
-    // v8.0.0: navigation is asynchronous (the outgoing card animates out before
-    // the index moves), so assert the revisit has actually landed before
-    // interacting. Without this the next click could hit Q2's options while
-    // they are still on their way out. The app also blocks that now
-    // (.q-card.is-hiding is pointer-events:none) — this states the precondition.
-    await expect(page.locator('#q-label')).toContainText('Question 1 of 3 · revisiting');
-    // Re-pick A (wrong) — score should drop, but streak should stay at 1.
+    // Pick wrong answer A on Q1 (correct is C).
     await page.locator('#options .option').nth(0).click();
     await expect(page.locator('#live-score')).toContainText('0 / 1');
-    await expect(page.locator('#live-streak')).toContainText('Streak 1');
+
+    // Every option is now disabled; a programmatic second pick is ignored too.
+    await expect(page.locator('#options .option').nth(2)).toBeDisabled();
+    await page.evaluate(() => document.querySelectorAll('#options .option')[2].click());
+    await expect(page.locator('#live-score')).toContainText('0 / 1');
+    await expect(page.locator('#options .option').nth(0)).toHaveClass(/wrong/);
   });
 
   test('keyboard ←/→ navigate prev/next', async ({ page }) => {
@@ -1420,7 +1406,7 @@ test.describe('Quiz Hot-Area — click-on-diagram PBQs', () => {
     await expect(page.locator('#live-score')).toContainText('0 / 1');
   });
 
-  test('revisit: re-pick after first submit updates score (wrong → right)', async ({ page }) => {
+  test('revisit: a submitted hot-area answer is locked (wrong stays wrong)', async ({ page }) => {
     await page.goto('/');
     // Use a 2-question quiz so we can advance + revisit
     const TWO_Q = [
@@ -1434,22 +1420,18 @@ test.describe('Quiz Hot-Area — click-on-diagram PBQs', () => {
     await page.locator('#ha-submit-btn').click();
     await expect(page.locator('#live-score')).toContainText('0 / 1');
 
-    // Advance to Q2
+    // Advance to Q2, then dot back to Q1
     await page.locator('#quiz-next-arrow-btn').click();
     await expect(page.locator('#q-label')).toContainText('Question 2 of 2');
-
-    // Click dot back to Q1
     await page.locator('#quiz-prog-dots .qpd-cell').nth(0).click();
     await expect(page.locator('#q-label')).toContainText('Question 1 of 2 · revisiting');
 
-    // Re-pick the firewall (correct) and re-submit
-    await page.locator('.hot-region[data-region="firewall"]').click();
-    await page.locator('#ha-submit-btn').click();
-
-    // Score truth-up: 0/1 → 1/1
-    await expect(page.locator('#live-score')).toContainText('1 / 1');
-    // Dot for Q1 now green (qpd-done)
-    await expect(page.locator('#quiz-prog-dots .qpd-cell').nth(0)).toHaveClass(/qpd-done/);
+    // v8.115.0: locked — submit is gone and a pick attempt is refused.
+    await expect(page.locator('#ha-submit-btn')).toBeHidden();
+    await page.evaluate(() => window._haPickRegion('firewall'));
+    await expect(page.locator('.hot-region[data-region="firewall"]')).not.toHaveClass(/is-picked/);
+    await expect(page.locator('#live-score')).toContainText('0 / 1');
+    await expect(page.locator('#quiz-prog-dots .qpd-cell').nth(0)).not.toHaveClass(/qpd-done/);
   });
 });
 

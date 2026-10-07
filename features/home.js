@@ -646,6 +646,7 @@
     localStorage.setItem(STORAGE.KEY, key);
     examMode = false;
     wrongDrillMode = false;
+    sessionMode = false;  // v8.115.0: never inherit an abandoned guided session
 
     activeQuizTopic = MIXED_TOPIC;
     topic = MIXED_TOPIC;
