@@ -239,7 +239,27 @@ test('SW cache name matches APP_VERSION', (() => { const m = js.match(/const APP
 test('SW relative paths', sw.includes("'./index.html'"));
 test('No unused Inter font', !css.includes("'Inter'"));
 test('Difficulty uses e.difficulty', js.includes('e.difficulty || e.diff'));
-test('Validation in retryQuiz', js.includes('retryQuiz') && js.includes('aiValidateQuestions(key, questions)'));
+// v8.115.1: retryQuiz delegates to startQuiz, which owns validation.
+test('Validation in retryQuiz (via startQuiz)',
+  /async function retryQuiz\(\)[\s\S]{0,900}return startQuiz\(\);/.test(js) && js.includes('aiValidateQuestions(key, raw)'));
+// v8.115.1: "New session" must not bounce a signed-in user (no personal key) to setup.
+test('v8.115.1 retryQuiz: signed-in user with no API key re-runs the quiz instead of going home',
+  (() => {
+    try {
+    const body = _fnBody(js, 'retryQuiz');
+    if (!body) return false;
+    const calls = [];
+    const ctx = vm.createContext({
+      wrongDrillMode: false, apiKey: '',
+      startWrongDrill: () => calls.push('drill'),
+      startQuiz: () => { calls.push('startQuiz'); return Promise.resolve(); },
+      showPage: (p) => calls.push('page:' + p),
+      document: { getElementById: () => ({ value: '', textContent: '', classList: { add() {}, remove() {} } }) },
+    });
+    vm.runInContext(body + '; retryQuiz();', ctx);
+    return calls.length === 1 && calls[0] === 'startQuiz';
+    } catch (e) { return false; }
+  })());
 test('Validation in runSessionStep', js.includes('aiValidateQuestions(apiKey, questions)'));
 
 // ── Analytics v2 (v4.5) ──

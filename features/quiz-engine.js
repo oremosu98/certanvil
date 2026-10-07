@@ -1796,52 +1796,13 @@
   // ══════════════════════════════════════════
   async function retryQuiz() {
     if (wrongDrillMode) { startWrongDrill(); return; }
-  
-    const key = apiKey || document.getElementById('api-key').value.trim();
-    if (!key) {
-      showPage('setup');
-      const err = document.getElementById('setup-err');
-      err.textContent = '\u26a0\ufe0f Please enter your API key to retry.';
-      err.classList.remove('is-hidden');
-      return;
-    }
-    apiKey = key;
-  
-    activeQuizTopic = topic.includes('Smart') ? getSpacedRepTopic() : topic;
-  
-    document.getElementById('load-progress').classList.add('is-hidden');
-    showPage('loading');
-    document.getElementById('loading-msg').textContent = 'Generating ' + qCount + ' fresh ' + diff + ' questions on ' + activeQuizTopic + '\u2026';
-  
-    showCacheNotice(false);
-    try {
-      questions = await fetchQuestions(key, activeQuizTopic, diff, qCount);
-      document.getElementById('loading-msg').textContent = 'Verifying question accuracy\u2026';
-      questions = await aiValidateQuestions(key, questions);
-      questions = validateQuestions(questions);
-      if (questions.length === 0) throw new Error('All generated questions failed validation. Try again.');
-    } catch(e) {
-      const cached = getCachedQuestions(activeQuizTopic, diff, qCount);
-      if (cached) {
-        questions = cached;
-        showCacheNotice(true);
-      } else {
-        showPage('setup');
-        const err = document.getElementById('setup-err');
-        err.textContent = '\u26a0\ufe0f ' + e.message;
-        err.classList.remove('is-hidden');
-        return;
-      }
-    }
-    // Inject PBQs on retry too
-    const retryPbqCount = qCount >= 10 ? 1 : 0;
-    if (retryPbqCount > 0) {
-      questions = injectPBQs(questions, activeQuizTopic, retryPbqCount);
-    }
-    current = 0; score = 0; streak = 0; bestStreak = 0; answered = 0; log = [];
-    quizFlags = new Array(questions.length).fill(false);
-    showPage('quiz');
-    render();
+    // v8.115.1: "New session" re-runs the same quiz setup (topic, difficulty,
+    // count — still held in the globals) through startQuiz. The old body kept
+    // its own pre-v4.99.3 BYOK check (`if (!key) showPage('setup')`), so every
+    // signed-in user — no personal key, served via the proxy — was bounced to
+    // the home page. Delegating also picks up startQuiz's quota gates, dropout
+    // top-up, session reset and loading bar, which this copy had drifted from.
+    return startQuiz();
   }
   
 
