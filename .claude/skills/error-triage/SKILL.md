@@ -22,12 +22,22 @@ select
   min(created_at) as first_seen,
   max(created_at) as last_seen
 from client_errors
+where type not like 'telemetry:%'   -- v8.116.0: validator telemetry shares this table
 group by 1, 2, 3, 4, 5
 order by n desc, last_seen desc
 limit 40;
 ```
 
 Fallback (if MCP unavailable): paste the same SQL into the Supabase SQL editor at your project dashboard → Table Editor → SQL editor.
+
+Validator telemetry (`type` = `telemetry:validator` / `telemetry:validator-run`) is NOT an error — it records why the Sonnet checker rejected generated questions. Read it separately when tuning the generator prompt:
+
+```sql
+select fingerprint, count(*) as n, min(message) as sample_reason
+from client_errors
+where type = 'telemetry:validator' and created_at > now() - interval '14 days'
+group by 1 order by n desc;
+```
 
 ## Step 2 — Split client vs server rows
 

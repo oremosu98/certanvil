@@ -1,9 +1,9 @@
 // ══════════════════════════════════════════
-// Network+ AI Quiz — app.js  v8.115.1
+// Network+ AI Quiz — app.js  v8.116.0
 // ══════════════════════════════════════════
 
 // ── CONSTANTS ──
-const APP_VERSION = '8.115.1';
+const APP_VERSION = '8.116.0';
 // v4.99.45 (Phase 6b): expose APP_VERSION on window so the web-vitals
 // collector (lib/web-vitals-collector.js, loaded BEFORE app.js so its
 // PerformanceObservers attach earlier) can stamp this version onto every
@@ -7412,6 +7412,101 @@ function injectPBQs(qs, qTopic, count) {
 // ══════════════════════════════════════════
 // AI SECOND-PASS VALIDATOR (Enhancement 1)
 // ══════════════════════════════════════════
+// v8.116.0 — validator hardening (founder-approved 5-point plan):
+//  1. FAIL CLOSED: a question survives only on an explicit OK. A failed call is
+//     retried once; questions with no verdict (call failed twice, or no
+//     parseable line) are dropped — callers already top up shortfalls and fall
+//     back to the validated cache. Pre-v8.116 every failure returned the whole
+//     set UNCHECKED, silently.
+//  2. A WRONG:X verdict on a multi-select drops the question. The old path set
+//     q.answer, which multi-select scoring never reads (it reads q.answers), so
+//     a known-bad key stayed in the quiz.
+//  3. CHUNKED + PARALLEL: VALIDATOR_CHUNK_SIZE questions per Sonnet call, all
+//     chunks at once. One call over 26 questions spread attention thin and was
+//     the slowest, most timeout-prone step.
+//  4. REASON FIRST: each verdict line names the failed check and a short reason
+//     before the verdict (better judgments), and rejections are logged to
+//     client_errors as type 'telemetry:validator' so we can fix the generator
+//     prompt at the source.
+const VALIDATOR_CHUNK_SIZE = 5;
+const VALIDATOR_TELEMETRY_CAP = 40;  // rows per page load — flood control
+
+// Pure: parse one chunk's response into verdicts keyed by 1-based Q number.
+// Line format: "Q3 | check: 8 | reason: ... | verdict: AMBIGUOUS"
+function _parseValidatorVerdicts(text) {
+  // Tolerant by design (A/B 2026-10-07: Sonnet 4.6 drifted from the strict
+  // layout on ~18% of verdicts). Accepts list prefixes ("1." / "-"), markdown,
+  // ":" or "=" after field names, pipes inside the reason, and the legacy
+  // "Q1: OK" shape and markdown-table rows ("| Q1 | 6 | … | OK |"). A line
+  // still needs a Q number AND a verdict token.
+  const out = {};
+  String(text || '').split('\n').forEach(raw => {
+    const line = raw.replace(/[*`#>_]/g, '').trim();
+    const qm = line.match(/^\|?\s*(?:[-•]\s*|\d+[.)]\s*)?Q\s*(\d+)\b/i);
+    if (!qm) return;
+    const vm = line.match(/verdict\s*[:=]\s*(OK|AMBIGUOUS|WRONG\s*:?\s*([A-F]))\b/i)
+      || line.match(/[:|\-–—]\s*(OK|AMBIGUOUS|WRONG\s*:\s*([A-F]))\s*\.?\s*\|?\s*$/i);
+    if (!vm) return;
+    const v = vm[1].toUpperCase().replace(/\s+/g, '');
+    const check = (line.match(/check\s*[:=]\s*([^|]*)/i) || [])[1];
+    const reason = (line.match(/reason\s*[:=]\s*(.*?)\s*\|\s*verdict/i) || line.match(/reason\s*[:=]\s*([^|]*)/i) || [])[1];
+    out[parseInt(qm[1], 10)] = {
+      verdict: v.startsWith('WRONG') ? 'WRONG' : v,
+      letter: vm[2] ? vm[2].toUpperCase() : null,
+      check: (check || '-').trim(),
+      reason: (reason || '').trim().slice(0, 200)
+    };
+  });
+  return out;
+}
+
+// Pure: apply verdicts. `verdicts[i]` belongs to `toValidate[i]`; undefined =
+// no verdict (failed call / unparsed line) → dropped. Non-validated types
+// (cli-sim, hot-area, …) pass through untouched.
+function _applyValidatorVerdicts(qs, toValidate, verdicts) {
+  const byQ = new Map();
+  toValidate.forEach((q, i) => byQ.set(q, verdicts[i]));
+  const stats = { checked: toValidate.length, kept: 0, fixed: 0, removed: 0, unverified: 0 };
+  const result = qs.filter(q => {
+    if (!byQ.has(q)) return true;
+    const v = byQ.get(q);
+    if (!v) { stats.unverified++; return false; }
+    if (v.verdict === 'OK') { stats.kept++; return true; }
+    if (v.verdict === 'WRONG' && getQType(q) === 'mcq' && v.letter && q.options && q.options[v.letter]) {
+      q.answer = v.letter;
+      stats.fixed++;
+      return true;
+    }
+    stats.removed++;
+    return false;
+  });
+  return { result, stats };
+}
+
+// Fire-and-forget telemetry into client_errors (no schema change). Skips
+// localhost and caps rows per page load. Never throws.
+function _logValidatorTelemetry(rows) {
+  try {
+    const sb = window.certanvilSupabase;
+    if (!sb || !rows || !rows.length) return;
+    if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') return;
+    window.__validatorTelemetryCount = window.__validatorTelemetryCount || 0;
+    const room = VALIDATOR_TELEMETRY_CAP - window.__validatorTelemetryCount;
+    if (room <= 0) return;
+    const batch = rows.slice(0, room);
+    window.__validatorTelemetryCount += batch.length;
+    sb.from('client_errors').insert(batch.map(r => ({
+      fingerprint: String(r.fingerprint).slice(0, 300),
+      type: String(r.type).slice(0, 50),
+      message: String(r.message || '').slice(0, 500),
+      page: 'quiz-generation',
+      version: String(typeof APP_VERSION !== 'undefined' ? APP_VERSION : '').slice(0, 20),
+      user_agent: String(navigator.userAgent || '').slice(0, 200),
+      extra: r.extra || null
+    }))).then(() => {}, () => {});
+  } catch (_) { /* telemetry must never break generation */ }
+}
+
 async function aiValidateQuestions(key, qs) {
   // Validate MCQ + multi-select questions (v4.85.4: extended from MCQ-only)
   const toValidate = qs.filter(q => {
@@ -7420,17 +7515,16 @@ async function aiValidateQuestions(key, qs) {
   });
   if (toValidate.length === 0) return qs;
 
-  // Build a compact verification prompt
-  const qList = toValidate.map((q, i) => {
+  const formatQ = (q, i) => {
     var t = getQType(q);
     if (t === 'multi-select') {
       var opts = Object.keys(q.options).sort().map(function(l) { return l + ') ' + q.options[l]; }).join('\n');
       return 'Q' + (i+1) + ' [MULTI-SELECT]: "' + q.question + '"\n' + opts + '\nMarked answers: ' + q.answers.join(', ') + '\nExplanation: ' + q.explanation;
     }
     return `Q${i+1}: "${q.question}"\nA) ${q.options.A}\nB) ${q.options.B}\nC) ${q.options.C}\nD) ${q.options.D}\nMarked answer: ${q.answer}\nExplanation: ${q.explanation}`;
-  }).join('\n\n');
+  };
 
-  const prompt = `You are a ${CERT_NAME_FULL} expert verifier. Review each question below and check EIGHT things:
+  const buildPrompt = (chunk) => `You are a ${CERT_NAME_FULL} expert verifier. Review each question below and check EIGHT things:
 1. Is the marked answer FACTUALLY CORRECT?
 2. Does the correct answer CONTRADICT any fact stated in the question stem?
 3. Does the EXPLANATION actually support the MARKED answer letter, or does it champion a different option?
@@ -7440,12 +7534,15 @@ async function aiValidateQuestions(key, qs) {
 7. MULTI-SELECT ANSWER BALANCE (for [MULTI-SELECT] questions only): Are ALL marked correct answers at a SIMILAR level of prominence and familiarity? A well-formed multi-select tests BREADTH (knowing that multiple core facts apply), NOT obscurity. If one correct answer is an obvious well-known fact and the other is an obscure edge-case detail that only specialists would know, the question is UNBALANCED — mark AMBIGUOUS. Also check: are any of the DISTRACTORS actually factually correct answers to the stem? If so, mark AMBIGUOUS.
 8. UNSTATED SCENARIO: Is every marked correct answer correct for the stem AS WRITTEN? If a correct answer only applies under a specific scenario, attack variant or context the stem never states (e.g. stem asks generically about "phishing" but a marked answer is a control that only fits business email compromise / payment fraud), the student has to invent context to reach the key — mark AMBIGUOUS.
 
-For each question, respond with ONLY:
-- "Q1:OK" if the marked answer is correct AND consistent with the stem AND supported by the explanation AND conceptually coherent AND well-framed AND has plausible distractors AND needs no unstated scenario (AND balanced, for multi-select)
-- "Q1:WRONG:X" if the correct answer should be letter X instead (use this when the explanation itself says X is correct but the answer field says something else)
-- "Q1:AMBIGUOUS" if the question is unclear, has multiple valid answers, the correct answer contradicts the question's own stated premises, OR fails any of checks 4/5/6/7/8 above
+For each question, write exactly ONE line, reason BEFORE verdict:
+Q1 | check: <number of the check it fails, or - if none> | reason: <under 15 words> | verdict: <VERDICT>
 
-Be strict. Check actual networking facts. Common errors to catch:
+VERDICT is one of:
+- OK — the marked answer is correct AND consistent with the stem AND supported by the explanation AND conceptually coherent AND well-framed AND has plausible distractors AND needs no unstated scenario (AND balanced, for multi-select)
+- WRONG:X — the correct answer should be letter X instead (use this when the explanation itself says X is correct but the answer field says something else). MCQ only; for a [MULTI-SELECT] with a wrong key use AMBIGUOUS.
+- AMBIGUOUS — the question is unclear, has multiple valid answers, the correct answer contradicts the question's own stated premises, OR fails any of checks 4/5/6/7/8 above
+
+Be strict. Check the actual technical facts. Common errors to catch:
 - Port numbers matched to wrong protocols
 - OSI layers confused
 - Protocol features attributed to wrong protocol
@@ -7459,70 +7556,62 @@ Be strict. Check actual networking facts. Common errors to catch:
 - MULTI-SELECT IMBALANCE: One correct answer is a widely-known core fact (e.g. "OSPF uses Dijkstra's algorithm") while the other is an obscure detail only specialists know (e.g. "OSPF uses area 0 as backbone"). Both correct answers MUST be at similar prominence levels — difficulty should come from breadth, not obscurity. Mark AMBIGUOUS.
 - MULTI-SELECT DISTRACTOR LEAK: A distractor option is ALSO a factually correct answer to the stem (e.g. stem asks "Which TWO are valid IPv6 transition methods?" and a distractor lists Teredo, which IS a valid method). If any distractor is factually correct, the question is unsolvable. Mark AMBIGUOUS.
 
-${qList}
+${chunk.map(formatQ).join('\n\n')}
 
-Respond with one line per question, nothing else:`;
+Respond with one line per question in the format above, nothing else:`;
 
-  try {
-    const res = await _claudeFetch( {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': key,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true'
-      },
-      body: JSON.stringify({ model: CLAUDE_VALIDATOR_MODEL, max_tokens: MAX_TOKENS_VALIDATION, messages: [{ role: 'user', content: prompt }] })
+  // One chunk → one Sonnet call, retried once. Returns verdicts aligned to
+  // the chunk (undefined where none was obtained).
+  const validateChunk = async (chunk) => {
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        const res = await _claudeFetch({
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': key,
+            'anthropic-version': '2023-06-01',
+            'anthropic-dangerous-direct-browser-access': 'true'
+          },
+          body: JSON.stringify({ model: CLAUDE_VALIDATOR_MODEL, max_tokens: MAX_TOKENS_VALIDATION, messages: [{ role: 'user', content: buildPrompt(chunk) }] })
+        });
+        if (!res.ok) continue;
+        const data = await res.json();
+        const parsed = _parseValidatorVerdicts(data.content?.[0]?.text || '');
+        if (Object.keys(parsed).length === 0) continue;  // unparseable → retry
+        return chunk.map((_, i) => parsed[i + 1]);
+      } catch (e) { /* network / timeout → retry */ }
+    }
+    return chunk.map(() => undefined);
+  };
+
+  const chunks = [];
+  for (let i = 0; i < toValidate.length; i += VALIDATOR_CHUNK_SIZE) chunks.push(toValidate.slice(i, i + VALIDATOR_CHUNK_SIZE));
+  const verdicts = [].concat(...(await Promise.all(chunks.map(validateChunk))));
+
+  const { result, stats } = _applyValidatorVerdicts(qs, toValidate, verdicts);
+
+  const cert = typeof CURRENT_CERT !== 'undefined' ? CURRENT_CERT : '';
+  const rows = [];
+  toValidate.forEach((q, i) => {
+    const v = verdicts[i];
+    if (v && v.verdict === 'OK') return;
+    const kind = v ? v.verdict : 'NONE';
+    rows.push({
+      type: 'telemetry:validator',
+      fingerprint: 'validator:' + kind + ':check-' + (v ? v.check : 'none'),
+      message: v ? v.reason : 'no verdict (call failed twice or unparseable)',
+      extra: { cert, model: CLAUDE_VALIDATOR_MODEL, qType: getQType(q), topic: q.topic || null, objective: q.objective || null, stem: String(q.question || '').slice(0, 160), letter: v ? v.letter : null }
     });
-
-    if (!res.ok) return qs; // If validation call fails, keep questions as-is
-
-    const data = await res.json();
-    const text = data.content?.[0]?.text || '';
-    const lines = text.trim().split('\n').map(l => l.trim()).filter(l => l);
-
-    // Parse results
-    const fixes = {};
-    lines.forEach(line => {
-      const wrongMatch = line.match(/Q(\d+)\s*:\s*WRONG\s*:\s*([A-D])/i);
-      const ambigMatch = line.match(/Q(\d+)\s*:\s*AMBIGUOUS/i);
-      if (wrongMatch) {
-        const idx = parseInt(wrongMatch[1]) - 1;
-        const correctLetter = wrongMatch[2].toUpperCase();
-        fixes[idx] = { action: 'fix', letter: correctLetter };
-      } else if (ambigMatch) {
-        const idx = parseInt(ambigMatch[1]) - 1;
-        fixes[idx] = { action: 'remove' };
-      }
-    });
-
-    // Apply fixes (v4.85.4: handles both MCQ + multi-select via toValidate indices)
-    let fixCount = 0;
-    let removeCount = 0;
-    const validatedIndices = [];
-    qs.forEach((q, i) => {
-      var t = getQType(q);
-      if (t === 'mcq' || t === 'multi-select') validatedIndices.push(i);
-    });
-
-    const result = qs.filter((q, i) => {
-      const valIdx = validatedIndices.indexOf(i);
-      if (valIdx === -1 || !fixes[valIdx]) return true;
-      if (fixes[valIdx].action === 'remove') { removeCount++; return false; }
-      if (fixes[valIdx].action === 'fix') {
-        const newAnswer = fixes[valIdx].letter;
-        if (q.options[newAnswer]) {
-          q.answer = newAnswer;
-          fixCount++;
-        }
-      }
-      return true;
-    });
-
-    return result;
-  } catch (e) {
-    return qs;
-  }
+  });
+  rows.unshift({
+    type: 'telemetry:validator-run',
+    fingerprint: 'validator-run:' + cert,
+    message: `checked ${stats.checked} · kept ${stats.kept} · fixed ${stats.fixed} · removed ${stats.removed} · unverified ${stats.unverified} · chunks ${chunks.length}`,
+    extra: Object.assign({ cert, model: CLAUDE_VALIDATOR_MODEL, chunks: chunks.length }, stats)
+  });
+  _logValidatorTelemetry(rows);
+  return result;
 }
 
 // ══════════════════════════════════════════

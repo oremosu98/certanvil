@@ -24,12 +24,12 @@
 <!-- machine-owned — run `node scripts/stamp-facts.js` to refresh; do not hand-edit -->
 | Metric | Lines | Size |
 |---|---|---|
-| app.js | 8172 | 426 KB |
+| app.js | 8261 | 432 KB |
 | styles.css | 14913 | 551 KB |
 | index.html | 2287 | 148 KB |
 | dg-system.css | 5447 | 507 KB |
-| tests/uat.js + tests/uat/ (29 modules) | 29058 | — |
-UAT checks: 5017 · E2E `test(` count: 163 · APP_VERSION: 8.115.1 · stamped-at: worktree
+| tests/uat.js + tests/uat/ (29 modules) | 29162 | — |
+UAT checks: 5023 · E2E `test(` count: 163 · APP_VERSION: 8.116.0 · stamped-at: worktree
 <!-- FACTS:AUTO:END -->
 
 | File | Purpose | Size |
@@ -135,9 +135,9 @@ npx playwright test              # E2E (tests/e2e/app.spec.js)
 
 | Version | Features Added |
 |---|---|
+| v8.116.0 | Question checker: fail closed, chunked, reasons + telemetry |
 | v8.115.1 | Fix: New session button bounced signed-in users home |
 | v8.115.0 | Lock answers once submitted + fix abandoned-session results hijack |
-| v8.114.1 | Fix: readiness pass tick hard-coded to 720 |
 
 _Older releases (v7.60.0 and back) live in [CHANGELOG.md](./CHANGELOG.md)._
 

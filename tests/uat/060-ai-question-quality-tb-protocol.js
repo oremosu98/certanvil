@@ -335,7 +335,7 @@ test('v4.57.0 validator: new failure modes listed in common-errors section',
 test('v4.57.0 validator: classful-addressing conflation explicitly called out as AMBIGUOUS trigger',
   /classful addressing[\s\S]{0,200}obsoleted by CIDR/.test(js));
 test('v4.57.0 validator: OK requires passing all 7 checks (v4.85.4: +balanced for multi-select)',
-  /Q1:OK[\s\S]{0,400}conceptually coherent[\s\S]{0,100}well-framed[\s\S]{0,100}plausible distractors/.test(js));
+  /- OK — [\s\S]{0,400}conceptually coherent[\s\S]{0,100}well-framed[\s\S]{0,100}plausible distractors/.test(js));
 test('v4.57.0 validator: AMBIGUOUS trigger expanded to cover checks 4/5/6/7',
   /AMBIGUOUS[\s\S]{0,400}fails any of checks 4\/5\/6\/7\/8/.test(js));
 
@@ -1430,3 +1430,106 @@ test('v4.62.2 validation-audit.js extracts + includes the new helper in its sand
   }
 })();
 
+
+// ══════════════════════════════════════════════════════════════════════
+// v8.116.0 — validator hardening: fail closed, multi-select WRONG drops,
+// chunked parallel calls with one retry, reason-first verdict lines.
+// ══════════════════════════════════════════════════════════════════════
+const _v116 = (() => {
+  const parse = _fnBody(js, '_parseValidatorVerdicts');
+  const apply = _fnBody(js, '_applyValidatorVerdicts');
+  // _fnBody returns `function aiValidateQuestions…` without `async`; restore it.
+  const mainRaw = _fnBody(js, 'aiValidateQuestions');
+  const main = mainRaw ? 'async ' + mainRaw : '';
+  return { parse, apply, main };
+})();
+const _v116Ctx = (extra) => {
+  const ctx = vm.createContext(Object.assign({
+    getQType: q => q.type || 'mcq', Map, Object, String, Promise, JSON, Math,
+    CERT_NAME_FULL: 'CompTIA Security+ SY0-701', CLAUDE_VALIDATOR_MODEL: 'claude-sonnet-4-6',
+    MAX_TOKENS_VALIDATION: 1000, VALIDATOR_CHUNK_SIZE: 5, CURRENT_CERT: 'secplus',
+    _logValidatorTelemetry: () => {}
+  }, extra || {}));
+  vm.runInContext(_v116.parse + '\n' + _v116.apply + '\n' + _v116.main, ctx);
+  return ctx;
+};
+const _mk = (n, type) => Array.from({ length: n }, (_, i) => type === 'multi-select'
+  ? { type, question: 'MS' + i, options: { A: 'a', B: 'b', C: 'c', D: 'd', E: 'e' }, answers: ['A', 'C'], explanation: '.' }
+  : { type: type || 'mcq', question: 'Q' + i, options: { A: 'a', B: 'b', C: 'c', D: 'd' }, answer: 'A', explanation: '.' });
+
+test('v8.116.0 validator: parser reads reason-first lines, tolerates drift (list prefix, pipes, legacy Q1: OK), ignores junk',
+  (() => {
+    try {
+      const ctx = _v116Ctx();
+      const r = vm.runInContext(`_parseValidatorVerdicts("Here you go\\n**Q1 | check: - | reason: fine | verdict: OK**\\nQ2 | check: 3 | reason: explanation backs C | verdict: WRONG:C\\nQ3 | check: 8 | reason: needs BEC scenario | verdict: AMBIGUOUS\\nQ4: OK\\n5. Q5 | check: 6 | reason: A | B both weak | verdict: AMBIGUOUS\\n| Q6 | 6 | distractors weak | AMBIGUOUS |\\n| Q7 | - | fine | OK |\\nSummary: all good")`, ctx);
+      return r[1].verdict === 'OK' && r[2].verdict === 'WRONG' && r[2].letter === 'C'
+        && r[3].verdict === 'AMBIGUOUS' && r[3].check === '8'
+        && r[4].verdict === 'OK' && r[5].verdict === 'AMBIGUOUS'
+        && r[6].verdict === 'AMBIGUOUS' && r[7].verdict === 'OK' && Object.keys(r).length === 7;
+    } catch (e) { return false; }
+  })());
+
+test('v8.116.0 validator: apply keeps only explicit OK; no verdict = dropped (fail closed)',
+  (() => {
+    try {
+      const ctx = _v116Ctx();
+      ctx.qs = _mk(3).concat([{ type: 'cli-sim', question: 'CLI' }]);
+      ctx.tv = ctx.qs.slice(0, 3);
+      const out = vm.runInContext(`_applyValidatorVerdicts(qs, tv, [{verdict:'OK'}, undefined, {verdict:'AMBIGUOUS'}])`, ctx);
+      return out.result.length === 2 && out.result[0].question === 'Q0' && out.result[1].type === 'cli-sim'
+        && out.stats.unverified === 1 && out.stats.removed === 1 && out.stats.kept === 1;
+    } catch (e) { return false; }
+  })());
+
+test('v8.116.0 validator: WRONG:X relabels an MCQ but DROPS a multi-select (q.answers is what scores)',
+  (() => {
+    try {
+      const ctx = _v116Ctx();
+      ctx.qs = _mk(1).concat(_mk(1, 'multi-select'));
+      const out = vm.runInContext(`_applyValidatorVerdicts(qs, qs, [{verdict:'WRONG', letter:'C'}, {verdict:'WRONG', letter:'B'}])`, ctx);
+      return out.result.length === 1 && out.result[0].answer === 'C' && out.stats.fixed === 1 && out.stats.removed === 1;
+    } catch (e) { return false; }
+  })());
+
+// Async fixtures run in a child node process: test() is synchronous, and a
+// returned Promise would always count as a pass.
+const _v116Async = (() => {
+  try {
+    const os = require('os'), cp = require('child_process');
+    const file = path.join(os.tmpdir(), 'uat-v116-validator-' + process.pid + '.js');
+    fs.writeFileSync(file, `
+const vm = require('vm');
+const mk = n => Array.from({ length: n }, (_, i) => ({ type: 'mcq', question: 'Q' + i, options: { A: 'a', B: 'b', C: 'c', D: 'd' }, answer: 'A', explanation: '.' }));
+const ctxFor = fetchImpl => { const c = vm.createContext({ getQType: q => q.type || 'mcq', Map, Object, String, Promise, JSON, Math,
+  CERT_NAME_FULL: 'X', CLAUDE_VALIDATOR_MODEL: 'm', MAX_TOKENS_VALIDATION: 1000, VALIDATOR_CHUNK_SIZE: 5, CURRENT_CERT: 'secplus',
+  _logValidatorTelemetry: () => {}, _claudeFetch: fetchImpl });
+  vm.runInContext(${JSON.stringify(_v116.parse + '\n' + _v116.apply + '\n' + _v116.main)}, c); return c; };
+(async () => {
+  let calls = 0;
+  const ok = ctxFor(async init => { calls++; const n = (JSON.parse(init.body).messages[0].content.match(/^Q\\d+: "/gm) || []).length;
+    return { ok: true, json: async () => ({ content: [{ text: Array.from({ length: n }, (_, i) => 'Q' + (i + 1) + ' | check: - | reason: ok | verdict: OK').join('\\n') }] }) }; });
+  ok.qs = mk(12);
+  const r1 = await vm.runInContext('aiValidateQuestions("k", qs)', ok);
+  const chunked = calls === 3 && r1.length === 12;
+  let calls2 = 0;
+  const bad = ctxFor(async () => { calls2++; return { ok: false, json: async () => ({}) }; });
+  bad.qs = mk(3);
+  const r2 = await vm.runInContext('aiValidateQuestions("k", qs)', bad);
+  const failClosed = calls2 === 2 && r2.length === 0;
+  process.stdout.write(JSON.stringify({ chunked, failClosed }));
+})().catch(e => process.stdout.write(JSON.stringify({ err: String(e) })));
+`);
+    const out = JSON.parse(cp.execFileSync(process.execPath, [file], { encoding: 'utf8' }));
+    fs.unlinkSync(file);
+    return out;
+  } catch (e) { return { err: String(e) }; }
+})();
+test('v8.116.0 validator: 12 questions → 3 parallel chunk calls, verdicts mapped back per chunk', _v116Async.chunked === true);
+test('v8.116.0 validator: a failed call is retried once; failing twice drops that chunk (never returns it unchecked)', _v116Async.failClosed === true);
+
+test('v8.116.0 validator: telemetry rows use the telemetry:validator type and skip localhost',
+  (() => {
+    const body = _fnBody(js, '_logValidatorTelemetry');
+    return !!body && /localhost/.test(body) && /VALIDATOR_TELEMETRY_CAP/.test(body)
+      && /'telemetry:validator'/.test(js) && /'telemetry:validator-run'/.test(js);
+  })());

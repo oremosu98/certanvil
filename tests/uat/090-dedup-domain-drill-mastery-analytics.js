@@ -1032,9 +1032,10 @@ test('v4.85.3 IPv6TransGT: vm fixture — "Which TWO" with 3 valid IPv6 methods 
 test('v4.85.4 MultiSelectSonnet: aiValidateQuestions filters multi-select alongside mcq',
   (() => {
     const body = _fnBody(js, 'aiValidateQuestions');
+    // v8.116.0: index bookkeeping replaced by _applyValidatorVerdicts (object map).
     return body && /multi-select/.test(body)
       && /MULTI-SELECT/.test(body)
-      && /validatedIndices/.test(body);
+      && /_applyValidatorVerdicts\(qs, toValidate, verdicts\)/.test(body);
   })());
 
 test('v4.85.4 MultiSelectSonnet: check 7 = MULTI-SELECT ANSWER BALANCE',
