@@ -643,6 +643,10 @@ test('v6.5.4 Bug A: walkActiveFlowStepId no longer assigned (removed from code p
     aiProxySrc.length > 0 && !/Object\.assign\(\{\},\s*req\.body\)/.test(aiProxySrc));
   test('Sec-P1 C2: ai-proxy enforces a model allowlist',
     /ALLOWED_MODELS/.test(aiProxySrc) && /invalid_model/.test(aiProxySrc));
+// v8.118.0: the generator moved to Haiku 5.5 — the proxy must allow it, and must
+// keep the previous Haiku so clients on a cached app.js don't 400 mid-rollout.
+test('v8.118.0 AI proxy: allowlist includes claude-haiku-5-5 and still claude-haiku-4-5-20251001',
+  /'claude-haiku-5-5'/.test(aiProxySrc) && /'claude-haiku-4-5-20251001'/.test(aiProxySrc) && /'claude-sonnet-4-6'/.test(aiProxySrc));
   test('Sec-P1 C2: ai-proxy clamps max_tokens to a cap',
     /MAX_TOKENS_CAP/.test(aiProxySrc) && /maxTokens\s*>\s*MAX_TOKENS_CAP/.test(aiProxySrc));
   test('Sec-P1 C2: ai-proxy caps prompt size',
