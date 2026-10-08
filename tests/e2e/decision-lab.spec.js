@@ -54,7 +54,7 @@ test('dl scaffold: _dlBank resolves its own registry; _slBank unchanged (no regr
       slNetLen: slNet.length, slAzLen: slAz.length
     };
   });
-  expect(r.certs).toEqual(['az900', 'sc900', 'clfc02']);  // v8.121.0: ai900 hidden until AI-901 rebuild
+  expect(r.certs).toEqual(['az900', 'ai900', 'sc900', 'clfc02']);  // v8.126.0: ai900 back with the AI-901 rebuild
   expect(r.dlAzLen).toBe(6);
   expect(r.dlUnknownLen).toBe(0);
   expect(r.slNetLen).toBe(1);

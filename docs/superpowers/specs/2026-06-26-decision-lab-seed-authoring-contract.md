@@ -20,7 +20,7 @@ and `features/sim-lab-seed-aplus-core1.js` (mirror their shape exactly, plus the
 | Cert | File | Global | Pack name · code (verified live) |
 |---|---|---|---|
 | AZ-900 | `features/decision-lab-seed-az900.js` | `window.DECISION_LAB_SEED_AZ900` | Microsoft Azure Fundamentals · AZ-900 |
-| AI-900 | `features/decision-lab-seed-ai900.js` | `window.DECISION_LAB_SEED_AI900` | Microsoft Azure AI Fundamentals · AI-900 |
+| AI-901 (id `ai900`) | `features/decision-lab-seed-ai900.js` | `window.DECISION_LAB_SEED_AI900` | Microsoft Azure AI Fundamentals · AI-901 |
 | SC-900 | `features/decision-lab-seed-sc900.js` | `window.DECISION_LAB_SEED_SC900` | Microsoft SC-900 · SC-900 |
 | CLF-C02 | `features/decision-lab-seed-clfc02.js` | `window.DECISION_LAB_SEED_CLFC02` | AWS Cloud Practitioner · CLF-C02 |
 
@@ -117,7 +117,7 @@ The verdict clusters MISSED scenarios by look-alike `pair` and by service `famil
 Weight to the vendor skills outline. Lead with scenario→pick `analyze` (the through-line, ~55-65% of each bank).
 
 - **AZ-900:** Cloud concepts (~25%), Architecture & services — compute/storage/network/identity service-pick (~35-40%), Management & governance — Policy vs RBAC vs Locks vs Blueprints, cost tools, composite-SLA `fillin`, shared-responsibility `categorize` (~30-35%). Include the cost-tool trio + the series-SLA calc.
-- **AI-900:** AI workloads & Responsible AI (~20%, apply-don't-recite "which principle is violated" `match`), Vision/Document Intelligence/Language/Speech/OpenAI service-pick at overlapping boundaries (~40%), ML fundamentals vocab — regression vs classification vs clustering, features vs labels (~25%), Generative AI (~15%). ML-lifecycle `order`. **No shared-responsibility for AI-900.**
+- **AI-901** (rebuilt 2026-10-08; id stays `ai900`): Identify AI concepts & capabilities ~42% (1.1 Responsible AI apply-don't-recite `match` + the four mitigation layers `categorize`, 1.2 model settings / deployment types / model choice / grounding, 1.3 workload to tool picks) and Implement AI solutions with Microsoft Foundry ~58% (2.1 prompts, deployments, agents and agent tools, 2.2 Azure Language + Azure Speech, 2.3 multimodal vision + image generation, 2.4 Content Understanding analyzers, confidence and validation). `order` for identify→measure→mitigate→operate, build-an-agent, and extraction flow. Current names only: Microsoft Foundry, Guardrails (formerly content filters), Foundry Agent Service conversations/responses. **No ML-fundamentals vocab and no shared-responsibility for AI-901.**
 - **SC-900:** Security/compliance/identity concepts (~25%), Entra identity — authN/authZ, MFA vs Conditional Access, PIM (~25%), Microsoft security solutions — the Defender family name-soup, Sentinel vs Defender for Cloud (~30%), Purview/compliance — sensitivity vs retention labels, DLP, Compliance vs Secure Score (~20%). Conditional-Access `order`; shared-responsibility `categorize` allowed.
 - **CLF-C02:** Cloud concepts & CAF (~24%), Security & compliance — shared-responsibility boundary shifts with managed services (EC2 vs RDS vs Lambda), IAM (~30%), Technology & services — CloudWatch/CloudTrail, Inspector/Macie/GuardDuty, EBS/EFS/S3, AI/ML abstraction-layer gate (~34%), Billing/pricing/support — the cost-tool quartet (~12%). Shared-responsibility `categorize` with a service that shifts the boundary.
 

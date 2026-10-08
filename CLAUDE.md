@@ -28,8 +28,8 @@
 | styles.css | 14913 | 551 KB |
 | index.html | 2287 | 148 KB |
 | dg-system.css | 5462 | 508 KB |
-| tests/uat.js + tests/uat/ (29 modules) | 29286 | — |
-UAT checks: 5038 · E2E `test(` count: 163 · APP_VERSION: 8.125.0 · stamped-at: worktree
+| tests/uat.js + tests/uat/ (29 modules) | 29309 | — |
+UAT checks: 5040 · E2E `test(` count: 163 · APP_VERSION: 8.126.0 · stamped-at: worktree
 <!-- FACTS:AUTO:END -->
 
 | File | Purpose | Size |
@@ -135,9 +135,9 @@ npx playwright test              # E2E (tests/e2e/app.spec.js)
 
 | Version | Features Added |
 |---|---|
+| v8.126.0 | AI-901 Phase 4: Decision Lab back on the AI cert (50 scenarios) + why/mark render fix |
 | v8.125.0 | AI-901 Phase 3 batch 3: 57 exemplars (bank 143 -> 200) |
 | v8.124.0 | AI-901 Phase 3 batch 2: 64 exemplars (bank 79 -> 143) |
-| v8.123.0 | AI-901 Phase 3 batch 1: 46 exemplars (bank 33 -> 79) |
 
 _Older releases (v7.60.0 and back) live in [CHANGELOG.md](./CHANGELOG.md)._
 

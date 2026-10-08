@@ -952,13 +952,36 @@ test('v8.121.0 AI-901: app labels, cert lock and onboarding rows say AI-901',
       && /id: 'ai900',\s*name: 'AI-901'/.test(r('lib/onboarding-home.js'))
       && /id: 'ai900',\s*name: 'AI-901'/.test(r('lib/onboarding-firstrun.js'));
   })());
-test('v8.121.0 AI-901: Decision Lab excludes ai900 in both the app gate and the engine',
+test('v8.126.0 AI-901: Decision Lab re-enables ai900 in the app gate, seed loader and engine',
   (() => {
     const sl = fs.readFileSync(path.join(ROOT, 'features', 'sim-lab.js'), 'utf8');
-    return js.includes("const _DL_CERTS = ['az900', 'sc900', 'clfc02'];")
-      && sl.includes("var _DL_CERTS = ['az900', 'sc900', 'clfc02'];")
-      && !/ai900: 'features\/decision-lab-seed-ai900\.js'/.test(js)
-      && !/ai900: 'DECISION_LAB_SEED_AI900'/.test(sl);
+    return js.includes("const _DL_CERTS = ['az900', 'ai900', 'sc900', 'clfc02'];")
+      && sl.includes("var _DL_CERTS = ['az900', 'ai900', 'sc900', 'clfc02'];")
+      && /ai900: 'features\/decision-lab-seed-ai900\.js'/.test(js)
+      && /ai900: 'DECISION_LAB_SEED_AI900'/.test(sl);
+  })());
+test('v8.126.0 AI-901: Decision Lab seed is the AI-901 rebuild (no retired AI-900 content)',
+  (() => {
+    const vm = require('vm');
+    const sb = { window: {} };
+    vm.runInNewContext(fs.readFileSync(path.join(ROOT, 'features', 'decision-lab-seed-ai900.js'), 'utf8'), sb);
+    const S = sb.window.DECISION_LAB_SEED_AI900 || [];
+    const raw = JSON.stringify(S);
+    const objOk = S.every(s => s.cert === 'ai900' && /^(1\.[1-3]|2\.[1-4])$/.test(s.objective));
+    const whyOk = S.every(s => s.steps.every(st => st.type !== 'analyze'
+      || st.payload.lines.every(l => st.answer.selected.indexOf(l.id) !== -1 || l.why)));
+    return S.length >= 45 && objOk && whyOk
+      && !/Custom Vision|Form Recognizer|Azure AI Studio|Document Intelligence|regression|clustering/i.test(raw)
+      && !/\u2014/.test(raw);
+  })());
+test('v8.126.0 Decision Lab: why stays hidden until graded + scenario <mark> renders',
+  (() => {
+    const sl = fs.readFileSync(path.join(ROOT, 'features', 'sim-lab.js'), 'utf8');
+    const css = fs.readFileSync(path.join(ROOT, 'dg-system.css'), 'utf8');
+    return sl.includes("_el('span', 'dl-why', '<span>' + _esc(ln.why) + '</span>')")
+      && sl.includes(".replace(/&lt;(\\/?)mark&gt;/g, '<$1mark>')")
+      && css.includes('#page-decision-lab .sl-analyze-line .dl-why,#page-decision-lab .dl-opt .dl-why{')
+      && css.includes('#page-decision-lab .sl-scn-prose mark,');
   })());
 test('v8.121.0 copy: analytics + diagnostic no longer hard-code N10-009 domain text',
   (() => {

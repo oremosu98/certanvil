@@ -1331,7 +1331,8 @@
       var lab = _el('span', 'dl-lab', _esc(ln.text));
       row.textContent = '';
       row.appendChild(lab);
-      if (ln.why) { row.appendChild(_el('span', 'dl-why', _esc(ln.why))); }
+      // v8.126.0: inner span so the 0fr grid collapse hides the why (and its height) until graded.
+      if (ln.why) { row.appendChild(_el('span', 'dl-why', '<span>' + _esc(ln.why) + '</span>')); }
       row.appendChild(_el('span', 'dl-verdict', ''));
       row.addEventListener('click', function () {
         var idx = selected.indexOf(ln.id);
@@ -2329,7 +2330,9 @@
     var initial = (opts && opts.initial) || null;
     host.innerHTML = '';
     var wrap = _el('div', 'sl-scenario');
-    wrap.appendChild(_el('div', 'sl-scn-prose', _esc(scn.scenario)));
+    // v8.126.0: escape first, then restore ONLY bare <mark>/</mark> so seed
+    // highlights render (they showed as literal tags). Seeds are static content.
+    wrap.appendChild(_el('div', 'sl-scn-prose', _esc(scn.scenario).replace(/&lt;(\/?)mark&gt;/g, '<$1mark>')));
     if (scn.assets && Array.isArray(scn.assets.logs) && scn.assets.logs.length) {
       var pre = _el('pre', 'sl-scn-logs');
       pre.textContent = scn.assets.logs.join('\n');
@@ -2459,9 +2462,10 @@
   function _slBank(cert) { return _seedBank(_SL_SEED_GLOBALS, cert); }
 
   // --- Decision Lab: cloud-fundamentals cert allowlist + seed registry (spec 3.2) ---
-  var _DL_CERTS = ['az900', 'sc900', 'clfc02'];  // v8.121.0: ai900 hidden until AI-901 rebuild
+  var _DL_CERTS = ['az900', 'ai900', 'sc900', 'clfc02'];  // v8.126.0: ai900 back with the AI-901 rebuild
   var _DL_SEED_GLOBALS = {
     az900: 'DECISION_LAB_SEED_AZ900',
+    ai900: 'DECISION_LAB_SEED_AI900',
     sc900: 'DECISION_LAB_SEED_SC900',
     clfc02: 'DECISION_LAB_SEED_CLFC02'
   };

@@ -163,7 +163,7 @@ const {
   test('v7.59 Decision Lab: runner page + Home tile present in index.html',
     html.includes('id="page-decision-lab"') && html.includes('id="dl-home-opt"'));
   test('v7.59 Decision Lab: _DL_CERTS allowlist defined (engine + app gate)',
-    js.includes("_DL_CERTS = ['az900', 'sc900', 'clfc02']"));  // v8.121.0: ai900 hidden until the AI-901 rebuild (Phase 4)
+    js.includes("_DL_CERTS = ['az900', 'ai900', 'sc900', 'clfc02']"));  // v8.126.0: ai900 back with the AI-901 rebuild
   test('v7.59 Decision Lab: _dlBank + shared _seedBank resolver defined',
     js.includes('function _dlBank(') && js.includes('function _seedBank('));
   test('v7.59 Decision Lab: per-option why render path (_dlGradeAnalyze) defined',

@@ -1,26 +1,22 @@
-/* DRAFT ai900 Decision Lab seed scenarios · answers NOT yet founder-verified. Review before ship. */
+/* DRAFT ai900 Decision Lab seed scenarios (AI-901 rebuild, 2026-10-08) · answers NOT yet founder-verified. Review before ship. */
 window.DECISION_LAB_SEED_AI900 = [
-  // ========================================================================
-  // ===== AI workloads & Responsible AI (~20%, ~10) ========================
-  // ========================================================================
   {
-    id: 'ai900-dl-rai-1', cert: 'ai900', objective: '1.3', topic: 'Responsible AI principles',
-    title: 'Which principle does the loan model violate?',
-    estMinutes: 3,
-    scenario: 'A bank trains a loan-approval model on historical decisions. After launch, the model approves <mark>qualified applicants from one neighborhood far less often</mark> than equally qualified applicants elsewhere, tracking a protected characteristic. Pick the Responsible AI principle most directly violated.',
-    pair: 'Fairness vs Reliability and safety',
+    id: 'ai900-dl-rai-1', cert: 'ai900', objective: '1.1', topic: 'Responsible AI principles',
+    title: 'Name the principle a loan model breaks', estMinutes: 3,
+    scenario: 'A bank\'s loan model approves applicants with near-identical finances at <mark>very different rates depending on their postcode</mark>. Which Responsible AI principle is most at risk?',
+    pair: 'Fairness vs Inclusiveness',
     family: 'Responsible AI principles',
     steps: [
       { id: 's1', type: 'analyze', points: 1,
-        prompt: 'Select the Responsible AI principle most directly violated.',
-        explanation: 'The tell: equally qualified people get systematically different outcomes that track a protected group. That is a disparate-treatment / bias problem, which is exactly the Fairness principle.',
+        prompt: 'Select the principle.',
+        explanation: 'The tell is comparable applicants getting different outcomes by group. Equal treatment of similar people is fairness.',
         payload: {
           multi: false,
           lines: [
             { id: 'l1', text: 'Fairness' },
-            { id: 'l2', text: 'Reliability and safety', why: 'This principle covers a model performing consistently and failing safely under unexpected input; here the model works as built but produces biased outcomes.' },
-            { id: 'l3', text: 'Privacy and security', why: 'This covers protecting personal data from exposure or misuse; nothing here describes data being leaked or accessed improperly.' },
-            { id: 'l4', text: 'Transparency', why: 'This covers explaining how the system makes decisions; the problem is the biased outcome itself, not a lack of explanation.' }
+            { id: 'l2', text: 'Transparency', why: 'Transparency is about explaining how the model reaches decisions. The problem here is the unequal outcome itself.' },
+            { id: 'l3', text: 'Reliability and safety', why: 'Reliability and safety is about consistent, safe behaviour under expected and unexpected conditions, not equal treatment.' },
+            { id: 'l4', text: 'Inclusiveness', why: 'Inclusiveness is about designing for people of all abilities and backgrounds to use the system.' }
           ]
         },
         answer: { selected: ['l1'] } }
@@ -28,255 +24,114 @@ window.DECISION_LAB_SEED_AI900 = [
   },
 
   {
-    id: 'ai900-dl-rai-2', cert: 'ai900', objective: '1.3', topic: 'Responsible AI principles',
-    title: 'Map each situation to the violated principle',
-    estMinutes: 4,
-    scenario: 'Match each Responsible AI failure to the principle it most directly violates.',
+    id: 'ai900-dl-rai-2', cert: 'ai900', objective: '1.1', topic: 'Responsible AI principles',
+    title: 'Name the principle a chatbot log breaks', estMinutes: 3,
+    scenario: 'A support chatbot writes customers\' <mark>full card numbers into plain-text logs</mark> that many staff can read. Which principle is most at risk?',
+    pair: 'Privacy vs Transparency',
+    family: 'Responsible AI principles',
+    steps: [
+      { id: 's1', type: 'analyze', points: 1,
+        prompt: 'Select the principle.',
+        explanation: 'The tell is sensitive personal data stored where it is exposed. Protecting data and controlling access is privacy and security.',
+        payload: {
+          multi: false,
+          lines: [
+            { id: 'l1', text: 'Accountability', why: 'Accountability is about who owns and answers for the system, not how its data is protected.' },
+            { id: 'l2', text: 'Fairness', why: 'Fairness is about comparable people getting comparable outcomes.' },
+            { id: 'l3', text: 'Privacy and security' },
+            { id: 'l4', text: 'Transparency', why: 'Transparency is about people understanding how the system works and its limits.' }
+          ]
+        },
+        answer: { selected: ['l3'] } }
+    ]
+  },
+
+  {
+    id: 'ai900-dl-rai-3', cert: 'ai900', objective: '1.1', topic: 'Responsible AI principles',
+    title: 'Name the principle behind an appeals route', estMinutes: 3,
+    scenario: 'After an AI system declines an insurance claim, the insurer <mark>names the team that owns the decision</mark> and gives the customer a route to appeal. Which principle is this?',
     pair: 'Transparency vs Accountability',
+    family: 'Responsible AI principles',
+    steps: [
+      { id: 's1', type: 'analyze', points: 1,
+        prompt: 'Select the principle.',
+        explanation: 'The tell is named ownership plus a way to challenge the outcome. People staying answerable for the AI system is accountability.',
+        payload: {
+          multi: false,
+          lines: [
+            { id: 'l1', text: 'Transparency', why: 'Transparency is about explaining how the system works. Naming an owner and an appeal route is about who answers for it.' },
+            { id: 'l2', text: 'Inclusiveness', why: 'Inclusiveness is about the system working for people of all abilities and backgrounds.' },
+            { id: 'l3', text: 'Reliability and safety', why: 'Reliability and safety is about the system behaving consistently and safely.' },
+            { id: 'l4', text: 'Accountability' }
+          ]
+        },
+        answer: { selected: ['l4'] } }
+    ]
+  },
+
+  {
+    id: 'ai900-dl-rai-4', cert: 'ai900', objective: '1.1', topic: 'Responsible AI principles',
+    title: 'Match each situation to the principle at risk', estMinutes: 4,
+    scenario: 'Four separate problems were found during a Responsible AI review of different AI apps.',
+    pair: 'Fairness vs Inclusiveness',
     family: 'Responsible AI principles',
     steps: [
       { id: 's1', type: 'match', points: 1,
-        prompt: 'Pair each situation with the principle it violates.',
-        explanation: 'Transparency is about the user understanding how/why a decision was made; Accountability is about a human being answerable and in control; Inclusiveness is about serving people of all abilities; Privacy and security is about protecting personal data; Reliability and safety is about consistent, safe operation.',
+        prompt: 'Match each situation to the Responsible AI principle most at risk.',
+        explanation: 'Unequal outcomes = fairness. Unexplained decisions = transparency. Unsafe behaviour on unusual input = reliability and safety. Unusable for some people = inclusiveness.',
         payload: {
           left: [
-            { id: 'blackbox', label: 'A medical AI gives a diagnosis but cannot explain which factors drove it' },
-            { id: 'noowner', label: 'An autonomous system causes harm and no person or process is responsible for it' },
-            { id: 'novoice', label: 'A kiosk app cannot be used by people who rely on a screen reader' },
-            { id: 'leak', label: 'Training data containing patient records is exposed to unauthorized staff' },
-            { id: 'erratic', label: 'A self-checkout vision model behaves unpredictably under poor lighting' }
+            { id: 'a1', label: 'A model gives women lower credit limits than men with the same income' },
+            { id: 'a2', label: 'Users cannot find out why the app rejected their request' },
+            { id: 'a3', label: 'A dosing assistant suggests doses ten times too high when weights are typed in pounds' },
+            { id: 'a4', label: 'A voice app cannot understand people with speech impairments' }
           ],
           right: [
-            { id: 'transparency', label: 'Transparency' },
-            { id: 'accountability', label: 'Accountability' },
-            { id: 'inclusiveness', label: 'Inclusiveness' },
-            { id: 'privacy', label: 'Privacy and security' },
-            { id: 'reliability', label: 'Reliability and safety' }
+            { id: 'b3', label: 'Reliability and safety' },
+            { id: 'b1', label: 'Fairness' },
+            { id: 'b4', label: 'Inclusiveness' },
+            { id: 'b2', label: 'Transparency' }
           ]
         },
-        answer: { pairs: { blackbox: 'transparency', noowner: 'accountability', novoice: 'inclusiveness', leak: 'privacy', erratic: 'reliability' } } }
+        answer: { pairs: { a1: 'b1', a2: 'b2', a3: 'b3', a4: 'b4' } } }
     ]
   },
 
   {
-    id: 'ai900-dl-rai-3', cert: 'ai900', objective: '1.3', topic: 'Responsible AI principles',
-    title: 'Transparency or Accountability?',
-    estMinutes: 3,
-    scenario: 'A company deploys an AI hiring screener. A rejected candidate asks why they were filtered out, and the team realizes they <mark>cannot describe what data or logic produced the score</mark>. Pick the principle most directly violated.',
-    pair: 'Transparency vs Accountability',
-    family: 'Responsible AI principles',
+    id: 'ai900-dl-rai-5', cert: 'ai900', objective: '1.1', topic: 'Responsible generative AI process',
+    title: 'Put the responsible generative AI steps in order', estMinutes: 4,
+    scenario: 'A team is planning how to release a customer-facing generative AI assistant responsibly.',
+    steps: [
+      { id: 's1', type: 'order', points: 1,
+        prompt: 'Put the stages in the order a team works through them.',
+        explanation: 'Microsoft\'s approach runs identify the potential harms, measure how often they occur, mitigate them in layers, then operate the solution responsibly after release.',
+        payload: { items: [
+          { id: 'o3', label: 'Mitigate the harms in layers' },
+          { id: 'o1', label: 'Identify the potential harms' },
+          { id: 'o4', label: 'Operate and monitor the solution after release' },
+          { id: 'o2', label: 'Measure how often the harms occur' }
+        ] },
+        answer: { correctOrder: ['o1', 'o2', 'o3', 'o4'] } }
+    ]
+  },
+
+  {
+    id: 'ai900-dl-params-1', cert: 'ai900', objective: '1.2', topic: 'Model settings',
+    title: 'Make replies more consistent', estMinutes: 3,
+    scenario: 'A chat app gives very different wording each time the same question is asked. The business wants <mark>more consistent, predictable</mark> replies.',
+    pair: 'Temperature vs Max tokens',
+    family: 'Model settings',
     steps: [
       { id: 's1', type: 'analyze', points: 1,
-        prompt: 'Select the Responsible AI principle most directly violated.',
-        explanation: 'The tell: the failure is the inability to explain how the decision was reached. Explainability of the system is Transparency, not Accountability.',
+        prompt: 'Select the change that helps most.',
+        explanation: 'The tell is variety the business doesn\'t want. Temperature controls randomness, so lowering it makes replies more consistent.',
         payload: {
           multi: false,
           lines: [
-            { id: 'l1', text: 'Transparency' },
-            { id: 'l2', text: 'Accountability', why: 'Accountability is about a human or process being answerable and in control of the system; here the gap is that no one can explain the decision, which is explainability.' },
-            { id: 'l3', text: 'Fairness', why: 'Fairness would apply if the screener treated similar candidates differently by group; the stated problem is lack of explanation, not biased outcomes.' },
-            { id: 'l4', text: 'Inclusiveness', why: 'Inclusiveness covers serving people of all abilities and backgrounds; nothing here describes an accessibility barrier.' }
-          ]
-        },
-        answer: { selected: ['l1'] } }
-    ]
-  },
-
-  {
-    id: 'ai900-dl-rai-4', cert: 'ai900', objective: '1.3', topic: 'Responsible AI principles',
-    title: 'Who is accountable for the AI decision?',
-    estMinutes: 3,
-    scenario: 'An insurer fully automates claim denials with no human review and no defined owner to override or audit wrong denials. Regulators ask <mark>who is answerable</mark> when the system is wrong. Pick the principle most directly violated.',
-    pair: 'Transparency vs Accountability',
-    family: 'Responsible AI principles',
-    steps: [
-      { id: 's1', type: 'analyze', points: 1,
-        prompt: 'Select the Responsible AI principle most directly violated.',
-        explanation: 'The tell: no human or process is answerable for, or in control of, the outcomes. That is Accountability, distinct from Transparency (which is about explaining the decision).',
-        payload: {
-          multi: false,
-          lines: [
-            { id: 'l1', text: 'Accountability' },
-            { id: 'l2', text: 'Transparency', why: 'Transparency is about being able to explain how a decision was made; the gap here is that nobody is answerable for or in control of the system, not a missing explanation.' },
-            { id: 'l3', text: 'Reliability and safety', why: 'This covers consistent, safe operation under varied conditions; the issue described is governance ownership, not erratic behavior.' },
-            { id: 'l4', text: 'Fairness', why: 'Fairness concerns biased outcomes across groups; the described gap is the absence of a responsible human owner.' }
-          ]
-        },
-        answer: { selected: ['l1'] } }
-    ]
-  },
-
-  {
-    id: 'ai900-dl-rai-5', cert: 'ai900', objective: '1.3', topic: 'Responsible AI principles',
-    title: 'Inclusiveness or Privacy?',
-    estMinutes: 3,
-    scenario: 'A voice assistant is trained mostly on one accent and <mark>fails to recognize speakers with regional accents or speech differences</mark>, leaving those users unable to use the product. Pick the principle most directly violated.',
-    pair: 'Inclusiveness vs Privacy and security',
-    family: 'Responsible AI principles',
-    steps: [
-      { id: 's1', type: 'analyze', points: 1,
-        prompt: 'Select the Responsible AI principle most directly violated.',
-        explanation: 'The tell: a group of people cannot use the product because of who they are or how they speak. Serving people of all abilities and backgrounds is Inclusiveness.',
-        payload: {
-          multi: false,
-          lines: [
-            { id: 'l1', text: 'Inclusiveness' },
-            { id: 'l2', text: 'Privacy and security', why: 'This covers protecting personal data; nothing here involves data exposure, only some users being unable to use the product.' },
-            { id: 'l3', text: 'Reliability and safety', why: 'This is about consistent, safe behavior under varied conditions; the issue is that a whole population is excluded, which is an inclusiveness gap.' },
-            { id: 'l4', text: 'Transparency', why: 'Transparency is about explaining decisions; the failure here is exclusion of users, not a missing explanation.' }
-          ]
-        },
-        answer: { selected: ['l1'] } }
-    ]
-  },
-
-  {
-    id: 'ai900-dl-rai-6', cert: 'ai900', objective: '1.3', topic: 'Responsible AI principles',
-    title: 'Privacy and security in training data',
-    estMinutes: 3,
-    scenario: 'A team builds a model and <mark>copies raw customer records, including names and card numbers, into an unsecured shared folder</mark> used for training. Pick the principle most directly violated.',
-    pair: 'Privacy and security vs Reliability and safety',
-    family: 'Responsible AI principles',
-    steps: [
-      { id: 's1', type: 'analyze', points: 1,
-        prompt: 'Select the Responsible AI principle most directly violated.',
-        explanation: 'The tell: personal data is exposed and not protected. Safeguarding personal information through a model lifecycle is Privacy and security.',
-        payload: {
-          multi: false,
-          lines: [
-            { id: 'l1', text: 'Privacy and security' },
-            { id: 'l2', text: 'Reliability and safety', why: 'This covers the model behaving consistently and failing safely; the problem here is unprotected personal data, not model behavior.' },
-            { id: 'l3', text: 'Fairness', why: 'Fairness is about biased outcomes across groups; exposing personal records is a data-protection issue.' },
-            { id: 'l4', text: 'Accountability', why: 'Accountability is about a human owning and controlling the system; the specific failure is that sensitive data was left exposed.' }
-          ]
-        },
-        answer: { selected: ['l1'] } }
-    ]
-  },
-
-  {
-    id: 'ai900-dl-rai-7', cert: 'ai900', objective: '1.3', topic: 'Responsible AI principles',
-    title: 'Which principle does the self-driving model violate?',
-    estMinutes: 3,
-    scenario: 'A self-driving prototype performs well in clear weather but <mark>behaves erratically and unpredictably in heavy rain and fog</mark>, swerving and braking at random instead of failing safely. Pick the Responsible AI principle most directly violated.',
-    pair: 'Reliability and safety vs Fairness',
-    family: 'Responsible AI principles',
-    steps: [
-      { id: 's1', type: 'analyze', points: 1,
-        prompt: 'Select the Responsible AI principle most directly violated.',
-        explanation: 'The tell: the system fails to operate consistently and safely under unexpected or harsh conditions. Performing dependably and failing safely under varied conditions is the Reliability and safety principle.',
-        payload: {
-          multi: false,
-          lines: [
-            { id: 'l1', text: 'Reliability and safety' },
-            { id: 'l2', text: 'Fairness', why: 'Fairness concerns biased outcomes across groups of people; here the problem is unsafe, inconsistent behavior under poor conditions, not bias.' },
-            { id: 'l3', text: 'Transparency', why: 'Transparency is about explaining how a decision was reached; the failure here is erratic, unsafe operation, not a missing explanation.' },
-            { id: 'l4', text: 'Privacy and security', why: 'This covers protecting personal data; nothing here involves data being exposed or misused.' }
-          ]
-        },
-        answer: { selected: ['l1'] } }
-    ]
-  },
-
-  {
-    id: 'ai900-dl-workload-1', cert: 'ai900', objective: '1.1', topic: 'AI workloads',
-    title: 'Match the AI workload to the scenario',
-    estMinutes: 4,
-    scenario: 'Match each business scenario to the AI workload category it best represents.',
-    family: 'AI workload types',
-    steps: [
-      { id: 's1', type: 'match', points: 1,
-        prompt: 'Pair each scenario with its AI workload type.',
-        explanation: 'Computer vision interprets images and video; NLP works with written and spoken language; knowledge mining extracts information from large unstructured document stores; anomaly detection flags data points that deviate from normal; generative AI creates new content such as text or images.',
-        payload: {
-          left: [
-            { id: 'count', label: 'Count vehicles in traffic-camera footage' },
-            { id: 'sentiment', label: 'Gauge customer sentiment from support emails' },
-            { id: 'search', label: 'Make thousands of scanned contracts searchable and queryable' },
-            { id: 'fraud', label: 'Flag credit-card transactions that deviate from a cardholder pattern' },
-            { id: 'draft', label: 'Produce a first-draft product description from a prompt' }
-          ],
-          right: [
-            { id: 'vision', label: 'Computer vision' },
-            { id: 'nlp', label: 'Natural language processing' },
-            { id: 'mining', label: 'Knowledge mining' },
-            { id: 'anomaly', label: 'Anomaly detection' },
-            { id: 'genai', label: 'Generative AI' }
-          ]
-        },
-        answer: { pairs: { count: 'vision', sentiment: 'nlp', search: 'mining', fraud: 'anomaly', draft: 'genai' } } }
-    ]
-  },
-
-  {
-    id: 'ai900-dl-workload-2', cert: 'ai900', objective: '1.1', topic: 'AI workloads',
-    title: 'Classify the workload: anomaly detection',
-    estMinutes: 3,
-    scenario: 'A factory streams sensor readings from a pump and wants to be alerted when a reading is <mark>unlike anything the equipment normally produces</mark>, without labeling every possible fault in advance. Pick the AI workload type.',
-    pair: 'Anomaly detection vs Classification',
-    family: 'AI workload types',
-    steps: [
-      { id: 's1', type: 'analyze', points: 1,
-        prompt: 'Select the AI workload type that best fits.',
-        explanation: 'The tell: flag readings that deviate from the normal pattern, with no predefined fault labels. Detecting unusual data points is anomaly detection.',
-        payload: {
-          multi: false,
-          lines: [
-            { id: 'l1', text: 'Anomaly detection' },
-            { id: 'l2', text: 'Classification', why: 'Classification assigns inputs to known, predefined categories; here there is no labeled set of fault classes, only a notion of normal vs unusual.' },
-            { id: 'l3', text: 'Computer vision', why: 'Computer vision interprets images or video; the input here is numeric sensor telemetry, not pixels.' },
-            { id: 'l4', text: 'Knowledge mining', why: 'Knowledge mining extracts information from unstructured documents; this is live numeric stream monitoring.' }
-          ]
-        },
-        answer: { selected: ['l1'] } }
-    ]
-  },
-
-  {
-    id: 'ai900-dl-workload-3', cert: 'ai900', objective: '1.2', topic: 'AI workloads',
-    title: 'Pick the workload: knowledge mining',
-    estMinutes: 3,
-    scenario: 'A legal firm has <mark>decades of scanned PDFs and contracts</mark> and wants a search experience that surfaces clauses and entities buried across the whole archive. Pick the AI workload type that best describes this need.',
-    pair: 'Knowledge mining vs NLP',
-    family: 'AI workload types',
-    steps: [
-      { id: 's1', type: 'analyze', points: 1,
-        prompt: 'Select the AI workload type that best fits.',
-        explanation: 'The tell: extract and index searchable information from a large store of unstructured documents. That is knowledge mining (the pattern Azure AI Search implements).',
-        payload: {
-          multi: false,
-          lines: [
-            { id: 'l1', text: 'Knowledge mining' },
-            { id: 'l2', text: 'Natural language processing', why: 'NLP is the underlying capability for understanding language, but the end-to-end need of indexing a document archive for search is the knowledge-mining workload.' },
-            { id: 'l3', text: 'Anomaly detection', why: 'Anomaly detection flags outlier data points; the goal here is search and extraction across documents, not finding outliers.' },
-            { id: 'l4', text: 'Generative AI', why: 'Generative AI creates new content; the need is to find and surface existing content already in the archive.' }
-          ]
-        },
-        answer: { selected: ['l1'] } }
-    ]
-  },
-
-  // ========================================================================
-  // ===== Service-pick at overlapping boundaries (~40%, ~20) ===============
-  // ========================================================================
-  {
-    id: 'ai900-dl-service-1', cert: 'ai900', objective: '2.1', topic: 'Azure AI services',
-    title: 'Structured invoice extraction',
-    estMinutes: 3,
-    scenario: 'A finance team needs to <mark>extract line-item totals, dates, and tables from scanned supplier invoices</mark> as structured key-value fields. Pick the best Azure AI service.',
-    pair: 'AI Vision vs Document Intelligence',
-    family: 'Azure AI services',
-    steps: [
-      { id: 's1', type: 'analyze', points: 1,
-        prompt: 'Select the best service.',
-        explanation: 'The tell: structured fields and tables from forms/invoices, not just loose text. Azure AI Document Intelligence is purpose-built for structured document extraction; its prebuilt invoice model returns these fields directly.',
-        payload: {
-          multi: false,
-          lines: [
-            { id: 'l1', text: 'Azure AI Vision (OCR)', why: 'Vision OCR returns raw text and its positions, but it does not understand invoice structure or return typed key-value fields and tables.' },
-            { id: 'l2', text: 'Azure AI Document Intelligence' },
-            { id: 'l3', text: 'Azure AI Language', why: 'Language analyzes text you already have (sentiment, entities, key phrases); it does not read scanned documents into structured fields.' },
-            { id: 'l4', text: 'Azure OpenAI', why: 'Azure OpenAI generates and reasons over text, but the prebuilt, deterministic path for invoice fields is Document Intelligence.' }
+            { id: 'l1', text: 'Raise max tokens', why: 'Max tokens only caps how long a reply can be. It does not change how varied the wording is.' },
+            { id: 'l2', text: 'Lower the temperature' },
+            { id: 'l3', text: 'Add a stop sequence', why: 'A stop sequence ends generation at a marker. It does not make wording consistent.' },
+            { id: 'l4', text: 'Move the deployment to another region', why: 'Region decides where the model runs, not how random its replies are.' }
           ]
         },
         answer: { selected: ['l2'] } }
@@ -284,317 +139,50 @@ window.DECISION_LAB_SEED_AI900 = [
   },
 
   {
-    id: 'ai900-dl-service-2', cert: 'ai900', objective: '2.1', topic: 'Azure AI services',
-    title: 'Read text off a photographed sign',
-    estMinutes: 3,
-    scenario: 'A travel app needs to <mark>read printed text from a photo of a street sign</mark> and return the words. There is no form structure to extract. Pick the best Azure AI service.',
-    pair: 'AI Vision vs Document Intelligence',
-    family: 'Azure AI services',
-    steps: [
-      { id: 's1', type: 'analyze', points: 1,
-        prompt: 'Select the best service.',
-        explanation: 'The tell: plain text from a general image with no structured form. Azure AI Vision OCR (Read) extracts free text from images and is the right fit when there is no document schema.',
-        payload: {
-          multi: false,
-          lines: [
-            { id: 'l1', text: 'Azure AI Vision (OCR)' },
-            { id: 'l2', text: 'Azure AI Document Intelligence', why: 'Document Intelligence shines when you need structured fields from forms or invoices; a street sign has no document structure to model.' },
-            { id: 'l3', text: 'Azure AI Language', why: 'Language processes text you already have; it cannot read text out of an image.' },
-            { id: 'l4', text: 'Azure AI Translator', why: 'Translator converts text between languages; you still need OCR first to get the text off the image.' }
-          ]
-        },
-        answer: { selected: ['l1'] } }
-    ]
-  },
-
-  {
-    id: 'ai900-dl-service-3', cert: 'ai900', objective: '2.2', topic: 'Azure AI services',
-    title: 'Transcribe a recorded call',
-    estMinutes: 3,
-    scenario: 'A support team wants to <mark>convert recorded phone calls into text transcripts</mark> for later analysis. Pick the best Azure AI service for the transcription step.',
-    pair: 'Speech vs Language',
-    family: 'Azure AI services',
-    steps: [
-      { id: 's1', type: 'analyze', points: 1,
-        prompt: 'Select the best service.',
-        explanation: 'The tell: audio in, text out. Speech-to-text is the Azure AI Speech service capability; Language acts on the text only after it exists.',
-        payload: {
-          multi: false,
-          lines: [
-            { id: 'l1', text: 'Azure AI Speech' },
-            { id: 'l2', text: 'Azure AI Language', why: 'Language analyzes text (sentiment, entities) but cannot turn an audio recording into text; that is the Speech service.' },
-            { id: 'l3', text: 'Azure AI Translator', why: 'Translator converts text between languages; it does not transcribe audio.' },
-            { id: 'l4', text: 'Azure AI Vision', why: 'Vision interprets images and video frames, not audio.' }
-          ]
-        },
-        answer: { selected: ['l1'] } }
-    ]
-  },
-
-  {
-    id: 'ai900-dl-service-4', cert: 'ai900', objective: '2.2', topic: 'Azure AI services',
-    title: 'Translate written product reviews',
-    estMinutes: 3,
-    scenario: 'A retailer wants to <mark>translate written product reviews from French and German into English</mark> in bulk. The text is already in a database. Pick the best Azure AI service.',
-    pair: 'Translator vs Speech',
-    family: 'Azure AI services',
-    steps: [
-      { id: 's1', type: 'analyze', points: 1,
-        prompt: 'Select the best service.',
-        explanation: 'The tell: text-to-text language conversion of existing written content. Azure AI Translator handles machine translation of text. Speech translation is only needed when the source is audio.',
-        payload: {
-          multi: false,
-          lines: [
-            { id: 'l1', text: 'Azure AI Translator' },
-            { id: 'l2', text: 'Azure AI Speech', why: 'The Speech service handles spoken-audio scenarios including speech translation; here the source is already written text, so the Translator is the direct fit.' },
-            { id: 'l3', text: 'Azure AI Language', why: 'Language covers sentiment, entities, and key phrases; bulk text translation is the Translator service.' },
-            { id: 'l4', text: 'Azure AI Document Intelligence', why: 'Document Intelligence extracts structured fields from documents; the text is already available and just needs translating.' }
-          ]
-        },
-        answer: { selected: ['l1'] } }
-    ]
-  },
-
-  {
-    id: 'ai900-dl-service-5', cert: 'ai900', objective: '2.2', topic: 'Azure AI services',
-    title: 'Detect sentiment and key phrases',
-    estMinutes: 3,
-    scenario: 'A team has thousands of English survey responses and wants to <mark>score each one as positive or negative and pull out key phrases</mark>. Pick the best Azure AI service.',
-    pair: 'Language vs OpenAI',
-    family: 'Azure AI services',
-    steps: [
-      { id: 's1', type: 'analyze', points: 1,
-        prompt: 'Select the best service.',
-        explanation: 'The tell: prebuilt sentiment analysis and key-phrase extraction over text. These are first-class features of Azure AI Language, no custom prompting required.',
-        payload: {
-          multi: false,
-          lines: [
-            { id: 'l1', text: 'Azure AI Language' },
-            { id: 'l2', text: 'Azure OpenAI', why: 'Azure OpenAI could do this with prompting, but sentiment and key-phrase extraction are turnkey, prebuilt features of Azure AI Language.' },
-            { id: 'l3', text: 'Azure AI Speech', why: 'Speech handles audio; the input here is written survey text.' },
-            { id: 'l4', text: 'Azure AI Vision', why: 'Vision interprets images; there are no images in this scenario.' }
-          ]
-        },
-        answer: { selected: ['l1'] } }
-    ]
-  },
-
-  {
-    id: 'ai900-dl-service-6', cert: 'ai900', objective: '2.3', topic: 'Azure AI services',
-    title: 'Build a question-answering bot from a FAQ',
-    estMinutes: 3,
-    scenario: 'A company wants a chatbot that <mark>answers customer questions from an existing FAQ document</mark> with curated question-and-answer pairs. Pick the best Azure AI capability.',
-    pair: 'Question answering vs OpenAI',
-    family: 'Azure AI services',
-    steps: [
-      { id: 's1', type: 'analyze', points: 1,
-        prompt: 'Select the best capability.',
-        explanation: 'The tell: turn an existing FAQ into a curated knowledge base of Q&A pairs. The question answering feature of Azure AI Language is built exactly for this.',
-        payload: {
-          multi: false,
-          lines: [
-            { id: 'l1', text: 'Azure AI Language question answering' },
-            { id: 'l2', text: 'Azure OpenAI', why: 'Azure OpenAI generates free-form answers, but building a curated knowledge base from a FAQ is the dedicated question answering feature in Azure AI Language.' },
-            { id: 'l3', text: 'Azure AI Translator', why: 'Translator converts languages; it does not build a Q&A knowledge base.' },
-            { id: 'l4', text: 'Azure AI Document Intelligence', why: 'Document Intelligence extracts structured fields from forms; it does not serve curated FAQ answers.' }
-          ]
-        },
-        answer: { selected: ['l1'] } }
-    ]
-  },
-
-  {
-    id: 'ai900-dl-service-7', cert: 'ai900', objective: '2.3', topic: 'Azure AI services',
-    title: 'Understand intent in a user utterance',
-    estMinutes: 3,
-    scenario: 'A smart-home app must <mark>interpret commands like "turn the kitchen lights off" into an intent plus entities</mark> (action, room). Pick the best Azure AI capability.',
-    pair: 'Conversational language understanding vs Question answering',
-    family: 'Azure AI services',
-    steps: [
-      { id: 's1', type: 'analyze', points: 1,
-        prompt: 'Select the best capability.',
-        explanation: 'The tell: map an utterance to an intent and extract entities. Conversational language understanding (CLU) in Azure AI Language does intent and entity recognition.',
-        payload: {
-          multi: false,
-          lines: [
-            { id: 'l1', text: 'Conversational language understanding (Azure AI Language)' },
-            { id: 'l2', text: 'Question answering', why: 'Question answering returns curated answers from a knowledge base; it does not classify intents or extract action/room entities from a command.' },
-            { id: 'l3', text: 'Azure AI Translator', why: 'Translator converts languages; it does not derive intent or entities.' },
-            { id: 'l4', text: 'Azure AI Speech', why: 'Speech converts audio to text; understanding the intent of that text is a Language capability.' }
-          ]
-        },
-        answer: { selected: ['l1'] } }
-    ]
-  },
-
-  {
-    id: 'ai900-dl-service-8', cert: 'ai900', objective: '2.1', topic: 'Azure AI services',
-    title: 'Recognize a specific product on shelves',
-    estMinutes: 3,
-    scenario: 'A retailer wants to <mark>train a model to recognize its own branded products in shelf photos</mark> using its own labeled images. Pick the best Azure AI capability.',
-    pair: 'Vision image analysis vs Custom Vision',
-    family: 'Azure AI services',
-    steps: [
-      { id: 's1', type: 'analyze', points: 1,
-        prompt: 'Select the best capability.',
-        explanation: 'The tell: train on your own labeled images for categories the prebuilt model does not know. Azure AI Custom Vision is a distinct service for custom image classification and object detection, separate from prebuilt Azure AI Vision.',
-        payload: {
-          multi: false,
-          lines: [
-            { id: 'l1', text: 'Azure AI Custom Vision' },
-            { id: 'l2', text: 'Prebuilt Azure AI Vision image analysis', why: 'Prebuilt Azure AI Vision is a separate service that tags general objects and scenes; it cannot recognize your specific branded SKUs without the custom training that the distinct Azure AI Custom Vision service provides.' },
-            { id: 'l3', text: 'Azure AI Document Intelligence', why: 'Document Intelligence reads structured documents, not products on a shelf.' },
-            { id: 'l4', text: 'Azure AI Language', why: 'Language works on text; this is an image-recognition task.' }
-          ]
-        },
-        answer: { selected: ['l1'] } }
-    ]
-  },
-
-  {
-    id: 'ai900-dl-service-9', cert: 'ai900', objective: '2.1', topic: 'Azure AI services',
-    title: 'Detect and identify faces',
-    estMinutes: 3,
-    scenario: 'A building access system needs to <mark>detect faces in a camera feed and verify they match enrolled employees</mark>. Pick the best Azure AI service.',
-    pair: 'Face vs Vision image analysis',
-    family: 'Azure AI services',
-    steps: [
-      { id: 's1', type: 'analyze', points: 1,
-        prompt: 'Select the best service.',
-        explanation: 'The tell: detect faces and verify identity against enrolled people. The Azure AI Face service provides face detection and verification specifically.',
-        payload: {
-          multi: false,
-          lines: [
-            { id: 'l1', text: 'Azure AI Face' },
-            { id: 'l2', text: 'Azure AI Vision image analysis', why: 'General image analysis can note that a face is present, but face verification against enrolled identities is the dedicated Face service.' },
-            { id: 'l3', text: 'Azure AI Custom Vision', why: 'Custom Vision classifies images into your own categories; it is not designed for face detection or identity verification.' },
-            { id: 'l4', text: 'Azure AI Document Intelligence', why: 'Document Intelligence reads documents, not faces in a camera feed.' }
-          ]
-        },
-        answer: { selected: ['l1'] } }
-    ]
-  },
-
-  {
-    id: 'ai900-dl-service-10', cert: 'ai900', objective: '2.2', topic: 'Azure AI services',
-    title: 'Give a chatbot a spoken voice',
-    estMinutes: 3,
-    scenario: 'A kiosk assistant needs to <mark>speak its responses aloud in a natural voice</mark> from text the app already generated. Pick the best Azure AI capability.',
-    pair: 'Text-to-speech vs Speech-to-text',
-    family: 'Azure AI services',
-    steps: [
-      { id: 's1', type: 'analyze', points: 1,
-        prompt: 'Select the best capability.',
-        explanation: 'The tell: text in, spoken audio out. Text-to-speech synthesis is an Azure AI Speech capability; speech-to-text is the reverse direction.',
-        payload: {
-          multi: false,
-          lines: [
-            { id: 'l1', text: 'Text-to-speech (Azure AI Speech)' },
-            { id: 'l2', text: 'Speech-to-text (Azure AI Speech)', why: 'Speech-to-text transcribes audio into text; here the app already has text and needs it spoken, which is the opposite direction.' },
-            { id: 'l3', text: 'Azure AI Translator', why: 'Translator converts text between languages; it does not synthesize a voice.' },
-            { id: 'l4', text: 'Azure AI Language', why: 'Language analyzes text content; it does not produce spoken audio.' }
-          ]
-        },
-        answer: { selected: ['l1'] } }
-    ]
-  },
-
-  {
-    id: 'ai900-dl-service-11', cert: 'ai900', objective: '2.1', topic: 'Azure AI services',
-    title: 'Caption images for accessibility',
-    estMinutes: 3,
-    scenario: 'A news site wants to <mark>auto-generate a short descriptive caption of what is in each uploaded photo</mark> for alt text. Pick the best Azure AI service.',
-    pair: 'Vision image analysis vs Custom Vision',
-    family: 'Azure AI services',
-    steps: [
-      { id: 's1', type: 'analyze', points: 1,
-        prompt: 'Select the best service.',
-        explanation: 'The tell: a generic description/caption of arbitrary photo content. Prebuilt Azure AI Vision image analysis generates captions and tags out of the box.',
-        payload: {
-          multi: false,
-          lines: [
-            { id: 'l1', text: 'Azure AI Vision image analysis' },
-            { id: 'l2', text: 'Azure AI Custom Vision', why: 'Custom Vision is for training your own narrow categories; generic captioning of any photo is a prebuilt Vision feature with no training needed.' },
-            { id: 'l3', text: 'Azure AI Face', why: 'Face detects and verifies people; it does not caption general scene content.' },
-            { id: 'l4', text: 'Azure AI Document Intelligence', why: 'Document Intelligence extracts fields from documents, not captions from photos.' }
-          ]
-        },
-        answer: { selected: ['l1'] } }
-    ]
-  },
-
-  {
-    id: 'ai900-dl-service-12', cert: 'ai900', objective: '2.3', topic: 'Azure AI services',
-    title: 'Find named entities in legal text',
-    estMinutes: 3,
-    scenario: 'A team wants to <mark>extract people, organizations, dates, and locations from blocks of contract text</mark> already stored as text. Pick the best Azure AI capability.',
-    pair: 'Language NER vs Document Intelligence',
-    family: 'Azure AI services',
-    steps: [
-      { id: 's1', type: 'analyze', points: 1,
-        prompt: 'Select the best capability.',
-        explanation: 'The tell: entity recognition over text that already exists. Named entity recognition is a prebuilt feature of Azure AI Language. Document Intelligence would be the pick only if you first had to read the entities off a scanned form.',
-        payload: {
-          multi: false,
-          lines: [
-            { id: 'l1', text: 'Azure AI Language named entity recognition' },
-            { id: 'l2', text: 'Azure AI Document Intelligence', why: 'Document Intelligence is for pulling structured fields out of scanned forms/invoices; here the text is already extracted, so entity recognition is a Language task.' },
-            { id: 'l3', text: 'Azure AI Translator', why: 'Translator converts languages; it does not tag entities.' },
-            { id: 'l4', text: 'Azure AI Vision', why: 'Vision works on images; the input is already text.' }
-          ]
-        },
-        answer: { selected: ['l1'] } }
-    ]
-  },
-
-  {
-    id: 'ai900-dl-service-13', cert: 'ai900', objective: '2.1', topic: 'Azure AI services',
-    title: 'Match the service to the input it consumes',
-    estMinutes: 4,
-    scenario: 'Match each Azure AI service to the primary kind of input it is designed to consume.',
-    family: 'Azure AI services',
+    id: 'ai900-dl-params-3', cert: 'ai900', objective: '1.2', topic: 'Model settings',
+    title: 'Match each setting to its effect', estMinutes: 4,
+    scenario: 'A developer is tuning a model deployment in the Microsoft Foundry playground.',
+    pair: 'Temperature vs Max tokens',
+    family: 'Model settings',
     steps: [
       { id: 's1', type: 'match', points: 1,
-        prompt: 'Pair each service with its primary input.',
-        explanation: 'Azure AI Vision consumes images; Azure AI Speech consumes audio; Azure AI Language consumes text; Azure AI Document Intelligence consumes scanned forms and documents; Azure AI Translator consumes text to convert between languages.',
+        prompt: 'Match each setting to what it controls.',
+        explanation: 'Temperature tunes randomness, max tokens caps length, a stop sequence ends output at a marker, and the system message sets behaviour.',
         payload: {
           left: [
-            { id: 'vision', label: 'Azure AI Vision' },
-            { id: 'speech', label: 'Azure AI Speech' },
-            { id: 'language', label: 'Azure AI Language' },
-            { id: 'docint', label: 'Azure AI Document Intelligence' },
-            { id: 'translator', label: 'Azure AI Translator' }
+            { id: 'a1', label: 'Temperature' },
+            { id: 'a2', label: 'Max tokens' },
+            { id: 'a3', label: 'Stop sequence' },
+            { id: 'a4', label: 'System message' }
           ],
           right: [
-            { id: 'images', label: 'Images and video frames' },
-            { id: 'audio', label: 'Spoken audio' },
-            { id: 'text', label: 'Plain text for sentiment, entities, key phrases' },
-            { id: 'forms', label: 'Scanned forms and invoices for structured fields' },
-            { id: 'multilang', label: 'Text to convert between languages' }
+            { id: 'b4', label: 'The assistant\'s role, scope and rules' },
+            { id: 'b2', label: 'The maximum length of a reply' },
+            { id: 'b1', label: 'How random or creative the wording is' },
+            { id: 'b3', label: 'Text that ends generation when it appears' }
           ]
         },
-        answer: { pairs: { vision: 'images', speech: 'audio', language: 'text', docint: 'forms', translator: 'multilang' } } }
+        answer: { pairs: { a1: 'b1', a2: 'b2', a3: 'b3', a4: 'b4' } } }
     ]
   },
 
   {
-    id: 'ai900-dl-service-14', cert: 'ai900', objective: '2.2', topic: 'Azure AI services',
-    title: 'Translate a spoken conversation live',
-    estMinutes: 3,
-    scenario: 'A conference app must <mark>take spoken speech in one language and produce translated text in another</mark> in near real time. Pick the best Azure AI service.',
-    pair: 'Speech vs Translator',
-    family: 'Azure AI services',
+    id: 'ai900-dl-deploy-1', cert: 'ai900', objective: '1.2', topic: 'Deployment types',
+    title: 'Pick the deployment for pay-per-token use', estMinutes: 3,
+    scenario: 'A team wants to call a model from Microsoft Foundry with <mark>no infrastructure to manage</mark>, paying only for the tokens they use.',
+    pair: 'Standard vs Provisioned',
+    family: 'Deployment types',
     steps: [
       { id: 's1', type: 'analyze', points: 1,
-        prompt: 'Select the best service.',
-        explanation: 'The tell: the source is spoken audio, not existing text. Speech translation is a capability of the Azure AI Speech service. The text Translator alone cannot ingest audio.',
+        prompt: 'Select the deployment approach.',
+        explanation: 'The tell is no infrastructure and pay per token. A standard deployment, such as Global Standard, is hosted by Microsoft and billed per token.',
         payload: {
           multi: false,
           lines: [
-            { id: 'l1', text: 'Azure AI Speech (speech translation)' },
-            { id: 'l2', text: 'Azure AI Translator', why: 'Translator converts text to text; it cannot ingest spoken audio, which is why the Speech service handles speech translation.' },
-            { id: 'l3', text: 'Azure AI Language', why: 'Language analyzes existing text; it neither ingests audio nor translates.' },
-            { id: 'l4', text: 'Azure AI Document Intelligence', why: 'Document Intelligence reads documents; this is a live-audio scenario.' }
+            { id: 'l1', text: 'Standard (pay-as-you-go) deployment' },
+            { id: 'l2', text: 'Provisioned throughput deployment', why: 'Provisioned throughput reserves capacity that you pay for whether or not you use it, rather than paying per token.' },
+            { id: 'l3', text: 'Managed compute on dedicated VMs', why: 'Managed compute runs the model on virtual machines you pay for while they run.' },
+            { id: 'l4', text: 'Running the model on a local laptop', why: 'A laptop means managing your own hardware, and it gives no hosted endpoint billed per token.' }
           ]
         },
         answer: { selected: ['l1'] } }
@@ -602,23 +190,68 @@ window.DECISION_LAB_SEED_AI900 = [
   },
 
   {
-    id: 'ai900-dl-service-15', cert: 'ai900', objective: '2.1', topic: 'Azure AI services',
-    title: 'Read handwriting from a paper form',
-    estMinutes: 3,
-    scenario: 'A clinic scans <mark>handwritten patient intake forms</mark> and wants the named fields (patient name, date, signature line) returned as structured data. Pick the best Azure AI service.',
-    pair: 'AI Vision vs Document Intelligence',
-    family: 'Azure AI services',
+    id: 'ai900-dl-deploy-2', cert: 'ai900', objective: '1.2', topic: 'Deployment types',
+    title: 'Pick the deployment for reserved capacity', estMinutes: 3,
+    scenario: 'A high-traffic production app needs <mark>predictable, reserved capacity</mark> so busy periods don\'t slow it down.',
+    pair: 'Standard vs Provisioned',
+    family: 'Deployment types',
     steps: [
       { id: 's1', type: 'analyze', points: 1,
-        prompt: 'Select the best service.',
-        explanation: 'The tell: named fields from a form, including handwriting. Azure AI Document Intelligence reads handwriting and maps it to structured fields. Vision OCR could read the handwriting but would not return typed form fields.',
+        prompt: 'Select the deployment approach.',
+        explanation: 'The tell is reserved, predictable capacity. Provisioned throughput reserves model capacity for steady performance at high volume.',
         payload: {
           multi: false,
           lines: [
-            { id: 'l1', text: 'Azure AI Document Intelligence' },
-            { id: 'l2', text: 'Azure AI Vision (OCR)', why: 'Vision OCR can read handwriting as loose text, but it does not return the form structure (which value is the patient name vs the date).' },
-            { id: 'l3', text: 'Azure AI Language', why: 'Language processes text you already have; it cannot read a scanned form.' },
-            { id: 'l4', text: 'Azure AI Face', why: 'Face detects and verifies people, not form fields.' }
+            { id: 'l1', text: 'Standard pay-per-token deployment', why: 'Pay-per-token suits variable use but does not reserve capacity.' },
+            { id: 'l2', text: 'Global Standard deployment', why: 'Global Standard routes traffic across regions and bills per token, but it does not reserve capacity.' },
+            { id: 'l3', text: 'Provisioned throughput deployment' },
+            { id: 'l4', text: 'Batch deployment', why: 'Batch processes large jobs asynchronously at lower cost, which suits offline work rather than busy live traffic.' }
+          ]
+        },
+        answer: { selected: ['l3'] } }
+    ]
+  },
+
+  {
+    id: 'ai900-dl-model-2', cert: 'ai900', objective: '1.2', topic: 'Choosing a model',
+    title: 'Pick a model for semantic search', estMinutes: 3,
+    scenario: 'A company wants staff to <mark>search thousands of policy documents by meaning</mark>, not just matching keywords.',
+    pair: 'Multimodal vs Embeddings',
+    family: 'Model types',
+    steps: [
+      { id: 's1', type: 'analyze', points: 1,
+        prompt: 'Select the type of model.',
+        explanation: 'The tell is search by meaning. Embeddings models turn text into vectors so passages with similar meaning sit close together.',
+        payload: {
+          multi: false,
+          lines: [
+            { id: 'l1', text: 'An image generation model', why: 'Image generation creates pictures and cannot search text.' },
+            { id: 'l2', text: 'A text to speech model', why: 'Text to speech produces audio.' },
+            { id: 'l3', text: 'A small chat model with no data', why: 'A chat model alone does not index or search documents.' },
+            { id: 'l4', text: 'An embeddings model' }
+          ]
+        },
+        answer: { selected: ['l4'] } }
+    ]
+  },
+
+  {
+    id: 'ai900-dl-ground-1', cert: 'ai900', objective: '1.2', topic: 'Grounding',
+    title: 'Keep answers current without retraining', estMinutes: 3,
+    scenario: 'A chatbot must answer from the company\'s HR policies, which <mark>change every month</mark>. The team doesn\'t want to retrain anything when they change.',
+    pair: 'Grounding vs Fine-tuning',
+    family: 'Model customisation',
+    steps: [
+      { id: 's1', type: 'analyze', points: 1,
+        prompt: 'Select the approach.',
+        explanation: 'The tell is frequently changing documents with no retraining. Grounding retrieves the current policies and adds them to the prompt at question time.',
+        payload: {
+          multi: false,
+          lines: [
+            { id: 'l1', text: 'Ground the prompt with retrieved policy text' },
+            { id: 'l2', text: 'Fine-tune the model again every time a policy changes', why: 'Fine-tuning bakes data into the model and has to be repeated each time the policies change.' },
+            { id: 'l3', text: 'Raise the temperature', why: 'Temperature changes randomness and adds no knowledge.' },
+            { id: 'l4', text: 'Use a larger context window alone', why: 'A bigger window only helps if the policy text is actually supplied.' }
           ]
         },
         answer: { selected: ['l1'] } }
@@ -626,23 +259,45 @@ window.DECISION_LAB_SEED_AI900 = [
   },
 
   {
-    id: 'ai900-dl-service-16', cert: 'ai900', objective: '2.3', topic: 'Azure AI services',
-    title: 'Detect the language of incoming text',
-    estMinutes: 3,
-    scenario: 'A global helpdesk receives messages in mixed languages and must <mark>identify which language each message is written in</mark> before routing. Pick the best Azure AI capability.',
-    pair: 'Language detection vs Translator',
-    family: 'Azure AI services',
+    id: 'ai900-dl-work-1', cert: 'ai900', objective: '1.3', topic: 'Generative vs agentic AI',
+    title: 'Pick the solution that takes actions', estMinutes: 3,
+    scenario: 'A sales team wants AI that reads each new lead, <mark>looks it up in the CRM and drafts a follow-up email</mark> for a person to approve.',
+    pair: 'Agent vs Chat completion',
+    family: 'AI workloads',
     steps: [
       { id: 's1', type: 'analyze', points: 1,
-        prompt: 'Select the best capability.',
-        explanation: 'The tell: identify the language, not translate it. Language detection is a prebuilt feature of Azure AI Language.',
+        prompt: 'Select the kind of solution.',
+        explanation: 'The tell is several steps that act on business systems. An agent combines a model, instructions and tools to carry out multi-step tasks.',
         payload: {
           multi: false,
           lines: [
-            { id: 'l1', text: 'Azure AI Language (language detection)' },
-            { id: 'l2', text: 'Azure AI Translator', why: 'Identifying a language without translating is the Language service language-detection feature; Translator detect step exists only to drive translation, which is not required here.' },
-            { id: 'l3', text: 'Azure AI Speech', why: 'Speech handles audio; the input here is written text.' },
-            { id: 'l4', text: 'Azure AI Vision', why: 'Vision interprets images, not the language of text.' }
+            { id: 'l1', text: 'A single chat completion', why: 'One prompt and one reply cannot look things up in the CRM or work through several steps.' },
+            { id: 'l2', text: 'Sentiment analysis', why: 'Sentiment analysis judges opinion and takes no actions.' },
+            { id: 'l3', text: 'An agent with tools' },
+            { id: 'l4', text: 'Image classification', why: 'Image classification labels pictures.' }
+          ]
+        },
+        answer: { selected: ['l3'] } }
+    ]
+  },
+
+  {
+    id: 'ai900-dl-work-4', cert: 'ai900', objective: '1.3', topic: 'Speech',
+    title: 'Pick the capability for live captions', estMinutes: 3,
+    scenario: 'A conference app must show <mark>captions while speakers are talking</mark>.',
+    pair: 'Speech to text vs Text to speech',
+    family: 'Azure Speech features',
+    steps: [
+      { id: 's1', type: 'analyze', points: 1,
+        prompt: 'Select the capability.',
+        explanation: 'The tell is turning live speech into text. That is speech recognition (speech to text).',
+        payload: {
+          multi: false,
+          lines: [
+            { id: 'l1', text: 'Speech to text' },
+            { id: 'l2', text: 'Text to speech', why: 'Text to speech turns text into audio, the opposite direction.' },
+            { id: 'l3', text: 'Custom voice', why: 'Custom voice creates a branded synthetic voice for output.' },
+            { id: 'l4', text: 'Speaker diarization alone', why: 'Diarization labels who spoke when, but it needs transcription to produce captions.' }
           ]
         },
         answer: { selected: ['l1'] } }
@@ -650,299 +305,322 @@ window.DECISION_LAB_SEED_AI900 = [
   },
 
   {
-    id: 'ai900-dl-service-17', cert: 'ai900', objective: '2.1', topic: 'Azure AI services',
-    title: 'One key for many AI services',
-    estMinutes: 3,
-    scenario: 'A developer wants to <mark>access vision, language, and speech capabilities through a single resource, endpoint, and key</mark> instead of provisioning each separately. Pick the best option.',
-    pair: 'Azure AI services multi-service vs single-service',
-    family: 'Azure AI services',
+    id: 'ai900-dl-work-5', cert: 'ai900', objective: '1.3', topic: 'Computer vision',
+    title: 'Pick the vision task for counting items', estMinutes: 3,
+    scenario: 'A warehouse camera must <mark>find each pallet and draw a box around it</mark> so they can be counted.',
+    pair: 'Object detection vs Classification',
+    family: 'Vision tasks',
     steps: [
       { id: 's1', type: 'analyze', points: 1,
-        prompt: 'Select the best option.',
-        explanation: 'The tell: one resource, one endpoint, one key, spanning multiple capabilities. A multi-service Azure AI services resource provides exactly that single billing and access point.',
+        prompt: 'Select the computer vision task.',
+        explanation: 'The tell is locating each item with a box. Object detection returns positions for every object it finds.',
         payload: {
           multi: false,
           lines: [
-            { id: 'l1', text: 'A multi-service Azure AI services resource' },
-            { id: 'l2', text: 'A separate single-service resource per capability', why: 'Single-service resources give you one key per service; the requirement is the opposite, a single shared key and endpoint across services.' },
-            { id: 'l3', text: 'Azure Machine Learning workspace', why: 'Azure Machine Learning is for building and training custom models, not for fronting prebuilt vision/language/speech APIs under one key.' },
-            { id: 'l4', text: 'Azure OpenAI resource', why: 'Azure OpenAI provides generative models; it does not bundle the vision, language, and speech APIs under one key.' }
+            { id: 'l1', text: 'Image classification', why: 'Classification gives one label for the whole image without locating items.' },
+            { id: 'l2', text: 'Optical character recognition', why: 'OCR reads text in the image.' },
+            { id: 'l3', text: 'Object detection' },
+            { id: 'l4', text: 'Image generation', why: 'Image generation creates new pictures.' }
           ]
         },
-        answer: { selected: ['l1'] } }
+        answer: { selected: ['l3'] } }
     ]
   },
 
   {
-    id: 'ai900-dl-service-18', cert: 'ai900', objective: '2.1', topic: 'Azure AI services',
-    title: 'Build a fully custom model on your data',
-    estMinutes: 3,
-    scenario: 'A data-science team wants to <mark>train, tune, and deploy their own regression model on proprietary tabular data</mark> with full control over the pipeline. Pick the best Azure offering.',
-    pair: 'Azure Machine Learning vs prebuilt AI services',
-    family: 'Azure AI services',
+    id: 'ai900-dl-work-6', cert: 'ai900', objective: '1.3', topic: 'Information extraction',
+    title: 'Tell extraction apart from summarization', estMinutes: 3,
+    scenario: 'A recruiter has hundreds of CVs and wants <mark>each candidate\'s skills and years of experience stored as fields</mark> in a database.',
+    pair: 'Extraction vs Summarization',
+    family: 'AI workloads',
     steps: [
       { id: 's1', type: 'analyze', points: 1,
-        prompt: 'Select the best offering.',
-        explanation: 'The tell: build and train your own model end to end on your own data. Azure Machine Learning is the platform for custom model training and deployment; prebuilt AI services are not trained from scratch by you.',
+        prompt: 'Select the workload.',
+        explanation: 'The tell is specific values saved as fields. That is information extraction, not a shorter readable version.',
         payload: {
           multi: false,
           lines: [
-            { id: 'l1', text: 'Azure Machine Learning' },
-            { id: 'l2', text: 'Azure AI Language', why: 'Azure AI Language offers prebuilt and lightly-customizable text features; it is not a general platform for training an arbitrary regression model on tabular data.' },
-            { id: 'l3', text: 'Azure AI Vision', why: 'Vision provides prebuilt image capabilities; it does not train custom tabular regression models.' },
-            { id: 'l4', text: 'Azure OpenAI', why: 'Azure OpenAI serves large generative models; it is not the tool for training a custom regression model on your tabular data.' }
+            { id: 'l1', text: 'Summarization', why: 'Summarization writes a shorter version in prose, not database fields.' },
+            { id: 'l2', text: 'Information extraction' },
+            { id: 'l3', text: 'Key phrase extraction', why: 'Key phrases list topics, not specific values stored as fields.' },
+            { id: 'l4', text: 'Sentiment analysis', why: 'Sentiment analysis judges the tone of the text.' }
           ]
         },
-        answer: { selected: ['l1'] } }
+        answer: { selected: ['l2'] } }
     ]
   },
 
   {
-    id: 'ai900-dl-service-19', cert: 'ai900', objective: '2.1', topic: 'Azure AI services',
-    title: 'No-code custom training for non-experts',
-    estMinutes: 3,
-    scenario: 'A business analyst with <mark>no data-science background</mark> wants to train an image classifier by uploading and tagging photos in a visual portal, with no code. Pick the best Azure offering.',
-    pair: 'Custom Vision vs Azure Machine Learning',
-    family: 'Azure AI services',
+    id: 'ai900-dl-work-7', cert: 'ai900', objective: '1.3', topic: 'Matching workloads to tools',
+    title: 'Sort each need into the best fit', estMinutes: 4,
+    scenario: 'An operations lead lists six AI needs for different teams.',
+    pair: 'Language vs Speech vs Content Understanding',
+    family: 'Foundry tools by workload',
     steps: [
-      { id: 's1', type: 'analyze', points: 1,
-        prompt: 'Select the best offering.',
-        explanation: 'The tell: custom image training with no code and no data-science skills. Azure AI Custom Vision provides a point-and-click portal for exactly this; full Azure Machine Learning assumes more expertise.',
+      { id: 's1', type: 'categorize', points: 1,
+        prompt: 'Sort each need into the tool that fits best.',
+        explanation: 'Text analytics = Azure Language. Audio in or out = Azure Speech. Reasoning about an image in words = a multimodal model. Structured fields from documents or media = Content Understanding.',
         payload: {
-          multi: false,
-          lines: [
-            { id: 'l1', text: 'Azure AI Custom Vision' },
-            { id: 'l2', text: 'Azure Machine Learning', why: 'Azure Machine Learning gives full control but expects data-science skills; the constraint here is no-code training by a non-expert, which Custom Vision targets.' },
-            { id: 'l3', text: 'Prebuilt Azure AI Vision', why: 'The prebuilt service cannot learn the analyst-specific categories; it only recognizes general objects.' },
-            { id: 'l4', text: 'Azure OpenAI', why: 'Azure OpenAI is for generative language/vision tasks, not training a custom image classifier on tagged photos.' }
-          ]
-        },
-        answer: { selected: ['l1'] } }
-    ]
-  },
-
-  {
-    id: 'ai900-dl-service-20', cert: 'ai900', objective: '2.3', topic: 'Azure AI services',
-    title: 'Summarize long support tickets',
-    estMinutes: 3,
-    scenario: 'A team wants to <mark>produce short abstractive summaries of long support-ticket threads</mark> to speed triage, using a prebuilt feature where possible. Pick the best Azure AI capability.',
-    pair: 'Language summarization vs OpenAI',
-    family: 'Azure AI services',
-    steps: [
-      { id: 's1', type: 'analyze', points: 1,
-        prompt: 'Select the best capability.',
-        explanation: 'The tell: summarization of text as a prebuilt feature. Azure AI Language includes a built-in summarization capability for documents and conversations.',
-        payload: {
-          multi: false,
-          lines: [
-            { id: 'l1', text: 'Azure AI Language summarization' },
-            { id: 'l2', text: 'Azure OpenAI', why: 'Azure OpenAI can summarize via prompting, but the requirement favors a prebuilt feature, and summarization is built into Azure AI Language.' },
-            { id: 'l3', text: 'Azure AI Translator', why: 'Translator converts languages; it does not summarize.' },
-            { id: 'l4', text: 'Azure AI Document Intelligence', why: 'Document Intelligence extracts structured fields; it is not a text-summarization service.' }
-          ]
-        },
-        answer: { selected: ['l1'] } }
-    ]
-  },
-
-  // ========================================================================
-  // ===== ML fundamentals vocab (~25%, ~12) ================================
-  // ========================================================================
-  {
-    id: 'ai900-dl-ml-1', cert: 'ai900', objective: '3.1', topic: 'ML problem types',
-    title: 'Predict a continuous house price',
-    estMinutes: 3,
-    scenario: 'A model must <mark>predict the dollar sale price of a house</mark> from features like size and location. The output is a continuous number. Pick the machine-learning problem type.',
-    pair: 'Regression vs Classification',
-    family: 'ML problem types',
-    steps: [
-      { id: 's1', type: 'analyze', points: 1,
-        prompt: 'Select the ML problem type.',
-        explanation: 'The tell: the prediction is a continuous numeric value. Predicting a number is regression; predicting a category would be classification.',
-        payload: {
-          multi: false,
-          lines: [
-            { id: 'l1', text: 'Regression' },
-            { id: 'l2', text: 'Classification', why: 'Classification predicts a discrete category or label; a continuous dollar amount is a numeric prediction, which is regression.' },
-            { id: 'l3', text: 'Clustering', why: 'Clustering groups unlabeled data by similarity; here there is a known target value to predict.' },
-            { id: 'l4', text: 'Anomaly detection', why: 'Anomaly detection flags outliers; the goal is to predict a price, not to find unusual records.' }
-          ]
-        },
-        answer: { selected: ['l1'] } }
-    ]
-  },
-
-  {
-    id: 'ai900-dl-ml-2', cert: 'ai900', objective: '3.1', topic: 'ML problem types',
-    title: 'Predict churn: yes or no',
-    estMinutes: 3,
-    scenario: 'A telecom wants to predict whether each customer <mark>will churn (yes) or stay (no)</mark> next month. The output is one of two labels. Pick the machine-learning problem type.',
-    pair: 'Regression vs Classification',
-    family: 'ML problem types',
-    steps: [
-      { id: 's1', type: 'analyze', points: 1,
-        prompt: 'Select the ML problem type.',
-        explanation: 'The tell: the output is a discrete label (churn vs stay). Predicting a category is classification; a continuous number would be regression.',
-        payload: {
-          multi: false,
-          lines: [
-            { id: 'l1', text: 'Classification' },
-            { id: 'l2', text: 'Regression', why: 'Regression predicts a continuous number; here the output is one of two discrete classes, which is classification.' },
-            { id: 'l3', text: 'Clustering', why: 'Clustering groups unlabeled data; this task has known yes/no labels to learn from.' },
-            { id: 'l4', text: 'Anomaly detection', why: 'Anomaly detection flags outliers, not whether a labeled customer will churn.' }
-          ]
-        },
-        answer: { selected: ['l1'] } }
-    ]
-  },
-
-  {
-    id: 'ai900-dl-ml-3', cert: 'ai900', objective: '3.1', topic: 'ML problem types',
-    title: 'Group customers with no labels',
-    estMinutes: 3,
-    scenario: 'A marketing team has customer data with <mark>no predefined groups and no labels</mark>, and wants the algorithm to discover natural segments by similarity. Pick the machine-learning problem type.',
-    pair: 'Clustering vs Classification',
-    family: 'ML problem types',
-    steps: [
-      { id: 's1', type: 'analyze', points: 1,
-        prompt: 'Select the ML problem type.',
-        explanation: 'The tell: no labels and the goal is to discover groupings by similarity. Unsupervised grouping of unlabeled data is clustering.',
-        payload: {
-          multi: false,
-          lines: [
-            { id: 'l1', text: 'Clustering' },
-            { id: 'l2', text: 'Classification', why: 'Classification needs predefined labeled categories to learn from; this data has no labels, so the model must discover groups itself, which is clustering.' },
-            { id: 'l3', text: 'Regression', why: 'Regression predicts a continuous number; there is no numeric target here.' },
-            { id: 'l4', text: 'Anomaly detection', why: 'Anomaly detection finds outliers; the goal is to segment the whole population into groups.' }
-          ]
-        },
-        answer: { selected: ['l1'] } }
-    ]
-  },
-
-  {
-    id: 'ai900-dl-ml-4', cert: 'ai900', objective: '3.1', topic: 'ML vocabulary',
-    title: 'Features vs labels',
-    estMinutes: 3,
-    scenario: 'In a dataset for predicting house price, columns include square footage, bedrooms, and the known sale price used for training. The <mark>known sale price the model learns to predict</mark> is which element?',
-    pair: 'Features vs Labels',
-    family: 'ML vocabulary',
-    steps: [
-      { id: 's1', type: 'analyze', points: 1,
-        prompt: 'Select the correct term.',
-        explanation: 'The tell: the value the model is trained to predict. The known target column is the label; the input columns (square footage, bedrooms) are the features.',
-        payload: {
-          multi: false,
-          lines: [
-            { id: 'l1', text: 'The label' },
-            { id: 'l2', text: 'A feature', why: 'Features are the input columns used to make a prediction (square footage, bedrooms); the value being predicted is the label.' },
-            { id: 'l3', text: 'A hyperparameter', why: 'A hyperparameter is a training setting you choose (like learning rate), not a column of data.' },
-            { id: 'l4', text: 'A validation split', why: 'A validation split is a portion of data held out to tune the model, not the target column.' }
-          ]
-        },
-        answer: { selected: ['l1'] } }
-    ]
-  },
-
-  {
-    id: 'ai900-dl-ml-5', cert: 'ai900', objective: '3.1', topic: 'ML vocabulary',
-    title: 'Match the ML term to its meaning',
-    estMinutes: 4,
-    scenario: 'Match each machine-learning term to its correct meaning.',
-    pair: 'Features vs Labels',
-    family: 'ML vocabulary',
-    steps: [
-      { id: 's1', type: 'match', points: 1,
-        prompt: 'Pair each term with its meaning.',
-        explanation: 'Features are the input variables; the label is the value being predicted; the training set is data used to fit the model; the validation set tunes the model and choices; the test set gives a final unbiased performance estimate on unseen data.',
-        payload: {
-          left: [
-            { id: 'feature', label: 'Feature' },
-            { id: 'label', label: 'Label' },
-            { id: 'train', label: 'Training set' },
-            { id: 'val', label: 'Validation set' },
-            { id: 'test', label: 'Test set' }
+          items: [
+            { id: 'i1', label: 'Find the sentiment of customer emails' },
+            { id: 'i2', label: 'Redact phone numbers from chat logs' },
+            { id: 'i3', label: 'Show live captions during a webinar' },
+            { id: 'i4', label: 'Read replies aloud in a branded voice' },
+            { id: 'i5', label: 'Answer questions about an uploaded photo' },
+            { id: 'i6', label: 'Pull totals and due dates from invoices' }
           ],
-          right: [
-            { id: 'dinput', label: 'An input variable used to make a prediction' },
-            { id: 'dtarget', label: 'The value the model is trained to predict' },
-            { id: 'dfit', label: 'Data the model learns its parameters from' },
-            { id: 'dtune', label: 'Held-out data used to tune the model during training' },
-            { id: 'dfinal', label: 'Unseen data for a final, unbiased performance estimate' }
+          buckets: [
+            { id: 'k1', label: 'Azure Language' },
+            { id: 'k2', label: 'Azure Speech' },
+            { id: 'k3', label: 'Multimodal model' },
+            { id: 'k4', label: 'Content Understanding' }
           ]
         },
-        answer: { pairs: { feature: 'dinput', label: 'dtarget', train: 'dfit', val: 'dtune', test: 'dfinal' } } }
+        answer: { map: { i1: 'k1', i2: 'k1', i3: 'k2', i4: 'k2', i5: 'k3', i6: 'k4' } } }
     ]
   },
 
   {
-    id: 'ai900-dl-ml-6', cert: 'ai900', objective: '3.2', topic: 'ML lifecycle',
-    title: 'Order the supervised ML lifecycle',
-    estMinutes: 4,
-    scenario: 'Put the typical supervised machine-learning lifecycle steps in order, first step at the top.',
-    family: 'ML lifecycle',
+    id: 'ai900-dl-work-8', cert: 'ai900', objective: '1.3', topic: 'Generative AI',
+    title: 'Spot the generative AI workload', estMinutes: 3,
+    scenario: 'A retailer has four AI ideas and wants to know which one is <mark>generative</mark> AI.',
+    pair: 'Generative vs Analytical AI',
+    family: 'AI workloads',
+    steps: [
+      { id: 's1', type: 'analyze', points: 1,
+        prompt: 'Select the generative AI workload.',
+        explanation: 'The tell is creating new content. Drafting product descriptions from bullet points generates new text.',
+        payload: {
+          multi: false,
+          lines: [
+            { id: 'l1', text: 'Counting customers in store camera images', why: 'Counting people is object detection, a vision analysis task.' },
+            { id: 'l2', text: 'Detecting the language of support emails', why: 'Language detection analyses text rather than creating it.' },
+            { id: 'l3', text: 'Flagging negative reviews', why: 'Flagging negative reviews is sentiment analysis.' },
+            { id: 'l4', text: 'Drafting product descriptions from bullet points' }
+          ]
+        },
+        answer: { selected: ['l4'] } }
+    ]
+  },
+
+  {
+    id: 'ai900-dl-app-1', cert: 'ai900', objective: '2.1', topic: 'System vs user messages',
+    title: 'Place the rule that applies to every reply', estMinutes: 3,
+    scenario: 'A travel company\'s chat app must <mark>only answer questions about its travel policy</mark>, for every user and every question.',
+    pair: 'System vs User message',
+    family: 'Generative AI apps & agents',
+    steps: [
+      { id: 's1', type: 'analyze', points: 1,
+        prompt: 'Select where the rule belongs.',
+        explanation: 'The tell is a rule for the whole conversation. The system message sets role, scope and rules that apply to every reply.',
+        payload: {
+          multi: false,
+          lines: [
+            { id: 'l1', text: 'In the system message' },
+            { id: 'l2', text: 'In each user message', why: 'User messages hold the person\'s request. Users should not have to repeat the rules.' },
+            { id: 'l3', text: 'In the temperature setting', why: 'Temperature controls randomness, not which topics are allowed.' },
+            { id: 'l4', text: 'In the deployment name', why: 'The deployment name only selects which model answers.' }
+          ]
+        },
+        answer: { selected: ['l1'] } }
+    ]
+  },
+
+  {
+    id: 'ai900-dl-app-2', cert: 'ai900', objective: '2.1', topic: 'Foundry SDK chat clients',
+    title: 'Identify what the model argument names', estMinutes: 3,
+    scenario: 'A developer calls a model deployed in Microsoft Foundry using <mark>client.chat.completions.create(model="support-bot", messages=msgs)</mark>.',
+    pair: 'Deployment name vs Endpoint',
+    family: 'Generative AI apps & agents',
+    steps: [
+      { id: 's1', type: 'analyze', points: 1,
+        prompt: 'Select what "support-bot" refers to.',
+        explanation: 'The tell is the model argument in an Azure-hosted call. It is the deployment name chosen when the model was deployed.',
+        payload: {
+          multi: false,
+          lines: [
+            { id: 'l1', text: 'The model family\'s official name', why: 'You choose the deployment name, and it does not have to match the model\'s name.' },
+            { id: 'l2', text: 'The Azure region of the resource', why: 'The region is part of the resource and endpoint, not this argument.' },
+            { id: 'l3', text: 'The deployment name' },
+            { id: 'l4', text: 'The title of the system message', why: 'The system message is a message with the system role.' }
+          ]
+        },
+        answer: { selected: ['l3'] } }
+    ]
+  },
+
+  {
+    id: 'ai900-dl-app-3', cert: 'ai900', objective: '2.1', topic: 'Prompt engineering',
+    title: 'Pick the prompt change for consistent JSON', estMinutes: 3,
+    scenario: 'A dashboard needs a model to return <mark>the same JSON fields every time</mark>, but the output keeps changing shape.',
+    pair: 'Few-shot vs Instructions',
+    family: 'Generative AI apps & agents',
+    steps: [
+      { id: 's1', type: 'analyze', points: 1,
+        prompt: 'Select the most effective change.',
+        explanation: 'The tell is consistent structure. Naming the exact fields and showing an example output gives the model a pattern to follow. Structured outputs (a JSON schema) enforce this even more strictly.',
+        payload: {
+          multi: false,
+          lines: [
+            { id: 'l1', text: 'Ask the model to be creative with the layout', why: 'Asking for creativity invites more variation, not less.' },
+            { id: 'l2', text: 'Name the exact fields and show an example' },
+            { id: 'l3', text: 'Raise the temperature', why: 'A higher temperature makes output less consistent.' },
+            { id: 'l4', text: 'Tell the model to always return JSON', why: 'Instructions alone often still let field names drift. Naming the fields and showing an example fixes the shape.' }
+          ]
+        },
+        answer: { selected: ['l2'] } }
+    ]
+  },
+
+  {
+    id: 'ai900-dl-app-7', cert: 'ai900', objective: '2.1', topic: 'Agent instructions',
+    title: 'Fix an agent that answers out of scope', estMinutes: 3,
+    scenario: 'An HR agent keeps answering questions about <mark>individual colleagues\' salaries</mark>, which it should decline.',
+    pair: 'Instructions vs Tools',
+    family: 'Agent tools',
+    steps: [
+      { id: 's1', type: 'analyze', points: 1,
+        prompt: 'Select the first fix.',
+        explanation: 'The tell is behaviour outside the intended scope. An agent\'s instructions define its role and what it must refuse, so update them first. Where possible, also remove its access to salary data, because instructions alone are not a hard control.',
+        payload: {
+          multi: false,
+          lines: [
+            { id: 'l1', text: 'Switch to a larger and more capable model', why: 'A bigger model is more capable but does not by itself narrow the scope.' },
+            { id: 'l2', text: 'Update its instructions to decline these' },
+            { id: 'l3', text: 'Add more tools', why: 'More tools extend what the agent can do instead of restricting it.' },
+            { id: 'l4', text: 'Raise max tokens', why: 'Max tokens only limits reply length.' }
+          ]
+        },
+        answer: { selected: ['l2'] } }
+    ]
+  },
+
+  {
+    id: 'ai900-dl-app-8', cert: 'ai900', objective: '2.1', topic: 'Agent client apps',
+    title: 'Keep follow-up questions in context', estMinutes: 3,
+    scenario: 'A client app chats with a Microsoft Foundry agent. Follow-up questions such as <mark>\'and what about next week?\'</mark> must make sense to the agent.',
+    pair: 'Conversation vs New session',
+    family: 'Generative AI apps & agents',
+    steps: [
+      { id: 's1', type: 'analyze', points: 1,
+        prompt: 'Select what the app should do.',
+        explanation: 'The tell is follow-ups that depend on earlier turns. Reusing the same conversation keeps the history together.',
+        payload: {
+          multi: false,
+          lines: [
+            { id: 'l1', text: 'Start a new conversation for every message', why: 'A new conversation loses the earlier context the follow-up depends on.' },
+            { id: 'l2', text: 'Redeploy the agent for each message', why: 'Agents are created once and reused.' },
+            { id: 'l3', text: 'Raise the temperature', why: 'Temperature does not give the agent memory of earlier turns.' },
+            { id: 'l4', text: 'Keep using the same conversation' }
+          ]
+        },
+        answer: { selected: ['l4'] } }
+    ]
+  },
+
+  {
+    id: 'ai900-dl-app-9', cert: 'ai900', objective: '2.1', topic: 'Agent client apps',
+    title: 'Show the answer as it is written', estMinutes: 3,
+    scenario: 'A client app should <mark>display the agent\'s answer progressively</mark> instead of waiting for the full reply.',
+    pair: 'Streaming vs Batch',
+    family: 'Generative AI apps & agents',
+    steps: [
+      { id: 's1', type: 'analyze', points: 1,
+        prompt: 'Select the approach.',
+        explanation: 'The tell is showing text as it is generated. Streaming the response delivers it in chunks.',
+        payload: {
+          multi: false,
+          lines: [
+            { id: 'l1', text: 'Stream the response' },
+            { id: 'l2', text: 'Raise max tokens', why: 'Max tokens limits length and does not change how the reply is delivered.' },
+            { id: 'l3', text: 'Add a second agent', why: 'Another agent does not stream the first one\'s answer.' },
+            { id: 'l4', text: 'Ask for a shorter reply', why: 'A shorter reply still arrives all at once at the end.' }
+          ]
+        },
+        answer: { selected: ['l1'] } }
+    ]
+  },
+
+  {
+    id: 'ai900-dl-app-10', cert: 'ai900', objective: '2.1', topic: 'Building an agent',
+    title: 'Put the steps to build an agent in order', estMinutes: 4,
+    scenario: 'A developer is building a single agent in Microsoft Foundry and a lightweight client app for it.',
     steps: [
       { id: 's1', type: 'order', points: 1,
-        prompt: 'Arrange the ML lifecycle steps in order.',
-        explanation: 'You first prepare and clean the data, then split it into training and test sets, then train the model on the training data, then evaluate it against the test set, and finally deploy the model once performance is acceptable.',
+        prompt: 'Put the steps in a sensible order.',
+        explanation: 'An agent needs a deployed model first, then the agent itself with its instructions and tools, then testing in the portal playground, and only then a client app that calls it.',
         payload: { items: [
-          { id: 'prep', label: 'Prepare and clean the data' },
-          { id: 'split', label: 'Split data into training and test sets' },
-          { id: 'train', label: 'Train the model on the training data' },
-          { id: 'eval', label: 'Evaluate the model on the test set' },
-          { id: 'deploy', label: 'Deploy the model' }
+          { id: 'o3', label: 'Test the agent in the playground' },
+          { id: 'o1', label: 'Deploy a model in the project' },
+          { id: 'o4', label: 'Call the agent from a client app' },
+          { id: 'o2', label: 'Create the agent with its instructions and tools' }
         ] },
-        answer: { correctOrder: ['prep', 'split', 'train', 'eval', 'deploy'] } }
+        answer: { correctOrder: ['o1', 'o2', 'o3', 'o4'] } }
     ]
   },
 
   {
-    id: 'ai900-dl-ml-7', cert: 'ai900', objective: '3.1', topic: 'ML problem types',
-    title: 'Match scenario to ML problem type',
-    estMinutes: 4,
-    scenario: 'Match each prediction scenario to the machine-learning problem type it represents.',
-    pair: 'Regression vs Classification',
-    family: 'ML problem types',
-    steps: [
-      { id: 's1', type: 'match', points: 1,
-        prompt: 'Pair each scenario with its problem type.',
-        explanation: 'Predicting a continuous number is regression; predicting a discrete category is classification; grouping unlabeled records by similarity is clustering; flagging records that deviate from the norm is anomaly detection.',
-        payload: {
-          left: [
-            { id: 'temp', label: 'Predict tomorrow temperature in degrees' },
-            { id: 'spam', label: 'Label an email as spam or not spam' },
-            { id: 'segment', label: 'Group shoppers into unlabeled segments by behavior' },
-            { id: 'fraud', label: 'Flag a transaction that is wildly unlike the norm' }
-          ],
-          right: [
-            { id: 'regression', label: 'Regression' },
-            { id: 'classification', label: 'Classification' },
-            { id: 'clustering', label: 'Clustering' },
-            { id: 'anomaly', label: 'Anomaly detection' }
-          ]
-        },
-        answer: { pairs: { temp: 'regression', spam: 'classification', segment: 'clustering', fraud: 'anomaly' } } }
-    ]
-  },
-
-  {
-    id: 'ai900-dl-ml-8', cert: 'ai900', objective: '3.1', topic: 'ML vocabulary',
-    title: 'What is the training set for?',
-    estMinutes: 3,
-    scenario: 'During model building, one portion of the labeled data is used so the algorithm can <mark>learn its parameters from examples</mark>. Pick the name of this portion.',
-    pair: 'Training set vs Test set',
-    family: 'ML vocabulary',
+    id: 'ai900-dl-app-11', cert: 'ai900', objective: '2.1', topic: 'Deploying models',
+    title: 'Try a new model version safely', estMinutes: 3,
+    scenario: 'A team wants to <mark>try a newer model version</mark> without disrupting the app that uses the current deployment.',
+    family: 'Generative AI apps & agents',
     steps: [
       { id: 's1', type: 'analyze', points: 1,
-        prompt: 'Select the correct term.',
-        explanation: 'The tell: the data the algorithm learns from. That is the training set; the test set is reserved to measure performance on unseen data.',
+        prompt: 'Select the approach.',
+        explanation: 'The tell is testing without disruption. A separate deployment lets the team evaluate the new version, then switch the app over.',
         payload: {
           multi: false,
           lines: [
-            { id: 'l1', text: 'Training set' },
-            { id: 'l2', text: 'Test set', why: 'The test set is held back and used only to measure final performance on unseen data; the model does not learn its parameters from it.' },
-            { id: 'l3', text: 'Feature set', why: 'Feature set refers to the input columns, not the portion of rows used to fit the model.' },
-            { id: 'l4', text: 'Label set', why: 'Labels are the target values; this question is about the data partition the model learns from, which is the training set.' }
+            { id: 'l1', text: 'Delete the current deployment first', why: 'Deleting first takes the app offline.' },
+            { id: 'l2', text: 'Change the version number in the system message', why: 'The system message steers behaviour and cannot change the model.' },
+            { id: 'l3', text: 'Deploy the new version separately and test it' },
+            { id: 'l4', text: 'Raise the temperature on the requests', why: 'Temperature changes randomness, not the model version.' }
+          ]
+        },
+        answer: { selected: ['l3'] } }
+    ]
+  },
+
+  {
+    id: 'ai900-dl-text-1', cert: 'ai900', objective: '2.2', topic: 'Azure Language',
+    title: 'Redact personal details before publishing', estMinutes: 3,
+    scenario: 'Reviews must be published with <mark>phone numbers and email addresses hidden</mark>.',
+    pair: 'PII vs Entities',
+    family: 'Azure Language features',
+    steps: [
+      { id: 's1', type: 'analyze', points: 1,
+        prompt: 'Select the Azure Language feature.',
+        explanation: 'The tell is finding and masking personal data. PII detection returns the entities found and a redacted version of the text.',
+        payload: {
+          multi: false,
+          lines: [
+            { id: 'l1', text: 'Named entity recognition', why: 'NER categorises names and places but is not built to redact personal data.' },
+            { id: 'l2', text: 'Key phrase extraction', why: 'Key phrases are main topics, not personal details.' },
+            { id: 'l3', text: 'Summarization', why: 'Summarization shortens the text without hiding personal details.' },
+            { id: 'l4', text: 'PII detection' }
+          ]
+        },
+        answer: { selected: ['l4'] } }
+    ]
+  },
+
+  {
+    id: 'ai900-dl-text-2', cert: 'ai900', objective: '2.2', topic: 'Azure Language',
+    title: 'Read a two-sentence review correctly', estMinutes: 3,
+    scenario: 'An app sends <mark>\'The delivery was awful. The staff were lovely.\'</mark> to Azure Language sentiment analysis.',
+    pair: 'Sentiment vs Opinion mining',
+    family: 'Azure Language features',
+    steps: [
+      { id: 's1', type: 'analyze', points: 1,
+        prompt: 'Select the most likely result.',
+        explanation: 'The tell is one negative sentence and one positive sentence. The document is labelled mixed, and each sentence gets its own label and scores.',
+        payload: {
+          multi: false,
+          lines: [
+            { id: 'l1', text: 'Mixed for the document, a label per sentence' },
+            { id: 'l2', text: 'Neutral for the whole text', why: 'Each sentence carries a clear opinion, one negative and one positive.' },
+            { id: 'l3', text: 'Positive, because the last sentence wins', why: 'Sentiment analysis does not simply take the last sentence.' },
+            { id: 'l4', text: 'A list of the people mentioned', why: 'That is named entity recognition.' }
           ]
         },
         answer: { selected: ['l1'] } }
@@ -950,242 +628,91 @@ window.DECISION_LAB_SEED_AI900 = [
   },
 
   {
-    id: 'ai900-dl-ml-9', cert: 'ai900', objective: '3.1', topic: 'ML problem types',
-    title: 'Forecast next month sales volume',
-    estMinutes: 3,
-    scenario: 'A retailer wants to <mark>predict the number of units it will sell next month</mark> from past sales and seasonality. The output is a number. Pick the machine-learning problem type.',
-    pair: 'Regression vs Classification',
-    family: 'ML problem types',
+    id: 'ai900-dl-text-3', cert: 'ai900', objective: '2.2', topic: 'Azure Language',
+    title: 'Handle reviews in many languages', estMinutes: 3,
+    scenario: 'Reviews arrive in <mark>several languages</mark>, and each must get sentiment analysis in the right language.',
+    pair: 'Language detection vs Key phrases',
+    family: 'Azure Language features',
     steps: [
       { id: 's1', type: 'analyze', points: 1,
-        prompt: 'Select the ML problem type.',
-        explanation: 'The tell: predicting a continuous numeric quantity (unit count). That is regression, even when framed as forecasting.',
+        prompt: 'Select what should happen first.',
+        explanation: 'The tell is unknown languages arriving. Detecting each review\'s language first lets the app send the right language to the sentiment step.',
         payload: {
           multi: false,
           lines: [
-            { id: 'l1', text: 'Regression' },
-            { id: 'l2', text: 'Classification', why: 'Classification outputs a category; a unit count is a continuous numeric prediction, which is regression.' },
-            { id: 'l3', text: 'Clustering', why: 'Clustering groups unlabeled data; here there is a numeric target to predict.' },
-            { id: 'l4', text: 'Anomaly detection', why: 'Anomaly detection flags outliers, not a forecasted quantity.' }
+            { id: 'l1', text: 'Run key phrase extraction', why: 'Key phrases do not tell the app which language each review is in.' },
+            { id: 'l2', text: 'Detect each review\'s language' },
+            { id: 'l3', text: 'Convert each review to speech', why: 'Speech output does not identify the language.' },
+            { id: 'l4', text: 'Run PII detection', why: 'PII detection finds personal data, not the language.' }
           ]
         },
-        answer: { selected: ['l1'] } }
+        answer: { selected: ['l2'] } }
     ]
   },
 
   {
-    id: 'ai900-dl-ml-10', cert: 'ai900', objective: '3.1', topic: 'ML vocabulary',
-    title: 'Why hold out a test set?',
-    estMinutes: 3,
-    scenario: 'A team trains a model and wants an honest estimate of how it will perform on <mark>data it has never seen</mark>. Which dataset gives that final unbiased estimate?',
-    pair: 'Test set vs Validation set',
-    family: 'ML vocabulary',
-    steps: [
-      { id: 's1', type: 'analyze', points: 1,
-        prompt: 'Select the correct term.',
-        explanation: 'The tell: an unbiased estimate on unseen data after training is done. That role belongs to the test set; the validation set is used during training to tune choices.',
-        payload: {
-          multi: false,
-          lines: [
-            { id: 'l1', text: 'Test set' },
-            { id: 'l2', text: 'Validation set', why: 'The validation set is used during training to tune the model and compare options, so it influences choices and is not a clean final estimate; the test set is held for the final measure.' },
-            { id: 'l3', text: 'Training set', why: 'The training set is what the model learns from, so measuring on it overstates performance.' },
-            { id: 'l4', text: 'Feature set', why: 'Feature set refers to the input columns, not a data partition for evaluation.' }
-          ]
-        },
-        answer: { selected: ['l1'] } }
-    ]
-  },
-
-  {
-    id: 'ai900-dl-ml-11', cert: 'ai900', objective: '3.1', topic: 'ML problem types',
-    title: 'Supervised or unsupervised?',
-    estMinutes: 3,
-    scenario: 'A team has a dataset where <mark>every record already has a correct labeled outcome</mark>, and they want to learn to predict that outcome on new records. Pick the learning category.',
-    pair: 'Supervised vs Unsupervised',
-    family: 'ML problem types',
-    steps: [
-      { id: 's1', type: 'analyze', points: 1,
-        prompt: 'Select the learning category.',
-        explanation: 'The tell: labeled outcomes are available to learn from. Learning from labeled data is supervised learning; clustering with no labels is unsupervised.',
-        payload: {
-          multi: false,
-          lines: [
-            { id: 'l1', text: 'Supervised learning' },
-            { id: 'l2', text: 'Unsupervised learning', why: 'Unsupervised learning works on unlabeled data to find structure; here every record already has a known labeled outcome.' },
-            { id: 'l3', text: 'Reinforcement learning', why: 'Reinforcement learning trains an agent through reward signals from actions; there is no agent or reward loop described here.' },
-            { id: 'l4', text: 'Semi-supervised learning', why: 'Semi-supervised learning mixes a small amount of labeled data with a large pool of unlabeled data; here every record already has a correct label, so it is fully supervised.' }
-          ]
-        },
-        answer: { selected: ['l1'] } }
-    ]
-  },
-
-  {
-    id: 'ai900-dl-ml-12', cert: 'ai900', objective: '3.2', topic: 'ML evaluation',
-    title: 'Read a model evaluation metric',
-    estMinutes: 3,
-    scenario: 'A classification model is evaluated and the team wants a single metric for <mark>the proportion of all predictions that were correct</mark>. Pick the metric.',
-    pair: 'Accuracy vs Recall',
-    family: 'ML evaluation',
-    steps: [
-      { id: 's1', type: 'analyze', points: 1,
-        prompt: 'Select the metric.',
-        explanation: 'The tell: proportion of total predictions that were correct. That is accuracy; recall instead measures how many actual positives were found.',
-        payload: {
-          multi: false,
-          lines: [
-            { id: 'l1', text: 'Accuracy' },
-            { id: 'l2', text: 'Recall', why: 'Recall measures the share of actual positive cases the model correctly identified, not the overall fraction of correct predictions.' },
-            { id: 'l3', text: 'Precision', why: 'Precision measures how many of the predicted positives were truly positive, not overall correctness.' },
-            { id: 'l4', text: 'Mean squared error', why: 'Mean squared error is a regression metric for numeric error; this is a classification accuracy question.' }
-          ]
-        },
-        answer: { selected: ['l1'] } }
-    ]
-  },
-
-  // ========================================================================
-  // ===== Generative AI (~15%, ~8) =========================================
-  // ========================================================================
-  {
-    id: 'ai900-dl-genai-1', cert: 'ai900', objective: '4.1', topic: 'Generative AI',
-    title: 'Generate marketing copy from a prompt',
-    estMinutes: 3,
-    scenario: 'A team wants to <mark>generate original marketing copy and product descriptions from natural-language prompts</mark> using a large language model on Azure. Pick the best Azure service.',
-    pair: 'Azure OpenAI vs Language',
-    family: 'Generative AI',
-    steps: [
-      { id: 's1', type: 'analyze', points: 1,
-        prompt: 'Select the best service.',
-        explanation: 'The tell: generate new content from prompts with a large language model. Azure OpenAI provides access to GPT-family generative models for exactly this.',
-        payload: {
-          multi: false,
-          lines: [
-            { id: 'l1', text: 'Azure OpenAI' },
-            { id: 'l2', text: 'Azure AI Language', why: 'Azure AI Language analyzes existing text (sentiment, entities, summarization); generating new long-form copy from a prompt is a generative LLM task in Azure OpenAI.' },
-            { id: 'l3', text: 'Azure AI Translator', why: 'Translator converts existing text between languages; it does not author new content.' },
-            { id: 'l4', text: 'Azure AI Document Intelligence', why: 'Document Intelligence extracts fields from documents; it does not generate marketing copy.' }
-          ]
-        },
-        answer: { selected: ['l1'] } }
-    ]
-  },
-
-  {
-    id: 'ai900-dl-genai-2', cert: 'ai900', objective: '4.1', topic: 'Generative AI',
-    title: 'What is a prompt?',
-    estMinutes: 3,
-    scenario: 'In a generative AI app, a user types instructions and context that <mark>tell the model what to produce</mark>. Pick the term for that input.',
-    pair: 'Prompt vs Completion',
-    family: 'Generative AI',
-    steps: [
-      { id: 's1', type: 'analyze', points: 1,
-        prompt: 'Select the correct term.',
-        explanation: 'The tell: the instructions/input you give the model. That is the prompt; the model output produced in response is the completion.',
-        payload: {
-          multi: false,
-          lines: [
-            { id: 'l1', text: 'Prompt' },
-            { id: 'l2', text: 'Completion', why: 'The completion is the text the model generates in response; the input instructions you provide are the prompt.' },
-            { id: 'l3', text: 'Token', why: 'A token is a chunk of text the model processes; it is a unit of text, not the user instruction as a whole.' },
-            { id: 'l4', text: 'Label', why: 'A label is the target value in supervised learning, unrelated to the input given to a generative model.' }
-          ]
-        },
-        answer: { selected: ['l1'] } }
-    ]
-  },
-
-  {
-    id: 'ai900-dl-genai-3', cert: 'ai900', objective: '4.1', topic: 'Generative AI',
-    title: 'Generate an image from text',
-    estMinutes: 3,
-    scenario: 'A designer wants to <mark>create a brand-new image from a text description</mark> such as "a watercolor fox in a forest." Pick the best Azure capability.',
-    pair: 'Azure OpenAI image generation vs Vision',
-    family: 'Generative AI',
-    steps: [
-      { id: 's1', type: 'analyze', points: 1,
-        prompt: 'Select the best capability.',
-        explanation: 'The tell: create a new image from a text prompt. Image generation (DALL-E family) in Azure OpenAI produces images from text; Azure AI Vision only analyzes existing images.',
-        payload: {
-          multi: false,
-          lines: [
-            { id: 'l1', text: 'Azure OpenAI image generation' },
-            { id: 'l2', text: 'Azure AI Vision', why: 'Azure AI Vision interprets and describes existing images; it does not create new images from a text prompt.' },
-            { id: 'l3', text: 'Azure AI Custom Vision', why: 'Custom Vision classifies images into your own categories; it does not generate images.' },
-            { id: 'l4', text: 'Azure AI Document Intelligence', why: 'Document Intelligence reads documents; it has nothing to do with image generation.' }
-          ]
-        },
-        answer: { selected: ['l1'] } }
-    ]
-  },
-
-  {
-    id: 'ai900-dl-genai-4', cert: 'ai900', objective: '4.2', topic: 'Generative AI',
-    title: 'Ground the model on your own documents',
-    estMinutes: 3,
-    scenario: 'A company wants its chatbot to <mark>answer using its own internal documents</mark> so responses are grounded in company data rather than only the model general knowledge. Pick the best approach.',
-    pair: 'Retrieval augmentation vs Fine-tuning',
-    family: 'Generative AI',
+    id: 'ai900-dl-speech-4', cert: 'ai900', objective: '2.2', topic: 'Spoken prompts',
+    title: 'Choose between a multimodal model and Azure Speech', estMinutes: 3,
+    scenario: 'A team could send spoken questions straight to a multimodal model, but compliance needs a <mark>stored written transcript with word timings</mark> of every call.',
+    pair: 'Multimodal audio vs Azure Speech',
+    family: 'Azure Speech features',
     steps: [
       { id: 's1', type: 'analyze', points: 1,
         prompt: 'Select the best approach.',
-        explanation: 'The tell: ground answers in your own documents at query time. Retrieving relevant company documents and adding them to the prompt (the Azure OpenAI on your data / RAG pattern) injects current, source-grounded facts the way fine-tuning cannot.',
+        explanation: 'The tell is a detailed, timed transcript as a record. Azure Speech is built for accurate transcription with timing information.',
         payload: {
           multi: false,
           lines: [
-            { id: 'l1', text: 'Ground the model on your documents (retrieval augmentation)' },
-            { id: 'l2', text: 'Fine-tune the model on the documents', why: 'Fine-tuning adjusts the model weights to shift its style, tone, and format, but it does not reliably inject current factual content; retrieval augmentation supplies the actual source documents at query time, which is what grounding needs.' },
-            { id: 'l3', text: 'Use the model with no extra context', why: 'Without supplying company documents, the model can only answer from its general training data, which is exactly what the requirement rules out.' },
-            { id: 'l4', text: 'Switch to a rule-based keyword search', why: 'Keyword search returns documents but does not produce a grounded natural-language answer the way retrieval-augmented generation does.' }
+            { id: 'l1', text: 'Send the audio to a multimodal model only', why: 'A multimodal model answers the question. It is not built to return a timed transcript you can store as a record.' },
+            { id: 'l2', text: 'Transcribe with Azure Speech' },
+            { id: 'l3', text: 'Use an image generation model', why: 'Image models do not process audio.' },
+            { id: 'l4', text: 'Use text to speech', why: 'Text to speech produces audio rather than transcripts.' }
           ]
         },
-        answer: { selected: ['l1'] } }
+        answer: { selected: ['l2'] } }
     ]
   },
 
   {
-    id: 'ai900-dl-genai-5', cert: 'ai900', objective: '4.1', topic: 'Generative AI',
-    title: 'What does a large language model do?',
-    estMinutes: 3,
-    scenario: 'You must describe the core behavior of a large language model to a stakeholder. Pick the statement that <mark>best captures what an LLM fundamentally does</mark>.',
-    pair: 'LLM vs Classifier',
-    family: 'Generative AI',
+    id: 'ai900-dl-vision-1', cert: 'ai900', objective: '2.3', topic: 'Visual input',
+    title: 'Answer a question about a photo', estMinutes: 3,
+    scenario: 'A customer uploads a photo of a restaurant menu and asks <mark>which dishes are vegetarian</mark>.',
+    pair: 'Multimodal vs OCR',
+    family: 'Vision & image models',
     steps: [
       { id: 's1', type: 'analyze', points: 1,
-        prompt: 'Select the best statement.',
-        explanation: 'The tell: the fundamental behavior is generating language by predicting likely next tokens from context. That generative, next-token prediction framing is what an LLM does.',
+        prompt: 'Select the approach.',
+        explanation: 'The tell is reasoning about what the image shows. A multimodal model can read the menu and answer in one request.',
         payload: {
           multi: false,
           lines: [
-            { id: 'l1', text: 'Generates natural-language text by predicting likely next tokens from the prompt context' },
-            { id: 'l2', text: 'Sorts records into a fixed set of predefined labels', why: 'That describes a classification model; an LLM generates text rather than only assigning records to fixed categories.' },
-            { id: 'l3', text: 'Groups unlabeled data points by similarity', why: 'That is clustering; an LLM is a generative language model, not an unsupervised grouping algorithm.' },
-            { id: 'l4', text: 'Flags data points that deviate from a normal pattern', why: 'That is anomaly detection; it is unrelated to generating language.' }
+            { id: 'l1', text: 'Run OCR on the menu text and then discard the image', why: 'OCR alone returns raw text and doesn\'t answer the question.' },
+            { id: 'l2', text: 'Run image classification', why: 'Classification returns a label for the whole image.' },
+            { id: 'l3', text: 'Run text to speech on the menu', why: 'Speech output doesn\'t answer anything.' },
+            { id: 'l4', text: 'Send the image and question to a multimodal model' }
           ]
         },
-        answer: { selected: ['l1'] } }
+        answer: { selected: ['l4'] } }
     ]
   },
 
   {
-    id: 'ai900-dl-genai-6', cert: 'ai900', objective: '4.2', topic: 'Generative AI',
-    title: 'Reduce harmful generated output',
-    estMinutes: 3,
-    scenario: 'A team deploying a generative chatbot wants to <mark>filter hateful, violent, and sexual content from both prompts and responses</mark>. Pick the best Azure capability.',
-    pair: 'Content safety vs Document Intelligence',
-    family: 'Generative AI',
+    id: 'ai900-dl-vision-2', cert: 'ai900', objective: '2.3', topic: 'Image generation',
+    title: 'Set the size of generated images', estMinutes: 3,
+    scenario: 'A website needs generated banner images in a <mark>wide landscape size</mark>.',
+    pair: 'Prompt vs Size setting',
+    family: 'Vision & image models',
     steps: [
       { id: 's1', type: 'analyze', points: 1,
-        prompt: 'Select the best capability.',
-        explanation: 'The tell: detect and filter harmful categories in prompts and completions. Azure AI Content Safety is purpose-built to moderate text and images across harm categories.',
+        prompt: 'Select where this is set.',
+        explanation: 'The tell is image dimensions. Image generation requests take a size setting alongside the prompt, chosen from the sizes the model supports.',
         payload: {
           multi: false,
           lines: [
-            { id: 'l1', text: 'Azure AI Content Safety' },
-            { id: 'l2', text: 'Azure AI Document Intelligence', why: 'Document Intelligence extracts structured fields from forms; it does not moderate harmful content.' },
-            { id: 'l3', text: 'Azure AI Translator', why: 'Translator converts languages; it does not detect or filter harmful content.' },
-            { id: 'l4', text: 'Azure AI Custom Vision', why: 'Custom Vision classifies images into your own categories; it is not a content-moderation service for generative output.' }
+            { id: 'l1', text: 'The size setting of the image request' },
+            { id: 'l2', text: 'The system message of a chat model', why: 'A chat model\'s system message does not control image dimensions.' },
+            { id: 'l3', text: 'The max tokens value', why: 'Max tokens limits text length, not image size.' },
+            { id: 'l4', text: 'The Azure region of the resource', why: 'Region decides where the model runs.' }
           ]
         },
         answer: { selected: ['l1'] } }
@@ -1193,23 +720,68 @@ window.DECISION_LAB_SEED_AI900 = [
   },
 
   {
-    id: 'ai900-dl-genai-7', cert: 'ai900', objective: '4.1', topic: 'Generative AI',
-    title: 'Why might an LLM be wrong?',
-    estMinutes: 3,
-    scenario: 'A stakeholder asks why a chatbot sometimes states a confident but <mark>factually false answer that sounds plausible</mark>. Pick the term that names this behavior.',
-    pair: 'Hallucination vs Overfitting',
-    family: 'Generative AI',
+    id: 'ai900-dl-vision-3', cert: 'ai900', objective: '2.3', topic: 'Image generation',
+    title: 'Change the background of an existing photo', estMinutes: 3,
+    scenario: 'A marketing team wants <mark>new versions of an existing product photo</mark> with a different background.',
+    pair: 'Image editing vs Analysis',
+    family: 'Vision & image models',
     steps: [
       { id: 's1', type: 'analyze', points: 1,
-        prompt: 'Select the correct term.',
-        explanation: 'The tell: a confident but fabricated, plausible-sounding answer from a generative model. That is a hallucination.',
+        prompt: 'Select the capability.',
+        explanation: 'The tell is changing an existing image. Some image generation models accept an input image plus a prompt to edit it.',
         payload: {
           multi: false,
           lines: [
-            { id: 'l1', text: 'Hallucination' },
-            { id: 'l2', text: 'Overfitting', why: 'Overfitting is when a model memorizes training data and generalizes poorly; it describes a training problem, not a confidently fabricated generated answer.' },
-            { id: 'l3', text: 'Underfitting', why: 'Underfitting is when a model is too simple to capture patterns; it does not describe fabricated but plausible output.' },
-            { id: 'l4', text: 'Clustering', why: 'Clustering is an unsupervised grouping task, unrelated to a model generating false statements.' }
+            { id: 'l1', text: 'Optical character recognition on the photo', why: 'OCR reads text in images.' },
+            { id: 'l2', text: 'Object detection', why: 'Object detection locates items but does not change them.' },
+            { id: 'l3', text: 'Image editing with a generation model' },
+            { id: 'l4', text: 'Speech synthesis', why: 'Speech synthesis produces audio.' }
+          ]
+        },
+        answer: { selected: ['l3'] } }
+    ]
+  },
+
+  {
+    id: 'ai900-dl-vision-4', cert: 'ai900', objective: '2.3', topic: 'Vision apps',
+    title: 'Get values the app can read reliably', estMinutes: 3,
+    scenario: 'A vision app asks a multimodal model for the expiry date on food packaging, but its code <mark>struggles to parse free-text answers</mark>.',
+    pair: 'Structured output vs Free text',
+    family: 'Vision & image models',
+    steps: [
+      { id: 's1', type: 'analyze', points: 1,
+        prompt: 'Select the change.',
+        explanation: 'The tell is code needing predictable output. Asking for a structured format such as JSON makes the answer easy to read reliably. Structured outputs (a JSON schema) enforce this even more strictly.',
+        payload: {
+          multi: false,
+          lines: [
+            { id: 'l1', text: 'Send the photo as audio', why: 'Audio would lose the image entirely.' },
+            { id: 'l2', text: 'Ask for the answer as JSON with a set field' },
+            { id: 'l3', text: 'Remove the instruction and send only the photo', why: 'Without an instruction the model may describe the photo instead.' },
+            { id: 'l4', text: 'Raise the temperature', why: 'A higher temperature makes output less predictable.' }
+          ]
+        },
+        answer: { selected: ['l2'] } }
+    ]
+  },
+
+  {
+    id: 'ai900-dl-vision-5', cert: 'ai900', objective: '2.3', topic: 'Image generation',
+    title: 'Explain a refused image request', estMinutes: 3,
+    scenario: 'An image generation request for a <mark>violent scene</mark> is refused by the service.',
+    pair: 'Guardrails vs Settings',
+    family: 'Vision & image models',
+    steps: [
+      { id: 's1', type: 'analyze', points: 1,
+        prompt: 'Select the most likely reason.',
+        explanation: 'The tell is harmful content in the prompt. Guardrails (previously called content filters) screen prompts and block harmful requests, which is the most likely cause here.',
+        payload: {
+          multi: false,
+          lines: [
+            { id: 'l1', text: 'Guardrails blocked the harmful prompt' },
+            { id: 'l2', text: 'The request exceeded the rate limit', why: 'Exceeding the rate limit returns a throttling error, not a content refusal.' },
+            { id: 'l3', text: 'The requested size is not supported', why: 'An unsupported size returns a parameter error, not a content refusal.' },
+            { id: 'l4', text: 'The model was deployed recently', why: 'New deployments work normally.' }
           ]
         },
         answer: { selected: ['l1'] } }
@@ -1217,32 +789,390 @@ window.DECISION_LAB_SEED_AI900 = [
   },
 
   {
-    id: 'ai900-dl-genai-8', cert: 'ai900', objective: '4.1', topic: 'Generative AI',
-    title: 'Match the generative AI term',
-    estMinutes: 4,
-    scenario: 'Match each generative AI term to its meaning.',
-    family: 'Generative AI',
+    id: 'ai900-dl-cu-1', cert: 'ai900', objective: '2.4', topic: 'Content Understanding',
+    title: 'Extract fields from standard receipts', estMinutes: 3,
+    scenario: 'A team needs common fields from <mark>standard receipts</mark> and doesn\'t want to design a schema from scratch.',
+    pair: 'Prebuilt vs Custom analyzer',
+    family: 'Content Understanding',
+    steps: [
+      { id: 's1', type: 'analyze', points: 1,
+        prompt: 'Select the starting point.',
+        explanation: 'The tell is a standard document type with no custom design. A prebuilt analyzer extracts common fields out of the box.',
+        payload: {
+          multi: false,
+          lines: [
+            { id: 'l1', text: 'A custom analyzer with a new field schema', why: 'The team does not want to design a schema, and receipts are a standard type a prebuilt analyzer already covers.' },
+            { id: 'l2', text: 'An image generation model', why: 'Image generation creates pictures.' },
+            { id: 'l3', text: 'A prebuilt analyzer' },
+            { id: 'l4', text: 'A provisioned throughput deployment', why: 'That reserves model capacity and extracts nothing.' }
+          ]
+        },
+        answer: { selected: ['l3'] } }
+    ]
+  },
+
+  {
+    id: 'ai900-dl-cu-2', cert: 'ai900', objective: '2.4', topic: 'Content Understanding',
+    title: 'Extract unusual fields from contracts', estMinutes: 3,
+    scenario: 'Contracts need fields such as <mark>renewal notice period and penalty clause</mark>, which no prebuilt analyzer covers.',
+    pair: 'Prebuilt vs Custom analyzer',
+    family: 'Content Understanding',
+    steps: [
+      { id: 's1', type: 'analyze', points: 1,
+        prompt: 'Select the approach.',
+        explanation: 'The tell is fields no prebuilt analyzer offers. A custom analyzer with your own field schema handles them.',
+        payload: {
+          multi: false,
+          lines: [
+            { id: 'l1', text: 'A prebuilt receipt analyzer with its default fields', why: 'A receipt analyzer extracts receipt fields, not contract terms.' },
+            { id: 'l2', text: 'Azure Speech batch transcription', why: 'Transcription is for audio.' },
+            { id: 'l3', text: 'Key phrase extraction', why: 'Key phrases list topics but don\'t fill defined fields.' },
+            { id: 'l4', text: 'A custom analyzer with its own field schema' }
+          ]
+        },
+        answer: { selected: ['l4'] } }
+    ]
+  },
+
+  {
+    id: 'ai900-dl-cu-3', cert: 'ai900', objective: '2.4', topic: 'Information extraction apps',
+    title: 'Handle a low-confidence field', estMinutes: 3,
+    scenario: 'An extraction app gets <mark>VendorName with a confidence of 0.42</mark> from Content Understanding.',
+    pair: 'Confidence vs Validation',
+    family: 'Content Understanding',
+    steps: [
+      { id: 's1', type: 'analyze', points: 1,
+        prompt: 'Select what the app should do.',
+        explanation: 'The tell is a low confidence score. The value may be wrong, so it should go to a person for review before it is used.',
+        payload: {
+          multi: false,
+          lines: [
+            { id: 'l1', text: 'Send it for human review' },
+            { id: 'l2', text: 'Accept it because a value was returned', why: 'A returned value can still be wrong.' },
+            { id: 'l3', text: 'Delete the field from the schema', why: 'The field is still needed; only this value is uncertain.' },
+            { id: 'l4', text: 'Raise the temperature and retry', why: 'Temperature is a chat setting and doesn\'t fix extraction confidence.' }
+          ]
+        },
+        answer: { selected: ['l1'] } }
+    ]
+  },
+
+  {
+    id: 'ai900-dl-cu-4', cert: 'ai900', objective: '2.4', topic: 'Information extraction apps',
+    title: 'Catch an impossible extracted value', estMinutes: 3,
+    scenario: 'Content Understanding returns <mark>InvoiceDate (string field): 2026-09-31</mark> with high confidence.',
+    pair: 'Confidence vs Validation',
+    family: 'Content Understanding',
+    steps: [
+      { id: 's1', type: 'analyze', points: 1,
+        prompt: 'Select what the app should do.',
+        explanation: 'The tell is a value that breaks a real-world rule. September has 30 days, so validation should flag it even though confidence is high.',
+        payload: {
+          multi: false,
+          lines: [
+            { id: 'l1', text: 'Save it, because confidence is high', why: 'High confidence doesn\'t make an impossible date valid.' },
+            { id: 'l2', text: 'Flag it, because the date does not exist' },
+            { id: 'l3', text: 'Lower the confidence threshold so it passes', why: 'The confidence is already high. The problem is a date that does not exist, not the threshold.' },
+            { id: 'l4', text: 'Move the deployment to another region', why: 'Region has nothing to do with the value.' }
+          ]
+        },
+        answer: { selected: ['l2'] } }
+    ]
+  },
+
+  {
+    id: 'ai900-dl-cu-5', cert: 'ai900', objective: '2.4', topic: 'Content Understanding',
+    title: 'Pull structure out of recorded calls', estMinutes: 3,
+    scenario: 'A support team wants each recorded call turned into fields: <mark>caller intent, product mentioned and outcome</mark>.',
+    pair: 'Language vs Speech vs Content Understanding',
+    family: 'Foundry tools by workload',
+    steps: [
+      { id: 's1', type: 'analyze', points: 1,
+        prompt: 'Select the tool.',
+        explanation: 'The tell is structured fields from audio. Content Understanding can analyse audio and return the fields you define.',
+        payload: {
+          multi: false,
+          lines: [
+            { id: 'l1', text: 'Text to speech', why: 'Text to speech produces audio rather than analysing it.' },
+            { id: 'l2', text: 'Image classification', why: 'Image classification labels pictures.' },
+            { id: 'l3', text: 'Content Understanding on the audio' },
+            { id: 'l4', text: 'A text-only chat model with no audio input', why: 'A text-only model cannot process the recordings.' }
+          ]
+        },
+        answer: { selected: ['l3'] } }
+    ]
+  },
+
+  {
+    id: 'ai900-dl-cu-6', cert: 'ai900', objective: '2.4', topic: 'Information extraction apps',
+    title: 'Put an extraction app\'s flow in order', estMinutes: 4,
+    scenario: 'A finance team is building an app that puts invoice fields into its accounting system.',
+    steps: [
+      { id: 's1', type: 'order', points: 1,
+        prompt: 'Put the steps in order.',
+        explanation: 'Define what to extract first, then analyze each invoice, check confidence and validate the values, and only then save them.',
+        payload: { items: [
+          { id: 'o2', label: 'Analyze each new invoice' },
+          { id: 'o4', label: 'Save the approved fields to the accounting system' },
+          { id: 'o1', label: 'Define the field schema' },
+          { id: 'o3', label: 'Check confidence and validate the values' }
+        ] },
+        answer: { correctOrder: ['o1', 'o2', 'o3', 'o4'] } }
+    ]
+  },
+
+  {
+    id: 'ai900-dl-cu-7', cert: 'ai900', objective: '2.4', topic: 'Content Understanding',
+    title: 'Match each input to what can be extracted', estMinutes: 4,
+    scenario: 'A media company is planning Content Understanding analyzers for different content.',
+    pair: 'Content Understanding modalities',
+    family: 'Content Understanding',
     steps: [
       { id: 's1', type: 'match', points: 1,
-        prompt: 'Pair each term with its meaning.',
-        explanation: 'A prompt is the input instructions given to the model; a completion is the generated output; a token is a chunk of text the model processes; a large language model generates language from learned patterns; grounding supplies external data so answers reflect a specific source.',
+        prompt: 'Match each content type to a fitting extraction.',
+        explanation: 'Content Understanding works across documents, images, audio and video, returning fields you define for each.',
         payload: {
           left: [
-            { id: 'prompt', label: 'Prompt' },
-            { id: 'completion', label: 'Completion' },
-            { id: 'token', label: 'Token' },
-            { id: 'llm', label: 'Large language model' },
-            { id: 'grounding', label: 'Grounding' }
+            { id: 'a1', label: 'Scanned contract PDF' },
+            { id: 'a2', label: 'Product photo' },
+            { id: 'a3', label: 'Recorded sales call' },
+            { id: 'a4', label: 'Training video' }
           ],
           right: [
-            { id: 'dinput', label: 'The input instructions and context given to the model' },
-            { id: 'doutput', label: 'The text the model generates in response' },
-            { id: 'dchunk', label: 'A chunk of text the model processes as a unit' },
-            { id: 'dgen', label: 'A model that generates language from learned patterns' },
-            { id: 'dground', label: 'Supplying external data so answers reflect a specific source' }
+            { id: 'b2', label: 'Product type and colour' },
+            { id: 'b4', label: 'Chapters with timestamps' },
+            { id: 'b1', label: 'Parties, dates and notice period' },
+            { id: 'b3', label: 'Transcript plus customer intent' }
           ]
         },
-        answer: { pairs: { prompt: 'dinput', completion: 'doutput', token: 'dchunk', llm: 'dgen', grounding: 'dground' } } }
+        answer: { pairs: { a1: 'b1', a2: 'b2', a3: 'b3', a4: 'b4' } } }
+    ]
+  },
+
+  {
+    id: 'ai900-dl-rai-6', cert: 'ai900', objective: '1.1', topic: 'Responsible generative AI',
+    title: 'Pick the user experience mitigation', estMinutes: 3,
+    scenario: 'A team is listing safety mitigations for its generative AI app and wants one that belongs in the <mark>user experience layer</mark>.',
+    pair: 'Safety layers',
+    family: 'Responsible AI principles',
+    steps: [
+      { id: 's1', type: 'analyze', points: 1,
+        prompt: 'Select the user experience mitigation.',
+        explanation: 'The tell is the user experience layer. Telling users the answers are AI-generated and may be wrong is part of how the app presents AI output responsibly.',
+        payload: {
+          multi: false,
+          lines: [
+            { id: 'l1', text: 'Block harmful prompts before they reach the model', why: 'Screening prompts is the job of guardrails in the safety system layer.' },
+            { id: 'l2', text: 'Pick the model with the best safety evaluation', why: 'Model selection sits in the model layer.' },
+            { id: 'l3', text: 'Instruct the model to cite its sources', why: 'Instructions to the model sit in the system message and grounding layer.' },
+            { id: 'l4', text: 'Show a notice that answers are AI-generated and can be wrong' }
+          ]
+        },
+        answer: { selected: ['l4'] } }
+    ]
+  },
+
+  {
+    id: 'ai900-dl-rai-7', cert: 'ai900', objective: '1.1', topic: 'Responsible generative AI',
+    title: 'Sort mitigations into Microsoft\'s layers', estMinutes: 4,
+    scenario: 'A team has collected mitigations for its generative AI app and needs to file each one under the right layer.',
+    pair: 'Safety layers',
+    family: 'Responsible AI principles',
+    steps: [
+      { id: 's1', type: 'categorize', points: 1,
+        prompt: 'Sort each mitigation into its layer.',
+        explanation: 'Model layer = which model you choose. Safety system = guardrails. System message and grounding = instructions and data in the prompt. User experience = how the app presents AI to people.',
+        payload: {
+          items: [
+            { id: 'i1', label: 'Choose a model fine-tuned for safety' },
+            { id: 'i2', label: 'Turn on guardrails for prompts and responses' },
+            { id: 'i3', label: 'Tell the model to answer only from supplied documents' },
+            { id: 'i4', label: 'Label answers as AI-generated with a feedback button' }
+          ],
+          buckets: [
+            { id: 'k1', label: 'Model' },
+            { id: 'k2', label: 'Safety system' },
+            { id: 'k3', label: 'System message and grounding' },
+            { id: 'k4', label: 'User experience' }
+          ]
+        },
+        answer: { map: { i1: 'k1', i2: 'k2', i3: 'k3', i4: 'k4' } } }
+    ]
+  },
+
+  {
+    id: 'ai900-dl-app-12', cert: 'ai900', objective: '2.1', topic: 'Foundry SDK chat clients',
+    title: 'Keep a key out of source code', estMinutes: 3,
+    scenario: 'A Python app has its API key typed <mark>directly into the code</mark>, which is stored in a shared repository.',
+    pair: 'Keys vs Identity',
+    family: 'Generative AI apps & agents',
+    steps: [
+      { id: 's1', type: 'analyze', points: 1,
+        prompt: 'Select the better practice.',
+        explanation: 'The tell is a secret in source control. Load it from configuration such as environment variables or Key Vault, or use Microsoft Entra ID instead of keys.',
+        payload: {
+          multi: false,
+          lines: [
+            { id: 'l1', text: 'Encode it in Base64 in the code', why: 'Base64 is encoding, not protection, and it is still in the repository.' },
+            { id: 'l2', text: 'Load it from configuration or use Entra ID' },
+            { id: 'l3', text: 'Put it in the system message', why: 'Prompts are sent to the model and can be logged or echoed back, so they are no place for a secret.' },
+            { id: 'l4', text: 'Move it to a config file committed to the repo', why: 'A committed config file is still in source control for anyone to read.' }
+          ]
+        },
+        answer: { selected: ['l2'] } }
+    ]
+  },
+
+  {
+    id: 'ai900-dl-text-4', cert: 'ai900', objective: '2.2', topic: 'Azure Language',
+    title: 'Separate opinions about different features', estMinutes: 3,
+    scenario: 'A review says <mark>\'The battery life is poor but the screen is great\'</mark>, and the team wants separate sentiment for the battery and the screen.',
+    pair: 'Sentiment vs Opinion mining',
+    family: 'Azure Language features',
+    steps: [
+      { id: 's1', type: 'analyze', points: 1,
+        prompt: 'Select the feature.',
+        explanation: 'The tell is sentiment per aspect within one sentence. Opinion mining links each opinion to the thing it is about.',
+        payload: {
+          multi: false,
+          lines: [
+            { id: 'l1', text: 'Language detection', why: 'Language detection names the language.' },
+            { id: 'l2', text: 'Key phrase extraction', why: 'Key phrases list topics without opinions.' },
+            { id: 'l3', text: 'Opinion mining' },
+            { id: 'l4', text: 'Summarization', why: 'Summarization shortens the text.' }
+          ]
+        },
+        answer: { selected: ['l3'] } }
+    ]
+  },
+
+  {
+    id: 'ai900-dl-app-13', cert: 'ai900', objective: '2.1', topic: 'Agent tools',
+    title: 'Match each need to the agent capability', estMinutes: 4,
+    scenario: 'A team is configuring a Microsoft Foundry agent for its finance and support staff.',
+    pair: 'Code interpreter vs File search',
+    family: 'Agent tools',
+    steps: [
+      { id: 's1', type: 'match', points: 1,
+        prompt: 'Match each need to the agent capability that handles it.',
+        explanation: 'Calculations on files = code interpreter. Answers from your own uploaded documents = file search. Current public information = web search. What the agent must refuse = its instructions.',
+        payload: {
+          left: [
+            { id: 'a1', label: 'Calculate totals and averages from an uploaded spreadsheet' },
+            { id: 'a2', label: 'Answer questions from the company\'s uploaded PDF manuals' },
+            { id: 'a3', label: 'Answer questions about today\'s public announcements' },
+            { id: 'a4', label: 'Decline questions about colleagues\' salaries' }
+          ],
+          right: [
+            { id: 'b2', label: 'File search' },
+            { id: 'b4', label: 'The agent\'s instructions' },
+            { id: 'b1', label: 'Code interpreter' },
+            { id: 'b3', label: 'Web search' }
+          ]
+        },
+        answer: { pairs: { a1: 'b1', a2: 'b2', a3: 'b3', a4: 'b4' } } }
+    ]
+  },
+
+  {
+    id: 'ai900-dl-speech-5', cert: 'ai900', objective: '2.2', topic: 'Azure Speech',
+    title: 'Match each requirement to the Azure Speech capability', estMinutes: 4,
+    scenario: 'A contact centre lists four speech requirements for its Azure Speech rollout.',
+    pair: 'Batch vs Real-time',
+    family: 'Azure Speech features',
+    steps: [
+      { id: 's1', type: 'match', points: 1,
+        prompt: 'Match each requirement to the capability that meets it.',
+        explanation: 'Stored files at volume = batch transcription. Pace, pauses and emphasis in spoken output = SSML. Who said what = speaker diarization. Spoken English shown as French text = speech translation.',
+        payload: {
+          left: [
+            { id: 'a1', label: 'Transcribe thousands of stored recordings overnight' },
+            { id: 'a2', label: 'Read balances aloud more slowly with pauses' },
+            { id: 'a3', label: 'Label which person said each part of a meeting' },
+            { id: 'a4', label: 'Show a presenter\'s English speech as French text' }
+          ],
+          right: [
+            { id: 'b3', label: 'Speaker diarization' },
+            { id: 'b1', label: 'Batch transcription' },
+            { id: 'b4', label: 'Speech translation' },
+            { id: 'b2', label: 'SSML (Speech Synthesis Markup Language)' }
+          ]
+        },
+        answer: { pairs: { a1: 'b1', a2: 'b2', a3: 'b3', a4: 'b4' } } }
+    ]
+  },
+
+  {
+    id: 'ai900-dl-work-9', cert: 'ai900', objective: '1.3', topic: 'Text analysis',
+    title: 'Match each request to the text analysis technique', estMinutes: 4,
+    scenario: 'A media company has four requests for analysing its articles and reader comments.',
+    pair: 'Entities vs Key phrases',
+    family: 'Azure Language features',
+    steps: [
+      { id: 's1', type: 'match', points: 1,
+        prompt: 'Match each request to the technique that fits.',
+        explanation: 'Categorised people, companies and places = named entity recognition. Main talking points = key phrases. Personal data to hide = PII detection. Positive or negative tone = sentiment analysis.',
+        payload: {
+          left: [
+            { id: 'a1', label: 'Tag each article with the people, companies and places it mentions' },
+            { id: 'a2', label: 'List the main talking points in each reader review' },
+            { id: 'a3', label: 'Hide phone numbers and emails before comments are published' },
+            { id: 'a4', label: 'Flag comments with a negative tone for moderators' }
+          ],
+          right: [
+            { id: 'b4', label: 'Sentiment analysis' },
+            { id: 'b2', label: 'Key phrase extraction' },
+            { id: 'b1', label: 'Named entity recognition' },
+            { id: 'b3', label: 'PII detection' }
+          ]
+        },
+        answer: { pairs: { a1: 'b1', a2: 'b2', a3: 'b3', a4: 'b4' } } }
+    ]
+  },
+
+  {
+    id: 'ai900-dl-vision-6', cert: 'ai900', objective: '2.3', topic: 'Visual input',
+    title: 'Write alt text for product photos', estMinutes: 3,
+    scenario: 'An online shop wants a <mark>one-sentence description of what each product photo shows</mark> to use as alt text.',
+    pair: 'Multimodal vs OCR',
+    family: 'Vision & image models',
+    steps: [
+      { id: 's1', type: 'analyze', points: 1,
+        prompt: 'Select the approach.',
+        explanation: 'The tell is a natural-language description of the whole scene. A multimodal model can look at the image and write the sentence.',
+        payload: {
+          multi: false,
+          lines: [
+            { id: 'l1', text: 'Run optical character recognition', why: 'OCR returns any text in the photo, not a description of what it shows.' },
+            { id: 'l2', text: 'Ask a multimodal model to describe each photo' },
+            { id: 'l3', text: 'Run object detection', why: 'Object detection returns boxes and labels, not a readable sentence.' },
+            { id: 'l4', text: 'Generate a new image from the product name', why: 'Generating a new image does not describe the existing photo.' }
+          ]
+        },
+        answer: { selected: ['l2'] } }
+    ]
+  },
+
+  {
+    id: 'ai900-dl-vision-7', cert: 'ai900', objective: '2.3', topic: 'Image generation',
+    title: 'Get images that match the brand style', estMinutes: 3,
+    scenario: 'Generated marketing images keep coming back in <mark>random styles that don\'t match the brand</mark>. The prompt is just \'a coffee cup\'.',
+    pair: 'Prompt vs Size setting',
+    family: 'Vision & image models',
+    steps: [
+      { id: 's1', type: 'analyze', points: 1,
+        prompt: 'Select the most effective change.',
+        explanation: 'The tell is a vague prompt producing off-brand results. Describing the style, subject, lighting and composition steers the model toward what the brand needs.',
+        payload: {
+          multi: false,
+          lines: [
+            { id: 'l1', text: 'Request a larger image size', why: 'A larger size gives more pixels but the same off-brand style.' },
+            { id: 'l2', text: 'Generate more images per request', why: 'More images from the same vague prompt are just more random styles.' },
+            { id: 'l3', text: 'Switch to an embeddings model', why: 'Embeddings models do not generate images.' },
+            { id: 'l4', text: 'Describe the style, lighting and composition in the prompt' }
+          ]
+        },
+        answer: { selected: ['l4'] } }
     ]
   }
 ];
