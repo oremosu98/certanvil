@@ -893,8 +893,8 @@ test('v4.73.0 structure: TARGET_ACC=0.80 in what-if simulation',
   /TARGET_ACC\s*=\s*0\.80/.test(js));
 test('v4.73.0 structure: CI scaled to 90% via 1.645 sigma factor',
   /ciHalfWidth\s*\/\s*1\.645/.test(js));
-test('v4.73.0 structure: CI clamped to [15, 100] range',
-  /Math\.max\(15,\s*Math\.min\(100,\s*Math\.round\(ciHalfWidth\)\)\)/.test(js));
+test('v4.73.0 structure: CI clamped to [15, 100] band points (v8.128.0: scaled by the cert band)',
+  /Math\.max\(Math\.round\(15 \* _bandK\),\s*Math\.min\(Math\.round\(100 \* _bandK\),\s*Math\.round\(ciHalfWidth \* _bandK\)\)\)/.test(js));
 test('v4.73.0 structure: targetGap = max(0, EXAM_PASS_SCORE - lowerBound)',
   /targetGap\s*=\s*Math\.max\(0,\s*EXAM_PASS_SCORE\s*-\s*lowerBound\)/.test(js));
 

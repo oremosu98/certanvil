@@ -86,7 +86,7 @@ test('v4.99.3 gate: shows quota-exceeded modal when blocked',
 test('v4.99.3 gate: startQuiz protected',
   /async function startQuiz[\s\S]{0,200}_gateActivityForQuota/.test(js));
 test('v4.99.3 gate: startExam protected',
-  /async function startExam[\s\S]{0,420}_gateActivityForQuota/.test(js));  // window 200→420: v7.46.0 _gateProOnly now precedes the quota gate
+  /async function startExam[\s\S]{0,560}_gateActivityForQuota/.test(js));  // window 200→420: v7.46.0 _gateProOnly precedes the quota gate; →560 v8.128.0 per-cert upsell copy
 // v4.99.4: drill entry points now use _gateProOnly (drills are Pro-only).
 // Quizzes (startQuiz/startExam) still use _gateActivityForQuota (20/day quota).
 test('v4.99.4 ProOnly: _gateProOnly helper defined',

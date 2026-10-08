@@ -52,6 +52,7 @@ window.CERT_PACKS.clfc02 = {
     blueprintUrl: 'https://d1.awsstatic.com/training-and-certification/docs-cloud-practitioner/AWS-Certified-Cloud-Practitioner_Exam-Guide.pdf',
     examPassScore: 700,         // CLF-C02 official pass: 700/1000 (scaled).
     examMaxScore: 1000,         // scaled-score ceiling
+    examMinScore: 100,           // v8.128.0: scaled-score floor (AWS reports 100-1000)
     examQuestionCount: 65,      // 65 questions (50 scored + 15 unscored).
     examTimeSeconds: 5400,      // 90-minute timer.
   },

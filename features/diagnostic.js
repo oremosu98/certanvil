@@ -474,18 +474,20 @@
     }
     const accPct = accNormalized * 100;
 
-    // Predicted score on the 420-870 scale matches getReadinessScore math.
+    // Predicted score on the cert's readiness band (420-870 on CompTIA) matches getReadinessScore math.
     // Diagnostic is single-domain-spread so we apply a slight regression-to-
     // mean penalty (multiply by 0.95) — 20 questions can't out-predict 200.
-    const predicted = Math.round(420 + (accPct / 100) * 450 * 0.95);
+    const _bandW = READINESS_BAND[1] - READINESS_BAND[0];
+    const predicted = Math.round(READINESS_BAND[0] + (accPct / 100) * _bandW * 0.95);
 
     // CI is wide for a 20-Q sample. Mirror the formula in getReadinessScore
     // but assume coverageFactor = 1 (we covered all domains) and recency = 1
     // (just answered them). So sampleWidth dominates: 60/sqrt(1 + 20/50) ≈ 50.
     const sampleWidth = 60 / Math.sqrt(1 + total / 50);
-    const ciHalfWidth = Math.max(20, Math.min(80, Math.round(sampleWidth)));
-    const lowerBound = Math.max(420, predicted - ciHalfWidth);
-    const upperBound = Math.min(870, predicted + ciHalfWidth);
+    const _bandK = _bandW / 450;  // widths are in CompTIA band points
+    const ciHalfWidth = Math.max(Math.round(20 * _bandK), Math.min(Math.round(80 * _bandK), Math.round(sampleWidth * _bandK)));
+    const lowerBound = Math.max(READINESS_BAND[0], predicted - ciHalfWidth);
+    const upperBound = Math.min(READINESS_BAND[1], predicted + ciHalfWidth);
 
     // Pass probability via logistic, same as v4.73.0 widget.
     const sigma = ciHalfWidth / 1.645;
@@ -764,7 +766,7 @@
     const upperPct = Math.round((1 / (1 + Math.exp(-((p.upperBound - EXAM_PASS_SCORE) / (p.ciHalfWidth / 1.645))))) * 100);
     if (rangeEl) rangeEl.textContent = lowerPct + '-' + upperPct + '%';
     const predEl = document.getElementById('pass-plan-predicted-score');
-    if (predEl) predEl.textContent = p.predicted + ' / 870';
+    if (predEl) predEl.textContent = p.predicted + ' / ' + READINESS_BAND[1];
     const dataConfEl = document.getElementById('pass-plan-data-confidence');
     if (dataConfEl) {
       const labels = { low: 'Low — 20 of ~50 questions answered', medium: 'Medium — 50+ questions answered', high: 'High — 80+ questions answered' };
@@ -940,9 +942,9 @@
         && p.seededCount < p.questionCount) {
       return true;
     }
-    // Secondary signature: predicted floored at 420 with non-zero correct count
+    // Secondary signature: predicted floored at the band minimum (420 on CompTIA) with non-zero correct count
     // (the Pass Plan thought you got 0% but your raw correct says otherwise)
-    if (typeof p.predicted === 'number' && p.predicted === 420
+    if (typeof p.predicted === 'number' && p.predicted === READINESS_BAND[0]
         && typeof p.correctCount === 'number' && p.correctCount > 0) {
       return true;
     }

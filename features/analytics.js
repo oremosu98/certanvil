@@ -383,7 +383,7 @@
     // Build a single SVG path per series + dots. viewBox 960x220, padding 50.
     const W = 960, H = 220, PAD = 50;
     const innerW = W - 2 * PAD, innerH = H - 2 * PAD;
-    const passPct = (EXAM_PASS_SCORE - 420) / 450 * 100; // ~66.67 on 420-870 scale
+    const passPct = readinessBarPct(EXAM_PASS_SCORE); // v8.128.0: position on the cert's readiness band
     const passYRaw = 72; // 72% raw accuracy ~= pass mark heuristic used in prototype
     const yOf = (p) => PAD + (1 - p / 100) * innerH;
     const xOf = (i, n) => PAD + (n > 1 ? (i / (n - 1)) * innerW : innerW / 2);
@@ -580,10 +580,10 @@
     const { predicted, domainAccuracy } = readiness;
     let tier, tierColor, tierBg;
     if (predicted >= EXAM_PASS_SCORE)      { tier = 'Exam Ready';   tierColor = 'var(--green)';  tierBg = 'rgba(34,197,94,.12)'; }
-    else if (predicted >= 650) { tier = 'Getting Close'; tierColor = 'var(--orange)'; tierBg = 'rgba(251,146,60,.12)'; }
-    else if (predicted >= 500) { tier = 'Building';     tierColor = 'var(--yellow)'; tierBg = 'rgba(251,191,36,.12)'; }
+    else if (predicted >= READINESS_CLOSE) { tier = 'Getting Close'; tierColor = 'var(--orange)'; tierBg = 'rgba(251,146,60,.12)'; }
+    else if (predicted >= READINESS_BUILDING) { tier = 'Building';     tierColor = 'var(--yellow)'; tierBg = 'rgba(251,191,36,.12)'; }
     else                       { tier = 'Not Ready';    tierColor = 'var(--red)';    tierBg = 'rgba(248,113,113,.12)'; }
-    const barPct = Math.max(0, Math.min(100, ((predicted - 420) / 450) * 100));
+    const barPct = readinessBarPct(predicted);
 
     // v4.46.0: merged date + countdown chip (built via shared _buildExamDateChipHtml)
     const dateChip = _buildExamDateChipHtml(examDateStr, daysToExam, 'ana-exam-date-input');
@@ -591,7 +591,7 @@
     // v4.46.0: PASS tick on the readiness bar. Bar scale is 420–870 (range 450),
     // pass is 720, so tick sits at (720-420)/450 = 66.67%. Pedagogically important:
     // users see at a glance how far past (or short of) the pass mark they are.
-    const passTickPct = ((EXAM_PASS_SCORE - 420) / 450) * 100;
+    const passTickPct = readinessBarPct(EXAM_PASS_SCORE);  // v8.128.0: cert's band, not 420-870
 
     // v4.46.0: Domain rows — tier-anchored color dots (matches Domain Mastery
     // thresholds 55/70/80; v4.85.11 lowered Mastered 85→80), weight as subtle
@@ -685,7 +685,7 @@
         <div class="ana-ready-score-block">
           <div class="ana-ready-num-wrap">
             <span class="ana-ready-num" style="color:${tierColor}">${predicted}</span>
-            <span class="ana-ready-denom">/ 900</span>
+            <span class="ana-ready-denom">/ ${EXAM_MAX_SCORE}</span>
           </div>
           <div class="ana-ready-badge" style="background:${tierBg};color:${tierColor}">${tier}</div>
         </div>
@@ -696,8 +696,8 @@
             <div class="ana-ready-bar-passlabel" style="left:${passTickPct}%" aria-hidden="true">${EXAM_PASS_SCORE} PASS</div>
           </div>
           <div class="ana-ready-bar-scale" aria-hidden="true">
-            <span>420</span>
-            <span>870</span>
+            <span>${READINESS_BAND[0]}</span>
+            <span>${READINESS_BAND[1]}</span>
           </div>
         </div>
       </div>
@@ -827,7 +827,7 @@
         <div>
           <div class="why-eyebrow">Score breakdown</div>
           <h3 class="why-title">Why you're at <em>${r.predicted}</em></h3>
-          <div class="why-sub">CompTIA-blueprinted. 4 components contribute to your 100-900 scaled score.</div>
+          <div class="why-sub">Built on the ${CERT_CODE} blueprint. Four things feed your ${EXAM_MIN_SCORE}-${EXAM_MAX_SCORE} scaled score.</div>
         </div>
         ${gap > 0 ? `<div class="why-gap-pill">${gap} pts to pass · ~5-10 min/day</div>` : `<div class="why-gap-pill is-passing">Above the pass line · keep it up</div>`}
       </div>
@@ -1063,7 +1063,7 @@
       ${_edCardhead('Exams \u00b7 scaled scores over time', 'Exam', 'history.')}
       <div class="ana-exams">
         ${exams.map(e => {
-          const scaled = Math.round(100 + (e.score / e.total) * 800);
+          const scaled = scaledExamScore(e.score, e.total);  // v8.128.0: cert scale
           const pass = scaled >= EXAM_PASS_SCORE;
           const date = new Date(e.date).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'2-digit'});
           return `<div class="ana-exam-row">
@@ -1206,9 +1206,6 @@
     return out;
   }
 
-  // v4.85.7: extracted from _renderAnaDomainMastery() — renders a single row.
-  // Either the unstudied "Not started" state or the active progress bar with
-  // tier badge + drill button. Pure HTML out.
   // v7.14.0 — Domain Mastery reveal + expand (locked in the combined studio).
   // Reveal on load: bars un-arm from 0 (CSS --dm-fill var + the base 800ms width
   // transition), the % counts up, the tier badge pops, and mastered bars flash as
@@ -1299,94 +1296,6 @@
     }));
   }
 
-  function _renderAnaDomainMasteryRow(d, data, tierInfo) {
-    if (data.t === 0) {
-      return `<div class="dm-row dm-row-unstudied" style="--dm-accent:${d.color}">
-        <div class="dm-row-head">
-          <div class="dm-row-label"><span class="dm-dot"></span><span class="dm-row-text"><span class="dm-row-name">${d.label}</span><span class="dm-row-weight">${d.weight}% of exam</span></span></div>
-          <div class="dm-row-badge dm-badge-unstudied">Not started</div>
-        </div>
-        <div class="dm-bar-wrap">
-          <div class="dm-bar-track"><div class="dm-bar-target" style="left:80%" title="80% mastery threshold"></div></div>
-          <div class="dm-bar-pct dm-bar-pct-empty">—</div>
-        </div>
-        <div class="dm-row-foot">
-          <span class="dm-row-stats">No questions answered yet</span>
-          <button class="dm-drill-btn" onclick="drillDomain('${d.id}')">Start drilling →</button>
-        </div>
-      </div>`;
-    }
-    const pct = Math.round((data.c / data.t) * 100);
-    const tier = tierInfo(pct);
-    return `<div class="dm-row" style="--dm-accent:${d.color}" data-pct="${pct}">
-      <div class="dm-row-head">
-        <div class="dm-row-label"><span class="dm-dot"></span><span class="dm-row-text"><span class="dm-row-name">${d.label}</span><span class="dm-row-weight">${d.weight}% of exam</span></span></div>
-        <div class="dm-row-badge ${tier.cls}">${tier.label}</div>
-      </div>
-      <div class="dm-bar-wrap">
-        <div class="dm-bar-track">
-          <div class="dm-bar-fill" style="--dm-fill:${Math.min(pct, 100)}%"></div>
-          <div class="dm-bar-target" style="left:80%" title="80% mastery threshold"></div>
-        </div>
-        <div class="dm-bar-pct">${pct}%</div>
-      </div>
-      <div class="dm-row-foot">
-        <span class="dm-row-stats">${data.c} correct of ${data.t} attempts</span>
-        <button class="dm-drill-btn" onclick="drillDomain('${d.id}')">${pct >= 80 ? 'Review →' : 'Drill weakest →'}</button>
-      </div>
-    </div>`;
-  }
-
-  // drill button that fires focusTopic() on the weakest topic within that
-  // domain. Unstudied domains get a "Not started" state with a prompt.
-  function _renderAnaDomainMastery(h) {
-    const domains = [
-      { id: 'concepts',        label: '1.0 Networking Concepts',     weight: 23, color: 'oklch(0.50 0.155 55)' },
-      { id: 'implementation',  label: '2.0 Network Implementation',  weight: 20, color: '#22c55e' },
-      { id: 'operations',      label: '3.0 Network Operations',      weight: 19, color: '#3b82f6' },
-      { id: 'security',        label: '4.0 Network Security',        weight: 14, color: '#f59e0b' },
-      { id: 'troubleshooting', label: '5.0 Network Troubleshooting', weight: 24, color: '#ef4444' }
-    ];
-    // v4.57.5: per-domain pct computation extracted to shared helper so Domain
-    // Mastery and Readiness hero Domain Breakdown stay in sync. byDomain {c,t}
-    // is kept here because this card's "Not started" empty-state and tier counts
-    // need the raw totals, not just the pct.
-    const byDomain = { concepts: {c:0,t:0}, implementation: {c:0,t:0}, operations: {c:0,t:0}, security: {c:0,t:0}, troubleshooting: {c:0,t:0} };
-    h.forEach(e => {
-      if (!e.topic || e.topic === MIXED_TOPIC || e.topic === EXAM_TOPIC) return;
-      const d = TOPIC_DOMAINS[e.topic];
-      if (!d || !byDomain[d]) return;
-      byDomain[d].c += e.score;
-      byDomain[d].t += e.total;
-    });
-
-    const hasAny = domains.some(d => byDomain[d.id].t > 0);
-    if (!hasAny) return '';
-
-    // v4.45.1 — tier thresholds shifted after user dispute. Originally 60/75/85
-    // (even 15-pt bands above Novice) but that put users who'd likely pass the
-    // real CompTIA exam (70-75% raw accuracy) into "Developing," which is
-    // psychologically wrong — 70% is refining, not still-learning-fundamentals.
-    // v4.45.1 set thresholds 55/70/85; v4.85.11 lowered Mastered 85→80 (user
-    // request — 85% felt aspirational to the point of unreachable; 80% still
-    // exceeds the real CompTIA pass equivalent (~70-75%) but is achievable
-    // through normal practice instead of needing perfect runs).
-    const tierInfo = (pct) => {
-      if (pct >= 80) return { label: 'Mastered',   cls: 'dm-badge-mastered' };
-      if (pct >= 70) return { label: 'Proficient', cls: 'dm-badge-proficient' };
-      if (pct >= 55) return { label: 'Developing', cls: 'dm-badge-developing' };
-      return           { label: 'Novice',     cls: 'dm-badge-novice' };
-    };
-
-    return `<div class="ana-card ana-card-dm" id="ana-s-domain-mastery">
-      <h3>DOMAIN MASTERY</h3>
-      <div class="ana-subtitle">How close each ${CERT_CODE} domain is to the 80% mastery threshold</div>
-      <div class="dm-list">
-        ${domains.map(d => _renderAnaDomainMasteryRow(d, byDomain[d.id], tierInfo)).join('')}
-      </div>
-      <div class="dm-footer">Weights from the official ${CERT_CODE} exam blueprint.</div>
-    </div>`;
-  }
   // ══════════════════════════════════════════
   // v4.54.2 — KNOWLEDGE CONSTELLATION (Analytics)
   // ══════════════════════════════════════════
@@ -1810,130 +1719,6 @@
     } catch (_) { /* defensive */ }
   }
 
-  // v4.45.0 — replaces the old Question Type Breakdown. Clusters your last 20
-  // wrong answers by signal (negation keywords, dominant domain, PBQ type,
-  // Hard-difficulty concentration) and surfaces top 3-4 patterns with
-  // coaching text + a drill button where action is possible. Fixes the
-  // pattern, not just the topic.
-  function _renderAnaWrongPatterns() {
-    const bank = typeof loadWrongBank === 'function' ? loadWrongBank() : [];
-    if (!bank || bank.length === 0) return '';
-    // Recent-first; take last 20 wrongs
-    const recent = bank.slice().sort((a, b) => new Date(b.addedDate || 0) - new Date(a.addedDate || 0)).slice(0, 20);
-    if (recent.length === 0) return '';
-
-    const negationRe = /\b(NOT|EXCEPT|CANNOT|NEVER|LEAST|WORST)\b/i;
-    const domainLabels = {
-      concepts:        '1.0 Networking Concepts',
-      implementation:  '2.0 Network Implementation',
-      operations:      '3.0 Network Operations',
-      security:        '4.0 Network Security',
-      troubleshooting: '5.0 Network Troubleshooting'
-    };
-
-    let negationCount = 0;
-    const domainCount = {};
-    const typeCount = {};
-    let hardCount = 0;
-
-    recent.forEach(w => {
-      if (w.question && negationRe.test(w.question)) negationCount++;
-      const d = TOPIC_DOMAINS[w.topic];
-      if (d) domainCount[d] = (domainCount[d] || 0) + 1;
-      if (w.type && w.type !== 'mcq') typeCount[w.type] = (typeCount[w.type] || 0) + 1;
-      if ((w.difficulty || '').toLowerCase().includes('hard')) hardCount++;
-    });
-
-    const patterns = [];
-    const total = recent.length;
-    const pctStr = (n) => Math.round((n / total) * 100) + '%';
-
-    if (negationCount >= 3) {
-      patterns.push({
-        icon: '\ud83c\udfaf',
-        title: 'NEGATION TRAPS',
-        count: negationCount,
-        pctStr: pctStr(negationCount),
-        desc: `Questions containing <strong>NOT / EXCEPT / CANNOT</strong> tripped you up. You're reading past the trap word. These are highlighted in <strong>bold purple</strong> on the question stem \u2014 slow down when you see one.`,
-        drillBtn: null,
-        accent: '#ef4444'
-      });
-    }
-
-    // Dominant domain cluster
-    const domEntries = Object.entries(domainCount).sort((a, b) => b[1] - a[1]);
-    if (domEntries.length > 0 && domEntries[0][1] >= 3) {
-      const [dId, count] = domEntries[0];
-      const label = domainLabels[dId] || dId;
-      patterns.push({
-        icon: '\ud83c\udff7\ufe0f',
-        title: 'DOMAIN \u2014 ' + label.toUpperCase(),
-        count: count,
-        pctStr: pctStr(count),
-        desc: `${count} of your last ${total} wrongs cluster in this ${CERT_CODE} domain. Focused drilling here will tighten the weakest block of your readiness score.`,
-        drillBtn: { label: 'Drill ' + label.split(' ').slice(1).join(' ') + ' \u2192', onclick: `drillDomain('${dId}')` },
-        accent: '#f59e0b'
-      });
-    }
-
-    // Multi-select concentration (PBQ structure issues)
-    const msCount = typeCount['multi-select'] || 0;
-    if (msCount >= 2) {
-      patterns.push({
-        icon: '\ud83e\udd39',
-        title: 'MULTI-SELECT (\u201cCHOOSE TWO\u201d)',
-        count: msCount,
-        pctStr: pctStr(msCount),
-        desc: `You're picking the first correct answer but missing the second. Read <em>every</em> option before submitting \u2014 "Choose TWO" means don't stop at one.`,
-        drillBtn: null,
-        accent: '#8b5cf6'
-      });
-    }
-
-    // Hard-difficulty concentration
-    if (hardCount >= 4) {
-      patterns.push({
-        icon: '\ud83d\udd25',
-        title: 'HARD-DIFFICULTY CONCENTRATION',
-        count: hardCount,
-        pctStr: pctStr(hardCount),
-        desc: `Many of your recent wrongs are Hard-tier questions. If you're still under 75% on Exam-Level for any domain, drop back to Exam-Level until it's solid before grinding Hard.`,
-        drillBtn: null,
-        accent: '#3b82f6'
-      });
-    }
-
-    if (patterns.length === 0) {
-      return `<div class="ana-card ana-card-wp" id="ana-s-wrong-patterns">
-        ${_edCardhead(`Patterns \u00b7 last ${recent.length} mistakes`, 'Wrong-answer', 'patterns.')}
-        <div class="wp-empty">
-          <div class="wp-empty-icon">\u2728</div>
-          <div class="wp-empty-title">No strong pattern yet</div>
-          <div class="wp-empty-body">Your ${recent.length} recent wrong${recent.length === 1 ? '' : 's'} are scattered across domains and question types. That's a good sign \u2014 no single failure mode dominates. Keep drilling and any patterns will surface if they exist.</div>
-        </div>
-      </div>`;
-    }
-
-    return `<div class="ana-card ana-card-wp" id="ana-s-wrong-patterns">
-      ${_edCardhead(`Patterns \u00b7 ${recent.length} recent mistakes`, 'Wrong-answer', 'patterns.')}
-      <div class="ana-subtitle">Clustered by cause. Fix the pattern, not only the topic.</div>
-      <div class="wp-list">
-        ${patterns.slice(0, 4).map((p, i) => `
-          <div class="wp-pattern" style="--wp-accent:${p.accent}">
-            <div class="wp-pattern-head">
-              <span class="wp-pattern-rank">${i + 1}</span>
-              <span class="wp-pattern-icon" aria-hidden="true">${p.icon}</span>
-              <span class="wp-pattern-title">${p.title}</span>
-              <span class="wp-pattern-count">${p.count} \u00b7 ${p.pctStr}</span>
-            </div>
-            <div class="wp-pattern-desc">${p.desc}</div>
-            ${p.drillBtn ? `<button class="wp-drill-btn" onclick="${p.drillBtn.onclick}">${p.drillBtn.label}</button>` : ''}
-          </div>
-        `).join('')}
-      </div>
-    </div>`;
-  }
-
   function _renderAnaExamVsQuiz(h) {
     // v4.85.20: filter exams to summary entries only (topic === EXAM_TOPIC) so the
     // exam-side avg reflects whole-exam scores, not per-topic split percentages
@@ -2160,23 +1945,23 @@
     const daysToExam = (typeof getDaysToExam === 'function') ? getDaysToExam() : null;
     let tier;
     if (predicted >= PASS)      tier = 'Exam Ready';
-    else if (predicted >= 650)  tier = 'Getting Close';
-    else if (predicted >= 500)  tier = 'Building';
+    else if (predicted >= READINESS_CLOSE)  tier = 'Getting Close';
+    else if (predicted >= READINESS_BUILDING)  tier = 'Building';
     else                        tier = 'Not Ready';
     const pointsToPass = Math.max(0, PASS - predicted);
-    const barPct = Math.max(0, Math.min(100, ((predicted - 420) / 450) * 100));
-    const passTickPct = ((PASS - 420) / 450) * 100;
+    const barPct = readinessBarPct(predicted);
+    const passTickPct = readinessBarPct(PASS);
 
     // Forecast: project a scaled score on current pace from the accuracy-trend
     // regression (getReadinessForecast). currentProj is a projected per-session
-    // pct; map pct→scaled (100 + pct/100*800) and clamp to the 420-870 display
-    // band. Falls back to predicted when the trend is flat / insufficient data.
+    // pct; map pct→scaled on the cert's exam scale and clamp to its readiness
+    // band (v8.128.0; was 100-900 / 420-870 on every cert). Falls back to predicted when the trend is flat / insufficient data.
     let forecast = predicted;
     try {
       const f = (typeof getReadinessForecast === 'function') ? getReadinessForecast() : null;
       if (f && !f.trendFlat && typeof f.currentProj === 'number') {
-        const projScaled = Math.round(100 + (f.currentProj / 100) * 800);
-        forecast = Math.max(420, Math.min(870, Math.max(predicted, projScaled)));
+        const projScaled = scaledExamScore(f.currentProj, 100);
+        forecast = Math.max(READINESS_BAND[0], Math.min(READINESS_BAND[1], Math.max(predicted, projScaled)));
       }
     } catch (_) {}
 
@@ -2356,7 +2141,7 @@
 
     // ── Exam history (full simulations) ──────────────────────────────────────
     const examHistory = h.filter(e => e.mode === 'exam' && e.topic === EXAM_TOPIC).slice(0, 5).map((e, i) => {
-      const scaled = Math.round(100 + (e.score / e.total) * 800);
+      const scaled = scaledExamScore(e.score, e.total);  // v8.128.0: cert scale
       return {
         date: new Date(e.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }),
         label: 'Full exam', pct: e.pct, score: scaled, questions: e.total, mode: 'exam',
@@ -2526,7 +2311,7 @@
             <div class="tile-eyebrow" style="margin:0">Readiness</div>
             <span class="read-tier">${esc(r.tier)}</span>
           </div>
-          <div class="read-score"><span class="big mono" data-cnt="${r.predicted}">0</span><span class="of">/ 900</span></div>
+          <div class="read-score"><span class="big mono" data-cnt="${r.predicted}">0</span><span class="of">/ ${EXAM_MAX_SCORE}</span></div>
           <p class="read-cap"><b>${r.pointsToPass} points</b> to the pass mark. Hold your pace and you cross it.</p>
           <div class="read-bar-wrap">
             <div class="read-bar">

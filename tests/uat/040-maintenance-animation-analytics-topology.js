@@ -817,14 +817,16 @@ test('v8.0.0 wave 2: dg-system.css cache-bust query bumped past 7.99.0',
 console.log('\n\x1b[1m── v4.45.0 ANALYTICS REVAMP ──\x1b[0m');
 // The old heatmap + question-type breakdown are removed. Regression guards
 // ensure they stay gone and the new cards are correctly wired.
-test('v4.45.0: _renderAnaDomainMastery function defined',
-  /function\s+_renderAnaDomainMastery\(h\)/.test(js));
+// v8.128.0: _renderAnaDomainMastery + _renderAnaWrongPatterns had no callers
+// (superseded by the bento tiles) and hard-coded Network+ domains. Tombstoned.
+test('v8.128.0 tombstone: dead Net+-only _renderAnaDomainMastery stays gone',
+  !/function\s+_renderAnaDomainMastery(Row)?\(/.test(js));
 test('v4.45.0: drillDomain helper defined (Domain Mastery drill buttons)',
   /function\s+drillDomain\(domainName\)/.test(js));
 test('v4.45.0: drillDomain calls focusTopic on weakest topic in domain',
   /function\s+drillDomain\(domainName\)[\s\S]*?focusTopic\(target\)/.test(js));
-test('v4.45.0: _renderAnaWrongPatterns function defined',
-  /function\s+_renderAnaWrongPatterns\(\)/.test(js));
+test('v8.128.0 tombstone: dead Net+-only _renderAnaWrongPatterns stays gone',
+  !/function\s+_renderAnaWrongPatterns\(/.test(js));
 // Regression guards: the old functions must stay gone
 test('v4.45.0: old _renderAnaHeatmap is gone (regression guard)',
   !/function\s+_renderAnaHeatmap/.test(js));
@@ -849,8 +851,6 @@ test('v4.45.0: all 4 tier badge CSS classes defined',
   /\.dm-badge-proficient/.test(css) && /\.dm-badge-mastered/.test(css));
 test('v4.45.0: .dm-bar-fill uses 800ms cubic-bezier width transition',
   /\.dm-bar-fill\s*\{[^}]*transition:\s*width\s+800ms\s+cubic-bezier/.test(css));
-test('v4.45.0: .dm-bar-target positioned at 80% (v4.85.11: lowered from 85%)',
-  /style="left:80%"/.test(js) || /left:\s*80%/.test(js));
 test('v4.45.0: .wp-pattern + .wp-pattern-rank + .wp-pattern-count CSS present',
   /\.wp-pattern\s*\{/.test(css) && /\.wp-pattern-rank\s*\{/.test(css) &&
   /\.wp-pattern-count\s*\{/.test(css));
@@ -858,15 +858,7 @@ test('v4.45.0: old .ana-heatmap + .ana-heat-* CSS is gone (regression guard)',
   !/\.ana-heatmap\s*\{/.test(css) && !/\.ana-heat-head/.test(css));
 test('v4.45.0: old .ana-type-list + .ana-type-row CSS is gone (regression guard)',
   !/\.ana-type-list\s*\{/.test(css) && !/\.ana-type-row\s*\{/.test(css));
-// Domain mastery classifier sanity — all 5 domain keys referenced
-test('v4.45.0: Domain Mastery covers all 5 N10-009 domain keys',
-  /id:\s*'concepts'[\s\S]*?id:\s*'implementation'[\s\S]*?id:\s*'operations'[\s\S]*?id:\s*'security'[\s\S]*?id:\s*'troubleshooting'/.test(js));
-// Wrong-pattern classifier sanity — all 4 pattern categories
-test('v4.45.0: Wrong-pattern classifier detects negation, domain, PBQ type, Hard difficulty',
-  js.includes('NEGATION TRAPS') &&
-  js.includes('DOMAIN \\u2014') &&
-  (js.includes('MULTI-SELECT') || js.includes('ORDER / SEQUENCE')) &&
-  js.includes('HARD-DIFFICULTY CONCENTRATION'));
+// v8.128.0: Domain Mastery + Wrong-pattern classifier checks retired with the dead renderers.
 
 // ── v4.45.1 DOMAIN MASTERY TIER THRESHOLD ADJUSTMENT ──
 console.log('\n\x1b[1m── v4.45.1 TIER THRESHOLD ADJUSTMENT ──\x1b[0m');
@@ -878,12 +870,7 @@ console.log('\n\x1b[1m── v4.45.1 TIER THRESHOLD ADJUSTMENT ──\x1b[0m');
 // The `pct >= N) return { label: '...', cls: 'dm-badge-...' }` pattern
 // appears only in tierInfo, so testing against the whole app.js is safe
 // and avoids brace-depth extraction gymnastics.
-test('v4.45.1: Proficient threshold at 70% (was 75%)',
-  /pct\s*>=\s*70\)\s*return\s*\{\s*label:\s*'Proficient'/.test(js));
-test('v4.45.1: Developing / Novice boundary at 55% (was 60%)',
-  /pct\s*>=\s*55\)\s*return\s*\{\s*label:\s*'Developing'/.test(js));
-test('v4.85.11: Mastered threshold lowered to 80% (was 85% per v4.45.1)',
-  /pct\s*>=\s*80\)\s*return\s*\{\s*label:\s*'Mastered'/.test(js));
+// v8.128.0: tier threshold checks retired with _renderAnaDomainMastery (its tierInfo was the only home).
 // Regression guards — old thresholds must stay gone
 test('v4.45.1: old 75% Proficient threshold removed (regression guard)',
   !/pct\s*>=\s*75\)\s*return\s*\{\s*label:\s*'Proficient'/.test(js));
@@ -940,8 +927,8 @@ test('v4.46.0: hero row wrapper (.ana-ready-hero-row)',
   js.includes('class="ana-ready-hero-row"'));
 test('v4.46.0: score denom "/ 900" rendered next to predicted',
   js.includes('class="ana-ready-denom"') && js.includes('/ 900'));
-test('v4.46.0: 720 PASS tick positioned by formula',
-  /passTickPct\s*=\s*\(\(EXAM_PASS_SCORE\s*-\s*420\)\s*\/\s*450\)\s*\*\s*100/.test(js));
+test('v4.46.0: PASS tick positioned on the cert readiness band (v8.128.0: readinessBarPct, was (pass-420)/450)',
+  /passTickPct\s*=\s*readinessBarPct\(EXAM_PASS_SCORE\)/.test(js));
 test('v4.46.0: PASS tick + PASS label elements rendered',
   js.includes('ana-ready-bar-passtick') && js.includes('ana-ready-bar-passlabel'));
 test('v4.46.0: bar scale 420/870 labels rendered', js.includes('ana-ready-bar-scale'));

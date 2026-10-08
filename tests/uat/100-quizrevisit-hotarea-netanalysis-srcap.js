@@ -1734,7 +1734,7 @@ test('v4.81.7 Retake: vm fixture — corruption signature detected',
       const body = _fnBody(js, '_isCorruptedPassPlan');
       if (!body) return false;
       const vm = require('vm');
-      const ctx = { Math, JSON };
+      const ctx = { READINESS_BAND: [420, 870], EXAM_MIN_SCORE: 100, EXAM_MAX_SCORE: 900, CERT_CODE: 'N10-009',  Math, JSON };
       vm.createContext(ctx);
       vm.runInContext(body, ctx);
       // Signature 1: accPct=0 + seededCount<questionCount

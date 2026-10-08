@@ -1,9 +1,9 @@
 // ══════════════════════════════════════════
-// Network+ AI Quiz — app.js  v8.127.0
+// Network+ AI Quiz — app.js  v8.128.0
 // ══════════════════════════════════════════
 
 // ── CONSTANTS ──
-const APP_VERSION = '8.127.0';
+const APP_VERSION = '8.128.0';
 // v4.99.45 (Phase 6b): expose APP_VERSION on window so the web-vitals
 // collector (lib/web-vitals-collector.js, loaded BEFORE app.js so its
 // PerformanceObservers attach earlier) can stamp this version onto every
@@ -197,6 +197,8 @@ const DIAGNOSTIC_DURATION_MS = 30 * 60 * 1000;  // 30-min timer (no hard cutoff 
 const DIAGNOSTIC_RETAKE_COOLDOWN_DAYS = 7;  // user can retake after 7 days
 const DIAGNOSTIC_RETAKE_COOLDOWN_MS = DIAGNOSTIC_RETAKE_COOLDOWN_DAYS * 86400000;
 const EXAM_MAX_SCORE = (CERT_PACK && CERT_PACK.meta && CERT_PACK.meta.examMaxScore) || 900;
+// v8.128.0: per-cert score scale (EXAM_MIN_SCORE, READINESS_BAND, readinessFromRaw,
+// readinessBarPct, scaledExamScore) lives in features/readiness.js.
 // v4.87.0: cert-aware exam name string for prompt injection. Examples:
 //   netplus → 'CompTIA Network+ N10-009'
 //   secplus → 'CompTIA Security+ SY0-701'
@@ -2922,7 +2924,7 @@ function getStudyStats() {
   // per-topic split rows (1/1 correct = scaled 900) from inflating the best-exam
   // headline number.
   const bestExam  = h.filter(e => e.mode === 'exam' && e.topic === EXAM_TOPIC).reduce((best, e) => {
-    const scaled = Math.round(100 + (e.score / e.total) * 800);
+    const scaled = scaledExamScore(e.score, e.total);  // v8.128.0: cert scale
     return scaled > best ? scaled : best;
   }, 0);
   return { totalQ, sessions, avgPct, bestExam };
@@ -5279,8 +5281,8 @@ function _parseMultiTopicSentinel(qTopic) {
   return found;
 }
 
-// Helper: scaled exam score per CompTIA's 100-900 scale (used by exam_pass + hardcore_pass)
-function _scaledExamScore(e) { return Math.round(100 + (e.score / e.total) * 800); }
+// Helper: scaled exam score on the active cert's scale (used by exam_pass + hardcore_pass)
+function _scaledExamScore(e) { return scaledExamScore(e.score, e.total); }
 
 // v4.81.13: per-topic exam split (Codex r∞ user request). Pre-fix the
 const MILESTONE_CHECKS = [
@@ -5291,11 +5293,11 @@ const MILESTONE_CHECKS = [
   { id: 'first_exam',          check: c => c.exams.length >= 1 },
   { id: 'exam_pass',           check: c => c.exams.some(e => _scaledExamScore(e) >= EXAM_PASS_SCORE) },
   { id: 'hardcore_pass',       check: c => c.exams.some(e => e.hardcore && _scaledExamScore(e) >= EXAM_PASS_SCORE) },
-  { id: 'all_domains',         check: c => c.allDomainsHit.size >= 5 },
+  { id: 'all_domains',         check: c => c.allDomainsHit.size >= Object.keys(DOMAIN_WEIGHTS).length },  // v8.128.0: was 5 on every cert
   { id: 'all_topics',          check: c => c.studied.size >= c.allTopicCount },
   { id: 'streak_7',            check: c => c.streak.currentStreak >= 7 },
   { id: 'streak_30',           check: c => c.streak.currentStreak >= 30 },
-  { id: 'ready_650',           check: c => c.readiness && c.readiness.predicted >= 650 },
+  { id: 'ready_650',           check: c => c.readiness && c.readiness.predicted >= READINESS_CLOSE },
   { id: 'ready_720',           check: c => c.readiness && c.readiness.predicted >= EXAM_PASS_SCORE },
   { id: 'perfect_quiz',        check: c => c.h.some(e => e.total >= 10 && e.score === e.total) },
   { id: 'five_exams',          check: c => c.exams.length >= 5 },

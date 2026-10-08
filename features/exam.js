@@ -48,7 +48,7 @@
     // and size gates below only matter for Pro edge states now.
     if (!_gateProOnly('The Exam Simulator', {
       title: 'The Exam Simulator is a Pro feature',
-      body: '90 questions against a 90-minute clock, scored 100-900 like test day. Free covers your daily practice; the full rehearsal is Pro.'
+      body: `${EXAM_QUESTION_COUNT} questions against a ${Math.round(EXAM_TIME_SECONDS / 60)}-minute clock, scored ${EXAM_MIN_SCORE}-${EXAM_MAX_SCORE} like test day. Free covers your daily practice; the full rehearsal is Pro.`  // v8.128.0: per-cert format
     })) return;
     if (!_gateActivityForQuota('exam simulator')) return;
     if (!_gateSessionSizeForQuota(90, { mode: 'exam' })) return;
@@ -514,7 +514,7 @@
     });
 
     const pct = Math.round((correct / total) * 100);
-    const scaledScore = Math.round(100 + (correct / total) * 800);
+    const scaledScore = scaledExamScore(correct, total);  // v8.128.0: cert's own scale
     const passed      = scaledScore >= EXAM_PASS_SCORE;
 
     // Build log for review
@@ -606,8 +606,8 @@
     if (hcBadge) hcBadge.classList.toggle('is-hidden', !examHardcore);
 
     document.getElementById('exam-result-msg').textContent = passed
-      ? `Score ${scaledScore}/900 \u2014 above the ${EXAM_PASS_SCORE} pass mark. Exam-ready!`
-      : `Score ${scaledScore}/900 \u2014 need ${EXAM_PASS_SCORE - scaledScore} more points. Keep drilling!`;
+      ? `Score ${scaledScore}/${EXAM_MAX_SCORE} \u2014 above the ${EXAM_PASS_SCORE} pass mark. Exam-ready!`
+      : `Score ${scaledScore}/${EXAM_MAX_SCORE} \u2014 need ${EXAM_PASS_SCORE - scaledScore} more points. Keep drilling!`;
 
     animateCount('exam-r-correct', 0, correct, 800);
     animateCount('exam-r-wrong', 0, wrong, 800);

@@ -24,6 +24,7 @@ window.CERT_PACKS.ai900 = {
     objectiveRanges: '1.1–1.3 (Identify AI concepts and capabilities), 2.1–2.4 (Implement AI solutions by using Microsoft Foundry) — Microsoft lists these skill groups unnumbered; X.Y is their order within each domain',
     examPassScore: 700,         // official: 700 on a 1000 scale
     examMaxScore: 1000,
+    examMinScore: 1,           // v8.128.0: scaled-score floor (Microsoft reports 1-1000)
     examQuestionCount: 45,      // not published by Microsoft — app mock format
     examTimeSeconds: 3600,      // not published by Microsoft — app mock format
   },

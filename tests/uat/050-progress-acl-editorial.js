@@ -561,9 +561,9 @@ test('v4.54.0 JS: display heading uses time-aware greeting (Good morning/afterno
   /renderHeroV2[\s\S]{0,2500}Good morning[\s\S]{0,300}Good afternoon[\s\S]{0,300}Good evening/.test(js));
 test('v4.54.0 JS: renderReadinessCardV2 pulls from getReadinessScore + computes bar %',
   js.includes('function renderReadinessCardV2(') &&
-  /renderReadinessCardV2[\s\S]{0,2500}getReadinessScore\(\)/.test(js));
-test('v4.54.0 JS: readiness bar uses (predicted - 420) / 450 formula (matches existing scale)',
-  /renderReadinessCardV2[\s\S]{0,3000}r\.predicted\s*-\s*420[\s\S]{0,80}\/ 450/.test(js));
+  /renderReadinessCardV2[\s\S]{0,2800}getReadinessScore\(\)/.test(js));  // 2500→2800 v8.128.0 pass-mark pre-fill
+test('v4.54.0 JS: readiness bar uses the cert readiness band (v8.128.0: readinessBarPct, was (predicted - 420) / 450)',
+  /renderReadinessCardV2[\s\S]{0,3500}readinessBarPct\(r\.predicted\)/.test(js));
 test('v4.54.0 JS: renderHeroV2MiniCards pulls from getDailyGoal + getStreak',
   js.includes('function renderHeroV2MiniCards(') &&
   /renderHeroV2MiniCards[\s\S]{0,2500}getDailyGoal[\s\S]{0,1000}getStreak/.test(js));
@@ -793,8 +793,8 @@ test('v4.54.3 JS: finish() guards legacy grade-ring writes with if(el)',
   /function finish\([\s\S]{0,2000}const ringFill\s*=\s*document\.getElementById\('grade-fill'\);\s*\n\s*if\s*\(ringFill\)/.test(js));
 test('v4.54.3 JS: finish() writes scaled score via animateCount to #r-v2-score',
   /function finish\([\s\S]{0,4000}animateCount\('r-v2-score'/.test(js));
-test('v4.54.3 JS: scaled-score formula 100 + (pct/100) * 800',
-  /const scaled\s*=\s*Math\.max\(100,\s*Math\.min\(900,\s*Math\.round\(100 \+ \(pct \/ 100\) \* 800\)\)\)/.test(js));
+test('v4.54.3 JS: scaled score on the cert scale (v8.128.0: scaledExamScore, was 100 + (pct/100) * 800)',
+  /const scaled\s*=\s*scaledExamScore\(pct,\s*100\)/.test(js));
 test('v4.54.3 JS: passed = scaled >= EXAM_PASS_SCORE (cert-aware, was hardcoded 720 pre-v4.99.82)',
   /const passed\s*=\s*scaled\s*>=\s*EXAM_PASS_SCORE/.test(js));
 test('v4.99.82 tombstone: finish() must NOT hardcode 720 in verdict/gap (use EXAM_PASS_SCORE)',

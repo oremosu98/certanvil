@@ -974,6 +974,38 @@ test('v8.126.0 AI-901: Decision Lab seed is the AI-901 rebuild (no retired AI-90
       && !/Custom Vision|Form Recognizer|Azure AI Studio|Document Intelligence|regression|clustering/i.test(raw)
       && !/\u2014/.test(raw);
   })());
+test('v8.128.0 Scale: CompTIA maths unchanged; Microsoft/AWS readiness + exam use their own scale',
+  (() => {
+    try {
+      const vm = require('vm');
+      const appSrc = fs.readFileSync(path.join(ROOT, 'features', 'readiness.js'), 'utf8');
+      const i = appSrc.indexOf('const EXAM_MIN_SCORE');
+      const j = appSrc.indexOf('\n', appSrc.indexOf('function scaledExamScore('));
+      const block = appSrc.slice(i, j);
+      const run = (min, max, pass) => {
+        const ctx = { Math, CERT_PACK: { meta: { examMinScore: min } }, EXAM_MAX_SCORE: max, EXAM_PASS_SCORE: pass };
+        vm.createContext(ctx);
+        vm.runInContext(block + '\nthis.out = { band: READINESS_BAND, r0: readinessFromRaw(0), r100: readinessFromRaw(100), r50: readinessFromRaw(50), close: READINESS_CLOSE, building: READINESS_BUILDING, passPct: readinessBarPct(EXAM_PASS_SCORE), ex0: scaledExamScore(0, 10), ex10: scaledExamScore(10, 10), ex7: scaledExamScore(7, 10) };', ctx);
+        return ctx.out;
+      };
+      const net = run(100, 900, 720), sec = run(100, 900, 750), ms = run(1, 1000, 700), aws = run(100, 1000, 700);
+      const compTiaSame = net.band[0] === 420 && net.band[1] === 870 && net.r50 === 645 && net.close === 650 && net.building === 500
+        && net.ex0 === 100 && net.ex10 === 900 && net.ex7 === 660 && Math.abs(net.passPct - 66.67) < 0.01
+        && sec.band[0] === 420 && sec.band[1] === 870 && sec.r50 === 645;
+      const msOk = ms.ex0 === 1 && ms.ex10 === 1000 && ms.band[1] <= 1000 && ms.band[0] >= 1
+        && Math.abs(ms.passPct - 66.67) < 0.5 && ms.close > ms.building && ms.close < 700;
+      const awsOk = aws.ex0 === 100 && aws.ex10 === 1000 && Math.abs(aws.passPct - 66.67) < 0.5;
+      return compTiaSame && msOk && awsOk;
+    } catch (e) { return false; }
+  })());
+test('v8.128.0 Scale: no 420/450/870 or 100+800 literals left in the readiness/exam maths',
+  (() => {
+    const files = ['features/readiness.js', 'features/analytics.js', 'features/exam.js', 'features/quiz-engine.js', 'features/diagnostic.js']
+      .map(f => fs.readFileSync(path.join(ROOT, f), 'utf8')).join('\n');
+    return !/- 420\) \/ 450/.test(files) && !/Math\.round\(100 \+ \(e\.score/.test(fs.readFileSync(path.join(ROOT, 'app.js'), 'utf8')) && !/420 \+ \([a-zA-Z]+ \/ 100\) \* 450/.test(files)
+      && !/100 \+ \([^)]*\) \* 800/.test(files) && !/\/900\b|\/ 900</.test(files)
+      && !/Math\.(max|min)\((420|870),/.test(files);
+  })());
 test('v8.126.0 Decision Lab: why stays hidden until graded + scenario <mark> renders',
   (() => {
     const sl = fs.readFileSync(path.join(ROOT, 'features', 'sim-lab.js'), 'utf8');

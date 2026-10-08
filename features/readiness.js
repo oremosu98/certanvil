@@ -3,11 +3,40 @@
  * Mechanical move: function bodies identical to app.js @ 8cfba59.
  * Regions: EXAM READINESS SCORE (L7803–L8355) + streak/subtopics (L8420–L8496)
  *   + readiness cards + session plan (L9480–L9869) + hero-v2 readiness (L13933–L14057).
+ * v8.128.0: owns the per-cert score scale (exported on window, see top of IIFE).
  * STAYS in app.js: _scaledExamScore (MILESTONE_CHECKS lambda ref), MILESTONE_CHECKS,
  *   evaluateMilestones (refs MILESTONE_CHECKS), computeWeakSpotScores (shared hub),
  *   _sampleTopicsForMixedBatch/_parseMultiTopicSentinel (quiz engine callers). */
 (function () {
   'use strict';
+  // v8.128.0: one score scale per cert. CompTIA 100-900 (readiness band 420-870,
+  // exactly as before); Microsoft 1-1000; AWS 100-1000. On a non-CompTIA scale the
+  // readiness band keeps CompTIA's relative width and is placed so the pass line
+  // sits at the same mastery point Network+ uses (2/3 of the band), rather than
+  // stretching 420-870, which would put a Microsoft pass at ~53% mastery.
+  const EXAM_MIN_SCORE = (CERT_PACK && CERT_PACK.meta && CERT_PACK.meta.examMinScore) || 100;
+  const READINESS_BAND = (function () {
+    if (EXAM_MIN_SCORE === 100 && EXAM_MAX_SCORE === 900) return [420, 870];
+    const w = Math.round((EXAM_MAX_SCORE - EXAM_MIN_SCORE) * 450 / 800);
+    const lo = Math.max(EXAM_MIN_SCORE, Math.round(EXAM_PASS_SCORE - w * 2 / 3));
+    return [lo, Math.min(EXAM_MAX_SCORE, lo + w)];
+  })();
+  // Readiness raw 0-100 → scaled; scaled → % along the readiness bar; exam % → scaled.
+  function readinessFromRaw(raw) { return Math.round(READINESS_BAND[0] + (raw / 100) * (READINESS_BAND[1] - READINESS_BAND[0])); }
+  function readinessBarPct(score) { return Math.max(0, Math.min(100, ((score - READINESS_BAND[0]) / (READINESS_BAND[1] - READINESS_BAND[0])) * 100)); }
+  // Readiness tier cut-offs at the same band positions as CompTIA's 650 / 500.
+  const READINESS_CLOSE = readinessFromRaw(230 / 4.5);
+  const READINESS_BUILDING = readinessFromRaw(80 / 4.5);
+  function scaledExamScore(correct, total) { return total > 0 ? Math.round(EXAM_MIN_SCORE + (correct / total) * (EXAM_MAX_SCORE - EXAM_MIN_SCORE)) : EXAM_MIN_SCORE; }
+  // Exported for app.js milestones, analytics, exam, diagnostic, home and onboarding.
+  window.EXAM_MIN_SCORE = EXAM_MIN_SCORE;
+  window.READINESS_BAND = READINESS_BAND;
+  window.READINESS_CLOSE = READINESS_CLOSE;
+  window.READINESS_BUILDING = READINESS_BUILDING;
+  window.readinessFromRaw = readinessFromRaw;
+  window.readinessBarPct = readinessBarPct;
+  window.scaledExamScore = scaledExamScore;
+
   function diffWeight(d) {
     if (!d) return 1.5;
     const s = d.toLowerCase();
@@ -38,7 +67,13 @@
   }
 
   function getReadinessScore() {
-    const allTopics = Array.from(document.querySelectorAll('#topic-group .chip'))
+    // v8.128.0: topic universe from the cert pack. The #topic-group chips are
+    // Network+'s static 50 until home.js re-renders them, so the first readiness
+    // render on any other cert divided by the wrong count (AI-901 seeded test:
+    // 556 at load vs 595 settled). Settled chips == TOPIC_DOMAINS keys on every
+    // cert (checked Net+ 50, Sec+ 39, AI-901 24), so settled scores don't move.
+    const _packTopics = (typeof TOPIC_DOMAINS === 'object' && TOPIC_DOMAINS) ? Object.keys(TOPIC_DOMAINS) : [];
+    const allTopics = _packTopics.length ? _packTopics : Array.from(document.querySelectorAll('#topic-group .chip'))
       .map(c => c.dataset.v)
       .filter(v => !v.includes('Mixed') && !v.includes('Smart'));
     const totalTopics = allTopics.length;
@@ -110,7 +145,7 @@
     const volumeScore = Math.min(totalQs / 500, 1) * 100;
 
     const raw = (accuracyScore * 0.40) + (coverageScore * 0.25) + (recencyScore * 0.20) + (volumeScore * 0.15);
-    const predicted = Math.round(420 + (raw / 100) * 450);
+    const predicted = readinessFromRaw(raw);
 
     let worstTopic = null, worstPct = 101;
     allTopics.forEach(t => {
@@ -133,9 +168,11 @@
     const coverageWidth = 30 * (1 - coverageFactor);
     const recencyWidth = 15 * (1 - recencyFactor);
     let ciHalfWidth = sampleWidth + coverageWidth + recencyWidth;
-    ciHalfWidth = Math.max(15, Math.min(100, Math.round(ciHalfWidth)));
-    const lowerBound = Math.max(420, predicted - ciHalfWidth);
-    const upperBound = Math.min(870, predicted + ciHalfWidth);
+    // v8.128.0: widths above are in CompTIA band points (450 wide); rescale to the cert's band.
+    const _bandK = (READINESS_BAND[1] - READINESS_BAND[0]) / 450;
+    ciHalfWidth = Math.max(Math.round(15 * _bandK), Math.min(Math.round(100 * _bandK), Math.round(ciHalfWidth * _bandK)));
+    const lowerBound = Math.max(READINESS_BAND[0], predicted - ciHalfWidth);
+    const upperBound = Math.min(READINESS_BAND[1], predicted + ciHalfWidth);
 
     // Pass probability via logistic centered on the pass line. Sigma derived
     // from CI half-width (90% CI ≈ ±1.645σ). Result is 0-1.
@@ -436,11 +473,11 @@
     { id: 'thousand_qs',      label: 'Iron will',           desc: 'Answer 1,000 questions' },
     { id: 'first_exam',       label: 'Exam rehearsal',      desc: 'Complete your first exam simulation' },
     { id: 'exam_pass',        label: 'Passing grade',       desc: `Score ${EXAM_PASS_SCORE}+ on any exam simulation` },
-    { id: 'all_domains',      label: 'Full coverage',       desc: 'Study at least one topic in all 5 domains' },
+    { id: 'all_domains',      label: 'Full coverage',       desc: `Study at least one topic in all ${Object.keys(DOMAIN_WEIGHTS).length} domains` },
     { id: 'all_topics',       label: 'Completionist',       desc: 'Attempt every topic at least once' },
     { id: 'streak_7',         label: 'Week warrior',        desc: '7-day study streak' },
     { id: 'streak_30',        label: 'Month master',        desc: '30-day study streak' },
-    { id: 'ready_650',        label: 'Getting close',       desc: 'Reach a readiness score of 650' },
+    { id: 'ready_650',        label: 'Getting close',       desc: `Reach a readiness score of ${READINESS_CLOSE}` },
     { id: 'ready_720',        label: 'Exam ready',          desc: `Reach a readiness score of ${EXAM_PASS_SCORE} (pass)` },
     { id: 'perfect_port',     label: 'Port master',         desc: 'Perfect round on Port Drill (40 correct)' },
     { id: 'streak_port_25',   label: 'Streak keeper',       desc: 'Reach a 25+ streak in Port Drill Endless mode' },
@@ -665,15 +702,15 @@
     let tierLabel, tierColor, tierBg;
     if (predicted >= EXAM_PASS_SCORE) {
       tierLabel = '\ud83d\udfe2 Exam Ready'; tierColor = 'var(--green)'; tierBg = 'rgba(34,197,94,.15)';
-    } else if (predicted >= 650) {
+    } else if (predicted >= READINESS_CLOSE) {
       tierLabel = '\ud83d\udfe0 Getting Close'; tierColor = 'var(--orange)'; tierBg = 'rgba(251,146,60,.15)';
-    } else if (predicted >= 500) {
+    } else if (predicted >= READINESS_BUILDING) {
       tierLabel = '\ud83d\udfe1 Building'; tierColor = 'var(--yellow)'; tierBg = 'rgba(251,191,36,.15)';
     } else {
       tierLabel = '\ud83d\udd34 Not Ready'; tierColor = 'var(--red)'; tierBg = 'rgba(248,113,113,.15)';
     }
 
-    const barPct = Math.max(0, Math.min(100, ((predicted - 420) / 450) * 100));
+    const barPct = readinessBarPct(predicted);
 
     // v4.42.1: first-render-per-session intro. Number counts from 0 → predicted
     // over 1.4s, bar fills from empty using a slower 1.1s cubic-bezier reveal,
@@ -1050,7 +1087,7 @@
     const _markEl = document.getElementById('rc-v2-bar-mark');
     if (_markEl) {
       _markEl.dataset.pass = EXAM_PASS_SCORE;
-      _markEl.style.left = Math.max(0, Math.min(100, ((EXAM_PASS_SCORE - 420) / 450) * 100)).toFixed(1) + '%';
+      _markEl.style.left = readinessBarPct(EXAM_PASS_SCORE).toFixed(1) + '%';
     }
     // v7.34.0: styling-only hook for the no-score state (compresses the desktop
     // hero so the empty card isn't a 2-row dead box - see dg-system.css). Cleared
@@ -1064,6 +1101,8 @@
     } else {
       card.onclick = null;
     }
+    // v8.128.0: pass mark shows before the first quiz too (HTML default was 720).
+    { const _pm = document.getElementById('rc-v2-passmark'); if (_pm) _pm.textContent = EXAM_PASS_SCORE; }
     const history = (typeof loadHistory === 'function') ? loadHistory() : [];
     if (history.length === 0 || typeof getReadinessScore !== 'function') {
       numEl.textContent = '\u2014';
@@ -1072,7 +1111,7 @@
       if (predEl) predEl.hidden = true;
       if (whatIfEl) whatIfEl.hidden = true;
       if (trajEl) trajEl.hidden = true;
-      if (_stripEl) _stripEl.textContent = 'Readiness \u2014/900 \u00b7 take a quiz to unlock';
+      if (_stripEl) _stripEl.textContent = 'Readiness \u2014/' + EXAM_MAX_SCORE + ' \u00b7 take a quiz to unlock';
       card.classList.add('is-pending');
       return;
     }
@@ -1084,12 +1123,12 @@
         // Phone strip: compact one-liner shown <=620px
         if (_stripEl) {
           if (typeof r.passProbability === 'number') {
-            _stripEl.textContent = 'Readiness ' + r.predicted + '/900 \u00b7 ' + Math.round(r.passProbability * 100) + '% pass';
+            _stripEl.textContent = 'Readiness ' + r.predicted + '/' + EXAM_MAX_SCORE + ' \u00b7 ' + Math.round(r.passProbability * 100) + '% pass';
           } else {
-            _stripEl.textContent = 'Readiness ' + r.predicted + '/900';
+            _stripEl.textContent = 'Readiness ' + r.predicted + '/' + EXAM_MAX_SCORE;
           }
         }
-        const pct = Math.max(0, Math.min(100, ((r.predicted - 420) / 450) * 100));
+        const pct = readinessBarPct(r.predicted);
         barEl.style.width = pct + '%';
         queueReadinessAnimation(r.predicted, pct);
         const pm = document.getElementById('rc-v2-passmark'); if (pm) pm.textContent = EXAM_PASS_SCORE;

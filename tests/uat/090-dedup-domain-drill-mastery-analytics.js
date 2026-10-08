@@ -1371,7 +1371,7 @@ test('v4.85.14 WhyScore: vm fixture — bottleneck = recency when recencyScore i
       const body = _fnBody(js, '_renderAnaWhyScore');
       if (!body) return false;
       const vm = require('vm');
-      const ctx = {
+      const ctx = { READINESS_BAND: [420, 870], EXAM_MIN_SCORE: 100, EXAM_MAX_SCORE: 900, CERT_CODE: 'N10-009', 
         EXAM_PASS_SCORE: 720,
         escHtml: s => String(s || ''),
         Math, Object, Array, String, JSON
@@ -1796,6 +1796,7 @@ test('v4.85.20 ExamSplitFilter: vm fixture — _renderAnaExams shows 2 entries w
       const ctx = {
         EXAM_TOPIC: 'Exam',
         EXAM_PASS_SCORE: 720,
+        scaledExamScore: (c, t) => Math.round(100 + (c / t) * 800),  // v8.128.0: CompTIA scale stub
         _edCardhead: () => '',
         Math, Date, Array
       };

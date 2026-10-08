@@ -1635,8 +1635,8 @@
   
     // v4.54.3 results-v2 additions: scaled score (100-900), verdict line, raw pct.
     // Scaled-score formula matches CompTIA N10-009 convention from the exam-
-    // results screen: 100 + (raw / 100) * 800, rounded.
-    const scaled = Math.max(100, Math.min(900, Math.round(100 + (pct / 100) * 800)));
+    // results screen: the cert's own scale via scaledExamScore (v8.128.0; was 100 + raw*8).
+    const scaled = scaledExamScore(pct, 100);  // v8.128.0: cert's own scale (was 100-900 everywhere)
     const passed = scaled >= EXAM_PASS_SCORE;
     const scoreEl = document.getElementById('r-v2-score');
     const verdictEl = document.getElementById('r-v2-verdict');

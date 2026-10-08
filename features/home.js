@@ -448,6 +448,23 @@
         }
       });
 
+      // 10. v8.128.0: score scale + exam format. Static HTML is CompTIA's
+      // 100-900 / 90 questions / 90 min; each swap is a no-op when they match.
+      const minS = EXAM_MIN_SCORE, maxS = EXAM_MAX_SCORE;
+      const swapScale = function (el) {
+        if (el) el.innerHTML = el.innerHTML.replace(/100-900/g, minS + '-' + maxS).replace(/(\/|out of) 900\b/g, '$1 ' + maxS);
+      };
+      ['.readiness-eyebrow', '#exam-note', '.readiness-denom', '.results-v2-big-score em'].forEach(function (s) {
+        document.querySelectorAll(s).forEach(swapScale);
+      });
+      const rcNum = document.getElementById('rc-v2-num');
+      if (rcNum && rcNum.parentNode) swapScale(rcNum.parentNode.nextElementSibling);
+      const fullExamOd = document.querySelector('button[onclick="startExam()"] .od');
+      if (fullExamOd) fullExamOd.textContent = EXAM_QUESTION_COUNT + ' questions, ' + Math.round(EXAM_TIME_SECONDS / 60) + '-min timer, scored ' + minS + '-' + maxS;
+      document.querySelectorAll('#page-exam-results .ed-pagehead-eyebrow').forEach(function (el) {
+        el.innerHTML = el.innerHTML.replace(/\b90 questions\b/, EXAM_QUESTION_COUNT + ' questions');
+      });
+
       // 9. Legacy hero h1 (hidden via .is-hidden, kept for regression-guards)
       const legacyHeroH1 = document.querySelector('.hero.is-hidden h1');
       if (legacyHeroH1 && legacyHeroH1.textContent === 'Network+ AI Quiz') {

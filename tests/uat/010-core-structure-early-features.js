@@ -134,8 +134,6 @@ test('Analytics editorial cardhead: Exam history.',
   js.includes("'Exam', 'history.'"));
 test('Analytics editorial cardhead: Study streak.',
   js.includes("'Study', 'streak.'"));
-test('Analytics editorial cardhead: Wrong-answer patterns.',
-  js.includes("'Wrong-answer', 'patterns.'"));
 test('Analytics editorial cardhead: Exam vs quiz.',
   js.includes("'Exam vs', 'quiz.'"));
 test('Analytics editorial cardhead: Milestones.',
@@ -385,8 +383,8 @@ test('Weak spots card removed (v4.45.2 regression guard)', !js.includes('ana-wea
 // v4.45.0: heatmap + type-list cards removed, replaced by Domain Mastery
 // (full-width above grid) and Wrong-Answer Patterns (inside 2-col grid).
 // See the v4.45.0 assertion block below for the new-card guards.
-test('Domain Mastery card rendered', js.includes('ana-card-dm'));
-test('Wrong-answer patterns card rendered', js.includes('wp-pattern'));
+// v8.128.0: the standalone Domain Mastery + Wrong-Answer Patterns cards were
+// dead (bento tiles replaced them) and removed; tombstones live in tests/uat/040.
 test('Mode compare card rendered', js.includes('ana-mode-compare'));
 // v4.45.2: Practice Drills stats card removed (drills have their own
 // in-drill dashboards; duplicating in Analytics was noise). Regression guard.

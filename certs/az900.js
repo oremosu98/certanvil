@@ -55,6 +55,7 @@ window.CERT_PACKS.az900 = {
     blueprintUrl: 'https://learn.microsoft.com/credentials/certifications/azure-fundamentals/',
     examPassScore: 700,         // AZ-900 official pass: 700/1000 (scaled)
     examMaxScore: 1000,         // scaled-score ceiling (different from CompTIA's 100-900 range)
+    examMinScore: 1,           // v8.128.0: scaled-score floor (Microsoft reports 1-1000)
     examQuestionCount: 35,      // v7.3.0 VoC correction (was 50, locked from a guess in plan §2#3).
                                 // 608-post Reddit research 2025-2026 shows real exam is 35-40 Q;
                                 // most recent posts cluster at 35-36. See plan Appendix C.1.

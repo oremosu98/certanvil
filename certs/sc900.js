@@ -74,6 +74,7 @@ window.CERT_PACKS.sc900 = {
                                 // greater is required to pass" — confirmed by the official PDF
                                 // + universal across VoC reports.
     examMaxScore: 1000,         // scaled-score ceiling
+    examMinScore: 1,           // v8.128.0: scaled-score floor (Microsoft reports 1-1000)
     examQuestionCount: 45,      // Blueprint range ~40-60 Q. Default 45 (mirrors AI-900's
                                 // fundamentals shape). One low-confidence VoC report of 44 Q;
                                 // cosmetic if slightly off (plan §9 Q3, founder-confirmed 45).

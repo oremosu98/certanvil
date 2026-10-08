@@ -442,7 +442,7 @@ test('v4.81.0 Diagnostic: _buildPassPlan returns expected shape (vm fixture)',
       const body = _fnBody(js, '_buildPassPlan');
       if (!body) return false;
       const vm = require('vm');
-      const ctx = {
+      const ctx = { READINESS_BAND: [420, 870], EXAM_MIN_SCORE: 100, EXAM_MAX_SCORE: 900, CERT_CODE: 'N10-009', 
         DOMAIN_WEIGHTS: { concepts: 0.23, implementation: 0.20, operations: 0.19, security: 0.14, troubleshooting: 0.24 },
         DOMAIN_LABELS: { concepts: 'Concepts', implementation: 'Implementation', operations: 'Operations', security: 'Security', troubleshooting: 'Troubleshooting' },
         TOPIC_DOMAINS: { 'A': 'concepts', 'B': 'implementation', 'C': 'operations', 'D': 'security', 'E': 'troubleshooting' },
@@ -477,7 +477,7 @@ test('v4.81.0 Diagnostic: _buildPassPlan probability near 0.5 at ~70% accuracy (
       const body = _fnBody(js, '_buildPassPlan');
       if (!body) return false;
       const vm = require('vm');
-      const ctx = {
+      const ctx = { READINESS_BAND: [420, 870], EXAM_MIN_SCORE: 100, EXAM_MAX_SCORE: 900, CERT_CODE: 'N10-009', 
         DOMAIN_WEIGHTS: { concepts: 0.23, implementation: 0.20, operations: 0.19, security: 0.14, troubleshooting: 0.24 },
         DOMAIN_LABELS: { concepts: 'Concepts', implementation: 'Implementation', operations: 'Operations', security: 'Security', troubleshooting: 'Troubleshooting' },
         TOPIC_DOMAINS: { 'A': 'concepts', 'B': 'implementation', 'C': 'operations', 'D': 'security', 'E': 'troubleshooting' },
@@ -882,7 +882,7 @@ test('v4.81.6 PassPlan: VM fixture — non-canonical topics produce real score (
       const buildBody = _fnBody(js, '_buildPassPlan');
       if (!resolveBody || !buildBody) return false;
       const vm = require('vm');
-      const ctx = {
+      const ctx = { READINESS_BAND: [420, 870], EXAM_MIN_SCORE: 100, EXAM_MAX_SCORE: 900, CERT_CODE: 'N10-009', 
         DOMAIN_WEIGHTS: { concepts: 0.23, implementation: 0.20, operations: 0.19, security: 0.14, troubleshooting: 0.24 },
         DOMAIN_LABELS: { concepts: 'Concepts', implementation: 'Implementation', operations: 'Operations', security: 'Security', troubleshooting: 'Troubleshooting' },
         // Realistic TOPIC_DOMAINS subset — short canonical keys
@@ -934,7 +934,7 @@ test('v4.81.6 PassPlan: VM fixture — exact-match canonical topics still work (
       const buildBody = _fnBody(js, '_buildPassPlan');
       if (!resolveBody || !buildBody) return false;
       const vm = require('vm');
-      const ctx = {
+      const ctx = { READINESS_BAND: [420, 870], EXAM_MIN_SCORE: 100, EXAM_MAX_SCORE: 900, CERT_CODE: 'N10-009', 
         DOMAIN_WEIGHTS: { concepts: 0.23, implementation: 0.20, operations: 0.19, security: 0.14, troubleshooting: 0.24 },
         DOMAIN_LABELS: { concepts: 'Concepts', implementation: 'Implementation', operations: 'Operations', security: 'Security', troubleshooting: 'Troubleshooting' },
         TOPIC_DOMAINS: { 'A': 'concepts', 'B': 'implementation', 'C': 'operations', 'D': 'security', 'E': 'troubleshooting' },
@@ -981,10 +981,10 @@ test('v4.81.7 Retake: corruption detection checks accPct=0 + seededCount mismatc
     const body = _fnBody(js, '_isCorruptedPassPlan');
     return body && /accPct[\s\S]{0,100}=== 0/.test(body) && /seededCount[\s\S]{0,100}questionCount/.test(body);
   })());
-test('v4.81.7 Retake: corruption detection checks predicted=420 + correctCount>0 (secondary)',
+test('v4.81.7 Retake: corruption detection checks predicted=band floor (420 on CompTIA) + correctCount>0 (secondary)',
   (() => {
     const body = _fnBody(js, '_isCorruptedPassPlan');
-    return body && /predicted[\s\S]{0,80}=== 420/.test(body) && /correctCount[\s\S]{0,80}>\s*0/.test(body);
+    return body && /predicted[\s\S]{0,80}=== READINESS_BAND\[0\]/.test(body) && /correctCount[\s\S]{0,80}>\s*0/.test(body);  // v8.128.0: 420 = CompTIA band floor
   })());
 test('v4.81.7 Retake: retakeDiagnostic checks _isCorruptedPassPlan first',
   (() => {
