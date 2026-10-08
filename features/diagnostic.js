@@ -755,7 +755,7 @@
     const sub = document.getElementById('pass-plan-sub');
     if (sub) {
       const domainCount = p.weakDomains.length;
-      sub.textContent = 'Based on ' + p.questionCount + ' calibrated questions across all 5 N10-009 domains · ' + domainCount + ' weak ' + (domainCount === 1 ? 'domain' : 'domains') + ' identified';
+      sub.textContent = 'Based on ' + p.questionCount + ' calibrated questions across all ' + Object.keys((CERT_PACK && CERT_PACK.domainWeights) || { a: 1, b: 1, c: 1, d: 1, e: 1 }).length + ' ' + CERT_CODE + ' domains · ' + domainCount + ' weak ' + (domainCount === 1 ? 'domain' : 'domains') + ' identified';
     }
 
     // CI band rows

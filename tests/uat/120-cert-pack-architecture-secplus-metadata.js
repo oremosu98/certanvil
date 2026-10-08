@@ -941,3 +941,29 @@ test('v4.99.41 Phase 3 Cycle 5: Deception vs Disruption retention concept added'
 test('v4.99.41 Phase 3 Cycle 5: Honey-X retention concept spells out the scope ladder (system→network→file→token)',
   /HONEYPOT = a whole DECOY SYSTEM[\s\S]{0,500}HONEYNET[\s\S]{0,300}HONEYFILE[\s\S]{0,300}HONEYTOKEN/i.test(certSecplus));
 
+
+// v8.121.0 (AI-901 Phase 2a): user-facing app labels say AI-901, Decision Lab is
+// hidden for ai900, and analytics/diagnostic copy no longer hard-codes N10-009.
+test('v8.121.0 AI-901: app labels, cert lock and onboarding rows say AI-901',
+  (() => {
+    const r = f => fs.readFileSync(path.join(ROOT, f), 'utf8');
+    return /ai900:\s*\['Azure AI Fundamentals', 'AI-901'\]/.test(html)
+      && /ai900: 'Azure AI-901'/.test(r('lib/cert-lock.js'))
+      && /id: 'ai900',\s*name: 'AI-901'/.test(r('lib/onboarding-home.js'))
+      && /id: 'ai900',\s*name: 'AI-901'/.test(r('lib/onboarding-firstrun.js'));
+  })());
+test('v8.121.0 AI-901: Decision Lab excludes ai900 in both the app gate and the engine',
+  (() => {
+    const sl = fs.readFileSync(path.join(ROOT, 'features', 'sim-lab.js'), 'utf8');
+    return js.includes("const _DL_CERTS = ['az900', 'sc900', 'clfc02'];")
+      && sl.includes("var _DL_CERTS = ['az900', 'sc900', 'clfc02'];")
+      && !/ai900: 'features\/decision-lab-seed-ai900\.js'/.test(js)
+      && !/ai900: 'DECISION_LAB_SEED_AI900'/.test(sl);
+  })());
+test('v8.121.0 copy: analytics + diagnostic no longer hard-code N10-009 domain text',
+  (() => {
+    const an = fs.readFileSync(path.join(ROOT, 'features', 'analytics.js'), 'utf8');
+    const dg = fs.readFileSync(path.join(ROOT, 'features', 'diagnostic.js'), 'utf8');
+    return !an.includes('How close each N10-009 domain') && !an.includes('official CompTIA N10-009 exam blueprint')
+      && !an.includes('cluster in this N10-009 domain') && !dg.includes('across all 5 N10-009 domains');
+  })());

@@ -2459,10 +2459,9 @@
   function _slBank(cert) { return _seedBank(_SL_SEED_GLOBALS, cert); }
 
   // --- Decision Lab: cloud-fundamentals cert allowlist + seed registry (spec 3.2) ---
-  var _DL_CERTS = ['az900', 'ai900', 'sc900', 'clfc02'];
+  var _DL_CERTS = ['az900', 'sc900', 'clfc02'];  // v8.121.0: ai900 hidden until AI-901 rebuild
   var _DL_SEED_GLOBALS = {
     az900: 'DECISION_LAB_SEED_AZ900',
-    ai900: 'DECISION_LAB_SEED_AI900',
     sc900: 'DECISION_LAB_SEED_SC900',
     clfc02: 'DECISION_LAB_SEED_CLFC02'
   };

@@ -1,9 +1,9 @@
 // ══════════════════════════════════════════
-// Network+ AI Quiz — app.js  v8.120.0
+// Network+ AI Quiz — app.js  v8.121.0
 // ══════════════════════════════════════════
 
 // ── CONSTANTS ──
-const APP_VERSION = '8.120.0';
+const APP_VERSION = '8.121.0';
 // v4.99.45 (Phase 6b): expose APP_VERSION on window so the web-vitals
 // collector (lib/web-vitals-collector.js, loaded BEFORE app.js so its
 // PerformanceObservers attach earlier) can stamp this version onto every
@@ -2220,7 +2220,6 @@ window._ensureSimLabLoaded = _ensureSimLabLoaded;
 
 const _DL_SEED_FILES = {
   az900: 'features/decision-lab-seed-az900.js',
-  ai900: 'features/decision-lab-seed-ai900.js',
   sc900: 'features/decision-lab-seed-sc900.js',
   clfc02: 'features/decision-lab-seed-clfc02.js'
 };
@@ -4195,7 +4194,9 @@ window.startSimLabHome = startSimLabHome;
 
 // Decision Lab Home entry (Home → Practice). Renders WITHOUT loading the module
 // (cert/pro/daily-state live here); the module lazy-loads on click.
-const _DL_CERTS = ['az900', 'ai900', 'sc900', 'clfc02'];
+// v8.121.0: ai900 removed — its 50 draft scenarios target the retired AI-900;
+// rebuilt for AI-901 in Phase 4 of docs/superpowers/plans/2026-10-08-ai901-swap.md.
+const _DL_CERTS = ['az900', 'sc900', 'clfc02'];
 function renderDecisionLabHomeEntry() {
   const btn = document.getElementById('dl-home-opt');
   if (!btn) return;

@@ -1380,11 +1380,11 @@
 
     return `<div class="ana-card ana-card-dm" id="ana-s-domain-mastery">
       <h3>DOMAIN MASTERY</h3>
-      <div class="ana-subtitle">How close each N10-009 domain is to the 80% mastery threshold</div>
+      <div class="ana-subtitle">How close each ${CERT_CODE} domain is to the 80% mastery threshold</div>
       <div class="dm-list">
         ${domains.map(d => _renderAnaDomainMasteryRow(d, byDomain[d.id], tierInfo)).join('')}
       </div>
-      <div class="dm-footer">Weights from official CompTIA N10-009 exam blueprint.</div>
+      <div class="dm-footer">Weights from the official ${CERT_CODE} exam blueprint.</div>
     </div>`;
   }
   // ══════════════════════════════════════════
@@ -1870,7 +1870,7 @@
         title: 'DOMAIN \u2014 ' + label.toUpperCase(),
         count: count,
         pctStr: pctStr(count),
-        desc: `${count} of your last ${total} wrongs cluster in this N10-009 domain. Focused drilling here will tighten the weakest block of your readiness score.`,
+        desc: `${count} of your last ${total} wrongs cluster in this ${CERT_CODE} domain. Focused drilling here will tighten the weakest block of your readiness score.`,
         drillBtn: { label: 'Drill ' + label.split(' ').slice(1).join(' ') + ' \u2192', onclick: `drillDomain('${dId}')` },
         accent: '#f59e0b'
       });
