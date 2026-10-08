@@ -71,12 +71,9 @@
       'Azure Architecture & Services': 37.5,
       'Azure Management & Governance': 32.5
     },
-    ai900: {
-      'AI Workloads & Considerations': 17.5,
-      'Machine Learning Fundamentals': 22.5,
-      'Computer Vision Workloads': 17.5,
-      'NLP Workloads': 17.5,
-      'Generative AI Workloads': 25
+    ai900: {  // AI-901 (v8.121.0) — labels match certs/ai900.js domainLabels
+      'Identify AI Concepts & Capabilities': 42.5,
+      'Implement AI Solutions with Microsoft Foundry': 57.5
     },
     sc900: {
       'Security, Compliance & Identity Concepts': 12.5,
@@ -190,16 +187,16 @@
       {
         id: 'ai900',
         name: 'Microsoft Azure AI Fundamentals',
-        code: 'AI-900',
+        code: 'AI-901',
         glyphClass: 'ai900',
         glyph: 'AI',
         status: 'active',
         examFormat: 'percent',
         maxScore: 1000,
         passScore: 700,
-        examName: 'Microsoft Azure AI Fundamentals AI-900',
+        examName: 'Microsoft Azure AI Fundamentals AI-901',
         cta: { label: 'Open →', href: 'https://ai.certanvil.com/?cert=ai900' },
-        coachActive: 'AI and ML fundamentals on Azure. Builds on AZ-900 cloud concepts.'
+        coachActive: 'Generative AI, agents and AI apps on Microsoft Foundry. Builds on AZ-900 cloud concepts.'
       },
       {
         id: 'sc900',

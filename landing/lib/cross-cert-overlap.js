@@ -470,9 +470,10 @@
       callout: 'Your networking depth is gold for VPC design questions. The other 75% of SAA (services, IAM, architecture) is new territory.'
     },
 
-    // ── v7.5.0 AI-900 quartet overlap (Net+/Sec+/AZ-900 ↔ AI-900) ───────────
+    // ── AI-901 quartet overlap (Net+/Sec+/AZ-900 ↔ AI-901) — v8.121.0: AI-900 retired;
+    //    target topics rewritten for AI-901 (2 domains, Foundry-centric, basic Python).
 
-    // ── Net+ → AI-900 — very light, generic cloud concepts only ───────────
+    // ── Net+ → AI-901 — very light, generic cloud concepts only ───────────
     {
       from: 'netplus',
       to: 'ai900',
@@ -485,19 +486,19 @@
         'Public/private/hybrid cloud at concept level'
       ],
       newTopics: [
-        'AI workload types (predictive, generative, agentic)',
-        'Responsible AI principles (fairness, reliability, privacy, inclusiveness, transparency, accountability)',
-        'Machine learning fundamentals (classification, regression, clustering)',
-        'Computer vision workloads (image classification, OCR, object detection)',
-        'NLP workloads (sentiment, entity recognition, translation, speech)',
-        'Generative AI (foundation models, Azure OpenAI, Azure AI Foundry)'
+        'Responsible AI principles (fairness, reliability and safety, privacy and security, inclusiveness, transparency, accountability)',
+        'How generative AI models work, choosing a model, deployment options and parameters',
+        'AI workloads — generative and agentic AI, text analysis, speech, computer vision, information extraction',
+        'Building generative AI apps and agents in Microsoft Foundry (portal + Python SDK)',
+        'Text and speech apps (Azure Language, Azure Speech in Foundry Tools)',
+        'Multimodal vision and image generation, and information extraction with Azure Content Understanding'
       ],
       hoursSaved: 2,
       daysSaved: 1,
-      callout: 'Net+ and AI-900 are different role families. The only meaningful carry-over is generic cloud-service literacy — start fresh on AI/ML content.'
+      callout: 'Net+ and AI-901 are different role families. The only meaningful carry-over is generic cloud-service literacy — start fresh on AI concepts and Microsoft Foundry.'
     },
 
-    // ── AI-900 → Net+ — reverse direction, same low overlap ───────────────
+    // ── AI-901 → Net+ — reverse direction, same low overlap ───────────────
     {
       from: 'ai900',
       to: 'netplus',
@@ -517,10 +518,10 @@
       ],
       hoursSaved: 1,
       daysSaved: 0,
-      callout: 'AI-900 doesn\'t prepare you for Net+. Networking foundations are net-new — plan a full Net+ study cycle.'
+      callout: 'AI-901 doesn\'t prepare you for Net+. Networking foundations are net-new — plan a full Net+ study cycle.'
     },
 
-    // ── Sec+ → AI-900 — medium, Responsible AI + governance + data protection ──
+    // ── Sec+ → AI-901 — medium, Responsible AI + governance + data protection ──
     {
       from: 'secplus',
       to: 'ai900',
@@ -529,30 +530,29 @@
       totalTargetCount: 18,
       headline: 'AI governance + data protection carry over',
       sharedTopics: [
-        'Data classification + privacy (Sec+ Domain 5 ↔ AI-900 Responsible AI privacy)',
+        'Data classification + privacy (Sec+ Domain 5 ↔ AI-901 Responsible AI privacy and security)',
         'Risk management framing (carries to AI risk + bias mitigation)',
         'Compliance posture (GDPR/HIPAA/SOX governance vocabulary)',
         'Audit + accountability (carries to Responsible AI accountability principle)',
-        'Content moderation + DLP awareness (carries to Azure AI Content Safety)'
+        'Data protection + DLP awareness (carries to PII detection and responsible AI safeguards)'
       ],
       refresherTopics: [
-        'Sec+ teaches data protection at policy level; AI-900 reframes for AI/ML pipelines'
+        'Sec+ teaches data protection at policy level; AI-901 reframes it for AI apps and agents'
       ],
       newTopics: [
-        'AI workload types (predictive vs generative vs agentic)',
-        'Machine learning fundamentals (regression / classification / clustering)',
-        'Confusion matrix + model evaluation (precision/recall/accuracy)',
-        'Computer vision sub-types (image classification / object detection / OCR / face)',
-        'NLP workloads (sentiment, entity, translation, speech)',
-        'Generative AI (foundation models, Azure OpenAI, Azure AI Foundry, Copilot)',
-        'Azure AI Services umbrella (Speech / Language / Vision / Document Intelligence / Content Safety)'
+        'Responsible AI principles (fairness, reliability and safety, privacy and security, inclusiveness, transparency, accountability)',
+        'How generative AI models work, choosing a model, deployment options and parameters',
+        'AI workloads — generative and agentic AI, text analysis, speech, computer vision, information extraction',
+        'Building generative AI apps and agents in Microsoft Foundry (portal + Python SDK)',
+        'Text and speech apps (Azure Language, Azure Speech in Foundry Tools)',
+        'Multimodal vision and image generation, and information extraction with Azure Content Understanding'
       ],
       hoursSaved: 6,
       daysSaved: 1,
-      callout: 'Your Sec+ governance + data-protection mental models translate directly to Responsible AI principles + Azure AI Content Safety. Most of AI-900 is still new content — ML + CV + NLP + GenAI.'
+      callout: 'Your Sec+ governance + data-protection mental models translate directly to the Responsible AI principles. Most of AI-901 is still new — generative AI, agents and building with Microsoft Foundry.'
     },
 
-    // ── AI-900 → Sec+ — reverse direction ─────────────────────────────────
+    // ── AI-901 → Sec+ — reverse direction ─────────────────────────────────
     {
       from: 'ai900',
       to: 'secplus',
@@ -563,7 +563,7 @@
       sharedTopics: [
         'Responsible AI principles (privacy, accountability, transparency carry to Sec+ governance)',
         'Data classification awareness (carries to Sec+ Domain 5)',
-        'Azure AI Content Safety (carries to Sec+ data protection + DLP)'
+        'PII detection in text (carries to Sec+ data protection + DLP)'
       ],
       newTopics: [
         'Threat actors + attack vectors (Sec+ Domain 2 — net-new)',
@@ -575,10 +575,10 @@
       ],
       hoursSaved: 4,
       daysSaved: 1,
-      callout: 'AI-900\'s Responsible AI literacy gives you a slight edge on Sec+ governance. The other 82% — threats, crypto, IR, network security — is new study.'
+      callout: 'AI-901\'s Responsible AI literacy gives you a slight edge on Sec+ governance. The other 82% — threats, crypto, IR, network security — is new study.'
     },
 
-    // ── AZ-900 → AI-900 — medium-high, shared Azure foundations ───────────
+    // ── AZ-900 → AI-901 — medium-high, shared Azure foundations ───────────
     {
       from: 'az900',
       to: 'ai900',
@@ -590,27 +590,27 @@
         'Azure platform fundamentals (regions, availability zones, subscriptions)',
         'Resource Groups + cost management',
         'Microsoft Entra ID + RBAC (identity layer reused by AI services)',
-        'Azure Machine Learning compute infrastructure (sits on Azure VMs + storage)',
+        'Azure resources, endpoints and keys (the layer Microsoft Foundry deployments sit on)',
         'Pricing models (consumption-based for AI services too)',
         'Shared Responsibility Model (carries to AI service deployment)'
       ],
       refresherTopics: [
-        'AZ-900 covers Azure platform; AI-900 reuses the platform layer beneath the AI services'
+        'AZ-900 covers the Azure platform; AI-901 builds AI apps on top of it with Microsoft Foundry'
       ],
       newTopics: [
-        'AI workload types + Responsible AI principles (Domain 1)',
-        'Machine learning fundamentals — classification / regression / clustering / confusion matrix (Domain 2)',
-        'Computer vision workloads — Azure AI Vision + Custom Vision (Domain 3)',
-        'NLP workloads — Azure AI Language + Speech + Translator (Domain 4)',
-        'Generative AI — Azure OpenAI, Azure AI Foundry, Microsoft Copilot, Content Safety (Domain 5 — largest, 25%)',
-        'Azure AI Foundry model catalog (post-Nov-2024 rebrand from Azure AI Studio)'
+        'Responsible AI principles (fairness, reliability and safety, privacy and security, inclusiveness, transparency, accountability)',
+        'How generative AI models work, choosing a model, deployment options and parameters',
+        'AI workloads — generative and agentic AI, text analysis, speech, computer vision, information extraction',
+        'Building generative AI apps and agents in Microsoft Foundry (portal + Python SDK)',
+        'Text and speech apps (Azure Language, Azure Speech in Foundry Tools)',
+        'Multimodal vision and image generation, and information extraction with Azure Content Understanding'
       ],
       hoursSaved: 12,
       daysSaved: 3,
-      callout: 'AZ-900 → AI-900 is the strongest 4-cert pair. Azure platform foundations (regions, RG hierarchy, Entra, pricing) carry over directly. Focus your AI-900 prep on the 5 AI-specific domains — especially Domain 5 Generative AI (Foundry + OpenAI + Copilot, the May 2025 refresh content).'
+      callout: 'AZ-900 → AI-901 is the strongest 4-cert pair. Azure platform foundations (regions, resource groups, Entra, pricing) carry over directly. Focus your AI-901 prep on the larger Foundry domain (55–60%) — prompts, agents, SDK chat clients, Content Understanding — plus basic Python.'
     },
 
-    // ── AI-900 → AZ-900 — reverse direction ───────────────────────────────
+    // ── AI-901 → AZ-900 — reverse direction ───────────────────────────────
     {
       from: 'ai900',
       to: 'az900',
@@ -636,7 +636,7 @@
       ],
       hoursSaved: 8,
       daysSaved: 2,
-      callout: 'AI-900 teaches the Azure platform layer just enough to host AI services. AZ-900 expects depth on compute, networking, storage, governance — most of that is net-new study.'
+      callout: 'AI-901 teaches the Azure platform layer just enough to build AI apps. AZ-900 expects depth on compute, networking, storage, governance — most of that is net-new study.'
     },
 
     // ── A+ Core 1 → A+ Core 2 — same cert family, complementary halves ──────

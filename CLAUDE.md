@@ -28,8 +28,8 @@
 | styles.css | 14913 | 551 KB |
 | index.html | 2287 | 148 KB |
 | dg-system.css | 5462 | 508 KB |
-| tests/uat.js + tests/uat/ (29 modules) | 29259 | — |
-UAT checks: 5036 · E2E `test(` count: 163 · APP_VERSION: 8.121.0 · stamped-at: worktree
+| tests/uat.js + tests/uat/ (29 modules) | 29286 | — |
+UAT checks: 5038 · E2E `test(` count: 163 · APP_VERSION: 8.122.0 · stamped-at: worktree
 <!-- FACTS:AUTO:END -->
 
 | File | Purpose | Size |
@@ -135,9 +135,9 @@ npx playwright test              # E2E (tests/e2e/app.spec.js)
 
 | Version | Features Added |
 |---|---|
+| v8.122.0 | AI-901 Phase 2b/c: switcher, landing, diagnostic |
 | v8.121.0 | AI-901 Phase 2a: app labels, hide Decision Lab, cert-aware analytics copy |
 | v8.120.0 | AI-901 pack (Phase 1) + hidden domain slots no longer leak Net+ topics |
-| v8.119.0 | Official objective ranges for all certs + cert-aware teacher prompts |
 
 _Older releases (v7.60.0 and back) live in [CHANGELOG.md](./CHANGELOG.md)._
 

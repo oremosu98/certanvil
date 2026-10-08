@@ -49,15 +49,14 @@
 
     'azure-ai-fundamentals': {
       name: 'Azure AI Fundamentals',
-      examCode: 'AI-900',
+      examCode: 'AI-901',
       slug: 'azure-ai-fundamentals',
       scoreMin: 0,
       scoreMax: 1000,
       bands: { ready: 820, onPace: 700, nearPass: 560 },
       domainDrills: {
-        'AI Workloads':                  'workload types · responsible-AI principles · vision / NLP / generative scenarios',
-        'Azure Architecture & Services': 'Azure AI services · Vision · Language · Azure OpenAI',
-        'Azure Management & Governance': 'provisioning AI resources · keys & endpoints · cost & access control'
+        'AI Concepts & Capabilities':    'responsible AI · how generative models work · model choice & parameters · AI workloads',
+        'Microsoft Foundry Solutions':   'prompts & SDK chat clients · agents · Language & Speech · multimodal vision · Content Understanding'
       }
     },
 

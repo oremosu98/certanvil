@@ -150,7 +150,7 @@
       { id: 'aplus-core1', name: 'CompTIA A+ Core 1', code: '220-1201', glyph: 'A+' },
       { id: 'aplus-core2', name: 'CompTIA A+ Core 2', code: '220-1202', glyph: 'A+' },
       { id: 'az900',       name: 'Azure Fundamentals', code: 'AZ-900',  glyph: 'AZ' },
-      { id: 'ai900',       name: 'Azure AI Fundamentals', code: 'AI-900', glyph: 'AI' },
+      { id: 'ai900',       name: 'Azure AI Fundamentals', code: 'AI-901', glyph: 'AI' },
       { id: 'sc900',       name: 'Microsoft SC-900',  code: 'SC-900',   glyph: 'SC' },
       { id: 'clfc02',      name: 'AWS Cloud Practitioner', code: 'CLF-C02', glyph: 'AWS' }
     ];
@@ -390,7 +390,7 @@
     'aplus-core1': { format: 'scaled', maxScore: 900, passScore: 675, examName: 'CompTIA A+ Core 1 220-1201' },
     'aplus-core2': { format: 'scaled', maxScore: 900, passScore: 700, examName: 'CompTIA A+ Core 2 220-1202' },
     az900:         { format: 'percent', maxScore: 1000, passScore: 700, examName: 'Azure Fundamentals AZ-900' },
-    ai900:         { format: 'percent', maxScore: 1000, passScore: 700, examName: 'Azure AI Fundamentals AI-900' },
+    ai900:         { format: 'percent', maxScore: 1000, passScore: 700, examName: 'Azure AI Fundamentals AI-901' },
     sc900:         { format: 'percent', maxScore: 1000, passScore: 700, examName: 'Microsoft SC-900' },
     clfc02:        { format: 'percent', maxScore: 1000, passScore: 700, examName: 'AWS Cloud Practitioner CLF-C02' }
   };
