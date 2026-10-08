@@ -52,12 +52,21 @@ const pass = (name, ok, detail) => results.push({ name, ok, detail });
 // quote or a stray space shows up here rather than in CI.
 {
   const m = src.match(/"objective":"(\d+)\.\d+"/g) || [];
-  const c = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+  // Sec+ keeps its founder-locked blueprint + D1 tolerance. Every other cert
+  // derives targets from its own domainWeights (domain N = Nth key), ±10pp.
+  let target, tol;
+  if (CERT === 'secplus') {
+    target = { 1: 12, 2: 22, 3: 18, 4: 28, 5: 20 };
+    tol = { 1: 19, 2: 10, 3: 10, 4: 10, 5: 10 };
+  } else {
+    target = {}; tol = {};
+    Object.values(PACK.domainWeights || {}).forEach((w, i) => { target[i + 1] = w * 100; tol[i + 1] = 10; });
+  }
+  const DOMS = Object.keys(target).map(Number);
+  const c = {}; DOMS.forEach(k => c[k] = 0);
   m.forEach(x => { const d = x.match(/"objective":"(\d+)\./)[1]; if (c[d] !== undefined) c[d]++; });
-  const target = { 1: 12, 2: 22, 3: 18, 4: 28, 5: 20 };
-  const tol = { 1: 19, 2: 10, 3: 10, 4: 10, 5: 10 };
-  let ok = true;
-  const rows = [1, 2, 3, 4, 5].map(k => {
+  let ok = m.length > 0;
+  const rows = DOMS.map(k => {
     const pct = c[k] / m.length * 100, delta = pct - target[k];
     const good = Math.abs(delta) <= tol[k];
     if (!good) ok = false;
@@ -69,7 +78,7 @@ const pass = (name, ok, detail) => results.push({ name, ok, detail });
   // Floor headroom on the tightest domain — the number that decides how much
   // more non-D4 content the pack can absorb.
   let tightest = null;
-  for (const k of [1, 2, 3, 4, 5]) {
+  for (const k of DOMS) {
     const delta = c[k] / m.length * 100 - target[k];
     if (delta < 0 && (!tightest || delta < tightest.delta)) tightest = { k, delta, count: c[k] };
   }

@@ -27,9 +27,9 @@
 | app.js | 8296 | 433 KB |
 | styles.css | 14913 | 551 KB |
 | index.html | 2287 | 148 KB |
-| dg-system.css | 5447 | 507 KB |
-| tests/uat.js + tests/uat/ (29 modules) | 29253 | — |
-UAT checks: 5032 · E2E `test(` count: 163 · APP_VERSION: 8.119.0 · stamped-at: worktree
+| dg-system.css | 5462 | 508 KB |
+| tests/uat.js + tests/uat/ (29 modules) | 29233 | — |
+UAT checks: 5033 · E2E `test(` count: 163 · APP_VERSION: 8.120.0 · stamped-at: worktree
 <!-- FACTS:AUTO:END -->
 
 | File | Purpose | Size |
@@ -135,9 +135,9 @@ npx playwright test              # E2E (tests/e2e/app.spec.js)
 
 | Version | Features Added |
 |---|---|
+| v8.120.0 | AI-901 pack (Phase 1) + hidden domain slots no longer leak Net+ topics |
 | v8.119.0 | Official objective ranges for all certs + cert-aware teacher prompts |
 | v8.118.0 | Question generation on Haiku 5.5 + cert-aware writer prompt |
-| v8.117.0 | Smart quiz targets several weak topics |
 
 _Older releases (v7.60.0 and back) live in [CHANGELOG.md](./CHANGELOG.md)._
 

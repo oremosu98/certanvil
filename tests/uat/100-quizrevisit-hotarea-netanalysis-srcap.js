@@ -2061,3 +2061,12 @@ test('v8.117.0 Smart: startQuiz uses getSmartQuizTopics and never shows the raw 
     return /topic\.includes\('Smart'\)\s*\?\s*getSmartQuizTopics\(qCount\)/.test(qe)
       && /questions on ' \+ _topicLabel/.test(qe) && !/questions on ' \+ activeQuizTopic/.test(qe);
   })());
+
+// v8.120.0: hidden domain slots must not keep Net+ chips (Smart read them on
+// certs with fewer than 5 domains).
+test('v8.120.0 topic chips: _renderTopicChipsForActiveCert empties chip grids of unused domain slots',
+  (() => {
+    const hm = fs.readFileSync(path.join(__dirname, '..', '..', 'features', 'home.js'), 'utf8');
+    const body = (hm.match(/function _renderTopicChipsForActiveCert\(\) \{[\s\S]*?\n  \}\n/) || [''])[0];
+    return /idx > domainKeys\.length\) grid\.innerHTML = ''/.test(body);
+  })());

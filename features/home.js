@@ -512,6 +512,16 @@
         }
       });
 
+      // v8.120.0: empty the chip grids of unused domain slots. They are hidden by
+      // dg-system.css but kept their static Net+ chips, which getSmartQuizTopics
+      // (reads every #topic-group .chip) could pick on AZ-900 / SC-900 / CLF-C02 /
+      // A+ Core 2 / AI-901.
+      document.querySelectorAll('details.topic-domain-group').forEach(acc => {
+        const idx = parseInt(acc.dataset.domainIdx, 10);
+        const grid = acc.querySelector('.chip-grid');
+        if (grid && idx > domainKeys.length) grid.innerHTML = '';
+      });
+
       // 2. Update the 5 .tdp-pill domain-prefill buttons
       document.querySelectorAll('.tdp-pill').forEach((pill) => {
         const idx = parseInt(pill.dataset.domainIdx, 10);
@@ -1938,46 +1948,23 @@
         { label: 'Monitor & Logs',        key: 'Azure Monitor & Log Analytics' },
       ],
     };
-    // v7.5.0 — AI-900 canonical topic shortlist (5 representative topics per
-    // domain) for the home-page domain grid. Mirrors the _CANONICAL_AZ900 +
-    // _CANONICAL_SECPLUS shape — { domainKey: [{ label, key }, …] } where
-    // `key` matches CERT_PACK.topicDomains[key] for weak-spot routing. Domain 5
-    // (GenAI) emphasises Foundry + Azure OpenAI per VoC §13.6 competitor gap.
+    // v8.120.0 — AI-901 (replaced AI-900; internal id stays 'ai900'). Two
+    // official domains, 5 representative topics each; `key` matches
+    // CERT_PACK.topicDomains in certs/ai900.js for weak-spot routing.
     const _CANONICAL_AI900 = {
-      'ai-workloads': [
-        { label: 'Workload Types',        key: 'AI Workload Types' },
+      'concepts': [
         { label: 'Responsible AI',        key: 'Responsible AI Principles' },
-        { label: 'Fairness',              key: 'Fairness in AI' },
-        { label: 'Reliability & Safety',  key: 'Reliability & Safety in AI' },
-        { label: 'Privacy & Inclusiveness', key: 'Privacy, Security & Inclusiveness in AI' },
+        { label: 'How GenAI Works',       key: 'How Generative AI Models Work' },
+        { label: 'Deployment & Params',   key: 'Model Deployment & Parameters' },
+        { label: 'Agentic Scenarios',     key: 'Generative & Agentic AI Scenarios' },
+        { label: 'Text Analysis',         key: 'Text Analysis Techniques' },
       ],
-      'ml-fundamentals': [
-        { label: 'ML Types',              key: 'Common Machine Learning Types' },
-        { label: 'Regression',            key: 'Regression Workloads' },
-        { label: 'Classification',        key: 'Classification Workloads' },
-        { label: 'Clustering',            key: 'Clustering Workloads' },
-        { label: 'Confusion Matrix',      key: 'Confusion Matrix & Model Evaluation' },
-      ],
-      'computer-vision': [
-        { label: 'CV Solutions',          key: 'Computer Vision Common Solutions' },
-        { label: 'Image Classification',  key: 'Image Classification' },
-        { label: 'Object Detection',      key: 'Object Detection' },
-        { label: 'OCR',                   key: 'Optical Character Recognition (OCR)' },
-        { label: 'Face Detection',        key: 'Facial Detection & Analysis' },
-      ],
-      'nlp-workloads': [
-        { label: 'NLP Solutions',         key: 'NLP Common Solutions' },
-        { label: 'Sentiment Analysis',    key: 'Sentiment Analysis' },
-        { label: 'Language Modeling',     key: 'Language Modeling' },
-        { label: 'Speech',                key: 'Speech Recognition & Synthesis' },
-        { label: 'Translation',           key: 'Translation & Transliteration' },
-      ],
-      'genai-workloads': [
-        { label: 'GenAI Features',        key: 'Generative AI Common Features' },
-        { label: 'Foundation vs Fine-tuned', key: 'Foundation Models vs Fine-tuned Models' },
-        { label: 'RAG / Grounding',       key: 'Grounding & RAG (Retrieval-Augmented Generation)' },
-        { label: 'Azure OpenAI',          key: 'Azure OpenAI Service' },
-        { label: 'AI Foundry',            key: 'Azure AI Foundry & Model Catalog' },
+      'foundry': [
+        { label: 'Prompts',               key: 'Prompt Engineering (System & User Prompts)' },
+        { label: 'SDK Chat Clients',      key: 'Foundry SDK Chat Clients' },
+        { label: 'Agents',                key: 'Building Single Agents in Foundry' },
+        { label: 'Multimodal Vision',     key: 'Visual Input with Multimodal Models' },
+        { label: 'Content Understanding', key: 'Content Understanding: Documents & Forms' },
       ],
     };
     // v7.6.0 — fifth cert family CompTIA A+ (dual-exam). 5 canonical topics per

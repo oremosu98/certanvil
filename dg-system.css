@@ -2962,6 +2962,21 @@ html[data-cert="clfc02"] .dgh-db[data-domain-idx="5"]{
   display:none !important;
 }
 
+/* v8.120.0 — AI-901 (cert id ai900) has only 2 domains (concepts / foundry), so
+   static domain slots 3-5 would show stale Net+ content. Hide them on all three
+   surfaces, same pattern as the 3-domain AZ-900 rule above. */
+html[data-cert="ai900"] details.topic-domain-group[data-domain-idx="3"],
+html[data-cert="ai900"] details.topic-domain-group[data-domain-idx="4"],
+html[data-cert="ai900"] details.topic-domain-group[data-domain-idx="5"],
+html[data-cert="ai900"] .tdp-pill[data-domain-idx="3"],
+html[data-cert="ai900"] .tdp-pill[data-domain-idx="4"],
+html[data-cert="ai900"] .tdp-pill[data-domain-idx="5"],
+html[data-cert="ai900"] .dgh-db[data-domain-idx="3"],
+html[data-cert="ai900"] .dgh-db[data-domain-idx="4"],
+html[data-cert="ai900"] .dgh-db[data-domain-idx="5"]{
+  display:none !important;
+}
+
 /* ---- readiness celebration (additive; structure animates, colour from tokens) ---- */
 #readiness-card-v2{position:relative;overflow:hidden}
 #readiness-card-v2 .readiness-score{position:relative}

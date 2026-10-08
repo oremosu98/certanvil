@@ -202,69 +202,40 @@ test('v7.5.0 CertPack: auth-state.js getAvailableCerts returns 4 certs (netplus 
         && /id:\s*['"]az900['"]/.test(src)
         && /id:\s*['"]ai900['"]/.test(src);
   })());
-test('v7.5.0 CertPack: AI-900 domain weights sum within tolerance (>= 0.95 && <= 1.05)',
-  (() => {
-    // 5-domain weights (0.175/0.225/0.175/0.175/0.25 per May 2025 refresh
-    // midpoints). Sums to exactly 1.00.
-    var m = certAi900.match(/domainWeights:\s*\{([\s\S]*?)\}/);
-    if (!m) return false;
-    var nums = (m[1].match(/[0-9]*\.[0-9]+/g) || []).map(Number);
-    var sum = nums.reduce(function (a, b) { return a + b; }, 0);
-    return sum >= 0.95 && sum <= 1.05;
+// v8.120.0: AI-900 was retired 2026-06-30; the ai900 pack now holds AI-901
+// (internal id kept). These replace the v7.5.0 AI-900 shape guards.
+const _ai901 = (() => {
+  try { const sb = { window: {} }; vm.runInNewContext(certAi900, sb); return sb.window.CERT_PACKS.ai900; }
+  catch (e) { return null; }
+})();
+test('v8.120.0 AI-901: pack is AI-901 with 2 official domains whose weights sum to 1',
+  !!_ai901 && _ai901.meta.code === 'AI-901' && _ai901.meta.id === 'ai900'
+    && JSON.stringify(Object.keys(_ai901.domainWeights)) === '["concepts","foundry"]'
+    && Math.abs(Object.values(_ai901.domainWeights).reduce((a, b) => a + b, 0) - 1) < 1e-9
+    && /1\.1–1\.3[^,]*, 2\.1–2\.4/.test(_ai901.meta.objectiveRanges || ''));
+test('v8.120.0 AI-901: every topic has a domain, a resource and at least one exemplar',
+  !!_ai901 && (() => {
+    const topics = Object.keys(_ai901.topicDomains);
+    const used = new Set(_ai901.questionExemplars.map(e => e.topic));
+    return topics.length >= 20
+      && topics.every(t => ['concepts', 'foundry'].includes(_ai901.topicDomains[t]))
+      && topics.every(t => _ai901.topicResources[t] && /^[12]\.\d$/.test(_ai901.topicResources[t].obj))
+      && topics.every(t => used.has(t));
   })());
-test('v7.5.0 CertPack: AI-900 exemplar bank >= 195 entries',
-  (() => {
-    // Count addedVersion: "7.5.0" markers — one per exemplar in the v7.5.0
-    // ship. The cert pack uses unquoted JS object literal keys (vs the JSON
-    // shape some prior packs used), so the regex anchors on the unquoted
-    // form. Floor 195 gives 5+ headroom from the 200 plan target (final
-    // count 206 per Stage 6 commit).
-    var matches = certAi900.match(/addedVersion:\s*"7\.5\.0"/g);
-    return matches && matches.length >= 195;
-  })());
-test('v7.5.0 CertPack: AI-900 topic catalog has >= 35 topics',
-  (() => {
-    // Count keys in the topicDomains object. Mirrors AZ-900 pattern with the
-    // topicResources block boundary marker. AI-900 has 40 topics per plan
-    // Stage 1 (D1=7 / D2=9 / D3=7 / D4=7 / D5=10).
-    var topicSection = certAi900.match(/topicDomains:\s*\{([\s\S]*?)\},\s*\n\s*\/\//);
-    if (!topicSection) return false;
-    var keys = topicSection[1].match(/^\s*'[^']+':/gm) || [];
-    return keys.length >= 35;
-  })());
-test('v7.5.0 CertPack: every AI-900 exemplar topic exists in topicDomains',
-  (() => {
-    // Mirrors the AZ-900 v7.3.0 guard. Domain IDs differ (5-domain set:
-    // ai-workloads / ml-fundamentals / computer-vision / nlp-workloads /
-    // genai-workloads). Exemplar.topic uses unquoted JS key style.
-    var topicSection = certAi900.match(/topicDomains:\s*\{([\s\S]*?)\},\s*\n\s*\/\//);
-    if (!topicSection) return false;
-    var topicKeys = new Set();
-    var keyMatch;
-    var keyRe = /'([^']+)':\s*'(?:ai-workloads|ml-fundamentals|computer-vision|nlp-workloads|genai-workloads)'/g;
-    while ((keyMatch = keyRe.exec(topicSection[1])) !== null) {
-      topicKeys.add(keyMatch[1]);
-    }
-    if (topicKeys.size < 35) return false; // sanity check that extraction worked
-    // Scan every exemplar.topic field (unquoted-key form: topic: "...")
-    var exTopics = certAi900.match(/topic:\s*"([^"]+)"/g) || [];
-    if (exTopics.length === 0) return false;
-    for (var i = 0; i < exTopics.length; i++) {
-      var t = exTopics[i].replace(/^topic:\s*"/, '').replace(/"$/, '');
-      if (!topicKeys.has(t)) return false;
-    }
-    return true;
-  })());
-test('v7.5.0 CertPack: Domain 5 has >= 10 Azure AI Foundry exemplars (VoC §13.6 competitor-gap floor)',
-  (() => {
-    // VoC §13.6 mandate: 10+ Azure AI Foundry exemplars in Domain 5 as the
-    // competitor-gap goldmine. Count exemplars whose topic is the Foundry
-    // topic OR whose question/explanation references "Azure AI Foundry"
-    // by name. Floor 10 catches regressions where Foundry coverage gets
-    // reduced (e.g. someone trims D5 exemplars without auditing for Foundry).
-    var foundryRefs = certAi900.match(/Azure AI Foundry/g) || [];
-    return foundryRefs.length >= 10;
-  })());
+test('v8.120.0 AI-901: every exemplar topic exists in topicDomains and objective matches its topic',
+  !!_ai901 && _ai901.questionExemplars.length >= 30
+    && _ai901.questionExemplars.every(e => _ai901.topicDomains[e.topic]
+      && _ai901.topicResources[e.topic].obj === e.objective));
+test('v8.120.0 AI-901: no retired AI-900 machine-learning domain or topics remain',
+  !!_ai901 && !/ml-fundamentals|Clustering Workloads|Automated ML \(AutoML\)|Azure AI Studio/.test(certAi900));
+test('v8.120.0 AI-901: Microsoft Foundry is covered (>= 10 exemplars name it) and the home grid matches the pack',
+  !!_ai901 && _ai901.questionExemplars.filter(e => /Foundry/.test(e.question + ' ' + e.explanation)).length >= 10
+    && (() => {
+      const hm = fs.readFileSync(path.join(ROOT, 'features', 'home.js'), 'utf8');
+      const block = (hm.match(/const _CANONICAL_AI900 = \{([\s\S]*?)\n    \};/) || [])[1] || '';
+      const keys = [...block.matchAll(/key: '([^']+)'/g)].map(m => m[1]);
+      return keys.length === 10 && keys.every(k => _ai901.topicDomains[k]);
+    })());
 
 // ══════════════════════════════════════════════════════════════════════
 // v7.6.0 CertPack — CompTIA A+ Core 1 (220-1201) + Core 2 (220-1202) cert add
