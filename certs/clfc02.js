@@ -47,6 +47,8 @@ window.CERT_PACKS.clfc02 = {
     id: 'clfc02',
     name: 'AWS Cloud Practitioner',
     code: 'CLF-C02',
+    // Official ranges, verified 2026-10-08 against the vendor's exam guide.
+    objectiveRanges: '1.1–1.4 (Cloud Concepts), 2.1–2.4 (Security and Compliance), 3.1–3.8 (Cloud Technology and Services), 4.1–4.3 (Billing, Pricing, and Support) — AWS task statements',
     blueprintUrl: 'https://d1.awsstatic.com/training-and-certification/docs-cloud-practitioner/AWS-Certified-Cloud-Practitioner_Exam-Guide.pdf',
     examPassScore: 700,         // CLF-C02 official pass: 700/1000 (scaled).
     examMaxScore: 1000,         // scaled-score ceiling

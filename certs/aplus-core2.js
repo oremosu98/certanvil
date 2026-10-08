@@ -57,6 +57,8 @@ window.CERT_PACKS['aplus-core2'] = {
     id: 'aplus-core2',
     name: 'CompTIA A+ Core 2',
     code: '220-1202',
+    // Official ranges, verified 2026-10-08 against the vendor's exam guide.
+    objectiveRanges: '1.1–1.11 (Operating Systems), 2.1–2.11 (Security), 3.1–3.4 (Software Troubleshooting), 4.1–4.10 (Operational Procedures)',
     blueprintUrl: 'https://www.comptia.org/certifications/a',
     examPassScore: 700,         // Official 220-1202: 700 on a 100-900 scale (NOT 675 like Core 1). PDF p3.
     examMaxScore: 900,          // scaled-score ceiling

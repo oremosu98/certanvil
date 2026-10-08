@@ -1,9 +1,9 @@
 // ══════════════════════════════════════════
-// Network+ AI Quiz — app.js  v8.118.0
+// Network+ AI Quiz — app.js  v8.119.0
 // ══════════════════════════════════════════
 
 // ── CONSTANTS ──
-const APP_VERSION = '8.118.0';
+const APP_VERSION = '8.119.0';
 // v4.99.45 (Phase 6b): expose APP_VERSION on window so the web-vitals
 // collector (lib/web-vitals-collector.js, loaded BEFORE app.js so its
 // PerformanceObservers attach earlier) can stamp this version onto every
@@ -7746,7 +7746,7 @@ async function explainFurther() {
   // v4.38.5 — inject ground-truth facts so the teacher can't hallucinate
   // deterministic things (ports, OSI layers, deprecated wireless) under us.
   const gtHint = _buildGtHint(q.question + ' ' + (q.explanation || ''), q.topic);
-  const prompt = `A student studying for the CompTIA Network+ N10-009 exam needs a thorough, teaching-quality explanation of this concept.
+  const prompt = `A student studying for the ${CERT_NAME_FULL} exam needs a thorough, teaching-quality explanation of this concept.
 ${gtHint}
 ${questionContext}
 
@@ -7755,7 +7755,7 @@ Original explanation: ${q.explanation}
 Please provide ALL of the following sections:
 
 1. CONCEPT BREAKDOWN
-Explain the underlying networking concept in simple, plain English. Assume the student is new to this topic. Cover what it is, why it exists, and how it works in practice. (3-4 sentences)
+Explain the underlying technical concept in simple, plain English. Assume the student is new to this topic. Cover what it is, why it exists, and how it works in practice. (3-4 sentences)
 
 2. REAL-WORLD ANALOGY
 Give a memorable real-world analogy that makes this concept click. Be creative and specific.
@@ -7764,7 +7764,7 @@ Give a memorable real-world analogy that makes this concept click. Be creative a
 For each incorrect option, explain in 1-2 sentences WHY it's wrong and what it actually refers to (so the student learns from the distractors too).
 
 4. HOW THIS APPEARS ON THE EXAM
-Describe common ways CompTIA tests this concept — what tricky wording to watch for, what distractors they like to use, and any "gotcha" patterns.
+Describe common ways the ${CERT_CODE} exam tests this concept — what tricky wording to watch for, what distractors they like to use, and any "gotcha" patterns.
 
 5. MEMORY TRICK
 Give a mnemonic, acronym, or memory hook to lock this in.

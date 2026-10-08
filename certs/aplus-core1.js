@@ -65,6 +65,8 @@ window.CERT_PACKS['aplus-core1'] = {
     id: 'aplus-core1',
     name: 'CompTIA A+ Core 1',
     code: '220-1201',
+    // Official ranges, verified 2026-10-08 against the vendor's exam guide.
+    objectiveRanges: '1.1–1.3 (Mobile Devices), 2.1–2.8 (Networking), 3.1–3.8 (Hardware), 4.1–4.2 (Virtualization and Cloud Computing), 5.1–5.6 (Hardware and Network Troubleshooting)',
     blueprintUrl: 'https://www.comptia.org/certifications/a',
     examPassScore: 675,         // Official 220-1201: 675 on a 100-900 scale. PDF p3 + VoC §7.
     examMaxScore: 900,          // scaled-score ceiling

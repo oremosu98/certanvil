@@ -67,6 +67,8 @@ window.CERT_PACKS.sc900 = {
     id: 'sc900',
     name: 'Microsoft SC-900',
     code: 'SC-900',
+    // Official ranges, verified 2026-10-08 against the vendor's exam guide.
+    objectiveRanges: '1.1–1.2 (Concepts of security, compliance, and identity), 2.1–2.4 (Capabilities of Microsoft Entra), 3.1–3.4 (Capabilities of Microsoft security solutions), 4.1–4.4 (Capabilities of Microsoft compliance solutions) — Microsoft lists these skill groups unnumbered; X.Y is their order within each domain',
     blueprintUrl: 'https://learn.microsoft.com/credentials/certifications/resources/study-guides/sc-900',
     examPassScore: 700,         // SC-900 official pass: 700/1000 (scaled). "A score of 700 or
                                 // greater is required to pass" — confirmed by the official PDF

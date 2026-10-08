@@ -50,6 +50,8 @@ window.CERT_PACKS.az900 = {
     id: 'az900',
     name: 'Microsoft Azure Fundamentals',
     code: 'AZ-900',
+    // Official ranges, verified 2026-10-08 against the vendor's exam guide.
+    objectiveRanges: '1.1–1.3 (Describe cloud concepts), 2.1–2.4 (Describe Azure architecture and services), 3.1–3.4 (Describe Azure management and governance) — Microsoft lists these skill groups unnumbered; X.Y is their order within each domain',
     blueprintUrl: 'https://learn.microsoft.com/credentials/certifications/azure-fundamentals/',
     examPassScore: 700,         // AZ-900 official pass: 700/1000 (scaled)
     examMaxScore: 1000,         // scaled-score ceiling (different from CompTIA's 100-900 range)

@@ -1553,3 +1553,25 @@ test('v8.118.0 replies: _claudeText skips thinking blocks and joins text blocks 
         && vm.runInContext('_claudeText({ content: [{ type: "thinking" }] })', ctx) === '';
     } catch (e) { return false; }
   })());
+
+// v8.119.0: every AI teaching prompt follows the active cert — Explain Further
+// and Topic Deep Dive were hard-coded to "CompTIA Network+ N10-009" on all certs.
+test('v8.119.0 teacher prompts: Explain Further + Topic Deep Dive use the active cert, not Network+',
+  (() => {
+    const td = fs.readFileSync(path.join(__dirname, '..', '..', 'features', 'topic-dive.js'), 'utf8');
+    return js.includes('A student studying for the ${CERT_NAME_FULL} exam')
+      && !js.includes('A student studying for the CompTIA Network+ N10-009 exam')
+      && td.includes('You are a ${CERT_NAME_FULL} instructor.')
+      && !td.includes('You are a CompTIA Network+ N10-009 instructor');
+  })());
+
+// v8.119.0: every live cert pack (except retired AI-900) gives the writer its
+// official objective ranges, so no cert falls back to a generic or wrong list.
+test('v8.119.0 objective ranges: netplus, secplus, A+ Core 1/2, AZ-900, SC-900, CLF-C02 all declare meta.objectiveRanges',
+  (() => {
+    const read = f => fs.readFileSync(path.join(__dirname, '..', '..', 'certs', f), 'utf8');
+    return ['netplus.js', 'secplus.js', 'aplus-core1.js', 'aplus-core2.js', 'az900.js', 'sc900.js', 'clfc02.js']
+      .every(f => /\n    objectiveRanges: '[^']+',\n/.test(read(f)))
+      && /3\.1–3\.8 \(Cloud Technology and Services\)/.test(read('clfc02.js'))
+      && /2\.1–2\.11 \(Security\)/.test(read('aplus-core2.js'));
+  })());

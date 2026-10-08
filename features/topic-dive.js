@@ -13,7 +13,7 @@
   // can't hallucinate deterministic values that live in GT_PORTS/GT_OSI.
   function buildTopicDivePrompt(topicName) {
     const gtHint = _buildGtHint(topicName, topicName);
-    return `You are a CompTIA Network+ N10-009 instructor. Create a comprehensive study guide for the topic: "${topicName}"
+    return `You are a ${CERT_NAME_FULL} instructor. Create a comprehensive study guide for the topic: "${topicName}"
   ${gtHint}
 
   Return your response as valid JSON with this exact structure:
