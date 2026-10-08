@@ -103,7 +103,7 @@
       if (!apiRes.ok) throw new Error('API error');
 
       const data = await apiRes.json();
-      const raw = data.content?.[0]?.text || '';
+      const raw = _claudeText(data);
 
       // Extract JSON (handle possible markdown code fences)
       let jsonStr = raw.trim();
@@ -526,7 +526,7 @@
       });
       if (!res.ok) return;
       const data = await res.json();
-      const text = data.content?.[0]?.text || '';
+      const text = _claudeText(data);
       if (text) {
         _aiCacheSet('topicBrief', topicName, text);
         tbt.innerHTML = escHtml(text).replace(/\n/g, '<br>');

@@ -32,6 +32,7 @@ window.CERT_PACKS.secplus = {
     id: 'secplus',
     name: 'CompTIA Security+',
     code: 'SY0-701',
+    objectiveRanges: '1.1–1.4 (General Security Concepts), 2.1–2.5 (Threats, Vulnerabilities & Mitigations), 3.1–3.4 (Security Architecture), 4.1–4.9 (Security Operations), 5.1–5.6 (Security Program Management & Oversight)',
     blueprintUrl: 'https://www.comptia.org/certifications/security',
     examPassScore: 750,        // Security+ scaled-score pass threshold (CompTIA official)
     examMaxScore: 900,         // scaled-score ceiling

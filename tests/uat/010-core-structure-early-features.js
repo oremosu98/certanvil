@@ -318,7 +318,14 @@ test('CSS: hardcore-active hides flag/nav', css.includes('hardcore-active'));
 // v4.8 — N10-009 tightness
 test('computeDomainDistribution helper', js.includes('function computeDomainDistribution('));
 test('N10-009 objective regex used in validation', /\(\[1-5\]\\\.\[1-8\]\)/.test(js));
-test('Prompt requires objective field', js.includes('MANDATORY N10-009 OBJECTIVE TAGGING'));
+test('Prompt requires objective field', js.includes('MANDATORY ${CERT_CODE} OBJECTIVE TAGGING'));
+// v8.118.0: the writer prompt must follow the active cert, never a hard-coded Net+ identity.
+test('v8.118.0 writer prompt: cert-aware identity + objective ranges (no hard-coded N10-009 voice)',
+  js.includes('You are a ${CERT_NAME_FULL} exam question writer')
+    && !js.includes('You are a CompTIA Network+ N10-009 exam question writer')
+    && js.includes('- Valid objectives are ${_objectiveRangesText}')
+    && /objectiveRanges: '1\.1–1\.4 \(General Security Concepts\)[^']*4\.1–4\.9[^']*5\.1–5\.6/.test(certSecplus)
+    && /objectiveRanges: '1\.1–1\.8 \(Concepts\)/.test(certNetplus));
 test('Prompt: objective in JSON schema', js.includes('"objective":"X.Y"'));
 test('Mixed mode topic lottery (v4.85.8: replaces MANDATORY DOMAIN DISTRIBUTION)', js.includes('MANDATORY TOPIC LOTTERY'));
 test('validateQuestions enforces objective', js.includes('q.objective') && js.includes('[1-5]\\.[1-8]'));

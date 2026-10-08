@@ -60,3 +60,4 @@ glabel.txt
 *.key
 *.pem
 secrets/
+scripts/generator-ab-results.json

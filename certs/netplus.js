@@ -21,6 +21,7 @@ window.CERT_PACKS.netplus = {
     id: 'netplus',
     name: 'CompTIA Network+',
     code: 'N10-009',
+    objectiveRanges: '1.1–1.8 (Concepts), 2.1–2.4 (Implementation), 3.1–3.5 (Operations), 4.1–4.5 (Security), 5.1–5.5 (Troubleshooting)',
     blueprintUrl: 'https://www.comptia.org/certifications/network',
     examPassScore: 720,        // scaled-score pass threshold
     examMaxScore: 900,         // scaled-score ceiling

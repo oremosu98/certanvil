@@ -132,7 +132,7 @@ test('v4.56.1 JS: QUIZ_BATCH_SIZE constant defined (10)',
 test('v4.56.1 JS: QUIZ_BATCH_THRESHOLD constant defined (12)',
   /const QUIZ_BATCH_THRESHOLD\s*=\s*12/.test(js));
 test('v4.56.1 JS: MAX_TOKENS_GENERATION bumped to 12000 for scenario headroom',
-  /MAX_TOKENS_GENERATION\s*=\s*12000/.test(js));
+  /MAX_TOKENS_GENERATION\s*=\s*(12000|16000)/.test(js));  // v8.118.0: 16000 for Haiku 5.5 thinking
 
 // Coordinator structure
 test('v4.56.1 JS: fetchQuestions single-shot path when n <= threshold',
@@ -1440,7 +1440,8 @@ const _v116 = (() => {
   const apply = _fnBody(js, '_applyValidatorVerdicts');
   // _fnBody returns `function aiValidateQuestions…` without `async`; restore it.
   const mainRaw = _fnBody(js, 'aiValidateQuestions');
-  const main = mainRaw ? 'async ' + mainRaw : '';
+  // v8.118.0: aiValidateQuestions reads replies through _claudeText.
+  const main = mainRaw ? _fnBody(js, '_claudeText') + '\n' + 'async ' + mainRaw : '';
   return { parse, apply, main };
 })();
 const _v116Ctx = (extra) => {
@@ -1507,7 +1508,7 @@ const ctxFor = fetchImpl => { const c = vm.createContext({ getQType: q => q.type
 (async () => {
   let calls = 0;
   const ok = ctxFor(async init => { calls++; const n = (JSON.parse(init.body).messages[0].content.match(/^Q\\d+: "/gm) || []).length;
-    return { ok: true, json: async () => ({ content: [{ text: Array.from({ length: n }, (_, i) => 'Q' + (i + 1) + ' | check: - | reason: ok | verdict: OK').join('\\n') }] }) }; });
+    return { ok: true, json: async () => ({ content: [{ type: 'text', text: Array.from({ length: n }, (_, i) => 'Q' + (i + 1) + ' | check: - | reason: ok | verdict: OK').join('\\n') }] }) }; });
   ok.qs = mk(12);
   const r1 = await vm.runInContext('aiValidateQuestions("k", qs)', ok);
   const chunked = calls === 3 && r1.length === 12;
@@ -1532,4 +1533,23 @@ test('v8.116.0 validator: telemetry rows use the telemetry:validator type and sk
     const body = _fnBody(js, '_logValidatorTelemetry');
     return !!body && /localhost/.test(body) && /VALIDATOR_TELEMETRY_CAP/.test(body)
       && /'telemetry:validator'/.test(js) && /'telemetry:validator-run'/.test(js);
+  })());
+
+
+// v8.118.0: generator → Haiku 5.5. Replies may open with thinking blocks, so
+// no reader may take content[0] as the answer.
+test('v8.118.0 generator: CLAUDE_MODEL is claude-haiku-5-5 with a 16000-token budget',
+  /const CLAUDE_MODEL = 'claude-haiku-5-5';/.test(js) && /const MAX_TOKENS_GENERATION\s*=\s*16000;/.test(js));
+test('v8.118.0 replies: no reader takes content[0] as the answer (all go through _claudeText)',
+  !/content\?\.\[0\]\?\.text|content\[0\]\.text/.test(js));
+test('v8.118.0 replies: _claudeText skips thinking blocks and joins text blocks in order',
+  (() => {
+    try {
+      const ctx = vm.createContext({ Array });
+      vm.runInContext(_fnBody(js, '_claudeText'), ctx);
+      ctx.d = { content: [{ type: 'thinking', thinking: '', signature: 'x' }, { type: 'text', text: '[1' }, { type: 'text', text: ',2]' }] };
+      return vm.runInContext('_claudeText(d)', ctx) === '[1\n,2]'
+        && vm.runInContext('_claudeText({})', ctx) === ''
+        && vm.runInContext('_claudeText({ content: [{ type: "thinking" }] })', ctx) === '';
+    } catch (e) { return false; }
   })());

@@ -158,7 +158,7 @@
     });
     if (!res.ok) throw new Error('gauntlet API error ' + res.status);
     const data = await res.json();
-    const raw = (data.content && data.content[0] && data.content[0].text) || '';
+    const raw = _claudeText(data);
     const m = raw.match(/\{[\s\S]*\}/);
     if (!m) throw new Error('gauntlet: no JSON object in response');
     const parsed = JSON.parse(m[0]);
@@ -508,7 +508,7 @@
     });
     if (!res.ok) throw new Error('whynot API error ' + res.status);
     const data = await res.json();
-    const raw = (data.content && data.content[0] && data.content[0].text) || '';
+    const raw = _claudeText(data);
     const m = raw.match(/\{[\s\S]*\}/);
     if (!m) throw new Error('whynot: no JSON object in response');
     const parsed = JSON.parse(m[0]);

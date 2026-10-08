@@ -41,7 +41,7 @@ function extractFunction(src, name) {
   }
   return src.slice(start, i);
 }
-const pipelineSrc = [
+const pipelineSrc = [extractFunction(appJs, '_claudeText'), 
   extractFunction(appJs, '_parseValidatorVerdicts'),
   extractFunction(appJs, '_applyValidatorVerdicts'),
   'async ' + extractFunction(appJs, 'aiValidateQuestions'),

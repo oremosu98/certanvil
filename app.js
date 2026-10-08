@@ -1,9 +1,9 @@
 // ══════════════════════════════════════════
-// Network+ AI Quiz — app.js  v8.117.0
+// Network+ AI Quiz — app.js  v8.118.0
 // ══════════════════════════════════════════
 
 // ── CONSTANTS ──
-const APP_VERSION = '8.117.0';
+const APP_VERSION = '8.118.0';
 // v4.99.45 (Phase 6b): expose APP_VERSION on window so the web-vitals
 // collector (lib/web-vitals-collector.js, loaded BEFORE app.js so its
 // PerformanceObservers attach earlier) can stamp this version onto every
@@ -224,7 +224,7 @@ const VXLAN_VNI_MAX = 16777215;     // 24-bit VNI range (RFC 7348)
 // Max-token limits per call site, named for intent rather than scattered
 // magic numbers. Generation (Haiku) needs room for 18-Q batches; validation
 // and teacher calls are more compact.
-const MAX_TOKENS_GENERATION      = 12000; // fetchQuestions — Haiku batch generation (v4.56.1: bumped 8000→12000 for scenario-field headroom on 20-Q runs)
+const MAX_TOKENS_GENERATION      = 16000; // fetchQuestions — Haiku batch generation (v4.56.1: 8000→12000 for scenario headroom; v8.118.0: →16000 = proxy cap, because Haiku 5.5's thinking counts toward it and the A/B averaged ~10.2k per 10-question batch)
 const MAX_TOKENS_VALIDATION      = 1000;  // aiValidateQuestions — Sonnet second-pass
 const MAX_TOKENS_TEACHER_DEFAULT = 1500;  // explainFurther, tbCoachTopology — standard teacher call
 const MAX_TOKENS_TEACHER_LONG    = 2000;  // showTopicDeepDive — longest teacher call
@@ -366,7 +366,7 @@ output — they are style references only. Write NEW questions of equal quality:
 ${blocks}
 `;
 }
-const CLAUDE_MODEL = 'claude-haiku-4-5-20251001';
+const CLAUDE_MODEL = 'claude-haiku-5-5';  // v8.118.0: was claude-haiku-4-5-20251001 — see scripts/generator-ab.js
 
 // ── Unplanned-failure hardening (spec 2026-07-19) ───────────────────────
 // Every network call gets a timeout budget. A timeout that overlapped a
@@ -469,6 +469,14 @@ function _claudeFail(e, response, init) {
   err.userFacing = true;
   err.refId = refId;
   throw err;
+}
+
+// v8.118.0: newer models (Haiku 5.5) can open a reply with "thinking" blocks
+// before the answer, so content[0] is no longer guaranteed to be the text.
+// Every reader goes through this: it joins all text blocks, in order.
+function _claudeText(data) {
+  const blocks = (data && Array.isArray(data.content)) ? data.content : [];
+  return blocks.filter(b => b && b.type === 'text' && typeof b.text === 'string').map(b => b.text).join('\n');
 }
 
 async function _claudeFetch(init) {
@@ -3322,13 +3330,9 @@ function getSpacedRepTopic() {
   return top[0].topic;
 }
 
-// v8.117.0: a Smart quiz targets SEVERAL weak spots, not one (founder request).
-// Topics are ranked by _scoreTopicNeed — a relative ranking — so when every
-// topic is strong it still picks the comparatively weakest. Draws 3 topics
-// (4 for 15+ questions) by need-weighted sampling from the top few, so repeat
-// runs vary slightly instead of always serving the identical trio. Returns a
-// "Multi: A, B, C" sentinel, which the generator already splits evenly.
-// getSpacedRepTopic stays single-topic for its other callers.
+// v8.117.0: Smart quiz = 3 (4 for 15+ Qs) of the neediest topics, need-weighted
+// sampled from the top few; relative ranking, so all-strong still picks the
+// weakest. Returns a "Multi:" sentinel. getSpacedRepTopic stays single-topic.
 function getSmartQuizTopics(count) {
   const allTopics = _getAllStudyTopics();
   if (allTopics.length === 0) return MIXED_TOPIC;
@@ -3934,7 +3938,7 @@ async function _fetchRewordedVariants(key, entries) {
   });
   if (!res.ok) throw new Error('reword API error ' + res.status);
   const data = await res.json();
-  const raw = (data.content && data.content[0] && data.content[0].text) || '';
+  const raw = _claudeText(data);
   const m = raw.match(/\[[\s\S]*\]/);
   if (!m) throw new Error('reword: no JSON array in response');
   const parsed = JSON.parse(m[0]);
@@ -4241,7 +4245,7 @@ async function _slMeteredGenerate(prompt) {
   });
   if (!res.ok) throw new Error('sim-lab API error ' + res.status);
   const data = await res.json();
-  const raw = (data.content && data.content[0] && data.content[0].text) || '';
+  const raw = _claudeText(data);
   const m = raw.match(/\{[\s\S]*\}/);
   if (!m) throw new Error('sim-lab: no JSON object in response');
   return JSON.parse(m[0]);
@@ -4708,14 +4712,19 @@ CRITICAL — MULTI-SELECT QUALITY CRITERIA (CompTIA exam style):
   // into producing malformed JSON — retry without them usually succeeds.
   const scenarioInstructions = `
 SCENARIO CONTEXT FIELD (optional, exam-realism):
-- On roughly 30-40% of Exam Level and Hard questions, include an optional "scenario" field with 1-2 short sentences (max ~30 words) of real-world setup BEFORE the question is asked. This mirrors real N10-009 exam framing ("A technician is configuring...", "A user reports...", "An administrator notices...").
+- On roughly 30-40% of Exam Level and Hard questions, include an optional "scenario" field with 1-2 short sentences (max ~30 words) of real-world setup BEFORE the question is asked. This mirrors real ${CERT_CODE} exam framing ("A technician is configuring...", "A user reports...", "An administrator notices...").
 - CRITICAL RULE — scenario describes the ENVIRONMENT the answer depends on; it NEVER restates the subject of the question in technical terms. ❌ "Consider a Layer 2 switch..." inside a question that asks which layer a switch operates at (this telegraphs the answer). ✅ "A technician sees frames being forwarded between hosts on the same subnet but traffic never leaves the local broadcast domain." (forces the learner to reason).
 - Scenario should help DISAMBIGUATE context that makes one answer clearly right, not give the answer away.
 - DO NOT include scenario on: pure recall questions (what port is HTTPS? which protocol uses X?), acronym definitions, or Foundational difficulty. Scenario adds noise on those.
 - Omit the field entirely for questions that don't need it — don't set it to empty string.
 `;
 
-  const buildPrompt = (includeScenario) => `You are a CompTIA Network+ N10-009 exam question writer. You ONLY write questions that map to the official N10-009 exam objectives. Never write questions about content outside the N10-009 blueprint.
+  // v8.118.0: the writer prompt was hard-coded to "CompTIA Network+ N10-009"
+  // (identity line, objective tagging, valid objective ranges) and ran that way
+  // on every cert, contradicting topicStr. Ranges now come from the cert pack.
+  const _objectiveRangesText = (CERT_PACK && CERT_PACK.meta && CERT_PACK.meta.objectiveRanges)
+    || 'the official ' + CERT_CODE + ' objective numbers';
+  const buildPrompt = (includeScenario) => `You are a ${CERT_NAME_FULL} exam question writer. You ONLY write questions that map to the official ${CERT_CODE} exam objectives. Never write questions about content outside the ${CERT_CODE} blueprint.
 
 ${topicStr}${mixedDistributionStr}
 Difficulty: ${diffStr}
@@ -4728,15 +4737,15 @@ Generate exactly ${n} multiple choice questions. Requirements:
 - Each explanation must state WHY the answer is correct AND briefly why the main wrong option is wrong (2-3 sentences max)
 - No repeated questions
 ${includeScenario ? scenarioInstructions : ''}
-MANDATORY N10-009 OBJECTIVE TAGGING:
+MANDATORY ${CERT_CODE} OBJECTIVE TAGGING:
 - Every question MUST include an "objective" field with the CompTIA ${CERT_CODE} exam objective number (format "X.Y" — e.g., "1.4", "2.1", "4.3", "5.1")
-- Valid objectives are 1.1–1.8 (Concepts), 2.1–2.4 (Implementation), 3.1–3.5 (Operations), 4.1–4.5 (Security), 5.1–5.5 (Troubleshooting)
-- If you cannot map the question to a specific N10-009 objective, do NOT write the question — write a different one that does map${expectedObj ? `\n- For this topic, use objective "${expectedObj}" (or an adjacent sub-objective in the same domain if more appropriate)` : ''}
+- Valid objectives are ${_objectiveRangesText}
+- If you cannot map the question to a specific ${CERT_CODE} objective, do NOT write the question — write a different one that does map${expectedObj ? `\n- For this topic, use objective "${expectedObj}" (or an adjacent sub-objective in the same domain if more appropriate)` : ''}
 ${pbqInstructions}
 
 CRITICAL — SELF-VERIFICATION PROTOCOL (you MUST follow these steps for EVERY question):
 Step 1: Write the question and all options.
-Step 2: INDEPENDENTLY determine which option is factually correct by reasoning through the networking concept. Do NOT just pick a letter — think through WHY.
+Step 2: INDEPENDENTLY determine which option is factually correct by reasoning through the technical concept. Do NOT just pick a letter — think through WHY.
 Step 3: Set the "answer" field to the letter of the option you verified in Step 2.
 Step 4: Write the explanation referencing that SAME letter and option text.
 Step 5: CROSS-CHECK: Re-read the option text at your chosen answer letter. Does it match what your explanation says? If not, fix the answer field.
@@ -4796,7 +4805,7 @@ Respond ONLY with a raw JSON array - no markdown, no extra text:
       throw apiErr;
     }
     const data = await res.json();
-    const raw = data.content?.[0]?.text || '';
+    const raw = _claudeText(data);
     const m = raw.match(/\[[\s\S]*\]/);
     if (!m) {
       const e = new Error(`[${label}] Could not locate JSON array in AI response`);
@@ -7450,22 +7459,10 @@ function injectPBQs(qs, qTopic, count) {
 // ══════════════════════════════════════════
 // AI SECOND-PASS VALIDATOR (Enhancement 1)
 // ══════════════════════════════════════════
-// v8.116.0 — validator hardening (founder-approved 5-point plan):
-//  1. FAIL CLOSED: a question survives only on an explicit OK. A failed call is
-//     retried once; questions with no verdict (call failed twice, or no
-//     parseable line) are dropped — callers already top up shortfalls and fall
-//     back to the validated cache. Pre-v8.116 every failure returned the whole
-//     set UNCHECKED, silently.
-//  2. A WRONG:X verdict on a multi-select drops the question. The old path set
-//     q.answer, which multi-select scoring never reads (it reads q.answers), so
-//     a known-bad key stayed in the quiz.
-//  3. CHUNKED + PARALLEL: VALIDATOR_CHUNK_SIZE questions per Sonnet call, all
-//     chunks at once. One call over 26 questions spread attention thin and was
-//     the slowest, most timeout-prone step.
-//  4. REASON FIRST: each verdict line names the failed check and a short reason
-//     before the verdict (better judgments), and rejections are logged to
-//     client_errors as type 'telemetry:validator' so we can fix the generator
-//     prompt at the source.
+// v8.116.0 validator hardening: fails closed (explicit OK only, one retry per
+// chunk), drops multi-select WRONG:X (scoring reads q.answers, not q.answer),
+// checks VALIDATOR_CHUNK_SIZE questions per parallel Sonnet call, and logs
+// reason-first verdicts to client_errors as 'telemetry:validator'.
 const VALIDATOR_CHUNK_SIZE = 5;
 const VALIDATOR_TELEMETRY_CAP = 40;  // rows per page load — flood control
 
@@ -7615,7 +7612,7 @@ Respond with one line per question in the format above, nothing else:`;
         });
         if (!res.ok) continue;
         const data = await res.json();
-        const parsed = _parseValidatorVerdicts(data.content?.[0]?.text || '');
+        const parsed = _parseValidatorVerdicts(_claudeText(data));
         if (Object.keys(parsed).length === 0) continue;  // unparseable → retry
         return chunk.map((_, i) => parsed[i + 1]);
       } catch (e) { /* network / timeout → retry */ }
@@ -7798,7 +7795,7 @@ Use plain text, no markdown. Label each section clearly. Aim for 250-350 words t
       });
       if (!res.ok) throw new Error('API error');
       const data = await res.json();
-      text = data.content?.[0]?.text || 'Could not generate explanation.';
+      text = _claudeText(data) || 'Could not generate explanation.';
       _aiCacheSet('explainFurther', cacheKey, text);
     } catch (e) {
       if (e && e.surfaced) { if (btn) { btn.textContent = 'Explain further'; btn.disabled = false; } return; }

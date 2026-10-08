@@ -22,7 +22,7 @@ test('v4.42.5 #130: DOUBLE_CLICK_MS constant declared',
 test('v4.42.5 #130: VXLAN_VNI_MAX constant declared',
   /const VXLAN_VNI_MAX = 16777215;/.test(js));
 test('v4.42.5 #130: MAX_TOKENS_GENERATION constant declared',
-  /const MAX_TOKENS_GENERATION\s+=\s*12000;/.test(js));  // v4.56.1: bumped 8000→12000
+  /const MAX_TOKENS_GENERATION\s+=\s*(12000|16000);/.test(js));  // v4.56.1: 8000→12000; v8.118.0: 16000 for Haiku 5.5 thinking
 test('v4.42.5 #130: MAX_TOKENS_VALIDATION constant declared',
   /const MAX_TOKENS_VALIDATION\s*=\s*1000;/.test(js));
 test('v4.42.5 #130: MAX_TOKENS_TEACHER_DEFAULT constant declared',
