@@ -29,7 +29,7 @@ const CANONICAL_IDS = [
 // Exam codes as rendered in the My Certs modal rows (unambiguous substrings).
 const CANONICAL_CODES = [
   'N10-009', 'SY0-701', '220-1201', '220-1202',
-  'AZ-900', 'AI-900', 'SC-900', 'CLF-C02',
+  'AZ-900', 'AI-901', 'SC-900', 'CLF-C02',  // v8.121.0: AI-900 retired → AI-901
 ];
 // Non-canonical certs the cd8c784 fix removed — must never reappear.
 const PHANTOM_STRINGS = ['CCNA', 'SAA-C03', 'AZ-104'];

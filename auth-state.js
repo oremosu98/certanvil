@@ -95,7 +95,7 @@
       { id: 'netplus', name: 'Network+',                       code: 'N10-009', tier: 'free', glyph: 'N+' },
       { id: 'secplus', name: 'Security+',                      code: 'SY0-701', tier: 'pro',  glyph: 'S+' },
       { id: 'az900',   name: 'Microsoft Azure Fundamentals',   code: 'AZ-900',  tier: 'pro',  glyph: 'AZ' },
-      { id: 'ai900',   name: 'Microsoft Azure AI Fundamentals',code: 'AI-900',  tier: 'pro',  glyph: 'AI' },
+      { id: 'ai900',   name: 'Microsoft Azure AI Fundamentals',code: 'AI-901',  tier: 'pro',  glyph: 'AI' },
       // v7.7.0 — sixth cert SC-900 (single-exam, Microsoft Security/Compliance/Identity)
       { id: 'sc900',   name: 'Microsoft SC-900',                code: 'SC-900',  tier: 'pro',  glyph: 'SC' },
       // v7.8.0 — seventh cert AWS Cloud Practitioner CLF-C02 (single-exam, AWS — third vendor)
@@ -192,7 +192,7 @@
       if (!window._gateProOnly('Azure Fundamentals (AZ-900)')) return false;
     }
     if (certId === 'ai900' && typeof window._gateProOnly === 'function') {
-      if (!window._gateProOnly('Azure AI Fundamentals (AI-900)')) return false;
+      if (!window._gateProOnly('Azure AI Fundamentals (AI-901)')) return false;
     }
     // v7.7.0: sc900 joins as the sixth Pro-tier cert (founder lock 2026-05-28).
     if (certId === 'sc900' && typeof window._gateProOnly === 'function') {

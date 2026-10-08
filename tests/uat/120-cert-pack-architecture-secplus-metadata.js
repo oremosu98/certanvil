@@ -967,3 +967,30 @@ test('v8.121.0 copy: analytics + diagnostic no longer hard-code N10-009 domain t
     return !an.includes('How close each N10-009 domain') && !an.includes('official CompTIA N10-009 exam blueprint')
       && !an.includes('cluster in this N10-009 domain') && !dg.includes('across all 5 N10-009 domains');
   })());
+
+// v8.121.0 (AI-901 Phase 2b/c): switcher, landing labels, diagnostic and
+// cross-cert analytics all say AI-901; the landing AI diagnostic pool is
+// AI-901 content (it previously held AZ-900 cloud questions).
+test('v8.121.0 AI-901: switcher + landing labels + diagnostic API say AI-901',
+  (() => {
+    const r = f => fs.readFileSync(path.join(ROOT, f), 'utf8');
+    return /id: 'ai900',\s*name: 'Microsoft Azure AI Fundamentals',code: 'AI-901'/.test(r('auth-state.js'))
+      && /_gateProOnly\('Azure AI Fundamentals \(AI-901\)'\)/.test(r('auth-state.js'))
+      && /id:'ai900', name:'Azure AI Fundamentals', code:'AI-901'/.test(r('landing/index.html'))
+      && !/\(AI-900\)/.test(r('landing/index.html'))
+      && /cert === 'azure-ai-fundamentals'[\s\S]{0,600}code: 'AI-901'/.test(r('landing/api/diagnostic/generate.js'))
+      && /examCode: 'AI-901'/.test(r('landing/diagnostic/results-config.js'))
+      && /'Identify AI Concepts & Capabilities': 42\.5/.test(r('landing/lib/cross-cert-analytics.js'));
+  })());
+test('v8.121.0 AI-901: landing diagnostic pool is 20 AI-901 questions across the 2 domains, balanced letters',
+  (() => {
+    const src = fs.readFileSync(path.join(ROOT, 'landing', 'diagnostic', 'azure-ai-fundamentals', 'quiz.html'), 'utf8');
+    const m = src.match(/var QUESTION_POOL = (\[[\s\S]*?\n  \]);/);
+    if (!m) return false;
+    const pool = vm.runInNewContext(m[1]);
+    const doms = new Set(pool.map(q => q.domain));
+    const letters = {}; pool.forEach(q => letters[q.answer] = (letters[q.answer] || 0) + 1);
+    return pool.length === 20 && doms.size === 2 && doms.has('AI Concepts & Capabilities') && doms.has('Microsoft Foundry Solutions')
+      && ['A', 'B', 'C', 'D'].every(l => letters[l] === 5)
+      && !/Hybrid cloud|CapEx|Azure Monitor/.test(m[1]);
+  })());

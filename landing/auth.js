@@ -501,7 +501,7 @@
       glyph: 'AI',
       glyphClass: 'cert-glyph-ai900',
       name: 'Microsoft Azure AI Fundamentals',
-      code: 'AI-900',
+      code: 'AI-901',
       activeMeta: 'available now',
       href: 'https://ai.certanvil.com/'
     }));

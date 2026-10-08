@@ -7,7 +7,7 @@
 <meta name="theme-color" content="#fafbff">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="CertAnvil">
-<meta name="description" content="20-question Azure AI Fundamentals AI-900 diagnostic. ~30 minutes. Score + weak-domain map at the end.">
+<meta name="description" content="20-question Azure AI Fundamentals AI-901 diagnostic. ~30 minutes. Score + weak-domain map at the end.">
 <link rel="icon" type="image/svg+xml" href="../../favicon.svg">
 <link rel="stylesheet" href="../../styles.css">
 <link rel="canonical" href="https://certanvil.com/diagnostic/azure-ai-fundamentals/quiz">
@@ -115,7 +115,7 @@
 // ══════════════════════════════════════════════════════════════════════════
 // D.2 · Landing Baseline Diagnostic · Azure AI Fundamentals quiz UI · v7.3.0
 // ══════════════════════════════════════════════════════════════════════════
-// Self-contained 20-Q flow. Inline question pool covers all 3 AI-900 domains
+// Self-contained 20-Q flow. Inline question pool covers both AI-901 domains
 // weighted to Microsoft Skills Measured blueprint (AI Workloads 25-30% → 6Q ·
 // Azure Architecture & Services 35-40% → 8Q · Azure Management & Governance
 // 30-35% → 6Q). Live AI generation runs via /api/diagnostic/generate;
@@ -140,154 +140,152 @@
   'use strict';
   document.body.classList.remove('no-js');
 
-  // ── 1. Question pool · 20 AI-900 Q across 3 domains ──
+  // ── 1. Question pool · 20 AI-901 Q across the 2 official domains ──
   // Each Q: { id, domain, topic, objective, difficulty, question, options:{A,B,C,D}, answer, explanation }
-  // Authored from public Microsoft AI-900 Skills Measured + Microsoft Learn modules.
+  // v8.121.0: rewritten for AI-901 (study guide, skills measured 2026-04-15). The
+  // previous pool held AZ-900 cloud questions mislabelled as AI domains.
   var QUESTION_POOL = [
-    // ── Domain 1.0 AI Workloads (6 · ~28%) ──
+    // ── Domain 1 · AI Concepts & Capabilities (8 · 40%) ──
     {
-      id: 1, domain: 'AI Workloads', topic: 'Cloud Models', objective: '1.1', difficulty: 'Easy',
-      question: 'Which cloud deployment model combines on-premises infrastructure with public cloud resources?',
-      options: { A: 'Public cloud', B: 'Private cloud', C: 'Hybrid cloud', D: 'Community cloud' },
-      answer: 'C',
-      explanation: 'A hybrid cloud combines on-premises (private) infrastructure with public cloud services, allowing data and apps to move between them. Public cloud is fully external; private cloud is fully on-premises or dedicated.'
+      id: 1, domain: "AI Concepts & Capabilities", topic: "Responsible AI", objective: "1.1", difficulty: "Easy",
+      question: "An AI tool for screening job applicants is tested with candidates who use screen readers, then redesigned so they can complete every step. Which Responsible AI principle does this support?",
+      options: { A: "Transparency", B: "Accountability", C: "Inclusiveness", D: "Fairness" },
+      answer: "C",
+      explanation: "Inclusiveness means designing AI so people of all abilities and backgrounds can use and benefit from it. Transparency is about explaining how the system works, accountability is about who answers for it, and fairness is about equitable outcomes for comparable people."
     },
     {
-      id: 2, domain: 'AI Workloads', topic: 'Cloud Benefits', objective: '1.1', difficulty: 'Easy',
-      question: 'Which cloud benefit refers to the ability to quickly scale resources up or down based on demand without long-term commitment?',
-      options: { A: 'High availability', B: 'Elasticity', C: 'Fault tolerance', D: 'Disaster recovery' },
-      answer: 'B',
-      explanation: 'Elasticity is the ability to dynamically allocate and deallocate resources as demand changes. High availability minimizes downtime; fault tolerance is the ability to continue operating during a failure.'
+      id: 2, domain: "AI Concepts & Capabilities", topic: "Responsible AI", objective: "1.1", difficulty: "Medium",
+      question: "A company publishes a note explaining what its AI chatbot can and cannot do, and that its answers may contain mistakes. Which Responsible AI principle is this?",
+      options: { A: "Transparency", B: "Fairness", C: "Reliability and safety", D: "Privacy and security" },
+      answer: "A",
+      explanation: "Transparency means people can understand how an AI system works and where its limits are. Fairness is about equitable outcomes, reliability and safety about consistent safe operation, and privacy and security about protecting data."
     },
     {
-      id: 3, domain: 'AI Workloads', topic: 'Service Models', objective: '1.2', difficulty: 'Medium',
-      question: 'A company wants to run virtual machines in the cloud but manage the OS, middleware, and applications themselves. Which service model is best?',
-      options: { A: 'SaaS (Software as a Service)', B: 'PaaS (Platform as a Service)', C: 'IaaS (Infrastructure as a Service)', D: 'FaaS (Function as a Service)' },
-      answer: 'C',
-      explanation: 'IaaS provides virtualized compute, storage, and networking · the customer manages everything above the hypervisor (OS, middleware, apps). PaaS abstracts the OS layer; SaaS delivers the entire app.'
+      id: 3, domain: "AI Concepts & Capabilities", topic: "How Generative Models Work", objective: "1.2", difficulty: "Easy",
+      question: "In a large language model, what is a token?",
+      options: { A: "A licence that lets one person use the model", B: "One complete sentence of the model's reply", C: "A saved conversation between a user and the model", D: "A chunk of text, such as a word or part of a word" },
+      answer: "D",
+      explanation: "Models read and write text as tokens, which are words or pieces of words; limits and pricing are counted in tokens. Tokens are not licences, whole sentences or saved conversations."
     },
     {
-      id: 4, domain: 'AI Workloads', topic: 'CapEx vs OpEx', objective: '1.1', difficulty: 'Medium',
-      question: 'Moving from on-premises infrastructure to Azure typically shifts IT spending from which model to which?',
-      options: { A: 'OpEx to CapEx', B: 'CapEx to OpEx', C: 'CapEx to fixed cost', D: 'OpEx to subscription tax' },
-      answer: 'B',
-      explanation: 'On-premises requires upfront Capital Expenditure (servers, networking, datacenter). Cloud shifts spend to Operational Expenditure (pay-as-you-go billing) · no large upfront purchase, predictable monthly costs.'
+      id: 4, domain: "AI Concepts & Capabilities", topic: "Model Parameters", objective: "1.2", difficulty: "Medium",
+      question: "A developer needs a hard limit on how long a model's replies can be, to control cost. Which setting should they change?",
+      options: { A: "Temperature", B: "Max tokens", C: "Top-p", D: "The deployment region" },
+      answer: "B",
+      explanation: "Max tokens caps the length of the generated reply. Temperature and top-p change how random the wording is, and the region decides where the model runs."
     },
     {
-      id: 5, domain: 'AI Workloads', topic: 'Shared Responsibility', objective: '1.1', difficulty: 'Medium',
-      question: 'Under the Azure shared responsibility model, who is responsible for securing data on a SaaS service like Microsoft 365?',
-      options: { A: 'Microsoft (the cloud provider) only', B: 'The customer only', C: 'Always shared 50/50', D: 'The customer for data + access; Microsoft for the platform' },
-      answer: 'D',
-      explanation: 'In SaaS the customer remains responsible for their data, identities, and access management. Microsoft handles the platform, hardware, networking, and OS. This is the consistent shape of the shared-responsibility model across SaaS/PaaS/IaaS.'
+      id: 5, domain: "AI Concepts & Capabilities", topic: "Choosing a Model", objective: "1.2", difficulty: "Medium",
+      question: "Why might a team choose a smaller model from the Microsoft Foundry model catalog for a high-volume FAQ bot?",
+      options: { A: "It is the only kind that can read images", B: "Lower cost and faster replies for a simple task", C: "It never produces an incorrect answer", D: "It can be used without any deployment" },
+      answer: "B",
+      explanation: "Smaller models are usually cheaper and quicker, which suits simple, high-volume tasks. Image input depends on whether a model is multimodal, not its size; every model can make mistakes; and models still need deploying before an app can call them."
     },
     {
-      id: 6, domain: 'AI Workloads', topic: 'High Availability', objective: '1.1', difficulty: 'Hard',
-      question: 'What is the primary distinction between high availability and disaster recovery in Azure architecture?',
-      options: { A: 'HA prevents downtime within a region; DR restores service after a regional failure', B: 'They are synonyms', C: 'HA is for VMs; DR is for storage only', D: 'HA is automatic; DR is manual only' },
-      answer: 'A',
-      explanation: 'High availability uses redundancy (availability sets/zones) to keep services running through localized failures. Disaster recovery (Azure Site Recovery, geo-redundant storage) restores service after a regional event · different problem, different toolkit.'
-    },
-
-    // ── Domain 2.0 Azure Architecture & Services (8 · ~38%) ──
-    {
-      id: 7, domain: 'Azure Architecture & Services', topic: 'Regions & AZs', objective: '2.1', difficulty: 'Easy',
-      question: 'Azure organizes datacenters into which two main geographic constructs?',
-      options: { A: 'Regions and Availability Zones', B: 'Subnets and VNets', C: 'Resource Groups and Subscriptions', D: 'Tenants and Management Groups' },
-      answer: 'A',
-      explanation: 'A Region is a set of datacenters within a geographic area. Availability Zones are physically separate datacenters within a region with independent power/cooling/network. Together they enable HA architecture.'
+      id: 6, domain: "AI Concepts & Capabilities", topic: "AI Workloads", objective: "1.3", difficulty: "Easy",
+      question: "A call centre wants live transcripts of customer calls on agents' screens. Which AI workload is this?",
+      options: { A: "Speech synthesis", B: "Image generation", C: "Key phrase extraction", D: "Speech recognition" },
+      answer: "D",
+      explanation: "Speech recognition converts spoken audio into text. Speech synthesis does the reverse, image generation creates pictures, and key phrase extraction works on text that already exists."
     },
     {
-      id: 8, domain: 'Azure Architecture & Services', topic: 'Compute', objective: '2.2', difficulty: 'Medium',
-      question: 'Which Azure compute service runs containerized applications without managing the underlying VM infrastructure?',
-      options: { A: 'Azure Virtual Machines', B: 'Azure Functions', C: 'Azure Container Instances', D: 'Azure Virtual Desktop' },
-      answer: 'C',
-      explanation: 'Azure Container Instances (ACI) is the simplest way to run containers in Azure without VM management. AKS adds orchestration; VMs require full OS management; Functions is for event-driven serverless code.'
+      id: 7, domain: "AI Concepts & Capabilities", topic: "AI Workloads", objective: "1.3", difficulty: "Medium",
+      question: "Which task is an example of computer vision rather than natural language processing?",
+      options: { A: "Counting cars in a car park camera image", B: "Detecting the language of a support email", C: "Summarising a long policy document", D: "Translating product reviews into Spanish" },
+      answer: "A",
+      explanation: "Counting objects in an image is a computer vision task. Language detection, summarization and translation all work on text, so they are natural language processing."
     },
     {
-      id: 9, domain: 'Azure Architecture & Services', topic: 'Storage', objective: '2.2', difficulty: 'Medium',
-      question: 'A company needs to store millions of unstructured files (images, videos, backups) with the lowest cost tier for rarely-accessed data. Which Azure Storage tier is best?',
-      options: { A: 'Hot tier', B: 'Cool tier', C: 'Archive tier', D: 'Premium tier' },
-      answer: 'C',
-      explanation: 'Archive tier offers the lowest storage cost for data accessed less than once per year, with higher retrieval cost and latency. Hot is for frequent access; Cool for infrequent (~30 days+); Premium is high-performance SSD.'
+      id: 8, domain: "AI Concepts & Capabilities", topic: "Generative & Agentic AI", objective: "1.3", difficulty: "Hard",
+      question: "A travel company wants an assistant that checks flight availability, holds a seat and emails a confirmation when a customer asks. Which approach fits BEST?",
+      options: { A: "A sentiment analysis model for customer reviews", B: "A translation service for the travel website", C: "An AI agent with tools for booking and email", D: "An image classification model for holiday photos" },
+      answer: "C",
+      explanation: "An agent combines a model, instructions and tools so it can carry out several steps and take actions. Sentiment analysis, translation and image classification each do one analysis task and cannot book or send anything."
+    },
+    // ── Domain 2 · Microsoft Foundry Solutions (12 · 60%) ──
+    {
+      id: 9, domain: "Microsoft Foundry Solutions", topic: "Prompts & Chat Clients", objective: "2.1", difficulty: "Easy",
+      question: "In a chat request to a deployed model, which message role carries the end user's question?",
+      options: { A: "system", B: "user", C: "assistant", D: "tool" },
+      answer: "B",
+      explanation: "The user message holds the person's request. The system message sets the assistant's behaviour, assistant messages are the model's earlier replies, and tool messages return results from tools."
     },
     {
-      id: 10, domain: 'Azure Architecture & Services', topic: 'Networking', objective: '2.2', difficulty: 'Medium',
-      question: 'Which Azure networking service provides a private, dedicated connection between an on-premises network and Azure, bypassing the public internet?',
-      options: { A: 'VPN Gateway', B: 'ExpressRoute', C: 'Azure Bastion', D: 'Application Gateway' },
-      answer: 'B',
-      explanation: 'ExpressRoute provides a private, dedicated, high-bandwidth connection through a connectivity provider · no public internet traversal. VPN Gateway is encrypted over the internet; Bastion is for secure RDP/SSH; App Gateway is L7 load balancing.'
+      id: 10, domain: "Microsoft Foundry Solutions", topic: "Prompts & Chat Clients", objective: "2.1", difficulty: "Medium",
+      question: "A developer wants a Microsoft Foundry chat app to always reply in British English and refuse off-topic questions. Where should these rules go?",
+      options: { A: "In each user message", B: "In the max tokens setting", C: "In the deployment name", D: "In the system message" },
+      answer: "D",
+      explanation: "The system message sets rules and behaviour for the whole conversation. Users shouldn't have to repeat them, max tokens only limits length, and the deployment name just selects the model."
     },
     {
-      id: 11, domain: 'Azure Architecture & Services', topic: 'Databases', objective: '2.2', difficulty: 'Medium',
-      question: 'Which Azure database service is a fully-managed multi-model NoSQL database with global distribution and single-digit-millisecond latency?',
-      options: { A: 'Azure SQL Database', B: 'Azure Cosmos DB', C: 'Azure Database for MySQL', D: 'Azure Synapse Analytics' },
-      answer: 'B',
-      explanation: 'Cosmos DB is Microsoft\'s globally-distributed multi-model NoSQL service (supports SQL, MongoDB, Cassandra, Gremlin, Table APIs). Azure SQL Database is the managed relational option; Synapse is the analytics/data-warehouse service.'
+      id: 11, domain: "Microsoft Foundry Solutions", topic: "Deploying Models", objective: "2.1", difficulty: "Medium",
+      question: "What does a developer get after deploying a model in Microsoft Foundry?",
+      options: { A: "A named deployment their app can call through an endpoint", B: "A full copy of the data the model was originally trained on", C: "A version of the model fine-tuned on their own files", D: "A brand-new Azure subscription created for the project" },
+      answer: "A",
+      explanation: "Deploying creates a named deployment that apps call through the resource's endpoint. It does not give you training data, does not fine-tune the model, and does not create a subscription."
     },
     {
-      id: 12, domain: 'Azure Architecture & Services', topic: 'Identity', objective: '2.3', difficulty: 'Hard',
-      question: 'Which Microsoft Entra ID (formerly Azure AD) feature enforces additional verification beyond username and password to grant access?',
-      options: { A: 'Conditional Access', B: 'Multi-Factor Authentication (MFA)', C: 'Privileged Identity Management (PIM)', D: 'Identity Protection' },
-      answer: 'B',
-      explanation: 'MFA requires a second factor (phone, app, hardware token) beyond the password. Conditional Access is the policy engine that decides WHEN to require MFA; PIM provides just-in-time elevated access; Identity Protection detects risky sign-ins.'
+      id: 12, domain: "Microsoft Foundry Solutions", topic: "Deploying Models", objective: "2.1", difficulty: "Medium",
+      question: "Which part of the Microsoft Foundry portal lets you try a deployed model and change its system message without writing code?",
+      options: { A: "Azure Advisor", B: "Cost Management", C: "The chat playground", D: "Azure Policy" },
+      answer: "C",
+      explanation: "The chat playground lets you send prompts to a deployment and adjust settings without code. Advisor gives recommendations, Cost Management tracks spend, and Policy enforces governance rules."
     },
     {
-      id: 13, domain: 'Azure Architecture & Services', topic: 'Serverless', objective: '2.2', difficulty: 'Hard',
-      question: 'A developer wants to run code in response to an HTTP request without provisioning servers and pay only for execution time. Which service fits?',
-      options: { A: 'Azure Virtual Machines', B: 'Azure App Service', C: 'Azure Functions', D: 'Azure Kubernetes Service' },
-      answer: 'C',
-      explanation: 'Azure Functions is the serverless compute service · code runs in response to triggers (HTTP, queue, timer, blob), and you pay per execution. App Service is for web apps but provisions an App Service Plan; AKS is for container orchestration.'
+      id: 13, domain: "Microsoft Foundry Solutions", topic: "Prompts & Chat Clients", objective: "2.1", difficulty: "Hard",
+      question: "A developer writes this Python call:\n\nresponse = client.chat.completions.create(model=\"faq-bot\", messages=messages, max_tokens=100)\n\nWhat does max_tokens=100 do?",
+      options: { A: "Limits how many users can call the deployment", B: "Sets how many earlier messages are sent", C: "Sets how random the reply's wording is", D: "Caps the length of the generated reply" },
+      answer: "D",
+      explanation: "max_tokens limits how long the model's reply can be. It doesn't control user numbers, the messages list decides what history is sent, and temperature controls randomness."
     },
     {
-      id: 14, domain: 'Azure Architecture & Services', topic: 'Management Hierarchy', objective: '2.4', difficulty: 'Hard',
-      question: 'What is the correct order of Azure resource organization, from broadest to narrowest scope?',
-      options: { A: 'Subscription → Management Group → Resource Group → Resource', B: 'Management Group → Subscription → Resource Group → Resource', C: 'Resource Group → Subscription → Management Group → Resource', D: 'Tenant → Resource → Subscription → Management Group' },
-      answer: 'B',
-      explanation: 'Management Groups contain Subscriptions, Subscriptions contain Resource Groups, Resource Groups contain Resources. Policies + RBAC inherit down this hierarchy.'
-    },
-
-    // ── Domain 3.0 Azure Management & Governance (6 · ~32%) ──
-    {
-      id: 15, domain: 'Azure Management & Governance', topic: 'Cost Management', objective: '3.1', difficulty: 'Easy',
-      question: 'Which Azure tool provides cost estimation BEFORE deploying resources, helping plan a cloud migration budget?',
-      options: { A: 'Azure Cost Management', B: 'Azure Pricing Calculator', C: 'Azure Advisor', D: 'Azure Monitor' },
-      answer: 'B',
-      explanation: 'The Azure Pricing Calculator gives upfront estimates BEFORE provisioning resources. Azure Cost Management analyzes ACTUAL spend after deployment; Advisor recommends optimizations; Monitor handles operational telemetry.'
+      id: 14, domain: "Microsoft Foundry Solutions", topic: "Agents", objective: "2.1", difficulty: "Medium",
+      question: "What gives a Microsoft Foundry agent the ability to take actions, such as looking up an order in a business system?",
+      options: { A: "A higher temperature setting", B: "Tools connected to the agent", C: "A much longer system message", D: "A larger context window" },
+      answer: "B",
+      explanation: "Tools let an agent call functions, search knowledge or act on systems. Temperature changes randomness, a longer system message adds guidance but no new abilities, and a larger context window only lets it read more text."
     },
     {
-      id: 16, domain: 'Azure Management & Governance', topic: 'Governance Tools', objective: '3.2', difficulty: 'Medium',
-      question: 'Which Azure governance service enforces organizational standards by allowing or denying resource configurations at scale?',
-      options: { A: 'Azure Blueprints', B: 'Azure Policy', C: 'Azure Resource Manager', D: 'Microsoft Defender for Cloud' },
-      answer: 'B',
-      explanation: 'Azure Policy evaluates resources against business rules and can audit, deny, or remediate non-compliant resources. Blueprints package policies + templates + RBAC; ARM is the deployment engine; Defender is the security posture service.'
+      id: 15, domain: "Microsoft Foundry Solutions", topic: "Language & Speech", objective: "2.2", difficulty: "Medium",
+      question: "A survey app built on Microsoft Foundry must report whether each free-text comment is positive, negative or neutral. Which Azure Language feature fits?",
+      options: { A: "Sentiment analysis", B: "Language detection", C: "Named entity recognition", D: "PII detection" },
+      answer: "A",
+      explanation: "Sentiment analysis classifies text as positive, negative, neutral or mixed. Language detection identifies the language, named entity recognition finds people, places and things, and PII detection finds personal data."
     },
     {
-      id: 17, domain: 'Azure Management & Governance', topic: 'RBAC', objective: '3.2', difficulty: 'Medium',
-      question: 'What is the principle of least privilege as applied to Azure Role-Based Access Control (RBAC)?',
-      options: { A: 'Grant users the maximum permissions to reduce support tickets', B: 'Grant only the minimum permissions needed to do the job', C: 'Apply RBAC only at the subscription level', D: 'Use one global admin account for all changes' },
-      answer: 'B',
-      explanation: 'Least privilege grants only the minimum permissions required for the task. Azure RBAC supports this via fine-grained built-in and custom roles assigned at the resource, resource group, or subscription scope.'
+      id: 16, domain: "Microsoft Foundry Solutions", topic: "Language & Speech", objective: "2.2", difficulty: "Easy",
+      question: "An accessibility app must read news articles aloud in a natural-sounding voice. Which Azure Speech feature fits?",
+      options: { A: "Speech to text", B: "Speaker recognition", C: "Text to speech", D: "Speech translation" },
+      answer: "C",
+      explanation: "Text to speech turns written text into spoken audio. Speech to text goes the other way, speaker recognition identifies who is speaking, and speech translation converts speech into another language."
     },
     {
-      id: 18, domain: 'Azure Management & Governance', topic: 'SLA & Service Health', objective: '3.3', difficulty: 'Medium',
-      question: 'Where can an Azure administrator view current Azure service incidents affecting their resources?',
-      options: { A: 'Azure Pricing Calculator', B: 'Azure Service Health', C: 'Azure Marketplace', D: 'Azure Active Directory portal' },
-      answer: 'B',
-      explanation: 'Azure Service Health surfaces service issues, planned maintenance, and health advisories scoped to YOUR subscriptions and regions. The general Azure Status page shows global outages; Service Health is personalized.'
+      id: 17, domain: "Microsoft Foundry Solutions", topic: "Vision & Image Generation", objective: "2.3", difficulty: "Medium",
+      question: "A user sends a photo of a restaurant menu and asks which dishes are vegetarian. Which Microsoft Foundry approach answers this in one request?",
+      options: { A: "Text to speech run on the menu photo", B: "A multimodal model given the image and the question", C: "A sentiment analysis model on the menu", D: "An image generation model given the menu" },
+      answer: "B",
+      explanation: "A multimodal model can read the image and the question together and reason about the dishes. Text to speech, sentiment analysis and image generation can't interpret a photo to answer the question."
     },
     {
-      id: 19, domain: 'Azure Management & Governance', topic: 'Compliance', objective: '3.4', difficulty: 'Hard',
-      question: 'Which Microsoft resource provides documentation about Azure\'s compliance certifications (ISO, SOC, HIPAA, GDPR, etc.) for audit and regulatory needs?',
-      options: { A: 'Azure Pricing Calculator', B: 'Microsoft Trust Center / Service Trust Portal', C: 'Azure Monitor', D: 'Microsoft Learn' },
-      answer: 'B',
-      explanation: 'The Microsoft Trust Center and Service Trust Portal publish audit reports, compliance certifications, and security/privacy documentation. Auditors and compliance teams use these resources to verify Azure meets regulatory requirements.'
+      id: 18, domain: "Microsoft Foundry Solutions", topic: "Vision & Image Generation", objective: "2.3", difficulty: "Easy",
+      question: "A designer wants brand-new artwork created from the prompt 'a lighthouse at sunset in watercolour'. What kind of model is used?",
+      options: { A: "An image generation model", B: "An object detection model", C: "A speech model", D: "An embeddings model" },
+      answer: "A",
+      explanation: "Image generation models create new pictures from a text prompt. Object detection finds items in existing images, speech models work with audio, and embeddings models produce vectors for search."
     },
     {
-      id: 20, domain: 'Azure Management & Governance', topic: 'Monitoring', objective: '3.3', difficulty: 'Hard',
-      question: 'Which Azure service provides a unified view of metrics, logs, and alerts across resources for observability?',
-      options: { A: 'Azure Advisor', B: 'Azure Monitor', C: 'Azure Service Health', D: 'Azure Policy' },
-      answer: 'B',
-      explanation: 'Azure Monitor is the unified observability platform · collects metrics (numeric time-series), logs (Kusto-queryable via Log Analytics), and drives alerting. Advisor gives optimization recommendations; Service Health shows incidents; Policy enforces compliance.'
+      id: 19, domain: "Microsoft Foundry Solutions", topic: "Content Understanding", objective: "2.4", difficulty: "Medium",
+      question: "A logistics company wants the delivery address, parcel weight and reference number pulled from scanned shipping labels. Which Microsoft Foundry tool fits?",
+      options: { A: "Azure Speech", B: "An image generation model", C: "Azure Language language detection", D: "Azure Content Understanding" },
+      answer: "D",
+      explanation: "Azure Content Understanding extracts the fields you define from documents and images as structured data. Azure Speech handles audio, image generation creates pictures, and language detection only names a language."
+    },
+    {
+      id: 20, domain: "Microsoft Foundry Solutions", topic: "Content Understanding", objective: "2.4", difficulty: "Hard",
+      question: "Using Azure Content Understanding, a team defines fields such as InvoiceDate (a date) and Total (a number). What is this definition?",
+      options: { A: "A model deployment inside the project", B: "A system message for the extraction model", C: "A field schema for the analyzer", D: "A temperature setting for the analyzer" },
+      answer: "C",
+      explanation: "A field schema tells the analyzer which fields to return and their types. A deployment hosts a model, a system message steers a chat model, and temperature controls randomness."
     }
   ];
 
@@ -507,7 +505,7 @@
       }
     });
 
-    // Scaled score: linear 0-1000 (Microsoft AI-900 scale, pass = 700).
+    // Scaled score: linear 0-1000 (Microsoft AI-901 scale, pass = 700).
     // 0 correct → 0 · 20 correct → 1000. A more sophisticated IRT-style
     // scoring lands in D.4 when we have user data to calibrate against.
     var scaledScore = Math.round((correctCount / n) * 1000);

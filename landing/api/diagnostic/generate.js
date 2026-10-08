@@ -368,24 +368,20 @@ function buildDiagnosticPrompt(cert, count, intake) {
       objectiveRanges: ['1.1', '1.2', '1.3', '2.1', '2.2', '2.3', '2.4', '3.1', '3.2', '3.3', '3.4'],
     };
   } else if (cert === 'azure-ai-fundamentals') {
-    // v7.5.0 — AI-900 cert branch. May 2025 Skills Measured refresh added
-    // Domain 5 (Generative AI workloads) + renamed Azure AI Studio → Azure AI
-    // Foundry. Bias prompt toward service-identification scenarios per VoC §3.
+    // v8.121.0 — AI-901 (replaced AI-900, retired 2026-06-30; slug kept). Official
+    // study guide, skills measured as of 2026-04-15: 2 domains, Foundry-centric,
+    // basic Python. Skill groups are unnumbered; X.Y = order within domain.
     certMeta = {
       name: 'Microsoft Azure AI Fundamentals',
-      code: 'AI-900',
+      code: 'AI-901',
       vendor: 'Microsoft',
       domains: [
-        { id: 1, label: 'AI Workloads & Considerations', weight: 18 },
-        { id: 2, label: 'Machine Learning Fundamentals', weight: 22 },
-        { id: 3, label: 'Computer Vision Workloads', weight: 18 },
-        { id: 4, label: 'NLP Workloads', weight: 17 },
-        { id: 5, label: 'Generative AI Workloads', weight: 25 },
+        { id: 1, label: 'Identify AI Concepts & Capabilities', weight: 43 },
+        { id: 2, label: 'Implement AI Solutions with Microsoft Foundry', weight: 57 },
       ],
       passMark: 700,
       maxScore: 1000,
-      // Public Microsoft Skills Measured (effective 2025-05-02) objective ranges
-      objectiveRanges: ['1.1', '1.2', '1.3', '2.1', '2.2', '2.3', '2.4', '2.5', '3.1', '3.2', '4.1', '4.2', '4.3', '5.1', '5.2', '5.3', '5.4'],
+      objectiveRanges: ['1.1', '1.2', '1.3', '2.1', '2.2', '2.3', '2.4'],
     };
   } else if (cert === 'aplus-core1') {
     // Stage 4 — CompTIA A+ Core 1 (220-1201) v4.0 blueprint. Bias prompt toward
