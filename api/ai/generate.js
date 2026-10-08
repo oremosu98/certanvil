@@ -36,7 +36,8 @@ const FREE_DAILY_LIMIT = 15;  // mirrors consume_daily_quota's hardcoded limit
 const crypto = require('crypto');
 // C2: only the models the cert-app actually uses may be proxied.
 const ALLOWED_MODELS = new Set([
-  'claude-haiku-4-5-20251001',  // CLAUDE_MODEL (generation)
+  'claude-haiku-4-5-20251001',  // previous CLAUDE_MODEL — kept so cached/older clients still work
+  'claude-haiku-5-5',           // CLAUDE_MODEL (generation) from v8.118.0 — A/B 2026-10-08
   'claude-sonnet-4-6'           // CLAUDE_VALIDATOR_MODEL / CLAUDE_TEACHER_MODEL
 ]);
 const DEFAULT_MODEL = 'claude-haiku-4-5-20251001';
