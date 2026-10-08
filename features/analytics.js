@@ -2438,7 +2438,9 @@
       byDomain[d].count++;
       if (w.topic) byDomain[d].topics[w.topic] = (byDomain[d].topics[w.topic] || 0) + 1;
     });
-    const labels = { concepts: 'Networking Concepts', implementation: 'Network Implementation', operations: 'Network Operations', security: 'Network Security', troubleshooting: 'Network Troubleshooting' };
+    // v8.127.0: the active cert's domain names (was Network+'s on every cert,
+    // so the AI cert's concepts domain read "Networking Concepts").
+    const labels = (typeof DOMAIN_LABELS === 'object' && DOMAIN_LABELS) || { concepts: 'Networking Concepts', implementation: 'Network Implementation', operations: 'Network Operations', security: 'Network Security', troubleshooting: 'Network Troubleshooting' };
     return Object.entries(byDomain)
       .sort((a, b) => b[1].count - a[1].count)
       .slice(0, 4)

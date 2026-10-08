@@ -1162,6 +1162,32 @@ test('v4.85.8 Lottery: vm fixture — sampler handles need > pool size with repl
         && result.security.every(t => t === 'A' || t === 'B');
     } catch (e) { return false; }
   })());
+test('v8.127.0 Lottery: vm fixture — sampler follows the active cert\'s domain keys (Sec+ shape)',
+  (() => {
+    try {
+      const body = _fnBody(js, '_sampleTopicsForMixedBatch');
+      const vm = require('vm');
+      const W = { concepts: 0.12, threats: 0.22, architecture: 0.18, operations: 0.28, governance: 0.2 };
+      const TD = { A1: 'concepts', B1: 'threats', B2: 'threats', C1: 'architecture', D1: 'operations', D2: 'operations', E1: 'governance' };
+      const ctx = { TOPIC_DOMAINS: TD, DOMAIN_WEIGHTS: W, Math, Object, Array };
+      vm.createContext(ctx); vm.runInContext(body, ctx);
+      const r = vm.runInContext('_sampleTopicsForMixedBatch({concepts:1,threats:2,architecture:1,operations:2,governance:1})', ctx);
+      return r.threats.length === 2 && r.architecture.length === 1 && r.governance.length === 1
+        && !('implementation' in r) && !('troubleshooting' in r);
+    } catch (e) { return false; }
+  })());
+test('v8.127.0 Prompt: mixed lottery + vendor wording come from the cert pack, not Network+ literals',
+  (() => {
+    const body = _fnBody(js, '_fetchQuestionsBatch');
+    return body
+      && body.includes('Object.keys(DOMAIN_WEIGHTS).map((k, i) =>')
+      && body.includes('${DOMAIN_LABELS[k] || k}')
+      && !body.includes('Domain 1.0 — Networking Concepts')
+      && !body.includes('all 5 official CompTIA domains')
+      && !body.includes('mirrors real CompTIA style')
+      && !/with the CompTIA \$\{CERT_CODE\}/.test(body)
+      && body.includes("const _examVendor = String(");
+  })());
 test('v4.85.8 Lottery: vm fixture — two consecutive samples produce different orderings',
   (() => {
     try {

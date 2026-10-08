@@ -61,3 +61,5 @@ glabel.txt
 *.pem
 secrets/
 scripts/generator-ab-results.json
+scripts/generator-spot-results-*.json
+scripts/generator-spot-prompts-*.json

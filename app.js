@@ -1,9 +1,9 @@
 // ══════════════════════════════════════════
-// Network+ AI Quiz — app.js  v8.126.0
+// Network+ AI Quiz — app.js  v8.127.0
 // ══════════════════════════════════════════
 
 // ── CONSTANTS ──
-const APP_VERSION = '8.126.0';
+const APP_VERSION = '8.127.0';
 // v4.99.45 (Phase 6b): expose APP_VERSION on window so the web-vitals
 // collector (lib/web-vitals-collector.js, loaded BEFORE app.js so its
 // PerformanceObservers attach earlier) can stamp this version onto every
@@ -4585,22 +4585,14 @@ async function _fetchQuestionsBatch(key, qTopic, difficulty, n, pbqCountOverride
     const dist = computeDomainDistribution(n);
     const sampled = _sampleTopicsForMixedBatch(dist);
     const fmt = (arr) => arr.length === 0 ? '  (none this batch)' : arr.map(t => '  - "' + t + '"').join('\n');
+    // v8.127.0: one block per domain of the ACTIVE cert, labels + weights from
+    // its pack (was Network+'s five domains hard-coded on every cert).
+    const domainBlocks = Object.keys(DOMAIN_WEIGHTS).map((k, i) =>
+      `Domain ${i + 1}.0 — ${DOMAIN_LABELS[k] || k} (${dist[k] || 0} questions, ${Math.round(DOMAIN_WEIGHTS[k] * 100)}%${i === 0 ? ' of exam' : ''}):\n${fmt(sampled[k] || [])}`
+    ).join('\n\n');
     mixedDistributionStr = `\n\nMANDATORY TOPIC LOTTERY — Of the ${n} questions, generate EXACTLY ONE question per topic listed below (${n} topics total). Each question's .topic field MUST match the assigned topic verbatim. This is a true random sample — do NOT skip topics, do NOT repeat topics, and do NOT substitute "easier" topics for the ones listed.
 
-Domain 1.0 — Networking Concepts (${dist.concepts} questions, 23% of exam):
-${fmt(sampled.concepts)}
-
-Domain 2.0 — Network Implementation (${dist.implementation} questions, 20%):
-${fmt(sampled.implementation)}
-
-Domain 3.0 — Network Operations (${dist.operations} questions, 19%):
-${fmt(sampled.operations)}
-
-Domain 4.0 — Network Security (${dist.security} questions, 14%):
-${fmt(sampled.security)}
-
-Domain 5.0 — Network Troubleshooting (${dist.troubleshooting} questions, 24%):
-${fmt(sampled.troubleshooting)}
+${domainBlocks}
 `;
   }
   // v4.54.15: multi-topic mode \u2014 Custom Quiz selected 2+ specific topics.
@@ -4625,15 +4617,17 @@ ${fmt(sampled.troubleshooting)}
   const expectedObj = (!isMulti && qTopic !== MIXED_TOPIC && topicResources[qTopic]) ? topicResources[qTopic].obj : null;
   // v4.87.0: cert-aware prompt voice. Substitutes CERT_NAME_FULL so Haiku
   // generates SY0-701 questions in Security+ mode + N10-009 in Network+ mode.
+  // v8.127.0: exam vendor from the pack name ("CompTIA" / "Microsoft" / "AWS").
+  const _examVendor = String((CERT_PACK && CERT_PACK.meta && CERT_PACK.meta.name) || 'CompTIA').split(' ')[0];
   const topicStr = qTopic === MIXED_TOPIC
-    ? `Cover a broad mix of ${CERT_NAME_FULL} exam topics across all 5 official CompTIA domains.`
+    ? `Cover a broad mix of ${CERT_NAME_FULL} exam topics across all ${Object.keys(DOMAIN_WEIGHTS).length} official ${_examVendor} domains.`
     : isMulti
       ? `Cover these ${multiTopicList.length} specific ${CERT_NAME_FULL} topics selected by the user: ${multiTopicList.map(t => '"' + t + '"').join(', ')}. See the mandatory distribution block below.`
       : `Focus only on: "${qTopic}" for the ${CERT_NAME_FULL} exam (primary objective ${expectedObj || 'N/A'}).${topicHints[qTopic] ? ' Specifically cover: ' + topicHints[qTopic] : ''}`;
 
   const diffStr = {
     'Foundational':  'Foundational: test basic recall and definitions. Clear right answers.',
-    'Exam Level':    'Exam Level: scenario-based, mirrors real CompTIA style. Plausible distractors.',
+    'Exam Level':    `Exam Level: scenario-based, mirrors real ${_examVendor} style. Plausible distractors.`,
     'Hard / Tricky': 'Hard: tricky edge cases, near-identical distractors, deep understanding required.',
     'Mixed':         'Mix of foundational, exam-level, and hard questions across all difficulties.'
   }[difficulty] || DEFAULT_DIFF;
@@ -4656,7 +4650,7 @@ For standard MCQ, use this format (scenario is OPTIONAL — only include on ~30-
 For PBQ, use MULTI-SELECT format (choose 2 or 3 correct answers from 5 options):
 {"type":"multi-select","question":"(Choose TWO) ...","difficulty":"...","topic":"...","objective":"X.Y","options":{"A":"...","B":"...","C":"...","D":"...","E":"..."},"answers":["A","C"],"explanation":"..."}
 
-CRITICAL — MULTI-SELECT QUALITY CRITERIA (CompTIA exam style):
+CRITICAL — MULTI-SELECT QUALITY CRITERIA (${_examVendor} exam style):
 - BOTH (or all 3) correct answers must be CORE, well-known facts about the topic — at similar levels of prominence/familiarity. Do NOT make one correct answer obvious and the other obscure or edge-case. Difficulty in multi-select comes from BREADTH (knowing multiple facts apply), NOT from one being a buried trivia point.
 - DISTRACTORS must be FACTUALLY WRONG about the topic. They should describe things that are categorically false, NOT things that are "less correct" or are correct facts about an adjacent/related topic. The user must be able to rule them out with actual knowledge — not by elimination.
 - AVOID the trap of "1 obvious correct + 1 obscure correct + 2 plausible-sounding adjacent-topic distractors" — that produces partial-credit scoring and frustration without testing real understanding.
@@ -4665,7 +4659,7 @@ CRITICAL — MULTI-SELECT QUALITY CRITERIA (CompTIA exam style):
   • WHY each distractor is wrong — naming a specific factual error, not just "less applicable" or "not the best fit"
 - Multi-select stems should ask about what IS true / IS valid / DOES apply — not about ranking, fit, or "best."
 - Every correct answer must apply to the stem AS WRITTEN — never one that needs a scenario the stem doesn't mention (e.g. a BEC-only control as a correct answer to a generic "phishing" stem). If you want to test it, put the scenario in the stem.
-- NEVER create a question where MORE options are factually correct than the stem asks for. Example: 6to4, Teredo, AND NAT64 are ALL valid IPv6 transition methods — a "Which TWO" stem forces the student to guess which 2 of 3 correct answers the grader prefers, which is NOT how CompTIA writes exams. If a topic has N valid answers, either ask for all N or reframe the stem to narrow which subset is being tested (e.g., "Which TWO are tunneling methods?" excludes NAT64 since it's translation, not tunneling).
+- NEVER create a question where MORE options are factually correct than the stem asks for. Example: 6to4, Teredo, AND NAT64 are ALL valid IPv6 transition methods — a "Which TWO" stem forces the student to guess which 2 of 3 correct answers the grader prefers, which is NOT how ${_examVendor} writes exams. If a topic has N valid answers, either ask for all N or reframe the stem to narrow which subset is being tested (e.g., "Which TWO are tunneling methods?" excludes NAT64 since it's translation, not tunneling).
 - SELF-TEST before finalizing: for each correct answer, ask "could a student who studied this topic for 2 weeks identify this as correct?" If the answer is no for ANY correct option, the question fails the balance test. Replace the obscure correct answer with a more recognizable one.
 - CONCRETE EXAMPLES of good vs bad multi-select:
   BAD: "Which TWO describe OSPF?" → A) Uses Dijkstra's algorithm (obvious) B) Uses area 0 as backbone (obscure detail) — student gets A easily, guesses on B.
@@ -4739,7 +4733,7 @@ Generate exactly ${n} multiple choice questions. Requirements:
 - No repeated questions
 ${includeScenario ? scenarioInstructions : ''}
 MANDATORY ${CERT_CODE} OBJECTIVE TAGGING:
-- Every question MUST include an "objective" field with the CompTIA ${CERT_CODE} exam objective number (format "X.Y" — e.g., "1.4", "2.1", "4.3", "5.1")
+- Every question MUST include an "objective" field with the ${_examVendor} ${CERT_CODE} exam objective number (format "X.Y" — e.g., "1.4", "2.1", "4.3", "5.1")
 - Valid objectives are ${_objectiveRangesText}
 - If you cannot map the question to a specific ${CERT_CODE} objective, do NOT write the question — write a different one that does map${expectedObj ? `\n- For this topic, use objective "${expectedObj}" (or an adjacent sub-objective in the same domain if more appropriate)` : ''}
 ${pbqInstructions}
@@ -4771,7 +4765,7 @@ DISTRACTOR QUALITY RULES:
 - Distractors should represent common misconceptions, adjacent concepts, or nearly-right answers — not random unrelated facts.
 
 STEM MUST BE AN ACTUAL QUESTION (v4.57.2):
-- The "question" field MUST contain a real interrogative, not pure declarative setup. Either end with "?" OR use explicit question words: "which", "what", "why", "how", "when", "where", or CompTIA-style imperatives: "Select the...", "Identify the...", "Choose the...", "Arrange these in order", "Place each device in the correct...", "Match each protocol with...", "Given the scenario, which...".
+- The "question" field MUST contain a real interrogative, not pure declarative setup. Either end with "?" OR use explicit question words: "which", "what", "why", "how", "when", "where", or ${_examVendor}-style imperatives: "Select the...", "Identify the...", "Choose the...", "Arrange these in order", "Place each device in the correct...", "Match each protocol with...", "Given the scenario, which...".
 - ❌ WRONG: "A system administrator is deploying a remote access VPN solution that requires users to authenticate and access corporate resources through a web browser without installing additional VPN client software." (This is pure setup. No question is asked. The learner has no cue what to pick.)
 - ✅ RIGHT: "A system administrator is deploying a remote access VPN that must work from any browser without installing client software. **Which VPN type best fits this requirement?**"
 - If you want to include setup context, put it in the OPTIONAL "scenario" field — but the "question" field itself MUST still pose a direct question. Scenario + question is additive; scenario is never a substitute for the question.
@@ -5171,7 +5165,12 @@ const DOMAIN_LABELS = (CERT_PACK && CERT_PACK.domainLabels) || {
 // domain unless dist[domain] exceeds pool size (then sampling-with-replacement).
 // User: *"increase the randomization of the topics so it's genuinely like a lottery."*
 function _sampleTopicsForMixedBatch(dist) {
-  const byDomain = { concepts: [], implementation: [], operations: [], security: [], troubleshooting: [] };
+  // v8.127.0: domain keys come from the active cert (were Network+'s five,
+  // so every other cert's lottery listed only the keys that happened to match).
+  // Falls back to dist's keys when run standalone (UAT vm fixtures).
+  const keys = (typeof DOMAIN_WEIGHTS === 'object' && DOMAIN_WEIGHTS) ? Object.keys(DOMAIN_WEIGHTS) : Object.keys(dist || {});
+  const byDomain = {};
+  keys.forEach(d => { byDomain[d] = []; });
   Object.keys(TOPIC_DOMAINS).forEach(t => {
     const d = TOPIC_DOMAINS[t];
     if (byDomain[d]) byDomain[d].push(t);
@@ -5184,8 +5183,9 @@ function _sampleTopicsForMixedBatch(dist) {
     }
     return a;
   };
-  const result = { concepts: [], implementation: [], operations: [], security: [], troubleshooting: [] };
+  const result = {};
   Object.keys(byDomain).forEach(d => {
+    result[d] = [];
     const need = dist[d] || 0;
     if (need <= 0) return;
     const pool = byDomain[d];
