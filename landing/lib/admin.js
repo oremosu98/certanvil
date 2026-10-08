@@ -222,7 +222,7 @@
       { name: 'Network+', code: 'N10-009', visibility: 'Public · Free', bank: '320 exemplars', status: 'Live · networkplus.certanvil.com', live: true },
       { name: 'Security+', code: 'SY0-701', visibility: 'Public · Pro', bank: '237 exemplars', status: 'Live · secplus.certanvil.com', live: true },
       { name: 'Azure Fundamentals', code: 'AZ-900', visibility: 'Public · Pro', bank: '194 exemplars', status: 'Live · azure.certanvil.com', live: true },
-      { name: 'Azure AI Fundamentals', code: 'AI-901', visibility: 'Public · Pro', bank: '33 exemplars (rebuilding)', status: 'Live · ai.certanvil.com', live: true },
+      { name: 'Azure AI Fundamentals', code: 'AI-901', visibility: 'Public · Pro', bank: '200 exemplars', status: 'Live · ai.certanvil.com', live: true },
       { name: 'CompTIA A+ Core 1', code: '220-1201', visibility: 'Public · Pro', bank: '200 exemplars', status: 'Live · aplus.certanvil.com', live: true },
       { name: 'CompTIA A+ Core 2', code: '220-1202', visibility: 'Public · Pro', bank: '200 exemplars', status: 'Live · aplus.certanvil.com', live: true },
       { name: 'Microsoft SC-900', code: 'SC-900', visibility: 'Public · Pro', bank: '200 exemplars', status: 'Live · sc900.certanvil.com', live: true },
