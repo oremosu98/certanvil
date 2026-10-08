@@ -29,7 +29,7 @@
 | index.html | 2287 | 148 KB |
 | dg-system.css | 5462 | 508 KB |
 | tests/uat.js + tests/uat/ (29 modules) | 29286 | — |
-UAT checks: 5038 · E2E `test(` count: 163 · APP_VERSION: 8.123.0 · stamped-at: worktree
+UAT checks: 5038 · E2E `test(` count: 163 · APP_VERSION: 8.124.0 · stamped-at: worktree
 <!-- FACTS:AUTO:END -->
 
 | File | Purpose | Size |
@@ -135,9 +135,9 @@ npx playwright test              # E2E (tests/e2e/app.spec.js)
 
 | Version | Features Added |
 |---|---|
+| v8.124.0 | AI-901 Phase 3 batch 2: 64 exemplars (bank 79 -> 143) |
 | v8.123.0 | AI-901 Phase 3 batch 1: 46 exemplars (bank 33 -> 79) |
 | v8.122.0 | AI-901 Phase 2b/c: switcher, landing, diagnostic |
-| v8.121.0 | AI-901 Phase 2a: app labels, hide Decision Lab, cert-aware analytics copy |
 
 _Older releases (v7.60.0 and back) live in [CHANGELOG.md](./CHANGELOG.md)._
 
