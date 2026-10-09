@@ -28,8 +28,8 @@
 | styles.css | 14913 | 551 KB |
 | index.html | 2287 | 148 KB |
 | dg-system.css | 5462 | 508 KB |
-| tests/uat.js + tests/uat/ (29 modules) | 29402 | — |
-UAT checks: 5040 · E2E `test(` count: 163 · APP_VERSION: 8.135.0 · stamped-at: worktree
+| tests/uat.js + tests/uat/ (29 modules) | 29419 | — |
+UAT checks: 5041 · E2E `test(` count: 163 · APP_VERSION: 8.136.0 · stamped-at: worktree
 <!-- FACTS:AUTO:END -->
 
 | File | Purpose | Size |
@@ -135,9 +135,9 @@ npx playwright test              # E2E (tests/e2e/app.spec.js)
 
 | Version | Features Added |
 |---|---|
+| v8.136.0 | Analytics domain mastery counts every domain of the active cert (Sec+ showed 3 domains blank) |
 | v8.135.0 | Readiness v2: score = expected exam accuracy on the cert scale; effort sets confidence; Exam ready needs recent accuracy |
 | v8.134.0 | Topic mastery %: smoothed toward the domain until enough answers, answer count shown, trend = last 10 vs previous 10 |
-| v8.133.0 | Question writer + checker block answer-echo giveaways (stem naming the answer) |
 
 _Older releases (v7.60.0 and back) live in [CHANGELOG.md](./CHANGELOG.md)._
 

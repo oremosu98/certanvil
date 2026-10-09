@@ -974,6 +974,22 @@ test('v8.126.0 AI-901: Decision Lab seed is the AI-901 rebuild (no retired AI-90
       && !/Custom Vision|Form Recognizer|Azure AI Studio|Document Intelligence|regression|clustering/i.test(raw)
       && !/\u2014/.test(raw);
   })());
+test('v8.136.0 Analytics: domain mastery buckets every Sec+ domain (Net+ key literals gone)',
+  (() => {
+    try {
+      const vm = require('vm');
+      const an = fs.readFileSync(path.join(ROOT, 'features', 'analytics.js'), 'utf8');
+      const m = an.match(/function\s+computeDomainRawAccuracy\(h\)\s*\{([\s\S]*?)\n  \}/);
+      const ctx = { MIXED_TOPIC: 'M', EXAM_TOPIC: 'E', Object,
+        DOMAIN_WEIGHTS: { concepts: 0.12, threats: 0.22, architecture: 0.18, operations: 0.28, governance: 0.2 },
+        TOPIC_DOMAINS: { T1: 'threats', A1: 'architecture', G1: 'governance', O1: 'operations' } };
+      vm.createContext(ctx);
+      const fn = vm.runInContext('(function(h){' + m[1] + '})', ctx);
+      const out = fn([{ topic: 'T1', score: 8, total: 10 }, { topic: 'A1', score: 9, total: 10 }, { topic: 'G1', score: 7, total: 10 }]);
+      return Math.round(out.threats) === 80 && Math.round(out.architecture) === 90 && Math.round(out.governance) === 70
+        && !/domByKey = \{ concepts:/.test(an) && !/DOMAIN_NUMS = \{ concepts:/.test(an);
+    } catch (e) { return false; }
+  })());
 test('v8.135.0 Readiness v2: predicted = expected accuracy on the exam scale; effort no longer adds points',
   (() => {
     const src = fs.readFileSync(path.join(ROOT, 'features', 'readiness.js'), 'utf8');

@@ -106,8 +106,8 @@ test('v4.62.3 JS: buildPrompt template interpolates retentionBlock alongside exe
 
 test('v4.57.5 JS: computeDomainRawAccuracy helper defined',
   /function\s+computeDomainRawAccuracy\(h\)/.test(js));
-test('v4.57.5 JS: helper exposes all 5 CompTIA domains',
-  /byDomain\s*=\s*\{[\s\S]{0,400}concepts:[\s\S]{0,100}implementation:[\s\S]{0,100}operations:[\s\S]{0,100}security:[\s\S]{0,100}troubleshooting:/.test(js));
+test('v4.57.5 JS: helper buckets every domain of the active cert (v8.136.0: from DOMAIN_WEIGHTS, was Network+ literals)',
+  /function\s+computeDomainRawAccuracy\(h\)[\s\S]{0,400}Object\.keys\(DOMAIN_WEIGHTS\)\.forEach\(d => \{ byDomain\[d\] = \{ c: 0, t: 0 \}; \}\)/.test(js));
 test('v4.57.5 JS: helper skips MIXED_TOPIC + EXAM_TOPIC entries',
   /e\.topic === MIXED_TOPIC \|\| e\.topic === EXAM_TOPIC/.test(js));
 test('v4.57.5 JS: helper uses raw sum(correct)/sum(total) per domain',
@@ -130,6 +130,7 @@ test('v4.57.5 JS: weighted domainAccuracy still feeds accuracyScore (Readiness 7
     const ctx = {
       MIXED_TOPIC: 'Mixed — All Topics',
       EXAM_TOPIC: 'Exam Simulation',
+      DOMAIN_WEIGHTS: { concepts: 0.23, implementation: 0.20, operations: 0.19, security: 0.14, troubleshooting: 0.24 },
       TOPIC_DOMAINS: {
         'OSI Model': 'concepts',
         'Subnetting & IP Addressing': 'concepts',

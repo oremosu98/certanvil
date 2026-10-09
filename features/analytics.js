@@ -1185,13 +1185,10 @@
   // matcher for per-topic surfaces; domain aggregation stays conservative to
   // avoid double-counting across multi-domain multi-topic sessions.
   function computeDomainRawAccuracy(h) {
-    const byDomain = {
-      concepts:        { c: 0, t: 0 },
-      implementation:  { c: 0, t: 0 },
-      operations:      { c: 0, t: 0 },
-      security:        { c: 0, t: 0 },
-      troubleshooting: { c: 0, t: 0 }
-    };
+    // v8.136.0: buckets from the active cert's domains (were Network+'s five, so
+    // Sec+ Threats / Architecture / Governance answers were dropped).
+    const byDomain = {};
+    Object.keys(DOMAIN_WEIGHTS).forEach(d => { byDomain[d] = { c: 0, t: 0 }; });
     (h || []).forEach(e => {
       if (!e || !e.topic || e.topic === MIXED_TOPIC || e.topic === EXAM_TOPIC) return;
       const d = TOPIC_DOMAINS[e.topic];
@@ -2033,9 +2030,10 @@
       data: { week: weekPts, month: monthPts, all: allPts },
     };
 
-    // ── Domains (5 N10-009 domains, real raw accuracy) ───────────────────────
+    // ── Domains (the active cert's blueprint domains, real raw accuracy) ─────
     const rawAcc = (typeof computeDomainRawAccuracy === 'function') ? computeDomainRawAccuracy(h) : {};
-    const domByKey = { concepts: { c: 0, t: 0 }, implementation: { c: 0, t: 0 }, operations: { c: 0, t: 0 }, security: { c: 0, t: 0 }, troubleshooting: { c: 0, t: 0 } };
+    const domByKey = {};  // v8.136.0: the active cert's domains (was Network+'s five)
+    Object.keys(DOMAIN_WEIGHTS).forEach(d => { domByKey[d] = { c: 0, t: 0 }; });
     h.forEach(e => {
       if (!e.topic || e.topic === MIXED_TOPIC || e.topic === EXAM_TOPIC) return;
       const d = TOPIC_DOMAINS[e.topic];
@@ -2049,12 +2047,11 @@
       if (pct > 0)   return 'novice';
       return 'unstudied';
     };
-    const DOMAIN_NUMS = { concepts: '1.0', implementation: '2.0', operations: '3.0', security: '4.0', troubleshooting: '5.0' };
-    const domainKeys = Object.keys(DOMAIN_WEIGHTS);
+    const domainKeys = Object.keys(DOMAIN_WEIGHTS);  // blueprint order
     const domains = domainKeys.map((k, i) => {
       const pct = Math.round(rawAcc[k] || 0);
       return {
-        idx: i + 1, id: k, num: DOMAIN_NUMS[k] || (i + 1) + '.0',
+        idx: i + 1, id: k, num: (i + 1) + '.0',  // v8.136.0: Sec+ operations is 4.0, not Net+'s 3.0
         name: DOMAIN_LABELS[k] || k, weight: Math.round((DOMAIN_WEIGHTS[k] || 0) * 100),
         accuracy: pct, tier: tierOf(pct), questions: domByKey[k] ? domByKey[k].t : 0,
       };

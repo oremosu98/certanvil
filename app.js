@@ -1,9 +1,9 @@
 // ══════════════════════════════════════════
-// Network+ AI Quiz — app.js  v8.135.0
+// Network+ AI Quiz — app.js  v8.136.0
 // ══════════════════════════════════════════
 
 // ── CONSTANTS ──
-const APP_VERSION = '8.135.0';
+const APP_VERSION = '8.136.0';
 // v4.99.45 (Phase 6b): expose APP_VERSION on window so the web-vitals
 // collector (lib/web-vitals-collector.js, loaded BEFORE app.js so its
 // PerformanceObservers attach earlier) can stamp this version onto every
@@ -2892,7 +2892,7 @@ function renderHistoryPanel() {
     else if (e.pct >= 55) { tierColor = '#eab308';                tierName = 'developing'; }
     else                  { tierColor = '#ef4444';                tierName = 'novice';     }
     const domId = (typeof TOPIC_DOMAINS !== 'undefined') ? TOPIC_DOMAINS[e.topic] : null;
-    const domColor = domId ? DOMAIN_COLOURS[domId] : 'var(--surface3)';
+    const domColor = domId ? (DOMAIN_COLOURS[domId] || Object.values(DOMAIN_COLOURS)[Object.keys(DOMAIN_WEIGHTS).indexOf(domId)] || 'var(--surface3)') : 'var(--surface3)';  // v8.136.0: other certs colour by domain position
     const tag = e.mode === 'exam' ? '<span class="h-mode-tag">EXAM</span>' : '';
     return `<div class="history-row history-row-${tierName}">
       <span class="h-domain-dot" style="background:${domColor}" aria-hidden="true"></span>
