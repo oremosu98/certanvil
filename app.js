@@ -1,9 +1,9 @@
 // ══════════════════════════════════════════
-// Network+ AI Quiz — app.js  v8.132.0
+// Network+ AI Quiz — app.js  v8.133.0
 // ══════════════════════════════════════════
 
 // ── CONSTANTS ──
-const APP_VERSION = '8.132.0';
+const APP_VERSION = '8.133.0';
 // v4.99.45 (Phase 6b): expose APP_VERSION on window so the web-vitals
 // collector (lib/web-vitals-collector.js, loaded BEFORE app.js so its
 // PerformanceObservers attach earlier) can stamp this version onto every
@@ -4711,7 +4711,7 @@ CRITICAL — MULTI-SELECT QUALITY CRITERIA (${_examVendor} exam style):
 SCENARIO CONTEXT FIELD (optional, exam-realism):
 - On roughly 30-40% of Exam Level and Hard questions, include an optional "scenario" field with 1-2 short sentences (max ~30 words) of real-world setup BEFORE the question is asked. This mirrors real ${CERT_CODE} exam framing ("A technician is configuring...", "A user reports...", "An administrator notices...").
 - CRITICAL RULE — scenario describes the ENVIRONMENT the answer depends on; it NEVER restates the subject of the question in technical terms. ❌ "Consider a Layer 2 switch..." inside a question that asks which layer a switch operates at (this telegraphs the answer). ✅ "A technician sees frames being forwarded between hosts on the same subnet but traffic never leaves the local broadcast domain." (forces the learner to reason).
-- Scenario should help DISAMBIGUATE context that makes one answer clearly right, not give the answer away.
+- Scenario should help DISAMBIGUATE context that makes one answer clearly right, not give the answer away. The scenario must add facts the question does not already state. Never restate the question in other words.
 - DO NOT include scenario on: pure recall questions (what port is HTTPS? which protocol uses X?), acronym definitions, or Foundational difficulty. Scenario adds noise on those.
 - Omit the field entirely for questions that don't need it — don't set it to empty string.
 `;
@@ -4760,6 +4760,7 @@ CONCEPTUAL COHERENCE RULES (v4.57.0 — enforce rigorously):
 - Do NOT conflate distinct concepts under one label. If the stem asks about "a TCP/IP principle," the answer must be about the TCP/IP protocol stack (layers, encapsulation, ports, the four-layer model), not about IP address classes. If the stem asks about "an OSI Layer 3 function," the answer must actually be a Layer 3 function, not a Layer 2 one.
 - MATCH THE ABSTRACTION LEVEL: If the stem asks for a "principle," "fundamental concept," or "root cause," the answer must be at that level of abstraction — NOT a specific configuration step or tool. ("Default gateway not configured" is a configuration detail, not a principle.) If the stem asks for a specific fix or symptom, don't give an abstract principle.
 - NO UNSTATED SCENARIOS: A correct answer must be correct for the stem AS WRITTEN. If an option is only right under a specific scenario or attack variant the stem never mentions (e.g. stem asks about "phishing" but the answer is "out-of-band verification of payment changes", which only fits business email compromise / invoice fraud), either name that scenario in the stem or don't use the option as a correct answer. The student must never have to invent context to reach the key.
+- NO ANSWER ECHO: When the question asks the student to identify or classify something (an attack, threat actor, control type, principle, service or protocol), the question and scenario describe what happens or what is observed; they must NOT contain the correct option's name, a word from the same family, or a near-synonym that labels it (e.g. "a criminal group" when the answer is "Organized crime", "a phishing email" when the answer is "Phishing"). The student must reach the answer by reasoning from the evidence, not by matching words.
 - STEM MUST MATCH WHAT THE QUESTION ACTUALLY TESTS: If the stem says "which protocol operates at Layer 3?", the question must test Layer 3 protocol knowledge — not addressing theory, not encapsulation. Read your own stem and make sure the answer directly addresses what you asked.
 
 DISTRACTOR QUALITY RULES:
@@ -7557,12 +7558,12 @@ async function aiValidateQuestions(key, qs) {
     var t = getQType(q);
     if (t === 'multi-select') {
       var opts = Object.keys(q.options).sort().map(function(l) { return l + ') ' + q.options[l]; }).join('\n');
-      return 'Q' + (i+1) + ' [MULTI-SELECT]: "' + q.question + '"\n' + opts + '\nMarked answers: ' + q.answers.join(', ') + '\nExplanation: ' + q.explanation;
+      return 'Q' + (i+1) + ' [MULTI-SELECT]: "' + q.question + '"\n' + (q.scenario ? 'Scenario: ' + q.scenario + '\n' : '') + opts + '\nMarked answers: ' + q.answers.join(', ') + '\nExplanation: ' + q.explanation;
     }
-    return `Q${i+1}: "${q.question}"\nA) ${q.options.A}\nB) ${q.options.B}\nC) ${q.options.C}\nD) ${q.options.D}\nMarked answer: ${q.answer}\nExplanation: ${q.explanation}`;
+    return `Q${i+1}: "${q.question}"\n${q.scenario ? 'Scenario: ' + q.scenario + '\n' : ''}A) ${q.options.A}\nB) ${q.options.B}\nC) ${q.options.C}\nD) ${q.options.D}\nMarked answer: ${q.answer}\nExplanation: ${q.explanation}`;
   };
 
-  const buildPrompt = (chunk) => `You are a ${CERT_NAME_FULL} expert verifier. Review each question below and check EIGHT things:
+  const buildPrompt = (chunk) => `You are a ${CERT_NAME_FULL} expert verifier. Review each question below and check NINE things:
 1. Is the marked answer FACTUALLY CORRECT?
 2. Does the correct answer CONTRADICT any fact stated in the question stem?
 3. Does the EXPLANATION actually support the MARKED answer letter, or does it champion a different option?
@@ -7571,14 +7572,15 @@ async function aiValidateQuestions(key, qs) {
 6. DISTRACTOR QUALITY: Are the wrong options plausible alternatives a student might pick, or are 3/4 obviously wrong? A good MCQ has at least two tempting-looking distractors.
 7. MULTI-SELECT ANSWER BALANCE (for [MULTI-SELECT] questions only): Are ALL marked correct answers at a SIMILAR level of prominence and familiarity? A well-formed multi-select tests BREADTH (knowing that multiple core facts apply), NOT obscurity. If one correct answer is an obvious well-known fact and the other is an obscure edge-case detail that only specialists would know, the question is UNBALANCED — mark AMBIGUOUS. Also check: are any of the DISTRACTORS actually factually correct answers to the stem? If so, mark AMBIGUOUS.
 8. UNSTATED SCENARIO: Is every marked correct answer correct for the stem AS WRITTEN? If a correct answer only applies under a specific scenario, attack variant or context the stem never states (e.g. stem asks generically about "phishing" but a marked answer is a control that only fits business email compromise / payment fraud), the student has to invent context to reach the key — mark AMBIGUOUS.
+9. ANSWER ECHO: Does the question or scenario give the answer away by naming it? If the stem or scenario contains the correct option's name, a word from the same family, or a near-synonym that labels it (e.g. "a criminal group" with the answer "Organized crime"; "a phishing email" with the answer "Phishing"), a student can answer by matching words without knowing the concept — mark AMBIGUOUS. Shared topic vocabulary that also appears in the distractors is fine.
 
 For each question, write exactly ONE line, reason BEFORE verdict:
 Q1 | check: <number of the check it fails, or - if none> | reason: <under 15 words> | verdict: <VERDICT>
 
 VERDICT is one of:
-- OK — the marked answer is correct AND consistent with the stem AND supported by the explanation AND conceptually coherent AND well-framed AND has plausible distractors AND needs no unstated scenario (AND balanced, for multi-select)
+- OK — the marked answer is correct AND consistent with the stem AND supported by the explanation AND conceptually coherent AND well-framed AND has plausible distractors AND needs no unstated scenario AND does not give the answer away (AND balanced, for multi-select)
 - WRONG:X — the correct answer should be letter X instead (use this when the explanation itself says X is correct but the answer field says something else). MCQ only; for a [MULTI-SELECT] with a wrong key use AMBIGUOUS.
-- AMBIGUOUS — the question is unclear, has multiple valid answers, the correct answer contradicts the question's own stated premises, OR fails any of checks 4/5/6/7/8 above
+- AMBIGUOUS — the question is unclear, has multiple valid answers, the correct answer contradicts the question's own stated premises, OR fails any of checks 4/5/6/7/8/9 above
 
 Be strict. Check the actual technical facts. Common errors to catch:
 - Port numbers matched to wrong protocols

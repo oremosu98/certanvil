@@ -314,8 +314,14 @@ test('v4.56.2 JS: Sonnet API error still bubbles up immediately (not masked)',
 // ══════════════════════════════════════════════════════════════════════
 
 // Validator prompt expansion
-test('v4.57.0 validator: expanded from THREE checks to EIGHT checks (v4.85.4: +multi-select balance; v8.112.0: +unstated scenario)',
-  /Review each question below and check EIGHT things/.test(js));
+test('v4.57.0 validator: expanded from THREE checks to NINE checks (v4.85.4: +multi-select balance; v8.112.0: +unstated scenario; v8.133.0: +answer echo)',
+  /Review each question below and check NINE things/.test(js));
+test('v8.133.0 validator: check 9 = ANSWER ECHO, triggers AMBIGUOUS, and the checker sees the scenario',
+  /9\.\s*ANSWER ECHO[\s\S]{0,500}mark AMBIGUOUS/.test(js)
+    && /checks 4\/5\/6\/7\/8\/9 above/.test(js)
+    && /\$\{q\.scenario \? 'Scenario: ' \+ q\.scenario/.test(js));
+test('v8.133.0 generator: NO ANSWER ECHO rule + scenario must add new facts',
+  /NO ANSWER ECHO:/.test(js) && /The scenario must add facts the question does not already state/.test(js));
 test('v8.112.0 validator: check 8 = UNSTATED SCENARIO, triggers AMBIGUOUS',
   /8\.\s*UNSTATED SCENARIO[\s\S]{0,500}mark AMBIGUOUS/.test(js));
 test('v8.112.0 validator: verifier persona is cert-aware, not hard-coded Network+',
