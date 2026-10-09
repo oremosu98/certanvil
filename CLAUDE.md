@@ -24,12 +24,12 @@
 <!-- machine-owned — run `node scripts/stamp-facts.js` to refresh; do not hand-edit -->
 | Metric | Lines | Size |
 |---|---|---|
-| app.js | 8301 | 436 KB |
+| app.js | 8301 | 437 KB |
 | styles.css | 14913 | 551 KB |
 | index.html | 2287 | 148 KB |
 | dg-system.css | 5462 | 508 KB |
-| tests/uat.js + tests/uat/ (29 modules) | 29421 | — |
-UAT checks: 5041 · E2E `test(` count: 163 · APP_VERSION: 8.137.0 · stamped-at: worktree
+| tests/uat.js + tests/uat/ (29 modules) | 29441 | — |
+UAT checks: 5042 · E2E `test(` count: 163 · APP_VERSION: 8.138.0 · stamped-at: worktree
 <!-- FACTS:AUTO:END -->
 
 | File | Purpose | Size |
@@ -135,9 +135,9 @@ npx playwright test              # E2E (tests/e2e/app.spec.js)
 
 | Version | Features Added |
 |---|---|
+| v8.138.0 | Block uncalculable/context-missing questions; real objective sets per cert (Sec+ 4.9 no longer dropped); exam countdown off-by-one |
 | v8.137.0 | Progress 'Drill this next' picks the biggest readiness gain and says why |
 | v8.136.0 | Analytics domain mastery counts every domain of the active cert (Sec+ showed 3 domains blank) |
-| v8.135.0 | Readiness v2: score = expected exam accuracy on the cert scale; effort sets confidence; Exam ready needs recent accuracy |
 
 _Older releases (v7.60.0 and back) live in [CHANGELOG.md](./CHANGELOG.md)._
 

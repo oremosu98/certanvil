@@ -315,7 +315,8 @@ test('CSS: .hardcore-badge', css.includes('.hardcore-badge'));
 test('CSS: hardcore-active hides flag/nav', css.includes('hardcore-active'));
 // v4.8 — N10-009 tightness
 test('computeDomainDistribution helper', js.includes('function computeDomainDistribution('));
-test('N10-009 objective regex used in validation', /\(\[1-5\]\\\.\[1-8\]\)/.test(js));
+test('Objective validation uses the active cert\'s objectives (v8.138.0; Net+ [1-5].[1-8] kept only as the fallback)',
+  /_validObjectiveSet\(\)/.test(js) && /\[1-5\]\\\.\[1-8\]\$\//.test(js) && !/match\(\/\(\[1-5\]\\\.\[1-8\]\)\//.test(js));
 test('Prompt requires objective field', js.includes('MANDATORY ${CERT_CODE} OBJECTIVE TAGGING'));
 // v8.118.0: the writer prompt must follow the active cert, never a hard-coded Net+ identity.
 test('v8.118.0 writer prompt: cert-aware identity + objective ranges (no hard-coded N10-009 voice)',

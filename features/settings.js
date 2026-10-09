@@ -570,7 +570,7 @@
     if (examDate) {
       let daysToExam = null;
       try { daysToExam = (typeof getDaysToExam === 'function') ? getDaysToExam() : null; } catch (_) {}
-      const formatted = new Date(examDate).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
+      const formatted = (typeof parseExamDate === 'function' && parseExamDate(examDate) || new Date(examDate)).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
       const tier = daysToExam !== null && daysToExam < 0 ? 'warn' : 'ok';
       const suffix = daysToExam !== null
         ? (daysToExam > 0 ? ' · ' + daysToExam + ' day' + (daysToExam === 1 ? '' : 's') + ' away' : daysToExam === 0 ? ' · today!' : ' · passed')

@@ -346,7 +346,7 @@
       let dateLabel = '';
       try {
         const raw = (typeof getExamDate === 'function') ? getExamDate() : null;
-        if (raw) dateLabel = ' · ' + new Date(raw).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
+        if (raw) dateLabel = ' · ' + (typeof parseExamDate === 'function' && parseExamDate(raw) || new Date(raw)).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
       } catch (_) {}
       header += '<div class="sr-fc-exam"><span class="sr-fc-exam-pill">Exam in ' + _exDays + (_exDays === 1 ? ' day' : ' days') + dateLabel + '</span></div>';
     }
@@ -433,6 +433,7 @@
       const qualityOk = due.filter(c => {
         if (typeof _stemNumericMatchesAnswerCount === 'function' && !_stemNumericMatchesAnswerCount(c)) return false;
         if (typeof _multiSelectGroundTruthOk === 'function' && !_multiSelectGroundTruthOk(c)) return false;
+        if (typeof _moneyNeedsFigures === 'function' && _moneyNeedsFigures(c)) return false;  // v8.138.0: uncalculable money questions
         return true;
       });
       if (qualityOk.length < due.length) {

@@ -2043,6 +2043,36 @@
   
 
   // ── Window exposure ──────────────────────────────────────────────────────
+  // v8.138.0: question-validator helpers, called from validateQuestions (app.js
+  // is at its line ratchet). Both are typeof-guarded there, so the UAT
+  // validation-audit sandbox keeps the old behaviour.
+  // Valid objectives for the active cert, parsed from meta.objectiveRanges
+  // ("1.1–1.4 (...), 2.1–2.5 (...)"). The old [1-5].[1-8] check dropped every
+  // Sec+ 4.9 question and cut A+ "2.11" to "2.1".
+  let _voCache = null;
+  function _validObjectiveSet() {
+    if (_voCache) return _voCache;
+    const ranges = (typeof CERT_PACK !== 'undefined' && CERT_PACK && CERT_PACK.meta && CERT_PACK.meta.objectiveRanges) || '';
+    const set = new Set();
+    String(ranges).replace(/(\d+)\.(\d+)\s*[–-]\s*\d+\.(\d+)/g, (_, d, a, b) => { for (let i = +a; i <= +b; i++) set.add(d + '.' + i); return ''; });
+    // Plus any objective the pack's own topic list assigns (A+ Core 1 files its
+    // Troubleshooting Methodology topic under 5.0, the domain intro).
+    const tr = (typeof topicResources !== 'undefined' && topicResources) || {};
+    if (set.size) Object.keys(tr).forEach(t => { const o = tr[t] && tr[t].obj; if (/^\d\.\d{1,2}$/.test(String(o || ''))) set.add(String(o)); });
+    _voCache = set.size ? set : null;
+    return _voCache;
+  }
+  // A question whose options are money amounts (3+) but whose stem and
+  // scenario give no figures at all can't be calculated (founder report: an
+  // ALE question about "the ransomware scenario" with no SLE/ARO/cost given).
+  // Measured on the 2,977 curated exemplars: 0 hits.
+  function _moneyNeedsFigures(q) {
+    const opts = Object.values((q && q.options) || {});
+    return opts.filter(o => /[$£€]\s?\d/.test(String(o))).length >= 3
+      && !/\d/.test(String((q && q.question) || '') + String((q && q.scenario) || ''));
+  }
+  window._validObjectiveSet = _validObjectiveSet;
+  window._moneyNeedsFigures = _moneyNeedsFigures;
   window.startQuiz = startQuiz;
   window.render = render;
   window.getQType = getQType;

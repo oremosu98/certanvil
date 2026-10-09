@@ -405,14 +405,22 @@
     localStorage.setItem(STORAGE.EXAM_DATE, isoDate);
     _cloudFlush(STORAGE.EXAM_DATE);
   }
-  function getDaysToExam() {
-    const raw = getExamDate();
+  // v8.138.0: a stored exam date is a bare "YYYY-MM-DD", which new Date() reads
+  // as UTC midnight: 1am on the day in the UK (so Math.ceil said "8 days" for an
+  // exam 7 days away) and the previous evening west of UTC (wrong date label).
+  // Parse it as local midnight instead.
+  function parseExamDate(raw) {
     if (!raw) return null;
-    const examMs = new Date(raw).getTime();
-    if (isNaN(examMs)) return null;
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(raw));
+    const d = m ? new Date(+m[1], +m[2] - 1, +m[3]) : new Date(raw);
+    return isNaN(d.getTime()) ? null : d;
+  }
+  function getDaysToExam() {
+    const exam = parseExamDate(getExamDate());
+    if (!exam) return null;
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
-    return Math.ceil((examMs - today) / 86400000);
+    return Math.round((exam.getTime() - today) / 86400000);
   }
   function getReadinessForecast() {
     // Linear regression on raw score over the last N sessions to project when we
@@ -1304,6 +1312,7 @@
   window.getExamDate               = getExamDate;
   window.setExamDate               = setExamDate;
   window.getDaysToExam             = getDaysToExam;
+  window.parseExamDate             = parseExamDate;
   window.getReadinessForecast      = getReadinessForecast;
   window.getTypeStats              = getTypeStats;
   window.updateTypeStat            = updateTypeStat;

@@ -974,6 +974,25 @@ test('v8.126.0 AI-901: Decision Lab seed is the AI-901 rebuild (no retired AI-90
       && !/Custom Vision|Form Recognizer|Azure AI Studio|Document Intelligence|regression|clustering/i.test(raw)
       && !/\u2014/.test(raw);
   })());
+test('v8.138.0 Validators: real objective sets (Sec+ 4.9, A+ 2.11, Core 1 5.0 topic), money answers need figures, exam date local',
+  (() => {
+    try {
+      const vm = require('vm');
+      const qe = fs.readFileSync(path.join(ROOT, 'features', 'quiz-engine.js'), 'utf8');
+      const a = qe.indexOf('  let _voCache = null;'), b = qe.indexOf('  window._validObjectiveSet');
+      const mk = (ranges, tr) => { const c = { CERT_PACK: { meta: { objectiveRanges: ranges } }, topicResources: tr || {}, Object, String, Set }; vm.createContext(c); vm.runInContext(qe.slice(a, b) + '\nthis.vo = _validObjectiveSet; this.money = _moneyNeedsFigures;', c); return c; };
+      const sec = mk('1.1–1.4 (A), 2.1–2.5 (B), 3.1–3.4 (C), 4.1–4.9 (D), 5.1–5.6 (E)').vo();
+      const c2 = mk('1.1–1.11 (A), 2.1–2.11 (B)').vo();
+      const c1 = mk('5.1–5.6 (E)', { 'Troubleshooting Methodology': { obj: '5.0' } }).vo();
+      const m = mk('1.1–1.2 (A)').money;
+      const broken = { question: 'The team generates a risk figure for the ransomware scenario. Which statement is correct?', options: { A: 'ALE $320,000', B: 'ALE $80,000', C: 'ALE $20,000', D: 'ALE $20,000 again' } };
+      const ok = { question: 'An asset worth $100,000 has an EF of 20% and an ARO of 4. What is the ALE?', options: { A: '$20,000', B: '$80,000', C: '$400,000', D: '$5,000' } };
+      const rd = fs.readFileSync(path.join(ROOT, 'features', 'readiness.js'), 'utf8');
+      return sec.has('4.9') && c2.has('2.11') && c2.has('2.1') && c1.has('5.0') && !sec.has('4.10')
+        && m(broken) === true && m(ok) === false
+        && /function parseExamDate\(raw\)/.test(rd) && /return Math\.round\(\(exam\.getTime\(\) - today\) \/ 86400000\)/.test(rd);
+    } catch (e) { return false; }
+  })());
 test('v8.136.0 Analytics: domain mastery buckets every Sec+ domain (Net+ key literals gone)',
   (() => {
     try {

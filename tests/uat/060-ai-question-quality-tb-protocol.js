@@ -456,7 +456,7 @@ test('v4.57.1 JS: single-topic path unchanged (else-branch preserves original be
 test('v4.57.2 JS: _stemHasInterrogative helper defined',
   /function\s+_stemHasInterrogative\(stem\)/.test(js));
 test('v4.57.2 JS: validateQuestions calls _stemHasInterrogative on each question',
-  /if\s*\(!_stemHasInterrogative\(q\.question\)\)\s*return false/.test(js));
+  /if\s*\(!_stemHasInterrogative\(q\.question\)( \|\| [^)]*\)\))?\)\s*return false/.test(js));
 test('v4.57.2 gen prompt: STEM MUST BE AN ACTUAL QUESTION section added',
   /STEM MUST BE AN ACTUAL QUESTION/.test(js));
 test('v4.57.2 gen prompt: includes the VPN-style wrong example (the exact failure mode)',

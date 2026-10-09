@@ -1,9 +1,9 @@
 // ══════════════════════════════════════════
-// Network+ AI Quiz — app.js  v8.137.0
+// Network+ AI Quiz — app.js  v8.138.0
 // ══════════════════════════════════════════
 
 // ── CONSTANTS ──
-const APP_VERSION = '8.137.0';
+const APP_VERSION = '8.138.0';
 // v4.99.45 (Phase 6b): expose APP_VERSION on window so the web-vitals
 // collector (lib/web-vitals-collector.js, loaded BEFORE app.js so its
 // PerformanceObservers attach earlier) can stamp this version onto every
@@ -4759,7 +4759,7 @@ CONCEPTUAL COHERENCE RULES (v4.57.0 — enforce rigorously):
 - Do NOT conflate deprecated classful addressing (Class A/B/C) with modern TCP/IP or CIDR/subnet principles. Classful addressing was obsoleted by CIDR in 1993 (RFC 1519). If you reference classful terminology, it must be explicitly about legacy concepts or historical context — never framed as a "fundamental TCP/IP principle."
 - Do NOT conflate distinct concepts under one label. If the stem asks about "a TCP/IP principle," the answer must be about the TCP/IP protocol stack (layers, encapsulation, ports, the four-layer model), not about IP address classes. If the stem asks about "an OSI Layer 3 function," the answer must actually be a Layer 3 function, not a Layer 2 one.
 - MATCH THE ABSTRACTION LEVEL: If the stem asks for a "principle," "fundamental concept," or "root cause," the answer must be at that level of abstraction — NOT a specific configuration step or tool. ("Default gateway not configured" is a configuration detail, not a principle.) If the stem asks for a specific fix or symptom, don't give an abstract principle.
-- NO UNSTATED SCENARIOS: A correct answer must be correct for the stem AS WRITTEN. If an option is only right under a specific scenario or attack variant the stem never mentions (e.g. stem asks about "phishing" but the answer is "out-of-band verification of payment changes", which only fits business email compromise / invoice fraud), either name that scenario in the stem or don't use the option as a correct answer. The student must never have to invent context to reach the key.
+- NO UNSTATED SCENARIOS: A correct answer must be correct for the stem AS WRITTEN. If an option is only right under a specific scenario or attack variant the stem never mentions (e.g. stem asks about "phishing" but the answer is "out-of-band verification of payment changes", which only fits business email compromise / invoice fraud), either name that scenario in the stem or don't use the option as a correct answer. The student must never have to invent context to reach the key. Every question must also be SELF-CONTAINED: never refer to a scenario, case, exhibit or earlier question that isn't included, and a calculation must give every number it needs (e.g. an ALE question states the SLE and ARO, or the asset value, exposure factor and ARO).
 - NO ANSWER ECHO: When the question asks the student to identify or classify something (an attack, threat actor, control type, principle, service or protocol), the question and scenario describe what happens or what is observed; they must NOT contain the correct option's name, a word from the same family, or a near-synonym that labels it (e.g. "a criminal group" when the answer is "Organized crime", "a phishing email" when the answer is "Phishing"). The student must reach the answer by reasoning from the evidence, not by matching words.
 - STEM MUST MATCH WHAT THE QUESTION ACTUALLY TESTS: If the stem says "which protocol operates at Layer 3?", the question must test Layer 3 protocol knowledge — not addressing theory, not encapsulation. Read your own stem and make sure the answer directly addresses what you asked.
 
@@ -6936,7 +6936,7 @@ function validateQuestions(qs) {
     // context compounds this — when both stem and scenario are setup,
     // the card reads as "here's a situation [silence] pick one of these."
     // Cheap programmatic guard runs before the Sonnet validator.
-    if (!_stemHasInterrogative(q.question)) return false;
+    if (!_stemHasInterrogative(q.question) || (typeof _moneyNeedsFigures === 'function' && _moneyNeedsFigures(q))) return false;  // v8.138.0: + money answers with no figures
 
     // v4.81.16: stem-numeric-vs-answer-count guard. Catches "Which TWO" /
     // "(Choose TWO)" stems that disagree with q.answers.length, plus MCQs
@@ -6952,9 +6952,9 @@ function validateQuestions(qs) {
     // v4.8 — N10-009 objective tagging: every question must cite a valid exam objective
     // Accept common shapes: "1.4", "Obj 1.4", "1.4 — Routing", etc. Extract first X.Y match.
     if (q.objective) {
-      const m = String(q.objective).match(/([1-5]\.[1-8])/);
-      if (!m) return false;
-      q.objective = m[1]; // normalize
+      const m = String(q.objective).match(/(\d)\.(\d{1,2})/), _vo = (typeof _validObjectiveSet === 'function') ? _validObjectiveSet() : null;  // v8.138.0: the cert's real objectives
+      if (!m || (_vo ? !_vo.has(m[1] + '.' + m[2]) : !/^[1-5]\.[1-8]$/.test(m[1] + '.' + m[2]))) return false;  // was [1-5].[1-8]: dropped Sec+ 4.9, cut A+ 2.11 to 2.1
+      q.objective = m[1] + '.' + m[2]; // normalize
     } else {
       return false;
     }
@@ -7571,7 +7571,7 @@ async function aiValidateQuestions(key, qs) {
 5. FRAMING MATCH: Is the question's abstraction level aligned with the answer? (e.g. stem asks for a "principle" or "root cause," but the answer is a specific configuration detail; or stem asks what is "most likely" but only one option is even plausible.)
 6. DISTRACTOR QUALITY: Are the wrong options plausible alternatives a student might pick, or are 3/4 obviously wrong? A good MCQ has at least two tempting-looking distractors.
 7. MULTI-SELECT ANSWER BALANCE (for [MULTI-SELECT] questions only): Are ALL marked correct answers at a SIMILAR level of prominence and familiarity? A well-formed multi-select tests BREADTH (knowing that multiple core facts apply), NOT obscurity. If one correct answer is an obvious well-known fact and the other is an obscure edge-case detail that only specialists would know, the question is UNBALANCED — mark AMBIGUOUS. Also check: are any of the DISTRACTORS actually factually correct answers to the stem? If so, mark AMBIGUOUS.
-8. UNSTATED SCENARIO: Is every marked correct answer correct for the stem AS WRITTEN? If a correct answer only applies under a specific scenario, attack variant or context the stem never states (e.g. stem asks generically about "phishing" but a marked answer is a control that only fits business email compromise / payment fraud), the student has to invent context to reach the key — mark AMBIGUOUS.
+8. UNSTATED SCENARIO: Is every marked correct answer correct for the stem AS WRITTEN? If a correct answer only applies under a specific scenario, attack variant or context the stem never states (e.g. stem asks generically about "phishing" but a marked answer is a control that only fits business email compromise / payment fraud), the student has to invent context to reach the key — mark AMBIGUOUS. Also mark AMBIGUOUS if the question refers to a scenario, case, exhibit or figures that are not included, or asks for a calculation without giving every number it needs.
 9. ANSWER ECHO: Does the question or scenario give the answer away by naming it? If the stem or scenario contains the correct option's name, a word from the same family, or a near-synonym that labels it (e.g. "a criminal group" with the answer "Organized crime"; "a phishing email" with the answer "Phishing"), a student can answer by matching words without knowing the concept — mark AMBIGUOUS. Shared topic vocabulary that also appears in the distractors is fine.
 
 For each question, write exactly ONE line, reason BEFORE verdict:
@@ -7860,7 +7860,7 @@ function _buildExamDateChipHtml(examDateStr, daysToExam, inputId) {
   let dateChipInner;
   let dateChipState = '';
   if (examDateStr) {
-    const dateLabel = new Date(examDateStr).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+    const dateLabel = (typeof parseExamDate === 'function' && parseExamDate(examDateStr) || new Date(examDateStr)).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
     // v7.50.x: urgency emoji (🔥⏰📅🎯✅) removed — urgency is already carried by
     // the ana-ready-datechip-{urgent|soon|ok|past} state class (colour), so the
     // glyph was redundant decoration (BRAND §9 · no emoji-as-icons).
