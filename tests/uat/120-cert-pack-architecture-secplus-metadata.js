@@ -974,6 +974,28 @@ test('v8.126.0 AI-901: Decision Lab seed is the AI-901 rebuild (no retired AI-90
       && !/Custom Vision|Form Recognizer|Azure AI Studio|Document Intelligence|regression|clustering/i.test(raw)
       && !/\u2014/.test(raw);
   })());
+test('v8.140.0 Mixed: least-recently-seen topics drawn first; later batches in a session move on',
+  (() => {
+    try {
+      const vm = require('vm');
+      const qe = fs.readFileSync(path.join(ROOT, 'features', 'quiz-engine.js'), 'utf8');
+      const helper = qe.slice(qe.indexOf('  const _drawnAt = {};'), qe.indexOf('  window._lrsPick = _lrsPick;'));
+      const sampler = _fnBody(js, '_sampleTopicsForMixedBatch');
+      const now = Date.now(), day = 86400000;
+      const hist = [ { topic: 'A', date: new Date(now - 1 * day).toISOString() },   // seen yesterday
+                     { topic: 'B', date: new Date(now - 9 * day).toISOString() },   // seen 9 days ago
+                     { topic: 'C', date: new Date(now - 30 * day).toISOString() } ]; // seen a month ago; D, E never
+      const ctx = { Math, Object, Array, Date, isFinite, TOPIC_DOMAINS: { A: 'x', B: 'x', C: 'x', D: 'x', E: 'x' },
+        DOMAIN_WEIGHTS: { x: 1 }, loadHistory: () => hist };
+      vm.createContext(ctx);
+      vm.runInContext(helper + '\nthis._lrsPick = _lrsPick;\n' + sampler, ctx);
+      const first = vm.runInContext('_sampleTopicsForMixedBatch({ x: 3 })', ctx).x;
+      const second = vm.runInContext('_sampleTopicsForMixedBatch({ x: 2 })', ctx).x;
+      const firstSet = new Set(first);
+      return first.length === 3 && firstSet.has('D') && firstSet.has('E') && firstSet.has('C') && !firstSet.has('A')
+        && second.length === 2 && second.indexOf('B') !== -1 && second.indexOf('A') !== -1;
+    } catch (e) { return false; }
+  })());
 test('v8.139.0 SR: review cards can be removed as broken (two-step, stays removed, reported)',
   (() => {
     const sr = fs.readFileSync(path.join(ROOT, 'features', 'sr-review.js'), 'utf8');
@@ -991,7 +1013,7 @@ test('v8.138.0 Validators: real objective sets (Sec+ 4.9, A+ 2.11, Core 1 5.0 to
     try {
       const vm = require('vm');
       const qe = fs.readFileSync(path.join(ROOT, 'features', 'quiz-engine.js'), 'utf8');
-      const a = qe.indexOf('  let _voCache = null;'), b = qe.indexOf('  window._validObjectiveSet');
+      const a = qe.indexOf('  let _voCache = null;'), b = qe.indexOf('  // v8.140.0: coverage-aware Mixed draws');
       const mk = (ranges, tr) => { const c = { CERT_PACK: { meta: { objectiveRanges: ranges } }, topicResources: tr || {}, Object, String, Set }; vm.createContext(c); vm.runInContext(qe.slice(a, b) + '\nthis.vo = _validObjectiveSet; this.money = _moneyNeedsFigures;', c); return c; };
       const sec = mk('1.1–1.4 (A), 2.1–2.5 (B), 3.1–3.4 (C), 4.1–4.9 (D), 5.1–5.6 (E)').vo();
       const c2 = mk('1.1–1.11 (A), 2.1–2.11 (B)').vo();

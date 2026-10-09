@@ -2071,6 +2071,35 @@
     return opts.filter(o => /[$£€]\s?\d/.test(String(o))).length >= 3
       && !/\d/.test(String((q && q.question) || '') + String((q && q.scenario) || ''));
   }
+  // v8.140.0: coverage-aware Mixed draws. Within each domain the lottery takes
+  // the least-recently-seen topics first (never-seen first; the incoming
+  // shuffle breaks ties), so consecutive Mixed quizzes cover the whole
+  // blueprint instead of leaving it to chance (Sec+ sim: ~20 → ~7 ten-question
+  // quizzes to touch all 39 topics). Topics drawn earlier this session count
+  // as just seen, so a multi-batch exam doesn't repeat the same picks.
+  const _drawnAt = {};
+  let _lastSeenCache = null;
+  function _topicLastSeen() {
+    const h = (typeof loadHistory === 'function') ? loadHistory() : [];
+    if (_lastSeenCache && _lastSeenCache.len === h.length) return _lastSeenCache.map;
+    const map = {};
+    h.forEach(e => {
+      if (!e || !e.topic) return;
+      const ts = new Date(e.date).getTime();
+      if (isFinite(ts) && (!map[e.topic] || ts > map[e.topic])) map[e.topic] = ts;
+    });
+    _lastSeenCache = { len: h.length, map };
+    return map;
+  }
+  function _lrsPick(shuffled, need) {
+    const seen = _topicLastSeen();
+    const key = t => Math.max(seen[t] || 0, _drawnAt[t] || 0);
+    const picks = shuffled.slice().sort((a, b) => key(a) - key(b)).slice(0, need); // stable: shuffle breaks ties
+    const now = Date.now();
+    picks.forEach((t, i) => { _drawnAt[t] = now + i; });
+    return picks;
+  }
+  window._lrsPick = _lrsPick;
   window._validObjectiveSet = _validObjectiveSet;
   window._moneyNeedsFigures = _moneyNeedsFigures;
   window.startQuiz = startQuiz;

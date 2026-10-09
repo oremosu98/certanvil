@@ -1,9 +1,9 @@
 // ══════════════════════════════════════════
-// Network+ AI Quiz — app.js  v8.139.0
+// Network+ AI Quiz — app.js  v8.140.0
 // ══════════════════════════════════════════
 
 // ── CONSTANTS ──
-const APP_VERSION = '8.139.0';
+const APP_VERSION = '8.140.0';
 // v4.99.45 (Phase 6b): expose APP_VERSION on window so the web-vitals
 // collector (lib/web-vitals-collector.js, loaded BEFORE app.js so its
 // PerformanceObservers attach earlier) can stamp this version onto every
@@ -5193,7 +5193,7 @@ function _sampleTopicsForMixedBatch(dist) {
     if (need <= 0) return;
     const pool = byDomain[d];
     if (need <= pool.length) {
-      result[d] = shuffle(pool).slice(0, need);
+      result[d] = (typeof _lrsPick === 'function') ? _lrsPick(shuffle(pool), need) : shuffle(pool).slice(0, need);  // v8.140.0: least-recently-seen first
     } else {
       // Need more than available — fill from shuffled pool, repeat as needed
       const out = [];
