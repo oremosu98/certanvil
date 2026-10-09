@@ -1275,7 +1275,7 @@ test('v4.54.15 JS: domain-chip click clears mode cards when turning ON',
 test('v4.54.15 JS: fallback to Mixed when all chips deselected',
   /initTopicGroupMulti[\s\S]{0,3500}!anyOn[\s\S]{0,400}Mixed/.test(js));
 test('v4.54.15 JS: fetchQuestions parses Multi: prefix into multiTopicList',
-  /async function fetchQuestions[\s\S]{0,12000}startsWith\('Multi:\s*'\)[\s\S]{0,800}multiTopicList/.test(js));
+  /async function fetchQuestions[\s\S]{0,13500}startsWith\('Multi:\s*'\)[\s\S]{0,800}multiTopicList/.test(js));  // 12000→13500 v8.143.0 pack topic hints in the lottery
 test('v4.54.15 JS: fetchQuestions builds MANDATORY MULTI-TOPIC DISTRIBUTION prompt',
   /fetchQuestions[\s\S]{0,15000}MANDATORY MULTI-TOPIC DISTRIBUTION/.test(js));
 test('v4.54.15 JS: startQuiz loading-msg handles multi-topic count',

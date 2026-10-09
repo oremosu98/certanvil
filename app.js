@@ -1,9 +1,9 @@
 // ══════════════════════════════════════════
-// Network+ AI Quiz — app.js  v8.142.0
+// Network+ AI Quiz — app.js  v8.143.0
 // ══════════════════════════════════════════
 
 // ── CONSTANTS ──
-const APP_VERSION = '8.142.0';
+const APP_VERSION = '8.143.0';
 // v4.99.45 (Phase 6b): expose APP_VERSION on window so the web-vitals
 // collector (lib/web-vitals-collector.js, loaded BEFORE app.js so its
 // PerformanceObservers attach earlier) can stamp this version onto every
@@ -4559,7 +4559,7 @@ function _mergeBatchedFetchResults(settled, numBatches, n) {
 // v4.81.15: staleSliceIdx threaded through from fetchQuestions for stale-
 // topic rotation in the prompt-injection layer. See _computeStaleTopics.
 async function _fetchQuestionsBatch(key, qTopic, difficulty, n, pbqCountOverride, staleSliceIdx) {
-  const topicHints = {
+  const topicHints = Object.assign({  // v8.143.0: + the active pack's topicHints (Sec+ official SY0-701 sub-topics)
     'Integrating Networked Devices': 'IoT devices, ICS/SCADA systems, OT/IT convergence, smart building tech, embedded systems, segmentation of IoT, industrial control risks.',
     'Network Troubleshooting & Tools': 'Troubleshooting methodology, ping, traceroute/tracert, ipconfig/ifconfig, nslookup, dig, netstat, arp, route, Wireshark/packet capture, cable testers, TDR, loopback testing, common network faults.',
     'NAT & IP Services': 'Static NAT, dynamic NAT, PAT/NAT overload, inside/outside local/global, port forwarding, NAT64, private vs public IP ranges, IP helper addresses.',
@@ -4576,7 +4576,7 @@ async function _fetchQuestionsBatch(key, qTopic, difficulty, n, pbqCountOverride
     'WPA3 & EAP Authentication': 'WPA3-Personal: SAE/Dragonfly. WPA3-Enterprise: 192-bit security. OWE. WPA3 vs WPA2. EAP types: EAP-TLS, PEAP, EAP-TTLS, EAP-FAST. 802.1X roles: Supplicant, Authenticator, Authentication Server. Wi-Fi Easy Connect. Transition mode.',
     'SDN, NFV & Automation': 'SDN: control/data plane separation. SDN controller, northbound/southbound APIs, OpenFlow. NFV: VNF, virtualising network functions. IaC: Ansible, Terraform, Puppet. YANG/NETCONF. Intent-based networking. REST APIs. Zero-touch provisioning.',
     'Network Appliances & Device Functions': 'Load balancers (hardware vs software, Layer 4 vs Layer 7, algorithms: round-robin / least-connections / weighted / source-IP hash, active-active vs active-passive, health checks, SSL/TLS offloading). Proxy servers: forward proxy (outbound filtering, anonymity, caching), reverse proxy (inbound distribution, caching, SSL termination, hides backend topology), transparent proxy (inline, no client config needed). IDS/IPS/NIDS/NIPS: detection vs prevention, signature-based vs anomaly-based/behavioural, in-line vs passive/tap placement. Next-Generation Firewall (NGFW) and Unified Threat Management (UTM) — app-aware filtering, deep packet inspection, bundled AV + IPS + content filter. VPN concentrator. Content/URL filter / web filter. Wireless access points (WAP) and Wireless LAN Controllers (WLC) — autonomous vs lightweight APs. Layer 3 capable switch / multilayer switch. Cable modem, DSL modem, ONT (fiber optical network terminal). Covers device selection, placement, distinctions between similar appliances (proxy vs reverse proxy vs load balancer; IDS vs IPS; NGFW vs UTM).'
-  };
+  }, (CERT_PACK && CERT_PACK.topicHints) || {});
   // v4.85.8: N10-009 domain-weighted distribution + per-batch TOPIC LOTTERY for
   // Mixed mode. Pre-samples specific topics from each domain (vs letting Haiku
   // choose) so the user gets a genuinely random spread instead of Haiku's
@@ -4586,7 +4586,7 @@ async function _fetchQuestionsBatch(key, qTopic, difficulty, n, pbqCountOverride
   if (qTopic === MIXED_TOPIC) {
     const dist = computeDomainDistribution(n);
     const sampled = _sampleTopicsForMixedBatch(dist);
-    const fmt = (arr) => arr.length === 0 ? '  (none this batch)' : arr.map(t => '  - "' + t + '"').join('\n');
+    const fmt = (arr) => arr.length === 0 ? '  (none this batch)' : arr.map(t => '  - "' + t + '"' + (CERT_PACK && CERT_PACK.topicHints && CERT_PACK.topicHints[t] ? ' (cover any of: ' + CERT_PACK.topicHints[t] + ')' : '')).join('\n');  // v8.143.0: pack hints in the lottery
     // v8.127.0: one block per domain of the ACTIVE cert, labels + weights from
     // its pack (was Network+'s five domains hard-coded on every cert).
     const domainBlocks = Object.keys(DOMAIN_WEIGHTS).map((k, i) =>

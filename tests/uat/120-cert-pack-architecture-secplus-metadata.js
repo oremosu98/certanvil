@@ -974,6 +974,21 @@ test('v8.126.0 AI-901: Decision Lab seed is the AI-901 rebuild (no retired AI-90
       && !/Custom Vision|Form Recognizer|Azure AI Studio|Document Intelligence|regression|clustering/i.test(raw)
       && !/\u2014/.test(raw);
   })());
+test('v8.143.0 Sec+: every topic has official SY0-701 hints; 5.5/5.6/1.2 objective map fixed; hints wired into prompts',
+  (() => {
+    const vm = require('vm');
+    const sb = { window: {} };
+    vm.runInNewContext(certSecplus, sb);
+    const P = sb.window.CERT_PACKS.secplus;
+    const topics = Object.keys(P.topicDomains), H = P.topicHints || {};
+    return topics.length >= 39 && topics.every(t => typeof H[t] === 'string' && H[t].length > 40)
+      && P.topicResources['Audits & Assessments'].obj === '5.5'
+      && P.topicResources['Security Awareness & Training'].obj === '5.6'
+      && P.topicResources['Zero Trust & SDN'].obj === '1.2'
+      && /honeytoken/.test(H['CIA Triad & AAA']) && /access control vestibule/.test(H['CIA Triad & AAA'])
+      && js.includes('}, (CERT_PACK && CERT_PACK.topicHints) || {});')
+      && js.includes("' (cover any of: ' + CERT_PACK.topicHints[t] + ')'");
+  })());
 test('v8.140.0 Mixed: least-recently-seen topics drawn first; later batches in a session move on',
   (() => {
     try {
