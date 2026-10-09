@@ -112,8 +112,9 @@ const pass = (name, ok, detail) => results.push({ name, ok, detail });
 // ── 4. Answer key resolves to a real option ──────────────────────────────
 {
   const broken = ALL.filter(e => {
-    const keys = Array.isArray(e.answers) ? e.answers : [e.answer];
-    return keys.some(k => !e.options || !e.options[k]);
+    // order items key the full sequence as an `answer` array (v8.130.0)
+    const keys = Array.isArray(e.answers) ? e.answers : Array.isArray(e.answer) ? e.answer : [e.answer];
+    return keys.length === 0 || keys.some(k => !e.options || !e.options[k]);
   });
   pass('keys resolve', broken.length === 0,
     broken.length === 0 ? 'every answer key names an existing option' : `${broken.length} item(s) key a missing option`);

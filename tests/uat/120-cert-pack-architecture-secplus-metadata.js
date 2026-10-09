@@ -303,7 +303,7 @@ test('v7.6.0 CertPack: Core 1 exemplar bank >= 195 entries',
   })());
 test('v7.6.0 CertPack: Core 2 exemplar bank >= 195 entries',
   (() => {
-    var matches = certAplusCore2.match(/addedVersion:\s*"7\.6\.0"/g);
+    var matches = certAplusCore2.match(/"?addedVersion"?:\s*"7\.6\.0"/g);  // v8.130.0: compact JSON quotes the key
     return matches && matches.length >= 195;
   })());
 test('v7.6.0 CertPack: Core 1 topic catalog has >= 40 topics',
@@ -346,10 +346,10 @@ test('v7.6.0 CertPack: every Core 2 exemplar topic exists in topicDomains',
     var km;
     while ((km = keyRe.exec(sec[1])) !== null) topicKeys.add(km[1]);
     if (topicKeys.size < 40) return false; // extraction sanity
-    var exTopics = certAplusCore2.match(/topic:\s*"([^"]+)"/g) || [];
+    var exTopics = certAplusCore2.match(/"topic":"([^"]+)"/g) || [];  // v8.130.0: exemplars are compact JSON
     if (exTopics.length === 0) return false;
     for (var i = 0; i < exTopics.length; i++) {
-      var t = exTopics[i].replace(/^topic:\s*"/, '').replace(/"$/, '');
+      var t = exTopics[i].replace(/^"topic":"/, '').replace(/"$/, '');
       if (!topicKeys.has(t)) return false;
     }
     return true;
