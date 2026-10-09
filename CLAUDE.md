@@ -28,8 +28,8 @@
 | styles.css | 14913 | 551 KB |
 | index.html | 2287 | 148 KB |
 | dg-system.css | 5470 | 510 KB |
-| tests/uat.js + tests/uat/ (29 modules) | 29479 | — |
-UAT checks: 5045 · E2E `test(` count: 163 · APP_VERSION: 8.141.0 · stamped-at: worktree
+| tests/uat.js + tests/uat/ (29 modules) | 29485 | — |
+UAT checks: 5047 · E2E `test(` count: 163 · APP_VERSION: 8.142.0 · stamped-at: worktree
 <!-- FACTS:AUTO:END -->
 
 | File | Purpose | Size |
@@ -135,9 +135,9 @@ npx playwright test              # E2E (tests/e2e/app.spec.js)
 
 | Version | Features Added |
 |---|---|
+| v8.142.0 | Quiz fill: one failed writer batch no longer sinks the request; per-quiz fill diagnostics |
 | v8.141.0 | Quizzes fill the requested count: up to 3 top-up rounds + gentler checker calls |
 | v8.140.0 | Mixed quizzes draw least-recently-seen topics first (full blueprint coverage ~3x faster) |
-| v8.139.0 | Review cards: remove a broken question (two-step, never re-added) |
 
 _Older releases (v7.60.0 and back) live in [CHANGELOG.md](./CHANGELOG.md)._
 

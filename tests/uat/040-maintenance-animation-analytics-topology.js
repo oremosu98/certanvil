@@ -349,12 +349,18 @@ test('v4.43.4 #2: retry-to-fill tops up while short (v8.141.0: up to MAX_TOPUP_R
   /for \(let round = 1; round <= MAX_TOPUP_ROUNDS && questions\.length < qCount; round\+\+\)/.test(_startQuizBody)
     && /const MAX_TOPUP_ROUNDS = 3;/.test(_startQuizBody));
 test('v4.43.4 #2: each top-up round fetches the deficit plus a buffer and de-dupes by stem',
-  /fetchQuestions\([^)]*deficit \+ Math\.max\(3, Math\.ceil\(deficit \* 0\.5 \* round\)\)\)/.test(_startQuizBody)
-    && /!have\.has\(/.test(_startQuizBody));
+  /_rn = \{ asked: deficit \+ Math\.max\(3, Math\.ceil\(deficit \* 0\.5 \* round\)\) \}/.test(_startQuizBody)
+    && /fetchQuestions\([^)]*_rn\.asked\)/.test(_startQuizBody) && /!have\.has\(/.test(_startQuizBody));
+test('v8.142.0 quiz-fill: per-round diagnostics logged; failed rounds pause before the next',
+  /_logQuizFill\(qCount, questions\.length, 'fresh', _fill\.rounds, null\)/.test(_startQuizBody)
+    && /round < MAX_TOPUP_ROUNDS && typeof _pause === 'function'\) await _pause\(1500 \* round\)/.test(_startQuizBody));
+test('v8.142.0 fetchQuestions: one failed batch no longer sinks the request (throws only if nothing merged)',
+  /if \(r\.reason && r\.reason\.apiError && !apiErr\) apiErr = r\.reason;/.test(js) && /throw apiErr \|\| new Error\('AI returned malformed data/.test(js)
+    && !/if \(r\.reason && r\.reason\.apiError\) throw r\.reason;/.test(js));
 test('v8.141.0 checker: chunks run 3 at a time with a pause before retry',
   /_runLimited\(chunks, 3, validateChunk\)/.test(js) && /attempt === 0 && typeof _pause === 'function'\) await _pause\(1500\)/.test(js));
 test('v4.43.4 #2: retry wraps in try/catch so a failed retry ships what we have',
-  /try\s*\{[\s\S]*?fetchQuestions\([^)]*deficit[\s\S]*?\}\s*catch\s*\(retryErr\)/.test(_startQuizBody));
+  /try\s*\{[\s\S]*?fetchQuestions\([^)]*_rn\.asked[\s\S]*?\}\s*catch\s*\(retryErr\)/.test(_startQuizBody));
 // Regression guards: the old "Acceptable shortfall" / "length < qCount/2" logic must stay gone
 test('v4.43.4: "Acceptable shortfall" comment removed (regression guard)',
   !_startQuizBody.includes('Acceptable shortfall'));

@@ -1,9 +1,9 @@
 // ══════════════════════════════════════════
-// Network+ AI Quiz — app.js  v8.141.0
+// Network+ AI Quiz — app.js  v8.142.0
 // ══════════════════════════════════════════
 
 // ── CONSTANTS ──
-const APP_VERSION = '8.141.0';
+const APP_VERSION = '8.142.0';
 // v4.99.45 (Phase 6b): expose APP_VERSION on window so the web-vitals
 // collector (lib/web-vitals-collector.js, loaded BEFORE app.js so its
 // PerformanceObservers attach earlier) can stamp this version onto every
@@ -4525,7 +4525,7 @@ async function fetchQuestions(key, qTopic, difficulty, n, staleSliceIdx) {
 function _mergeBatchedFetchResults(settled, numBatches, n) {
   const merged = [];
   const seenStems = new Set();
-  let failed = 0;
+  let failed = 0, apiErr = null;  // v8.142.0: keep successful batches; only throw if none succeeded
   let deduped = 0;
   settled.forEach(r => {
     if (r.status === 'fulfilled') {
@@ -4537,11 +4537,11 @@ function _mergeBatchedFetchResults(settled, numBatches, n) {
       });
     } else {
       failed++;
-      if (r.reason && r.reason.apiError) throw r.reason;
+      if (r.reason && r.reason.apiError && !apiErr) apiErr = r.reason;  // was: throw (one bad batch sank the whole request → cache fallback)
     }
   });
   if (merged.length === 0) {
-    throw new Error('AI returned malformed data. Please try again.');
+    throw apiErr || new Error('AI returned malformed data. Please try again.');
   }
   if (failed > 0 && typeof console !== 'undefined' && console.warn) {
     console.warn(`[fetchQuestions] ${failed}/${numBatches} batches failed — returning ${merged.length}/${n} questions; caller will retry-to-fill if needed`);

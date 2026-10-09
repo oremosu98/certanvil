@@ -105,14 +105,19 @@
       const DROPOUT_BUFFER = Math.max(3, Math.ceil(qCount * 0.3));
       document.getElementById('loading-msg').textContent =
         'Generating ' + qCount + ' ' + diff + ' questions on ' + _topicLabel + '\u2026';
+      // v8.142.0: per-round fill diagnostics → telemetry:quiz-fill (see end of try).
+      const _fill = { rounds: [] };
       let raw = await fetchQuestions(key, activeQuizTopic, diff, qCount + DROPOUT_BUFFER);
+      const _r0 = { asked: qCount + DROPOUT_BUFFER, written: raw.length };
       _loadingProgressUpdate('Verifying quality\u2026', 45);
       // Enhancement 1: AI second-pass validation
       document.getElementById('loading-msg').textContent = 'Verifying question accuracy\u2026';
       raw = await aiValidateQuestions(key, raw);
       _loadingProgressUpdate('Finalizing\u2026', 80);
       // Enhancement 2 + 4: Programmatic validation + reported question exclusion
+      _r0.afterChecker = raw.length;
       questions = validateQuestions(raw);
+      _r0.afterLocal = questions.length; _fill.rounds.push(_r0);
       if (questions.length === 0) throw new Error('All generated questions failed validation. Try again.');
   
       // Retry-to-fill. v8.141.0: up to MAX_TOPUP_ROUNDS rounds (was one), so a
@@ -126,16 +131,26 @@
         _loadingProgressUpdate('Topping up (' + deficit + ' more)\u2026', Math.min(95, 82 + round * 4));
         document.getElementById('loading-msg').textContent =
           'Generating ' + deficit + ' more to complete your ' + qCount + '-question set\u2026';
+        const _rn = { asked: deficit + Math.max(3, Math.ceil(deficit * 0.5 * round)) };
         try {
-          const extraRaw = await fetchQuestions(key, activeQuizTopic, diff, deficit + Math.max(3, Math.ceil(deficit * 0.5 * round))); // buffer grows each round
-          const extraValidated = validateQuestions(await aiValidateQuestions(key, extraRaw));
+          const extraRaw = await fetchQuestions(key, activeQuizTopic, diff, _rn.asked); // buffer grows each round
+          _rn.written = extraRaw.length;
+          const extraChecked = await aiValidateQuestions(key, extraRaw);
+          _rn.afterChecker = extraChecked.length;
+          const extraValidated = validateQuestions(extraChecked);
+          _rn.afterLocal = extraValidated.length;
           const have = new Set(questions.map(q => String(q.question || '').trim().toLowerCase()));
-          questions = questions.concat(extraValidated.filter(q => !have.has(String(q.question || '').trim().toLowerCase())));
+          const fresh = extraValidated.filter(q => !have.has(String(q.question || '').trim().toLowerCase()));
+          _rn.added = fresh.length;
+          questions = questions.concat(fresh);
         } catch (retryErr) {
-          // A failed round (network/API hiccup) just moves on to the next one;
-          // after the last round we ship what we have rather than error out.
+          // A failed round (network/API hiccup) moves on to the next one after a
+          // short pause (v8.142.0); after the last round we ship what we have.
+          _rn.error = String((retryErr && retryErr.message) || retryErr).slice(0, 80);
           console.warn('Top-up round ' + round + ' failed:', retryErr);
+          if (round < MAX_TOPUP_ROUNDS && typeof _pause === 'function') await _pause(1500 * round);
         }
+        _fill.rounds.push(_rn);
       }
   
       // Slice to exact count — truncates buffer overage from the initial over-request
@@ -144,7 +159,9 @@
       if (questions.length > qCount) {
         questions = questions.slice(0, qCount);
       }
+      _logQuizFill(qCount, questions.length, 'fresh', _fill.rounds, null);
     } catch(e) {
+      _logQuizFill(qCount, 0, getCachedQuestions(activeQuizTopic, diff, qCount) ? 'cache' : 'error', [], String((e && e.message) || e).slice(0, 120));
       const cached = getCachedQuestions(activeQuizTopic, diff, qCount);
       if (cached) {
         questions = cached.slice(0, qCount);
@@ -2106,6 +2123,19 @@
     return picks;
   }
   window._lrsPick = _lrsPick;
+  // v8.142.0: one telemetry row per quiz generation so a short set can be
+  // traced: requested vs served, fresh vs cache fallback, and per round how
+  // many were asked for, written, passed the checker, passed local checks.
+  function _logQuizFill(requested, served, source, rounds, error) {
+    try {
+      if (typeof _logValidatorTelemetry !== 'function') return;
+      const r = (rounds || []).map((x, i) => (i === 0 ? 'r0 ' : 'top-up' + i + ' ') + (x.error ? 'ERR ' + x.error
+        : x.asked + '→' + (x.written ?? '?') + '→' + (x.afterChecker ?? '?') + '→' + (x.afterLocal ?? '?') + (x.added !== undefined ? ' +' + x.added : ''))).join(' | ');
+      _logValidatorTelemetry([{ type: 'telemetry:quiz-fill', fingerprint: 'quiz-fill:' + (typeof CURRENT_CERT !== 'undefined' ? CURRENT_CERT : ''),
+        message: 'asked ' + requested + ' · served ' + served + ' · ' + source + (r ? ' · ' + r : '') + (error ? ' · error: ' + error : ''),
+        extra: { requested, served, source, rounds, error } }]);
+    } catch (_) { /* diagnostics must never affect the quiz */ }
+  }
   // v8.141.0: run the checker's chunks a few at a time, with a pause before
   // retrying a failed call (used by aiValidateQuestions in app.js). Firing all
   // chunks at once (8 for a 39-question request) invited rate-limit and
