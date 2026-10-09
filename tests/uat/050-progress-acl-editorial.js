@@ -102,8 +102,10 @@ test('v7.2.0: _renderProgressGrouped emits id="domain-<slug>" on each .dom secti
 // JS — v2 prescription card locked copy (Where to drill next + per-minute language)
 test('v7.2.0: rec card eyebrow "WHERE TO DRILL NEXT" (locked stop-slop copy)',
   /WHERE TO DRILL NEXT/i.test(js) || /Where to drill next/i.test(js));
-test('v7.2.0: rec card sub "Drilling here moves readiness furthest per minute."',
-  /Drilling here moves readiness furthest per minute/.test(js));
+test('v8.137.0: "Drill this next" picks the biggest readiness gain and says why (was "weakest studied topic" over a recent-mistakes ranking)',
+  /function _drillNextPick\(\)[\s\S]{0,900}r\.impactTopics[\s\S]{0,600}points to your readiness/.test(js)
+    && !/Your weakest studied topic\. Drilling here moves readiness furthest per minute/.test(js)
+    && /impactTopics,/.test(js));
 test('v7.2.0: rec card empty-state copy "Start with the diagnostic"',
   /Start with the diagnostic/.test(js));
 

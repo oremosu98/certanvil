@@ -288,6 +288,13 @@
     });
     whatIfsRaw.sort((a, b) => b.deltaPredicted - a.deltaPredicted);
     const whatIf = whatIfsRaw.slice(0, 3);
+    // v8.137.0: every topic (studied or not) ranked by readiness points gained
+    // if its estimate reached TARGET_ACC. Drives Progress "Drill this next".
+    const impactTopics = allTopics.map(t => {
+      const d = TOPIC_DOMAINS[t]; if (!d) return null;
+      const n = (topicsByDomain[d] || []).length || 1;
+      return { topic: t, untouched: !topicMap[t], deltaPredicted: Math.round(Math.max(0, TARGET_ACC - topicEst[t]) * DOMAIN_WEIGHTS[d] / n * _range) };
+    }).filter(x => x && x.deltaPredicted >= 1).sort((a, b) => b.deltaPredicted - a.deltaPredicted);
 
     // Days to exam + the gap to a confident pass (lower CI bound above 720).
     const daysToExam = (typeof getDaysToExam === 'function') ? getDaysToExam() : null;
@@ -325,6 +332,7 @@
       upperBound,
       passProbability,
       whatIf,
+      impactTopics,
       daysToExam,
       targetGap,
       // v4.85.14 — stale-topic list for the score-breakdown card

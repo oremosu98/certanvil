@@ -314,11 +314,8 @@
     // recommendation signal (computeWeakSpotScores), then bind it to its real row
     // so the whole tile is a .t-row[data-topic] drillTopic fires on.
     function spotlightTile(i) {
-      let recName = null;
-      try {
-        const w = (typeof computeWeakSpotScores === 'function') ? computeWeakSpotScores() : null;
-        if (w && w.length) recName = w[0].topic;
-      } catch (_) {}
+      const pick = _drillNextPick();
+      const recName = pick ? pick.topic : null;
       let recRow = recName ? (rows.find(r => r.t === recName || r.label === recName) || null) : null;
       if (!recRow) {
         // Empty/fresh user: anchor on the heaviest-weight untouched topic.
@@ -330,7 +327,7 @@
       const dLabel = (DOMAIN_LABELS && DOMAIN_LABELS[recRow.domainKey]) || '';
       const objTxt = recRow.obj ? ' · Objective ' + escHtml(recRow.obj) : '';
       const isFresh = recRow.pct === null;
-      const why = isFresh ? 'It carries heavy exam weight and you have not started it yet. Clearing it now moves your overall score the most.' : 'Your weakest studied topic. Drilling here moves readiness furthest per minute.';
+      const why = (pick && pick.topic === recRow.t && pick.why) ? pick.why : (isFresh ? 'It carries heavy exam weight and you have not started it yet. Clearing it now moves your overall score the most.' : 'One of your weaker topics. A short drill keeps it moving.');
       const masteryHtml = isFresh ? '<span class="spot-mastery-lbl">Not started yet</span>' : '<span class="spot-mastery"><span class="num mono">' + recRow.pct + '</span><span class="lbl">% mastery</span></span>';
       const aria = escAttr((recRow.label || recRow.t) + ', drill this next');
       return '<button type="button" class="tile t-spot t-row" data-topic="' + escAttr(recRow.t) + '" style="--i:' + i + '" aria-label="' + aria + '">'
@@ -535,10 +532,37 @@
   // minute." (the per-minute language names the unit; the "right now" filler
   // is dropped). Empty state swaps to "Start with the diagnostic" (the spec
   // Q4-A lock — diagnostic is the canonical first action for a fresh user).
+  // v8.137.0: "Drill this next" = the topic whose improvement to 80% adds the
+  // most readiness points (readiness v2 impactTopics, untouched topics
+  // included). Only when nothing is below 80% does it fall back to the
+  // recent-mistakes ranker, and the reason line says which one it used.
+  // (It used to take computeWeakSpotScores()[0], which is driven by recent
+  // wrong answers, while claiming "your weakest studied topic".)
+  function _drillNextPick() {
+    try {
+      const r = (typeof getReadinessScore === 'function') ? getReadinessScore() : null;
+      const top = r && Array.isArray(r.impactTopics) ? r.impactTopics[0] : null;
+      if (top) {
+        return { topic: top.topic, deltaPredicted: top.deltaPredicted, why: top.untouched
+          ? 'You have not started this yet. Getting it to 80% adds about +' + top.deltaPredicted + ' points to your readiness, more than any other topic.'
+          : 'Getting this to 80% adds about +' + top.deltaPredicted + ' points to your readiness, more than any other topic.' };
+      }
+      const w = (typeof computeWeakSpotScores === 'function') ? computeWeakSpotScores() : null;
+      if (w && w.length) {
+        const n = w[0].wrongsRaw || 0;
+        return { topic: w[0].topic, why: n > 0
+          ? 'Every topic is at 80% or above. You missed ' + n + ' question' + (n === 1 ? '' : 's') + ' here recently, so a short drill locks them in.'
+          : 'Every topic is at 80% or above. This one has slipped the most lately.' };
+      }
+    } catch (_) {}
+    return null;
+  }
+
   function _pickProgressRecommendation() {
     let weak = null;
     try { weak = (typeof computeWeakSpotScores === 'function') ? computeWeakSpotScores() : null; } catch (_) {}
-    if (!weak || weak.length === 0) {
+    const pick = _drillNextPick();
+    if ((!weak || weak.length === 0) && !pick) {
       // Empty-state CTA: "Start with the diagnostic" — the spec §3.8 + Q4-A
       // lock. Pre-v7.2.0 this routed to a Network Models & OSI starter quiz;
       // the v2 redesign anchors fresh users on the diagnostic surface instead.
@@ -552,13 +576,12 @@
         reason: 'A 10-question diagnostic surfaces your weakest topics fast.'
       };
     }
-    const top = weak[0];
-    const topicName = top.topic || 'Unknown';
+    const topicName = (pick && pick.topic) || (weak && weak[0] && weak[0].topic) || 'Unknown';
     return {
       eyebrow: 'WHERE TO DRILL NEXT',
       icon: '',
       headline: 'Drill ' + topicName,
-      sub: 'Your weakest studied topic. Drilling here moves readiness furthest per minute.',
+      sub: (pick && pick.why) || 'One of your weaker topics. A short drill keeps it moving.',
       ctaLabel: 'Drill ' + topicName + ' →',
       ctaFn: "focusTopic('" + topicName.replace(/'/g, "\\'") + "');",
       reason: 'Direct hit on your biggest score gap.'
