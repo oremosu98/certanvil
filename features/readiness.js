@@ -28,7 +28,54 @@
   const READINESS_CLOSE = readinessFromRaw(230 / 4.5);
   const READINESS_BUILDING = readinessFromRaw(80 / 4.5);
   function scaledExamScore(correct, total) { return total > 0 ? Math.round(EXAM_MIN_SCORE + (correct / total) * (EXAM_MAX_SCORE - EXAM_MIN_SCORE)) : EXAM_MIN_SCORE; }
+  // v8.134.0: per-topic mastery shared by Progress rows and Smart picking.
+  // A topic with few answers is blended with the student's accuracy on the
+  // rest of its domain, as if they had already answered MASTERY_PRIOR_ANSWERS
+  // questions at that rate; real answers take over as they accumulate. This
+  // stops one miss on an 11-answer topic swinging it ~8 points.
+  const MASTERY_PRIOR_ANSWERS = 6;
+  let _masteryCache = null;
+  function buildMasteryContext(h) {
+    if (_masteryCache && _masteryCache.h === h && _masteryCache.len === h.length) return _masteryCache.ctx;
+    const per = {}, dom = {}, all = { c: 0, t: 0 };
+    Object.keys(TOPIC_DOMAINS || {}).forEach(t => {
+      const es = _filterHistoryByTopic(h, t);
+      if (!es.length) return;
+      let c = 0, w = 0, n = 0;
+      es.forEach(e => { const d = diffWeight(e.difficulty); c += e.score * d; w += e.total * d; n += e.total; });
+      per[t] = { es, c, w, n };
+      const k = TOPIC_DOMAINS[t];
+      dom[k] = dom[k] || { c: 0, t: 0 };
+      dom[k].c += c; dom[k].t += w; all.c += c; all.t += w;
+    });
+    const ctx = { per, dom, all };
+    _masteryCache = { h, len: h.length, ctx };
+    return ctx;
+  }
+  // Returns { pct, n, trend, prior } or null when the topic is untouched.
+  // trend = accuracy of the newest 10 answers minus the 10 before (points).
+  function topicMastery(topic, ctx) {
+    const p = ctx.per[topic];
+    if (!p || p.w <= 0) return null;
+    const d = ctx.dom[TOPIC_DOMAINS[topic]] || { c: 0, t: 0 };
+    let pc = d.c - p.c, pt = d.t - p.w;                       // rest of the domain
+    if (pt <= 0) { pc = ctx.all.c - p.c; pt = ctx.all.t - p.w; } // else everything else
+    const prior = pt > 0 ? pc / pt : p.c / p.w;
+    const k = MASTERY_PRIOR_ANSWERS * (p.w / p.n);            // 6 answers at this topic's mean weight
+    const pct = Math.round(100 * (p.c + k * prior) / (p.w + k));
+    const seq = [];
+    p.es.forEach(e => { const r = e.total ? e.score / e.total : 0; for (let i = 0; i < e.total; i++) seq.push(r); });
+    let trend = 0;
+    if (seq.length >= 6) {
+      const w = Math.min(10, Math.floor(seq.length / 2));
+      const avg = a => a.reduce((x, y) => x + y, 0) / a.length;
+      trend = Math.round(100 * (avg(seq.slice(0, w)) - avg(seq.slice(w, 2 * w))));
+    }
+    return { pct, n: p.n, trend, prior: Math.round(prior * 100) };
+  }
   // Exported for app.js milestones, analytics, exam, diagnostic, home and onboarding.
+  window.buildMasteryContext = buildMasteryContext;
+  window.topicMastery = topicMastery;
   window.EXAM_MIN_SCORE = EXAM_MIN_SCORE;
   window.READINESS_BAND = READINESS_BAND;
   window.READINESS_CLOSE = READINESS_CLOSE;

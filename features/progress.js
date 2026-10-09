@@ -12,6 +12,8 @@
       .filter(c => !c.dataset.v.includes('Mixed') && !c.dataset.v.includes('Smart'));
     const h   = loadHistory();
     const now = Date.now();
+    // v8.134.0: shared smoothed mastery (features/readiness.js topicMastery).
+    const mctx = (typeof buildMasteryContext === 'function') ? buildMasteryContext(h) : null;
     return chips.map(chip => {
       const t = chip.dataset.v;
       const label = (chip.textContent || t).trim(); // short display label from the chip
@@ -25,7 +27,8 @@
       const totalQ   = entries.reduce((a, e) => a + e.total, 0);
       const wCorrect = entries.reduce((a, e) => a + e.score * diffWeight(e.difficulty), 0);
       const wTotal   = entries.reduce((a, e) => a + e.total * diffWeight(e.difficulty), 0);
-      const pct      = Math.round((wCorrect / wTotal) * 100);
+      const m        = mctx ? topicMastery(t, mctx) : null;
+      const pct      = m ? m.pct : Math.round((wCorrect / wTotal) * 100);
       const lastDate = Math.max.apply(null, entries.map(e => new Date(e.date).getTime()));
       const daysSince = Math.round((now - lastDate) / 86400000);
       // v4.42.2: trend — recent session accuracy minus oldest session accuracy.
@@ -33,9 +36,11 @@
       // topic, entries[last] is the oldest). Analytics' deleted Topic Mastery
       // card used this exact algorithm; moving it here so trend lives next to
       // the row it describes.
-      const trend = entries.length >= 2
+      // v8.134.0: newest 10 answers vs the 10 before (was first vs latest
+      // session, which with 1-question mixed-split rows swung 0% ↔ 100%).
+      const trend = m ? m.trend : (entries.length >= 2
         ? entries[0].pct - entries[entries.length - 1].pct
-        : 0;
+        : 0);
       return { t, label, pct, total: totalQ, attempts: entries.length, daysSince, lastDate, domainKey, obj, trend };
     });
   }

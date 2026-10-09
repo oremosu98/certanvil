@@ -1,9 +1,9 @@
 // ══════════════════════════════════════════
-// Network+ AI Quiz — app.js  v8.133.0
+// Network+ AI Quiz — app.js  v8.134.0
 // ══════════════════════════════════════════
 
 // ── CONSTANTS ──
-const APP_VERSION = '8.133.0';
+const APP_VERSION = '8.134.0';
 // v4.99.45 (Phase 6b): expose APP_VERSION on window so the web-vitals
 // collector (lib/web-vitals-collector.js, loaded BEFORE app.js so its
 // PerformanceObservers attach earlier) can stamp this version onto every
@@ -3124,13 +3124,13 @@ function _progressRowHtml(row) {
     else if (pct >= 60) verdict = 'Solid';
     else verdict = 'Weak';
   }
-  const subLine = pct !== null ? (verdict + ' \u00b7 ' + when) : 'Untouched';
+  const subLine = pct !== null ? (verdict + ' \u00b7 ' + total + ' answered \u00b7 ' + when) : 'Untouched';  // v8.134.0: answer count shows how settled pct is
   const barW = pct !== null ? pct : 0;
   const pctTxt = pct !== null ? pct + '%' : '&mdash;';
   // v4.42.2 trend arrow kept as small inline suffix on the verdict line so
   // the signal survives without rainbow. Only renders when 2+ sessions exist.
   let trendHtml = '';
-  if (typeof trend === 'number' && pct !== null && row.attempts >= 2) {
+  if (typeof trend === 'number' && pct !== null && total >= 6) {  // v8.134.0: needs 6+ answers (trend = last 10 vs previous 10)
     const arrow = trend > 5 ? '\u2191' : trend < -5 ? '\u2193' : '\u2192';
     const trendLbl = trend > 5 ? 'Improving' : trend < -5 ? 'Slipping' : 'Steady';
     trendHtml = ` <span class="topic-trend" title="${trendLbl}" aria-label="Trend ${trendLbl}">${arrow}</span>`;
@@ -3276,7 +3276,7 @@ function _scoreTopicNeed(topic, historyEntries, now) {
   if (entries.length === 0) return { score: 1.0, reason: 'Never studied', color: 'var(--text-dim)' };
 
   const daysSince = (now - new Date(entries[0].date)) / 86400000;
-  const recentAvg = entries.slice(0, 3).reduce((a, e) => a + e.pct, 0) / Math.min(entries.length, 3);
+  const _m = (typeof topicMastery === 'function') ? topicMastery(topic, buildMasteryContext(historyEntries)) : null; const recentAvg = _m ? _m.pct : entries.slice(0, 3).reduce((a, e) => a + e.pct, 0) / Math.min(entries.length, 3);  // v8.134.0: same smoothed mastery as Progress
 
   // Confidence level: consecutive 80%+ sessions (like Leitner boxes)
   let confidence = 0;

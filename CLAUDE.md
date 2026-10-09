@@ -24,12 +24,12 @@
 <!-- machine-owned — run `node scripts/stamp-facts.js` to refresh; do not hand-edit -->
 | Metric | Lines | Size |
 |---|---|---|
-| app.js | 8301 | 435 KB |
+| app.js | 8301 | 436 KB |
 | styles.css | 14913 | 551 KB |
 | index.html | 2287 | 148 KB |
 | dg-system.css | 5462 | 508 KB |
-| tests/uat.js + tests/uat/ (29 modules) | 29359 | — |
-UAT checks: 5037 · E2E `test(` count: 163 · APP_VERSION: 8.133.0 · stamped-at: worktree
+| tests/uat.js + tests/uat/ (29 modules) | 29380 | — |
+UAT checks: 5038 · E2E `test(` count: 163 · APP_VERSION: 8.134.0 · stamped-at: worktree
 <!-- FACTS:AUTO:END -->
 
 | File | Purpose | Size |
@@ -135,9 +135,9 @@ npx playwright test              # E2E (tests/e2e/app.spec.js)
 
 | Version | Features Added |
 |---|---|
+| v8.134.0 | Topic mastery %: smoothed toward the domain until enough answers, answer count shown, trend = last 10 vs previous 10 |
 | v8.133.0 | Question writer + checker block answer-echo giveaways (stem naming the answer) |
 | v8.132.0 | Network+, A+ Core 1, SC-900 exemplar packs to compact JSON (every pack passes the gate) |
-| v8.131.0 | AZ-900: 15 multi-select exemplars key answers[] (gate passes) |
 
 _Older releases (v7.60.0 and back) live in [CHANGELOG.md](./CHANGELOG.md)._
 

@@ -638,8 +638,8 @@ console.log('\n\x1b[1m── v4.42.2 ANALYTICS / PROGRESS DEDUP ──\x1b[0m');
 (function() {
   const buildBody = _fnBody(js, '_buildProgressRows');
   const rowBody = _fnBody(js, '_progressRowHtml');
-  test('v4.42.2: _buildProgressRows computes trend field',
-    buildBody.includes('const trend = entries.length >= 2'));
+  test('v4.42.2: _buildProgressRows computes trend field (v8.134.0: from topicMastery, last 10 vs previous 10)',
+    buildBody.includes('const trend = m ? m.trend : (entries.length >= 2'));
   test('v4.42.2: trend uses entries[0].pct - entries[last].pct',
     buildBody.includes('entries[0].pct - entries[entries.length - 1].pct'));
   test('v4.42.2: _buildProgressRows returns trend: 0 for untouched rows',
@@ -648,8 +648,8 @@ console.log('\n\x1b[1m── v4.42.2 ANALYTICS / PROGRESS DEDUP ──\x1b[0m');
     /return\s*\{[^}]*trend[^}]*\}/.test(buildBody));
   test('v4.42.2: _progressRowHtml destructures trend from row',
     /const\s*\{[^}]*trend\b/.test(rowBody));
-  test('v4.42.2: _progressRowHtml renders arrow when attempts >= 2',
-    rowBody.includes('row.attempts >= 2'));
+  test('v4.42.2: _progressRowHtml renders arrow once a topic has 6+ answers (v8.134.0, was attempts >= 2)',
+    rowBody.includes('total >= 6') && rowBody.includes("' answered \\u00b7 '"));
   test('v4.42.2: _progressRowHtml emits topic-trend class',
     rowBody.includes('class="topic-trend"'));
   test('v4.42.2: _progressRowHtml uses ↑/↓/→ thresholds at ±5',

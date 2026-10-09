@@ -974,6 +974,27 @@ test('v8.126.0 AI-901: Decision Lab seed is the AI-901 rebuild (no retired AI-90
       && !/Custom Vision|Form Recognizer|Azure AI Studio|Document Intelligence|regression|clustering/i.test(raw)
       && !/\u2014/.test(raw);
   })());
+test('v8.134.0 Mastery: few answers blend toward the rest of the domain; many answers converge to true accuracy',
+  (() => {
+    try {
+      const vm = require('vm');
+      const src = fs.readFileSync(path.join(ROOT, 'features', 'readiness.js'), 'utf8');
+      const i = src.indexOf('  const MASTERY_PRIOR_ANSWERS');
+      const j = src.indexOf('  // Exported for app.js milestones');
+      const dw = src.slice(src.indexOf('  function diffWeight('), src.indexOf('\n  }\n', src.indexOf('  function diffWeight(')) + 4);
+      const ctx = { Math, Object, TOPIC_DOMAINS: { T: 'd', O: 'd' },
+        _filterHistoryByTopic: (h, t) => h.filter(e => e.topic === t) };
+      vm.createContext(ctx);
+      vm.runInContext(dw + src.slice(i, j) + '\nthis.bmc = buildMasteryContext; this.tm = topicMastery;', ctx);
+      const rows = (t, c, n) => Array.from({ length: n }, (_, k) => ({ topic: t, score: k < c ? 1 : 0, total: 1, difficulty: 'Foundational' }));
+      const other = rows('O', 90, 100);                       // rest of the domain at 90%
+      const few = ctx.tm('T', ctx.bmc(rows('T', 7, 11).concat(other)));
+      const fewMiss = ctx.tm('T', ctx.bmc(rows('T', 7, 12).concat(other)));
+      const many = ctx.tm('T', ctx.bmc(rows('T', 60, 80).concat(other)));
+      const none = ctx.tm('T', ctx.bmc(other));
+      return few.pct === 73 && few.n === 11 && fewMiss.pct === 69 && many.pct === 76 && none === null;
+    } catch (e) { return false; }
+  })());
 test('v8.128.0 Scale: CompTIA maths unchanged; Microsoft/AWS readiness + exam use their own scale',
   (() => {
     try {
