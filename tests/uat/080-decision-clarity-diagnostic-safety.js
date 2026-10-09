@@ -471,7 +471,7 @@ test('v4.81.0 Diagnostic: _buildPassPlan returns expected shape (vm fixture)',
     } catch (e) { return false; }
   })());
 
-test('v4.81.0 Diagnostic: _buildPassPlan probability near 0.5 at ~70% accuracy (vm fixture)',
+test('v4.81.0 Diagnostic: _buildPassPlan probability near 0.5 at ~80% accuracy (vm fixture; v8.135.0 readiness v2, was ~70%)',
   (() => {
     try {
       const body = _fnBody(js, '_buildPassPlan');
@@ -491,7 +491,7 @@ test('v4.81.0 Diagnostic: _buildPassPlan probability near 0.5 at ~70% accuracy (
       };
       vm.createContext(ctx);
       const questions = Array.from({ length: 20 }, (_, i) => ({ topic: ['A','B','C','D','E'][i % 5] }));
-      const answers = questions.map((_, i) => ({ correct: i < 14, confidence: 'confident', answeredAt: 1 }));
+      const answers = questions.map((_, i) => ({ correct: i < 16, confidence: 'confident', answeredAt: 1 }));
       ctx.session = { questions, answers };
       vm.runInContext(body, ctx);
       const plan = vm.runInContext('_buildPassPlan(session)', ctx);

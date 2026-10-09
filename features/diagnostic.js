@@ -474,11 +474,11 @@
     }
     const accPct = accNormalized * 100;
 
-    // Predicted score on the cert's readiness band (420-870 on CompTIA) matches getReadinessScore math.
+    // v8.135.0: readiness v2 — expected accuracy on the cert's exam scale, as getReadinessScore.
     // Diagnostic is single-domain-spread so we apply a slight regression-to-
     // mean penalty (multiply by 0.95) — 20 questions can't out-predict 200.
     const _bandW = READINESS_BAND[1] - READINESS_BAND[0];
-    const predicted = Math.round(READINESS_BAND[0] + (accPct / 100) * _bandW * 0.95);
+    const predicted = Math.round(EXAM_MIN_SCORE + (accPct / 100) * 0.95 * (EXAM_MAX_SCORE - EXAM_MIN_SCORE));
 
     // CI is wide for a 20-Q sample. Mirror the formula in getReadinessScore
     // but assume coverageFactor = 1 (we covered all domains) and recency = 1
@@ -766,7 +766,7 @@
     const upperPct = Math.round((1 / (1 + Math.exp(-((p.upperBound - EXAM_PASS_SCORE) / (p.ciHalfWidth / 1.645))))) * 100);
     if (rangeEl) rangeEl.textContent = lowerPct + '-' + upperPct + '%';
     const predEl = document.getElementById('pass-plan-predicted-score');
-    if (predEl) predEl.textContent = p.predicted + ' / ' + READINESS_BAND[1];
+    if (predEl) predEl.textContent = p.predicted + ' / ' + EXAM_MAX_SCORE;
     const dataConfEl = document.getElementById('pass-plan-data-confidence');
     if (dataConfEl) {
       const labels = { low: 'Low — 20 of ~50 questions answered', medium: 'Medium — 50+ questions answered', high: 'High — 80+ questions answered' };
@@ -942,9 +942,9 @@
         && p.seededCount < p.questionCount) {
       return true;
     }
-    // Secondary signature: predicted floored at the band minimum (420 on CompTIA) with non-zero correct count
+    // Secondary signature: predicted at the floor (exam minimum since v8.135.0; band minimum, 420 on CompTIA, for older plans) with non-zero correct count
     // (the Pass Plan thought you got 0% but your raw correct says otherwise)
-    if (typeof p.predicted === 'number' && p.predicted === READINESS_BAND[0]
+    if (typeof p.predicted === 'number' && (p.predicted === READINESS_BAND[0] || p.predicted === EXAM_MIN_SCORE)
         && typeof p.correctCount === 'number' && p.correctCount > 0) {
       return true;
     }

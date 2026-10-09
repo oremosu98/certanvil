@@ -131,15 +131,14 @@ At `app.js:3672`. Drives the homepage `🎯 Weak spots` chip row + Subnet Traine
 
 Final score = `(wrongsRecent * 3.0 + accGap * 25.0 + staleness * 2.0) * domainMul`. **Low-signal filter** excludes `wTotal < 1 && wrongsRecent < 0.5` (untouched, not weak). `renderTodaysFocus()` is refreshed in real time via hooks in `finish()`/`submitExam()`.
 
-### Readiness Score — `getReadinessScore()`
-At `app.js:3066`. Composite 420–870 scaled score.
-- **Signals (weighted 40 / 25 / 20 / 15)**: accuracy / coverage / recency / volume
-- **Accuracy** — within-domain question-count weighted (v4.42.4 fix — do NOT revert to `pctSum/count`), CompTIA domain weights 23/20/19/14/24 (`DOMAIN_WEIGHTS`), difficulty multipliers, exam-mode boost 1.3×
-- **Coverage** — studied topics / total (50), × 0.5 penalty under 5 topics
-- **Recency** — topics touched in last 14 days, 7-day boost 2×
-- **Volume** — total Qs answered, capped at 500
-
-Deferred tuning ([#139](https://github.com/oremosu98/networkplus-quiz/issues/139), `saas-gated`): recency denominator redundancy with coverage signal, no PBQ weighting, triple coverage-penalty. Revisit with real SaaS user data.
+### Readiness Score — `getReadinessScore()` (v2, v8.135.0)
+In `features/readiness.js`. **Predicted score = expected exam accuracy placed on the cert's own scale** (`EXAM_MIN_SCORE + expectedAcc × (max − min)`; CompTIA 100–900, Microsoft 1–1000, AWS 100–1000). So the pass mark implies an accuracy: Sec+ 750 ≈ 81%, Net+ 720 ≈ 77.5%, Microsoft 700 ≈ 70%.
+- **Per topic**: difficulty-weighted accuracy from `buildWeightedTopicMap` (recent sessions 2×, exam mode 1.3×), blended with ~3 answers (`PRIOR_W` 4.5 weighted) at the student's own overall accuracy so small samples don't swing it. **Untouched topics count as 40%** (`PRIOR_ACC`, just above guessing): this is how coverage enters the prediction.
+- **Expected accuracy**: topic estimates averaged within each domain, then weighted by `DOMAIN_WEIGHTS`.
+- **Confidence, not points**: sample size, coverage and recency set the CI half-width (CompTIA band points scaled by `_bandK`), combined in quadrature with exam-day sampling noise `sqrt(p(1−p)/EXAM_QUESTION_COUNT) × range`. Pass probability is a logistic on (predicted − pass) / (CI/1.645).
+- **Exam ready** (`examReady`) needs predicted ≥ pass **and** recent accuracy (newest 200 answers) ≥ the pass accuracy. The home card shows "Last 200 answers: X% right" and only stamps "Exam ready" / fires confetti when both hold.
+- `accuracyScore` / `coverageScore` / `recencyScore` / `volumeScore` are still returned for display factors, but no longer feed the score.
+- Why v2: v1 summed 40% accuracy + 25% coverage + 20% recency + 15% volume, so effort alone could show a pass (~33% accuracy reached Sec+ 750 with full effort). Founder lifted the #139 freeze for this on 2026-10-09. Calibrate `PRIOR_ACC` / the accuracy↔scale mapping against real exam results as they come in.
 
 ### Catalog & Domain Weights
 - `TOPIC_DOMAINS` at `app.js:2979` — 50 topics → domain mapping (v4.42.3 expanded from 40)

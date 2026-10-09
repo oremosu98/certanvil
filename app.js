@@ -1,9 +1,9 @@
 // ══════════════════════════════════════════
-// Network+ AI Quiz — app.js  v8.134.0
+// Network+ AI Quiz — app.js  v8.135.0
 // ══════════════════════════════════════════
 
 // ── CONSTANTS ──
-const APP_VERSION = '8.134.0';
+const APP_VERSION = '8.135.0';
 // v4.99.45 (Phase 6b): expose APP_VERSION on window so the web-vitals
 // collector (lib/web-vitals-collector.js, loaded BEFORE app.js so its
 // PerformanceObservers attach earlier) can stamp this version onto every
@@ -4982,9 +4982,9 @@ function launchConfetti() {
 // ══════════════════════════════════════════
 // READINESS CARD CELEBRATION
 // ══════════════════════════════════════════
-function queueReadinessAnimation(scaled, barPct){
+function queueReadinessAnimation(scaled, barPct, ready){
   const card=document.getElementById('readiness-card-v2'); if(!card) return;
-  card._rcPending={scaled,barPct};
+  card._rcPending={scaled,barPct,ready};
   if(card.dataset.ioBound==='1') return;
   card.dataset.ioBound='1';
   if(!('IntersectionObserver' in window)){ animateReadinessCardV2(card._rcPending); return; }
@@ -4996,12 +4996,12 @@ function animateReadinessCardV2(pending){
   if(card.dataset.animated==='1') return; card.dataset.animated='1';
   const scaled=pending.scaled, barPct=pending.barPct;
   const passLine=(typeof EXAM_PASS_SCORE==='number')?EXAM_PASS_SCORE:720;
-  const passed=scaled>=passLine;
+  const passed=scaled>=passLine && pending.ready!==false;  // v8.135.0: also needs recent accuracy at the pass line
   const fill=document.getElementById('rc-v2-bar-fill'), green=document.getElementById('rc-v2-bar-fill-green');
   const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
   const settle=()=>{ if(green) green.style.width=barPct+'%'; card.classList.toggle('is-pass',passed);
     if(passed){ drawReadinessRing(card); showReadinessStamp(card,'Exam ready',false); try{ if(typeof launchConfetti==='function') launchConfetti(); else fireReadinessConfetti(card); }catch(_){ fireReadinessConfetti(card);} }
-    else { showReadinessStamp(card,(passLine-scaled)+' pts to pass',true); } };
+    else { showReadinessStamp(card,scaled>=passLine?'Recent accuracy below pass':(passLine-scaled)+' pts to pass',true); } };
   if(reduce){ const n=document.getElementById('rc-v2-num'); if(n) n.textContent=scaled; if(fill) fill.style.width=barPct+'%'; if(green) green.style.width=barPct+'%'; settle(); return; }
   if(fill) fill.style.width=barPct+'%'; if(green) green.style.width=barPct+'%';
   animateCount('rc-v2-num',100,scaled,1100); setTimeout(settle,1150);

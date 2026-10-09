@@ -579,7 +579,7 @@
 
     const { predicted, domainAccuracy } = readiness;
     let tier, tierColor, tierBg;
-    if (predicted >= EXAM_PASS_SCORE)      { tier = 'Exam Ready';   tierColor = 'var(--green)';  tierBg = 'rgba(34,197,94,.12)'; }
+    if (predicted >= EXAM_PASS_SCORE && readiness.examReady !== false) { tier = 'Exam Ready';   tierColor = 'var(--green)';  tierBg = 'rgba(34,197,94,.12)'; }
     else if (predicted >= READINESS_CLOSE) { tier = 'Getting Close'; tierColor = 'var(--orange)'; tierBg = 'rgba(251,146,60,.12)'; }
     else if (predicted >= READINESS_BUILDING) { tier = 'Building';     tierColor = 'var(--yellow)'; tierBg = 'rgba(251,191,36,.12)'; }
     else                       { tier = 'Not Ready';    tierColor = 'var(--red)';    tierBg = 'rgba(248,113,113,.12)'; }
@@ -1944,7 +1944,7 @@
     const examDate = (typeof getExamDate === 'function') ? getExamDate() : null;
     const daysToExam = (typeof getDaysToExam === 'function') ? getDaysToExam() : null;
     let tier;
-    if (predicted >= PASS)      tier = 'Exam Ready';
+    if (predicted >= PASS && !(r && r.examReady === false)) tier = 'Exam Ready';
     else if (predicted >= READINESS_CLOSE)  tier = 'Getting Close';
     else if (predicted >= READINESS_BUILDING)  tier = 'Building';
     else                        tier = 'Not Ready';
@@ -2185,18 +2185,21 @@
     // Leverage estimate: closing weakest domain to the 70% line, valued by weight.
     // deltaAccPts * weight * accuracyWeight(0.40) * scale(4.5) mirrors the readiness
     // what-if math; we approximate at the domain level for a headline number.
+    // v8.135.0: the target is the accuracy the pass mark needs (readiness v2), and
+    // points are accuracy on the cert's scale, not the retired 0.40 × 4.5 blend.
+    const passAcc = (r && typeof r.passAccuracy === 'number') ? r.passAccuracy : 80;
     let leveragePts = 0;
-    if (weakest && weakest.accuracy < 70) {
-      leveragePts = Math.max(1, Math.round((70 - weakest.accuracy) * (weakest.weight / 100) * 0.40 * 4.5));
+    if (weakest && weakest.accuracy < passAcc) {
+      leveragePts = Math.max(1, Math.round((passAcc - weakest.accuracy) / 100 * (weakest.weight / 100) * (EXAM_MAX_SCORE - EXAM_MIN_SCORE)));
     } else if (r && Array.isArray(r.whatIf) && r.whatIf.length) {
       leveragePts = r.whatIf.reduce((s, w) => s + (w.deltaPredicted || 0), 0);
     }
-    const headline = weakest && weakest.accuracy < 70
+    const headline = weakest && weakest.accuracy < passAcc
       ? 'Drill ' + weakest.name + ' next.'
       : 'Keep your rotation fresh.';
-    const body = weakest && weakest.accuracy < 70
-      ? weakest.name + ' sits at ' + weakest.accuracy + '%, your weakest domain, and it carries ' + weakest.weight + '% of the exam. Lifting it toward the 70% line is the fastest single move you have right now.'
-      : 'Every studied domain is holding above the developing line. Spread practice across topics and refresh the staleest ones to keep your score climbing.';
+    const body = weakest && weakest.accuracy < passAcc
+      ? weakest.name + ' sits at ' + weakest.accuracy + '%, your weakest domain, and it carries ' + weakest.weight + '% of the exam. Lifting it toward the ' + passAcc + '% the pass mark needs is the fastest single move you have right now.'
+      : 'Every studied domain is at or above the ' + passAcc + '% the pass mark needs. Spread practice across topics and refresh the stalest ones to keep your score climbing.';
     const factors = [];
     if (weakest && weakest.questions > 0) factors.push({ label: weakest.name + ' at ' + weakest.accuracy + '%', effect: 'down', note: 'biggest drag on the score' });
     if (strongest && strongest.questions > 0 && strongest.id !== (weakest && weakest.id)) factors.push({ label: strongest.name + ' at ' + strongest.accuracy + '%', effect: 'up', note: 'carrying you, ' + strongest.weight + '% of exam' });

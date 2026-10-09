@@ -974,6 +974,28 @@ test('v8.126.0 AI-901: Decision Lab seed is the AI-901 rebuild (no retired AI-90
       && !/Custom Vision|Form Recognizer|Azure AI Studio|Document Intelligence|regression|clustering/i.test(raw)
       && !/\u2014/.test(raw);
   })());
+test('v8.135.0 Readiness v2: predicted = expected accuracy on the exam scale; effort no longer adds points',
+  (() => {
+    const src = fs.readFileSync(path.join(ROOT, 'features', 'readiness.js'), 'utf8');
+    const body = src.slice(src.indexOf('  function getReadinessScore'), src.indexOf('  function _readReadinessSnapshots'));
+    return !/accuracyScore \* 0\.40\) \+ \(coverageScore \* 0\.25\)/.test(body)
+      && /const predicted = Math\.round\(EXAM_MIN_SCORE \+ expectedAcc \* _range\)/.test(body)
+      && /PRIOR_ACC = 0\.40/.test(body)
+      && /\(m\.wCorrect \+ PRIOR_W \* ownAcc\) \/ \(m\.wTotal \+ PRIOR_W\) : PRIOR_ACC/.test(body)
+      && /Math\.sqrt\(_pE \* \(1 - _pE\) \/ Math\.max\(10, EXAM_QUESTION_COUNT\)\)/.test(body)
+      && /const examReady = predicted >= EXAM_PASS_SCORE && recentAccuracy !== null && recentAccuracy >= passAccuracy/.test(body)
+      && /expectedAccuracy: Math\.round\(expectedAcc \* 100\), passAccuracy, recentAccuracy, recentAnswers: recentN, examReady/.test(body);
+  })());
+test('v8.135.0 Readiness v2: home card + analytics gate "Exam ready" on recent accuracy too',
+  (() => {
+    const rd = fs.readFileSync(path.join(ROOT, 'features', 'readiness.js'), 'utf8');
+    const an = fs.readFileSync(path.join(ROOT, 'features', 'analytics.js'), 'utf8');
+    return js.includes("const passed=scaled>=passLine && pending.ready!==false;")
+      && rd.includes('queueReadinessAnimation(r.predicted, pct, r.examReady);')
+      && rd.includes("' answers: ' + r.recentAccuracy + '% right")
+      && an.includes("readiness.examReady !== false") && an.includes("r.examReady === false")
+      && !/\* 0\.40 \* 4\.5\)\)/.test(an.slice(an.indexOf('function _anaBtWhyData')));
+  })());
 test('v8.134.0 Mastery: few answers blend toward the rest of the domain; many answers converge to true accuracy',
   (() => {
     try {

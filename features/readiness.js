@@ -191,8 +191,35 @@
     const totalQs    = h.reduce((sum, e) => sum + e.total, 0);
     const volumeScore = Math.min(totalQs / 500, 1) * 100;
 
-    const raw = (accuracyScore * 0.40) + (coverageScore * 0.25) + (recencyScore * 0.20) + (volumeScore * 0.15);
-    const predicted = readinessFromRaw(raw);
+    // v8.135.0 readiness v2 (founder-approved 2026-10-09, lifts #139 freeze):
+    // predicted = EXPECTED EXAM ACCURACY placed on the cert's scale. Effort no
+    // longer adds points (v1 summed 40% accuracy + 25% coverage + 20% recency +
+    // 15% volume, so ~33% accuracy could show a Sec+ pass). Each topic is its
+    // weighted accuracy blended with ~3 answers at the student's own overall
+    // accuracy; untouched topics count as 40% (just above guessing), which is
+    // how coverage now shows up. Recency, volume and coverage drive the CI below.
+    const PRIOR_ACC = 0.40, PRIOR_W = 4.5;  // untouched = 40%; blend ≈ 3 answers at a typical weight
+    // Studied topics shrink toward the student's own overall accuracy (noise
+    // control, as Progress does); only untouched topics are assumed weak.
+    let _oc = 0, _ow = 0;
+    studiedTopics.forEach(t => { _oc += topicMap[t].wCorrect; _ow += topicMap[t].wTotal; });
+    const ownAcc = _ow > 0 ? _oc / _ow : PRIOR_ACC;
+    const topicEst = {}, topicsByDomain = {};
+    allTopics.forEach(t => {
+      const m = topicMap[t];
+      topicEst[t] = (m && m.wTotal > 0) ? (m.wCorrect + PRIOR_W * ownAcc) / (m.wTotal + PRIOR_W) : PRIOR_ACC;
+      const d = TOPIC_DOMAINS[t]; if (d) (topicsByDomain[d] = topicsByDomain[d] || []).push(t);
+    });
+    let expectedAcc = 0;
+    Object.keys(DOMAIN_WEIGHTS).forEach(d => {
+      const ts = topicsByDomain[d] || [];
+      const dAcc = ts.length ? ts.reduce((a, t) => a + topicEst[t], 0) / ts.length : PRIOR_ACC;
+      expectedAcc += dAcc * DOMAIN_WEIGHTS[d];
+    });
+    const _range = EXAM_MAX_SCORE - EXAM_MIN_SCORE;
+    const predicted = Math.round(EXAM_MIN_SCORE + expectedAcc * _range);
+    const raw = expectedAcc * 100;
+    const passAccuracy = Math.round(((EXAM_PASS_SCORE - EXAM_MIN_SCORE) / _range) * 100);
 
     let worstTopic = null, worstPct = 101;
     allTopics.forEach(t => {
@@ -218,8 +245,14 @@
     // v8.128.0: widths above are in CompTIA band points (450 wide); rescale to the cert's band.
     const _bandK = (READINESS_BAND[1] - READINESS_BAND[0]) / 450;
     ciHalfWidth = Math.max(Math.round(15 * _bandK), Math.min(Math.round(100 * _bandK), Math.round(ciHalfWidth * _bandK)));
-    const lowerBound = Math.max(READINESS_BAND[0], predicted - ciHalfWidth);
-    const upperBound = Math.min(READINESS_BAND[1], predicted + ciHalfWidth);
+    // v8.135.0: add exam-day sampling noise in quadrature. Even with a perfect
+    // estimate, an 80% student's score on a 90-question exam varies by ~±55
+    // (90% interval); without it the pass probability was overconfident.
+    const _pE = Math.min(0.99, Math.max(0.01, expectedAcc));
+    const _examSd = Math.sqrt(_pE * (1 - _pE) / Math.max(10, EXAM_QUESTION_COUNT)) * _range;
+    ciHalfWidth = Math.round(Math.sqrt(ciHalfWidth * ciHalfWidth + Math.pow(1.645 * _examSd, 2)));
+    const lowerBound = Math.max(EXAM_MIN_SCORE, predicted - ciHalfWidth);
+    const upperBound = Math.min(EXAM_MAX_SCORE, predicted + ciHalfWidth);
 
     // Pass probability via logistic centered on the pass line. Sigma derived
     // from CI half-width (90% CI ≈ ±1.645σ). Result is 0-1.
@@ -244,15 +277,10 @@
       const currentPct = Math.round(currentAcc * 100);
       if (currentAcc >= TARGET_ACC) return;
 
-      const newWCorrect = TARGET_ACC * tData.wTotal;
-      const deltaWCorrect = newWCorrect - tData.wCorrect;
-      // New domain accuracy if THIS topic improved to TARGET_ACC
-      const newDomainAcc = ((bucket.wCorrect + deltaWCorrect) / bucket.wTotal) * 100;
-      const oldDomainAcc = (bucket.wCorrect / bucket.wTotal) * 100;
-      const deltaDomainAccPts = newDomainAcc - oldDomainAcc;
-      // Score delta: deltaDomainAcc * domain weight * accuracy weight (0.40) * scale (4.5)
-      const deltaAccScore = deltaDomainAccPts * DOMAIN_WEIGHTS[domain];
-      const deltaPredicted = Math.round(deltaAccScore * 0.40 * 4.5);
+      // v8.135.0: points gained if this topic's estimate reached TARGET_ACC,
+      // through its share of its domain and the domain's exam weight.
+      const nInDomain = (topicsByDomain[domain] || []).length || 1;
+      const deltaPredicted = Math.round(Math.max(0, TARGET_ACC - topicEst[t]) * DOMAIN_WEIGHTS[domain] / nInDomain * _range);
 
       if (deltaPredicted >= 1) {
         whatIfsRaw.push({ topic: t, domain, currentPct, targetPct: 80, deltaPredicted });
@@ -274,8 +302,16 @@
       .map(t => ({ topic: t, daysSince: Math.round((now - topicMap[t].lastDate) / 86400000) }))
       .sort((a, b) => b.daysSince - a.daysSince);
 
+    // v8.135.0: recent accuracy over the newest 200 answers (h is newest-first),
+    // and "exam ready" needs BOTH the prediction and recent form at the pass line.
+    let recentC = 0, recentN = 0;
+    for (const e of h) { if (recentN >= 200) break; const take = Math.min(e.total, 200 - recentN); recentC += e.total ? e.score * take / e.total : 0; recentN += take; }
+    const recentAccuracy = recentN ? Math.round((recentC / recentN) * 100) : null;
+    const examReady = predicted >= EXAM_PASS_SCORE && recentAccuracy !== null && recentAccuracy >= passAccuracy;
+
     return {
       predicted, raw,
+      expectedAccuracy: Math.round(expectedAcc * 100), passAccuracy, recentAccuracy, recentAnswers: recentN, examReady,
       accuracyScore, coverageScore, recencyScore, volumeScore,
       domainAccuracy,
       worstTopic,
@@ -747,7 +783,7 @@
     const { predicted, raw, worstTopic, worstPct } = data;
 
     let tierLabel, tierColor, tierBg;
-    if (predicted >= EXAM_PASS_SCORE) {
+    if (predicted >= EXAM_PASS_SCORE && data.examReady !== false) {
       tierLabel = '\ud83d\udfe2 Exam Ready'; tierColor = 'var(--green)'; tierBg = 'rgba(34,197,94,.15)';
     } else if (predicted >= READINESS_CLOSE) {
       tierLabel = '\ud83d\udfe0 Getting Close'; tierColor = 'var(--orange)'; tierBg = 'rgba(251,146,60,.15)';
@@ -1177,7 +1213,7 @@
         }
         const pct = readinessBarPct(r.predicted);
         barEl.style.width = pct + '%';
-        queueReadinessAnimation(r.predicted, pct);
+        queueReadinessAnimation(r.predicted, pct, r.examReady);
         const pm = document.getElementById('rc-v2-passmark'); if (pm) pm.textContent = EXAM_PASS_SCORE;
 
         // v4.73.0: prediction line \u2014 pass probability + CI inside the dark card
@@ -1187,8 +1223,10 @@
           if (probPct < 50) probClass = 'low';
           else if (probPct < 80) probClass = 'med';
           predEl.innerHTML = '<span class="prob ' + probClass + '">'
-            + probPct + '% pass probability</span>'
-            + '<span class="ci">\u00b1 ' + r.ciHalfWidth + ' pts</span>';
+            + probPct + '% pass probability</span> \u00b7 '
+            + '<span class="ci">\u00b1 ' + r.ciHalfWidth + ' pts</span>'
+            + (typeof r.recentAccuracy === 'number'
+              ? '<br><span class="ci">Last ' + r.recentAnswers + ' answers: ' + r.recentAccuracy + '% right</span>' : '');
           predEl.hidden = false;
         } else if (predEl) {
           predEl.hidden = true;
