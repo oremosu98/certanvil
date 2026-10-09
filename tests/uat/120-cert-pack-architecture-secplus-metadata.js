@@ -298,7 +298,7 @@ test('v7.6.0 CertPack: Core 2 domain weights sum within tolerance (>= 0.95 && <=
   })());
 test('v7.6.0 CertPack: Core 1 exemplar bank >= 195 entries',
   (() => {
-    var matches = certAplusCore1.match(/addedVersion:\s*"7\.6\.0"/g);
+    var matches = certAplusCore1.match(/"?addedVersion"?:\s*"7\.6\.0"/g);  // v8.132.0: compact JSON quotes the key
     return matches && matches.length >= 195;
   })());
 test('v7.6.0 CertPack: Core 2 exemplar bank >= 195 entries',
@@ -329,10 +329,10 @@ test('v7.6.0 CertPack: every Core 1 exemplar topic exists in topicDomains',
     var km;
     while ((km = keyRe.exec(sec[1])) !== null) topicKeys.add(km[1]);
     if (topicKeys.size < 40) return false; // extraction sanity
-    var exTopics = certAplusCore1.match(/topic:\s*"([^"]+)"/g) || [];
+    var exTopics = certAplusCore1.match(/"topic":"([^"]+)"/g) || [];  // v8.132.0: exemplars are compact JSON
     if (exTopics.length === 0) return false;
     for (var i = 0; i < exTopics.length; i++) {
-      var t = exTopics[i].replace(/^topic:\s*"/, '').replace(/"$/, '');
+      var t = exTopics[i].replace(/^"topic":"/, '').replace(/"$/, '');
       if (!topicKeys.has(t)) return false;
     }
     return true;
@@ -398,7 +398,7 @@ test('v7.7.0 CertPack: SC-900 exemplar bank >= 195 entries',
   (() => {
     // Count addedVersion: "7.7.0" markers — one per exemplar (final count 200
     // per Stage 6: D1 25 / D2 55 / D3 75 / D4 45). Floor 195 gives headroom.
-    var matches = certSc900.match(/addedVersion:\s*"7\.7\.0"/g);
+    var matches = certSc900.match(/"?addedVersion"?:\s*"7\.7\.0"/g);  // v8.132.0: compact JSON quotes the key
     return matches && matches.length >= 195;
   })());
 test('v7.7.0 CertPack: SC-900 topic catalog has >= 40 topics',
@@ -421,10 +421,10 @@ test('v7.7.0 CertPack: every SC-900 exemplar topic exists in topicDomains',
       topicKeys.add(keyMatch[1]);
     }
     if (topicKeys.size < 40) return false; // sanity check that extraction worked
-    var exTopics = certSc900.match(/topic:\s*"([^"]+)"/g) || [];
+    var exTopics = certSc900.match(/"topic":"([^"]+)"/g) || [];  // v8.132.0: exemplars are compact JSON
     if (exTopics.length === 0) return false;
     for (var i = 0; i < exTopics.length; i++) {
-      var t = exTopics[i].replace(/^topic:\s*"/, '').replace(/"$/, '');
+      var t = exTopics[i].replace(/^"topic":"/, '').replace(/"$/, '');
       if (!topicKeys.has(t)) return false;
     }
     return true;

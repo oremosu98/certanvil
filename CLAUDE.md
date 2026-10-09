@@ -29,7 +29,7 @@
 | index.html | 2287 | 148 KB |
 | dg-system.css | 5462 | 508 KB |
 | tests/uat.js + tests/uat/ (29 modules) | 29353 | — |
-UAT checks: 5035 · E2E `test(` count: 163 · APP_VERSION: 8.131.0 · stamped-at: worktree
+UAT checks: 5035 · E2E `test(` count: 163 · APP_VERSION: 8.132.0 · stamped-at: worktree
 <!-- FACTS:AUTO:END -->
 
 | File | Purpose | Size |
@@ -135,9 +135,9 @@ npx playwright test              # E2E (tests/e2e/app.spec.js)
 
 | Version | Features Added |
 |---|---|
+| v8.132.0 | Network+, A+ Core 1, SC-900 exemplar packs to compact JSON (every pack passes the gate) |
 | v8.131.0 | AZ-900: 15 multi-select exemplars key answers[] (gate passes) |
 | v8.130.0 | A+ Core 2 2.11 browser security: 11 exemplars + 2 retags (bank 200 -> 211) |
-| v8.129.0 | CLF-C02 3.7/3.8: 15 exemplars, 16 retags, 30 explanation letter fixes (bank 200 -> 215) |
 
 _Older releases (v7.60.0 and back) live in [CHANGELOG.md](./CHANGELOG.md)._
 
