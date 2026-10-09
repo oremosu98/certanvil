@@ -165,6 +165,8 @@
     const queue = loadSrQueue();
     const stem = q.question || '';
     const qHash = _srHash(stem);
+    // v8.139.0: a card the student removed as broken never comes back.
+    if ((loadSrPrefs().removed || []).indexOf(qHash) !== -1) return null;
     let entry = queue.find(e => e.qHash === qHash);
 
     if (entry) {
@@ -790,7 +792,51 @@
       + '<div class="sr-question">' + escHtml(stem) + '</div>'
       + optionsHtml
       + confidenceHtml
+      + (typeof _srRemoveHtml === 'function' ? _srRemoveHtml() : '')  // typeof: UAT vm fixtures render this body alone
       + '</div>';
+  }
+
+  // v8.139.0: "this question is broken" escape hatch. Two-step so a mis-tap
+  // can't delete a card; no undo needed beyond that. Deliberately quiet so it
+  // never reads as a way to skip hard cards.
+  function _srRemoveHtml() {
+    if (_srSession && _srSession.removeAsk) {
+      return '<div class="sr-remove sr-remove-confirm" role="group" aria-label="Remove this card">'
+        + '<span class="sr-remove-q">Remove this card? It won\u2019t come back.</span>'
+        + '<button type="button" class="sr-remove-yes" onclick="srRemoveConfirm()">Remove</button>'
+        + '<button type="button" class="sr-remove-no" onclick="srRemoveCancel()">Keep</button>'
+        + '</div>';
+    }
+    return '<div class="sr-remove">'
+      + '<button type="button" class="sr-remove-btn" onclick="srRemoveAsk()">Something wrong with this question? Remove it</button>'
+      + '</div>';
+  }
+  function srRemoveAsk() { if (!_srSession) return; _srSession.removeAsk = true; _renderSrCard(); }
+  function srRemoveCancel() { if (!_srSession) return; _srSession.removeAsk = false; _renderSrCard(); }
+  function srRemoveConfirm() {
+    if (!_srSession) return;
+    const i = _srSession.index;
+    const card = _srSession.cards[i];
+    _srSession.removeAsk = false;
+    if (!card) return;
+    const qHash = card.qHash || _srHash(card.question || '');
+    try {
+      saveSrQueue(loadSrQueue().filter(e => e.qHash !== qHash));
+      const prefs = loadSrPrefs();
+      const removed = Array.isArray(prefs.removed) ? prefs.removed : [];
+      [qHash, _srHash(card.question || '')].forEach(h => { if (h && removed.indexOf(h) === -1) removed.push(h); });
+      prefs.removed = removed.slice(-500);
+      saveSrPrefs(prefs);
+      if (typeof saveReport === 'function') saveReport(card.question || '', 'Removed from review cards as broken');
+    } catch (_) { /* never block the session on a storage error */ }
+    // Drop this card and any retry copy still ahead; earlier cards stay put.
+    _srSession.cards = _srSession.cards.filter((c, j) => j < i || (c.qHash || _srHash(c.question || '')) !== qHash);
+    _srSession.removed = (_srSession.removed || 0) + 1;
+    _srSession.pickedLetter = null;
+    _srSession.pickedLetters = new Set();
+    _srSession.revealed = false;
+    if (typeof showToast === 'function') showToast('Removed from your review cards', 'success');
+    if (_srSession.index >= _srSession.cards.length) _srEndReview(); else _renderSrCard();
   }
 
   function srPickAnswer(letter) {
@@ -870,6 +916,7 @@
     _srSession.pickedLetters = new Set(); // v4.81.30 — clear multi-select picks for next card
     _srSession.pickedIdx = null;          // legacy — kept for any external observer
     _srSession.revealed = false;
+    _srSession.removeAsk = false;
 
     if (_srSession.index >= _srSession.cards.length) {
       _srEndReview();
@@ -1110,6 +1157,9 @@
   window.srToggleMultiPick        = srToggleMultiPick;
   window.srSubmitMultiPick        = srSubmitMultiPick;
   window.srMarkConfidence         = srMarkConfidence;
+  window.srRemoveAsk              = srRemoveAsk;
+  window.srRemoveCancel           = srRemoveCancel;
+  window.srRemoveConfirm          = srRemoveConfirm;
   window._srEndReview             = _srEndReview;
   // SR top-up (AI)
   window.startSrGenTopUp          = startSrGenTopUp;

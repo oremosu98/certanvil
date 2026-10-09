@@ -27,9 +27,9 @@
 | app.js | 8301 | 437 KB |
 | styles.css | 14913 | 551 KB |
 | index.html | 2287 | 148 KB |
-| dg-system.css | 5462 | 508 KB |
-| tests/uat.js + tests/uat/ (29 modules) | 29441 | — |
-UAT checks: 5042 · E2E `test(` count: 163 · APP_VERSION: 8.138.0 · stamped-at: worktree
+| dg-system.css | 5470 | 510 KB |
+| tests/uat.js + tests/uat/ (29 modules) | 29453 | — |
+UAT checks: 5043 · E2E `test(` count: 163 · APP_VERSION: 8.139.0 · stamped-at: worktree
 <!-- FACTS:AUTO:END -->
 
 | File | Purpose | Size |
@@ -135,9 +135,9 @@ npx playwright test              # E2E (tests/e2e/app.spec.js)
 
 | Version | Features Added |
 |---|---|
+| v8.139.0 | Review cards: remove a broken question (two-step, never re-added) |
 | v8.138.0 | Block uncalculable/context-missing questions; real objective sets per cert (Sec+ 4.9 no longer dropped); exam countdown off-by-one |
 | v8.137.0 | Progress 'Drill this next' picks the biggest readiness gain and says why |
-| v8.136.0 | Analytics domain mastery counts every domain of the active cert (Sec+ showed 3 domains blank) |
 
 _Older releases (v7.60.0 and back) live in [CHANGELOG.md](./CHANGELOG.md)._
 

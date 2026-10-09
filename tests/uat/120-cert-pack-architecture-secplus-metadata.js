@@ -974,6 +974,18 @@ test('v8.126.0 AI-901: Decision Lab seed is the AI-901 rebuild (no retired AI-90
       && !/Custom Vision|Form Recognizer|Azure AI Studio|Document Intelligence|regression|clustering/i.test(raw)
       && !/\u2014/.test(raw);
   })());
+test('v8.139.0 SR: review cards can be removed as broken (two-step, stays removed, reported)',
+  (() => {
+    const sr = fs.readFileSync(path.join(ROOT, 'features', 'sr-review.js'), 'utf8');
+    const css = fs.readFileSync(path.join(ROOT, 'dg-system.css'), 'utf8');
+    return /function _srRemoveHtml\(\)[\s\S]{0,700}srRemoveConfirm\(\)[\s\S]{0,200}srRemoveCancel\(\)/.test(sr)
+      && /Something wrong with this question\? Remove it/.test(sr)
+      && /if \(\(loadSrPrefs\(\)\.removed \|\| \[\]\)\.indexOf\(qHash\) !== -1\) return null;/.test(sr)
+      && /saveReport\(card\.question \|\| '', 'Removed from review cards as broken'\)/.test(sr)
+      && /window\.srRemoveConfirm\s*=\s*srRemoveConfirm/.test(sr)
+      && /#page-sr-review \.sr-remove-btn\{[^}]*min-height:44px/.test(css)
+      && /dg-system\.css\?v=8\.139\.0/.test(html);
+  })());
 test('v8.138.0 Validators: real objective sets (Sec+ 4.9, A+ 2.11, Core 1 5.0 topic), money answers need figures, exam date local',
   (() => {
     try {
