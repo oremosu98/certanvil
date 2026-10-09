@@ -474,7 +474,7 @@ test('v7.8.0 CertPack: CLF-C02 exemplar bank >= 195 entries',
   (() => {
     // Count addedVersion: "7.8.0" markers — one per exemplar (final count 200
     // per Stage 6: D1 48 / D2 60 / D3 68 / D4 24). Floor 195 gives headroom.
-    var matches = certClfc02.match(/addedVersion:\s*"7\.8\.0"/g);
+    var matches = certClfc02.match(/"?addedVersion"?:\s*"7\.8\.0"/g);  // v8.129.0: compact JSON quotes the key
     return matches && matches.length >= 195;
   })());
 test('v7.8.0 CertPack: CLF-C02 topic catalog has >= 40 topics',
@@ -498,10 +498,10 @@ test('v7.8.0 CertPack: every CLF-C02 exemplar topic exists in topicDomains',
       topicKeys.add(keyMatch[1]);
     }
     if (topicKeys.size < 40) return false; // sanity check that extraction worked
-    var exTopics = certClfc02.match(/topic:\s*"([^"]+)"/g) || [];
+    var exTopics = certClfc02.match(/"topic":"([^"]+)"/g) || [];  // v8.129.0: exemplars are compact JSON
     if (exTopics.length === 0) return false;
     for (var i = 0; i < exTopics.length; i++) {
-      var t = exTopics[i].replace(/^topic:\s*"/, '').replace(/"$/, '');
+      var t = exTopics[i].replace(/^"topic":"/, '').replace(/"$/, '');
       if (!topicKeys.has(t)) return false;
     }
     return true;

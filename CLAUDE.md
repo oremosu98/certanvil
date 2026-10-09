@@ -29,7 +29,7 @@
 | index.html | 2287 | 148 KB |
 | dg-system.css | 5462 | 508 KB |
 | tests/uat.js + tests/uat/ (29 modules) | 29353 | — |
-UAT checks: 5035 · E2E `test(` count: 163 · APP_VERSION: 8.128.0 · stamped-at: worktree
+UAT checks: 5035 · E2E `test(` count: 163 · APP_VERSION: 8.129.0 · stamped-at: worktree
 <!-- FACTS:AUTO:END -->
 
 | File | Purpose | Size |
@@ -135,9 +135,9 @@ npx playwright test              # E2E (tests/e2e/app.spec.js)
 
 | Version | Features Added |
 |---|---|
+| v8.129.0 | CLF-C02 3.7/3.8: 15 exemplars, 16 retags, 30 explanation letter fixes (bank 200 -> 215) |
 | v8.128.0 | Readiness + exam scores use each cert's real scale (Microsoft 1-1000, AWS 100-1000; CompTIA unchanged) |
 | v8.127.0 | Writer prompt topic lottery + vendor wording follow the active cert (fixes Sec+/AI-901/Microsoft/AWS mixed quizzes) |
-| v8.126.0 | AI-901 Phase 4: Decision Lab back on the AI cert (50 scenarios) + why/mark render fix |
 
 _Older releases (v7.60.0 and back) live in [CHANGELOG.md](./CHANGELOG.md)._
 
