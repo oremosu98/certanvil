@@ -115,20 +115,26 @@
       questions = validateQuestions(raw);
       if (questions.length === 0) throw new Error('All generated questions failed validation. Try again.');
   
-      // Retry-to-fill: if validation left us short of qCount, fetch the deficit + buffer.
-      if (questions.length < qCount) {
+      // Retry-to-fill. v8.141.0: up to MAX_TOPUP_ROUNDS rounds (was one), so a
+      // 30-question request stops shipping ~21. Every extra question passes the
+      // same checks, so quality is unchanged; only the wait grows. Drops come
+      // from a failed writer batch (10 at a time), a checker call that fails
+      // twice (5 at a time, fail-closed) and genuine rejections.
+      const MAX_TOPUP_ROUNDS = 3;
+      for (let round = 1; round <= MAX_TOPUP_ROUNDS && questions.length < qCount; round++) {
         const deficit = qCount - questions.length;
-        _loadingProgressUpdate('Topping up (' + deficit + ' more)\u2026', 85);
+        _loadingProgressUpdate('Topping up (' + deficit + ' more)\u2026', Math.min(95, 82 + round * 4));
         document.getElementById('loading-msg').textContent =
           'Generating ' + deficit + ' more to complete your ' + qCount + '-question set\u2026';
         try {
-          const extraRaw = await fetchQuestions(key, activeQuizTopic, diff, deficit + DROPOUT_BUFFER);
+          const extraRaw = await fetchQuestions(key, activeQuizTopic, diff, deficit + Math.max(3, Math.ceil(deficit * 0.5 * round))); // buffer grows each round
           const extraValidated = validateQuestions(await aiValidateQuestions(key, extraRaw));
-          questions = questions.concat(extraValidated);
+          const have = new Set(questions.map(q => String(q.question || '').trim().toLowerCase()));
+          questions = questions.concat(extraValidated.filter(q => !have.has(String(q.question || '').trim().toLowerCase())));
         } catch (retryErr) {
-          // If the retry fails (network/API hiccup), ship what we have — better than
-          // blocking the user entirely. They'll see a slight shortfall rather than an error.
-          console.warn('Retry fetch failed, shipping what we have:', retryErr);
+          // A failed round (network/API hiccup) just moves on to the next one;
+          // after the last round we ship what we have rather than error out.
+          console.warn('Top-up round ' + round + ' failed:', retryErr);
         }
       }
   
@@ -2100,6 +2106,21 @@
     return picks;
   }
   window._lrsPick = _lrsPick;
+  // v8.141.0: run the checker's chunks a few at a time, with a pause before
+  // retrying a failed call (used by aiValidateQuestions in app.js). Firing all
+  // chunks at once (8 for a 39-question request) invited rate-limit and
+  // timeout failures, and the checker is fail-closed, so each failed chunk
+  // dropped 5 otherwise-good questions.
+  function _pause(ms) { return new Promise(r => setTimeout(r, ms)); }
+  async function _runLimited(items, limit, fn) {
+    const out = new Array(items.length);
+    let next = 0;
+    const worker = async () => { while (next < items.length) { const i = next++; out[i] = await fn(items[i], i); } };
+    await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker));
+    return out;
+  }
+  window._pause = _pause;
+  window._runLimited = _runLimited;
   window._validObjectiveSet = _validObjectiveSet;
   window._moneyNeedsFigures = _moneyNeedsFigures;
   window.startQuiz = startQuiz;

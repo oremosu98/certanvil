@@ -1,9 +1,9 @@
 // ══════════════════════════════════════════
-// Network+ AI Quiz — app.js  v8.140.0
+// Network+ AI Quiz — app.js  v8.141.0
 // ══════════════════════════════════════════
 
 // ── CONSTANTS ──
-const APP_VERSION = '8.140.0';
+const APP_VERSION = '8.141.0';
 // v4.99.45 (Phase 6b): expose APP_VERSION on window so the web-vitals
 // collector (lib/web-vitals-collector.js, loaded BEFORE app.js so its
 // PerformanceObservers attach earlier) can stamp this version onto every
@@ -7615,19 +7615,19 @@ Respond with one line per question in the format above, nothing else:`;
           },
           body: JSON.stringify({ model: CLAUDE_VALIDATOR_MODEL, max_tokens: MAX_TOKENS_VALIDATION, messages: [{ role: 'user', content: buildPrompt(chunk) }] })
         });
-        if (!res.ok) continue;
+        if (!res.ok) { if (attempt === 0 && typeof _pause === 'function') await _pause(1500); continue; }  // v8.141.0: back off before retrying
         const data = await res.json();
         const parsed = _parseValidatorVerdicts(_claudeText(data));
         if (Object.keys(parsed).length === 0) continue;  // unparseable → retry
         return chunk.map((_, i) => parsed[i + 1]);
-      } catch (e) { /* network / timeout → retry */ }
+      } catch (e) { if (attempt === 0 && typeof _pause === 'function') await _pause(1500); /* network / timeout → back off, retry */ }
     }
     return chunk.map(() => undefined);
   };
 
   const chunks = [];
   for (let i = 0; i < toValidate.length; i += VALIDATOR_CHUNK_SIZE) chunks.push(toValidate.slice(i, i + VALIDATOR_CHUNK_SIZE));
-  const verdicts = [].concat(...(await Promise.all(chunks.map(validateChunk))));
+  const verdicts = [].concat(...(await (typeof _runLimited === 'function' ? _runLimited(chunks, 3, validateChunk) : Promise.all(chunks.map(validateChunk)))));  // v8.141.0: 3 at a time
 
   const { result, stats } = _applyValidatorVerdicts(qs, toValidate, verdicts);
 

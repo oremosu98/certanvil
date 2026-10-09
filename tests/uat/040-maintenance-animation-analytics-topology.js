@@ -345,10 +345,14 @@ test('v4.43.4 #1: DROPOUT_BUFFER constant with 30% + min-3 formula',
   /DROPOUT_BUFFER\s*=\s*Math\.max\(3,\s*Math\.ceil\(qCount\s*\*\s*0\.3\)\)/.test(_startQuizBody));
 test('v4.43.4 #1: initial fetch over-requests (qCount + DROPOUT_BUFFER)',
   /fetchQuestions\([^)]*qCount\s*\+\s*DROPOUT_BUFFER\s*\)/.test(_startQuizBody));
-test('v4.43.4 #2: retry-to-fill block exists (questions.length < qCount)',
-  /if\s*\(\s*questions\.length\s*<\s*qCount\s*\)\s*\{/.test(_startQuizBody));
-test('v4.43.4 #2: retry fetches deficit + DROPOUT_BUFFER',
-  /fetchQuestions\([^)]*deficit\s*\+\s*DROPOUT_BUFFER\s*\)/.test(_startQuizBody));
+test('v4.43.4 #2: retry-to-fill tops up while short (v8.141.0: up to MAX_TOPUP_ROUNDS rounds, was one)',
+  /for \(let round = 1; round <= MAX_TOPUP_ROUNDS && questions\.length < qCount; round\+\+\)/.test(_startQuizBody)
+    && /const MAX_TOPUP_ROUNDS = 3;/.test(_startQuizBody));
+test('v4.43.4 #2: each top-up round fetches the deficit plus a buffer and de-dupes by stem',
+  /fetchQuestions\([^)]*deficit \+ Math\.max\(3, Math\.ceil\(deficit \* 0\.5 \* round\)\)\)/.test(_startQuizBody)
+    && /!have\.has\(/.test(_startQuizBody));
+test('v8.141.0 checker: chunks run 3 at a time with a pause before retry',
+  /_runLimited\(chunks, 3, validateChunk\)/.test(js) && /attempt === 0 && typeof _pause === 'function'\) await _pause\(1500\)/.test(js));
 test('v4.43.4 #2: retry wraps in try/catch so a failed retry ships what we have',
   /try\s*\{[\s\S]*?fetchQuestions\([^)]*deficit[\s\S]*?\}\s*catch\s*\(retryErr\)/.test(_startQuizBody));
 // Regression guards: the old "Acceptable shortfall" / "length < qCount/2" logic must stay gone
