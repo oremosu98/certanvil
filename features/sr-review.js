@@ -187,6 +187,7 @@
       entry.topic = q.topic || entry.topic || null;
       entry.difficulty = q.difficulty || entry.difficulty || null;
       entry.explanation = q.explanation || entry.explanation || '';
+      entry.scenario = q.scenario || entry.scenario || null;  // v8.147.0
       _srSchedule(entry, 'wrong');
       saveSrQueue(queue);
       return entry;
@@ -211,6 +212,7 @@
       topic: q.topic || (typeof activeQuizTopic !== 'undefined' ? activeQuizTopic : null),
       difficulty: q.difficulty || (typeof diff !== 'undefined' ? diff : null),
       explanation: q.explanation || '',
+      scenario: q.scenario || null,  // v8.147.0: was dropped, so context-dependent cards came back incomplete
       createdAt: Date.now(),
       lastSeen: Date.now(),
       intervalDays: 1,
@@ -789,6 +791,7 @@
       + '<span class="sr-meta-streak">streak ' + (card.correctStreak || 0) + '</span>'
       + '</div>'
       + whyDueHtml
+      + (card.scenario ? '<div class="sr-scenario">' + escHtml(card.scenario) + '</div>' : '')  // v8.147.0
       + '<div class="sr-question">' + escHtml(stem) + '</div>'
       + optionsHtml
       + confidenceHtml
@@ -828,6 +831,12 @@
       prefs.removed = removed.slice(-500);
       saveSrPrefs(prefs);
       if (typeof saveReport === 'function') saveReport(card.question || '', 'Removed from review cards as broken');
+      // v8.147.0: the same question leaves Drill Mistakes too (the lists used to drift apart).
+      if (typeof loadWrongBank === 'function' && typeof saveWrongBank === 'function') {
+        const wb = loadWrongBank();
+        const left = wb.filter(b => _srHash(b.question || '') !== qHash && b.question !== card.question);
+        if (left.length !== wb.length) { saveWrongBank(left); if (typeof renderWrongBankBtn === 'function') renderWrongBankBtn(); }
+      }
     } catch (_) { /* never block the session on a storage error */ }
     // Drop this card and any retry copy still ahead; earlier cards stay put.
     _srSession.cards = _srSession.cards.filter((c, j) => j < i || (c.qHash || _srHash(c.question || '')) !== qHash);
@@ -1135,6 +1144,7 @@
   // ── Public API (window exposure) ─────────────────────────────────────────
   // SR prefs / queue persistence
   window.loadSrPrefs              = loadSrPrefs;
+  window._srHash                  = _srHash;  // v8.147.0: Drill Mistakes drops removed cards
   window.saveSrPrefs              = saveSrPrefs;
   window.loadSrQueue              = loadSrQueue;
   window.saveSrQueue              = saveSrQueue;

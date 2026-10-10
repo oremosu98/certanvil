@@ -24,12 +24,12 @@
 <!-- machine-owned — run `node scripts/stamp-facts.js` to refresh; do not hand-edit -->
 | Metric | Lines | Size |
 |---|---|---|
-| app.js | 8301 | 438 KB |
+| app.js | 8290 | 439 KB |
 | styles.css | 14913 | 551 KB |
 | index.html | 2298 | 149 KB |
-| dg-system.css | 5472 | 510 KB |
-| tests/uat.js + tests/uat/ (29 modules) | 29528 | — |
-UAT checks: 5051 · E2E `test(` count: 163 · APP_VERSION: 8.146.0 · stamped-at: worktree
+| dg-system.css | 5474 | 510 KB |
+| tests/uat.js + tests/uat/ (29 modules) | 29546 | — |
+UAT checks: 5052 · E2E `test(` count: 163 · APP_VERSION: 8.147.0 · stamped-at: worktree
 <!-- FACTS:AUTO:END -->
 
 | File | Purpose | Size |
@@ -135,9 +135,9 @@ npx playwright test              # E2E (tests/e2e/app.spec.js)
 
 | Version | Features Added |
 |---|---|
+| v8.147.0 | Drill Mistakes: full bank keeps new misses, reworded questions pass the quiz checks, 2-in-a-row to clear, broken entries leave, least-recently-drilled first, scenarios kept; '63 mistakes to clear' |
 | v8.146.0 | Mixed is true random again (exam-weighted) everywhere; new Catch-up card for least-recently-seen; honest Smart/Mixed copy; '12% of exam' badges |
 | v8.145.0 | Exam Simulator fills all 90: a failed writer batch no longer aborts the exam, final checked top-up, quiz-fill telemetry |
-| v8.144.0 | Marathon presets (30/45) now fill the full set: over-request + checked top-up rounds + quiz-fill telemetry; Cached chip no longer shows on fresh sets |
 
 _Older releases (v7.60.0 and back) live in [CHANGELOG.md](./CHANGELOG.md)._
 

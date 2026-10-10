@@ -81,7 +81,9 @@ const {
   test('v7.48.1 OptShape: gauntlet rung mapping letterizes options before the quiz engine',
     /options:\s*_letterizeOptions\(r\.options\)/.test(js));
   test('v7.48.1 OptShape: reworded variant assignment letterizes options',
-    /q\.options\s*=\s*_letterizeOptions\(v\.options\)/.test(js));
+    /q\.options\s*=\s*_letterizeOptions\(v\.options\)/.test(js)
+      // v8.147.0: variant mapping moved to features/quiz-engine.js _applyCheckedVariants
+      || /options:\s*_letterizeOptions\(v\.options\)/.test(require('fs').readFileSync(require('path').join(__dirname, '..', '..', 'features', 'quiz-engine.js'), 'utf8')));
   test('v7.48.1 OptShape: reword eligibility accepts house letter-keyed options (no Array.isArray-only filter)',
     /_optionCount\(q\.options\)\s*>=\s*3/.test(js));
   test('v7.48.1 OptShape: gauntlet run validation rejects non-string/empty option elements',

@@ -974,6 +974,22 @@ test('v8.126.0 AI-901: Decision Lab seed is the AI-901 rebuild (no retired AI-90
       && !/Custom Vision|Form Recognizer|Azure AI Studio|Document Intelligence|regression|clustering/i.test(raw)
       && !/\u2014/.test(raw);
   })());
+test('v8.147.0 Drill Mistakes: oldest drop at cap, miss resets, scenario kept, variants checked, broken entries leave, LRD order, copy',
+  (() => {
+    const qe = fs.readFileSync(path.join(ROOT, 'features', 'quiz-engine.js'), 'utf8');
+    const sr = fs.readFileSync(path.join(ROOT, 'features', 'sr-review.js'), 'utf8');
+    const css = fs.readFileSync(path.join(ROOT, 'dg-system.css'), 'utf8');
+    return /\.splice\(0, bank\.length - WRONG_BANK_CAP\)/.test(js) && !/bank\.length = WRONG_BANK_CAP;/.test(js)
+      && /if \(exists\) \{ if \(exists\.rightCount\) \{ exists\.rightCount = 0; saveWrongBank\(bank\); \} return; \}/.test(js)
+      && /scenario: q\.scenario \|\| null, objective: q\.objective \|\| null/.test(js)
+      && /' mistake' \+ \(bank\.length !== 1 \? 's' : ''\) \+ ' to clear'/.test(js)
+      && /_applyCheckedVariants\(key, rewordable, variants\)/.test(js) && /is wrong because \.\.\./.test(js)
+      && /validateQuestions\(await aiValidateQuestions\(key, cand\.map\(c => c\.v\)\)\)/.test(qe)
+      && /function _pickDrillEntries\(bank, n\)[\s\S]{0,400}lastDrilled/.test(qe)
+      && /function _cleanWrongBank\(bank\)[\s\S]{0,500}_moneyNeedsFigures\(b\)/.test(qe)
+      && /saveWrongBank\(left\)/.test(sr) && /scenario: q\.scenario \|\| null/.test(sr) && /class=\\"sr-scenario\\"|class="sr-scenario"/.test(sr)
+      && /#page-sr-review \.sr-scenario\{/.test(css);
+  })());
 test('v8.145.0 Exam Simulator: a failed writer batch no longer aborts; tops up to EXAM_QUESTION_COUNT; logs quiz-fill',
   (() => {
     const ex = fs.readFileSync(path.join(ROOT, 'features', 'exam.js'), 'utf8');

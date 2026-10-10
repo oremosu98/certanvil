@@ -2346,6 +2346,8 @@ html[data-theme] body #page-sr-review .sr-remove-yes{border:1px solid color-mix(
 html[data-theme] body #page-sr-review .sr-remove-no{border:1px solid var(--border);color:var(--text);}
 @media (hover:hover) and (pointer:fine){html[data-theme] body #page-sr-review .sr-remove-btn:hover{color:var(--red);}html[data-theme] body #page-sr-review .sr-remove-yes:hover{background:color-mix(in oklab,var(--red) 8%,transparent);}html[data-theme] body #page-sr-review .sr-remove-no:hover{background:color-mix(in oklab,var(--text) 5%,transparent);}}
 html[data-theme] body #page-sr-review .sr-question{font-size:clamp(16px,2vw,20px)!important;font-weight:600!important;color:var(--text)!important;line-height:1.45!important;}
+/* v8.147.0: review cards show the question's scenario box (same treatment as #page-quiz .q-scenario). */
+html[data-theme] body #page-sr-review .sr-scenario{background:color-mix(in oklab,var(--accent) 5%,transparent);border:1px solid color-mix(in oklab, var(--accent) 22%, var(--border));border-radius:10px;padding:14px 16px;margin:8px 0 16px;font-size:var(--t-1);line-height:1.55;color:var(--text-mid);}
 html[data-theme] body #page-sr-review .sr-option{background:none!important;border:1px solid var(--border)!important;border-radius:8px!important;box-shadow:none!important;transition:border-color .15s!important;}
 html[data-theme] body #page-sr-review .sr-option:hover{border-color:var(--accent)!important;}
 html[data-theme] body #page-sr-review .sr-option.is-picked{border-color:var(--accent)!important;background:color-mix(in oklab,var(--accent) 8%,transparent)!important;}

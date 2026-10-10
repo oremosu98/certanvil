@@ -1,9 +1,9 @@
 // ══════════════════════════════════════════
-// Network+ AI Quiz — app.js  v8.146.0
+// Network+ AI Quiz — app.js  v8.147.0
 // ══════════════════════════════════════════
 
 // ── CONSTANTS ──
-const APP_VERSION = '8.146.0';
+const APP_VERSION = '8.147.0';
 // v4.99.45 (Phase 6b): expose APP_VERSION on window so the web-vitals
 // collector (lib/web-vitals-collector.js, loaded BEFORE app.js so its
 // PerformanceObservers attach earlier) can stamp this version onto every
@@ -3438,7 +3438,7 @@ function addToWrongBank(q, chosen) {
   const bank = loadWrongBank();
   // Deduplicate by question text
   const exists = bank.find(b => b.question === q.question);
-  if (exists) return;
+  if (exists) { if (exists.rightCount) { exists.rightCount = 0; saveWrongBank(bank); } return; }  // v8.147.0: a miss resets it, so clearing takes 2 right IN A ROW
   bank.push({
     question: q.question,
     options: q.options,
@@ -3447,14 +3447,14 @@ function addToWrongBank(q, chosen) {
     type: q.type || 'mcq',
     items: q.items || null,
     correctOrder: q.correctOrder || null,
-    explanation: q.explanation,
+    explanation: q.explanation, scenario: q.scenario || null, objective: q.objective || null,  // v8.147.0: scenario was dropped, so context-dependent questions came back incomplete
     topic: q.topic || activeQuizTopic,
     difficulty: q.difficulty || diff,
     rightCount: 0,
     addedDate: new Date().toISOString()
   });
   // Cap wrong bank size — oldest entries drop off
-  if (bank.length > WRONG_BANK_CAP) bank.length = WRONG_BANK_CAP;
+  if (bank.length > WRONG_BANK_CAP) bank.sort((a, b) => String(a.addedDate || '').localeCompare(String(b.addedDate || ''))).splice(0, bank.length - WRONG_BANK_CAP);  // v8.147.0: drop the OLDEST (truncating length dropped the newest, so a full bank stopped saving new misses)
   saveWrongBank(bank);
 }
 
@@ -3753,8 +3753,8 @@ function renderWrongBankBtn() {
   const modesTile = document.getElementById('modes-wrong-tile');
   const modesSub = document.getElementById('modes-wrong-sub');
   const subText = bank.length === 0
-    ? '0 wrong answers saved'
-    : bank.length + ' wrong answer' + (bank.length !== 1 ? 's' : '') + ' saved';
+    ? '0 mistakes to clear'
+    : bank.length + ' mistake' + (bank.length !== 1 ? 's' : '') + ' to clear';  // v8.147.0: was "N wrong answers saved"
   if (wrongTile) {
     if (bank.length === 0) {
       wrongTile.classList.add('is-hidden');
@@ -3913,17 +3913,17 @@ async function _fetchRewordedVariants(key, entries) {
       ? (b.options[correctIdx] || '')
       : ((b.options && b.options[letter]) || '');
     return (i + 1) + '. Topic: ' + (b.topic || 'general') +
-      '\n   Original question: ' + b.question +
+      '\n   Original question: ' + (b.scenario ? b.scenario + ' ' : '') + b.question +  // v8.147.0: + its scenario
       '\n   The fact being tested (the correct answer): ' + correctText;
   }).join('\n\n');
 
-  const prompt = 'A student answered each of these exam questions WRONG and is re-drilling them. ' +
+  const prompt = 'A student answered each of these ' + CERT_NAME_FULL + ' exam questions WRONG and is re-drilling them. ' +
     'For EACH original, write ONE new multiple-choice question that tests the SAME concept and the SAME correct fact, ' +
     'but is phrased completely differently: new scenario or angle, different sentence structure, no reuse of the original wording. ' +
     'Keep the same difficulty. Write 4 plausible options (plain text, no letter prefixes) with exactly one correct; ' +
-    'vary which position is correct across questions. Add a 1-2 sentence explanation of why the correct answer is right.\n\n' +
+    'vary which position is correct across questions. The question must be self-contained (state every fact or number needed) and must not name or hint at the answer. The explanation says why the correct answer is right, then one short sentence per wrong option in the form "<option> is wrong because ..." (that wording keeps the answer checks reading it correctly).\n\n' +
     'Return ONLY a JSON array with one object per original, in the same order:\n' +
-    '[{"question":"...","options":["...","...","...","..."],"answer":"A","explanation":"...","topic":"copy the topic"}]\n' +
+    '[{"question":"...","options":["...","...","...","..."],"answer":"A","explanation":"...","topic":"copy the topic","objective":"the official objective number, e.g. 2.4"}]\n' +
     '"answer" is the letter (A-D) of the correct option by position.\n\nOriginals:\n\n' + numbered;
 
   const res = await _claudeFetch({
@@ -3962,7 +3962,7 @@ async function startWrongDrill() {
     title: 'Drill Mistakes is a Pro feature',
     body: 'Your missed questions come back re-worded, so you beat the concept · not the question. The bank keeps saving either way; the drill itself is Pro.'
   })) return;
-  const bank = loadWrongBank();
+  const bank = (typeof _cleanWrongBank === 'function') ? _cleanWrongBank(loadWrongBank()) : loadWrongBank();  // v8.147.0: broken entries leave first
   if (bank.length === 0) {
     alert('No wrong answers saved yet. Keep quizzing!');
     return;
@@ -3980,7 +3980,7 @@ async function startWrongDrill() {
   // _bankKey/_bankOrig carry the ORIGINAL bank identity through the drill:
   // graduation and miss-handling key on the original question text, so a
   // re-worded variant graduates (or re-triggers SR for) the entry it came from.
-  const shuffled = [...bank].sort(() => Math.random() - 0.5);
+  const shuffled = (typeof _pickDrillEntries === 'function') ? _pickDrillEntries(bank, 10) : [...bank].sort(() => Math.random() - 0.5);  // v8.147.0: least-recently-drilled first
   const base = shuffled.slice(0, 10).map(b => ({
     question: b.question,
     options: b.options,
@@ -3989,7 +3989,7 @@ async function startWrongDrill() {
     type: b.type || 'mcq',
     items: b.items,
     correctOrder: b.correctOrder,
-    explanation: b.explanation,
+    explanation: b.explanation, scenario: b.scenario || undefined, objective: b.objective || undefined,
     topic: b.topic,
     difficulty: b.difficulty,
     _bankKey: b.question,
@@ -4008,23 +4008,12 @@ async function startWrongDrill() {
     if (lp) lp.classList.add('is-hidden');
     showPage('loading');
     const lm = document.getElementById('loading-msg');
-    if (lm) lm.textContent = 'Re-wording your mistakes — same concepts, new disguises…';
+    if (lm) lm.textContent = 'Re-wording your mistakes and checking each one…';  // v8.147.0: variants now pass the quiz checks
     if (typeof _loadingProgressBegin === 'function') _loadingProgressBegin('Re-wording your mistakes…');
     try {
       const variants = await _fetchRewordedVariants(key, rewordable.map(q => q._bankOrig));
-      rewordable.forEach((q, i) => {
-        const v = variants[i];
-        if (v) {
-          q.question = v.question;
-          // v7.48.1: renderMCQ reads q.options[letter] — letterize the AI's
-          // array into the house letter-keyed object (the 'undefined options'
-          // class of bug, caught live on the Gauntlet 2026-06-12).
-          q.options = _letterizeOptions(v.options);
-          q.answer = v.answer.trim().toUpperCase();
-          q.explanation = v.explanation || q.explanation;
-          q._reworded = true;
-        }
-      });
+      const _rw = (typeof _applyCheckedVariants === 'function') ? await _applyCheckedVariants(key, rewordable, variants) : { asked: 0, kept: 0 };  // v8.147.0: failures serve the original
+      if (typeof _logQuizFill === 'function') _logQuizFill(base.length, base.length, 'drill · reworded ' + _rw.kept + '/' + _rw.asked + ' passed checks', [], null);
     } catch (_) {
       // Verbatim fallback — say so honestly, then run the drill as before.
       try { if (typeof showToast === 'function') showToast('Couldn’t re-word this time · running your saved questions as-is.', 'info'); } catch (_) {}

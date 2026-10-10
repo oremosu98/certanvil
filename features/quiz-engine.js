@@ -2162,6 +2162,63 @@
     return questions;
   }
   window._topUpToCount = _topUpToCount;
+  // v8.147.0: Drill Mistakes helpers (they live here because app.js is at its
+  // line ratchet). Broken entries leave the bank: money questions with no
+  // figures to calculate from, and anything the student removed from review
+  // cards as broken (the two lists used to drift apart).
+  function _cleanWrongBank(bank) {
+    let removed = [];
+    try { removed = (typeof loadSrPrefs === 'function' && loadSrPrefs().removed) || []; } catch (_) {}
+    const hashOf = (typeof window._srHash === 'function') ? window._srHash : null;
+    const kept = bank.filter(b => !_moneyNeedsFigures(b) && !(hashOf && removed.indexOf(hashOf(b.question || '')) !== -1));
+    if (kept.length !== bank.length) saveWrongBank(kept);
+    return kept;
+  }
+  // Least-recently-drilled first (never-drilled first, ties random), so the
+  // whole bank cycles every few drills instead of random picks leaving some
+  // mistakes unseen for days. Stamps lastDrilled; serves in random order.
+  function _pickDrillEntries(bank, n) {
+    const shuffle = (a) => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+    const picks = shuffle(bank.slice()).sort((a, b) => (a.lastDrilled || 0) - (b.lastDrilled || 0)).slice(0, n);
+    const now = Date.now();
+    picks.forEach(b => { b.lastDrilled = now; });
+    saveWrongBank(bank);
+    return shuffle(picks);
+  }
+  // Re-worded variants face the same checks as quiz questions (Sonnet checker,
+  // then validateQuestions). A variant that fails is dropped and its slot
+  // serves the original, which passed those checks when it was generated.
+  // Pre-v8.147.0 variants were served unchecked, and a correct answer to one
+  // could graduate the real mistake out of the bank.
+  async function _applyCheckedVariants(key, slots, variants) {
+    const cand = [];
+    slots.forEach((q, i) => {
+      const v = variants[i];
+      if (!v) return;
+      const tr = (typeof topicResources !== 'undefined' && topicResources[q.topic]) || null;
+      cand.push({ slot: q, v: {
+        type: 'mcq', question: v.question,
+        scenario: (typeof v.scenario === 'string' && v.scenario.trim()) ? v.scenario.trim() : undefined,
+        options: _letterizeOptions(v.options), answer: String(v.answer).trim().toUpperCase(),
+        explanation: v.explanation || '', topic: q.topic, difficulty: q.difficulty,
+        objective: v.objective || (tr && tr.obj) || ''
+      } });
+    });
+    if (!cand.length) return { asked: 0, kept: 0 };
+    const checked = validateQuestions(await aiValidateQuestions(key, cand.map(c => c.v)));
+    const ok = new Set(checked.map(x => x.question));
+    let kept = 0;
+    cand.forEach(c => {
+      if (!ok.has(c.v.question)) return;
+      Object.assign(c.slot, { question: c.v.question, scenario: c.v.scenario, options: c.v.options, answer: c.v.answer,
+        explanation: c.v.explanation, objective: c.v.objective, _reworded: true });
+      kept++;
+    });
+    return { asked: cand.length, kept };
+  }
+  window._cleanWrongBank = _cleanWrongBank;
+  window._pickDrillEntries = _pickDrillEntries;
+  window._applyCheckedVariants = _applyCheckedVariants;
   // v8.142.0: one telemetry row per quiz generation so a short set can be
   // traced: requested vs served, fresh vs cache fallback, and per round how
   // many were asked for, written, passed the checker, passed local checks.
