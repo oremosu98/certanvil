@@ -91,6 +91,7 @@
     // startQuiz). A batch whose writer call fails every retry no longer
     // aborts the whole exam; the top-up refills it.
     const _fillRounds = []; let _lastBatchErr = null;
+    window._mixedPickMode = 'random';  // v8.146.0: exam rehearsal draws topics at random, never Catch-up
     try {
       for (let i = 0; i < BATCHES; i++) {
         _loadingProgressUpdate(`Batch ${i + 1} / ${BATCHES} \u2014 generating\u2026`, (i / BATCHES) * 100);

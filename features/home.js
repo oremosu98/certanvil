@@ -519,7 +519,7 @@
         const grid = accordion.querySelector('.chip-grid');
         const label = CERT_PACK.domainLabels[dKey] || dKey;
         const weight = CERT_PACK.domainWeights[dKey];
-        const weightStr = weight ? Math.round(weight * 100) + '%' : '';
+        const weightStr = weight ? Math.round(weight * 100) + '% of exam' : '';  // v8.146.0: was a bare % that read like a score
         if (summary) {
           summary.innerHTML = '<span class="dom-name">' + idx + '.0 ' + escHtml(label) + '</span><span class="dom-weight">' + weightStr + '</span>';
         }
@@ -704,6 +704,7 @@
     // v8.144.0: over-request ~30% so checker rejections don't come straight off
     // the set (was exactly `count`: 45 → 28, 30 → 25), then top up below.
     const target = count + Math.max(3, Math.ceil(count * 0.3));
+    window._mixedPickMode = 'random';  // v8.146.0: Marathon draws topics at random, never Catch-up
     const batches = Math.ceil(target / BATCH_SIZE);
     const _fillRounds = [];
     let collected = [];
@@ -2242,7 +2243,8 @@
     let topicProse;
     if (modeOn) {
       const label = (modeOn.getAttribute('data-v') || '').replace(/&mdash;/g, '\u2014');
-      if (/smart/i.test(label)) topicProse = '<em>AI-picked weak spots</em>';
+      if (/smart/i.test(label)) topicProse = '<em>your weakest topics</em>';
+      else if (/catch-up/i.test(label)) topicProse = '<em>topics you haven\u2019t seen lately</em>';
       else topicProse = '<em>Mixed across all topics</em>';
     } else if (domainOn.length === 1) {
       topicProse = `on <em>${esc(domainOn[0])}</em>`;

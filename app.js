@@ -1,9 +1,9 @@
 // ══════════════════════════════════════════
-// Network+ AI Quiz — app.js  v8.145.0
+// Network+ AI Quiz — app.js  v8.146.0
 // ══════════════════════════════════════════
 
 // ── CONSTANTS ──
-const APP_VERSION = '8.145.0';
+const APP_VERSION = '8.146.0';
 // v4.99.45 (Phase 6b): expose APP_VERSION on window so the web-vitals
 // collector (lib/web-vitals-collector.js, loaded BEFORE app.js so its
 // PerformanceObservers attach earlier) can stamp this version onto every
@@ -234,7 +234,7 @@ const MAX_TOKENS_TEACHER_COACH   = 800;   // tbExplainDevice — focused coach c
 const MAX_TOKENS_TEACHER_BRIEF   = 400;   // stAskCoach, ptAskCoach, fetchTopicBrief — short teacher call
 const MAX_TOKENS_IRW_AIGEN       = 4000;  // v4.97.2: IRW AI scenario generator (full PICERL JSON output)
 
-const MIXED_TOPIC = 'Mixed \u2014 All Topics';
+const MIXED_TOPIC = 'Mixed \u2014 All Topics'; const CATCHUP_TOPIC = 'Mixed \u2014 Catch-up';  // v8.146.0: Catch-up card; startQuiz maps it to MIXED_TOPIC + least-recently-seen picks
 const EXAM_TOPIC = 'Exam Simulation';
 const DEFAULT_DIFF = 'Exam Level';
 
@@ -2573,7 +2573,7 @@ function initTopicGroupMulti(cb) {
         // if the user just deselected the last domain chip.
         const anyOn = g.querySelector('.chip.on');
         if (!anyOn) {
-          const mixed = g.querySelector('.chip[data-v*="Mixed"]');
+          const mixed = g.querySelector('.chip[data-v="' + MIXED_TOPIC + '"]');  // v8.146.0: exact (Catch-up's value also contains Mixed)
           if (mixed) {
             mixed.classList.add('on');
             mixed.setAttribute('aria-pressed', 'true');
@@ -5193,7 +5193,7 @@ function _sampleTopicsForMixedBatch(dist) {
     if (need <= 0) return;
     const pool = byDomain[d];
     if (need <= pool.length) {
-      result[d] = (typeof _lrsPick === 'function') ? _lrsPick(shuffle(pool), need) : shuffle(pool).slice(0, need);  // v8.140.0: least-recently-seen first
+      result[d] = (typeof window !== 'undefined' && window._mixedPickMode === 'lrs' && typeof _lrsPick === 'function') ? _lrsPick(shuffle(pool), need) : shuffle(pool).slice(0, need);  // v8.146.0: true random; least-recently-seen only for Catch-up
     } else {
       // Need more than available — fill from shuffled pool, repeat as needed
       const out = [];

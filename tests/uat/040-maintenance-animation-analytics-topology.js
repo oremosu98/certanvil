@@ -352,7 +352,7 @@ test('v4.43.4 #2: each top-up round fetches the deficit plus a buffer and de-dup
   /_rn = \{ asked: deficit \+ Math\.max\(3, Math\.ceil\(deficit \* 0\.5 \* round\)\) \}/.test(_startQuizBody)
     && /fetchQuestions\([^)]*_rn\.asked\)/.test(_startQuizBody) && /!have\.has\(/.test(_startQuizBody));
 test('v8.142.0 quiz-fill: per-round diagnostics logged; failed rounds pause before the next',
-  /_logQuizFill\(qCount, questions\.length, 'fresh', _fill\.rounds, null\)/.test(_startQuizBody)
+  /_logQuizFill\(qCount, questions\.length, _catchUp \? 'fresh \(catch-up\)' : 'fresh', _fill\.rounds, null\)/.test(_startQuizBody)
     && /round < MAX_TOPUP_ROUNDS && typeof _pause === 'function'\) await _pause\(1500 \* round\)/.test(_startQuizBody));
 test('v8.142.0 fetchQuestions: one failed batch no longer sinks the request (throws only if nothing merged)',
   /if \(r\.reason && r\.reason\.apiError && !apiErr\) apiErr = r\.reason;/.test(js) && /throw apiErr \|\| new Error\('AI returned malformed data/.test(js)
@@ -1214,14 +1214,18 @@ test('v4.50.0: cq-section-head + cq-section-ico + cq-section-title structure in 
 test('v4.50.0: 3 section headers (Topic + Difficulty + Questions)',
   (html.match(/class="cq-section-head"/g) || []).length >= 3);
 // Smart/Mixed premium cards
-test('v4.50.0: Smart + Mixed promoted to cq-mode-card',
-  (html.match(/class="chip[^"]*cq-mode-card"/g) || []).length === 2);
+test('v4.50.0: Smart + Mixed (+ v8.146.0 Catch-up) promoted to cq-mode-card',
+  (html.match(/class="chip[^"]*cq-mode-card"/g) || []).length === 3);
 test('v4.50.0: mode cards have title + sub structure',
   html.includes('class="cq-mode-title"') && html.includes('class="cq-mode-sub"'));
-test('v4.50.0: Smart card advertises AI weak-spot pick',
-  html.includes('AI picks your weak spots'));
-test('v4.50.0: Mixed card advertises random-across-topics',
-  html.includes('Random across all topics'));
+// v8.146.0: copy rewritten (Smart is a scoring rule, not AI; Mixed is
+// exam-weighted random; Catch-up added for least-recently-seen).
+test('v8.146.0: Smart card says weakest topics (no AI claim)',
+  html.includes('Your 3-4 weakest topics') && !html.includes('AI picks your weak spots'));
+test('v8.146.0: Mixed card says random, exam-weighted',
+  html.includes('Random topics, weighted like the real exam'));
+test('v8.146.0: Catch-up card present with its own value',
+  html.includes('data-v="Mixed &mdash; Catch-up"') && html.includes("Topics you haven't seen lately"));
 // Domain accordions with data-domain-idx (1-5) — scoped to <details> tags only.
 // v4.81.17 added more data-domain-idx attributes on Mode Ladder tiles + pre-fill
 // pills, so a global count would over-match; this regex matches only the

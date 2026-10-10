@@ -106,8 +106,8 @@
      cascade + de-card primitives + bento home layout) extracted to
      dg-critical.css (~63KB vs 450KB). dg-system.css loads after first paint
      for analytics/progress/quiz/sim-lab reskins. -->
-<link rel="stylesheet" href="dg-system.css?v=8.144.0" media="print" onload="this.media='all'">
-<noscript><link rel="stylesheet" href="dg-system.css?v=8.144.0"></noscript>
+<link rel="stylesheet" href="dg-system.css?v=8.146.0" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="dg-system.css?v=8.146.0"></noscript>
 <!-- v7.81.0 P1a: dg-depurple.css demoted to non-blocking. It is supplemental
      purple-reduction theming layered on top of dg-system.css tokens; zero
      layout rules. The media=print swap pattern defers it off the critical
@@ -671,20 +671,31 @@
             <span class="cq-mode-ico" aria-hidden="true">&#129504;</span>
             <span class="cq-mode-text">
               <span class="cq-mode-title">Smart</span>
-              <span class="cq-mode-sub">AI picks your weak spots</span>
+              <span class="cq-mode-sub">Your 3-4 weakest topics</span>
             </span>
           </button>
           <button class="chip on cq-mode-card" data-v="Mixed &mdash; All Topics" type="button">
             <span class="cq-mode-ico" aria-hidden="true">&#127922;</span>
             <span class="cq-mode-text">
               <span class="cq-mode-title">Mixed</span>
-              <span class="cq-mode-sub">Random across all topics</span>
+              <span class="cq-mode-sub">Random topics, weighted like the real exam</span>
+            </span>
+          </button>
+          <!-- v8.146.0: Catch-up = least-recently-seen topics first (Mixed's
+               v8.140.0 behaviour, now opt-in; Mixed is true random again). Its
+               value contains "Mixed" so topic-list readers skip it like the
+               other mode cards; startQuiz maps it to MIXED_TOPIC + lrs picking. -->
+          <button class="chip cq-mode-card" data-v="Mixed &mdash; Catch-up" type="button">
+            <span class="cq-mode-ico" aria-hidden="true">&#8987;</span>
+            <span class="cq-mode-text">
+              <span class="cq-mode-title">Catch-up</span>
+              <span class="cq-mode-sub">Topics you haven't seen lately</span>
             </span>
           </button>
         </div>
         <!-- Domain 1.0 — Networking Concepts (23%) -->
         <details class="topic-domain-group" data-domain-idx="1" open>
-          <summary><span class="dom-name">1.0 Networking Concepts</span><span class="dom-weight">23%</span></summary>
+          <summary><span class="dom-name">1.0 Networking Concepts</span><span class="dom-weight">23% of exam</span></summary>
           <div class="chip-grid">
             <button class="chip" data-v="Network Models & OSI">Network Models & OSI</button>
             <button class="chip" data-v="TCP/IP Basics">TCP/IP Basics</button>
@@ -703,7 +714,7 @@
         </details>
         <!-- Domain 2.0 — Network Implementation (20%) -->
         <details class="topic-domain-group" data-domain-idx="2">
-          <summary><span class="dom-name">2.0 Network Implementation</span><span class="dom-weight">20%</span></summary>
+          <summary><span class="dom-name">2.0 Network Implementation</span><span class="dom-weight">20% of exam</span></summary>
           <div class="chip-grid">
             <button class="chip" data-v="Routing Protocols">Routing Protocols</button>
             <button class="chip" data-v="OSPF">OSPF</button>
@@ -722,7 +733,7 @@
         </details>
         <!-- Domain 3.0 — Network Operations (19%) -->
         <details class="topic-domain-group" data-domain-idx="3">
-          <summary><span class="dom-name">3.0 Network Operations</span><span class="dom-weight">19%</span></summary>
+          <summary><span class="dom-name">3.0 Network Operations</span><span class="dom-weight">19% of exam</span></summary>
           <div class="chip-grid">
             <button class="chip" data-v="Network Operations">Network Operations</button>
             <button class="chip" data-v="Data Centres">Data Centres</button>
@@ -735,7 +746,7 @@
         </details>
         <!-- Domain 4.0 — Network Security (14%) -->
         <details class="topic-domain-group" data-domain-idx="4">
-          <summary><span class="dom-name">4.0 Network Security</span><span class="dom-weight">14%</span></summary>
+          <summary><span class="dom-name">4.0 Network Security</span><span class="dom-weight">14% of exam</span></summary>
           <div class="chip-grid">
             <button class="chip" data-v="Securing TCP/IP">Securing TCP/IP</button>
             <button class="chip" data-v="Protecting Networks">Protecting Networks</button>
@@ -752,7 +763,7 @@
         </details>
         <!-- Domain 5.0 — Network Troubleshooting (24%) -->
         <details class="topic-domain-group" data-domain-idx="5">
-          <summary><span class="dom-name">5.0 Network Troubleshooting</span><span class="dom-weight">24%</span></summary>
+          <summary><span class="dom-name">5.0 Network Troubleshooting</span><span class="dom-weight">24% of exam</span></summary>
           <div class="chip-grid">
             <button class="chip" data-v="Network Troubleshooting & Tools">Troubleshooting & Tools</button>
             <button class="chip" data-v="CompTIA Troubleshooting Methodology">7-Step Methodology</button>
@@ -948,7 +959,7 @@
     <span class="hero-icon">&#9889;</span>
     <h1>Network+ AI Quiz</h1>
     <p>AI-generated MCQs every session. Never the same quiz twice.</p>
-    <span id="version-badge" style="display:inline-block;margin-top:10px;font-size:11px;font-weight:700;letter-spacing:.08em;color:var(--accent-light);background:color-mix(in oklab,var(--accent) 12%,transparent);border:1px solid color-mix(in oklab,var(--accent) 30%,transparent);padding:3px 10px;border-radius:99px;cursor:default;user-select:none">v8.145.0</span>
+    <span id="version-badge" style="display:inline-block;margin-top:10px;font-size:11px;font-weight:700;letter-spacing:.08em;color:var(--accent-light);background:color-mix(in oklab,var(--accent) 12%,transparent);border:1px solid color-mix(in oklab,var(--accent) 30%,transparent);padding:3px 10px;border-radius:99px;cursor:default;user-select:none">v8.146.0</span>
     <div id="streak-badge" class="streak-badge"></div>
     <div id="stats-card" class="hero-stats-strip is-hidden">
       <div class="stats-grid" id="stats-grid"></div>

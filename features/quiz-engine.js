@@ -46,11 +46,17 @@
     sessionMode = false;
   
     // v4.54.15: Smart + Multi: handled alongside single-topic + Mixed.
+    // v8.146.0: Catch-up runs as a normal Mixed quiz (history, cache, progress
+    // all see MIXED_TOPIC) with least-recently-seen topic picks for this
+    // generation only; every other Mixed path (Marathon, Exam) draws at random.
+    const _catchUp = typeof CATCHUP_TOPIC !== 'undefined' && topic === CATCHUP_TOPIC;
+    window._mixedPickMode = _catchUp ? 'lrs' : 'random';
     activeQuizTopic = topic.includes('Smart')
       ? getSmartQuizTopics(qCount)
-      : topic;
+      : (_catchUp ? MIXED_TOPIC : topic);
     // Human label for loading copy — never show the raw "Multi: …" sentinel.
-    const _topicLabel = activeQuizTopic.startsWith('Multi: ') && typeof _parseMultiTopicSentinel === 'function'
+    const _topicLabel = _catchUp ? 'topics you haven\u2019t seen lately'
+      : activeQuizTopic.startsWith('Multi: ') && typeof _parseMultiTopicSentinel === 'function'
       ? _parseMultiTopicSentinel(activeQuizTopic).join(' \u00b7 ')
       : activeQuizTopic;
   
@@ -159,7 +165,7 @@
       if (questions.length > qCount) {
         questions = questions.slice(0, qCount);
       }
-      _logQuizFill(qCount, questions.length, 'fresh', _fill.rounds, null);
+      _logQuizFill(qCount, questions.length, _catchUp ? 'fresh (catch-up)' : 'fresh', _fill.rounds, null);
     } catch(e) {
       _logQuizFill(qCount, 0, getCachedQuestions(activeQuizTopic, diff, qCount) ? 'cache' : 'error', [], String((e && e.message) || e).slice(0, 120));
       const cached = getCachedQuestions(activeQuizTopic, diff, qCount);
@@ -171,9 +177,11 @@
         showPage('setup');
         errBox.textContent = '\u26a0\ufe0f ' + (e.message || 'Failed. Check your API key.');
         errBox.classList.remove('is-hidden');
+        window._mixedPickMode = 'random';
         return;
       }
     }
+    window._mixedPickMode = 'random';  // v8.146.0: Catch-up picking ends with this generation
     // Inject CLI sim / topology PBQs from predefined bank
     const pbqInjectCount = qCount >= 10 ? 1 : 0;
     if (pbqInjectCount > 0) {

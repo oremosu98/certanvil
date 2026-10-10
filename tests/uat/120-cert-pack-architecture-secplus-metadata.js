@@ -1009,7 +1009,7 @@ test('v8.143.0 Sec+: every topic has official SY0-701 hints; 5.5/5.6/1.2 objecti
       && js.includes('}, (CERT_PACK && CERT_PACK.topicHints) || {});')
       && js.includes("' (cover any of: ' + CERT_PACK.topicHints[t] + ')'");
   })());
-test('v8.140.0 Mixed: least-recently-seen topics drawn first; later batches in a session move on',
+test('v8.140.0/v8.146.0 Catch-up: least-recently-seen topics drawn first, later batches move on; plain Mixed never uses it',
   (() => {
     try {
       const vm = require('vm');
@@ -1021,13 +1021,17 @@ test('v8.140.0 Mixed: least-recently-seen topics drawn first; later batches in a
                      { topic: 'B', date: new Date(now - 9 * day).toISOString() },   // seen 9 days ago
                      { topic: 'C', date: new Date(now - 30 * day).toISOString() } ]; // seen a month ago; D, E never
       const ctx = { Math, Object, Array, Date, isFinite, TOPIC_DOMAINS: { A: 'x', B: 'x', C: 'x', D: 'x', E: 'x' },
-        DOMAIN_WEIGHTS: { x: 1 }, loadHistory: () => hist };
+        DOMAIN_WEIGHTS: { x: 1 }, loadHistory: () => hist, window: { _mixedPickMode: 'lrs' } };
       vm.createContext(ctx);
       vm.runInContext(helper + '\nthis._lrsPick = _lrsPick;\n' + sampler, ctx);
       const first = vm.runInContext('_sampleTopicsForMixedBatch({ x: 3 })', ctx).x;
       const second = vm.runInContext('_sampleTopicsForMixedBatch({ x: 2 })', ctx).x;
       const firstSet = new Set(first);
-      return first.length === 3 && firstSet.has('D') && firstSet.has('E') && firstSet.has('C') && !firstSet.has('A')
+      // Plain Mixed: _lrsPick must not run (its calls would stamp _drawnAt).
+      let calls = 0; ctx.window._mixedPickMode = 'random';
+      vm.runInContext('var __l = _lrsPick; _lrsPick = function(){ __c++; return __l.apply(null, arguments); }; var __c = 0;', ctx);
+      vm.runInContext('_sampleTopicsForMixedBatch({ x: 3 })', ctx); calls = vm.runInContext('__c', ctx);
+      return calls === 0 && first.length === 3 && firstSet.has('D') && firstSet.has('E') && firstSet.has('C') && !firstSet.has('A')
         && second.length === 2 && second.indexOf('B') !== -1 && second.indexOf('A') !== -1;
     } catch (e) { return false; }
   })());
