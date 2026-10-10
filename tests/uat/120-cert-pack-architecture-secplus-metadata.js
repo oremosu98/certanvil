@@ -974,6 +974,15 @@ test('v8.126.0 AI-901: Decision Lab seed is the AI-901 rebuild (no retired AI-90
       && !/Custom Vision|Form Recognizer|Azure AI Studio|Document Intelligence|regression|clustering/i.test(raw)
       && !/\u2014/.test(raw);
   })());
+test('v8.145.0 Exam Simulator: a failed writer batch no longer aborts; tops up to EXAM_QUESTION_COUNT; logs quiz-fill',
+  (() => {
+    const ex = fs.readFileSync(path.join(ROOT, 'features', 'exam.js'), 'utf8');
+    return /if \(attempt === MAX_RETRIES\) \{ _lastBatchErr = retryErr; rawBatch = \[\]; break; \}/.test(ex)
+      && /_topUpToCount\(key, MIXED_TOPIC, 'Mixed', examQuestions, EXAM_QUESTION_COUNT, _fillRounds/.test(ex)
+      && /_logQuizFill\(EXAM_QUESTION_COUNT, examQuestions\.length, 'fresh \(exam\)'/.test(ex)
+      && /_logQuizFill\(EXAM_QUESTION_COUNT, 0, 'error \(exam\)'/.test(ex)
+      && !/if \(attempt === MAX_RETRIES\) throw retryErr;/.test(ex);
+  })());
 test('v8.144.0 Marathon: over-requests, tops up via the shared helper, logs quiz-fill; Cached chip only when cached',
   (() => {
     const home = fs.readFileSync(path.join(ROOT, 'features', 'home.js'), 'utf8');

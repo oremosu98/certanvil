@@ -28,8 +28,8 @@
 | styles.css | 14913 | 551 KB |
 | index.html | 2287 | 148 KB |
 | dg-system.css | 5472 | 510 KB |
-| tests/uat.js + tests/uat/ (29 modules) | 29511 | — |
-UAT checks: 5049 · E2E `test(` count: 163 · APP_VERSION: 8.144.0 · stamped-at: worktree
+| tests/uat.js + tests/uat/ (29 modules) | 29520 | — |
+UAT checks: 5050 · E2E `test(` count: 163 · APP_VERSION: 8.145.0 · stamped-at: worktree
 <!-- FACTS:AUTO:END -->
 
 | File | Purpose | Size |
@@ -135,9 +135,9 @@ npx playwright test              # E2E (tests/e2e/app.spec.js)
 
 | Version | Features Added |
 |---|---|
+| v8.145.0 | Exam Simulator fills all 90: a failed writer batch no longer aborts the exam, final checked top-up, quiz-fill telemetry |
 | v8.144.0 | Marathon presets (30/45) now fill the full set: over-request + checked top-up rounds + quiz-fill telemetry; Cached chip no longer shows on fresh sets |
 | v8.143.0 | Sec+ syllabus coverage: official SY0-701 sub-topics wired into every topic; objective map fixed |
-| v8.142.0 | Quiz fill: one failed writer batch no longer sinks the request; per-quiz fill diagnostics |
 
 _Older releases (v7.60.0 and back) live in [CHANGELOG.md](./CHANGELOG.md)._
 

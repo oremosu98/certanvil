@@ -87,6 +87,10 @@
     // banner on the exam page (score scaling is correct/total so a shortfall
     // scales proportionally — 720 pass threshold stays honest).
     const BATCHES = 5, EXAM_BATCH_BASE = 18, EXAM_BATCH_BUFFER = 5, MAX_RETRIES = 2;
+    // v8.145.0: per-batch fill telemetry + a final top-up (same as Marathon /
+    // startQuiz). A batch whose writer call fails every retry no longer
+    // aborts the whole exam; the top-up refills it.
+    const _fillRounds = []; let _lastBatchErr = null;
     try {
       for (let i = 0; i < BATCHES; i++) {
         _loadingProgressUpdate(`Batch ${i + 1} / ${BATCHES} \u2014 generating\u2026`, (i / BATCHES) * 100);
@@ -105,7 +109,7 @@
             rawBatch = await fetchQuestions(key, MIXED_TOPIC, 'Mixed', EXAM_BATCH_BASE + EXAM_BATCH_BUFFER, i);
             break;
           } catch(retryErr) {
-            if (attempt === MAX_RETRIES) throw retryErr;
+            if (attempt === MAX_RETRIES) { _lastBatchErr = retryErr; rawBatch = []; break; }
             lbl.textContent = `Batch ${i + 1} failed, retrying (${attempt + 1}/${MAX_RETRIES})\u2026`;
             await new Promise(r => setTimeout(r, 1500));
           }
@@ -114,8 +118,11 @@
         // Step 2: Validate — Sonnet semantic pass + programmatic checks
         // (same pipeline as startQuiz, per v4.43.5 parity decision)
         lbl.textContent = `Batch ${i + 1} / ${BATCHES} \u2014 verifying\u2026`;
-        const aiValidated = await aiValidateQuestions(key, rawBatch);
+        const _r = { label: 'b' + (i + 1), asked: EXAM_BATCH_BASE + EXAM_BATCH_BUFFER, written: rawBatch.length };
+        if (!rawBatch.length && _lastBatchErr) _r.error = String(_lastBatchErr.message || _lastBatchErr).slice(0, 80);
+        const aiValidated = rawBatch.length ? await aiValidateQuestions(key, rawBatch) : [];
         let batch = validateQuestions(aiValidated);
+        _r.afterChecker = aiValidated.length; _r.afterLocal = batch.length;
 
         // v4.81.14: cross-batch dedup (user report: same questions repeating
         // across the 5 exam batches). fetchQuestions dedupes within a single
@@ -168,8 +175,16 @@
 
         // Step 4: Slice batch to EXAM_BATCH_BASE (truncate overage, accept shortage).
         // If still < EXAM_BATCH_BASE here, the final exam will be short of 90 — handled below.
+        const _before = examQuestions.length;
         examQuestions = examQuestions.concat(batch.slice(0, EXAM_BATCH_BASE));
+        _r.added = examQuestions.length - _before; _fillRounds.push(_r);
       }
+      if (examQuestions.length < EXAM_QUESTION_COUNT && typeof _topUpToCount === 'function') {
+        examQuestions = await _topUpToCount(key, MIXED_TOPIC, 'Mixed', examQuestions, EXAM_QUESTION_COUNT, _fillRounds, (round, deficit) => {
+          _loadingProgressUpdate(`Filling the last ${deficit} question${deficit === 1 ? '' : 's'}\u2026`, 92 + round * 2);
+        });
+      }
+      if (!examQuestions.length) throw (_lastBatchErr || new Error('No questions could be generated. Try again.'));
       _loadingProgressUpdate('Finalizing…', 98);
       // Inject 2 CLI/topo PBQs into exam (predefined bank — already known good, skip validation)
       examQuestions = injectPBQs(examQuestions, MIXED_TOPIC, 2);
@@ -179,6 +194,7 @@
       }
       // Capture final count before render so we can surface the shortfall banner if needed
       const examShortfall = examQuestions.length < EXAM_QUESTION_COUNT;
+      if (typeof _logQuizFill === 'function') _logQuizFill(EXAM_QUESTION_COUNT, examQuestions.length, 'fresh (exam)', _fillRounds, null);
 
       examAnswers = examQuestions.map(() => ({ chosen: null, flagged: false, msChosen: [], orderSeq: [], cliRan: [], topoState: {} }));
       // v4.82.1: hide loading bar before swapping to the exam page.
@@ -190,6 +206,7 @@
       // with what we have rather than error out. Show a non-blocking banner.
       if (examShortfall) showExamShortfallBanner(examQuestions.length);
     } catch(e) {
+      if (typeof _logQuizFill === 'function') _logQuizFill(EXAM_QUESTION_COUNT, 0, 'error (exam)', _fillRounds, String((e && e.message) || e).slice(0, 120));
       examMode = false;
       _loadingProgressFinish();
       showPage('setup');

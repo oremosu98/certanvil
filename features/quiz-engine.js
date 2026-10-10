@@ -2132,7 +2132,7 @@
     const MAX_ROUNDS = 3;
     for (let round = 1; round <= MAX_ROUNDS && questions.length < target; round++) {
       const deficit = target - questions.length;
-      const r = { asked: deficit + Math.max(3, Math.ceil(deficit * 0.5 * round)) };
+      const r = { label: 'top-up' + round, asked: deficit + Math.max(3, Math.ceil(deficit * 0.5 * round)) };
       if (typeof onRound === 'function') { try { onRound(round, deficit); } catch (_) {} }
       try {
         const raw = await fetchQuestions(key, topic, diffLabel, r.asked);
@@ -2161,7 +2161,7 @@
   function _logQuizFill(requested, served, source, rounds, error) {
     try {
       if (typeof _logValidatorTelemetry !== 'function') return;
-      const r = (rounds || []).map((x, i) => (i === 0 ? 'r0 ' : 'top-up' + i + ' ') + (x.error ? 'ERR ' + x.error
+      const r = (rounds || []).map((x, i) => (x.label ? x.label + ' ' : (i === 0 ? 'r0 ' : 'top-up' + i + ' ')) + (x.error ? 'ERR ' + x.error
         : x.asked + '→' + (x.written ?? '?') + '→' + (x.afterChecker ?? '?') + '→' + (x.afterLocal ?? '?') + (x.added !== undefined ? ' +' + x.added : ''))).join(' | ');
       _logValidatorTelemetry([{ type: 'telemetry:quiz-fill', fingerprint: 'quiz-fill:' + (typeof CURRENT_CERT !== 'undefined' ? CURRENT_CERT : ''),
         message: 'asked ' + requested + ' · served ' + served + ' · ' + source + (r ? ' · ' + r : '') + (error ? ' · error: ' + error : ''),
