@@ -356,11 +356,12 @@ test.describe('Topic Chip Count', () => {
     // v4.42.3 expanded catalog from 40 → 50 topics; current total is 52 including
     // Smart + Mixed quickpicks. Keep the exact count as a regression guard — if a
     // topic is accidentally removed, fail loud. Update this number when the catalog
-    // intentionally grows.
-    await expect(chips).toHaveCount(52);
-    // Sanity: Smart + Mixed are among them
+    // intentionally grows. v8.146.0: 52 → 53 with the Catch-up mode card.
+    await expect(chips).toHaveCount(53);
+    // Sanity: Smart + Mixed + Catch-up are among them
     await expect(page.locator('#topic-group .chip-smart')).toHaveCount(1);
     await expect(page.locator('#topic-group .chip').filter({ hasText: 'Mixed' })).toHaveCount(1);
+    await expect(page.locator('#topic-group .cq-mode-card').filter({ hasText: 'Catch-up' })).toHaveCount(1);
   });
 
   test('switching topic chip deselects previous', async ({ page }) => {
