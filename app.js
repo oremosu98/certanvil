@@ -1,9 +1,9 @@
 // ══════════════════════════════════════════
-// Network+ AI Quiz — app.js  v8.147.0
+// Network+ AI Quiz — app.js  v8.148.0
 // ══════════════════════════════════════════
 
 // ── CONSTANTS ──
-const APP_VERSION = '8.147.0';
+const APP_VERSION = '8.148.0';
 // v4.99.45 (Phase 6b): expose APP_VERSION on window so the web-vitals
 // collector (lib/web-vitals-collector.js, loaded BEFORE app.js so its
 // PerformanceObservers attach earlier) can stamp this version onto every
@@ -2629,6 +2629,7 @@ const PRO_ONLY_PAGES = {
   'monitor': 'Network Monitor'
 };
 
+let _pageSwitchDone = null;  // v8.148.0: the in-flight page switch's finisher (see showPage)
 function showPage(name) {
   // v4.99.5 Phase E.4.2: gate Pro-only pages at navigation level.
   // _gateProOnly returns true for Pro/admin (proceed) or false + shows the
@@ -2685,9 +2686,17 @@ function showPage(name) {
   if (typeof _clearStaleErrBoxes === 'function') {
     try { _clearStaleErrBoxes(); } catch (_) { /* never block navigation */ }
   }
-  const current = document.querySelector('.page.active');
+  // v8.148.0: one switch at a time, finished exactly once. An exit used to end on animationend OR a 300ms timer; when the
+  // timer won (busy thread, background tab) the listener stayed on the old page and re-ran that stale switch when any later
+  // animation ended there (a new quiz's loading screen jumped to the previous quiz). It also fired on child animations,
+  // and overlapping calls could leave two pages active. tests/uat/300-page-switch-integrity.js replays each case.
   const next = document.getElementById('page-' + name);
+  if (!next) return;
+  const interrupted = !!_pageSwitchDone;
+  if (interrupted) _pageSwitchDone(false);
   const activate = () => {
+    document.querySelectorAll('.page.active').forEach(p => { if (p !== next) p.classList.remove('active', 'page-exit'); });
+    next.classList.remove('page-exit');
     next.classList.add('active');
     window.scrollTo(0, 0);
     // a11y: move focus to the new page so screen readers announce context
@@ -2697,24 +2706,22 @@ function showPage(name) {
       try { focusTarget.focus({ preventScroll: true }); } catch (_) {}
     }
   };
-  if (current && current !== next) {
-    current.classList.add('page-exit');
-    current.addEventListener('animationend', function handler() {
-      current.removeEventListener('animationend', handler);
-      current.classList.remove('active', 'page-exit');
-      activate();
-    }, { once: true });
-    // Fallback in case animationend doesn't fire
-    setTimeout(() => {
-      if (current.classList.contains('page-exit')) {
-        current.classList.remove('active', 'page-exit');
-        activate();
-      }
-    }, 300);
-  } else {
-    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-    activate();
-  }
+  const current = document.querySelector('.page.active');
+  if (!current || current === next || interrupted || document.hidden) { activate(); return; }
+  current.classList.add('page-exit');
+  let timer = 0;
+  const onEnd = (e) => { if (e.target === current) done(true); };  // the page's own exit only, not a child's
+  const done = (go) => {
+    if (_pageSwitchDone !== done) return;
+    _pageSwitchDone = null;
+    clearTimeout(timer);
+    current.removeEventListener('animationend', onEnd);
+    current.classList.remove('page-exit');
+    if (go) activate();
+  };
+  _pageSwitchDone = done;
+  current.addEventListener('animationend', onEnd);
+  timer = setTimeout(() => done(true), 300);
 }
 
 function goSetup() {

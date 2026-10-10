@@ -24,12 +24,12 @@
 <!-- machine-owned — run `node scripts/stamp-facts.js` to refresh; do not hand-edit -->
 | Metric | Lines | Size |
 |---|---|---|
-| app.js | 8290 | 439 KB |
+| app.js | 8297 | 440 KB |
 | styles.css | 14913 | 551 KB |
 | index.html | 2298 | 149 KB |
 | dg-system.css | 5474 | 510 KB |
-| tests/uat.js + tests/uat/ (29 modules) | 29546 | — |
-UAT checks: 5052 · E2E `test(` count: 163 · APP_VERSION: 8.147.0 · stamped-at: worktree
+| tests/uat.js + tests/uat/ (30 modules) | 29671 | — |
+UAT checks: 5056 · E2E `test(` count: 163 · APP_VERSION: 8.148.0 · stamped-at: worktree
 <!-- FACTS:AUTO:END -->
 
 | File | Purpose | Size |
@@ -135,9 +135,9 @@ npx playwright test              # E2E (tests/e2e/app.spec.js)
 
 | Version | Features Added |
 |---|---|
+| v8.148.0 | Root-cause fix: starting a new quiz no longer jumps to the previous quiz (page switches finish exactly once) |
 | v8.147.0 | Drill Mistakes: full bank keeps new misses, reworded questions pass the quiz checks, 2-in-a-row to clear, broken entries leave, least-recently-drilled first, scenarios kept; '63 mistakes to clear' |
 | v8.146.0 | Mixed is true random again (exam-weighted) everywhere; new Catch-up card for least-recently-seen; honest Smart/Mixed copy; '12% of exam' badges |
-| v8.145.0 | Exam Simulator fills all 90: a failed writer batch no longer aborts the exam, final checked top-up, quiz-fill telemetry |
 
 _Older releases (v7.60.0 and back) live in [CHANGELOG.md](./CHANGELOG.md)._
 
@@ -153,6 +153,7 @@ The Sim Lab faceplate/wiremap/slots (`.faceplate*`/`.wm*`/`.slots*`) tokens live
 - Topology scoring uses `correctPlacements` object mapping device→zone name (exact string match)
 - Exam answers init must include `cliRan: [], topoState: {}` for PBQ types
 - `hasAnswer` checks must include `Object.keys(a.topoState || {}).length > 0`
+- **Page switches go through `showPage` only, and it must finish each switch exactly once** (v8.148.0). The exit completes on the page's OWN `animationend` (`e.target === current`; child animations bubble) or a 300ms timer, whichever first, and both clear the other. Never add a bare `animationend` listener to a `.page`: when the timer wins (busy thread, background tab) it stays attached and re-runs a stale switch on a later animation, which made a new quiz's loading screen jump to the previous quiz. `tests/uat/300-page-switch-integrity.js` replays it.
 - `setQuestionText(el, raw)` order is **escape-THEN-highlight** (`escHtml` → `highlightExamKeywords` → `innerHTML`). Reversing it is an XSS hole since question text is AI-generated.
 - The `_fnBody(src, name)` helper used by UAT extracts function bodies via brace-depth walking. **Prefix-match trap**: `tbShowCoach` will match `tbShowCoachModalLoading`. When writing UAT for a function, pick a name that's either unique or specify the exact suffix.
 - Curated exemplars (`CERT_PACK.questionExemplars`) are few-shot **style references** injected into the generation prompt — never served as quiz questions. MCQs key `answer: 'B'`; multi-selects key `answers: ['A','B']` (plural, the shape the runtime scorer reads) and may carry options past D. `_formatExemplarsForPrompt` must read BOTH keys and emit only the option letters present — it must also stay self-contained (no external helpers, `typeof CERT_PACK` guarded) because UAT extracts and runs its body in a bare vm sandbox.
