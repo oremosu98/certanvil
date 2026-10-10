@@ -974,6 +974,17 @@ test('v8.126.0 AI-901: Decision Lab seed is the AI-901 rebuild (no retired AI-90
       && !/Custom Vision|Form Recognizer|Azure AI Studio|Document Intelligence|regression|clustering/i.test(raw)
       && !/\u2014/.test(raw);
   })());
+test('v8.144.0 Marathon: over-requests, tops up via the shared helper, logs quiz-fill; Cached chip only when cached',
+  (() => {
+    const home = fs.readFileSync(path.join(ROOT, 'features', 'home.js'), 'utf8');
+    const qe = fs.readFileSync(path.join(ROOT, 'features', 'quiz-engine.js'), 'utf8');
+    const css = fs.readFileSync(path.join(ROOT, 'dg-system.css'), 'utf8');
+    return /const target = count \+ Math\.max\(3, Math\.ceil\(count \* 0\.3\)\);/.test(home)
+      && /_topUpToCount\(key, MIXED_TOPIC, 'Exam Level', collected, count, _fillRounds/.test(home)
+      && /_logQuizFill\(count, collected\.length, 'fresh \(marathon\)'/.test(home)
+      && /async function _topUpToCount\(key, topic, diffLabel, have, target, rounds, onRound\)/.test(qe)
+      && /#page-quiz #cache-notice:not\(\.show\)\{display:none!important;\}/.test(css);
+  })());
 test('v8.143.0 Sec+: every topic has official SY0-701 hints; 5.5/5.6/1.2 objective map fixed; hints wired into prompts',
   (() => {
     const vm = require('vm');
@@ -1021,7 +1032,7 @@ test('v8.139.0 SR: review cards can be removed as broken (two-step, stays remove
       && /saveReport\(card\.question \|\| '', 'Removed from review cards as broken'\)/.test(sr)
       && /window\.srRemoveConfirm\s*=\s*srRemoveConfirm/.test(sr)
       && /#page-sr-review \.sr-remove-btn\{[^}]*min-height:44px/.test(css)
-      && /dg-system\.css\?v=8\.139\.0/.test(html);
+      && /dg-system\.css\?v=8\.(139|1[4-9]\d)\.0/.test(html);  // ≥ 8.139.0
   })());
 test('v8.138.0 Validators: real objective sets (Sec+ 4.9, A+ 2.11, Core 1 5.0 topic), money answers need figures, exam date local',
   (() => {

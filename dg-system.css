@@ -1480,6 +1480,8 @@ html[data-theme] body #page-quiz .back-btn{display:inline-flex;align-items:cente
 html[data-theme] body #page-quiz .back-btn:hover{border-color:var(--accent)!important;color:var(--accent)!important;}
 #page-quiz .quiz-stats{display:flex;align-items:center;gap:10px;}
 html[data-theme] body #page-quiz .stat-pill,html[data-theme] body #page-quiz .flag-btn,html[data-theme] body #page-quiz #cache-notice{display:flex;align-items:center;gap:7px;background:none!important;border:1px solid var(--border)!important;border-radius:999px!important;color:var(--text-mid)!important;font:700 var(--t-1)/1 Inter,sans-serif;padding:6px 12px!important;box-shadow:none!important;font-variant-numeric:tabular-nums;}
+/* v8.144.0: the rule above forced the "Cached" chip visible on every quiz; only show it when questions really came from cache */
+html[data-theme] body #page-quiz #cache-notice:not(.show){display:none!important;}
 html[data-theme] body #page-quiz .flag-btn{border-radius:8px!important;color:var(--text-dim)!important;cursor:pointer;}
 html[data-theme] body #page-quiz .flag-btn:hover,html[data-theme] body #page-quiz .flag-btn.flagged{border-color:var(--accent)!important;color:var(--accent)!important;}
 html[data-theme] body #page-quiz .stat-pill.streak{color:var(--accent)!important;border-color:color-mix(in oklab,var(--accent) 40%,transparent)!important;}

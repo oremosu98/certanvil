@@ -2123,9 +2123,41 @@
     return picks;
   }
   window._lrsPick = _lrsPick;
+  // v8.144.0: shared top-up so every generation path fills to the requested
+  // count the same way (Marathon presets used to have no buffer and no top-up,
+  // which is where "45 → 28" came from). Mutates `rounds` with per-round
+  // asked/written/afterChecker/afterLocal/added (or error) for telemetry.
+  async function _topUpToCount(key, topic, diffLabel, have, target, rounds, onRound) {
+    let questions = have.slice();
+    const MAX_ROUNDS = 3;
+    for (let round = 1; round <= MAX_ROUNDS && questions.length < target; round++) {
+      const deficit = target - questions.length;
+      const r = { asked: deficit + Math.max(3, Math.ceil(deficit * 0.5 * round)) };
+      if (typeof onRound === 'function') { try { onRound(round, deficit); } catch (_) {} }
+      try {
+        const raw = await fetchQuestions(key, topic, diffLabel, r.asked);
+        r.written = raw.length;
+        const checked = await aiValidateQuestions(key, raw);
+        r.afterChecker = checked.length;
+        const valid = validateQuestions(checked);
+        r.afterLocal = valid.length;
+        const seen = new Set(questions.map(q => String(q.question || '').trim().toLowerCase()));
+        const fresh = valid.filter(q => !seen.has(String(q.question || '').trim().toLowerCase()));
+        r.added = fresh.length;
+        questions = questions.concat(fresh);
+      } catch (err) {
+        r.error = String((err && err.message) || err).slice(0, 80);
+        if (round < MAX_ROUNDS && typeof _pause === 'function') await _pause(1500 * round);
+      }
+      if (Array.isArray(rounds)) rounds.push(r);
+    }
+    return questions;
+  }
+  window._topUpToCount = _topUpToCount;
   // v8.142.0: one telemetry row per quiz generation so a short set can be
   // traced: requested vs served, fresh vs cache fallback, and per round how
   // many were asked for, written, passed the checker, passed local checks.
+  window._logQuizFill = function () { return _logQuizFill.apply(null, arguments); };
   function _logQuizFill(requested, served, source, rounds, error) {
     try {
       if (typeof _logValidatorTelemetry !== 'function') return;

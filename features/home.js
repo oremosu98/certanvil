@@ -701,14 +701,18 @@
     const lbl = document.getElementById('load-progress-label'); // legacy textContent writes for retry banner
 
     const BATCH_SIZE = 18, MAX_RETRIES = 2;
-    const batches = Math.ceil(count / BATCH_SIZE);
+    // v8.144.0: over-request ~30% so checker rejections don't come straight off
+    // the set (was exactly `count`: 45 → 28, 30 → 25), then top up below.
+    const target = count + Math.max(3, Math.ceil(count * 0.3));
+    const batches = Math.ceil(target / BATCH_SIZE);
+    const _fillRounds = [];
     let collected = [];
     try {
       for (let i = 0; i < batches; i++) {
-        const remaining = count - collected.length;
+        const remaining = target - collected.length;
         const thisBatch = Math.min(BATCH_SIZE, remaining);
         _loadingProgressUpdate(`Batch ${i + 1} / ${batches}\u2026`, (i / batches) * 100);
-        document.getElementById('loading-msg').textContent = `Generating questions (${collected.length + thisBatch} / ${count})\u2026`;
+        document.getElementById('loading-msg').textContent = `Generating questions (${Math.min(count, collected.length + thisBatch)} / ${count})\u2026`;
         let batch = null;
         for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
           try {
@@ -727,13 +731,25 @@
       }
       _loadingProgressUpdate('Verifying quality\u2026', 88);
       document.getElementById('loading-msg').textContent = 'Verifying question accuracy\u2026';
+      const _r0 = { asked: target, written: collected.length };
       collected = await aiValidateQuestions(key, collected);
+      _r0.afterChecker = collected.length;
       collected = validateQuestions(collected);
+      _r0.afterLocal = collected.length; _fillRounds.push(_r0);
       if (collected.length === 0) throw new Error('All generated questions failed validation. Try again.');
+      // v8.144.0: top up to the requested count (shared with custom quizzes).
+      if (collected.length < count && typeof _topUpToCount === 'function') {
+        collected = await _topUpToCount(key, MIXED_TOPIC, 'Exam Level', collected, count, _fillRounds, (round, deficit) => {
+          _loadingProgressUpdate('Topping up (' + deficit + ' more)\u2026', Math.min(97, 89 + round * 2));
+          document.getElementById('loading-msg').textContent = 'Generating ' + deficit + ' more to complete your ' + count + '-question set\u2026';
+        });
+      }
       _loadingProgressUpdate('Finalizing…', 95);
       // Enforce target count — truncate extras from AI
       if (collected.length > count) collected = collected.slice(0, count);
+      if (typeof _logQuizFill === 'function') _logQuizFill(count, collected.length, 'fresh (marathon)', _fillRounds, null);
     } catch(e) {
+      if (typeof _logQuizFill === 'function') _logQuizFill(count, 0, 'error (marathon)', _fillRounds, String((e && e.message) || e).slice(0, 120));
       _loadingProgressFinish();
       showPage('setup');
       errBox.textContent = '\u26a0\ufe0f ' + (e.message || 'Failed. Check your API key.');
