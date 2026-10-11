@@ -139,6 +139,63 @@
     return topicMap;
   }
 
+  // v8.152.0 readiness v3: difficulty-adjusted ability. Each answer is evidence
+  // of exam-level ability GIVEN how hard the question was (one-parameter
+  // logistic): P(right) = sigma(theta - offset[band]), Exam Level = 0. So a right
+  // answer on Hard counts for more than one on Foundational, and a miss on
+  // Foundational counts against you more than a miss on Hard. Before, difficulty
+  // only scaled how much an answer counted (Hard 2x), so a topic answered only at
+  // Foundational read as that accuracy on exam questions, and a Hard miss counted
+  // double against you. Offsets are logits, measured from the founder's answers
+  // by scripts/readiness-calibrate.js (2026-10-11: Exam Level 81 answers 92.6%,
+  // Hard 20 at 75.0%, Mixed 180 at 88.3%, no Foundational) and shrunk toward
+  // defaults; re-run it on a fresh backup to recalibrate.
+  const BAND_OFFSET = { F: -1.0, E: 0, H: 1.15, M: 0.26 };
+  function _sig(x) { return 1 / (1 + Math.exp(-x)); }
+  function _logit(p) { p = Math.min(0.999, Math.max(0.001, p)); return Math.log(p / (1 - p)); }
+  // Per-topic {band: [weightedRight, weightedTotal]}. Same recency (2x for the
+  // last 7 days) and Exam Simulator (1.3x) weights as buildWeightedTopicMap; no
+  // difficulty weight, the band offset does that job now. Rows with byDiff
+  // (v8.149.0+) use each question's own label; older rows the quiz setting.
+  function buildBandTopicMap(historyEntries, now) {
+    const map = {};
+    (historyEntries || []).forEach(e => {
+      if (!e || !e.topic) return;
+      const w = (e.mode === 'exam' ? 1.3 : 1.0) * ((now - new Date(e.date).getTime()) <= 7 * 86400000 ? 2.0 : 1.0);
+      const m = map[e.topic] || (map[e.topic] = {});
+      const add = (b, c, n) => { const x = m[b] || (m[b] = [0, 0]); x[0] += (c || 0) * w; x[1] += (n || 0) * w; };
+      if (e.byDiff && typeof e.byDiff === 'object') {
+        Object.keys(e.byDiff).forEach(b => { const v = e.byDiff[b]; if (Array.isArray(v)) add(BAND_OFFSET[b] !== undefined ? b : 'M', v[0], v[1]); });
+      } else {
+        add(diffBand(e.difficulty) || 'M', e.score, e.total);
+      }
+    });
+    return map;
+  }
+  // Exam-level ability theta (logits) from band counts, with priorW pseudo-answers
+  // at Exam Level at rate priorP (noise control, like the v2 blend). Newton steps.
+  function abilityFromBands(bands, priorP, priorW) {
+    let th = _logit(priorP);
+    for (let i = 0; i < 30; i++) {
+      const p0 = _sig(th);
+      let g = priorW * (priorP - p0), hs = priorW * p0 * (1 - p0);
+      Object.keys(bands || {}).forEach(b => {
+        const c = bands[b][0], n = bands[b][1];
+        if (!n) return;
+        const p = _sig(th - (BAND_OFFSET[b] || 0));
+        g += c - n * p; hs += n * p * (1 - p);
+      });
+      if (hs < 1e-9) break;
+      const step = Math.max(-2, Math.min(2, g / hs));
+      th += step;
+      if (Math.abs(step) < 1e-7) break;
+    }
+    return th;
+  }
+  window.BAND_OFFSET = BAND_OFFSET;
+  window.buildBandTopicMap = buildBandTopicMap;
+  window.abilityFromBands = abilityFromBands;
+
   function getReadinessScore() {
     // v8.128.0: topic universe from the cert pack. The #topic-group chips are
     // Network+'s static 50 until home.js re-renders them, so the first readiness
@@ -227,13 +284,19 @@
     const PRIOR_ACC = 0.40, PRIOR_W = 4.5;  // untouched = 40%; blend ≈ 3 answers at a typical weight
     // Studied topics shrink toward the student's own overall accuracy (noise
     // control, as Progress does); only untouched topics are assumed weak.
-    let _oc = 0, _ow = 0;
-    studiedTopics.forEach(t => { _oc += topicMap[t].wCorrect; _ow += topicMap[t].wTotal; });
-    const ownAcc = _ow > 0 ? _oc / _ow : PRIOR_ACC;
+    // v8.152.0 readiness v3: estimates are exam-level ability from difficulty-
+    // adjusted evidence (see BAND_OFFSET); the prior is the student's own pooled
+    // exam-level ability, as v2 shrank toward their own accuracy.
+    const bandMap = buildBandTopicMap(h, now);
+    const pooled = {};
+    Object.keys(bandMap).forEach(t => Object.keys(bandMap[t]).forEach(b => {
+      const x = pooled[b] || (pooled[b] = [0, 0]); x[0] += bandMap[t][b][0]; x[1] += bandMap[t][b][1];
+    }));
+    const ownAcc = Object.keys(pooled).length ? _sig(abilityFromBands(pooled, 0.5, 1)) : PRIOR_ACC;
     const topicEst = {}, topicsByDomain = {};
     allTopics.forEach(t => {
       const m = topicMap[t];
-      topicEst[t] = (m && m.wTotal > 0) ? (m.wCorrect + PRIOR_W * ownAcc) / (m.wTotal + PRIOR_W) : PRIOR_ACC;
+      topicEst[t] = (m && m.wTotal > 0 && bandMap[t]) ? _sig(abilityFromBands(bandMap[t], ownAcc, PRIOR_W)) : PRIOR_ACC;
       const d = TOPIC_DOMAINS[t]; if (d) (topicsByDomain[d] = topicsByDomain[d] || []).push(t);
     });
     let expectedAcc = 0;
@@ -347,6 +410,7 @@
       expectedAccuracy: Math.round(expectedAcc * 100), passAccuracy, recentAccuracy, recentAnswers: recentN, examReady,
       accuracyScore, coverageScore, recencyScore, volumeScore,
       domainAccuracy,
+      topicEstimates: topicEst,  // v8.152.0: per-topic exam-level ability (0-1), difficulty-adjusted
       worstTopic,
       worstPct: worstPct === -1 ? null : worstPct,
       studiedCount,

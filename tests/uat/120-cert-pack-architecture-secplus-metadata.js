@@ -974,6 +974,24 @@ test('v8.126.0 AI-901: Decision Lab seed is the AI-901 rebuild (no retired AI-90
       && !/Custom Vision|Form Recognizer|Azure AI Studio|Document Intelligence|regression|clustering/i.test(raw)
       && !/\u2014/.test(raw);
   })());
+test('v8.152.0 Readiness v3: Hard done well beats Foundational done equally well; Foundational misses cost more; exam-level stays put',
+  (() => {
+    try {
+      const vm = require('vm');
+      const rd = fs.readFileSync(path.join(ROOT, 'features', 'readiness.js'), 'utf8');
+      const off = rd.match(/const BAND_OFFSET = \{[^}]*\};/)[0];
+      const ctx = { Math }; vm.createContext(ctx);
+      vm.runInContext(off + '\n' + _fnBody(rd, '_sig') + '\n' + _fnBody(rd, '_logit') + '\n' + _fnBody(rd, 'abilityFromBands'), ctx);
+      const p = (bands) => vm.runInContext('_sig(abilityFromBands(' + JSON.stringify(bands) + ', 0.5, 1))', ctx);
+      const hard90 = p({ H: [18, 20] }), found90 = p({ F: [18, 20] }), exam90 = p({ E: [18, 20] });
+      const hardMiss = p({ E: [18, 20], H: [0, 2] }), foundMiss = p({ E: [18, 20], F: [0, 2] });
+      return hard90 > exam90 && exam90 > found90                  // 90% on Hard > 90% on Exam > 90% on Foundational
+        && found90 < 0.85                                          // easy wins are discounted
+        && Math.abs(exam90 - 0.88) < 0.03                          // exam-level accuracy maps ~1:1 (light prior)
+        && foundMiss < hardMiss                                    // a Foundational miss hurts more than a Hard miss
+        && /BAND_OFFSET = \{ F: -1\.0, E: 0, H: 1\.15, M: 0\.26 \}/.test(rd);
+    } catch (e) { return false; }
+  })());
 test('v8.150.0 Export Data saves every study key (not the API key/caches); import restores missing keys without overwriting',
   (() => {
     const st = fs.readFileSync(path.join(ROOT, 'features', 'settings.js'), 'utf8');
@@ -1132,7 +1150,7 @@ test('v8.135.0 Readiness v2: predicted = expected accuracy on the exam scale; ef
     return !/accuracyScore \* 0\.40\) \+ \(coverageScore \* 0\.25\)/.test(body)
       && /const predicted = Math\.round\(EXAM_MIN_SCORE \+ expectedAcc \* _range\)/.test(body)
       && /PRIOR_ACC = 0\.40/.test(body)
-      && /\(m\.wCorrect \+ PRIOR_W \* ownAcc\) \/ \(m\.wTotal \+ PRIOR_W\) : PRIOR_ACC/.test(body)
+      && /_sig\(abilityFromBands\(bandMap\[t\], ownAcc, PRIOR_W\)\) : PRIOR_ACC/.test(body)  // v8.152.0 v3 estimate (was the v2 accuracy blend)
       && /Math\.sqrt\(_pE \* \(1 - _pE\) \/ Math\.max\(10, EXAM_QUESTION_COUNT\)\)/.test(body)
       && /const examReady = predicted >= EXAM_PASS_SCORE && recentAccuracy !== null && recentAccuracy >= passAccuracy/.test(body)
       && /expectedAccuracy: Math\.round\(expectedAcc \* 100\), passAccuracy, recentAccuracy, recentAnswers: recentN, examReady/.test(body);

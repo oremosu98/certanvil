@@ -211,7 +211,7 @@ console.log('\n\x1b[1m── TECH DEBT FIXES ──\x1b[0m');
 test('APP_VERSION constant defined', /const APP_VERSION = '\d+\.\d+/.test(js));
 test('EXAM_TIME_SECONDS constant (cert-pack-aware, 5400 fallback)',
   /const EXAM_TIME_SECONDS = .*examTimeSeconds.*\|\|\s*5400/.test(js));
-test('HISTORY_CAP constant', js.includes('const HISTORY_CAP = 200'));
+test('HISTORY_CAP constant (v8.152.0: 200 -> 2000, ~10 days at the founder\'s pace)', js.includes('const HISTORY_CAP = 2000'));
 test('WRONG_BANK_CAP constant', js.includes('const WRONG_BANK_CAP = 200'));
 test('Wrong bank capped', js.includes('WRONG_BANK_CAP'));
 test('Reports capped', js.includes('REPORTS_CAP'));

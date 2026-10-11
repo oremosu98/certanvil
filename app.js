@@ -1,9 +1,9 @@
 // ══════════════════════════════════════════
-// Network+ AI Quiz — app.js  v8.151.0
+// Network+ AI Quiz — app.js  v8.152.0
 // ══════════════════════════════════════════
 
 // ── CONSTANTS ──
-const APP_VERSION = '8.151.0';
+const APP_VERSION = '8.152.0';
 // v4.99.45 (Phase 6b): expose APP_VERSION on window so the web-vitals
 // collector (lib/web-vitals-collector.js, loaded BEFORE app.js so its
 // PerformanceObservers attach earlier) can stamp this version onto every
@@ -207,7 +207,7 @@ const CERT_NAME_FULL = (CERT_PACK && CERT_PACK.meta)
   ? CERT_PACK.meta.name + ' ' + CERT_PACK.meta.code
   : 'CompTIA Network+ N10-009';
 const CERT_CODE = (CERT_PACK && CERT_PACK.meta && CERT_PACK.meta.code) || 'N10-009';
-const HISTORY_CAP = 200;
+const HISTORY_CAP = 2000;  // v8.152.0: was 200 rows (~1 day at 200 questions/day, since a Mixed quiz writes ~11 rows), so readiness, Progress and Catch-up forgot topics studied 2+ days ago. 2000 rows ~ 310KB; measured home render ~30ms, Analytics ~45ms
 const WRONG_BANK_CAP = 200;
 const REPORTS_CAP = 500;
 const PORT_DRILL_SECONDS = 30;
