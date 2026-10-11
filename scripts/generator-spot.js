@@ -7,6 +7,11 @@
 //
 //   node scripts/generator-spot.js --cert ai900 --capture-only   # no key, no cost
 //   ANTHROPIC_API_KEY=… node scripts/generator-spot.js --cert ai900
+//   ANTHROPIC_API_KEY=… node scripts/generator-spot.js --cert secplus --compare
+//
+// --compare (v8.165.0): runs the live code (a temporary checkout of HEAD) and
+// your working tree side by side and prints a ship / don't-ship verdict for a
+// writer-prompt change: judgement-case share up, checker pass rate held.
 //
 // Scores: questions written vs requested, Sonnet checker pass rate, objective
 // tags inside the pack's objectiveRanges, topics that exist in the pack,
@@ -26,6 +31,7 @@ const ROOT = path.resolve(__dirname, '..');
 const arg = (k, d) => { const i = process.argv.indexOf(k); return i === -1 ? d : process.argv[i + 1]; };
 const CERT = arg('--cert', 'ai900');
 const CAPTURE_ONLY = process.argv.includes('--capture-only');
+const COMPARE = process.argv.includes('--compare');
 const KEY = process.env.ANTHROPIC_API_KEY;
 if (!CAPTURE_ONLY && !KEY) { console.error('Set ANTHROPIC_API_KEY in your shell first (never paste it into chat or commit it), or pass --capture-only.'); process.exit(1); }
 
@@ -69,22 +75,22 @@ function pickConfigs() {
 }
 
 // ── Capture: static server + headless Chromium ──
-function serve() {
+function serve(root) {
   const types = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.svg': 'image/svg+xml', '.woff2': 'font/woff2', '.png': 'image/png' };
   const srv = http.createServer((req, res) => {
     let p = decodeURIComponent(req.url.split('?')[0]);
     if (p === '/') p = '/index.html';
-    const f = path.join(ROOT, p);
-    if (!f.startsWith(ROOT) || !fs.existsSync(f) || fs.statSync(f).isDirectory()) { res.writeHead(404); return res.end(); }
+    const f = path.join(root, p);
+    if (!f.startsWith(root) || !fs.existsSync(f) || fs.statSync(f).isDirectory()) { res.writeHead(404); return res.end(); }
     res.writeHead(200, { 'content-type': types[path.extname(f)] || 'application/octet-stream' });
     fs.createReadStream(f).pipe(res);
   });
   return new Promise(r => srv.listen(0, '127.0.0.1', () => r(srv)));
 }
 
-async function capture() {
+async function capture(root) {
   const { chromium } = require('@playwright/test');
-  const srv = await serve();
+  const srv = await serve(root);
   const base = 'http://127.0.0.1:' + srv.address().port;
   const browser = await chromium.launch();
   try {
@@ -109,6 +115,14 @@ async function capture() {
     out.configs.forEach(c => { if (!c.body) throw new Error('No request captured for ' + c.id); });
     return out;
   } finally { await browser.close(); srv.close(); }
+}
+
+// --compare: the live code is HEAD, checked out into a temporary worktree.
+function headCheckout() {
+  const { execFileSync } = require('child_process');
+  const dir = path.join(fs.mkdtempSync(path.join(require('os').tmpdir(), 'certanvil-spot-')), 'head');
+  execFileSync('git', ['-C', ROOT, 'worktree', 'add', '--detach', dir, 'HEAD'], { stdio: 'ignore' });
+  return { dir, cleanup: () => { try { execFileSync('git', ['-C', ROOT, 'worktree', 'remove', '--force', dir], { stdio: 'ignore' }); } catch (_) {} } };
 }
 
 // ── The real checker pipeline from app.js ──
@@ -169,8 +183,13 @@ function parseQuestions(text) {
   catch (e) { return { error: 'JSON.parse: ' + e.message.slice(0, 80) }; }
 }
 
+const QUALIFIER = /\b(best|most|first|least)\b/i;
+const ORG_WORDS = /\b(company|organi[sz]ation|hospital|bank|retailer|firm|agency|school|university|startup|manufacturer|clinic|business|enterprise|insurer|charity|government|council|department|team)\b/i;
+const CONSTRAINT_WORDS = /\b(budget|legacy|cannot|can't|must not|without|only|limited|deadline|compliance|regulat|downtime|small|minimi[sz]e|no additional|existing)/i;
+const NAMED_PERSON = /\b(?!The|A|An|Which|What|After|During|While|When|If|Each|All|Its|Their|This|That)[A-Z][a-z]{2,}, (a|an|the) [a-z]/;
+
 function audit(qs) {
-  const a = { objBad: [], topicBad: [], banned: [], letters: {}, longest: 0, mcq: 0, snippets: 0, domains: {} };
+  const a = { objBad: [], topicBad: [], banned: [], letters: {}, longest: 0, mcq: 0, snippets: 0, domains: {}, elh: 0, cases: 0, realCases: 0, words: [], names: 0 };
   qs.forEach(q => {
     const raw = JSON.stringify(q);
     if (!VALID_OBJ.has(String(q.objective))) a.objBad.push(q.objective);
@@ -183,23 +202,34 @@ function audit(qs) {
       a.letters[q.answer] = (a.letters[q.answer] || 0) + 1;
       const lens = Object.values(q.options).map(o => String(o).length);
       if (String(q.options[q.answer] || '').length === Math.max(...lens)) a.longest++;
+      // v8.165.0 style: judgement cases among Exam Level + Hard MCQs.
+      if (q.difficulty === 'Exam Level' || q.difficulty === 'Hard') {
+        const full = (q.scenario || '') + ' ' + q.question;
+        a.elh++;
+        a.words.push(full.split(/\s+/).filter(Boolean).length);
+        if (q.scenario && QUALIFIER.test(q.question)) {
+          a.cases++;
+          if (ORG_WORDS.test(full) && CONSTRAINT_WORDS.test(full)) a.realCases++;
+        }
+        if (NAMED_PERSON.test(full)) a.names++;
+      }
     }
   });
   return a;
 }
 
-(async () => {
-  console.log(`Generator spot-check · ${CERT} · capturing the app's real prompts…`);
-  const cap = await capture();
-  const promptsFile = path.join(__dirname, `generator-spot-prompts-${CERT}.json`);
+// Capture one version's prompts, send them through the writer and the checker.
+async function runArm(root, tag) {
+  const cap = await capture(root);
+  const promptsFile = path.join(__dirname, `generator-spot-prompts-${CERT}${tag ? '-' + tag : ''}.json`);
   fs.writeFileSync(promptsFile, JSON.stringify({ capturedAt: new Date().toISOString(), cert: CERT, appVersion: cap.appVersion, configs: cap.configs.map(c => ({ id: c.id, topic: c.topic, diff: c.diff, n: c.n, model: c.body.model, max_tokens: c.body.max_tokens, prompt: c.body.messages[0].content })) }, null, 2));
-  console.log(`  ${cap.configs.length} prompts from v${cap.appVersion} · writer ${cap.configs[0].body.model} · checker ${VALIDATOR}`);
+  console.log(`  ${tag || 'prompts'}: ${cap.configs.length} prompts from v${cap.appVersion} · writer ${cap.configs[0].body.model} · checker ${VALIDATOR}`);
   const leak = cap.configs.filter(c => /CompTIA|N10-009|Networking Concepts|undefined questions/.test(c.body.messages[0].content) && !/^CompTIA/.test(PACK.meta.name));
   if (leak.length) console.log(`  ⚠ prompt still carries another cert's wording: ${leak.map(c => c.id).join(', ')}`);
-  if (CAPTURE_ONLY) { console.log(`  saved ${path.relative(ROOT, promptsFile)} (capture only, nothing sent)`); return; }
+  if (CAPTURE_ONLY) { console.log(`  saved ${path.relative(ROOT, promptsFile)} (capture only, nothing sent)`); return null; }
 
   const results = { ranAt: new Date().toISOString(), cert: CERT, appVersion: cap.appVersion, configs: [] };
-  const tot = { requested: 0, written: 0, checked: 0, passed: 0, jsonFail: 0, refusals: 0, truncated: 0, genIn: 0, genOut: 0, valIn: 0, valOut: 0, ms: [], objBad: [], topicBad: [], banned: [], letters: {}, longest: 0, mcq: 0, snippets: 0, domains: {}, problems: [] };
+  const tot = { requested: 0, written: 0, checked: 0, passed: 0, jsonFail: 0, refusals: 0, truncated: 0, genIn: 0, genOut: 0, valIn: 0, valOut: 0, ms: [], objBad: [], topicBad: [], banned: [], letters: {}, longest: 0, mcq: 0, snippets: 0, domains: {}, problems: [], elh: 0, cases: 0, realCases: 0, words: [], names: 0 };
   const model = cap.configs[0].body.model;
   await Promise.all(cap.configs.map(async c => {
     const body = Object.assign({}, c.body); delete body._metered;
@@ -225,30 +255,79 @@ function audit(qs) {
     const a = audit(parsed.questions); row.audit = a;
     tot.objBad.push(...a.objBad); tot.topicBad.push(...a.topicBad); tot.banned.push(...a.banned);
     tot.longest += a.longest; tot.mcq += a.mcq; tot.snippets += a.snippets;
+    tot.elh += a.elh; tot.cases += a.cases; tot.realCases += a.realCases; tot.names += a.names; tot.words.push(...a.words);
     Object.entries(a.letters).forEach(([k, v]) => { tot.letters[k] = (tot.letters[k] || 0) + v; });
     if (c.topic === '__MIXED__') Object.entries(a.domains).forEach(([k, v]) => { tot.domains[k] = (tot.domains[k] || 0) + v; });
     results.configs.push(row);
   }));
   const pr = PRICE[model] || PRICE['claude-haiku-5-5'], pv = PRICE[VALIDATOR] || PRICE['claude-sonnet-4-6'];
   const genCost = (tot.genIn * pr.in + tot.genOut * pr.out) / 1e6, valCost = (tot.valIn * pv.in + tot.valOut * pv.out) / 1e6;
-  const med = a => { const s = a.slice().sort((x, y) => x - y); return s.length ? s[Math.floor(s.length / 2)] : 0; };
-  const pct = (a, b) => b ? (100 * a / b).toFixed(0) + '%' : '-';
-  const mixedTotal = Object.values(tot.domains).reduce((s, v) => s + v, 0);
-  console.log('');
-  console.log(`  written / requested:          ${tot.written}/${tot.requested}`);
-  console.log(`  passed Sonnet checker:        ${tot.passed}/${tot.checked} = ${pct(tot.passed, tot.checked)}`);
-  console.log(`  objective tags out of range:  ${tot.objBad.length}${tot.objBad.length ? '  (' + [...new Set(tot.objBad)].slice(0, 6).join(', ') + ')' : ''}`);
-  console.log(`  topics not in the pack:       ${tot.topicBad.length}${tot.topicBad.length ? '  (' + [...new Set(tot.topicBad)].slice(0, 4).join(' | ') + ')' : ''}`);
-  console.log(`  retired / off-cert terms:     ${tot.banned.length}${tot.banned.length ? '  (' + [...new Set(tot.banned)].join(', ') + ')' : ''}`);
-  console.log(`  mixed-quiz domain split:      ${Object.keys(PACK.domainWeights).map(k => `${k} ${pct(tot.domains[k] || 0, mixedTotal)} (target ${Math.round(PACK.domainWeights[k] * 100)}%)`).join(' · ')}`);
-  console.log(`  answer letters (MCQ):         ${['A', 'B', 'C', 'D'].map(l => `${l} ${tot.letters[l] || 0}`).join(' · ')}`);
-  console.log(`  correct option is longest:    ${pct(tot.longest, tot.mcq)} of MCQs (about 25% is unbiased)`);
-  console.log(`  questions with code snippets: ${tot.snippets}`);
-  console.log(`  JSON failures / refusals / cut off: ${tot.jsonFail} / ${tot.refusals} / ${tot.truncated}`);
-  console.log(`  median generation time:       ${(med(tot.ms) / 1000).toFixed(1)}s`);
-  console.log(`  cost: writing $${genCost.toFixed(3)} + checking $${valCost.toFixed(3)}`);
-  if (tot.problems.length) console.log(`  problems: ${tot.problems.slice(0, 3).join(' | ')}`);
-  const out = path.join(__dirname, `generator-spot-results-${CERT}.json`);
+  const out = path.join(__dirname, `generator-spot-results-${CERT}${tag ? '-' + tag : ''}.json`);
   fs.writeFileSync(out, JSON.stringify(Object.assign(results, { totals: tot, genCost, valCost }), null, 2));
-  console.log(`\nFull outputs saved to ${path.relative(ROOT, out)} — tell Claude it's done.`);
+  return { tag, appVersion: cap.appVersion, tot, genCost, valCost, out };
+}
+
+const med = a => { const s = a.slice().sort((x, y) => x - y); return s.length ? s[Math.floor(s.length / 2)] : 0; };
+const pct = (a, b) => b ? (100 * a / b).toFixed(0) + '%' : '-';
+const rate = (a, b) => b ? 100 * a / b : 0;
+
+// One version's report lines, as [label, value] pairs (so --compare can put two side by side).
+function summaryRows(r) {
+  const tot = r.tot;
+  const mixedTotal = Object.values(tot.domains).reduce((s, v) => s + v, 0);
+  return [
+    ['written / requested', `${tot.written}/${tot.requested}`],
+    ['passed Sonnet checker', `${tot.passed}/${tot.checked} = ${pct(tot.passed, tot.checked)}`],
+    ['judgement cases (Exam/Hard MCQs)', `${tot.cases}/${tot.elh} = ${pct(tot.cases, tot.elh)}`],
+    ['  …with a setting + constraint', `${tot.realCases}/${tot.elh} = ${pct(tot.realCases, tot.elh)}`],
+    ['question length, median / max', `${med(tot.words)} / ${tot.words.length ? Math.max(...tot.words) : 0} words`],
+    ['questions naming a person', `${tot.names}`],
+    ['objective tags out of range', `${tot.objBad.length}${tot.objBad.length ? '  (' + [...new Set(tot.objBad)].slice(0, 6).join(', ') + ')' : ''}`],
+    ['topics not in the pack', `${tot.topicBad.length}${tot.topicBad.length ? '  (' + [...new Set(tot.topicBad)].slice(0, 4).join(' | ') + ')' : ''}`],
+    ['retired / off-cert terms', `${tot.banned.length}${tot.banned.length ? '  (' + [...new Set(tot.banned)].join(', ') + ')' : ''}`],
+    ['mixed-quiz domain split', Object.keys(PACK.domainWeights).map(k => `${k} ${pct(tot.domains[k] || 0, mixedTotal)} (target ${Math.round(PACK.domainWeights[k] * 100)}%)`).join(' · ')],
+    ['answer letters (MCQ)', ['A', 'B', 'C', 'D'].map(l => `${l} ${tot.letters[l] || 0}`).join(' · ')],
+    ['correct option is longest', `${pct(tot.longest, tot.mcq)} of MCQs (about 25% is unbiased)`],
+    ['questions with code snippets', `${tot.snippets}`],
+    ['JSON failures / refusals / cut off', `${tot.jsonFail} / ${tot.refusals} / ${tot.truncated}`],
+    ['median generation time', `${(med(tot.ms) / 1000).toFixed(1)}s`],
+    ['cost', `writing $${r.genCost.toFixed(3)} + checking $${r.valCost.toFixed(3)}`],
+  ];
+}
+
+(async () => {
+  console.log(`Generator spot-check · ${CERT}${COMPARE ? ' · live (HEAD) vs your working tree' : ''} · capturing the app's real prompts…`);
+  if (!COMPARE) {
+    const r = await runArm(ROOT, '');
+    if (!r) return;
+    console.log('');
+    summaryRows(r).forEach(([k, v]) => console.log(`  ${(k + ':').padEnd(36)}${v}`));
+    if (r.tot.problems.length) console.log(`  problems: ${r.tot.problems.slice(0, 3).join(' | ')}`);
+    console.log(`\nFull outputs saved to ${path.relative(ROOT, r.out)} — tell Claude it's done.`);
+    return;
+  }
+
+  const head = headCheckout();
+  let live, changed;
+  try {
+    [live, changed] = await Promise.all([runArm(head.dir, 'live'), runArm(ROOT, 'changed')]);
+  } finally { head.cleanup(); }
+  if (!live || !changed) return;
+  const a = summaryRows(live), b = summaryRows(changed);
+  console.log(`\n  ${''.padEnd(36)}${'LIVE (HEAD)'.padEnd(26)}CHANGED (working tree)`);
+  a.forEach(([k, v], i) => console.log(`  ${(k + ':').padEnd(36)}${String(v).slice(0, 24).padEnd(26)}${b[i][1]}`));
+  [live, changed].forEach(r => { if (r.tot.problems.length) console.log(`  problems (${r.tag}): ${r.tot.problems.slice(0, 3).join(' | ')}`); });
+
+  // The v8.165.0 gate (docs/superpowers/specs/2026-10-11-judgement-case-questions-design.md).
+  const caseLive = rate(live.tot.cases, live.tot.elh), caseNew = rate(changed.tot.cases, changed.tot.elh);
+  const passLive = rate(live.tot.passed, live.tot.checked), passNew = rate(changed.tot.passed, changed.tot.checked);
+  const checks = [
+    [caseNew >= 35, `judgement cases at least 35%: ${caseNew.toFixed(0)}%`],
+    [caseNew - caseLive >= 10, `judgement cases up at least 10 points: ${caseLive.toFixed(0)}% → ${caseNew.toFixed(0)}%`],
+    [passNew >= 90 && passLive - passNew <= 5, `checker pass rate at least 90% and within 5 points of live: ${passLive.toFixed(0)}% → ${passNew.toFixed(0)}%`],
+  ];
+  console.log('\n  Verdict:');
+  checks.forEach(([ok, msg]) => console.log(`    ${ok ? '✓' : '✗'} ${msg}`));
+  console.log(checks.every(c => c[0]) ? '\n  SHIP: the change holds up.' : '\n  DON\'T SHIP: at least one check failed.');
+  console.log(`\nFull outputs saved to ${path.relative(ROOT, live.out)} and ${path.relative(ROOT, changed.out)} — tell Claude it's done.`);
 })().catch(e => { console.error(e); process.exit(1); });

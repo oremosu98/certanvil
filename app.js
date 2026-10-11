@@ -1,9 +1,9 @@
 // ══════════════════════════════════════════
-// Network+ AI Quiz — app.js  v8.164.0
+// Network+ AI Quiz — app.js  v8.165.0
 // ══════════════════════════════════════════
 
 // ── CONSTANTS ──
-const APP_VERSION = '8.164.0';
+const APP_VERSION = '8.165.0';
 // v4.99.45 (Phase 6b): expose APP_VERSION on window so the web-vitals
 // collector (lib/web-vitals-collector.js, loaded BEFORE app.js so its
 // PerformanceObservers attach earlier) can stamp this version onto every
@@ -4646,7 +4646,7 @@ ${domainBlocks}
 
 IMPORTANT: Out of the ${n} questions, generate exactly ${mcqCount} as standard MCQ and ${pbqCount} as performance-based questions (PBQ).
 
-For standard MCQ, use this format (scenario is OPTIONAL — only include on ~30-40% of Exam Level / Hard questions where real-world context genuinely disambiguates the answer):
+For standard MCQ, use this format (scenario is OPTIONAL — the setup of a judgement case, or real-world context that genuinely disambiguates the answer):
 {"type":"mcq","question":"...","scenario":"(optional — 1-2 sentences of setup context)","difficulty":"...","topic":"...","objective":"X.Y","options":{"A":"...","B":"...","C":"...","D":"..."},"answer":"A|B|C|D","explanation":"..."}
 
 For PBQ, use MULTI-SELECT format (choose 2 or 3 correct answers from 5 options):
@@ -4703,18 +4703,9 @@ CRITICAL — MULTI-SELECT QUALITY CRITERIA (${_examVendor} exam style):
     } catch (_) { staleBlock = ''; }
   }
 
-  // v4.56.1: Scenario field instructions isolated so they can be omitted on
-  // retry. They were the main prompt bloat added in v4.56.0 and on complex
-  // runs (multi-topic + Mixed + 20 questions) they occasionally push Haiku
-  // into producing malformed JSON — retry without them usually succeeds.
-  const scenarioInstructions = `
-SCENARIO CONTEXT FIELD (optional, exam-realism):
-- On roughly 30-40% of Exam Level and Hard questions, include an optional "scenario" field with 1-2 short sentences (max ~30 words) of real-world setup BEFORE the question is asked. This mirrors real ${CERT_CODE} exam framing ("A technician is configuring...", "A user reports...", "An administrator notices...").
-- CRITICAL RULE — scenario describes the ENVIRONMENT the answer depends on; it NEVER restates the subject of the question in technical terms. ❌ "Consider a Layer 2 switch..." inside a question that asks which layer a switch operates at (this telegraphs the answer). ✅ "A technician sees frames being forwarded between hosts on the same subnet but traffic never leaves the local broadcast domain." (forces the learner to reason).
-- Scenario should help DISAMBIGUATE context that makes one answer clearly right, not give the answer away. The scenario must add facts the question does not already state. Never restate the question in other words.
-- DO NOT include scenario on: pure recall questions (what port is HTTPS? which protocol uses X?), acronym definitions, or Foundational difficulty. Scenario adds noise on those.
-- Omit the field entirely for questions that don't need it — don't set it to empty string.
-`;
+  // v4.56.1: Scenario instructions are omitted on retry (prompt bloat could push Haiku into malformed JSON).
+  // v8.165.0: the block, now with the judgement-case rule, lives in quiz-engine.js (_scenarioPromptBlock).
+  const scenarioInstructions = (typeof _scenarioPromptBlock === 'function') ? _scenarioPromptBlock(CERT_CODE, _examVendor) : '';
 
   // v8.118.0: the writer prompt was hard-coded to "CompTIA Network+ N10-009"
   // (identity line, objective tagging, valid objective ranges) and ran that way

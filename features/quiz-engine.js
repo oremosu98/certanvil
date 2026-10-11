@@ -461,6 +461,36 @@
   }
   window.clearAiErrorCard = clearAiErrorCard;
 
+  // ── Writer prompt: scenario field + judgement cases ───────────────────
+  // v4.56.0 scenario field, moved out of app.js (_fetchQuestionsBatch) in
+  // v8.165.0 to keep app.js under its line ratchet. _fetchQuestionsBatch still
+  // drops this block on its malformed-JSON retry.
+  // v8.165.0: judgement cases. Generated Exam Level questions were mostly
+  // recognition ("which malware type is this?"): "best/most/first" wording was
+  // common, but only 13-24% had a setup line with it and about 1 in 38 was a
+  // real case (setting + constraint), the format of CompTIA's hardest items.
+  // Spec: docs/superpowers/specs/2026-10-11-judgement-case-questions-design.md
+  function _scenarioPromptBlock(certCode, vendor) {
+    return `
+SCENARIO CONTEXT FIELD (optional, exam-realism):
+- Use the optional "scenario" field for 1-3 short sentences of real-world setup BEFORE the question is asked. This mirrors real ${certCode} exam framing ("A technician is configuring...", "A user reports...", "An administrator notices...").
+- CRITICAL RULE — scenario describes the ENVIRONMENT the answer depends on; it NEVER restates the subject of the question in technical terms. ❌ "Consider a Layer 2 switch..." inside a question that asks which layer a switch operates at (this telegraphs the answer). ✅ "A technician sees frames being forwarded between hosts on the same subnet but traffic never leaves the local broadcast domain." (forces the learner to reason).
+- Scenario should help DISAMBIGUATE context that makes one answer clearly right, not give the answer away. The scenario must add facts the question does not already state. Never restate the question in other words.
+- DO NOT include scenario on: pure recall questions (what port is HTTPS? which protocol uses X?), acronym definitions, or Foundational difficulty. Scenario adds noise on those.
+- Omit the field entirely for questions that don't need it — don't set it to empty string.
+
+JUDGEMENT CASES (the format of the hardest real ${certCode} items) — write about 4 in 10 of the Exam Level and Hard MCQs this way:
+- The "scenario" names WHO (a role, e.g. "a SOC analyst", "the IT manager") and WHERE (a type of organisation, e.g. "a regional hospital", "a 40-person accounting firm"), plus ONE or TWO concrete constraints the answer depends on (a fixed budget, a legacy system that can't be replaced, a compliance rule, no downtime allowed, a small team, a deadline, an incident already in progress).
+- The "question" then asks for the BEST, MOST appropriate, MOST likely or FIRST option, in ${vendor} style (e.g. "Which of the following BEST meets these requirements?", "Which of the following should the analyst do FIRST?").
+- At least TWO options must be sound practice in general. The constraints in the scenario are what make exactly ONE of them the best answer here, so a student who ignores the constraints is tempted by the runner-up.
+- Every constraint must matter to the answer, and the right answer must follow from what is stated, never from unstated context.
+- The explanation must name the runner-up option and the constraint that rules it out.
+- Keep scenario + question under about 60 words. Use roles and types of organisation, never people's names or brand names.
+- The style examples above show format and accuracy, not this mix: still write about 4 in 10 of the Exam Level and Hard MCQs as judgement cases. Foundational questions and multi-select stay as they are.
+`;
+  }
+  window._scenarioPromptBlock = _scenarioPromptBlock;
+
   // ── v8.164.0: Cancel while generating ─────────────────────────────────
   // Founder: "whilst its loading you need to allow the option to cancel and go
   // back to the home page". Every build on the loading screen runs in a
