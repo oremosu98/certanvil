@@ -183,7 +183,10 @@
       // Pull profile (jsonb metadata) + recent quiz_history rows in parallel
       return Promise.all([
         sb.from('profiles').select('metadata, role, exam_date, display_name').eq('id', userId).single(),
-        sb.from('quiz_history').select('*').eq('user_id', userId).order('created_at', { ascending: false }).limit(500),
+        // v8.155.0: this cert's rows only. Every cert's subdomain shares one
+        // quiz_history table, so an unfiltered pull merged (since v8.151.0)
+        // e.g. Network+ history into the Security+ device.
+        sb.from('quiz_history').select('*').eq('user_id', userId).eq('cert', _ccCert()).order('created_at', { ascending: false }).limit(500),
       ]).then(function (results) {
         var profileResult = results[0];
         var historyResult = results[1];
@@ -579,7 +582,7 @@
               return (t && t < m) ? t : m;
             }, Date.now());
             return sb.from('quiz_history').select('created_at, topic, score, total, metadata')
-              .eq('user_id', userId).gte('created_at', new Date(oldest - 60000).toISOString());
+              .eq('user_id', userId).eq('cert', _ccCert()).gte('created_at', new Date(oldest - 60000).toISOString());
           })().then(function (existing) {
             if (existing && existing.error) return { error: existing.error };
             var existingKeys = new Set(((existing && existing.data) || []).map(function (r) {
