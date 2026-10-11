@@ -165,6 +165,35 @@ const { js, read, results, test, vm } = require('./_context');
     test('Sim Lab diagrams: seeds that already use grid cells keep their exact layout',
       JSON.stringify(G._slNetGrid(authored)) === JSON.stringify(authored) &&
       /_slNetGrid\(devices\)/.test(fn('_slRenderRefNetwork')));
+
+    // ── v8.159.0: every firewall PBQ in every bank has ONE right order ──
+    // The order step only accepts fwSpec order, so if another permutation
+    // passes every flow, a learner who built a working table is marked wrong.
+    // Measured 2026-10-11: 11 of 12 Network+ firewall seeds had 2-30 passing
+    // orders, some with an allow below deny-all that no flow ever exercised.
+    var FW = {}; vm.createContext(FW);
+    vm.runInContext(['_ipToInt', '_fwMatchAddr', '_fwRuleMatches'].map(fn).join('\n'), FW);
+    function verdict(rules, f) { for (var i = 0; i < rules.length; i++) { if (FW._fwRuleMatches(rules[i], f)) return rules[i].action; } return 'deny'; }
+    function perms(a) { if (a.length <= 1) return [a]; var o = []; a.forEach(function (x, i) { perms(a.slice(0, i).concat(a.slice(i + 1))).forEach(function (q) { o.push([x].concat(q)); }); }); return o; }
+    var multi = [], ported = [];
+    ['sim-lab-seed-netplus.js', 'sim-lab-seed-secplus.js'].forEach(function (f) {
+      var C = {}; vm.createContext(C);
+      vm.runInContext('var window = {};\n' + read('features/' + f) + '\nglobalThis.__w = window;', C);
+      var b = Object.keys(C.__w).map(function (k) { return C.__w[k]; }).filter(Array.isArray)[0] || [];
+      b.filter(function (sc) { return sc.archetype === 'firewall'; }).forEach(function (sc) {
+        var ok = perms(sc.fwSpec.rules).filter(function (pm) { return sc.fwSpec.flows.every(function (fl) { return verdict(pm, fl) === fl.expect; }); });
+        if (ok.length !== 1) multi.push(sc.id + ':' + ok.length);
+        ((sc.assets.reference || {}).devices || []).forEach(function (d) {
+          if (/·\s*\d/.test(String(d.ip || '') + ' ' + String(d.label || ''))) ported.push(sc.id);
+        });
+      });
+    });
+    test('Firewall PBQs (all banks): exactly one rule order passes every flow, so a working table is never marked wrong',
+      multi.length === 0);
+    if (multi.length) results.errors.push('firewall seeds with more than one passing order: ' + multi.join(', '));
+    test('Firewall PBQs (all banks): the diagram never prints the ports the configure steps ask for',
+      ported.length === 0);
+    if (ported.length) results.errors.push('firewall diagrams printing ports: ' + ported.filter(function (v, i, a) { return a.indexOf(v) === i; }).join(', '));
   } catch (err) {
     test('Sec+ PBQ banks: content block (threw)', false);
     results.errors.push('320 Sec+ PBQ content block threw: ' + err.message);
