@@ -78,6 +78,20 @@ const { js, read, results, test, vm } = require('./_context');
     test('Sec+ design bank: tagged to SY0-701 domain 3 (architecture) and cert secplus',
       dg.length > 0 && dg.every(function (s) { return s.cert === 'secplus' && /^3\.\d$/.test(s.objective); }));
 
+    // ── v8.157.0: wireless security PBQs ──
+    var wl = of('wireless');
+    test('Sec+ wireless bank: at least 6 wireless security PBQs', wl.length >= 6);
+    test('Sec+ wireless bank: every seed passes simLabValidateScenario + simLabValidateWirelessFidelity',
+      wl.length > 0 && allPass(wl, 'wireless'));
+
+    // ── v8.157.0: governance (D5) + threat (D2) PBQs on generic steps ──
+    var gov = bank.filter(function (s) { return /^sp-(gv|th)-\d\d$/.test(s.id); });
+    test('Sec+ governance/threat set: 10 seeds, each passes simLabValidateScenario',
+      gov.length === 10 && gov.every(function (s) { return V.simLabValidateScenario(s).ok; }));
+    test('Sec+ governance/threat set: 6 target domain 5 and 4 target domain 2',
+      gov.filter(function (s) { return /^5\./.test(s.objective); }).length === 6 &&
+      gov.filter(function (s) { return /^2\./.test(s.objective); }).length === 4);
+
     // ── v8.156.0: configure dropdowns are shuffled on screen ──
     // 303 of 313 Network+ configure dropdowns list the keyed answer first, and
     // the renderer showed options as authored, so "pick the top one" scored.

@@ -6533,5 +6533,2892 @@ window.SIM_LAB_SEED_SECPLUS = [
         }
       }
     ]
+  },
+
+  // ===== v8.157.0 — wireless security PBQs (wireless), SY0-701 4.1 3.2 2.4; two-reviewer gate passed 2026-10-11 =====
+  {
+    "id": "sp-wl-01",
+    "cert": "secplus",
+    "objective": "4.1",
+    "topic": "Wireless AAA",
+    "title": "The contractor who can still connect",
+    "estMinutes": 5,
+    "archetype": "wireless",
+    "scenario": "Tern Logistics runs its staff SSID, Tern-Staff, on one shared passphrase. A contractor who left a month ago was spotted in the car park this week, still connected. The operations director wants every Wi-Fi login tied to a named directory account, so one person can be cut off without anyone else changing anything. A new server, AAA-1, will check logins against the directory, and the wireless controller, WLC-1, will pass each login to it. Work out what the fix needs, then configure Tern-Staff and the link between WLC-1 and AAA-1.",
+    "assets": {
+      "reference": {
+        "kind": "network",
+        "given": {
+          "site": "Tern Logistics · head office"
+        },
+        "devices": [
+          {
+            "id": "ap1",
+            "label": "AP-1",
+            "type": "ap",
+            "zone": "office",
+            "ip": "Tern-Staff",
+            "x": 0,
+            "y": 1
+          },
+          {
+            "id": "lap",
+            "label": "Staff laptops",
+            "type": "pc",
+            "zone": "office",
+            "ip": "shared passphrase",
+            "x": 0,
+            "y": 2
+          },
+          {
+            "id": "wlc",
+            "label": "WLC-1",
+            "type": "switch",
+            "ip": "10.20.5.2",
+            "x": 2,
+            "y": 1
+          },
+          {
+            "id": "aaa",
+            "label": "AAA-1 (new)",
+            "type": "server",
+            "ip": "placement ?",
+            "x": 4,
+            "y": 1
+          },
+          {
+            "id": "dir",
+            "label": "Directory",
+            "type": "server",
+            "zone": "servers",
+            "ip": "10.20.10.11",
+            "x": 4,
+            "y": 2
+          },
+          {
+            "id": "exc",
+            "label": "Ex-contractor",
+            "type": "pc",
+            "zone": "car park",
+            "ip": "still connected",
+            "x": 2,
+            "y": 3,
+            "state": "compromised"
+          }
+        ],
+        "links": [
+          {
+            "from": "lap",
+            "to": "ap1"
+          },
+          {
+            "from": "ap1",
+            "to": "wlc"
+          },
+          {
+            "from": "wlc",
+            "to": "aaa"
+          },
+          {
+            "from": "aaa",
+            "to": "dir"
+          },
+          {
+            "from": "exc",
+            "to": "ap1",
+            "kind": "attack"
+          }
+        ]
+      }
+    },
+    "steps": [
+      {
+        "id": "s1",
+        "type": "analyze",
+        "points": 1,
+        "prompt": "The contractor still gets on a month after leaving. Which statements are true for the fix? Select all that apply.",
+        "explanation": "A shared passphrase is one secret for everyone, so the only way to lock one person out is to change it on every device. 802.1X fixes that: the controller relays each login to the authentication server, which checks that person’s own directory account, so disabling one account blocks one person at their next login. The trap is WPA3-Personal. SAE makes the passphrase much harder to crack offline, but it is still one passphrase shared by everyone, so the contractor’s copy keeps working.",
+        "payload": {
+          "lines": [
+            {
+              "id": "l1",
+              "text": "With one shared passphrase, removing a single person means re-keying every device."
+            },
+            {
+              "id": "l2",
+              "text": "WPA3-Personal would solve this on its own, because SAE gives each user a separate password."
+            },
+            {
+              "id": "l3",
+              "text": "Under 802.1X, WLC-1 relays each login to AAA-1, which checks the named directory account."
+            },
+            {
+              "id": "l4",
+              "text": "Once a leaver’s directory account is disabled, their next Wi-Fi login fails."
+            }
+          ]
+        },
+        "answer": {
+          "selected": [
+            "l1",
+            "l3",
+            "l4"
+          ]
+        }
+      },
+      {
+        "id": "s2",
+        "type": "configure",
+        "points": 1,
+        "apId": "ap1",
+        "require": {
+          "security": "WPA3-Enterprise"
+        },
+        "prompt": "Configure Tern-Staff and the WLC-1 to AAA-1 link so every login is checked individually.",
+        "explanation": "WPA3-Enterprise uses 802.1X, so each person signs in with their own account; WPA3-Personal and WPA2-Personal both keep one shared passphrase. 802.1X logins travel from the controller to the server over RADIUS, and RADIUS authentication uses UDP 1812. UDP 1813 is RADIUS accounting, and TCP 49 is TACACS+, which is built for administrator logins to network devices rather than Wi-Fi users. Kerberos is how the directory authenticates users to services, not how a controller hands off a Wi-Fi login. AAA-1 belongs on the internal server VLAN, accepting logins only from WLC-1. A public DMZ exposes it to the internet, and the staff Wi-Fi VLAN puts it within reach of every laptop. The shared secret lets WLC-1 and AAA-1 trust each other’s messages and protects the session keys AAA-1 sends back, so it should be long, random and unique to that controller. Reusing the old passphrase, which the contractor knows, or one short secret everywhere means a single leak exposes everything.",
+        "payload": {
+          "slots": [
+            {
+              "id": "security",
+              "label": "Security mode",
+              "options": [
+                {
+                  "id": "a",
+                  "text": "WPA3-Personal"
+                },
+                {
+                  "id": "b",
+                  "text": "WPA3-Enterprise"
+                },
+                {
+                  "id": "c",
+                  "text": "WPA2-Personal"
+                }
+              ]
+            },
+            {
+              "id": "proto",
+              "label": "Protocol from WLC-1 to AAA-1",
+              "options": [
+                {
+                  "id": "a",
+                  "text": "TACACS+"
+                },
+                {
+                  "id": "b",
+                  "text": "Kerberos"
+                },
+                {
+                  "id": "c",
+                  "text": "RADIUS"
+                }
+              ]
+            },
+            {
+              "id": "port",
+              "label": "Authentication port on AAA-1",
+              "options": [
+                {
+                  "id": "a",
+                  "text": "UDP 1812"
+                },
+                {
+                  "id": "b",
+                  "text": "UDP 1813"
+                },
+                {
+                  "id": "c",
+                  "text": "TCP 49"
+                }
+              ]
+            },
+            {
+              "id": "place",
+              "label": "Where AAA-1 sits",
+              "options": [
+                {
+                  "id": "a",
+                  "text": "Public DMZ, reachable from anywhere"
+                },
+                {
+                  "id": "b",
+                  "text": "Server VLAN, logins accepted only from WLC-1"
+                },
+                {
+                  "id": "c",
+                  "text": "Staff Wi-Fi VLAN, beside the laptops"
+                }
+              ]
+            },
+            {
+              "id": "secret",
+              "label": "Shared secret on WLC-1 and AAA-1",
+              "options": [
+                {
+                  "id": "a",
+                  "text": "The old Tern-Staff passphrase"
+                },
+                {
+                  "id": "b",
+                  "text": "One short secret used on every device"
+                },
+                {
+                  "id": "c",
+                  "text": "Long random value unique to WLC-1"
+                }
+              ]
+            }
+          ]
+        },
+        "answer": {
+          "slots": {
+            "security": "b",
+            "proto": "c",
+            "port": "a",
+            "place": "b",
+            "secret": "c"
+          }
+        }
+      }
+    ]
+  },
+
+  {
+    "id": "sp-wl-02",
+    "cert": "secplus",
+    "objective": "4.1",
+    "topic": "Wireless authentication",
+    "title": "Two kinds of device, one access point",
+    "estMinutes": 5,
+    "archetype": "wireless",
+    "scenario": "Hollin Health is moving staff Wi-Fi off a shared passphrase. AP-1 will broadcast two SSIDs, and both will send logins to RAD-1. Hollin-Corp is for clinic laptops: company-owned, managed, and each already holding a device certificate from the internal CA. A phishing test last quarter captured several staff passwords, so the laptops must join without any password at all. Hollin-BYOD is for staff phones, which are personally owned and unmanaged. The company will not install certificates on them, so staff sign in there with their directory username and password. Every connection, on both SSIDs, must be tied to an individual identity. Work out what each group of devices can support, then configure both SSIDs.",
+    "assets": {
+      "reference": {
+        "kind": "network",
+        "given": {
+          "site": "Hollin Health · clinic floor"
+        },
+        "devices": [
+          {
+            "id": "lap",
+            "label": "Clinic laptops",
+            "type": "pc",
+            "zone": "managed",
+            "ip": "device cert",
+            "x": 0,
+            "y": 0
+          },
+          {
+            "id": "phn",
+            "label": "Staff phones",
+            "type": "pc",
+            "zone": "personal",
+            "ip": "no certificate",
+            "x": 0,
+            "y": 2
+          },
+          {
+            "id": "ap1",
+            "label": "AP-1",
+            "type": "ap",
+            "ip": "two SSIDs",
+            "x": 2,
+            "y": 1
+          },
+          {
+            "id": "rad",
+            "label": "RAD-1",
+            "type": "server",
+            "zone": "servers",
+            "ip": "10.40.0.10",
+            "x": 4,
+            "y": 1
+          },
+          {
+            "id": "ca",
+            "label": "Internal CA",
+            "type": "server",
+            "zone": "servers",
+            "ip": "10.40.0.12",
+            "x": 4,
+            "y": 2
+          }
+        ],
+        "links": [
+          {
+            "from": "lap",
+            "to": "ap1"
+          },
+          {
+            "from": "phn",
+            "to": "ap1"
+          },
+          {
+            "from": "ap1",
+            "to": "rad"
+          },
+          {
+            "from": "rad",
+            "to": "ca"
+          }
+        ]
+      }
+    },
+    "steps": [
+      {
+        "id": "s1",
+        "type": "analyze",
+        "points": 1,
+        "prompt": "Which statements about these two groups of devices are true? Select all that apply.",
+        "explanation": "EAP-TLS is mutual certificate authentication. RAD-1 proves itself with its server certificate and the laptop proves itself with its device certificate, so there is no password to phish. PEAP needs a certificate only on the server. The client checks that certificate, a TLS tunnel forms, and the username-and-password exchange happens inside it. That makes the last line the trap: client certificates are an EAP-TLS requirement, not a PEAP one. It is also why the phones, which have no certificate, can use PEAP but not EAP-TLS.",
+        "payload": {
+          "lines": [
+            {
+              "id": "l1",
+              "text": "EAP-TLS checks both the network and the device with certificates, so no password is used."
+            },
+            {
+              "id": "l2",
+              "text": "PEAP protects a username-and-password login inside a TLS tunnel set up with the server’s certificate."
+            },
+            {
+              "id": "l3",
+              "text": "A phone with no client certificate cannot complete EAP-TLS."
+            },
+            {
+              "id": "l4",
+              "text": "PEAP needs a certificate installed on every client device, just as EAP-TLS does."
+            }
+          ]
+        },
+        "answer": {
+          "selected": [
+            "l1",
+            "l2",
+            "l3"
+          ]
+        }
+      },
+      {
+        "id": "s2",
+        "type": "configure",
+        "points": 1,
+        "apId": "ap1",
+        "require": {
+          "security": "WPA3-Enterprise"
+        },
+        "prompt": "Configure Hollin-Corp for the managed clinic laptops.",
+        "explanation": "An individual identity on every connection means 802.1X, so the mode is WPA3-Enterprise; both Personal modes share one passphrase. The laptops already carry device certificates and must not use passwords, which rules out PEAP and leaves EAP-TLS. EAP-MD5 has no mutual authentication and cannot generate Wi-Fi encryption keys, so it is never an option for wireless. Under EAP-TLS a laptop’s credential is its certificate, so a lost laptop is cut off by revoking that certificate, provided RAD-1 checks the CA’s revocation list. Resetting the owner’s password does nothing because EAP-TLS never uses it, and renaming the SSID only disrupts everyone else.",
+        "payload": {
+          "slots": [
+            {
+              "id": "security",
+              "label": "Security mode",
+              "options": [
+                {
+                  "id": "a",
+                  "text": "WPA2-Personal"
+                },
+                {
+                  "id": "b",
+                  "text": "WPA3-Enterprise"
+                },
+                {
+                  "id": "c",
+                  "text": "WPA3-Personal"
+                }
+              ]
+            },
+            {
+              "id": "eap",
+              "label": "Authentication method",
+              "options": [
+                {
+                  "id": "a",
+                  "text": "PEAP (MSCHAPv2)"
+                },
+                {
+                  "id": "b",
+                  "text": "EAP-MD5"
+                },
+                {
+                  "id": "c",
+                  "text": "EAP-TLS"
+                }
+              ]
+            },
+            {
+              "id": "lost",
+              "label": "When a laptop is lost",
+              "options": [
+                {
+                  "id": "a",
+                  "text": "Revoke its certificate at the internal CA"
+                },
+                {
+                  "id": "b",
+                  "text": "Reset the owner’s directory password"
+                },
+                {
+                  "id": "c",
+                  "text": "Rename the Hollin-Corp SSID"
+                }
+              ]
+            }
+          ]
+        },
+        "answer": {
+          "slots": {
+            "security": "b",
+            "eap": "c",
+            "lost": "a"
+          }
+        }
+      },
+      {
+        "id": "s3",
+        "type": "configure",
+        "points": 1,
+        "apId": "ap1",
+        "require": {
+          "security": "WPA3-Enterprise"
+        },
+        "prompt": "Configure Hollin-BYOD for the staff phones.",
+        "explanation": "The phones also need an individual identity, so this SSID is WPA3-Enterprise too. Personally owned devices do not call for Personal mode, which would put everyone back on one passphrase, and an open SSID has no authentication at all. With no client certificates, EAP-TLS cannot work, so PEAP is the method that lets staff use their directory credentials. EAP-MD5 still offers no mutual authentication and no Wi-Fi keys. PEAP is only as strong as the phone’s check on the server. A phone that accepts any certificate will build its tunnel to an attacker’s server behind a fake access point and hand over the login, so each phone must verify RAD-1’s certificate and the CA that issued it before it sends anything.",
+        "payload": {
+          "slots": [
+            {
+              "id": "security",
+              "label": "Security mode",
+              "options": [
+                {
+                  "id": "a",
+                  "text": "WPA3-Personal"
+                },
+                {
+                  "id": "b",
+                  "text": "Open"
+                },
+                {
+                  "id": "c",
+                  "text": "WPA3-Enterprise"
+                }
+              ]
+            },
+            {
+              "id": "eap",
+              "label": "Authentication method",
+              "options": [
+                {
+                  "id": "a",
+                  "text": "EAP-TLS"
+                },
+                {
+                  "id": "b",
+                  "text": "PEAP (MSCHAPv2)"
+                },
+                {
+                  "id": "c",
+                  "text": "EAP-MD5"
+                }
+              ]
+            },
+            {
+              "id": "check",
+              "label": "Before a phone sends its login",
+              "options": [
+                {
+                  "id": "a",
+                  "text": "Accept any certificate the network shows"
+                },
+                {
+                  "id": "b",
+                  "text": "Verify RAD-1’s certificate and its issuing CA"
+                },
+                {
+                  "id": "c",
+                  "text": "Skip the check; the tunnel protects the login"
+                }
+              ]
+            }
+          ]
+        },
+        "answer": {
+          "slots": {
+            "security": "c",
+            "eap": "b",
+            "check": "b"
+          }
+        }
+      }
+    ]
+  },
+
+  {
+    "id": "sp-wl-03",
+    "cert": "secplus",
+    "objective": "3.2",
+    "topic": "Guest wireless",
+    "title": "Wi-Fi for the waiting room",
+    "estMinutes": 4,
+    "archetype": "wireless",
+    "scenario": "Larkspur Dental wants to offer Wi-Fi to patients in the waiting room. AP-1 already broadcasts Larkspur-Staff, which puts staff devices on VLAN 10 with the practice server and the X-ray PC. The practice owner has three conditions. Visitors must accept the acceptable-use terms before they browse. Visitors must never reach anything on VLAN 10. One visitor’s phone must not be able to see another’s. Work out what the visitor network needs, then add it to AP-1.",
+    "assets": {
+      "reference": {
+        "kind": "network",
+        "given": {
+          "site": "Larkspur Dental · reception"
+        },
+        "devices": [
+          {
+            "id": "vis",
+            "label": "Visitor phones",
+            "type": "pc",
+            "zone": "waiting room",
+            "ip": "unknown devices",
+            "x": 0,
+            "y": 0
+          },
+          {
+            "id": "ap1",
+            "label": "AP-1",
+            "type": "ap",
+            "zone": "waiting room",
+            "ip": "Larkspur-Staff",
+            "x": 0,
+            "y": 1
+          },
+          {
+            "id": "inet",
+            "label": "Internet",
+            "type": "box",
+            "x": 2,
+            "y": 0
+          },
+          {
+            "id": "fw",
+            "label": "Firewall",
+            "type": "firewall",
+            "ip": "10.0.0.1",
+            "x": 2,
+            "y": 1
+          },
+          {
+            "id": "srv",
+            "label": "Practice server",
+            "type": "server",
+            "zone": "VLAN 10",
+            "ip": "10.0.10.5",
+            "x": 4,
+            "y": 1
+          },
+          {
+            "id": "xr",
+            "label": "X-ray PC",
+            "type": "pc",
+            "zone": "VLAN 10",
+            "ip": "10.0.10.21",
+            "x": 4,
+            "y": 2
+          }
+        ],
+        "links": [
+          {
+            "from": "vis",
+            "to": "ap1"
+          },
+          {
+            "from": "ap1",
+            "to": "fw"
+          },
+          {
+            "from": "fw",
+            "to": "inet"
+          },
+          {
+            "from": "fw",
+            "to": "srv"
+          },
+          {
+            "from": "fw",
+            "to": "xr"
+          }
+        ]
+      }
+    },
+    "steps": [
+      {
+        "id": "s1",
+        "type": "analyze",
+        "points": 1,
+        "prompt": "Which statements about the visitor network are true? Select all that apply.",
+        "explanation": "An SSID is only a name for a wireless network. What keeps visitors away from clinical systems is where their traffic lands: a separate VLAN with firewall rules that allow the internet and deny VLAN 10. That is why the first line is the trap. A new name on the same VLAN gives visitors the same reach as staff. Client isolation stops guest devices from talking to each other through the access point, so one infected phone cannot probe the next. A captive portal intercepts a new visitor’s first web request and holds them at the terms page until they accept.",
+        "payload": {
+          "lines": [
+            {
+              "id": "l1",
+              "text": "Giving visitors their own SSID name is enough, on its own, to keep them off VLAN 10."
+            },
+            {
+              "id": "l2",
+              "text": "Visitor traffic should land on its own VLAN that the firewall lets out to the internet only."
+            },
+            {
+              "id": "l3",
+              "text": "Client isolation blocks traffic between devices on the same SSID."
+            },
+            {
+              "id": "l4",
+              "text": "A captive portal can hold each visitor at a terms page until they accept."
+            }
+          ]
+        },
+        "answer": {
+          "selected": [
+            "l2",
+            "l3",
+            "l4"
+          ]
+        }
+      },
+      {
+        "id": "s2",
+        "type": "configure",
+        "points": 1,
+        "apId": "ap1",
+        "require": {
+          "ssid": "Larkspur-Guest"
+        },
+        "prompt": "Add the visitor network to AP-1.",
+        "explanation": "Visitors get their own SSID, Larkspur-Guest, mapped to VLAN 30, where the firewall allows internet traffic and denies everything internal. Joining Larkspur-Staff would drop them onto VLAN 10 with the practice server, and VLAN 99 would hand strangers the network-management segment. Client isolation is enabled so visitor phones cannot reach each other. The captive portal meets the terms requirement. Sharing the staff passphrase gives strangers the key to the staff network, and an SSID with no sign-in step never shows the terms at all.",
+        "payload": {
+          "slots": [
+            {
+              "id": "ssid",
+              "label": "Visitor SSID",
+              "options": [
+                {
+                  "id": "a",
+                  "text": "Larkspur-Staff"
+                },
+                {
+                  "id": "b",
+                  "text": "Larkspur-Guest"
+                }
+              ]
+            },
+            {
+              "id": "vlan",
+              "label": "Visitor VLAN",
+              "options": [
+                {
+                  "id": "a",
+                  "text": "VLAN 30 · internet only"
+                },
+                {
+                  "id": "b",
+                  "text": "VLAN 10 · practice systems"
+                },
+                {
+                  "id": "c",
+                  "text": "VLAN 99 · switch management"
+                }
+              ]
+            },
+            {
+              "id": "iso",
+              "label": "Client isolation",
+              "options": [
+                {
+                  "id": "a",
+                  "text": "Disabled"
+                },
+                {
+                  "id": "b",
+                  "text": "Enabled"
+                }
+              ]
+            },
+            {
+              "id": "portal",
+              "label": "Before visitors can browse",
+              "options": [
+                {
+                  "id": "a",
+                  "text": "Share the Larkspur-Staff passphrase at reception"
+                },
+                {
+                  "id": "b",
+                  "text": "Captive portal with the acceptable-use terms"
+                },
+                {
+                  "id": "c",
+                  "text": "Nothing; the SSID simply opens"
+                }
+              ]
+            }
+          ]
+        },
+        "answer": {
+          "slots": {
+            "ssid": "b",
+            "vlan": "a",
+            "iso": "b",
+            "portal": "b"
+          }
+        }
+      }
+    ]
+  },
+
+  {
+    "id": "sp-wl-04",
+    "cert": "secplus",
+    "objective": "4.1",
+    "topic": "Wireless hardening",
+    "title": "Someone keeps guessing at the router",
+    "estMinutes": 4,
+    "archetype": "wireless",
+    "scenario": "Pell & Daughter is a five-person accounting office with no server and no IT staff. Its wireless router still runs factory settings: WPA2-Personal with the passphrase printed on the router’s label, WPS switched on, and the default admin login. This morning the router log showed the entries below, all from a device nobody recognises. Every laptop and phone in the office supports WPA3, and the owner will not run or pay for an authentication server. Read the log, then reconfigure the router.",
+    "assets": {
+      "reference": {
+        "kind": "network",
+        "given": {
+          "site": "Pell & Daughter · office",
+          "cli": [
+            "Router log · wireless",
+            "02:14:07  WPS: PIN failure from 9e:41:0c:77:2a:d3",
+            "02:14:19  WPS: PIN failure from 9e:41:0c:77:2a:d3",
+            "02:14:30  WPS: PIN failure from 9e:41:0c:77:2a:d3",
+            "          ... 1,145 more PIN failures from the same device ...",
+            "05:51:58  WPS: PIN failure from 9e:41:0c:77:2a:d3"
+          ]
+        },
+        "devices": [
+          {
+            "id": "rtr",
+            "label": "Office router",
+            "type": "router",
+            "zone": "office",
+            "ip": "factory settings",
+            "x": 1,
+            "y": 1
+          },
+          {
+            "id": "lap",
+            "label": "Laptops",
+            "type": "pc",
+            "zone": "office",
+            "ip": "WPA3 capable",
+            "x": 0,
+            "y": 2
+          },
+          {
+            "id": "phn",
+            "label": "Phones",
+            "type": "pc",
+            "zone": "office",
+            "ip": "WPA3 capable",
+            "x": 1,
+            "y": 2
+          },
+          {
+            "id": "unk",
+            "label": "Unknown device",
+            "type": "pc",
+            "zone": "outside",
+            "ip": "…:77:2a:d3",
+            "x": 3,
+            "y": 1,
+            "state": "compromised"
+          }
+        ],
+        "links": [
+          {
+            "from": "rtr",
+            "to": "lap"
+          },
+          {
+            "from": "rtr",
+            "to": "phn"
+          },
+          {
+            "from": "unk",
+            "to": "rtr",
+            "kind": "attack"
+          }
+        ]
+      }
+    },
+    "steps": [
+      {
+        "id": "s1",
+        "type": "analyze",
+        "points": 1,
+        "prompt": "What do the log entries tell you? Select all that apply.",
+        "explanation": "The repeated failures are a brute-force attack on the WPS PIN. The PIN is eight digits, the last one a check digit, and the router confirms each half separately, so an attacker needs at most 10,000 guesses for the first half and 1,000 for the second. A correct PIN makes the router hand over its Wi-Fi passphrase, whatever that passphrase is. That is the trap in the third line: a new passphrase would simply be handed over with the PIN. The last line reads the log backwards. A log full of failures shows the device is still guessing; it is not evidence that it got in.",
+        "payload": {
+          "lines": [
+            {
+              "id": "l1",
+              "text": "The WPS PIN is checked in two halves, so about 11,000 guesses cover every possible PIN."
+            },
+            {
+              "id": "l2",
+              "text": "If the device finds the PIN, the router gives it the current Wi-Fi passphrase."
+            },
+            {
+              "id": "l3",
+              "text": "Changing the Wi-Fi passphrase would stop this attack, even with WPS left on."
+            },
+            {
+              "id": "l4",
+              "text": "The failures show the device has already joined the network."
+            }
+          ]
+        },
+        "answer": {
+          "selected": [
+            "l1",
+            "l2"
+          ]
+        }
+      },
+      {
+        "id": "s2",
+        "type": "configure",
+        "points": 1,
+        "apId": "rtr",
+        "require": {
+          "security": "WPA3-Personal"
+        },
+        "prompt": "Reconfigure the office router.",
+        "explanation": "WPA3-Personal is the strongest shared-passphrase mode. Its SAE handshake stops an attacker from capturing a handshake and guessing the passphrase offline, which WPA2-Personal allows. WPA3-Enterprise needs an authentication server the office does not have, and WEP is broken. WPS must be switched off. Many routers drop WPS once WPA3-only is selected, but firmware varies, so turn it off explicitly. A new PIN would not help: it is still eight digits checked in two halves, so it falls just as quickly. The label passphrase is known to anyone who has seen the router, so it is replaced with a long random one. SAE resists guessing, but it cannot protect a passphrase that is already known. Default admin passwords are easy to look up, so the router gets a unique, strong one too.",
+        "payload": {
+          "slots": [
+            {
+              "id": "security",
+              "label": "Security mode",
+              "options": [
+                {
+                  "id": "a",
+                  "text": "WPA2-Personal"
+                },
+                {
+                  "id": "b",
+                  "text": "WPA3-Personal"
+                },
+                {
+                  "id": "c",
+                  "text": "WPA3-Enterprise"
+                },
+                {
+                  "id": "d",
+                  "text": "WEP"
+                }
+              ]
+            },
+            {
+              "id": "wps",
+              "label": "WPS",
+              "options": [
+                {
+                  "id": "a",
+                  "text": "Enabled with the label PIN"
+                },
+                {
+                  "id": "b",
+                  "text": "Enabled with a new random PIN"
+                },
+                {
+                  "id": "c",
+                  "text": "Disabled"
+                }
+              ]
+            },
+            {
+              "id": "psk",
+              "label": "Wi-Fi passphrase",
+              "options": [
+                {
+                  "id": "a",
+                  "text": "Long random passphrase, set today"
+                },
+                {
+                  "id": "b",
+                  "text": "Keep the label passphrase; WPA3 protects it"
+                }
+              ]
+            },
+            {
+              "id": "admin",
+              "label": "Router admin login",
+              "options": [
+                {
+                  "id": "a",
+                  "text": "Leave the default admin password"
+                },
+                {
+                  "id": "b",
+                  "text": "Unique, strong admin password"
+                }
+              ]
+            }
+          ]
+        },
+        "answer": {
+          "slots": {
+            "security": "b",
+            "wps": "c",
+            "psk": "a",
+            "admin": "b"
+          }
+        }
+      }
+    ]
+  },
+
+  {
+    "id": "sp-wl-05",
+    "cert": "secplus",
+    "objective": "4.1",
+    "topic": "Wireless encryption",
+    "title": "Scanners that can’t be replaced yet",
+    "estMinutes": 5,
+    "archetype": "wireless",
+    "scenario": "Quarry Hill Supply’s warehouse SSID, QH-Floor, still runs settings from 2014: WPA/WPA2 mixed mode with TKIP and AES, protected by one shared passphrase. The only device that ever needed TKIP, an old label printer, was retired last month. The 40 handheld scanners support WPA2 with AES but cannot run WPA3, and they will not be replaced until next year. The new office laptops all support WPA3. The warehouse system expects every device on QH-Floor. Decide what QH-Floor can safely run until the scanners are replaced, then configure AP-3.",
+    "assets": {
+      "reference": {
+        "kind": "network",
+        "given": {
+          "site": "Quarry Hill Supply · warehouse"
+        },
+        "devices": [
+          {
+            "id": "ap3",
+            "label": "AP-3",
+            "type": "ap",
+            "zone": "site",
+            "ip": "QH-Floor",
+            "x": 1,
+            "y": 1
+          },
+          {
+            "id": "scn",
+            "label": "Scanners ×40",
+            "type": "pc",
+            "zone": "site",
+            "ip": "WPA2 · AES only",
+            "x": 0,
+            "y": 2
+          },
+          {
+            "id": "lap",
+            "label": "Office laptops",
+            "type": "pc",
+            "zone": "site",
+            "ip": "WPA3 capable",
+            "x": 2,
+            "y": 2
+          }
+        ],
+        "links": [
+          {
+            "from": "ap3",
+            "to": "scn"
+          },
+          {
+            "from": "ap3",
+            "to": "lap"
+          }
+        ]
+      }
+    },
+    "steps": [
+      {
+        "id": "s1",
+        "type": "analyze",
+        "points": 1,
+        "prompt": "Which facts should shape AP-3’s settings until the scanners go? Select all that apply.",
+        "explanation": "TKIP was a stopgap built on the same RC4 cipher as WEP, and it is deprecated. With the printer gone, nothing needs it. The scanners cannot do WPA3, so a WPA3-only SSID would cut them off. Running WPA2 and WPA3 together keeps them working, but it has a cost. A fake access point that offers only WPA2 can lure a WPA3-capable laptop into a WPA2 handshake, and that handshake can be guessed offline. The trap is the third line: each device uses the protocol it supports, so WPA2 scanners never use SAE.",
+        "payload": {
+          "lines": [
+            {
+              "id": "l1",
+              "text": "Nothing left on site needs TKIP, a deprecated cipher built on RC4."
+            },
+            {
+              "id": "l2",
+              "text": "A WPA3-only SSID would lock the scanners out until next year."
+            },
+            {
+              "id": "l3",
+              "text": "Scanners joining a mixed WPA2/WPA3 SSID get SAE protection too."
+            },
+            {
+              "id": "l4",
+              "text": "With WPA2 and WPA3 on one SSID, an attacker can push WPA3-capable laptops down to WPA2."
+            }
+          ]
+        },
+        "answer": {
+          "selected": [
+            "l1",
+            "l2",
+            "l4"
+          ]
+        }
+      },
+      {
+        "id": "s2",
+        "type": "configure",
+        "points": 1,
+        "apId": "ap3",
+        "require": {
+          "security": "WPA3-Personal transition (WPA2 + WPA3)"
+        },
+        "prompt": "Configure AP-3 for the year until the scanners are replaced.",
+        "explanation": "Transition mode is the only option that keeps both groups on QH-Floor: laptops connect with WPA3 and SAE, while the scanners keep using WPA2. WPA3-only locks out the scanners, WPA/WPA2 mixed keeps the original WPA and its TKIP, and WEP is broken. Every remaining device supports AES-CCMP, so TKIP comes off completely. Transition mode should be temporary. While WPA2 is still offered, a downgrade attack can pull laptops onto it, so the shared passphrase must be long and random for now. Once the scanners are replaced, QH-Floor moves to WPA3-only.",
+        "payload": {
+          "slots": [
+            {
+              "id": "security",
+              "label": "Security mode",
+              "options": [
+                {
+                  "id": "a",
+                  "text": "WPA3-Personal only"
+                },
+                {
+                  "id": "b",
+                  "text": "WPA/WPA2 mixed"
+                },
+                {
+                  "id": "c",
+                  "text": "WPA3-Personal transition (WPA2 + WPA3)"
+                },
+                {
+                  "id": "d",
+                  "text": "WEP"
+                }
+              ]
+            },
+            {
+              "id": "cipher",
+              "label": "Cipher",
+              "options": [
+                {
+                  "id": "a",
+                  "text": "TKIP + AES-CCMP"
+                },
+                {
+                  "id": "b",
+                  "text": "AES-CCMP only"
+                },
+                {
+                  "id": "c",
+                  "text": "TKIP only"
+                }
+              ]
+            },
+            {
+              "id": "later",
+              "label": "Once the scanners are replaced",
+              "options": [
+                {
+                  "id": "a",
+                  "text": "Switch QH-Floor to WPA3-Personal only"
+                },
+                {
+                  "id": "b",
+                  "text": "Leave transition mode on permanently"
+                },
+                {
+                  "id": "c",
+                  "text": "Turn TKIP back on for spare devices"
+                }
+              ]
+            }
+          ]
+        },
+        "answer": {
+          "slots": {
+            "security": "c",
+            "cipher": "b",
+            "later": "a"
+          }
+        }
+      }
+    ]
+  },
+
+  {
+    "id": "sp-wl-06",
+    "cert": "secplus",
+    "objective": "2.4",
+    "topic": "Wireless attacks",
+    "title": "The certificate prompt nobody expected",
+    "estMinutes": 5,
+    "archetype": "wireless",
+    "scenario": "Several Kestrel Freight staff say their laptops showed a certificate prompt when they joined Wi-Fi this morning, naming an issuer nobody recognised. Two people who clicked Accept have since had their directory accounts used to sign in from overseas. The staff SSID, Kestrel-Staff, runs WPA3-Enterprise with PEAP against RAD-1, whose server certificate comes from Kestrel’s internal CA. Kestrel owns two access points. A walk-round survey with a wireless analyzer captured the results below. Read the evidence, then respond and harden the network.",
+    "assets": {
+      "reference": {
+        "kind": "network",
+        "given": {
+          "site": "Kestrel Freight · 2nd floor",
+          "cli": [
+            "Survey 08:40 · SSID Kestrel-Staff",
+            "BSSID              CH   SECURITY  STRONGEST AT",
+            "3c:84:6a:10:22:01  36   WPA3-Ent  2nd floor east",
+            "3c:84:6a:10:22:05  149  WPA3-Ent  2nd floor west",
+            "02:1a:7f:c4:90:3e  44   WPA3-Ent  car park",
+            "AP inventory: …22:01 (AP-1), …22:05 (AP-2)"
+          ]
+        },
+        "devices": [
+          {
+            "id": "ap1",
+            "label": "AP-1",
+            "type": "ap",
+            "zone": "office",
+            "ip": "ch 36",
+            "x": 0,
+            "y": 0
+          },
+          {
+            "id": "ap2",
+            "label": "AP-2",
+            "type": "ap",
+            "zone": "office",
+            "ip": "ch 149",
+            "x": 1,
+            "y": 0
+          },
+          {
+            "id": "lap",
+            "label": "Staff laptops",
+            "type": "pc",
+            "zone": "office",
+            "ip": "PEAP",
+            "x": 0,
+            "y": 1
+          },
+          {
+            "id": "rad",
+            "label": "RAD-1",
+            "type": "server",
+            "ip": "10.8.0.20",
+            "x": 1,
+            "y": 2
+          },
+          {
+            "id": "bss3",
+            "label": "BSSID …90:3e",
+            "type": "ap",
+            "zone": "car park",
+            "ip": "ch 44",
+            "x": 3,
+            "y": 1
+          }
+        ],
+        "links": [
+          {
+            "from": "lap",
+            "to": "ap1"
+          },
+          {
+            "from": "lap",
+            "to": "ap2"
+          },
+          {
+            "from": "ap1",
+            "to": "rad"
+          },
+          {
+            "from": "ap2",
+            "to": "rad"
+          },
+          {
+            "from": "bss3",
+            "to": "lap"
+          }
+        ]
+      }
+    },
+    "steps": [
+      {
+        "id": "s1",
+        "type": "analyze",
+        "points": 1,
+        "prompt": "Which evidence shows the third Kestrel-Staff entry is not one of Kestrel’s access points? Select all that apply.",
+        "explanation": "Every access point radio has its own BSSID, and this one is missing from Kestrel’s list. It is strongest in the car park, where no Kestrel access point is mounted. The certificate is the clearest sign: RAD-1’s certificate comes from Kestrel’s own CA, so a prompt naming an unknown issuer means a different authentication server answered. Together these point to an evil twin, a fake access point copying Kestrel-Staff to collect logins. The trap is the SSID line. Many access points can broadcast one SSID, and AP-1 and AP-2 already do, so a matching name proves nothing. Copying the name is the point of the attack.",
+        "payload": {
+          "lines": [
+            {
+              "id": "l1",
+              "text": "Its BSSID is not in the AP inventory."
+            },
+            {
+              "id": "l2",
+              "text": "It uses the Kestrel-Staff name, and only one access point may broadcast an SSID."
+            },
+            {
+              "id": "l3",
+              "text": "Its signal is strongest in the car park, where Kestrel has no access point."
+            },
+            {
+              "id": "l4",
+              "text": "Laptops that joined it were shown a certificate from an issuer Kestrel does not use."
+            }
+          ]
+        },
+        "answer": {
+          "selected": [
+            "l1",
+            "l3",
+            "l4"
+          ]
+        }
+      },
+      {
+        "id": "s2",
+        "type": "configure",
+        "points": 1,
+        "apId": "ap1",
+        "require": {},
+        "prompt": "Name the attack, then choose the response and the lasting fixes.",
+        "explanation": "An unknown access point copying the SSID and presenting its own certificate is an evil twin. A deauthentication attack would show forged disconnect frames, and jamming would show radio noise; neither involves a fake network asking for logins. The two accounts were captured through PEAP, so their passwords must be reset and any active sessions ended. Encryption between a laptop and the attacker’s own access point protects nothing. The lasting fix is in the Wi-Fi profile: laptops should trust only RAD-1’s certificate from the internal CA and never ask the user, so a fake server is refused without a prompt. A wireless IPS that compares every BSSID it hears against the inventory would have flagged this one early. Hiding the SSID does not help, because laptops looking for a hidden network call out its name, and MAC filtering on the real access points does nothing about a fake one.",
+        "payload": {
+          "slots": [
+            {
+              "id": "attack",
+              "label": "What the evidence shows",
+              "options": [
+                {
+                  "id": "a",
+                  "text": "A deauthentication attack"
+                },
+                {
+                  "id": "b",
+                  "text": "RF jamming"
+                },
+                {
+                  "id": "c",
+                  "text": "An evil twin collecting logins"
+                }
+              ]
+            },
+            {
+              "id": "accounts",
+              "label": "Staff who clicked Accept",
+              "options": [
+                {
+                  "id": "a",
+                  "text": "Reset their passwords and end their sessions"
+                },
+                {
+                  "id": "b",
+                  "text": "No action; Wi-Fi traffic is encrypted"
+                }
+              ]
+            },
+            {
+              "id": "profile",
+              "label": "Laptop Wi-Fi profile",
+              "options": [
+                {
+                  "id": "a",
+                  "text": "Let users accept new certificates"
+                },
+                {
+                  "id": "b",
+                  "text": "Trust only RAD-1’s certificate from the internal CA"
+                },
+                {
+                  "id": "c",
+                  "text": "Turn off certificate checks so prompts stop"
+                }
+              ]
+            },
+            {
+              "id": "watch",
+              "label": "Ongoing detection",
+              "options": [
+                {
+                  "id": "a",
+                  "text": "Hide the SSID so it cannot be copied"
+                },
+                {
+                  "id": "b",
+                  "text": "MAC filtering on AP-1 and AP-2"
+                },
+                {
+                  "id": "c",
+                  "text": "Wireless IPS alerts on unknown BSSIDs"
+                }
+              ]
+            }
+          ]
+        },
+        "answer": {
+          "slots": {
+            "attack": "c",
+            "accounts": "a",
+            "profile": "b",
+            "watch": "c"
+          }
+        }
+      }
+    ]
+  },
+
+  // ===== v8.157.0 — governance + threat PBQs (generic), SY0-701 5.1-5.6 2.2-2.5; two-reviewer gate passed 2026-10-11 =====
+  {
+    "id": "sp-gv-01",
+    "cert": "secplus",
+    "objective": "5.1",
+    "topic": "Governance documents",
+    "title": "Tidy the governance library",
+    "estMinutes": 4,
+    "scenario": "A biotech firm faces an external audit next month, and its new security manager finds every governance document dumped in one unsorted folder. Each document has to be filed at the right level of the governance framework before the auditors arrive.",
+    "steps": [
+      {
+        "id": "s1",
+        "type": "categorize",
+        "points": 1,
+        "prompt": "Place each document under Policy, Standard, Procedure, or Guideline.",
+        "explanation": "A policy is management's high-level, mandatory statement of intent: the board-approved rule that all information is protected by classification, and the acceptable use rules signed at hiring (SY0-701 lists the AUP under policies). A standard sets a specific, measurable requirement that supports a policy: AES-256 full-disk encryption on every laptop and the 14-character password rule. A procedure gives step-by-step instructions for one task: the leaver checklist (offboarding) and the phishing playbook. A guideline is a recommendation staff are not required to follow: the optional password manager and the email tips teams can adapt.",
+        "payload": {
+          "items": [
+            {
+              "id": "fde",
+              "label": "All company laptops must use AES-256 full-disk encryption"
+            },
+            {
+              "id": "leaver",
+              "label": "Leaver's last day: disable the account at 17:00, collect badge and laptop, forward the mailbox to the manager"
+            },
+            {
+              "id": "pwmgr",
+              "label": "Staff are encouraged, but not required, to use a password manager"
+            },
+            {
+              "id": "classify",
+              "label": "Board-approved statement that all company information must be protected according to its classification"
+            },
+            {
+              "id": "pwlen",
+              "label": "Passwords must be at least 14 characters and cannot repeat any of the last 24"
+            },
+            {
+              "id": "playbook",
+              "label": "Phishing playbook: quarantine the email, reset the user's password, then block the sender's domain"
+            },
+            {
+              "id": "aup",
+              "label": "Rules every employee signs at hiring on what they may and may not do with company email, devices and internet access"
+            },
+            {
+              "id": "tips",
+              "label": "Suggested tips for spotting suspicious email, which each team can adapt to its own work"
+            }
+          ],
+          "buckets": [
+            {
+              "id": "policy",
+              "label": "Policy"
+            },
+            {
+              "id": "standard",
+              "label": "Standard"
+            },
+            {
+              "id": "procedure",
+              "label": "Procedure"
+            },
+            {
+              "id": "guideline",
+              "label": "Guideline"
+            }
+          ]
+        },
+        "answer": {
+          "map": {
+            "classify": "policy",
+            "aup": "policy",
+            "fde": "standard",
+            "pwlen": "standard",
+            "leaver": "procedure",
+            "playbook": "procedure",
+            "pwmgr": "guideline",
+            "tips": "guideline"
+          }
+        }
+      }
+    ]
+  },
+
+  {
+    "id": "sp-gv-02",
+    "cert": "secplus",
+    "objective": "5.2",
+    "topic": "Risk register",
+    "title": "Put risk on paper after the scare",
+    "estMinutes": 5,
+    "scenario": "After a ransomware scare, a logistics company is building its first formal risk-management records. The CISO's draft notes need the right terms attached, and the board's three candidate risk statements need classifying before one is adopted.",
+    "steps": [
+      {
+        "id": "s1",
+        "type": "match",
+        "points": 1,
+        "prompt": "Pair each risk-management term with the note from the CISO's draft that it describes.",
+        "explanation": "The risk register is the document that records every identified risk with its likelihood, impact, treatment and status. The risk owner is the named person accountable for managing one specific risk. A key risk indicator (KRI) is a metric tracked over time that warns a risk is growing, such as the share of servers missing critical patches. Risk appetite is the broad, board-level statement of how much risk the organization will take on to reach its objectives. Risk tolerance is the acceptable variation from that appetite for a specific area, here a set amount of unplanned downtime on one system.",
+        "payload": {
+          "left": [
+            {
+              "id": "register",
+              "label": "Risk register"
+            },
+            {
+              "id": "owner",
+              "label": "Risk owner"
+            },
+            {
+              "id": "kri",
+              "label": "Key risk indicator (KRI)"
+            },
+            {
+              "id": "appetite",
+              "label": "Risk appetite"
+            },
+            {
+              "id": "tolerance",
+              "label": "Risk tolerance"
+            }
+          ],
+          "right": [
+            {
+              "id": "dweekly",
+              "label": "Percentage of servers missing critical patches, reported every week as an early warning"
+            },
+            {
+              "id": "dboard",
+              "label": "The board's overall statement of how much risk the company will take on to reach its goals"
+            },
+            {
+              "id": "dsheet",
+              "label": "One document listing every identified risk with its likelihood, impact, treatment and status"
+            },
+            {
+              "id": "dvariance",
+              "label": "The acceptable variation for one area: the order system may have up to 4 hours of unplanned downtime a quarter"
+            },
+            {
+              "id": "dhead",
+              "label": "The head of warehousing, accountable for how the warehouse-system risk is treated and tracked"
+            }
+          ]
+        },
+        "answer": {
+          "pairs": {
+            "register": "dsheet",
+            "owner": "dhead",
+            "kri": "dweekly",
+            "appetite": "dboard",
+            "tolerance": "dvariance"
+          }
+        }
+      },
+      {
+        "id": "s2",
+        "type": "configure",
+        "points": 1,
+        "prompt": "Classify the risk-appetite posture each candidate board statement describes.",
+        "explanation": "An expansionary appetite accepts more risk to pursue growth, such as adopting new technology early to beat competitors. A conservative appetite accepts less risk and gives up some opportunity to keep exposure low. A neutral appetite balances risk against reward and accepts moderate risk where the two even out.",
+        "payload": {
+          "slots": [
+            {
+              "id": "stmtA",
+              "label": "\"We adopt new technology early and accept higher risk to reach new markets before competitors.\"",
+              "options": [
+                {
+                  "id": "exp",
+                  "text": "Expansionary"
+                },
+                {
+                  "id": "con",
+                  "text": "Conservative"
+                },
+                {
+                  "id": "neu",
+                  "text": "Neutral"
+                }
+              ]
+            },
+            {
+              "id": "stmtB",
+              "label": "\"We accept slower growth if it keeps the risk to customer data as low as possible.\"",
+              "options": [
+                {
+                  "id": "exp",
+                  "text": "Expansionary"
+                },
+                {
+                  "id": "con",
+                  "text": "Conservative"
+                },
+                {
+                  "id": "neu",
+                  "text": "Neutral"
+                }
+              ]
+            },
+            {
+              "id": "stmtC",
+              "label": "\"We weigh each risk against its expected reward and accept moderate risk where the two balance.\"",
+              "options": [
+                {
+                  "id": "exp",
+                  "text": "Expansionary"
+                },
+                {
+                  "id": "con",
+                  "text": "Conservative"
+                },
+                {
+                  "id": "neu",
+                  "text": "Neutral"
+                }
+              ]
+            }
+          ]
+        },
+        "answer": {
+          "slots": {
+            "stmtA": "exp",
+            "stmtB": "con",
+            "stmtC": "neu"
+          }
+        }
+      }
+    ]
+  },
+
+  {
+    "id": "sp-gv-03",
+    "cert": "secplus",
+    "objective": "5.3",
+    "topic": "Third-party risk",
+    "title": "Onboard a cloud vendor",
+    "estMinutes": 5,
+    "scenario": "A credit union wants a cloud provider to build and host its new loan-application portal, which will process members' financial data. You run the third-party risk process from first contact to the end of the contract, and you also choose the paperwork.",
+    "steps": [
+      {
+        "id": "s1",
+        "type": "order",
+        "points": 1,
+        "prompt": "Arrange the third-party risk steps in order, first step at the top.",
+        "explanation": "Start by scoping what the vendor will do and which data it will touch, because that sets how deep the assessment must go. Due diligence (security questionnaires, independent audit reports, evidence of penetration testing) comes next because it informs the choice, so selection follows it. The contract is signed only after selection, and the right-to-audit clause has to be in it at signing; it cannot be added later without renegotiating. Monitoring then runs for the life of the contract. Offboarding comes last: revoke the vendor's access and confirm member data is returned or destroyed.",
+        "payload": {
+          "items": [
+            {
+              "id": "contract",
+              "label": "Sign the contract, including the service levels and a right-to-audit clause"
+            },
+            {
+              "id": "offboard",
+              "label": "At contract end, revoke the vendor's access and confirm the data is returned or destroyed"
+            },
+            {
+              "id": "scope",
+              "label": "Define the service and classify the member data the vendor will handle"
+            },
+            {
+              "id": "monitor",
+              "label": "Monitor the vendor's performance and security posture on a recurring schedule"
+            },
+            {
+              "id": "select",
+              "label": "Select the vendor and record the approval decision"
+            },
+            {
+              "id": "diligence",
+              "label": "Send security questionnaires and review each shortlisted vendor's independent audit reports"
+            }
+          ]
+        },
+        "answer": {
+          "correctOrder": [
+            "scope",
+            "diligence",
+            "select",
+            "contract",
+            "monitor",
+            "offboard"
+          ]
+        }
+      },
+      {
+        "id": "s2",
+        "type": "configure",
+        "points": 1,
+        "prompt": "Choose the agreement type that covers each need in the deal.",
+        "explanation": "The MSA (master service agreement) is the overarching contract whose terms govern every later piece of work with the provider. The SOW or work order sits under the MSA and spells out the deliverables, timeline and acceptance criteria for one specific job, here the portal build. The SLA sets measurable service levels such as 99.9% monthly uptime, with a remedy (service credits) when they are missed. An MOU or MOA records intent or agreed objectives rather than commercial terms, a BPA governs a business partnership, and an NDA only protects confidential information, so none of them fits these needs.",
+        "payload": {
+          "slots": [
+            {
+              "id": "umbrella",
+              "label": "The overarching contract whose terms will govern this job and every future work order with the provider",
+              "options": [
+                {
+                  "id": "sla",
+                  "text": "SLA"
+                },
+                {
+                  "id": "msa",
+                  "text": "MSA"
+                },
+                {
+                  "id": "sow",
+                  "text": "SOW / WO"
+                },
+                {
+                  "id": "mou",
+                  "text": "MOU"
+                },
+                {
+                  "id": "moa",
+                  "text": "MOA"
+                },
+                {
+                  "id": "bpa",
+                  "text": "BPA"
+                },
+                {
+                  "id": "nda",
+                  "text": "NDA"
+                }
+              ]
+            },
+            {
+              "id": "deliverables",
+              "label": "The deliverables, timeline and acceptance criteria for building the loan portal",
+              "options": [
+                {
+                  "id": "sla",
+                  "text": "SLA"
+                },
+                {
+                  "id": "msa",
+                  "text": "MSA"
+                },
+                {
+                  "id": "sow",
+                  "text": "SOW / WO"
+                },
+                {
+                  "id": "mou",
+                  "text": "MOU"
+                },
+                {
+                  "id": "moa",
+                  "text": "MOA"
+                },
+                {
+                  "id": "bpa",
+                  "text": "BPA"
+                },
+                {
+                  "id": "nda",
+                  "text": "NDA"
+                }
+              ]
+            },
+            {
+              "id": "uptime",
+              "label": "A commitment to 99.9% monthly uptime, with service credits if the provider misses it",
+              "options": [
+                {
+                  "id": "sla",
+                  "text": "SLA"
+                },
+                {
+                  "id": "msa",
+                  "text": "MSA"
+                },
+                {
+                  "id": "sow",
+                  "text": "SOW / WO"
+                },
+                {
+                  "id": "mou",
+                  "text": "MOU"
+                },
+                {
+                  "id": "moa",
+                  "text": "MOA"
+                },
+                {
+                  "id": "bpa",
+                  "text": "BPA"
+                },
+                {
+                  "id": "nda",
+                  "text": "NDA"
+                }
+              ]
+            }
+          ]
+        },
+        "answer": {
+          "slots": {
+            "umbrella": "msa",
+            "deliverables": "sow",
+            "uptime": "sla"
+          }
+        }
+      }
+    ]
+  },
+
+  {
+    "id": "sp-gv-04",
+    "cert": "secplus",
+    "objective": "5.5",
+    "topic": "Penetration testing",
+    "title": "Scope the penetration test",
+    "estMinutes": 5,
+    "scenario": "An insurer is commissioning penetration tests from an outside firm. Before the rules of engagement are signed, the CISO wants each proposed engagement labeled by how much the testers are told, and the testers' planned reconnaissance sorted by type.",
+    "steps": [
+      {
+        "id": "s1",
+        "type": "configure",
+        "points": 1,
+        "prompt": "Label each proposed engagement with its test environment type.",
+        "explanation": "In a known environment test the testers get full information: diagrams, source code and privileged credentials. In an unknown environment test they get nothing beyond the target's name, the way an outside attacker starts. A partially known environment sits between the two: the testers get some information, such as the in-scope IP ranges and one standard account, or the firewall rules and server OS versions, but not the full picture.",
+        "payload": {
+          "slots": [
+            {
+              "id": "e1",
+              "label": "Testers receive the network diagrams, application source code and an administrator account",
+              "options": [
+                {
+                  "id": "known",
+                  "text": "Known environment"
+                },
+                {
+                  "id": "partial",
+                  "text": "Partially known environment"
+                },
+                {
+                  "id": "unknown",
+                  "text": "Unknown environment"
+                }
+              ]
+            },
+            {
+              "id": "e2",
+              "label": "Testers are told only the company's name and must find everything else themselves",
+              "options": [
+                {
+                  "id": "known",
+                  "text": "Known environment"
+                },
+                {
+                  "id": "partial",
+                  "text": "Partially known environment"
+                },
+                {
+                  "id": "unknown",
+                  "text": "Unknown environment"
+                }
+              ]
+            },
+            {
+              "id": "e3",
+              "label": "Testers get the in-scope IP ranges and one standard employee account, nothing more",
+              "options": [
+                {
+                  "id": "known",
+                  "text": "Known environment"
+                },
+                {
+                  "id": "partial",
+                  "text": "Partially known environment"
+                },
+                {
+                  "id": "unknown",
+                  "text": "Unknown environment"
+                }
+              ]
+            },
+            {
+              "id": "e4",
+              "label": "Testers get a copy of the firewall rule set and a list of server OS versions, but no credentials",
+              "options": [
+                {
+                  "id": "known",
+                  "text": "Known environment"
+                },
+                {
+                  "id": "partial",
+                  "text": "Partially known environment"
+                },
+                {
+                  "id": "unknown",
+                  "text": "Unknown environment"
+                }
+              ]
+            }
+          ]
+        },
+        "answer": {
+          "slots": {
+            "e1": "known",
+            "e2": "unknown",
+            "e3": "partial",
+            "e4": "partial"
+          }
+        }
+      },
+      {
+        "id": "s2",
+        "type": "categorize",
+        "points": 1,
+        "prompt": "Place each planned reconnaissance activity under Passive or Active.",
+        "explanation": "Passive reconnaissance gathers information without sending any traffic to the target's systems: job ads, social media profiles and web-archive copies all come from third parties, so the target cannot see them happen. Active reconnaissance interacts with the target directly and can be logged or detected: a port scan, banner grabbing on the mail server and a ping sweep all send packets to the target's own hosts.",
+        "payload": {
+          "items": [
+            {
+              "id": "portscan",
+              "label": "Port-scanning the insurer's public IP range"
+            },
+            {
+              "id": "jobads",
+              "label": "Reading the insurer's job ads to learn which firewall and EDR products it runs"
+            },
+            {
+              "id": "banner",
+              "label": "Connecting to the mail server to grab its banner and software version"
+            },
+            {
+              "id": "social",
+              "label": "Collecting staff names and the email address format from social media profiles"
+            },
+            {
+              "id": "sweep",
+              "label": "Running a ping sweep across the in-scope subnet"
+            },
+            {
+              "id": "archive",
+              "label": "Browsing old copies of the insurer's website on a public web archive"
+            }
+          ],
+          "buckets": [
+            {
+              "id": "passive",
+              "label": "Passive"
+            },
+            {
+              "id": "active",
+              "label": "Active"
+            }
+          ]
+        },
+        "answer": {
+          "map": {
+            "jobads": "passive",
+            "social": "passive",
+            "archive": "passive",
+            "portscan": "active",
+            "banner": "active",
+            "sweep": "active"
+          }
+        }
+      }
+    ]
+  },
+
+  {
+    "id": "sp-gv-05",
+    "cert": "secplus",
+    "objective": "5.6",
+    "topic": "Security awareness",
+    "title": "Launch the awareness program",
+    "estMinutes": 5,
+    "scenario": "Two engineers at a manufacturing firm typed their credentials into a fake login page last month, and the firm has no security awareness program. The security lead is building one from scratch and also has to brief managers on the kinds of anomalous behavior to report.",
+    "steps": [
+      {
+        "id": "s1",
+        "type": "order",
+        "points": 1,
+        "prompt": "Arrange the awareness-program activities in order, first at the top.",
+        "explanation": "The program starts by assessing what staff need: recent incidents and which roles attackers target. Development follows, producing role-based training and phishing-simulation templates. Execution delivers the training and runs the first campaign. Reporting and monitoring then measure completion, click and report rates and give management the initial results. Those results drive revisions, and the cycle repeats on a recurring schedule.",
+        "payload": {
+          "items": [
+            {
+              "id": "execute",
+              "label": "Deliver the training and launch the first phishing-simulation campaign"
+            },
+            {
+              "id": "revise",
+              "label": "Revise the content from the results and repeat the campaign on a recurring schedule"
+            },
+            {
+              "id": "assess",
+              "label": "Review recent incidents and identify which roles attackers target most"
+            },
+            {
+              "id": "report",
+              "label": "Measure click and report rates and present the initial results to management"
+            },
+            {
+              "id": "develop",
+              "label": "Develop role-based training and phishing-simulation templates"
+            }
+          ]
+        },
+        "answer": {
+          "correctOrder": [
+            "assess",
+            "develop",
+            "execute",
+            "report",
+            "revise"
+          ]
+        }
+      },
+      {
+        "id": "s2",
+        "type": "categorize",
+        "points": 1,
+        "prompt": "Place each example under Risky, Unexpected, or Unintentional behavior.",
+        "explanation": "Risky behavior is a deliberate action the user knows weakens security: editing the hosts file to get around the web filter, or disabling endpoint protection so an unapproved tool will install. Unexpected behavior breaks from the account's normal pattern: a sign-in from another country at 03:00, or a 40 GB download by someone who normally pulls a few files a day. Unintentional behavior is an honest mistake: mistyping the company domain and landing on a lookalike site, or leaving a USB drive on a train.",
+        "payload": {
+          "items": [
+            {
+              "id": "typo",
+              "label": "Mistypes the company's domain name and enters credentials on a lookalike site"
+            },
+            {
+              "id": "hosts",
+              "label": "Edits the hosts file on their laptop to get around the web filter"
+            },
+            {
+              "id": "abroad",
+              "label": "A payroll clerk's account signs in from another country at 03:00"
+            },
+            {
+              "id": "usb",
+              "label": "Leaves a USB drive holding project files on a train"
+            },
+            {
+              "id": "edr",
+              "label": "Disables the endpoint protection agent so an unapproved tool will install"
+            },
+            {
+              "id": "bulk",
+              "label": "A user who normally downloads a few files a day pulls 40 GB from the file server"
+            }
+          ],
+          "buckets": [
+            {
+              "id": "risky",
+              "label": "Risky"
+            },
+            {
+              "id": "unexpected",
+              "label": "Unexpected"
+            },
+            {
+              "id": "unintentional",
+              "label": "Unintentional"
+            }
+          ]
+        },
+        "answer": {
+          "map": {
+            "hosts": "risky",
+            "edr": "risky",
+            "abroad": "unexpected",
+            "bulk": "unexpected",
+            "typo": "unintentional",
+            "usb": "unintentional"
+          }
+        }
+      }
+    ]
+  },
+
+  {
+    "id": "sp-gv-06",
+    "cert": "secplus",
+    "objective": "5.4",
+    "topic": "Consequences of non-compliance",
+    "title": "The cost of failing the audit",
+    "estMinutes": 4,
+    "scenario": "An audit finds that a pharmacy chain stored payment card and patient records unencrypted for three years. Legal counsel lists five outcomes the company now faces and asks you to label each one for the board report.",
+    "steps": [
+      {
+        "id": "s1",
+        "type": "match",
+        "points": 1,
+        "prompt": "Pair each consequence of non-compliance with the outcome that represents it.",
+        "explanation": "A fine is a monetary penalty, such as a regulator charging a percentage of annual turnover. A sanction is a penalty imposed by a regulator or government; fines and license loss are forms of it, but the item that is neither a payment nor a lost permit is the restriction: the ban on launching new online services until the fix is verified. Loss of license means losing the permit the business needs in order to operate, such as a pharmacy board revoking its operating permits. Reputational damage is lost trust, shown by customers moving to competitors after the news coverage. A contractual impact comes from an agreement with another party, like a partner using a breach clause to end its contract.",
+        "payload": {
+          "left": [
+            {
+              "id": "fines",
+              "label": "Fines"
+            },
+            {
+              "id": "sanctions",
+              "label": "Sanctions"
+            },
+            {
+              "id": "license",
+              "label": "Loss of license"
+            },
+            {
+              "id": "reputation",
+              "label": "Reputational damage"
+            },
+            {
+              "id": "contract",
+              "label": "Contractual impacts"
+            }
+          ],
+          "right": [
+            {
+              "id": "dcustomers",
+              "label": "Customers move their prescriptions to competitors after the story makes national news"
+            },
+            {
+              "id": "dpenalty",
+              "label": "The data-protection regulator orders a payment of 4% of annual turnover"
+            },
+            {
+              "id": "dpartner",
+              "label": "A hospital partner invokes a clause in its agreement and ends the supply deal"
+            },
+            {
+              "id": "drestrict",
+              "label": "The regulator bars the company from launching any new online services until the fix is verified"
+            },
+            {
+              "id": "dpermit",
+              "label": "The state pharmacy board revokes the permits the company needs to run its pharmacies"
+            }
+          ]
+        },
+        "answer": {
+          "pairs": {
+            "fines": "dpenalty",
+            "sanctions": "drestrict",
+            "license": "dpermit",
+            "reputation": "dcustomers",
+            "contract": "dpartner"
+          }
+        }
+      }
+    ]
+  },
+
+  {
+    "id": "sp-th-01",
+    "cert": "secplus",
+    "objective": "2.2",
+    "topic": "Threat vectors",
+    "title": "Trace how each attack got in",
+    "estMinutes": 5,
+    "scenario": "A retailer's SOC is closing out six incidents from the past month. For the quarterly threat report, each one needs tagging with the threat vector that delivered it.",
+    "steps": [
+      {
+        "id": "s1",
+        "type": "configure",
+        "points": 1,
+        "prompt": "Choose the threat vector for each incident.",
+        "explanation": "Message-based vectors arrive by email, SMS or instant message, like the parcel text. Image-based vectors hide code inside an image: an SVG is written in XML, so it can carry JavaScript that runs when the portal renders it inline or someone opens it directly. An SVG is also a file, but Sec+ lists image-based as its own vector with SVG as the textbook case; file-based here means documents and archives. File-based vectors use documents and archives, like the macro-enabled document from the file-sharing site. A voice call (vishing) is the caller posing as the bank's fraud team. Removable devices include the USB drives left in the car park. A supply chain vector reaches the target through a trusted third party, here the compromised MSP's remote-management tool. None of the six relied on an unsecure network or an open service port.",
+        "payload": {
+          "slots": [
+            {
+              "id": "parcel",
+              "label": "Staff get an SMS saying a parcel is held at the depot, with a link to pay a redelivery fee",
+              "options": [
+                {
+                  "id": "msg",
+                  "text": "Message-based"
+                },
+                {
+                  "id": "img",
+                  "text": "Image-based"
+                },
+                {
+                  "id": "file",
+                  "text": "File-based"
+                },
+                {
+                  "id": "voice",
+                  "text": "Voice call"
+                },
+                {
+                  "id": "usb",
+                  "text": "Removable device"
+                },
+                {
+                  "id": "supply",
+                  "text": "Supply chain"
+                },
+                {
+                  "id": "net",
+                  "text": "Unsecure network"
+                },
+                {
+                  "id": "port",
+                  "text": "Open service port"
+                }
+              ]
+            },
+            {
+              "id": "svg",
+              "label": "A customer's profile picture on the support portal is an SVG carrying JavaScript that runs when staff view the profile",
+              "options": [
+                {
+                  "id": "msg",
+                  "text": "Message-based"
+                },
+                {
+                  "id": "img",
+                  "text": "Image-based"
+                },
+                {
+                  "id": "file",
+                  "text": "File-based"
+                },
+                {
+                  "id": "voice",
+                  "text": "Voice call"
+                },
+                {
+                  "id": "usb",
+                  "text": "Removable device"
+                },
+                {
+                  "id": "supply",
+                  "text": "Supply chain"
+                },
+                {
+                  "id": "net",
+                  "text": "Unsecure network"
+                },
+                {
+                  "id": "port",
+                  "text": "Open service port"
+                }
+              ]
+            },
+            {
+              "id": "macro",
+              "label": "An Office document on a public file-sharing site downloads malware through a macro once staff allow macros to run",
+              "options": [
+                {
+                  "id": "msg",
+                  "text": "Message-based"
+                },
+                {
+                  "id": "img",
+                  "text": "Image-based"
+                },
+                {
+                  "id": "file",
+                  "text": "File-based"
+                },
+                {
+                  "id": "voice",
+                  "text": "Voice call"
+                },
+                {
+                  "id": "usb",
+                  "text": "Removable device"
+                },
+                {
+                  "id": "supply",
+                  "text": "Supply chain"
+                },
+                {
+                  "id": "net",
+                  "text": "Unsecure network"
+                },
+                {
+                  "id": "port",
+                  "text": "Open service port"
+                }
+              ]
+            },
+            {
+              "id": "caller",
+              "label": "Someone posing as the bank's fraud team phones a finance clerk and asks them to read back a one-time code",
+              "options": [
+                {
+                  "id": "msg",
+                  "text": "Message-based"
+                },
+                {
+                  "id": "img",
+                  "text": "Image-based"
+                },
+                {
+                  "id": "file",
+                  "text": "File-based"
+                },
+                {
+                  "id": "voice",
+                  "text": "Voice call"
+                },
+                {
+                  "id": "usb",
+                  "text": "Removable device"
+                },
+                {
+                  "id": "supply",
+                  "text": "Supply chain"
+                },
+                {
+                  "id": "net",
+                  "text": "Unsecure network"
+                },
+                {
+                  "id": "port",
+                  "text": "Open service port"
+                }
+              ]
+            },
+            {
+              "id": "carpark",
+              "label": "Flash drives labeled \"Salary review 2026\" are found scattered across the staff car park",
+              "options": [
+                {
+                  "id": "msg",
+                  "text": "Message-based"
+                },
+                {
+                  "id": "img",
+                  "text": "Image-based"
+                },
+                {
+                  "id": "file",
+                  "text": "File-based"
+                },
+                {
+                  "id": "voice",
+                  "text": "Voice call"
+                },
+                {
+                  "id": "usb",
+                  "text": "Removable device"
+                },
+                {
+                  "id": "supply",
+                  "text": "Supply chain"
+                },
+                {
+                  "id": "net",
+                  "text": "Unsecure network"
+                },
+                {
+                  "id": "port",
+                  "text": "Open service port"
+                }
+              ]
+            },
+            {
+              "id": "msp",
+              "label": "Attackers breach the retailer's managed service provider and push ransomware through the MSP's remote-management tool",
+              "options": [
+                {
+                  "id": "msg",
+                  "text": "Message-based"
+                },
+                {
+                  "id": "img",
+                  "text": "Image-based"
+                },
+                {
+                  "id": "file",
+                  "text": "File-based"
+                },
+                {
+                  "id": "voice",
+                  "text": "Voice call"
+                },
+                {
+                  "id": "usb",
+                  "text": "Removable device"
+                },
+                {
+                  "id": "supply",
+                  "text": "Supply chain"
+                },
+                {
+                  "id": "net",
+                  "text": "Unsecure network"
+                },
+                {
+                  "id": "port",
+                  "text": "Open service port"
+                }
+              ]
+            }
+          ]
+        },
+        "answer": {
+          "slots": {
+            "parcel": "msg",
+            "svg": "img",
+            "macro": "file",
+            "caller": "voice",
+            "carpark": "usb",
+            "msp": "supply"
+          }
+        }
+      }
+    ]
+  },
+
+  {
+    "id": "sp-th-02",
+    "cert": "secplus",
+    "objective": "2.3",
+    "topic": "Vulnerability types",
+    "title": "Tag the quarter's findings",
+    "estMinutes": 4,
+    "scenario": "A managed hosting firm's security team is writing up six findings from the last quarter, spread across its virtualization platform, staff phones and endpoints. The risk report needs each finding tagged with its vulnerability type.",
+    "steps": [
+      {
+        "id": "s1",
+        "type": "match",
+        "points": 1,
+        "prompt": "Pair each vulnerability type with the finding it explains.",
+        "explanation": "VM escape is code breaking out of a guest VM to reach the hypervisor and other guests. Resource reuse is when memory or storage passes to a new tenant without being cleared, so the previous tenant's data is still there. Side loading installs an app from outside the official store, like the APK from a forum. Jailbreaking removes the manufacturer's restrictions on an iOS device to gain root-level control of the OS. Memory injection places malicious code into the memory of a running, legitimate process so it runs under that process's identity. A malicious update arrives through the normal, trusted update channel after the vendor's build system is compromised.",
+        "payload": {
+          "left": [
+            {
+              "id": "vmescape",
+              "label": "VM escape"
+            },
+            {
+              "id": "reuse",
+              "label": "Resource reuse"
+            },
+            {
+              "id": "sideload",
+              "label": "Side loading"
+            },
+            {
+              "id": "jailbreak",
+              "label": "Jailbreaking"
+            },
+            {
+              "id": "meminject",
+              "label": "Memory injection"
+            },
+            {
+              "id": "malupdate",
+              "label": "Malicious update"
+            }
+          ],
+          "right": [
+            {
+              "id": "dsigned",
+              "label": "A routine, digitally signed vendor update installed a backdoor after attackers compromised the vendor's build system"
+            },
+            {
+              "id": "dleftover",
+              "label": "A newly provisioned VM's disk still held another customer's database files because the storage was reallocated without being wiped"
+            },
+            {
+              "id": "dprocess",
+              "label": "Malware wrote its code into the memory of a running, trusted process so it executed under that process's identity"
+            },
+            {
+              "id": "dapk",
+              "label": "A sales rep installed a free copy of a paid app on an Android phone from an APK posted on a forum"
+            },
+            {
+              "id": "dbreakout",
+              "label": "Code running inside one tenant's virtual machine reached the hypervisor and read another tenant's VM"
+            },
+            {
+              "id": "droot",
+              "label": "An executive removed the manufacturer's built-in restrictions on their iPhone to gain root-level control of the OS"
+            }
+          ]
+        },
+        "answer": {
+          "pairs": {
+            "vmescape": "dbreakout",
+            "reuse": "dleftover",
+            "sideload": "dapk",
+            "jailbreak": "droot",
+            "meminject": "dprocess",
+            "malupdate": "dsigned"
+          }
+        }
+      }
+    ]
+  },
+
+  {
+    "id": "sp-th-03",
+    "cert": "secplus",
+    "objective": "2.5",
+    "topic": "Mitigation techniques",
+    "title": "Close the assessment findings",
+    "estMinutes": 4,
+    "scenario": "A regional hospital's security assessment flagged six exposures, and the CISO wants one mitigation technique assigned to each before the board meets. Pick the technique that most directly fixes each exposure.",
+    "steps": [
+      {
+        "id": "s1",
+        "type": "match",
+        "points": 1,
+        "prompt": "Pair each mitigation technique with the exposure it most directly addresses.",
+        "explanation": "Segmentation splits the flat network so building IoT devices and clinical workstations sit in separate zones. Isolation cuts one compromised system off from everything else while it stays powered on for forensics. Access control (ACLs and permissions) limits the HR share to the people who need it. Monitoring means someone actually reviews the logs, which would have caught the stolen admin account within hours, not weeks. Configuration enforcement checks each device against the approved baseline (patch level, EDR agent, firewall) before it is allowed on the network. Decommissioning retires the old file server properly: wipe or destroy its drives and remove it from the network.",
+        "payload": {
+          "left": [
+            {
+              "id": "segment",
+              "label": "Segmentation"
+            },
+            {
+              "id": "isolate",
+              "label": "Isolation"
+            },
+            {
+              "id": "access",
+              "label": "Access control (ACLs and permissions)"
+            },
+            {
+              "id": "monitor",
+              "label": "Monitoring"
+            },
+            {
+              "id": "config",
+              "label": "Configuration enforcement"
+            },
+            {
+              "id": "decom",
+              "label": "Decommissioning"
+            }
+          ],
+          "right": [
+            {
+              "id": "dretired",
+              "label": "A retired file server holding old patient records is still powered on and reachable in the server room"
+            },
+            {
+              "id": "dhrshare",
+              "label": "Every employee can open the HR share that holds salary and disciplinary records"
+            },
+            {
+              "id": "dflat",
+              "label": "Smart thermostats, badge readers and clinical workstations all share one flat network"
+            },
+            {
+              "id": "dbaseline",
+              "label": "Laptops join the network with no check that their patch level, EDR agent and firewall settings match the approved baseline"
+            },
+            {
+              "id": "dlogs",
+              "label": "Authentication logs are collected but never reviewed, so a stolen admin account went unnoticed for six weeks"
+            },
+            {
+              "id": "dencrypting",
+              "label": "A nurse's workstation is encrypting files right now and must be cut off from everything, but kept powered on for forensics"
+            }
+          ]
+        },
+        "answer": {
+          "pairs": {
+            "segment": "dflat",
+            "isolate": "dencrypting",
+            "access": "dhrshare",
+            "monitor": "dlogs",
+            "config": "dbaseline",
+            "decom": "dretired"
+          }
+        }
+      }
+    ]
+  },
+
+  {
+    "id": "sp-th-04",
+    "cert": "secplus",
+    "objective": "2.4",
+    "topic": "Indicators of malicious activity",
+    "title": "Triage the overnight queue",
+    "estMinutes": 5,
+    "scenario": "You are the first analyst in at a SOC, and eight observations from the overnight shift are waiting in the queue. Before escalating, tag each one with the indicator of malicious activity it shows.",
+    "steps": [
+      {
+        "id": "s1",
+        "type": "configure",
+        "points": 1,
+        "prompt": "Choose the indicator each observation represents.",
+        "explanation": "Impossible travel: two sign-ins too far apart, in too little time, to be one person (Leeds, then Singapore 30 minutes later). Concurrent session usage: one account active in two places at the same moment. Account lockout: repeated failed attempts locked the account while its owner was not trying, which points to a brute-force attack on that one account (password spraying is built to stay under the lockout threshold, so it rarely causes one). Missing logs: a gap with no entries while the server was running suggests someone cleared them. Out-of-cycle logging: patch and firewall changes recorded outside any approved window. Published/documented: the company's own data turning up online. Resource consumption: CPU and outbound traffic spiking for no business reason. Resource inaccessibility: files that suddenly cannot be opened, here renamed by ransomware. No observation shows blocked content.",
+        "payload": {
+          "slots": [
+            {
+              "id": "travel",
+              "label": "jdoe signs in from Leeds at 09:05, signs out at 09:20, then signs in from Singapore at 09:50",
+              "options": [
+                {
+                  "id": "lockout",
+                  "text": "Account lockout"
+                },
+                {
+                  "id": "concurrent",
+                  "text": "Concurrent session usage"
+                },
+                {
+                  "id": "blocked",
+                  "text": "Blocked content"
+                },
+                {
+                  "id": "travel",
+                  "text": "Impossible travel"
+                },
+                {
+                  "id": "consume",
+                  "text": "Resource consumption"
+                },
+                {
+                  "id": "inaccess",
+                  "text": "Resource inaccessibility"
+                },
+                {
+                  "id": "outcycle",
+                  "text": "Out-of-cycle logging"
+                },
+                {
+                  "id": "published",
+                  "text": "Published/documented"
+                },
+                {
+                  "id": "missing",
+                  "text": "Missing logs"
+                }
+              ]
+            },
+            {
+              "id": "twoplaces",
+              "label": "An admin account is signed in on the admin's desk PC and, at the same moment, on a finance server the admin never uses",
+              "options": [
+                {
+                  "id": "lockout",
+                  "text": "Account lockout"
+                },
+                {
+                  "id": "concurrent",
+                  "text": "Concurrent session usage"
+                },
+                {
+                  "id": "blocked",
+                  "text": "Blocked content"
+                },
+                {
+                  "id": "travel",
+                  "text": "Impossible travel"
+                },
+                {
+                  "id": "consume",
+                  "text": "Resource consumption"
+                },
+                {
+                  "id": "inaccess",
+                  "text": "Resource inaccessibility"
+                },
+                {
+                  "id": "outcycle",
+                  "text": "Out-of-cycle logging"
+                },
+                {
+                  "id": "published",
+                  "text": "Published/documented"
+                },
+                {
+                  "id": "missing",
+                  "text": "Missing logs"
+                }
+              ]
+            },
+            {
+              "id": "helpdesk",
+              "label": "A user calls the help desk: sign-in fails with \"too many failed attempts\", though they have not tried to sign in since yesterday",
+              "options": [
+                {
+                  "id": "lockout",
+                  "text": "Account lockout"
+                },
+                {
+                  "id": "concurrent",
+                  "text": "Concurrent session usage"
+                },
+                {
+                  "id": "blocked",
+                  "text": "Blocked content"
+                },
+                {
+                  "id": "travel",
+                  "text": "Impossible travel"
+                },
+                {
+                  "id": "consume",
+                  "text": "Resource consumption"
+                },
+                {
+                  "id": "inaccess",
+                  "text": "Resource inaccessibility"
+                },
+                {
+                  "id": "outcycle",
+                  "text": "Out-of-cycle logging"
+                },
+                {
+                  "id": "published",
+                  "text": "Published/documented"
+                },
+                {
+                  "id": "missing",
+                  "text": "Missing logs"
+                }
+              ]
+            },
+            {
+              "id": "gap",
+              "label": "The domain controller's security log has no entries at all between 01:00 and 03:30, although the server was running",
+              "options": [
+                {
+                  "id": "lockout",
+                  "text": "Account lockout"
+                },
+                {
+                  "id": "concurrent",
+                  "text": "Concurrent session usage"
+                },
+                {
+                  "id": "blocked",
+                  "text": "Blocked content"
+                },
+                {
+                  "id": "travel",
+                  "text": "Impossible travel"
+                },
+                {
+                  "id": "consume",
+                  "text": "Resource consumption"
+                },
+                {
+                  "id": "inaccess",
+                  "text": "Resource inaccessibility"
+                },
+                {
+                  "id": "outcycle",
+                  "text": "Out-of-cycle logging"
+                },
+                {
+                  "id": "published",
+                  "text": "Published/documented"
+                },
+                {
+                  "id": "missing",
+                  "text": "Missing logs"
+                }
+              ]
+            },
+            {
+              "id": "sunday",
+              "label": "Patch-installation and firewall-change entries appear at 02:00 on a Sunday, outside any approved change window",
+              "options": [
+                {
+                  "id": "lockout",
+                  "text": "Account lockout"
+                },
+                {
+                  "id": "concurrent",
+                  "text": "Concurrent session usage"
+                },
+                {
+                  "id": "blocked",
+                  "text": "Blocked content"
+                },
+                {
+                  "id": "travel",
+                  "text": "Impossible travel"
+                },
+                {
+                  "id": "consume",
+                  "text": "Resource consumption"
+                },
+                {
+                  "id": "inaccess",
+                  "text": "Resource inaccessibility"
+                },
+                {
+                  "id": "outcycle",
+                  "text": "Out-of-cycle logging"
+                },
+                {
+                  "id": "published",
+                  "text": "Published/documented"
+                },
+                {
+                  "id": "missing",
+                  "text": "Missing logs"
+                }
+              ]
+            },
+            {
+              "id": "forsale",
+              "label": "A file containing the company's customer list is offered for sale on a dark-web forum",
+              "options": [
+                {
+                  "id": "lockout",
+                  "text": "Account lockout"
+                },
+                {
+                  "id": "concurrent",
+                  "text": "Concurrent session usage"
+                },
+                {
+                  "id": "blocked",
+                  "text": "Blocked content"
+                },
+                {
+                  "id": "travel",
+                  "text": "Impossible travel"
+                },
+                {
+                  "id": "consume",
+                  "text": "Resource consumption"
+                },
+                {
+                  "id": "inaccess",
+                  "text": "Resource inaccessibility"
+                },
+                {
+                  "id": "outcycle",
+                  "text": "Out-of-cycle logging"
+                },
+                {
+                  "id": "published",
+                  "text": "Published/documented"
+                },
+                {
+                  "id": "missing",
+                  "text": "Missing logs"
+                }
+              ]
+            },
+            {
+              "id": "cpu",
+              "label": "A reception PC's CPU sat at 100% all night while its outbound traffic was twenty times its normal level",
+              "options": [
+                {
+                  "id": "lockout",
+                  "text": "Account lockout"
+                },
+                {
+                  "id": "concurrent",
+                  "text": "Concurrent session usage"
+                },
+                {
+                  "id": "blocked",
+                  "text": "Blocked content"
+                },
+                {
+                  "id": "travel",
+                  "text": "Impossible travel"
+                },
+                {
+                  "id": "consume",
+                  "text": "Resource consumption"
+                },
+                {
+                  "id": "inaccess",
+                  "text": "Resource inaccessibility"
+                },
+                {
+                  "id": "outcycle",
+                  "text": "Out-of-cycle logging"
+                },
+                {
+                  "id": "published",
+                  "text": "Published/documented"
+                },
+                {
+                  "id": "missing",
+                  "text": "Missing logs"
+                }
+              ]
+            },
+            {
+              "id": "share",
+              "label": "Staff can no longer open anything on the shared drive, and every filename now ends in .crypt",
+              "options": [
+                {
+                  "id": "lockout",
+                  "text": "Account lockout"
+                },
+                {
+                  "id": "concurrent",
+                  "text": "Concurrent session usage"
+                },
+                {
+                  "id": "blocked",
+                  "text": "Blocked content"
+                },
+                {
+                  "id": "travel",
+                  "text": "Impossible travel"
+                },
+                {
+                  "id": "consume",
+                  "text": "Resource consumption"
+                },
+                {
+                  "id": "inaccess",
+                  "text": "Resource inaccessibility"
+                },
+                {
+                  "id": "outcycle",
+                  "text": "Out-of-cycle logging"
+                },
+                {
+                  "id": "published",
+                  "text": "Published/documented"
+                },
+                {
+                  "id": "missing",
+                  "text": "Missing logs"
+                }
+              ]
+            }
+          ]
+        },
+        "answer": {
+          "slots": {
+            "travel": "travel",
+            "twoplaces": "concurrent",
+            "helpdesk": "lockout",
+            "gap": "missing",
+            "sunday": "outcycle",
+            "forsale": "published",
+            "cpu": "consume",
+            "share": "inaccess"
+          }
+        }
+      }
+    ]
   }
 ];
