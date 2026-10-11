@@ -24,12 +24,12 @@
 <!-- machine-owned — run `node scripts/stamp-facts.js` to refresh; do not hand-edit -->
 | Metric | Lines | Size |
 |---|---|---|
-| app.js | 8300 | 441 KB |
+| app.js | 8297 | 441 KB |
 | styles.css | 14913 | 551 KB |
 | index.html | 2298 | 149 KB |
 | dg-system.css | 5474 | 510 KB |
-| tests/uat.js + tests/uat/ (32 modules) | 30051 | — |
-UAT checks: 5096 · E2E `test(` count: 163 · APP_VERSION: 8.159.0 · stamped-at: worktree
+| tests/uat.js + tests/uat/ (33 modules) | 30170 | — |
+UAT checks: 5114 · E2E `test(` count: 163 · APP_VERSION: 8.160.0 · stamped-at: worktree
 <!-- FACTS:AUTO:END -->
 
 | File | Purpose | Size |
@@ -135,9 +135,9 @@ npx playwright test              # E2E (tests/e2e/app.spec.js)
 
 | Version | Features Added |
 |---|---|
+| v8.160.0 | Spaced repetition becomes a daily plan: Home asks for today's share, the rest spreads over the next days |
 | v8.159.0 | Net+ firewall PBQs rebuilt: one right rule order each, no port giveaways, single-select analyze |
 | v8.158.0 | Sim Lab: 10 Sec+ firewall-rule PBQs (build, order, find the rule that never fires); bank 129 |
-| v8.157.0 | Sim Lab: 16 new Sec+ PBQs (wireless security + governance/threat) |
 
 _Older releases (v7.60.0 and back) live in [CHANGELOG.md](./CHANGELOG.md)._
 
@@ -154,6 +154,7 @@ The Sim Lab faceplate/wiremap/slots (`.faceplate*`/`.wm*`/`.slots*`) tokens live
 - Exam answers init must include `cliRan: [], topoState: {}` for PBQ types
 - `hasAnswer` checks must include `Object.keys(a.topoState || {}).length > 0`
 - **Page switches go through `showPage` only, and it must finish each switch exactly once** (v8.148.0). The exit completes on the page's OWN `animationend` (`e.target === current`; child animations bubble) or a 300ms timer, whichever first, and both clear the other. Never add a bare `animationend` listener to a `.page`: when the timer wins (busy thread, background tab) it stays attached and re-runs a stale switch on a later animation, which made a new quiz's loading screen jump to the previous quiz. `tests/uat/300-page-switch-integrity.js` replays it.
+- **Constants inside a `features/*.js` IIFE are invisible to app.js and other modules.** A `typeof X === 'number'` guard silently falls back and a bare reference throws inside a `try` (v8.160.0: the lost `SR_SESSION_CAP` showed "Review 62 cards" on Home and dropped reviews from next-best-move). Export a function (`window.getSrTodayPlan`) and read that.
 - `setQuestionText(el, raw)` order is **escape-THEN-highlight** (`escHtml` → `highlightExamKeywords` → `innerHTML`). Reversing it is an XSS hole since question text is AI-generated.
 - The `_fnBody(src, name)` helper used by UAT extracts function bodies via brace-depth walking. **Prefix-match trap**: `tbShowCoach` will match `tbShowCoachModalLoading`. When writing UAT for a function, pick a name that's either unique or specify the exact suffix.
 - Curated exemplars (`CERT_PACK.questionExemplars`) are few-shot **style references** injected into the generation prompt — never served as quiz questions. MCQs key `answer: 'B'`; multi-selects key `answers: ['A','B']` (plural, the shape the runtime scorer reads) and may carry options past D. `_formatExemplarsForPrompt` must read BOTH keys and emit only the option letters present — it must also stay self-contained (no external helpers, `typeof CERT_PACK` guarded) because UAT extracts and runs its body in a bare vm sandbox.

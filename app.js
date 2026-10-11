@@ -1,9 +1,9 @@
 // ══════════════════════════════════════════
-// Network+ AI Quiz — app.js  v8.159.0
+// Network+ AI Quiz — app.js  v8.160.0
 // ══════════════════════════════════════════
 
 // ── CONSTANTS ──
-const APP_VERSION = '8.159.0';
+const APP_VERSION = '8.160.0';
 // v4.99.45 (Phase 6b): expose APP_VERSION on window so the web-vitals
 // collector (lib/web-vitals-collector.js, loaded BEFORE app.js so its
 // PerformanceObservers attach earlier) can stamp this version onto every
@@ -765,7 +765,7 @@ function _showQuotaExceededUI(detail) {
     }
   } catch (_) {}
   var _srDue = 0;
-  try { if (typeof getSrDueCount === 'function') _srDue = getSrDueCount() || 0; } catch (_) {}
+  try { _srDue = (typeof getSrTodayPlan === 'function') ? getSrTodayPlan().todo : (typeof getSrDueCount === 'function' ? getSrDueCount() || 0 : 0); } catch (_) {}
   var _srBtnHtml = _srDue > 0
     ? '<button type="button" class="quota-exceeded-cta" id="quota-review-sr">Review ' + _srDue + ' saved card' + (_srDue === 1 ? '' : 's') + ' &middot; no AI needed &rarr;</button>'
     : '';
@@ -3521,16 +3521,13 @@ function _computeNextBestMove() {
 
   // 1. SR queue
   try {
-    if (typeof getSrStats === 'function') {
-      const srStats = getSrStats();
-      if (srStats && srStats.due > 0) {
-        const capped = Math.min(srStats.due, SR_SESSION_CAP);
-        const minutes = Math.max(2, Math.round(capped * 0.5));
-        const titleText = srStats.due <= SR_SESSION_CAP
-          ? (srStats.due === 1
-              ? 'Review 1 card due'
-              : 'Review ' + srStats.due + ' cards due')
-          : 'Review ' + capped + ' of ' + srStats.due + ' cards due';
+    if (typeof getSrTodayPlan === 'function') {
+      // v8.160.0: today's review plan. The old bare session-cap constant threw
+      // here (closure-private in sr-review.js) and the try swallowed it.
+      const todo = getSrTodayPlan().todo;
+      if (todo > 0) {
+        const minutes = Math.max(2, Math.round(todo * 0.5));
+        const titleText = todo === 1 ? 'Review 1 card due' : 'Review ' + todo + ' cards due';
         return {
           type: 'sr-review',
           icon: '',

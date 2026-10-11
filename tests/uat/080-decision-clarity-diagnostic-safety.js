@@ -49,7 +49,7 @@ console.log('\n\x1b[1m── v4.76.0 DECISION-CLARITY POLISH ──\x1b[0m');
 test('v4.76.0 logic: _computeNextBestMove function defined',
   /function\s+_computeNextBestMove\s*\(/.test(js));
 test('v4.76.0 logic: _computeNextBestMove checks SR queue first',
-  /function\s+_computeNextBestMove[\s\S]{0,1500}getSrStats[\s\S]{0,1500}srStats\.due/.test(js));
+  /function\s+_computeNextBestMove[\s\S]{0,1500}getSrTodayPlan\(\)\.todo/.test(js));   // v8.160.0: today's review plan
 test('v4.76.0 logic: _computeNextBestMove checks daily challenge',
   /_computeNextBestMove[\s\S]{0,3000}isDailyChallengeDoneToday/.test(js));
 test('v4.76.0 logic: _computeNextBestMove checks weak warmup path',

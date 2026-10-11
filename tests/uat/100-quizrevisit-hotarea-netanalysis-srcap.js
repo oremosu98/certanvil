@@ -1114,11 +1114,11 @@ test('v4.85.1 SRSessionCap: renderSrReviewCard shows capped headline when due > 
       && /stats\.due\s*<=\s*SR_SESSION_CAP/.test(body);
   })());
 
-test('v4.85.1 SRSessionCap: NBM (_computeNextBestMove) shows capped title',
+test('v8.160.0 SRSessionCap: NBM (_computeNextBestMove) titles today\'s review plan, not the backlog',
   (() => {
     const body = _fnBody(js, '_computeNextBestMove');
-    return body && /Math\.min\(srStats\.due,\s*SR_SESSION_CAP\)/.test(body)
-      && /srStats\.due\s*<=\s*SR_SESSION_CAP/.test(body);
+    // The old title read the closure-private session-cap constant, which threw.
+    return body && /getSrTodayPlan\(\)\.todo/.test(body) && !/SR_SESSION_CAP/.test(body);
   })());
 
 test('v4.85.1 SRSessionCap: _srEndReview shows remaining cards + Continue button',

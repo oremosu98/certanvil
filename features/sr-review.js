@@ -25,6 +25,8 @@
   const SR_EXAM_BUFFER_PCT = 0.15;      // #7: leave 15% of days-to-exam as a final-pass buffer
   const SR_LAPSE_FACTOR = 0.30;         // #3: a wrong answer drops the interval to ~30% of prior (floor 1d), not a hard reset to 1
   const SR_LIGHT_DAY_THRESHOLD = 8;     // #8: fewer than this many due cards = a "light day" that offers top-up practice
+  const SR_PLAN_CEILING = 50;           // v8.160.0: exam catch-up never plans more than this in a day
+  const SR_DAY_KEY = 'nplus_sr_day';    // v8.160.0: {date, count} of real reviews done today (this device)
   const SR_FREE_DAILY_CAP = 5;          // GAP-1 (2026-06-11): free tier reviews 5 cards/day
                                         // (cert-ios-daily-limit mockup: "15 practice + 5 review").
                                         // Gentle queue, not a wall — extra due cards simply wait
@@ -55,6 +57,88 @@
         count: _srFreeReviewedToday() + 1
       }));
     } catch (_) {}
+  }
+
+  // ── v8.160.0: daily review plan ─────────────────────────────────────────
+  // Reviews come as a daily plan: the chosen session size per day, overflow
+  // carried to the next days. Before this, finishing 30 cards just put the next
+  // 30 on Home, so a backlog never felt finishable (founder, 2026-10-11: 65 of
+  // 69 cards never reviewed). Spec: docs/superpowers/specs/2026-10-11-sr-daily-plan-design.md
+  function _srLocalDay(t) { return new Date(t || Date.now()).toLocaleDateString('en-CA'); }
+  function _srReviewedToday() {
+    try {
+      const raw = JSON.parse(localStorage.getItem(SR_DAY_KEY) || 'null');
+      if (raw && raw.date === _srLocalDay()) return raw.count || 0;
+    } catch (_) {}
+    return 0;
+  }
+  function _srBumpReviewedToday() {
+    try { localStorage.setItem(SR_DAY_KEY, JSON.stringify({ date: _srLocalDay(), count: _srReviewedToday() + 1 })); } catch (_) {}
+  }
+  // Reviews per day. 'all' = no plan. With an exam booked, the rate rises only
+  // when the cards due before exam day would not otherwise fit.
+  function _srPerDay(sessionSize, daysToExam, beforeExam) {
+    if (sessionSize === 'all') return Infinity;
+    let perDay = Math.min(sessionSize || SR_SESSION_CAP, SR_SESSION_CAP);
+    if (daysToExam > 0 && beforeExam > 0) {
+      perDay = Math.max(perDay, Math.min(SR_PLAN_CEILING, Math.ceil(beforeExam / daysToExam)));
+    }
+    return perDay;
+  }
+  // Spread the schedule: natural[i] = cards due on day i (day 0 = due now).
+  // Day 0 plans todayTodo; each later day plans up to perDay of what is due
+  // plus what carried over. spillDays = how many days the overflow reaches.
+  function _srPlanDays(natural, perDay, todayTodo) {
+    if (!isFinite(perDay)) return { counts: natural.slice(), spillDays: 0, carryLeft: 0 };
+    const counts = [todayTodo];
+    let carry = Math.max(0, natural[0] - todayTodo), spillDays = 0;
+    for (let i = 1; i < natural.length; i++) {
+      const load = natural[i] + carry;
+      const n = Math.min(load, perDay);
+      if (carry > 0) spillDays = i;
+      counts.push(n);
+      carry = load - n;
+    }
+    return { counts: counts, spillDays: spillDays, carryLeft: carry };
+  }
+  // "32 more over the next 2 days" / "1 more tomorrow" / "190 more across the next week".
+  // mode 'rest' (Home, no big number next to today's): "the rest is spread over the next 2 days".
+  // mode 'sentence' (complete screen): "32 more come up over the next 2 days."
+  function _srSpreadPhrase(later, spillDays, carryLeft, mode) {
+    if (!later || later <= 0) return '';
+    const when = carryLeft > 0 ? 'across the next week'
+      : (spillDays <= 1 ? 'tomorrow' : 'over the next ' + spillDays + ' days');
+    if (mode === 'rest') return when === 'tomorrow' ? 'the rest moves to tomorrow' : 'the rest is spread ' + when;
+    if (mode === 'sentence') return later + ' more ' + (later === 1 ? 'comes' : 'come') + ' up ' + when + '.';
+    return later + ' more ' + when;
+  }
+  // Anki-style load balancing: an interval of 3+ days moves to the least-busy
+  // day within ±10% (min ±1), never past maxDays (the exam cap). Ties keep the
+  // exact interval, so an empty queue changes nothing.
+  function _srLeastLoadedDay(queue, entry, days, maxDays, now) {
+    if (!Array.isArray(queue) || !(days >= 3)) return days;
+    const DAY = 86400000;
+    const t0 = new Date(now); t0.setHours(0, 0, 0, 0);
+    const base = t0.getTime();
+    const exact = Math.round(days);
+    const w = Math.max(1, Math.round(days * 0.1));
+    function load(d) {
+      const a = base + d * DAY, b = a + DAY;
+      let n = 0;
+      queue.forEach(function (e) {
+        if (e && !e.graduated && e.qHash !== entry.qHash && (e.nextReview || 0) >= a && (e.nextReview || 0) < b) n++;
+      });
+      return n;
+    }
+    let best = days, bestLoad = load(exact);
+    for (let k = 1; k <= w; k++) {
+      [exact - k, exact + k].forEach(function (d) {
+        if (d < 1 || d > maxDays) return;
+        const l = load(d);
+        if (l < bestLoad) { best = d; bestLoad = l; }
+      });
+    }
+    return best;
   }
 
   // #8: review session preferences (session size + top-up). Cloud-flushed like
@@ -89,7 +173,7 @@
   // Apply SM-2 scheduling to an entry based on the user's outcome.
   // outcome: 'correct-confident' | 'correct-uncertain' | 'wrong'
   // Mutates entry in place AND returns it.
-  function _srSchedule(entry, outcome) {
+  function _srSchedule(entry, outcome, queue) {
     const now = Date.now();
     entry.lastSeen = now;
     entry.attempts = (entry.attempts || 0) + 1;
@@ -130,9 +214,17 @@
     // localStorage via getDaysToExam); no new field. days<=0/null reverts to the
     // open-ended schedule above.
     const _daysToExam = (typeof getDaysToExam === 'function') ? getDaysToExam() : null;
+    let _capMax = 180;
     if (_daysToExam != null && _daysToExam > 0) {
       const buffer = Math.max(1, Math.round(_daysToExam * SR_EXAM_BUFFER_PCT));
+      _capMax = Math.max(1, _daysToExam - buffer);
       entry.intervalDays = Math.min(entry.intervalDays, Math.max(1, _daysToExam - buffer));
+    }
+    // v8.160.0: spread reviews off already-busy days (graduation still judges
+    // the unbalanced interval, so a nudge from 30 to 27 days can't block it).
+    const _gradInterval = entry.intervalDays;
+    if (queue && typeof _srLeastLoadedDay === 'function') {
+      entry.intervalDays = _srLeastLoadedDay(queue, entry, entry.intervalDays, _capMax, now);
     }
 
     entry.nextReview = now + entry.intervalDays * 86400000;
@@ -140,7 +232,7 @@
     // Graduation: sustained mastery means it leaves the active queue.
     if (entry.correctStreak >= SR_GRADUATION_STREAK
         && entry.easeFactor >= SR_GRADUATION_EASE
-        && entry.intervalDays >= SR_GRADUATION_INTERVAL) {
+        && Math.max(entry.intervalDays, _gradInterval) >= SR_GRADUATION_INTERVAL) {
       entry.graduated = true;
     }
 
@@ -188,7 +280,7 @@
       entry.difficulty = q.difficulty || entry.difficulty || null;
       entry.explanation = q.explanation || entry.explanation || '';
       entry.scenario = q.scenario || entry.scenario || null;  // v8.147.0
-      _srSchedule(entry, 'wrong');
+      _srSchedule(entry, 'wrong', queue);
       saveSrQueue(queue);
       return entry;
     }
@@ -241,7 +333,7 @@
     const queue = loadSrQueue();
     const idx = queue.findIndex(e => e.qHash === qHash);
     if (idx === -1) return null;
-    _srSchedule(queue[idx], outcome);
+    _srSchedule(queue[idx], outcome, queue);
     saveSrQueue(queue);
     return queue[idx];
   }
@@ -272,6 +364,33 @@
     const due = queue.filter(e => !e.graduated && (e.nextReview || 0) <= now).length;
     const active = total - graduated;
     return { total, graduated, active, due };
+  }
+
+  // v8.160.0: today's review plan. todo = what Home asks for today; later =
+  // due cards planned for the coming days; counts = the 7-day plan.
+  function getSrTodayPlan() {
+    const prefs = loadSrPrefs();
+    const queue = loadSrQueue();
+    const now = Date.now();
+    const active = queue.filter(e => !e.graduated);
+    const due = active.filter(e => (e.nextReview || 0) <= now).length;
+    const dte = (typeof getDaysToExam === 'function') ? getDaysToExam() : null;
+    let beforeExam = 0;
+    if (dte != null && dte > 0) {
+      const t0 = new Date(now); t0.setHours(0, 0, 0, 0);
+      const examAt = t0.getTime() + dte * 86400000;
+      beforeExam = active.filter(e => (e.nextReview || 0) < examAt).length;
+    }
+    let perDay = _srPerDay(prefs.sessionSize, dte, beforeExam);
+    let done = _srReviewedToday();
+    if (typeof _srIsFreeTier === 'function' && _srIsFreeTier()) {
+      perDay = Math.min(perDay, SR_FREE_DAILY_CAP);
+      done = Math.max(done, _srFreeReviewedToday());
+    }
+    const todo = isFinite(perDay) ? Math.max(0, Math.min(due, perDay - done)) : due;
+    const spread = _srPlanDays(buildSrForecast().days.map(d => d.count), perDay, todo);
+    return { due: due, done: done, perDay: perDay, todo: todo, later: due - todo,
+      spillDays: spread.spillDays, carryLeft: spread.carryLeft, counts: spread.counts };
   }
 
   // #6 — Review forecast. Build a 7-day projection of upcoming due cards by
@@ -316,6 +435,15 @@
     if (!container) return;
     opts = opts || {};
     const fc = buildSrForecast();
+    // v8.160.0: the bars show the daily plan (overflow carried forward), not raw
+    // due counts, so a backlog reads as a few manageable days instead of a spike.
+    try {
+      const plan = (typeof getSrTodayPlan === 'function') ? getSrTodayPlan() : null;
+      if (plan) {
+        fc.days.forEach((d, i) => { d.count = plan.counts[i]; });
+        fc.maxCount = fc.days.reduce((m, x) => Math.max(m, x.count), 0);
+      }
+    } catch (_) {}
     const max = fc.maxCount;
     let strip = '<div class="sr-fc-strip">';
     fc.days.forEach((d, i) => {
@@ -496,6 +624,14 @@
     let _srCap = (_srPrefs.sessionSize === 'all')
       ? due.length
       : Math.min(_srPrefs.sessionSize || SR_SESSION_CAP, SR_SESSION_CAP);
+    // v8.160.0 daily plan: a session serves today's share. Once that is done, a
+    // session the learner starts by hand reviews one day ahead (it counts toward
+    // today and thins the days to come). typeof guard: vm fixtures lack it.
+    let _srPlanToday = null;
+    try { if (typeof getSrTodayPlan === 'function') _srPlanToday = getSrTodayPlan(); } catch (_) {}
+    if (_srPlanToday && isFinite(_srPlanToday.perDay)) {
+      _srCap = _srPlanToday.todo > 0 ? _srPlanToday.todo : _srPlanToday.perDay;
+    }
     // GAP-1: free tier reviews 5 cards/day — gentle queue, extras wait for
     // tomorrow. If today's 5 are already done, say so instead of starting.
     // typeof guard: UAT vm fixtures eval this body without the helpers.
@@ -900,6 +1036,8 @@
       // Retries don't reach this branch, so a card costs exactly one credit.
       // typeof guard: UAT vm fixtures eval this body without the helpers.
       if (!_srSession.practice && typeof _srBumpFreeReviewed === 'function') _srBumpFreeReviewed();
+      // v8.160.0: and toward today's review plan (practice top-ups never count).
+      if (!_srSession.practice && typeof _srBumpReviewedToday === 'function') _srBumpReviewedToday();
 
       // Tally
       _srSession.answersGiven++;
@@ -1036,11 +1174,25 @@
             + '<a class="btn btn-primary sr-continue-btn" href="https://certanvil.com/pricing" target="_blank" rel="noopener">Go Pro →</a>'
             + '</div>';
         } else {
-          const remMin = Math.max(2, Math.round(Math.min(remaining, SR_SESSION_CAP) * 0.5));
-          html += '<div class="sr-remaining-row">'
-            + '<span class="sr-remaining-text">' + remaining + ' more card' + (remaining === 1 ? '' : 's') + ' still due</span>'
-            + '<button class="btn btn-primary sr-continue-btn" onclick="startSrReview()">Continue · ~' + remMin + ' min →</button>'
-            + '</div>';
+          // v8.160.0: plan-aware. While today's plan has cards left, Continue
+          // finishes it. Once it's done, say so, show where the rest went, and
+          // keep a quieter "review more now" for anyone cramming.
+          let _plan = null;
+          try { if (typeof getSrTodayPlan === 'function') _plan = getSrTodayPlan(); } catch (_) {}
+          if (_plan && isFinite(_plan.perDay) && _plan.todo === 0) {
+            const more = Math.min(remaining, _plan.perDay);
+            html += '<div class="sr-remaining-row">'
+              + '<span class="sr-remaining-text">That\'s today\'s reviews done. ' + _srSpreadPhrase(remaining, _plan.spillDays, _plan.carryLeft, 'sentence') + '</span>'
+              + '<button class="btn sr-continue-btn" onclick="startSrReview()">Review ' + more + ' more now</button>'
+              + '</div>';
+          } else {
+            const left = _plan ? _plan.todo : remaining;
+            const remMin = Math.max(2, Math.round(Math.min(left, SR_SESSION_CAP) * 0.5));
+            html += '<div class="sr-remaining-row">'
+              + '<span class="sr-remaining-text">' + left + ' card' + (left === 1 ? '' : 's') + ' left today</span>'
+              + '<button class="btn btn-primary sr-continue-btn" onclick="startSrReview()">Continue · ~' + remMin + ' min →</button>'
+              + '</div>';
+          }
         }
       }
       // #8 top-up — on a light day, offer extra practice on weak topics (helper
@@ -1156,6 +1308,8 @@
   window.getSrDueCount            = getSrDueCount;
   window.getSrDueEntries          = getSrDueEntries;
   window.getSrStats               = getSrStats;
+  window.getSrTodayPlan           = getSrTodayPlan;   // v8.160.0: Home, next-best-move, forecast
+  window._srSpreadPhrase          = _srSpreadPhrase;
   // SR forecast
   window.buildSrForecast          = buildSrForecast;
   window.renderSrForecast         = renderSrForecast;

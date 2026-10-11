@@ -975,7 +975,7 @@ test('v4.74.0 helpers: loadSrQueue + saveSrQueue defined',
 test('v4.74.0 helpers: _srHash defined (djb2 base36)',
   /function\s+_srHash[\s\S]{0,300}toString\(36\)/.test(js));
 test('v4.74.0 helpers: _srSchedule defined with SM-2 logic',
-  /function\s+_srSchedule\s*\(entry,\s*outcome\)/.test(js));
+  /function\s+_srSchedule\s*\(entry,\s*outcome(,\s*queue)?\)/.test(js));   // v8.160.0: optional queue (load balancing)
 test('v4.74.0 helpers: addToSrQueue defined',
   /function\s+addToSrQueue\s*\(/.test(js));
 test('v4.74.0 helpers: updateSrEntry defined',

@@ -1581,23 +1581,29 @@
     // overdue reviews over a fresh weak-spots set. We override the click handler
     // via the .onclick PROPERTY (the static onclick="applyPreset('focused')"
     // attribute stays in the markup as the not-due default + UAT contract).
-    let srDue = 0;
+    // v8.160.0: lead with TODAY'S review plan, never the whole backlog. This
+    // used to read SR_SESSION_CAP, which is closure-private in sr-review.js, so
+    // the guard fell back to the full due count ("Review 62 cards · 31 min").
+    let srDue = 0, srPlan = null;
     try {
-      if (typeof getSrStats === 'function') {
+      if (typeof getSrTodayPlan === 'function') {
+        srPlan = getSrTodayPlan();
+        srDue = srPlan.todo;
+      } else if (typeof getSrStats === 'function') {
         const s = getSrStats();
         srDue = (s && typeof s.due === 'number') ? s.due : 0;
       }
     } catch (_) { srDue = 0; }
 
     if (srDue > 0) {
-      const cap = (typeof SR_SESSION_CAP === 'number') ? SR_SESSION_CAP : srDue;
-      const sessionN = Math.min(srDue, cap);
-      const mins = Math.max(2, Math.round(sessionN * 0.5));
+      const mins = Math.max(2, Math.round(srDue * 0.5));
       if (minEl) minEl.textContent = String(mins);
       if (titleEl) titleEl.textContent = srDue === 1 ? 'Review 1 card' : `Review ${srDue} cards`;
       if (metaEl) {
-        metaEl.textContent = srDue > cap
-          ? `spaced repetition · ${cap} of ${srDue} due now`
+        const spread = (srPlan && srPlan.later > 0 && typeof _srSpreadPhrase === 'function')
+          ? _srSpreadPhrase(srPlan.later, srPlan.spillDays, srPlan.carryLeft, 'rest') : '';
+        metaEl.textContent = spread
+          ? `spaced repetition · ${spread}`
           : 'spaced repetition · re-encounter what you forgot';
       }
       if (launchEl) launchEl.onclick = function () { if (typeof startSrReview === 'function') startSrReview(); };

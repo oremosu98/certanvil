@@ -725,7 +725,7 @@
     saveSrPrefs(prefs);
     renderSrSettings();
     if (typeof showSuccessToast === 'function') {
-      showSuccessToast('Review session size: ' + (n === 'all' ? 'all due cards' : n + ' cards'));
+      showSuccessToast('Reviews per day: ' + (n === 'all' ? 'all due cards' : n));
     }
   }
 
