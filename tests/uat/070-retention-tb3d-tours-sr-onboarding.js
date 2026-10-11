@@ -1324,7 +1324,7 @@ test('onb gate: vm — applyJsonb extracts this cert activated slice (sibling st
       const sets = {};
       const ctx = { USER_DATA_KEYS: new Set(['nplus_activated']), TABLE_BACKED_KEYS: new Set(), localStorage: { setItem: (k, v) => { sets[k] = v; } }, window: { CURRENT_CERT: 'secplus' }, JSON: JSON, Object: Object };
       vm.createContext(ctx);
-      vm.runInContext(cc + '\n' + apply + '\napplyJsonbToLocalStorage({activated:{secplus:{baseline:700},netplus:{baseline:400}}});', ctx);
+      vm.runInContext(cc + '\n' + _fnBody(cjs, '_localHas') + '\n' + apply + '\napplyJsonbToLocalStorage({activated:{secplus:{baseline:700},netplus:{baseline:400}}});', ctx);
       return sets['nplus_activated'] === JSON.stringify({ baseline: 700 });
     } catch (e) { return false; }
   })());
@@ -1395,7 +1395,7 @@ test('cloud cert-keying: vm — applyJsonb extracts this cert; legacy flat sr_qu
       const sets = {};
       const ctx = { USER_DATA_KEYS: new Set(['nplus_sr_queue', 'nplus_streak']), TABLE_BACKED_KEYS: new Set(), localStorage: { setItem: (k, v) => { sets[k] = v; } }, window: { CURRENT_CERT: 'secplus' }, JSON: JSON, Object: Object };
       vm.createContext(ctx);
-      vm.runInContext(cc + '\n' + apply + '\napplyJsonbToLocalStorage({sr:{secplus:{queue:[1,2]},netplus:{queue:[9]}}});', ctx);
+      vm.runInContext(cc + '\n' + _fnBody(cjs, '_localHas') + '\n' + apply + '\napplyJsonbToLocalStorage({sr:{secplus:{queue:[1,2]},netplus:{queue:[9]}}});', ctx);
       const perCert = sets['nplus_sr_queue'] === JSON.stringify([1, 2]);   // secplus, not netplus
       delete sets['nplus_sr_queue'];
       vm.runInContext('applyJsonbToLocalStorage({sr_queue:[7,7]});', ctx);

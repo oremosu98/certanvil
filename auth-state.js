@@ -416,10 +416,13 @@
         e.preventDefault();
         var sb = getSupabase();
         var cs = getCloudStore();
-        if (cs) cs.flushNow().catch(function () {});
+        // v8.151.0: upload first, and only clear this device once everything is
+        // confirmed in the cloud. Sync had never worked, so an unconditional
+        // clear here deleted the only copy of a student's history.
+        var _flushed = cs ? cs.flushNow().catch(function () {}) : Promise.resolve();
         if (sb) {
-          sb.auth.signOut().then(function () {
-            if (cs) cs.clearLocalCache();
+          _flushed.then(function () { return sb.auth.signOut(); }).then(function () {
+            _clearLocalIfSafe(cs);
             renderAnonymous();
           }).catch(function (err) {
             console.warn('[auth-state] signOut threw', err);
@@ -532,6 +535,10 @@
     // sync "is the user signed in?" checks elsewhere in the app (async access
     // to Supabase session is too slow + clunky for UI gates).
     try { window._certanvilSignedIn = true; } catch (_) {}
+    // v8.151.0: hand the session to cloud-store. It used to read a supabase-js v1
+    // field that v2 doesn't have, so it never saw a signed-in user and nothing
+    // ever synced.
+    try { var _csS = getCloudStore(); if (_csS && _csS.setSession) _csS.setSession(session); } catch (_) {}
     renderSignedIn(session.user, { role: 'user' });
     // Then progressively enhance: fetch profile + re-render only if role differs
     // (e.g. admin) to surface the admin link. Cloud-store hydrate runs the same
@@ -575,8 +582,20 @@
     // v4.99.34 — clear the signed-in flag (paired with handleSignedIn above).
     try { window._certanvilSignedIn = false; } catch (_) {}
     var cs = getCloudStore();
-    if (cs) cs.clearLocalCache();
+    _clearLocalIfSafe(cs);
     renderAnonymous();
+  }
+
+  // v8.151.0: SIGNED_OUT also fires on token expiry or a sign-out in another
+  // tab, so the local copy is cleared only when cloud-store confirms it is
+  // backed up. Otherwise it stays (privacy trade-off on shared devices, but
+  // never data loss).
+  function _clearLocalIfSafe(cs) {
+    if (!cs) return;
+    var safe = (typeof cs.isSafeToClear !== 'function') || cs.isSafeToClear();
+    if (safe) cs.clearLocalCache();
+    else console.warn('[auth-state] signed out with unsynced study data — keeping this device\'s copy');
+    if (cs.setSession) cs.setSession(null);
   }
 
   // ── Init ───────────────────────────────────────────────────────────────

@@ -766,7 +766,8 @@ test('v4.99.34 SignedInFlag behavioral: handleSignedOut() flips the flag from tr
     const ctx = {
       window: win,
       getCloudStore: () => null,
-      renderAnonymous: () => {}
+      renderAnonymous: () => {},
+      _clearLocalIfSafe: () => {}   // v8.151.0 guarded clear (tested in 310-cloud-sync-merge-first.js)
     };
     require('vm').createContext(ctx);
     require('vm').runInContext(m[0] + '; handleSignedOut();', ctx);

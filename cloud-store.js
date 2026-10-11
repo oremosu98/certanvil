@@ -129,6 +129,22 @@
   var syncStatus = 'idle';  // 'idle' | 'pending' | 'syncing' | 'error' | 'offline'
   var statusListeners = [];
   var inflightFlush = null;
+  // v8.151.0 (founder SQL 2026-10-11: profiles.metadata and quiz_history were
+  // empty for EVERY user — nothing had ever synced). The session accessors read
+  // sb.auth._currentSession / sb.auth.session(), which supabase-js v2 doesn't
+  // have, so isSignedIn() was always false. auth-state now hands the session in
+  // via setSession(). And because hydrate() used to OVERWRITE local data with
+  // the cloud copy, simply fixing the accessor would have written an empty cloud
+  // over real history. Rules now:
+  //   - hydrate merges: cloud only fills what this device lacks; history is a
+  //     union; then everything local is pushed up.
+  //   - nothing uploads until the first hydrate has merged (a fresh device or a
+  //     pre-hydrate write can't clobber the cloud copy).
+  //   - an upload keeps cloud keys this device doesn't have, and never writes
+  //     the profile blind if the cloud copy couldn't be read.
+  //   - history rows are matched on the quiz time (item.date), not `at`.
+  var _session = null;
+  var _hydrated = false;
 
   // ── Public API ──────────────────────────────────────────────────────────
   var cloudStore = {
@@ -140,6 +156,7 @@
       if (!USER_DATA_KEYS.has(key)) return;       // not a user-data key — no-op
       if (!isSignedIn()) return;                  // anonymous — no cloud writes
       pendingFlush.add(key);
+      if (!_hydrated) return;                     // v8.151.0: queued until the first merge
       setStatus('pending');
       if (flushTimer) clearTimeout(flushTimer);
       flushTimer = setTimeout(doFlush, FLUSH_DEBOUNCE_MS);
@@ -175,34 +192,56 @@
         var meta = (profileResult.data && profileResult.data.metadata) || {};
         var examDate = profileResult.data && profileResult.data.exam_date;
 
-        // Apply jsonb-stored keys to localStorage
+        // Fill-only: cloud values land only where this device has nothing (v8.151.0)
         applyJsonbToLocalStorage(meta);
         // exam_date lives in its own profiles column, not in metadata jsonb,
         // so write it via the centralised KEY_PREFIX const at the top of
         // this file (keeps cloud-store the single owner of the 'nplus_'
         // prefix; the variable-arg form satisfies the literal-string lint).
-        if (examDate) {
+        if (examDate && !_localHas(KEY_PREFIX + 'exam_date')) {
           try { localStorage.setItem(KEY_PREFIX + 'exam_date', examDate); } catch (e) {}
         }
 
-        // Apply quiz_history (latest 500 rows) to localStorage
+        // quiz_history: union of local + cloud (never replace local with cloud)
         if (!historyResult.error && Array.isArray(historyResult.data)) {
-          var historyArr = historyResult.data.map(rowToHistoryItem);
-          try { localStorage.setItem(KEY_PREFIX + 'history', JSON.stringify(historyArr)); } catch (e) {}
+          var local = getLocalHistoryArr();
+          var merged = _mergeHistory(local, historyResult.data.map(rowToHistoryItem));
+          if (merged.length !== local.length) {
+            try { localStorage.setItem(KEY_PREFIX + 'history', JSON.stringify(merged)); } catch (e) {}
+          }
         }
 
         lastSyncAt = Date.now();
         setStatus('idle');
+        // First merge done: push everything this device holds (the cloud keeps
+        // anything only it had, see doFlush), then normal debounced syncing.
+        _hydrated = true;
+        USER_DATA_KEYS.forEach(function (k) { pendingFlush.add(k); });
+        if (flushTimer) clearTimeout(flushTimer);
+        flushTimer = setTimeout(doFlush, 50);
         return { profile: profileResult.data, historyCount: (historyResult.data || []).length };
       }).catch(function (err) {
         console.error('[cloud-store] hydrate failed', err);
+        _syncTelemetry('hydrate', err);
         setStatus('error');
         throw err;
       });
     },
 
-    // Clear localStorage user-data keys. Called on SIGNED_OUT.
+    // v8.151.0: auth-state hands the Supabase session in (null on sign-out).
+    setSession: function (session) {
+      _session = (session && session.user) ? session : null;
+      if (!_session) _hydrated = false;
+    },
+    getUserId: function () { return getUserId(); },
+    // v8.151.0: local data may only be cleared once it is safely in the cloud.
+    isSafeToClear: function () {
+      return _hydrated && pendingFlush.size === 0 && !inflightFlush && syncStatus !== 'error' && lastSyncAt != null;
+    },
+
+    // Clear localStorage user-data keys. Called on SIGNED_OUT (only when isSafeToClear()).
     clearLocalCache: function () {
+      _hydrated = false;
       USER_DATA_KEYS.forEach(function (key) {
         try { localStorage.removeItem(key); } catch (e) {}
       });
@@ -239,6 +278,7 @@
   // ── Internals ───────────────────────────────────────────────────────────
 
   function isSignedIn() {
+    if (_session && _session.user) return true;
     var sb = getSupabase();
     if (!sb || !sb.auth) return false;
     // Check the synchronous current-session cache that Supabase JS maintains.
@@ -250,6 +290,7 @@
   }
 
   function getUserId() {
+    if (_session && _session.user && _session.user.id) return _session.user.id;
     var sb = getSupabase();
     if (!sb || !sb.auth) return null;
     var sess = sb.auth._currentSession || (sb.auth.session && sb.auth.session().data && sb.auth.session().data.session);
@@ -275,6 +316,52 @@
   // cannot overwrite another's (the localStorage queue is already per-subdomain).
   function _ccCert() {
     return (typeof window !== 'undefined' && window.CURRENT_CERT) ? window.CURRENT_CERT : 'netplus';
+  }
+
+  // v8.151.0 merge helpers ------------------------------------------------
+  // A local value counts as present unless it is missing or an empty shell.
+  function _localHas(key) {
+    var raw = null;
+    try { raw = localStorage.getItem(key); } catch (e) { raw = null; }
+    return !(raw == null || raw === '' || raw === 'null' || raw === '[]' || raw === '{}');
+  }
+  // History identity = the quiz moment + topic + result (rows are append-only).
+  function _historyKey(item) {
+    var when = item.date || (item.at ? new Date(item.at).toISOString() : '');
+    return when + '|' + (item.topic || '') + '|' + (item.score || 0) + '|' + (item.total || 0);
+  }
+  function _mergeHistory(local, cloud) {
+    var seen = new Set(), out = [];
+    (local || []).concat(cloud || []).forEach(function (it) {
+      if (!it) return;
+      var k = _historyKey(it);
+      if (seen.has(k)) return;
+      seen.add(k); out.push(it);
+    });
+    out.sort(function (a, b) {
+      var ta = new Date(a.date || a.at || 0).getTime(), tb = new Date(b.date || b.at || 0).getTime();
+      return tb - ta;
+    });
+    return out;
+  }
+  // Sync failures used to go to the console only, which is how a dead sync went
+  // unnoticed for months. One client_errors row per stage per page load.
+  var _syncTelemetrySent = {};
+  function _syncTelemetry(stage, detail) {
+    try {
+      if (_syncTelemetrySent[stage]) return;
+      if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') return;
+      var sb = getSupabase();
+      if (!sb) return;
+      _syncTelemetrySent[stage] = true;
+      var msg = (detail && (detail.message || detail.error || (detail.code && ('code ' + detail.code)))) || String(detail);
+      sb.from('client_errors').insert([{
+        fingerprint: 'sync:' + stage, type: 'telemetry:sync',
+        message: (stage + ': ' + String(msg)).slice(0, 500), page: 'cloud-sync',
+        version: String(window.APP_VERSION || '').slice(0, 20),
+        user_agent: String(navigator.userAgent || '').slice(0, 200)
+      }]).then(function () {}, function () {});
+    } catch (e) { /* telemetry must never break sync */ }
   }
 
   // Read all USER_DATA keys from localStorage, structure for cloud write
@@ -321,7 +408,7 @@
       // Cert-scoped SR: pull only THIS cert's queue out of metadata.sr.<certId>.
       if (cloudKey === 'sr') {
         var certSr = (meta.sr && meta.sr[cert]) ? meta.sr[cert] : null;
-        if (certSr && certSr.queue != null) {
+        if (certSr && certSr.queue != null && !_localHas('nplus_sr_queue')) {
           var q = certSr.queue;
           try { localStorage.setItem('nplus_sr_queue', typeof q === 'string' ? q : JSON.stringify(q)); } catch (e) {}
         }
@@ -333,13 +420,13 @@
       if (cloudKey === 'sr_queue') {
         if (meta.sr && meta.sr[cert] && meta.sr[cert].queue != null) return;
         var v = meta.sr_queue;
-        if (v != null) { try { localStorage.setItem('nplus_sr_queue', typeof v === 'string' ? v : JSON.stringify(v)); } catch (e) {} }
+        if (v != null && !_localHas('nplus_sr_queue')) { try { localStorage.setItem('nplus_sr_queue', typeof v === 'string' ? v : JSON.stringify(v)); } catch (e) {} }
         return;
       }
       // Onboarding cert-scoped maps: pull only THIS cert's entry down to local.
       if (cloudKey === 'activated' || cloudKey === 'onb_skips') {
         var mine = (meta[cloudKey] && meta[cloudKey][cert]) ? meta[cloudKey][cert] : null;
-        if (mine != null) {
+        if (mine != null && !_localHas('nplus_' + cloudKey)) {
           try { localStorage.setItem('nplus_' + cloudKey, JSON.stringify(mine)); } catch (e) {}
         }
         return;
@@ -351,6 +438,7 @@
       var val = meta[cloudKey];
       var writeVal;
       if (val == null) return;
+      if (_localHas(localKey)) return;   // v8.151.0: this device's data wins
       if (typeof val === 'string') writeVal = val;
       else writeVal = JSON.stringify(val);
       try { localStorage.setItem(localKey, writeVal); } catch (e) {}
@@ -395,7 +483,7 @@
       duration_ms: typeof item.durationMs === 'number' ? item.durationMs :
                    typeof item.duration_ms === 'number' ? item.duration_ms : null,
       metadata: meta,
-      created_at: item.at ? new Date(item.at).toISOString() : new Date().toISOString(),
+      created_at: item.at ? new Date(item.at).toISOString() : (item.date ? new Date(item.date).toISOString() : new Date().toISOString()),  // v8.151.0: the quiz moment
     };
   }
 
@@ -451,15 +539,21 @@
         if (jsonb.freeCertId == null && existingMeta && existingMeta.freeCertId != null) {
           jsonb.freeCertId = existingMeta.freeCertId;
         }
+        // v8.151.0: keep cloud keys this device doesn't hold (a fresh device's
+        // first upload used to replace the whole profile with its few keys).
+        jsonb = Object.assign({}, existingMeta || {}, jsonb);
         var update = { metadata: jsonb };
         if (examDate) update.exam_date = examDate;
         return sb.from('profiles').update(update).eq('id', userId);
       };
       ops.push(
         sb.from('profiles').select('metadata').eq('id', userId).single().then(function (res) {
-          return writeProfile(res && res.data && res.data.metadata);
-        }, function () {
-          return writeProfile(null);   // read failed — write our cert's slices only
+          // v8.151.0: never write the profile blind — if the cloud copy can't be
+          // read, a full-metadata write could erase keys only the cloud has.
+          if (!res || res.error) return { error: (res && res.error) || 'metadata read failed' };
+          return writeProfile(res.data && res.data.metadata);
+        }, function (err) {
+          return { error: err || 'metadata read failed' };
         })
       );
     }
@@ -475,16 +569,24 @@
         // Pull existing cloud rows to dedupe (only for ongoing sync; in
         // migration mode the cloud is empty so this is a no-op fast path)
         ops.push(
-          sb.from('quiz_history').select('created_at, topic, score, total').eq('user_id', userId).then(function (existing) {
-            var existingKeys = new Set(
-              ((existing.data || []).map(function (r) {
-                return (new Date(r.created_at).getTime()) + '|' + (r.topic || '') + '|' + r.score + '|' + r.total;
-              }))
-            );
+          (function () {
+            // v8.151.0: compare on the quiz moment (item.date). The old key used
+            // item.at, which new rows never have, so every sync would have
+            // re-inserted them. Bounded to the local window; a read error stops
+            // the insert instead of inserting everything.
+            var oldest = localHistory.reduce(function (m, it) {
+              var t = new Date(it.date || it.at || 0).getTime();
+              return (t && t < m) ? t : m;
+            }, Date.now());
+            return sb.from('quiz_history').select('created_at, topic, score, total, metadata')
+              .eq('user_id', userId).gte('created_at', new Date(oldest - 60000).toISOString());
+          })().then(function (existing) {
+            if (existing && existing.error) return { error: existing.error };
+            var existingKeys = new Set(((existing && existing.data) || []).map(function (r) {
+              return _historyKey(rowToHistoryItem(r));
+            }));
             var newRows = localHistory.filter(function (item) {
-              var t = item.at || Date.now();
-              var key = t + '|' + (item.topic || '') + '|' + (item.score || 0) + '|' + (item.total || 0);
-              return !existingKeys.has(key);
+              return !existingKeys.has(_historyKey(item));
             }).map(function (item) {
               return historyItemToRow(item, userId);
             });
@@ -510,6 +612,7 @@
         // Re-queue the failed keys for retry
         keysSnapshot.forEach(function (k) { pendingFlush.add(k); });
         console.warn('[cloud-store] flush had errors', results);
+        _syncTelemetry('flush', (results.filter(function (r) { return r && r.error; })[0] || {}).error);
       }
       return results;
     }).catch(function (err) {
@@ -518,6 +621,7 @@
       keysSnapshot.forEach(function (k) { pendingFlush.add(k); });
       setStatus(navigator.onLine === false ? 'offline' : 'error');
       console.error('[cloud-store] flush threw', err);
+      _syncTelemetry('flush-throw', err);
       throw err;
     });
 
