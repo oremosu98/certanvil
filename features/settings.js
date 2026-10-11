@@ -135,19 +135,36 @@
     renderWrongBankBtn();
   }
 
+  // v8.150.0: the export carried only history, streak and the mistakes bank, so
+  // review cards, exam date, milestones and readiness snapshots had no backup —
+  // and cloud sync has never run (founder SQL 2026-10-11: profiles.metadata and
+  // quiz_history empty for every user), so this file is the only copy outside
+  // the browser. `all` now holds every study key; secrets (the API key), caches
+  // and the in-browser auto-backup snapshots are left out.
+  const _EXPORT_SKIP = /^nplus_(key|dev_cert|qcache__|autobackup_|ai_cache|acl_coach_cache|tb_coach_cache|error_log)/;
+  function _exportableKeys() {
+    const out = {};
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k && k.indexOf('nplus_') === 0 && !_EXPORT_SKIP.test(k)) out[k] = localStorage.getItem(k);
+    }
+    return out;
+  }
   function exportData() {
     const data = {
       version: APP_VERSION,
       exportedAt: new Date().toISOString(),
+      cert: (typeof CURRENT_CERT !== 'undefined') ? CURRENT_CERT : null,
       history: loadHistory(),
       streak: getStreak(),
-      wrongBank: loadWrongBank()
+      wrongBank: loadWrongBank(),
+      all: _exportableKeys()
     };
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     const url  = URL.createObjectURL(blob);
     const a    = document.createElement('a');
     a.href = url;
-    a.download = 'networkplus-quiz-backup-' + new Date().toISOString().slice(0, 10) + '.json';
+    a.download = 'certanvil-' + (data.cert || 'backup') + '-backup-' + new Date().toISOString().slice(0, 10) + '.json';
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -190,7 +207,19 @@
           saveWrongBank(existingBank.concat(newBank));
         }
 
-        alert(`Imported ${newEntries.length} new entries.`);
+        // v8.150.0: restore every other study key the file carries, but only
+        // where this device has none (never overwrites existing data).
+        let restoredKeys = 0;
+        if (data.all && typeof data.all === 'object') {
+          Object.keys(data.all).forEach(k => {
+            if (k.indexOf('nplus_') !== 0 || _EXPORT_SKIP.test(k)) return;
+            if (k === STORAGE.HISTORY || k === STORAGE.STREAK || k === STORAGE.WRONG_BANK) return;  // merged above
+            if (localStorage.getItem(k) !== null || typeof data.all[k] !== 'string') return;
+            try { localStorage.setItem(k, data.all[k]); restoredKeys++; } catch (_) {}
+          });
+        }
+
+        alert(`Imported ${newEntries.length} new entries` + (restoredKeys ? ` and restored ${restoredKeys} other saved item${restoredKeys === 1 ? '' : 's'}.` : '.'));
         renderHistoryPanel();
         renderStatsCard();
         renderReadinessCard();

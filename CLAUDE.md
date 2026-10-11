@@ -28,8 +28,8 @@
 | styles.css | 14913 | 551 KB |
 | index.html | 2298 | 149 KB |
 | dg-system.css | 5474 | 510 KB |
-| tests/uat.js + tests/uat/ (30 modules) | 29690 | — |
-UAT checks: 5057 · E2E `test(` count: 163 · APP_VERSION: 8.149.0 · stamped-at: worktree
+| tests/uat.js + tests/uat/ (30 modules) | 29698 | — |
+UAT checks: 5058 · E2E `test(` count: 163 · APP_VERSION: 8.150.0 · stamped-at: worktree
 <!-- FACTS:AUTO:END -->
 
 | File | Purpose | Size |
@@ -135,9 +135,9 @@ npx playwright test              # E2E (tests/e2e/app.spec.js)
 
 | Version | Features Added |
 |---|---|
+| v8.150.0 | Export Data now backs up every study key (review cards, exam date, milestones…); import restores missing keys |
 | v8.149.0 | History rows now record right/total per question difficulty (readiness v3 groundwork) |
 | v8.148.0 | Root-cause fix: starting a new quiz no longer jumps to the previous quiz (page switches finish exactly once) |
-| v8.147.0 | Drill Mistakes: full bank keeps new misses, reworded questions pass the quiz checks, 2-in-a-row to clear, broken entries leave, least-recently-drilled first, scenarios kept; '63 mistakes to clear' |
 
 _Older releases (v7.60.0 and back) live in [CHANGELOG.md](./CHANGELOG.md)._
 

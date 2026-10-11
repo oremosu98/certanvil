@@ -974,6 +974,14 @@ test('v8.126.0 AI-901: Decision Lab seed is the AI-901 rebuild (no retired AI-90
       && !/Custom Vision|Form Recognizer|Azure AI Studio|Document Intelligence|regression|clustering/i.test(raw)
       && !/\u2014/.test(raw);
   })());
+test('v8.150.0 Export Data saves every study key (not the API key/caches); import restores missing keys without overwriting',
+  (() => {
+    const st = fs.readFileSync(path.join(ROOT, 'features', 'settings.js'), 'utf8');
+    return /_EXPORT_SKIP = \/\^nplus_\(key\|dev_cert\|qcache__\|autobackup_/.test(st)
+      && /all: _exportableKeys\(\)/.test(st)
+      && /if \(localStorage\.getItem\(k\) !== null \|\| typeof data\.all\[k\] !== 'string'\) return;/.test(st)
+      && /'certanvil-' \+ \(data\.cert \|\| 'backup'\) \+ '-backup-'/.test(st);
+  })());
 test('v8.149.0 History rows record right/total per question difficulty (byDiff), incl. Mixed and exam splits',
   (() => {
     try {

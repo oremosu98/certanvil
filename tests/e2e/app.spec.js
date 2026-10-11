@@ -735,6 +735,8 @@ test.describe('Export Data', () => {
         topic: 'Test', score: 5, total: 10, pct: 50,
         date: new Date().toISOString(), mode: 'quiz'
       }]));
+      localStorage.setItem('nplus_sr_queue', JSON.stringify([{ qHash: 'x1', question: 'Q?' }]));
+      localStorage.setItem('nplus_key', 'sk-ant-must-not-export');
     });
 
     // v4.54.1: Export button is on the Settings page now
@@ -743,8 +745,13 @@ test.describe('Export Data', () => {
     await page.locator('#page-settings button:has-text("Export")').click();
     const download = await downloadPromise;
 
-    // Verify filename pattern
-    expect(download.suggestedFilename()).toMatch(/networkplus.*\.json/);
+    // Verify filename pattern (v8.150.0: certanvil-<cert>-backup-<date>.json)
+    expect(download.suggestedFilename()).toMatch(/^certanvil-.+-backup-\d{4}-\d{2}-\d{2}\.json$/);
+    // v8.150.0: the file carries every study key (review cards included) and never the API key
+    const body = JSON.parse(require('fs').readFileSync(await download.path(), 'utf8'));
+    expect(Object.keys(body.all || {})).toContain('nplus_sr_queue');
+    expect(Object.keys(body.all || {})).toContain('nplus_history');
+    expect(JSON.stringify(body)).not.toContain('sk-ant-must-not-export');
   });
 });
 
