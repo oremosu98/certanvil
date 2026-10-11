@@ -24,12 +24,12 @@
 <!-- machine-owned — run `node scripts/stamp-facts.js` to refresh; do not hand-edit -->
 | Metric | Lines | Size |
 |---|---|---|
-| app.js | 8299 | 441 KB |
+| app.js | 8301 | 442 KB |
 | styles.css | 14913 | 551 KB |
-| index.html | 2299 | 149 KB |
-| dg-system.css | 5497 | 518 KB |
-| tests/uat.js + tests/uat/ (34 modules) | 30351 | — |
-UAT checks: 5138 · E2E `test(` count: 163 · APP_VERSION: 8.163.0 · stamped-at: worktree
+| index.html | 2302 | 150 KB |
+| dg-system.css | 5513 | 520 KB |
+| tests/uat.js + tests/uat/ (35 modules) | 30470 | — |
+UAT checks: 5154 · E2E `test(` count: 163 · APP_VERSION: 8.164.0 · stamped-at: worktree
 <!-- FACTS:AUTO:END -->
 
 | File | Purpose | Size |
@@ -135,9 +135,9 @@ npx playwright test              # E2E (tests/e2e/app.spec.js)
 
 | Version | Features Added |
 |---|---|
+| v8.164.0 | Pause the Full Exam Simulator for real interruptions (clock stops, resume keeps the time left, result line reports it); Cancel on every loading screen goes Home, aborts the AI request and can never let the cancelled build take over later. |
 | v8.163.0 | Full exam opens with 4 Sim Lab PBQs (partial credit, same navigator and clock); PBQ review |
 | v8.162.0 | Full exam: resumable after reload or leaving, real clock, exam-level questions, pace line, honest score |
-| v8.161.0 | Review forecast marks exam day in the 7-day strip |
 
 _Older releases (v7.60.0 and back) live in [CHANGELOG.md](./CHANGELOG.md)._
 

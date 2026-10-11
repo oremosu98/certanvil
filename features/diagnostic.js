@@ -157,6 +157,8 @@
     if (typeof showLoading === 'function') showLoading('Generating your diagnostic · ' + N + ' calibrated questions…');
     // v4.82.1: smooth loading bar across the diagnostic flow too.
     _loadingProgressBegin('Generating diagnostic questions…');
+    const _g = (typeof _genToken === 'function') ? _genToken() : null;   // v8.164.0: Cancel
+    const _alive = () => typeof _genAlive !== 'function' || _genAlive(_g);
 
     try {
       // Use Mixed topic + Mixed difficulty so the existing 7-layer pipeline
@@ -189,6 +191,7 @@
           } catch (_) { /* swallow — we ship what we have */ }
         }
       }
+      if (!_alive()) return;
       if (qs.length === 0) {
         throw new Error('Could not generate diagnostic questions. Please try again in a moment.');
       }
@@ -211,6 +214,7 @@
       showPage('diagnostic-quiz');
       _renderDiagnosticQuestion();
     } catch (err) {
+      if (!_alive()) return;   // cancelled: Cancel already went Home
       _loadingProgressFinish();
       showToast(err.message || 'Diagnostic generation failed. Please try again.', 'error');
       goSetup();

@@ -37,7 +37,7 @@ const { _fnBody, js, read, results, test, vm } = require('./_context');
 
     // ── Saved progress ──
     var S = ctx();
-    vm.runInContext('var examMode = true, examTimer = 7, examHardcore = false, examCurrent = 4, examEndTime = Date.now() + 3000000, _examLastSave = 0;' +
+    vm.runInContext('var examMode = true, examTimer = 7, examHardcore = false, examCurrent = 4, examEndTime = Date.now() + 3000000, _examLastSave = 0, examTimeLeft = 3000, _examPausedAt = 0, _examPausedMs = 0, _examPauses = 0;' +
       'var examQuestions = [], examAnswers = []; for (var i = 0; i < 10; i++) { examQuestions.push(' + mcq.toString() + '(i)); examAnswers.push(' + blank.toString() + '()); }' +
       'examAnswers[2].chosen = "A";', S);
     vm.runInContext([fn('_examPbqTouched'), fn('_examAnswered'), fn('_examSaveState'), fn('examSavedState'), fn('_examClearState')].join('\n'), S);
@@ -56,7 +56,7 @@ const { _fnBody, js, read, results, test, vm } = require('./_context');
     // ── Leaving asks first; yes = suspend (clock keeps running, state kept) ──
     function leaveRun(running, answer) {
       var L = ctx({ confirm: function () { L.__asked = true; return answer; } });
-      vm.runInContext('var examMode = ' + running + ', examTimer = ' + (running ? 7 : 'null') + ', examHardcore = false, examCurrent = 0, examEndTime = Date.now() + 60000, _examLastSave = 0;' +
+      vm.runInContext('var examMode = ' + running + ', examTimer = ' + (running ? 7 : 'null') + ', examHardcore = false, examCurrent = 0, examEndTime = Date.now() + 60000, _examLastSave = 0, examTimeLeft = 60, _examPausedAt = 0, _examPausedMs = 0, _examPauses = 0;' +
         'var examQuestions = [' + JSON.stringify(mcq(1)) + '], examAnswers = [' + JSON.stringify(blank()) + '];' +
         'function _releaseExamWakeLock() {}' +
         'var _EXAM_OWN_PAGES = ["exam", "exam-results", "review", "loading"];', L);
@@ -154,6 +154,38 @@ const { _fnBody, js, read, results, test, vm } = require('./_context');
     test('Exam PBQs: every #page-sim-lab rule in dg-system.css has a "#page-exam .exam-pbq" twin (else exam PBQs render half-styled)',
       missing.length === 0);
     if (missing.length) results.errors.push('Sim Lab selectors with no exam-PBQ twin: ' + missing.slice(0, 5).join(' | '));
+
+    // ══ v8.164.0: pause (founder: "what if i have something critical come up like a phone call") ══
+    var PZ = ctx();
+    vm.runInContext('var examMode = true, examTimer = 7, examHardcore = false, examCurrent = 0, examEndTime = Date.now() + 600000, examTimeLeft = 600, _examLastSave = 0;' +
+      'var examQuestions = [' + JSON.stringify(mcq(1)) + '], examAnswers = [' + JSON.stringify(blank()) + '];' +
+      'var _EXAM_OWN_PAGES = ["exam", "exam-results", "review", "loading"];' +
+      'var __started = 0; function startExamTimer() { __started++; examEndTime = Date.now() + examTimeLeft * 1000; examTimer = 9; }' +
+      'function _releaseExamWakeLock() {} function _examRenderPaused() {} var document = { getElementById: function () { return null; } };', PZ);
+    vm.runInContext('var _examPausedAt = 0, _examPausedMs = 0, _examPauses = 0;' + [fn('_examPbqTouched'), fn('_examAnswered'), fn('_examSaveState'), fn('examSavedState'),
+      fn('examIsPaused'), fn('examTogglePause'), fn('_examPause'), fn('_examResumeFromPause'), fn('_examInProgress'), fn('examLeaveOk')].join('\n'), PZ);
+    vm.runInContext('examTogglePause();', PZ);
+    var paused = vm.runInContext('({ p: examIsPaused(), timer: examTimer, left: examTimeLeft, st: examSavedState() })', PZ);
+    test('Exam pause: Pause stops the clock, keeps the time left and saves the exam as paused',
+      paused.p === true && paused.timer === null && paused.left >= 599 && paused.st && paused.st.paused === true && paused.st.timeLeft === paused.left);
+    var leftQuietly = vm.runInContext('(function () { var asked = false; confirm = function () { asked = true; return false; }; var ok = examLeaveOk("setup"); return { ok: ok, asked: asked, mode: examMode }; })()', PZ);
+    test('Exam pause: leaving while paused needs no prompt (the clock is already stopped) and keeps it saved',
+      leftQuietly.ok === true && leftQuietly.asked === false && leftQuietly.mode === false && vm.runInContext('examSavedState().paused', PZ) === true);
+    vm.runInContext('examMode = true; examTogglePause();', PZ);
+    var resumed = vm.runInContext('({ p: examIsPaused(), started: __started, timer: examTimer, pauses: _examPauses })', PZ);
+    test('Exam pause: Resume restarts the clock from the time that was left and counts the pause',
+      resumed.p === false && resumed.started === 1 && resumed.timer === 9 && resumed.pauses === 1);
+    PZ.__store.nplus_exam_state = JSON.stringify({ v: 1, paused: true, savedAt: Date.now() - 3 * 86400000, endTime: Date.now() - 2 * 86400000, timeLeft: 1500, questions: [mcq(1)], answers: [blank()] });
+    test('Exam pause: a paused exam stays resumable for a week even though its old deadline has passed',
+      !!vm.runInContext('examSavedState()', PZ));
+    var resumeBody = _fnBody(js, 'resumeExam') || '';
+    test('Exam pause: resuming a paused exam uses the saved time left, not the old deadline',
+      /if \(st\.paused\)[\s\S]{0,120}examTimeLeft = Math\.max\(0, st\.timeLeft/.test(resumeBody));
+    test('Exam pause: no Pause in hardcore mode; answer shortcuts stand down while paused; the result reports the pause',
+      /if \(examHardcore\) return;/.test(_fnBody(js, 'examTogglePause') || '') && /#page-exam\.hardcore-active #exam-pause-btn\{display:none/.test(read('dg-system.css'))
+        && /examIsPaused\(\)\) return;/.test(read('features/quiz-engine.js')) && /The real exam has no pause\./.test(_fnBody(js, 'submitExam') || ''));
+    test('Exam pause: Home shows "paused, N min left" for a paused exam',
+      /paused, \$\{left\} min left/.test(read('features/home.js')));
   } catch (err) {
     test('Exam simulator: block (threw)', false);
     results.errors.push('340 exam simulator block threw: ' + err.message);

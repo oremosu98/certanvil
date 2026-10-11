@@ -90,6 +90,7 @@
   
     // v4.82.1: surface the smooth loading progress bar with stage milestones.
     _loadingProgressBegin('Generating questions\u2026');
+    const _g = _genToken();   // v8.164.0: Cancel; checked after every await that writes quiz state
   
     showCacheNotice(false);
     // Fire topic brief in parallel (non-blocking). Skip for Mixed AND Multi
@@ -120,6 +121,7 @@
       // Enhancement 1: AI second-pass validation
       document.getElementById('loading-msg').textContent = 'Verifying question accuracy\u2026';
       raw = await aiValidateQuestions(key, raw);
+      if (!_genAlive(_g)) return;
       _loadingProgressUpdate('Finalizing\u2026', 80);
       // Enhancement 2 + 4: Programmatic validation + reported question exclusion
       _r0.afterChecker = raw.length;
@@ -134,6 +136,7 @@
       // twice (5 at a time, fail-closed) and genuine rejections.
       const MAX_TOPUP_ROUNDS = 3;
       for (let round = 1; round <= MAX_TOPUP_ROUNDS && questions.length < qCount; round++) {
+        if (!_genAlive(_g)) return;
         const deficit = qCount - questions.length;
         _loadingProgressUpdate('Topping up (' + deficit + ' more)\u2026', Math.min(95, 82 + round * 4));
         document.getElementById('loading-msg').textContent =
@@ -143,6 +146,7 @@
           const extraRaw = await fetchQuestions(key, activeQuizTopic, diff, _rn.asked); // buffer grows each round
           _rn.written = extraRaw.length;
           const extraChecked = await aiValidateQuestions(key, extraRaw);
+          if (!_genAlive(_g)) return;
           _rn.afterChecker = extraChecked.length;
           const extraValidated = validateQuestions(extraChecked);
           _rn.afterLocal = extraValidated.length;
@@ -151,6 +155,7 @@
           _rn.added = fresh.length;
           questions = questions.concat(fresh);
         } catch (retryErr) {
+          if (!_genAlive(_g)) return;
           // A failed round (network/API hiccup) moves on to the next one after a
           // short pause (v8.142.0); after the last round we ship what we have.
           _rn.error = String((retryErr && retryErr.message) || retryErr).slice(0, 80);
@@ -168,6 +173,7 @@
       }
       _logQuizFill(qCount, questions.length, _catchUp ? 'fresh (catch-up)' : 'fresh', _fill.rounds, null);
     } catch(e) {
+      if (!_genAlive(_g)) { window._mixedPickMode = 'random'; return; }   // cancelled: say nothing, serve nothing
       _logQuizFill(qCount, 0, getCachedQuestions(activeQuizTopic, diff, qCount) ? 'cache' : 'error', [], String((e && e.message) || e).slice(0, 120));
       const cached = getCachedQuestions(activeQuizTopic, diff, qCount);
       if (cached) {
@@ -183,6 +189,7 @@
       }
     }
     window._mixedPickMode = 'random';  // v8.146.0: Catch-up picking ends with this generation
+    if (!_genAlive(_g)) return;
     // Inject CLI sim / topology PBQs from predefined bank
     const pbqInjectCount = qCount >= 10 ? 1 : 0;
     if (pbqInjectCount > 0) {
@@ -454,7 +461,39 @@
   }
   window.clearAiErrorCard = clearAiErrorCard;
 
+  // ── v8.164.0: Cancel while generating ─────────────────────────────────
+  // Founder: "whilst its loading you need to allow the option to cancel and go
+  // back to the home page". Every build on the loading screen runs in a
+  // generation session. Cancel aborts its AI requests (_claudeFetch attaches
+  // _genSignal()) and marks it dead; each builder captures _genToken() and
+  // checks _genAlive(token) after its awaits, so a cancelled build can never
+  // write the shared quiz state or take over the screen later (the class of
+  // bug behind "a new quiz shows the old quiz").
+  let _gen = { id: 0, ctrl: null, cancelled: false, live: false };
+  function _genBegin() {
+    try { if (_gen.live && _gen.ctrl) _gen.ctrl.abort(); } catch (_) {}
+    _gen = { id: _gen.id + 1, ctrl: (typeof AbortController === 'function') ? new AbortController() : null, cancelled: false, live: true };
+    return _gen.id;
+  }
+  function _genToken() { return _gen.id; }
+  function _genEnd() { _gen.live = false; }
+  // null/undefined token = a caller outside any session: always alive.
+  function _genAlive(token) { return token == null || (token === _gen.id && !_gen.cancelled); }
+  // Only AI calls made while the loading screen is up are cancellable.
+  function _genSignal() { return (_gen.live && _gen.ctrl) ? _gen.ctrl.signal : undefined; }
+  function cancelGeneration() {
+    _gen.cancelled = true; _gen.live = false;
+    try { if (_gen.ctrl) _gen.ctrl.abort(); } catch (_) {}
+    _loadingProgressFinish();
+    if (typeof goSetup === 'function') goSetup(); else showPage('setup');
+  }
+  (function _bindLoadCancel() {
+    const b = document.getElementById('load-cancel');
+    if (b && !b._bound) { b._bound = true; b.addEventListener('click', cancelGeneration); }
+  })();
+
   function _loadingProgressBegin(initialLabel) {
+    if (typeof _genBegin === 'function') _genBegin();   // v8.164.0: a new build, cancellable from the loading screen (typeof: vm fixtures extract this alone)
     if (typeof clearAiErrorCard === 'function') clearAiErrorCard(document.getElementById('page-loading'));   // v8.153.0: a stale error card never outlives the next load
     const prog = document.getElementById('load-progress');
     _loadingProgressBar = document.getElementById('load-bar-fill');
@@ -504,6 +543,7 @@
   }
   
   function _loadingProgressFinish() {
+    if (typeof _genEnd === 'function') _genEnd();   // v8.164.0: later AI calls (teacher content etc.) aren't tied to this build
     if (!_loadingProgressBar) return;
     // Snap to 100% then schedule hide. The 100% bump uses the same eased
     // transition so it doesn't feel jarring relative to the prior milestones.
@@ -2055,6 +2095,7 @@
     const key     = e.key.toUpperCase();
     const onQuiz  = document.getElementById('page-quiz').classList.contains('active');
     const onExam  = document.getElementById('page-exam').classList.contains('active');
+    if (onExam && typeof examIsPaused === 'function' && examIsPaused()) return;   // v8.164.0: no answering while paused
   
     if (['A','B','C','D','E'].includes(key)) {
       if (onQuiz) {
@@ -2301,6 +2342,11 @@
   window.nextQuestion = nextQuestion;
   window.prevQuestion = prevQuestion;
   window._loadingProgressBegin = _loadingProgressBegin;
+  window._genBegin = _genBegin;               // v8.164.0
+  window._genToken = _genToken;
+  window._genAlive = _genAlive;
+  window._genSignal = _genSignal;
+  window.cancelGeneration = cancelGeneration;
   window._loadingProgressUpdate = _loadingProgressUpdate;
   window._loadingProgressFinish = _loadingProgressFinish;
   // v7.79.2: these four were missed in the original wave-8 extraction —

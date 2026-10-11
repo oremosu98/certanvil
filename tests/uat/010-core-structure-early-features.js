@@ -549,7 +549,7 @@ test('applyPreset routes bulk to startBulkQuiz', /bulkSizes\[name\][\s\S]{0,900}
 test('startBulkQuiz batches via fetchQuestions', /startBulkQuiz[\s\S]{0,2500}fetchQuestions\(key, MIXED_TOPIC, 'Exam Level', thisBatch(?:,\s*i)?\)/.test(js));
 test('startBulkQuiz uses 18-Q batches', /startBulkQuiz[\s\S]{0,1500}BATCH_SIZE = 18/.test(js));
 test('startBulkQuiz has retry logic', /startBulkQuiz[\s\S]{0,2000}MAX_RETRIES/.test(js));
-test('startBulkQuiz runs validation pipeline', /startBulkQuiz[\s\S]{0,3000}aiValidateQuestions[\s\S]{0,200}validateQuestions/.test(js));
+test('startBulkQuiz runs validation pipeline', /startBulkQuiz[\s\S]{0,3400}aiValidateQuestions[\s\S]{0,200}validateQuestions/.test(js));   // 3000 → 3400: v8.164.0 Cancel token lines
 test('startBulkQuiz forces Mixed topic', /startBulkQuiz[\s\S]{0,800}activeQuizTopic = MIXED_TOPIC/.test(js));
 // v4.82.1: marathon mode now uses _loadingProgressFinish() instead of direct
 // fill.style.width = '100%'. Same end-state (bar at 100% then hidden), via

@@ -1,9 +1,9 @@
 // ══════════════════════════════════════════
-// Network+ AI Quiz — app.js  v8.163.0
+// Network+ AI Quiz — app.js  v8.164.0
 // ══════════════════════════════════════════
 
 // ── CONSTANTS ──
-const APP_VERSION = '8.163.0';
+const APP_VERSION = '8.164.0';
 // v4.99.45 (Phase 6b): expose APP_VERSION on window so the web-vitals
 // collector (lib/web-vitals-collector.js, loaded BEFORE app.js so its
 // PerformanceObservers attach earlier) can stamp this version onto every
@@ -392,10 +392,11 @@ async function fetchWithTimeout(url, init, opts) {
   const onVis = () => { if (document.visibilityState === 'hidden') hiddenDuring = true; };
   document.addEventListener('visibilitychange', onVis);
   const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+  const ext = opts.signal; if (ext) { if (ext.aborted) ctrl.abort(); else ext.addEventListener('abort', () => ctrl.abort(), { once: true }); }  // v8.164.0: Cancel on the loading screen
   try {
     return await fetch(url, Object.assign({}, init, { signal: ctrl.signal }));
   } catch (e) {
-    if (e && e.name === 'AbortError') throw _timeoutError(label, timeoutMs, hiddenDuring);
+    if (e && e.name === 'AbortError' && !(ext && ext.aborted)) throw _timeoutError(label, timeoutMs, hiddenDuring);
     throw e;
   } finally {
     clearTimeout(timer);
@@ -437,7 +438,6 @@ if (typeof window !== 'undefined') {
 // The wrapper preserves the same call shape as fetch(url, init) so all 13
 // existing Anthropic call sites in this file collapsed to a single global
 // rename to _claudeFetch(.
-//
 // To mark a call as "metered" (counts against the user's daily 20-Q quota),
 // the body's parsed JSON should include _metered: true. Only the canonical
 // question-generation site (_fetchQuestionsBatch) sets this flag; all
@@ -456,6 +456,7 @@ function _classifyFetchError(e, response) {
 }
 
 function _claudeFail(e, response, init) {
+  if (e && e.name === 'AbortError') throw e;   // v8.164.0: cancelled from the loading screen, not a failure (no log, no error card)
   const kind = _classifyFetchError(e, response) || 'server';
   const refId = Math.random().toString(16).slice(2, 8);
   logError('api:' + kind, (e && e.message) || ('HTTP ' + (response && response.status)), { ref: refId, label: e && e.label });
@@ -514,12 +515,12 @@ async function _claudeFetch(init) {
     };
     var r;
     try {
-      r = await fetchWithTimeout('/api/ai/generate', _proxyInit, { timeoutMs: 90000, label: 'ai-generate' });
+      r = await fetchWithTimeout('/api/ai/generate', _proxyInit, { timeoutMs: 90000, label: 'ai-generate', signal: (typeof _genSignal === 'function') ? _genSignal() : undefined });
     } catch (e) {
       if (e && e.name === 'TimeoutError' && e.hiddenDuring) {
         // Suspend-aware auto-retry: timeout overlapped a WKWebView background suspend
         try {
-          r = await fetchWithTimeout('/api/ai/generate', _proxyInit, { timeoutMs: 90000, label: 'ai-generate-resume' });
+          r = await fetchWithTimeout('/api/ai/generate', _proxyInit, { timeoutMs: 90000, label: 'ai-generate-resume', signal: (typeof _genSignal === 'function') ? _genSignal() : undefined });
         } catch (e2) { return _claudeFail(e2, null, init); }
       } else {
         return _claudeFail(e, null, init);
@@ -4018,15 +4019,16 @@ async function startWrongDrill() {
     showPage('loading');
     const lm = document.getElementById('loading-msg');
     if (lm) lm.textContent = 'Re-wording your mistakes and checking each one…';  // v8.147.0: variants now pass the quiz checks
-    if (typeof _loadingProgressBegin === 'function') _loadingProgressBegin('Re-wording your mistakes…');
+    if (typeof _loadingProgressBegin === 'function') _loadingProgressBegin('Re-wording your mistakes…'); const _g = (typeof _genToken === 'function') ? _genToken() : null;   // v8.164.0: token for Cancel
     try {
       const variants = await _fetchRewordedVariants(key, rewordable.map(q => q._bankOrig));
       const _rw = (typeof _applyCheckedVariants === 'function') ? await _applyCheckedVariants(key, rewordable, variants) : { asked: 0, kept: 0 };  // v8.147.0: failures serve the original
       if (typeof _logQuizFill === 'function') _logQuizFill(base.length, base.length, 'drill · reworded ' + _rw.kept + '/' + _rw.asked + ' passed checks', [], null);
     } catch (_) {
       // Verbatim fallback — say so honestly, then run the drill as before.
-      try { if (typeof showToast === 'function') showToast('Couldn’t re-word this time · running your saved questions as-is.', 'info'); } catch (_) {}
+      try { if (typeof showToast === 'function' && (typeof _genAlive !== 'function' || _genAlive(_g))) showToast('Couldn’t re-word this time · running your saved questions as-is.', 'info'); } catch (_) {}
     }
+    if (typeof _genAlive === 'function' && !_genAlive(_g)) return;   // cancelled: don't start the drill
     if (typeof _loadingProgressFinish === 'function') { try { _loadingProgressFinish(); } catch (_) {} }
   }
 

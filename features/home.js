@@ -698,6 +698,8 @@
 
     // v4.82.1: smooth loading bar across marathon mode too.
     _loadingProgressBegin('Generating questions\u2026');
+    const _g = (typeof _genToken === 'function') ? _genToken() : null;   // v8.164.0: Cancel
+    const _alive = () => typeof _genAlive !== 'function' || _genAlive(_g);
     const lbl = document.getElementById('load-progress-label'); // legacy textContent writes for retry banner
 
     const BATCH_SIZE = 18, MAX_RETRIES = 2;
@@ -724,7 +726,7 @@
             batch = await fetchQuestions(key, MIXED_TOPIC, 'Exam Level', thisBatch, i);
             break;
           } catch(retryErr) {
-            if (attempt === MAX_RETRIES) throw retryErr;
+            if (!_alive() || attempt === MAX_RETRIES) throw retryErr;
             if (lbl) lbl.textContent = `Batch ${i + 1} failed, retrying (${attempt + 1}/${MAX_RETRIES})\u2026`;
             await new Promise(r => setTimeout(r, 1500));
           }
@@ -751,6 +753,7 @@
       if (collected.length > count) collected = collected.slice(0, count);
       if (typeof _logQuizFill === 'function') _logQuizFill(count, collected.length, 'fresh (marathon)', _fillRounds, null);
     } catch(e) {
+      if (!_alive()) return;   // cancelled: Cancel already went Home
       if (typeof _logQuizFill === 'function') _logQuizFill(count, 0, 'error (marathon)', _fillRounds, String((e && e.message) || e).slice(0, 120));
       _loadingProgressFinish();
       showPage('setup');
@@ -758,6 +761,7 @@
       errBox.classList.remove('is-hidden');
       return;
     }
+    if (!_alive()) return;
     questions = injectPBQs(collected, MIXED_TOPIC, 2);
     current = 0; score = 0; streak = 0; bestStreak = 0; answered = 0; log = [];
     quizFlags = new Array(questions.length).fill(false);
@@ -795,6 +799,9 @@
 
     document.getElementById('load-progress').classList.add('is-hidden');
     showPage('loading');
+    // v8.164.0: this flow skips _loadingProgressBegin, so it opens its own cancellable session.
+    const _g = (typeof _genBegin === 'function') ? _genBegin() : null;
+    const _alive = () => typeof _genAlive !== 'function' || _genAlive(_g);
     document.getElementById('loading-msg').textContent =
       'Session ' + (sessionStep + 1) + '/' + SESSION_TOPICS + ' \u2014 ' + sTopic + '\u2026';
 
@@ -803,9 +810,11 @@
       questions = await fetchQuestions(apiKey, sTopic, 'Mixed', SESSION_QUESTIONS);
       document.getElementById('loading-msg').textContent = 'Verifying question accuracy\u2026';
       questions = await aiValidateQuestions(apiKey, questions);
+      if (!_alive()) return;
       questions = validateQuestions(questions);
       if (questions.length === 0) throw new Error('All generated questions failed validation. Try again.');
     } catch(e) {
+      if (!_alive()) return;   // cancelled: Cancel already went Home
       const cached = getCachedQuestions(sTopic, 'Mixed', SESSION_QUESTIONS);
       if (cached) { questions = cached; showCacheNotice(true); }
       else {
@@ -817,6 +826,8 @@
         return;
       }
     }
+    if (!_alive()) return;
+    if (typeof _loadingProgressFinish === 'function') _loadingProgressFinish();   // ends the session (no bar shown here)
     current = 0; score = 0; streak = 0; bestStreak = 0; answered = 0; log = [];
     quizFlags = new Array(questions.length).fill(false);
     diff = 'Mixed';
@@ -1580,15 +1591,18 @@
     let _ex = null;
     try { _ex = JSON.parse(localStorage.getItem('nplus_exam_state') || 'null'); } catch (_) { _ex = null; }
     if (_ex && Array.isArray(_ex.questions) && _ex.questions.length && typeof _ex.endTime === 'number'
-        && _ex.endTime > Date.now() - 86400000) {
-      const left = Math.max(0, Math.round((_ex.endTime - Date.now()) / 60000));
+        && (_ex.paused ? (_ex.savedAt || 0) > Date.now() - 7 * 86400000 : _ex.endTime > Date.now() - 86400000)) {
+      // v8.164.0: a paused exam keeps its remaining time; a running one counts down.
+      const left = _ex.paused ? Math.max(1, Math.round((_ex.timeLeft || 0) / 60))
+        : Math.max(0, Math.round((_ex.endTime - Date.now()) / 60000));
       const answered = (typeof _ex.answered === 'number') ? _ex.answered
         : (_ex.answers || []).filter(a => a && ((a.chosen !== null && a.chosen !== undefined)
           || (a.msChosen || []).length || (a.orderSeq || []).length || Object.keys(a.topoState || {}).length)).length;
       const of = `${answered} of ${_ex.questions.length} answered`;
       if (minEl) minEl.textContent = String(left);
       if (titleEl) titleEl.textContent = left > 0 ? 'Resume your exam' : 'Your exam time is up';
-      if (metaEl) metaEl.textContent = left > 0 ? `${of} · the clock is still running` : `${of} · see your result`;
+      if (metaEl) metaEl.textContent = _ex.paused ? `${of} · paused, ${left} min left`
+        : (left > 0 ? `${of} · the clock is still running` : `${of} · see your result`);
       if (launchEl) launchEl.onclick = function () {
         if (typeof _loadFeature === 'function') _loadFeature('exam').then(function (m) { if (m && m.resumeExam) m.resumeExam(); });
       };

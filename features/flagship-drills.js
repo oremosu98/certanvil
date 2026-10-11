@@ -254,6 +254,8 @@
     const lm = document.getElementById('loading-msg');
     if (lm) lm.textContent = 'Forging five disguises…';
     if (typeof _loadingProgressBegin === 'function') _loadingProgressBegin('Forging five disguises…');
+    const _g = (typeof _genToken === 'function') ? _genToken() : null;   // v8.164.0: Cancel
+    const _alive = () => typeof _genAlive !== 'function' || _genAlive(_g);
 
     const _gauntletErrSurface = {
       container: (typeof document !== 'undefined' ? document.getElementById('page-loading') : null),
@@ -263,7 +265,7 @@
     try {
       run = await _fetchGauntletRun(topicName, opts.concept || null, _gauntletErrSurface);
     } catch (e) {
-      if (e && e.surfaced) { _gauntletBusy = false; return; }
+      if (!_alive() || (e && e.surfaced)) { _gauntletBusy = false; return; }
       // Friendly error + retry — no crack, no attempt, nothing recorded.
       _gauntletBusy = false;
       if (typeof _loadingProgressFinish === 'function') { try { _loadingProgressFinish(); } catch (_) {} }
@@ -272,6 +274,7 @@
       try { showToast('The forge misfired. Nothing was used up. Hit Start to try again.', 'error'); } catch (_) {}
       return;
     }
+    if (!_alive()) { _gauntletBusy = false; return; }
     if (typeof _loadingProgressFinish === 'function') { try { _loadingProgressFinish(); } catch (_) {} }
     _gauntletBusy = false;
 
@@ -635,6 +638,8 @@
     const lm = document.getElementById('loading-msg');
     if (lm) lm.textContent = 'Building the case files…';
     if (typeof _loadingProgressBegin === 'function') _loadingProgressBegin('Building the case files…');
+    const _g = (typeof _genToken === 'function') ? _genToken() : null;   // v8.164.0: Cancel
+    const _alive = () => typeof _genAlive !== 'function' || _genAlive(_g);
 
     const _wnErrSurface = {
       container: (typeof document !== 'undefined' ? document.getElementById('page-loading') : null),
@@ -644,7 +649,7 @@
     try {
       rounds = await _fetchWhyNotSession(topicName, _wnErrSurface);
     } catch (e) {
-      if (e && e.surfaced) { _wnBusy = false; return; }
+      if (!_alive() || (e && e.surfaced)) { _wnBusy = false; return; }
       _wnBusy = false;
       if (typeof _loadingProgressFinish === 'function') { try { _loadingProgressFinish(); } catch (_) {} }
       renderWhyNotEntry();
@@ -652,6 +657,7 @@
       try { showToast('The forge misfired. Nothing was used up. Hit Start to try again.', 'error'); } catch (_) {}
       return;
     }
+    if (!_alive()) { _wnBusy = false; return; }
     if (typeof _loadingProgressFinish === 'function') { try { _loadingProgressFinish(); } catch (_) {} }
     _wnBusy = false;
 

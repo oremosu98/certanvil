@@ -23,7 +23,9 @@
       localStorage.setItem(EXAM_STATE_KEY, JSON.stringify({
         v: 1, savedAt: Date.now(), endTime: examEndTime, current: examCurrent,
         hardcore: !!examHardcore, questions: examQuestions, answers: examAnswers,
-        answered: examAnswers.filter(_examAnswered).length   // for Home's resume tile
+        answered: examAnswers.filter(_examAnswered).length,  // for Home's resume tile
+        paused: !!_examPausedAt, pausedAt: _examPausedAt || 0, timeLeft: examTimeLeft,   // v8.164.0
+        pausedMs: _examPausedMs, pauses: _examPauses
       }));
       _examLastSave = Date.now();
     } catch (_) { /* storage full: the exam still runs, it just can't be resumed */ }
@@ -34,9 +36,64 @@
     try {
       const st = JSON.parse(localStorage.getItem(EXAM_STATE_KEY) || 'null');
       if (!st || !Array.isArray(st.questions) || !st.questions.length || !Array.isArray(st.answers) || typeof st.endTime !== 'number') return null;
-      if (st.endTime < Date.now() - 86400000) { _examClearState(); return null; }
+      // Running exams expire a day after their deadline; a paused one keeps a week.
+      const stale = st.paused ? (st.savedAt || 0) < Date.now() - 7 * 86400000 : st.endTime < Date.now() - 86400000;
+      if (stale) { _examClearState(); return null; }
       return st;
     } catch (_) { return null; }
+  }
+  // ── v8.164.0: pause ──────────────────────────────────────────────────
+  // Founder: "what if i have something critical come up like a phone call".
+  // Pause stops the clock and covers the questions (no reading ahead while
+  // paused); Resume restarts it with the time that was left. Leaving while
+  // paused keeps it paused; Home offers resume. The result says how long the
+  // exam was paused, since the real exam has no pause. Not in hardcore mode.
+  let _examPausedAt = 0, _examPausedMs = 0, _examPauses = 0;
+  function examIsPaused() { return !!_examPausedAt; }
+  function examTogglePause() {
+    if (examHardcore) return;
+    if (_examPausedAt) _examResumeFromPause(); else _examPause();
+  }
+  function _examPause() {
+    if (!examMode || !examTimer) return;
+    clearInterval(examTimer); examTimer = null;
+    examTimeLeft = Math.max(0, Math.round((examEndTime - Date.now()) / 1000));
+    _examPausedAt = Date.now(); _examPauses++;
+    _releaseExamWakeLock();
+    _examSaveState();
+    _examRenderPaused();
+  }
+  function _examResumeFromPause() {
+    if (!_examPausedAt) return;
+    _examPausedMs += Date.now() - _examPausedAt; _examPausedAt = 0;
+    _examRenderPaused();
+    startExamTimer();   // deadline = now + the time that was left
+  }
+  function _examBindPause() {
+    const pb = document.getElementById('exam-pause-btn');
+    if (pb && !pb._examBound) { pb._examBound = true; pb.addEventListener('click', examTogglePause); }
+  }
+  function _examRenderPaused() {
+    const page = document.getElementById('page-exam');
+    if (!page) return;
+    const on = !!_examPausedAt;
+    page.classList.toggle('is-paused', on);
+    const pb = document.getElementById('exam-pause-btn');
+    if (pb) { pb.textContent = on ? 'Resume' : 'Pause'; pb.setAttribute('aria-pressed', on ? 'true' : 'false'); }
+    let card = document.getElementById('exam-paused');
+    if (!on) { if (card) card.remove(); return; }
+    if (!card) {
+      card = document.createElement('div');
+      card.id = 'exam-paused'; card.className = 'exam-paused'; card.setAttribute('role', 'status');
+      const bar = page.querySelector('.exam-topbar');
+      if (bar) bar.insertAdjacentElement('afterend', card); else page.appendChild(card);
+    }
+    const m = Math.floor(examTimeLeft / 60), sec = examTimeLeft % 60;
+    card.innerHTML = '<div class="exam-paused-k">Exam paused</div>'
+      + '<div class="exam-paused-t">' + m + ':' + String(sec).padStart(2, '0') + ' left. The clock is stopped.</div>'
+      + '<button type="button" class="btn btn-primary exam-paused-btn">Resume exam</button>'
+      + '<p class="exam-paused-note">The real exam has no pause, so keep this for real interruptions.</p>';
+    card.querySelector('.exam-paused-btn').addEventListener('click', _examResumeFromPause);
   }
   function _examInProgress() { return !!(examMode && examTimer); }
   // Leaving a running exam asks first. Yes = suspend: the in-page clock stops,
@@ -45,6 +102,7 @@
   const _EXAM_OWN_PAGES = ['exam', 'exam-results', 'review', 'loading'];
   function examLeaveOk(target) {
     if (_EXAM_OWN_PAGES.indexOf(target) !== -1) return true;
+    if (examMode && _examPausedAt) { _examSaveState(); examMode = false; return true; }   // paused: the clock is already stopped
     if (!_examInProgress()) return true;
     if (!confirm('Leave the exam? The clock keeps running, and you can resume from Home.')) return false;
     _examSaveState();
@@ -64,7 +122,14 @@
     wrongDrillMode = false; navOpen = false;
     examQuestions = st.questions; examAnswers = st.answers;
     examCurrent = Math.max(0, Math.min(st.current || 0, examQuestions.length - 1));
-    examTimeLeft = Math.max(0, Math.round((st.endTime - Date.now()) / 1000));
+    _examPauses = st.pauses || 0; _examPausedMs = st.pausedMs || 0; _examPausedAt = 0;
+    if (st.paused) {   // v8.164.0: a paused exam resumes with the time it had; the pause ends now
+      examTimeLeft = Math.max(0, st.timeLeft || 0);
+      _examPausedMs += Math.max(0, Date.now() - (st.pausedAt || Date.now()));
+    } else {
+      examTimeLeft = Math.max(0, Math.round((st.endTime - Date.now()) / 1000));
+    }
+    _examRenderPaused(); _examBindPause();
     if (examTimeLeft <= 0) { submitExam(); return; }   // time ran out while away: mark what was answered
     showPage('exam');
     renderExam();
@@ -213,6 +278,8 @@
     examCurrent   = 0;
     examTimeLeft  = EXAM_TIME_SECONDS;
     navOpen       = false;
+    _examPausedAt = 0; _examPausedMs = 0; _examPauses = 0;   // v8.164.0
+    _examRenderPaused(); _examBindPause();
 
     showPage('loading');
     document.getElementById('loading-msg').textContent = 'Building 90-question exam\u2026';
@@ -220,6 +287,10 @@
     // gets the same eased transition + shimmer overlay as quiz/diagnostic.
     // The label updates per-batch use _loadingProgressUpdate(label, pct).
     _loadingProgressBegin('Building 90-question exam\u2026');
+    // v8.164.0: Cancel on the loading screen. Checked after every await so a
+    // cancelled build never fills examQuestions or opens the exam later.
+    const _g = (typeof _genToken === 'function') ? _genToken() : null;
+    const _alive = () => typeof _genAlive !== 'function' || _genAlive(_g);
     const lbl = document.getElementById('load-progress-label'); // kept for legacy textContent writes
 
     // v4.43.5 — Exam now runs the same validation pipeline as quiz mode (was
@@ -243,6 +314,7 @@
     window._mixedPickMode = 'random';  // v8.146.0: exam rehearsal draws topics at random, never Catch-up
     try {
       for (let i = 0; i < BATCHES; i++) {
+        if (!_alive()) return;
         _loadingProgressUpdate(`Batch ${i + 1} / ${BATCHES} \u2014 generating\u2026`, (i / BATCHES) * 100);
         // v8.162.0: exam-level questions, the last batch hard (~80/20). "Mixed"
         // included easy recall the real exam doesn't ask, which flattered the score.
@@ -262,6 +334,7 @@
             rawBatch = await fetchQuestions(key, MIXED_TOPIC, batchDiff, EXAM_BATCH_BASE + EXAM_BATCH_BUFFER, i);
             break;
           } catch(retryErr) {
+            if (!_alive()) return;
             if (attempt === MAX_RETRIES) { _lastBatchErr = retryErr; rawBatch = []; break; }
             lbl.textContent = `Batch ${i + 1} failed, retrying (${attempt + 1}/${MAX_RETRIES})\u2026`;
             await new Promise(r => setTimeout(r, 1500));
@@ -274,6 +347,7 @@
         const _r = { label: 'b' + (i + 1), asked: EXAM_BATCH_BASE + EXAM_BATCH_BUFFER, written: rawBatch.length };
         if (!rawBatch.length && _lastBatchErr) _r.error = String(_lastBatchErr.message || _lastBatchErr).slice(0, 80);
         const aiValidated = rawBatch.length ? await aiValidateQuestions(key, rawBatch) : [];
+        if (!_alive()) return;
         let batch = validateQuestions(aiValidated);
         _r.afterChecker = aiValidated.length; _r.afterLocal = batch.length;
 
@@ -326,6 +400,7 @@
           }
         }
 
+        if (!_alive()) return;
         // Step 4: Slice batch to EXAM_BATCH_BASE (truncate overage, accept shortage).
         // If still < EXAM_BATCH_BASE here, the final exam will be short of 90 — handled below.
         const _before = examQuestions.length;
@@ -333,10 +408,13 @@
         _r.added = examQuestions.length - _before; _fillRounds.push(_r);
       }
       if (examQuestions.length < MCQ_TARGET && typeof _topUpToCount === 'function') {
-        examQuestions = await _topUpToCount(key, MIXED_TOPIC, 'Exam Level', examQuestions, MCQ_TARGET, _fillRounds, (round, deficit) => {
+        const _topped = await _topUpToCount(key, MIXED_TOPIC, 'Exam Level', examQuestions, MCQ_TARGET, _fillRounds, (round, deficit) => {
           _loadingProgressUpdate(`Filling the last ${deficit} question${deficit === 1 ? '' : 's'}\u2026`, 92 + round * 2);
         });
+        if (!_alive()) return;
+        examQuestions = _topped;
       }
+      if (!_alive()) return;
       if (!examQuestions.length) throw (_lastBatchErr || new Error('No questions could be generated. Try again.'));
       // v8.162.0: shuffle so the hard batch doesn't cluster at the end.
       for (let k = examQuestions.length - 1; k > 0; k--) { const r = Math.floor(Math.random() * (k + 1)); const t = examQuestions[k]; examQuestions[k] = examQuestions[r]; examQuestions[r] = t; }
@@ -367,6 +445,7 @@
       // with what we have rather than error out. Show a non-blocking banner.
       if (examShortfall) showExamShortfallBanner(examQuestions.length);
     } catch(e) {
+      if (!_alive()) return;   // cancelled: Cancel already went Home
       if (typeof _logQuizFill === 'function') _logQuizFill(EXAM_QUESTION_COUNT, 0, 'error (exam)', _fillRounds, String((e && e.message) || e).slice(0, 120));
       examMode = false;
       _loadingProgressFinish();
@@ -503,6 +582,9 @@
     const box = document.getElementById('exam-options');
     box.innerHTML = '';
 
+    // v8.164.0: the A-D "pick" hint means nothing on a PBQ
+    const _pickHint = document.getElementById('exam-kbd-pick');
+    if (_pickHint) _pickHint.style.display = (qType === 'simlab') ? 'none' : '';   // inline: the hints row's CSS overrides [hidden]
     if (qType === 'simlab') {
       _examRenderPbq(q, box, ans);   // v8.163.0
     } else if (qType === 'multi-select') {
@@ -650,6 +732,7 @@
     if (examTimer) { clearInterval(examTimer); examTimer = null; }
     _examClearState();       // v8.162.0: a submitted exam is never offered for resume
     _releaseExamWakeLock();  // Phase 10: phone can sleep now
+    if (_examPausedAt) { _examPausedMs += Date.now() - _examPausedAt; _examPausedAt = 0; _examRenderPaused(); }   // v8.164.0
     hideExamModal();
 
     const total = examQuestions.length;
@@ -767,7 +850,7 @@
     try {
       if ((getStreak().current || 0) > _prevStreakBefore) _pendingStreakPulse = true;
     } catch (_) {}
-    saveToHistory({ date: new Date().toISOString(), topic: EXAM_TOPIC, difficulty: 'Mixed', score: Math.round(points), total, pct, mode: 'exam', hardcore: examHardcore });
+    saveToHistory({ date: new Date().toISOString(), topic: EXAM_TOPIC, difficulty: 'Mixed', score: Math.round(points), total, pct, mode: 'exam', hardcore: examHardcore, pausedMs: _examPausedMs || undefined });
     // v4.81.13 (Codex r∞ user request): also write per-topic split rows so the
     // exam contributes to readiness / progress / weak-spots / what-if /
     // domain mastery — pre-fix the rolled-up EXAM_TOPIC sentinel was filtered
@@ -814,7 +897,8 @@
       ? `Score ${scaledScore}/${EXAM_MAX_SCORE}, above the ${EXAM_PASS_SCORE} pass mark.`
       : `Score ${scaledScore}/${EXAM_MAX_SCORE}, ${EXAM_PASS_SCORE - scaledScore} points short of the ${EXAM_PASS_SCORE} pass mark.`)
       + ` Here, ${EXAM_PASS_SCORE} is about ${_passPct}% correct. The real exam's scaling isn't published, so treat this as an estimate.`
-      + (pbqCount ? ` PBQs earned ${Math.round(pbqPoints * 10) / 10} of ${pbqCount} points, with partial credit per step.` : '');
+      + (pbqCount ? ` PBQs earned ${Math.round(pbqPoints * 10) / 10} of ${pbqCount} points, with partial credit per step.` : '')
+      + (_examPauses ? ` Paused ${_examPauses === 1 ? 'once' : _examPauses === 2 ? 'twice' : _examPauses + ' times'}, ${Math.max(1, Math.round(_examPausedMs / 60000))} min in total. The real exam has no pause.` : '');
 
     animateCount('exam-r-correct', 0, correct, 800);
     animateCount('exam-r-wrong', 0, wrong, 800);
@@ -963,6 +1047,8 @@
   window.resumeExam        = resumeExam;
   window.examLeaveOk       = examLeaveOk;
   window.examSavedState    = examSavedState;
+  window.examIsPaused      = examIsPaused;      // v8.164.0: keyboard shortcuts stand down while paused
+  window.examTogglePause   = examTogglePause;
 
   window._certanvilFeatures['exam'] = {
     enter: startExam,
