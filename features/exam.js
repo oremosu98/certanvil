@@ -61,6 +61,7 @@
     localStorage.setItem(STORAGE.KEY, key);
 
     examMode = true;
+    if (typeof _resetDrillModes === 'function') _resetDrillModes();  // v8.153.0
     // Hardcore mode (#48): read the persisted checkbox state at start time
     examHardcore = localStorage.getItem(STORAGE.HARDCORE_EXAM) === '1';
     const examPage = document.getElementById('page-exam');

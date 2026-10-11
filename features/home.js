@@ -705,6 +705,7 @@
     // the set (was exactly `count`: 45 → 28, 30 → 25), then top up below.
     const target = count + Math.max(3, Math.ceil(count * 0.3));
     window._mixedPickMode = 'random';  // v8.146.0: Marathon draws topics at random, never Catch-up
+    if (typeof _resetDrillModes === 'function') _resetDrillModes();  // v8.153.0
     const batches = Math.ceil(target / BATCH_SIZE);
     const _fillRounds = [];
     let collected = [];

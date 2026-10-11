@@ -224,6 +224,7 @@
     // renderContinueCard for the same class-of-bug-grep precedent).
     const h = loadHistory().filter(e =>
       e.topic !== MIXED_TOPIC && e.topic !== EXAM_TOPIC && _isCurrentCertTopic(e.topic)
+      && e.mode !== 'gauntlet' && e.mode !== 'whynot'   // v8.153.0: unchecked, trap-heavy drill runs aren't exam-level evidence
     );
     if (h.length === 0) return null;
 
@@ -519,7 +520,7 @@
     // current cert's exam only (the only sensible semantic since each cert has
     // its own pass mark + domain weights).
     const h = loadHistory().filter(e =>
-      e.topic !== MIXED_TOPIC && e.topic !== EXAM_TOPIC && e.total >= 3 && _isCurrentCertTopic(e.topic)
+      e.topic !== MIXED_TOPIC && e.topic !== EXAM_TOPIC && e.total >= 3 && _isCurrentCertTopic(e.topic) && e.mode !== 'gauntlet' && e.mode !== 'whynot'
     );
     if (h.length < 5) return null;
     // Use the last 14 sessions (history is newest-first, so take .slice(0, 14).reverse())

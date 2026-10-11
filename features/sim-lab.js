@@ -1211,7 +1211,12 @@
 
   // --- order renderer ---
   function _slRenderOrder(step, onChange, initial) {
-    var order = step.payload.items.map(function (it) { return it.id; }); // initial = given order
+    var order = step.payload.items.map(function (it) { return it.id; });
+    // v8.153.0: shuffle. Items were shown in the given order, and 20 of 26 Sec+
+    // order steps list them already in the answer order, so an untouched submit passed.
+    for (var _i = order.length - 1; _i > 0; _i--) { var _j = Math.floor(Math.random() * (_i + 1)); var _t = order[_i]; order[_i] = order[_j]; order[_j] = _t; }
+    var _key = (step.answer && step.answer.correctOrder) || [];
+    if (order.length > 1 && order.join(' ') === _key.join(' ')) order.push(order.shift());
     // Re-hydrate from a saved response: adopt the prior order if it's a valid
     // permutation of this step's items (ignore anything stale/mismatched).
     if (initial && Array.isArray(initial.order) && initial.order.length === order.length &&
@@ -2957,7 +2962,7 @@
   function _slExamGateCopy() {
     return {
       title: 'The real exam is timed. Practice that way.',
-      body: 'Exam mode runs one clock across the whole session. Flag a PBQ, move on, come back, then review before you submit, just like the N10-009 PBQ section. Practice mode stays free and unlimited. Unlock Exam mode with Pro to train under real pressure.',
+      body: 'Exam mode runs one clock across the whole session. Flag a PBQ, move on, come back, then review before you submit, just like the ' + ((typeof CERT_CODE !== 'undefined' && CERT_CODE) || 'exam') + ' PBQ section. Practice mode stays free. Unlock Exam mode with Pro to train under real pressure.',
       primary: 'Unlock Exam mode',
       secondary: 'Keep practicing (free)'
     };
@@ -3087,6 +3092,22 @@
   // transition — §6.5). Amber latches via .is-low.
   function _slTickClock() {
     var sess = _activeExamSession(); if (!sess) return;
+    // v8.153.0: leaving by any route but the Leave button (sidebar, tab bar) left
+    // the clock running, and at the deadline it yanked you to the results page,
+    // even mid-quiz. Off the exam page means the exam was abandoned, like Leave.
+    // Two consecutive off-page ticks (~2s): the clock's first tick can land while
+    // showPage is still transitioning onto the exam page, which must not count.
+    var _pg = document.getElementById(sess === _dlSession ? 'page-decision-lab' : 'page-sim-lab');
+    if (_pg && !_pg.classList.contains('active')) {
+      sess.offPageTicks = (sess.offPageTicks || 0) + 1;
+      if (sess.offPageTicks >= 2) {
+        _slStopCountdown();
+        if (sess === _slSession) { _slSession = null; _slMode = null; } else { _dlSession = null; }
+        return;
+      }
+    } else {
+      sess.offPageTicks = 0;
+    }
     var remaining = sess.deadlineMs - Date.now();   // wall-clock truth, never decremented
     var clk = document.querySelector('.sl-clock');
     var t = clk && clk.querySelector('.sl-clock-t');
@@ -3549,7 +3570,16 @@
       + 'Return ONLY the JSON object, no prose.';
   }
 
+  // v8.153.0: curated seeds first. Signed-in users used to get mostly AI-made
+  // PBQs that were only shape-checked (no answer-key check), so a wrong key could
+  // fail a correct answer; ADR-003 had ruled out live AI generation. The AI path
+  // now runs only when the bank can't serve a scenario.
   function _slGenerateScenario(cert, objectiveHint) {
+    var curated = _slPickSeed(cert);
+    if (curated) return Promise.resolve(curated);
+    return _slGenerateScenarioAI(cert, objectiveHint);
+  }
+  function _slGenerateScenarioAI(cert, objectiveHint) {
     return Promise.resolve().then(function () {
       if (!_slFetcher) return null;
       return _slFetcher(_slBuildPrompt(cert, objectiveHint));
@@ -3749,7 +3779,10 @@
   }
 
   function _slGenerateScenarioFresh(cert, usedIds) {
-    return _slGenerateScenario(cert).then(function (scn) {
+    // v8.153.0: an unused curated seed first; AI only once this session has used the bank.
+    var fresh = _slBank(cert).filter(function (s) { return !usedIds.has(s.id) && simLabValidateScenario(s).ok; });
+    if (fresh.length) return Promise.resolve(_slPickSeedFresh(cert, usedIds));
+    return _slGenerateScenarioAI(cert).then(function (scn) {
       if (scn && usedIds.has(scn.id)) { var alt = _slPickSeedFresh(cert, usedIds); if (alt) return alt; }
       return scn;
     }).catch(function () { return _slPickSeedFresh(cert, usedIds); });
@@ -3837,10 +3870,11 @@
       if (t && uniq.indexOf(t) === -1) uniq.push(t);
     });
     if (!uniq.length) return null;
-    return 'Your misses were in ' + uniq.join(' and ') + '. Pro tracks this across every session and pulls your weak domains back in automatically.';
+    // v8.153.0: the old line promised Pro "pulls your weak domains back in"; nothing reads SIMLAB_WEAK yet.
+    return 'Your misses were in ' + uniq.join(' and ') + '. Those are worth another round.';
   }
   function simLabSummaryUpsell() {
-    window._gateProOnly('Sim Lab', { title: 'Go Pro for the full sim.', body: 'Exam-length 10-round runs, unlimited sessions on every cert, the full reasoning on every step, and weak-spot tracking that pulls your misses back in.' });
+    window._gateProOnly('Sim Lab', { title: 'Go Pro for the full sim.', body: 'Exam-length 10-round runs, unlimited sessions on every cert, and the full reasoning on every step.' });  // v8.153.0: dropped an unbuilt weak-spot promise
   }
 
   // --- Task 16: Drills-page card with daily-state pill ---

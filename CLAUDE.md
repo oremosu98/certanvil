@@ -24,12 +24,12 @@
 <!-- machine-owned — run `node scripts/stamp-facts.js` to refresh; do not hand-edit -->
 | Metric | Lines | Size |
 |---|---|---|
-| app.js | 8297 | 440 KB |
+| app.js | 8300 | 441 KB |
 | styles.css | 14913 | 551 KB |
 | index.html | 2298 | 149 KB |
 | dg-system.css | 5474 | 510 KB |
-| tests/uat.js + tests/uat/ (31 modules) | 29780 | — |
-UAT checks: 5068 · E2E `test(` count: 163 · APP_VERSION: 8.152.0 · stamped-at: worktree
+| tests/uat.js + tests/uat/ (31 modules) | 29799 | — |
+UAT checks: 5069 · E2E `test(` count: 163 · APP_VERSION: 8.153.0 · stamped-at: worktree
 <!-- FACTS:AUTO:END -->
 
 | File | Purpose | Size |
@@ -135,9 +135,9 @@ npx playwright test              # E2E (tests/e2e/app.spec.js)
 
 | Version | Features Added |
 |---|---|
+| v8.153.0 | Drill fixes: Sim Lab serves curated PBQs with shuffled order steps, exam clock stops off-page; drill modes reset; error card no longer breaks the loading screen; Why-Not guards; drill runs leave readiness |
 | v8.152.0 | Readiness v3 (difficulty-adjusted: Hard done well counts more, Foundational less) + history keeps 2000 rows instead of 200 |
 | v8.151.0 | Cloud sync works for the first time, merge-first: local data is never overwritten, uploads keep cloud-only keys, sign-out only clears backed-up data |
-| v8.150.0 | Export Data now backs up every study key (review cards, exam date, milestones…); import restores missing keys |
 
 _Older releases (v7.60.0 and back) live in [CHANGELOG.md](./CHANGELOG.md)._
 

@@ -8,7 +8,10 @@
   // ── moved functions, 2-space indent ──
   // ── Block A: weak topic + gauntlet data ──
   function getWeakTopic() {
-    const h = loadHistory().filter(e => e.topic !== MIXED_TOPIC && e.topic !== EXAM_TOPIC && e.total >= 5);
+    // v8.153.0: this cert's topics only, and at least 5 answers per TOPIC rather
+    // than per row (Mixed quizzes write one-answer rows, so almost nothing qualified).
+    const h = loadHistory().filter(e => e.topic !== MIXED_TOPIC && e.topic !== EXAM_TOPIC
+      && (typeof _isCurrentCertTopic !== 'function' || _isCurrentCertTopic(e.topic)));
     if (h.length < 1) return null;
     const map = {};
     h.forEach(e => {
@@ -18,6 +21,7 @@
     });
     let weakest = null, lowestPct = 100;
     Object.entries(map).forEach(([t, s]) => {
+      if (s.total < 5) return;
       const pct = (s.correct / s.total) * 100;
       if (pct < lowestPct) { lowestPct = pct; weakest = t; }
     });
@@ -643,8 +647,10 @@
     const kit = r.whynot[letter];
     const optText = r.options[['A', 'B', 'C', 'D'].indexOf(letter)];
     // shuffle [true, fake, fake]; remember where the true reason landed
-    const entries = [{ t: kit.reason, real: true }, { t: kit.fakes[0], real: false }, { t: kit.fakes[1], real: false }]
-      .sort(() => Math.random() - 0.5);
+    // v8.153.0: Fisher-Yates. sort(() => Math.random() - 0.5) put the true reason
+    // first 44% of the time (should be 33%).
+    const entries = [{ t: kit.reason, real: true }, { t: kit.fakes[0], real: false }, { t: kit.fakes[1], real: false }];
+    for (let i = entries.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [entries[i], entries[j]] = [entries[j], entries[i]]; }
     _wnRound.map = entries;
     const segs = ['answer'].concat(_wnRound.wrongLetters).map((k, i) => {
       if (i === 0) return '<i class="' + (_wnRound.answerRight ? 'done' : 'bad') + '"></i>';
@@ -723,6 +729,8 @@
   }
 
   function _wnFinishRound() {
+    if (_wnRound.finished) return;   // v8.153.0: a double-click counted the answer twice (e.g. 4/3)
+    _wnRound.finished = true;
     const answerPt = _wnRound.answerRight ? 1 : 0;
     if (_wnRound.answerRight) _wnSession.points++;
     const reasonPts = _wnRound.wrongLetters.filter(l => _wnRound.reasons[l]).length;
@@ -782,11 +790,15 @@
     // bounds guard: past the last round, the only valid move is the session
     // verdict (the real button already says so; this protects double-fires)
     if (_wnSession.roundIdx + 1 >= WHY_NOT_ROUNDS) { whyNotFinishSession(); return; }
+    // v8.153.0: only move on from a recorded round (a double-click skipped one)
+    if (_wnSession.roundResults.length <= _wnSession.roundIdx) return;
     _wnBeginRound(_wnSession.roundIdx + 1);
   }
 
   function whyNotFinishSession() {
     if (!_wnSession) { startWhyNot(); return; }
+    if (_wnSession.finished) return;   // v8.153.0: a double-click saved the session twice
+    _wnSession.finished = true;
     const answersRight = _wnSession.roundResults.filter(x => x.answerRight).length;
     const pct = Math.round((answersRight / WHY_NOT_ROUNDS) * 100);
     try { saveToHistory({ date: new Date().toISOString(), topic: _wnSession.topic, difficulty: 'Exam Level', score: answersRight, total: WHY_NOT_ROUNDS, pct, mode: 'whynot' }); } catch (_) {}

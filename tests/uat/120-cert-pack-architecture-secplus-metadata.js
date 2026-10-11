@@ -974,6 +974,25 @@ test('v8.126.0 AI-901: Decision Lab seed is the AI-901 rebuild (no retired AI-90
       && !/Custom Vision|Form Recognizer|Azure AI Studio|Document Intelligence|regression|clustering/i.test(raw)
       && !/\u2014/.test(raw);
   })());
+test('v8.153.0 drills: Sim Lab seeds first + shuffled order steps + exam clock stops off-page; Why-Not guards; drill modes reset; error card keeps the loading page',
+  (() => {
+    const sl = fs.readFileSync(path.join(ROOT, 'features', 'sim-lab.js'), 'utf8');
+    const fd = fs.readFileSync(path.join(ROOT, 'features', 'flagship-drills.js'), 'utf8');
+    const qe = fs.readFileSync(path.join(ROOT, 'features', 'quiz-engine.js'), 'utf8');
+    const rd = fs.readFileSync(path.join(ROOT, 'features', 'readiness.js'), 'utf8');
+    return /var curated = _slPickSeed\(cert\);\s*if \(curated\) return Promise\.resolve\(curated\);/.test(sl)
+      && /if \(fresh\.length\) return Promise\.resolve\(_slPickSeedFresh\(cert, usedIds\)\);/.test(sl)
+      && /order\.length > 1 && order\.join\(' '\) === _key\.join\(' '\)/.test(sl)
+      && /sess\.offPageTicks >= 2/.test(sl) && !/N10-009 PBQ section/.test(sl)
+      && /if \(_wnRound\.finished\) return;/.test(fd) && /if \(_wnSession\.finished\) return;/.test(fd)
+      && /if \(_wnSession\.roundResults\.length <= _wnSession\.roundIdx\) return;/.test(fd)
+      && !/\.sort\(\(\) => Math\.random\(\) - 0\.5\)/.test(fd)
+      && /_isCurrentCertTopic\(e\.topic\)\)\);/.test(fd)
+      && /sessionMode = false;\s*_resetDrillModes\(\);/.test(qe)
+      && (js.match(/wrongDrillMode = true; if \(typeof _resetDrillModes === 'function'\) _resetDrillModes\(\);/g) || []).length === 2
+      && /const _w = document\.createElement\('div'\); _w\.className = 'errc-wrap'/.test(js) && !/showPage === 'function'\) showPage\('page-setup'\)/.test(js)
+      && (rd.match(/e\.mode !== 'gauntlet' && e\.mode !== 'whynot'/g) || []).length === 2;
+  })());
 test('v8.152.0 Readiness v3: Hard done well beats Foundational done equally well; Foundational misses cost more; exam-level stays put',
   (() => {
     try {

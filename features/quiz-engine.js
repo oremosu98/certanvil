@@ -44,6 +44,7 @@
     // "Begin plan" session used to stay armed, so this quiz's finish() rendered
     // the session "Topic N done" page instead of results — up to 4 times.
     sessionMode = false;
+    _resetDrillModes();
   
     // v4.54.15: Smart + Multi: handled alongside single-topic + Mixed.
     // v8.146.0: Catch-up runs as a normal Mixed quiz (history, cache, progress
@@ -434,7 +435,27 @@
   let _loadingProgressBar = null;
   let _loadingProgressLabel = null;
   
+  // v8.153.0: a quiz start always ends any Gauntlet / Why-Not run. Leaving one
+  // via the sidebar (Progress, Analytics) skipped goSetup, so the next quiz
+  // started from Analytics had its misses skip the bank and review cards, and
+  // finish() was hijacked into the old drill (its results were lost).
+  function _resetDrillModes() {
+    try { gauntletMode = false; _gauntletRun = null; whyNotMode = false; _wnSession = null; _wnRound = null; } catch (_) {}
+  }
+  window._resetDrillModes = _resetDrillModes;
+  // v8.153.0: undo showAiErrorCard: remove the card and restore what it hid.
+  function clearAiErrorCard(container) {
+    const c = container || document.getElementById('page-loading');
+    if (!c) return;
+    Array.from(c.children).forEach(n => {
+      if (n.classList && n.classList.contains('errc-wrap')) { n.remove(); return; }
+      if (n.hasAttribute && n.hasAttribute('data-errc-hid')) { n.style.display = n.getAttribute('data-errc-hid'); n.removeAttribute('data-errc-hid'); }
+    });
+  }
+  window.clearAiErrorCard = clearAiErrorCard;
+
   function _loadingProgressBegin(initialLabel) {
+    if (typeof clearAiErrorCard === 'function') clearAiErrorCard(document.getElementById('page-loading'));   // v8.153.0: a stale error card never outlives the next load
     const prog = document.getElementById('load-progress');
     _loadingProgressBar = document.getElementById('load-bar-fill');
     _loadingProgressLabel = document.getElementById('load-progress-label');

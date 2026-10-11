@@ -1,9 +1,9 @@
 // ══════════════════════════════════════════
-// Network+ AI Quiz — app.js  v8.152.0
+// Network+ AI Quiz — app.js  v8.153.0
 // ══════════════════════════════════════════
 
 // ── CONSTANTS ──
-const APP_VERSION = '8.152.0';
+const APP_VERSION = '8.153.0';
 // v4.99.45 (Phase 6b): expose APP_VERSION on window so the web-vitals
 // collector (lib/web-vitals-collector.js, loaded BEFORE app.js so its
 // PerformanceObservers attach earlier) can stamp this version onto every
@@ -1452,7 +1452,10 @@ function showAiErrorCard(opts) {
   const c = _ERRC_COPY[kind] || _ERRC_COPY.server;
   const icon = _ERRC_ICONS[kind] || _ERRC_ICONS.server;
   const neutralClass = (kind === 'network') ? ' neutral' : '';
-  container.innerHTML = '' +
+  // v8.153.0: never wipe the container. On #page-loading that deleted #load-progress, so every later quiz start threw until a reload. Hide its content, add the card beside it; clearAiErrorCard() restores.
+  if (typeof clearAiErrorCard === 'function') clearAiErrorCard(container); Array.from(container.children).forEach(ch => { ch.setAttribute('data-errc-hid', ch.style.display || ''); ch.style.display = 'none'; });
+  const _w = document.createElement('div'); _w.className = 'errc-wrap'; container.appendChild(_w);
+  _w.innerHTML = '' +
     '<div class="errc-card" role="alert">' +
       '<span class="errc-eyebrow' + neutralClass + '">' + icon + _escNudge(c.eyebrow) + '</span>' +
       '<div class="errc-title">' + _escNudge(c.title) + '</div>' +
@@ -1463,10 +1466,10 @@ function showAiErrorCard(opts) {
         (refId ? '<button type="button" class="errc-ref" title="Click to copy">' + _ERRC_COPY_SVG + 'ref ' + _escNudge(refId) + '</button>' : '') +
       '</div>' +
     '</div>';
-  const btns = container.querySelectorAll('button');
-  btns[0].onclick = () => { if (typeof onRetry === 'function') onRetry(); };
-  btns[1].onclick = () => { if (typeof onBack === 'function') onBack(); else if (typeof showPage === 'function') showPage('page-setup'); };
-  const ref = container.querySelector('.errc-ref');
+  const btns = _w.querySelectorAll('button'), _clr = () => { if (typeof clearAiErrorCard === 'function') clearAiErrorCard(container); };
+  btns[0].onclick = () => { _clr(); if (typeof onRetry === 'function') onRetry(); };
+  btns[1].onclick = () => { _clr(); if (typeof onBack === 'function') onBack(); else if (typeof goSetup === 'function') goSetup(); else if (typeof showPage === 'function') showPage('setup'); };  // was showPage('page-setup'): no such page
+  const ref = _w.querySelector('.errc-ref');
   if (ref) ref.onclick = () => { try { navigator.clipboard.writeText(refId); showSuccessToast('Error ref copied.'); } catch (_) { /* intentionally silent: cosmetic */ } };
 }
 
@@ -3836,7 +3839,7 @@ function drillMistakesFromResults() {
     if (typeof showErrorToast === 'function') showErrorToast('Nothing to drill \u2014 you got them all right.');
     return;
   }
-  wrongDrillMode = true;
+  wrongDrillMode = true; if (typeof _resetDrillModes === 'function') _resetDrillModes();  // v8.153.0
   examMode = false;
   sessionMode = false;
   activeQuizTopic = 'Session \u00b7 mistakes drill';
@@ -3978,7 +3981,7 @@ async function startWrongDrill() {
   const key = document.getElementById('api-key').value.trim();
   apiKey = key; // May be empty — the reword call routes via the signed-in proxy
 
-  wrongDrillMode = true;
+  wrongDrillMode = true; if (typeof _resetDrillModes === 'function') _resetDrillModes();  // v8.153.0
   examMode = false;
   sessionMode = false;
   activeQuizTopic = 'Wrong Answers Drill';
