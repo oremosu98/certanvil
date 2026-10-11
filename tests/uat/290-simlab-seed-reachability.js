@@ -10,7 +10,7 @@
 // New waves are always APPENDED, so the dead tail grows with every wave. These
 // tests are the ratchet that stops it coming back.
 
-const { _fnBody, dgCss, html, js, results, test, vm } = require('./_context');
+const { ROOT, _fnBody, dgCss, fs, html, js, path, results, test, vm } = require('./_context');
 
 (function () {
   console.log('\n\x1b[1m── Sim Lab: every seed in the bank is reachable ──\x1b[0m');
@@ -92,6 +92,39 @@ const { _fnBody, dgCss, html, js, results, test, vm } = require('./_context');
     vm.runInContext('__setMinute(1); globalThis.__b = _slPickSeed("netplus");', ctx4);
     test('Reachability: a 2-seed bank still reaches both entries on consecutive minutes',
       ctx4.__a && ctx4.__b && ctx4.__a.idx === 0 && ctx4.__b.idx === 1);
+
+    // ── 4b. v8.156.0 unseen-first: with a served history, never-served seeds come first ──
+    (function () {
+      var c = mkCtx(6);
+      vm.runInContext('var __ls = {}; var localStorage = { getItem: function (k) { return __ls[k] === undefined ? null : __ls[k]; }, setItem: function (k, v) { __ls[k] = String(v); } };', c);
+      vm.runInContext('var _SL_SERVED_KEY = "nplus_simlab_served";', c);
+      vm.runInContext(_fnBody(js, '_slServedFor'), c);
+      vm.runInContext(_fnBody(js, '_slMarkServed'), c);
+      vm.runInContext(_fnBody(js, '_slLeastServed'), c);
+      // seeds 0..4 served at increasing times; seed-5 never served
+      vm.runInContext('__ls["nplus_simlab_served"] = JSON.stringify({ netplus: { "seed-0": 5, "seed-1": 4, "seed-2": 3, "seed-3": 2, "seed-4": 1 } });', c);
+      vm.runInContext('__setMinute(10); globalThis.__u1 = _slPickSeed("netplus");', c);   // fake clock: Date.now() = 600000
+      vm.runInContext('__setMinute(10); globalThis.__u2 = _slPickSeed("netplus");', c);   // seed-5 now served; oldest is seed-4
+      vm.runInContext('__setMinute(3); var used = new Set(); globalThis.__sess = [];' +
+        'for (var r = 0; r < 6; r++) { var s = _slPickSeedFresh("netplus", used); used.add(s.id); __sess.push(s.id); }', c);
+      test('Unseen-first: the never-served seed is picked first, then the least-recently-served',
+        c.__u1 && c.__u1.id === 'seed-5' && c.__u2 && c.__u2.id === 'seed-4');
+      test('Unseen-first: a session still never repeats and covers the whole small bank',
+        c.__sess.length === 6 && new Set(c.__sess).size === 6);
+    })();
+
+    // ── 4c. v8.156.0 timeline: no severity, no tag (and the Sec+ bank carries none) ──
+    test('Timeline: a stage without severity renders no .sl-sevtag (renderer no longer defaults to "low")',
+      /var sev = st\.severity \|\| '';/.test(js) && /var tagHtml\s*=\s*sev \? '<span class="sl-sevtag">'/.test(js));
+    (function () {
+      var sctx = { window: {} }; vm.createContext(sctx);
+      vm.runInContext(fs.readFileSync(path.join(ROOT, 'features', 'sim-lab-seed-secplus.js'), 'utf8'), sctx);
+      var tagged = (sctx.window.SIM_LAB_SEED_SECPLUS || []).filter(function (sd) {
+        var r = sd.assets && sd.assets.reference;
+        return r && r.kind === 'timeline' && (r.stages || []).some(function (st) { return st.severity; });
+      }).length;
+      test('Timeline: no Sec+ incident timeline shows a severity tag (they revealed or contradicted the answer)', tagged === 0);
+    })();
 
     // ── 5. Degenerate inputs stay total ──
     var ctx5 = mkCtx(0);

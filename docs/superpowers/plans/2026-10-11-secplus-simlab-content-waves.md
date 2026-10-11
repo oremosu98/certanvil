@@ -9,6 +9,8 @@ updated: 2026-10-11
 
 Spec: [[2026-10-11-secplus-simlab-content-waves-design]]. Three batches, shipped one at a time on 2026-10-11.
 
+**Re-sequenced during execution:** the terminal and design sets cleared the gate before the firewall set was written, so v8.156.0 shipped them with all the engine fixes, and firewall moved to v8.157.0. Found and fixed on the way (v8.156.0): configure dropdowns never shuffled (303/313 Net+ keyed option 1), network diagrams with pixel or missing x/y (7 Sec+ incident, 12 Sec+ VPN, 12 A+ SOHO), and `_CLI_FAULT_SIG` knew only Net+ faults.
+
 ## Batch A
 1. **Unseen-first picking** (TDD). Failing UAT first: with a served map marking seeds 1..n−1, `_slPickSeed` returns seed n; `_slPickSeedFresh` never repeats inside a session and prefers never-served; the whole bank stays reachable. Implement `nplus_simlab_served` = `{cert: {seedId: ts}}`, stamped at pick time; ties broken randomly; storage errors fall back to the old rotation.
 2. **Timeline severity** (TDD). Failing UAT: a stage without `severity` renders no `.sl-sev` tag. Renderer: no default `'low'`. Strip `severity` from every Sec+ `incident` timeline stage.

