@@ -974,6 +974,19 @@ test('v8.126.0 AI-901: Decision Lab seed is the AI-901 rebuild (no retired AI-90
       && !/Custom Vision|Form Recognizer|Azure AI Studio|Document Intelligence|regression|clustering/i.test(raw)
       && !/\u2014/.test(raw);
   })());
+test('v8.154.0 Gauntlet + Why-Not: questions pass the quiz checks (re-keyed = failed), one auto-retry, Why-Not keeps 3 of 5',
+  (() => {
+    const fd = fs.readFileSync(path.join(ROOT, 'features', 'flagship-drills.js'), 'utf8');
+    return /async function _drillQualityGate\(key, qs, label\)/.test(fd)
+      && /checked = await aiValidateQuestions\(key, qs\)/.test(fd) && /checked = validateQuestions\(checked\)/.test(fd)
+      && /checked\.filter\(q => q\.answer === q\._origAnswer\)/.test(fd)
+      && /const passed = await _drillQualityGate\(apiKey, qs, 'gauntlet'\);/.test(fd)
+      && /const passed = await _drillQualityGate\(apiKey, qs, 'whynot'\);/.test(fd)
+      && /const WN_ASK = WHY_NOT_ROUNDS \+ 2;/.test(fd)
+      && /if \(!\(e && e\.qualityGate\)\) throw e;\s*return _fetchGauntletRunOnce/.test(fd)
+      && /if \(!\(e && e\.qualityGate\)\) throw e;\s*return _fetchWhyNotSessionOnce/.test(fd)
+      && /objective: obj/.test(fd);
+  })());
 test('v8.153.0 drills: Sim Lab seeds first + shuffled order steps + exam clock stops off-page; Why-Not guards; drill modes reset; error card keeps the loading page',
   (() => {
     const sl = fs.readFileSync(path.join(ROOT, 'features', 'sim-lab.js'), 'utf8');

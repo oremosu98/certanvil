@@ -126,22 +126,54 @@
     renderGauntletEntry();
   }
 
+  // v8.154.0: drill questions face the same checks as quiz questions: the Sonnet
+  // checker (fail-closed) then validateQuestions. Gauntlet rungs and Why-Not rounds
+  // were only shape-checked, so a wrong key could mark right knowledge wrong. A
+  // question the checker RE-KEYS counts as failed here: its explanation, hinge or
+  // reasons were written for the original key. Returns the indexes that passed.
+  async function _drillQualityGate(key, qs, label) {
+    qs.forEach(q => { q._origAnswer = q.answer; });
+    let checked = qs;
+    try {
+      if (typeof aiValidateQuestions === 'function') checked = await aiValidateQuestions(key, qs);
+      if (typeof validateQuestions === 'function') checked = validateQuestions(checked);
+    } catch (_) { checked = []; }   // fail closed
+    const ok = new Set(checked.filter(q => q.answer === q._origAnswer).map(q => q.question));
+    const passed = qs.map((q, i) => (ok.has(q.question) ? i : -1)).filter(i => i >= 0);
+    if (typeof _logQuizFill === 'function') _logQuizFill(qs.length, passed.length, label + ' quality gate', [], null);
+    return passed;
+  }
+  function _drillTopicObjective(topicName) {
+    const tr = (typeof topicResources !== 'undefined' && topicResources && topicResources[topicName]) || null;
+    return (tr && tr.obj) || '';
+  }
+
+  // A run needs all 5 rungs; one that fails the checks means a fresh run (once).
   async function _fetchGauntletRun(topicName, forcedConcept, errorSurface) {
+    try {
+      return await _fetchGauntletRunOnce(topicName, forcedConcept, errorSurface);
+    } catch (e) {
+      if (!(e && e.qualityGate)) throw e;
+      return _fetchGauntletRunOnce(topicName, forcedConcept, errorSurface);
+    }
+  }
+
+  async function _fetchGauntletRunOnce(topicName, forcedConcept, errorSurface) {
     const exemplars = (typeof _pickExemplarsForTopic === 'function') ? _pickExemplarsForTopic(topicName, 3) : [];
     const exemplarBlock = (exemplars && exemplars.length && typeof _formatExemplarsForPrompt === 'function')
       ? _formatExemplarsForPrompt(exemplars) : '';
     const rungSpecs =
-      '1. Plain — a direct, plainly worded question on the concept. hinge = the concept term itself.\n' +
+      '1. Plain — a direct, plainly worded question on the concept. hinge = the concept term itself, named in the stem; the correct option states its defining fact and is never the concept\'s own name.\n' +
       '2. Scenario — a short real-world scenario (2-3 sentences) where the concept is the answer. hinge = the scenario detail that points to the concept.\n' +
       '3. Best-of — several options are partially workable; a BEST/MOST-style qualifier decides it. hinge = the qualifier word.\n' +
-      '4. Not-trap — a negation question (NOT / EXCEPT / LEAST). hinge = the negation word.\n' +
+      '4. Not-trap — a negation question using NOT or EXCEPT. hinge = the negation word.\n' +
       '5. Twisted — the trickiest wording: inverted framing, double qualifier, or distractor-heavy phrasing. hinge = the word or phrase the whole question pivots on.';
     const prompt = (forcedConcept
         ? 'Write a fresh 5-question "Reword Gauntlet" run about this exact concept: "' + forcedConcept + '" (exam topic: ' + topicName + '). Brand-new wordings — reuse nothing from any previous phrasing.\n\n'
         : 'Pick ONE precise, testable concept inside the certification exam topic "' + topicName + '" — a single fact or decision a candidate must know cold, not the whole topic. Then write a 5-question "Reword Gauntlet" run about THAT concept only.\n\n') +
       'All five questions test the SAME concept and the SAME underlying fact, each in a different disguise:\n' + rungSpecs + '\n\n' +
       'Rules: 4 plausible options per question (plain text, no letter prefixes), exactly one correct, vary which position is correct across the five. ' +
-      'The hinge must be copied VERBATIM from that question\'s own text. Add a 1-2 sentence explanation per question that says why the hinge decides it.\n' +
+      'The hinge must be copied VERBATIM from that question\'s own text. Add a 1-2 sentence explanation per question that names the correct option, says why it is right and why the hinge decides it.\n' +
       (exemplarBlock ? '\n' + exemplarBlock + '\n' : '') +
       '\nReturn ONLY JSON:\n{"concept":"...","rungs":[{"question":"...","options":["...","...","...","..."],"answer":"A","explanation":"...","hinge":"..."}]}\n' +
       '"answer" is the letter (A-D) of the correct option by position. Exactly 5 rungs, in the order above.';
@@ -178,6 +210,15 @@
         typeof r.explanation === 'string' && r.explanation.length > 0 &&
         typeof r.hinge === 'string' && r.hinge.length > 0);
     if (!ok) throw new Error('gauntlet: malformed run shape');
+    const obj = _drillTopicObjective(topicName);
+    const qs = rungs.map(r => ({ type: 'mcq', question: r.question, options: _letterizeOptions(r.options),
+      answer: r.answer.trim().toUpperCase(), explanation: r.explanation, topic: topicName, difficulty: 'Exam Level', objective: obj }));
+    const passed = await _drillQualityGate(apiKey, qs, 'gauntlet');
+    if (passed.length !== rungs.length) {
+      const e = new Error('gauntlet: ' + (rungs.length - passed.length) + ' of ' + rungs.length + ' rungs failed the quality check');
+      e.qualityGate = true;
+      throw e;
+    }
     return { concept: parsed.concept, rungs };
   }
 
@@ -481,13 +522,24 @@
     renderWhyNotEntry();
   }
 
+  const WN_ASK = WHY_NOT_ROUNDS + 2;   // v8.154.0: two spare rounds so one that fails the checks doesn't sink the session
+
   async function _fetchWhyNotSession(topicName, errorSurface) {
+    try {
+      return await _fetchWhyNotSessionOnce(topicName, errorSurface);
+    } catch (e) {
+      if (!(e && e.qualityGate)) throw e;
+      return _fetchWhyNotSessionOnce(topicName, errorSurface);
+    }
+  }
+
+  async function _fetchWhyNotSessionOnce(topicName, errorSurface) {
     const exemplars = (typeof _pickExemplarsForTopic === 'function') ? _pickExemplarsForTopic(topicName, 3) : [];
     const exemplarBlock = (exemplars && exemplars.length && typeof _formatExemplarsForPrompt === 'function')
       ? _formatExemplarsForPrompt(exemplars) : '';
     const prompt =
-      'Write a 3-question "Why-Not" drill session for the certification exam topic "' + topicName + '". ' +
-      'Each question is a 4-option multiple-choice exam question (plain text options, no letter prefixes, exactly one correct, vary the correct position across the three).\n\n' +
+      'Write a ' + WN_ASK + '-question "Why-Not" drill session for the certification exam topic "' + topicName + '". ' +
+      'Each question is a 4-option multiple-choice exam question (plain text options, no letter prefixes, exactly one correct, vary the correct position across the questions). Its explanation names the correct option and says why it is right.\n\n' +
       'For EACH of the three WRONG options of each question, provide an interrogation kit:\n' +
       '- "reason": the one TRUE reason that option loses, stated in one plain sentence\n' +
       '- "fakes": exactly 2 tempting but FACTUALLY FALSE reasons. A fake must be false about the option itself, not merely a weaker argument. Make them genuinely tempting.\n' +
@@ -496,7 +548,7 @@
       (exemplarBlock ? '\n' + exemplarBlock + '\n' : '') +
       '\nReturn ONLY JSON:\n' +
       '{"rounds":[{"question":"...","options":["...","...","...","..."],"answer":"A","explanation":"...","whynot":{"B":{"reason":"...","fakes":["...","..."],"note":"..."},"C":{...},"D":{...}}}]}\n' +
-      '"answer" is the letter (A-D) of the correct option by position. The "whynot" object has EXACTLY the three wrong letters as keys. Exactly 3 rounds.';
+      '"answer" is the letter (A-D) of the correct option by position. The "whynot" object has EXACTLY the three wrong letters as keys. Exactly ' + WN_ASK + ' rounds.';
 
     const res = await _claudeFetch({
       method: 'POST',
@@ -518,7 +570,7 @@
     const parsed = JSON.parse(m[0]);
     const rounds = (parsed && Array.isArray(parsed.rounds)) ? parsed.rounds : [];
     const isStr = s => typeof s === 'string' && s.length > 0;
-    const ok = rounds.length === WHY_NOT_ROUNDS && rounds.every(r => {
+    const shapeOk = r => {
       if (!r || typeof r.question !== 'string' || r.question.length <= 20) return false;
       if (!Array.isArray(r.options) || r.options.length !== 4 || !r.options.every(o => isStr(o))) return false;
       if (typeof r.answer !== 'string' || !/^[A-D]$/.test(r.answer.trim().toUpperCase())) return false;
@@ -531,9 +583,26 @@
         return k && isStr(k.reason) && Array.isArray(k.fakes) && k.fakes.length === 2 &&
           k.fakes.every(f => isStr(f)) && isStr(k.note);
       });
+    };
+    const valid = rounds.filter(shapeOk);
+    if (valid.length < WHY_NOT_ROUNDS) throw new Error('whynot: malformed session shape');
+    // v8.154.0: each round's question AND its true reasons go through the quiz
+    // checks (the reasons ride in the explanation as "<option> is wrong because
+    // ..."). Keep the first WHY_NOT_ROUNDS that pass.
+    const obj = _drillTopicObjective(topicName);
+    const qs = valid.map(r => {
+      const ans = r.answer.trim().toUpperCase();
+      const opts = _letterizeOptions(r.options);
+      const why = ['A', 'B', 'C', 'D'].filter(l => l !== ans).map(l => opts[l] + ' is wrong because ' + r.whynot[l].reason).join(' ');
+      return { type: 'mcq', question: r.question, options: opts, answer: ans, explanation: r.explanation + ' ' + why, topic: topicName, difficulty: 'Exam Level', objective: obj };
     });
-    if (!ok) throw new Error('whynot: malformed session shape');
-    return rounds;
+    const passed = await _drillQualityGate(apiKey, qs, 'whynot');
+    if (passed.length < WHY_NOT_ROUNDS) {
+      const e = new Error('whynot: only ' + passed.length + ' of ' + valid.length + ' rounds passed the quality check');
+      e.qualityGate = true;
+      throw e;
+    }
+    return passed.slice(0, WHY_NOT_ROUNDS).map(i => valid[i]);
   }
 
   async function whyNotStart(opts) {
