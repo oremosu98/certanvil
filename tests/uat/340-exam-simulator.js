@@ -40,7 +40,7 @@ const { _fnBody, js, read, results, test, vm } = require('./_context');
     vm.runInContext('var examMode = true, examTimer = 7, examHardcore = false, examCurrent = 4, examEndTime = Date.now() + 3000000, _examLastSave = 0;' +
       'var examQuestions = [], examAnswers = []; for (var i = 0; i < 10; i++) { examQuestions.push(' + mcq.toString() + '(i)); examAnswers.push(' + blank.toString() + '()); }' +
       'examAnswers[2].chosen = "A";', S);
-    vm.runInContext([fn('_examSaveState'), fn('examSavedState'), fn('_examClearState')].join('\n'), S);
+    vm.runInContext([fn('_examPbqTouched'), fn('_examAnswered'), fn('_examSaveState'), fn('examSavedState'), fn('_examClearState')].join('\n'), S);
     vm.runInContext('_examSaveState();', S);
     var saved = vm.runInContext('examSavedState()', S);
     test('Exam: progress is saved (questions, answers, current question, deadline) and reads back',
@@ -60,7 +60,7 @@ const { _fnBody, js, read, results, test, vm } = require('./_context');
         'var examQuestions = [' + JSON.stringify(mcq(1)) + '], examAnswers = [' + JSON.stringify(blank()) + '];' +
         'function _releaseExamWakeLock() {}' +
         'var _EXAM_OWN_PAGES = ["exam", "exam-results", "review", "loading"];', L);
-      vm.runInContext([fn('_examSaveState'), fn('_examInProgress'), fn('examLeaveOk')].join('\n'), L);
+      vm.runInContext([fn('_examPbqTouched'), fn('_examAnswered'), fn('_examSaveState'), fn('_examInProgress'), fn('examLeaveOk')].join('\n'), L);
       var ok = vm.runInContext('examLeaveOk()', L);
       return { ok: ok, asked: !!L.__asked, mode: vm.runInContext('examMode', L), timer: vm.runInContext('examTimer', L), saved: !!L.__store.nplus_exam_state };
     }
@@ -88,7 +88,7 @@ const { _fnBody, js, read, results, test, vm } = require('./_context');
     var P = ctx();
     vm.runInContext('var examQuestions = [], examAnswers = [], examTimeLeft = 5400; for (var i = 0; i < 90; i++) { examQuestions.push({ type: "mcq" }); examAnswers.push({ chosen: null, msChosen: [], orderSeq: [], topoState: {} }); }' +
       'function setRun(mins, answered) { examTimeLeft = 5400 - mins * 60; examAnswers.forEach(function (a, i) { a.chosen = i < answered ? "A" : null; }); }', P);
-    vm.runInContext([fn('_examAnswered'), fn('_examParSeconds'), fn('_examPaceText')].join('\n'), P);
+    vm.runInContext([fn('_examPbqTouched'), fn('_examAnswered'), fn('_examParSeconds'), fn('_examPaceText')].join('\n'), P);
     function pace(m, a) { vm.runInContext('setRun(' + m + ',' + a + ')', P); return vm.runInContext('_examPaceText()', P); }
     test('Exam: pace reads "on pace" / "N min behind" / "N min ahead" (90 questions in 90 minutes)',
       pace(30, 30) === 'on pace' && pace(30, 25) === '5 min behind' && pace(30, 34) === '4 min ahead' && pace(0.5, 0) === '');
@@ -102,6 +102,58 @@ const { _fnBody, js, read, results, test, vm } = require('./_context');
     var home = read('features/home.js');
     test('Exam: Home offers "Resume your exam" from the saved state, or "see your result" once time is up',
       /nplus_exam_state/.test(home) && /Resume your exam/.test(home) && /resumeExam/.test(home) && /window\.resumeExam\s*=\s*resumeExam|resumeExam:\s*resumeExam/.test(js));
+
+    // ══ Release 2 (v8.163.0): Sim Lab PBQs open the exam ══
+    var PK = ctx({ simLabValidateScenario: function (s) { return { ok: !s.bad }; } });
+    var bank = [];
+    ['firewall', 'firewall', 'cli', 'cli', 'diagram', 'wireless', 'incident', 'incident'].forEach(function (a, i) { bank.push({ id: a + i, archetype: a }); });
+    bank.push({ id: 'gen1' }, { id: 'gen2' }, { id: 'broken', archetype: 'vpntunnel', bad: true });
+    PK.__bank = bank;
+    vm.runInContext('var _SL_SERVED_KEY = "nplus_simlab_served"; function _slBank() { return __bank; }', PK);
+    vm.runInContext([fn('_slServedFor'), fn('_slMarkServed'), fn('_slLeastServed'), fn('_slPickExamPbqs')].join('\n'), PK);
+    var picks = vm.runInContext('_slPickExamPbqs("secplus", 4)', PK);
+    var fmts = picks.map(function (s) { return s.archetype || 'generic'; });
+    test('Exam PBQs: 4 picked, each a different format, never an invalid seed',
+      picks.length === 4 && fmts.filter(function (f, i) { return fmts.indexOf(f) === i; }).length === 4 && fmts.indexOf('vpntunnel') === -1);
+    var servedNow = JSON.parse(PK.__store.nplus_simlab_served || '{}').secplus || {};
+    test('Exam PBQs: the picked seeds are marked served (the next sim gets different ones)',
+      picks.every(function (s) { return servedNow[s.id] > 0; }));
+    var picks2 = vm.runInContext('_slPickExamPbqs("secplus", 4)', PK);
+    test('Exam PBQs: the next sim prefers formats it has not just used',
+      picks2.filter(function (s) { return picks.some(function (p) { return p.id === s.id; }); }).length === 0);
+
+    var ex = read('features/exam.js');
+    test('Exam PBQs: the exam picks them before generating, fills the rest with MCQs, and keeps the old injector only as a fallback',
+      /pickExamPbqs\(/.test(start) && /MCQ_TARGET\s*=\s*EXAM_QUESTION_COUNT\s*-\s*_pbqs\.length/.test(start)
+        && /type:\s*'simlab'/.test(start) && /else \{[\s\S]{0,160}injectPBQs\(examQuestions, MIXED_TOPIC, 2\)/.test(start));
+    test('Exam PBQs: a PBQ renders in the exam card through Sim Lab (own Submit removed, answers captured live)',
+      /_examRenderPbq\(q, box, ans\)/.test(_fnBody(js, 'renderExam') || '') && /mountScenario\(host, q\.simlab/.test(ex) && /simLabSubmitScenario"\]'\)/.test(ex));
+
+    // Scoring: partial credit per PBQ
+    var T = ctx();
+    vm.runInContext(fn('_examPbqTouched'), T);
+    test('Exam PBQs: a PBQ counts as answered only once a step holds a real answer',
+      vm.runInContext('!_examPbqTouched(null) && !_examPbqTouched({s1:{slots:{}}, s2:{selected:[]}}) && _examPbqTouched({s1:{slots:{a:"x"}}})', T));
+    test('Exam PBQs: score = MCQs right + PBQ step fractions; PBQs stay out of the wrong bank and topic splits',
+      /const points = correct \+ pbqPartial/.test(sub) && /scaledExamScore\(points, total\)/.test(sub)
+        && /no wrong bank \/ SR for PBQs/.test(sub) && /q\.type === 'simlab'\) return;/.test(ex));
+    test('Exam PBQs: review shows each PBQ step with ✓/✗ and its explanation',
+      /qType === 'simlab' && q\.simlab/.test(js) && /'simlab': 'PBQ'/.test(js));
+
+    // Styling: every page-scoped Sim Lab rule also styles the exam's PBQ panel
+    var dg = read('dg-system.css').replace(/\/\*[\s\S]*?\*\//g, '');
+    var missing = [];
+    (dg.match(/[^{}]+\{/g) || []).forEach(function (pre) {
+      var sel = pre.slice(0, -1).trim();
+      if (sel.charAt(0) === '@' || !/#page-sim-lab(?![\w-])/.test(sel)) return;
+      var parts = sel.split(',').map(function (x) { return x.trim(); });
+      parts.forEach(function (x) {
+        if (/#page-sim-lab(?![\w-])/.test(x) && parts.indexOf(x.replace(/#page-sim-lab(?![\w-])/g, '#page-exam .exam-pbq')) === -1) missing.push(x);
+      });
+    });
+    test('Exam PBQs: every #page-sim-lab rule in dg-system.css has a "#page-exam .exam-pbq" twin (else exam PBQs render half-styled)',
+      missing.length === 0);
+    if (missing.length) results.errors.push('Sim Lab selectors with no exam-PBQ twin: ' + missing.slice(0, 5).join(' | '));
   } catch (err) {
     test('Exam simulator: block (threw)', false);
     results.errors.push('340 exam simulator block threw: ' + err.message);

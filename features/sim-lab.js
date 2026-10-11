@@ -2591,6 +2591,29 @@
     return pick;
   }
 
+  // v8.163.0: the PBQs that open the Full Exam Simulator. n validated seeds of
+  // DISTINCT formats (archetype; plain drag-and-drop seeds count as one format,
+  // 'generic'), least recently served first, then marked served so the next
+  // sim gets different ones. Ties are shuffled so equal-age formats rotate.
+  function _slPickExamPbqs(cert, n) {
+    var bank = _slBank(cert).filter(function (s) { return s && simLabValidateScenario(s).ok; });
+    if (!bank.length || !(n > 0)) return [];
+    var served = _slServedFor(cert);
+    function shuffle(a) { for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
+    var byFmt = {};
+    bank.forEach(function (s) { var f = s.archetype || 'generic'; (byFmt[f] = byFmt[f] || []).push(s); });
+    var heads = shuffle(Object.keys(byFmt)).map(function (f) { return _slLeastServed(cert, shuffle(byFmt[f].slice()), 0); });
+    heads.sort(function (x, y) { return (served[x.id] || 0) - (served[y.id] || 0); });   // stable: shuffled order breaks ties
+    var out = heads.slice(0, n);
+    if (out.length < n) {   // fewer formats than n: top up with the next least-served seeds
+      var rest = shuffle(bank.filter(function (s) { return out.indexOf(s) === -1; }));
+      rest.sort(function (x, y) { return (served[x.id] || 0) - (served[y.id] || 0); });
+      out = out.concat(rest.slice(0, n - out.length));
+    }
+    out.forEach(function (s) { _slMarkServed(cert, s.id); });
+    return out;
+  }
+
   // Aggregate per-round results into a session summary.
   function _slAggregateSession(results) {
     var passed = 0, stepsCorrect = 0, stepsTotal = 0;
@@ -4008,6 +4031,7 @@
   window._simLab.generateScenario = _slGenerateScenario;
   window._simLab.__setFetcher = function (fn) { _slFetcher = fn; };
   window._simLab.pickSeedFresh = _slPickSeedFresh;
+  window._simLab.pickExamPbqs = _slPickExamPbqs;   // v8.163.0: Full Exam Simulator PBQs
   window._simLab.aggregateSession = _slAggregateSession;
   window._simLab.sessionBumpOnce = function () { _slSessionBumpOnce(); };
   window._simLab.renderRefSwatch = _slRenderRefSwatch;

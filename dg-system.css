@@ -2168,6 +2168,10 @@ html[data-theme] body #page-exam #exam-prog-dots>.qpd-cell.qpd-done,
 html[data-theme] body #page-exam #exam-prog-dots>.qpd-cell.qpd-flagged{height:6px!important;}
 html[data-theme] body #page-exam #exam-prog-dots>.qpd-cell.qpd-now{height:8px!important;}
 @media (max-width:600px){html[data-theme] body #page-exam #exam-prog-dots{gap:1px;}}
+/* v8.163.0: Sim Lab's movable items (order rows, chips, match labels) are <button>s
+   and nothing set their text colour, so in dark mode they fell back to the
+   browser's black on a dark card (Sim Lab page and exam PBQs alike). */
+html[data-theme] body .sl-item{color:var(--text);}
 
 /* ── Exam Mode: flag button ── */
 html[data-theme] body #page-exam .exam-flag-btn{background:none!important;border:1px solid var(--border)!important;border-radius:6px!important;color:var(--text-dim)!important;font-size:12px!important;font-weight:600!important;box-shadow:none!important;}
@@ -4055,7 +4059,7 @@ mark.gnt-hinge{background:color-mix(in oklab,var(--red) 26%,transparent);color:i
 #page-sim-lab-result .sls-insight p{font:400 13.5px/1.5 Inter,sans-serif;color:var(--text-mid)}
 
 /* Sim Lab session: in-round chrome + loader (Task 5, lifted from mockup panels 2-3) */
-#page-sim-lab .slr-round-pill{font:800 11px/1 Inter,sans-serif;letter-spacing:.06em;color:var(--accent);border:1px solid color-mix(in oklab,var(--accent) 30%,var(--border));background:color-mix(in oklab,var(--accent) 8%,transparent);padding:3px 9px;border-radius:999px;margin-left:8px}
+#page-sim-lab .slr-round-pill,#page-exam .exam-pbq .slr-round-pill{font:800 11px/1 Inter,sans-serif;letter-spacing:.06em;color:var(--accent);border:1px solid color-mix(in oklab,var(--accent) 30%,var(--border));background:color-mix(in oklab,var(--accent) 8%,transparent);padding:3px 9px;border-radius:999px;margin-left:8px}
 
 /* Header strip: the round pill and the Exam badge must never break mid-phrase.
    `.sl-strip` is a flex ITEM of .sl-topbar (base rules in styles.css). Its own
@@ -4082,87 +4086,87 @@ mark.gnt-hinge{background:color-mix(in oklab,var(--red) 26%,transparent);color:i
    at that width the clock and Leave button leave ~100px, which the pill alone
    fills. Nothing is lost: you are already on the Sim Lab page, the topic opens
    the scenario text, and .slr-dots carries round progress visually. */
-#page-sim-lab .sl-strip{display:flex;align-items:center;gap:6px;min-width:0}
-#page-sim-lab .sl-strip-label{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#page-sim-lab .sl-strip,#page-exam .exam-pbq .sl-strip{display:flex;align-items:center;gap:6px;min-width:0}
+#page-sim-lab .sl-strip-label,#page-exam .exam-pbq .sl-strip-label{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #page-sim-lab .slr-round-pill,
-#page-sim-lab .sl-exam-badge{flex:0 0 auto;white-space:nowrap;margin-left:0}
-#page-sim-lab .sl-topbar > .btn{flex:0 0 auto;width:auto}
+#page-sim-lab .sl-exam-badge,#page-exam .exam-pbq .slr-round-pill,#page-exam .exam-pbq .sl-exam-badge{flex:0 0 auto;white-space:nowrap;margin-left:0}
+#page-sim-lab .sl-topbar > .btn,#page-exam .exam-pbq .sl-topbar > .btn{flex:0 0 auto;width:auto}
 /* Phones. The label goes first. In EXAM mode the countdown clock also joins the
    row, and pill + badge + clock + Leave cannot all fit 375px — the badge goes
    too, because the countdown itself already distinguishes exam from practice
    (practice counts UP and has no clock chip) and the question palette replaces
    the round dots. */
 @media (max-width:480px){
-  #page-sim-lab .sl-strip-label{display:none}
-  #page-sim-lab .sl-exam-badge{display:none}
+  #page-sim-lab .sl-strip-label,#page-exam .exam-pbq .sl-strip-label{display:none}
+  #page-sim-lab .sl-exam-badge,#page-exam .exam-pbq .sl-exam-badge{display:none}
 }
-#page-sim-lab .slr-dots{display:flex;gap:5px;margin:0 0 16px}
-#page-sim-lab .slr-dot{width:22px;height:4px;border-radius:999px;background:var(--border)}
-#page-sim-lab .slr-dot.done{background:var(--green,var(--pass))}
-#page-sim-lab .slr-dot.now{background:var(--accent)}
-#page-sim-lab .slr-loader{text-align:center;padding:40px 0}
-#page-sim-lab .slr-spin{width:34px;height:34px;margin:0 auto 16px;border-radius:50%;border:3px solid color-mix(in oklab,var(--accent) 22%,transparent);border-top-color:var(--accent);animation:slrspin .8s linear infinite}
+#page-sim-lab .slr-dots,#page-exam .exam-pbq .slr-dots{display:flex;gap:5px;margin:0 0 16px}
+#page-sim-lab .slr-dot,#page-exam .exam-pbq .slr-dot{width:22px;height:4px;border-radius:999px;background:var(--border)}
+#page-sim-lab .slr-dot.done,#page-exam .exam-pbq .slr-dot.done{background:var(--green,var(--pass))}
+#page-sim-lab .slr-dot.now,#page-exam .exam-pbq .slr-dot.now{background:var(--accent)}
+#page-sim-lab .slr-loader,#page-exam .exam-pbq .slr-loader{text-align:center;padding:40px 0}
+#page-sim-lab .slr-spin,#page-exam .exam-pbq .slr-spin{width:34px;height:34px;margin:0 auto 16px;border-radius:50%;border:3px solid color-mix(in oklab,var(--accent) 22%,transparent);border-top-color:var(--accent);animation:slrspin .8s linear infinite}
 @keyframes slrspin{to{transform:rotate(360deg)}}
-#page-sim-lab .slr-loader-t{font:600 15px/1.3 Inter,sans-serif}
-#page-sim-lab .slr-loader-s{font:400 13px/1.4 Inter,sans-serif;color:var(--text-dim);margin-top:5px}
-@media (prefers-reduced-motion:reduce){#page-sim-lab .slr-spin{animation:none}}
-#page-sim-lab .sl-exam-badge{font:800 9.5px/1 Inter,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);border:1px solid color-mix(in oklab,var(--accent) 32%,var(--border));padding:2px 7px;border-radius:999px;margin-left:8px}
-#page-sim-lab .sl-clock{display:inline-flex;align-items:center;gap:6px;font:700 14px/1 Inter,sans-serif;color:var(--text);font-variant-numeric:lining-nums tabular-nums;background:var(--surface2);border:1px solid var(--border);padding:6px 11px;min-height:44px;border-radius:999px;transition:color 220ms cubic-bezier(.16,1,.3,1),border-color 220ms cubic-bezier(.16,1,.3,1)}
-#page-sim-lab .sl-clock svg{width:13px;height:13px;fill:none;stroke:var(--text-dim);stroke-width:2}
-#page-sim-lab .sl-clock .cap{font:700 10px/1 Inter,sans-serif;color:var(--text-dim);letter-spacing:.06em;text-transform:uppercase}
-#page-sim-lab .sl-clock.is-low{color:var(--yellow,var(--warn));border-color:color-mix(in oklab,var(--yellow,var(--warn)) 40%,var(--border))}
-#page-sim-lab .sl-clock.is-low svg{stroke:var(--yellow,var(--warn))}
-@media (prefers-reduced-motion:reduce){#page-sim-lab .sl-clock{transition:none}}
+#page-sim-lab .slr-loader-t,#page-exam .exam-pbq .slr-loader-t{font:600 15px/1.3 Inter,sans-serif}
+#page-sim-lab .slr-loader-s,#page-exam .exam-pbq .slr-loader-s{font:400 13px/1.4 Inter,sans-serif;color:var(--text-dim);margin-top:5px}
+@media (prefers-reduced-motion:reduce){#page-sim-lab .slr-spin,#page-exam .exam-pbq .slr-spin{animation:none}}
+#page-sim-lab .sl-exam-badge,#page-exam .exam-pbq .sl-exam-badge{font:800 9.5px/1 Inter,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);border:1px solid color-mix(in oklab,var(--accent) 32%,var(--border));padding:2px 7px;border-radius:999px;margin-left:8px}
+#page-sim-lab .sl-clock,#page-exam .exam-pbq .sl-clock{display:inline-flex;align-items:center;gap:6px;font:700 14px/1 Inter,sans-serif;color:var(--text);font-variant-numeric:lining-nums tabular-nums;background:var(--surface2);border:1px solid var(--border);padding:6px 11px;min-height:44px;border-radius:999px;transition:color 220ms cubic-bezier(.16,1,.3,1),border-color 220ms cubic-bezier(.16,1,.3,1)}
+#page-sim-lab .sl-clock svg,#page-exam .exam-pbq .sl-clock svg{width:13px;height:13px;fill:none;stroke:var(--text-dim);stroke-width:2}
+#page-sim-lab .sl-clock .cap,#page-exam .exam-pbq .sl-clock .cap{font:700 10px/1 Inter,sans-serif;color:var(--text-dim);letter-spacing:.06em;text-transform:uppercase}
+#page-sim-lab .sl-clock.is-low,#page-exam .exam-pbq .sl-clock.is-low{color:var(--yellow,var(--warn));border-color:color-mix(in oklab,var(--yellow,var(--warn)) 40%,var(--border))}
+#page-sim-lab .sl-clock.is-low svg,#page-exam .exam-pbq .sl-clock.is-low svg{stroke:var(--yellow,var(--warn))}
+@media (prefers-reduced-motion:reduce){#page-sim-lab .sl-clock,#page-exam .exam-pbq .sl-clock{transition:none}}
 /* Sim Lab exam: question palette (Task 5) */
-#page-sim-lab .sl-palette{display:flex;gap:7px;flex-wrap:wrap;margin:0 0 6px}
-#page-sim-lab .pq{position:relative;min-width:44px;min-height:44px;border-radius:8px;display:grid;place-items:center;font:700 12.5px/1 Inter,sans-serif;font-variant-numeric:tabular-nums;cursor:pointer;background:var(--surface2);border:1px solid var(--border);color:var(--text-dim);transition:transform .12s cubic-bezier(.16,1,.3,1)}
-#page-sim-lab .pq:active{transform:scale(.94)}
-#page-sim-lab .pq.answered{background:color-mix(in oklab,var(--green,var(--pass)) 16%,transparent);border-color:color-mix(in oklab,var(--green,var(--pass)) 38%,var(--border));color:var(--green,var(--pass))}
-#page-sim-lab .pq.now{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
-#page-sim-lab .pq.flagged::after{content:"";position:absolute;top:-3px;right:-3px;width:9px;height:9px;border-radius:50%;background:var(--yellow,var(--warn));border:1.5px solid var(--surface);transform-origin:center;animation:slpflag 150ms cubic-bezier(.16,1,.3,1)}
+#page-sim-lab .sl-palette,#page-exam .exam-pbq .sl-palette{display:flex;gap:7px;flex-wrap:wrap;margin:0 0 6px}
+#page-sim-lab .pq,#page-exam .exam-pbq .pq{position:relative;min-width:44px;min-height:44px;border-radius:8px;display:grid;place-items:center;font:700 12.5px/1 Inter,sans-serif;font-variant-numeric:tabular-nums;cursor:pointer;background:var(--surface2);border:1px solid var(--border);color:var(--text-dim);transition:transform .12s cubic-bezier(.16,1,.3,1)}
+#page-sim-lab .pq:active,#page-exam .exam-pbq .pq:active{transform:scale(.94)}
+#page-sim-lab .pq.answered,#page-exam .exam-pbq .pq.answered{background:color-mix(in oklab,var(--green,var(--pass)) 16%,transparent);border-color:color-mix(in oklab,var(--green,var(--pass)) 38%,var(--border));color:var(--green,var(--pass))}
+#page-sim-lab .pq.now,#page-exam .exam-pbq .pq.now{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+#page-sim-lab .pq.flagged::after,#page-exam .exam-pbq .pq.flagged::after{content:"";position:absolute;top:-3px;right:-3px;width:9px;height:9px;border-radius:50%;background:var(--yellow,var(--warn));border:1.5px solid var(--surface);transform-origin:center;animation:slpflag 150ms cubic-bezier(.16,1,.3,1)}
 @keyframes slpflag{from{transform:scale(.6);opacity:0}to{transform:scale(1);opacity:1}}
-#page-sim-lab .sl-palette-key{display:flex;gap:14px;flex-wrap:wrap;font:400 11px/1 Inter,sans-serif;color:var(--text-dim);margin:0 0 16px}
-#page-sim-lab .sl-palette-key span{display:inline-flex;align-items:center;gap:5px}
-#page-sim-lab .kdot{width:10px;height:10px;border-radius:3px;border:1px solid var(--border)}
-#page-sim-lab .kdot.answered{background:color-mix(in oklab,var(--green,var(--pass)) 16%,transparent);border-color:color-mix(in oklab,var(--green,var(--pass)) 38%,var(--border))}
-#page-sim-lab .kdot.now{background:var(--accent);border-color:var(--accent)}
-#page-sim-lab .kdot.flag{background:var(--yellow,var(--warn));border-color:var(--yellow,var(--warn));border-radius:50%}
-@media (prefers-reduced-motion:reduce){#page-sim-lab .pq{transition:none}#page-sim-lab .pq.flagged::after{animation:none}}
-#page-sim-lab .sl-examfoot{display:flex;align-items:center;gap:9px;margin-top:14px;flex-wrap:wrap}
-#page-sim-lab .sl-flagbtn{display:inline-flex;align-items:center;gap:7px;font:600 13px/1 Inter,sans-serif;color:var(--text-dim);background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:11px 14px;min-height:44px;cursor:pointer;transition:transform .12s cubic-bezier(.16,1,.3,1)}
-#page-sim-lab .sl-flagbtn svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-#page-sim-lab .sl-flagbtn.is-on{color:var(--yellow,var(--warn));border-color:color-mix(in oklab,var(--yellow,var(--warn)) 40%,var(--border));background:color-mix(in oklab,var(--yellow,var(--warn)) 10%,transparent)}
-#page-sim-lab .sl-flagbtn.is-on svg{fill:color-mix(in oklab,var(--yellow,var(--warn)) 30%,transparent)}
-#page-sim-lab .sl-flagbtn:active{transform:scale(.97)}
-#page-sim-lab .sl-nav{margin-left:auto;display:flex;gap:9px}
-#page-sim-lab .sl-navbtn{font:700 13px/1 Inter,sans-serif;padding:11px 16px;min-height:44px;border-radius:10px;cursor:pointer;transition:transform .12s cubic-bezier(.16,1,.3,1)}
-#page-sim-lab .sl-navbtn:active{transform:scale(.97)}
-#page-sim-lab .sl-navbtn.prev{color:var(--text-dim);background:var(--surface2);border:1px solid var(--border)}
-#page-sim-lab .sl-navbtn.next{color:var(--on-accent);background:var(--accent);border:1px solid var(--accent)}
-#page-sim-lab .sl-navbtn[disabled]{opacity:.45;cursor:default}
-@media (prefers-reduced-motion:reduce){#page-sim-lab .sl-flagbtn,#page-sim-lab .sl-navbtn{transition:none}}
-#page-sim-lab .slv-rev-h{font-family:Fraunces,Georgia,serif;font-weight:600;font-size:21px;letter-spacing:-.01em;margin-bottom:4px;color:var(--text)}
-#page-sim-lab .slv-rev-sub{font:400 13px/1.4 Inter,sans-serif;color:var(--text-mid);margin-bottom:16px}
-#page-sim-lab .slv-rev-counts{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
-#page-sim-lab .slv-rc{font:700 11.5px/1 Inter,sans-serif;padding:6px 10px;border-radius:999px;border:1px solid var(--border);color:var(--text-mid)}
-#page-sim-lab .slv-rc.ok{color:var(--green,var(--pass));border-color:color-mix(in oklab,var(--green,var(--pass)) 36%,var(--border));background:color-mix(in oklab,var(--green,var(--pass)) 10%,transparent)}
-#page-sim-lab .slv-rc.flag{color:var(--yellow,var(--warn));border-color:color-mix(in oklab,var(--yellow,var(--warn)) 38%,var(--border));background:color-mix(in oklab,var(--yellow,var(--warn)) 10%,transparent)}
-#page-sim-lab .slv-rc.miss{color:var(--text-dim)}
-#page-sim-lab .slv-rev-list{display:flex;flex-direction:column;gap:8px;margin-bottom:18px}
-#page-sim-lab .slv-rev-row{display:flex;align-items:center;gap:11px;padding:11px 13px;min-height:44px;border:1px solid var(--border);border-radius:12px;background:var(--surface2);cursor:pointer;transition:transform .12s cubic-bezier(.16,1,.3,1)}
-#page-sim-lab .slv-rev-row:active{transform:scale(.99)}
-@media (hover:hover) and (pointer:fine){#page-sim-lab .slv-rev-row:hover{border-color:color-mix(in oklab,var(--accent) 30%,var(--border))}}
-#page-sim-lab .slv-rev-n{width:26px;height:26px;border-radius:7px;display:grid;place-items:center;font:700 12px/1 Inter,sans-serif;background:var(--surface);border:1px solid var(--border);color:var(--text-dim);font-variant-numeric:tabular-nums;flex:none}
-#page-sim-lab .slv-rev-t{font:600 13.5px/1.3 Inter,sans-serif;color:var(--text)}
-#page-sim-lab .slv-rev-o{font:400 11.5px/1 Inter,sans-serif;color:var(--text-dim)}
-#page-sim-lab .slv-rev-status{margin-left:auto;font:700 11.5px/1 Inter,sans-serif;display:inline-flex;align-items:center;gap:6px;flex:none}
-#page-sim-lab .slv-rev-status svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
-#page-sim-lab .slv-rev-status.ok{color:var(--green,var(--pass))}
-#page-sim-lab .slv-rev-status.flag{color:var(--yellow,var(--warn))}
-#page-sim-lab .slv-rev-status.miss{color:var(--text-dim)}
-#page-sim-lab .slv-cta-row{display:flex;gap:9px}
-#page-sim-lab .slv-cta-row .btn{flex:1}
-@media (prefers-reduced-motion:reduce){#page-sim-lab .slv-rev-row{transition:none}}
+#page-sim-lab .sl-palette-key,#page-exam .exam-pbq .sl-palette-key{display:flex;gap:14px;flex-wrap:wrap;font:400 11px/1 Inter,sans-serif;color:var(--text-dim);margin:0 0 16px}
+#page-sim-lab .sl-palette-key span,#page-exam .exam-pbq .sl-palette-key span{display:inline-flex;align-items:center;gap:5px}
+#page-sim-lab .kdot,#page-exam .exam-pbq .kdot{width:10px;height:10px;border-radius:3px;border:1px solid var(--border)}
+#page-sim-lab .kdot.answered,#page-exam .exam-pbq .kdot.answered{background:color-mix(in oklab,var(--green,var(--pass)) 16%,transparent);border-color:color-mix(in oklab,var(--green,var(--pass)) 38%,var(--border))}
+#page-sim-lab .kdot.now,#page-exam .exam-pbq .kdot.now{background:var(--accent);border-color:var(--accent)}
+#page-sim-lab .kdot.flag,#page-exam .exam-pbq .kdot.flag{background:var(--yellow,var(--warn));border-color:var(--yellow,var(--warn));border-radius:50%}
+@media (prefers-reduced-motion:reduce){#page-sim-lab .pq,#page-exam .exam-pbq .pq{transition:none}#page-sim-lab .pq.flagged::after,#page-exam .exam-pbq .pq.flagged::after{animation:none}}
+#page-sim-lab .sl-examfoot,#page-exam .exam-pbq .sl-examfoot{display:flex;align-items:center;gap:9px;margin-top:14px;flex-wrap:wrap}
+#page-sim-lab .sl-flagbtn,#page-exam .exam-pbq .sl-flagbtn{display:inline-flex;align-items:center;gap:7px;font:600 13px/1 Inter,sans-serif;color:var(--text-dim);background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:11px 14px;min-height:44px;cursor:pointer;transition:transform .12s cubic-bezier(.16,1,.3,1)}
+#page-sim-lab .sl-flagbtn svg,#page-exam .exam-pbq .sl-flagbtn svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+#page-sim-lab .sl-flagbtn.is-on,#page-exam .exam-pbq .sl-flagbtn.is-on{color:var(--yellow,var(--warn));border-color:color-mix(in oklab,var(--yellow,var(--warn)) 40%,var(--border));background:color-mix(in oklab,var(--yellow,var(--warn)) 10%,transparent)}
+#page-sim-lab .sl-flagbtn.is-on svg,#page-exam .exam-pbq .sl-flagbtn.is-on svg{fill:color-mix(in oklab,var(--yellow,var(--warn)) 30%,transparent)}
+#page-sim-lab .sl-flagbtn:active,#page-exam .exam-pbq .sl-flagbtn:active{transform:scale(.97)}
+#page-sim-lab .sl-nav,#page-exam .exam-pbq .sl-nav{margin-left:auto;display:flex;gap:9px}
+#page-sim-lab .sl-navbtn,#page-exam .exam-pbq .sl-navbtn{font:700 13px/1 Inter,sans-serif;padding:11px 16px;min-height:44px;border-radius:10px;cursor:pointer;transition:transform .12s cubic-bezier(.16,1,.3,1)}
+#page-sim-lab .sl-navbtn:active,#page-exam .exam-pbq .sl-navbtn:active{transform:scale(.97)}
+#page-sim-lab .sl-navbtn.prev,#page-exam .exam-pbq .sl-navbtn.prev{color:var(--text-dim);background:var(--surface2);border:1px solid var(--border)}
+#page-sim-lab .sl-navbtn.next,#page-exam .exam-pbq .sl-navbtn.next{color:var(--on-accent);background:var(--accent);border:1px solid var(--accent)}
+#page-sim-lab .sl-navbtn[disabled],#page-exam .exam-pbq .sl-navbtn[disabled]{opacity:.45;cursor:default}
+@media (prefers-reduced-motion:reduce){#page-sim-lab .sl-flagbtn,#page-sim-lab .sl-navbtn,#page-exam .exam-pbq .sl-flagbtn,#page-exam .exam-pbq .sl-navbtn{transition:none}}
+#page-sim-lab .slv-rev-h,#page-exam .exam-pbq .slv-rev-h{font-family:Fraunces,Georgia,serif;font-weight:600;font-size:21px;letter-spacing:-.01em;margin-bottom:4px;color:var(--text)}
+#page-sim-lab .slv-rev-sub,#page-exam .exam-pbq .slv-rev-sub{font:400 13px/1.4 Inter,sans-serif;color:var(--text-mid);margin-bottom:16px}
+#page-sim-lab .slv-rev-counts,#page-exam .exam-pbq .slv-rev-counts{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+#page-sim-lab .slv-rc,#page-exam .exam-pbq .slv-rc{font:700 11.5px/1 Inter,sans-serif;padding:6px 10px;border-radius:999px;border:1px solid var(--border);color:var(--text-mid)}
+#page-sim-lab .slv-rc.ok,#page-exam .exam-pbq .slv-rc.ok{color:var(--green,var(--pass));border-color:color-mix(in oklab,var(--green,var(--pass)) 36%,var(--border));background:color-mix(in oklab,var(--green,var(--pass)) 10%,transparent)}
+#page-sim-lab .slv-rc.flag,#page-exam .exam-pbq .slv-rc.flag{color:var(--yellow,var(--warn));border-color:color-mix(in oklab,var(--yellow,var(--warn)) 38%,var(--border));background:color-mix(in oklab,var(--yellow,var(--warn)) 10%,transparent)}
+#page-sim-lab .slv-rc.miss,#page-exam .exam-pbq .slv-rc.miss{color:var(--text-dim)}
+#page-sim-lab .slv-rev-list,#page-exam .exam-pbq .slv-rev-list{display:flex;flex-direction:column;gap:8px;margin-bottom:18px}
+#page-sim-lab .slv-rev-row,#page-exam .exam-pbq .slv-rev-row{display:flex;align-items:center;gap:11px;padding:11px 13px;min-height:44px;border:1px solid var(--border);border-radius:12px;background:var(--surface2);cursor:pointer;transition:transform .12s cubic-bezier(.16,1,.3,1)}
+#page-sim-lab .slv-rev-row:active,#page-exam .exam-pbq .slv-rev-row:active{transform:scale(.99)}
+@media (hover:hover) and (pointer:fine){#page-sim-lab .slv-rev-row:hover,#page-exam .exam-pbq .slv-rev-row:hover{border-color:color-mix(in oklab,var(--accent) 30%,var(--border))}}
+#page-sim-lab .slv-rev-n,#page-exam .exam-pbq .slv-rev-n{width:26px;height:26px;border-radius:7px;display:grid;place-items:center;font:700 12px/1 Inter,sans-serif;background:var(--surface);border:1px solid var(--border);color:var(--text-dim);font-variant-numeric:tabular-nums;flex:none}
+#page-sim-lab .slv-rev-t,#page-exam .exam-pbq .slv-rev-t{font:600 13.5px/1.3 Inter,sans-serif;color:var(--text)}
+#page-sim-lab .slv-rev-o,#page-exam .exam-pbq .slv-rev-o{font:400 11.5px/1 Inter,sans-serif;color:var(--text-dim)}
+#page-sim-lab .slv-rev-status,#page-exam .exam-pbq .slv-rev-status{margin-left:auto;font:700 11.5px/1 Inter,sans-serif;display:inline-flex;align-items:center;gap:6px;flex:none}
+#page-sim-lab .slv-rev-status svg,#page-exam .exam-pbq .slv-rev-status svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+#page-sim-lab .slv-rev-status.ok,#page-exam .exam-pbq .slv-rev-status.ok{color:var(--green,var(--pass))}
+#page-sim-lab .slv-rev-status.flag,#page-exam .exam-pbq .slv-rev-status.flag{color:var(--yellow,var(--warn))}
+#page-sim-lab .slv-rev-status.miss,#page-exam .exam-pbq .slv-rev-status.miss{color:var(--text-dim)}
+#page-sim-lab .slv-cta-row,#page-exam .exam-pbq .slv-cta-row{display:flex;gap:9px}
+#page-sim-lab .slv-cta-row .btn,#page-exam .exam-pbq .slv-cta-row .btn{flex:1}
+@media (prefers-reduced-motion:reduce){#page-sim-lab .slv-rev-row,#page-exam .exam-pbq .slv-rev-row{transition:none}}
 /* Sim Lab exam: Pace block on verdict (Task 9, lifted from mockup panel 4) — v7.57.2 */
 #page-sim-lab-result .slp-pace-card{background:var(--surface2);border:1px solid var(--border-soft,var(--border));border-radius:14px;padding:16px;margin:6px 0 22px}
 #page-sim-lab-result .slp-pace-eyebrow{font:800 10px/1 Inter,sans-serif;letter-spacing:.13em;text-transform:uppercase;color:var(--accent);margin-bottom:10px}
@@ -4191,36 +4195,36 @@ mark.gnt-hinge{background:color-mix(in oklab,var(--red) 26%,transparent);color:i
 #page-sim-lab-result .slp-pr-val.under{color:var(--green,var(--pass))}
 @media (prefers-reduced-motion:reduce){#page-sim-lab-result .slp-par-fill,#page-sim-lab-result .slp-pr-bar i{transition:none;transform:scaleX(1)}}
 /* Sim Lab session: configure step dropdowns (Task 4) - grading task toggles .is-correct/.is-wrong on .sl-cfg-select */
-#page-sim-lab .sl-cfg{display:grid;gap:13px}
-#page-sim-lab .sl-cfg-slot{display:grid;gap:6px}
-#page-sim-lab .sl-cfg-label{font:700 12px/1 Inter,sans-serif;color:var(--text-dim)}
-#page-sim-lab .sl-cfg-select{width:100%;appearance:none;-webkit-appearance:none;font:inherit;font-size:13.5px;font-weight:600;color:var(--text);background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:11px 38px 11px 13px;cursor:pointer;transition:border-color .18s var(--ease),box-shadow .18s var(--ease);background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Cpolyline points='2,3 5,7 8,3' fill='none' stroke='%23888' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 13px center}
-#page-sim-lab .sl-cfg-select:focus{outline:none;border-color:color-mix(in oklab,var(--accent) 55%,var(--border));box-shadow:0 0 0 3px color-mix(in oklab,var(--accent) 18%,transparent)}
-#page-sim-lab .sl-cfg-select.is-correct{border-color:color-mix(in oklab,var(--pass) 60%,var(--border));box-shadow:0 0 0 3px color-mix(in oklab,var(--pass) 15%,transparent)}
-#page-sim-lab .sl-cfg-select.is-wrong{border-color:color-mix(in oklab,var(--red) 60%,var(--border));box-shadow:0 0 0 3px color-mix(in oklab,var(--red) 14%,transparent)}
-@media (hover:hover) and (pointer:fine){#page-sim-lab .sl-cfg-select:hover{border-color:color-mix(in oklab,var(--accent) 30%,var(--border))}}
-@media (prefers-reduced-motion:reduce){#page-sim-lab .sl-cfg-select{transition:none}}
+#page-sim-lab .sl-cfg,#page-exam .exam-pbq .sl-cfg{display:grid;gap:13px}
+#page-sim-lab .sl-cfg-slot,#page-exam .exam-pbq .sl-cfg-slot{display:grid;gap:6px}
+#page-sim-lab .sl-cfg-label,#page-exam .exam-pbq .sl-cfg-label{font:700 12px/1 Inter,sans-serif;color:var(--text-dim)}
+#page-sim-lab .sl-cfg-select,#page-exam .exam-pbq .sl-cfg-select{width:100%;appearance:none;-webkit-appearance:none;font:inherit;font-size:13.5px;font-weight:600;color:var(--text);background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:11px 38px 11px 13px;cursor:pointer;transition:border-color .18s var(--ease),box-shadow .18s var(--ease);background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Cpolyline points='2,3 5,7 8,3' fill='none' stroke='%23888' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 13px center}
+#page-sim-lab .sl-cfg-select:focus,#page-exam .exam-pbq .sl-cfg-select:focus{outline:none;border-color:color-mix(in oklab,var(--accent) 55%,var(--border));box-shadow:0 0 0 3px color-mix(in oklab,var(--accent) 18%,transparent)}
+#page-sim-lab .sl-cfg-select.is-correct,#page-exam .exam-pbq .sl-cfg-select.is-correct{border-color:color-mix(in oklab,var(--pass) 60%,var(--border));box-shadow:0 0 0 3px color-mix(in oklab,var(--pass) 15%,transparent)}
+#page-sim-lab .sl-cfg-select.is-wrong,#page-exam .exam-pbq .sl-cfg-select.is-wrong{border-color:color-mix(in oklab,var(--red) 60%,var(--border));box-shadow:0 0 0 3px color-mix(in oklab,var(--red) 14%,transparent)}
+@media (hover:hover) and (pointer:fine){#page-sim-lab .sl-cfg-select:hover,#page-exam .exam-pbq .sl-cfg-select:hover{border-color:color-mix(in oklab,var(--accent) 30%,var(--border))}}
+@media (prefers-reduced-motion:reduce){#page-sim-lab .sl-cfg-select,#page-exam .exam-pbq .sl-cfg-select{transition:none}}
 
 /* Sim Lab Wave 5: vpntunnel dualpanel configure — A/B toggle + mirror chip strip
    (mockups/vpn-tunnel-negotiation-concept.html). Tokens only, zero hex.
    Curve is the literal BRAND.md §6 value: --ease is referenced elsewhere in this
    file but never DEFINED, so var(--ease) would silently resolve to nothing. */
-#page-sim-lab .sl-dualpanel{display:grid;gap:0}
-#page-sim-lab .sl-dp-toggle{display:flex;gap:6px;margin:10px 0}
-#page-sim-lab .sl-dp-btn{flex:1;min-height:44px;font:700 11px/1.2 Inter,sans-serif;padding:10px 6px;border-radius:10px;cursor:pointer;border:1px solid var(--border);background:var(--surface2);color:var(--text-dim);transition:color .18s cubic-bezier(0.16,1,0.3,1),border-color .18s cubic-bezier(0.16,1,0.3,1),background-color .18s cubic-bezier(0.16,1,0.3,1),transform .15s cubic-bezier(0.16,1,0.3,1)}
-#page-sim-lab .sl-dp-btn:active{transform:scale(0.97)}
-#page-sim-lab .sl-dp-btn:disabled{cursor:default;opacity:.7}
-#page-sim-lab .sl-dp-btn:focus-visible{outline:none;border-color:color-mix(in oklab,var(--accent) 55%,var(--border));box-shadow:0 0 0 3px color-mix(in oklab,var(--accent) 18%,transparent)}
-#page-sim-lab .sl-dp-btn[aria-pressed="true"]{color:var(--accent);border-color:color-mix(in oklab,var(--accent) 40%,var(--border));background:color-mix(in oklab,var(--accent) 10%,transparent)}
-#page-sim-lab .sl-dp-dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:5px;vertical-align:1px;background:var(--border);transition:background-color .18s cubic-bezier(0.16,1,0.3,1)}
-#page-sim-lab .sl-dp-btn.filled .sl-dp-dot{background:var(--pass)}
-#page-sim-lab .sl-dp-mirror{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:13px;padding:10px;background:var(--surface2);border:1px dashed var(--border);border-radius:11px}
-#page-sim-lab .sl-dp-mh{flex-basis:100%;font:800 9.5px/1 Inter,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:var(--text-dim);margin-bottom:2px}
-#page-sim-lab .sl-dp-chip{font:700 10.5px/1.5 Inter,sans-serif;color:var(--text-mid);background:var(--surface);border:1px solid var(--border);border-radius:999px;padding:4px 10px}
-#page-sim-lab .sl-dp-chip.unset{color:var(--text-dim);font-style:italic}
-#page-sim-lab .sl-dp-slots{display:grid;gap:13px}
-@media (hover:hover) and (pointer:fine){#page-sim-lab .sl-dp-btn:hover{border-color:color-mix(in oklab,var(--accent) 30%,var(--border));color:var(--text-mid)}}
-@media (prefers-reduced-motion:reduce){#page-sim-lab .sl-dp-btn{transition-property:color,border-color,background-color}#page-sim-lab .sl-dp-btn:active{transform:none}}
+#page-sim-lab .sl-dualpanel,#page-exam .exam-pbq .sl-dualpanel{display:grid;gap:0}
+#page-sim-lab .sl-dp-toggle,#page-exam .exam-pbq .sl-dp-toggle{display:flex;gap:6px;margin:10px 0}
+#page-sim-lab .sl-dp-btn,#page-exam .exam-pbq .sl-dp-btn{flex:1;min-height:44px;font:700 11px/1.2 Inter,sans-serif;padding:10px 6px;border-radius:10px;cursor:pointer;border:1px solid var(--border);background:var(--surface2);color:var(--text-dim);transition:color .18s cubic-bezier(0.16,1,0.3,1),border-color .18s cubic-bezier(0.16,1,0.3,1),background-color .18s cubic-bezier(0.16,1,0.3,1),transform .15s cubic-bezier(0.16,1,0.3,1)}
+#page-sim-lab .sl-dp-btn:active,#page-exam .exam-pbq .sl-dp-btn:active{transform:scale(0.97)}
+#page-sim-lab .sl-dp-btn:disabled,#page-exam .exam-pbq .sl-dp-btn:disabled{cursor:default;opacity:.7}
+#page-sim-lab .sl-dp-btn:focus-visible,#page-exam .exam-pbq .sl-dp-btn:focus-visible{outline:none;border-color:color-mix(in oklab,var(--accent) 55%,var(--border));box-shadow:0 0 0 3px color-mix(in oklab,var(--accent) 18%,transparent)}
+#page-sim-lab .sl-dp-btn[aria-pressed="true"],#page-exam .exam-pbq .sl-dp-btn[aria-pressed="true"]{color:var(--accent);border-color:color-mix(in oklab,var(--accent) 40%,var(--border));background:color-mix(in oklab,var(--accent) 10%,transparent)}
+#page-sim-lab .sl-dp-dot,#page-exam .exam-pbq .sl-dp-dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:5px;vertical-align:1px;background:var(--border);transition:background-color .18s cubic-bezier(0.16,1,0.3,1)}
+#page-sim-lab .sl-dp-btn.filled .sl-dp-dot,#page-exam .exam-pbq .sl-dp-btn.filled .sl-dp-dot{background:var(--pass)}
+#page-sim-lab .sl-dp-mirror,#page-exam .exam-pbq .sl-dp-mirror{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:13px;padding:10px;background:var(--surface2);border:1px dashed var(--border);border-radius:11px}
+#page-sim-lab .sl-dp-mh,#page-exam .exam-pbq .sl-dp-mh{flex-basis:100%;font:800 9.5px/1 Inter,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:var(--text-dim);margin-bottom:2px}
+#page-sim-lab .sl-dp-chip,#page-exam .exam-pbq .sl-dp-chip{font:700 10.5px/1.5 Inter,sans-serif;color:var(--text-mid);background:var(--surface);border:1px solid var(--border);border-radius:999px;padding:4px 10px}
+#page-sim-lab .sl-dp-chip.unset,#page-exam .exam-pbq .sl-dp-chip.unset{color:var(--text-dim);font-style:italic}
+#page-sim-lab .sl-dp-slots,#page-exam .exam-pbq .sl-dp-slots{display:grid;gap:13px}
+@media (hover:hover) and (pointer:fine){#page-sim-lab .sl-dp-btn:hover,#page-exam .exam-pbq .sl-dp-btn:hover{border-color:color-mix(in oklab,var(--accent) 30%,var(--border));color:var(--text-mid)}}
+@media (prefers-reduced-motion:reduce){#page-sim-lab .sl-dp-btn,#page-exam .exam-pbq .sl-dp-btn{transition-property:color,border-color,background-color}#page-sim-lab .sl-dp-btn:active,#page-exam .exam-pbq .sl-dp-btn:active{transform:none}}
 /* Decision Lab: per-option why reveal + teach block (Task 2) — v7.59.0 */
 #page-decision-lab .sl-analyze-line .dl-why,#page-decision-lab .dl-opt .dl-why{font:500 12.5px/1.45 Inter,sans-serif;color:var(--text-dim);margin-top:4px;display:grid;grid-template-rows:0fr;opacity:0;overflow:hidden;transition:grid-template-rows .16s var(--ease,cubic-bezier(.16,1,.3,1)),opacity .16s,transform .16s;transform:translateY(2px)}
 #page-decision-lab .dl-graded .dl-opt .dl-why{grid-template-rows:1fr;opacity:1;transform:none}
@@ -4418,61 +4422,61 @@ html[data-theme] body .celebration-toast-sub{color:var(--text-dim,rgba(255,255,2
    is --yellow, so affected uses --yellow (matches the existing .sl-clock
    .is-low precedent at line ~4168). Scoped to both labs that mount a
    reference panel (#page-sim-lab + #page-decision-lab). 0 hardcoded hex. */
-#page-sim-lab .sl-net,#page-decision-lab .sl-net{padding:8px}
-#page-sim-lab .sl-net-svg,#page-decision-lab .sl-net-svg{width:100%;height:auto;display:block;touch-action:pan-x pan-y pinch-zoom}
+#page-sim-lab .sl-net,#page-decision-lab .sl-net,#page-exam .exam-pbq .sl-net{padding:8px}
+#page-sim-lab .sl-net-svg,#page-decision-lab .sl-net-svg,#page-exam .exam-pbq .sl-net-svg{width:100%;height:auto;display:block;touch-action:pan-x pan-y pinch-zoom}
 
 /* zones */
-#page-sim-lab .sl-vlan-zone,#page-decision-lab .sl-vlan-zone{fill:color-mix(in oklab,var(--accent) 7%,transparent);stroke:color-mix(in oklab,var(--accent) 26%,var(--border));stroke-width:1}
-#page-sim-lab .sl-zone-lbl,#page-decision-lab .sl-zone-lbl{font:800 10.5px Inter,sans-serif;letter-spacing:.1em;text-transform:uppercase;fill:var(--text-dim)}
+#page-sim-lab .sl-vlan-zone,#page-decision-lab .sl-vlan-zone,#page-exam .exam-pbq .sl-vlan-zone{fill:color-mix(in oklab,var(--accent) 7%,transparent);stroke:color-mix(in oklab,var(--accent) 26%,var(--border));stroke-width:1}
+#page-sim-lab .sl-zone-lbl,#page-decision-lab .sl-zone-lbl,#page-exam .exam-pbq .sl-zone-lbl{font:800 10.5px Inter,sans-serif;letter-spacing:.1em;text-transform:uppercase;fill:var(--text-dim)}
 
 /* links */
-#page-sim-lab .sl-link,#page-decision-lab .sl-link{stroke:color-mix(in oklab,var(--text) 34%,transparent);stroke-width:1.6;fill:none}
-#page-sim-lab .sl-link.attack,#page-decision-lab .sl-link.attack{stroke:var(--red);stroke-width:2.2;fill:none;stroke-dasharray:5 6}
-#page-sim-lab .sl-net-arrowhead,#page-decision-lab .sl-net-arrowhead{fill:var(--red)}
-@media (prefers-reduced-motion:no-preference){#page-sim-lab .sl-link.attack,#page-decision-lab .sl-link.attack{animation:sl-net-flow 1s linear infinite}}
+#page-sim-lab .sl-link,#page-decision-lab .sl-link,#page-exam .exam-pbq .sl-link{stroke:color-mix(in oklab,var(--text) 34%,transparent);stroke-width:1.6;fill:none}
+#page-sim-lab .sl-link.attack,#page-decision-lab .sl-link.attack,#page-exam .exam-pbq .sl-link.attack{stroke:var(--red);stroke-width:2.2;fill:none;stroke-dasharray:5 6}
+#page-sim-lab .sl-net-arrowhead,#page-decision-lab .sl-net-arrowhead,#page-exam .exam-pbq .sl-net-arrowhead{fill:var(--red)}
+@media (prefers-reduced-motion:no-preference){#page-sim-lab .sl-link.attack,#page-decision-lab .sl-link.attack,#page-exam .exam-pbq .sl-link.attack{animation:sl-net-flow 1s linear infinite}}
 @keyframes sl-net-flow{to{stroke-dashoffset:-22}}
 
 /* nodes — centered stack (rect + glyph-on-top + name/ip centered) */
-#page-sim-lab .sl-node-box,#page-decision-lab .sl-node-box{fill:var(--surface2);stroke:var(--border);stroke-width:1.2}
-#page-sim-lab .sl-node-name,#page-decision-lab .sl-node-name{font:700 13px Inter,sans-serif;fill:var(--text);text-anchor:middle}
-#page-sim-lab .sl-node-ip,#page-decision-lab .sl-node-ip{font:600 11px ui-monospace,Menlo,monospace;fill:var(--text-mid);text-anchor:middle}
-#page-sim-lab .sl-glyph,#page-decision-lab .sl-glyph{stroke:var(--accent);stroke-width:1.8;fill:none}
+#page-sim-lab .sl-node-box,#page-decision-lab .sl-node-box,#page-exam .exam-pbq .sl-node-box{fill:var(--surface2);stroke:var(--border);stroke-width:1.2}
+#page-sim-lab .sl-node-name,#page-decision-lab .sl-node-name,#page-exam .exam-pbq .sl-node-name{font:700 13px Inter,sans-serif;fill:var(--text);text-anchor:middle}
+#page-sim-lab .sl-node-ip,#page-decision-lab .sl-node-ip,#page-exam .exam-pbq .sl-node-ip{font:600 11px ui-monospace,Menlo,monospace;fill:var(--text-mid);text-anchor:middle}
+#page-sim-lab .sl-glyph,#page-decision-lab .sl-glyph,#page-exam .exam-pbq .sl-glyph{stroke:var(--accent);stroke-width:1.8;fill:none}
 
 /* incident overlay states */
-#page-sim-lab .sl-node.compromised .sl-node-box,#page-decision-lab .sl-node.compromised .sl-node-box{stroke:var(--red);stroke-width:2}
-#page-sim-lab .sl-node.compromised .sl-node-name,#page-decision-lab .sl-node.compromised .sl-node-name{fill:var(--red)}
-#page-sim-lab .sl-node.compromised .sl-glyph,#page-decision-lab .sl-node.compromised .sl-glyph{stroke:var(--red)}
-#page-sim-lab .sl-node.affected .sl-node-box,#page-decision-lab .sl-node.affected .sl-node-box{stroke:var(--yellow);stroke-width:1.8}
-#page-sim-lab .sl-node.affected .sl-node-name,#page-decision-lab .sl-node.affected .sl-node-name{fill:var(--yellow)}
-#page-sim-lab .sl-node.affected .sl-glyph,#page-decision-lab .sl-node.affected .sl-glyph{stroke:var(--yellow)}
+#page-sim-lab .sl-node.compromised .sl-node-box,#page-decision-lab .sl-node.compromised .sl-node-box,#page-exam .exam-pbq .sl-node.compromised .sl-node-box{stroke:var(--red);stroke-width:2}
+#page-sim-lab .sl-node.compromised .sl-node-name,#page-decision-lab .sl-node.compromised .sl-node-name,#page-exam .exam-pbq .sl-node.compromised .sl-node-name{fill:var(--red)}
+#page-sim-lab .sl-node.compromised .sl-glyph,#page-decision-lab .sl-node.compromised .sl-glyph,#page-exam .exam-pbq .sl-node.compromised .sl-glyph{stroke:var(--red)}
+#page-sim-lab .sl-node.affected .sl-node-box,#page-decision-lab .sl-node.affected .sl-node-box,#page-exam .exam-pbq .sl-node.affected .sl-node-box{stroke:var(--yellow);stroke-width:1.8}
+#page-sim-lab .sl-node.affected .sl-node-name,#page-decision-lab .sl-node.affected .sl-node-name,#page-exam .exam-pbq .sl-node.affected .sl-node-name{fill:var(--yellow)}
+#page-sim-lab .sl-node.affected .sl-glyph,#page-decision-lab .sl-node.affected .sl-glyph,#page-exam .exam-pbq .sl-node.affected .sl-glyph{stroke:var(--yellow)}
 
 /* read-only given reference + CLI block */
-#page-sim-lab .sl-net-given,#page-decision-lab .sl-net-given{margin:2px 8px 10px;border-top:1px solid var(--border);padding-top:11px;display:grid;gap:9px}
-#page-sim-lab .sl-net-row,#page-decision-lab .sl-net-row{display:flex;align-items:baseline;gap:10px;font-size:12.5px}
-#page-sim-lab .sl-net-row .k,#page-decision-lab .sl-net-row .k{color:var(--text-dim);font-weight:700;min-width:86px}
-#page-sim-lab .sl-net-row .v,#page-decision-lab .sl-net-row .v{font-family:ui-monospace,Menlo,monospace;color:var(--text);font-size:12px}
-#page-sim-lab .sl-net-cli,#page-decision-lab .sl-net-cli{margin:0 8px 8px;background:color-mix(in oklab,var(--text) 5%,var(--surface));border:1px solid var(--border);border-radius:11px;padding:11px 13px;font-family:ui-monospace,Menlo,monospace;font-size:11.5px;line-height:1.6;color:var(--text-mid);white-space:pre-wrap;word-break:break-word}
+#page-sim-lab .sl-net-given,#page-decision-lab .sl-net-given,#page-exam .exam-pbq .sl-net-given{margin:2px 8px 10px;border-top:1px solid var(--border);padding-top:11px;display:grid;gap:9px}
+#page-sim-lab .sl-net-row,#page-decision-lab .sl-net-row,#page-exam .exam-pbq .sl-net-row{display:flex;align-items:baseline;gap:10px;font-size:12.5px}
+#page-sim-lab .sl-net-row .k,#page-decision-lab .sl-net-row .k,#page-exam .exam-pbq .sl-net-row .k{color:var(--text-dim);font-weight:700;min-width:86px}
+#page-sim-lab .sl-net-row .v,#page-decision-lab .sl-net-row .v,#page-exam .exam-pbq .sl-net-row .v{font-family:ui-monospace,Menlo,monospace;color:var(--text);font-size:12px}
+#page-sim-lab .sl-net-cli,#page-decision-lab .sl-net-cli,#page-exam .exam-pbq .sl-net-cli{margin:0 8px 8px;background:color-mix(in oklab,var(--text) 5%,var(--surface));border:1px solid var(--border);border-radius:11px;padding:11px 13px;font-family:ui-monospace,Menlo,monospace;font-size:11.5px;line-height:1.6;color:var(--text-mid);white-space:pre-wrap;word-break:break-word}
 
 /* ── Sim Lab: attack-timeline reference renderer (Task 7) ──────────────────
    Vertical timeline: each .sl-stage row = left rail (.sl-dot + .sl-line) +
    right body (.sl-when / .sl-what / .sl-sevtag). severity drives --sev token.
    .sev-med uses --yellow (same precedent as .sl-clock .is-low, Task 6).
    Scoped to #page-sim-lab + #page-decision-lab; 0 hardcoded hex. */
-#page-sim-lab .sl-timeline,#page-decision-lab .sl-timeline{display:grid;gap:0;padding:16px 16px 6px}
-#page-sim-lab .sl-stage,#page-decision-lab .sl-stage{display:grid;grid-template-columns:22px 1fr;gap:12px}
-#page-sim-lab .sl-rail,#page-decision-lab .sl-rail{display:flex;flex-direction:column;align-items:center}
-#page-sim-lab .sl-dot,#page-decision-lab .sl-dot{width:13px;height:13px;border-radius:999px;margin-top:3px;flex-shrink:0;background:var(--sev,var(--muted));box-shadow:0 0 0 3px color-mix(in oklab,var(--sev,var(--muted)) 22%,transparent)}
-#page-sim-lab .sl-line,#page-decision-lab .sl-line{flex:1;width:2px;background:color-mix(in oklab,var(--sev,var(--muted)) 28%,var(--border));min-height:18px;margin:3px 0}
-#page-sim-lab .sl-body,#page-decision-lab .sl-body{padding-bottom:18px;min-width:0}
-#page-sim-lab .sl-when,#page-decision-lab .sl-when{font:700 11px ui-monospace,Menlo,monospace;color:var(--text-dim);margin-bottom:3px}
-#page-sim-lab .sl-what,#page-decision-lab .sl-what{font-size:13px;line-height:1.45;color:var(--text);margin-bottom:6px}
-#page-sim-lab .sl-sevtag,#page-decision-lab .sl-sevtag{display:inline-block;font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--sev,var(--muted));background:color-mix(in oklab,var(--sev,var(--muted)) 12%,transparent);border:1px solid color-mix(in oklab,var(--sev,var(--muted)) 30%,var(--border));border-radius:999px;padding:2px 8px}
+#page-sim-lab .sl-timeline,#page-decision-lab .sl-timeline,#page-exam .exam-pbq .sl-timeline{display:grid;gap:0;padding:16px 16px 6px}
+#page-sim-lab .sl-stage,#page-decision-lab .sl-stage,#page-exam .exam-pbq .sl-stage{display:grid;grid-template-columns:22px 1fr;gap:12px}
+#page-sim-lab .sl-rail,#page-decision-lab .sl-rail,#page-exam .exam-pbq .sl-rail{display:flex;flex-direction:column;align-items:center}
+#page-sim-lab .sl-dot,#page-decision-lab .sl-dot,#page-exam .exam-pbq .sl-dot{width:13px;height:13px;border-radius:999px;margin-top:3px;flex-shrink:0;background:var(--sev,var(--muted));box-shadow:0 0 0 3px color-mix(in oklab,var(--sev,var(--muted)) 22%,transparent)}
+#page-sim-lab .sl-line,#page-decision-lab .sl-line,#page-exam .exam-pbq .sl-line{flex:1;width:2px;background:color-mix(in oklab,var(--sev,var(--muted)) 28%,var(--border));min-height:18px;margin:3px 0}
+#page-sim-lab .sl-body,#page-decision-lab .sl-body,#page-exam .exam-pbq .sl-body{padding-bottom:18px;min-width:0}
+#page-sim-lab .sl-when,#page-decision-lab .sl-when,#page-exam .exam-pbq .sl-when{font:700 11px ui-monospace,Menlo,monospace;color:var(--text-dim);margin-bottom:3px}
+#page-sim-lab .sl-what,#page-decision-lab .sl-what,#page-exam .exam-pbq .sl-what{font-size:13px;line-height:1.45;color:var(--text);margin-bottom:6px}
+#page-sim-lab .sl-sevtag,#page-decision-lab .sl-sevtag,#page-exam .exam-pbq .sl-sevtag{display:inline-block;font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--sev,var(--muted));background:color-mix(in oklab,var(--sev,var(--muted)) 12%,transparent);border:1px solid color-mix(in oklab,var(--sev,var(--muted)) 30%,var(--border));border-radius:999px;padding:2px 8px}
 
 /* severity → --sev token (--yellow for med: no --warn in dg-system.css) */
-#page-sim-lab .sev-low,#page-decision-lab .sev-low{--sev:var(--muted)}
-#page-sim-lab .sev-med,#page-decision-lab .sev-med{--sev:var(--yellow)}
-#page-sim-lab .sev-high,#page-decision-lab .sev-high{--sev:color-mix(in oklab,var(--red) 80%,var(--yellow))}
-#page-sim-lab .sev-crit,#page-decision-lab .sev-crit{--sev:var(--red)}
+#page-sim-lab .sev-low,#page-decision-lab .sev-low,#page-exam .exam-pbq .sev-low{--sev:var(--muted)}
+#page-sim-lab .sev-med,#page-decision-lab .sev-med,#page-exam .exam-pbq .sev-med{--sev:var(--yellow)}
+#page-sim-lab .sev-high,#page-decision-lab .sev-high,#page-exam .exam-pbq .sev-high{--sev:color-mix(in oklab,var(--red) 80%,var(--yellow))}
+#page-sim-lab .sev-crit,#page-decision-lab .sev-crit,#page-exam .exam-pbq .sev-crit{--sev:var(--red)}
 
 /* ── Sim Lab: layered defense-in-depth reference renderer (Task 8) ────────
    Nested-frames SVG layout. Layers ordered outer→inner; each frame is either
@@ -4481,37 +4485,37 @@ html[data-theme] body .celebration-toast-sub{color:var(--text-dim,rgba(255,255,2
    Device nodes inside core: .sl-dev (normal) or .sl-dev.exposed (red).
    Lifted from mockups/defense-in-depth-{netplus,secplus}-concept.html; tokens
    only, 0 hardcoded hex. --red = red/missing/exposed; --accent = present. */
-#page-sim-lab .sl-layered,#page-decision-lab .sl-layered{padding:8px}
-#page-sim-lab .sl-layered-svg,#page-decision-lab .sl-layered-svg{width:100%;height:auto;display:block;touch-action:pan-x pan-y pinch-zoom}
+#page-sim-lab .sl-layered,#page-decision-lab .sl-layered,#page-exam .exam-pbq .sl-layered{padding:8px}
+#page-sim-lab .sl-layered-svg,#page-decision-lab .sl-layered-svg,#page-exam .exam-pbq .sl-layered-svg{width:100%;height:auto;display:block;touch-action:pan-x pan-y pinch-zoom}
 
 /* present layer frame */
-#page-sim-lab .sl-layer,#page-decision-lab .sl-layer{fill:color-mix(in oklab,var(--accent) 6%,transparent);stroke:color-mix(in oklab,var(--accent) 50%,var(--border));stroke-width:1.4}
+#page-sim-lab .sl-layer,#page-decision-lab .sl-layer,#page-exam .exam-pbq .sl-layer{fill:color-mix(in oklab,var(--accent) 6%,transparent);stroke:color-mix(in oklab,var(--accent) 50%,var(--border));stroke-width:1.4}
 
 /* missing layer frame — red dashed */
-#page-sim-lab .sl-misslayer,#page-decision-lab .sl-misslayer{fill:color-mix(in oklab,var(--red) 5%,transparent);stroke:var(--red);stroke-width:1.5;stroke-dasharray:6 5}
+#page-sim-lab .sl-misslayer,#page-decision-lab .sl-misslayer,#page-exam .exam-pbq .sl-misslayer{fill:color-mix(in oklab,var(--red) 5%,transparent);stroke:var(--red);stroke-width:1.5;stroke-dasharray:6 5}
 
 /* layer labels */
-#page-sim-lab .sl-layer-lbl,#page-decision-lab .sl-layer-lbl{font:700 11px Inter,sans-serif;fill:var(--text-mid)}
-#page-sim-lab .sl-layer-lbl-miss,#page-decision-lab .sl-layer-lbl-miss{fill:var(--red)}
-#page-sim-lab .sl-misslayer-tag,#page-decision-lab .sl-misslayer-tag{font-weight:400;font-size:10px;opacity:.85}
+#page-sim-lab .sl-layer-lbl,#page-decision-lab .sl-layer-lbl,#page-exam .exam-pbq .sl-layer-lbl{font:700 11px Inter,sans-serif;fill:var(--text-mid)}
+#page-sim-lab .sl-layer-lbl-miss,#page-decision-lab .sl-layer-lbl-miss,#page-exam .exam-pbq .sl-layer-lbl-miss{fill:var(--red)}
+#page-sim-lab .sl-misslayer-tag,#page-decision-lab .sl-misslayer-tag,#page-exam .exam-pbq .sl-misslayer-tag{font-weight:400;font-size:10px;opacity:.85}
 
 /* core: safe */
-#page-sim-lab .sl-core,#page-decision-lab .sl-core{fill:color-mix(in oklab,var(--accent) 10%,transparent);stroke:color-mix(in oklab,var(--accent) 40%,var(--border));stroke-width:1.4}
+#page-sim-lab .sl-core,#page-decision-lab .sl-core,#page-exam .exam-pbq .sl-core{fill:color-mix(in oklab,var(--accent) 10%,transparent);stroke:color-mix(in oklab,var(--accent) 40%,var(--border));stroke-width:1.4}
 /* core: exposed (one or more assets are exposed) */
-#page-sim-lab .sl-core-exposed,#page-decision-lab .sl-core-exposed{fill:color-mix(in oklab,var(--red) 9%,transparent);stroke:var(--red);stroke-width:1.7}
+#page-sim-lab .sl-core-exposed,#page-decision-lab .sl-core-exposed,#page-exam .exam-pbq .sl-core-exposed{fill:color-mix(in oklab,var(--red) 9%,transparent);stroke:var(--red);stroke-width:1.7}
 
 /* core labels */
-#page-sim-lab .sl-core-lbl,#page-decision-lab .sl-core-lbl{font:700 11px Inter,sans-serif;fill:var(--text-mid)}
-#page-sim-lab .sl-core-lbl-exp,#page-decision-lab .sl-core-lbl-exp{fill:var(--red)}
+#page-sim-lab .sl-core-lbl,#page-decision-lab .sl-core-lbl,#page-exam .exam-pbq .sl-core-lbl{font:700 11px Inter,sans-serif;fill:var(--text-mid)}
+#page-sim-lab .sl-core-lbl-exp,#page-decision-lab .sl-core-lbl-exp,#page-exam .exam-pbq .sl-core-lbl-exp{fill:var(--red)}
 
 /* device node box (safe) */
-#page-sim-lab .sl-dev-box,#page-decision-lab .sl-dev-box{fill:var(--surface);stroke:var(--border);stroke-width:1.2}
+#page-sim-lab .sl-dev-box,#page-decision-lab .sl-dev-box,#page-exam .exam-pbq .sl-dev-box{fill:var(--surface);stroke:var(--border);stroke-width:1.2}
 /* device node box (exposed) */
-#page-sim-lab .sl-dev-box-exp,#page-decision-lab .sl-dev-box-exp{stroke:var(--red);stroke-width:1.8}
+#page-sim-lab .sl-dev-box-exp,#page-decision-lab .sl-dev-box-exp,#page-exam .exam-pbq .sl-dev-box-exp{stroke:var(--red);stroke-width:1.8}
 
 /* device node labels */
-#page-sim-lab .sl-dev-nm,#page-decision-lab .sl-dev-nm{font:700 10.5px Inter,sans-serif;fill:var(--text);text-anchor:middle}
-#page-sim-lab .sl-dev-nm-exp,#page-decision-lab .sl-dev-nm-exp{fill:var(--red)}
+#page-sim-lab .sl-dev-nm,#page-decision-lab .sl-dev-nm,#page-exam .exam-pbq .sl-dev-nm{font:700 10.5px Inter,sans-serif;fill:var(--text);text-anchor:middle}
+#page-sim-lab .sl-dev-nm-exp,#page-decision-lab .sl-dev-nm-exp,#page-exam .exam-pbq .sl-dev-nm-exp{fill:var(--red)}
 
 /* ── Sim Lab: layered defense-in-depth "stacked-bands" reference renderer ──
    Faithful lift of mockups/defense-in-depth-secplus-concept.html (~lines
@@ -4521,35 +4525,37 @@ html[data-theme] body .celebration-toast-sub{color:var(--text-dim,rgba(255,255,2
    from the nested renderer above (same core semantics). Present = accent
    solid; missing/exposed = --red dashed/solid. Tokens only, 0 hardcoded
    hex. Scoped to #page-sim-lab + #page-decision-lab. */
-#page-sim-lab .sl-stacked,#page-decision-lab .sl-stacked{padding:8px}
+#page-sim-lab .sl-stacked,#page-decision-lab .sl-stacked,0 hardcoded
+   hex. Scoped to #page-exam .exam-pbq + #page-decision-lab. */
+#page-exam .exam-pbq .sl-stacked{padding:8px}
 
 /* perimeter frame: present */
-#page-sim-lab .sl-perim,#page-decision-lab .sl-perim{fill:color-mix(in oklab,var(--accent) 5%,transparent);stroke:color-mix(in oklab,var(--accent) 55%,var(--border));stroke-width:1.4}
+#page-sim-lab .sl-perim,#page-decision-lab .sl-perim,#page-exam .exam-pbq .sl-perim{fill:color-mix(in oklab,var(--accent) 5%,transparent);stroke:color-mix(in oklab,var(--accent) 55%,var(--border));stroke-width:1.4}
 /* perimeter frame: missing */
-#page-sim-lab .sl-perim-missing,#page-decision-lab .sl-perim-missing{fill:color-mix(in oklab,var(--red) 5%,transparent);stroke:var(--red);stroke-width:1.5;stroke-dasharray:6 5}
+#page-sim-lab .sl-perim-missing,#page-decision-lab .sl-perim-missing,#page-exam .exam-pbq .sl-perim-missing{fill:color-mix(in oklab,var(--red) 5%,transparent);stroke:var(--red);stroke-width:1.5;stroke-dasharray:6 5}
 
 /* perimeter labels */
-#page-sim-lab .sl-perim-lbl,#page-decision-lab .sl-perim-lbl{font:800 10.5px Inter,sans-serif;letter-spacing:.1em;text-transform:uppercase;fill:var(--accent)}
-#page-sim-lab .sl-perim-lbl-miss,#page-decision-lab .sl-perim-lbl-miss{fill:var(--red)}
-#page-sim-lab .sl-perim-sub,#page-decision-lab .sl-perim-sub{font:600 10.5px ui-monospace,Menlo,monospace;fill:var(--text-mid)}
+#page-sim-lab .sl-perim-lbl,#page-decision-lab .sl-perim-lbl,#page-exam .exam-pbq .sl-perim-lbl{font:800 10.5px Inter,sans-serif;letter-spacing:.1em;text-transform:uppercase;fill:var(--accent)}
+#page-sim-lab .sl-perim-lbl-miss,#page-decision-lab .sl-perim-lbl-miss,#page-exam .exam-pbq .sl-perim-lbl-miss{fill:var(--red)}
+#page-sim-lab .sl-perim-sub,#page-decision-lab .sl-perim-sub,#page-exam .exam-pbq .sl-perim-sub{font:600 10.5px ui-monospace,Menlo,monospace;fill:var(--text-mid)}
 
 /* interior band: present */
-#page-sim-lab .sl-band,#page-decision-lab .sl-band{fill:color-mix(in oklab,var(--accent) 6%,transparent);stroke:color-mix(in oklab,var(--accent) 50%,var(--border));stroke-width:1.4}
+#page-sim-lab .sl-band,#page-decision-lab .sl-band,#page-exam .exam-pbq .sl-band{fill:color-mix(in oklab,var(--accent) 6%,transparent);stroke:color-mix(in oklab,var(--accent) 50%,var(--border));stroke-width:1.4}
 /* interior band: missing */
-#page-sim-lab .sl-band-missing,#page-decision-lab .sl-band-missing{fill:color-mix(in oklab,var(--red) 5%,transparent);stroke:var(--red);stroke-width:1.5;stroke-dasharray:6 5}
+#page-sim-lab .sl-band-missing,#page-decision-lab .sl-band-missing,#page-exam .exam-pbq .sl-band-missing{fill:color-mix(in oklab,var(--red) 5%,transparent);stroke:var(--red);stroke-width:1.5;stroke-dasharray:6 5}
 
 /* band labels */
-#page-sim-lab .sl-band-lbl,#page-decision-lab .sl-band-lbl{font:800 10.5px Inter,sans-serif;letter-spacing:.06em;text-transform:uppercase;fill:var(--text)}
-#page-sim-lab .sl-band-lbl-miss,#page-decision-lab .sl-band-lbl-miss{fill:var(--red)}
-#page-sim-lab .sl-band-sub,#page-decision-lab .sl-band-sub{font:600 9.5px ui-monospace,Menlo,monospace;fill:var(--text-dim)}
+#page-sim-lab .sl-band-lbl,#page-decision-lab .sl-band-lbl,#page-exam .exam-pbq .sl-band-lbl{font:800 10.5px Inter,sans-serif;letter-spacing:.06em;text-transform:uppercase;fill:var(--text)}
+#page-sim-lab .sl-band-lbl-miss,#page-decision-lab .sl-band-lbl-miss,#page-exam .exam-pbq .sl-band-lbl-miss{fill:var(--red)}
+#page-sim-lab .sl-band-sub,#page-decision-lab .sl-band-sub,#page-exam .exam-pbq .sl-band-sub{font:600 9.5px ui-monospace,Menlo,monospace;fill:var(--text-dim)}
 
 /* perimeter device box (FW-1, WAF-1, ...) — faithful lift of the mockup's
    .fw device box (~lines 79-81, 194): surface box, border stroke, accent
    glyph, text label. Optional — only rendered when layers[0].device.label
    is present on a stacked-layout scenario. Tokens only, 0 hardcoded hex. */
-#page-sim-lab .sl-fw-box,#page-decision-lab .sl-fw-box{fill:var(--surface);stroke:var(--border);stroke-width:1.2}
-#page-sim-lab .sl-fw-nm,#page-decision-lab .sl-fw-nm{font:700 11px Inter,sans-serif;fill:var(--text);text-anchor:middle}
-#page-sim-lab .sl-fw-glyph,#page-decision-lab .sl-fw-glyph{stroke:var(--accent);stroke-width:1.7;fill:none}
+#page-sim-lab .sl-fw-box,#page-decision-lab .sl-fw-box,#page-exam .exam-pbq .sl-fw-box{fill:var(--surface);stroke:var(--border);stroke-width:1.2}
+#page-sim-lab .sl-fw-nm,#page-decision-lab .sl-fw-nm,#page-exam .exam-pbq .sl-fw-nm{font:700 11px Inter,sans-serif;fill:var(--text);text-anchor:middle}
+#page-sim-lab .sl-fw-glyph,#page-decision-lab .sl-fw-glyph,#page-exam .exam-pbq .sl-fw-glyph{stroke:var(--accent);stroke-width:1.7;fill:none}
 
 /* ════════════════════════════════════════════════════════════════════════
    SIM LAB · terminal / output-excerpt reference (Wave 2 — Task 7)

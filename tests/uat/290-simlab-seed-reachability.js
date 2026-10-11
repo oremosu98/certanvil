@@ -150,10 +150,11 @@ const { ROOT, _fnBody, dgCss, fs, html, js, path, results, test, vm } = require(
     test('Header: .sl-strip-label sits inside .sl-strip and contains #sl-topic',
       /class="sl-strip"><span class="sl-strip-label">[\s\S]{0,120}id="sl-topic"[\s\S]{0,20}<\/span>/.test(html));
 
-    var strip = (dgCss.match(/#page-sim-lab \.sl-strip\{[^}]*\}/) || [])[0] || '';
-    var label = (dgCss.match(/#page-sim-lab \.sl-strip-label\{[^}]*\}/) || [])[0] || '';
-    var pill = (dgCss.match(/#page-sim-lab \.slr-round-pill,\s*\n?#page-sim-lab \.sl-exam-badge\{[^}]*\}/) || [])[0] || '';
-    var btn = (dgCss.match(/#page-sim-lab \.sl-topbar > \.btn\{[^}]*\}/) || [])[0] || '';
+    // v8.163.0: each rule may carry a "#page-exam .exam-pbq" twin selector ([^{]*).
+    var strip = (dgCss.match(/#page-sim-lab \.sl-strip(?:,[^{]*)?\{[^}]*\}/) || [])[0] || '';
+    var label = (dgCss.match(/#page-sim-lab \.sl-strip-label(?:,[^{]*)?\{[^}]*\}/) || [])[0] || '';
+    var pill = (dgCss.match(/#page-sim-lab \.slr-round-pill,\s*\n?#page-sim-lab \.sl-exam-badge(?:,[^{]*)?\{[^}]*\}/) || [])[0] || '';
+    var btn = (dgCss.match(/#page-sim-lab \.sl-topbar > \.btn(?:,[^{]*)?\{[^}]*\}/) || [])[0] || '';
 
     test('Header: .sl-strip is a flex row that may shrink (min-width:0)',
       /display:flex/.test(strip) && /min-width:0/.test(strip));

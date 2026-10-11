@@ -1582,8 +1582,9 @@
     if (_ex && Array.isArray(_ex.questions) && _ex.questions.length && typeof _ex.endTime === 'number'
         && _ex.endTime > Date.now() - 86400000) {
       const left = Math.max(0, Math.round((_ex.endTime - Date.now()) / 60000));
-      const answered = (_ex.answers || []).filter(a => a && ((a.chosen !== null && a.chosen !== undefined)
-        || (a.msChosen || []).length || (a.orderSeq || []).length || Object.keys(a.topoState || {}).length || a.slVisited)).length;
+      const answered = (typeof _ex.answered === 'number') ? _ex.answered
+        : (_ex.answers || []).filter(a => a && ((a.chosen !== null && a.chosen !== undefined)
+          || (a.msChosen || []).length || (a.orderSeq || []).length || Object.keys(a.topoState || {}).length)).length;
       const of = `${answered} of ${_ex.questions.length} answered`;
       if (minEl) minEl.textContent = String(left);
       if (titleEl) titleEl.textContent = left > 0 ? 'Resume your exam' : 'Your exam time is up';

@@ -1071,7 +1071,7 @@ test('v8.145.0 Exam Simulator: a failed writer batch no longer aborts; tops up t
   (() => {
     const ex = fs.readFileSync(path.join(ROOT, 'features', 'exam.js'), 'utf8');
     return /if \(attempt === MAX_RETRIES\) \{ _lastBatchErr = retryErr; rawBatch = \[\]; break; \}/.test(ex)
-      && /_topUpToCount\(key, MIXED_TOPIC, 'Exam Level', examQuestions, EXAM_QUESTION_COUNT, _fillRounds/.test(ex)   // v8.162.0: exam-level top-up
+      && /_topUpToCount\(key, MIXED_TOPIC, 'Exam Level', examQuestions, MCQ_TARGET, _fillRounds/.test(ex)   // v8.162.0 exam-level; v8.163.0 PBQs take their share
       && /_logQuizFill\(EXAM_QUESTION_COUNT, examQuestions\.length, 'fresh \(exam\)'/.test(ex)
       && /_logQuizFill\(EXAM_QUESTION_COUNT, 0, 'error \(exam\)'/.test(ex)
       && !/if \(attempt === MAX_RETRIES\) throw retryErr;/.test(ex);

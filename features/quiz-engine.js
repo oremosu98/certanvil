@@ -1980,7 +1980,16 @@
     if (flagged) cls += ' flagged-item';
   
     let optsHtml;
-    if (qType === 'order') {
+    if (qType === 'simlab' && q.simlab && Array.isArray(q.simlab.steps)) {
+      // v8.163.0: an exam PBQ reviews step by step, each with its explanation.
+      const per = (entry.pbq && entry.pbq.perStep) || {};
+      optsHtml = (q.simlab.scenario ? `<div class="review-exp">${escHtml(q.simlab.scenario).replace(/&lt;(\/?)mark&gt;/g, '<$1mark>')}</div>` : '')
+        + '<div class="review-options">' + q.simlab.steps.map((st, k) => {
+          const raw = per[st.id];
+          const ok = (raw && typeof raw === 'object') ? raw.correct === raw.total : !!raw;
+          return `<div class="review-opt ${ok ? 'is-correct' : 'was-chosen'}"><span class="r-letter">${ok ? '\u2713' : '\u2717'}</span><span><strong>Step ${k + 1}.</strong> ${escHtml(st.prompt)}<br>${escHtml(st.explanation || '')}</span></div>`;
+        }).join('') + '</div>';
+    } else if (qType === 'order') {
       const items = q.items || [];
       const correctOrd = q.correctOrder || [];
       optsHtml = '<div class="review-options">' +
@@ -2016,7 +2025,7 @@
       ? '<span class="q-tag tag-domain">' + escHtml(reviewTopic) + '</span>'
       : '';
   
-    const typeLabels = { 'multi-select': 'Multi-Select', 'order': 'Ordering', 'cli-sim': 'CLI Sim', 'topology': 'Topology' };
+    const typeLabels = { 'multi-select': 'Multi-Select', 'order': 'Ordering', 'cli-sim': 'CLI Sim', 'topology': 'Topology', 'simlab': 'PBQ' };
     const typeBadge = qType !== 'mcq' ? `<span class="pbq-badge" style="margin-left:6px">${typeLabels[qType] || qType}</span>` : '';
   
     const resLink = reviewRes ? `<div class="resource-link" style="margin-top:8px"><button class="resource-dive-btn" onclick="showTopicDeepDive('${escHtml(reviewTopic).replace(/'/g, "\\'")}')">Study: ${escHtml(reviewRes.title)} (Obj ${reviewRes.obj})</button></div>` : '';

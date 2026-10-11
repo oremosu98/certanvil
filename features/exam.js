@@ -22,7 +22,8 @@
     try {
       localStorage.setItem(EXAM_STATE_KEY, JSON.stringify({
         v: 1, savedAt: Date.now(), endTime: examEndTime, current: examCurrent,
-        hardcore: !!examHardcore, questions: examQuestions, answers: examAnswers
+        hardcore: !!examHardcore, questions: examQuestions, answers: examAnswers,
+        answered: examAnswers.filter(_examAnswered).length   // for Home's resume tile
       }));
       _examLastSave = Date.now();
     } catch (_) { /* storage full: the exam still runs, it just can't be resumed */ }
@@ -51,9 +52,10 @@
     _releaseExamWakeLock();
     return true;
   }
-  function resumeExam() {
+  async function resumeExam() {
     const st = examSavedState();
     if (!st) { if (typeof goSetup === 'function') goSetup(); return; }
+    if (st.questions.some(q => q && q.type === 'simlab')) await _examEnsureSimLab();   // v8.163.0
     examMode = true;
     if (typeof _resetDrillModes === 'function') _resetDrillModes();
     examHardcore = !!st.hardcore;
@@ -71,7 +73,7 @@
   // Answered = any answer recorded (shared by the pace line).
   function _examAnswered(a) {
     return !!a && (a.chosen !== null && a.chosen !== undefined || (a.msChosen || []).length > 0 ||
-      (a.orderSeq || []).length > 0 || Object.keys(a.topoState || {}).length > 0 || !!a.slVisited);
+      (a.orderSeq || []).length > 0 || Object.keys(a.topoState || {}).length > 0 || _examPbqTouched(a.sl));
   }
   // Seconds budgeted per question: a PBQ gets its Sim Lab par (estMinutes x 0.9),
   // the multiple-choice questions share the rest of the clock evenly.
@@ -97,6 +99,56 @@
     const m = Math.round(Math.abs(diff) / 60);
     return diff > 0 ? m + ' min ahead' : m + ' min behind';
   }
+
+  // ── v8.163.0: Sim Lab PBQs inside the exam ──────────────────────────────
+  // The real SY0-701 opens with a few PBQs. Security+ had none here (the old
+  // injectPBQs banks are Network+ only), so the exam now opens with
+  // EXAM_PBQ_COUNT Sim Lab PBQs that share the navigator, flags and clock.
+  const EXAM_PBQ_COUNT = 4;
+  // Sim Lab is lazy-loaded; never let a slow load hold up the exam build.
+  function _examEnsureSimLab() {
+    return new Promise(function (resolve) {
+      if (window._simLab && window._simLab.mountScenario) { resolve(true); return; }
+      const t = setTimeout(function () { resolve(false); }, 8000);
+      if (typeof _ensureSimLabLoaded !== 'function') { clearTimeout(t); resolve(false); return; }
+      _ensureSimLabLoaded(function () { clearTimeout(t); resolve(!!(window._simLab && window._simLab.mountScenario)); });
+    });
+  }
+  // A PBQ counts as answered once any step holds a real answer.
+  function _examPbqTouched(sl) {
+    function filled(v) {
+      if (v === null || v === undefined || v === '' || v === false) return false;
+      if (Array.isArray(v)) return v.some(filled);
+      if (typeof v === 'object') return Object.keys(v).some(function (k) { return filled(v[k]); });
+      return true;
+    }
+    return !!sl && filled(sl);
+  }
+  function _examScorePbq(q, a) {
+    try {
+      if (typeof simLabScoreScenario === 'function' && q && q.simlab) return simLabScoreScenario(q.simlab, (a && a.sl) || {});
+    } catch (_) {}
+    return { perStep: {}, correct: 0, total: 0, fraction: 0 };
+  }
+  // Mount the PBQ into the exam card. Its own Submit button goes (the exam
+  // submits everything at the end); answers are captured live and restored
+  // when you come back, exactly as Sim Lab's own exam mode does.
+  function _examRenderPbq(q, box, ans) {
+    const host = document.createElement('div');
+    host.className = 'exam-pbq';
+    box.appendChild(host);
+    if (!window._simLab || typeof window._simLab.mountScenario !== 'function' || !q.simlab) {
+      host.textContent = 'This PBQ could not load. Move on; it counts as unanswered.';
+      return;
+    }
+    const prior = ans.sl || null;
+    window._simLab.mountScenario(host, q.simlab, { initial: prior, onSubmit: function () {} });
+    const own = host.querySelector('[data-action="simLabSubmitScenario"]');
+    if (own) own.remove();
+    const live = window.__slResponses || {};
+    if (prior) Object.keys(prior).forEach(function (k) { if (!(k in live)) live[k] = prior[k]; });
+    ans.sl = live;   // the object every step writes into
+  }
   // v4.54.9: exam-mode segmented progress dots. Mirrors the quiz version but
   // reads examAnswers[i].chosen/msChosen/orderSeq to decide per-question state.
   // In exam mode we can't know correct/wrong until submit, so we only distinguish
@@ -111,7 +163,8 @@
       const answered = (ans.chosen !== null && ans.chosen !== undefined) ||
                        (Array.isArray(ans.msChosen) && ans.msChosen.length > 0) ||
                        (Array.isArray(ans.orderSeq) && ans.orderSeq.length > 0) ||
-                       (ans.topoState && Object.keys(ans.topoState).length > 0);
+                       (ans.topoState && Object.keys(ans.topoState).length > 0) ||
+                       _examPbqTouched(ans.sl);   // v8.163.0
       let cls = 'qpd-cell';
       let aria;
       if (i === examCurrent) { cls += ' qpd-now'; aria = `Question ${i + 1}, current`; }
@@ -180,6 +233,13 @@
     // startQuiz). A batch whose writer call fails every retry no longer
     // aborts the whole exam; the top-up refills it.
     const _fillRounds = []; let _lastBatchErr = null;
+    // v8.163.0: pick the opening PBQs first, so the MCQs fill the rest of the 90.
+    let _pbqs = [];
+    try {
+      _loadingProgressUpdate('Choosing the PBQs\u2026', 2);
+      if (await _examEnsureSimLab() && window._simLab.pickExamPbqs) _pbqs = window._simLab.pickExamPbqs(window.CURRENT_CERT || 'netplus', EXAM_PBQ_COUNT) || [];
+    } catch (_) { _pbqs = []; }
+    const MCQ_TARGET = EXAM_QUESTION_COUNT - _pbqs.length;
     window._mixedPickMode = 'random';  // v8.146.0: exam rehearsal draws topics at random, never Catch-up
     try {
       for (let i = 0; i < BATCHES; i++) {
@@ -272,8 +332,8 @@
         examQuestions = examQuestions.concat(batch.slice(0, EXAM_BATCH_BASE));
         _r.added = examQuestions.length - _before; _fillRounds.push(_r);
       }
-      if (examQuestions.length < EXAM_QUESTION_COUNT && typeof _topUpToCount === 'function') {
-        examQuestions = await _topUpToCount(key, MIXED_TOPIC, 'Exam Level', examQuestions, EXAM_QUESTION_COUNT, _fillRounds, (round, deficit) => {
+      if (examQuestions.length < MCQ_TARGET && typeof _topUpToCount === 'function') {
+        examQuestions = await _topUpToCount(key, MIXED_TOPIC, 'Exam Level', examQuestions, MCQ_TARGET, _fillRounds, (round, deficit) => {
           _loadingProgressUpdate(`Filling the last ${deficit} question${deficit === 1 ? '' : 's'}\u2026`, 92 + round * 2);
         });
       }
@@ -281,8 +341,14 @@
       // v8.162.0: shuffle so the hard batch doesn't cluster at the end.
       for (let k = examQuestions.length - 1; k > 0; k--) { const r = Math.floor(Math.random() * (k + 1)); const t = examQuestions[k]; examQuestions[k] = examQuestions[r]; examQuestions[r] = t; }
       _loadingProgressUpdate('Finalizing…', 98);
-      // Inject 2 CLI/topo PBQs into exam (predefined bank — already known good, skip validation)
-      examQuestions = injectPBQs(examQuestions, MIXED_TOPIC, 2);
+      examQuestions = examQuestions.slice(0, MCQ_TARGET);
+      if (_pbqs.length) {
+        // v8.163.0: Sim Lab PBQs open the exam, as on the real thing.
+        examQuestions = _pbqs.map(s => ({ type: 'simlab', simlab: s, question: s.title, topic: s.topic, objective: s.objective, explanation: '' })).concat(examQuestions);
+      } else {
+        // Inject 2 CLI/topo PBQs into exam (predefined bank — already known good, skip validation)
+        examQuestions = injectPBQs(examQuestions, MIXED_TOPIC, 2);
+      }
       // Defensive truncate: if injectPBQs somehow grew past 90 (shouldn't — it splices 1-for-1)
       if (examQuestions.length > EXAM_QUESTION_COUNT) {
         examQuestions = examQuestions.slice(0, EXAM_QUESTION_COUNT);
@@ -417,7 +483,7 @@
     document.getElementById('exam-q-label').textContent = `Q${examCurrent + 1}`;
     document.getElementById('exam-topic-lbl').textContent = q.topic || '';
 
-    const answeredCount = examAnswers.filter(a => a.chosen !== null || a.msChosen.length > 0 || a.orderSeq.length > 0 || Object.keys(a.topoState || {}).length > 0).length;
+    const answeredCount = examAnswers.filter(a => a.chosen !== null || a.msChosen.length > 0 || a.orderSeq.length > 0 || Object.keys(a.topoState || {}).length > 0 || _examPbqTouched(a.sl)).length;
     document.getElementById('exam-answered-lbl').textContent = `${answeredCount} / ${total} answered`;
     document.getElementById('exam-prog-fill').style.width = ((examCurrent / total) * 100) + '%';
     // v4.54.9: segmented per-question progress dots (exam parity with quiz)
@@ -437,7 +503,9 @@
     const box = document.getElementById('exam-options');
     box.innerHTML = '';
 
-    if (qType === 'multi-select') {
+    if (qType === 'simlab') {
+      _examRenderPbq(q, box, ans);   // v8.163.0
+    } else if (qType === 'multi-select') {
       renderMultiSelect(q, box, ans);
     } else if (qType === 'order') {
       renderOrder(q, box, ans);
@@ -495,7 +563,7 @@
     grid.setAttribute('role', 'list');
     examAnswers.forEach((a, i) => {
       const sq = document.createElement('button');
-      const hasAnswer = a.chosen !== null || a.msChosen.length > 0 || a.orderSeq.length > 0 || Object.keys(a.topoState || {}).length > 0;
+      const hasAnswer = a.chosen !== null || a.msChosen.length > 0 || a.orderSeq.length > 0 || Object.keys(a.topoState || {}).length > 0 || _examPbqTouched(a.sl);
       let cls = 'qnav-sq';
       let stateLbl = 'unanswered';
       if (i === examCurrent)    { cls += ' current';  stateLbl = 'current'; }
@@ -514,7 +582,7 @@
   // EXAM MODAL
   // ══════════════════════════════════════════
   function showExamModal() {
-    const answeredCount = examAnswers.filter(a => a.chosen !== null || a.msChosen.length > 0 || a.orderSeq.length > 0 || Object.keys(a.topoState || {}).length > 0).length;
+    const answeredCount = examAnswers.filter(a => a.chosen !== null || a.msChosen.length > 0 || a.orderSeq.length > 0 || Object.keys(a.topoState || {}).length > 0 || _examPbqTouched(a.sl)).length;
     const unanswered    = examAnswers.length - answeredCount;
     const flaggedCount  = examAnswers.filter(a => a.flagged).length;
     document.getElementById('modal-answered').textContent   = answeredCount;
@@ -588,12 +656,25 @@
     let correct = 0;
     let wrong = 0;
     let skipped = 0;
+    // v8.163.0: a PBQ earns partial credit (fraction of steps right). Fully right
+    // counts as correct, otherwise wrong; the partial fraction is added to the
+    // points the score is built from. pbqPartial = sum of those partial fractions.
+    let pbqPartial = 0, pbqPoints = 0, pbqCount = 0;
 
     examAnswers.forEach((a, i) => {
       const q = examQuestions[i];
       const qType = getQType(q);
       let qCorrect = false, qSkipped = false;
 
+      if (qType === 'simlab') {
+        pbqCount++;
+        const sc = _examScorePbq(q, a);
+        if (!_examPbqTouched(a.sl)) { skipped++; return; }
+        pbqPoints += sc.fraction;
+        if (sc.fraction === 1) correct++;
+        else { wrong++; pbqPartial += sc.fraction; }
+        return;   // PBQs stay out of the MCQ type stats
+      }
       if (qType === 'multi-select') {
         const correctAns = (q.answers || []).sort();
         const chosen = [...(a.msChosen || [])].sort();
@@ -628,8 +709,9 @@
       if (!qSkipped) updateTypeStat(qType, qCorrect);
     });
 
-    const pct = Math.round((correct / total) * 100);
-    const scaledScore = scaledExamScore(correct, total);  // v8.128.0: cert's own scale
+    const points = correct + pbqPartial;
+    const pct = Math.round((points / total) * 100);
+    const scaledScore = scaledExamScore(points, total);  // v8.128.0: cert's own scale; v8.163.0: PBQ partial credit
     const passed      = scaledScore >= EXAM_PASS_SCORE;
 
     // Build log for review
@@ -638,6 +720,11 @@
       const qType = getQType(q);
       let isRight, chosen, correctVal, isSkipped;
 
+      if (qType === 'simlab') {   // v8.163.0: no wrong bank / SR for PBQs
+        const sc = _examScorePbq(q, a);
+        const touched = _examPbqTouched(a.sl);
+        return { q, chosen: '', correct: '', isRight: touched && sc.fraction === 1, flagged: a.flagged, skipped: !touched, pbq: sc };
+      }
       if (qType === 'multi-select') {
         const correctAns = (q.answers || []).sort();
         chosen = (a.msChosen || []).sort().join(',');
@@ -680,7 +767,7 @@
     try {
       if ((getStreak().current || 0) > _prevStreakBefore) _pendingStreakPulse = true;
     } catch (_) {}
-    saveToHistory({ date: new Date().toISOString(), topic: EXAM_TOPIC, difficulty: 'Mixed', score: correct, total, pct, mode: 'exam', hardcore: examHardcore });
+    saveToHistory({ date: new Date().toISOString(), topic: EXAM_TOPIC, difficulty: 'Mixed', score: Math.round(points), total, pct, mode: 'exam', hardcore: examHardcore });
     // v4.81.13 (Codex r∞ user request): also write per-topic split rows so the
     // exam contributes to readiness / progress / weak-spots / what-if /
     // domain mastery — pre-fix the rolled-up EXAM_TOPIC sentinel was filtered
@@ -726,7 +813,8 @@
     document.getElementById('exam-result-msg').textContent = (passed
       ? `Score ${scaledScore}/${EXAM_MAX_SCORE}, above the ${EXAM_PASS_SCORE} pass mark.`
       : `Score ${scaledScore}/${EXAM_MAX_SCORE}, ${EXAM_PASS_SCORE - scaledScore} points short of the ${EXAM_PASS_SCORE} pass mark.`)
-      + ` Here, ${EXAM_PASS_SCORE} is about ${_passPct}% correct. The real exam's scaling isn't published, so treat this as an estimate.`;
+      + ` Here, ${EXAM_PASS_SCORE} is about ${_passPct}% correct. The real exam's scaling isn't published, so treat this as an estimate.`
+      + (pbqCount ? ` PBQs earned ${Math.round(pbqPoints * 10) / 10} of ${pbqCount} points, with partial credit per step.` : '');
 
     animateCount('exam-r-correct', 0, correct, 800);
     animateCount('exam-r-wrong', 0, wrong, 800);
@@ -766,7 +854,7 @@
     const byTopic = {};
     log.forEach(entry => {
       const q = entry && entry.q;
-      if (!q) return;
+      if (!q || q.type === 'simlab') return;   // v8.163.0: PBQs aren't calibrated like MCQs
       const t = q.topic;
       if (!t || t === MIXED_TOPIC || t === EXAM_TOPIC) return;
       if (!byTopic[t]) byTopic[t] = { correct: 0, total: 0, entries: [] };
