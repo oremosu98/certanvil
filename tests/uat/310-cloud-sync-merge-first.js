@@ -40,6 +40,10 @@ const { authStateJs, test, vm, path } = require('./_context');
   test('v8.151.0 sync: local data counts as safe to clear only after a successful sync',
     s1.notSafeBeforeSync && s1.safeAfterSync && s5.notSafeAfterError);
 
+  const s6 = r.s6 || {};
+  test('v8.155.0 sync: a device only pulls its own cert\'s history (no Network+ rows on the Security+ site)',
+    s6.onlyThisCert === true && s6.noReupload === true);
+
   test('v8.151.0 auth-state: sign-out clears local data only when cloud-store says it is backed up', (() => {
     try {
       const m = authStateJs.match(/function\s+_clearLocalIfSafe\(cs\)\s*\{[\s\S]*?\n\s\s\}/);

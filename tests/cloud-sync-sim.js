@@ -50,7 +50,10 @@ function makeSupabase(db, userId) {
       if (table === 'quiz_history') {
         if (st.op === 'insert') { calls.historyInserts++; calls.inserted += st.payload.length; st.payload.forEach(r => db.history.push(r)); return { data: st.payload, error: null }; }
         let rows = db.history.filter(r => r.user_id === userId);
-        st.filters.forEach(([op, col, val]) => { if (op === 'gte') rows = rows.filter(r => r[col] >= val); });
+        st.filters.forEach(([op, col, val]) => {
+          if (op === 'gte') rows = rows.filter(r => r[col] >= val);
+          if (op === 'eq' && col !== 'user_id') rows = rows.filter(r => r[col] === val);
+        });
         return { data: rows.slice().sort((a, b) => (a.created_at < b.created_at ? 1 : -1)), error: null };
       }
       if (table === 'client_errors') return { data: null, error: null };
@@ -129,7 +132,7 @@ async function main() {
   // 3. Fresh device: cloud fills an empty local.
   {
     const db = { profile: { metadata: { wrong_bank: [{ question: 'C1' }], streak: { current: 2, best: 4 }, sr: { secplus: { queue: [{ qHash: 'z' }] } } }, exam_date: '2026-10-16' },
-      history: [{ user_id: 'u1', topic: 'PKI', difficulty: 'Exam Level', mode: 'quiz', score: 2, total: 3, metadata: { date: '2026-10-09T10:00:00.000Z', pct: 67 }, created_at: '2026-10-09T10:00:00.000Z' }] };
+      history: [{ user_id: 'u1', cert: 'secplus', topic: 'PKI', difficulty: 'Exam Level', mode: 'quiz', score: 2, total: 3, metadata: { date: '2026-10-09T10:00:00.000Z', pct: 67 }, created_at: '2026-10-09T10:00:00.000Z' }] };
     const b = boot({}, db);
     b.cs.setSession(b.session);
     await b.cs.hydrate();
@@ -147,8 +150,8 @@ async function main() {
   {
     const db = { profile: { metadata: { wrong_bank: [{ question: 'CLOUD' }], milestones: { secplus: { first: 'x' } }, migration_v1_at: '2026-05-01' } },
       history: [
-        { user_id: 'u1', topic: 'PKI', difficulty: 'Exam Level', mode: 'quiz', score: 2, total: 3, metadata: { date: '2026-10-09T10:00:00.000Z' }, created_at: '2026-10-09T10:00:00.000Z' },
-        { user_id: 'u1', topic: 'IAM', difficulty: 'Exam Level', mode: 'quiz', score: 1, total: 1, metadata: { date: '2026-10-07T10:00:00.000Z' }, created_at: '2026-10-07T10:00:00.000Z' }] };
+        { user_id: 'u1', cert: 'secplus', topic: 'PKI', difficulty: 'Exam Level', mode: 'quiz', score: 2, total: 3, metadata: { date: '2026-10-09T10:00:00.000Z' }, created_at: '2026-10-09T10:00:00.000Z' },
+        { user_id: 'u1', cert: 'secplus', topic: 'IAM', difficulty: 'Exam Level', mode: 'quiz', score: 1, total: 1, metadata: { date: '2026-10-07T10:00:00.000Z' }, created_at: '2026-10-07T10:00:00.000Z' }] };
     const local = { nplus_wrong_bank: JSON.stringify([{ question: 'LOCAL' }]),
       nplus_history: JSON.stringify([H('2026-10-10T10:00:00.000Z', 'Security Controls', 3, 4), H('2026-10-09T10:00:00.000Z', 'PKI', 2, 3)]) };
     const b = boot(local, db);
@@ -174,6 +177,19 @@ async function main() {
     const before = b.calls.profileUpdates;
     await b.cs.flushNow();
     out.s5 = { noBlindWrite: b.calls.profileUpdates === before, notSafeAfterError: b.cs.isSafeToClear() === false };
+  }
+
+  // 6. Cross-cert: the Sec+ device must not pull Network+ history (v8.155.0).
+  {
+    const db = { profile: { metadata: {} }, history: [
+      { user_id: 'u1', cert: 'netplus', topic: 'Subnetting', difficulty: 'Exam Level', mode: 'quiz', score: 1, total: 1, metadata: { date: '2026-10-09T10:00:00.000Z' }, created_at: '2026-10-09T10:00:00.000Z' },
+      { user_id: 'u1', cert: 'secplus', topic: 'PKI', difficulty: 'Exam Level', mode: 'quiz', score: 1, total: 1, metadata: { date: '2026-10-08T10:00:00.000Z' }, created_at: '2026-10-08T10:00:00.000Z' }] };
+    const b = boot({}, db, 'secplus');
+    b.cs.setSession(b.session);
+    await b.cs.hydrate();
+    await b.cs.flushNow();
+    const lh = JSON.parse(b.ls.getItem('nplus_history') || '[]');
+    out.s6 = { onlyThisCert: lh.length === 1 && lh[0].topic === 'PKI', noReupload: db.history.length === 2 };
   }
 
   return out;
