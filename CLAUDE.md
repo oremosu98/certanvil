@@ -28,8 +28,8 @@
 | styles.css | 14913 | 551 KB |
 | index.html | 2298 | 149 KB |
 | dg-system.css | 5474 | 510 KB |
-| tests/uat.js + tests/uat/ (30 modules) | 29698 | — |
-UAT checks: 5058 · E2E `test(` count: 163 · APP_VERSION: 8.150.0 · stamped-at: worktree
+| tests/uat.js + tests/uat/ (31 modules) | 29762 | — |
+UAT checks: 5067 · E2E `test(` count: 163 · APP_VERSION: 8.151.0 · stamped-at: worktree
 <!-- FACTS:AUTO:END -->
 
 | File | Purpose | Size |
@@ -135,9 +135,9 @@ npx playwright test              # E2E (tests/e2e/app.spec.js)
 
 | Version | Features Added |
 |---|---|
+| v8.151.0 | Cloud sync works for the first time, merge-first: local data is never overwritten, uploads keep cloud-only keys, sign-out only clears backed-up data |
 | v8.150.0 | Export Data now backs up every study key (review cards, exam date, milestones…); import restores missing keys |
 | v8.149.0 | History rows now record right/total per question difficulty (readiness v3 groundwork) |
-| v8.148.0 | Root-cause fix: starting a new quiz no longer jumps to the previous quiz (page switches finish exactly once) |
 
 _Older releases (v7.60.0 and back) live in [CHANGELOG.md](./CHANGELOG.md)._
 
