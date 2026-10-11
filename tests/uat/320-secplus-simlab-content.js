@@ -62,6 +62,33 @@ const { js, read, results, test, vm } = require('./_context');
       return ok;
     }
 
+    // ── v8.158.0: firewall-rule PBQs ──
+    var fw = of('firewall');
+    test('Sec+ firewall bank: at least 10 firewall-rule PBQs', fw.length >= 10);
+    test('Sec+ firewall bank: every seed passes simLabValidateScenario + simLabValidateFirewallFidelity (simulated traffic)',
+      fw.length > 0 && allPass(fw, 'firewall'));
+    test('Sec+ firewall bank: the order step\'s key is the fwSpec rule order (the table the traffic test ran on)',
+      fw.length > 0 && fw.every(function (s) {
+        var ord = (s.steps || []).filter(function (st) { return st.type === 'order'; })[0];
+        var ids = (s.fwSpec.rules || []).map(function (r) { return r.id; });
+        return ord && JSON.stringify(ord.answer.correctOrder) === JSON.stringify(ids);
+      }));
+    test('Sec+ firewall bank: no rule id or label names the answer (no "shadow"/"wrong"/"broken" giveaways)',
+      fw.length > 0 && fw.every(function (s) {
+        // Rule ids and the table rows the student sorts (field NAMES like
+        // shadowTable are schema, not content). Analyze-step options may say
+        // "shadowed", right and wrong ones alike, so they are not checked.
+        var spec = s.fwSpec || {}, rows = [];
+        (spec.rules || []).concat((spec.shadowTable || {}).rules || []).forEach(function (r) { rows.push(r.id); });
+        (s.steps || []).filter(function (st) { return st.type === 'order'; }).forEach(function (st) {
+          (st.payload.items || []).forEach(function (it) { rows.push(it.id, it.label); });
+        });
+        var txt = rows.join(' | ');
+        return !/shadow|wrong|broken|never fires|dead rule/i.test(txt);
+      }));
+    test('Sec+ firewall bank: tagged to SY0-701 objectives 3.x/4.x and cert secplus',
+      fw.length > 0 && fw.every(function (s) { return s.cert === 'secplus' && /^[34]\.\d$/.test(s.objective); }));
+
     // ── v8.156.0: terminal / log-analysis PBQs ──
     var cli = of('cli');
     test('Sec+ terminal bank: at least 8 log / command-output PBQs', cli.length >= 8);

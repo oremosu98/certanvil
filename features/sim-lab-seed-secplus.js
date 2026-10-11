@@ -1,4 +1,9 @@
 /* DRAFT Sec+ PBQ seed scenarios — answers NOT yet founder-verified. Review before ship. */
+/* Gate record, 2026-10-11 content waves (v8.156.0-v8.158.0): sp-cli-01..08, sp-dg-01..08,
+   sp-wl-01..06, sp-gv-01..06, sp-th-01..04 and sp-fw-01..10 each passed simLabValidateScenario,
+   their archetype's fidelity validator, and a two-reviewer gate (independent security engineer +
+   CompTIA SY0-701 examiner) with every REVISE applied before merge. tests/uat/320 re-runs the
+   machine half. Domain mix after the waves: D1 9% D2 14% D3 26% D4 40% D5 10% (129 seeds). */
 window.SIM_LAB_SEED_SECPLUS = [
   // ===== Domain 1 — General Security Concepts (~3) =====
   {
@@ -9417,6 +9422,4131 @@ window.SIM_LAB_SEED_SECPLUS = [
             "cpu": "consume",
             "share": "inaccess"
           }
+        }
+      }
+    ]
+  },
+
+  // ===== v8.158.0 — firewall-rule PBQs (firewall), SY0-701 3.2 4.5; two-reviewer gate passed 2026-10-11 =====
+  {
+    "id": "sp-fw-01",
+    "cert": "secplus",
+    "objective": "4.5",
+    "topic": "Screened subnet",
+    "title": "Publish the storefront from a screened subnet",
+    "estMinutes": 5,
+    "archetype": "firewall",
+    "scenario": "Harbor & Vine is moving its online store off the internal network and into a screened subnet (172.16.10.0/24) on a three-legged firewall. The storefront web server is 172.16.10.20, and the search node it queries, 172.16.10.30, sits beside it in the same subnet. Staff work on the internal LAN (10.20.0.0/16). The change ticket, in the order the web team wrote it: no other connection may be opened into the screened subnet, from anywhere; staff keep their normal outbound access; customers anywhere on the internet reach the storefront over HTTPS; anything else is dropped. Staff use the storefront the same way customers do. Screened-subnet servers are patched over a separate out-of-band network, so they never start connections of their own. The firewall is stateful, so replies to an allowed connection come back automatically.",
+    "assets": {
+      "reference": {
+        "kind": "network",
+        "given": {
+          "site": "Harbor & Vine · FW-EDGE",
+          "engine": "first match wins, implicit deny"
+        },
+        "devices": [
+          {
+            "id": "net",
+            "label": "Internet",
+            "type": "cloud",
+            "zone": "untrusted",
+            "ip": "any",
+            "x": 0,
+            "y": 1
+          },
+          {
+            "id": "fw",
+            "label": "FW-EDGE",
+            "type": "firewall",
+            "ip": "top-down",
+            "x": 2,
+            "y": 1
+          },
+          {
+            "id": "search",
+            "label": "Search node",
+            "type": "server",
+            "zone": "screened subnet",
+            "ip": "172.16.10.30",
+            "x": 3,
+            "y": 0
+          },
+          {
+            "id": "web",
+            "label": "Storefront web",
+            "type": "server",
+            "zone": "screened subnet",
+            "ip": "172.16.10.20",
+            "x": 4,
+            "y": 0
+          },
+          {
+            "id": "lan",
+            "label": "Staff LAN",
+            "type": "pc",
+            "zone": "internal",
+            "ip": "10.20.0.0/16",
+            "x": 4,
+            "y": 2
+          }
+        ],
+        "links": [
+          {
+            "from": "net",
+            "to": "fw"
+          },
+          {
+            "from": "fw",
+            "to": "web"
+          },
+          {
+            "from": "fw",
+            "to": "search"
+          },
+          {
+            "from": "fw",
+            "to": "lan"
+          }
+        ]
+      }
+    },
+    "fwSpec": {
+      "rules": [
+        {
+          "id": "web",
+          "action": "allow",
+          "proto": "tcp",
+          "src": "any",
+          "dst": "172.16.10.20/32",
+          "port": 443
+        },
+        {
+          "id": "dmz",
+          "action": "deny",
+          "proto": "any",
+          "src": "any",
+          "dst": "172.16.10.0/24",
+          "port": "any"
+        },
+        {
+          "id": "staff",
+          "action": "allow",
+          "proto": "any",
+          "src": "10.20.0.0/16",
+          "dst": "any",
+          "port": "any"
+        },
+        {
+          "id": "deny",
+          "action": "deny",
+          "proto": "any",
+          "src": "any",
+          "dst": "any",
+          "port": "any"
+        }
+      ],
+      "flows": [
+        {
+          "name": "internet https to the storefront",
+          "proto": "tcp",
+          "src": "203.0.113.40",
+          "dst": "172.16.10.20",
+          "port": 443,
+          "expect": "allow"
+        },
+        {
+          "name": "internet ssh to the storefront blocked",
+          "proto": "tcp",
+          "src": "203.0.113.40",
+          "dst": "172.16.10.20",
+          "port": 22,
+          "expect": "deny"
+        },
+        {
+          "name": "staff https to the storefront",
+          "proto": "tcp",
+          "src": "10.20.4.15",
+          "dst": "172.16.10.20",
+          "port": 443,
+          "expect": "allow"
+        },
+        {
+          "name": "staff ssh into the screened subnet blocked",
+          "proto": "tcp",
+          "src": "10.20.4.15",
+          "dst": "172.16.10.20",
+          "port": 22,
+          "expect": "deny"
+        },
+        {
+          "name": "staff to the search node blocked",
+          "proto": "tcp",
+          "src": "10.20.4.15",
+          "dst": "172.16.10.30",
+          "port": 443,
+          "expect": "deny"
+        },
+        {
+          "name": "internet to the search node blocked",
+          "proto": "tcp",
+          "src": "203.0.113.40",
+          "dst": "172.16.10.30",
+          "port": 443,
+          "expect": "deny"
+        },
+        {
+          "name": "staff browse the web",
+          "proto": "tcp",
+          "src": "10.20.4.15",
+          "dst": "198.51.100.80",
+          "port": 443,
+          "expect": "allow"
+        },
+        {
+          "name": "storefront to the LAN blocked",
+          "proto": "tcp",
+          "src": "172.16.10.20",
+          "dst": "10.20.4.15",
+          "port": 445,
+          "expect": "deny"
+        },
+        {
+          "name": "internet to the LAN blocked",
+          "proto": "tcp",
+          "src": "203.0.113.40",
+          "dst": "10.20.4.15",
+          "port": 3389,
+          "expect": "deny"
+        }
+      ],
+      "shadowTable": {
+        "rules": [
+          {
+            "id": "web",
+            "action": "allow",
+            "proto": "tcp",
+            "src": "any",
+            "dst": "172.16.10.20/32",
+            "port": 443
+          },
+          {
+            "id": "dmz",
+            "action": "deny",
+            "proto": "any",
+            "src": "any",
+            "dst": "172.16.10.0/24",
+            "port": "any"
+          },
+          {
+            "id": "anyOut",
+            "action": "allow",
+            "proto": "any",
+            "src": "any",
+            "dst": "any",
+            "port": "any"
+          },
+          {
+            "id": "deny",
+            "action": "deny",
+            "proto": "any",
+            "src": "any",
+            "dst": "any",
+            "port": "any"
+          }
+        ],
+        "shadowedRuleId": "deny"
+      }
+    },
+    "steps": [
+      {
+        "id": "s1",
+        "type": "configure",
+        "points": 1,
+        "prompt": "Build the rule that publishes the storefront to the internet.",
+        "explanation": "Publish one host on one port: any source to 172.16.10.20/32 on TCP 443. Publishing the whole 172.16.10.0/24 would expose the search node too, along with every server that lands there later, which breaks least privilege. TCP 80 is plain HTTP, and TCP 8443 is an alternate HTTPS port the storefront does not listen on.",
+        "payload": {
+          "slots": [
+            {
+              "id": "action",
+              "label": "Action",
+              "options": [
+                {
+                  "id": "a",
+                  "text": "allow"
+                },
+                {
+                  "id": "d",
+                  "text": "deny"
+                }
+              ]
+            },
+            {
+              "id": "dst",
+              "label": "Destination",
+              "options": [
+                {
+                  "id": "any",
+                  "text": "any"
+                },
+                {
+                  "id": "dmz",
+                  "text": "172.16.10.0/24"
+                },
+                {
+                  "id": "web",
+                  "text": "172.16.10.20/32"
+                }
+              ]
+            },
+            {
+              "id": "svc",
+              "label": "Service",
+              "options": [
+                {
+                  "id": "http",
+                  "text": "TCP 80"
+                },
+                {
+                  "id": "https",
+                  "text": "TCP 443"
+                },
+                {
+                  "id": "alt",
+                  "text": "TCP 8443"
+                }
+              ]
+            }
+          ]
+        },
+        "answer": {
+          "slots": {
+            "action": "a",
+            "dst": "web",
+            "svc": "https"
+          }
+        }
+      },
+      {
+        "id": "s2",
+        "type": "configure",
+        "points": 1,
+        "prompt": "Build the rule that closes the rest of the screened subnet.",
+        "explanation": "Deny any source to the whole 172.16.10.0/24 on any service. A /32 destination would close the storefront host but leave the search node open to staff through their outbound rule. Denying a single port, 443 or 22, leaves every other port reachable the same way.",
+        "payload": {
+          "slots": [
+            {
+              "id": "action",
+              "label": "Action",
+              "options": [
+                {
+                  "id": "a",
+                  "text": "allow"
+                },
+                {
+                  "id": "d",
+                  "text": "deny"
+                }
+              ]
+            },
+            {
+              "id": "dst",
+              "label": "Destination",
+              "options": [
+                {
+                  "id": "web",
+                  "text": "172.16.10.20/32"
+                },
+                {
+                  "id": "dmz",
+                  "text": "172.16.10.0/24"
+                },
+                {
+                  "id": "lan",
+                  "text": "10.20.0.0/16"
+                }
+              ]
+            },
+            {
+              "id": "svc",
+              "label": "Service",
+              "options": [
+                {
+                  "id": "https",
+                  "text": "TCP 443"
+                },
+                {
+                  "id": "ssh",
+                  "text": "TCP 22"
+                },
+                {
+                  "id": "any",
+                  "text": "any"
+                }
+              ]
+            }
+          ]
+        },
+        "answer": {
+          "slots": {
+            "action": "d",
+            "dst": "dmz",
+            "svc": "any"
+          }
+        }
+      },
+      {
+        "id": "s3",
+        "type": "order",
+        "points": 1,
+        "prompt": "Arrange the four rules. The firewall reads from the top and stops at the first match.",
+        "explanation": "Storefront allow, screened-subnet block, staff outbound, then the catch-all. The storefront rule is an exception to the block, so it has to sit above it or customers get dropped. The block has to sit above the staff rule: staff traffic into the screened subnet matches both, and the ticket only lets staff use the storefront over HTTPS. The catch-all goes last, because nothing below it can ever be reached.",
+        "payload": {
+          "items": [
+            {
+              "id": "staff",
+              "label": "Allow staff their normal outbound access"
+            },
+            {
+              "id": "deny",
+              "label": "Drop everything else"
+            },
+            {
+              "id": "web",
+              "label": "Allow the internet to reach the storefront over HTTPS"
+            },
+            {
+              "id": "dmz",
+              "label": "Block every other connection into the screened subnet"
+            }
+          ]
+        },
+        "answer": {
+          "correctOrder": [
+            "web",
+            "dmz",
+            "staff",
+            "deny"
+          ]
+        }
+      },
+      {
+        "id": "s4",
+        "type": "analyze",
+        "points": 1,
+        "prompt": "A month later, an audit exports the live table, top rule first. Which rule can never fire?",
+        "explanation": "Rule 4 never fires. Someone changed rule 3’s source from the staff LAN to Any, so rule 3 now matches every packet that gets past rules 1 and 2, and the catch-all under it is never reached. Rule 3 is the cause, but it fires all day, so it is not the answer. Rule 2 still fires for everything else aimed at the screened subnet. The damage is serious: nothing gets dropped any more, so unsolicited traffic from the internet passes, and a compromised storefront can open connections into the LAN. Fix: set rule 3’s source back to 10.20.0.0/16.",
+        "payload": {
+          "multi": false,
+          "lines": [
+            {
+              "id": "l1",
+              "text": "1 · Allow · Any → Storefront web · HTTPS"
+            },
+            {
+              "id": "l2",
+              "text": "2 · Deny · Any → Screened subnet · any service"
+            },
+            {
+              "id": "l3",
+              "text": "3 · Allow · Any → Any · any service"
+            },
+            {
+              "id": "l4",
+              "text": "4 · Deny · Any → Any · any service"
+            }
+          ]
+        },
+        "answer": {
+          "selected": [
+            "l4"
+          ]
+        }
+      }
+    ]
+  },
+
+  {
+    "id": "sp-fw-02",
+    "cert": "secplus",
+    "objective": "3.2",
+    "topic": "Jump server",
+    "title": "Lock the management network behind a jump host",
+    "estMinutes": 5,
+    "archetype": "firewall",
+    "scenario": "At Orbit Freight, the management network (10.50.99.0/24) holds the management interfaces of every switch and hypervisor. Admins manage them over SSH, and the devices’ web consoles are switched on too. The core firewall routes between the VLANs and out to the internet. The new policy: corporate users (10.50.0.0/16) keep their normal access to everything else; nobody on the corporate network may reach the management network, and that includes the IT team’s own workstations in the IT admin VLAN (10.50.10.0/24); the only way in is SSH from the hardened jump host at 10.50.10.5, which enforces MFA and records every session. Anything else is dropped.",
+    "assets": {
+      "reference": {
+        "kind": "network",
+        "given": {
+          "site": "Orbit Freight · FW-CORE",
+          "engine": "first match wins, implicit deny"
+        },
+        "devices": [
+          {
+            "id": "jump",
+            "label": "Jump host",
+            "type": "pc",
+            "zone": "it admin",
+            "ip": "10.50.10.5",
+            "x": 0,
+            "y": 0
+          },
+          {
+            "id": "itv",
+            "label": "IT admin VLAN",
+            "type": "pc",
+            "zone": "it admin",
+            "ip": "10.50.10.0/24",
+            "x": 1,
+            "y": 0
+          },
+          {
+            "id": "staff",
+            "label": "Staff VLAN",
+            "type": "pc",
+            "zone": "staff",
+            "ip": "10.50.20.0/24",
+            "x": 0,
+            "y": 2
+          },
+          {
+            "id": "fw",
+            "label": "FW-CORE",
+            "type": "firewall",
+            "ip": "top-down",
+            "x": 2,
+            "y": 1
+          },
+          {
+            "id": "mgmt",
+            "label": "Mgmt network",
+            "type": "switch",
+            "zone": "management",
+            "ip": "10.50.99.0/24",
+            "x": 4,
+            "y": 0
+          },
+          {
+            "id": "net",
+            "label": "Internet",
+            "type": "cloud",
+            "ip": "any",
+            "x": 4,
+            "y": 2
+          }
+        ],
+        "links": [
+          {
+            "from": "jump",
+            "to": "fw"
+          },
+          {
+            "from": "itv",
+            "to": "fw"
+          },
+          {
+            "from": "staff",
+            "to": "fw"
+          },
+          {
+            "from": "fw",
+            "to": "mgmt"
+          },
+          {
+            "from": "fw",
+            "to": "net"
+          }
+        ]
+      }
+    },
+    "fwSpec": {
+      "rules": [
+        {
+          "id": "jump",
+          "action": "allow",
+          "proto": "tcp",
+          "src": "10.50.10.5/32",
+          "dst": "10.50.99.0/24",
+          "port": 22
+        },
+        {
+          "id": "noMgmt",
+          "action": "deny",
+          "proto": "any",
+          "src": "10.50.0.0/16",
+          "dst": "10.50.99.0/24",
+          "port": "any"
+        },
+        {
+          "id": "corp",
+          "action": "allow",
+          "proto": "any",
+          "src": "10.50.0.0/16",
+          "dst": "any",
+          "port": "any"
+        },
+        {
+          "id": "deny",
+          "action": "deny",
+          "proto": "any",
+          "src": "any",
+          "dst": "any",
+          "port": "any"
+        }
+      ],
+      "flows": [
+        {
+          "name": "jump host ssh to a switch",
+          "proto": "tcp",
+          "src": "10.50.10.5",
+          "dst": "10.50.99.11",
+          "port": 22,
+          "expect": "allow"
+        },
+        {
+          "name": "jump host to a web console blocked",
+          "proto": "tcp",
+          "src": "10.50.10.5",
+          "dst": "10.50.99.20",
+          "port": 443,
+          "expect": "deny"
+        },
+        {
+          "name": "IT workstation ssh blocked",
+          "proto": "tcp",
+          "src": "10.50.10.40",
+          "dst": "10.50.99.11",
+          "port": 22,
+          "expect": "deny"
+        },
+        {
+          "name": "staff to a hypervisor console blocked",
+          "proto": "tcp",
+          "src": "10.50.20.30",
+          "dst": "10.50.99.20",
+          "port": 443,
+          "expect": "deny"
+        },
+        {
+          "name": "staff browse the web",
+          "proto": "tcp",
+          "src": "10.50.20.30",
+          "dst": "203.0.113.80",
+          "port": 443,
+          "expect": "allow"
+        },
+        {
+          "name": "internet to management blocked",
+          "proto": "tcp",
+          "src": "203.0.113.80",
+          "dst": "10.50.99.11",
+          "port": 22,
+          "expect": "deny"
+        }
+      ],
+      "shadowTable": {
+        "rules": [
+          {
+            "id": "itSsh",
+            "action": "allow",
+            "proto": "tcp",
+            "src": "10.50.10.0/24",
+            "dst": "10.50.99.0/24",
+            "port": 22
+          },
+          {
+            "id": "jump",
+            "action": "allow",
+            "proto": "tcp",
+            "src": "10.50.10.5/32",
+            "dst": "10.50.99.0/24",
+            "port": 22
+          },
+          {
+            "id": "noMgmt",
+            "action": "deny",
+            "proto": "any",
+            "src": "10.50.0.0/16",
+            "dst": "10.50.99.0/24",
+            "port": "any"
+          },
+          {
+            "id": "corp",
+            "action": "allow",
+            "proto": "any",
+            "src": "10.50.0.0/16",
+            "dst": "any",
+            "port": "any"
+          },
+          {
+            "id": "deny",
+            "action": "deny",
+            "proto": "any",
+            "src": "any",
+            "dst": "any",
+            "port": "any"
+          }
+        ],
+        "shadowedRuleId": "jump"
+      }
+    },
+    "steps": [
+      {
+        "id": "s1",
+        "type": "configure",
+        "points": 1,
+        "prompt": "Build the jump-host rule into the management network.",
+        "explanation": "Allow the jump host’s /32 on TCP 22 (SSH). The IT admin VLAN /24 is the trap: it lets every IT workstation skip the jump host, and with it the MFA and session recording. Telnet (23) sends credentials in cleartext, 443 is the web console the policy leaves closed, and RDP (3389) is for Windows desktops, not switch and hypervisor command lines.",
+        "payload": {
+          "slots": [
+            {
+              "id": "action",
+              "label": "Action",
+              "options": [
+                {
+                  "id": "a",
+                  "text": "allow"
+                },
+                {
+                  "id": "d",
+                  "text": "deny"
+                }
+              ]
+            },
+            {
+              "id": "src",
+              "label": "Source",
+              "options": [
+                {
+                  "id": "corp",
+                  "text": "10.50.0.0/16"
+                },
+                {
+                  "id": "itv",
+                  "text": "10.50.10.0/24"
+                },
+                {
+                  "id": "jump",
+                  "text": "10.50.10.5/32"
+                }
+              ]
+            },
+            {
+              "id": "svc",
+              "label": "Service",
+              "options": [
+                {
+                  "id": "telnet",
+                  "text": "TCP 23"
+                },
+                {
+                  "id": "https",
+                  "text": "TCP 443"
+                },
+                {
+                  "id": "ssh",
+                  "text": "TCP 22"
+                },
+                {
+                  "id": "rdp",
+                  "text": "TCP 3389"
+                }
+              ]
+            }
+          ]
+        },
+        "answer": {
+          "slots": {
+            "action": "a",
+            "src": "jump",
+            "svc": "ssh"
+          }
+        }
+      },
+      {
+        "id": "s2",
+        "type": "configure",
+        "points": 1,
+        "prompt": "Build the rule that keeps everyone else out of the management network.",
+        "explanation": "Deny the whole corporate 10.50.0.0/16 on any service. Denying only the staff VLAN leaves the IT workstations a direct path in. Denying only SSH leaves the web consoles open to every desk.",
+        "payload": {
+          "slots": [
+            {
+              "id": "action",
+              "label": "Action",
+              "options": [
+                {
+                  "id": "a",
+                  "text": "allow"
+                },
+                {
+                  "id": "d",
+                  "text": "deny"
+                }
+              ]
+            },
+            {
+              "id": "src",
+              "label": "Source",
+              "options": [
+                {
+                  "id": "staff",
+                  "text": "10.50.20.0/24"
+                },
+                {
+                  "id": "corp",
+                  "text": "10.50.0.0/16"
+                },
+                {
+                  "id": "itv",
+                  "text": "10.50.10.0/24"
+                }
+              ]
+            },
+            {
+              "id": "svc",
+              "label": "Service",
+              "options": [
+                {
+                  "id": "ssh",
+                  "text": "TCP 22"
+                },
+                {
+                  "id": "any",
+                  "text": "any"
+                },
+                {
+                  "id": "https",
+                  "text": "TCP 443"
+                }
+              ]
+            }
+          ]
+        },
+        "answer": {
+          "slots": {
+            "action": "d",
+            "src": "corp",
+            "svc": "any"
+          }
+        }
+      },
+      {
+        "id": "s3",
+        "type": "order",
+        "points": 1,
+        "prompt": "Arrange the four rules. The firewall reads from the top and stops at the first match.",
+        "explanation": "Jump-host SSH, the management block, the corporate allow, then the catch-all. The jump host sits inside 10.50.0.0/16, so its SSH also matches the block, and the exception has to come first. The block has to sit above the corporate allow, which matches traffic into the management network too. The catch-all goes last.",
+        "payload": {
+          "items": [
+            {
+              "id": "corp",
+              "label": "Allow corporate users everything else"
+            },
+            {
+              "id": "noMgmt",
+              "label": "Block the corporate network from the management network"
+            },
+            {
+              "id": "deny",
+              "label": "Drop anything left over"
+            },
+            {
+              "id": "jump",
+              "label": "Allow SSH from the jump host into the management network"
+            }
+          ]
+        },
+        "answer": {
+          "correctOrder": [
+            "jump",
+            "noMgmt",
+            "corp",
+            "deny"
+          ]
+        }
+      },
+      {
+        "id": "s4",
+        "type": "analyze",
+        "points": 1,
+        "prompt": "Three weeks later, the live table reads as follows, top rule first. Which rule can never fire?",
+        "explanation": "Rule 2 never fires. The jump host 10.50.10.5 is inside the IT admin VLAN, so its SSH sessions match rule 1 first. A redundant allow breaks nothing on its own; the real problem is rule 1. Every IT workstation can now SSH straight into the management network, with no MFA and no session recording. Rule 3 still fires for staff and for non-SSH traffic, so it is not the answer. Fix: delete rule 1.",
+        "payload": {
+          "multi": false,
+          "lines": [
+            {
+              "id": "l1",
+              "text": "1 · Allow · IT admin VLAN → Mgmt network · SSH"
+            },
+            {
+              "id": "l2",
+              "text": "2 · Allow · Jump host → Mgmt network · SSH"
+            },
+            {
+              "id": "l3",
+              "text": "3 · Deny · Corporate network → Mgmt network · any service"
+            },
+            {
+              "id": "l4",
+              "text": "4 · Allow · Corporate network → Any · any service"
+            },
+            {
+              "id": "l5",
+              "text": "5 · Deny · Any → Any · any service"
+            }
+          ]
+        },
+        "answer": {
+          "selected": [
+            "l2"
+          ]
+        }
+      }
+    ]
+  },
+
+  {
+    "id": "sp-fw-03",
+    "cert": "secplus",
+    "objective": "4.5",
+    "topic": "Egress filtering",
+    "title": "Close outbound SMB at the branch",
+    "estMinutes": 5,
+    "archetype": "firewall",
+    "scenario": "The Leeds branch (10.40.0.0/16) reaches head office (10.10.0.0/16) over a site-to-site IPsec tunnel that runs through the branch firewall. Last month a phishing link made a branch laptop connect to an attacker’s file share on the internet, and Windows handed over the user’s hashed credentials while trying to log in. The ticket: SMB from the branch to any destination is blocked; the branch’s other outbound traffic carries on as before; branch users can still map drives on the head-office file server 10.10.5.20; anything not covered is dropped. NetBIOS over TCP/IP is already disabled on every branch laptop by Group Policy, so Windows only ever uses SMB’s direct-hosted port.",
+    "assets": {
+      "reference": {
+        "kind": "network",
+        "given": {
+          "site": "Leeds branch · FW-LEEDS",
+          "engine": "first match wins, implicit deny"
+        },
+        "devices": [
+          {
+            "id": "branch",
+            "label": "Branch LAN",
+            "type": "pc",
+            "zone": "branch",
+            "ip": "10.40.0.0/16",
+            "x": 0,
+            "y": 1
+          },
+          {
+            "id": "fw",
+            "label": "FW-LEEDS",
+            "type": "firewall",
+            "ip": "top-down",
+            "x": 2,
+            "y": 1
+          },
+          {
+            "id": "fs",
+            "label": "HQ file server",
+            "type": "server",
+            "zone": "head office",
+            "ip": "10.10.5.20",
+            "x": 4,
+            "y": 0
+          },
+          {
+            "id": "net",
+            "label": "Internet",
+            "type": "cloud",
+            "zone": "untrusted",
+            "ip": "any",
+            "x": 4,
+            "y": 2
+          }
+        ],
+        "links": [
+          {
+            "from": "branch",
+            "to": "fw"
+          },
+          {
+            "from": "fw",
+            "to": "fs"
+          },
+          {
+            "from": "fw",
+            "to": "net"
+          }
+        ]
+      }
+    },
+    "fwSpec": {
+      "rules": [
+        {
+          "id": "hqSmb",
+          "action": "allow",
+          "proto": "tcp",
+          "src": "10.40.0.0/16",
+          "dst": "10.10.5.20/32",
+          "port": 445
+        },
+        {
+          "id": "noSmb",
+          "action": "deny",
+          "proto": "tcp",
+          "src": "10.40.0.0/16",
+          "dst": "any",
+          "port": 445
+        },
+        {
+          "id": "branchOut",
+          "action": "allow",
+          "proto": "any",
+          "src": "10.40.0.0/16",
+          "dst": "any",
+          "port": "any"
+        },
+        {
+          "id": "deny",
+          "action": "deny",
+          "proto": "any",
+          "src": "any",
+          "dst": "any",
+          "port": "any"
+        }
+      ],
+      "flows": [
+        {
+          "name": "branch maps a drive on the HQ file server",
+          "proto": "tcp",
+          "src": "10.40.3.25",
+          "dst": "10.10.5.20",
+          "port": 445,
+          "expect": "allow"
+        },
+        {
+          "name": "branch smb to the internet blocked",
+          "proto": "tcp",
+          "src": "10.40.3.25",
+          "dst": "198.51.100.66",
+          "port": 445,
+          "expect": "deny"
+        },
+        {
+          "name": "branch smb to another HQ host blocked",
+          "proto": "tcp",
+          "src": "10.40.3.25",
+          "dst": "10.10.7.9",
+          "port": 445,
+          "expect": "deny"
+        },
+        {
+          "name": "branch web traffic",
+          "proto": "tcp",
+          "src": "10.40.3.25",
+          "dst": "203.0.113.80",
+          "port": 443,
+          "expect": "allow"
+        },
+        {
+          "name": "unsolicited inbound dropped",
+          "proto": "tcp",
+          "src": "198.51.100.66",
+          "dst": "10.40.3.25",
+          "port": 445,
+          "expect": "deny"
+        }
+      ],
+      "shadowTable": {
+        "rules": [
+          {
+            "id": "noSmb",
+            "action": "deny",
+            "proto": "tcp",
+            "src": "10.40.0.0/16",
+            "dst": "any",
+            "port": 445
+          },
+          {
+            "id": "hqSmb",
+            "action": "allow",
+            "proto": "tcp",
+            "src": "10.40.0.0/16",
+            "dst": "10.10.5.20/32",
+            "port": 445
+          },
+          {
+            "id": "branchOut",
+            "action": "allow",
+            "proto": "any",
+            "src": "10.40.0.0/16",
+            "dst": "any",
+            "port": "any"
+          },
+          {
+            "id": "deny",
+            "action": "deny",
+            "proto": "any",
+            "src": "any",
+            "dst": "any",
+            "port": "any"
+          }
+        ],
+        "shadowedRuleId": "hqSmb"
+      }
+    },
+    "steps": [
+      {
+        "id": "s1",
+        "type": "configure",
+        "points": 1,
+        "prompt": "Build the rule that blocks SMB leaving the branch.",
+        "explanation": "Deny the branch to any destination on TCP 445, the port modern SMB uses. Any is the point: the attacker’s share could be anywhere. A head-office destination would leave the internet open, and a /32 for the file server would block the one share the branch needs and nothing else. TCP 389 is LDAP and TCP 3389 is RDP. The legacy NetBIOS ports 137 to 139 would also need blocking on a network that still runs NetBIOS; this branch has it switched off, so 445 is the only SMB path left.",
+        "payload": {
+          "slots": [
+            {
+              "id": "action",
+              "label": "Action",
+              "options": [
+                {
+                  "id": "a",
+                  "text": "allow"
+                },
+                {
+                  "id": "d",
+                  "text": "deny"
+                }
+              ]
+            },
+            {
+              "id": "dst",
+              "label": "Destination",
+              "options": [
+                {
+                  "id": "fs",
+                  "text": "10.10.5.20/32"
+                },
+                {
+                  "id": "hq",
+                  "text": "10.10.0.0/16"
+                },
+                {
+                  "id": "any",
+                  "text": "any"
+                }
+              ]
+            },
+            {
+              "id": "svc",
+              "label": "Service",
+              "options": [
+                {
+                  "id": "ldap",
+                  "text": "TCP 389"
+                },
+                {
+                  "id": "rdp",
+                  "text": "TCP 3389"
+                },
+                {
+                  "id": "smb",
+                  "text": "TCP 445"
+                }
+              ]
+            }
+          ]
+        },
+        "answer": {
+          "slots": {
+            "action": "d",
+            "dst": "any",
+            "svc": "smb"
+          }
+        }
+      },
+      {
+        "id": "s2",
+        "type": "configure",
+        "points": 1,
+        "prompt": "Build the exception for the head-office file server.",
+        "explanation": "Allow the branch, 10.40.0.0/16, to the file server’s /32 only. Opening SMB to all of 10.10.0.0/16 would give malware on a branch laptop SMB to every head-office host, which is how worms like WannaCry spread. A /24 source would cut every other branch subnet off from its shares, and a head-office source puts the exception on traffic that never crosses this firewall.",
+        "payload": {
+          "slots": [
+            {
+              "id": "action",
+              "label": "Action",
+              "options": [
+                {
+                  "id": "a",
+                  "text": "allow"
+                },
+                {
+                  "id": "d",
+                  "text": "deny"
+                }
+              ]
+            },
+            {
+              "id": "src",
+              "label": "Source",
+              "options": [
+                {
+                  "id": "floor",
+                  "text": "10.40.3.0/24"
+                },
+                {
+                  "id": "branch",
+                  "text": "10.40.0.0/16"
+                },
+                {
+                  "id": "hq",
+                  "text": "10.10.0.0/16"
+                }
+              ]
+            },
+            {
+              "id": "dst",
+              "label": "Destination",
+              "options": [
+                {
+                  "id": "hq",
+                  "text": "10.10.0.0/16"
+                },
+                {
+                  "id": "any",
+                  "text": "any"
+                },
+                {
+                  "id": "fs",
+                  "text": "10.10.5.20/32"
+                }
+              ]
+            }
+          ]
+        },
+        "answer": {
+          "slots": {
+            "action": "a",
+            "src": "branch",
+            "dst": "fs"
+          }
+        }
+      },
+      {
+        "id": "s3",
+        "type": "order",
+        "points": 1,
+        "prompt": "Arrange the four rules. The firewall reads from the top and stops at the first match.",
+        "explanation": "File-server exception, SMB block, branch outbound, catch-all. The file server is part of any, so the exception has to sit above the block or every mapped drive fails. The block has to sit above the general outbound rule, which also matches SMB. The catch-all goes last.",
+        "payload": {
+          "items": [
+            {
+              "id": "noSmb",
+              "label": "Block SMB from the branch to everywhere else"
+            },
+            {
+              "id": "deny",
+              "label": "Drop anything not covered"
+            },
+            {
+              "id": "branchOut",
+              "label": "Allow the branch’s other outbound traffic"
+            },
+            {
+              "id": "hqSmb",
+              "label": "Allow branch users SMB to the head-office file server"
+            }
+          ]
+        },
+        "answer": {
+          "correctOrder": [
+            "hqSmb",
+            "noSmb",
+            "branchOut",
+            "deny"
+          ]
+        }
+      },
+      {
+        "id": "s4",
+        "type": "analyze",
+        "points": 1,
+        "prompt": "The live table after the change window reads as follows, top rule first. Which rule can never fire?",
+        "explanation": "Rule 2 never fires. The head-office file server is part of Any, so every mapped-drive connection matches rule 1’s deny first, and users lose their shares. This is the “put the denies first” habit, which only works when no allow is meant to carve an exception out of the deny. Rule 1 is the cause, but it fires on every SMB attempt, so it is not the answer. Fix: move rule 2 above rule 1.",
+        "payload": {
+          "multi": false,
+          "lines": [
+            {
+              "id": "l1",
+              "text": "1 · Deny · Branch LAN → Any · SMB"
+            },
+            {
+              "id": "l2",
+              "text": "2 · Allow · Branch LAN → HQ file server · SMB"
+            },
+            {
+              "id": "l3",
+              "text": "3 · Allow · Branch LAN → Any · any service"
+            },
+            {
+              "id": "l4",
+              "text": "4 · Deny · Any → Any · any service"
+            }
+          ]
+        },
+        "answer": {
+          "selected": [
+            "l2"
+          ]
+        }
+      }
+    ]
+  },
+
+  {
+    "id": "sp-fw-04",
+    "cert": "secplus",
+    "objective": "4.5",
+    "topic": "DNS filtering",
+    "title": "Rein in DNS at the edge firewall",
+    "estMinutes": 5,
+    "archetype": "firewall",
+    "scenario": "Kestrel Labs runs a filtering DNS resolver at 10.30.1.53 that refuses to resolve known-malicious domains. Clients on the LAN (10.30.0.0/16) query it directly without crossing the edge firewall, and it forwards to its upstream servers over standard DNS. Two infected laptops ignored it and queried outside resolvers, and one sent stolen data straight to an attacker-run DNS server on port 53. The edge-firewall ticket: the LAN keeps its other outbound access; no LAN host may send DNS to the internet; the resolver is the one exception; anything else is dropped.",
+    "assets": {
+      "reference": {
+        "kind": "network",
+        "given": {
+          "site": "Kestrel Labs · FW-EDGE",
+          "engine": "first match wins, implicit deny"
+        },
+        "devices": [
+          {
+            "id": "res",
+            "label": "DNS resolver",
+            "type": "server",
+            "zone": "lan",
+            "ip": "10.30.1.53",
+            "x": 0,
+            "y": 0
+          },
+          {
+            "id": "lap",
+            "label": "User laptops",
+            "type": "pc",
+            "zone": "lan",
+            "ip": "10.30.8.0/24",
+            "x": 0,
+            "y": 1
+          },
+          {
+            "id": "fw",
+            "label": "FW-EDGE",
+            "type": "firewall",
+            "ip": "top-down",
+            "x": 2,
+            "y": 1
+          },
+          {
+            "id": "net",
+            "label": "Internet",
+            "type": "cloud",
+            "zone": "untrusted",
+            "ip": "any",
+            "x": 4,
+            "y": 1
+          }
+        ],
+        "links": [
+          {
+            "from": "res",
+            "to": "fw"
+          },
+          {
+            "from": "lap",
+            "to": "fw"
+          },
+          {
+            "from": "fw",
+            "to": "net"
+          }
+        ]
+      }
+    },
+    "fwSpec": {
+      "rules": [
+        {
+          "id": "resolver",
+          "action": "allow",
+          "proto": "any",
+          "src": "10.30.1.53/32",
+          "dst": "any",
+          "port": 53
+        },
+        {
+          "id": "noDns",
+          "action": "deny",
+          "proto": "any",
+          "src": "10.30.0.0/16",
+          "dst": "any",
+          "port": 53
+        },
+        {
+          "id": "lanOut",
+          "action": "allow",
+          "proto": "any",
+          "src": "10.30.0.0/16",
+          "dst": "any",
+          "port": "any"
+        },
+        {
+          "id": "deny",
+          "action": "deny",
+          "proto": "any",
+          "src": "any",
+          "dst": "any",
+          "port": "any"
+        }
+      ],
+      "flows": [
+        {
+          "name": "resolver forwards a query",
+          "proto": "udp",
+          "src": "10.30.1.53",
+          "dst": "198.51.100.53",
+          "port": 53,
+          "expect": "allow"
+        },
+        {
+          "name": "resolver retries a large reply over tcp",
+          "proto": "tcp",
+          "src": "10.30.1.53",
+          "dst": "198.51.100.53",
+          "port": 53,
+          "expect": "allow"
+        },
+        {
+          "name": "laptop queries an outside resolver",
+          "proto": "udp",
+          "src": "10.30.8.21",
+          "dst": "203.0.113.53",
+          "port": 53,
+          "expect": "deny"
+        },
+        {
+          "name": "laptop sends dns over tcp",
+          "proto": "tcp",
+          "src": "10.30.8.21",
+          "dst": "203.0.113.53",
+          "port": 53,
+          "expect": "deny"
+        },
+        {
+          "name": "laptop browses the web",
+          "proto": "tcp",
+          "src": "10.30.8.21",
+          "dst": "203.0.113.80",
+          "port": 443,
+          "expect": "allow"
+        },
+        {
+          "name": "unsolicited inbound dropped",
+          "proto": "udp",
+          "src": "203.0.113.53",
+          "dst": "10.30.1.53",
+          "port": 53,
+          "expect": "deny"
+        }
+      ],
+      "shadowTable": {
+        "rules": [
+          {
+            "id": "resolver",
+            "action": "allow",
+            "proto": "any",
+            "src": "10.30.1.53/32",
+            "dst": "any",
+            "port": 53
+          },
+          {
+            "id": "lanOut",
+            "action": "allow",
+            "proto": "any",
+            "src": "10.30.0.0/16",
+            "dst": "any",
+            "port": "any"
+          },
+          {
+            "id": "noDns",
+            "action": "deny",
+            "proto": "any",
+            "src": "10.30.0.0/16",
+            "dst": "any",
+            "port": 53
+          },
+          {
+            "id": "deny",
+            "action": "deny",
+            "proto": "any",
+            "src": "any",
+            "dst": "any",
+            "port": "any"
+          }
+        ],
+        "shadowedRuleId": "noDns"
+      }
+    },
+    "steps": [
+      {
+        "id": "s1",
+        "type": "configure",
+        "points": 1,
+        "prompt": "Build the rule for the resolver’s upstream queries.",
+        "explanation": "Allow the resolver’s /32 on port 53 over both transports. Ordinary queries use UDP 53, and TCP 53 carries replies too large for UDP and zone transfers, so a resolver needs both. TCP 853 is DNS over TLS, which this resolver does not use. UDP 67 is DHCP and UDP 123 is NTP. A /16 source would hand the exception to every laptop.",
+        "payload": {
+          "slots": [
+            {
+              "id": "action",
+              "label": "Action",
+              "options": [
+                {
+                  "id": "a",
+                  "text": "allow"
+                },
+                {
+                  "id": "d",
+                  "text": "deny"
+                }
+              ]
+            },
+            {
+              "id": "src",
+              "label": "Source",
+              "options": [
+                {
+                  "id": "lan",
+                  "text": "10.30.0.0/16"
+                },
+                {
+                  "id": "res",
+                  "text": "10.30.1.53/32"
+                },
+                {
+                  "id": "any",
+                  "text": "any"
+                }
+              ]
+            },
+            {
+              "id": "svc",
+              "label": "Service",
+              "options": [
+                {
+                  "id": "dot",
+                  "text": "TCP 853"
+                },
+                {
+                  "id": "dns",
+                  "text": "TCP/UDP 53"
+                },
+                {
+                  "id": "dhcp",
+                  "text": "UDP 67"
+                },
+                {
+                  "id": "ntp",
+                  "text": "UDP 123"
+                }
+              ]
+            }
+          ]
+        },
+        "answer": {
+          "slots": {
+            "action": "a",
+            "src": "res",
+            "svc": "dns"
+          }
+        }
+      },
+      {
+        "id": "s2",
+        "type": "configure",
+        "points": 1,
+        "prompt": "Build the rule that stops every other LAN host sending DNS out.",
+        "explanation": "Deny the whole 10.30.0.0/16 on TCP and UDP 53. Blocking only UDP 53 leaves TCP 53 open, and any client can send its queries over TCP. Blocking only the laptop subnet leaves every other subnet free to use outside resolvers. DNS over HTTPS on 443 is a separate bypass, handled by blocking known DoH endpoints or by browser policy, not by this rule.",
+        "payload": {
+          "slots": [
+            {
+              "id": "action",
+              "label": "Action",
+              "options": [
+                {
+                  "id": "a",
+                  "text": "allow"
+                },
+                {
+                  "id": "d",
+                  "text": "deny"
+                }
+              ]
+            },
+            {
+              "id": "src",
+              "label": "Source",
+              "options": [
+                {
+                  "id": "lap",
+                  "text": "10.30.8.0/24"
+                },
+                {
+                  "id": "lan",
+                  "text": "10.30.0.0/16"
+                },
+                {
+                  "id": "res",
+                  "text": "10.30.1.53/32"
+                }
+              ]
+            },
+            {
+              "id": "svc",
+              "label": "Service",
+              "options": [
+                {
+                  "id": "udp",
+                  "text": "UDP 53"
+                },
+                {
+                  "id": "dns",
+                  "text": "TCP/UDP 53"
+                },
+                {
+                  "id": "https",
+                  "text": "TCP 443"
+                }
+              ]
+            }
+          ]
+        },
+        "answer": {
+          "slots": {
+            "action": "d",
+            "src": "lan",
+            "svc": "dns"
+          }
+        }
+      },
+      {
+        "id": "s3",
+        "type": "order",
+        "points": 1,
+        "prompt": "Arrange the four rules. The firewall reads from the top and stops at the first match.",
+        "explanation": "Resolver exception, DNS block, LAN outbound, catch-all. The resolver sits inside 10.30.0.0/16, so its queries also match the block, and the exception has to come first or all name resolution stops. The block has to sit above the LAN outbound rule, which matches DNS too. The catch-all goes last.",
+        "payload": {
+          "items": [
+            {
+              "id": "lanOut",
+              "label": "Allow the LAN its other outbound traffic"
+            },
+            {
+              "id": "noDns",
+              "label": "Block DNS from every other LAN host"
+            },
+            {
+              "id": "deny",
+              "label": "Drop anything else"
+            },
+            {
+              "id": "resolver",
+              "label": "Allow the resolver to send DNS to the internet"
+            }
+          ]
+        },
+        "answer": {
+          "correctOrder": [
+            "resolver",
+            "noDns",
+            "lanOut",
+            "deny"
+          ]
+        }
+      },
+      {
+        "id": "s4",
+        "type": "analyze",
+        "points": 1,
+        "prompt": "Six weeks later the live table reads as follows, top rule first. Which rule can never fire?",
+        "explanation": "Rule 3 never fires. Rule 2 lets the LAN send anything anywhere, DNS included, so a laptop’s query to an outside resolver is allowed at rule 2 and rule 3 is never read. Malware can skip the filtering resolver and its query logs again, and send DNS straight to an attacker's server. Rule 2 is the cause, but it fires all day, so it is not the answer, and rule 1 still fires for the resolver. Fix: move rule 3 above rule 2.",
+        "payload": {
+          "multi": false,
+          "lines": [
+            {
+              "id": "l1",
+              "text": "1 · Allow · DNS resolver → Any · DNS"
+            },
+            {
+              "id": "l2",
+              "text": "2 · Allow · LAN → Any · any service"
+            },
+            {
+              "id": "l3",
+              "text": "3 · Deny · LAN → Any · DNS"
+            },
+            {
+              "id": "l4",
+              "text": "4 · Deny · Any → Any · any service"
+            }
+          ]
+        },
+        "answer": {
+          "selected": [
+            "l3"
+          ]
+        }
+      }
+    ]
+  },
+
+  {
+    "id": "sp-fw-05",
+    "cert": "secplus",
+    "objective": "3.2",
+    "topic": "Security zones",
+    "title": "Move the SIEM into its own security zone",
+    "estMinutes": 5,
+    "archetype": "firewall",
+    "scenario": "Wrenfield Council is moving its SIEM into a dedicated security VLAN (10.41.7.0/24): the log collector is 10.41.7.20 and the log archive is 10.41.7.30. The core firewall routes between the VLANs and out to the internet. Nothing else may open a connection into the security VLAN, because an attacker who gets in there can quietly delete the evidence. The servers in the server VLAN (10.41.20.0/24) will forward their logs to the collector as syslog over TLS, so the stream cannot be read or altered on the way. The rest of the council network (10.41.0.0/16) keeps its normal access, and anything else is dropped.",
+    "assets": {
+      "reference": {
+        "kind": "network",
+        "given": {
+          "site": "Wrenfield Council · FW-CORE",
+          "engine": "first match wins, implicit deny"
+        },
+        "devices": [
+          {
+            "id": "srv",
+            "label": "Server VLAN",
+            "type": "server",
+            "zone": "servers",
+            "ip": "10.41.20.0/24",
+            "x": 0,
+            "y": 0
+          },
+          {
+            "id": "staff",
+            "label": "Staff PCs",
+            "type": "pc",
+            "zone": "staff",
+            "ip": "10.41.30.0/24",
+            "x": 0,
+            "y": 2
+          },
+          {
+            "id": "fw",
+            "label": "FW-CORE",
+            "type": "firewall",
+            "ip": "top-down",
+            "x": 2,
+            "y": 1
+          },
+          {
+            "id": "col",
+            "label": "SIEM collector",
+            "type": "server",
+            "zone": "security",
+            "ip": "10.41.7.20",
+            "x": 4,
+            "y": 0
+          },
+          {
+            "id": "arc",
+            "label": "Log archive",
+            "type": "server",
+            "zone": "security",
+            "ip": "10.41.7.30",
+            "x": 4,
+            "y": 1
+          },
+          {
+            "id": "net",
+            "label": "Internet",
+            "type": "cloud",
+            "ip": "any",
+            "x": 4,
+            "y": 2
+          }
+        ],
+        "links": [
+          {
+            "from": "srv",
+            "to": "fw"
+          },
+          {
+            "from": "staff",
+            "to": "fw"
+          },
+          {
+            "from": "fw",
+            "to": "col"
+          },
+          {
+            "from": "fw",
+            "to": "arc"
+          },
+          {
+            "from": "fw",
+            "to": "net"
+          }
+        ]
+      }
+    },
+    "fwSpec": {
+      "rules": [
+        {
+          "id": "logs",
+          "action": "allow",
+          "proto": "tcp",
+          "src": "10.41.20.0/24",
+          "dst": "10.41.7.20/32",
+          "port": 6514
+        },
+        {
+          "id": "noSec",
+          "action": "deny",
+          "proto": "any",
+          "src": "any",
+          "dst": "10.41.7.0/24",
+          "port": "any"
+        },
+        {
+          "id": "council",
+          "action": "allow",
+          "proto": "any",
+          "src": "10.41.0.0/16",
+          "dst": "any",
+          "port": "any"
+        },
+        {
+          "id": "deny",
+          "action": "deny",
+          "proto": "any",
+          "src": "any",
+          "dst": "any",
+          "port": "any"
+        }
+      ],
+      "flows": [
+        {
+          "name": "server forwards logs over tls",
+          "proto": "tcp",
+          "src": "10.41.20.14",
+          "dst": "10.41.7.20",
+          "port": 6514,
+          "expect": "allow"
+        },
+        {
+          "name": "server plaintext syslog blocked",
+          "proto": "udp",
+          "src": "10.41.20.14",
+          "dst": "10.41.7.20",
+          "port": 514,
+          "expect": "deny"
+        },
+        {
+          "name": "staff pc to the log archive blocked",
+          "proto": "tcp",
+          "src": "10.41.30.50",
+          "dst": "10.41.7.30",
+          "port": 445,
+          "expect": "deny"
+        },
+        {
+          "name": "staff pc browses the web",
+          "proto": "tcp",
+          "src": "10.41.30.50",
+          "dst": "203.0.113.80",
+          "port": 443,
+          "expect": "allow"
+        },
+        {
+          "name": "internet to the collector blocked",
+          "proto": "tcp",
+          "src": "203.0.113.80",
+          "dst": "10.41.7.20",
+          "port": 6514,
+          "expect": "deny"
+        },
+        {
+          "name": "internet to a staff pc dropped",
+          "proto": "tcp",
+          "src": "203.0.113.80",
+          "dst": "10.41.30.50",
+          "port": 3389,
+          "expect": "deny"
+        }
+      ],
+      "shadowTable": {
+        "rules": [
+          {
+            "id": "noSec",
+            "action": "deny",
+            "proto": "any",
+            "src": "any",
+            "dst": "10.41.7.0/24",
+            "port": "any"
+          },
+          {
+            "id": "council",
+            "action": "allow",
+            "proto": "any",
+            "src": "10.41.0.0/16",
+            "dst": "any",
+            "port": "any"
+          },
+          {
+            "id": "logs",
+            "action": "allow",
+            "proto": "tcp",
+            "src": "10.41.20.0/24",
+            "dst": "10.41.7.20/32",
+            "port": 6514
+          },
+          {
+            "id": "deny",
+            "action": "deny",
+            "proto": "any",
+            "src": "any",
+            "dst": "any",
+            "port": "any"
+          }
+        ],
+        "shadowedRuleId": "logs"
+      }
+    },
+    "steps": [
+      {
+        "id": "s1",
+        "type": "configure",
+        "points": 1,
+        "prompt": "Build the log-forwarding rule from the server VLAN to the collector.",
+        "explanation": "Allow the server VLAN to the collector on TCP 6514, the registered port for syslog over TLS. UDP 514 is classic syslog: cleartext, unauthenticated and easy to spoof, which is what this ticket retires. UDP 162 is SNMP traps and TCP 443 is HTTPS. A source of the whole council network, or any, would let every PC talk to the collector.",
+        "payload": {
+          "slots": [
+            {
+              "id": "action",
+              "label": "Action",
+              "options": [
+                {
+                  "id": "a",
+                  "text": "allow"
+                },
+                {
+                  "id": "d",
+                  "text": "deny"
+                }
+              ]
+            },
+            {
+              "id": "src",
+              "label": "Source",
+              "options": [
+                {
+                  "id": "any",
+                  "text": "any"
+                },
+                {
+                  "id": "council",
+                  "text": "10.41.0.0/16"
+                },
+                {
+                  "id": "srv",
+                  "text": "10.41.20.0/24"
+                }
+              ]
+            },
+            {
+              "id": "svc",
+              "label": "Service",
+              "options": [
+                {
+                  "id": "syslog",
+                  "text": "UDP 514"
+                },
+                {
+                  "id": "trap",
+                  "text": "UDP 162"
+                },
+                {
+                  "id": "tls",
+                  "text": "TCP 6514"
+                },
+                {
+                  "id": "https",
+                  "text": "TCP 443"
+                }
+              ]
+            }
+          ]
+        },
+        "answer": {
+          "slots": {
+            "action": "a",
+            "src": "srv",
+            "svc": "tls"
+          }
+        }
+      },
+      {
+        "id": "s2",
+        "type": "configure",
+        "points": 1,
+        "prompt": "Build the rule that keeps everything else out of the security VLAN.",
+        "explanation": "Deny any source to the whole 10.41.7.0/24 on any service. A /32 for the collector would leave the log archive open, and the archive holds the evidence. Denying only the syslog port leaves every other service in the VLAN reachable.",
+        "payload": {
+          "slots": [
+            {
+              "id": "action",
+              "label": "Action",
+              "options": [
+                {
+                  "id": "a",
+                  "text": "allow"
+                },
+                {
+                  "id": "d",
+                  "text": "deny"
+                }
+              ]
+            },
+            {
+              "id": "dst",
+              "label": "Destination",
+              "options": [
+                {
+                  "id": "col",
+                  "text": "10.41.7.20/32"
+                },
+                {
+                  "id": "sec",
+                  "text": "10.41.7.0/24"
+                },
+                {
+                  "id": "council",
+                  "text": "10.41.0.0/16"
+                }
+              ]
+            },
+            {
+              "id": "svc",
+              "label": "Service",
+              "options": [
+                {
+                  "id": "any",
+                  "text": "any"
+                },
+                {
+                  "id": "syslog",
+                  "text": "UDP 514"
+                },
+                {
+                  "id": "tls",
+                  "text": "TCP 6514"
+                }
+              ]
+            }
+          ]
+        },
+        "answer": {
+          "slots": {
+            "action": "d",
+            "dst": "sec",
+            "svc": "any"
+          }
+        }
+      },
+      {
+        "id": "s3",
+        "type": "order",
+        "points": 1,
+        "prompt": "Arrange the four rules. The firewall reads from the top and stops at the first match.",
+        "explanation": "Log-forwarding allow, security-VLAN block, council allow, catch-all. The collector lives inside the security VLAN, so log traffic matches the block too, and the allow has to sit above it. The block has to sit above the council allow, which matches traffic into the security VLAN from every council PC. The catch-all goes last.",
+        "payload": {
+          "items": [
+            {
+              "id": "noSec",
+              "label": "Block every other connection into the security VLAN"
+            },
+            {
+              "id": "deny",
+              "label": "Drop anything else"
+            },
+            {
+              "id": "council",
+              "label": "Allow the council network its normal access"
+            },
+            {
+              "id": "logs",
+              "label": "Allow the server VLAN to forward logs to the collector"
+            }
+          ]
+        },
+        "answer": {
+          "correctOrder": [
+            "logs",
+            "noSec",
+            "council",
+            "deny"
+          ]
+        }
+      },
+      {
+        "id": "s4",
+        "type": "analyze",
+        "points": 1,
+        "prompt": "The live table after a hardening change reads as follows, top rule first. Which rule can never fire?",
+        "explanation": "Rule 3 never fires. The collector is inside the security VLAN, so every log connection matches rule 1’s deny first. The SIEM goes quiet while every server looks healthy, a detection blind spot that nothing alerts on unless someone watches for missing logs. Rule 2 is not dead: it still carries staff traffic to the internet. Fix: move rule 3 above rule 1.",
+        "payload": {
+          "multi": false,
+          "lines": [
+            {
+              "id": "l1",
+              "text": "1 · Deny · Any → Security VLAN · any service"
+            },
+            {
+              "id": "l2",
+              "text": "2 · Allow · Council network → Any · any service"
+            },
+            {
+              "id": "l3",
+              "text": "3 · Allow · Server VLAN → SIEM collector · syslog over TLS"
+            },
+            {
+              "id": "l4",
+              "text": "4 · Deny · Any → Any · any service"
+            }
+          ]
+        },
+        "answer": {
+          "selected": [
+            "l3"
+          ]
+        }
+      }
+    ]
+  },
+
+  {
+    "id": "sp-fw-06",
+    "cert": "secplus",
+    "objective": "4.5",
+    "topic": "Secure protocols",
+    "title": "Move directory binds to LDAPS",
+    "estMinutes": 5,
+    "archetype": "firewall",
+    "scenario": "Three line-of-business apps in the app subnet (10.60.30.0/24) check user passwords by binding to the directory servers (10.60.5.0/24). Today they bind over plain LDAP, so every password crosses the network readable. The apps are not domain members and resolve names through a separate DNS service, so the directory servers do nothing else for them. The core firewall routes between the VLANs and out to the internet. The ticket: the corporate network (10.60.0.0/16), app subnet included, keeps its normal access; the app subnet gets nothing from the directory servers except encrypted binds over LDAPS. The firewall reads top-down, stops at the first match, and drops anything no rule matches.",
+    "assets": {
+      "reference": {
+        "kind": "network",
+        "given": {
+          "site": "Corporate core · FW-CORE",
+          "engine": "first match wins, implicit deny"
+        },
+        "devices": [
+          {
+            "id": "apps",
+            "label": "App subnet",
+            "type": "server",
+            "zone": "apps",
+            "ip": "10.60.30.0/24",
+            "x": 0,
+            "y": 0
+          },
+          {
+            "id": "ws",
+            "label": "Workstations",
+            "type": "pc",
+            "zone": "users",
+            "ip": "10.60.40.0/24",
+            "x": 0,
+            "y": 2
+          },
+          {
+            "id": "fw",
+            "label": "FW-CORE",
+            "type": "firewall",
+            "ip": "top-down",
+            "x": 2,
+            "y": 1
+          },
+          {
+            "id": "dir",
+            "label": "Directory servers",
+            "type": "server",
+            "zone": "directory",
+            "ip": "10.60.5.0/24",
+            "x": 4,
+            "y": 0
+          },
+          {
+            "id": "net",
+            "label": "Internet",
+            "type": "cloud",
+            "zone": "untrusted",
+            "ip": "any",
+            "x": 4,
+            "y": 2
+          }
+        ],
+        "links": [
+          {
+            "from": "apps",
+            "to": "fw"
+          },
+          {
+            "from": "ws",
+            "to": "fw"
+          },
+          {
+            "from": "fw",
+            "to": "dir"
+          },
+          {
+            "from": "fw",
+            "to": "net"
+          }
+        ]
+      }
+    },
+    "fwSpec": {
+      "rules": [
+        {
+          "id": "ldaps",
+          "action": "allow",
+          "proto": "tcp",
+          "src": "10.60.30.0/24",
+          "dst": "10.60.5.0/24",
+          "port": 636
+        },
+        {
+          "id": "noDir",
+          "action": "deny",
+          "proto": "any",
+          "src": "10.60.30.0/24",
+          "dst": "10.60.5.0/24",
+          "port": "any"
+        },
+        {
+          "id": "corp",
+          "action": "allow",
+          "proto": "any",
+          "src": "10.60.0.0/16",
+          "dst": "any",
+          "port": "any"
+        }
+      ],
+      "flows": [
+        {
+          "name": "app binds over ldaps",
+          "proto": "tcp",
+          "src": "10.60.30.21",
+          "dst": "10.60.5.10",
+          "port": 636,
+          "expect": "allow"
+        },
+        {
+          "name": "app cleartext bind blocked",
+          "proto": "tcp",
+          "src": "10.60.30.21",
+          "dst": "10.60.5.10",
+          "port": 389,
+          "expect": "deny"
+        },
+        {
+          "name": "workstation kerberos to a domain controller",
+          "proto": "udp",
+          "src": "10.60.40.12",
+          "dst": "10.60.5.10",
+          "port": 88,
+          "expect": "allow"
+        },
+        {
+          "name": "app reaches its vendor over https",
+          "proto": "tcp",
+          "src": "10.60.30.21",
+          "dst": "203.0.113.80",
+          "port": 443,
+          "expect": "allow"
+        },
+        {
+          "name": "internet to a directory server dropped",
+          "proto": "tcp",
+          "src": "203.0.113.80",
+          "dst": "10.60.5.10",
+          "port": 636,
+          "expect": "deny"
+        }
+      ],
+      "shadowTable": {
+        "rules": [
+          {
+            "id": "ldaps",
+            "action": "allow",
+            "proto": "tcp",
+            "src": "10.60.30.0/24",
+            "dst": "10.60.5.0/24",
+            "port": 636
+          },
+          {
+            "id": "legacy",
+            "action": "allow",
+            "proto": "any",
+            "src": "10.60.30.0/24",
+            "dst": "10.60.5.0/24",
+            "port": "any"
+          },
+          {
+            "id": "noDir",
+            "action": "deny",
+            "proto": "any",
+            "src": "10.60.30.0/24",
+            "dst": "10.60.5.0/24",
+            "port": "any"
+          },
+          {
+            "id": "corp",
+            "action": "allow",
+            "proto": "any",
+            "src": "10.60.0.0/16",
+            "dst": "any",
+            "port": "any"
+          }
+        ],
+        "shadowedRuleId": "noDir"
+      }
+    },
+    "steps": [
+      {
+        "id": "s1",
+        "type": "configure",
+        "points": 1,
+        "prompt": "Build the rule that lets the apps bind securely to the directory servers.",
+        "explanation": "Allow the app subnet to the directory servers on TCP 636, LDAPS: LDAP inside TLS from the first byte. TCP 389 is plain LDAP. It can be upgraded with StartTLS, but the ticket asks for LDAPS, and an allow on 389 keeps the cleartext path open. TCP 88 is Kerberos and TCP 445 is SMB, neither of which the apps use. The source is the app subnet, the side that opens the connection. Picking the directory subnet as the source gets the direction backwards, and a source of any would open the directory servers’ LDAPS port to the internet.",
+        "payload": {
+          "slots": [
+            {
+              "id": "action",
+              "label": "Action",
+              "options": [
+                {
+                  "id": "a",
+                  "text": "allow"
+                },
+                {
+                  "id": "d",
+                  "text": "deny"
+                }
+              ]
+            },
+            {
+              "id": "src",
+              "label": "Source",
+              "options": [
+                {
+                  "id": "any",
+                  "text": "any"
+                },
+                {
+                  "id": "apps",
+                  "text": "10.60.30.0/24"
+                },
+                {
+                  "id": "dir",
+                  "text": "10.60.5.0/24"
+                }
+              ]
+            },
+            {
+              "id": "svc",
+              "label": "Service",
+              "options": [
+                {
+                  "id": "ldap",
+                  "text": "TCP 389"
+                },
+                {
+                  "id": "krb",
+                  "text": "TCP 88"
+                },
+                {
+                  "id": "ldaps",
+                  "text": "TCP 636"
+                },
+                {
+                  "id": "smb",
+                  "text": "TCP 445"
+                }
+              ]
+            }
+          ]
+        },
+        "answer": {
+          "slots": {
+            "action": "a",
+            "src": "apps",
+            "svc": "ldaps"
+          }
+        }
+      },
+      {
+        "id": "s2",
+        "type": "configure",
+        "points": 1,
+        "prompt": "Build the rule that stops the app subnet using anything else on the directory servers.",
+        "explanation": "Deny the app subnet to the directory servers on any service. Blocking only 389 leaves the other directory services open to the apps. A source of 10.60.0.0/16, or any, would cut every workstation off from the domain controllers and break logons across the network.",
+        "payload": {
+          "slots": [
+            {
+              "id": "action",
+              "label": "Action",
+              "options": [
+                {
+                  "id": "a",
+                  "text": "allow"
+                },
+                {
+                  "id": "d",
+                  "text": "deny"
+                }
+              ]
+            },
+            {
+              "id": "src",
+              "label": "Source",
+              "options": [
+                {
+                  "id": "corp",
+                  "text": "10.60.0.0/16"
+                },
+                {
+                  "id": "apps",
+                  "text": "10.60.30.0/24"
+                },
+                {
+                  "id": "any",
+                  "text": "any"
+                }
+              ]
+            },
+            {
+              "id": "svc",
+              "label": "Service",
+              "options": [
+                {
+                  "id": "ldap",
+                  "text": "TCP 389"
+                },
+                {
+                  "id": "any",
+                  "text": "any"
+                },
+                {
+                  "id": "ldaps",
+                  "text": "TCP 636"
+                }
+              ]
+            }
+          ]
+        },
+        "answer": {
+          "slots": {
+            "action": "d",
+            "src": "apps",
+            "svc": "any"
+          }
+        }
+      },
+      {
+        "id": "s3",
+        "type": "order",
+        "points": 1,
+        "prompt": "Arrange the three rules. The firewall reads from the top, stops at the first match, and drops anything that matches nothing.",
+        "explanation": "LDAPS allow, then the directory block, then the network-wide allow. LDAPS traffic from the apps matches all three rules, so the exception goes first. The block has to sit above the network-wide allow, because the app subnet is part of 10.60.0.0/16 and would otherwise get everything. No final deny row is needed: the firewall drops unmatched traffic by itself.",
+        "payload": {
+          "items": [
+            {
+              "id": "corp",
+              "label": "Allow the corporate network its normal access"
+            },
+            {
+              "id": "ldaps",
+              "label": "Allow the app subnet to bind over LDAPS"
+            },
+            {
+              "id": "noDir",
+              "label": "Block the app subnet from everything else on the directory servers"
+            }
+          ]
+        },
+        "answer": {
+          "correctOrder": [
+            "ldaps",
+            "noDir",
+            "corp"
+          ]
+        }
+      },
+      {
+        "id": "s4",
+        "type": "analyze",
+        "points": 1,
+        "prompt": "After the cut-over, the live table reads as follows, top rule first. Which rule can never fire?",
+        "explanation": "Rule 3 never fires. Rule 2, the old allow from before the migration, matches exactly the same traffic and sits above it. Cleartext binds on 389 still succeed, so passwords still cross the network readable. Rule 1 still fires, because LDAPS matches it first, so a test of the new binds looks perfect. That is how leftovers like rule 2 survive cut-over checks. Fix: delete rule 2.",
+        "payload": {
+          "multi": false,
+          "lines": [
+            {
+              "id": "l1",
+              "text": "1 · Allow · App subnet → Directory servers · LDAPS"
+            },
+            {
+              "id": "l2",
+              "text": "2 · Allow · App subnet → Directory servers · any service"
+            },
+            {
+              "id": "l3",
+              "text": "3 · Deny · App subnet → Directory servers · any service"
+            },
+            {
+              "id": "l4",
+              "text": "4 · Allow · Corporate network → Any · any service"
+            }
+          ]
+        },
+        "answer": {
+          "selected": [
+            "l3"
+          ]
+        }
+      }
+    ]
+  },
+
+  {
+    "id": "sp-fw-07",
+    "cert": "secplus",
+    "objective": "4.5",
+    "topic": "Secure file transfer",
+    "title": "Switch payroll uploads from FTP to SFTP",
+    "estMinutes": 5,
+    "archetype": "firewall",
+    "scenario": "Every Friday the finance team (10.72.12.0/24) uploads payroll files to the payroll bureau’s server at 198.51.100.20. The bureau has switched off FTP, which sent the files and the login in cleartext, and now accepts SFTP only. The ticket: the corporate network (10.72.0.0/16) keeps its normal outbound access; nobody on the corporate network may connect to the bureau’s server on any service, with one exception, finance uploading over SFTP; anything else is dropped.",
+    "assets": {
+      "reference": {
+        "kind": "network",
+        "given": {
+          "site": "Corporate edge · FW-EDGE",
+          "engine": "first match wins, implicit deny"
+        },
+        "devices": [
+          {
+            "id": "fin",
+            "label": "Finance VLAN",
+            "type": "pc",
+            "zone": "corporate",
+            "ip": "10.72.12.0/24",
+            "x": 0,
+            "y": 0
+          },
+          {
+            "id": "sales",
+            "label": "Sales PCs",
+            "type": "pc",
+            "zone": "corporate",
+            "ip": "10.72.30.0/24",
+            "x": 0,
+            "y": 1
+          },
+          {
+            "id": "fw",
+            "label": "FW-EDGE",
+            "type": "firewall",
+            "ip": "top-down",
+            "x": 2,
+            "y": 1
+          },
+          {
+            "id": "bureau",
+            "label": "Bureau server",
+            "type": "server",
+            "zone": "payroll bureau",
+            "ip": "198.51.100.20",
+            "x": 4,
+            "y": 0
+          },
+          {
+            "id": "net",
+            "label": "Internet",
+            "type": "cloud",
+            "ip": "any",
+            "x": 4,
+            "y": 2
+          }
+        ],
+        "links": [
+          {
+            "from": "fin",
+            "to": "fw"
+          },
+          {
+            "from": "sales",
+            "to": "fw"
+          },
+          {
+            "from": "fw",
+            "to": "bureau"
+          },
+          {
+            "from": "fw",
+            "to": "net"
+          }
+        ]
+      }
+    },
+    "fwSpec": {
+      "rules": [
+        {
+          "id": "sftp",
+          "action": "allow",
+          "proto": "tcp",
+          "src": "10.72.12.0/24",
+          "dst": "198.51.100.20/32",
+          "port": 22
+        },
+        {
+          "id": "noBureau",
+          "action": "deny",
+          "proto": "any",
+          "src": "10.72.0.0/16",
+          "dst": "198.51.100.20/32",
+          "port": "any"
+        },
+        {
+          "id": "corpOut",
+          "action": "allow",
+          "proto": "any",
+          "src": "10.72.0.0/16",
+          "dst": "any",
+          "port": "any"
+        },
+        {
+          "id": "deny",
+          "action": "deny",
+          "proto": "any",
+          "src": "any",
+          "dst": "any",
+          "port": "any"
+        }
+      ],
+      "flows": [
+        {
+          "name": "finance sftp upload",
+          "proto": "tcp",
+          "src": "10.72.12.8",
+          "dst": "198.51.100.20",
+          "port": 22,
+          "expect": "allow"
+        },
+        {
+          "name": "finance ftp blocked",
+          "proto": "tcp",
+          "src": "10.72.12.8",
+          "dst": "198.51.100.20",
+          "port": 21,
+          "expect": "deny"
+        },
+        {
+          "name": "sales pc to the bureau blocked",
+          "proto": "tcp",
+          "src": "10.72.30.44",
+          "dst": "198.51.100.20",
+          "port": 22,
+          "expect": "deny"
+        },
+        {
+          "name": "sales pc browses the web",
+          "proto": "tcp",
+          "src": "10.72.30.44",
+          "dst": "203.0.113.80",
+          "port": 443,
+          "expect": "allow"
+        },
+        {
+          "name": "unsolicited inbound dropped",
+          "proto": "tcp",
+          "src": "203.0.113.80",
+          "dst": "10.72.12.8",
+          "port": 22,
+          "expect": "deny"
+        }
+      ],
+      "shadowTable": {
+        "rules": [
+          {
+            "id": "noBureau",
+            "action": "deny",
+            "proto": "any",
+            "src": "10.72.0.0/16",
+            "dst": "198.51.100.20/32",
+            "port": "any"
+          },
+          {
+            "id": "corpOut",
+            "action": "allow",
+            "proto": "any",
+            "src": "10.72.0.0/16",
+            "dst": "any",
+            "port": "any"
+          },
+          {
+            "id": "deny",
+            "action": "deny",
+            "proto": "any",
+            "src": "any",
+            "dst": "any",
+            "port": "any"
+          },
+          {
+            "id": "sftp",
+            "action": "allow",
+            "proto": "tcp",
+            "src": "10.72.12.0/24",
+            "dst": "198.51.100.20/32",
+            "port": 22
+          }
+        ],
+        "shadowedRuleId": "sftp"
+      }
+    },
+    "steps": [
+      {
+        "id": "s1",
+        "type": "configure",
+        "points": 1,
+        "prompt": "Build the finance upload rule.",
+        "explanation": "Allow the finance VLAN to the bureau on TCP 22. SFTP runs inside SSH, so it uses the SSH port. TCP 21 is plain FTP, the thing being retired. TCP 990 is FTPS, a different protocol that wraps FTP in TLS: the names are close, the ports are not. UDP 69 is TFTP, which has no authentication at all. A source of the whole corporate network would let every PC reach the bureau.",
+        "payload": {
+          "slots": [
+            {
+              "id": "action",
+              "label": "Action",
+              "options": [
+                {
+                  "id": "a",
+                  "text": "allow"
+                },
+                {
+                  "id": "d",
+                  "text": "deny"
+                }
+              ]
+            },
+            {
+              "id": "src",
+              "label": "Source",
+              "options": [
+                {
+                  "id": "corp",
+                  "text": "10.72.0.0/16"
+                },
+                {
+                  "id": "fin",
+                  "text": "10.72.12.0/24"
+                },
+                {
+                  "id": "any",
+                  "text": "any"
+                }
+              ]
+            },
+            {
+              "id": "svc",
+              "label": "Service",
+              "options": [
+                {
+                  "id": "ftp",
+                  "text": "TCP 21"
+                },
+                {
+                  "id": "ftps",
+                  "text": "TCP 990"
+                },
+                {
+                  "id": "sftp",
+                  "text": "TCP 22"
+                },
+                {
+                  "id": "tftp",
+                  "text": "UDP 69"
+                }
+              ]
+            }
+          ]
+        },
+        "answer": {
+          "slots": {
+            "action": "a",
+            "src": "fin",
+            "svc": "sftp"
+          }
+        }
+      },
+      {
+        "id": "s2",
+        "type": "configure",
+        "points": 1,
+        "prompt": "Build the rule that keeps everyone else away from the bureau’s server.",
+        "explanation": "Deny the whole corporate network to the bureau’s server on any service. Denying only TCP 21 would leave every other port open to every PC. Scoping the deny to finance would leave the rest of the company free to reach the bureau.",
+        "payload": {
+          "slots": [
+            {
+              "id": "action",
+              "label": "Action",
+              "options": [
+                {
+                  "id": "a",
+                  "text": "allow"
+                },
+                {
+                  "id": "d",
+                  "text": "deny"
+                }
+              ]
+            },
+            {
+              "id": "src",
+              "label": "Source",
+              "options": [
+                {
+                  "id": "fin",
+                  "text": "10.72.12.0/24"
+                },
+                {
+                  "id": "corp",
+                  "text": "10.72.0.0/16"
+                },
+                {
+                  "id": "bureau",
+                  "text": "198.51.100.20/32"
+                }
+              ]
+            },
+            {
+              "id": "svc",
+              "label": "Service",
+              "options": [
+                {
+                  "id": "ftp",
+                  "text": "TCP 21"
+                },
+                {
+                  "id": "any",
+                  "text": "any"
+                },
+                {
+                  "id": "sftp",
+                  "text": "TCP 22"
+                }
+              ]
+            }
+          ]
+        },
+        "answer": {
+          "slots": {
+            "action": "d",
+            "src": "corp",
+            "svc": "any"
+          }
+        }
+      },
+      {
+        "id": "s3",
+        "type": "order",
+        "points": 1,
+        "prompt": "Arrange the four rules. The firewall reads from the top and stops at the first match.",
+        "explanation": "Finance SFTP, bureau block, outbound allow, catch-all. Finance is part of 10.72.0.0/16, so its uploads also match the block, and the exception has to come first. The block has to sit above the outbound allow, which also matches traffic to the bureau. The catch-all goes last.",
+        "payload": {
+          "items": [
+            {
+              "id": "deny",
+              "label": "Drop anything else"
+            },
+            {
+              "id": "corpOut",
+              "label": "Allow normal outbound access"
+            },
+            {
+              "id": "sftp",
+              "label": "Allow finance to upload over SFTP"
+            },
+            {
+              "id": "noBureau",
+              "label": "Block everyone else from the bureau’s server"
+            }
+          ]
+        },
+        "answer": {
+          "correctOrder": [
+            "sftp",
+            "noBureau",
+            "corpOut",
+            "deny"
+          ]
+        }
+      },
+      {
+        "id": "s4",
+        "type": "analyze",
+        "points": 1,
+        "prompt": "On Friday morning the live table reads as follows, top rule first. Which rule can never fire?",
+        "explanation": "Rule 4 never fires. It was appended at the bottom, below the catch-all, and nothing gets past a catch-all. Even without rule 3, rule 1 would catch the uploads first, because finance is part of the corporate network. Payroll uploads fail. Rule 3 is not dead: it still drops unsolicited traffic from the internet. Fix: move the finance rule to the top. Appending to the bottom of a table is the classic way new rules end up dead.",
+        "payload": {
+          "multi": false,
+          "lines": [
+            {
+              "id": "l1",
+              "text": "1 · Deny · Corporate network → Bureau server · any service"
+            },
+            {
+              "id": "l2",
+              "text": "2 · Allow · Corporate network → Any · any service"
+            },
+            {
+              "id": "l3",
+              "text": "3 · Deny · Any → Any · any service"
+            },
+            {
+              "id": "l4",
+              "text": "4 · Allow · Finance VLAN → Bureau server · SFTP"
+            }
+          ]
+        },
+        "answer": {
+          "selected": [
+            "l4"
+          ]
+        }
+      }
+    ]
+  },
+
+  {
+    "id": "sp-fw-08",
+    "cert": "secplus",
+    "objective": "4.5",
+    "topic": "Email gateway",
+    "title": "Put a cloud email gateway in front of the mail server",
+    "estMinutes": 5,
+    "archetype": "firewall",
+    "scenario": "Larkspur Dental has moved inbound email filtering to a cloud email security gateway. The domain’s MX record now points at the gateway, which checks every message for malware and spoofing, then hands clean mail to the on-site mail server 10.74.20.25 from its published range, 192.0.2.0/24. The firewall routes between the internet, the staff VLAN (10.74.10.0/24) and the server VLAN (10.74.20.0/24). The ticket: the internal network (10.74.0.0/16) keeps its normal outbound access, which is also how the mail server sends outgoing mail; refuse SMTP to the mail server from anyone else, so nobody can skip the gateway; accept SMTP from the gateway’s range; drop anything else. Staff read their mail over HTTPS, not SMTP.",
+    "assets": {
+      "reference": {
+        "kind": "network",
+        "given": {
+          "site": "Larkspur Dental · FW-EDGE",
+          "engine": "first match wins, implicit deny"
+        },
+        "devices": [
+          {
+            "id": "gw",
+            "label": "Email gateway",
+            "type": "cloud",
+            "zone": "cloud provider",
+            "ip": "192.0.2.0/24",
+            "x": 0,
+            "y": 0
+          },
+          {
+            "id": "net",
+            "label": "Internet",
+            "type": "cloud",
+            "ip": "any",
+            "x": 0,
+            "y": 2
+          },
+          {
+            "id": "fw",
+            "label": "FW-EDGE",
+            "type": "firewall",
+            "ip": "top-down",
+            "x": 2,
+            "y": 1
+          },
+          {
+            "id": "mail",
+            "label": "Mail server",
+            "type": "server",
+            "zone": "servers",
+            "ip": "10.74.20.25",
+            "x": 4,
+            "y": 0
+          },
+          {
+            "id": "staff",
+            "label": "Staff VLAN",
+            "type": "pc",
+            "zone": "staff",
+            "ip": "10.74.10.0/24",
+            "x": 4,
+            "y": 2
+          }
+        ],
+        "links": [
+          {
+            "from": "gw",
+            "to": "fw"
+          },
+          {
+            "from": "net",
+            "to": "fw"
+          },
+          {
+            "from": "fw",
+            "to": "mail"
+          },
+          {
+            "from": "fw",
+            "to": "staff"
+          }
+        ]
+      }
+    },
+    "fwSpec": {
+      "rules": [
+        {
+          "id": "gwSmtp",
+          "action": "allow",
+          "proto": "tcp",
+          "src": "192.0.2.0/24",
+          "dst": "10.74.20.25/32",
+          "port": 25
+        },
+        {
+          "id": "noSmtp",
+          "action": "deny",
+          "proto": "tcp",
+          "src": "any",
+          "dst": "10.74.20.25/32",
+          "port": 25
+        },
+        {
+          "id": "corpOut",
+          "action": "allow",
+          "proto": "any",
+          "src": "10.74.0.0/16",
+          "dst": "any",
+          "port": "any"
+        },
+        {
+          "id": "deny",
+          "action": "deny",
+          "proto": "any",
+          "src": "any",
+          "dst": "any",
+          "port": "any"
+        }
+      ],
+      "flows": [
+        {
+          "name": "gateway delivers clean mail",
+          "proto": "tcp",
+          "src": "192.0.2.44",
+          "dst": "10.74.20.25",
+          "port": 25,
+          "expect": "allow"
+        },
+        {
+          "name": "direct delivery from the internet refused",
+          "proto": "tcp",
+          "src": "203.0.113.66",
+          "dst": "10.74.20.25",
+          "port": 25,
+          "expect": "deny"
+        },
+        {
+          "name": "staff pc smtp to the mail server refused",
+          "proto": "tcp",
+          "src": "10.74.10.31",
+          "dst": "10.74.20.25",
+          "port": 25,
+          "expect": "deny"
+        },
+        {
+          "name": "mail server sends outgoing mail",
+          "proto": "tcp",
+          "src": "10.74.20.25",
+          "dst": "192.0.2.10",
+          "port": 25,
+          "expect": "allow"
+        },
+        {
+          "name": "staff read mail over https",
+          "proto": "tcp",
+          "src": "10.74.10.31",
+          "dst": "10.74.20.25",
+          "port": 443,
+          "expect": "allow"
+        },
+        {
+          "name": "internet https to the mail server dropped",
+          "proto": "tcp",
+          "src": "203.0.113.66",
+          "dst": "10.74.20.25",
+          "port": 443,
+          "expect": "deny"
+        }
+      ],
+      "shadowTable": {
+        "rules": [
+          {
+            "id": "gwSmtp",
+            "action": "allow",
+            "proto": "tcp",
+            "src": "192.0.2.0/24",
+            "dst": "10.74.20.25/32",
+            "port": 25
+          },
+          {
+            "id": "oldMx",
+            "action": "allow",
+            "proto": "tcp",
+            "src": "any",
+            "dst": "10.74.20.25/32",
+            "port": 25
+          },
+          {
+            "id": "noSmtp",
+            "action": "deny",
+            "proto": "tcp",
+            "src": "any",
+            "dst": "10.74.20.25/32",
+            "port": 25
+          },
+          {
+            "id": "corpOut",
+            "action": "allow",
+            "proto": "any",
+            "src": "10.74.0.0/16",
+            "dst": "any",
+            "port": "any"
+          },
+          {
+            "id": "deny",
+            "action": "deny",
+            "proto": "any",
+            "src": "any",
+            "dst": "any",
+            "port": "any"
+          }
+        ],
+        "shadowedRuleId": "noSmtp"
+      }
+    },
+    "steps": [
+      {
+        "id": "s1",
+        "type": "configure",
+        "points": 1,
+        "prompt": "Build the rule that accepts mail from the gateway.",
+        "explanation": "Allow the gateway’s 192.0.2.0/24 to the mail server on TCP 25. Server-to-server delivery always uses port 25, protected with STARTTLS when both ends support it. TCP 587 and TCP 465 are submission ports, where a mail client hands a message to its own server. TCP 993 is IMAPS, for reading mail. A source of any is the very bypass the ticket is closing.",
+        "payload": {
+          "slots": [
+            {
+              "id": "action",
+              "label": "Action",
+              "options": [
+                {
+                  "id": "a",
+                  "text": "allow"
+                },
+                {
+                  "id": "d",
+                  "text": "deny"
+                }
+              ]
+            },
+            {
+              "id": "src",
+              "label": "Source",
+              "options": [
+                {
+                  "id": "any",
+                  "text": "any"
+                },
+                {
+                  "id": "gw",
+                  "text": "192.0.2.0/24"
+                },
+                {
+                  "id": "corp",
+                  "text": "10.74.0.0/16"
+                }
+              ]
+            },
+            {
+              "id": "svc",
+              "label": "Service",
+              "options": [
+                {
+                  "id": "sub",
+                  "text": "TCP 587"
+                },
+                {
+                  "id": "smtp",
+                  "text": "TCP 25"
+                },
+                {
+                  "id": "smtps",
+                  "text": "TCP 465"
+                },
+                {
+                  "id": "imaps",
+                  "text": "TCP 993"
+                }
+              ]
+            }
+          ]
+        },
+        "answer": {
+          "slots": {
+            "action": "a",
+            "src": "gw",
+            "svc": "smtp"
+          }
+        }
+      },
+      {
+        "id": "s2",
+        "type": "configure",
+        "points": 1,
+        "prompt": "Build the rule that refuses SMTP to the mail server from anyone else.",
+        "explanation": "Deny any source to the mail server’s /32 on TCP 25. A destination of any would also block the mail server’s own outgoing mail, because this rule sits above the outbound allow. A source of the staff VLAN would leave the internet free to deliver straight to the server. A source of the gateway range would do nothing useful, since the gateway is already allowed above it.",
+        "payload": {
+          "slots": [
+            {
+              "id": "action",
+              "label": "Action",
+              "options": [
+                {
+                  "id": "a",
+                  "text": "allow"
+                },
+                {
+                  "id": "d",
+                  "text": "deny"
+                }
+              ]
+            },
+            {
+              "id": "src",
+              "label": "Source",
+              "options": [
+                {
+                  "id": "gw",
+                  "text": "192.0.2.0/24"
+                },
+                {
+                  "id": "any",
+                  "text": "any"
+                },
+                {
+                  "id": "staff",
+                  "text": "10.74.10.0/24"
+                }
+              ]
+            },
+            {
+              "id": "dst",
+              "label": "Destination",
+              "options": [
+                {
+                  "id": "any",
+                  "text": "any"
+                },
+                {
+                  "id": "gw",
+                  "text": "192.0.2.0/24"
+                },
+                {
+                  "id": "mail",
+                  "text": "10.74.20.25/32"
+                }
+              ]
+            }
+          ]
+        },
+        "answer": {
+          "slots": {
+            "action": "d",
+            "src": "any",
+            "dst": "mail"
+          }
+        }
+      },
+      {
+        "id": "s3",
+        "type": "order",
+        "points": 1,
+        "prompt": "Arrange the four rules. The firewall reads from the top and stops at the first match.",
+        "explanation": "Gateway allow, SMTP refusal, internal outbound, catch-all. Gateway deliveries match the refusal too, so the allow goes first. The refusal has to sit above the outbound allow, because a staff PC sending SMTP to the mail server matches both, and the ticket refuses it. The catch-all goes last.",
+        "payload": {
+          "items": [
+            {
+              "id": "corpOut",
+              "label": "Allow the internal network its normal outbound access"
+            },
+            {
+              "id": "deny",
+              "label": "Drop anything else"
+            },
+            {
+              "id": "noSmtp",
+              "label": "Refuse SMTP to the mail server from anyone else"
+            },
+            {
+              "id": "gwSmtp",
+              "label": "Accept SMTP from the gateway’s range"
+            }
+          ]
+        },
+        "answer": {
+          "correctOrder": [
+            "gwSmtp",
+            "noSmtp",
+            "corpOut",
+            "deny"
+          ]
+        }
+      },
+      {
+        "id": "s4",
+        "type": "analyze",
+        "points": 1,
+        "prompt": "Two months after go-live, an audit exports the live table, top rule first. Which rule can never fire?",
+        "explanation": "Rule 3 never fires. Rule 2 is the old MX rule from before the gateway, and nobody removed it. It matches the same traffic as rule 3 and sits above it, so anyone on the internet can still hand mail straight to the server and skip the malware and spoofing checks. Rule 1 still fires for the gateway, so mail flows normally and nothing looks wrong. Fix: delete rule 2. Rule-set reviews after a migration exist to catch this.",
+        "payload": {
+          "multi": false,
+          "lines": [
+            {
+              "id": "l1",
+              "text": "1 · Allow · Gateway range → Mail server · SMTP"
+            },
+            {
+              "id": "l2",
+              "text": "2 · Allow · Any → Mail server · SMTP"
+            },
+            {
+              "id": "l3",
+              "text": "3 · Deny · Any → Mail server · SMTP"
+            },
+            {
+              "id": "l4",
+              "text": "4 · Allow · Internal network → Any · any service"
+            },
+            {
+              "id": "l5",
+              "text": "5 · Deny · Any → Any · any service"
+            }
+          ]
+        },
+        "answer": {
+          "selected": [
+            "l3"
+          ]
+        }
+      }
+    ]
+  },
+
+  {
+    "id": "sp-fw-09",
+    "cert": "secplus",
+    "objective": "3.2",
+    "topic": "OT segmentation",
+    "title": "Fence the plant network at the firewall",
+    "estMinutes": 5,
+    "archetype": "firewall",
+    "scenario": "At Tidewater Water Treatment, the PLCs and the HMI that runs the plant sit on the OT network (172.20.50.0/24). The office network (10.80.0.0/16) is on the other side of the firewall. Ransomware that reaches the OT network can stop the plant, so the ticket is strict: office users keep their normal access to everything else; no office host may open a connection into the OT network; the one exception is the engineering workstation 10.80.20.15, which manages the HMI (172.20.50.10) over RDP. OT devices start no connections across the firewall; they keep time from a GPS clock on their own network. The firewall reads top-down, stops at the first match, and drops anything no rule matches.",
+    "assets": {
+      "reference": {
+        "kind": "network",
+        "given": {
+          "site": "Tidewater plant · FW-PLANT",
+          "engine": "first match wins, implicit deny"
+        },
+        "devices": [
+          {
+            "id": "eng",
+            "label": "Engineering WS",
+            "type": "pc",
+            "zone": "office",
+            "ip": "10.80.20.15",
+            "x": 0,
+            "y": 0
+          },
+          {
+            "id": "pcs",
+            "label": "Office PCs",
+            "type": "pc",
+            "zone": "office",
+            "ip": "10.80.30.0/24",
+            "x": 0,
+            "y": 1
+          },
+          {
+            "id": "net",
+            "label": "Internet",
+            "type": "cloud",
+            "ip": "any",
+            "x": 0,
+            "y": 2
+          },
+          {
+            "id": "fw",
+            "label": "FW-PLANT",
+            "type": "firewall",
+            "ip": "top-down",
+            "x": 2,
+            "y": 1
+          },
+          {
+            "id": "hmi",
+            "label": "HMI",
+            "type": "pc",
+            "zone": "ot",
+            "ip": "172.20.50.10",
+            "x": 4,
+            "y": 0
+          },
+          {
+            "id": "plc",
+            "label": "PLCs",
+            "type": "box",
+            "zone": "ot",
+            "ip": "172.20.50.0/24",
+            "x": 4,
+            "y": 1
+          }
+        ],
+        "links": [
+          {
+            "from": "eng",
+            "to": "fw"
+          },
+          {
+            "from": "pcs",
+            "to": "fw"
+          },
+          {
+            "from": "net",
+            "to": "fw"
+          },
+          {
+            "from": "fw",
+            "to": "hmi"
+          },
+          {
+            "from": "fw",
+            "to": "plc"
+          }
+        ]
+      }
+    },
+    "fwSpec": {
+      "rules": [
+        {
+          "id": "eng",
+          "action": "allow",
+          "proto": "tcp",
+          "src": "10.80.20.15/32",
+          "dst": "172.20.50.10/32",
+          "port": 3389
+        },
+        {
+          "id": "noOt",
+          "action": "deny",
+          "proto": "any",
+          "src": "10.80.0.0/16",
+          "dst": "172.20.50.0/24",
+          "port": "any"
+        },
+        {
+          "id": "office",
+          "action": "allow",
+          "proto": "any",
+          "src": "10.80.0.0/16",
+          "dst": "any",
+          "port": "any"
+        }
+      ],
+      "flows": [
+        {
+          "name": "engineering workstation rdp to the hmi",
+          "proto": "tcp",
+          "src": "10.80.20.15",
+          "dst": "172.20.50.10",
+          "port": 3389,
+          "expect": "allow"
+        },
+        {
+          "name": "engineering workstation to a plc blocked",
+          "proto": "tcp",
+          "src": "10.80.20.15",
+          "dst": "172.20.50.21",
+          "port": 502,
+          "expect": "deny"
+        },
+        {
+          "name": "office pc rdp to the hmi blocked",
+          "proto": "tcp",
+          "src": "10.80.30.40",
+          "dst": "172.20.50.10",
+          "port": 3389,
+          "expect": "deny"
+        },
+        {
+          "name": "office pc browses the web",
+          "proto": "tcp",
+          "src": "10.80.30.40",
+          "dst": "203.0.113.80",
+          "port": 443,
+          "expect": "allow"
+        },
+        {
+          "name": "hmi browsing out dropped",
+          "proto": "tcp",
+          "src": "172.20.50.10",
+          "dst": "203.0.113.80",
+          "port": 443,
+          "expect": "deny"
+        }
+      ],
+      "shadowTable": {
+        "rules": [
+          {
+            "id": "eng",
+            "action": "allow",
+            "proto": "tcp",
+            "src": "10.80.20.15/32",
+            "dst": "172.20.50.10/32",
+            "port": 3389
+          },
+          {
+            "id": "office",
+            "action": "allow",
+            "proto": "any",
+            "src": "10.80.0.0/16",
+            "dst": "any",
+            "port": "any"
+          },
+          {
+            "id": "noOt",
+            "action": "deny",
+            "proto": "any",
+            "src": "10.80.0.0/16",
+            "dst": "172.20.50.0/24",
+            "port": "any"
+          }
+        ],
+        "shadowedRuleId": "noOt"
+      }
+    },
+    "steps": [
+      {
+        "id": "s1",
+        "type": "configure",
+        "points": 1,
+        "prompt": "Build the engineering workstation’s rule.",
+        "explanation": "Allow the engineering workstation to the HMI’s /32 on TCP 3389, RDP. TCP 5900 is VNC, which many HMIs also run, so it is a tempting pick, but the ticket says RDP. TCP 22 is SSH and TCP 23 is Telnet. A destination of the whole OT /24 would give the workstation a path to every PLC as well.",
+        "payload": {
+          "slots": [
+            {
+              "id": "action",
+              "label": "Action",
+              "options": [
+                {
+                  "id": "a",
+                  "text": "allow"
+                },
+                {
+                  "id": "d",
+                  "text": "deny"
+                }
+              ]
+            },
+            {
+              "id": "dst",
+              "label": "Destination",
+              "options": [
+                {
+                  "id": "ot",
+                  "text": "172.20.50.0/24"
+                },
+                {
+                  "id": "hmi",
+                  "text": "172.20.50.10/32"
+                },
+                {
+                  "id": "any",
+                  "text": "any"
+                }
+              ]
+            },
+            {
+              "id": "svc",
+              "label": "Service",
+              "options": [
+                {
+                  "id": "ssh",
+                  "text": "TCP 22"
+                },
+                {
+                  "id": "vnc",
+                  "text": "TCP 5900"
+                },
+                {
+                  "id": "rdp",
+                  "text": "TCP 3389"
+                },
+                {
+                  "id": "telnet",
+                  "text": "TCP 23"
+                }
+              ]
+            }
+          ]
+        },
+        "answer": {
+          "slots": {
+            "action": "a",
+            "dst": "hmi",
+            "svc": "rdp"
+          }
+        }
+      },
+      {
+        "id": "s2",
+        "type": "configure",
+        "points": 1,
+        "prompt": "Build the rule that keeps the office out of the OT network.",
+        "explanation": "Deny the whole office, 10.80.0.0/16, to the OT /24 on any service. Scoping it to one office subnet leaves the others a path in. Blocking only RDP, or only TCP 502 (Modbus, the protocol the PLCs speak), leaves every other service open.",
+        "payload": {
+          "slots": [
+            {
+              "id": "action",
+              "label": "Action",
+              "options": [
+                {
+                  "id": "a",
+                  "text": "allow"
+                },
+                {
+                  "id": "d",
+                  "text": "deny"
+                }
+              ]
+            },
+            {
+              "id": "src",
+              "label": "Source",
+              "options": [
+                {
+                  "id": "pcs",
+                  "text": "10.80.30.0/24"
+                },
+                {
+                  "id": "office",
+                  "text": "10.80.0.0/16"
+                },
+                {
+                  "id": "eng",
+                  "text": "10.80.20.15/32"
+                }
+              ]
+            },
+            {
+              "id": "svc",
+              "label": "Service",
+              "options": [
+                {
+                  "id": "rdp",
+                  "text": "TCP 3389"
+                },
+                {
+                  "id": "modbus",
+                  "text": "TCP 502"
+                },
+                {
+                  "id": "any",
+                  "text": "any"
+                }
+              ]
+            }
+          ]
+        },
+        "answer": {
+          "slots": {
+            "action": "d",
+            "src": "office",
+            "svc": "any"
+          }
+        }
+      },
+      {
+        "id": "s3",
+        "type": "order",
+        "points": 1,
+        "prompt": "Arrange the three rules. The firewall reads from the top, stops at the first match, and drops anything that matches nothing.",
+        "explanation": "Engineering exception, OT block, office allow. The engineering workstation is part of 10.80.0.0/16, so its RDP session also matches the block, and the exception has to come first. The block has to sit above the office allow, which also matches traffic into the OT network. Traffic that OT devices start matches none of the three rules, so the firewall drops it.",
+        "payload": {
+          "items": [
+            {
+              "id": "office",
+              "label": "Allow office users everything else"
+            },
+            {
+              "id": "eng",
+              "label": "Allow the engineering workstation to reach the HMI over RDP"
+            },
+            {
+              "id": "noOt",
+              "label": "Block the office network from the OT network"
+            }
+          ]
+        },
+        "answer": {
+          "correctOrder": [
+            "eng",
+            "noOt",
+            "office"
+          ]
+        }
+      },
+      {
+        "id": "s4",
+        "type": "analyze",
+        "points": 1,
+        "prompt": "A month on, the live table reads as follows, top rule first. Which rule can never fire?",
+        "explanation": "Rule 3 never fires. Rule 2 lets the whole office reach Any, and the OT network is part of Any, so every office connection into the plant is allowed before rule 3 is read. Any infected office PC can now reach the PLCs and the HMI, which is the IT-to-OT path ransomware needs to stop a plant. Rule 1 still fires for the engineering workstation. Fix: move rule 3 above rule 2.",
+        "payload": {
+          "multi": false,
+          "lines": [
+            {
+              "id": "l1",
+              "text": "1 · Allow · Engineering WS → HMI · RDP"
+            },
+            {
+              "id": "l2",
+              "text": "2 · Allow · Office network → Any · any service"
+            },
+            {
+              "id": "l3",
+              "text": "3 · Deny · Office network → OT network · any service"
+            }
+          ]
+        },
+        "answer": {
+          "selected": [
+            "l3"
+          ]
+        }
+      }
+    ]
+  },
+
+  {
+    "id": "sp-fw-10",
+    "cert": "secplus",
+    "objective": "4.5",
+    "topic": "Host containment",
+    "title": "Contain an infected laptop at the firewall",
+    "estMinutes": 5,
+    "archetype": "firewall",
+    "scenario": "The SOC has confirmed malware on a sales laptop at 10.90.40.66 in the user VLAN (10.90.40.0/24). The access switch has already cut the laptop off from its neighbours on the VLAN, because that traffic never passes through the firewall. The core firewall routes between the VLANs and out to the internet, and until the responders finish, the laptop has to be contained there. The ticket: the rest of the user VLAN works normally; the laptop may not open connections to anything outside the user VLAN; the one exception is its EDR agent, which reaches the EDR console at 10.90.9.15 in the security VLAN (10.90.9.0/24) over HTTPS, so responders keep live telemetry and can pull files and memory remotely. The firewall reads top-down, stops at the first match, and drops anything no rule matches.",
+    "assets": {
+      "reference": {
+        "kind": "network",
+        "given": {
+          "site": "Sales floor · FW-CORE",
+          "engine": "first match wins, implicit deny"
+        },
+        "devices": [
+          {
+            "id": "lap",
+            "label": "Infected laptop",
+            "type": "pc",
+            "zone": "users",
+            "ip": "10.90.40.66",
+            "x": 0,
+            "y": 0,
+            "state": "compromised"
+          },
+          {
+            "id": "users",
+            "label": "User VLAN",
+            "type": "pc",
+            "zone": "users",
+            "ip": "10.90.40.0/24",
+            "x": 0,
+            "y": 1
+          },
+          {
+            "id": "fw",
+            "label": "FW-CORE",
+            "type": "firewall",
+            "ip": "top-down",
+            "x": 2,
+            "y": 1
+          },
+          {
+            "id": "edr",
+            "label": "EDR console",
+            "type": "server",
+            "zone": "security",
+            "ip": "10.90.9.15",
+            "x": 4,
+            "y": 0
+          },
+          {
+            "id": "net",
+            "label": "Internet",
+            "type": "cloud",
+            "ip": "any",
+            "x": 4,
+            "y": 1
+          },
+          {
+            "id": "fs",
+            "label": "File server",
+            "type": "server",
+            "zone": "servers",
+            "ip": "10.90.20.10",
+            "x": 4,
+            "y": 2
+          }
+        ],
+        "links": [
+          {
+            "from": "lap",
+            "to": "fw"
+          },
+          {
+            "from": "users",
+            "to": "fw"
+          },
+          {
+            "from": "fw",
+            "to": "edr"
+          },
+          {
+            "from": "fw",
+            "to": "net"
+          },
+          {
+            "from": "fw",
+            "to": "fs"
+          }
+        ]
+      }
+    },
+    "fwSpec": {
+      "rules": [
+        {
+          "id": "edr",
+          "action": "allow",
+          "proto": "tcp",
+          "src": "10.90.40.66/32",
+          "dst": "10.90.9.15/32",
+          "port": 443
+        },
+        {
+          "id": "contain",
+          "action": "deny",
+          "proto": "any",
+          "src": "10.90.40.66/32",
+          "dst": "any",
+          "port": "any"
+        },
+        {
+          "id": "users",
+          "action": "allow",
+          "proto": "any",
+          "src": "10.90.40.0/24",
+          "dst": "any",
+          "port": "any"
+        }
+      ],
+      "flows": [
+        {
+          "name": "edr agent checks in",
+          "proto": "tcp",
+          "src": "10.90.40.66",
+          "dst": "10.90.9.15",
+          "port": 443,
+          "expect": "allow"
+        },
+        {
+          "name": "laptop to the file server blocked",
+          "proto": "tcp",
+          "src": "10.90.40.66",
+          "dst": "10.90.20.10",
+          "port": 445,
+          "expect": "deny"
+        },
+        {
+          "name": "laptop to the internet blocked",
+          "proto": "tcp",
+          "src": "10.90.40.66",
+          "dst": "203.0.113.80",
+          "port": 443,
+          "expect": "deny"
+        },
+        {
+          "name": "colleague browses the web",
+          "proto": "tcp",
+          "src": "10.90.40.12",
+          "dst": "203.0.113.80",
+          "port": 443,
+          "expect": "allow"
+        },
+        {
+          "name": "colleague opens the file server",
+          "proto": "tcp",
+          "src": "10.90.40.12",
+          "dst": "10.90.20.10",
+          "port": 445,
+          "expect": "allow"
+        }
+      ],
+      "shadowTable": {
+        "rules": [
+          {
+            "id": "contain",
+            "action": "deny",
+            "proto": "any",
+            "src": "10.90.40.66/32",
+            "dst": "any",
+            "port": "any"
+          },
+          {
+            "id": "edr",
+            "action": "allow",
+            "proto": "tcp",
+            "src": "10.90.40.66/32",
+            "dst": "10.90.9.15/32",
+            "port": 443
+          },
+          {
+            "id": "users",
+            "action": "allow",
+            "proto": "any",
+            "src": "10.90.40.0/24",
+            "dst": "any",
+            "port": "any"
+          }
+        ],
+        "shadowedRuleId": "edr"
+      }
+    },
+    "steps": [
+      {
+        "id": "s1",
+        "type": "configure",
+        "points": 1,
+        "prompt": "Build the containment rule.",
+        "explanation": "Deny the laptop’s /32 to any destination on any service. Blocking the /24 would take the whole sales floor offline. Blocking only SMB (445) still leaves HTTPS open for command-and-control and data theft, and blocking only 443 leaves SMB open for spreading.",
+        "payload": {
+          "slots": [
+            {
+              "id": "action",
+              "label": "Action",
+              "options": [
+                {
+                  "id": "a",
+                  "text": "allow"
+                },
+                {
+                  "id": "d",
+                  "text": "deny"
+                }
+              ]
+            },
+            {
+              "id": "src",
+              "label": "Source",
+              "options": [
+                {
+                  "id": "vlan",
+                  "text": "10.90.40.0/24"
+                },
+                {
+                  "id": "lap",
+                  "text": "10.90.40.66/32"
+                },
+                {
+                  "id": "any",
+                  "text": "any"
+                }
+              ]
+            },
+            {
+              "id": "svc",
+              "label": "Service",
+              "options": [
+                {
+                  "id": "smb",
+                  "text": "TCP 445"
+                },
+                {
+                  "id": "any",
+                  "text": "any"
+                },
+                {
+                  "id": "https",
+                  "text": "TCP 443"
+                }
+              ]
+            }
+          ]
+        },
+        "answer": {
+          "slots": {
+            "action": "d",
+            "src": "lap",
+            "svc": "any"
+          }
+        }
+      },
+      {
+        "id": "s2",
+        "type": "configure",
+        "points": 1,
+        "prompt": "Build the EDR exception.",
+        "explanation": "Allow the laptop to the EDR console’s /32 on TCP 443, the channel its agent uses. Opening the whole security VLAN would give an infected machine a path to every security tool, the systems an attacker most wants to tamper with. RDP (3389) or SSH (22) would open an interactive login path to the console instead of the agent channel.",
+        "payload": {
+          "slots": [
+            {
+              "id": "action",
+              "label": "Action",
+              "options": [
+                {
+                  "id": "a",
+                  "text": "allow"
+                },
+                {
+                  "id": "d",
+                  "text": "deny"
+                }
+              ]
+            },
+            {
+              "id": "dst",
+              "label": "Destination",
+              "options": [
+                {
+                  "id": "sec",
+                  "text": "10.90.9.0/24"
+                },
+                {
+                  "id": "any",
+                  "text": "any"
+                },
+                {
+                  "id": "edr",
+                  "text": "10.90.9.15/32"
+                }
+              ]
+            },
+            {
+              "id": "svc",
+              "label": "Service",
+              "options": [
+                {
+                  "id": "rdp",
+                  "text": "TCP 3389"
+                },
+                {
+                  "id": "https",
+                  "text": "TCP 443"
+                },
+                {
+                  "id": "ssh",
+                  "text": "TCP 22"
+                }
+              ]
+            }
+          ]
+        },
+        "answer": {
+          "slots": {
+            "action": "a",
+            "dst": "edr",
+            "svc": "https"
+          }
+        }
+      },
+      {
+        "id": "s3",
+        "type": "order",
+        "points": 1,
+        "prompt": "Arrange the three rules. The firewall reads from the top, stops at the first match, and drops anything that matches nothing.",
+        "explanation": "EDR exception, containment block, user-VLAN allow. The console is part of any, so the agent’s traffic also matches the block, and the exception has to sit above it. The block has to sit above the user-VLAN allow, because the laptop is part of 10.90.40.0/24 and would otherwise keep full access. The firewall drops anything unmatched by itself.",
+        "payload": {
+          "items": [
+            {
+              "id": "users",
+              "label": "Allow the rest of the user VLAN its normal access"
+            },
+            {
+              "id": "contain",
+              "label": "Block every other connection from the laptop"
+            },
+            {
+              "id": "edr",
+              "label": "Allow the laptop’s EDR agent to reach its console"
+            }
+          ]
+        },
+        "answer": {
+          "correctOrder": [
+            "edr",
+            "contain",
+            "users"
+          ]
+        }
+      },
+      {
+        "id": "s4",
+        "type": "analyze",
+        "points": 1,
+        "prompt": "The responder who made the change pastes the live table, top rule first. Which rule can never fire?",
+        "explanation": "Rule 2 never fires. The EDR console is part of Any, so the agent’s check-ins hit rule 1’s deny first. The laptop is contained, but it also drops off the EDR console, and responders lose the live telemetry and remote collection they were counting on. Rule 3 still fires for every other laptop on the VLAN. Fix: move rule 2 above rule 1.",
+        "payload": {
+          "multi": false,
+          "lines": [
+            {
+              "id": "l1",
+              "text": "1 · Deny · Infected laptop → Any · any service"
+            },
+            {
+              "id": "l2",
+              "text": "2 · Allow · Infected laptop → EDR console · HTTPS"
+            },
+            {
+              "id": "l3",
+              "text": "3 · Allow · User VLAN → Any · any service"
+            }
+          ]
+        },
+        "answer": {
+          "selected": [
+            "l2"
+          ]
         }
       }
     ]

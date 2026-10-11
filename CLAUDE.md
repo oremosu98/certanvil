@@ -28,8 +28,8 @@
 | styles.css | 14913 | 551 KB |
 | index.html | 2298 | 149 KB |
 | dg-system.css | 5474 | 510 KB |
-| tests/uat.js + tests/uat/ (32 modules) | 29995 | — |
-UAT checks: 5089 · E2E `test(` count: 163 · APP_VERSION: 8.157.0 · stamped-at: worktree
+| tests/uat.js + tests/uat/ (32 modules) | 30022 | — |
+UAT checks: 5094 · E2E `test(` count: 163 · APP_VERSION: 8.158.0 · stamped-at: worktree
 <!-- FACTS:AUTO:END -->
 
 | File | Purpose | Size |
@@ -135,9 +135,9 @@ npx playwright test              # E2E (tests/e2e/app.spec.js)
 
 | Version | Features Added |
 |---|---|
+| v8.158.0 | Sim Lab: 10 Sec+ firewall-rule PBQs (build, order, find the rule that never fires); bank 129 |
 | v8.157.0 | Sim Lab: 16 new Sec+ PBQs (wireless security + governance/threat) |
 | v8.156.0 | Sim Lab: 16 new Sec+ PBQs (terminal + network design), shuffled dropdowns, fixed diagrams, unseen-first picking, no severity giveaways |
-| v8.155.0 | Cloud history pull is filtered to the current cert (no Network+ rows on the Security+ site) |
 
 _Older releases (v7.60.0 and back) live in [CHANGELOG.md](./CHANGELOG.md)._
 
