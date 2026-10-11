@@ -1421,7 +1421,7 @@ test('v4.85.15 MixedSplit: Mixed-split saves both summary entry AND per-topic sp
     const body = _fnBody(js, 'finish');
     if (!body) return false;
     // Find the Mixed branch and confirm it calls saveToHistory at least twice
-    const mixedBranch = body.match(/activeQuizTopic === MIXED_TOPIC[\s\S]{0,1500}else \{/);
+    const mixedBranch = body.match(/activeQuizTopic === MIXED_TOPIC[\s\S]{0,1900}else \{/);  // 1500 -> 1900: v8.149.0 byDiff entries lines
     if (!mixedBranch) return false;
     const summaryCall = /saveToHistory\(\{ date: now, topic: activeQuizTopic/.test(mixedBranch[0]);
     const splitCall = /saveToHistory\(\{ date: now, topic: t,[\s\S]{0,200}via:\s*'mixed-split'/.test(mixedBranch[0]);

@@ -974,6 +974,25 @@ test('v8.126.0 AI-901: Decision Lab seed is the AI-901 rebuild (no retired AI-90
       && !/Custom Vision|Form Recognizer|Azure AI Studio|Document Intelligence|regression|clustering/i.test(raw)
       && !/\u2014/.test(raw);
   })());
+test('v8.149.0 History rows record right/total per question difficulty (byDiff), incl. Mixed and exam splits',
+  (() => {
+    try {
+      const vm = require('vm');
+      const rd = fs.readFileSync(path.join(ROOT, 'features', 'readiness.js'), 'utf8');
+      const qe = fs.readFileSync(path.join(ROOT, 'features', 'quiz-engine.js'), 'utf8');
+      const ex = fs.readFileSync(path.join(ROOT, 'features', 'exam.js'), 'utf8');
+      const ctx = { window: {} }; vm.createContext(ctx);
+      vm.runInContext(_fnBody(rd, 'diffBand') + '\n' + _fnBody(rd, 'byDiffFromLog'), ctx);
+      ctx.log = [ { q: { difficulty: 'Foundational' }, isRight: true }, { q: { difficulty: 'Hard' }, isRight: false },
+                  { q: { difficulty: 'Hard' }, isRight: true }, { q: {}, isRight: true }, { q: { difficulty: 'weird' }, isRight: false } ];
+      const r = vm.runInContext('byDiffFromLog(log, "Mixed", e => e.isRight)', ctx);
+      const r2 = vm.runInContext('byDiffFromLog(log, "Exam Level", e => e.isRight)', ctx);
+      return JSON.stringify(r) === JSON.stringify({ F: [1, 1], H: [1, 2], M: [1, 2] })
+        && JSON.stringify(r2) === JSON.stringify({ F: [1, 1], H: [1, 2], E: [1, 2] })
+        && (qe.match(/byDiff: _byDiff\(/g) || []).length === 3
+        && /byDiff: \(typeof byDiffFromLog === 'function'\) \? byDiffFromLog\(b\.entries, 'Mixed'/.test(ex);
+    } catch (e) { return false; }
+  })());
 test('v8.147.0 Drill Mistakes: oldest drop at cap, miss resets, scenario kept, variants checked, broken entries leave, LRD order, copy',
   (() => {
     const qe = fs.readFileSync(path.join(ROOT, 'features', 'quiz-engine.js'), 'utf8');

@@ -93,6 +93,32 @@
     return 1.3;
   }
 
+  // v8.149.0: per-question difficulty on every history row. Rows kept only the
+  // quiz's difficulty SETTING, so a "Mixed" difficulty quiz (and every exam
+  // split) lost which answers were Foundational, Exam Level or Hard. byDiff is
+  // { F|E|H|M: [correct, total] } from each question's own label (the writer
+  // tags every question); M = no usable label. Feeds the difficulty-adjusted
+  // readiness model (readiness v3) and its calibration.
+  function diffBand(label) {
+    const s = String(label || '').toLowerCase();
+    if (s.includes('found')) return 'F';
+    if (s.includes('hard') || s.includes('tricky')) return 'H';
+    if (s.includes('exam')) return 'E';
+    return null;
+  }
+  function byDiffFromLog(entries, fallbackLabel, isRight) {
+    const out = {};
+    (entries || []).forEach(e => {
+      const b = diffBand(e && e.q && e.q.difficulty) || diffBand(fallbackLabel) || 'M';
+      const o = out[b] || (out[b] = [0, 0]);
+      o[1]++;
+      if (isRight(e)) o[0]++;
+    });
+    return out;
+  }
+  window.diffBand = diffBand;
+  window.byDiffFromLog = byDiffFromLog;
+
   // Build a per-topic weighted-accuracy map from history entries.
   // Weights: difficulty × exam-mode boost (1.3 for exam mode) × recency boost
   // (2.0 for sessions in the last 7 days). Extracted from getReadinessScore (#18).

@@ -1726,6 +1726,8 @@
   
     if (!wrongDrillMode) {
       const entryMode = dailyChallengeMode ? 'daily' : (sessionMode ? 'session' : 'quiz');
+      // v8.149.0: each row records right/total per question difficulty (readiness v3 input).
+      const _byDiff = (entries) => (typeof byDiffFromLog === 'function') ? byDiffFromLog(entries, diff, e => !!e.isRight) : undefined;
       const now = new Date().toISOString();
       // v4.57.1: Multi-topic sessions (selected via Custom Quiz with 2+ chips)
       // used to save ONE history entry under the "Multi: Topic A, Topic B, …"
@@ -1739,14 +1741,15 @@
         const byTopic = {};
         log.forEach(entry => {
           const t = (entry.q && entry.q.topic) || 'Unknown';
-          if (!byTopic[t]) byTopic[t] = { total: 0, score: 0 };
+          if (!byTopic[t]) byTopic[t] = { total: 0, score: 0, entries: [] };
           byTopic[t].total++;
+          byTopic[t].entries.push(entry);
           if (entry.isRight) byTopic[t].score++;
         });
         Object.keys(byTopic).forEach(t => {
           const { total: tTotal, score: tScore } = byTopic[t];
           const tPct = tTotal > 0 ? Math.round((tScore / tTotal) * 100) : 0;
-          saveToHistory({ date: now, topic: t, difficulty: diff, score: tScore, total: tTotal, pct: tPct, mode: entryMode, multi: true });
+          saveToHistory({ date: now, topic: t, difficulty: diff, score: tScore, total: tTotal, pct: tPct, mode: entryMode, multi: true, byDiff: _byDiff(byTopic[t].entries) });
         });
       } else if (activeQuizTopic === MIXED_TOPIC) {
         // v4.85.15: Mixed-mode per-topic split — pre-fix, Mixed quizzes (Deep
@@ -1763,17 +1766,18 @@
         log.forEach(entry => {
           const t = (entry.q && entry.q.topic) || null;
           if (!t || t === MIXED_TOPIC) return;
-          if (!byTopicMixed[t]) byTopicMixed[t] = { total: 0, score: 0 };
+          if (!byTopicMixed[t]) byTopicMixed[t] = { total: 0, score: 0, entries: [] };
           byTopicMixed[t].total++;
+          byTopicMixed[t].entries.push(entry);
           if (entry.isRight) byTopicMixed[t].score++;
         });
         Object.keys(byTopicMixed).forEach(t => {
           const { total: tTotal, score: tScore } = byTopicMixed[t];
           const tPct = tTotal > 0 ? Math.round((tScore / tTotal) * 100) : 0;
-          saveToHistory({ date: now, topic: t, difficulty: diff, score: tScore, total: tTotal, pct: tPct, mode: entryMode, via: 'mixed-split' });
+          saveToHistory({ date: now, topic: t, difficulty: diff, score: tScore, total: tTotal, pct: tPct, mode: entryMode, via: 'mixed-split', byDiff: _byDiff(byTopicMixed[t].entries) });
         });
       } else {
-        saveToHistory({ date: now, topic: activeQuizTopic, difficulty: diff, score, total, pct, mode: entryMode });
+        saveToHistory({ date: now, topic: activeQuizTopic, difficulty: diff, score, total, pct, mode: entryMode, byDiff: _byDiff(log) });
       }
     }
     // v4.54.17: if this quiz pushed the user past their daily goal for the

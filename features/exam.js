@@ -668,8 +668,9 @@
       if (!q) return;
       const t = q.topic;
       if (!t || t === MIXED_TOPIC || t === EXAM_TOPIC) return;
-      if (!byTopic[t]) byTopic[t] = { correct: 0, total: 0 };
+      if (!byTopic[t]) byTopic[t] = { correct: 0, total: 0, entries: [] };
       byTopic[t].total++;
+      byTopic[t].entries.push(entry);
       if (entry.isRight && !entry.isSkipped) byTopic[t].correct++;
     });
     const date = new Date().toISOString();
@@ -682,7 +683,8 @@
         date, topic, difficulty: 'Mixed',
         score: b.correct, total: b.total, pct,
         mode: 'exam', hardcore: !!hardcore,
-        via: 'exam-split'
+        via: 'exam-split',
+        byDiff: (typeof byDiffFromLog === 'function') ? byDiffFromLog(b.entries, 'Mixed', e => !!(e.isRight && !e.isSkipped)) : undefined  // v8.149.0
       });
       written++;
     });
