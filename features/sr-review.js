@@ -445,12 +445,18 @@
       }
     } catch (_) {}
     const max = fc.maxCount;
+    // v8.161.0: mark exam day in the strip (founder 2026-10-11), so the plan
+    // reads against the deadline. getDaysToExam: 0 = today, 5 = five days out.
+    const _exIdx = (typeof getDaysToExam === 'function') ? getDaysToExam() : null;
     let strip = '<div class="sr-fc-strip">';
     fc.days.forEach((d, i) => {
       const pct = (max > 0 && d.count > 0) ? Math.max(10, Math.round((d.count / max) * 100)) : 0;
-      const todayCls = d.isToday ? ' sr-fc-day-today' : '';
+      const isExam = (_exIdx != null && _exIdx >= 0 && i === _exIdx);
+      const todayCls = (d.isToday ? ' sr-fc-day-today' : '') + (isExam ? ' sr-fc-day-exam' : '');
       let countHtml;
-      if (d.isToday) {
+      if (isExam) {
+        countHtml = '<span class="sr-fc-count sr-fc-examday">Exam' + (d.count > 0 ? ' · ' + d.count : '') + '</span>';
+      } else if (d.isToday) {
         countHtml = d.count > 0
           ? '<span class="sr-fc-count">' + d.count + ' due</span>'
           : '<span class="sr-fc-count sr-fc-done">&#10003; done</span>';
@@ -462,7 +468,7 @@
       // Bar grows 0 → --h via a CSS keyframe (see dg-system.css). Target height
       // and stagger index ride in the style attribute, so there are no JS .style
       // writes and the sweep stays declarative.
-      strip += '<div class="sr-fc-day' + todayCls + '">'
+      strip += '<div class="sr-fc-day' + todayCls + '"' + (isExam ? ' title="Exam day"' : '') + '>'
         + '<span class="sr-fc-lbl">' + d.label + '</span>'
         + '<div class="sr-fc-track"><div class="sr-fc-bar" style="--fi:' + i + ';--h:' + pct + '%"></div></div>'
         + countHtml + '</div>';

@@ -2382,6 +2382,11 @@ html[data-theme] body .sr-fc-strip{display:flex;gap:8px;margin-top:14px;padding:
 html[data-theme] body .sr-fc-day{flex:0 0 auto;min-width:44px;display:flex;flex-direction:column;align-items:center;gap:7px;text-align:center;padding:5px 4px;border-radius:10px;}
 html[data-theme] body .sr-fc-day.sr-fc-day-today{background:color-mix(in oklab,var(--accent) 8%,transparent);}
 html[data-theme] body .sr-fc-day.sr-fc-day-today .sr-fc-lbl{color:var(--accent);}
+/* v8.161.0: exam day in the 7-day strip. A thin bronze ring (today keeps its tint, */
+/* so the two read apart, and an exam-today column shows both). Static, no motion. */
+html[data-theme] body .sr-fc-day.sr-fc-day-exam{box-shadow:inset 0 0 0 1px color-mix(in oklab,var(--accent) 50%,var(--border));}
+html[data-theme] body .sr-fc-day.sr-fc-day-exam .sr-fc-lbl{color:var(--accent);}
+html[data-theme] body .sr-fc-count.sr-fc-examday{color:var(--accent);font-weight:800;font-size:9.5px;letter-spacing:.09em;text-transform:uppercase;}
 html[data-theme] body .sr-fc-lbl{font-size:9.5px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:var(--text-dim);}
 html[data-theme] body .sr-fc-track{height:52px;width:22px;display:flex;align-items:flex-end;}
 html[data-theme] body .sr-fc-bar{width:100%;border-radius:5px;background:linear-gradient(180deg,var(--accent-light),var(--accent));height:var(--h,0);transform-origin:center bottom;animation:srFcGrow .9s var(--ease-out,ease) backwards;animation-delay:calc(var(--fi,0) * 45ms);}

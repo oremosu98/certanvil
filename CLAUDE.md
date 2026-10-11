@@ -27,9 +27,9 @@
 | app.js | 8297 | 441 KB |
 | styles.css | 14913 | 551 KB |
 | index.html | 2298 | 149 KB |
-| dg-system.css | 5474 | 510 KB |
-| tests/uat.js + tests/uat/ (33 modules) | 30170 | — |
-UAT checks: 5114 · E2E `test(` count: 163 · APP_VERSION: 8.160.0 · stamped-at: worktree
+| dg-system.css | 5479 | 511 KB |
+| tests/uat.js + tests/uat/ (33 modules) | 30184 | — |
+UAT checks: 5116 · E2E `test(` count: 163 · APP_VERSION: 8.161.0 · stamped-at: worktree
 <!-- FACTS:AUTO:END -->
 
 | File | Purpose | Size |
@@ -135,9 +135,9 @@ npx playwright test              # E2E (tests/e2e/app.spec.js)
 
 | Version | Features Added |
 |---|---|
+| v8.161.0 | Review forecast marks exam day in the 7-day strip |
 | v8.160.0 | Spaced repetition becomes a daily plan: Home asks for today's share, the rest spreads over the next days |
 | v8.159.0 | Net+ firewall PBQs rebuilt: one right rule order each, no port giveaways, single-select analyze |
-| v8.158.0 | Sim Lab: 10 Sec+ firewall-rule PBQs (build, order, find the rule that never fires); bank 129 |
 
 _Older releases (v7.60.0 and back) live in [CHANGELOG.md](./CHANGELOG.md)._
 

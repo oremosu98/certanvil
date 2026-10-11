@@ -93,6 +93,20 @@ const { _fnBody, js, results, test, vm } = require('./_context');
     test('SR plan: after 30 reviews today (queue unchanged in this fixture) Home asks for nothing more today',
       after.todo === 0 && after.done === 30);
 
+    // ── v8.161.0: exam day is marked in the 7-day strip ──
+    var R = { Math: Math, getDaysToExam: function () { return 5; }, escHtml: function (x) { return x; },
+      buildSrForecast: function () { var a = []; for (var i = 0; i < 7; i++) a.push({ label: ['Today', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][i], count: i < 3 ? 10 : 0, isToday: i === 0, topics: [] }); return { days: a, maxCount: 10, total: 30 }; } };
+    var host = { innerHTML: '' };
+    vm.createContext(R);
+    vm.runInContext(fn('renderSrForecast') + '\nrenderSrForecast(__h, { compact: true });', Object.assign(R, { __h: host }));
+    var days = host.innerHTML.split('<div class="sr-fc-day').slice(1);
+    test('SR plan: the exam day column (5 days out = Fri) is marked, and only that column',
+      days.length === 7 && /sr-fc-day-exam/.test(days[5]) && />Exam</.test(days[5])
+        && days.filter(function (x) { return /sr-fc-day-exam/.test(x); }).length === 1);
+    test('SR plan: exam-day styling lives in dg-system.css and the stylesheet cache-bust moved with it',
+      /\.sr-fc-day\.sr-fc-day-exam\{/.test(require('fs').readFileSync(require('path').join(__dirname, '..', '..', 'dg-system.css'), 'utf8'))
+        && /dg-system\.css\?v=8\.161\.0/.test(require('fs').readFileSync(require('path').join(__dirname, '..', '..', 'index.html'), 'utf8')));
+
     // ── Wiring ──
     var sched = _fnBody(js, '_srSchedule'), upd = _fnBody(js, 'updateSrEntry');
     test('SR plan: _srSchedule balances only when it is given the queue (vm fixtures without it are unchanged)',
