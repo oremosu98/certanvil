@@ -1574,6 +1574,27 @@
     const metaEl = document.getElementById('pl-meta');
     const launchEl = document.getElementById('primaryLaunch');
 
+    // v8.162.0: an unfinished full exam outranks everything: resume it. Read
+    // straight from storage (exam.js is lazy-loaded); the key is exam.js's
+    // EXAM_STATE_KEY. Once its time is up, the tile submits what was answered.
+    let _ex = null;
+    try { _ex = JSON.parse(localStorage.getItem('nplus_exam_state') || 'null'); } catch (_) { _ex = null; }
+    if (_ex && Array.isArray(_ex.questions) && _ex.questions.length && typeof _ex.endTime === 'number'
+        && _ex.endTime > Date.now() - 86400000) {
+      const left = Math.max(0, Math.round((_ex.endTime - Date.now()) / 60000));
+      const answered = (_ex.answers || []).filter(a => a && ((a.chosen !== null && a.chosen !== undefined)
+        || (a.msChosen || []).length || (a.orderSeq || []).length || Object.keys(a.topoState || {}).length || a.slVisited)).length;
+      const of = `${answered} of ${_ex.questions.length} answered`;
+      if (minEl) minEl.textContent = String(left);
+      if (titleEl) titleEl.textContent = left > 0 ? 'Resume your exam' : 'Your exam time is up';
+      if (metaEl) metaEl.textContent = left > 0 ? `${of} · the clock is still running` : `${of} · see your result`;
+      if (launchEl) launchEl.onclick = function () {
+        if (typeof _loadFeature === 'function') _loadFeature('exam').then(function (m) { if (m && m.resumeExam) m.resumeExam(); });
+      };
+      _renderHomeForecast(false);
+      return;
+    }
+
     // v7.17.0: when spaced-repetition cards are due, the recommend tile becomes
     // the SR-review entry. The old #sr-review-card home prompt + Next-Best-Move
     // CTA are hidden legacy stubs in the bento, so this cell is the only home

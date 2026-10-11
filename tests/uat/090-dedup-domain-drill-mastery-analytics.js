@@ -1855,9 +1855,9 @@ test('v4.81.15 Stale: staleBlock interpolated into buildPrompt template',
 test('v4.81.15 Stale: prompt block gated on STALE_CHIP_MIN_HISTORY',
   /hist\.length\s*>=\s*STALE_CHIP_MIN_HISTORY/.test(_fnBody(js, '_fetchQuestionsBatch') || ''));
 test('v4.81.15 Stale: startExam passes batch index i as staleSliceIdx',
-  /fetchQuestions\(key, MIXED_TOPIC, 'Mixed', EXAM_BATCH_BASE \+ EXAM_BATCH_BUFFER, i\)/.test(js));
+  /fetchQuestions\(key, MIXED_TOPIC, batchDiff, EXAM_BATCH_BASE \+ EXAM_BATCH_BUFFER, i\)/.test(js));   // v8.162.0: per-batch difficulty
 test('v4.81.15 Stale: startExam retry-to-fill threads same staleSliceIdx i',
-  /fetchQuestions\(key, MIXED_TOPIC, 'Mixed', deficit \+ EXAM_BATCH_BUFFER, i\)/.test(js));
+  /fetchQuestions\(key, MIXED_TOPIC, batchDiff, deficit \+ EXAM_BATCH_BUFFER, i\)/.test(js));   // v8.162.0
 test('v4.81.15 Stale: Marathon mode passes batch index as staleSliceIdx',
   /fetchQuestions\(key, MIXED_TOPIC, 'Exam Level', thisBatch, i\)/.test(js));
 test('v4.81.15 Stale: parallel-batch sub-batches get outerIdx + i for inner rotation',

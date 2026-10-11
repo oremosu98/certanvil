@@ -151,7 +151,8 @@ test('Tier1: renderMarathonSection called in goSetup',
   // (_portDrillTeardown, _irwTeardown) pushing renderMarathonSection further
   // down the function body.
   // v7.50.0: window 2500 → 2900 after the gauntlet + why-not mode-reset blocks.
-  js.match(/function goSetup\(\)[\s\S]{0,2900}renderMarathonSection\(\)/));
+  // v8.162.0: 2900 → 3000 after the exam leave guard line.
+  js.match(/function goSetup\(\)[\s\S]{0,3000}renderMarathonSection\(\)/));
 test('Tier1: renderMarathonSection called on DOMContentLoaded', js.match(/DOMContentLoaded[\s\S]{0,3000}renderMarathonSection\(\)/));
 // Marathon preset buttons still present inside the wrapper
 test('Tier1: Marathon 30-question preset still wired', html.includes("applyPreset('bulk30')"));

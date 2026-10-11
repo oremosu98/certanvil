@@ -2156,6 +2156,18 @@ html[data-theme] body #page-exam .exam-timer{font-family:'SF Mono',ui-monospace,
 html[data-theme] body #page-exam .timer-label{font-size:10px!important;text-transform:uppercase!important;letter-spacing:.08em!important;color:var(--text-dim)!important;}
 html[data-theme] body #page-exam .exam-q-counter{font-size:14px!important;font-weight:700!important;color:var(--text)!important;}
 html[data-theme] body #page-exam .exam-answered-lbl{font-size:11px!important;color:var(--text-dim)!important;}
+/* v8.162.0: pace line under "N / 90 answered". Static text, no motion; behind turns warn. */
+html[data-theme] body #page-exam .exam-pace{font-size:11px;font-weight:600;color:var(--text-dim);min-height:14px;font-variant-numeric:tabular-nums;}
+html[data-theme] body #page-exam .exam-pace.is-behind{color:var(--warn);}
+/* v8.162.0: the exam's per-question dots are display-only (the Question Navigator is
+   the control), so 90 of them shrink to fit one row. At 18px (44px on touch) they
+   overflowed and showed a horizontal scrollbar under the bar. */
+html[data-theme] body #page-exam #exam-prog-dots{overflow:hidden;gap:2px;}
+html[data-theme] body #page-exam #exam-prog-dots>.qpd-cell{flex:1 1 0!important;width:auto!important;min-width:0!important;height:4px!important;}
+html[data-theme] body #page-exam #exam-prog-dots>.qpd-cell.qpd-done,
+html[data-theme] body #page-exam #exam-prog-dots>.qpd-cell.qpd-flagged{height:6px!important;}
+html[data-theme] body #page-exam #exam-prog-dots>.qpd-cell.qpd-now{height:8px!important;}
+@media (max-width:600px){html[data-theme] body #page-exam #exam-prog-dots{gap:1px;}}
 
 /* ── Exam Mode: flag button ── */
 html[data-theme] body #page-exam .exam-flag-btn{background:none!important;border:1px solid var(--border)!important;border-radius:6px!important;color:var(--text-dim)!important;font-size:12px!important;font-weight:600!important;box-shadow:none!important;}

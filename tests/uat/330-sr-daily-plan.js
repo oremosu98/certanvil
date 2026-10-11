@@ -105,7 +105,10 @@ const { _fnBody, js, results, test, vm } = require('./_context');
         && days.filter(function (x) { return /sr-fc-day-exam/.test(x); }).length === 1);
     test('SR plan: exam-day styling lives in dg-system.css and the stylesheet cache-bust moved with it',
       /\.sr-fc-day\.sr-fc-day-exam\{/.test(require('fs').readFileSync(require('path').join(__dirname, '..', '..', 'dg-system.css'), 'utf8'))
-        && /dg-system\.css\?v=8\.161\.0/.test(require('fs').readFileSync(require('path').join(__dirname, '..', '..', 'index.html'), 'utf8')));
+        && (function () {   // cache-bust at or after the release that added the rule
+          var m = /dg-system\.css\?v=(\d+)\.(\d+)\.(\d+)/.exec(require('fs').readFileSync(require('path').join(__dirname, '..', '..', 'index.html'), 'utf8'));
+          return m && (+m[1] * 1e6 + +m[2] * 1e3 + +m[3]) >= 8161000;
+        })());
 
     // ── Wiring ──
     var sched = _fnBody(js, '_srSchedule'), upd = _fnBody(js, 'updateSrEntry');

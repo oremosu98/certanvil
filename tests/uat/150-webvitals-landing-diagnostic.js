@@ -238,8 +238,8 @@ test('v4.99.49 Phase10: _examOnVisibilityChange handler defined',
   /function\s+_examOnVisibilityChange\s*\(/.test(js));
 test('v4.99.49 Phase10: visibility handler is registered as event listener',
   /document\.addEventListener\(\s*['"]visibilitychange['"]\s*,\s*_examOnVisibilityChange/.test(js));
-test('v4.99.49 Phase10: visibility handler extends examEndTime by hidden duration (no lost seconds)',
-  /_examOnVisibilityChange[\s\S]{0,500}examEndTime\s*\+=\s*hiddenMs/.test(js));
+test('v8.162.0 Phase10: visibility handler no longer pauses the clock (the real exam never stops); it saves state + re-acquires the wake lock',
+  (() => { const b = _fnBody(js, '_examOnVisibilityChange') || ''; return !/examEndTime\s*\+=/.test(b) && /_acquireExamWakeLock\(\)/.test(b); })());
 
 // Online/offline banner
 test('v4.99.49 Phase10: _renderConnectivityBanner helper defined',

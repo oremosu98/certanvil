@@ -8,7 +8,95 @@
   'use strict';
 
   let _examWakeLock = null;
-  let _examHiddenAt = null;
+
+  // ── v8.162.0: saved exam state ─────────────────────────────────────────
+  // The exam lived only in memory, so a refresh, a crash, iOS evicting the tab
+  // or the "New version → Refresh" banner lost up to 90 minutes. It is now
+  // saved on every render and every 5s, and Home offers to resume it. Local
+  // only (per-subdomain key, so per cert). Spec:
+  // docs/superpowers/specs/2026-10-11-exam-simulator-hardening-design.md
+  const EXAM_STATE_KEY = 'nplus_exam_state';
+  let _examLastSave = 0;
+  function _examSaveState() {
+    if (!examMode || !Array.isArray(examQuestions) || !examQuestions.length) return;
+    try {
+      localStorage.setItem(EXAM_STATE_KEY, JSON.stringify({
+        v: 1, savedAt: Date.now(), endTime: examEndTime, current: examCurrent,
+        hardcore: !!examHardcore, questions: examQuestions, answers: examAnswers
+      }));
+      _examLastSave = Date.now();
+    } catch (_) { /* storage full: the exam still runs, it just can't be resumed */ }
+  }
+  function _examClearState() { try { localStorage.removeItem(EXAM_STATE_KEY); } catch (_) {} }
+  // The saved exam, or null. One that ended over a day ago is dropped.
+  function examSavedState() {
+    try {
+      const st = JSON.parse(localStorage.getItem(EXAM_STATE_KEY) || 'null');
+      if (!st || !Array.isArray(st.questions) || !st.questions.length || !Array.isArray(st.answers) || typeof st.endTime !== 'number') return null;
+      if (st.endTime < Date.now() - 86400000) { _examClearState(); return null; }
+      return st;
+    } catch (_) { return null; }
+  }
+  function _examInProgress() { return !!(examMode && examTimer); }
+  // Leaving a running exam asks first. Yes = suspend: the in-page clock stops,
+  // the saved deadline keeps running (like the real exam), Home offers resume.
+  // Called by showPage(target) and goSetup(); the exam's own pages pass through.
+  const _EXAM_OWN_PAGES = ['exam', 'exam-results', 'review', 'loading'];
+  function examLeaveOk(target) {
+    if (_EXAM_OWN_PAGES.indexOf(target) !== -1) return true;
+    if (!_examInProgress()) return true;
+    if (!confirm('Leave the exam? The clock keeps running, and you can resume from Home.')) return false;
+    _examSaveState();
+    clearInterval(examTimer); examTimer = null; examMode = false;
+    _releaseExamWakeLock();
+    return true;
+  }
+  function resumeExam() {
+    const st = examSavedState();
+    if (!st) { if (typeof goSetup === 'function') goSetup(); return; }
+    examMode = true;
+    if (typeof _resetDrillModes === 'function') _resetDrillModes();
+    examHardcore = !!st.hardcore;
+    const examPage = document.getElementById('page-exam');
+    if (examPage) examPage.classList.toggle('hardcore-active', examHardcore);
+    wrongDrillMode = false; navOpen = false;
+    examQuestions = st.questions; examAnswers = st.answers;
+    examCurrent = Math.max(0, Math.min(st.current || 0, examQuestions.length - 1));
+    examTimeLeft = Math.max(0, Math.round((st.endTime - Date.now()) / 1000));
+    if (examTimeLeft <= 0) { submitExam(); return; }   // time ran out while away: mark what was answered
+    showPage('exam');
+    renderExam();
+    startExamTimer();
+  }
+  // Answered = any answer recorded (shared by the pace line).
+  function _examAnswered(a) {
+    return !!a && (a.chosen !== null && a.chosen !== undefined || (a.msChosen || []).length > 0 ||
+      (a.orderSeq || []).length > 0 || Object.keys(a.topoState || {}).length > 0 || !!a.slVisited);
+  }
+  // Seconds budgeted per question: a PBQ gets its Sim Lab par (estMinutes x 0.9),
+  // the multiple-choice questions share the rest of the clock evenly.
+  function _examParSeconds() {
+    let pbqSec = 0, nMcq = 0;
+    const pars = examQuestions.map(q => {
+      if (q && q.type === 'simlab') { const sec = Math.round((((q.simlab && q.simlab.estMinutes) || 6) * 0.9) * 60); pbqSec += sec; return sec; }
+      nMcq++; return null;
+    });
+    const mcq = nMcq ? Math.max(30, (EXAM_TIME_SECONDS - pbqSec) / nMcq) : 0;
+    return pars.map(p => (p === null ? mcq : p));
+  }
+  // "on pace" within 2 minutes, else "N min behind" / "N min ahead".
+  function _examPaceText() {
+    if (!Array.isArray(examQuestions) || !examQuestions.length) return '';
+    const elapsed = EXAM_TIME_SECONDS - examTimeLeft;
+    if (elapsed < 60) return '';
+    const pars = _examParSeconds();
+    let used = 0;
+    examAnswers.forEach((a, i) => { if (_examAnswered(a)) used += pars[i]; });
+    const diff = used - elapsed;
+    if (Math.abs(diff) < 120) return 'on pace';
+    const m = Math.round(Math.abs(diff) / 60);
+    return diff > 0 ? m + ' min ahead' : m + ' min behind';
+  }
   // v4.54.9: exam-mode segmented progress dots. Mirrors the quiz version but
   // reads examAnswers[i].chosen/msChosen/orderSeq to decide per-question state.
   // In exam mode we can't know correct/wrong until submit, so we only distinguish
@@ -96,6 +184,9 @@
     try {
       for (let i = 0; i < BATCHES; i++) {
         _loadingProgressUpdate(`Batch ${i + 1} / ${BATCHES} \u2014 generating\u2026`, (i / BATCHES) * 100);
+        // v8.162.0: exam-level questions, the last batch hard (~80/20). "Mixed"
+        // included easy recall the real exam doesn't ask, which flattered the score.
+        const batchDiff = (i === BATCHES - 1) ? 'Hard / Tricky' : 'Exam Level';
 
         // Step 1: Generate (over-request) with fetch-retry on throw
         document.getElementById('loading-msg').textContent =
@@ -108,7 +199,7 @@
             // window of stale topics. Without this all 5 batches would see
             // the SAME stale-topic top-N and Haiku would cluster picks at
             // the top, defeating the breadth goal across a 90-Q exam.
-            rawBatch = await fetchQuestions(key, MIXED_TOPIC, 'Mixed', EXAM_BATCH_BASE + EXAM_BATCH_BUFFER, i);
+            rawBatch = await fetchQuestions(key, MIXED_TOPIC, batchDiff, EXAM_BATCH_BASE + EXAM_BATCH_BUFFER, i);
             break;
           } catch(retryErr) {
             if (attempt === MAX_RETRIES) { _lastBatchErr = retryErr; rawBatch = []; break; }
@@ -153,7 +244,7 @@
           try {
             // v4.81.15: retry-to-fill stays on the same staleSliceIdx as
             // the parent batch so we keep filling the same rotation window.
-            const extraRaw = await fetchQuestions(key, MIXED_TOPIC, 'Mixed', deficit + EXAM_BATCH_BUFFER, i);
+            const extraRaw = await fetchQuestions(key, MIXED_TOPIC, batchDiff, deficit + EXAM_BATCH_BUFFER, i);
             let extraValidated = validateQuestions(await aiValidateQuestions(key, extraRaw));
             // v4.81.14: dedupe the retry-to-fill payload against accumulated
             // examQuestions + the current batch's already-deduped contents.
@@ -182,11 +273,13 @@
         _r.added = examQuestions.length - _before; _fillRounds.push(_r);
       }
       if (examQuestions.length < EXAM_QUESTION_COUNT && typeof _topUpToCount === 'function') {
-        examQuestions = await _topUpToCount(key, MIXED_TOPIC, 'Mixed', examQuestions, EXAM_QUESTION_COUNT, _fillRounds, (round, deficit) => {
+        examQuestions = await _topUpToCount(key, MIXED_TOPIC, 'Exam Level', examQuestions, EXAM_QUESTION_COUNT, _fillRounds, (round, deficit) => {
           _loadingProgressUpdate(`Filling the last ${deficit} question${deficit === 1 ? '' : 's'}\u2026`, 92 + round * 2);
         });
       }
       if (!examQuestions.length) throw (_lastBatchErr || new Error('No questions could be generated. Try again.'));
+      // v8.162.0: shuffle so the hard batch doesn't cluster at the end.
+      for (let k = examQuestions.length - 1; k > 0; k--) { const r = Math.floor(Math.random() * (k + 1)); const t = examQuestions[k]; examQuestions[k] = examQuestions[r]; examQuestions[r] = t; }
       _loadingProgressUpdate('Finalizing…', 98);
       // Inject 2 CLI/topo PBQs into exam (predefined bank — already known good, skip validation)
       examQuestions = injectPBQs(examQuestions, MIXED_TOPIC, 2);
@@ -269,23 +362,14 @@
     } catch (_) { _examWakeLock = null; }
   }
 
-  // v4.99.49 Phase 10: pause exam timer when tab loses visibility, resume on
-  // regain. Tracks "time hidden" so examEndTime is extended by the same
-  // amount — student doesn't lose seconds to a notification interrupt.
-
+  // v8.162.0: the clock no longer pauses while the tab is hidden (it extended
+  // the deadline by the time away). The real exam never stops, and the
+  // deadline-based timer already counts that time. Save on hide (iOS can evict
+  // the tab) and re-acquire the wake lock on return.
   function _examOnVisibilityChange() {
     if (!examMode || !examTimer) return;  // only act during an exam
-    if (document.visibilityState === 'hidden') {
-      _examHiddenAt = Date.now();
-    } else if (document.visibilityState === 'visible' && _examHiddenAt) {
-      const hiddenMs = Date.now() - _examHiddenAt;
-      _examHiddenAt = null;
-      if (hiddenMs > 250) {  // ignore quick focus/blur glitches
-        examEndTime += hiddenMs;  // extend deadline by hidden duration
-      }
-      // Wake Lock auto-released on hide — re-acquire
-      _acquireExamWakeLock();
-    }
+    _examSaveState();
+    if (document.visibilityState === 'visible') _acquireExamWakeLock();
   }
   if (typeof document !== 'undefined') {
     document.addEventListener('visibilitychange', _examOnVisibilityChange);
@@ -295,9 +379,11 @@
     if (examTimer) clearInterval(examTimer);
     examEndTime = Date.now() + examTimeLeft * 1000;
     _acquireExamWakeLock();  // Phase 10: keep phone screen on for 90 min
+    _examSaveState();        // v8.162.0: deadline is known now
     examTimer = setInterval(() => {
       examTimeLeft = Math.max(0, Math.round((examEndTime - Date.now()) / 1000));
       updateTimerDisplay();
+      if (Date.now() - _examLastSave > 5000) _examSaveState();
       if (examTimeLeft <= 0) { clearInterval(examTimer); examTimer = null; _releaseExamWakeLock(); submitExam(); }
     }, 1000);
     updateTimerDisplay();
@@ -309,6 +395,13 @@
     const m = Math.floor(examTimeLeft / 60), s = examTimeLeft % 60;
     el.textContent = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
     el.className = 'exam-timer' + (examTimeLeft <= 300 ? ' danger' : examTimeLeft <= 600 ? ' warning' : '');
+    // v8.162.0: pace line next to "N / 90 answered".
+    const pc = document.getElementById('exam-pace');
+    if (pc) {
+      const t = _examPaceText();
+      pc.textContent = t;
+      pc.classList.toggle('is-behind', / behind$/.test(t));
+    }
   }
 
   // ══════════════════════════════════════════
@@ -364,6 +457,7 @@
 
     if (navOpen) renderNavGrid();
     updateTimerDisplay();
+    _examSaveState();   // v8.162.0: every answer and every move is resumable
   }
 
   function examNext() { if (examCurrent < examQuestions.length - 1) { examCurrent++; renderExam(); window.scrollTo(0,0); } }
@@ -471,6 +565,7 @@
   function abandonExam() {
     if (confirm('Abandon this exam and return to the menu? All progress will be lost.')) {
       clearInterval(examTimer); examTimer = null; examMode = false;
+      _examClearState();   // v8.162.0
       hideExamModal();
       renderHistoryPanel();
       showPage('setup');
@@ -485,6 +580,7 @@
     // goSetup() on increment.
     const _prevStreakBefore = (function(){ try { return getStreak().current || 0; } catch (_) { return 0; } })();
     if (examTimer) { clearInterval(examTimer); examTimer = null; }
+    _examClearState();       // v8.162.0: a submitted exam is never offered for resume
     _releaseExamWakeLock();  // Phase 10: phone can sleep now
     hideExamModal();
 
@@ -624,9 +720,13 @@
     const hcBadge = document.getElementById('exam-hardcore-badge');
     if (hcBadge) hcBadge.classList.toggle('is-hidden', !examHardcore);
 
-    document.getElementById('exam-result-msg').textContent = passed
-      ? `Score ${scaledScore}/${EXAM_MAX_SCORE} \u2014 above the ${EXAM_PASS_SCORE} pass mark. Exam-ready!`
-      : `Score ${scaledScore}/${EXAM_MAX_SCORE} \u2014 need ${EXAM_PASS_SCORE - scaledScore} more points. Keep drilling!`;
+    // v8.162.0: the 100-900 conversion is linear and the real scaling is
+    // unpublished, so say what the pass mark means here and call it an estimate.
+    const _passPct = Math.round(((EXAM_PASS_SCORE - EXAM_MIN_SCORE) / (EXAM_MAX_SCORE - EXAM_MIN_SCORE)) * 100);
+    document.getElementById('exam-result-msg').textContent = (passed
+      ? `Score ${scaledScore}/${EXAM_MAX_SCORE}, above the ${EXAM_PASS_SCORE} pass mark.`
+      : `Score ${scaledScore}/${EXAM_MAX_SCORE}, ${EXAM_PASS_SCORE - scaledScore} points short of the ${EXAM_PASS_SCORE} pass mark.`)
+      + ` Here, ${EXAM_PASS_SCORE} is about ${_passPct}% correct. The real exam's scaling isn't published, so treat this as an estimate.`;
 
     animateCount('exam-r-correct', 0, correct, 800);
     animateCount('exam-r-wrong', 0, wrong, 800);
@@ -771,9 +871,14 @@
   // captive-call landmine, same class as the renderExam fix above. Exam
   // navigator toggle dead since wave 6.
   window.toggleNav         = toggleNav;
+  // v8.162.0: resume + leave guard (showPage / goSetup call examLeaveOk).
+  window.resumeExam        = resumeExam;
+  window.examLeaveOk       = examLeaveOk;
+  window.examSavedState    = examSavedState;
 
   window._certanvilFeatures['exam'] = {
     enter: startExam,
-    startExam: startExam
+    startExam: startExam,
+    resumeExam: resumeExam
   };
 })();

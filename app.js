@@ -1,9 +1,9 @@
 // ══════════════════════════════════════════
-// Network+ AI Quiz — app.js  v8.161.0
+// Network+ AI Quiz — app.js  v8.162.0
 // ══════════════════════════════════════════
 
 // ── CONSTANTS ──
-const APP_VERSION = '8.161.0';
+const APP_VERSION = '8.162.0';
 // v4.99.45 (Phase 6b): expose APP_VERSION on window so the web-vitals
 // collector (lib/web-vitals-collector.js, loaded BEFORE app.js so its
 // PerformanceObservers attach earlier) can stamp this version onto every
@@ -2634,6 +2634,7 @@ const PRO_ONLY_PAGES = {
 
 let _pageSwitchDone = null;  // v8.148.0: the in-flight page switch's finisher (see showPage)
 function showPage(name) {
+  if (typeof examLeaveOk === 'function' && !examLeaveOk(name)) return;  // v8.162.0
   // v4.99.5 Phase E.4.2: gate Pro-only pages at navigation level.
   // _gateProOnly returns true for Pro/admin (proceed) or false + shows the
   // upgrade modal (block). Free users see the modal instead of the page.
@@ -2728,6 +2729,7 @@ function showPage(name) {
 }
 
 function goSetup() {
+  if (typeof examLeaveOk === 'function' && !examLeaveOk()) return;  // v8.162.0
   if (examTimer) { clearInterval(examTimer); examTimer = null; }
   // v4.99.38: portTimer was a top-level let in the Port Drill region but lives
   // inside features/port-drill.js IIFE post-extraction. Use typeof guard +
