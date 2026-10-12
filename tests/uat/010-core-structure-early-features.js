@@ -289,7 +289,9 @@ console.log('\n\x1b[1m── HARDCORE EXAM (v4.13 #48) ──\x1b[0m');
 test('STORAGE.HARDCORE_EXAM key', js.includes("HARDCORE_EXAM:"));
 test('examHardcore state var', js.includes('let examHardcore'));
 test('setHardcoreMode function', js.includes('function setHardcoreMode('));
-test('startExam reads HARDCORE_EXAM pref', /examHardcore = localStorage\.getItem\(STORAGE\.HARDCORE_EXAM\)/.test(js));
+// v8.166.0: Strict Mode retired from the simulator (its switch had no UI left and a
+// saved old setting silently locked navigation, flags and Pause). See 370.
+test('startExam no longer reads the HARDCORE_EXAM pref (Strict Mode retired v8.166.0)', !/examHardcore = localStorage\.getItem\(STORAGE\.HARDCORE_EXAM\)/.test(js));
 test('startExam toggles hardcore-active class', js.includes("classList.toggle('hardcore-active'"));
 test('examPrev guarded by examHardcore', /function examPrev[\s\S]{0,150}if \(examHardcore\) return;/.test(js));
 test('examToggleFlag guarded by examHardcore', /function examToggleFlag[\s\S]{0,200}if \(examHardcore\) return;/.test(js));

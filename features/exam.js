@@ -116,7 +116,7 @@
     if (st.questions.some(q => q && q.type === 'simlab')) await _examEnsureSimLab();   // v8.163.0
     examMode = true;
     if (typeof _resetDrillModes === 'function') _resetDrillModes();
-    examHardcore = !!st.hardcore;
+    examHardcore = false;   // v8.166.0: Strict Mode retired (see startExam), even for an exam saved in it
     const examPage = document.getElementById('page-exam');
     if (examPage) examPage.classList.toggle('hardcore-active', examHardcore);
     wrongDrillMode = false; navOpen = false;
@@ -207,7 +207,10 @@
       return;
     }
     const prior = ans.sl || null;
-    window._simLab.mountScenario(host, q.simlab, { initial: prior, onSubmit: function () {} });
+    window._simLab.mountScenario(host, q.simlab, {
+      initial: prior, onSubmit: function () {},
+      onReset: function () { ans.sl = null; renderExam(); }   // v8.166.0: Reset clears this PBQ's saved answers too
+    });
     const own = host.querySelector('[data-action="simLabSubmitScenario"]');
     if (own) own.remove();
     const live = window.__slResponses || {};
@@ -268,8 +271,12 @@
 
     examMode = true;
     if (typeof _resetDrillModes === 'function') _resetDrillModes();  // v8.153.0
-    // Hardcore mode (#48): read the persisted checkbox state at start time
-    examHardcore = localStorage.getItem(STORAGE.HARDCORE_EXAM) === '1';
+    // v8.166.0: Strict Mode (#48, "hardcore") is retired from the simulator. Its
+    // switch left the UI in a redesign, but a saved old setting still locked the
+    // order, flags, navigator and Pause. The real exam lets you go back and flag,
+    // so the simulator always runs real-exam rules. STORAGE.HARDCORE_EXAM is left
+    // in place but no longer read here.
+    examHardcore = false;
     const examPage = document.getElementById('page-exam');
     if (examPage) examPage.classList.toggle('hardcore-active', examHardcore);
     wrongDrillMode = false;

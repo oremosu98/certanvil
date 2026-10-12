@@ -27,9 +27,9 @@
 | app.js | 8292 | 440 KB |
 | styles.css | 14913 | 551 KB |
 | index.html | 2302 | 150 KB |
-| dg-system.css | 5513 | 520 KB |
-| tests/uat.js + tests/uat/ (36 modules) | 30519 | — |
-UAT checks: 5162 · E2E `test(` count: 163 · APP_VERSION: 8.165.0 · stamped-at: worktree
+| dg-system.css | 5544 | 524 KB |
+| tests/uat.js + tests/uat/ (37 modules) | 30595 | — |
+UAT checks: 5176 · E2E `test(` count: 163 · APP_VERSION: 8.166.0 · stamped-at: worktree
 <!-- FACTS:AUTO:END -->
 
 | File | Purpose | Size |
@@ -135,9 +135,9 @@ npx playwright test              # E2E (tests/e2e/app.spec.js)
 
 | Version | Features Added |
 |---|---|
+| v8.166.0 | Exam feedback: Reset on Sim Lab PBQs; simulator always runs real-exam rules (hidden Strict Mode retired, so Prev/Flag/Navigator/Pause are back); readable results card; review page back in brand colours. |
 | v8.165.0 | Judgement-case questions: about 4 in 10 Exam Level and Hard MCQs are short cases (role, organisation, one or two constraints) asking for the BEST, MOST or FIRST option, where two options are sound and the constraints decide. Prompt-only, all certs. |
 | v8.164.0 | Pause the Full Exam Simulator for real interruptions (clock stops, resume keeps the time left, result line reports it); Cancel on every loading screen goes Home, aborts the AI request and can never let the cancelled build take over later. |
-| v8.163.0 | Full exam opens with 4 Sim Lab PBQs (partial credit, same navigator and clock); PBQ review |
 
 _Older releases (v7.60.0 and back) live in [CHANGELOG.md](./CHANGELOG.md)._
 

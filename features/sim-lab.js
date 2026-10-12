@@ -2412,16 +2412,35 @@
     // Expose the live responses object so the exam layer can snapshot real answers
     // (closure over `responses`; user edits flow into it via each onChange).
     window.__slResponses = responses;
+    // v8.166.0: Reset (founder, 2026-10-12: "on the pbq we need like an undo or
+    // reset button"). Shown only when the host passes opts.onReset, because hosts
+    // add their own chrome around this mount (the exam footer, the Decision Lab
+    // selector) that a blind re-mount here would wipe. Gone once submitted, so a
+    // graded answer can't be reset.
+    var actions = _el('div', 'sl-actions');
+    var resetBtn = null;
+    if (opts && typeof opts.onReset === 'function') {
+      resetBtn = _el('button', 'sl-reset', 'Reset');
+      resetBtn.setAttribute('type', 'button');
+      resetBtn.setAttribute('aria-label', 'Reset this PBQ');
+      resetBtn.addEventListener('click', function () {
+        if (!window.confirm('Clear your answers on this PBQ and start it again?')) return;
+        opts.onReset();
+      });
+      actions.appendChild(resetBtn);
+    }
     var submit = _el('button', 'btn btn-primary gnt-cta', 'Submit answers');
     submit.setAttribute('type', 'button');
     submit.setAttribute('data-action', 'simLabSubmitScenario');
-    wrap.appendChild(submit);
+    actions.appendChild(submit);
+    wrap.appendChild(actions);
     host.appendChild(wrap);
 
     var submitted = false;
     window.__slActiveSubmit = function () {
       if (submitted) return;
       submitted = true;
+      if (resetBtn && resetBtn.parentNode) resetBtn.parentNode.removeChild(resetBtn);
       var score = simLabScoreScenario(scn, responses);
       opts.onSubmit(Object.assign({ responses: responses, scenario: scn }, score));
     };
@@ -3458,7 +3477,12 @@
     // the saved snapshot insulated from edits made on this re-entry.
     _slMountScenario(body, scn, {
       onSubmit: function () {},                                 // exam never per-round-submits; nav/Review drives flow
-      initial: _slSession.answers[idx] ? _slCloneResp(_slSession.answers[idx]) : null
+      initial: _slSession.answers[idx] ? _slCloneResp(_slSession.answers[idx]) : null,
+      onReset: function () {                                    // v8.166.0: keep the time already spent, clear the answer
+        _slSession.roundMs[idx] += Math.max(0, Date.now() - _slSession.roundEnteredAt);
+        _slSession.answers[idx] = null;
+        _slRenderRound(idx);
+      }
     });
     _slRenderExamFooter(idx);
   }
@@ -3721,6 +3745,7 @@
 
     var body = document.getElementById('sl-body');
     _slMountScenario(body, scn, {
+      onReset: function () { _slMountScenario(body, scn, this); },   // v8.166.0: same PBQ, blank (this = these options)
       onSubmit: function (result) {
         if (_slTimer) _slTimer.stop();
         _slTimer = null;
@@ -3849,6 +3874,7 @@
       var slot = document.getElementById('sl-timer-slot');
       if (slot) { slot.innerHTML = ''; _slSession.timer = _slStartPracticeTimer(slot, { estMinutes: scn.estMinutes }); }
       _slMountScenario(body, scn, {
+        onReset: function () { _slMountScenario(body, scn, this); },   // v8.166.0: same PBQ, blank (this = these options)
         onSubmit: function (result) {
           if (_slSession.timer) { _slSession.timer.stop(); _slSession.timer = null; }
           var passed = result.fraction === 1;
