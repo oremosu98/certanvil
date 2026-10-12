@@ -181,8 +181,8 @@ const { _fnBody, js, read, results, test, vm } = require('./_context');
     var resumeBody = _fnBody(js, 'resumeExam') || '';
     test('Exam pause: resuming a paused exam uses the saved time left, not the old deadline',
       /if \(st\.paused\)[\s\S]{0,120}examTimeLeft = Math\.max\(0, st\.timeLeft/.test(resumeBody));
-    test('Exam pause: no Pause in hardcore mode; answer shortcuts stand down while paused; the result reports the pause',
-      /if \(examHardcore\) return;/.test(_fnBody(js, 'examTogglePause') || '') && /#page-exam\.hardcore-active #exam-pause-btn\{display:none/.test(read('dg-system.css'))
+    test('Exam pause: available in every exam (Strict Mode removed); answer shortcuts stand down while paused; the result reports the pause',
+      !/examHardcore/.test(_fnBody(js, 'examTogglePause') || '') && !/hardcore-active/.test(read('dg-system.css'))
         && /examIsPaused\(\)\) return;/.test(read('features/quiz-engine.js')) && /The real exam has no pause\./.test(_fnBody(js, 'submitExam') || ''));
     test('Exam pause: Home shows "paused, N min left" for a paused exam',
       /paused, \$\{left\} min left/.test(read('features/home.js')));

@@ -84,15 +84,15 @@ test('Label: preset "15-min Weak Spots" (was Focused)', html.includes('15-min We
 test('Label: no legacy "15-min Focused" preset text', !html.includes('15-min Focused'));
 test('Label: preset "20-min Deep Scan" (v4.50.1: time corrected from 30-min to honest 20-min estimate)', html.includes('20-min Deep Scan'));
 test('Label: no legacy "30-min Grind" preset text', !html.includes('30-min Grind'));
-test('Label: exam toggle "Strict Mode" (was Hardcore)', html.includes('Strict Mode'));
+test('Label: Strict Mode toggle removed from the UI (v8.168.0)', !html.includes('modes-strict-checkbox'));
 test('Label: no legacy "Hardcore Mode" UI text', !html.includes('Hardcore Mode <span class="hardcore-sub"'));
 // v7.18.0: Settings page header is now the bento mono kicker (matches Analytics/Progress).
 test('Label: Settings page bento kicker heading (v7.18.0: Network+ N10-009 · Settings)',
   /id="page-settings"[\s\S]{0,800}ana-pagehead-title[^>]*><span class="ana-ph-cert">Network\+ N10-009<\/span>\s*<span class="ana-ph-dot"[^>]*>&middot;<\/span>\s*Settings/.test(html));
 test('codex-home: legacy #marathon-section stub + Marathon presets in session picker', html.includes('id="marathon-section"') && html.includes("applyPreset('bulk30')") && html.includes("applyPreset('bulk45')"));
 // Internal code identifiers must NOT have been renamed
-test('Code: examHardcore state var preserved', js.includes('let examHardcore'));
-test('Code: setHardcoreMode function preserved', js.includes('function setHardcoreMode('));
+test('Code: examHardcore removed (Strict Mode retired v8.166.0)', !js.includes('examHardcore'));
+test('Code: setHardcoreMode removed', !js.includes('function setHardcoreMode('));
 test('Code: HARDCORE_EXAM storage key preserved', js.includes('HARDCORE_EXAM'));
 test('Code: hardcore_pass milestone preserved', js.includes('hardcore_pass'));
 

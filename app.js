@@ -1,9 +1,9 @@
 // ══════════════════════════════════════════
-// Network+ AI Quiz — app.js  v8.167.0
+// Network+ AI Quiz — app.js  v8.168.0
 // ══════════════════════════════════════════
 
 // ── CONSTANTS ──
-const APP_VERSION = '8.167.0';
+const APP_VERSION = '8.168.0';
 // v4.99.45 (Phase 6b): expose APP_VERSION on window so the web-vitals
 // collector (lib/web-vitals-collector.js, loaded BEFORE app.js so its
 // PerformanceObservers attach earlier) can stamp this version onto every
@@ -1138,7 +1138,7 @@ const STORAGE = {
   PORT_STREAK_BEST: 'nplus_port_streak_best',
   PORT_FAMILY_BEST: 'nplus_port_family_best',
   PORT_PAIRS_BEST: 'nplus_port_pairs_best',
-  HARDCORE_EXAM: 'nplus_hardcore_exam',
+  HARDCORE_EXAM: 'nplus_hardcore_exam',   // Strict Mode (#48): retired v8.166.0, code removed v8.168.0; kept so old synced values stay recognised
   PORT_STATS: 'nplus_port_stats',
   EXAM_DATE: 'nplus_exam_date',
   MILESTONES: 'nplus_milestones',
@@ -1341,7 +1341,6 @@ window._certanvilFeatures = window._certanvilFeatures || {};
 
 // Exam state
 let examMode      = false;
-let examHardcore  = false; // #48: locked order, no flagging, no navigator
 let examQuestions  = [];
 let examAnswers    = []; // [{chosen, flagged, msChosen:[], orderSeq:[]}]
 let examCurrent    = 0;
@@ -2498,9 +2497,6 @@ window.addEventListener('DOMContentLoaded', () => {
   if (typeof _renderEnvBadge === 'function') _renderEnvBadge();
   if (typeof _maybeExportReminder === 'function') _maybeExportReminder();
   initMonitorGesture();
-  // Restore Hardcore exam preference (#48)
-  const hcCheckbox = document.getElementById('hardcore-checkbox');
-  if (hcCheckbox) hcCheckbox.checked = localStorage.getItem(STORAGE.HARDCORE_EXAM) === '1';
   // v7.34.1: initialise phone home-collapse on first load. goSetup() calls
   // _initHomeCollapse() when navigating back from quiz/exam, but on a raw
   // page load the DOMContentLoaded handler renders the setup/bento content
@@ -2509,13 +2505,6 @@ window.addEventListener('DOMContentLoaded', () => {
   // this call is a no-op on desktop and safe to duplicate.
   if (typeof _initHomeCollapse === 'function') _initHomeCollapse();
 });
-
-// Persist hardcore-mode preference (#48). The exam page reads `examHardcore`
-// at startExam time, so toggling the checkbox between exams just updates the
-// stored preference.
-function setHardcoreMode(on) {
-  try { localStorage.setItem(STORAGE.HARDCORE_EXAM, on ? '1' : '0'); _cloudFlush(STORAGE.HARDCORE_EXAM); } catch {}
-}
 
 function initChips(groupId, cb) {
   const g = document.getElementById(groupId);

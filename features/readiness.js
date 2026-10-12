@@ -688,7 +688,7 @@
     { id: 'daily_challenge_7',label: 'Daily disciple',      desc: '7-day Daily Challenge streak' },
     { id: 'daily_challenge_30',label:'Daily devotee',       desc: '30-day Daily Challenge streak' },
     // ── v4.13: Hardcore exam (#48) ──
-    { id: 'hardcore_pass',    label: 'Hardcore pass',       desc: `Score ${EXAM_PASS_SCORE}+ on a Hardcore exam simulation` },
+    { id: 'hardcore_pass',    label: 'Hardcore pass',       desc: `Scored ${EXAM_PASS_SCORE}+ on a Strict Mode exam simulation`, retired: true },  // Strict Mode retired v8.166.0: shown only to those who earned it
     // ── v4.30.2: Lab milestones ──
     { id: 'first_lab',        label: 'Lab rat',             desc: 'Complete your first topology lab' },
     { id: 'labs_5',            label: 'Lab regular',         desc: 'Complete 5 different labs' },

@@ -1,7 +1,7 @@
 /* Exam mode — extracted from app.js (#138 wave 6).
  * Lazy-loaded feature. Mechanical move: function bodies identical to app.js @ edfa740.
  * State vars (_examWakeLock, _examHiddenAt) moved here.
- * Shared state (examMode, examHardcore, examQuestions, examAnswers, examCurrent,
+ * Shared state (examMode, examQuestions, examAnswers, examCurrent,
  * examTimer, examTimeLeft, examEndTime) STAYS in app.js (quiz engine reads them).
  * _scaledExamScore STAYS in app.js (used by MILESTONE_CHECKS). */
 (function () {
@@ -22,7 +22,7 @@
     try {
       localStorage.setItem(EXAM_STATE_KEY, JSON.stringify({
         v: 1, savedAt: Date.now(), endTime: examEndTime, current: examCurrent,
-        hardcore: !!examHardcore, questions: examQuestions, answers: examAnswers,
+        questions: examQuestions, answers: examAnswers,
         answered: examAnswers.filter(_examAnswered).length,  // for Home's resume tile
         paused: !!_examPausedAt, pausedAt: _examPausedAt || 0, timeLeft: examTimeLeft,   // v8.164.0
         pausedMs: _examPausedMs, pauses: _examPauses
@@ -47,11 +47,10 @@
   // Pause stops the clock and covers the questions (no reading ahead while
   // paused); Resume restarts it with the time that was left. Leaving while
   // paused keeps it paused; Home offers resume. The result says how long the
-  // exam was paused, since the real exam has no pause. Not in hardcore mode.
+  // exam was paused, since the real exam has no pause.
   let _examPausedAt = 0, _examPausedMs = 0, _examPauses = 0;
   function examIsPaused() { return !!_examPausedAt; }
   function examTogglePause() {
-    if (examHardcore) return;
     if (_examPausedAt) _examResumeFromPause(); else _examPause();
   }
   function _examPause() {
@@ -116,9 +115,6 @@
     if (st.questions.some(q => q && q.type === 'simlab')) await _examEnsureSimLab();   // v8.163.0
     examMode = true;
     if (typeof _resetDrillModes === 'function') _resetDrillModes();
-    examHardcore = false;   // v8.166.0: Strict Mode retired (see startExam), even for an exam saved in it
-    const examPage = document.getElementById('page-exam');
-    if (examPage) examPage.classList.toggle('hardcore-active', examHardcore);
     wrongDrillMode = false; navOpen = false;
     examQuestions = st.questions; examAnswers = st.answers;
     examCurrent = Math.max(0, Math.min(st.current || 0, examQuestions.length - 1));
@@ -271,14 +267,6 @@
 
     examMode = true;
     if (typeof _resetDrillModes === 'function') _resetDrillModes();  // v8.153.0
-    // v8.166.0: Strict Mode (#48, "hardcore") is retired from the simulator. Its
-    // switch left the UI in a redesign, but a saved old setting still locked the
-    // order, flags, navigator and Pause. The real exam lets you go back and flag,
-    // so the simulator always runs real-exam rules. STORAGE.HARDCORE_EXAM is left
-    // in place but no longer read here.
-    examHardcore = false;
-    const examPage = document.getElementById('page-exam');
-    if (examPage) examPage.classList.toggle('hardcore-active', examHardcore);
     wrongDrillMode = false;
     examQuestions = [];
     examAnswers   = [];
@@ -619,14 +607,10 @@
 
   function examNext() { if (examCurrent < examQuestions.length - 1) { examCurrent++; renderExam(); window.scrollTo(0,0); } }
   function examPrev() {
-    // Hardcore mode locks question order — no going back (#48)
-    if (examHardcore) return;
     if (examCurrent > 0) { examCurrent--; renderExam(); window.scrollTo(0,0); }
   }
 
   function examToggleFlag() {
-    // Flagging is disabled in hardcore mode (#48)
-    if (examHardcore) return;
     examAnswers[examCurrent].flagged = !examAnswers[examCurrent].flagged;
     renderExam();
   }
@@ -635,8 +619,6 @@
   // QUESTION NAVIGATOR
   // ══════════════════════════════════════════
   function toggleNav() {
-    // Question navigator is disabled in hardcore mode (#48)
-    if (examHardcore) return;
     navOpen = !navOpen;
     const grid = document.getElementById('qnav-grid');
     document.getElementById('qnav-arrow').textContent = navOpen ? '\u25b2' : '\u25bc';
@@ -857,14 +839,14 @@
     try {
       if ((getStreak().current || 0) > _prevStreakBefore) _pendingStreakPulse = true;
     } catch (_) {}
-    saveToHistory({ date: new Date().toISOString(), topic: EXAM_TOPIC, difficulty: 'Mixed', score: Math.round(points), total, pct, mode: 'exam', hardcore: examHardcore, pausedMs: _examPausedMs || undefined });
+    saveToHistory({ date: new Date().toISOString(), topic: EXAM_TOPIC, difficulty: 'Mixed', score: Math.round(points), total, pct, mode: 'exam', pausedMs: _examPausedMs || undefined });
     // v4.81.13 (Codex r∞ user request): also write per-topic split rows so the
     // exam contributes to readiness / progress / weak-spots / what-if /
     // domain mastery — pre-fix the rolled-up EXAM_TOPIC sentinel was filtered
     // OUT by getReadinessScore (and every other surface that reads history
     // per-topic), so a 90-question exam was a "standalone entity" with zero
     // signal contribution beyond the wrong-bank + SR seed.
-    try { _saveExamPerTopicSplit(log, examHardcore); } catch (e) { console.warn('[exam-split]', e); }
+    try { _saveExamPerTopicSplit(log); } catch (e) { console.warn('[exam-split]', e); }
     // v4.81.13 (C): render the per-domain breakdown card on the exam-results
     // page so the user sees their domain split immediately after submit.
     try { if (typeof renderExamDomainBreakdown === 'function') renderExamDomainBreakdown(log); } catch (e) { console.warn('[exam-domain]', e); }
@@ -893,9 +875,6 @@
         ? 'Pass mark <em>cleared.</em>'
         : 'More <em>work needed.</em>';
     }
-    // Hardcore badge on results hero (#48)
-    const hcBadge = document.getElementById('exam-hardcore-badge');
-    if (hcBadge) hcBadge.classList.toggle('is-hidden', !examHardcore);
 
     // v8.162.0: the 100-900 conversion is linear and the real scaling is
     // unpublished, so say what the pass mark means here and call it an estimate.
@@ -940,7 +919,7 @@
   //
   // No double-counting: getReadinessScore filters EXAM_TOPIC (the
   // summary) explicitly, so only the per-topic splits contribute.
-  function _saveExamPerTopicSplit(log, hardcore) {
+  function _saveExamPerTopicSplit(log) {
     if (!Array.isArray(log) || log.length === 0) return 0;
     const byTopic = {};
     log.forEach(entry => {
@@ -962,7 +941,7 @@
       saveToHistory({
         date, topic, difficulty: 'Mixed',
         score: b.correct, total: b.total, pct,
-        mode: 'exam', hardcore: !!hardcore,
+        mode: 'exam',
         via: 'exam-split',
         byDiff: (typeof byDiffFromLog === 'function') ? byDiffFromLog(b.entries, 'Mixed', e => !!(e.isRight && !e.isSkipped)) : undefined  // v8.149.0
       });

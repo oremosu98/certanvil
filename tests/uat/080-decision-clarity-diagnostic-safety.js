@@ -282,16 +282,11 @@ test('v4.79.0 home: §04 Custom Quiz section heading retired',
   !/&#167;\s*04[\s\S]{0,400}Custom\s*<em>quiz<\/em>/.test(html));
 test('v4.79.0 home: standalone exam-section retired (was duplicating Mode Ladder)',
   !/<div class="exam-section">[\s\S]{0,800}Simulate Full Exam/.test(html));
-test('v4.79.0 home: legacy #hardcore-checkbox preserved as hidden compat shim',
-  /id="hardcore-checkbox"[^>]*hidden/.test(html));
+test('v8.168.0: legacy #hardcore-checkbox shim removed with Strict Mode', !html.includes('id="hardcore-checkbox"'));
 // bento: the v7.16-era `.dgh-strict` Exam-group toggle was replaced by the bento
 // composition; #modes-strict-checkbox survives as a hidden legacy stub still wired to
 // setHardcoreMode (the next assertion guards the dual-checkbox sync).
-test('bento home: Strict Mode toggle preserved as #modes-strict-checkbox legacy stub (→ setHardcoreMode)',
-  html.includes('id="modes-strict-checkbox"')
-    && /id="modes-strict-checkbox"[\s\S]{0,160}setHardcoreMode\(/.test(html));
-test('v4.79.0 home: Strict Mode toggle syncs both checkboxes',
-  /modes-strict-checkbox[\s\S]{0,400}hardcore-checkbox/.test(html));
+test('v8.168.0: #modes-strict-checkbox stub removed with Strict Mode', !html.includes('modes-strict-checkbox') && !html.includes('setHardcoreMode('));
 test('v4.79.0 CSS: .modes-strict-toggle styled', css.includes('.modes-strict-toggle'));
 
 // 2. Analytics empty H1 swap
@@ -1201,7 +1196,7 @@ test('v4.81.13 Exam: renderExamDomainBreakdown function defined',
 test('v4.81.13 Exam: submitExam wires _saveExamPerTopicSplit after summary save',
   (() => {
     const body = _fnBody(js, 'submitExam');
-    return body && /_saveExamPerTopicSplit\(log,/.test(body);
+    return body && /_saveExamPerTopicSplit\(log[,)]/.test(body);   // v8.168.0: the hardcore argument went with Strict Mode
   })());
 test('v4.81.13 Exam: submitExam wires renderExamDomainBreakdown',
   (() => {

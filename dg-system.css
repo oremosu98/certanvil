@@ -2174,7 +2174,6 @@ html[data-theme] body #page-exam #exam-prog-dots>.qpd-cell.qpd-now{height:8px!im
 html[data-theme] body .sl-item{color:var(--text);}
 /* v8.164.0: exam pause. Paused = only the top bar and the paused card show, so the
    questions can't be read while the clock is stopped. Static, no motion. */
-#page-exam.hardcore-active #exam-pause-btn{display:none!important;}
 html[data-theme] body #page-exam.is-paused > :not(.exam-topbar):not(#exam-paused){display:none!important;}
 html[data-theme] body #page-exam.is-paused #exam-flag-btn{display:none!important;}
 html[data-theme] body #page-exam .exam-paused{max-width:520px;margin:48px auto;padding:32px 28px;text-align:center;background:var(--surface);border:1px solid var(--border);border-radius:16px;}
@@ -2258,7 +2257,6 @@ html[data-theme] body #page-exam-results .exam-results-v2-big-label{font:800 11p
 html[data-theme] body #page-exam-results .exam-results-v2-big-score{font-family:'Fraunces',Georgia,serif!important;font-weight:600!important;font-size:clamp(64px,8vw,92px)!important;line-height:1!important;letter-spacing:-0.03em!important;font-variant-numeric:lining-nums tabular-nums!important;font-feature-settings:"lnum","tnum"!important;margin-bottom:14px!important;}
 html[data-theme] body #page-exam-results .pass-badge{background:var(--green)!important;color:#fff!important;border-radius:4px!important;font-size:11px!important;font-weight:800!important;letter-spacing:.1em!important;box-shadow:none!important;}
 html[data-theme] body #page-exam-results .badge-fail{background:var(--red)!important;}
-html[data-theme] body #page-exam-results .hardcore-badge{background:color-mix(in oklab,var(--accent) 12%,transparent)!important;color:var(--accent)!important;border:1px solid color-mix(in oklab,var(--accent) 30%,transparent)!important;border-radius:4px!important;font-size:11px!important;font-weight:800!important;box-shadow:none!important;}
 html[data-theme] body #page-exam-results .exam-results-v2-msg{color:var(--text-mid)!important;font-size:14px!important;line-height:1.6!important;max-width:52ch;}
 html[data-theme] body #page-exam-results .exam-results-v2-threshold{font:600 11px/1.4 Inter,sans-serif!important;letter-spacing:.06em!important;text-transform:uppercase!important;color:var(--text-dim)!important;margin-top:8px!important;}
 

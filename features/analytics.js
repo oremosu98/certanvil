@@ -1855,8 +1855,9 @@
   function _renderAnaMilestones() {
     evaluateMilestones(); // unlock any newly-earned milestones on render
     const unlockedMap = getMilestones();
-    const totalMilestones = MILESTONE_DEFS.length;
-    const unlockedDefs = MILESTONE_DEFS.filter(m => unlockedMap[m.id]);
+    const defs = MILESTONE_DEFS.filter(m => !m.retired || unlockedMap[m.id]);   // v8.168.0: a retired milestone shows only if already earned
+    const totalMilestones = defs.length;
+    const unlockedDefs = defs.filter(m => unlockedMap[m.id]);
     const unlockedCount = unlockedDefs.length;
     const pct = totalMilestones > 0 ? Math.round((unlockedCount / totalMilestones) * 100) : 0;
     const recent = unlockedDefs.slice().sort((a, b) => new Date(unlockedMap[b.id]) - new Date(unlockedMap[a.id])).slice(0, 4);
@@ -1911,7 +1912,7 @@
       <details class="ana-ms-details">
         <summary class="ana-ms-details-summary">Show all ${totalMilestones} milestones</summary>
         <div class="ana-milestones ana-ms-full-grid">
-          ${MILESTONE_DEFS.map(m => renderTile(m, !!unlockedMap[m.id])).join('')}
+          ${defs.map(m => renderTile(m, !!unlockedMap[m.id])).join('')}
         </div>
       </details>
     </div>`;
@@ -2242,8 +2243,9 @@
     }
     try { if (typeof evaluateMilestones === 'function') evaluateMilestones(); } catch (_) {}
     const unlockedMap = getMilestones();
-    const total = MILESTONE_DEFS.length;
-    const unlockedDefs = MILESTONE_DEFS.filter(m => unlockedMap[m.id]);
+    const defs = MILESTONE_DEFS.filter(m => !m.retired || unlockedMap[m.id]);   // v8.168.0: a retired milestone shows only if already earned
+    const total = defs.length;
+    const unlockedDefs = defs.filter(m => unlockedMap[m.id]);
     const unlocked = unlockedDefs.length;
     const relDate = (iso) => {
       try {
@@ -2266,7 +2268,7 @@
     try { if (typeof _buildMilestoneCtx === 'function') ctx = _buildMilestoneCtx(); } catch (_) {}
     const locked = [];
     if (ctx && typeof MILESTONE_PROGRESS !== 'undefined') {
-      MILESTONE_DEFS.forEach(m => {
+      defs.forEach(m => {
         if (unlockedMap[m.id]) return;
         const f = MILESTONE_PROGRESS[m.id];
         if (!f) return;

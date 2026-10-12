@@ -13,7 +13,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { _fnBody, js, results, test } = require('./_context');
+const { _fnBody, js, results, test, vm } = require('./_context');
 
 (function () {
   console.log('\n\x1b[1m── Exam feedback fixes (v8.166.0) ──\x1b[0m');
@@ -43,10 +43,27 @@ const { _fnBody, js, results, test } = require('./_context');
         && /@media \(prefers-reduced-motion:reduce\)\{\.sl-reset\{transition:none;\}/.test(dg));
 
     // ── 2 + 5. Strict Mode retired from the simulator ──
-    test('Strict Mode: startExam always runs real-exam rules (no more reading the hidden saved setting)',
-      /examHardcore = false;/.test(_fnBody(ex, 'startExam') || '') && !/localStorage\.getItem\(STORAGE\.HARDCORE_EXAM\)/.test(ex));
+    test('Strict Mode: the simulator has no Strict Mode left, so it always runs real-exam rules (code removed v8.168.0)',
+      !/examHardcore|hardcore-active|HARDCORE_EXAM/.test(ex));
     test('Strict Mode: a resumed exam saved in Strict Mode also runs real-exam rules',
-      /examHardcore = false;/.test(_fnBody(ex, 'resumeExam') || '') && !/examHardcore = !!st\.hardcore/.test(ex));
+      !/hardcore/.test(_fnBody(ex, 'resumeExam') || ''));
+    const rd = fs.readFileSync(path.join(ROOT, 'features', 'readiness.js'), 'utf8');
+    const an = fs.readFileSync(path.join(ROOT, 'features', 'analytics.js'), 'utf8');
+    test('Strict Mode: the Hardcore pass milestone is retired, shown only to those who earned it',
+      /id: 'hardcore_pass'[^\n]*retired: true/.test(rd)
+        && (an.match(/MILESTONE_DEFS\.filter\(m => !m\.retired \|\| unlockedMap\[m\.id\]\)/g) || []).length === 2);
+
+    // The live Analytics milestone data: a retired milestone counts and shows only once earned.
+    const anBody = _fnBody(an, '_anaBtMilestoneData') || '';
+    const runMs = (earned) => {
+      const ctx = vm.createContext({ Date, Math, MILESTONE_DEFS: [{ id: 'a', label: 'A', desc: '' }, { id: 'hardcore_pass', label: 'Hardcore pass', desc: '', retired: true }],
+        getMilestones: () => (earned ? { hardcore_pass: '2026-10-12T08:09:27.231Z' } : {}), evaluateMilestones: () => {}, MILESTONE_PROGRESS: {} });
+      vm.runInContext(anBody, ctx);
+      return vm.runInContext('_anaBtMilestoneData()', ctx);
+    };
+    const msOff = runMs(false), msOn = runMs(true);
+    test('Strict Mode: Analytics counts the retired milestone only once it is earned (1 of 2 shown before, 2 after)',
+      msOff.total === 1 && msOff.unlocked === 0 && msOn.total === 2 && msOn.unlocked === 1 && msOn.recent.some(r => r.label === 'Hardcore pass'));
 
     // ── 3. Results card ──
     test('Results card: one theme-aware surface card, no gradient, no purple glow',

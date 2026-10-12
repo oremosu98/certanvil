@@ -284,37 +284,20 @@ test('CSS: .hero-stats-strip', css.includes('.hero-stats-strip'));
 test('SW cache bumped to package.json version (netplus-v' + PKG_VERSION + ')', sw.includes('netplus-v' + PKG_VERSION));
 test('Family Drill: STORAGE.PORT_FAMILY_BEST', js.includes("PORT_FAMILY_BEST:"));
 
-// ── Hardcore exam (#48) ──
-console.log('\n\x1b[1m── HARDCORE EXAM (v4.13 #48) ──\x1b[0m');
-test('STORAGE.HARDCORE_EXAM key', js.includes("HARDCORE_EXAM:"));
-test('examHardcore state var', js.includes('let examHardcore'));
-test('setHardcoreMode function', js.includes('function setHardcoreMode('));
-// v8.166.0: Strict Mode retired from the simulator (its switch had no UI left and a
-// saved old setting silently locked navigation, flags and Pause). See 370.
-test('startExam no longer reads the HARDCORE_EXAM pref (Strict Mode retired v8.166.0)', !/examHardcore = localStorage\.getItem\(STORAGE\.HARDCORE_EXAM\)/.test(js));
-test('startExam toggles hardcore-active class', js.includes("classList.toggle('hardcore-active'"));
-test('examPrev guarded by examHardcore', /function examPrev[\s\S]{0,150}if \(examHardcore\) return;/.test(js));
-test('examToggleFlag guarded by examHardcore', /function examToggleFlag[\s\S]{0,200}if \(examHardcore\) return;/.test(js));
-test('toggleNav guarded by examHardcore', /function toggleNav[\s\S]{0,150}if \(examHardcore\) return;/.test(js));
-test('History entry includes hardcore flag', js.includes('hardcore: examHardcore'));
-test('Hardcore badge shown on results', js.includes("'exam-hardcore-badge'"));
-test('hardcore_pass milestone defined', js.includes("id: 'hardcore_pass'"));
+// ── Hardcore exam (#48) ── retired v8.166.0, code removed v8.168.0 ──
+// Its switch had left the UI in a redesign, but a saved old setting silently
+// locked question order, flags, the navigator and Pause. The real exam allows
+// all four, so the simulator always runs real-exam rules now.
+console.log('\n\x1b[1m── HARDCORE EXAM (#48, removed v8.168.0) ──\x1b[0m');
+test('Strict Mode removed: no examHardcore state or guards', !/examHardcore/.test(js));
+test('Strict Mode removed: no setHardcoreMode', !js.includes('function setHardcoreMode('));
+test('Strict Mode removed: no hardcore-active class in JS or CSS', !js.includes('hardcore-active') && !css.includes('hardcore-active') && !dgCss.includes('hardcore-active'));
+test('Strict Mode removed: no hidden toggles or HARDCORE badge in the HTML', !html.includes('hardcore-checkbox') && !html.includes('modes-strict-checkbox') && !html.includes('exam-hardcore-badge'));
+test('STORAGE.HARDCORE_EXAM key kept so old synced values stay recognised', js.includes("HARDCORE_EXAM:"));
+test('hardcore_pass milestone kept for those who earned it', js.includes("id: 'hardcore_pass'"));
 // v4.42.5 #141: table-driven — hardcore_pass check is now a one-liner in MILESTONE_CHECKS
 test('hardcore_pass evaluated against history',
   /id:\s*'hardcore_pass'[\s\S]{0,200}e\.hardcore/.test(js));
-test('HTML: hardcore-checkbox', html.includes('id="hardcore-checkbox"'));
-// v4.79.0: legacy .hardcore-toggle label retired — Strict Mode now lives
-// inside Mode Ladder Exam tier as .modes-strict-toggle (Codex round-3).
-// bento: the v7.16-era session-picker `.dgh-strict` Exam-group toggle was replaced
-// by the bento composition; Strict Mode lives on as the #modes-strict-checkbox legacy
-// stub (still wired → setHardcoreMode + syncs #hardcore-checkbox).
-test('bento: Strict Mode toggle preserved as #modes-strict-checkbox (wired to setHardcoreMode)',
-  html.includes('id="modes-strict-checkbox"')
-    && /id="modes-strict-checkbox"[\s\S]{0,160}setHardcoreMode\(this\.checked\)/.test(html));
-test('HTML: exam-hardcore-badge', html.includes('id="exam-hardcore-badge"'));
-test('CSS: .hardcore-toggle', css.includes('.hardcore-toggle'));
-test('CSS: .hardcore-badge', css.includes('.hardcore-badge'));
-test('CSS: hardcore-active hides flag/nav', css.includes('hardcore-active'));
 // v4.8 — N10-009 tightness
 test('computeDomainDistribution helper', js.includes('function computeDomainDistribution('));
 test('Objective validation uses the active cert\'s objectives (v8.138.0; Net+ [1-5].[1-8] kept only as the fallback)',
