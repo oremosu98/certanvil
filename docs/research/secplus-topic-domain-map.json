@@ -129,6 +129,9 @@
     "Audits and Assessments": 5,
     "Penetration Testing: Domain 5 Additions": 5,
     "Security Awareness": 5,
-    "User Training": 5
+    "User Training": 5,
+    "Cold Boot Attack": 2,
+    "Code Reuse": 2,
+    "Security Tools: Cuckoo, Nessus, Sn1per, theHarvester, Sublist3r": 4
   }
 }
