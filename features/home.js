@@ -1740,7 +1740,7 @@
         const go = document.createElement('button');
         go.type = 'button';
         go.className = 'mo-pick-go';
-        go.innerHTML = 'Practise it · 10 questions <span class="mo-pick-arrow" aria-hidden="true">→</span>';
+        go.innerHTML = 'Practise it · 10 questions<svg class="mo-pick-arrow" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>';   // same arrow as the custom quiz tile's "Configure" 
         go.setAttribute('aria-label', 'Start a 10-question mixed-difficulty quiz on ' + pickTopic);
         go.addEventListener('click', () => _startPickUpQuiz(pickTopic));
         resumeEl.appendChild(go);

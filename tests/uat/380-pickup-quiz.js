@@ -31,11 +31,13 @@ const { _fnBody, dgCss, js, results, test, vm } = require('./_context');
     vm.runInContext('_startPickUpQuiz(null)', ctx);
     test('Pick up: does nothing without a topic', ctx.started === 1);
 
-    test('Pick up CSS: quiet accent action, hover gated to fine pointers, 44px on touch, reduced-motion safe',
-      /#page-setup \.mo-resume \.mo-pick-go\{display:flex;width:100%;justify-content:space-between;[^}]*color:var\(--accent\);background:color-mix\(in oklab,var\(--accent\) 5%,transparent\)/.test(dgCss)
-        && /@media \(hover:hover\) and \(pointer:fine\)\{#page-setup \.mo-resume \.mo-pick-go:hover/.test(dgCss)
+    test('Pick up CSS: the same text-link look as the custom quiz tile\'s "Configure" (bronze text + arrow, no box), hover gated, 44px on touch, reduced-motion safe',
+      /#page-setup \.mo-resume \.mo-pick-go\{display:flex;align-items:center;gap:8px;margin-top:10px;padding:0;background:none;border:0;font:600 12px Inter,sans-serif;color:var\(--accent\);/.test(dgCss)
+        && /#page-setup \.cu-foot\{[^}]*gap:8px;font:600 12px Inter,sans-serif;color:var\(--accent\)\}/.test(dgCss)
+        && /@media \(hover:hover\) and \(pointer:fine\)\{#page-setup \.mo-resume \.mo-pick-go:hover \.mo-pick-arrow\{transform:translateX\(3px\);\}\}/.test(dgCss)
         && /@media \(hover:none\) and \(pointer:coarse\)\{#page-setup \.mo-resume \.mo-pick-go\{min-height:44px;\}\}/.test(dgCss)
-        && /@media \(prefers-reduced-motion:reduce\)\{#page-setup \.mo-resume \.mo-pick-go/.test(dgCss));
+        && /@media \(prefers-reduced-motion:reduce\)\{#page-setup \.mo-resume \.mo-pick-arrow/.test(dgCss));
+    test('Pick up: uses the same arrow icon as "Configure"', /class="mo-pick-arrow"[^>]*><path d="M5 12h14M13 6l6 6-6 6"\/><\/svg>/.test(mo));
   } catch (err) {
     test('Pick up: block (threw)', false);
     results.errors.push('380 pickup-quiz block threw: ' + err.message);
