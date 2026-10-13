@@ -998,14 +998,12 @@
       if (data.daysToExam !== null && data.daysToExam !== undefined) {
         if (data.targetGap > 0) {
           const cls = data.targetGap > 60 ? 'warn' : (data.targetGap > 20 ? 'mid' : 'good');
-          trajEl.innerHTML = '<strong>' + data.daysToExam + ' days</strong> to exam &middot; '
-            + 'need <strong>+' + data.targetGap + ' pts</strong> for confident pass '
-            + '<span class="hint">(lower bound → ' + EXAM_PASS_SCORE + ')</span>';
+          trajEl.innerHTML = _trajDays(data.daysToExam) + ' &middot; your low estimate needs <strong>+'
+            + data.targetGap + ' pts</strong> to clear ' + EXAM_PASS_SCORE;
           trajEl.className = 'readiness-trajectory ' + cls;
           trajEl.hidden = false;
         } else {
-          trajEl.innerHTML = '<strong>' + data.daysToExam + ' days</strong> to exam &middot; '
-            + 'already confidently above pass.';
+          trajEl.innerHTML = _trajDays(data.daysToExam) + ' &middot; even your low estimate clears the pass mark';
           trajEl.className = 'readiness-trajectory good';
           trajEl.hidden = false;
         }
@@ -1013,6 +1011,13 @@
         trajEl.hidden = true;
       }
     }
+  }
+
+  // v8.173.0: the trajectory line's lead. Plain wording (founder, 13 Oct: the old
+  // above-pass phrasing read as "a little corny"), with 1 day and exam day handled.
+  function _trajDays(n) {
+    if (n === 0) return '<strong>Exam day</strong>';
+    return '<strong>' + n + (n === 1 ? ' day' : ' days') + '</strong> to your exam';
   }
 
   // ══════════════════════════════════════════
@@ -1368,13 +1373,12 @@
           if (r.daysToExam !== null && r.daysToExam !== undefined) {
             if (r.targetGap > 0) {
               const cls = r.targetGap > 60 ? 'warn' : (r.targetGap > 20 ? 'mid' : 'good');
-              trajEl.innerHTML = '<strong>' + r.daysToExam + ' days</strong> to exam &middot; '
-                + 'need <strong>+' + r.targetGap + ' pts</strong> for confident pass';
+              trajEl.innerHTML = _trajDays(r.daysToExam) + ' &middot; your low estimate needs <strong>+'
+                + r.targetGap + ' pts</strong> to clear ' + EXAM_PASS_SCORE;
               trajEl.className = 'rc-v2-trajectory ' + cls;
               trajEl.hidden = false;
             } else {
-              trajEl.innerHTML = '<strong>' + r.daysToExam + ' days</strong> to exam &middot; '
-                + 'already confidently above pass.';
+              trajEl.innerHTML = _trajDays(r.daysToExam) + ' &middot; even your low estimate clears the pass mark';
               trajEl.className = 'rc-v2-trajectory good';
               trajEl.hidden = false;
             }

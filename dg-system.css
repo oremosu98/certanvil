@@ -251,6 +251,16 @@ html[data-theme] body #page-setup .readiness-score span:not(#rc-v2-num){display:
    reservation away before JS fills content. See dg-critical.css for the
    measurement writeup. */
 #page-setup .readiness-traj,#page-setup .rc-v2-trajectory{min-height:60px;}
+/* v8.173.0: the readiness trajectory line as a plain line, not a tinted box (founder, 13 Oct:
+   "needs a cleaner look"). styles.css drew a mono, tinted, bordered callout, and the CLS min-height
+   above made it an empty coloured block. Now Inter, text colours, and a 6px status dot in the
+   brand's pass/warn tokens; the reserved height stays, invisible without a box. */
+html[data-theme] body #page-setup .rc-v2-trajectory{display:block;margin-top:12px;padding:0 0 0 15px;text-indent:-15px;background:none!important;border:0!important;border-radius:0;font:500 12.5px/1.5 Inter,sans-serif!important;color:var(--text-mid)!important;}
+html[data-theme] body #page-setup .rc-v2-trajectory strong{color:var(--text)!important;font-weight:700;}
+html[data-theme] body #page-setup .rc-v2-trajectory::before{content:"";display:inline-block;width:6px;height:6px;margin-right:9px;border-radius:999px;background:var(--text-dim);vertical-align:middle;transform:translateY(-1px);}
+html[data-theme] body #page-setup .rc-v2-trajectory.good::before{background:var(--pass);}
+html[data-theme] body #page-setup .rc-v2-trajectory.mid::before,html[data-theme] body #page-setup .rc-v2-trajectory.warn::before{background:var(--warn);}
+html[data-theme] body #page-setup .rc-v2-trajectory:empty::before{content:none;}
 @media (min-width:981px){
   #page-setup .readiness-traj,#page-setup .rc-v2-trajectory{min-height:80px;}
 }

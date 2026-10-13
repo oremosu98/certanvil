@@ -27,9 +27,9 @@
 | app.js | 8282 | 441 KB |
 | styles.css | 14887 | 550 KB |
 | index.html | 2288 | 149 KB |
-| dg-system.css | 5552 | 525 KB |
-| tests/uat.js + tests/uat/ (38 modules) | 30647 | — |
-UAT checks: 5175 · E2E `test(` count: 163 · APP_VERSION: 8.172.0 · stamped-at: worktree
+| dg-system.css | 5562 | 526 KB |
+| tests/uat.js + tests/uat/ (39 modules) | 30686 | — |
+UAT checks: 5179 · E2E `test(` count: 163 · APP_VERSION: 8.173.0 · stamped-at: worktree
 <!-- FACTS:AUTO:END -->
 
 | File | Purpose | Size |
@@ -135,9 +135,9 @@ npx playwright test              # E2E (tests/e2e/app.spec.js)
 
 | Version | Features Added |
 |---|---|
+| v8.173.0 | Home readiness trajectory line reworded and restyled as a plain line with a status dot. |
 | v8.172.0 | Momentum 'Practise it · 10 questions' restyled as a text link matching the custom quiz tile's Configure link. |
 | v8.171.0 | Home Momentum tile: 'Practise it · 10 questions' starts a 10-question Mixed quiz on the topic the Pick up line names. |
-| v8.170.0 | 4 Sec+ exemplars filling SY0-701 gaps: server-side input validation (2), recognising SSO, continuity of operations. |
 
 _Older releases (v7.60.0 and back) live in [CHANGELOG.md](./CHANGELOG.md)._
 
