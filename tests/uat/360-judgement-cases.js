@@ -41,6 +41,17 @@ const { _fnBody, js, results, test, vm } = require('./_context');
         && /\$\{includeScenario \? scenarioInstructions : ''\}/.test(fb) && /buildPrompt\(false\)/.test(fb));
     test('Judgement cases: the old "~30-40% of Exam Level / Hard" scenario quota is gone from the writer prompt',
       !/30-40%/.test(fb) && !/30-40%/.test(block) && /the setup of a judgement case/.test(fb));
+
+    // v8.169.0: giveaway conditions (founder, 13 Oct: "(Choose TWO) Which TWO techniques make stored
+    // data unreadable to anyone who ... does not hold the required key or token vault?" named both
+    // answers' ingredients, and masking also fit the wording). Writer and checker both learn the pattern.
+    test('Giveaway conditions: the writer must not name an ingredient only the correct options have',
+      /never name the ingredient that only the correct options have/.test(fb) && /check that no distractor also satisfies the stem as worded/.test(fb));
+    test('Giveaway conditions: the multi-select rules carry the same point',
+      /No giveaway conditions: the stem must not name a key, vault, tool or feature that only the correct options share/.test(fb));
+    var vb = _fnBody(js, 'aiValidateQuestions') || '';
+    test('Giveaway conditions: the checker rejects a stem that names the ingredient only the answers have (check 9)',
+      /9\. ANSWER ECHO:[^\n]*names the ingredient or condition that only the correct options have/.test(vb));
   } catch (err) {
     test('Judgement cases: block (threw)', false);
     results.errors.push('360 judgement-cases block threw: ' + err.message);
