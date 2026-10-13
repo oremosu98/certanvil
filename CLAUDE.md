@@ -29,7 +29,7 @@
 | index.html | 2288 | 149 KB |
 | dg-system.css | 5542 | 524 KB |
 | tests/uat.js + tests/uat/ (37 modules) | 30601 | — |
-UAT checks: 5169 · E2E `test(` count: 163 · APP_VERSION: 8.169.0 · stamped-at: worktree
+UAT checks: 5169 · E2E `test(` count: 163 · APP_VERSION: 8.170.0 · stamped-at: worktree
 <!-- FACTS:AUTO:END -->
 
 | File | Purpose | Size |
@@ -135,9 +135,9 @@ npx playwright test              # E2E (tests/e2e/app.spec.js)
 
 | Version | Features Added |
 |---|---|
+| v8.170.0 | 4 Sec+ exemplars filling SY0-701 gaps: server-side input validation (2), recognising SSO, continuity of operations. |
 | v8.169.0 | Writer and checker learn the giveaway-condition pattern: a stem must not name the ingredient only the correct options have (key, token vault), and no distractor may also fit the wording. |
 | v8.168.0 | Remove the retired Strict Mode (hardcore) code from the exam simulator; the Hardcore pass milestone is kept only for those who earned it. |
-| v8.167.0 | 16 Sec+ exemplars from the founder's 12 Oct notes: cold boot, NIC teaming, rainbow tables and salting, threat actors, code reuse, security tools (Cuckoo, Nessus, Sn1per, theHarvester, Sublist3r). |
 
 _Older releases (v7.60.0 and back) live in [CHANGELOG.md](./CHANGELOG.md)._
 
