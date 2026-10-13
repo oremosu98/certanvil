@@ -1694,6 +1694,20 @@
     if (launchEl) launchEl.onclick = function () { if (typeof applyPreset === 'function') applyPreset('focused'); };
   }
 
+  // v8.171.0: the Momentum tile's "Pick up" quiz. Same chip-sync-then-start path as
+  // applyPreset, so the setup page reflects what is running.
+  function _startPickUpQuiz(t) {
+    if (!t) return;
+    topic = t; diff = 'Mixed'; qCount = 10;
+    document.querySelectorAll('#topic-group .chip').forEach(c => c.classList.toggle('on', c.dataset.v === topic));
+    document.querySelectorAll('#diff-group .chip').forEach(c => c.classList.toggle('on', c.dataset.v === diff));
+    document.querySelectorAll('#count-group .chip').forEach(c => c.classList.toggle('on', c.dataset.v === String(qCount)));
+    syncChipAriaPressed('#topic-group');
+    syncChipAriaPressed('#diff-group');
+    syncChipAriaPressed('#count-group');
+    startQuiz();
+  }
+
   // MOMENTUM tile — today done/goal + streak + ring + resume context. Ring fill
   // and count-ups gate on scroll-into-view (mockup IntersectionObserver).
   function renderBentoMomentum() {
@@ -1710,15 +1724,27 @@
     // Resume context: top weak/stale plan item, else a today/fresh fallback.
     const resumeEl = document.getElementById('moResume');
     if (resumeEl) {
-      let ctx = '';
+      let ctx = '', pickTopic = null;
       try {
         const plan = (typeof buildSessionPlan === 'function') ? buildSessionPlan(1) : null;
         if (plan && plan[0] && plan[0].topic) {
           ctx = `<b>Pick up:</b> ${escHtml(plan[0].topic)} · ${escHtml(plan[0].meta || plan[0].reason || '')}`.replace(/\s*·\s*$/, '') + '.';
+          pickTopic = plan[0].topic;
         }
       } catch (_) {}
       if (!ctx) ctx = done > 0 ? `<b>Pick up:</b> ${done} of ${goal} done today.` : '<b>Start fresh:</b> a quick warmup keeps the streak.';
       resumeEl.innerHTML = ctx;
+      // v8.171.0: one tap from "Pick up: <topic>" into a 10-question Mixed quiz on
+      // exactly that topic (founder, 13 Oct). Only when the line names a topic.
+      if (pickTopic) {
+        const go = document.createElement('button');
+        go.type = 'button';
+        go.className = 'mo-pick-go';
+        go.innerHTML = 'Practise it · 10 questions <span class="mo-pick-arrow" aria-hidden="true">→</span>';
+        go.setAttribute('aria-label', 'Start a 10-question mixed-difficulty quiz on ' + pickTopic);
+        go.addEventListener('click', () => _startPickUpQuiz(pickTopic));
+        resumeEl.appendChild(go);
+      }
     }
 
     const moFill = document.getElementById('moFill');
