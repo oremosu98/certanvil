@@ -415,7 +415,6 @@
       "objective": null,
       "status": "shipped",
       "shippedVersion": "8.43.0",
-      "changedSinceShip": "2026-10-14",
       "lastSeen": "2026-10-14"
     },
     "2|Password Attacks": {
@@ -699,11 +698,11 @@
       "lastSeen": "2026-10-14"
     },
     "4|Security Tools (SCAP, Agents, DLP, SNMP, NetFlow)": {
-      "hash": "6b6f8b2443fb",
+      "hash": "4af54a47c467",
       "domain": "4",
       "objective": null,
       "status": "shipped",
-      "shippedVersion": "8.174.0",
+      "shippedVersion": "8.175.0",
       "lastSeen": "2026-10-14"
     },
     "4|Firewall Rules & Zones": {
