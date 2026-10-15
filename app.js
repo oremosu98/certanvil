@@ -1,9 +1,9 @@
 // ══════════════════════════════════════════
-// Network+ AI Quiz — app.js  v8.175.0
+// Network+ AI Quiz — app.js  v8.176.0
 // ══════════════════════════════════════════
 
 // ── CONSTANTS ──
-const APP_VERSION = '8.175.0';
+const APP_VERSION = '8.176.0';
 // v4.99.45 (Phase 6b): expose APP_VERSION on window so the web-vitals
 // collector (lib/web-vitals-collector.js, loaded BEFORE app.js so its
 // PerformanceObservers attach earlier) can stamp this version onto every
@@ -2855,6 +2855,12 @@ function confirmBack() {
 function loadHistory() {
   try { return JSON.parse(localStorage.getItem(STORAGE.HISTORY) || '[]'); } catch(e) { return []; }
 }
+// v8.176.0: a Mixed quiz or an exam saves a summary row AND per-topic rows for the same
+// questions, so a count of questions must skip the per-topic rows or those sessions count
+// twice (founder, 15 Oct: 15 answered, Momentum said 30). Old exam splits predate `via`.
+function isHistorySplitRow(e) {
+  return !!e && (e.via === 'mixed-split' || e.via === 'exam-split' || (e.mode === 'exam' && e.topic !== EXAM_TOPIC));
+}
 function saveToHistory(entry) {
   try {
     const h = loadHistory();
@@ -2934,7 +2940,7 @@ function getStudyStats() {
 function getTodayQuestionCount() {
   const today = new Date().toISOString().slice(0, 10);
   return loadHistory()
-    .filter(e => new Date(e.date).toISOString().slice(0, 10) === today)
+    .filter(e => !isHistorySplitRow(e) && new Date(e.date).toISOString().slice(0, 10) === today)
     .reduce((a, e) => a + (e.total || 0), 0);
 }
 

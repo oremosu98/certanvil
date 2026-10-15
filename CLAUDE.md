@@ -24,12 +24,12 @@
 <!-- machine-owned — run `node scripts/stamp-facts.js` to refresh; do not hand-edit -->
 | Metric | Lines | Size |
 |---|---|---|
-| app.js | 8282 | 441 KB |
+| app.js | 8288 | 441 KB |
 | styles.css | 14887 | 550 KB |
 | index.html | 2288 | 149 KB |
 | dg-system.css | 5562 | 526 KB |
-| tests/uat.js + tests/uat/ (39 modules) | 30686 | — |
-UAT checks: 5179 · E2E `test(` count: 163 · APP_VERSION: 8.175.0 · stamped-at: worktree
+| tests/uat.js + tests/uat/ (40 modules) | 30740 | — |
+UAT checks: 5179 · E2E `test(` count: 163 · APP_VERSION: 8.176.0 · stamped-at: worktree
 <!-- FACTS:AUTO:END -->
 
 | File | Purpose | Size |
@@ -135,9 +135,9 @@ npx playwright test              # E2E (tests/e2e/app.spec.js)
 
 | Version | Features Added |
 |---|---|
+| v8.176.0 | Today's question count no longer counts Mixed quizzes and exams twice. |
 | v8.175.0 | 7 Sec+ SCAP exemplars: components, compliance checking, and SCAP vs scanners and STIGs. |
 | v8.174.0 | 7 Sec+ NetFlow exemplars: reading flow patterns and the NetFlow traps. |
-| v8.173.0 | Home readiness trajectory line reworded and restyled as a plain line with a status dot. |
 
 _Older releases (v7.60.0 and back) live in [CHANGELOG.md](./CHANGELOG.md)._
 
@@ -154,6 +154,7 @@ The Sim Lab faceplate/wiremap/slots (`.faceplate*`/`.wm*`/`.slots*`) tokens live
 - Exam answers init must include `cliRan: [], topoState: {}` for PBQ types
 - `hasAnswer` checks must include `Object.keys(a.topoState || {}).length > 0`
 - **Page switches go through `showPage` only, and it must finish each switch exactly once** (v8.148.0). The exit completes on the page's OWN `animationend` (`e.target === current`; child animations bubble) or a 300ms timer, whichever first, and both clear the other. Never add a bare `animationend` listener to a `.page`: when the timer wins (busy thread, background tab) it stays attached and re-runs a stale switch on a later animation, which made a new quiz's loading screen jump to the previous quiz. `tests/uat/300-page-switch-integrity.js` replays it.
+- **Counting questions or sessions from history must skip split rows (`isHistorySplitRow`).** A Mixed quiz or an exam saves a summary row AND per-topic rows for the same questions; summing every row counts them twice (v8.176.0: 15 answered, Momentum said 30). Per-topic stats do the reverse and skip the summaries.
 - **Constants inside a `features/*.js` IIFE are invisible to app.js and other modules.** A `typeof X === 'number'` guard silently falls back and a bare reference throws inside a `try` (v8.160.0: the lost `SR_SESSION_CAP` showed "Review 62 cards" on Home and dropped reviews from next-best-move). Export a function (`window.getSrTodayPlan`) and read that.
 - `setQuestionText(el, raw)` order is **escape-THEN-highlight** (`escHtml` → `highlightExamKeywords` → `innerHTML`). Reversing it is an XSS hole since question text is AI-generated.
 - The `_fnBody(src, name)` helper used by UAT extracts function bodies via brace-depth walking. **Prefix-match trap**: `tbShowCoach` will match `tbShowCoachModalLoading`. When writing UAT for a function, pick a name that's either unique or specify the exact suffix.

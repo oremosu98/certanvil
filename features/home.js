@@ -1225,6 +1225,7 @@
       let yesterdayQ = 0, yesterdayScore = 0;
       const yesterdayKey = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
       h.forEach(e => {
+        if (typeof isHistorySplitRow === 'function' && isHistorySplitRow(e)) return;   // v8.176.0: count Mixed quizzes and exams once
         const k = new Date(e.date).toISOString().slice(0, 10);
         if (k === todayKey) { todayQ += (e.total || 0); todayScore += (e.score || 0); todayCount += 1; }
         else if (k === yesterdayKey) { yesterdayQ += (e.total || 0); yesterdayScore += (e.score || 0); }
