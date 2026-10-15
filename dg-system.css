@@ -4118,6 +4118,50 @@ mark.gnt-hinge{background:color-mix(in oklab,var(--red) 26%,transparent);color:i
 #page-sim-lab-result .sls-r-why.sls-why-locked{color:color-mix(in oklab,var(--accent) 70%,var(--text-dim));display:inline-flex;align-items:center;gap:5px}
 #page-sim-lab-result .sls-r-why.sls-why-locked svg{width:11px;height:11px;fill:none;stroke:currentColor;stroke-width:2;flex:none}
 #page-sim-lab-result .sls-r-score{font:700 12.5px/1 Inter,sans-serif;color:var(--text-mid);font-variant-numeric:tabular-nums;flex:none}
+/* v8.177.0: each round row opens its answer key (founder, 15 Oct: "click on the scenario of choice
+   and see the right PBQ answer and set up", for right and wrong rounds). The row is a real button;
+   the panel lists each step's correct answer, your answer when it differs, and the why. */
+#page-sim-lab-result button.sls-r{width:100%;text-align:left;background:none;border:0;border-bottom:1px solid var(--border-soft,var(--border));font:inherit;color:inherit;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:background-color 160ms cubic-bezier(0.16,1,0.3,1),transform 160ms cubic-bezier(0.16,1,0.3,1)}
+#page-sim-lab-result .sls-r-title,#page-sim-lab-result .sls-r-why{display:block}
+#page-sim-lab-result .sls-r-why.sls-why-locked{display:inline-flex}
+#page-sim-lab-result .sls-r-open{display:block;margin-top:6px;font:600 12px/1.3 Inter,sans-serif;color:var(--accent)}
+#page-sim-lab-result .sls-r-chev{flex:none;width:18px;height:18px;color:var(--text-dim);transition:transform 200ms cubic-bezier(0.16,1,0.3,1)}
+#page-sim-lab-result .sls-r-chev svg{display:block;width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+#page-sim-lab-result .sls-r-chev path{vector-effect:non-scaling-stroke}
+#page-sim-lab-result .sls-r[aria-expanded="true"]{border-bottom-color:transparent}
+#page-sim-lab-result .sls-r[aria-expanded="true"] .sls-r-chev{transform:scaleY(-1)}   /* flip, not spin: never points sideways mid-way */
+#page-sim-lab-result .sls-r[aria-expanded="true"] .sls-r-why{display:none}   /* the panel shows every step's why */
+#page-sim-lab-result .sls-r:active{transform:scale(0.99)}
+#page-sim-lab-result .sls-r:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:8px}
+@media (hover:hover) and (pointer:fine){#page-sim-lab-result .sls-r:hover{background:color-mix(in oklab,var(--text) 3%,transparent)}#page-sim-lab-result .sls-r:hover .sls-r-chev{color:var(--text-mid)}}
+@media (hover:none) and (pointer:coarse){#page-sim-lab-result .sls-r{min-height:44px}}
+#page-sim-lab-result .sls-ans{padding:2px 2px 16px 36px;border-bottom:1px solid var(--border-soft,var(--border));animation:sls-ans-in 220ms cubic-bezier(0.16,1,0.3,1)}
+#page-sim-lab-result .sls-ans[hidden]{display:none}
+@keyframes sls-ans-in{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+@keyframes sls-ans-fade{from{opacity:0}to{opacity:1}}
+@media (prefers-reduced-motion:reduce){#page-sim-lab-result .sls-ans{animation:sls-ans-fade 160ms linear}#page-sim-lab-result .sls-r-chev,#page-sim-lab-result button.sls-r{transition:none}#page-sim-lab-result .sls-r:active{transform:none}}
+#page-sim-lab-result .sls-ans-scn{margin:0 0 12px;font:400 13px/1.55 Inter,sans-serif;color:var(--text-mid)}
+#page-sim-lab-result .sls-ans-step{padding:12px 0 2px;border-top:1px solid var(--border-soft,var(--border))}
+#page-sim-lab-result .sls-ans-h{display:flex;gap:8px;align-items:flex-start;font:600 13.5px/1.45 Inter,sans-serif;color:var(--text)}
+#page-sim-lab-result .sls-ans-ic{flex:none;width:18px;height:18px;margin-top:1px;border-radius:50%;display:grid;place-items:center;font:800 10px/1 Inter,sans-serif}
+#page-sim-lab-result .sls-ans-step.ok .sls-ans-ic{color:var(--pass);background:color-mix(in oklab,var(--pass) 14%,transparent)}
+#page-sim-lab-result .sls-ans-step.no .sls-ans-ic{color:var(--fail);background:color-mix(in oklab,var(--fail) 14%,transparent)}
+#page-sim-lab-result .sls-ans-n{color:var(--text-dim)}
+#page-sim-lab-result .sls-ans-part{font-weight:700;color:var(--text-mid);font-variant-numeric:tabular-nums}
+#page-sim-lab-result .sls-ans-row{display:grid;grid-template-columns:62px minmax(0,1fr);gap:10px;margin:9px 0 0 26px}
+#page-sim-lab-result .sls-ans-lab{font:700 10.5px/1.95 Inter,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:var(--pass)}
+#page-sim-lab-result .sls-ans-row.yours .sls-ans-lab{color:var(--fail)}
+#page-sim-lab-result .sls-ans-val{min-width:0;font:400 13px/1.55 Inter,sans-serif;color:var(--text)}
+#page-sim-lab-result .sls-ans-row.yours .sls-ans-val{color:var(--text-mid)}
+#page-sim-lab-result .sls-ans-list{margin:0;padding-left:18px}
+#page-sim-lab-result ul.sls-ans-list{padding-left:0;list-style:none}
+#page-sim-lab-result .sls-ans-list li+li{margin-top:3px}
+#page-sim-lab-result .sls-ans-k{font-weight:600}
+#page-sim-lab-result .sls-ans-to{color:var(--text-dim)}
+#page-sim-lab-result .sls-ans-code{font:500 12px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;overflow-wrap:anywhere}
+#page-sim-lab-result .sls-ans-none{color:var(--text-dim)}
+#page-sim-lab-result .sls-ans-why{margin:9px 0 10px 26px;font:400 12.5px/1.55 Inter,sans-serif;color:var(--text-dim)}
+@media (max-width:560px){#page-sim-lab-result .sls-ans{padding-left:0}#page-sim-lab-result .sls-ans-row{grid-template-columns:minmax(0,1fr);gap:1px}}
 #page-sim-lab-result .sls-insight{margin:20px 0;padding:14px 16px;border:1px solid color-mix(in oklab,var(--accent) 26%,var(--border));background:color-mix(in oklab,var(--accent) 7%,transparent);border-radius:13px}
 #page-sim-lab-result .sls-insight-k{display:inline-flex;align-items:center;gap:6px;font:800 10px/1 Inter,sans-serif;letter-spacing:.13em;text-transform:uppercase;color:var(--accent);margin-bottom:6px}
 #page-sim-lab-result .sls-insight-k svg{width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:2}

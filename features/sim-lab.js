@@ -3329,19 +3329,7 @@
     score.innerHTML = '<span class="sls-score-n">' + agg.passed + '<small>/' + agg.rounds + '</small></span>' +
       '<span class="sls-score-cap">Rounds passed · ' + agg.pct + '% of steps correct</span>';
     root.appendChild(score);
-    var rounds = _el('div', 'sls-rounds');
-    _slSession.results.forEach(function (r) {
-      var row = _el('div', 'sls-r');
-      var ok = r.passed;
-      row.appendChild(_el('span', 'sls-r-ic ' + (ok ? 'ok' : 'no'), ok ? '&#x2713;' : '&#x2717;'));
-      var bodyc = _el('div', 'sls-r-body');
-      bodyc.appendChild(_el('div', 'sls-r-title', _esc(r.scenario.topic || 'PBQ')));
-      bodyc.appendChild(_el('div', 'sls-r-why', _esc(_slFirstWhy(r))));   // exam is Pro-only — always reveal
-      row.appendChild(bodyc);
-      row.appendChild(_el('span', 'sls-r-score', r.score.correct + '/' + r.score.total));
-      rounds.appendChild(row);
-    });
-    root.appendChild(rounds);
+    root.appendChild(_slRoundRows(_slSession.results, function () { return true; }));   // exam is Pro-only — always reveal
     var cluster = _slWeakCluster(_slSession.results);
     if (cluster) {
       var ins = _el('div', 'sls-insight');
@@ -3382,7 +3370,7 @@
     _slSession.results = _slSession.scenarios.map(function (scn, i) {
       var resp = _slSession.answers[i] || {};
       var score = simLabScoreScenario(scn, resp);
-      return { scenario: scn, score: score, passed: score.fraction === 1 };
+      return { scenario: scn, score: score, passed: score.fraction === 1, responses: resp };   // v8.177.0: the answer panel shows them
     });
     _slSession.timeUp = !!timeUp;
     _slRenderExamResult();   // Task 9
@@ -3922,6 +3910,165 @@
     }).catch(function () { return null; });
     _slSession.prefetch = { idx: nextIdx, promise: p };
   }
+  // v8.177.0: tap a round on the results page to see the answer key and your own
+  // answers, step by step (founder, 15 Oct: "click on the scenario of choice and see
+  // the right PBQ answer and set up ... for Correct+Wrong answers"). Text per step type.
+  function _slStepOk(raw) { return (raw && typeof raw === 'object') ? raw.correct === raw.total : !!raw; }
+  function _slLabels(list, key) {
+    var m = {};
+    (list || []).forEach(function (x) { if (x && x.id != null) m[x.id] = x[key || 'label']; });
+    return m;
+  }
+  function _slList(items, ordered) {
+    if (!items.length) return '<span class="sls-ans-none">Nothing</span>';
+    var tag = ordered ? 'ol' : 'ul';
+    return '<' + tag + ' class="sls-ans-list">' + items.map(function (t) { return '<li>' + t + '</li>'; }).join('') + '</' + tag + '>';
+  }
+  var _SL_TO = ' <span class="sls-ans-to" aria-hidden="true">&rarr;</span> ';
+  function _slKv(k, v) { return '<span class="sls-ans-k">' + k + '</span>' + _SL_TO + v; }
+  // analyze targets live on the step (lines) or on the scenario's reference panel
+  function _slTargetLabels(scn, step) {
+    var p = step.payload || {}, ref = (scn.assets && scn.assets.reference) || {}, m = {};
+    (p.lines || []).forEach(function (l) { m[l.id] = l.text; });
+    (ref.excerpts || []).forEach(function (ex) {
+      m[ex.id] = ex.promptLine || ex.id;                                   // reveal: the command to run
+      (ex.lines || []).forEach(function (ln) { if (ln.id) m[ln.id] = ln.text; });   // excerptLines
+    });
+    (ref.ports || []).forEach(function (pt) { m[pt.id] = pt.label || pt.id; });      // facePorts
+    (ref.pins || []).forEach(function (pn) { m[String(pn.pin)] = 'Pin ' + pn.pin; });  // wiremapPins
+    return m;
+  }
+  function _slKeyOrder(st, r) {
+    var lab = _slLabels(st.payload.items);
+    var name = function (id) { return _esc(lab[id] || id); };
+    return { correct: _slList((st.answer.correctOrder || []).map(name), true),
+             yours: _slList(Array.isArray(r.order) ? r.order.map(name) : [], true) };
+  }
+  function _slKeyCategorize(st, r) {
+    var items = _slLabels(st.payload.items), buckets = _slLabels(st.payload.buckets), map = st.answer.map || {}, got = r.map || {};
+    return {
+      correct: _slList((st.payload.buckets || []).map(function (b) {
+        var ids = Object.keys(map).filter(function (id) { return map[id] === b.id; });
+        return '<span class="sls-ans-k">' + _esc(b.label) + ':</span> ' + (ids.length ? ids.map(function (id) { return _esc(items[id] || id); }).join(', ') : 'none');
+      })),
+      yours: _slList(Object.keys(map).filter(function (id) { return got[id] !== map[id]; }).map(function (id) {
+        return _slKv(_esc(items[id] || id), got[id] ? _esc(buckets[got[id]] || got[id]) : 'not placed');
+      }))
+    };
+  }
+  function _slKeyMatch(st, r) {
+    var left = _slLabels(st.payload.left), right = _slLabels(st.payload.right), pairs = st.answer.pairs || {}, got = r.pairs || {};
+    return {
+      correct: _slList(Object.keys(pairs).map(function (l) { return _slKv(_esc(left[l] || l), _esc(right[pairs[l]] || pairs[l])); })),
+      yours: _slList(Object.keys(pairs).filter(function (l) { return got[l] !== pairs[l]; }).map(function (l) {
+        return _slKv(_esc(left[l] || l), got[l] ? _esc(right[got[l]] || got[l]) : 'not matched');
+      }))
+    };
+  }
+  function _slKeyAnalyze(scn, st, r) {
+    var lab = _slTargetLabels(scn, st);
+    var name = function (id) { return '<span class="sls-ans-code">' + _esc(lab[id] || id) + '</span>'; };
+    return { correct: _slList((st.answer.selected || []).map(name)),
+             yours: _slList((r.selected || []).map(name)) };
+  }
+  function _slKeyFillin(st, r) {
+    var a = st.answer || {};
+    return {
+      correct: _slList(st.payload.fields.map(function (f) { return _slKv(_esc(f.label), _esc((a[f.id] || [])[0])); })),
+      yours: _slList(st.payload.fields.filter(function (f) { return !_simLabNormalizeMatch(r[f.id], a[f.id] || []); }).map(function (f) {
+        var g = r[f.id];
+        return _slKv(_esc(f.label), (g != null && String(g).trim() !== '') ? _esc(g) : 'blank');
+      }))
+    };
+  }
+  function _slKeyConfigure(st, r) {
+    var p = st.payload, ans = (st.answer && st.answer.slots) || {}, got = r.slots || {};
+    var tunnel = p.scoring === 'tunnel', panels = _slLabels(p.panels);
+    var slotName = function (sl) { return _esc((tunnel && panels[sl.panel] ? panels[sl.panel] + ' · ' : '') + sl.label); };
+    var opt = function (sl, id) { var o = _slLabels(sl.options, 'text'); return _esc(o[id] || id); };
+    var accepted = function (sl) { var v = ans[sl.id]; return Array.isArray(v) ? v : [v]; };
+    return {
+      correct: _slList(p.slots.map(function (sl) { return _slKv(slotName(sl), accepted(sl).map(function (id) { return opt(sl, id); }).join(' or ')); })),
+      yours: _slList(p.slots.filter(function (sl) { return accepted(sl).indexOf(got[sl.id]) === -1; }).map(function (sl) {
+        return _slKv(slotName(sl), got[sl.id] ? opt(sl, got[sl.id]) : 'not set');
+      }))
+    };
+  }
+  // true when a step was left untouched: every value empty ({}, [], '')
+  function _slIsBlank(resp) {
+    if (!resp) return true;
+    return Object.keys(resp).every(function (k) {
+      var v = resp[k];
+      if (v == null) return true;
+      if (Array.isArray(v)) return v.length === 0;
+      if (typeof v === 'object') return Object.keys(v).length === 0;
+      return String(v).trim() === '';
+    });
+  }
+  function _slStepKey(scn, st, resp) {
+    var r = resp || {};
+    try {
+      switch (st.type) {
+        case 'order': return _slKeyOrder(st, r);
+        case 'categorize': return _slKeyCategorize(st, r);
+        case 'match': return _slKeyMatch(st, r);
+        case 'analyze': return _slKeyAnalyze(scn, st, r);
+        case 'fillin': return _slKeyFillin(st, r);
+        case 'configure': return _slKeyConfigure(st, r);
+      }
+    } catch (_) {}
+    return null;
+  }
+  // showWhy(stepOk) keeps the existing rule: free sees the why on misses, Pro on every step.
+  function _slAnswerPanelHtml(r, showWhy) {
+    var scn = r.scenario, resp = r.responses || (r.score && r.score.responses) || {}, per = (r.score && r.score.perStep) || {};
+    var html = scn.scenario ? '<div class="sls-ans-scn">' + _esc(scn.scenario).replace(/&lt;(\/?)mark&gt;/g, '<$1mark>') + '</div>' : '';
+    return html + (scn.steps || []).map(function (st, i) {
+      var raw = per[st.id], ok = _slStepOk(raw), k = _slStepKey(scn, st, resp[st.id]);
+      var part = (raw && typeof raw === 'object' && raw.total > 1) ? ' <span class="sls-ans-part">' + raw.correct + '/' + raw.total + '</span>' : '';
+      return '<div class="sls-ans-step ' + (ok ? 'ok' : 'no') + '">' +
+        '<div class="sls-ans-h"><span class="sls-ans-ic" role="img" aria-label="' + (ok ? 'Correct' : 'Incorrect') + '">' + (ok ? '&#x2713;' : '&#x2717;') + '</span>' +
+        '<span class="sls-ans-p"><span class="sls-ans-n">Step ' + (i + 1) + '</span> ' + _esc(st.prompt) + part + '</span></div>' +
+        (k ? '<div class="sls-ans-row"><span class="sls-ans-lab">Answer</span><div class="sls-ans-val">' + k.correct + '</div></div>' : '') +
+        (k && !ok ? '<div class="sls-ans-row yours"><span class="sls-ans-lab">You put</span><div class="sls-ans-val">' + (_slIsBlank(resp[st.id]) ? '<span class="sls-ans-none">Nothing</span>' : k.yours) + '</div></div>' : '') +
+        (showWhy(ok) && st.explanation ? '<p class="sls-ans-why">' + _esc(st.explanation) + '</p>' : '') +
+        '</div>';
+    }).join('');
+  }
+  // One results row per round: a button that opens that round's answer panel.
+  // revealWhy(roundPassed) says whether the summary line and step whys show.
+  function _slRoundRows(results, revealWhy) {
+    var rounds = _el('div', 'sls-rounds');
+    results.forEach(function (r, i) {
+      var ok = r.passed, reveal = revealWhy(ok);
+      var row = _el('button', 'sls-r');
+      row.setAttribute('type', 'button');
+      row.setAttribute('aria-expanded', 'false');
+      row.setAttribute('aria-controls', 'sls-ans-' + i);
+      row.appendChild(_el('span', 'sls-r-ic ' + (ok ? 'ok' : 'no'), ok ? '&#x2713;' : '&#x2717;'));
+      var bodyc = _el('span', 'sls-r-body');
+      bodyc.appendChild(_el('span', 'sls-r-title', _esc(r.scenario.topic || 'PBQ')));
+      if (reveal) bodyc.appendChild(_el('span', 'sls-r-why', _esc(_slFirstWhy(r))));
+      else bodyc.appendChild(_el('span', 'sls-r-why sls-why-locked', '<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="9" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path></svg>Pro shows the why on the ones you got right too'));
+      bodyc.appendChild(_el('span', 'sls-r-open', 'See the answer'));
+      row.appendChild(bodyc);
+      row.appendChild(_el('span', 'sls-r-score', r.score.correct + '/' + r.score.total));
+      row.appendChild(_el('span', 'sls-r-chev', '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>'));
+      var panel = _el('div', 'sls-ans');
+      panel.id = 'sls-ans-' + i;
+      panel.hidden = true;
+      panel.innerHTML = _slAnswerPanelHtml(r, function (stepOk) { return reveal || !stepOk; });
+      row.addEventListener('click', function () {
+        var open = row.getAttribute('aria-expanded') !== 'true';
+        row.setAttribute('aria-expanded', String(open));
+        panel.hidden = !open;
+        var lbl = row.querySelector('.sls-r-open'); if (lbl) lbl.textContent = open ? 'Hide the answer' : 'See the answer';
+      });
+      rounds.appendChild(row);
+      rounds.appendChild(panel);
+    });
+    return rounds;
+  }
   function _slRenderSummary() {
     var pill = document.getElementById('sl-round-pill'); if (pill) pill.classList.add('is-hidden');
     var dots = document.getElementById('sl-dots'); if (dots) dots.classList.add('is-hidden');
@@ -3934,21 +4081,8 @@
     score.innerHTML = '<span class="sls-score-n">' + agg.pct + '<small>%</small></span>' +
       '<span class="sls-score-cap">' + agg.passed + ' of ' + agg.rounds + ' sims passed &middot; ' + agg.stepsCorrect + ' of ' + agg.stepsTotal + ' steps</span>';
     root.appendChild(score);
-    var rounds = _el('div', 'sls-rounds');
-    _slSession.results.forEach(function (r) {
-      var row = _el('div', 'sls-r');
-      var ok = r.passed;
-      row.appendChild(_el('span', 'sls-r-ic ' + (ok ? 'ok' : 'no'), ok ? '&#x2713;' : '&#x2717;'));
-      var bodyc = _el('div', 'sls-r-body');
-      bodyc.appendChild(_el('div', 'sls-r-title', _esc(r.scenario.topic || 'PBQ')));
-      var reveal = pro || !ok; // free reveals "why" on missed rounds only
-      if (reveal) bodyc.appendChild(_el('div', 'sls-r-why', _esc(_slFirstWhy(r))));
-      else { var lk = _el('div', 'sls-r-why sls-why-locked'); lk.innerHTML = '<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="9" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path></svg>Pro shows the why on the ones you got right too'; bodyc.appendChild(lk); }
-      row.appendChild(bodyc);
-      row.appendChild(_el('span', 'sls-r-score', r.score.correct + '/' + r.score.total));
-      rounds.appendChild(row);
-    });
-    root.appendChild(rounds);
+    // free reveals "why" on missed rounds only; the answer key shows on every round
+    root.appendChild(_slRoundRows(_slSession.results, function (ok) { return pro || !ok; }));
     var cluster = _slWeakCluster(_slSession.results);
     if (cluster) {
       var ins = _el('div', 'sls-insight');

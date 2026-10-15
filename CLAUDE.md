@@ -27,9 +27,9 @@
 | app.js | 8288 | 441 KB |
 | styles.css | 14887 | 550 KB |
 | index.html | 2288 | 149 KB |
-| dg-system.css | 5562 | 526 KB |
-| tests/uat.js + tests/uat/ (40 modules) | 30740 | — |
-UAT checks: 5179 · E2E `test(` count: 163 · APP_VERSION: 8.176.0 · stamped-at: worktree
+| dg-system.css | 5606 | 531 KB |
+| tests/uat.js + tests/uat/ (41 modules) | 30824 | — |
+UAT checks: 5193 · E2E `test(` count: 163 · APP_VERSION: 8.177.0 · stamped-at: worktree
 <!-- FACTS:AUTO:END -->
 
 | File | Purpose | Size |
@@ -135,9 +135,9 @@ npx playwright test              # E2E (tests/e2e/app.spec.js)
 
 | Version | Features Added |
 |---|---|
+| v8.177.0 | Sim Lab results: tap any PBQ to see the correct answer and your own, step by step. |
 | v8.176.0 | Today's question count no longer counts Mixed quizzes and exams twice. |
 | v8.175.0 | 7 Sec+ SCAP exemplars: components, compliance checking, and SCAP vs scanners and STIGs. |
-| v8.174.0 | 7 Sec+ NetFlow exemplars: reading flow patterns and the NetFlow traps. |
 
 _Older releases (v7.60.0 and back) live in [CHANGELOG.md](./CHANGELOG.md)._
 
