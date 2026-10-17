@@ -172,6 +172,7 @@
         questions = questions.slice(0, qCount);
       }
       _logQuizFill(qCount, questions.length, _catchUp ? 'fresh (catch-up)' : 'fresh', _fill.rounds, null);
+      _noteShortQuiz(qCount, questions.length, _fill.rounds);
     } catch(e) {
       if (!_genAlive(_g)) { window._mixedPickMode = 'random'; return; }   // cancelled: say nothing, serve nothing
       _logQuizFill(qCount, 0, getCachedQuestions(activeQuizTopic, diff, qCount) ? 'cache' : 'error', [], String((e && e.message) || e).slice(0, 120));
@@ -448,8 +449,33 @@
   // finish() was hijacked into the old drill (its results were lost).
   function _resetDrillModes() {
     try { gauntletMode = false; _gauntletRun = null; whyNotMode = false; _wnSession = null; _wnRound = null; } catch (_) {}
+    _noteShortQuiz(0, 0);   // v8.178.0: a new quiz starts with no short-set pill
   }
   window._resetDrillModes = _resetDrillModes;
+  // v8.178.0: say so when a quiz comes back short. Founder, 13 Oct: asked for 20, got 16
+  // after the API credit ran out mid-generation, and nothing on screen said so. A toast
+  // on start gives the reason; a "16 of 20" pill stays in the quiz header. (0, 0) hides it.
+  function _shortReason(rounds) {
+    const errs = (rounds || []).map(r => r && r.error).filter(Boolean).join(' ');
+    if (/credit|billing|balance|quota/i.test(errs)) return 'credit';
+    return errs ? 'error' : 'checks';
+  }
+  function _noteShortQuiz(asked, got, rounds) {
+    const short = got > 0 && got < asked, miss = asked - got;
+    const why = short ? _shortReason(rounds) : '';
+    const tail = why === 'credit' ? 'Your API credit ran out partway, so ' + miss + (miss === 1 ? " wasn't" : " weren't") + ' made.'
+      : why === 'error' ? 'The AI stopped responding partway, so ' + miss + (miss === 1 ? " wasn't" : " weren't") + ' made.'
+      : miss + " didn't pass the quality checks.";
+    const pill = (typeof document !== 'undefined') ? document.getElementById('short-notice') : null;
+    if (pill) {
+      pill.classList.toggle('show', short);
+      pill.textContent = short ? got + ' of ' + asked : '';
+      if (short) pill.title = tail; else pill.removeAttribute('title');
+    }
+    if (short && typeof showErrorToast === 'function') showErrorToast(got + ' of ' + asked + ' questions came through. ' + tail);
+    return short ? tail : null;
+  }
+  window._noteShortQuiz = _noteShortQuiz;
   // v8.153.0: undo showAiErrorCard: remove the card and restore what it hid.
   function clearAiErrorCard(container) {
     const c = container || document.getElementById('page-loading');

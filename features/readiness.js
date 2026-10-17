@@ -722,7 +722,7 @@
 
   function _buildMilestoneCtx() {
     const h = loadHistory();
-    const totalQs = h.reduce((a, e) => a + e.total, 0);
+    const totalQs = h.filter(e => !(typeof isHistorySplitRow === 'function' && isHistorySplitRow(e))).reduce((a, e) => a + e.total, 0);   // v8.178.0
     const studied = new Set(h.filter(e => e.topic !== MIXED_TOPIC && e.topic !== EXAM_TOPIC).map(e => e.topic));
     // v4.85.20: count actual exam SUMMARY entries only (one per exam, topic === EXAM_TOPIC).
     // Without this filter, the per-topic splits (~50 per 90-Q exam) inflate milestone

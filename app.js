@@ -1,9 +1,9 @@
 // ══════════════════════════════════════════
-// Network+ AI Quiz — app.js  v8.177.0
+// Network+ AI Quiz — app.js  v8.178.0
 // ══════════════════════════════════════════
 
 // ── CONSTANTS ──
-const APP_VERSION = '8.177.0';
+const APP_VERSION = '8.178.0';
 // v4.99.45 (Phase 6b): expose APP_VERSION on window so the web-vitals
 // collector (lib/web-vitals-collector.js, loaded BEFORE app.js so its
 // PerformanceObservers attach earlier) can stamp this version onto every
@@ -2923,7 +2923,7 @@ function renderHistoryPanel() {
 // STUDY STATS
 // ══════════════════════════════════════════
 function getStudyStats() {
-  const h = loadHistory();
+  const h = loadHistory().filter(e => !isHistorySplitRow(e));   // v8.178.0: one row per session
   if (!h.length) return null;
   const totalQ    = h.reduce((a, e) => a + e.total, 0);
   const sessions  = h.length;

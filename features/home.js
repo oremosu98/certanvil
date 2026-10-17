@@ -752,6 +752,7 @@
       // Enforce target count — truncate extras from AI
       if (collected.length > count) collected = collected.slice(0, count);
       if (typeof _logQuizFill === 'function') _logQuizFill(count, collected.length, 'fresh (marathon)', _fillRounds, null);
+      if (typeof _noteShortQuiz === 'function') _noteShortQuiz(count, collected.length, _fillRounds);   // v8.178.0
     } catch(e) {
       if (!_alive()) return;   // cancelled: Cancel already went Home
       if (typeof _logQuizFill === 'function') _logQuizFill(count, 0, 'error (marathon)', _fillRounds, String((e && e.message) || e).slice(0, 120));
@@ -792,6 +793,7 @@
   }
 
   async function runSessionStep() {
+    if (typeof _noteShortQuiz === 'function') _noteShortQuiz(0, 0);   // v8.178.0: sessions skip _resetDrillModes
     const step  = sessionPlan[sessionStep];
     const sTopic = step.topic;
     activeQuizTopic = sTopic;

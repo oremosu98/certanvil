@@ -1933,6 +1933,10 @@
 
   // Build the ANALYTICS_SAMPLE-shaped data object from real history `h`.
   function _anaBentoData(h) {
+    // v8.178.0: a Mixed quiz or exam saves a summary row plus per-topic rows for the same
+    // questions. Counts, accuracy over time, difficulty, heatmap and recent sessions use
+    // one row per session (hs); per-topic and per-domain views keep every row (h).
+    const hs = h.filter(e => !(typeof isHistorySplitRow === 'function' && isHistorySplitRow(e)));
     const esc = (typeof escHtml === 'function') ? escHtml : (s => String(s));
     const PASS = (typeof EXAM_PASS_SCORE === 'number') ? EXAM_PASS_SCORE : 720;
 
@@ -1963,17 +1967,17 @@
       }
     } catch (_) {}
 
-    const totalQ = h.reduce((a, e) => a + (e.total || 0), 0);
-    const totalCorrect = h.reduce((a, e) => a + (e.score || 0), 0);
+    const totalQ = hs.reduce((a, e) => a + (e.total || 0), 0);
+    const totalCorrect = hs.reduce((a, e) => a + (e.score || 0), 0);
     const studyDays = new Set(h.map(e => new Date(e.date).toISOString().slice(0, 10))).size;
     const accuracyPct = totalQ > 0 ? Math.round(totalCorrect / totalQ * 100) : 0;
-    const _series = (typeof _weeklyStatSeries === 'function') ? _weeklyStatSeries(h, 12)
+    const _series = (typeof _weeklyStatSeries === 'function') ? _weeklyStatSeries(hs, 12)
       : { sessions: [], questions: [], accuracy: [], studyDays: [] };
 
     const readiness = {
       predicted, passScore: PASS, forecast, daysToExam, examDate, tier, pointsToPass,
       barPct, passTickPct,
-      stats: { sessions: h.length, questions: totalQ, accuracy: accuracyPct, studyDays },
+      stats: { sessions: hs.length, questions: totalQ, accuracy: accuracyPct, studyDays },
       spark: {
         sessions: _series.sessions, questions: _series.questions,
         accuracy: _series.accuracy, studyDays: _series.studyDays,
@@ -1986,7 +1990,7 @@
     const now = Date.now(), DAY = 86400000, WK = 7 * DAY;
     const bucketAcc = (i, span) => {
       const bStart = now - (i + 1) * span, bEnd = now - i * span;
-      const ent = h.filter(e => { const t = new Date(e.date).getTime(); return t >= bStart && t < bEnd; });
+      const ent = hs.filter(e => { const t = new Date(e.date).getTime(); return t >= bStart && t < bEnd; });
       const qs = ent.reduce((a, e) => a + (e.total || 0), 0);
       const cs = ent.reduce((a, e) => a + (e.score || 0), 0);
       return qs > 0 ? Math.round((cs / qs) * 100) : null;
@@ -2079,7 +2083,7 @@
 
     // ── Difficulty breakdown ─────────────────────────────────────────────────
     const diffAgg = {};
-    h.forEach(e => {
+    hs.forEach(e => {
       const d = e.difficulty || e.diff || DEFAULT_DIFF;
       if (!diffAgg[d]) diffAgg[d] = { correct: 0, total: 0 };
       diffAgg[d].correct += (e.score || 0); diffAgg[d].total += (e.total || 0);
@@ -2108,7 +2112,7 @@
     else                             heatTier = 'blazing';
     // 365-day count-per-day map (questions answered).
     const dayQ = new Map();
-    h.forEach(e => {
+    hs.forEach(e => {
       const d = new Date(e.date); if (isNaN(d.getTime())) return;
       const key = d.toISOString().slice(0, 10);
       dayQ.set(key, (dayQ.get(key) || 0) + (e.total || 0));
@@ -2162,7 +2166,7 @@
     }
 
     // ── Recent sessions ──────────────────────────────────────────────────────
-    const recent = h.slice(0, 5).map(e => ({
+    const recent = hs.slice(0, 5).map(e => ({
       date: new Date(e.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }),
       topic: e.topic === EXAM_TOPIC ? 'Full exam' : (e.topic === MIXED_TOPIC ? 'Mixed' : e.topic),
       pct: e.pct, n: e.total, mode: e.mode === 'exam' ? 'exam' : 'quiz',

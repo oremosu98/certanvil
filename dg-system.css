@@ -1497,6 +1497,10 @@ html[data-theme] body #page-quiz .flag-btn:hover,html[data-theme] body #page-qui
 html[data-theme] body #page-quiz .stat-pill.streak{color:var(--accent)!important;border-color:color-mix(in oklab,var(--accent) 40%,transparent)!important;}
 #page-quiz #cache-notice{display:none;}
 #page-quiz #cache-notice.show{display:flex;}
+/* v8.178.0: "16 of 20" when a quiz came back short. Same pill as Cached, warn-coloured;
+   the reason sits in its title and in the toast shown when the quiz starts. */
+html[data-theme] body #page-quiz #short-notice{display:flex;align-items:center;background:none!important;border:1px solid color-mix(in oklab,var(--warn) 45%,transparent)!important;border-radius:999px!important;color:var(--warn)!important;font:700 var(--t-1)/1 Inter,sans-serif;padding:6px 12px!important;box-shadow:none!important;font-variant-numeric:tabular-nums;white-space:nowrap;flex:none;cursor:help;}
+html[data-theme] body #page-quiz #short-notice:not(.show){display:none!important;}
 
 /* progress + pips */
 #page-quiz .progress-wrap{max-width:780px;margin:0 auto;padding:24px 26px 0;background:none;border:0;}
