@@ -238,6 +238,20 @@ test.describe('Chip Selectors', () => {
 });
 
 test.describe('API Key Validation', () => {
+  // 2026-10-17: these asserted #setup-err stayed hidden for 1.5s, but with no real
+  // session the generation fails a moment later and writes ITS error into the same
+  // box. On a slow CI runner that landed inside the window (run 39064185630).
+  // The contract is only that validateApiKey's messages never show, so sample the
+  // box for 1.5s and assert none of those messages ever appears.
+  async function expectNoByokError(page) {
+    const BYOK = /Sign in to study free|Invalid API key format|API key looks too short/;
+    const seen = [];
+    for (let i = 0; i < 10; i++) {
+      seen.push(await page.locator('#setup-err').evaluate(el => el.classList.contains('is-hidden') ? '' : el.textContent).catch(() => ''));
+      await page.waitForTimeout(150);
+    }
+    expect(seen.filter(t => BYOK.test(t))).toEqual([]);
+  }
   test.beforeEach(openCustomQuizModal);
   // v4.99.36: these 2 tests originally asserted that the BYOK error fires for
   // empty / bad-format keys. v4.99.33 retargeted validateApiKey to skip the
@@ -253,9 +267,7 @@ test.describe('API Key Validation', () => {
     // v4.99.33: error is suppressed for signed-in users (validateApiKey returns null).
     // Quiz generation will fail downstream because there's no real session, but
     // the BYOK gate doesn't fire — that's the contract under test.
-    const err = page.locator('#setup-err');
-    // Use a short timeout — error should NOT appear at all
-    await expect(err).not.toBeVisible({ timeout: 1500 });
+    await expectNoByokError(page);
   });
 
   test('signed-in user with bad-format API key does NOT see BYOK error', async ({ page }) => {
@@ -265,8 +277,7 @@ test.describe('API Key Validation', () => {
       if (el) el.value = 'invalid-key-123';
     });
     await page.locator('#custom-quiz-section button:has-text("Generate Quiz")').click();
-    const err = page.locator('#setup-err');
-    await expect(err).not.toBeVisible({ timeout: 1500 });
+    await expectNoByokError(page);
   });
 });
 
