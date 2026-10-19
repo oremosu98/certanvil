@@ -46,6 +46,8 @@ screen: same layout, navigation, tab bar, copy, spacing, type, colour and motion
 - **Answering is pick-then-confirm** (E2E): tap selects, Next submits, Next is disabled until a pick. No skip.
 - **Review answers filters: All / Wrong only / Flagged.** Flagged shows only when something was flagged;
   skipped counts as wrong.
+- **Results primary button is "Redo this quiz"** (was "New session"): same topic, difficulty and count, fresh
+  questions (`retryQuiz`). **Back to menu** stays in the row below.
 - E2E wins by default elsewhere: neutral amber answered pills, explanation always open, ✕ is Cancel, no arrow
   glyphs in labels, no 🧠 emoji (Smart-quiz topics go in the generating line), Cached chip stays hidden on phone.
 - Additions drawn into the E2E (branch `feat/cert-ios-e2e`, HUD entries): home-exam-paused, home-signed-out
