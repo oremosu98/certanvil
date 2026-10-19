@@ -57,6 +57,8 @@
     max-width: calc(100vw - 24px);
   }
   body.hud-collapsed #hud > :not(#hud-toggle) { display: none; }
+  /* phone-width HUD: wrap onto two rows so 'jump to' is never clipped */
+  @media (max-width: 600px) { #hud { flex-wrap: wrap; justify-content: center; row-gap: 6px; } #hud-crumb { display: none; } #hud-jump { flex: 1 1 100%; } }
   #hud button, #hud select {
     font: inherit; color: #e7e9ee;
     background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.12);
