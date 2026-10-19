@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>CertAnvil</title>
+<style>
+  :root { --bg: oklch(0.17 0.008 275); --text: oklch(0.96 0.006 275); --dim: oklch(0.725 0.013 275); --accent: oklch(0.80 0.155 64); --ink: oklch(0.20 0.045 64); }
+  @media (prefers-color-scheme: light) { :root { --bg: oklch(0.975 0.007 85); --text: oklch(0.26 0.015 280); --dim: oklch(0.50 0.013 280); --accent: oklch(0.50 0.155 55); --ink: oklch(0.98 0.012 70); } }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text); font: 15px/1.5 -apple-system, "Inter", system-ui, sans-serif; }
+  main { min-height: 100%; display: grid; place-content: center; gap: 14px; padding: max(24px, env(safe-area-inset-top)) 24px max(24px, env(safe-area-inset-bottom)); text-align: center; }
+  h1 { font: 600 26px/1.15 Georgia, serif; margin: 0; }
+  p { margin: 0; color: var(--dim); max-width: 30ch; }
+  button { justify-self: center; margin-top: 6px; min-height: 44px; padding: 0 22px; border: 0; border-radius: 10px; background: var(--accent); color: var(--ink); font: 700 15px -apple-system, system-ui, sans-serif; }
+</style>
+</head>
+<body>
+<main>
+  <h1>You're offline</h1>
+  <p>CertAnvil writes your questions live, so it needs a connection. Your progress is saved.</p>
+  <button type="button" onclick="location.replace('https://secplus.certanvil.com/')">Try again</button>
+</main>
+</body>
+</html>
