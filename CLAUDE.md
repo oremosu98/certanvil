@@ -28,8 +28,8 @@
 | styles.css | 14887 | 550 KB |
 | index.html | 2289 | 149 KB |
 | dg-system.css | 5610 | 531 KB |
-| tests/uat.js + tests/uat/ (45 modules) | 30997 | — |
-UAT checks: 5211 · E2E `test(` count: 164 · APP_VERSION: 8.180.0 · stamped-at: worktree
+| tests/uat.js + tests/uat/ (46 modules) | 31015 | — |
+UAT checks: 5213 · E2E `test(` count: 164 · APP_VERSION: 8.181.0 · stamped-at: worktree
 <!-- FACTS:AUTO:END -->
 
 | File | Purpose | Size |
@@ -135,9 +135,9 @@ npx playwright test              # E2E (tests/e2e/app.spec.js)
 
 | Version | Features Added |
 |---|---|
+| v8.181.0 | No more negative day counts once the exam date has passed. |
 | v8.180.0 | Fix #498: history rows normalised at loadHistory, so odd rows can't crash Home or show NaN. |
 | v8.179.0 | Mixed is now a true mixed bag: random topics from the whole syllabus, no domain quotas. |
-| v8.178.0 | Analytics totals count each Mixed quiz once; a short quiz now says so (toast + '16 of 20' pill). |
 
 _Older releases (v7.60.0 and back) live in [CHANGELOG.md](./CHANGELOG.md)._
 

@@ -2327,7 +2327,7 @@
           </div>
           <div class="read-fore">
             <span>Forecast on this pace <span class="fv fg">${r.forecast}</span></span>
-            <span><span class="fv">${r.daysToExam != null ? r.daysToExam : '—'}</span> days to exam</span>
+            <span><span class="fv">${r.daysToExam != null && r.daysToExam >= 0 ? r.daysToExam : '—'}</span> days to exam</span>
           </div>
         </div>
         <div class="read-stats">

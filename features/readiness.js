@@ -995,7 +995,7 @@
     // Trajectory: time-bound + confident-pass gap
     const trajEl = document.getElementById('readiness-trajectory');
     if (trajEl) {
-      if (data.daysToExam !== null && data.daysToExam !== undefined) {
+      if (data.daysToExam !== null && data.daysToExam !== undefined && data.daysToExam >= 0) {   // v8.181.0: no line once the exam date has passed (was "-3 days to your exam")
         if (data.targetGap > 0) {
           const cls = data.targetGap > 60 ? 'warn' : (data.targetGap > 20 ? 'mid' : 'good');
           trajEl.innerHTML = _trajDays(data.daysToExam) + ' &middot; your low estimate needs <strong>+'
@@ -1370,7 +1370,7 @@
 
         // v4.73.0: trajectory line below the chips
         if (trajEl) {
-          if (r.daysToExam !== null && r.daysToExam !== undefined) {
+          if (r.daysToExam !== null && r.daysToExam !== undefined && r.daysToExam >= 0) {   // v8.181.0: hide once the exam date has passed
             if (r.targetGap > 0) {
               const cls = r.targetGap > 60 ? 'warn' : (r.targetGap > 20 ? 'mid' : 'good');
               trajEl.innerHTML = _trajDays(r.daysToExam) + ' &middot; your low estimate needs <strong>+'
