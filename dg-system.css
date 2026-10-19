@@ -5607,3 +5607,9 @@ html[data-theme] body #page-settings .settings-section-danger{background:var(--s
 html[data-theme] body #page-settings .settings-section-danger .settings-section-title{background:color-mix(in oklab,var(--dg-danger) 12%,var(--surface2))!important;border-bottom-color:color-mix(in oklab,var(--dg-danger) 32%,var(--border))!important;color:var(--dg-danger)!important;}
 html[data-theme] body #page-settings .settings-group-danger .settings-group-h{font-family:'Fraunces',Georgia,serif!important;font-weight:600!important;}
 html[data-theme] body #page-settings .settings-group-danger .settings-group-num{color:var(--dg-danger)!important;}
+
+/* ADR-004 (19 Oct 2026): inside the iOS app (html.is-native, set by native-shell.js).
+   Apple Guideline 3.1.1 bars links to web purchase in an iOS app, so every Go-Pro / pricing
+   link is hidden until in-app purchase replaces them (G-3). The add-to-home-screen banner is
+   meaningless inside an installed app. */
+html.is-native a[href*="certanvil.com/pricing"],html.is-native .settings-go-pro-btn,html.is-native .a2hs-banner{display:none!important;}

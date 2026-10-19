@@ -30,6 +30,8 @@
      Hint without blocking: preload tells the browser to start early, the
      media="print" onload pattern below gates actual style application. -->
 <link rel="preload" as="style" href="styles.css">
+<!-- ADR-004: inside the iOS app this marks html.is-native and wires native links/haptics; a no-op on the website -->
+<script src="native-shell.js"></script>
 <!-- v7.81.0 P0b: Fraunces self-hosted. Preload latin subset (covers all
      English content); latin-ext and vietnamese load on-demand by the
      @font-face unicode-range rules. Kills the 794ms Google Fonts render-
