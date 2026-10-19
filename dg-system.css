@@ -5607,3 +5607,14 @@ html[data-theme] body #page-settings .settings-section-danger{background:var(--s
 html[data-theme] body #page-settings .settings-section-danger .settings-section-title{background:color-mix(in oklab,var(--dg-danger) 12%,var(--surface2))!important;border-bottom-color:color-mix(in oklab,var(--dg-danger) 32%,var(--border))!important;color:var(--dg-danger)!important;}
 html[data-theme] body #page-settings .settings-group-danger .settings-group-h{font-family:'Fraunces',Georgia,serif!important;font-weight:600!important;}
 html[data-theme] body #page-settings .settings-group-danger .settings-group-num{color:var(--dg-danger)!important;}
+
+/* v8.182.0 (June iOS step 0): phone-width top bar.
+   1. The countdown chip's touch rules above force display:inline-flex!important at higher
+      specificity than its .is-hidden rule, so with no exam date it showed as an empty square.
+   2. Signed in, the account pill carried the full email + chevron (168px) and pushed the bar to
+      492px on a 390px iPhone. The tab bar has its own Account tab, so the pill is avatar-only. */
+html[data-theme] body .topbar-countdown.is-hidden{display:none!important;}
+@media (max-width:899px){
+  html[data-theme] body .topbar-account-email,html[data-theme] body .topbar-account-chevron{display:none!important;}
+  html[data-theme] body .topbar-account-pill{min-width:44px!important;min-height:44px!important;justify-content:center!important;padding:4px!important;gap:0!important;}
+}

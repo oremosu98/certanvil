@@ -522,14 +522,14 @@ html[data-theme] body #page-progress .progress-search { display: none !important
 
 /* toolbar → mockup .controls (fchips + sort pill) */
 html[data-theme] body #page-progress .progress-toolbar {
-  display: flex !important; align-items: center !important; flex-wrap: wrap !important; gap: 7px !important;
+  display: flex !important; flex-direction: row !important; align-items: center !important; flex-wrap: wrap !important; gap: 7px !important;   /* v8.182.0: dg-system's old <=480px column rule stacked the chips one per line */
   margin: 2px 0 14px !important; padding: 0 !important; background: none !important; border: 0 !important;
 }
 html[data-theme] body #page-progress .progress-filters { display: contents !important; }
 html[data-theme] body #page-progress .prog-filter-btn {
   border: 1px solid var(--border) !important; border-radius: 999px !important;
   background: var(--surface) !important; color: var(--text-mid) !important;
-  font: 700 11.5px/1 Inter, sans-serif !important; padding: 8px 12px !important; cursor: pointer;
+  font: 700 11.5px/1 Inter, sans-serif !important; padding: 8px 12px !important; cursor: pointer; flex: none !important;
   transition: transform .14s var(--lift-ease), border-color .18s, background .18s, color .18s !important;
 }
 html[data-theme] body #page-progress .prog-filter-btn:active { transform: scale(0.96); }
