@@ -150,7 +150,7 @@
     'exam'             : [ {sel:'#mSubmit',  to:'exam-results'},
                            {sel:'#endBtn',   to:'pop'},
                            {sel:'#mAbandon', to:'pop'} ],
-    'results'          : [ {text:'New session',          to:'quiz'},
+    'results'          : [ {text:'Redo this quiz',       to:'quiz'},
                            {text:'Drill my 3 mistakes',  to:'quiz'},
                            {text:'Review answers',       to:'review-answers'},
                            {text:'Back to menu',         to:'home'} ],
