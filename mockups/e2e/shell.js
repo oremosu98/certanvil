@@ -30,6 +30,8 @@
     'first-run-diag'    : 'onboarding-first-run-diagnostic.html',
     'notifications'     : 'onboarding-notifications-prime.html',
     'home'              : 'cert-ios-home.html',
+    'home-exam-paused'  : 'cert-ios-home.html?v=exam',
+    'home-signed-out'   : 'cert-ios-home.html?v=signedout',
     'drills'            : 'cert-ios-drills.html',
     'hub'               : 'cert-ios-hub.html',
     'quiz'              : 'cert-ios-quiz.html',
@@ -88,7 +90,10 @@
     // "Review 7 cards" (returning) -> spaced-repetition session; first-quiz lead -> quiz.
     //  Study menus already exist on home; wire them. Order matters (first rule
     //  that matches an element wins): exam launchers before the generic .opt.
+    'home-exam-paused' : [ {sel:'.rec-exam', to:'exam'}, {sel:'.tb-set', to:'settings'}, {sel:'.mo-go', to:'quiz'}, {sel:'.opt', to:'quiz'} ],
+    'home-signed-out'  : [ {sel:'.tb-signin', to:'signup-signin'}, {sel:'.tb-set', to:'settings'}, {sel:'.mo-go', to:'quiz'}, {sel:'.opt', to:'quiz'} ],
     'home'             : [ {sel:'.tb-name', to:'hub'},
+                           {sel:'.mo-go', to:'quiz'},
                            {sel:'.tb-set',  to:'settings'},
                            {sel:'.rec.only-returning', to:'review'},
                            {sel:'.rec.only-new', to:'quiz'},
