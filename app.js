@@ -1,9 +1,9 @@
 // ══════════════════════════════════════════
-// Network+ AI Quiz — app.js  v8.179.0
+// Network+ AI Quiz — app.js  v8.180.0
 // ══════════════════════════════════════════
 
 // ── CONSTANTS ──
-const APP_VERSION = '8.179.0';
+const APP_VERSION = '8.180.0';
 // v4.99.45 (Phase 6b): expose APP_VERSION on window so the web-vitals
 // collector (lib/web-vitals-collector.js, loaded BEFORE app.js so its
 // PerformanceObservers attach earlier) can stamp this version onto every
@@ -2853,7 +2853,19 @@ function confirmBack() {
 // HISTORY
 // ══════════════════════════════════════════
 function loadHistory() {
-  try { return JSON.parse(localStorage.getItem(STORAGE.HISTORY) || '[]'); } catch(e) { return []; }
+  let h; try { h = JSON.parse(localStorage.getItem(STORAGE.HISTORY) || '[]'); } catch(e) { return []; }
+  return Array.isArray(h) ? h.map(_normHistoryRow).filter(Boolean) : [];
+}
+// v8.180.0 (#498): one row shape for every reader: date from date|at|ts, total/score/pct filled, timeless rows dropped (saveToHistory writes them back clean).
+function _normHistoryRow(e) {
+  const t = e && (e.date || e.at || e.ts), d = new Date(t);
+  if (t == null || isNaN(d.getTime())) return null;
+  if (typeof e.date === 'string' && typeof e.total === 'number' && typeof e.score === 'number' && typeof e.pct === 'number') return e;
+  const r = Object.assign({}, e, { date: d.toISOString() });
+  if (typeof r.total !== 'number') { if (typeof e.correct !== 'boolean') return null; r.total = 1; r.score = e.correct ? 1 : 0; }
+  if (typeof r.score !== 'number') r.score = 0;
+  if (typeof r.pct !== 'number') r.pct = r.total ? Math.round(r.score / r.total * 100) : 0;
+  return r;
 }
 // v8.176.0: a Mixed quiz or an exam saves a summary row AND per-topic rows for the same
 // questions, so a count of questions must skip the per-topic rows or those sessions count
