@@ -553,6 +553,13 @@
       var o = document.createElement('option'); o.value = id; o.textContent = id; sel.appendChild(o);
     });
     sel.addEventListener('change', function () { if (sel.value) resetTo(sel.value); });
+    // Lift A review: step through the post-June additions in order (founder sign-off aid).
+    var LIFT_A = ['home','home-exam-paused','home-signed-out','quiz','quiz-short-set','quiz-answered','results-milestone','review-answers'];
+    var liftBtn = document.getElementById('hud-lifta'), liftI = -1;
+    if (liftBtn) liftBtn.addEventListener('click', function () {
+      liftI = (liftI + 1) % LIFT_A.length; resetTo(LIFT_A[liftI]);
+      liftBtn.textContent = 'Lift A ' + (liftI + 1) + '/' + LIFT_A.length + ' \u203a';
+    });
   }
 
   // ── Boot ────────────────────────────────────────────────────────────────
