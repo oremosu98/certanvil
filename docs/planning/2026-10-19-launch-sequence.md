@@ -25,6 +25,9 @@ Phase G sub-plans in `docs/superpowers/plans/2026-06-*` stay the build reference
 
 ## Phase 2 · iOS app (the launch)
 
+**Detail and stage order: `docs/superpowers/specs/2026-10-19-ios-launch-june-design.md`** (approved 19 Oct:
+the June CertAnvil E2E design, lifted into the real app, in 8 stages).
+
 Before real users touch the AI proxy (same proxy for iOS):
 - **Security C1**: the free daily quota only runs when the client sends `_metered: true`
   (`landing/api/ai/generate.js`). Enforce it server-side. S.
