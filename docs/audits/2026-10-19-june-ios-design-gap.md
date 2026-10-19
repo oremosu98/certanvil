@@ -60,6 +60,38 @@ Real bugs at 390px:
 
 Counts: MATCHES 2 · PARTIAL 15 · DIFFERENT 4 · MISSING 7 · DEMO-ONLY 5 · NOT CHECKED 10.
 
+## Part 2 — screens behind sign-in (checked 19 Oct, fake session on localhost)
+
+Session stubbed by routing `lib/supabase.js` to a fake client (getSession/getUser/onAuthStateChange,
+a chainable `from()` profile, `rpc('get_daily_quota_usage')` → pro); all non-localhost requests aborted.
+
+| Mockup | Real surface | Status | Key differences |
+|---|---|---|---|
+| cert-ios-hub | landing/account.html | DIFFERENT | Profile/settings page; no "Your cert" card, Unlock-with-Pro list or Go Pro card |
+| onboarding-my-certs-pro | My certs modal / account list | PARTIAL | No "Studying now" card; centred modal not a screen; rows wrap at 390 |
+| cert-ios-log-result | account.html inline form + result modal | PARTIAL | Form expands in the row; **cert name line disappears from the expanded row (bug)**; no big serif score field. **Keep** the restyled "Cert passed · You crushed it." modal |
+| cert-ios-cross-cert | landing/analytics.html | PARTIAL | Landing header not app chrome; taller cards; every CTA filled amber |
+| onboarding-manage-subscription | manage-subscription.html | PARTIAL (near) | Copy/data; "Manage in App Store" button missing |
+| onboarding-signup-signin | landing auth modal | PARTIAL | Modal; no Create/Sign-in toggle; no Apple button (Google "SOON") |
+| onboarding-magic-link-sent | auth modal sent state | PARTIAL | No Open Mail / Resend buttons; 1h vs 15min copy |
+| onboarding-welcome-back | — | MISSING | |
+| onboarding-error-states (card declined, link expired, email typo…) | — | MISSING | App AI error cards (timeout/network/server) are a different, kept design |
+| onboarding-account-deletion | Settings delete flow | PARTIAL | Ghost button in red card vs iOS row; centred card vs bottom sheet; title clipped at 844px. **Keep** the 7-day grace copy |
+
+Bug confirmations:
+- Progress / Analytics tabs render fine with real taps (part 1's "empty" was a navigation artifact).
+  New: Progress filter chips stack one per line, centred, at 390.
+- **Home overflow happens only when signed in:** `.topbar-right` (PRO pill + icon group + email pill)
+  reaches x≈491, so the page is 492px wide: title gone, account pill clipped, tab bar's Account tab
+  off-screen. An empty square button sits in the topbar in every state.
+- **Pro is decided by role only on the account site:** `landing/lib/account.js` and `manage-sub.js`
+  treat a user as Pro only when `role === 'admin'`, so a paying `role:'user'` with Sec+ entitlements
+  sees "Free tier", locked certs and "Upgrade →" on their own passed cert. `analytics.html` uses the
+  quota tier and shows the same user as Pro. Launch blocker once real users pay.
+
+Newer features the June mockups lack, to keep in the lift: the restyled Cert-passed modal (17 Oct);
+exam Pause / Prev-Next / Flag / Cancel / PBQ Reset / score card (12 Oct); Sim Lab PBQ answer view (19 Oct).
+
 ## Proposed build order (pending the founder's additions)
 1. Home (June hub) + the 390px overflow fix.
 2. Core loop: quiz, results, review answers.
