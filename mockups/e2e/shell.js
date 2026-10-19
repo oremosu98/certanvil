@@ -182,6 +182,8 @@
       'overflow:hidden!important;width:' + CANVAS_W + 'px!important;height:' + CANVAS_H + 'px!important;max-width:none!important;}',
     '.stage{max-width:none!important;width:100%!important;height:100%!important;margin:0!important;padding:0!important;}',
     '.stage-head{display:none!important;}',
+    /* designer state chips (Returning / New user / Generating...) are gallery chrome, not app UI */
+    '.states,.switcher{display:none!important;}',
     /* kill any below-phone gallery caption (e.g. the report screen's .hint) */
     '.hint{display:none!important;}',
     '.phone-wrap{display:block!important;width:100%!important;height:100%!important;max-width:none!important;margin:0!important;padding:0!important;}',
