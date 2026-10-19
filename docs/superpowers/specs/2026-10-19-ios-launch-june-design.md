@@ -21,6 +21,25 @@ It is the Phase 2 detail of `docs/planning/2026-10-19-launch-sequence.md`.
 - It is fake data and a design reference. **It does not ship.**
 - Screen-by-screen gap list: `docs/audits/2026-10-19-june-ios-design-gap.md`.
 
+## Fidelity rule (founder, 19 Oct 2026, HARD RULE)
+
+**The CertAnvil E2E app IS the iOS app.** The shipped app must look and flow exactly like it, screen for
+screen: same layout, navigation, tab bar, copy, spacing, type, colour and motion. "Close" is a fail.
+
+- **Acceptance per screen:** the real screen and the E2E screen side by side in the iOS Simulator, same
+  device, both themes, Free and Pro. Reuse June's fidelity harness (`tests/e2e/cert-ios-fidelity.spec.js`,
+  80 baselines on `feat/cert-ios-e2e`) as the automated check.
+- **Any deviation** (real data that doesn't fit, a platform limit) is shown to the founder and approved
+  before it ships. Never silently "improve" the E2E design.
+- **Additions the E2E lacks** (Sim Lab, the newer drills, exam pause/resume, feedback sheet, etc.) are
+  designed in the E2E's own language and added to the E2E app first, so the founder taps them in the
+  Simulator and approves them before they are built. The E2E stays the single source of truth.
+- **Method per screen:** where the real page can be styled to match exactly, CSS in `lift-*.css`. Where its
+  structure differs (Home, Settings, the Progress/Analytics switch, Exam), the phone gets the E2E markup,
+  wired to the real app logic. Cost accepted: those screens carry a phone version alongside the desktop one.
+- The earlier v7.36 CSS-only lift drifted from June because it restyled desktop markup. That is the
+  failure this rule exists to stop.
+
 ## Architecture (unchanged from ADR-004)
 
 The real app is lifted to the June design at phone width (`lift-*.css`, the v7.36.1 `max-width:899px`
