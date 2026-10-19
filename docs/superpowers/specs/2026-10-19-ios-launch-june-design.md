@@ -40,6 +40,18 @@ screen: same layout, navigation, tab bar, copy, spacing, type, colour and motion
 - The earlier v7.36 CSS-only lift drifted from June because it restyled desktop markup. That is the
   failure this rule exists to stop.
 
+## Lift A decisions (founder, 19 Oct 2026)
+
+- **Quiz top-right corner is Flag**, styled as the E2E's square button. Light/dark lives on Home and Settings.
+- **Answering is pick-then-confirm** (E2E): tap selects, Next submits, Next is disabled until a pick. No skip.
+- **Review answers filters: All / Wrong only / Flagged.** Flagged shows only when something was flagged;
+  skipped counts as wrong.
+- E2E wins by default elsewhere: neutral amber answered pills, explanation always open, ✕ is Cancel, no arrow
+  glyphs in labels, no 🧠 emoji (Smart-quiz topics go in the generating line), Cached chip stays hidden on phone.
+- Additions drawn into the E2E (branch `feat/cert-ios-e2e`, HUD entries): home-exam-paused, home-signed-out
+  (web only), Momentum "Practise it", readiness meta line, quiz-short-set ("16 of 20"), "On your pick" note,
+  results-milestone toast (from the top, never over the dock), Flagged review filter.
+
 ## Architecture (unchanged from ADR-004)
 
 The real app is lifted to the June design at phone width (`lift-*.css`, the v7.36.1 `max-width:899px`
