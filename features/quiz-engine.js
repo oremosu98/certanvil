@@ -51,7 +51,8 @@
     // all see MIXED_TOPIC) with least-recently-seen topic picks for this
     // generation only; every other Mixed path (Marathon, Exam) draws at random.
     const _catchUp = typeof CATCHUP_TOPIC !== 'undefined' && topic === CATCHUP_TOPIC;
-    window._mixedPickMode = _catchUp ? 'lrs' : 'random';
+    window._mixedPickMode = _catchUp ? 'lrs' : 'bag';   // v8.179.0: plain Mixed is a mixed bag; Exam + Marathon keep exam weighting
+    window._mixedBagDeck = null;
     activeQuizTopic = topic.includes('Smart')
       ? getSmartQuizTopics(qCount)
       : (_catchUp ? MIXED_TOPIC : topic);
@@ -2262,6 +2263,24 @@ JUDGEMENT CASES (the format of the hardest real ${certCode} items) — write abo
     return picks;
   }
   window._lrsPick = _lrsPick;
+  // v8.179.0: Mixed as a true mixed bag (founder, 19 Oct: "a true mixed topic picker where it
+  // generally just selects a random mix, not trying to fit in every exam domain"). Draws from a
+  // shuffled deck of every topic in the pack, so no topic repeats until all have come up, then
+  // reshuffles. No domain quotas. startQuiz clears the deck for each new quiz.
+  function _sampleTopicsBag(n) {
+    const all = (typeof TOPIC_DOMAINS === 'object' && TOPIC_DOMAINS) ? Object.keys(TOPIC_DOMAINS) : [];
+    const out = [];
+    while (out.length < n && all.length) {
+      if (!Array.isArray(window._mixedBagDeck) || !window._mixedBagDeck.length) {
+        const d = all.slice();
+        for (let i = d.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [d[i], d[j]] = [d[j], d[i]]; }
+        window._mixedBagDeck = d;
+      }
+      out.push(window._mixedBagDeck.pop());
+    }
+    return out;
+  }
+  window._sampleTopicsBag = _sampleTopicsBag;
   // v8.144.0: shared top-up so every generation path fills to the requested
   // count the same way (Marathon presets used to have no buffer and no top-up,
   // which is where "45 → 28" came from). Mutates `rounds` with per-round

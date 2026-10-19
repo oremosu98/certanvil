@@ -1222,8 +1222,9 @@ test('v4.50.0: mode cards have title + sub structure',
 // exam-weighted random; Catch-up added for least-recently-seen).
 test('v8.146.0: Smart card says weakest topics (no AI claim)',
   html.includes('Your 3-4 weakest topics') && !html.includes('AI picks your weak spots'));
-test('v8.146.0: Mixed card says random, exam-weighted',
-  html.includes('Random topics, weighted like the real exam'));
+// v8.179.0: Mixed became a true mixed bag (no domain quotas), so the card no longer says exam-weighted.
+test('v8.179.0: Mixed card says a random mix from every topic',
+  html.includes('A random mix from every topic') && !html.includes('weighted like the real exam'));
 test('v8.146.0: Catch-up card present with its own value',
   html.includes('data-v="Mixed &mdash; Catch-up"') && html.includes("Topics you haven't seen lately"));
 // Domain accordions with data-domain-idx (1-5) — scoped to <details> tags only.

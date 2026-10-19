@@ -1,9 +1,9 @@
 // ══════════════════════════════════════════
-// Network+ AI Quiz — app.js  v8.178.0
+// Network+ AI Quiz — app.js  v8.179.0
 // ══════════════════════════════════════════
 
 // ── CONSTANTS ──
-const APP_VERSION = '8.178.0';
+const APP_VERSION = '8.179.0';
 // v4.99.45 (Phase 6b): expose APP_VERSION on window so the web-vitals
 // collector (lib/web-vitals-collector.js, loaded BEFORE app.js so its
 // PerformanceObservers attach earlier) can stamp this version onto every
@@ -4584,7 +4584,8 @@ async function _fetchQuestionsBatch(key, qTopic, difficulty, n, pbqCountOverride
     const fmt = (arr) => arr.length === 0 ? '  (none this batch)' : arr.map(t => '  - "' + t + '"' + (CERT_PACK && CERT_PACK.topicHints && CERT_PACK.topicHints[t] ? ' (cover any of: ' + CERT_PACK.topicHints[t] + ')' : '')).join('\n');  // v8.143.0: pack hints in the lottery
     // v8.127.0: one block per domain of the ACTIVE cert, labels + weights from
     // its pack (was Network+'s five domains hard-coded on every cert).
-    const domainBlocks = Object.keys(DOMAIN_WEIGHTS).map((k, i) =>
+    const bag = typeof window !== 'undefined' && window._mixedPickMode === 'bag' && typeof _sampleTopicsBag === 'function';   // v8.179.0: the Mixed card is a true mixed bag, no domain quotas
+    const domainBlocks = bag ? 'Topics (one question each):\n' + fmt(_sampleTopicsBag(n)) : Object.keys(DOMAIN_WEIGHTS).map((k, i) =>
       `Domain ${i + 1}.0 — ${DOMAIN_LABELS[k] || k} (${dist[k] || 0} questions, ${Math.round(DOMAIN_WEIGHTS[k] * 100)}%${i === 0 ? ' of exam' : ''}):\n${fmt(sampled[k] || [])}`
     ).join('\n\n');
     mixedDistributionStr = `\n\nMANDATORY TOPIC LOTTERY — Of the ${n} questions, generate EXACTLY ONE question per topic listed below (${n} topics total). Each question's .topic field MUST match the assigned topic verbatim. This is a true random sample — do NOT skip topics, do NOT repeat topics, and do NOT substitute "easier" topics for the ones listed.

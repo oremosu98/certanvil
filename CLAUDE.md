@@ -24,12 +24,12 @@
 <!-- machine-owned — run `node scripts/stamp-facts.js` to refresh; do not hand-edit -->
 | Metric | Lines | Size |
 |---|---|---|
-| app.js | 8288 | 441 KB |
+| app.js | 8289 | 442 KB |
 | styles.css | 14887 | 550 KB |
 | index.html | 2289 | 149 KB |
 | dg-system.css | 5610 | 531 KB |
-| tests/uat.js + tests/uat/ (43 modules) | 30911 | — |
-UAT checks: 5203 · E2E `test(` count: 163 · APP_VERSION: 8.178.0 · stamped-at: worktree
+| tests/uat.js + tests/uat/ (44 modules) | 30951 | — |
+UAT checks: 5207 · E2E `test(` count: 164 · APP_VERSION: 8.179.0 · stamped-at: worktree
 <!-- FACTS:AUTO:END -->
 
 | File | Purpose | Size |
@@ -135,9 +135,9 @@ npx playwright test              # E2E (tests/e2e/app.spec.js)
 
 | Version | Features Added |
 |---|---|
+| v8.179.0 | Mixed is now a true mixed bag: random topics from the whole syllabus, no domain quotas. |
 | v8.178.0 | Analytics totals count each Mixed quiz once; a short quiz now says so (toast + '16 of 20' pill). |
 | v8.177.0 | Sim Lab results: tap any PBQ to see the correct answer and your own, step by step. |
-| v8.176.0 | Today's question count no longer counts Mixed quizzes and exams twice. |
 
 _Older releases (v7.60.0 and back) live in [CHANGELOG.md](./CHANGELOG.md)._
 
