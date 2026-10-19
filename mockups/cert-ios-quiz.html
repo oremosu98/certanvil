@@ -69,6 +69,18 @@
   .qprog { flex: 1 1 auto; }
   .qprog-track { height: 6px; border-radius: 999px; background: var(--track); overflow: hidden; }
   .qprog-fill { height: 100%; border-radius: 999px; background: var(--accent); width: 20%; transition: width .5s var(--ease); }
+  /* post-June additions: Flag (replaces the theme switch, founder 19 Oct), short-set pill, your-pick note */
+  .qflag { flex: 0 0 auto; width: 34px; height: 34px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface); display: grid; place-items: center; cursor: pointer; color: var(--ink-soft); transition: transform .14s var(--ease), background-color .18s, border-color .18s, color .18s; }
+  .qflag:active { transform: scale(0.94); }
+  .qflag svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2.1; stroke-linecap: round; stroke-linejoin: round; }
+  .qflag.on { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+  .qflag.on svg { fill: currentColor; }
+  #stateGen.on ~ * .qflag, .screen[data-q="gen"] .qflag { opacity: .45; pointer-events: none; }
+  .qprog-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 6px; }
+  .qprog-row .qprog-num { margin-top: 0; }
+  .q-short { display: none; font: 800 10px/1 Inter, sans-serif; letter-spacing: .02em; color: var(--accent-deep); background: color-mix(in oklab, var(--accent) 11%, transparent); border: 1px solid color-mix(in oklab, var(--accent) 26%, var(--border)); border-radius: 999px; padding: 4px 8px; }
+  .screen[data-short="1"] .q-short { display: inline-block; }
+  .why-mine { margin: 10px 0 0 !important; font-size: 12.5px !important; }
   .qprog-num { display: block; font: 700 11px/1 Inter, sans-serif; color: var(--muted); margin-top: 6px; letter-spacing: 0.02em; }
 
   /* in-app theme toggle (separate from the stage-head preview toggle) */
@@ -210,6 +222,7 @@
       <button class="switch-chip" type="button" data-state="gen">Generating</button>
       <button class="switch-chip on" type="button" data-state="q">Question</button>
       <button class="switch-chip" type="button" data-state="ans">Answered</button>
+      <button class="switch-chip" type="button" data-state="short">Short set</button>
     </div>
 
     <div class="phone-wrap">
@@ -228,9 +241,9 @@
             <button class="exit" type="button" aria-label="Exit session"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
             <div class="qprog">
               <div class="qprog-track"><div class="qprog-fill" id="qfill"></div></div>
-              <span class="qprog-num" id="qprogNum">Question 1 of 5</span>
+              <span class="qprog-row"><span class="qprog-num" id="qprogNum">Question 1 of 5</span><span class="q-short" id="qShort">16 of 20</span></span>
             </div>
-            <button class="app-theme" id="appTheme" type="button" aria-label="Switch theme"><svg id="appThemeIcon" viewBox="0 0 24 24" aria-hidden="true"></svg></button>
+            <button class="qflag" id="qflag" type="button" aria-pressed="false" aria-label="Flag this question for review"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 21V4M5 4h11l-1.8 4L16 12H5"></path></svg></button>
           </div>
 
           <!-- STATE 1: GENERATING -->
@@ -243,10 +256,10 @@
               <div class="reveal sk-opt shimmer"></div>
               <div class="reveal sk-opt shimmer"></div>
               <div class="reveal sk-opt shimmer"></div>
-              <p class="gen-line reveal">Generating 5 Foundational questions on Mixed - All Topics...</p>
+              <p class="gen-line reveal">Generating 10 Exam level questions on Subnetting, VLANs and DNS...</p>
               <div class="gen-prog reveal">
                 <div class="gen-prog-track"><div class="gen-prog-bar"></div></div>
-                <span class="gen-prog-cap">Generating questions...</span>
+                <span class="gen-prog-cap">2 of 4 batches ready</span>
               </div>
             </div>
             <div class="qfoot">
@@ -301,6 +314,7 @@
               <div class="why">
                 <div class="why-h"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg><span>Wrong - correct answer: B</span></div>
                 <p>DHCP reservation ties a specific MAC address to a fixed IP address within the DHCP scope, ensuring the server <b>always</b> receives the same IP while remaining centrally managed by DHCP. Option A (DHCP option 66) specifies a TFTP server for boot operations, not IP assignment. Option C (DHCP option 51) controls lease time but does not guarantee the same IP, other hosts could receive it. Option D (DHCP snooping) is a security feature that validates DHCP messages, not an assignment mechanism.</p>
+                <p class="why-mine"><b>On your pick (A):</b> option 66 tells devices where the TFTP boot server is. It never decides which IP a host gets.</p>
                 <button class="why-study" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h11a3 3 0 0 1 3 3v11M4 5v13a2 2 0 0 0 2 2h12"></path><path d="M4 5a2 2 0 0 1 2-2h9"></path></svg>Study: DNS &amp; DHCP (Obj 1.6)</button>
                 <div class="why-acts">
                   <button class="why-act" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.3-1 .8-1 1.7M12 17v.01"></path></svg>Explain further</button>
@@ -335,7 +349,7 @@
         label.textContent = light ? 'Dark' : 'Light';
         icon.innerHTML = light ? MOON : SUN;
         // in-app toggle: light shows moon (tap to go dark)
-        appIcon.innerHTML = light ? MOON : SUN;
+        if (appIcon) appIcon.innerHTML = light ? MOON : SUN;
       }
       function toggle(){
         var next = html.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
@@ -347,7 +361,9 @@
       try { var saved = localStorage.getItem(STORE); if (saved) html.setAttribute('data-theme', saved); } catch (e) {}
 
       document.getElementById('themeToggle').addEventListener('click', toggle);
-      document.getElementById('appTheme').addEventListener('click', toggle);
+      // Flag replaced the in-app theme switch (founder, 19 Oct 2026). Theme lives on Home and Settings.
+      var qflag = document.getElementById('qflag');
+      qflag.addEventListener('click', function(){ var on = qflag.classList.toggle('on'); qflag.setAttribute('aria-pressed', on ? 'true' : 'false'); });
       paint();
 
       // State switcher
@@ -357,15 +373,20 @@
       var META = {
         gen: { w: '8%',  num: 'Building set...', hint: 'Generating state. AI is writing the question set before the first card.' },
         q:   { w: '20%', num: 'Question 1 of 5', hint: 'Question state. Tap an answer, then Next. Switch states with the chips above.' },
-        ans: { w: '20%', num: 'Question 1 of 5', hint: 'Answered state. The reveal leads with the right answer, then the explanation and next moves.' }
+        ans: { w: '20%', num: 'Question 1 of 5', hint: 'Answered state. The reveal leads with the right answer, then the explanation and next moves.' },
+        short: { w: '6%', num: 'Question 1 of 16', hint: 'Short set. You asked for 20 and 16 came back, so the pill says so.' }
       };
       function show(key){
-        for (var k in states) states[k].classList.toggle('on', k === key);
+        var scr = document.getElementById('screen');
+        scr.setAttribute('data-q', key); scr.setAttribute('data-short', key === 'short' ? '1' : '0');
+        if (key === 'short') { for (var k2 in states) states[k2].classList.toggle('on', k2 === 'q'); }
+        else for (var k in states) states[k].classList.toggle('on', k === key);
         chips.forEach(function(c){ c.classList.toggle('on', c.getAttribute('data-state') === key); });
         var m = META[key]; fill.style.width = m.w; progNum.textContent = m.num; hint.textContent = m.hint;
-        if (key === 'q') resetQuestion();
+        if (key === 'q' || key === 'short') resetQuestion();
       }
       chips.forEach(function(c){ c.addEventListener('click', function(){ show(c.getAttribute('data-state')); }); });
+      try { var qv = new URLSearchParams(location.search).get('v'); if (qv && META[qv]) setTimeout(function(){ show(qv); }, 0); } catch (_) {}
 
       // Question-state interaction (answer then Next)
       var qbody = document.getElementById('qbody'), action = document.getElementById('qaction');

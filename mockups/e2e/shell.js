@@ -35,9 +35,12 @@
     'drills'            : 'cert-ios-drills.html',
     'hub'               : 'cert-ios-hub.html',
     'quiz'              : 'cert-ios-quiz.html',
+    'quiz-short-set'    : 'cert-ios-quiz.html?v=short',
+    'quiz-answered'     : 'cert-ios-quiz.html?v=ans',
     'custom-quiz'       : 'cert-ios-custom-quiz.html',
     'exam'              : 'cert-ios-exam.html',
     'results'           : 'cert-ios-results.html',
+    'results-milestone' : 'cert-ios-results.html?v=milestone',
     'exam-results'      : 'cert-ios-exam-results.html',
     'progress'          : 'cert-ios-progress.html',
     'analytics'         : 'cert-ios-analytics.html',
@@ -166,6 +169,9 @@
 
   // The dashboard tab bar (Home/Drills/Progress/Account) recurs across screens.
   // Wire it generically by label so every screen that has it navigates.
+  // post-June variant screens reuse their base screen's routes
+  NAV['quiz-short-set'] = NAV['quiz']; NAV['quiz-answered'] = NAV['quiz']; NAV['results-milestone'] = NAV['results'];
+
   var TABS = { 'Home':'home', 'Drills':'drills', 'Progress':'progress', 'Account':'settings',
                'Analytics':'analytics', 'Settings':'settings' };
 

@@ -69,6 +69,9 @@
   .seg { display: inline-flex; gap: 5px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 11px; padding: 4px; }
   .seg button { border: none; background: transparent; border-radius: 8px; padding: 8px 14px; cursor: pointer; font: 700 12.5px/1 Inter, sans-serif; color: var(--ink-soft);
     transition: background .18s var(--ease), color .18s var(--ease); }
+  .qa-flag { display: inline-flex; align-items: center; gap: 4px; margin-left: 8px; font: 800 9.5px/1 Inter, sans-serif; letter-spacing: .06em; text-transform: uppercase; color: var(--accent-deep); vertical-align: 1px; }
+  .qa-flag svg { width: 11px; height: 11px; stroke: currentColor; fill: currentColor; stroke-width: 2; stroke-linejoin: round; }
+  .seg button[hidden] { display: none; }
   .seg button.on { background: var(--surface); color: var(--ink); box-shadow: 0 1px 3px color-mix(in oklab, var(--ink) 10%, transparent); }
 
   .body { flex: 1; overflow-y: auto; padding: 16px 22px 18px; display: grid; gap: 14px; }
@@ -151,6 +154,7 @@
             <div class="seg" role="tablist" aria-label="Filter answers">
               <button id="fAll" class="on" type="button" role="tab" aria-selected="true">All</button>
               <button id="fWrong" type="button" role="tab" aria-selected="false">Wrong only</button>
+              <button id="fFlag" type="button" role="tab" aria-selected="false">Flagged</button>
             </div>
           </div>
 
@@ -198,16 +202,17 @@
     var QS = [
       { q: 'Which port does HTTPS use?', opts: ['443', '80', '22', '53'], a: 0, you: 0, ex: 'HTTPS is HTTP over TLS, on TCP 443.' },
       { q: 'Which protocol resolves an IP address to a MAC address on a LAN?', opts: ['DNS', 'ARP', 'DHCP', 'ICMP'], a: 1, you: 1, ex: 'ARP maps a known IP to its MAC on the local segment.' },
-      { q: 'How many usable hosts does a /26 subnet provide?', opts: ['30', '62', '64', '126'], a: 1, you: 2, ex: '/26 = 64 addresses, minus the network and broadcast = 62 usable.' },
+      { q: 'How many usable hosts does a /26 subnet provide?', opts: ['30', '62', '64', '126'], a: 1, you: 2, flag: 1, ex: '/26 = 64 addresses, minus the network and broadcast = 62 usable.' },
       { q: 'Which device makes forwarding decisions at Layer 3?', opts: ['Switch', 'Hub', 'Router', 'Bridge'], a: 2, you: 2, ex: 'A router forwards by IP (Layer 3); a switch works at Layer 2.' },
       { q: 'What is the first message a DHCP client sends?', opts: ['OFFER', 'REQUEST', 'DISCOVER', 'ACK'], a: 2, you: 2, ex: 'DORA starts with the client broadcasting DISCOVER.' },
       { q: 'Which port does SSH use?', opts: ['23', '22', '443', '3389'], a: 1, you: 0, ex: 'SSH runs on TCP 22; Telnet (insecure) is 23.' },
-      { q: 'Which record maps a hostname to an IPv6 address?', opts: ['A', 'CNAME', 'AAAA', 'MX'], a: 2, you: 2, ex: 'AAAA ("quad-A") holds an IPv6 address; A holds IPv4.' },
+      { q: 'Which record maps a hostname to an IPv6 address?', opts: ['A', 'CNAME', 'AAAA', 'MX'], a: 2, you: 2, flag: 1, ex: 'AAAA ("quad-A") holds an IPv6 address; A holds IPv4.' },
       { q: 'What is the default subnet mask for a /24 network?', opts: ['255.255.0.0', '255.255.255.0', '255.255.255.128', '255.0.0.0'], a: 1, you: 1, ex: 'A /24 has 24 network bits = 255.255.255.0.' }
     ];
     var keys = ['A', 'B', 'C', 'D'];
     var CHECK = '<svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>';
     var CROSS = '<svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg>';
+    var FLAGI = '<svg viewBox="0 0 24 24"><path d="M5 21V4M5 4h11l-1.8 4L16 12H5"/></svg>';
     var list = document.getElementById('list');
     var fAll = document.getElementById('fAll'), fWrong = document.getElementById('fWrong');
     var rightCount = QS.filter(function (q) { return q.you === q.a; }).length;
@@ -224,7 +229,7 @@
         return '<div class="' + cls + '">' + mk + '<span>' + keys[i] + '. ' + text + '</span>' + tag + '</div>';
       }).join('');
       return '<div class="qa" data-wrong="' + (correct ? '0' : '1') + '">' +
-        '<div class="qa-top"><span class="qa-num">Question ' + n + '</span>' +
+        '<div class="qa-top"><span class="qa-num">Question ' + n + (q.flag ? '<span class="qa-flag">' + FLAGI + 'Flagged</span>' : '') + '</span>' +
           '<span class="qa-badge ' + (correct ? 'ok' : 'no') + '">' + (correct ? CHECK + 'Correct' : CROSS + 'Missed') + '</span></div>' +
         '<p class="qa-q">' + q.q + '</p>' +
         '<div class="qa-opts">' + opts + '</div>' +
@@ -232,9 +237,11 @@
       '</div>';
     }
 
-    function render(wrongOnly) {
+    // filter: 'all' | 'wrong' | 'flag'. Flagged only shows when something was flagged (founder, 19 Oct).
+    function render(mode) {
+      if (mode === true) mode = 'wrong'; if (!mode) mode = 'all';
       var shown = QS.map(function (q, i) { return { q: q, n: i + 1 }; })
-        .filter(function (o) { return !wrongOnly || o.q.you !== o.q.a; });
+        .filter(function (o) { return mode === 'all' || (mode === 'wrong' ? o.q.you !== o.q.a : !!o.q.flag); });
       if (!shown.length) {
         list.innerHTML = '<div class="empty"><b>Nothing missed</b>Every answer was correct. Clean run.</div>';
         return;
@@ -243,8 +250,15 @@
       list.scrollTop = 0;
     }
 
-    fAll.addEventListener('click', function () { fAll.classList.add('on'); fAll.setAttribute('aria-selected', 'true'); fWrong.classList.remove('on'); fWrong.setAttribute('aria-selected', 'false'); render(false); });
-    fWrong.addEventListener('click', function () { fWrong.classList.add('on'); fWrong.setAttribute('aria-selected', 'true'); fAll.classList.remove('on'); fAll.setAttribute('aria-selected', 'false'); render(true); });
+    var fFlag = document.getElementById('fFlag');
+    if (!QS.some(function (q) { return q.flag; })) fFlag.hidden = true;
+    function pick(btn, mode) {
+      [fAll, fWrong, fFlag].forEach(function (b) { var on = b === btn; b.classList.toggle('on', on); b.setAttribute('aria-selected', on ? 'true' : 'false'); });
+      render(mode);
+    }
+    fAll.addEventListener('click', function () { pick(fAll, 'all'); });
+    fWrong.addEventListener('click', function () { pick(fWrong, 'wrong'); });
+    fFlag.addEventListener('click', function () { pick(fFlag, 'flag'); });
     // #done and header .back are wired by the shell nav-bridge
     render(false);
   })();
