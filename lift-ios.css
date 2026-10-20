@@ -556,7 +556,8 @@ body:has(#page-setup.active #ios-custom:not(:empty)) #app-topbar, body:has(#page
 body:has(#page-setup.active #ios-custom:not(:empty)) #lift-tabbar { display: none !important; }
 html[data-theme] body #page-setup:has(#ios-custom:not(:empty)) { padding: 0 !important; }
 /* the desktop panel is only ever a source of state on phones; the phone screen replaces it */
-#custom-quiz-section { display: none !important; }
+/* ic-failed: the phone screen could not draw, so the desktop picker stays usable */
+html:not(.ic-failed) #custom-quiz-section { display: none !important; }
 #ios-custom .ic-topbar { padding-top: max(8px, env(safe-area-inset-top)) !important; }
 #ios-custom .ic-body { flex: 1 0 auto; overflow: visible !important; }
 #ios-custom .ic-foot { position: sticky; bottom: 0; z-index: 5; }

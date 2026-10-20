@@ -450,6 +450,57 @@ test.describe('Lift A custom quiz (phone)', () => {
     await expect(page.locator('#ios-custom [data-act="count"][data-v="20"]')).not.toHaveClass(/ic-overcap/);
   });
 
+  test('custom (minor 1): an auto-opened domain stays open when its last topic is un-picked', async ({ page }) => {
+    await openApp(page, PHONE);
+    await page.evaluate(() => { document.querySelector('details.topic-domain-group[data-domain-idx="2"] .chip[data-v]').click(); _jumpToCustomQuiz(); });
+    const dom = page.locator('#ios-custom .ic-dom[data-idx="2"]');
+    await expect(dom).toHaveAttribute('aria-expanded', 'true');
+    await dom.locator('[data-act="topic"][aria-pressed="true"]').click();
+    await expect(dom.locator('.ic-picked')).toHaveCount(0);
+    await expect(dom).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  test('custom (minor 2): if the phone screen cannot draw, the desktop picker still opens', async ({ page }) => {
+    await openApp(page, PHONE);
+    await page.evaluate(() => { window._srIsFreeTier = () => { throw new Error('boom'); }; });
+    await page.locator('#ios-home [data-act="custom"]').click();
+    await expect(page.locator('#ios-custom')).toBeEmpty();
+    await expect(page.locator('#custom-quiz-section')).toHaveAttribute('open', '');
+    await expect(page.locator('#custom-quiz-section')).toBeVisible();
+  });
+
+  test('custom (minor 3): a key error raised on another page brings you to the screen with the error', async ({ page }) => {
+    await openApp(page, PHONE);
+    await page.evaluate(() => showPage('progress'));
+    await expect(page.locator('#page-progress')).toHaveClass(/active/);
+    await page.waitForTimeout(400);
+    await page.evaluate(() => { const b = document.getElementById('setup-err'); b.textContent = 'Add your API key to start.'; b.classList.remove('is-hidden'); showSetupError(); });
+    await expect(page.locator('#page-setup')).toHaveClass(/active/);
+    await expect(page.locator('#ios-custom .ic-err')).toContainText('Add your API key to start.');
+    await expect(page.locator('#ios-custom .ic-err')).toBeVisible();
+  });
+
+  test('custom (minor 4): a drilled topic with no chip is named in the footer (guard)', async ({ page }) => {
+    // Exactly what features/progress.js drillTopic(t) does, for a topic the picker has no chip for.
+    await openApp(page, PHONE);
+    await page.evaluate(() => {
+      document.querySelectorAll('#topic-group .chip').forEach(c => c.classList.remove('on'));
+      topic = 'Legacy Topic Name';
+      _jumpToCustomQuiz();
+    });
+    await expect(page.locator('#ios-custom .ic-foot-note')).toHaveText(/^1 topic: Legacy Topic Name, /);
+  });
+
+  test('custom (minor 5): the signed-out card does not point at a top bar it hides', async ({ page }) => {
+    await openApp(page, PHONE);
+    await page.evaluate(() => { window._certanvilSignedIn = false; window._gateActivityForQuota = () => true; window._gateSessionSizeForQuota = () => true; });
+    await openCustom(page);
+    await page.locator('#ios-custom [data-act="start"]').click();
+    const err = page.locator('#ios-custom .ic-err');
+    await expect(err.locator('[data-act="signin"]')).toBeVisible();
+    await expect(err).not.toContainText('top right');
+  });
+
   test('custom: desktop still gets the modal', async ({ page }) => {
     await openApp(page, DESKTOP);
     await page.evaluate(() => _jumpToCustomQuiz());

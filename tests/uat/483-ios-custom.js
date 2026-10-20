@@ -59,6 +59,14 @@ const { _fnBody, js, results, test, vm } = require('./_context');
     const zs = src({ mode: 'mixed' }); zs.domains.push({ idx: 5, name: '5.0 Network Troubleshooting', short: 'Troubleshooting', weight: '24% of exam', topics: [] });
     const zm = vm.runInContext('_iosCustomModel(__s, __n)', Object.assign(ctx, { __s: zs, __n: NOW }));
     test('Custom model (fix C1): domains with no topics (stale slots for smaller certs) are dropped', zm.domains.length === 3 && zm.domains.every(x => x.topicCount > 0));
+    const lone = vm.runInContext('_iosCustomModel(__s, __n)', Object.assign(ctx, { __s: Object.assign(src({ diff: 'Exam Level' }), { loneTopic: 'Network Troubleshooting & Tools' }), __n: NOW }));
+    test('Custom model (minor 4): a drilled topic with no chip is named in the footer', lone.foot === '1 topic: Network Troubleshooting & Tools, exam level.');
+    test('Custom model (minor 4): loneTopic is ignored once a chip or mode is picked',
+      vm.runInContext('_iosCustomModel(__s, __n)', Object.assign(ctx, { __s: Object.assign(src({ mode: 'smart', diff: 'Exam Level' }), { loneTopic: 'X' }), __n: NOW })).foot === 'Your weakest topics, exam level.');
+    const se = (signIn) => vm.runInContext('_iosCustomModel(__s, __n)', Object.assign(ctx, { __s: Object.assign(src({ mode: 'mixed' }),
+      { err: 'Sign in to study free: 15 questions a day, no API key needed. Tap "Sign in" at the top right.', signIn: signIn }), __n: NOW })).err;
+    test('Custom model (minor 5): with its own Sign in button, the card drops "Tap Sign in at the top right"',
+      se(true) === 'Sign in to study free: 15 questions a day, no API key needed.' && /top right/.test(se(false)));
     test('Custom model: count is the selected number', d.count === 15 && M({ mode: 'mixed' }).count === 10);
     test('Custom model: mode copy (E2E wins)',
       d.modes[0].title === 'Smart' && d.modes[0].sub === 'Targets the topics you keep getting wrong.'

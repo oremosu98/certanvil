@@ -64,7 +64,11 @@
     var nTopics = 0, from = [];
     domains.forEach(function (d) { if (d.picked) { nTopics += d.picked; from.push(d.short || d.name); } });
     var foot;
-    if (nTopics) {
+    var anyMode = modes.some(function (m) { return m.on; });
+    if (!nTopics && !anyMode && src.loneTopic) {
+      // drill-a-topic on a topic the picker has no chip for: app.js's `topic` still holds it (minor 4)
+      foot = '1 topic: ' + src.loneTopic + ', ' + diffText + '.';
+    } else if (nTopics) {
       var where = from.length > 2 ? from.length + ' domains'
         : (from.length === 2 ? from[0] + ' and ' + from[1] : from[0]);
       foot = nTopics + (nTopics === 1 ? ' topic' : ' topics') + ' from ' + where + ', ' + diffText + '.';
@@ -79,7 +83,9 @@
     return {
       cert: src.cert || { mark: 'CA', name: '', code: '' },
       domains: domains, modes: modes, catchup: catchup, diffs: diffs, counts: counts,
-      count: countOn ? parseInt(countOn.v, 10) : 10, foot: foot, err: src.err || '',
+      count: countOn ? parseInt(countOn.v, 10) : 10, foot: foot,
+      // the phone screen hides the top bar, and the card carries its own Sign in button (minor 5)
+      err: src.signIn ? String(src.err || '').replace(/\s*Tap\s+["\u201c]Sign in["\u201d]\s+at the top right\.?/i, '') : (src.err || ''),
       capNote: free, signIn: !!src.signIn
     };
   }
@@ -227,16 +233,26 @@
       history: history.map(function (r) { return { topic: r && r.topic, date: r && r.date }; }),
       err: (errBox && !errBox.classList.contains('is-hidden')) ? _icText(errBox) : '',
       freeTier: !!(typeof window._srIsFreeTier === 'function' && window._srIsFreeTier()),
-      signIn: window._certanvilSignedIn !== true && !!document.querySelector('a.topbar-signin-pill')
+      signIn: window._certanvilSignedIn !== true && !!document.querySelector('a.topbar-signin-pill'),
+      loneTopic: _icLoneTopic(MIXED, CATCH)
     };
+  }
+
+  // The topic app.js will quiz on when no chip or mode is on (drillTopic sets `topic` directly).
+  function _icLoneTopic(MIXED, CATCH) {
+    var t = '';
+    try { t = (typeof topic === 'string') ? topic : ''; } catch (_) { t = ''; }
+    if (!t || document.querySelector('#topic-group .chip.on')) return '';
+    if (t === MIXED || t === CATCH || /^Multi:/.test(t) || /smart/i.test(t)) return '';
+    return t;
   }
 
   var _icOpen = {};   // accordions the user opened or closed this visit, by domain idx
 
   function renderIosCustom(fresh) {
     var root = document.getElementById('ios-custom');
-    if (!root) return;
-    if (!_icPhone()) { closeIosCustom(); return; }
+    if (!root) return false;
+    if (!_icPhone()) { closeIosCustom(); return false; }
     try {
       var m = _iosCustomModel(_iosCustomSource(), new Date());
       m.domains.forEach(function (d) { if (typeof _icOpen[d.idx] === 'boolean') d.expanded = _icOpen[d.idx]; });
@@ -252,10 +268,20 @@
         })[0];
         if (back) { try { back.focus({ preventScroll: true }); } catch (_) { back.focus(); } }
       }
+      document.documentElement.classList.remove('ic-failed');
+      return true;
     } catch (err) {
       root.innerHTML = '';
       try { console.warn('[ios-custom] render failed', err); } catch (_) {}
+      return false;
     }
+  }
+
+  // Keep each accordion as the user last saw it across a re-render (minor 1).
+  function _icSnapOpen(root) {
+    [].forEach.call(root.querySelectorAll('.ic-dom[data-idx]'), function (d) {
+      _icOpen[d.getAttribute('data-idx')] = d.getAttribute('aria-expanded') === 'true';
+    });
   }
 
   function closeIosCustom() {
@@ -285,6 +311,7 @@
       _icOpen[idx] = open;
       return;
     }
+    _icSnapOpen(root);
     if (act === 'theme') { if (typeof toggleTheme === 'function') toggleTheme(); }
     else if (act === 'mode') _icClickHidden('#topic-group .cq-mode-card', v);
     else if (act === 'topic') _icClickHidden('#topic-group .chip:not(.cq-mode-card)', v);
@@ -303,9 +330,17 @@
     var root = document.getElementById('ios-custom');
     if (!cq || !cq.open || !root || !_icPhone()) return;
     var fresh = !root.innerHTML;
+    if (fresh) _icOpen = {}; else _icSnapOpen(root);
+    if (!renderIosCustom(fresh)) {
+      // the phone screen could not draw: leave the desktop picker open and visible (minor 2)
+      document.documentElement.classList.add('ic-failed');
+      return;
+    }
     cq.open = false;
-    if (fresh) _icOpen = {};
-    renderIosCustom(fresh);
+    // a key error raised on another page (no page switch under way): bring the user to Setup, where the
+    // screen and its error now live, instead of leaving it hidden until they next come Home (minor 3)
+    var setup = document.getElementById('page-setup');
+    if (setup && !setup.classList.contains('active') && !document.querySelector('.page.page-exit') && typeof goSetup === 'function') goSetup();
     var target = root.querySelector('.ic-err') || (fresh && root.querySelector('.ic-dom[aria-expanded="true"]'));
     if (target) _icScrollWhenSettled(target);
     else if (fresh) window.scrollTo(0, 0);
