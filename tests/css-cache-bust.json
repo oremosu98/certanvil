@@ -4,12 +4,12 @@
     "sha256": "1e8db10d14b53737"
   },
   "dg-critical.css": {
-    "version": "8.6.1",
-    "sha256": "c071aee1e6a6582b"
+    "version": "8.115.0",
+    "sha256": "12dd5bfd37c94a6f"
   },
   "dg-system.css": {
-    "version": "8.6.0",
-    "sha256": "39d5d36c582f1d2c"
+    "version": "8.183.0",
+    "sha256": "8278fa5c57061f21"
   },
   "dg-depurple.css": {
     "version": "7.81.0",
@@ -24,7 +24,11 @@
     "sha256": "ba09b3442d244791"
   },
   "lift-screens.css": {
-    "version": "7.36.1",
-    "sha256": "5f179a86e8782722"
+    "version": "8.182.0",
+    "sha256": "fcf0b9faaca9d6ff"
+  },
+  "lift-ios.css": {
+    "version": "8.183.0",
+    "sha256": "57e9dc3a46582919"
   }
 }

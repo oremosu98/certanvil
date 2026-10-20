@@ -5618,3 +5618,6 @@ html[data-theme] body .topbar-countdown.is-hidden{display:none!important;}
   html[data-theme] body .topbar-account-email,html[data-theme] body .topbar-account-chevron{display:none!important;}
   html[data-theme] body .topbar-account-pill{min-width:44px!important;min-height:44px!important;justify-content:center!important;padding:4px!important;gap:0!important;}
 }
+
+/* v8.183.0 Lift A: phone-only containers. lift-ios.css (phone width) shows them. */
+.ios-only{display:none!important;}
