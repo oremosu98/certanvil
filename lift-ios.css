@@ -527,3 +527,14 @@ body:has(#page-review.active #ios-review:not(:empty)) #app-topbar, body:has(#pag
 #ios-review .ia-body { flex: 1 0 auto !important; overflow: visible !important; }
 #ios-review .ia-footer { position: sticky !important; bottom: 0 !important; z-index: 30; }
 #ios-review .ia-hdr h1 { text-transform: none !important; }
+/* Toasts never cover the docked buttons: info/success toasts drop from the top like the E2E
+   toast, and milestone toasts that fire together stack instead of overlapping. */
+html[data-theme] body .success-toast { position: fixed !important; z-index: 2000 !important; left: 16px !important; right: 16px !important; top: calc(52px + env(safe-area-inset-top)) !important; bottom: auto !important; width: auto !important; max-width: none !important; transform: translateY(-160%) !important; opacity: 0 !important; margin: 0 !important; text-align: left !important; border-radius: 16px !important; padding: 14px 15px !important; font: 600 13px/1.35 Inter, -apple-system, sans-serif !important; background: var(--surface) !important; color: var(--text) !important; border: 1px solid color-mix(in oklab, var(--green) 45%, var(--border)) !important; box-shadow: 0 20px 50px -24px rgba(0,0,0,.5) !important; transition: transform .22s cubic-bezier(0.32,0.72,0,1), opacity .2s var(--ios-ease) !important; }
+html[data-theme] body .success-toast.show { transform: translateY(0) !important; opacity: 1 !important; transition: transform .34s cubic-bezier(0.32,0.72,0,1), opacity .25s var(--ios-ease) !important; }
+html[data-theme] body .celebration-toast ~ .celebration-toast { top: calc(52px + 84px + env(safe-area-inset-top)) !important; }
+html[data-theme] body .celebration-toast ~ .celebration-toast ~ .celebration-toast { top: calc(52px + 168px + env(safe-area-inset-top)) !important; }
+@media (prefers-reduced-motion: reduce) { html[data-theme] body .success-toast, html[data-theme] body .success-toast.show { transform: none !important; transition: opacity .18s ease !important; } }
+html[data-theme] body #page-quiz .exp-head { min-height: 0 !important; height: auto !important; }
+html[data-theme] body #page-quiz #exp-text { padding-top: 0 !important; }
+html[data-theme] body #page-quiz .exp-head::before, html[data-theme] body #page-quiz .exp-head::after { display: none !important; }
+html[data-theme] body #page-quiz .exp-head { line-height: 1.3 !important; }

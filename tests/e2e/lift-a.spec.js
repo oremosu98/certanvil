@@ -112,6 +112,7 @@ test.describe('Lift A quiz: pick, then confirm (phone)', () => {
     await page.locator('#btn-next').click();
     expect(await page.evaluate(() => log.length)).toBe(1);
     await expect(page.locator('#options .option').nth(1)).toHaveClass(/wrong/);
+    await expect(page.locator('#options .option').nth(1)).not.toHaveClass(/\bsel\b/);   // the pick turns red, not bronze
     await expect(page.locator('#exp-box')).toBeVisible();
     await expect(page.locator('#btn-next')).toHaveText('Next question');
     await page.locator('#btn-next').click();

@@ -1313,7 +1313,7 @@ JUDGEMENT CASES (the format of the hardest real ${certCode} items) — write abo
     // Walk option buttons and apply the answered markers.
     document.querySelectorAll('#options .option').forEach((btn, i) => {
       const l = ['A','B','C','D'][i];
-      btn.classList.remove('correct', 'wrong', 'reveal-correct', 'dimmed');
+      btn.classList.remove('correct', 'wrong', 'reveal-correct', 'dimmed', 'sel');   // v8.183.0: clear the phone pick-then-confirm selection
       // v8.0.0 (wave 2): .t-shake is kept ORTHOGONAL to .wrong on purpose —
       // dropping both together would restart the colour treatment every time
       // the shake replays on a re-pick, so the option would flicker.
