@@ -39,6 +39,11 @@ screen: same layout, navigation, tab bar, copy, spacing, type, colour and motion
   wired to the real app logic. Cost accepted: those screens carry a phone version alongside the desktop one.
 - The earlier v7.36 CSS-only lift drifted from June because it restyled desktop markup. That is the
   failure this rule exists to stop.
+- **Scale: keep the app-wide `html { zoom: 1.10 }` on phones** (founder delegated the decision, 20 Oct 2026).
+  The E2E draws a 368px-wide screen, and the Simulator app stretches it to the 402pt iPhone 17 Pro, about
+  1.09×. The zoomed real app (402 / 1.10 ≈ 365 CSS px) is the closest match to what the founder approved.
+  Turning the zoom off would draw every phone screen about 9% smaller than the E2E. Compare side-by-sides
+  at the device width (402), not at 390, where the zoom makes lines wrap that fit on the device.
 
 ## Lift A decisions (founder, 19 Oct 2026)
 
