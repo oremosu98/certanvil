@@ -48,23 +48,22 @@ It is a full-screen page in the shared `.iq-screen` shell, the same as the quiz.
 - **How to choose questions:** a bento 2 + 1.
   - Smart: "Targets the topics you keep getting wrong."
   - Mixed: "A random spread across every topic."
-  - Catch-up (wide): title "Catch-up", sub "Topics you haven't seen lately". It also shows a live
-    line: "**N topics you haven't practised in a week**", where N counts topics last seen 7 or more
-    days ago, or never.
-  - Catch-up fallback: with no history, or when N is 0, the line reads "Picks the topics you've gone
-    longest without".
+  - Catch-up (wide): title "Catch-up", sub "Topics you haven't seen lately". Under a hairline it shows a
+    live line, "**N** not practised in a week", where N counts topics last seen 7 or more days ago.
+  - With history but N = 0, the line reads "All practised this week." With no history, the line is hidden.
   - Each card has an icon tile, a title and a sub. When selected it gets an accent border and a tick.
     Colour is never the only signal.
 - **Or build it by topic:** one accordion card per domain, showing "N topics", the "X% of exam" badge
   and a chevron. Opened, it shows topic chips you can pick several of. A closed card shows how many of
-  its topics are picked ("2 picked").
+  its topics are picked ("5 topics · 2 picked", or "all picked").
 - **Difficulty:** a segmented control, Foundational / Exam level / Mixed.
 - **Count:** the count echoed as a large number ("10 questions"), then a segmented control, 5 / 10 /
   15 / 20.
 - **Docked footer:** a sticky bar, as on the quiz. The primary button reads "Start quiz" with the count
   ("10 Q"). Under it, one line describes the session:
   - Mixed: "Mixed spread across all topics, mixed difficulty."
-  - Picked topics: "3 topics from Concepts and Security, exam level."
+  - Picked topics: "3 topics from Concepts and Security, exam level." With more than 2 domains, it reads
+    "from 3 domains". The line is always one line, so the docked footer never changes height.
 - **Picking rules:** the same as today. Picking a mode clears picked topics, and picking a topic clears
   the mode. If nothing is picked, Start falls back to the live app's default.
 
@@ -98,7 +97,11 @@ It is a full-screen page in the shared `.iq-screen` shell, the same as the quiz.
   - `#ios-custom` container (`ios-only iq-screen`) in `index.html`.
   - CSS ported into `lift-ios.css` with the `ic-` prefix, using the existing porter and token map.
 - **Free cap.** Choosing 20 does not open the daily-limit screen yet. That limit lands with Stage 6 (Pro
-  on iPhone).
+  on iPhone). Until then, the real app shows **no** cap note and does not dim 20, because "20 needs Pro"
+  would be untrue while 20 still works.
+- **Stage 6.** The E2E shows the cap note "Free covers 15 questions a day. 20 needs Pro." and dims 20.
+  Once the quota is real, use the remaining count instead ("9 left today"), so the limit is never a
+  surprise.
 
 ## Motion and copy
 
@@ -106,8 +109,11 @@ It is a full-screen page in the shared `.iq-screen` shell, the same as the quiz.
   instant, apart from a short border and tick fade.
 - **Reduced motion** reduces everything to a fade.
 - **Hover** stays behind `(hover:hover) and (pointer:fine)`.
-- **E2E copy wins.** The stage-4 humanizer pass covers only the new Catch-up line and the footer
-  descriptions.
+- **E2E copy wins.** The visual pass ran on 20 Oct 2026, on the additions only.
+  - Stage 2 ruled that nothing new moves. Stage 3 therefore added nothing.
+  - The one fix: the footer line stays one line, so the dock never jumps.
+  - Stage 4 tightened the Catch-up line and "all picked".
+  - Stage 5 kept the framing and added the Stage 6 note above.
 
 ## Acceptance
 
