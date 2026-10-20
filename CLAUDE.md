@@ -29,7 +29,7 @@
 | index.html | 2303 | 150 KB |
 | dg-system.css | 5624 | 532 KB |
 | tests/uat.js + tests/uat/ (51 modules) | 31427 | — |
-UAT checks: 5313 · E2E `test(` count: 211 · APP_VERSION: 8.183.0 · stamped-at: worktree
+UAT checks: 5313 · E2E `test(` count: 211 · APP_VERSION: 8.184.0 · stamped-at: worktree
 <!-- FACTS:AUTO:END -->
 
 | File | Purpose | Size |
@@ -135,9 +135,9 @@ npx playwright test              # E2E (tests/e2e/app.spec.js)
 
 | Version | Features Added |
 |---|---|
+| v8.184.0 | Custom quiz on phones: five small fixes from the v8.183.0 review. |
 | v8.183.0 | Phone app looks like the June design: Home, quiz, results, review answers and Custom quiz. |
 | v8.181.0 | No more negative day counts once the exam date has passed. |
-| v8.180.0 | Fix #498: history rows normalised at loadHistory, so odd rows can't crash Home or show NaN. |
 
 _Older releases (v7.60.0 and back) live in [CHANGELOG.md](./CHANGELOG.md)._
 
