@@ -83,3 +83,61 @@ test.describe('Lift A generating screen', () => {
     await expect(page.locator('#page-setup')).toHaveClass(/active/);
   });
 });
+
+const QUIZ = [
+  { type: 'mcq', question: 'Which port does HTTPS use by default?', options: { A: '80', B: '22', C: '443', D: '53' }, answer: 'C', explanation: 'HTTPS uses TCP 443.', topic: 'Ports & Protocols', difficulty: 'Foundational' },
+  { type: 'mcq', question: 'At which OSI layer does ICMP operate?', options: { A: 'Layer 2', B: 'Layer 3', C: 'Layer 4', D: 'Layer 7' }, answer: 'B', explanation: 'ICMP is Layer 3.', topic: 'OSI Model', difficulty: 'Foundational' },
+];
+const MS = [{ type: 'multi-select', question: 'Pick TWO secure protocols.', options: { A: 'SSH', B: 'Telnet', C: 'HTTPS', D: 'FTP' }, answers: ['A', 'C'], explanation: 'SSH and HTTPS encrypt.', topic: 'Ports & Protocols', difficulty: 'Foundational' }];
+async function inject(page, viewport, qs) {
+  await openApp(page, viewport);
+  await page.evaluate((q) => window._testInjectQuiz(q), qs);
+  await expect(page.locator('#page-quiz')).toHaveClass(/active/);
+}
+
+test.describe('Lift A quiz: pick, then confirm (phone)', () => {
+  test('phone: tapping an option only selects it; Next is disabled until then', async ({ page }) => {
+    await inject(page, PHONE, QUIZ);
+    await expect(page.locator('#btn-next')).toBeDisabled();
+    await page.locator('#options .option').nth(1).click();
+    await expect(page.locator('#options .option').nth(1)).toHaveClass(/\bsel\b/);
+    await expect(page.locator('#options .option.correct, #options .option.wrong')).toHaveCount(0);
+    expect(await page.evaluate(() => log.length)).toBe(0);
+    await expect(page.locator('#btn-next')).toBeEnabled();
+  });
+
+  test('phone: Next submits the selection, then reads "Next question"', async ({ page }) => {
+    await inject(page, PHONE, QUIZ);
+    await page.locator('#options .option').nth(1).click();
+    await page.locator('#btn-next').click();
+    expect(await page.evaluate(() => log.length)).toBe(1);
+    await expect(page.locator('#options .option').nth(1)).toHaveClass(/wrong/);
+    await expect(page.locator('#exp-box')).toBeVisible();
+    await expect(page.locator('#btn-next')).toHaveText('Next question');
+    await page.locator('#btn-next').click();
+    await expect(page.locator('#q-label')).toContainText('Question 2 of 2');
+  });
+
+  test('phone: a multi-select question keeps its own flow (no confirm gate)', async ({ page }) => {
+    await inject(page, PHONE, MS);
+    await page.locator('#options .option').first().click();
+    await expect(page.locator('#options .option').first()).toHaveClass(/ms-selected/);
+  });
+
+  test('phone: Flag sits in the top-right corner and toggles aria-pressed', async ({ page }) => {
+    await inject(page, PHONE, QUIZ);
+    const flag = page.locator('#quiz-flag-btn');
+    const box = await flag.boundingBox();
+    expect(box.x + box.width).toBeGreaterThan(390 - 30);
+    expect(box.y).toBeLessThan(80);
+    await flag.click();
+    await expect(flag).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  test('desktop: one tap still answers immediately', async ({ page }) => {
+    await inject(page, DESKTOP, QUIZ);
+    await page.locator('#options .option').nth(2).click();
+    await expect(page.locator('#options .option').nth(2)).toHaveClass(/correct/);
+    expect(await page.evaluate(() => log.length)).toBe(1);
+  });
+});

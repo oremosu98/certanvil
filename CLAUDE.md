@@ -29,7 +29,7 @@
 | index.html | 2297 | 149 KB |
 | dg-system.css | 5624 | 532 KB |
 | tests/uat.js + tests/uat/ (50 modules) | 31245 | — |
-UAT checks: 5260 · E2E `test(` count: 171 · APP_VERSION: 8.181.0 · stamped-at: worktree
+UAT checks: 5260 · E2E `test(` count: 176 · APP_VERSION: 8.181.0 · stamped-at: worktree
 <!-- FACTS:AUTO:END -->
 
 | File | Purpose | Size |

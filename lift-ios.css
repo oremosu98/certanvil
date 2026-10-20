@@ -277,3 +277,82 @@ html[data-theme] body #page-loading:has(#ios-loading:not(:empty)) { padding: 0 !
 }
 @keyframes iq-shimmer { to { transform: translateX(100%); } }
 @keyframes iq-indeterminate { from { transform: translateX(-100%); } to { transform: translateX(250%); } }
+
+/* ═════════════════════ QUIZ question + answered (cert-ios-quiz.html) ═════════════════════ */
+/* Lift A decisions (founder, 19 Oct): Flag in the corner, pick-then-confirm, E2E pills. */
+body:has(#page-quiz.active) #app-topbar, body:has(#page-quiz.active) .app-topbar { display: none !important; }
+html[data-theme] body #page-quiz { font-family: Inter, -apple-system, BlinkMacSystemFont, sans-serif; }
+html[data-theme] body #page-quiz .quiz-topbar { position: relative !important; padding-top: max(13px, env(safe-area-inset-top)) !important; }
+/* stat pills and Cached stay hidden; Flag is the 34px square in the corner */
+html[data-theme] body #page-quiz .quiz-stats { display: flex !important; align-items: center !important; flex: 0 0 auto !important; order: 3 !important; }
+html[data-theme] body #page-quiz .quiz-stats > :not(#quiz-flag-btn):not(#short-notice) { display: none !important; }
+html[data-theme] body #page-quiz #quiz-flag-btn { width: 34px !important; height: 34px !important; min-width: 34px !important; padding: 0 !important; border-radius: 10px !important; border: 1px solid var(--border) !important; background: var(--surface) !important; color: var(--text-mid) !important; font-size: 0 !important; display: grid !important; place-items: center !important; transition: transform .14s var(--ios-ease), background-color .18s, border-color .18s, color .18s !important; }
+html[data-theme] body #page-quiz #quiz-flag-btn::before { content: ""; width: 16px; height: 16px; background: currentColor;
+  -webkit-mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.1' stroke-linecap='round' stroke-linejoin='round'><path d='M5 21V4M5 4h11l-1.8 4L16 12H5'/></svg>") center / contain no-repeat;
+          mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.1' stroke-linecap='round' stroke-linejoin='round'><path d='M5 21V4M5 4h11l-1.8 4L16 12H5'/></svg>") center / contain no-repeat; }
+html[data-theme] body #page-quiz #quiz-flag-btn.flagged { background: var(--accent) !important; border-color: var(--accent) !important; color: var(--on-accent) !important; }
+html[data-theme] body #page-quiz #quiz-flag-btn.flagged::before {
+  -webkit-mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='black' stroke='black' stroke-width='2.1' stroke-linecap='round' stroke-linejoin='round'><path d='M5 21V4M5 4h11l-1.8 4L16 12H5'/></svg>");
+          mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='black' stroke='black' stroke-width='2.1' stroke-linecap='round' stroke-linejoin='round'><path d='M5 21V4M5 4h11l-1.8 4L16 12H5'/></svg>"); }
+html[data-theme] body #page-quiz #quiz-flag-btn:active { transform: scale(0.94); }
+/* "16 of 20" short-set pill: right end of the "Question 1 of N" row (E2E .q-short) */
+html[data-theme] body #page-quiz #short-notice:not(:empty):not(.is-hidden) { position: absolute !important; right: 67px; top: calc(max(13px, env(safe-area-inset-top)) + 9px); display: inline-block !important; margin: 0 !important; font: 800 10px/1 Inter, sans-serif !important; letter-spacing: .02em; color: var(--accent-deep) !important; background: color-mix(in oklab, var(--accent) 11%, transparent) !important; border: 1px solid color-mix(in oklab, var(--accent) 26%, var(--border)) !important; border-radius: 999px !important; padding: 4px 8px !important; }
+/* pills: one number each (the lift counter doubled it), answered = neutral amber "done" */
+html[data-theme] body #page-quiz .qpd-cell::before { content: none !important; }
+html[data-theme] body #page-quiz .qpd-cell { width: 28px !important; height: 28px !important; border-radius: 9px !important; font: 800 12px/1 Inter, sans-serif !important; }
+html[data-theme] body #page-quiz .qpd-cell.qpd-done, html[data-theme] body #page-quiz .qpd-cell.qpd-wrong { color: var(--accent-deep) !important; background: color-mix(in oklab, var(--accent) 12%, var(--surface3)) !important; border-color: color-mix(in oklab, var(--accent) 30%, var(--border)) !important; }
+/* stem: Fraunces 22px, keyword in italic accent, no programmatic focus box */
+html[data-theme] body #page-quiz .q-text { font: 600 22px/1.28 Fraunces, Georgia, serif !important; letter-spacing: -0.01em !important; color: var(--text) !important; outline: none !important; box-shadow: none !important; border: 0 !important; }
+html[data-theme] body #page-quiz .q-text strong.exam-keyword { color: var(--accent-deep) !important; font-style: italic !important; font-weight: 600 !important; background: none !important; }
+/* scenario card with the E2E "SCENARIO" label */
+html[data-theme] body #page-quiz .q-scenario:not([hidden]) { display: block !important; border: 1px solid color-mix(in oklab, var(--accent) 22%, var(--border)) !important; border-left: 3px solid var(--accent) !important; border-radius: 12px !important; background: color-mix(in oklab, var(--accent) 6%, var(--surface)) !important; padding: 11px 13px !important; margin: 0 0 18px !important; }
+html[data-theme] body #page-quiz .q-scenario .q-scenario-rule { display: none !important; }
+html[data-theme] body #page-quiz .q-scenario::before { content: "Scenario"; display: flex; align-items: center; gap: 7px; font: 800 9.5px/1 Inter, sans-serif; letter-spacing: 0.11em; text-transform: uppercase; color: var(--accent-deep); margin-bottom: 7px; padding-left: 20px; min-height: 13px;
+  background: no-repeat left center / 13px 13px url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23c2702a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><circle cx='12' cy='12' r='9'/><path d='M12 8v.01M11 12h1v4h1'/></svg>"); }
+html[data-theme] body #page-quiz .q-scenario .q-scenario-body { font: 500 13px/1.5 Inter, sans-serif !important; color: var(--text-mid) !important; }
+/* pick-then-confirm: selected (not yet submitted) option */
+html[data-theme] body #page-quiz .option.sel { border-color: color-mix(in oklab, var(--accent) 55%, var(--border)) !important; background: color-mix(in oklab, var(--accent) 7%, var(--surface)) !important; }
+html[data-theme] body #page-quiz .option.sel .opt-letter { background: var(--accent) !important; color: var(--on-accent) !important; }
+/* docked Next: sticky in a full-height column (see .iq-screen note), disabled until a pick */
+html[data-theme] body #page-quiz.active { min-height: 100dvh; display: flex !important; flex-direction: column; padding-bottom: 0 !important; }
+html[data-theme] body #page-quiz .q-card { flex: 1 0 auto; }
+html[data-theme] body #page-quiz .next-btn-row { position: sticky !important; bottom: 0 !important; z-index: 30; margin: 0 -20px !important; padding: 12px 20px calc(12px + env(safe-area-inset-bottom)) !important; border-top: 1px solid color-mix(in oklab, var(--border) 70%, transparent) !important; background: var(--bg) !important; }
+html[data-theme] body #page-quiz .btn-next { display: block !important; width: 100% !important; border-radius: 13px !important; padding: 14px !important; font: 700 15px/1 Inter, sans-serif !important; color: var(--on-accent) !important; box-shadow: 0 10px 22px -12px color-mix(in oklab, var(--accent) 70%, transparent) !important; text-align: center; }
+html[data-theme] body #page-quiz .btn-next[disabled] { opacity: 0.45 !important; box-shadow: none !important; cursor: default !important; }
+/* answered: the E2E .why card (red on a miss, green on a hit), explanation always open */
+html[data-theme] body #page-quiz .explanation-box.show { border-radius: 15px !important; padding: 14px 15px !important; margin-top: 4px !important; }
+html[data-theme] body #page-quiz .explanation-box.show.wrong { border: 1px solid color-mix(in oklab, var(--miss) 26%, var(--border)) !important; background: color-mix(in oklab, var(--miss) 5%, var(--surface)) !important; }
+html[data-theme] body #page-quiz .explanation-box.show.correct { border: 1px solid color-mix(in oklab, var(--green) 30%, var(--border)) !important; background: color-mix(in oklab, var(--green) 6%, var(--surface)) !important; }
+html[data-theme] body #page-quiz #exp-verdict-check { display: none !important; }
+html[data-theme] body #page-quiz .exp-head { display: flex !important; align-items: center !important; gap: 8px !important; margin-bottom: 9px !important; }
+html[data-theme] body #page-quiz #exp-label { display: inline-flex !important; align-items: center; gap: 8px; font: 800 11px/1.3 Inter, sans-serif !important; letter-spacing: 0.04em !important; text-transform: none !important; }
+html[data-theme] body #page-quiz .explanation-box.wrong #exp-label { color: var(--miss) !important; }
+html[data-theme] body #page-quiz .explanation-box.correct #exp-label { color: var(--green) !important; }
+html[data-theme] body #page-quiz #exp-label::before { content: ""; width: 15px; height: 15px; flex: 0 0 auto; background: currentColor; -webkit-mask: var(--iq-verdict) center / contain no-repeat; mask: var(--iq-verdict) center / contain no-repeat; }
+html[data-theme] body #page-quiz .explanation-box.wrong { --iq-verdict: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'><path d='M6 6l12 12M18 6L6 18'/></svg>"); }
+html[data-theme] body #page-quiz .explanation-box.correct { --iq-verdict: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'><path d='M20 6L9 17l-5-5'/></svg>"); }
+html[data-theme] body #page-quiz #exp-acc-head { display: none !important; }
+html[data-theme] body #page-quiz #exp-acc, html[data-theme] body #page-quiz #exp-acc-panel { display: block !important; grid-template-rows: 1fr !important; height: auto !important; max-height: none !important; overflow: visible !important; border: 0 !important; background: none !important; padding: 0 !important; }
+html[data-theme] body #page-quiz #exp-acc-panel .t-acc-panel-inner { overflow: visible !important; padding: 0 !important; }
+html[data-theme] body #page-quiz #exp-text { display: block; font: 400 13px/1.52 Inter, sans-serif !important; color: var(--text-mid) !important; }
+html[data-theme] body #page-quiz #exp-wrong-explain:not(.is-hidden) { display: block !important; margin: 10px 0 0 !important; padding: 0 !important; border: 0 !important; background: none !important; font: 400 12.5px/1.52 Inter, sans-serif !important; color: var(--text-mid) !important; }
+html[data-theme] body #page-quiz #exp-wrong-explain b { color: var(--text); font-weight: 650; }
+/* actions: Study pill, then Explain further / Drill this concept / Report issue three across */
+html[data-theme] body #page-quiz #exp-extras { display: flex !important; flex-wrap: wrap !important; gap: 8px !important; margin-top: 13px !important; }
+html[data-theme] body #page-quiz #exp-extras .resource-link { flex: 1 1 100% !important; margin: 0 !important; }
+html[data-theme] body #page-quiz #exp-box .resource-dive-btn { display: inline-flex !important; width: auto !important; align-items: center; gap: 7px; font: 700 12px/1 Inter, sans-serif !important; color: var(--accent-deep) !important; background: color-mix(in oklab, var(--accent) 10%, transparent) !important; border: 1px solid color-mix(in oklab, var(--accent) 30%, var(--border)) !important; border-radius: 999px !important; padding: 8px 12px !important; margin: 0 !important; }
+html[data-theme] body #page-quiz #exp-box .explain-btn, html[data-theme] body #page-quiz #exp-box .report-btn { flex: 1 1 0 !important; min-width: 0 !important; display: inline-flex !important; align-items: center; justify-content: center; gap: 6px; font: 700 11.5px/1.1 Inter, sans-serif !important; color: var(--text-mid) !important; background: var(--surface3) !important; border: 1px solid var(--border) !important; border-radius: 11px !important; padding: 10px 6px !important; margin: 0 !important; text-align: center; transition: border-color .18s, color .18s, transform .12s var(--ios-ease) !important; }
+html[data-theme] body #page-quiz #exp-box .explain-btn:active, html[data-theme] body #page-quiz #exp-box .report-btn:active, html[data-theme] body #page-quiz #exp-box .resource-dive-btn:active { transform: scale(0.97); }
+html[data-theme] body #page-quiz #exp-box .explain-btn::before, html[data-theme] body #page-quiz #exp-box .report-btn::before, html[data-theme] body #page-quiz #exp-box .resource-dive-btn::before { content: ""; width: 14px; height: 14px; flex: 0 0 auto; background: currentColor; -webkit-mask: var(--iq-ic) center / contain no-repeat; mask: var(--iq-ic) center / contain no-repeat; }
+html[data-theme] body #page-quiz #exp-box .explain-btn { --iq-ic: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><circle cx='12' cy='12' r='9'/><path d='M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.3-1 .8-1 1.7M12 17v.01'/></svg>"); }
+html[data-theme] body #page-quiz #exp-box .explain-btn-followup { --iq-ic: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M4 6h16M4 12h16M4 18h10'/></svg>"); }
+html[data-theme] body #page-quiz #exp-box .report-btn { --iq-ic: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M12 9v4M12 17v.01M10.3 4.3 3.4 16a2 2 0 0 0 1.7 3h13.8a2 2 0 0 0 1.7-3L13.7 4.3a2 2 0 0 0-3.4 0z'/></svg>"); }
+html[data-theme] body #page-quiz #exp-box .resource-dive-btn { --iq-ic: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M4 5h11a3 3 0 0 1 3 3v11M4 5v13a2 2 0 0 0 2 2h12'/><path d='M4 5a2 2 0 0 1 2-2h9'/></svg>"); }
+/* E2E sizes: 34px squares and 28px pills. The 44px tap target stays as an invisible
+   hit area (::after) so the visual matches the E2E without shrinking what a thumb hits. */
+html[data-theme] body #page-quiz .back-btn, html[data-theme] body #page-quiz #quiz-flag-btn { min-height: 34px !important; max-height: 34px !important; height: 34px !important; width: 34px !important; position: relative !important; align-self: center !important; }
+html[data-theme] body #page-quiz .back-btn::after, html[data-theme] body #page-quiz #quiz-flag-btn::after { content: ""; position: absolute; inset: -5px; }
+html[data-theme] body #page-quiz .qpd-cell { min-width: 28px !important; min-height: 28px !important; flex: 0 0 28px !important; padding: 0 !important; position: relative !important; }
+html[data-theme] body #page-quiz .qpd-cell::after { content: ""; position: absolute; inset: -8px -3px; }
+html[data-theme] body #page-quiz #exp-acc { margin: 0 !important; }
+html[data-theme] body #page-quiz .quiz-prog-dots { gap: 7px !important; margin: 2px 0 16px !important; }

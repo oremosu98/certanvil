@@ -667,9 +667,30 @@ JUDGEMENT CASES (the format of the hardest real ${certCode} items) — write abo
   // ══════════════════════════════════════════
   // REGULAR QUIZ RENDER
   // ══════════════════════════════════════════
+  // v8.183.0 Lift A: pick-then-confirm at phone width (founder, 19 Oct 2026, the June E2E).
+  // Captured when a fresh set starts so a resize mid-quiz never switches mode. Single-answer
+  // MCQ only: multi-select, order, CLI, topology and hot-area keep their own flows.
+  let _iosConfirm = false, _iosSel = null;
+  function iosConfirmActive(q) {
+    q = q || questions[current];
+    return _iosConfirm && !!q && getQType(q) === 'mcq' && !_findLogEntryFor(q);
+  }
+  function iosQuizSelect(l) {
+    _iosSel = l;
+    document.querySelectorAll('#options .option').forEach((b, i) => {
+      const on = ['A', 'B', 'C', 'D'][i] === l;
+      b.classList.toggle('sel', on);
+      b.setAttribute('aria-checked', on ? 'true' : 'false');
+    });
+    const n = document.getElementById('btn-next');
+    if (n) n.disabled = false;
+  }
+
   function render() {
     const q     = questions[current];
     const total = questions.length;
+    if (current === 0 && answered === 0) _iosConfirm = !!(window.matchMedia && matchMedia('(max-width: 899px)').matches);
+    _iosSel = null;
     const pct   = Math.round((current / total) * 100);
     const qType = getQType(q);
   
@@ -677,7 +698,7 @@ JUDGEMENT CASES (the format of the hardest real ${certCode} items) — write abo
     _setLiveStreak(streak, false);
     document.getElementById('q-label').textContent     = `Question ${current + 1} of ${total}`;
     _swapText(document.getElementById('q-pct'), pct + '%');
-    document.getElementById('prog-fill').style.width   = pct + '%';
+    document.getElementById('prog-fill').style.width   = (_iosConfirm ? Math.round(((current + 1) / total) * 100) : pct) + '%';   // v8.183.0: E2E counts the current question
     document.getElementById('q-num').textContent       = `Q${current + 1}`;
     // v4.54.8: segmented per-question progress dots. State derived from `log` entries.
     _renderQuizProgressDots();
@@ -745,6 +766,25 @@ JUDGEMENT CASES (the format of the hardest real ${certCode} items) — write abo
     btnNext.className = 'btn-next';
     btnNext.textContent = current === total - 1 ? 'See Results' : 'Next \u2192';
     btnNext.onclick = current === total - 1 ? finish : advance;
+    btnNext.disabled = false;
+    if (_iosConfirm) {
+      // E2E labels: "Next" to confirm a pick, "Next question" / "See results" once answered.
+      const _last = current === total - 1, _done = !!_findLogEntryFor(q);
+      btnNext.textContent = _done ? (_last ? 'See results' : 'Next question') : (iosConfirmActive(q) ? 'Next' : (_last ? 'See results' : 'Next question'));
+      if (iosConfirmActive(q)) {
+        btnNext.disabled = true;
+        const _go = btnNext.onclick;
+        btnNext.onclick = () => {
+          if (_iosSel && !_findLogEntryFor(q)) {
+            const l = _iosSel; _iosSel = null;
+            pick(l, q);
+            btnNext.textContent = _last ? 'See results' : 'Next question';
+            return;
+          }
+          _go();
+        };
+      }
+    }
   
     // v8.0.0 (motion lift wave 2) — question reveal now rides the shared
     // .t-reveal primitive (dg-system.css, wave 1) instead of the v4.44.0
@@ -955,7 +995,7 @@ JUDGEMENT CASES (the format of the hardest real ${certCode} items) — write abo
       if (ans) {
         btn.onclick = () => { examAnswers[examCurrent].chosen = l; renderExam(); };
       } else {
-        btn.onclick = () => pick(l, q);
+        btn.onclick = () => (iosConfirmActive(q) ? iosQuizSelect(l) : pick(l, q));   // v8.183.0 Lift A
       }
       box.appendChild(btn);
     });
@@ -1579,6 +1619,7 @@ JUDGEMENT CASES (the format of the hardest real ${certCode} items) — write abo
     if (whyNotMode && _wnRound && _wnRound.answerRight === undefined) {
       _wnRound.answerRight = isRight;
     }
+    if (_iosConfirm) label = label.replace(' \u2014 ', ' - ').replace(/^Correct!$/, 'Correct');   // v8.183.0 Lift A: E2E copy on phones
     document.getElementById('exp-label').textContent = label;
     document.getElementById('exp-text').textContent  = q.explanation;
     // v4.54.8: per-choice wrongExplain paragraph. If the question carries a
@@ -1593,7 +1634,8 @@ JUDGEMENT CASES (the format of the hardest real ${certCode} items) — write abo
       const chosenLetter = sourceEntry ? sourceEntry.chosen : null;
       const pickExplain = (q.wrongExplain && typeof q.wrongExplain === 'object') ? q.wrongExplain[chosenLetter] : null;
       if (!isRight && pickExplain && typeof pickExplain === 'string') {
-        wrongExplainEl.textContent = `On your choice (${chosenLetter}): ${pickExplain}`;
+        if (_iosConfirm) wrongExplainEl.innerHTML = '<b>On your pick (' + escHtml(chosenLetter) + '):</b> ' + escHtml(pickExplain);   // v8.183.0 Lift A
+        else wrongExplainEl.textContent = `On your choice (${chosenLetter}): ${pickExplain}`;
         wrongExplainEl.classList.remove('is-hidden');
       } else {
         wrongExplainEl.textContent = '';
@@ -1640,6 +1682,7 @@ JUDGEMENT CASES (the format of the hardest real ${certCode} items) — write abo
     const expTextEl = document.getElementById('exp-text');
     const extrasEl  = document.getElementById('exp-extras');
     if (extrasEl) {
+      if (_iosConfirm) extraHtml = extraHtml.replace('>Explain Further<', '>Explain further<').replace('>Report Issue<', '>Report issue<');   // v8.183.0 Lift A copy
       extrasEl.innerHTML = extraHtml;
     } else {
       // Defensive: older cached index.html without #exp-extras. Rebuild the
@@ -1684,6 +1727,7 @@ JUDGEMENT CASES (the format of the hardest real ${certCode} items) — write abo
     const flagBtn = document.getElementById('quiz-flag-btn');
     flagBtn.className = 'flag-btn' + (quizFlags[current] ? ' flagged' : '');
     flagBtn.textContent = quizFlags[current] ? 'Flagged' : 'Flag';
+    flagBtn.setAttribute('aria-pressed', quizFlags[current] ? 'true' : 'false');   // v8.183.0: was never updated on toggle
   }
   
 
@@ -2418,6 +2462,8 @@ JUDGEMENT CASES (the format of the hardest real ${certCode} items) — write abo
   window.renderMultiSelect = renderMultiSelect;
   window.renderOrder = renderOrder;
   window.pick = pick;
+  window.iosConfirmActive = iosConfirmActive;
+  window.iosQuizSelect    = iosQuizSelect;
   window.showExplanation = showExplanation;
   window.advance = advance;
   window.retryQuiz = retryQuiz;
