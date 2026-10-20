@@ -89,6 +89,7 @@ const { _fnBody, js, results, test, vm } = require('./_context');
     test('Coming up: 7 days, Today first, counts from the review plan, exam day marked',
       sr.week.length === 7 && sr.week[0].label === 'Today' && sr.week[0].count === 7 && sr.week[1].label === 'Wed' && sr.week[1].count === 2
       && mk({ history: hist, readiness: rd, days: 2, sr: { todo: 7, later: 0, counts: [7, 2, 0, 0, 0, 0, 0] } }).week[2].isExam === true);
+    test('Coming up is hidden when no reviews are scheduled in the next 7 days', ret.week === null);
     test('No reviews, returning: "15-min Weak Spots" on the weakest topic',
       ret.rec.kind === 'weak' && ret.rec.title === '15-min Weak Spots' && ret.rec.min === 15 && ret.rec.sub === '10 questions, exam level, on VLANs.');
 

@@ -31,3 +31,40 @@ test.describe('Lift A scaffold', () => {
     expect(light).toBe('oklch(0.55 0.155 55)');
   });
 });
+
+test.describe('Lift A Home', () => {
+  test('phone renders the E2E Home and hides the desktop bento', async ({ page }) => {
+    await openApp(page, PHONE);
+    await expect(page.locator('#ios-home .ih-topbar')).toBeVisible();
+    await expect(page.locator('#ios-home .ih-rd')).toBeVisible();
+    await expect(page.locator('#page-setup .bento')).toBeHidden();
+    await expect(page.locator('#app-topbar')).toBeHidden();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(390);
+  });
+
+  test('phone: Home buttons call the same handlers as the desktop Home', async ({ page }) => {
+    await openApp(page, PHONE);
+    await page.evaluate(() => {
+      window.__calls = [];
+      ['applyPreset', 'startDailyChallenge', 'startExam', '_jumpToCustomQuiz'].forEach(n => { window[n] = (...a) => window.__calls.push(n + ':' + a.join(',')); });
+    });
+    await page.locator('#ios-home [data-act="warmup"]').click();
+    await page.locator('#ios-home [data-act="daily"]').click();
+    await page.locator('#ios-home [data-act="custom"]').click();
+    expect(await page.evaluate(() => window.__calls)).toEqual(['applyPreset:warmup', 'startDailyChallenge:', '_jumpToCustomQuiz:']);
+  });
+
+  test('phone: Practice accordion opens and shows its three options', async ({ page }) => {
+    await openApp(page, PHONE);
+    const acc = page.locator('#ios-home [data-acc]').first();
+    await acc.locator('.ih-acc-head').click();
+    await expect(acc).toHaveClass(/ih-open/);
+    await expect(acc.locator('[data-act="grind"]')).toBeVisible();
+  });
+
+  test('desktop keeps the bento Home and never shows the E2E Home', async ({ page }) => {
+    await openApp(page, DESKTOP);
+    await expect(page.locator('#ios-home')).toBeHidden();
+    await expect(page.locator('#page-setup .bento')).toBeVisible();
+  });
+});

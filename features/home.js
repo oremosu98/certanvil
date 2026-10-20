@@ -1512,6 +1512,9 @@
     try { renderBentoMomentum(); } catch (_) {}
     try { renderBentoQuickStart(); } catch (_) {}
     try { renderBentoDomains(); } catch (_) {}
+    // v8.183.0 Lift A: the June E2E Home at phone width (features/ios-home.js). After the
+    // bento so #primaryLaunch already holds the right Recommended-next action.
+    try { if (typeof window.renderIosHome === 'function') window.renderIosHome(); } catch (_) {}
   }
 
   // v7.17.0 — HOME BENTO BOARD renderers (faithful port of mockup-3-bento.html).
@@ -2333,6 +2336,7 @@
 
   // ── Public API (window exposure) ─────────────────────────────────────────
   // Daily Challenge
+  window._startPickUpQuiz = _startPickUpQuiz;   // v8.183.0: Lift A phone Home 'Practise it'
   window.getDailyChallenge           = getDailyChallenge;
   window.saveDailyChallenge          = saveDailyChallenge;
   window.isDailyChallengeDoneToday   = isDailyChallengeDoneToday;

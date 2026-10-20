@@ -324,8 +324,10 @@ test.describe('Responsive Layout', () => {
     await page.goto('/');
 
     await expect(page.locator('#page-setup')).toHaveClass(/active/);
-    // v7.17.0 (home bento): bento command bar replaces the greeting heading.
-    await expect(page.locator('#page-setup .cmd-bar')).toBeVisible();
+    // v8.183.0 (Lift A): phones get the June E2E Home (#ios-home); the desktop
+    // bento command bar is hidden at phone width (desktop keeps it, see lift-a.spec.js).
+    await expect(page.locator('#ios-home .ih-topbar')).toBeVisible();
+    await expect(page.locator('#page-setup .cmd-bar')).toBeHidden();
     // API key is inside collapsed Settings — just needs to be attached to DOM
     await expect(page.locator('#api-key')).toBeAttached();
   });
