@@ -26,10 +26,10 @@
 |---|---|---|
 | app.js | 8301 | 442 KB |
 | styles.css | 14887 | 550 KB |
-| index.html | 2289 | 149 KB |
-| dg-system.css | 5610 | 531 KB |
-| tests/uat.js + tests/uat/ (46 modules) | 31015 | — |
-UAT checks: 5213 · E2E `test(` count: 164 · APP_VERSION: 8.181.0 · stamped-at: worktree
+| index.html | 2292 | 149 KB |
+| dg-system.css | 5624 | 532 KB |
+| tests/uat.js + tests/uat/ (48 modules) | 31162 | — |
+UAT checks: 5242 · E2E `test(` count: 166 · APP_VERSION: 8.181.0 · stamped-at: worktree
 <!-- FACTS:AUTO:END -->
 
 | File | Purpose | Size |
