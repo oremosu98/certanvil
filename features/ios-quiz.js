@@ -25,7 +25,8 @@
   var X = '<path d="M6 6l12 12M18 6L6 18"></path>';
   function renderIosLoading(o) {
     var root = document.getElementById('ios-loading');
-    if (!root || !isPhone()) return;
+    if (!root) return;
+    if (!isPhone()) { root.innerHTML = ''; return; }
     var e = function (s) { return escHtml(String(s)); };
     root.innerHTML =
       '<div class="iq-qbar"><button class="iq-exit" type="button" data-act="cancel" aria-label="Cancel and go back to Home"><svg viewBox="0 0 24 24" aria-hidden="true">' + X + '</svg></button>'
@@ -86,7 +87,8 @@
 
   function renderIosResults() {
     var root = document.getElementById('ios-results');
-    if (!root || !isPhone() || typeof log === 'undefined' || !log.length) return;
+    if (!root) return;
+    if (!isPhone() || typeof log === 'undefined' || !log.length) { root.innerHTML = ''; return; }   // never leave a stale session behind
     var total = log.length, pct = Math.round(score / total * 100);
     var scaled = (typeof scaledExamScore === 'function') ? scaledExamScore(pct, 100) : Math.round(100 + pct * 8);
     var rawName = (typeof CERT_PACK === 'object' && CERT_PACK && CERT_PACK.meta && CERT_PACK.meta.name) || 'CompTIA';
@@ -147,12 +149,14 @@
       if (flagged) anyFlag = true;
       var keys = Object.keys(q.options || {}).sort();
       var correctSet = Array.isArray(q.answers) ? q.answers : [q.answer];
-      var mine = en ? (Array.isArray(en.chosen) ? en.chosen : (en.msChosen || [en.chosen])) : [];
+      // multi-select logs chosen as "A,C" (as desktop review reads it)
+      var mine = en ? (Array.isArray(en.chosen) ? en.chosen : String(en.chosen == null ? '' : en.chosen).split(',').filter(Boolean)) : [];
       var opts = keys.map(function (k) {
         var isC = correctSet.indexOf(k) >= 0, isMineWrong = !ok && mine.indexOf(k) >= 0 && !isC;
         return { key: k, text: q.options[k], state: isC ? 'correct' : (isMineWrong ? 'yours-wrong' : ''), tag: isC ? 'Correct' : (isMineWrong ? 'Your pick' : '') };
       });
-      return { n: i + 1, q: q.question || '', badge: ok ? 'Correct' : 'Missed', ok: ok, flagged: flagged, opts: opts, why: q.explanation || '' };
+      // order / topology / CLI / hot-area / Sim Lab items have no options: render the desktop item
+      return { n: i + 1, i: i, q: q.question || '', badge: ok ? 'Correct' : 'Missed', ok: ok, flagged: flagged, opts: opts, why: q.explanation || '', fallback: !keys.length };
     });
     var mode = o.mode || 'all';
     return {
@@ -179,7 +183,13 @@
     var e = function (s) { return escHtml(String(s)); };
     var svg = function (p) { return '<svg viewBox="0 0 24 24" aria-hidden="true">' + p + '</svg>'; };
     var seg = function (k, label) { return '<button type="button" role="tab" data-mode="' + k + '" class="' + (_iosReviewMode === k ? 'ia-on' : '') + '" aria-selected="' + (_iosReviewMode === k) + '">' + label + '</button>'; };
+    var _lg = (typeof log !== 'undefined' ? log : []);
     var cards = m.cards.length ? m.cards.map(function (c) {
+      if (c.fallback && typeof window._buildReviewItemHtml === 'function') {
+        var q0 = questions[c.i], en0 = null;
+        for (var j = 0; j < _lg.length; j++) if (_lg[j] && _lg[j].q === q0) en0 = _lg[j];
+        return '<div class="ia-qa ia-legacy">' + window._buildReviewItemHtml(en0 || { q: q0, chosen: null, isRight: false, flagged: c.flagged, skipped: true }, c.i, questions.length) + '</div>';
+      }
       return '<div class="ia-qa"><div class="ia-qa-top"><span class="ia-qa-num">Question ' + c.n + (c.flagged ? '<span class="ia-qa-flag">' + svg(FLAGI) + 'Flagged</span>' : '') + '</span>'
         + '<span class="ia-qa-badge ' + (c.ok ? 'ia-ok' : 'ia-no') + '">' + svg(c.ok ? CHECK : XS) + (c.ok ? 'Correct' : 'Missed') + '</span></div>'
         + '<p class="ia-qa-q">' + e(c.q) + '</p><div class="ia-qa-opts">' + c.opts.map(function (op) {

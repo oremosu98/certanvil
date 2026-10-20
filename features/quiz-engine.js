@@ -2466,6 +2466,7 @@ JUDGEMENT CASES (the format of the hardest real ${certCode} items) — write abo
   window.pick = pick;
   window.iosConfirmActive = iosConfirmActive;
   window.iosQuizSelect    = iosQuizSelect;
+  window._buildReviewItemHtml = _buildReviewItemHtml;   // v8.183.0: phone review falls back to it for non-MCQ items
   window.showExplanation = showExplanation;
   window.advance = advance;
   window.retryQuiz = retryQuiz;

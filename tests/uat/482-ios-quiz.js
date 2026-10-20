@@ -62,6 +62,12 @@ const { _fnBody, js, results, test, vm } = require('./_context');
       && c2.opts.find(o => o.key === 'A').tag === '' && c2.why === 'Why Which port does SSH use?');
     test('Review: a skipped question is badged "Missed" with no "Your pick"', all.cards[2].badge === 'Missed' && !all.cards[2].opts.some(o => o.tag === 'Your pick'));
     test('Review: a hit is badged "Correct"', all.cards[0].badge === 'Correct');
+    const msq = { type: 'multi-select', question: 'Pick two', options: { A: 'SSH', B: 'Telnet', C: 'HTTPS', D: 'FTP' }, answers: ['A', 'C'], explanation: 'x' };
+    const ordq = { type: 'order', question: 'Order the steps', items: ['a', 'b'], correctOrder: [0, 1], explanation: 'y' };
+    const mv = vm.runInContext('_iosReviewModel(__o)', Object.assign(ctx, { __o: { questions: [msq, ordq], log: [{ q: msq, chosen: 'A,B', isRight: false }, { q: ordq, chosen: '1,0', isRight: false }], certName: 'Network+', mode: 'all' } }));
+    test('Review: a missed multi-select ("A,B") tags B "Your pick" and A, C "Correct"',
+      mv.cards[0].opts.find(o => o.key === 'B').tag === 'Your pick' && mv.cards[0].opts.find(o => o.key === 'A').tag === 'Correct' && mv.cards[0].opts.find(o => o.key === 'C').tag === 'Correct');
+    test('Review: question types without options (order, PBQ) fall back to the desktop review item', mv.cards[1].fallback === true && mv.cards[0].fallback === false);
   } catch (err) {
     test('Lift A quiz loop: generating block (threw)', false);
     results.errors.push('482 ios-quiz generating block threw: ' + err.message);

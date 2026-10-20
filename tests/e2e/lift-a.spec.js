@@ -208,3 +208,30 @@ test.describe('Lift A review answers (phone)', () => {
     await expect(page.locator('#ios-review .ia-qa-flag')).toContainText('Flagged');
   });
 });
+
+test.describe('Lift A review fixes', () => {
+  test('phone: a failed quiz start shows its error on Home (not hidden)', async ({ page }) => {
+    await page.addInitScript(() => { try { localStorage.setItem('nplus_key', 'sk-ant-api03-' + 'x'.repeat(90)); } catch (_) {} });
+    await openApp(page, PHONE);
+    await page.evaluate(() => { window._gateActivityForQuota = () => true; window._gateSessionSizeForQuota = () => true; window.fetchQuestions = () => Promise.reject(new Error('Boom test failure')); });
+    await page.locator('#ios-home [data-act="warmup"]').click();
+    await expect(page.locator('#page-setup')).toHaveClass(/active/);
+    await expect(page.locator('#setup-err')).toBeVisible();
+  });
+
+  test('phone results never show a previous session after a wide (desktop-width) finish', async ({ page }) => {
+    await inject(page, PHONE, QUIZ);
+    await finishQuiz(page);
+    await page.setViewportSize(DESKTOP);
+    await page.evaluate((q) => window._testInjectQuiz(q), QUIZ);
+    for (let i = 0; i < 2; i++) { await page.locator('#options .option').nth(2).click(); await page.locator('#btn-next').click(); }
+    await expect(page.locator('#page-results')).toHaveClass(/active/);
+    expect(await page.evaluate(() => document.getElementById('ios-results').innerHTML)).toBe('');
+  });
+
+  test('phone: if the phone Home script never loads, the desktop Home still shows (no blank screen)', async ({ page }) => {
+    await page.route(/features\/ios-home\.js/, r => r.abort());
+    await openApp(page, PHONE);
+    await expect(page.locator('#page-setup .bento')).toBeVisible();
+  });
+});

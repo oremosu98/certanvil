@@ -120,7 +120,9 @@
     var td = (typeof TOPIC_DOMAINS === 'object' && TOPIC_DOMAINS) || {};
     var agg = {};
     Object.keys(weights).forEach(function (k) { agg[k] = { s: 0, n: 0 }; });
-    rows.forEach(function (e) { var k = td[e.topic]; if (k && agg[k]) { agg[k].s += e.score || 0; agg[k].n += e.total || 0; } });
+    // Every row, like the desktop bento: Mixed sessions and exams keep their per-topic data only
+    // in split rows (summary rows carry topic 'Mixed', which maps to no domain).
+    history.forEach(function (e) { var k = e && td[e.topic]; if (k && agg[k]) { agg[k].s += e.score || 0; agg[k].n += e.total || 0; } });
     var domains = Object.keys(weights).map(function (k) {
       return { key: k, name: labels[k] || k, weightPct: Math.round((weights[k] || 0) * 100),
         mastery: agg[k].n > 0 ? Math.round(agg[k].s / agg[k].n * 100) : 0, untouched: agg[k].n === 0 };
@@ -254,10 +256,10 @@
   // handler the desktop Home already uses, so behaviour (Pro gates, quotas) is identical.
   function renderIosHome() {
     var root = document.getElementById('ios-home');
-    if (!root || !(window.matchMedia && matchMedia('(max-width: 899px)').matches)) return;
+    if (!root) return;
+    if (!(window.matchMedia && matchMedia('(max-width: 899px)').matches)) { root.innerHTML = ''; return; }
     var m;
-    try { m = _iosHomeModel(new Date()); } catch (err) { return; }
-    root.innerHTML = _iosHomeHtml(m);
+    try { m = _iosHomeModel(new Date()); root.innerHTML = _iosHomeHtml(m); } catch (err) { root.innerHTML = ''; return; }   // empty = desktop Home shows
     var tab = function (p) { var b = document.querySelector('.lift-tab[data-page="' + p + '"]'); if (b) b.click(); else if (typeof showPage === 'function') showPage(p); };
     var ACT = {
       // Recommended next: the desktop tile's onclick already holds the right action

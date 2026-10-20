@@ -101,6 +101,11 @@ const { _fnBody, js, results, test, vm } = require('./_context');
     test('Domains: exam weight %, mastery from non-split history, untouched flag',
       ret.domains.length === 2 && ret.domains[0].name === 'Networking Concepts' && ret.domains[0].weightPct === 23
       && ret.domains[0].mastery === 80 && ret.domains[1].mastery === 50 && nu.domains[0].untouched === true);
+    test('Domain mastery counts Mixed/exam practice (split rows), the same as the desktop bento', (() => {
+      const mixed = [Object.assign(row('Mixed', 2, 4), {}), Object.assign(row('VLANs', 1, 2), { via: 'mixed-split' }), Object.assign(row('Ethernet Basics', 1, 2), { via: 'mixed-split' })];
+      const m = mk({ history: mixed, readiness: rd });
+      return m.domains[0].mastery === 50 && m.domains[1].mastery === 50 && m.domains[1].untouched === false;
+    })());
     test('Cert header: mark N+, name Network+ (vendor prefix dropped), code N10-009',
       ret.cert.mark === 'N+' && ret.cert.name === 'Network+' && ret.cert.code === 'N10-009' && ret.streak === 1);
     test('Signed out on the web: signedIn false; the native app always counts as signed in',
