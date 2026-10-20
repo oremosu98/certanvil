@@ -184,6 +184,138 @@
     return h;
   }
 
+  // ── DOM: scrape the hidden panel, render, bind ──
+  function _icPhone() { return !!(window.matchMedia && matchMedia('(max-width: 899px)').matches); }
+  function _icText(el) { return el ? String(el.textContent || '').replace(/\s+/g, ' ').trim() : ''; }
+
+  function _iosCustomSource() {
+    var MIXED = (typeof MIXED_TOPIC === 'string') ? MIXED_TOPIC : 'Mixed — All Topics';
+    var CATCH = (typeof CATCHUP_TOPIC === 'string') ? CATCHUP_TOPIC : 'Mixed — Catch-up';
+    var certId = (typeof CURRENT_CERT === 'string' && CURRENT_CERT) || 'netplus';
+    var MARKS = { netplus: 'N+', secplus: 'S+', 'aplus-core1': 'A+', 'aplus-core2': 'A+', az900: 'AZ', ai900: 'AI', sc900: 'SC', clfc02: 'CLF' };
+    var rawName = (typeof CERT_PACK === 'object' && CERT_PACK && CERT_PACK.meta && CERT_PACK.meta.name) || 'CompTIA Network+';
+    var modes = [].slice.call(document.querySelectorAll('#topic-group .cq-mode-card')).map(function (c) {
+      var v = c.dataset.v || '';
+      return { kind: v === MIXED ? 'mixed' : v === CATCH ? 'catchup' : (/smart/i.test(v) ? 'smart' : 'mixed'), v: v, on: c.classList.contains('on') };
+    });
+    var domains = [].slice.call(document.querySelectorAll('#topic-group details.topic-domain-group[data-domain-idx]')).map(function (d) {
+      var idx = d.getAttribute('data-domain-idx');
+      var pill = document.querySelector('.tdp-pill[data-domain-idx="' + idx + '"]');
+      return {
+        idx: idx, name: _icText(d.querySelector('.dom-name')), weight: _icText(d.querySelector('.dom-weight')),
+        short: _icText(pill).replace(/^\d+(\.\d+)?\s*/, ''),
+        topics: [].slice.call(d.querySelectorAll('.chip[data-v]')).map(function (c) {
+          return { v: c.dataset.v, label: _icText(c), on: c.classList.contains('on') };
+        })
+      };
+    });
+    var pick = function (sel) {
+      return [].slice.call(document.querySelectorAll(sel)).map(function (c) { return { v: c.dataset.v, on: c.classList.contains('on') }; });
+    };
+    var history = [];
+    try { history = (typeof loadHistory === 'function' ? loadHistory() : []) || []; } catch (_) { history = []; }
+    var errBox = document.getElementById('setup-err');
+    return {
+      cert: { mark: MARKS[certId] || 'CA', name: String(rawName).replace(/^(CompTIA|Microsoft|Amazon|AWS)\s+/, ''),
+        code: (typeof CERT_CODE === 'string' && CERT_CODE) || 'N10-009' },
+      domains: domains, modes: modes, diffs: pick('#diff-group .chip[data-v]'), counts: pick('#count-group .chip[data-v]'),
+      history: history.map(function (r) { return { topic: r && r.topic, date: r && r.date }; }),
+      err: (errBox && !errBox.classList.contains('is-hidden')) ? _icText(errBox) : ''
+    };
+  }
+
+  var _icOpen = {};   // accordions the user opened or closed this visit, by domain idx
+
+  function renderIosCustom(fresh) {
+    var root = document.getElementById('ios-custom');
+    if (!root) return;
+    if (!_icPhone()) { closeIosCustom(); return; }
+    try {
+      var m = _iosCustomModel(_iosCustomSource(), new Date());
+      m.domains.forEach(function (d) { if (typeof _icOpen[d.idx] === 'boolean') d.expanded = _icOpen[d.idx]; });
+      root.classList.toggle('ic-settled', !fresh);
+      root.innerHTML = _iosCustomHtml(m);
+    } catch (err) {
+      root.innerHTML = '';
+      try { console.warn('[ios-custom] render failed', err); } catch (_) {}
+    }
+  }
+
+  function closeIosCustom() {
+    var root = document.getElementById('ios-custom');
+    if (root) { root.innerHTML = ''; root.classList.remove('ic-settled'); }
+  }
+
+  function _icClickHidden(sel, v) {
+    var hit = [].slice.call(document.querySelectorAll(sel)).filter(function (c) { return c.dataset.v === v || c.getAttribute('data-domain-idx') === v; })[0];
+    if (hit) hit.click();
+  }
+
+  function _icOnTap(ev) {
+    var b = ev.target.closest && ev.target.closest('[data-act]');
+    var root = document.getElementById('ios-custom');
+    if (!b || !root || !root.contains(b)) return;
+    var act = b.getAttribute('data-act'), v = b.getAttribute('data-v'), idx = b.getAttribute('data-idx');
+    if (act === 'close') { closeIosCustom(); window.scrollTo(0, 0); return; }
+    if (act === 'start') { closeIosCustom(); window.scrollTo(0, 0); if (typeof window.startQuiz === 'function') window.startQuiz(); return; }
+    if (act === 'acc') {
+      var dom = b.closest('.ic-dom');
+      var open = dom.getAttribute('aria-expanded') !== 'true';
+      dom.setAttribute('aria-expanded', open ? 'true' : 'false');
+      _icOpen[idx] = open;
+      return;
+    }
+    if (act === 'theme') { if (typeof toggleTheme === 'function') toggleTheme(); }
+    else if (act === 'mode') _icClickHidden('#topic-group .cq-mode-card', v);
+    else if (act === 'topic') _icClickHidden('#topic-group .chip:not(.cq-mode-card)', v);
+    else if (act === 'domain') { _icOpen[idx] = true; _icClickHidden('.tdp-pill', idx); }
+    else if (act === 'diff') _icClickHidden('#diff-group .chip', v);
+    else if (act === 'count') _icClickHidden('#count-group .chip', v);
+    renderIosCustom(false);
+    if (act === 'count') { var bn = root.querySelector('.ic-bn'); if (bn) bn.classList.add('ic-bump'); }
+  }
+
+  // Every route into the custom quiz sets #custom-quiz-section.open (Home, presets, drill-a-topic,
+  // showSetupError). On a phone, close the desktop modal at once (its own toggle handler then
+  // restores scroll and its place) and show the phone screen instead.
+  function _icOnToggle() {
+    var cq = document.getElementById('custom-quiz-section');
+    var root = document.getElementById('ios-custom');
+    if (!cq || !cq.open || !root || !_icPhone()) return;
+    var fresh = !root.innerHTML;
+    cq.open = false;
+    if (fresh) _icOpen = {};
+    renderIosCustom(fresh);
+    if (!fresh) return;
+    var first = root.querySelector('.ic-dom[aria-expanded="true"]');
+    if (first && first.scrollIntoView) first.scrollIntoView({ block: 'center' });
+    else window.scrollTo(0, 0);
+  }
+
+  function _iosCustomBoot() {
+    var cq = document.getElementById('custom-quiz-section');
+    var root = document.getElementById('ios-custom');
+    var setup = document.getElementById('page-setup');
+    if (!cq || !root || root._icWired) return;
+    root._icWired = true;
+    cq.addEventListener('toggle', _icOnToggle);
+    root.addEventListener('click', _icOnTap);
+    if (setup && window.MutationObserver) {
+      new MutationObserver(function () { if (!setup.classList.contains('active')) closeIosCustom(); })
+        .observe(setup, { attributes: true, attributeFilter: ['class'] });
+    }
+    if (window.matchMedia) {
+      var mq = matchMedia('(max-width: 899px)');
+      var onMq = function () { if (!mq.matches) closeIosCustom(); };
+      if (mq.addEventListener) mq.addEventListener('change', onMq); else if (mq.addListener) mq.addListener(onMq);
+    }
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', _iosCustomBoot);
+  else _iosCustomBoot();
+
   window._iosCustomModel = _iosCustomModel;
   window._iosCustomHtml = _iosCustomHtml;
+  window._iosCustomSource = _iosCustomSource;
+  window.renderIosCustom = renderIosCustom;
+  window.closeIosCustom = closeIosCustom;
 })();

@@ -235,3 +235,149 @@ test.describe('Lift A review fixes', () => {
     await expect(page.locator('#page-setup .bento')).toBeVisible();
   });
 });
+
+// ── Custom quiz (phone) — spec docs/superpowers/specs/2026-10-20-ios-custom-quiz-design.md ──
+const KEY = () => { try { localStorage.setItem('nplus_key', 'sk-ant-api03-' + 'x'.repeat(90)); } catch (_) {} };
+async function openCustom(page) {
+  await page.locator('#ios-home [data-act="custom"]').click();
+  await expect(page.locator('#ios-custom .ic-topbar')).toBeVisible();
+}
+const hiddenOn = (page, sel) => page.evaluate((s) => !!document.querySelector(s) && document.querySelector(s).classList.contains('on'), sel);
+
+test.describe('Lift A custom quiz (phone)', () => {
+  test('custom: Home "Build a custom quiz" opens the phone screen', async ({ page }) => {
+    await openApp(page, PHONE);
+    await openCustom(page);
+    await expect(page.locator('#ios-home')).toBeHidden();
+    await expect(page.locator('#custom-quiz-section')).toBeHidden();
+    expect(await page.evaluate(() => document.documentElement.style.overflow)).toBe('');
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(390);
+  });
+
+  test('custom: Catch-up card drives the real chip', async ({ page }) => {
+    await openApp(page, PHONE);
+    await openCustom(page);
+    await page.locator('#ios-custom .ic-mode-wide').click();
+    expect(await hiddenOn(page, '#topic-group .chip[data-v="Mixed — Catch-up"]')).toBe(true);
+    await expect(page.locator('#ios-custom .ic-mode-wide')).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.locator('#ios-custom .ic-foot-note')).toHaveText(/^The topics you've gone longest without, /);
+  });
+
+  test('custom: domain chip picks the domain', async ({ page }) => {
+    await openApp(page, PHONE);
+    await openCustom(page);
+    await page.locator('#ios-custom [data-act="domain"][data-idx="1"]').click();
+    const allOn = await page.evaluate(() => [...document.querySelectorAll('details.topic-domain-group[data-domain-idx="1"] .chip')].every(c => c.classList.contains('on')));
+    expect(allOn).toBe(true);
+    await expect(page.locator('#ios-custom .ic-dom[data-idx="1"] .ic-picked')).toHaveText('all picked');
+    expect(await page.evaluate(() => document.querySelectorAll('#topic-group .cq-mode-card.on').length)).toBe(0);
+  });
+
+  test('custom: topic, Hard and 5 reach the hidden controls', async ({ page }) => {
+    await openApp(page, PHONE);
+    await openCustom(page);
+    await page.locator('#ios-custom .ic-dom[data-idx="2"] .ic-dom-head').click();
+    const first = page.locator('#ios-custom .ic-dom[data-idx="2"] [data-act="topic"]').first();
+    const v = await first.getAttribute('data-v');
+    await first.click();
+    expect(await page.evaluate((x) => document.querySelector('#topic-group .chip[data-v="' + CSS.escape(x) + '"]').classList.contains('on'), v)).toBe(true);
+    await page.locator('#ios-custom [data-act="diff"][data-v="Hard / Tricky"]').click();
+    await page.locator('#ios-custom [data-act="count"][data-v="5"]').click();
+    expect(await hiddenOn(page, '#diff-group .chip[data-v="Hard / Tricky"]')).toBe(true);
+    expect(await hiddenOn(page, '#count-group .chip[data-v="5"]')).toBe(true);
+    await expect(page.locator('#ios-custom .ic-qc')).toHaveText('5 Q');
+    await expect(page.locator('#ios-custom .ic-foot-note')).toHaveText(/^1 topic from .+, hard\.$/);
+  });
+
+  test('custom: Start generates with the chosen settings', async ({ page }) => {
+    await page.addInitScript(KEY);
+    await openApp(page, PHONE);
+    await page.evaluate(() => { window._gateActivityForQuota = () => true; window._gateSessionSizeForQuota = () => true; window.fetchQuestions = () => new Promise(() => {}); });
+    await openCustom(page);
+    await page.locator('#ios-custom [data-act="count"][data-v="5"]').click();
+    await page.locator('#ios-custom [data-act="start"]').click();
+    await expect(page.locator('#page-loading')).toHaveClass(/active/);
+    await expect(page.locator('#ios-custom')).toBeEmpty();
+    expect(await page.evaluate(() => (typeof qCount !== 'undefined') ? qCount : null)).toBe(5);
+  });
+
+  test('custom: ✕ returns Home', async ({ page }) => {
+    await openApp(page, PHONE);
+    await openCustom(page);
+    await page.locator('#ios-custom [data-act="close"]').click();
+    await expect(page.locator('#ios-custom')).toBeEmpty();
+    await expect(page.locator('#ios-home .ih-topbar')).toBeVisible();
+  });
+
+  test('custom: drill-a-topic opens with the topic picked and its domain open', async ({ page }) => {
+    await page.addInitScript(() => {
+      const T = ['Subnetting & IP Addressing', 'OSPF', 'Port Numbers'];
+      const h = Array.from({ length: 9 }, (_, i) => ({ date: new Date(Date.now() - (i + 1) * 864e5).toISOString(), topic: T[i % 3], difficulty: 'Exam Level', score: 6, total: 10, pct: 60, mode: 'quiz' }));
+      try { localStorage.setItem('nplus_history', JSON.stringify(h)); } catch (_) {}
+    });
+    await openApp(page, PHONE);
+    await page.evaluate(() => showPage('progress'));
+    const row = page.locator('#page-progress .t-row[data-topic="Subnetting & IP Addressing"]').first();
+    await expect(row).toBeVisible();
+    const topic = await row.getAttribute('data-topic');
+    await row.click();
+    await expect(page.locator('#ios-custom .ic-topbar')).toBeVisible();
+    const chip = page.locator('#ios-custom [data-act="topic"][data-v="' + topic.replace(/"/g, '\\"') + '"]');
+    await expect(chip).toHaveAttribute('aria-pressed', 'true');
+    const dom = page.locator('#ios-custom .ic-dom').filter({ has: page.locator('[data-act="topic"][data-v="' + topic.replace(/"/g, '\\"') + '"]') });
+    await expect(dom).toHaveAttribute('aria-expanded', 'true');
+    await expect(dom.locator('.ic-picked')).toHaveText('1 picked');
+  });
+
+  test('custom: setup error shows inside the screen', async ({ page }) => {
+    await openApp(page, PHONE);
+    await page.evaluate(() => { const b = document.getElementById('setup-err'); b.textContent = 'Add your API key to start.'; b.classList.remove('is-hidden'); showSetupError(); });
+    await expect(page.locator('#ios-custom .ic-err')).toHaveText('Add your API key to start.');
+  });
+
+  test('custom: opening twice leaves one screen and no scroll lock', async ({ page }) => {
+    await openApp(page, PHONE);
+    await openCustom(page);
+    await page.evaluate(() => { _jumpToCustomQuiz(); _jumpToCustomQuiz(); });
+    await page.waitForTimeout(150);
+    expect(await page.locator('#ios-custom .ic-topbar').count()).toBe(1);
+    expect(await page.evaluate(() => document.documentElement.style.overflow)).toBe('');
+    expect(await page.evaluate(() => document.getElementById('custom-quiz-section').open)).toBe(false);
+  });
+
+  test('custom: Security+ lists its own domains', async ({ page }) => {
+    await page.addInitScript(() => { try { localStorage.setItem('nplus_dev_cert', 'secplus'); } catch (_) {} });
+    await openApp(page, PHONE);
+    await openCustom(page);
+    const want = await page.evaluate(() => [...document.querySelectorAll('details.topic-domain-group .dom-name')].map(n => n.textContent.trim()));
+    const got = await page.locator('#ios-custom .ic-dh-txt b').allTextContents();
+    expect(got).toEqual(want);
+    expect(got[0]).not.toMatch(/Networking Concepts/);
+  });
+
+  test('custom: growing past 899px clears the phone screen', async ({ page }) => {
+    await openApp(page, PHONE);
+    await openCustom(page);
+    await page.setViewportSize(DESKTOP);
+    await expect(page.locator('#ios-custom')).toBeEmpty();
+    expect(await page.evaluate(() => document.documentElement.style.overflow)).toBe('');
+  });
+
+  test('custom: leaving Setup closes it', async ({ page }) => {
+    await openApp(page, PHONE);
+    await openCustom(page);
+    await page.evaluate(() => showPage('progress'));
+    await expect(page.locator('#page-progress')).toHaveClass(/active/);
+    await page.evaluate(() => goSetup());
+    await expect(page.locator('#ios-custom')).toBeEmpty();
+    await expect(page.locator('#ios-home .ih-topbar')).toBeVisible();
+  });
+
+  test('custom: desktop still gets the modal', async ({ page }) => {
+    await openApp(page, DESKTOP);
+    await page.evaluate(() => _jumpToCustomQuiz());
+    await expect(page.locator('#custom-quiz-section')).toHaveAttribute('open', '');
+    await expect(page.locator('#custom-quiz-section')).toBeVisible();
+    await expect(page.locator('#ios-custom')).toBeEmpty();
+  });
+});

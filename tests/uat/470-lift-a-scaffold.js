@@ -11,6 +11,8 @@ const { dgCss, fs, html, path, ROOT, results, test } = require('./_context');
     const linkIdx = html.search(/<link rel="stylesheet" href="lift-ios\.css\?v=[0-9.]+" media="\(max-width: 899px\)">/);
     const screensIdx = html.lastIndexOf('lift-screens.css?v=');
     test('index.html links lift-ios.css at phone width, after lift-screens.css', linkIdx > 0 && linkIdx > screensIdx);
+    test('index.html has the phone Custom quiz container right after #ios-home, plus its script',
+      /<section id="ios-home"[^>]*><\/section>\s*<section id="ios-custom" class="ios-only iq-screen"/.test(html) && /<script defer src="features\/ios-custom\.js"><\/script>/.test(html));
     test('dg-system.css hides .ios-only everywhere by default', dgCss.includes('.ios-only{display:none!important;}'));
     test('lift-ios.css shows .ios-only and hides .ios-desktop-only at phone width',
       /\.ios-only\s*\{\s*display:\s*block\s*!important;?\s*\}/.test(ios) && /\.ios-desktop-only\s*\{\s*display:\s*none\s*!important;?\s*\}/.test(ios));
