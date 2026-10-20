@@ -134,6 +134,80 @@
   window._iosResultsModel = _iosResultsModel;
   window.renderIosResults = renderIosResults;
 
+  // ── Review answers (cert-ios-review-answers.html) ───────────────────────
+  // Filters: All / Wrong only / Flagged (founder, 19 Oct). Skipped counts as wrong;
+  // Flagged only appears when something was flagged.
+  function _iosReviewModel(o) {
+    var qs = o.questions || [], lg = o.log || [];
+    var entryFor = function (q) { for (var i = 0; i < lg.length; i++) if (lg[i] && lg[i].q === q) return lg[i]; return null; };
+    var right = 0, anyFlag = false;
+    var cards = qs.map(function (q, i) {
+      var en = entryFor(q), ok = !!(en && en.isRight), flagged = !!((en && en.flagged) || (o.flags && o.flags[i]));
+      if (ok) right++;
+      if (flagged) anyFlag = true;
+      var keys = Object.keys(q.options || {}).sort();
+      var correctSet = Array.isArray(q.answers) ? q.answers : [q.answer];
+      var mine = en ? (Array.isArray(en.chosen) ? en.chosen : (en.msChosen || [en.chosen])) : [];
+      var opts = keys.map(function (k) {
+        var isC = correctSet.indexOf(k) >= 0, isMineWrong = !ok && mine.indexOf(k) >= 0 && !isC;
+        return { key: k, text: q.options[k], state: isC ? 'correct' : (isMineWrong ? 'yours-wrong' : ''), tag: isC ? 'Correct' : (isMineWrong ? 'Your pick' : '') };
+      });
+      return { n: i + 1, q: q.question || '', badge: ok ? 'Correct' : 'Missed', ok: ok, flagged: flagged, opts: opts, why: q.explanation || '' };
+    });
+    var mode = o.mode || 'all';
+    return {
+      summary: (o.certName || 'Practice') + ' practice · ' + qs.length + ' question' + (qs.length === 1 ? '' : 's') + ' · ' + right + ' correct',
+      showFlagged: anyFlag,
+      cards: cards.filter(function (c) { return mode === 'all' || (mode === 'wrong' ? !c.ok : c.flagged); })
+    };
+  }
+
+  var BACK = '<path d="M15 18l-6-6 6-6"></path>';
+  var XS = '<path d="M6 6l12 12M18 6L6 18"></path>';
+  var FLAGI = '<path d="M5 21V4M5 4h11l-1.8 4L16 12H5"></path>';
+  var _iosReviewMode = 'all';
+  function renderIosReview(fromExam, mode) {
+    var root = document.getElementById('ios-review');
+    if (!root) return;
+    // Exam review stays on the desktop layout until Lift B lifts the exam.
+    if (!isPhone() || fromExam || typeof questions === 'undefined') { root.innerHTML = ''; return; }
+    _iosReviewMode = mode || 'all';
+    var rawName = (typeof CERT_PACK === 'object' && CERT_PACK && CERT_PACK.meta && CERT_PACK.meta.name) || 'CompTIA Network+';
+    var m = _iosReviewModel({ questions: questions, log: (typeof log !== 'undefined' ? log : []), flags: (typeof quizFlags !== 'undefined' ? quizFlags : null),
+      certName: String(rawName).replace(/^(CompTIA|Microsoft|Amazon|AWS)\s+/, ''), mode: _iosReviewMode });
+    if (_iosReviewMode === 'flag' && !m.showFlagged) return renderIosReview(fromExam, 'all');
+    var e = function (s) { return escHtml(String(s)); };
+    var svg = function (p) { return '<svg viewBox="0 0 24 24" aria-hidden="true">' + p + '</svg>'; };
+    var seg = function (k, label) { return '<button type="button" role="tab" data-mode="' + k + '" class="' + (_iosReviewMode === k ? 'ia-on' : '') + '" aria-selected="' + (_iosReviewMode === k) + '">' + label + '</button>'; };
+    var cards = m.cards.length ? m.cards.map(function (c) {
+      return '<div class="ia-qa"><div class="ia-qa-top"><span class="ia-qa-num">Question ' + c.n + (c.flagged ? '<span class="ia-qa-flag">' + svg(FLAGI) + 'Flagged</span>' : '') + '</span>'
+        + '<span class="ia-qa-badge ' + (c.ok ? 'ia-ok' : 'ia-no') + '">' + svg(c.ok ? CHECK : XS) + (c.ok ? 'Correct' : 'Missed') + '</span></div>'
+        + '<p class="ia-qa-q">' + e(c.q) + '</p><div class="ia-qa-opts">' + c.opts.map(function (op) {
+          return '<div class="ia-qa-opt' + (op.state ? ' ia-' + op.state : '') + '"><span class="ia-mk">' + (op.state === 'correct' ? svg(CHECK) : (op.state === 'yours-wrong' ? svg(XS) : '')) + '</span>'
+            + '<span>' + e(op.key) + '. ' + e(op.text) + '</span>' + (op.tag ? '<span class="ia-tag">' + e(op.tag) + '</span>' : '') + '</div>';
+        }).join('') + '</div>' + (c.why ? '<p class="ia-qa-ex"><b>Why:</b> ' + e(c.why) + '</p>' : '') + '</div>';
+    }).join('') : '<div class="ia-empty"><b>Nothing missed</b>Every answer was correct. Clean run.</div>';
+    root.innerHTML =
+      '<div class="ia-hdr"><button class="ia-back" type="button" data-act="back" aria-label="Back">' + svg(BACK) + '</button><h1>Review answers</h1>'
+      + '<button class="ia-app-theme" type="button" data-act="theme" aria-label="Switch between light and dark">' + svg(_iosThemeIcon()) + '</button></div>'
+      + '<div class="ia-summary"><p class="ia-sline">' + e(m.summary).replace(/ · (\d+ questions?) · (\d+ correct)$/, ' · <b>$1</b> · <b>$2</b>') + '</p>'
+      + '<div class="ia-seg" role="tablist" aria-label="Filter answers">' + seg('all', 'All') + seg('wrong', 'Wrong only') + (m.showFlagged ? seg('flag', 'Flagged') : '') + '</div></div>'
+      + '<div class="ia-body">' + cards + '</div>'
+      + '<div class="ia-footer"><button class="ia-cta" type="button" data-act="done">Done</button></div>';
+    var back = function () { showPage('results'); };
+    root.querySelectorAll('[data-mode]').forEach(function (b) { b.addEventListener('click', function () { renderIosReview(false, b.getAttribute('data-mode')); }); });
+    root.querySelectorAll('[data-act]').forEach(function (b) {
+      var a = b.getAttribute('data-act');
+      b.addEventListener('click', function () {
+        if (a === 'back' || a === 'done') back();
+        else if (a === 'theme') { if (typeof toggleTheme === 'function') toggleTheme(); renderIosReview(false, _iosReviewMode); }
+      });
+    });
+  }
+
+  window._iosReviewModel = _iosReviewModel;
+  window.renderIosReview = renderIosReview;
+
   window._iosLoadingLine = _iosLoadingLine;
   window.renderIosLoading = renderIosLoading;
   window.iosLoadingCaption = iosLoadingCaption;

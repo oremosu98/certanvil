@@ -180,3 +180,30 @@ test.describe('Lift A results (phone)', () => {
     await expect(page.locator('#ios-results')).toBeHidden();
   });
 });
+
+test.describe('Lift A review answers (phone)', () => {
+  test('phone: All / Wrong only filters; Flagged hidden with no flags; Done returns to results', async ({ page }) => {
+    await inject(page, PHONE, QUIZ);
+    await finishQuiz(page);   // picks A twice: Q1 wrong (answer C), Q2 wrong (answer B)
+    await page.locator('#ios-results [data-act="review"]').click();
+    await expect(page.locator('#page-review')).toHaveClass(/active/);
+    await expect(page.locator('#ios-review .ia-sline')).toContainText('2 questions');
+    await expect(page.locator('#ios-review [data-mode="flag"]')).toHaveCount(0);
+    await expect(page.locator('#ios-review .ia-qa')).toHaveCount(2);
+    await page.locator('#ios-review [data-mode="wrong"]').click();
+    await expect(page.locator('#ios-review .ia-qa')).toHaveCount(2);
+    await expect(page.locator('#ios-review .ia-qa-opt.ia-yours-wrong .ia-tag').first()).toHaveText('Your pick');
+    await page.locator('#ios-review [data-act="done"]').click();
+    await expect(page.locator('#page-results')).toHaveClass(/active/);
+  });
+
+  test('phone: a flagged question shows the Flagged filter and tag', async ({ page }) => {
+    await inject(page, PHONE, QUIZ);
+    await page.locator('#quiz-flag-btn').click();
+    await finishQuiz(page);
+    await page.locator('#ios-results [data-act="review"]').click();
+    await page.locator('#ios-review [data-mode="flag"]').click();
+    await expect(page.locator('#ios-review .ia-qa')).toHaveCount(1);
+    await expect(page.locator('#ios-review .ia-qa-flag')).toContainText('Flagged');
+  });
+});

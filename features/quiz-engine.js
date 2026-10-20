@@ -2031,6 +2031,7 @@ JUDGEMENT CASES (the format of the hardest real ${certCode} items) — write abo
     // Reset filter when entering a fresh review (don't leak state from a previous session)
     _reviewFilter = 'all';
     _renderReviewList();
+    if (window.renderIosReview) { try { renderIosReview(!!fromExam); } catch (_) {} }   // v8.183.0 Lift A: E2E review at phone width
     showPage('review');
   }
   

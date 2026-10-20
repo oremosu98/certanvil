@@ -43,6 +43,25 @@ const { _fnBody, js, results, test, vm } = require('./_context');
       r.review[0].n === '01' && r.review[0].meta === 'DNS & DHCP - Concepts' && r.review[0].verdict === 'Wrong' && r.review[2].verdict === 'Correct' && r.review[2].meta === 'Cabling');
     test('Results: mistakes = wrong answers this session; em-dash in a sub becomes a comma',
       r.mistakes === 3 && R(Object.assign({}, base, { sub: 'A few gaps \u2014 keep at it.' })).sub === 'A few gaps, keep at it.');
+    // ── Review answers model ──
+    vm.runInContext((_fnBody(js, '_iosReviewModel') || ''), ctx);
+    const Q = (question, answer, extra) => Object.assign({ type: 'mcq', question, options: { A: '443', B: '80', C: '22', D: '53' }, answer, explanation: 'Why ' + question }, extra || {});
+    const qs = [Q('Which port does HTTPS use?', 'A'), Q('Which port does SSH use?', 'C'), Q('Which port does DNS use?', 'D'), Q('Which port is HTTP?', 'B')];
+    const rlog = [{ q: qs[0], chosen: 'A', isRight: true }, { q: qs[1], chosen: 'B', isRight: false, flagged: true }, { q: qs[3], chosen: 'B', isRight: true }];
+    const RV = (mode) => vm.runInContext('_iosReviewModel(__o)', Object.assign(ctx, { __o: { questions: qs, log: rlog, certName: 'Network+', mode } }));
+    const all = RV('all');
+    test('Review: summary "Network+ practice · 4 questions · 2 correct"', all.summary === 'Network+ practice · 4 questions · 2 correct');
+    test('Review: All lists every question; Wrong only includes skipped (unanswered) ones',
+      all.cards.length === 4 && RV('wrong').cards.map(c => c.n).join(',') === '2,3');
+    test('Review: Flagged filter shows only flagged; showFlagged true when something was flagged',
+      all.showFlagged === true && RV('flag').cards.map(c => c.n).join(',') === '2');
+    test('Review: showFlagged false when nothing was flagged', vm.runInContext('_iosReviewModel(__o)', Object.assign(ctx, { __o: { questions: qs, log: [rlog[0]], certName: 'Network+', mode: 'all' } })).showFlagged === false);
+    const c2 = all.cards[1];
+    test('Review: a miss tags the right option "Correct" and your option "Your pick", badge "Missed", flagged tag',
+      c2.badge === 'Missed' && c2.flagged === true && c2.opts.find(o => o.key === 'C').tag === 'Correct' && c2.opts.find(o => o.key === 'B').tag === 'Your pick'
+      && c2.opts.find(o => o.key === 'A').tag === '' && c2.why === 'Why Which port does SSH use?');
+    test('Review: a skipped question is badged "Missed" with no "Your pick"', all.cards[2].badge === 'Missed' && !all.cards[2].opts.some(o => o.tag === 'Your pick'));
+    test('Review: a hit is badged "Correct"', all.cards[0].badge === 'Correct');
   } catch (err) {
     test('Lift A quiz loop: generating block (threw)', false);
     results.errors.push('482 ios-quiz generating block threw: ' + err.message);
