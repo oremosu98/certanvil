@@ -141,3 +141,42 @@ test.describe('Lift A quiz: pick, then confirm (phone)', () => {
     expect(await page.evaluate(() => log.length)).toBe(1);
   });
 });
+
+async function finishQuiz(page) {
+  for (let i = 0; i < 2; i++) {
+    await page.locator('#options .option').first().click();
+    await page.locator('#btn-next').click();   // confirm
+    await page.locator('#btn-next').click();   // next / see results
+  }
+  await expect(page.locator('#page-results')).toHaveClass(/active/);
+}
+
+test.describe('Lift A results (phone)', () => {
+  test('phone: finishing a quiz shows the E2E results with Redo this quiz + Back to menu', async ({ page }) => {
+    await inject(page, PHONE, QUIZ);
+    await finishQuiz(page);
+    await expect(page.locator('#ios-results .ir-done-kick')).toHaveText('Session complete');
+    await expect(page.locator('#ios-results .ir-scaled-of')).toHaveText('/ 900');
+    await expect(page.locator('#ios-results [data-act="redo"]')).toHaveText('Redo this quiz');
+    await expect(page.locator('#ios-results .ir-qrow')).toHaveCount(2);
+    await page.evaluate(() => { window.__redo = 0; window.retryQuiz = () => { window.__redo++; }; });
+    await page.locator('#ios-results [data-act="redo"]').click();
+    expect(await page.evaluate(() => window.__redo)).toBe(1);
+    await page.locator('#ios-results [data-act="menu"]').click();
+    await expect(page.locator('#page-setup')).toHaveClass(/active/);
+  });
+
+  test('phone: CLF-C02 results use its own scale (/ 1000)', async ({ page }) => {
+    await page.addInitScript(() => { try { localStorage.setItem('nplus_dev_cert', 'clfc02'); } catch (_) {} });
+    await inject(page, PHONE, QUIZ);
+    await finishQuiz(page);
+    await expect(page.locator('#ios-results .ir-scaled-of')).toHaveText('/ 1000');
+  });
+
+  test('desktop: results page is the existing desktop layout', async ({ page }) => {
+    await inject(page, DESKTOP, QUIZ);
+    for (let i = 0; i < 2; i++) { await page.locator('#options .option').first().click(); await page.locator('#btn-next').click(); }
+    await expect(page.locator('#page-results')).toHaveClass(/active/);
+    await expect(page.locator('#ios-results')).toBeHidden();
+  });
+});

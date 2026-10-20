@@ -1886,6 +1886,7 @@ JUDGEMENT CASES (the format of the hardest real ${certCode} items) — write abo
     document.getElementById('btn-review').classList.toggle('is-hidden', log.length === 0);
   
     renderResultsDifficultyBreakdown();
+    if (window.renderIosResults) { try { renderIosResults(); } catch (_) {} }   // v8.183.0 Lift A: E2E results at phone width
   
     updateStreak();
     renderStreakBadge();
