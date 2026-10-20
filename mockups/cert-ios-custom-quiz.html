@@ -102,6 +102,15 @@
   .mode .tick svg { width: 17px; height: 17px; stroke: currentColor; fill: none; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
   .mode[aria-pressed="true"] { border-color: var(--accent); background: color-mix(in oklab, var(--accent) 7%, var(--surface)); }
   .mode[aria-pressed="true"] .tick { opacity: 1; }
+  /* Catch-up: the wide third tile (bento 2 + 1, founder 20 Oct). Icon beside the title, live line under a hairline. */
+  .mode-wide { grid-column: 1 / -1; display: grid; grid-template-columns: auto 1fr; column-gap: 12px; align-items: center; }
+  .mode-wide .mi { margin-bottom: 0; }
+  .mode-wide .mw-txt { min-width: 0; }
+  .mode-wide .mw-txt span { margin-top: 3px; }
+  .mode-wide .mw-live { grid-column: 1 / -1; display: flex; align-items: baseline; gap: 7px; margin-top: 11px; padding-top: 10px;
+    border-top: 1px solid color-mix(in oklab, var(--border) 70%, transparent); font: 500 11.5px/1.35 Inter, sans-serif; color: var(--ink-soft); }
+  .mode-wide .mw-live b { display: inline; font: 650 13px/1 'Roboto Mono', monospace; color: var(--accent-deep); }
+  .dom-head .dh-txt small .picked { color: var(--accent-deep); font-weight: 650; }
 
   /* expandable domain sections */
   .dom { border: 1px solid var(--border); border-radius: 14px; background: var(--surface); margin-bottom: 9px; overflow: hidden; }
@@ -157,7 +166,8 @@
   @media (hover:hover) and (pointer:fine) { .btn-primary:hover { filter: brightness(1.05); } }
   .btn-primary svg { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
   .btn-primary .qc { font: 700 12px/1 'Roboto Mono', monospace; opacity: 0.82; }
-  .foot-note { text-align: center; font: 500 10.5px/1.3 Inter, sans-serif; color: var(--muted); margin: 9px 0 0; }
+  .foot-note { text-align: center; font: 500 10.5px/1.3 Inter, sans-serif; color: var(--muted); margin: 9px 0 0;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }   /* one line always: the dock never changes height */
 
   @media (prefers-reduced-motion: no-preference) {
     .reveal { opacity: 0; transform: translateY(9px); animation: rise .5s var(--ease) forwards; }
@@ -178,7 +188,7 @@
       <div>
         <p class="stage-eyebrow">Cert app · iOS</p>
         <h1 class="stage-title">Custom quiz</h1>
-        <p class="stage-sub">The configurator that opens from the home as a full-screen sheet. Pick a domain, choose smart or mixed, set difficulty and length, then launch. Built in the cert-ios language.</p>
+        <p class="stage-sub">The configurator that opens from the home as a full-screen sheet. Pick a domain, choose Smart, Mixed or Catch-up, set difficulty and length, then launch. Built in the cert-ios language.</p>
       </div>
       <button class="theme-toggle" id="themeToggle" type="button" aria-label="Toggle light and dark">
         <svg id="themeIcon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></svg>
@@ -235,6 +245,14 @@
                 <span class="mi"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 3h5v5"></path><path d="M21 3 13 11"></path><path d="M8 21H3v-5"></path><path d="M3 21 11 13"></path><path d="M21 16v5h-5"></path><path d="M15 15l6 6"></path><path d="M3 8V3h5"></path><path d="M9 9 3 3"></path></svg></span>
                 <b>Mixed <span class="tick"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"></path></svg></span></b>
                 <span>A random spread across every topic.</span>
+              </button>
+              <button class="mode mode-wide" type="button" aria-pressed="false">
+                <span class="mi"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7"></path><path d="M3 4v4h4"></path><path d="M12 7v5l3 2"></path></svg></span>
+                <span class="mw-txt">
+                  <b>Catch-up <span class="tick"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"></path></svg></span></b>
+                  <span>Topics you haven't seen lately.</span>
+                </span>
+                <span class="mw-live" id="catchupLive"><b>6</b> not practised in a week</span>
               </button>
             </div>
 
@@ -316,7 +334,7 @@
 
             <!-- DIFFICULTY -->
             <div class="sect reveal">Difficulty</div>
-            <div class="seg reveal" role="group" aria-label="Difficulty">
+            <div class="seg reveal" id="diffSeg" role="group" aria-label="Difficulty">
               <button type="button" aria-pressed="false">Foundational</button>
               <button type="button" aria-pressed="false">Exam level</button>
               <button type="button" aria-pressed="true">Mixed</button>
@@ -326,12 +344,12 @@
             <div class="sect reveal">Count</div>
             <div class="count-echo reveal"><span class="bn" id="countNum">10</span><span class="bl">questions</span></div>
             <div class="seg reveal" id="countSeg" role="group" aria-label="Question count">
+              <button type="button" aria-pressed="false">5</button>
               <button type="button" aria-pressed="true">10</button>
+              <button type="button" aria-pressed="false">15</button>
               <button type="button" aria-pressed="false" data-overcap="20">20</button>
-              <button type="button" aria-pressed="false" data-overcap="30">30</button>
-              <button type="button" aria-pressed="false" data-overcap="45">45</button>
             </div>
-            <p class="reveal" id="freeCapNote" style="margin:9px 2px 0;font:600 12px/1.45 Inter,sans-serif;color:var(--muted);">Free covers <b style="color:var(--ink-soft)">15 questions a day</b>. Longer sets are Pro.</p>
+            <p class="reveal" id="freeCapNote" style="margin:9px 2px 0;font:600 12px/1.45 Inter,sans-serif;color:var(--muted);">Free covers <b style="color:var(--ink-soft)">15 questions a day</b>. 20 needs Pro.</p>
           </div>
 
           <div class="foot">
@@ -339,11 +357,11 @@
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4l14 8-14 8V4z"></path></svg>
               Start quiz <span class="qc" id="footCount">10 Q</span>
             </button>
-            <p class="foot-note">Mixed spread across all topics, mixed difficulty.</p>
+            <p class="foot-note" id="footNote">Mixed spread across all topics, mixed difficulty.</p>
           </div>
         </div>
       </div>
-      <p class="hint">Phase 1 mockup. Tap a domain header to expand it, switch modes, and change the count to watch the echo update.</p>
+      <p class="hint">Tap a domain chip, a mode or a topic to watch the footer line and the picked counts update. Add ?v=topic to arrive from "Drill this topic".</p>
     </div>
   </div>
 
@@ -371,26 +389,70 @@
       document.getElementById('appTheme').addEventListener('click', toggleTheme);
       paint();
 
-      // domain chips (multi-select, topic)
-      document.querySelectorAll('.chiprow .chip').forEach(function(c){
-        c.addEventListener('click', function(){ c.setAttribute('aria-pressed', c.getAttribute('aria-pressed') === 'true' ? 'false' : 'true'); });
+      // Selection model (matches the live app): a mode OR a set of topics, never both, never nothing.
+      var domChips = [].slice.call(document.querySelectorAll('.chiprow .chip'));
+      var doms = [].slice.call(document.querySelectorAll('.dom'));
+      var modes = [].slice.call(document.querySelectorAll('.modes .mode'));
+      var MIXED = modes[1];
+      var SHORT = ['Concepts', 'Implementation', 'Operations', 'Security', 'Troubleshooting'];
+      var footNote = document.getElementById('footNote');
+      function pressed(el){ return el.getAttribute('aria-pressed') === 'true'; }
+      function press(el, on){ el.setAttribute('aria-pressed', on ? 'true' : 'false'); }
+      function topicsOf(i){ return [].slice.call(doms[i].querySelectorAll('.tchip')); }
+      function pickedCount(i){ return topicsOf(i).filter(pressed).length; }
+      function anyTopic(){ return doms.some(function(_, i){ return pickedCount(i) > 0; }); }
+      function andJoin(a){ return a.length < 2 ? a.join('') : a.slice(0, -1).join(', ') + ' and ' + a[a.length - 1]; }
+      function diffText(){
+        var d = document.querySelector('#diffSeg [aria-pressed="true"]').textContent.trim();
+        return d === 'Mixed' ? 'mixed difficulty' : d.toLowerCase();
+      }
+      function sync(){
+        if (!anyTopic() && !modes.some(pressed)) press(MIXED, true);   // never empty: fall back to Mixed
+        doms.forEach(function(d, i){
+          var n = pickedCount(i), all = topicsOf(i).length;
+          press(domChips[i], n === all);
+          var sm = d.querySelector('.dh-txt small');
+          sm.innerHTML = all + ' topics' + (n ? ' · <span class="picked">' + (n === all ? 'all' : n) + ' picked</span>' : '');
+        });
+        var note;
+        if (anyTopic()) {
+          var n = 0, from = [];
+          doms.forEach(function(_, i){ var c = pickedCount(i); if (c) { n += c; from.push(SHORT[i]); } });
+          note = n + (n === 1 ? ' topic' : ' topics') + ' from ' + (from.length > 2 ? from.length + ' domains' : andJoin(from)) + ', ' + diffText() + '.';
+        } else if (pressed(modes[0])) note = 'Your weakest topics, ' + diffText() + '.';
+        else if (pressed(modes[2])) note = "The topics you've gone longest without, " + diffText() + '.';
+        else note = 'Mixed spread across all topics, ' + diffText() + '.';
+        footNote.textContent = note;
+      }
+      function clearTopics(){ doms.forEach(function(_, i){ topicsOf(i).forEach(function(t){ press(t, false); }); }); }
+      function clearModes(){ modes.forEach(function(m){ press(m, false); }); }
+
+      // domain chips select (or clear) every topic in that domain
+      domChips.forEach(function(c, i){
+        c.addEventListener('click', function(){
+          var on = !pressed(c);
+          clearModes();
+          topicsOf(i).forEach(function(t){ press(t, on); });
+          sync();
+        });
       });
 
-      // mode cards (single selection)
-      var modes = document.querySelectorAll('.modes .mode');
+      // mode cards (single selection; clears any picked topics)
       modes.forEach(function(m){
         m.addEventListener('click', function(){
-          modes.forEach(function(x){ x.setAttribute('aria-pressed', x === m ? 'true' : 'false'); });
+          clearTopics();
+          modes.forEach(function(x){ press(x, x === m); });
+          sync();
         });
       });
 
       // expandable domain sections
-      document.querySelectorAll('.dom').forEach(function(d){
+      doms.forEach(function(d){
         d.querySelector('.dom-head').addEventListener('click', function(){
           d.setAttribute('aria-expanded', d.getAttribute('aria-expanded') === 'true' ? 'false' : 'true');
         });
         d.querySelectorAll('.tchip').forEach(function(t){
-          t.addEventListener('click', function(){ t.setAttribute('aria-pressed', t.getAttribute('aria-pressed') === 'true' ? 'false' : 'true'); });
+          t.addEventListener('click', function(){ clearModes(); press(t, !pressed(t)); sync(); });
         });
       });
 
@@ -400,8 +462,21 @@
         grp.addEventListener('click', function(e){
           var btn = e.target.closest('button'); if (!btn) return;
           grp.querySelectorAll('button').forEach(function(b){ b.setAttribute('aria-pressed', b === btn ? 'true' : 'false'); });
+          sync();
         });
       });
+
+      // ?v=topic: arrived from "Drill this topic" on Progress. One topic picked, its domain open and in view.
+      if (/[?&]v=topic\b/.test(location.search)) {
+        var t = [].slice.call(doms[0].querySelectorAll('.tchip')).filter(function(x){ return /Subnetting/.test(x.textContent); })[0];
+        clearModes(); press(t, true); doms[0].setAttribute('aria-expanded', 'true');
+        setTimeout(function(){ doms[0].scrollIntoView({ block: 'center' }); }, 60);
+      }
+      // ?cu=0: nothing stale this week. ?cu=none: no history yet, so the line is hidden.
+      var cu = (location.search.match(/[?&]cu=(\w+)/) || [])[1], live = document.getElementById('catchupLive');
+      if (cu === 'none') live.style.display = 'none';
+      else if (cu === '0') live.textContent = 'All practised this week.';
+      sync();
 
       // count segmented control with big echo + footer count
       var countSeg = document.getElementById('countSeg'), countNum = document.getElementById('countNum'), footCount = document.getElementById('footCount');

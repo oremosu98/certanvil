@@ -38,6 +38,8 @@
     'quiz-short-set'    : 'cert-ios-quiz.html?v=short',
     'quiz-answered'     : 'cert-ios-quiz.html?v=ans',
     'custom-quiz'       : 'cert-ios-custom-quiz.html',
+    'custom-quiz-topic' : 'cert-ios-custom-quiz.html?v=topic',   // from "Drill this topic" (20 Oct)
+    'custom-quiz-caught-up' : 'cert-ios-custom-quiz.html?cu=0',  // Catch-up with nothing stale (20 Oct)
     'exam'              : 'cert-ios-exam.html',
     'results'           : 'cert-ios-results.html',
     'results-milestone' : 'cert-ios-results.html?v=milestone',
@@ -171,6 +173,7 @@
   // Wire it generically by label so every screen that has it navigates.
   // post-June variant screens reuse their base screen's routes
   NAV['quiz-short-set'] = NAV['quiz']; NAV['quiz-answered'] = NAV['quiz']; NAV['results-milestone'] = NAV['results'];
+  NAV['custom-quiz-topic'] = NAV['custom-quiz']; NAV['custom-quiz-caught-up'] = NAV['custom-quiz'];
 
   var TABS = { 'Home':'home', 'Drills':'drills', 'Progress':'progress', 'Account':'settings',
                'Analytics':'analytics', 'Settings':'settings' };
@@ -262,7 +265,7 @@
         planFree.click();  // back to free view
       }
     }
-    if (id === 'custom-quiz') {
+    if (/^custom-quiz/.test(id)) {
       // free: show the cap note + dim the over-cap options; pro: clear both
       var note = doc.getElementById('freeCapNote');
       if (note) note.style.display = demoPro ? 'none' : '';
@@ -390,9 +393,9 @@
           }
         });
       }
-      // custom-quiz: a FREE user picking a set bigger than the daily cap (20/30/45)
+      // custom-quiz: a FREE user picking a set bigger than the daily cap (20)
       // hits the daily-limit blocker. Pro removes the cap (mockup selects normally).
-      if (id === 'custom-quiz') {
+      if (/^custom-quiz/.test(id)) {
         doc.querySelectorAll('[data-overcap]').forEach(function (el) {
           if (el.__e2e_bound) return; el.__e2e_bound = 1;
           el.addEventListener('click', function () {
@@ -554,7 +557,7 @@
     });
     sel.addEventListener('change', function () { if (sel.value) resetTo(sel.value); });
     // Lift A review: step through the post-June additions in order (founder sign-off aid).
-    var LIFT_A = ['home','home-exam-paused','home-signed-out','quiz','quiz-short-set','quiz-answered','results-milestone','review-answers'];
+    var LIFT_A = ['home','home-exam-paused','home-signed-out','custom-quiz','custom-quiz-topic','custom-quiz-caught-up','quiz','quiz-short-set','quiz-answered','results-milestone','review-answers'];
     var liftBtn = document.getElementById('hud-lifta'), liftI = -1;
     if (liftBtn) liftBtn.addEventListener('click', function () {
       liftI = (liftI + 1) % LIFT_A.length; resetTo(LIFT_A[liftI]);
