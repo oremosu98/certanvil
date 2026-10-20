@@ -56,6 +56,9 @@ const { _fnBody, js, results, test, vm } = require('./_context');
     const d = M({ mode: 'mixed', diff: 'Hard / Tricky', count: '15' });
     test('Custom model: difficulty labels Foundational / Exam level / Hard / Mixed',
       d.diffs.map(x => x.label).join('|') === 'Foundational|Exam level|Hard|Mixed' && d.diffs[2].on === true);
+    const zs = src({ mode: 'mixed' }); zs.domains.push({ idx: 5, name: '5.0 Network Troubleshooting', short: 'Troubleshooting', weight: '24% of exam', topics: [] });
+    const zm = vm.runInContext('_iosCustomModel(__s, __n)', Object.assign(ctx, { __s: zs, __n: NOW }));
+    test('Custom model (fix C1): domains with no topics (stale slots for smaller certs) are dropped', zm.domains.length === 3 && zm.domains.every(x => x.topicCount > 0));
     test('Custom model: count is the selected number', d.count === 15 && M({ mode: 'mixed' }).count === 10);
     test('Custom model: mode copy (E2E wins)',
       d.modes[0].title === 'Smart' && d.modes[0].sub === 'Targets the topics you keep getting wrong.'
@@ -91,7 +94,15 @@ const { _fnBody, js, results, test, vm } = require('./_context');
     test('Custom view: 4 difficulty and 4 count buttons', count(/data-act="diff"/g) === 4 && count(/data-act="count"/g) === 4
       && /data-act="count" data-v="5"/.test(h) && /data-act="count" data-v="20"/.test(h));
     test('Custom view: Start quiz with the count', h.indexOf('Start quiz') >= 0 && h.indexOf('10 Q') >= 0);
-    test('Custom view: no cap note and no over-cap dimming before Stage 6', h.indexOf('needs Pro') < 0 && h.indexOf('data-overcap') < 0);
+    test('Custom view: Pro (not free) gets no cap note and no dimmed 20', h.indexOf('needs Pro') < 0 && h.indexOf('ic-overcap') < 0);
+    const hf = H({ freeTier: true });
+    test('Custom view (fix C/M4): Free shows "Free covers 15 questions a day. 20 needs Pro." and dims only 20',
+      /Free covers <b>15 questions a day<\/b>\. 20 needs Pro\./.test(hf) && (hf.match(/ic-overcap/g) || []).length === 1
+      && /class="ic-overcap"[^>]*data-act="count" data-v="20"|data-act="count" data-v="20"[^>]*class="ic-overcap"|<button class="ic-overcap" type="button" data-act="count" data-v="20"/.test(hf));
+    test('Custom view (fix I1): a signed-out error card carries a Sign in button',
+      H({ err: 'Sign in to study free.', signIn: true }).indexOf('data-act="signin"') >= 0 && H({ err: 'Bad key.' }).indexOf('data-act="signin"') < 0);
+    test('Custom view (fix I3): the accordion header button carries aria-expanded',
+      /<button class="ic-dom-head" type="button" data-act="acc" data-idx="1" aria-expanded="true"/.test(h));
     test('Custom view: error card only when err is set', h.indexOf('ic-err') < 0 && H({ err: 'Add your API key first.' }).indexOf('ic-err') >= 0
       && H({ err: 'Add your API key first.' }).indexOf('Add your API key first.') >= 0);
     test('Custom view: no em dash in the copy (mode data-v values excepted)', !/—/.test(h.replace(/data-v="[^"]*"/g, '')));

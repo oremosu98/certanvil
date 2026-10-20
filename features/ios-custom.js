@@ -18,7 +18,8 @@
       mixed: ['Mixed', 'A random spread across every topic.'],
       catchup: ['Catch-up', "Topics you haven't seen lately."]
     };
-    var domainsIn = src.domains || [];
+    // smaller certs leave the unused Network+ slots in the panel with no chips: drop them (review C1)
+    var domainsIn = (src.domains || []).filter(function (d) { return d && d.topics && d.topics.length; });
     var domains = domainsIn.map(function (d) {
       var topics = (d.topics || []).map(function (t) { return { v: t.v, label: t.label, on: !!t.on }; });
       var picked = topics.filter(function (t) { return t.on; }).length;
@@ -56,7 +57,8 @@
     var diffs = (src.diffs || []).map(function (x) { return { v: x.v, label: DIFF_LABEL[x.v] || x.v, on: !!x.on }; });
     var diffOn = diffs.filter(function (x) { return x.on; })[0];
     var diffText = diffOn ? (DIFF_TEXT[diffOn.v] || String(diffOn.label).toLowerCase()) : 'mixed difficulty';
-    var counts = (src.counts || []).map(function (x) { return { v: String(x.v), on: !!x.on }; });
+    var free = !!src.freeTier;
+    var counts = (src.counts || []).map(function (x) { return { v: String(x.v), on: !!x.on, overcap: free && parseInt(x.v, 10) > 15 }; });
     var countOn = counts.filter(function (x) { return x.on; })[0];
 
     var nTopics = 0, from = [];
@@ -77,7 +79,8 @@
     return {
       cert: src.cert || { mark: 'CA', name: '', code: '' },
       domains: domains, modes: modes, catchup: catchup, diffs: diffs, counts: counts,
-      count: countOn ? parseInt(countOn.v, 10) : 10, foot: foot, err: src.err || ''
+      count: countOn ? parseInt(countOn.v, 10) : 10, foot: foot, err: src.err || '',
+      capNote: free, signIn: !!src.signIn
     };
   }
 
@@ -150,7 +153,7 @@
       + '<p class="ic-sect-sub ic-reveal">Open a domain to pick the exact areas you want.</p>';
     m.domains.forEach(function (d) {
       h += '<div class="ic-dom ic-reveal" aria-expanded="' + (d.expanded ? 'true' : 'false') + '" data-idx="' + e(d.idx) + '">'
-        + '<button class="ic-dom-head" type="button" data-act="acc" data-idx="' + e(d.idx) + '">'
+        + '<button class="ic-dom-head" type="button" data-act="acc" data-idx="' + e(d.idx) + '" aria-expanded="' + (d.expanded ? 'true' : 'false') + '">'
         + '<span class="ic-dh-txt"><b>' + e(d.name) + '</b><small>' + e(d.topicCount) + ' topics'
         + (d.pickedLabel ? ' · <span class="ic-picked">' + e(d.pickedLabel) + '</span>' : '') + '</small></span>'
         + (d.weight ? '<span class="ic-pill">' + e(d.weight) + '</span>' : '')
@@ -172,10 +175,12 @@
       + '<div class="ic-count-echo ic-reveal"><span class="ic-bn">' + e(m.count) + '</span><span class="ic-bl">questions</span></div>'
       + '<div class="ic-seg ic-count-seg ic-reveal" role="group" aria-label="Question count">';
     m.counts.forEach(function (x) {
-      h += '<button type="button" data-act="count" data-v="' + e(x.v) + '"' + pressed(x.on) + '>' + e(x.v) + '</button>';
+      h += '<button' + (x.overcap ? ' class="ic-overcap"' : '') + ' type="button" data-act="count" data-v="' + e(x.v) + '"' + pressed(x.on) + '>' + e(x.v) + '</button>';
     });
     h += '</div>';
-    if (m.err) h += '<div class="ic-err" role="alert">' + e(m.err) + '</div>';
+    if (m.capNote) h += '<p class="ic-cap-note ic-reveal">Free covers <b>15 questions a day</b>. 20 needs Pro.</p>';
+    if (m.err) h += '<div class="ic-err" role="alert">' + e(m.err)
+      + (m.signIn ? '<button class="ic-err-signin" type="button" data-act="signin">Sign in</button>' : '') + '</div>';
     h += '</div>';
 
     h += '<div class="ic-foot"><button class="ic-btn-primary" type="button" data-act="start">' + svg('play')
@@ -220,7 +225,9 @@
         code: (typeof CERT_CODE === 'string' && CERT_CODE) || 'N10-009' },
       domains: domains, modes: modes, diffs: pick('#diff-group .chip[data-v]'), counts: pick('#count-group .chip[data-v]'),
       history: history.map(function (r) { return { topic: r && r.topic, date: r && r.date }; }),
-      err: (errBox && !errBox.classList.contains('is-hidden')) ? _icText(errBox) : ''
+      err: (errBox && !errBox.classList.contains('is-hidden')) ? _icText(errBox) : '',
+      freeTier: !!(typeof window._srIsFreeTier === 'function' && window._srIsFreeTier()),
+      signIn: window._certanvilSignedIn !== true && !!document.querySelector('a.topbar-signin-pill')
     };
   }
 
@@ -233,8 +240,18 @@
     try {
       var m = _iosCustomModel(_iosCustomSource(), new Date());
       m.domains.forEach(function (d) { if (typeof _icOpen[d.idx] === 'boolean') d.expanded = _icOpen[d.idx]; });
+      var act = document.activeElement, key = null;
+      if (act && root.contains(act) && act.getAttribute('data-act')) {
+        key = [act.getAttribute('data-act'), act.getAttribute('data-v'), act.getAttribute('data-idx')];
+      }
       root.classList.toggle('ic-settled', !fresh);
       root.innerHTML = _iosCustomHtml(m);
+      if (key) {   // keep keyboard / VoiceOver focus on the control just used (review I3)
+        var back = [].slice.call(root.querySelectorAll('[data-act]')).filter(function (b) {
+          return b.getAttribute('data-act') === key[0] && b.getAttribute('data-v') === key[1] && b.getAttribute('data-idx') === key[2];
+        })[0];
+        if (back) { try { back.focus({ preventScroll: true }); } catch (_) { back.focus(); } }
+      }
     } catch (err) {
       root.innerHTML = '';
       try { console.warn('[ios-custom] render failed', err); } catch (_) {}
@@ -257,11 +274,14 @@
     if (!b || !root || !root.contains(b)) return;
     var act = b.getAttribute('data-act'), v = b.getAttribute('data-v'), idx = b.getAttribute('data-idx');
     if (act === 'close') { closeIosCustom(); window.scrollTo(0, 0); return; }
-    if (act === 'start') { closeIosCustom(); window.scrollTo(0, 0); if (typeof window.startQuiz === 'function') window.startQuiz(); return; }
+    // Start: leaving Setup closes the screen (observer); a start that fails validation keeps it, with the error (review I1)
+    if (act === 'start') { if (typeof window.startQuiz === 'function') window.startQuiz(); return; }
+    if (act === 'signin') { var a = document.querySelector('a.topbar-signin-pill'); if (a && a.href) location.href = a.href; return; }
     if (act === 'acc') {
       var dom = b.closest('.ic-dom');
       var open = dom.getAttribute('aria-expanded') !== 'true';
       dom.setAttribute('aria-expanded', open ? 'true' : 'false');
+      b.setAttribute('aria-expanded', open ? 'true' : 'false');
       _icOpen[idx] = open;
       return;
     }
@@ -286,10 +306,22 @@
     cq.open = false;
     if (fresh) _icOpen = {};
     renderIosCustom(fresh);
-    if (!fresh) return;
-    var first = root.querySelector('.ic-dom[aria-expanded="true"]');
-    if (first && first.scrollIntoView) first.scrollIntoView({ block: 'center' });
-    else window.scrollTo(0, 0);
+    var target = root.querySelector('.ic-err') || (fresh && root.querySelector('.ic-dom[aria-expanded="true"]'));
+    if (target) _icScrollWhenSettled(target);
+    else if (fresh) window.scrollTo(0, 0);
+  }
+
+  // Setup may still be mid page-switch (drill-a-topic opens it from Progress); its activation scrolls to
+  // the top, so wait for .active and two frames before bringing the target into view (review M2).
+  function _icScrollWhenSettled(el) {
+    var setup = document.getElementById('page-setup'), t0 = Date.now();
+    (function wait() {
+      if (!el.isConnected) return;
+      if (setup && !setup.classList.contains('active') && Date.now() - t0 < 1500) { setTimeout(wait, 50); return; }
+      requestAnimationFrame(function () { requestAnimationFrame(function () {
+        if (el.isConnected && el.scrollIntoView) el.scrollIntoView({ block: 'center' });
+      }); });
+    })();
   }
 
   function _iosCustomBoot() {
@@ -306,7 +338,10 @@
     }
     if (window.matchMedia) {
       var mq = matchMedia('(max-width: 899px)');
-      var onMq = function () { if (!mq.matches) closeIosCustom(); };
+      var onMq = function () {
+        if (!mq.matches) { closeIosCustom(); return; }
+        if (cq.open) _icOnToggle();   // desktop modal open while the window narrows: hand over (review I2)
+      };
       if (mq.addEventListener) mq.addEventListener('change', onMq); else if (mq.addListener) mq.addListener(onMq);
     }
   }

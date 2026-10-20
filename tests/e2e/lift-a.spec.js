@@ -311,13 +311,13 @@ test.describe('Lift A custom quiz (phone)', () => {
 
   test('custom: drill-a-topic opens with the topic picked and its domain open', async ({ page }) => {
     await page.addInitScript(() => {
-      const T = ['Subnetting & IP Addressing', 'OSPF', 'Port Numbers'];
+      const T = ['AAA & Authentication', 'OSPF', 'Port Numbers'];
       const h = Array.from({ length: 9 }, (_, i) => ({ date: new Date(Date.now() - (i + 1) * 864e5).toISOString(), topic: T[i % 3], difficulty: 'Exam Level', score: 6, total: 10, pct: 60, mode: 'quiz' }));
       try { localStorage.setItem('nplus_history', JSON.stringify(h)); } catch (_) {}
     });
     await openApp(page, PHONE);
     await page.evaluate(() => showPage('progress'));
-    const row = page.locator('#page-progress .t-row[data-topic="Subnetting & IP Addressing"]').first();
+    const row = page.locator('#page-progress .t-row[data-topic="AAA & Authentication"]').first();
     await expect(row).toBeVisible();
     const topic = await row.getAttribute('data-topic');
     await row.click();
@@ -327,12 +327,14 @@ test.describe('Lift A custom quiz (phone)', () => {
     const dom = page.locator('#ios-custom .ic-dom').filter({ has: page.locator('[data-act="topic"][data-v="' + topic.replace(/"/g, '\\"') + '"]') });
     await expect(dom).toHaveAttribute('aria-expanded', 'true');
     await expect(dom.locator('.ic-picked')).toHaveText('1 picked');
+    // fix M2: the picked topic's domain is scrolled into view once Setup is active
+    await expect.poll(async () => { const bb = await dom.boundingBox(); return !!bb && bb.y >= 0 && bb.y + 40 <= 844; }, { timeout: 3000 }).toBe(true);
   });
 
   test('custom: setup error shows inside the screen', async ({ page }) => {
     await openApp(page, PHONE);
     await page.evaluate(() => { const b = document.getElementById('setup-err'); b.textContent = 'Add your API key to start.'; b.classList.remove('is-hidden'); showSetupError(); });
-    await expect(page.locator('#ios-custom .ic-err')).toHaveText('Add your API key to start.');
+    await expect(page.locator('#ios-custom .ic-err')).toContainText('Add your API key to start.');
   });
 
   test('custom: opening twice leaves one screen and no scroll lock', async ({ page }) => {
@@ -371,6 +373,81 @@ test.describe('Lift A custom quiz (phone)', () => {
     await page.evaluate(() => goSetup());
     await expect(page.locator('#ios-custom')).toBeEmpty();
     await expect(page.locator('#ios-home .ih-topbar')).toBeVisible();
+  });
+
+  test('custom (fix C1): AZ-900 lists only its own domains, no stale Network+ slots', async ({ page }) => {
+    await page.addInitScript(() => { try { localStorage.setItem('nplus_dev_cert', 'az900'); } catch (_) {} });
+    await openApp(page, PHONE);
+    await openCustom(page);
+    const want = await page.evaluate(() => [...document.querySelectorAll('details.topic-domain-group')].filter(d => d.querySelector('.chip[data-v]')).length);
+    await expect(page.locator('#ios-custom .ic-dom')).toHaveCount(want);
+    await expect(page.locator('#ios-custom [data-act="domain"]')).toHaveCount(want);
+    const names = await page.locator('#ios-custom .ic-dh-txt b').allTextContents();
+    expect(names.some(n => /Network/.test(n))).toBe(false);
+    const counts = await page.locator('#ios-custom .ic-dh-txt small').allTextContents();
+    expect(counts.some(t => /^0 topics/.test(t))).toBe(false);
+  });
+
+  test('custom (fix I1): signed-out Start keeps the screen, shows the error in view with Sign in', async ({ page }) => {
+    await openApp(page, PHONE);
+    await page.evaluate(() => { window._certanvilSignedIn = false; window._gateActivityForQuota = () => true; window._gateSessionSizeForQuota = () => true; });
+    await openCustom(page);
+    await page.locator('#ios-custom [data-act="start"]').click();
+    await expect(page.locator('#page-setup')).toHaveClass(/active/);
+    const err = page.locator('#ios-custom .ic-err');
+    await expect(err).toBeVisible();
+    await expect(err.locator('[data-act="signin"]')).toBeVisible();
+    await expect.poll(async () => { const bb = await err.boundingBox(); return !!bb && bb.y >= 0 && bb.y + bb.height <= 844; }, { timeout: 3000 }).toBe(true);
+  });
+
+  test('custom (fix I2): narrowing with the desktop modal open hands over to the phone screen', async ({ page }) => {
+    await openApp(page, DESKTOP);
+    await page.evaluate(() => _jumpToCustomQuiz());
+    await expect(page.locator('#custom-quiz-section')).toHaveAttribute('open', '');
+    await page.setViewportSize(PHONE);
+    await expect(page.locator('#ios-custom .ic-topbar')).toBeVisible();
+    expect(await page.evaluate(() => document.documentElement.style.overflow)).toBe('');
+    expect(await page.evaluate(() => document.getElementById('custom-quiz-section').open)).toBe(false);
+  });
+
+  test('custom (fix I3): focus stays on the control you used after the screen re-renders', async ({ page }) => {
+    await openApp(page, PHONE);
+    await openCustom(page);
+    await page.locator('#ios-custom [data-act="mode"][data-v="Mixed — Catch-up"]').focus();
+    await page.keyboard.press('Enter');
+    await expect(page.locator('#ios-custom .ic-mode-wide')).toHaveAttribute('aria-pressed', 'true');
+    expect(await page.evaluate(() => { const a = document.activeElement; return a && a.getAttribute('data-act') + '|' + a.getAttribute('data-v'); })).toBe('mode|Mixed — Catch-up');
+  });
+
+  test('custom (fix I3): collapsed topics are out of reach; the header carries aria-expanded', async ({ page }) => {
+    await openApp(page, PHONE);
+    await openCustom(page);
+    const head = page.locator('#ios-custom .ic-dom[data-idx="3"] .ic-dom-head');
+    await expect(head).toHaveAttribute('aria-expanded', 'false');
+    const chip = page.locator('#ios-custom .ic-dom[data-idx="3"] [data-act="topic"]').first();
+    expect(await chip.evaluate(el => getComputedStyle(el).visibility)).toBe('hidden');
+    await head.click();
+    await expect(head).toHaveAttribute('aria-expanded', 'true');
+    await expect.poll(() => chip.evaluate(el => getComputedStyle(el).visibility)).toBe('visible');
+  });
+
+  test('custom (fix M4): Free sees the cap note; 20 is dimmed and opens the Pro prompt', async ({ page }) => {
+    await openApp(page, PHONE);
+    await page.evaluate(() => { window._srIsFreeTier = () => true; });
+    await openCustom(page);
+    await expect(page.locator('#ios-custom .ic-cap-note')).toHaveText('Free covers 15 questions a day. 20 needs Pro.');
+    await expect(page.locator('#ios-custom [data-act="count"][data-v="20"]')).toHaveClass(/ic-overcap/);
+    await page.locator('#ios-custom [data-act="count"][data-v="20"]').click();
+    await expect(page.getByText('Bigger sets are a Pro feature')).toBeVisible();
+    expect(await hiddenOn(page, '#count-group .chip[data-v="10"]')).toBe(true);
+  });
+
+  test('custom (fix M4): Pro sees no cap note and an undimmed 20', async ({ page }) => {
+    await openApp(page, PHONE);
+    await page.evaluate(() => { window._srIsFreeTier = () => false; });
+    await openCustom(page);
+    await expect(page.locator('#ios-custom .ic-cap-note')).toHaveCount(0);
+    await expect(page.locator('#ios-custom [data-act="count"][data-v="20"]')).not.toHaveClass(/ic-overcap/);
   });
 
   test('custom: desktop still gets the modal', async ({ page }) => {

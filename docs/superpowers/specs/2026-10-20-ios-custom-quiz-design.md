@@ -103,12 +103,13 @@ It is a full-screen page in the shared `.iq-screen` shell, the same as the quiz.
     `renderIosCustom()` and the binding.
   - `#ios-custom` container (`ios-only iq-screen`) in `index.html`.
   - CSS ported into `lift-ios.css` with the `ic-` prefix, using the existing porter and token map.
-- **Free cap.** Choosing 20 does not open the daily-limit screen yet. That limit lands with Stage 6 (Pro
-  on iPhone). Until then, the real app shows **no** cap note and does not dim 20, because "20 needs Pro"
-  would be untrue while 20 still works.
-- **Stage 6.** The E2E shows the cap note "Free covers 15 questions a day. 20 needs Pro." and dims 20.
-  Once the quota is real, use the remaining count instead ("9 left today"), so the limit is never a
-  surprise.
+- **Free cap.** The live app already limits Free to 15 per set. A capture-phase click handler in app.js
+  opens the "Bigger sets are a Pro feature" prompt when a Free user taps 20, and `startQuiz` enforces the same
+  limit. So the phone shows the E2E's note, "Free covers 15 questions a day. 20 needs Pro.", and dims 20 for Free.
+  Pro sees neither.
+  - Corrected 20 Oct after the final review. The first draft assumed 20 still worked for Free, which was wrong.
+- **Stage 6.** Once the daily quota is server-side, change the note to the remaining count ("9 left today"), so
+  the limit is never a surprise.
 
 ## Motion and copy
 

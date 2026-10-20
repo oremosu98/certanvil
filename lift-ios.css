@@ -566,6 +566,19 @@ html[data-theme="light"] #ios-custom .ic-i-sun, html:not([data-theme="light"]) #
   background: color-mix(in oklab, var(--miss) 6%, var(--surface)); color: var(--text); font: 500 13px/1.45 Inter, -apple-system, sans-serif; }
 /* the staggered entrance plays once per open, never on the re-render after each tap */
 #ios-custom.ic-settled .ic-reveal { animation: none !important; opacity: 1 !important; transform: none !important; }
+/* Free cap (the app already gates 20 for Free with the Pro prompt): E2E note + dimmed 20 */
+#ios-custom .ic-seg button.ic-overcap { opacity: .5; }
+#ios-custom .ic-cap-note { margin: 9px 2px 0; font: 600 12px/1.45 Inter, -apple-system, sans-serif; color: var(--text-dim); }
+#ios-custom .ic-cap-note b { color: var(--text-mid); }
+#ios-custom .ic-err-signin { display: flex; margin-top: 10px; border: 0; border-radius: 10px; padding: 9px 14px; cursor: pointer;
+  background: var(--accent); color: var(--on-accent); font: 700 13px/1 Inter, -apple-system, sans-serif; }
+#ios-custom .ic-err-signin:active { transform: scale(0.97); }
+/* collapsed topics are out of the focus order and the accessibility tree */
+#ios-custom .ic-dom:not([aria-expanded="true"]) .ic-dom-inner { visibility: hidden; }
+@media (prefers-reduced-motion: no-preference) {
+  #ios-custom .ic-dom .ic-dom-inner { transition: opacity .26s var(--ios-ease), visibility 0s linear .3s; }
+  #ios-custom .ic-dom[aria-expanded="true"] .ic-dom-inner { transition: opacity .26s var(--ios-ease), visibility 0s; }
+}
 #ios-custom .ic-sheet-grip { width: 38px; height: 5px; border-radius: 999px; background: color-mix(in oklab, var(--text) 22%, transparent); margin: 9px auto 2px; }
 #ios-custom .ic-topbar { display: flex; align-items: flex-start; gap: 12px; padding: 8px 20px 10px; border-bottom: 1px solid color-mix(in oklab, var(--border) 70%, transparent); }
 #ios-custom .ic-tb-close { flex: 0 0 auto; width: 34px; height: 34px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface); display: grid; place-items: center; cursor: pointer; color: var(--text-mid); transition: transform .14s var(--ios-ease), border-color .18s; }
