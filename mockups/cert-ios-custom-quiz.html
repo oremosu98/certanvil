@@ -147,6 +147,8 @@
   .seg button:active { transform: scale(0.96); }
   .seg button[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); box-shadow: 0 6px 14px -8px color-mix(in oklab, var(--accent) 70%, transparent); }
   @media (hover:hover) and (pointer:fine) { .seg button:not([aria-pressed="true"]):hover { color: var(--ink-soft); } }
+  /* difficulty has 4 labels of uneven length (Hard kept, founder 20 Oct): size to content, never wrap */
+  #diffSeg button { flex: 1 1 auto; white-space: nowrap; padding-left: 8px; padding-right: 8px; }
 
   /* big count echo */
   .count-echo { display: flex; align-items: baseline; gap: 9px; margin: 6px 2px 2px; }
@@ -337,6 +339,7 @@
             <div class="seg reveal" id="diffSeg" role="group" aria-label="Difficulty">
               <button type="button" aria-pressed="false">Foundational</button>
               <button type="button" aria-pressed="false">Exam level</button>
+              <button type="button" aria-pressed="false">Hard</button>
               <button type="button" aria-pressed="true">Mixed</button>
             </div>
 
