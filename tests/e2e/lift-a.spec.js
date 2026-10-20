@@ -68,3 +68,18 @@ test.describe('Lift A Home', () => {
     await expect(page.locator('#page-setup .bento')).toBeVisible();
   });
 });
+
+test.describe('Lift A generating screen', () => {
+  test('phone: starting a quiz shows the E2E generating screen; ✕ cancels back to Home', async ({ page }) => {
+    await page.addInitScript(() => { try { localStorage.setItem('nplus_key', 'sk-ant-api03-' + 'x'.repeat(90)); } catch (_) {} });
+    await openApp(page, PHONE);
+    // Hold generation open (a slow network) so the loading screen stays up.
+    await page.evaluate(() => { window._gateActivityForQuota = () => true; window._gateSessionSizeForQuota = () => true; window.fetchQuestions = () => new Promise(() => {}); });
+    await page.locator('#ios-home [data-act="warmup"]').click();
+    await expect(page.locator('#page-loading')).toHaveClass(/active/);
+    await expect(page.locator('#ios-loading .iq-gen-line')).toHaveText(/^Generating 5 Foundational questions on .+\.\.\.$/);
+    await expect(page.locator('#ios-loading .iq-btn-primary')).toBeDisabled();
+    await page.locator('#ios-loading [data-act="cancel"]').click();
+    await expect(page.locator('#page-setup')).toHaveClass(/active/);
+  });
+});

@@ -229,3 +229,51 @@ html[data-theme] body #page-setup { padding-bottom: calc(24px + var(--lift-tab-h
 /* Tiers the E2E never drew: Close reads amber, Behind reads as a miss (not the pass green). */
 #ios-home .ih-rd-tier.ih-close { color: var(--accent-deep); background: color-mix(in oklab, var(--accent) 13%, transparent); border-color: color-mix(in oklab, var(--accent) 32%, transparent); }
 #ios-home .ih-rd-tier.ih-behind { color: var(--miss); background: color-mix(in oklab, var(--miss) 12%, transparent); border-color: color-mix(in oklab, var(--miss) 30%, transparent); }
+
+/* ═════════════════ QUIZ LOOP SCREENS (cert-ios-quiz / results / review-answers) ═════════════════ */
+/* Shared shell for phone-only quiz-loop screens (.iq-screen): ported from the E2E, prefixed iq-. */
+.iq-screen { background: var(--bg); color: var(--text); font: 15px/1.55 Inter, -apple-system, BlinkMacSystemFont, sans-serif; -webkit-font-smoothing: antialiased; }
+/* Full-height column with a sticky footer: .page carries a transform during page switches,
+   which would re-anchor a position:fixed footer to the page instead of the screen. */
+.iq-screen:not(:empty) { min-height: 100dvh; display: flex !important; flex-direction: column; }
+.iq-screen .iq-body { flex: 1 0 auto; }
+.iq-screen *, .iq-screen *::before, .iq-screen *::after { box-sizing: border-box; }
+.iq-screen button { font-family: inherit; }
+.iq-screen .iq-qbar { display: flex; align-items: center; gap: 13px; padding: max(13px, env(safe-area-inset-top)) 20px 12px; }
+.iq-screen .iq-exit, .iq-screen .iq-qflag { flex: 0 0 auto; width: 34px; height: 34px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface); display: grid; place-items: center; cursor: pointer; color: var(--text-mid); transition: transform .14s var(--ios-ease), background-color .18s, border-color .18s, color .18s; }
+.iq-screen .iq-exit:active, .iq-screen .iq-qflag:active { transform: scale(0.94); }
+.iq-screen .iq-exit svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+.iq-screen .iq-qflag svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2.1; stroke-linecap: round; stroke-linejoin: round; }
+.iq-screen .iq-qflag[disabled] { opacity: .45; pointer-events: none; }
+.iq-screen .iq-qprog { flex: 1 1 auto; }
+.iq-screen .iq-qprog-track { height: 6px; border-radius: 999px; background: var(--track); overflow: hidden; }
+.iq-screen .iq-qprog-fill { height: 100%; border-radius: 999px; background: var(--accent); transition: width .5s var(--ios-ease); }
+.iq-screen .iq-qprog-num { display: block; font: 700 11px/1 Inter, sans-serif; color: var(--text-dim); margin-top: 6px; letter-spacing: 0.02em; }
+.iq-screen .iq-body { padding: 8px 20px 14px; }
+.iq-screen .iq-qfoot { position: sticky; bottom: 0; z-index: 30; padding: 12px 20px calc(12px + env(safe-area-inset-bottom)); border-top: 1px solid color-mix(in oklab, var(--border) 70%, transparent); background: var(--bg); }
+.iq-screen .iq-btn-primary { width: 100%; border: none; border-radius: 13px; padding: 14px; cursor: pointer; background: var(--accent); color: var(--on-accent); font: 700 15px/1 Inter, sans-serif; box-shadow: 0 10px 22px -12px color-mix(in oklab, var(--accent) 70%, transparent); transition: transform .15s var(--ios-ease), filter .2s, opacity .2s; }
+.iq-screen .iq-btn-primary:active { transform: scale(0.985); }
+.iq-screen .iq-btn-primary[disabled] { opacity: 0.45; box-shadow: none; cursor: default; }
+
+/* Generating (E2E state "gen") */
+html[data-theme] body #page-loading:has(#ios-loading:not(:empty)) > :not(#ios-loading) { display: none !important; }
+body:has(#page-loading.active #ios-loading:not(:empty)) #app-topbar, body:has(#page-loading.active #ios-loading:not(:empty)) .app-topbar { display: none !important; }
+html[data-theme] body #page-loading:has(#ios-loading:not(:empty)) { padding: 0 !important; }
+#ios-loading .iq-sk { border-radius: 12px; background: var(--surface3); }
+#ios-loading .iq-sk-stem { height: 18px; margin-bottom: 10px; }
+#ios-loading .iq-sk-stem.iq-short { width: 62%; margin-bottom: 22px; }
+#ios-loading .iq-sk-opt { height: 50px; border-radius: 14px; margin-bottom: 10px; background: var(--surface); border: 1px solid var(--border); position: relative; overflow: hidden; }
+#ios-loading .iq-sk-opt::before { content: ""; position: absolute; left: 14px; top: 50%; transform: translateY(-50%); width: 30px; height: 30px; border-radius: 9px; background: var(--surface3); }
+#ios-loading .iq-gen-line { font-family: Fraunces, Georgia, serif; font-weight: 600; font-size: 16px; line-height: 1.4; letter-spacing: -0.008em; color: var(--text); text-align: center; margin: 18px 14px 22px; }
+#ios-loading .iq-gen-prog { margin: 8px 2px 0; }
+#ios-loading .iq-gen-prog-track { height: 4px; border-radius: 999px; background: var(--track); overflow: hidden; position: relative; }
+#ios-loading .iq-gen-prog-bar { position: absolute; top: 0; bottom: 0; left: 0; width: 40%; border-radius: 999px; background: var(--accent); transform: translateX(-100%); }
+#ios-loading .iq-gen-prog-cap { display: block; text-align: center; font: 600 11.5px/1 Inter, sans-serif; color: var(--text-dim); margin-top: 10px; letter-spacing: 0.01em; }
+@media (prefers-reduced-motion: no-preference) {
+  #ios-loading .iq-shimmer { position: relative; overflow: hidden; }
+  #ios-loading .iq-shimmer::after { content: ""; position: absolute; inset: 0; transform: translateX(-100%); background: linear-gradient(90deg, transparent, color-mix(in oklab, var(--text) 9%, transparent), transparent); animation: iq-shimmer 1.35s var(--ios-ease) infinite; }
+  /* E2E sweeps `left`; same sweep on transform (40% bar travels -100% → 250% of itself) */
+  #ios-loading .iq-gen-prog-bar { animation: iq-indeterminate 1.5s var(--ios-ease) infinite; }
+}
+@keyframes iq-shimmer { to { transform: translateX(100%); } }
+@keyframes iq-indeterminate { from { transform: translateX(-100%); } to { transform: translateX(250%); } }

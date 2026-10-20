@@ -88,7 +88,15 @@
       : _multiCount >= 2
         ? `Generating ${qCount} ${diff} questions across ${_multiCount} topics\u2026`
         : 'Generating ' + qCount + ' ' + diff + ' questions on ' + _topicLabel + '\u2026';
-  
+    // v8.183.0 Lift A: the E2E generating screen at phone width (features/ios-quiz.js).
+    if (window.renderIosLoading) {
+      try {
+        renderIosLoading({ count: qCount, diff: diff, label: _catchUp ? _topicLabel : undefined,
+          topics: _catchUp ? null : activeQuizTopic.startsWith('Multi: ') && typeof _parseMultiTopicSentinel === 'function'
+            ? _parseMultiTopicSentinel(activeQuizTopic) : (/Mixed/.test(activeQuizTopic) ? [] : [activeQuizTopic]) });
+      } catch (_) {}
+    }
+
     // v4.82.1: surface the smooth loading progress bar with stage milestones.
     _loadingProgressBegin('Generating questions\u2026');
     const _g = _genToken();   // v8.164.0: Cancel; checked after every await that writes quiz state
@@ -582,6 +590,7 @@ JUDGEMENT CASES (the format of the hardest real ${certCode} items) — write abo
   // word. aria-label names the state, per antalik's rule; never "Loading".
   function _loadingSetMilestone(label) {
     if (!label) return;
+    if (typeof window !== 'undefined' && window.iosLoadingCaption) window.iosLoadingCaption(label);   // v8.183.0 Lift A phone caption
     if (_loadingProgressLabel) {
       _loadingProgressLabel.textContent = label;
       _loadingProgressLabel.dataset.text = label;
@@ -615,6 +624,7 @@ JUDGEMENT CASES (the format of the hardest real ${certCode} items) — write abo
     setTimeout(() => {
       const prog = document.getElementById('load-progress');
       if (prog) prog.classList.add('is-hidden');
+      const _iosL = document.getElementById('ios-loading'); if (_iosL) _iosL.innerHTML = '';   // v8.183.0: never show a stale phone loader
       _loadingProgressBar = null;
       _loadingProgressLabel = null;
     }, 400);
