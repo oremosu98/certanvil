@@ -56,7 +56,8 @@ It is a full-screen page in the shared `.iq-screen` shell, the same as the quiz.
 - **Or build it by topic:** one accordion card per domain, showing "N topics", the "X% of exam" badge
   and a chevron. Opened, it shows topic chips you can pick several of. A closed card shows how many of
   its topics are picked ("5 topics · 2 picked", or "all picked").
-- **Difficulty:** a segmented control, Foundational / Exam level / Mixed.
+- **Difficulty:** a segmented control, Foundational / Exam level / Hard / Mixed. Hard is kept (founder, 20 Oct,
+  added to the E2E as `c75e41e8`). The segments size to their labels and never wrap.
 - **Count:** the count echoed as a large number ("10 questions"), then a segmented control, 5 / 10 /
   15 / 20.
 - **Docked footer:** a sticky bar, as on the quiz. The primary button reads "Start quiz" with the count
@@ -64,6 +65,12 @@ It is a full-screen page in the shared `.iq-screen` shell, the same as the quiz.
   - Mixed: "Mixed spread across all topics, mixed difficulty."
   - Picked topics: "3 topics from Concepts and Security, exam level." With more than 2 domains, it reads
     "from 3 domains". The line is always one line, so the docked footer never changes height.
+- **Domain chips behave like the live pills.** A tap runs `prefillDomainTopics`: it picks that domain's topics
+  and clears topics in other domains. A chip shows as pressed when all of its domain's topics are picked.
+- **Accordions start open** for every domain that has picked topics, and the first one scrolls into view. That
+  also covers "Drill this topic", with no special case needed.
+- **The screen closes** on ✕ and on Start, when `#page-setup` stops being the active page, and when the viewport
+  grows past 899px.
 - **Picking rules:** the same as today. Picking a mode clears picked topics, and picking a topic clears
   the mode. If nothing is picked, Start falls back to the live app's default.
 
