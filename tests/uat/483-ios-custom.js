@@ -65,4 +65,41 @@ const { _fnBody, js, results, test, vm } = require('./_context');
     test('Lift A custom quiz: model block (threw)', false);
     results.errors.push('483 ios-custom model block threw: ' + err.message);
   }
+
+  // ── View ──
+  try {
+    const ctx = vm.createContext({ Math, String, Array, Object, JSON, Date, isFinite, Number });
+    vm.runInContext("function escHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\"/g,'&quot;');}\n"
+      + (_fnBody(js, '_iosCustomModel') || '') + '\n' + (_fnBody(js, '_iosCustomHtml') || ''), ctx);
+    const base = {
+      cert: { mark: 'N+', name: 'Network+', code: 'N10-009' },
+      domains: [{ idx: 1, name: '1.0 Networking Concepts', short: 'Concepts', weight: '23% of exam',
+        topics: [{ v: '<img src=x onerror=1>', label: '<img src=x onerror=1>', on: true }, { v: 'DNS', label: 'DNS', on: false }] }],
+      modes: [{ kind: 'smart', v: 'Smart', on: false }, { kind: 'mixed', v: 'Mixed — All Topics', on: false }, { kind: 'catchup', v: 'Mixed — Catch-up', on: false }],
+      diffs: ['Foundational', 'Exam Level', 'Hard / Tricky', 'Mixed'].map(v => ({ v, on: v === 'Exam Level' })),
+      counts: ['5', '10', '15', '20'].map(v => ({ v, on: v === '10' })), history: [], err: ''
+    };
+    const H = (over) => vm.runInContext('_iosCustomHtml(_iosCustomModel(__s, new Date("2026-10-20")))',
+      Object.assign(ctx, { __s: Object.assign({}, base, over || {}) }));
+    const h = H();
+    const count = (re) => (h.match(re) || []).length;
+    test('Custom view: topic labels are escaped', h.indexOf('<img src=x') < 0 && h.indexOf('&lt;img src=x onerror=1&gt;') >= 0);
+    test('Custom view: Catch-up is the wide tile', /class="ic-mode ic-mode-wide[^"]*"[^>]*data-act="mode"/.test(h) || /ic-mode-wide/.test(h));
+    test('Custom view: no Catch-up live line without history', h.indexOf('ic-live') < 0);
+    test('Custom view: Catch-up live line with history',
+      /ic-live[^>]*>\s*<b>2<\/b> not practised in a week/.test(H({ history: [{ topic: 'x', date: '2026-01-01' }] })));
+    test('Custom view: 4 difficulty and 4 count buttons', count(/data-act="diff"/g) === 4 && count(/data-act="count"/g) === 4
+      && /data-act="count" data-v="5"/.test(h) && /data-act="count" data-v="20"/.test(h));
+    test('Custom view: Start quiz with the count', h.indexOf('Start quiz') >= 0 && h.indexOf('10 Q') >= 0);
+    test('Custom view: no cap note and no over-cap dimming before Stage 6', h.indexOf('needs Pro') < 0 && h.indexOf('data-overcap') < 0);
+    test('Custom view: error card only when err is set', h.indexOf('ic-err') < 0 && H({ err: 'Add your API key first.' }).indexOf('ic-err') >= 0
+      && H({ err: 'Add your API key first.' }).indexOf('Add your API key first.') >= 0);
+    test('Custom view: no em dash in the copy (mode data-v values excepted)', !/—/.test(h.replace(/data-v="[^"]*"/g, '')));
+    test('Custom view: every hook present', ['close', 'theme', 'mode', 'domain', 'acc', 'topic', 'diff', 'count', 'start']
+      .every(a => h.indexOf('data-act="' + a + '"') >= 0));
+    test('Custom view: picked domain renders expanded with "1 picked"', /class="ic-dom[^"]*" aria-expanded="true"/.test(h) && h.indexOf('1 picked') >= 0);
+  } catch (err) {
+    test('Lift A custom quiz: view block (threw)', false);
+    results.errors.push('483 ios-custom view block threw: ' + err.message);
+  }
 })();
