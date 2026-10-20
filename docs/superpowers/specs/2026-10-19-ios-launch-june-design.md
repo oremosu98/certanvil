@@ -53,6 +53,9 @@ screen: same layout, navigation, tab bar, copy, spacing, type, colour and motion
 - Additions drawn into the E2E (branch `feat/cert-ios-e2e`, HUD entries): home-exam-paused, home-signed-out
   (web only), Momentum "Practise it", readiness meta line, quiz-short-set ("16 of 20"), "On your pick" note,
   results-milestone toast (from the top, never over the dock), Flagged review filter.
+- **Custom quiz joins Lift A** (founder, 20 Oct): lift the E2E's `cert-ios-custom-quiz` screen. Catch-up is
+  added as a bento 2 + 1, counts are 5 / 10 / 15 / 20, and it ships in the same release.
+  Spec: [[2026-10-20-ios-custom-quiz-design]].
 
 ## Architecture (unchanged from ADR-004)
 
