@@ -40,6 +40,7 @@ const SCREENS = [
   ['quiz-answered', 'cert-ios-quiz.html?v=ans', 'ans'],
   ['results', 'cert-ios-results.html', 'res'],
   ['review-answers', 'cert-ios-review-answers.html', 'rev'],
+  ['custom-quiz', 'cert-ios-custom-quiz.html', 'cq'],
 ];
 
 async function shootE2E(browser, file, theme) {
@@ -71,7 +72,10 @@ async function shootReal(browser, step, theme) {
   const p = await ctx.newPage();
   await p.goto(APP + '?nc=' + Date.now());
   await p.waitForTimeout(3000);
-  if (step) {
+  if (step === 'cq') {
+    await p.evaluate(() => window._jumpToCustomQuiz());
+    await p.waitForTimeout(1200);   // let the staggered entrance settle
+  } else if (step) {
     await p.evaluate(q => window._testInjectQuiz(q), QS);
     await p.waitForTimeout(800);
     const pickNext = async (i) => { await p.locator('#options .option').nth(i).click(); await p.locator('#btn-next').click(); await p.waitForTimeout(400); };
@@ -102,7 +106,7 @@ async function pair(browser, left, right, file) {
   fs.mkdirSync(OUT, { recursive: true });
   const browser = await chromium.launch();
   for (const theme of ['dark', 'light']) {
-    for (const [name, file, step] of SCREENS) {
+    for (const [name, file, step] of SCREENS.filter(x => !process.env.LIFT_ONLY || x[0] === process.env.LIFT_ONLY)) {
       const l = await shootE2E(browser, file, theme);
       const r = await shootReal(browser, step, theme);
       const f = path.join(OUT, name + '-' + theme + '.png');
