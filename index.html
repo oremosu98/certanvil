@@ -140,7 +140,7 @@
 <link rel="stylesheet" href="lift-screens.css?v=8.182.0" media="print" onload="this.media='(max-width: 899px)'">
 <noscript><link rel="stylesheet" href="lift-screens.css?v=8.182.0" media="(max-width: 899px)"></noscript>
 <!-- v8.183.0 Lift A: E2E tokens + phone-only containers (iOS June design). Phone width only. -->
-<link rel="stylesheet" href="lift-ios.css?v=8.185.0" media="(max-width: 899px)">
+<link rel="stylesheet" href="lift-ios.css?v=8.186.0" media="(max-width: 899px)">
 <script>
 // v4.87.0: Inline cert detection — runs synchronously before <body>
 // renders so the right banner shows on first paint (no Network+ → Security+
@@ -1664,7 +1664,7 @@
   <div class="modal-box">
     <!-- v4.54.16: editorial modal head -->
     <div class="ed-modalhead">
-      <div class="ed-modalhead-eyebrow">Exam \u00b7 end of session</div>
+      <div class="ed-modalhead-eyebrow">Exam &middot; end of session</div>
       <h2 class="ed-modalhead-title">Submit <em>exam?</em></h2>
     </div>
     <div class="modal-stats">
@@ -1684,6 +1684,7 @@
      EXAM RESULTS PAGE
 ══════════════════════════════════════════ -->
 <div id="page-exam-results" class="page">
+  <section id="ios-exam-results" class="ios-only iq-screen" aria-label="Exam results"></section>
   <!-- v4.54.9: editorial treatment on exam results \u2014 parallels the quiz Results page redesign -->
   <div class="exam-results-v2">
     <div class="ed-pagehead-eyebrow">Exam &middot; 90 questions &middot; complete</div>
@@ -2263,6 +2264,7 @@
 <script defer src="features/ios-custom.js"></script>
 <script defer src="features/ios-progress.js"></script>
 <script defer src="features/ios-analytics.js"></script>
+<script defer src="features/ios-exam.js"></script>
 <script defer src="features/sr-review.js"></script>
 <script defer src="lift-shell.js?v=7.36.0"></script>
 <!-- v7.81.0 P0a: cert pack injection (moved from <head>).

@@ -1264,3 +1264,10 @@ html[data-theme] body #page-sr-review #sr-forecast-complete .sr-fc-day-exam .sr-
   html[data-theme] body #page-sr-review #sr-forecast-complete .sr-fc-bar { transform-origin: 50% 100%; animation: iv-sweep .9s var(--ios-ease) both; animation-delay: calc(var(--fi, 0) * 60ms); }
 }
 @keyframes iv-sweep { from { transform: scaleY(0); } to { transform: none; } }
+
+/* ═════════════════════ LIFT B2 · SCAFFOLD (exam results) ═════════════════════ */
+#page-exam-results:has(#ios-exam-results:not(:empty)) > :not(#ios-exam-results) { display: none !important; }
+body:has(#page-exam-results.active #ios-exam-results:not(:empty)) #app-topbar, body:has(#page-exam-results.active #ios-exam-results:not(:empty)) .app-topbar { display: none !important; }
+/* one fixed viewport like the B1 screens; an animation in effect would make the page the fixed box */
+#page-exam-results.active #ios-exam-results:not(:empty) { position: fixed; inset: 0; z-index: 5; min-height: 0; overflow: hidden; overflow: clip; }
+#page-exam-results.active:has(#ios-exam-results:not(:empty)) { animation: none !important; transform: none !important; }

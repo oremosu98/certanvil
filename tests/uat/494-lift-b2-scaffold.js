@@ -1,0 +1,25 @@
+// tests/uat/494-lift-b2-scaffold.js
+// Scope: Lift B2 phone scaffold. #ios-exam-results lives inside #page-exam-results and, once rendered,
+// hides the desktop results and becomes a fixed one-viewport screen. Spec: docs/superpowers/specs/2026-10-21-ios-lift-b2-design.md
+const { fs, html, path, ROOT, results, test } = require('./_context');
+(function () {
+  console.log('\n\x1b[1m── Lift B2 scaffold (exam, results) ──\x1b[0m');
+  try {
+    const ios = fs.readFileSync(path.join(ROOT, 'lift-ios.css'), 'utf8');
+    test('#ios-exam-results is the first child of #page-exam-results, ios-only iq-screen',
+      /<div id="page-exam-results" class="page">\s*<section id="ios-exam-results" class="ios-only iq-screen" aria-label="Exam results"><\/section>/.test(html));
+    test('features/ios-exam.js loads deferred after ios-analytics.js',
+      /<script defer src="features\/ios-analytics\.js"><\/script>\s*<script defer src="features\/ios-exam\.js"><\/script>/.test(html));
+    test('lift-ios.css hides the desktop results beside a rendered #ios-exam-results',
+      /#page-exam-results:has\(#ios-exam-results:not\(:empty\)\) > :not\(#ios-exam-results\)\s*\{\s*display:\s*none\s*!important;?\s*\}/.test(ios));
+    test('lift-ios.css makes the results a fixed one-viewport screen with the page animation off',
+      ios.includes('#page-exam-results.active #ios-exam-results:not(:empty) { position: fixed; inset: 0;') &&
+      ios.includes('#page-exam-results.active:has(#ios-exam-results:not(:empty)) { animation: none !important; transform: none !important; }'));
+    test('the submit dialog eyebrow no longer prints a literal \\u00b7', !html.includes('Exam \\u00b7 end of session'));
+    const appLines = fs.readFileSync(path.join(ROOT, 'app.js'), 'utf8').split('\n').length;
+    test('app.js stays at its 8301-line ratchet (B2 adds nothing there)', appLines === 8301);
+  } catch (err) {
+    test('Lift B2 scaffold: block (threw)', false);
+    results.errors.push('494 lift-b2-scaffold block threw: ' + err.message);
+  }
+})();
