@@ -50,7 +50,14 @@ const { _fnBody, js, results, test, vm } = require('./_context');
       { title: 'Patch panel', topic: 'Cabling', correct: 0, total: 3, fraction: 0, skipped: false },
       { title: 'Routing table', topic: 'Routing', correct: 0, total: 2, fraction: 0, skipped: true }] });
     test('Exam results: Sim Lab rows read Right / Partly / Wrong / Skipped',
-      pb.pbq.rows.map(r => r.verdict).join() === 'Right,Partly,Wrong,Skipped' && pb.pbq.right === 1 && pb.pbq.count === 4 && pb.pbq.rows[1].detail === '2 of 4 steps right.');
+      pb.pbq.rows.map(r => r.verdict).join() === 'Right,Partly,Wrong,Skipped' && pb.pbq.right === 1 && pb.pbq.count === 4 && pb.pbq.rows[1].detail.indexOf('2 of 4 steps right.') === 0);
+    // final review I2: a row opens to the answer, not just the step count
+    const pe = M({ pbqs: [{ title: 'Fix the ACL', topic: 'Firewalls & DMZ', correct: 2, total: 4, fraction: 0.5, skipped: false, explain: 'Rule 3 must sit above rule 1.' },
+      { title: 'Trunk', topic: 'Switch & VLANs', correct: 1, total: 1, fraction: 1, skipped: false, explain: '' },
+      { title: 'Patch', topic: 'Cabling', correct: 0, total: 2, fraction: 0, skipped: true, explain: 'Pin 1 is white-orange.' }] }).pbq.rows;
+    test('Exam results: a Sim Lab row explains the first step you missed', pe[0].detail === '2 of 4 steps right. Rule 3 must sit above rule 1.');
+    test('Exam results: one step reads "1 of 1 step right."', pe[1].detail === '1 of 1 step right.');
+    test('Exam results: a skipped Sim Lab row says so and shows the answer', pe[2].detail === "You didn't answer this one. Pin 1 is white-orange.");
     test('Exam results: the Sim Lab kicker counts the right ones', H({ pbqs: [{ title: 'T', topic: 'X', correct: 1, total: 1, fraction: 1, skipped: false }] }).includes('Performance-based · 1 of 1 right'));
     test('Exam results: no Sim Lab questions means no Sim Lab block', near.pbq === null && !H().includes('ie-srow'));
     test('Exam results: nothing wrong means no Drill the gap button', !H({ wrongTopics: [] }).includes('data-act="drill-gap"') && H().includes('data-act="drill-gap"'));

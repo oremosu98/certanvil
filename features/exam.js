@@ -140,21 +140,25 @@
       function close(val) {
         if (_examSheetOpen !== close) return;
         _examSheetOpen = null;
-        document.removeEventListener('keydown', onKey, true);
+        window.removeEventListener('keydown', onKey, true);
         sheet.classList.remove('open'); scrim.classList.remove('open');
         setTimeout(function () { if (!sheet.classList.contains('open')) { sheet.hidden = true; scrim.hidden = true; } }, 200);   // BRAND §6: sheet out 200ms
         if (back && back.focus) try { back.focus({ preventScroll: true }); } catch (_) {}
         resolve(val);
       }
+      // Keys belong to the sheet while it is open: nothing reaches the exam or the End dialog underneath
+      // (A-E would change the answer, F the flag, Escape would close the dialog too). Final review I3.
       function onKey(e) {
+        e.stopImmediatePropagation();
         if (e.key === 'Escape') { e.preventDefault(); close(false); }
         else if (e.key === 'Tab') { e.preventDefault(); (document.activeElement === stay ? go : stay).focus({ preventScroll: true }); }
+        else if (document.activeElement !== stay && document.activeElement !== go) e.preventDefault();
       }
       _examSheetOpen = close;
       stay.onclick = function () { close(false); };
       go.onclick = function () { close(true); };
       scrim.onclick = function () { close(false); };
-      document.addEventListener('keydown', onKey, true);
+      window.addEventListener('keydown', onKey, true);   // window capture: ahead of the exam's own key handlers
       sheet.hidden = false; scrim.hidden = false;
       void sheet.offsetHeight;   // commit the closed state so the slide-in runs
       sheet.classList.add('open'); scrim.classList.add('open');
@@ -738,7 +742,7 @@
     modal.classList.remove('hidden');
     // Focus first button in modal for keyboard users
     setTimeout(() => {
-      const firstBtn = modal.querySelector('button:not([disabled])');
+      const firstBtn = Array.prototype.find.call(modal.querySelectorAll('button:not([disabled])'), b => b.offsetParent !== null);   // phones hide the first one
       if (firstBtn) firstBtn.focus();
     }, 100);
     // Trap focus inside modal
@@ -814,7 +818,7 @@
 
   function abandonExam() {
     if (_examIsPhone()) {   // v8.186.0 Lift B2: the app's own sheet; Home through goSetup (a bare showPage skips the phone render)
-      _examSheet({ title: 'Abandon this exam?', body: 'Your answers will be lost.', go: 'Abandon', stay: 'Keep going' }).then(function (ok) { if (ok) _examAbandon(true); });
+      _examSheet({ title: 'Abandon this exam?', body: 'Your answers will be lost.', go: 'Abandon', stay: 'Keep going' }).then(function (ok) { if (ok && examMode) _examAbandon(true); });
       return;
     }
     if (confirm('Abandon this exam and return to the menu? All progress will be lost.')) _examAbandon(false);
@@ -837,6 +841,7 @@
     if (examTimer) { clearInterval(examTimer); examTimer = null; }
     _examClearState();       // v8.162.0: a submitted exam is never offered for resume
     _releaseExamWakeLock();  // Phase 10: phone can sleep now
+    if (_examSheetOpen) _examSheetOpen(false);   // v8.186.0: a leave/abandon sheet never outlives the exam (final review I1)
     if (_examPausedAt) { _examPausedMs += Date.now() - _examPausedAt; _examPausedAt = 0; _examRenderPaused(); }   // v8.164.0
     hideExamModal();
 
@@ -1074,6 +1079,13 @@
   // contribute an empty bucket so the rendered grid stays consistent
   // (renders as "—" rather than missing entirely).
   // v8.186.0 Lift B2: what the phone results screen reads (features/ios-exam.js _iosExamResultsModel).
+  // The explanation of the first step that wasn't fully right (any step when skipped). Final review I2.
+  function _examPbqMiss(en) {
+    const steps = (en.q.simlab && en.q.simlab.steps) || [], per = (en.pbq && en.pbq.perStep) || {};
+    const ok = function (r) { return r === true || !!(r && typeof r === 'object' && r.total && r.correct === r.total); };
+    const st = steps.find(function (s) { return en.skipped || !ok(per[s.id]); });
+    return (st && st.explanation) ? String(st.explanation) : '';
+  }
   function _examPhoneResultsData(log, n) {
     const b = _buildExamDomainBreakdown(log);
     const order = (typeof DOMAIN_WEIGHTS === 'object' && DOMAIN_WEIGHTS) ? Object.keys(DOMAIN_WEIGHTS) : Object.keys(b);
@@ -1092,7 +1104,7 @@
       domains: order.filter(k => b[k]).map(k => ({ key: k, label: b[k].label || k, correct: b[k].correct, total: b[k].total, pct: b[k].pct })),
       pbqs: (log || []).filter(en => en && en.pbq).map(en => ({
         title: (en.q.simlab && (en.q.simlab.title || en.q.simlab.name)) || en.q.question || 'Sim Lab question', topic: en.q.topic || '',
-        correct: en.pbq.correct || 0, total: en.pbq.total || 0, fraction: en.pbq.fraction || 0, skipped: !!en.skipped })),
+        correct: en.pbq.correct || 0, total: en.pbq.total || 0, fraction: en.pbq.fraction || 0, skipped: !!en.skipped, explain: _examPbqMiss(en) })),
       wrongTopics: Object.keys(wrongBy).map(t => ({ topic: t, domain: (DOMAIN_LABELS && DOMAIN_LABELS[TOPIC_DOMAINS[t]]) || '', wrong: wrongBy[t] }))
     };
   }

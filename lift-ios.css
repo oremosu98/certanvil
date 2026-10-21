@@ -1376,7 +1376,7 @@ body:has(#page-exam-results.active #ios-exam-results:not(:empty)) #app-topbar, b
 #ios-exam-results .ie-srow[aria-expanded="true"] + .ie-sdet { display: block; }
 #ios-exam-results .ie-sdet b { color: var(--miss); font-weight: 700; }
 #ios-exam-results .ie-rfoot { flex-wrap: wrap; }
-#ios-exam-results .ie-retry-link { flex: 1 0 100%; border: 0; background: none; padding: 8px 0 0; cursor: pointer; font: 650 13px/1 Inter, sans-serif; color: var(--text-mid); text-decoration: underline; text-underline-offset: 3px; text-decoration-color: color-mix(in oklab, var(--text) 25%, transparent); }
+#ios-exam-results .ie-retry-link { flex: 1 0 100%; min-height: 40px; display: inline-flex; align-items: center; justify-content: center; border: 0; background: none; padding: 4px 0 0; cursor: pointer; font: 650 13px/1 Inter, sans-serif; color: var(--text-mid); text-decoration: underline; text-underline-offset: 3px; text-decoration-color: color-mix(in oklab, var(--text) 25%, transparent); }
 #ios-exam-results .ie-retry-link:active { opacity: .6; }
     background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 12px 14px; box-shadow: 0 18px 40px -20px rgba(0,0,0,.45);
     transform: translateY(-140%); opacity: 0; transition: transform .2s var(--ios-ease), opacity .2s var(--ios-ease); }

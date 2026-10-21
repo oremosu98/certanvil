@@ -22,8 +22,8 @@ async function openExam(page, viewport, o) {
     const ans = qs.map((_, i) => ({ chosen: (i < 7 && !(op.pbq && i === 0)) ? (i % 3 ? 'A' : 'B') : null, flagged: i === 2, msChosen: [], orderSeq: [], cliRan: [], topoState: {} }));
     try {
       localStorage.setItem('nplus_theme', 'dark');
-      localStorage.setItem('nplus_exam_state', JSON.stringify({ v: 1, savedAt: Date.now(), endTime: Date.now() + 84 * 60000, current: op.pbq ? 0 : 2, questions: qs, answers: ans,
-        answered: 7, paused: !!op.paused, pausedAt: op.paused ? Date.now() - 60000 : 0, timeLeft: 5040, pausedMs: 0, pauses: op.paused ? 1 : 0 }));
+      localStorage.setItem('nplus_exam_state', JSON.stringify({ v: 1, savedAt: Date.now(), endTime: Date.now() + (op.secondsLeft ? op.secondsLeft * 1000 : 84 * 60000), current: op.pbq ? 0 : 2, questions: qs, answers: ans,
+        answered: 7, paused: !!op.paused, pausedAt: op.paused ? Date.now() - 60000 : 0, timeLeft: op.secondsLeft || 5040, pausedMs: 0, pauses: op.paused ? 1 : 0 }));
     } catch (_) {}
   }, opts);
   await page.goto('/');
@@ -314,3 +314,43 @@ for (const vp of [...PHONES, DESKTOP]) {
     await expect(modal).toBeHidden();
   });
 }
+
+// ── Final-review fix pass (review of 8bb03fa7..63082fbf) ──
+for (const vp of PHONES) {
+  test.describe('Lift B2 review fixes @' + vp.width, () => {
+    test('a leave sheet open when the clock runs out closes with the exam (I1)', async ({ page }) => {
+      await openExam(page, vp, { secondsLeft: 3 });
+      await page.evaluate(() => goSetup());
+      await expect(page.locator('#exam-sheet')).toBeVisible();
+      await expect(page.locator('#page-exam-results')).toHaveClass(/active/, { timeout: 8000 });
+      await expect(page.locator('#exam-sheet')).toBeHidden();
+    });
+
+    test('keys pressed while the sheet is open do not reach the exam (I3)', async ({ page }) => {
+      await openExam(page, vp);
+      const before = await page.evaluate(() => examAnswers[examCurrent].chosen);
+      await page.locator('#page-exam .end-exam-btn').click();
+      await page.locator('#exam-modal .btn-danger').click();
+      await expect(page.locator('#exam-sheet')).toBeVisible();
+      await page.keyboard.press('a'); await page.keyboard.press('d'); await page.keyboard.press('f');
+      expect(await page.evaluate(() => [examAnswers[examCurrent].chosen, examAnswers[examCurrent].flagged])).toEqual([before, true]);
+      await page.keyboard.press('Escape');
+      await expect(page.locator('#exam-sheet')).toBeHidden();
+      await expect(page.locator('#exam-modal')).not.toHaveClass(/hidden/);   // Escape closed the sheet only
+    });
+
+    test('opening the End dialog moves focus into it (I4)', async ({ page }) => {
+      await openExam(page, vp);
+      await page.locator('#page-exam .end-exam-btn').click();
+      await expect.poll(() => page.evaluate(() => { const a = document.activeElement; return !!(a && a.closest('#exam-modal') && a.offsetParent); })).toBe(true);
+    });
+
+    test('"Retry the exam" is a full-size tap target (I6)', async ({ page }) => {
+      await openExam(page, vp);
+      await submitExamViaDialog(page);
+      const box = await page.locator('#ios-exam-results [data-act="retry"]').boundingBox();
+      expect(box.height).toBeGreaterThanOrEqual(40);
+    });
+  });
+}
+

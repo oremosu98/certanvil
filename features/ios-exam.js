@@ -38,7 +38,7 @@
       var rows = d.pbqs.map(function (q) {
         var v = q.skipped ? 'Skipped' : q.fraction >= 1 ? 'Right' : q.fraction > 0 ? 'Partly' : 'Wrong';
         return { title: q.title, topic: q.topic, verdict: v, tone: v === 'Right' ? 'ok' : v === 'Skipped' ? 'skip' : 'no',
-          detail: q.correct + ' of ' + q.total + ' steps right.' };
+          detail: (q.skipped ? "You didn't answer this one." : q.correct + ' of ' + q.total + (q.total === 1 ? ' step' : ' steps') + ' right.') + (q.explain && v !== 'Right' ? ' ' + q.explain : '') };
       });
       pbq = { right: rows.filter(function (r) { return r.verdict === 'Right'; }).length, count: rows.length, rows: rows };
     }
