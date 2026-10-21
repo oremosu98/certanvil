@@ -1372,10 +1372,15 @@
     <div class="ed-pagehead-body">
       <div class="ed-pagehead-eyebrow">Daily Review &middot; spaced repetition</div>
       <h1 class="ed-pagehead-display">SR <em>queue.</em></h1>
+      <!-- v8.185.0 Lift B1: the E2E header at phone width (lift-ios.css shows these, hides the desktop title) -->
+      <h1 class="ed-pagehead-display iv-title" hidden>Daily Review</h1>
     </div>
+    <span class="iv-streak" id="iv-streak" hidden title="Review streak"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2c1 4-2 5.5-2 8.5a2 2 0 0 0 4 0c0-1 .4-2 1-2.6C17 9.5 19 12 19 15a7 7 0 0 1-14 0c0-4.5 3.5-7.5 7-13z"></path></svg><span>0</span></span>
+    <button class="iv-theme" type="button" hidden onclick="toggleTheme()" aria-label="Switch between light and dark"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"></path></svg></button>
   </div>
   <div class="sr-progress-row" id="sr-progress-row">
     <div class="sr-progress-text" id="sr-progress-text">0 of 0</div>
+    <span class="sr-plan-line" id="sr-plan-line" hidden></span>
     <div class="sr-progress-bar"><div class="sr-progress-fill" id="sr-progress-fill"></div></div>
   </div>
   <div id="sr-card-host"></div>
@@ -1387,10 +1392,13 @@
   </div>
   <div id="sr-complete" class="sr-empty" hidden>
     <div class="sr-empty-icon"></div>
-    <h2>Review complete</h2>
+    <div class="iv-seal" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6L9 17l-5-5"></path></svg></div>
+    <h2 class="iv-done-desk">Review complete</h2>
+    <h2 class="iv-done-t" hidden>Review done</h2>
     <p id="sr-complete-stats">All cards reviewed.</p>
     <div id="sr-forecast-complete"></div>
     <button class="btn btn-primary" onclick="goSetup()">Back to home</button>
+    <button class="btn iv-retry" type="button" hidden onclick="srRetryMissed()">Retry the cards you missed</button>
   </div>
 </div>
 

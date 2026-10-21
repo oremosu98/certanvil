@@ -169,12 +169,101 @@ for (const vp of PHONES) {
   });
 }
 
+// Daily Review: three due MCQ cards (answers C, B, A), seeded on localhost only.
+async function openReview(page, viewport) {
+  await page.setViewportSize(viewport);
+  await page.addInitScript(() => {
+    const card = (qHash, question, answer, topic) => ({ qHash, question, options: { A: 'Alpha', B: 'Bravo', C: 'Charlie', D: 'Delta' }, answer,
+      explanation: 'Because ' + answer + '.', topic, difficulty: 'Exam Level', nextReview: 0, intervalDays: 0, easiness: 2.5, repetitions: 0, graduated: false });
+    try {
+      localStorage.setItem('nplus_theme', 'dark');
+      localStorage.setItem('nplus_sr_queue', JSON.stringify([card('r1', 'First?', 'C', 'Port Numbers'), card('r2', 'Second?', 'B', 'OSPF'), card('r3', 'Third?', 'A', 'IPv6')]));
+    } catch (_) {}
+  });
+  await page.goto('/');
+  await page.waitForLoadState('load');
+  await page.evaluate(() => startSrReview());
+  await expect(page.locator('#page-sr-review')).toHaveClass(/active/);
+}
+
+for (const vp of PHONES) {
+  test.describe('Lift B1 Daily Review @' + vp.width, () => {
+    test('header, plan line and the waiting dock match the E2E', async ({ page }) => {
+      await openReview(page, vp);
+      await expect(page.locator('#page-sr-review .iv-title')).toBeVisible();
+      await expect(page.locator('#page-sr-review .ed-pagehead-display:not(.iv-title)')).toBeHidden();
+      await expect(page.locator('#sr-plan-line')).toHaveText(/^\d+ today · \d+ in queue$/);
+      await expect(page.locator('#sr-progress-text')).toHaveText('Card 1 of 3');
+      await expect(page.locator('#page-sr-review .sr-card-meta')).toBeHidden();
+      const wait = page.locator('#page-sr-review .iv-wait-btn');
+      await expect(wait).toBeVisible();
+      await expect(wait).toBeDisabled();
+      const box = await wait.boundingBox();
+      expect(box.y + box.height).toBeGreaterThan(vp.height - 90);
+    });
+
+    test('a correct answer docks Guessed and Knew it; Knew it moves on', async ({ page }) => {
+      await openReview(page, vp);
+      await page.locator('#sr-card-host .sr-option[data-letter="C"]').click();
+      await expect(page.locator('#page-sr-review .sr-confidence-uncertain')).toHaveText(/Guessed/);
+      await expect(page.locator('#page-sr-review .sr-confidence-confident')).toHaveText(/Knew it/);
+      const g = await page.locator('#page-sr-review .sr-confidence-uncertain').boundingBox();
+      const k = await page.locator('#page-sr-review .sr-confidence-confident').boundingBox();
+      expect(g.x).toBeLessThan(k.x);
+      await page.locator('#page-sr-review .sr-confidence-confident').click();
+      await expect(page.locator('#sr-progress-text')).toHaveText('Card 2 of 3');
+    });
+
+    test('a wrong answer docks a single Next card', async ({ page }) => {
+      await openReview(page, vp);
+      await page.locator('#sr-card-host .sr-option[data-letter="A"]').click();
+      await expect(page.locator('#page-sr-review .sr-confidence-wrong')).toHaveText(/Next card/);
+      await expect(page.locator('#page-sr-review .sr-confidence-confident')).toHaveCount(0);
+    });
+
+    test('Remove it still removes the card', async ({ page }) => {
+      await openReview(page, vp);
+      await page.locator('#sr-card-host .sr-remove-btn').click();
+      await page.locator('#sr-card-host .sr-remove-yes').click();
+      await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem('nplus_sr_queue')).length)).toBe(2);
+    });
+
+    test('Review done shows the tiles and forecast; Retry replays only the missed card', async ({ page }) => {
+      await openReview(page, vp);
+      const answer = async (letter, conf) => {
+        await page.locator('#sr-card-host .sr-option[data-letter="' + letter + '"]').click();
+        await page.locator('#page-sr-review .sr-confidence-' + conf).click();
+      };
+      await answer('C', 'confident');
+      await answer('A', 'wrong');            // card 2 is B: missed
+      await answer('A', 'confident');
+      // the in-session retry brings the missed card back once; miss it again
+      while (await page.locator('#sr-card-host .sr-option').count()) await answer('A', 'wrong');
+      const tiles = page.locator('#page-sr-review .sr-done-tiles');
+      await expect(tiles).toBeVisible();
+      await expect(tiles.locator('.sr-done-miss b')).not.toHaveText('0');
+      await expect(page.locator('#page-sr-review .iv-done-t')).toHaveText('Review done');
+      await expect(page.locator('#sr-forecast-complete')).toBeVisible();
+      await page.locator('#page-sr-review .iv-retry').click();
+      await expect(page.locator('#sr-progress-text')).toHaveText('Card 1 of 1');
+    });
+  });
+}
+
 test.describe('Lift B1 desktop is unchanged', () => {
   test('desktop Progress keeps its own page and leaves #ios-progress empty', async ({ page }) => {
     await openApp(page, DESKTOP, true);
     await page.evaluate(() => showPage('progress'));
     await expect(page.locator('#ios-progress')).toBeEmpty();
     await expect(page.locator('#page-progress .progress-toolbar')).toBeVisible();
+  });
+
+  test('desktop Daily Review keeps "SR queue." and hides the phone hooks', async ({ page }) => {
+    await openReview(page, DESKTOP);
+    await expect(page.locator('#page-sr-review .ed-pagehead-display:not(.iv-title)')).toBeVisible();
+    await expect(page.locator('#page-sr-review .iv-title')).toBeHidden();
+    await expect(page.locator('#sr-plan-line')).toBeHidden();
+    await expect(page.locator('#sr-progress-text')).toHaveText('1 of 3', { useInnerText: true });   // what desktop shows (the phone span is hidden)
   });
 
   test('desktop Analytics keeps the bento and leaves #ios-analytics empty', async ({ page }) => {

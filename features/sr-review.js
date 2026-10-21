@@ -606,6 +606,24 @@
     return weak + bp * 2;   // blueprint nudge on top of weakness
   }
 
+  // v8.185.0 Lift B1: "Retry the cards you missed" on the review-done screen.
+  function srRetryMissed() {
+    const prev = _srSession;
+    const cards = ((prev && prev.results) || []).filter(r => r.outcome === 'wrong').map(r => Object.assign({}, r.card, { _retry: true }));
+    if (!cards.length) return;
+    if (typeof _srIsFreeTier === 'function' && _srIsFreeTier() && (SR_FREE_DAILY_CAP - _srFreeReviewedToday()) <= 0) {
+      if (typeof showToast === 'function') showToast("Today's " + SR_FREE_DAILY_CAP + ' free reviews are done. Your missed cards come back tomorrow.', 'info');
+      return;
+    }
+    _srSession = { cards: cards, totalDueCount: cards.length, index: 0, answersGiven: 0, correctConfident: 0, correctUncertain: 0, wrong: 0,
+      results: [], pickedLetter: null, pickedLetters: new Set(), pickedIdx: null, revealed: false };
+    showPage('sr-review');
+    document.getElementById('sr-empty').hidden = true;
+    document.getElementById('sr-complete').hidden = true;
+    document.getElementById('sr-progress-row').hidden = false;
+    _renderSrCard();
+  }
+
   function startSrReview() {
     let due = _srScrubQueue(getSrDueEntries());
 
@@ -689,6 +707,21 @@
   //      addToSrQueue type-guard bug). User still commits before seeing
   //      the explanation, so the self-deception loophole is closed even
   //      in this fallback case.
+  // v8.185.0 Lift B1: today's plan for the phone progress row ("5 today · 18 in queue"). Pure.
+  function _srPlanLine(plan) {
+    if (!plan || !(plan.due > 0)) return '';
+    return (isFinite(plan.todo) ? plan.todo : plan.due) + ' today · ' + plan.due + ' in queue';
+  }
+  // Phone chrome the E2E draws around the card: plan line and the review streak.
+  function _srPhoneChrome() {
+    try {
+      var pl = document.getElementById('sr-plan-line');
+      if (pl && typeof getSrTodayPlan === 'function') pl.textContent = _srPlanLine(getSrTodayPlan());
+      var st = document.getElementById('iv-streak');
+      if (st && typeof getStreak === 'function') st.lastChild.textContent = String(getStreak().current || 0);
+    } catch (_) {}
+  }
+
   function _renderSrCard() {
     const host = document.getElementById('sr-card-host');
     if (!host || !_srSession) return;
@@ -699,7 +732,8 @@
     // Update progress
     const pTxt = document.getElementById('sr-progress-text');
     const pFill = document.getElementById('sr-progress-fill');
-    if (pTxt) pTxt.textContent = (i + 1) + ' of ' + total;
+    if (pTxt) pTxt.innerHTML = '<span class="iv-only" hidden>Card </span>' + (i + 1) + ' of ' + total;   // v8.185.0: phone reads "Card N of M"
+    if (typeof _srPhoneChrome === 'function') _srPhoneChrome();   // typeof: UAT vm fixtures render this body alone
     if (pFill) pFill.style.width = (((i + 1) / total) * 100).toFixed(1) + '%';
 
     if (!card) { _srEndReview(); return; }
@@ -795,10 +829,10 @@
             + '<div class="sr-confidence-row">'
             + '<div class="sr-confidence-label">How did that feel?</div>'
             + '<button type="button" class="sr-confidence-btn sr-confidence-confident" onclick="srMarkConfidence(\'correct-confident\')">'
-            + 'Got it · was confident'
+            + '<span class="iv-long">Got it · was confident</span><span class="iv-short" hidden>Knew it</span>'
             + '<span class="sr-confidence-hint">interval grows fast</span></button>'
             + '<button type="button" class="sr-confidence-btn sr-confidence-uncertain" onclick="srMarkConfidence(\'correct-uncertain\')">'
-            + 'Got it · was unsure'
+            + '<span class="iv-long">Got it · was unsure</span><span class="iv-short" hidden>Guessed</span>'
             + '<span class="sr-confidence-hint">interval grows slowly</span></button>'
             + '</div>';
         } else {
@@ -808,7 +842,7 @@
             + '✗ Wrong. This card resets to tomorrow.</div>'
             + srRetryPillHtml
             + '<button type="button" class="sr-confidence-btn sr-confidence-wrong" onclick="srMarkConfidence(\'wrong\')">'
-            + 'Got it wrong → next card</button>'
+            + '<span class="iv-long">Got it wrong → next card</span><span class="iv-short" hidden>Next card</span></button>'
             + '</div>';
         }
       }
@@ -864,10 +898,10 @@
             + '<div class="sr-confidence-row">'
             + '<div class="sr-confidence-label">How did that feel?</div>'
             + '<button type="button" class="sr-confidence-btn sr-confidence-confident" onclick="srMarkConfidence(\'correct-confident\')">'
-            + 'Got it · was confident'
+            + '<span class="iv-long">Got it · was confident</span><span class="iv-short" hidden>Knew it</span>'
             + '<span class="sr-confidence-hint">interval grows fast</span></button>'
             + '<button type="button" class="sr-confidence-btn sr-confidence-uncertain" onclick="srMarkConfidence(\'correct-uncertain\')">'
-            + 'Got it · was unsure'
+            + '<span class="iv-long">Got it · was unsure</span><span class="iv-short" hidden>Guessed</span>'
             + '<span class="sr-confidence-hint">interval grows slowly</span></button>'
             + '</div>';
         } else {
@@ -879,7 +913,7 @@
             + '✗ Not quite. Correct answers were ' + escHtml(correctList) + '. This card resets to tomorrow.</div>'
             + srRetryPillHtml
             + '<button type="button" class="sr-confidence-btn sr-confidence-wrong" onclick="srMarkConfidence(\'wrong\')">'
-            + 'Got it wrong → next card</button>'
+            + '<span class="iv-long">Got it wrong → next card</span><span class="iv-short" hidden>Next card</span></button>'
             + '</div>';
         }
       }
@@ -912,18 +946,22 @@
           + '<div class="sr-confidence-row">'
           + '<div class="sr-confidence-label">How did you do?</div>'
           + '<button type="button" class="sr-confidence-btn sr-confidence-confident" onclick="srMarkConfidence(\'correct-confident\')">'
-          + 'Got it · was confident'
+          + '<span class="iv-long">Got it · was confident</span><span class="iv-short" hidden>Knew it</span>'
           + '<span class="sr-confidence-hint">interval grows fast</span></button>'
           + '<button type="button" class="sr-confidence-btn sr-confidence-uncertain" onclick="srMarkConfidence(\'correct-uncertain\')">'
-          + 'Got it · was unsure'
+          + '<span class="iv-long">Got it · was unsure</span><span class="iv-short" hidden>Guessed</span>'
           + '<span class="sr-confidence-hint">interval grows slowly</span></button>'
           + '<button type="button" class="sr-confidence-btn sr-confidence-wrong" onclick="srMarkConfidence(\'wrong\')">'
-          + '✗ Got it wrong'
+          + '<span class="iv-long">✗ Got it wrong</span><span class="iv-short" hidden>Got it wrong</span>'
           + '<span class="sr-confidence-hint">resets to tomorrow</span></button>'
           + '</div>';
       }
     }
 
+    // v8.185.0 Lift B1: the phone docks the answer buttons; before an answer it shows a disabled one (E2E)
+    if (!_srSession.revealed && renderMode !== 'multi-auto') {
+      confidenceHtml += '<div class="iv-wait" hidden><button type="button" class="iv-wait-btn" disabled>Answer to continue</button></div>';
+    }
     host.innerHTML = '<div class="sr-card">'
       + '<div class="sr-card-meta">'
       + '<span class="sr-meta-topic">' + escHtml(topicLabel) + '</span>'
@@ -1102,17 +1140,24 @@
     const completeEl = document.getElementById('sr-complete');
     const stats = document.getElementById('sr-complete-stats');
     if (stats && _srSession) {
+      // v8.185.0 Lift B1: the E2E recap tiles (phone only) and the retry button's state
+      const _ivMissed = (_srSession.results || []).filter(r => r.outcome === 'wrong').length;
+      if (completeEl) { if (_ivMissed > 0) completeEl.setAttribute('data-missed', String(_ivMissed)); else completeEl.removeAttribute('data-missed'); }
+      const _ivTiles = '<div class="sr-done-tiles" hidden>'
+        + '<div class="sr-done-tile"><b>' + _srSession.answersGiven + '</b><span>Reviewed</span></div>'
+        + '<div class="sr-done-tile"><b>' + (_srSession.correctConfident + _srSession.correctUncertain) + '</b><span>Got right</span></div>'
+        + '<div class="sr-done-tile sr-done-miss"><b>' + _srSession.wrong + '</b><span>To retry</span></div></div>';
       const total = _srSession.answersGiven;
       const cc = _srSession.correctConfident;
       const cu = _srSession.correctUncertain;
       const w = _srSession.wrong;
 
-      let html = total === 0
+      let html = _ivTiles + '<span class="sr-done-sum">' + (total === 0
         ? 'No cards reviewed.'
         : '<strong>' + total + ' cards reviewed.</strong> '
           + '<span style="color: var(--green)">' + cc + ' confident</span> · '
           + '<span style="color: var(--yellow)">' + cu + ' uncertain</span> · '
-          + '<span style="color: var(--red)">' + w + ' wrong</span>.';
+          + '<span style="color: var(--red)">' + w + ' wrong</span>.') + '</span>';
 
       // #4 — finishing a review credits the daily streak (idempotent per day,
       // gated on at least one card marked). Reuses updateStreak()'s same-day guard.
@@ -1324,6 +1369,8 @@
   window.startSrReview            = startSrReview;
   window._renderSrCard            = _renderSrCard;
   window.srPickAnswer             = srPickAnswer;
+  window.srRetryMissed = srRetryMissed;   // v8.185.0 Lift B1
+  window._srPlanLine = _srPlanLine;
   window.srToggleMultiPick        = srToggleMultiPick;
   window.srSubmitMultiPick        = srSubmitMultiPick;
   window.srMarkConfidence         = srMarkConfidence;

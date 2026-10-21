@@ -1183,3 +1183,82 @@ body:has(#page-analytics.active #ios-analytics:not(:empty)) #app-topbar, body:ha
 #ios-analytics .in-ms-stats span { display: block; margin-top: 5px; font: 600 10.5px/1 Inter, sans-serif; color: var(--text-dim); }
 #ios-analytics .in-ms-go { width: 100%; padding: 14px; font-size: 14.5px; }
 
+
+/* ═════════════════════ DAILY REVIEW (cert-ios-review.html 77f94eef, B1) · iv- hooks on the real sr-* markup ═════════════════════ */
+/* The real review keeps its markup; sr-review.js ships hidden phone hooks (iv-*) and this block shows them. */
+html[data-theme] body #page-sr-review.active { animation: none !important; transform: none !important; padding-bottom: calc(118px + env(safe-area-inset-bottom)) !important; }
+/* header: "Daily Review" + streak + theme (E2E .hdr) */
+html[data-theme] body #page-sr-review .ed-pagehead-body { flex: 1 1 auto; min-width: 0; }
+html[data-theme] body #page-sr-review .ed-pagehead-display:not(.iv-title) { display: none !important; }
+html[data-theme] body #page-sr-review .iv-title[hidden] { display: block !important; font-family: Fraunces, Georgia, serif !important; font-weight: 600 !important; font-size: 20px !important; letter-spacing: -0.01em !important; margin: 0 !important; color: var(--text) !important; }
+html[data-theme] body #page-sr-review .iv-streak[hidden] { display: inline-flex !important; align-items: center; gap: 5px; flex: 0 0 auto; font: 800 12px/1 Inter, sans-serif; color: var(--accent-deep); background: color-mix(in oklab, var(--accent) 12%, transparent); border: 1px solid color-mix(in oklab, var(--accent) 30%, var(--border)); border-radius: 999px; padding: 7px 10px; }
+html[data-theme] body #page-sr-review .iv-streak svg { width: 13px; height: 13px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linejoin: round; }
+html[data-theme] body #page-sr-review .iv-theme[hidden] { display: grid !important; place-items: center; flex: 0 0 auto; width: 38px; height: 38px; border-radius: 11px; border: 1px solid var(--border); background: var(--surface); color: var(--text-mid); cursor: pointer; transition: transform .14s var(--ios-ease); }
+html[data-theme] body #page-sr-review .iv-theme svg { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+html[data-theme] body #page-sr-review .iv-theme:active { transform: scale(0.94); }
+/* progress: "Card N of M" left, today's plan right, bar under both */
+html[data-theme] body #page-sr-review .sr-progress-row:not([hidden]) { display: grid !important; grid-template-columns: 1fr auto; align-items: baseline; column-gap: 10px; }
+html[data-theme] body #page-sr-review .sr-progress-bar { grid-column: 1 / -1; }
+html[data-theme] body #page-sr-review .iv-only[hidden] { display: inline !important; }
+html[data-theme] body #page-sr-review .sr-plan-line[hidden] { display: inline !important; font: 700 11px/1 Inter, sans-serif; letter-spacing: 0.04em; text-transform: uppercase; color: var(--accent-deep); }
+/* card: no mono meta row (E2E); Remove it sits under the options, then the feedback */
+html[data-theme] body #page-sr-review .sr-card-meta { display: none !important; }
+html[data-theme] body #page-sr-review .sr-card { display: flex !important; flex-direction: column; }
+html[data-theme] body #page-sr-review .sr-why-due { align-self: flex-start; }
+html[data-theme] body #page-sr-review .sr-remove { order: 1; margin: 14px 2px 0 !important; padding: 0 !important; border: 0 !important; text-align: left !important; justify-content: flex-start !important; }
+html[data-theme] body #page-sr-review .sr-remove-btn { border: 0 !important; background: none !important; padding: 0 !important; font: 650 12px/1.4 Inter, sans-serif !important; color: var(--text-mid) !important; text-decoration: underline; text-underline-offset: 3px; text-decoration-color: color-mix(in oklab, var(--text) 30%, transparent); cursor: pointer; }
+html[data-theme] body #page-sr-review .sr-remove-btn:active { opacity: .6; }
+html[data-theme] body #page-sr-review .sr-explanation, html[data-theme] body #page-sr-review .sr-self-grade-banner { order: 2; margin-top: 16px !important; }
+html[data-theme] body #page-sr-review .sr-confidence-row { order: 3; }
+/* the dock (E2E .footer): answer buttons pinned to the bottom of the screen */
+html[data-theme] body #page-sr-review .sr-confidence-row:not([hidden]), html[data-theme] body #page-sr-review .iv-wait[hidden], html[data-theme] body #page-sr-review .sr-multi-submit-row {
+  position: fixed !important; left: 0; right: 0; bottom: 0; z-index: 20; margin: 0 !important; display: grid !important; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 9px !important;
+  padding: 12px 22px calc(12px + env(safe-area-inset-bottom)) !important; background: var(--bg) !important; border: 0 !important; border-top: 1px solid color-mix(in oklab, var(--border) 70%, transparent) !important; border-radius: 0 !important; }
+html[data-theme] body #page-sr-review .sr-confidence-label { display: none !important; }
+html[data-theme] body #page-sr-review .sr-confidence-row:has(.sr-confidence-wrong) .sr-confidence-label, html[data-theme] body #page-sr-review .sr-retry-pill, html[data-theme] body #page-sr-review .sr-multi-hint { grid-column: 1 / -1; grid-row: 1; }
+html[data-theme] body #page-sr-review .sr-confidence-row:has(.sr-confidence-wrong) .sr-confidence-label { display: block !important; margin: 0 !important; font: 600 12px/1.35 Inter, sans-serif !important; }
+html[data-theme] body #page-sr-review .sr-confidence-row:has(.sr-retry-pill) .sr-confidence-label { display: none !important; }
+html[data-theme] body #page-sr-review .sr-confidence-btn, html[data-theme] body #page-sr-review .iv-wait-btn, html[data-theme] body #page-sr-review .sr-multi-submit-btn {
+  grid-row: 2; width: 100%; border: none !important; border-radius: 13px !important; padding: 15px !important; min-height: 48px; cursor: pointer; background: var(--accent) !important; color: var(--on-accent) !important;
+  font: 800 15.5px/1 Inter, sans-serif !important; letter-spacing: -0.005em; text-align: center !important; box-shadow: 0 10px 22px -12px color-mix(in oklab, var(--accent) 70%, transparent) !important; transition: transform .15s var(--ios-ease), opacity .2s; }
+html[data-theme] body #page-sr-review .sr-confidence-row:not(:has(.sr-confidence-label, .sr-retry-pill)) .sr-confidence-btn, html[data-theme] body #page-sr-review .iv-wait-btn { grid-row: 1; }
+html[data-theme] body #page-sr-review .sr-confidence-row:has(.sr-confidence-label:not(:only-of-type)) .sr-confidence-btn { grid-row: auto; }
+html[data-theme] body #page-sr-review .sr-confidence-uncertain { order: -1; background: var(--surface) !important; color: var(--text) !important; border: 1px solid var(--border) !important; box-shadow: none !important; }
+html[data-theme] body #page-sr-review .iv-wait-btn:disabled, html[data-theme] body #page-sr-review .sr-multi-submit-btn:disabled { opacity: 0.4; cursor: default; box-shadow: none !important; }
+html[data-theme] body #page-sr-review .sr-confidence-btn:active:not(:disabled), html[data-theme] body #page-sr-review .sr-multi-submit-btn:active:not(:disabled) { transform: scale(0.985); }
+html[data-theme] body #page-sr-review .sr-confidence-hint, html[data-theme] body #page-sr-review .iv-long { display: none !important; }
+html[data-theme] body #page-sr-review .iv-short[hidden] { display: inline !important; }
+/* review done (E2E .done): seal, "Review done", three tiles, streak, forecast, Back to home + Retry */
+html[data-theme] body #page-sr-review #sr-complete .sr-empty-icon, html[data-theme] body #page-sr-review #sr-complete .iv-done-desk, html[data-theme] body #page-sr-review #sr-complete .sr-done-sum { display: none !important; }
+html[data-theme] body #page-sr-review #sr-complete .iv-seal[hidden] { display: grid !important; place-items: center; width: 72px; height: 72px; border-radius: 999px; margin: 0 auto 18px; background: color-mix(in oklab, var(--green) 16%, var(--surface)); }
+html[data-theme] body #page-sr-review #sr-complete .iv-seal svg { width: 34px; height: 34px; stroke: var(--green); fill: none; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
+html[data-theme] body #page-sr-review #sr-complete .iv-done-t[hidden] { display: block !important; font-family: Fraunces, Georgia, serif; font-weight: 600; font-size: 25px; letter-spacing: -0.015em; margin: 0 0 18px; color: var(--text); }
+html[data-theme] body #page-sr-review .sr-done-tiles[hidden] { display: grid !important; grid-template-columns: repeat(3, 1fr); gap: 9px; margin-bottom: 18px; }
+html[data-theme] body #page-sr-review .sr-done-tile { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 13px 8px; text-align: center; }
+html[data-theme] body #page-sr-review .sr-done-tile b { display: block; font-family: Fraunces, Georgia, serif; font-weight: 600; font-size: 24px; color: var(--text); font-variant-numeric: lining-nums; }
+html[data-theme] body #page-sr-review .sr-done-tile.sr-done-miss b { color: var(--miss); }
+html[data-theme] body #page-sr-review .sr-done-tile span { font: 700 9.5px/1.2 Inter, sans-serif; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-dim); }
+html[data-theme] body #page-sr-review #sr-complete .sr-streak { text-align: left; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 13px 14px; margin-bottom: 10px; }
+html[data-theme] body #page-sr-review #sr-complete .btn-primary { width: 100%; }
+html[data-theme] body #page-sr-review #sr-complete[data-missed] .iv-retry[hidden] { display: block !important; width: 100%; margin-top: 9px; background: transparent; border: 1.5px solid var(--border); color: var(--text); border-radius: 13px; padding: 13px; font: 700 14px/1 Inter, sans-serif; cursor: pointer; }
+html[data-theme] body #page-sr-review #sr-complete .iv-retry:active { transform: scale(0.985); }
+/* Next 7 days: the E2E column chart, exam day in the accent */
+html[data-theme] body #page-sr-review #sr-forecast-complete { margin: 12px 0 18px !important; padding: 13px 14px 12px; border: 1px solid var(--border); border-radius: 14px; background: var(--surface); text-align: left; }
+html[data-theme] body #page-sr-review #sr-forecast-complete .sr-fc-strip { display: grid !important; grid-template-columns: repeat(7, 1fr); gap: 6px; align-items: end; }
+html[data-theme] body #page-sr-review #sr-forecast-complete .sr-fc-day { display: flex !important; flex-direction: column; justify-content: flex-end; align-items: center; gap: 4px; min-width: 0; background: none !important; border: 0 !important; padding: 0 !important; }
+html[data-theme] body #page-sr-review #sr-forecast-complete .sr-fc-track { order: 1; }
+html[data-theme] body #page-sr-review #sr-forecast-complete .sr-fc-count { order: 2; }
+html[data-theme] body #page-sr-review #sr-forecast-complete .sr-fc-lbl { order: 3; }
+html[data-theme] body #page-sr-review #sr-forecast-complete::before { content: "Next 7 days"; display: block; margin-bottom: 10px; font: 650 13px/1.2 Inter, sans-serif; color: var(--text); }
+html[data-theme] body #page-sr-review #sr-forecast-complete .sr-fc-cap { margin: 12px 0 0 !important; font-size: 12px !important; line-height: 1.45 !important; color: var(--text-dim) !important; }
+html[data-theme] body #page-sr-review .sr-progress-row[hidden] { display: none !important; }
+html[data-theme] body #page-sr-review #sr-forecast-complete .sr-fc-track { width: 100%; max-width: 22px; height: 64px; display: flex; align-items: flex-end; background: none !important; }
+html[data-theme] body #page-sr-review #sr-forecast-complete .sr-fc-bar { width: 100%; height: var(--h) !important; min-height: 3px; border-radius: 6px 6px 3px 3px; background: color-mix(in oklab, var(--accent) 38%, var(--surface3)) !important; }
+html[data-theme] body #page-sr-review #sr-forecast-complete .sr-fc-day-exam .sr-fc-bar { background: var(--accent) !important; }
+html[data-theme] body #page-sr-review #sr-forecast-complete .sr-fc-lbl { font: 600 10px/1 Inter, sans-serif; color: var(--text-dim); }
+html[data-theme] body #page-sr-review #sr-forecast-complete .sr-fc-count { font: 600 10px/1.1 "Roboto Mono", monospace; color: var(--text-mid); text-align: center; }
+html[data-theme] body #page-sr-review #sr-forecast-complete .sr-fc-day-exam .sr-fc-lbl, html[data-theme] body #page-sr-review #sr-forecast-complete .sr-fc-examday { color: var(--accent-deep); font-weight: 800; }
+@media (prefers-reduced-motion: no-preference) {
+  html[data-theme] body #page-sr-review #sr-forecast-complete .sr-fc-bar { transform-origin: 50% 100%; animation: iv-sweep .9s var(--ios-ease) both; animation-delay: calc(var(--fi, 0) * 60ms); }
+}
+@keyframes iv-sweep { from { transform: scaleY(0); } to { transform: none; } }
