@@ -123,6 +123,7 @@
   .modal { position: absolute; z-index: 9; left: 22px; right: 22px; top: 50%; transform: translateY(-50%) scale(0.94); opacity: 0; pointer-events: none;
     background: var(--surface); border: 1px solid var(--border); border-radius: 22px; padding: 20px 19px 18px; box-shadow: 0 30px 70px -28px rgba(0,0,0,.6);
     transition: transform .2s var(--ease), opacity .2s var(--ease); }
+  .modal { max-height: calc(100% - 96px); overflow-y: auto; }
   .modal.open { transform: translateY(-50%) scale(1); opacity: 1; pointer-events: auto; transition: transform .26s var(--ease), opacity .2s var(--ease); }
   .modal-kick { font: 800 9.5px/1 Inter, sans-serif; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); display: inline-flex; align-items: center; gap: 7px; }
   .modal-kick svg { width: 13px; height: 13px; stroke: currentColor; fill: none; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
@@ -160,6 +161,72 @@
     .modal { transform: translateY(-50%); transition: opacity .15s ease; }
     .modal.open { transform: translateY(-50%); transition: opacity .15s ease; }
   }
+
+  /* ── B2 additions (21 Oct, real-app features drawn into the E2E for approval) ── */
+  /* Pause beside End */
+  .pause-btn { flex: 0 0 auto; width: 34px; height: 34px; display: grid; place-items: center; color: var(--ink-soft);
+    background: transparent; border: 1px solid var(--border); border-radius: 999px; padding: 0; cursor: pointer; transition: transform .14s var(--ease), border-color .18s; }
+  .pause-btn svg { width: 12px; height: 12px; stroke: currentColor; fill: currentColor; stroke-width: 1.5; stroke-linejoin: round; }
+  .pause-btn:active { transform: scale(.96); }
+  .screen.paused .pause-btn { color: var(--accent-deep); border-color: color-mix(in oklab, var(--accent) 34%, var(--border)); }
+  /* pace line under the counter */
+  .ecount .cp { display: block; font: 600 10px/1 'Roboto Mono', monospace; color: var(--pass); margin-top: 4px; }
+  .ecount .cp.behind { color: var(--miss); }
+  /* Prev in the dock */
+  .prev-btn { flex: 0 0 auto; width: 48px; display: grid; place-items: center; border: 1px solid var(--border); border-radius: 13px; background: transparent; color: var(--ink-soft); cursor: pointer; transition: transform .14s var(--ease), border-color .18s; }
+  .prev-btn svg { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+  .prev-btn:active { transform: scale(.97); }
+  .prev-btn:disabled { opacity: .35; cursor: default; }
+  /* paused cover: the question is hidden while the clock is stopped */
+  .pcover { display: none; flex: 1; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 0 30px 40px; }
+  .screen.paused .pcover { display: flex; }
+  .screen.paused .body, .screen.paused .efoot, .screen.paused .emap { display: none; }
+  .pc-i { width: 56px; height: 56px; border-radius: 999px; display: grid; place-items: center; margin-bottom: 16px; background: color-mix(in oklab, var(--accent) 12%, var(--surface)); color: var(--accent-deep); }
+  .pc-i svg { width: 22px; height: 22px; stroke: currentColor; fill: currentColor; stroke-width: 1.5; stroke-linejoin: round; }
+  .pc-k { font: 800 10px/1 Inter, sans-serif; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); }
+  .pc-t { font: 600 34px/1 'Roboto Mono', monospace; color: var(--ink); margin: 12px 0 6px; font-variant-numeric: tabular-nums; }
+  .pc-s { font-size: 13.5px; color: var(--ink-soft); margin: 0 0 22px; }
+  .pc-go { width: 100%; max-width: 280px; border: none; border-radius: 13px; padding: 15px; cursor: pointer; background: var(--accent); color: var(--on-accent); font: 700 15px/1 Inter, sans-serif;
+    box-shadow: 0 10px 22px -12px color-mix(in oklab, var(--accent) 70%, transparent); transition: transform .15s var(--ease); }
+  .pc-go:active { transform: scale(.985); }
+  .pc-n { font-size: 12px; line-height: 1.5; color: var(--muted); margin: 16px 0 0; max-width: 30ch; }
+  /* End dialog: jump to any question */
+  .jump { margin-top: 4px; }
+  .jump-t { width: 100%; display: flex; align-items: center; justify-content: space-between; border: 0; background: none; padding: 10px 2px 6px; cursor: pointer; font: 650 12.5px/1 Inter, sans-serif; color: var(--ink-soft); }
+  .jump-t svg { width: 15px; height: 15px; stroke: currentColor; fill: none; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; transition: transform .2s var(--ease); }
+  .jump.open .jump-t svg { transform: rotate(180deg); }
+  .jgrid { display: none; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 5px; max-height: 236px; overflow-y: auto; scrollbar-width: thin; padding: 4px 3px 2px 1px; }
+  .jump.open .jgrid { display: grid; }
+  .jgrid button { aspect-ratio: 1; min-height: 40px; border-radius: 9px; border: 1px solid var(--border); background: transparent; color: var(--muted); font: 700 12px/1 'Roboto Mono', monospace; cursor: pointer; padding: 0; }
+  .jgrid button.a { background: color-mix(in oklab, var(--accent) 16%, var(--surface)); border-color: transparent; color: var(--ink-soft); }
+  .jgrid button.f { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+  .jgrid button.c { box-shadow: 0 0 0 2px var(--surface), 0 0 0 3.5px var(--ink); }
+  .jkey { display: flex; gap: 12px; margin-top: 8px; font: 600 10.5px/1 Inter, sans-serif; color: var(--muted); }
+  .jkey i { display: inline-block; width: 9px; height: 9px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; border: 1px solid var(--border); }
+  .jkey i.a { background: color-mix(in oklab, var(--accent) 16%, var(--surface)); border-color: transparent; }
+  .jkey i.f { background: var(--accent); border-color: var(--accent); }
+  /* leave sheet (replaces the system alert) */
+  .lsheet { position: absolute; left: 0; right: 0; bottom: 0; z-index: 9; background: var(--surface); border-radius: 22px 22px 0 0; border-top: 1px solid var(--border);
+    padding: 10px 20px calc(22px + env(safe-area-inset-bottom)); transform: translateY(100%); visibility: hidden; transition: transform .2s var(--ease), visibility 0s linear .2s; }
+  .lsheet.open { transform: none; visibility: visible; transition: transform .36s var(--ease), visibility 0s; }
+  .ls-grip { width: 38px; height: 5px; border-radius: 999px; background: color-mix(in oklab, var(--ink) 18%, transparent); margin: 0 auto 16px; }
+  .lsheet h3 { font: 600 21px/1.2 Fraunces, serif; color: var(--ink); margin: 0 0 6px; }
+  .lsheet p { font-size: 13.5px; line-height: 1.5; color: var(--ink-soft); margin: 0 0 18px; }
+  .ls-stay { width: 100%; border: none; border-radius: 13px; padding: 15px; cursor: pointer; background: var(--accent); color: var(--on-accent); font: 700 15px/1 Inter, sans-serif; transition: transform .15s var(--ease); }
+  .ls-stay:active { transform: scale(.985); }
+  .ls-leave { width: 100%; margin-top: 6px; border: none; background: transparent; cursor: pointer; padding: 12px; font: 650 13.5px/1 Inter, sans-serif; color: var(--miss); }
+  @media (prefers-reduced-motion: reduce) { .lsheet { transform: none; opacity: 0; transition: opacity .2s ease, visibility 0s linear .2s; } .lsheet.open { opacity: 1; transition: opacity .2s ease, visibility 0s; } }
+  /* a Sim Lab question inside the exam (console look is B3) */
+  .pbq { display: none; }
+  .screen.pbq-on .pbq { display: block; }
+  .screen.pbq-on .mcq { display: none; }
+  .pbq-tag { font: 800 9.5px/1 Inter, sans-serif; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent-deep); background: color-mix(in oklab, var(--accent) 12%, transparent); border-radius: 999px; padding: 5px 8px; }
+  .pbq-con { border: 1px solid var(--border); border-radius: 14px; background: var(--surface); overflow: hidden; }
+  .pbq-bar { display: flex; align-items: center; justify-content: space-between; padding: 9px 12px; border-bottom: 1px solid var(--border); font: 700 10.5px/1 'Roboto Mono', monospace; color: var(--muted); }
+  .pbq-reset { border: 1px solid var(--border); border-radius: 999px; background: transparent; color: var(--ink-soft); font: 700 11px/1 Inter, sans-serif; padding: 7px 11px; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; }
+  .pbq-reset svg { width: 12px; height: 12px; stroke: currentColor; fill: none; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+  .pbq-body { padding: 12px; font: 500 12px/1.6 'Roboto Mono', monospace; color: var(--ink-soft); min-height: 210px; }
+  .pbq-body b { color: var(--accent-deep); font-weight: 700; }
   .hint { text-align: center; color: var(--page-dim); font-size: 12px; margin-top: 18px; max-width: 44ch; margin-left: auto; margin-right: auto; }
   @media (max-width: 440px) { .phone { transform: scale(.92); transform-origin: top center; } }
 </style>
@@ -201,7 +268,9 @@
             <div class="ecount">
               <span class="cn">Question 23 of 90</span>
               <span class="cs" id="answeredline">63 answered</span>
+              <span class="cp">4 min ahead</span>
             </div>
+            <button class="pause-btn" id="pauseBtn" type="button" aria-pressed="false" aria-label="Pause the exam"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="5" width="4" height="14" rx="1"></rect><rect x="14" y="5" width="4" height="14" rx="1"></rect></svg></button>
             <button class="end-btn" id="endBtn" type="button">End</button>
           </div>
 
@@ -213,6 +282,7 @@
 
           <!-- QUESTION BODY -->
           <div class="body" id="qbody">
+            <div class="mcq">
             <div class="q-head reveal">
               <span class="q-num">Q23</span>
               <span class="q-topic">NTP, ICMP &amp; Traffic Types</span>
@@ -240,10 +310,30 @@
               <span class="otx">Synchronising time across network devices with sub-microsecond precision</span>
               <span class="ock"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"></path></svg></span>
             </button>
+            </div>
+            <div class="pbq">
+              <div class="q-head"><span class="q-num">Q2</span><span class="pbq-tag">Sim Lab</span><span class="q-topic">Switch &amp; VLANs</span></div>
+              <p class="q-stem">Put ports 1 to 4 on VLAN 20 and make port 24 a trunk that carries VLANs 10 and 20.</p>
+              <div class="pbq-con">
+                <div class="pbq-bar"><span>SW1 console</span><button class="pbq-reset" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"></path><path d="M3 3v5h5"></path></svg>Reset</button></div>
+                <div class="pbq-body">SW1(config)# <b>interface range fa0/1-4</b><br>SW1(config-if-range)# <b>switchport access vlan 20</b><br>SW1(config-if-range)# exit<br>SW1(config)# <b>interface gi0/24</b><br>SW1(config-if)# _</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- B2: paused cover (the question stays hidden while the clock is stopped) -->
+          <div class="pcover" role="status">
+            <span class="pc-i"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="5" width="4" height="14" rx="1"></rect><rect x="14" y="5" width="4" height="14" rx="1"></rect></svg></span>
+            <span class="pc-k">Exam paused</span>
+            <span class="pc-t">54:12 left</span>
+            <p class="pc-s">The clock is stopped.</p>
+            <button class="pc-go" id="resumeBtn" type="button">Resume exam</button>
+            <p class="pc-n">The real exam has no pause, so keep this for real interruptions.</p>
           </div>
 
           <!-- EXAM FOOTER -->
           <div class="efoot">
+            <button class="prev-btn" id="prevBtn" type="button" aria-label="Previous question"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6"></path></svg></button>
             <button class="flag-btn" id="flagBtn" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 21V4h11l-1.5 4L16 12H5"></path></svg>Flag</button>
             <button class="next-btn" id="nextBtn" type="button">Next<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></button>
           </div>
@@ -261,6 +351,20 @@
             <button class="m-review" id="mReview" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 21V4h11l-1.5 4L16 12H5"></path></svg>Review the 27 you skipped first</button>
             <button class="m-submit" id="mSubmit" type="button">Submit and see results</button>
             <button class="m-abandon" id="mAbandon" type="button">Abandon exam</button>
+            <div class="jump" id="jump">
+              <button class="jump-t" id="jumpT" type="button" aria-expanded="false">Jump to a question<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg></button>
+              <div class="jgrid" id="jgrid"></div>
+              <div class="jkey"><span><i class="a"></i>Answered</span><span><i></i>Skipped</span><span><i class="f"></i>Flagged</span></div>
+            </div>
+          </div>
+
+          <!-- B2: leaving a running exam asks in the app's own sheet -->
+          <div class="lsheet" id="lsheet" role="dialog" aria-modal="true" aria-labelledby="lsTitle">
+            <div class="ls-grip" aria-hidden="true"></div>
+            <h3 id="lsTitle">Leave the exam?</h3>
+            <p>The clock keeps running, and you can resume from Home.</p>
+            <button class="ls-stay" id="lsStay" type="button">Stay</button>
+            <button class="ls-leave" id="lsLeave" type="button">Leave</button>
           </div>
         </div>
       </div>
@@ -312,13 +416,40 @@
       // Submit modal
       var scrim = document.getElementById('scrim'), modal = document.getElementById('modal');
       function openModal(){ scrim.classList.add('open'); modal.classList.add('open'); }
-      function closeModal(){ scrim.classList.remove('open'); modal.classList.remove('open'); }
+      function closeModal(){ scrim.classList.remove('open'); modal.classList.remove('open'); var l = document.getElementById('lsheet'); if (l) l.classList.remove('open'); }
       document.getElementById('endBtn').addEventListener('click', openModal);
       scrim.addEventListener('click', closeModal);
       document.getElementById('mReview').addEventListener('click', closeModal);
       document.getElementById('mAbandon').addEventListener('click', closeModal);
       // Submit leads to the Results screen, completing the flow inside the sandbox.
       document.getElementById('mSubmit').addEventListener('click', function () { window.location.href = 'cert-ios-exam-results.html'; });
+
+      // ── B2 additions ──
+      var pauseBtn = document.getElementById('pauseBtn');
+      var PAUSE_I = pauseBtn.innerHTML, PLAY_I = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5l11 7-11 7z"></path></svg>';
+      function setPaused(on) { screen.classList.toggle('paused', on); pauseBtn.setAttribute('aria-pressed', String(on)); pauseBtn.setAttribute('aria-label', on ? 'Resume the exam' : 'Pause the exam'); pauseBtn.innerHTML = on ? PLAY_I : PAUSE_I; }
+      pauseBtn.addEventListener('click', function () { setPaused(!screen.classList.contains('paused')); });
+      document.getElementById('resumeBtn').addEventListener('click', function () { setPaused(false); });
+      // jump grid in the End dialog: 1-22 answered (4 flagged), 23 current, the rest skipped
+      var jgrid = document.getElementById('jgrid'), jh = '';
+      for (var n = 1; n <= 90; n++) {
+        var cls = (FLAGGED[n] ? 'f' : (n <= 63 && !(n > 22 && n < 50) ? 'a' : '')) + (n === 23 ? ' c' : '');
+        jh += '<button type="button" class="' + cls + '" aria-label="Question ' + n + '">' + n + '</button>';
+      }
+      jgrid.innerHTML = jh;
+      var jump = document.getElementById('jump'), jumpT = document.getElementById('jumpT');
+      jumpT.addEventListener('click', function () { var o = jump.classList.toggle('open'); jumpT.setAttribute('aria-expanded', String(o)); });
+      jgrid.addEventListener('click', function (e) { if (e.target.closest('button')) closeModal(); });
+      var ls = document.getElementById('lsheet');
+      document.getElementById('lsStay').addEventListener('click', function () { ls.classList.remove('open'); scrim.classList.remove('open'); });
+      document.getElementById('lsLeave').addEventListener('click', function () { ls.classList.remove('open'); scrim.classList.remove('open'); });
+      // HUD states: ?v=paused | end | leave | pbq
+      var v = (location.search.match(/[?&]v=(\w+)/) || [])[1];
+      if (v === 'paused') setPaused(true);
+      if (v === 'end') setTimeout(openModal, 40);
+      if (v === 'jump') setTimeout(function () { openModal(); jump.classList.add('open'); jumpT.setAttribute('aria-expanded', 'true'); }, 40);
+      if (v === 'leave') setTimeout(function () { scrim.classList.add('open'); ls.classList.add('open'); }, 40);
+      if (v === 'pbq') { screen.classList.add('pbq-on'); document.querySelector('.efill > span').style.width = '2%'; document.querySelector('.ecount .cn').textContent = 'Question 2 of 90'; document.getElementById('answeredline').textContent = '1 answered'; }
 
       // A slow, honest countdown so the timer reads as live (gated by reduced motion).
       var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;

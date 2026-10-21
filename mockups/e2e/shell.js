@@ -44,6 +44,11 @@
     'analytics-wins'    : 'cert-ios-analytics.html?p=5',   // B1: Hands-on milestones on Wins (21 Oct)
     'review-done'       : 'cert-ios-review.html?v=done',   // B1: Next 7 days with exam day (21 Oct)
     'exam'              : 'cert-ios-exam.html',
+    'exam-paused'       : 'cert-ios-exam.html?v=paused',   // B2 (21 Oct): Pause covers the question
+    'exam-end'          : 'cert-ios-exam.html?v=jump',     // B2: End dialog with the question grid
+    'exam-leave'        : 'cert-ios-exam.html?v=leave',    // B2: leave sheet instead of the system alert
+    'exam-pbq'          : 'cert-ios-exam.html?v=pbq',      // B2: a Sim Lab question inside the exam
+    'exam-results-toast': 'cert-ios-exam-results.html?v=toast',   // B2: milestone toast from the top
     'results'           : 'cert-ios-results.html',
     'results-milestone' : 'cert-ios-results.html?v=milestone',
     'exam-results'      : 'cert-ios-exam-results.html',
@@ -180,6 +185,8 @@
   // B1 (21 Oct): the Progress | Analytics view switch
   NAV['progress'] = (NAV['progress'] || []).concat([{sel:'[data-view="analytics"]', to:'analytics'}]);
   NAV['analytics'] = (NAV['analytics'] || []).concat([{sel:'[data-view="progress"]', to:'progress'}]);
+  ['exam-paused','exam-end','exam-leave','exam-pbq'].forEach(function (k) { NAV[k] = NAV['exam']; });
+  NAV['exam-results-toast'] = NAV['exam-results'];
   NAV['analytics-wins'] = NAV['analytics']; NAV['analytics-map'] = NAV['analytics']; NAV['review-done'] = NAV['review'] || [];
 
   var TABS = { 'Home':'home', 'Drills':'drills', 'Progress':'progress', 'Account':'settings',
@@ -567,6 +574,12 @@
     var LIFT_A = ['home','home-exam-paused','home-signed-out','custom-quiz','custom-quiz-topic','custom-quiz-caught-up','quiz','quiz-short-set','quiz-answered','results-milestone','review-answers'];
     // Lift B1 review (21 Oct): Progress, Analytics (switch + Wins), Daily Review (plan, Remove it, forecast)
     var LIFT_B1 = ['progress','analytics','analytics-map','analytics-wins','review','review-done'];
+    var LIFT_B2 = ['exam','exam-paused','exam-end','exam-leave','exam-pbq','exam-results','exam-results-toast'];
+    var b2Btn = document.getElementById('hud-liftb2'), b2I = -1;
+    if (b2Btn) b2Btn.addEventListener('click', function () {
+      b2I = (b2I + 1) % LIFT_B2.length; resetTo(LIFT_B2[b2I]);
+      b2Btn.textContent = 'B2 ' + (b2I + 1) + '/' + LIFT_B2.length + ' \u203a';
+    });
     var b1Btn = document.getElementById('hud-liftb1'), b1I = -1;
     if (b1Btn) b1Btn.addEventListener('click', function () {
       b1I = (b1I + 1) % LIFT_B1.length; resetTo(LIFT_B1[b1I]);
