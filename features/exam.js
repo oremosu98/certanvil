@@ -518,7 +518,7 @@
     banner.setAttribute('role', 'status');
     banner.innerHTML = `
       <span class="exam-shortfall-icon" aria-hidden="true"></span>
-      <span class="exam-shortfall-text">This exam has <strong>${actualCount} of ${EXAM_QUESTION_COUNT}</strong> questions \u2014 ${filtered} were filtered out by the quality validator. Your score scales against the actual count, so the ${EXAM_PASS_SCORE} pass mark stays accurate.</span>
+      <span class="exam-shortfall-text">This exam has <strong>${actualCount} of ${EXAM_QUESTION_COUNT}</strong> questions. The quality check removed ${filtered}. Your score is scaled to the ${actualCount} you get, so the ${EXAM_PASS_SCORE} pass mark still holds.</span>
       <button class="exam-shortfall-dismiss" onclick="document.getElementById('exam-shortfall-banner')?.remove()" aria-label="Dismiss">\u00D7</button>
     `;
     examPage.insertBefore(banner, examPage.firstChild);
@@ -617,7 +617,7 @@
       const cn = _page.querySelector('.ix-cn'), cs = _page.querySelector('.ix-cs');
       if (cn) cn.textContent = `Question ${examCurrent + 1} of ${total}`;
       if (cs) cs.textContent = `${answeredCount} answered`;
-      _page.style.setProperty('--ix-answered', ((answeredCount / total) * 100) + '%');
+      _page.style.setProperty('--ix-answered', String(total ? answeredCount / total : 0));   // a 0-1 scaleX (transform-only motion)
       _page.classList.toggle('ix-is-flagged', !!ans.flagged);
       const dockFlag = _page.querySelector('.ix-flag');
       if (dockFlag) {
@@ -734,6 +734,7 @@
     flagBtn.classList.toggle('is-dimmed', flaggedCount === 0);
     const modal = document.getElementById('exam-modal');
     if (_examIsPhone()) _examModalPhone(modal, unanswered, flaggedCount);   // v8.186.0 Lift B2
+    clearTimeout(modal._ixCloseT); modal.classList.remove('ix-closing');
     modal.classList.remove('hidden');
     // Focus first button in modal for keyboard users
     setTimeout(() => {
@@ -792,7 +793,12 @@
 
   function hideExamModal() {
     const modal = document.getElementById('exam-modal');
-    modal.classList.add('hidden');
+    if (_examIsPhone() && !modal.classList.contains('hidden')) {
+      // v8.186.0 Lift B2: the E2E dialog leaves with a short fade (BRAND §6: out faster than in)
+      modal.classList.add('ix-closing');
+      clearTimeout(modal._ixCloseT);
+      modal._ixCloseT = setTimeout(function () { modal.classList.remove('ix-closing'); modal.classList.add('hidden'); }, 200);
+    } else modal.classList.add('hidden');
     if (modal._trapHandler) { modal.removeEventListener('keydown', modal._trapHandler); modal._trapHandler = null; }
     if (modal._escHandler) { document.removeEventListener('keydown', modal._escHandler); modal._escHandler = null; }
     // Return focus to the End Exam button

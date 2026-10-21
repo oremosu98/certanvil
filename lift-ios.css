@@ -1416,6 +1416,8 @@ html[data-theme] body #page-exam .exam-topbar-actions { flex: 0 0 auto !importan
 html[data-theme] body #page-exam #exam-pause-btn { position: relative; width: 34px !important; height: 34px !important; min-width: 34px !important; min-height: 34px !important; padding: 0 !important; display: flex !important; align-items: center; justify-content: center; font-size: 0 !important; color: var(--text-mid) !important; background: transparent !important; border: 1px solid var(--border) !important; border-radius: 999px !important; transition: transform .14s var(--ios-ease), border-color .18s, color .18s !important; }
 html[data-theme] body #page-exam #exam-pause-btn::before { content: ""; width: 12px; height: 12px; background: currentColor; -webkit-mask: var(--ix-pause) center / contain no-repeat; mask: var(--ix-pause) center / contain no-repeat; }
 html[data-theme] body #page-exam #exam-pause-btn[aria-pressed="true"] { color: var(--accent-deep) !important; border-color: color-mix(in oklab, var(--accent) 34%, var(--border)) !important; }
+/* paused: the button shows Play (E2E swaps the icon) */
+html[data-theme] body #page-exam #exam-pause-btn[aria-pressed="true"]::before { -webkit-mask-image: var(--ix-play); mask-image: var(--ix-play); }
 html[data-theme] body #page-exam .end-exam-btn { position: relative; display: inline-flex !important; align-items: center; min-height: 0 !important; height: auto !important; width: auto !important; font: 700 12px/1 Inter, sans-serif !important; color: var(--accent-deep) !important; background: color-mix(in oklab, var(--accent) 10%, transparent) !important; border: 1px solid color-mix(in oklab, var(--accent) 34%, var(--border)) !important; border-radius: 999px !important; padding: 9px 13px !important; box-shadow: none !important; filter: none !important; transition: transform .14s var(--ios-ease), background-color .18s !important; }
 /* flex, not grid: the hidden "Pause" text node would form a second grid row and lift the icon */
 /* 44pt hit areas around the 34px controls */
@@ -1437,7 +1439,7 @@ html[data-theme] body #page-exam #exam-prog-dots > .qpd-cell.qpd-done { height: 
 html[data-theme] body #page-exam #exam-prog-dots > .qpd-cell.qpd-flagged { height: 5px !important; background: var(--accent-deep) !important; }
 html[data-theme] body #page-exam #exam-prog-dots > .qpd-cell.qpd-now { height: 12px !important; background: var(--accent) !important; }
 html[data-theme] body #page-exam .progress-wrap .progress-bar { order: 2; height: 4px !important; margin: 8px 0 0 !important; border-radius: 999px !important; background: var(--track) !important; overflow: hidden; border: 0 !important; }
-html[data-theme] body #page-exam #exam-prog-fill { width: var(--ix-answered, 0%) !important; height: 100% !important; border-radius: 999px !important; background: color-mix(in oklab, var(--accent) 75%, var(--accent-deep)) !important; box-shadow: none !important; transition: width .4s var(--ios-ease) !important; }
+html[data-theme] body #page-exam #exam-prog-fill { width: 100% !important; height: 100% !important; border-radius: 999px !important; background: color-mix(in oklab, var(--accent) 75%, var(--accent-deep)) !important; box-shadow: none !important; transform: scaleX(var(--ix-answered, 0)); transform-origin: left center; transition: transform .4s var(--ios-ease) !important; }
 
 /* the question: no card chrome, scrolls between the bar and the dock */
 html[data-theme] body #page-exam .q-card { order: 3; flex: 1 1 auto !important; min-height: 0 !important; overflow-y: auto !important; overscroll-behavior: contain; margin: 0 !important; padding: 14px 18px 12px !important; border: 0 !important; border-radius: 0 !important; background: none !important; box-shadow: none !important; }
@@ -1499,6 +1501,7 @@ html[data-theme] body #page-exam.is-paused .progress-wrap { display: none !impor
 /* icons (E2E paths) */
 html[data-theme] body #page-exam {
   --ix-clock: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'><circle cx='12' cy='13' r='8'/><path d='M12 9v4l2.5 1.5M9 2h6'/></svg>");
+  --ix-play: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='black' stroke='black' stroke-width='1.5' stroke-linejoin='round'><path d='M8 5l11 7-11 7z'/></svg>");
   --ix-pause: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='black' stroke='black' stroke-width='1.5' stroke-linejoin='round'><rect x='6' y='5' width='4' height='14' rx='1'/><rect x='14' y='5' width='4' height='14' rx='1'/></svg>");
   --ix-flag: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M5 21V4h11l-1.5 4L16 12H5'/></svg>");
   --ix-flag-fill: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='black' stroke='black' stroke-width='1.5' stroke-linejoin='round'><path d='M5 21V4h11l-1.5 4L16 12H5'/></svg>");
@@ -1546,7 +1549,8 @@ html[data-theme] body #exam-modal .ix-jump-t::after { content: ""; width: 15px; 
 html[data-theme] body #exam-modal .ix-jump.open .ix-jump-t::after { transform: rotate(180deg); }
 html[data-theme] body #exam-modal .ix-jgrid { display: none; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 5px; max-height: 236px; overflow-y: auto; scrollbar-width: thin; padding: 4px 3px 2px 1px; }
 html[data-theme] body #exam-modal .ix-jump.open .ix-jgrid { display: grid; }
-html[data-theme] body #exam-modal .ix-jgrid button { aspect-ratio: 1; min-height: 40px; padding: 0; border-radius: 9px; border: 1px solid var(--border); background: transparent; color: var(--text-dim); font: 700 12px/1 'Roboto Mono', monospace; cursor: pointer; }
+html[data-theme] body #exam-modal .ix-jgrid button { aspect-ratio: 1; min-height: 40px; padding: 0; border-radius: 9px; border: 1px solid var(--border); background: transparent; color: var(--text-dim); font: 700 12px/1 'Roboto Mono', monospace; cursor: pointer; transition: transform .14s var(--ios-ease); }
+html[data-theme] body #exam-modal .ix-jgrid button:active { transform: scale(0.96); }
 html[data-theme] body #exam-modal .ix-jgrid button.a { background: color-mix(in oklab, var(--accent) 16%, var(--surface)); border-color: transparent; color: var(--text-mid); }
 html[data-theme] body #exam-modal .ix-jgrid button.f { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
 html[data-theme] body #exam-modal .ix-jgrid button.c { box-shadow: 0 0 0 2px var(--surface), 0 0 0 3.5px var(--text); }
@@ -1559,6 +1563,12 @@ html[data-theme] body #exam-modal .ix-jkey i.f { background: var(--accent); bord
   html[data-theme] body #exam-modal:not(.hidden) .modal-box { animation: ix-pop .26s var(--ios-ease) both; }
 }
 @media (prefers-reduced-motion: reduce) { html[data-theme] body #exam-modal:not(.hidden) { animation: ix-fade .15s ease both; } }
+/* closing: a short fade, the box settles back to 0.96 (no clicks while it leaves) */
+html[data-theme] body #exam-modal.ix-closing { pointer-events: none; animation: ix-fade-out .2s var(--ios-ease) both !important; }
+html[data-theme] body #exam-modal.ix-closing .modal-box { animation: ix-pop-out .2s var(--ios-ease) both !important; }
+@media (prefers-reduced-motion: reduce) { html[data-theme] body #exam-modal.ix-closing .modal-box { animation: none !important; } }
+@keyframes ix-fade-out { to { opacity: 0; } }
+@keyframes ix-pop-out { to { opacity: 0; transform: scale(0.96); } }
 @keyframes ix-fade { from { opacity: 0; } }
 @keyframes ix-pop { from { opacity: 0; transform: scale(0.96); } }
 
@@ -1573,7 +1583,8 @@ html[data-theme] body #exam-modal .ix-jkey i.f { background: var(--accent); bord
 #exam-sheet button { font-family: inherit; box-sizing: border-box; cursor: pointer; }
 #exam-sheet .ix-sheet-stay { width: 100%; border: 0; border-radius: 13px; padding: 15px; background: var(--accent); color: var(--on-accent); font: 700 15px/1 Inter, sans-serif; transition: transform .15s var(--ios-ease); }
 #exam-sheet .ix-sheet-stay:active { transform: scale(0.985); }
-#exam-sheet .ix-sheet-go { width: 100%; margin-top: 6px; border: 0; background: transparent; padding: 12px; font: 650 13.5px/1 Inter, sans-serif; color: var(--miss); }
+#exam-sheet .ix-sheet-go { width: 100%; margin-top: 6px; border: 0; background: transparent; padding: 12px; font: 650 13.5px/1 Inter, sans-serif; color: var(--miss); transition: opacity .15s var(--ios-ease); }
+#exam-sheet .ix-sheet-go:active { opacity: .6; }
 @media (prefers-reduced-motion: reduce) {
   #exam-sheet { transform: none; opacity: 0; transition: opacity .2s ease; }
   #exam-sheet.open { opacity: 1; transition: opacity .2s ease; }

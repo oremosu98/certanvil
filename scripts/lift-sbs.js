@@ -51,7 +51,27 @@ const SCREENS = [
   ['analytics-wins', 'cert-ios-analytics.html?p=5', 'ana-5'],
   ['review', 'cert-ios-review.html', 'srv'],
   ['review-done', 'cert-ios-review.html?v=done', 'srv-done'],
+  // Lift B2 (21 Oct): the exam and its results
+  ['exam', 'cert-ios-exam.html', 'ex'],
+  ['exam-paused', 'cert-ios-exam.html?v=paused', 'ex-paused'],
+  ['exam-end', 'cert-ios-exam.html?v=jump', 'ex-end'],
+  ['exam-leave', 'cert-ios-exam.html?v=leave', 'ex-leave'],
+  ['exam-pbq', 'cert-ios-exam.html?v=pbq', 'ex-pbq'],
+  ['exam-results', 'cert-ios-exam-results.html', 'ex-res'],
 ];
+// B2: a saved 90-question exam like the E2E's (Q23 of 90, 63 answered, Q23 + four earlier flagged, 84:28 left)
+const EXAM_TOPICS = ['NTP, ICMP & Traffic Types', 'OSPF', 'PKI & Certificates', 'Cable Issues', 'Monitoring & SNMP', 'DNS & DHCP'];
+function examState(step) {
+  const qs = Array.from({ length: 90 }, (_, i) => ({ type: 'mcq', question: 'Which of the following is the primary function of ICMP in network communications?',
+    options: { A: 'Providing error reporting and diagnostic capabilities for IP networks', B: 'Establishing encrypted connections between remote hosts',
+      C: 'Managing the allocation of dynamic IP addresses to client devices', D: 'Synchronising time across network devices with sub-microsecond precision' },
+    answer: 'A', explanation: 'ICMP carries error and diagnostic messages.', topic: i === 22 ? EXAM_TOPICS[0] : EXAM_TOPICS[i % 6], difficulty: 'Exam Level' }));
+  if (step === 'ex-pbq') qs[1] = { type: 'simlab', question: 'Trunk the uplink', topic: 'Switch & VLANs', explanation: '', simlab: { id: 'sbs-pbq', cert: 'netplus', objective: '2.1', topic: 'Switch & VLANs',
+    title: 'Trunk the uplink', scenario: 'Put ports 1 to 4 on VLAN 20 and make port 24 a trunk that carries VLANs 10 and 20.', estMinutes: 6,
+    steps: [{ id: 'st1', type: 'fillin', prompt: 'Which VLAN do ports 1 to 4 join?', points: 1, explanation: 'VLAN 20', payload: { fields: [{ id: 'vlan', label: 'VLAN' }] }, answer: { vlan: ['20'] } }] } };
+  const ans = qs.map((_, i) => ({ chosen: (i < 64 && i !== 22) ? (i % 4 ? 'A' : 'B') : null, flagged: [3, 9, 14, 19, 22].includes(i), msChosen: [], orderSeq: [], cliRan: [], topoState: {} }));
+  return { v: 1, savedAt: Date.now(), endTime: Date.now() + 5068000, current: step === 'ex-pbq' ? 1 : 22, questions: qs, answers: ans, answered: 63, paused: false, pausedAt: 0, timeLeft: 5068, pausedMs: 0, pauses: 0 };
+}
 const SRQ = ['First?', 'Second?', 'Third?', 'Fourth?', 'Fifth?'].map((q, i) => ({ qHash: 'sbs' + i, question: 'Which port does ' + ['HTTPS', 'SSH', 'DNS', 'SMTP', 'RDP'][i] + ' use?',
   options: { A: '443', B: '22', C: '53', D: '25' }, answer: 'ABCD'[i % 4], explanation: 'Sample explanation.', topic: 'Port Numbers', difficulty: 'Exam Level',
   nextReview: 0, intervalDays: 6, easiness: 2.5, repetitions: 1, graduated: false, correctStreak: 1 }));
@@ -76,14 +96,15 @@ async function shootReal(browser, step, theme) {
     if (/\/lib\/supabase\.js$/.test(u.pathname)) return r.fulfill({ contentType: 'application/javascript', body: 'window.__FAKE_SB={"role":"admin"};' + FAKE });
     return r.continue();
   });
-  await ctx.addInitScript(([t, h, q]) => {
+  await ctx.addInitScript(([t, h, q, ex]) => {
     if (sessionStorage.getItem('s')) return;
     localStorage.clear(); sessionStorage.setItem('s', 1);
     localStorage.setItem('nplus_dev_cert', 'netplus'); localStorage.setItem('nplus_theme', t);
     localStorage.setItem('nplus_history', JSON.stringify(h));
     localStorage.setItem('nplus_streak', JSON.stringify({ current: 12, best: 14, last: new Date().toISOString().slice(0, 10) }));
     if (q) localStorage.setItem('nplus_sr_queue', JSON.stringify(q));
-  }, [theme, HISTORY, /^srv/.test(step || '') ? SRQ : null]);
+    if (ex) localStorage.setItem('nplus_exam_state', JSON.stringify(ex));
+  }, [theme, HISTORY, /^srv/.test(step || '') ? SRQ : null, /^ex/.test(step || '') ? examState(step) : null]);
   const p = await ctx.newPage();
   await p.goto(APP + '?nc=' + Date.now());
   await p.waitForTimeout(3000);
@@ -106,6 +127,20 @@ async function shootReal(browser, step, theme) {
       }
       await p.waitForTimeout(1300);
     }
+  } else if (/^ex/.test(step || '')) {
+    // Home's resume tile path (the exam module is lazy)
+    await p.evaluate(async () => { const m = await _loadFeature('exam'); await m.resumeExam(); });
+    await p.waitForTimeout(800);
+    if (step === 'ex-paused') { await p.locator('#exam-pause-btn').click(); await p.waitForTimeout(400); }
+    if (step === 'ex-end') { await p.locator('#page-exam .end-exam-btn').click(); await p.locator('#exam-modal .ix-jump-t').click(); await p.waitForTimeout(500); }
+    if (step === 'ex-leave') { await p.evaluate(() => goSetup()); await p.waitForTimeout(600); }
+    if (step === 'ex-res') {
+      await p.locator('#page-exam .end-exam-btn').click(); await p.locator('#exam-modal .btn-primary').click();
+      await p.waitForTimeout(4600);   // let any milestone toast leave
+      // the end-of-day recap (100+ questions today) is its own modal, not part of the E2E results screen
+      const recap = p.locator('#daily-recap-modal:not([hidden]) button').filter({ hasText: /^Close$/ });
+      if (await recap.count()) { await recap.first().click(); await p.waitForTimeout(400); }
+    }
   } else if (step === 'cq') {
     await p.evaluate(() => window._jumpToCustomQuiz());
     await p.waitForTimeout(1200);   // let the staggered entrance settle
@@ -124,7 +159,7 @@ async function shootReal(browser, step, theme) {
   await p.addStyleTag({ content: '.success-toast, .error-toast, .toast { display: none !important; }' });
   await p.waitForTimeout(300);
   // B1 screens are one fixed viewport (a full-page capture resizes it mid-shot); the review-done recap scrolls
-  const buf = await p.screenshot({ fullPage: !/^(prog|ana|srv$)/.test(step || '') });
+  const buf = await p.screenshot({ fullPage: !/^(prog|ana|srv$|ex)/.test(step || '') });
   await ctx.close();
   return buf;
 }
