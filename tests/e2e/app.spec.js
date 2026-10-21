@@ -102,6 +102,32 @@ async function expandHomeSection(page, cellClass) {
   }
 }
 
+// v8.186.0: at phone width the June Home (#ios-home) and phone Custom quiz replace the
+// desktop setup controls, so the launch tests go through the phone entry points there.
+async function startFromHome(page, kind) {
+  const vp = page.viewportSize();
+  const phone = !!(vp && vp.width <= 899);   // the lift gate (LIFT_MQ); #ios-home renders a beat after load
+  if (kind === 'custom') {
+    if (phone) {
+      // openCustomQuizModal may already have opened the phone Custom quiz; otherwise go there from Home
+      const start = page.locator('#ios-custom [data-act="start"]');
+      await page.locator('#ios-custom [data-act="start"]:visible, #ios-home [data-act="custom"]:visible').first().waitFor();
+      if (!(await start.isVisible())) await page.locator('#ios-home [data-act="custom"]').click();
+      await start.click();
+    } else {
+      await page.locator('#custom-quiz-section button:has-text("Generate Quiz")').click();
+    }
+  } else if (phone) {
+    // the exam option lives in a collapsed Home section: open it first, as a student would
+    const head = page.locator('#ios-home .ih-acc-head').filter({ has: page.locator('xpath=..//*[@data-act="exam"]') }).first();
+    if ((await head.getAttribute('aria-expanded')) === 'false') await head.click();
+    await page.locator('#ios-home [data-act="exam"]').click();
+  } else {
+    await expandHomeSection(page, 'cell-exam'); // v7.35.0: expand if collapsed on phones
+    await page.locator('#page-setup button:has-text("Full Exam Simulator")').click();
+  }
+}
+
 test.describe('App Load & Setup Page', () => {
   test('loads and shows the setup page', async ({ page }) => {
     await page.goto('/');
@@ -263,7 +289,7 @@ test.describe('API Key Validation', () => {
   test('signed-in user with empty API key does NOT see BYOK error (v4.99.33 contract)', async ({ page }) => {
     await page.goto('/');
     await page.evaluate(() => localStorage.setItem('nplus_key', ''));
-    await page.locator('#custom-quiz-section button:has-text("Generate Quiz")').click();
+    await startFromHome(page, 'custom');
     // v4.99.33: error is suppressed for signed-in users (validateApiKey returns null).
     // Quiz generation will fail downstream because there's no real session, but
     // the BYOK gate doesn't fire — that's the contract under test.
@@ -276,7 +302,7 @@ test.describe('API Key Validation', () => {
       const el = document.getElementById('api-key');
       if (el) el.value = 'invalid-key-123';
     });
-    await page.locator('#custom-quiz-section button:has-text("Generate Quiz")').click();
+    await startFromHome(page, 'custom');
     await expectNoByokError(page);
   });
 });
@@ -463,8 +489,7 @@ test.describe('Exam Button Validation', () => {
   test('signed-in user with empty API key — exam start does NOT show BYOK error', async ({ page }) => {
     await page.goto('/');
     await page.evaluate(() => localStorage.setItem('nplus_key', ''));
-    await expandHomeSection(page, 'cell-exam'); // v7.35.0: expand if collapsed on phones
-    await page.locator('#page-setup button:has-text("Full Exam Simulator")').click();
+    await startFromHome(page, 'exam');
     const err = page.locator('#setup-err');
     await expect(err).not.toBeVisible({ timeout: 1500 });
   });
@@ -475,8 +500,7 @@ test.describe('Exam Button Validation', () => {
       const el = document.getElementById('api-key');
       if (el) el.value = 'bad-key';
     });
-    await expandHomeSection(page, 'cell-exam'); // v7.35.0: expand if collapsed on phones
-    await page.locator('#page-setup button:has-text("Full Exam Simulator")').click();
+    await startFromHome(page, 'exam');
     const err = page.locator('#setup-err');
     await expect(err).not.toBeVisible({ timeout: 1500 });
   });
