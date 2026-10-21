@@ -465,7 +465,8 @@ console.log('\n\x1b[1m── T7: DRILLS ANALYTICS GROUP + FINAL COPY + BRONZE TO
   // mounted by renderAnalytics() (the live bento renderer) below the grid.
   // NOTE: the legacy _renderAnaMilestones() is NOT wired into the live page —
   // the live analytics page is the bento board (_anaBt* + _anaBtWire).
-  const drillsBody = _fnBody(js, '_anaDrillsGroupHtml');
+  // v8.185.0: the drill/milestone data moved into _anaDrillsGroupData (the phone Wins page reads it too)
+  const drillsBody = _fnBody(js, '_anaDrillsGroupHtml') + _fnBody(js, '_anaDrillsGroupData');
   test('T7: _anaDrillsGroupHtml() exists (single source of drills markup)',
     drillsBody.length > 0);
   test('T7: _anaDrillsGroupHtml emits ana-drills-group class',

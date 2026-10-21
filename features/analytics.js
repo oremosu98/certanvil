@@ -903,8 +903,17 @@
         return;
       }
       const weak = r.whatIf.slice(0, 3);
-      const topicNames = weak.map(w => w.topic).filter(Boolean);
-      if (topicNames.length === 0) return;
+      _startTopicsQuiz(weak.map(w => w.topic).filter(Boolean));
+    } catch (e) {
+      if (typeof showErrorToast === 'function') showErrorToast('Could not start weakest drill: ' + (e && e.message ? e.message : 'unknown error'));
+    }
+  }
+
+  // v8.185.0: a hard multi-topic quiz on exactly these topics (Readiness weakest drill; the phone
+  // Map's "Drill them", which quizzes the topics it names).
+  function _startTopicsQuiz(topicNames) {
+    try {
+      if (!Array.isArray(topicNames) || topicNames.length === 0) return;
       topic = 'Multi: ' + topicNames.join(', ');
       activeQuizTopic = topic;
       diff = 'Hard / Tricky';
@@ -2513,10 +2522,10 @@
   // Entrance (.dg-drill.reveal → .visible) + bar-fill are wired in _anaBtWire()
   // because the page-setup reveal IIFE is scoped to #page-setup only and never
   // touches #page-analytics. Returns '' when milestone plumbing is unavailable.
-  function _anaDrillsGroupHtml() {
-    if (typeof MILESTONE_DEFS === 'undefined' || typeof getMilestones !== 'function') return '';
+  // v8.185.0: the Hands-on data, split out so the phone Wins page reads the same states.
+  function _anaDrillsGroupData() {
+    if (typeof MILESTONE_DEFS === 'undefined' || typeof getMilestones !== 'function') return null;
     try { if (typeof evaluateMilestones === 'function') evaluateMilestones(); } catch (_) {}
-    const esc = _anaBtEsc;
     const unlockedMap = getMilestones() || {};
     let ctx = null;
     try { if (typeof _buildMilestoneCtx === 'function') ctx = _buildMilestoneCtx(); } catch (_) {}
@@ -2548,20 +2557,36 @@
       { name: 'Gauntlet',     meta: 'timed endurance',  ids: ['gauntlet_first', 'gauntlet_25', 'gauntlet_survivor'] },
     ];
     const allDefs = DRILL_GROUPS.flatMap(g => g.ids).map(id => MILESTONE_DEFS.find(m => m.id === id)).filter(Boolean);
-    if (!allDefs.length) return '';
-    const earnedCount = allDefs.filter(m => unlockedMap[m.id]).length;
+    const step = (m) => {
+      if (unlockedMap[m.id]) return { id: m.id, label: m.label, desc: m.desc, state: 'earned', rel: relDate(unlockedMap[m.id]) };
+      const p = progOf(m.id);
+      if (p) return { id: m.id, label: m.label, desc: m.desc, state: 'prog', cur: p[0], tar: p[1], pct: Math.round((p[0] / p[1]) * 100) };
+      return { id: m.id, label: m.label, desc: m.desc, state: 'locked' };
+    };
+    return {
+      groups: DRILL_GROUPS.map(g => ({ name: g.name, meta: g.meta,
+        steps: g.ids.map(id => MILESTONE_DEFS.find(m => m.id === id)).filter(Boolean).map(step) })),
+      earned: allDefs.filter(m => unlockedMap[m.id]).length, total: allDefs.length,
+    };
+  }
+
+
+  function _anaDrillsGroupHtml() {
+    const D = _anaDrillsGroupData();
+    if (!D || !D.total) return '';
+    const esc = _anaBtEsc;
+    const earnedCount = D.earned;
 
     // A milestone slot: earned (dot+✓+gleam-if-today) / in-progress (n/25 bar) / locked.
     const tile = (m) => {
-      if (unlockedMap[m.id]) {
-        const rel = relDate(unlockedMap[m.id]); const fresh = rel === 'Earned today';
+      if (m.state === 'earned') {
+        const rel = m.rel; const fresh = rel === 'Earned today';
         return `<div class="ms ms-earned${fresh ? ' ms-fresh' : ''}">${fresh ? '<div class="ms-gleam"></div>' : ''}` +
           `<div class="ms-top"><span class="ms-dot"></span><span class="ms-label">${esc(m.label)}</span><span class="ms-check">✓</span></div>` +
           `<div class="ms-desc">${esc(m.desc)}</div><div class="ms-meta">${esc(rel)}</div></div>`;
       }
-      const p = progOf(m.id);
-      if (p) {
-        const [cur, tar] = p; const pctFill = Math.round((cur / tar) * 100);
+      if (m.state === 'prog') {
+        const cur = m.cur, tar = m.tar; const pctFill = m.pct;
         const frac = tar === 1 ? 'In reach' : `${cur} <span class="of">/ ${tar}</span>`;
         return `<div class="ms ms-prog"><div class="ms-top"><span class="ms-dot"></span><span class="ms-label">${esc(m.label)}</span></div>` +
           `<div class="ms-desc">${esc(m.desc)}</div>` +
@@ -2572,8 +2597,8 @@
         `<div class="ms-desc">${esc(m.desc)}</div></div>`;
     };
 
-    const rows = DRILL_GROUPS.map((g, i) => {
-      const slots = g.ids.map(id => { const def = MILESTONE_DEFS.find(m => m.id === id); return def ? tile(def) : ''; }).join('');
+    const rows = D.groups.map((g, i) => {
+      const slots = g.steps.map(tile).join('');
       return `<div class="dg-drill reveal" style="--d:${i + 1}">` +
         `<div class="dg-drill-name">${esc(g.name)} <span class="meta">${esc(g.meta)}</span></div>` +
         `<div class="dg-slots">${slots}</div></div>`;
@@ -2582,7 +2607,7 @@
     return `<div class="ana-drills-group" id="ana-ms-drills-section">
       <div class="dg-head">
         <div><p class="dg-eyebrow">Drills</p><h2 class="dg-title">Hands-on milestones</h2></div>
-        <div class="dg-count"><span class="n">${earnedCount}</span><span class="of">of ${allDefs.length} earned</span></div>
+        <div class="dg-count"><span class="n">${earnedCount}</span><span class="of">of ${D.total} earned</span></div>
       </div>
       <hr class="dg-rule">
       ${rows}
@@ -2967,6 +2992,11 @@
   window._anaAccChartTab = _anaAccChartTab;
   window._startReadinessRefreshQuiz = _startReadinessRefreshQuiz;
   window._startReadinessWeakestQuiz = _startReadinessWeakestQuiz;
+  // v8.185.0 Lift B1: what the phone Analytics screen (features/ios-analytics.js) reads
+  window._startTopicsQuiz = _startTopicsQuiz;
+  window._anaBentoData = _anaBentoData;
+  window._computeConstellationData = _computeConstellationData;
+  window._anaDrillsGroupData = _anaDrillsGroupData;
 
   // ── feature registry ──
   window._certanvilFeatures = window._certanvilFeatures || {};

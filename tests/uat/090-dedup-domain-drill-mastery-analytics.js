@@ -1341,7 +1341,8 @@ test('v4.85.14 WhyScore: refresh handler builds Multi: sentinel from staleTopics
   })());
 test('v4.85.14 WhyScore: weakest handler builds Multi: sentinel from whatIf',
   (() => {
-    const body = _fnBody(js, '_startReadinessWeakestQuiz');
+    // v8.185.0: the quiz setup moved into _startTopicsQuiz (shared with the phone Map's Drill them)
+    const body = _fnBody(js, '_startReadinessWeakestQuiz') + _fnBody(js, '_startTopicsQuiz');
     return body
       && /whatIf\.slice\(0,\s*3\)/.test(body)
       && /'Multi: '\s*\+\s*topicNames\.join\(', '\)/.test(body)
@@ -1354,7 +1355,7 @@ test('v4.85.14 WhyScore: refresh handler uses 5 Qs per topic (Mixed difficulty)'
   })());
 test('v4.85.14 WhyScore: weakest handler uses 10 Qs per topic',
   (() => {
-    const body = _fnBody(js, '_startReadinessWeakestQuiz');
+    const body = _fnBody(js, '_startReadinessWeakestQuiz') + _fnBody(js, '_startTopicsQuiz');
     return body && /topicNames\.length\s*\*\s*10/.test(body);
   })());
 test('v4.85.14 WhyScore CSS: .ana-why-score grid spans full width',
