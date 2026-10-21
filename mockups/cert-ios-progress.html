@@ -66,6 +66,15 @@
   @media (hover:hover) and (pointer:fine){ .app-theme:hover{ border-color:color-mix(in oklab,var(--accent) 36%,var(--border)); } }
   .app-theme svg{ width:17px; height:17px; stroke:currentColor; fill:none; stroke-width:1.9; stroke-linecap:round; stroke-linejoin:round; }
 
+  /* Progress | Analytics view switch (B1, 21 Oct): neutral iOS segmented control above the accent section pills */
+  .view-switch { flex: 0 0 auto; display: flex; gap: 4px; margin: 2px 18px 4px; padding: 3px; border-radius: 12px; border: 1px solid var(--border);
+    background: color-mix(in oklab, var(--ink) 5%, var(--surface-2)); }
+  .view-switch button { flex: 1 1 0; border: 0; background: transparent; border-radius: 9px; padding: 8px 6px; cursor: pointer;
+    font: 700 12.5px/1 Inter, sans-serif; color: var(--muted); transition: background .2s var(--ease), color .2s, transform .14s var(--ease); }
+  .view-switch button:active { transform: scale(0.97); }
+  .view-switch button[aria-pressed="true"] { background: var(--surface); color: var(--ink);
+    box-shadow: 0 1px 0 color-mix(in oklab, var(--ink) 6%, transparent), 0 4px 10px -6px rgba(0,0,0,.45); }
+  @media (hover:hover) and (pointer:fine) { .view-switch button:not([aria-pressed="true"]):hover { color: var(--ink-soft); } }
   /* swipe-paged shell: sticky segmented control + horizontal scroll-snap pager */
   .seg { flex:0 0 auto; display:flex; gap:8px; overflow-x:auto; padding:8px 16px 10px; scrollbar-width:none; }
   .seg::-webkit-scrollbar{ display:none; }
@@ -259,6 +268,10 @@
             <button class="tb-set" type="button" aria-label="Settings"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M19 12a7 7 0 0 0-.1-1l2-1.5-2-3.5-2.4 1a7 7 0 0 0-1.7-1L16.5 2h-4l-.3 2.6a7 7 0 0 0-1.7 1l-2.4-1-2 3.5 2 1.5a7 7 0 0 0 0 2l-2 1.5 2 3.5 2.4-1a7 7 0 0 0 1.7 1l.3 2.6h4l.3-2.6a7 7 0 0 0 1.7-1l2.4 1 2-3.5-2-1.5a7 7 0 0 0 .1-1z"></path></svg></button>
             <button class="app-theme" id="appTheme" type="button" aria-label="Switch theme"><svg id="appThemeIcon" viewBox="0 0 24 24" aria-hidden="true"></svg></button>
           </div>
+
+          <!-- B1: Progress | Analytics switch -->
+          <div class="view-switch" role="group" aria-label="View"><button type="button" data-view="progress" aria-pressed="true">Progress</button><button type="button" data-view="analytics" aria-pressed="false">Analytics</button></div>
+
 
           <!-- SEGMENTED CONTROL (chips) -->
           <div class="seg" id="seg">
@@ -514,9 +527,9 @@
 
           <div class="tabbar">
             <button class="tab" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11l8-7 8 7"></path><path d="M6 10v9h12v-9"></path></svg><span>Home</span></button>
+            <button class="tab" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10"></path></svg><span>Drills</span></button>
             <button class="tab on" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19V9M12 19V4M19 19v-7"></path></svg><span>Progress</span></button>
-            <button class="tab" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="5" r="2"></circle><circle cx="12" cy="5" r="2"></circle><circle cx="19" cy="12" r="2"></circle><circle cx="5" cy="12" r="2"></circle><circle cx="12" cy="19" r="2"></circle><circle cx="19" cy="19" r="2"></circle></svg><span>Analytics</span></button>
-            <button class="tab" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M19 12a7 7 0 0 0-.1-1l2-1.5-2-3.5-2.4 1a7 7 0 0 0-1.7-1L16.5 2h-4l-.3 2.6a7 7 0 0 0-1.7 1l-2.4-1-2 3.5 2 1.5a7 7 0 0 0 0 2l-2 1.5 2 3.5 2.4-1a7 7 0 0 0 1.7 1l.3 2.6h4l.3-2.6a7 7 0 0 0 1.7-1l2.4 1 2-3.5-2-1.5a7 7 0 0 0 .1-1z"></path></svg><span>Settings</span></button>
+            <button class="tab" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"></circle><path d="M4 21a8 8 0 0 1 16 0"></path></svg><span>Account</span></button>
           </div>
 
         </div>
@@ -580,6 +593,9 @@
         var chip = chips[i];
         if (chip) chip.scrollIntoView({ inline: 'center', block: 'nearest' });
       }
+      // ?p=N opens on page N (E2E HUD, B1)
+      var _p = parseInt((location.search.match(/[?&]p=(\d+)/) || [])[1], 10);
+      if (_p > 0 && pages[_p]) { setTimeout(function () { pager.scrollTo({ left: pages[_p].offsetLeft, behavior: 'auto' }); setActive(_p); }, 30); }
       var io = new IntersectionObserver(function(entries){
         entries.forEach(function(entry){
           if (entry.isIntersecting && entry.intersectionRatio >= 0.6){
