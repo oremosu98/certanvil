@@ -19,12 +19,20 @@ const { fs, html, path, ROOT, results, test } = require('./_context');
     // Task 4: phone hooks on the exam page, hidden on desktop
     test('exam top bar carries hidden .ix-cn / .ix-cs counter spans', /<span class="ix-cn" hidden><\/span><span class="ix-cs" hidden><\/span>/.test(html));
     test('End reads "End Exam" on desktop and "End" on phones', html.includes('<span class="ix-long">End Exam</span><span class="ix-short" hidden>End</span>'));
-    test('the dock Flag sits before Next, hidden on desktop', /<button type="button" class="ix-flag" hidden onclick="examToggleFlag\(\)" aria-pressed="false">Flag<\/button>\s*<button class="btn btn-primary" id="exam-next-btn"/.test(html));
+    test('the dock Flag sits before Next, hidden on desktop', /<button type="button" class="ix-flag" hidden aria-pressed="false">Flag<\/button>\s*<button class="btn btn-primary" id="exam-next-btn"/.test(html));
     test('the question card has a hidden Flagged chip', html.includes('<span class="ix-flagged" hidden>Flagged</span>'));
     test('lift-ios.css makes #page-exam one fixed viewport with the page animation off',
       ios.includes('html[data-theme] body #page-exam.active { position: fixed !important; inset: 0 !important;') && /#page-exam\.active \{[^}]*animation: none !important; transform: none !important;/.test(ios));
     test('lift-ios.css hides the navigator, kbd hints and top-bar Flag on phones',
       ios.includes('#page-exam .qnav-toggle, html[data-theme] body #page-exam .qnav-grid, html[data-theme] body #page-exam .quiz-kbd-hints, html[data-theme] body #page-exam #exam-flag-btn { display: none !important; }'));
+    // Task 5: End dialog grid + in-app sheets (phones); desktop keeps confirm()
+    const ex = fs.readFileSync(path.join(ROOT, 'features/exam.js'), 'utf8');
+    test('features/exam.js exports examJumpTo and examReviewFirst', /window\.examJumpTo\s*=\s*examJumpTo;/.test(ex) && /window\.examReviewFirst\s*=\s*examReviewFirst;/.test(ex));
+    test('features/exam.js has the _examSheet bottom sheet, used by leave and abandon on phones',
+      /function _examSheet\(o\)/.test(ex) && /_examSheet\(\{ title: 'Leave the exam\?'/.test(ex) && /_examSheet\(\{ title: 'Abandon this exam\?'/.test(ex));
+    test('desktop leave and abandon still use confirm()', /confirm\('Leave the exam\? The clock keeps running/.test(ex) && /confirm\('Abandon this exam and return to the menu\?/.test(ex));
+    test('index.html has the sheet, its scrim and the jump grid, all hidden by default',
+      html.includes('<div id="exam-sheet-scrim" class="ix-scrim" hidden></div>') && /<div id="exam-sheet" class="ix-sheet" role="dialog" aria-modal="true" aria-labelledby="exam-sheet-title" hidden>/.test(html) && html.includes('<div class="ix-jump" hidden>'));
     const appLines = fs.readFileSync(path.join(ROOT, 'app.js'), 'utf8').split('\n').length;
     test('app.js stays at its 8301-line ratchet (B2 adds nothing there)', appLines === 8301);
   } catch (err) {

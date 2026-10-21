@@ -1655,7 +1655,7 @@
       <span><kbd>&larr;</kbd><kbd>&rarr;</kbd> navigate</span>
       <span><kbd>F</kbd> flag</span>
     </div>
-    <button type="button" class="ix-flag" hidden onclick="examToggleFlag()" aria-pressed="false">Flag</button>
+    <button type="button" class="ix-flag" hidden aria-pressed="false">Flag</button>
     <button class="btn btn-primary" id="exam-next-btn" onclick="examNext()" style="padding:12px 20px"><span class="ix-long">Next &#8594;</span><span class="ix-short ix-arr" hidden>Next</span></button>
   </div>
 </div>
@@ -1677,10 +1677,28 @@
     </div>
     <div class="modal-actions">
       <button class="btn btn-ghost" onclick="goToFirstFlagged()" id="modal-flagged-btn">&#9873; Review Flagged First</button>
-      <button class="btn btn-primary" onclick="submitExam()">Submit &amp; See Results</button>
-      <button class="btn btn-danger" onclick="abandonExam()">Abandon &middot; Back to Menu</button>
+      <!-- v8.186.0 Lift B2: phone review button ("Review the N you skipped first"), filled by showExamModal -->
+      <button type="button" class="ix-review" hidden></button>
+      <button class="btn btn-primary" onclick="submitExam()"><span class="ix-long">Submit &amp; See Results</span><span class="ix-short" hidden>Submit and see results</span></button>
+      <button class="btn btn-danger" onclick="abandonExam()"><span class="ix-long">Abandon &middot; Back to Menu</span><span class="ix-short" hidden>Abandon exam</span></button>
+    </div>
+    <!-- v8.186.0 Lift B2: phone "Jump to a question" grid (the desktop navigator's job) -->
+    <div class="ix-jump" hidden>
+      <button type="button" class="ix-jump-t" aria-expanded="false" aria-controls="ix-jgrid">Jump to a question</button>
+      <div class="ix-jgrid" id="ix-jgrid" role="list"></div>
+      <div class="ix-jkey" aria-hidden="true"><span><i class="a"></i>Answered</span><span><i></i>Skipped</span><span><i class="f"></i>Flagged</span></div>
     </div>
   </div>
+</div>
+
+<!-- v8.186.0 Lift B2: in-app sheet for leaving or abandoning a running exam on phones (desktop keeps confirm()) -->
+<div id="exam-sheet-scrim" class="ix-scrim" hidden></div>
+<div id="exam-sheet" class="ix-sheet" role="dialog" aria-modal="true" aria-labelledby="exam-sheet-title" hidden>
+  <div class="ix-sheet-grip" aria-hidden="true"></div>
+  <h3 id="exam-sheet-title"></h3>
+  <p class="ix-sheet-body"></p>
+  <button type="button" class="ix-sheet-stay"></button>
+  <button type="button" class="ix-sheet-go"></button>
 </div>
 
 <!-- ══════════════════════════════════════════

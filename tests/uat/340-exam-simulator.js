@@ -60,7 +60,7 @@ const { _fnBody, js, read, results, test, vm } = require('./_context');
         'var examQuestions = [' + JSON.stringify(mcq(1)) + '], examAnswers = [' + JSON.stringify(blank()) + '];' +
         'function _releaseExamWakeLock() {}' +
         'var _EXAM_OWN_PAGES = ["exam", "exam-results", "review", "loading"];', L);
-      vm.runInContext([fn('_examPbqTouched'), fn('_examAnswered'), fn('_examSaveState'), fn('_examInProgress'), fn('examLeaveOk')].join('\n'), L);
+      vm.runInContext([fn('_examPbqTouched'), fn('_examAnswered'), fn('_examSaveState'), fn('_examInProgress'), fn('_examSuspend'), fn('examLeaveOk')].join('\n'), L);
       var ok = vm.runInContext('examLeaveOk()', L);
       return { ok: ok, asked: !!L.__asked, mode: vm.runInContext('examMode', L), timer: vm.runInContext('examTimer', L), saved: !!L.__store.nplus_exam_state };
     }
@@ -163,7 +163,7 @@ const { _fnBody, js, read, results, test, vm } = require('./_context');
       'var __started = 0; function startExamTimer() { __started++; examEndTime = Date.now() + examTimeLeft * 1000; examTimer = 9; }' +
       'function _releaseExamWakeLock() {} function _examRenderPaused() {} var document = { getElementById: function () { return null; } };', PZ);
     vm.runInContext('var _examPausedAt = 0, _examPausedMs = 0, _examPauses = 0;' + [fn('_examPbqTouched'), fn('_examAnswered'), fn('_examSaveState'), fn('examSavedState'),
-      fn('examIsPaused'), fn('examTogglePause'), fn('_examPause'), fn('_examResumeFromPause'), fn('_examInProgress'), fn('examLeaveOk')].join('\n'), PZ);
+      fn('examIsPaused'), fn('examTogglePause'), fn('_examPause'), fn('_examResumeFromPause'), fn('_examInProgress'), fn('_examSuspend'), fn('examLeaveOk')].join('\n'), PZ);
     vm.runInContext('examTogglePause();', PZ);
     var paused = vm.runInContext('({ p: examIsPaused(), timer: examTimer, left: examTimeLeft, st: examSavedState() })', PZ);
     test('Exam pause: Pause stops the clock, keeps the time left and saves the exam as paused',

@@ -1508,3 +1508,78 @@ html[data-theme] body #page-exam {
   --ix-pause-ic: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23e0912f' stroke='%23e0912f' stroke-width='1.5' stroke-linejoin='round'><rect x='6' y='5' width='4' height='14' rx='1'/><rect x='14' y='5' width='4' height='14' rx='1'/></svg>");
 }
 html[data-theme="light"] body #page-exam { --ix-pause-ic: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23964514' stroke='%23964514' stroke-width='1.5' stroke-linejoin='round'><rect x='6' y='5' width='4' height='14' rx='1'/><rect x='14' y='5' width='4' height='14' rx='1'/></svg>"); }
+
+/* ═════════════════════ EXAM End dialog + leave/abandon sheet (cert-ios-exam.html 597e06e8, B2) · ix- ═════════════════════ */
+html[data-theme] body #exam-modal { background: color-mix(in oklab, var(--bg) 58%, transparent) !important; padding: 0 22px !important; font: 15px/1.55 Inter, -apple-system, BlinkMacSystemFont, sans-serif; -webkit-font-smoothing: antialiased; }
+html[data-theme] body #exam-modal .modal-box { max-width: none !important; width: 100% !important; max-height: calc(100dvh - 96px); overflow-y: auto; overscroll-behavior: contain; padding: 20px 19px 18px !important; border: 1px solid var(--border) !important; border-radius: 22px !important; background: var(--surface) !important; box-shadow: 0 30px 70px -28px rgba(0,0,0,.6) !important; }
+html[data-theme] body #exam-modal button { font-family: inherit; box-sizing: border-box; }
+html[data-theme] body #exam-modal .ix-long { display: none !important; }
+html[data-theme] body #exam-modal .ix-short[hidden] { display: inline !important; }
+html[data-theme] body #exam-modal .ed-modalhead { margin: 0 !important; padding: 0 !important; border: 0 !important; }
+html[data-theme] body #exam-modal .ed-modalhead-eyebrow { display: inline-flex !important; align-items: center !important; gap: 7px !important; margin: 0 !important; padding: 0 !important; font: 800 9.5px/1 Inter, sans-serif !important; letter-spacing: 0.14em !important; text-transform: uppercase !important; color: var(--text-dim) !important; opacity: 1 !important; }
+html[data-theme] body #exam-modal .ed-modalhead-eyebrow::before { content: "" !important; display: block !important; position: static !important; color: inherit !important; flex: 0 0 auto; width: 13px !important; height: 13px !important; margin: 0 !important; border: 0 !important; border-radius: 0 !important; background: currentColor !important; -webkit-mask: var(--ix-done) center / contain no-repeat; mask: var(--ix-done) center / contain no-repeat; }
+html[data-theme] body #exam-modal .ed-modalhead-title { font: 600 23px/1.1 Fraunces, Georgia, serif !important; letter-spacing: -0.012em !important; color: var(--text) !important; margin: 11px 0 0 !important; }
+html[data-theme] body #exam-modal .ed-modalhead-title em { font-style: normal !important; color: var(--accent) !important; }
+html[data-theme] body #exam-modal .modal-stats { display: flex !important; gap: 8px !important; margin: 16px 0 !important; }
+html[data-theme] body #exam-modal .modal-stat { flex: 1 1 0 !important; border: 1px solid var(--border) !important; border-radius: 13px !important; background: var(--bg) !important; padding: 12px 8px !important; text-align: center; }
+html[data-theme] body #exam-modal .modal-stat .ms-val { display: block; font: 600 24px/1 Fraunces, Georgia, serif !important; color: var(--text) !important; font-variant-numeric: lining-nums tabular-nums; }
+html[data-theme] body #exam-modal #modal-unanswered { color: var(--miss) !important; }
+html[data-theme] body #exam-modal #modal-flagged { color: var(--accent-deep) !important; }
+html[data-theme] body #exam-modal .modal-stat .ms-lbl { display: block; font: 700 9.5px/1 Inter, sans-serif !important; letter-spacing: 0.08em !important; text-transform: uppercase !important; color: var(--text-dim) !important; margin-top: 7px; }
+html[data-theme] body #exam-modal .modal-actions { display: block !important; margin: 0 !important; }
+html[data-theme] body #exam-modal #modal-flagged-btn { display: none !important; }
+html[data-theme] body #exam-modal .ix-review[hidden] { display: flex !important; }
+html[data-theme] body #exam-modal .ix-review.is-empty { display: none !important; }
+html[data-theme] body #exam-modal .ix-review { width: 100%; align-items: center; justify-content: center; gap: 8px; margin: 0 0 9px; padding: 13px; border: 1px solid var(--border); border-radius: 13px; background: transparent; color: var(--text-mid); font: 650 13.5px/1 Inter, sans-serif; cursor: pointer; transition: background-color .18s, border-color .18s, transform .14s var(--ios-ease); }
+html[data-theme] body #exam-modal .ix-review::before { content: ""; width: 15px; height: 15px; flex: 0 0 auto; background: currentColor; -webkit-mask: var(--ix-flag) center / contain no-repeat; mask: var(--ix-flag) center / contain no-repeat; }
+html[data-theme] body #exam-modal .ix-review:active { transform: scale(0.99); }
+@media (hover: hover) and (pointer: fine) { html[data-theme] body #exam-modal .ix-review:hover { border-color: color-mix(in oklab, var(--accent) 34%, var(--border)); background: color-mix(in oklab, var(--accent) 5%, transparent); } }
+html[data-theme] body #exam-modal .modal-actions .btn-primary { display: block !important; width: 100% !important; margin: 0 !important; padding: 14px !important; border: 0 !important; border-radius: 13px !important; background: var(--accent) !important; color: var(--on-accent) !important; font: 700 15px/1 Inter, sans-serif !important; box-shadow: 0 10px 22px -12px color-mix(in oklab, var(--accent) 70%, transparent) !important; transition: transform .15s var(--ios-ease), filter .2s !important; }
+html[data-theme] body #exam-modal .modal-actions .btn-primary:active { transform: scale(0.985); }
+html[data-theme] body #exam-modal .modal-actions .btn-danger { display: block !important; width: 100% !important; margin: 6px 0 0 !important; padding: 11px !important; border: 0 !important; background: transparent !important; color: var(--miss) !important; font: 650 13px/1 Inter, sans-serif !important; box-shadow: none !important; transition: opacity .15s var(--ios-ease) !important; }
+html[data-theme] body #exam-modal .modal-actions .btn-danger:active { opacity: .6; }
+/* Jump to a question: 7 columns of 40px+ squares (44pt with the gap) */
+html[data-theme] body #exam-modal .ix-jump[hidden] { display: block !important; }
+html[data-theme] body #exam-modal .ix-jump { margin-top: 4px; }
+html[data-theme] body #exam-modal .ix-jump-t { width: 100%; display: flex; align-items: center; justify-content: space-between; border: 0; background: none; padding: 10px 2px 6px; cursor: pointer; font: 650 12.5px/1 Inter, sans-serif; color: var(--text-mid); }
+html[data-theme] body #exam-modal .ix-jump-t::after { content: ""; width: 15px; height: 15px; background: currentColor; -webkit-mask: var(--ix-down) center / contain no-repeat; mask: var(--ix-down) center / contain no-repeat; transition: transform .2s var(--ios-ease); }
+html[data-theme] body #exam-modal .ix-jump.open .ix-jump-t::after { transform: rotate(180deg); }
+html[data-theme] body #exam-modal .ix-jgrid { display: none; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 5px; max-height: 236px; overflow-y: auto; scrollbar-width: thin; padding: 4px 3px 2px 1px; }
+html[data-theme] body #exam-modal .ix-jump.open .ix-jgrid { display: grid; }
+html[data-theme] body #exam-modal .ix-jgrid button { aspect-ratio: 1; min-height: 40px; padding: 0; border-radius: 9px; border: 1px solid var(--border); background: transparent; color: var(--text-dim); font: 700 12px/1 'Roboto Mono', monospace; cursor: pointer; }
+html[data-theme] body #exam-modal .ix-jgrid button.a { background: color-mix(in oklab, var(--accent) 16%, var(--surface)); border-color: transparent; color: var(--text-mid); }
+html[data-theme] body #exam-modal .ix-jgrid button.f { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+html[data-theme] body #exam-modal .ix-jgrid button.c { box-shadow: 0 0 0 2px var(--surface), 0 0 0 3.5px var(--text); }
+html[data-theme] body #exam-modal .ix-jkey { display: flex; gap: 12px; margin-top: 8px; font: 600 10.5px/1 Inter, sans-serif; color: var(--text-dim); }
+html[data-theme] body #exam-modal .ix-jkey i { display: inline-block; width: 9px; height: 9px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; border: 1px solid var(--border); }
+html[data-theme] body #exam-modal .ix-jkey i.a { background: color-mix(in oklab, var(--accent) 16%, var(--surface)); border-color: transparent; }
+html[data-theme] body #exam-modal .ix-jkey i.f { background: var(--accent); border-color: var(--accent); }
+@media (prefers-reduced-motion: no-preference) {
+  html[data-theme] body #exam-modal:not(.hidden) { animation: ix-fade .26s var(--ios-ease) both; }
+  html[data-theme] body #exam-modal:not(.hidden) .modal-box { animation: ix-pop .26s var(--ios-ease) both; }
+}
+@media (prefers-reduced-motion: reduce) { html[data-theme] body #exam-modal:not(.hidden) { animation: ix-fade .15s ease both; } }
+@keyframes ix-fade { from { opacity: 0; } }
+@keyframes ix-pop { from { opacity: 0; transform: scale(0.96); } }
+
+/* the leave / abandon sheet (E2E .lsheet): 360ms in, 200ms out */
+#exam-sheet-scrim { position: fixed; inset: 0; z-index: 400; background: color-mix(in oklab, var(--bg) 58%, transparent); opacity: 0; transition: opacity .2s var(--ios-ease); }
+#exam-sheet-scrim.open { opacity: 1; transition: opacity .26s var(--ios-ease); }
+#exam-sheet { position: fixed; left: 0; right: 0; bottom: 0; z-index: 401; box-sizing: border-box; padding: 10px 20px calc(22px + env(safe-area-inset-bottom)); border-top: 1px solid var(--border); border-radius: 22px 22px 0 0; background: var(--surface); color: var(--text); font: 15px/1.55 Inter, -apple-system, BlinkMacSystemFont, sans-serif; -webkit-font-smoothing: antialiased; transform: translateY(100%); transition: transform .2s var(--ios-ease); }
+#exam-sheet.open { transform: none; transition: transform .36s var(--ios-ease); }
+#exam-sheet .ix-sheet-grip { width: 38px; height: 5px; border-radius: 999px; background: color-mix(in oklab, var(--text) 18%, transparent); margin: 0 auto 16px; }
+#exam-sheet h3 { font: 600 21px/1.2 Fraunces, Georgia, serif !important; letter-spacing: -0.01em !important; text-transform: none !important; color: var(--text); margin: 0 0 6px; }
+#exam-sheet .ix-sheet-body { font-size: 13.5px; line-height: 1.5; color: var(--text-mid); margin: 0 0 18px; }
+#exam-sheet button { font-family: inherit; box-sizing: border-box; cursor: pointer; }
+#exam-sheet .ix-sheet-stay { width: 100%; border: 0; border-radius: 13px; padding: 15px; background: var(--accent); color: var(--on-accent); font: 700 15px/1 Inter, sans-serif; transition: transform .15s var(--ios-ease); }
+#exam-sheet .ix-sheet-stay:active { transform: scale(0.985); }
+#exam-sheet .ix-sheet-go { width: 100%; margin-top: 6px; border: 0; background: transparent; padding: 12px; font: 650 13.5px/1 Inter, sans-serif; color: var(--miss); }
+@media (prefers-reduced-motion: reduce) {
+  #exam-sheet { transform: none; opacity: 0; transition: opacity .2s ease; }
+  #exam-sheet.open { opacity: 1; transition: opacity .2s ease; }
+}
+html[data-theme] body #exam-modal, #exam-sheet {
+  --ix-flag: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M5 21V4h11l-1.5 4L16 12H5'/></svg>");
+  --ix-done: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'><path d='M9 11l3 3L22 4M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11'/></svg>");
+  --ix-down: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'><path d='M6 9l6 6 6-6'/></svg>");
+}

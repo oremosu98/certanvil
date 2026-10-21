@@ -14,7 +14,7 @@ async function openExam(page, viewport, o) {
   await page.addInitScript((op) => {
     if (sessionStorage.getItem('seeded')) return; sessionStorage.setItem('seeded', '1');
     const T = ['DNS & DHCP', 'OSPF', 'PKI & Certificates', 'Cable Issues', 'Monitoring & SNMP'];
-    const qs = Array.from({ length: 12 }, (_, i) => ({ type: 'mcq', question: 'Sample exam question ' + (i + 1) + '?',
+    const qs = Array.from({ length: 12 }, (_, i) => ({ type: 'mcq', question: 'Sample exam question ' + (i + 1) + '?' + (op.long ? ' A long scenario sentence about a branch network.'.repeat(40) : ''),
       options: { A: 'Alpha', B: 'Bravo', C: 'Charlie', D: 'Delta' }, answer: 'A', explanation: 'Because A.', topic: T[i % 5], difficulty: 'Exam Level' }));
     if (op.pbq) qs[0] = { type: 'simlab', question: 'Find the mask', topic: 'IPv4', explanation: '', simlab: { id: 'b2-pbq', cert: 'netplus', objective: '1.4', topic: 'IPv4',
       title: 'Find the mask', scenario: 'Branch cannot reach HQ.', estMinutes: 5,
@@ -191,5 +191,107 @@ test.describe('Lift B2 exam desktop is unchanged', () => {
     await expect(ex.locator('.ix-flag')).toBeHidden();
     await expect(ex.locator('.ix-cn')).toBeHidden();
     await expect(ex.locator('#exam-next-btn')).toHaveText(/Next/, { useInnerText: true });
+  });
+});
+
+// ── Task 5: End dialog grid, leave and abandon sheets ──
+for (const vp of PHONES) {
+  test.describe('Lift B2 End dialog and sheets @' + vp.width, () => {
+    test('End shows the counts and "Review the 5 you skipped first" goes to the first skipped', async ({ page }) => {
+      await openExam(page, vp);
+      await page.locator('#page-exam .end-exam-btn').click();
+      const m = page.locator('#exam-modal');
+      await expect(m).not.toHaveClass(/hidden/);
+      await expect(m.locator('#modal-answered')).toHaveText('7');
+      await expect(m.locator('#modal-unanswered')).toHaveText('5');
+      await expect(m.locator('#modal-flagged')).toHaveText('1');
+      await expect(m.locator('#modal-flagged-btn')).toBeHidden();
+      const review = m.locator('.ix-review');
+      await expect(review).toHaveText('Review the 5 you skipped first');
+      await review.click();
+      await expect(m).toHaveClass(/hidden/);
+      await expect(page.locator('#page-exam .ix-cn')).toHaveText('Question 8 of 12');
+    });
+
+    test('Jump to a question opens a grid and goes where you tap', async ({ page }) => {
+      await openExam(page, vp);
+      await page.locator('#page-exam .end-exam-btn').click();
+      const t = page.locator('#exam-modal .ix-jump-t');
+      await expect(t).toHaveAttribute('aria-expanded', 'false');
+      await t.click();
+      await expect(t).toHaveAttribute('aria-expanded', 'true');
+      const cells = page.locator('#exam-modal .ix-jgrid button');
+      await expect(cells).toHaveCount(12);
+      const box = await cells.first().boundingBox();
+      expect(box.height).toBeGreaterThanOrEqual(40);
+      await cells.filter({ hasText: /^9$/ }).click();
+      await expect(page.locator('#exam-modal')).toHaveClass(/hidden/);
+      await expect(page.locator('#page-exam .ix-cn')).toHaveText('Question 9 of 12');
+      expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(vp.width);
+    });
+
+    test('a new question starts at the top of the card', async ({ page }) => {
+      await openExam(page, vp, { long: true });
+      const card = page.locator('#page-exam .q-card');
+      await card.evaluate(el => { el.scrollTop = 400; });
+      expect(await card.evaluate(el => el.scrollTop)).toBeGreaterThan(0);
+      await page.locator('#exam-next-btn').click();
+      expect(await card.evaluate(el => el.scrollTop)).toBe(0);
+    });
+
+    test('leaving mid-exam asks in a sheet: Stay keeps the exam, Leave lands on Home', async ({ page }) => {
+      await openExam(page, vp);
+      let native = 0; page.on('dialog', d => { native++; d.dismiss(); });
+      const sheet = page.locator('#exam-sheet');
+      await page.evaluate(() => goSetup());
+      await expect(sheet).toBeVisible();
+      await expect(sheet.locator('#exam-sheet-title')).toHaveText('Leave the exam?');
+      await expect(sheet).toContainText('The clock keeps running, and you can resume from Home.');
+      await sheet.locator('.ix-sheet-stay').click();
+      await expect(sheet).toBeHidden();
+      await expect(page.locator('#page-exam')).toHaveClass(/active/);
+      await page.evaluate(() => goSetup());
+      await sheet.locator('.ix-sheet-go').click();
+      await expect(page.locator('#page-setup')).toHaveClass(/active/);
+      await expect(page.getByText('Resume your exam').first()).toBeVisible();
+      expect(native).toBe(0);
+    });
+
+    test('Leave goes to the page that was asked for', async ({ page }) => {
+      await openExam(page, vp);
+      await page.evaluate(() => showPage('progress'));
+      await page.locator('#exam-sheet .ix-sheet-go').click();
+      await expect(page.locator('#page-progress')).toHaveClass(/active/);
+    });
+
+    test('Abandon asks in a sheet; Keep going returns to the dialog', async ({ page }) => {
+      await openExam(page, vp);
+      let native = 0; page.on('dialog', d => { native++; d.dismiss(); });
+      await page.locator('#page-exam .end-exam-btn').click();
+      await page.locator('#exam-modal .btn-danger').click();
+      const sheet = page.locator('#exam-sheet');
+      await expect(sheet.locator('#exam-sheet-title')).toHaveText('Abandon this exam?');
+      await expect(sheet).toContainText('Your answers will be lost.');
+      await sheet.locator('.ix-sheet-stay').click();
+      await expect(sheet).toBeHidden();
+      await expect(page.locator('#exam-modal')).not.toHaveClass(/hidden/);
+      await page.locator('#exam-modal .btn-danger').click();
+      await sheet.locator('.ix-sheet-go').click();
+      await expect(page.locator('#page-setup')).toHaveClass(/active/);
+      expect(await page.evaluate(() => localStorage.getItem('nplus_exam_state'))).toBeNull();
+      expect(native).toBe(0);
+    });
+  });
+}
+
+test.describe('Lift B2 desktop leave is unchanged', () => {
+  test('desktop leave still asks with confirm()', async ({ page }) => {
+    await openExam(page, DESKTOP);
+    let msg = '';
+    page.once('dialog', d => { msg = d.message(); d.dismiss(); });
+    await page.evaluate(() => goSetup());
+    await expect.poll(() => msg).toContain('Leave the exam?');
+    await expect(page.locator('#page-exam')).toHaveClass(/active/);
+    await expect(page.locator('#exam-sheet')).toBeHidden();
   });
 });

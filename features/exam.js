@@ -104,11 +104,62 @@
     if (_EXAM_OWN_PAGES.indexOf(target) !== -1) return true;
     if (examMode && _examPausedAt) { _examSaveState(); examMode = false; return true; }   // paused: the clock is already stopped
     if (!_examInProgress()) return true;
+    // v8.186.0 Lift B2: phones ask in the app's own sheet, then finish the trip themselves
+    if (typeof _examIsPhone === 'function' && _examIsPhone()) {
+      _examSheet({ title: 'Leave the exam?', body: 'The clock keeps running, and you can resume from Home.', go: 'Leave', stay: 'Stay' }).then(function (leave) {
+        if (!leave || !_examInProgress()) return;
+        _examSuspend();
+        if (!target || target === 'setup') goSetup(); else showPage(target);
+      });
+      return false;
+    }
     if (!confirm('Leave the exam? The clock keeps running, and you can resume from Home.')) return false;
+    _examSuspend();
+    return true;
+  }
+  // Leave = suspend: the in-page clock stops, the saved deadline keeps running.
+  function _examSuspend() {
     _examSaveState();
     clearInterval(examTimer); examTimer = null; examMode = false;
     _releaseExamWakeLock();
-    return true;
+  }
+  function _examIsPhone() { return !!(window.matchMedia && window.matchMedia('(max-width: 899px)').matches); }
+  // v8.186.0 Lift B2: the E2E bottom sheet (.lsheet) in place of confirm() on phones.
+  // Resolves true for `go`, false for `stay` (Stay, the scrim, Escape). One at a time.
+  let _examSheetOpen = null;
+  function _examSheet(o) {
+    const sheet = document.getElementById('exam-sheet'), scrim = document.getElementById('exam-sheet-scrim');
+    if (!sheet || !scrim) return Promise.resolve(false);
+    if (_examSheetOpen) return Promise.resolve(false);
+    return new Promise(function (resolve) {
+      const back = document.activeElement;
+      const stay = sheet.querySelector('.ix-sheet-stay'), go = sheet.querySelector('.ix-sheet-go');
+      document.getElementById('exam-sheet-title').textContent = o.title;
+      sheet.querySelector('.ix-sheet-body').textContent = o.body;
+      stay.textContent = o.stay; go.textContent = o.go;
+      function close(val) {
+        if (_examSheetOpen !== close) return;
+        _examSheetOpen = null;
+        document.removeEventListener('keydown', onKey, true);
+        sheet.classList.remove('open'); scrim.classList.remove('open');
+        setTimeout(function () { if (!sheet.classList.contains('open')) { sheet.hidden = true; scrim.hidden = true; } }, 200);   // BRAND §6: sheet out 200ms
+        if (back && back.focus) try { back.focus({ preventScroll: true }); } catch (_) {}
+        resolve(val);
+      }
+      function onKey(e) {
+        if (e.key === 'Escape') { e.preventDefault(); close(false); }
+        else if (e.key === 'Tab') { e.preventDefault(); (document.activeElement === stay ? go : stay).focus({ preventScroll: true }); }
+      }
+      _examSheetOpen = close;
+      stay.onclick = function () { close(false); };
+      go.onclick = function () { close(true); };
+      scrim.onclick = function () { close(false); };
+      document.addEventListener('keydown', onKey, true);
+      sheet.hidden = false; scrim.hidden = false;
+      void sheet.offsetHeight;   // commit the closed state so the slide-in runs
+      sheet.classList.add('open'); scrim.classList.add('open');
+      stay.focus({ preventScroll: true });
+    });
   }
   async function resumeExam() {
     const st = examSavedState();
@@ -569,7 +620,12 @@
       _page.style.setProperty('--ix-answered', ((answeredCount / total) * 100) + '%');
       _page.classList.toggle('ix-is-flagged', !!ans.flagged);
       const dockFlag = _page.querySelector('.ix-flag');
-      if (dockFlag) dockFlag.setAttribute('aria-pressed', ans.flagged ? 'true' : 'false');
+      if (dockFlag) {
+        dockFlag.setAttribute('aria-pressed', ans.flagged ? 'true' : 'false');
+        if (!dockFlag._ixBound) { dockFlag._ixBound = true; dockFlag.addEventListener('click', examToggleFlag); }   // no inline on*= (Sec-P7)
+      }
+      // the phone card scrolls on its own, so a new question starts at its top
+      if (_page._ixAt !== examCurrent) { _page._ixAt = examCurrent; const card = _page.querySelector('.q-card'); if (card) card.scrollTop = 0; }
     }
     document.getElementById('exam-prog-fill').style.width = ((examCurrent / total) * 100) + '%';
     // v4.54.9: segmented per-question progress dots (exam parity with quiz)
@@ -677,6 +733,7 @@
     flagBtn.disabled = flaggedCount === 0;
     flagBtn.classList.toggle('is-dimmed', flaggedCount === 0);
     const modal = document.getElementById('exam-modal');
+    if (_examIsPhone()) _examModalPhone(modal, unanswered, flaggedCount);   // v8.186.0 Lift B2
     modal.classList.remove('hidden');
     // Focus first button in modal for keyboard users
     setTimeout(() => {
@@ -699,6 +756,40 @@
     document.addEventListener('keydown', modal._escHandler);
   }
 
+  // v8.186.0 Lift B2: the E2E End dialog's review button and "Jump to a question" grid.
+  function _examModalPhone(modal, skipped, flagged) {
+    const review = modal.querySelector('.ix-review');
+    if (review) {
+      review.textContent = skipped ? `Review the ${skipped} you skipped first` : flagged ? `Review the ${flagged} you flagged first` : '';
+      review.classList.toggle('is-empty', !skipped && !flagged);
+      if (!review._ixBound) { review._ixBound = true; review.addEventListener('click', examReviewFirst); }
+    }
+    const jump = modal.querySelector('.ix-jump'), t = jump && jump.querySelector('.ix-jump-t'), grid = jump && jump.querySelector('.ix-jgrid');
+    if (!jump || !t || !grid) return;
+    jump.classList.remove('open'); t.setAttribute('aria-expanded', 'false');
+    if (!t._ixBound) {
+      t._ixBound = true;
+      t.addEventListener('click', function () { const o = jump.classList.toggle('open'); t.setAttribute('aria-expanded', String(o)); });
+      grid.addEventListener('click', function (e) { const b = e.target.closest('button[data-i]'); if (b) examJumpTo(+b.getAttribute('data-i')); });
+    }
+    grid.innerHTML = examAnswers.map(function (a, i) {
+      const st = i === examCurrent ? 'current' : a.flagged ? 'flagged' : _examAnswered(a) ? 'answered' : 'skipped';
+      const cls = (a.flagged ? 'f' : _examAnswered(a) ? 'a' : '') + (i === examCurrent ? ' c' : '');
+      return `<button type="button" role="listitem" class="${cls.trim()}" data-i="${i}" aria-label="Question ${i + 1}, ${st}">${i + 1}</button>`;
+    }).join('');
+  }
+  function examJumpTo(i) {
+    if (!Array.isArray(examQuestions) || i < 0 || i >= examQuestions.length) return;
+    hideExamModal();
+    examCurrent = i; renderExam(); window.scrollTo(0, 0);
+  }
+  // Phone review button: the first skipped question, or with none skipped the first flagged.
+  function examReviewFirst() {
+    const i = examAnswers.findIndex(function (a) { return !_examAnswered(a); });
+    if (i >= 0) { examJumpTo(i); return; }
+    goToFirstFlagged();
+  }
+
   function hideExamModal() {
     const modal = document.getElementById('exam-modal');
     modal.classList.add('hidden');
@@ -716,13 +807,18 @@
   }
 
   function abandonExam() {
-    if (confirm('Abandon this exam and return to the menu? All progress will be lost.')) {
-      clearInterval(examTimer); examTimer = null; examMode = false;
-      _examClearState();   // v8.162.0
-      hideExamModal();
-      renderHistoryPanel();
-      showPage('setup');
+    if (_examIsPhone()) {   // v8.186.0 Lift B2: the app's own sheet; Home through goSetup (a bare showPage skips the phone render)
+      _examSheet({ title: 'Abandon this exam?', body: 'Your answers will be lost.', go: 'Abandon', stay: 'Keep going' }).then(function (ok) { if (ok) _examAbandon(true); });
+      return;
     }
+    if (confirm('Abandon this exam and return to the menu? All progress will be lost.')) _examAbandon(false);
+  }
+  function _examAbandon(phone) {
+    clearInterval(examTimer); examTimer = null; examMode = false;
+    _examClearState();   // v8.162.0
+    hideExamModal();
+    renderHistoryPanel();
+    if (phone) goSetup(); else showPage('setup');
   }
 
   // ══════════════════════════════════════════
@@ -1059,6 +1155,8 @@
   window.goToFirstFlagged  = goToFirstFlagged;
   window.submitExam        = submitExam;
   window.abandonExam       = abandonExam;
+  window.examJumpTo        = examJumpTo;        // v8.186.0 Lift B2: End dialog grid
+  window.examReviewFirst   = examReviewFirst;
   // v7.96.0: quiz-engine.js's per-question-type render paths (MCQ/multi-select/
   // ordering/topology option clicks) call renderExam() as a bare identifier to
   // redraw the exam UI after recording an answer — a closure-captive-call
