@@ -23,6 +23,18 @@ const { _fnBody, fs, html, js, path, ROOT, results, test, vm } = require('./_con
     test('Review done: retry shows only when something was missed', /data-missed/.test(end));
     test('Review: srRetryMissed is exported', js.includes('window.srRetryMissed') && !!_fnBody(js, 'srRetryMissed'));
 
+    // final review fix 3: retries cost no credit, so a spent free cap must not refuse them
+    const rctx = vm.createContext({ Object, Array, String, Math, Set, SR_FREE_DAILY_CAP: 5,
+      _srIsFreeTier: () => true, _srFreeReviewedToday: () => 5, showToast: () => {}, showPage: () => {}, _renderSrCard: () => {},
+      document: { getElementById: () => ({ hidden: false }) } });
+    vm.runInContext('var _srSession = { results: [{ card: { qHash: "a" }, outcome: "wrong" }, { card: { qHash: "b" }, outcome: "correct-confident" }] };\n'
+      + (_fnBody(js, 'srRetryMissed') || ''), rctx);
+    vm.runInContext('srRetryMissed()', rctx);
+    const rs = vm.runInContext('_srSession', rctx);
+    test('Review retry: a free user with the cap spent can still retry missed cards (they cost no credit)',
+      rs.cards && rs.cards.length === 1 && rs.cards[0].qHash === 'a' && rs.cards[0]._retry === true && rs.retryPass === true);
+    test('Review retry: a retry pass tallies answers for the recap without rescheduling',
+      /if \(_srSession\.retryPass\)/.test(_fnBody(js, 'srMarkConfidence') || ''));
     test('index.html: phone header reads "Daily Review" with streak, theme and plan line hooks',
       /class="ed-pagehead-display iv-title" hidden>Daily Review</.test(html) && html.includes('id="iv-streak"') && html.includes('id="sr-plan-line"'));
     test('index.html: the done screen has the seal, "Review done" and the retry button',

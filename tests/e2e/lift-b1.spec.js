@@ -186,6 +186,19 @@ async function openReview(page, viewport) {
   await expect(page.locator('#page-sr-review')).toHaveClass(/active/);
 }
 
+async function finishReview(page, letters) {
+  for (const l of letters) {
+    await page.locator('#sr-card-host .sr-option[data-letter="' + l + '"]').click();
+    await page.locator('#page-sr-review .sr-confidence-confident, #page-sr-review .sr-confidence-wrong').first().click();
+  }
+  // the in-session retry brings missed cards back once; miss them again
+  while (await page.locator('#sr-card-host .sr-option').count()) {
+    await page.locator('#sr-card-host .sr-option[data-letter="D"]').click();
+    await page.locator('#page-sr-review .sr-confidence-wrong').click();
+  }
+  await expect(page.locator('#sr-complete')).toBeVisible();
+}
+
 for (const vp of PHONES) {
   test.describe('Lift B1 Daily Review @' + vp.width, () => {
     test('header, plan line and the waiting dock match the E2E', async ({ page }) => {
@@ -228,6 +241,21 @@ for (const vp of PHONES) {
       await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem('nplus_sr_queue')).length)).toBe(2);
     });
 
+    test('a perfect review shows no retry button (final review fix 1)', async ({ page }) => {
+      await openReview(page, vp);
+      await finishReview(page, ['C', 'B', 'A']);
+      await expect(page.locator('#page-sr-review .iv-retry')).toBeHidden();
+    });
+
+    test('the recap after a Retry counts the retried cards (final review fix 2)', async ({ page }) => {
+      await openReview(page, vp);
+      await finishReview(page, ['C', 'D', 'A']);
+      await page.locator('#page-sr-review .iv-retry').click();
+      await finishReview(page, ['B']);
+      const tiles = page.locator('#page-sr-review .sr-done-tiles b');
+      await expect(tiles).toHaveText(['1', '1', '0']);
+    });
+
     test('Review done shows the tiles and forecast; Retry replays only the missed card', async ({ page }) => {
       await openReview(page, vp);
       const answer = async (letter, conf) => {
@@ -264,6 +292,12 @@ test.describe('Lift B1 desktop is unchanged', () => {
     await expect(page.locator('#page-sr-review .iv-title')).toBeHidden();
     await expect(page.locator('#sr-plan-line')).toBeHidden();
     await expect(page.locator('#sr-progress-text')).toHaveText('1 of 3', { useInnerText: true });   // what desktop shows (the phone span is hidden)
+  });
+
+  test('desktop review-done never shows the phone retry button (final review fix 1)', async ({ page }) => {
+    await openReview(page, DESKTOP);
+    await finishReview(page, ['C', 'D', 'A']);
+    await expect(page.locator('#sr-complete .iv-retry')).toBeHidden();
   });
 
   test('desktop Analytics keeps the bento and leaves #ios-analytics empty', async ({ page }) => {

@@ -316,7 +316,8 @@ test.describe('Lift A custom quiz (phone)', () => {
       try { localStorage.setItem('nplus_history', JSON.stringify(h)); } catch (_) {}
     });
     await openApp(page, PHONE);
-    await page.evaluate(() => showPage('progress'));
+    // v8.185.0: arrive via the tab bar (it paints Progress, then shows it); a bare showPage only swaps pages
+    await page.locator('#lift-tabbar .lift-tab[data-page="progress"]').click();
     // v8.185.0 B1: at phone width Progress is the E2E screen; its rows drill through the same drillTopic.
     const row = page.locator('#ios-progress .ip-trow[data-t="AAA & Authentication"]').first();
     // open the row's domain page through its pill, as a user would

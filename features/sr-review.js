@@ -611,12 +611,10 @@
     const prev = _srSession;
     const cards = ((prev && prev.results) || []).filter(r => r.outcome === 'wrong').map(r => Object.assign({}, r.card, { _retry: true }));
     if (!cards.length) return;
-    if (typeof _srIsFreeTier === 'function' && _srIsFreeTier() && (SR_FREE_DAILY_CAP - _srFreeReviewedToday()) <= 0) {
-      if (typeof showToast === 'function') showToast("Today's " + SR_FREE_DAILY_CAP + ' free reviews are done. Your missed cards come back tomorrow.', 'info');
-      return;
-    }
+    // _retry cards skip scheduling and never spend a free credit (as the in-session retry), so no cap gate here.
+    // retryPass makes srMarkConfidence tally them, so the recap counts what was just answered.
     _srSession = { cards: cards, totalDueCount: cards.length, index: 0, answersGiven: 0, correctConfident: 0, correctUncertain: 0, wrong: 0,
-      results: [], pickedLetter: null, pickedLetters: new Set(), pickedIdx: null, revealed: false };
+      results: [], pickedLetter: null, pickedLetters: new Set(), pickedIdx: null, revealed: false, retryPass: true };
     showPage('sr-review');
     document.getElementById('sr-empty').hidden = true;
     document.getElementById('sr-complete').hidden = true;
@@ -1070,6 +1068,14 @@
       // #1: retry pass — re-exposure only. The card was already scheduled and
       // tallied on its first attempt this session, so do not re-do either, and
       // do not append it again (one retry per card, max).
+      // v8.185.0: a "Retry the N you missed" pass still tallies for its own recap (no rescheduling, no credit).
+      if (_srSession.retryPass) {
+        _srSession.answersGiven++;
+        if (outcome === 'correct-confident') _srSession.correctConfident++;
+        else if (outcome === 'correct-uncertain') _srSession.correctUncertain++;
+        else _srSession.wrong++;
+        _srSession.results.push({ card: card, outcome: outcome });
+      }
       _srSession.index++;
     } else {
       // Apply SM-2 scheduling — skipped in #8 top-up practice mode so extra

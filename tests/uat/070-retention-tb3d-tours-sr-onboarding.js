@@ -1077,7 +1077,8 @@ test('v7.20.0 SR #5: why-due microcopy rendered in card',
 test('v7.20.0 SR #1: same-session retry appends a _retry clone on wrong',
   /outcome === 'wrong'[\s\S]{0,160}_srSession\.cards\.push\([\s\S]{0,80}_retry:\s*true/.test(js));
 test('v7.20.0 SR #1: retry pass does not re-tally or re-append',
-  /if \(card\._retry\)[\s\S]{0,400}_srSession\.index\+\+/.test(js));
+  // v8.185.0: only an explicit "Retry the N you missed" pass (retryPass) tallies, for its own recap
+  /if \(card\._retry\)[\s\S]{0,500}if \(_srSession\.retryPass\)[\s\S]{0,500}_srSession\.index\+\+/.test(js));
 test('v7.20.0 SR #1: retry pill markup present',
   js.includes('sr-retry-pill') && /bring this back once more before you finish/.test(js));
 test('v7.20.0 SR CSS: .sr-why-due + .sr-retry-pill scoped in dg-system',
