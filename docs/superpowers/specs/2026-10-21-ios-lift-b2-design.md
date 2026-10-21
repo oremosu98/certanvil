@@ -30,6 +30,8 @@ parent spec's Fidelity rule applies in full. Phone only (`max-width: 899px`); de
 - **Results buttons:** **Menu / Review all / Drill the gap**, with a quiet **"Retry the exam"** link under
   them.
 - **Leaving a running exam** asks in an E2E-style bottom sheet, not the system alert.
+- **The score card follows the theme** ("we need consistency"): the E2E's fixed dark trophy panel becomes a
+  themed card in the quiz results card's family, colours from tokens, no hardcoded hex.
 
 ## The screens
 
