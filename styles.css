@@ -10184,6 +10184,7 @@ html { zoom: 1.10; }
 }
 .daily-recap-close {
   position: absolute;
+  z-index: 2;   /* v8.186.0: above the eyebrow, which is position:relative and paints later (phones lost the tap) */
   top: 12px; right: 14px;
   width: 30px; height: 30px;
   display: flex; align-items: center; justify-content: center;

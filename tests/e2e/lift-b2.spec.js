@@ -295,3 +295,22 @@ test.describe('Lift B2 desktop leave is unchanged', () => {
     await expect(page.locator('#exam-sheet')).toBeHidden();
   });
 });
+
+// ── Found during B2: the end-of-day recap's × sat under its own eyebrow ──
+for (const vp of [...PHONES, DESKTOP]) {
+  test('the daily recap closes from its × @' + vp.width, async ({ page }) => {
+    await page.setViewportSize(vp);
+    await page.addInitScript(() => {
+      if (sessionStorage.getItem('seeded')) return; sessionStorage.setItem('seeded', '1');
+      const now = new Date().toISOString();
+      localStorage.setItem('nplus_history', JSON.stringify([{ date: now, topic: 'OSPF', score: 18, total: 25, pct: 72, difficulty: 'Exam Level', mode: 'quiz' }]));
+    });
+    await page.goto('/');
+    await page.waitForLoadState('load');
+    await page.evaluate(() => _maybeShowDailyRecap());
+    const modal = page.locator('#daily-recap-modal');
+    await expect(modal).toBeVisible();
+    await modal.locator('.daily-recap-close').click({ timeout: 3000 });
+    await expect(modal).toBeHidden();
+  });
+}

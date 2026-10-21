@@ -25,11 +25,11 @@
 | Metric | Lines | Size |
 |---|---|---|
 | app.js | 8301 | 442 KB |
-| styles.css | 14887 | 550 KB |
+| styles.css | 14888 | 550 KB |
 | index.html | 2339 | 153 KB |
 | dg-system.css | 5624 | 532 KB |
 | tests/uat.js + tests/uat/ (57 modules) | 31797 | — |
-UAT checks: 5422 · E2E `test(` count: 255 · APP_VERSION: 8.185.0 · stamped-at: worktree
+UAT checks: 5422 · E2E `test(` count: 256 · APP_VERSION: 8.185.0 · stamped-at: worktree
 <!-- FACTS:AUTO:END -->
 
 | File | Purpose | Size |
