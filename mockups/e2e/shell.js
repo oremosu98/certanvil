@@ -40,6 +40,7 @@
     'custom-quiz'       : 'cert-ios-custom-quiz.html',
     'custom-quiz-topic' : 'cert-ios-custom-quiz.html?v=topic',   // from "Drill this topic" (20 Oct)
     'custom-quiz-caught-up' : 'cert-ios-custom-quiz.html?cu=0',  // Catch-up with nothing stale (20 Oct)
+    'analytics-map'     : 'cert-ios-analytics.html?p=1',   // B1: topic map replaces Sky (21 Oct)
     'analytics-wins'    : 'cert-ios-analytics.html?p=5',   // B1: Hands-on milestones on Wins (21 Oct)
     'review-done'       : 'cert-ios-review.html?v=done',   // B1: Next 7 days with exam day (21 Oct)
     'exam'              : 'cert-ios-exam.html',
@@ -179,7 +180,7 @@
   // B1 (21 Oct): the Progress | Analytics view switch
   NAV['progress'] = (NAV['progress'] || []).concat([{sel:'[data-view="analytics"]', to:'analytics'}]);
   NAV['analytics'] = (NAV['analytics'] || []).concat([{sel:'[data-view="progress"]', to:'progress'}]);
-  NAV['analytics-wins'] = NAV['analytics']; NAV['review-done'] = NAV['review'] || [];
+  NAV['analytics-wins'] = NAV['analytics']; NAV['analytics-map'] = NAV['analytics']; NAV['review-done'] = NAV['review'] || [];
 
   var TABS = { 'Home':'home', 'Drills':'drills', 'Progress':'progress', 'Account':'settings',
                'Analytics':'analytics', 'Settings':'settings' };
@@ -565,7 +566,7 @@
     // Lift A review: step through the post-June additions in order (founder sign-off aid).
     var LIFT_A = ['home','home-exam-paused','home-signed-out','custom-quiz','custom-quiz-topic','custom-quiz-caught-up','quiz','quiz-short-set','quiz-answered','results-milestone','review-answers'];
     // Lift B1 review (21 Oct): Progress, Analytics (switch + Wins), Daily Review (plan, Remove it, forecast)
-    var LIFT_B1 = ['progress','analytics','analytics-wins','review','review-done'];
+    var LIFT_B1 = ['progress','analytics','analytics-map','analytics-wins','review','review-done'];
     var b1Btn = document.getElementById('hud-liftb1'), b1I = -1;
     if (b1Btn) b1Btn.addEventListener('click', function () {
       b1I = (b1I + 1) % LIFT_B1.length; resetTo(LIFT_B1[b1I]);
