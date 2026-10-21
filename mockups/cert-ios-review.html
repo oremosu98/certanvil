@@ -110,6 +110,10 @@
   .cta { width: 100%; border: none; border-radius: 13px; padding: 15px; cursor: pointer; background: var(--accent); color: var(--on-accent); font: 800 15.5px/1 Inter, sans-serif; letter-spacing: -0.005em;
     box-shadow: 0 10px 22px -12px color-mix(in oklab, var(--accent) 70%, transparent); transition: transform .15s var(--ease), filter .2s, opacity .2s; }
   .cta:disabled { opacity: 0.4; cursor: default; box-shadow: none; }
+  /* confidence step (real-app addition, 21 Oct): after a correct answer the dock splits into Guessed + Knew it */
+  .footer.pick { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+  .cta.alt { background: var(--surface); color: var(--ink); border: 1px solid var(--border); box-shadow: none; }
+  .cta[hidden] { display: none; }
   .cta:active:not(:disabled) { transform: scale(0.985); }
 
   /* complete recap */
@@ -227,6 +231,7 @@
           <div class="flag">Concept · sample due cards</div>
 
           <div class="footer">
+            <button class="cta alt" id="guess" type="button" hidden>Guessed</button>
             <button class="cta" id="next" type="button" disabled>Answer to continue</button>
           </div>
 
@@ -311,7 +316,7 @@
       progN: document.getElementById('progN'), pbar: document.getElementById('pbar'),
       why: document.getElementById('whyText'), q: document.getElementById('q'), opts: document.getElementById('opts'),
       fb: document.getElementById('fb'), fbTitle: document.getElementById('fbTitle'), fbBody: document.getElementById('fbBody'), fbSched: document.getElementById('fbSched'),
-      next: document.getElementById('next'), done: document.getElementById('done')
+      next: document.getElementById('next'), guess: document.getElementById('guess'), done: document.getElementById('done')
     };
 
     function render() {
@@ -323,6 +328,7 @@
       els.q.textContent = c.q;
       els.fb.className = 'fb';
       els.next.disabled = true; els.next.textContent = 'Answer to continue';
+      els.guess.hidden = true; els.next.parentNode.classList.remove('pick');
       els.opts.innerHTML = '';
       c.opts.forEach(function (text, i) {
         var btn = document.createElement('button');
@@ -349,12 +355,15 @@
       els.fbTitle.textContent = correct ? 'Correct' : 'Not quite';
       els.fbBody.textContent = c.ex;
       els.fbSched.textContent = correct
-        ? 'Scheduled ' + c.up + '.'
+        ? 'Knew it sends it ' + c.up + '. Guessed brings it back sooner.'
         : 'No problem — we drop the interval and bring it ' + c.down + '.';
       els.next.disabled = false;
       els.next.textContent = (idx >= queue.length - 1) ? 'See your review' : 'Next card';
+      // correct: ask how sure (the real app schedules on it); wrong: one Next
+      if (correct) { els.next.textContent = 'Knew it'; els.guess.hidden = false; els.next.parentNode.classList.add('pick'); }
     }
 
+    els.guess.addEventListener('click', function () { els.next.click(); });
     els.next.addEventListener('click', function () {
       if (!answered) return;
       if (idx >= queue.length - 1) { finish(); return; }
