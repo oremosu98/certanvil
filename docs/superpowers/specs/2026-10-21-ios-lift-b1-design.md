@@ -67,18 +67,21 @@ Domains, Activity, Wins.
     neither theme. It also broke three BRAND.md rules: no gradient chrome, no hardcoded hex, and no
     descriptive-only Analytics cards.
   - **Card header:** "Your topic map", with the line "N of M studied · K mastered".
-  - **Action line:** "3 topics need you most: A, B, C", with a **Drill them** button. The button starts the
+  - **Action line:** "Your 3 weakest topics: A, B, C", with a **Drill them** button. The button starts the
     existing Smart quiz (the 3–4 weakest topics).
   - **Domain rows.** One row per domain: the domain name, "X% of exam" on the right, then a wrapping grid of
-    ~22px topic tiles. Domains come from the cert.
+    topic tiles: a 32px square inside a 40px tap target (44pt on the device at the 1.10 zoom). Domains come
+    from the cert.
   - **Tile colours** come from theme tokens:
     - mastered: `--pass`
-    - proficient: `--accent`
+    - proficient: `--pass` mixed 50% into `--surface` (`--accent` read too close to developing amber in dark)
     - developing: `--warn`
     - weak (studied, under 55%): a `--miss` tint
     - untouched: an outlined empty square
   - **Tapping a tile** rings it and opens a small sheet: the topic, its domain, mastery %, questions answered,
-    last seen, and **Drill this topic**.
+    last seen, and **Drill this topic** ("Start this topic" for a topic never studied). The sheet rises its
+    own height in 360ms and drops in 200ms on `--ease`, with the scrim fading on the same clocks; reduced
+    motion fades only. Opening focuses the button without scrolling the screen; closing returns focus to the tile.
   - **Legend** at the bottom of the card.
   - **VoiceOver** reads each tile as "<topic>, <status>, <mastery>%".
   - Data comes from `_computeConstellationData`. Desktop keeps the constellation.
