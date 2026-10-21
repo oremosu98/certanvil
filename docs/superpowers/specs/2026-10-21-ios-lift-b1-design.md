@@ -104,6 +104,7 @@ Domains, Activity, Wins.
 ### Daily Review
 
 - **Header:** "Daily Review" and today's plan from `getSrTodayPlan()` (e.g. "6 of 18 today").
+- **Confidence step (founder, 21 Oct):** after a correct answer the docked button splits into **Guessed** and **Knew it** (the real app's confident / unsure grading, which sets the next interval). A wrong answer keeps one **Next card**. Drawn into the E2E first and approved in the Simulator.
 - **The card:** one question per card, with the E2E options. The **"Something wrong with this question?
   Remove it"** link sits under the card (real-only, kept). The Answer / Next button is docked.
 - **Review done:**
