@@ -14,11 +14,12 @@ const fs = require('fs');
 const { chromium } = require('playwright');
 
 const ROOT = path.resolve(__dirname, '..');
-const OUT = path.join(ROOT, 'test-results', 'lift-a-sbs');
+const OUT = path.join(ROOT, 'test-results', process.env.LIFT_OUT || 'lift-sbs');
 const APP = process.env.LIFT_APP || 'http://127.0.0.1:3199/';
 const E2E = process.env.LIFT_E2E || 'http://localhost:3207/';
 const FAKE = fs.readFileSync(path.join(ROOT, 'tests/fixtures/fake-supabase.js'), 'utf8');
-const VP = { width: 390, height: 844 };
+// Compare at the device width (402pt iPhone 17 Pro): the app-wide zoom makes 390 wrap lines the device does not.
+const VP = { width: +(process.env.LIFT_W || 402), height: +(process.env.LIFT_H || 874) };
 
 const TOPICS = ['Ethernet Basics', 'Subnetting', 'DNS', 'DHCP', 'VLANs', 'Routing Protocols', 'Wireless Standards', 'Network Security Basics'];
 const HISTORY = Array.from({ length: 24 }, (_, i) => {
@@ -41,7 +42,19 @@ const SCREENS = [
   ['results', 'cert-ios-results.html', 'res'],
   ['review-answers', 'cert-ios-review-answers.html', 'rev'],
   ['custom-quiz', 'cert-ios-custom-quiz.html', 'cq'],
+  // Lift B1 (21 Oct)
+  ['progress', 'cert-ios-progress.html', 'prog'],
+  ['progress-domain', 'cert-ios-progress.html?p=1', 'prog-1'],
+  ['progress-insights', 'cert-ios-progress.html?p=6', 'prog-6'],
+  ['analytics', 'cert-ios-analytics.html', 'ana'],
+  ['analytics-map', 'cert-ios-analytics.html?p=1', 'ana-1'],
+  ['analytics-wins', 'cert-ios-analytics.html?p=5', 'ana-5'],
+  ['review', 'cert-ios-review.html', 'srv'],
+  ['review-done', 'cert-ios-review.html?v=done', 'srv-done'],
 ];
+const SRQ = ['First?', 'Second?', 'Third?', 'Fourth?', 'Fifth?'].map((q, i) => ({ qHash: 'sbs' + i, question: 'Which port does ' + ['HTTPS', 'SSH', 'DNS', 'SMTP', 'RDP'][i] + ' use?',
+  options: { A: '443', B: '22', C: '53', D: '25' }, answer: 'ABCD'[i % 4], explanation: 'Sample explanation.', topic: 'Port Numbers', difficulty: 'Exam Level',
+  nextReview: 0, intervalDays: 6, easiness: 2.5, repetitions: 1, graduated: false, correctStreak: 1 }));
 
 async function shootE2E(browser, file, theme) {
   const p = await browser.newPage({ viewport: { width: 1100, height: 1000 }, deviceScaleFactor: 2 });
@@ -55,24 +68,45 @@ async function shootE2E(browser, file, theme) {
 }
 
 async function shootReal(browser, step, theme) {
-  const ctx = await browser.newContext({ viewport: VP, deviceScaleFactor: 2, isMobile: true, hasTouch: true, colorScheme: theme });
+  // reduced motion: pagers jump instead of gliding, so a mid-swipe frame is never captured (end states are identical)
+  const ctx = await browser.newContext({ viewport: VP, deviceScaleFactor: 2, isMobile: true, hasTouch: true, colorScheme: theme, reducedMotion: 'reduce' });
   await ctx.route('**/*', r => {
     const u = new URL(r.request().url());
     if (u.hostname !== '127.0.0.1' && u.hostname !== 'localhost') return r.abort();
     if (/\/lib\/supabase\.js$/.test(u.pathname)) return r.fulfill({ contentType: 'application/javascript', body: 'window.__FAKE_SB={"role":"admin"};' + FAKE });
     return r.continue();
   });
-  await ctx.addInitScript(([t, h]) => {
+  await ctx.addInitScript(([t, h, q]) => {
     if (sessionStorage.getItem('s')) return;
     localStorage.clear(); sessionStorage.setItem('s', 1);
     localStorage.setItem('nplus_dev_cert', 'netplus'); localStorage.setItem('nplus_theme', t);
     localStorage.setItem('nplus_history', JSON.stringify(h));
     localStorage.setItem('nplus_streak', JSON.stringify({ current: 12, best: 14, last: new Date().toISOString().slice(0, 10) }));
-  }, [theme, HISTORY]);
+    if (q) localStorage.setItem('nplus_sr_queue', JSON.stringify(q));
+  }, [theme, HISTORY, /^srv/.test(step || '') ? SRQ : null]);
   const p = await ctx.newPage();
   await p.goto(APP + '?nc=' + Date.now());
   await p.waitForTimeout(3000);
-  if (step === 'cq') {
+  const pageNo = (step || '').split('-')[1];
+  if (/^(prog|ana)/.test(step || '')) {
+    await p.locator('#lift-tabbar .lift-tab[data-page="progress"]').click();
+    await p.waitForTimeout(600);
+    if (/^ana/.test(step)) { await p.locator('#ios-progress [data-view="analytics"]').click(); await p.waitForTimeout(900); }
+    const scope = /^ana/.test(step) ? '#ios-analytics' : '#ios-progress';
+    if (pageNo) { await p.locator(scope + ' [role="tab"][data-page="' + pageNo + '"]').click(); await p.waitForTimeout(1500); }
+    await p.waitForTimeout(1300);   // let the entrance and the bar sweeps settle
+  } else if (/^srv/.test(step || '')) {
+    await p.evaluate(() => startSrReview());
+    await p.waitForTimeout(700);
+    if (step === 'srv-done') {
+      for (let n = 0; n < 12 && await p.locator('#sr-card-host .sr-option').count(); n++) {
+        await p.locator('#sr-card-host .sr-option').nth(n === 1 ? 3 : 0).click();
+        const btn = p.locator('#page-sr-review .sr-confidence-confident, #page-sr-review .sr-confidence-wrong').first();
+        await btn.click(); await p.waitForTimeout(250);
+      }
+      await p.waitForTimeout(1300);
+    }
+  } else if (step === 'cq') {
     await p.evaluate(() => window._jumpToCustomQuiz());
     await p.waitForTimeout(1200);   // let the staggered entrance settle
   } else if (step) {
@@ -86,7 +120,11 @@ async function shootReal(browser, step, theme) {
       if (step === 'rev') { await p.locator('#ios-results [data-act="review"]').click(); await p.waitForTimeout(800); }
     }
   }
-  const buf = await p.screenshot({ fullPage: true });
+  // app toasts (e.g. the periodic backup tip) are not part of the screen being compared
+  await p.addStyleTag({ content: '.success-toast, .error-toast, .toast { display: none !important; }' });
+  await p.waitForTimeout(300);
+  // B1 screens are one fixed viewport (a full-page capture resizes it mid-shot); the review-done recap scrolls
+  const buf = await p.screenshot({ fullPage: !/^(prog|ana|srv$)/.test(step || '') });
   await ctx.close();
   return buf;
 }
@@ -95,8 +133,8 @@ async function pair(browser, left, right, file) {
   const p = await browser.newPage({ viewport: { width: 860, height: 800 } });
   const img = b => 'data:image/png;base64,' + b.toString('base64');
   await p.setContent('<body style="margin:0;background:#888;display:flex;gap:20px;align-items:flex-start;padding:20px;font:12px sans-serif">'
-    + '<figure style="margin:0;width:390px"><figcaption>E2E</figcaption><img style="width:390px" src="' + img(left) + '"></figure>'
-    + '<figure style="margin:0;width:390px"><figcaption>Real app</figcaption><img style="width:390px" src="' + img(right) + '"></figure></body>');
+    + '<figure style="margin:0;width:' + VP.width + 'px"><figcaption>E2E</figcaption><img style="width:' + VP.width + 'px" src="' + img(left) + '"></figure>'
+    + '<figure style="margin:0;width:' + VP.width + 'px"><figcaption>Real app</figcaption><img style="width:' + VP.width + 'px" src="' + img(right) + '"></figure></body>');
   await p.waitForTimeout(200);
   await p.screenshot({ path: file, fullPage: true });
   await p.close();

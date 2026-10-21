@@ -1233,6 +1233,8 @@ html[data-theme] body #page-sr-review #sr-complete .sr-empty-icon, html[data-the
 html[data-theme] body #page-sr-review #sr-complete .iv-seal[hidden] { display: grid !important; place-items: center; width: 72px; height: 72px; border-radius: 999px; margin: 0 auto 18px; background: color-mix(in oklab, var(--green) 16%, var(--surface)); }
 html[data-theme] body #page-sr-review #sr-complete .iv-seal svg { width: 34px; height: 34px; stroke: var(--green); fill: none; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
 html[data-theme] body #page-sr-review #sr-complete .iv-done-t[hidden] { display: block !important; font-family: Fraunces, Georgia, serif; font-weight: 600; font-size: 25px; letter-spacing: -0.015em; margin: 0 0 18px; color: var(--text); }
+html[data-theme] body #page-sr-review #sr-complete:has(.iv-done-sub:not(:empty)) .iv-done-t[hidden] { margin-bottom: 18px; }
+html[data-theme] body #page-sr-review #sr-complete .iv-done-sub[hidden] { display: block !important; margin: -12px 0 22px; font-size: 14px; color: var(--text-mid); }
 html[data-theme] body #page-sr-review .sr-done-tiles[hidden] { display: grid !important; grid-template-columns: repeat(3, 1fr); gap: 9px; margin-bottom: 18px; }
 html[data-theme] body #page-sr-review .sr-done-tile { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 13px 8px; text-align: center; }
 html[data-theme] body #page-sr-review .sr-done-tile b { display: block; font-family: Fraunces, Georgia, serif; font-weight: 600; font-size: 24px; color: var(--text); font-variant-numeric: lining-nums; }

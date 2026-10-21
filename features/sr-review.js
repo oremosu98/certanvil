@@ -1143,6 +1143,10 @@
       // v8.185.0 Lift B1: the E2E recap tiles (phone only) and the retry button's state
       const _ivMissed = (_srSession.results || []).filter(r => r.outcome === 'wrong').length;
       if (completeEl) { if (_ivMissed > 0) completeEl.setAttribute('data-missed', String(_ivMissed)); else completeEl.removeAttribute('data-missed'); }
+      const _ivRetry = completeEl && completeEl.querySelector('.iv-retry');
+      if (_ivRetry) _ivRetry.textContent = 'Retry the ' + (_ivMissed === 1 ? '1' : _ivMissed) + ' you missed';
+      const _ivSub = completeEl && completeEl.querySelector('.iv-done-sub');
+      if (_ivSub) _ivSub.textContent = _ivMissed > 0 ? 'Today\'s cards are cleared. Here\'s what to circle back on.' : 'Today\'s cards are cleared.';
       const _ivTiles = '<div class="sr-done-tiles" hidden>'
         + '<div class="sr-done-tile"><b>' + _srSession.answersGiven + '</b><span>Reviewed</span></div>'
         + '<div class="sr-done-tile"><b>' + (_srSession.correctConfident + _srSession.correctUncertain) + '</b><span>Got right</span></div>'

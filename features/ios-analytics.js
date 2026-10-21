@@ -53,7 +53,7 @@
     var svg = function (d) { return '<svg viewBox="0 0 24 24" aria-hidden="true">' + d + '</svg>'; };
     var ICON = {
       gear: svg('<circle cx="12" cy="12" r="3"></circle><path d="M19 12a7 7 0 0 0-.1-1l2-1.5-2-3.5-2.4 1a7 7 0 0 0-1.7-1L16.5 2h-4l-.3 2.6a7 7 0 0 0-1.7 1l-2.4-1-2 3.5 2 1.5a7 7 0 0 0 0 2l-2 1.5 2 3.5 2.4-1a7 7 0 0 0 1.7 1l.3 2.6h4l.3-2.6a7 7 0 0 0 1.7-1l2.4 1 2-3.5-2-1.5a7 7 0 0 0 .1-1z"></path>'),
-      theme: svg('<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"></path>'),
+      theme: svg(cert.light ? '<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"></path>' : '<circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path>'),   // shows the theme it switches to (as Home)
       tick: svg('<path d="M20 6L9 17l-5-5"></path>'),
       up: svg('<path d="M12 19V5M5 12l7-7 7 7"></path>'),
       dn: svg('<path d="M12 5v14M19 12l-7 7-7-7"></path>'),
@@ -113,11 +113,12 @@
       + '<p class="in-map-meta">' + mp.studied + ' of ' + mp.total + ' studied · ' + mp.mastered + ' mastered</p></div></div>';
     if (wk.length) mh += '<div class="in-map-act"><div class="in-map-act-t"><b>' + (wk.length === 1 ? 'Your weakest topic' : 'Your ' + wk.length + ' weakest topics') + '</b>'
       + '<span>' + e(wk.join(', ')) + '</span></div><button class="in-map-btn" type="button" data-act="drill-weakest">' + (wk.length === 1 ? 'Drill it' : 'Drill them') + '</button></div>';
-    mh += mp.rows.map(function (row) {
-      return '<div class="in-map-dom"><div class="in-map-dh"><b>' + e(row.name) + '</b><span>' + row.examPct + '% of exam</span></div><div class="in-map-tiles">'
+    mh += mp.rows.map(function (row, ri) {
+      var dn = (ri + 1) + '.0 ' + row.name;
+      return '<div class="in-map-dom"><div class="in-map-dh"><b>' + e(dn) + '</b><span>' + row.examPct + '% of exam</span></div><div class="in-map-tiles">'
         + row.tiles.map(function (t) {
           var lbl = t.topic + ', ' + LABEL[t.status] + (t.pct === null ? '' : ', ' + t.pct + '%');
-          return '<button class="in-mtile in-t-' + t.status + '" type="button" aria-pressed="false" aria-label="' + e(lbl) + '" data-t="' + e(t.topic) + '" data-d="' + e(row.name)
+          return '<button class="in-mtile in-t-' + t.status + '" type="button" aria-pressed="false" aria-label="' + e(lbl) + '" data-t="' + e(t.topic) + '" data-d="' + e(dn)
             + '" data-s="' + t.status + '" data-p="' + (t.pct === null ? '' : t.pct) + '" data-n="' + t.attempts + '" data-l="' + (t.lastDays === null || t.lastDays === undefined ? '' : t.lastDays) + '"></button>';
         }).join('') + '</div></div>';
     }).join('');
@@ -187,7 +188,7 @@
     var b = m.wins.badges || {}, ho = m.wins.handsOn || { groups: [] };
     var wh = '<div class="in-card in-reveal">' + head('Milestones', 'Badges earned', '<span class="in-mile-count">' + (b.unlocked || 0) + '<small> / ' + (b.total || 0) + '</small></span>')
       + (b.recent || []).map(function (x) {
-        return '<div class="in-mile"><span class="in-mi">' + svg(x.icon || '<path d="M20 6L9 17l-5-5"></path>') + '</span><span class="in-mtx"><b>' + e(x.label) + '</b><span>' + e(x.earned) + '</span></span><span class="in-mtick">' + ICON.tick + '</span></div>';
+        return '<div class="in-mile"><span class="in-mi">' + svg('<path d="' + e(x.icon || 'M20 6L9 17l-5-5') + '"></path>') + '</span><span class="in-mtx"><b>' + e(x.label) + '</b><span>' + e(x.earned) + '</span></span><span class="in-mtick">' + ICON.tick + '</span></div>';
       }).join('')
       + (b.locked || []).map(function (x) {
         var p = x.progress || [0, 1], pc = Math.round(p[0] / p[1] * 1000) / 10;
@@ -225,7 +226,8 @@
     var id = (typeof CURRENT_CERT === 'string' && CURRENT_CERT) || 'netplus';
     var MARKS = { netplus: 'N+', secplus: 'S+', 'aplus-core1': 'A+', 'aplus-core2': 'A+', az900: 'AZ', ai900: 'AI', sc900: 'SC', clfc02: 'CLF' };
     var raw = (typeof CERT_PACK === 'object' && CERT_PACK && CERT_PACK.meta && CERT_PACK.meta.name) || 'CompTIA Network+';
-    return { mark: MARKS[id] || 'CA', name: String(raw).replace(/^(CompTIA|Microsoft|Amazon|AWS)\s+/, ''), code: (typeof CERT_CODE === 'string' && CERT_CODE) || 'N10-009' };
+    return { mark: MARKS[id] || 'CA', name: String(raw).replace(/^(CompTIA|Microsoft|Amazon|AWS)\s+/, ''), code: (typeof CERT_CODE === 'string' && CERT_CODE) || 'N10-009',
+      light: document.documentElement.getAttribute('data-theme') === 'light' };
   }
   function _inDomains() {
     var w = (typeof DOMAIN_WEIGHTS === 'object' && DOMAIN_WEIGHTS) || {}, l = (typeof DOMAIN_LABELS === 'object' && DOMAIN_LABELS) || {};
@@ -318,7 +320,11 @@
       if (act === 'drill-one') { var t = cur && cur.getAttribute('data-t'); closeSheet(); if (t && typeof window.focusTopic === 'function') window.focusTopic(t); return; }
       if (act === 'warmup') { if (typeof window.applyPreset === 'function') window.applyPreset('warmup'); return; }
       if (act === 'settings') { _inNav('settings'); return; }
-      if (act === 'theme') { if (typeof toggleTheme === 'function') toggleTheme(); }
+      if (act === 'theme') {
+        if (typeof toggleTheme === 'function') toggleTheme();
+        var lt = document.documentElement.getAttribute('data-theme') === 'light';
+        b.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true">' + (lt ? '<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"></path>' : '<circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path>') + '</svg>';
+      }
     };
   }
 

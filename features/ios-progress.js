@@ -67,7 +67,8 @@
     var e = function (v) { return String(v == null ? '' : v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); };
     var ICON = {
       gear: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M19 12a7 7 0 0 0-.1-1l2-1.5-2-3.5-2.4 1a7 7 0 0 0-1.7-1L16.5 2h-4l-.3 2.6a7 7 0 0 0-1.7 1l-2.4-1-2 3.5 2 1.5a7 7 0 0 0 0 2l-2 1.5 2 3.5 2.4-1a7 7 0 0 0 1.7 1l.3 2.6h4l.3-2.6a7 7 0 0 0 1.7-1l2.4 1 2-3.5-2-1.5a7 7 0 0 0 .1-1z"></path></svg>',
-      theme: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"></path></svg>',
+      // the theme button shows the theme it switches to (as Home): sun in dark, moon in light
+      theme: '<svg viewBox="0 0 24 24" aria-hidden="true">' + (cert.light ? '<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"></path>' : '<circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path>') + '</svg>',
       bolt: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2L3 14h7l-1 8 10-12h-7l1-8z"></path></svg>',
       go: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg>',
       chev: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg>',
@@ -166,7 +167,8 @@
     var id = (typeof CURRENT_CERT === 'string' && CURRENT_CERT) || 'netplus';
     var MARKS = { netplus: 'N+', secplus: 'S+', 'aplus-core1': 'A+', 'aplus-core2': 'A+', az900: 'AZ', ai900: 'AI', sc900: 'SC', clfc02: 'CLF' };
     var raw = (typeof CERT_PACK === 'object' && CERT_PACK && CERT_PACK.meta && CERT_PACK.meta.name) || 'CompTIA Network+';
-    return { mark: MARKS[id] || 'CA', name: String(raw).replace(/^(CompTIA|Microsoft|Amazon|AWS)\s+/, ''), code: (typeof CERT_CODE === 'string' && CERT_CODE) || 'N10-009' };
+    return { mark: MARKS[id] || 'CA', name: String(raw).replace(/^(CompTIA|Microsoft|Amazon|AWS)\s+/, ''), code: (typeof CERT_CODE === 'string' && CERT_CODE) || 'N10-009',
+      light: document.documentElement.getAttribute('data-theme') === 'light' };
   }
   function _ipDomains() {
     var w = (typeof DOMAIN_WEIGHTS === 'object' && DOMAIN_WEIGHTS) || {}, l = (typeof DOMAIN_LABELS === 'object' && DOMAIN_LABELS) || {};
@@ -218,10 +220,17 @@
     var bar = root.querySelector('.ip-ftabs');
     if (bar) {
       var ink = bar.querySelector('.ip-ftab-ink'), on = bar.querySelector('.ip-ftab[aria-pressed="true"]') || bar.querySelector('.ip-ftab');
-      requestAnimationFrame(function () {
+      // the screen paints before its page is shown (lift-shell navTo), so wait for the tabs to have a size
+      var place = function () {
+        if (!on.offsetWidth) return false;
         ink.style.transform = 'translateX(' + on.offsetLeft + 'px) scaleX(' + on.offsetWidth + ')';
         requestAnimationFrame(function () { ink.classList.add('ip-ready'); });
-      });
+        return true;
+      };
+      if (!place() && 'ResizeObserver' in window) {
+        var ro = new ResizeObserver(function () { if (place()) ro.disconnect(); });
+        ro.observe(bar);
+      }
     }
     root.onclick = function (ev) {
       var b = ev.target.closest('button'); if (!b || !root.contains(b)) return;
@@ -241,7 +250,7 @@
       if (act === 'drill') { if (typeof window.drillTopic === 'function') window.drillTopic(b.getAttribute('data-t')); return; }
       if (act === 'start') { if (typeof window.focusTopic === 'function') window.focusTopic(b.getAttribute('data-t')); return; }
       if (act === 'settings') { _ipNav('settings'); return; }
-      if (act === 'theme') { if (typeof toggleTheme === 'function') toggleTheme(); return; }
+      if (act === 'theme') { if (typeof toggleTheme === 'function') toggleTheme(); renderIosProgress(true); return; }
       if (act === 'dhead') { var d = b.closest('.ip-domain'), o = d.classList.toggle('ip-open'); b.setAttribute('aria-expanded', String(o)); return; }
       if (act === 'disclose') { var o2 = b.classList.toggle('ip-open'); b.setAttribute('aria-expanded', String(o2)); if (b.nextElementSibling) b.nextElementSibling.classList.toggle('ip-open', o2); }
     };
