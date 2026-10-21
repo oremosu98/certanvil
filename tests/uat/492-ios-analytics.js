@@ -57,6 +57,39 @@ const { _fnBody, js, results, test, vm } = require('./_context');
       am.domains.rows.map(r => r.name).join() === 'B,C,A' && am.domains.rows[1].weakest === true && !am.domains.rows[0].weakest);
     test('Analytics model: Wins carries badges and the Hands-on drills', am.wins.handsOn.groups.length === 4 && am.wins.badges === D.milestones);
     test('Analytics model: no history is the empty state', AM(null).empty === true && am.empty === false);
+
+    // ── View ──
+    vm.runInContext((_fnBody(js, '_iosAnalyticsHtml') || ''), ctx);
+    const CERT = { mark: 'N+', name: 'Network+', code: 'N10-009' };
+    const FULL = Object.assign({}, D, {
+      readiness: { predicted: 553, passScore: 720, maxScore: 900, forecast: 553, daysToExam: null, tier: 'Building', pointsToPass: 167, barPct: 61.4, passTickPct: 80,
+        stats: { sessions: 23, questions: 75, accuracy: 92, studyDays: 7 }, spark: { sessions: [1, 2, 3], questions: [4, 5, 6], accuracy: [70, 80, 90], studyDays: [1, 1, 2] } },
+      passTrend: { passAcc: 72, yMin: 40, yMax: 100, data: { week: [{ acc: 60 }], month: [{ acc: 55 }, { acc: 60 }], all: [{ acc: 50 }, { acc: 60 }] } },
+      difficulty: [{ label: 'Easy', accuracy: 73, count: 15 }], whyScore: { headline: 'Drill B next.', body: 'B is weakest.', leverage: '+25 pts', factors: [{ label: 'B at 0%', effect: 'down', note: 'biggest drag' }] },
+      wrongPatterns: [{ label: 'B', domain: 'B', note: 'Ethernet', count: 2 }],
+      streak: { current: 0, longest: 4, totalActiveDays: 7, lastStudy: '16 May', week: [{ dayLabel: 'M', studied: true }] },
+      heatmap: Array.from({ length: 365 }, (_, i) => ({ daysAgo: 364 - i, count: i % 30 === 0 ? 8 : 0 })),
+      examHistory: [] });
+    const AH = (model) => vm.runInContext('_iosAnalyticsHtml(__m, __c)', Object.assign(ctx, { __m: model, __c: CERT }));
+    const ah = AH(vm.runInContext('_iosAnalyticsModel(__D, __m, __w)', Object.assign(ctx, { __D: FULL, __m: map, __w: dd })));
+    test('Analytics view: six pills, Readiness selected', (ah.match(/class="in-chip[^"]*" type="button" role="tab"/g) || []).length === 6 && ah.includes('aria-selected="true" data-page="0">Readiness<'));
+    test('Analytics view: the switch has Analytics pressed', ah.includes('data-view="analytics" aria-pressed="true"'));
+    test('Analytics view: one Map row per domain and one tile per topic',
+      (ah.match(/class="in-map-dom"/g) || []).length === 2 && (ah.match(/<button class="in-mtile /g) || []).length === 7);
+    test('Analytics view: tile labels read "<topic>, <status>, <pct>%" or "<topic>, untouched"',
+      ah.includes('aria-label="BGP, weak, 30%"') && ah.includes('aria-label="IPv6, untouched"'));
+    test('Analytics view: the action line counts the weakest topics it names',
+      ah.includes('<b>Your 2 weakest topics</b>') && ah.includes('>BGP, OSPF</span>'));
+    const one = vm.runInContext('_iosAnalyticsModel(__D, __m, __w)', Object.assign(ctx, { __D: FULL, __m: Object.assign({}, map, { weakest: ['BGP'] }), __w: dd }));
+    test('Analytics view: one weak topic reads "Your weakest topic"', AH(one).includes('<b>Your weakest topic</b>'));
+    const zero = vm.runInContext('_iosAnalyticsModel(__D, __m, __w)', Object.assign(ctx, { __D: FULL, __m: Object.assign({}, map, { weakest: [] }), __w: dd }));
+    test('Analytics view: no weak topics hides the action box', !AH(zero).includes('in-map-act'));
+    test('Analytics view: Wins lists one Hands-on row per drill with three steps',
+      (ah.match(/class="in-ho"/g) || []).length === 4 && (ah.match(/class="in-ho-step in-(earned|prog|locked)"/g) || []).length === 12);
+    test('Analytics view: readiness reads "<b>167 points</b> to the pass mark"', ah.includes('<b>167 points</b> to the pass mark.'));
+    test('Analytics view: the heatmap has 26 weeks of cells', (ah.match(/<i class="in-hm[^"]*"><\/i>/g) || []).length === 182);
+    const em = AH(vm.runInContext('_iosAnalyticsModel(null, __m, __w)', Object.assign(ctx, { __m: map, __w: dd })));
+    test('Analytics view: no history renders the empty card and no pager', em.includes('in-empty-card') && !em.includes('in-pager'));
   } catch (err) {
     test('Lift B1 Analytics: block (threw)', false);
     results.errors.push('492 ios-analytics block threw: ' + err.message);

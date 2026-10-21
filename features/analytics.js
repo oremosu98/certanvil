@@ -2946,6 +2946,7 @@
         + '</div>';
       // Hide actionable headline in empty state
       if (typeof renderAnalyticsActionHeadline === 'function') renderAnalyticsActionHeadline();
+      try { if (typeof window.renderIosAnalytics === 'function') window.renderIosAnalytics(); } catch (_) {}
       return;
     }
     // v4.79.0: data path — restore page header (was hidden if user previously hit empty state)
@@ -2984,6 +2985,8 @@
     // constellation twinkle/pulsar/tooltip, trend tabs + draw-in). Reduced-motion
     // is handled inside: every tile resolves to its final values, nothing hidden.
     _anaBtWire(D);
+    // v8.185.0 Lift B1: the June E2E Analytics screen at phone width (features/ios-analytics.js).
+    try { if (typeof window.renderIosAnalytics === 'function') window.renderIosAnalytics(); } catch (_) {}
   }
 
   // ── window re-exposure (HTML onclick + cross-file callers) ──

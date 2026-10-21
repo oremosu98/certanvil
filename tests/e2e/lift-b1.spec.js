@@ -89,11 +89,98 @@ for (const vp of PHONES) {
   });
 }
 
+for (const vp of PHONES) {
+  test.describe('Lift B1 Analytics @' + vp.width, () => {
+    async function openAnalytics(page, withHistory) {
+      await openApp(page, vp, withHistory);
+      await goTab(page, 'progress');
+      await page.locator('#ios-progress [data-view="analytics"]').click();
+      await expect(page.locator('#page-analytics')).toHaveClass(/active/);
+    }
+
+    test('phone renders the E2E Analytics screen with six pages', async ({ page }) => {
+      await openAnalytics(page, true);
+      await expect(page.locator('#ios-analytics .in-topbar')).toBeVisible();
+      await expect(page.locator('#ios-analytics .in-chip')).toHaveCount(6);
+      await expect(page.locator('#page-analytics #analytics-content')).toBeHidden();
+      expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(vp.width);
+    });
+
+    test('pills and swipe move between the pages', async ({ page }) => {
+      await openAnalytics(page, true);
+      const pager = page.locator('#ios-analytics .in-pager');
+      await page.locator('#ios-analytics .in-chip[data-page="3"]').click();
+      await expect.poll(() => pager.evaluate(el => Math.round(el.scrollLeft / el.clientWidth))).toBe(3);
+      await pager.evaluate(el => el.scrollTo({ left: el.clientWidth * 5, behavior: 'auto' }));
+      await expect(page.locator('#ios-analytics .in-chip[data-page="5"]')).toHaveAttribute('aria-selected', 'true');
+    });
+
+    test('a Map tile opens its sheet without moving the screen; the scrim closes it and returns focus', async ({ page }) => {
+      await openAnalytics(page, true);
+      await page.locator('#ios-analytics .in-chip[data-page="1"]').click();
+      const tile = page.locator('#ios-analytics .in-mtile[data-t="OSPF"]');
+      await tile.click();
+      const sheet = page.locator('#ios-analytics [role="dialog"]');
+      await expect(sheet).toHaveClass(/in-is-open/);
+      await expect(sheet.locator('.in-ms-name')).toHaveText('OSPF');
+      expect(await page.evaluate(() => document.getElementById('ios-analytics').scrollTop)).toBe(0);
+      await page.locator('#ios-analytics .in-map-scrim').click({ position: { x: 20, y: 20 } });
+      await expect(sheet).not.toHaveClass(/in-is-open/);
+      expect(await page.evaluate(() => document.activeElement && document.activeElement.getAttribute('data-t'))).toBe('OSPF');
+    });
+
+    test('an untouched tile offers "Start this topic"', async ({ page }) => {
+      await openAnalytics(page, true);
+      await page.locator('#ios-analytics .in-chip[data-page="1"]').click();
+      await page.locator('#ios-analytics .in-mtile.in-t-untouched').first().click();
+      await expect(page.locator('#ios-analytics .in-ms-go')).toHaveText('Start this topic');
+    });
+
+    test('Drill this topic starts a quiz on that topic', async ({ page }) => {
+      await openAnalytics(page, true);
+      await page.evaluate(() => { window.__q = []; window.focusTopic = (t) => window.__q.push(t); });
+      await page.locator('#ios-analytics .in-chip[data-page="1"]').click();
+      await page.locator('#ios-analytics .in-mtile[data-t="OSPF"]').click();
+      await page.locator('#ios-analytics .in-ms-go').click();
+      expect(await page.evaluate(() => window.__q)).toEqual(['OSPF']);
+    });
+
+    test('Drill them quizzes exactly the topics it names', async ({ page }) => {
+      await openAnalytics(page, true);
+      await page.evaluate(() => { window.__t = null; window.startQuiz = () => { window.__t = topic; }; });
+      await page.locator('#ios-analytics .in-chip[data-page="1"]').click();
+      const names = (await page.locator('#ios-analytics .in-map-act-t span').textContent()).split(', ');
+      await page.locator('#ios-analytics [data-act="drill-weakest"]').click();
+      expect(await page.evaluate(() => window.__t)).toBe('Multi: ' + names.join(', '));
+    });
+
+    test('the Progress side of the switch opens Progress', async ({ page }) => {
+      await openAnalytics(page, true);
+      await page.locator('#ios-analytics [data-view="progress"]').click();
+      await expect(page.locator('#page-progress')).toHaveClass(/active/);
+      await expect(page.locator('#ios-progress .ip-topbar')).toBeVisible();
+    });
+
+    test('a new user sees the empty card, not six empty pages', async ({ page }) => {
+      await openAnalytics(page, false);
+      await expect(page.locator('#ios-analytics .in-empty-card')).toBeVisible();
+      await expect(page.locator('#ios-analytics .in-pager')).toHaveCount(0);
+    });
+  });
+}
+
 test.describe('Lift B1 desktop is unchanged', () => {
   test('desktop Progress keeps its own page and leaves #ios-progress empty', async ({ page }) => {
     await openApp(page, DESKTOP, true);
     await page.evaluate(() => showPage('progress'));
     await expect(page.locator('#ios-progress')).toBeEmpty();
     await expect(page.locator('#page-progress .progress-toolbar')).toBeVisible();
+  });
+
+  test('desktop Analytics keeps the bento and leaves #ios-analytics empty', async ({ page }) => {
+    await openApp(page, DESKTOP, true);
+    await page.evaluate(() => showPage('analytics'));
+    await expect(page.locator('#ios-analytics')).toBeEmpty();
+    await expect(page.locator('#analytics-content .ana-bento')).toBeVisible();
   });
 });
