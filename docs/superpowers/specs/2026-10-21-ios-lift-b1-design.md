@@ -67,8 +67,8 @@ Domains, Activity, Wins.
     neither theme. It also broke three BRAND.md rules: no gradient chrome, no hardcoded hex, and no
     descriptive-only Analytics cards.
   - **Card header:** "Your topic map", with the line "N of M studied · K mastered".
-  - **Action line:** "Your 3 weakest topics: A, B, C", with a **Drill them** button. The button starts the
-    existing Smart quiz (the 3–4 weakest topics).
+  - **Action line:** "Your 3 weakest topics: A, B, C", with a **Drill them** button. The button starts a
+    quiz on exactly the topics it names, through the same path as Readiness's weakest-topics quiz.
   - **Domain rows.** One row per domain: the domain name, "X% of exam" on the right, then a wrapping grid of
     topic tiles: a 32px square inside a 40px tap target (44pt on the device at the 1.10 zoom). Domains come
     from the cert.
