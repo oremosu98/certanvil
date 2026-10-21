@@ -46,9 +46,9 @@ parent spec's Fidelity rule applies in full. Phone only (`max-width: 899px`); de
 - The "could only build N of 90 questions" notice keeps its meaning in the E2E style.
 
 ### End sheet
-- Answered / Skipped / Flagged counts, **Review the N you skipped first** (or the flagged ones when nothing
-  is skipped), **Submit and see results**, **Abandon exam**.
-- Below them the **question grid**.
+- The E2E's centred dialog: Answered / Skipped / Flagged counts, **Review the N you skipped first** (or the
+  flagged ones when nothing is skipped), **Submit and see results**, **Abandon exam**.
+- Below them **Jump to a question** opens the question grid (7 columns so each number is a 44pt target).
 
 ### Leave sheet
 - "Leave the exam? The clock keeps running, and you can resume from Home." **Leave** and **Stay**. A paused
@@ -63,7 +63,7 @@ parent spec's Fidelity rule applies in full. Phone only (`max-width: 899px`); de
 - **Menu / Review all / Drill the gap**, and **Retry the exam** as a quiet link. **Drill the gap** starts a
   hard quiz on the weakest studied topics in the two weakest domains, through `_startTopicsQuiz` (the Map's
   Drill them path).
-- Milestone toasts arrive from the top without covering the headline (Lift A's results rule).
+- Milestone toasts behave as on quiz results (Lift A): one at a time from the top, gone after 4 seconds or a tap, never over the dock.
 
 ## Architecture
 - **Exam, End sheet, leave sheet:** the real `#page-exam` restyled in `lift-ios.css` (an `ix-` section)
