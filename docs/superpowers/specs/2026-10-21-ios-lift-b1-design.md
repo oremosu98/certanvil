@@ -27,8 +27,8 @@ The parent spec's Fidelity rule applies in full. Phone only (`max-width: 899px`)
 | Analytics | `cert-ios-analytics.html`: swipeable pages behind pills | One long scroll; the phone hides the section pills | Layout, plus Hands-on milestones |
 | Daily Review | `cert-ios-review.html`: card, then a "Review done" summary | "SR queue." header, mono meta, Next not docked | Styling, plus three real-only items |
 
-Progress pills: Overview, one page per domain, Insights. Analytics pills: Readiness, Sky, Trends, Domains,
-Activity, Wins.
+Progress pills: Overview, one page per domain, Insights. Analytics pills: Readiness, Map (was Sky), Trends,
+Domains, Activity, Wins.
 
 ## Founder decisions (21 Oct 2026)
 
@@ -62,13 +62,41 @@ Activity, Wins.
 
 - **Readiness:** scaled score card with the tier badge, the pass line, "forecast on this pace", days to
   exam, and four tiles (sessions, questions, accuracy, study days) with sparklines.
-- **Sky:** the knowledge constellation ("Your sky tonight").
+- **Map** (replaces the Sky constellation; founder, 21 Oct, via the feature lane):
+  - **Why it changed.** The constellation was too small to read on a phone. Its fixed navy card fitted
+    neither theme. It also broke three BRAND.md rules: no gradient chrome, no hardcoded hex, and no
+    descriptive-only Analytics cards.
+  - **Card header:** "Your topic map", with the line "N of M studied · K mastered".
+  - **Action line:** "3 topics need you most: A, B, C", with a **Drill them** button. The button starts the
+    existing Smart quiz (the 3–4 weakest topics).
+  - **Domain rows.** One row per domain: the domain name, "X% of exam" on the right, then a wrapping grid of
+    ~22px topic tiles. Domains come from the cert.
+  - **Tile colours** come from theme tokens:
+    - mastered: `--pass`
+    - proficient: `--accent`
+    - developing: `--warn`
+    - weak (studied, under 55%): a `--miss` tint
+    - untouched: an outlined empty square
+  - **Tapping a tile** rings it and opens a small sheet: the topic, its domain, mastery %, questions answered,
+    last seen, and **Drill this topic**.
+  - **Legend** at the bottom of the card.
+  - **VoiceOver** reads each tile as "<topic>, <status>, <mastery>%".
+  - Data comes from `_computeConstellationData`. Desktop keeps the constellation.
 - **Trends:** the trend chart (Week / Month / All), "Where you hold up" and "Pressure check".
 - **Domains:** worst first, plus the top 3 patterns.
 - **Activity:** "Keep the chain" streak and the 26-week heatmap.
 - **Wins:** badges, plus the new **Hands-on** group: Sim Lab, Decision Lab, Why-Not and Gauntlet, each with
   three milestones and an earned / in-progress / locked state.
 - **Every domain in Mastery** (a v8.x addition, kept).
+
+### Founder refinements (21 Oct, after the first Simulator walk)
+
+- **"Where you stand", cleaner.** The coverage ring holds only its number: 72px, 5px stroke. "Covered",
+  "Avg mastery" and "Topics seen" each sit as a value over a label, on one shared baseline.
+- **Topic filters on one toolbar line.** Underlined text tabs (All / Weak / Untouched / Strong) and a quiet
+  "Worst first" sort button, with a hairline beneath. Motion goes through `transitions-polish` (which the
+  founder asked for), remapped onto BRAND §6: the underline moves in 220ms and the sort button fades on
+  press over 150ms.
 
 ### Daily Review
 
