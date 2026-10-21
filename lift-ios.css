@@ -720,3 +720,199 @@ html[data-theme="light"] #ios-custom .ic-i-sun, html:not([data-theme="light"]) #
 body:has(#page-progress.active #ios-progress:not(:empty)) #app-topbar, body:has(#page-progress.active #ios-progress:not(:empty)) .app-topbar,
 body:has(#page-analytics.active #ios-analytics:not(:empty)) #app-topbar, body:has(#page-analytics.active #ios-analytics:not(:empty)) .app-topbar { display: none !important; }
 #page-progress:has(#ios-progress:not(:empty)), #page-analytics:has(#ios-analytics:not(:empty)) { padding: 0 !important; }
+
+/* ═════════════════════ PROGRESS (cert-ios-progress.html, B1) · ip- ═════════════════════ */
+/* Screen: one viewport, pages scroll on their own (E2E). position:fixed sizes right under html{zoom}. */
+#page-progress.active #ios-progress:not(:empty) { position: fixed; inset: 0; z-index: 5; min-height: 0; overflow: hidden; }
+/* a page-enter animation in effect (pageFadeIn fills forwards) makes the page, not the viewport, the fixed box;
+   the E2E swaps tabs instantly, so the phone screen drops it */
+#page-progress.active:has(#ios-progress:not(:empty)) { animation: none !important; transform: none !important; }
+#ios-progress .ip-topbar { padding-top: max(12px, env(safe-area-inset-top)) !important; }
+#ios-progress .ip-pager { min-height: 0; }
+#ios-progress .ip-page { padding-bottom: calc(96px + env(safe-area-inset-bottom)) !important; }
+/* rows, list rows, tags and recent cards are buttons here (tap drills the topic) */
+#ios-progress :where(button.ip-trow, button.ip-lrow, button.ip-tag, button.ip-rcard) { font: inherit; color: inherit; text-align: left; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+#ios-progress :where(button.ip-trow, button.ip-lrow) { width: 100%; background: none; border: 0; border-radius: 0; }
+#ios-progress button.ip-trow:active, #ios-progress button.ip-lrow:active, #ios-progress button.ip-tag:active, #ios-progress button.ip-rcard:active { transform: scale(0.98); }
+#ios-progress .ip-rpct.ip-miss-t { color: var(--miss); }
+#ios-progress .ip-none { margin: 10px 0 4px; font-size: 13px; color: var(--text-dim); }
+/* filter/sort re-renders keep their place: no entrance replay */
+#ios-progress.ip-static .ip-reveal { animation: none !important; opacity: 1 !important; transform: none !important; }
+#ios-progress .ip-topbar { display: flex; align-items: center; gap: 11px; padding: 12px 20px 8px; }
+#ios-progress .ip-tb-mark { flex: 0 0 auto; width: 34px; height: 34px; border-radius: 10px; background: color-mix(in oklab, var(--accent) 13%, var(--surface3)); color: var(--accent-deep); display: grid; place-items: center; font: 800 12px/1 Inter, sans-serif; }
+#ios-progress .ip-tb-name { flex: 1 1 auto; min-width: 0; }
+#ios-progress .ip-tb-name b { display: block; font: 650 16px/1.05 Inter, sans-serif; color: var(--text); }
+#ios-progress .ip-tb-name span { display: block; font: 600 11px/1 'Roboto Mono', monospace; color: var(--text-dim); margin-top: 2px; }
+#ios-progress .ip-tb-set { flex: 0 0 auto; width: 34px; height: 34px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface); display: grid; place-items: center; cursor: pointer; color: var(--text-mid); transition: transform .14s var(--ios-ease), border-color .18s; }
+#ios-progress .ip-tb-set:active { transform: scale(0.94); }
+#ios-progress .ip-tb-set svg { width: 17px; height: 17px; stroke: currentColor; fill: none; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+#ios-progress .ip-app-theme { flex:0 0 auto; width:34px; height:34px; border-radius:10px; border:1px solid var(--border); background:var(--surface); display:grid; place-items:center; cursor:pointer; color:var(--text-mid); transition:transform .14s var(--ios-ease), border-color .18s; }
+#ios-progress .ip-app-theme:active { transform:scale(.94); }
+@media (hover:hover) and (pointer:fine) {
+#ios-progress .ip-app-theme:hover { border-color:color-mix(in oklab,var(--accent) 36%,var(--border)); }
+}
+#ios-progress .ip-app-theme svg { width:17px; height:17px; stroke:currentColor; fill:none; stroke-width:1.9; stroke-linecap:round; stroke-linejoin:round; }
+#ios-progress .ip-view-switch { flex: 0 0 auto; display: flex; gap: 4px; margin: 2px 18px 4px; padding: 3px; border-radius: 12px; border: 1px solid var(--border);
+    background: color-mix(in oklab, var(--text) 5%, var(--surface3)); }
+#ios-progress .ip-view-switch button { flex: 1 1 0; border: 0; background: transparent; border-radius: 9px; padding: 8px 6px; cursor: pointer;
+    font: 700 12.5px/1 Inter, sans-serif; color: var(--text-dim); transition: background .2s var(--ios-ease), color .2s, transform .14s var(--ios-ease); }
+#ios-progress .ip-view-switch button:active { transform: scale(0.97); }
+#ios-progress .ip-view-switch button[aria-pressed="true"] { background: var(--surface); color: var(--text);
+    box-shadow: 0 1px 0 color-mix(in oklab, var(--text) 6%, transparent), 0 4px 10px -6px rgba(0,0,0,.45); }
+@media (hover:hover) and (pointer:fine) {
+#ios-progress .ip-view-switch button:not([aria-pressed="true"]):hover { color: var(--text-mid); }
+}
+#ios-progress .ip-seg { flex:0 0 auto; display:flex; gap:8px; overflow-x:auto; padding:8px 16px 10px; scrollbar-width:none; }
+#ios-progress .ip-seg::-webkit-scrollbar { display:none; }
+#ios-progress .ip-chip { flex:0 0 auto; font:700 12px/1 Inter,sans-serif; padding:8px 13px; border-radius:999px; border:1px solid var(--border); background:var(--surface); color:var(--text-mid); cursor:pointer; white-space:nowrap; transition:background .2s, color .2s, border-color .2s, transform .14s var(--ios-ease); }
+#ios-progress .ip-chip:active { transform:scale(.96); }
+#ios-progress .ip-chip.ip-on { background:color-mix(in oklab,var(--accent) 12%,var(--surface)); border-color:color-mix(in oklab,var(--accent) 45%,var(--border)); color:var(--accent-deep); }
+#ios-progress .ip-pager { flex:1 1 auto; display:flex; overflow-x:auto; overflow-y:hidden; scroll-snap-type:x mandatory; -webkit-overflow-scrolling:touch; scrollbar-width:none; }
+#ios-progress .ip-pager::-webkit-scrollbar { display:none; }
+#ios-progress .ip-page { flex:0 0 100%; scroll-snap-align:start; overflow-y:auto; padding:6px 18px 16px; }
+#ios-progress .ip-page::-webkit-scrollbar { display:none; }
+#ios-progress .ip-sect { font: 800 10px/1 Inter, sans-serif; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-dim); margin: 20px 2px 11px; }
+#ios-progress .ip-sect:first-child { margin-top: 4px; }
+#ios-progress .ip-bar { height: 8px; border-radius: 999px; background: var(--track); position: relative; overflow: hidden; }
+#ios-progress .ip-bar > span { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 999px; background: var(--accent); transition: width .8s var(--ios-ease), background .4s ease; }
+#ios-progress .ip-bar > span.ip-pass { background: var(--green); }
+#ios-progress .ip-bar > span.ip-miss { background: var(--miss); }
+#ios-progress .ip-hero { position: relative; overflow: hidden; border: 1px solid color-mix(in oklab, var(--accent) 24%, var(--border)); border-radius: 18px; background: color-mix(in oklab, var(--accent) 6%, var(--surface)); padding: 16px 17px; margin-top: 4px; }
+#ios-progress .ip-hero-kick { display: inline-flex; align-items: center; gap: 6px; font: 800 9.5px/1 Inter, sans-serif; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent-deep); }
+#ios-progress .ip-hero-kick svg { width: 13px; height: 13px; stroke: currentColor; fill: none; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+#ios-progress .ip-hero-topic { font: 600 21px/1.12 Fraunces, serif; color: var(--text); margin: 10px 0 3px; letter-spacing: -0.01em; }
+#ios-progress .ip-hero-obj { font: 600 11px/1 'Roboto Mono', monospace; color: var(--text-dim); }
+#ios-progress .ip-hero-line { font-size: 12.5px; line-height: 1.45; color: var(--text-mid); margin: 11px 0 13px; }
+#ios-progress .ip-hero-line b { color: var(--text); font-weight: 650; }
+#ios-progress .ip-hero-foot { display: flex; align-items: center; gap: 12px; }
+#ios-progress .ip-hero-mast { flex: 0 0 auto; display: flex; flex-direction: column; gap: 3px; }
+#ios-progress .ip-hero-mast b { font: 600 22px/1 Fraunces, serif; color: var(--miss); font-variant-numeric: lining-nums tabular-nums; font-feature-settings: "lnum","tnum"; }
+#ios-progress .ip-hero-mast span { font: 700 8.5px/1 Inter, sans-serif; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-dim); }
+#ios-progress .ip-hero-btn { flex: 1 1 auto; display: inline-flex; align-items: center; justify-content: center; gap: 7px; border: none; cursor: pointer;
+    border-radius: 13px; background: var(--accent); color: var(--on-accent); font: 700 14px/1 Inter, sans-serif; padding: 13px 16px;
+    box-shadow: 0 10px 22px -12px color-mix(in oklab, var(--accent) 72%, transparent); transition: transform .15s var(--ios-ease), filter .2s; }
+#ios-progress .ip-hero-btn:active { transform: scale(0.985); }
+@media (hover:hover) and (pointer:fine) {
+#ios-progress .ip-hero-btn:hover { filter: brightness(1.04); }
+}
+#ios-progress .ip-hero-btn svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+#ios-progress .ip-stand { border: 1px solid var(--border); border-radius: 17px; background: var(--surface); padding: 15px 16px; margin-top: 12px; }
+#ios-progress .ip-stand-top { display: flex; align-items: center; gap: 15px; }
+#ios-progress .ip-ring { flex: 0 0 auto; position: relative; width: 64px; height: 64px; }
+#ios-progress .ip-ring svg { width: 64px; height: 64px; transform: rotate(-90deg); }
+#ios-progress .ip-ring .ip-track { stroke: var(--track); }
+#ios-progress .ip-ring .ip-fill { stroke: var(--accent); stroke-linecap: round; transition: stroke-dashoffset .9s var(--ios-ease); }
+#ios-progress .ip-stand-counts { display: flex; gap: 8px; margin-top: 15px; }
+#ios-progress .ip-count { flex: 1 1 0; border-radius: 12px; padding: 10px 11px; border: 1px solid var(--border); background: var(--surface3); }
+#ios-progress .ip-count b { font: 600 18px/1 Fraunces, serif; font-variant-numeric: lining-nums tabular-nums; font-feature-settings: "lnum","tnum"; }
+#ios-progress .ip-count span { display: block; font: 700 9px/1 Inter, sans-serif; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-dim); margin-top: 5px; }
+#ios-progress .ip-count.ip-weak b { color: var(--miss); }
+#ios-progress .ip-count.ip-strong b { color: var(--green); }
+#ios-progress .ip-count.ip-untouched b { color: var(--text-mid); }
+
+#ios-progress .ip-domain { border: 1px solid var(--border); border-radius: 16px; background: var(--surface); margin-bottom: 11px; overflow: hidden; }
+#ios-progress .ip-dhead { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; border: none; background: none; cursor: pointer; padding: 14px 15px; transition: background .18s; }
+@media (hover:hover) and (pointer:fine) {
+#ios-progress .ip-dhead:hover { background: color-mix(in oklab, var(--accent) 4%, transparent); }
+}
+#ios-progress .ip-dhead-main { flex: 1 1 auto; min-width: 0; }
+#ios-progress .ip-dhead-row { display: flex; align-items: baseline; gap: 8px; }
+#ios-progress .ip-dhead-row b { font: 650 15px/1.15 Inter, sans-serif; color: var(--text); }
+#ios-progress .ip-dhead-row .ip-exam { flex: 0 0 auto; font: 600 10px/1 'Roboto Mono', monospace; color: var(--text-dim); margin-left: auto; white-space: nowrap; }
+#ios-progress .ip-dhead-bar { display: flex; align-items: center; gap: 9px; margin-top: 9px; }
+#ios-progress .ip-dhead-bar .ip-bar { flex: 1 1 auto; }
+#ios-progress .ip-dhead-pct { flex: 0 0 auto; font: 600 11px/1 'Roboto Mono', monospace; color: var(--text-dim); min-width: 34px; text-align: right; }
+#ios-progress .ip-dhead-count { font: 600 10.5px/1 Inter, sans-serif; color: var(--text-dim); margin-top: 7px; }
+#ios-progress .ip-dchev { flex: 0 0 auto; color: var(--text-dim); transition: transform .25s var(--ios-ease); }
+#ios-progress .ip-dchev svg { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+#ios-progress .ip-domain.ip-open .ip-dchev { transform: rotate(180deg); }
+#ios-progress .ip-dbody { display: none; padding: 0 15px 6px; }
+#ios-progress .ip-domain.ip-open .ip-dbody { display: block; }
+#ios-progress .ip-trow { display: flex; align-items: center; gap: 11px; padding: 10px 0; border-top: 1px solid color-mix(in oklab, var(--border) 70%, transparent); }
+#ios-progress .ip-trow .ip-tdot { flex: 0 0 auto; width: 9px; height: 9px; border-radius: 999px; background: var(--track); }
+#ios-progress .ip-trow.ip-strong .ip-tdot { background: var(--green); }
+#ios-progress .ip-trow.ip-partial .ip-tdot { background: var(--accent); }
+#ios-progress .ip-trow.ip-weak .ip-tdot { background: var(--miss); }
+#ios-progress .ip-trow.ip-untouched .ip-tdot { background: var(--text-dim); opacity: 0.4; }
+#ios-progress .ip-trow .ip-tnm { flex: 1 1 auto; min-width: 0; font: 600 13.5px/1.25 Inter, sans-serif; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#ios-progress .ip-trow.ip-untouched .ip-tnm { color: var(--text-mid); }
+#ios-progress .ip-trow .ip-tbar { flex: 0 0 58px; }
+#ios-progress .ip-trow .ip-tval { flex: 0 0 auto; font: 600 11px/1 'Roboto Mono', monospace; color: var(--text-dim); min-width: 30px; text-align: right; }
+#ios-progress .ip-trow.ip-strong .ip-tval { color: var(--green); }
+#ios-progress .ip-trow.ip-partial .ip-tval { color: var(--accent-deep); }
+#ios-progress .ip-trow.ip-weak .ip-tval { color: var(--miss); }
+#ios-progress .ip-disclose { width: 100%; border: none; background: none; cursor: pointer; text-align: left; padding: 11px 0 4px; border-top: 1px solid color-mix(in oklab, var(--border) 70%, transparent);
+    font: 700 11.5px/1 Inter, sans-serif; color: var(--accent-deep); display: flex; align-items: center; gap: 7px; transition: transform .14s var(--ios-ease); }
+#ios-progress .ip-disclose:active { transform: scale(0.985); }
+#ios-progress .ip-disclose svg { width: 13px; height: 13px; stroke: currentColor; fill: none; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; transition: transform .25s var(--ios-ease); }
+#ios-progress .ip-disclose.ip-open svg { transform: rotate(180deg); }
+#ios-progress .ip-untouched-list { display: none; padding-bottom: 4px; }
+#ios-progress .ip-untouched-list.ip-open { display: block; }
+#ios-progress .ip-listcard { border: 1px solid var(--border); border-radius: 16px; background: var(--surface); padding: 6px 15px; }
+#ios-progress .ip-lrow { display: flex; align-items: center; gap: 12px; padding: 11px 0; border-top: 1px solid color-mix(in oklab, var(--border) 70%, transparent); }
+#ios-progress .ip-lrow:first-child { border-top: none; }
+#ios-progress .ip-lrow .ip-tdot { flex: 0 0 auto; width: 9px; height: 9px; border-radius: 999px; background: var(--track); }
+#ios-progress .ip-lrow.ip-strong .ip-tdot { background: var(--green); }
+#ios-progress .ip-lrow.ip-partial .ip-tdot { background: var(--accent); }
+#ios-progress .ip-lrow.ip-weak .ip-tdot { background: var(--miss); }
+#ios-progress .ip-lrow .ip-lt { flex: 1 1 auto; min-width: 0; }
+#ios-progress .ip-lrow .ip-lt b { display: block; font: 600 14px/1.15 Inter, sans-serif; color: var(--text); }
+#ios-progress .ip-lrow .ip-lt span { display: block; font: 500 11px/1.2 Inter, sans-serif; color: var(--text-dim); margin-top: 2px; }
+#ios-progress .ip-lrow .ip-lpct { flex: 0 0 auto; font: 600 12px/1 'Roboto Mono', monospace; color: var(--text-dim); }
+#ios-progress .ip-lrow.ip-strong .ip-lpct { color: var(--green); }
+#ios-progress .ip-lrow.ip-weak .ip-lpct { color: var(--miss); }
+#ios-progress .ip-lrow .ip-lchip { flex: 0 0 auto; font: 800 9px/1 Inter, sans-serif; letter-spacing: 0.06em; text-transform: uppercase; color: var(--green); background: color-mix(in oklab, var(--green) 13%, transparent); border: 1px solid color-mix(in oklab, var(--green) 32%, transparent); border-radius: 999px; padding: 5px 8px; }
+#ios-progress .ip-cloud { display: flex; flex-wrap: wrap; gap: 7px; }
+#ios-progress .ip-tag { font: 600 11px/1 Inter, sans-serif; color: var(--text-dim); background: var(--surface); border: 1px solid var(--border); border-radius: 999px; padding: 7px 10px; }
+#ios-progress .ip-strip { display: flex; gap: 10px; overflow-x: auto; padding: 2px 18px 6px; margin: 0 -18px; scroll-snap-type: x mandatory; }
+#ios-progress .ip-strip::-webkit-scrollbar { height: 0; }
+#ios-progress .ip-rcard { flex: 0 0 auto; width: 138px; scroll-snap-align: start; border: 1px solid var(--border); border-radius: 14px; background: var(--surface); padding: 12px 13px; }
+#ios-progress .ip-rcard b { display: block; font: 650 13px/1.2 Inter, sans-serif; color: var(--text); min-height: 32px; }
+#ios-progress .ip-rcard .ip-rbar { margin: 10px 0 7px; }
+#ios-progress .ip-rcard .ip-rmeta { display: flex; align-items: center; justify-content: space-between; }
+#ios-progress .ip-rcard .ip-rpct { font: 600 11px/1 'Roboto Mono', monospace; color: var(--accent-deep); }
+#ios-progress .ip-rcard .ip-rago { font: 500 10px/1 Inter, sans-serif; color: var(--text-dim); }
+@media (prefers-reduced-motion: no-preference) {
+#ios-progress .ip-reveal { opacity: 0; transform: translateY(9px); animation: ip-rise .5s var(--ios-ease) forwards; }
+#ios-progress .ip-reveal:nth-child(1) {animation-delay:.04s}
+#ios-progress .ip-reveal:nth-child(2) {animation-delay:.09s}
+#ios-progress .ip-reveal:nth-child(3) {animation-delay:.14s}
+#ios-progress .ip-reveal:nth-child(4) {animation-delay:.19s}
+#ios-progress .ip-reveal:nth-child(5) {animation-delay:.24s}
+#ios-progress .ip-reveal:nth-child(6) {animation-delay:.29s}
+#ios-progress .ip-reveal:nth-child(7) {animation-delay:.34s}
+#ios-progress .ip-reveal:nth-child(8) {animation-delay:.39s}
+#ios-progress .ip-reveal:nth-child(9) {animation-delay:.44s}
+#ios-progress .ip-reveal:nth-child(10) {animation-delay:.49s}
+#ios-progress .ip-reveal:nth-child(11) {animation-delay:.54s}
+#ios-progress .ip-reveal:nth-child(12) {animation-delay:.59s}
+@keyframes ip-rise { to { opacity: 1; transform: none; } }
+}
+#ios-progress .ip-stand-top { display: grid; grid-template-columns: auto 1fr 1fr; align-items: end; gap: 18px; }
+#ios-progress .ip-st-cell { display: flex; flex-direction: column; gap: 7px; min-width: 0; }
+#ios-progress .ip-st-ring { align-items: flex-start; }
+#ios-progress .ip-stand-top .ip-ring { width: 72px; height: 72px; }
+#ios-progress .ip-stand-top .ip-ring svg { width: 72px; height: 72px; }
+#ios-progress .ip-ring-n { position: absolute; inset: 0; display: grid; place-items: center; font: 600 19px/1 Fraunces, serif; color: var(--text);
+    font-variant-numeric: lining-nums tabular-nums; font-feature-settings: "lnum","tnum"; }
+#ios-progress .ip-st-v { display: block; font: 600 24px/1 Fraunces, serif; color: var(--text); font-variant-numeric: lining-nums tabular-nums; font-feature-settings: "lnum","tnum"; }
+#ios-progress .ip-st-v small { font: 600 13px/1 Inter, sans-serif; color: var(--text-dim); }
+#ios-progress .ip-st-l { display: block; font: 600 10.5px/1.3 Inter, sans-serif; color: var(--text-dim); }
+#ios-progress .ip-toolbar { display: flex; align-items: center; gap: 12px; margin-top: 18px; border-bottom: 1px solid color-mix(in oklab, var(--border) 80%, transparent); }
+#ios-progress .ip-ftabs { position: relative; display: flex; gap: 17px; flex: 1 1 auto; min-width: 0; }
+#ios-progress .ip-ftab { border: 0; background: none; padding: 11px 0 12px; cursor: pointer; white-space: nowrap; font: 650 12.5px/1 Inter, sans-serif; color: var(--text-dim);
+    transition: color .15s var(--ios-ease); }
+#ios-progress .ip-ftab[aria-pressed="true"] { color: var(--text); }
+@media (hover:hover) and (pointer:fine) {
+#ios-progress .ip-ftab:not([aria-pressed="true"]):hover { color: var(--text-mid); }
+}
+#ios-progress .ip-ftab-ink { position: absolute; left: 0; bottom: -1px; width: 1px; height: 2px; background: var(--accent); transform-origin: 0 50%; pointer-events: none; }
+#ios-progress .ip-fsort { flex: 0 0 auto; display: inline-flex; align-items: center; gap: 6px; border: 0; background: none; padding: 11px 0 12px; cursor: pointer;
+    font: 650 12px/1 Inter, sans-serif; color: var(--text-mid); }
+#ios-progress .ip-fsort svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+#ios-progress .ip-fsort:active { opacity: .6; }
+@media (prefers-reduced-motion: no-preference) {
+#ios-progress .ip-ftab-ink.ip-ready { transition: transform .22s var(--ios-ease); }
+#ios-progress .ip-fsort { transition: opacity .15s var(--ios-ease); }
+}
+

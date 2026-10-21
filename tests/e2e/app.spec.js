@@ -1723,7 +1723,7 @@ test.describe('Mobile lift chrome (viewport-gated)', () => {
     await expect(page.locator('#lift-tabbar')).toBeVisible();
     await page.locator('#lift-tabbar .lift-tab[data-page="progress"]').click();
     await expect(page.locator('#page-progress')).toHaveClass(/active/);
-    await page.locator('#page-progress .lift-seg-chip[data-page="analytics"]').click();
+    await page.locator('#ios-progress [data-view="analytics"]').click();   // v8.185.0 B1: the phone screen draws the switch
     await expect(page.locator('#page-analytics')).toHaveClass(/active/);
     await page.locator('#lift-tabbar .lift-tab[data-page="settings"]').click();
     await expect(page.locator('#page-settings')).toHaveClass(/active/);
@@ -1840,7 +1840,7 @@ test.describe('Per-cert milestones + Analytics Drills visibility (Task 8)', () =
       // Mobile lift chrome: Progress tab → Analytics segment chip.
       await page.locator('#lift-tabbar .lift-tab[data-page="progress"]').click();
       await expect(page.locator('#page-progress')).toHaveClass(/active/);
-      await page.locator('#page-progress .lift-seg-chip[data-page="analytics"]').click();
+      await page.locator('#ios-progress [data-view="analytics"]').click();   // v8.185.0 B1: the phone screen draws the switch
     }
     await expect(page.locator('#page-analytics')).toHaveClass(/active/);
 

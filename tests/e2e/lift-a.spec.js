@@ -317,9 +317,13 @@ test.describe('Lift A custom quiz (phone)', () => {
     });
     await openApp(page, PHONE);
     await page.evaluate(() => showPage('progress'));
-    const row = page.locator('#page-progress .t-row[data-topic="AAA & Authentication"]').first();
+    // v8.185.0 B1: at phone width Progress is the E2E screen; its rows drill through the same drillTopic.
+    const row = page.locator('#ios-progress .ip-trow[data-t="AAA & Authentication"]').first();
+    // open the row's domain page through its pill, as a user would
+    const pg = await row.evaluate(el => el.closest('.ip-page').getAttribute('data-page'));
+    await page.locator('#ios-progress .ip-chip[data-page="' + pg + '"]').click();
     await expect(row).toBeVisible();
-    const topic = await row.getAttribute('data-topic');
+    const topic = await row.getAttribute('data-t');
     await row.click();
     await expect(page.locator('#ios-custom .ic-topbar')).toBeVisible();
     const chip = page.locator('#ios-custom [data-act="topic"][data-v="' + topic.replace(/"/g, '\\"') + '"]');

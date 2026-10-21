@@ -50,6 +50,28 @@ const { _fnBody, js, results, test, vm } = require('./_context');
     const fresh = M(ROWS.map(r => Object.assign({}, r, { pct: null, total: 0, attempts: 0, daysSince: null, lastDate: 0 })));
     test('Progress model: a new user has no "Drill this next" and 0% covered',
       fresh.next === null && fresh.stand.coveredPct === 0 && fresh.stand.avgMastery === null && fresh.insights.weakest.length === 0);
+
+    // ── View (pure HTML from the model) ──
+    vm.runInContext((_fnBody(js, '_iosProgressHtml') || ''), ctx);
+    const CERT = { mark: 'N+', name: 'Network+', code: 'N10-009' };
+    const H = (model) => vm.runInContext('_iosProgressHtml(__m, __c)', Object.assign(ctx, { __m: model, __c: CERT }));
+    const h = H(m);
+    test('Progress view: one pill per page, the first selected',
+      (h.match(/class="ip-chip[^"]*" type="button" role="tab"/g) || []).length === 4 && /class="ip-chip ip-on" type="button" role="tab" aria-selected="true" data-page="0">Overview</.test(h));
+    test('Progress view: one pager page per pill', (h.match(/<section class="ip-page" data-page="\d"/g) || []).length === 4);
+    test('Progress view: the ring holds only its number; Covered sits outside it as a label',
+      /<b class="ip-ring-n">67%<\/b><\/div><span class="ip-st-l">Covered<\/span>/.test(h));
+    test('Progress view: Avg mastery and Topics seen are value-over-label',
+      h.includes('<b class="ip-st-v">62%</b><span class="ip-st-l">Avg mastery</span>') && h.includes('<b class="ip-st-v">4<small> of 6</small></b><span class="ip-st-l">Topics seen</span>'));
+    test('Progress view: toolbar has 4 filter tabs (aria-pressed) and a Worst first sort',
+      (h.match(/class="ip-ftab" type="button" data-filter="\w+" aria-pressed="(true|false)"/g) || []).length === 4 && /<button class="ip-fsort"[^>]*>[\s\S]*?<span>Worst first<\/span>/.test(h));
+    test('Progress view: topic rows are buttons that carry their topic', /<button class="ip-trow ip-weak" type="button" data-act="drill" data-t="OSI"/.test(h));
+    test('Progress view: the Progress/Analytics switch is drawn, Progress pressed',
+      h.includes('<button type="button" data-view="progress" aria-pressed="true">Progress</button>') && h.includes('data-view="analytics" aria-pressed="false"'));
+    const nasty = M([R('A & <B>', 'concepts', 20, 1)]);
+    const hn = H(nasty);
+    test('Progress view: topic names are escaped in text and attributes', hn.includes('A &amp; &lt;B&gt;') && !hn.includes('<B>') && hn.includes('data-t="A &amp; &lt;B&gt;"'));
+    test('Progress view: a new user gets no "Drill this next" card', !H(fresh).includes('ip-hero'));
   } catch (err) {
     test('Lift B1 Progress: block (threw)', false);
     results.errors.push('491 ios-progress block threw: ' + err.message);

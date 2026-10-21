@@ -458,6 +458,8 @@
     _renderProgressGrouped(progressState.rows);
     // v4.78.0: surface highest-leverage topic recommendation at top
     if (typeof renderProgressRecommendation === 'function') renderProgressRecommendation();
+    // v8.185.0 Lift B1: the June E2E Progress screen at phone width (features/ios-progress.js).
+    try { if (typeof window.renderIosProgress === 'function') window.renderIosProgress(); } catch (_) {}
   }
 
   function setProgressFilter(name) {
@@ -602,6 +604,7 @@
 
   // ── window re-exposure (HTML onclick/onchange/oninput) ──
   window.renderProgressPage = renderProgressPage;
+  window.drillTopic = drillTopic;   // v8.185.0: the phone Progress rows drill through the live path
   window.setProgressFilter = setProgressFilter;
   window.setProgressSort = setProgressSort;
   window.filterProgressPage = filterProgressPage;
