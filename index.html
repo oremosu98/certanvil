@@ -140,7 +140,7 @@
 <link rel="stylesheet" href="lift-screens.css?v=8.182.0" media="print" onload="this.media='(max-width: 899px)'">
 <noscript><link rel="stylesheet" href="lift-screens.css?v=8.182.0" media="(max-width: 899px)"></noscript>
 <!-- v8.183.0 Lift A: E2E tokens + phone-only containers (iOS June design). Phone width only. -->
-<link rel="stylesheet" href="lift-ios.css?v=8.184.0" media="(max-width: 899px)">
+<link rel="stylesheet" href="lift-ios.css?v=8.185.0" media="(max-width: 899px)">
 <script>
 // v4.87.0: Inline cert detection — runs synchronously before <body>
 // renders so the right banner shows on first paint (no Network+ → Security+
@@ -1441,6 +1441,7 @@
      TOPIC PROGRESS PAGE
 ══════════════════════════════════════════ -->
 <div id="page-progress" class="page">
+  <section id="ios-progress" class="ios-only iq-screen" aria-label="Progress"></section>
   <!-- v4.51.0: Topic Progress cleaner header + stats split; v4.54.9: editorial treatment -->
   <div class="ed-pagehead">
     <button class="btn btn-ghost ed-pagehead-back" onclick="goSetup()" aria-label="Back to menu">&#8592; Menu</button>
@@ -1738,6 +1739,7 @@
      PORT MASTERY (revamped v4.36.1)
 ══════════════════════════════════════════ -->
 <div id="page-analytics" class="page">
+  <section id="ios-analytics" class="ios-only iq-screen" aria-label="Analytics"></section>
   <!-- v4.54.12: editorial header -->
   <div class="ed-pagehead">
     <button class="btn btn-ghost ed-pagehead-back" onclick="goSetup()" aria-label="Back to menu">&#8592; Menu</button>
@@ -2250,6 +2252,8 @@
 <script defer src="features/home.js"></script>
 <script defer src="features/ios-home.js"></script>
 <script defer src="features/ios-custom.js"></script>
+<script defer src="features/ios-progress.js"></script>
+<script defer src="features/ios-analytics.js"></script>
 <script defer src="features/sr-review.js"></script>
 <script defer src="lift-shell.js?v=7.36.0"></script>
 <!-- v7.81.0 P0a: cert pack injection (moved from <head>).

@@ -711,3 +711,12 @@ html[data-theme="light"] #ios-custom .ic-i-sun, html:not([data-theme="light"]) #
 @keyframes ic-rise { to { opacity: 1; transform: none; } }
 }
 
+
+/* ═════════════════════ LIFT B1 · SCAFFOLD (Progress, Analytics) ═════════════════════ */
+/* The phone screens replace their whole page once rendered: desktop siblings (incl. the
+   lift-shell .lift-seg switch, which the E2E draws inside the screen) and the top bar hide. */
+#page-progress:has(#ios-progress:not(:empty)) > :not(#ios-progress) { display: none !important; }
+#page-analytics:has(#ios-analytics:not(:empty)) > :not(#ios-analytics) { display: none !important; }
+body:has(#page-progress.active #ios-progress:not(:empty)) #app-topbar, body:has(#page-progress.active #ios-progress:not(:empty)) .app-topbar,
+body:has(#page-analytics.active #ios-analytics:not(:empty)) #app-topbar, body:has(#page-analytics.active #ios-analytics:not(:empty)) .app-topbar { display: none !important; }
+#page-progress:has(#ios-progress:not(:empty)), #page-analytics:has(#ios-analytics:not(:empty)) { padding: 0 !important; }
