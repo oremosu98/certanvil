@@ -78,7 +78,7 @@
     const on = !!_examPausedAt;
     page.classList.toggle('is-paused', on);
     const pb = document.getElementById('exam-pause-btn');
-    if (pb) { pb.textContent = on ? 'Resume' : 'Pause'; pb.setAttribute('aria-pressed', on ? 'true' : 'false'); }
+    if (pb) { pb.textContent = on ? 'Resume' : 'Pause'; pb.setAttribute('aria-pressed', on ? 'true' : 'false'); pb.setAttribute('aria-label', on ? 'Resume the exam' : 'Pause the exam'); }
     let card = document.getElementById('exam-paused');
     if (!on) { if (card) card.remove(); return; }
     if (!card) {
@@ -89,7 +89,8 @@
     }
     const m = Math.floor(examTimeLeft / 60), sec = examTimeLeft % 60;
     card.innerHTML = '<div class="exam-paused-k">Exam paused</div>'
-      + '<div class="exam-paused-t">' + m + ':' + String(sec).padStart(2, '0') + ' left. The clock is stopped.</div>'
+      // v8.186.0 Lift B2: time and "clock is stopped" in their own spans (the phone cover stacks them)
+      + '<div class="exam-paused-t"><span class="exam-paused-time">' + m + ':' + String(sec).padStart(2, '0') + ' left</span><span class="ix-long">.</span> <span class="exam-paused-s">The clock is stopped.</span></div>'
       + '<button type="button" class="btn btn-primary exam-paused-btn">Resume exam</button>'
       + '<p class="exam-paused-note">The real exam has no pause, so keep this for real interruptions.</p>';
     card.querySelector('.exam-paused-btn').addEventListener('click', _examResumeFromPause);
@@ -559,6 +560,17 @@
 
     const answeredCount = examAnswers.filter(a => a.chosen !== null || a.msChosen.length > 0 || a.orderSeq.length > 0 || Object.keys(a.topoState || {}).length > 0 || _examPbqTouched(a.sl)).length;
     document.getElementById('exam-answered-lbl').textContent = `${answeredCount} / ${total} answered`;
+    // v8.186.0 Lift B2: phone top bar ("Question 3 of 90" / "63 answered"), answered fill, Flagged chip
+    const _page = document.getElementById('page-exam');
+    if (_page) {
+      const cn = _page.querySelector('.ix-cn'), cs = _page.querySelector('.ix-cs');
+      if (cn) cn.textContent = `Question ${examCurrent + 1} of ${total}`;
+      if (cs) cs.textContent = `${answeredCount} answered`;
+      _page.style.setProperty('--ix-answered', ((answeredCount / total) * 100) + '%');
+      _page.classList.toggle('ix-is-flagged', !!ans.flagged);
+      const dockFlag = _page.querySelector('.ix-flag');
+      if (dockFlag) dockFlag.setAttribute('aria-pressed', ans.flagged ? 'true' : 'false');
+    }
     document.getElementById('exam-prog-fill').style.width = ((examCurrent / total) * 100) + '%';
     // v4.54.9: segmented per-question progress dots (exam parity with quiz)
     if (typeof _renderExamProgressDots === 'function') _renderExamProgressDots();
@@ -597,7 +609,9 @@
     document.getElementById('exam-prev-btn').disabled = examCurrent === 0;
     const isLast = examCurrent === total - 1;
     const nextBtn = document.getElementById('exam-next-btn');
-    nextBtn.textContent = isLast ? 'Submit Exam' : 'Next \u2192';
+    nextBtn.innerHTML = isLast   // v8.186.0 Lift B2: long label on desktop, short on phones
+      ? '<span class="ix-long">Submit Exam</span><span class="ix-short" hidden>End</span>'
+      : '<span class="ix-long">Next \u2192</span><span class="ix-short ix-arr" hidden>Next</span>';
     nextBtn.onclick = isLast ? showExamModal : examNext;
 
     if (navOpen) renderNavGrid();

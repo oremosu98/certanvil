@@ -1613,11 +1613,12 @@
       <div class="exam-q-counter" id="exam-q-num" aria-live="polite">Q1 / 90</div>
       <div class="exam-answered-lbl" id="exam-answered-lbl" aria-live="polite">0 / 90 answered</div>
       <div class="exam-pace" id="exam-pace" aria-live="off"></div>
+      <span class="ix-cn" hidden></span><span class="ix-cs" hidden></span>
     </div>
     <div class="exam-topbar-actions">
       <button type="button" class="exam-flag-btn exam-pause-btn" id="exam-pause-btn" aria-label="Pause the exam" aria-pressed="false">Pause</button>
       <button class="exam-flag-btn" id="exam-flag-btn" onclick="examToggleFlag()" aria-label="Flag question for review" aria-pressed="false">&#9873; Flag</button>
-      <button class="end-exam-btn" onclick="showExamModal()">End Exam</button>
+      <button class="end-exam-btn" onclick="showExamModal()"><span class="ix-long">End Exam</span><span class="ix-short" hidden>End</span></button>
     </div>
   </div>
 
@@ -1636,6 +1637,7 @@
     <div class="q-meta">
       <span class="q-num" id="exam-q-label">Q1</span>
       <span style="font-size:12px;color:var(--text-dim)" id="exam-topic-lbl"></span>
+      <span class="ix-flagged" hidden>Flagged</span>
     </div>
     <div class="q-text" id="exam-q-text">Loading&#8230;</div>
     <!-- v4.56.0 \u2014 optional scenario context block for exam mode (populated by renderExam() from q.scenario) -->
@@ -1646,14 +1648,15 @@
   </div>
 
   <div class="exam-nav-row">
-    <button class="btn btn-ghost" id="exam-prev-btn" onclick="examPrev()" style="padding:12px 20px" aria-label="Previous question">&#8592; Prev</button>
+    <button class="btn btn-ghost" id="exam-prev-btn" onclick="examPrev()" style="padding:12px 20px" aria-label="Previous question"><span class="ix-long">&#8592; Prev</span></button>
     <!-- v4.54.9: editorial kbd-hints (parallels the quiz page treatment) -->
     <div class="quiz-kbd-hints" aria-label="Keyboard shortcuts">
       <span id="exam-kbd-pick"><kbd>A</kbd><kbd>B</kbd><kbd>C</kbd><kbd>D</kbd> pick</span>
       <span><kbd>&larr;</kbd><kbd>&rarr;</kbd> navigate</span>
       <span><kbd>F</kbd> flag</span>
     </div>
-    <button class="btn btn-primary" id="exam-next-btn" onclick="examNext()" style="padding:12px 20px">Next &#8594;</button>
+    <button type="button" class="ix-flag" hidden onclick="examToggleFlag()" aria-pressed="false">Flag</button>
+    <button class="btn btn-primary" id="exam-next-btn" onclick="examNext()" style="padding:12px 20px"><span class="ix-long">Next &#8594;</span><span class="ix-short ix-arr" hidden>Next</span></button>
   </div>
 </div>
 

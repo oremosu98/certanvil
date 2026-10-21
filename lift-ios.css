@@ -1384,3 +1384,127 @@ body:has(#page-exam-results.active #ios-exam-results:not(:empty)) #app-topbar, b
 }
 
 #ios-exam-results .ie-done-title, #ios-exam-results .ie-sect-title { text-transform: none !important; }
+
+/* ═════════════════════ EXAM (cert-ios-exam.html 597e06e8, B2) · ix- hooks on the real #page-exam markup ═════════════════════ */
+/* One fixed viewport like the E2E: bar + ticks on top, the question scrolls, the dock sits at the bottom. */
+body:has(#page-exam.active) #app-topbar, body:has(#page-exam.active) .app-topbar { display: none !important; }
+html[data-theme] body #page-exam.active { position: fixed !important; inset: 0 !important; height: auto !important; min-height: 0 !important; max-height: none !important; box-sizing: border-box; z-index: 5; display: flex !important; flex-direction: column !important; overflow: hidden; overflow: clip; margin: 0 !important; padding: 0 !important; max-width: none !important; background: var(--bg) !important; color: var(--text); font: 15px/1.55 Inter, -apple-system, BlinkMacSystemFont, sans-serif; -webkit-font-smoothing: antialiased; animation: none !important; transform: none !important; }
+html[data-theme] body #page-exam > * { flex: 0 0 auto; }
+html[data-theme] body #page-exam button { font-family: inherit; box-sizing: border-box; }
+html[data-theme] body #page-exam [hidden].ix-cn, html[data-theme] body #page-exam [hidden].ix-cs { display: block !important; }
+html[data-theme] body #page-exam .ix-long { display: none !important; }
+html[data-theme] body #page-exam .ix-short[hidden] { display: inline !important; }
+/* the desktop controls the E2E doesn't have: navigator, kbd hints, top-bar Flag */
+html[data-theme] body #page-exam .qnav-toggle, html[data-theme] body #page-exam .qnav-grid, html[data-theme] body #page-exam .quiz-kbd-hints, html[data-theme] body #page-exam #exam-flag-btn { display: none !important; }
+
+/* top bar: timer · counter + pace · Pause · End */
+html[data-theme] body #page-exam .exam-topbar { order: 0; position: static !important; display: flex !important; flex-wrap: nowrap !important; align-items: center !important; gap: 10px !important; padding: max(12px, env(safe-area-inset-top)) 18px 8px !important; margin: 0 !important; border: 0 !important; background: none !important; }
+html[data-theme] body #page-exam .exam-timer-block { flex: 0 0 auto; min-width: 0; text-align: left; }
+html[data-theme] body #page-exam .timer-label { display: block; font: 800 8.5px/1 Inter, sans-serif !important; letter-spacing: 0.14em !important; text-transform: uppercase !important; color: var(--text-dim) !important; margin: 0 0 4px !important; }
+html[data-theme] body #page-exam .exam-timer { display: inline-flex !important; align-items: center; gap: 5px; font: 700 17px/1 'Roboto Mono', monospace !important; letter-spacing: 0 !important; color: var(--text) !important; font-variant-numeric: tabular-nums; }
+html[data-theme] body #page-exam .exam-timer::before { content: ""; width: 13px; height: 13px; flex: 0 0 auto; background: var(--accent-deep); -webkit-mask: var(--ix-clock) center / contain no-repeat; mask: var(--ix-clock) center / contain no-repeat; }
+html[data-theme] body #page-exam .exam-timer.danger { color: var(--miss) !important; }
+html[data-theme] body #page-exam .exam-timer.danger::before { background: var(--miss); }
+html[data-theme] body #page-exam .exam-center-info { flex: 1 1 auto !important; min-width: 0; display: flex !important; flex-direction: column; align-items: center; text-align: center; }
+html[data-theme] body #page-exam #exam-q-num, html[data-theme] body #page-exam #exam-answered-lbl { display: none !important; }
+html[data-theme] body #page-exam .ix-cn { order: 1; font: 700 13.5px/1 Inter, sans-serif; color: var(--text); }
+html[data-theme] body #page-exam .ix-cs { order: 2; font: 500 10.5px/1 Inter, sans-serif; color: var(--text-dim); margin-top: 4px; }
+html[data-theme] body #page-exam #exam-pace { order: 3; display: block; min-height: 0; font: 600 10px/1 'Roboto Mono', monospace !important; color: var(--green) !important; margin-top: 4px; }
+html[data-theme] body #page-exam #exam-pace:empty { display: none !important; }
+html[data-theme] body #page-exam #exam-pace.is-behind { color: var(--miss) !important; }
+html[data-theme] body #page-exam .exam-topbar-actions { flex: 0 0 auto !important; display: flex !important; align-items: center; gap: 10px !important; margin: 0 !important; }
+html[data-theme] body #page-exam #exam-pause-btn { position: relative; width: 34px !important; height: 34px !important; min-width: 34px !important; min-height: 34px !important; padding: 0 !important; display: flex !important; align-items: center; justify-content: center; font-size: 0 !important; color: var(--text-mid) !important; background: transparent !important; border: 1px solid var(--border) !important; border-radius: 999px !important; transition: transform .14s var(--ios-ease), border-color .18s, color .18s !important; }
+html[data-theme] body #page-exam #exam-pause-btn::before { content: ""; width: 12px; height: 12px; background: currentColor; -webkit-mask: var(--ix-pause) center / contain no-repeat; mask: var(--ix-pause) center / contain no-repeat; }
+html[data-theme] body #page-exam #exam-pause-btn[aria-pressed="true"] { color: var(--accent-deep) !important; border-color: color-mix(in oklab, var(--accent) 34%, var(--border)) !important; }
+html[data-theme] body #page-exam .end-exam-btn { position: relative; display: inline-flex !important; align-items: center; min-height: 0 !important; height: auto !important; width: auto !important; font: 700 12px/1 Inter, sans-serif !important; color: var(--accent-deep) !important; background: color-mix(in oklab, var(--accent) 10%, transparent) !important; border: 1px solid color-mix(in oklab, var(--accent) 34%, var(--border)) !important; border-radius: 999px !important; padding: 9px 13px !important; box-shadow: none !important; filter: none !important; transition: transform .14s var(--ios-ease), background-color .18s !important; }
+/* flex, not grid: the hidden "Pause" text node would form a second grid row and lift the icon */
+/* 44pt hit areas around the 34px controls */
+html[data-theme] body #page-exam #exam-pause-btn::after, html[data-theme] body #page-exam .end-exam-btn::after { content: ""; position: absolute; inset: -6px -3px; }
+html[data-theme] body #page-exam #exam-pause-btn:active, html[data-theme] body #page-exam .end-exam-btn:active { transform: scale(0.96); }
+@media (hover: hover) and (pointer: fine) { html[data-theme] body #page-exam .end-exam-btn:hover { background: color-mix(in oklab, var(--accent) 16%, transparent) !important; } }
+
+/* shortfall notice: an E2E notice card under the bar */
+html[data-theme] body #page-exam .exam-shortfall-banner { order: 1; display: flex !important; align-items: flex-start; gap: 10px; margin: 4px 18px 6px !important; padding: 10px 12px !important; border: 1px solid color-mix(in oklab, var(--accent) 26%, var(--border)) !important; border-radius: 12px !important; background: color-mix(in oklab, var(--accent) 6%, var(--surface)) !important; font: 500 12px/1.45 Inter, sans-serif !important; color: var(--text-mid) !important; }
+html[data-theme] body #page-exam .exam-shortfall-banner strong { color: var(--text); font-weight: 700; }
+html[data-theme] body #page-exam .exam-shortfall-dismiss { flex: 0 0 auto; width: 28px; height: 28px; margin: -4px -4px 0 auto; border: 0; background: none; color: var(--text-dim); font-size: 18px; line-height: 1; cursor: pointer; }
+
+/* question map: ticks, then the answered fill */
+html[data-theme] body #page-exam .progress-wrap { order: 2; display: flex !important; flex-direction: column; margin: 0 !important; padding: 2px 18px 0 !important; }
+html[data-theme] body #page-exam #exam-prog-dots { order: 1; display: flex !important; align-items: flex-end !important; gap: 2px !important; height: 12px !important; margin: 0 !important; padding: 0 !important; border: 0 !important; overflow: hidden; }
+html[data-theme] body #page-exam #exam-prog-dots > .qpd-cell { flex: 1 1 0 !important; width: auto !important; min-width: 0 !important; height: 5px !important; min-height: 0 !important; margin: 0 !important; padding: 0 !important; border: 0 !important; border-radius: 2px !important; box-shadow: none !important; background: var(--track) !important; }
+html[data-theme] body #page-exam #exam-prog-dots > .qpd-cell::before, html[data-theme] body #page-exam #exam-prog-dots > .qpd-cell::after { content: none !important; }
+html[data-theme] body #page-exam #exam-prog-dots > .qpd-cell.qpd-done { height: 5px !important; background: color-mix(in oklab, var(--accent) 55%, var(--track)) !important; }
+html[data-theme] body #page-exam #exam-prog-dots > .qpd-cell.qpd-flagged { height: 5px !important; background: var(--accent-deep) !important; }
+html[data-theme] body #page-exam #exam-prog-dots > .qpd-cell.qpd-now { height: 12px !important; background: var(--accent) !important; }
+html[data-theme] body #page-exam .progress-wrap .progress-bar { order: 2; height: 4px !important; margin: 8px 0 0 !important; border-radius: 999px !important; background: var(--track) !important; overflow: hidden; border: 0 !important; }
+html[data-theme] body #page-exam #exam-prog-fill { width: var(--ix-answered, 0%) !important; height: 100% !important; border-radius: 999px !important; background: color-mix(in oklab, var(--accent) 75%, var(--accent-deep)) !important; box-shadow: none !important; transition: width .4s var(--ios-ease) !important; }
+
+/* the question: no card chrome, scrolls between the bar and the dock */
+html[data-theme] body #page-exam .q-card { order: 3; flex: 1 1 auto !important; min-height: 0 !important; overflow-y: auto !important; overscroll-behavior: contain; margin: 0 !important; padding: 14px 18px 12px !important; border: 0 !important; border-radius: 0 !important; background: none !important; box-shadow: none !important; }
+html[data-theme] body #page-exam .q-card::-webkit-scrollbar { width: 0; }
+html[data-theme] body #page-exam .q-meta { display: flex !important; align-items: center !important; gap: 9px !important; margin: 0 0 11px !important; }
+html[data-theme] body #page-exam #exam-q-label { font: 800 11px/1 'Roboto Mono', monospace !important; letter-spacing: 0 !important; color: var(--accent-deep) !important; }
+html[data-theme] body #page-exam #exam-topic-lbl { display: inline-flex; align-items: center; min-width: 0; font: 600 11px/1 Inter, sans-serif !important; letter-spacing: 0.02em; color: var(--text-dim) !important; }
+html[data-theme] body #page-exam .ix-flagged { display: none !important; margin-left: auto; align-items: center; gap: 5px; font: 700 9.5px/1 Inter, sans-serif; letter-spacing: 0.06em; text-transform: uppercase; color: var(--accent-deep); }
+html[data-theme] body #page-exam.ix-is-flagged .ix-flagged { display: inline-flex !important; }
+html[data-theme] body #page-exam .ix-flagged::before { content: ""; width: 12px; height: 12px; background: currentColor; -webkit-mask: var(--ix-flag-fill) center / contain no-repeat; mask: var(--ix-flag-fill) center / contain no-repeat; }
+html[data-theme] body #page-exam #exam-q-text { font: 600 18px/1.32 Inter, sans-serif !important; letter-spacing: -0.005em !important; color: var(--text) !important; margin: 0 0 16px !important; outline: none !important; box-shadow: none !important; border: 0 !important; }
+html[data-theme] body #page-exam #exam-q-text strong.exam-keyword { color: var(--accent-deep) !important; font-weight: 700 !important; font-style: normal !important; background: none !important; }
+html[data-theme] body #page-exam .q-scenario:not([hidden]) { display: block !important; border: 1px solid color-mix(in oklab, var(--accent) 22%, var(--border)) !important; border-left: 3px solid var(--accent) !important; border-radius: 12px !important; background: color-mix(in oklab, var(--accent) 6%, var(--surface)) !important; padding: 11px 13px !important; margin: 0 0 16px !important; font: 500 13px/1.5 Inter, sans-serif !important; color: var(--text-mid) !important; }
+html[data-theme] body #page-exam .q-scenario .q-scenario-rule { display: none !important; }
+/* options (E2E .opt): letter tile · text · check */
+html[data-theme] body #page-exam #exam-options .option { display: flex !important; align-items: center !important; gap: 12px !important; width: 100% !important; text-align: left; margin: 0 0 10px !important; padding: 14px !important; border: 1px solid var(--border) !important; border-radius: 14px !important; background: var(--surface) !important; box-shadow: none !important; color: var(--text) !important; transition: border-color .16s, background-color .16s, transform .12s var(--ios-ease) !important; }
+html[data-theme] body #page-exam #exam-options .option:active { transform: scale(0.99); }
+@media (hover: hover) and (pointer: fine) { html[data-theme] body #page-exam #exam-options .option:hover { border-color: color-mix(in oklab, var(--accent) 40%, var(--border)) !important; background: var(--surface) !important; } }
+html[data-theme] body #page-exam #exam-options .opt-letter { flex: 0 0 auto !important; width: 30px !important; height: 30px !important; min-width: 30px !important; border-radius: 9px !important; display: grid !important; place-items: center !important; margin: 0 !important; background: var(--surface3) !important; color: var(--text-mid) !important; border: 1px solid var(--border) !important; font: 800 13px/1 Inter, sans-serif !important; transition: background-color .16s, color .16s, border-color .16s !important; }
+html[data-theme] body #page-exam #exam-options .opt-text { flex: 1 1 auto; min-width: 0; font: 500 13.5px/1.4 Inter, sans-serif !important; color: var(--text) !important; }
+html[data-theme] body #page-exam #exam-options .option::after { content: ""; flex: 0 0 auto; width: 20px; height: 20px; border-radius: 999px; opacity: 0; background: var(--accent) var(--ix-check) center / 13px 13px no-repeat; transition: opacity .16s var(--ios-ease); }
+html[data-theme] body #page-exam #exam-options .option.exam-selected, html[data-theme] body #page-exam #exam-options .option.ms-selected { border-color: var(--accent) !important; background: color-mix(in oklab, var(--accent) 7%, var(--surface)) !important; }
+html[data-theme] body #page-exam #exam-options .option.exam-selected .opt-letter { background: var(--accent) !important; color: var(--on-accent) !important; border-color: var(--accent) !important; }
+html[data-theme] body #page-exam #exam-options .option.exam-selected::after, html[data-theme] body #page-exam #exam-options .option.ms-selected::after { opacity: 1; }
+html[data-theme="light"] body #page-exam #exam-options .option::after { --ix-check: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23fbf8f2' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'><path d='M20 6L9 17l-5-5'/></svg>"); }
+/* a Sim Lab question: "Sim Lab" tag before the topic, the console card holds its own Reset */
+html[data-theme] body #page-exam:has(#exam-options .exam-pbq) #exam-topic-lbl::before { content: "Sim Lab"; margin-right: 9px; font: 800 9.5px/1 Inter, sans-serif; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent-deep); background: color-mix(in oklab, var(--accent) 12%, transparent); border-radius: 999px; padding: 5px 8px; }
+html[data-theme] body #page-exam .exam-pbq { max-width: 100%; overflow-x: auto; }
+
+/* dock: Prev · Flag · Next */
+html[data-theme] body #page-exam .exam-nav-row { order: 4; display: flex !important; align-items: stretch !important; justify-content: flex-start !important; gap: 10px !important; margin: 0 !important; padding: 12px 18px calc(12px + env(safe-area-inset-bottom)) !important; border-top: 1px solid color-mix(in oklab, var(--border) 70%, transparent) !important; background: var(--bg) !important; }
+html[data-theme] body #page-exam #exam-prev-btn { flex: 0 0 auto !important; width: 48px !important; min-width: 48px !important; height: auto !important; padding: 0 !important; display: grid !important; place-items: center; color: var(--text-mid) !important; background: transparent !important; border: 1px solid var(--border) !important; border-radius: 13px !important; box-shadow: none !important; transition: transform .14s var(--ios-ease), border-color .18s !important; }
+html[data-theme] body #page-exam #exam-prev-btn::before { content: ""; width: 18px; height: 18px; background: currentColor; -webkit-mask: var(--ix-chev) center / contain no-repeat; mask: var(--ix-chev) center / contain no-repeat; }
+html[data-theme] body #page-exam #exam-prev-btn:disabled { opacity: .35 !important; cursor: default; }
+html[data-theme] body #page-exam .ix-flag[hidden] { display: inline-flex !important; }
+html[data-theme] body #page-exam .ix-flag { flex: 0 0 auto; align-items: center; gap: 7px; padding: 0 16px; border: 1px solid var(--border); border-radius: 13px; background: transparent; color: var(--text-mid); font: 650 13px/1 Inter, sans-serif; cursor: pointer; transition: background-color .18s, border-color .18s, color .18s, transform .14s var(--ios-ease); }
+html[data-theme] body #page-exam .ix-flag::before { content: ""; width: 15px; height: 15px; background: currentColor; -webkit-mask: var(--ix-flag) center / contain no-repeat; mask: var(--ix-flag) center / contain no-repeat; }
+html[data-theme] body #page-exam.ix-is-flagged .ix-flag { color: var(--accent-deep); border-color: color-mix(in oklab, var(--accent) 40%, var(--border)); background: color-mix(in oklab, var(--accent) 9%, transparent); }
+html[data-theme] body #page-exam.ix-is-flagged .ix-flag::before { -webkit-mask-image: var(--ix-flag-fill); mask-image: var(--ix-flag-fill); }
+html[data-theme] body #page-exam #exam-next-btn { flex: 1 1 auto !important; display: inline-flex !important; align-items: center; justify-content: center; gap: 7px; width: auto !important; height: auto !important; padding: 14px !important; border: 0 !important; border-radius: 13px !important; background: var(--accent) !important; color: var(--on-accent) !important; font: 700 15px/1 Inter, sans-serif !important; box-shadow: 0 10px 22px -12px color-mix(in oklab, var(--accent) 70%, transparent) !important; filter: none; transition: transform .15s var(--ios-ease), filter .2s !important; }
+html[data-theme] body #page-exam #exam-next-btn .ix-arr { display: inline-flex !important; align-items: center; gap: 7px; }
+html[data-theme] body #page-exam #exam-next-btn .ix-arr::after { content: ""; width: 17px; height: 17px; background: currentColor; -webkit-mask: var(--ix-arrow) center / contain no-repeat; mask: var(--ix-arrow) center / contain no-repeat; }
+html[data-theme] body #page-exam #exam-prev-btn:active, html[data-theme] body #page-exam .ix-flag:active { transform: scale(0.97); }
+html[data-theme] body #page-exam #exam-next-btn:active { transform: scale(0.985); }
+@media (hover: hover) and (pointer: fine) { html[data-theme] body #page-exam #exam-next-btn:hover { filter: brightness(1.05); } }
+
+/* paused cover: the question is hidden while the clock is stopped (dg-system hides the rest) */
+html[data-theme] body #page-exam .exam-paused { order: 3; flex: 1 1 auto !important; display: flex !important; flex-direction: column; align-items: center; justify-content: center; text-align: center; max-width: none !important; margin: 0 !important; padding: 0 30px 40px !important; border: 0 !important; border-radius: 0 !important; background: none !important; }
+html[data-theme] body #page-exam .exam-paused::before { content: ""; width: 56px; height: 56px; border-radius: 999px; margin-bottom: 16px; background: var(--ix-pause-ic) center / 22px 22px no-repeat, color-mix(in oklab, var(--accent) 12%, var(--surface)); }
+html[data-theme] body #page-exam .exam-paused-k { font: 800 10px/1 Inter, sans-serif !important; letter-spacing: 0.14em !important; text-transform: uppercase !important; color: var(--text-dim) !important; }
+html[data-theme] body #page-exam .exam-paused-t { display: flex !important; flex-direction: column; align-items: center; margin: 0 !important; font-size: inherit !important; font-weight: 400 !important; }
+html[data-theme] body #page-exam .exam-paused-time { font: 600 34px/1 'Roboto Mono', monospace; color: var(--text); margin: 12px 0 6px; font-variant-numeric: tabular-nums; }
+html[data-theme] body #page-exam .exam-paused-s { font-size: 13.5px; line-height: 1.55; color: var(--text-mid); margin: 0 0 22px; }
+html[data-theme] body #page-exam .exam-paused-btn { width: 100% !important; max-width: 280px; border: 0 !important; border-radius: 13px !important; padding: 15px !important; background: var(--accent) !important; color: var(--on-accent) !important; font: 700 15px/1 Inter, sans-serif !important; box-shadow: 0 10px 22px -12px color-mix(in oklab, var(--accent) 70%, transparent) !important; transition: transform .15s var(--ios-ease) !important; }
+html[data-theme] body #page-exam .exam-paused-btn:active { transform: scale(0.985); }
+html[data-theme] body #page-exam .exam-paused-note { font-size: 12px !important; line-height: 1.5; color: var(--text-dim) !important; margin: 16px 0 0 !important; max-width: 30ch; }
+html[data-theme] body #page-exam.is-paused .progress-wrap { display: none !important; }
+
+/* icons (E2E paths) */
+html[data-theme] body #page-exam {
+  --ix-clock: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'><circle cx='12' cy='13' r='8'/><path d='M12 9v4l2.5 1.5M9 2h6'/></svg>");
+  --ix-pause: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='black' stroke='black' stroke-width='1.5' stroke-linejoin='round'><rect x='6' y='5' width='4' height='14' rx='1'/><rect x='14' y='5' width='4' height='14' rx='1'/></svg>");
+  --ix-flag: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M5 21V4h11l-1.5 4L16 12H5'/></svg>");
+  --ix-flag-fill: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='black' stroke='black' stroke-width='1.5' stroke-linejoin='round'><path d='M5 21V4h11l-1.5 4L16 12H5'/></svg>");
+  --ix-chev: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'><path d='M15 6l-6 6 6 6'/></svg>");
+  --ix-arrow: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'><path d='M5 12h14M13 6l6 6-6 6'/></svg>");
+  --ix-check: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23231f2e' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'><path d='M20 6L9 17l-5-5'/></svg>");
+  --ix-pause-ic: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23e0912f' stroke='%23e0912f' stroke-width='1.5' stroke-linejoin='round'><rect x='6' y='5' width='4' height='14' rx='1'/><rect x='14' y='5' width='4' height='14' rx='1'/></svg>");
+}
+html[data-theme="light"] body #page-exam { --ix-pause-ic: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23964514' stroke='%23964514' stroke-width='1.5' stroke-linejoin='round'><rect x='6' y='5' width='4' height='14' rx='1'/><rect x='14' y='5' width='4' height='14' rx='1'/></svg>"); }
