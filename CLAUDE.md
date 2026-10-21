@@ -29,7 +29,7 @@
 | index.html | 2339 | 153 KB |
 | dg-system.css | 5624 | 532 KB |
 | tests/uat.js + tests/uat/ (57 modules) | 31804 | — |
-UAT checks: 5425 · E2E `test(` count: 260 · APP_VERSION: 8.185.0 · stamped-at: worktree
+UAT checks: 5425 · E2E `test(` count: 260 · APP_VERSION: 8.186.0 · stamped-at: worktree
 <!-- FACTS:AUTO:END -->
 
 | File | Purpose | Size |
@@ -135,9 +135,9 @@ npx playwright test              # E2E (tests/e2e/app.spec.js)
 
 | Version | Features Added |
 |---|---|
+| v8.186.0 | Exam and exam results look like the June design on phones. |
 | v8.185.0 | Progress, Analytics and Daily Review look like the June design on phones. |
 | v8.184.0 | Custom quiz on phones: five small fixes from the v8.183.0 review. |
-| v8.183.0 | Phone app looks like the June design: Home, quiz, results, review answers and Custom quiz. |
 
 _Older releases (v7.60.0 and back) live in [CHANGELOG.md](./CHANGELOG.md)._
 
