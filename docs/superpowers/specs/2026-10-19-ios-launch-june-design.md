@@ -98,6 +98,8 @@ mobile web and iOS.
 2. **Lift A: Home and the core loop.** Home hub, quiz, results, review answers, with the additions above.
 3. **Lift B: everything you study in.** Exam + results, Sim Lab, Drills, Progress, Analytics, Settings,
    Daily Review.
+   Split on 21 Oct (founder) into **B1** Progress + Analytics + Daily Review ([[2026-10-21-ios-lift-b1-design]]),
+   **B2** Exam + results, **B3** Drills + Sim Lab, **B4** Settings; each ships on its own.
 4. **Lift C: first run.** Cert picker, first-run diagnostic, day-0 and capped Home, the never-built
    screens (native welcome, notification prompt, error and offline states), AI-901 labels.
 5. **Native app.** Sign-in by 6-digit email code (magic links open Safari, not the app), Sign in with
