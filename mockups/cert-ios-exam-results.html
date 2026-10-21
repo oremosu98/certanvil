@@ -69,35 +69,36 @@
   .done-title em { font-style: normal; color: var(--accent); }
   .done-sub { font-size: 13.5px; line-height: 1.5; color: var(--ink-soft); margin: 10px 0 0; max-width: 36ch; }
 
-  /* score reveal card: deliberately dark in both themes (signature trophy panel) */
+  /* score card: follows the theme, in the same family as the quiz results card (founder, 21 Oct: consistency) */
   .scorecard { margin-top: 16px; border-radius: 20px; overflow: hidden; position: relative;
-    background: radial-gradient(120% 130% at 12% 0%, #20242e 0%, #14161d 56%, #0f1014 100%);
-    border: 1px solid #2a2f3a; box-shadow: 0 24px 50px -30px rgba(0,0,0,.7); color: #e9ebf1; }
+    background: color-mix(in oklab, var(--accent) 5%, var(--surface)); border: 1px solid color-mix(in oklab, var(--accent) 20%, var(--border)); color: var(--ink); }
   .sc-top { padding: 17px 18px 15px; }
-  .sc-lbl { font: 700 9.5px/1.2 'Roboto Mono', monospace; letter-spacing: 0.12em; text-transform: uppercase; color: #8b93a6; }
-  .sc-num { font: 600 58px/0.95 Fraunces, serif; color: #fff; font-variant-numeric: lining-nums tabular-nums; margin: 9px 0 0; letter-spacing: -0.01em; }
-  .sc-of { font: 700 13px/1 Inter, sans-serif; color: #8b93a6; margin-left: 4px; }
-  .sc-tags { display: flex; gap: 7px; margin: 13px 0 0; }
+  .sc-lbl { font: 700 9.5px/1.2 'Roboto Mono', monospace; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+  .sc-num { font: 600 58px/0.95 Fraunces, serif; color: var(--ink); font-variant-numeric: lining-nums tabular-nums; margin: 9px 0 0; letter-spacing: -0.01em; }
+  .sc-of { font: 700 13px/1 Inter, sans-serif; color: var(--muted); margin-left: 4px; }
+  .sc-tags { display: flex; flex-wrap: wrap; gap: 7px; margin: 13px 0 0; }
   .sc-tag { font: 800 10px/1 Inter, sans-serif; letter-spacing: 0.08em; text-transform: uppercase; border-radius: 7px; padding: 6px 9px; }
-  .sc-tag.fail { color: #fff; background: color-mix(in oklab, var(--miss) 78%, #000); }
-  .sc-tag.mode { color: #f1c27a; background: color-mix(in oklab, #f1c27a 16%, transparent); border: 1px solid color-mix(in oklab, #f1c27a 34%, transparent); }
-  .sc-msg { font: 500 12.5px/1.45 Inter, sans-serif; color: #c4c9d6; margin: 13px 0 0; }
-  .sc-msg b { color: #fff; font-weight: 700; }
+  .sc-tag.fail { color: var(--miss); background: color-mix(in oklab, var(--miss) 13%, transparent); border: 1px solid color-mix(in oklab, var(--miss) 30%, transparent); }
+  .sc-tag.pass { color: var(--pass); background: color-mix(in oklab, var(--pass) 13%, transparent); border: 1px solid color-mix(in oklab, var(--pass) 30%, transparent); }
+  .sc-tag.mode { color: var(--accent-deep); background: color-mix(in oklab, var(--accent) 11%, transparent); border: 1px solid color-mix(in oklab, var(--accent) 28%, transparent); }
+  .sc-msg { font: 500 12.5px/1.45 Inter, sans-serif; color: var(--ink-soft); margin: 13px 0 0; }
+  .sc-msg b { color: var(--ink); font-weight: 700; }
   /* gap-to-pass meter */
   .sc-meter { margin: 14px 0 2px; }
-  .sc-meter-track { height: 7px; border-radius: 999px; background: #272c37; position: relative; overflow: hidden; }
-  .sc-meter-fill { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 999px; background: linear-gradient(90deg, color-mix(in oklab, var(--miss) 80%, #000), #d98a3c); width: 0; transition: width .9s var(--ease); }
-  .sc-meter-tick { position: absolute; top: -3px; bottom: -3px; width: 2px; background: #aeb5c6; left: 80%; }
-  .sc-meter-legend { display: flex; justify-content: space-between; font: 600 9.5px/1 'Roboto Mono', monospace; color: #7e8699; margin-top: 6px; }
-  .sc-meter-legend .p { color: #d4a574; }
+  .sc-meter-track { height: 7px; border-radius: 999px; background: var(--track); position: relative; overflow: hidden; }
+  .sc-meter-fill { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 999px; background: var(--miss); width: 0; transition: width .9s var(--ease); }
+  .scorecard.passed .sc-meter-fill { background: var(--pass); }
+  .sc-meter-tick { position: absolute; top: -3px; bottom: -3px; width: 2px; background: var(--ink-soft); left: 80%; }
+  .sc-meter-legend { display: flex; justify-content: space-between; font: 600 9.5px/1 'Roboto Mono', monospace; color: var(--muted); margin-top: 6px; }
+  .sc-meter-legend .p { color: var(--accent-deep); }
   /* stat row under the score */
-  .sc-stats { display: flex; border-top: 1px solid #262b35; }
+  .sc-stats { display: flex; border-top: 1px solid color-mix(in oklab, var(--border) 70%, transparent); }
   .sc-stat { flex: 1 1 0; padding: 12px 6px 13px; text-align: center; }
-  .sc-stat + .sc-stat { border-left: 1px solid #262b35; }
-  .sc-stat .sn { display: block; font: 600 19px/1 Fraunces, serif; color: #fff; font-variant-numeric: lining-nums tabular-nums; }
-  .sc-stat.good .sn { color: #5fcf93; }
-  .sc-stat.bad .sn { color: #f08a78; }
-  .sc-stat .sl { display: block; font: 700 9px/1 Inter, sans-serif; letter-spacing: 0.07em; text-transform: uppercase; color: #8b93a6; margin-top: 6px; }
+  .sc-stat + .sc-stat { border-left: 1px solid color-mix(in oklab, var(--border) 70%, transparent); }
+  .sc-stat .sn { display: block; font: 600 19px/1 Fraunces, serif; color: var(--ink); font-variant-numeric: lining-nums tabular-nums; }
+  .sc-stat.good .sn { color: var(--pass); }
+  .sc-stat.bad .sn { color: var(--miss); }
+  .sc-stat .sl { display: block; font: 700 9px/1 Inter, sans-serif; letter-spacing: 0.07em; text-transform: uppercase; color: var(--muted); margin-top: 6px; }
 
   /* by domain */
   .sect-kick { font: 800 10px/1 Inter, sans-serif; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin: 24px 2px 4px; }
