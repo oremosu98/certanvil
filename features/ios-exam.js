@@ -79,9 +79,9 @@
       + '<div class="ie-sc-stats">' + m.tiles.map(function (t) { return '<div class="ie-sc-stat' + (t.kind ? ' ie-' + t.kind : '') + '"><span class="ie-sn">' + e(t.n) + '</span><span class="ie-sl">' + t.l + '</span></div>'; }).join('') + '</div></div>';
     h += '<p class="ie-sect-kick">Where the points went</p><h3 class="ie-sect-title">By <em>domain.</em></h3>'
       + m.domains.map(function (dm) {
-        var c = dm.tone === 'none' ? '' : ' ie-' + dm.tone;
+        var t = dm.tone === 'none' ? '' : dm.tone;
         return '<div class="ie-drow ie-reveal"><div class="ie-dmid"><div class="ie-dn">' + e(dm.label) + '</div><div class="ie-dc">' + e(dm.detail) + '</div></div>'
-          + '<div class="ie-dbar"><span class="ie-bg' + c + '" data-w="' + (dm.pct || 0) + '"></span></div><div class="ie-dpct' + c + '">' + (dm.pct === null ? '--' : dm.pct + '%') + '</div></div>';
+          + '<div class="ie-dbar"><span' + (t ? ' class="ie-' + t + '-bg"' : '') + ' data-w="' + (dm.pct || 0) + '"></span></div><div class="ie-dpct' + (t ? ' ie-' + t + '-c' : '') + '">' + (dm.pct === null ? '--' : dm.pct + '%') + '</div></div>';
       }).join('');
     if (m.pbq) {
       h += '<p class="ie-sect-kick">Performance-based · ' + m.pbq.right + ' of ' + m.pbq.count + ' right</p><h3 class="ie-sect-title">Sim Lab <em>questions.</em></h3>'
@@ -96,6 +96,51 @@
     return h;
   }
 
+  // ── Mount: phone width only, into #ios-exam-results. submitExam() passes d (features/exam.js).
+  function _ieIsPhone() { return !!(window.matchMedia && window.matchMedia('(max-width: 899px)').matches); }
+  var _ieLast = null;
+  function renderIosExamResults(d) {
+    var root = document.getElementById('ios-exam-results');
+    if (!root) return false;
+    if (d) _ieLast = d;
+    if (!_ieIsPhone() || !_ieLast) { if (root.innerHTML) root.innerHTML = ''; return false; }
+    var m = _iosExamResultsModel(_ieLast);
+    m.light = document.documentElement.getAttribute('data-theme') === 'light';
+    root.innerHTML = _iosExamResultsHtml(m);
+    _ieWire(root, m);
+    return true;
+  }
+  function _ieWire(root, m) {
+    var reduce = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+    var bars = [].slice.call(root.querySelectorAll('[data-w]'));
+    var fill = function () { bars.forEach(function (b) { b.style.width = b.getAttribute('data-w') + '%'; }); };
+    if (reduce) fill(); else requestAnimationFrame(function () { requestAnimationFrame(fill); });
+    var num = root.querySelector('.ie-sc-num');
+    if (num && !reduce) {
+      var to = +num.getAttribute('data-to'), t0 = null;
+      num.textContent = '0';
+      var step = function (t) { if (!t0) t0 = t; var p = Math.min((t - t0) / 950, 1); num.textContent = Math.round(to * (1 - Math.pow(1 - p, 3))); if (p < 1) requestAnimationFrame(step); };
+      requestAnimationFrame(step);
+    }
+    root.onclick = function (ev) {
+      var b = ev.target.closest('button'); if (!b || !root.contains(b)) return;
+      var act = b.getAttribute('data-act');
+      if (act === 'pbq') { b.setAttribute('aria-expanded', String(b.getAttribute('aria-expanded') !== 'true')); return; }
+      if (act === 'menu') { if (typeof window.goSetup === 'function') window.goSetup(); return; }
+      if (act === 'review') { if (typeof window.showReview === 'function') window.showReview(true); return; }
+      if (act === 'retry') { if (typeof window.startExam === 'function') window.startExam(); return; }
+      if (act === 'drill-gap') {
+        var go = function () { if (typeof window._startTopicsQuiz === 'function') window._startTopicsQuiz(m.gapTopics.slice()); };
+        if (typeof window._startTopicsQuiz === 'function') go();
+        else if (typeof window._loadFeature === 'function') window._loadFeature('analytics').then(go);   // the quiz path lives in analytics.js
+        return;
+      }
+      if (act === 'theme') { if (typeof window.toggleTheme === 'function') window.toggleTheme(); renderIosExamResults(); }
+    };
+  }
+
   window._iosExamResultsModel = _iosExamResultsModel;
+  window.renderIosExamResults = renderIosExamResults;
+  if (window.matchMedia) { var mq = window.matchMedia('(max-width: 899px)'); var onMq = function () { var p = document.getElementById('page-exam-results'); if (!mq.matches || (p && p.classList.contains('active'))) renderIosExamResults(); }; if (mq.addEventListener) mq.addEventListener('change', onMq); else if (mq.addListener) mq.addListener(onMq); }
   window._iosExamResultsHtml = _iosExamResultsHtml;
 })();

@@ -891,6 +891,8 @@
     animateCount('exam-r-skipped', 0, skipped, 600);
     document.getElementById('exam-r-pct').textContent     = pct + '%';
 
+    // v8.186.0 Lift B2: the June E2E results at phone width (features/ios-exam.js)
+    try { if (typeof window.renderIosExamResults === 'function') window.renderIosExamResults(_examPhoneResultsData(log, { scaled: scaledScore, total, correct, wrong, skipped, pct })); } catch (e) { console.warn('[ios-exam]', e); }
     showPage('exam-results');
     if (passed) setTimeout(() => launchConfetti(), 400);
     // v4.42.0: evaluate + celebrate unlocked milestones. Delayed 900ms so it
@@ -955,6 +957,30 @@
   // total, pct} } for all 5 N10-009 domains. Domains with zero questions
   // contribute an empty bucket so the rendered grid stays consistent
   // (renders as "—" rather than missing entirely).
+  // v8.186.0 Lift B2: what the phone results screen reads (features/ios-exam.js _iosExamResultsModel).
+  function _examPhoneResultsData(log, n) {
+    const b = _buildExamDomainBreakdown(log);
+    const order = (typeof DOMAIN_WEIGHTS === 'object' && DOMAIN_WEIGHTS) ? Object.keys(DOMAIN_WEIGHTS) : Object.keys(b);
+    const meta = (typeof CERT_PACK === 'object' && CERT_PACK && CERT_PACK.meta) || {};
+    const vendor = String(meta.name || 'CompTIA').split(' ')[0];
+    const wrongBy = {};
+    (log || []).forEach(en => {
+      if (!en || !en.q || en.pbq || en.isRight || en.skipped || !en.q.topic) return;
+      wrongBy[en.q.topic] = (wrongBy[en.q.topic] || 0) + 1;
+    });
+    return {
+      scaled: n.scaled, minScore: EXAM_MIN_SCORE, maxScore: EXAM_MAX_SCORE, passScore: EXAM_PASS_SCORE,
+      certLabel: vendor + ' ' + ((typeof CERT_CODE === 'string' && CERT_CODE) || ''),
+      total: n.total, correct: n.correct, wrong: n.wrong, skipped: n.skipped, pct: n.pct,
+      pauses: _examPauses || 0, pausedMs: _examPausedMs || 0,
+      domains: order.filter(k => b[k]).map(k => ({ key: k, label: b[k].label || k, correct: b[k].correct, total: b[k].total, pct: b[k].pct })),
+      pbqs: (log || []).filter(en => en && en.pbq).map(en => ({
+        title: (en.q.simlab && (en.q.simlab.title || en.q.simlab.name)) || en.q.question || 'Sim Lab question', topic: en.q.topic || '',
+        correct: en.pbq.correct || 0, total: en.pbq.total || 0, fraction: en.pbq.fraction || 0, skipped: !!en.skipped })),
+      wrongTopics: Object.keys(wrongBy).map(t => ({ topic: t, domain: (DOMAIN_LABELS && DOMAIN_LABELS[TOPIC_DOMAINS[t]]) || '', wrong: wrongBy[t] }))
+    };
+  }
+
   function _buildExamDomainBreakdown(log) {
     const buckets = {};
     Object.keys(DOMAIN_WEIGHTS).forEach(d => {

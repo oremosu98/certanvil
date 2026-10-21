@@ -171,7 +171,12 @@ DATA_SAFETY_ISSUES=""
 # exemption — same category as app.spec.js/sim-lab.spec.js above (Playwright
 # E2E, isolated browser context per test); it seeds nplus_* localStorage
 # fixtures on localhost to get deterministic screenshot states.
-META_FILES_REGEX='^(\.githooks/pre-commit|CLAUDE\.md|cloud-store\.js|tests/uat\.js|tests/e2e/app\.spec\.js|tests/e2e/sim-lab\.spec\.js|tests/e2e/visual\.spec\.js|memory/.*\.md)$'
+#
+# v8.186.0 (Lift B2): tests/e2e/lift-*.spec.js added — the iOS-lift Playwright
+# specs (lift-b1, lift-b2, …). Same category as the three above: isolated
+# browser context on localhost, seeding nplus_* fixtures (history, SR queue,
+# a saved exam) to reach phone screens through their real entry paths.
+META_FILES_REGEX='^(\.githooks/pre-commit|CLAUDE\.md|cloud-store\.js|tests/uat\.js|tests/e2e/app\.spec\.js|tests/e2e/sim-lab\.spec\.js|tests/e2e/visual\.spec\.js|tests/e2e/lift-[a-z0-9]+\.spec\.js|memory/.*\.md)$'
 
 # Helper: filter staged file list down to non-meta files
 filter_meta() {
