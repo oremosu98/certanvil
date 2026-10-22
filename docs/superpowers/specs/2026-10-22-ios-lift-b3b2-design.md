@@ -70,7 +70,8 @@ Reduced motion: static.
   On the last round the primary reads **Review** and opens the End dialog.
 
 ### End dialog
-A bottom sheet in the B2 End dialog's language, opened by End or by Review on the last round:
+A centered dialog in the B2 End dialog's language (scale 0.96 + fade on BRAND §6's curve, fade only
+under reduced motion), opened by End or by Review on the last round:
 - Eyebrow "Sim Lab exam · end of session", title "Submit exam?".
 - Three counts: **Answered**, **Skipped**, **Flagged** (today's `_slReviewCounts`).
 - "Review the N you skipped first" when any round is unanswered (jumps to the first one; with none
@@ -79,7 +80,8 @@ A bottom sheet in the B2 End dialog's language, opened by End or by Review on th
 - **Submit and see results** (primary). Unanswered rounds are already shown in the counts, so there is
   no second confirm.
 - **Abandon exam** opens the confirm sheet over the dialog: "Abandon this exam?" / "Your answers won't
-  be scored." / **Abandon** / **Keep going**. Keep going returns to the dialog. Abandon runs today's
+  be scored." / **Keep going** (primary) / **Abandon**. While the sheet is up the dialog recedes (scale
+  0.98 under a 55% overlay, still solid). Keep going returns to the dialog. Abandon runs today's
   leave without its `confirm()` (no score, back to Home).
 - "Jump to a round" opens a grid of round numbers (answered / skipped / flagged / current, with a key);
   a tap jumps to that round (answers restored) and closes the dialog.
@@ -95,8 +97,12 @@ A bottom sheet in the B2 End dialog's language, opened by End or by Review on th
 The B3b1 verdict layout:
 - Eyebrow "Sim Lab exam · M rounds", or "Time's up · M rounds" when the clock ran out.
 - Headline "N of M passed.", the steps line "X of Y steps right.", the % score with its bar.
-- The **Pace** card in June style with today's contents: "Pace", the total time, "On exam pace" or
-  "m:ss over exam pace" (as a pill; no ✓ glyph), today's coaching line, the target bar (fill capped at
+- The **Pace** card in June style with today's contents: "Pace", the total time, a pill (no ✓ glyph)
+  and a coaching line. Finished in time: "On exam pace" and today's "m:ss to spare…" line. Clock ran
+  out: "Out of time" (red) and today's "Round N ran long…" line. (Today the clock auto-submits at
+  zero, so elapsed never exceeds the budget: a time-up exam computes `deltaMs = 0`, reads "On exam
+  pace ✓" and "0:00 to spare", and "m:ss over exam pace" can't be reached. The pill keys off
+  `timeUp` instead, on phone and desktop.) Then the target bar (fill capped at
   100%, "Target m:ss" tick, with the real budget), the "0:00 · your time m:ss" scale and today's
   per-round lines (round time against its par).
 - Fix on both phone and desktop: the Pace card's target uses the exam's real budget
@@ -147,7 +153,8 @@ The B3b1 verdict layout:
     Pace target fix).
   - Every exit (submit, time-up, abandon, Leave from desktop paths) calls `iosSimLab.closeEnd()` and
     `iosSheet.dismiss()` (which also closes the enlarge sheet); sheet promises check `__submitted`.
-  - `_slComputePace` (or `_slRenderPaceBlock`) gets the session budget so the target is real.
+  - `_slComputePace` (or `_slRenderPaceBlock`) gets the session budget so the target is real, and
+    `timeUp` so a time-up exam reads "Out of time" with the ran-long line (phone and desktop).
 - **CSS:** a `B3b2 · SIM LAB EXAM` section in `lift-ios.css`, prefix `isl-`, reusing the B3b1 round
   card rules (widen their `:is()` scope to `#page-sim-lab.isl-exam`) and porting the B2 bar, dock and
   End dialog look. Plain top padding (no `env(safe-area-inset-top)`, see v8.188.1).
