@@ -27,7 +27,7 @@ html[data-theme] body #page-setup:has(#ios-home:not(:empty)) { padding: 0 !impor
 #ios-home { background: var(--bg); color: var(--text); font: 15px/1.55 Inter, -apple-system, BlinkMacSystemFont, sans-serif; -webkit-font-smoothing: antialiased; }
 #ios-home *, #ios-home *::before, #ios-home *::after { box-sizing: border-box; }
 #ios-home button { font-family: inherit; }
-#ios-home .ih-topbar { padding-top: max(12px, env(safe-area-inset-top)) !important; }
+#ios-home .ih-topbar { padding-top: 12px !important; }   /* no env(): body's padding-top already clears the status bar; fixed full-screen pages (Progress, Analytics, Exam, Exam results) keep it */
 #ios-home .ih-tb-name { flex: 1 1 auto; min-width: 0; text-align: left; background: none; border: 0; padding: 0; cursor: pointer; color: inherit; }
 #ios-home .ih-body { flex: none !important; overflow: visible !important; }
 #ios-home .ih-day.ih-examday .ih-day-name { color: var(--accent-deep); }
@@ -239,7 +239,7 @@ html[data-theme] body #page-setup:has(#ios-home:not(:empty)) { padding-bottom: c
 .iq-screen .iq-body { flex: 1 0 auto; }
 .iq-screen *, .iq-screen *::before, .iq-screen *::after { box-sizing: border-box; }
 .iq-screen button { font-family: inherit; }
-.iq-screen .iq-qbar { display: flex; align-items: center; gap: 13px; padding: max(13px, env(safe-area-inset-top)) 20px 12px; }
+.iq-screen .iq-qbar { display: flex; align-items: center; gap: 13px; padding: 13px 20px 12px; }
 .iq-screen .iq-exit, .iq-screen .iq-qflag { flex: 0 0 auto; width: 34px; height: 34px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface); display: grid; place-items: center; cursor: pointer; color: var(--text-mid); transition: transform .14s var(--ios-ease), background-color .18s, border-color .18s, color .18s; }
 .iq-screen .iq-exit:active, .iq-screen .iq-qflag:active { transform: scale(0.94); }
 .iq-screen .iq-exit svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
@@ -282,7 +282,7 @@ html[data-theme] body #page-loading:has(#ios-loading:not(:empty)) { padding: 0 !
 /* Lift A decisions (founder, 19 Oct): Flag in the corner, pick-then-confirm, E2E pills. */
 body:has(#page-quiz.active) #app-topbar, body:has(#page-quiz.active) .app-topbar { display: none !important; }
 html[data-theme] body #page-quiz { font-family: Inter, -apple-system, BlinkMacSystemFont, sans-serif; }
-html[data-theme] body #page-quiz .quiz-topbar { position: relative !important; padding-top: max(13px, env(safe-area-inset-top)) !important; }
+html[data-theme] body #page-quiz .quiz-topbar { position: relative !important; padding-top: 13px !important; }
 /* stat pills and Cached stay hidden; Flag is the 34px square in the corner */
 html[data-theme] body #page-quiz .quiz-stats { display: flex !important; align-items: center !important; flex: 0 0 auto !important; order: 3 !important; }
 html[data-theme] body #page-quiz .quiz-stats > :not(#quiz-flag-btn):not(#short-notice) { display: none !important; }
@@ -296,7 +296,7 @@ html[data-theme] body #page-quiz #quiz-flag-btn.flagged::before {
           mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='black' stroke='black' stroke-width='2.1' stroke-linecap='round' stroke-linejoin='round'><path d='M5 21V4M5 4h11l-1.8 4L16 12H5'/></svg>"); }
 html[data-theme] body #page-quiz #quiz-flag-btn:active { transform: scale(0.94); }
 /* "16 of 20" short-set pill: right end of the "Question 1 of N" row (E2E .q-short) */
-html[data-theme] body #page-quiz #short-notice:not(:empty):not(.is-hidden) { position: absolute !important; right: 67px; top: calc(max(13px, env(safe-area-inset-top)) + 9px); display: inline-block !important; margin: 0 !important; font: 800 10px/1 Inter, sans-serif !important; letter-spacing: .02em; color: var(--accent-deep) !important; background: color-mix(in oklab, var(--accent) 11%, transparent) !important; border: 1px solid color-mix(in oklab, var(--accent) 26%, var(--border)) !important; border-radius: 999px !important; padding: 4px 8px !important; }
+html[data-theme] body #page-quiz #short-notice:not(:empty):not(.is-hidden) { position: absolute !important; right: 67px; top: 22px; display: inline-block !important; margin: 0 !important; font: 800 10px/1 Inter, sans-serif !important; letter-spacing: .02em; color: var(--accent-deep) !important; background: color-mix(in oklab, var(--accent) 11%, transparent) !important; border: 1px solid color-mix(in oklab, var(--accent) 26%, var(--border)) !important; border-radius: 999px !important; padding: 4px 8px !important; }
 /* pills: one number each (the lift counter doubled it), answered = neutral amber "done" */
 html[data-theme] body #page-quiz .qpd-cell::before { content: none !important; }
 html[data-theme] body #page-quiz .qpd-cell { width: 28px !important; height: 28px !important; border-radius: 9px !important; font: 800 12px/1 Inter, sans-serif !important; }
@@ -443,7 +443,7 @@ body:has(#page-results.active #ios-results:not(:empty)) #app-topbar, body:has(#p
 }
 
 /* app-specific: real scroll (no inner scroller), sticky dock, row buttons, pass state */
-#ios-results .ir-app-chrome { padding-top: max(10px, env(safe-area-inset-top)) !important; }
+#ios-results .ir-app-chrome { padding-top: 10px !important; }
 #ios-results .ir-body { flex: 1 0 auto !important; overflow: visible !important; }
 #ios-results .ir-rfoot { position: sticky !important; bottom: 0 !important; z-index: 30; }
 #ios-results .ir-qrow { width: 100%; text-align: left; font: inherit; color: inherit; cursor: pointer; }
@@ -523,7 +523,7 @@ body:has(#page-review.active #ios-review:not(:empty)) #app-topbar, body:has(#pag
 }
 #ios-review .ia-flag { position: absolute; left: 14px; bottom: 96px; z-index: 7; font: 800 9px/1 Inter, sans-serif; letter-spacing: 0.06em; text-transform: uppercase; color: var(--accent-deep); background: color-mix(in oklab, var(--accent) 12%, var(--bg)); border: 1px solid color-mix(in oklab, var(--accent) 30%, transparent); border-radius: 999px; padding: 4px 9px; pointer-events: none; }
 
-#ios-review .ia-hdr { padding-top: max(12px, env(safe-area-inset-top)) !important; }
+#ios-review .ia-hdr { padding-top: 12px !important; }
 #ios-review .ia-body { flex: 1 0 auto !important; overflow: visible !important; }
 #ios-review .ia-footer { position: sticky !important; bottom: 0 !important; z-index: 30; }
 #ios-review .ia-hdr h1 { text-transform: none !important; }
@@ -558,7 +558,7 @@ html[data-theme] body #page-setup:has(#ios-custom:not(:empty)) { padding: 0 !imp
 /* the desktop panel is only ever a source of state on phones; the phone screen replaces it */
 /* ic-failed: the phone screen could not draw, so the desktop picker stays usable */
 html:not(.ic-failed) #custom-quiz-section { display: none !important; }
-#ios-custom .ic-topbar { padding-top: max(8px, env(safe-area-inset-top)) !important; }
+#ios-custom .ic-topbar { padding-top: 8px !important; }
 #ios-custom .ic-body { flex: 1 0 auto; overflow: visible !important; }
 #ios-custom .ic-foot { position: sticky; bottom: 0; z-index: 5; }
 html[data-theme="light"] #ios-custom .ic-i-sun, html:not([data-theme="light"]) #ios-custom .ic-i-moon { display: none; }
