@@ -79,6 +79,45 @@
   .rchip.on { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
   .rchip.locked { color: var(--muted); }
   .rchip svg { width: 12px; height: 12px; stroke-width: 2.4; }
+  /* entry, rebuilt in the custom-quiz language */
+  .en-hdr { align-items: flex-start; }
+  .en-title { flex: 1 1 auto; min-width: 0; padding-top: 1px; }
+  .en-title h1 { font: 600 21px/1.05 Fraunces, Georgia, serif; letter-spacing: -0.01em; margin: 0; color: var(--ink); }
+  .en-title span { display: block; font: 500 11.5px/1.3 Inter, sans-serif; color: var(--muted); margin-top: 4px; }
+  .cert-strip { display: flex; align-items: center; gap: 10px; margin: 10px 2px 4px; }
+  .cert-strip .cm { flex: 0 0 auto; width: 30px; height: 30px; border-radius: 9px; background: color-mix(in oklab, var(--accent) 13%, var(--surface-2)); color: var(--accent-deep); display: grid; place-items: center; font: 800 11px/1 Inter, sans-serif; }
+  .cert-strip .cn b { display: block; font: 650 13.5px/1.05 Inter, sans-serif; color: var(--ink); }
+  .cert-strip .cn span { display: block; font: 600 10.5px/1 'Roboto Mono', monospace; color: var(--muted); margin-top: 2px; }
+  .en-lead { font: 500 13.5px/1.5 Inter, sans-serif; color: var(--ink-soft); margin: 12px 2px 0; max-width: 36ch; }
+  .modes { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+  .mode { text-align: left; border: 1.5px solid var(--border); background: var(--surface); border-radius: 15px; padding: 13px 13px 12px; cursor: pointer; font: inherit; color: var(--ink); transition: border-color .18s, background-color .18s, transform .12s var(--ease); }
+  .mode:active { transform: scale(0.985); }
+  .mode .mi { width: 34px; height: 34px; border-radius: 10px; background: color-mix(in oklab, var(--accent) 10%, var(--surface-2)); display: grid; place-items: center; margin-bottom: 10px; color: var(--accent-deep); }
+  .mode .mi svg { width: 18px; height: 18px; }
+  .mode b { display: flex; align-items: center; gap: 6px; font: 650 14px/1.1 Inter, sans-serif; color: var(--ink); }
+  .mode > span:last-child { display: block; font: 500 11.5px/1.35 Inter, sans-serif; color: var(--muted); margin-top: 4px; }
+  .mode .tick { margin-left: auto; display: grid; color: var(--accent-deep); opacity: 0; }
+  .mode .tick svg { width: 16px; height: 16px; stroke-width: 2.6; }
+  .mode[aria-pressed="true"] { border-color: var(--accent); background: color-mix(in oklab, var(--accent) 7%, var(--surface)); }
+  .mode[aria-pressed="true"] .tick { opacity: 1; }
+  .pro-tag { margin-left: auto; display: inline-flex; align-items: center; gap: 3px; white-space: nowrap; font: 800 9px/1 Inter, sans-serif; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent-deep); background: color-mix(in oklab, var(--accent) 12%, var(--surface-2)); border-radius: 999px; padding: 4px 7px; }
+  .pro-tag svg { width: 9px; height: 9px; stroke-width: 2.6; }
+  .count-echo { display: flex; align-items: baseline; gap: 9px; margin: 2px 2px 8px; }
+  .count-echo .bn { font: 600 44px/1 Fraunces, serif; color: var(--ink); font-variant-numeric: lining-nums tabular-nums; }
+  .count-echo .bl { font: 700 11px/1 Inter, sans-serif; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+  .cseg { display: flex; gap: 5px; background: color-mix(in oklab, var(--ink) 5%, var(--surface-2)); border: 1px solid var(--border); border-radius: 13px; padding: 4px; }
+  .cseg button { flex: 1 1 0; min-height: 40px; border: none; background: transparent; cursor: pointer; border-radius: 9px; font: 700 14px/1 Inter, sans-serif; color: var(--muted); display: inline-flex; align-items: center; justify-content: center; gap: 5px; transition: background-color .2s var(--ease), color .2s, transform .14s var(--ease); }
+  .cseg button:active { transform: scale(0.96); }
+  .cseg button[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); box-shadow: 0 6px 14px -8px color-mix(in oklab, var(--accent) 70%, transparent); }
+  .cseg button.locked { color: color-mix(in oklab, var(--muted) 75%, transparent); }
+  .cseg button svg { width: 11px; height: 11px; stroke-width: 2.4; }
+  .cap-note { margin: 9px 2px 0; font: 600 12px/1.45 Inter, sans-serif; color: var(--muted); }
+  .cap-note b { color: var(--ink-soft); }
+  .en-dock { flex-direction: column; gap: 0; }
+  .en-dock .btn-primary { display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+  .en-dock .btn-primary svg { width: 14px; height: 14px; fill: currentColor; stroke: none; }
+  .en-dock .qc { font: 700 12px/1 'Roboto Mono', monospace; opacity: 0.82; }
+  .foot-note { text-align: center; font: 500 10.5px/1.3 Inter, sans-serif; color: var(--muted); margin: 9px 0 0; }
   .free-note { font: 500 11.5px/1.45 Inter, sans-serif; color: var(--muted); text-align: center; margin: 14px 8px 2px; }
 
   /* ── session top bar (Leave · Round pill · timer) + ticks ── */
@@ -264,6 +303,7 @@
     (function () {
       var v = new URLSearchParams(location.search).get('v') || 'entry';
       var I = {
+        play: '<path d="M6 4l14 8-14 8V4z"/>',
         back: '<path d="M15 6l-6 6 6 6"/>', sim: '<rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M7 9l3 3-3 3M12 15h5"/>',
         clock: '<circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 1.5M9 2h6"/>', lock: '<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',
         reset: '<path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/>', enl: '<path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/>',
@@ -287,14 +327,17 @@
         + '<rect x="242" y="58" width="72" height="40" rx="8"/><text x="250" y="76">Payment GW</text><text class="ip" x="250" y="89">10.20.9.10</text></svg>';
       var h = '', bodyOpen = '<div class="body">', hint = '';
       if (v === 'entry') {
-        h = '<div class="hdr"><button class="back" type="button" aria-label="Back">' + ic('back') + '</button><h1>Sim Lab</h1><span class="plan-tag">N10-009</span></div>' + bodyOpen
-          + '<div class="hero reveal"><div class="hero-i">' + ic('sim') + '</div><h2>Practice the hands-on <em>PBQs</em></h2><p>The exam opens with them. Run a few back to back and the format stops being a surprise.</p></div>'
-          + '<div class="sect reveal">Mode</div><div class="seg reveal"><button class="on" type="button"><b>Practice</b><span>Relaxed, a count-up timer</span></button><button type="button"><b>' + ic('clock') + 'Exam <span class="lock-pill">' + ic('lock') + 'Pro</span></b><span>One clock, flag and return</span></button></div>'
-          + '<div class="sect reveal">Today’s target</div><div class="card target reveal"><div class="v">Mixed · Network+ N10-009</div></div>'
-          + '<div class="sect reveal">How many rounds</div><div class="chips reveal"><button class="rchip" type="button">3 rounds</button><button class="rchip on" type="button">5 rounds</button><button class="rchip locked" type="button">' + ic('lock') + '10 · exam length</button></div>'
-          + '<p class="free-note reveal">Free plan: one Sim Lab session a day.</p></div>'
-          + '<div class="dock"><button class="btn-primary" type="button">Start the sim</button></div>' + TAB;
-        hint = 'Start screen: June header, mode, today’s target, rounds, Start docked above the tab bar.';
+        h = '<div class="hdr en-hdr"><button class="back" type="button" aria-label="Back">' + ic('back') + '</button><span class="en-title"><h1>Sim Lab</h1><span>Practice the hands-on PBQs</span></span></div>' + bodyOpen
+          + '<div class="cert-strip reveal"><span class="cm">N+</span><span class="cn"><b>Network+</b><span>N10-009</span></span></div>'
+          + '<p class="en-lead reveal">The exam opens with them. Run a few back to back and the format stops being a surprise.</p>'
+          + '<div class="sect reveal">Mode</div><div class="modes reveal" role="group" aria-label="Sim Lab mode">'
+          + '<button class="mode" type="button" aria-pressed="true"><span class="mi">' + ic('sim') + '</span><b>Practice <span class="tick">' + ic('check') + '</span></b><span>Relaxed, a count-up timer.</span></button>'
+          + '<button class="mode" type="button" aria-pressed="false"><span class="mi">' + ic('clock') + '</span><b>Exam <span class="pro-tag">' + ic('lock') + 'Pro</span></b><span>One clock, flag and return.</span></button></div>'
+          + '<div class="sect reveal">Rounds</div><div class="count-echo reveal"><span class="bn">5</span><span class="bl">rounds</span></div>'
+          + '<div class="cseg reveal" role="group" aria-label="Rounds"><button type="button" aria-pressed="false">3</button><button type="button" aria-pressed="true">5</button><button type="button" aria-pressed="false" class="locked">' + ic('lock') + '10</button></div>'
+          + '<p class="cap-note reveal">Free covers <b>one Sim Lab session a day</b>. 10 rounds, the exam length, needs Pro.</p></div>'
+          + '<div class="dock en-dock"><button class="btn-primary" type="button">' + ic('play') + 'Start the sim <span class="qc">5 rounds</span></button><p class="foot-note">Practice mode, mixed topics, a count-up timer.</p></div>' + TAB;
+        hint = 'Start screen in the custom-quiz language: cert strip, mode cards, rounds count, Start docked above the tab bar.';
       } else if (v === 'loading') {
         h = bar(2) + bodyOpen + '<div class="skel shimmer" style="height:92px;margin-top:8px"></div><div class="skel shimmer" style="height:150px;margin-top:11px"></div><div class="skel shimmer" style="height:120px;margin-top:11px"></div>'
           + '<p class="gen-line">Building round 2 of 3…</p><span class="gen-cap">A fresh scenario</span><div class="gen-track"><div class="gen-bar"></div></div></div>';
@@ -357,6 +400,7 @@
       if ($('enlBtn')) $('enlBtn').addEventListener('click', function () { openS($('esheet')); });
       ['lsStay', 'lsGo', 'esClose', 'scrim'].forEach(function (id) { if ($(id)) $(id).addEventListener('click', closeAll); });
       [].slice.call(document.querySelectorAll('.srow')).forEach(function (b) { b.addEventListener('click', function () { b.setAttribute('aria-expanded', String(b.getAttribute('aria-expanded') !== 'true')); }); });
+      [].slice.call(document.querySelectorAll('.cseg button:not(.locked)')).forEach(function (b) { b.addEventListener('click', function () { document.querySelectorAll('.cseg button').forEach(function (x) { x.setAttribute('aria-pressed', String(x === b)); }); var n = b.textContent.trim(); document.querySelector('.count-echo .bn').textContent = n; document.querySelector('.en-dock .qc').textContent = n + ' rounds'; }); });
       [].slice.call(document.querySelectorAll('.pick button')).forEach(function (b) { b.addEventListener('click', function () { b.classList.toggle('on'); b.querySelector('.ck').innerHTML = b.classList.contains('on') ? '<svg class="i" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>' : ''; }); });
       if (v === 'reset') setTimeout(function () { openS($('lsheet')); }, 40);
       if (v === 'enlarge') setTimeout(function () { openS($('esheet')); }, 40);
