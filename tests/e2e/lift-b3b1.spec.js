@@ -435,3 +435,21 @@ test.describe('Lift B3b1 final review fixes @402', () => {
     expect(big).toBe(0);
   });
 });
+
+// ── v8.188.1: found in the real iOS app ──
+test('v8.188.1: Leave is a compact pill level with the round pill and timer; select labels are not cramped', async ({ page }) => {
+  await startSession(page, PHONES[1]);
+  const m = await page.evaluate(() => {
+    const r = (s) => document.querySelector(s).getBoundingClientRect();
+    const L = r('.sl-topbar > [data-action="simLabExit"]'), P = r('#sl-round-pill'), T = r('#sl-timer-slot .sl-timer');
+    const after = getComputedStyle(document.querySelector('.sl-topbar > [data-action="simLabExit"]'), '::after');
+    return { leaveH: L.height, hit: L.height - 2 * parseFloat(after.top), dPill: Math.abs((L.top + L.height / 2) - (P.top + P.height / 2)), dTimer: Math.abs((P.top + P.height / 2) - (T.top + T.height / 2)) };
+  });
+  expect(m.leaveH).toBeLessThanOrEqual(36);
+  expect(m.hit).toBeGreaterThanOrEqual(44);
+  expect(m.dPill).toBeLessThanOrEqual(2);
+  expect(m.dTimer).toBeLessThanOrEqual(2);
+  await mountSeed(page, PHONES[1], "return JSON.stringify(s.steps).indexOf('\"type\":\"configure\"') > 0");
+  const lab = await page.evaluate(() => { const l = document.querySelector('#sl-body .sl-cfg-label'); const c = getComputedStyle(l); return parseFloat(c.lineHeight) / parseFloat(c.fontSize); });
+  expect(lab).toBeGreaterThanOrEqual(1.3);
+});

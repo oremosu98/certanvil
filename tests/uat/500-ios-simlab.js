@@ -66,6 +66,10 @@ const { _fnBody, fs, path, ROOT, results, test, vm } = require('./_context');
     const gate = (_fnBody(sl, '_slBindRoundChips') || '');
     test('Start: the 10-rounds Pro gate makes no unbuilt weak-spot promise (founder, 22 Oct)',
       /body: 'Free runs 3 or 5 rounds\. Pro opens the full 10-round exam-length sim on every cert\.'/.test(gate) && !/weak-spot/i.test(gate));
+    const liftCss = fs.readFileSync(path.join(ROOT, 'lift-ios.css'), 'utf8');
+    test('v8.188.1: the Sim Lab headers do not add the top safe area again (the iOS web view already clears the status bar)',
+      !/#isl-entry \.isl-hdr \{[^}]*safe-area-inset-top/.test(liftCss) && !/#page-sim-lab\.isl-practice \.sl-topbar \{[^}]*safe-area-inset-top/.test(liftCss)
+      && !/#sl-result-root \.isl-vbody \{[^}]*safe-area-inset-top/.test(liftCss));
     test('Round: the phone loader reads "Building round N of M…" with the June skeleton; desktop keeps its spinner',
       /' of ' \+ total/.test(_fnBody(sl, '_slRenderLoader') || '') && /isl-skel/.test(_fnBody(sl, '_slRenderLoader') || '') && /slr-spin/.test(_fnBody(sl, '_slRenderLoader') || ''));
   } catch (err) {
