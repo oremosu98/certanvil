@@ -3573,6 +3573,7 @@
   function _slExamStart() {
     if (typeof window._slMeteredGenerate === 'function') window._simLab.__setFetcher(window._slMeteredGenerate);
     // Exam is Pro-only and unlimited — never calls _bumpPbqFreeRun (§3.7).
+    _slSetPractice(false);
     if (typeof showPage === 'function') showPage('sim-lab');
     var body = document.getElementById('sl-body');
     if (body) _slRenderExamLoader(body);
@@ -3721,6 +3722,7 @@
 
   function _slRenderPracticePage(scn, pro) {
     _slShowPage();
+    _slSetPractice(true);
     // Defensive: the legacy single-scenario flow has no rounds — keep session-mode
     // chrome hidden so it can't leak in if both paths are ever exercised (mirrors simLabExit).
     var rp = document.getElementById('sl-round-pill'); if (rp) rp.classList.add('is-hidden');
@@ -3732,7 +3734,7 @@
     if (timerSlot) _slTimer = _slStartPracticeTimer(timerSlot, { estMinutes: scn.estMinutes });
 
     var body = document.getElementById('sl-body');
-    _slMountScenario(body, scn, {
+    _slMountScenario(body, scn, { lift: true,
       onReset: function () { _slMountScenario(body, scn, this); },   // v8.166.0: same PBQ, blank (this = these options)
       onSubmit: function (result) {
         if (_slTimer) _slTimer.stop();
@@ -3829,6 +3831,12 @@
     host.appendChild(box);
   }
 
+  // v8.188.0 Lift B3b1: phone restyling of the round applies to practice only (session + the legacy
+  // single PBQ). Sim Lab Exam mode keeps today's look until B3b2.
+  function _slSetPractice(on) {
+    var pg = document.getElementById('page-sim-lab');
+    if (pg) pg.classList.toggle('isl-practice', !!on);
+  }
   function _slSessionStart() {
     var cert = window.CURRENT_CERT || 'netplus';
     var pro = _slIsPro();
@@ -3846,6 +3854,7 @@
     if (!pro) _slSessionBumpOnce();
     if (typeof window._slMeteredGenerate === 'function') window._simLab.__setFetcher(window._slMeteredGenerate);
     _slSession = { mode: 'practice', rounds: _slPickedRounds, idx: 0, pro: pro, cert: cert, results: [], usedSeedIds: new (window.Set || Set)(), prefetch: null, timer: null };
+    _slSetPractice(true);
     if (typeof showPage === 'function') showPage('sim-lab');
     _slUpdateChrome();
     _slRunRound();
@@ -3861,7 +3870,7 @@
       if (topic) topic.textContent = scn.topic || 'PBQ';
       var slot = document.getElementById('sl-timer-slot');
       if (slot) { slot.innerHTML = ''; _slSession.timer = _slStartPracticeTimer(slot, { estMinutes: scn.estMinutes }); }
-      _slMountScenario(body, scn, {
+      _slMountScenario(body, scn, { lift: true,
         onReset: function () { _slMountScenario(body, scn, this); },   // v8.166.0: same PBQ, blank (this = these options)
         onSubmit: function (result) {
           if (_slSession.timer) { _slSession.timer.stop(); _slSession.timer = null; }

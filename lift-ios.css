@@ -1714,3 +1714,11 @@ html[data-theme] body #page-drills:has(#ios-drills:not(:empty)) { padding-top: 0
   #isl-enlarge { transform: none; opacity: 0; transition: opacity .2s ease; }
   #isl-enlarge.open { opacity: 1; transition: opacity .2s ease; }
 }
+
+/* ═════════════════════ LIFT B3b1 · SCAFFOLD (Sim Lab) ═════════════════════ */
+/* no app top bar on the three Sim Lab pages (the tab bar hides on the round and verdict via lift-shell HIDE_ON) */
+body:has(#page-sim-lab-entry.active) #app-topbar, body:has(#page-sim-lab-entry.active) .app-topbar { display: none !important; }
+body:has(#page-sim-lab.active) #app-topbar, body:has(#page-sim-lab.active) .app-topbar { display: none !important; }
+body:has(#page-sim-lab-result.active) #app-topbar, body:has(#page-sim-lab-result.active) .app-topbar { display: none !important; }
+#page-sim-lab-entry:has(#isl-entry:not(:empty)) > :not(#isl-entry) { display: none !important; }
+html[data-theme] body #page-sim-lab-entry:has(#isl-entry:not(:empty)) { padding-top: 0 !important; padding-left: 0 !important; padding-right: 0 !important; max-width: none !important; }
