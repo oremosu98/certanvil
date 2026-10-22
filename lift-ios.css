@@ -1594,3 +1594,6 @@ html[data-theme] body #exam-modal, #exam-sheet {
   --ix-done: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'><path d='M9 11l3 3L22 4M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11'/></svg>");
   --ix-down: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'><path d='M6 9l6 6 6-6'/></svg>");
 }
+
+/* ═════════════════════ LIFT B3a · SCAFFOLD (Drills) ═════════════════════ */
+#page-drills:has(#ios-drills:not(:empty)) > :not(#ios-drills) { display: none !important; }
