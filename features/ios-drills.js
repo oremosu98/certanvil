@@ -82,6 +82,86 @@
     return h;
   }
 
+  function _idIsPhone() { return !!(window.matchMedia && window.matchMedia('(max-width: 899px)').matches); }
+  // Live app state → the plain state the model takes. Every read is guarded: render must never block navigation.
+  function _idState() {
+    var cert = window.CURRENT_CERT || 'netplus';
+    var bank = [], hist = [], weak = [];
+    try { bank = (typeof loadWrongBank === 'function') ? loadWrongBank() : []; } catch (_) {}
+    try { hist = (typeof loadHistory === 'function') ? loadHistory() : []; } catch (_) {}
+    try { weak = ((typeof computeWeakSpotScores === 'function') ? computeWeakSpotScores() : []) || []; } catch (_) {}
+    var acc = {}, dom = {};
+    var weights = (typeof DOMAIN_WEIGHTS === 'object' && DOMAIN_WEIGHTS) || {};
+    var tdom = (typeof TOPIC_DOMAINS === 'object' && TOPIC_DOMAINS) || {};
+    var labels = (typeof DOMAIN_LABELS === 'object' && DOMAIN_LABELS) || {};
+    Object.keys(weights).forEach(function (k) { dom[k] = { s: 0, t: 0 }; });
+    (hist || []).forEach(function (h) {
+      if (!h || !h.topic) return;
+      var a = acc[h.topic] || (acc[h.topic] = { s: 0, t: 0 }); a.s += h.score || 0; a.t += h.total || 0;
+      var dk = tdom[h.topic]; if (dk && dom[dk]) { dom[dk].s += h.score || 0; dom[dk].t += h.total || 0; }
+    });
+    var q = (typeof _quotaState !== 'undefined') ? _quotaState : null;
+    var body = document.body.classList;
+    var pro = body.contains('is-pro-tier') || !!(q && (q.tier === 'pro' || q.tier === 'admin'));
+    var meta = (typeof CERT_PACK === 'object' && CERT_PACK && CERT_PACK.meta) || {};
+    return {
+      code: meta.code || meta.examCode || '', pro: pro, tierKnown: body.contains('is-state-resolved') || !!q,
+      gauntletFree: !!(q && q.tier === 'free'), wrongCount: (bank || []).length,
+      weak: weak.slice(0, 3).map(function (w) { var a = acc[w.topic]; return { topic: w.topic, pct: (a && a.t) ? Math.round(a.s / a.t * 100) : 0 }; }),
+      domains: Object.keys(weights).map(function (k) {
+        var st = dom[k]; return { key: k, label: labels[k] || k, weight: Math.round((weights[k] || 0) * 100), mastery: st.t ? Math.round(st.s / st.t * 100) : 0, touched: !!st.t };
+      }),
+      simLab: (typeof _SL_PBQ_CERTS_HOME !== 'undefined') && _SL_PBQ_CERTS_HOME.indexOf(cert) !== -1,
+      decisionLab: (typeof _DL_CERTS !== 'undefined') && _DL_CERTS.indexOf(cert) !== -1,
+      gauntletUsed: (typeof _gauntletFreeRunsToday === 'function') ? _gauntletFreeRunsToday() : 0,
+      gauntletCap: (typeof GAUNTLET_FREE_DAILY_CAP === 'number') ? GAUNTLET_FREE_DAILY_CAP : 1,
+      pbqUsed: (typeof _pbqFreeRunsToday === 'function') ? _pbqFreeRunsToday() : 0,
+      pbqCap: (typeof PBQ_FREE_DAILY_CAP === 'number') ? PBQ_FREE_DAILY_CAP : 1
+    };
+  }
+  var _idLast = null;
+  function renderIosDrills() {
+    var root = document.getElementById('ios-drills');
+    if (!root) return;
+    if (!_idIsPhone()) { root.innerHTML = ''; return; }
+    try {
+      var m = _iosDrillsModel(_idState());
+      m.light = document.documentElement.getAttribute('data-theme') === 'light';
+      _idLast = m;
+      root.innerHTML = _iosDrillsHtml(m);
+      if (!root._idWired) { root._idWired = true; root.addEventListener('click', _idTap); }
+    } catch (e) { root.innerHTML = ''; try { console.warn('[ios-drills]', e); } catch (_) {} }   // the old cards show instead
+  }
+  function _idCall(n, arg) { if (typeof window[n] === 'function') window[n](arg); }
+  function _idTap(ev) {
+    var b = ev.target.closest && ev.target.closest('[data-act]');
+    if (!b || b.disabled) return;
+    var act = b.getAttribute('data-act');
+    if (act === 'mistakes') _idCall('startWrongDrill');
+    else if (act === 'weak') { if (_idLast && _idLast.weak.chips[0]) _idCall('focusTopic', _idLast.weak.chips[0].topic); }
+    else if (act === 'domain') _idCall('applyDomainPreset', b.getAttribute('data-key'));
+    else if (act === 'row') _idCall({ sim: 'startSimLabHome', gnt: 'startRewordGauntlet', why: 'startWhyNot', dl: 'startDecisionLabHome' }[b.getAttribute('data-id')]);
+    else if (act === 'theme') { _idCall('toggleTheme'); renderIosDrills(); }
+  }
+  // Tier hydrates after the tab can first paint: app.js re-runs renderGauntletDrillsCard then, so chain onto it.
+  if (typeof window.renderGauntletDrillsCard === 'function' && !window.renderGauntletDrillsCard._idChained) {
+    var _orig = window.renderGauntletDrillsCard;
+    var chained = function () {
+      var r = _orig.apply(this, arguments);
+      var root = document.getElementById('ios-drills');
+      if (root && root.innerHTML) renderIosDrills();
+      return r;
+    };
+    chained._idChained = true;
+    window.renderGauntletDrillsCard = chained;
+  }
+  if (window.matchMedia) {
+    var mq = window.matchMedia('(max-width: 899px)');
+    var onMq = function () { var p = document.getElementById('page-drills'); if (!mq.matches || (p && p.classList.contains('active'))) renderIosDrills(); };
+    if (mq.addEventListener) mq.addEventListener('change', onMq); else if (mq.addListener) mq.addListener(onMq);
+  }
+
+  window.renderIosDrills = renderIosDrills;
   window._iosDrillsModel = _iosDrillsModel;
   window._iosDrillsHtml = _iosDrillsHtml;
 })();

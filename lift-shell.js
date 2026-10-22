@@ -84,7 +84,7 @@
      by the (now retired) sidebar item handlers. Mirror that dispatch here so
      tab/seg navigation always lands on fresh content. */
   var RENDER = {
-    drills: function () { liftRenderDrills(); },
+    drills: function () { liftRenderDrills(); if (typeof window.renderIosDrills === 'function') window.renderIosDrills(); },   /* v8.187.0 Lift B3a */
     progress: function () { if (typeof renderProgressPage === 'function') renderProgressPage(); },
     analytics: function () { if (typeof renderAnalytics === 'function') renderAnalytics(); },
     settings: function () { if (typeof renderSettingsPage === 'function') renderSettingsPage(); }
