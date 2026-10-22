@@ -25,13 +25,13 @@
   // Pure: model -> markup of the E2E start screen (isl- prefixed). Self-contained.
   function _iosSlEntryHtml(m) {
     function e(v) { return String(v == null ? '' : v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
-    function svg(p, cls) { return '<svg' + (cls ? ' class="' + cls + '"' : '') + ' viewBox="0 0 24 24" aria-hidden="true">' + p + '</svg>'; }
-    var LOCK = svg('<rect x="5" y="11" width="14" height="9" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path>');
-    var TICK = '<span class="isl-tick">' + svg('<path d="M20 6 9 17l-5-5"></path>') + '</span>';
-    var SIM = svg('<rect x="3" y="4" width="18" height="16" rx="2.5"></rect><path d="M7 9l3 3-3 3M12 15h5"></path>');
-    var CLOCK = svg('<circle cx="12" cy="13" r="8"></circle><path d="M12 9v4l2.5 2M9 2h6"></path>');
-    var BACK = svg('<path d="M15 18l-6-6 6-6"></path>');
-    var PLAY = svg('<path d="M6 4l14 8-14 8V4z"></path>');
+    function svg(p, n, fill) { return '<svg viewBox="0 0 24 24" aria-hidden="true" width="' + n + '" height="' + n + '" fill="' + (fill ? 'currentColor' : 'none') + '" stroke="' + (fill ? 'none' : 'currentColor') + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + p + '</svg>'; }
+    var LOCK = svg('<rect x="5" y="11" width="14" height="9" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path>', 11);
+    var TICK = '<span class="isl-tick">' + svg('<path d="M20 6 9 17l-5-5"></path>', 16) + '</span>';
+    var SIM = svg('<rect x="3" y="4" width="18" height="16" rx="2.5"></rect><path d="M7 9l3 3-3 3M12 15h5"></path>', 18);
+    var CLOCK = svg('<circle cx="12" cy="13" r="8"></circle><path d="M12 9v4l2.5 2M9 2h6"></path>', 18);
+    var BACK = svg('<path d="M15 18l-6-6 6-6"></path>', 16);
+    var PLAY = svg('<path d="M6 4l14 8-14 8V4z"></path>', 14, true);
     function mode(id, icon, name, line) {
       var on = m.mode === id, locked = id === 'exam' && m.examLocked;
       return '<button class="isl-mode" type="button" data-act="mode" data-mode="' + id + '" aria-pressed="' + on + '">'
@@ -106,8 +106,8 @@
   // Passive references hold no answers, so a copy can open full size. terminal / faceplate / wiremap
   // are answer surfaces (excerptLines / facePorts / wiremapPins) and stay inline only.
   var PASSIVE = { network: 'Network map', timeline: 'Timeline', layered: 'Layers', slots: 'Slots', swatch: 'Sample' };
-  var ENL = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"></path></svg>';
-  var SCN = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2.5"></rect><path d="M7 9l3 3-3 3M12 15h5"></path></svg>';
+  var ENL = '<svg viewBox="0 0 24 24" aria-hidden="true" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"></path></svg>';
+  var SCN = '<svg viewBox="0 0 24 24" aria-hidden="true" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2.5"></rect><path d="M7 9l3 3-3 3M12 15h5"></path></svg>';
   function decorate(wrap, scn, opts) {
     var ref = scn && scn.assets && scn.assets.reference;
     // A new round rises in after the skeleton; a Reset re-mount (same opts) and the exam's per-question
@@ -159,10 +159,10 @@
   // Pure: model -> markup of the E2E verdict (isl- prefixed). Self-contained.
   function _iosSlVerdictHtml(m) {
     function e(v) { return String(v == null ? '' : v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
-    function svg(p) { return '<svg viewBox="0 0 24 24" aria-hidden="true">' + p + '</svg>'; }
-    var DONE = svg('<path d="M9 11l3 3L22 4"></path><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>');
-    var CHEV = svg('<path d="M9 6l6 6-6 6"></path>');
-    var SPARK = svg('<path d="M12 2v4M12 18v4M2 12h4M18 12h4"></path><circle cx="12" cy="12" r="4"></circle>');
+    function svg(p, n) { return '<svg viewBox="0 0 24 24" aria-hidden="true" width="' + n + '" height="' + n + '" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + p + '</svg>'; }
+    var DONE = svg('<path d="M9 11l3 3L22 4"></path><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>', 14);
+    var CHEV = svg('<path d="M9 6l6 6-6 6"></path>', 16);
+    var SPARK = svg('<path d="M12 2v4M12 18v4M2 12h4M18 12h4"></path><circle cx="12" cy="12" r="4"></circle>', 13);
     var h = '<div class="isl-vbody">'
       + '<div class="isl-vkick">' + DONE + 'Sim Lab · ' + m.n + ' rounds</div>'
       + '<h2 class="isl-vtitle">' + m.passed + ' of ' + m.n + ' <em>passed.</em></h2>'

@@ -1709,6 +1709,7 @@ html[data-theme] body #page-drills:has(#ios-drills:not(:empty)) { padding-top: 0
 #isl-enlarge .isl-es-body { flex: 1; overflow: auto; padding: 16px; -webkit-overflow-scrolling: touch; }
 #isl-enlarge .isl-es-body > * { width: 640px; max-width: none; margin: 0; }
 #isl-enlarge .isl-es-body .isl-ref-head { display: none; }
+html[data-theme] body #isl-enlarge .isl-es-body > .exam-pbq { width: 640px; max-width: none; overflow: visible; }   /* the exam's .exam-pbq width cap must not shrink the enlarged copy */
 #isl-enlarge .isl-es-hint { margin: 0; padding: 8px 16px calc(12px + env(safe-area-inset-bottom)); text-align: center; font: 500 11px/1.4 Inter, sans-serif; color: var(--text-dim, var(--text-mid)); }
 @media (prefers-reduced-motion: reduce) {
   #isl-enlarge { transform: none; opacity: 0; transition: opacity .2s ease; }

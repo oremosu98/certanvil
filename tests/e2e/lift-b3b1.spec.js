@@ -401,3 +401,37 @@ for (const vp of PHONES) {
     });
   });
 }
+
+// ── Final review fixes ──
+const NETWORK_PBQ = NETWORK;
+test.describe('Lift B3b1 final review fixes @402', () => {
+  test('I1: inside the exam, Tap to enlarge opens the map wider than the screen', async ({ page }) => {
+    await openExamPbq(page, PHONES[1], NETWORK_PBQ);
+    await page.locator('#page-exam .exam-pbq .isl-enlarge').click();
+    await expect(page.locator('#isl-enlarge')).toHaveClass(/open/);
+    const w = await page.evaluate(() => document.querySelector('#isl-enlarge .isl-es-body > *').getBoundingClientRect().width);
+    expect(w).toBeGreaterThan(600);
+  });
+
+  test('I2: an open enlarge sheet closes when the round ends and does not come back', async ({ page }) => {
+    await startSession(page, PHONES[1]);
+    await page.evaluate(() => {   // put a network round in place, open its enlarge sheet
+      const scn = window.SIM_LAB_SEED_NETPLUS.find((s) => s.assets && s.assets.reference && s.assets.reference.kind === 'network');
+      const body = document.getElementById('sl-body');
+      window._simLab.mountScenario(body, scn, { lift: true, onReset() {}, onSubmit() { window.iosSheet.dismiss(); } });
+    });
+    await page.locator('#sl-body .isl-enlarge').click();
+    await expect(page.locator('#isl-enlarge')).toHaveClass(/open/);
+    await page.evaluate(() => window.iosSheet.dismiss());   // what every round end, the verdict, Leave and an exam submit call
+    await expect(page.locator('#isl-enlarge')).not.toHaveClass(/open/);
+  });
+
+  test('I3: rotating past 899px mid-round or on the verdict leaves small icons, not black squares', async ({ page }) => {
+    await page.setViewportSize({ width: 440, height: 956 });
+    await mountSeed(page, { width: 440, height: 956 }, NETWORK);
+    await page.setViewportSize({ width: 956, height: 440 });
+    const big = await page.evaluate(() => [].slice.call(document.querySelectorAll('#sl-body svg'))
+      .filter((s) => !s.closest('.sl-ref > :not(.isl-ref-head)') && s.getBoundingClientRect().width > 40).length);
+    expect(big).toBe(0);
+  });
+});
