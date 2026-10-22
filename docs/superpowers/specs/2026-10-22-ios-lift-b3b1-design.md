@@ -39,14 +39,29 @@ Phone only (max-width 899px); desktop unchanged. Sim Lab exists on CompTIA certs
 4. **Exam-style chrome:** no app top bar or tab bar during a round; Reset asks in the in-app bottom
    sheet B2 built, not `confirm()`.
 5. Founder approved the design as presented: "its perfect".
+6. **Drawing approved** in the Simulator (E2E `feat/cert-ios-e2e` 8c94ebe0 + ac0d9180), with the
+   start screen rebuilt and the cap line, summary line and upsell label above approved ("yes to both").
 
 ## The screens
 
 ### Start screen (`#page-sim-lab-entry`)
-June header (back chevron, "Sim Lab"), the hero ("Practice the hands-on PBQs" and its line), the
-Practice / Exam segment (Exam keeps its Pro tag and gate), the "Today's target" card, round chips
-(3 / 5, and 10 with its Pro lock), **Start** docked at the bottom, above the tab bar. Copy, gates and the free daily
-session are today's. No app top bar; the tab bar stays.
+Rebuilt in the custom-quiz language (founder, 22 Oct: the first drawing looked "corny"):
+- **Header:** back chevron, "Sim Lab" with the line "Practice the hands-on PBQs" under it. No hero
+  icon bubble.
+- **Cert strip** (custom-quiz `cert-strip`: monogram tile, cert name, mono exam code), then the line
+  "The exam opens with them. Run a few back to back and the format stops being a surprise."
+- **Mode:** two matching cards (icon tile, name, one line, tick when chosen). Practice: "Relaxed, a
+  count-up timer." Exam: "One clock, flag and return." with a Pro tag inside the card. Exam keeps
+  today's Pro gate.
+- **Length:** a large serif round count with "rounds" beside it, over a segmented track 3 / 5 / 10;
+  10 carries a lock for free users and opens today's Pro gate.
+- **Cap line:** "Free covers **one Sim Lab session a day**. 10 rounds, the exam length, needs Pro."
+  (replaces "Free plan: one Sim Lab session a day."; founder approved). Pro users see no cap line.
+- **Start**, docked above the tab bar: "Start the sim" with a play glyph and the round count
+  ("5 rounds"), and under it the summary line "Practice mode, mixed topics, a count-up timer."
+  Today's "Today's target" box goes; its value (today's target text) moves into that summary line
+  (founder approved).
+- No app top bar; the tab bar stays. Gates and the free daily session are today's.
 
 ### Loader
 The June "generating" treatment from the quiz (skeleton and shimmer line), reading
@@ -66,8 +81,8 @@ The June "generating" treatment from the quiz (skeleton and shimmer line), readi
     with its title and a **Tap to enlarge** button. Enlarge opens a copy full screen in the enlarge
     sheet (scrollable both ways, Close button, swipe-down, Escape). A copy is safe because these
     kinds hold no answers.
-- **Steps** as June cards: "Step 1 of 2", the prompt, then the controls in June style: selectable
-  chips (multi-pick), June selects (dropdowns), June rows with drag handles (order, categorize,
+- **Steps** as June cards: "Step 1 of 2", the prompt, then the controls in June style: full-width
+  pick rows with a check box (multi-pick), June selects (dropdowns), June rows with drag handles (order, categorize,
   match), June fields (fill-in; numeric keyboards stay). The tunnel dual-panel stacks its A / B
   panels.
 - **Dock:** fixed at the bottom, **Reset** (ghost) and **Submit answers** (primary). The scroll area
@@ -79,9 +94,13 @@ The June "generating" treatment from the quiz (skeleton and shimmer line), readi
   counted at Start).
 
 ### Verdict (`#page-sim-lab-result`)
-In the language of the B2 exam results: headline, % score, "N of M sims passed · steps", one row per
-round (verdict tone, title, topic, score) that opens to Answer / You put / why, the "Where you
-slipped" card, **Back to Practice** docked, and today's free-user upsell. No app top bar or tab bar.
+In the language of the B2 exam results: eyebrow "Sim Lab · N rounds", headline "N of M passed.",
+"X of Y steps right.", the % score with its bar, one row per round (verdict tone Right / Partly /
+Wrong, title, topic and step score) that opens to Answer / You put / why (the open panel fades in,
+close is instant), the "Where you slipped" card with today's `_slWeakCluster` line, and **Back to
+Practice** docked. Free users get today's upsell as a quiet row under the slipped card, relabelled
+**"Go Pro for exam-length runs"** (today's label promises weak-spot tracking, which v8.153.0
+confirmed is not built; founder approved the new label). No app top bar or tab bar.
 
 ### Inside the full exam
 A Sim Lab question keeps the B2 exam top bar and dock (Prev · Flag · Next), so Sim Lab's own dock
@@ -141,8 +160,8 @@ Reset asks in the same confirm sheet.
 - Sim Lab Exam mode and Decision Lab look as they do today (apart from Exam mode losing the app top
   bar and tab bar).
 - Reset asks in the sheet; "Keep them" leaves answers in place, "Clear answers" clears them.
-- Every step type is operable at phone width with 44pt targets (chips, selects, drag handles,
-  fields).
+- Every step type is operable at phone width with 44pt targets (full-width pick rows, selects,
+  drag handles, fields; Tap to enlarge and both Reset pills get a 44pt hit area).
 - Inside the full exam, a Sim Lab question shows the console card with Reset in its bar.
 - Free daily session, Pro gates and scoring unchanged; desktop unchanged.
 
