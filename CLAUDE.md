@@ -29,7 +29,7 @@
 | index.html | 2351 | 154 KB |
 | dg-system.css | 5624 | 532 KB |
 | tests/uat.js + tests/uat/ (62 modules) | 32098 | — |
-UAT checks: 5497 · E2E `test(` count: 293 · APP_VERSION: 8.188.2 · stamped-at: worktree
+UAT checks: 5497 · E2E `test(` count: 293 · APP_VERSION: 8.188.3 · stamped-at: worktree
 <!-- FACTS:AUTO:END -->
 
 | File | Purpose | Size |
@@ -135,9 +135,9 @@ npx playwright test              # E2E (tests/e2e/app.spec.js)
 
 | Version | Features Added |
 |---|---|
+| v8.188.3 | Lift screens on iOS no longer double the top gap. |
 | v8.188.2 | Pro offers no longer promise weak-spot tracking that is not built. |
 | v8.188.1 | Sim Lab on iOS: tighter top, Leave pill and label spacing. |
-| v8.188.0 | Practice Sim Lab looks like the June design on phones. |
 
 _Older releases (v7.60.0 and back) live in [CHANGELOG.md](./CHANGELOG.md)._
 
