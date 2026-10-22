@@ -3653,7 +3653,7 @@
       if (n === 10 && !_slIsPro()) {
         window._gateProOnly('Sim Lab', {
           title: 'Exam-length runs are a Pro sim.',
-          body: 'Free runs 3 or 5 rounds. Pro opens the full 10-round exam-length sim on every cert, plus weak-spot tracking across sessions.'
+          body: 'Free runs 3 or 5 rounds. Pro opens the full 10-round exam-length sim on every cert.'   // v8.188.0: no promise of cross-session tracking, which is not built (as v8.153.0 did for the upsell)
         });
         return;
       }

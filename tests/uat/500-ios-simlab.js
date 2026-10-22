@@ -63,6 +63,9 @@ const { _fnBody, fs, path, ROOT, results, test, vm } = require('./_context');
       /mountScenario\(host, q\.simlab, \{\s*lift: true,/.test(_fnBody(ex, '_examRenderPbq') || '') && /simLabSubmitScenario"\]'\)/.test(ex));
     test('Exam: decorate moves Reset into the console bar or a step-1 pill only inside .exam-pbq',
       /closest\('\.exam-pbq'\)/.test(src) && /bar\.appendChild\(reset\)/.test(src) && /isl-reset-step/.test(src));
+    const gate = (_fnBody(sl, '_slBindRoundChips') || '');
+    test('Start: the 10-rounds Pro gate makes no unbuilt weak-spot promise (founder, 22 Oct)',
+      /body: 'Free runs 3 or 5 rounds\. Pro opens the full 10-round exam-length sim on every cert\.'/.test(gate) && !/weak-spot/i.test(gate));
     test('Round: the phone loader reads "Building round N of M…" with the June skeleton; desktop keeps its spinner',
       /' of ' \+ total/.test(_fnBody(sl, '_slRenderLoader') || '') && /isl-skel/.test(_fnBody(sl, '_slRenderLoader') || '') && /slr-spin/.test(_fnBody(sl, '_slRenderLoader') || ''));
   } catch (err) {
