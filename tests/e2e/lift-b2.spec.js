@@ -171,8 +171,8 @@ for (const vp of PHONES) {
       await ex.locator('#exam-prev-btn').click();
       await expect(ex.locator('.ix-cs')).toHaveText('7 answered');
       await expect(ex.locator('.exam-pbq [data-field="mask"]')).toHaveValue('/26');
-      page.once('dialog', d => d.accept());
-      await ex.locator('.exam-pbq .sl-reset').click();
+      await ex.locator('.exam-pbq .sl-reset').click();   // v8.188.0 (B3b1): phones ask in the in-app sheet, not confirm()
+      await page.locator('#exam-sheet .ix-sheet-go').click();
       await expect(ex.locator('.exam-pbq [data-field="mask"]')).toHaveValue('');
       await expect(ex.locator('.ix-cs')).toHaveText('6 answered');
       expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(vp.width);

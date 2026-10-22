@@ -222,6 +222,7 @@
     }
     const prior = ans.sl || null;
     window._simLab.mountScenario(host, q.simlab, {
+      lift: true,   // v8.188.0 Lift B3b1: phones get the console look, Reset in the console bar or step 1, the in-app sheet
       initial: prior, onSubmit: function () {},
       onReset: function () { ans.sl = null; renderExam(); }   // v8.166.0: Reset clears this PBQ's saved answers too
     });

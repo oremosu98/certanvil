@@ -340,3 +340,53 @@ test('Lift B3b1 desktop: the verdict is today\'s', async ({ page }) => {
   await expect(page.locator('#sl-result-root .sls-score')).toBeVisible();
   await expect(page.locator('#sl-result-root .isl-srow')).toHaveCount(0);
 });
+
+// ── Task 6: Sim Lab questions inside the full exam ──
+// A saved 12-question exam whose first question is a Sim Lab seed (pick runs against the Net+ pool), resumed like Home does.
+async function openExamPbq(page, viewport, pick) {
+  await page.setViewportSize(viewport);
+  await page.goto('/');
+  await page.waitForLoadState('load');
+  await page.evaluate(async (pickSrc) => {
+    await new Promise((res) => window._ensureSimLabLoaded(res));
+    const scn = pickSrc ? window.SIM_LAB_SEED_NETPLUS.find(new Function('s', pickSrc)) : { id: 'b3-pbq', cert: 'netplus', objective: '1.4', topic: 'IPv4', title: 'Find the mask', scenario: 'Branch cannot reach HQ.', estMinutes: 5,
+      steps: [{ id: 'st1', type: 'fillin', prompt: 'Which mask?', points: 1, explanation: '/26', payload: { fields: [{ id: 'mask', label: 'Mask' }] }, answer: { mask: ['/26'] } }] };
+    const qs = Array.from({ length: 12 }, (_, i) => ({ type: 'mcq', question: 'Sample exam question ' + (i + 1) + '?', options: { A: 'Alpha', B: 'Bravo', C: 'Charlie', D: 'Delta' }, answer: 'A', explanation: 'Because A.', topic: 'OSPF', difficulty: 'Exam Level' }));
+    qs[0] = { type: 'simlab', question: scn.title, topic: scn.topic, explanation: '', simlab: scn };
+    const ans = qs.map(() => ({ chosen: null, flagged: false, msChosen: [], orderSeq: [], cliRan: [], topoState: {} }));
+    localStorage.setItem('nplus_exam_state', JSON.stringify({ v: 1, savedAt: Date.now(), endTime: Date.now() + 84 * 60000, current: 0, questions: qs, answers: ans, answered: 0, paused: false, pausedAt: 0, timeLeft: 5040, pausedMs: 0, pauses: 0 }));
+    const m = await _loadFeature('exam'); await m.resumeExam();
+  }, pick || null);
+  await expect(page.locator('#page-exam')).toHaveClass(/active/);
+  await page.locator('#page-exam .exam-pbq .sl-step').first().waitFor({ state: 'visible' });
+}
+for (const vp of PHONES) {
+  test.describe('Lift B3b1 exam PBQ @' + vp.width, () => {
+    test('a terminal PBQ shows the console card with Reset in its bar; no Sim Lab dock', async ({ page }) => {
+      await openExamPbq(page, vp, TERMINAL);
+      const pbq = page.locator('#page-exam .exam-pbq');
+      await expect(pbq.locator('.term-head .sl-reset')).toBeVisible();
+      await expect(pbq.locator('[data-action="simLabSubmitScenario"]')).toHaveCount(0);
+      await expect(pbq.locator('.sl-actions')).toBeHidden();
+      await expect(page.locator('#page-exam #exam-next-btn')).toBeVisible();
+      await pbq.locator('.term-head .sl-reset').click();
+      await expect(page.locator('#exam-sheet-title')).toHaveText('Start this PBQ again?');
+      await page.locator('#exam-sheet .ix-sheet-stay').click();
+      await expect(page.locator('#exam-sheet')).not.toHaveClass(/open/);
+      const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+      expect(overflow).toBeLessThanOrEqual(0);
+    });
+
+    test('a PBQ without a console puts a Reset pill in its first step; Clear answers clears it', async ({ page }) => {
+      await openExamPbq(page, vp, null);
+      const pbq = page.locator('#page-exam .exam-pbq');
+      const pill = pbq.locator('.sl-step').first().locator('.sl-reset.isl-reset-pill');
+      await expect(pill).toBeVisible();
+      await pbq.locator('[data-field="mask"]').fill('/26');
+      await page.evaluate(() => { window.confirm = () => { throw new Error('confirm() called'); }; });
+      await pill.click();
+      await page.locator('#exam-sheet .ix-sheet-go').click();
+      await expect(pbq.locator('[data-field="mask"]')).toHaveValue('');
+    });
+  });
+}

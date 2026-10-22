@@ -58,6 +58,11 @@ const { _fnBody, fs, path, ROOT, results, test, vm } = require('./_context');
     test('Round: a round ending, the verdict and Leave all dismiss an open sheet',
       /onSubmit: function \(result\) \{\s*if \(window\.iosSheet\) window\.iosSheet\.dismiss\(\);/.test(_fnBody(sl, '_slRunRound') || '')
       && /iosSheet\.dismiss\(\)/.test(_fnBody(sl, '_slRenderSummary') || '') && /iosSheet\.dismiss\(\)/.test(_fnBody(sl, 'simLabExit') || ''));
+    const ex = fs.readFileSync(path.join(ROOT, 'features', 'exam.js'), 'utf8');
+    test('Exam: _examRenderPbq opts into the phone hooks (lift: true) and still drops Sim Lab\'s own Submit',
+      /mountScenario\(host, q\.simlab, \{\s*lift: true,/.test(_fnBody(ex, '_examRenderPbq') || '') && /simLabSubmitScenario"\]'\)/.test(ex));
+    test('Exam: decorate moves Reset into the console bar or a step-1 pill only inside .exam-pbq',
+      /closest\('\.exam-pbq'\)/.test(src) && /bar\.appendChild\(reset\)/.test(src) && /isl-reset-step/.test(src));
     test('Round: the phone loader reads "Building round N of M…" with the June skeleton; desktop keeps its spinner',
       /' of ' \+ total/.test(_fnBody(sl, '_slRenderLoader') || '') && /isl-skel/.test(_fnBody(sl, '_slRenderLoader') || '') && /slr-spin/.test(_fnBody(sl, '_slRenderLoader') || ''));
   } catch (err) {

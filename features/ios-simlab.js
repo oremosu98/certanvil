@@ -120,6 +120,16 @@
         if (window.iosEnlarge && node) window.iosEnlarge(node, title);
       });
     }
+    // Inside the full exam the B2 dock (Prev · Flag · Next) stays, so Reset moves: into the console
+    // bar when the reference is a terminal, otherwise a compact pill at the top right of step 1.
+    var reset = wrap.closest && wrap.closest('.exam-pbq') ? wrap.querySelector('.sl-actions .sl-reset') : null;
+    if (reset) {
+      var bar = ref && ref.kind === 'terminal' ? wrap.querySelector('.term-head') : null;
+      var step = wrap.querySelector('.sl-step');
+      reset.classList.add('isl-reset-pill');
+      if (bar) bar.appendChild(reset);
+      else if (step) { reset.classList.add('isl-reset-step'); step.insertBefore(reset, step.firstChild); }
+    }
   }
   function askReset() {
     if (!window.iosSheet) return Promise.resolve(window.confirm('Clear your answers on this PBQ and start it again?'));
