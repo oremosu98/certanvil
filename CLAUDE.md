@@ -29,7 +29,7 @@
 | index.html | 2351 | 154 KB |
 | dg-system.css | 5624 | 532 KB |
 | tests/uat.js + tests/uat/ (62 modules) | 32085 | — |
-UAT checks: 5494 · E2E `test(` count: 293 · APP_VERSION: 8.188.0 · stamped-at: worktree
+UAT checks: 5494 · E2E `test(` count: 293 · APP_VERSION: 8.188.1 · stamped-at: worktree
 <!-- FACTS:AUTO:END -->
 
 | File | Purpose | Size |
@@ -135,9 +135,9 @@ npx playwright test              # E2E (tests/e2e/app.spec.js)
 
 | Version | Features Added |
 |---|---|
+| v8.188.1 | Sim Lab on iOS: tighter top, Leave pill and label spacing. |
 | v8.188.0 | Practice Sim Lab looks like the June design on phones. |
 | v8.187.0 | The Drills tab looks like the June design on phones. |
-| v8.186.0 | Exam and exam results look like the June design on phones. |
 
 _Older releases (v7.60.0 and back) live in [CHANGELOG.md](./CHANGELOG.md)._
 
