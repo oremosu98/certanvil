@@ -45,7 +45,7 @@ Phone only (max-width 899px); desktop unchanged. Sim Lab exists on CompTIA certs
 ### Start screen (`#page-sim-lab-entry`)
 June header (back chevron, "Sim Lab"), the hero ("Practice the hands-on PBQs" and its line), the
 Practice / Exam segment (Exam keeps its Pro tag and gate), the "Today's target" card, round chips
-(3 / 5, and 10 with its Pro lock), **Start** docked at the bottom. Copy, gates and the free daily
+(3 / 5, and 10 with its Pro lock), **Start** docked at the bottom, above the tab bar. Copy, gates and the free daily
 session are today's. No app top bar; the tab bar stays.
 
 ### Loader
@@ -56,19 +56,27 @@ The June "generating" treatment from the quiz (skeleton and shimmer line), readi
 - **Top bar:** Leave · "Round 2 of 3" pill · count-up timer; June round ticks under it. No app top
   bar, no tab bar.
 - **Scenario** in a June card (prose, `<mark>` kept). Logs, when present, in a mono card.
-- **Reference:**
-  - `terminal`: the E2E console card (cert-ios-exam.html `?v=pbq`): a bar with the device name and
-    "console", a mono body.
-  - every other kind (`network`, `timeline`, `layered`, `faceplate`, `wiremap`, `slots`, `swatch`):
-    a full-width June card with its title and a **Tap to enlarge** button. Enlarge opens the same
-    reference full screen in a bottom sheet (scrollable both ways, close button and swipe-down).
+- **Reference.** Some references are answer surfaces (steps select lines, ports or pins inside
+  them), so they never leave the round:
+  - `terminal` (answer surface for `excerptLines`): the E2E console card (cert-ios-exam.html
+    `?v=pbq`): a bar with the host name and the static word "console", a mono body.
+  - `faceplate`, `wiremap` (answer surfaces for `facePorts`, `wiremapPins`): a full-width June card,
+    inline, scrolling sideways inside the card if wider than the screen. No enlarge.
+  - passive kinds (`network`, `timeline`, `layered`, `slots`, `swatch`): a full-width June card
+    with its title and a **Tap to enlarge** button. Enlarge opens a copy full screen in the enlarge
+    sheet (scrollable both ways, Close button, swipe-down, Escape). A copy is safe because these
+    kinds hold no answers.
 - **Steps** as June cards: "Step 1 of 2", the prompt, then the controls in June style: selectable
   chips (multi-pick), June selects (dropdowns), June rows with drag handles (order, categorize,
   match), June fields (fill-in; numeric keyboards stay). The tunnel dual-panel stacks its A / B
   panels.
-- **Dock:** fixed at the bottom, **Reset** (ghost) and **Submit answers** (primary). Reset asks in
-  the bottom sheet: title "Start this PBQ again?", body "Your answers on this question will be
-  cleared.", go "Clear answers", stay "Keep them".
+- **Dock:** fixed at the bottom, **Reset** (ghost) and **Submit answers** (primary). The scroll area
+  is padded by the dock's height; a focused field scrolls clear of the dock and keyboard. Reset asks
+  in the confirm sheet: title "Start this PBQ again?", body "Your answers on this question will be
+  cleared.", go "Clear answers", stay "Keep them". If the round ends with the sheet open, the sheet
+  closes as "Keep them".
+- **Leave** stays unprompted in practice, as today (nothing is lost; the free daily session was
+  counted at Start).
 
 ### Verdict (`#page-sim-lab-result`)
 In the language of the B2 exam results: headline, % score, "N of M sims passed · steps", one row per
@@ -76,21 +84,42 @@ round (verdict tone, title, topic, score) that opens to Answer / You put / why, 
 slipped" card, **Back to Practice** docked, and today's free-user upsell. No app top bar or tab bar.
 
 ### Inside the full exam
-A Sim Lab question keeps the B2 exam top bar and dock. Its reference and steps use the cards above;
-**Reset moves into the console/reference card's bar** as the E2E draws it (the exam dock is
-Prev · Flag · Next).
+A Sim Lab question keeps the B2 exam top bar and dock (Prev · Flag · Next), so Sim Lab's own dock
+does not appear there. Its reference and steps use the cards above. **Reset** moves to:
+- the console card's bar when the reference is a `terminal` (as the E2E draws it);
+- otherwise a compact Reset pill at the top right of the first step card (no reference, or any
+  other kind).
+Reset asks in the same confirm sheet.
 
 ## Architecture
 
+- **Scope guard.** `#page-sim-lab` also hosts Sim Lab Exam mode (B3b2) and the legacy single-PBQ
+  path, and `_slMountScenario` is shared with Decision Lab. So:
+  - Sim Lab adds `isl-practice` to `#page-sim-lab` whenever the page is not in Exam mode (session
+    practice and the legacy single-PBQ path), and removes it in Exam mode. All round restyling is
+    scoped to `#page-sim-lab.isl-practice`; Exam mode keeps today's look until B3b2.
+  - The chrome is page-wide on purpose: no app top bar and no tab bar on `#page-sim-lab` in either
+    mode (Exam mode is immersive too).
+  - Mount hooks (enlarge button, Reset routing, Reset placement) run only when the caller passes
+    `opts.lift` (the Sim Lab session/legacy callers and the full exam's `_examRenderPbq`). Decision
+    Lab does not pass it and is untouched (B3c).
 - **CSS:** a `B3b1 · SIM LAB` section in `lift-ios.css`, class prefix `isl-` for new hooks, scoped
-  to `#page-sim-lab-entry`, `#page-sim-lab`, `#page-sim-lab-result` and `#page-exam .exam-pbq`,
-  overriding the `dg-system.css` Sim Lab rules on phones only.
-- **Phone-only hooks in `features/sim-lab.js`** (behind a `(max-width: 899px)` check, desktop
-  untouched): the reference card's "Tap to enlarge" button and its sheet; Reset routed to the shared
-  sheet; the round top bar's "Round N of M" pill text; the dock wrapper for `.sl-actions`.
-- **Shared bottom sheet:** B2's `_examSheet` moves to a small `features/ios-sheet.js`
-  (`window.iosSheet({title, body, go, stay}) -> Promise<boolean>`, same markup `#exam-sheet`,
-  same focus, key and close rules); `features/exam.js` and Sim Lab both call it.
+  to `#page-sim-lab-entry`, `#page-sim-lab.isl-practice`, `#page-sim-lab-result` and
+  `#page-exam .exam-pbq`, overriding the `dg-system.css` Sim Lab rules on phones only.
+- **Phone-only hooks in `features/sim-lab.js`** (behind `opts.lift` and a `(max-width: 899px)`
+  check, desktop untouched): the passive reference card's "Tap to enlarge" button; Reset routed to
+  the confirm sheet; the Reset placement inside the exam; the `isl-practice` class.
+- **`features/ios-sheet.js`** (new, loaded eagerly `defer` from `index.html` like `ios-exam.js`;
+  `exam.js` and `sim-lab.js` are lazy, so the sheet must not live in either; `ios-*` files are not
+  in `sw.js` precache, so no `sw.js` change):
+  - `window.iosSheet({title, body, go, stay}) -> Promise<boolean>`: B2's `_examSheet` moved here
+    unchanged (same `#exam-sheet` markup, focus return, key isolation, one at a time).
+  - `window.iosSheet.dismiss()`: closes an open confirm sheet as "stay" (false). `exam.js` keeps
+    calling it on auto-submit (B2 final review I1); Sim Lab calls it when a round ends.
+  - `window.iosEnlarge(node, title)`: the enlarge sheet, its own element `#isl-enlarge` (full
+    screen, scrollable, Close, swipe-down, Escape). It holds a copy of a passive reference. Only one
+    sheet is open at a time; opening one closes the other.
+  - `features/exam.js` calls `iosSheet` / `iosSheet.dismiss` in place of its private copy.
 - **`lift-shell.js`:** `HIDE_ON` gains `sim-lab` and `sim-lab-result`; the app top bar hides on
   all three Sim Lab pages (CSS, as other Lift screens).
 - No engine, scoring, gating or data changes.
@@ -107,7 +136,10 @@ Prev · Flag · Next).
 
 - At 390 and 402: a full 3-round practice session from Home → start → rounds → verdict, with no app
   top bar, no tab bar during rounds, the dock always visible, and no horizontal scroll.
-- Every reference kind renders in its card; non-terminal kinds open full screen and close again.
+- Every reference kind renders in its card; terminal, faceplate and wiremap stay inline and still
+  take answers; passive kinds open full screen and close again.
+- Sim Lab Exam mode and Decision Lab look as they do today (apart from Exam mode losing the app top
+  bar and tab bar).
 - Reset asks in the sheet; "Keep them" leaves answers in place, "Clear answers" clears them.
 - Every step type is operable at phone width with 44pt targets (chips, selects, drag handles,
   fields).
