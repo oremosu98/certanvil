@@ -4103,31 +4103,48 @@
     var agg = _slAggregateSession(_slSession.results);
     var pro = _slSession.pro;
     var root = document.getElementById('sl-result-root');
-    root.innerHTML = '';
-    root.appendChild(_el('span', 'sls-seal', '&#x2713; Session complete'));
-    var score = _el('div', 'sls-score');
-    score.innerHTML = '<span class="sls-score-n">' + agg.pct + '<small>%</small></span>' +
-      '<span class="sls-score-cap">' + agg.passed + ' of ' + agg.rounds + ' sims passed &middot; ' + agg.stepsCorrect + ' of ' + agg.stepsTotal + ' steps</span>';
-    root.appendChild(score);
-    // free reveals "why" on missed rounds only; the answer key shows on every round
-    root.appendChild(_slRoundRows(_slSession.results, function (ok) { return pro || !ok; }));
-    var cluster = _slWeakCluster(_slSession.results);
-    if (cluster) {
-      var ins = _el('div', 'sls-insight');
-      ins.innerHTML = '<div class="sls-insight-k"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2v4M12 18v4M2 12h4M18 12h4"></path><circle cx="12" cy="12" r="4"></circle></svg>Where you slipped</div><p>' + _esc(cluster) + '</p>';
-      root.appendChild(ins);
+    var isl = window.iosSimLab;
+    if (isl && isl.verdictHtml && isl.isPhone && isl.isPhone()) {
+      // v8.188.0 Lift B3b1: the phone verdict in the exam-results language (features/ios-simlab.js)
+      root.innerHTML = isl.verdictHtml({
+        rounds: _slSession.results.map(function (r) {
+          var reveal = pro || !r.passed, c = r.score.correct, t = r.score.total;
+          return { title: r.scenario.title || r.scenario.topic || 'PBQ', topic: r.scenario.topic || 'PBQ', correct: c, total: t,
+            fraction: r.passed ? 1 : Math.min(t ? c / t : 0, 0.99),
+            panelHtml: _slAnswerPanelHtml(r, function (stepOk) { return reveal || !stepOk; })
+              + (reveal ? '' : '<p class="sls-r-why sls-why-locked"><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="9" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path></svg>Pro shows the why on the ones you got right too</p>') };
+        }),
+        pct: agg.pct, passed: agg.passed, stepsCorrect: agg.stepsCorrect, stepsTotal: agg.stepsTotal,
+        slip: _slWeakCluster(_slSession.results), pro: pro
+      });
+      isl.wireVerdict(root);
+    } else {
+      root.innerHTML = '';
+      root.appendChild(_el('span', 'sls-seal', '&#x2713; Session complete'));
+      var score = _el('div', 'sls-score');
+      score.innerHTML = '<span class="sls-score-n">' + agg.pct + '<small>%</small></span>' +
+        '<span class="sls-score-cap">' + agg.passed + ' of ' + agg.rounds + ' sims passed &middot; ' + agg.stepsCorrect + ' of ' + agg.stepsTotal + ' steps</span>';
+      root.appendChild(score);
+      // free reveals "why" on missed rounds only; the answer key shows on every round
+      root.appendChild(_slRoundRows(_slSession.results, function (ok) { return pro || !ok; }));
+      var cluster = _slWeakCluster(_slSession.results);
+      if (cluster) {
+        var ins = _el('div', 'sls-insight');
+        ins.innerHTML = '<div class="sls-insight-k"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2v4M12 18v4M2 12h4M18 12h4"></path><circle cx="12" cy="12" r="4"></circle></svg>Where you slipped</div><p>' + _esc(cluster) + '</p>';
+        root.appendChild(ins);
+      }
+      var back = _el('button', 'btn btn-primary gnt-cta', 'Back to Practice');
+      back.setAttribute('type', 'button'); back.setAttribute('data-action', 'simLabExit');
+      root.appendChild(back);
+      if (!pro) {
+        var up = _el('button', 'btn gnt-ghost', 'Go Pro &middot; exam-length runs + weak-spot tracking');
+        up.setAttribute('type', 'button'); up.setAttribute('data-action', 'simLabSummaryUpsell');
+        root.appendChild(up);
+      }
     }
     if (pro && typeof window._slRecordWeakSpots === 'function') {
       var missedTopics = _slSession.results.filter(function (r) { return !r.passed; }).map(function (r) { return r.scenario.topic; });
       window._slRecordWeakSpots(missedTopics);
-    }
-    var back = _el('button', 'btn btn-primary gnt-cta', 'Back to Practice');
-    back.setAttribute('type', 'button'); back.setAttribute('data-action', 'simLabExit');
-    root.appendChild(back);
-    if (!pro) {
-      var up = _el('button', 'btn gnt-ghost', 'Go Pro &middot; exam-length runs + weak-spot tracking');
-      up.setAttribute('type', 'button'); up.setAttribute('data-action', 'simLabSummaryUpsell');
-      root.appendChild(up);
     }
     try {
       if (typeof window.bumpDrillStat === 'function') {

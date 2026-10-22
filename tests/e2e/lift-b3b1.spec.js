@@ -276,3 +276,67 @@ test('Lift B3b1: a mount without opts.lift (Decision Lab) gets no phone hooks', 
   await page.locator('#sl-body .sl-reset').click();
   expect(await page.evaluate(() => window.__confirmed)).toBe(1);
 });
+
+// ── Task 5: the verdict ──
+async function finishSession(page, viewport) {
+  await startSession(page, viewport);
+  for (let i = 0; i < 3; i++) {
+    await page.waitForSelector('#sl-body [data-action="simLabSubmitScenario"]', { timeout: 8000 });
+    await page.locator('#sl-body [data-action="simLabSubmitScenario"]').click();   // blank: every round missed
+  }
+  await expect(page.locator('#page-sim-lab-result')).toHaveClass(/active/);
+}
+for (const vp of PHONES) {
+  test.describe('Lift B3b1 verdict @' + vp.width, () => {
+    test('the verdict in the exam-results language; rows open to the answer', async ({ page }) => {
+      await finishSession(page, vp);
+      const root = page.locator('#sl-result-root');
+      await expect(root.locator('.isl-vkick')).toContainText('Sim Lab · 3 rounds');
+      await expect(root.locator('.isl-vtitle')).toHaveText('0 of 3 passed.');
+      await expect(root.locator('.isl-vsub')).toHaveText(/^\d+ of \d+ steps right\.$/);
+      await expect(root.locator('.isl-srow')).toHaveCount(3);
+      await expect(root.locator('.isl-slip')).toContainText('Where you slipped');
+      await expect(page.locator('#lift-tabbar')).toBeHidden();
+      await expect(page.locator('#app-topbar')).toBeHidden();
+      const dock = await page.evaluate(() => { const r = document.querySelector('#sl-result-root .isl-vdock').getBoundingClientRect(); return Math.round(r.bottom) <= innerHeight && r.top > 0; });
+      expect(dock).toBe(true);
+      const first = root.locator('.isl-srow').first();
+      await first.click();
+      await expect(first).toHaveAttribute('aria-expanded', 'true');
+      await expect(root.locator('.isl-sdet').first()).toBeVisible();
+      await expect(root.locator('.isl-sdet').first()).toContainText('Answer');
+      await first.click();
+      await expect(root.locator('.isl-sdet').first()).toBeHidden();
+      const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+      expect(overflow).toBeLessThanOrEqual(0);
+    });
+
+    test('free upsell opens the Pro gate; Back to Practice leaves', async ({ page }) => {
+      await finishSession(page, vp);
+      await expect(page.locator('#sl-result-root [data-action="simLabSummaryUpsell"]')).toHaveText('Go Pro for exam-length runs');
+      await record(page, ['_gateProOnly']);
+      await page.locator('#sl-result-root [data-action="simLabSummaryUpsell"]').click();
+      expect(await page.evaluate(() => window.__calls)).toEqual(['_gateProOnly']);
+      await page.evaluate(() => { const m = document.getElementById('pro-only-modal'); if (m) m.remove(); });
+      await page.locator('#sl-result-root [data-action="simLabExit"]').click();
+      await expect(page.locator('#page-setup')).toHaveClass(/active/);
+    });
+  });
+}
+
+test('Lift B3b1 desktop: the verdict is today\'s', async ({ page }) => {
+  await boot(page, DESKTOP, 'free');
+  await page.evaluate(async () => {
+    try { localStorage.removeItem('nplus_pbq_free_count'); } catch (_) {}
+    await new Promise((res) => window._ensureSimLabLoaded(res));
+    window._slMeteredGenerate = async () => ({ bad: true });
+    window.simLabOpenEntry(); await new Promise((r) => setTimeout(r, 450));
+    document.querySelector('.sle-chip[data-rounds="3"]').click(); window.simLabSessionStart();
+  });
+  for (let i = 0; i < 3; i++) {
+    await page.waitForSelector('#sl-body [data-action="simLabSubmitScenario"]', { timeout: 8000 });
+    await page.locator('#sl-body [data-action="simLabSubmitScenario"]').click();
+  }
+  await expect(page.locator('#sl-result-root .sls-score')).toBeVisible();
+  await expect(page.locator('#sl-result-root .isl-srow')).toHaveCount(0);
+});

@@ -65,3 +65,38 @@ const { _fnBody, fs, path, ROOT, results, test, vm } = require('./_context');
     results.errors.push('500 ios-simlab block threw: ' + err.message);
   }
 })();
+
+// ── the verdict (pure model/view) ──
+(function () {
+  try {
+    const src = fs.readFileSync(path.join(ROOT, 'features', 'ios-simlab.js'), 'utf8');
+    const ctx = vm.createContext({ Math, String, Array, Object, JSON, Number, isFinite });
+    vm.runInContext(['_iosSlVerdictModel', '_iosSlVerdictHtml'].map(n => _fnBody(src, n) || '').join('\n'), ctx);
+    const round = (t, tp, c, n, extra) => Object.assign({ title: t, topic: tp, correct: c, total: n, fraction: n ? c / n : 0, panelHtml: '<div class="sls-ans-step">P' + t + '</div>' }, extra || {});
+    const base = (o) => Object.assign({
+      rounds: [round('Well-known ports', 'Firewalls & DMZ', 8, 8), round('CLI fault isolation: duplex', 'Switching', 3, 5), round('VLAN on the wrong access port', 'VLANs', 0, 3)],
+      pct: 69, passed: 1, stepsCorrect: 11, stepsTotal: 16, slip: 'Your misses were in Switching and VLANs. Those are worth another round.', pro: false }, o || {});
+    const H = (o) => { ctx.__s = base(o); return vm.runInContext('_iosSlVerdictHtml(_iosSlVerdictModel(__s))', ctx); };
+    const free = H();
+    const pills = Array.from(free.matchAll(/class="isl-sv isl-(?:ok|part|no)">(Right|Partly|Wrong)</g)).map(x => x[1]);
+    test('Verdict: tone pills read Right / Partly / Wrong from the round fractions', pills.join(',') === 'Right,Partly,Wrong');
+    test('Verdict: eyebrow, headline and steps line',
+      /Sim Lab · 3 rounds/.test(free) && /<h2 class="isl-vtitle">1 of 3 <em>passed\.<\/em><\/h2>/.test(free) && free.indexOf('11 of 16 steps right.') > 0);
+    test('Verdict: score and bar width from pct', /<b>69<\/b><span>%<\/span>/.test(free) && /style="width:69%"/.test(free));
+    test('Verdict: each row is a button with aria-expanded=false followed by its hidden panel (panelHtml passed through)',
+      (free.match(/<button class="isl-srow" type="button" aria-expanded="false" aria-controls="isl-sdet-\d"/g) || []).length === 3
+      && /<div class="isl-sdet" id="isl-sdet-1" hidden><div class="sls-ans-step">PCLI fault isolation: duplex<\/div><\/div>/.test(free));
+    test('Verdict: row shows title and "topic · c/t"', free.indexOf('Switching · 3/5') > 0 && free.indexOf('>Well-known ports<') > 0);
+    test('Verdict: slip card with the exact line, upsell for free only with the new label',
+      free.indexOf('Where you slipped') > 0 && free.indexOf('Your misses were in Switching and VLANs. Those are worth another round.') > 0
+      && /data-action="simLabSummaryUpsell"[^>]*>\s*<span>Go Pro for exam-length runs<\/span>/.test(free) && !/simLabSummaryUpsell/.test(H({ pro: true })));
+    test('Verdict: no slip card when nothing was missed', !/Where you slipped/.test(H({ slip: null })));
+    test('Verdict: Back to Practice is docked and routes to simLabExit', /<div class="isl-vdock"><button[^>]*data-action="simLabExit"[^>]*>Back to Practice<\/button><\/div>/.test(free));
+    const esc = H({ rounds: [round('A & <b>', 'T<x>', 1, 2)], slip: 'Misses in <i>&' });
+    test('Verdict: titles, topics and the slip line are escaped', esc.indexOf('A &amp; &lt;b&gt;') > 0 && esc.indexOf('T&lt;x&gt;') > 0 && esc.indexOf('Misses in &lt;i&gt;&amp;') > 0 && esc.indexOf('<b>A') < 0);
+    test('Verdict: no on*= handlers, no em-dash', !/\son[a-z]+=/.test(free) && free.indexOf('—') < 0);
+  } catch (err) {
+    test('Lift B3b1 verdict: block (threw)', false);
+    results.errors.push('500 ios-simlab verdict block threw: ' + err.message);
+  }
+})();

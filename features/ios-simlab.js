@@ -126,6 +126,59 @@
     return window.iosSheet({ title: 'Start this PBQ again?', body: 'Your answers on this question will be cleared.', go: 'Clear answers', stay: 'Keep them' });
   }
 
+  // ── The verdict (#sl-result-root on phones) ──
+  // Pure: s = {rounds:[{title, topic, correct, total, fraction, panelHtml}], pct, passed, stepsCorrect, stepsTotal, slip, pro}.
+  // panelHtml comes from sim-lab.js's own answer panel (already escaped there) and passes through.
+  function _iosSlVerdictModel(s) {
+    var rounds = (s.rounds || []).map(function (r) {
+      var f = Number(r.fraction) || 0;
+      var tone = f >= 1 ? 'ok' : (r.correct > 0 ? 'part' : 'no');
+      return { title: r.title, topic: r.topic, score: r.correct + '/' + r.total, tone: tone,
+        label: tone === 'ok' ? 'Right' : tone === 'part' ? 'Partly' : 'Wrong', panelHtml: r.panelHtml || '' };
+    });
+    var pct = Math.max(0, Math.min(100, Math.round(Number(s.pct) || 0)));
+    return { n: rounds.length, passed: s.passed || 0, pct: pct, stepsCorrect: s.stepsCorrect || 0, stepsTotal: s.stepsTotal || 0,
+      rounds: rounds, slip: s.slip || null, upsell: !s.pro };
+  }
+  // Pure: model -> markup of the E2E verdict (isl- prefixed). Self-contained.
+  function _iosSlVerdictHtml(m) {
+    function e(v) { return String(v == null ? '' : v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+    function svg(p) { return '<svg viewBox="0 0 24 24" aria-hidden="true">' + p + '</svg>'; }
+    var DONE = svg('<path d="M9 11l3 3L22 4"></path><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>');
+    var CHEV = svg('<path d="M9 6l6 6-6 6"></path>');
+    var SPARK = svg('<path d="M12 2v4M12 18v4M2 12h4M18 12h4"></path><circle cx="12" cy="12" r="4"></circle>');
+    var h = '<div class="isl-vbody">'
+      + '<div class="isl-vkick">' + DONE + 'Sim Lab · ' + m.n + ' rounds</div>'
+      + '<h2 class="isl-vtitle">' + m.passed + ' of ' + m.n + ' <em>passed.</em></h2>'
+      + '<p class="isl-vsub">' + m.stepsCorrect + ' of ' + m.stepsTotal + ' steps right.</p>'
+      + '<div class="isl-vscore"><b>' + m.pct + '</b><span>%</span></div><div class="isl-vmeter"><i style="width:' + m.pct + '%"></i></div>'
+      + '<div class="isl-sect">Your rounds</div>';
+    m.rounds.forEach(function (r, i) {
+      h += '<button class="isl-srow" type="button" aria-expanded="false" aria-controls="isl-sdet-' + i + '">'
+        + '<span class="isl-sn2"><span class="isl-st">' + e(r.title) + '</span><span class="isl-ss">' + e(r.topic) + ' · ' + e(r.score) + '</span></span>'
+        + '<span class="isl-sv isl-' + r.tone + '">' + r.label + '</span>' + CHEV + '</button>'
+        + '<div class="isl-sdet" id="isl-sdet-' + i + '" hidden>' + r.panelHtml + '</div>';
+    });
+    if (m.slip) h += '<div class="isl-slip"><span class="isl-k">' + SPARK + 'Where you slipped</span><p>' + e(m.slip) + '</p></div>';
+    if (m.upsell) h += '<button class="isl-upsell" type="button" data-action="simLabSummaryUpsell"><span>Go Pro for exam-length runs</span>' + CHEV + '</button>';
+    h += '</div><div class="isl-vdock"><button class="isl-vback" type="button" data-action="simLabExit">Back to Practice</button></div>';
+    return h;
+  }
+  function verdictHtml(s) { return _iosSlVerdictHtml(_iosSlVerdictModel(s)); }
+  // One delegated listener: a row opens and closes its answer panel.
+  function wireVerdict(root) {
+    if (!root || root._islWired) return;
+    root._islWired = true;
+    root.addEventListener('click', function (ev) {
+      var row = ev.target.closest && ev.target.closest('.isl-srow');
+      if (!row || !root.contains(row)) return;
+      var panel = document.getElementById(row.getAttribute('aria-controls'));
+      var open = row.getAttribute('aria-expanded') !== 'true';
+      row.setAttribute('aria-expanded', String(open));
+      if (panel) panel.hidden = !open;
+    });
+  }
+
   // Tier hydrates after the start screen can first paint: app.js re-runs renderGauntletDrillsCard then
   // (B3a's hook), so chain onto it and repaint the locks, Pro tag and cap line in place.
   function _islChainTier() {
@@ -151,6 +204,10 @@
   window.iosSimLab.isPhone = isPhone;
   window.iosSimLab.decorate = decorate;
   window.iosSimLab.askReset = askReset;
+  window.iosSimLab.verdictHtml = verdictHtml;
+  window.iosSimLab.wireVerdict = wireVerdict;
+  window._iosSlVerdictModel = _iosSlVerdictModel;
+  window._iosSlVerdictHtml = _iosSlVerdictHtml;
   window.renderIosSimLabEntry = renderIosSimLabEntry;
   window._iosSlEntryModel = _iosSlEntryModel;
   window._iosSlEntryHtml = _iosSlEntryHtml;

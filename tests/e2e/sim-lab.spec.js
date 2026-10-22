@@ -637,6 +637,7 @@ test('prefetch: round N+1 is fetched during round N', async ({ page }) => {
 });
 
 test('session: completing all rounds shows the summary with aggregate', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 });   // the desktop summary; phones get the B3b1 verdict (lift-b3b1.spec)
   await gotoApp(page);
   await page.evaluate(async () => {
     window._quotaState = { tier: 'free' }; localStorage.removeItem('nplus_pbq_free_count');
