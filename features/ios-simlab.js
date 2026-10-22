@@ -102,6 +102,30 @@
     if (real) real.click();   // the real handlers apply the gates and update their own state
     if (act === 'mode' || act === 'rounds') renderIosSimLabEntry({ still: true });
   }
+  // ── The round (sim-lab.js _slMountScenario calls these when opts.lift on a phone) ──
+  // Passive references hold no answers, so a copy can open full size. terminal / faceplate / wiremap
+  // are answer surfaces (excerptLines / facePorts / wiremapPins) and stay inline only.
+  var PASSIVE = { network: 'Network map', timeline: 'Timeline', layered: 'Layers', slots: 'Slots', swatch: 'Sample' };
+  var ENL = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"></path></svg>';
+  function decorate(wrap, scn, opts) {
+    var ref = scn && scn.assets && scn.assets.reference;
+    var panel = wrap.querySelector('.sl-ref');
+    if (ref && panel && PASSIVE[ref.kind] && !panel.querySelector('.isl-ref-head')) {
+      var title = PASSIVE[ref.kind], node = panel.firstElementChild;
+      var head = document.createElement('div');
+      head.className = 'isl-ref-head';
+      head.innerHTML = '<span>' + title + '</span><button class="isl-enlarge" type="button">' + ENL + 'Tap to enlarge</button>';
+      panel.insertBefore(head, panel.firstChild);
+      head.querySelector('.isl-enlarge').addEventListener('click', function () {
+        if (window.iosEnlarge && node) window.iosEnlarge(node, title);
+      });
+    }
+  }
+  function askReset() {
+    if (!window.iosSheet) return Promise.resolve(window.confirm('Clear your answers on this PBQ and start it again?'));
+    return window.iosSheet({ title: 'Start this PBQ again?', body: 'Your answers on this question will be cleared.', go: 'Clear answers', stay: 'Keep them' });
+  }
+
   // Tier hydrates after the start screen can first paint: app.js re-runs renderGauntletDrillsCard then
   // (B3a's hook), so chain onto it and repaint the locks, Pro tag and cap line in place.
   function _islChainTier() {
@@ -125,6 +149,8 @@
 
   window.iosSimLab = window.iosSimLab || {};
   window.iosSimLab.isPhone = isPhone;
+  window.iosSimLab.decorate = decorate;
+  window.iosSimLab.askReset = askReset;
   window.renderIosSimLabEntry = renderIosSimLabEntry;
   window._iosSlEntryModel = _iosSlEntryModel;
   window._iosSlEntryHtml = _iosSlEntryHtml;

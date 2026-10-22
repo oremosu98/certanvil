@@ -43,6 +43,23 @@ const { _fnBody, fs, path, ROOT, results, test, vm } = require('./_context');
     test('Start: back, start, both modes and three round options are data-act buttons',
       /<button[^>]*data-act="back"/.test(free) && /<button[^>]*data-act="start"/.test(free)
       && (free.match(/<button[^>]*data-act="mode"/g) || []).length === 2 && (free.match(/<button[^>]*data-act="rounds"/g) || []).length === 3);
+
+    // ── the round: hooks in sim-lab.js ──
+    const sl = fs.readFileSync(path.join(ROOT, 'features', 'sim-lab.js'), 'utf8');
+    test('Round: decorate gives Tap to enlarge to exactly the five passive reference kinds',
+      /var PASSIVE = \{ network: 'Network map', timeline: 'Timeline', layered: 'Layers', slots: 'Slots', swatch: 'Sample' \};/.test(src)
+      && !/PASSIVE[^;]*(terminal|faceplate|wiremap)/.test(src));
+    const mount = _fnBody(sl, '_slMountScenario') || '';
+    test('Round: _slMountScenario asks in the sheet only for opts.lift on a phone, else confirm()',
+      /if \(opts\.lift && isl && isl\.isPhone && isl\.isPhone\(\) && isl\.askReset\)/.test(mount) && /window\.confirm\('Clear your answers on this PBQ and start it again\?'\)/.test(mount)
+      && /opts && opts\.lift && isl && isl\.decorate/.test(mount));
+    test('Round: the Reset sheet copy is exact',
+      /title: 'Start this PBQ again\?', body: 'Your answers on this question will be cleared\.', go: 'Clear answers', stay: 'Keep them'/.test(src));
+    test('Round: a round ending, the verdict and Leave all dismiss an open sheet',
+      /onSubmit: function \(result\) \{\s*if \(window\.iosSheet\) window\.iosSheet\.dismiss\(\);/.test(_fnBody(sl, '_slRunRound') || '')
+      && /iosSheet\.dismiss\(\)/.test(_fnBody(sl, '_slRenderSummary') || '') && /iosSheet\.dismiss\(\)/.test(_fnBody(sl, 'simLabExit') || ''));
+    test('Round: the phone loader reads "Building round N of M…" with the June skeleton; desktop keeps its spinner',
+      /' of ' \+ total/.test(_fnBody(sl, '_slRenderLoader') || '') && /isl-skel/.test(_fnBody(sl, '_slRenderLoader') || '') && /slr-spin/.test(_fnBody(sl, '_slRenderLoader') || ''));
   } catch (err) {
     test('Lift B3b1 Sim Lab: block (threw)', false);
     results.errors.push('500 ios-simlab block threw: ' + err.message);

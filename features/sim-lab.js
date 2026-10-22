@@ -2424,6 +2424,12 @@
       resetBtn.setAttribute('type', 'button');
       resetBtn.setAttribute('aria-label', 'Reset this PBQ');
       resetBtn.addEventListener('click', function () {
+        // v8.188.0 Lift B3b1: phones ask in the in-app sheet (features/ios-simlab.js) for callers that opt in
+        var isl = window.iosSimLab;
+        if (opts.lift && isl && isl.isPhone && isl.isPhone() && isl.askReset) {
+          isl.askReset().then(function (ok) { if (ok && resetBtn.isConnected) opts.onReset(); });
+          return;
+        }
         if (!window.confirm('Clear your answers on this PBQ and start it again?')) return;
         opts.onReset();
       });
@@ -2435,6 +2441,8 @@
     actions.appendChild(submit);
     wrap.appendChild(actions);
     host.appendChild(wrap);
+    var isl = window.iosSimLab;   // v8.188.0 Lift B3b1: phone hooks (enlarge, Reset placement) for callers that opt in
+    if (opts && opts.lift && isl && isl.decorate && isl.isPhone && isl.isPhone()) { try { isl.decorate(wrap, scn, opts); } catch (_) {} }
 
     var submitted = false;
     window.__slActiveSubmit = function () {
@@ -2484,6 +2492,9 @@
     var nudged = false;
     var thresholdMs = (opts.estMinutes || 6) * 60 * 1000;
     var el = _el('div', 'sl-timer');
+    // v8.188.0: the glyph sits in its own span so phones can draw the June clock icon in its place
+    el.innerHTML = '<span class="sl-timer-ic" aria-hidden="true">⏱</span> <span class="sl-timer-t">0:00</span>';
+    var tEl = el.lastChild;
     var nudgeEl = _el('div', 'sl-nudge sl-hidden',
       "You've been on this one a while. Partial credit counts, so lock in your best answer and move on.");
     host.appendChild(el); host.appendChild(nudgeEl);
@@ -2494,7 +2505,7 @@
     }
     var iv = setInterval(function () {
       var elapsed = Date.now() - started;
-      el.textContent = '⏱ ' + fmt(elapsed);
+      tEl.textContent = fmt(elapsed);
       if (!nudged && elapsed >= thresholdMs) {
         nudged = true;
         nudgeEl.classList.remove('sl-hidden');
@@ -3752,6 +3763,7 @@
   }
 
   function simLabExit() {
+    if (window.iosSheet) window.iosSheet.dismiss();   // v8.188.0 Lift B3b1
     // §3.7 confirm gate: mid-exam only (clock still running, not yet submitted)
     if (_slSession && _slSession.mode === 'exam' && !_slSession.__submitted) {
       if (!window.confirm('Leave? Your exam ends and won\'t be scored.')) return;
@@ -3822,12 +3834,17 @@
     }
   }
 
-  function _slRenderLoader(host, roundNum) {
+  function _slRenderLoader(host, roundNum, total) {
     host.innerHTML = '';
-    var box = _el('div', 'slr-loader');
-    box.innerHTML = '<div class="slr-spin" aria-hidden="true"></div>' +
-      '<div class="slr-loader-t">Building round ' + roundNum + '…</div>' +
-      '<div class="slr-loader-s">A fresh scenario. This takes a few seconds.</div>';
+    // v8.188.0 Lift B3b1: on phones, the quiz's June "generating" treatment (skeleton + shimmer line)
+    var phone = !!(window.iosSimLab && window.iosSimLab.isPhone && window.iosSimLab.isPhone());
+    var box = _el('div', 'slr-loader' + (phone ? ' isl-loader' : ''));
+    box.innerHTML = (phone
+      ? '<div class="isl-skel" aria-hidden="true"></div><div class="isl-skel isl-skel-2" aria-hidden="true"></div><div class="isl-skel isl-skel-3" aria-hidden="true"></div>'
+      : '<div class="slr-spin" aria-hidden="true"></div>') +
+      '<div class="slr-loader-t">Building round ' + roundNum + (phone && total ? ' of ' + total : '') + '…</div>' +
+      '<div class="slr-loader-s">A fresh scenario. This takes a few seconds.</div>' +
+      (phone ? '<div class="isl-gen-track" aria-hidden="true"><div class="isl-gen-bar"></div></div>' : '');
     host.appendChild(box);
   }
 
@@ -3864,7 +3881,7 @@
     var body = document.getElementById('sl-body');
     var topic = document.getElementById('sl-topic');
     _slUpdateChrome();
-    _slRenderLoader(body, _slSession.idx + 1);
+    _slRenderLoader(body, _slSession.idx + 1, _slSession.rounds);
     _slGetRoundScenario().then(function (scn) {
       _slSession.usedSeedIds.add(scn.id);
       if (topic) topic.textContent = scn.topic || 'PBQ';
@@ -3873,6 +3890,7 @@
       _slMountScenario(body, scn, { lift: true,
         onReset: function () { _slMountScenario(body, scn, this); },   // v8.166.0: same PBQ, blank (this = these options)
         onSubmit: function (result) {
+          if (window.iosSheet) window.iosSheet.dismiss();   // v8.188.0: a Reset sheet never outlives its round
           if (_slSession.timer) { _slSession.timer.stop(); _slSession.timer = null; }
           var passed = result.fraction === 1;
           _slSession.results.push({ scenario: scn, score: result, passed: passed });
@@ -4079,6 +4097,7 @@
     return rounds;
   }
   function _slRenderSummary() {
+    if (window.iosSheet) window.iosSheet.dismiss();
     var pill = document.getElementById('sl-round-pill'); if (pill) pill.classList.add('is-hidden');
     var dots = document.getElementById('sl-dots'); if (dots) dots.classList.add('is-hidden');
     var agg = _slAggregateSession(_slSession.results);

@@ -112,3 +112,166 @@ test('Lift B3b1 desktop: the start screen is today\'s', async ({ page }) => {
   await expect(page.locator('#isl-entry')).toBeEmpty();
   await expect(page.locator('#page-sim-lab-entry .gnt-shell')).toBeVisible();
 });
+
+// ── Task 4: the round ──
+async function startSession(page, viewport) {
+  await openEntry(page, viewport, 'free');
+  await page.evaluate(() => {
+    try { localStorage.removeItem('nplus_pbq_free_count'); } catch (_) {}
+    window._slMeteredGenerate = async () => ({ bad: true });   // force the seed pool (offline)
+  });
+  await page.locator('#isl-entry [data-act="rounds"][data-rounds="3"]').click();
+  await page.locator('#isl-entry [data-act="start"]').click();
+  await expect(page.locator('#page-sim-lab')).toHaveClass(/active/);
+  await page.waitForSelector('#sl-body [data-action="simLabSubmitScenario"]', { timeout: 8000 });
+}
+// Mount one seed directly (fixed reference kinds). pick: a function body run against the Net+ seed pool.
+async function mountSeed(page, viewport, pick, opts) {
+  await boot(page, viewport, 'free');
+  await page.evaluate(async ([pickSrc, o]) => {
+    await new Promise((res) => window._ensureSimLabLoaded(res));
+    showPage('sim-lab');
+    document.getElementById('page-sim-lab').classList.add('isl-practice');
+    const scn = window.SIM_LAB_SEED_NETPLUS.find(new Function('s', pickSrc));
+    window.__scn = scn;
+    const body = document.getElementById('sl-body');
+    window._simLab.mountScenario(body, scn, { lift: o.lift !== false, onReset: function () { window._simLab.mountScenario(body, scn, this); }, onSubmit: function () { window.__submitted = true; } });
+  }, [pick, opts || {}]);
+  await page.locator('#sl-body .sl-actions').waitFor({ state: 'visible' });   // showPage finishes its switch first
+}
+const TERMINAL = "return s.assets && s.assets.reference && s.assets.reference.kind === 'terminal' && JSON.stringify(s.steps).indexOf('excerptLines') > 0";
+const FACEPLATE = "return s.assets && s.assets.reference && s.assets.reference.kind === 'faceplate' && JSON.stringify(s.steps).indexOf('facePorts') > 0";
+const NETWORK = "return s.assets && s.assets.reference && s.assets.reference.kind === 'network'";
+const PICKER = "return JSON.stringify(s.steps).indexOf('\"type\":\"analyze\"') > 0 && !(s.assets && s.assets.reference && s.assets.reference.kind === 'terminal')";
+
+for (const vp of PHONES) {
+  test.describe('Lift B3b1 round @' + vp.width, () => {
+    test('June top bar, ticks, docked Reset and Submit; no tab bar or app top bar', async ({ page }) => {
+      await startSession(page, vp);
+      await expect(page.locator('#sl-round-pill')).toHaveText('Round 1 of 3');
+      await expect(page.locator('.sl-topbar [data-action="simLabExit"]')).toBeVisible();
+      await expect(page.locator('#sl-timer-slot .sl-timer')).toBeVisible();
+      await expect(page.locator('#sl-dots .slr-dot')).toHaveCount(3);
+      await expect(page.locator('#lift-tabbar')).toBeHidden();
+      await expect(page.locator('#app-topbar')).toBeHidden();
+      const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+      expect(overflow).toBeLessThanOrEqual(0);
+    });
+
+    test('Reset and Submit stay docked on a scenario taller than the screen', async ({ page }) => {
+      await mountSeed(page, vp, TERMINAL);
+      const st = await page.evaluate(() => ({ tall: document.documentElement.scrollHeight > window.innerHeight + 200 }));
+      expect(st.tall).toBe(true);   // the test only proves the dock on a scenario that scrolls
+      const inView = () => page.evaluate(() => {
+        const r = document.querySelector('#sl-body .sl-actions').getBoundingClientRect();
+        return r.top >= 0 && Math.round(r.bottom) <= window.innerHeight && r.height > 0;
+      });
+      expect(await inView()).toBe(true);
+      await page.evaluate(() => window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'instant' }));
+      expect(await inView()).toBe(true);
+      const last = await page.evaluate(() => {   // the last step is not hidden under the dock at the bottom
+        const steps = document.querySelectorAll('#sl-body .sl-step'); const s = steps[steps.length - 1].getBoundingClientRect();
+        return Math.round(s.bottom) <= Math.round(document.querySelector('#sl-body .sl-actions').getBoundingClientRect().top);
+      });
+      expect(last).toBe(true);
+    });
+
+    test('the 3-round session ends on the verdict; the loader reads "Building round N of M…"', async ({ page }) => {
+      await startSession(page, vp);
+      await page.evaluate(() => {   // the loader can be gone within a frame (prefetch), so record it as it appears
+        window.__loader = [];
+        new MutationObserver(() => { const t = document.querySelector('#sl-body .slr-loader-t'); if (t) window.__loader.push(t.textContent); })
+          .observe(document.getElementById('sl-body'), { childList: true, subtree: true });
+      });
+      await page.locator('#sl-body [data-action="simLabSubmitScenario"]').click();
+      await expect.poll(() => page.evaluate(() => window.__loader[0])).toBe('Building round 2 of 3…');
+      expect(await page.evaluate(() => !!document.querySelector('#sl-body .isl-skel') || window.__loader.length > 0)).toBe(true);
+      await page.waitForSelector('#sl-body [data-action="simLabSubmitScenario"]', { timeout: 8000 });
+      await page.locator('#sl-body [data-action="simLabSubmitScenario"]').click();
+      await page.waitForSelector('#sl-body [data-action="simLabSubmitScenario"]', { timeout: 8000 });
+      await page.locator('#sl-body [data-action="simLabSubmitScenario"]').click();
+      await expect(page.locator('#page-sim-lab-result')).toHaveClass(/active/);
+    });
+
+    test('terminal is the console card, stays inline and still takes answers', async ({ page }) => {
+      await mountSeed(page, vp, TERMINAL);
+      await expect(page.locator('#sl-body .term-host-name')).toBeVisible();
+      const after = await page.evaluate(() => getComputedStyle(document.querySelector('#sl-body .term-host-name'), '::after').content);
+      expect(after).toContain('console');
+      await expect(page.locator('#sl-body .isl-enlarge')).toHaveCount(0);
+      const tabs = page.locator('#sl-body .term-tab');   // the selectable lines sit under one of the console's tabs
+      for (let i = 0; i < await tabs.count() && await page.locator('#sl-body button.term-line:visible').count() === 0; i++) await tabs.nth(i).click();
+      const line = page.locator('#sl-body button.term-line:visible').first();
+      await line.click();
+      await expect(line).toHaveClass(/sl-sel/);
+    });
+
+    test('faceplate stays inline (no enlarge) and its ports still take answers', async ({ page }) => {
+      await mountSeed(page, vp, FACEPLATE);
+      await expect(page.locator('#sl-body .isl-enlarge')).toHaveCount(0);
+      const port = page.locator('#sl-body button.port').first();
+      await port.click();
+      await expect(port).toHaveClass(/sl-sel/);
+    });
+
+    test('a network map gets Tap to enlarge; the sheet opens with the map and closes on Escape', async ({ page }) => {
+      await mountSeed(page, vp, NETWORK);
+      const btn = page.locator('#sl-body .isl-enlarge');
+      await expect(btn).toHaveText('Tap to enlarge');
+      const hit = await btn.evaluate((b) => { const a = getComputedStyle(b, '::after'); return a.content !== 'none' && b.getBoundingClientRect().height - 2 * parseFloat(a.top) >= 44; });
+      expect(hit).toBe(true);
+      await btn.click();
+      await expect(page.locator('#isl-enlarge')).toHaveClass(/open/);
+      await expect(page.locator('#isl-enlarge-title')).toHaveText('Network map');
+      await expect(page.locator('#isl-enlarge .isl-es-body svg').first()).toBeVisible();
+      await page.keyboard.press('Escape');
+      await expect(page.locator('#isl-enlarge')).not.toHaveClass(/open/);
+    });
+
+    test('Reset asks in the sheet, never confirm(); Keep them keeps, Clear answers clears', async ({ page }) => {
+      await mountSeed(page, vp, PICKER);
+      await page.evaluate(() => { window.confirm = () => { throw new Error('confirm() called'); }; });
+      const pick = page.locator('#sl-body .sl-analyze-line').first();
+      await pick.click();
+      await expect(pick).toHaveClass(/sl-sel/);
+      await page.locator('#sl-body .sl-reset').click();
+      await expect(page.locator('#exam-sheet')).toHaveClass(/open/);
+      await expect(page.locator('#exam-sheet-title')).toHaveText('Start this PBQ again?');
+      await expect(page.locator('#exam-sheet .ix-sheet-body')).toHaveText('Your answers on this question will be cleared.');
+      await expect(page.locator('#exam-sheet .ix-sheet-stay')).toHaveText('Keep them');
+      await expect(page.locator('#exam-sheet .ix-sheet-go')).toHaveText('Clear answers');
+      await page.locator('#exam-sheet .ix-sheet-stay').click();
+      await expect(page.locator('#sl-body .sl-analyze-line').first()).toHaveClass(/sl-sel/);
+      await page.locator('#sl-body .sl-reset').click();
+      await page.locator('#exam-sheet .ix-sheet-go').click();
+      await expect(page.locator('#sl-body .sl-analyze-line.sl-sel')).toHaveCount(0);
+    });
+
+    test('a round that ends with the Reset sheet open closes it as Keep them', async ({ page }) => {
+      await startSession(page, vp);
+      await page.locator('#sl-body .sl-reset').click();
+      await expect(page.locator('#exam-sheet')).toHaveClass(/open/);
+      await page.evaluate(() => window.simLabSubmitScenario());
+      await expect(page.locator('#exam-sheet')).not.toHaveClass(/open/);
+      await page.waitForSelector('#sl-body [data-action="simLabSubmitScenario"]', { timeout: 8000 });
+      await expect(page.locator('#sl-round-pill')).toHaveText('Round 2 of 3');
+      expect(await page.evaluate(() => window.iosSheet.isOpen())).toBe(false);
+    });
+  });
+}
+
+test('Lift B3b1 desktop: the round keeps confirm() and no enlarge', async ({ page }) => {
+  await mountSeed(page, DESKTOP, NETWORK);
+  await expect(page.locator('#sl-body .isl-enlarge')).toHaveCount(0);
+  await page.evaluate(() => { window.__confirmed = 0; window.confirm = () => { window.__confirmed++; return false; }; });
+  await page.locator('#sl-body .sl-reset').click();
+  expect(await page.evaluate(() => window.__confirmed)).toBe(1);
+});
+
+test('Lift B3b1: a mount without opts.lift (Decision Lab) gets no phone hooks', async ({ page }) => {
+  await mountSeed(page, PHONES[1], NETWORK, { lift: false });
+  await expect(page.locator('#sl-body .isl-enlarge')).toHaveCount(0);
+  await page.evaluate(() => { window.__confirmed = 0; window.confirm = () => { window.__confirmed++; return false; }; });
+  await page.locator('#sl-body .sl-reset').click();
+  expect(await page.evaluate(() => window.__confirmed)).toBe(1);
+});
