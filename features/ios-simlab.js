@@ -107,8 +107,14 @@
   // are answer surfaces (excerptLines / facePorts / wiremapPins) and stay inline only.
   var PASSIVE = { network: 'Network map', timeline: 'Timeline', layered: 'Layers', slots: 'Slots', swatch: 'Sample' };
   var ENL = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"></path></svg>';
+  var SCN = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2.5"></rect><path d="M7 9l3 3-3 3M12 15h5"></path></svg>';
   function decorate(wrap, scn, opts) {
     var ref = scn && scn.assets && scn.assets.reference;
+    // A new round rises in after the skeleton; a Reset re-mount (same opts) and the exam's per-question
+    // re-renders do not replay it.
+    if (opts && !opts.__islEntered && !(wrap.closest && wrap.closest('.exam-pbq'))) { opts.__islEntered = true; wrap.classList.add('isl-enter'); }
+    var prose = wrap.querySelector('.sl-scn-prose');
+    if (prose && !prose.querySelector('.isl-scn-k')) prose.insertAdjacentHTML('afterbegin', '<span class="isl-scn-k">' + SCN + 'Scenario</span>');
     var panel = wrap.querySelector('.sl-ref');
     if (ref && panel && PASSIVE[ref.kind] && !panel.querySelector('.isl-ref-head')) {
       var title = PASSIVE[ref.kind], node = panel.firstElementChild;

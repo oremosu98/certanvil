@@ -149,6 +149,7 @@ for (const vp of PHONES) {
     test('June top bar, ticks, docked Reset and Submit; no tab bar or app top bar', async ({ page }) => {
       await startSession(page, vp);
       await expect(page.locator('#sl-round-pill')).toHaveText('Round 1 of 3');
+      await expect(page.locator('#sl-body .sl-scenario')).toHaveClass(/isl-enter/);   // a new round rises in after the skeleton
       await expect(page.locator('.sl-topbar [data-action="simLabExit"]')).toBeVisible();
       await expect(page.locator('#sl-timer-slot .sl-timer')).toBeVisible();
       await expect(page.locator('#sl-dots .slr-dot')).toHaveCount(3);
@@ -196,6 +197,7 @@ for (const vp of PHONES) {
     test('terminal is the console card, stays inline and still takes answers', async ({ page }) => {
       await mountSeed(page, vp, TERMINAL);
       await expect(page.locator('#sl-body .term-host-name')).toBeVisible();
+      await expect(page.locator('#sl-body .sl-scn-prose .isl-scn-k')).toHaveText('Scenario');
       const after = await page.evaluate(() => getComputedStyle(document.querySelector('#sl-body .term-host-name'), '::after').content);
       expect(after).toContain('console');
       await expect(page.locator('#sl-body .isl-enlarge')).toHaveCount(0);
@@ -225,6 +227,12 @@ for (const vp of PHONES) {
       await expect(page.locator('#isl-enlarge')).toHaveClass(/open/);
       await expect(page.locator('#isl-enlarge-title')).toHaveText('Network map');
       await expect(page.locator('#isl-enlarge .isl-es-body svg').first()).toBeVisible();
+      const fills = await page.evaluate(() => {   // the copy keeps the map's own styling (no black boxes)
+        const sel = 'svg rect, svg path, svg circle';
+        const o = document.querySelector('#sl-body .sl-ref ' + sel.split(', ')[0]), c = document.querySelector('#isl-enlarge .isl-es-body ' + sel.split(', ')[0]);
+        return [getComputedStyle(o).fill, c && getComputedStyle(c).fill];
+      });
+      expect(fills[1]).toBe(fills[0]);
       await page.keyboard.press('Escape');
       await expect(page.locator('#isl-enlarge')).not.toHaveClass(/open/);
     });
@@ -246,6 +254,7 @@ for (const vp of PHONES) {
       await page.locator('#sl-body .sl-reset').click();
       await page.locator('#exam-sheet .ix-sheet-go').click();
       await expect(page.locator('#sl-body .sl-analyze-line.sl-sel')).toHaveCount(0);
+      await expect(page.locator('#sl-body .sl-scenario')).not.toHaveClass(/isl-enter/);   // a Reset re-mount does not replay the round's entrance
     });
 
     test('a round that ends with the Reset sheet open closes it as Keep them', async ({ page }) => {
@@ -305,6 +314,7 @@ for (const vp of PHONES) {
       await expect(first).toHaveAttribute('aria-expanded', 'true');
       await expect(root.locator('.isl-sdet').first()).toBeVisible();
       await expect(root.locator('.isl-sdet').first()).toContainText('Answer');
+      await expect(root.locator('.isl-sdet').first().locator('.sls-ans-scn')).toBeHidden();   // the drawing's panel: steps only
       await first.click();
       await expect(root.locator('.isl-sdet').first()).toBeHidden();
       const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
@@ -367,6 +377,7 @@ for (const vp of PHONES) {
       const pbq = page.locator('#page-exam .exam-pbq');
       await expect(pbq.locator('.term-head .sl-reset')).toBeVisible();
       await expect(pbq.locator('[data-action="simLabSubmitScenario"]')).toHaveCount(0);
+      await expect(pbq.locator('.sl-scenario')).not.toHaveClass(/isl-enter/);   // exam navigation re-renders: no entrance
       await expect(pbq.locator('.sl-actions')).toBeHidden();
       await expect(page.locator('#page-exam #exam-next-btn')).toBeVisible();
       await pbq.locator('.term-head .sl-reset').click();

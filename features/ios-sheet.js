@@ -64,6 +64,11 @@
     var copy = node.cloneNode(true);
     copy.removeAttribute('id');
     [].forEach.call(copy.querySelectorAll('[id]'), function (el) { el.removeAttribute('id'); });
+    // Sim Lab diagrams are styled under their page (#page-sim-lab X, #page-exam .exam-pbq X), so the
+    // sheet opens inside that page and, in the exam, the copy sits in an .exam-pbq wrapper.
+    var pg = node.closest && node.closest('.page');
+    if (pg && sheet.parentNode !== pg) { pg.appendChild(scrim); pg.appendChild(sheet); }
+    if (node.closest && node.closest('.exam-pbq')) { var w = document.createElement('div'); w.className = 'exam-pbq'; w.appendChild(copy); copy = w; }
     body.innerHTML = '';
     body.appendChild(copy);
     body.scrollTop = 0; body.scrollLeft = 0;

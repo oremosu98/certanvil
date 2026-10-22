@@ -63,6 +63,15 @@ const SCREENS = [
   ['drills-free', 'cert-ios-drills.html?v=free', 'dr-free'],
   ['drills-empty', 'cert-ios-drills.html?v=empty', 'dr-empty'],
   ['drills-dl', 'cert-ios-drills.html?v=dl', 'dr-dl'],
+  // Lift B3b1 (22 Oct): practice Sim Lab (free user; fixed seeds for the reference kinds)
+  ['sl-entry', 'cert-ios-simlab.html', 'sl-entry'],
+  ['sl-loading', 'cert-ios-simlab.html?v=loading', 'sl-loading'],
+  ['sl-round', 'cert-ios-simlab.html?v=round', 'sl-round'],
+  ['sl-reset', 'cert-ios-simlab.html?v=reset', 'sl-reset'],
+  ['sl-map', 'cert-ios-simlab.html?v=round-map', 'sl-map'],
+  ['sl-enlarge', 'cert-ios-simlab.html?v=enlarge', 'sl-enlarge'],
+  ['sl-verdict', 'cert-ios-simlab.html?v=verdict', 'sl-verdict'],
+  ['sl-verdict-open', 'cert-ios-simlab.html?v=verdict-open', 'sl-verdict-open'],
 ];
 // B3a: Drills seeds per state (wrong-bank size, fresh user, cert)
 function drillsSeed(step) {
@@ -71,14 +80,15 @@ function drillsSeed(step) {
 }
 // B2: a saved 90-question exam like the E2E's (Q23 of 90, 63 answered, Q23 + four earlier flagged, 84:28 left)
 const EXAM_TOPICS = ['NTP, ICMP & Traffic Types', 'OSPF', 'PKI & Certificates', 'Cable Issues', 'Monitoring & SNMP', 'DNS & DHCP'];
+// The Net+ Sim Lab seed pool, read here so a saved exam can carry a real terminal PBQ (B3b1 console look).
+const SL_SEEDS = (() => { const c = { window: {} }; require('vm').runInNewContext(fs.readFileSync(path.join(ROOT, 'features/sim-lab-seed-netplus.js'), 'utf8'), c); return c.window.SIM_LAB_SEED_NETPLUS; })();
+const SL_TERMINAL = SL_SEEDS.find(x => x.assets && x.assets.reference && x.assets.reference.kind === 'terminal' && JSON.stringify(x.steps).indexOf('excerptLines') > 0);
 function examState(step) {
   const qs = Array.from({ length: 90 }, (_, i) => ({ type: 'mcq', question: 'Which of the following is the primary function of ICMP in network communications?',
     options: { A: 'Providing error reporting and diagnostic capabilities for IP networks', B: 'Establishing encrypted connections between remote hosts',
       C: 'Managing the allocation of dynamic IP addresses to client devices', D: 'Synchronising time across network devices with sub-microsecond precision' },
     answer: 'A', explanation: 'ICMP carries error and diagnostic messages.', topic: i === 22 ? EXAM_TOPICS[0] : EXAM_TOPICS[i % 6], difficulty: 'Exam Level' }));
-  if (step === 'ex-pbq') qs[1] = { type: 'simlab', question: 'Trunk the uplink', topic: 'Switch & VLANs', explanation: '', simlab: { id: 'sbs-pbq', cert: 'netplus', objective: '2.1', topic: 'Switch & VLANs',
-    title: 'Trunk the uplink', scenario: 'Put ports 1 to 4 on VLAN 20 and make port 24 a trunk that carries VLANs 10 and 20.', estMinutes: 6,
-    steps: [{ id: 'st1', type: 'fillin', prompt: 'Which VLAN do ports 1 to 4 join?', points: 1, explanation: 'VLAN 20', payload: { fields: [{ id: 'vlan', label: 'VLAN' }] }, answer: { vlan: ['20'] } }] } };
+  if (step === 'ex-pbq') qs[1] = { type: 'simlab', question: SL_TERMINAL.title, topic: SL_TERMINAL.topic, explanation: '', simlab: SL_TERMINAL };
   const ans = qs.map((_, i) => ({ chosen: (i < 64 && i !== 22) ? (i % 4 ? 'A' : 'B') : null, flagged: [3, 9, 14, 19, 22].includes(i), msChosen: [], orderSeq: [], cliRan: [], topoState: {} }));
   return { v: 1, savedAt: Date.now(), endTime: Date.now() + 5068000, current: step === 'ex-pbq' ? 1 : 22, questions: qs, answers: ans, answered: 63, paused: false, pausedAt: 0, timeLeft: 5068, pausedMs: 0, pauses: 0 };
 }
@@ -164,6 +174,43 @@ async function shootReal(browser, step, theme) {
       renderGauntletDrillsCard();
     }, step === 'dr-free' ? 'used' : step === 'dr-empty');
     await p.waitForTimeout(1200);
+  } else if (/^sl/.test(step || '')) {
+    // free user, today's free session not used; seeds only (offline)
+    await p.evaluate(async (st) => {
+      window._quotaState = { tier: 'free', used_today: 0, daily_limit: 15 };
+      document.body.classList.add('is-state-resolved'); document.body.classList.remove('is-pro-tier');
+      try { localStorage.removeItem('nplus_pbq_free_count'); } catch (_) {}
+      await new Promise(res => window._ensureSimLabLoaded(res));
+      window._slMeteredGenerate = st === 'sl-loading' ? () => new Promise(() => {}) : async () => ({ bad: true });
+      if (st === 'sl-loading') { window.SIM_LAB_SEED_NETPLUS.length = 0; }   // nothing to pick: the loader stays up
+      startSimLabHome();
+    }, step);
+    await p.waitForTimeout(900);
+    if (step !== 'sl-entry') {
+      await p.locator('#isl-entry [data-act="rounds"][data-rounds="3"]').click();
+      await p.locator('#isl-entry [data-act="start"]').click();
+      await p.waitForTimeout(1200);
+    }
+    const kind = { 'sl-round': 'terminal', 'sl-reset': 'terminal', 'sl-map': 'network', 'sl-enlarge': 'network' }[step];
+    if (kind) {
+      await p.evaluate((k) => {
+        const scn = window.SIM_LAB_SEED_NETPLUS.find(x => x.assets && x.assets.reference && x.assets.reference.kind === k && (k !== 'terminal' || JSON.stringify(x.steps).indexOf('excerptLines') > 0));
+        const body = document.getElementById('sl-body');
+        window._simLab.mountScenario(body, scn, { lift: true, onReset: function () { window._simLab.mountScenario(body, scn, this); }, onSubmit: function () {} });
+      }, kind);
+      await p.waitForTimeout(700);
+    }
+    if (step === 'sl-reset') { await p.locator('#sl-body .sl-reset').click(); await p.waitForTimeout(600); }
+    if (step === 'sl-enlarge') { await p.locator('#sl-body .isl-enlarge').click(); await p.waitForTimeout(600); }
+    if (/^sl-verdict/.test(step)) {
+      for (let i = 0; i < 3; i++) {
+        await p.waitForSelector('#sl-body [data-action="simLabSubmitScenario"]', { timeout: 8000 });
+        await p.locator('#sl-body [data-action="simLabSubmitScenario"]').click();
+        await p.waitForTimeout(500);
+      }
+      await p.waitForTimeout(4600);   // let any milestone toast leave
+      if (step === 'sl-verdict-open') { await p.locator('#sl-result-root .isl-srow').nth(1).click(); await p.waitForTimeout(500); }
+    }
   } else if (step === 'cq') {
     await p.evaluate(() => window._jumpToCustomQuiz());
     await p.waitForTimeout(1200);   // let the staggered entrance settle
@@ -182,7 +229,7 @@ async function shootReal(browser, step, theme) {
   await p.addStyleTag({ content: '.success-toast, .error-toast, .toast { display: none !important; }' });
   await p.waitForTimeout(300);
   // B1 screens are one fixed viewport (a full-page capture resizes it mid-shot); the review-done recap scrolls
-  const buf = await p.screenshot({ fullPage: !/^(prog|ana|srv$|ex)/.test(step || '') });
+  const buf = await p.screenshot({ fullPage: !/^(prog|ana|srv$|ex|sl)/.test(step || '') });
   await ctx.close();
   return buf;
 }
