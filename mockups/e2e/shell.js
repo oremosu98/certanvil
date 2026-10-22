@@ -36,6 +36,14 @@
     'drills-free'       : 'cert-ios-drills.html?v=free',   // B3a (22 Oct): free pills + Pro locks
     'drills-empty'      : 'cert-ios-drills.html?v=empty',  // B3a: a fresh user, empty states
     'drills-dl'         : 'cert-ios-drills.html?v=dl',     // B3a: AZ-900, Decision Lab instead of Sim Lab
+    'simlab'            : 'cert-ios-simlab.html',          // B3b1 (22 Oct): practice Sim Lab start screen
+    'simlab-loading'    : 'cert-ios-simlab.html?v=loading',
+    'simlab-round'      : 'cert-ios-simlab.html?v=round',   // console card stays inline (it takes answers)
+    'simlab-reset'      : 'cert-ios-simlab.html?v=reset',   // Reset asks in B2's sheet
+    'simlab-map'        : 'cert-ios-simlab.html?v=round-map', // passive reference: Tap to enlarge
+    'simlab-enlarge'    : 'cert-ios-simlab.html?v=enlarge',
+    'simlab-verdict'    : 'cert-ios-simlab.html?v=verdict',
+    'simlab-verdict-open': 'cert-ios-simlab.html?v=verdict-open',
     'hub'               : 'cert-ios-hub.html',
     'quiz'              : 'cert-ios-quiz.html',
     'quiz-short-set'    : 'cert-ios-quiz.html?v=short',
@@ -191,6 +199,9 @@
   ['exam-paused','exam-end','exam-leave','exam-pbq'].forEach(function (k) { NAV[k] = NAV['exam']; });
   NAV['exam-results-toast'] = NAV['exam-results'];
   ['drills-free','drills-empty','drills-dl'].forEach(function (k) { NAV[k] = NAV['drills']; });
+  NAV['simlab'] = [ {text:'Start the sim', to:'simlab-loading'}, {sel:'.back', to:'drills'} ];
+  NAV['simlab-verdict'] = [ {text:'Back to Practice', to:'drills'} ]; NAV['simlab-verdict-open'] = NAV['simlab-verdict'];
+  ['simlab-round','simlab-reset','simlab-map','simlab-enlarge'].forEach(function (k) { NAV[k] = [ {sel:'.leave', to:'drills'} ]; });
   NAV['analytics-wins'] = NAV['analytics']; NAV['analytics-map'] = NAV['analytics']; NAV['review-done'] = NAV['review'] || [];
 
   var TABS = { 'Home':'home', 'Drills':'drills', 'Progress':'progress', 'Account':'settings',
@@ -579,6 +590,12 @@
     // Lift B1 review (21 Oct): Progress, Analytics (switch + Wins), Daily Review (plan, Remove it, forecast)
     var LIFT_B1 = ['progress','analytics','analytics-map','analytics-wins','review','review-done'];
     var LIFT_B2 = ['exam','exam-paused','exam-end','exam-leave','exam-pbq','exam-results','exam-results-toast'];
+    var LIFT_B3B = ['simlab','simlab-loading','simlab-round','simlab-reset','simlab-map','simlab-enlarge','simlab-verdict','simlab-verdict-open','exam-pbq'];
+    var b3bBtn = document.getElementById('hud-liftb3b'), b3bI = -1;
+    if (b3bBtn) b3bBtn.addEventListener('click', function () {
+      b3bI = (b3bI + 1) % LIFT_B3B.length; resetTo(LIFT_B3B[b3bI]);
+      b3bBtn.textContent = 'B3b ' + (b3bI + 1) + '/' + LIFT_B3B.length + ' \u203a';
+    });
     var LIFT_B3A = ['drills','drills-free','drills-empty','drills-dl'];
     var b3Btn = document.getElementById('hud-liftb3a'), b3I = -1;
     if (b3Btn) b3Btn.addEventListener('click', function () {

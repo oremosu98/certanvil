@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>CertAnvil · Sim Lab (iOS)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700;800&family=Roboto+Mono:wght@500;600;700&display=swap" rel="stylesheet" />
+<style>
+  /* Forged-bronze tokens (matches dg-system.css + the cert-ios mockups). */
+  :root {
+    --bg: oklch(0.15 0.010 275); --surface: oklch(0.205 0.009 275); --surface-2: oklch(0.255 0.010 275);
+    --ink: oklch(0.97 0.006 275); --ink-soft: oklch(0.80 0.010 275); --muted: oklch(0.62 0.013 275);
+    --border: oklch(0.34 0.009 275);
+    --accent: oklch(0.82 0.150 66); --accent-bright: oklch(0.88 0.140 72); --accent-deep: oklch(0.72 0.150 62);
+    --on-accent: oklch(0.18 0.020 275); --pass: oklch(0.78 0.150 152); --miss: oklch(0.68 0.165 25); --track: oklch(0.30 0.010 275);
+    --page-bg: oklch(0.22 0.012 275); --page-ink: oklch(0.92 0.008 275); --page-dim: oklch(0.66 0.012 275);
+  }
+  [data-theme="light"] {
+    --bg: oklch(0.975 0.007 85); --surface: oklch(0.955 0.009 84); --surface-2: oklch(0.92 0.010 84);
+    --ink: oklch(0.22 0.015 280); --ink-soft: oklch(0.38 0.014 280); --muted: oklch(0.52 0.013 280);
+    --border: oklch(0.85 0.010 85);
+    --accent: oklch(0.55 0.155 55); --accent-bright: oklch(0.62 0.150 58); --accent-deep: oklch(0.46 0.150 52);
+    --on-accent: oklch(0.99 0.008 85); --pass: oklch(0.52 0.13 150); --miss: oklch(0.55 0.18 25); --track: oklch(0.88 0.010 85);
+    --page-bg: oklch(0.93 0.010 84); --page-ink: oklch(0.28 0.015 280); --page-dim: oklch(0.46 0.013 280);
+  }
+  :root { --ease: cubic-bezier(0.16,1,0.3,1); }
+  * { box-sizing: border-box; }
+  html { color-scheme: light dark; }
+  body { margin: 0; background: var(--page-bg); color: var(--page-ink); font: 15px/1.55 Inter, -apple-system, BlinkMacSystemFont, sans-serif; padding: 30px 20px 64px; transition: background .35s var(--ease), color .35s var(--ease); }
+  .stage { max-width: 520px; margin: 0 auto; }
+  .stage-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 24px; }
+  .stage-eyebrow { font-size: 10.5px; font-weight: 800; letter-spacing: 0.16em; text-transform: uppercase; color: var(--accent-bright); margin: 0 0 7px; }
+  .stage-title { font-family: Fraunces, Georgia, serif; font-weight: 600; font-size: 24px; letter-spacing: -0.012em; margin: 0; color: var(--page-ink); }
+  .stage-sub { color: var(--page-dim); font-size: 13px; margin: 7px 0 0; max-width: 48ch; line-height: 1.5; }
+  .theme-toggle { flex: 0 0 auto; display: inline-flex; align-items: center; gap: 7px; font: 600 12px/1 Inter, sans-serif; color: var(--accent-bright); background: transparent; border: 1px solid color-mix(in oklab, var(--accent-bright) 38%, var(--page-dim)); border-radius: 999px; padding: 8px 13px; cursor: pointer; }
+  .theme-toggle svg { width: 15px; height: 15px; stroke: currentColor; fill: none; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+  .phone-wrap { display: flex; flex-direction: column; align-items: center; }
+  .phone { width: 390px; height: 844px; border-radius: 52px; padding: 11px; flex: 0 0 auto; background: linear-gradient(165deg, #23262f, #0c0d11); box-shadow: 0 40px 90px -34px rgba(0,0,0,0.6), 0 0 0 1.5px rgba(255,255,255,0.06) inset; }
+  .screen { width: 100%; height: 100%; border-radius: 42px; overflow: hidden; position: relative; background: var(--bg); color: var(--ink); display: flex; flex-direction: column; transition: background .35s var(--ease), color .35s var(--ease); }
+  .notch { position: absolute; top: 9px; left: 50%; transform: translateX(-50%); width: 122px; height: 32px; background: #07080b; border-radius: 18px; z-index: 12; }
+  .statusbar { display: flex; align-items: center; justify-content: space-between; padding: 14px 26px 0; font: 700 13px/1 Inter, sans-serif; color: var(--ink); }
+  .sb-icons { display: inline-flex; gap: 6px; align-items: center; }
+  .sb-icons svg { width: 17px; height: 12px; fill: var(--ink); }
+  svg.i { stroke: currentColor; fill: none; stroke-width: 2.1; stroke-linecap: round; stroke-linejoin: round; }
+
+  .body { flex: 1; min-height: 0; overflow-y: auto; padding: 4px 20px 20px; }
+  .body::-webkit-scrollbar { width: 0; }
+  .card { border: 1px solid var(--border); border-radius: 16px; background: var(--surface); padding: 15px 16px; margin-bottom: 11px; }
+  .sect { font: 800 10px/1 Inter, sans-serif; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin: 18px 2px 10px; }
+
+  /* ── start screen ── */
+  .hdr { display: flex; align-items: center; gap: 11px; padding: 14px 20px 6px; }
+  .back { flex: 0 0 auto; width: 34px; height: 34px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface); display: grid; place-items: center; color: var(--ink-soft); cursor: pointer; }
+  .back svg { width: 16px; height: 16px; }
+  .hdr h1 { font: 600 21px/1 Fraunces, Georgia, serif; letter-spacing: -0.01em; margin: 0; color: var(--ink); flex: 1; }
+  .plan-tag { font: 800 9.5px/1 Inter, sans-serif; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); border: 1px solid var(--border); border-radius: 999px; padding: 6px 9px; }
+  .hero { text-align: center; padding: 10px 6px 4px; }
+  .hero-i { width: 58px; height: 58px; border-radius: 999px; margin: 6px auto 14px; display: grid; place-items: center; color: var(--accent-deep); background: color-mix(in oklab, var(--accent) 12%, var(--surface)); }
+  .hero-i svg { width: 26px; height: 26px; }
+  .hero h2 { font: 600 26px/1.1 Fraunces, Georgia, serif; letter-spacing: -0.014em; margin: 0; color: var(--ink); }
+  .hero h2 em { font-style: italic; color: var(--accent); }
+  .hero p { font-size: 13.5px; line-height: 1.5; color: var(--ink-soft); margin: 10px auto 0; max-width: 32ch; }
+  .seg { display: flex; gap: 6px; padding: 5px; border: 1px solid var(--border); border-radius: 15px; background: var(--surface); }
+  .seg button { flex: 1 1 0; text-align: left; border: 1px solid transparent; border-radius: 11px; background: none; padding: 10px 11px; cursor: pointer; font: inherit; color: var(--ink); transition: background-color .18s, border-color .18s, transform .14s var(--ease); }
+  .seg button:active { transform: scale(0.98); }
+  .seg b { display: flex; align-items: center; gap: 6px; font: 700 14px/1.2 Inter, sans-serif; }
+  .seg button > span { display: block; font: 500 11.5px/1.35 Inter, sans-serif; color: var(--muted); margin-top: 3px; }
+  .seg .on { background: color-mix(in oklab, var(--accent) 9%, var(--bg)); border-color: color-mix(in oklab, var(--accent) 40%, var(--border)); }
+  .seg .on b { color: var(--accent-deep); }
+  .lock-pill { display: inline-flex; align-items: center; gap: 4px; font: 800 9px/1 Inter, sans-serif; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent-deep); border: 1px solid color-mix(in oklab, var(--accent) 34%, var(--border)); background: color-mix(in oklab, var(--accent) 9%, transparent); border-radius: 999px; padding: 4px 7px; }
+  .lock-pill svg { width: 10px; height: 10px; stroke-width: 2.4; }
+  .target .k { font: 800 9.5px/1 Inter, sans-serif; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+  .target .v { font: 650 16px/1.3 Inter, sans-serif; color: var(--ink); margin-top: 8px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .rchip { min-height: 44px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); padding: 0 16px; font: 650 14px/1 Inter, sans-serif; color: var(--ink-soft); cursor: pointer; display: inline-flex; align-items: center; gap: 7px; transition: transform .14s var(--ease); }
+  .rchip:active { transform: scale(0.97); }
+  .rchip.on { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+  .rchip.locked { color: var(--muted); }
+  .rchip svg { width: 12px; height: 12px; stroke-width: 2.4; }
+  .free-note { font: 500 11.5px/1.45 Inter, sans-serif; color: var(--muted); text-align: center; margin: 14px 8px 2px; }
+
+  /* ── session top bar (Leave · Round pill · timer) + ticks ── */
+  .rbar { display: flex; align-items: center; gap: 10px; padding: 12px 18px 8px; }
+  .leave { flex: 0 0 auto; font: 650 12.5px/1 Inter, sans-serif; color: var(--ink-soft); border: 1px solid var(--border); background: var(--surface); border-radius: 999px; padding: 9px 13px; cursor: pointer; }
+  .rpill { font: 800 10.5px/1 Inter, sans-serif; letter-spacing: 0.04em; color: var(--accent-deep); background: color-mix(in oklab, var(--accent) 11%, transparent); border: 1px solid color-mix(in oklab, var(--accent) 30%, var(--border)); border-radius: 999px; padding: 6px 10px; }
+  .rspace { flex: 1; }
+  .timer { display: inline-flex; align-items: center; gap: 5px; font: 700 14px/1 'Roboto Mono', monospace; color: var(--ink); font-variant-numeric: tabular-nums; }
+  .timer svg { width: 13px; height: 13px; stroke: var(--accent-deep); }
+  .ticks { display: flex; gap: 5px; padding: 2px 18px 6px; }
+  .ticks i { flex: 1 1 0; height: 5px; border-radius: 3px; background: var(--track); }
+  .ticks i.done { background: color-mix(in oklab, var(--accent) 55%, var(--track)); }
+  .ticks i.cur { background: var(--accent); }
+
+  /* ── round ── */
+  .scen .k { display: inline-flex; align-items: center; gap: 7px; font: 800 9.5px/1 Inter, sans-serif; letter-spacing: 0.11em; text-transform: uppercase; color: var(--accent-deep); margin-bottom: 8px; }
+  .scen p { margin: 0; font: 500 13.5px/1.55 Inter, sans-serif; color: var(--ink); }
+  .scen mark { background: color-mix(in oklab, var(--accent) 18%, transparent); color: inherit; border-radius: 4px; padding: 0 2px; }
+  .con { border: 1px solid var(--border); border-radius: 14px; background: var(--surface); overflow: hidden; margin-bottom: 11px; }
+  .con-bar { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 9px 12px; border-bottom: 1px solid var(--border); font: 700 10.5px/1 'Roboto Mono', monospace; color: var(--muted); }
+  .con-bar b { color: var(--ink-soft); font-weight: 700; }
+  .reset-pill { border: 1px solid var(--border); border-radius: 999px; background: transparent; color: var(--ink-soft); font: 700 11px/1 Inter, sans-serif; padding: 7px 11px; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; }
+  .reset-pill svg { width: 12px; height: 12px; stroke-width: 2.2; }
+  .con-body { padding: 11px 12px; font: 500 11.5px/1.65 'Roboto Mono', monospace; color: var(--ink-soft); }
+  .con-body .ln { display: block; white-space: pre; overflow-x: auto; }
+  .con-body .ln.hit { color: var(--accent-deep); font-weight: 700; }
+  .con-body .pr { color: var(--accent-deep); font-weight: 700; }
+  .ref .ref-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
+  .ref .ref-head span { font: 800 9.5px/1 Inter, sans-serif; letter-spacing: 0.11em; text-transform: uppercase; color: var(--muted); }
+  .enlarge { border: 1px solid var(--border); border-radius: 999px; background: transparent; color: var(--accent-deep); font: 700 11px/1 Inter, sans-serif; padding: 7px 11px; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; }
+  .enlarge svg { width: 12px; height: 12px; stroke-width: 2.2; }
+  .net { width: 100%; height: auto; display: block; }
+  .net rect { fill: var(--surface-2); stroke: var(--border); }
+  .net .zone { fill: none; stroke: var(--border); stroke-dasharray: 4 4; }
+  .net text { fill: var(--ink-soft); font: 600 9px Inter, sans-serif; }
+  .net text.z { fill: var(--muted); font: 800 7.5px Inter, sans-serif; letter-spacing: 1px; }
+  .net text.ip { fill: var(--muted); font: 500 8px 'Roboto Mono', monospace; }
+  .net line { stroke: var(--muted); stroke-width: 1.2; }
+  .net .dev { fill: color-mix(in oklab, var(--accent) 14%, var(--surface)); stroke: color-mix(in oklab, var(--accent) 40%, var(--border)); }
+  .step .sk { font: 800 9.5px/1 Inter, sans-serif; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+  .step h3 { font: 600 15.5px/1.35 Inter, sans-serif; color: var(--ink); margin: 8px 0 12px; letter-spacing: -0.005em; }
+  .pick { display: grid; gap: 8px; }
+  .pick button { min-height: 44px; border: 1px solid var(--border); border-radius: 11px; background: var(--bg); padding: 0 12px; font: 600 12px/1.2 'Roboto Mono', monospace; color: var(--ink-soft); cursor: pointer; display: flex; width: 100%; align-items: center; gap: 7px; text-align: left; transition: background-color .16s, border-color .16s, transform .12s var(--ease); }
+  .pick button:active { transform: scale(0.98); }
+  .pick button .ck { width: 16px; height: 16px; border-radius: 5px; border: 1.5px solid var(--border); display: grid; place-items: center; flex: 0 0 auto; }
+  .pick button.on { border-color: var(--accent); background: color-mix(in oklab, var(--accent) 8%, var(--surface)); color: var(--ink); }
+  .pick button.on .ck { background: var(--accent); border-color: var(--accent); }
+  .pick button.on .ck svg { width: 11px; height: 11px; stroke: var(--on-accent); stroke-width: 3; }
+  .fld { margin-top: 12px; }
+  .fld label { display: block; font: 700 11.5px/1 Inter, sans-serif; color: var(--ink-soft); margin-bottom: 7px; }
+  .sel { width: 100%; min-height: 46px; border: 1px solid var(--border); border-radius: 12px; background: var(--bg); padding: 0 14px; display: flex; align-items: center; justify-content: space-between; font: 500 13.5px/1.3 Inter, sans-serif; color: var(--muted); }
+  .sel.set { color: var(--ink); border-color: color-mix(in oklab, var(--accent) 40%, var(--border)); }
+  .sel svg { width: 15px; height: 15px; flex: 0 0 auto; }
+  .ord { display: flex; flex-direction: column; gap: 8px; }
+  .ord .row { min-height: 48px; display: flex; align-items: center; gap: 10px; border: 1px solid var(--border); border-radius: 12px; background: var(--bg); padding: 10px 12px; font: 500 13px/1.35 Inter, sans-serif; color: var(--ink); }
+  .ord .n { flex: 0 0 auto; width: 22px; height: 22px; border-radius: 7px; display: grid; place-items: center; font: 800 11px/1 Inter, sans-serif; color: var(--accent-deep); background: color-mix(in oklab, var(--accent) 11%, var(--surface)); }
+  .ord .grip { margin-left: auto; flex: 0 0 auto; width: 18px; height: 18px; color: var(--muted); }
+
+  /* ── dock ── */
+  .dock { flex: 0 0 auto; display: flex; gap: 10px; padding: 12px 18px calc(12px + env(safe-area-inset-bottom)); border-top: 1px solid color-mix(in oklab, var(--border) 70%, transparent); background: var(--bg); }
+  .btn-primary { flex: 1 1 auto; border: none; border-radius: 13px; padding: 14px; cursor: pointer; background: var(--accent); color: var(--on-accent); font: 700 15px/1 Inter, sans-serif; box-shadow: 0 10px 22px -12px color-mix(in oklab, var(--accent) 70%, transparent); transition: transform .15s var(--ease), filter .2s; }
+  .btn-primary:active { transform: scale(0.985); }
+  .btn-ghost { flex: 0 0 auto; border: 1px solid var(--border); border-radius: 13px; padding: 13px 16px; cursor: pointer; background: transparent; color: var(--ink-soft); font: 650 14px/1 Inter, sans-serif; display: inline-flex; align-items: center; gap: 7px; transition: transform .15s var(--ease); }
+  .btn-ghost:active { transform: scale(0.98); }
+  .btn-ghost svg { width: 14px; height: 14px; stroke-width: 2.2; }
+  @media (hover:hover) and (pointer:fine) { .btn-primary:hover { filter: brightness(1.05); } }
+
+  /* ── loader (the quiz's generating treatment) ── */
+  .skel { border-radius: 12px; background: var(--surface-2); }
+  .gen-line { font: 600 16px/1.4 Fraunces, Georgia, serif; letter-spacing: -0.008em; color: var(--ink); text-align: center; margin: 22px 14px 6px; }
+  .gen-cap { display: block; text-align: center; font: 600 11.5px/1 Inter, sans-serif; color: var(--muted); }
+  .gen-track { height: 4px; border-radius: 999px; background: var(--track); overflow: hidden; position: relative; margin: 14px 40px 0; }
+  .gen-bar { position: absolute; top: 0; bottom: 0; left: 0; width: 40%; border-radius: 999px; background: var(--accent); transform: translateX(-100%); }
+  @media (prefers-reduced-motion: no-preference) {
+    .shimmer { position: relative; overflow: hidden; }
+    .shimmer::after { content: ""; position: absolute; inset: 0; transform: translateX(-100%); background: linear-gradient(90deg, transparent, color-mix(in oklab, var(--ink) 9%, transparent), transparent); animation: shim 1.35s var(--ease) infinite; }
+    .gen-bar { animation: ind 1.5s var(--ease) infinite; }
+    @keyframes shim { to { transform: translateX(100%); } }
+    @keyframes ind { from { transform: translateX(-100%); } to { transform: translateX(250%); } }
+  }
+
+  /* ── verdict (the exam results' language) ── */
+  .done-kick { font: 800 10px/1 Inter, sans-serif; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); display: inline-flex; align-items: center; gap: 7px; margin: 8px 0 11px; }
+  .done-kick svg { width: 14px; height: 14px; stroke-width: 2.4; }
+  .done-title { font: 600 32px/1.05 Fraunces, serif; letter-spacing: -0.016em; color: var(--ink); margin: 0; }
+  .done-title em { font-style: normal; color: var(--accent); }
+  .done-sub { font-size: 13.5px; line-height: 1.5; color: var(--ink-soft); margin: 10px 0 0; }
+  .vscore { display: flex; align-items: baseline; gap: 6px; margin-top: 16px; }
+  .vscore b { font: 600 52px/0.95 Fraunces, serif; color: var(--ink); font-variant-numeric: lining-nums tabular-nums; }
+  .vscore span { font: 700 13px/1 Inter, sans-serif; color: var(--muted); }
+  .vmeter { height: 7px; border-radius: 999px; background: var(--track); margin-top: 12px; overflow: hidden; }
+  .vmeter i { display: block; height: 100%; border-radius: 999px; background: var(--pass); }
+  .srow { width: 100%; display: flex; align-items: center; gap: 12px; text-align: left; border: 1px solid var(--border); border-radius: 13px; background: var(--surface); padding: 12px 14px; margin-bottom: 9px; cursor: pointer; font: inherit; color: inherit; min-height: 56px; transition: transform .14s var(--ease); }
+  .srow:active { transform: scale(.99); }
+  .srow .sn2 { flex: 1 1 auto; min-width: 0; }
+  .srow .st { display: block; font: 600 14px/1.25 Inter, sans-serif; color: var(--ink); }
+  .srow .ss { display: block; font: 500 11px/1 'Roboto Mono', monospace; color: var(--muted); margin-top: 5px; }
+  .srow .sv { flex: 0 0 auto; font: 800 10px/1 Inter, sans-serif; letter-spacing: 0.06em; text-transform: uppercase; border-radius: 999px; padding: 6px 9px; }
+  .srow .sv.ok { color: var(--pass); background: color-mix(in oklab, var(--pass) 14%, transparent); }
+  .srow .sv.part { color: var(--accent-deep); background: color-mix(in oklab, var(--accent) 13%, transparent); }
+  .srow .sv.no { color: var(--miss); background: color-mix(in oklab, var(--miss) 13%, transparent); }
+  .srow > svg { flex: 0 0 auto; width: 16px; height: 16px; stroke: var(--muted); transition: transform .2s var(--ease); }
+  .srow[aria-expanded="true"] > svg { transform: rotate(90deg); }
+  .sdet { display: none; margin: -4px 0 10px; padding: 12px 14px; border-radius: 12px; background: var(--surface-2); }
+  .srow[aria-expanded="true"] + .sdet { display: block; }
+  .sdet .q { font: 600 12.5px/1.4 Inter, sans-serif; color: var(--ink); margin: 0 0 8px; }
+  .sdet .lab { font: 800 9px/1 Inter, sans-serif; letter-spacing: 0.12em; text-transform: uppercase; margin: 10px 0 5px; }
+  .sdet .lab.a { color: var(--pass); } .sdet .lab.y { color: var(--miss); }
+  .sdet .val { font: 500 11.5px/1.55 'Roboto Mono', monospace; color: var(--ink-soft); }
+  .sdet .why { font: 500 12px/1.5 Inter, sans-serif; color: var(--ink-soft); margin: 10px 0 0; }
+  /* stage 3: accordion choreography, content part only (BRAND §6: transform + opacity). Open settles in 220ms; close is instant. */
+  @media (prefers-reduced-motion: no-preference) { .srow[aria-expanded="true"] + .sdet { animation: sdetIn .22s cubic-bezier(0.16,1,0.3,1); } @keyframes sdetIn { from { opacity: 0; transform: translateY(-4px); } } }
+  @media (prefers-reduced-motion: reduce) { .srow[aria-expanded="true"] + .sdet { animation: sdetFade .2s ease; } @keyframes sdetFade { from { opacity: 0; } } }
+  .slip { border: 1px solid color-mix(in oklab, var(--accent) 28%, var(--border)); border-radius: 14px; background: color-mix(in oklab, var(--accent) 6%, var(--surface)); padding: 13px 14px; margin-top: 6px; }
+  .slip .k { display: inline-flex; align-items: center; gap: 6px; font: 800 9.5px/1 Inter, sans-serif; letter-spacing: 0.11em; text-transform: uppercase; color: var(--accent-deep); }
+  .slip .k svg, .scen .k svg { width: 13px; height: 13px; flex: 0 0 auto; }
+  .slip p { margin: 7px 0 0; font: 500 12.5px/1.5 Inter, sans-serif; color: var(--ink-soft); }
+  /* today's free-user upsell, quiet: a row under the slip card, never in the dock */
+  .upsell { width: 100%; min-height: 44px; margin-top: 10px; display: flex; align-items: center; justify-content: space-between; gap: 10px; border: 1px solid var(--border); border-radius: 13px; background: transparent; padding: 0 14px; cursor: pointer; font: 650 13px/1.3 Inter, sans-serif; color: var(--accent-deep); text-align: left; transition: transform .15s var(--ease); }
+  .upsell:active { transform: scale(0.98); }
+  .upsell svg { width: 15px; height: 15px; stroke: currentColor; flex: 0 0 auto; }
+
+  /* ── sheets: confirm (B2's) and enlarge ── */
+  .scrim { position: absolute; inset: 0; z-index: 8; background: color-mix(in oklab, var(--bg) 58%, transparent); opacity: 0; pointer-events: none; transition: opacity .2s var(--ease); }
+  .scrim.open { opacity: 1; pointer-events: auto; transition: opacity .26s var(--ease); }
+  .lsheet { position: absolute; left: 0; right: 0; bottom: 0; z-index: 9; background: var(--surface); border-radius: 22px 22px 0 0; border-top: 1px solid var(--border); padding: 10px 20px calc(22px + env(safe-area-inset-bottom)); transform: translateY(100%); visibility: hidden; transition: transform .2s var(--ease), visibility 0s linear .2s; }
+  .lsheet.open { transform: none; visibility: visible; transition: transform .36s var(--ease), visibility 0s; }
+  .ls-grip { width: 38px; height: 5px; border-radius: 999px; background: color-mix(in oklab, var(--ink) 18%, transparent); margin: 0 auto 16px; }
+  .lsheet h3 { font: 600 21px/1.2 Fraunces, serif; color: var(--ink); margin: 0 0 6px; }
+  .lsheet p { font-size: 13.5px; line-height: 1.5; color: var(--ink-soft); margin: 0 0 18px; }
+  .ls-stay { width: 100%; border: none; border-radius: 13px; padding: 15px; cursor: pointer; background: var(--accent); color: var(--on-accent); font: 700 15px/1 Inter, sans-serif; }
+  .ls-go { width: 100%; margin-top: 6px; border: none; background: transparent; cursor: pointer; padding: 12px; font: 650 13.5px/1 Inter, sans-serif; color: var(--miss); }
+  .esheet { position: absolute; left: 0; right: 0; bottom: 0; top: 48px; z-index: 9; background: var(--surface); border-radius: 22px 22px 0 0; border-top: 1px solid var(--border); display: flex; flex-direction: column; transform: translateY(100%); visibility: hidden; transition: transform .2s var(--ease), visibility 0s linear .2s; }
+  .esheet.open { transform: none; visibility: visible; transition: transform .36s var(--ease), visibility 0s; }
+  .es-head { display: flex; align-items: center; gap: 10px; padding: 10px 16px 12px; border-bottom: 1px solid var(--border); }
+  .es-head .ls-grip { position: absolute; left: 50%; top: 8px; transform: translateX(-50%); margin: 0; }
+  .es-head h3 { flex: 1; font: 600 18px/1.2 Fraunces, serif; color: var(--ink); margin: 14px 0 0; }
+  .es-close { margin-top: 14px; border: 1px solid var(--border); border-radius: 999px; background: var(--bg); color: var(--ink-soft); font: 650 12.5px/1 Inter, sans-serif; padding: 9px 13px; cursor: pointer; }
+  .es-body { flex: 1; overflow: auto; padding: 16px; }
+  .es-body .net { width: 640px; max-width: none; }
+  .es-hint { font: 500 11px/1.4 Inter, sans-serif; color: var(--muted); text-align: center; padding: 8px 16px calc(12px + env(safe-area-inset-bottom)); }
+  /* stage 2: 44pt hit areas + press feedback on small pills and sheet buttons */
+  .enlarge, .reset-pill, .es-close { position: relative; transition: transform .15s var(--ease); }
+  .enlarge::after, .reset-pill::after, .es-close::after { content: ""; position: absolute; inset: -7px; }
+  .ls-stay, .ls-go { transition: transform .15s var(--ease); }
+  .enlarge:active, .reset-pill:active, .es-close:active, .ls-stay:active, .ls-go:active { transform: scale(0.97); }
+  @media (prefers-reduced-motion: reduce) { .lsheet, .esheet { transform: none; opacity: 0; transition: opacity .2s ease, visibility 0s linear .2s; } .lsheet.open, .esheet.open { opacity: 1; transition: opacity .2s ease, visibility 0s; } }
+
+  .tabbar { flex: 0 0 auto; display: flex; border-top: 1px solid color-mix(in oklab, var(--border) 70%, transparent); background: color-mix(in oklab, var(--bg) 86%, var(--surface)); padding: 8px 8px calc(8px + env(safe-area-inset-bottom)); }
+  .tab { flex: 1 1 0; display: flex; flex-direction: column; align-items: center; gap: 4px; background: none; border: none; padding: 5px 0; color: var(--muted); }
+  .tab svg { width: 22px; height: 22px; }
+  .tab span { font: 700 10px/1 Inter, sans-serif; }
+  .hint { text-align: center; color: var(--page-dim); font-size: 12px; margin-top: 18px; max-width: 44ch; margin-left: auto; margin-right: auto; }
+  @media (prefers-reduced-motion: no-preference) {
+    .reveal { opacity: 0; transform: translateY(9px); animation: rise .5s var(--ease) forwards; }
+    .reveal:nth-child(2){animation-delay:.05s}.reveal:nth-child(3){animation-delay:.10s}.reveal:nth-child(4){animation-delay:.15s}.reveal:nth-child(5){animation-delay:.20s}.reveal:nth-child(6){animation-delay:.25s}
+    @keyframes rise { to { opacity: 1; transform: none; } }
+  }
+</style>
+</head>
+<body>
+  <div class="stage">
+    <div class="stage-head">
+      <div>
+        <p class="stage-eyebrow">Cert app · iOS · B3b1</p>
+        <h1 class="stage-title">Sim Lab</h1>
+        <p class="stage-sub">Practice Sim Lab: start, a round, the verdict. States: <code>?v=loading</code>, <code>round</code>, <code>round-map</code>, <code>enlarge</code>, <code>reset</code>, <code>verdict</code>, <code>verdict-open</code>.</p>
+      </div>
+      <button class="theme-toggle" id="themeToggle" type="button"><svg id="themeIcon" viewBox="0 0 24 24" aria-hidden="true"></svg><span id="themeLabel">Dark</span></button>
+    </div>
+    <div class="phone-wrap">
+      <div class="phone">
+        <div class="screen" id="screen">
+          <div class="notch"></div>
+          <div class="statusbar"><span>9:41</span><span class="sb-icons"><svg viewBox="0 0 18 12" aria-hidden="true"><rect x="0" y="7" width="3" height="5" rx="1"/><rect x="5" y="4" width="3" height="8" rx="1"/><rect x="10" y="1" width="3" height="11" rx="1" opacity="0.4"/></svg><svg viewBox="0 0 18 12" aria-hidden="true"><rect x="1" y="2" width="14" height="8" rx="2.4" fill="none" stroke="currentColor" stroke-width="1.4"/><rect x="2.6" y="3.6" width="9" height="4.8" rx="1.2"/><rect x="16" y="4.6" width="1.4" height="2.8" rx="0.7"/></svg></span></div>
+          <div id="app" style="display:contents"></div>
+        </div>
+      </div>
+      <p class="hint" id="hint">Practice Sim Lab on phones. Tap Reset, Tap to enlarge, or a verdict row.</p>
+    </div>
+  </div>
+  <script>
+    (function () {
+      var v = new URLSearchParams(location.search).get('v') || 'entry';
+      var I = {
+        back: '<path d="M15 6l-6 6 6 6"/>', sim: '<rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M7 9l3 3-3 3M12 15h5"/>',
+        clock: '<circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 1.5M9 2h6"/>', lock: '<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',
+        reset: '<path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/>', enl: '<path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/>',
+        chev: '<path d="M6 9l6 6 6-6"/>', right: '<path d="M9 6l6 6-6 6"/>', check: '<path d="M20 6L9 17l-5-5"/>', grip: '<path d="M9 6h.01M15 6h.01M9 12h.01M15 12h.01M9 18h.01M15 18h.01"/>',
+        done: '<path d="M9 11l3 3L22 4M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>', spark: '<path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5L18 18M6 18l2.5-2.5M15.5 8.5L18 6"/>',
+        home: '<path d="M4 11l8-7 8 7"/><path d="M6 10v9h12v-9"/>', drills: '<path d="M4 6h16M4 12h16M4 18h10"/>', prog: '<path d="M5 19V9M12 19V4M19 19v-7"/>', acct: '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>'
+      };
+      function ic(k, cls) { return '<svg class="i' + (cls ? ' ' + cls : '') + '" viewBox="0 0 24 24" aria-hidden="true">' + I[k] + '</svg>'; }
+      var TAB = '<div class="tabbar">' + [['home','Home'],['drills','Drills'],['prog','Progress'],['acct','Account']].map(function (t) { return '<button class="tab" type="button">' + ic(t[0]) + '<span>' + t[1] + '</span></button>'; }).join('') + '</div>';
+      function bar(n) { return '<div class="rbar"><button class="leave" type="button">Leave</button><span class="rpill">Round ' + n + ' of 3</span><span class="rspace"></span><span class="timer">' + ic('clock') + (n === 1 ? '0:42' : '3:18') + '</span></div>'
+        + '<div class="ticks">' + [1,2,3].map(function (i) { return '<i class="' + (i < n ? 'done' : i === n ? 'cur' : '') + '"></i>'; }).join('') + '</div>'; }
+      var DOCK = '<div class="dock"><button class="btn-ghost" type="button" id="resetBtn">' + ic('reset') + 'Reset</button><button class="btn-primary" type="button">Submit answers</button></div>';
+      var SHEET = '<div class="scrim" id="scrim"></div><div class="lsheet" id="lsheet" role="dialog" aria-modal="true" aria-labelledby="lsT"><div class="ls-grip"></div><h3 id="lsT">Start this PBQ again?</h3><p>Your answers on this question will be cleared.</p><button class="ls-stay" type="button" id="lsStay">Keep them</button><button class="ls-go" type="button" id="lsGo">Clear answers</button></div>';
+      var NET = '<svg class="net" viewBox="0 0 330 150" role="img" aria-label="Kiosk subnet through FW-POS to the payment gateway">'
+        + '<rect class="zone" x="6" y="8" width="96" height="134" rx="10"/><text class="z" x="16" y="22">KIOSK SUBNET</text>'
+        + '<rect x="16" y="32" width="76" height="40" rx="8"/><text x="24" y="50">Flagged kiosk</text><text class="ip" x="24" y="63">10.20.5.66</text>'
+        + '<rect x="16" y="90" width="76" height="40" rx="8"/><text x="24" y="108">Kiosk subnet</text><text class="ip" x="24" y="121">10.20.5.0/24</text>'
+        + '<line x1="92" y1="52" x2="136" y2="75"/><line x1="92" y1="110" x2="136" y2="78"/>'
+        + '<rect class="dev" x="136" y="55" width="70" height="42" rx="8"/><text x="150" y="73">FW-POS</text><text class="ip" x="146" y="86">top-down ACL</text>'
+        + '<line x1="206" y1="76" x2="236" y2="76"/><rect class="zone" x="232" y="36" width="92" height="80" rx="10"/><text class="z" x="242" y="50">PCI</text>'
+        + '<rect x="242" y="58" width="72" height="40" rx="8"/><text x="250" y="76">Payment GW</text><text class="ip" x="250" y="89">10.20.9.10</text></svg>';
+      var h = '', bodyOpen = '<div class="body">', hint = '';
+      if (v === 'entry') {
+        h = '<div class="hdr"><button class="back" type="button" aria-label="Back">' + ic('back') + '</button><h1>Sim Lab</h1><span class="plan-tag">N10-009</span></div>' + bodyOpen
+          + '<div class="hero reveal"><div class="hero-i">' + ic('sim') + '</div><h2>Practice the hands-on <em>PBQs</em></h2><p>The exam opens with them. Run a few back to back and the format stops being a surprise.</p></div>'
+          + '<div class="sect reveal">Mode</div><div class="seg reveal"><button class="on" type="button"><b>Practice</b><span>Relaxed, a count-up timer</span></button><button type="button"><b>' + ic('clock') + 'Exam <span class="lock-pill">' + ic('lock') + 'Pro</span></b><span>One clock, flag and return</span></button></div>'
+          + '<div class="sect reveal">Today’s target</div><div class="card target reveal"><div class="v">Mixed · Network+ N10-009</div></div>'
+          + '<div class="sect reveal">How many rounds</div><div class="chips reveal"><button class="rchip" type="button">3 rounds</button><button class="rchip on" type="button">5 rounds</button><button class="rchip locked" type="button">' + ic('lock') + '10 · exam length</button></div>'
+          + '<p class="free-note reveal">Free plan: one Sim Lab session a day.</p></div>'
+          + '<div class="dock"><button class="btn-primary" type="button">Start the sim</button></div>' + TAB;
+        hint = 'Start screen: June header, mode, today’s target, rounds, Start docked above the tab bar.';
+      } else if (v === 'loading') {
+        h = bar(2) + bodyOpen + '<div class="skel shimmer" style="height:92px;margin-top:8px"></div><div class="skel shimmer" style="height:150px;margin-top:11px"></div><div class="skel shimmer" style="height:120px;margin-top:11px"></div>'
+          + '<p class="gen-line">Building round 2 of 3…</p><span class="gen-cap">A fresh scenario</span><div class="gen-track"><div class="gen-bar"></div></div></div>';
+        hint = 'Loader: the quiz’s generating treatment. No app top bar or tab bar during a session.';
+      } else if (v === 'round' || v === 'reset') {
+        h = bar(2) + bodyOpen
+          + '<div class="card scen reveal"><div class="k">' + ic('sim') + 'Scenario</div><p>A conference room AV cart on <mark>Fa0/8</mark> drops off mid-meeting whenever screen sharing starts. Light traffic is fine; heavy traffic fails.</p></div>'
+          + '<div class="con reveal"><div class="con-bar"><span><b>EDGE-SW5</b> console</span></div><div class="con-body">'
+          + '<span class="ln"><span class="pr">EDGE-SW5#</span> show interface fa0/8 status</span><span class="ln">Port   Status     Duplex  Speed</span><span class="ln">Fa0/8  connected  a-half  a-100</span>'
+          + '<span class="ln"><span class="pr">EDGE-SW5#</span> show logging | include DUPLEX</span><span class="ln">%CDP-4-DUPLEX_MISMATCH: Fa0/8 (half)</span></div></div>'
+          + '<div class="card step reveal"><div class="sk">Step 1 of 2</div><h3>Select the commands that surface the actual cause.</h3><div class="pick">'
+          + [['show interface fa0/8 status', 1], ['show interface fa0/8', 1], ['show logging | include DUPLEX', 0], ['show ip dhcp binding', 0], ['show interfaces trunk', 0]].map(function (c) { return '<button type="button" class="' + (c[1] ? 'on' : '') + '"><span class="ck">' + (c[1] ? ic('check') : '') + '</span>' + c[0] + '</button>'; }).join('')
+          + '</div></div>'
+          + '<div class="card step reveal"><div class="sk">Step 2 of 2</div><h3>What is the root cause, and how do you fix it?</h3>'
+          + '<div class="fld"><label>Root cause</label><div class="sel set">Duplex mismatch on Fa0/8' + ic('chev') + '</div></div>'
+          + '<div class="fld"><label>Fix</label><div class="sel">Choose…' + ic('chev') + '</div></div></div>'
+          + '</div>' + DOCK + SHEET;
+        hint = v === 'reset' ? 'Reset asks in the same sheet B2 built. Keep them is the default.' : 'A round: scenario, the console card (it takes answers, so it stays inline), steps as June cards, Reset and Submit docked.';
+      } else if (v === 'round-map' || v === 'enlarge') {
+        h = bar(1) + bodyOpen
+          + '<div class="card scen reveal"><div class="k">' + ic('sim') + 'Scenario</div><p>Security flagged a kiosk at <mark>10.20.5.66</mark>. Log and drop it, let the rest of the kiosk subnet reach the payment gateway over HTTPS, deny everything else.</p></div>'
+          + '<div class="card ref reveal"><div class="ref-head"><span>Network map</span><button class="enlarge" type="button" id="enlBtn">' + ic('enl') + 'Tap to enlarge</button></div>' + NET + '</div>'
+          + '<div class="card step reveal"><div class="sk">Step 1 of 2</div><h3>Put the three rules in order. The firewall reads top down and stops at the first match.</h3><div class="ord">'
+          + ['Log and drop the flagged kiosk', 'Allow the kiosks to the payment gateway', 'Drop everything else'].map(function (t, i) { return '<div class="row"><span class="n">' + (i + 1) + '</span>' + t + ic('grip', 'grip') + '</div>'; }).join('')
+          + '</div></div>'
+          + '<div class="card step reveal"><div class="sk">Step 2 of 2</div><h3>Build the payment rule.</h3><div class="fld"><label>Action</label><div class="sel set">Permit' + ic('chev') + '</div></div><div class="fld"><label>Service</label><div class="sel">Choose…' + ic('chev') + '</div></div></div>'
+          + '</div>' + DOCK
+          + '<div class="scrim" id="scrim"></div><div class="esheet" id="esheet" role="dialog" aria-modal="true" aria-labelledby="esT"><div class="es-head"><div class="ls-grip"></div><h3 id="esT">Network map</h3><button class="es-close" type="button" id="esClose">Close</button></div><div class="es-body">' + NET + '</div><p class="es-hint">Scroll to look around. Swipe down or tap Close to go back.</p></div>' + SHEET;
+        hint = v === 'enlarge' ? 'Tap to enlarge: the map full screen, scrollable. Only passive references enlarge.' : 'A network map is passive, so it gets Tap to enlarge. Order rows have drag handles.';
+      } else {
+        var open = v === 'verdict-open';
+        var rows = [
+          ['Well-known ports', 'Firewalls & DMZ · 8/8', 'ok', 'Right'],
+          ['CLI fault isolation: duplex', 'Switching · 3/5', 'part', 'Partly'],
+          ['VLAN on the wrong access port', 'VLANs · 0/3', 'no', 'Wrong']
+        ];
+        h = '<div class="body" style="padding-top:12px">'
+          + '<div class="done-kick">' + ic('done') + 'Sim Lab · 3 rounds</div><h2 class="done-title">2 of 3 <em>passed.</em></h2>'
+          + '<p class="done-sub">11 of 16 steps right.</p>'
+          + '<div class="vscore"><b>69</b><span>%</span></div><div class="vmeter"><i style="width:69%"></i></div>'
+          + '<div class="sect">Your rounds</div>'
+          + rows.map(function (r, i) {
+              var exp = open && i === 1;
+              return '<button class="srow" type="button" aria-expanded="' + exp + '"><span class="sn2"><span class="st">' + r[0] + '</span><span class="ss">' + r[1] + '</span></span><span class="sv ' + r[2] + '">' + r[3] + '</span>' + ic('right') + '</button>'
+                + '<div class="sdet"><p class="q">Step 1 · Select the commands that surface the actual cause.</p><div class="lab a">Answer</div><div class="val">show interface fa0/8 status<br>show logging | include DUPLEX</div>'
+                + '<div class="lab y">You put</div><div class="val">show interface fa0/8 status<br>show interface fa0/8</div>'
+                + '<p class="why">Duplex mismatches only bite under load. The status line says a-half on Fa0/8, and the log names the mismatch.</p></div>';
+            }).join('')
+          + '<div class="slip"><span class="k">' + ic('spark') + 'Where you slipped</span><p>Your misses were in Switching and VLANs. Those are worth another round.</p></div>'
+          + '<button class="upsell" type="button"><span>Go Pro for exam-length runs</span>' + ic('right') + '</button>'
+          + '</div><div class="dock"><button class="btn-primary" type="button">Back to Practice</button></div>';
+        hint = open ? 'A verdict row opens to the answer, what you put, and why.' : 'The verdict in the exam results’ language. Tap a row to see the answer.';
+      }
+      document.getElementById('app').innerHTML = h;
+      document.getElementById('hint').textContent = hint;
+      var $ = function (id) { return document.getElementById(id); };
+      function openS(el) { $('scrim').classList.add('open'); el.classList.add('open'); }
+      function closeAll() { ['scrim', 'lsheet', 'esheet'].forEach(function (id) { var e = $(id); if (e) e.classList.remove('open'); }); }
+      if ($('resetBtn')) $('resetBtn').addEventListener('click', function () { openS($('lsheet')); });
+      if ($('enlBtn')) $('enlBtn').addEventListener('click', function () { openS($('esheet')); });
+      ['lsStay', 'lsGo', 'esClose', 'scrim'].forEach(function (id) { if ($(id)) $(id).addEventListener('click', closeAll); });
+      [].slice.call(document.querySelectorAll('.srow')).forEach(function (b) { b.addEventListener('click', function () { b.setAttribute('aria-expanded', String(b.getAttribute('aria-expanded') !== 'true')); }); });
+      [].slice.call(document.querySelectorAll('.pick button')).forEach(function (b) { b.addEventListener('click', function () { b.classList.toggle('on'); b.querySelector('.ck').innerHTML = b.classList.contains('on') ? '<svg class="i" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>' : ''; }); });
+      if (v === 'reset') setTimeout(function () { openS($('lsheet')); }, 40);
+      if (v === 'enlarge') setTimeout(function () { openS($('esheet')); }, 40);
+      // theme
+      var html = document.documentElement, label = $('themeLabel'), icon = $('themeIcon');
+      var SUN = '<circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path>';
+      var MOON = '<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"></path>';
+      try { var saved = localStorage.getItem('ca-theme'); if (saved) html.setAttribute('data-theme', saved); } catch (e) {}
+      function paint() { var dark = html.getAttribute('data-theme') !== 'light'; icon.innerHTML = dark ? SUN : MOON; label.textContent = dark ? 'Light' : 'Dark'; }
+      $('themeToggle').addEventListener('click', function () { var n = html.getAttribute('data-theme') === 'light' ? 'dark' : 'light'; html.setAttribute('data-theme', n); try { localStorage.setItem('ca-theme', n); } catch (e) {} paint(); });
+      paint();
+    })();
+  </script>
+</body>
+</html>
