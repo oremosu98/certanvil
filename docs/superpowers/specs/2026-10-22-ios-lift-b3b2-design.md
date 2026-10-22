@@ -46,8 +46,8 @@ Phone only (max-width 899px); desktop unchanged. Exam mode is Pro only and exist
 ## The screens
 
 ### Loader
-The B3b1 June "generating" treatment (skeleton blocks, a sweeping line), with today's copy:
-"Building your exam…" over "Generating every round up front so the clock never waits on us."
+The B3b1 June "generating" treatment (skeleton blocks, a sweeping line): "Building your exam…" over
+"Every round is built before your clock starts." (the drawing's caption; desktop keeps today's).
 Reduced motion: static.
 
 ### Round (`#page-sim-lab.isl-exam`)
