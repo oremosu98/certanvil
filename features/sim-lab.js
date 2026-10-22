@@ -2733,10 +2733,11 @@
   var _dlPickedDecisions = 10;
 
   // Spec §4 — EXACT gate copy. Do not paraphrase. Keyed by the locked surface.
+  // v8.188.2 (founder, 22 Oct): exam.body no longer promises cross-session tracking; DL_WEAK is recorded but never read back.
   var _DL_GATE = {
     exam: {
       title: 'Exam-style mode is Pro',
-      body: "The real exam never explains why your pick was wrong, and never gives you the clock back. Exam-style runs a timed, no-feedback set so the first time you feel that pressure isn't on test day. Pro unlocks it, plus unlimited sets and weak-spots that follow you across sessions.",
+      body: "The real exam never explains why your pick was wrong, and never gives you the clock back. Exam-style runs a timed, no-feedback set so the first time you feel that pressure isn't on test day. Pro unlocks it, plus unlimited sets.",
       primary: 'Go Pro', secondary: 'Keep practicing'
     },
     full20: {
@@ -4137,7 +4138,7 @@
       back.setAttribute('type', 'button'); back.setAttribute('data-action', 'simLabExit');
       root.appendChild(back);
       if (!pro) {
-        var up = _el('button', 'btn gnt-ghost', 'Go Pro &middot; exam-length runs + weak-spot tracking');
+        var up = _el('button', 'btn gnt-ghost', 'Go Pro for exam-length runs');   // v8.188.2: matches the phone; cross-session tracking is not built
         up.setAttribute('type', 'button'); up.setAttribute('data-action', 'simLabSummaryUpsell');
         root.appendChild(up);
       }

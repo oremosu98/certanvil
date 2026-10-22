@@ -70,6 +70,10 @@ const { _fnBody, fs, path, ROOT, results, test, vm } = require('./_context');
     test('v8.188.1: the Sim Lab headers do not add the top safe area again (the iOS web view already clears the status bar)',
       !/#isl-entry \.isl-hdr \{[^}]*safe-area-inset-top/.test(liftCss) && !/#page-sim-lab\.isl-practice \.sl-topbar \{[^}]*safe-area-inset-top/.test(liftCss)
       && !/#sl-result-root \.isl-vbody \{[^}]*safe-area-inset-top/.test(liftCss));
+    test('No Pro copy promises cross-session weak-spot tracking (recorded, never read back; founder 22 Oct)',
+      !/weak-spot tracking/i.test(sl) && !/weak-spots that follow/i.test(sl)
+      && /_el\('button', 'btn gnt-ghost', 'Go Pro for exam-length runs'\)/.test(sl)
+      && /Pro unlocks it, plus unlimited sets\."/.test(sl));
     test('Round: the phone loader reads "Building round N of M…" with the June skeleton; desktop keeps its spinner',
       /' of ' \+ total/.test(_fnBody(sl, '_slRenderLoader') || '') && /isl-skel/.test(_fnBody(sl, '_slRenderLoader') || '') && /slr-spin/.test(_fnBody(sl, '_slRenderLoader') || ''));
   } catch (err) {
