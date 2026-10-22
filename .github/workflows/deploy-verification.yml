@@ -2,7 +2,16 @@ name: Deploy Verification
 
 # Runs the 8-check post-deploy verifier against the live Vercel URL.
 # Triggers:
-#   • push to main           — every deploy gets verified after Vercel propagates
+#   • workflow_run           — after "CI/CD — Test & Deploy" finishes a push to
+#                              main successfully, i.e. after its deploy-production
+#                              job has run `vercel --prod`. This used to be
+#                              `on: push`, which raced CI: UAT + Playwright take
+#                              6-15 min before the deploy even starts, so the
+#                              ~5 min verify window saw the previous version and
+#                              filed a false FAIL on nearly every ship
+#                              (v8.187.0-v8.188.2, issues #519-#522).
+#                              CI failing (tests or deploy) skips this run; CI's
+#                              own red status is the alarm for that.
 #   • cron 03:00 UTC nightly — catches CDN drift and intermittent issues
 #   • manual workflow_dispatch — for ad-hoc re-runs from the Actions tab
 #
@@ -11,31 +20,52 @@ name: Deploy Verification
 # On PASS: silent (no inbox spam).
 
 on:
-  push:
+  workflow_run:
+    # Must match the `name:` in ci.yml exactly.
+    workflows: ['CI/CD — Test & Deploy']
+    types: [completed]
     branches: [main]
   schedule:
     - cron: '0 3 * * *'
   workflow_dispatch:
 
+# Back-to-back ships: only the newest verification matters, because prod
+# serves whichever deploy finished last. Cancel the older run instead of
+# letting it compare its own version against the newer live one.
+concurrency:
+  group: deploy-verification
+  cancel-in-progress: true
+
 jobs:
   verify:
     name: Live URL health check
+    # workflow_run fires on every CI completion; only verify successful pushes
+    # to main (the only CI runs that deploy to prod).
+    if: >-
+      github.event_name != 'workflow_run' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push')
     runs-on: ubuntu-latest
     permissions:
       contents: read
       issues: write
     steps:
+      # workflow_run runs in the context of main's latest commit, so check out
+      # the commit CI actually deployed — the verifier reads the expected
+      # version and SHA from the checkout.
       - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
 
       - uses: actions/setup-node@v6
         with:
           node-version: '20'
 
-      # Vercel needs ~60-90s after a push to fully propagate to its CDN edge.
+      # Vercel needs ~60-90s after a deploy to fully propagate to its CDN edge.
       # Skip the wait for cron and manual runs — those run against
       # whatever's already live.
       - name: Wait 90s for Vercel CDN propagation
-        if: github.event_name == 'push'
+        if: github.event_name == 'workflow_run'
         run: sleep 90
 
       - name: Run deploy verifier

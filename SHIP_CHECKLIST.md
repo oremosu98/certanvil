@@ -233,7 +233,7 @@ export PATH="$HOME/.local/bin:$PATH"
 gh run list --limit 3 --branch main
 ```
 
-`CI/CD — Test & Deploy` and `Deploy Verification` should both be `in_progress` within 30 seconds. If they don't start, the GitHub→Vercel webhook missed the push (known issue — see CLAUDE.md "Deployment" section). Manual deploy:
+`CI/CD — Test & Deploy` should be `in_progress` within 30 seconds. `Deploy Verification` starts only after CI finishes successfully (it is triggered by CI's completion, not by the push). If CI doesn't start, the GitHub→Vercel webhook missed the push (known issue — see CLAUDE.md "Deployment" section). Manual deploy:
 
 ```bash
 export PATH="$HOME/.nvm/versions/node/v20.20.2/bin:$PATH"

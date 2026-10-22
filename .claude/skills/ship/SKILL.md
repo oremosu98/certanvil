@@ -104,7 +104,7 @@ git branch --show-current        # confirm where you actually are
 ## Step 6 — Post-push smoke (SHIP_CHECKLIST Phase 6) — production-impacting changes
 
 ```bash
-gh run list --limit 3 --branch main   # "Test & Deploy" + "Deploy Verification" in_progress within ~30s
+gh run list --limit 3 --branch main   # "Test & Deploy" in_progress within ~30s; "Deploy Verification" starts after it succeeds
 ```
 If CI didn't start, the GitHub→Vercel webhook missed the push — manual deploy: `npx vercel --prod --yes` (then commit/push immediately so git↔prod don't drift — that cost 6 versions once).
 
