@@ -44,6 +44,14 @@
     'simlab-enlarge'    : 'cert-ios-simlab.html?v=enlarge',
     'simlab-verdict'    : 'cert-ios-simlab.html?v=verdict',
     'simlab-verdict-open': 'cert-ios-simlab.html?v=verdict-open',
+    'simlab-exam-loading'  : 'cert-ios-simlab.html?v=exam-loading',      // B3b2 (22 Oct): Sim Lab Exam mode
+    'simlab-exam-round'    : 'cert-ios-simlab.html?v=exam-round',        // the full exam's bar + dock around B3b1 cards
+    'simlab-exam-last'     : 'cert-ios-simlab.html?v=exam-round-last',   // last round: Review opens the End dialog
+    'simlab-exam-end'      : 'cert-ios-simlab.html?v=exam-end',
+    'simlab-exam-jump'     : 'cert-ios-simlab.html?v=exam-end-jump',
+    'simlab-exam-abandon'  : 'cert-ios-simlab.html?v=exam-abandon',
+    'simlab-exam-result'   : 'cert-ios-simlab.html?v=exam-result',
+    'simlab-exam-timeup'   : 'cert-ios-simlab.html?v=exam-result-timeup',
     'hub'               : 'cert-ios-hub.html',
     'quiz'              : 'cert-ios-quiz.html',
     'quiz-short-set'    : 'cert-ios-quiz.html?v=short',
@@ -202,6 +210,8 @@
   NAV['simlab'] = [ {text:'Start the sim', to:'simlab-loading'}, {sel:'.back', to:'drills'} ];
   NAV['simlab-verdict'] = [ {text:'Back to Practice', to:'drills'} ]; NAV['simlab-verdict-open'] = NAV['simlab-verdict'];
   ['simlab-round','simlab-reset','simlab-map','simlab-enlarge'].forEach(function (k) { NAV[k] = [ {sel:'.leave', to:'drills'} ]; });
+  NAV['simlab-exam-round'] = [ {sel:'#nextBtn', to:'simlab-exam-last'} ];
+  NAV['simlab-exam-result'] = [ {text:'Back to Practice', to:'drills'} ]; NAV['simlab-exam-timeup'] = NAV['simlab-exam-result'];
   NAV['analytics-wins'] = NAV['analytics']; NAV['analytics-map'] = NAV['analytics']; NAV['review-done'] = NAV['review'] || [];
 
   var TABS = { 'Home':'home', 'Drills':'drills', 'Progress':'progress', 'Account':'settings',
@@ -595,6 +605,12 @@
     if (b3bBtn) b3bBtn.addEventListener('click', function () {
       b3bI = (b3bI + 1) % LIFT_B3B.length; resetTo(LIFT_B3B[b3bI]);
       b3bBtn.textContent = 'B3b ' + (b3bI + 1) + '/' + LIFT_B3B.length + ' \u203a';
+    });
+    var LIFT_B3B2 = ['simlab','simlab-exam-loading','simlab-exam-round','simlab-exam-last','simlab-exam-end','simlab-exam-jump','simlab-exam-abandon','simlab-exam-result','simlab-exam-timeup'];
+    var b3b2Btn = document.getElementById('hud-liftb3b2'), b3b2I = -1;
+    if (b3b2Btn) b3b2Btn.addEventListener('click', function () {
+      b3b2I = (b3b2I + 1) % LIFT_B3B2.length; resetTo(LIFT_B3B2[b3b2I]);
+      b3b2Btn.textContent = 'B3b2 ' + (b3b2I + 1) + '/' + LIFT_B3B2.length + ' \u203a';
     });
     var LIFT_B3A = ['drills','drills-free','drills-empty','drills-dl'];
     var b3Btn = document.getElementById('hud-liftb3a'), b3I = -1;
