@@ -124,47 +124,9 @@
     _releaseExamWakeLock();
   }
   function _examIsPhone() { return !!(window.matchMedia && window.matchMedia('(max-width: 899px)').matches); }
-  // v8.186.0 Lift B2: the E2E bottom sheet (.lsheet) in place of confirm() on phones.
-  // Resolves true for `go`, false for `stay` (Stay, the scrim, Escape). One at a time.
-  let _examSheetOpen = null;
-  function _examSheet(o) {
-    const sheet = document.getElementById('exam-sheet'), scrim = document.getElementById('exam-sheet-scrim');
-    if (!sheet || !scrim) return Promise.resolve(false);
-    if (_examSheetOpen) return Promise.resolve(false);
-    return new Promise(function (resolve) {
-      const back = document.activeElement;
-      const stay = sheet.querySelector('.ix-sheet-stay'), go = sheet.querySelector('.ix-sheet-go');
-      document.getElementById('exam-sheet-title').textContent = o.title;
-      sheet.querySelector('.ix-sheet-body').textContent = o.body;
-      stay.textContent = o.stay; go.textContent = o.go;
-      function close(val) {
-        if (_examSheetOpen !== close) return;
-        _examSheetOpen = null;
-        window.removeEventListener('keydown', onKey, true);
-        sheet.classList.remove('open'); scrim.classList.remove('open');
-        setTimeout(function () { if (!sheet.classList.contains('open')) { sheet.hidden = true; scrim.hidden = true; } }, 200);   // BRAND §6: sheet out 200ms
-        if (back && back.focus) try { back.focus({ preventScroll: true }); } catch (_) {}
-        resolve(val);
-      }
-      // Keys belong to the sheet while it is open: nothing reaches the exam or the End dialog underneath
-      // (A-E would change the answer, F the flag, Escape would close the dialog too). Final review I3.
-      function onKey(e) {
-        e.stopImmediatePropagation();
-        if (e.key === 'Escape') { e.preventDefault(); close(false); }
-        else if (e.key === 'Tab') { e.preventDefault(); (document.activeElement === stay ? go : stay).focus({ preventScroll: true }); }
-        else if (document.activeElement !== stay && document.activeElement !== go) e.preventDefault();
-      }
-      _examSheetOpen = close;
-      stay.onclick = function () { close(false); };
-      go.onclick = function () { close(true); };
-      scrim.onclick = function () { close(false); };
-      window.addEventListener('keydown', onKey, true);   // window capture: ahead of the exam's own key handlers
-      sheet.hidden = false; scrim.hidden = false;
-      void sheet.offsetHeight;   // commit the closed state so the slide-in runs
-      sheet.classList.add('open'); scrim.classList.add('open');
-      stay.focus({ preventScroll: true });
-    });
-  }
+  // v8.186.0 Lift B2: the E2E bottom sheet in place of confirm() on phones. v8.188.0: the sheet
+  // lives in features/ios-sheet.js (window.iosSheet) so Sim Lab shares it; exam.js is lazy.
+  function _examSheet(o) { return window.iosSheet ? window.iosSheet(o) : Promise.resolve(false); }
   async function resumeExam() {
     const st = examSavedState();
     if (!st) { if (typeof goSetup === 'function') goSetup(); return; }
@@ -841,7 +803,7 @@
     if (examTimer) { clearInterval(examTimer); examTimer = null; }
     _examClearState();       // v8.162.0: a submitted exam is never offered for resume
     _releaseExamWakeLock();  // Phase 10: phone can sleep now
-    if (_examSheetOpen) _examSheetOpen(false);   // v8.186.0: a leave/abandon sheet never outlives the exam (final review I1)
+    window.iosSheet && window.iosSheet.dismiss();   // v8.186.0: a leave/abandon sheet never outlives the exam (final review I1)
     if (_examPausedAt) { _examPausedMs += Date.now() - _examPausedAt; _examPausedAt = 0; _examRenderPaused(); }   // v8.164.0
     hideExamModal();
 

@@ -1701,6 +1701,13 @@
   <button type="button" class="ix-sheet-stay"></button>
   <button type="button" class="ix-sheet-go"></button>
 </div>
+<!-- v8.188.0 Lift B3b1: phone sheet that shows a Sim Lab diagram full size (features/ios-sheet.js iosEnlarge) -->
+<div id="isl-enlarge-scrim" class="isl-scrim" hidden></div>
+<div id="isl-enlarge" class="isl-esheet" role="dialog" aria-modal="true" aria-labelledby="isl-enlarge-title" hidden>
+  <div class="isl-es-head"><div class="ix-sheet-grip" aria-hidden="true"></div><h3 id="isl-enlarge-title"></h3><button type="button" class="isl-es-close">Close</button></div>
+  <div class="isl-es-body"></div>
+  <p class="isl-es-hint">Scroll to look around. Swipe down or tap Close to go back.</p>
+</div>
 
 <!-- ══════════════════════════════════════════
      EXAM RESULTS PAGE
@@ -2288,6 +2295,7 @@
 <script defer src="features/ios-analytics.js"></script>
 <script defer src="features/ios-exam.js"></script>
 <script defer src="features/ios-drills.js"></script>
+<script defer src="features/ios-sheet.js"></script>
 <script defer src="features/sr-review.js"></script>
 <script defer src="lift-shell.js?v=7.36.0"></script>
 <!-- v7.81.0 P0a: cert pack injection (moved from <head>).
