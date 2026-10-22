@@ -199,12 +199,17 @@
   function _icPhone() { return !!(window.matchMedia && matchMedia('(max-width: 899px)').matches); }
   function _icText(el) { return el ? String(el.textContent || '').replace(/\s+/g, ' ').trim() : ''; }
 
-  function _iosCustomSource() {
-    var MIXED = (typeof MIXED_TOPIC === 'string') ? MIXED_TOPIC : 'Mixed — All Topics';
-    var CATCH = (typeof CATCHUP_TOPIC === 'string') ? CATCHUP_TOPIC : 'Mixed — Catch-up';
+  // The cert strip's identity (mark, short name, exam code). Shared with the Sim Lab start screen (B3b1).
+  function iosCertIdentity() {
     var certId = (typeof CURRENT_CERT === 'string' && CURRENT_CERT) || 'netplus';
     var MARKS = { netplus: 'N+', secplus: 'S+', 'aplus-core1': 'A+', 'aplus-core2': 'A+', az900: 'AZ', ai900: 'AI', sc900: 'SC', clfc02: 'CLF' };
     var rawName = (typeof CERT_PACK === 'object' && CERT_PACK && CERT_PACK.meta && CERT_PACK.meta.name) || 'CompTIA Network+';
+    return { mark: MARKS[certId] || 'CA', name: String(rawName).replace(/^(CompTIA|Microsoft|Amazon|AWS)\s+/, ''),
+      code: (typeof CERT_CODE === 'string' && CERT_CODE) || 'N10-009' };
+  }
+  function _iosCustomSource() {
+    var MIXED = (typeof MIXED_TOPIC === 'string') ? MIXED_TOPIC : 'Mixed — All Topics';
+    var CATCH = (typeof CATCHUP_TOPIC === 'string') ? CATCHUP_TOPIC : 'Mixed — Catch-up';
     var modes = [].slice.call(document.querySelectorAll('#topic-group .cq-mode-card')).map(function (c) {
       var v = c.dataset.v || '';
       return { kind: v === MIXED ? 'mixed' : v === CATCH ? 'catchup' : (/smart/i.test(v) ? 'smart' : 'mixed'), v: v, on: c.classList.contains('on') };
@@ -227,8 +232,7 @@
     try { history = (typeof loadHistory === 'function' ? loadHistory() : []) || []; } catch (_) { history = []; }
     var errBox = document.getElementById('setup-err');
     return {
-      cert: { mark: MARKS[certId] || 'CA', name: String(rawName).replace(/^(CompTIA|Microsoft|Amazon|AWS)\s+/, ''),
-        code: (typeof CERT_CODE === 'string' && CERT_CODE) || 'N10-009' },
+      cert: iosCertIdentity(),
       domains: domains, modes: modes, diffs: pick('#diff-group .chip[data-v]'), counts: pick('#count-group .chip[data-v]'),
       history: history.map(function (r) { return { topic: r && r.topic, date: r && r.date }; }),
       err: (errBox && !errBox.classList.contains('is-hidden')) ? _icText(errBox) : '',
@@ -386,6 +390,7 @@
   window._iosCustomModel = _iosCustomModel;
   window._iosCustomHtml = _iosCustomHtml;
   window._iosCustomSource = _iosCustomSource;
+  window.iosCertIdentity = iosCertIdentity;
   window.renderIosCustom = renderIosCustom;
   window.closeIosCustom = closeIosCustom;
 })();

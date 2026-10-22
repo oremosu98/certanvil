@@ -71,6 +71,7 @@
         try { sync(name); } catch (_) {}
         /* v8.187.0 Lift B3a: Drills is reached by the tab bar and by drill exits (Why-Not calls showPage('drills')) */
         if (name === 'drills' && typeof window.renderIosDrills === 'function') { try { window.renderIosDrills(); } catch (_) {} }
+      if (name === 'sim-lab-entry' && typeof window.renderIosSimLabEntry === 'function') { try { window.renderIosSimLabEntry(); } catch (_) {} }
         return r;
       };
       wrapped.__liftWrapped = true;

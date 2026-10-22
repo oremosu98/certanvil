@@ -507,6 +507,7 @@ test('Sim Lab card is absent on non-CompTIA certs (no PBQs)', async ({ page }) =
 });
 
 test('sim-lab module lazy-loads when the drills page is shown', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 });   // the desktop card; phones show the B3a Drills screen instead
   await page.goto('http://localhost:3131/?_cb=test');
   await page.waitForFunction(() => typeof window.showPage === 'function');
   // Ensure CURRENT_CERT is netplus so the card renders for CompTIA certs.

@@ -1721,4 +1721,63 @@ body:has(#page-sim-lab-entry.active) #app-topbar, body:has(#page-sim-lab-entry.a
 body:has(#page-sim-lab.active) #app-topbar, body:has(#page-sim-lab.active) .app-topbar { display: none !important; }
 body:has(#page-sim-lab-result.active) #app-topbar, body:has(#page-sim-lab-result.active) .app-topbar { display: none !important; }
 #page-sim-lab-entry:has(#isl-entry:not(:empty)) > :not(#isl-entry) { display: none !important; }
+#page-sim-lab-entry.active:has(#isl-entry:not(:empty)) { animation: none !important; transform: none !important; }   /* a transformed page would trap the fixed Start dock */
 html[data-theme] body #page-sim-lab-entry:has(#isl-entry:not(:empty)) { padding-top: 0 !important; padding-left: 0 !important; padding-right: 0 !important; max-width: none !important; }
+
+/* ═════════════════════ LIFT B3b1 · START (cert-ios-simlab.html default, ac0d9180) · isl- ═════════════════════ */
+/* The custom-quiz language: cert strip, mode cards, a rounds count over a segmented track, Start docked above the tab bar. */
+#isl-entry.isl-static .isl-reveal { animation: none !important; opacity: 1 !important; transform: none !important; }
+#isl-entry button { font-family: inherit; color: inherit; appearance: none; -webkit-appearance: none; }
+#isl-entry svg { stroke: currentColor; fill: none; stroke-width: 2.1; stroke-linecap: round; stroke-linejoin: round; }
+#isl-entry .isl-hdr { display: flex; align-items: flex-start; gap: 11px; padding: max(14px, env(safe-area-inset-top)) 20px 6px; }
+#isl-entry .isl-back { position: relative; flex: 0 0 auto; width: 34px; height: 34px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface); display: grid; place-items: center; cursor: pointer; color: var(--text-mid); transition: transform .14s var(--ios-ease); }
+#isl-entry .isl-back::after { content: ""; position: absolute; inset: -5px; }   /* 44pt hit area around the drawn 34px button */
+#isl-entry .isl-back:active { transform: scale(0.94); }
+#isl-entry .isl-back svg { width: 16px; height: 16px; stroke-width: 2.2; }
+#isl-entry .isl-title { flex: 1 1 auto; min-width: 0; padding-top: 1px; }
+#isl-entry .isl-title h1 { font: 600 21px/1.05 Fraunces, Georgia, serif; letter-spacing: -0.01em; margin: 0; color: var(--text); }
+#isl-entry .isl-title span { display: block; font: 500 11.5px/1.3 Inter, sans-serif; color: var(--text-dim); margin-top: 4px; }
+#isl-entry .isl-body { flex: 1 0 auto; padding: 4px 20px calc(140px + var(--lift-tab-h, 64px) + env(safe-area-inset-bottom)); }
+#isl-entry .isl-cert-strip { display: flex; align-items: center; gap: 10px; margin: 10px 2px 4px; }
+#isl-entry .isl-cm { flex: 0 0 auto; width: 30px; height: 30px; border-radius: 9px; background: color-mix(in oklab, var(--accent) 13%, var(--surface3)); color: var(--accent-deep); display: grid; place-items: center; font: 800 11px/1 Inter, sans-serif; }
+#isl-entry .isl-cn b { display: block; font: 650 13.5px/1.05 Inter, sans-serif; color: var(--text); }
+#isl-entry .isl-cn span { display: block; font: 600 10.5px/1 'Roboto Mono', ui-monospace, monospace; color: var(--text-dim); margin-top: 2px; }
+#isl-entry .isl-lede { font: 500 13.5px/1.5 Inter, sans-serif; color: var(--text-mid); margin: 12px 2px 0; max-width: 36ch; }
+#isl-entry .isl-sect { font: 800 10px/1 Inter, sans-serif; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-dim); margin: 18px 2px 10px; }
+#isl-entry .isl-modes { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+#isl-entry .isl-mode { text-align: left; border: 1.5px solid var(--border); background: var(--surface); border-radius: 15px; padding: 13px 13px 12px; cursor: pointer; transition: border-color .18s, background-color .18s, transform .12s var(--ios-ease); }
+#isl-entry .isl-mode:active { transform: scale(0.985); }
+#isl-entry .isl-mi { width: 34px; height: 34px; border-radius: 10px; background: color-mix(in oklab, var(--accent) 10%, var(--surface3)); display: grid; place-items: center; margin-bottom: 10px; color: var(--accent-deep); }
+#isl-entry .isl-mi svg { width: 18px; height: 18px; stroke-width: 1.9; }
+#isl-entry .isl-mode b { display: flex; align-items: center; gap: 6px; font: 650 14px/1.1 Inter, sans-serif; color: var(--text); }
+#isl-entry .isl-ml { display: block; font: 500 11.5px/1.35 Inter, sans-serif; color: var(--text-dim); margin-top: 4px; }
+#isl-entry .isl-tick { margin-left: auto; display: grid; color: var(--accent-deep); }
+#isl-entry .isl-tick svg { width: 16px; height: 16px; stroke-width: 2.6; }
+#isl-entry .isl-mode[aria-pressed="true"] { border-color: var(--accent); background: color-mix(in oklab, var(--accent) 7%, var(--surface)); }
+#isl-entry .isl-pro-tag { margin-left: auto; display: inline-flex; align-items: center; gap: 3px; white-space: nowrap; font: 800 9px/1 Inter, sans-serif; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent-deep); background: color-mix(in oklab, var(--accent) 12%, var(--surface3)); border-radius: 999px; padding: 4px 7px; }
+#isl-entry .isl-pro-tag svg { width: 9px; height: 9px; stroke-width: 2.6; }
+#isl-entry .isl-count { display: flex; align-items: baseline; gap: 9px; margin: 2px 2px 8px; }
+#isl-entry .isl-bn { font: 600 44px/1 Fraunces, Georgia, serif; color: var(--text); font-variant-numeric: lining-nums tabular-nums; }
+#isl-entry .isl-bl { font: 700 11px/1 Inter, sans-serif; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-dim); }
+#isl-entry .isl-cseg { display: flex; gap: 5px; background: color-mix(in oklab, var(--text) 5%, var(--surface3)); border: 1px solid var(--border); border-radius: 13px; padding: 4px; }
+#isl-entry .isl-cseg button { flex: 1 1 0; min-height: 44px; border: none; background: transparent; cursor: pointer; border-radius: 9px; font: 700 14px/1 Inter, sans-serif; color: var(--text-dim); display: inline-flex; align-items: center; justify-content: center; gap: 5px; transition: background-color .2s var(--ios-ease), color .2s, transform .14s var(--ios-ease); }
+#isl-entry .isl-cseg button:active { transform: scale(0.96); }
+#isl-entry .isl-cseg button[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); box-shadow: 0 6px 14px -8px color-mix(in oklab, var(--accent) 70%, transparent); }
+#isl-entry .isl-cseg button[data-locked] { color: color-mix(in oklab, var(--text-dim) 75%, transparent); }
+#isl-entry .isl-cseg button svg { width: 11px; height: 11px; stroke-width: 2.4; }
+#isl-entry .isl-cap { margin: 9px 2px 0; font: 600 12px/1.45 Inter, sans-serif; color: var(--text-dim); }
+#isl-entry .isl-cap b { color: var(--text-mid); }
+#isl-entry .isl-dock { position: fixed; left: 50%; transform: translateX(-50%); width: min(var(--lift-col-w, 100%), 100%); bottom: calc(var(--lift-tab-h, 64px) + env(safe-area-inset-bottom)); z-index: 95; padding: 12px 20px 10px; border-top: 1px solid color-mix(in oklab, var(--border) 70%, transparent); background: color-mix(in oklab, var(--bg) 86%, var(--surface)); }
+#isl-entry .isl-start { width: 100%; min-height: 48px; border: none; border-radius: 13px; padding: 14px; cursor: pointer; background: var(--accent); color: var(--on-accent); font: 700 15px/1 Inter, sans-serif; display: inline-flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 10px 22px -12px color-mix(in oklab, var(--accent) 70%, transparent); transition: transform .15s var(--ios-ease); }
+#isl-entry .isl-start:active { transform: scale(0.985); }
+#isl-entry .isl-start svg { width: 14px; height: 14px; fill: currentColor; stroke: none; }
+#isl-entry .isl-qc { font: 700 12px/1 'Roboto Mono', ui-monospace, monospace; opacity: 0.82; }
+#isl-entry .isl-foot { text-align: center; font: 500 10.5px/1.3 Inter, sans-serif; color: var(--text-dim); margin: 9px 0 0; }
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes isl-rise { from { opacity: 0; transform: translateY(9px); } to { opacity: 1; transform: none; } }
+  #isl-entry .isl-reveal { opacity: 0; animation: isl-rise .5s var(--ios-ease) forwards; }
+  #isl-entry .isl-reveal:nth-child(2) { animation-delay: .04s; } #isl-entry .isl-reveal:nth-child(3) { animation-delay: .08s; }
+  #isl-entry .isl-reveal:nth-child(4) { animation-delay: .12s; } #isl-entry .isl-reveal:nth-child(5) { animation-delay: .16s; }
+  #isl-entry .isl-reveal:nth-child(6) { animation-delay: .20s; } #isl-entry .isl-reveal:nth-child(7) { animation-delay: .24s; }
+  #isl-entry .isl-reveal:nth-child(8) { animation-delay: .28s; } #isl-entry .isl-reveal:nth-child(9) { animation-delay: .32s; }
+}
