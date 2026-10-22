@@ -30,6 +30,9 @@ const { _fnBody, js, results, test, vm } = require('./_context');
       && em.mistakes.button.label === 'Nothing to drill yet' && em.mistakes.button.disabled === true);
     test('Drills: Weakest topics chips, note and button', pro.weak.chips.length === 3 && pro.weak.chips[0].topic === 'OSPF vs RIP behaviour' && pro.weak.chips[0].pct === 41
       && pro.weak.note === 'Your three lowest-mastery topics right now. The drill leads with the weakest of them.' && pro.weak.button === 'Drill weakest topics');
+    test('Drills: the weak note counts what it shows (I4)',
+      M({ weak: [{ topic: 'A', pct: 20 }, { topic: 'B', pct: 30 }] }).weak.note === 'Your two lowest-mastery topics right now. The drill leads with the weaker of them.'
+      && M({ weak: [{ topic: 'A', pct: 20 }] }).weak.note === 'Your lowest-mastery topic right now.');
     const nw = M({ weak: [] }).weak;
     test('Drills: no weak topics yet', nw.chips.length === 0 && nw.note === 'Take a quiz and your weakest topics show up here.' && nw.button === null);
     test('Drills: domains carry weight, full and untouched', pro.domains[0].weight === '23% of exam' && pro.domains[0].full === true && pro.domains[1].untouched === true && pro.domains[3].full === false && pro.domains[3].mastery === 75);

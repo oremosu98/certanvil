@@ -1606,7 +1606,10 @@ html[data-theme] body #page-drills:has(#ios-drills:not(:empty)) { padding-top: 0
 #ios-drills button { font-family: inherit; box-sizing: border-box; }
 #ios-drills .id-domain { display: block; width: 100%; text-align: left; color: inherit; font: inherit; appearance: none; -webkit-appearance: none; }
 #ios-drills .id-domain-bar, #ios-drills .id-domain-mast { display: block; }
-#ios-drills .id-hdr { padding-top: max(14px, env(safe-area-inset-top)); }
+#ios-drills.id-static .id-reveal { animation: none !important; opacity: 1 !important; transform: none !important; }   /* re-renders that are not navigation */
+#ios-drills .id-btn-drill { min-height: 44px; }   /* 44pt floor (the drawing's 12px padding gives 41.8) */
+#ios-drills .id-app-theme { position: relative; }
+#ios-drills .id-app-theme::after { content: ""; position: absolute; inset: -5px; }   /* 44pt hit area around the drawn 34px button */
 #ios-drills .id-hdr { display: flex; align-items: center; gap: 11px; padding: 14px 22px 10px; }
 #ios-drills .id-hdr h1 { font-family: Fraunces, Georgia, serif; font-weight: 600; font-size: 21px; letter-spacing: -0.01em; margin: 0; color: var(--text); flex: 1; }
 #ios-drills .id-hdr .id-plan-tag { font: 800 9.5px/1 Inter, sans-serif; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-dim); background: color-mix(in oklab, var(--text) 6%, transparent); border: 1px solid var(--border); border-radius: 999px; padding: 6px 9px; }

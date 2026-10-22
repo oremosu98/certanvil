@@ -16,7 +16,9 @@
       : { pill: '0 saved', lock: locked, note: 'Questions you miss land here.', button: { label: 'Nothing to drill yet', disabled: true } };
     var chips = (s.weak || []).slice(0, 3).map(function (w) { return { topic: w.topic, pct: w.pct }; });
     var weak = chips.length
-      ? { chips: chips, note: 'Your three lowest-mastery topics right now. The drill leads with the weakest of them.', button: 'Drill weakest topics' }
+      ? { chips: chips, note: chips.length === 3 ? 'Your three lowest-mastery topics right now. The drill leads with the weakest of them.'
+          : chips.length === 2 ? 'Your two lowest-mastery topics right now. The drill leads with the weaker of them.' : 'Your lowest-mastery topic right now.',
+          button: 'Drill weakest topics' }
       : { chips: [], note: 'Take a quiz and your weakest topics show up here.', button: null };
     var domains = (s.domains || []).map(function (d) {
       return { key: d.key, label: d.label, weight: d.weight + '% of exam', mastery: d.mastery, full: d.mastery >= 100, untouched: !d.touched };
@@ -120,9 +122,11 @@
     };
   }
   var _idLast = null;
-  function renderIosDrills() {
+  // opts.still: a re-render that is not navigation (theme, tier repaint) keeps the screen still (no entrance replay)
+  function renderIosDrills(opts) {
     var root = document.getElementById('ios-drills');
     if (!root) return;
+    root.classList.toggle('id-static', !!(opts && opts.still));
     if (!_idIsPhone()) { root.innerHTML = ''; return; }
     try {
       var m = _iosDrillsModel(_idState());
@@ -141,7 +145,7 @@
     else if (act === 'weak') { if (_idLast && _idLast.weak.chips[0]) _idCall('focusTopic', _idLast.weak.chips[0].topic); }
     else if (act === 'domain') _idCall('applyDomainPreset', b.getAttribute('data-key'));
     else if (act === 'row') _idCall({ sim: 'startSimLabHome', gnt: 'startRewordGauntlet', why: 'startWhyNot', dl: 'startDecisionLabHome' }[b.getAttribute('data-id')]);
-    else if (act === 'theme') { _idCall('toggleTheme'); renderIosDrills(); }
+    else if (act === 'theme') { _idCall('toggleTheme'); renderIosDrills({ still: true }); }
   }
   // Tier hydrates after the tab can first paint: app.js re-runs renderGauntletDrillsCard then, so chain onto it.
   if (typeof window.renderGauntletDrillsCard === 'function' && !window.renderGauntletDrillsCard._idChained) {
@@ -149,7 +153,7 @@
     var chained = function () {
       var r = _orig.apply(this, arguments);
       var root = document.getElementById('ios-drills');
-      if (root && root.innerHTML) renderIosDrills();
+      if (root && root.innerHTML) renderIosDrills({ still: true });
       return r;
     };
     chained._idChained = true;

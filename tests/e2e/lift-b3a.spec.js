@@ -78,6 +78,31 @@ for (const vp of PHONES) {
       await expect(page.locator('#ios-drills [data-act="mistakes"]')).toHaveText('Drill the 2 you missed');
     });
 
+    test('returning by showPage (the Why-Not exit path) shows fresh counts (I1)', async ({ page }) => {
+      await openDrills(page, vp);
+      await page.evaluate(() => { showPage('setup'); localStorage.setItem('nplus_wrong_bank', JSON.stringify([{ question: 'a' }])); showPage('drills'); });
+      await expect(page.locator('#ios-drills [data-act="mistakes"]')).toHaveText('Drill the 1 you missed');
+    });
+
+    test('a theme tap or tier repaint does not replay the entrance (I2)', async ({ page }) => {
+      await openDrills(page, vp);
+      await page.locator('#ios-drills [data-act="theme"]').click();
+      expect(await page.evaluate(() => getComputedStyle(document.querySelector('#ios-drills .id-lede')).animationName)).toBe('none');
+      await page.evaluate(() => renderGauntletDrillsCard());
+      expect(await page.evaluate(() => getComputedStyle(document.querySelector('#ios-drills .id-lede')).animationName)).toBe('none');
+    });
+
+    test('drill buttons and the theme button are 44pt targets (I3)', async ({ page }) => {
+      await openDrills(page, vp);
+      for (const b of await page.locator('#ios-drills .id-btn-drill').all()) expect((await b.boundingBox()).height).toBeGreaterThanOrEqual(44);
+      const hit = await page.evaluate(() => {
+        const t = document.querySelector('#ios-drills [data-act="theme"]'), r = t.getBoundingClientRect();
+        const pts = [[r.left - 4, r.top + r.height / 2], [r.right + 4 > innerWidth - 1 ? innerWidth - 1 : r.right + 4, r.top + r.height / 2], [r.left + r.width / 2, r.top - 4], [r.left + r.width / 2, r.bottom + 4]];
+        return pts.every(([x, y]) => { const el = document.elementFromPoint(x, y); return !!(el && el.closest('[data-act="theme"]')); });
+      });
+      expect(hit).toBe(true);
+    });
+
     test('AZ-900 has Decision Lab and no Sim Lab', async ({ page }) => {
       await openDrills(page, vp, { cert: 'az900' });
       const r = page.locator('#ios-drills');

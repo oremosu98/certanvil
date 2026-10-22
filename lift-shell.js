@@ -67,6 +67,8 @@
       var wrapped = function (name) {
         var r = orig.apply(this, arguments);
         try { sync(name); } catch (_) {}
+        /* v8.187.0 Lift B3a: Drills is reached by the tab bar and by drill exits (Why-Not calls showPage('drills')) */
+        if (name === 'drills' && typeof window.renderIosDrills === 'function') { try { window.renderIosDrills(); } catch (_) {} }
         return r;
       };
       wrapped.__liftWrapped = true;
@@ -84,7 +86,7 @@
      by the (now retired) sidebar item handlers. Mirror that dispatch here so
      tab/seg navigation always lands on fresh content. */
   var RENDER = {
-    drills: function () { liftRenderDrills(); if (typeof window.renderIosDrills === 'function') window.renderIosDrills(); },   /* v8.187.0 Lift B3a */
+    drills: function () { liftRenderDrills(); },   /* v8.187.0 Lift B3a: the phone screen renders in the showPage wrapper below */
     progress: function () { if (typeof renderProgressPage === 'function') renderProgressPage(); },
     analytics: function () { if (typeof renderAnalytics === 'function') renderAnalytics(); },
     settings: function () { if (typeof renderSettingsPage === 'function') renderSettingsPage(); }
