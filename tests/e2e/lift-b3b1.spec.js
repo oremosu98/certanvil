@@ -201,7 +201,8 @@ for (const vp of PHONES) {
       await expect(page.locator('#sl-body .isl-enlarge')).toHaveCount(0);
       const tabs = page.locator('#sl-body .term-tab');   // the selectable lines sit under one of the console's tabs
       for (let i = 0; i < await tabs.count() && await page.locator('#sl-body button.term-line:visible').count() === 0; i++) await tabs.nth(i).click();
-      const line = page.locator('#sl-body button.term-line:visible').first();
+      const id = await page.locator('#sl-body button.term-line:visible').first().getAttribute('data-line');
+      const line = page.locator('#sl-body button.term-line[data-line="' + id + '"]');   // a stable handle: :visible re-resolves as blocks animate
       await line.click();
       await expect(line).toHaveClass(/sl-sel/);
     });
