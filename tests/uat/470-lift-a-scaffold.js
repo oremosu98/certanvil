@@ -29,6 +29,15 @@ const { dgCss, fs, html, path, ROOT, results, test } = require('./_context');
     test('lift-ios.css light tokens equal the E2E values', has(light, LIGHT));
     test('lift-ios.css also defines --accent-deep, --accent-bright, --on-accent, --track, --miss in both themes',
       ['--accent-deep:', '--accent-bright:', '--on-accent:', '--track:', '--miss:'].every(k => dark.includes(k) && light.includes(k)));
+    // Every rule for a selector (a selector can appear in several rules), by exact "sel {" match.
+    const rules = (sel) => ios.split(sel + ' {').slice(1).map(r => r.slice(0, r.indexOf('}')));
+    const IN_FLOW = ['#ios-home .ih-topbar', '.iq-screen .iq-qbar', '#page-quiz .quiz-topbar', '#page-quiz #short-notice:not(:empty):not(.is-hidden)',
+      '#ios-results .ir-app-chrome', '#ios-review .ia-hdr', '#ios-custom .ic-topbar'];
+    const FIXED = ['#ios-progress .ip-topbar', '#ios-analytics .in-topbar', '#ios-exam-results .ie-app-chrome', '#page-exam .exam-topbar'];
+    test('In-flow phone headers do not add the top safe area again: body padding already clears it in the iOS app (Simulator, 22 Oct)',
+      IN_FLOW.every(s => rules(s).length > 0 && rules(s).every(r => !r.includes('safe-area-inset-top'))));
+    test('Fixed full-screen phone pages (Progress, Analytics, Exam, Exam results) still pad their header by the top safe area',
+      FIXED.every(s => rules(s).some(r => r.includes('env(safe-area-inset-top)'))));
   } catch (err) {
     test('Lift A scaffold: block (threw)', false);
     results.errors.push('470 lift-a-scaffold block threw: ' + err.message);
