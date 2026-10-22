@@ -58,7 +58,17 @@ const SCREENS = [
   ['exam-leave', 'cert-ios-exam.html?v=leave', 'ex-leave'],
   ['exam-pbq', 'cert-ios-exam.html?v=pbq', 'ex-pbq'],
   ['exam-results', 'cert-ios-exam-results.html', 'ex-res'],
+  // Lift B3a (22 Oct): the Drills tab
+  ['drills', 'cert-ios-drills.html', 'dr'],
+  ['drills-free', 'cert-ios-drills.html?v=free', 'dr-free'],
+  ['drills-empty', 'cert-ios-drills.html?v=empty', 'dr-empty'],
+  ['drills-dl', 'cert-ios-drills.html?v=dl', 'dr-dl'],
 ];
+// B3a: Drills seeds per state (wrong-bank size, fresh user, cert)
+function drillsSeed(step) {
+  if (!/^dr/.test(step || '')) return null;
+  return { wrong: step === 'dr-empty' ? 0 : (step === 'dr-dl' ? 6 : 9), fresh: step === 'dr-empty', cert: step === 'dr-dl' ? 'az900' : null };
+}
 // B2: a saved 90-question exam like the E2E's (Q23 of 90, 63 answered, Q23 + four earlier flagged, 84:28 left)
 const EXAM_TOPICS = ['NTP, ICMP & Traffic Types', 'OSPF', 'PKI & Certificates', 'Cable Issues', 'Monitoring & SNMP', 'DNS & DHCP'];
 function examState(step) {
@@ -96,15 +106,16 @@ async function shootReal(browser, step, theme) {
     if (/\/lib\/supabase\.js$/.test(u.pathname)) return r.fulfill({ contentType: 'application/javascript', body: 'window.__FAKE_SB={"role":"admin"};' + FAKE });
     return r.continue();
   });
-  await ctx.addInitScript(([t, h, q, ex]) => {
+  await ctx.addInitScript(([t, h, q, ex, dr]) => {
     if (sessionStorage.getItem('s')) return;
     localStorage.clear(); sessionStorage.setItem('s', 1);
-    localStorage.setItem('nplus_dev_cert', 'netplus'); localStorage.setItem('nplus_theme', t);
-    localStorage.setItem('nplus_history', JSON.stringify(h));
+    localStorage.setItem('nplus_dev_cert', (dr && dr.cert) || 'netplus'); localStorage.setItem('nplus_theme', t);
+    localStorage.setItem('nplus_history', JSON.stringify(dr && dr.fresh ? [] : h));
+    if (dr) localStorage.setItem('nplus_wrong_bank', JSON.stringify(Array.from({ length: dr.wrong }, (_, i) => ({ question: 'Missed ' + i + '?', topic: 'OSPF' }))));
     localStorage.setItem('nplus_streak', JSON.stringify({ current: 12, best: 14, last: new Date().toISOString().slice(0, 10) }));
     if (q) localStorage.setItem('nplus_sr_queue', JSON.stringify(q));
     if (ex) localStorage.setItem('nplus_exam_state', JSON.stringify(ex));
-  }, [theme, HISTORY, /^srv/.test(step || '') ? SRQ : null, /^ex/.test(step || '') ? examState(step) : null]);
+  }, [theme, HISTORY, /^srv/.test(step || '') ? SRQ : null, /^ex/.test(step || '') ? examState(step) : null, drillsSeed(step)]);
   const p = await ctx.newPage();
   await p.goto(APP + '?nc=' + Date.now());
   await p.waitForTimeout(3000);
@@ -141,6 +152,18 @@ async function shootReal(browser, step, theme) {
       const recap = p.locator('#daily-recap-modal:not([hidden]) button').filter({ hasText: /^Close$/ });
       if (await recap.count()) { await recap.first().click(); await p.waitForTimeout(400); }
     }
+  } else if (/^dr/.test(step || '')) {
+    await p.locator('#lift-tabbar .lift-tab[data-page="drills"]').click();
+    await p.waitForTimeout(600);
+    // the E2E default and AZ-900 states are Pro; free and fresh are free users
+    await p.evaluate((free) => {
+      _quotaState = free ? { tier: 'free', used_today: 0, daily_limit: 15 } : { tier: 'pro' };
+      document.body.classList.add('is-state-resolved'); document.body.classList.toggle('is-pro-tier', !free);
+      // the E2E free state draws the Gauntlet run as used today
+      if (free === 'used') try { localStorage.setItem(STORAGE.GAUNTLET_FREE_COUNT, JSON.stringify({ date: new Date().toISOString().slice(0, 10), count: 1 })); } catch (_) {}
+      renderGauntletDrillsCard();
+    }, step === 'dr-free' ? 'used' : step === 'dr-empty');
+    await p.waitForTimeout(1200);
   } else if (step === 'cq') {
     await p.evaluate(() => window._jumpToCustomQuiz());
     await p.waitForTimeout(1200);   // let the staggered entrance settle
