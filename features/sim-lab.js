@@ -3172,9 +3172,29 @@
   }
   // "K answered" and the strip move with rounds, flags and the End dialog, not while you type.
   function _slExamBarSync() {
-    var xp = _slXPhone();
-    if (xp && _slSession && _slSession.mode === 'exam') xp.examBar.update(window._iosSlExamBarModel(_slExamFlags()));
+    if (!_slSession || _slSession.mode !== 'exam') return;
+    var xp = _slXPhone(), isl = window.iosSimLab;
+    // the bar follows the phone breakpoint (an iPad rotating across 899px mid-exam keeps one clock)
+    if (!xp) { if (isl && isl.examBar) isl.examBar.unmount(); return; }
+    if (!document.getElementById('isl-xbar')) xp.examBar.mount(_slOpenEnd);
+    xp.examBar.update(window._iosSlExamBarModel(_slExamFlags()));
   }
+  // Crossing 899px mid-exam: close the phone dialog, save the round in view and re-render it in the new layout.
+  (function () {
+    var mq = window.matchMedia && window.matchMedia('(max-width: 899px)');
+    if (!mq || !mq.addEventListener) return;
+    mq.addEventListener('change', function () {
+      if (!_slSession || _slSession.mode !== 'exam' || _slSession.__submitted || !_slSession.scenarios) return;
+      var pg = document.getElementById('page-sim-lab'); if (!pg || !pg.classList.contains('active')) return;
+      if (window.iosSheet) window.iosSheet.dismiss();
+      if (window.iosSimLab && window.iosSimLab.closeEnd) window.iosSimLab.closeEnd();
+      if (_slSession.view === 'round') {
+        _slSession.roundMs[_slSession.idx] += Math.max(0, Date.now() - _slSession.roundEnteredAt);
+        _slCaptureAnswer(_slSession.idx);
+      }
+      _slRenderRound(_slSession.idx);
+    });
+  })();
   // The B2 End dialog replaces the review screen on phones. Time in it counts towards no round.
   function _slOpenEnd() {
     var xp = _slXPhone();

@@ -1862,7 +1862,7 @@ html[data-theme] body #page-sim-lab.isl-practice.active { padding: 0 !important;
 /* loader: the quiz's generating treatment */
 :is(#page-sim-lab.isl-practice, #page-sim-lab.isl-exam) .isl-loader { padding: 8px 0 0; text-align: center; }
 :is(#page-sim-lab.isl-practice, #page-sim-lab.isl-exam) .isl-skel { position: relative; overflow: hidden; height: 92px; border-radius: 12px; background: var(--surface3); margin-bottom: 11px; }
-:is(#page-sim-lab.isl-practice, #page-sim-lab.isl-exam) .isl-skel-2 { height: 150px; } #page-sim-lab.isl-practice .isl-skel-3 { height: 120px; }
+:is(#page-sim-lab.isl-practice, #page-sim-lab.isl-exam) .isl-skel-2 { height: 150px; } :is(#page-sim-lab.isl-practice, #page-sim-lab.isl-exam) .isl-skel-3 { height: 120px; }
 :is(#page-sim-lab.isl-practice, #page-sim-lab.isl-exam) .isl-loader .slr-loader-t { font: 600 19px/1.3 Fraunces, Georgia, serif; color: var(--text); margin-top: 22px; }
 :is(#page-sim-lab.isl-practice, #page-sim-lab.isl-exam) .isl-loader .slr-loader-s { font: 500 12px/1.4 Inter, sans-serif; color: var(--text-dim); margin-top: 6px; }
 :is(#page-sim-lab.isl-practice, #page-sim-lab.isl-exam) .isl-gen-track { width: 60%; height: 3px; margin: 16px auto 0; border-radius: 999px; background: var(--track); overflow: hidden; }
@@ -1876,8 +1876,8 @@ html[data-theme] body #page-sim-lab.isl-practice.active { padding: 0 !important;
   #page-sim-lab.isl-practice .sl-scenario.isl-enter > :nth-child(n+5) { animation-delay: .20s; }
   @keyframes isl-shim { to { transform: translateX(100%); } }
   @keyframes isl-ind { from { transform: translateX(-100%); } to { transform: translateX(250%); } }
-  #page-sim-lab.isl-practice .isl-skel::after { content: ""; position: absolute; inset: 0; transform: translateX(-100%); background: linear-gradient(90deg, transparent, color-mix(in oklab, var(--text) 9%, transparent), transparent); animation: isl-shim 1.4s linear infinite; }
-  #page-sim-lab.isl-practice .isl-gen-bar { animation: isl-ind 1.5s var(--ios-ease) infinite; }
+  :is(#page-sim-lab.isl-practice, #page-sim-lab.isl-exam) .isl-skel::after { content: ""; position: absolute; inset: 0; transform: translateX(-100%); background: linear-gradient(90deg, transparent, color-mix(in oklab, var(--text) 9%, transparent), transparent); animation: isl-shim 1.4s linear infinite; }
+  :is(#page-sim-lab.isl-practice, #page-sim-lab.isl-exam) .isl-gen-bar { animation: isl-ind 1.5s var(--ios-ease) infinite; }
 }
 
 /* ═════════════════════ LIFT B3b1 · VERDICT (cert-ios-simlab.html ?v=verdict, ?v=verdict-open) · isl- ═════════════════════ */

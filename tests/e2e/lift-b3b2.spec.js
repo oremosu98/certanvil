@@ -340,3 +340,41 @@ test('Lift B3b2 desktop: the exam result keeps its seal and Pace card, with a re
   expect(await page.locator('#sl-result-root').textContent()).not.toContain('NaN');
   await expect(page.locator('#sl-result-root .isl-vbody')).toHaveCount(0);
 });
+
+// ── Final review fixes ──
+test.describe('Lift B3b2 final review fixes', () => {
+  test('I1: crossing 899px mid-exam keeps a clock and working controls both ways', async ({ page }) => {
+    await startExam(page, DESKTOP, 3);
+    await page.setViewportSize({ width: 820, height: 1180 });
+    await expect(page.locator('#isl-xbar #sl-clock-slot .sl-clock')).toBeVisible();
+    await expect(page.locator('.isl-xdock')).toBeVisible();
+    await expect(page.locator('#sl-palette')).toBeHidden();
+    await page.locator('#isl-xbar .isl-xend').click();
+    await expect(page.locator('#isl-end')).not.toHaveClass(/hidden/);
+    await page.setViewportSize({ width: 1180, height: 820 });
+    await expect(page.locator('#isl-end')).toHaveClass(/hidden/);
+    await expect(page.locator('#isl-xbar')).toHaveCount(0);
+    await expect(page.locator('.sl-topbar #sl-clock-slot .sl-clock')).toBeVisible();
+    await expect(page.locator('#sl-body .sl-examfoot')).toBeVisible();
+    await expect(page.locator('#sl-palette')).toBeVisible();
+    expect(await page.evaluate(() => window._simLab.examSession().view)).toBe('round');
+  });
+  test('I2: the exam loader sweeps (skeleton shimmer and bar animate) and keeps the drawn block heights', async ({ page }) => {
+    await boot(page, { width: 402, height: 874 }, 'pro');
+    await page.evaluate(() => { window._slMeteredGenerate = () => new Promise(() => {}); startSimLabHome(); });
+    await expect(page.locator('#page-sim-lab-entry')).toHaveClass(/active/);
+    await setTier(page, 'pro');
+    await page.locator('#isl-entry [data-act="mode"][data-mode="exam"]').click();
+    await page.evaluate(async () => { await new Promise((res) => window._ensureSimLabLoaded(res)); window.SIM_LAB_SEED_NETPLUS.length = 0; });   // nothing to fall back to: the loader stays up
+    await page.locator('#isl-entry [data-act="start"]').click();
+    await page.waitForSelector('#sl-body .isl-loader');
+    const r = await page.evaluate(() => ({
+      shim: getComputedStyle(document.querySelector('#sl-body .isl-skel'), '::after').animationName,
+      bar: getComputedStyle(document.querySelector('#sl-body .isl-gen-bar')).animationName,
+      hs: Array.from(document.querySelectorAll('#sl-body .isl-skel')).map((e) => Math.round(e.getBoundingClientRect().height))
+    }));
+    expect(r.shim).not.toBe('none');
+    expect(r.bar).not.toBe('none');
+    expect(r.hs[0] < r.hs[2] && r.hs[2] < r.hs[1]).toBe(true);   // the drawn 92 / 150 / 120 blocks
+  });
+});

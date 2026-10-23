@@ -1147,6 +1147,7 @@ test('exam submit: scores all rounds, stops the clock, builds results', async ({
 
 // Task 9: Pace block on verdict — under-par and over-par copy variants
 test('exam pace verdict: under-par shows "On exam pace", over-par shows coaching copy', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 });   // desktop pace card; phones get the B3b2 verdict with its Pace card (lift-b3b2.spec)
   await gotoApp(page);
   const r = await page.evaluate(async () => {
     window._quotaState = { tier: 'pro' };
