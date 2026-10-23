@@ -70,6 +70,7 @@
 
   // ── Block B: Reword Gauntlet ──
   function startRewordGauntlet() {
+    if (window.iosGauntlet && window.iosGauntlet.closeTopics) window.iosGauntlet.closeTopics();   // v8.190.0
     _gauntletTopic = null;
     // v7.48.1: remember the entry origin — Back must never route a desktop
     // user to the mobile-only drills page.
@@ -80,6 +81,7 @@
   }
 
   function gauntletBack() {
+    if (window.iosGauntlet && window.iosGauntlet.closeTopics) window.iosGauntlet.closeTopics();   // v8.190.0
     if (_gauntletReturn === 'drills') showPage('drills');
     else goSetup();
   }
@@ -107,6 +109,15 @@
     if (nEl) nEl.textContent = n;
     const listEl = document.getElementById('gnt-topic-list');
     if (listEl) listEl.classList.add('is-hidden');
+    // v8.190.0 Lift B3c1: phones get the June entry (features/ios-gauntlet.js); the desktop card hides beside it
+    const igt = window.iosGauntlet;
+    if (igt && igt.renderEntry) {
+      try {
+        igt.renderEntry({ topic: topicName, why: whyEl ? whyEl.textContent : '', back: _gauntletReturn, cracked: n,
+          free: !!(_quotaState && _quotaState.tier === 'free'),
+          topics: Object.keys((typeof TOPIC_DOMAINS !== 'undefined' && TOPIC_DOMAINS) || {}) });
+      } catch (_) {}
+    }
   }
 
   function gauntletToggleTopicList() {
@@ -225,6 +236,7 @@
   async function gauntletStart(opts) {
     opts = opts || {};
     if (_gauntletBusy) return; // double-tap guard
+    if (window.iosGauntlet && window.iosGauntlet.closeTopics) window.iosGauntlet.closeTopics();   // v8.190.0
     // v7.54.0: free users get one Gauntlet run a day (was Pro-only). _gateGauntletDaily
     // allows Pro / anonymous freely and caps the free tier at 1/day with its own modal.
     if (typeof _gateGauntletDaily === 'function' && !_gateGauntletDaily()) return;

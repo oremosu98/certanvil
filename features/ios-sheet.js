@@ -49,7 +49,7 @@
   }
   // Closes an open confirm sheet as "stay". Called when the screen under it goes away
   // (an exam submit, a Sim Lab round ending), so a sheet never outlives its question.
-  iosSheet.dismiss = function () { if (_open) _open(false); if (window.iosEnlarge && window.iosEnlarge.close) window.iosEnlarge.close(); };   // both sheets go with their screen
+  iosSheet.dismiss = function () { if (_open) _open(false); if (window.iosEnlarge && window.iosEnlarge.close) window.iosEnlarge.close(); if (window.iosGauntlet && window.iosGauntlet.closeTopics) window.iosGauntlet.closeTopics(); };   // both sheets go with their screen
   iosSheet.isOpen = function () { return !!_open; };
   window.iosSheet = iosSheet;
 

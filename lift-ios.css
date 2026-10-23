@@ -1573,21 +1573,21 @@ html[data-theme] body :is(#exam-modal, #isl-end).ix-closing .modal-box { animati
 @keyframes ix-pop { from { opacity: 0; transform: scale(0.96); } }
 
 /* the leave / abandon sheet (E2E .lsheet): 360ms in, 200ms out */
-#exam-sheet-scrim { position: fixed; inset: 0; z-index: 400; background: color-mix(in oklab, var(--bg) 58%, transparent); opacity: 0; transition: opacity .2s var(--ios-ease); }
-#exam-sheet-scrim.open { opacity: 1; transition: opacity .26s var(--ios-ease); }
-#exam-sheet { position: fixed; left: 0; right: 0; bottom: 0; z-index: 401; box-sizing: border-box; padding: 10px 20px calc(22px + env(safe-area-inset-bottom)); border-top: 1px solid var(--border); border-radius: 22px 22px 0 0; background: var(--surface); color: var(--text); font: 15px/1.55 Inter, -apple-system, BlinkMacSystemFont, sans-serif; -webkit-font-smoothing: antialiased; transform: translateY(100%); transition: transform .2s var(--ios-ease); }
-#exam-sheet.open { transform: none; transition: transform .36s var(--ios-ease); }
-#exam-sheet .ix-sheet-grip { width: 38px; height: 5px; border-radius: 999px; background: color-mix(in oklab, var(--text) 18%, transparent); margin: 0 auto 16px; }
-#exam-sheet h3 { font: 600 21px/1.2 Fraunces, Georgia, serif !important; letter-spacing: -0.01em !important; text-transform: none !important; color: var(--text); margin: 0 0 6px; }
-#exam-sheet .ix-sheet-body { font-size: 13.5px; line-height: 1.5; color: var(--text-mid); margin: 0 0 18px; }
-#exam-sheet button { font-family: inherit; box-sizing: border-box; cursor: pointer; }
-#exam-sheet .ix-sheet-stay { width: 100%; border: 0; border-radius: 13px; padding: 15px; background: var(--accent); color: var(--on-accent); font: 700 15px/1 Inter, sans-serif; transition: transform .15s var(--ios-ease); }
-#exam-sheet .ix-sheet-stay:active { transform: scale(0.985); }
-#exam-sheet .ix-sheet-go { width: 100%; margin-top: 6px; border: 0; background: transparent; padding: 12px; font: 650 13.5px/1 Inter, sans-serif; color: var(--miss); transition: opacity .15s var(--ios-ease); }
-#exam-sheet .ix-sheet-go:active { opacity: .6; }
+:is(#exam-sheet-scrim, #igt-topics-scrim) { position: fixed; inset: 0; z-index: 400; background: color-mix(in oklab, var(--bg) 58%, transparent); opacity: 0; transition: opacity .2s var(--ios-ease); }
+:is(#exam-sheet-scrim, #igt-topics-scrim).open { opacity: 1; transition: opacity .26s var(--ios-ease); }
+:is(#exam-sheet, #igt-topics) { position: fixed; left: 0; right: 0; bottom: 0; z-index: 401; box-sizing: border-box; padding: 10px 20px calc(22px + env(safe-area-inset-bottom)); border-top: 1px solid var(--border); border-radius: 22px 22px 0 0; background: var(--surface); color: var(--text); font: 15px/1.55 Inter, -apple-system, BlinkMacSystemFont, sans-serif; -webkit-font-smoothing: antialiased; transform: translateY(100%); transition: transform .2s var(--ios-ease); }
+:is(#exam-sheet, #igt-topics).open { transform: none; transition: transform .36s var(--ios-ease); }
+:is(#exam-sheet, #igt-topics) .ix-sheet-grip { width: 38px; height: 5px; border-radius: 999px; background: color-mix(in oklab, var(--text) 18%, transparent); margin: 0 auto 16px; }
+:is(#exam-sheet, #igt-topics) h3 { font: 600 21px/1.2 Fraunces, Georgia, serif !important; letter-spacing: -0.01em !important; text-transform: none !important; color: var(--text); margin: 0 0 6px; }
+:is(#exam-sheet, #igt-topics) .ix-sheet-body { font-size: 13.5px; line-height: 1.5; color: var(--text-mid); margin: 0 0 18px; }
+:is(#exam-sheet, #igt-topics) button { font-family: inherit; box-sizing: border-box; cursor: pointer; }
+:is(#exam-sheet, #igt-topics) .ix-sheet-stay { width: 100%; border: 0; border-radius: 13px; padding: 15px; background: var(--accent); color: var(--on-accent); font: 700 15px/1 Inter, sans-serif; transition: transform .15s var(--ios-ease); }
+:is(#exam-sheet, #igt-topics) .ix-sheet-stay:active { transform: scale(0.985); }
+:is(#exam-sheet, #igt-topics) .ix-sheet-go { width: 100%; margin-top: 6px; border: 0; background: transparent; padding: 12px; font: 650 13.5px/1 Inter, sans-serif; color: var(--miss); transition: opacity .15s var(--ios-ease); }
+:is(#exam-sheet, #igt-topics) .ix-sheet-go:active { opacity: .6; }
 @media (prefers-reduced-motion: reduce) {
-  #exam-sheet { transform: none; opacity: 0; transition: opacity .2s ease; }
-  #exam-sheet.open { opacity: 1; transition: opacity .2s ease; }
+  :is(#exam-sheet, #igt-topics) { transform: none; opacity: 0; transition: opacity .2s ease; }
+  :is(#exam-sheet, #igt-topics).open { opacity: 1; transition: opacity .2s ease; }
 }
 html[data-theme] body :is(#exam-modal, #isl-end), #exam-sheet {
   --ix-flag: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M5 21V4h11l-1.5 4L16 12H5'/></svg>");
@@ -2019,3 +2019,58 @@ html[data-theme] body #page-sim-lab.isl-exam.active { padding: 0 !important; mar
 #sl-result-root .isl-prt { font: 600 11.5px/1 'Roboto Mono', monospace; color: var(--text); }
 #sl-result-root .isl-prt.over { color: var(--miss); }
 #sl-result-root .isl-prp { font: 500 10.5px/1 'Roboto Mono', monospace; color: var(--text-dim); }
+
+/* ═════════════════════ LIFT B3c1 · ENTRY (cert-ios-gauntlet.html ?v=entry, entry-free) · igt- ═════════════════════ */
+body:has(#page-gauntlet.active) #app-topbar, body:has(#page-gauntlet.active) .app-topbar,
+body:has(#page-gauntlet-result.active) #app-topbar, body:has(#page-gauntlet-result.active) .app-topbar { display: none !important; }
+#page-gauntlet:has(#igt-entry:not(:empty)) > :not(#igt-entry) { display: none !important; }
+#page-gauntlet.active:has(#igt-entry:not(:empty)) { animation: none !important; transform: none !important; }   /* a transformed page would trap the fixed Start dock */
+html[data-theme] body #page-gauntlet:has(#igt-entry:not(:empty)) { padding: 0 !important; max-width: none !important; }
+#igt-entry { background: var(--bg); color: var(--text); font-family: Inter, -apple-system, BlinkMacSystemFont, sans-serif; }
+#igt-entry button { font-family: inherit; box-sizing: border-box; cursor: pointer; }
+#igt-entry .igt-hdr { display: flex; align-items: center; gap: 11px; padding: 14px 20px 6px; }
+#igt-entry .igt-back { position: relative; flex: 0 0 auto; width: 34px; height: 34px; min-height: 0; margin: 0; padding: 0; border-radius: 10px; border: 1px solid var(--border); background: var(--surface); display: grid; place-items: center; color: var(--text-mid); transition: transform .14s var(--ios-ease); }
+#igt-entry .igt-back::after { content: ""; position: absolute; inset: -5px; }
+#igt-entry .igt-back:active { transform: scale(0.97); }
+#igt-entry .igt-hdr h1 { flex: 1; margin: 0; font: 600 21px/1.05 Fraunces, Georgia, serif !important; letter-spacing: -0.01em !important; text-transform: none !important; color: var(--text); }
+#igt-entry .igt-body { padding: 4px 20px calc(160px + env(safe-area-inset-bottom)); }
+#igt-entry .igt-hero { text-align: center; padding: 10px 6px 4px; }
+#igt-entry .igt-mark { width: 58px; height: 58px; border-radius: 999px; margin: 6px auto 14px; display: grid; place-items: center; color: var(--accent-deep); background: color-mix(in oklab, var(--accent) 13%, var(--surface)); }
+#igt-entry .igt-hero h2 { margin: 0; font: 600 26px/1.1 Fraunces, Georgia, serif !important; letter-spacing: -0.014em !important; text-transform: none !important; color: var(--text); }
+#igt-entry .igt-hero h2 em { font-style: italic; color: var(--accent); }
+#igt-entry .igt-hero p { margin: 10px auto 0; max-width: 32ch; font: 500 13.5px/1.5 Inter, sans-serif; color: var(--text-mid); }
+#igt-entry .igt-target { margin-top: 16px; border: 1px solid var(--border); border-radius: 16px; background: var(--surface); padding: 15px 16px; }
+#igt-entry .igt-k, #igt-entry .igt-sect { font: 800 9.5px/1 Inter, sans-serif; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-dim); }
+#igt-entry .igt-v { margin-top: 8px; font: 650 16px/1.3 Inter, sans-serif; color: var(--text); }
+#igt-entry .igt-why { margin-top: 4px; font: 500 12px/1.4 Inter, sans-serif; color: var(--text-dim); }
+#igt-entry .igt-switch { position: relative; display: inline-flex; align-items: center; gap: 6px; min-height: 0; margin: 12px 0 0; padding: 0; border: 0; background: none; font: 650 13px/1 Inter, sans-serif; color: var(--accent-deep); transition: transform .15s var(--ios-ease); }
+#igt-entry .igt-switch::after { content: ""; position: absolute; inset: -12px -8px; }
+#igt-entry .igt-switch:active { transform: scale(0.97); }
+#igt-entry .igt-cracked { display: flex; align-items: center; gap: 12px; margin: 12px 2px 0; }
+#igt-entry .igt-cracked b { font: 600 30px/1 Fraunces, Georgia, serif; color: var(--accent); font-variant-numeric: lining-nums tabular-nums; }
+#igt-entry .igt-cracked span { font: 500 12px/1.4 Inter, sans-serif; color: var(--text-mid); }
+#igt-entry .igt-sect { margin: 18px 2px 10px; font-size: 10px; }
+#igt-entry .igt-rungs, #page-quiz #gauntlet-ladder { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 5px; }
+#igt-entry .igt-rg i { display: block; height: 5px; border-radius: 3px; background: var(--track); }
+#igt-entry .igt-rg span { display: block; margin-top: 7px; text-align: center; font: 800 9px/1.15 Inter, sans-serif; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-dim); }
+#igt-entry .igt-cap { margin: 12px 2px 0; font: 600 12px/1.45 Inter, sans-serif; color: var(--text-dim); }
+#igt-entry .igt-cap b { color: var(--text-mid); }
+#igt-entry .igt-dock { position: fixed; left: 0; right: 0; bottom: calc(76px + env(safe-area-inset-bottom)); z-index: 40; padding: 12px 18px; border-top: 1px solid color-mix(in oklab, var(--border) 70%, transparent); background: var(--bg); }
+#igt-entry .igt-start { width: 100%; display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 0; margin: 0; padding: 14px; border: 0; border-radius: 13px; background: var(--accent); color: var(--on-accent); font: 700 15px/1 Inter, sans-serif; box-shadow: 0 10px 22px -12px color-mix(in oklab, var(--accent) 70%, transparent); transition: transform .15s var(--ios-ease); }
+#igt-entry .igt-start:active { transform: scale(0.985); }
+@media (prefers-reduced-motion: no-preference) {
+  #page-gauntlet.active #igt-entry .igt-hero, #page-gauntlet.active #igt-entry .igt-target, #page-gauntlet.active #igt-entry .igt-rungs { animation: igt-rise .52s var(--ios-ease) both; }
+  #page-gauntlet.active #igt-entry .igt-target { animation-delay: .06s; } #page-gauntlet.active #igt-entry .igt-rungs { animation-delay: .12s; }
+  @keyframes igt-rise { from { opacity: 0; transform: translateY(9px); } }
+}
+
+/* ═════════════════════ LIFT B3c1 · SHEET (cert-ios-gauntlet.html ?v=entry-pick) · igt- ═════════════════════ */
+/* #igt-topics takes B2's sheet rules (widened above to :is(#exam-sheet, #igt-topics)); the list lives here */
+#igt-topics h3 { margin-bottom: 12px !important; }
+#igt-topics .igt-tlist { max-height: min(60dvh, 420px); overflow-y: auto; overscroll-behavior: contain; margin: 0 -4px; }
+#igt-topics .igt-tlist button { width: 100%; min-height: 48px; display: flex; align-items: center; gap: 10px; margin: 0; padding: 0 12px; border: 0; border-radius: 12px; background: none; text-align: left; font: 600 14px/1.25 Inter, sans-serif; color: var(--text); transition: background-color .16s, transform .12s var(--ios-ease); }
+#igt-topics .igt-tlist button:active { transform: scale(0.99); }
+#igt-topics .igt-tlist button span { flex: 1 1 auto; }
+#igt-topics .igt-tlist button svg { flex: 0 0 auto; color: var(--accent-deep); opacity: 0; }
+#igt-topics .igt-tlist button[aria-pressed="true"] { background: color-mix(in oklab, var(--accent) 9%, transparent); color: var(--accent-deep); }
+#igt-topics .igt-tlist button[aria-pressed="true"] svg { opacity: 1; }

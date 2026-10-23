@@ -56,6 +56,22 @@ const { _fnBody, fs, html, path, ROOT, results, test, vm } = require('./_context
       /That was today’s free run\. The next one is free tomorrow, or Pro runs it again now\./.test(run('_iosGtResultHtml(_iosGtResultModel(__s))', R({ free: true, used: true })))
       && run('_iosGtResultHtml(_iosGtResultModel(__s))', R({ free: false, used: true })).indexOf('free run') < 0
       && run('_iosGtResultHtml(_iosGtResultModel(__s))', R({ free: true, used: false })).indexOf('free run') < 0);
+
+    // ── Task 2: the phone hosts ──
+    test('index.html: #igt-entry is the first child of #page-gauntlet (ios-only iq-screen)',
+      /<div id="page-gauntlet" class="page">\s*<section id="igt-entry" class="ios-only iq-screen" aria-label="Reword Gauntlet"><\/section>/.test(html));
+    test('index.html: #igt-topics sheet with its scrim, labelled, hidden',
+      /<div id="igt-topics-scrim" class="isl-scrim" hidden><\/div>\s*<div id="igt-topics" class="ix-sheet igt-tsheet" role="dialog" aria-modal="true" aria-labelledby="igt-topics-title" hidden>/.test(html)
+      && /<h3 id="igt-topics-title">Pick a topic<\/h3>/.test(html));
+    test('features/ios-gauntlet.js loads deferred right after ios-simlab.js',
+      /<script defer src="features\/ios-simlab\.js"><\/script>\s*<script defer src="features\/ios-gauntlet\.js"><\/script>/.test(html));
+    test('ios-gauntlet.js exports renderEntry, pickTopic, closeTopics; no inline on*= in its markup',
+      ['renderEntry', 'pickTopic', 'closeTopics'].every(n => new RegExp('window\\.iosGauntlet\\.' + n + ' = ').test(src)) && !/\son[a-z]+=/.test(src));
+    const fd = fs.readFileSync(path.join(ROOT, 'features', 'flagship-drills.js'), 'utf8');
+    test('renderGauntletEntry hands phones to iosGauntlet.renderEntry; Start and the entry close the topic sheet',
+      /iosGauntlet/.test(_fnBody(fd, 'renderGauntletEntry') || '') && /\.renderEntry\(/.test(_fnBody(fd, 'renderGauntletEntry') || '') && /closeTopics/.test(_fnBody(fd, 'startRewordGauntlet') || '') && /closeTopics/.test(_fnBody(fd, 'gauntletStart') || ''));
+    test('iosSheet.dismiss also closes the Gauntlet topic sheet',
+      /iosGauntlet[^;]*closeTopics/.test(fs.readFileSync(path.join(ROOT, 'features', 'ios-sheet.js'), 'utf8')));
   } catch (err) {
     test('Lift B3c1 Reword Gauntlet: block (threw)', false);
     results.errors.push('503 ios-gauntlet block threw: ' + err.message);

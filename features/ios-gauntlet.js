@@ -81,8 +81,79 @@
     return h;
   }
 
+  // ── Phone hosts ──
+  function _call(name, arg) { if (typeof window[name] === 'function') window[name](arg); }
+  // Renders the phone entry into #igt-entry and wires it (one delegated listener). False on desktop.
+  function renderEntry(s) {
+    var host = document.getElementById('igt-entry');
+    if (!host) return false;
+    if (!isPhone()) { host.innerHTML = ''; return false; }
+    host.innerHTML = _iosGtEntryHtml(_iosGtEntryModel(s));
+    host.__igtTopics = s.topics || []; host.__igtTopic = s.topic;
+    if (!host.__igtBound) {
+      host.__igtBound = true;
+      host.addEventListener('click', function (ev) {
+        var b = ev.target.closest && ev.target.closest('[data-act]');
+        if (!b || !host.contains(b)) return;
+        var act = b.getAttribute('data-act');
+        if (act === 'back') _call('gauntletBack');
+        else if (act === 'start') _call('gauntletStart');
+        else if (act === 'pick') pickTopic(host.__igtTopics, host.__igtTopic).then(function (t) { if (t) _call('gauntletChooseTopic', t); });
+      });
+    }
+    return true;
+  }
+  // The topic list in the in-app sheet's look (#igt-topics). Resolves the tapped topic, or null.
+  var _tp = null;   // { done(val) } while open
+  function closeTopics() { if (_tp) _tp.done(null); }
+  function pickTopic(topics, current) {
+    var sheet = document.getElementById('igt-topics'), scrim = document.getElementById('igt-topics-scrim');
+    if (!sheet || !scrim) return Promise.resolve(null);
+    if (_tp) _tp.done(null);
+    var list = sheet.querySelector('.igt-tlist'), back = document.activeElement;
+    function e(v) { return String(v == null ? '' : v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+    var TICK = '<svg viewBox="0 0 24 24" aria-hidden="true" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"></path></svg>';
+    list.innerHTML = (topics || []).map(function (t, i) {
+      return '<button type="button" role="listitem" data-i="' + i + '" aria-pressed="' + (t === current) + '"><span>' + e(t) + '</span>' + TICK + '</button>';
+    }).join('');
+    return new Promise(function (resolve) {
+      var t1 = null;
+      var st = {
+        done: function (val) {
+          if (_tp !== st) return;
+          _tp = null; clearTimeout(t1);
+          window.removeEventListener('keydown', onKey, true);
+          list.removeEventListener('click', onTap); scrim.removeEventListener('click', onScrim);
+          sheet.classList.remove('open'); scrim.classList.remove('open');
+          setTimeout(function () { if (!sheet.classList.contains('open')) { sheet.hidden = true; scrim.hidden = true; } }, 200);   // BRAND §6: sheet out 200ms
+          if (back && back.isConnected && back.focus) { try { back.focus({ preventScroll: true }); } catch (_) {} }
+          resolve(val);
+        }
+      };
+      function onKey(ev) { if (ev.key === 'Escape') { ev.preventDefault(); ev.stopImmediatePropagation(); st.done(null); } }
+      function onScrim() { st.done(null); }
+      function onTap(ev) {
+        var b = ev.target.closest && ev.target.closest('button[data-i]'); if (!b || t1) return;
+        [].forEach.call(list.children, function (x) { x.setAttribute('aria-pressed', String(x === b)); });
+        var t = topics[Number(b.getAttribute('data-i'))];
+        t1 = setTimeout(function () { st.done(t); }, 140);   // the tick lands before the sheet goes
+      }
+      _tp = st;
+      window.addEventListener('keydown', onKey, true);
+      list.addEventListener('click', onTap); scrim.addEventListener('click', onScrim);
+      sheet.hidden = false; scrim.hidden = false;
+      void sheet.offsetWidth;
+      sheet.classList.add('open'); scrim.classList.add('open');
+      var on = list.querySelector('[aria-pressed="true"]') || list.firstChild;
+      if (on && on.focus) { try { on.focus({ preventScroll: true }); } catch (_) {} }
+    });
+  }
+
   window.iosGauntlet = window.iosGauntlet || {};
   window.iosGauntlet.isPhone = isPhone;
+  window.iosGauntlet.renderEntry = renderEntry;
+  window.iosGauntlet.pickTopic = pickTopic;
+  window.iosGauntlet.closeTopics = closeTopics;
   window._iosGtEntryModel = _iosGtEntryModel;
   window._iosGtEntryHtml = _iosGtEntryHtml;
   window._iosGtResultModel = _iosGtResultModel;
