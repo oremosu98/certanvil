@@ -142,6 +142,56 @@
     return window.iosSheet({ title: 'Start this PBQ again?', body: 'Your answers on this question will be cleared.', go: 'Clear answers', stay: 'Keep them' });
   }
 
+  // ── Exam mode (Lift B3b2): the bar, the dock and the End dialog. Pure; s = {idx, rounds, answered[], flagged[]}. ──
+  function _iosSlExamBarModel(s) {
+    var ticks = [], k = 0;
+    for (var i = 0; i < s.rounds; i++) {
+      if (s.answered[i]) k++;
+      ticks.push(i === s.idx ? 'cur' : s.flagged[i] ? 'flag' : s.answered[i] ? 'done' : '');
+    }
+    return { cn: 'Round ' + (s.idx + 1) + ' of ' + s.rounds, cs: k + ' answered', ticks: ticks };
+  }
+  function _iosSlExamBarHtml(m) {
+    return { mid: '<span class="isl-xcn">' + m.cn + '</span><span class="isl-xcs">' + m.cs + '</span>',
+      strip: m.ticks.map(function (t) { return '<i class="' + t + '"></i>'; }).join('') };
+  }
+  function _iosSlExamDockHtml(d) {
+    function svg(p, n) { return '<svg viewBox="0 0 24 24" aria-hidden="true" width="' + n + '" height="' + n + '" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">' + p + '</svg>'; }
+    return '<button type="button" class="isl-xprev" data-act="prev" aria-label="Previous round"' + (d.first ? ' disabled' : '') + '>' + svg('<path d="M15 18l-6-6 6-6"></path>', 18) + '</button>'
+      + '<button type="button" class="isl-xflag' + (d.flagged ? ' is-on' : '') + '" data-act="flag" aria-pressed="' + (d.flagged ? 'true' : 'false') + '">' + svg('<path d="M5 21V4h11l-1.5 4L16 12H5"></path>', 15) + (d.flagged ? 'Flagged' : 'Flag') + '</button>'
+      + '<button type="button" class="isl-xnext" data-act="next">' + (d.last ? 'Review' : 'Next' + svg('<path d="M5 12h14M13 6l6 6-6 6"></path>', 17)) + '</button>';
+  }
+  function _iosSlEndModel(s) {
+    var answered = 0, flagged = 0, firstSkip = -1, firstFlag = -1, grid = [];
+    for (var i = 0; i < s.rounds; i++) {
+      var a = !!s.answered[i], f = !!s.flagged[i], cur = i === s.idx;
+      if (a) answered++; else if (firstSkip < 0) firstSkip = i;
+      if (f) { flagged++; if (firstFlag < 0) firstFlag = i; }
+      grid.push({ n: i + 1, cls: ((f ? 'f' : a ? 'a' : '') + (cur ? ' c' : '')).trim(),
+        label: 'Round ' + (i + 1) + ', ' + (cur ? 'current' : f ? 'flagged' : a ? 'answered' : 'skipped') });
+    }
+    var skipped = s.rounds - answered, review = null;
+    if (skipped) review = { label: 'Review the ' + skipped + ' you skipped first', target: firstSkip };
+    else if (flagged) review = { label: 'Review the ' + flagged + ' you flagged first', target: firstFlag };
+    return { answered: answered, skipped: skipped, flagged: flagged, review: review, grid: grid };
+  }
+  function _iosSlEndHtml(m) {
+    return '<div class="modal-box">'
+      + '<div class="ed-modalhead"><div class="ed-modalhead-eyebrow">Sim Lab exam · end of session</div><h2 class="ed-modalhead-title" id="isl-end-title">Submit <em>exam?</em></h2></div>'
+      + '<div class="modal-stats"><div class="modal-stat"><div class="ms-val">' + m.answered + '</div><div class="ms-lbl">Answered</div></div>'
+      + '<div class="modal-stat"><div class="ms-val isl-ms-skip">' + m.skipped + '</div><div class="ms-lbl">Skipped</div></div>'
+      + '<div class="modal-stat"><div class="ms-val isl-ms-flag">' + m.flagged + '</div><div class="ms-lbl">Flagged</div></div></div>'
+      + '<div class="modal-actions">' + (m.review ? '<button type="button" class="ix-review" data-act="review">' + m.review.label + '</button>' : '')
+      + '<button type="button" class="btn btn-primary" data-act="submit">Submit and see results</button>'
+      + '<button type="button" class="btn btn-danger" data-act="abandon">Abandon exam</button></div>'
+      + '<div class="ix-jump"><button type="button" class="ix-jump-t" aria-expanded="false" aria-controls="isl-jgrid">Jump to a round</button>'
+      + '<div class="ix-jgrid" id="isl-jgrid" role="list">' + m.grid.map(function (g, i) {
+        return '<button type="button" role="listitem"' + (g.cls ? ' class="' + g.cls + '"' : '') + ' data-i="' + i + '" aria-label="' + g.label + '">' + g.n + '</button>';
+      }).join('') + '</div>'
+      + '<div class="ix-jkey" aria-hidden="true"><span><i class="a"></i>Answered</span><span><i></i>Skipped</span><span><i class="f"></i>Flagged</span></div></div>'
+      + '</div>';
+  }
+
   // ── The verdict (#sl-result-root on phones) ──
   // Pure: s = {rounds:[{title, topic, correct, total, fraction, panelHtml}], pct, passed, stepsCorrect, stepsTotal, slip, pro}.
   // panelHtml comes from sim-lab.js's own answer panel (already escaped there) and passes through.
@@ -153,8 +203,28 @@
         label: tone === 'ok' ? 'Right' : tone === 'part' ? 'Partly' : 'Wrong', panelHtml: r.panelHtml || '' };
     });
     var pct = Math.max(0, Math.min(100, Math.round(Number(s.pct) || 0)));
-    return { n: rounds.length, passed: s.passed || 0, pct: pct, stepsCorrect: s.stepsCorrect || 0, stepsTotal: s.stepsTotal || 0,
+    var m = { n: rounds.length, passed: s.passed || 0, pct: pct, stepsCorrect: s.stepsCorrect || 0, stepsTotal: s.stepsTotal || 0,
       rounds: rounds, slip: s.slip || null, upsell: !s.pro };
+    if (s.mode !== 'exam') return m;
+    // v8.189.0 Lift B3b2: Sim Lab exam: no upsell, a time-up kicker, and the Pace card (today's contents).
+    function fmt(ms) { var t = Math.max(0, Math.round(ms / 1000)), mm = Math.floor(t / 60); return mm + ':' + String(t % 60).padStart(2, '0'); }
+    var p = s.pace || { totalMs: 0, budgetMs: 0, deltaMs: 0, timeUp: !!s.timeUp, perRound: [] };
+    var up = !!(s.timeUp || p.timeUp), worst = 0, worstOver = -Infinity;
+    (p.perRound || []).forEach(function (r, i) { var o = r.roundMs - r.parMs; if (o > worstOver) { worstOver = o; worst = i; } });
+    m.upsell = false;
+    m.timeUp = up;
+    m.kick = (up ? "Time's up · " : 'Sim Lab exam · ') + m.n + ' rounds';
+    m.pace = {
+      total: fmt(p.totalMs), pill: up ? 'Out of time' : 'On exam pace', over: up,
+      sub: up ? 'Round ' + (worst + 1) + " ran long. On test day that's the round to triage: flag it and move."
+        : fmt(p.deltaMs) + ' to spare. On the real exam that leaves room to revisit a hard PBQ.',
+      pct: p.budgetMs ? Math.min(100, Math.round(p.totalMs / p.budgetMs * 100)) : 0,
+      target: 'Target ' + fmt(p.budgetMs), yours: 'your time ' + fmt(p.totalMs),
+      rows: (p.perRound || []).map(function (r, i) {
+        return { label: 'Round ' + (i + 1) + ' · ' + ((rounds[i] && rounds[i].topic) || 'PBQ'), time: fmt(r.roundMs), par: 'par ' + fmt(r.parMs), over: r.roundMs > r.parMs };
+      })
+    };
+    return m;
   }
   // Pure: model -> markup of the E2E verdict (isl- prefixed). Self-contained.
   function _iosSlVerdictHtml(m) {
@@ -162,13 +232,23 @@
     function svg(p, n) { return '<svg viewBox="0 0 24 24" aria-hidden="true" width="' + n + '" height="' + n + '" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + p + '</svg>'; }
     var DONE = svg('<path d="M9 11l3 3L22 4"></path><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>', 14);
     var CHEV = svg('<path d="M9 6l6 6-6 6"></path>', 16);
+    var CLOCK = svg('<circle cx="12" cy="13" r="8"></circle><path d="M12 9v4l2 2M9 2h6"></path>', 14);
     var SPARK = svg('<path d="M12 2v4M12 18v4M2 12h4M18 12h4"></path><circle cx="12" cy="12" r="4"></circle>', 13);
     var h = '<div class="isl-vbody">'
-      + '<div class="isl-vkick">' + DONE + 'Sim Lab · ' + m.n + ' rounds</div>'
+      + '<div class="isl-vkick">' + (m.timeUp ? CLOCK : DONE) + (m.kick ? e(m.kick) : 'Sim Lab · ' + m.n + ' rounds') + '</div>'
       + '<h2 class="isl-vtitle">' + m.passed + ' of ' + m.n + ' <em>passed.</em></h2>'
       + '<p class="isl-vsub">' + m.stepsCorrect + ' of ' + m.stepsTotal + ' steps right.</p>'
-      + '<div class="isl-vscore"><b>' + m.pct + '</b><span>%</span></div><div class="isl-vmeter"><i style="width:' + m.pct + '%"></i></div>'
-      + '<div class="isl-sect">Your rounds</div>';
+      + '<div class="isl-vscore"><b>' + m.pct + '</b><span>%</span></div><div class="isl-vmeter"><i style="width:' + m.pct + '%"></i></div>';
+    if (m.pace) {
+      var P = m.pace;
+      h += '<div class="isl-pace"><div class="isl-pk">Pace</div><div class="isl-ph"><span class="isl-pt">' + P.total + '</span><span class="isl-pv' + (P.over ? ' over' : '') + '">' + P.pill + '</span></div>'
+        + '<p class="isl-ps">' + e(P.sub) + '</p>'
+        + '<div class="isl-ptrack"><i class="isl-pfill' + (P.over ? ' over' : '') + '" style="width:' + P.pct + '%"></i><span class="isl-ptick"><b>' + P.target + '</b></span></div>'
+        + '<div class="isl-pscale"><span>0:00</span><span>' + P.yours + '</span></div><div class="isl-prows">'
+        + P.rows.map(function (r) { return '<div class="isl-prow"><span class="isl-prn">' + e(r.label) + '</span><span class="isl-prt' + (r.over ? ' over' : '') + '">' + r.time + '</span><span class="isl-prp">' + r.par + '</span></div>'; }).join('')
+        + '</div></div>';
+    }
+    h += '<div class="isl-sect">Your rounds</div>';
     m.rounds.forEach(function (r, i) {
       h += '<button class="isl-srow" type="button" aria-expanded="false" aria-controls="isl-sdet-' + i + '">'
         + '<span class="isl-sn2"><span class="isl-st">' + e(r.title) + '</span><span class="isl-ss">' + e(r.topic) + ' · ' + e(r.score) + '</span></span>'
@@ -224,6 +304,11 @@
   window.iosSimLab.wireVerdict = wireVerdict;
   window._iosSlVerdictModel = _iosSlVerdictModel;
   window._iosSlVerdictHtml = _iosSlVerdictHtml;
+  window._iosSlExamBarModel = _iosSlExamBarModel;
+  window._iosSlExamBarHtml = _iosSlExamBarHtml;
+  window._iosSlExamDockHtml = _iosSlExamDockHtml;
+  window._iosSlEndModel = _iosSlEndModel;
+  window._iosSlEndHtml = _iosSlEndHtml;
   window.renderIosSimLabEntry = renderIosSimLabEntry;
   window._iosSlEntryModel = _iosSlEntryModel;
   window._iosSlEntryHtml = _iosSlEntryHtml;
