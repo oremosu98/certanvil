@@ -114,3 +114,50 @@ test('Lift B3c1 desktop: the entry is today\'s', async ({ page }) => {
   await expect(page.locator('#page-gauntlet .gnt-shell')).toBeVisible();
   expect(await page.evaluate(() => (document.getElementById('igt-entry') || { innerHTML: '' }).innerHTML)).toBe('');
 });
+
+// ── Task 3: the run ──
+// Lift A: pick an option, confirm with Next, then move on with Next question.
+async function answer(page, idx) {
+  await page.locator('#options .option').nth(idx).click();
+  const nb = page.locator('#btn-next');
+  await nb.click();                      // confirm the pick
+  await page.waitForTimeout(150);
+}
+async function nextQ(page) { await page.locator('#btn-next').click(); await page.waitForTimeout(250); }
+async function startRun(page, vp, tier) {
+  await openEntry(page, vp, tier || 'pro');
+  await page.locator('#igt-entry .igt-start').click();
+  await expect(page.locator('#page-quiz')).toHaveClass(/active/, { timeout: 8000 });
+}
+module.exports.answer = answer; module.exports.nextQ = nextQ; module.exports.startRun = startRun;
+
+for (const vp of PHONES) {
+  test.describe('Lift B3c1 run @' + vp.width, () => {
+    test('the ladder replaces the pills during the run', async ({ page }) => {
+      await startRun(page, vp);
+      await expect(page.locator('#gauntlet-ladder')).toBeVisible();
+      await expect(page.locator('#gauntlet-ladder .gnt-rung')).toHaveCount(5);
+      await expect(page.locator('#quiz-prog-dots')).toBeHidden();
+      await expect(page.locator('#gauntlet-ladder .gnt-rung').nth(0)).toHaveClass(/live/);
+      await answer(page, 0);
+      await expect(page.locator('#gauntlet-ladder .gnt-rung').nth(0)).toHaveClass(/done/);
+      await nextQ(page);
+      await expect(page.locator('#gauntlet-ladder .gnt-rung').nth(1)).toHaveClass(/live/);
+      const tf = await page.evaluate(() => getComputedStyle(document.querySelector('#gauntlet-ladder .gnt-rung.live .gnt-rung-bar')).transform);
+      expect(tf).not.toBe('none');
+      const h = await page.evaluate(() => [0, 1].map((i) => getComputedStyle(document.querySelectorAll('#gauntlet-ladder .gnt-rung-bar')[i]).height));
+      expect(h[0]).toBe(h[1]);   // the live rung grows by transform, never height
+    });
+    test('a normal quiz after a Gauntlet shows the pills', async ({ page }) => {
+      await startRun(page, vp);
+      for (let i = 0; i < 5; i++) { await answer(page, ['A', 'B', 'C', 'D', 'A'][i].charCodeAt(0) - 65); await nextQ(page); }
+      await expect(page.locator('#page-gauntlet-result')).toHaveClass(/active/, { timeout: 8000 });
+      await page.evaluate(() => window._testInjectQuiz([
+        { type: 'mcq', question: 'Which port does HTTPS use by default?', options: { A: '443', B: '80', C: '22', D: '25' }, answer: 'A', explanation: 'HTTPS is 443.', topic: 'Ports & Protocols', difficulty: 'Foundational' },
+        { type: 'mcq', question: 'Which port does SSH use by default?', options: { A: '21', B: '22', C: '23', D: '25' }, answer: 'B', explanation: 'SSH is 22.', topic: 'Ports & Protocols', difficulty: 'Foundational' }]));
+      await expect(page.locator('#page-quiz')).toHaveClass(/active/);
+      await expect(page.locator('#quiz-prog-dots')).toBeVisible();
+      await expect(page.locator('#gauntlet-ladder')).toBeHidden();
+    });
+  });
+}
