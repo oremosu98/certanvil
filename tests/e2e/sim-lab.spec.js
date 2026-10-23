@@ -728,6 +728,20 @@ test('exam core: blank exam state + pace math (under and over par)', async ({ pa
   expect(r.r0over).toBe(false);        // round 0 par = est? handled via roundMs vs budget-share; see impl
   expect(r.overOn).toBe(false);
   expect(r.overDelta).toBe(-2 * 60000);
+  // v8.189.0 Lift B3b2: time-up is never on pace; the target reads the real budget, not NaN:NaN
+  const t = await page.evaluate(() => {
+    const S = window._simLab;
+    const up = S.computePace([], [1000], 18 * 60000, 18 * 60000, [18 * 60000], true);
+    const host = document.createElement('div');
+    S.renderPaceBlock(host, up, [{ topic: 'x' }]);
+    return { on: up.onPace, timeUp: up.timeUp, budget: up.budgetMs,
+      tick: (host.querySelector('.slp-par-tick') || {}).textContent, verdict: (host.querySelector('.slp-pace-verdict') || {}).textContent };
+  });
+  expect(t.on).toBe(false);
+  expect(t.timeUp).toBe(true);
+  expect(t.budget).toBe(18 * 60000);
+  expect(t.tick).toBe('Target 18:00');
+  expect(t.verdict).toBe('Out of time');
 });
 
 test('exam entry: free tapping Exam gates; Pro toggles Exam + shows budget; CTA copy flips', async ({ page }) => {

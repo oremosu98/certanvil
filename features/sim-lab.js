@@ -2689,15 +2689,17 @@
   // onPace = deltaMs >= 0. Per-round bars compare roundMs[i] against that round's
   // par. Par per round comes from the scenario estMinutes × 0.9; the caller passes
   // the par array so this stays pure.
-  function _slComputePace(results, roundMs, budgetMs, elapsedMs, parMs) {
+  // v8.189.0 Lift B3b2: returns budgetMs (the Pace target read it and got "NaN:NaN"), and a time-up
+  // exam is never on pace (the clock submits at zero, so its delta is 0, not negative).
+  function _slComputePace(results, roundMs, budgetMs, elapsedMs, parMs, timeUp) {
     var totalMs = elapsedMs;
     var deltaMs = budgetMs - totalMs;
-    var onPace = deltaMs >= 0;
+    var onPace = !timeUp && deltaMs >= 0;
     var perRound = roundMs.map(function (ms, i) {
       var par = (parMs && typeof parMs[i] === 'number') ? parMs[i] : (budgetMs / roundMs.length);
       return { roundMs: ms, parMs: par, deltaMs: par - ms, over: ms > par };
     });
-    return { totalMs: totalMs, deltaMs: deltaMs, onPace: onPace, perRound: perRound };
+    return { totalMs: totalMs, deltaMs: deltaMs, onPace: onPace, perRound: perRound, budgetMs: budgetMs, timeUp: !!timeUp };
   }
 
   // Budget = Σ estMinutes × 0.9 × 60000 (§2 decision 2). Pure helper.
@@ -3268,7 +3270,7 @@
     var head = _el('div', 'slp-pace-head');
     head.appendChild(_el('span', 'slp-pace-time', _slFmtClock(pace.totalMs)));
     var verdict = _el('span', 'slp-pace-verdict' + (pace.onPace ? '' : ' over'),
-      pace.onPace ? 'On exam pace ✓' : (_slFmtClock(Math.abs(pace.deltaMs)) + ' over exam pace'));
+      pace.onPace ? 'On exam pace ✓' : pace.timeUp ? 'Out of time' : (_slFmtClock(Math.abs(pace.deltaMs)) + ' over exam pace'));
     head.appendChild(verdict);
     card.appendChild(head);
     var sub;
@@ -3327,7 +3329,7 @@
 
   function _slRenderExamResult() {
     var pace = _slComputePace(_slSession.results, _slSession.roundMs, _slSession.budgetMs,
-      _slSession.elapsedMs, _slExamParMs(_slSession.scenarios));
+      _slSession.elapsedMs, _slExamParMs(_slSession.scenarios), _slSession.timeUp);
     var root = document.getElementById('sl-result-root');
     root.innerHTML = '';
     // exam topbar-style seal + optional time-up note
@@ -3853,7 +3855,7 @@
   // single PBQ). Sim Lab Exam mode keeps today's look until B3b2.
   function _slSetPractice(on) {
     var pg = document.getElementById('page-sim-lab');
-    if (pg) pg.classList.toggle('isl-practice', !!on);
+    if (pg) { pg.classList.toggle('isl-practice', !!on); pg.classList.toggle('isl-exam', !on); }   // v8.189.0 Lift B3b2
   }
   function _slSessionStart() {
     var cert = window.CURRENT_CERT || 'netplus';
@@ -4247,8 +4249,8 @@
   window._simLab.sessionRounds = function () { return _slPickedRounds; };
   window._simLab.hasPrefetch = function () { return !!(_slSession && _slSession.prefetch); };
   window._simLab.examBlankState = _slExamBlankState;
-  window._simLab.computePace = function (results, roundMs, budgetMs, elapsedMs, parMs) {
-    return _slComputePace(results, roundMs, budgetMs, elapsedMs, parMs);
+  window._simLab.computePace = function (results, roundMs, budgetMs, elapsedMs, parMs, timeUp) {
+    return _slComputePace(results, roundMs, budgetMs, elapsedMs, parMs, timeUp);
   };
   window._simLab.examBudgetMs = _slExamBudgetMs;
   window._simLab.examParMs = _slExamParMs;
