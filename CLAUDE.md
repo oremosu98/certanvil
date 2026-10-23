@@ -29,7 +29,7 @@
 | index.html | 2358 | 155 KB |
 | dg-system.css | 5624 | 532 KB |
 | tests/uat.js + tests/uat/ (65 modules) | 32341 | — |
-UAT checks: 5544 · E2E `test(` count: 326 · APP_VERSION: 8.189.0 · stamped-at: worktree
+UAT checks: 5544 · E2E `test(` count: 326 · APP_VERSION: 8.190.0 · stamped-at: worktree
 <!-- FACTS:AUTO:END -->
 
 | File | Purpose | Size |
@@ -135,9 +135,9 @@ npx playwright test              # E2E (tests/e2e/app.spec.js)
 
 | Version | Features Added |
 |---|---|
+| v8.190.0 | Reword Gauntlet looks like the June design on phones. |
 | v8.189.0 | Sim Lab Exam mode looks like the June design on phones. |
 | v8.188.3 | Lift screens on iOS no longer double the top gap. |
-| v8.188.2 | Pro offers no longer promise weak-spot tracking that is not built. |
 
 _Older releases (v7.60.0 and back) live in [CHANGELOG.md](./CHANGELOG.md)._
 
