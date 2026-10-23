@@ -192,6 +192,93 @@
       + '</div>';
   }
 
+  // ── Exam mode hosts: the End dialog (#isl-end, B2's #exam-modal markup) and the exam bar ──
+  var _end = null;   // {h, model, opener, keyH} while open
+  function _endEl() { return document.getElementById('isl-end'); }
+  function isEndOpen() { return !!_end; }
+  // Closes without calling onClose (exits, submit, jumps). 200ms fade out, as B2.
+  function closeEnd() {
+    var el = _endEl(), st = _end; if (!el || !st) return;
+    _end = null;
+    document.removeEventListener('keydown', st.keyH, true);
+    el.classList.remove('is-under');
+    el.classList.add('ix-closing');
+    clearTimeout(el._islT);
+    el._islT = setTimeout(function () { el.classList.remove('ix-closing'); el.classList.add('hidden'); }, 200);
+    if (st.opener && st.opener.isConnected && st.opener.focus) { try { st.opener.focus(); } catch (_) {} }
+  }
+  function _endTap(ev) {
+    var el = _endEl(), st = _end; if (!el || !st) return;
+    if (ev.target === el) { closeEnd(); if (st.h.onClose) st.h.onClose(); return; }
+    var b = ev.target.closest && ev.target.closest('button'); if (!b || !el.contains(b)) return;
+    if (b.classList.contains('ix-jump-t')) { var open = b.parentNode.classList.toggle('open'); b.setAttribute('aria-expanded', String(open)); return; }
+    if (b.hasAttribute('data-i')) { var i = Number(b.getAttribute('data-i')); closeEnd(); if (st.h.onJump) st.h.onJump(i); return; }
+    var act = b.getAttribute('data-act');
+    if (act === 'submit') { closeEnd(); if (st.h.onSubmit) st.h.onSubmit(); }
+    else if (act === 'review' && st.model.review) { closeEnd(); if (st.h.onReview) st.h.onReview(st.model.review.target); }
+    else if (act === 'abandon') {
+      el.classList.add('is-under');
+      Promise.resolve(st.h.onAbandon ? st.h.onAbandon() : false).then(function (ok) {
+        if (_end !== st) return;   // the exam ended (time-up, submit) while the sheet was up
+        el.classList.remove('is-under');
+        if (ok) closeEnd();
+      });
+    }
+  }
+  function openEnd(model, h) {
+    var el = _endEl(); if (!el) return;
+    h = h || {};
+    if (!el._islBound) { el._islBound = true; el.addEventListener('click', _endTap); }
+    clearTimeout(el._islT);
+    el.classList.remove('ix-closing', 'is-under');
+    var opener = _end ? _end.opener : document.activeElement;
+    if (_end) document.removeEventListener('keydown', _end.keyH, true);
+    el.innerHTML = _iosSlEndHtml(model);
+    el.classList.remove('hidden');
+    var st = _end = { h: h, model: model, opener: opener };
+    st.keyH = function (e) {
+      if (_end !== st || (window.iosSheet && window.iosSheet.isOpen && window.iosSheet.isOpen())) return;
+      if (e.key === 'Escape') { e.preventDefault(); closeEnd(); if (h.onClose) h.onClose(); return; }
+      if (e.key !== 'Tab') return;
+      var f = Array.prototype.filter.call(el.querySelectorAll('button:not([disabled])'), function (b) { return b.offsetParent !== null; });
+      if (!f.length) return;
+      if (e.shiftKey && document.activeElement === f[0]) { e.preventDefault(); f[f.length - 1].focus(); }
+      else if (!e.shiftKey && document.activeElement === f[f.length - 1]) { e.preventDefault(); f[0].focus(); }
+    };
+    document.addEventListener('keydown', st.keyH, true);
+    var first = Array.prototype.find.call(el.querySelectorAll('button:not([disabled])'), function (b) { return b.offsetParent !== null; });
+    if (first) first.focus();
+  }
+  // The bar is built once per exam; the real #sl-clock-slot moves into it so _slTickClock keeps one clock.
+  var examBar = {
+    mount: function (onEnd) {
+      var shell = document.querySelector('#page-sim-lab .sl-shell'); if (!shell) return;
+      var bar = document.getElementById('isl-xbar');
+      if (!bar) {
+        bar = document.createElement('div'); bar.id = 'isl-xbar'; bar.className = 'isl-xbar';
+        bar.innerHTML = '<div class="isl-xt"><span class="isl-xtl">Time left</span></div><div class="isl-xmid" aria-live="polite"></div><button type="button" class="isl-xend">End</button>';
+        var strip = document.createElement('div'); strip.id = 'isl-xstrip'; strip.className = 'isl-xstrip'; strip.setAttribute('aria-hidden', 'true');
+        shell.insertBefore(strip, shell.firstChild);
+        shell.insertBefore(bar, strip);
+        bar.querySelector('.isl-xend').addEventListener('click', function () { if (typeof bar._onEnd === 'function') bar._onEnd(); });
+      }
+      bar._onEnd = onEnd;
+      var slot = document.getElementById('sl-clock-slot'), xt = bar.querySelector('.isl-xt');
+      if (slot && slot.parentNode !== xt) xt.appendChild(slot);
+    },
+    update: function (m) {
+      var bar = document.getElementById('isl-xbar'), strip = document.getElementById('isl-xstrip'); if (!bar || !strip) return;
+      var v = _iosSlExamBarHtml(m);
+      bar.querySelector('.isl-xmid').innerHTML = v.mid;
+      strip.innerHTML = v.strip;
+    },
+    unmount: function () {
+      var slot = document.getElementById('sl-clock-slot'), tslot = document.getElementById('sl-timer-slot');
+      if (slot && tslot && slot.nextElementSibling !== tslot) tslot.parentNode.insertBefore(slot, tslot);
+      ['isl-xbar', 'isl-xstrip'].forEach(function (id) { var n = document.getElementById(id); if (n) n.remove(); });
+    }
+  };
+
   // ── The verdict (#sl-result-root on phones) ──
   // Pure: s = {rounds:[{title, topic, correct, total, fraction, panelHtml}], pct, passed, stepsCorrect, stepsTotal, slip, pro}.
   // panelHtml comes from sim-lab.js's own answer panel (already escaped there) and passes through.
@@ -302,6 +389,10 @@
   window.iosSimLab.askReset = askReset;
   window.iosSimLab.verdictHtml = verdictHtml;
   window.iosSimLab.wireVerdict = wireVerdict;
+  window.iosSimLab.openEnd = openEnd;
+  window.iosSimLab.closeEnd = closeEnd;
+  window.iosSimLab.isEndOpen = isEndOpen;
+  window.iosSimLab.examBar = examBar;
   window._iosSlVerdictModel = _iosSlVerdictModel;
   window._iosSlVerdictHtml = _iosSlVerdictHtml;
   window._iosSlExamBarModel = _iosSlExamBarModel;

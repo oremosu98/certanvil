@@ -78,6 +78,20 @@ const { _fnBody, fs, path, ROOT, results, test, vm } = require('./_context');
     ctx.__s = { rounds: rounds5.slice(0, 3), pct: 69, passed: 1, stepsCorrect: 11, stepsTotal: 16, slip: null, pro: false };
     const prac = vm.runInContext('_iosSlVerdictHtml(_iosSlVerdictModel(__s))', ctx);
     test('Verdict practice unchanged: Sim Lab kicker, no Pace card, free upsell', /Sim Lab · 3 rounds/.test(prac) && !/isl-pace/.test(prac) && /isl-upsell/.test(prac));
+
+    // ── hosts (Task 3): #isl-end markup, B2's dialog CSS widened to it, exports ──
+    const { html } = require('./_context');
+    const ios = fs.readFileSync(path.join(ROOT, 'lift-ios.css'), 'utf8');
+    test('index.html: #isl-end is a hidden, labelled dialog overlay',
+      /<div id="isl-end" class="modal-overlay isl-end hidden" role="dialog" aria-modal="true" aria-labelledby="isl-end-title"><\/div>/.test(html));
+    const a2 = ios.indexOf('EXAM End dialog + leave/abandon sheet'), b2 = ios.indexOf('LIFT B3a · SCAFFOLD');
+    const sect = ios.slice(a2, b2);
+    test('lift-ios.css: B2 End dialog rules cover #isl-end (no bare #exam-modal left in that section)',
+      a2 > 0 && b2 > a2 && !/(^|[^(])#exam-modal(?!, #isl-end\))/m.test(sect.replace(/:is\(#exam-modal, #isl-end\)/g, ''))
+      && sect.indexOf(':is(#exam-modal, #isl-end) .ix-jgrid button.c') > 0);
+    test('lift-ios.css: the dialog recedes under the Abandon sheet', /#isl-end\.is-under \.modal-box\s*\{[^}]*scale\(0\.98\)/.test(ios));
+    test('ios-simlab.js exports openEnd, closeEnd, isEndOpen and examBar',
+      ['openEnd', 'closeEnd', 'isEndOpen', 'examBar'].every(n => new RegExp('window\\.iosSimLab\\.' + n + ' = ').test(src)));
   } catch (err) {
     test('Lift B3b2 Sim Lab Exam: block (threw)', false);
     results.errors.push('502 ios-simlab-exam block threw: ' + err.message);
