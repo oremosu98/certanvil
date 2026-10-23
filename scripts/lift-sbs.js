@@ -72,6 +72,14 @@ const SCREENS = [
   ['sl-enlarge', 'cert-ios-simlab.html?v=enlarge', 'sl-enlarge'],
   ['sl-verdict', 'cert-ios-simlab.html?v=verdict', 'sl-verdict'],
   ['sl-verdict-open', 'cert-ios-simlab.html?v=verdict-open', 'sl-verdict-open'],
+  ['xs-loading', 'cert-ios-simlab.html?v=exam-loading', 'xs-loading'],
+  ['xs-round', 'cert-ios-simlab.html?v=exam-round', 'xs-round'],
+  ['xs-round-last', 'cert-ios-simlab.html?v=exam-round-last', 'xs-round-last'],
+  ['xs-end', 'cert-ios-simlab.html?v=exam-end', 'xs-end'],
+  ['xs-end-jump', 'cert-ios-simlab.html?v=exam-end-jump', 'xs-end-jump'],
+  ['xs-abandon', 'cert-ios-simlab.html?v=exam-abandon', 'xs-abandon'],
+  ['xs-result', 'cert-ios-simlab.html?v=exam-result', 'xs-result'],
+  ['xs-result-timeup', 'cert-ios-simlab.html?v=exam-result-timeup', 'xs-result-timeup'],
 ];
 // B3a: Drills seeds per state (wrong-bank size, fresh user, cert)
 function drillsSeed(step) {
@@ -174,6 +182,41 @@ async function shootReal(browser, step, theme) {
       renderGauntletDrillsCard();
     }, step === 'dr-free' ? 'used' : step === 'dr-empty');
     await p.waitForTimeout(1200);
+  } else if (/^xs/.test(step || '')) {
+    // B3b2: a Pro Sim Lab exam, 5 rounds, seeds only (offline); the drawn round is the terminal seed in round 2
+    await p.evaluate(async (st) => {
+      window._quotaState = { tier: 'pro' };
+      document.body.classList.add('is-state-resolved', 'is-pro-tier');
+      await new Promise(res => window._ensureSimLabLoaded(res));
+      window._slMeteredGenerate = st === 'xs-loading' ? () => new Promise(() => {}) : async () => ({ bad: true });
+      if (st === 'xs-loading') { window.SIM_LAB_SEED_NETPLUS.length = 0; }   // nothing to fall back to: the loader stays up
+      startSimLabHome();
+      if (typeof renderGauntletDrillsCard === 'function') renderGauntletDrillsCard();
+    }, step);
+    await p.waitForTimeout(900);
+    await p.locator('#isl-entry [data-act="mode"][data-mode="exam"]').click();
+    await p.locator('#isl-entry [data-act="rounds"][data-rounds="5"]').click();
+    await p.locator('#isl-entry [data-act="start"]').click();
+    await p.waitForTimeout(1500);
+    if (step !== 'xs-loading') {
+      await p.evaluate((st) => {
+        const s = window._simLab.examSession(), seeds = window.SIM_LAB_SEED_NETPLUS;
+        const term = seeds.find(x => x.assets && x.assets.reference && x.assets.reference.kind === 'terminal' && JSON.stringify(x.steps).indexOf('excerptLines') > 0);
+        const at = st === 'xs-round-last' ? 4 : 1;
+        s.scenarios[at] = term;
+        const mark = (i) => { s.answers[i] = { probe: 'x' }; };
+        mark(0); mark(3); s.flagged.add(3);
+        if (st === 'xs-round-last') { mark(1); mark(4); s.flagged.add(4); s.deadlineMs = Date.now() + 118000; }
+        window._simLab.renderRound(at);
+        window._simLab.tickClock();
+      }, step);
+      await p.waitForTimeout(700);
+    }
+    if (/^xs-(end|abandon)/.test(step)) { await p.locator('#isl-xbar .isl-xend').click(); await p.waitForTimeout(500); }
+    if (step === 'xs-end-jump') { await p.locator('#isl-end .ix-jump-t').click(); await p.waitForTimeout(300); }
+    if (step === 'xs-abandon') { await p.locator('#isl-end [data-act="abandon"]').click(); await p.waitForTimeout(600); }
+    if (step === 'xs-result') { await p.evaluate(() => window._simLab.examSubmit(false)); await p.waitForTimeout(4600); }
+    if (step === 'xs-result-timeup') { await p.evaluate(() => { window._simLab.examSession().deadlineMs = Date.now() - 1; window._simLab.tickClock(); }); await p.waitForTimeout(4600); }
   } else if (/^sl/.test(step || '')) {
     // free user, today's free session not used; seeds only (offline)
     await p.evaluate(async (st) => {
@@ -226,10 +269,10 @@ async function shootReal(browser, step, theme) {
     }
   }
   // app toasts (e.g. the periodic backup tip) are not part of the screen being compared
-  await p.addStyleTag({ content: '.success-toast, .error-toast, .toast { display: none !important; }' });
+  await p.addStyleTag({ content: '.success-toast, .error-toast, .toast, .celebration-toast { display: none !important; }' });
   await p.waitForTimeout(300);
   // B1 screens are one fixed viewport (a full-page capture resizes it mid-shot); the review-done recap scrolls
-  const buf = await p.screenshot({ fullPage: !/^(prog|ana|srv$|ex|sl)/.test(step || '') });
+  const buf = await p.screenshot({ fullPage: !/^(prog|ana|srv$|ex|sl|xs)/.test(step || '') });
   await ctx.close();
   return buf;
 }

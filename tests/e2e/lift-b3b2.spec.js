@@ -305,6 +305,10 @@ for (const vp of PHONES) {
       await expect(page.locator('#sl-result-root .isl-pv')).toHaveText('On exam pace');
       await expect(page.locator('#sl-result-root .isl-ptick b')).toHaveText(/^Target \d+:\d\d$/);
       await expect(page.locator('#sl-result-root .isl-prow')).toHaveCount(3);
+      // long topics truncate: every time and par sits inside the card
+      const fit = await page.evaluate(() => { const card = document.querySelector('#sl-result-root .isl-pace').getBoundingClientRect();
+        return Array.from(document.querySelectorAll('#sl-result-root .isl-prp, #sl-result-root .isl-prt')).every((el) => { const b = el.getBoundingClientRect(); return b.width > 0 && b.right <= card.right - 8; }); });
+      expect(fit).toBe(true);
       expect(await page.locator('#sl-result-root').textContent()).not.toContain('NaN');
       await expect(page.locator('#sl-result-root .isl-upsell')).toHaveCount(0);
       const rows = page.locator('#sl-result-root .isl-srow');
