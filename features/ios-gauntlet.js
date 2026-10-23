@@ -149,11 +149,34 @@
     });
   }
 
+  // Renders the phone result into root and wires it (rows open; the two docked buttons). False on desktop.
+  function renderResult(root, s) {
+    if (!root || !isPhone()) return false;
+    root.innerHTML = _iosGtResultHtml(_iosGtResultModel(s));
+    if (!root.__igtBound) {
+      root.__igtBound = true;
+      root.addEventListener('click', function (ev) {
+        var row = ev.target.closest && ev.target.closest('.igt-srow');
+        if (row && root.contains(row)) {
+          var open = row.getAttribute('aria-expanded') !== 'true', d = document.getElementById(row.getAttribute('aria-controls'));
+          row.setAttribute('aria-expanded', String(open)); if (d) d.hidden = !open;
+          return;
+        }
+        var b = ev.target.closest && ev.target.closest('[data-act]');
+        if (!b || !root.contains(b) || !root.querySelector('.igt-vbody')) return;
+        var fn = { next: 'gauntletNextTarget', exit: 'gauntletExit', again: 'gauntletRunAgain', different: 'gauntletDifferentConcept' }[b.getAttribute('data-act')];
+        if (fn) _call(fn);
+      });
+    }
+    return true;
+  }
+
   window.iosGauntlet = window.iosGauntlet || {};
   window.iosGauntlet.isPhone = isPhone;
   window.iosGauntlet.renderEntry = renderEntry;
   window.iosGauntlet.pickTopic = pickTopic;
   window.iosGauntlet.closeTopics = closeTopics;
+  window.iosGauntlet.renderResult = renderResult;
   window._iosGtEntryModel = _iosGtEntryModel;
   window._iosGtEntryHtml = _iosGtEntryHtml;
   window._iosGtResultModel = _iosGtResultModel;

@@ -72,6 +72,8 @@ const { _fnBody, fs, html, path, ROOT, results, test, vm } = require('./_context
       /iosGauntlet/.test(_fnBody(fd, 'renderGauntletEntry') || '') && /\.renderEntry\(/.test(_fnBody(fd, 'renderGauntletEntry') || '') && /closeTopics/.test(_fnBody(fd, 'startRewordGauntlet') || '') && /closeTopics/.test(_fnBody(fd, 'gauntletStart') || ''));
     test('iosSheet.dismiss also closes the Gauntlet topic sheet',
       /iosGauntlet[^;]*closeTopics/.test(fs.readFileSync(path.join(ROOT, 'features', 'ios-sheet.js'), 'utf8')));
+    test("lift-shell hides the tab bar on the Gauntlet results, not the entry",
+      /'gauntlet-result': 1/.test(fs.readFileSync(path.join(ROOT, 'lift-shell.js'), 'utf8')) && !/'gauntlet': 1/.test(fs.readFileSync(path.join(ROOT, 'lift-shell.js'), 'utf8')));
   } catch (err) {
     test('Lift B3c1 Reword Gauntlet: block (threw)', false);
     results.errors.push('503 ios-gauntlet block threw: ' + err.message);

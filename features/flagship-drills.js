@@ -419,6 +419,22 @@
   function renderGauntletResult(cracked, results) {
     const root = document.getElementById('gnt-result-root');
     if (!root) return;
+    // v8.190.0 Lift B3c1: phones get the June results (features/ios-gauntlet.js), rows that open to each wording
+    const igt = window.iosGauntlet;
+    if (igt && igt.renderResult && igt.isPhone && igt.isPhone()) {
+      const opt = (q, k) => (q && q.options && k && q.options[k] != null) ? k + '. ' + q.options[k] : '';
+      const rungs = GAUNTLET_RUNGS.map((r, i) => {
+        const q = questions[i] || {};
+        const entry = (Array.isArray(log) ? log : []).find(l => l && l.q === q) || {};
+        return { key: r.key, sub: r.sub, ok: !!results[i], question: q.question || '', hinge: q.hinge || '',
+          yours: opt(q, entry.chosen), answer: opt(q, q.answer), explanation: q.explanation || '' };
+      });
+      if (igt.renderResult(root, { cracked, concept: _gauntletRun.concept, topic: _gauntletRun.topic, attempts: _gauntletRun.attempts,
+        collection: loadGauntletCracked().length, back: _gauntletReturn,
+        free: !!(_quotaState && _quotaState.tier === 'free'),
+        used: !!(_quotaState && _quotaState.tier === 'free') && _gauntletFreeRunsToday() >= GAUNTLET_FREE_DAILY_CAP,
+        rungs })) return;
+    }
     if (cracked) {
       const n = loadGauntletCracked().length;
       const subLine = _gauntletRun.attempts > 1

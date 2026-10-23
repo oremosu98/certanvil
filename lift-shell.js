@@ -26,7 +26,9 @@
     /* session-end screens carry their own mockup footer (rfoot) */
     'results': 1, 'exam-results': 1, 'session-complete': 1,
     /* Lift B3b1: the Sim Lab round and its verdict are immersive (the start screen keeps the tab bar) */
-    'sim-lab': 1, 'sim-lab-result': 1
+    'sim-lab': 1, 'sim-lab-result': 1,
+    /* Lift B3c1: the Gauntlet's results are immersive (the entry keeps the tab bar) */
+    'gauntlet-result': 1
   };
 
   /* tab to light when a non-tab page is active */

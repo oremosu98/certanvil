@@ -161,3 +161,76 @@ for (const vp of PHONES) {
     });
   });
 }
+
+// ── Task 4: results ──
+const RIGHT = [0, 1, 2, 3, 0];   // the stub's keyed options per rung
+async function playRun(page, wrongAt) {
+  for (let i = 0; i < 5; i++) {
+    const pick = (wrongAt || []).indexOf(i) >= 0 ? (RIGHT[i] + 1) % 4 : RIGHT[i];
+    await answer(page, pick); await nextQ(page);
+  }
+  await expect(page.locator('#page-gauntlet-result')).toHaveClass(/active/, { timeout: 8000 });
+}
+for (const vp of PHONES) {
+  test.describe('Lift B3c1 results @' + vp.width, () => {
+    test('cracked: seal, concept, Next target; Back leaves to Drills', async ({ page }) => {
+      await boot(page, vp, 'pro'); await stubForge(page);
+      await page.evaluate(() => showPage('drills')); await page.waitForTimeout(400);
+      await page.evaluate(() => startRewordGauntlet());
+      await page.locator('#igt-entry .igt-start').click();
+      await expect(page.locator('#page-quiz')).toHaveClass(/active/, { timeout: 8000 });
+      await playRun(page, []);
+      await expect(page.locator('#gnt-result-root .igt-concept')).toHaveText('Remote Desktop listens on TCP 3389');
+      await expect(page.locator('#gnt-result-root .igt-seal-sub')).toContainText('in your collection');
+      await expect(page.locator('#gnt-result-root .igt-primary')).toHaveText('Next target');
+      await expect(page.locator('#gnt-result-root .igt-vkick')).toContainText('Reword Gauntlet ·');
+      await expect(page.locator('#lift-tabbar')).toBeHidden();
+      await expect(page.locator('#app-topbar')).toBeHidden();
+      await page.locator('#gnt-result-root .igt-ghost').click();
+      await expect(page.locator('#page-drills')).toHaveClass(/active/);
+    });
+    test('missed: Cracked N of 5, rows open to the wording', async ({ page }) => {
+      await startRun(page, vp);
+      await playRun(page, [2, 3]);
+      await expect(page.locator('#gnt-result-root .igt-vtitle')).toHaveText('Cracked 3 of 5');
+      await expect(page.locator('#gnt-result-root .igt-callout')).toHaveText('The Best-of and the Not-trap got you.');
+      await page.locator('#gnt-result-root .igt-srow').nth(2).click();
+      const d2 = page.locator('#igt-sdet-2');
+      await expect(d2).toBeVisible();
+      await expect(d2.locator('mark.igt-hg')).toHaveText('BEST');
+      await expect(d2).toContainText('Your answer');
+      await expect(d2.locator('.igt-a')).toHaveText('Answer');
+      await expect(d2).toContainText('3389');
+      await page.locator('#gnt-result-root .igt-srow').nth(0).click();
+      await expect(page.locator('#igt-sdet-0 .igt-a')).toHaveCount(0);
+      await expect(page.locator('#gnt-result-root .igt-primary')).toHaveText('Run it again');
+      expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(0);
+    });
+    test("free after today's run shows the foot note; Pro does not", async ({ page }) => {
+      await openEntry(page, vp, 'free');
+      await setTier(page, 'free');
+      await page.locator('#igt-entry .igt-start').click();
+      await expect(page.locator('#page-quiz')).toHaveClass(/active/, { timeout: 8000 });
+      await setTier(page, 'free');
+      await playRun(page, [1]);
+      await expect(page.locator('#gnt-result-root .igt-free')).toHaveText(/^That was today’s free run\./);
+      await setTier(page, 'pro');
+      await page.evaluate(() => { localStorage.removeItem('nplus_gauntlet_free_count'); });
+      await page.locator('#gnt-result-root .igt-primary').click();
+      await expect(page.locator('#page-quiz')).toHaveClass(/active/, { timeout: 8000 });
+      await playRun(page, [1]);
+      await expect(page.locator('#gnt-result-root .igt-free')).toHaveCount(0);
+    });
+  });
+}
+test('Lift B3c1 desktop: results are today\'s', async ({ page }) => {
+  await openEntry(page, DESKTOP, 'pro');
+  await setTier(page, 'pro');   // signed out, the app resets _quotaState after load
+  await page.locator('#gnt-start-btn').click();
+  await expect(page.locator('#page-quiz')).toHaveClass(/active/, { timeout: 8000 });
+  // desktop: a tap on an option answers it; Next moves on
+  for (let i = 0; i < 5; i++) { await page.locator('#options .option').nth(RIGHT[i]).click(); await page.waitForTimeout(200); await page.locator('#btn-next').click(); await page.waitForTimeout(300); }
+  await expect(page.locator('#page-gauntlet-result')).toHaveClass(/active/, { timeout: 8000 });
+  await expect(page.locator('#gnt-result-root .gnt-seal-wrap')).toBeVisible();
+  await expect(page.locator('#gnt-result-root .igt-vbody')).toHaveCount(0);
+});
