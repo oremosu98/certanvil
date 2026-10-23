@@ -32,6 +32,10 @@ const { _fnBody, fs, path, ROOT, results, test, vm } = require('./_context');
     test('_slIsAnswered: empty nested slots are not an answer; a filled slot, a pick or an order is',
       ans({ d1: { slots: {} }, f1: { slots: {} } }) === false && ans(null) === false && ans({ a: '' }) === false
       && ans({ d1: { slots: { s1: 'VLAN 20' } } }) === true && ans({ p: 'B' }) === true && ans({ o: [2, 0, 1] }) === true);
+    const er = _fnBody(sl, '_slRenderExamResult') || '';
+    test('exam results: phones get the verdict with mode exam; weak spots, drill stats and milestones run on both widths',
+      /verdictHtml\(\{\s*mode: 'exam'/.test(er) && er.lastIndexOf('_slRecordWeakSpots') > er.lastIndexOf("'Back to Practice'")
+      && er.lastIndexOf('bumpDrillStat') > er.lastIndexOf("'Back to Practice'"));
   } catch (err) {
     test('Lift B3b2 scaffold: block (threw)', false);
     results.errors.push('501 lift-b3b2-scaffold block threw: ' + err.message);

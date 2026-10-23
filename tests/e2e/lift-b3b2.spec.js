@@ -184,10 +184,15 @@ for (const vp of PHONES) {
       await expect(page.locator('.isl-xdock [data-act="next"]')).toHaveText('Review');
       await answerInView(page);
       await page.locator('.isl-xdock [data-act="flag"]').click();
+      // the bar counts saved answers only (not the round in view); the dialog adds the round in view.
+      // Untouched rounds may count (an order step's shown order is an answer), so compare, not hardcode.
+      const before = Number((await page.locator('#isl-xbar .isl-xcs').textContent()).split(' ')[0]);
       await page.locator('.isl-xdock [data-act="next"]').click();
-      await expect(page.locator('#isl-end .ms-val')).toHaveText(['1', '2', '1']);
-      await expect(page.locator('#isl-end .ix-review')).toHaveText('Review the 2 you skipped first');
-      await expect(page.locator('#isl-xbar .isl-xcs')).toHaveText('1 answered');
+      const want = String(before + 1), skipped = String(3 - before - 1);
+      await expect(page.locator('#isl-end .ms-val')).toHaveText([want, skipped, '1']);
+      await expect(page.locator('#isl-end .ix-review')).toHaveText(skipped === '0' ? 'Review the 1 you flagged first' : 'Review the ' + skipped + ' you skipped first');
+      await expect(page.locator('#isl-xbar .isl-xcs')).toHaveText(want + ' answered');
+      await expect(page.locator('#isl-end .ix-jgrid button[data-i="2"]')).toHaveClass('f c');
       expect(await S(page, () => window._simLab.examSession().view)).toBe('review');
     });
     test('dialog time is not counted; a jump restores answers', async ({ page }) => {
@@ -281,6 +286,53 @@ test('Lift B3b2 desktop: Exam mode keeps the palette, the footer, the review scr
   await page.locator('#sl-body .sl-examfoot .sl-navbtn.next').click();
   await page.locator('#sl-body .sl-examfoot .sl-navbtn.next').click();
   await expect(page.locator('#sl-body .slv-review')).toBeVisible();
+  expect(await page.evaluate(() => !!window._simLab.examSession())).toBe(true);
   await page.locator('.sl-topbar [data-action="simLabExit"]').click();
   expect(await page.evaluate(() => window.__confirms)).toBe(1);
+});
+
+// ── Task 5: exam results on phones ──
+for (const vp of PHONES) {
+  test.describe('Lift B3b2 results @' + vp.width, () => {
+    test('results: the verdict with the Pace card; why on every row; no upsell; Back to Practice leaves', async ({ page }) => {
+      await startExam(page, vp, 3);
+      await page.locator('#isl-xbar .isl-xend').click();
+      await page.locator('#isl-end [data-act="submit"]').click();
+      await expect(page.locator('#page-sim-lab-result')).toHaveClass(/active/);
+      await expect(page.locator('#sl-result-root .isl-vkick')).toHaveText('Sim Lab exam · 3 rounds');
+      await expect(page.locator('#sl-result-root .isl-pace')).toHaveCount(1);
+      await expect(page.locator('#sl-result-root .isl-pk')).toHaveText('Pace');
+      await expect(page.locator('#sl-result-root .isl-pv')).toHaveText('On exam pace');
+      await expect(page.locator('#sl-result-root .isl-ptick b')).toHaveText(/^Target \d+:\d\d$/);
+      await expect(page.locator('#sl-result-root .isl-prow')).toHaveCount(3);
+      expect(await page.locator('#sl-result-root').textContent()).not.toContain('NaN');
+      await expect(page.locator('#sl-result-root .isl-upsell')).toHaveCount(0);
+      const rows = page.locator('#sl-result-root .isl-srow');
+      await expect(rows).toHaveCount(3);
+      for (let i = 0; i < 3; i++) {
+        await rows.nth(i).click();
+        await expect(page.locator('#isl-sdet-' + i + ' .sls-ans-why').first()).toBeVisible();
+      }
+      await page.locator('#sl-result-root .isl-vback').click();
+      await expect(page.locator('#page-setup')).toHaveClass(/active/);
+    });
+    test('results: time-up reads Time\'s up and Out of time', async ({ page }) => {
+      await startExam(page, vp, 3);
+      await page.evaluate(() => { window._simLab.examSession().deadlineMs = Date.now() - 1; window._simLab.tickClock(); });
+      await expect(page.locator('#page-sim-lab-result')).toHaveClass(/active/);
+      await expect(page.locator('#sl-result-root .isl-vkick')).toHaveText("Time's up · 3 rounds");
+      await expect(page.locator('#sl-result-root .isl-pv')).toHaveText('Out of time');
+      await expect(page.locator('#sl-result-root .isl-pv')).toHaveClass(/over/);
+    });
+  });
+}
+
+test('Lift B3b2 desktop: the exam result keeps its seal and Pace card, with a real target', async ({ page }) => {
+  await startExam(page, DESKTOP, 3);
+  await page.evaluate(() => window._simLab.examSubmit(false));
+  await expect(page.locator('#sl-result-root .sls-seal')).toBeVisible();
+  await expect(page.locator('#sl-result-root .slp-pace-card')).toBeVisible();
+  await expect(page.locator('#sl-result-root .slp-par-tick')).toHaveText(/^Target \d+:\d\d$/);
+  expect(await page.locator('#sl-result-root').textContent()).not.toContain('NaN');
+  await expect(page.locator('#sl-result-root .isl-vbody')).toHaveCount(0);
 });

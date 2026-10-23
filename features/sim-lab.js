@@ -3374,6 +3374,22 @@
     var pace = _slComputePace(_slSession.results, _slSession.roundMs, _slSession.budgetMs,
       _slSession.elapsedMs, _slExamParMs(_slSession.scenarios), _slSession.timeUp);
     var root = document.getElementById('sl-result-root');
+    var agg = _slAggregateSession(_slSession.results);
+    var cluster = _slWeakCluster(_slSession.results);
+    var isl = window.iosSimLab;
+    if (isl && isl.verdictHtml && isl.isPhone && isl.isPhone()) {
+      // v8.189.0 Lift B3b2: the B3b1 verdict with the Pace card; exam is Pro-only, so every why shows
+      root.innerHTML = isl.verdictHtml({
+        mode: 'exam', timeUp: !!_slSession.timeUp, pace: pace,
+        rounds: _slSession.results.map(function (r) {
+          var c = r.score.correct, t = r.score.total;
+          return { title: r.scenario.title || r.scenario.topic || 'PBQ', topic: r.scenario.topic || 'PBQ', correct: c, total: t,
+            fraction: r.passed ? 1 : Math.min(t ? c / t : 0, 0.99), panelHtml: _slAnswerPanelHtml(r, function () { return true; }) };
+        }),
+        pct: agg.pct, passed: agg.passed, stepsCorrect: agg.stepsCorrect, stepsTotal: agg.stepsTotal, slip: cluster, pro: true
+      });
+      isl.wireVerdict(root);
+    } else {
     root.innerHTML = '';
     // exam topbar-style seal + optional time-up note
     var seal = _el('span', 'sls-seal', _slSession.timeUp ? '⏱ Time’s up' : '✓ Exam complete');
@@ -3381,24 +3397,23 @@
     // Pace block FIRST (prepended above the verdict rows)
     _slRenderPaceBlock(root, pace, _slSession.scenarios);
     // reuse the existing aggregate + per-round rows + weak-spot cluster (same as practice summary)
-    var agg = _slAggregateSession(_slSession.results);
     var score = _el('div', 'sls-score');
     score.innerHTML = '<span class="sls-score-n">' + agg.passed + '<small>/' + agg.rounds + '</small></span>' +
       '<span class="sls-score-cap">Rounds passed · ' + agg.pct + '% of steps correct</span>';
     root.appendChild(score);
     root.appendChild(_slRoundRows(_slSession.results, function () { return true; }));   // exam is Pro-only — always reveal
-    var cluster = _slWeakCluster(_slSession.results);
     if (cluster) {
       var ins = _el('div', 'sls-insight');
       ins.innerHTML = '<div class="sls-insight-k">Where you slipped</div><p>' + _esc(cluster) + '</p>';
       root.appendChild(ins);
     }
-    if (typeof window._slRecordWeakSpots === 'function') {
-      window._slRecordWeakSpots(_slSession.results.filter(function (r) { return !r.passed; }).map(function (r) { return r.scenario.topic; }));
-    }
     var back = _el('button', 'btn btn-primary gnt-cta', 'Back to Practice');
     back.setAttribute('type', 'button'); back.setAttribute('data-action', 'simLabExit');
     root.appendChild(back);
+    }
+    if (typeof window._slRecordWeakSpots === 'function') {
+      window._slRecordWeakSpots(_slSession.results.filter(function (r) { return !r.passed; }).map(function (r) { return r.scenario.topic; }));
+    }
     try {
       if (typeof window.bumpDrillStat === 'function') {
         window.bumpDrillStat('simlab', 'done', 1);
