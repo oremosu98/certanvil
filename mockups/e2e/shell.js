@@ -52,6 +52,16 @@
     'simlab-exam-abandon'  : 'cert-ios-simlab.html?v=exam-abandon',
     'simlab-exam-result'   : 'cert-ios-simlab.html?v=exam-result',
     'simlab-exam-timeup'   : 'cert-ios-simlab.html?v=exam-result-timeup',
+    'gauntlet'             : 'cert-ios-gauntlet.html',                      // B3c1 (23 Oct): Reword Gauntlet
+    'gauntlet-pick'        : 'cert-ios-gauntlet.html?v=entry-pick',
+    'gauntlet-free'        : 'cert-ios-gauntlet.html?v=entry-free',
+    'gauntlet-loading'     : 'cert-ios-gauntlet.html?v=loading',
+    'gauntlet-run'         : 'cert-ios-gauntlet.html?v=run',
+    'gauntlet-answered'    : 'cert-ios-gauntlet.html?v=run-answered',
+    'gauntlet-cracked'     : 'cert-ios-gauntlet.html?v=result-cracked',
+    'gauntlet-miss'        : 'cert-ios-gauntlet.html?v=result-miss',
+    'gauntlet-miss-open'   : 'cert-ios-gauntlet.html?v=result-miss-open',
+    'gauntlet-miss-free'   : 'cert-ios-gauntlet.html?v=result-miss-free',
     'hub'               : 'cert-ios-hub.html',
     'quiz'              : 'cert-ios-quiz.html',
     'quiz-short-set'    : 'cert-ios-quiz.html?v=short',
@@ -212,6 +222,10 @@
   ['simlab-round','simlab-reset','simlab-map','simlab-enlarge'].forEach(function (k) { NAV[k] = [ {sel:'.leave', to:'drills'} ]; });
   NAV['simlab-exam-round'] = [ {sel:'#nextBtn', to:'simlab-exam-last'} ];
   NAV['simlab-exam-result'] = [ {text:'Back to Practice', to:'drills'} ]; NAV['simlab-exam-timeup'] = NAV['simlab-exam-result'];
+  NAV['gauntlet'] = [ {sel:'#startBtn', to:'gauntlet-loading'}, {sel:'.back', to:'drills'} ]; NAV['gauntlet-free'] = NAV['gauntlet'];
+  NAV['gauntlet-run'] = [ {sel:'.exit', to:'drills'} ]; NAV['gauntlet-answered'] = [ {text:'Next question', to:'gauntlet-miss'}, {sel:'.exit', to:'drills'} ];
+  NAV['gauntlet-cracked'] = [ {text:'Back to Drills', to:'drills'}, {text:'Next target', to:'gauntlet-loading'} ];
+  NAV['gauntlet-miss'] = [ {text:'Run it again', to:'gauntlet-loading'}, {text:'Different concept', to:'gauntlet-loading'} ]; NAV['gauntlet-miss-open'] = NAV['gauntlet-miss']; NAV['gauntlet-miss-free'] = NAV['gauntlet-miss'];
   NAV['analytics-wins'] = NAV['analytics']; NAV['analytics-map'] = NAV['analytics']; NAV['review-done'] = NAV['review'] || [];
 
   var TABS = { 'Home':'home', 'Drills':'drills', 'Progress':'progress', 'Account':'settings',
@@ -611,6 +625,12 @@
     if (b3b2Btn) b3b2Btn.addEventListener('click', function () {
       b3b2I = (b3b2I + 1) % LIFT_B3B2.length; resetTo(LIFT_B3B2[b3b2I]);
       b3b2Btn.textContent = 'B3b2 ' + (b3b2I + 1) + '/' + LIFT_B3B2.length + ' \u203a';
+    });
+    var LIFT_B3C1 = ['gauntlet','gauntlet-pick','gauntlet-free','gauntlet-loading','gauntlet-run','gauntlet-answered','gauntlet-cracked','gauntlet-miss','gauntlet-miss-open','gauntlet-miss-free'];
+    var b3c1Btn = document.getElementById('hud-liftb3c1'), b3c1I = -1;
+    if (b3c1Btn) b3c1Btn.addEventListener('click', function () {
+      b3c1I = (b3c1I + 1) % LIFT_B3C1.length; resetTo(LIFT_B3C1[b3c1I]);
+      b3c1Btn.textContent = 'B3c1 ' + (b3c1I + 1) + '/' + LIFT_B3C1.length + ' \u203a';
     });
     var LIFT_B3A = ['drills','drills-free','drills-empty','drills-dl'];
     var b3Btn = document.getElementById('hud-liftb3a'), b3I = -1;
