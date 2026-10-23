@@ -266,6 +266,7 @@
       }
       root.classList.toggle('ic-settled', !fresh);
       root.innerHTML = _iosCustomHtml(m);
+      document.documentElement.classList.add('ic-open');   // WebKit misses :has(#ios-custom:not(:empty)) here
       if (key) {   // keep keyboard / VoiceOver focus on the control just used (review I3)
         var back = [].slice.call(root.querySelectorAll('[data-act]')).filter(function (b) {
           return b.getAttribute('data-act') === key[0] && b.getAttribute('data-v') === key[1] && b.getAttribute('data-idx') === key[2];
@@ -276,6 +277,7 @@
       return true;
     } catch (err) {
       root.innerHTML = '';
+      document.documentElement.classList.remove('ic-open');
       try { console.warn('[ios-custom] render failed', err); } catch (_) {}
       return false;
     }
@@ -291,6 +293,7 @@
   function closeIosCustom() {
     var root = document.getElementById('ios-custom');
     if (root) { root.innerHTML = ''; root.classList.remove('ic-settled'); }
+    document.documentElement.classList.remove('ic-open');
   }
 
   function _icClickHidden(sel, v) {

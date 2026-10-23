@@ -122,3 +122,20 @@ const { _fnBody, js, results, test, vm } = require('./_context');
     results.errors.push('483 ios-custom view block threw: ' + err.message);
   }
 })();
+
+// WebKit (Safari, the iOS app) does not re-check :has(#ios-custom:not(:empty)) when the host is filled after
+// first style, so Home and the tab bar stayed over the screen. The host toggles html.ic-open; the CSS keys on it.
+(function () {
+  try {
+    const fs = require('fs'), path = require('path'), ROOT = path.join(__dirname, '..', '..');
+    const src = fs.readFileSync(path.join(ROOT, 'features', 'ios-custom.js'), 'utf8');
+    const css = fs.readFileSync(path.join(ROOT, 'lift-ios.css'), 'utf8');
+    test('Custom (WebKit): render sets html.ic-open, close clears it',
+      /classList\.add\('ic-open'\)/.test(_fnBody(src, 'renderIosCustom') || '') && /classList\.remove\('ic-open'\)/.test(_fnBody(src, 'closeIosCustom') || ''));
+    test('Custom (WebKit): lift-ios.css never keys on #ios-custom:not(:empty), and hides chrome on html.ic-open',
+      css.indexOf('#ios-custom:not(:empty)') < 0 && /html\.ic-open[^{]*#lift-tabbar/.test(css) && /html\.ic-open[^{]*#page-setup[^{]*> :not\(#ios-custom\)/.test(css));
+  } catch (err) {
+    test('Lift A custom quiz: WebKit hook block (threw)', false);
+    results.errors.push('483 ios-custom WebKit block threw: ' + err.message);
+  }
+})();

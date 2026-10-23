@@ -550,11 +550,13 @@ html[data-theme] body #page-setup:has(#ios-home:not(:empty)) #setup-err:not(.is-
 /* ═════════════════ CUSTOM QUIZ (cert-ios-custom-quiz.html, c75e41e8) ═════════════════
    Phone screen over the hidden #custom-quiz-section controls (features/ios-custom.js).
    Spec: docs/superpowers/specs/2026-10-20-ios-custom-quiz-design.md. Ported rules below are ic- prefixed. */
-html[data-theme] body #page-setup:has(#ios-custom:not(:empty)) > :not(#ios-custom) { display: none !important; }
-body:has(#page-setup.active #ios-custom:not(:empty)) #app-topbar, body:has(#page-setup.active #ios-custom:not(:empty)) .app-topbar { display: none !important; }
+/* html.ic-open is set by features/ios-custom.js while the screen is drawn. Never key these on
+   an emptiness test inside :has(): WebKit does not re-check it when the host fills after first style. */
+html.ic-open[data-theme] body #page-setup > :not(#ios-custom) { display: none !important; }
+html.ic-open body:has(#page-setup.active) #app-topbar, html.ic-open body:has(#page-setup.active) .app-topbar { display: none !important; }
 /* full-screen sheet in the E2E: no tab bar over the docked Start button */
-body:has(#page-setup.active #ios-custom:not(:empty)) #lift-tabbar { display: none !important; }
-html[data-theme] body #page-setup:has(#ios-custom:not(:empty)) { padding: 0 !important; }
+html.ic-open body:has(#page-setup.active) #lift-tabbar { display: none !important; }
+html.ic-open[data-theme] body #page-setup { padding: 0 !important; }
 /* the desktop panel is only ever a source of state on phones; the phone screen replaces it */
 /* ic-failed: the phone screen could not draw, so the desktop picker stays usable */
 html:not(.ic-failed) #custom-quiz-section { display: none !important; }
