@@ -171,6 +171,13 @@
     return true;
   }
 
+  // Crossing 899px (an iPhone Pro Max rotating, iPad split view): the topic sheet goes, and the entry or the
+  // result re-renders in the new layout (features/flagship-drills.js owns the state).
+  if (MQ && MQ.addEventListener) MQ.addEventListener('change', function () {
+    closeTopics();
+    if (typeof window._gauntletRerender === 'function') { try { window._gauntletRerender(); } catch (_) {} }
+  });
+
   window.iosGauntlet = window.iosGauntlet || {};
   window.iosGauntlet.isPhone = isPhone;
   window.iosGauntlet.renderEntry = renderEntry;

@@ -416,9 +416,11 @@
     showPage('gauntlet-result');
   }
 
+  let _gauntletLastResult = null;   // v8.190.0: kept so a rotation across 899px can re-render the result
   function renderGauntletResult(cracked, results) {
     const root = document.getElementById('gnt-result-root');
     if (!root) return;
+    _gauntletLastResult = [cracked, results];
     // v8.190.0 Lift B3c1: phones get the June results (features/ios-gauntlet.js), rows that open to each wording
     const igt = window.iosGauntlet;
     if (igt && igt.renderResult && igt.isPhone && igt.isPhone()) {
@@ -974,6 +976,12 @@
   window.gauntletDifferentConcept = gauntletDifferentConcept;
   window.gauntletNextTarget = gauntletNextTarget;
   window.gauntletExit = gauntletExit;
+  // v8.190.0 Lift B3c1: features/ios-gauntlet.js re-renders these when the width crosses 899px
+  window._gauntletRerender = function () {
+    const act = document.querySelector('.page.active');
+    if (act && act.id === 'page-gauntlet') renderGauntletEntry();
+    else if (act && act.id === 'page-gauntlet-result' && _gauntletLastResult && _gauntletRun) renderGauntletResult(_gauntletLastResult[0], _gauntletLastResult[1]);
+  };
   window.startWhyNot = startWhyNot;                   // overwrites the app.js loader stub
   window.whyNotBack = whyNotBack;
   window.whyNotStart = whyNotStart;

@@ -2151,3 +2151,8 @@ html[data-theme] body #page-gauntlet-result.active:has(.igt-vbody) { padding: 0 
   #gnt-result-root .igt-srow[aria-expanded="true"] + .igt-sdet { animation: igt-open .22s var(--ios-ease); }
   @keyframes igt-open { from { opacity: 0; transform: translateY(-4px); } }
 }
+/* milestone toasts on the cracked seal (spec: never over the seal): anchored above the dock, stacking upwards */
+html[data-theme] body:has(#page-gauntlet-result.active .igt-seal) .celebration-toast { top: auto !important; bottom: calc(150px + env(safe-area-inset-bottom)) !important; }
+html[data-theme] body:has(#page-gauntlet-result.active .igt-seal) .celebration-toast ~ .celebration-toast { top: auto !important; bottom: calc(150px + 84px + env(safe-area-inset-bottom)) !important; }
+html[data-theme] body:has(#page-gauntlet-result.active .igt-seal) .celebration-toast ~ .celebration-toast ~ .celebration-toast { top: auto !important; bottom: calc(150px + 168px + env(safe-area-inset-bottom)) !important; }
+html[data-theme] body:has(#page-gauntlet-result.active .igt-seal) .celebration-toast:not(.show) { transform: translateY(16px) !important; }

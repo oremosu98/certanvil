@@ -242,3 +242,42 @@ test('Lift B3c1 desktop: results are today\'s', async ({ page }) => {
   await expect(page.locator('#gnt-result-root .gnt-seal-wrap')).toBeVisible();
   await expect(page.locator('#gnt-result-root .igt-vbody')).toHaveCount(0);
 });
+
+// ── Final review fixes ──
+test.describe('Lift B3c1 final review fixes', () => {
+  test('I1: crossing 899px re-renders the entry and the results, and closes the topic sheet', async ({ page }) => {
+    await openEntry(page, { width: 956, height: 440 }, 'pro');
+    await expect(page.locator('#page-gauntlet .gnt-shell')).toBeVisible();
+    await page.setViewportSize({ width: 440, height: 956 });
+    await expect(page.locator('#igt-entry .igt-start')).toBeVisible();
+    await page.locator('#igt-entry .igt-switch').click();
+    await expect(page.locator('#igt-topics')).toBeVisible();
+    await page.setViewportSize({ width: 956, height: 440 });
+    await expect(page.locator('#igt-topics')).toBeHidden();
+    await expect(page.locator('#page-gauntlet .gnt-shell')).toBeVisible();
+    await page.setViewportSize({ width: 440, height: 956 });
+    await setTier(page, 'pro');
+    await page.locator('#igt-entry .igt-start').click();
+    await expect(page.locator('#page-quiz')).toHaveClass(/active/, { timeout: 8000 });
+    await playRun(page, [2]);
+    await expect(page.locator('#gnt-result-root .igt-vbody')).toHaveCount(1);
+    await page.setViewportSize({ width: 956, height: 440 });
+    await expect(page.locator('#gnt-result-root .igt-vbody')).toHaveCount(0);
+    await expect(page.locator('#gnt-result-root .gnt-miss-head')).toBeVisible();
+    await page.setViewportSize({ width: 440, height: 956 });
+    await expect(page.locator('#gnt-result-root .igt-vtitle')).toHaveText('Cracked 4 of 5');
+  });
+  test('I2: a milestone toast never covers the seal', async ({ page }) => {
+    await startRun(page, { width: 402, height: 874 });
+    await playRun(page, []);
+    await page.waitForSelector('.celebration-toast', { state: 'attached', timeout: 4000 });
+    await page.waitForTimeout(700);
+    const r = await page.evaluate(() => {
+      const seal = document.querySelector('#gnt-result-root .igt-seal').getBoundingClientRect();
+      return Array.from(document.querySelectorAll('.celebration-toast')).filter((t) => getComputedStyle(t).display !== 'none' && t.getBoundingClientRect().height > 0)
+        .map((t) => { const b = t.getBoundingClientRect(); return b.bottom <= seal.top || b.top >= seal.bottom; });
+    });
+    expect(r.length).toBeGreaterThan(0);
+    expect(r.every(Boolean)).toBe(true);
+  });
+});
