@@ -147,6 +147,14 @@ for (const vp of PHONES) {
       expect(tf).not.toBe('none');
       const h = await page.evaluate(() => [0, 1].map((i) => getComputedStyle(document.querySelectorAll('#gauntlet-ladder .gnt-rung-bar')[i]).height));
       expect(h[0]).toBe(h[1]);   // the live rung grows by transform, never height
+      // drawing order: the ladder, then "The Gauntlet · topic", then the question
+      const y = await page.evaluate(() => ['#gauntlet-ladder', '#gauntlet-run-topic', '#q-num'].map((q) => document.querySelector(q).getBoundingClientRect().top));
+      expect(y[0]).toBeLessThan(y[1]); expect(y[1]).toBeLessThan(y[2]);
+      // the answered hinge uses the accent tint, as drawn (today's mark is red-tinted)
+      await answer(page, 1);
+      const bg = await page.evaluate(() => { const m = document.querySelector('#q-text mark.gnt-hinge'); return m && getComputedStyle(m).backgroundColor; });
+      const red = await page.evaluate(() => { const d = document.createElement('i'); d.style.color = 'color-mix(in oklab, var(--red) 26%, transparent)'; document.body.appendChild(d); const c = getComputedStyle(d).color; d.remove(); return c; });
+      expect(bg).toBeTruthy(); expect(bg).not.toBe(red);
     });
     test('a normal quiz after a Gauntlet shows the pills', async ({ page }) => {
       await startRun(page, vp);

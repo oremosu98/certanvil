@@ -2093,6 +2093,13 @@ html[data-theme] body #page-quiz #gauntlet-run-topic span { color: var(--text-di
 html[data-theme] body #page-quiz #gauntlet-rung-chip:not(.is-hidden) { display: inline-flex !important; align-items: center; gap: 6px; padding: 0 !important; border: 0 !important; background: none !important; font: 800 9.5px/1 Inter, sans-serif !important; letter-spacing: 0.12em !important; text-transform: uppercase !important; color: var(--accent-deep) !important; }
 html[data-theme] body #page-quiz #gauntlet-rung-chip:not(.is-hidden)::before { content: ""; width: 7px; height: 7px; border-radius: 2px; background: var(--accent); }
 @media (prefers-reduced-motion: reduce) { html[data-theme] body #page-quiz #gauntlet-ladder .gnt-rung-bar { transition: background-color .2s ease; } }
+/* drawing order during a run: top bar, the ladder (in the pills' row), "The Gauntlet · topic", then the question */
+html[data-theme] body #page-quiz:has(#gauntlet-ladder:not(.is-hidden)) > * { order: 3; }
+html[data-theme] body #page-quiz:has(#gauntlet-ladder:not(.is-hidden)) > .quiz-topbar { order: 0; }
+html[data-theme] body #page-quiz:has(#gauntlet-ladder:not(.is-hidden)) > #gauntlet-ladder { order: 1; }
+html[data-theme] body #page-quiz:has(#gauntlet-ladder:not(.is-hidden)) > #gauntlet-run-topic { order: 2; }
+/* the hinge in the drawn accent tint (today's mark is red-tinted, which reads as a miss on a right answer) */
+html[data-theme] body #page-quiz mark.gnt-hinge { background: color-mix(in oklab, var(--accent) 22%, transparent); padding: 0 3px; font-weight: inherit; }
 
 /* ═════════════════════ LIFT B3c1 · RESULTS (cert-ios-gauntlet.html ?v=result-cracked, result-miss, result-miss-open, result-miss-free) · igt- ═════════════════════ */
 html[data-theme] body #page-gauntlet-result.active:has(.igt-vbody) { padding: 0 !important; margin: 0 !important; max-width: none !important; animation: none !important; transform: none !important; background: var(--bg); color: var(--text); font-family: Inter, -apple-system, BlinkMacSystemFont, sans-serif; }

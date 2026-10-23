@@ -80,6 +80,16 @@ const SCREENS = [
   ['xs-abandon', 'cert-ios-simlab.html?v=exam-abandon', 'xs-abandon'],
   ['xs-result', 'cert-ios-simlab.html?v=exam-result', 'xs-result'],
   ['xs-result-timeup', 'cert-ios-simlab.html?v=exam-result-timeup', 'xs-result-timeup'],
+  ['gt-entry', 'cert-ios-gauntlet.html?v=entry', 'gt-entry'],
+  ['gt-pick', 'cert-ios-gauntlet.html?v=entry-pick', 'gt-pick'],
+  ['gt-free', 'cert-ios-gauntlet.html?v=entry-free', 'gt-free'],
+  ['gt-loading', 'cert-ios-gauntlet.html?v=loading', 'gt-loading'],
+  ['gt-run', 'cert-ios-gauntlet.html?v=run', 'gt-run'],
+  ['gt-answered', 'cert-ios-gauntlet.html?v=run-answered', 'gt-answered'],
+  ['gt-cracked', 'cert-ios-gauntlet.html?v=result-cracked', 'gt-cracked'],
+  ['gt-miss', 'cert-ios-gauntlet.html?v=result-miss', 'gt-miss'],
+  ['gt-miss-open', 'cert-ios-gauntlet.html?v=result-miss-open', 'gt-miss-open'],
+  ['gt-miss-free', 'cert-ios-gauntlet.html?v=result-miss-free', 'gt-miss-free'],
 ];
 // B3a: Drills seeds per state (wrong-bank size, fresh user, cert)
 function drillsSeed(step) {
@@ -91,6 +101,12 @@ const EXAM_TOPICS = ['NTP, ICMP & Traffic Types', 'OSPF', 'PKI & Certificates', 
 // The Net+ Sim Lab seed pool, read here so a saved exam can carry a real terminal PBQ (B3b1 console look).
 const SL_SEEDS = (() => { const c = { window: {} }; require('vm').runInNewContext(fs.readFileSync(path.join(ROOT, 'features/sim-lab-seed-netplus.js'), 'utf8'), c); return c.window.SIM_LAB_SEED_NETPLUS; })();
 const SL_TERMINAL = SL_SEEDS.find(x => x.assets && x.assets.reference && x.assets.reference.kind === 'terminal' && JSON.stringify(x.steps).indexOf('excerptLines') > 0);
+const GT_RUN = { concept: 'Remote Desktop listens on TCP 3389', rungs: [
+  { question: 'Which TCP port does Remote Desktop Protocol listen on by default?', options: ['3389', '22', '445', '5900'], answer: 'A', explanation: 'RDP listens on TCP 3389 by default. SSH is 22, SMB is 445, VNC is 5900.', hinge: 'Remote Desktop Protocol' },
+  { question: 'A help desk tech can\u2019t reach a Windows server for remote desktop. The firewall log shows drops on one port only. Which port must be opened?', options: ['443', '3389', '23', '135'], answer: 'B', explanation: 'Remote desktop to a Windows host is RDP on TCP 3389. 443 is HTTPS, 23 is Telnet, 135 is RPC.', hinge: 'remote desktop' },
+  { question: 'Which port is the BEST one to restrict to stop remote GUI logins to Windows hosts?', options: ['80', '389', '3389', '8080'], answer: 'C', explanation: 'Closing 3389 stops RDP, the remote GUI login. 389 is LDAP and does not carry a desktop session.', hinge: 'BEST' },
+  { question: 'All of these ports carry remote access EXCEPT which one?', options: ['22', '3389', '5900', '161'], answer: 'D', explanation: '161 is SNMP, for monitoring. 22 (SSH), 3389 (RDP) and 5900 (VNC) all give remote access.', hinge: 'EXCEPT' },
+  { question: 'An admin moved RDP off its default port. Which port did they move it off of?', options: ['3389', '3390', '443', '22'], answer: 'A', explanation: 'RDP\u2019s default is 3389, so that is the port it was moved off of.', hinge: 'off of' } ] };
 function examState(step) {
   const qs = Array.from({ length: 90 }, (_, i) => ({ type: 'mcq', question: 'Which of the following is the primary function of ICMP in network communications?',
     options: { A: 'Providing error reporting and diagnostic capabilities for IP networks', B: 'Establishing encrypted connections between remote hosts',
@@ -182,6 +198,33 @@ async function shootReal(browser, step, theme) {
       renderGauntletDrillsCard();
     }, step === 'dr-free' ? 'used' : step === 'dr-empty');
     await p.waitForTimeout(1200);
+  } else if (/^gt/.test(step || '')) {
+    // B3c1: the Reword Gauntlet, forge stubbed in the page (the drawing's RDP run; checkers pass every rung)
+    const free = /^gt-(free|miss-free)$/.test(step);
+    const tier = () => p.evaluate((f) => { window._quotaState = f ? { tier: 'free', used_today: 0, daily_limit: 15 } : { tier: 'pro' }; document.body.classList.toggle('is-pro-tier', !f); }, free);
+    await p.evaluate(async ([st, run]) => {
+      try { localStorage.removeItem('nplus_gauntlet_free_count'); } catch (_) {}
+      window._claudeFetch = st === 'gt-loading' ? () => new Promise(() => {}) : async () => ({ ok: true, json: async () => ({ content: [{ type: 'text', text: JSON.stringify(run) }] }) });
+      window.aiValidateQuestions = async (k, qs) => qs; window.validateQuestions = (qs) => qs;
+      if (typeof showPage === 'function') showPage('drills');
+    }, [step, GT_RUN]);
+    await p.waitForTimeout(500);
+    await tier();
+    await p.evaluate(() => startRewordGauntlet());
+    await p.waitForTimeout(900);
+    if (step === 'gt-pick') { await p.locator('#igt-entry .igt-switch').click(); await p.waitForTimeout(500); }
+    if (!/^gt-(entry|pick|free)$/.test(step)) {
+      await tier(); await p.locator('#igt-entry .igt-start').click(); await p.waitForTimeout(1200);
+      const ans = async (i) => { await p.locator('#options .option').nth(i).click(); await p.locator('#btn-next').click(); await p.waitForTimeout(300); };
+      const next = async () => { await p.locator('#btn-next').click(); await p.waitForTimeout(400); };
+      if (step === 'gt-run' || step === 'gt-answered') { await ans(0); await next(); if (step === 'gt-answered') await ans(1); }
+      if (/^gt-(cracked|miss)/.test(step)) {
+        const right = [0, 1, 2, 3, 0], wrong = step === 'gt-cracked' ? [] : [2, 3];
+        for (let i = 0; i < 5; i++) { await tier(); await ans(wrong.indexOf(i) >= 0 ? (right[i] + 1) % 4 : right[i]); await next(); }
+        await p.waitForTimeout(4600);   // let any milestone toast leave
+        if (step === 'gt-miss-open') { await p.locator('#gnt-result-root .igt-srow').nth(2).click(); await p.waitForTimeout(400); }
+      }
+    }
   } else if (/^xs/.test(step || '')) {
     // B3b2: a Pro Sim Lab exam, 5 rounds, seeds only (offline); the drawn round is the terminal seed in round 2
     await p.evaluate(async (st) => {
@@ -272,7 +315,7 @@ async function shootReal(browser, step, theme) {
   await p.addStyleTag({ content: '.success-toast, .error-toast, .toast, .celebration-toast { display: none !important; }' });
   await p.waitForTimeout(300);
   // B1 screens are one fixed viewport (a full-page capture resizes it mid-shot); the review-done recap scrolls
-  const buf = await p.screenshot({ fullPage: !/^(prog|ana|srv$|ex|sl|xs)/.test(step || '') });
+  const buf = await p.screenshot({ fullPage: !/^(prog|ana|srv$|ex|sl|xs|gt)/.test(step || '') });
   await ctx.close();
   return buf;
 }
